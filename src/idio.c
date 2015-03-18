@@ -28,11 +28,11 @@ void idio_init ()
 {
     /* GC first! */
     idio_init_gc ();
+    idio_init_symbol ();
     
     idio_init_handle ();
     idio_init_C_struct ();
     idio_init_frame ();
-    idio_init_symbol ();
 }
 
 void idio_final ()
@@ -40,9 +40,9 @@ void idio_final ()
     /*
      * reverse order of idio_init () -- if there is an idio_final_X ()
      */
-    idio_final_symbol ();
     idio_final_handle ();
 
+    idio_final_symbol ();
     idio_final_gc ();
 }
 
@@ -54,10 +54,12 @@ int main (int argc, char **argv, char **envp)
 
     idio_init ();
 
-    idio_load_file (idio_G_frame, "bootstrap.idio");  
+    IDIO fh = idio_open_file_handle_C (idio_G_frame, "bootstrap.idio", "r");
+
+    idio_load_file (idio_G_frame, fh);
 
     /*
-      IDIO inp = idio_array_get_index (idio_G_frame, IDIO_COLLECTOR (idio_G_frame)->input_port, 0);
+      IDIO inp = idio_array_get_index (idio_G_frame, IDIO_GC (idio_G_frame)->input_port, 0);
     */
     
     idio_final ();

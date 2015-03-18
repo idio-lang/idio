@@ -35,6 +35,10 @@ const char *idio_type_enum2string (idio_type_e type)
     case IDIO_TYPE_CLOSURE: return "FUNCTION";
     case IDIO_TYPE_PRIMITIVE_C: return "FUNCTION_C";
     case IDIO_TYPE_BIGNUM: return "BIGNUM";
+    case IDIO_TYPE_FRAME: return "FRAME";
+    case IDIO_TYPE_HANDLE: return "HANDLE";
+    case IDIO_TYPE_STRUCT_TYPE: return "STRUCT_TYPE";
+    case IDIO_TYPE_STRUCT_INSTANCE: return "STRUCT_INSTANCE";
 	
     case IDIO_TYPE_C_INT8: return "C INT8";
     case IDIO_TYPE_C_UINT8: return "C UINT8";
@@ -53,7 +57,6 @@ const char *idio_type_enum2string (idio_type_e type)
     case IDIO_TYPE_C_STRUCT: return "C_STRUCT";
     case IDIO_TYPE_C_INSTANCE: return "C_INSTANCE";
     case IDIO_TYPE_C_FFI: return "C_FFI";
-    case IDIO_TYPE_FRAME: return "FRAME";
     case IDIO_TYPE_OPAQUE: return "OPAQUE";
     default:
 	fprintf (stderr, "IDIO_TYPE_ENUM2STRING: unexpected type %d\n", type);
@@ -220,18 +223,48 @@ int idio_equal (IDIO f, IDIO o1, IDIO o2, int eqp)
 		return (o1->u.closure == o2->u.closure);
 	    case IDIO_TYPE_PRIMITIVE_C:
 		return (o1->u.primitive_C == o2->u.primitive_C);
-	    case IDIO_TYPE_C_FFI:
-		return (o1->u.C_FFI == o2->u.C_FFI);
+	    case IDIO_TYPE_BIGNUM:
+		return idio_bignum_real_equal_p (f, o1, o2);
+	    case IDIO_TYPE_HANDLE:
+		if (IDIO_EQUAL_EQP == eqp) {
+		    return (o1->u.handle == o2->u.handle);
+		}
+		
+		if (! idio_equalp (f, IDIO_HANDLE_NAME (o1), IDIO_HANDLE_NAME (o2))) {
+		    return 0;
+		}
+		break;
+	    case IDIO_TYPE_STRUCT_TYPE:
+		if (IDIO_EQUAL_EQP == eqp) {
+		    return (o1->u.struct_type == o2->u.struct_type);
+		}
+		
+		if (! idio_equalp (f, IDIO_STRUCT_TYPE_NAME (o1), IDIO_STRUCT_TYPE_NAME (o2)) ||
+		    ! idio_equalp (f, IDIO_STRUCT_TYPE_PARENT (o1), IDIO_STRUCT_TYPE_PARENT (o2)) ||
+		    ! idio_equalp (f, IDIO_STRUCT_TYPE_SLOTS (o1), IDIO_STRUCT_TYPE_SLOTS (o2))) {
+		    return 0;
+		}
+		break;
+	    case IDIO_TYPE_STRUCT_INSTANCE:
+		if (IDIO_EQUAL_EQP == eqp) {
+		    return (o1->u.struct_instance == o2->u.struct_instance);
+		}
+		
+		if (! idio_equalp (f, IDIO_STRUCT_INSTANCE_TYPE (o1), IDIO_STRUCT_INSTANCE_TYPE (o2)) ||
+		    ! idio_equalp (f, IDIO_STRUCT_INSTANCE_SLOTS (o1), IDIO_STRUCT_INSTANCE_SLOTS (o2))) {
+		    return 0;
+		}
+		break;
+	    case IDIO_TYPE_C_TYPEDEF:
+		return (o1->u.C_typedef == o2->u.C_typedef);
 	    case IDIO_TYPE_C_STRUCT:
 		return (o1->u.C_struct == o2->u.C_struct);
 	    case IDIO_TYPE_C_INSTANCE:
 		return o1->u.C_instance == o2->u.C_instance;
+	    case IDIO_TYPE_C_FFI:
+		return (o1->u.C_FFI == o2->u.C_FFI);
 	    case IDIO_TYPE_OPAQUE:
 		return (o1->u.opaque == o2->u.opaque);
-	    case IDIO_TYPE_C_TYPEDEF:
-		return (o1->u.C_typedef == o2->u.C_typedef);
-	    case IDIO_TYPE_BIGNUM:
-		return idio_bignum_real_equal_p (f, o1, o2);
 	    default:
 		fprintf (stderr, "idio_equal: IDIO_TYPE_POINTER_MARK: o1->type %d unexpected\n", o1->type);
 		IDIO_C_ASSERT (0);
@@ -257,12 +290,6 @@ int idio_equal (IDIO f, IDIO o1, IDIO o2, int eqp)
 char *idio_as_string (IDIO f, IDIO o, int depth)
 {
     IDIO_ASSERT (f);
-
-    if ((o->flags & IDIO_FLAG_FREE_MASK) == IDIO_FLAG_FREE) {
-	return NULL;
-    }
-
-    IDIO_ASSERT (o);
 
     char *r;
     size_t i;
@@ -318,6 +345,7 @@ char *idio_as_string (IDIO f, IDIO o, int depth)
 	    case IDIO_CONSTANT_ASTERISK:        t = "asterisk";        break;
 	    case IDIO_CONSTANT_NAMESPACE:       t = "namespace";       break;
 	    default:
+		IDIO_FRAME_FPRINTF (f, stderr, "%10p v=%zd\n", o, v);
 		IDIO_C_ASSERT (0);
 		break;
 	    }
@@ -396,7 +424,7 @@ char *idio_as_string (IDIO f, IDIO o, int depth)
 		}
 		break;
 	    case IDIO_TYPE_SYMBOL:
-		IDIO_STRCAT_FREE (r, idio_as_string (f, IDIO_SYMBOL_STRING (o), depth - 1));
+		r = idio_as_string (f, IDIO_SYMBOL_STRING (o), depth - 1);
 		break;
 	    case IDIO_TYPE_PAIR:
 		/*
@@ -505,14 +533,23 @@ char *idio_as_string (IDIO f, IDIO o, int depth)
 		if (depth >= 0) {
 		    for (i = 0; i < IDIO_HASH_SIZE (o); i++) {
 			if (idio_S_nil != IDIO_HASH_HE_KEY (o, i)) {
-			    char *t = idio_as_string (f, IDIO_HASH_HE_KEY (o, i), depth - 1);
+			    char *t;
+			    if (IDIO_HASH_FLAGS (o) & IDIO_HASH_FLAG_STRING_KEYS) {
+				t = (char *) IDIO_HASH_HE_KEY (o, i);
+			    } else {
+				t = idio_as_string (f, IDIO_HASH_HE_KEY (o, i), depth - 1);
+			    }
 			    char *hes;
 			    if (asprintf (&hes, "%s:", t) == -1) {
-				free (t);
+				if (! (IDIO_HASH_FLAGS (o) & IDIO_HASH_FLAG_STRING_KEYS)) {
+				    free (t);
+				}
 				free (r);
 				return NULL;
 			    }
-			    free (t);
+			    if (! (IDIO_HASH_FLAGS (o) & IDIO_HASH_FLAG_STRING_KEYS)) {
+				free (t);
+			    }
 			    IDIO_STRCAT_FREE (r, hes);
 			    if (IDIO_HASH_HE_VALUE (o, i)) {
 				t = idio_as_string (f, IDIO_HASH_HE_VALUE (o, i), depth - 1);
@@ -554,75 +591,9 @@ char *idio_as_string (IDIO f, IDIO o, int depth)
 		    return NULL;
 		}
 		break;
-	    case IDIO_TYPE_C_FFI:
+	    case IDIO_TYPE_BIGNUM:
 		{
-		    char *t = idio_as_string (f, IDIO_C_FFI_NAME (o), depth - 1);
-		    if (asprintf (&r, "#F_CFFI{%s ", t) == -1) {
-			free (t);
-			return NULL;
-		    }
-		    free (t);
-		    IDIO_STRCAT_FREE (r, idio_as_string (f, IDIO_C_FFI_SYMBOL (o), depth - 1));
-		    IDIO_STRCAT (r, " ");
-		    IDIO_STRCAT_FREE (r, idio_as_string (f, IDIO_C_FFI_ARGS (o), depth - 1));
-		    IDIO_STRCAT (r, " ");
-		    IDIO_STRCAT_FREE (r, idio_as_string (f, IDIO_C_FFI_RESULT (o), depth - 1));
-		    IDIO_STRCAT (r, " ");
-		    IDIO_STRCAT_FREE (r, idio_as_string (f, IDIO_C_FFI_NAME (o), depth - 1));
-		    IDIO_STRCAT (r, " }");
-		    break;
-		}
-	    case IDIO_TYPE_C_STRUCT:
-		{
-		    if (asprintf (&r, "c_struct %10p { ", o) == -1) {
-			return NULL;
-		    }
-		    IDIO_STRCAT (r, "\n\tslots: ");
-		    IDIO_STRCAT_FREE (r, idio_as_string (f, IDIO_C_STRUCT_SLOTS (o), depth - 1));
-
-		    IDIO mh = IDIO_C_STRUCT_METHODS (o);
-	    
-		    IDIO_STRCAT (r, "\n\tmethods: ");
-		    if (idio_S_nil != mh) {
-			for (i = 0; i < IDIO_HASH_SIZE (mh); i++) {
-			    if (idio_S_nil != IDIO_HASH_HE_KEY (mh, i)) {
-				char *t = idio_as_string (f, IDIO_HASH_HE_KEY (mh, i), depth - 1);
-				char *hes;
-				if (asprintf (&hes, "\n\t%10s:", t) == -1) {
-				    free (t);
-				    free (r);
-				    return NULL;
-				}
-				free (t);
-				IDIO_STRCAT_FREE (r, hes);
-				if (IDIO_HASH_HE_VALUE (mh, i)) {
-				    t = idio_as_string (f, IDIO_HASH_HE_VALUE (mh, i), depth - 1);
-				} else {
-				    if (asprintf (&t, "-") == -1) {
-					free (r);
-					return NULL;
-				    }
-				}
-				if (asprintf (&hes, "%s ", t) == -1) {
-				    free (t);
-				    free (r);
-				    return NULL;
-				}
-				free (t);
-				IDIO_STRCAT_FREE (r, hes);
-			    }
-			}
-		    }
-		    IDIO_STRCAT (r, "\n\tframe: ");
-		    IDIO_STRCAT_FREE (r, idio_as_string (f, IDIO_C_STRUCT_FRAME (o), depth - 1));
-		    IDIO_STRCAT (r, "\n}");
-		    break;
-		}
-	    case IDIO_TYPE_C_INSTANCE:
-		{
-		    if (asprintf (&r, "c_instance %10p { C_ptr=%10p c-struct=%10p}", o, IDIO_C_INSTANCE_P (o), IDIO_C_INSTANCE_C_STRUCT (o)) == -1) {
-			return NULL;
-		    }
+		    r = idio_bignum_as_string (f, o);
 		    break;
 		}
 	    case IDIO_TYPE_FRAME:
@@ -683,6 +654,99 @@ char *idio_as_string (IDIO f, IDIO o, int depth)
 		    IDIO_STRCAT (r, " }");
 		    break;
 		}
+	    case IDIO_TYPE_HANDLE:
+		if (asprintf (&r, "#H{%s}", IDIO_HANDLE_NAME (o)) == -1) {
+		    return NULL;
+		}
+		break;
+	    case IDIO_TYPE_STRUCT_TYPE:
+		if (asprintf (&r, "#ST{%p}", o) == -1) {
+		    return NULL;
+		}
+		break;
+	    case IDIO_TYPE_STRUCT_INSTANCE:
+		if (asprintf (&r, "#SI{%p}", o) == -1) {
+		    return NULL;
+		}
+		break;
+	    case IDIO_TYPE_C_TYPEDEF:
+		{
+		    if (asprintf (&r, "#T{%10p}", IDIO_C_TYPEDEF_SYM (o)) == -1) {
+			return NULL;
+		    }
+		    break;
+		}
+	    case IDIO_TYPE_C_STRUCT:
+		{
+		    if (asprintf (&r, "c_struct %10p { ", o) == -1) {
+			return NULL;
+		    }
+		    IDIO_STRCAT (r, "\n\tslots: ");
+		    IDIO_STRCAT_FREE (r, idio_as_string (f, IDIO_C_STRUCT_SLOTS (o), depth - 1));
+
+		    IDIO mh = IDIO_C_STRUCT_METHODS (o);
+	    
+		    IDIO_STRCAT (r, "\n\tmethods: ");
+		    if (idio_S_nil != mh) {
+			for (i = 0; i < IDIO_HASH_SIZE (mh); i++) {
+			    if (idio_S_nil != IDIO_HASH_HE_KEY (mh, i)) {
+				char *t = idio_as_string (f, IDIO_HASH_HE_KEY (mh, i), depth - 1);
+				char *hes;
+				if (asprintf (&hes, "\n\t%10s:", t) == -1) {
+				    free (t);
+				    free (r);
+				    return NULL;
+				}
+				free (t);
+				IDIO_STRCAT_FREE (r, hes);
+				if (IDIO_HASH_HE_VALUE (mh, i)) {
+				    t = idio_as_string (f, IDIO_HASH_HE_VALUE (mh, i), depth - 1);
+				} else {
+				    if (asprintf (&t, "-") == -1) {
+					free (r);
+					return NULL;
+				    }
+				}
+				if (asprintf (&hes, "%s ", t) == -1) {
+				    free (t);
+				    free (r);
+				    return NULL;
+				}
+				free (t);
+				IDIO_STRCAT_FREE (r, hes);
+			    }
+			}
+		    }
+		    IDIO_STRCAT (r, "\n\tframe: ");
+		    IDIO_STRCAT_FREE (r, idio_as_string (f, IDIO_C_STRUCT_FRAME (o), depth - 1));
+		    IDIO_STRCAT (r, "\n}");
+		    break;
+		}
+	    case IDIO_TYPE_C_INSTANCE:
+		{
+		    if (asprintf (&r, "c_instance %10p { C_ptr=%10p c-struct=%10p}", o, IDIO_C_INSTANCE_P (o), IDIO_C_INSTANCE_C_STRUCT (o)) == -1) {
+			return NULL;
+		    }
+		    break;
+		}
+	    case IDIO_TYPE_C_FFI:
+		{
+		    char *t = idio_as_string (f, IDIO_C_FFI_NAME (o), depth - 1);
+		    if (asprintf (&r, "#F_CFFI{%s ", t) == -1) {
+			free (t);
+			return NULL;
+		    }
+		    free (t);
+		    IDIO_STRCAT_FREE (r, idio_as_string (f, IDIO_C_FFI_SYMBOL (o), depth - 1));
+		    IDIO_STRCAT (r, " ");
+		    IDIO_STRCAT_FREE (r, idio_as_string (f, IDIO_C_FFI_ARGS (o), depth - 1));
+		    IDIO_STRCAT (r, " ");
+		    IDIO_STRCAT_FREE (r, idio_as_string (f, IDIO_C_FFI_RESULT (o), depth - 1));
+		    IDIO_STRCAT (r, " ");
+		    IDIO_STRCAT_FREE (r, idio_as_string (f, IDIO_C_FFI_NAME (o), depth - 1));
+		    IDIO_STRCAT (r, " }");
+		    break;
+		}
 	    case IDIO_TYPE_OPAQUE:
 		{
 		    if (asprintf (&r, "#O{%10p ", IDIO_OPAQUE_P (o)) == -1) {
@@ -692,25 +756,18 @@ char *idio_as_string (IDIO f, IDIO o, int depth)
 		    IDIO_STRCAT (r, "}");
 		    break;
 		}
-	    case IDIO_TYPE_C_TYPEDEF:
-		{
-		    if (asprintf (&r, "#T{%10p}", IDIO_C_TYPEDEF_SYM (o)) == -1) {
-			return NULL;
-		    }
-		    break;
-		}
-	    case IDIO_TYPE_BIGNUM:
-		{
-		    r = idio_bignum_as_string (f, o);
-		    break;
-		}
 	    default:
-		IDIO_C_ASSERT (0);
+		if (asprintf (&r, "#?{%10p}", o) == -1) {
+		    return NULL;
+		}
 		break;
 	    }
 	}
+	break;
     default:
-	IDIO_C_ASSERT (0);
+	if (asprintf (&r, "#??{%10p}", o) == -1) {
+	    return NULL;
+	}
 	break;
     }
 
@@ -772,22 +829,26 @@ char *idio_display_string (IDIO f, IDIO o)
 	    case IDIO_TYPE_HASH:
 	    case IDIO_TYPE_CLOSURE:
 	    case IDIO_TYPE_PRIMITIVE_C:
-	    case IDIO_TYPE_C_FFI:
+	    case IDIO_TYPE_BIGNUM:
+	    case IDIO_TYPE_FRAME:
+	    case IDIO_TYPE_HANDLE:
+	    case IDIO_TYPE_STRUCT_TYPE:
+	    case IDIO_TYPE_STRUCT_INSTANCE:
+	    case IDIO_TYPE_C_TYPEDEF:
 	    case IDIO_TYPE_C_STRUCT:
 	    case IDIO_TYPE_C_INSTANCE:
-	    case IDIO_TYPE_FRAME:
+	    case IDIO_TYPE_C_FFI:
 	    case IDIO_TYPE_OPAQUE:
-	    case IDIO_TYPE_C_TYPEDEF:
-	    case IDIO_TYPE_BIGNUM:
 		r = idio_as_string (f, o, 4);
 		break;
 	    default:
-		if (asprintf (&r, "type %d n/k", o->type) == -1) {
+		if (asprintf (&r, "#?{%10p}", o) == -1) {
 		    return NULL;
 		}
 		break;
 	    }
 	}
+	break;
     default:
 	if (asprintf (&r, "type %d n/k", o->type) == -1) {
 	    return NULL;
@@ -919,7 +980,12 @@ void idio_dump (IDIO f, IDIO o, int detail)
 			    if (idio_S_nil == IDIO_HASH_HE_KEY (o, i)) {
 				continue;
 			    } else {
-				char *s = idio_as_string (f, IDIO_HASH_HE_KEY (o, i), 4);
+				char *s;
+				if (IDIO_HASH_FLAGS (o) & IDIO_HASH_FLAG_STRING_KEYS) {
+				    s = (char *) IDIO_HASH_HE_KEY (o, i);
+				} else {
+				    s = idio_as_string (f, IDIO_HASH_HE_KEY (o, i), 4);
+				}
 				if (detail & 0x4) {
 				    IDIO_FRAME_FPRINTF (f, stderr, "\t%30s : ", s);
 				} else {
@@ -930,7 +996,9 @@ void idio_dump (IDIO f, IDIO o, int detail)
 							IDIO_HASH_HE_NEXT (o, i),
 							s);
 				}
-				free (s);
+				if (! (IDIO_HASH_FLAGS (o) & IDIO_HASH_FLAG_STRING_KEYS)) {
+				    free (s);
+				}
 				if (IDIO_HASH_HE_VALUE (o, i)) {
 				    s = idio_as_string (f, IDIO_HASH_HE_VALUE (o, i), 4);
 				} else {
@@ -949,28 +1017,36 @@ void idio_dump (IDIO f, IDIO o, int detail)
 		break;
 	    case IDIO_TYPE_PRIMITIVE_C:
 		break;
-	    case IDIO_TYPE_C_FFI:
+	    case IDIO_TYPE_BIGNUM:
+		break;
+	    case IDIO_TYPE_FRAME:
+		break;
+	    case IDIO_TYPE_HANDLE:
+		break;
+	    case IDIO_TYPE_STRUCT_TYPE:
+		break;
+	    case IDIO_TYPE_STRUCT_INSTANCE:
+		break;
+	    case IDIO_TYPE_C_TYPEDEF:
 		break;
 	    case IDIO_TYPE_C_STRUCT:
 		break;
 	    case IDIO_TYPE_C_INSTANCE:
 		break;
-	    case IDIO_TYPE_FRAME:
+	    case IDIO_TYPE_C_FFI:
 		break;
 	    case IDIO_TYPE_OPAQUE:
 		break;
-	    case IDIO_TYPE_C_TYPEDEF:
-		break;
-	    case IDIO_TYPE_BIGNUM:
-		break;
 	    default:
-		IDIO_C_ASSERT (0);
-		IDIO_FRAME_FPRINTF (f, stderr, "v=n/k");
+		IDIO_FRAME_FPRINTF (f, stderr, "o=%#p\n", o);
+		break;
 	    }
 	}
+	break;
     default:
+	IDIO_FRAME_FPRINTF (f, stderr, "v=n/k o=%#p o&3=%x F=%x C=%x P=%x\n", o, (intptr_t) o & 3, IDIO_TYPE_FIXNUM_MARK, IDIO_TYPE_CONSTANT_MARK, IDIO_TYPE_POINTER_MARK);
 	IDIO_C_ASSERT (0);
-	IDIO_FRAME_FPRINTF (f, stderr, "v=n/k");
+	break;
     }	
 
     if (detail &&
@@ -990,9 +1066,9 @@ void idio_dump (IDIO f, IDIO o, int detail)
 void idio_expr_dump_ (IDIO f, IDIO e, const char *en, int detail)
 {
     fprintf (stderr, "%20s=", en);
-    IDIO_FRAME_COLLECTOR (f)->verbose++;
+    IDIO_FRAME_GC (f)->verbose++;
     idio_dump (f, e, detail);
-    IDIO_FRAME_COLLECTOR (f)->verbose--;
+    IDIO_FRAME_GC (f)->verbose--;
 }
 
 void idio_frame_env_dump_ (IDIO f, int detail)
@@ -1002,14 +1078,14 @@ void idio_frame_env_dump_ (IDIO f, int detail)
 	fprintf (stderr, " (idio_G_frame)\n");
 	return;
     }
-    IDIO_FRAME_COLLECTOR (f)->verbose++;
+    IDIO_FRAME_GC (f)->verbose++;
     idio_dump (f, IDIO_FRAME_ENV (f), detail | 0x4);
     if (NULL != IDIO_FRAME_PFRAME (f)) { 
      	fprintf (stderr, "+");
 	idio_frame_env_dump_ (IDIO_FRAME_PFRAME (f), detail);
     } 
     fprintf (stderr, "\n"); 
-    IDIO_FRAME_COLLECTOR (f)->verbose--;
+    IDIO_FRAME_GC (f)->verbose--;
 }
 
 void idio_frame_dump_ (IDIO f, const char *sname, int detail)
@@ -1019,26 +1095,26 @@ void idio_frame_dump_ (IDIO f, const char *sname, int detail)
     idio_expr_dump (f, IDIO_FRAME_FORM (f));
     fprintf (stderr, "ERROR:");
     if (idio_array_size (f, IDIO_FRAME_ERROR (f))) {
-	IDIO_FRAME_COLLECTOR (f)->verbose++;
+	IDIO_FRAME_GC (f)->verbose++;
 	idio_dump (f, IDIO_FRAME_ERROR (f), detail);
-	IDIO_FRAME_COLLECTOR (f)->verbose--;
+	IDIO_FRAME_GC (f)->verbose--;
     } else {
 	fprintf (stderr, "\n");
     }
     fprintf (stderr, "STACK:");
     if (idio_array_size (f, IDIO_FRAME_STACK (f))) {
-	IDIO_FRAME_COLLECTOR (f)->verbose++;
+	IDIO_FRAME_GC (f)->verbose++;
 	idio_dump (f, IDIO_FRAME_STACK (f), detail);
-	IDIO_FRAME_COLLECTOR (f)->verbose--;
+	IDIO_FRAME_GC (f)->verbose--;
     } else {
 	fprintf (stderr, "\n");
     }
     idio_frame_env_dump_ (f, detail);
     fprintf (stderr, "THREADS:");
     if (idio_array_size (f, IDIO_FRAME_THREADS (f))) {
-	IDIO_FRAME_COLLECTOR (f)->verbose++;
+	IDIO_FRAME_GC (f)->verbose++;
 	idio_dump (f, IDIO_FRAME_THREADS (f), detail);
-	IDIO_FRAME_COLLECTOR (f)->verbose--;
+	IDIO_FRAME_GC (f)->verbose--;
     } else {
 	fprintf (stderr, "\n");
     }

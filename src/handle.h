@@ -36,6 +36,7 @@ IDIO idio_current_input_handle (IDIO f);
 IDIO idio_current_output_handle (IDIO f);
 
 IDIO idio_open_handle (IDIO f, IDIO pathname, char *mode);
+IDIO idio_read (IDIO f, IDIO h);
 
 #endif
 

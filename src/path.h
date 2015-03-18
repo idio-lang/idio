@@ -25,7 +25,6 @@
 
 char **idio_path_env_split (const char *path_env);
 char *idio_find_file (const char *file);
-int idio_load_file (IDIO f, const char *file);
 
 #endif
 

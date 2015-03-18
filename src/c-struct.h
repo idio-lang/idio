@@ -29,9 +29,11 @@
 	idio_CTD_##t = idio_C_typedefs_add_value ((f), sym, val);	\
     }
 
-#define IDIO_C_TYPEDEF_ADD(f,t)	(IDIO_C_TYPEDEF_ADD_VALUE(f,t,idio_S_nil))
-
-
+#define IDIO_C_TYPEDEF_ADD(f,t)	{					\
+	IDIO sym = idio_symbols_C_intern ((f), (#t));			\
+	idio_CTD_##t = idio_C_typedefs_add_value ((f), sym, idio_S_nil); \
+    }
+    
 #define IDIO_C_SLOT_DATA_TAG       0
 #define IDIO_C_SLOT_DATA_ALIGNMENT 1
 #define IDIO_C_SLOT_DATA_TYPE      2

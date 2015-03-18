@@ -62,6 +62,7 @@ IDIO idio_array_head (IDIO f, IDIO a);
 IDIO idio_array_top (IDIO f, IDIO a);
 IDIO idio_array_get_index (IDIO f, IDIO a, idio_index_t index);
 idio_index_t idio_array_find_free_index (IDIO f, IDIO a, idio_index_t index);
+idio_index_t idio_array_find_eqp (IDIO f, IDIO a, IDIO e, idio_index_t index);
 void idio_array_bind (IDIO f, IDIO a, size_t nargs, ...);
 IDIO idio_array_copy (IDIO f, IDIO a, size_t extra);
 IDIO idio_array_to_list (IDIO f, IDIO a);

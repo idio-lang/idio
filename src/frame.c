@@ -28,16 +28,17 @@ void idio_init_frame ()
 {
 }
 
-/* bootstrap -- takes a idio_collector_t */
-IDIO idio_collector_frame (idio_collector_t *collector, size_t esize, size_t ssize)
+/* bootstrap -- takes a idio_gc_t */
+IDIO idio_gc_frame (idio_gc_t *gc, size_t esize, size_t ssize)
 {
-    IDIO_C_ASSERT (collector);
+    IDIO_C_ASSERT (gc);
 
-    IDIO fo = idio_collector_get (collector, IDIO_TYPE_FRAME);
+    IDIO fo = idio_gc_get (gc, IDIO_TYPE_FRAME);
 
-    IDIO_COLLECTOR_ALLOC (collector, fo->u.frame, sizeof (idio_frame_t));
+    IDIO_GC_ALLOC (gc, fo->u.frame, sizeof (idio_frame_t));
 
     IDIO_FRAME_GREY (fo) = NULL;
+    IDIO_FRAME_GC (fo) = gc;
     IDIO_FRAME_FLAGS (fo) = IDIO_FRAME_FLAG_NONE;
 
     return fo;
@@ -47,7 +48,7 @@ IDIO idio_frame (IDIO f, size_t esize, size_t ssize)
 {
     IDIO_ASSERT (f);
 
-    idio_collector_t *collector = IDIO_COLLECTOR (f);
+    idio_gc_t *gc = IDIO_GC (f);
 
     IDIO fo = idio_get (f, IDIO_TYPE_FRAME);
 
@@ -56,7 +57,7 @@ IDIO idio_frame (IDIO f, size_t esize, size_t ssize)
     IDIO_FRAME_GREY (fo) = NULL;
     IDIO_FRAME_FORM (fo) = NULL;
     IDIO_FRAME_FLAGS (fo) = IDIO_FRAME_FLAG_NONE;
-    IDIO_FRAME_COLLECTOR (fo) = collector;
+    IDIO_FRAME_GC (fo) = gc;
     IDIO_FRAME_PFRAME (fo) = f;
 
     IDIO_FRAME_NAMESPACE (fo) = IDIO_FRAME_NAMESPACE (f);
@@ -89,11 +90,11 @@ void idio_free_frame (IDIO f, IDIO fo)
     IDIO_ASSERT (f);
     IDIO_ASSERT (fo);
 
-    IDIO_C_ASSERT (idio_isa_frame (f, fo));
+    IDIO_TYPE_ASSERT (frame, fo);
 
-    idio_collector_t *collector = IDIO_COLLECTOR (f);
+    idio_gc_t *gc = IDIO_GC (f);
 
-    collector->stats.nbytes -= sizeof (idio_frame_t);
+    gc->stats.nbytes -= sizeof (idio_frame_t);
 
     free (fo->u.frame);
 }

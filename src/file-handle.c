@@ -69,7 +69,7 @@ static idio_handle_methods_t idio_file_handle_methods = {
 
 void idio_init_file_handle ()
 {
-    idio_collector_protect (idio_G_frame, idio_file_handles);
+    idio_gc_protect (idio_G_frame, idio_file_handles);
 
     
 }
@@ -107,13 +107,13 @@ IDIO idio_open_file_handle_C (IDIO f, char *name, char *mode)
 	}
 	break;
     default:
-	idio_error_file_handle_mode (f, name, mode);
+	idio_error_message (f, "unexpected mode", mode);
 	break;
     }
 
     FILE *filep = fopen (name, mode);
     if (NULL == filep) {
-	idio_error_file_handle_open (f, name, mode);
+	idio_error_message (f, "fopen (\"%s\", \"%s\"): %s", name, mode, strerror (errno));
     }
 
     idio_file_handle_stream_t *fhsp = idio_alloc (sizeof (idio_file_handle_stream_t));
@@ -177,7 +177,10 @@ void idio_file_handle_finalizer (IDIO fh)
 {
     IDIO_ASSERT (fh);
 
-    IDIO_C_ASSERT (idio_isa_opaque (idio_G_frame, fh));
+    /* for IDIO_TYPE_ASSERT */
+    IDIO f = idio_G_frame;
+
+    IDIO_TYPE_ASSERT (handle, fh);
 }
 
 void idio_register_file_handle (IDIO f, IDIO fh)
@@ -257,7 +260,10 @@ int idio_file_handle_getc (IDIO f, IDIO fh)
     IDIO_ASSERT (f);
     IDIO_ASSERT (fh);
 
-    IDIO_C_ASSERT (idio_input_file_handlep (f, fh));
+    if (! idio_input_file_handlep (f, fh)) {
+	idio_error_type (f, "not an input file-handle", fh);
+	IDIO_C_ASSERT (0);
+    }
 
     for (;;) {
 	if (IDIO_FILE_HANDLE_COUNT (fh) >= 1) {
@@ -279,7 +285,7 @@ int idio_file_handle_eofp (IDIO f, IDIO fh)
     IDIO_ASSERT (f);
     IDIO_ASSERT (fh);
 
-    IDIO_C_ASSERT (idio_isa_file_handle (f, fh));
+    IDIO_TYPE_ASSERT (file_handle, fh);
 
     return (IDIO_FILE_HANDLE_STREAM_FLAGS (fh) & IDIO_FILE_HANDLE_FLAG_EOF);
 }
@@ -289,7 +295,7 @@ int idio_file_handle_close (IDIO f, IDIO fh)
     IDIO_ASSERT (f);
     IDIO_ASSERT (fh);
 
-    IDIO_C_ASSERT (idio_isa_file_handle (f, fh));
+    IDIO_TYPE_ASSERT (file_handle, fh);
 
     idio_file_handle_flush (f, fh);
 
@@ -301,7 +307,10 @@ int idio_file_handle_putc (IDIO f, IDIO fh, int c)
     IDIO_ASSERT (f);
     IDIO_ASSERT (fh);
 
-    IDIO_C_ASSERT (idio_output_file_handlep (f, fh));
+    if (! idio_output_file_handlep (f, fh)) {
+	idio_error_type (f, "not an output file-handle", fh);
+	IDIO_C_ASSERT (0);
+    }
     
     for (;;) {
 	if (IDIO_FILE_HANDLE_COUNT (fh) < IDIO_FILE_HANDLE_BUFSIZ (fh)) {
@@ -365,7 +374,7 @@ int idio_file_handle_flush (IDIO f, IDIO fh)
     IDIO_ASSERT (f);
     IDIO_ASSERT (fh);
 
-    IDIO_C_ASSERT (idio_isa_file_handle (f, fh));
+    IDIO_TYPE_ASSERT (file_handle, fh);
 
     /*
      * What does it mean to flush a file open for reading?  fflush(3)
@@ -390,7 +399,7 @@ off_t idio_file_handle_seek (IDIO f, IDIO fh, off_t offset, int whence)
     IDIO_ASSERT (f);
     IDIO_ASSERT (fh);
 
-    IDIO_C_ASSERT (idio_isa_file_handle (f, fh));
+    IDIO_TYPE_ASSERT (file_handle, fh);
 
     return lseek (IDIO_FILE_HANDLE_FD (fh), offset, whence);
 }
@@ -400,10 +409,12 @@ void idio_file_handle_print (IDIO f, IDIO fh, IDIO o)
     IDIO_ASSERT (f);
     IDIO_ASSERT (fh);
 
-    IDIO_C_ASSERT (idio_output_file_handlep (f, fh));
+    if (! idio_output_file_handlep (f, fh)) {
+	idio_error_type (f, "not an output file-handle", fh);
+	IDIO_C_ASSERT (0);
+    }
 
     IDIO_C_ASSERT (0);
-    
 }
 
 IDIO idio_defprimitive_open_file_handle (IDIO f, IDIO name, IDIO mode)
@@ -420,7 +431,7 @@ IDIO idio_defprimitive_open_file_handle (IDIO f, IDIO name, IDIO mode)
 	name_C = idio_string_as_C (f, name);
 	break;
     default:
-	idio_error_bad_argument (f, name);
+	idio_error_type (f, "not a string", name);
 	break;
     }
     
@@ -432,7 +443,7 @@ IDIO idio_defprimitive_open_file_handle (IDIO f, IDIO name, IDIO mode)
 	mode_C = idio_string_as_C (f, mode);
 	break;
     default:
-	idio_error_bad_argument (f, mode);
+	idio_error_type (f, "not a string", mode);
 	break;
     }
     
@@ -450,6 +461,7 @@ IDIO idio_load_file (IDIO f, IDIO fh)
     IDIO_ASSERT (fh);
 
     IDIO_C_ASSERT (0);
+    
     return idio_S_unspec;
 }
 
@@ -459,7 +471,7 @@ IDIO idio_defprimitive_load_file (IDIO f, IDIO filename)
     IDIO_ASSERT (filename);
 
     if (! idio_isa_string (f, filename)) {
-	fprintf (stderr, "ERROR: load-file string\n");
+	idio_error_type (f, "not a string", filename);
 	IDIO_C_ASSERT (0);
     }
 

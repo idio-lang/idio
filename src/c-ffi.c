@@ -62,6 +62,7 @@ ffi_type *idio_C_FFI_type (IDIO f, IDIO slot_data)
 	    idio_error_add_C (f, em);
 	    IDIO_C_ASSERT (0);
 	}
+	break;
     }
 }
 
@@ -92,8 +93,7 @@ IDIO idio_C_FFI (IDIO f, IDIO symbol, IDIO arg_types, IDIO result_type)
     IDIO_FRAME_FPRINTF (f, stderr, "idio_C_FFI: %10p\n", o);
 
     IDIO_TYPE_ASSERT (opaque, symbol);
-    IDIO_C_ASSERT (idio_isa_pair (f, arg_types) ||
-		   idio_S_nil == arg_types);
+    IDIO_TYPE_ASSERT (list, arg_types);
 
     IDIO_ALLOC (f, o->u.C_FFI, sizeof (idio_C_FFI_t));
     
@@ -147,11 +147,11 @@ void idio_free_C_FFI (IDIO f, IDIO o)
 {
     IDIO_ASSERT (f);
     IDIO_ASSERT (o);
-    IDIO_C_ASSERT (idio_isa_C_FFI (f, o));
+    IDIO_TYPE_ASSERT (C_FFI, o);
 
-    idio_collector_t *collector = IDIO_COLLECTOR (f);
+    idio_gc_t *gc = IDIO_GC (f);
 
-    collector->stats.nbytes -= sizeof (idio_C_FFI_t);
+    gc->stats.nbytes -= sizeof (idio_C_FFI_t);
 
     free (IDIO_C_FFI_CIFP (o));
     free (IDIO_C_FFI_ARG_TYPES (o));

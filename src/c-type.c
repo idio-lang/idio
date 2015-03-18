@@ -237,9 +237,9 @@ void idio_free_C_type (IDIO f, IDIO co)
     IDIO_ASSERT (f);
     IDIO_ASSERT (co);
 
-    idio_collector_t *collector = IDIO_COLLECTOR (f);
+    idio_gc_t *gc = IDIO_GC (f);
     
-    collector->stats.nbytes -= sizeof (idio_C_type_t);
+    gc->stats.nbytes -= sizeof (idio_C_type_t);
 
     free (co->u.C_type);
 }
@@ -283,9 +283,9 @@ void idio_free_C_pointer (IDIO f, IDIO co)
     IDIO_ASSERT (f);
     IDIO_ASSERT (co);
 
-    idio_collector_t *collector = IDIO_COLLECTOR (f);
+    idio_gc_t *gc = IDIO_GC (f);
     
-    collector->stats.nbytes -= sizeof (idio_C_pointer_t);
+    gc->stats.nbytes -= sizeof (idio_C_pointer_t);
 
     if (IDIO_C_TYPE_POINTER_FREEP (co)) {
 	free (IDIO_C_TYPE_POINTER_P (co));

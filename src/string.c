@@ -119,11 +119,11 @@ void idio_free_string (IDIO f, IDIO so)
     IDIO_ASSERT (f);
     IDIO_ASSERT (so);
 
-    IDIO_C_ASSERT (idio_isa_string (f, so));
+    IDIO_TYPE_ASSERT (string, so);
 
-    idio_collector_t *collector = IDIO_COLLECTOR (f);
+    idio_gc_t *gc = IDIO_GC (f);
     
-    collector->stats.nbytes -= sizeof (idio_string_t) + IDIO_STRING_BLEN (so);
+    gc->stats.nbytes -= sizeof (idio_string_t) + IDIO_STRING_BLEN (so);
 
     free (IDIO_STRING_S (so));
     free (so->u.string);
@@ -163,16 +163,12 @@ void idio_free_substring (IDIO f, IDIO so)
     IDIO_ASSERT (f);
     IDIO_ASSERT (so);
 
-    IDIO_C_ASSERT (idio_isa_substring (f, so));
+    IDIO_TYPE_ASSERT (substring, so);
 
-    idio_collector_t *collector = IDIO_COLLECTOR (f);
+    idio_gc_t *gc = IDIO_GC (f);
 
-    collector->stats.nbytes -= sizeof (idio_substring_t);
+    gc->stats.nbytes -= sizeof (idio_substring_t);
 
-    IDIO_C_ASSERT (IDIO_SUBSTRING_PARENT (so));
-    IDIO_ASSERT (IDIO_SUBSTRING_PARENT (so));
-    IDIO_C_ASSERT (idio_isa_string (f, IDIO_SUBSTRING_PARENT (so)));
-    
     free (so->u.substring);
 }
 
@@ -203,7 +199,7 @@ size_t idio_string_blen (IDIO f, IDIO so)
     IDIO_ASSERT (f);
     IDIO_ASSERT (so);
 
-    IDIO_C_ASSERT (idio_isa_string (f, so));
+    IDIO_TYPE_ASSERT (string, so);
 
     size_t blen = 0;
 
@@ -231,7 +227,7 @@ char *idio_string_s (IDIO f, IDIO so)
     IDIO_ASSERT (f);
     IDIO_ASSERT (so);
 
-    IDIO_C_ASSERT (idio_isa_string (f, so));
+    IDIO_TYPE_ASSERT (string, so);
 
     char *s = NULL;
 
@@ -262,7 +258,7 @@ char *idio_string_as_C (IDIO f, IDIO so)
     IDIO_ASSERT (f);
     IDIO_ASSERT (so);
 
-    IDIO_C_ASSERT (idio_isa_string (f, so));
+    IDIO_TYPE_ASSERT (string, so);
 
     char *s = NULL;
 

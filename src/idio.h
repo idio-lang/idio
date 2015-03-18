@@ -56,11 +56,12 @@
 
 #define IDIO_C_ASSERT(x)	(assert (x))
 
-#define IDIO_TYPE_ASSERT(t,x) {					\
+/* IDIO_TYPE_ASSERT assumes a local variable f */
+#define IDIO_TYPE_ASSERT(t,x) {						\
 	if (! idio_isa_ ## t (f, x)) {					\
 	    char em[BUFSIZ];						\
 	    sprintf (em, "%s %s is not a %s", idio_type2string (x), #x, #t); \
-	    idio_error_add_C (f, em);				\
+	    idio_error_add_C (f, em);					\
 	    fprintf (stderr, "%s\n", em);				\
 	    idio_expr_dump (f, x);					\
 	    idio_frame_trace (f);					\
@@ -68,7 +69,16 @@
 	}								\
     }
 
-#define IDIO_ASSERT(x)		(assert(x),assert((x)->type),assert((x)->type < IDIO_TYPE_MAX))
+/*
+ * A valid IDIO object must be:
+ *
+ * - non-NULL
+ * - either have bottom 2 bits set
+ * - therefore a pointer and type field < IDIO_TYPE_MAX
+ *
+ * obviously some random C pointer might pass but that's *always* true
+ */
+#define IDIO_ASSERT(x)		(assert(x),(((intptr_t) x)&3)?1:(assert((x)->type),assert((x)->type < IDIO_TYPE_MAX)))
 #define IDIO_ASSERT_FREE(x)	(assert(((x)->flags & IDIO_FLAG_FREE_MASK) == IDIO_FLAG_FREE))
 #define IDIO_ASSERT_NOT_FREED(x) (assert(((x)->flags & IDIO_FLAG_FREE_MASK) != IDIO_FLAG_FREE))
 #define IDIO_EXIT(x)		{IDIO_C_ASSERT(0);exit(x);}
@@ -77,7 +87,7 @@
 #else
 
 #define IDIO_C_ASSERT(x)	((void) 0)
-#define IDIO_TYPE_ASSERT(t,x,r)	((void) 0)
+#define IDIO_TYPE_ASSERT(t,x)	((void) 0)
 #define IDIO_ASSERT(x)		((void) 0)
 #define IDIO_ASSERT_FREE(x)	((void) 0)
 #define IDIO_ASSERT_NOT_FREED(x) ((void) 0)
@@ -107,6 +117,7 @@
 #include "pair.h"
 #include "path.h"
 #include "string.h"
+#include "struct.h"
 #include "symbol.h"
 #include "util.h"
 

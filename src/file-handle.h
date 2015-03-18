@@ -40,6 +40,7 @@ int idio_file_handle_flush (IDIO f, IDIO fh);
 off_t idio_file_handle_seek (IDIO f, IDIO fh, off_t offset, int whence);
 void idio_file_handle_print (IDIO f, IDIO fh, IDIO o);
 IDIO idio_defprimitive_open_file_handle (IDIO f, IDIO name, IDIO mode);
+IDIO idio_load_file (IDIO f, IDIO fh);
 IDIO idio_defprimitive_load_file (IDIO f, IDIO filename);
 
 

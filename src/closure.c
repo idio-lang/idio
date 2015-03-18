@@ -56,11 +56,11 @@ void idio_free_closure (IDIO f, IDIO c)
     IDIO_ASSERT (f);
     IDIO_ASSERT (c);
 
-    IDIO_C_ASSERT (idio_isa_closure (f, c));
+    IDIO_TYPE_ASSERT (closure, c);
 
-    idio_collector_t *collector = IDIO_COLLECTOR (f);
+    idio_gc_t *gc = IDIO_GC (f);
 
-    collector->stats.nbytes -= sizeof (idio_closure_t);
+    gc->stats.nbytes -= sizeof (idio_closure_t);
 
     free (c->u.closure);
 }

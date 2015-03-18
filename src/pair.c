@@ -49,16 +49,25 @@ int idio_isa_pair (IDIO f, IDIO p)
     return idio_isa (f, p, IDIO_TYPE_PAIR);
 }
 
+int idio_isa_list (IDIO f, IDIO p)
+{
+    IDIO_ASSERT (f);
+    IDIO_ASSERT (p);
+
+    return (idio_isa_pair (f, p) ||
+	    idio_S_nil == p);
+}
+
 void idio_free_pair (IDIO f, IDIO p)
 {
     IDIO_ASSERT (f);
     IDIO_ASSERT (p);
     
-    IDIO_C_ASSERT (idio_isa_pair (f, p));
+    IDIO_TYPE_ASSERT (pair, p);
 
-    idio_collector_t *collector = IDIO_COLLECTOR (f);
+    idio_gc_t *gc = IDIO_GC (f);
 
-    collector->stats.nbytes -= sizeof (idio_pair_t);
+    gc->stats.nbytes -= sizeof (idio_pair_t);
 
     free (p->u.pair);
 }
@@ -96,7 +105,7 @@ void idio_list_bind (IDIO f, IDIO *list, size_t nargs, ...)
     IDIO_ASSERT (f);
     IDIO_ASSERT (*list);
 
-    IDIO_C_ASSERT (idio_isa_pair (f, *list));
+    IDIO_TYPE_ASSERT (pair, *list);
 
     va_list ap;
     va_start (ap, nargs);

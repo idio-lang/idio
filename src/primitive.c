@@ -62,11 +62,11 @@ void idio_free_primitive_C (IDIO f, IDIO o)
 {
     IDIO_ASSERT (f);
     IDIO_ASSERT (o);
-    IDIO_C_ASSERT (idio_isa_primitive_C (f, o));
+    IDIO_TYPE_ASSERT (primitive_C, o);
 
-    idio_collector_t *collector = IDIO_COLLECTOR (f);
+    idio_gc_t *gc = IDIO_GC (f);
 
-    collector->stats.nbytes -= sizeof (idio_primitive_C_t);
+    gc->stats.nbytes -= sizeof (idio_primitive_C_t);
 
     free (o->u.primitive_C->name);
     free (o->u.primitive_C);

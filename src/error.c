@@ -22,6 +22,43 @@
 
 #include "idio.h"
 
+void idio_error_message (IDIO f, char *format, ...)
+{
+    fprintf (stderr, "ERROR: ");
+
+    va_list fmt_args;
+    va_start (fmt_args, format);
+    
+    vfprintf (stderr, format, fmt_args);
+
+    va_end (fmt_args);
+
+    switch (format[strlen(format)-1]) {
+    case '\n':
+	break;
+    default:
+	fprintf (stderr, "\n");
+    }
+    
+    IDIO_C_ASSERT (0);
+}
+
+void idio_error_alloc (IDIO f)
+{
+    IDIO_ASSERT (f);
+
+    idio_error_message (f, "general allocation fault: %s", strerror (errno));
+}
+
+void idio_error_type (IDIO f, char *what, IDIO who)
+{
+    IDIO_ASSERT (f);
+    IDIO_C_ASSERT (what);
+    IDIO_ASSERT (who);
+
+    idio_error_message (f, "%s: %s", what, idio_display_string (f, who));
+}
+
 void idio_error_add_C (IDIO f, const char *s)
 {
 }

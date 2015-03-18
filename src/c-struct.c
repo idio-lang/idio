@@ -48,9 +48,9 @@ static IDIO idio_C_typedefs_hash = idio_S_nil;
 
 void idio_init_C_struct ()
 {
-    idio_C_typedefs_hash = IDIO_HASH_EQP (idio_G_frame, 80);
-    idio_collector_protect (idio_G_frame, idio_C_typedefs_hash);
-    
+    idio_C_typedefs_hash = IDIO_HASH_EQP (idio_G_frame, 1<<6);
+    idio_gc_protect (idio_G_frame, idio_C_typedefs_hash);
+
     IDIO_C_TYPEDEF_ADD (idio_G_frame, int8);
     IDIO_C_TYPEDEF_ADD (idio_G_frame, uint8);
     IDIO_C_TYPEDEF_ADD (idio_G_frame, int16);
@@ -88,7 +88,7 @@ IDIO idio_C_typedef (IDIO f, IDIO sym)
     IDIO_ASSERT (f);
     IDIO_ASSERT (sym);
 
-    IDIO_C_ASSERT (idio_isa_symbol (f, sym));
+    IDIO_TYPE_ASSERT (symbol, sym);
     
     IDIO o = idio_get (f, IDIO_TYPE_C_TYPEDEF);
 
@@ -112,11 +112,11 @@ void idio_free_C_typedef (IDIO f, IDIO o)
     IDIO_ASSERT (f);
     IDIO_ASSERT (o);
 
-    IDIO_C_ASSERT (idio_isa_C_typedef (f, o));
+    IDIO_TYPE_ASSERT (C_typedef, o);
 
-    idio_collector_t *collector = IDIO_COLLECTOR (f);
+    idio_gc_t *gc = IDIO_GC (f);
 
-    collector->stats.nbytes -= sizeof (idio_C_typedef_t);
+    gc->stats.nbytes -= sizeof (idio_C_typedef_t);
 
     free (o->u.C_typedef);
 }
@@ -380,11 +380,11 @@ void idio_free_C_struct (IDIO f, IDIO cs)
 {
     IDIO_ASSERT (f);
     IDIO_ASSERT (cs);
-    IDIO_C_ASSERT (idio_isa_C_struct (f, cs));
+    IDIO_TYPE_ASSERT (C_struct, cs);
 
-    idio_collector_t *collector = IDIO_COLLECTOR (f);
+    idio_gc_t *gc = IDIO_GC (f);
 
-    collector->stats.nbytes -= sizeof (idio_C_struct_t);
+    gc->stats.nbytes -= sizeof (idio_C_struct_t);
 
     free (cs->u.C_struct);
 }
@@ -393,7 +393,7 @@ IDIO idio_C_instance (IDIO f, IDIO cs, IDIO frame)
 {
     IDIO_ASSERT (f);
     IDIO_ASSERT (cs);
-    IDIO_C_ASSERT (idio_isa_C_struct (f, cs));
+    IDIO_TYPE_ASSERT (C_struct, cs);
     IDIO_ASSERT (frame);
 
     IDIO ci = idio_get (f, IDIO_TYPE_C_INSTANCE);
@@ -422,11 +422,11 @@ void idio_free_C_instance (IDIO f, IDIO ci)
 {
     IDIO_ASSERT (f);
     IDIO_ASSERT (ci);
-    IDIO_C_ASSERT (idio_isa_C_instance (f, ci));
+    IDIO_TYPE_ASSERT (C_instance, ci);
 
-    idio_collector_t *collector = IDIO_COLLECTOR (f);
+    idio_gc_t *gc = IDIO_GC (f);
 
-    collector->stats.nbytes -= sizeof (idio_C_instance_t);
+    gc->stats.nbytes -= sizeof (idio_C_instance_t);
 
     free (ci->u.C_instance->p);
     free (ci->u.C_instance);
@@ -479,11 +479,11 @@ void idio_free_opaque (IDIO f, IDIO o)
     IDIO_ASSERT (f);
     IDIO_ASSERT (o);
 
-    IDIO_C_ASSERT (idio_isa_opaque (f, o));
+    IDIO_TYPE_ASSERT (opaque, o);
 
-    idio_collector_t *collector = IDIO_COLLECTOR (f);
+    idio_gc_t *gc = IDIO_GC (f);
 
-    collector->stats.nbytes -= sizeof (idio_opaque_t);
+    gc->stats.nbytes -= sizeof (idio_opaque_t);
 
     free (o->u.opaque);
 }

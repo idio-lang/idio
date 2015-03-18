@@ -23,36 +23,38 @@
 #ifndef GC_H
 #define GC_H
 
-#define IDIO_TYPE_NONE        0
-#define IDIO_TYPE_STRING      1
-#define IDIO_TYPE_SUBSTRING   2
-#define IDIO_TYPE_SYMBOL      3
-#define IDIO_TYPE_PAIR        4
-#define IDIO_TYPE_ARRAY       5
-#define IDIO_TYPE_HASH        6
-#define IDIO_TYPE_CLOSURE     7
-#define IDIO_TYPE_PRIMITIVE_C 8
-#define IDIO_TYPE_BIGNUM      9
-#define IDIO_TYPE_FRAME       10
-#define IDIO_TYPE_HANDLE  11
-#define IDIO_TYPE_C_INT8      12
-#define IDIO_TYPE_C_UINT8     13
-#define IDIO_TYPE_C_INT16     14
-#define IDIO_TYPE_C_UINT16    15
-#define IDIO_TYPE_C_INT32     16
-#define IDIO_TYPE_C_UINT32    17
-#define IDIO_TYPE_C_INT64     18
-#define IDIO_TYPE_C_UINT64    19
-#define IDIO_TYPE_C_FLOAT     20
-#define IDIO_TYPE_C_DOUBLE    21
-#define IDIO_TYPE_C_POINTER   22
-#define IDIO_TYPE_C_VOID      23
-#define IDIO_TYPE_C_TYPEDEF   24
-#define IDIO_TYPE_C_STRUCT    25
-#define IDIO_TYPE_C_INSTANCE  26
-#define IDIO_TYPE_C_FFI       27
-#define IDIO_TYPE_OPAQUE      28
-#define IDIO_TYPE_MAX         29
+#define IDIO_TYPE_NONE            0
+#define IDIO_TYPE_STRING          1
+#define IDIO_TYPE_SUBSTRING       2
+#define IDIO_TYPE_SYMBOL          3
+#define IDIO_TYPE_PAIR            4
+#define IDIO_TYPE_ARRAY           5
+#define IDIO_TYPE_HASH            6
+#define IDIO_TYPE_CLOSURE         7
+#define IDIO_TYPE_PRIMITIVE_C     8
+#define IDIO_TYPE_BIGNUM          9
+#define IDIO_TYPE_FRAME           10
+#define IDIO_TYPE_HANDLE          11
+#define IDIO_TYPE_STRUCT_TYPE     12
+#define IDIO_TYPE_STRUCT_INSTANCE 13
+#define IDIO_TYPE_C_INT8          22
+#define IDIO_TYPE_C_UINT8         23
+#define IDIO_TYPE_C_INT16         24
+#define IDIO_TYPE_C_UINT16        25
+#define IDIO_TYPE_C_INT32         26
+#define IDIO_TYPE_C_UINT32        27
+#define IDIO_TYPE_C_INT64         28
+#define IDIO_TYPE_C_UINT64        29
+#define IDIO_TYPE_C_FLOAT         30
+#define IDIO_TYPE_C_DOUBLE        31
+#define IDIO_TYPE_C_POINTER       32
+#define IDIO_TYPE_C_VOID          33
+#define IDIO_TYPE_C_TYPEDEF       34
+#define IDIO_TYPE_C_STRUCT        35
+#define IDIO_TYPE_C_INSTANCE      36
+#define IDIO_TYPE_C_FFI           37
+#define IDIO_TYPE_OPAQUE          38
+#define IDIO_TYPE_MAX             39
 
 typedef unsigned char idio_type_e;
 
@@ -143,6 +145,9 @@ typedef struct idio_hash_entry_s {
     size_t n;			/* next in chain */
 } idio_hash_entry_t;
 
+#define IDIO_HASH_FLAG_NONE		0
+#define IDIO_HASH_FLAG_STRING_KEYS	(1<<0)
+
 typedef struct idio_hash_s {
     struct idio_s *grey;
     size_t size;		/* nominal hash size */
@@ -160,6 +165,7 @@ typedef struct idio_hash_s {
 #define IDIO_HASH_HE_KEY(H,i)	((H)->u.hash->he[i].k)
 #define IDIO_HASH_HE_VALUE(H,i)	((H)->u.hash->he[i].v)
 #define IDIO_HASH_HE_NEXT(H,i)	((H)->u.hash->he[i].n)
+#define IDIO_HASH_FLAGS(H)	((H)->tflags)
 
 typedef struct idio_closure_s {
     struct idio_s *grey;
@@ -189,7 +195,7 @@ typedef struct idio_primitive_C_s {
 
 typedef struct idio_frame_s {
     struct idio_s *grey;
-    struct idio_collector_s *collector;
+    struct idio_gc_s *gc;
     struct idio_s *form;
     struct idio_s *namespace;
     struct idio_s *env;
@@ -200,7 +206,7 @@ typedef struct idio_frame_s {
 } idio_frame_t;
 
 #define IDIO_FRAME_GREY(F)	((F)->u.frame->grey)
-#define IDIO_FRAME_COLLECTOR(F)	((F)->u.frame->collector)
+#define IDIO_FRAME_GC(F)	((F)->u.frame->gc)
 #define IDIO_FRAME_FORM(F)	((F)->u.frame->form)
 #define IDIO_FRAME_NAMESPACE(F)	((F)->u.frame->namespace)
 #define IDIO_FRAME_ENV(F)	((F)->u.frame->env)
@@ -281,6 +287,28 @@ typedef struct idio_handle_s {
 #define IDIO_HANDLE_M_FLUSH(H)	(IDIO_HANDLE_METHODS (H)->flush)
 #define IDIO_HANDLE_M_SEEK(H)	(IDIO_HANDLE_METHODS (H)->seek)
 #define IDIO_HANDLE_M_PRINT(H)	(IDIO_HANDLE_METHODS (H)->print)
+
+typedef struct idio_struct_type_s {
+    struct idio_s *grey;
+    struct idio_s *name;	/* a string */
+    struct idio_s *parent;	/* a struct-type */
+    struct idio_s *slots;	/* an array of strings */
+} idio_struct_type_t;
+
+#define IDIO_STRUCT_TYPE_GREY(S)	((S)->u.struct_type->grey)
+#define IDIO_STRUCT_TYPE_NAME(S)	((S)->u.struct_type->name)
+#define IDIO_STRUCT_TYPE_PARENT(S)	((S)->u.struct_type->parent)
+#define IDIO_STRUCT_TYPE_SLOTS(S)	((S)->u.struct_type->slots)
+
+typedef struct idio_struct_instance_s {
+    struct idio_s *grey;
+    struct idio_s *type;	/* a struct-type */
+    struct idio_s *slots;	/* an array */
+} idio_struct_instance_t;
+
+#define IDIO_STRUCT_INSTANCE_GREY(I)	((I)->u.struct_instance->grey)
+#define IDIO_STRUCT_INSTANCE_TYPE(I)	((I)->u.struct_instance->type)
+#define IDIO_STRUCT_INSTANCE_SLOTS(I)	((I)->u.struct_instance->slots)
 
 typedef struct idio_C_pointer_s {
     void *p;
@@ -404,26 +432,28 @@ typedef struct idio_s {
 				   room here) */
 
     union idio_s_u {
-	idio_string_t       *string;
-	idio_substring_t    *substring;
-	idio_symbol_t       *symbol;
-	idio_pair_t         *pair;
-	idio_array_t        *array;
-	idio_hash_t         *hash;
-	idio_closure_t      *closure;
-	idio_primitive_C_t  *primitive_C;
-	idio_bignum_t       *bignum;
-	idio_frame_t        *frame;
-	idio_handle_t       *handle;
-                            
-	idio_C_type_t       *C_type;
-                            
-	idio_C_typedef_t    *C_typedef;
-	idio_C_struct_t     *C_struct;
-	idio_C_instance_t   *C_instance;
-	idio_C_FFI_t        *C_FFI;
-	idio_opaque_t       *opaque;
-	idio_continuation_t *continuation;
+	idio_string_t          *string;
+	idio_substring_t       *substring;
+	idio_symbol_t          *symbol;
+	idio_pair_t            *pair;
+	idio_array_t           *array;
+	idio_hash_t            *hash;
+	idio_closure_t         *closure;
+	idio_primitive_C_t     *primitive_C;
+	idio_bignum_t          *bignum;
+	idio_frame_t           *frame;
+	idio_handle_t          *handle;
+	idio_struct_type_t     *struct_type;
+	idio_struct_instance_t *struct_instance;
+                               
+	idio_C_type_t          *C_type;
+                               
+	idio_C_typedef_t       *C_typedef;
+	idio_C_struct_t        *C_struct;
+	idio_C_instance_t      *C_instance;
+	idio_C_FFI_t           *C_FFI;
+	idio_opaque_t          *opaque;
+	idio_continuation_t    *continuation;
     } u;
 } idio_t;
 					 
@@ -434,8 +464,8 @@ typedef struct idio_root_s {
     struct idio_s *object;
 } idio_root_t;
 
-typedef struct idio_collector_s {
-    struct idio_collector_s *next;
+typedef struct idio_gc_s {
+    struct idio_gc_s *next;
     idio_root_t *roots;
     IDIO namespace;
     IDIO symbols;
@@ -458,12 +488,12 @@ typedef struct idio_collector_s {
 	unsigned long long tbytes;	/* # bytes ever allocated */
 	unsigned long long nbytes;	/* # bytes currently allocated */
 	unsigned long long nused[IDIO_TYPE_MAX]; /* per-type usage */
-	unsigned long long collections;	/* # times collector has been run */
+	unsigned long long collections;	/* # times gc has been run */
 	unsigned long long bounces;
     }  stats;
-} idio_collector_t;
+} idio_gc_t;
 
-#define IDIO_COLLECTOR(f)	((f)->u.frame->collector)
+#define IDIO_GC(f)	((f)->u.frame->gc)
 
 /*
   the alignment of a structure slot of type TYPE can be determined by
@@ -511,11 +541,11 @@ void idio_register_finalizer (IDIO f, IDIO o, void (*func) (IDIO o));
 void idio_deregister_finalizer (IDIO f, IDIO o);
 void idio_run_finalizer (IDIO f, IDIO o);
 void *idio_alloc (size_t s);
-IDIO idio_collector_get (idio_collector_t *collector, idio_type_e type);
+IDIO idio_gc_get (idio_gc_t *gc, idio_type_e type);
 IDIO idio_get (IDIO f, idio_type_e type);
-void idio_collector_alloc (idio_collector_t *collector, void **p, size_t size);
-#define IDIO_COLLECTOR_ALLOC(c,p,s)	(idio_collector_alloc ((c), (void **)&(p), s))
-#define IDIO_ALLOC(f,p,s)		IDIO_COLLECTOR_ALLOC(IDIO_COLLECTOR(f),p,s)
+void idio_gc_alloc (idio_gc_t *gc, void **p, size_t size);
+#define IDIO_GC_ALLOC(c,p,s)	(idio_gc_alloc ((c), (void **)&(p), s))
+#define IDIO_ALLOC(f,p,s)		IDIO_GC_ALLOC(IDIO_GC(f),p,s)
 IDIO idio_clone_base (IDIO f, IDIO o);
 int idio_isa (IDIO f, IDIO o, idio_type_e type);
 
@@ -525,21 +555,21 @@ unsigned idio_bw (IDIO f, IDIO o);
 idio_root_t *idio_root_new (IDIO f);
 void idio_root_dump (IDIO f, idio_root_t *root);
 void idio_root_mark (IDIO f, idio_root_t *root, unsigned colour);
-idio_collector_t *idio_collector_new ();
+idio_gc_t *idio_gc_new ();
 #ifdef IDIO_DEBUG
-void IDIO_COLLECTOR_FPRINTF (idio_collector_t *collector, FILE *stream, const char *format, ...);
+void IDIO_GC_FPRINTF (idio_gc_t *gc, FILE *stream, const char *format, ...);
 void IDIO_FRAME_FPRINTF (IDIO f, FILE *stream, const char *format, ...);
 #endif
-void idio_collector_dump (IDIO f);
-void idio_collector_protect (IDIO f, IDIO o);
-void idio_collector_expose (IDIO f, IDIO o);
-void idio_collector_expose_all (IDIO f);
-void idio_collector_mark (IDIO f);
-void idio_collector_sweep (IDIO f);
-void idio_collector_collect (IDIO f);
-void idio_collector_pause (IDIO f);
-void idio_collector_resume (IDIO f);
-void idio_collector_free (IDIO f);
+void idio_gc_dump (IDIO f);
+void idio_gc_protect (IDIO f, IDIO o);
+void idio_gc_expose (IDIO f, IDIO o);
+void idio_gc_expose_all (IDIO f);
+void idio_gc_mark (IDIO f);
+void idio_gc_sweep (IDIO f);
+void idio_gc_collect (IDIO f);
+void idio_gc_pause (IDIO f);
+void idio_gc_resume (IDIO f);
+void idio_gc_free (IDIO f);
 
 char *idio_strcat (char *s1, const char *s2);
 char *idio_strcat_free (char *s1, char *s2);

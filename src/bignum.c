@@ -85,7 +85,7 @@ IDIO idio_bignum (IDIO f, int flags, int64_t exp, IDIO sig_a)
     IDIO_ASSERT (f);
     IDIO_ASSERT (sig_a);
 
-    IDIO_C_ASSERT (idio_isa_array (f, sig_a));
+    IDIO_TYPE_ASSERT (array, sig_a);
     
     IDIO o = idio_get (f, IDIO_TYPE_BIGNUM);
 
@@ -112,11 +112,11 @@ void idio_free_bignum (IDIO f, IDIO bn)
 {
     IDIO_ASSERT (f);
     IDIO_ASSERT (bn);
-    IDIO_C_ASSERT (idio_isa_bignum (f, bn));
+    IDIO_TYPE_ASSERT (bignum, bn);
 
-    idio_collector_t *collector = IDIO_COLLECTOR (f);
+    idio_gc_t *gc = IDIO_GC (f);
 
-    collector->stats.nbytes -= sizeof (idio_bignum_t);
+    gc->stats.nbytes -= sizeof (idio_bignum_t);
 
     free (bn->u.bignum);
 }
@@ -167,7 +167,7 @@ IDIO idio_bignum_integer (IDIO f, IDIO sig_a)
     IDIO_ASSERT (f);
     IDIO_ASSERT (sig_a);
 
-    IDIO_C_ASSERT (idio_isa_array (f, sig_a));
+    IDIO_TYPE_ASSERT (array, sig_a);
 
     return idio_bignum (f, IDIO_BIGNUM_FLAG_INTEGER, 0, sig_a);
 }
@@ -927,7 +927,7 @@ IDIO idio_bignum_real (IDIO f, int flags, int64_t exp, IDIO sig_a)
     IDIO_ASSERT (f);
     IDIO_ASSERT (sig_a);
 
-    IDIO_C_ASSERT (idio_isa_array (f, sig_a));
+    IDIO_TYPE_ASSERT (array, sig_a);
 
     flags &= ~IDIO_BIGNUM_FLAG_INTEGER;
 
@@ -1778,7 +1778,7 @@ int idio_bignum_count_digits (IDIO f, IDIO sig_a)
     IDIO_ASSERT (f);
     IDIO_ASSERT (sig_a);
 
-    IDIO_C_ASSERT (idio_isa_array (f, sig_a));
+    IDIO_TYPE_ASSERT (array, sig_a);
 
     size_t al = idio_array_size (f, sig_a);
     IDIO_C_ASSERT (al);
@@ -2013,7 +2013,7 @@ IDIO idio_bignum_primitive_add (IDIO f, IDIO args)
     IDIO_ASSERT (f);
     IDIO_ASSERT (args);
 
-    IDIO_C_ASSERT (idio_isa_array (f, args));
+    IDIO_TYPE_ASSERT (array, args);
 
     IDIO eval_args;
     idio_array_bind (f, args, 1, &eval_args);
@@ -2043,7 +2043,7 @@ IDIO idio_bignum_primitive_subtract (IDIO f, IDIO args)
     IDIO_ASSERT (f);
     IDIO_ASSERT (args);
 
-    IDIO_C_ASSERT (idio_isa_array (f, args));
+    IDIO_TYPE_ASSERT (array, args);
 
     IDIO eval_args;
     idio_array_bind (f, args, 1, &eval_args);
@@ -2100,7 +2100,7 @@ IDIO idio_bignum_primitive_multiply (IDIO f, IDIO args)
     IDIO_ASSERT (f);
     IDIO_ASSERT (args);
 
-    IDIO_C_ASSERT (idio_isa_array (f, args));
+    IDIO_TYPE_ASSERT (array, args);
 
     IDIO eval_args;
     idio_array_bind (f, args, 1, &eval_args);
@@ -2130,7 +2130,7 @@ IDIO idio_bignum_primitive_divide (IDIO f, IDIO args)
     IDIO_ASSERT (f);
     IDIO_ASSERT (args);
 
-    IDIO_C_ASSERT (idio_isa_array (f, args));
+    IDIO_TYPE_ASSERT (array, args);
 
     IDIO eval_args;
     idio_array_bind (f, args, 1, &eval_args);
@@ -2186,7 +2186,7 @@ IDIO idio_bignum_primitive_lt (IDIO f, IDIO args)
     IDIO_ASSERT (f);
     IDIO_ASSERT (args);
 
-    IDIO_C_ASSERT (idio_isa_array (f, args));
+    IDIO_TYPE_ASSERT (array, args);
 
     IDIO eval_args;
     idio_array_bind (f, args, 1, &eval_args);
@@ -2221,7 +2221,7 @@ IDIO idio_bignum_primitive_le (IDIO f, IDIO args)
     IDIO_ASSERT (f);
     IDIO_ASSERT (args);
 
-    IDIO_C_ASSERT (idio_isa_array (f, args));
+    IDIO_TYPE_ASSERT (array, args);
 
     IDIO eval_args;
     idio_array_bind (f, args, 1, &eval_args);
@@ -2256,7 +2256,7 @@ IDIO idio_bignum_primitive_gt (IDIO f, IDIO args)
     IDIO_ASSERT (f);
     IDIO_ASSERT (args);
 
-    IDIO_C_ASSERT (idio_isa_array (f, args));
+    IDIO_TYPE_ASSERT (array, args);
 
     IDIO eval_args;
     idio_array_bind (f, args, 1, &eval_args);
@@ -2291,7 +2291,7 @@ IDIO idio_bignum_primitive_ge (IDIO f, IDIO args)
     IDIO_ASSERT (f);
     IDIO_ASSERT (args);
 
-    IDIO_C_ASSERT (idio_isa_array (f, args));
+    IDIO_TYPE_ASSERT (array, args);
 
     IDIO eval_args;
     idio_array_bind (f, args, 1, &eval_args);
@@ -2326,7 +2326,7 @@ IDIO idio_bignum_primitive_eq (IDIO f, IDIO args)
     IDIO_ASSERT (f);
     IDIO_ASSERT (args);
 
-    IDIO_C_ASSERT (idio_isa_array (f, args));
+    IDIO_TYPE_ASSERT (array, args);
 
     IDIO eval_args;
     idio_array_bind (f, args, 1, &eval_args);

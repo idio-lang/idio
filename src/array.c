@@ -28,7 +28,7 @@ void idio_assign_array (IDIO f, IDIO a, size_t asize)
     IDIO_ASSERT (a);
     IDIO_C_ASSERT (asize);
 
-    IDIO_C_ASSERT (idio_isa_array (f, a));
+    IDIO_TYPE_ASSERT (array, a);
 
     IDIO_FRAME_FPRINTF (f, stderr, "idio_assign_array: %10p = [%d]\n", a, asize);
 
@@ -70,11 +70,11 @@ void idio_free_array (IDIO f, IDIO a)
     IDIO_ASSERT (f);
     IDIO_ASSERT (a);
 
-    IDIO_C_ASSERT (idio_isa_array (f, a));
+    IDIO_TYPE_ASSERT (array, a);
 
-    idio_collector_t *collector = IDIO_COLLECTOR (f);
+    idio_gc_t *gc = IDIO_GC (f);
 
-    collector->stats.nbytes -= sizeof (idio_array_t) + IDIO_ARRAY_ASIZE (a) * sizeof (idio_t);
+    gc->stats.nbytes -= sizeof (idio_array_t) + IDIO_ARRAY_ASIZE (a) * sizeof (idio_t);
 
     free (a->u.array->ae);
     free (a->u.array);
@@ -85,9 +85,9 @@ void idio_array_resize (IDIO f, IDIO a)
     IDIO_ASSERT (f);
     IDIO_ASSERT (a);
 
-    IDIO_C_ASSERT (idio_isa_array (f, a));
+    IDIO_TYPE_ASSERT (array, a);
 
-    idio_collector_t *collector = IDIO_COLLECTOR (f);
+    idio_gc_t *gc = IDIO_GC (f);
 
     idio_array_t *oarray = a->u.array;
     size_t oasize = IDIO_ARRAY_ASIZE (a);
@@ -110,8 +110,8 @@ void idio_array_resize (IDIO f, IDIO a)
     /* all the inserts above will have mucked usize up */
     IDIO_ARRAY_USIZE (a) = ousize;
     
-    collector->stats.nbytes -= sizeof (idio_array_t) + oasize * sizeof (idio_t);
-    collector->stats.tbytes -= sizeof (idio_array_t) + oasize * sizeof (idio_t);
+    gc->stats.nbytes -= sizeof (idio_array_t) + oasize * sizeof (idio_t);
+    gc->stats.tbytes -= sizeof (idio_array_t) + oasize * sizeof (idio_t);
 
     free (oarray->ae);
     free (oarray);
@@ -133,7 +133,7 @@ void idio_array_insert_index (IDIO f, IDIO a, IDIO o, idio_index_t index)
     IDIO_ASSERT (a);
     IDIO_ASSERT (o);
 
-    IDIO_C_ASSERT (idio_isa_array (f, a));
+    IDIO_TYPE_ASSERT (array, a);
 
     if (index < 0) {
 	/*
@@ -175,7 +175,7 @@ void idio_array_push (IDIO f, IDIO a, IDIO o)
     IDIO_ASSERT (a);
     IDIO_ASSERT (o);
 
-    IDIO_C_ASSERT (idio_isa_array (f, a));
+    IDIO_TYPE_ASSERT (array, a);
 
     idio_array_insert_index (f, a, o, IDIO_ARRAY_USIZE (a));
 }
@@ -234,7 +234,7 @@ void idio_array_unshift (IDIO f, IDIO a, IDIO o)
     IDIO_ASSERT (a);
     IDIO_ASSERT (o);
 
-    IDIO_C_ASSERT (idio_isa_array (f, a));
+    IDIO_TYPE_ASSERT (array, a);
 
     size_t i;
     if (IDIO_ARRAY_USIZE (a) > 0) {
@@ -285,7 +285,7 @@ IDIO idio_array_get_index (IDIO f, IDIO a, idio_index_t index)
     IDIO_ASSERT (f);
     IDIO_ASSERT (a);
 
-    IDIO_C_ASSERT (idio_isa_array (f, a));
+    IDIO_TYPE_ASSERT (array, a);
 
     if (index < 0) {
 	index += IDIO_ARRAY_USIZE (a);
@@ -309,7 +309,7 @@ idio_index_t idio_array_find_free_index (IDIO f, IDIO a, idio_index_t index)
     IDIO_ASSERT (f);
     IDIO_ASSERT (a);
 
-    IDIO_C_ASSERT (idio_isa_array (f, a));
+    IDIO_TYPE_ASSERT (array, a);
     
     if (index < 0) {
 	fprintf (stderr, "idio_array_find_free_index: index %3zd is OOB (%zd)\n", index, IDIO_ARRAY_USIZE (a));
@@ -330,12 +330,38 @@ idio_index_t idio_array_find_free_index (IDIO f, IDIO a, idio_index_t index)
     return -1;
 }
 
+idio_index_t idio_array_find_eqp (IDIO f, IDIO a, IDIO e, idio_index_t index)
+{
+    IDIO_ASSERT (f);
+    IDIO_ASSERT (a);
+
+    IDIO_TYPE_ASSERT (array, a);
+    
+    if (index < 0) {
+	fprintf (stderr, "idio_array_find_eqp: index %3zd is OOB (%zd)\n", index, IDIO_ARRAY_USIZE (a));
+	IDIO_C_EXIT (1);
+    }
+
+    if (index >= IDIO_ARRAY_USIZE (a)) {
+	fprintf (stderr, "idio_array_find_eqp: index %3zd is OOB (%zd)\n", index, IDIO_ARRAY_USIZE (a));
+	IDIO_C_EXIT (1);
+    }
+
+    for (; index < IDIO_ARRAY_USIZE (a); index++) {
+	if (idio_eqp (f, IDIO_ARRAY_AE (a, index), e)) {
+	    return index;
+	}
+    }
+
+    return -1;
+}
+
 void idio_array_bind (IDIO f, IDIO a, size_t nargs, ...)
 {
     IDIO_ASSERT (f);
     IDIO_ASSERT (a);
 
-    IDIO_C_ASSERT (idio_isa_array (f, a));
+    IDIO_TYPE_ASSERT (array, a);
 
     if (IDIO_ARRAY_USIZE (a) < nargs) {
 	char *os = idio_display_string (f, a);
@@ -406,7 +432,7 @@ int idio_array_delete_index (IDIO f, IDIO a, idio_index_t index)
     IDIO_ASSERT (f);
     IDIO_ASSERT (a);
 
-    IDIO_C_ASSERT (idio_isa_array (f, a));
+    IDIO_TYPE_ASSERT (array, a);
 
     if (index < 0) {
 	index += IDIO_ARRAY_USIZE (a);

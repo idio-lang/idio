@@ -25,6 +25,7 @@
 
 IDIO idio_pair (IDIO f, IDIO h, IDIO t);
 int idio_isa_pair (IDIO f, IDIO p);
+int idio_isa_list (IDIO f, IDIO p);
 void idio_free_pair (IDIO f, IDIO p);
 IDIO idio_pair_head (IDIO f, IDIO p);
 IDIO idio_pair_tail (IDIO f, IDIO p);
