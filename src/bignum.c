@@ -22,16 +22,15 @@
 
 #include "idio.h"
 
-void idio_bignum_dump (IDIO f, IDIO bn)
+void idio_bignum_dump (IDIO bn)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (bn);
 
     IDIO_TYPE_ASSERT (bignum, bn);
     
     int64_t exp = IDIO_BIGNUM_EXP(bn);	    
     IDIO sig_a = IDIO_BIGNUM_SIG(bn);	    
-    size_t al = idio_array_size (f, sig_a);
+    size_t al = idio_array_size (sig_a);
     int64_t i;
     fprintf (stderr, "idio_bignum_dump: ");
     if (IDIO_BIGNUM_INTEGER_P (bn)) {
@@ -80,16 +79,15 @@ void idio_bignum_dump (IDIO f, IDIO bn)
 }
 
 /* bignum code from S9fES */
-IDIO idio_bignum (IDIO f, int flags, int64_t exp, IDIO sig_a)
+IDIO idio_bignum (int flags, int64_t exp, IDIO sig_a)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (sig_a);
 
     IDIO_TYPE_ASSERT (array, sig_a);
     
-    IDIO o = idio_get (f, IDIO_TYPE_BIGNUM);
+    IDIO o = idio_gc_get (IDIO_TYPE_BIGNUM);
 
-    IDIO_ALLOC (f, o->u.bignum, sizeof (idio_bignum_t));
+    IDIO_GC_ALLOC (o->u.bignum, sizeof (idio_bignum_t));
 
     IDIO_BIGNUM_GREY (o) = NULL;
     IDIO_BIGNUM_NUMS (o) = NULL;
@@ -100,172 +98,159 @@ IDIO idio_bignum (IDIO f, int flags, int64_t exp, IDIO sig_a)
     return o;
 }
 
-int idio_isa_bignum (IDIO f, IDIO bn)
+int idio_isa_bignum (IDIO bn)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (bn);
 
-    return idio_isa (f, bn, IDIO_TYPE_BIGNUM);
+    return idio_isa (bn, IDIO_TYPE_BIGNUM);
 }
 
-void idio_free_bignum (IDIO f, IDIO bn)
+void idio_free_bignum (IDIO bn)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (bn);
     IDIO_TYPE_ASSERT (bignum, bn);
 
-    idio_gc_t *gc = IDIO_GC (f);
-
-    gc->stats.nbytes -= sizeof (idio_bignum_t);
+    idio_gc_stats_free (sizeof (idio_bignum_t));
 
     free (bn->u.bignum);
 }
 
-IDIO idio_bignum_copy (IDIO f, IDIO bn)
+IDIO idio_bignum_copy (IDIO bn)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (bn);
 
     IDIO_TYPE_ASSERT (bignum, bn);
     
-    idio_t* sig_ac = idio_array_copy (f, IDIO_BIGNUM_SIG(bn), 0);
+    idio_t* sig_ac = idio_array_copy (IDIO_BIGNUM_SIG(bn), 0);
 
     /* all the C_int64 are referenced in both arrays so we should copy
 	those as well otherwise things that change the sign of an
 	integer with affect the source too */
 
-    size_t al = idio_array_size (f, sig_ac);
+    size_t al = idio_array_size (sig_ac);
     int64_t i;
     for (i = 0 ; i < al; i++) {
-	IDIO v = idio_array_get_index (f, sig_ac, i);
-	IDIO vn = idio_C_int64 (f, IDIO_C_TYPE_INT64 (v));
-	idio_array_insert_index (f, sig_ac, vn, i);
+	IDIO v = idio_array_get_index (sig_ac, i);
+	IDIO vn = idio_C_int64 (IDIO_C_TYPE_INT64 (v));
+	idio_array_insert_index (sig_ac, vn, i);
     }
     
-    IDIO bnc = idio_bignum (f, IDIO_BIGNUM_FLAGS(bn), IDIO_BIGNUM_EXP(bn), sig_ac);
+    IDIO bnc = idio_bignum (IDIO_BIGNUM_FLAGS(bn), IDIO_BIGNUM_EXP(bn), sig_ac);
 
     /* idio_frame_stack_pop (f); */	/* sig_ac */
 	
     return bnc;
 }
 
-IDIO idio_bignum_integer_int64 (IDIO f, int64_t i)
+IDIO idio_bignum_integer_int64 (int64_t i)
 {
-    IDIO_ASSERT (f);
 
-    IDIO sig_a = idio_array (f, 1);
+    IDIO sig_a = idio_array (1);
     
-    idio_array_insert_index (f, sig_a, idio_C_int64 (f, i), 0);
+    idio_array_insert_index (sig_a, idio_C_int64 (i), 0);
     
-    IDIO r = idio_bignum (f, IDIO_BIGNUM_FLAG_INTEGER, 0, sig_a);
+    IDIO r = idio_bignum (IDIO_BIGNUM_FLAG_INTEGER, 0, sig_a);
 
     return r;
 }
 
-IDIO idio_bignum_integer (IDIO f, IDIO sig_a)
+IDIO idio_bignum_integer (IDIO sig_a)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (sig_a);
 
     IDIO_TYPE_ASSERT (array, sig_a);
 
-    return idio_bignum (f, IDIO_BIGNUM_FLAG_INTEGER, 0, sig_a);
+    return idio_bignum (IDIO_BIGNUM_FLAG_INTEGER, 0, sig_a);
 }
 
-IDIO idio_bignum_copy_to_integer (IDIO f, IDIO bn)
+IDIO idio_bignum_copy_to_integer (IDIO bn)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (bn);
 
     IDIO_TYPE_ASSERT (bignum, bn);
     
-    IDIO bnc = idio_bignum_copy (f, bn);
+    IDIO bnc = idio_bignum_copy (bn);
 
-    IDIO bn_i = idio_bignum_integer (f, IDIO_BIGNUM_SIG (bnc));
+    IDIO bn_i = idio_bignum_integer (IDIO_BIGNUM_SIG (bnc));
 
     return bn_i;
 }
 
-int64_t idio_bignum_int64_value (IDIO f, IDIO bn)
+int64_t idio_bignum_int64_value (IDIO bn)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (bn);
 
     IDIO_TYPE_ASSERT (bignum, bn);
 
-    IDIO bn_i = idio_bignum_integer_argument (f, bn);
+    IDIO bn_i = idio_bignum_integer_argument (bn);
     if (idio_S_nil == bn_i) {
 	return 0;
     }
 
     IDIO sig_a = IDIO_BIGNUM_SIG(bn_i);
-    size_t al = idio_array_size (f, sig_a);
+    size_t al = idio_array_size (sig_a);
 
     if (al > 1) {
-	idio_error_add_C (f, "bignum too large to convert");
+	idio_error_add_C ("bignum too large to convert");
 	return 0;
     }
 
-    IDIO i = idio_array_get_index (f, sig_a, al - 1);
+    IDIO i = idio_array_get_index (sig_a, al - 1);
 
     return IDIO_C_TYPE_INT64 (i);
 }
 
-IDIO idio_bignum_abs (IDIO f, IDIO bn)
+IDIO idio_bignum_abs (IDIO bn)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (bn);
 
     IDIO_TYPE_ASSERT (bignum, bn);
 
-    IDIO bnc = idio_bignum_copy (f, bn);
+    IDIO bnc = idio_bignum_copy (bn);
 
     IDIO sig_a = IDIO_BIGNUM_SIG(bnc);
-    size_t al = idio_array_size (f, sig_a);
-    IDIO i = idio_array_get_index (f, sig_a, al - 1);
+    size_t al = idio_array_size (sig_a);
+    IDIO i = idio_array_get_index (sig_a, al - 1);
     IDIO_C_TYPE_INT64 (i) = llabs (IDIO_C_TYPE_INT64 (i));
-    idio_array_insert_index (f, sig_a, i, al - 1);
+    idio_array_insert_index (sig_a, i, al - 1);
     
     return bnc;
 }
 
-int idio_bignum_negative_p (IDIO f, IDIO bn)
+int idio_bignum_negative_p (IDIO bn)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (bn);
 
     IDIO_TYPE_ASSERT (bignum, bn);
 
     IDIO sig_a = IDIO_BIGNUM_SIG(bn);
-    size_t al = idio_array_size (f, sig_a);
+    size_t al = idio_array_size (sig_a);
 
-    IDIO i = idio_array_get_index (f, sig_a, al - 1);
+    IDIO i = idio_array_get_index (sig_a, al - 1);
     
     return (IDIO_C_TYPE_INT64 (i) < 0);
 }
 
-IDIO idio_bignum_negate (IDIO f, IDIO bn)
+IDIO idio_bignum_negate (IDIO bn)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (bn);
 
     IDIO_TYPE_ASSERT (bignum, bn);
 
-    IDIO bnc = idio_bignum_copy (f, bn);
+    IDIO bnc = idio_bignum_copy (bn);
 
-    size_t al = idio_array_size (f, IDIO_BIGNUM_SIG(bnc));
+    size_t al = idio_array_size (IDIO_BIGNUM_SIG(bnc));
     
-    IDIO i = idio_array_get_index (f, IDIO_BIGNUM_SIG(bnc), al - 1);
+    IDIO i = idio_array_get_index (IDIO_BIGNUM_SIG(bnc), al - 1);
     IDIO_C_TYPE_INT64 (i) = - IDIO_C_TYPE_INT64 (i);
     
-    idio_array_insert_index (f, IDIO_BIGNUM_SIG(bnc), i, al - 1);
+    idio_array_insert_index (IDIO_BIGNUM_SIG(bnc), i, al - 1);
     
     return bnc;
 }
 
-IDIO idio_bignum_add (IDIO f, IDIO a, IDIO b)
+IDIO idio_bignum_add (IDIO a, IDIO b)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (a);
     IDIO_ASSERT (b);
 
@@ -273,38 +258,38 @@ IDIO idio_bignum_add (IDIO f, IDIO a, IDIO b)
     IDIO_TYPE_ASSERT (bignum, b);
 
     /* we want to avoid operations with negative numbers */
-    if (idio_bignum_negative_p (f, a)) {
-	if (idio_bignum_negative_p (f, b)) {
+    if (idio_bignum_negative_p (a)) {
+	if (idio_bignum_negative_p (b)) {
 	    /* -a + -b => -(|a| + |b|) */
-	    a = idio_bignum_abs (f, a);
+	    a = idio_bignum_abs (a);
 
-	    b = idio_bignum_abs (f, b);
+	    b = idio_bignum_abs (b);
 
-	    IDIO r = idio_bignum_add (f, a, b);
+	    IDIO r = idio_bignum_add (a, b);
 
-	    r = idio_bignum_negate (f, r);
+	    r = idio_bignum_negate (r);
 
 	    return r;
 	} else {
 	    /* -a + b => b - |a| */
-	    a = idio_bignum_abs (f, a);
+	    a = idio_bignum_abs (a);
 
-	    IDIO r = idio_bignum_subtract (f, b, a);
+	    IDIO r = idio_bignum_subtract (b, a);
 
 	    return r;
 	}
-    } else if (idio_bignum_negative_p (f, b)) {
+    } else if (idio_bignum_negative_p (b)) {
 	/* a + -b => a - |b| */
-	b = idio_bignum_abs (f, b);
+	b = idio_bignum_abs (b);
 
-	IDIO r = idio_bignum_subtract (f, a, b);
+	IDIO r = idio_bignum_subtract (a, b);
 
 	return r;
     }
 
     /* regular a + b */
-    size_t al = idio_array_size (f, IDIO_BIGNUM_SIG(a));
-    size_t bl = idio_array_size (f, IDIO_BIGNUM_SIG(b));
+    size_t al = idio_array_size (IDIO_BIGNUM_SIG(a));
+    size_t bl = idio_array_size (IDIO_BIGNUM_SIG(b));
 
     int carry = 0;
     size_t rl;
@@ -314,7 +299,7 @@ IDIO idio_bignum_add (IDIO f, IDIO a, IDIO b)
     } else {
 	rl = bl;
     }
-    IDIO ra = idio_array (f, rl);
+    IDIO ra = idio_array (rl);
     
     int64_t ai = 0;
     int64_t bi = 0;
@@ -327,12 +312,12 @@ IDIO idio_bignum_add (IDIO f, IDIO a, IDIO b)
 	int64_t ib = 0;
 
 	if (ai < al) {
-	    IDIO i = idio_array_get_index (f, IDIO_BIGNUM_SIG(a), ai);
+	    IDIO i = idio_array_get_index (IDIO_BIGNUM_SIG(a), ai);
 	    ia = IDIO_C_TYPE_INT64 (i);
 	}
 
 	if (bi < bl) {
-	    IDIO i = idio_array_get_index (f, IDIO_BIGNUM_SIG(b), bi);
+	    IDIO i = idio_array_get_index (IDIO_BIGNUM_SIG(b), bi);
 	    ib = IDIO_C_TYPE_INT64 (i);
 	}
 
@@ -344,46 +329,44 @@ IDIO idio_bignum_add (IDIO f, IDIO a, IDIO b)
 	    carry = 1;
 	}
 
-	idio_array_insert_index (f, ra, idio_C_int64 (f, ir), ri);
+	idio_array_insert_index (ra, idio_C_int64 (ir), ri);
 
 	ai++;
 	bi++;
 	ri++;
     }
 
-    IDIO r = idio_bignum_integer (f, ra);
+    IDIO r = idio_bignum_integer (ra);
 
     return r;
 }
 
-int idio_bignum_zero_p (IDIO f, IDIO a)
+int idio_bignum_zero_p (IDIO a)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (a);
 
     IDIO_TYPE_ASSERT (bignum, a);
 
     IDIO sig_a = IDIO_BIGNUM_SIG(a);
-    size_t al = idio_array_size (f, sig_a);
+    size_t al = idio_array_size (sig_a);
     if (1 == al) {
-	IDIO i = idio_array_get_index (f, sig_a, 0);
+	IDIO i = idio_array_get_index (sig_a, 0);
 	return (IDIO_C_TYPE_INT64 (i) == 0);
     }
 
     return 0;
 }
 
-int idio_bignum_lt_p (IDIO f, IDIO a, IDIO b)
+int idio_bignum_lt_p (IDIO a, IDIO b)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (a);
     IDIO_ASSERT (b);
 
     IDIO_TYPE_ASSERT (bignum, a);
     IDIO_TYPE_ASSERT (bignum, b);
 
-    int na = idio_bignum_negative_p (f, a);
-    int nb = idio_bignum_negative_p (f, b);
+    int na = idio_bignum_negative_p (a);
+    int nb = idio_bignum_negative_p (b);
 
     if (na &&
 	!nb) {
@@ -395,8 +378,8 @@ int idio_bignum_lt_p (IDIO f, IDIO a, IDIO b)
 	return 0;
     }
 
-    size_t al = idio_array_size (f, IDIO_BIGNUM_SIG(a));
-    size_t bl = idio_array_size (f, IDIO_BIGNUM_SIG(b));
+    size_t al = idio_array_size (IDIO_BIGNUM_SIG(a));
+    size_t bl = idio_array_size (IDIO_BIGNUM_SIG(b));
 
     if (al < bl) {
 	return na ? 0 : 1;
@@ -406,16 +389,16 @@ int idio_bignum_lt_p (IDIO f, IDIO a, IDIO b)
 	return na ? 1 : 0;
     }
 
-    IDIO aa = idio_bignum_abs (f, a);
+    IDIO aa = idio_bignum_abs (a);
     IDIO sig_aa = IDIO_BIGNUM_SIG(aa);
 
-    IDIO ab = idio_bignum_abs (f, b);
+    IDIO ab = idio_bignum_abs (b);
     IDIO sig_ab = IDIO_BIGNUM_SIG(ab);
 
     int64_t i;
     for (i = al - 1; i >= 0 ; i--) {
-	IDIO iaa = idio_array_get_index (f, sig_aa, i);
-	IDIO iab = idio_array_get_index (f, sig_ab, i);
+	IDIO iaa = idio_array_get_index (sig_aa, i);
+	IDIO iab = idio_array_get_index (sig_ab, i);
 
 	if (IDIO_C_TYPE_INT64 (iaa) < IDIO_C_TYPE_INT64 (iab)) {
 
@@ -431,9 +414,8 @@ int idio_bignum_lt_p (IDIO f, IDIO a, IDIO b)
     return 0;
 }
 
-int idio_bignum_equal_p (IDIO f, IDIO a, IDIO b)
+int idio_bignum_equal_p (IDIO a, IDIO b)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (a);
     IDIO_ASSERT (b);
 
@@ -441,9 +423,9 @@ int idio_bignum_equal_p (IDIO f, IDIO a, IDIO b)
     IDIO_TYPE_ASSERT (bignum, b);
 
     IDIO sig_aa = IDIO_BIGNUM_SIG(a);
-    size_t al = idio_array_size (f, sig_aa);
+    size_t al = idio_array_size (sig_aa);
     IDIO sig_ab = IDIO_BIGNUM_SIG(b);
-    size_t bl = idio_array_size (f, sig_ab);
+    size_t bl = idio_array_size (sig_ab);
 
     if (al != bl) {
 	return 0;
@@ -451,8 +433,8 @@ int idio_bignum_equal_p (IDIO f, IDIO a, IDIO b)
 
     int64_t i;
     for (i = 0; i < al ; i++) {
-	IDIO ia = idio_array_get_index (f, sig_aa, i);
-	IDIO ib = idio_array_get_index (f, sig_ab, i);
+	IDIO ia = idio_array_get_index (sig_aa, i);
+	IDIO ib = idio_array_get_index (sig_ab, i);
 
 	if (IDIO_C_TYPE_INT64 (ia) != IDIO_C_TYPE_INT64 (ib)) {
 	    return 0;
@@ -462,9 +444,8 @@ int idio_bignum_equal_p (IDIO f, IDIO a, IDIO b)
     return 1;
 }
 
-IDIO idio_bignum_subtract (IDIO f, IDIO a, IDIO b)
+IDIO idio_bignum_subtract (IDIO a, IDIO b)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (a);
     IDIO_ASSERT (b);
 
@@ -472,49 +453,49 @@ IDIO idio_bignum_subtract (IDIO f, IDIO a, IDIO b)
     IDIO_TYPE_ASSERT (bignum, b);
 
     /* we want to avoid operations with negative numbers */
-    if (idio_bignum_negative_p (f, a)) {
-	if (idio_bignum_negative_p (f, b)) {
+    if (idio_bignum_negative_p (a)) {
+	if (idio_bignum_negative_p (b)) {
 	    /* -a - -b => -a + |b| => |b| - |a| */
-	    a = idio_bignum_abs (f, a);
+	    a = idio_bignum_abs (a);
 	    
-	    b = idio_bignum_abs (f, b);
+	    b = idio_bignum_abs (b);
 	    
-	    IDIO r = idio_bignum_subtract (f, b, a);
+	    IDIO r = idio_bignum_subtract (b, a);
 
 	    return r;
 	} else {
 	    /* -a - b => |a| + b */
-	    a = idio_bignum_abs (f, a);
+	    a = idio_bignum_abs (a);
 	    
-	    IDIO r = idio_bignum_add (f, a, b);
+	    IDIO r = idio_bignum_add (a, b);
 	    
-	    r = idio_bignum_negate (f, r);
+	    r = idio_bignum_negate (r);
 
 	    return r;
 	}
-    } else if (idio_bignum_negative_p (f, b)) {
+    } else if (idio_bignum_negative_p (b)) {
 	/* a - -b => a + |b| */
-	b = idio_bignum_abs (f, b);
+	b = idio_bignum_abs (b);
 	
-	IDIO r = idio_bignum_add (f, a, b);
+	IDIO r = idio_bignum_add (a, b);
 
 	return r;
     }
 
     /* regular a - b: a < b => -(b - a) */
-    if (idio_bignum_lt_p (f, a, b)) {
-	IDIO r = idio_bignum_subtract (f, b, a);
+    if (idio_bignum_lt_p (a, b)) {
+	IDIO r = idio_bignum_subtract (b, a);
 	
-	r = idio_bignum_negate (f, r);
+	r = idio_bignum_negate (r);
 
 	return r;
     }
 
     /* regular a - b: a >= b */
     IDIO sig_aa = IDIO_BIGNUM_SIG(a);
-    size_t al = idio_array_size (f, sig_aa);
+    size_t al = idio_array_size (sig_aa);
     IDIO sig_ab = IDIO_BIGNUM_SIG(b);
-    size_t bl = idio_array_size (f, sig_ab);
+    size_t bl = idio_array_size (sig_ab);
 
     int borrow = 0;
     size_t rl;
@@ -524,7 +505,7 @@ IDIO idio_bignum_subtract (IDIO f, IDIO a, IDIO b)
     } else {
 	rl = bl;
     }
-    IDIO ra = idio_array (f, rl);
+    IDIO ra = idio_array (rl);
 
     int64_t ai = 0;
     int64_t bi = 0;
@@ -538,12 +519,12 @@ IDIO idio_bignum_subtract (IDIO f, IDIO a, IDIO b)
 	int64_t ib = 0;
 
 	if (ai < al) {
-	    IDIO i = idio_array_get_index (f, sig_aa, ai);
+	    IDIO i = idio_array_get_index (sig_aa, ai);
 	    ia = IDIO_C_TYPE_INT64 (i);
 	}
 
 	if (bi < bl) {
-	    IDIO i = idio_array_get_index (f, sig_ab, bi);
+	    IDIO i = idio_array_get_index (sig_ab, bi);
 	    ib = IDIO_C_TYPE_INT64 (i);
 	}
 
@@ -557,7 +538,7 @@ IDIO idio_bignum_subtract (IDIO f, IDIO a, IDIO b)
 	    IDIO_C_ASSERT (borrow_bug < 10);
 	}
 
-	idio_array_insert_index (f, ra, idio_C_int64 (f, ir), ri);
+	idio_array_insert_index (ra, idio_C_int64 (ir), ri);
 
 	ai++;
 	bi++;
@@ -565,36 +546,35 @@ IDIO idio_bignum_subtract (IDIO f, IDIO a, IDIO b)
     }
 
     /* remove leading zeroes */
-    IDIO ir = idio_array_get_index (f, ra, rl - 1);
+    IDIO ir = idio_array_get_index (ra, rl - 1);
     while (0 == IDIO_C_TYPE_INT64 (ir) &&
 	   rl > 1) {
-	idio_array_pop (f, ra);
+	idio_array_pop (ra);
 	rl--;
-	ir = idio_array_get_index (f, ra, rl - 1);
+	ir = idio_array_get_index (ra, rl - 1);
     }
 
-    IDIO r = idio_bignum_integer (f, ra);
+    IDIO r = idio_bignum_integer (ra);
 
     return r;
 }
 
-IDIO idio_bignum_shift_left (IDIO f, IDIO a, int fill)
+IDIO idio_bignum_shift_left (IDIO a, int fill)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (a);
 
     IDIO_TYPE_ASSERT (bignum, a);
 
     IDIO sig_a = IDIO_BIGNUM_SIG(a);
-    size_t al = idio_array_size (f, sig_a);
-    IDIO ra = idio_array (f, al);
+    size_t al = idio_array_size (sig_a);
+    IDIO ra = idio_array (al);
     
     int64_t ai;
 
     int carry = fill;
     
     for (ai = 0; ai < al; ai++) {
-	IDIO ia = idio_array_get_index (f, sig_a, ai);
+	IDIO ia = idio_array_get_index (sig_a, ai);
 	int64_t i = IDIO_C_TYPE_INT64 (ia);
 	int64_t r;
 	
@@ -608,40 +588,39 @@ IDIO idio_bignum_shift_left (IDIO f, IDIO a, int fill)
 	    carry = 0;
 	}
 
-	idio_array_insert_index (f, ra, idio_C_int64 (f, r), ai);
+	idio_array_insert_index (ra, idio_C_int64 (r), ai);
     }
 
     if (carry) {
-	idio_array_insert_index (f, ra, idio_C_int64 (f, carry), ai);
+	idio_array_insert_index (ra, idio_C_int64 (carry), ai);
     }
 
-    IDIO r = idio_bignum_integer (f, ra);
+    IDIO r = idio_bignum_integer (ra);
 
     return r;
 }
 
 /* result: (a/10 . a%10) */
-IDIO idio_bignum_shift_right (IDIO f, IDIO a)
+IDIO idio_bignum_shift_right (IDIO a)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (a);
 
     IDIO_TYPE_ASSERT (bignum, a);
 
     IDIO sig_a = IDIO_BIGNUM_SIG(a);
-    size_t al = idio_array_size (f, sig_a);
+    size_t al = idio_array_size (sig_a);
     IDIO ra;
 
     /* repeated shift_rights result in an empty array! */
     if (al) {
-	ra = idio_array (f, al);
+	ra = idio_array (al);
     } else {
 	al++;
-	ra = idio_array (f, al);
+	ra = idio_array (al);
 
 	/* plonk this int64 into sig_a as that's what we're about to
 	get_index from */
-	idio_array_insert_index (f, sig_a, idio_C_int64 (f, 0), 0);
+	idio_array_insert_index (sig_a, idio_C_int64 (0), 0);
     }
     
     int64_t ai;
@@ -649,7 +628,7 @@ IDIO idio_bignum_shift_right (IDIO f, IDIO a)
     int carry = 0;
     
     for (ai = al - 1; ai >= 0; ai--) {
-	IDIO ia = idio_array_get_index (f, sig_a, ai);
+	IDIO ia = idio_array_get_index (sig_a, ai);
 	int64_t i = IDIO_C_TYPE_INT64 (ia);
 
 	int64_t c = i % 10;
@@ -657,42 +636,41 @@ IDIO idio_bignum_shift_right (IDIO f, IDIO a)
 	r += carry * (IDIO_BIGNUM_INT_SEG_LIMIT / 10);
 	carry = c;
 
-	idio_array_insert_index (f, ra, idio_C_int64 (f, r), ai);
+	idio_array_insert_index (ra, idio_C_int64 (r), ai);
     }
 
     /* is more than one segment s and if the mss is zero, pop it
 	off */
     if (al > 1) {
-	IDIO v = idio_array_get_index (f, ra, al - 1);
+	IDIO v = idio_array_get_index (ra, al - 1);
 	if (0 == IDIO_C_TYPE_INT64 (v)) {
-	    idio_array_pop (f, ra);
+	    idio_array_pop (ra);
 	}
     }
 
-    IDIO c_i = idio_bignum_integer_int64 (f, carry);
+    IDIO c_i = idio_bignum_integer_int64 (carry);
     
-    IDIO r_i = idio_bignum_integer (f, ra);
+    IDIO r_i = idio_bignum_integer (ra);
 
-    IDIO r = idio_pair (f, r_i, c_i);
+    IDIO r = idio_pair (r_i, c_i);
 
     return r;
 }
 
-IDIO idio_bignum_multiply (IDIO f, IDIO a, IDIO b)
+IDIO idio_bignum_multiply (IDIO a, IDIO b)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (a);
     IDIO_ASSERT (b);
 
     IDIO_TYPE_ASSERT (bignum, a);
     IDIO_TYPE_ASSERT (bignum, b);
 
-    int neg = idio_bignum_negative_p (f, a) != idio_bignum_negative_p (f, b);
-    IDIO aa = idio_bignum_abs (f, a);
+    int neg = idio_bignum_negative_p (a) != idio_bignum_negative_p (b);
+    IDIO aa = idio_bignum_abs (a);
     
-    IDIO ab = idio_bignum_abs (f, b);
+    IDIO ab = idio_bignum_abs (b);
     
-    IDIO r = idio_bignum_integer_int64 (f, 0);
+    IDIO r = idio_bignum_integer_int64 (0);
     
     /*
       1234 * 11 =>
@@ -701,28 +679,28 @@ IDIO idio_bignum_multiply (IDIO f, IDIO a, IDIO b)
       2 * 1100 +
       1 * 11000
      */
-    while (! idio_bignum_zero_p (f, aa)) {
-	IDIO ibsr = idio_bignum_shift_right (f, aa);
+    while (! idio_bignum_zero_p (aa)) {
+	IDIO ibsr = idio_bignum_shift_right (aa);
 
-	IDIO ibsrt = idio_pair_tail (f, ibsr);
-	IDIO ir = idio_array_get_index (f, IDIO_BIGNUM_SIG(ibsrt), 0);
+	IDIO ibsrt = IDIO_PAIR_T (ibsr);
+	IDIO ir = idio_array_get_index (IDIO_BIGNUM_SIG(ibsrt), 0);
 	int64_t i = IDIO_C_TYPE_INT64 (ir);
 
 	
-	aa = idio_pair_head (f, ibsr);
+	aa = IDIO_PAIR_H (ibsr);
 
 	
 	while (i) {
-	    r = idio_bignum_add (f, r, ab);
+	    r = idio_bignum_add (r, ab);
 	    i--;
 	}
 
-	ab = idio_bignum_shift_left (f, ab, 0);
+	ab = idio_bignum_shift_left (ab, 0);
 
     }
 
     if (neg) {
-	r = idio_bignum_negate (f, r);
+	r = idio_bignum_negate (r);
     }
 
     return r;
@@ -738,9 +716,8 @@ IDIO idio_bignum_multiply (IDIO f, IDIO a, IDIO b)
   r = scaled divisor
   f = factor (of scaled divisor)
  */
-IDIO idio_bignum_equalize (IDIO f, IDIO a, IDIO b)
+IDIO idio_bignum_equalize (IDIO a, IDIO b)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (a);
     IDIO_ASSERT (b);
 
@@ -749,50 +726,49 @@ IDIO idio_bignum_equalize (IDIO f, IDIO a, IDIO b)
 
     IDIO rp = b;
     
-    IDIO fp = idio_bignum_integer_int64 (f, 1);
+    IDIO fp = idio_bignum_integer_int64 (1);
     
     IDIO rn = rp;
     IDIO fn = fp;
 
-    while (idio_bignum_lt_p (f, rn, a)) {
+    while (idio_bignum_lt_p (rn, a)) {
 	rp = rn;
 	fp = fn;
 	
-	rn = idio_bignum_shift_left (f, rn, 0);
+	rn = idio_bignum_shift_left (rn, 0);
 	
-	fn = idio_bignum_shift_left (f, fn, 0);
+	fn = idio_bignum_shift_left (fn, 0);
 
     }
 
-    IDIO r = idio_pair (f, rp, fp);
+    IDIO r = idio_pair (rp, fp);
     
     return r;
 }
 
 /* result: (a/b . a%b) */
-IDIO idio_bignum_divide (IDIO f, IDIO a, IDIO b)
+IDIO idio_bignum_divide (IDIO a, IDIO b)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (a);
     IDIO_ASSERT (b);
 
     IDIO_TYPE_ASSERT (bignum, a);
     IDIO_TYPE_ASSERT (bignum, b);
 
-    if (idio_bignum_zero_p (f, b)) {
-	idio_error_add_C (f, "divide by zero");
+    if (idio_bignum_zero_p (b)) {
+	idio_error_add_C ("divide by zero");
 	return idio_S_nil;
     }
 
-    int na = idio_bignum_negative_p (f, a);
-    int neg = na != idio_bignum_negative_p (f, b);
-    IDIO aa = idio_bignum_abs (f, a);
+    int na = idio_bignum_negative_p (a);
+    int neg = na != idio_bignum_negative_p (b);
+    IDIO aa = idio_bignum_abs (a);
     
-    IDIO ab = idio_bignum_abs (f, b);
+    IDIO ab = idio_bignum_abs (b);
     
-    IDIO r_div = idio_bignum_integer_int64 (f, 0);
+    IDIO r_div = idio_bignum_integer_int64 (0);
     
-    IDIO r_mod = idio_bignum_copy (f, aa);
+    IDIO r_mod = idio_bignum_copy (aa);
 
     /*
       a / b for 12 / 123
@@ -800,20 +776,19 @@ IDIO idio_bignum_divide (IDIO f, IDIO a, IDIO b)
       r_div = 0
       r_mod = 12
      */
-    if (idio_bignum_lt_p (f, aa, ab)) {
+    if (idio_bignum_lt_p (aa, ab)) {
 	if (na) {
 	    r_mod = a;
 
-	    IDIO r = idio_pair (f, r_div, r_mod);
+	    IDIO r = idio_pair (r_div, r_mod);
 
 	    return r;
 	}
     }
 
-    IDIO ibe = idio_bignum_equalize (f, aa, ab);
-    IDIO sd = idio_pair_head (f, ibe);
-    
-    IDIO sf = idio_pair_tail (f, ibe);
+    IDIO ibe = idio_bignum_equalize (aa, ab);
+    IDIO sd = IDIO_PAIR_H (ibe);
+    IDIO sf = IDIO_PAIR_T (ibe);
 
     /*
       a / b for 12345 / 123
@@ -862,48 +837,47 @@ IDIO idio_bignum_divide (IDIO f, IDIO a, IDIO b)
 	  
      */
 
-    while (! idio_bignum_zero_p (f, sf)) {
-	IDIO c = idio_bignum_integer_int64 (f, 0);
+    while (! idio_bignum_zero_p (sf)) {
+	IDIO c = idio_bignum_integer_int64 (0);
 	IDIO c0 = c;
 	
 	int i = 0;
-	while (! idio_bignum_lt_p (f, r_mod, c)) {
+	while (! idio_bignum_lt_p (r_mod, c)) {
 	    c0 = c;
 
-	    c = idio_bignum_add (f, c, sd);
+	    c = idio_bignum_add (c, sd);
 
 	    i++;
 	}
 
-	r_div = idio_bignum_shift_left (f, r_div, i - 1);
+	r_div = idio_bignum_shift_left (r_div, i - 1);
 
-	r_mod = idio_bignum_subtract (f, r_mod, c0);
+	r_mod = idio_bignum_subtract (r_mod, c0);
 
-	IDIO ibsr = idio_bignum_shift_right (f, sf);
-	sf = idio_pair_head (f, ibsr);
+	IDIO ibsr = idio_bignum_shift_right (sf);
+	sf = IDIO_PAIR_H (ibsr);
 
-	ibsr = idio_bignum_shift_right (f, sd);
-	sd = idio_pair_head (f, ibsr);
+	ibsr = idio_bignum_shift_right (sd);
+	sd = IDIO_PAIR_H (ibsr);
     }
 
     if (neg) {
-	r_div = idio_bignum_negate (f, r_div);
+	r_div = idio_bignum_negate (r_div);
     }
 
     if (na) {
-	r_mod = idio_bignum_negate (f, r_mod);
+	r_mod = idio_bignum_negate (r_mod);
     }
 
-    IDIO r = idio_pair (f, r_div, r_mod);
+    IDIO r = idio_pair (r_div, r_mod);
     
     return r;
 }
 
 /* floating point numbers */
 
-IDIO idio_bignum_integer_argument (IDIO f, IDIO bn)
+IDIO idio_bignum_integer_argument (IDIO bn)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (bn);
 
     IDIO_TYPE_ASSERT (bignum, bn);
@@ -912,47 +886,45 @@ IDIO idio_bignum_integer_argument (IDIO f, IDIO bn)
 	return bn;
     }
     
-    IDIO bn_i = idio_bignum_real_to_integer (f, bn);
+    IDIO bn_i = idio_bignum_real_to_integer (bn);
     if (idio_S_nil == bn_i ||
 	IDIO_BIGNUM_REAL_INEXACT_P (bn_i)) {
-	idio_error_add_C (f, "expected integer, got real/inexact");
+	idio_error_add_C ("expected integer, got real/inexact");
 	return idio_S_nil;
     }
 
     return bn_i;
 }
 
-IDIO idio_bignum_real (IDIO f, int flags, int64_t exp, IDIO sig_a)
+IDIO idio_bignum_real (int flags, int64_t exp, IDIO sig_a)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (sig_a);
 
     IDIO_TYPE_ASSERT (array, sig_a);
 
     flags &= ~IDIO_BIGNUM_FLAG_INTEGER;
 
-    return idio_bignum (f, flags | IDIO_BIGNUM_FLAG_REAL, exp, sig_a);
+    return idio_bignum (flags | IDIO_BIGNUM_FLAG_REAL, exp, sig_a);
 }
 
-IDIO idio_bignum_real_to_integer (IDIO f, IDIO bn)
+IDIO idio_bignum_real_to_integer (IDIO bn)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (bn);
 
     IDIO_TYPE_ASSERT (bignum, bn);
 
     if (IDIO_BIGNUM_EXP(bn) >= 0) {
-	IDIO bns = idio_bignum_scale_significand (f, bn, 0, IDIO_BIGNUM_SIG_MAX_DIGITS);
+	IDIO bns = idio_bignum_scale_significand (bn, 0, IDIO_BIGNUM_SIG_MAX_DIGITS);
 	
 	if (idio_S_nil == bns) {
 
 	    return idio_S_nil;
 	}
 
-	IDIO bn_i = idio_bignum_copy_to_integer (f, bns);
+	IDIO bn_i = idio_bignum_copy_to_integer (bns);
 
 	if (IDIO_BIGNUM_REAL_NEGATIVE_P (bn)) {
-	    bn_i = idio_bignum_negate (f, bn_i);
+	    bn_i = idio_bignum_negate (bn_i);
 	}
 
 	return bn_i;
@@ -961,39 +933,34 @@ IDIO idio_bignum_real_to_integer (IDIO f, IDIO bn)
     return idio_S_nil;
 }
 
-IDIO idio_bignum_real_to_inexact (IDIO f, IDIO bn)
+IDIO idio_bignum_real_to_inexact (IDIO bn)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (bn);
 
     IDIO_TYPE_ASSERT (bignum, bn);
 
-    IDIO r = idio_bignum_real (f,
-			       IDIO_BIGNUM_FLAGS (bn) | IDIO_BIGNUM_FLAG_REAL_INEXACT,
+    IDIO r = idio_bignum_real (IDIO_BIGNUM_FLAGS (bn) | IDIO_BIGNUM_FLAG_REAL_INEXACT,
 			       IDIO_BIGNUM_EXP (bn),
 			       IDIO_BIGNUM_SIG (bn));
 
     return r;
 }
 
-IDIO idio_bignum_real_to_exact (IDIO f, IDIO bn)
+IDIO idio_bignum_real_to_exact (IDIO bn)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (bn);
 
     IDIO_TYPE_ASSERT (bignum, bn);
 
-    IDIO r = idio_bignum_real (f,
-			       IDIO_BIGNUM_FLAGS (bn) & ~IDIO_BIGNUM_FLAG_REAL_INEXACT,
+    IDIO r = idio_bignum_real (IDIO_BIGNUM_FLAGS (bn) & ~IDIO_BIGNUM_FLAG_REAL_INEXACT,
 			       IDIO_BIGNUM_EXP (bn),
 			       IDIO_BIGNUM_SIG (bn));
 
     return r;
 }
 
-IDIO idio_bignum_real_negate (IDIO f, IDIO bn)
+IDIO idio_bignum_real_negate (IDIO bn)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (bn);
 
     IDIO_TYPE_ASSERT (bignum, bn);
@@ -1006,7 +973,7 @@ IDIO idio_bignum_real_negate (IDIO f, IDIO bn)
 	flags |= IDIO_BIGNUM_FLAG_REAL_NEGATIVE;
     }
     
-    IDIO r = idio_bignum_real (f, flags, IDIO_BIGNUM_EXP (bn), IDIO_BIGNUM_SIG (bn));
+    IDIO r = idio_bignum_real (flags, IDIO_BIGNUM_EXP (bn), IDIO_BIGNUM_SIG (bn));
 
     return r;
 }
@@ -1018,9 +985,8 @@ IDIO idio_bignum_real_negate (IDIO f, IDIO bn)
   Limit to IDIO_BIGNUM_SIG_MAX_DIGITS, a loss of precision =>
 	IDIO_BIGNUM_FLAG_REAL_INEXACT
  */
-IDIO idio_bignum_normalize (IDIO f, IDIO bn)
+IDIO idio_bignum_normalize (IDIO bn)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (bn);
 
     IDIO_TYPE_ASSERT (bignum, bn);
@@ -1029,61 +995,60 @@ IDIO idio_bignum_normalize (IDIO f, IDIO bn)
     IDIO sig_a = IDIO_BIGNUM_SIG(bn);
 
     /* significand-only part */
-    IDIO bn_s = idio_bignum_copy (f, bn);
+    IDIO bn_s = idio_bignum_copy (bn);
     
-    int digits = idio_bignum_count_digits (f, sig_a);
+    int digits = idio_bignum_count_digits (sig_a);
     int inexact = IDIO_BIGNUM_REAL_INEXACT_P (bn);
 
     IDIO ibsr;
     
     while (digits > IDIO_BIGNUM_SIG_MAX_DIGITS) {
-	ibsr = idio_bignum_shift_right (f, bn_s);
+	ibsr = idio_bignum_shift_right (bn_s);
 	
-	if (! idio_bignum_zero_p (f, idio_pair_tail (f, ibsr))) {
+	if (! idio_bignum_zero_p (IDIO_PAIR_T (ibsr))) {
 	    inexact = IDIO_BIGNUM_FLAG_REAL_INEXACT;
 	}
 
-	bn_s = idio_pair_head (f, ibsr);
+	bn_s = IDIO_PAIR_H (ibsr);
 	digits--;
 	exp++;
     }
 
-    while (! idio_bignum_zero_p (f, bn_s)) {
-	ibsr = idio_bignum_shift_right (f, bn_s);
+    while (! idio_bignum_zero_p (bn_s)) {
+	ibsr = idio_bignum_shift_right (bn_s);
 
-	if (! idio_bignum_zero_p (f, idio_pair_tail (f, ibsr))) {
+	if (! idio_bignum_zero_p (IDIO_PAIR_T (ibsr))) {
 	    break;
 	}
 
-	bn_s = idio_pair_head (f, ibsr);
+	bn_s = IDIO_PAIR_H (ibsr);
 	exp++;
     }
 
-    if (idio_bignum_zero_p (f, bn_s)) {
+    if (idio_bignum_zero_p (bn_s)) {
 	exp = 0;
     }
 
     /* S9fES checks for over/under-flow in exp wrt IDIO_BIGNUM_DPW.
 	Not sure that's applicable here. */
 
-    IDIO r = idio_bignum_real (f, IDIO_BIGNUM_FLAGS(bn) | inexact, exp, IDIO_BIGNUM_SIG(bn_s));
+    IDIO r = idio_bignum_real (IDIO_BIGNUM_FLAGS(bn) | inexact, exp, IDIO_BIGNUM_SIG(bn_s));
 
     return r;
 }
 
-IDIO idio_bignum_to_real (IDIO f, IDIO bn)
+IDIO idio_bignum_to_real (IDIO bn)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (bn);
 
     IDIO_TYPE_ASSERT (bignum, bn);
 
     int64_t exp = 0;
 
-    IDIO bnc = idio_bignum_copy (f, bn);
+    IDIO bnc = idio_bignum_copy (bn);
     IDIO sig_a = IDIO_BIGNUM_SIG(bnc);
-    size_t al = idio_array_size (f, sig_a);
-    IDIO i = idio_array_get_index (f, sig_a, al - 1);
+    size_t al = idio_array_size (sig_a);
+    IDIO i = idio_array_get_index (sig_a, al - 1);
     IDIO_C_TYPE_INT64 (i) = llabs (IDIO_C_TYPE_INT64 (i));
 
     /*
@@ -1091,7 +1056,7 @@ IDIO idio_bignum_to_real (IDIO f, IDIO bn)
 
       With DPW of 3 and 1 seg then 3141 would become 3e3
      */
-    int nseg = idio_array_size (f, sig_a);
+    int nseg = idio_array_size (sig_a);
     int inexact = 0;
 
     IDIO r;
@@ -1100,45 +1065,43 @@ IDIO idio_bignum_to_real (IDIO f, IDIO bn)
 	int64_t nshift = (nseg - IDIO_BIGNUM_SIG_SEGMENTS);
 	int64_t i;
 	for (i = 0; i < nshift; i++) {
-	    idio_array_shift (f, sig_a);
+	    idio_array_shift (sig_a);
 	}
 	exp = nshift * IDIO_BIGNUM_DPW;
 	inexact = IDIO_BIGNUM_FLAG_REAL_INEXACT;
     }
 
     int flags = inexact;
-    if (idio_bignum_negative_p (f, bn)) {
+    if (idio_bignum_negative_p (bn)) {
 	flags |= IDIO_BIGNUM_FLAG_REAL_NEGATIVE;
     }
     
-    r = idio_bignum_real (f, flags, exp, sig_a);
+    r = idio_bignum_real (flags, exp, sig_a);
 
-    r = idio_bignum_normalize (f, r);
+    r = idio_bignum_normalize (r);
     
     return r;
 }
 
-int idio_bignum_real_zero_p (IDIO f, IDIO a)
+int idio_bignum_real_zero_p (IDIO a)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (a);
 
     IDIO_TYPE_ASSERT (bignum, a);
 
     IDIO sig_a = IDIO_BIGNUM_SIG(a);
-    size_t al = idio_array_size (f, sig_a);
+    size_t al = idio_array_size (sig_a);
 
     if (al > 1) {
 	return 0;
     }
 
-    IDIO ia = idio_array_get_index (f, sig_a, 0);
+    IDIO ia = idio_array_get_index (sig_a, 0);
     return (IDIO_C_TYPE_INT64 (ia) == 0);
 }
 
-int idio_bignum_real_equal_p (IDIO f, IDIO a, IDIO b)
+int idio_bignum_real_equal_p (IDIO a, IDIO b)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (a);
     IDIO_ASSERT (b);
 
@@ -1147,19 +1110,19 @@ int idio_bignum_real_equal_p (IDIO f, IDIO a, IDIO b)
 
     if (IDIO_BIGNUM_INTEGER_P (a) &&
 	IDIO_BIGNUM_INTEGER_P (b)) {
-	return idio_bignum_equal_p (f, a, b);
+	return idio_bignum_equal_p (a, b);
     }
 
     IDIO ra = a;
     
     if (IDIO_BIGNUM_INTEGER_P (a)) {
-	ra = idio_bignum_to_real (f, a);
+	ra = idio_bignum_to_real (a);
     }
 
     IDIO rb = b;
     
     if (IDIO_BIGNUM_INTEGER_P (b)) {
-	rb = idio_bignum_to_real (f, b);
+	rb = idio_bignum_to_real (b);
     }
 
     if (IDIO_BIGNUM_EXP(ra) != IDIO_BIGNUM_EXP(rb)) {
@@ -1167,8 +1130,8 @@ int idio_bignum_real_equal_p (IDIO f, IDIO a, IDIO b)
 	return 0;
     }
 
-    if (idio_bignum_real_zero_p (f, ra) &&
-	idio_bignum_real_zero_p (f, rb)) {
+    if (idio_bignum_real_zero_p (ra) &&
+	idio_bignum_real_zero_p (rb)) {
 	return 1;
     }
 
@@ -1179,8 +1142,8 @@ int idio_bignum_real_equal_p (IDIO f, IDIO a, IDIO b)
     IDIO ras = IDIO_BIGNUM_SIG(ra);
     IDIO rbs = IDIO_BIGNUM_SIG(rb);
     
-    size_t ral = idio_array_size (f, ras);
-    size_t rbl = idio_array_size (f, rbs);
+    size_t ral = idio_array_size (ras);
+    size_t rbl = idio_array_size (rbs);
 
     if (ral != rbl) {
 	return 0;
@@ -1189,8 +1152,8 @@ int idio_bignum_real_equal_p (IDIO f, IDIO a, IDIO b)
     int64_t i;
 
     for (i = ral - 1; i >= 0; i--) {
-	IDIO ia = idio_array_get_index (f, ras, i);
-	IDIO ib = idio_array_get_index (f, rbs, i);
+	IDIO ia = idio_array_get_index (ras, i);
+	IDIO ib = idio_array_get_index (rbs, i);
 
 	if (IDIO_C_TYPE_INT64 (ia) != IDIO_C_TYPE_INT64 (ib)) {
 	    return 0;
@@ -1207,36 +1170,34 @@ int idio_bignum_real_equal_p (IDIO f, IDIO a, IDIO b)
 
   100.0e-2
  */
-IDIO idio_bignum_scale_significand (IDIO f, IDIO bn, int64_t desired_exp, int max_size)
+IDIO idio_bignum_scale_significand (IDIO bn, int64_t desired_exp, int max_size)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (bn);
 
     IDIO_TYPE_ASSERT (bignum, bn);
 
-    int digits = idio_bignum_count_digits (f, IDIO_BIGNUM_SIG(bn));
+    int digits = idio_bignum_count_digits (IDIO_BIGNUM_SIG(bn));
 
     /* is there room to scale within the desired_exp (and max_size)? */
     if ((max_size - digits) < (IDIO_BIGNUM_EXP(bn) - desired_exp)) {
 	return idio_S_nil;
     }
 
-    IDIO bnc = idio_bignum_copy (f, bn);
+    IDIO bnc = idio_bignum_copy (bn);
     
     int64_t exp = IDIO_BIGNUM_EXP(bn);
     while (exp > desired_exp) {
-	bnc = idio_bignum_shift_left (f, bnc, 0);
+	bnc = idio_bignum_shift_left (bnc, 0);
 	exp--;
     }
 
-    IDIO r = idio_bignum_real (f, IDIO_BIGNUM_FLAGS(bn), exp, IDIO_BIGNUM_SIG(bnc));
+    IDIO r = idio_bignum_real (IDIO_BIGNUM_FLAGS(bn), exp, IDIO_BIGNUM_SIG(bnc));
 
     return r;
 }
 
-int idio_bignum_real_lt_p (IDIO f, IDIO a, IDIO b)
+int idio_bignum_real_lt_p (IDIO a, IDIO b)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (a);
     IDIO_ASSERT (b);
 
@@ -1245,19 +1206,19 @@ int idio_bignum_real_lt_p (IDIO f, IDIO a, IDIO b)
 
     if (IDIO_BIGNUM_INTEGER_P (a) &&
 	IDIO_BIGNUM_INTEGER_P (b)) {
-	return idio_bignum_lt_p (f, a, b);
+	return idio_bignum_lt_p (a, b);
     }
 
     IDIO ra = a;
     
     if (IDIO_BIGNUM_INTEGER_P (a)) {
-	ra = idio_bignum_to_real (f, a);
+	ra = idio_bignum_to_real (a);
     }
 
     IDIO rb = b;
     
     if (IDIO_BIGNUM_INTEGER_P (b)) {
-	rb = idio_bignum_to_real (f, b);
+	rb = idio_bignum_to_real (b);
     }
 
     if (IDIO_BIGNUM_REAL_NEGATIVE_P (ra) &&
@@ -1271,20 +1232,20 @@ int idio_bignum_real_lt_p (IDIO f, IDIO a, IDIO b)
     }
 
     if (IDIO_BIGNUM_REAL_POSITIVE_P (ra) &&
-	idio_bignum_real_zero_p (f, rb)) {
+	idio_bignum_real_zero_p (rb)) {
 	return 0;
     }
 
     /* XXX S9fES has real_positive_p (a) bug?? */
     if (IDIO_BIGNUM_REAL_POSITIVE_P (rb) &&
-	idio_bignum_real_zero_p (f, ra)) {
+	idio_bignum_real_zero_p (ra)) {
 	return 1;
     }
 
     int neg = IDIO_BIGNUM_REAL_NEGATIVE_P (ra);
 
-    int dpa = idio_bignum_count_digits (f, IDIO_BIGNUM_SIG (ra)) + IDIO_BIGNUM_EXP(ra);
-    int dpb = idio_bignum_count_digits (f, IDIO_BIGNUM_SIG (rb)) + IDIO_BIGNUM_EXP(rb);
+    int dpa = idio_bignum_count_digits (IDIO_BIGNUM_SIG (ra)) + IDIO_BIGNUM_EXP(ra);
+    int dpb = idio_bignum_count_digits (IDIO_BIGNUM_SIG (rb)) + IDIO_BIGNUM_EXP(rb);
 
     if (dpa < dpb) {
 	return neg ? 0 : 1;
@@ -1296,7 +1257,7 @@ int idio_bignum_real_lt_p (IDIO f, IDIO a, IDIO b)
 
     if (IDIO_BIGNUM_EXP(ra) < IDIO_BIGNUM_EXP(rb)) {
 
-	rb = idio_bignum_scale_significand (f, rb, IDIO_BIGNUM_EXP(ra), IDIO_BIGNUM_SIG_MAX_DIGITS);
+	rb = idio_bignum_scale_significand (rb, IDIO_BIGNUM_EXP(ra), IDIO_BIGNUM_SIG_MAX_DIGITS);
 
 	if (idio_S_nil == rb) {
 	    return neg ? 0 : 1;
@@ -1305,7 +1266,7 @@ int idio_bignum_real_lt_p (IDIO f, IDIO a, IDIO b)
 
     if (IDIO_BIGNUM_EXP(ra) > IDIO_BIGNUM_EXP(rb)) {
 
-	ra = idio_bignum_scale_significand (f, ra, IDIO_BIGNUM_EXP(rb), IDIO_BIGNUM_SIG_MAX_DIGITS);
+	ra = idio_bignum_scale_significand (ra, IDIO_BIGNUM_EXP(rb), IDIO_BIGNUM_SIG_MAX_DIGITS);
 
 
 	if (idio_S_nil == ra) {
@@ -1313,8 +1274,8 @@ int idio_bignum_real_lt_p (IDIO f, IDIO a, IDIO b)
 	}
     }
 
-    size_t ral = idio_array_size (f, IDIO_BIGNUM_SIG(ra));
-    size_t rbl = idio_array_size (f, IDIO_BIGNUM_SIG(rb));
+    size_t ral = idio_array_size (IDIO_BIGNUM_SIG(ra));
+    size_t rbl = idio_array_size (IDIO_BIGNUM_SIG(rb));
 
     if (ral < rbl) {
 	return 1;
@@ -1327,8 +1288,8 @@ int idio_bignum_real_lt_p (IDIO f, IDIO a, IDIO b)
     int64_t i;
 
     for (i = ral - 1 ; i >= 0 ; i--) {
-	IDIO ia = idio_array_get_index (f, IDIO_BIGNUM_SIG(ra), i);
-	IDIO ib = idio_array_get_index (f, IDIO_BIGNUM_SIG(rb), i);
+	IDIO ia = idio_array_get_index (IDIO_BIGNUM_SIG(ra), i);
+	IDIO ib = idio_array_get_index (IDIO_BIGNUM_SIG(rb), i);
 
 	if (IDIO_C_TYPE_INT64 (ia) < IDIO_C_TYPE_INT64 (ib)) {
 	    /* fprintf (stderr, "idio_bignum_real_lt_p: SEG[%d] (ra) < SEG[%d] (rb)\n", i, i); */
@@ -1345,9 +1306,8 @@ int idio_bignum_real_lt_p (IDIO f, IDIO a, IDIO b)
     return 0;
 }
 
-IDIO idio_bignum_real_add (IDIO f, IDIO a, IDIO b)
+IDIO idio_bignum_real_add (IDIO a, IDIO b)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (a);
     IDIO_ASSERT (b);
 
@@ -1356,36 +1316,36 @@ IDIO idio_bignum_real_add (IDIO f, IDIO a, IDIO b)
 
     if (IDIO_BIGNUM_INTEGER_P (a) &&
 	IDIO_BIGNUM_INTEGER_P (b)) {
-	return idio_bignum_add (f, a, b);
+	return idio_bignum_add (a, b);
     }
 
     IDIO ra = a;
     
     if (IDIO_BIGNUM_INTEGER_P (a)) {
-	ra = idio_bignum_to_real (f, a);
+	ra = idio_bignum_to_real (a);
     }
     
     IDIO rb = b;
     
     if (IDIO_BIGNUM_INTEGER_P (b)) {
-	rb = idio_bignum_to_real (f, b);
+	rb = idio_bignum_to_real (b);
     }
 
     int inexact = IDIO_BIGNUM_REAL_INEXACT_P (ra) | IDIO_BIGNUM_REAL_INEXACT_P (rb);
 
     if (IDIO_BIGNUM_EXP(ra) < IDIO_BIGNUM_EXP(rb)) {
-	rb = idio_bignum_scale_significand (f, rb, IDIO_BIGNUM_EXP(ra), IDIO_BIGNUM_SIG_MAX_DIGITS * 2);
+	rb = idio_bignum_scale_significand (rb, IDIO_BIGNUM_EXP(ra), IDIO_BIGNUM_SIG_MAX_DIGITS * 2);
     } else if (IDIO_BIGNUM_EXP(ra) > IDIO_BIGNUM_EXP(rb)) {
-	ra = idio_bignum_scale_significand (f, ra, IDIO_BIGNUM_EXP(rb), IDIO_BIGNUM_SIG_MAX_DIGITS * 2);
+	ra = idio_bignum_scale_significand (ra, IDIO_BIGNUM_EXP(rb), IDIO_BIGNUM_SIG_MAX_DIGITS * 2);
     }
 
     if (idio_S_nil == ra ||
 	idio_S_nil == rb) {
 
-	if (idio_bignum_real_lt_p (f, a, b)) {
-	    return idio_bignum_real_to_inexact (f, b);
+	if (idio_bignum_real_lt_p (a, b)) {
+	    return idio_bignum_real_to_inexact (b);
 	} else {
-	    return idio_bignum_real_to_inexact (f, a);
+	    return idio_bignum_real_to_inexact (a);
 	}
     }
 
@@ -1393,37 +1353,36 @@ IDIO idio_bignum_real_add (IDIO f, IDIO a, IDIO b)
     int na = IDIO_BIGNUM_REAL_NEGATIVE_P (ra);
     int nb = IDIO_BIGNUM_REAL_NEGATIVE_P (rb);
 
-    IDIO ra_i = idio_bignum_copy_to_integer (f, ra);
+    IDIO ra_i = idio_bignum_copy_to_integer (ra);
 
     if (na) {
-	ra_i = idio_bignum_negate (f, ra_i);
+	ra_i = idio_bignum_negate (ra_i);
     }
     
-    IDIO rb_i = idio_bignum_copy_to_integer (f,  rb);
+    IDIO rb_i = idio_bignum_copy_to_integer ( rb);
 
     if (nb) {
-	rb_i = idio_bignum_negate (f, rb_i);
+	rb_i = idio_bignum_negate (rb_i);
     }
 
-    IDIO r_i = idio_bignum_add (f, ra_i, rb_i);
+    IDIO r_i = idio_bignum_add (ra_i, rb_i);
 
     int flags = inexact;
-    if (idio_bignum_negative_p (f, r_i)) {
+    if (idio_bignum_negative_p (r_i)) {
 	flags |= IDIO_BIGNUM_FLAG_REAL_NEGATIVE;
     }
     
-    IDIO r_ia = idio_bignum_abs (f, r_i);
+    IDIO r_ia = idio_bignum_abs (r_i);
     
-    IDIO r = idio_bignum_real (f, flags, exp, IDIO_BIGNUM_SIG(r_ia));
+    IDIO r = idio_bignum_real (flags, exp, IDIO_BIGNUM_SIG(r_ia));
 
-    r = idio_bignum_normalize (f, r);
+    r = idio_bignum_normalize (r);
 
     return r;
 }
 
-IDIO idio_bignum_real_subtract (IDIO f, IDIO a, IDIO b)
+IDIO idio_bignum_real_subtract (IDIO a, IDIO b)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (a);
     IDIO_ASSERT (b);
 
@@ -1433,19 +1392,18 @@ IDIO idio_bignum_real_subtract (IDIO f, IDIO a, IDIO b)
     IDIO nb;
     
     if (IDIO_BIGNUM_INTEGER_P (b)) {
-	nb = idio_bignum_negate (f, b);
+	nb = idio_bignum_negate (b);
     } else {
-	nb = idio_bignum_real_negate (f, b);
+	nb = idio_bignum_real_negate (b);
     }
 
-    IDIO r = idio_bignum_real_add (f, a, nb);
+    IDIO r = idio_bignum_real_add (a, nb);
 
     return r;
 }
 
-IDIO idio_bignum_real_multiply (IDIO f, IDIO a, IDIO b)
+IDIO idio_bignum_real_multiply (IDIO a, IDIO b)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (a);
     IDIO_ASSERT (b);
 
@@ -1454,19 +1412,19 @@ IDIO idio_bignum_real_multiply (IDIO f, IDIO a, IDIO b)
 
     if (IDIO_BIGNUM_INTEGER_P (a) &&
 	IDIO_BIGNUM_INTEGER_P (b)) {
-	return idio_bignum_multiply (f, a, b);
+	return idio_bignum_multiply (a, b);
     }
 
     IDIO ra = a;
 
     if (IDIO_BIGNUM_INTEGER_P (a)) {
-	ra = idio_bignum_to_real (f, a);
+	ra = idio_bignum_to_real (a);
     }
 	
     IDIO rb = b;
 
     if (IDIO_BIGNUM_INTEGER_P (b)) {
-	rb = idio_bignum_to_real (f, b);
+	rb = idio_bignum_to_real (b);
     }
 
     int inexact = IDIO_BIGNUM_REAL_INEXACT_P (ra) | IDIO_BIGNUM_REAL_INEXACT_P (rb);
@@ -1476,26 +1434,25 @@ IDIO idio_bignum_real_multiply (IDIO f, IDIO a, IDIO b)
     int64_t expa = IDIO_BIGNUM_EXP(ra);
     int64_t expb = IDIO_BIGNUM_EXP(rb);
 
-    IDIO ra_i = idio_bignum_copy_to_integer (f, ra);
+    IDIO ra_i = idio_bignum_copy_to_integer (ra);
     
-    IDIO rb_i = idio_bignum_copy_to_integer (f, rb);
+    IDIO rb_i = idio_bignum_copy_to_integer (rb);
     
     int64_t exp = expa + expb;
 
-    IDIO r_i = idio_bignum_multiply (f, ra_i, rb_i);
+    IDIO r_i = idio_bignum_multiply (ra_i, rb_i);
 
     int flags = inexact | (neg ? IDIO_BIGNUM_FLAG_REAL_NEGATIVE : 0);
     
-    IDIO r = idio_bignum_real (f, flags, exp, IDIO_BIGNUM_SIG(r_i));
+    IDIO r = idio_bignum_real (flags, exp, IDIO_BIGNUM_SIG(r_i));
 
-    r = idio_bignum_normalize (f, r);
+    r = idio_bignum_normalize (r);
     
     return r;
 }
 
-IDIO idio_bignum_real_divide (IDIO f, IDIO a, IDIO b)
+IDIO idio_bignum_real_divide (IDIO a, IDIO b)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (a);
     IDIO_ASSERT (b);
 
@@ -1505,11 +1462,11 @@ IDIO idio_bignum_real_divide (IDIO f, IDIO a, IDIO b)
     IDIO ra = a;
 
     if (IDIO_BIGNUM_INTEGER_P (a)) {
-	ra = idio_bignum_to_real (f, a);
-	if (idio_bignum_real_zero_p (f, ra)) {
-	    IDIO i0 = idio_bignum_integer_int64 (f, 0);
+	ra = idio_bignum_to_real (a);
+	if (idio_bignum_real_zero_p (ra)) {
+	    IDIO i0 = idio_bignum_integer_int64 (0);
 
-	    IDIO r = idio_bignum_real (f, 0, 0, IDIO_BIGNUM_SIG (i0));
+	    IDIO r = idio_bignum_real (0, 0, IDIO_BIGNUM_SIG (i0));
 
 	    return r;
 	}
@@ -1518,7 +1475,7 @@ IDIO idio_bignum_real_divide (IDIO f, IDIO a, IDIO b)
     IDIO rb = b;
 
     if (IDIO_BIGNUM_INTEGER_P (b)) {
-	rb = idio_bignum_to_real (f, b);
+	rb = idio_bignum_to_real (b);
     }
 
     int inexact = IDIO_BIGNUM_REAL_INEXACT_P (ra) | IDIO_BIGNUM_REAL_INEXACT_P (rb);
@@ -1528,11 +1485,11 @@ IDIO idio_bignum_real_divide (IDIO f, IDIO a, IDIO b)
     int64_t expa = IDIO_BIGNUM_EXP(ra);
     int64_t expb = IDIO_BIGNUM_EXP(rb);
 
-    IDIO ra_i = idio_bignum_copy_to_integer (f, ra);
+    IDIO ra_i = idio_bignum_copy_to_integer (ra);
     
-    IDIO rb_i = idio_bignum_copy_to_integer (f, rb);
+    IDIO rb_i = idio_bignum_copy_to_integer (rb);
     
-    if (idio_bignum_zero_p (f, rb)) {
+    if (idio_bignum_zero_p (rb)) {
 
 	return idio_S_NaN;
     }
@@ -1562,38 +1519,37 @@ IDIO idio_bignum_real_divide (IDIO f, IDIO a, IDIO b)
 	MAX_DIGITS significant digits.
      */
     
-    int nd = idio_bignum_count_digits (f, IDIO_BIGNUM_SIG(ra));
-    int dd = IDIO_BIGNUM_SIG_MAX_DIGITS + idio_bignum_count_digits (f, IDIO_BIGNUM_SIG(rb));
+    int nd = idio_bignum_count_digits (IDIO_BIGNUM_SIG(ra));
+    int dd = IDIO_BIGNUM_SIG_MAX_DIGITS + idio_bignum_count_digits (IDIO_BIGNUM_SIG(rb));
 
     while (nd < dd) {
-	ra_i = idio_bignum_shift_left (f, ra_i, 0);
+	ra_i = idio_bignum_shift_left (ra_i, 0);
 
 	nd++;
 	expa--;
     }
 
     int64_t exp = expa - expb;
-    IDIO ibd = idio_bignum_divide (f, ra_i, rb_i);
-    IDIO r_i = idio_pair_head (f, ibd);
+    IDIO ibd = idio_bignum_divide (ra_i, rb_i);
+    IDIO r_i = IDIO_PAIR_H (ibd);
 
-    if (! idio_bignum_zero_p (f, r_i)) {
+    if (! idio_bignum_zero_p (r_i)) {
 	inexact = IDIO_BIGNUM_FLAG_REAL_INEXACT;
     }
 
     int flags = inexact | (neg ? IDIO_BIGNUM_FLAG_REAL_NEGATIVE : 0);
     
-    IDIO r = idio_bignum_real (f, flags, exp, IDIO_BIGNUM_SIG(r_i));
+    IDIO r = idio_bignum_real (flags, exp, IDIO_BIGNUM_SIG(r_i));
 
-    r = idio_bignum_normalize (f, r);
+    r = idio_bignum_normalize (r);
     
     return r;
 }
 	
 /* printers */
 
-char *idio_bignum_integer_as_string (IDIO f, IDIO bn)
+char *idio_bignum_integer_as_string (IDIO bn)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (bn);
 
     IDIO_TYPE_ASSERT (bignum, bn);
@@ -1603,10 +1559,10 @@ char *idio_bignum_integer_as_string (IDIO f, IDIO bn)
     char *s = idio_alloc (1);
     *s = '\0';
 
-    size_t al = idio_array_size (f, sig_a);
+    size_t al = idio_array_size (sig_a);
     int64_t i;
     for (i = al - 1; i >= 0; i--) {
-	IDIO v = idio_array_get_index (f, sig_a, i);
+	IDIO v = idio_array_get_index (sig_a, i);
 	char buf[BUFSIZ];
 	char fmt[BUFSIZ];
 	if (i == al - 1) {
@@ -1621,9 +1577,8 @@ char *idio_bignum_integer_as_string (IDIO f, IDIO bn)
     return s;
 }
 
-char *idio_bignum_expanded_real_as_string (IDIO f, IDIO bn, int64_t exp, int digits, int neg)
+char *idio_bignum_expanded_real_as_string (IDIO bn, int64_t exp, int digits, int neg)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (bn);
 
     IDIO_TYPE_ASSERT (bignum, bn);
@@ -1652,12 +1607,12 @@ char *idio_bignum_expanded_real_as_string (IDIO f, IDIO bn, int64_t exp, int dig
 
     dp_offset = exp + digits;
     IDIO sig_a = IDIO_BIGNUM_SIG(bn);
-    size_t al = idio_array_size (f, sig_a);
+    size_t al = idio_array_size (sig_a);
 
     int64_t ai;
     for (ai = al - 1; ai >= 0; ai--) {
-	IDIO v = idio_array_get_index (f, sig_a, ai);
-	IDIO_STRCAT_FREE (s, idio_as_string (f, v, 1));
+	IDIO v = idio_array_get_index (sig_a, ai);
+	IDIO_STRCAT_FREE (s, idio_as_string (v, 1));
     }
 
     if (dp_offset >= 0) {
@@ -1675,9 +1630,8 @@ char *idio_bignum_expanded_real_as_string (IDIO f, IDIO bn, int64_t exp, int dig
     return s;
 }
 
-char *idio_bignum_real_as_string (IDIO f, IDIO bn)
+char *idio_bignum_real_as_string (IDIO bn)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (bn);
 
     IDIO_TYPE_ASSERT (bignum, bn);
@@ -1687,12 +1641,12 @@ char *idio_bignum_real_as_string (IDIO f, IDIO bn)
     }
     
     IDIO sig_a = IDIO_BIGNUM_SIG(bn);
-    int digits = idio_bignum_count_digits (f, sig_a);
+    int digits = idio_bignum_count_digits (sig_a);
     int exp = IDIO_BIGNUM_EXP(bn);
 
     if (0 && (exp + digits) > -4 &&
 	(exp + digits) <= 9) {
-	return idio_bignum_expanded_real_as_string (f, bn, exp, digits, IDIO_BIGNUM_REAL_NEGATIVE_P (bn));
+	return idio_bignum_expanded_real_as_string (bn, exp, digits, IDIO_BIGNUM_REAL_NEGATIVE_P (bn));
     }
 
     char *s = idio_alloc (1);
@@ -1706,16 +1660,16 @@ char *idio_bignum_real_as_string (IDIO f, IDIO bn)
 	IDIO_STRCAT (s, "-");
     }
 
-    size_t al = idio_array_size (f, sig_a);
+    size_t al = idio_array_size (sig_a);
     int64_t i = al - 1;
-    IDIO v = idio_array_get_index (f, sig_a, i);
+    IDIO v = idio_array_get_index (sig_a, i);
 
     /*
       vs can be n digits long (n >= 1).  We want to add vs[0] then
 	".".  If vs is more than 1 digit then add the rest of vs.  If
 	there are no more digits to add then add "0".
      */
-    char *vs = idio_as_string (f, v, 1);
+    char *vs = idio_as_string (v, 1);
     IDIO_C_ASSERT (strlen (vs));
     char vs_rest[IDIO_BIGNUM_DPW];
     strcpy (vs_rest, vs + 1);
@@ -1734,26 +1688,25 @@ char *idio_bignum_real_as_string (IDIO f, IDIO bn)
     free (vs);
     
     for (i--; i >= 0; i--) {
-	v = idio_array_get_index (f, sig_a, i);
+	v = idio_array_get_index (sig_a, i);
 	char buf[BUFSIZ];
 	sprintf (buf, "%0*ld", IDIO_BIGNUM_DPW, IDIO_C_TYPE_INT64 (v));
 	s = idio_strcat (s, buf);
-	/* s = idio_strcat_free (s, idio_as_string (f, v, 1, 0)); */
+	/* s = idio_strcat_free (s, idio_as_string (v, 1, 0)); */
     }
 
     IDIO_STRCAT (s, "e");
     if ((exp + digits - 1) >= 0) {
 	IDIO_STRCAT (s, "+");
     }
-    v = idio_C_int64 (f, (exp + digits - 1));
-    s = idio_strcat_free (s, idio_as_string (f, v, 1));
+    v = idio_C_int64 ((exp + digits - 1));
+    s = idio_strcat_free (s, idio_as_string (v, 1));
 
     return s;
 }
 
-char *idio_bignum_as_string (IDIO f, IDIO bn)
+char *idio_bignum_as_string (IDIO bn)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (bn);
 
     if (idio_S_NaN == bn) {
@@ -1764,26 +1717,25 @@ char *idio_bignum_as_string (IDIO f, IDIO bn)
     }
 
     if (IDIO_BIGNUM_INTEGER_P (bn)) {
-	return idio_bignum_integer_as_string (f, bn);
+	return idio_bignum_integer_as_string (bn);
     }
-    return idio_bignum_real_as_string (f, bn);
+    return idio_bignum_real_as_string (bn);
 }
 
 /*
   count the digits in the first array element (by dividing by 10) then
   add DPW times the remaining number of elements
  */
-int idio_bignum_count_digits (IDIO f, IDIO sig_a)
+int idio_bignum_count_digits (IDIO sig_a)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (sig_a);
 
     IDIO_TYPE_ASSERT (array, sig_a);
 
-    size_t al = idio_array_size (f, sig_a);
+    size_t al = idio_array_size (sig_a);
     IDIO_C_ASSERT (al);
 
-    IDIO i = idio_array_get_index (f, sig_a, al - 1);
+    IDIO i = idio_array_get_index (sig_a, al - 1);
     int64_t v = IDIO_C_TYPE_INT64 (i);
     int d = 0;
     while (v) {
@@ -1800,9 +1752,8 @@ int idio_bignum_count_digits (IDIO f, IDIO sig_a)
     return d;
 }
 
-char *idio_bignum_C_without_inexact (IDIO f, char *nums)
+char *idio_bignum_C_without_inexact (char *nums)
 {
-    IDIO_ASSERT (f);
     IDIO_C_ASSERT (nums);
 
     char *buf = idio_alloc (strlen (nums) + 1);
@@ -1819,13 +1770,12 @@ char *idio_bignum_C_without_inexact (IDIO f, char *nums)
     return buf;
 }
 
-IDIO idio_bignum_integer_C (IDIO f, char *nums, int req_exact)
+IDIO idio_bignum_integer_C (char *nums, int req_exact)
 {
-    IDIO_ASSERT (f);
     IDIO_C_ASSERT (nums);
 
 
-    char *buf = idio_bignum_C_without_inexact (f, nums);
+    char *buf = idio_bignum_C_without_inexact (nums);
     int is_exact = (NULL == strchr (nums, '#'));
 
     char *s = buf;
@@ -1838,7 +1788,7 @@ IDIO idio_bignum_integer_C (IDIO f, char *nums, int req_exact)
     }
 
     int nl = strlen (s);
-    IDIO ra = idio_array (f, 1);
+    IDIO ra = idio_array (1);
     
     int64_t ri = 0;
     
@@ -1856,7 +1806,7 @@ IDIO idio_bignum_integer_C (IDIO f, char *nums, int req_exact)
 	     i == 0)) {
 	    char em[BUFSIZ];
 	    sprintf (em, "strtoll (%s) = %ld: %s", nums, i, strerror (errno));
-	    idio_error_add_C (f, em);
+	    idio_error_add_C (em);
 	    free (buf);
 
 	    return idio_S_nil;
@@ -1865,7 +1815,7 @@ IDIO idio_bignum_integer_C (IDIO f, char *nums, int req_exact)
 	if (end == nums) {
 	    char em[BUFSIZ];
 	    sprintf (em, "strtoll (%s): No digits?", nums);
-	    idio_error_add_C (f, em);
+	    idio_error_add_C (em);
 	    free (buf);
 
 	    return idio_S_nil;
@@ -1874,7 +1824,7 @@ IDIO idio_bignum_integer_C (IDIO f, char *nums, int req_exact)
 	if ('\0' != *end) {
 	    char em[BUFSIZ];
 	    sprintf (em, "strtoll (%s) = %ld", nums, i);
-	    idio_error_add_C (f, em);
+	    idio_error_add_C (em);
 	    free (buf);
 
 	    return idio_S_nil;
@@ -1888,7 +1838,7 @@ IDIO idio_bignum_integer_C (IDIO f, char *nums, int req_exact)
 	    i *= sign;
 	}
 
-	idio_array_insert_index (f, ra, idio_C_int64 (f, i), ri);
+	idio_array_insert_index (ra, idio_C_int64 (i), ri);
 	ri++;
     }
 
@@ -1896,19 +1846,18 @@ IDIO idio_bignum_integer_C (IDIO f, char *nums, int req_exact)
     
     if (req_exact ||
 	is_exact) {
-	IDIO r = idio_bignum_integer (f, ra);
+	IDIO r = idio_bignum_integer (ra);
 
 
 	return r;
     } else {
-	IDIO r = idio_bignum_real (f,
-				   (IDIO_BIGNUM_FLAG_REAL |
+	IDIO r = idio_bignum_real ((IDIO_BIGNUM_FLAG_REAL |
 				    ((sign < 0) ? IDIO_BIGNUM_FLAG_REAL_NEGATIVE : 0) |
 				    IDIO_BIGNUM_FLAG_REAL_INEXACT),
 				   0,
 				   ra);
 
-	r = idio_bignum_normalize (f, r);
+	r = idio_bignum_normalize (r);
 	
 	return r;
     }
@@ -1916,12 +1865,11 @@ IDIO idio_bignum_integer_C (IDIO f, char *nums, int req_exact)
     IDIO_C_ASSERT (0);
 }
 
-IDIO idio_bignum_real_C (IDIO f, char *nums)
+IDIO idio_bignum_real_C (char *nums)
 {
-    IDIO_ASSERT (f);
     IDIO_C_ASSERT (nums);
 
-    IDIO sig_bn = idio_bignum_integer_int64 (f, 0);
+    IDIO sig_bn = idio_bignum_integer_int64 (0);
     
     int64_t exp = 0;
     char *s = nums;
@@ -1952,7 +1900,7 @@ IDIO idio_bignum_real_C (IDIO f, char *nums)
 	    exp--;
 	}
 
-	sig_bn = idio_bignum_shift_left (f, sig_bn, 0);
+	sig_bn = idio_bignum_shift_left (sig_bn, 0);
 	
 	if ('#' == *s) {
 	    exact = 0;
@@ -1961,9 +1909,9 @@ IDIO idio_bignum_real_C (IDIO f, char *nums)
 	    digit = *s - '0';
 	}
 
-	IDIO i = idio_bignum_integer_int64 (f, digit);
+	IDIO i = idio_bignum_integer_int64 (digit);
 	
-	sig_bn = idio_bignum_add (f, sig_bn, i);
+	sig_bn = idio_bignum_add (sig_bn, i);
 
 	s++;
     }
@@ -1971,93 +1919,89 @@ IDIO idio_bignum_real_C (IDIO f, char *nums)
     /*
      * also unused in S9fES string_to_real
       
-    int j = idio_array_size (f, IDIO_BIGNUM_SIG(sig_bn));
+    int j = idio_array_size (IDIO_BIGNUM_SIG(sig_bn));
     */
 
     if (IDIO_BIGNUM_EXP_CHAR (*s)) {
 	s++;
-	IDIO n = idio_bignum_integer_C (f, s, 1);
-	exp += idio_bignum_int64_value (f, n);
+	IDIO n = idio_bignum_integer_C (s, 1);
+	exp += idio_bignum_int64_value (n);
     }
 
-    IDIO r = idio_bignum_real (f,
-			       ((neg ? IDIO_BIGNUM_FLAG_REAL_NEGATIVE : 0) |
+    IDIO r = idio_bignum_real (((neg ? IDIO_BIGNUM_FLAG_REAL_NEGATIVE : 0) |
 				(exact ? 0 : IDIO_BIGNUM_FLAG_REAL_INEXACT)),
 			       exp,
 			       IDIO_BIGNUM_SIG(sig_bn));
     
-    r = idio_bignum_normalize (f, r);
+    r = idio_bignum_normalize (r);
     
     return r;
 }
 
-IDIO idio_bignum_C (IDIO f, char *nums)
+IDIO idio_bignum_C (char *nums)
 {
-    IDIO_ASSERT (f);
     IDIO_C_ASSERT (nums);
 
     char *s = nums;
     while (*s) {
 	if ('.' == *s ||
 	    IDIO_BIGNUM_EXP_CHAR (*s)) {
-	    return idio_bignum_real_C (f, nums);
+	    return idio_bignum_real_C (nums);
 	}
 	s++;
     }
 
-    return idio_bignum_integer_C (f, nums, 0);
+    return idio_bignum_integer_C (nums, 0);
 }
 
-IDIO idio_bignum_primitive_add (IDIO f, IDIO args)
+IDIO idio_bignum_primitive_add (IDIO args)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (args);
 
     IDIO_TYPE_ASSERT (array, args);
 
     IDIO eval_args;
-    idio_array_bind (f, args, 1, &eval_args);
+    idio_array_bind (args, 1, &eval_args);
     
-    IDIO r = idio_bignum_integer_int64 (f, 0);
+    IDIO r = idio_bignum_integer_int64 (0);
     
     while (idio_S_nil != eval_args) {
-	IDIO h = idio_pair_head (f, eval_args);
+	IDIO h = IDIO_PAIR_H (eval_args);
 
-        if (! idio_isa_bignum (f, h)) {
+        if (! idio_isa_bignum (h)) {
 	    char em[BUFSIZ];
 	    sprintf (em, "idio_bignum_primitive_add: expected a bignum, got a %s", idio_type2string (h));
-	    idio_error_add_C (f, em);
+	    idio_error_add_C (em);
 	    break;
 	}
 
-	r = idio_bignum_real_add (f, r, h);
+	r = idio_bignum_real_add (r, h);
 	
-        eval_args = idio_pair_tail (f, eval_args);
+        eval_args = IDIO_PAIR_T (eval_args);
     }
 
     return r;
 }
 
-IDIO idio_bignum_primitive_subtract (IDIO f, IDIO args)
+IDIO idio_bignum_primitive_subtract (IDIO args)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (args);
 
     IDIO_TYPE_ASSERT (array, args);
 
     IDIO eval_args;
-    idio_array_bind (f, args, 1, &eval_args);
+    idio_array_bind (args, 1, &eval_args);
     
     IDIO r;
 
     int first = 1;
     while (idio_S_nil != eval_args) {
-	IDIO h = idio_pair_head (f, eval_args);
+	IDIO h = IDIO_PAIR_H (eval_args);
 
-        if (! idio_isa_bignum (f, h)) {
+        if (! idio_isa_bignum (h)) {
 	    char em[BUFSIZ];
 	    sprintf (em, "idio_bignum_primitive_subtract: expected a bignum, got a %s", idio_type2string (h));
-	    idio_error_add_C (f, em);
+	    idio_error_add_C (em);
 	    break;
 	}
 
@@ -2071,81 +2015,79 @@ IDIO idio_bignum_primitive_subtract (IDIO f, IDIO args)
 	      (- 6 2) => 6-2 => 4
 	    */
 
-	    IDIO t = idio_pair_tail (f, eval_args);
+	    IDIO t = IDIO_PAIR_T (eval_args);
 	    if (idio_S_nil == t) {
 		if (IDIO_BIGNUM_INTEGER_P (h)) {
-		    r = idio_bignum_negate (f, h);
+		    r = idio_bignum_negate (h);
 		} else {
-		    r = idio_bignum_real_negate (f, h);
+		    r = idio_bignum_real_negate (h);
 		}
 		break;
 	    } else {
-		r = idio_bignum_copy (f, h);
+		r = idio_bignum_copy (h);
 
 		eval_args = t;
 		continue;
 	    }
 	}
 
-	r = idio_bignum_real_subtract (f, r, h);
+	r = idio_bignum_real_subtract (r, h);
 	
-        eval_args = idio_pair_tail (f, eval_args);
+        eval_args = IDIO_PAIR_T (eval_args);
     }
     
     return r;
 }
 
-IDIO idio_bignum_primitive_multiply (IDIO f, IDIO args)
+IDIO idio_bignum_primitive_multiply (IDIO args)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (args);
 
     IDIO_TYPE_ASSERT (array, args);
 
     IDIO eval_args;
-    idio_array_bind (f, args, 1, &eval_args);
+    idio_array_bind (args, 1, &eval_args);
     
-    IDIO r = idio_bignum_integer_int64 (f, 1);
+    IDIO r = idio_bignum_integer_int64 (1);
     
     while (idio_S_nil != eval_args) {
-	IDIO h = idio_pair_head (f, eval_args);
+	IDIO h = IDIO_PAIR_H (eval_args);
 
-        if (! idio_isa_bignum (f, h)) {
+        if (! idio_isa_bignum (h)) {
 	    char em[BUFSIZ];
 	    sprintf (em, "idio_bignum_primitive_multiply: expected a bignum, got a %s", idio_type2string (h));
-	    idio_error_add_C (f, em);
+	    idio_error_add_C (em);
 	    break;
 	}
 
-	r = idio_bignum_real_multiply (f, r, h);
+	r = idio_bignum_real_multiply (r, h);
 	
-        eval_args = idio_pair_tail (f, eval_args);
+        eval_args = IDIO_PAIR_T (eval_args);
     }
 
     return r;
 }
 
-IDIO idio_bignum_primitive_divide (IDIO f, IDIO args)
+IDIO idio_bignum_primitive_divide (IDIO args)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (args);
 
     IDIO_TYPE_ASSERT (array, args);
 
     IDIO eval_args;
-    idio_array_bind (f, args, 1, &eval_args);
+    idio_array_bind (args, 1, &eval_args);
 
-    IDIO r = idio_bignum_integer_int64 (f, 1);
+    IDIO r = idio_bignum_integer_int64 (1);
 
     int first = 1;
     
     while (idio_S_nil != eval_args) {
-	IDIO h = idio_pair_head (f, eval_args);
+	IDIO h = IDIO_PAIR_H (eval_args);
 
-        if (! idio_isa_bignum (f, h)) {
+        if (! idio_isa_bignum (h)) {
 	    char em[BUFSIZ];
 	    sprintf (em, "idio_bignum_primitive_divide: expected a bignum, got a %s", idio_type2string (h));
-	    idio_error_add_C (f, em);
+	    idio_error_add_C (em);
 	    break;
 	}
 
@@ -2159,197 +2101,192 @@ IDIO idio_bignum_primitive_divide (IDIO f, IDIO args)
 	      (/ 6 2) => 6/2 => 3
 	    */
 
-	    IDIO t = idio_pair_tail (f, eval_args);
+	    IDIO t = IDIO_PAIR_T (eval_args);
 	    if (idio_S_nil != t) {
-		r = idio_bignum_copy (f, h);
+		r = idio_bignum_copy (h);
 
 		eval_args = t;
 		continue;
 	    }
 	}
 
-	if (idio_bignum_zero_p (f, h)) {
-	    idio_error_add_C (f, "divide by zero");
+	if (idio_bignum_zero_p (h)) {
+	    idio_error_add_C ("divide by zero");
 	    break;
 	}
 
-	r = idio_bignum_real_divide (f, r, h);
+	r = idio_bignum_real_divide (r, h);
 
-        eval_args = idio_pair_tail (f, eval_args);
+        eval_args = IDIO_PAIR_T (eval_args);
     }
     
     return r;
 }
 
-IDIO idio_bignum_primitive_lt (IDIO f, IDIO args)
+IDIO idio_bignum_primitive_lt (IDIO args)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (args);
 
     IDIO_TYPE_ASSERT (array, args);
 
     IDIO eval_args;
-    idio_array_bind (f, args, 1, &eval_args);
+    idio_array_bind (args, 1, &eval_args);
     
-    IDIO r = idio_pair_head (f, eval_args);
-    eval_args = idio_pair_tail (f, eval_args);
+    IDIO r = idio_pair_head (eval_args);
+    eval_args = idio_pair_tail (eval_args);
 
     while (idio_S_nil != eval_args) {
-	IDIO h = idio_pair_head (f, eval_args);
+	IDIO h = idio_pair_head (eval_args);
 	
-        if (! idio_isa_bignum (f, h)) {
+        if (! idio_isa_bignum (h)) {
 	    char em[BUFSIZ];
 	    sprintf (em, "idio_bignum_primitive_lt: expected a bignum, got a %s", idio_type2string (h));
-	    idio_error_add_C (f, em);
+	    idio_error_add_C (em);
 	    break;
 	}
 
 	/* r < h */
-	if (! idio_bignum_real_lt_p (f, r, h)) {
+	if (! idio_bignum_real_lt_p (r, h)) {
 	    return idio_S_false;
 	}
 
 	r = h;
-        eval_args = idio_pair_tail (f, eval_args);
+        eval_args = idio_pair_tail (eval_args);
     }
     
     return idio_S_true;
 }
 
-IDIO idio_bignum_primitive_le (IDIO f, IDIO args)
+IDIO idio_bignum_primitive_le (IDIO args)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (args);
 
     IDIO_TYPE_ASSERT (array, args);
 
     IDIO eval_args;
-    idio_array_bind (f, args, 1, &eval_args);
+    idio_array_bind (args, 1, &eval_args);
     
-    IDIO r = idio_pair_head (f, eval_args);
-    eval_args = idio_pair_tail (f, eval_args);
+    IDIO r = idio_pair_head (eval_args);
+    eval_args = idio_pair_tail (eval_args);
 
     while (idio_S_nil != eval_args) {
-	IDIO h = idio_pair_head (f, eval_args);
+	IDIO h = idio_pair_head (eval_args);
 	
-        if (! idio_isa_bignum (f, h)) {
+        if (! idio_isa_bignum (h)) {
 	    char em[BUFSIZ];
 	    sprintf (em, "idio_bignum_primitive_le: expected a bignum, got a %s", idio_type2string (h));
-	    idio_error_add_C (f, em);
+	    idio_error_add_C (em);
 	    break;
 	}
 
 	/* r <= h => ! h < r */
-	if (idio_bignum_real_lt_p (f, h, r)) {
+	if (idio_bignum_real_lt_p (h, r)) {
 	    return idio_S_false;
 	}
 	
 	r = h;
-        eval_args = idio_pair_tail (f, eval_args);
+        eval_args = idio_pair_tail (eval_args);
     }
     
     return idio_S_true;
 }
 
-IDIO idio_bignum_primitive_gt (IDIO f, IDIO args)
+IDIO idio_bignum_primitive_gt (IDIO args)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (args);
 
     IDIO_TYPE_ASSERT (array, args);
 
     IDIO eval_args;
-    idio_array_bind (f, args, 1, &eval_args);
+    idio_array_bind (args, 1, &eval_args);
     
-    IDIO r = idio_pair_head (f, eval_args);
-    eval_args = idio_pair_tail (f, eval_args);
+    IDIO r = idio_pair_head (eval_args);
+    eval_args = idio_pair_tail (eval_args);
 
     while (idio_S_nil != eval_args) {
-	IDIO h = idio_pair_head (f, eval_args);
+	IDIO h = idio_pair_head (eval_args);
 	
-        if (! idio_isa_bignum (f, h)) {
+        if (! idio_isa_bignum (h)) {
 	    char em[BUFSIZ];
 	    sprintf (em, "idio_bignum_primitive_gt: expected a bignum, got a %s", idio_type2string (h));
-	    idio_error_add_C (f, em);
+	    idio_error_add_C (em);
 	    break;
 	}
 
 	/* r > h => h < r */
-	if (! idio_bignum_real_lt_p (f, h, r)) {
+	if (! idio_bignum_real_lt_p (h, r)) {
 	    return idio_S_false;
 	}
 	
 	r = h;
-        eval_args = idio_pair_tail (f, eval_args);
+        eval_args = idio_pair_tail (eval_args);
     }
     
     return idio_S_true;
 }
 
-IDIO idio_bignum_primitive_ge (IDIO f, IDIO args)
+IDIO idio_bignum_primitive_ge (IDIO args)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (args);
 
     IDIO_TYPE_ASSERT (array, args);
 
     IDIO eval_args;
-    idio_array_bind (f, args, 1, &eval_args);
+    idio_array_bind (args, 1, &eval_args);
     
-    IDIO r = idio_pair_head (f, eval_args);
-    eval_args = idio_pair_tail (f, eval_args);
+    IDIO r = idio_pair_head (eval_args);
+    eval_args = idio_pair_tail (eval_args);
 
     while (idio_S_nil != eval_args) {
-	IDIO h = idio_pair_head (f, eval_args);
+	IDIO h = idio_pair_head (eval_args);
 	
-        if (! idio_isa_bignum (f, h)) {
+        if (! idio_isa_bignum (h)) {
 	    char em[BUFSIZ];
 	    sprintf (em, "idio_bignum_primitive_ge: expected a bignum, got a %s", idio_type2string (h));
-	    idio_error_add_C (f, em);
+	    idio_error_add_C (em);
 	    break;
 	}
 
 	/* r >= h => ! r < h */
-	if (idio_bignum_real_lt_p (f, r, h)) {
+	if (idio_bignum_real_lt_p (r, h)) {
 	    return idio_S_false;
 	}
 	
 	r = h;
-        eval_args = idio_pair_tail (f, eval_args);
+        eval_args = idio_pair_tail (eval_args);
     }
     
     return idio_S_true;
 }
 
-IDIO idio_bignum_primitive_eq (IDIO f, IDIO args)
+IDIO idio_bignum_primitive_eq (IDIO args)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (args);
 
     IDIO_TYPE_ASSERT (array, args);
 
     IDIO eval_args;
-    idio_array_bind (f, args, 1, &eval_args);
+    idio_array_bind (args, 1, &eval_args);
     
-    IDIO r = idio_pair_head (f, eval_args);
-    eval_args = idio_pair_tail (f, eval_args);
+    IDIO r = idio_pair_head (eval_args);
+    eval_args = idio_pair_tail (eval_args);
 
     while (idio_S_nil != eval_args) {
-	IDIO h = idio_pair_head (f, eval_args);
+	IDIO h = idio_pair_head (eval_args);
 	
-        if (! idio_isa_bignum (f, h)) {
+        if (! idio_isa_bignum (h)) {
 	    char em[BUFSIZ];
 	    sprintf (em, "idio_bignum_primitive_ge: expected a bignum, got a %s", idio_type2string (h));
-	    idio_error_add_C (f, em);
+	    idio_error_add_C (em);
 	    break;
 	}
 
-	if (! idio_bignum_real_equal_p (f, r, h)) {
+	if (! idio_bignum_real_equal_p (r, h)) {
 	    return idio_S_false;
 	}
 	
 	r = h;
-        eval_args = idio_pair_tail (f, eval_args);
+        eval_args = idio_pair_tail (eval_args);
     }
     
     return idio_S_true;

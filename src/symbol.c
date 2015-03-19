@@ -24,7 +24,7 @@
 
 static IDIO idio_symbols_hash = idio_S_nil;
 
-int idio_symbol_C_eqp (IDIO f, void *s1, void *s2)
+int idio_symbol_C_eqp (void *s1, void *s2)
 {
     /*
      * We should only be here for idio_symbols_hash key comparisons
@@ -47,76 +47,71 @@ size_t idio_symbol_C_hash (IDIO h, void *s)
 
 void idio_init_symbol ()
 {
-    idio_symbols_hash = idio_hash (idio_G_frame, 1<<7, idio_symbol_C_eqp, idio_symbol_C_hash);
-    idio_gc_protect (idio_G_frame, idio_symbols_hash);
+    idio_symbols_hash = idio_hash (1<<7, idio_symbol_C_eqp, idio_symbol_C_hash);
+    idio_gc_protect (idio_symbols_hash);
 
     IDIO_HASH_FLAGS (idio_symbols_hash) |= IDIO_HASH_FLAG_STRING_KEYS;
 }
 
 void idio_final_symbol ()
 {
-    idio_symbols_hash = idio_S_nil;
+    idio_gc_expose (idio_symbols_hash);
 }
 
-IDIO idio_symbol_C (IDIO f, const char *s_C)
+IDIO idio_symbol_C (const char *s_C)
 {
-    IDIO_ASSERT (f);
     IDIO_C_ASSERT (s_C);
 
-    IDIO_FRAME_FPRINTF (f, stderr, "idio_symbol: '%s'\n", s_C);
+    IDIO_FPRINTF (stderr, "idio_symbol: '%s'\n", s_C);
 
-    IDIO o = idio_get (f, IDIO_TYPE_SYMBOL);
+    IDIO o = idio_gc_get (IDIO_TYPE_SYMBOL);
 
-    IDIO_ALLOC (f, o->u.symbol, sizeof (idio_symbol_t));
-    IDIO_SYMBOL_STRING (o) = idio_string_C (f, s_C);
+    IDIO_GC_ALLOC (o->u.symbol, sizeof (idio_symbol_t));
+    IDIO_SYMBOL_STRING (o) = idio_string_C (s_C);
     
     return o;
 }
 
-int idio_isa_symbol (IDIO f, IDIO s)
+int idio_isa_symbol (IDIO s)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (s);
 
-    return idio_isa (f, s, IDIO_TYPE_SYMBOL);
+    return idio_isa (s, IDIO_TYPE_SYMBOL);
 }
 
-void idio_free_symbol (IDIO f, IDIO s)
+void idio_free_symbol (IDIO s)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (s);
     IDIO_TYPE_ASSERT (symbol, s);
 
     free (s->u.symbol);
 }
 
-IDIO idio_symbols_C_intern (IDIO f, char *s)
+IDIO idio_symbols_C_intern (char *s)
 {
-    IDIO_ASSERT (f);
     IDIO_C_ASSERT (s);
 
-    IDIO r = idio_hash_get (f, idio_symbols_hash, s);
+    IDIO r = idio_hash_get (idio_symbols_hash, s);
 
     if (idio_S_nil == r) {
-	r = idio_symbol_C (f, s);
-	idio_hash_put (f, idio_symbols_hash, s, r);
+	r = idio_symbol_C (s);
+	idio_hash_put (idio_symbols_hash, s, r);
     }
 
-    idio_dump (f, idio_symbols_hash, 4);
+    idio_dump (idio_symbols_hash, 4);
 
     return r;
 }
 
-IDIO idio_symbols_string_intern (IDIO f, IDIO str)
+IDIO idio_symbols_string_intern (IDIO str)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (str);
 
     IDIO_TYPE_ASSERT (string, str);
     
-    char *s_C = idio_string_as_C (f, str);
+    char *s_C = idio_string_as_C (str);
     
-    IDIO r = idio_symbols_C_intern (f, s_C);
+    IDIO r = idio_symbols_C_intern (s_C);
 
     free (s_C);
 	

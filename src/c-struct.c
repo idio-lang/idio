@@ -48,82 +48,81 @@ static IDIO idio_C_typedefs_hash = idio_S_nil;
 
 void idio_init_C_struct ()
 {
-    idio_C_typedefs_hash = IDIO_HASH_EQP (idio_G_frame, 1<<6);
-    idio_gc_protect (idio_G_frame, idio_C_typedefs_hash);
+    idio_C_typedefs_hash = IDIO_HASH_EQP (1<<6);
+    idio_gc_protect (idio_C_typedefs_hash);
 
-    IDIO_C_TYPEDEF_ADD (idio_G_frame, int8);
-    IDIO_C_TYPEDEF_ADD (idio_G_frame, uint8);
-    IDIO_C_TYPEDEF_ADD (idio_G_frame, int16);
-    IDIO_C_TYPEDEF_ADD (idio_G_frame, uint16);
-    IDIO_C_TYPEDEF_ADD (idio_G_frame, int32);
-    IDIO_C_TYPEDEF_ADD (idio_G_frame, uint32);
-    IDIO_C_TYPEDEF_ADD (idio_G_frame, int64);
-    IDIO_C_TYPEDEF_ADD (idio_G_frame, uint64);
-    IDIO_C_TYPEDEF_ADD (idio_G_frame, float);
-    IDIO_C_TYPEDEF_ADD (idio_G_frame, double);
+    IDIO_C_TYPEDEF_ADD (int8);
+    IDIO_C_TYPEDEF_ADD (uint8);
+    IDIO_C_TYPEDEF_ADD (int16);
+    IDIO_C_TYPEDEF_ADD (uint16);
+    IDIO_C_TYPEDEF_ADD (int32);
+    IDIO_C_TYPEDEF_ADD (uint32);
+    IDIO_C_TYPEDEF_ADD (int64);
+    IDIO_C_TYPEDEF_ADD (uint64);
+    IDIO_C_TYPEDEF_ADD (float);
+    IDIO_C_TYPEDEF_ADD (double);
     {
-	IDIO sym = idio_symbols_C_intern (idio_G_frame, "*");
-	idio_CTD_asterisk = idio_C_typedefs_add (idio_G_frame, sym);
+	IDIO sym = idio_symbols_C_intern ("*");
+	idio_CTD_asterisk = idio_C_typedefs_add (sym);
     }
-    IDIO_C_TYPEDEF_ADD (idio_G_frame, string);
+    IDIO_C_TYPEDEF_ADD (string);
 
-    IDIO_C_TYPEDEF_ADD_VALUE (idio_G_frame, char, int8);
-    IDIO_C_TYPEDEF_ADD_VALUE (idio_G_frame, uchar, uint8);
-    IDIO_C_TYPEDEF_ADD_VALUE (idio_G_frame, short, int16);
-    IDIO_C_TYPEDEF_ADD_VALUE (idio_G_frame, ushort, uint16);
-    IDIO_C_TYPEDEF_ADD_VALUE (idio_G_frame, int, int32);
-    IDIO_C_TYPEDEF_ADD_VALUE (idio_G_frame, uint, uint32);
+    IDIO_C_TYPEDEF_ADD_VALUE (char, int8);
+    IDIO_C_TYPEDEF_ADD_VALUE (uchar, uint8);
+    IDIO_C_TYPEDEF_ADD_VALUE (short, int16);
+    IDIO_C_TYPEDEF_ADD_VALUE (ushort, uint16);
+    IDIO_C_TYPEDEF_ADD_VALUE (int, int32);
+    IDIO_C_TYPEDEF_ADD_VALUE (uint, uint32);
 #ifdef __LP64__
-    IDIO_C_TYPEDEF_ADD_VALUE (idio_G_frame, long, int64);
-    IDIO_C_TYPEDEF_ADD_VALUE (idio_G_frame, ulong, uint64);
+    IDIO_C_TYPEDEF_ADD_VALUE (long, int64);
+    IDIO_C_TYPEDEF_ADD_VALUE (ulong, uint64);
 #else
-    IDIO_C_TYPEDEF_ADD_VALUE (idio_G_frame, long, int32);
-    IDIO_C_TYPEDEF_ADD_VALUE (idio_G_frame, ulong, uint32);
+    IDIO_C_TYPEDEF_ADD_VALUE (long, int32);
+    IDIO_C_TYPEDEF_ADD_VALUE (ulong, uint32);
 #endif
     
 }
 
-IDIO idio_C_typedef (IDIO f, IDIO sym)
+void idio_final_C_struct ()
 {
-    IDIO_ASSERT (f);
+    idio_gc_expose (idio_C_typedefs_hash);
+}
+
+IDIO idio_C_typedef (IDIO sym)
+{
     IDIO_ASSERT (sym);
 
     IDIO_TYPE_ASSERT (symbol, sym);
     
-    IDIO o = idio_get (f, IDIO_TYPE_C_TYPEDEF);
+    IDIO o = idio_gc_get (IDIO_TYPE_C_TYPEDEF);
 
-    IDIO_ALLOC (f, o->u.C_typedef, sizeof (idio_C_typedef_t));
+    IDIO_GC_ALLOC (o->u.C_typedef, sizeof (idio_C_typedef_t));
 
     IDIO_C_TYPEDEF_SYM (o) = sym;
 
     return o;
 }
 
-int idio_isa_C_typedef (IDIO f, IDIO o)
+int idio_isa_C_typedef (IDIO o)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (o);
 
-    return idio_isa (f, o, IDIO_TYPE_C_TYPEDEF);
+    return idio_isa (o, IDIO_TYPE_C_TYPEDEF);
 }
 
-void idio_free_C_typedef (IDIO f, IDIO o)
+void idio_free_C_typedef (IDIO o)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (o);
 
     IDIO_TYPE_ASSERT (C_typedef, o);
 
-    idio_gc_t *gc = IDIO_GC (f);
-
-    gc->stats.nbytes -= sizeof (idio_C_typedef_t);
+    idio_gc_stats_free (sizeof (idio_C_typedef_t));
 
     free (o->u.C_typedef);
 }
 
-int idio_C_typedef_type_cmp (IDIO f, IDIO C_typedef, IDIO val)
+int idio_C_typedef_type_cmp (IDIO C_typedef, IDIO val)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (C_typedef);
     
     switch (val->type) {
@@ -144,79 +143,73 @@ int idio_C_typedef_type_cmp (IDIO f, IDIO C_typedef, IDIO val)
     return 0;
 }
 
-IDIO idio_C_typedefs_get (IDIO f, IDIO s)
+IDIO idio_C_typedefs_get (IDIO s)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (s);
     IDIO_TYPE_ASSERT (symbol, s);
 
-    return idio_hash_get (f, idio_C_typedefs_hash, s);
+    return idio_hash_get (idio_C_typedefs_hash, s);
 }
 
-IDIO idio_C_typedefs_exists (IDIO f, IDIO s)
+IDIO idio_C_typedefs_exists (IDIO s)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (s);
     IDIO_TYPE_ASSERT (symbol, s);
 
-    return idio_hash_exists (f, idio_C_typedefs_hash, s);
+    return idio_hash_exists (idio_C_typedefs_hash, s);
 }
 
-IDIO idio_C_typedefs_add_value (IDIO f, IDIO s, IDIO v)
+IDIO idio_C_typedefs_add_value (IDIO s, IDIO v)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (s);
     IDIO_ASSERT (v);
     IDIO_TYPE_ASSERT (symbol, s);
 
-    IDIO r = idio_C_typedefs_get (f, s);
+    IDIO r = idio_C_typedefs_get (s);
 
     if (idio_S_nil == r) {
 	if (idio_S_nil != v) {
-	    r = idio_C_typedefs_get (f, v);
+	    r = idio_C_typedefs_get (v);
 	    if (idio_S_nil == r) {
-		char *vs = idio_display_string (f, v);
+		char *vs = idio_display_string (v);
 		char em[BUFSIZ];
 		sprintf (em, "target C_typedef '%s' does not exist", vs);
 		free (vs);
-		idio_error_add_C (f, em);
+		idio_error_add_C (em);
 	    }
 	}
-	r = idio_hash_put (f, idio_C_typedefs_hash, s, v);
+	r = idio_hash_put (idio_C_typedefs_hash, s, v);
     }
 
     return r;
 }
 
-IDIO idio_C_typedefs_add (IDIO f, IDIO s)
+IDIO idio_C_typedefs_add (IDIO s)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (s);
     IDIO_TYPE_ASSERT (symbol, s);
 
-    return idio_C_typedefs_add_value (f, s, idio_S_nil);
+    return idio_C_typedefs_add_value (s, idio_S_nil);
 }
 
-IDIO idio_resolve_C_typedef (IDIO f, IDIO ctd)
+IDIO idio_resolve_C_typedef (IDIO ctd)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (ctd);
 
     /*
       time_t -> slong -> int32/int64
      */
 
-    IDIO ctdv = idio_C_typedefs_get (f, ctd);
+    IDIO ctdv = idio_C_typedefs_get (ctd);
     if (idio_S_nil == ctdv) {
 	return ctd;
     } else {
-	return idio_resolve_C_typedef (f, ctdv);
+	return idio_resolve_C_typedef (ctdv);
     }
 }
 
-IDIO idio_C_slots_array (IDIO f, IDIO C_typedefs)
+IDIO idio_C_slots_array (IDIO C_typedefs)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (C_typedefs);
     
     IDIO_TYPE_ASSERT (pair, C_typedefs);
@@ -225,32 +218,32 @@ IDIO idio_C_slots_array (IDIO f, IDIO C_typedefs)
     IDIO sp = C_typedefs;
     while (idio_S_nil != sp) {
 	sc++;
-	sp = idio_pair_tail (f, sp);
+	sp = idio_pair_tail (sp);
     }
 
-    IDIO slots_array = idio_array (f, sc);
+    IDIO slots_array = idio_array (sc);
 
     size_t offset = 0;
     while (idio_S_nil != C_typedefs) {
-	IDIO C_typedef = idio_pair_head (f, C_typedefs);
+	IDIO C_typedef = idio_pair_head (C_typedefs);
 
-	IDIO slot_data = idio_array (f, IDIO_C_SLOT_DATA_MAX);
-	idio_array_push (f, slot_data, C_typedef);
+	IDIO slot_data = idio_array (IDIO_C_SLOT_DATA_MAX);
+	idio_array_push (slot_data, C_typedef);
 
 	size_t alignment;
 	size_t size;
 	size_t type;
 
 	int nelem = 1;
-	if (idio_isa_pair (f, C_typedef)) {
-	    IDIO v1 = idio_pair_head (f, idio_pair_tail (f, C_typedef));
-	    IDIO v2 = idio_C_number_cast (f, v1, IDIO_TYPE_C_UINT64);
+	if (idio_isa_pair (C_typedef)) {
+	    IDIO v1 = idio_pair_head (idio_pair_tail (C_typedef));
+	    IDIO v2 = idio_C_number_cast (v1, IDIO_TYPE_C_UINT64);
 	    nelem = IDIO_C_TYPE_UINT64 (v2);
 
-	    C_typedef = idio_pair_head (f, C_typedef);
+	    C_typedef = idio_pair_head (C_typedef);
 	}
 
-	IDIO base_C_typedef = idio_resolve_C_typedef (f, C_typedef);
+	IDIO base_C_typedef = idio_resolve_C_typedef (C_typedef);
 	
 	if (base_C_typedef == idio_CTD_int8) {
 	    alignment = IDIO_C_STRUCT_ALIGNMENT (int8_t);
@@ -305,103 +298,96 @@ IDIO idio_C_slots_array (IDIO f, IDIO C_typedefs)
 	    size = nelem * sizeof (char*);
 	    type = IDIO_TYPE_STRING;
 	} else {
-	    idio_error_add_C (f, "unexpected type\n");
+	    idio_error_add_C ("unexpected type\n");
 	    return slots_array;
 	}
 
 	/* add any alignment required */
 	offset += offset % alignment;
 
-	idio_array_push (f, slot_data, idio_C_uint64 (f, alignment));
-	idio_array_push (f, slot_data, idio_C_uint64 (f, type));
-	idio_array_push (f, slot_data, idio_C_uint64 (f, offset));
-	idio_array_push (f, slot_data, idio_C_uint64 (f, size));
-	idio_array_push (f, slot_data, idio_C_uint64 (f, nelem));
+	idio_array_push (slot_data, idio_C_uint64 (alignment));
+	idio_array_push (slot_data, idio_C_uint64 (type));
+	idio_array_push (slot_data, idio_C_uint64 (offset));
+	idio_array_push (slot_data, idio_C_uint64 (size));
+	idio_array_push (slot_data, idio_C_uint64 (nelem));
 
-	idio_array_push (f, slots_array, slot_data);
+	idio_array_push (slots_array, slot_data);
 
 	offset += size;
 	
-	C_typedefs = idio_pair_tail (f, C_typedefs);
+	C_typedefs = idio_pair_tail (C_typedefs);
     }
 
     return slots_array;
 }
 
-size_t idio_sizeof_C_struct (IDIO f, IDIO slots_array)
+size_t idio_sizeof_C_struct (IDIO slots_array)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (slots_array);
 
     size_t r = 0;
 
-    size_t sas = idio_array_size (f, slots_array);
+    size_t sas = idio_array_size (slots_array);
 
-    IDIO slot_data = idio_array_get_index (f, slots_array, sas - 1);
-    IDIO offset = idio_array_get_index (f, slot_data, IDIO_C_SLOT_DATA_OFFSET);
-    IDIO size = idio_array_get_index (f, slot_data, IDIO_C_SLOT_DATA_SIZE);
+    IDIO slot_data = idio_array_get_index (slots_array, sas - 1);
+    IDIO offset = idio_array_get_index (slot_data, IDIO_C_SLOT_DATA_OFFSET);
+    IDIO size = idio_array_get_index (slot_data, IDIO_C_SLOT_DATA_SIZE);
 
     r = IDIO_C_TYPE_INT64 (offset) + IDIO_C_TYPE_UINT64 (size);
 
     return r;
 }
 
-IDIO idio_C_struct (IDIO f, IDIO slots_array, IDIO methods, IDIO frame)
+IDIO idio_C_struct (IDIO slots_array, IDIO methods, IDIO frame)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (slots_array);
     IDIO_ASSERT (methods);
     IDIO_ASSERT (frame);
 
-    IDIO cs = idio_get (f, IDIO_TYPE_C_STRUCT);
+    IDIO cs = idio_gc_get (IDIO_TYPE_C_STRUCT);
 
-    IDIO_FRAME_FPRINTF (f, stderr, "idio_C_struct: %10p = (%10p %10p)\n", cs, slots_array, methods);
+    IDIO_FPRINTF (stderr, "idio_C_struct: %10p = (%10p %10p)\n", cs, slots_array, methods);
 
-    IDIO_ALLOC (f, cs->u.C_struct, sizeof (idio_C_struct_t));
+    IDIO_GC_ALLOC (cs->u.C_struct, sizeof (idio_C_struct_t));
 
     IDIO_C_STRUCT_GREY (cs) = NULL;
     IDIO_C_STRUCT_SLOTS (cs) = slots_array;
     IDIO_C_STRUCT_METHODS (cs) = methods;
     IDIO_C_STRUCT_FRAME (cs) = frame;
-    IDIO_C_STRUCT_SIZE (cs) = idio_sizeof_C_struct (f, slots_array);
+    IDIO_C_STRUCT_SIZE (cs) = idio_sizeof_C_struct (slots_array);
 
     return cs;
 }
 
-int idio_isa_C_struct (IDIO f, IDIO o)
+int idio_isa_C_struct (IDIO o)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (o);
 
-    return idio_isa (f, o, IDIO_TYPE_C_STRUCT);
+    return idio_isa (o, IDIO_TYPE_C_STRUCT);
 }
 
-void idio_free_C_struct (IDIO f, IDIO cs)
+void idio_free_C_struct (IDIO cs)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (C_struct, cs);
 
-    idio_gc_t *gc = IDIO_GC (f);
-
-    gc->stats.nbytes -= sizeof (idio_C_struct_t);
+    idio_gc_stats_free (sizeof (idio_C_struct_t));
 
     free (cs->u.C_struct);
 }
 
-IDIO idio_C_instance (IDIO f, IDIO cs, IDIO frame)
+IDIO idio_C_instance (IDIO cs, IDIO frame)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (C_struct, cs);
     IDIO_ASSERT (frame);
 
-    IDIO ci = idio_get (f, IDIO_TYPE_C_INSTANCE);
+    IDIO ci = idio_gc_get (IDIO_TYPE_C_INSTANCE);
 
-    IDIO_FRAME_FPRINTF (f, stderr, "idio_C_instance: %10p = (%10p)\n", ci, cs);
+    IDIO_FPRINTF (stderr, "idio_C_instance: %10p = (%10p)\n", ci, cs);
 
-    IDIO_ALLOC (f, ci->u.C_instance, sizeof (idio_C_instance_t));
-    IDIO_ALLOC (f, IDIO_C_INSTANCE_P (ci), IDIO_C_STRUCT_SIZE (cs));
+    IDIO_GC_ALLOC (ci->u.C_instance, sizeof (idio_C_instance_t));
+    IDIO_GC_ALLOC (IDIO_C_INSTANCE_P (ci), IDIO_C_STRUCT_SIZE (cs));
 
     IDIO_C_INSTANCE_GREY (ci) = NULL;
     IDIO_C_INSTANCE_C_STRUCT (ci) = cs;
@@ -410,80 +396,69 @@ IDIO idio_C_instance (IDIO f, IDIO cs, IDIO frame)
     return ci;
 }
 
-int idio_isa_C_instance (IDIO f, IDIO o)
+int idio_isa_C_instance (IDIO o)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (o);
 
-    return idio_isa (f, o, IDIO_TYPE_C_INSTANCE);
+    return idio_isa (o, IDIO_TYPE_C_INSTANCE);
 }
 
-void idio_free_C_instance (IDIO f, IDIO ci)
+void idio_free_C_instance (IDIO ci)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (ci);
     IDIO_TYPE_ASSERT (C_instance, ci);
 
-    idio_gc_t *gc = IDIO_GC (f);
-
-    gc->stats.nbytes -= sizeof (idio_C_instance_t);
+    idio_gc_stats_free (sizeof (idio_C_instance_t));
 
     free (ci->u.C_instance->p);
     free (ci->u.C_instance);
 }
 
-IDIO idio_opaque (IDIO f, void *p)
+IDIO idio_opaque (void *p)
 {
-    IDIO_ASSERT (f);
     IDIO_C_ASSERT (p);
     
-    return idio_opaque_final (f, p, NULL, idio_S_nil);
+    return idio_opaque_final (p, NULL, idio_S_nil);
 }
 
-IDIO idio_opaque_args (IDIO f, void *p, IDIO args)
+IDIO idio_opaque_args (void *p, IDIO args)
 {
-    IDIO_ASSERT (f);
     IDIO_C_ASSERT (p);
     IDIO_ASSERT (args);
     
-    return idio_opaque_final (f, p, NULL, args);
+    return idio_opaque_final (p, NULL, args);
 }
 
-IDIO idio_opaque_final (IDIO f, void *p, void (*func) (IDIO o), IDIO args)
+IDIO idio_opaque_final (void *p, void (*func) (IDIO o), IDIO args)
 {
-    IDIO_ASSERT (f);
     IDIO_C_ASSERT (p);
 
-    IDIO o = idio_get (f, IDIO_TYPE_OPAQUE);
+    IDIO o = idio_gc_get (IDIO_TYPE_OPAQUE);
 
-    IDIO_ALLOC (f, o->u.opaque, sizeof (idio_opaque_t));
+    IDIO_GC_ALLOC (o->u.opaque, sizeof (idio_opaque_t));
 
     IDIO_OPAQUE_P (o) = p;
     IDIO_OPAQUE_ARGS (o) = args;
 
-    idio_register_finalizer (f, o, func);
+    idio_register_finalizer (o, func);
 
     return o;
 }
 
-int idio_isa_opaque (IDIO f, IDIO o)
+int idio_isa_opaque (IDIO o)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (o);
 
-    return idio_isa (f, o, IDIO_TYPE_OPAQUE);
+    return idio_isa (o, IDIO_TYPE_OPAQUE);
 }
 
-void idio_free_opaque (IDIO f, IDIO o)
+void idio_free_opaque (IDIO o)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (o);
 
     IDIO_TYPE_ASSERT (opaque, o);
 
-    idio_gc_t *gc = IDIO_GC (f);
-
-    gc->stats.nbytes -= sizeof (idio_opaque_t);
+    idio_gc_stats_free (sizeof (idio_opaque_t));
 
     free (o->u.opaque);
 }

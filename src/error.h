@@ -25,13 +25,14 @@
 
 extern IDIO idio_io_read_exception;
 
-void idio_raise_exception (IDIO f, IDIO e);
-IDIO idio_make_exception (IDIO f, IDIO e);
+void idio_raise_exception (IDIO e);
+IDIO idio_make_exception (IDIO e);
 
-void idio_error_message (IDIO f, char *format, ...);
-void idio_error_alloc (IDIO f);
-void idio_error_type (IDIO f, char *what, IDIO who);
-void idio_error_add_C (IDIO f, const char *s);
+void idio_error_message (char *format, ...);
+void idio_error_alloc ();
+void idio_error_param_nil (char *name);
+void idio_error_param_type (char *etype, IDIO who);
+void idio_error_add_C (const char *s);
 
 #endif
 

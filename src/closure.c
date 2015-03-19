@@ -22,18 +22,17 @@
 
 #include "idio.h"
 
-IDIO idio_closure (IDIO f, IDIO args, IDIO body, IDIO frame)
+IDIO idio_closure (IDIO args, IDIO body, IDIO frame)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (args);
     IDIO_ASSERT (body);
     IDIO_ASSERT (frame);
 
-    IDIO c = idio_get (f, IDIO_TYPE_CLOSURE);
+    IDIO c = idio_gc_get (IDIO_TYPE_CLOSURE);
 
-    IDIO_FRAME_FPRINTF (f, stderr, "idio_closure: %10p = (%10p %10p %10p)\n", c, args, body, frame);
+    IDIO_FPRINTF (stderr, "idio_closure: %10p = (%10p %10p %10p)\n", c, args, body, frame);
 
-    IDIO_ALLOC (f, c->u.closure, sizeof (idio_closure_t));
+    IDIO_GC_ALLOC (c->u.closure, sizeof (idio_closure_t));
 
     IDIO_CLOSURE_GREY (c) = NULL;
     IDIO_CLOSURE_ARGS (c) = args;
@@ -43,24 +42,20 @@ IDIO idio_closure (IDIO f, IDIO args, IDIO body, IDIO frame)
     return c;
 }
 
-int idio_isa_closure (IDIO f, IDIO o)
+int idio_isa_closure (IDIO o)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (o);
 
-    return idio_isa (f, o, IDIO_TYPE_CLOSURE);
+    return idio_isa (o, IDIO_TYPE_CLOSURE);
 }
 
-void idio_free_closure (IDIO f, IDIO c)
+void idio_free_closure (IDIO c)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (c);
 
     IDIO_TYPE_ASSERT (closure, c);
 
-    idio_gc_t *gc = IDIO_GC (f);
-
-    gc->stats.nbytes -= sizeof (idio_closure_t);
+    idio_gc_stats_free (sizeof (idio_closure_t));
 
     free (c->u.closure);
 }

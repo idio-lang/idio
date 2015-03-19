@@ -47,26 +47,26 @@
  * typedef ptrdiff_t idio_index_t;
  */
 
-void idio_assign_array (IDIO f, IDIO a, size_t size);
-IDIO idio_array (IDIO f, size_t size);
-int idio_isa_array (IDIO f, IDIO a);
-void idio_free_array (IDIO f, IDIO a);
-void idio_array_resize (IDIO f, IDIO a);
-idio_index_t idio_array_size (IDIO f, IDIO a);
-void idio_array_insert_index (IDIO f, IDIO a, IDIO io, idio_index_t index);
-void idio_array_push (IDIO f, IDIO a, IDIO io);
-IDIO idio_array_pop (IDIO f, IDIO a);
-IDIO idio_array_shift (IDIO f, IDIO a);
-void idio_array_unshift (IDIO f, IDIO a, IDIO io);
-IDIO idio_array_head (IDIO f, IDIO a);
-IDIO idio_array_top (IDIO f, IDIO a);
-IDIO idio_array_get_index (IDIO f, IDIO a, idio_index_t index);
-idio_index_t idio_array_find_free_index (IDIO f, IDIO a, idio_index_t index);
-idio_index_t idio_array_find_eqp (IDIO f, IDIO a, IDIO e, idio_index_t index);
-void idio_array_bind (IDIO f, IDIO a, size_t nargs, ...);
-IDIO idio_array_copy (IDIO f, IDIO a, size_t extra);
-IDIO idio_array_to_list (IDIO f, IDIO a);
-int idio_array_delete_index (IDIO f, IDIO a, idio_index_t index);
+void idio_assign_array (IDIO a, size_t size);
+IDIO idio_array (size_t size);
+int idio_isa_array (IDIO a);
+void idio_free_array (IDIO a);
+void idio_array_resize (IDIO a);
+idio_index_t idio_array_size (IDIO a);
+void idio_array_insert_index (IDIO a, IDIO io, idio_index_t index);
+void idio_array_push (IDIO a, IDIO io);
+IDIO idio_array_pop (IDIO a);
+IDIO idio_array_shift (IDIO a);
+void idio_array_unshift (IDIO a, IDIO io);
+IDIO idio_array_head (IDIO a);
+IDIO idio_array_top (IDIO a);
+IDIO idio_array_get_index (IDIO a, idio_index_t index);
+idio_index_t idio_array_find_free_index (IDIO a, idio_index_t index);
+idio_index_t idio_array_find_eqp (IDIO a, IDIO e, idio_index_t index);
+void idio_array_bind (IDIO a, size_t nargs, ...);
+IDIO idio_array_copy (IDIO a, size_t extra);
+IDIO idio_array_to_list (IDIO a);
+int idio_array_delete_index (IDIO a, idio_index_t index);
 
 #endif
 

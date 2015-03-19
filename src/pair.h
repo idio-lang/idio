@@ -23,19 +23,22 @@
 #ifndef PAIR_H
 #define PAIR_H
 
-IDIO idio_pair (IDIO f, IDIO h, IDIO t);
-int idio_isa_pair (IDIO f, IDIO p);
-int idio_isa_list (IDIO f, IDIO p);
-void idio_free_pair (IDIO f, IDIO p);
-IDIO idio_pair_head (IDIO f, IDIO p);
-IDIO idio_pair_tail (IDIO f, IDIO p);
+IDIO idio_pair (IDIO h, IDIO t);
+int idio_isa_pair (IDIO p);
+int idio_isa_list (IDIO p);
+void idio_free_pair (IDIO p);
+IDIO idio_pair_head (IDIO p);
+IDIO idio_pair_tail (IDIO p);
 
-IDIO idio_list_reverse (IDIO f, IDIO l);
-IDIO idio_list_to_array (IDIO f, IDIO l);
-size_t idio_list_length (IDIO f, IDIO l);
-IDIO idio_list_copy (IDIO f, IDIO l);
-IDIO idio_list_append (IDIO f, IDIO l1, IDIO l2);
+IDIO idio_list_reverse (IDIO l);
+IDIO idio_list_to_array (IDIO l);
+size_t idio_list_length (IDIO l);
+IDIO idio_list_copy (IDIO l);
+IDIO idio_list_append (IDIO l1, IDIO l2);
 
+#define IDIO_LIST1(e1)		idio_pair (e1, idio_S_nil)
+#define IDIO_LIST2(e1,e2)	idio_pair (e1, idio_pair (e2, idio_S_nil))
+#define IDIO_LIST3(e1,e2,e3)	idio_pair (e1, idio_pair (e2, idio_pair (e3, idio_S_nil)))
 
 #endif
 

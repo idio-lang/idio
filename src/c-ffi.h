@@ -23,8 +23,8 @@
 #ifndef C_FFI_H
 #define C_FFI_H
 
-IDIO idio_C_FFI (IDIO f, IDIO symbol, IDIO arg_types, IDIO result_type);
-void idio_free_C_FFI (IDIO f, IDIO o);
+IDIO idio_C_FFI (IDIO symbol, IDIO arg_types, IDIO result_type);
+void idio_free_C_FFI (IDIO o);
 
 
 #endif

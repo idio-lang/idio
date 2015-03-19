@@ -23,8 +23,8 @@
 #ifndef PRIMITIVE_H
 #define PRIMITIVE_H
 
-IDIO idio_primitive_C (IDIO f, IDIO (*func) (IDIO frame, IDIO args), const char *name_C);
-void idio_free_primitive_C (IDIO f, IDIO o);
+IDIO idio_primitive_C (IDIO (*func) (IDIO frame, IDIO args), const char *name_C);
+void idio_free_primitive_C (IDIO o);
 
 
 #endif

@@ -58,13 +58,13 @@
 
 /* IDIO_TYPE_ASSERT assumes a local variable f */
 #define IDIO_TYPE_ASSERT(t,x) {						\
-	if (! idio_isa_ ## t (f, x)) {					\
+	if (! idio_isa_ ## t (x)) {					\
 	    char em[BUFSIZ];						\
 	    sprintf (em, "%s %s is not a %s", idio_type2string (x), #x, #t); \
-	    idio_error_add_C (f, em);					\
+	    idio_error_add_C (em);					\
 	    fprintf (stderr, "%s\n", em);				\
-	    idio_expr_dump (f, x);					\
-	    idio_frame_trace (f);					\
+	    idio_expr_dump (x);						\
+	    /*idio_frame_trace (f);*/					\
 	    IDIO_C_ASSERT (0);						\
 	}								\
     }
@@ -192,8 +192,6 @@
 #define idio_S_ampersand	((const IDIO) IDIO_CONSTANT (IDIO_CONSTANT_AMPERSAND))
 #define idio_S_asterisk		((const IDIO) IDIO_CONSTANT (IDIO_CONSTANT_ASTERISK))
 #define idio_S_namespace	((const IDIO) IDIO_CONSTANT (IDIO_CONSTANT_NAMESPACE))
-
-extern IDIO idio_G_frame;
 
 #endif
 

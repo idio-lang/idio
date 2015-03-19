@@ -22,24 +22,23 @@
 
 #include "idio.h"
 
-IDIO idio_primitive_C (IDIO f, IDIO (*func) (IDIO frame, IDIO args), const char *name_C)
+IDIO idio_primitive_C (IDIO (*func) (IDIO frame, IDIO args), const char *name_C)
 {
-    IDIO_ASSERT (f);
     IDIO_C_ASSERT (func);
     IDIO_C_ASSERT (name_C);
 
-    IDIO o = idio_get (f, IDIO_TYPE_PRIMITIVE_C);
+    IDIO o = idio_gc_get (IDIO_TYPE_PRIMITIVE_C);
 
-    IDIO_FRAME_FPRINTF (f, stderr, "idio_primitive_C: %10p = (%10p)\n", o, func);
+    IDIO_FPRINTF (stderr, "idio_primitive_C: %10p = (%10p)\n", o, func);
 
-    IDIO_ALLOC (f, o->u.primitive_C, sizeof (idio_primitive_C_t));
+    IDIO_GC_ALLOC (o->u.primitive_C, sizeof (idio_primitive_C_t));
     
     IDIO_PRIMITIVE_C_F (o) = func;
 
     size_t l = strlen (name_C);
     IDIO_C_ASSERT (l);
 
-    IDIO_ALLOC (f, IDIO_PRIMITIVE_C_NAME (o), l + 1);
+    IDIO_GC_ALLOC (IDIO_PRIMITIVE_C_NAME (o), l + 1);
 
     /*
       No point in using strncpy as we have just relied on name_C being
@@ -50,23 +49,19 @@ IDIO idio_primitive_C (IDIO f, IDIO (*func) (IDIO frame, IDIO args), const char 
     return o;
 }
 
-int idio_isa_primitive_C (IDIO f, IDIO o)
+int idio_isa_primitive_C (IDIO o)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (o);
 
-    return idio_isa (f, o, IDIO_TYPE_PRIMITIVE_C);
+    return idio_isa (o, IDIO_TYPE_PRIMITIVE_C);
 }
 
-void idio_free_primitive_C (IDIO f, IDIO o)
+void idio_free_primitive_C (IDIO o)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (o);
     IDIO_TYPE_ASSERT (primitive_C, o);
 
-    idio_gc_t *gc = IDIO_GC (f);
-
-    gc->stats.nbytes -= sizeof (idio_primitive_C_t);
+    idio_gc_stats_free (sizeof (idio_primitive_C_t));
 
     free (o->u.primitive_C->name);
     free (o->u.primitive_C);

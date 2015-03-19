@@ -23,15 +23,15 @@
 #ifndef C_STRUCT_H
 #define C_STRUCT_H
 
-#define IDIO_C_TYPEDEF_ADD_VALUE(f,t,v)	{				\
-	IDIO sym = idio_symbols_C_intern ((f), (#t));			\
-	IDIO val = idio_symbols_C_intern ((f), (#v));			\
-	idio_CTD_##t = idio_C_typedefs_add_value ((f), sym, val);	\
+#define IDIO_C_TYPEDEF_ADD_VALUE(t,v)	{				\
+	IDIO sym = idio_symbols_C_intern ((#t));			\
+	IDIO val = idio_symbols_C_intern ((#v));			\
+	idio_CTD_##t = idio_C_typedefs_add_value (sym, val);		\
     }
 
-#define IDIO_C_TYPEDEF_ADD(f,t)	{					\
-	IDIO sym = idio_symbols_C_intern ((f), (#t));			\
-	idio_CTD_##t = idio_C_typedefs_add_value ((f), sym, idio_S_nil); \
+#define IDIO_C_TYPEDEF_ADD(t)	{					\
+	IDIO sym = idio_symbols_C_intern ((#t));			\
+	idio_CTD_##t = idio_C_typedefs_add_value (sym, idio_S_nil);	\
     }
     
 #define IDIO_C_SLOT_DATA_TAG       0
@@ -65,23 +65,24 @@ extern IDIO idio_CTD_long;
 extern IDIO idio_CTD_ulong;
 
 void idio_init_C_struct ();
-IDIO idio_C_typedef_C (IDIO f, const char *s_C);
-int idio_isa_C_typedef (IDIO f, IDIO o);
-void idio_free_C_typedef (IDIO f, IDIO o);
-IDIO idio_C_typedefs_exists (IDIO f, IDIO s);
-IDIO idio_C_typedefs_get (IDIO f, IDIO s);
-IDIO idio_C_typedefs_add_value (IDIO f, IDIO s, IDIO v);
-IDIO idio_C_typedefs_add (IDIO f, IDIO s);
-IDIO idio_C_slots_array (IDIO f, IDIO slots);
-IDIO idio_C_struct (IDIO f, IDIO slots_array, IDIO methods, IDIO frame);
-void idio_free_C_struct (IDIO f, IDIO s);
-IDIO idio_C_instance (IDIO f, IDIO c_struct, IDIO frame);
-void idio_free_C_instance (IDIO f, IDIO s);
-IDIO idio_opaque (IDIO f, void *opaque);
-int idio_isa_opaque (IDIO f, IDIO o);
-void idio_free_opaque (IDIO f, IDIO o);
-IDIO idio_opaque_args (IDIO f, void *p, IDIO args);
-IDIO idio_opaque_final (IDIO f, void *p, void (*func) (IDIO o), IDIO args);
+void idio_final_C_struct ();
+IDIO idio_C_typedef_C (const char *s_C);
+int idio_isa_C_typedef (IDIO o);
+void idio_free_C_typedef (IDIO o);
+IDIO idio_C_typedefs_exists (IDIO s);
+IDIO idio_C_typedefs_get (IDIO s);
+IDIO idio_C_typedefs_add_value (IDIO s, IDIO v);
+IDIO idio_C_typedefs_add (IDIO s);
+IDIO idio_C_slots_array (IDIO slots);
+IDIO idio_C_struct (IDIO slots_array, IDIO methods, IDIO frame);
+void idio_free_C_struct (IDIO s);
+IDIO idio_C_instance (IDIO c_struct, IDIO frame);
+void idio_free_C_instance (IDIO s);
+IDIO idio_opaque (void *opaque);
+int idio_isa_opaque (IDIO o);
+void idio_free_opaque (IDIO o);
+IDIO idio_opaque_args (void *p, IDIO args);
+IDIO idio_opaque_final (void *p, void (*func) (IDIO o), IDIO args);
 
 #endif
 

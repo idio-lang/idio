@@ -26,9 +26,9 @@
 extern IDIO idio_G_frame;
 
 void idio_init_frame (void);
-IDIO idio_gc_frame (idio_gc_t *gc, size_t esize, size_t ssize);
-IDIO idio_frame (IDIO f, size_t esize, size_t ssize);
-void idio_free_frame (IDIO f, IDIO fo);
+void idio_final_frame (void);
+IDIO idio_frame (size_t esize, size_t ssize);
+void idio_free_frame (IDIO fo);
 
 #endif
 

@@ -22,236 +22,212 @@
 
 #include "idio.h"
 
-IDIO idio_C_int8 (IDIO f, int8_t i)
+IDIO idio_C_int8 (int8_t i)
 {
-    IDIO_ASSERT (f);
 
-    IDIO co = idio_get (f, IDIO_TYPE_C_INT8);
+    IDIO co = idio_gc_get (IDIO_TYPE_C_INT8);
 
-    IDIO_ALLOC (f, co->u.C_type, sizeof (idio_C_type_t));
+    IDIO_GC_ALLOC (co->u.C_type, sizeof (idio_C_type_t));
     
     IDIO_C_TYPE_INT8 (co) = i;
 
     return co;
 }
 
-int idio_isa_C_int8 (IDIO f, IDIO co)
+int idio_isa_C_int8 (IDIO co)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (co);
 
-    return idio_isa (f, co, IDIO_TYPE_C_INT8);
+    return idio_isa (co, IDIO_TYPE_C_INT8);
 }
 
-IDIO idio_C_uint8 (IDIO f, uint8_t i)
+IDIO idio_C_uint8 (uint8_t i)
 {
-    IDIO_ASSERT (f);
 
-    IDIO co = idio_get (f, IDIO_TYPE_C_UINT8);
+    IDIO co = idio_gc_get (IDIO_TYPE_C_UINT8);
 
-    IDIO_ALLOC (f, co->u.C_type, sizeof (idio_C_type_t));
+    IDIO_GC_ALLOC (co->u.C_type, sizeof (idio_C_type_t));
     
     IDIO_C_TYPE_UINT8 (co) = i;
 
     return co;
 }
 
-int idio_isa_C_uint8 (IDIO f, IDIO co)
+int idio_isa_C_uint8 (IDIO co)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (co);
 
-    return idio_isa (f, co, IDIO_TYPE_C_UINT8);
+    return idio_isa (co, IDIO_TYPE_C_UINT8);
 }
 
-IDIO idio_C_int16 (IDIO f, int16_t i)
+IDIO idio_C_int16 (int16_t i)
 {
-    IDIO_ASSERT (f);
 
-    IDIO co = idio_get (f, IDIO_TYPE_C_INT16);
+    IDIO co = idio_gc_get (IDIO_TYPE_C_INT16);
 
-    IDIO_ALLOC (f, co->u.C_type, sizeof (idio_C_type_t));
+    IDIO_GC_ALLOC (co->u.C_type, sizeof (idio_C_type_t));
     
     IDIO_C_TYPE_INT16 (co) = i;
 
     return co;
 }
 
-int idio_isa_C_int16 (IDIO f, IDIO co)
+int idio_isa_C_int16 (IDIO co)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (co);
 
-    return idio_isa (f, co, IDIO_TYPE_C_INT16);
+    return idio_isa (co, IDIO_TYPE_C_INT16);
 }
 
-IDIO idio_C_uint16 (IDIO f, uint16_t i)
+IDIO idio_C_uint16 (uint16_t i)
 {
-    IDIO_ASSERT (f);
 
-    IDIO co = idio_get (f, IDIO_TYPE_C_UINT16);
+    IDIO co = idio_gc_get (IDIO_TYPE_C_UINT16);
 
-    IDIO_ALLOC (f, co->u.C_type, sizeof (idio_C_type_t));
+    IDIO_GC_ALLOC (co->u.C_type, sizeof (idio_C_type_t));
     
     IDIO_C_TYPE_UINT16 (co) = i;
 
     return co;
 }
 
-int idio_isa_C_uint16 (IDIO f, IDIO co)
+int idio_isa_C_uint16 (IDIO co)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (co);
 
-    return idio_isa (f, co, IDIO_TYPE_C_UINT16);
+    return idio_isa (co, IDIO_TYPE_C_UINT16);
 }
 
-IDIO idio_C_int32 (IDIO f, int32_t i)
+IDIO idio_C_int32 (int32_t i)
 {
-    IDIO_ASSERT (f);
 
-    IDIO co = idio_get (f, IDIO_TYPE_C_INT32);
+    IDIO co = idio_gc_get (IDIO_TYPE_C_INT32);
 
-    IDIO_ALLOC (f, co->u.C_type, sizeof (idio_C_type_t));
+    IDIO_GC_ALLOC (co->u.C_type, sizeof (idio_C_type_t));
     
     IDIO_C_TYPE_INT32 (co) = i;
 
     return co;
 }
 
-int idio_isa_C_int32 (IDIO f, IDIO co)
+int idio_isa_C_int32 (IDIO co)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (co);
 
-    return idio_isa (f, co, IDIO_TYPE_C_INT32);
+    return idio_isa (co, IDIO_TYPE_C_INT32);
 }
 
-IDIO idio_C_uint32 (IDIO f, uint32_t i)
+IDIO idio_C_uint32 (uint32_t i)
 {
-    IDIO_ASSERT (f);
 
-    IDIO co = idio_get (f, IDIO_TYPE_C_UINT32);
+    IDIO co = idio_gc_get (IDIO_TYPE_C_UINT32);
 
-    IDIO_ALLOC (f, co->u.C_type, sizeof (idio_C_type_t));
+    IDIO_GC_ALLOC (co->u.C_type, sizeof (idio_C_type_t));
     
     IDIO_C_TYPE_UINT32 (co) = i;
 
     return co;
 }
 
-int idio_isa_C_uint32 (IDIO f, IDIO co)
+int idio_isa_C_uint32 (IDIO co)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (co);
 
-    return idio_isa (f, co, IDIO_TYPE_C_UINT32);
+    return idio_isa (co, IDIO_TYPE_C_UINT32);
 }
 
-IDIO idio_C_int64 (IDIO f, int64_t i)
+IDIO idio_C_int64 (int64_t i)
 {
-    IDIO_ASSERT (f);
 
-    IDIO co = idio_get (f, IDIO_TYPE_C_INT64);
+    IDIO co = idio_gc_get (IDIO_TYPE_C_INT64);
 
-    IDIO_ALLOC (f, co->u.C_type, sizeof (idio_C_type_t));
+    IDIO_GC_ALLOC (co->u.C_type, sizeof (idio_C_type_t));
     
     IDIO_C_TYPE_INT64 (co) = i;
 
     return co;
 }
 
-int idio_isa_C_int64 (IDIO f, IDIO co)
+int idio_isa_C_int64 (IDIO co)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (co);
 
-    return idio_isa (f, co, IDIO_TYPE_C_INT64);
+    return idio_isa (co, IDIO_TYPE_C_INT64);
 }
 
-IDIO idio_C_uint64 (IDIO f, uint64_t i)
+IDIO idio_C_uint64 (uint64_t i)
 {
-    IDIO_ASSERT (f);
 
-    IDIO co = idio_get (f, IDIO_TYPE_C_UINT64);
+    IDIO co = idio_gc_get (IDIO_TYPE_C_UINT64);
 
-    IDIO_ALLOC (f, co->u.C_type, sizeof (idio_C_type_t));
+    IDIO_GC_ALLOC (co->u.C_type, sizeof (idio_C_type_t));
     
     IDIO_C_TYPE_UINT64 (co) = i;
 
     return co;
 }
 
-int idio_isa_C_uint64 (IDIO f, IDIO co)
+int idio_isa_C_uint64 (IDIO co)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (co);
 
-    return idio_isa (f, co, IDIO_TYPE_C_UINT64);
+    return idio_isa (co, IDIO_TYPE_C_UINT64);
 }
 
-IDIO idio_C_float (IDIO f, float fl)
+IDIO idio_C_float (float fl)
 {
-    IDIO_ASSERT (f);
 
-    IDIO co = idio_get (f, IDIO_TYPE_C_FLOAT);
+    IDIO co = idio_gc_get (IDIO_TYPE_C_FLOAT);
 
-    IDIO_ALLOC (f, co->u.C_type, sizeof (idio_C_type_t));
+    IDIO_GC_ALLOC (co->u.C_type, sizeof (idio_C_type_t));
     
     IDIO_C_TYPE_FLOAT (co) = fl;
 
     return co;
 }
 
-int idio_isa_C_float (IDIO f, IDIO co)
+int idio_isa_C_float (IDIO co)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (co);
 
-    return idio_isa (f, co, IDIO_TYPE_C_FLOAT);
+    return idio_isa (co, IDIO_TYPE_C_FLOAT);
 }
 
-IDIO idio_C_double (IDIO f, double d)
+IDIO idio_C_double (double d)
 {
-    IDIO_ASSERT (f);
 
-    IDIO co = idio_get (f, IDIO_TYPE_C_DOUBLE);
+    IDIO co = idio_gc_get (IDIO_TYPE_C_DOUBLE);
 
-    IDIO_ALLOC (f, co->u.C_type, sizeof (idio_C_type_t));
+    IDIO_GC_ALLOC (co->u.C_type, sizeof (idio_C_type_t));
     
     IDIO_C_TYPE_DOUBLE (co) = d;
 
     return co;
 }
 
-int idio_isa_C_double (IDIO f, IDIO co)
+int idio_isa_C_double (IDIO co)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (co);
 
-    return idio_isa (f, co, IDIO_TYPE_C_DOUBLE);
+    return idio_isa (co, IDIO_TYPE_C_DOUBLE);
 }
 
-void idio_free_C_type (IDIO f, IDIO co)
+void idio_free_C_type (IDIO co)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (co);
 
-    idio_gc_t *gc = IDIO_GC (f);
-    
-    gc->stats.nbytes -= sizeof (idio_C_type_t);
+    idio_gc_stats_free (sizeof (idio_C_type_t));
 
     free (co->u.C_type);
 }
 
-IDIO idio_C_pointer (IDIO f, void *p)
+IDIO idio_C_pointer (void *p)
 {
-    IDIO_ASSERT (f);
 
-    IDIO co = idio_get (f, IDIO_TYPE_C_POINTER);
+    IDIO co = idio_gc_get (IDIO_TYPE_C_POINTER);
 
-    IDIO_ALLOC (f, co->u.C_type, sizeof (idio_C_type_t));
-    IDIO_ALLOC (f, IDIO_C_TYPE_POINTER (co), sizeof (idio_C_pointer_t));
+    IDIO_GC_ALLOC (co->u.C_type, sizeof (idio_C_type_t));
+    IDIO_GC_ALLOC (IDIO_C_TYPE_POINTER (co), sizeof (idio_C_pointer_t));
 
     IDIO_C_TYPE_POINTER_P (co) = p;
     IDIO_C_TYPE_POINTER_FREEP (co) = 0;
@@ -259,33 +235,28 @@ IDIO idio_C_pointer (IDIO f, void *p)
     return co;
 }
 
-IDIO idio_C_pointer_free_me (IDIO f, void *p)
+IDIO idio_C_pointer_free_me (void *p)
 {
-    IDIO_ASSERT (f);
 
-    IDIO co = idio_C_pointer (f, p);
+    IDIO co = idio_C_pointer (p);
 
     IDIO_C_TYPE_POINTER_FREEP (co) = 1;
 
     return co;
 }
 
-int idio_isa_C_pointer (IDIO f, IDIO co)
+int idio_isa_C_pointer (IDIO co)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (co);
 
-    return idio_isa (f, co, IDIO_TYPE_C_POINTER);
+    return idio_isa (co, IDIO_TYPE_C_POINTER);
 }
 
-void idio_free_C_pointer (IDIO f, IDIO co)
+void idio_free_C_pointer (IDIO co)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (co);
 
-    idio_gc_t *gc = IDIO_GC (f);
-    
-    gc->stats.nbytes -= sizeof (idio_C_pointer_t);
+    idio_gc_stats_free (sizeof (idio_C_pointer_t));
 
     if (IDIO_C_TYPE_POINTER_FREEP (co)) {
 	free (IDIO_C_TYPE_POINTER_P (co));
@@ -295,9 +266,8 @@ void idio_free_C_pointer (IDIO f, IDIO co)
     free (co->u.C_type);
 }
 
-int idio_isa_C_number (IDIO f, IDIO co)
+int idio_isa_C_number (IDIO co)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (co);
 
     switch (co->type) {
@@ -317,16 +287,15 @@ int idio_isa_C_number (IDIO f, IDIO co)
     return 0;
 }
 
-IDIO idio_C_number_cast (IDIO f, IDIO co, int type)
+IDIO idio_C_number_cast (IDIO co, int type)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (co);
     IDIO_C_ASSERT (type);
 
     if (! IDIO_TYPE_POINTERP (co)) {
 	char em[BUFSIZ];
 	sprintf (em, "idio_C_number_cast: conversion not possible from %s %d to %d", idio_type2string (co), co->type, type);
-	idio_error_add_C (f, em);
+	idio_error_add_C (em);
 	return idio_S_nil;
     }
 
@@ -337,16 +306,16 @@ IDIO idio_C_number_cast (IDIO f, IDIO co, int type)
     case IDIO_TYPE_C_INT8:
 	{
 	    switch (co->type) {
-	    case IDIO_TYPE_C_INT8: r = idio_C_int8 (f, (int8_t) IDIO_C_TYPE_INT8 (co)); break;
-	    case IDIO_TYPE_C_UINT8: r = idio_C_int8 (f, (int8_t) IDIO_C_TYPE_UINT8 (co)); break;
-	    case IDIO_TYPE_C_INT16: r = idio_C_int8 (f, (int8_t) IDIO_C_TYPE_INT16 (co)); break;
-	    case IDIO_TYPE_C_UINT16: r = idio_C_int8 (f, (int8_t) IDIO_C_TYPE_UINT16 (co)); break;
-	    case IDIO_TYPE_C_INT32: r = idio_C_int8 (f, (int8_t) IDIO_C_TYPE_INT32 (co)); break;
-	    case IDIO_TYPE_C_UINT32: r = idio_C_int8 (f, (int8_t) IDIO_C_TYPE_UINT32 (co)); break;
-	    case IDIO_TYPE_C_INT64: r = idio_C_int8 (f, (int8_t) IDIO_C_TYPE_INT64 (co)); break;
-	    case IDIO_TYPE_C_UINT64: r = idio_C_int8 (f, (int8_t) IDIO_C_TYPE_UINT64 (co)); break;
-	    case IDIO_TYPE_C_FLOAT: r = idio_C_int8 (f, (int8_t) IDIO_C_TYPE_FLOAT (co)); break;
-	    case IDIO_TYPE_C_DOUBLE: r = idio_C_int8 (f, (int8_t) IDIO_C_TYPE_DOUBLE (co)); break;
+	    case IDIO_TYPE_C_INT8: r = idio_C_int8 ((int8_t) IDIO_C_TYPE_INT8 (co)); break;
+	    case IDIO_TYPE_C_UINT8: r = idio_C_int8 ((int8_t) IDIO_C_TYPE_UINT8 (co)); break;
+	    case IDIO_TYPE_C_INT16: r = idio_C_int8 ((int8_t) IDIO_C_TYPE_INT16 (co)); break;
+	    case IDIO_TYPE_C_UINT16: r = idio_C_int8 ((int8_t) IDIO_C_TYPE_UINT16 (co)); break;
+	    case IDIO_TYPE_C_INT32: r = idio_C_int8 ((int8_t) IDIO_C_TYPE_INT32 (co)); break;
+	    case IDIO_TYPE_C_UINT32: r = idio_C_int8 ((int8_t) IDIO_C_TYPE_UINT32 (co)); break;
+	    case IDIO_TYPE_C_INT64: r = idio_C_int8 ((int8_t) IDIO_C_TYPE_INT64 (co)); break;
+	    case IDIO_TYPE_C_UINT64: r = idio_C_int8 ((int8_t) IDIO_C_TYPE_UINT64 (co)); break;
+	    case IDIO_TYPE_C_FLOAT: r = idio_C_int8 ((int8_t) IDIO_C_TYPE_FLOAT (co)); break;
+	    case IDIO_TYPE_C_DOUBLE: r = idio_C_int8 ((int8_t) IDIO_C_TYPE_DOUBLE (co)); break;
 	    default:
 		fail = 1;
 		break;
@@ -356,16 +325,16 @@ IDIO idio_C_number_cast (IDIO f, IDIO co, int type)
     case IDIO_TYPE_C_UINT8:
 	{
 	    switch (co->type) {
-	    case IDIO_TYPE_C_INT8: r = idio_C_uint8 (f, (uint8_t) IDIO_C_TYPE_INT8 (co)); break;
-	    case IDIO_TYPE_C_UINT8: r = idio_C_uint8 (f, (uint8_t) IDIO_C_TYPE_UINT8 (co)); break;
-	    case IDIO_TYPE_C_INT16: r = idio_C_uint8 (f, (uint8_t) IDIO_C_TYPE_INT16 (co)); break;
-	    case IDIO_TYPE_C_UINT16: r = idio_C_uint8 (f, (uint8_t) IDIO_C_TYPE_UINT16 (co)); break;
-	    case IDIO_TYPE_C_INT32: r = idio_C_uint8 (f, (uint8_t) IDIO_C_TYPE_INT32 (co)); break;
-	    case IDIO_TYPE_C_UINT32: r = idio_C_uint8 (f, (uint8_t) IDIO_C_TYPE_UINT32 (co)); break;
-	    case IDIO_TYPE_C_INT64: r = idio_C_uint8 (f, (uint8_t) IDIO_C_TYPE_INT64 (co)); break;
-	    case IDIO_TYPE_C_UINT64: r = idio_C_uint8 (f, (uint8_t) IDIO_C_TYPE_UINT64 (co)); break;
-	    case IDIO_TYPE_C_FLOAT: r = idio_C_uint8 (f, (uint8_t) IDIO_C_TYPE_FLOAT (co)); break;
-	    case IDIO_TYPE_C_DOUBLE: r = idio_C_uint8 (f, (uint8_t) IDIO_C_TYPE_DOUBLE (co)); break;
+	    case IDIO_TYPE_C_INT8: r = idio_C_uint8 ((uint8_t) IDIO_C_TYPE_INT8 (co)); break;
+	    case IDIO_TYPE_C_UINT8: r = idio_C_uint8 ((uint8_t) IDIO_C_TYPE_UINT8 (co)); break;
+	    case IDIO_TYPE_C_INT16: r = idio_C_uint8 ((uint8_t) IDIO_C_TYPE_INT16 (co)); break;
+	    case IDIO_TYPE_C_UINT16: r = idio_C_uint8 ((uint8_t) IDIO_C_TYPE_UINT16 (co)); break;
+	    case IDIO_TYPE_C_INT32: r = idio_C_uint8 ((uint8_t) IDIO_C_TYPE_INT32 (co)); break;
+	    case IDIO_TYPE_C_UINT32: r = idio_C_uint8 ((uint8_t) IDIO_C_TYPE_UINT32 (co)); break;
+	    case IDIO_TYPE_C_INT64: r = idio_C_uint8 ((uint8_t) IDIO_C_TYPE_INT64 (co)); break;
+	    case IDIO_TYPE_C_UINT64: r = idio_C_uint8 ((uint8_t) IDIO_C_TYPE_UINT64 (co)); break;
+	    case IDIO_TYPE_C_FLOAT: r = idio_C_uint8 ((uint8_t) IDIO_C_TYPE_FLOAT (co)); break;
+	    case IDIO_TYPE_C_DOUBLE: r = idio_C_uint8 ((uint8_t) IDIO_C_TYPE_DOUBLE (co)); break;
 	    default:
 		fail = 1;
 		break;
@@ -375,16 +344,16 @@ IDIO idio_C_number_cast (IDIO f, IDIO co, int type)
     case IDIO_TYPE_C_INT16:
 	{
 	    switch (co->type) {
-	    case IDIO_TYPE_C_INT8: r = idio_C_int16 (f, (int16_t) IDIO_C_TYPE_INT8 (co)); break;
-	    case IDIO_TYPE_C_UINT8: r = idio_C_int16 (f, (int16_t) IDIO_C_TYPE_UINT8 (co)); break;
-	    case IDIO_TYPE_C_INT16: r = idio_C_int16 (f, (int16_t) IDIO_C_TYPE_INT16 (co)); break;
-	    case IDIO_TYPE_C_UINT16: r = idio_C_int16 (f, (int16_t) IDIO_C_TYPE_UINT16 (co)); break;
-	    case IDIO_TYPE_C_INT32: r = idio_C_int16 (f, (int16_t) IDIO_C_TYPE_INT32 (co)); break;
-	    case IDIO_TYPE_C_UINT32: r = idio_C_int16 (f, (int16_t) IDIO_C_TYPE_UINT32 (co)); break;
-	    case IDIO_TYPE_C_INT64: r = idio_C_int16 (f, (int16_t) IDIO_C_TYPE_INT64 (co)); break;
-	    case IDIO_TYPE_C_UINT64: r = idio_C_int16 (f, (int16_t) IDIO_C_TYPE_UINT64 (co)); break;
-	    case IDIO_TYPE_C_FLOAT: r = idio_C_int16 (f, (int16_t) IDIO_C_TYPE_FLOAT (co)); break;
-	    case IDIO_TYPE_C_DOUBLE: r = idio_C_int16 (f, (int16_t) IDIO_C_TYPE_DOUBLE (co)); break;
+	    case IDIO_TYPE_C_INT8: r = idio_C_int16 ((int16_t) IDIO_C_TYPE_INT8 (co)); break;
+	    case IDIO_TYPE_C_UINT8: r = idio_C_int16 ((int16_t) IDIO_C_TYPE_UINT8 (co)); break;
+	    case IDIO_TYPE_C_INT16: r = idio_C_int16 ((int16_t) IDIO_C_TYPE_INT16 (co)); break;
+	    case IDIO_TYPE_C_UINT16: r = idio_C_int16 ((int16_t) IDIO_C_TYPE_UINT16 (co)); break;
+	    case IDIO_TYPE_C_INT32: r = idio_C_int16 ((int16_t) IDIO_C_TYPE_INT32 (co)); break;
+	    case IDIO_TYPE_C_UINT32: r = idio_C_int16 ((int16_t) IDIO_C_TYPE_UINT32 (co)); break;
+	    case IDIO_TYPE_C_INT64: r = idio_C_int16 ((int16_t) IDIO_C_TYPE_INT64 (co)); break;
+	    case IDIO_TYPE_C_UINT64: r = idio_C_int16 ((int16_t) IDIO_C_TYPE_UINT64 (co)); break;
+	    case IDIO_TYPE_C_FLOAT: r = idio_C_int16 ((int16_t) IDIO_C_TYPE_FLOAT (co)); break;
+	    case IDIO_TYPE_C_DOUBLE: r = idio_C_int16 ((int16_t) IDIO_C_TYPE_DOUBLE (co)); break;
 	    default:
 		fail = 1;
 		break;
@@ -394,16 +363,16 @@ IDIO idio_C_number_cast (IDIO f, IDIO co, int type)
     case IDIO_TYPE_C_UINT16:
 	{
 	    switch (co->type) {
-	    case IDIO_TYPE_C_INT8: r = idio_C_uint16 (f, (uint16_t) IDIO_C_TYPE_INT8 (co)); break;
-	    case IDIO_TYPE_C_UINT8: r = idio_C_uint16 (f, (uint16_t) IDIO_C_TYPE_UINT8 (co)); break;
-	    case IDIO_TYPE_C_INT16: r = idio_C_uint16 (f, (uint16_t) IDIO_C_TYPE_INT16 (co)); break;
-	    case IDIO_TYPE_C_UINT16: r = idio_C_uint16 (f, (uint16_t) IDIO_C_TYPE_UINT16 (co)); break;
-	    case IDIO_TYPE_C_INT32: r = idio_C_uint16 (f, (uint16_t) IDIO_C_TYPE_INT32 (co)); break;
-	    case IDIO_TYPE_C_UINT32: r = idio_C_uint16 (f, (uint16_t) IDIO_C_TYPE_UINT32 (co)); break;
-	    case IDIO_TYPE_C_INT64: r = idio_C_uint16 (f, (uint16_t) IDIO_C_TYPE_INT64 (co)); break;
-	    case IDIO_TYPE_C_UINT64: r = idio_C_uint16 (f, (uint16_t) IDIO_C_TYPE_UINT64 (co)); break;
-	    case IDIO_TYPE_C_FLOAT: r = idio_C_uint16 (f, (uint16_t) IDIO_C_TYPE_FLOAT (co)); break;
-	    case IDIO_TYPE_C_DOUBLE: r = idio_C_uint16 (f, (uint16_t) IDIO_C_TYPE_DOUBLE (co)); break;
+	    case IDIO_TYPE_C_INT8: r = idio_C_uint16 ((uint16_t) IDIO_C_TYPE_INT8 (co)); break;
+	    case IDIO_TYPE_C_UINT8: r = idio_C_uint16 ((uint16_t) IDIO_C_TYPE_UINT8 (co)); break;
+	    case IDIO_TYPE_C_INT16: r = idio_C_uint16 ((uint16_t) IDIO_C_TYPE_INT16 (co)); break;
+	    case IDIO_TYPE_C_UINT16: r = idio_C_uint16 ((uint16_t) IDIO_C_TYPE_UINT16 (co)); break;
+	    case IDIO_TYPE_C_INT32: r = idio_C_uint16 ((uint16_t) IDIO_C_TYPE_INT32 (co)); break;
+	    case IDIO_TYPE_C_UINT32: r = idio_C_uint16 ((uint16_t) IDIO_C_TYPE_UINT32 (co)); break;
+	    case IDIO_TYPE_C_INT64: r = idio_C_uint16 ((uint16_t) IDIO_C_TYPE_INT64 (co)); break;
+	    case IDIO_TYPE_C_UINT64: r = idio_C_uint16 ((uint16_t) IDIO_C_TYPE_UINT64 (co)); break;
+	    case IDIO_TYPE_C_FLOAT: r = idio_C_uint16 ((uint16_t) IDIO_C_TYPE_FLOAT (co)); break;
+	    case IDIO_TYPE_C_DOUBLE: r = idio_C_uint16 ((uint16_t) IDIO_C_TYPE_DOUBLE (co)); break;
 	    default:
 		fail = 1;
 		break;
@@ -413,16 +382,16 @@ IDIO idio_C_number_cast (IDIO f, IDIO co, int type)
     case IDIO_TYPE_C_INT32:
 	{
 	    switch (co->type) {
-	    case IDIO_TYPE_C_INT8: r = idio_C_int32 (f, (int32_t) IDIO_C_TYPE_INT8 (co)); break;
-	    case IDIO_TYPE_C_UINT8: r = idio_C_int32 (f, (int32_t) IDIO_C_TYPE_UINT8 (co)); break;
-	    case IDIO_TYPE_C_INT16: r = idio_C_int32 (f, (int32_t) IDIO_C_TYPE_INT16 (co)); break;
-	    case IDIO_TYPE_C_UINT16: r = idio_C_int32 (f, (int32_t) IDIO_C_TYPE_UINT16 (co)); break;
-	    case IDIO_TYPE_C_INT32: r = idio_C_int32 (f, (int32_t) IDIO_C_TYPE_INT32 (co)); break;
-	    case IDIO_TYPE_C_UINT32: r = idio_C_int32 (f, (int32_t) IDIO_C_TYPE_UINT32 (co)); break;
-	    case IDIO_TYPE_C_INT64: r = idio_C_int32 (f, (int32_t) IDIO_C_TYPE_INT64 (co)); break;
-	    case IDIO_TYPE_C_UINT64: r = idio_C_int32 (f, (int32_t) IDIO_C_TYPE_UINT64 (co)); break;
-	    case IDIO_TYPE_C_FLOAT: r = idio_C_int32 (f, (int32_t) IDIO_C_TYPE_FLOAT (co)); break;
-	    case IDIO_TYPE_C_DOUBLE: r = idio_C_int32 (f, (int32_t) IDIO_C_TYPE_DOUBLE (co)); break;
+	    case IDIO_TYPE_C_INT8: r = idio_C_int32 ((int32_t) IDIO_C_TYPE_INT8 (co)); break;
+	    case IDIO_TYPE_C_UINT8: r = idio_C_int32 ((int32_t) IDIO_C_TYPE_UINT8 (co)); break;
+	    case IDIO_TYPE_C_INT16: r = idio_C_int32 ((int32_t) IDIO_C_TYPE_INT16 (co)); break;
+	    case IDIO_TYPE_C_UINT16: r = idio_C_int32 ((int32_t) IDIO_C_TYPE_UINT16 (co)); break;
+	    case IDIO_TYPE_C_INT32: r = idio_C_int32 ((int32_t) IDIO_C_TYPE_INT32 (co)); break;
+	    case IDIO_TYPE_C_UINT32: r = idio_C_int32 ((int32_t) IDIO_C_TYPE_UINT32 (co)); break;
+	    case IDIO_TYPE_C_INT64: r = idio_C_int32 ((int32_t) IDIO_C_TYPE_INT64 (co)); break;
+	    case IDIO_TYPE_C_UINT64: r = idio_C_int32 ((int32_t) IDIO_C_TYPE_UINT64 (co)); break;
+	    case IDIO_TYPE_C_FLOAT: r = idio_C_int32 ((int32_t) IDIO_C_TYPE_FLOAT (co)); break;
+	    case IDIO_TYPE_C_DOUBLE: r = idio_C_int32 ((int32_t) IDIO_C_TYPE_DOUBLE (co)); break;
 	    default:
 		fail = 1;
 		break;
@@ -432,16 +401,16 @@ IDIO idio_C_number_cast (IDIO f, IDIO co, int type)
     case IDIO_TYPE_C_UINT32:
 	{
 	    switch (co->type) {
-	    case IDIO_TYPE_C_INT8: r = idio_C_uint32 (f, (uint32_t) IDIO_C_TYPE_INT8 (co)); break;
-	    case IDIO_TYPE_C_UINT8: r = idio_C_uint32 (f, (uint32_t) IDIO_C_TYPE_UINT8 (co)); break;
-	    case IDIO_TYPE_C_INT16: r = idio_C_uint32 (f, (uint32_t) IDIO_C_TYPE_INT16 (co)); break;
-	    case IDIO_TYPE_C_UINT16: r = idio_C_uint32 (f, (uint32_t) IDIO_C_TYPE_UINT16 (co)); break;
-	    case IDIO_TYPE_C_INT32: r = idio_C_uint32 (f, (uint32_t) IDIO_C_TYPE_INT32 (co)); break;
-	    case IDIO_TYPE_C_UINT32: r = idio_C_uint32 (f, (uint32_t) IDIO_C_TYPE_UINT32 (co)); break;
-	    case IDIO_TYPE_C_INT64: r = idio_C_uint32 (f, (uint32_t) IDIO_C_TYPE_INT64 (co)); break;
-	    case IDIO_TYPE_C_UINT64: r = idio_C_uint32 (f, (uint32_t) IDIO_C_TYPE_UINT64 (co)); break;
-	    case IDIO_TYPE_C_FLOAT: r = idio_C_uint32 (f, (uint32_t) IDIO_C_TYPE_FLOAT (co)); break;
-	    case IDIO_TYPE_C_DOUBLE: r = idio_C_uint32 (f, (uint32_t) IDIO_C_TYPE_DOUBLE (co)); break;
+	    case IDIO_TYPE_C_INT8: r = idio_C_uint32 ((uint32_t) IDIO_C_TYPE_INT8 (co)); break;
+	    case IDIO_TYPE_C_UINT8: r = idio_C_uint32 ((uint32_t) IDIO_C_TYPE_UINT8 (co)); break;
+	    case IDIO_TYPE_C_INT16: r = idio_C_uint32 ((uint32_t) IDIO_C_TYPE_INT16 (co)); break;
+	    case IDIO_TYPE_C_UINT16: r = idio_C_uint32 ((uint32_t) IDIO_C_TYPE_UINT16 (co)); break;
+	    case IDIO_TYPE_C_INT32: r = idio_C_uint32 ((uint32_t) IDIO_C_TYPE_INT32 (co)); break;
+	    case IDIO_TYPE_C_UINT32: r = idio_C_uint32 ((uint32_t) IDIO_C_TYPE_UINT32 (co)); break;
+	    case IDIO_TYPE_C_INT64: r = idio_C_uint32 ((uint32_t) IDIO_C_TYPE_INT64 (co)); break;
+	    case IDIO_TYPE_C_UINT64: r = idio_C_uint32 ((uint32_t) IDIO_C_TYPE_UINT64 (co)); break;
+	    case IDIO_TYPE_C_FLOAT: r = idio_C_uint32 ((uint32_t) IDIO_C_TYPE_FLOAT (co)); break;
+	    case IDIO_TYPE_C_DOUBLE: r = idio_C_uint32 ((uint32_t) IDIO_C_TYPE_DOUBLE (co)); break;
 	    default:
 		fail = 1;
 		break;
@@ -451,16 +420,16 @@ IDIO idio_C_number_cast (IDIO f, IDIO co, int type)
     case IDIO_TYPE_C_INT64:
 	{
 	    switch (co->type) {
-	    case IDIO_TYPE_C_INT8: r = idio_C_int64 (f, (int64_t) IDIO_C_TYPE_INT8 (co)); break;
-	    case IDIO_TYPE_C_UINT8: r = idio_C_int64 (f, (int64_t) IDIO_C_TYPE_UINT8 (co)); break;
-	    case IDIO_TYPE_C_INT16: r = idio_C_int64 (f, (int64_t) IDIO_C_TYPE_INT16 (co)); break;
-	    case IDIO_TYPE_C_UINT16: r = idio_C_int64 (f, (int64_t) IDIO_C_TYPE_UINT16 (co)); break;
-	    case IDIO_TYPE_C_INT32: r = idio_C_int64 (f, (int64_t) IDIO_C_TYPE_INT32 (co)); break;
-	    case IDIO_TYPE_C_UINT32: r = idio_C_int64 (f, (int64_t) IDIO_C_TYPE_UINT32 (co)); break;
-	    case IDIO_TYPE_C_INT64: r = idio_C_int64 (f, (int64_t) IDIO_C_TYPE_INT64 (co)); break;
-	    case IDIO_TYPE_C_UINT64: r = idio_C_int64 (f, (int64_t) IDIO_C_TYPE_UINT64 (co)); break;
-	    case IDIO_TYPE_C_FLOAT: r = idio_C_int64 (f, (int64_t) IDIO_C_TYPE_FLOAT (co)); break;
-	    case IDIO_TYPE_C_DOUBLE: r = idio_C_int64 (f, (int64_t) IDIO_C_TYPE_DOUBLE (co)); break;
+	    case IDIO_TYPE_C_INT8: r = idio_C_int64 ((int64_t) IDIO_C_TYPE_INT8 (co)); break;
+	    case IDIO_TYPE_C_UINT8: r = idio_C_int64 ((int64_t) IDIO_C_TYPE_UINT8 (co)); break;
+	    case IDIO_TYPE_C_INT16: r = idio_C_int64 ((int64_t) IDIO_C_TYPE_INT16 (co)); break;
+	    case IDIO_TYPE_C_UINT16: r = idio_C_int64 ((int64_t) IDIO_C_TYPE_UINT16 (co)); break;
+	    case IDIO_TYPE_C_INT32: r = idio_C_int64 ((int64_t) IDIO_C_TYPE_INT32 (co)); break;
+	    case IDIO_TYPE_C_UINT32: r = idio_C_int64 ((int64_t) IDIO_C_TYPE_UINT32 (co)); break;
+	    case IDIO_TYPE_C_INT64: r = idio_C_int64 ((int64_t) IDIO_C_TYPE_INT64 (co)); break;
+	    case IDIO_TYPE_C_UINT64: r = idio_C_int64 ((int64_t) IDIO_C_TYPE_UINT64 (co)); break;
+	    case IDIO_TYPE_C_FLOAT: r = idio_C_int64 ((int64_t) IDIO_C_TYPE_FLOAT (co)); break;
+	    case IDIO_TYPE_C_DOUBLE: r = idio_C_int64 ((int64_t) IDIO_C_TYPE_DOUBLE (co)); break;
 	    default:
 		fail = 1;
 		break;
@@ -470,16 +439,16 @@ IDIO idio_C_number_cast (IDIO f, IDIO co, int type)
     case IDIO_TYPE_C_UINT64:
 	{
 	    switch (co->type) {
-	    case IDIO_TYPE_C_INT8: r = idio_C_uint64 (f, (uint64_t) IDIO_C_TYPE_INT8 (co)); break;
-	    case IDIO_TYPE_C_UINT8: r = idio_C_uint64 (f, (uint64_t) IDIO_C_TYPE_UINT8 (co)); break;
-	    case IDIO_TYPE_C_INT16: r = idio_C_uint64 (f, (uint64_t) IDIO_C_TYPE_INT16 (co)); break;
-	    case IDIO_TYPE_C_UINT16: r = idio_C_uint64 (f, (uint64_t) IDIO_C_TYPE_UINT16 (co)); break;
-	    case IDIO_TYPE_C_INT32: r = idio_C_uint64 (f, (uint64_t) IDIO_C_TYPE_INT32 (co)); break;
-	    case IDIO_TYPE_C_UINT32: r = idio_C_uint64 (f, (uint64_t) IDIO_C_TYPE_UINT32 (co)); break;
-	    case IDIO_TYPE_C_INT64: r = idio_C_uint64 (f, (uint64_t) IDIO_C_TYPE_INT64 (co)); break;
-	    case IDIO_TYPE_C_UINT64: r = idio_C_uint64 (f, (uint64_t) IDIO_C_TYPE_UINT64 (co)); break;
-	    case IDIO_TYPE_C_FLOAT: r = idio_C_uint64 (f, (uint64_t) IDIO_C_TYPE_FLOAT (co)); break;
-	    case IDIO_TYPE_C_DOUBLE: r = idio_C_uint64 (f, (uint64_t) IDIO_C_TYPE_DOUBLE (co)); break;
+	    case IDIO_TYPE_C_INT8: r = idio_C_uint64 ((uint64_t) IDIO_C_TYPE_INT8 (co)); break;
+	    case IDIO_TYPE_C_UINT8: r = idio_C_uint64 ((uint64_t) IDIO_C_TYPE_UINT8 (co)); break;
+	    case IDIO_TYPE_C_INT16: r = idio_C_uint64 ((uint64_t) IDIO_C_TYPE_INT16 (co)); break;
+	    case IDIO_TYPE_C_UINT16: r = idio_C_uint64 ((uint64_t) IDIO_C_TYPE_UINT16 (co)); break;
+	    case IDIO_TYPE_C_INT32: r = idio_C_uint64 ((uint64_t) IDIO_C_TYPE_INT32 (co)); break;
+	    case IDIO_TYPE_C_UINT32: r = idio_C_uint64 ((uint64_t) IDIO_C_TYPE_UINT32 (co)); break;
+	    case IDIO_TYPE_C_INT64: r = idio_C_uint64 ((uint64_t) IDIO_C_TYPE_INT64 (co)); break;
+	    case IDIO_TYPE_C_UINT64: r = idio_C_uint64 ((uint64_t) IDIO_C_TYPE_UINT64 (co)); break;
+	    case IDIO_TYPE_C_FLOAT: r = idio_C_uint64 ((uint64_t) IDIO_C_TYPE_FLOAT (co)); break;
+	    case IDIO_TYPE_C_DOUBLE: r = idio_C_uint64 ((uint64_t) IDIO_C_TYPE_DOUBLE (co)); break;
 	    default:
 		fail = 1;
 		break;
@@ -489,16 +458,16 @@ IDIO idio_C_number_cast (IDIO f, IDIO co, int type)
     case IDIO_TYPE_C_FLOAT:
 	{
 	    switch (co->type) {
-	    case IDIO_TYPE_C_INT8: r = idio_C_float (f, (float) IDIO_C_TYPE_INT8 (co)); break;
-	    case IDIO_TYPE_C_UINT8: r = idio_C_float (f, (float) IDIO_C_TYPE_UINT8 (co)); break;
-	    case IDIO_TYPE_C_INT16: r = idio_C_float (f, (float) IDIO_C_TYPE_INT16 (co)); break;
-	    case IDIO_TYPE_C_UINT16: r = idio_C_float (f, (float) IDIO_C_TYPE_UINT16 (co)); break;
-	    case IDIO_TYPE_C_INT32: r = idio_C_float (f, (float) IDIO_C_TYPE_INT32 (co)); break;
-	    case IDIO_TYPE_C_UINT32: r = idio_C_float (f, (float) IDIO_C_TYPE_UINT32 (co)); break;
-	    case IDIO_TYPE_C_INT64: r = idio_C_float (f, (float) IDIO_C_TYPE_INT64 (co)); break;
-	    case IDIO_TYPE_C_UINT64: r = idio_C_float (f, (float) IDIO_C_TYPE_UINT64 (co)); break;
-	    case IDIO_TYPE_C_FLOAT: r = idio_C_float (f, (float) IDIO_C_TYPE_FLOAT (co)); break;
-	    case IDIO_TYPE_C_DOUBLE: r = idio_C_float (f, (float) IDIO_C_TYPE_DOUBLE (co)); break;
+	    case IDIO_TYPE_C_INT8: r = idio_C_float ((float) IDIO_C_TYPE_INT8 (co)); break;
+	    case IDIO_TYPE_C_UINT8: r = idio_C_float ((float) IDIO_C_TYPE_UINT8 (co)); break;
+	    case IDIO_TYPE_C_INT16: r = idio_C_float ((float) IDIO_C_TYPE_INT16 (co)); break;
+	    case IDIO_TYPE_C_UINT16: r = idio_C_float ((float) IDIO_C_TYPE_UINT16 (co)); break;
+	    case IDIO_TYPE_C_INT32: r = idio_C_float ((float) IDIO_C_TYPE_INT32 (co)); break;
+	    case IDIO_TYPE_C_UINT32: r = idio_C_float ((float) IDIO_C_TYPE_UINT32 (co)); break;
+	    case IDIO_TYPE_C_INT64: r = idio_C_float ((float) IDIO_C_TYPE_INT64 (co)); break;
+	    case IDIO_TYPE_C_UINT64: r = idio_C_float ((float) IDIO_C_TYPE_UINT64 (co)); break;
+	    case IDIO_TYPE_C_FLOAT: r = idio_C_float ((float) IDIO_C_TYPE_FLOAT (co)); break;
+	    case IDIO_TYPE_C_DOUBLE: r = idio_C_float ((float) IDIO_C_TYPE_DOUBLE (co)); break;
 	    default:
 		fail = 1;
 		break;
@@ -508,16 +477,16 @@ IDIO idio_C_number_cast (IDIO f, IDIO co, int type)
     case IDIO_TYPE_C_DOUBLE:
 	{
 	    switch (co->type) {
-	    case IDIO_TYPE_C_INT8: r = idio_C_double (f, (double) IDIO_C_TYPE_INT8 (co)); break;
-	    case IDIO_TYPE_C_UINT8: r = idio_C_double (f, (double) IDIO_C_TYPE_UINT8 (co)); break;
-	    case IDIO_TYPE_C_INT16: r = idio_C_double (f, (double) IDIO_C_TYPE_INT16 (co)); break;
-	    case IDIO_TYPE_C_UINT16: r = idio_C_double (f, (double) IDIO_C_TYPE_UINT16 (co)); break;
-	    case IDIO_TYPE_C_INT32: r = idio_C_double (f, (double) IDIO_C_TYPE_INT32 (co)); break;
-	    case IDIO_TYPE_C_UINT32: r = idio_C_double (f, (double) IDIO_C_TYPE_UINT32 (co)); break;
-	    case IDIO_TYPE_C_INT64: r = idio_C_double (f, (double) IDIO_C_TYPE_INT64 (co)); break;
-	    case IDIO_TYPE_C_UINT64: r = idio_C_double (f, (double) IDIO_C_TYPE_UINT64 (co)); break;
-	    case IDIO_TYPE_C_FLOAT: r = idio_C_double (f, (double) IDIO_C_TYPE_FLOAT (co)); break;
-	    case IDIO_TYPE_C_DOUBLE: r = idio_C_double (f, (double) IDIO_C_TYPE_DOUBLE (co)); break;
+	    case IDIO_TYPE_C_INT8: r = idio_C_double ((double) IDIO_C_TYPE_INT8 (co)); break;
+	    case IDIO_TYPE_C_UINT8: r = idio_C_double ((double) IDIO_C_TYPE_UINT8 (co)); break;
+	    case IDIO_TYPE_C_INT16: r = idio_C_double ((double) IDIO_C_TYPE_INT16 (co)); break;
+	    case IDIO_TYPE_C_UINT16: r = idio_C_double ((double) IDIO_C_TYPE_UINT16 (co)); break;
+	    case IDIO_TYPE_C_INT32: r = idio_C_double ((double) IDIO_C_TYPE_INT32 (co)); break;
+	    case IDIO_TYPE_C_UINT32: r = idio_C_double ((double) IDIO_C_TYPE_UINT32 (co)); break;
+	    case IDIO_TYPE_C_INT64: r = idio_C_double ((double) IDIO_C_TYPE_INT64 (co)); break;
+	    case IDIO_TYPE_C_UINT64: r = idio_C_double ((double) IDIO_C_TYPE_UINT64 (co)); break;
+	    case IDIO_TYPE_C_FLOAT: r = idio_C_double ((double) IDIO_C_TYPE_FLOAT (co)); break;
+	    case IDIO_TYPE_C_DOUBLE: r = idio_C_double ((double) IDIO_C_TYPE_DOUBLE (co)); break;
 	    default:
 		fail = 1;
 		break;
@@ -527,27 +496,27 @@ IDIO idio_C_number_cast (IDIO f, IDIO co, int type)
     case IDIO_TYPE_C_POINTER:
 	{
 	    switch (co->type) {
-	    case IDIO_TYPE_C_INT8: r = idio_C_pointer (f, (void *) &(IDIO_C_TYPE_INT8 (co))); break;
-	    case IDIO_TYPE_C_UINT8: r = idio_C_pointer (f, (void *) &(IDIO_C_TYPE_UINT8 (co))); break;
-	    case IDIO_TYPE_C_INT16: r = idio_C_pointer (f, (void *) &(IDIO_C_TYPE_INT16 (co))); break;
-	    case IDIO_TYPE_C_UINT16: r = idio_C_pointer (f, (void *) &(IDIO_C_TYPE_UINT16 (co))); break;
-	    case IDIO_TYPE_C_INT32: r = idio_C_pointer (f, (void *) &(IDIO_C_TYPE_INT32 (co))); break;
-	    case IDIO_TYPE_C_UINT32: r = idio_C_pointer (f, (void *) &(IDIO_C_TYPE_UINT32 (co))); break;
-	    case IDIO_TYPE_C_INT64: r = idio_C_pointer (f, (void *) &(IDIO_C_TYPE_INT64 (co))); break;
-	    case IDIO_TYPE_C_UINT64: r = idio_C_pointer (f, (void *) &(IDIO_C_TYPE_UINT64 (co))); break;
-	    case IDIO_TYPE_C_FLOAT: r = idio_C_pointer (f, (void *) &(IDIO_C_TYPE_FLOAT (co))); break;
-	    case IDIO_TYPE_C_DOUBLE: r = idio_C_pointer (f, (void *) &(IDIO_C_TYPE_DOUBLE (co))); break;
+	    case IDIO_TYPE_C_INT8: r = idio_C_pointer ((void *) &(IDIO_C_TYPE_INT8 (co))); break;
+	    case IDIO_TYPE_C_UINT8: r = idio_C_pointer ((void *) &(IDIO_C_TYPE_UINT8 (co))); break;
+	    case IDIO_TYPE_C_INT16: r = idio_C_pointer ((void *) &(IDIO_C_TYPE_INT16 (co))); break;
+	    case IDIO_TYPE_C_UINT16: r = idio_C_pointer ((void *) &(IDIO_C_TYPE_UINT16 (co))); break;
+	    case IDIO_TYPE_C_INT32: r = idio_C_pointer ((void *) &(IDIO_C_TYPE_INT32 (co))); break;
+	    case IDIO_TYPE_C_UINT32: r = idio_C_pointer ((void *) &(IDIO_C_TYPE_UINT32 (co))); break;
+	    case IDIO_TYPE_C_INT64: r = idio_C_pointer ((void *) &(IDIO_C_TYPE_INT64 (co))); break;
+	    case IDIO_TYPE_C_UINT64: r = idio_C_pointer ((void *) &(IDIO_C_TYPE_UINT64 (co))); break;
+	    case IDIO_TYPE_C_FLOAT: r = idio_C_pointer ((void *) &(IDIO_C_TYPE_FLOAT (co))); break;
+	    case IDIO_TYPE_C_DOUBLE: r = idio_C_pointer ((void *) &(IDIO_C_TYPE_DOUBLE (co))); break;
 	    case IDIO_TYPE_C_POINTER: r = co; break;
 	    case IDIO_TYPE_STRING:
 	    case IDIO_TYPE_SUBSTRING:
 		{
-		    char *s_C = idio_string_as_C (f, co);
-		    r = idio_string_C (f, (void *) s_C);
+		    char *s_C = idio_string_as_C (co);
+		    r = idio_string_C ((void *) s_C);
 		    free (s_C);
 		    break;
 		}
 	    case IDIO_TYPE_C_INSTANCE:
-		r = idio_C_pointer (f, IDIO_C_INSTANCE_P (co));
+		r = idio_C_pointer (IDIO_C_INSTANCE_P (co));
 		break;
 	    default:
 		fail = 1;
@@ -558,9 +527,9 @@ IDIO idio_C_number_cast (IDIO f, IDIO co, int type)
     case IDIO_TYPE_STRING:
 	{
 	    switch (co->type) {
-	    case IDIO_TYPE_C_POINTER: r = idio_C_pointer (f, IDIO_C_TYPE_POINTER_P (co)); break;
-	    case IDIO_TYPE_STRING: r = idio_C_pointer (f, (void *) IDIO_STRING_S (co)); break;
-	    case IDIO_TYPE_SUBSTRING: r = idio_C_pointer (f, (void *) IDIO_SUBSTRING_S (co)); break;
+	    case IDIO_TYPE_C_POINTER: r = idio_C_pointer (IDIO_C_TYPE_POINTER_P (co)); break;
+	    case IDIO_TYPE_STRING: r = idio_C_pointer ((void *) IDIO_STRING_S (co)); break;
+	    case IDIO_TYPE_SUBSTRING: r = idio_C_pointer ((void *) IDIO_SUBSTRING_S (co)); break;
 	    default:
 		fail = 1;
 		break;
@@ -575,7 +544,7 @@ IDIO idio_C_number_cast (IDIO f, IDIO co, int type)
     if (fail) {
 	char em[BUFSIZ];
 	sprintf (em, "idio_C_number_cast: conversion not possible from %s %d to %d", idio_type2string (co), co->type, type);
-	idio_error_add_C (f, em);
+	idio_error_add_C (em);
     }
 
     return r;

@@ -22,19 +22,18 @@
 
 #include "idio.h"
 
-IDIO idio_string_C (IDIO f, const char *s_C)
+IDIO idio_string_C (const char *s_C)
 {
-    IDIO_ASSERT (f);
     IDIO_C_ASSERT (s_C);
 
-    IDIO so = idio_get (f, IDIO_TYPE_STRING);
+    IDIO so = idio_gc_get (IDIO_TYPE_STRING);
     
-    IDIO_FRAME_FPRINTF (f, stderr, "idio_string_C: %10p = '%s'\n", so, s_C);
+    IDIO_FPRINTF (stderr, "idio_string_C: %10p = '%s'\n", so, s_C);
 
     size_t blen = strlen (s_C);
 
-    IDIO_ALLOC (f, so->u.string, sizeof (idio_string_t));
-    IDIO_ALLOC (f, IDIO_STRING_S (so), blen + 1);
+    IDIO_GC_ALLOC (so->u.string, sizeof (idio_string_t));
+    IDIO_GC_ALLOC (IDIO_STRING_S (so), blen + 1);
     
     memcpy (IDIO_STRING_S (so), s_C, blen);
     IDIO_STRING_S (so)[blen] = '\0';
@@ -43,14 +42,13 @@ IDIO idio_string_C (IDIO f, const char *s_C)
     return so;
 }
 
-IDIO idio_string_C_array (IDIO f, size_t ns, char *a_C[])
+IDIO idio_string_C_array (size_t ns, char *a_C[])
 {
-    IDIO_ASSERT (f);
     IDIO_C_ASSERT (a_C);
 
     IDIO so;
 
-    so = idio_get (f, IDIO_TYPE_STRING);
+    so = idio_gc_get (IDIO_TYPE_STRING);
     
     size_t blen = 0;
     size_t ai;
@@ -59,8 +57,8 @@ IDIO idio_string_C_array (IDIO f, size_t ns, char *a_C[])
 	blen += strlen (a_C[ai]);
     }
 
-    IDIO_ALLOC (f, so->u.string, sizeof (idio_string_t));
-    IDIO_ALLOC (f, IDIO_STRING_S (so), blen + 1);
+    IDIO_GC_ALLOC (so->u.string, sizeof (idio_string_t));
+    IDIO_GC_ALLOC (IDIO_STRING_S (so), blen + 1);
     
     size_t ao = 0;
     for (ai = 0; ai < ns; ai++) {
@@ -75,27 +73,25 @@ IDIO idio_string_C_array (IDIO f, size_t ns, char *a_C[])
     return so;
 }
 
-IDIO idio_string_copy (IDIO f, IDIO string)
+IDIO idio_string_copy (IDIO string)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (string);
 
     IDIO_TYPE_ASSERT (string, string);
 
     IDIO copy;
 
-    char *s = idio_string_s (f, string);
+    char *s = idio_string_s (string);
 
     switch (string->type) {
     case IDIO_TYPE_STRING:
 	{
-	    copy = idio_string_C (f, s);
+	    copy = idio_string_C (s);
 	    break;
 	}
     case IDIO_TYPE_SUBSTRING:
 	{
-	    copy = idio_substring_offset (f,
-					  IDIO_SUBSTRING_PARENT (string),
+	    copy = idio_substring_offset (IDIO_SUBSTRING_PARENT (string),
 					  IDIO_SUBSTRING_S (string) - IDIO_STRING_S (IDIO_SUBSTRING_PARENT (string)),
 					  IDIO_SUBSTRING_BLEN (string));
 	    break;
@@ -105,43 +101,38 @@ IDIO idio_string_copy (IDIO f, IDIO string)
     return copy;
 }
 
-int idio_isa_string (IDIO f, IDIO so)
+int idio_isa_string (IDIO so)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (so);
 
-    return (idio_isa (f, so, IDIO_TYPE_STRING) ||
-	    idio_isa (f, so, IDIO_TYPE_SUBSTRING));
+    return (idio_isa (so, IDIO_TYPE_STRING) ||
+	    idio_isa (so, IDIO_TYPE_SUBSTRING));
 }
 
-void idio_free_string (IDIO f, IDIO so)
+void idio_free_string (IDIO so)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (so);
 
     IDIO_TYPE_ASSERT (string, so);
 
-    idio_gc_t *gc = IDIO_GC (f);
-    
-    gc->stats.nbytes -= sizeof (idio_string_t) + IDIO_STRING_BLEN (so);
+    idio_gc_stats_free (sizeof (idio_string_t) + IDIO_STRING_BLEN (so));
 
     free (IDIO_STRING_S (so));
     free (so->u.string);
 }
 
-IDIO idio_substring_offset (IDIO f, IDIO p, size_t offset, size_t blen)
+IDIO idio_substring_offset (IDIO p, size_t offset, size_t blen)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (p);
     IDIO_C_ASSERT (blen);
             
-    IDIO so = idio_get (f, IDIO_TYPE_SUBSTRING);
+    IDIO so = idio_gc_get (IDIO_TYPE_SUBSTRING);
 
-    IDIO_FRAME_FPRINTF (f, stderr, "idio_substring_offset: %10p = '%.*s'\n", so, blen, IDIO_STRING_S (p) + offset);
+    IDIO_FPRINTF (stderr, "idio_substring_offset: %10p = '%.*s'\n", so, blen, IDIO_STRING_S (p) + offset);
 
-    IDIO_ALLOC (f, so->u.substring, sizeof (idio_substring_t));
+    IDIO_GC_ALLOC (so->u.substring, sizeof (idio_substring_t));
 
-    IDIO_FRAME_FPRINTF (f, stderr, "idio_substring_offset: %d@%d in '%.*s' -> '%.*s'\n", blen, offset, IDIO_STRING_BLEN (p), IDIO_STRING_S (p), blen, IDIO_STRING_S (p) + offset);
+    IDIO_FPRINTF (stderr, "idio_substring_offset: %d@%d in '%.*s' -> '%.*s'\n", blen, offset, IDIO_STRING_BLEN (p), IDIO_STRING_S (p), blen, IDIO_STRING_S (p) + offset);
 
     IDIO_SUBSTRING_BLEN (so) = blen;
     IDIO_SUBSTRING_S (so) = IDIO_STRING_S (p) + offset;
@@ -150,31 +141,26 @@ IDIO idio_substring_offset (IDIO f, IDIO p, size_t offset, size_t blen)
     return so;
 }
 
-int idio_isa_substring (IDIO f, IDIO so)
+int idio_isa_substring (IDIO so)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (so);
 
-    return idio_isa (f, so, IDIO_TYPE_SUBSTRING);
+    return idio_isa (so, IDIO_TYPE_SUBSTRING);
 }
 
-void idio_free_substring (IDIO f, IDIO so)
+void idio_free_substring (IDIO so)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (so);
 
     IDIO_TYPE_ASSERT (substring, so);
 
-    idio_gc_t *gc = IDIO_GC (f);
-
-    gc->stats.nbytes -= sizeof (idio_substring_t);
+    idio_gc_stats_free (sizeof (idio_substring_t));
 
     free (so->u.substring);
 }
 
-int idio_string_cmp_C (IDIO f, IDIO so, char *s_C)
+int idio_string_cmp_C (IDIO so, char *s_C)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (so);
     IDIO_C_ASSERT (s_C);
 
@@ -194,9 +180,8 @@ int idio_string_cmp_C (IDIO f, IDIO so, char *s_C)
     return strncmp (IDIO_STRING_S (so), s_C, blen);
 }
 
-size_t idio_string_blen (IDIO f, IDIO so)
+size_t idio_string_blen (IDIO so)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (so);
 
     IDIO_TYPE_ASSERT (string, so);
@@ -214,7 +199,7 @@ size_t idio_string_blen (IDIO f, IDIO so)
 	{
 	    char em[BUFSIZ];
 	    sprintf (em, "idio_type_string: unexpected string type %d", so->type);
-	    idio_error_add_C (f, em);
+	    idio_error_add_C (em);
 	    break;
 	}
     }
@@ -222,9 +207,8 @@ size_t idio_string_blen (IDIO f, IDIO so)
     return blen;
 }
 
-char *idio_string_s (IDIO f, IDIO so)
+char *idio_string_s (IDIO so)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (so);
 
     IDIO_TYPE_ASSERT (string, so);
@@ -242,7 +226,7 @@ char *idio_string_s (IDIO f, IDIO so)
 	{
 	    char em[BUFSIZ];
 	    sprintf (em, "idio_type_string: unexpected string type %d", so->type);
-	    idio_error_add_C (f, em);
+	    idio_error_add_C (em);
 	    break;
 	}
     }
@@ -253,9 +237,8 @@ char *idio_string_s (IDIO f, IDIO so)
 /*
  * caller must free(3) this string
  */
-char *idio_string_as_C (IDIO f, IDIO so)
+char *idio_string_as_C (IDIO so)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (so);
 
     IDIO_TYPE_ASSERT (string, so);
@@ -273,12 +256,12 @@ char *idio_string_as_C (IDIO f, IDIO so)
 	{
 	    char em[BUFSIZ];
 	    sprintf (em, "idio_type_string: unexpected string type %d", so->type);
-	    idio_error_add_C (f, em);
+	    idio_error_add_C (em);
 	    break;
 	}
     }
 
-    size_t blen = idio_string_blen (f, so);
+    size_t blen = idio_string_blen (so);
     char *s_C = idio_alloc (blen + 1);
 
     memcpy (s_C, s, blen);

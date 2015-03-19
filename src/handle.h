@@ -25,18 +25,18 @@
 
 void idio_init_handle ();
 void idio_final_handle ();
-IDIO idio_handle (IDIO f);
-int idio_isa_handle (IDIO f, IDIO d);
-void idio_free_handle (IDIO f, IDIO d);
+IDIO idio_handle ();
+int idio_isa_handle (IDIO d);
+void idio_free_handle (IDIO d);
 void idio_handle_finalizer (IDIO handle);
 
-IDIO idio_close_input_handle (IDIO f, IDIO h);
-IDIO idio_close_output_handle (IDIO f, IDIO h);
-IDIO idio_current_input_handle (IDIO f);
-IDIO idio_current_output_handle (IDIO f);
+IDIO idio_close_input_handle (IDIO h);
+IDIO idio_close_output_handle (IDIO h);
+IDIO idio_current_input_handle ();
+IDIO idio_current_output_handle ();
 
-IDIO idio_open_handle (IDIO f, IDIO pathname, char *mode);
-IDIO idio_read (IDIO f, IDIO h);
+IDIO idio_open_handle (IDIO pathname, char *mode);
+IDIO idio_read (IDIO h);
 
 #endif
 

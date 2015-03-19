@@ -28,73 +28,56 @@ void idio_init_frame ()
 {
 }
 
-/* bootstrap -- takes a idio_gc_t */
-IDIO idio_gc_frame (idio_gc_t *gc, size_t esize, size_t ssize)
+void idio_final_frame ()
 {
-    IDIO_C_ASSERT (gc);
-
-    IDIO fo = idio_gc_get (gc, IDIO_TYPE_FRAME);
-
-    IDIO_GC_ALLOC (gc, fo->u.frame, sizeof (idio_frame_t));
-
-    IDIO_FRAME_GREY (fo) = NULL;
-    IDIO_FRAME_GC (fo) = gc;
-    IDIO_FRAME_FLAGS (fo) = IDIO_FRAME_FLAG_NONE;
-
-    return fo;
 }
 
-IDIO idio_frame (IDIO f, size_t esize, size_t ssize)
+IDIO idio_frame (size_t esize, size_t ssize)
 {
-    IDIO_ASSERT (f);
 
-    idio_gc_t *gc = IDIO_GC (f);
+    IDIO fo = idio_gc_get (IDIO_TYPE_FRAME);
 
-    IDIO fo = idio_get (f, IDIO_TYPE_FRAME);
-
-    IDIO_ALLOC (f, fo->u.frame, sizeof (idio_frame_t));
+    IDIO_GC_ALLOC (fo->u.frame, sizeof (idio_frame_t));
     
     IDIO_FRAME_GREY (fo) = NULL;
     IDIO_FRAME_FORM (fo) = NULL;
     IDIO_FRAME_FLAGS (fo) = IDIO_FRAME_FLAG_NONE;
-    IDIO_FRAME_GC (fo) = gc;
-    IDIO_FRAME_PFRAME (fo) = f;
 
-    IDIO_FRAME_NAMESPACE (fo) = IDIO_FRAME_NAMESPACE (f);
+    /*
+      IDIO_FRAME_PFRAME (fo) = f;
+      IDIO_FRAME_NAMESPACE (fo) = IDIO_FRAME_NAMESPACE (f);
+    
     if (esize) {
-	IDIO_FRAME_ENV (fo) = IDIO_HASH_EQP (f, esize);
+	IDIO_FRAME_ENV (fo) = IDIO_HASH_EQP (esize);
     } else {
 	IDIO_FRAME_ENV (fo) = IDIO_FRAME_ENV (f);
     }
     if (ssize) {
-	IDIO_FRAME_STACK (fo) = idio_array (f, ssize);
+	IDIO_FRAME_STACK (fo) = idio_array (ssize);
     } else {
 	IDIO_FRAME_STACK (fo) = IDIO_FRAME_STACK (f);
     }
     IDIO_FRAME_THREADS (fo) = IDIO_FRAME_THREADS (f);
     IDIO_FRAME_ERROR (fo) = IDIO_FRAME_ERROR (f);
+    */
 
     return fo;
 }
 
-int idio_isa_frame (IDIO f, IDIO fo)
+int idio_isa_frame (IDIO fo)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (fo);
 
-    return idio_isa (f, fo, IDIO_TYPE_FRAME);
+    return idio_isa (fo, IDIO_TYPE_FRAME);
 }
 
-void idio_free_frame (IDIO f, IDIO fo)
+void idio_free_frame (IDIO fo)
 {
-    IDIO_ASSERT (f);
     IDIO_ASSERT (fo);
 
     IDIO_TYPE_ASSERT (frame, fo);
 
-    idio_gc_t *gc = IDIO_GC (f);
-
-    gc->stats.nbytes -= sizeof (idio_frame_t);
+    idio_gc_stats_free (sizeof (idio_frame_t));
 
     free (fo->u.frame);
 }

@@ -25,32 +25,19 @@
 
 const char *idio_type2string (IDIO o);
 const char *idio_type_enum2string (idio_type_e type);
-IDIO idio_type (IDIO f, IDIO o);
-int idio_eqp (IDIO f, void *o1, void *o2);
-int idio_eqvp (IDIO f, void *o1, void *o2);
-int idio_equalp (IDIO f, void *o1, void *o2);
-int idio_equal (IDIO f, IDIO o1, IDIO o2, int eqp);
-IDIO idio_value (IDIO f, IDIO o);
-char *idio_as_string (IDIO f, IDIO o, int depth);
-char *idio_display_string (IDIO f, IDIO o);
-IDIO idio_apply (IDIO f, IDIO func, IDIO args);
-IDIO idio_apply1 (IDIO f, IDIO func, IDIO arg);
-IDIO idio_apply2 (IDIO f, IDIO func, IDIO arg1, IDIO arg2);
+IDIO idio_type (IDIO o);
+int idio_eqp (void *o1, void *o2);
+int idio_eqvp (void *o1, void *o2);
+int idio_equalp (void *o1, void *o2);
+int idio_equal (IDIO o1, IDIO o2, int eqp);
+IDIO idio_value (IDIO o);
+char *idio_as_string (IDIO o, int depth);
+char *idio_display_string (IDIO o);
+IDIO idio_apply (IDIO func, IDIO args);
+IDIO idio_apply1 (IDIO func, IDIO arg);
+IDIO idio_apply2 (IDIO func, IDIO arg1, IDIO arg2);
 
-/*
-  XXX delete me
- */
-#define idio_expr_dump(f,e)	(idio_expr_dump_ ((f), (e), (#e), 1))
-#define idio_expr_dumpn(f,e,d)	(idio_expr_dump_ ((f), (e), (#e), (d)))
-void idio_expr_dump_ (IDIO f, IDIO e, const char *en, int depth);
-
-#define idio_frame_dump(f)	{idio_frame_dump_((f),(#f),1);}
-#define idio_frame_dump2(f)	{idio_frame_dump_((f),(#f),2);}
-#define idio_frame_trace(f)	{idio_frame_trace_((f),(#f),1);}
-#define idio_frame_trace2(f)	{idio_frame_trace_((f),(#f),2);}
-
-void idio_frame_trace_ (IDIO f, const char *sname, int detail);
-void idio_dump (IDIO f, IDIO o, int detail);
+void idio_dump (IDIO o, int detail);
 
 #endif
 

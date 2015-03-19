@@ -66,25 +66,25 @@ typedef unsigned char idio_type_e;
 
 #define IDIO_FLAG_GCC_MASK	(3 << IDIO_FLAG_GCC_SHIFT)
 #define IDIO_FLAG_GCC_UMASK	(~ IDIO_FLAG_GCC_MASK)
-#define IDIO_FLAG_GCC_BLACK	(0x00 << IDIO_FLAG_GCC_SHIFT)
-#define IDIO_FLAG_GCC_DGREY	(0x01 << IDIO_FLAG_GCC_SHIFT)
-#define IDIO_FLAG_GCC_LGREY	(0x10 << IDIO_FLAG_GCC_SHIFT)
-#define IDIO_FLAG_GCC_WHITE	(0x11 << IDIO_FLAG_GCC_SHIFT)
+#define IDIO_FLAG_GCC_BLACK	(0 << IDIO_FLAG_GCC_SHIFT)
+#define IDIO_FLAG_GCC_DGREY	(1 << IDIO_FLAG_GCC_SHIFT)
+#define IDIO_FLAG_GCC_LGREY	(2 << IDIO_FLAG_GCC_SHIFT)
+#define IDIO_FLAG_GCC_WHITE	(3 << IDIO_FLAG_GCC_SHIFT)
 
 #define IDIO_FLAG_FREE_MASK	(1 << IDIO_FLAG_FREE_SHIFT)
 #define IDIO_FLAG_FREE_UMASK	(~ IDIO_FLAG_FREE_MASK)
-#define IDIO_FLAG_NOTFREE	(0x0 << IDIO_FLAG_FREE_SHIFT)
-#define IDIO_FLAG_FREE		(0x1 << IDIO_FLAG_FREE_SHIFT)
+#define IDIO_FLAG_NOTFREE	(0 << IDIO_FLAG_FREE_SHIFT)
+#define IDIO_FLAG_FREE		(1 << IDIO_FLAG_FREE_SHIFT)
 
 #define IDIO_FLAG_STICKY_MASK	(1 << IDIO_FLAG_STICKY_SHIFT)
 #define IDIO_FLAG_STICKY_UMASK	(~ IDIO_FLAG_STICKY_MASK)
-#define IDIO_FLAG_NOTSTICKY	(0x0 << IDIO_FLAG_STICKY_SHIFT)
-#define IDIO_FLAG_STICKY	(0x1 << IDIO_FLAG_STICKY_SHIFT)
+#define IDIO_FLAG_NOTSTICKY	(0 << IDIO_FLAG_STICKY_SHIFT)
+#define IDIO_FLAG_STICKY	(1 << IDIO_FLAG_STICKY_SHIFT)
 
 #define IDIO_FLAG_MACRO_MASK	(1 << IDIO_FLAG_MACRO_SHIFT)
 #define IDIO_FLAG_MACRO_UMASK	(~ IDIO_FLAG_MACRO_MASK)
-#define IDIO_FLAG_NOTMACRO	(0x0 << IDIO_FLAG_MACRO_SHIFT)
-#define IDIO_FLAG_MACRO		(0x1 << IDIO_FLAG_MACRO_SHIFT)
+#define IDIO_FLAG_NOTMACRO	(0 << IDIO_FLAG_MACRO_SHIFT)
+#define IDIO_FLAG_MACRO		(1 << IDIO_FLAG_MACRO_SHIFT)
 
 typedef struct idio_string_s {
     size_t blen;		/* bytes */
@@ -152,7 +152,7 @@ typedef struct idio_hash_s {
     struct idio_s *grey;
     size_t size;		/* nominal hash size */
     size_t mask;		/* bitmask for easy modulo arithmetic */
-    int (*equal) (struct idio_s *f, void *k1, void *k2);
+    int (*equal) (void *k1, void *k2);
     size_t (*hashf) (struct idio_s *h, void *k); /* hashing function */
     idio_hash_entry_t *he;
 } idio_hash_t;
@@ -195,7 +195,6 @@ typedef struct idio_primitive_C_s {
 
 typedef struct idio_frame_s {
     struct idio_s *grey;
-    struct idio_gc_s *gc;
     struct idio_s *form;
     struct idio_s *namespace;
     struct idio_s *env;
@@ -206,7 +205,6 @@ typedef struct idio_frame_s {
 } idio_frame_t;
 
 #define IDIO_FRAME_GREY(F)	((F)->u.frame->grey)
-#define IDIO_FRAME_GC(F)	((F)->u.frame->gc)
 #define IDIO_FRAME_FORM(F)	((F)->u.frame->form)
 #define IDIO_FRAME_NAMESPACE(F)	((F)->u.frame->namespace)
 #define IDIO_FRAME_ENV(F)	((F)->u.frame->env)
@@ -237,15 +235,16 @@ typedef struct idio_bignum_s {
 #define IDIO_BIGNUM_SIG(B)   ((B)->u.bignum->sig)
 
 typedef struct idio_handle_methods_s {
-    int (*readyp) (struct idio_s *f, struct idio_s *h);
-    int (*getc) (struct idio_s *f, struct idio_s *h);
-    int (*eofp) (struct idio_s *f, struct idio_s *h);
-    int (*close) (struct idio_s *f, struct idio_s *h);
-    int (*putc) (struct idio_s *f, struct idio_s *h, int c);
-    int (*puts) (struct idio_s *f, struct idio_s *h, char *s, size_t l);
-    int (*flush) (struct idio_s *f, struct idio_s *h);
-    off_t (*seek) (struct idio_s *f, struct idio_s *h, off_t offset, int whence);
-    void (*print) (struct idio_s *f, struct idio_s *h, struct idio_s *o);
+    void (*free) (struct idio_s *h);
+    int (*readyp) (struct idio_s *h);
+    int (*getc) (struct idio_s *h);
+    int (*eofp) (struct idio_s *h);
+    int (*close) (struct idio_s *h);
+    int (*putc) (struct idio_s *h, int c);
+    int (*puts) (struct idio_s *h, char *s, size_t l);
+    int (*flush) (struct idio_s *h);
+    off_t (*seek) (struct idio_s *h, off_t offset, int whence);
+    void (*print) (struct idio_s *h, struct idio_s *o);
 } idio_handle_methods_t;
 
 #define IDIO_HANDLE_FLAG_NONE		0
@@ -278,6 +277,7 @@ typedef struct idio_handle_s {
 #define IDIO_HANDLE_FILEP(H)	(IDIO_HANDLE_FLAGS(H) & IDIO_HANDLE_FLAG_FILE)
 #define IDIO_HANDLE_STRINGP(H)	(IDIO_HANDLE_FLAGS(H) & IDIO_HANDLE_FLAG_STRING)
 
+#define IDIO_HANDLE_M_FREE(H)	(IDIO_HANDLE_METHODS (H)->free)
 #define IDIO_HANDLE_M_READYP(H)	(IDIO_HANDLE_METHODS (H)->readyp)
 #define IDIO_HANDLE_M_GETC(H)	(IDIO_HANDLE_METHODS (H)->getc)
 #define IDIO_HANDLE_M_EOFP(H)	(IDIO_HANDLE_METHODS (H)->eofp)
@@ -493,8 +493,6 @@ typedef struct idio_gc_s {
     }  stats;
 } idio_gc_t;
 
-#define IDIO_GC(f)	((f)->u.frame->gc)
-
 /*
   the alignment of a structure slot of type TYPE can be determined by
   looking at the offset of such a slot in a structure where the first
@@ -537,45 +535,52 @@ typedef struct idio_gc_s {
 
 void idio_init_gc ();
 void idio_final_gc ();
-void idio_register_finalizer (IDIO f, IDIO o, void (*func) (IDIO o));
-void idio_deregister_finalizer (IDIO f, IDIO o);
-void idio_run_finalizer (IDIO f, IDIO o);
+void idio_register_finalizer (IDIO o, void (*func) (IDIO o));
+void idio_deregister_finalizer (IDIO o);
+void idio_run_finalizer (IDIO o);
 void *idio_alloc (size_t s);
-IDIO idio_gc_get (idio_gc_t *gc, idio_type_e type);
-IDIO idio_get (IDIO f, idio_type_e type);
-void idio_gc_alloc (idio_gc_t *gc, void **p, size_t size);
-#define IDIO_GC_ALLOC(c,p,s)	(idio_gc_alloc ((c), (void **)&(p), s))
-#define IDIO_ALLOC(f,p,s)		IDIO_GC_ALLOC(IDIO_GC(f),p,s)
-IDIO idio_clone_base (IDIO f, IDIO o);
-int idio_isa (IDIO f, IDIO o, idio_type_e type);
+IDIO idio_gc_get (idio_type_e type);
+void idio_gc_alloc (void **p, size_t size);
+#define IDIO_GC_ALLOC(p,s)	(idio_gc_alloc ((void **)&(p), s))
+IDIO idio_clone_base (IDIO o);
+int idio_isa (IDIO o, idio_type_e type);
+void idio_gc_stats_free (size_t n);
 
-void idio_mark (IDIO f, IDIO o, unsigned colour);
-void idio_process_grey (IDIO f, unsigned colour);
-unsigned idio_bw (IDIO f, IDIO o);
-idio_root_t *idio_root_new (IDIO f);
-void idio_root_dump (IDIO f, idio_root_t *root);
-void idio_root_mark (IDIO f, idio_root_t *root, unsigned colour);
+void idio_mark (IDIO o, unsigned colour);
+void idio_process_grey (unsigned colour);
+unsigned idio_bw (IDIO o);
+idio_root_t *idio_root_new ();
+void idio_root_dump (idio_root_t *root);
+void idio_root_mark (idio_root_t *root, unsigned colour);
 idio_gc_t *idio_gc_new ();
 #ifdef IDIO_DEBUG
-void IDIO_GC_FPRINTF (idio_gc_t *gc, FILE *stream, const char *format, ...);
-void IDIO_FRAME_FPRINTF (IDIO f, FILE *stream, const char *format, ...);
+void IDIO_FPRINTF (FILE *stream, const char *format, ...);
 #endif
-void idio_gc_dump (IDIO f);
-void idio_gc_protect (IDIO f, IDIO o);
-void idio_gc_expose (IDIO f, IDIO o);
-void idio_gc_expose_all (IDIO f);
-void idio_gc_mark (IDIO f);
-void idio_gc_sweep (IDIO f);
-void idio_gc_collect (IDIO f);
-void idio_gc_pause (IDIO f);
-void idio_gc_resume (IDIO f);
-void idio_gc_free (IDIO f);
+void idio_gc_dump ();
+void idio_gc_protect (IDIO o);
+void idio_gc_expose (IDIO o);
+void idio_gc_expose_all ();
+void idio_gc_mark ();
+void idio_gc_sweep ();
+void idio_gc_collect ();
+void idio_gc_pause ();
+void idio_gc_resume ();
+void idio_gc_free ();
 
 char *idio_strcat (char *s1, const char *s2);
 char *idio_strcat_free (char *s1, char *s2);
 
 #define IDIO_STRCAT(s1,s2)	((s1) = idio_strcat ((s1), (s2)))
 #define IDIO_STRCAT_FREE(s1,s2)	((s1) = idio_strcat_free ((s1), (s2)))
+
+int idio_gc_verboseness (int n);
+
+/*
+  XXX delete me
+ */
+#define idio_expr_dump(e)	(idio_expr_dump_ ((e), (#e), 1))
+#define idio_expr_dumpn(e,d)	(idio_expr_dump_ ((e), (#e), (d)))
+void idio_expr_dump_ (IDIO e, const char *en, int depth);
 
 #endif
 

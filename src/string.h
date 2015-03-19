@@ -25,17 +25,17 @@
 
 #include "idio.h"
 
-int idio_assign_string_C (IDIO f, IDIO so, const char *s_C);
-IDIO idio_string_C (IDIO f, const char *s_C);
-IDIO idio_string_copy (IDIO f, IDIO s);
-IDIO idio_string_C_array (IDIO f, size_t ns, char *a_C[]);
-void idio_free_string (IDIO f, IDIO so);
-int idio_isa_string (IDIO f, IDIO so);
-IDIO idio_substring_offset (IDIO f, IDIO so, size_t offset, size_t blen);
-void idio_free_substring (IDIO f, IDIO so);
-size_t idio_string_blen (IDIO f, IDIO so);
-char *idio_string_s (IDIO f, IDIO so);
-char *idio_string_as_C (IDIO f, IDIO so);
+int idio_assign_string_C (IDIO so, const char *s_C);
+IDIO idio_string_C (const char *s_C);
+IDIO idio_string_copy (IDIO s);
+IDIO idio_string_C_array (size_t ns, char *a_C[]);
+void idio_free_string (IDIO so);
+int idio_isa_string (IDIO so);
+IDIO idio_substring_offset (IDIO so, size_t offset, size_t blen);
+void idio_free_substring (IDIO so);
+size_t idio_string_blen (IDIO so);
+char *idio_string_s (IDIO so);
+char *idio_string_as_C (IDIO so);
 
 
 #endif

@@ -22,15 +22,13 @@
 
 #include "idio.h"
 
-void idio_error_message (IDIO f, char *format, ...)
+void idio_error_message (char *format, ...)
 {
     fprintf (stderr, "ERROR: ");
 
     va_list fmt_args;
     va_start (fmt_args, format);
-    
     vfprintf (stderr, format, fmt_args);
-
     va_end (fmt_args);
 
     switch (format[strlen(format)-1]) {
@@ -47,18 +45,24 @@ void idio_error_alloc (IDIO f)
 {
     IDIO_ASSERT (f);
 
-    idio_error_message (f, "general allocation fault: %s", strerror (errno));
+    idio_error_message ("general allocation fault: %s", strerror (errno));
 }
 
-void idio_error_type (IDIO f, char *what, IDIO who)
+void idio_error_param_nil (char *name)
 {
-    IDIO_ASSERT (f);
-    IDIO_C_ASSERT (what);
+    IDIO_C_ASSERT (name);
+    
+    idio_error_message ("%s is nil", name);
+}
+
+void idio_error_param_type (char *etype, IDIO who)
+{
+    IDIO_C_ASSERT (etype);
     IDIO_ASSERT (who);
 
-    idio_error_message (f, "%s: %s", what, idio_display_string (f, who));
+    idio_error_message ("not a %s: %s", etype, idio_display_string (who));
 }
 
-void idio_error_add_C (IDIO f, const char *s)
+void idio_error_add_C (const char *s)
 {
 }

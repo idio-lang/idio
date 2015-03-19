@@ -99,58 +99,58 @@
 #define IDIO_BIGNUM_INTEGER_P(bn)	(IDIO_BIGNUM_FLAGS (bn) & IDIO_BIGNUM_FLAG_INTEGER)
 #define IDIO_BIGNUM_REAL_P(bn)		(IDIO_BIGNUM_FLAGS (bn) & IDIO_BIGNUM_FLAG_REAL)
 #define IDIO_BIGNUM_REAL_NEGATIVE_P(bn)	((IDIO_BIGNUM_FLAGS (bn) & IDIO_BIGNUM_FLAG_REAL_NEGATIVE) && \
-					 ! idio_bignum_real_zero_p (f, (bn)))
+					 ! idio_bignum_real_zero_p ((bn)))
 #define IDIO_BIGNUM_REAL_POSITIVE_P(bn)	(!IDIO_BIGNUM_REAL_NEGATIVE_P (bn))
 #define IDIO_BIGNUM_REAL_INEXACT_P(bn)	(IDIO_BIGNUM_FLAGS (bn) & IDIO_BIGNUM_FLAG_REAL_INEXACT)
 
 #define IDIO_BIGNUM_NAN			"NaN"
 
-IDIO idio_bignum (IDIO f, int flags, int64_t exp, IDIO sig_a);
-int idio_isa_bignum (IDIO f, IDIO bn);
-void idio_free_bignum (IDIO f, IDIO bn);
-IDIO idio_bignum_integer_int64 (IDIO f, int64_t i);
-IDIO idio_bignum_integer (IDIO f, IDIO sig_a);
-int idio_bignum_real_zero_p (IDIO f, IDIO a);
-int idio_bignum_real_equal_p (IDIO f, IDIO a, IDIO b);
-IDIO idio_bignum_scale_significand (IDIO f, IDIO bn, int64_t desired_exp, int max_size);
-IDIO idio_bignum_integer_argument (IDIO f, IDIO bn);
-int64_t idio_bignum_int64_value (IDIO f, IDIO bn);
-IDIO idio_bignum_abs (IDIO f, IDIO bn);
-int idio_bignum_negativep (IDIO f, IDIO bn);
-IDIO idio_bignum_negate (IDIO f, IDIO bn);
-IDIO idio_bignum_add (IDIO f, IDIO a, IDIO b);
-int idio_bignum_zero_p (IDIO f, IDIO a);
-int idio_bignum_lt_p (IDIO f, IDIO a, IDIO b);
-int idio_bignum_equal_p (IDIO f, IDIO a, IDIO b);
-IDIO idio_bignum_subtract (IDIO f, IDIO a, IDIO b);
-IDIO idio_bignum_shift_left (IDIO f, IDIO a, int fill);
-IDIO idio_bignum_shift_right (IDIO f, IDIO a);
-IDIO idio_bignum_multiply (IDIO f, IDIO a, IDIO b);
-IDIO idio_bignum_equalize (IDIO f, IDIO a, IDIO b);
-IDIO idio_bignum_divide (IDIO f, IDIO a, IDIO b);
-IDIO idio_bignum_real (IDIO f, int flags, int64_t exp, IDIO sig_a);
-IDIO idio_bignum_real_to_integer (IDIO f, IDIO bn);
-IDIO idio_bignum_real_to_inexact (IDIO f, IDIO bn);
-IDIO idio_bignum_real_to_exact (IDIO f, IDIO bn);
-char *idio_bignum_integer_as_string (IDIO f, IDIO o);
-char *idio_bignum_real_as_string (IDIO f, IDIO o);
-char *idio_bignum_as_string (IDIO f, IDIO o);
-int idio_bignum_count_digits (IDIO f, IDIO sig_a);
-IDIO idio_bignum_normalize (IDIO f, IDIO o);
-char *idio_bignum_C_without_inexact (IDIO f, char *nums);
-IDIO idio_bignum_integer_C (IDIO f, char *nums, int req_exact);
-IDIO idio_bignum_real_C (IDIO f, char *nums);
-IDIO idio_bignum_C (IDIO f, char *nums);
+IDIO idio_bignum (int flags, int64_t exp, IDIO sig_a);
+int idio_isa_bignum (IDIO bn);
+void idio_free_bignum (IDIO bn);
+IDIO idio_bignum_integer_int64 (int64_t i);
+IDIO idio_bignum_integer (IDIO sig_a);
+int idio_bignum_real_zero_p (IDIO a);
+int idio_bignum_real_equal_p (IDIO a, IDIO b);
+IDIO idio_bignum_scale_significand (IDIO bn, int64_t desired_exp, int max_size);
+IDIO idio_bignum_integer_argument (IDIO bn);
+int64_t idio_bignum_int64_value (IDIO bn);
+IDIO idio_bignum_abs (IDIO bn);
+int idio_bignum_negativep (IDIO bn);
+IDIO idio_bignum_negate (IDIO bn);
+IDIO idio_bignum_add (IDIO a, IDIO b);
+int idio_bignum_zero_p (IDIO a);
+int idio_bignum_lt_p (IDIO a, IDIO b);
+int idio_bignum_equal_p (IDIO a, IDIO b);
+IDIO idio_bignum_subtract (IDIO a, IDIO b);
+IDIO idio_bignum_shift_left (IDIO a, int fill);
+IDIO idio_bignum_shift_right (IDIO a);
+IDIO idio_bignum_multiply (IDIO a, IDIO b);
+IDIO idio_bignum_equalize (IDIO a, IDIO b);
+IDIO idio_bignum_divide (IDIO a, IDIO b);
+IDIO idio_bignum_real (int flags, int64_t exp, IDIO sig_a);
+IDIO idio_bignum_real_to_integer (IDIO bn);
+IDIO idio_bignum_real_to_inexact (IDIO bn);
+IDIO idio_bignum_real_to_exact (IDIO bn);
+char *idio_bignum_integer_as_string (IDIO o);
+char *idio_bignum_real_as_string (IDIO o);
+char *idio_bignum_as_string (IDIO o);
+int idio_bignum_count_digits (IDIO sig_a);
+IDIO idio_bignum_normalize (IDIO o);
+char *idio_bignum_C_without_inexact (char *nums);
+IDIO idio_bignum_integer_C (char *nums, int req_exact);
+IDIO idio_bignum_real_C (char *nums);
+IDIO idio_bignum_C (char *nums);
 
-IDIO idio_bignum_primitive_add (IDIO f, IDIO args);
-IDIO idio_bignum_primitive_subtract (IDIO f, IDIO args);
-IDIO idio_bignum_primitive_multiply (IDIO f, IDIO args);
-IDIO idio_bignum_primitive_divide (IDIO f, IDIO args);
-IDIO idio_bignum_primitive_lt (IDIO f, IDIO args);
-IDIO idio_bignum_primitive_le (IDIO f, IDIO args);
-IDIO idio_bignum_primitive_gt (IDIO f, IDIO args);
-IDIO idio_bignum_primitive_ge (IDIO f, IDIO args);
-IDIO idio_bignum_primitive_eq (IDIO f, IDIO args);
+IDIO idio_bignum_primitive_add (IDIO args);
+IDIO idio_bignum_primitive_subtract (IDIO args);
+IDIO idio_bignum_primitive_multiply (IDIO args);
+IDIO idio_bignum_primitive_divide (IDIO args);
+IDIO idio_bignum_primitive_lt (IDIO args);
+IDIO idio_bignum_primitive_le (IDIO args);
+IDIO idio_bignum_primitive_gt (IDIO args);
+IDIO idio_bignum_primitive_ge (IDIO args);
+IDIO idio_bignum_primitive_eq (IDIO args);
 
 #endif
 
