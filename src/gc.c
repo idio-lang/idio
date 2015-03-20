@@ -29,8 +29,8 @@ void idio_init_gc ()
 {
     idio_gc = idio_gc_new ();
 
-    idio_gc->verbose++;
-
+    idio_gc->verbose = 0;
+    
     idio_gc_finalizer_hash = IDIO_HASH_EQP (64);
     idio_gc_protect (idio_gc_finalizer_hash);
 }
@@ -57,15 +57,12 @@ void idio_run_all_finalizers ()
 
 void idio_final_gc ()
 {
-    idio_gc_walk_tree ();
     idio_run_all_finalizers ();
-    idio_gc_walk_tree ();
 
     /* unprotect the finalizer hash itself */
     idio_gc_expose (idio_gc_finalizer_hash);
     /*  prevent it being used */
     idio_gc_finalizer_hash = idio_S_nil;
-    idio_gc_walk_tree ();
 
     idio_gc_collect ();
 
@@ -85,6 +82,11 @@ void *idio_alloc (size_t s)
      * catch assumptions about default memory bugs
      */
     return memset (blob, 0x5e, s);
+}
+
+void *idio_realloc (void *p, size_t s)
+{
+    return realloc (p, s);
 }
 
 /*
@@ -151,7 +153,7 @@ void idio_gc_alloc (void **p, size_t size)
 
 IDIO idio_clone_base (IDIO o)
 {
-    return idio_gc_get (o->type);
+    return idio_gc_get (idio_type (o));
 }
 
 int idio_isa (IDIO o, idio_type_e type)
@@ -159,7 +161,17 @@ int idio_isa (IDIO o, idio_type_e type)
     IDIO_ASSERT (o);
     IDIO_C_ASSERT (type);
     
-    return (o->type == type);
+    switch ((intptr_t) o & 3) {
+    case IDIO_TYPE_FIXNUM_MARK:
+	return (IDIO_TYPE_FIXNUM == type);
+    case IDIO_TYPE_CONSTANT_MARK:
+	return (IDIO_TYPE_CONSTANT == type);
+    case IDIO_TYPE_POINTER_MARK:
+	return (o->type == type);
+    default:
+	idio_error_message ("isa: unexpected object type %x", o);
+	return 0;
+    }
 }
 
 int idio_isa_nil (IDIO o)
@@ -932,34 +944,30 @@ void idio_gc_stats ()
 	tgets += idio_gc->stats.tgets[i];
 	nused += idio_gc->stats.nused[i];
     }
-    if (tgets && nused) {
-	count = tgets;
-	scale = 0;
-	idio_hcount (&count, &scale);
-	fprintf (stderr, "idio_gc_stats: %4lld%c total GC requests\n", count, scales[scale]);
-	count = nused;
-	scale = 0;
-	idio_hcount (&count, &scale);
-	fprintf (stderr, "idio_gc_stats: %4lld%c current GC requests\n", count, scales[scale]);
-	fprintf (stderr, "idio_gc_stats: %-10.10s %5.5s %4.4s %5.5s %4.4s\n", "type", "total", "%age", "used", "%age");
-	for (i = 1; i < IDIO_TYPE_MAX; i++) {
-	    unsigned long long tgets_count = idio_gc->stats.tgets[i];
-	    int tgets_scale = 0;
-	    idio_hcount (&tgets_count, &tgets_scale);
-	    unsigned long long nused_count = idio_gc->stats.nused[i];
-	    int nused_scale = 0;
-	    idio_hcount (&nused_count, &nused_scale);
+    count = tgets;
+    scale = 0;
+    idio_hcount (&count, &scale);
+    fprintf (stderr, "idio_gc_stats: %4lld%c total GC requests\n", count, scales[scale]);
+    count = nused;
+    scale = 0;
+    idio_hcount (&count, &scale);
+    fprintf (stderr, "idio_gc_stats: %4lld%c current GC requests\n", count, scales[scale]);
+    fprintf (stderr, "idio_gc_stats: %-10.10s %5.5s %4.4s %5.5s %4.4s\n", "type", "total", "%age", "used", "%age");
+    for (i = 1; i < IDIO_TYPE_MAX; i++) {
+	unsigned long long tgets_count = idio_gc->stats.tgets[i];
+	int tgets_scale = 0;
+	idio_hcount (&tgets_count, &tgets_scale);
+	unsigned long long nused_count = idio_gc->stats.nused[i];
+	int nused_scale = 0;
+	idio_hcount (&nused_count, &nused_scale);
     
-	    fprintf (stderr, "idio_gc_stats: %-10.10s %4lld%c %3lld %4lld%c %3lld\n",
-		     idio_type_enum2string (i),
-		     tgets_count, scales[tgets_scale],
-		     idio_gc->stats.tgets[i] * 100 / tgets,
-		     nused_count, scales[nused_scale],
-		     idio_gc->stats.nused[i] * 100 / nused
-		     );
-	}
-    } else {
-	fprintf (stderr, "idio_gc_stats: error? tgets=%d nused=%d\n", tgets, nused);
+	fprintf (stderr, "idio_gc_stats: %-10.10s %4lld%c %3lld %4lld%c %3lld\n",
+		 idio_type_enum2string (i),
+		 tgets_count, scales[tgets_scale],
+		 tgets ? idio_gc->stats.tgets[i] * 100 / tgets : -1,
+		 nused_count, scales[nused_scale],
+		 nused ? idio_gc->stats.nused[i] * 100 / nused : -1
+		 );
     }
 
     count = idio_gc->stats.mgets;
@@ -1067,9 +1075,6 @@ void idio_gc_ports_free ()
 
 void idio_gc_free ()
 {
-    idio_gc_stats ();
-    idio_gc_walk_tree ();
-
     /*
       Things with finalizers will try to use embedded references which
       may have been freed by gc_sweep (because we will remove

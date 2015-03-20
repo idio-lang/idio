@@ -112,9 +112,10 @@ void idio_list_bind (IDIO *list, size_t nargs, ...)
     va_end (ap);
 }
 
-IDIO idio_list_reverse (IDIO l)
+IDIO idio_improper_list_reverse (IDIO l, IDIO last)
 {
     IDIO_ASSERT (l);
+    IDIO_ASSERT (last);
     
     if (idio_S_nil == l) {
 	return idio_S_nil;
@@ -122,7 +123,7 @@ IDIO idio_list_reverse (IDIO l)
 
     IDIO_TYPE_ASSERT (pair, l);
 
-    IDIO r = idio_S_nil;
+    IDIO r = last;
     
     while (idio_S_nil != l) {
 	IDIO h = idio_pair_head (l);
@@ -132,6 +133,13 @@ IDIO idio_list_reverse (IDIO l)
     }
 
     return r;
+}
+
+IDIO idio_list_reverse (IDIO l)
+{
+    IDIO_ASSERT (l);
+    
+    return idio_improper_list_reverse (l, idio_S_nil);
 }
 
 IDIO idio_list_to_array (IDIO l)

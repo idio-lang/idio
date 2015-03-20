@@ -125,7 +125,9 @@ int idio_C_typedef_type_cmp (IDIO C_typedef, IDIO val)
 {
     IDIO_ASSERT (C_typedef);
     
-    switch (val->type) {
+    int type = idio_type (val);
+    
+    switch (type) {
     case IDIO_TYPE_C_INT8: return (C_typedef == idio_CTD_int8);
     case IDIO_TYPE_C_UINT8: return (C_typedef == idio_CTD_uint8);
     case IDIO_TYPE_C_INT16: return (C_typedef == idio_CTD_int16);

@@ -270,7 +270,9 @@ int idio_isa_C_number (IDIO co)
 {
     IDIO_ASSERT (co);
 
-    switch (co->type) {
+    int type = idio_type (co);
+    
+    switch (type) {
     case IDIO_TYPE_C_INT64:
     case IDIO_TYPE_C_UINT64:
     case IDIO_TYPE_C_INT32:
@@ -294,7 +296,7 @@ IDIO idio_C_number_cast (IDIO co, int type)
 
     if (! IDIO_TYPE_POINTERP (co)) {
 	char em[BUFSIZ];
-	sprintf (em, "idio_C_number_cast: conversion not possible from %s %d to %d", idio_type2string (co), co->type, type);
+	sprintf (em, "idio_C_number_cast: conversion not possible from %s %d to %d", idio_type2string (co), idio_type (co), type);
 	idio_error_add_C (em);
 	return idio_S_nil;
     }
@@ -305,7 +307,7 @@ IDIO idio_C_number_cast (IDIO co, int type)
     switch (type) {
     case IDIO_TYPE_C_INT8:
 	{
-	    switch (co->type) {
+	    switch (idio_type (co)) {
 	    case IDIO_TYPE_C_INT8: r = idio_C_int8 ((int8_t) IDIO_C_TYPE_INT8 (co)); break;
 	    case IDIO_TYPE_C_UINT8: r = idio_C_int8 ((int8_t) IDIO_C_TYPE_UINT8 (co)); break;
 	    case IDIO_TYPE_C_INT16: r = idio_C_int8 ((int8_t) IDIO_C_TYPE_INT16 (co)); break;
@@ -324,7 +326,7 @@ IDIO idio_C_number_cast (IDIO co, int type)
 	}
     case IDIO_TYPE_C_UINT8:
 	{
-	    switch (co->type) {
+	    switch (idio_type (co)) {
 	    case IDIO_TYPE_C_INT8: r = idio_C_uint8 ((uint8_t) IDIO_C_TYPE_INT8 (co)); break;
 	    case IDIO_TYPE_C_UINT8: r = idio_C_uint8 ((uint8_t) IDIO_C_TYPE_UINT8 (co)); break;
 	    case IDIO_TYPE_C_INT16: r = idio_C_uint8 ((uint8_t) IDIO_C_TYPE_INT16 (co)); break;
@@ -343,7 +345,7 @@ IDIO idio_C_number_cast (IDIO co, int type)
 	}
     case IDIO_TYPE_C_INT16:
 	{
-	    switch (co->type) {
+	    switch (idio_type (co)) {
 	    case IDIO_TYPE_C_INT8: r = idio_C_int16 ((int16_t) IDIO_C_TYPE_INT8 (co)); break;
 	    case IDIO_TYPE_C_UINT8: r = idio_C_int16 ((int16_t) IDIO_C_TYPE_UINT8 (co)); break;
 	    case IDIO_TYPE_C_INT16: r = idio_C_int16 ((int16_t) IDIO_C_TYPE_INT16 (co)); break;
@@ -362,7 +364,7 @@ IDIO idio_C_number_cast (IDIO co, int type)
 	}
     case IDIO_TYPE_C_UINT16:
 	{
-	    switch (co->type) {
+	    switch (idio_type (co)) {
 	    case IDIO_TYPE_C_INT8: r = idio_C_uint16 ((uint16_t) IDIO_C_TYPE_INT8 (co)); break;
 	    case IDIO_TYPE_C_UINT8: r = idio_C_uint16 ((uint16_t) IDIO_C_TYPE_UINT8 (co)); break;
 	    case IDIO_TYPE_C_INT16: r = idio_C_uint16 ((uint16_t) IDIO_C_TYPE_INT16 (co)); break;
@@ -381,7 +383,7 @@ IDIO idio_C_number_cast (IDIO co, int type)
 	}
     case IDIO_TYPE_C_INT32:
 	{
-	    switch (co->type) {
+	    switch (idio_type (co)) {
 	    case IDIO_TYPE_C_INT8: r = idio_C_int32 ((int32_t) IDIO_C_TYPE_INT8 (co)); break;
 	    case IDIO_TYPE_C_UINT8: r = idio_C_int32 ((int32_t) IDIO_C_TYPE_UINT8 (co)); break;
 	    case IDIO_TYPE_C_INT16: r = idio_C_int32 ((int32_t) IDIO_C_TYPE_INT16 (co)); break;
@@ -400,7 +402,7 @@ IDIO idio_C_number_cast (IDIO co, int type)
 	}
     case IDIO_TYPE_C_UINT32:
 	{
-	    switch (co->type) {
+	    switch (idio_type (co)) {
 	    case IDIO_TYPE_C_INT8: r = idio_C_uint32 ((uint32_t) IDIO_C_TYPE_INT8 (co)); break;
 	    case IDIO_TYPE_C_UINT8: r = idio_C_uint32 ((uint32_t) IDIO_C_TYPE_UINT8 (co)); break;
 	    case IDIO_TYPE_C_INT16: r = idio_C_uint32 ((uint32_t) IDIO_C_TYPE_INT16 (co)); break;
@@ -419,7 +421,7 @@ IDIO idio_C_number_cast (IDIO co, int type)
 	}
     case IDIO_TYPE_C_INT64:
 	{
-	    switch (co->type) {
+	    switch (idio_type (co)) {
 	    case IDIO_TYPE_C_INT8: r = idio_C_int64 ((int64_t) IDIO_C_TYPE_INT8 (co)); break;
 	    case IDIO_TYPE_C_UINT8: r = idio_C_int64 ((int64_t) IDIO_C_TYPE_UINT8 (co)); break;
 	    case IDIO_TYPE_C_INT16: r = idio_C_int64 ((int64_t) IDIO_C_TYPE_INT16 (co)); break;
@@ -438,7 +440,7 @@ IDIO idio_C_number_cast (IDIO co, int type)
 	}
     case IDIO_TYPE_C_UINT64:
 	{
-	    switch (co->type) {
+	    switch (idio_type (co)) {
 	    case IDIO_TYPE_C_INT8: r = idio_C_uint64 ((uint64_t) IDIO_C_TYPE_INT8 (co)); break;
 	    case IDIO_TYPE_C_UINT8: r = idio_C_uint64 ((uint64_t) IDIO_C_TYPE_UINT8 (co)); break;
 	    case IDIO_TYPE_C_INT16: r = idio_C_uint64 ((uint64_t) IDIO_C_TYPE_INT16 (co)); break;
@@ -457,7 +459,7 @@ IDIO idio_C_number_cast (IDIO co, int type)
 	}
     case IDIO_TYPE_C_FLOAT:
 	{
-	    switch (co->type) {
+	    switch (idio_type (co)) {
 	    case IDIO_TYPE_C_INT8: r = idio_C_float ((float) IDIO_C_TYPE_INT8 (co)); break;
 	    case IDIO_TYPE_C_UINT8: r = idio_C_float ((float) IDIO_C_TYPE_UINT8 (co)); break;
 	    case IDIO_TYPE_C_INT16: r = idio_C_float ((float) IDIO_C_TYPE_INT16 (co)); break;
@@ -476,7 +478,7 @@ IDIO idio_C_number_cast (IDIO co, int type)
 	}
     case IDIO_TYPE_C_DOUBLE:
 	{
-	    switch (co->type) {
+	    switch (idio_type (co)) {
 	    case IDIO_TYPE_C_INT8: r = idio_C_double ((double) IDIO_C_TYPE_INT8 (co)); break;
 	    case IDIO_TYPE_C_UINT8: r = idio_C_double ((double) IDIO_C_TYPE_UINT8 (co)); break;
 	    case IDIO_TYPE_C_INT16: r = idio_C_double ((double) IDIO_C_TYPE_INT16 (co)); break;
@@ -495,7 +497,7 @@ IDIO idio_C_number_cast (IDIO co, int type)
 	}
     case IDIO_TYPE_C_POINTER:
 	{
-	    switch (co->type) {
+	    switch (idio_type (co)) {
 	    case IDIO_TYPE_C_INT8: r = idio_C_pointer ((void *) &(IDIO_C_TYPE_INT8 (co))); break;
 	    case IDIO_TYPE_C_UINT8: r = idio_C_pointer ((void *) &(IDIO_C_TYPE_UINT8 (co))); break;
 	    case IDIO_TYPE_C_INT16: r = idio_C_pointer ((void *) &(IDIO_C_TYPE_INT16 (co))); break;
@@ -526,7 +528,7 @@ IDIO idio_C_number_cast (IDIO co, int type)
 	}
     case IDIO_TYPE_STRING:
 	{
-	    switch (co->type) {
+	    switch (idio_type (co)) {
 	    case IDIO_TYPE_C_POINTER: r = idio_C_pointer (IDIO_C_TYPE_POINTER_P (co)); break;
 	    case IDIO_TYPE_STRING: r = idio_C_pointer ((void *) IDIO_STRING_S (co)); break;
 	    case IDIO_TYPE_SUBSTRING: r = idio_C_pointer ((void *) IDIO_SUBSTRING_S (co)); break;
@@ -543,7 +545,7 @@ IDIO idio_C_number_cast (IDIO co, int type)
 
     if (fail) {
 	char em[BUFSIZ];
-	sprintf (em, "idio_C_number_cast: conversion not possible from %s %d to %d", idio_type2string (co), co->type, type);
+	sprintf (em, "idio_C_number_cast: conversion not possible from %s %d to %d", idio_type2string (co), idio_type (co), type);
 	idio_error_add_C (em);
     }
 

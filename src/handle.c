@@ -156,11 +156,25 @@ int idio_handle_ungetc (IDIO h, int c)
 
     IDIO_HANDLE_LC (h) = c;
     
-    if ('\n' == r) {
+    if ('\n' == c) {
 	IDIO_HANDLE_LINE (h) -= 1;
     }
 
     IDIO_HANDLE_POS (h) -= 1;
+
+    return c;
+}
+
+int idio_handle_peek (IDIO h)
+{
+    IDIO_ASSERT (h);
+
+    if (! idio_isa_handle (h)) {
+	idio_error_bad_handle (h);
+    }
+
+    int c = idio_handle_getc (h);
+    idio_handle_ungetc (h, c);
 
     return c;
 }
@@ -489,7 +503,7 @@ IDIO idio_defprimitive_primitive_C_read (IDIO h)
     
     h = idio_handle_or_current (h, IDIO_HANDLE_FLAG_READ);
 
-    return idio_read (h);
+    return idio_scm_read (h);
 }
 
 IDIO idio_defprimitive_primitive_C_read_char (IDIO h)
@@ -498,13 +512,6 @@ IDIO idio_defprimitive_primitive_C_read_char (IDIO h)
     
     h = idio_handle_or_current (h, IDIO_HANDLE_FLAG_READ);
 
-    return idio_read (h);
+    return idio_scm_read (h);
 }
 
-IDIO idio_read (IDIO h)
-{
-    IDIO_ASSERT (h);
-    
-    IDIO_C_ASSERT (0);
-    return idio_S_nil;
-}

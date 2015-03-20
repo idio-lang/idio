@@ -22,10 +22,30 @@
 
 #include "idio.h"
 
+int idio_type (IDIO o)
+{
+    switch ((intptr_t) o & 3) {
+    case IDIO_TYPE_FIXNUM_MARK:
+	return IDIO_TYPE_FIXNUM;
+    case IDIO_TYPE_CONSTANT_MARK:
+	return IDIO_TYPE_CONSTANT;
+    case IDIO_TYPE_CHARACTER_MARK:
+	return IDIO_TYPE_CHARACTER;
+    case IDIO_TYPE_POINTER_MARK:
+	return o->type;
+    default:
+	idio_error_message ("type: unexpected object type %x", o);
+	return IDIO_TYPE_NONE;
+    }
+}
+
 const char *idio_type_enum2string (idio_type_e type)
 {
     switch (type) {
     case IDIO_TYPE_NONE: return "NONE";
+    case IDIO_TYPE_FIXNUM: return "FIXNUM";
+    case IDIO_TYPE_CONSTANT: return "CONSTANT";
+    case IDIO_TYPE_CHARACTER: return "CHARACTER";
     case IDIO_TYPE_STRING: return "STRING";
     case IDIO_TYPE_SUBSTRING: return "SUBSTRING";
     case IDIO_TYPE_SYMBOL: return "SYMBOL";
@@ -59,7 +79,7 @@ const char *idio_type_enum2string (idio_type_e type)
     case IDIO_TYPE_C_FFI: return "C_FFI";
     case IDIO_TYPE_OPAQUE: return "OPAQUE";
     default:
-	fprintf (stderr, "IDIO_TYPE_ENUM2STRING: unexpected type %d\n", type);
+	IDIO_FPRINTF (stderr, "IDIO_TYPE_ENUM2STRING: unexpected type %d\n", type);
 	return "NOT KNOWN";
     }
 }
@@ -113,6 +133,7 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
     switch (m1) {
     case IDIO_TYPE_FIXNUM_MARK:
     case IDIO_TYPE_CONSTANT_MARK:
+    case IDIO_TYPE_CHARACTER_MARK:
 	/*
 	  We already tested for equality above!
 	 */
@@ -287,14 +308,13 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
  */
 char *idio_as_string (IDIO o, int depth)
 {
-
     char *r;
     size_t i;
     
     switch ((intptr_t) o & 3) {
     case IDIO_TYPE_FIXNUM_MARK:
 	{
-	    if (asprintf (&r, "%ld", ((intptr_t) o) >> 2) == -1) {
+	    if (asprintf (&r, "%ld", IDIO_FIXNUM_VAL (o)) == -1) {
 		return NULL;
 	    }
 	    break;
@@ -303,7 +323,7 @@ char *idio_as_string (IDIO o, int depth)
 	{
 	    char *t = NULL;
 	    
-	    long v = ((intptr_t) o) >> 2;
+	    long v = IDIO_CONSTANT_VAL (o);
 	    
 	    switch (v) {
 	    case IDIO_CONSTANT_NIL:             t = "#nil";            break;
@@ -342,7 +362,7 @@ char *idio_as_string (IDIO o, int depth)
 	    case IDIO_CONSTANT_ASTERISK:        t = "asterisk";        break;
 	    case IDIO_CONSTANT_NAMESPACE:       t = "namespace";       break;
 	    default:
-		IDIO_FPRINTF (stderr, "%10p v=%zd\n", o, v);
+		fprintf (stderr, "idio_as_string: unexpected constant: %10p v=%zd\n", o, v);
 		IDIO_C_ASSERT (0);
 		break;
 	    }
@@ -352,9 +372,37 @@ char *idio_as_string (IDIO o, int depth)
 	    }
 	}
 	break;
+    case IDIO_TYPE_CHARACTER_MARK:
+	{
+	    int c = IDIO_CHARACTER_VAL (o);
+	    switch (c) {
+	    case ' ':
+		if (asprintf (&r, "#\\space") == -1) {
+		    return NULL;
+		}
+		break;
+	    case '\n':
+		if (asprintf (&r, "#\\newline") == -1) {
+		    return NULL;
+		}
+		break;
+	    default:
+		if (isprint (c)) {
+		    if (asprintf (&r, "#\\%c", c) == -1) {
+			return NULL;
+		    }
+		} else {
+		    if (asprintf (&r, "#\\%#x", c) == -1) {
+			return NULL;
+		    }
+		}
+		break;
+	    }
+	    break;
+	}
     case IDIO_TYPE_POINTER_MARK:
 	{
-	    switch (o->type) {
+	    switch (idio_type (o)) {
 	    case IDIO_TYPE_C_INT8:
 		if (asprintf (&r, "%hhd", IDIO_C_TYPE_INT8 (o)) == -1) {
 		    return NULL;
@@ -421,13 +469,16 @@ char *idio_as_string (IDIO o, int depth)
 		}
 		break;
 	    case IDIO_TYPE_SYMBOL:
-		r = idio_as_string (IDIO_SYMBOL_STRING (o), depth - 1);
+		if (asprintf (&r, ":") == -1) {
+		    return NULL;
+		}
+		IDIO_STRCAT (r, IDIO_SYMBOL_S (o));
 		break;
 	    case IDIO_TYPE_PAIR:
 		/*
 		  Technically a list (of pairs) should look like:
 
-		  "(a (b (c (d . nil))))"
+		  "(a . (b . (c . (d . nil))))"
 
 		  but tradition dictates that we should flatten
 		  the list to:
@@ -480,7 +531,7 @@ char *idio_as_string (IDIO o, int depth)
 			IDIO_STRCAT_FREE (r, idio_as_string (IDIO_PAIR_H (o), depth - 1));
 
 			o = IDIO_PAIR_T (o);
-			if (o->type != IDIO_TYPE_PAIR) {
+			if (idio_type (o) != IDIO_TYPE_PAIR) {
 			    if (idio_S_nil != o) {
 				char *t = idio_as_string (o, depth - 1);
 				char *ps;
@@ -652,7 +703,7 @@ char *idio_as_string (IDIO o, int depth)
 		    break;
 		}
 	    case IDIO_TYPE_HANDLE:
-		if (asprintf (&r, "#H{%s}", IDIO_HANDLE_NAME (o)) == -1) {
+		if (asprintf (&r, "#H{%s:%zu:%zu}", IDIO_HANDLE_NAME (o), IDIO_HANDLE_LINE (o), IDIO_HANDLE_POS (o)) == -1) {
 		    return NULL;
 		}
 		break;
@@ -793,14 +844,17 @@ char *idio_as_string (IDIO o, int depth)
  */
 char *idio_display_string (IDIO o)
 {
-    IDIO_ASSERT (o);
-
     char *r;
     
     switch ((intptr_t) o & 3) {
     case IDIO_TYPE_FIXNUM_MARK:
     case IDIO_TYPE_CONSTANT_MARK:
 	r = idio_as_string (o, 4);
+	break;
+    case IDIO_TYPE_CHARACTER_MARK:
+	if (asprintf (&r, "%c", (char) IDIO_CHARACTER_VAL (o)) == -1) {
+	    return NULL;
+	}
 	break;
     case IDIO_TYPE_POINTER_MARK:
 	{
@@ -872,11 +926,11 @@ IDIO idio_apply (IDIO func, IDIO args)
     IDIO_ASSERT (func);
     IDIO_ASSERT (args);
     
-    switch (func->type) {
+    switch (idio_type (func)) {
     case IDIO_TYPE_CLOSURE:
     case IDIO_TYPE_PRIMITIVE_C:
     default:
-	fprintf (stderr, "idio_apply: unexpected function type %s %d\n", idio_type_enum2string (func->type), func->type);
+	fprintf (stderr, "idio_apply: unexpected function type %s %d\n", idio_type_enum2string (idio_type (func)), idio_type (func));
     }
 
     return idio_S_nil;
@@ -1056,6 +1110,34 @@ void idio_dump (IDIO o, int detail)
 
     IDIO_FPRINTF (stderr, "\n");
 }
+
+IDIO idio_fixnum_C (char *str, int base)
+{
+    char *end;
+    errno = 0;
+    intptr_t val = strtoll (str, &end, base);
+
+    if ((errno == ERANGE &&
+	 (val == LLONG_MAX ||
+	  val == LLONG_MIN)) ||
+	(errno != 0 &&
+	 val == 0)) {
+	idio_error_message ("idio_fixnum_C: strtoll (%s) = %ld: %s", str, val, strerror (errno));
+	return idio_S_nil;
+    }
+
+    if (end == str) {
+	idio_error_message ("idio_fixnum_C: strtoll (%s): No digits?", str);
+	return idio_S_nil;
+    }
+	
+    if ('\0' == *end) {
+	return IDIO_FIXNUM (val);
+    } else {
+	idio_error_message ("idio_fixnum_C: strtoll (%s) = %ld", str, val);
+	return idio_S_nil;
+    }
+}    
 
 /* Local Variables: */
 /* mode: C/l */

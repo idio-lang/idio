@@ -30,6 +30,19 @@ int idio_isa_handle (IDIO d);
 void idio_free_handle (IDIO d);
 void idio_handle_finalizer (IDIO handle);
 
+void idio_handle_free (IDIO h);
+int idio_handle_readyp (IDIO h);
+int idio_handle_getc (IDIO h);
+int idio_handle_ungetc (IDIO h, int c);
+int idio_handle_peek (IDIO h);
+int idio_handle_eofp (IDIO h);
+int idio_handle_close (IDIO h);
+int idio_handle_putc (IDIO h, int c);
+int idio_handle_puts (IDIO h, char *s, size_t l);
+int idio_handle_flush (IDIO h);
+off_t idio_handle_seek (IDIO h, off_t offset, int whence);
+void idio_handle_print (IDIO h, IDIO o);
+
 IDIO idio_close_input_handle (IDIO h);
 IDIO idio_close_output_handle (IDIO h);
 IDIO idio_current_input_handle ();

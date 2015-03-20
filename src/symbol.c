@@ -32,15 +32,19 @@ int idio_symbol_C_eqp (void *s1, void *s2)
      */
     if (idio_S_nil == s1 ||
 	idio_S_nil == s2) {
-	return 0;
+	return -1;
     }
 
-    return strcmp ((char *) s1, (char *) s2);
+    return strcmp ((const char *) s1, (const char *) s2);
 }
 
 size_t idio_symbol_C_hash (IDIO h, void *s)
 {
-    size_t hvalue = idio_hash_hashval_string_C (strlen ((char *) s), s);
+    size_t hvalue = (uintptr_t) s;
+
+    if (idio_S_nil != s) {
+	hvalue = idio_hash_hashval_string_C (strlen ((char *) s), s);
+    }
     
     return (hvalue & IDIO_HASH_MASK (h));
 }
@@ -62,12 +66,13 @@ IDIO idio_symbol_C (const char *s_C)
 {
     IDIO_C_ASSERT (s_C);
 
-    IDIO_FPRINTF (stderr, "idio_symbol: '%s'\n", s_C);
-
     IDIO o = idio_gc_get (IDIO_TYPE_SYMBOL);
 
     IDIO_GC_ALLOC (o->u.symbol, sizeof (idio_symbol_t));
-    IDIO_SYMBOL_STRING (o) = idio_string_C (s_C);
+
+    size_t blen = strlen (s_C);
+    IDIO_GC_ALLOC (o->u.symbol->s, blen + 1);
+    strcpy (IDIO_SYMBOL_S (o), s_C);
     
     return o;
 }
@@ -91,16 +96,14 @@ IDIO idio_symbols_C_intern (char *s)
 {
     IDIO_C_ASSERT (s);
 
-    IDIO r = idio_hash_get (idio_symbols_hash, s);
+    IDIO sym = idio_hash_get (idio_symbols_hash, s);
 
-    if (idio_S_nil == r) {
-	r = idio_symbol_C (s);
-	idio_hash_put (idio_symbols_hash, s, r);
+    if (idio_S_nil == sym) {
+	sym = idio_symbol_C (s);
+	idio_hash_put (idio_symbols_hash, IDIO_SYMBOL_S (sym), sym);
     }
 
-    idio_dump (idio_symbols_hash, 4);
-
-    return r;
+    return sym;
 }
 
 IDIO idio_symbols_string_intern (IDIO str)

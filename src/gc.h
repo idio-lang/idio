@@ -24,19 +24,22 @@
 #define GC_H
 
 #define IDIO_TYPE_NONE            0
-#define IDIO_TYPE_STRING          1
-#define IDIO_TYPE_SUBSTRING       2
-#define IDIO_TYPE_SYMBOL          3
-#define IDIO_TYPE_PAIR            4
-#define IDIO_TYPE_ARRAY           5
-#define IDIO_TYPE_HASH            6
-#define IDIO_TYPE_CLOSURE         7
-#define IDIO_TYPE_PRIMITIVE_C     8
-#define IDIO_TYPE_BIGNUM          9
-#define IDIO_TYPE_FRAME           10
-#define IDIO_TYPE_HANDLE          11
-#define IDIO_TYPE_STRUCT_TYPE     12
-#define IDIO_TYPE_STRUCT_INSTANCE 13
+#define IDIO_TYPE_FIXNUM          1
+#define IDIO_TYPE_CONSTANT        2
+#define IDIO_TYPE_CHARACTER       3
+#define IDIO_TYPE_STRING          5
+#define IDIO_TYPE_SUBSTRING       6
+#define IDIO_TYPE_SYMBOL          7
+#define IDIO_TYPE_PAIR            8
+#define IDIO_TYPE_ARRAY           9
+#define IDIO_TYPE_HASH            10
+#define IDIO_TYPE_CLOSURE         11
+#define IDIO_TYPE_PRIMITIVE_C     12
+#define IDIO_TYPE_BIGNUM          13
+#define IDIO_TYPE_FRAME           14
+#define IDIO_TYPE_HANDLE          15
+#define IDIO_TYPE_STRUCT_TYPE     16
+#define IDIO_TYPE_STRUCT_INSTANCE 17
 #define IDIO_TYPE_C_INT8          22
 #define IDIO_TYPE_C_UINT8         23
 #define IDIO_TYPE_C_INT16         24
@@ -110,10 +113,10 @@ typedef struct idio_substring_s {
 #define IDIO_SUBSTRING_PARENT(S) ((S)->u.substring->parent)
 
 typedef struct idio_symbol_s {
-    struct idio_s *string;
+    char *s;			/* C string */
 } idio_symbol_t;
 
-#define IDIO_SYMBOL_STRING(S)	((S)->u.symbol->string)
+#define IDIO_SYMBOL_S(S)	((S)->u.symbol->s)
 
 typedef struct idio_pair_s {
     struct idio_s *grey;
@@ -503,14 +506,22 @@ typedef struct idio_gc_s {
 
 /*
  * Fixnums and small constants
- *
+
  * On a 32 bit processor a pointer to an Idio type structure will be
  * word-aligned meaning the bottom two bits will always be 00.  We can
  * use this to identify up to three other types which require less
  * than one word of data.
- *
- * Initially: fixnums and small constants.
- *
+
+ * The three types are:
+
+ * - fixnums: small integers (for small being at least +/- 2**29)
+
+ * - small constants the user can see and use: #t, #f, #eof etc..
+     Negative values cannot be evaluated.
+
+ * - characters: as a distinct type from fixnums to avoid the
+     awkwardness of trying to evaluate: 1 + ®
+
  * All three will then have a minimum of 30 bits.
  */
 
@@ -519,19 +530,23 @@ typedef struct idio_gc_s {
 #define IDIO_TYPE_POINTER_MARK	0x00
 #define IDIO_TYPE_FIXNUM_MARK	0x01
 #define IDIO_TYPE_CONSTANT_MARK	0x02
-/* room for one more! */
+#define IDIO_TYPE_CHARACTER_MARK	0x03
 
 #define IDIO_TYPE_POINTERP(x)	((((intptr_t) x) & IDIO_TYPE_MASK) == IDIO_TYPE_POINTER_MARK)
 #define IDIO_TYPE_FIXNUMP(x)	((((intptr_t) x) & IDIO_TYPE_MASK) == IDIO_TYPE_FIXNUM_MARK)
 #define IDIO_TYPE_CONSTANTP(x)	((((intptr_t) x) & IDIO_TYPE_MASK) == IDIO_TYPE_CONSTANT_MARK)
+#define IDIO_TYPE_CHARACTERP(x)	((((intptr_t) x) & IDIO_TYPE_MASK) == IDIO_TYPE_CHARACTER_MARK)
 
 #define IDIO_FIXNUM_VAL(x)	(((intptr_t) x) >> 2)
-#define IDIO_FIXNUM(x)		((x) << 2 | IDIO_TYPE_FIXNUM_MARK)
+#define IDIO_FIXNUM(x)		((IDIO) ((x) << 2 | IDIO_TYPE_FIXNUM_MARK))
 #define IDIO_FIXNUM_MIN		(INTPTR_MIN >> 2)
 #define IDIO_FIXNUM_MAX		(INTPTR_MAX >> 2)
 
 #define IDIO_CONSTANT_VAL(x)	(((intptr_t) x) >> 2)
-#define IDIO_CONSTANT(x)	((x) << 2 | IDIO_TYPE_CONSTANT_MARK)
+#define IDIO_CONSTANT(x)	((const IDIO) ((x) << 2 | IDIO_TYPE_CONSTANT_MARK))
+
+#define IDIO_CHARACTER_VAL(x)	(((intptr_t) x) >> 2)
+#define IDIO_CHARACTER(x)	((const IDIO) (((intptr_t) x) << 2 | IDIO_TYPE_CHARACTER_MARK))
 
 void idio_init_gc ();
 void idio_final_gc ();
@@ -539,6 +554,7 @@ void idio_register_finalizer (IDIO o, void (*func) (IDIO o));
 void idio_deregister_finalizer (IDIO o);
 void idio_run_finalizer (IDIO o);
 void *idio_alloc (size_t s);
+void *idio_realloc (void *p, size_t s);
 IDIO idio_gc_get (idio_type_e type);
 void idio_gc_alloc (void **p, size_t size);
 #define IDIO_GC_ALLOC(p,s)	(idio_gc_alloc ((void **)&(p), s))

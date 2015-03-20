@@ -97,8 +97,12 @@
 #endif
 
 #define IDIO_FLAG_FREE_SET(x) ((((x)->flags & IDIO_FLAG_FREE_MASK) == IDIO_FLAG_FREE))
+/*
 #define IDIO_IS_FREE(x)       (idio_S_nil == (x) || IDIO_FLAG_FREE_SET (x))
+*/
 #define IDIO_IS_SET(x)        (idio_S_nil != (x) && (IDIO_FLAG_FREE_SET (x) == 0))
+
+#define IDIO_WORD_MAX_LEN	BUFSIZ
 
 #include "gc.h"
 #include "array.h"
@@ -116,18 +120,24 @@
 #include "primitive.h"
 #include "pair.h"
 #include "path.h"
+#include "scm-read.h"
 #include "string.h"
 #include "struct.h"
 #include "symbol.h"
 #include "util.h"
 
-#define IDIO_CONSTANT_NIL		    0
-#define IDIO_CONSTANT_UNDEF           1
-#define IDIO_CONSTANT_UNSPEC          2
+/*
+ * Some well-known constants.
+ *
+ * Update util.c:idio_as-string as well!
+ */
+#define IDIO_CONSTANT_NIL	      0
+#define IDIO_CONSTANT_UNDEF           -1
+#define IDIO_CONSTANT_UNSPEC          -2
 #define IDIO_CONSTANT_EOF             3
 #define IDIO_CONSTANT_TRUE            4
 #define IDIO_CONSTANT_FALSE           5
-#define IDIO_CONSTANT_NAN             6
+#define IDIO_CONSTANT_NAN             -6
 #define IDIO_CONSTANT_ELSE            7
 #define IDIO_CONSTANT_EQ_GT           8
 #define IDIO_CONSTANT_QUOTE           9

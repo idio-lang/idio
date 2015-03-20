@@ -299,7 +299,7 @@ int idio_file_handle_eofp (IDIO fh)
 
     IDIO_TYPE_ASSERT (file_handle, fh);
 
-    return (IDIO_FILE_HANDLE_STREAM_FLAGS (fh) & IDIO_FILE_HANDLE_FLAG_EOF);
+    return (IDIO_FILE_HANDLE_FLAGS (fh) & IDIO_FILE_HANDLE_FLAG_EOF);
 }
 
 int idio_file_handle_close (IDIO fh)
@@ -402,7 +402,8 @@ int idio_file_handle_flush (IDIO fh)
      *
      * ??
      */
-    if (IDIO_HANDLE_INPUTP (fh)) {
+    if (IDIO_HANDLE_INPUTP (fh) &&
+	! IDIO_HANDLE_OUTPUTP (fh)) {
 	fprintf (stderr, "WARNING: flush (%s) open for reading\n", IDIO_HANDLE_NAME (fh));
     }
 
@@ -441,7 +442,7 @@ IDIO idio_defprimitive_open_file_handle (IDIO name, IDIO mode)
 
     char *name_C = NULL;
 
-    switch (name->type) {
+    switch (idio_type (name)) {
     case IDIO_TYPE_STRING:
     case IDIO_TYPE_SUBSTRING:
 	name_C = idio_string_as_C (name);
@@ -453,7 +454,7 @@ IDIO idio_defprimitive_open_file_handle (IDIO name, IDIO mode)
     
     char *mode_C = NULL;
 
-    switch (mode->type) {
+    switch (idio_type (mode)) {
     case IDIO_TYPE_STRING:
     case IDIO_TYPE_SUBSTRING:
 	mode_C = idio_string_as_C (mode);
@@ -475,9 +476,18 @@ IDIO idio_load_file (IDIO fh)
 {
     IDIO_ASSERT (fh);
 
+    for (;;) {
+	IDIO e = idio_scm_read (fh);
+
+	if (idio_S_eof == e) {
+	    break;
+	}
+
+	fprintf (stderr, "idio_load_file: e=%s\n", idio_as_string (e, 1));
+    }
     
     IDIO_HANDLE_M_CLOSE (fh) (fh);
-    
+
     return idio_S_true;
 }
 

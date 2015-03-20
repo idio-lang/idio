@@ -116,7 +116,7 @@ IDIO idio_bignum_scale_significand (IDIO bn, int64_t desired_exp, int max_size);
 IDIO idio_bignum_integer_argument (IDIO bn);
 int64_t idio_bignum_int64_value (IDIO bn);
 IDIO idio_bignum_abs (IDIO bn);
-int idio_bignum_negativep (IDIO bn);
+int idio_bignum_negative_p (IDIO bn);
 IDIO idio_bignum_negate (IDIO bn);
 IDIO idio_bignum_add (IDIO a, IDIO b);
 int idio_bignum_zero_p (IDIO a);

@@ -43,6 +43,7 @@ void idio_final ()
     idio_final_C_struct ();
     idio_final_file_handle ();
     idio_final_handle ();
+
     idio_final_symbol ();
     idio_final_gc ();
 }

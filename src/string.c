@@ -83,7 +83,7 @@ IDIO idio_string_copy (IDIO string)
 
     char *s = idio_string_s (string);
 
-    switch (string->type) {
+    switch (idio_type (string)) {
     case IDIO_TYPE_STRING:
 	{
 	    copy = idio_string_C (s);
@@ -166,7 +166,7 @@ int idio_string_cmp_C (IDIO so, char *s_C)
 
     IDIO_TYPE_ASSERT (string, so);
 
-    if (IDIO_IS_FREE (so)) {
+    if (idio_S_nil == so) {
 	return 0;
     }
 
@@ -188,7 +188,7 @@ size_t idio_string_blen (IDIO so)
 
     size_t blen = 0;
 
-    switch (so->type) {
+    switch (idio_type (so)) {
     case IDIO_TYPE_STRING:
 	blen = IDIO_STRING_BLEN (so);
 	break;
@@ -198,7 +198,7 @@ size_t idio_string_blen (IDIO so)
     default:
 	{
 	    char em[BUFSIZ];
-	    sprintf (em, "idio_type_string: unexpected string type %d", so->type);
+	    sprintf (em, "idio_type_string: unexpected string type %d", idio_type (so));
 	    idio_error_add_C (em);
 	    break;
 	}
@@ -215,7 +215,7 @@ char *idio_string_s (IDIO so)
 
     char *s = NULL;
 
-    switch (so->type) {
+    switch (idio_type (so)) {
     case IDIO_TYPE_STRING:
 	s = IDIO_STRING_S (so);
 	break;
@@ -225,7 +225,7 @@ char *idio_string_s (IDIO so)
     default:
 	{
 	    char em[BUFSIZ];
-	    sprintf (em, "idio_type_string: unexpected string type %d", so->type);
+	    sprintf (em, "idio_type_string: unexpected string type %d", idio_type (so));
 	    idio_error_add_C (em);
 	    break;
 	}
@@ -245,7 +245,7 @@ char *idio_string_as_C (IDIO so)
 
     char *s = NULL;
 
-    switch (so->type) {
+    switch (idio_type (so)) {
     case IDIO_TYPE_STRING:
 	s = IDIO_STRING_S (so);
 	break;
@@ -255,7 +255,7 @@ char *idio_string_as_C (IDIO so)
     default:
 	{
 	    char em[BUFSIZ];
-	    sprintf (em, "idio_type_string: unexpected string type %d", so->type);
+	    sprintf (em, "idio_type_string: unexpected string type %d", idio_type (so));
 	    idio_error_add_C (em);
 	    break;
 	}

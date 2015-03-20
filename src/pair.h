@@ -30,6 +30,7 @@ void idio_free_pair (IDIO p);
 IDIO idio_pair_head (IDIO p);
 IDIO idio_pair_tail (IDIO p);
 
+IDIO idio_improper_list_reverse (IDIO l, IDIO last);
 IDIO idio_list_reverse (IDIO l);
 IDIO idio_list_to_array (IDIO l);
 size_t idio_list_length (IDIO l);
