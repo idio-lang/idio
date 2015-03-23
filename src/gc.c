@@ -29,7 +29,7 @@ void idio_init_gc ()
 {
     idio_gc = idio_gc_new ();
 
-    idio_gc->verbose = 0;
+    idio_gc->verbose = 1;
     
     idio_gc_finalizer_hash = IDIO_HASH_EQP (64);
     idio_gc_protect (idio_gc_finalizer_hash);

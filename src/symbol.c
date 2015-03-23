@@ -35,7 +35,7 @@ int idio_symbol_C_eqp (void *s1, void *s2)
 	return -1;
     }
 
-    return strcmp ((const char *) s1, (const char *) s2);
+    return (0 == strcmp ((const char *) s1, (const char *) s2));
 }
 
 size_t idio_symbol_C_hash (IDIO h, void *s)
