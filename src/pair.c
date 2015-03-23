@@ -146,7 +146,7 @@ IDIO idio_list_to_array (IDIO l)
 {
     IDIO_ASSERT (l);
     
-    IDIO_TYPE_ASSERT (pair, l);
+    IDIO_TYPE_ASSERT (list, l);
     
     size_t ll = idio_list_length (l);
     

@@ -166,6 +166,8 @@ int idio_isa (IDIO o, idio_type_e type)
 	return (IDIO_TYPE_FIXNUM == type);
     case IDIO_TYPE_CONSTANT_MARK:
 	return (IDIO_TYPE_CONSTANT == type);
+    case IDIO_TYPE_CHARACTER_MARK:
+	return (IDIO_TYPE_CHARACTER == type);
     case IDIO_TYPE_POINTER_MARK:
 	return (o->type == type);
     default:
@@ -892,7 +894,9 @@ void idio_gc_sweep ()
 
 void idio_gc_collect ()
 {
-
+    idio_gc_walk_tree ();
+    idio_gc_stats ();
+    
     IDIO_C_ASSERT (idio_gc->pause == 0);
 
     idio_gc->stats.collections++;
@@ -920,6 +924,15 @@ void idio_hcount (unsigned long long *bytes, int *scale)
     *scale += 1;
     *bytes /= 1000;
     idio_hcount (bytes, scale);
+}
+
+void idio_gc_stats_inc (idio_type_e type)
+{
+    if (type > IDIO_TYPE_MAX) {
+	idio_error_message ("GC stats: bad type %#x", type);
+    } else {
+	idio_gc->stats.tgets[type]++;
+    }
 }
 
 void idio_gc_stats ()

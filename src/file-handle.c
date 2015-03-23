@@ -73,6 +73,16 @@ static void idio_error_file_closed (IDIO fh)
     idio_error_message ("file-handle %s already closed", IDIO_HANDLE_NAME (fh));
 }
 
+static void idio_error_filename_too_long (IDIO filename)
+{
+    idio_error_message ("filename %s is too long", IDIO_STRING_S (filename));
+}
+
+static void idio_error_file_not_found (IDIO filename)
+{
+    idio_error_message ("filename %s not found", IDIO_STRING_S (filename));
+}
+
 void idio_init_file_handle ()
 {
     idio_file_handles = IDIO_HASH_EQP (1<<3);
@@ -472,18 +482,35 @@ IDIO idio_defprimitive_open_file_handle (IDIO name, IDIO mode)
     return r;
 }
 
-IDIO idio_load_file (IDIO fh)
+IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h))
 {
     IDIO_ASSERT (fh);
+    IDIO_C_ASSERT (reader);
 
     for (;;) {
-	IDIO e = idio_scm_read (fh);
+	IDIO e = (*reader) (fh);
 
 	if (idio_S_eof == e) {
 	    break;
 	}
 
-	fprintf (stderr, "idio_load_file: e=%s\n", idio_as_string (e, 1));
+	fprintf (stderr, "idio_load_filehandle: e=%s\n", idio_as_string (e, 1));
+
+	/* XXX */
+	if (idio_isa_pair (e)) {
+	    IDIO h = IDIO_PAIR_H (e);
+	    if (idio_isa_symbol (h)) {
+		if (strncmp (IDIO_SYMBOL_S (h), "load", 4) == 0) {
+		    IDIO t = IDIO_PAIR_T (e);
+		    if (idio_isa_pair (t)) {
+			IDIO fn = IDIO_PAIR_H (t);
+			if (idio_isa_string (fn)) {
+			    idio_load_file (fn);
+			}
+		    }
+		}
+	    }
+	}
     }
     
     IDIO_HANDLE_M_CLOSE (fh) (fh);
@@ -491,20 +518,93 @@ IDIO idio_load_file (IDIO fh)
     return idio_S_true;
 }
 
-IDIO idio_defprimitive_load_file (IDIO filename)
+typedef struct idio_file_extension_s {
+    char *ext;
+    IDIO (*reader) (IDIO h);
+} idio_file_extension_t;
+
+static idio_file_extension_t idio_file_extensions[] = {
+    { NULL, idio_scm_read },
+    { "idio", idio_scm_read },
+    { "scm", idio_scm_read },
+    { NULL, NULL }
+};
+
+IDIO idio_load_file (IDIO filename)
 {
     IDIO_ASSERT (filename);
 
     if (! idio_isa_string (filename)) {
 	idio_error_param_type ("not a string", filename);
-	IDIO_C_ASSERT (0);
+	return idio_S_unspec;
     }
 
     char *filename_C = idio_string_as_C (filename);
+    char lfn[PATH_MAX];
+    size_t l;
     
-    IDIO fh = idio_open_file_handle_C (filename_C, "r");
+    strncpy (lfn, filename_C, PATH_MAX - 1);
+    l = strlen (lfn);
 
-    free (filename_C);
+    char *slash = strrchr (lfn, '/');
+    if (NULL == slash) {
+	slash = lfn;
+    }
+	    
+    char *dot = strrchr (slash, '.');
 
-    return idio_load_file (fh);
+    if (NULL == dot) {
+	if ((l + 1) >= PATH_MAX) {
+	    idio_error_filename_too_long (filename);
+	    return idio_S_unspec;
+	}
+	    
+	dot = strrchr (slash, '\0'); /* end of string */
+	strcpy (dot, ".");
+	dot++;
+	l++;
+	    
+	idio_file_extension_t *fe = idio_file_extensions;
+    
+	for (;NULL != fe->reader;fe++) {
+	    if (NULL != fe->ext) {
+
+		if ((l + strlen (fe->ext)) >= PATH_MAX) {
+		    idio_error_filename_too_long (filename);
+		    return idio_S_unspec;
+		}
+	    
+		strncpy (dot, fe->ext, PATH_MAX - l - 1);
+	    }
+
+	    if (access (lfn, R_OK) == 0) {
+		IDIO fh = idio_open_file_handle_C (lfn, "r");
+
+		free (filename_C);
+
+		return idio_load_filehandle (fh, fe->reader);
+	    }
+
+	    /* reset lfn without ext */
+	    *dot = '\0';
+	}
+    } else {
+	if (access (lfn, R_OK) == 0) {
+	    IDIO fh = idio_open_file_handle_C (lfn, "r");
+
+	    free (filename_C);
+
+	    return idio_load_filehandle (fh, idio_scm_read);
+	}	
+    }
+
+    idio_error_file_not_found (filename);
+    return idio_S_unspec;
+}
+
+IDIO idio_defprimitive_load_file (IDIO filename)
+{
+    IDIO_ASSERT (filename);
+
+    return idio_load_file (filename);
 }

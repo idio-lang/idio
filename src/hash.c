@@ -194,7 +194,8 @@ void idio_hash_resize (IDIO h)
 
     IDIO_TYPE_ASSERT (hash, h);
 
-    idio_hash_t *ohash = h->u.hash;
+    size_t ohsize = h->u.hash->size;
+    idio_hash_entry_t *ohe = h->u.hash->he;
 
     /*
      * if we said osize = ohash->size it would be including the
@@ -221,18 +222,16 @@ void idio_hash_resize (IDIO h)
     idio_assign_hash_he (h, nsize);
 
     size_t i;
-    for (i = 0 ; i < ohash->size; i++) {
-	if (IDIO_IS_SET (ohash->he[i].k)) {
-	    idio_hash_put (h, ohash->he[i].k, ohash->he[i].v);
+    for (i = 0 ; i < ohsize; i++) {
+	if (IDIO_IS_SET (ohe[i].k)) {
+	    idio_hash_put (h, ohe[i].k, ohe[i].v);
 	}
     }
 
     idio_gc_stats_free (osize * sizeof (idio_hash_entry_t));
     idio_gc_stats_free (osize * sizeof (idio_hash_entry_t));
 
-    free (ohash->he);
-    free (ohash);
-
+    free (ohe);
 }
 
 size_t idio_hash_hashval_void (void *p)

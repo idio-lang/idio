@@ -438,6 +438,7 @@ IDIO idio_scm_read_character (IDIO handle)
 	return idio_S_unspec;
     }
 
+    idio_gc_stats_inc (IDIO_TYPE_CHARACTER);
     return IDIO_CHARACTER (c);
 }
 
@@ -566,8 +567,13 @@ static IDIO idio_scm_read_number_C (IDIO handle, char *str)
     int has_digit = 0;
     int has_period = 0;
     int has_exp = 0;
+    int inexact = 0;
 
     for (; s[i]; i++) {
+	if ('#' == s[i]) {
+	    inexact = 1;
+	}
+	
 	if (EXPONENT (s[i]) &&
 	    has_digit &&
 	    ! has_exp) {
@@ -604,7 +610,8 @@ static IDIO idio_scm_read_number_C (IDIO handle, char *str)
     IDIO num = idio_S_nil;
     
     if (has_period ||
-	has_exp) {
+	has_exp ||
+	inexact) {
 	num = idio_bignum_C (str);
     } else {
 	/*
@@ -616,6 +623,7 @@ static IDIO idio_scm_read_number_C (IDIO handle, char *str)
 	 */
 	if (((i - 1) * 4) < ((sizeof (void *) * 8) >> 2)) {
 	    num = idio_fixnum_C (str, 10);
+	    idio_gc_stats_inc (IDIO_TYPE_FIXNUM);
 	} else {
 	    num = idio_bignum_C (str);
 	}
@@ -722,6 +730,10 @@ static IDIO idio_scm_read_expr (IDIO handle, int depth)
 		    {
 			int inexact = ('i' == c);
 			IDIO bn = idio_scm_read_expr (handle, depth);
+
+			if (IDIO_TYPE_FIXNUMP (bn)) {
+			    return bn;
+			}
 
 			if (! idio_isa_bignum (bn)) {
 			    char em[BUFSIZ];

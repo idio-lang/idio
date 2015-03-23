@@ -27,37 +27,37 @@
 #define IDIO_TYPE_FIXNUM          1
 #define IDIO_TYPE_CONSTANT        2
 #define IDIO_TYPE_CHARACTER       3
-#define IDIO_TYPE_STRING          5
-#define IDIO_TYPE_SUBSTRING       6
-#define IDIO_TYPE_SYMBOL          7
-#define IDIO_TYPE_PAIR            8
-#define IDIO_TYPE_ARRAY           9
-#define IDIO_TYPE_HASH            10
-#define IDIO_TYPE_CLOSURE         11
-#define IDIO_TYPE_PRIMITIVE_C     12
-#define IDIO_TYPE_BIGNUM          13
-#define IDIO_TYPE_FRAME           14
-#define IDIO_TYPE_HANDLE          15
-#define IDIO_TYPE_STRUCT_TYPE     16
-#define IDIO_TYPE_STRUCT_INSTANCE 17
-#define IDIO_TYPE_C_INT8          22
-#define IDIO_TYPE_C_UINT8         23
-#define IDIO_TYPE_C_INT16         24
-#define IDIO_TYPE_C_UINT16        25
-#define IDIO_TYPE_C_INT32         26
-#define IDIO_TYPE_C_UINT32        27
-#define IDIO_TYPE_C_INT64         28
-#define IDIO_TYPE_C_UINT64        29
-#define IDIO_TYPE_C_FLOAT         30
-#define IDIO_TYPE_C_DOUBLE        31
-#define IDIO_TYPE_C_POINTER       32
-#define IDIO_TYPE_C_VOID          33
-#define IDIO_TYPE_C_TYPEDEF       34
-#define IDIO_TYPE_C_STRUCT        35
-#define IDIO_TYPE_C_INSTANCE      36
-#define IDIO_TYPE_C_FFI           37
-#define IDIO_TYPE_OPAQUE          38
-#define IDIO_TYPE_MAX             39
+#define IDIO_TYPE_STRING          4
+#define IDIO_TYPE_SUBSTRING       5
+#define IDIO_TYPE_SYMBOL          6
+#define IDIO_TYPE_PAIR            7
+#define IDIO_TYPE_ARRAY           8
+#define IDIO_TYPE_HASH            9
+#define IDIO_TYPE_CLOSURE         10
+#define IDIO_TYPE_PRIMITIVE_C     11
+#define IDIO_TYPE_BIGNUM          12
+#define IDIO_TYPE_FRAME           13
+#define IDIO_TYPE_HANDLE          14
+#define IDIO_TYPE_STRUCT_TYPE     15
+#define IDIO_TYPE_STRUCT_INSTANCE 16
+#define IDIO_TYPE_C_INT8          18
+#define IDIO_TYPE_C_UINT8         19
+#define IDIO_TYPE_C_INT16         20
+#define IDIO_TYPE_C_UINT16        21
+#define IDIO_TYPE_C_INT32         22
+#define IDIO_TYPE_C_UINT32        23
+#define IDIO_TYPE_C_INT64         24
+#define IDIO_TYPE_C_UINT64        25
+#define IDIO_TYPE_C_FLOAT         26
+#define IDIO_TYPE_C_DOUBLE        27
+#define IDIO_TYPE_C_POINTER       28
+#define IDIO_TYPE_C_VOID          29
+#define IDIO_TYPE_C_TYPEDEF       30
+#define IDIO_TYPE_C_STRUCT        31
+#define IDIO_TYPE_C_INSTANCE      32
+#define IDIO_TYPE_C_FFI           33
+#define IDIO_TYPE_OPAQUE          34
+#define IDIO_TYPE_MAX             35
 
 typedef unsigned char idio_type_e;
 
@@ -573,6 +573,7 @@ idio_gc_t *idio_gc_new ();
 void IDIO_FPRINTF (FILE *stream, const char *format, ...);
 #endif
 void idio_gc_dump ();
+void idio_gc_stats_inc (idio_type_e type);
 void idio_gc_protect (IDIO o);
 void idio_gc_expose (IDIO o);
 void idio_gc_expose_all ();

@@ -56,9 +56,7 @@ int main (int argc, char **argv, char **envp)
 
     idio_init ();
 
-    IDIO fh = idio_open_file_handle_C ("bootstrap.idio", "r");
-
-    idio_load_file (fh);
+    idio_load_file (idio_string_C ("bootstrap"));
 
     /*
       IDIO inp = idio_array_get_index (IDIO_FRAME_GC (idio_G_frame)->input_port, 0);
