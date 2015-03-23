@@ -227,7 +227,7 @@ void idio_finalizer_run (IDIO o)
     }
 
     IDIO ofunc = idio_hash_get (idio_gc_finalizer_hash, o);
-    if (idio_S_nil != ofunc) {
+    if (idio_S_unspec != ofunc) {
 	IDIO_TYPE_ASSERT (C_pointer, ofunc);
 
 	void (*p) (IDIO o) = IDIO_C_TYPE_POINTER_P (ofunc);
@@ -305,6 +305,13 @@ void idio_mark (IDIO o, unsigned colour)
 	    IDIO_C_ASSERT (idio_gc->grey != o);
 	    o->flags |= IDIO_FLAG_GCC_LGREY;
 	    IDIO_BIGNUM_GREY (o) = idio_gc->grey;
+	    idio_gc->grey = o;
+	    break;
+	case IDIO_TYPE_MODULE:
+	    IDIO_C_ASSERT (IDIO_MODULE_GREY (o) != o);
+	    IDIO_C_ASSERT (idio_gc->grey != o);
+	    o->flags |= IDIO_FLAG_GCC_LGREY;
+	    IDIO_MODULE_GREY (o) = idio_gc->grey;
 	    idio_gc->grey = o;
 	    break;
 	case IDIO_TYPE_FRAME:
@@ -424,6 +431,14 @@ void idio_process_grey (unsigned colour)
 	IDIO_C_ASSERT (idio_gc->grey != IDIO_BIGNUM_GREY (o));
 	idio_gc->grey = IDIO_BIGNUM_GREY (o);
 	idio_mark (IDIO_BIGNUM_SIG (o), colour);
+	break;
+    case IDIO_TYPE_MODULE:
+	IDIO_C_ASSERT (idio_gc->grey != IDIO_MODULE_GREY (o));
+	idio_gc->grey = IDIO_MODULE_GREY (o);
+	idio_mark (IDIO_MODULE_NAME (o), colour); 
+	idio_mark (IDIO_MODULE_EXPORTS (o), colour); 
+	idio_mark (IDIO_MODULE_IMPORTS (o), colour); 
+	idio_mark (IDIO_MODULE_SYMBOLS (o), colour); 
 	break;
     case IDIO_TYPE_FRAME:
 	IDIO_C_ASSERT (idio_gc->grey != IDIO_FRAME_GREY (o));
@@ -807,6 +822,9 @@ void idio_gc_sweep_free_value (IDIO vo)
 	break;
     case IDIO_TYPE_BIGNUM:
 	idio_free_bignum (vo);
+	break;
+    case IDIO_TYPE_MODULE:
+	idio_free_module (vo);
 	break;
     case IDIO_TYPE_FRAME:
 	idio_free_frame (vo);

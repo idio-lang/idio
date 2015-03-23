@@ -169,10 +169,10 @@ IDIO idio_C_typedefs_add_value (IDIO s, IDIO v)
 
     IDIO r = idio_C_typedefs_get (s);
 
-    if (idio_S_nil == r) {
+    if (idio_S_unspec == r) {
 	if (idio_S_nil != v) {
 	    r = idio_C_typedefs_get (v);
-	    if (idio_S_nil == r) {
+	    if (idio_S_unspec == r) {
 		char *vs = idio_display_string (v);
 		char em[BUFSIZ];
 		sprintf (em, "target C_typedef '%s' does not exist", vs);

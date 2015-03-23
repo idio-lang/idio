@@ -117,6 +117,7 @@
 #include "frame.h"
 #include "handle.h"
 #include "hash.h"
+#include "module.h"
 #include "primitive.h"
 #include "pair.h"
 #include "path.h"

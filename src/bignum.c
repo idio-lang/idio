@@ -137,8 +137,6 @@ IDIO idio_bignum_copy (IDIO bn)
     
     IDIO bnc = idio_bignum (IDIO_BIGNUM_FLAGS(bn), IDIO_BIGNUM_EXP(bn), sig_ac);
 
-    /* idio_frame_stack_pop (f); */	/* sig_ac */
-	
     return bnc;
 }
 

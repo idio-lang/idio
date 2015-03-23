@@ -16,29 +16,17 @@
  */
 
 /*
- * util.h
+ * module.h
  * 
  */
 
-#ifndef UTIL_H
-#define UTIL_H
+#ifndef MODULE_H
+#define MODULE_H
 
-int idio_type (IDIO o);
-const char *idio_type2string (IDIO o);
-const char *idio_type_enum2string (idio_type_e type);
-int idio_eqp (void *o1, void *o2);
-int idio_eqvp (void *o1, void *o2);
-int idio_equalp (void *o1, void *o2);
-int idio_equal (IDIO o1, IDIO o2, int eqp);
-IDIO idio_value (IDIO o);
-char *idio_as_string (IDIO o, int depth);
-char *idio_display_string (IDIO o);
-IDIO idio_apply (IDIO func, IDIO args);
-IDIO idio_apply1 (IDIO func, IDIO arg);
-IDIO idio_apply2 (IDIO func, IDIO arg1, IDIO arg2);
-IDIO idio_list_memq (IDIO k, IDIO l);
-void idio_dump (IDIO o, int detail);
-IDIO idio_fixnum_C (char *str, int base);
+void idio_init_module (void);
+void idio_final_module (void);
+IDIO idio_module (IDIO name);
+void idio_free_module (IDIO fo);
 
 #endif
 

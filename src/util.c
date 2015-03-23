@@ -55,6 +55,7 @@ const char *idio_type_enum2string (idio_type_e type)
     case IDIO_TYPE_CLOSURE: return "FUNCTION";
     case IDIO_TYPE_PRIMITIVE_C: return "FUNCTION_C";
     case IDIO_TYPE_BIGNUM: return "BIGNUM";
+    case IDIO_TYPE_MODULE: return "MODULE";
     case IDIO_TYPE_FRAME: return "FRAME";
     case IDIO_TYPE_HANDLE: return "HANDLE";
     case IDIO_TYPE_STRUCT_TYPE: return "STRUCT_TYPE";
@@ -644,6 +645,38 @@ char *idio_as_string (IDIO o, int depth)
 		    r = idio_bignum_as_string (o);
 		    break;
 		}
+	    case IDIO_TYPE_MODULE:
+		{
+		    if (asprintf (&r, "{module %10p", o) == -1) {
+			return NULL;
+		    }
+		    IDIO_STRCAT (r, " name=");
+		    if (idio_S_nil == IDIO_MODULE_NAME (o)) {
+			IDIO_STRCAT (r, "(nil)");
+		    } else {
+			IDIO_STRCAT_FREE (r, idio_as_string (IDIO_MODULE_NAME (o), depth - 1));
+		    }
+		    IDIO_STRCAT (r, " exports=");
+		    if (idio_S_nil == IDIO_MODULE_EXPORTS (o)) {
+			IDIO_STRCAT (r, "(nil)");
+		    } else {
+			IDIO_STRCAT_FREE (r, idio_as_string (IDIO_MODULE_EXPORTS (o), depth - 1));
+		    }
+		    IDIO_STRCAT (r, " imports=");
+		    if (idio_S_nil == IDIO_MODULE_IMPORTS (o)) {
+			IDIO_STRCAT (r, "(nil)");
+		    } else {
+			IDIO_STRCAT_FREE (r, idio_as_string (IDIO_MODULE_IMPORTS (o), depth - 1));
+		    }
+		    IDIO_STRCAT (r, " symbols=");
+		    if (idio_S_nil == IDIO_MODULE_SYMBOLS (o)) {
+			IDIO_STRCAT (r, "(nil)");
+		    } else {
+			IDIO_STRCAT_FREE (r, idio_as_string (IDIO_MODULE_SYMBOLS (o), depth - 1));
+		    }
+		    IDIO_STRCAT (r, " }");
+		    break;
+		}
 	    case IDIO_TYPE_FRAME:
 		{
 		    if (asprintf (&r, "{frame %10p f=%02x", o, IDIO_FRAME_FLAGS (o)) == -1) {
@@ -889,6 +922,7 @@ char *idio_display_string (IDIO o)
 	    case IDIO_TYPE_CLOSURE:
 	    case IDIO_TYPE_PRIMITIVE_C:
 	    case IDIO_TYPE_BIGNUM:
+	    case IDIO_TYPE_MODULE:
 	    case IDIO_TYPE_FRAME:
 	    case IDIO_TYPE_HANDLE:
 	    case IDIO_TYPE_STRUCT_TYPE:
@@ -954,6 +988,22 @@ IDIO idio_apply2 (IDIO func, IDIO arg1, IDIO arg2)
 		       idio_pair (arg1,
 				  idio_pair (arg2,
 					     idio_S_nil)));
+}
+
+IDIO idio_list_memq (IDIO k, IDIO l)
+{
+    IDIO_ASSERT (k);
+    IDIO_ASSERT (l);
+    IDIO_TYPE_ASSERT (list, l);
+
+    while (idio_S_nil != l) {
+	if (idio_eqp (k, IDIO_PAIR_H (l))) {
+	    return l;
+	}
+	l = IDIO_PAIR_T (l);
+    }
+
+    return idio_S_false;
 }
 
 void idio_dump (IDIO o, int detail)
@@ -1070,6 +1120,8 @@ void idio_dump (IDIO o, int detail)
 	    case IDIO_TYPE_PRIMITIVE_C:
 		break;
 	    case IDIO_TYPE_BIGNUM:
+		break;
+	    case IDIO_TYPE_MODULE:
 		break;
 	    case IDIO_TYPE_FRAME:
 		break;

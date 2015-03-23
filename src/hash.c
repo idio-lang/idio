@@ -328,6 +328,13 @@ size_t idio_idio_hash_hashval_primitive_C (IDIO h)
     return idio_hash_hashval_void (IDIO_PRIMITIVE_C_F (h));
 }
 
+size_t idio_idio_hash_hashval_module (IDIO h)
+{
+    IDIO_ASSERT (h);
+    
+    return idio_hash_hashval_void (IDIO_MODULE_NAME (h));
+}
+
 size_t idio_idio_hash_hashval_frame (IDIO h)
 {
     IDIO_ASSERT (h);
@@ -403,6 +410,9 @@ size_t idio_hash_hashval (IDIO h, void *kv)
 	break;
     case IDIO_TYPE_PRIMITIVE_C:
 	hv = idio_idio_hash_hashval_primitive_C (k);
+	break;
+    case IDIO_TYPE_MODULE:
+	hv = idio_idio_hash_hashval_module (k);
 	break;
     case IDIO_TYPE_FRAME:
 	hv = idio_idio_hash_hashval_frame (k);
@@ -731,7 +741,7 @@ IDIO idio_hash_get (IDIO h, void *kv)
     size_t hv = idio_hash_hv_follow_chain (h, kv);
 
     if (hv > IDIO_HASH_SIZE (h)) {
-	return idio_S_nil;
+	return idio_S_unspec;
     }
 
     return IDIO_HASH_HE_VALUE (h, hv);

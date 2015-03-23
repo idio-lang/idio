@@ -36,10 +36,11 @@
 #define IDIO_TYPE_CLOSURE         10
 #define IDIO_TYPE_PRIMITIVE_C     11
 #define IDIO_TYPE_BIGNUM          12
-#define IDIO_TYPE_FRAME           13
-#define IDIO_TYPE_HANDLE          14
-#define IDIO_TYPE_STRUCT_TYPE     15
-#define IDIO_TYPE_STRUCT_INSTANCE 16
+#define IDIO_TYPE_MODULE          13
+#define IDIO_TYPE_FRAME           14
+#define IDIO_TYPE_HANDLE          15
+#define IDIO_TYPE_STRUCT_TYPE     16
+#define IDIO_TYPE_STRUCT_INSTANCE 17
 #define IDIO_TYPE_C_INT8          18
 #define IDIO_TYPE_C_UINT8         19
 #define IDIO_TYPE_C_INT16         20
@@ -189,6 +190,20 @@ typedef struct idio_primitive_C_s {
 
 #define IDIO_PRIMITIVE_C_F(P)		((P)->u.primitive_C->f)
 #define IDIO_PRIMITIVE_C_NAME(P)	((P)->u.primitive_C->name)
+
+typedef struct idio_module_s {
+    struct idio_s *grey;
+    struct idio_s *name;
+    struct idio_s *exports;	/* symbols */
+    struct idio_s *imports;	/* modules */
+    struct idio_s *symbols;	/* hash table */
+} idio_module_t;
+
+#define IDIO_MODULE_GREY(F)	((F)->u.module->grey)
+#define IDIO_MODULE_NAME(F)	((F)->u.module->name)
+#define IDIO_MODULE_EXPORTS(F)	((F)->u.module->exports)
+#define IDIO_MODULE_IMPORTS(F)	((F)->u.module->imports)
+#define IDIO_MODULE_SYMBOLS(F)	((F)->u.module->symbols)
 
 #define IDIO_FRAME_FLAG_NONE	 0
 #define IDIO_FRAME_FLAG_ETRACE   (1<<0)
@@ -444,6 +459,7 @@ typedef struct idio_s {
 	idio_closure_t         *closure;
 	idio_primitive_C_t     *primitive_C;
 	idio_bignum_t          *bignum;
+	idio_module_t          *module;
 	idio_frame_t           *frame;
 	idio_handle_t          *handle;
 	idio_struct_type_t     *struct_type;

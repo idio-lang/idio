@@ -24,9 +24,10 @@
 
 void idio_init ()
 {
-    /* GC first then symbol for the symbol table! */
+    /* GC first then symbol for the symbol table then modules */
     idio_init_gc ();
     idio_init_symbol ();
+    idio_init_module ();
     
     idio_init_handle ();
     idio_init_file_handle ();
@@ -44,6 +45,7 @@ void idio_final ()
     idio_final_file_handle ();
     idio_final_handle ();
 
+    idio_final_module ();
     idio_final_symbol ();
     idio_final_gc ();
 }

@@ -32,7 +32,7 @@ int idio_symbol_C_eqp (void *s1, void *s2)
      */
     if (idio_S_nil == s1 ||
 	idio_S_nil == s2) {
-	return -1;
+	return 0;
     }
 
     return (0 == strcmp ((const char *) s1, (const char *) s2));
@@ -98,7 +98,7 @@ IDIO idio_symbols_C_intern (char *s)
 
     IDIO sym = idio_hash_get (idio_symbols_hash, s);
 
-    if (idio_S_nil == sym) {
+    if (idio_S_unspec == sym) {
 	sym = idio_symbol_C (s);
 	idio_hash_put (idio_symbols_hash, IDIO_SYMBOL_S (sym), sym);
     }
