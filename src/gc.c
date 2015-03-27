@@ -33,6 +33,9 @@ void idio_init_gc ()
     
     idio_gc_finalizer_hash = IDIO_HASH_EQP (64);
     idio_gc_protect (idio_gc_finalizer_hash);
+
+    idio_primitive_C_hash = IDIO_HASH_EQP (1<<7);
+    idio_gc_protect (idio_primitive_C_hash);
 }
 
 void idio_run_all_finalizers ()
@@ -57,6 +60,8 @@ void idio_run_all_finalizers ()
 
 void idio_final_gc ()
 {
+    idio_gc_expose (idio_primitive_C_hash);
+    
     idio_run_all_finalizers ();
 
     /* unprotect the finalizer hash itself */
@@ -174,21 +179,6 @@ int idio_isa (IDIO o, idio_type_e type)
 	idio_error_message ("isa: unexpected object type %x", o);
 	return 0;
     }
-}
-
-int idio_isa_nil (IDIO o)
-{
-    IDIO_ASSERT (o);
-
-    return (idio_S_nil == o);
-}
-
-int idio_isa_boolean (IDIO o)
-{
-    IDIO_ASSERT (o);
-
-    return (idio_S_true == o ||
-	    idio_S_false == o);
 }
 
 void idio_gc_stats_free (size_t n)
@@ -443,15 +433,8 @@ void idio_process_grey (unsigned colour)
     case IDIO_TYPE_FRAME:
 	IDIO_C_ASSERT (idio_gc->grey != IDIO_FRAME_GREY (o));
 	idio_gc->grey = IDIO_FRAME_GREY (o);
-	idio_mark (IDIO_FRAME_FORM (o), colour); 
-	idio_mark (IDIO_FRAME_NAMESPACE (o), colour); 
-	idio_mark (IDIO_FRAME_ENV (o), colour); 
-	if (NULL != IDIO_FRAME_PFRAME (o)) {
-	    idio_mark (IDIO_FRAME_PFRAME (o), colour);
-	}
-	idio_mark (IDIO_FRAME_STACK (o), colour);
-	idio_mark (IDIO_FRAME_THREADS (o), colour);
-	idio_mark (IDIO_FRAME_ERROR (o), colour);
+	idio_mark (IDIO_FRAME_NEXT (o), colour); 
+	idio_mark (IDIO_FRAME_ARGS (o), colour); 
 	break;
     case IDIO_TYPE_STRUCT_TYPE:
 	IDIO_C_ASSERT (idio_gc->grey != IDIO_STRUCT_TYPE_GREY (o));
@@ -591,7 +574,7 @@ void IDIO_GC_VFPRINTF (FILE *stream, const char *format, va_list argp)
     IDIO_C_ASSERT (format);
     IDIO_C_ASSERT (argp);
 
-    if (idio_gc->verbose) {
+    if (idio_gc->verbose > 2) {
 	vfprintf (stream, format, argp);
     }
 }

@@ -27,6 +27,17 @@ void idio_init_module (void);
 void idio_final_module (void);
 IDIO idio_module (IDIO name);
 void idio_free_module (IDIO fo);
+IDIO idio_root_module ();
+IDIO idio_current_module ();
+IDIO idio_module_symbols (IDIO module);
+IDIO idio_module_current_symbols ();
+IDIO idio_module_primitive_symbols ();
+IDIO idio_module_symbol_value (IDIO symbol, IDIO module);
+IDIO idio_module_primitive_symbol_value (IDIO symbol);
+IDIO idio_module_current_symbol_value (IDIO symbol);
+IDIO idio_module_set_symbol_value (IDIO symbol, IDIO value, IDIO module);
+IDIO idio_module_set_primitive_symbol_value (IDIO symbol, IDIO value);
+IDIO idio_module_set_current_symbol_value (IDIO symbol, IDIO value);
 
 #endif
 

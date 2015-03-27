@@ -16,20 +16,15 @@
  */
 
 /*
- * frame.h
+ * specialform.h
  * 
  */
 
-#ifndef FRAME_H
-#define FRAME_H
+#ifndef SPECIALFORM_H
+#define SPECIALFORM_H
 
-extern IDIO idio_G_frame;
-
-void idio_init_frame (void);
-void idio_final_frame (void);
-IDIO idio_frame (IDIO next, IDIO args);
-int idio_isa_frame (IDIO fo);
-void idio_free_frame (IDIO fo);
+void idio_init_specialform ();
+void idio_final_specialform ();
 
 #endif
 

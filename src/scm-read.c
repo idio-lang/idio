@@ -662,7 +662,11 @@ static IDIO idio_scm_read_word (IDIO handle, int c)
     IDIO r = idio_scm_read_number_C (handle, buf);
 
     if (idio_S_nil == r) {
+	if (strncmp (buf, "quasiquote", 10) == 0) {
+	    fprintf (stderr, "%p %p\n", idio_S_quasiquote, r);
+	}
 	r = idio_symbols_C_intern (buf);
+
     }
 
     return r;

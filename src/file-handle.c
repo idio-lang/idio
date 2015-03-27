@@ -482,7 +482,7 @@ IDIO idio_defprimitive_open_file_handle (IDIO name, IDIO mode)
     return r;
 }
 
-IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h))
+IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO h))
 {
     IDIO_ASSERT (fh);
     IDIO_C_ASSERT (reader);
@@ -511,6 +511,9 @@ IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h))
 		}
 	    }
 	}
+
+	IDIO r = (*evaluator) (e);
+	fprintf (stderr, "idio_load_filehandle: evaluation => %s\n\n", idio_as_string (r, 4));
     }
     
     IDIO_HANDLE_M_CLOSE (fh) (fh);
@@ -521,12 +524,13 @@ IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h))
 typedef struct idio_file_extension_s {
     char *ext;
     IDIO (*reader) (IDIO h);
+    IDIO (*evaluator) (IDIO h);
 } idio_file_extension_t;
 
 static idio_file_extension_t idio_file_extensions[] = {
-    { NULL, idio_scm_read },
-    { "idio", idio_scm_read },
-    { "scm", idio_scm_read },
+    { NULL, idio_scm_read, idio_scm_evaluate },
+    { "idio", idio_scm_read, idio_scm_evaluate },
+    { "scm", idio_scm_read, idio_scm_evaluate },
     { NULL, NULL }
 };
 
@@ -582,7 +586,7 @@ IDIO idio_load_file (IDIO filename)
 
 		free (filename_C);
 
-		return idio_load_filehandle (fh, fe->reader);
+		return idio_load_filehandle (fh, fe->reader, fe->evaluator);
 	    }
 
 	    /* reset lfn without ext */
@@ -594,7 +598,7 @@ IDIO idio_load_file (IDIO filename)
 
 	    free (filename_C);
 
-	    return idio_load_filehandle (fh, idio_scm_read);
+	    return idio_load_filehandle (fh, idio_scm_read, idio_scm_evaluate);
 	}	
     }
 

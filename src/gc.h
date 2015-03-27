@@ -184,12 +184,16 @@ typedef struct idio_closure_s {
 #define IDIO_CLOSURE_BODY(C)	((C)->u.closure->body)
 
 typedef struct idio_primitive_C_s {
-    struct idio_s *(*f) (struct idio_s *frame, struct idio_s *args);
+    struct idio_s *(*f) ();	/* don't declare args */
     char *name;
+    size_t arity;
+    char varargs;
 } idio_primitive_C_t;
 
 #define IDIO_PRIMITIVE_C_F(P)		((P)->u.primitive_C->f)
 #define IDIO_PRIMITIVE_C_NAME(P)	((P)->u.primitive_C->name)
+#define IDIO_PRIMITIVE_C_ARITY(P)	((P)->u.primitive_C->arity)
+#define IDIO_PRIMITIVE_C_VARARGS(P)	((P)->u.primitive_C->varargs)
 
 typedef struct idio_module_s {
     struct idio_s *grey;
@@ -213,23 +217,15 @@ typedef struct idio_module_s {
 
 typedef struct idio_frame_s {
     struct idio_s *grey;
-    struct idio_s *form;
-    struct idio_s *namespace;
-    struct idio_s *env;
-    struct idio_s *pframe;	/* parent frame */
-    struct idio_s *stack;
-    struct idio_s *threads;
-    struct idio_s *error;
+    struct idio_s *next;
+    size_t nargs;
+    struct idio_s *args;
 } idio_frame_t;
 
 #define IDIO_FRAME_GREY(F)	((F)->u.frame->grey)
-#define IDIO_FRAME_FORM(F)	((F)->u.frame->form)
-#define IDIO_FRAME_NAMESPACE(F)	((F)->u.frame->namespace)
-#define IDIO_FRAME_ENV(F)	((F)->u.frame->env)
-#define IDIO_FRAME_PFRAME(F)	((F)->u.frame->pframe)
-#define IDIO_FRAME_STACK(F)	((F)->u.frame->stack)
-#define IDIO_FRAME_THREADS(F)	((F)->u.frame->threads)
-#define IDIO_FRAME_ERROR(F)	((F)->u.frame->error)
+#define IDIO_FRAME_NEXT(F)	((F)->u.frame->next)
+#define IDIO_FRAME_NARGS(F)	((F)->u.frame->nargs)
+#define IDIO_FRAME_ARGS(F)	((F)->u.frame->args)
 #define IDIO_FRAME_FLAGS(F)	((F)->tflags)
 
 #define IDIO_BIGNUM_FLAG_NONE          (0)

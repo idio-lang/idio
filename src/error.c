@@ -22,13 +22,18 @@
 
 #include "idio.h"
 
+void idio_error_vfprintf (char *format, va_list argp)
+{
+    vfprintf (stderr, format, argp);
+}
+
 void idio_error_message (char *format, ...)
 {
     fprintf (stderr, "ERROR: ");
 
     va_list fmt_args;
     va_start (fmt_args, format);
-    vfprintf (stderr, format, fmt_args);
+    idio_error_vfprintf (format, fmt_args);
     va_end (fmt_args);
 
     switch (format[strlen(format)-1]) {

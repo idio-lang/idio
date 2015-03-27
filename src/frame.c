@@ -24,6 +24,11 @@
 
 IDIO idio_G_frame;
 
+void idio_error_frame_range (IDIO fo, size_t d, size_t i)
+{
+    idio_error_message ("%zd/%zd out of range for %p", d, i, fo);
+}
+
 void idio_init_frame ()
 {
 }
@@ -32,34 +37,28 @@ void idio_final_frame ()
 {
 }
 
-IDIO idio_frame (size_t esize, size_t ssize)
+IDIO idio_frame (IDIO next, IDIO args)
 {
-
+    IDIO_ASSERT (next);
+    IDIO_ASSERT (args);
+    
     IDIO fo = idio_gc_get (IDIO_TYPE_FRAME);
 
     IDIO_GC_ALLOC (fo->u.frame, sizeof (idio_frame_t));
     
     IDIO_FRAME_GREY (fo) = NULL;
-    IDIO_FRAME_FORM (fo) = NULL;
     IDIO_FRAME_FLAGS (fo) = IDIO_FRAME_FLAG_NONE;
+    IDIO_FRAME_NEXT (fo) = next;
 
-    /*
-      IDIO_FRAME_PFRAME (fo) = f;
-      IDIO_FRAME_NAMESPACE (fo) = IDIO_FRAME_NAMESPACE (f);
+    idio_index_t nargs = idio_list_length (args);
     
-    if (esize) {
-	IDIO_FRAME_ENV (fo) = IDIO_HASH_EQP (esize);
-    } else {
-	IDIO_FRAME_ENV (fo) = IDIO_FRAME_ENV (f);
+    IDIO_FRAME_NARGS (fo) = nargs;
+    IDIO_FRAME_ARGS (fo) = idio_array (nargs);
+
+    while (idio_S_nil != args) {
+	idio_array_push (IDIO_FRAME_ARGS (fo), IDIO_PAIR_H (args));
+	args = IDIO_PAIR_T (args);
     }
-    if (ssize) {
-	IDIO_FRAME_STACK (fo) = idio_array (ssize);
-    } else {
-	IDIO_FRAME_STACK (fo) = IDIO_FRAME_STACK (f);
-    }
-    IDIO_FRAME_THREADS (fo) = IDIO_FRAME_THREADS (f);
-    IDIO_FRAME_ERROR (fo) = IDIO_FRAME_ERROR (f);
-    */
 
     return fo;
 }
@@ -80,5 +79,44 @@ void idio_free_frame (IDIO fo)
     idio_gc_stats_free (sizeof (idio_frame_t));
 
     free (fo->u.frame);
+}
+
+IDIO idio_frame_fetch (IDIO fo, size_t d, size_t i)
+{
+    IDIO_ASSERT (fo);
+    IDIO_TYPE_ASSERT (frame, fo);
+
+    for (; d; d--) {
+	fo = IDIO_FRAME_NEXT (fo);
+	IDIO_ASSERT (fo);
+	IDIO_TYPE_ASSERT (frame, fo);
+    }
+
+    if (i >= idio_array_size (IDIO_FRAME_ARGS (fo))) {
+	idio_error_frame_range (fo, d, i);
+	return idio_S_unspec;
+    }
+    
+    return idio_array_get_index (IDIO_FRAME_ARGS (fo), i);
+}
+
+void idio_frame_update (IDIO fo, size_t d, size_t i, IDIO v)
+{
+    IDIO_ASSERT (fo);
+    IDIO_TYPE_ASSERT (frame, fo);
+    IDIO_ASSERT (v);
+
+    for (; d; d--) {
+	fo = IDIO_FRAME_NEXT (fo);
+	IDIO_ASSERT (fo);
+	IDIO_TYPE_ASSERT (frame, fo);
+    }
+
+    if (i >= idio_array_size (IDIO_FRAME_ARGS (fo))) {
+	idio_error_frame_range (fo, d, i);
+	return;
+    }
+    
+    idio_array_insert_index (IDIO_FRAME_ARGS (fo), v, i);
 }
 

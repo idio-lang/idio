@@ -22,7 +22,7 @@
 
 #include "idio.h"
 
-IDIO idio_primitive_C (IDIO (*func) (IDIO frame, IDIO args), const char *name_C)
+IDIO idio_primitive_C (IDIO (*func) (IDIO args), const char *name_C, size_t arity, char varargs)
 {
     IDIO_C_ASSERT (func);
     IDIO_C_ASSERT (name_C);
@@ -34,6 +34,8 @@ IDIO idio_primitive_C (IDIO (*func) (IDIO frame, IDIO args), const char *name_C)
     IDIO_GC_ALLOC (o->u.primitive_C, sizeof (idio_primitive_C_t));
     
     IDIO_PRIMITIVE_C_F (o) = func;
+    IDIO_PRIMITIVE_C_ARITY (o) = arity;
+    IDIO_PRIMITIVE_C_VARARGS (o) = varargs;
 
     size_t l = strlen (name_C);
     IDIO_C_ASSERT (l);
@@ -45,6 +47,28 @@ IDIO idio_primitive_C (IDIO (*func) (IDIO frame, IDIO args), const char *name_C)
       NUL terminated with strlen...
      */
     strcpy (IDIO_PRIMITIVE_C_NAME (o), name_C);
+
+    return o;
+}
+
+IDIO idio_primitive_C_desc (idio_primitive_C_t *desc)
+{
+    IDIO_C_ASSERT (desc);
+
+    IDIO o = idio_gc_get (IDIO_TYPE_PRIMITIVE_C);
+
+    IDIO_GC_ALLOC (o->u.primitive_C, sizeof (idio_primitive_C_t));
+    
+    IDIO_PRIMITIVE_C_F (o) = desc->f;
+    IDIO_PRIMITIVE_C_ARITY (o) = desc->arity;
+    IDIO_PRIMITIVE_C_VARARGS (o) = desc->varargs;
+
+    size_t l = strlen (desc->name);
+    IDIO_C_ASSERT (l);
+
+    IDIO_GC_ALLOC (IDIO_PRIMITIVE_C_NAME (o), l + 1);
+
+    strcpy (IDIO_PRIMITIVE_C_NAME (o), desc->name);
 
     return o;
 }

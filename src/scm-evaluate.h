@@ -16,20 +16,22 @@
  */
 
 /*
- * frame.h
+ * scm-evaluate.h
  * 
  */
 
-#ifndef FRAME_H
-#define FRAME_H
+#ifndef SCM_EVALUATE_H
+#define SCM_EVALUATE_H
 
-extern IDIO idio_G_frame;
+extern IDIO idio_primitive_C_hash;
 
-void idio_init_frame (void);
-void idio_final_frame (void);
-IDIO idio_frame (IDIO next, IDIO args);
-int idio_isa_frame (IDIO fo);
-void idio_free_frame (IDIO fo);
+void idio_add_description (IDIO sym, IDIO desc);
+IDIO idio_get_description (IDIO sym);
+void idio_add_primitive (idio_primitive_C_t *d);
+
+IDIO idio_scm_evaluate (IDIO e);
+void idio_init_scm_evaluate ();
+void idio_final_scm_evaluate ();
 
 #endif
 

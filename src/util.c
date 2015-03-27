@@ -101,6 +101,47 @@ const char *idio_type2string (IDIO o)
     }
 }
 
+int idio_isa_nil (IDIO o)
+{
+    IDIO_ASSERT (o);
+
+    return (idio_S_nil == o);
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("null?", nullp, (IDIO o))
+{
+    IDIO_ASSERT (o);
+
+    IDIO r = idio_S_false;
+
+    if (idio_isa_nil (o)) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
+int idio_isa_boolean (IDIO o)
+{
+    IDIO_ASSERT (o);
+
+    return (idio_S_true == o ||
+	    idio_S_false == o);
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("boolean?", booleanp, (IDIO o))
+{
+    IDIO_ASSERT (o);
+
+    IDIO r = idio_S_false;
+
+    if (idio_isa_boolean (o)) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
 #define IDIO_EQUAL_EQP		1
 #define IDIO_EQUAL_EQVP		2
 #define IDIO_EQUAL_EQUALP	3
@@ -108,6 +149,20 @@ const char *idio_type2string (IDIO o)
 int idio_eqp (void *o1, void *o2)
 {
     return idio_equal ((IDIO) o1, (IDIO) o2, IDIO_EQUAL_EQP);
+}
+
+IDIO_DEFINE_PRIMITIVE2 ("eq?", eqp, (IDIO o1, IDIO o2))
+{
+    IDIO_ASSERT (o1);
+    IDIO_ASSERT (o2);
+
+    IDIO r = idio_S_false;
+
+    if (idio_eqp (o1, o2)) {
+	r = idio_S_true;
+    }
+
+    return r;
 }
 
 int idio_eqvp (void *o1, void *o2)
@@ -334,42 +389,18 @@ char *idio_as_string (IDIO o, int depth)
 	    case IDIO_CONSTANT_TRUE:            t = "#true";           break;
 	    case IDIO_CONSTANT_FALSE:           t = "#false";          break;
 	    case IDIO_CONSTANT_NAN:             t = "#NaN";            break;
-	    case IDIO_CONSTANT_ELSE:            t = "else";            break;
-	    case IDIO_CONSTANT_EQ_GT:           t = "eq_gt";           break;
-	    case IDIO_CONSTANT_QUOTE:           t = "quote";           break;
-	    case IDIO_CONSTANT_UNQUOTE:         t = "unquote";         break;
-	    case IDIO_CONSTANT_UNQUOTESPLICING: t = "unquotesplicing"; break;
-	    case IDIO_CONSTANT_QUASIQUOTE:      t = "quasiquote";      break;
-	    case IDIO_CONSTANT_LAMBDA:          t = "lambda";          break;
-	    case IDIO_CONSTANT_MACRO:           t = "macro";           break;
-	    case IDIO_CONSTANT_BEGIN:           t = "begin";           break;
-	    case IDIO_CONSTANT_AND:             t = "and";             break;
-	    case IDIO_CONSTANT_OR:              t = "or";              break;
-	    case IDIO_CONSTANT_DEFINE:          t = "define";          break;
-	    case IDIO_CONSTANT_LETREC:          t = "letrec";          break;
-	    case IDIO_CONSTANT_BLOCK:           t = "block";           break;
-	    case IDIO_CONSTANT_TEMPLATE:        t = "template";        break;
-	    case IDIO_CONSTANT_FIXED_TEMPLATE:  t = "fixed_template";  break;
-	    case IDIO_CONSTANT_CLASS:           t = "class";           break;
-	    case IDIO_CONSTANT_SUPER:           t = "super";           break;
-	    case IDIO_CONSTANT_C_STRUCT:        t = "c_struct";        break;
-	    case IDIO_CONSTANT_ROOT:            t = "root";            break;
-	    case IDIO_CONSTANT_INIT:            t = "init";            break;
-	    case IDIO_CONSTANT_THIS:            t = "this";            break;
-	    case IDIO_CONSTANT_ERROR:           t = "error";           break;
-	    case IDIO_CONSTANT_PROFILE:         t = "profile";         break;
-	    case IDIO_CONSTANT_DLOADS:          t = "dloads";          break;
-	    case IDIO_CONSTANT_AMPERSAND:       t = "ampersand";       break;
-	    case IDIO_CONSTANT_ASTERISK:        t = "asterisk";        break;
-	    case IDIO_CONSTANT_NAMESPACE:       t = "namespace";       break;
 	    default:
-		fprintf (stderr, "idio_as_string: unexpected constant: %10p v=%zd\n", o, v);
-		IDIO_C_ASSERT (0);
 		break;
 	    }
 
-	    if (asprintf (&r, "%s", t) == -1) {
-		return NULL;
+	    if (NULL == t) {
+		if (asprintf (&r, "C=%zd", v) == -1) {
+		    return NULL;
+		}
+	    } else {
+		if (asprintf (&r, "%s", t) == -1) {
+		    return NULL;
+		}
 	    }
 	}
 	break;
@@ -556,7 +587,7 @@ char *idio_as_string (IDIO o, int depth)
 		if (asprintf (&r, "#( ") == -1) {
 		    return NULL;
 		}
-		if (depth >= 0) {
+		if (depth > 0) {
 		    for (i = 0; i < IDIO_ARRAY_ASIZE (o); i++) {
 			if (idio_S_nil != IDIO_ARRAY_AE (o, i)) {
 			    char *t = idio_as_string (IDIO_ARRAY_AE (o, i), depth - 1);
@@ -579,7 +610,7 @@ char *idio_as_string (IDIO o, int depth)
 		if (asprintf (&r, "{ ") == -1) {
 		    return NULL;
 		}
-		if (depth >= 0) {
+		if (depth > 0) {
 		    for (i = 0; i < IDIO_HASH_SIZE (o); i++) {
 			if (idio_S_nil != IDIO_HASH_HE_KEY (o, i)) {
 			    char *t;
@@ -656,82 +687,36 @@ char *idio_as_string (IDIO o, int depth)
 		    } else {
 			IDIO_STRCAT_FREE (r, idio_as_string (IDIO_MODULE_NAME (o), depth - 1));
 		    }
-		    IDIO_STRCAT (r, " exports=");
-		    if (idio_S_nil == IDIO_MODULE_EXPORTS (o)) {
-			IDIO_STRCAT (r, "(nil)");
-		    } else {
-			IDIO_STRCAT_FREE (r, idio_as_string (IDIO_MODULE_EXPORTS (o), depth - 1));
-		    }
-		    IDIO_STRCAT (r, " imports=");
-		    if (idio_S_nil == IDIO_MODULE_IMPORTS (o)) {
-			IDIO_STRCAT (r, "(nil)");
-		    } else {
-			IDIO_STRCAT_FREE (r, idio_as_string (IDIO_MODULE_IMPORTS (o), depth - 1));
-		    }
-		    IDIO_STRCAT (r, " symbols=");
-		    if (idio_S_nil == IDIO_MODULE_SYMBOLS (o)) {
-			IDIO_STRCAT (r, "(nil)");
-		    } else {
-			IDIO_STRCAT_FREE (r, idio_as_string (IDIO_MODULE_SYMBOLS (o), depth - 1));
+		    if (depth > 0) {
+			IDIO_STRCAT (r, " exports=");
+			if (idio_S_nil == IDIO_MODULE_EXPORTS (o)) {
+			    IDIO_STRCAT (r, "(nil)");
+			} else {
+			    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_MODULE_EXPORTS (o), depth - 1));
+			}
+			IDIO_STRCAT (r, " imports=");
+			if (idio_S_nil == IDIO_MODULE_IMPORTS (o)) {
+			    IDIO_STRCAT (r, "(nil)");
+			} else {
+			    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_MODULE_IMPORTS (o), 0));
+			}
+			IDIO_STRCAT (r, " symbols=");
+			if (idio_S_nil == IDIO_MODULE_SYMBOLS (o)) {
+			    IDIO_STRCAT (r, "(nil)");
+			} else {
+			    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_MODULE_SYMBOLS (o), depth - 1));
+			}
 		    }
 		    IDIO_STRCAT (r, " }");
 		    break;
 		}
 	    case IDIO_TYPE_FRAME:
 		{
-		    if (asprintf (&r, "{frame %10p f=%02x", o, IDIO_FRAME_FLAGS (o)) == -1) {
+		    if (asprintf (&r, "{frame %10p f=%02x next=%p nargs=%zd", o, IDIO_FRAME_FLAGS (o), IDIO_FRAME_NEXT (o), IDIO_FRAME_NARGS (o)) == -1) {
 			return NULL;
 		    }
-		    if (idio_G_frame == o) {
-			IDIO_STRCAT (r, " == idio_G_frame");
-		    } else {
-			IDIO_STRCAT (r, " form=");
-			if (NULL == IDIO_FRAME_FORM (o)) {
-			    IDIO_STRCAT (r, "(nil)");
-			} else {
-			    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_FRAME_FORM (o), depth - 1));
-			}
-			IDIO_STRCAT (r, " namespace=");
-			if (NULL == IDIO_FRAME_NAMESPACE (o)) {
-			    IDIO_STRCAT (r, "(nil)");
-			} else {
-			    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_FRAME_NAMESPACE (o), depth - 1));
-			}
-			IDIO_STRCAT (r, " env=");
-			if (NULL == IDIO_FRAME_ENV (o)) {
-			    IDIO_STRCAT (r, "(nil)");
-			} else if (IDIO_FRAME_ENV (idio_G_frame) == IDIO_FRAME_ENV (o)) {
-			    IDIO_STRCAT (r, "(idio_G_frame)");
-			} else {
-			    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_FRAME_ENV (o), depth - 1));
-			}
-			IDIO_STRCAT (r, " pframe=");
-			if (NULL == IDIO_FRAME_PFRAME (o)) {
-			    IDIO_STRCAT (r, "(nil)");
-			} else if (idio_G_frame == IDIO_FRAME_PFRAME (o)) {
-			    IDIO_STRCAT (r, "(idio_G_frame)");
-			} else {
-			    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_FRAME_PFRAME (o), depth - 1));
-			}
-			IDIO_STRCAT (r, " stack=");
-			if (NULL == IDIO_FRAME_STACK (o)) {
-			    IDIO_STRCAT (r, "(nil)");
-			} else {
-			    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_FRAME_STACK (o), depth - 1));
-			}
-			IDIO_STRCAT (r, " threads=");
-			if (NULL == IDIO_FRAME_THREADS (o)) {
-			    IDIO_STRCAT (r, "(nil)");
-			} else {
-			    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_FRAME_THREADS (o), depth - 1));
-			}
-			IDIO_STRCAT (r, " error=");
-			if (NULL == IDIO_FRAME_ERROR (o)) {
-			    IDIO_STRCAT (r, "(nil)");
-			} else {
-			    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_FRAME_ERROR (o), depth - 1));
-			}
-		    }
+		    IDIO_STRCAT (r, " args=");
+		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_FRAME_ARGS (o), depth - 1));
 		    IDIO_STRCAT (r, " }");
 		    break;
 		}
@@ -990,15 +975,66 @@ IDIO idio_apply2 (IDIO func, IDIO arg1, IDIO arg2)
 					     idio_S_nil)));
 }
 
+IDIO idio_list_mapcar (IDIO l)
+{
+    IDIO_ASSERT (l);
+    IDIO_TYPE_ASSERT (list, l);
+
+    IDIO r = idio_S_nil;
+
+    while (idio_S_nil != l) {
+	IDIO e = IDIO_PAIR_H (l);
+	if (idio_isa_pair (e)) {
+	    r = idio_pair (IDIO_PAIR_H (e), r);
+	} else {
+	    r = idio_pair (idio_S_nil, r);
+	}
+	l = IDIO_PAIR_T (l);
+	IDIO_TYPE_ASSERT (list, l);
+    }
+
+    return idio_list_reverse (r);
+}
+
 IDIO idio_list_memq (IDIO k, IDIO l)
 {
     IDIO_ASSERT (k);
     IDIO_ASSERT (l);
     IDIO_TYPE_ASSERT (list, l);
 
+    /* fprintf (stderr, "memq: k=%s in l=%s\n", idio_as_string (k, 1), idio_as_string (idio_list_mapcar (l), 4)); */
+    
     while (idio_S_nil != l) {
 	if (idio_eqp (k, IDIO_PAIR_H (l))) {
 	    return l;
+	}
+	l = IDIO_PAIR_T (l);
+    }
+
+    return idio_S_false;
+}
+
+IDIO idio_list_assq (IDIO k, IDIO l)
+{
+    IDIO_ASSERT (k);
+    IDIO_ASSERT (l);
+    IDIO_TYPE_ASSERT (list, l);
+
+    /* fprintf (stderr, "assq: k=%s in l=%s\n", idio_as_string (k, 1), idio_as_string (idio_list_mapcar (l), 4)); */
+    
+    while (idio_S_nil != l) {
+	IDIO p = IDIO_PAIR_H (l);
+
+	if (idio_S_nil == p) {
+	    return idio_S_false;
+	}
+
+	if (! idio_isa_pair (p)) {
+	    fprintf (stderr, "assq: p %s is not a pair in l %s\n", idio_as_string (p, 1), idio_as_string (l, 2));
+	}
+
+	if (idio_eqp (k, IDIO_PAIR_H (p))) {
+	    return p;
 	}
 	l = IDIO_PAIR_T (l);
     }
@@ -1013,6 +1049,7 @@ void idio_dump (IDIO o, int detail)
     switch ((intptr_t) o & 3) {
     case IDIO_TYPE_FIXNUM_MARK:
     case IDIO_TYPE_CONSTANT_MARK:
+    case IDIO_TYPE_CHARACTER_MARK:
 	break;
     case IDIO_TYPE_POINTER_MARK:
 	{
@@ -1156,11 +1193,11 @@ void idio_dump (IDIO o, int detail)
     if (detail &&
 	!(detail & 0x4)) {
 	char *s = idio_as_string (o, detail);
-	IDIO_FPRINTF (stderr, "%s", s);
+	fprintf (stderr, "%s", s);
 	free (s);
     }
 
-    IDIO_FPRINTF (stderr, "\n");
+    fprintf (stderr, "\n");
 }
 
 IDIO idio_fixnum_C (char *str, int base)
@@ -1190,6 +1227,17 @@ IDIO idio_fixnum_C (char *str, int base)
 	return idio_S_nil;
     }
 }    
+
+void idio_init_util ()
+{
+    IDIO_ADD_PRIMITIVE (nullp);
+    IDIO_ADD_PRIMITIVE (booleanp);
+    IDIO_ADD_PRIMITIVE (eqp);
+}
+
+void idio_final_util ()
+{
+}
 
 /* Local Variables: */
 /* mode: C/l */

@@ -16,24 +16,16 @@
  */
 
 /*
- * frame.h
+ * specialform.c
  * 
  */
 
-#ifndef FRAME_H
-#define FRAME_H
+#include "idio.h"
 
-extern IDIO idio_G_frame;
+void idio_init_specialform ()
+{
+}
 
-void idio_init_frame (void);
-void idio_final_frame (void);
-IDIO idio_frame (IDIO next, IDIO args);
-int idio_isa_frame (IDIO fo);
-void idio_free_frame (IDIO fo);
-
-#endif
-
-/* Local Variables: */
-/* mode: C/l */
-/* coding: utf-8-unix */
-/* End: */
+void idio_final_specialform ()
+{
+}

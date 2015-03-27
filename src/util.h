@@ -36,9 +36,14 @@ char *idio_display_string (IDIO o);
 IDIO idio_apply (IDIO func, IDIO args);
 IDIO idio_apply1 (IDIO func, IDIO arg);
 IDIO idio_apply2 (IDIO func, IDIO arg1, IDIO arg2);
+IDIO idio_list_mapcar (IDIO l);
 IDIO idio_list_memq (IDIO k, IDIO l);
+IDIO idio_list_assq (IDIO k, IDIO l);
 void idio_dump (IDIO o, int detail);
 IDIO idio_fixnum_C (char *str, int base);
+
+void idio_init_util ();
+void idio_final_util ();
 
 #endif
 

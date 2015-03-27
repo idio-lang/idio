@@ -40,6 +40,14 @@ IDIO idio_pair (IDIO h, IDIO t)
     return p;
 }
 
+IDIO_DEFINE_PRIMITIVE2 ("cons", pair, (IDIO h, IDIO t))
+{
+    IDIO_ASSERT (h);
+    IDIO_ASSERT (t);
+
+    return idio_pair (h, t);
+}
+
 int idio_isa_pair (IDIO p)
 {
     IDIO_ASSERT (p);
@@ -58,7 +66,6 @@ int idio_isa_list (IDIO p)
 void idio_free_pair (IDIO p)
 {
     IDIO_ASSERT (p);
-    
     IDIO_TYPE_ASSERT (pair, p);
 
     idio_gc_stats_free (sizeof (idio_pair_t));
@@ -69,14 +76,18 @@ void idio_free_pair (IDIO p)
 IDIO idio_pair_head (IDIO p)
 {
     IDIO_ASSERT (p);
-    
     IDIO_TYPE_ASSERT (pair, p);
 
-    if (idio_S_nil == p) {
-	return idio_S_nil;
-    }
-    
     return IDIO_PAIR_H (p);
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("car", pair_head, (IDIO p))
+{
+    IDIO_ASSERT (p);
+
+    IDIO_VERIFY_PARAM_TYPE (pair, p);
+
+    return idio_pair_head (p);
 }
 
 IDIO idio_pair_tail (IDIO p)
@@ -85,11 +96,16 @@ IDIO idio_pair_tail (IDIO p)
     
     IDIO_TYPE_ASSERT (pair, p);
 
-    if (idio_S_nil == p) {
-	return idio_S_nil;
-    }
-    
     return IDIO_PAIR_T (p);
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("cdr", pair_tail, (IDIO p))
+{
+    IDIO_ASSERT (p);
+
+    IDIO_VERIFY_PARAM_TYPE (pair, p);
+
+    return idio_pair_tail (p);
 }
 
 void idio_list_bind (IDIO *list, size_t nargs, ...)
@@ -232,3 +248,25 @@ IDIO idio_list_append (IDIO l1, IDIO l2)
     return r;
 }
 
+IDIO_DEFINE_PRIMITIVE2 ("append", append, (IDIO a, IDIO b))
+{
+    IDIO_ASSERT (a);
+    IDIO_ASSERT (b);
+
+    IDIO_VERIFY_PARAM_TYPE (list, a);
+    IDIO_VERIFY_PARAM_TYPE (list, b);
+
+    return idio_list_append (a, b);
+}
+
+void idio_init_pair ()
+{
+    IDIO_ADD_PRIMITIVE (pair);
+    IDIO_ADD_PRIMITIVE (pair_head);
+    IDIO_ADD_PRIMITIVE (pair_tail);
+    IDIO_ADD_PRIMITIVE (append);
+}
+
+void idio_final_pair ()
+{
+}

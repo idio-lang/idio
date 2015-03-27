@@ -37,9 +37,14 @@ size_t idio_list_length (IDIO l);
 IDIO idio_list_copy (IDIO l);
 IDIO idio_list_append (IDIO l1, IDIO l2);
 
+void idio_init_pair ();
+void idio_final_pair ();
+
 #define IDIO_LIST1(e1)		idio_pair (e1, idio_S_nil)
 #define IDIO_LIST2(e1,e2)	idio_pair (e1, idio_pair (e2, idio_S_nil))
 #define IDIO_LIST3(e1,e2,e3)	idio_pair (e1, idio_pair (e2, idio_pair (e3, idio_S_nil)))
+#define IDIO_LIST4(e1,e2,e3,e4)	idio_pair (e1, idio_pair (e2, idio_pair (e3, idio_pair (e4, idio_S_nil))))
+#define IDIO_LIST5(e1,e2,e3,e4,e5)	idio_pair (e1, idio_pair (e2, idio_pair (e3, idio_pair (e4, idio_pair (e5, idio_S_nil)))))
 
 #endif
 

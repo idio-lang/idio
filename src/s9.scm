@@ -56,7 +56,7 @@
 ;; this let assumes that functions are not evaluated which is a
 ;; particular problem with this definition of let as the arguments are
 ;; (v1 a1) (v2 a2) which look a lot like function calls...
-(define-macro (let-s9 bindings expr . exprs)
+(define-macro (let bindings expr . exprs)
   ((lambda (split)
      ((lambda (tmp-split)
         (set! split tmp-split)
@@ -99,7 +99,7 @@
     (set! map2 tmp-map2)
     (map2 a b))))
 
-(define-macro (letrec-s9 bindings expr . exprs)
+(define-macro (letrec bindings expr . exprs)
   (let ((append3
           (lambda (a b c)
             (append a (append b c))))
@@ -1021,9 +1021,9 @@
                ,expr
                ,@exprs)))))))
 
-(define-macro letrec-s9 %clean-letrec)
+(define-macro letrec %clean-letrec)
 
-(define-macro let*-s9
+(define-macro let*
   (let ((check-bindings check-bindings))
     (lambda (bindings expr . exprs)
       (letrec

@@ -180,7 +180,7 @@ size_t idio_hash_hcount (IDIO h)
 
     size_t i;
     for (i = 0 ; i < IDIO_HASH_SIZE (h); i++) {
-	if (IDIO_IS_SET (IDIO_HASH_HE_KEY (h, i))) {
+	if (idio_S_nil != IDIO_HASH_HE_KEY (h, i)) {
 	    count++;
 	}
     }
@@ -218,12 +218,12 @@ void idio_hash_resize (IDIO h)
 	nsize <<= 1;
     }
 
-    IDIO_FPRINTF (stderr, "idio_hash_resize: %10p = {%d} -> {%d}\n", h, IDIO_HASH_SIZE (h), nsize);
+    IDIO_FPRINTF (stderr, "idio_hash_resize: %10p = %zd/%zd/%zd -> %zd\n", h, hcount, osize, IDIO_HASH_SIZE (h), nsize);
     idio_assign_hash_he (h, nsize);
 
     size_t i;
     for (i = 0 ; i < ohsize; i++) {
-	if (IDIO_IS_SET (ohe[i].k)) {
+	if (idio_S_nil != ohe[i].k) {
 	    idio_hash_put (h, ohe[i].k, ohe[i].v);
 	}
     }
@@ -339,7 +339,7 @@ size_t idio_idio_hash_hashval_frame (IDIO h)
 {
     IDIO_ASSERT (h);
     
-    return idio_hash_hashval_void (IDIO_FRAME_ENV (h));
+    return idio_hash_hashval_void (h->u.frame);
 }
 
 size_t idio_idio_hash_hashval_bignum (IDIO h)
@@ -484,7 +484,7 @@ void idio_hash_verify_chain (IDIO h, void *kv)
 	size_t nhv = ohv;
 	fprintf (stderr, "idio_hash_verify_chain: %10p %lu\n", kv, nhv);
 	while (nhv < IDIO_HASH_SIZE (h) &&
-	       IDIO_IS_SET (IDIO_HASH_HE_KEY (h, nhv))) {
+	       idio_S_nil != IDIO_HASH_HE_KEY (h, nhv)) {
 	    size_t hv = IDIO_HASH_HASHF (h) (h, IDIO_HASH_HE_KEY (h, nhv));
 	    if (hv != ohv) {
 		fprintf (stderr, "idio_hash_verify_chain: %10p %10p@%lu hv %lu != ohv %lu\n", kv, IDIO_HASH_HE_KEY (h, nhv), nhv, hv, ohv);
@@ -503,13 +503,12 @@ size_t idio_hash_find_free_slot (IDIO h)
     IDIO_TYPE_ASSERT (hash, h);
 
     size_t i;
-    for (i = 0; i < IDIO_HASH_SIZE (h); i++) {
+    for (i = IDIO_HASH_SIZE (h) - 1; i >= 0 ; i--) {
 	if (idio_S_nil == IDIO_HASH_HE_KEY (h, i)) {
 	    return i;
 	}
     }
 
-    IDIO_FPRINTF (stderr, "no free slots\n");
     return (IDIO_HASH_SIZE (h) + 1);
 }
 
@@ -537,9 +536,6 @@ IDIO idio_hash_put (IDIO h, void *kv, IDIO v)
     IDIO ck = IDIO_HASH_HE_KEY (h, hv);
 
     if (idio_S_nil == ck) {
-	if (idio_gc_verboseness (1)) {
-	    fprintf (stderr, "idio_hash_put: ck == nil\n");
-	}
 	IDIO_HASH_HE_KEY (h, hv) = kv;
 	IDIO_HASH_HE_VALUE (h, hv) = v;
 	IDIO_HASH_HE_NEXT (h, hv) = IDIO_HASH_SIZE (h) + 1;
@@ -548,9 +544,6 @@ IDIO idio_hash_put (IDIO h, void *kv, IDIO v)
     }
 
     if (IDIO_HASH_EQUAL (h) (ck, kv)) {
-	if (idio_gc_verboseness (1)) {
-	    fprintf (stderr, "idio_hash_put: ck == kv\n");
-	}
 	IDIO_HASH_HE_VALUE (h, hv) = v;
 	idio_hash_verify_chain (h, kv);
 	return kv;
@@ -558,9 +551,7 @@ IDIO idio_hash_put (IDIO h, void *kv, IDIO v)
 
     size_t fhv = idio_hash_find_free_slot (h);
     if (fhv > IDIO_HASH_SIZE (h)) {
-	if (idio_gc_verboseness (1)) {
-	    fprintf (stderr, "idio_hash_put: fhv %lu > size %lu (hash is full)\n", fhv, IDIO_HASH_SIZE (h));
-	}
+	fprintf (stderr, "idio_hash_put: no free slot -> resize\n");
 	idio_hash_resize (h);
 	idio_hash_put (h, kv, v);
 	return kv;
@@ -655,17 +646,28 @@ size_t idio_hash_hv_follow_chain (IDIO h, void *kv)
     }
 
     IDIO_FPRINTF (stderr, "idio_hash_hv_follow_chain: %10p starting @%lu\n", kv, hv);
+    if (IDIO_HASH_FLAGS (h) & IDIO_HASH_FLAG_STRING_KEYS) {
+	IDIO_FPRINTF (stderr, "SK kv=%s\n", (char *) kv);
+    }
 
     size_t chv = hv;
     IDIO ck = IDIO_HASH_HE_KEY (h, chv);
 
     IDIO_FPRINTF (stderr, "%10p: @%zd %10p -> %zd\n", kv, chv, ck, IDIO_HASH_HE_NEXT (h, chv));
+    if (idio_S_nil != ck &&
+	IDIO_HASH_FLAGS (h) & IDIO_HASH_FLAG_STRING_KEYS) {
+	IDIO_FPRINTF (stderr, "SK ck=%s\n", (char *) ck);
+    }
 
     while (! IDIO_HASH_EQUAL (h) (ck, kv) &&
 	   IDIO_HASH_HE_NEXT (h, chv) < IDIO_HASH_SIZE (h)) {
 	chv = IDIO_HASH_HE_NEXT (h, chv);
 	ck = IDIO_HASH_HE_KEY (h, chv);
 	IDIO_FPRINTF (stderr, "%10p: @%zd %10p -> %zd\n", kv, chv, ck, IDIO_HASH_HE_NEXT (h, chv));
+	if (idio_S_nil != ck &&
+	    IDIO_HASH_FLAGS (h) & IDIO_HASH_FLAG_STRING_KEYS) {
+	    IDIO_FPRINTF (stderr, "SK ck=%s\n", (char *) ck);
+	}
     }
 
     if (! IDIO_HASH_EQUAL (h) (ck, kv)) {
