@@ -46,48 +46,6 @@ IDIO idio_CTD_ulong = NULL;
 
 static IDIO idio_C_typedefs_hash = idio_S_nil;
 
-void idio_init_C_struct ()
-{
-    idio_C_typedefs_hash = IDIO_HASH_EQP (1<<6);
-    idio_gc_protect (idio_C_typedefs_hash);
-
-    IDIO_C_TYPEDEF_ADD (int8);
-    IDIO_C_TYPEDEF_ADD (uint8);
-    IDIO_C_TYPEDEF_ADD (int16);
-    IDIO_C_TYPEDEF_ADD (uint16);
-    IDIO_C_TYPEDEF_ADD (int32);
-    IDIO_C_TYPEDEF_ADD (uint32);
-    IDIO_C_TYPEDEF_ADD (int64);
-    IDIO_C_TYPEDEF_ADD (uint64);
-    IDIO_C_TYPEDEF_ADD (float);
-    IDIO_C_TYPEDEF_ADD (double);
-    {
-	IDIO sym = idio_symbols_C_intern ("*");
-	idio_CTD_asterisk = idio_C_typedefs_add (sym);
-    }
-    IDIO_C_TYPEDEF_ADD (string);
-
-    IDIO_C_TYPEDEF_ADD_VALUE (char, int8);
-    IDIO_C_TYPEDEF_ADD_VALUE (uchar, uint8);
-    IDIO_C_TYPEDEF_ADD_VALUE (short, int16);
-    IDIO_C_TYPEDEF_ADD_VALUE (ushort, uint16);
-    IDIO_C_TYPEDEF_ADD_VALUE (int, int32);
-    IDIO_C_TYPEDEF_ADD_VALUE (uint, uint32);
-#ifdef __LP64__
-    IDIO_C_TYPEDEF_ADD_VALUE (long, int64);
-    IDIO_C_TYPEDEF_ADD_VALUE (ulong, uint64);
-#else
-    IDIO_C_TYPEDEF_ADD_VALUE (long, int32);
-    IDIO_C_TYPEDEF_ADD_VALUE (ulong, uint32);
-#endif
-    
-}
-
-void idio_final_C_struct ()
-{
-    idio_gc_expose (idio_C_typedefs_hash);
-}
-
 IDIO idio_C_typedef (IDIO sym)
 {
     IDIO_ASSERT (sym);
@@ -463,5 +421,47 @@ void idio_free_opaque (IDIO o)
     idio_gc_stats_free (sizeof (idio_opaque_t));
 
     free (o->u.opaque);
+}
+
+void idio_init_C_struct ()
+{
+    idio_C_typedefs_hash = IDIO_HASH_EQP (1<<6);
+    idio_gc_protect (idio_C_typedefs_hash);
+
+    IDIO_C_TYPEDEF_ADD (int8);
+    IDIO_C_TYPEDEF_ADD (uint8);
+    IDIO_C_TYPEDEF_ADD (int16);
+    IDIO_C_TYPEDEF_ADD (uint16);
+    IDIO_C_TYPEDEF_ADD (int32);
+    IDIO_C_TYPEDEF_ADD (uint32);
+    IDIO_C_TYPEDEF_ADD (int64);
+    IDIO_C_TYPEDEF_ADD (uint64);
+    IDIO_C_TYPEDEF_ADD (float);
+    IDIO_C_TYPEDEF_ADD (double);
+    {
+	IDIO sym = idio_symbols_C_intern ("*");
+	idio_CTD_asterisk = idio_C_typedefs_add (sym);
+    }
+    IDIO_C_TYPEDEF_ADD (string);
+
+    IDIO_C_TYPEDEF_ADD_VALUE (char, int8);
+    IDIO_C_TYPEDEF_ADD_VALUE (uchar, uint8);
+    IDIO_C_TYPEDEF_ADD_VALUE (short, int16);
+    IDIO_C_TYPEDEF_ADD_VALUE (ushort, uint16);
+    IDIO_C_TYPEDEF_ADD_VALUE (int, int32);
+    IDIO_C_TYPEDEF_ADD_VALUE (uint, uint32);
+#ifdef __LP64__
+    IDIO_C_TYPEDEF_ADD_VALUE (long, int64);
+    IDIO_C_TYPEDEF_ADD_VALUE (ulong, uint64);
+#else
+    IDIO_C_TYPEDEF_ADD_VALUE (long, int32);
+    IDIO_C_TYPEDEF_ADD_VALUE (ulong, uint32);
+#endif
+    
+}
+
+void idio_final_C_struct ()
+{
+    idio_gc_expose (idio_C_typedefs_hash);
 }
 

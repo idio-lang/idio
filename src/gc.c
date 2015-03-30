@@ -676,7 +676,7 @@ void idio_gc_expose (IDIO o)
     IDIO_ASSERT (o);
 
     IDIO_FPRINTF (stderr, "idio_gc_expose: %10p\n", o);
-
+    
     int seen = 0;
     idio_root_t *r = idio_gc->roots;
     idio_root_t *p = NULL;

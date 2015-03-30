@@ -61,23 +61,6 @@ void idio_error_module_unbound_name (IDIO symbol, IDIO module)
     idio_error_message ("symbol %s unbound in module %s", IDIO_SYMBOL_S (symbol), IDIO_SYMBOL_S (IDIO_MODULE_NAME (module)));
 }
 
-void idio_init_module ()
-{
-    idio_modules_hash = IDIO_HASH_EQP (1<<4);
-    idio_gc_protect (idio_modules_hash);
-
-    idio_primitive_module = idio_module (idio_symbols_C_intern ("Idio.primitives"));
-    IDIO_MODULE_IMPORTS (idio_primitive_module) = idio_S_nil;
-
-    idio_toplevel_module = idio_module (idio_symbols_C_intern ("Idio"));
-    IDIO_MODULE_IMPORTS (idio_toplevel_module) = IDIO_LIST1 (idio_primitive_module);
-}
-
-void idio_final_module ()
-{
-    idio_gc_expose (idio_modules_hash);
-}
-
 IDIO idio_module (IDIO name)
 {
     IDIO_ASSERT (name);
@@ -475,5 +458,22 @@ IDIO idio_defprimitive_set_symbol_value (IDIO symbol, IDIO value, IDIO module)
     }
 
     return idio_module_set_symbol_value (symbol, value, module);
+}
+
+void idio_init_module ()
+{
+    idio_modules_hash = IDIO_HASH_EQP (1<<4);
+    idio_gc_protect (idio_modules_hash);
+
+    idio_primitive_module = idio_module (idio_symbols_C_intern ("Idio.primitives"));
+    IDIO_MODULE_IMPORTS (idio_primitive_module) = idio_S_nil;
+
+    idio_toplevel_module = idio_module (idio_symbols_C_intern ("Idio"));
+    IDIO_MODULE_IMPORTS (idio_toplevel_module) = IDIO_LIST1 (idio_primitive_module);
+}
+
+void idio_final_module ()
+{
+    idio_gc_expose (idio_modules_hash);
 }
 

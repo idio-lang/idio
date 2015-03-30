@@ -65,12 +65,12 @@ m3
 ;(ggg)
 (test 99 99)
 
-(define-syntax keyword
-  (syntax-rules ()
-    ((_) '())))
-keyword
-(test (keyword) '())
-(fff)
+;; (define-syntax keyword
+;;   (syntax-rules ()
+;;     ((_) '())))
+;; keyword
+;; (test (keyword) '())
+;(fff)
 ; --- syntax ---
 
 ; symbols

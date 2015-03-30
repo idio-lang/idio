@@ -166,12 +166,13 @@ void idio_free_hash (IDIO h)
     idio_gc_stats_free (sizeof (idio_hash_t));
     idio_gc_stats_free (IDIO_HASH_SIZE (h) * sizeof (idio_hash_entry_t));
 
+    fprintf (stderr, "idio_free_hash: %p\n", h);
     if (IDIO_HASH_FLAGS (h) & IDIO_HASH_FLAG_STRING_KEYS) {
 	size_t i;
 	for (i = 0; i < IDIO_HASH_SIZE (h); i++) {
 	    void *kv = IDIO_HASH_HE_KEY (h, i);
 	    if (idio_S_nil != kv) {
-		free (kv);
+		free (kv); 
 	    }
 	}
     }
@@ -501,9 +502,9 @@ void idio_hash_verify_chain (IDIO h, void *kv)
 		    fprintf (stderr, "idio_hash_verify_chain: %10p %10p@%lu hv %lu != ohv %lu\n", kv, nkv, nhv, hv, ohv);
 		    abort ();
 		}
-		fprintf (stderr, "idio_hash_verify_chain: %10p %10p %lu -> %lu\n", kv, nkv, nhv, IDIO_HASH_HE_NEXT (h, nhv));
-		nhv = IDIO_HASH_HE_NEXT (h, nhv);
 	    }
+	    fprintf (stderr, "idio_hash_verify_chain: %10p %10p %lu -> %lu\n", kv, nkv, nhv, IDIO_HASH_HE_NEXT (h, nhv));
+	    nhv = IDIO_HASH_HE_NEXT (h, nhv);
 	}
     }
 }

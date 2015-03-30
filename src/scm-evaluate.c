@@ -57,6 +57,16 @@ static IDIO idio_scm_evaluation_module = idio_S_nil;
 static IDIO idio_scm_expander_list = idio_S_nil;
 static IDIO idio_scm_expander_list_src = idio_S_nil;
 
+static void idio_warning_static_undefineds (IDIO diff)
+{
+    IDIO_ASSERT (diff);
+    IDIO_TYPE_ASSERT (pair, diff);
+
+    char *s = idio_as_string (diff, 1);
+    fprintf (stderr, "WARNING: undefined variables: %s\n", s);
+    free (s);
+}
+
 static void idio_error_static_redefine (IDIO name)
 {
     IDIO_ASSERT (name);
@@ -70,7 +80,7 @@ static void idio_warning_static_redefine (IDIO name)
     IDIO_ASSERT (name);
     IDIO_TYPE_ASSERT (symbol, name);
     
-    fprintf (stderr, "redefinition of %s\n", IDIO_SYMBOL_S (name));
+    fprintf (stderr, "WARNING: redefinition of %s\n", IDIO_SYMBOL_S (name));
 }
 
 static void idio_error_static_unbound (IDIO name)
@@ -86,7 +96,7 @@ static void idio_warning_static_unbound (IDIO name)
     IDIO_ASSERT (name);
     IDIO_TYPE_ASSERT (symbol, name);
     
-    fprintf (stderr, "%s is unbound\n", IDIO_SYMBOL_S (name));
+    fprintf (stderr, "WARNING: %s is unbound\n", IDIO_SYMBOL_S (name));
 }
 
 static void idio_error_static_immutable (IDIO name)
@@ -307,6 +317,16 @@ static IDIO idio_variable_kind (IDIO nametree, IDIO name)
 	r = idio_variable_toplevelp (idio_module_current_symbol_value (idio_scm_toplevel_names), name);
 	if (idio_S_nil == r) {
 	    r = idio_variable_predefp (idio_module_current_symbol_value (idio_scm_predef_names), name);
+	    if (idio_S_nil == r) {
+		/*
+		 * auto-extend toplevel names with this unknown
+		 * variable -- it wasn't a lexical and can't be a
+		 * primitive therefore we should (eventually) see a
+		 * definition for it
+		 */
+		idio_toplevel_extend (name);
+		r = idio_variable_toplevelp (idio_module_current_symbol_value (idio_scm_toplevel_names), name);
+	    }
 	}
     }
 
@@ -414,7 +434,7 @@ static IDIO idio_scm_initial_expander (IDIO e)
 	     * ((cdr (assq functor *expander-list*)) x e)
 	     */
 	    fprintf (stderr, "apply-macro -> nil\n");
-	    return idio_S_nil;
+	    return IDIO_LIST2 (idio_S_error, eh);
 	} else {
 	    return idio_scm_application_expander (e);
 	}
@@ -501,7 +521,11 @@ static IDIO idio_scm_meaning_reference (IDIO name, IDIO nametree, int tailp)
     IDIO k = idio_variable_kind (nametree, name);
 
     if (idio_S_nil == k) {
-	idio_warning_static_unbound (name);
+	/*
+	 * shouldn't get here as unknowns are automatically
+	 * toplevel...
+	 */
+	idio_error_static_unbound (name);
 	return idio_scm_undefined_code ("meaning-reference: %s", idio_as_string (name, 1));
     }
 
@@ -647,6 +671,13 @@ static IDIO idio_scm_meaning_assignment (IDIO name, IDIO e, IDIO nametree, int t
     } else if (idio_S_toplevel == kt) {
 	return IDIO_LIST3 (idio_I_GLOBAL_SET, i, m);
     } else if (idio_S_predef == kt) {
+	/*
+	 * We can shadow predefs...semantically dubious
+	 */
+	i = idio_toplevel_extend (name);
+	return IDIO_LIST3 (idio_I_GLOBAL_SET, i, m);
+
+	/* if we weren't allowing shadowing */
 	idio_error_static_immutable (name);
 	return idio_S_unspec;
     } else {
@@ -675,15 +706,8 @@ static IDIO idio_scm_meaning_define (IDIO name, IDIO e, IDIO nametree, int tailp
 
     if (idio_isa_pair (d)) {
 	idio_warning_static_redefine (name);
-	return idio_S_unspec;
     } else {
 	idio_module_set_current_symbol_value (idio_scm_defined_names, idio_pair (name, defined));
-    }
-
-    if (idio_S_nil == nametree) {
-	idio_toplevel_extend (name);
-    } else {
-	idio_toplevel_extend (name);
     }
 
     return idio_scm_meaning_assignment (name, e, nametree, tailp);
@@ -709,15 +733,8 @@ static IDIO idio_scm_meaning_define_macro (IDIO name, IDIO e, IDIO nametree, int
 
     if (idio_isa_pair (d)) {
 	idio_warning_static_redefine (name);
-	return idio_S_unspec;
     } else {
 	idio_module_set_current_symbol_value (idio_scm_defined_names, idio_pair (name, defined));
-    }
-
-    if (idio_S_nil == nametree) {
-	idio_toplevel_extend (name);
-    } else {
-	idio_toplevel_extend (name);
     }
 
     idio_scm_install_expander (name, e, e);
@@ -1245,6 +1262,8 @@ IDIO idio_scm_evaluate (IDIO e)
 		idio_array_insert_index (tv2, idio_S_undef, i);
 	    }
 	}
+    } else {
+	idio_warning_static_undefineds (diff);
     }
     size_t tl = idio_list_length (t);
     size_t dl = idio_list_length (d);
@@ -1256,7 +1275,7 @@ IDIO idio_scm_evaluate (IDIO e)
 	fprintf (stderr, "diff d, t = %s\n", idio_as_string (diff, 1));
 	fprintf (stderr, "t = %s\n", idio_as_string (t, 1));
 	fprintf (stderr, "d = %s\n", idio_as_string (d, 1));
-	IDIO_C_ASSERT (0);
+	sleep (1);
     }
     return m;
 }

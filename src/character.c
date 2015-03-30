@@ -56,7 +56,10 @@ IDIO idio_characters_C_intern (char *s, IDIO v)
     IDIO c = idio_hash_get (idio_characters_hash, s);
 
     if (idio_S_unspec == c) {
-	idio_hash_put (idio_characters_hash, s, v);
+	size_t blen = strlen (s);
+	char *copy = idio_alloc (blen + 1);
+	strcpy (copy, s);
+	idio_hash_put (idio_characters_hash, copy, v);
     }
 
     return v;
@@ -269,7 +272,7 @@ void idio_init_character ()
     IDIO_CHARACTER_INTERN_C ("bs", 8);
     IDIO_CHARACTER_INTERN_C ("ht", 9);
     IDIO_CHARACTER_INTERN_C ("lf", 10);
-    IDIO_CHARACTER_INTERN_C ("vt", 10);
+    IDIO_CHARACTER_INTERN_C ("vt", 11);
     IDIO_CHARACTER_INTERN_C ("ff", 12);
     IDIO_CHARACTER_INTERN_C ("cr", 13);
     IDIO_CHARACTER_INTERN_C ("so", 14);
