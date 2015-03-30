@@ -166,6 +166,16 @@ void idio_free_hash (IDIO h)
     idio_gc_stats_free (sizeof (idio_hash_t));
     idio_gc_stats_free (IDIO_HASH_SIZE (h) * sizeof (idio_hash_entry_t));
 
+    if (IDIO_HASH_FLAGS (h) & IDIO_HASH_FLAG_STRING_KEYS) {
+	size_t i;
+	for (i = 0; i < IDIO_HASH_SIZE (h); i++) {
+	    void *kv = IDIO_HASH_HE_KEY (h, i);
+	    if (idio_S_nil != kv) {
+		free (kv);
+	    }
+	}
+    }
+
     free (h->u.hash->he);
     free (h->u.hash);
 }
@@ -325,7 +335,7 @@ size_t idio_idio_hash_hashval_primitive_C (IDIO h)
 {
     IDIO_ASSERT (h);
     
-    return idio_hash_hashval_void (IDIO_PRIMITIVE_C_F (h));
+    return idio_hash_hashval_void (IDIO_PRIMITIVE_F (h));
 }
 
 size_t idio_idio_hash_hashval_module (IDIO h)
@@ -483,17 +493,43 @@ void idio_hash_verify_chain (IDIO h, void *kv)
 	size_t ohv = IDIO_HASH_HASHF (h) (h, kv);
 	size_t nhv = ohv;
 	fprintf (stderr, "idio_hash_verify_chain: %10p %lu\n", kv, nhv);
-	while (nhv < IDIO_HASH_SIZE (h) &&
-	       idio_S_nil != IDIO_HASH_HE_KEY (h, nhv)) {
-	    size_t hv = IDIO_HASH_HASHF (h) (h, IDIO_HASH_HE_KEY (h, nhv));
-	    if (hv != ohv) {
-		fprintf (stderr, "idio_hash_verify_chain: %10p %10p@%lu hv %lu != ohv %lu\n", kv, IDIO_HASH_HE_KEY (h, nhv), nhv, hv, ohv);
-		abort ();
+	while (nhv < IDIO_HASH_SIZE (h)) {
+	    void *nkv = IDIO_HASH_HE_KEY (h, nhv);
+	    if (idio_S_nil != nkv) {
+		size_t hv = IDIO_HASH_HASHF (h) (h, nkv);
+		if (hv != ohv) {
+		    fprintf (stderr, "idio_hash_verify_chain: %10p %10p@%lu hv %lu != ohv %lu\n", kv, nkv, nhv, hv, ohv);
+		    abort ();
+		}
+		fprintf (stderr, "idio_hash_verify_chain: %10p %10p %lu -> %lu\n", kv, nkv, nhv, IDIO_HASH_HE_NEXT (h, nhv));
+		nhv = IDIO_HASH_HE_NEXT (h, nhv);
 	    }
-	    fprintf (stderr, "idio_hash_verify_chain: %10p %10p %lu -> %lu\n", kv, IDIO_HASH_HE_KEY (h, nhv), nhv, IDIO_HASH_HE_NEXT (h, nhv));
-	    nhv = IDIO_HASH_HE_NEXT (h, nhv);
 	}
     }
+}
+
+void idio_hash_verify_all_keys (IDIO h)
+{
+    IDIO_ASSERT (h);
+
+    IDIO_TYPE_ASSERT (hash, h);
+
+    IDIO_FPRINTF (stderr, "idio_hash_verify_all_keys:\n");
+    idio_dump (h, 1);
+    size_t hv = 0;
+    for (hv = 0; hv < IDIO_HASH_SIZE (h); hv++) {
+	void *kv = IDIO_HASH_HE_KEY (h, hv);
+	if (idio_S_nil != kv) {
+	    IDIO_FPRINTF (stderr, "idio_hash_verify_all_keys: hv=%zd %p ", hv, kv);
+	    if (IDIO_HASH_FLAGS (h) & IDIO_HASH_FLAG_STRING_KEYS) {
+		IDIO_FPRINTF (stderr, "\"%s\"", (char *) kv);
+	    }
+	    IDIO_FPRINTF (stderr, "\n");
+	
+	    idio_hash_verify_chain (h, kv);
+	}
+    }
+    IDIO_FPRINTF (stderr, "idio_hash_verify_all_keys: done\n");
 }
 
 size_t idio_hash_find_free_slot (IDIO h)
@@ -848,7 +884,11 @@ IDIO idio_hash_keys_to_list (IDIO h)
 	}
 	IDIO_ASSERT (k);
 	if (idio_S_nil != k) {
-	    r = idio_pair (k, r);
+	    if (IDIO_HASH_FLAGS (h) & IDIO_HASH_FLAG_STRING_KEYS) {
+		r = idio_pair (idio_string_C ((char *) k), r);
+	    } else {
+		r = idio_pair (k, r);
+	    }
 	}
     }
 

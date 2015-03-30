@@ -27,6 +27,9 @@ void idio_init_scm_read ();
 void idio_final_scm_read ();
 
 IDIO idio_scm_read (IDIO handle);
+IDIO idio_scm_read_char (IDIO handle);
+void idio_scm_write (IDIO handle, IDIO o);
+void idio_scm_write_char (IDIO handle, IDIO c);
 
 #endif
 

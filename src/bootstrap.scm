@@ -1,2 +1,2 @@
-(load "s9.scm")
-(load "test.scm")
+(load-file "s9.scm")
+(load-file "test.scm")

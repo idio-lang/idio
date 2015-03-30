@@ -122,37 +122,41 @@
  *
  */
 
-#define IDIO_DEFINE_PRIMITIVE0(iname,cname,params)			\
+#define IDIO_DEFINE_PRIMITIVE_(iname,cname,params,arity,varargs)	\
     IDIO idio_defprimitive_ ## cname params;				\
-    static struct idio_primitive_C_s idio_primitive_C_description_ ## cname = { \
+    static struct idio_primitive_s idio_primitive_description_ ## cname = { \
 	idio_defprimitive_ ## cname,					\
 	iname,								\
-	0,								\
-	0								\
+	arity,								\
+	varargs								\
     };									\
     IDIO idio_defprimitive_ ## cname params
+
+#define IDIO_DEFINE_PRIMITIVE0(iname,cname,params)			\
+    IDIO_DEFINE_PRIMITIVE_(iname,cname,params,0,0)
+
+#define IDIO_DEFINE_PRIMITIVE0V(iname,cname,params)			\
+    IDIO_DEFINE_PRIMITIVE_(iname,cname,params,0,1)
 
 #define IDIO_DEFINE_PRIMITIVE1(iname,cname,params)			\
-    IDIO idio_defprimitive_ ## cname params;				\
-    static struct idio_primitive_C_s idio_primitive_C_description_ ## cname = { \
-	idio_defprimitive_ ## cname,					\
-	iname,								\
-	1,								\
-	0								\
-    };									\
-    IDIO idio_defprimitive_ ## cname params
+    IDIO_DEFINE_PRIMITIVE_(iname,cname,params,1,0)
+
+#define IDIO_DEFINE_PRIMITIVE1V(iname,cname,params)			\
+    IDIO_DEFINE_PRIMITIVE_(iname,cname,params,1,1)
 
 #define IDIO_DEFINE_PRIMITIVE2(iname,cname,params)			\
-    IDIO idio_defprimitive_ ## cname params;				\
-    static struct idio_primitive_C_s idio_primitive_C_description_ ## cname = { \
-	idio_defprimitive_ ## cname,					\
-	iname,								\
-	2,								\
-	0								\
-    };									\
-    IDIO idio_defprimitive_ ## cname params
+    IDIO_DEFINE_PRIMITIVE_(iname,cname,params,2,0)
 
-#define IDIO_ADD_PRIMITIVE(cname)	idio_add_primitive (&idio_primitive_C_description_ ## cname);
+#define IDIO_DEFINE_PRIMITIVE2V(iname,cname,params)			\
+    IDIO_DEFINE_PRIMITIVE_(iname,cname,params,2,1)
+
+#define IDIO_DEFINE_PRIMITIVE3(iname,cname,params)			\
+    IDIO_DEFINE_PRIMITIVE_(iname,cname,params,3,0)
+
+#define IDIO_DEFINE_PRIMITIVE3V(iname,cname,params)			\
+    IDIO_DEFINE_PRIMITIVE_(iname,cname,params,3,1)
+
+#define IDIO_ADD_PRIMITIVE(cname)	idio_add_primitive (&idio_primitive_description_ ## cname);
 
 #define IDIO_VERIFY_PARAM_TYPE(type,param)		\
     {							\
@@ -169,10 +173,12 @@
 #include "c-ffi.h"
 #include "c-struct.h"
 #include "c-type.h"
+#include "character.h"
 #include "closure.h"
 #include "error.h"
 #include "scm-evaluate.h"
 #include "file-handle.h"
+#include "fixnum.h"
 #include "frame.h"
 #include "handle.h"
 #include "hash.h"

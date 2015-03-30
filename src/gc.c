@@ -34,8 +34,8 @@ void idio_init_gc ()
     idio_gc_finalizer_hash = IDIO_HASH_EQP (64);
     idio_gc_protect (idio_gc_finalizer_hash);
 
-    idio_primitive_C_hash = IDIO_HASH_EQP (1<<7);
-    idio_gc_protect (idio_primitive_C_hash);
+    idio_primitive_hash = IDIO_HASH_EQP (1<<7);
+    idio_gc_protect (idio_primitive_hash);
 }
 
 void idio_run_all_finalizers ()
@@ -60,7 +60,7 @@ void idio_run_all_finalizers ()
 
 void idio_final_gc ()
 {
-    idio_gc_expose (idio_primitive_C_hash);
+    idio_gc_expose (idio_primitive_hash);
     
     idio_run_all_finalizers ();
 
@@ -403,8 +403,10 @@ void idio_process_grey (unsigned colour)
     case IDIO_TYPE_HASH:
 	idio_gc->grey = IDIO_HASH_GREY (o);
 	for (i = 0; i < IDIO_HASH_SIZE (o); i++) {
-	    if (idio_S_nil != IDIO_HASH_HE_KEY (o, i)) {
-		idio_mark (IDIO_HASH_HE_KEY (o, i), colour);
+	    if (0 == (IDIO_HASH_FLAGS (o) & IDIO_HASH_FLAG_STRING_KEYS)) {
+		if (idio_S_nil != IDIO_HASH_HE_KEY (o, i)) {
+		    idio_mark (IDIO_HASH_HE_KEY (o, i), colour);
+		}
 	    }
 	    if (idio_S_nil != IDIO_HASH_HE_VALUE (o, i)) {
 		idio_mark (IDIO_HASH_HE_VALUE (o, i), colour);
@@ -1185,6 +1187,11 @@ char *idio_strcat_free (char *s1, char *s2)
 int idio_gc_verboseness (int n)
 {
     return (idio_gc->verbose >= n);
+}
+
+void idio_gc_set_verboseness (int n)
+{
+    idio_gc->verbose = n;
 }
 
 /*

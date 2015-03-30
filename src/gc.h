@@ -183,17 +183,17 @@ typedef struct idio_closure_s {
 #define IDIO_CLOSURE_ARGS(C)	((C)->u.closure->args)
 #define IDIO_CLOSURE_BODY(C)	((C)->u.closure->body)
 
-typedef struct idio_primitive_C_s {
+typedef struct idio_primitive_s {
     struct idio_s *(*f) ();	/* don't declare args */
     char *name;
     size_t arity;
     char varargs;
-} idio_primitive_C_t;
+} idio_primitive_t;
 
-#define IDIO_PRIMITIVE_C_F(P)		((P)->u.primitive_C->f)
-#define IDIO_PRIMITIVE_C_NAME(P)	((P)->u.primitive_C->name)
-#define IDIO_PRIMITIVE_C_ARITY(P)	((P)->u.primitive_C->arity)
-#define IDIO_PRIMITIVE_C_VARARGS(P)	((P)->u.primitive_C->varargs)
+#define IDIO_PRIMITIVE_F(P)		((P)->u.primitive_C->f)
+#define IDIO_PRIMITIVE_NAME(P)	((P)->u.primitive_C->name)
+#define IDIO_PRIMITIVE_ARITY(P)	((P)->u.primitive_C->arity)
+#define IDIO_PRIMITIVE_VARARGS(P)	((P)->u.primitive_C->varargs)
 
 typedef struct idio_module_s {
     struct idio_s *grey;
@@ -453,7 +453,7 @@ typedef struct idio_s {
 	idio_array_t           *array;
 	idio_hash_t            *hash;
 	idio_closure_t         *closure;
-	idio_primitive_C_t     *primitive_C;
+	idio_primitive_t     *primitive_C;
 	idio_bignum_t          *bignum;
 	idio_module_t          *module;
 	idio_frame_t           *frame;
@@ -558,6 +558,7 @@ typedef struct idio_gc_s {
 #define IDIO_CONSTANT(x)	((const IDIO) ((x) << 2 | IDIO_TYPE_CONSTANT_MARK))
 
 #define IDIO_CHARACTER_VAL(x)	(((intptr_t) x) >> 2)
+#define IDIO_CHARACTER_IVAL(x)	(tolower (IDIO_CHARACTER_VAL (x)))
 #define IDIO_CHARACTER(x)	((const IDIO) (((intptr_t) x) << 2 | IDIO_TYPE_CHARACTER_MARK))
 
 void idio_init_gc ();
@@ -603,6 +604,7 @@ char *idio_strcat_free (char *s1, char *s2);
 #define IDIO_STRCAT_FREE(s1,s2)	((s1) = idio_strcat_free ((s1), (s2)))
 
 int idio_gc_verboseness (int n);
+void idio_gc_set_verboseness (int n);
 
 /*
   XXX delete me

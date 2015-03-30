@@ -71,3 +71,19 @@ void idio_error_param_type (char *etype, IDIO who)
 void idio_error_add_C (const char *s)
 {
 }
+
+IDIO_DEFINE_PRIMITIVE1V ("error", error, (IDIO m, IDIO args))
+{
+    idio_error_message ("HELP!!! I'm in error!");
+    IDIO_C_ASSERT (0);
+}
+
+void idio_init_error ()
+{
+    IDIO_ADD_PRIMITIVE (error);
+}
+
+void idio_final_error ()
+{
+}
+

@@ -23,11 +23,11 @@
 #ifndef SCM_EVALUATE_H
 #define SCM_EVALUATE_H
 
-extern IDIO idio_primitive_C_hash;
+extern IDIO idio_primitive_hash;
 
 void idio_add_description (IDIO sym, IDIO desc);
 IDIO idio_get_description (IDIO sym);
-void idio_add_primitive (idio_primitive_C_t *d);
+void idio_add_primitive (idio_primitive_t *d);
 
 IDIO idio_scm_evaluate (IDIO e);
 void idio_init_scm_evaluate ();

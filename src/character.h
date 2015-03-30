@@ -16,19 +16,18 @@
  */
 
 /*
- * primitive.h
+ * character.h
  * 
  */
 
-#ifndef PRIMITIVE_H
-#define PRIMITIVE_H
+#ifndef CHARACTER_H
+#define CHARACTER_H
 
-IDIO idio_primitive (IDIO (*func) (IDIO args), const char *name_C, size_t arity, char varargs);
-IDIO idio_primitive_desc (idio_primitive_t *desc);
-void idio_free_primitive_C (IDIO o);
+int idio_isa_character (IDIO o);
+IDIO idio_character_lookup (char *name);
 
-void idio_init_primitive ();
-void idio_final_primitive ();
+void idio_init_character ();
+void idio_final_character ();
 
 #endif
 

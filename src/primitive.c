@@ -22,53 +22,53 @@
 
 #include "idio.h"
 
-IDIO idio_primitive_C (IDIO (*func) (IDIO args), const char *name_C, size_t arity, char varargs)
+IDIO idio_primitive (IDIO (*func) (IDIO args), const char *name_C, size_t arity, char varargs)
 {
     IDIO_C_ASSERT (func);
     IDIO_C_ASSERT (name_C);
 
     IDIO o = idio_gc_get (IDIO_TYPE_PRIMITIVE_C);
 
-    IDIO_FPRINTF (stderr, "idio_primitive_C: %10p = (%10p)\n", o, func);
+    IDIO_FPRINTF (stderr, "idio_primitive: %10p = (%10p)\n", o, func);
 
-    IDIO_GC_ALLOC (o->u.primitive_C, sizeof (idio_primitive_C_t));
+    IDIO_GC_ALLOC (o->u.primitive_C, sizeof (idio_primitive_t));
     
-    IDIO_PRIMITIVE_C_F (o) = func;
-    IDIO_PRIMITIVE_C_ARITY (o) = arity;
-    IDIO_PRIMITIVE_C_VARARGS (o) = varargs;
+    IDIO_PRIMITIVE_F (o) = func;
+    IDIO_PRIMITIVE_ARITY (o) = arity;
+    IDIO_PRIMITIVE_VARARGS (o) = varargs;
 
     size_t l = strlen (name_C);
     IDIO_C_ASSERT (l);
 
-    IDIO_GC_ALLOC (IDIO_PRIMITIVE_C_NAME (o), l + 1);
+    IDIO_GC_ALLOC (IDIO_PRIMITIVE_NAME (o), l + 1);
 
     /*
       No point in using strncpy as we have just relied on name_C being
       NUL terminated with strlen...
      */
-    strcpy (IDIO_PRIMITIVE_C_NAME (o), name_C);
+    strcpy (IDIO_PRIMITIVE_NAME (o), name_C);
 
     return o;
 }
 
-IDIO idio_primitive_C_desc (idio_primitive_C_t *desc)
+IDIO idio_primitive_desc (idio_primitive_t *desc)
 {
     IDIO_C_ASSERT (desc);
 
     IDIO o = idio_gc_get (IDIO_TYPE_PRIMITIVE_C);
 
-    IDIO_GC_ALLOC (o->u.primitive_C, sizeof (idio_primitive_C_t));
+    IDIO_GC_ALLOC (o->u.primitive_C, sizeof (idio_primitive_t));
     
-    IDIO_PRIMITIVE_C_F (o) = desc->f;
-    IDIO_PRIMITIVE_C_ARITY (o) = desc->arity;
-    IDIO_PRIMITIVE_C_VARARGS (o) = desc->varargs;
+    IDIO_PRIMITIVE_F (o) = desc->f;
+    IDIO_PRIMITIVE_ARITY (o) = desc->arity;
+    IDIO_PRIMITIVE_VARARGS (o) = desc->varargs;
 
     size_t l = strlen (desc->name);
     IDIO_C_ASSERT (l);
 
-    IDIO_GC_ALLOC (IDIO_PRIMITIVE_C_NAME (o), l + 1);
+    IDIO_GC_ALLOC (IDIO_PRIMITIVE_NAME (o), l + 1);
 
-    strcpy (IDIO_PRIMITIVE_C_NAME (o), desc->name);
+    strcpy (IDIO_PRIMITIVE_NAME (o), desc->name);
 
     return o;
 }
@@ -85,9 +85,17 @@ void idio_free_primitive_C (IDIO o)
     IDIO_ASSERT (o);
     IDIO_TYPE_ASSERT (primitive_C, o);
 
-    idio_gc_stats_free (sizeof (idio_primitive_C_t));
+    idio_gc_stats_free (sizeof (idio_primitive_t));
 
     free (o->u.primitive_C->name);
     free (o->u.primitive_C);
+}
+
+void idio_init_primitive ()
+{
+}
+
+void idio_final_primitive ()
+{
 }
 

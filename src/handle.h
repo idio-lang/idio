@@ -43,6 +43,7 @@ int idio_handle_flush (IDIO h);
 off_t idio_handle_seek (IDIO h, off_t offset, int whence);
 void idio_handle_print (IDIO h, IDIO o);
 
+IDIO idio_handle_or_current (IDIO h, unsigned mode);
 IDIO idio_close_input_handle (IDIO h);
 IDIO idio_close_output_handle (IDIO h);
 IDIO idio_current_input_handle ();

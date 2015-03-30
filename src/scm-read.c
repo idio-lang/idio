@@ -93,14 +93,6 @@
 #define idio_T_lparen		((const IDIO) IDIO_CONSTANT (IDIO_SCM_TOKEN_LPAREN))
 #define idio_T_rparen		((const IDIO) IDIO_CONSTANT (IDIO_SCM_TOKEN_RPAREN))
 
-void idio_init_scm_read ()
-{
-}
-
-void idio_final_scm_read ()
-{
-}
-
 static void idio_error_scm_read_parse (IDIO handle, char *msg)
 {
     idio_error_message ("%s:%zd:%zd: %s", IDIO_HANDLE_NAME (handle), IDIO_HANDLE_LINE (handle), IDIO_HANDLE_POS (handle), msg);
@@ -133,7 +125,7 @@ static void idio_error_scm_read_character (IDIO handle, char *msg)
 
 static void idio_error_scm_read_character_unknown_name (IDIO handle, char *name)
 {
-    idio_error_message ("%s:%zd:%zd: unknwon character name %s", IDIO_HANDLE_NAME (handle), IDIO_HANDLE_POS (handle), IDIO_HANDLE_POS (handle), name);
+    idio_error_message ("%s:%zd:%zd: unknown character name %s", IDIO_HANDLE_NAME (handle), IDIO_HANDLE_POS (handle), IDIO_HANDLE_POS (handle), name);
 }
 
 static IDIO idio_scm_read_expr (IDIO handle, int depth);
@@ -388,7 +380,12 @@ IDIO idio_scm_read_string (IDIO handle)
     }
 
     buf[slen] = '\0';
-    return idio_string_C (buf);
+
+    IDIO r = idio_string_C (buf);
+
+    free (buf);
+
+    return r;
 }
 
 IDIO idio_scm_read_character (IDIO handle)
@@ -397,7 +394,7 @@ IDIO idio_scm_read_character (IDIO handle)
 
     char buf[IDIO_SCM_CHARACTER_MAX_NAME_LEN+1];
     int i;
-    int c;
+    intptr_t c;
     
     for (i = 0 ; i < IDIO_SCM_CHARACTER_MAX_NAME_LEN; i++) {
 	c = idio_handle_getc (handle);
@@ -421,25 +418,27 @@ IDIO idio_scm_read_character (IDIO handle)
     }
     
     idio_handle_ungetc (handle, c);
-    buf[i+1] = '\0';
+    buf[i] = '\0';
 
+    IDIO r;
+    
     /* can i==0 happen? EOF? */
     if (0 == i) {
 	idio_error_scm_read_character (handle, "no letters in character name?");
 	return idio_S_unspec;
     } else if (1 == i) {
-	c = buf[0];
-    } else if (strncasecmp (buf, IDIO_SCM_CHARACTER_SPACE, strlen (IDIO_SCM_CHARACTER_SPACE)) == 0) {
-	c = ' ';
-    } else if (strncasecmp (buf, IDIO_SCM_CHARACTER_NEWLINE, strlen (IDIO_SCM_CHARACTER_NEWLINE)) == 0) {
-	c = '\n';
+	r = IDIO_CHARACTER (buf[0]);
     } else {
-	idio_error_scm_read_character_unknown_name (handle, buf);
-	return idio_S_unspec;
+	r = idio_character_lookup (buf);
+
+	if (r == idio_S_unspec) {
+	    idio_error_scm_read_character_unknown_name (handle, buf);
+	    return idio_S_unspec;
+	}
     }
 
     idio_gc_stats_inc (IDIO_TYPE_CHARACTER);
-    return IDIO_CHARACTER (c);
+    return r;
 }
 
 IDIO idio_scm_read_vector (IDIO handle, int depth)
@@ -818,5 +817,49 @@ static IDIO idio_scm_read_expr (IDIO handle, int depth)
 
 IDIO idio_scm_read (IDIO handle)
 {
+    IDIO_ASSERT (handle);
+    IDIO_TYPE_ASSERT (handle, handle);
+    
     return idio_scm_read_expr (handle, 0);
 }
+
+IDIO idio_scm_read_char (IDIO handle)
+{
+    IDIO_ASSERT (handle);
+    IDIO_TYPE_ASSERT (handle, handle);
+
+    int c = idio_handle_getc (handle);
+
+    if (EOF == c) {
+	return idio_S_eof;
+    } else {
+	return IDIO_CHARACTER (c);
+    }
+}
+
+void idio_scm_write (IDIO handle, IDIO o)
+{
+    IDIO_ASSERT (handle);
+    IDIO_TYPE_ASSERT (handle, handle);
+    
+    IDIO_C_ASSERT (0);
+}
+
+void idio_scm_write_char (IDIO handle, IDIO c)
+{
+    IDIO_ASSERT (handle);
+    IDIO_ASSERT (c);
+    IDIO_TYPE_ASSERT (handle, handle);
+    IDIO_TYPE_ASSERT (character, c);
+
+    idio_handle_putc (handle, IDIO_CHARACTER_VAL (c));
+}
+
+void idio_init_scm_read ()
+{
+}
+
+void idio_final_scm_read ()
+{
+}
+

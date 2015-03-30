@@ -101,6 +101,22 @@ const char *idio_type2string (IDIO o)
     }
 }
 
+IDIO_DEFINE_PRIMITIVE1 ("zero?", zerop, (IDIO o))
+{
+    IDIO_ASSERT (o);
+
+    IDIO r = idio_S_false;
+
+    if ((idio_isa_fixnum (o) &&
+	 0 == IDIO_FIXNUM_VAL (o)) ||
+	(idio_isa_bignum (o) &&
+	 idio_bignum_zero_p (o))) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
 int idio_isa_nil (IDIO o)
 {
     IDIO_ASSERT (o);
@@ -389,6 +405,32 @@ char *idio_as_string (IDIO o, int depth)
 	    case IDIO_CONSTANT_TRUE:            t = "#true";           break;
 	    case IDIO_CONSTANT_FALSE:           t = "#false";          break;
 	    case IDIO_CONSTANT_NAN:             t = "#NaN";            break;
+
+	    case IDIO_VM_CODE_SHALLOW_ARGUMENT_REF:  t = "SHALLOW-ARGUMENT-REF";  break;
+	    case IDIO_VM_CODE_PREDEFINED:            t = "PREDEFINED";            break;
+	    case IDIO_VM_CODE_DEEP_ARGUMENT_REF:     t = "DEEP-ARGUMENT-REF";     break;
+	    case IDIO_VM_CODE_SHALLOW_ARGUMENT_SET:  t = "SHALLOW-ARGUMENT-SET";  break;
+	    case IDIO_VM_CODE_DEEP_ARGUMENT_SET:     t = "DEEP-ARGUMENT-SET";     break;
+	    case IDIO_VM_CODE_GLOBAL_REF:            t = "GLOBAL-REF";            break;
+	    case IDIO_VM_CODE_CHECKED_GLOBAL_REF:    t = "CHECKED-GLOBAL-REF";    break;
+	    case IDIO_VM_CODE_GLOBAL_SET:            t = "GLOBAL-SET";            break;
+	    case IDIO_VM_CODE_CONSTANT:              t = "CONSTANT";              break;
+	    case IDIO_VM_CODE_ALTERNATIVE:           t = "ALTERNATIVE";           break;
+	    case IDIO_VM_CODE_SEQUENCE:              t = "SEQUENCE";              break;
+	    case IDIO_VM_CODE_TR_FIX_LET:            t = "TR-FIX-LET";            break;
+	    case IDIO_VM_CODE_FIX_LET:               t = "FIX-LET";               break;
+	    case IDIO_VM_CODE_CALL0:                 t = "CALL0";                 break;
+	    case IDIO_VM_CODE_CALL1:                 t = "CALL1";                 break;
+	    case IDIO_VM_CODE_CALL2:                 t = "CALL2";                 break;
+	    case IDIO_VM_CODE_CALL3:                 t = "CALL3";                 break;
+	    case IDIO_VM_CODE_FIX_CLOSURE:           t = "FIX-CLOSURE";           break;
+	    case IDIO_VM_CODE_NARY_CLOSURE:          t = "NARY-CLOSURE";          break;
+	    case IDIO_VM_CODE_TR_REGULAR_CALL:       t = "TR-REGULAR-CALL";       break;
+	    case IDIO_VM_CODE_REGULAR_CALL:          t = "REGULAR-CALL";          break;
+	    case IDIO_VM_CODE_STORE_ARGUMENT:        t = "STORE-ARGUMENT";        break;
+	    case IDIO_VM_CODE_CONS_ARGUMENT:         t = "CONS-ARGUMENT";         break;
+	    case IDIO_VM_CODE_ALLOCATE_FRAME:        t = "ALLOCATE-FRAME";        break;
+	    case IDIO_VM_CODE_ALLOCATE_DOTTED_FRAME: t = "ALLOCATE-DOTTED-FRAME"; break;
 	    default:
 		break;
 	    }
@@ -501,10 +543,9 @@ char *idio_as_string (IDIO o, int depth)
 		}
 		break;
 	    case IDIO_TYPE_SYMBOL:
-		if (asprintf (&r, ":") == -1) {
+		if (asprintf (&r, "%s", IDIO_SYMBOL_S (o)) == -1) {
 		    return NULL;
 		}
-		IDIO_STRCAT (r, IDIO_SYMBOL_S (o));
 		break;
 	    case IDIO_TYPE_PAIR:
 		/*
@@ -548,7 +589,7 @@ char *idio_as_string (IDIO o, int depth)
 
 			if (special) {
 			    if (idio_isa_pair (IDIO_PAIR_T (o))) {
-				IDIO_STRCAT_FREE (r, idio_as_string (idio_pair_head (IDIO_PAIR_T (o)), depth - 1));
+				IDIO_STRCAT_FREE (r, idio_as_string (idio_list_head (IDIO_PAIR_T (o)), depth - 1));
 			    } else {
 				IDIO_STRCAT_FREE (r, idio_as_string (IDIO_PAIR_T (o), depth - 1));
 			    }
@@ -667,7 +708,7 @@ char *idio_as_string (IDIO o, int depth)
 		    break;
 		}
 	    case IDIO_TYPE_PRIMITIVE_C:
-		if (asprintf (&r, "#F_C{%s}", IDIO_PRIMITIVE_C_NAME (o)) == -1) {
+		if (asprintf (&r, "#F_C{%s}", IDIO_PRIMITIVE_NAME (o)) == -1) {
 		    return NULL;
 		}
 		break;
@@ -1042,6 +1083,24 @@ IDIO idio_list_assq (IDIO k, IDIO l)
     return idio_S_false;
 }
 
+IDIO idio_list_set_difference (IDIO set1, IDIO set2)
+{
+    if (idio_isa_pair (set1)) {
+	if (idio_S_false != idio_list_memq (IDIO_PAIR_H (set1), set2)) {
+	    return idio_list_set_difference (IDIO_PAIR_T (set1), set2);
+	} else {
+	    return idio_pair (IDIO_PAIR_H (set1),
+			      idio_list_set_difference (IDIO_PAIR_T (set1), set2));
+	}
+    } else {
+	if (idio_S_nil != set1) {
+	    fprintf (stderr, "set1=%s\n", idio_as_string (set1, 1));
+	    IDIO_C_ASSERT (0);
+	}
+	return idio_S_nil;
+    }
+}
+
 void idio_dump (IDIO o, int detail)
 {
     IDIO_ASSERT (o);
@@ -1200,39 +1259,12 @@ void idio_dump (IDIO o, int detail)
     fprintf (stderr, "\n");
 }
 
-IDIO idio_fixnum_C (char *str, int base)
-{
-    char *end;
-    errno = 0;
-    intptr_t val = strtoll (str, &end, base);
-
-    if ((errno == ERANGE &&
-	 (val == LLONG_MAX ||
-	  val == LLONG_MIN)) ||
-	(errno != 0 &&
-	 val == 0)) {
-	idio_error_message ("idio_fixnum_C: strtoll (%s) = %ld: %s", str, val, strerror (errno));
-	return idio_S_nil;
-    }
-
-    if (end == str) {
-	idio_error_message ("idio_fixnum_C: strtoll (%s): No digits?", str);
-	return idio_S_nil;
-    }
-	
-    if ('\0' == *end) {
-	return IDIO_FIXNUM (val);
-    } else {
-	idio_error_message ("idio_fixnum_C: strtoll (%s) = %ld", str, val);
-	return idio_S_nil;
-    }
-}    
-
 void idio_init_util ()
 {
     IDIO_ADD_PRIMITIVE (nullp);
     IDIO_ADD_PRIMITIVE (booleanp);
     IDIO_ADD_PRIMITIVE (eqp);
+    IDIO_ADD_PRIMITIVE (zerop);
 }
 
 void idio_final_util ()

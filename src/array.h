@@ -68,6 +68,9 @@ IDIO idio_array_copy (IDIO a, size_t extra);
 IDIO idio_array_to_list (IDIO a);
 int idio_array_delete_index (IDIO a, idio_index_t index);
 
+void idio_init_array ();
+void idio_final_array ();
+
 #endif
 
 /* Local Variables: */

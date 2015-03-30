@@ -16,19 +16,17 @@
  */
 
 /*
- * primitive.h
+ * fixnum.h
  * 
  */
 
-#ifndef PRIMITIVE_H
-#define PRIMITIVE_H
+#ifndef FIXNUM_H
+#define FIXNUM_H
 
-IDIO idio_primitive (IDIO (*func) (IDIO args), const char *name_C, size_t arity, char varargs);
-IDIO idio_primitive_desc (idio_primitive_t *desc);
-void idio_free_primitive_C (IDIO o);
+IDIO idio_fixnum_C (char *str, int base);
+void idio_init_fixnum ();
+void idio_final_fixnum ();
 
-void idio_init_primitive ();
-void idio_final_primitive ();
 
 #endif
 

@@ -146,11 +146,16 @@ IDIO idio_bignum_primitive_add (IDIO args);
 IDIO idio_bignum_primitive_subtract (IDIO args);
 IDIO idio_bignum_primitive_multiply (IDIO args);
 IDIO idio_bignum_primitive_divide (IDIO args);
+IDIO idio_bignum_primitive_floor (IDIO bn);
+IDIO idio_bignum_primitive_quotient (IDIO a, IDIO b);
 IDIO idio_bignum_primitive_lt (IDIO args);
 IDIO idio_bignum_primitive_le (IDIO args);
 IDIO idio_bignum_primitive_gt (IDIO args);
 IDIO idio_bignum_primitive_ge (IDIO args);
 IDIO idio_bignum_primitive_eq (IDIO args);
+
+void idio_init_bignum ();
+void idio_final_bignum ();
 
 #endif
 

@@ -77,6 +77,10 @@
 #define idio_I_ALLOCATE_DOTTED_FRAME ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_ALLOCATE_DOTTED_FRAME))
 
 void idio_vm_codegen (IDIO code);
+IDIO idio_current_input_handle ();
+void idio_set_current_input_handle (IDIO h);
+IDIO idio_current_output_handle ();
+void idio_set_current_output_handle (IDIO h);
 
 #endif
 

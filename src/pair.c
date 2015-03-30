@@ -40,6 +40,19 @@ IDIO idio_pair (IDIO h, IDIO t)
     return p;
 }
 
+IDIO_DEFINE_PRIMITIVE1 ("pair?", pair_p, (IDIO o))
+{
+    IDIO_ASSERT (o);
+
+    IDIO r = idio_S_false;
+
+    if (idio_isa_pair (o)) {
+	r = idio_S_true;
+    }
+    
+    return r;
+}
+
 IDIO_DEFINE_PRIMITIVE2 ("cons", pair, (IDIO h, IDIO t))
 {
     IDIO_ASSERT (h);
@@ -73,7 +86,7 @@ void idio_free_pair (IDIO p)
     free (p->u.pair);
 }
 
-IDIO idio_pair_head (IDIO p)
+IDIO idio_list_head (IDIO p)
 {
     IDIO_ASSERT (p);
     IDIO_TYPE_ASSERT (pair, p);
@@ -87,10 +100,10 @@ IDIO_DEFINE_PRIMITIVE1 ("car", pair_head, (IDIO p))
 
     IDIO_VERIFY_PARAM_TYPE (pair, p);
 
-    return idio_pair_head (p);
+    return idio_list_head (p);
 }
 
-IDIO idio_pair_tail (IDIO p)
+IDIO idio_list_tail (IDIO p)
 {
     IDIO_ASSERT (p);
     
@@ -105,7 +118,7 @@ IDIO_DEFINE_PRIMITIVE1 ("cdr", pair_tail, (IDIO p))
 
     IDIO_VERIFY_PARAM_TYPE (pair, p);
 
-    return idio_pair_tail (p);
+    return idio_list_tail (p);
 }
 
 void idio_list_bind (IDIO *list, size_t nargs, ...)
@@ -120,8 +133,8 @@ void idio_list_bind (IDIO *list, size_t nargs, ...)
     size_t i;
     for (i = 0; i < nargs; i++) {
 	IDIO *arg = va_arg (ap, IDIO *);
-	*arg = idio_pair_head (*list);
-	*list = idio_pair_tail (*list);
+	*arg = idio_list_head (*list);
+	*list = idio_list_tail (*list);
 	IDIO_ASSERT (*arg);
     }
     
@@ -134,6 +147,12 @@ IDIO idio_improper_list_reverse (IDIO l, IDIO last)
     IDIO_ASSERT (last);
     
     if (idio_S_nil == l) {
+	/*
+	 * An empty improper list, ie. "( . last)" is invalid and we
+	 * shouldn't have gotten here, otherwise we're here because
+	 * we're reversing an ordinary list in which case the result
+	 * is nil
+	 */
 	return idio_S_nil;
     }
 
@@ -142,10 +161,10 @@ IDIO idio_improper_list_reverse (IDIO l, IDIO last)
     IDIO r = last;
     
     while (idio_S_nil != l) {
-	IDIO h = idio_pair_head (l);
+	IDIO h = idio_list_head (l);
 	r = idio_pair (h, r);
 	
-	l = idio_pair_tail (l);
+	l = idio_list_tail (l);
     }
 
     return r;
@@ -170,8 +189,8 @@ IDIO idio_list_to_array (IDIO l)
 
     size_t li = 0;
     while (idio_S_nil != l) {
-	idio_array_insert_index (r, idio_pair_head (l), li);
-	l = idio_pair_tail (l);
+	idio_array_insert_index (r, idio_list_head (l), li);
+	l = idio_list_tail (l);
 	li++;
     }
 
@@ -192,7 +211,7 @@ size_t idio_list_length (IDIO l)
     
     while (idio_S_nil != l) {
 	len++;
-	l = idio_pair_tail (l);
+	l = idio_list_tail (l);
     }
     
     return len;
@@ -211,8 +230,8 @@ IDIO idio_list_copy (IDIO l)
     IDIO r = idio_S_nil;
     
     while (idio_S_nil != l) {
-	IDIO h = idio_pair_head (l);
-	IDIO t = idio_pair_tail (l);
+	IDIO h = idio_list_head (l);
+	IDIO t = idio_list_tail (l);
 
 	if (idio_S_nil == h &&
 	    idio_S_nil == t) {
@@ -241,8 +260,8 @@ IDIO idio_list_append (IDIO l1, IDIO l2)
 
     IDIO_TYPE_ASSERT (pair, l1);
 
-    IDIO r = idio_pair (idio_pair_head (l1),
-			idio_list_append (idio_pair_tail (l1),
+    IDIO r = idio_pair (idio_list_head (l1),
+			idio_list_append (idio_list_tail (l1),
 					  l2));
     
     return r;
@@ -259,12 +278,61 @@ IDIO_DEFINE_PRIMITIVE2 ("append", append, (IDIO a, IDIO b))
     return idio_list_append (a, b);
 }
 
+IDIO idio_list_list2string (IDIO l)
+{
+    IDIO_ASSERT (l);
+    IDIO_TYPE_ASSERT (list, l);
+
+    size_t ll = idio_list_length (l);
+    char s[ll+1];
+    size_t i = 0;
+
+    while (idio_S_nil != l) {
+	IDIO h = IDIO_PAIR_H (l);
+
+	if (idio_isa_character (h)) {
+	    s[i] = IDIO_CHARACTER_VAL (h);
+	} else {
+	    idio_error_param_type ("character", h);
+	    return idio_S_unspec;
+	}
+
+	l = IDIO_PAIR_T (l);
+	i++;
+    }
+
+    s[i] = '\0';
+    
+    return idio_string_C (s);
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("list->string", list2string, (IDIO l))
+{
+    IDIO_ASSERT (l);
+
+    IDIO_VERIFY_PARAM_TYPE (list, l);
+
+    return idio_list_list2string (l);
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("list->vector", list2array, (IDIO l))
+{
+    IDIO_ASSERT (l);
+
+    IDIO_VERIFY_PARAM_TYPE (list, l);
+
+    return idio_list_to_array (l);
+}
+
 void idio_init_pair ()
 {
+    IDIO_ADD_PRIMITIVE (pair_p);
     IDIO_ADD_PRIMITIVE (pair);
     IDIO_ADD_PRIMITIVE (pair_head);
     IDIO_ADD_PRIMITIVE (pair_tail);
     IDIO_ADD_PRIMITIVE (append);
+    IDIO_ADD_PRIMITIVE (list2string);
+    IDIO_ADD_PRIMITIVE (list2array);
 }
 
 void idio_final_pair ()

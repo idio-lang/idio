@@ -220,14 +220,14 @@ IDIO idio_C_slots_array (IDIO C_typedefs)
     IDIO sp = C_typedefs;
     while (idio_S_nil != sp) {
 	sc++;
-	sp = idio_pair_tail (sp);
+	sp = idio_list_tail (sp);
     }
 
     IDIO slots_array = idio_array (sc);
 
     size_t offset = 0;
     while (idio_S_nil != C_typedefs) {
-	IDIO C_typedef = idio_pair_head (C_typedefs);
+	IDIO C_typedef = idio_list_head (C_typedefs);
 
 	IDIO slot_data = idio_array (IDIO_C_SLOT_DATA_MAX);
 	idio_array_push (slot_data, C_typedef);
@@ -238,11 +238,11 @@ IDIO idio_C_slots_array (IDIO C_typedefs)
 
 	int nelem = 1;
 	if (idio_isa_pair (C_typedef)) {
-	    IDIO v1 = idio_pair_head (idio_pair_tail (C_typedef));
+	    IDIO v1 = idio_list_head (idio_list_tail (C_typedef));
 	    IDIO v2 = idio_C_number_cast (v1, IDIO_TYPE_C_UINT64);
 	    nelem = IDIO_C_TYPE_UINT64 (v2);
 
-	    C_typedef = idio_pair_head (C_typedef);
+	    C_typedef = idio_list_head (C_typedef);
 	}
 
 	IDIO base_C_typedef = idio_resolve_C_typedef (C_typedef);
@@ -317,7 +317,7 @@ IDIO idio_C_slots_array (IDIO C_typedefs)
 
 	offset += size;
 	
-	C_typedefs = idio_pair_tail (C_typedefs);
+	C_typedefs = idio_list_tail (C_typedefs);
     }
 
     return slots_array;

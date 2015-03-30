@@ -31,11 +31,13 @@ IDIO idio_S_unquotesplicing;
 IDIO idio_S_quasiquote;
 IDIO idio_S_if;
 IDIO idio_S_lambda;
+IDIO idio_S_let;
 IDIO idio_S_set;
 IDIO idio_S_define_macro;
 IDIO idio_S_begin;
 IDIO idio_S_and;
 IDIO idio_S_or;
+IDIO idio_S_cond;
 IDIO idio_S_define;
 IDIO idio_S_letrec;
 IDIO idio_S_block;
@@ -138,26 +140,88 @@ IDIO idio_symbols_string_intern (IDIO str)
     return r;
 }
 
+static uintmax_t idio_gensym_id = 1;
+
+IDIO idio_gensym ()
+{
+    char *prefix = "g";
+
+    /*
+     * strlen (uintmax_t) == 20
+     * strlen ("/") == 1
+     */
+    char buf[strlen (prefix) + 2 + 1 + 1];
+
+    IDIO sym;
+    
+    for (;idio_gensym_id;idio_gensym_id++) {
+	sprintf (buf, "%s/%zd", prefix, idio_gensym_id);
+
+	sym = idio_hash_get (idio_symbols_hash, buf);
+
+	if (idio_S_unspec == sym) {
+	    sym = idio_symbols_C_intern (buf);
+	    return sym;
+	}
+    }
+
+    idio_error_message ("gensym: looped!");
+    IDIO_C_ASSERT (0);
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("symbol?", symbol_p, (IDIO o))
+{
+    IDIO_ASSERT (o);
+
+    IDIO r = idio_S_false;
+
+    if (idio_isa_symbol (o)) {
+	r = idio_S_true;
+    }
+    
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE0 ("gensym", gensym, ())
+{
+    return idio_gensym ();
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("symbol->string", symbol2string, (IDIO s))
+{
+    IDIO_ASSERT (s);
+
+    IDIO_VERIFY_PARAM_TYPE (symbol, s);
+
+    return idio_string_C (IDIO_SYMBOL_S (s));
+}
+
+IDIO_DEFINE_PRIMITIVE0 ("symbols", symbols, ())
+{
+    return idio_hash_keys_to_list (idio_symbols_hash);
+}
+
 void idio_init_symbol ()
 {
     idio_symbols_hash = idio_hash (1<<7, idio_symbol_C_eqp, idio_symbol_C_hash);
     idio_gc_protect (idio_symbols_hash);
-
     IDIO_HASH_FLAGS (idio_symbols_hash) |= IDIO_HASH_FLAG_STRING_KEYS;
+
     idio_S_else = idio_symbols_C_intern ("else");
     idio_S_eq_gt = idio_symbols_C_intern ("eq_gt");
     idio_S_quote = idio_symbols_C_intern ("quote");
     idio_S_unquote = idio_symbols_C_intern ("unquote");
     idio_S_unquotesplicing = idio_symbols_C_intern ("unquotesplicing");
     idio_S_quasiquote = idio_symbols_C_intern ("quasiquote");
-    fprintf (stderr, "quasiquote is %p\n", idio_S_quasiquote);
     idio_S_if = idio_symbols_C_intern ("if");
     idio_S_lambda = idio_symbols_C_intern ("lambda");
-    idio_S_set = idio_symbols_C_intern ("set");
+    idio_S_let = idio_symbols_C_intern ("let");
+    idio_S_set = idio_symbols_C_intern ("set!");
     idio_S_define_macro = idio_symbols_C_intern ("define-macro");
     idio_S_begin = idio_symbols_C_intern ("begin");
     idio_S_and = idio_symbols_C_intern ("and");
     idio_S_or = idio_symbols_C_intern ("or");
+    idio_S_cond = idio_symbols_C_intern ("cond");
     idio_S_define = idio_symbols_C_intern ("define");
     idio_S_letrec = idio_symbols_C_intern ("letrec");
     idio_S_block = idio_symbols_C_intern ("block");
@@ -175,6 +239,14 @@ void idio_init_symbol ()
     idio_S_ampersand = idio_symbols_C_intern ("&");
     idio_S_asterisk = idio_symbols_C_intern ("*");
     idio_S_namespace = idio_symbols_C_intern ("namespace");
+}
+
+void idio_symbol_primitives ()
+{
+    IDIO_ADD_PRIMITIVE (symbol_p);
+    IDIO_ADD_PRIMITIVE (gensym);
+    IDIO_ADD_PRIMITIVE (symbol2string);
+    IDIO_ADD_PRIMITIVE (symbols);
 }
 
 void idio_final_symbol ()

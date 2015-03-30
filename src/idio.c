@@ -37,15 +37,36 @@ void idio_init ()
     idio_init_C_struct ();
     idio_init_frame ();
     idio_init_util ();
+    idio_init_primitive ();
     idio_init_specialform ();
+    idio_init_character ();
+    idio_init_string ();
+    idio_init_array ();
+    idio_init_fixnum ();
+    idio_init_bignum ();
+    idio_init_error ();
+
+    /*
+     * race condition!  We can't bind any symbols into the "current
+     * module" in idio_init_symbol() until we have modules initialised
+     * which can't happen until after symbols have been initialised...
+     */
+    idio_symbol_primitives ();
 }
 
 void idio_final ()
 {
     /*
-     * reverse order of idio_init () -- if there is an idio_final_X ()
+     * reverse order of idio_init () ??
      */
+    idio_final_error ();
+    idio_final_bignum ();
+    idio_final_fixnum ();
+    idio_final_array ();
+    idio_final_string ();
+    idio_final_character ();
     idio_final_specialform ();
+    idio_final_primitive ();
     idio_final_util ();
     idio_final_frame ();
     idio_final_C_struct ();

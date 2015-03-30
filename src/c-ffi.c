@@ -100,14 +100,14 @@ IDIO idio_C_FFI (IDIO symbol, IDIO arg_types, IDIO result_type)
     IDIO a = arg_types;
     while (idio_S_nil != a) {
 	nargs++;
-	a = idio_pair_tail (a);
+	a = idio_list_tail (a);
     }
     
     IDIO args = idio_array (nargs);
     a = arg_types;
     while (idio_S_nil != a) {
-	idio_array_push (args, idio_pair_head (a));
-	a = idio_pair_tail (a);	
+	idio_array_push (args, idio_list_head (a));
+	a = idio_list_tail (a);	
     }
 
     IDIO_C_FFI_SYMBOL (o) = symbol;

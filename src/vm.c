@@ -29,3 +29,30 @@ void idio_vm_codegen (IDIO code)
 
     IDIO_C_ASSERT (0);
 }
+
+IDIO idio_current_input_handle ()
+{
+    return idio_module_current_symbol_value (idio_symbols_C_intern ("*current-input-handle*"));
+}
+
+void idio_set_current_input_handle (IDIO h)
+{
+    IDIO_ASSERT (h);
+    IDIO_TYPE_ASSERT (handle, h);
+
+    idio_module_set_current_symbol_value (idio_symbols_C_intern ("*current-input-handle*"), h);
+}
+
+IDIO idio_current_output_handle ()
+{
+    return idio_module_current_symbol_value (idio_symbols_C_intern ("*current-output-handle*"));
+}
+
+void idio_set_current_output_handle (IDIO h)
+{
+    IDIO_ASSERT (h);
+    IDIO_TYPE_ASSERT (handle, h);
+
+    idio_module_set_current_symbol_value (idio_symbols_C_intern ("*current-output-handle*"), h);
+}
+

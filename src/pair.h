@@ -27,8 +27,8 @@ IDIO idio_pair (IDIO h, IDIO t);
 int idio_isa_pair (IDIO p);
 int idio_isa_list (IDIO p);
 void idio_free_pair (IDIO p);
-IDIO idio_pair_head (IDIO p);
-IDIO idio_pair_tail (IDIO p);
+IDIO idio_list_head (IDIO p);
+IDIO idio_list_tail (IDIO p);
 
 IDIO idio_improper_list_reverse (IDIO l, IDIO last);
 IDIO idio_list_reverse (IDIO l);

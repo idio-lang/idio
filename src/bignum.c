@@ -1956,15 +1956,12 @@ IDIO idio_bignum_primitive_add (IDIO args)
 {
     IDIO_ASSERT (args);
 
-    IDIO_TYPE_ASSERT (array, args);
+    IDIO_TYPE_ASSERT (list, args);
 
-    IDIO eval_args;
-    idio_array_bind (args, 1, &eval_args);
-    
     IDIO r = idio_bignum_integer_int64 (0);
     
-    while (idio_S_nil != eval_args) {
-	IDIO h = IDIO_PAIR_H (eval_args);
+    while (idio_S_nil != args) {
+	IDIO h = IDIO_PAIR_H (args);
 
         if (! idio_isa_bignum (h)) {
 	    char em[BUFSIZ];
@@ -1975,7 +1972,7 @@ IDIO idio_bignum_primitive_add (IDIO args)
 
 	r = idio_bignum_real_add (r, h);
 	
-        eval_args = IDIO_PAIR_T (eval_args);
+        args = IDIO_PAIR_T (args);
     }
 
     return r;
@@ -1985,16 +1982,13 @@ IDIO idio_bignum_primitive_subtract (IDIO args)
 {
     IDIO_ASSERT (args);
 
-    IDIO_TYPE_ASSERT (array, args);
+    IDIO_TYPE_ASSERT (list, args);
 
-    IDIO eval_args;
-    idio_array_bind (args, 1, &eval_args);
-    
     IDIO r;
 
     int first = 1;
-    while (idio_S_nil != eval_args) {
-	IDIO h = IDIO_PAIR_H (eval_args);
+    while (idio_S_nil != args) {
+	IDIO h = IDIO_PAIR_H (args);
 
         if (! idio_isa_bignum (h)) {
 	    char em[BUFSIZ];
@@ -2013,7 +2007,7 @@ IDIO idio_bignum_primitive_subtract (IDIO args)
 	      (- 6 2) => 6-2 => 4
 	    */
 
-	    IDIO t = IDIO_PAIR_T (eval_args);
+	    IDIO t = IDIO_PAIR_T (args);
 	    if (idio_S_nil == t) {
 		if (IDIO_BIGNUM_INTEGER_P (h)) {
 		    r = idio_bignum_negate (h);
@@ -2024,14 +2018,14 @@ IDIO idio_bignum_primitive_subtract (IDIO args)
 	    } else {
 		r = idio_bignum_copy (h);
 
-		eval_args = t;
+		args = t;
 		continue;
 	    }
 	}
 
 	r = idio_bignum_real_subtract (r, h);
 	
-        eval_args = IDIO_PAIR_T (eval_args);
+        args = IDIO_PAIR_T (args);
     }
     
     return r;
@@ -2041,15 +2035,12 @@ IDIO idio_bignum_primitive_multiply (IDIO args)
 {
     IDIO_ASSERT (args);
 
-    IDIO_TYPE_ASSERT (array, args);
+    IDIO_TYPE_ASSERT (list, args);
 
-    IDIO eval_args;
-    idio_array_bind (args, 1, &eval_args);
-    
     IDIO r = idio_bignum_integer_int64 (1);
     
-    while (idio_S_nil != eval_args) {
-	IDIO h = IDIO_PAIR_H (eval_args);
+    while (idio_S_nil != args) {
+	IDIO h = IDIO_PAIR_H (args);
 
         if (! idio_isa_bignum (h)) {
 	    char em[BUFSIZ];
@@ -2060,7 +2051,7 @@ IDIO idio_bignum_primitive_multiply (IDIO args)
 
 	r = idio_bignum_real_multiply (r, h);
 	
-        eval_args = IDIO_PAIR_T (eval_args);
+        args = IDIO_PAIR_T (args);
     }
 
     return r;
@@ -2070,17 +2061,14 @@ IDIO idio_bignum_primitive_divide (IDIO args)
 {
     IDIO_ASSERT (args);
 
-    IDIO_TYPE_ASSERT (array, args);
-
-    IDIO eval_args;
-    idio_array_bind (args, 1, &eval_args);
+    IDIO_TYPE_ASSERT (list, args);
 
     IDIO r = idio_bignum_integer_int64 (1);
 
     int first = 1;
     
-    while (idio_S_nil != eval_args) {
-	IDIO h = IDIO_PAIR_H (eval_args);
+    while (idio_S_nil != args) {
+	IDIO h = IDIO_PAIR_H (args);
 
         if (! idio_isa_bignum (h)) {
 	    char em[BUFSIZ];
@@ -2099,11 +2087,11 @@ IDIO idio_bignum_primitive_divide (IDIO args)
 	      (/ 6 2) => 6/2 => 3
 	    */
 
-	    IDIO t = IDIO_PAIR_T (eval_args);
+	    IDIO t = IDIO_PAIR_T (args);
 	    if (idio_S_nil != t) {
 		r = idio_bignum_copy (h);
 
-		eval_args = t;
+		args = t;
 		continue;
 	    }
 	}
@@ -2115,26 +2103,69 @@ IDIO idio_bignum_primitive_divide (IDIO args)
 
 	r = idio_bignum_real_divide (r, h);
 
-        eval_args = IDIO_PAIR_T (eval_args);
+        args = IDIO_PAIR_T (args);
     }
     
     return r;
+}
+
+IDIO idio_bignum_primitive_floor (IDIO bn)
+{
+    IDIO_ASSERT (bn);
+    IDIO_TYPE_ASSERT (bignum, bn);
+    
+    IDIO r;
+
+    int64_t exp = IDIO_BIGNUM_EXP (bn);
+
+    if (exp >= 0) {
+	r = bn;
+    } else {
+	IDIO bn_i = idio_bignum_integer (IDIO_BIGNUM_SIG (bn));
+
+	while (exp < 0) {
+	    IDIO ibsr = idio_bignum_shift_right (bn_i);
+	    bn_i = idio_list_head (ibsr);
+	    exp++;
+	}
+
+	if (IDIO_BIGNUM_REAL_NEGATIVE_P (bn)) {
+	    IDIO bn1 = idio_bignum_integer_int64 (1);
+	    
+	    bn_i = idio_bignum_add (bn_i, bn1);
+	}
+
+	r = idio_bignum_real (IDIO_BIGNUM_FLAGS (bn), exp, IDIO_BIGNUM_SIG (bn_i));
+
+	r = idio_bignum_normalize (r);
+    }
+
+    return r;
+}
+
+IDIO idio_bignum_primitive_quotient (IDIO a, IDIO b)
+{
+    IDIO_ASSERT (a);
+    IDIO_ASSERT (b);
+    IDIO_TYPE_ASSERT (bignum, a);
+    IDIO_TYPE_ASSERT (bignum, b);
+    
+    IDIO ibd = idio_bignum_divide (a, b);
+
+    return IDIO_PAIR_H (ibd);
 }
 
 IDIO idio_bignum_primitive_lt (IDIO args)
 {
     IDIO_ASSERT (args);
 
-    IDIO_TYPE_ASSERT (array, args);
+    IDIO_TYPE_ASSERT (list, args);
 
-    IDIO eval_args;
-    idio_array_bind (args, 1, &eval_args);
-    
-    IDIO r = idio_pair_head (eval_args);
-    eval_args = idio_pair_tail (eval_args);
+    IDIO r = idio_list_head (args);
+    args = idio_list_tail (args);
 
-    while (idio_S_nil != eval_args) {
-	IDIO h = idio_pair_head (eval_args);
+    while (idio_S_nil != args) {
+	IDIO h = idio_list_head (args);
 	
         if (! idio_isa_bignum (h)) {
 	    char em[BUFSIZ];
@@ -2149,7 +2180,7 @@ IDIO idio_bignum_primitive_lt (IDIO args)
 	}
 
 	r = h;
-        eval_args = idio_pair_tail (eval_args);
+        args = idio_list_tail (args);
     }
     
     return idio_S_true;
@@ -2159,16 +2190,13 @@ IDIO idio_bignum_primitive_le (IDIO args)
 {
     IDIO_ASSERT (args);
 
-    IDIO_TYPE_ASSERT (array, args);
+    IDIO_TYPE_ASSERT (list, args);
 
-    IDIO eval_args;
-    idio_array_bind (args, 1, &eval_args);
-    
-    IDIO r = idio_pair_head (eval_args);
-    eval_args = idio_pair_tail (eval_args);
+    IDIO r = idio_list_head (args);
+    args = idio_list_tail (args);
 
-    while (idio_S_nil != eval_args) {
-	IDIO h = idio_pair_head (eval_args);
+    while (idio_S_nil != args) {
+	IDIO h = idio_list_head (args);
 	
         if (! idio_isa_bignum (h)) {
 	    char em[BUFSIZ];
@@ -2183,7 +2211,7 @@ IDIO idio_bignum_primitive_le (IDIO args)
 	}
 	
 	r = h;
-        eval_args = idio_pair_tail (eval_args);
+        args = idio_list_tail (args);
     }
     
     return idio_S_true;
@@ -2193,16 +2221,13 @@ IDIO idio_bignum_primitive_gt (IDIO args)
 {
     IDIO_ASSERT (args);
 
-    IDIO_TYPE_ASSERT (array, args);
+    IDIO_TYPE_ASSERT (list, args);
 
-    IDIO eval_args;
-    idio_array_bind (args, 1, &eval_args);
-    
-    IDIO r = idio_pair_head (eval_args);
-    eval_args = idio_pair_tail (eval_args);
+    IDIO r = idio_list_head (args);
+    args = idio_list_tail (args);
 
-    while (idio_S_nil != eval_args) {
-	IDIO h = idio_pair_head (eval_args);
+    while (idio_S_nil != args) {
+	IDIO h = idio_list_head (args);
 	
         if (! idio_isa_bignum (h)) {
 	    char em[BUFSIZ];
@@ -2217,7 +2242,7 @@ IDIO idio_bignum_primitive_gt (IDIO args)
 	}
 	
 	r = h;
-        eval_args = idio_pair_tail (eval_args);
+        args = idio_list_tail (args);
     }
     
     return idio_S_true;
@@ -2227,16 +2252,13 @@ IDIO idio_bignum_primitive_ge (IDIO args)
 {
     IDIO_ASSERT (args);
 
-    IDIO_TYPE_ASSERT (array, args);
+    IDIO_TYPE_ASSERT (list, args);
 
-    IDIO eval_args;
-    idio_array_bind (args, 1, &eval_args);
-    
-    IDIO r = idio_pair_head (eval_args);
-    eval_args = idio_pair_tail (eval_args);
+    IDIO r = idio_list_head (args);
+    args = idio_list_tail (args);
 
-    while (idio_S_nil != eval_args) {
-	IDIO h = idio_pair_head (eval_args);
+    while (idio_S_nil != args) {
+	IDIO h = idio_list_head (args);
 	
         if (! idio_isa_bignum (h)) {
 	    char em[BUFSIZ];
@@ -2251,7 +2273,7 @@ IDIO idio_bignum_primitive_ge (IDIO args)
 	}
 	
 	r = h;
-        eval_args = idio_pair_tail (eval_args);
+        args = idio_list_tail (args);
     }
     
     return idio_S_true;
@@ -2261,16 +2283,13 @@ IDIO idio_bignum_primitive_eq (IDIO args)
 {
     IDIO_ASSERT (args);
 
-    IDIO_TYPE_ASSERT (array, args);
+    IDIO_TYPE_ASSERT (list, args);
 
-    IDIO eval_args;
-    idio_array_bind (args, 1, &eval_args);
-    
-    IDIO r = idio_pair_head (eval_args);
-    eval_args = idio_pair_tail (eval_args);
+    IDIO r = idio_list_head (args);
+    args = idio_list_tail (args);
 
-    while (idio_S_nil != eval_args) {
-	IDIO h = idio_pair_head (eval_args);
+    while (idio_S_nil != args) {
+	IDIO h = idio_list_head (args);
 	
         if (! idio_isa_bignum (h)) {
 	    char em[BUFSIZ];
@@ -2284,9 +2303,42 @@ IDIO idio_bignum_primitive_eq (IDIO args)
 	}
 	
 	r = h;
-        eval_args = idio_pair_tail (eval_args);
+        args = idio_list_tail (args);
     }
     
     return idio_S_true;
 }
 
+int idio_realp (IDIO n)
+{
+    IDIO_ASSERT (n);
+
+    if (idio_isa_bignum (n) &&
+	IDIO_BIGNUM_REAL_P (n)) {
+	return 1;
+    }
+
+    return 0;
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("real?", realp, (IDIO n))
+{
+    IDIO_ASSERT (n);
+
+    IDIO r = idio_S_false;
+
+    if (idio_realp (n)) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
+void idio_init_bignum ()
+{
+    IDIO_ADD_PRIMITIVE (realp);
+}
+
+void idio_final_bignum ()
+{
+}

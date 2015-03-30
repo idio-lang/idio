@@ -83,25 +83,9 @@ static void idio_error_file_not_found (IDIO filename)
     idio_error_message ("filename %s not found", IDIO_STRING_S (filename));
 }
 
-void idio_init_file_handle ()
+static void idio_error_file_delete (IDIO filename)
 {
-    idio_file_handles = IDIO_HASH_EQP (1<<3);
-    idio_gc_protect (idio_file_handles);
-}
-
-void idio_final_file_handle ()
-{
-    IDIO fhl = idio_hash_keys_to_list (idio_file_handles);
-    
-    while (idio_S_nil != fhl) {
-	IDIO fh = IDIO_PAIR_H (fhl);
-
-	IDIO_HANDLE_M_CLOSE (fh) (fh);
-
-	fhl = IDIO_PAIR_T (fhl);
-    }
-
-    idio_gc_expose (idio_file_handles);
+    idio_error_message ("remove (%s): %s", IDIO_STRING_S (filename), strerror (errno));
 }
 
 IDIO idio_open_file_handle_C (char *name, char *mode)
@@ -445,7 +429,7 @@ void idio_file_handle_print (IDIO fh, IDIO o)
     IDIO_C_ASSERT (0);
 }
 
-IDIO idio_defprimitive_open_file_handle (IDIO name, IDIO mode)
+IDIO_DEFINE_PRIMITIVE2 ("open-file", open_file, (IDIO name, IDIO mode))
 {
     IDIO_ASSERT (name);
     IDIO_ASSERT (mode);
@@ -606,9 +590,78 @@ IDIO idio_load_file (IDIO filename)
     return idio_S_unspec;
 }
 
-IDIO idio_defprimitive_load_file (IDIO filename)
+IDIO_DEFINE_PRIMITIVE1 ("load-file", load_file, (IDIO filename))
 {
     IDIO_ASSERT (filename);
 
     return idio_load_file (filename);
 }
+
+IDIO_DEFINE_PRIMITIVE1 ("file-exists?", file_exists_p, (IDIO filename))
+{
+    IDIO_ASSERT (filename);
+
+    IDIO_VERIFY_PARAM_TYPE (string, filename);
+
+    char *Cfn = idio_string_as_C (filename);
+
+    IDIO r = idio_S_false;
+
+    if (access (Cfn, R_OK) == 0) {
+	r = idio_S_true;
+    }
+    
+    free (Cfn);
+    
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("delete-file", delete_file, (IDIO filename))
+{
+    IDIO_ASSERT (filename);
+
+    IDIO_VERIFY_PARAM_TYPE (string, filename);
+
+    char *Cfn = idio_string_as_C (filename);
+
+    IDIO r = idio_S_false;
+
+    if (remove (Cfn)) {
+	free (Cfn);
+	idio_error_file_delete (filename);
+	return idio_S_unspec;
+    } else {
+	r = idio_S_true;
+    }
+    
+    free (Cfn);
+    
+    return r;
+}
+
+void idio_init_file_handle ()
+{
+    idio_file_handles = IDIO_HASH_EQP (1<<3);
+    idio_gc_protect (idio_file_handles);
+
+    IDIO_ADD_PRIMITIVE (open_file);
+    IDIO_ADD_PRIMITIVE (load_file);
+    IDIO_ADD_PRIMITIVE (file_exists_p);
+    IDIO_ADD_PRIMITIVE (delete_file);
+}
+
+void idio_final_file_handle ()
+{
+    IDIO fhl = idio_hash_keys_to_list (idio_file_handles);
+    
+    while (idio_S_nil != fhl) {
+	IDIO fh = IDIO_PAIR_H (fhl);
+
+	IDIO_HANDLE_M_CLOSE (fh) (fh);
+
+	fhl = IDIO_PAIR_T (fhl);
+    }
+
+    idio_gc_expose (idio_file_handles);
+}
+

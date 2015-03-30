@@ -22,6 +22,11 @@
 
 #include "idio.h"
 
+void idio_error_vector_length (char *m, intptr_t i)
+{
+    idio_error_message ("%s: %zd", m, i);
+}
+
 void idio_assign_array (IDIO a, size_t asize)
 {
     IDIO_ASSERT (a);
@@ -425,5 +430,124 @@ int idio_array_delete_index (IDIO a, idio_index_t index)
     IDIO_ARRAY_AE (a, index) = idio_S_nil;
 
     return 1;
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("vector?", vector_p, (IDIO o))
+{
+    IDIO_ASSERT (o);
+
+    IDIO r = idio_S_false;
+
+    if (idio_isa_array (o)) {
+	r = idio_S_true;
+    }
+    
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE2 ("vector-fill!", vector_fill, (IDIO a, IDIO fill))
+{
+    IDIO_ASSERT (a);
+    IDIO_ASSERT (fill);
+
+    IDIO_VERIFY_PARAM_TYPE (array, a);
+
+    idio_index_t al = idio_array_size (a);
+    idio_index_t ai;
+
+    for (ai = 0; ai < al ; ai++) {
+	idio_array_insert_index (a, fill, ai);
+    }
+
+    return idio_S_unspec;
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("vector-length", vector_length, (IDIO a))
+{
+    IDIO_ASSERT (a);
+
+    IDIO_VERIFY_PARAM_TYPE (array, a);
+
+    return IDIO_FIXNUM (idio_array_size (a));
+}
+
+IDIO_DEFINE_PRIMITIVE2 ("vector-ref", vector_ref, (IDIO a, IDIO index))
+{
+    IDIO_ASSERT (a);
+    IDIO_ASSERT (index);
+
+    IDIO_VERIFY_PARAM_TYPE (array, a);
+    IDIO_VERIFY_PARAM_TYPE (fixnum, index);
+
+    idio_index_t al = idio_array_size (a);
+
+    intptr_t i = IDIO_FIXNUM_VAL (index);
+
+    if (i < 0) {
+	i += al;
+	if (i < 0) {
+	    i -= al;
+	    idio_error_vector_length ("vector-ref: out of bounds", i);
+	    return idio_S_unspec;
+	}
+    } else if (i >= al) {
+	idio_error_vector_length ("vector-ref: out of bounds", i);
+	return idio_S_unspec;
+    }
+
+    return idio_array_get_index (a, i);
+}
+
+IDIO_DEFINE_PRIMITIVE3 ("vector-set!", vector_set, (IDIO a, IDIO index, IDIO v))
+{
+    IDIO_ASSERT (a);
+    IDIO_ASSERT (index);
+    IDIO_ASSERT (v);
+
+    IDIO_VERIFY_PARAM_TYPE (array, a);
+    IDIO_VERIFY_PARAM_TYPE (fixnum, index);
+
+    idio_index_t al = idio_array_size (a);
+
+    intptr_t i = IDIO_FIXNUM_VAL (index);
+
+    if (i < 0) {
+	i += al;
+	if (i < 0) {
+	    i -= al;
+	    idio_error_vector_length ("vector-set: out of bounds", i);
+	    return idio_S_unspec;
+	}
+    } else if (i >= al) {
+	idio_error_vector_length ("vector-set: out of bounds", i);
+	return idio_S_unspec;
+    }
+
+    idio_array_insert_index (a, v, i);
+
+    return idio_S_unspec;
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("vector->list", vector2list, (IDIO a))
+{
+    IDIO_ASSERT (a);
+
+    IDIO_VERIFY_PARAM_TYPE (array, a);
+
+    return idio_array_to_list (a);
+}
+
+void idio_init_array ()
+{
+    IDIO_ADD_PRIMITIVE (vector_p);
+    IDIO_ADD_PRIMITIVE (vector_fill);
+    IDIO_ADD_PRIMITIVE (vector_length);
+    IDIO_ADD_PRIMITIVE (vector_ref);
+    IDIO_ADD_PRIMITIVE (vector_set);
+    IDIO_ADD_PRIMITIVE (vector2list);
+}
+
+void idio_final_array ()
+{
 }
 
