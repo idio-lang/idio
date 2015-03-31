@@ -50,7 +50,7 @@ IDIO idio_frame (IDIO next, IDIO args)
     IDIO_FRAME_FLAGS (fo) = IDIO_FRAME_FLAG_NONE;
     IDIO_FRAME_NEXT (fo) = next;
 
-    idio_index_t nargs = idio_list_length (args);
+    idio_ai_t nargs = idio_list_length (args);
     
     IDIO_FRAME_NARGS (fo) = nargs;
     IDIO_FRAME_ARGS (fo) = idio_array (nargs);

@@ -129,12 +129,12 @@ typedef struct idio_pair_s {
 #define IDIO_PAIR_H(P)		((P)->u.pair->h)
 #define IDIO_PAIR_T(P)		((P)->u.pair->t)
 
-typedef ptrdiff_t idio_index_t;
+typedef ptrdiff_t idio_ai_t;
 
 typedef struct idio_array_s {
     struct idio_s *grey;
-    idio_index_t asize;		/* allocated size */
-    idio_index_t usize;		/* used size */
+    idio_ai_t asize;	/* allocated size */
+    idio_ai_t usize;	/* used size */
     struct idio_s* *ae;		/* IDIO *a */
 } idio_array_t;
 
@@ -152,14 +152,23 @@ typedef struct idio_hash_entry_s {
 #define IDIO_HASH_FLAG_NONE		0
 #define IDIO_HASH_FLAG_STRING_KEYS	(1<<0)
 
+/*
+ * idio_hi_t must be a size_t as, though we may only create an
+ * array of 2**(n-1)-1, we need a size+1 marker to indicate out of
+ * bounds.
+ */
+typedef size_t idio_hi_t;
+
 typedef struct idio_hash_s {
     struct idio_s *grey;
-    size_t size;		/* nominal hash size */
-    size_t mask;		/* bitmask for easy modulo arithmetic */
+    idio_hi_t size;   /* nominal hash size */
+    idio_hi_t mask;   /* bitmask for easy modulo arithmetic */
     int (*equal) (void *k1, void *k2);
     size_t (*hashf) (struct idio_s *h, void *k); /* hashing function */
-    idio_hash_entry_t *he;
+    idio_hash_entry_t *he;			 /* a C array */
 } idio_hash_t;
+
+typedef size_t idio_hi_t;
 
 #define IDIO_HASH_GREY(H)	((H)->u.hash->grey)
 #define IDIO_HASH_SIZE(H)	((H)->u.hash->size)

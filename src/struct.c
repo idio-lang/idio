@@ -52,7 +52,7 @@ IDIO idio_struct_type (IDIO name, IDIO parent, IDIO slots)
     IDIO_STRUCT_TYPE_NAME (st) = name;
     IDIO_STRUCT_TYPE_PARENT (st) = parent;
 
-    idio_index_t nslots = 0;
+    idio_ai_t nslots = 0;
     IDIO slot = slots;
     while (idio_S_nil != slot) {
 	if (! idio_isa_symbol (IDIO_PAIR_H (slot))) {
@@ -63,7 +63,7 @@ IDIO idio_struct_type (IDIO name, IDIO parent, IDIO slots)
 	slot = IDIO_PAIR_T (slot);
     }
 
-    idio_index_t pslots = 0;
+    idio_ai_t pslots = 0;
     if (idio_S_nil != parent) {
 	pslots = idio_array_size (IDIO_STRUCT_TYPE_SLOTS (parent));
 	IDIO_STRUCT_TYPE_SLOTS (st) = idio_array_copy (IDIO_STRUCT_TYPE_SLOTS (parent), nslots);
@@ -72,7 +72,7 @@ IDIO idio_struct_type (IDIO name, IDIO parent, IDIO slots)
     }
 
     slot = slots;
-    idio_index_t i;
+    idio_ai_t i;
     for (i = 0; i < nslots; i++) {
 	idio_array_insert_index (IDIO_STRUCT_TYPE_SLOTS (st), IDIO_PAIR_H (slot), pslots + i);
 	slot = IDIO_PAIR_T (slot);	
@@ -170,10 +170,10 @@ IDIO idio_struct_instance (IDIO st, IDIO slots)
     IDIO_STRUCT_INSTANCE_GREY (si) = NULL;
     IDIO_STRUCT_INSTANCE_TYPE (si) = st;
 
-    idio_index_t size = idio_array_size (IDIO_STRUCT_TYPE_SLOTS (st));
+    idio_ai_t size = idio_array_size (IDIO_STRUCT_TYPE_SLOTS (st));
     IDIO_STRUCT_INSTANCE_SLOTS (si) = idio_array (size);
 
-    idio_index_t i = 0;
+    idio_ai_t i = 0;
     IDIO slot = slots;
     while (idio_S_nil != slot) {
 	idio_array_insert_index (IDIO_STRUCT_INSTANCE_SLOTS (si), IDIO_PAIR_H (slot), i);
@@ -268,7 +268,7 @@ IDIO idio_defprimitive_struct_instance_ref (IDIO si, IDIO slot)
 	idio_error_param_type ("symbol", slot);
     }
 
-    idio_index_t i = idio_array_find_eqp (IDIO_STRUCT_INSTANCE_SLOTS (si), slot, 0);
+    idio_ai_t i = idio_array_find_eqp (IDIO_STRUCT_INSTANCE_SLOTS (si), slot, 0);
 
     if (-1 == i) {
 	fprintf (stderr, "struct-ref: slot not found");
@@ -292,7 +292,7 @@ IDIO idio_defprimitive_struct_instance_set (IDIO si, IDIO slot, IDIO v)
 	idio_error_param_type ("symbol", slot);
     }
 
-    idio_index_t i = idio_array_find_eqp (IDIO_STRUCT_INSTANCE_SLOTS (si), slot, 0);
+    idio_ai_t i = idio_array_find_eqp (IDIO_STRUCT_INSTANCE_SLOTS (si), slot, 0);
 
     if (-1 == i) {
 	fprintf (stderr, "struct-set!: slot not found");

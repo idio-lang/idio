@@ -22,12 +22,12 @@
 
 #include "idio.h"
 
-void idio_error_vector_length (char *m, intptr_t i)
+void idio_error_vector_length (char *m, idio_ai_t i)
 {
     idio_error_message ("%s: %zd", m, i);
 }
 
-void idio_assign_array (IDIO a, size_t asize)
+void idio_assign_array (IDIO a, idio_ai_t asize)
 {
     IDIO_ASSERT (a);
     IDIO_C_ASSERT (asize);
@@ -42,13 +42,14 @@ void idio_assign_array (IDIO a, size_t asize)
     IDIO_ARRAY_GREY (a) = NULL;
     IDIO_ARRAY_ASIZE (a) = asize;
     IDIO_ARRAY_USIZE (a) = 0;
-    idio_index_t i;
+
+    idio_ai_t i;
     for (i = 0; i < asize; i++) {
 	IDIO_ARRAY_AE (a, i) = idio_S_nil;
     }
 }
 
-IDIO idio_array (size_t size)
+IDIO idio_array (idio_ai_t size)
 {
 
     if (0 == size) {
@@ -86,14 +87,14 @@ void idio_array_resize (IDIO a)
     IDIO_TYPE_ASSERT (array, a);
 
     idio_array_t *oarray = a->u.array;
-    size_t oasize = IDIO_ARRAY_ASIZE (a);
-    size_t ousize = IDIO_ARRAY_USIZE (a);
-    size_t nsize = oasize << 1;
+    idio_ai_t oasize = IDIO_ARRAY_ASIZE (a);
+    idio_ai_t ousize = IDIO_ARRAY_USIZE (a);
+    idio_ai_t nsize = oasize << 1;
 
     IDIO_FPRINTF (stderr, "idio_array_resize: %10p = {%d} -> {%d}\n", a, oasize, nsize);
     idio_assign_array (a, nsize);
 
-    size_t i;
+    idio_ai_t i;
     for (i = 0 ; i < oarray->usize; i++) {
 	idio_array_insert_index (a, oarray->ae[i], i);
     }
@@ -113,7 +114,7 @@ void idio_array_resize (IDIO a)
     free (oarray);
 }
 
-idio_index_t idio_array_size (IDIO a)
+idio_ai_t idio_array_size (IDIO a)
 {
     IDIO_ASSERT (a);
 
@@ -122,7 +123,7 @@ idio_index_t idio_array_size (IDIO a)
     return IDIO_ARRAY_USIZE (a);
 }
 
-void idio_array_insert_index (IDIO a, IDIO o, idio_index_t index)
+void idio_array_insert_index (IDIO a, IDIO o, idio_ai_t index)
 {
     IDIO_ASSERT (a);
     IDIO_ASSERT (o);
@@ -206,7 +207,7 @@ IDIO idio_array_shift (IDIO a)
     }
 
     IDIO e = idio_array_get_index (a, 0);
-    size_t i;
+    idio_ai_t i;
     for (i = 0 ; i < IDIO_ARRAY_USIZE (a) - 1; i++) {
 	IDIO e = idio_array_get_index (a, i + 1);
 	IDIO_ASSERT (e);
@@ -226,7 +227,7 @@ void idio_array_unshift (IDIO a, IDIO o)
 
     IDIO_TYPE_ASSERT (array, a);
 
-    size_t i;
+    idio_ai_t i;
     if (IDIO_ARRAY_USIZE (a) > 0) {
 	for (i = IDIO_ARRAY_USIZE (a); i > 0; i--) {
 	    IDIO e = idio_array_get_index (a, i - 1);
@@ -268,7 +269,7 @@ IDIO idio_array_top (IDIO a)
     return idio_array_get_index (a, IDIO_ARRAY_USIZE (a) - 1);
 }
 
-IDIO idio_array_get_index (IDIO a, idio_index_t index)
+IDIO idio_array_get_index (IDIO a, idio_ai_t index)
 {
     IDIO_ASSERT (a);
 
@@ -291,7 +292,7 @@ IDIO idio_array_get_index (IDIO a, idio_index_t index)
     return IDIO_ARRAY_AE (a, index);
 }
 
-idio_index_t idio_array_find_free_index (IDIO a, idio_index_t index)
+idio_ai_t idio_array_find_free_index (IDIO a, idio_ai_t index)
 {
     IDIO_ASSERT (a);
 
@@ -316,7 +317,7 @@ idio_index_t idio_array_find_free_index (IDIO a, idio_index_t index)
     return -1;
 }
 
-idio_index_t idio_array_find_eqp (IDIO a, IDIO e, idio_index_t index)
+idio_ai_t idio_array_find_eqp (IDIO a, IDIO e, idio_ai_t index)
 {
     IDIO_ASSERT (a);
 
@@ -341,7 +342,7 @@ idio_index_t idio_array_find_eqp (IDIO a, IDIO e, idio_index_t index)
     return -1;
 }
 
-void idio_array_bind (IDIO a, size_t nargs, ...)
+void idio_array_bind (IDIO a, idio_ai_t nargs, ...)
 {
     IDIO_ASSERT (a);
 
@@ -358,7 +359,7 @@ void idio_array_bind (IDIO a, size_t nargs, ...)
     va_list ap;
     va_start (ap, nargs);
 
-    size_t i;
+    idio_ai_t i;
     for (i = 0; i < nargs; i++) {
 	IDIO *arg = va_arg (ap, IDIO *);
 	*arg = idio_array_get_index (a, i);
@@ -368,17 +369,17 @@ void idio_array_bind (IDIO a, size_t nargs, ...)
     va_end (ap);
 }
 
-IDIO idio_array_copy (IDIO a, size_t extra)
+IDIO idio_array_copy (IDIO a, idio_ai_t extra)
 {
     IDIO_ASSERT (a);
 
     IDIO_TYPE_ASSERT (array, a);
 
-    size_t osz = IDIO_ARRAY_USIZE (a);
-    size_t nsz = osz + extra;
+    idio_ai_t osz = IDIO_ARRAY_USIZE (a);
+    idio_ai_t nsz = osz + extra;
     IDIO na = idio_array (nsz);
 
-    size_t i;
+    idio_ai_t i;
     for (i = 0; i < osz; i++) {
 	idio_array_insert_index (na,
 				 idio_array_get_index (a, i),
@@ -394,8 +395,8 @@ IDIO idio_array_to_list (IDIO a)
 
     IDIO_TYPE_ASSERT (array, a);
 
-    size_t al = IDIO_ARRAY_USIZE (a);
-    size_t ai;
+    idio_ai_t al = IDIO_ARRAY_USIZE (a);
+    idio_ai_t ai;
     
     IDIO r = idio_S_nil;
 
@@ -407,7 +408,7 @@ IDIO idio_array_to_list (IDIO a)
     return r;
 }
 
-int idio_array_delete_index (IDIO a, idio_index_t index)
+int idio_array_delete_index (IDIO a, idio_ai_t index)
 {
     IDIO_ASSERT (a);
 
@@ -452,8 +453,8 @@ IDIO_DEFINE_PRIMITIVE2 ("vector-fill!", vector_fill, (IDIO a, IDIO fill))
 
     IDIO_VERIFY_PARAM_TYPE (array, a);
 
-    idio_index_t al = idio_array_size (a);
-    idio_index_t ai;
+    idio_ai_t al = idio_array_size (a);
+    idio_ai_t ai;
 
     for (ai = 0; ai < al ; ai++) {
 	idio_array_insert_index (a, fill, ai);
@@ -479,9 +480,9 @@ IDIO_DEFINE_PRIMITIVE2 ("vector-ref", vector_ref, (IDIO a, IDIO index))
     IDIO_VERIFY_PARAM_TYPE (array, a);
     IDIO_VERIFY_PARAM_TYPE (fixnum, index);
 
-    idio_index_t al = idio_array_size (a);
+    idio_ai_t al = idio_array_size (a);
 
-    intptr_t i = IDIO_FIXNUM_VAL (index);
+    idio_ai_t i = IDIO_FIXNUM_VAL (index);
 
     if (i < 0) {
 	i += al;
@@ -507,9 +508,9 @@ IDIO_DEFINE_PRIMITIVE3 ("vector-set!", vector_set, (IDIO a, IDIO index, IDIO v))
     IDIO_VERIFY_PARAM_TYPE (array, a);
     IDIO_VERIFY_PARAM_TYPE (fixnum, index);
 
-    idio_index_t al = idio_array_size (a);
+    idio_ai_t al = idio_array_size (a);
 
-    intptr_t i = IDIO_FIXNUM_VAL (index);
+    idio_ai_t i = IDIO_FIXNUM_VAL (index);
 
     if (i < 0) {
 	i += al;

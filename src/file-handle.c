@@ -478,7 +478,9 @@ IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (
 	    break;
 	}
 
-	fprintf (stderr, "idio_load_filehandle: e=%s\n", idio_as_string (e, 1));
+	char *es = idio_as_string (e, 1);
+	fprintf (stderr, "idio_load_filehandle: e=%s\n", es);
+	free (es);
 
 	/* XXX */
 	if (idio_isa_pair (e)) {
@@ -497,7 +499,9 @@ IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (
 	}
 
 	IDIO r = (*evaluator) (e);
-	fprintf (stderr, "idio_load_filehandle: evaluation => %s\n\n", idio_as_string (r, 4));
+	char *rs = idio_as_string (r, 4);
+	fprintf (stderr, "idio_load_filehandle: evaluation => %s\n\n", rs);
+	free (rs);
     }
     
     IDIO_HANDLE_M_CLOSE (fh) (fh);

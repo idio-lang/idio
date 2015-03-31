@@ -44,7 +44,7 @@ void idio_run_all_finalizers ()
 	return;
     }
     
-    idio_index_t hi;
+    idio_ai_t hi;
     for (hi = 0; hi < IDIO_HASH_SIZE (idio_gc_finalizer_hash); hi++) {
 	IDIO k = IDIO_HASH_HE_KEY (idio_gc_finalizer_hash, hi);
 	if (idio_S_nil != k) {

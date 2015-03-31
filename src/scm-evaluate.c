@@ -1117,7 +1117,9 @@ static IDIO idio_scm_meaning (IDIO e, IDIO nametree, int tailp)
     IDIO_ASSERT (nametree);
     IDIO_TYPE_ASSERT (list, nametree);
 
-    fprintf (stderr, "meaning: %s\n", idio_as_string (e, 1));
+    char *ms = idio_as_string (e, 1);
+    fprintf (stderr, "meaning: %s\n", ms);
+    free (ms);
     if (idio_isa_pair (e)) {
 	IDIO eh = IDIO_PAIR_H (e);
 	IDIO et = IDIO_PAIR_T (e);
@@ -1170,7 +1172,11 @@ static IDIO idio_scm_meaning (IDIO e, IDIO nametree, int tailp)
 	    }
 	} else if (idio_S_cond == eh) {
 	    IDIO c = idio_scm_meaning (idio_scm_rewrite_cond (et), nametree, tailp);
-	    fprintf (stderr, "cond: %s\n%s\n", idio_as_string (et, 1), idio_as_string (c, 1));
+	    char *ets = idio_as_string (et, 1);
+	    char *cs = idio_as_string (c, 1);
+	    fprintf (stderr, "cond: %s\n%s\n", ets, cs);
+	    free (ets);
+	    free (cs);
 	    return c;
 	} else if (idio_S_set == eh) {
 	    if (idio_isa_pair (et)) {
@@ -1218,7 +1224,11 @@ static IDIO idio_scm_meaning (IDIO e, IDIO nametree, int tailp)
 		if (idio_S_nil != k) {
 		    if (idio_S_false != idio_scm_expanderp (eh)) {
 			IDIO me = idio_scm_macro_expand (e);
-			fprintf (stderr, "macro-expand:\ne=%s\nme=%s\n", idio_as_string (e, 4), idio_as_string (me, 4));
+			char *es = idio_as_string (e, 4);
+			char *mes = idio_as_string (me, 4);
+			fprintf (stderr, "macro-expand:\ne=%s\nme=%s\n", es, mes);
+			free (es);
+			free (mes);
 			return idio_scm_meaning (me, nametree, tailp);
 		    }
 		}
@@ -1257,7 +1267,7 @@ IDIO idio_scm_evaluate (IDIO e)
 	    fprintf (stderr, "scm-evaluate: growing toplevel_values by %zd to %zd\n", tl - tvl, tl);
 	    IDIO tv2 = idio_array_copy (tv, tl - tvl);
 	    idio_module_set_current_symbol_value (idio_scm_toplevel_values, tv2);
-	    idio_index_t i = tvl;
+	    idio_ai_t i = tvl;
 	    for (; i < tl; i++) {
 		idio_array_insert_index (tv2, idio_S_undef, i);
 	    }
@@ -1270,11 +1280,20 @@ IDIO idio_scm_evaluate (IDIO e)
     if (tl != dl) {
 	fprintf (stderr, "scm-evaluate: after: %zd toplevel vars\n", tl);
 	fprintf (stderr, "scm-evaluate: after: %zd defined vars\n", dl);
-	fprintf (stderr, "diff t, d = %s\n", idio_as_string (diff, 1));
+
+	char *s = idio_as_string (diff, 1);
+	fprintf (stderr, "diff t, d = %s\n", s);
+	free (s);
 	diff = idio_list_set_difference (d, t);
-	fprintf (stderr, "diff d, t = %s\n", idio_as_string (diff, 1));
-	fprintf (stderr, "t = %s\n", idio_as_string (t, 1));
-	fprintf (stderr, "d = %s\n", idio_as_string (d, 1));
+	s = idio_as_string (diff, 1);
+	fprintf (stderr, "diff d, t = %s\n", s);
+	free (s);
+	s = idio_as_string (t, 1);
+	fprintf (stderr, "t = %s\n", s);
+	free (s);
+	s = idio_as_string (d, 1);
+	fprintf (stderr, "d = %s\n", s);
+	free (s);
 	sleep (1);
     }
     return m;
