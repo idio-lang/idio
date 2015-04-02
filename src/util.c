@@ -60,6 +60,7 @@ const char *idio_type_enum2string (idio_type_e type)
     case IDIO_TYPE_HANDLE: return "HANDLE";
     case IDIO_TYPE_STRUCT_TYPE: return "STRUCT_TYPE";
     case IDIO_TYPE_STRUCT_INSTANCE: return "STRUCT_INSTANCE";
+    case IDIO_TYPE_THREAD: return "THREAD";
 	
     case IDIO_TYPE_C_INT8: return "C INT8";
     case IDIO_TYPE_C_UINT8: return "C UINT8";
@@ -313,7 +314,7 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 	    case IDIO_TYPE_CLOSURE:
 		return (o1->u.closure == o2->u.closure);
 	    case IDIO_TYPE_PRIMITIVE_C:
-		return (o1->u.primitive_C == o2->u.primitive_C);
+		return (o1->u.primitive == o2->u.primitive);
 	    case IDIO_TYPE_BIGNUM:
 		return idio_bignum_real_equal_p (o1, o2);
 	    case IDIO_TYPE_HANDLE:
@@ -346,6 +347,8 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		    return 0;
 		}
 		break;
+	    case IDIO_TYPE_THREAD:
+		return (o1->u.thread == o2->u.thread);
 	    case IDIO_TYPE_C_TYPEDEF:
 		return (o1->u.C_typedef == o2->u.C_typedef);
 	    case IDIO_TYPE_C_STRUCT:
@@ -699,9 +702,12 @@ char *idio_as_string (IDIO o, int depth)
 		    if (asprintf (&r, "(lambda ") == -1) {
 			return NULL;
 		    }
+		    IDIO_STRCAT (r, " [code]");
+		    /*
 		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_CLOSURE_ARGS (o), depth - 1));
 		    IDIO_STRCAT (r, " ");
 		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_CLOSURE_BODY (o), depth - 1));
+		    */
 		    /* IDIO_STRCAT (r, " "); */
 		    /* IDIO_STRCAT_FREE (r, idio_as_string (IDIO_CLOSURE_FRAME (o), depth + 1, depth + 1)); */
 		    IDIO_STRCAT (r, ")");
@@ -776,9 +782,46 @@ char *idio_as_string (IDIO o, int depth)
 		    return NULL;
 		}
 		break;
+	    case IDIO_TYPE_THREAD:
+		{
+		    idio_ai_t sp = idio_array_size (IDIO_THREAD_STACK (o));
+		    if (asprintf (&r, "#T{%p pc=%3d sp=%zd s/top=",
+				  o,
+				  *IDIO_THREAD_PC (o),
+				  sp) == -1) {
+			return NULL;
+		    }
+		    IDIO_STRCAT_FREE (r, idio_as_string (idio_array_top (IDIO_THREAD_STACK (o)), 1));
+		    IDIO_STRCAT (r, " val=");
+		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_VAL (o), 1));
+		    IDIO_STRCAT (r, " func=");
+		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_FUNC (o), 1));
+		    IDIO_STRCAT (r, " reg1=");
+		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_REG1 (o), 1));
+		    IDIO_STRCAT (r, " reg2=");
+		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_REG2 (o), 1));
+		    if (depth > 1) {
+			IDIO_STRCAT (r, " env=");
+			IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_ENV (o), 1));
+			if (depth > 2) {
+			    IDIO_STRCAT (r, " constants=");
+			    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_CONSTANTS (o), 1));
+			    IDIO_STRCAT (r, " input_handle=");
+			    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_INPUT_HANDLE (o), 1));
+			    IDIO_STRCAT (r, " output_handle=");
+			    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_OUTPUT_HANDLE (o), 1));
+			    IDIO_STRCAT (r, " error_handle=");
+			    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_ERROR_HANDLE (o), 1));
+			    IDIO_STRCAT (r, " module=");
+			    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_MODULE (o), 1));
+			}
+		    }
+		    IDIO_STRCAT (r, "}");
+		}
+		break;
 	    case IDIO_TYPE_C_TYPEDEF:
 		{
-		    if (asprintf (&r, "#T{%10p}", IDIO_C_TYPEDEF_SYM (o)) == -1) {
+		    if (asprintf (&r, "#CTD{%10p}", IDIO_C_TYPEDEF_SYM (o)) == -1) {
 			return NULL;
 		    }
 		    break;
@@ -953,6 +996,7 @@ char *idio_display_string (IDIO o)
 	    case IDIO_TYPE_HANDLE:
 	    case IDIO_TYPE_STRUCT_TYPE:
 	    case IDIO_TYPE_STRUCT_INSTANCE:
+	    case IDIO_TYPE_THREAD:
 	    case IDIO_TYPE_C_TYPEDEF:
 	    case IDIO_TYPE_C_STRUCT:
 	    case IDIO_TYPE_C_INSTANCE:
@@ -1226,6 +1270,8 @@ void idio_dump (IDIO o, int detail)
 	    case IDIO_TYPE_STRUCT_TYPE:
 		break;
 	    case IDIO_TYPE_STRUCT_INSTANCE:
+		break;
+	    case IDIO_TYPE_THREAD:
 		break;
 	    case IDIO_TYPE_C_TYPEDEF:
 		break;

@@ -22,22 +22,20 @@
 
 #include "idio.h"
 
-IDIO idio_closure (IDIO args, IDIO body, IDIO frame)
+IDIO idio_closure (IDIO_I *code, IDIO env)
 {
-    IDIO_ASSERT (args);
-    IDIO_ASSERT (body);
-    IDIO_ASSERT (frame);
+    IDIO_C_ASSERT (code);
+    IDIO_ASSERT (env);
 
     IDIO c = idio_gc_get (IDIO_TYPE_CLOSURE);
 
-    IDIO_FPRINTF (stderr, "idio_closure: %10p = (%10p %10p %10p)\n", c, args, body, frame);
+    IDIO_FPRINTF (stderr, "idio_closure: %10p = (%10p %10p)\n", c, code, env);
 
     IDIO_GC_ALLOC (c->u.closure, sizeof (idio_closure_t));
 
     IDIO_CLOSURE_GREY (c) = NULL;
-    IDIO_CLOSURE_ARGS (c) = args;
-    IDIO_CLOSURE_BODY (c) = body;
-    IDIO_CLOSURE_FRAME (c) = frame;
+    IDIO_CLOSURE_CODE (c) = code;
+    IDIO_CLOSURE_ENV (c) = env;
 
     return c;
 }

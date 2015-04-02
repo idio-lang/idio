@@ -27,6 +27,16 @@ IDIO idio_fixnum_C (char *str, int base);
 void idio_init_fixnum ();
 void idio_final_fixnum ();
 
+IDIO idio_fixnum_primitive_add (IDIO args);
+IDIO idio_fixnum_primitive_subtract (IDIO args);
+IDIO idio_fixnum_primitive_multiply (IDIO args);
+IDIO idio_fixnum_primitive_divide (IDIO args);
+IDIO idio_fixnum_primitive_le (IDIO args);
+IDIO idio_fixnum_primitive_lt (IDIO args);
+IDIO idio_fixnum_primitive_eq (IDIO args);
+IDIO idio_fixnum_primitive_ge (IDIO args);
+IDIO idio_fixnum_primitive_gt (IDIO args);
+IDIO idio_fixnum_primitive_remainder (IDIO a, IDIO b);
 
 #endif
 

@@ -29,6 +29,10 @@ void idio_add_description (IDIO sym, IDIO desc);
 IDIO idio_get_description (IDIO sym);
 void idio_add_primitive (idio_primitive_t *d);
 
+IDIO idio_predef_ref (idio_ai_t i);
+IDIO idio_toplevel_ref (idio_ai_t i);
+void idio_toplevel_update (idio_ai_t i, IDIO v);
+
 IDIO idio_scm_evaluate (IDIO e);
 void idio_init_scm_evaluate ();
 void idio_final_scm_evaluate ();

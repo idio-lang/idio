@@ -348,7 +348,7 @@ idio_hi_t idio_idio_hash_hashval_closure (IDIO h)
 {
     IDIO_ASSERT (h);
     
-    return idio_hash_hashval_void (IDIO_CLOSURE_BODY (h));
+    return idio_hash_hashval_void (h->u.closure);
 }
 
 idio_hi_t idio_idio_hash_hashval_primitive_C (IDIO h)
@@ -629,7 +629,7 @@ IDIO idio_hash_put (IDIO h, void *kv, IDIO v)
 
     idio_hi_t fhv = idio_hash_find_free_slot (h);
     if (fhv > IDIO_HASH_SIZE (h)) {
-	fprintf (stderr, "idio_hash_put: no free slot -> resize\n");
+	IDIO_FPRINTF (stderr, "idio_hash_put: no free slot -> resize\n");
 	idio_hash_resize (h);
 	idio_hash_put (h, kv, v);
 	return kv;

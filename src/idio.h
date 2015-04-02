@@ -79,8 +79,8 @@
  * obviously some random C pointer might pass but that's *always* true
  */
 #define IDIO_ASSERT(x)		(assert(x),(((intptr_t) x)&3)?1:(assert((x)->type),assert((x)->type < IDIO_TYPE_MAX)))
-#define IDIO_ASSERT_FREE(x)	(assert(((x)->flags & IDIO_FLAG_FREE_MASK) == IDIO_FLAG_FREE))
-#define IDIO_ASSERT_NOT_FREED(x) (assert(((x)->flags & IDIO_FLAG_FREE_MASK) != IDIO_FLAG_FREE))
+#define IDIO_ASSERT_FREE(x)	((((intptr_t) x)&3)?1:(assert(((x)->flags & IDIO_FLAG_FREE_MASK) == IDIO_FLAG_FREE)))
+#define IDIO_ASSERT_NOT_FREED(x) ((((intptr_t) x)&3)?1:(assert(((x)->flags & IDIO_FLAG_FREE_MASK) != IDIO_FLAG_FREE)))
 #define IDIO_EXIT(x)		{IDIO_C_ASSERT(0);exit(x);}
 #define IDIO_C_EXIT(x)		{IDIO_C_ASSERT(0);exit(x);}
 
@@ -191,6 +191,7 @@
 #include "string.h"
 #include "struct.h"
 #include "symbol.h"
+#include "thread.h"
 #include "util.h"
 #include "vm.h"
 

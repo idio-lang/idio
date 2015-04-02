@@ -171,12 +171,9 @@ static IDIO idio_predef_extend (IDIO name)
     return i;
 }
 
-static IDIO idio_predef_ref (IDIO i)
+IDIO idio_predef_ref (idio_ai_t i)
 {
-    IDIO_ASSERT (i);
-    IDIO_TYPE_ASSERT (fixnum, i);
-    
-    return idio_array_get_index (idio_module_current_symbol_value (idio_scm_predef_values), IDIO_FIXNUM_VAL (i));
+    return idio_array_get_index (idio_module_current_symbol_value (idio_scm_predef_values), i);
 }
 
 void idio_add_description (IDIO sym, IDIO desc)
@@ -214,21 +211,16 @@ static IDIO idio_variable_toplevelp (IDIO names, IDIO name)
     return idio_S_nil;
 }
 
-static IDIO idio_toplevel_ref (IDIO i)
+IDIO idio_toplevel_ref (idio_ai_t i)
 {
-    IDIO_ASSERT (i);
-    IDIO_TYPE_ASSERT (fixnum, i);
-    
-    return idio_array_get_index (idio_module_current_symbol_value (idio_scm_toplevel_values), IDIO_FIXNUM_VAL (i));
+    return idio_array_get_index (idio_module_current_symbol_value (idio_scm_toplevel_values), i);
 }
 
-static void idio_toplevel_update (IDIO i, IDIO v)
+void idio_toplevel_update (idio_ai_t i, IDIO v)
 {
-    IDIO_ASSERT (i);
     IDIO_ASSERT (v);
-    IDIO_TYPE_ASSERT (fixnum, i);
     
-    idio_array_insert_index (idio_module_current_symbol_value (idio_scm_toplevel_values), v, IDIO_FIXNUM_VAL (i));
+    idio_array_insert_index (idio_module_current_symbol_value (idio_scm_toplevel_values), v, i);
 }
 
 static IDIO idio_toplevel_extend (IDIO name)
@@ -544,6 +536,9 @@ static IDIO idio_scm_meaning_reference (IDIO name, IDIO nametree, int tailp)
     } else if (idio_S_toplevel == kt) {
 	return IDIO_LIST2 (idio_I_CHECKED_GLOBAL_REF, i);
     } else if (idio_S_predef == kt) {
+	char *names = idio_as_string (name, 1);
+	fprintf (stderr, "meaning-reference: predefined %s %zd\n", names, IDIO_FIXNUM_VAL (i));
+	free (names);
 	return IDIO_LIST2 (idio_I_PREDEFINED, i);
     } else {
 	idio_error_static_unbound (name);
@@ -1039,7 +1034,7 @@ static IDIO idio_scm_meaning_primitive_application (IDIO e, IDIO es, IDIO nametr
 	    IDIO m2 = idio_scm_meaning (IDIO_PAIR_H (IDIO_PAIR_T (es)), nametree, 0);
 	    return IDIO_LIST4 (idio_I_CALL2, desc, m1, m2);
 	}
-    case 4:
+    case 3:
 	{
 	    IDIO m1 = idio_scm_meaning (IDIO_PAIR_H (es), nametree, 0);
 	    IDIO m2 = idio_scm_meaning (IDIO_PAIR_H (IDIO_PAIR_T (es)), nametree, 0);
@@ -1087,7 +1082,7 @@ static IDIO idio_scm_meaning_application (IDIO e, IDIO es, IDIO nametree, int ta
 		if (idio_S_unspec != desc) {
 
 		    size_t nargs = idio_list_length (es);
-		    fprintf (stderr, "nargs=%zd arity=%zd, varargs=%d\n", nargs, IDIO_PRIMITIVE_ARITY (desc), IDIO_PRIMITIVE_VARARGS (desc));
+		    fprintf (stderr, "primitive-application: %s nargs=%zd arity=%zd, varargs=%d\n", IDIO_PRIMITIVE_NAME (desc),  nargs, IDIO_PRIMITIVE_ARITY (desc), IDIO_PRIMITIVE_VARARGS (desc));
 		    
 		    if (((IDIO_PRIMITIVE_VARARGS (desc) &&
 			  nargs >= IDIO_PRIMITIVE_ARITY (desc))) ||
@@ -1252,6 +1247,12 @@ IDIO idio_scm_evaluate (IDIO e)
     IDIO m = idio_scm_meaning (e, idio_S_nil, 1);
     IDIO d = idio_module_current_symbol_value (idio_scm_defined_names);
     IDIO t = idio_list_mapcar (idio_module_current_symbol_value (idio_scm_toplevel_names));
+
+
+    /*
+     * 1. Have we tried to use a name without having seen a definition
+     * for it?
+     */
     IDIO diff = idio_list_set_difference (t, d);
     if (idio_S_nil == diff) {
 	size_t tl = idio_list_length (t);
@@ -1260,9 +1261,15 @@ IDIO idio_scm_evaluate (IDIO e)
 
 	if (tl < tvl) {
 	    /* what sorcery is this? */
+	    idio_error_message ("fewer toplevel names than values??");
 	    IDIO_C_ASSERT (0);
 	}
 
+	/*
+	 * 2. If we have used some names (for which we have seen a
+	 * definition) then give the corresponding value slot the
+	 * undefined value.  We should spot that later.
+	 */
 	if (tl > tvl) {
 	    fprintf (stderr, "scm-evaluate: growing toplevel_values by %zd to %zd\n", tl - tvl, tl);
 	    IDIO tv2 = idio_array_copy (tv, tl - tvl);
@@ -1275,6 +1282,7 @@ IDIO idio_scm_evaluate (IDIO e)
     } else {
 	idio_warning_static_undefineds (diff);
     }
+
     size_t tl = idio_list_length (t);
     size_t dl = idio_list_length (d);
     if (tl != dl) {
@@ -1295,7 +1303,14 @@ IDIO idio_scm_evaluate (IDIO e)
 	fprintf (stderr, "d = %s\n", s);
 	free (s);
 	sleep (1);
+	IDIO_C_ASSERT (0);
     }
+
+    IDIO thr = idio_thread (100);
+    idio_vm_codegen (thr, m);
+
+    idio_vm_run (thr);
+    
     return m;
 }
 

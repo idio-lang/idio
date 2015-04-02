@@ -37,10 +37,9 @@ void idio_final_frame ()
 {
 }
 
-IDIO idio_frame (IDIO next, IDIO args)
+IDIO idio_frame_allocate (idio_ai_t nargs)
 {
-    IDIO_ASSERT (next);
-    IDIO_ASSERT (args);
+    IDIO_C_ASSERT (nargs);
     
     IDIO fo = idio_gc_get (IDIO_TYPE_FRAME);
 
@@ -48,12 +47,24 @@ IDIO idio_frame (IDIO next, IDIO args)
     
     IDIO_FRAME_GREY (fo) = NULL;
     IDIO_FRAME_FLAGS (fo) = IDIO_FRAME_FLAG_NONE;
-    IDIO_FRAME_NEXT (fo) = next;
+    IDIO_FRAME_NEXT (fo) = idio_S_nil;
 
-    idio_ai_t nargs = idio_list_length (args);
-    
     IDIO_FRAME_NARGS (fo) = nargs;
     IDIO_FRAME_ARGS (fo) = idio_array (nargs);
+
+    return fo;
+}
+
+IDIO idio_frame (IDIO next, IDIO args)
+{
+    IDIO_ASSERT (next);
+    IDIO_ASSERT (args);
+    
+    idio_ai_t nargs = idio_list_length (args);
+    
+    IDIO fo = idio_frame_allocate (nargs);
+
+    IDIO_FRAME_NEXT (fo) = next;
 
     while (idio_S_nil != args) {
 	idio_array_push (IDIO_FRAME_ARGS (fo), IDIO_PAIR_H (args));
@@ -118,5 +129,15 @@ void idio_frame_update (IDIO fo, size_t d, size_t i, IDIO v)
     }
     
     idio_array_insert_index (IDIO_FRAME_ARGS (fo), v, i);
+}
+
+void idio_frame_extend (IDIO f1, IDIO f2)
+{
+    IDIO_ASSERT (f1);
+    IDIO_ASSERT (f2);
+    IDIO_TYPE_ASSERT (frame, f1);
+    IDIO_TYPE_ASSERT (frame, f2);
+
+    IDIO_FRAME_NEXT (f2) = f1;
 }
 

@@ -29,6 +29,7 @@ void idio_init ()
 
     idio_init_symbol ();
     idio_init_module ();
+    idio_init_thread ();
 
     idio_init_scm_evaluate ();
     idio_init_pair ();
@@ -45,13 +46,22 @@ void idio_init ()
     idio_init_fixnum ();
     idio_init_bignum ();
     idio_init_error ();
-
+    idio_init_vm ();
+    
     /*
      * race condition!  We can't bind any symbols into the "current
      * module" in idio_init_symbol() until we have modules initialised
-     * which can't happen until after symbols have been initialised...
+     * which can't happen until after symbols have been initialised
+     * because modules interns the names of the default modules...
      */
     idio_symbol_primitives ();
+
+    /*
+     * We can't patch up the first thread's IO handles until modules
+     * are available which required that threads were available to
+     * find the current module...
+     */
+    idio_init_first_thread ();
 }
 
 void idio_final ()
@@ -59,6 +69,7 @@ void idio_final ()
     /*
      * reverse order of idio_init () ??
      */
+    idio_final_vm ();
     idio_final_error ();
     idio_final_bignum ();
     idio_final_fixnum ();
@@ -75,6 +86,7 @@ void idio_final ()
     idio_final_pair ();
     idio_final_scm_evaluate ();
 
+    idio_final_thread ();
     idio_final_module ();
     idio_final_symbol ();
 

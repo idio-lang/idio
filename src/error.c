@@ -65,7 +65,9 @@ void idio_error_param_type (char *etype, IDIO who)
     IDIO_C_ASSERT (etype);
     IDIO_ASSERT (who);
 
-    idio_error_message ("not a %s: %s", etype, idio_display_string (who));
+    char *whos = idio_display_string (who);
+    idio_error_message ("not a %s: %s", etype, whos);
+    free (whos);
 }
 
 void idio_error_add_C (const char *s)

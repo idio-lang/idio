@@ -25,55 +25,6 @@
 static idio_gc_t *idio_gc;
 static IDIO idio_gc_finalizer_hash = idio_S_nil;
 
-void idio_init_gc ()
-{
-    idio_gc = idio_gc_new ();
-
-    idio_gc->verbose = 1;
-    
-    idio_gc_finalizer_hash = IDIO_HASH_EQP (64);
-    idio_gc_protect (idio_gc_finalizer_hash);
-
-    idio_primitive_hash = IDIO_HASH_EQP (1<<7);
-    idio_gc_protect (idio_primitive_hash);
-}
-
-void idio_run_all_finalizers ()
-{
-    if (idio_S_nil == idio_gc_finalizer_hash) {
-	return;
-    }
-    
-    idio_ai_t hi;
-    for (hi = 0; hi < IDIO_HASH_SIZE (idio_gc_finalizer_hash); hi++) {
-	IDIO k = IDIO_HASH_HE_KEY (idio_gc_finalizer_hash, hi);
-	if (idio_S_nil != k) {
-	    /* apply the finalizer */
-	    idio_apply (IDIO_HASH_HE_VALUE (idio_gc_finalizer_hash, hi),
-			idio_pair (k, idio_S_nil));
-
-	    /* expunge the key/value pair from this hash */
-	    idio_hash_delete (idio_gc_finalizer_hash, k);
-	}
-    }
-}
-
-void idio_final_gc ()
-{
-    idio_gc_expose (idio_primitive_hash);
-    
-    idio_run_all_finalizers ();
-
-    /* unprotect the finalizer hash itself */
-    idio_gc_expose (idio_gc_finalizer_hash);
-    /*  prevent it being used */
-    idio_gc_finalizer_hash = idio_S_nil;
-
-    idio_gc_collect ();
-
-    idio_gc_free ();
-}
-
 /*
  * idio_alloc actually calls malloc(3)!
  */
@@ -325,6 +276,13 @@ void idio_mark (IDIO o, unsigned colour)
 	    IDIO_STRUCT_INSTANCE_GREY (o) = idio_gc->grey;
 	    idio_gc->grey = o;
 	    break;
+	case IDIO_TYPE_THREAD:
+	    IDIO_C_ASSERT (IDIO_THREAD_GREY (o) != o);
+	    IDIO_C_ASSERT (idio_gc->grey != o);
+	    o->flags |= IDIO_FLAG_GCC_LGREY;
+	    IDIO_THREAD_GREY (o) = idio_gc->grey;
+	    idio_gc->grey = o;
+	    break;
 	case IDIO_TYPE_C_TYPEDEF:
 	    IDIO_C_ASSERT (IDIO_C_TYPEDEF_GREY (o) != o);
 	    IDIO_C_ASSERT (idio_gc->grey != o);
@@ -415,9 +373,7 @@ void idio_process_grey (unsigned colour)
 	break;
     case IDIO_TYPE_CLOSURE:
 	idio_gc->grey = IDIO_CLOSURE_GREY (o);
-	idio_mark (IDIO_CLOSURE_ARGS (o), colour);
-	idio_mark (IDIO_CLOSURE_BODY (o), colour);
-	idio_mark (IDIO_CLOSURE_FRAME (o), colour);
+	idio_mark (IDIO_CLOSURE_ENV (o), colour);
 	break;
     case IDIO_TYPE_BIGNUM:
 	IDIO_C_ASSERT (idio_gc->grey != IDIO_BIGNUM_GREY (o));
@@ -450,6 +406,21 @@ void idio_process_grey (unsigned colour)
 	idio_gc->grey = IDIO_STRUCT_INSTANCE_GREY (o);
 	idio_mark (IDIO_STRUCT_INSTANCE_TYPE (o), colour);
 	idio_mark (IDIO_STRUCT_INSTANCE_SLOTS (o), colour);
+	break;
+    case IDIO_TYPE_THREAD:
+	IDIO_C_ASSERT (idio_gc->grey != IDIO_THREAD_GREY (o));
+	idio_gc->grey = IDIO_THREAD_GREY (o);
+	idio_mark (IDIO_THREAD_STACK (o), colour);
+	idio_mark (IDIO_THREAD_VAL (o), colour);
+	idio_mark (IDIO_THREAD_ENV (o), colour);
+	idio_mark (IDIO_THREAD_CONSTANTS (o), colour);
+	idio_mark (IDIO_THREAD_FUNC (o), colour);
+	idio_mark (IDIO_THREAD_REG1 (o), colour);
+	idio_mark (IDIO_THREAD_REG2 (o), colour);
+	idio_mark (IDIO_THREAD_INPUT_HANDLE (o), colour);
+	idio_mark (IDIO_THREAD_OUTPUT_HANDLE (o), colour);
+	idio_mark (IDIO_THREAD_ERROR_HANDLE (o), colour);
+	idio_mark (IDIO_THREAD_MODULE (o), colour);
 	break;
     case IDIO_TYPE_C_TYPEDEF:
 	IDIO_C_ASSERT (idio_gc->grey != IDIO_C_TYPEDEF_GREY (o));
@@ -803,7 +774,7 @@ void idio_gc_sweep_free_value (IDIO vo)
 	idio_free_closure (vo);
 	break;
     case IDIO_TYPE_PRIMITIVE_C:
-	idio_free_primitive_C (vo);
+	idio_free_primitive (vo);
 	break;
     case IDIO_TYPE_BIGNUM:
 	idio_free_bignum (vo);
@@ -822,6 +793,9 @@ void idio_gc_sweep_free_value (IDIO vo)
 	break;
     case IDIO_TYPE_STRUCT_INSTANCE:
 	idio_free_struct_instance (vo);
+	break;
+    case IDIO_TYPE_THREAD:
+	idio_free_thread (vo);
 	break;
     case IDIO_TYPE_C_TYPEDEF:
 	idio_free_C_typedef (vo);
@@ -894,6 +868,8 @@ void idio_gc_sweep ()
 	co = no;
     }
 }
+
+void idio_gc_stats ();
 
 void idio_gc_collect ()
 {
@@ -1192,6 +1168,55 @@ int idio_gc_verboseness (int n)
 void idio_gc_set_verboseness (int n)
 {
     idio_gc->verbose = n;
+}
+
+void idio_init_gc ()
+{
+    idio_gc = idio_gc_new ();
+
+    idio_gc->verbose = 1;
+    
+    idio_gc_finalizer_hash = IDIO_HASH_EQP (64);
+    idio_gc_protect (idio_gc_finalizer_hash);
+
+    idio_primitive_hash = IDIO_HASH_EQP (1<<7);
+    idio_gc_protect (idio_primitive_hash);
+}
+
+void idio_run_all_finalizers ()
+{
+    if (idio_S_nil == idio_gc_finalizer_hash) {
+	return;
+    }
+    
+    idio_ai_t hi;
+    for (hi = 0; hi < IDIO_HASH_SIZE (idio_gc_finalizer_hash); hi++) {
+	IDIO k = IDIO_HASH_HE_KEY (idio_gc_finalizer_hash, hi);
+	if (idio_S_nil != k) {
+	    /* apply the finalizer */
+	    idio_apply (IDIO_HASH_HE_VALUE (idio_gc_finalizer_hash, hi),
+			idio_pair (k, idio_S_nil));
+
+	    /* expunge the key/value pair from this hash */
+	    idio_hash_delete (idio_gc_finalizer_hash, k);
+	}
+    }
+}
+
+void idio_final_gc ()
+{
+    idio_gc_expose (idio_primitive_hash);
+    
+    idio_run_all_finalizers ();
+
+    /* unprotect the finalizer hash itself */
+    idio_gc_expose (idio_gc_finalizer_hash);
+    /*  prevent it being used */
+    idio_gc_finalizer_hash = idio_S_nil;
+
+    idio_gc_collect ();
+
+    idio_gc_free ();
 }
 
 /*

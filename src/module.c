@@ -119,19 +119,6 @@ IDIO idio_main_module ()
     return idio_toplevel_module;
 }
 
-IDIO idio_current_module ()
-{
-    return idio_main_module ();
-}
-
-void idio_set_current_module (IDIO module)
-{
-    IDIO_ASSERT (module);
-    IDIO_TYPE_ASSERT (module, module);
-
-    fprintf (stderr, "set-current-module: always sets main\n");
-}
-
 IDIO idio_defprimitive_create_module (IDIO name)
 {
     IDIO_ASSERT (name);

@@ -16,20 +16,30 @@
  */
 
 /*
- * primitive.h
+ * thread.h
  * 
  */
 
-#ifndef PRIMITIVE_H
-#define PRIMITIVE_H
+#ifndef THREAD_H
+#define THREAD_H
 
-IDIO idio_primitive (IDIO (*func) (IDIO args), const char *name_C, size_t arity, char varargs);
-int idio_isa_primitive (IDIO o);
-IDIO idio_primitive_desc (idio_primitive_t *desc);
-void idio_free_primitive (IDIO o);
+IDIO idio_thread (idio_ai_t stack_size);
+int idio_isa_thread (IDIO o);
+void idio_free_thread (IDIO t);
+IDIO idio_current_thread ();
+void idio_thread_codegen (IDIO code);
+IDIO idio_current_input_handle ();
+void idio_set_current_input_handle (IDIO h);
+IDIO idio_current_output_handle ();
+void idio_set_current_output_handle (IDIO h);
+IDIO idio_current_error_handle ();
+void idio_set_current_error_handle (IDIO h);
+IDIO idio_current_module ();
+void idio_set_current_module (IDIO h);
 
-void idio_init_primitive ();
-void idio_final_primitive ();
+void idio_init_thread ();
+void idio_init_first_thread ();
+void idio_final_thread ();
 
 #endif
 

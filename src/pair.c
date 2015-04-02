@@ -86,6 +86,26 @@ void idio_free_pair (IDIO p)
     free (p->u.pair);
 }
 
+IDIO idio_pair_set_head (IDIO p, IDIO v)
+{
+    IDIO_ASSERT (p);
+    IDIO_ASSERT (v);
+    IDIO_TYPE_ASSERT (pair, p);
+
+    IDIO_PAIR_H (p) = v;
+    return idio_S_unspec;
+}
+
+IDIO idio_pair_set_tail (IDIO p, IDIO v)
+{
+    IDIO_ASSERT (p);
+    IDIO_ASSERT (v);
+    IDIO_TYPE_ASSERT (pair, p);
+
+    IDIO_PAIR_T (p) = v;
+    return idio_S_unspec;
+}
+
 IDIO idio_list_head (IDIO p)
 {
     IDIO_ASSERT (p);

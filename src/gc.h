@@ -41,26 +41,31 @@
 #define IDIO_TYPE_HANDLE          15
 #define IDIO_TYPE_STRUCT_TYPE     16
 #define IDIO_TYPE_STRUCT_INSTANCE 17
-#define IDIO_TYPE_C_INT8          18
-#define IDIO_TYPE_C_UINT8         19
-#define IDIO_TYPE_C_INT16         20
-#define IDIO_TYPE_C_UINT16        21
-#define IDIO_TYPE_C_INT32         22
-#define IDIO_TYPE_C_UINT32        23
-#define IDIO_TYPE_C_INT64         24
-#define IDIO_TYPE_C_UINT64        25
-#define IDIO_TYPE_C_FLOAT         26
-#define IDIO_TYPE_C_DOUBLE        27
-#define IDIO_TYPE_C_POINTER       28
-#define IDIO_TYPE_C_VOID          29
-#define IDIO_TYPE_C_TYPEDEF       30
-#define IDIO_TYPE_C_STRUCT        31
-#define IDIO_TYPE_C_INSTANCE      32
-#define IDIO_TYPE_C_FFI           33
-#define IDIO_TYPE_OPAQUE          34
-#define IDIO_TYPE_MAX             35
+#define IDIO_TYPE_THREAD	  18
+#define IDIO_TYPE_C_INT8          19
+#define IDIO_TYPE_C_UINT8         20
+#define IDIO_TYPE_C_INT16         21
+#define IDIO_TYPE_C_UINT16        22
+#define IDIO_TYPE_C_INT32         23
+#define IDIO_TYPE_C_UINT32        24
+#define IDIO_TYPE_C_INT64         25
+#define IDIO_TYPE_C_UINT64        26
+#define IDIO_TYPE_C_FLOAT         27
+#define IDIO_TYPE_C_DOUBLE        28
+#define IDIO_TYPE_C_POINTER       29
+#define IDIO_TYPE_C_VOID          30
+#define IDIO_TYPE_C_TYPEDEF       31
+#define IDIO_TYPE_C_STRUCT        32
+#define IDIO_TYPE_C_INSTANCE      33
+#define IDIO_TYPE_C_FFI           34
+#define IDIO_TYPE_OPAQUE          35
+#define IDIO_TYPE_MAX             36
 
 typedef unsigned char idio_type_e;
+
+/* byte compiler instruction */
+typedef uint8_t IDIO_I;
+#define IDIO_I_MAX	UINT8_MAX
 
 #define IDIO_FLAG_NONE		0
 #define IDIO_FLAG_GCC_SHIFT	0 /* GC colours -- two bits */
@@ -182,15 +187,13 @@ typedef size_t idio_hi_t;
 
 typedef struct idio_closure_s {
     struct idio_s *grey;
-    struct idio_s *frame;
-    struct idio_s *args;
-    struct idio_s *body;
+    IDIO_I *code;
+    struct idio_s *env;
 } idio_closure_t;
 
 #define IDIO_CLOSURE_GREY(C)	((C)->u.closure->grey)
-#define IDIO_CLOSURE_FRAME(C)	((C)->u.closure->frame)
-#define IDIO_CLOSURE_ARGS(C)	((C)->u.closure->args)
-#define IDIO_CLOSURE_BODY(C)	((C)->u.closure->body)
+#define IDIO_CLOSURE_CODE(C)	((C)->u.closure->code)
+#define IDIO_CLOSURE_ENV(C)	((C)->u.closure->env)
 
 typedef struct idio_primitive_s {
     struct idio_s *(*f) ();	/* don't declare args */
@@ -199,10 +202,10 @@ typedef struct idio_primitive_s {
     char varargs;
 } idio_primitive_t;
 
-#define IDIO_PRIMITIVE_F(P)		((P)->u.primitive_C->f)
-#define IDIO_PRIMITIVE_NAME(P)	((P)->u.primitive_C->name)
-#define IDIO_PRIMITIVE_ARITY(P)	((P)->u.primitive_C->arity)
-#define IDIO_PRIMITIVE_VARARGS(P)	((P)->u.primitive_C->varargs)
+#define IDIO_PRIMITIVE_F(P)       ((P)->u.primitive->f)
+#define IDIO_PRIMITIVE_NAME(P)    ((P)->u.primitive->name)
+#define IDIO_PRIMITIVE_ARITY(P)   ((P)->u.primitive->arity)
+#define IDIO_PRIMITIVE_VARARGS(P) ((P)->u.primitive->varargs)
 
 typedef struct idio_module_s {
     struct idio_s *grey;
@@ -333,6 +336,40 @@ typedef struct idio_struct_instance_s {
 #define IDIO_STRUCT_INSTANCE_TYPE(I)	((I)->u.struct_instance->type)
 #define IDIO_STRUCT_INSTANCE_SLOTS(I)	((I)->u.struct_instance->slots)
 
+typedef struct idio_thread_s {
+    struct idio_s *grey;
+    IDIO_I *pc;
+    struct idio_s *stack;
+    struct idio_s *val;
+    struct idio_s *env;
+    struct idio_s *constants;
+
+    struct idio_s *func;
+    struct idio_s *reg1;
+    struct idio_s *reg2;
+
+    struct idio_s *input_handle;
+    struct idio_s *output_handle;
+    struct idio_s *error_handle;
+
+    struct idio_s *module;
+} idio_thread_t;
+
+#define IDIO_THREAD_GREY(T)           ((T)->u.thread->grey)
+#define IDIO_THREAD_PC(T)             ((T)->u.thread->pc)
+#define IDIO_THREAD_STACK(T)          ((T)->u.thread->stack)
+#define IDIO_THREAD_VAL(T)            ((T)->u.thread->val)
+#define IDIO_THREAD_ENV(T)            ((T)->u.thread->env)
+#define IDIO_THREAD_CONSTANTS(T)      ((T)->u.thread->constants)
+#define IDIO_THREAD_FUNC(T)           ((T)->u.thread->func)
+#define IDIO_THREAD_REG1(T)           ((T)->u.thread->reg1)
+#define IDIO_THREAD_REG2(T)           ((T)->u.thread->reg2)
+#define IDIO_THREAD_INPUT_HANDLE(T)   ((T)->u.thread->input_handle)
+#define IDIO_THREAD_OUTPUT_HANDLE(T)  ((T)->u.thread->output_handle)
+#define IDIO_THREAD_ERROR_HANDLE(T)   ((T)->u.thread->error_handle)
+#define IDIO_THREAD_MODULE(T)	      ((T)->u.thread->module)
+#define IDIO_THREAD_FLAGS(T)          ((T)->tflags)
+
 typedef struct idio_C_pointer_s {
     void *p;
     char freep;
@@ -462,13 +499,14 @@ typedef struct idio_s {
 	idio_array_t           *array;
 	idio_hash_t            *hash;
 	idio_closure_t         *closure;
-	idio_primitive_t     *primitive_C;
+	idio_primitive_t       *primitive;
 	idio_bignum_t          *bignum;
 	idio_module_t          *module;
 	idio_frame_t           *frame;
 	idio_handle_t          *handle;
 	idio_struct_type_t     *struct_type;
 	idio_struct_instance_t *struct_instance;
+	idio_thread_t	       *thread;
                                
 	idio_C_type_t          *C_type;
                                

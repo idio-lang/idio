@@ -23,6 +23,9 @@
 #include "idio.h"
 
 static IDIO idio_file_handles = idio_S_nil;
+static IDIO idio_stdin = idio_S_nil;
+static IDIO idio_stdout = idio_S_nil;
+static IDIO idio_stderr = idio_S_nil;
 
 #define IDIO_FILE_HANDLE_FLAG_NONE	  0
 #define IDIO_FILE_HANDLE_FLAG_EOF	  (1<<0)
@@ -88,6 +91,40 @@ static void idio_error_file_delete (IDIO filename)
     idio_error_message ("remove (%s): %s", IDIO_STRING_S (filename), strerror (errno));
 }
 
+static IDIO idio_open_file_handle (char *name, FILE *filep, int mflag)
+{
+    IDIO_C_ASSERT (filep);
+    
+    idio_file_handle_stream_t *fhsp = idio_alloc (sizeof (idio_file_handle_stream_t));
+    int bufsiz = BUFSIZ;
+
+    int fd = fileno (filep);
+
+    int sflags = IDIO_FILE_HANDLE_FLAG_NONE;
+    if (isatty (fd)) {
+	sflags |= IDIO_FILE_HANDLE_FLAG_INTERACTIVE;
+    }
+    
+    IDIO_FILE_HANDLE_STREAM_FILEP (fhsp) = filep;
+    IDIO_FILE_HANDLE_STREAM_FD (fhsp) = fd;
+    IDIO_FILE_HANDLE_STREAM_FLAGS (fhsp) = sflags;
+    IDIO_FILE_HANDLE_STREAM_BUF (fhsp) = idio_alloc (bufsiz);
+    IDIO_FILE_HANDLE_STREAM_BUFSIZ (fhsp) = bufsiz;
+    IDIO_FILE_HANDLE_STREAM_PTR (fhsp) = IDIO_FILE_HANDLE_STREAM_BUF (fhsp);
+    IDIO_FILE_HANDLE_STREAM_COUNT (fhsp) = 0;
+
+    IDIO fh = idio_handle ();
+
+    IDIO_HANDLE_FLAGS (fh) |= mflag | IDIO_HANDLE_FLAG_FILE;
+    IDIO_HANDLE_NAME (fh) = name;
+    IDIO_HANDLE_STREAM (fh) = fhsp;
+    IDIO_HANDLE_METHODS (fh) = &idio_file_handle_methods;
+
+    idio_register_file_handle (fh);
+    
+    return fh;
+}
+
 IDIO idio_open_file_handle_C (char *name, char *mode)
 {
     IDIO_C_ASSERT (name);
@@ -119,34 +156,46 @@ IDIO idio_open_file_handle_C (char *name, char *mode)
 	idio_error_message ("fopen (\"%s\", \"%s\"): %s", name, mode, strerror (errno));
     }
 
-    idio_file_handle_stream_t *fhsp = idio_alloc (sizeof (idio_file_handle_stream_t));
-    int bufsiz = BUFSIZ;
+    return idio_open_file_handle (name, filep, mflag);
+}
 
-    int fd = fileno (filep);
+static IDIO idio_open_std_file_handle (FILE *filep)
+{
+    IDIO_C_ASSERT (filep);
 
-    int sflags = IDIO_FILE_HANDLE_FLAG_NONE;
-    if (isatty (fd)) {
-	sflags |= IDIO_FILE_HANDLE_FLAG_INTERACTIVE;
+    int mflag = 0;
+    char *name = NULL;
+    
+    if (filep == stdin) {
+	mflag = IDIO_HANDLE_FLAG_READ;
+	name = "*stdin*";
+    } else if (filep == stdout) {
+	mflag = IDIO_HANDLE_FLAG_WRITE;
+	name = "*stdout*";
+    } else if (filep == stderr) {
+	mflag = IDIO_HANDLE_FLAG_WRITE;
+	name = "*stderr*";
+    } else {
+	idio_error_message ("unexpected standard IO stream");
+	return idio_S_unspec;
     }
-    
-    IDIO_FILE_HANDLE_STREAM_FILEP (fhsp) = filep;
-    IDIO_FILE_HANDLE_STREAM_FD (fhsp) = fd;
-    IDIO_FILE_HANDLE_STREAM_FLAGS (fhsp) = sflags;
-    IDIO_FILE_HANDLE_STREAM_BUF (fhsp) = idio_alloc (bufsiz);
-    IDIO_FILE_HANDLE_STREAM_BUFSIZ (fhsp) = bufsiz;
-    IDIO_FILE_HANDLE_STREAM_PTR (fhsp) = IDIO_FILE_HANDLE_STREAM_BUF (fhsp);
-    IDIO_FILE_HANDLE_STREAM_COUNT (fhsp) = 0;
 
-    IDIO fh = idio_handle ();
+    return idio_open_file_handle (name, filep, mflag);
+}
 
-    IDIO_HANDLE_FLAGS (fh) |= mflag | IDIO_HANDLE_FLAG_FILE;
-    IDIO_HANDLE_NAME (fh) = name;
-    IDIO_HANDLE_STREAM (fh) = fhsp;
-    IDIO_HANDLE_METHODS (fh) = &idio_file_handle_methods;
+IDIO idio_stdin_file_handle ()
+{
+    return idio_stdin;
+}
 
-    idio_register_file_handle (fh);
-    
-    return fh;
+IDIO idio_stdout_file_handle ()
+{
+    return idio_stdout;
+}
+
+IDIO idio_stderr_file_handle ()
+{
+    return idio_stderr;
 }
 
 int idio_isa_file_handle (IDIO fh)
@@ -647,6 +696,10 @@ void idio_init_file_handle ()
 {
     idio_file_handles = IDIO_HASH_EQP (1<<3);
     idio_gc_protect (idio_file_handles);
+
+    idio_stdin = idio_open_std_file_handle (stdin);
+    idio_stdout = idio_open_std_file_handle (stdout);
+    idio_stderr = idio_open_std_file_handle (stderr);
 
     IDIO_ADD_PRIMITIVE (open_file);
     IDIO_ADD_PRIMITIVE (load_file);
