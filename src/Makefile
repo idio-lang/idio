@@ -48,7 +48,8 @@ ifneq ($(OS),Darwin)
 DLIBS = libos.so libposix-regex.so
 endif
 
-all : main scm1-c-structs.scm1 ${DLIBS} tags
+all : tags idio
+#all : idio scm1-c-structs.scm1 ${DLIBS} tags
 
 profiled :
 	$(MAKE) LEAN=1 PROFLAGS=-pg
@@ -58,7 +59,7 @@ lean :
 
 include $(subst .c,.d,$(sources))
 
-main : $(objects)
+idio : $(objects)
 	${CC} ${LDFLAGS} -o $@ $^ ${LIBS}
 
 lib%.so : %.o
@@ -68,7 +69,7 @@ scm1-c-structs.scm1 : scm1-c-structs
 	./scm1-c-structs > $@
 
 clean : tidy
-	rm -f *.o *.d main scm1-c-structs *.so scm1-c-structs.scm1 tests/e TAGS
+	rm -f *.o *.d idio scm1-c-structs *.so scm1-c-structs.scm1 tests/e TAGS
 
 tidy :
 	rm -f vgcore.* core.* core *~
@@ -82,5 +83,5 @@ TAGS : *.[ch]
 %.d: %.c
 	$(CC) -MM -MP -MF $@ $(CFLAGS) $< -MT $*.o -MT $@
 
-test : main scm1-c-structs.scm1
-	(cd tests; IDIO_PATH=${PWD} MAIN=${PWD}/main ./rtest 2>e)
+test : idio scm1-c-structs.scm1
+	(cd tests; IDIO_PATH=${PWD} IDIO=${PWD}/idio ./rtest 2>e)

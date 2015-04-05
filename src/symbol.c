@@ -23,38 +23,42 @@
 #include "idio.h"
 
 static IDIO idio_symbols_hash = idio_S_nil;
-IDIO idio_S_else;
-IDIO idio_S_eq_gt;
-IDIO idio_S_quote;
-IDIO idio_S_unquote;
-IDIO idio_S_unquotesplicing;
-IDIO idio_S_quasiquote;
-IDIO idio_S_if;
-IDIO idio_S_lambda;
-IDIO idio_S_let;
-IDIO idio_S_set;
-IDIO idio_S_define_macro;
-IDIO idio_S_begin;
+
+IDIO idio_S_C_struct;
+IDIO idio_S_ampersand;
 IDIO idio_S_and;
-IDIO idio_S_or;
+IDIO idio_S_asterisk;
+IDIO idio_S_begin;
+IDIO idio_S_block;
+IDIO idio_S_class;
 IDIO idio_S_cond;
 IDIO idio_S_define;
-IDIO idio_S_letrec;
-IDIO idio_S_block;
-IDIO idio_S_template;
-IDIO idio_S_fixed_template;
-IDIO idio_S_class;
-IDIO idio_S_super;
-IDIO idio_S_C_struct;
-IDIO idio_S_root;
-IDIO idio_S_init;
-IDIO idio_S_this;
-IDIO idio_S_error;
-IDIO idio_S_profile;
+IDIO idio_S_define_macro;
 IDIO idio_S_dloads;
-IDIO idio_S_ampersand;
-IDIO idio_S_asterisk;
+IDIO idio_S_dynamic;
+IDIO idio_S_dynamic_let;
+IDIO idio_S_else;
+IDIO idio_S_eq_gt;
+IDIO idio_S_error;
+IDIO idio_S_fixed_template;
+IDIO idio_S_if;
+IDIO idio_S_init;
+IDIO idio_S_lambda;
+IDIO idio_S_let;
+IDIO idio_S_letrec;
+IDIO idio_S_monitor;
 IDIO idio_S_namespace;
+IDIO idio_S_or;
+IDIO idio_S_profile;
+IDIO idio_S_quasiquote;
+IDIO idio_S_quote;
+IDIO idio_S_root;
+IDIO idio_S_set;
+IDIO idio_S_super;
+IDIO idio_S_template;
+IDIO idio_S_this;
+IDIO idio_S_unquote;
+IDIO idio_S_unquotesplicing;
 
 int idio_symbol_C_eqp (void *s1, void *s2)
 {
@@ -207,41 +211,44 @@ void idio_init_symbol ()
     idio_gc_protect (idio_symbols_hash);
     IDIO_HASH_FLAGS (idio_symbols_hash) |= IDIO_HASH_FLAG_STRING_KEYS;
 
-    idio_S_else = idio_symbols_C_intern ("else");
-    idio_S_eq_gt = idio_symbols_C_intern ("eq_gt");
-    idio_S_quote = idio_symbols_C_intern ("quote");
-    idio_S_unquote = idio_symbols_C_intern ("unquote");
-    idio_S_unquotesplicing = idio_symbols_C_intern ("unquotesplicing");
-    idio_S_quasiquote = idio_symbols_C_intern ("quasiquote");
-    idio_S_if = idio_symbols_C_intern ("if");
-    idio_S_lambda = idio_symbols_C_intern ("lambda");
-    idio_S_let = idio_symbols_C_intern ("let");
-    idio_S_set = idio_symbols_C_intern ("set!");
-    idio_S_define_macro = idio_symbols_C_intern ("define-macro");
-    idio_S_begin = idio_symbols_C_intern ("begin");
+    idio_S_C_struct = idio_symbols_C_intern ("c_struct");
+    idio_S_ampersand = idio_symbols_C_intern ("&");
     idio_S_and = idio_symbols_C_intern ("and");
-    idio_S_or = idio_symbols_C_intern ("or");
+    idio_S_asterisk = idio_symbols_C_intern ("*");
+    idio_S_begin = idio_symbols_C_intern ("begin");
+    idio_S_block = idio_symbols_C_intern ("block");
+    idio_S_class = idio_symbols_C_intern ("class");
     idio_S_cond = idio_symbols_C_intern ("cond");
     idio_S_define = idio_symbols_C_intern ("define");
-    idio_S_letrec = idio_symbols_C_intern ("letrec");
-    idio_S_block = idio_symbols_C_intern ("block");
-    idio_S_template = idio_symbols_C_intern ("template");
-    idio_S_fixed_template = idio_symbols_C_intern ("fixed_template");
-    idio_S_class = idio_symbols_C_intern ("class");
-    idio_S_super = idio_symbols_C_intern ("super");
-    idio_S_C_struct = idio_symbols_C_intern ("c_struct");
-    idio_S_root = idio_symbols_C_intern ("root");
-    idio_S_init = idio_symbols_C_intern ("init");
-    idio_S_this = idio_symbols_C_intern ("this");
-    idio_S_error = idio_symbols_C_intern ("error");
-    idio_S_profile = idio_symbols_C_intern ("profile");
+    idio_S_define_macro = idio_symbols_C_intern ("define-macro");
     idio_S_dloads = idio_symbols_C_intern ("dloads");
-    idio_S_ampersand = idio_symbols_C_intern ("&");
-    idio_S_asterisk = idio_symbols_C_intern ("*");
+    idio_S_dynamic = idio_symbols_C_intern ("dynamic");
+    idio_S_dynamic_let = idio_symbols_C_intern ("dynamic-let");
+    idio_S_else = idio_symbols_C_intern ("else");
+    idio_S_eq_gt = idio_symbols_C_intern ("eq_gt");
+    idio_S_error = idio_symbols_C_intern ("error");
+    idio_S_fixed_template = idio_symbols_C_intern ("fixed_template");
+    idio_S_if = idio_symbols_C_intern ("if");
+    idio_S_init = idio_symbols_C_intern ("init");
+    idio_S_lambda = idio_symbols_C_intern ("lambda");
+    idio_S_let = idio_symbols_C_intern ("let");
+    idio_S_letrec = idio_symbols_C_intern ("letrec");
+    idio_S_monitor = idio_symbols_C_intern ("monitor");
     idio_S_namespace = idio_symbols_C_intern ("namespace");
+    idio_S_or = idio_symbols_C_intern ("or");
+    idio_S_profile = idio_symbols_C_intern ("profile");
+    idio_S_quasiquote = idio_symbols_C_intern ("quasiquote");
+    idio_S_quote = idio_symbols_C_intern ("quote");
+    idio_S_root = idio_symbols_C_intern ("root");
+    idio_S_set = idio_symbols_C_intern ("set!");
+    idio_S_super = idio_symbols_C_intern ("super");
+    idio_S_template = idio_symbols_C_intern ("template");
+    idio_S_this = idio_symbols_C_intern ("this");
+    idio_S_unquote = idio_symbols_C_intern ("unquote");
+    idio_S_unquotesplicing = idio_symbols_C_intern ("unquotesplicing");
 }
 
-void idio_symbol_primitives ()
+void idio_symbol_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (symbol_p);
     IDIO_ADD_PRIMITIVE (gensym);

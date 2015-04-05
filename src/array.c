@@ -540,6 +540,10 @@ IDIO_DEFINE_PRIMITIVE1 ("vector->list", vector2list, (IDIO a))
 
 void idio_init_array ()
 {
+}
+
+void idio_array_add_primitives ()
+{
     IDIO_ADD_PRIMITIVE (vector_p);
     IDIO_ADD_PRIMITIVE (vector_fill);
     IDIO_ADD_PRIMITIVE (vector_length);

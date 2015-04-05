@@ -269,7 +269,7 @@ IDIO idio_list_copy (IDIO l)
     return r;
 }
 
-IDIO idio_list_append (IDIO l1, IDIO l2)
+IDIO idio_list_append2 (IDIO l1, IDIO l2)
 {
     IDIO_ASSERT (l1);
     IDIO_ASSERT (l2);
@@ -280,22 +280,62 @@ IDIO idio_list_append (IDIO l1, IDIO l2)
 
     IDIO_TYPE_ASSERT (pair, l1);
 
-    IDIO r = idio_pair (idio_list_head (l1),
-			idio_list_append (idio_list_tail (l1),
-					  l2));
+    IDIO r = idio_S_nil;
+    IDIO p = idio_S_nil;
+
+    for (;;l1 = IDIO_PAIR_T (l1)) {
+	if (idio_S_nil == l1) {
+	    break;
+	}
+	if (! idio_isa_pair (l1)) {
+	    char *l1s = idio_as_string (l1, 1);
+	    idio_error_message ("append2: not a list: %s", l1s);
+	    free (l1s);
+	    return idio_S_unspec;
+	}
+
+	IDIO t = idio_pair (IDIO_PAIR_H (l1), idio_S_nil);
+
+	if (idio_S_nil == r) {
+	    r = t;
+	} else {
+	    IDIO_PAIR_T (p) = t;
+	}
+	p = t;
+    }
+
+    IDIO_PAIR_T (p) = l2;
     
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("append", append, (IDIO a, IDIO b))
+IDIO_DEFINE_PRIMITIVE2 ("append", append, (IDIO a, IDIO args))
 {
     IDIO_ASSERT (a);
-    IDIO_ASSERT (b);
+    IDIO_ASSERT (args);
+
+    if (idio_S_nil == a) {
+	return args;
+    }
 
     IDIO_VERIFY_PARAM_TYPE (list, a);
-    IDIO_VERIFY_PARAM_TYPE (list, b);
 
-    return idio_list_append (a, b);
+    if (idio_S_nil == args) {
+	return a;
+    } else if (! idio_isa_pair (args)) {
+	return idio_list_append2 (a, args);
+    } else {
+	for (;;args = IDIO_PAIR_T (args)) {
+	    if (! idio_isa_pair (args)) {
+		return idio_list_append2 (a, args);
+	    } else {
+		a = idio_list_append2 (a, IDIO_PAIR_H (args));
+	    }
+	}
+	return a;
+    }
+
+    return idio_S_unspec;
 }
 
 IDIO idio_list_list2string (IDIO l)
@@ -346,10 +386,15 @@ IDIO_DEFINE_PRIMITIVE1 ("list->vector", list2array, (IDIO l))
 
 void idio_init_pair ()
 {
+}
+
+void idio_pair_add_primitives ()
+{
     IDIO_ADD_PRIMITIVE (pair_p);
     IDIO_ADD_PRIMITIVE (pair);
     IDIO_ADD_PRIMITIVE (pair_head);
     IDIO_ADD_PRIMITIVE (pair_tail);
+
     IDIO_ADD_PRIMITIVE (append);
     IDIO_ADD_PRIMITIVE (list2string);
     IDIO_ADD_PRIMITIVE (list2array);

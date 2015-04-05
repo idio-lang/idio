@@ -37,9 +37,10 @@ IDIO idio_list_reverse (IDIO l);
 IDIO idio_list_to_array (IDIO l);
 size_t idio_list_length (IDIO l);
 IDIO idio_list_copy (IDIO l);
-IDIO idio_list_append (IDIO l1, IDIO l2);
+IDIO idio_list_append2 (IDIO l1, IDIO l2);
 
 void idio_init_pair ();
+void idio_pair_add_primitives ();
 void idio_final_pair ();
 
 #define IDIO_LIST1(e1)		idio_pair (e1, idio_S_nil)

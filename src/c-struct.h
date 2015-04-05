@@ -64,8 +64,6 @@ extern IDIO idio_CTD_uint;
 extern IDIO idio_CTD_long;
 extern IDIO idio_CTD_ulong;
 
-void idio_init_C_struct ();
-void idio_final_C_struct ();
 IDIO idio_C_typedef_C (const char *s_C);
 int idio_isa_C_typedef (IDIO o);
 void idio_free_C_typedef (IDIO o);
@@ -83,6 +81,10 @@ int idio_isa_opaque (IDIO o);
 void idio_free_opaque (IDIO o);
 IDIO idio_opaque_args (void *p, IDIO args);
 IDIO idio_opaque_final (void *p, void (*func) (IDIO o), IDIO args);
+
+void idio_init_C_struct ();
+void idio_C_struct_add_primitives ();
+void idio_final_C_struct ();
 
 #endif
 

@@ -22,7 +22,7 @@
 
 #include "idio.h"
 
-IDIO idio_closure (IDIO_I *code, IDIO env)
+IDIO idio_closure (size_t code, IDIO env)
 {
     IDIO_C_ASSERT (code);
     IDIO_ASSERT (env);

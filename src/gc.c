@@ -413,7 +413,6 @@ void idio_process_grey (unsigned colour)
 	idio_mark (IDIO_THREAD_STACK (o), colour);
 	idio_mark (IDIO_THREAD_VAL (o), colour);
 	idio_mark (IDIO_THREAD_ENV (o), colour);
-	idio_mark (IDIO_THREAD_CONSTANTS (o), colour);
 	idio_mark (IDIO_THREAD_FUNC (o), colour);
 	idio_mark (IDIO_THREAD_REG1 (o), colour);
 	idio_mark (IDIO_THREAD_REG2 (o), colour);
@@ -773,7 +772,7 @@ void idio_gc_sweep_free_value (IDIO vo)
     case IDIO_TYPE_CLOSURE:
 	idio_free_closure (vo);
 	break;
-    case IDIO_TYPE_PRIMITIVE_C:
+    case IDIO_TYPE_PRIMITIVE:
 	idio_free_primitive (vo);
 	break;
     case IDIO_TYPE_BIGNUM:
@@ -1178,9 +1177,6 @@ void idio_init_gc ()
     
     idio_gc_finalizer_hash = IDIO_HASH_EQP (64);
     idio_gc_protect (idio_gc_finalizer_hash);
-
-    idio_primitive_hash = IDIO_HASH_EQP (1<<7);
-    idio_gc_protect (idio_primitive_hash);
 }
 
 void idio_run_all_finalizers ()
@@ -1205,8 +1201,6 @@ void idio_run_all_finalizers ()
 
 void idio_final_gc ()
 {
-    idio_gc_expose (idio_primitive_hash);
-    
     idio_run_all_finalizers ();
 
     /* unprotect the finalizer hash itself */

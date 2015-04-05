@@ -23,7 +23,7 @@
 #ifndef CLOSURE_H
 #define CLOSURE_H
 
-IDIO idio_closure (IDIO_I *code, IDIO env);
+IDIO idio_closure (size_t code, IDIO env);
 void idio_free_closure (IDIO c);
 
 #endif

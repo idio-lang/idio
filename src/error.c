@@ -65,7 +65,7 @@ void idio_error_param_type (char *etype, IDIO who)
     IDIO_C_ASSERT (etype);
     IDIO_ASSERT (who);
 
-    char *whos = idio_display_string (who);
+    char *whos = idio_as_string (who, 1);
     idio_error_message ("not a %s: %s", etype, whos);
     free (whos);
 }
@@ -76,11 +76,37 @@ void idio_error_add_C (const char *s)
 
 IDIO_DEFINE_PRIMITIVE1V ("error", error, (IDIO m, IDIO args))
 {
-    idio_error_message ("HELP!!! I'm in error!");
+    IDIO_ASSERT (m);
+    /* IDIO_ASSERT (args); */
+    
+    fprintf (stderr, "HELP!!! I'm in error!: ");
+    char *ms = idio_as_string (m, 1);
+    fprintf (stderr, "%s", ms);
+    free (ms);
+
+    /* IDIO_TYPE_ASSERT (list, args); */
+    /* while (idio_S_nil != args) { */
+    /* 	char *s = idio_as_string (IDIO_PAIR_H (args), 1); */
+    /* 	fprintf (stderr, " %s", s); */
+    /* 	free (s); */
+    /* 	args = IDIO_PAIR_T (args); */
+    /* 	IDIO_TYPE_ASSERT (list, args); */
+    /* } */
+    fprintf (stderr, "\n");
+
+    idio_signal_exception (0, m);
+
+    fprintf (stderr, "XXX can't be here!\n");
     IDIO_C_ASSERT (0);
+    idio_vm_abort_thread (idio_current_thread ());
+    return idio_S_unspec;
 }
 
 void idio_init_error ()
+{
+}
+
+void idio_error_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (error);
 }

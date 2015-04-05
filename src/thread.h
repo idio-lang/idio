@@ -38,6 +38,7 @@ IDIO idio_current_module ();
 void idio_set_current_module (IDIO h);
 
 void idio_init_thread ();
+void idio_thread_add_primitives ();
 void idio_init_first_thread ();
 void idio_final_thread ();
 

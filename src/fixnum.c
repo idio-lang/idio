@@ -492,6 +492,8 @@ IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(gt, >)
 		} else {					\
 		    bn_args = idio_pair (h, bn_args);		\
 		}						\
+								\
+		args = IDIO_PAIR_T (args);			\
 	    }							\
 								\
 	    return idio_bignum_primitive_ ## cname (idio_list_reverse (bn_args)); \
@@ -513,6 +515,10 @@ IDIO_DEFINE_ARITHMETIC_PRIMITIVE1V (">=", ge)
 IDIO_DEFINE_ARITHMETIC_PRIMITIVE1V (">", gt)
 
 void idio_init_fixnum ()
+{
+}
+
+void idio_fixnum_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (fixnump);
     IDIO_ADD_PRIMITIVE (eq);

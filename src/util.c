@@ -53,7 +53,7 @@ const char *idio_type_enum2string (idio_type_e type)
     case IDIO_TYPE_ARRAY: return "ARRAY";
     case IDIO_TYPE_HASH: return "HASH";
     case IDIO_TYPE_CLOSURE: return "FUNCTION";
-    case IDIO_TYPE_PRIMITIVE_C: return "FUNCTION_C";
+    case IDIO_TYPE_PRIMITIVE: return "PRIMITIVE";
     case IDIO_TYPE_BIGNUM: return "BIGNUM";
     case IDIO_TYPE_MODULE: return "MODULE";
     case IDIO_TYPE_FRAME: return "FRAME";
@@ -313,7 +313,7 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		break;
 	    case IDIO_TYPE_CLOSURE:
 		return (o1->u.closure == o2->u.closure);
-	    case IDIO_TYPE_PRIMITIVE_C:
+	    case IDIO_TYPE_PRIMITIVE:
 		return (o1->u.primitive == o2->u.primitive);
 	    case IDIO_TYPE_BIGNUM:
 		return idio_bignum_real_equal_p (o1, o2);
@@ -422,10 +422,10 @@ char *idio_as_string (IDIO o, int depth)
 	    case IDIO_VM_CODE_SEQUENCE:              t = "SEQUENCE";              break;
 	    case IDIO_VM_CODE_TR_FIX_LET:            t = "TR-FIX-LET";            break;
 	    case IDIO_VM_CODE_FIX_LET:               t = "FIX-LET";               break;
-	    case IDIO_VM_CODE_CALL0:                 t = "CALL0";                 break;
-	    case IDIO_VM_CODE_CALL1:                 t = "CALL1";                 break;
-	    case IDIO_VM_CODE_CALL2:                 t = "CALL2";                 break;
-	    case IDIO_VM_CODE_CALL3:                 t = "CALL3";                 break;
+	    case IDIO_VM_CODE_PRIMCALL0:             t = "PRIMCALL0";             break;
+	    case IDIO_VM_CODE_PRIMCALL1:             t = "PRIMCALL1";             break;
+	    case IDIO_VM_CODE_PRIMCALL2:             t = "PRIMCALL2";             break;
+	    case IDIO_VM_CODE_PRIMCALL3:             t = "PRIMCALL3";             break;
 	    case IDIO_VM_CODE_FIX_CLOSURE:           t = "FIX-CLOSURE";           break;
 	    case IDIO_VM_CODE_NARY_CLOSURE:          t = "NARY-CLOSURE";          break;
 	    case IDIO_VM_CODE_TR_REGULAR_CALL:       t = "TR-REGULAR-CALL";       break;
@@ -713,8 +713,8 @@ char *idio_as_string (IDIO o, int depth)
 		    IDIO_STRCAT (r, ")");
 		    break;
 		}
-	    case IDIO_TYPE_PRIMITIVE_C:
-		if (asprintf (&r, "#F_C{%s}", IDIO_PRIMITIVE_NAME (o)) == -1) {
+	    case IDIO_TYPE_PRIMITIVE:
+		if (asprintf (&r, "#PRIM{%s}", IDIO_PRIMITIVE_NAME (o)) == -1) {
 		    return NULL;
 		}
 		break;
@@ -785,15 +785,15 @@ char *idio_as_string (IDIO o, int depth)
 	    case IDIO_TYPE_THREAD:
 		{
 		    idio_ai_t sp = idio_array_size (IDIO_THREAD_STACK (o));
-		    if (asprintf (&r, "#T{%p pc=%3d sp=%zd s/top=",
+		    if (asprintf (&r, "#T{%p pc=%3zd sp=%3zd s/top=",
 				  o,
-				  *IDIO_THREAD_PC (o),
+				  IDIO_THREAD_PC (o),
 				  sp) == -1) {
 			return NULL;
 		    }
 		    IDIO_STRCAT_FREE (r, idio_as_string (idio_array_top (IDIO_THREAD_STACK (o)), 1));
 		    IDIO_STRCAT (r, " val=");
-		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_VAL (o), 1));
+		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_VAL (o), 2));
 		    IDIO_STRCAT (r, " func=");
 		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_FUNC (o), 1));
 		    IDIO_STRCAT (r, " reg1=");
@@ -804,8 +804,6 @@ char *idio_as_string (IDIO o, int depth)
 			IDIO_STRCAT (r, " env=");
 			IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_ENV (o), 1));
 			if (depth > 2) {
-			    IDIO_STRCAT (r, " constants=");
-			    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_CONSTANTS (o), 1));
 			    IDIO_STRCAT (r, " input_handle=");
 			    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_INPUT_HANDLE (o), 1));
 			    IDIO_STRCAT (r, " output_handle=");
@@ -989,7 +987,7 @@ char *idio_display_string (IDIO o)
 	    case IDIO_TYPE_ARRAY:
 	    case IDIO_TYPE_HASH:
 	    case IDIO_TYPE_CLOSURE:
-	    case IDIO_TYPE_PRIMITIVE_C:
+	    case IDIO_TYPE_PRIMITIVE:
 	    case IDIO_TYPE_BIGNUM:
 	    case IDIO_TYPE_MODULE:
 	    case IDIO_TYPE_FRAME:
@@ -1032,7 +1030,7 @@ IDIO idio_apply (IDIO func, IDIO args)
     
     switch (idio_type (func)) {
     case IDIO_TYPE_CLOSURE:
-    case IDIO_TYPE_PRIMITIVE_C:
+    case IDIO_TYPE_PRIMITIVE:
     default:
 	fprintf (stderr, "idio_apply: unexpected function type %s %d\n", idio_type_enum2string (idio_type (func)), idio_type (func));
     }
@@ -1257,7 +1255,7 @@ void idio_dump (IDIO o, int detail)
 		break;
 	    case IDIO_TYPE_CLOSURE:
 		break;
-	    case IDIO_TYPE_PRIMITIVE_C:
+	    case IDIO_TYPE_PRIMITIVE:
 		break;
 	    case IDIO_TYPE_BIGNUM:
 		break;
@@ -1306,6 +1304,10 @@ void idio_dump (IDIO o, int detail)
 }
 
 void idio_init_util ()
+{
+}
+
+void idio_util_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (nullp);
     IDIO_ADD_PRIMITIVE (booleanp);

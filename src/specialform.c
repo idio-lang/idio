@@ -26,6 +26,10 @@ void idio_init_specialform ()
 {
 }
 
+void idio_specialform_add_primitives ()
+{
+}
+
 void idio_final_specialform ()
 {
 }

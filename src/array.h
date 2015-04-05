@@ -74,6 +74,7 @@ IDIO idio_array_to_list (IDIO a);
 int idio_array_delete_index (IDIO a, idio_ai_t index);
 
 void idio_init_array ();
+void idio_array_add_primitives ();
 void idio_final_array ();
 
 #endif

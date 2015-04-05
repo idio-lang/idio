@@ -53,8 +53,29 @@ void idio_init ()
      * module" in idio_init_symbol() until we have modules initialised
      * which can't happen until after symbols have been initialised
      * because modules interns the names of the default modules...
+     *
+     * Neither of which can happen until scm_evaluate is up and
+     * running...
      */
-    idio_symbol_primitives ();
+    idio_symbol_add_primitives ();
+    idio_module_add_primitives ();
+    idio_thread_add_primitives ();
+    idio_scm_evaluate_add_primitives ();
+    idio_pair_add_primitives ();
+    idio_handle_add_primitives ();
+    idio_file_handle_add_primitives ();
+    idio_C_struct_add_primitives ();
+    idio_frame_add_primitives ();
+    idio_util_add_primitives ();
+    idio_primitive_add_primitives ();
+    idio_specialform_add_primitives ();
+    idio_character_add_primitives ();
+    idio_string_add_primitives ();
+    idio_array_add_primitives ();
+    idio_fixnum_add_primitives ();
+    idio_bignum_add_primitives ();
+    idio_error_add_primitives ();
+    idio_vm_add_primitives ();
 
     /*
      * We can't patch up the first thread's IO handles until modules

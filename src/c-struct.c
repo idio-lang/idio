@@ -460,6 +460,10 @@ void idio_init_C_struct ()
     
 }
 
+void idio_C_struct_add_primitives ()
+{
+}
+
 void idio_final_C_struct ()
 {
     idio_gc_expose (idio_C_typedefs_hash);

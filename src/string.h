@@ -38,6 +38,7 @@ char *idio_string_s (IDIO so);
 char *idio_string_as_C (IDIO so);
 
 void idio_init_string ();
+void idio_string_add_primitives ();
 void idio_final_string ();
 
 #endif

@@ -25,10 +25,11 @@
 
 IDIO idio_primitive (IDIO (*func) (IDIO args), const char *name_C, size_t arity, char varargs);
 int idio_isa_primitive (IDIO o);
-IDIO idio_primitive_desc (idio_primitive_t *desc);
+IDIO idio_primitive_data (idio_primitive_t *desc);
 void idio_free_primitive (IDIO o);
 
 void idio_init_primitive ();
+void idio_primitive_add_primitives ();
 void idio_final_primitive ();
 
 #endif

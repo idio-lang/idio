@@ -23,8 +23,6 @@
 #ifndef HANDLE_H
 #define HANDLE_H
 
-void idio_init_handle ();
-void idio_final_handle ();
 IDIO idio_handle ();
 int idio_isa_handle (IDIO d);
 void idio_free_handle (IDIO d);
@@ -51,6 +49,10 @@ IDIO idio_current_output_handle ();
 
 IDIO idio_open_handle (IDIO pathname, char *mode);
 IDIO idio_read (IDIO h);
+
+void idio_init_handle ();
+void idio_handle_add_primitives ();
+void idio_final_handle ();
 
 #endif
 

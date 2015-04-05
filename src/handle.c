@@ -556,6 +556,10 @@ IDIO_DEFINE_PRIMITIVE1V ("display", display, (IDIO o, IDIO args))
 
 void idio_init_handle ()
 {
+}
+
+void idio_handle_add_primitives ()
+{
     IDIO_ADD_PRIMITIVE (handlep);
     IDIO_ADD_PRIMITIVE (input_handlep);
     IDIO_ADD_PRIMITIVE (output_handlep);

@@ -35,6 +35,7 @@ void idio_error_param_type (char *etype, IDIO who);
 void idio_error_add_C (const char *s);
 
 void idio_init_error ();
+void idio_error_add_primitives ();
 void idio_final_error ();
 
 #endif

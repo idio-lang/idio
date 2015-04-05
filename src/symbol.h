@@ -23,38 +23,41 @@
 #ifndef SYMBOL_H
 #define SYMBOL_H
 
-extern IDIO idio_S_else;
-extern IDIO idio_S_eq_gt;
-extern IDIO idio_S_quote;
-extern IDIO idio_S_unquote;
-extern IDIO idio_S_unquotesplicing;
-extern IDIO idio_S_quasiquote;
-extern IDIO idio_S_if;
-extern IDIO idio_S_lambda;
-extern IDIO idio_S_let;
-extern IDIO idio_S_set;
-extern IDIO idio_S_define_macro;
-extern IDIO idio_S_begin;
+extern IDIO idio_S_ampersand;
 extern IDIO idio_S_and;
-extern IDIO idio_S_or;
+extern IDIO idio_S_asterisk;
+extern IDIO idio_S_begin;
+extern IDIO idio_S_block;
+extern IDIO idio_S_c_struct;
+extern IDIO idio_S_class;
 extern IDIO idio_S_cond;
 extern IDIO idio_S_define;
-extern IDIO idio_S_letrec;
-extern IDIO idio_S_block;
-extern IDIO idio_S_template;
-extern IDIO idio_S_fixed_template;
-extern IDIO idio_S_class;
-extern IDIO idio_S_super;
-extern IDIO idio_S_c_struct;
-extern IDIO idio_S_root;
-extern IDIO idio_S_init;
-extern IDIO idio_S_this;
-extern IDIO idio_S_error;
-extern IDIO idio_S_profile;
+extern IDIO idio_S_define_macro;
 extern IDIO idio_S_dloads;
-extern IDIO idio_S_ampersand;
-extern IDIO idio_S_asterisk;
+extern IDIO idio_S_dynamic;
+extern IDIO idio_S_dynamic_let;
+extern IDIO idio_S_else;
+extern IDIO idio_S_eq_gt;
+extern IDIO idio_S_error;
+extern IDIO idio_S_fixed_template;
+extern IDIO idio_S_if;
+extern IDIO idio_S_init;
+extern IDIO idio_S_lambda;
+extern IDIO idio_S_let;
+extern IDIO idio_S_letrec;
+extern IDIO idio_S_monitor;
 extern IDIO idio_S_namespace;
+extern IDIO idio_S_or;
+extern IDIO idio_S_profile;
+extern IDIO idio_S_quasiquote;
+extern IDIO idio_S_quote;
+extern IDIO idio_S_root;
+extern IDIO idio_S_set;
+extern IDIO idio_S_super;
+extern IDIO idio_S_template;
+extern IDIO idio_S_this;
+extern IDIO idio_S_unquote;
+extern IDIO idio_S_unquotesplicing;
 
 IDIO idio_symbol_C (const char *s_C);
 IDIO idio_tag_C (const char *s_C);
@@ -66,7 +69,7 @@ IDIO idio_symbols_string_intern (IDIO str);
 IDIO idio_gensym ();
 
 void idio_init_symbol (void);
-void idio_symbol_primitives (void);
+void idio_symbol_add_primitives (void);
 void idio_final_symbol (void);
 
 #endif

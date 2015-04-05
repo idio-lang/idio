@@ -113,18 +113,15 @@
  * be (unqiue) C name.  cname is embedded within other C names,
  * eg. idio_defprimitive_cname.
  *
- * PRIMITIVEx indicates the arity of the function.  
- *
- * idio_primitive_description_hash is a symbol->structure mapping
- * where the structure retains some helpful information describing the
- * primitive, notably the arity and the C function to implement the
- * primitive
+ * PRIMITIVEx indicates that x is the arity of the function with
+ * PRIMITIVExV meaning it has a variable arity with a minimum arity of
+ * x.
  *
  */
 
-#define IDIO_DEFINE_PRIMITIVE_(iname,cname,params,arity,varargs)	\
+#define IDIO_DEFINE_PRIMITIVE_DESC(iname,cname,params,arity,varargs)	\
     IDIO idio_defprimitive_ ## cname params;				\
-    static struct idio_primitive_s idio_primitive_description_ ## cname = { \
+    static struct idio_primitive_s idio_primitive_data_ ## cname = { \
 	idio_defprimitive_ ## cname,					\
 	iname,								\
 	arity,								\
@@ -133,30 +130,32 @@
     IDIO idio_defprimitive_ ## cname params
 
 #define IDIO_DEFINE_PRIMITIVE0(iname,cname,params)			\
-    IDIO_DEFINE_PRIMITIVE_(iname,cname,params,0,0)
+    IDIO_DEFINE_PRIMITIVE_DESC(iname,cname,params,0,0)
 
 #define IDIO_DEFINE_PRIMITIVE0V(iname,cname,params)			\
-    IDIO_DEFINE_PRIMITIVE_(iname,cname,params,0,1)
+    IDIO_DEFINE_PRIMITIVE_DESC(iname,cname,params,0,1)
 
 #define IDIO_DEFINE_PRIMITIVE1(iname,cname,params)			\
-    IDIO_DEFINE_PRIMITIVE_(iname,cname,params,1,0)
+    IDIO_DEFINE_PRIMITIVE_DESC(iname,cname,params,1,0)
 
 #define IDIO_DEFINE_PRIMITIVE1V(iname,cname,params)			\
-    IDIO_DEFINE_PRIMITIVE_(iname,cname,params,1,1)
+    IDIO_DEFINE_PRIMITIVE_DESC(iname,cname,params,1,1)
 
 #define IDIO_DEFINE_PRIMITIVE2(iname,cname,params)			\
-    IDIO_DEFINE_PRIMITIVE_(iname,cname,params,2,0)
+    IDIO_DEFINE_PRIMITIVE_DESC(iname,cname,params,2,0)
 
 #define IDIO_DEFINE_PRIMITIVE2V(iname,cname,params)			\
-    IDIO_DEFINE_PRIMITIVE_(iname,cname,params,2,1)
+    IDIO_DEFINE_PRIMITIVE_DESC(iname,cname,params,2,1)
 
 #define IDIO_DEFINE_PRIMITIVE3(iname,cname,params)			\
-    IDIO_DEFINE_PRIMITIVE_(iname,cname,params,3,0)
+    IDIO_DEFINE_PRIMITIVE_DESC(iname,cname,params,3,0)
 
 #define IDIO_DEFINE_PRIMITIVE3V(iname,cname,params)			\
-    IDIO_DEFINE_PRIMITIVE_(iname,cname,params,3,1)
+    IDIO_DEFINE_PRIMITIVE_DESC(iname,cname,params,3,1)
 
-#define IDIO_ADD_PRIMITIVE(cname)	idio_add_primitive (&idio_primitive_description_ ## cname);
+#define IDIO_ADD_PRIMITIVE(cname)	  idio_add_primitive (&idio_primitive_data_ ## cname);
+
+#define IDIO_ADD_SPECIAL_PRIMITIVE(cname) idio_add_special_primitive (&idio_primitive_data_ ## cname);
 
 #define IDIO_VERIFY_PARAM_TYPE(type,param)		\
     {							\
@@ -165,6 +164,8 @@
 	    return idio_S_unspec;			\
 	}						\
     }
+
+#define IDIO_STREQP(s,cs)	(strlen (s) == strlen (cs) && strncmp (s, cs, strlen (cs)) == 0)
 
 #include "gc.h"
 

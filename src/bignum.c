@@ -2336,6 +2336,10 @@ IDIO_DEFINE_PRIMITIVE1 ("real?", realp, (IDIO n))
 
 void idio_init_bignum ()
 {
+}
+
+void idio_bignum_add_primitives ()
+{
     IDIO_ADD_PRIMITIVE (realp);
 }
 

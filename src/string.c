@@ -566,6 +566,10 @@ IDIO_DEFINE_STRING_CS_PRIMITIVE2 ("string>?", gt, >)
 
 void idio_init_string ()
 {
+}
+
+void idio_string_add_primitives ()
+{
     IDIO_ADD_PRIMITIVE (string_p);
     IDIO_ADD_PRIMITIVE (string2list);
     IDIO_ADD_PRIMITIVE (string2symbol);

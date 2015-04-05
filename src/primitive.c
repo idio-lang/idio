@@ -27,7 +27,7 @@ IDIO idio_primitive (IDIO (*func) (IDIO args), const char *name_C, size_t arity,
     IDIO_C_ASSERT (func);
     IDIO_C_ASSERT (name_C);
 
-    IDIO o = idio_gc_get (IDIO_TYPE_PRIMITIVE_C);
+    IDIO o = idio_gc_get (IDIO_TYPE_PRIMITIVE);
 
     IDIO_FPRINTF (stderr, "idio_primitive: %10p = (%10p)\n", o, func);
 
@@ -51,11 +51,11 @@ IDIO idio_primitive (IDIO (*func) (IDIO args), const char *name_C, size_t arity,
     return o;
 }
 
-IDIO idio_primitive_desc (idio_primitive_t *desc)
+IDIO idio_primitive_data (idio_primitive_t *desc)
 {
     IDIO_C_ASSERT (desc);
 
-    IDIO o = idio_gc_get (IDIO_TYPE_PRIMITIVE_C);
+    IDIO o = idio_gc_get (IDIO_TYPE_PRIMITIVE);
 
     IDIO_GC_ALLOC (o->u.primitive, sizeof (idio_primitive_t));
     
@@ -77,7 +77,7 @@ int idio_isa_primitive (IDIO o)
 {
     IDIO_ASSERT (o);
 
-    return idio_isa (o, IDIO_TYPE_PRIMITIVE_C);
+    return idio_isa (o, IDIO_TYPE_PRIMITIVE);
 }
 
 void idio_free_primitive (IDIO o)
@@ -92,6 +92,10 @@ void idio_free_primitive (IDIO o)
 }
 
 void idio_init_primitive ()
+{
+}
+
+void idio_primitive_add_primitives ()
 {
 }
 

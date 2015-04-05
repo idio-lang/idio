@@ -34,7 +34,7 @@
 #define IDIO_TYPE_ARRAY           8
 #define IDIO_TYPE_HASH            9
 #define IDIO_TYPE_CLOSURE         10
-#define IDIO_TYPE_PRIMITIVE_C     11
+#define IDIO_TYPE_PRIMITIVE       11
 #define IDIO_TYPE_BIGNUM          12
 #define IDIO_TYPE_MODULE          13
 #define IDIO_TYPE_FRAME           14
@@ -187,7 +187,7 @@ typedef size_t idio_hi_t;
 
 typedef struct idio_closure_s {
     struct idio_s *grey;
-    IDIO_I *code;
+    size_t code;
     struct idio_s *env;
 } idio_closure_t;
 
@@ -213,6 +213,7 @@ typedef struct idio_module_s {
     struct idio_s *exports;	/* symbols */
     struct idio_s *imports;	/* modules */
     struct idio_s *symbols;	/* hash table */
+    struct idio_s *defined;	/* list of defined names */
 } idio_module_t;
 
 #define IDIO_MODULE_GREY(F)	((F)->u.module->grey)
@@ -220,6 +221,7 @@ typedef struct idio_module_s {
 #define IDIO_MODULE_EXPORTS(F)	((F)->u.module->exports)
 #define IDIO_MODULE_IMPORTS(F)	((F)->u.module->imports)
 #define IDIO_MODULE_SYMBOLS(F)	((F)->u.module->symbols)
+#define IDIO_MODULE_DEFINED(F)	((F)->u.module->defined)
 
 #define IDIO_FRAME_FLAG_NONE	 0
 #define IDIO_FRAME_FLAG_ETRACE   (1<<0)
@@ -338,11 +340,10 @@ typedef struct idio_struct_instance_s {
 
 typedef struct idio_thread_s {
     struct idio_s *grey;
-    IDIO_I *pc;
+    size_t pc;
     struct idio_s *stack;
     struct idio_s *val;
     struct idio_s *env;
-    struct idio_s *constants;
 
     struct idio_s *func;
     struct idio_s *reg1;
@@ -360,7 +361,6 @@ typedef struct idio_thread_s {
 #define IDIO_THREAD_STACK(T)          ((T)->u.thread->stack)
 #define IDIO_THREAD_VAL(T)            ((T)->u.thread->val)
 #define IDIO_THREAD_ENV(T)            ((T)->u.thread->env)
-#define IDIO_THREAD_CONSTANTS(T)      ((T)->u.thread->constants)
 #define IDIO_THREAD_FUNC(T)           ((T)->u.thread->func)
 #define IDIO_THREAD_REG1(T)           ((T)->u.thread->reg1)
 #define IDIO_THREAD_REG2(T)           ((T)->u.thread->reg2)
@@ -564,7 +564,7 @@ typedef struct idio_gc_s {
 #define IDIO_C_STRUCT_ALIGNMENT(TYPE)	offsetof (struct { char __gc1_c_struct_1; TYPE __gc1_c_struct_2; }, __gc1_c_struct_2)
 
 /*
- * Fixnums and small constants
+ * Fixnums, characters and small constants
 
  * On a 32 bit processor a pointer to an Idio type structure will be
  * word-aligned meaning the bottom two bits will always be 00.  We can
@@ -581,15 +581,15 @@ typedef struct idio_gc_s {
  * - characters: as a distinct type from fixnums to avoid the
      awkwardness of trying to evaluate: 1 + ®
 
- * All three will then have a minimum of 30 bits.
+ * All three will then have a minimum of 30 bits of useful space.
  */
 
-#define IDIO_TYPE_MASK		0x3
+#define IDIO_TYPE_MASK           0x3
 
-#define IDIO_TYPE_POINTER_MARK	0x00
-#define IDIO_TYPE_FIXNUM_MARK	0x01
-#define IDIO_TYPE_CONSTANT_MARK	0x02
-#define IDIO_TYPE_CHARACTER_MARK	0x03
+#define IDIO_TYPE_POINTER_MARK   0x00
+#define IDIO_TYPE_FIXNUM_MARK    0x01
+#define IDIO_TYPE_CONSTANT_MARK  0x02
+#define IDIO_TYPE_CHARACTER_MARK 0x03
 
 #define IDIO_TYPE_POINTERP(x)	((((intptr_t) x) & IDIO_TYPE_MASK) == IDIO_TYPE_POINTER_MARK)
 #define IDIO_TYPE_FIXNUMP(x)	((((intptr_t) x) & IDIO_TYPE_MASK) == IDIO_TYPE_FIXNUM_MARK)

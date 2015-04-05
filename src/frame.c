@@ -26,15 +26,10 @@ IDIO idio_G_frame;
 
 void idio_error_frame_range (IDIO fo, size_t d, size_t i)
 {
-    idio_error_message ("%zd/%zd out of range for %p", d, i, fo);
-}
-
-void idio_init_frame ()
-{
-}
-
-void idio_final_frame ()
-{
+    char *fos = idio_as_string (fo, 1);
+    fprintf (stderr, "%s\n", fos);
+    free (fos);
+    idio_error_message ("frame #%zd index #%zd is out of range for %p", d, i, fo);
 }
 
 IDIO idio_frame_allocate (idio_ai_t nargs)
@@ -52,6 +47,22 @@ IDIO idio_frame_allocate (idio_ai_t nargs)
     IDIO_FRAME_NARGS (fo) = nargs;
     IDIO_FRAME_ARGS (fo) = idio_array (nargs);
 
+    /*
+     * We must supply values into the array otherwise the array will
+     * think it is empty (and flag errors when you try to access any
+     * element).
+     *
+     * This array is arity+1 in length where the last argument is a
+     * list of putative varargs.  It will have been be initialised by
+     * the array code to idio_S_nil.  The others should be initialused
+     * to idio_S_undef so that we might spot misuse.  We don't touch
+     * the last argument.
+     */
+    idio_ai_t i;
+    for (i = 0; i < nargs - 1; i++) {
+	idio_array_insert_index (IDIO_FRAME_ARGS (fo), idio_S_undef, i);
+    }
+
     return fo;
 }
 
@@ -62,7 +73,7 @@ IDIO idio_frame (IDIO next, IDIO args)
     
     idio_ai_t nargs = idio_list_length (args);
     
-    IDIO fo = idio_frame_allocate (nargs);
+    IDIO fo = idio_frame_allocate (nargs + 1);
 
     IDIO_FRAME_NEXT (fo) = next;
 
@@ -123,7 +134,7 @@ void idio_frame_update (IDIO fo, size_t d, size_t i, IDIO v)
 	IDIO_TYPE_ASSERT (frame, fo);
     }
 
-    if (i >= idio_array_size (IDIO_FRAME_ARGS (fo))) {
+    if (i > idio_array_size (IDIO_FRAME_ARGS (fo))) {
 	idio_error_frame_range (fo, d, i);
 	return;
     }
@@ -139,5 +150,17 @@ void idio_frame_extend (IDIO f1, IDIO f2)
     IDIO_TYPE_ASSERT (frame, f2);
 
     IDIO_FRAME_NEXT (f2) = f1;
+}
+
+void idio_init_frame ()
+{
+}
+
+void idio_frame_add_primitives ()
+{
+}
+
+void idio_final_frame ()
+{
 }
 

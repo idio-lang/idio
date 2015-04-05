@@ -313,7 +313,10 @@ void idio_init_character ()
     IDIO_CHARACTER_INTERN_C ("delete", 0x7f);	       /* 0x7f */
 
     /* Unicode code points... */
+}
 
+void idio_character_add_primitives ()
+{
     IDIO_ADD_PRIMITIVE (char_p);
     IDIO_ADD_PRIMITIVE (char2integer);
     IDIO_ADD_PRIMITIVE (char_alphabetic_p);

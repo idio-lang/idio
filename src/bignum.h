@@ -155,6 +155,7 @@ IDIO idio_bignum_primitive_ge (IDIO args);
 IDIO idio_bignum_primitive_eq (IDIO args);
 
 void idio_init_bignum ();
+void idio_bignum_add_primitives ();
 void idio_final_bignum ();
 
 #endif

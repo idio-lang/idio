@@ -528,7 +528,7 @@ IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (
 	}
 
 	char *es = idio_as_string (e, 1);
-	fprintf (stderr, "idio_load_filehandle: e=%s\n", es);
+	fprintf (stderr, "idio_load_filehandle: line %zd: e=%s\n", IDIO_HANDLE_LINE (fh), es);
 	free (es);
 
 	/* XXX */
@@ -547,10 +547,9 @@ IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (
 	    }
 	}
 
-	IDIO r = (*evaluator) (e);
-	char *rs = idio_as_string (r, 4);
-	fprintf (stderr, "idio_load_filehandle: evaluation => %s\n\n", rs);
-	free (rs);
+	(*evaluator) (e);
+	fprintf (stderr, "\n");
+	sleep (1);
     }
     
     IDIO_HANDLE_M_CLOSE (fh) (fh);
@@ -700,7 +699,10 @@ void idio_init_file_handle ()
     idio_stdin = idio_open_std_file_handle (stdin);
     idio_stdout = idio_open_std_file_handle (stdout);
     idio_stderr = idio_open_std_file_handle (stderr);
+}
 
+void idio_file_handle_add_primitives ()
+{
     IDIO_ADD_PRIMITIVE (open_file);
     IDIO_ADD_PRIMITIVE (load_file);
     IDIO_ADD_PRIMITIVE (file_exists_p);

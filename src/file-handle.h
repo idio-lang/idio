@@ -23,8 +23,6 @@
 #ifndef FILE_HANDLE_H
 #define FILE_HANDLE_H
 
-void idio_init_file_handle ();
-void idio_final_file_handle ();
 IDIO idio_open_file_handle_C (char *name, char *mode);
 int idio_isa_file_handle (IDIO fh);
 void idio_file_handle_finalizer (IDIO fh);
@@ -49,6 +47,9 @@ IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO fh), IDIO (*evaluator) 
 IDIO idio_load_file (IDIO filename);
 IDIO idio_defprimitive_load_file (IDIO filename);
 
+void idio_init_file_handle ();
+void idio_file_handle_add_primitives ();
+void idio_final_file_handle ();
 
 #endif
 

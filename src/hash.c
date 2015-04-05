@@ -351,7 +351,7 @@ idio_hi_t idio_idio_hash_hashval_closure (IDIO h)
     return idio_hash_hashval_void (h->u.closure);
 }
 
-idio_hi_t idio_idio_hash_hashval_primitive_C (IDIO h)
+idio_hi_t idio_idio_hash_hashval_primitive (IDIO h)
 {
     IDIO_ASSERT (h);
     
@@ -438,8 +438,8 @@ idio_hi_t idio_hash_hashval (IDIO h, void *kv)
     case IDIO_TYPE_CLOSURE:
 	hv = idio_idio_hash_hashval_closure (k);
 	break;
-    case IDIO_TYPE_PRIMITIVE_C:
-	hv = idio_idio_hash_hashval_primitive_C (k);
+    case IDIO_TYPE_PRIMITIVE:
+	hv = idio_idio_hash_hashval_primitive (k);
 	break;
     case IDIO_TYPE_MODULE:
 	hv = idio_idio_hash_hashval_module (k);

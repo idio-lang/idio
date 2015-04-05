@@ -45,6 +45,7 @@ IDIO idio_list_set_difference (IDIO set1, IDIO set2);
 void idio_dump (IDIO o, int detail);
 
 void idio_init_util ();
+void idio_util_add_primitives ();
 void idio_final_util ();
 
 #endif
