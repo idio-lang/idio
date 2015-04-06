@@ -58,6 +58,27 @@ void idio_error_module_unbound (IDIO module)
 
 void idio_error_module_unbound_name (IDIO symbol, IDIO module)
 {
+    char *ss = idio_as_string (symbol, 1);
+    fprintf (stderr, "%s is unbound in %s\n", ss, IDIO_SYMBOL_S (IDIO_MODULE_NAME (module)));
+    free (ss);
+
+    ss = idio_as_string (IDIO_MODULE_SYMBOLS (module), 1);
+    fprintf (stderr, "symbols: %s\n", ss);
+    free (ss);
+    
+    char *is = idio_as_string (IDIO_MODULE_IMPORTS (module), 1);
+    fprintf (stderr, "%s imports %s\n", IDIO_SYMBOL_S (IDIO_MODULE_NAME (module)), is);
+    free (is);
+    IDIO i = IDIO_MODULE_IMPORTS (module);
+    while (idio_S_nil != i) {
+	IDIO m = IDIO_PAIR_H (i);
+
+	char *es = idio_as_string (IDIO_MODULE_EXPORTS (m), 1);
+	fprintf (stderr, "  %s: %s\n", IDIO_SYMBOL_S (IDIO_MODULE_NAME (m)), es);
+	free (es);
+
+	i = IDIO_PAIR_T (i);
+    }
     idio_error_message ("symbol %s unbound in module %s", IDIO_SYMBOL_S (symbol), IDIO_SYMBOL_S (IDIO_MODULE_NAME (module)));
 }
 
@@ -318,6 +339,34 @@ IDIO_DEFINE_PRIMITIVE0 ("all-modules", all_modules, ())
 /*
   idio_symbol_lookup will chase down the exports of imported modules
  */
+IDIO idio_symbol_lookup_imports (IDIO symbol, IDIO module)
+{
+    IDIO_ASSERT (symbol);
+    IDIO_ASSERT (module);
+    IDIO_TYPE_ASSERT (symbol, symbol);
+    IDIO_TYPE_ASSERT (module, module);
+
+    IDIO sv = idio_hash_get (IDIO_MODULE_SYMBOLS (module), symbol);
+
+    if (idio_S_unspec != sv) {
+	if (idio_toplevel_module == module ||
+	    idio_primitive_module == module ||
+	    idio_S_false != idio_list_memq (symbol, IDIO_MODULE_EXPORTS (module))) {
+	    return sv;
+	}
+    }
+
+    IDIO imports = IDIO_MODULE_IMPORTS (module);
+    for (; idio_S_nil != imports; imports = IDIO_PAIR_T (imports)) {
+	sv = idio_symbol_lookup_imports (symbol, IDIO_PAIR_H (imports));
+	if (idio_S_unspec != sv) {
+	    return sv;
+	}
+    }
+
+    return idio_S_unspec;
+}
+
 IDIO idio_symbol_lookup (IDIO symbol, IDIO m_or_n)
 {
     IDIO_ASSERT (symbol);
@@ -343,30 +392,15 @@ IDIO idio_symbol_lookup (IDIO symbol, IDIO m_or_n)
     IDIO sv = idio_hash_get (IDIO_MODULE_SYMBOLS (module), symbol);
 
     if (idio_S_unspec == sv) {
-	/*
-	 * Try the list of exports of the modules we have imported
-	 */
 	IDIO imports = IDIO_MODULE_IMPORTS (module);
 	for (; idio_S_nil != imports; imports = IDIO_PAIR_T (imports)) {
-	    IDIO m = IDIO_PAIR_H (imports);
-
-	    if (! idio_isa_module (m)) {
-		idio_error_module_unbound (m);
-		return idio_S_unspec;
-	    }
-
-	    sv = idio_hash_get (IDIO_MODULE_SYMBOLS (m), symbol);
+	    sv = idio_symbol_lookup_imports (symbol, IDIO_PAIR_H (imports));
 
 	    if (idio_S_unspec != sv) {
-		if (idio_toplevel_module == m ||
-		    idio_primitive_module == m ||
-		    idio_S_false != idio_list_memq (symbol, IDIO_MODULE_EXPORTS (m))) {
-		    return sv;
-		}
+		return sv;
 	    }
 	}
 
-	idio_error_module_unbound_name (symbol, module);
 	return idio_S_unspec;
     }
     

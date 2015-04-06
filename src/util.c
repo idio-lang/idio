@@ -159,6 +159,19 @@ IDIO_DEFINE_PRIMITIVE1 ("boolean?", booleanp, (IDIO o))
     return r;
 }
 
+IDIO_DEFINE_PRIMITIVE1 ("not", not, (IDIO e))
+{
+    IDIO_ASSERT (e);
+
+    IDIO r = idio_S_false;
+
+    if (idio_S_false == e) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
 #define IDIO_EQUAL_EQP		1
 #define IDIO_EQUAL_EQVP		2
 #define IDIO_EQUAL_EQUALP	3
@@ -531,7 +544,7 @@ char *idio_as_string (IDIO o, int depth)
 		}
 		break;
 	    case IDIO_TYPE_C_POINTER:
-		if (asprintf (&r, "%p free=%d", IDIO_C_TYPE_POINTER_P (o), IDIO_C_TYPE_POINTER_FREEP (o)) == -1) {
+		if (asprintf (&r, "#C_p-%p{%p free=%d}", o, IDIO_C_TYPE_POINTER_P (o), IDIO_C_TYPE_POINTER_FREEP (o)) == -1) {
 		    return NULL;
 		}
 		break;
@@ -699,18 +712,9 @@ char *idio_as_string (IDIO o, int depth)
 		break;
 	    case IDIO_TYPE_CLOSURE:
 		{
-		    if (asprintf (&r, "(lambda ") == -1) {
+		    if (asprintf (&r, "(lambda [code@%zd])", IDIO_CLOSURE_CODE (o)) == -1) {
 			return NULL;
 		    }
-		    IDIO_STRCAT (r, " [code]");
-		    /*
-		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_CLOSURE_ARGS (o), depth - 1));
-		    IDIO_STRCAT (r, " ");
-		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_CLOSURE_BODY (o), depth - 1));
-		    */
-		    /* IDIO_STRCAT (r, " "); */
-		    /* IDIO_STRCAT_FREE (r, idio_as_string (IDIO_CLOSURE_FRAME (o), depth + 1, depth + 1)); */
-		    IDIO_STRCAT (r, ")");
 		    break;
 		}
 	    case IDIO_TYPE_PRIMITIVE:
@@ -768,7 +772,7 @@ char *idio_as_string (IDIO o, int depth)
 		    break;
 		}
 	    case IDIO_TYPE_HANDLE:
-		if (asprintf (&r, "#H{%s:%zu:%zu}", IDIO_HANDLE_NAME (o), IDIO_HANDLE_LINE (o), IDIO_HANDLE_POS (o)) == -1) {
+		if (asprintf (&r, "#H-%p{%s:%zu:%zu}", o, IDIO_HANDLE_NAME (o), IDIO_HANDLE_LINE (o), IDIO_HANDLE_POS (o)) == -1) {
 		    return NULL;
 		}
 		break;
@@ -1020,42 +1024,23 @@ char *idio_display_string (IDIO o)
     return r;
 }
 
-/*
- * invoke Idio code from C
- */
-IDIO idio_apply (IDIO func, IDIO args)
+IDIO_DEFINE_PRIMITIVE2 ("map", map, (IDIO fn, IDIO l))
 {
-    IDIO_ASSERT (func);
-    IDIO_ASSERT (args);
-    
-    switch (idio_type (func)) {
-    case IDIO_TYPE_CLOSURE:
-    case IDIO_TYPE_PRIMITIVE:
-    default:
-	fprintf (stderr, "idio_apply: unexpected function type %s %d\n", idio_type_enum2string (idio_type (func)), idio_type (func));
+    IDIO_ASSERT (fn);
+    IDIO_ASSERT (l);
+
+    IDIO_VERIFY_PARAM_TYPE (list, l);
+
+    IDIO r = idio_S_nil;
+
+    while (idio_S_nil != l) {
+	r = idio_pair (idio_apply (fn, IDIO_PAIR_H (l)), r);
+	
+	l = IDIO_PAIR_T (l);
+	IDIO_TYPE_ASSERT (list, l);
     }
-
-    return idio_S_nil;
-}
-
-IDIO idio_apply1 (IDIO func, IDIO arg)
-{
-    IDIO_ASSERT (func);
-    IDIO_ASSERT (arg);
     
-    return idio_apply (func, idio_pair (arg, idio_S_nil));
-}
-
-IDIO idio_apply2 (IDIO func, IDIO arg1, IDIO arg2)
-{
-    IDIO_ASSERT (func);
-    IDIO_ASSERT (arg1);
-    IDIO_ASSERT (arg2);
-    
-    return idio_apply (func,
-		       idio_pair (arg1,
-				  idio_pair (arg2,
-					     idio_S_nil)));
+    return r;
 }
 
 IDIO idio_list_mapcar (IDIO l)
@@ -1069,6 +1054,27 @@ IDIO idio_list_mapcar (IDIO l)
 	IDIO e = IDIO_PAIR_H (l);
 	if (idio_isa_pair (e)) {
 	    r = idio_pair (IDIO_PAIR_H (e), r);
+	} else {
+	    r = idio_pair (idio_S_nil, r);
+	}
+	l = IDIO_PAIR_T (l);
+	IDIO_TYPE_ASSERT (list, l);
+    }
+
+    return idio_list_reverse (r);
+}
+
+IDIO idio_list_mapcdr (IDIO l)
+{
+    IDIO_ASSERT (l);
+    IDIO_TYPE_ASSERT (list, l);
+
+    IDIO r = idio_S_nil;
+
+    while (idio_S_nil != l) {
+	IDIO e = IDIO_PAIR_H (l);
+	if (idio_isa_pair (e)) {
+	    r = idio_pair (IDIO_PAIR_T (e), r);
 	} else {
 	    r = idio_pair (idio_S_nil, r);
 	}
@@ -1097,6 +1103,16 @@ IDIO idio_list_memq (IDIO k, IDIO l)
     return idio_S_false;
 }
 
+IDIO_DEFINE_PRIMITIVE2 ("memq", memq, (IDIO k, IDIO l))
+{
+    IDIO_ASSERT (k);
+    IDIO_ASSERT (l);
+
+    IDIO_VERIFY_PARAM_TYPE (list, l);
+
+    return idio_list_memq (k, l);
+}
+
 IDIO idio_list_assq (IDIO k, IDIO l)
 {
     IDIO_ASSERT (k);
@@ -1123,6 +1139,16 @@ IDIO idio_list_assq (IDIO k, IDIO l)
     }
 
     return idio_S_false;
+}
+
+IDIO_DEFINE_PRIMITIVE2 ("assq", assq, (IDIO k, IDIO l))
+{
+    IDIO_ASSERT (k);
+    IDIO_ASSERT (l);
+
+    IDIO_VERIFY_PARAM_TYPE (list, l);
+
+    return idio_list_assq (k, l);
 }
 
 IDIO idio_list_set_difference (IDIO set1, IDIO set2)
@@ -1311,8 +1337,12 @@ void idio_util_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (nullp);
     IDIO_ADD_PRIMITIVE (booleanp);
+    IDIO_ADD_PRIMITIVE (not);
     IDIO_ADD_PRIMITIVE (eqp);
     IDIO_ADD_PRIMITIVE (zerop);
+    IDIO_ADD_PRIMITIVE (map);
+    IDIO_ADD_PRIMITIVE (memq);
+    IDIO_ADD_PRIMITIVE (assq);
 }
 
 void idio_final_util ()

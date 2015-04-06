@@ -185,6 +185,7 @@ void idio_mark (IDIO o, unsigned colour)
     switch ((uintptr_t) o & 3) {
     case IDIO_TYPE_FIXNUM_MARK:
     case IDIO_TYPE_CONSTANT_MARK:
+    case IDIO_TYPE_CHARACTER_MARK:
 	return;
     case IDIO_TYPE_POINTER_MARK:
 	break;
@@ -212,7 +213,7 @@ void idio_mark (IDIO o, unsigned colour)
 	    break;
 	}
 	if (o->flags & IDIO_FLAG_GCC_LGREY) {
-	    IDIO_FPRINTF (stderr, "idio_mark: object is already grey: %10p %2d %s\n", o, o->type, idio_type2string (o)); 
+	    IDIO_FPRINTF (stderr, "idio_mark: object is already grey: %10p t=%2d %s f=%x\n", o, o->type, idio_type2string (o), o->flags); 
 	    break;
 	}
 
@@ -574,7 +575,7 @@ void idio_gc_walk_tree ()
     size_t ri = 0;
     idio_root_t *root = idio_gc->roots;
     while (root) {
-	fprintf (stderr, "ri %3zd: ", ri++);
+	fprintf (stderr, "root #%3zd: ", ri++);
 	if (idio_G_frame == root->object) {
 	    fprintf (stderr, "== idio_G_frame: ");
 	}

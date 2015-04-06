@@ -84,6 +84,10 @@ static IDIO idio_scm_dynamic_names = idio_S_nil;
 static IDIO idio_scm_evaluation_module = idio_S_nil;
 static IDIO idio_scm_expander_list = idio_S_nil;
 static IDIO idio_scm_expander_list_src = idio_S_nil;
+static IDIO idio_scm_expander_thread = idio_S_nil;
+
+static IDIO idio_scm_initial_expander (IDIO x, IDIO e);
+static IDIO idio_scm_macro_expand (IDIO e);
 
 static void idio_warning_static_undefineds (IDIO diff)
 {
@@ -164,6 +168,7 @@ static IDIO idio_scm_undefined_code (char *format, ...)
     IDIO r = IDIO_LIST2 (idio_S_undef, idio_string_C (s));
     free (s);
 
+    fprintf (stderr, "WARNING: scm-undefined-code\n");
     sleep (5);
     return r;
 }
@@ -194,8 +199,11 @@ static IDIO idio_scm_predef_extend (IDIO name, IDIO primdata)
     idio_ai_t index = idio_vm_extend_primitives (primdata);
     IDIO i = IDIO_FIXNUM (index);
     
-    idio_scm_predef_names = idio_pair (IDIO_LIST3 (name, idio_S_predef, i),
-				       idio_scm_predef_names);
+    IDIO_PAIR_H (idio_scm_predef_names) = idio_pair (IDIO_LIST3 (name, idio_S_predef, i),
+						     IDIO_PAIR_H (idio_scm_predef_names));
+
+    /* for idio_symbol_lookup etc. */
+    idio_module_primitive_set_symbol_value (name, primdata);
 
     return i;
 }
@@ -205,7 +213,7 @@ IDIO idio_scm_get_primitive_data (IDIO name)
     IDIO_ASSERT (name);
     IDIO_TYPE_ASSERT (symbol, name);
 
-    IDIO k = idio_scm_variable_predefp (idio_scm_predef_names, name);
+    IDIO k = idio_scm_variable_predefp (IDIO_PAIR_H (idio_scm_predef_names), name);
 
     if (idio_S_nil != k) {
 	IDIO i = IDIO_PAIR_H (IDIO_PAIR_T (k));
@@ -229,6 +237,15 @@ IDIO idio_add_special_primitive (idio_primitive_t *d)
     IDIO sym = idio_symbols_C_intern (d->name);
     /* no description! */
     return idio_scm_predef_extend (sym, primdata);
+}
+
+static void idio_scm_install_expander (IDIO id, IDIO proc, IDIO code);
+
+void idio_add_expander_primitive (idio_primitive_t *d)
+{
+    IDIO primdata = idio_primitive_data (d);
+    idio_vm_extend_primitives (primdata);
+    idio_scm_install_expander (idio_symbols_C_intern (d->name), primdata, primdata);
 }
 
 static IDIO idio_scm_variable_toplevelp (IDIO names, IDIO name)
@@ -255,10 +272,13 @@ static IDIO idio_scm_toplevel_extend (IDIO name)
     idio_ai_t index = idio_vm_extend_symbols (name);
     IDIO i = IDIO_FIXNUM (index);
     
-    idio_scm_toplevel_names = idio_pair (IDIO_LIST3 (name, idio_S_toplevel, i),
-					 idio_scm_toplevel_names);
+    IDIO_PAIR_H (idio_scm_toplevel_names) = idio_pair (IDIO_LIST3 (name, idio_S_toplevel, i),
+						       IDIO_PAIR_H (idio_scm_toplevel_names));
 
-    idio_module_current_set_symbol_value (name, idio_S_undef);
+    IDIO cv = idio_symbol_lookup (name, idio_current_module ());
+    if (idio_S_unspec == cv) {
+	idio_module_current_set_symbol_value (name, idio_S_undef);
+    }
     
     return i;
 }
@@ -268,7 +288,7 @@ static IDIO idio_scm_variable_dynamicp (IDIO name)
     IDIO_ASSERT (name);
     IDIO_TYPE_ASSERT (symbol, name);
 
-    IDIO a = idio_list_assq (name, idio_scm_dynamic_names);
+    IDIO a = idio_list_assq (name, IDIO_PAIR_H (idio_scm_dynamic_names));
 
     if (idio_isa_pair (a)) {
 	return IDIO_PAIR_T (a);
@@ -285,8 +305,8 @@ static IDIO idio_scm_dynamic_extend (IDIO name)
     idio_ai_t index = idio_vm_extend_symbols (name);
     IDIO i = IDIO_FIXNUM (index);
     
-    idio_scm_dynamic_names = idio_pair (IDIO_LIST3 (name, idio_S_dynamic, i),
-					idio_scm_dynamic_names);
+    IDIO_PAIR_H (idio_scm_dynamic_names) = idio_pair (IDIO_LIST3 (name, idio_S_dynamic, i),
+						      IDIO_PAIR_H (idio_scm_dynamic_names));
 
     return i;
 }
@@ -372,9 +392,9 @@ static IDIO idio_scm_variable_kind (IDIO nametree, IDIO name)
     IDIO r = idio_scm_variable_localp (nametree, 0, name);
     
     if (idio_S_nil == r) {
-	r = idio_scm_variable_toplevelp (idio_scm_toplevel_names, name);
+	r = idio_scm_variable_toplevelp (IDIO_PAIR_H (idio_scm_toplevel_names), name);
 	if (idio_S_nil == r) {
-	    r = idio_scm_variable_predefp (idio_scm_predef_names, name);
+	    r = idio_scm_variable_predefp (IDIO_PAIR_H (idio_scm_predef_names), name);
 	    if (idio_S_nil == r) {
 		/*
 		 * auto-extend toplevel names with this unknown
@@ -383,7 +403,7 @@ static IDIO idio_scm_variable_kind (IDIO nametree, IDIO name)
 		 * definition for it
 		 */
 		idio_scm_toplevel_extend (name);
-		r = idio_scm_variable_toplevelp (idio_scm_toplevel_names, name);
+		r = idio_scm_variable_toplevelp (IDIO_PAIR_H (idio_scm_toplevel_names), name);
 	    }
 	}
     }
@@ -433,37 +453,140 @@ static IDIO idio_scm_variable_kind (IDIO nametree, IDIO name)
 /*     } */
 /* } */
 
+/*
+ * Poor man's let:
+ *
+ * (let bindings body)
+ *
+ * =>
+ *
+ * (apply (lambda (map car bindings) body) (map cdr bindings))
+ */
+
+IDIO_DEFINE_PRIMITIVE1 ("let", let, (IDIO e))
+{
+    IDIO_ASSERT (e);
+    IDIO_TYPE_ASSERT (list, e);
+
+    size_t nargs = idio_list_length (e);
+
+    if (nargs < 3) {
+	fprintf (stderr, "nargs=%zd\n", nargs);
+	idio_error_static_arity ("wrong arguments", e);
+	return idio_S_unspec;
+    }
+
+    e = IDIO_PAIR_T (e);
+
+    IDIO bindings = IDIO_PAIR_H (e);
+    IDIO vars = idio_S_nil;
+    IDIO vals = idio_S_nil;
+    while (idio_S_nil != bindings) {
+	IDIO binding = IDIO_PAIR_H (bindings);
+	IDIO_TYPE_ASSERT (pair, bindings);
+	vars = idio_pair (IDIO_PAIR_H (binding), vars);
+	vals = idio_pair (IDIO_PAIR_H (IDIO_PAIR_T (binding)), vals);
+	
+	bindings = IDIO_PAIR_T (bindings);
+    }
+
+    IDIO fn = IDIO_LIST3 (idio_S_lambda, idio_list_reverse (vars), IDIO_PAIR_T (e));
+
+    return idio_list_append2 (IDIO_LIST1 (fn), idio_list_reverse (vals));
+}
+
+IDIO_DEFINE_PRIMITIVE0V ("macro-expand", macro_expand, (IDIO x))
+{
+    IDIO_ASSERT (x);
+
+    return idio_scm_macro_expand (x);
+}
+
+static IDIO idio_expander_let (IDIO x, IDIO e)
+{
+    IDIO_ASSERT (x);
+    IDIO_ASSERT (e);
+
+    IDIO_TYPE_ASSERT (list, x);
+
+    size_t nargs = idio_list_length (x);
+    if (3 != nargs) {
+	idio_error_static_arity ("wrong arguments", x);
+	return idio_S_unspec;
+    }
+
+    x = IDIO_PAIR_T (x);
+    
+    IDIO vars = idio_list_mapcar (IDIO_PAIR_H (x));
+    IDIO vals = idio_list_mapcdr (IDIO_PAIR_H (x));
+
+    IDIO fn = IDIO_LIST3 (idio_S_lambda, vars, IDIO_PAIR_T (x));
+
+    char *fns = idio_as_string (fn, 1);
+    char *varss = idio_as_string (vars, 1);
+    fprintf (stderr, "EXPANDER-LET: apply %s %s\n", fns, varss);
+    free (fns);
+    free (varss);
+    sleep (2);
+    return idio_apply (fn, vals);
+}
+
 static IDIO idio_scm_expanderp (IDIO name)
 {
     IDIO_ASSERT (name);
     IDIO_TYPE_ASSERT (symbol, name);
 
-    return idio_list_assq (name, idio_module_symbol_value (idio_scm_expander_list, idio_scm_evaluation_module));
+    IDIO expander_list = idio_module_symbol_value (idio_scm_expander_list, idio_scm_evaluation_module);
+    fprintf (stderr, "expander?: %p in %p: *expander-list* = %p\n", idio_scm_expander_list, idio_scm_evaluation_module, expander_list);
+    idio_dump (idio_current_module (), 2);
+    return idio_list_assq (name, expander_list);
 }
 
-static IDIO idio_scm_initial_expander (IDIO e);
-
-static IDIO idio_scm_application_expander (IDIO expr)
+IDIO_DEFINE_PRIMITIVE1 ("expander?", expanderp, (IDIO o))
 {
-    IDIO_ASSERT (expr);
-    IDIO_TYPE_ASSERT (list, expr);
+    IDIO_ASSERT (o);
 
-    /* (map* (lambda (y) (e y e)) expr) */
+    IDIO r = idio_S_false;
+
+    if (idio_scm_expanderp (o)) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
+static IDIO idio_scm_application_expander (IDIO x, IDIO e)
+{
+    IDIO_ASSERT (x);
+    IDIO_ASSERT (e);
+    IDIO_TYPE_ASSERT (list, e);
+
+    /*
+     * (application-expander x e)
+     * =>
+     * (map* (lambda (y) (e y e)) x)
+     *
+     * map* is:
+     */
+
+    IDIO y = idio_symbols_C_intern ("y");
+    IDIO fn = IDIO_LIST3 (idio_S_lambda, IDIO_LIST1 (y), IDIO_LIST3 (e, y, e));
+    
     IDIO r = idio_S_nil;
     
     for (;;) {
-	if (idio_isa_pair (expr)) {
-	    IDIO exprh = IDIO_PAIR_H (expr);
-	    if (idio_S_nil == exprh) {
+	if (idio_isa_pair (x)) {
+	    IDIO xh = IDIO_PAIR_H (x);
+	    if (idio_S_nil == xh) {
 		r = idio_pair (idio_S_nil, r);
 		break;
 	    } else {
-		r = idio_pair (idio_scm_initial_expander (IDIO_PAIR_H (expr)), r);
-		expr = IDIO_PAIR_T (expr);
+		r = idio_pair (idio_scm_initial_expander (IDIO_PAIR_H (x), e), r);
+		x = IDIO_PAIR_T (x);
 	    }
 	} else {
 	    fprintf (stderr, "application-expander: recursing!\n");
-	    r = idio_pair (idio_scm_initial_expander (expr), r);
+	    r = idio_pair (idio_scm_initial_expander (x, e), r);
 	    break;
 	}
     }
@@ -471,36 +594,39 @@ static IDIO idio_scm_application_expander (IDIO expr)
     return idio_list_reverse (r);
 }
 
-static IDIO idio_scm_initial_expander (IDIO e)
+static IDIO idio_scm_initial_expander (IDIO x, IDIO e)
 {
+    IDIO_ASSERT (x);
     IDIO_ASSERT (e);
-    IDIO_TYPE_ASSERT (list, e);
 
-    if (! idio_isa_pair (e)) {
-	return e;
+    if (! idio_isa_pair (x)) {
+	return x;
     }
 
-    IDIO eh = IDIO_PAIR_H (e);
+    IDIO xh = IDIO_PAIR_H (x);
 
-    if (! idio_isa_symbol (eh)) {
-	return idio_scm_application_expander (e);
+    if (! idio_isa_symbol (xh)) {
+	return idio_scm_application_expander (x, e);
     } else {
-	if (idio_S_false != idio_scm_expanderp (eh)) {
+	IDIO expander = idio_scm_expanderp (xh);
+	if (idio_S_false != expander) {
 	    /*
 	     * apply the macro!
 	     *
 	     * ((cdr (assq functor *expander-list*)) x e)
 	     */
-	    fprintf (stderr, "apply-macro -> nil\n");
-	    return IDIO_LIST2 (idio_S_error, eh);
+	    return idio_apply (IDIO_PAIR_T (expander), IDIO_LIST2 (x, e));
 	} else {
-	    return idio_scm_application_expander (e);
+	    return idio_scm_application_expander (x, e);
 	}
     }
 }
 
 static void idio_scm_install_expander (IDIO id, IDIO proc, IDIO code)
 {
+    char *ids = idio_as_string (id, 1);
+    fprintf (stderr, "install-expander: %s\n", ids);
+    free (ids);
     IDIO el = idio_module_symbol_value (idio_scm_expander_list, idio_scm_evaluation_module);
     IDIO old = idio_list_assq (id, el);
 
@@ -564,7 +690,7 @@ static IDIO idio_scm_macro_expand (IDIO e)
 {
     IDIO_ASSERT (e);
 
-    return idio_scm_initial_expander (e);
+    return idio_scm_initial_expander (e, idio_S_nil);
 }
 
 static IDIO idio_scm_meaning (IDIO e, IDIO nametree, int tailp);
@@ -602,9 +728,7 @@ static IDIO idio_scm_meaning_reference (IDIO name, IDIO nametree, int tailp)
     } else if (idio_S_toplevel == kt) {
 	return IDIO_LIST2 (idio_I_CHECKED_GLOBAL_REF, i);
     } else if (idio_S_predef == kt) {
-	char *names = idio_as_string (name, 1);
-	fprintf (stderr, "meaning-reference: predefined %s %zd\n", names, IDIO_FIXNUM_VAL (i));
-	free (names);
+	fprintf (stderr, "meaning-reference: predefined #%zd\n", IDIO_FIXNUM_VAL (i));
 	return IDIO_LIST2 (idio_I_PREDEFINED, i);
     } else {
 	idio_error_static_unbound (name);
@@ -646,7 +770,7 @@ static IDIO idio_scm_rewrite_cond (IDIO c)
 	return idio_scm_undefined_code ("cond: %s", idio_as_string (c, 1));
     } else if (idio_S_else == IDIO_PAIR_H (IDIO_PAIR_H (c))) {
 	if (idio_S_nil == IDIO_PAIR_T (c)) {
-	    return IDIO_LIST2 (idio_S_begin, IDIO_PAIR_T (IDIO_PAIR_H (c)));
+	    return idio_list_append2 (IDIO_LIST1 (idio_S_begin), IDIO_PAIR_T (IDIO_PAIR_H (c)));
 	} else {
 	    return idio_scm_undefined_code ("cond: else not in last clause", idio_as_string (c, 1));
 	}
@@ -687,7 +811,7 @@ static IDIO idio_scm_rewrite_cond (IDIO c)
     } else {
 	return IDIO_LIST4 (idio_S_if,
 			   IDIO_PAIR_H (IDIO_PAIR_H (c)),
-			   IDIO_LIST2 (idio_S_begin, IDIO_PAIR_T (IDIO_PAIR_H (c))),
+			   idio_list_append2 (IDIO_LIST1 (idio_S_begin), IDIO_PAIR_T (IDIO_PAIR_H (c))),
 			   idio_scm_rewrite_cond (IDIO_PAIR_T (c)));
     }
 }
@@ -708,7 +832,7 @@ static IDIO idio_scm_meaning_assignment (IDIO name, IDIO e, IDIO nametree, int t
 	if (idio_S_false == d) {
 	    i = idio_scm_toplevel_extend (name);
 	} else {
-	    i = idio_scm_variable_toplevelp (idio_scm_toplevel_names, name);
+	    i = idio_scm_variable_toplevelp (IDIO_PAIR_H (idio_scm_toplevel_names), name);
 	}
 	if (idio_S_nil == i) {
 	    fprintf (stderr, "meaning-assignment: %s not yet defined\n", idio_as_string (name, 1));
@@ -799,7 +923,7 @@ static IDIO idio_scm_meaning_define_macro (IDIO name, IDIO e, IDIO nametree, int
 
     idio_scm_install_expander (name, e, e);
 
-    return idio_scm_meaning_assignment (name, e, nametree, tailp);
+    return idio_scm_meaning_assignment (name, e, nametree, 0);
 }
 
 static IDIO idio_scm_meaning_sequence (IDIO ep, IDIO nametree, int tailp);
@@ -1373,10 +1497,11 @@ static IDIO idio_scm_meaning (IDIO e, IDIO nametree, int tailp)
 	    }
 	} else if (idio_S_cond == eh) {
 	    /* (cond clause ...) */
-	    IDIO c = idio_scm_meaning (idio_scm_rewrite_cond (et), nametree, tailp);
+	    IDIO etc = idio_scm_rewrite_cond (et);
+	    IDIO c = idio_scm_meaning (etc, nametree, tailp);
 	    char *ets = idio_as_string (et, 1);
-	    char *cs = idio_as_string (c, 1);
-	    fprintf (stderr, "cond: %s\n%s\n", ets, cs);
+	    char *cs = idio_as_string (etc, 1);
+	    fprintf (stderr, "cond in: %s\ncond out: %s\n", ets, cs);
 	    free (ets);
 	    free (cs);
 	    return c;
@@ -1465,7 +1590,18 @@ static IDIO idio_scm_meaning (IDIO e, IDIO nametree, int tailp)
 
 		if (idio_S_nil != k) {
 		    if (idio_S_false != idio_scm_expanderp (eh)) {
-			IDIO me = idio_scm_macro_expand (e);
+			IDIO cthr = idio_current_thread ();
+			idio_set_current_thread (idio_scm_expander_thread);
+			char *e1s = idio_as_string (e, 1);
+			fprintf (stderr, "scm-meaning: (macro-expand %s)\n", e1s);
+			free (e1s);
+			IDIO macro_expand_sym = idio_symbols_C_intern ("macro-expand");
+			IDIO macro_expand = idio_symbol_lookup (macro_expand_sym, idio_current_module ());
+			if (idio_S_unspec == macro_expand) {
+			    idio_error_module_unbound_name (macro_expand_sym, idio_current_module ());
+			}
+			IDIO me = idio_apply (macro_expand, e);
+			idio_set_current_thread (cthr);
 			char *es = idio_as_string (e, 4);
 			char *mes = idio_as_string (me, 4);
 			fprintf (stderr, "macro-expand:\ne=%s\nme=%s\n", es, mes);
@@ -1507,7 +1643,11 @@ IDIO idio_scm_evaluate (IDIO e)
 
     size_t tl = idio_list_length (t);
     size_t dl = idio_list_length (d);
-    if (tl != dl) {
+    if (tl > dl) {
+	fprintf (stderr, "scm-evaluate: module=%s\n", IDIO_SYMBOL_S (IDIO_MODULE_NAME (idio_current_module ())));
+	char *es = idio_as_string (e, 1);
+	fprintf (stderr, "scm-evaluate: e=%s\n", es);
+	free (es);
 	fprintf (stderr, "scm-evaluate: after: %zd toplevel vars\n", tl);
 	fprintf (stderr, "scm-evaluate: after: %zd defined vars\n", dl);
 
@@ -1524,8 +1664,8 @@ IDIO idio_scm_evaluate (IDIO e)
 	s = idio_as_string (d, 1);
 	fprintf (stderr, "d = %s\n", s);
 	free (s);
-	sleep (1);
-	IDIO_C_ASSERT (0);
+
+	sleep (0);
     }
 
     idio_vm_codegen (idio_current_thread (), m);
@@ -1536,15 +1676,24 @@ IDIO idio_scm_evaluate (IDIO e)
 
 void idio_init_scm_evaluate ()
 {
-    idio_scm_toplevel_names = idio_S_nil;
+    idio_scm_toplevel_names = idio_pair (idio_S_nil, idio_S_nil);
+    idio_gc_protect (idio_scm_toplevel_names);
 
-    idio_scm_predef_names = idio_S_nil;
+    idio_scm_predef_names = idio_pair (idio_S_nil, idio_S_nil);
+    idio_gc_protect (idio_scm_predef_names);
 
     idio_scm_predef_values = idio_array (1);
+    idio_gc_protect (idio_scm_predef_values);
+
+    idio_scm_dynamic_names = idio_pair (idio_S_nil, idio_S_nil);
+    idio_gc_protect (idio_scm_dynamic_names);
 
     idio_scm_evaluation_module = idio_module (idio_symbols_C_intern ("SCM.evaluation"));
+
     idio_scm_expander_list = idio_symbols_C_intern ("*expander-list*");
     idio_module_set_symbol_value (idio_scm_expander_list, idio_S_nil, idio_scm_evaluation_module);
+
+    IDIO_MODULE_EXPORTS (idio_scm_evaluation_module) = idio_pair (idio_scm_expander_list, IDIO_MODULE_EXPORTS (idio_scm_evaluation_module));
     
     idio_scm_expander_list_src = idio_symbols_C_intern ("*expander-list-src*");
     idio_module_set_symbol_value (idio_scm_expander_list_src, idio_S_nil, idio_scm_evaluation_module);
@@ -1552,10 +1701,23 @@ void idio_init_scm_evaluate ()
 
 void idio_scm_evaluate_add_primitives ()
 {
+    idio_scm_expander_thread = idio_thread (100);
+    idio_gc_protect (idio_scm_expander_thread);
+
+    IDIO_THREAD_MODULE (idio_scm_expander_thread) = idio_scm_evaluation_module;
+
+    IDIO_ADD_PRIMITIVE (expanderp);
+    IDIO_ADD_EXPANDER (let);
+    IDIO_ADD_PRIMITIVE (macro_expand);
 }
 
 void idio_final_scm_evaluate ()
 {
+    idio_gc_expose (idio_scm_toplevel_names);
+    idio_gc_expose (idio_scm_predef_names);
+    idio_gc_expose (idio_scm_predef_values);
+    idio_gc_expose (idio_scm_dynamic_names);
+    idio_gc_expose (idio_scm_expander_thread);
 }
 
 /* Local Variables: */

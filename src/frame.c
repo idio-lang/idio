@@ -53,10 +53,13 @@ IDIO idio_frame_allocate (idio_ai_t nargs)
      * element).
      *
      * This array is arity+1 in length where the last argument is a
-     * list of putative varargs.  It will have been be initialised by
-     * the array code to idio_S_nil.  The others should be initialused
-     * to idio_S_undef so that we might spot misuse.  We don't touch
-     * the last argument.
+     * putative list of varargs.  It will have been be initialised by
+     * the array code to idio_S_nil.  The others should be initialised
+     * to idio_S_undef so that we might spot misuse.
+     *
+     * We don't touch the last argument otherwise the array will think
+     * it is set and therefore it'll be passed as a list of nil,
+     * "(nil)", rather than just nil.
      */
     idio_ai_t i;
     for (i = 0; i < nargs - 1; i++) {
@@ -77,8 +80,9 @@ IDIO idio_frame (IDIO next, IDIO args)
 
     IDIO_FRAME_NEXT (fo) = next;
 
+    idio_ai_t i = 0;
     while (idio_S_nil != args) {
-	idio_array_push (IDIO_FRAME_ARGS (fo), IDIO_PAIR_H (args));
+	idio_array_insert_index (IDIO_FRAME_ARGS (fo), IDIO_PAIR_H (args), i++);
 	args = IDIO_PAIR_T (args);
     }
 
@@ -142,14 +146,19 @@ void idio_frame_update (IDIO fo, size_t d, size_t i, IDIO v)
     idio_array_insert_index (IDIO_FRAME_ARGS (fo), v, i);
 }
 
-void idio_frame_extend (IDIO f1, IDIO f2)
+IDIO idio_frame_extend (IDIO f1, IDIO f2)
 {
     IDIO_ASSERT (f1);
     IDIO_ASSERT (f2);
-    IDIO_TYPE_ASSERT (frame, f1);
+
+    if (idio_S_nil != f1) {
+	IDIO_TYPE_ASSERT (frame, f1);
+    }
     IDIO_TYPE_ASSERT (frame, f2);
 
     IDIO_FRAME_NEXT (f2) = f1;
+
+    return f2;
 }
 
 void idio_init_frame ()

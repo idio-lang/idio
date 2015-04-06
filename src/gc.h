@@ -68,17 +68,17 @@ typedef uint8_t IDIO_I;
 #define IDIO_I_MAX	UINT8_MAX
 
 #define IDIO_FLAG_NONE		0
-#define IDIO_FLAG_GCC_SHIFT	0 /* GC colours -- two bits */
-#define IDIO_FLAG_FREE_SHIFT	2 /* debug */
-#define IDIO_FLAG_STICKY_SHIFT	3 /* memory pinning */
-#define IDIO_FLAG_MACRO_SHIFT	4 /* (closure) is a macro */
+#define IDIO_FLAG_GCC_SHIFT	0 /* GC colours -- four bits */
+#define IDIO_FLAG_FREE_SHIFT	4 /* debug */
+#define IDIO_FLAG_STICKY_SHIFT	5 /* memory pinning */
+#define IDIO_FLAG_MACRO_SHIFT	6 /* (closure) is a macro */
 
 #define IDIO_FLAG_GCC_MASK	(3 << IDIO_FLAG_GCC_SHIFT)
 #define IDIO_FLAG_GCC_UMASK	(~ IDIO_FLAG_GCC_MASK)
-#define IDIO_FLAG_GCC_BLACK	(0 << IDIO_FLAG_GCC_SHIFT)
-#define IDIO_FLAG_GCC_DGREY	(1 << IDIO_FLAG_GCC_SHIFT)
-#define IDIO_FLAG_GCC_LGREY	(2 << IDIO_FLAG_GCC_SHIFT)
-#define IDIO_FLAG_GCC_WHITE	(3 << IDIO_FLAG_GCC_SHIFT)
+#define IDIO_FLAG_GCC_BLACK	(1 << (IDIO_FLAG_GCC_SHIFT+0))
+#define IDIO_FLAG_GCC_DGREY	(1 << (IDIO_FLAG_GCC_SHIFT+1))
+#define IDIO_FLAG_GCC_LGREY	(1 << (IDIO_FLAG_GCC_SHIFT+2))
+#define IDIO_FLAG_GCC_WHITE	(1 << (IDIO_FLAG_GCC_SHIFT+3))
 
 #define IDIO_FLAG_FREE_MASK	(1 << IDIO_FLAG_FREE_SHIFT)
 #define IDIO_FLAG_FREE_UMASK	(~ IDIO_FLAG_FREE_MASK)

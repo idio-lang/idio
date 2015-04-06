@@ -241,7 +241,9 @@ IDIO idio_vm_dynamics_ref (idio_ai_t i);
 void idio_vm_abort_thread (IDIO thr);
 
 void idio_signal_exception (int continuablep, IDIO e);
+IDIO idio_apply (IDIO fn, IDIO args);
 
+void idio_vm_thread_init (IDIO thr);
 void idio_init_vm ();
 void idio_vm_add_primitives ();
 void idio_final_vm ();

@@ -223,21 +223,26 @@ void idio_free_C_type (IDIO co)
 
 IDIO idio_C_pointer (void *p)
 {
-
+    IDIO_C_ASSERT (p);
+    
     IDIO co = idio_gc_get (IDIO_TYPE_C_POINTER);
 
     IDIO_GC_ALLOC (co->u.C_type, sizeof (idio_C_type_t));
-    IDIO_GC_ALLOC (IDIO_C_TYPE_POINTER (co), sizeof (idio_C_pointer_t));
+    IDIO_GC_ALLOC (co->u.C_type->u.C_pointer, sizeof (idio_C_pointer_t));
 
     IDIO_C_TYPE_POINTER_P (co) = p;
     IDIO_C_TYPE_POINTER_FREEP (co) = 0;
 
+    char *cos = idio_as_string (co, 1);
+    fprintf (stderr, "C-pointer: %s\n", cos);
+    free (cos);
     return co;
 }
 
 IDIO idio_C_pointer_free_me (void *p)
 {
-
+    IDIO_C_ASSERT (p);
+    
     IDIO co = idio_C_pointer (p);
 
     IDIO_C_TYPE_POINTER_FREEP (co) = 1;

@@ -47,6 +47,8 @@ IDIO idio_thread (idio_ai_t stack_size)
     IDIO_THREAD_ERROR_HANDLE (t) = idio_S_nil;
     IDIO_THREAD_MODULE (t) = idio_main_module ();
 
+    idio_vm_thread_init (t);
+
     return t;
 }
 
@@ -75,6 +77,14 @@ IDIO idio_current_thread ()
     }
     
     return idio_running_thread;
+}
+
+void idio_set_current_thread (IDIO thr)
+{
+    IDIO_ASSERT (thr);
+    IDIO_TYPE_ASSERT (thread, thr);
+    
+    idio_running_thread = thr;
 }
 
 
@@ -150,11 +160,11 @@ void idio_init_thread ()
 {
     idio_running_threads = idio_array (8);
     idio_gc_protect (idio_running_threads);
-    idio_running_thread = idio_thread (256);
 }
 
 void idio_thread_add_primitives ()
 {
+    idio_running_thread = idio_thread (256);
 }
 
 void idio_init_first_thread ()

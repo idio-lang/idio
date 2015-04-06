@@ -27,6 +27,7 @@ IDIO idio_thread (idio_ai_t stack_size);
 int idio_isa_thread (IDIO o);
 void idio_free_thread (IDIO t);
 IDIO idio_current_thread ();
+void idio_set_current_thread (IDIO thr);
 void idio_thread_codegen (IDIO code);
 IDIO idio_current_input_handle ();
 void idio_set_current_input_handle (IDIO h);

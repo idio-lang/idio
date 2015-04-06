@@ -23,6 +23,7 @@
 #ifndef MODULE_H
 #define MODULE_H
 
+void idio_error_module_unbound_name (IDIO symbol, IDIO module);
 IDIO idio_module (IDIO name);
 int idio_isa_module (IDIO o);
 void idio_free_module (IDIO fo);
@@ -33,6 +34,7 @@ IDIO idio_module_current_symbols ();
 IDIO idio_module_primitive_symbols ();
 IDIO idio_module_defined (IDIO module);
 IDIO idio_module_current_defined ();
+void idio_module_extend_defined (IDIO module, IDIO name);
 void idio_module_current_extend_defined (IDIO name);
 IDIO idio_module_primitive_defined ();
 IDIO idio_symbol_lookup (IDIO symbol, IDIO module);

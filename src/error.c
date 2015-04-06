@@ -43,6 +43,7 @@ void idio_error_message (char *format, ...)
 	fprintf (stderr, "\n");
     }
     
+    idio_signal_exception (0, IDIO_LIST1 (idio_string_C ("idio-error-message")));
     IDIO_C_ASSERT (0);
 }
 
@@ -79,7 +80,7 @@ IDIO_DEFINE_PRIMITIVE1V ("error", error, (IDIO m, IDIO args))
     IDIO_ASSERT (m);
     /* IDIO_ASSERT (args); */
     
-    fprintf (stderr, "HELP!!! I'm in error!: ");
+    fprintf (stderr, "primitive-error: ");
     char *ms = idio_as_string (m, 1);
     fprintf (stderr, "%s", ms);
     free (ms);
@@ -96,8 +97,7 @@ IDIO_DEFINE_PRIMITIVE1V ("error", error, (IDIO m, IDIO args))
 
     idio_signal_exception (0, m);
 
-    fprintf (stderr, "XXX can't be here!\n");
-    IDIO_C_ASSERT (0);
+    fprintf (stderr, "primitive-error: return from signal exception: XXX abort!\n");
     idio_vm_abort_thread (idio_current_thread ());
     return idio_S_unspec;
 }

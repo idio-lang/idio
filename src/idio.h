@@ -157,6 +157,8 @@
 
 #define IDIO_ADD_SPECIAL_PRIMITIVE(cname) idio_add_special_primitive (&idio_primitive_data_ ## cname);
 
+#define IDIO_ADD_EXPANDER(cname)	  idio_add_expander_primitive (&idio_primitive_data_ ## cname);
+
 #define IDIO_VERIFY_PARAM_TYPE(type,param)		\
     {							\
 	if (! idio_isa_ ## type (param)) {		\

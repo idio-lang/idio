@@ -524,6 +524,7 @@ IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (
 	IDIO e = (*reader) (fh);
 
 	if (idio_S_eof == e) {
+	    fprintf (stderr, "%s: EOF\n", IDIO_HANDLE_NAME (fh));
 	    break;
 	}
 
@@ -531,25 +532,9 @@ IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (
 	fprintf (stderr, "idio_load_filehandle: line %zd: e=%s\n", IDIO_HANDLE_LINE (fh), es);
 	free (es);
 
-	/* XXX */
-	if (idio_isa_pair (e)) {
-	    IDIO h = IDIO_PAIR_H (e);
-	    if (idio_isa_symbol (h)) {
-		if (strncmp (IDIO_SYMBOL_S (h), "load", 4) == 0) {
-		    IDIO t = IDIO_PAIR_T (e);
-		    if (idio_isa_pair (t)) {
-			IDIO fn = IDIO_PAIR_H (t);
-			if (idio_isa_string (fn)) {
-			    idio_load_file (fn);
-			}
-		    }
-		}
-	    }
-	}
-
 	(*evaluator) (e);
 	fprintf (stderr, "\n");
-	sleep (1);
+	sleep (0);
     }
     
     IDIO_HANDLE_M_CLOSE (fh) (fh);
@@ -645,6 +630,8 @@ IDIO idio_load_file (IDIO filename)
 IDIO_DEFINE_PRIMITIVE1 ("load-file", load_file, (IDIO filename))
 {
     IDIO_ASSERT (filename);
+
+    IDIO_VERIFY_PARAM_TYPE (string, filename);
 
     return idio_load_file (filename);
 }

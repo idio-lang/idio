@@ -121,12 +121,34 @@ IDIO idio_fixnum_primitive_subtract (IDIO args)
 
     intptr_t ir = 0;
 
+    int first = 1;
     while (idio_S_nil != args) {
 	IDIO h = IDIO_PAIR_H (args);
 	IDIO_TYPE_ASSERT (fixnum, h);
 	
 	intptr_t ih = IDIO_FIXNUM_VAL (h);
 
+	if (first) {
+	    first = 0;
+
+	    /*
+	      a bit of magic for subtract:
+
+	      (- 6)   => 0-6 => -6
+	      (- 6 2) => 6-2 => 4
+	    */
+
+	    IDIO t = IDIO_PAIR_T (args);
+	    if (idio_S_nil == t) {
+		ir = -ih;
+		break;
+	    } else {
+		ir = ih;
+		args = t;
+		continue;
+	    }
+	}
+	
 	ir = ir - ih;
 	if (ir > IDIO_FIXNUM_MAX ||
 	    ir < IDIO_FIXNUM_MIN) {
@@ -230,7 +252,7 @@ IDIO idio_fixnum_primitive_multiply (IDIO args)
 		    args = IDIO_PAIR_T (args);
 		}
 	    
-		return idio_bignum_primitive_add (idio_list_reverse (bn_args));
+		return idio_bignum_primitive_multiply (idio_list_reverse (bn_args));
 	    } else {
 		ir = ir * ih;
 	    }
@@ -249,6 +271,8 @@ IDIO idio_fixnum_primitive_divide (IDIO args)
 
     intptr_t ir = 1;
 
+    int first = 1;
+    
     while (idio_S_nil != args) {
 	IDIO h = IDIO_PAIR_H (args);
 	IDIO_TYPE_ASSERT (fixnum, h);
@@ -258,6 +282,24 @@ IDIO idio_fixnum_primitive_divide (IDIO args)
 	if (0 == ih) {
 	    idio_error_fixnum_divide_by_zero ();
 	    return idio_S_unspec;
+	}
+
+	if (first) {
+	    first = 0;
+
+	    /*
+	      a bit of magic for divide:
+
+	      (/ 6)   => 1/6 => 1/6
+	      (/ 6 2) => 6/2 => 3
+	    */
+
+	    IDIO t = IDIO_PAIR_T (args);
+	    if (idio_S_nil != t) {
+		ir = ih;
+		args = t;
+		continue;
+	    }
 	}
     
 	ir = ir / ih;
@@ -400,7 +442,7 @@ IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(gt, >)
 
 
 #define IDIO_DEFINE_ARITHMETIC_PRIMITIVE0V(name,cname)			\
-    IDIO_DEFINE_PRIMITIVE1V (name, cname, (IDIO args))			\
+    IDIO_DEFINE_PRIMITIVE0V (name, cname, (IDIO args))			\
     {									\
 	IDIO_ASSERT (args);						\
 									\
@@ -435,6 +477,8 @@ IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(gt, >)
 		} else {						\
 		    bn_args = idio_pair (h, bn_args);			\
 		}							\
+									\
+		args = IDIO_PAIR_T (args);				\
 	    }								\
 									\
 	    return idio_bignum_primitive_ ## cname (idio_list_reverse (bn_args)); \
