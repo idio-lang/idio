@@ -24,6 +24,7 @@
 #define CLOSURE_H
 
 IDIO idio_closure (size_t code, IDIO env);
+int idio_isa_closure (IDIO o);
 void idio_free_closure (IDIO c);
 
 #endif

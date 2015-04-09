@@ -22,6 +22,23 @@
         (set! n (+ 1 n))
         x))))
 
+(define seq2
+  (let ((n 1))
+    (lambda ()
+      (let ((x n))
+        (set! n (+ 1 n))
+        x))))
+
+(let ((s (seq)))
+  (s)
+  (s))
+
+(seq2)
+XXX
+
+(define (write x)
+  (display x))
+
 (define (fail expr result expected)
   (display "test failed: ")
   (write expr)
@@ -39,38 +56,11 @@
 ;  (write expr) (display " => ") (write result) (newline)
   (display "test3: (eq? ") (write expr) (display " ") (write expected) (display ") => ") 
   (if (not (equal? result expected))
-      (fail expr result expected)
-      #t))
+      (fail expr result expected)))
 
 (define-macro (test form result)
   `(test3 ',form ,form ,result))
 
-(define-macro (m1 v1a v1b)
-  `(cons ,v1a ,v1b))
-m1
-(m1 111 112)
-
-(define-macro (m2 v2a v2b)
-  (let ((m2v 22))
-    `(cons ,v2a ,m2v)))
-m2
-(m2 221 222)
-
-(define-macro m3
-  (lambda (v3a v3b)
-    `(cons ,v3a 33)))
-m3
-(m3 331 332)
-
-;(ggg)
-(test 99 99)
-
-;; (define-syntax keyword
-;;   (syntax-rules ()
-;;     ((_) '())))
-;; keyword
-;; (test (keyword) '())
-;(fff)
 ; --- syntax ---
 
 ; symbols

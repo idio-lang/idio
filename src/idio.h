@@ -203,17 +203,18 @@
  *
  * Update util.c:idio_as-string as well!
  */
-#define IDIO_CONSTANT_NIL	      0
+#define IDIO_CONSTANT_NIL              0
 #define IDIO_CONSTANT_UNDEF           -1
 #define IDIO_CONSTANT_UNSPEC          -2
-#define IDIO_CONSTANT_EOF             3
-#define IDIO_CONSTANT_TRUE            4
-#define IDIO_CONSTANT_FALSE           5
-#define IDIO_CONSTANT_NAN             -6
+#define IDIO_CONSTANT_EOF              3
+#define IDIO_CONSTANT_TRUE             4
+#define IDIO_CONSTANT_FALSE            5
+#define IDIO_CONSTANT_VOID            -6
+#define IDIO_CONSTANT_NAN             -7
 
-#define IDIO_CONSTANT_TOPLEVEL        36
-#define IDIO_CONSTANT_PREDEF          37
-#define IDIO_CONSTANT_LOCAL           38
+#define IDIO_CONSTANT_TOPLEVEL         36
+#define IDIO_CONSTANT_PREDEF           37
+#define IDIO_CONSTANT_LOCAL            38
 
 
 #define idio_S_nil		((const IDIO) IDIO_CONSTANT (IDIO_CONSTANT_NIL))
@@ -222,6 +223,7 @@
 #define idio_S_eof		((const IDIO) IDIO_CONSTANT (IDIO_CONSTANT_EOF))
 #define idio_S_true		((const IDIO) IDIO_CONSTANT (IDIO_CONSTANT_TRUE))
 #define idio_S_false		((const IDIO) IDIO_CONSTANT (IDIO_CONSTANT_FALSE))
+#define idio_S_void		((const IDIO) IDIO_CONSTANT (IDIO_CONSTANT_VOID))
 #define idio_S_NaN		((const IDIO) IDIO_CONSTANT (IDIO_CONSTANT_NAN))
 
 #define idio_S_toplevel		((const IDIO) IDIO_CONSTANT (IDIO_CONSTANT_TOPLEVEL))

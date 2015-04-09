@@ -27,11 +27,16 @@ static IDIO idio_symbols_hash = idio_S_nil;
 IDIO idio_S_C_struct;
 IDIO idio_S_ampersand;
 IDIO idio_S_and;
+IDIO idio_S_append;
+IDIO idio_S_apply;
 IDIO idio_S_asterisk;
 IDIO idio_S_begin;
 IDIO idio_S_block;
+IDIO idio_S_car;
+IDIO idio_S_cdr;
 IDIO idio_S_class;
 IDIO idio_S_cond;
+IDIO idio_S_cons;
 IDIO idio_S_define;
 IDIO idio_S_define_macro;
 IDIO idio_S_dloads;
@@ -46,6 +51,7 @@ IDIO idio_S_init;
 IDIO idio_S_lambda;
 IDIO idio_S_let;
 IDIO idio_S_letrec;
+IDIO idio_S_list;
 IDIO idio_S_monitor;
 IDIO idio_S_namespace;
 IDIO idio_S_or;
@@ -151,10 +157,11 @@ IDIO idio_gensym ()
     char *prefix = "g";
 
     /*
-     * strlen (uintmax_t) == 20
      * strlen ("/") == 1
+     * strlen (uintmax_t) == 20
+     * NUL
      */
-    char buf[strlen (prefix) + 2 + 1 + 1];
+    char buf[strlen (prefix) + 1 + 20 + 1];
 
     IDIO sym;
     
@@ -214,11 +221,16 @@ void idio_init_symbol ()
     idio_S_C_struct = idio_symbols_C_intern ("c_struct");
     idio_S_ampersand = idio_symbols_C_intern ("&");
     idio_S_and = idio_symbols_C_intern ("and");
+    idio_S_append = idio_symbols_C_intern ("append");
+    idio_S_apply = idio_symbols_C_intern ("apply");
     idio_S_asterisk = idio_symbols_C_intern ("*");
     idio_S_begin = idio_symbols_C_intern ("begin");
     idio_S_block = idio_symbols_C_intern ("block");
+    idio_S_car = idio_symbols_C_intern ("car");
+    idio_S_cdr = idio_symbols_C_intern ("cdr");
     idio_S_class = idio_symbols_C_intern ("class");
     idio_S_cond = idio_symbols_C_intern ("cond");
+    idio_S_cons = idio_symbols_C_intern ("cons");
     idio_S_define = idio_symbols_C_intern ("define");
     idio_S_define_macro = idio_symbols_C_intern ("define-macro");
     idio_S_dloads = idio_symbols_C_intern ("dloads");
@@ -233,6 +245,7 @@ void idio_init_symbol ()
     idio_S_lambda = idio_symbols_C_intern ("lambda");
     idio_S_let = idio_symbols_C_intern ("let");
     idio_S_letrec = idio_symbols_C_intern ("letrec");
+    idio_S_list = idio_symbols_C_intern ("list");
     idio_S_monitor = idio_symbols_C_intern ("monitor");
     idio_S_namespace = idio_symbols_C_intern ("namespace");
     idio_S_or = idio_symbols_C_intern ("or");

@@ -429,6 +429,7 @@ int idio_file_handle_puts (IDIO fh, char *s, size_t l)
 	r = l;
     }
 
+    idio_file_handle_flush (fh);
     return r;
 }
 
@@ -475,7 +476,10 @@ void idio_file_handle_print (IDIO fh, IDIO o)
 	IDIO_C_ASSERT (0);
     }
 
-    IDIO_C_ASSERT (0);
+    char *os = idio_display_string (o);
+    IDIO_HANDLE_M_PUTS (fh) (fh, os, strlen (os));
+    IDIO_HANDLE_M_PUTS (fh) (fh, "\n", 1);
+    free (os);
 }
 
 IDIO_DEFINE_PRIMITIVE2 ("open-file", open_file, (IDIO name, IDIO mode))
@@ -520,6 +524,9 @@ IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (
     IDIO_ASSERT (fh);
     IDIO_C_ASSERT (reader);
 
+    fprintf (stderr, "load-file-handle: %-20s: start ", IDIO_HANDLE_NAME (fh));
+    idio_dump (idio_current_thread (), 2);
+    idio_ai_t sp0 = idio_array_size (IDIO_THREAD_STACK (idio_current_thread ()));
     for (;;) {
 	IDIO e = (*reader) (fh);
 
@@ -539,6 +546,17 @@ IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (
     
     IDIO_HANDLE_M_CLOSE (fh) (fh);
 
+    idio_ai_t sp = idio_array_size (IDIO_THREAD_STACK (idio_current_thread ()));
+    fprintf (stderr, "load-file-handle: %-20s: end   ", IDIO_HANDLE_NAME (fh));
+    idio_dump (idio_current_thread (), 2);
+
+    if (sp != sp0) {
+	fprintf (stderr, "load-file-handle: SP %zd != %zd: ", sp, sp0);
+	idio_dump (IDIO_THREAD_STACK (idio_current_thread ()), 2);
+    } else {
+	fprintf (stderr, "load-file-handle: SP %zd == %zd: ", sp, sp0);
+	idio_dump (IDIO_THREAD_STACK (idio_current_thread ()), 2);
+    }
     return idio_S_true;
 }
 
@@ -633,7 +651,11 @@ IDIO_DEFINE_PRIMITIVE1 ("load-file", load_file, (IDIO filename))
 
     IDIO_VERIFY_PARAM_TYPE (string, filename);
 
-    return idio_load_file (filename);
+    idio_thread_save_state (idio_current_thread ());
+    IDIO r = idio_load_file (filename);
+    idio_thread_restore_state (idio_current_thread ());
+    
+    return r;
 }
 
 IDIO_DEFINE_PRIMITIVE1 ("file-exists?", file_exists_p, (IDIO filename))

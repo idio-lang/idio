@@ -119,6 +119,12 @@ IDIO idio_frame_fetch (IDIO fo, size_t d, size_t i)
     }
 
     if (i >= idio_array_size (IDIO_FRAME_ARGS (fo))) {
+	fprintf (stderr, "\n\nARGS = ");
+	idio_gc_verboseness (3);
+	idio_dump (IDIO_FRAME_ARGS (fo), 10);
+	idio_gc_verboseness (0);
+	fprintf (stderr, "\n\nFRAME = ");
+	idio_dump (fo, 10);
 	idio_error_frame_range (fo, d, i);
 	return idio_S_unspec;
     }

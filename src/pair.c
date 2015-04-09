@@ -109,6 +109,11 @@ IDIO idio_pair_set_tail (IDIO p, IDIO v)
 IDIO idio_list_head (IDIO p)
 {
     IDIO_ASSERT (p);
+
+    if (idio_S_nil == p) {
+	return idio_S_nil;
+    }
+    
     IDIO_TYPE_ASSERT (pair, p);
 
     return IDIO_PAIR_H (p);
@@ -126,7 +131,11 @@ IDIO_DEFINE_PRIMITIVE1 ("car", pair_head, (IDIO p))
 IDIO idio_list_tail (IDIO p)
 {
     IDIO_ASSERT (p);
-    
+
+    if (idio_S_nil == p) {
+	return idio_S_nil;
+    }
+
     IDIO_TYPE_ASSERT (pair, p);
 
     return IDIO_PAIR_T (p);
@@ -309,33 +318,29 @@ IDIO idio_list_append2 (IDIO l1, IDIO l2)
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("append", append, (IDIO a, IDIO args))
+IDIO_DEFINE_PRIMITIVE0V ("list", list, (IDIO args))
 {
-    IDIO_ASSERT (a);
     IDIO_ASSERT (args);
 
+    return args;
+}
+
+IDIO_DEFINE_PRIMITIVE2 ("append", append, (IDIO a, IDIO b))
+{
+    IDIO_ASSERT (a);
+    IDIO_ASSERT (b);
+
     if (idio_S_nil == a) {
-	return args;
+	return b;
     }
 
     IDIO_VERIFY_PARAM_TYPE (list, a);
 
-    if (idio_S_nil == args) {
-	return a;
-    } else if (! idio_isa_pair (args)) {
-	return idio_list_append2 (a, args);
-    } else {
-	for (;;args = IDIO_PAIR_T (args)) {
-	    if (! idio_isa_pair (args)) {
-		return idio_list_append2 (a, args);
-	    } else {
-		a = idio_list_append2 (a, IDIO_PAIR_H (args));
-	    }
-	}
+    if (idio_S_nil == b) {
 	return a;
     }
 
-    return idio_S_unspec;
+    return idio_list_append2 (a, b);
 }
 
 IDIO idio_list_list2string (IDIO l)
@@ -395,6 +400,7 @@ void idio_pair_add_primitives ()
     IDIO_ADD_PRIMITIVE (pair_head);
     IDIO_ADD_PRIMITIVE (pair_tail);
 
+    IDIO_ADD_PRIMITIVE (list);
     IDIO_ADD_PRIMITIVE (append);
     IDIO_ADD_PRIMITIVE (list2string);
     IDIO_ADD_PRIMITIVE (list2array);

@@ -52,7 +52,7 @@ const char *idio_type_enum2string (idio_type_e type)
     case IDIO_TYPE_PAIR: return "PAIR";
     case IDIO_TYPE_ARRAY: return "ARRAY";
     case IDIO_TYPE_HASH: return "HASH";
-    case IDIO_TYPE_CLOSURE: return "FUNCTION";
+    case IDIO_TYPE_CLOSURE: return "CLOSURE";
     case IDIO_TYPE_PRIMITIVE: return "PRIMITIVE";
     case IDIO_TYPE_BIGNUM: return "BIGNUM";
     case IDIO_TYPE_MODULE: return "MODULE";
@@ -131,7 +131,7 @@ IDIO_DEFINE_PRIMITIVE1 ("null?", nullp, (IDIO o))
 
     IDIO r = idio_S_false;
 
-    if (idio_isa_nil (o)) {
+    if (idio_S_nil == o) {
 	r = idio_S_true;
     }
 
@@ -420,6 +420,7 @@ char *idio_as_string (IDIO o, int depth)
 	    case IDIO_CONSTANT_EOF:             t = "#eof";            break;
 	    case IDIO_CONSTANT_TRUE:            t = "#true";           break;
 	    case IDIO_CONSTANT_FALSE:           t = "#false";          break;
+	    case IDIO_CONSTANT_VOID:            t = "#void";           break;
 	    case IDIO_CONSTANT_NAN:             t = "#NaN";            break;
 
 	    case IDIO_VM_CODE_SHALLOW_ARGUMENT_REF:  t = "SHALLOW-ARGUMENT-REF";  break;
@@ -641,12 +642,12 @@ char *idio_as_string (IDIO o, int depth)
 		}
 		break;
 	    case IDIO_TYPE_ARRAY:
-		if (asprintf (&r, "#( ") == -1) {
+		if (asprintf (&r, "#[ ") == -1) {
 		    return NULL;
 		}
 		if (depth > 0) {
-		    for (i = 0; i < IDIO_ARRAY_ASIZE (o); i++) {
-			if (idio_S_nil != IDIO_ARRAY_AE (o, i)) {
+		    for (i = 0; i < IDIO_ARRAY_USIZE (o); i++) {
+			if (idio_S_nil != IDIO_ARRAY_AE (o, i) || 1) {
 			    char *t = idio_as_string (IDIO_ARRAY_AE (o, i), depth - 1);
 			    char *aes;
 			    if (asprintf (&aes, "%s ", t) == -1) {
@@ -659,9 +660,9 @@ char *idio_as_string (IDIO o, int depth)
 			}
 		    }
 		} else {
-		    IDIO_STRCAT (r, "...");
+		    IDIO_STRCAT (r, "... ");
 		}
-		IDIO_STRCAT (r, ")");
+		IDIO_STRCAT (r, "]");
 		break;
 	    case IDIO_TYPE_HASH:
 		if (asprintf (&r, "{ ") == -1) {
@@ -712,7 +713,7 @@ char *idio_as_string (IDIO o, int depth)
 		break;
 	    case IDIO_TYPE_CLOSURE:
 		{
-		    if (asprintf (&r, "(lambda [code@%zd])", IDIO_CLOSURE_CODE (o)) == -1) {
+		    if (asprintf (&r, "#CLOS{@%zd}", IDIO_CLOSURE_CODE (o)) == -1) {
 			return NULL;
 		    }
 		    break;
@@ -789,7 +790,7 @@ char *idio_as_string (IDIO o, int depth)
 	    case IDIO_TYPE_THREAD:
 		{
 		    idio_ai_t sp = idio_array_size (IDIO_THREAD_STACK (o));
-		    if (asprintf (&r, "#T{%p pc=%3zd sp=%3zd s/top=",
+		    if (asprintf (&r, "#T{%p pc=%4zd sp/top=%2zd/",
 				  o,
 				  IDIO_THREAD_PC (o),
 				  sp) == -1) {
@@ -800,14 +801,28 @@ char *idio_as_string (IDIO o, int depth)
 		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_VAL (o), 2));
 		    IDIO_STRCAT (r, " func=");
 		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_FUNC (o), 1));
-		    IDIO_STRCAT (r, " reg1=");
-		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_REG1 (o), 1));
-		    IDIO_STRCAT (r, " reg2=");
-		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_REG2 (o), 1));
+		    if (1 == depth) {
+			IDIO env = IDIO_THREAD_ENV (o);
+
+			if (idio_S_nil == env) {
+			    IDIO_STRCAT (r, " env=nil");
+			} else {
+			    char *es;
+			    if (asprintf (&es, " env=%p ", env) == -1) {
+				return NULL;
+			    }
+			    IDIO_STRCAT_FREE (r, es);
+			    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_FRAME_ARGS (env), 1));
+			}
+		    }
 		    if (depth > 1) {
 			IDIO_STRCAT (r, " env=");
 			IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_ENV (o), 1));
 			if (depth > 2) {
+			    IDIO_STRCAT (r, " reg1=");
+			    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_REG1 (o), 1));
+			    IDIO_STRCAT (r, " reg2=");
+			    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_REG2 (o), 1));
 			    IDIO_STRCAT (r, " input_handle=");
 			    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_INPUT_HANDLE (o), 1));
 			    IDIO_STRCAT (r, " output_handle=");
@@ -1091,8 +1106,12 @@ IDIO idio_list_memq (IDIO k, IDIO l)
     IDIO_ASSERT (l);
     IDIO_TYPE_ASSERT (list, l);
 
-    /* fprintf (stderr, "memq: k=%s in l=%s\n", idio_as_string (k, 1), idio_as_string (idio_list_mapcar (l), 4)); */
-    
+    /* fprintf (stderr, "memq: k=%s in l=%s\n", idio_as_string (k, 1), idio_as_string (l, 4));   */
+
+    if (idio_S_true == k &&
+	idio_S_nil == l) {
+	sleep (0);
+    }
     while (idio_S_nil != l) {
 	if (idio_eqp (k, IDIO_PAIR_H (l))) {
 	    return l;
@@ -1227,8 +1246,9 @@ void idio_dump (IDIO o, int detail)
 		    IDIO_FPRINTF (stderr, "size=%d/%d \n", IDIO_ARRAY_USIZE (o), IDIO_ARRAY_ASIZE (o));
 		    if (detail > 1) {
 			size_t i;
-			for (i = 0; i < IDIO_ARRAY_ASIZE (o); i++) {
-			    if (idio_S_nil != IDIO_ARRAY_AE (o, i)) {
+			for (i = 0; i < IDIO_ARRAY_USIZE (o); i++) {
+			    if (idio_S_nil != IDIO_ARRAY_AE (o, i) ||
+				detail > 3) {
 				char *s = idio_as_string (IDIO_ARRAY_AE (o, i), 4);
 				IDIO_FPRINTF (stderr, "\t%3d: %10p %10s\n", i, IDIO_ARRAY_AE (o, i), s);
 				free (s);

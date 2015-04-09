@@ -53,9 +53,6 @@
 
 ; There is no LET or LETREC yet, so
 
-;; this let assumes that functions are not evaluated which is a
-;; particular problem with this definition of let as the arguments are
-;; (v1 a1) (v2 a2) which look a lot like function calls...
 (define-macro (let bindings expr . exprs)
   ((lambda (split)
      ((lambda (tmp-split)
@@ -970,7 +967,6 @@
 ; Now that the QQ expander is here, define a
 ; clean version of LET (including named LET).
 ; Can't name it LET yet, because it uses LET.
-
 (define-macro %ext-let
   (let ((check-bindings check-bindings))
     (lambda (a1 a2 . a3)
@@ -997,6 +993,8 @@
                      (let ((v (car va))
                            (a (cdr va)))
                        `((lambda ,v ,a2 ,@a3) ,@a)))))))))
+
+(define-macro let %ext-let)
 
 ; Also define a clean version of LETREC.
 

@@ -42,9 +42,9 @@ IDIO idio_thread (idio_ai_t stack_size)
     IDIO_THREAD_FUNC (t) = idio_S_unspec;
     IDIO_THREAD_REG1 (t) = idio_S_unspec;
     IDIO_THREAD_REG2 (t) = idio_S_unspec;
-    IDIO_THREAD_INPUT_HANDLE (t) = idio_S_nil;
-    IDIO_THREAD_OUTPUT_HANDLE (t) = idio_S_nil;
-    IDIO_THREAD_ERROR_HANDLE (t) = idio_S_nil;
+    IDIO_THREAD_INPUT_HANDLE (t) = idio_stdin_file_handle ();
+    IDIO_THREAD_OUTPUT_HANDLE (t) = idio_stdout_file_handle ();
+    IDIO_THREAD_ERROR_HANDLE (t) = idio_stderr_file_handle ();
     IDIO_THREAD_MODULE (t) = idio_main_module ();
 
     idio_vm_thread_init (t);
@@ -156,6 +156,26 @@ void idio_set_current_module (IDIO m)
     IDIO_THREAD_MODULE (thr) = m;
 }
 
+void idio_thread_save_state (IDIO thr)
+{
+    IDIO_ASSERT (thr);
+    IDIO_TYPE_ASSERT (thread, thr);
+
+    fprintf (stderr, "thread: %p save-state\n", thr);
+    IDIO stack = IDIO_THREAD_STACK (thr);
+    idio_array_push (stack, IDIO_FIXNUM (IDIO_THREAD_PC (thr)));
+}
+
+void idio_thread_restore_state (IDIO thr)
+{
+    IDIO_ASSERT (thr);
+    IDIO_TYPE_ASSERT (thread, thr);
+
+    fprintf (stderr, "thread: %p restore-state\n", thr);
+    IDIO stack = IDIO_THREAD_STACK (thr);
+    IDIO_THREAD_PC (thr) = IDIO_FIXNUM_VAL (idio_array_pop (stack));
+}
+
 void idio_init_thread ()
 {
     idio_running_threads = idio_array (8);
@@ -164,15 +184,11 @@ void idio_init_thread ()
 
 void idio_thread_add_primitives ()
 {
-    idio_running_thread = idio_thread (256);
+    idio_running_thread = idio_thread (40);
 }
 
 void idio_init_first_thread ()
 {
-    IDIO_THREAD_INPUT_HANDLE (idio_running_thread) = idio_stdin_file_handle ();
-    IDIO_THREAD_OUTPUT_HANDLE (idio_running_thread) = idio_stdout_file_handle ();
-    IDIO_THREAD_ERROR_HANDLE (idio_running_thread) = idio_stderr_file_handle ();
-    
     idio_array_push (idio_running_threads, idio_running_thread);
 }
 

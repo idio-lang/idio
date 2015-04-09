@@ -490,7 +490,27 @@ IDIO_DEFINE_PRIMITIVE1 ("let", let, (IDIO e))
 	bindings = IDIO_PAIR_T (bindings);
     }
 
-    IDIO fn = IDIO_LIST3 (idio_S_lambda, idio_list_reverse (vars), IDIO_PAIR_T (e));
+    /*
+     * e is currently a list, either (body) or (body ...)
+     *
+     * body could be a single expression in which case we want the
+     * head of e (otherwise we will attempt to apply the result of
+     * body) or multiple expressions in which case we want to prefix e
+     * with begin
+     *
+     * it could be nil too...
+     */
+
+    if (idio_S_nil != e) {
+	e = IDIO_PAIR_T (e);
+	if (idio_S_nil == IDIO_PAIR_T (e)) {
+	    e = IDIO_PAIR_H (e);
+	} else {
+	    e = idio_list_append2 (IDIO_LIST1 (idio_S_begin), e);
+	}
+    }
+    
+    IDIO fn = IDIO_LIST3 (idio_S_lambda, idio_list_reverse (vars), e);
 
     return idio_list_append2 (IDIO_LIST1 (fn), idio_list_reverse (vals));
 }
@@ -499,36 +519,10 @@ IDIO_DEFINE_PRIMITIVE0V ("macro-expand", macro_expand, (IDIO x))
 {
     IDIO_ASSERT (x);
 
+    char *xs = idio_as_string (x, 1);
+    fprintf (stderr, "primitive-macro-expand: %s\n", xs);
+    free (xs);
     return idio_scm_macro_expand (x);
-}
-
-static IDIO idio_expander_let (IDIO x, IDIO e)
-{
-    IDIO_ASSERT (x);
-    IDIO_ASSERT (e);
-
-    IDIO_TYPE_ASSERT (list, x);
-
-    size_t nargs = idio_list_length (x);
-    if (3 != nargs) {
-	idio_error_static_arity ("wrong arguments", x);
-	return idio_S_unspec;
-    }
-
-    x = IDIO_PAIR_T (x);
-    
-    IDIO vars = idio_list_mapcar (IDIO_PAIR_H (x));
-    IDIO vals = idio_list_mapcdr (IDIO_PAIR_H (x));
-
-    IDIO fn = IDIO_LIST3 (idio_S_lambda, vars, IDIO_PAIR_T (x));
-
-    char *fns = idio_as_string (fn, 1);
-    char *varss = idio_as_string (vars, 1);
-    fprintf (stderr, "EXPANDER-LET: apply %s %s\n", fns, varss);
-    free (fns);
-    free (varss);
-    sleep (2);
-    return idio_apply (fn, vals);
 }
 
 static IDIO idio_scm_expanderp (IDIO name)
@@ -537,9 +531,32 @@ static IDIO idio_scm_expanderp (IDIO name)
     IDIO_TYPE_ASSERT (symbol, name);
 
     IDIO expander_list = idio_module_symbol_value (idio_scm_expander_list, idio_scm_evaluation_module);
-    fprintf (stderr, "expander?: %p in %p: *expander-list* = %p\n", idio_scm_expander_list, idio_scm_evaluation_module, expander_list);
-    idio_dump (idio_current_module (), 2);
-    return idio_list_assq (name, expander_list);
+    /* fprintf (stderr, "expander?: %p in %p: *expander-list* = %p\n", idio_scm_expander_list, idio_scm_evaluation_module, expander_list); */
+    /* idio_dump (expander_list, 1); */
+    
+    IDIO assq = idio_list_assq (name, expander_list);
+
+    /* char *as = idio_as_string (assq,1); */
+    /* fprintf (stderr, "expander?: assq %s\n", as); */
+    /* free (as); */
+
+    if (idio_S_false != assq) {
+	IDIO v = IDIO_PAIR_T (assq);
+	if (idio_isa_pair (v)) {
+	    fprintf (stderr, "expander?: isa PAIR\n");
+	    IDIO lv = idio_symbol_lookup (name, idio_current_module ());
+	    char *lvs = idio_as_string (lv, 1);
+	    fprintf (stderr, "expander?: lookup -> %s\n", lvs);
+	    free (lvs);
+	    if (idio_isa_primitive (lv) ||
+		idio_isa_closure (lv)) {
+		IDIO_PAIR_T (assq) = lv;
+	    }
+	} else {
+	    /* fprintf (stderr, "expander?: isa %s\n", idio_type2string (v)); */
+	}
+    }
+    return assq;
 }
 
 IDIO_DEFINE_PRIMITIVE1 ("expander?", expanderp, (IDIO o))
@@ -569,9 +586,6 @@ static IDIO idio_scm_application_expander (IDIO x, IDIO e)
      * map* is:
      */
 
-    IDIO y = idio_symbols_C_intern ("y");
-    IDIO fn = IDIO_LIST3 (idio_S_lambda, IDIO_LIST1 (y), IDIO_LIST3 (e, y, e));
-    
     IDIO r = idio_S_nil;
     
     for (;;) {
@@ -599,6 +613,12 @@ static IDIO idio_scm_initial_expander (IDIO x, IDIO e)
     IDIO_ASSERT (x);
     IDIO_ASSERT (e);
 
+    char *xs = idio_as_string (x, 1);
+    char *es = idio_as_string (e, 1);
+    fprintf (stderr, "scm-initial-expander: %s %s\n", xs, es);
+    free (xs);
+    free (es);
+
     if (! idio_isa_pair (x)) {
 	return x;
     }
@@ -615,7 +635,7 @@ static IDIO idio_scm_initial_expander (IDIO x, IDIO e)
 	     *
 	     * ((cdr (assq functor *expander-list*)) x e)
 	     */
-	    return idio_apply (IDIO_PAIR_T (expander), IDIO_LIST2 (x, e));
+	    return idio_apply (IDIO_PAIR_T (expander), IDIO_LIST3 (x, e, idio_S_nil));
 	} else {
 	    return idio_scm_application_expander (x, e);
 	}
@@ -627,6 +647,7 @@ static void idio_scm_install_expander (IDIO id, IDIO proc, IDIO code)
     char *ids = idio_as_string (id, 1);
     fprintf (stderr, "install-expander: %s\n", ids);
     free (ids);
+
     IDIO el = idio_module_symbol_value (idio_scm_expander_list, idio_scm_evaluation_module);
     IDIO old = idio_list_assq (id, el);
 
@@ -690,7 +711,11 @@ static IDIO idio_scm_macro_expand (IDIO e)
 {
     IDIO_ASSERT (e);
 
-    return idio_scm_initial_expander (e, idio_S_nil);
+    char *es = idio_as_string (e, 1);
+    fprintf (stderr, "scm-macro-expand: %zd args in %s\n", idio_list_length (e), es);
+    free (es);
+    
+    return idio_scm_initial_expander (e, idio_S_unspec);
 }
 
 static IDIO idio_scm_meaning (IDIO e, IDIO nametree, int tailp);
@@ -741,6 +766,89 @@ static IDIO idio_scm_meaning_quotation (IDIO v, IDIO nametree, int tailp)
     IDIO_ASSERT (v);
 
     return IDIO_LIST2 (idio_I_CONSTANT, v);
+}
+
+static IDIO idio_scm_meaning_dequasiquote (IDIO e, int level)
+{
+    IDIO_ASSERT (e);
+
+    if (idio_isa_pair (e)) {
+	IDIO eh = IDIO_PAIR_H (e);
+	if (idio_S_quasiquote == eh) {
+	    /* ('list ''quasiquote (deqq (cadr e) (+ level 1))) */
+	    return IDIO_LIST3 (idio_S_list,
+			       IDIO_LIST2 (idio_S_quote, idio_S_quasiquote),
+			       idio_scm_meaning_dequasiquote (IDIO_PAIR_H (IDIO_PAIR_T (e)),
+							      level + 1));
+	} else if (idio_S_unquote == eh) {
+	    if (level <= 0) {
+		return IDIO_PAIR_H (IDIO_PAIR_T (e));
+	    } else {
+		/* ('list ''unquote (deqq (cadr e) (- level 1))) */
+		return IDIO_LIST3 (idio_S_list,
+				   IDIO_LIST2 (idio_S_quote, idio_S_unquote),
+				   idio_scm_meaning_dequasiquote (IDIO_PAIR_H (IDIO_PAIR_T (e)),
+								  level - 1));
+	    }
+	} else if (idio_S_unquotesplicing == eh) {
+	    if (level <= 0) {
+		return IDIO_LIST3 (idio_S_cons,
+				   idio_scm_meaning_dequasiquote (IDIO_PAIR_H (e), level),
+				   idio_scm_meaning_dequasiquote (IDIO_PAIR_T (e), level));
+	    } else {
+		/* ('list ''unquotesplicing (deqq (cadr e) (- level 1))) */
+		return IDIO_LIST3 (idio_S_list,
+				   IDIO_LIST2 (idio_S_quote, idio_S_unquotesplicing),
+				   idio_scm_meaning_dequasiquote (IDIO_PAIR_H (IDIO_PAIR_T (e)),
+								  level - 1));
+	    }
+	} else if (level <= 0 &&
+		   idio_isa_pair (IDIO_PAIR_H (e)) &&
+		   idio_S_unquotesplicing == IDIO_PAIR_H (IDIO_PAIR_H (e))) {
+	    if (idio_S_nil == IDIO_PAIR_T (e)) {
+		return IDIO_PAIR_H (IDIO_PAIR_T (IDIO_PAIR_H (e)));
+	    } else {
+		/* ('append (cadar e) (deqq (cdr e) level)) */
+		return IDIO_LIST3 (idio_S_append,
+				   IDIO_PAIR_H (IDIO_PAIR_T (IDIO_PAIR_H (e))),
+				   idio_scm_meaning_dequasiquote (IDIO_PAIR_T (e),
+								  level));
+	    }
+	} else {
+	    return IDIO_LIST3 (idio_S_cons,
+			       idio_scm_meaning_dequasiquote (IDIO_PAIR_H (e), level),
+			       idio_scm_meaning_dequasiquote (IDIO_PAIR_T (e), level));
+	}
+    } else if (idio_isa_array (e)) {
+	return idio_list_to_array (idio_scm_meaning_dequasiquote (idio_array_to_list (e), level));
+    } else if (idio_isa_symbol (e)) {
+	return IDIO_LIST2 (idio_S_quote, e);
+    } else {
+	return e;
+    }
+
+    /* not reached */
+    return idio_S_unspec;
+}
+
+static IDIO idio_scm_meaning_quasiquotation (IDIO e, IDIO nametree, int tailp)
+{
+    IDIO_ASSERT (e);
+
+    IDIO dq = idio_scm_meaning_dequasiquote (e, 0);
+    char *es = idio_as_string (e, 1);
+    char *dqs = idio_as_string (dq, 1);
+    fprintf (stderr, "scm-meaning-quasiquote: in %s\n", es);
+    fprintf (stderr, "scm-meaning-quasiquote: dq %s\n", dqs);
+    free (es);
+    free (dqs);
+
+    IDIO dqm = idio_scm_meaning (dq, nametree, tailp);
+    char *dqms = idio_as_string (dqm, 1);
+    fprintf (stderr, "scm-meaning-quasiquote: m => %s\n", dqms);
+    free (dqms);
+    
+    return dqm;
 }
 
 static IDIO idio_scm_meaning_alternative (IDIO e1, IDIO e2, IDIO e3, IDIO nametree, int tailp)
@@ -851,7 +959,7 @@ static IDIO idio_scm_meaning_assignment (IDIO name, IDIO e, IDIO nametree, int t
 	if (0 == IDIO_FIXNUM_VAL (i)) {
 	    return IDIO_LIST3 (idio_I_SHALLOW_ARGUMENT_SET, j, m);
 	} else {
-	    fprintf (stderr, "%s: deep-argument-set %zd %zd = %s\n", idio_as_string (name, 1), IDIO_FIXNUM_VAL (i), IDIO_FIXNUM_VAL (j), idio_as_string (m, 1));
+	    fprintf (stderr, "scm-meaning-assignment: %s: deep-argument-set %zd %zd <= %s\n", idio_as_string (name, 1), IDIO_FIXNUM_VAL (i), IDIO_FIXNUM_VAL (j), idio_as_string (m, 1));
 	    return IDIO_LIST4 (idio_I_DEEP_ARGUMENT_SET, i, j, m);
 	}
     } else if (idio_S_toplevel == kt) {
@@ -885,6 +993,10 @@ static IDIO idio_scm_meaning_define (IDIO name, IDIO e, IDIO nametree, int tailp
     if (idio_isa_pair (name)) {
 	e = IDIO_LIST3 (idio_S_lambda, IDIO_PAIR_T (name), e);
 	name = IDIO_PAIR_H (name);
+
+	char *es = idio_as_string (e, 1);
+	fprintf (stderr, "scm-meaning-define: rewrite: (define %s %s)\n", IDIO_SYMBOL_S (name), es);
+	free (es);
     }
 
     IDIO d = idio_list_memq (name, idio_module_current_defined ());
@@ -921,12 +1033,92 @@ static IDIO idio_scm_meaning_define_macro (IDIO name, IDIO e, IDIO nametree, int
 	idio_module_current_extend_defined (name);
     }
 
-    idio_scm_install_expander (name, e, e);
+    /*
+     * create an expander: (lambda (x e) (apply proc (cdr x)))
+     *
+     * where proc is (lambda (arg) ...) from above, ie. e
+     */
+    IDIO x_sym = idio_symbols_C_intern ("x");
+    IDIO e_sym = idio_symbols_C_intern ("e");
+    IDIO expander = IDIO_LIST3 (idio_S_lambda,
+				IDIO_LIST2 (x_sym, e_sym),
+				IDIO_LIST3 (idio_S_apply,
+					    e,
+					    IDIO_LIST2 (idio_S_cdr, x_sym)));
 
-    return idio_scm_meaning_assignment (name, e, nametree, 0);
+    char *es = idio_as_string (expander, 1);
+    fprintf (stderr, "define-macro: => expander %s\n", es);
+    free (es);
+
+    /*
+     * In general (define-macro a ...) means that "a" is associated
+     * with an expander and that expander takes the cdr of the
+     * expression it is passed, "(a ...)" (ie. it skips over its own
+     * name).
+     *
+     * It happens that people say
+     *
+     * (define-macro a ...)
+     * (define-macro b a)
+     *
+     * (in particular where they are creating an enhanced version of b
+     * which requires using the existing b to define itself hence
+     * defining some other name, "a", which can use "b" freely then
+     * reset b to this new version)
+     *
+     * However, we can't just use the current value of "a" in
+     * (define-macro b a) as the normal definition of a macro is an
+     * expander which takes the cdr of its arguments.  So expander "b"
+     * will take the cdr then expander "a" will take the cdr....  A
+     * cdr too far, one would say in hindsight.
+     *
+     * So catch the case where the value is already an expander.
+     */
+    if (idio_isa_symbol (e)) {
+	IDIO exp = idio_scm_expanderp (e);
+
+	if (idio_S_false != exp) {
+	    idio_scm_install_expander (name, exp, expander);
+	    return idio_scm_meaning_assignment (name, IDIO_PAIR_T (exp), nametree, 0);
+	}
+    }
+
+    /*
+     * XXX define-macro bootstrap
+     *
+     * We really want the entry in *expander-list* to be some compiled
+     * code but we don't know what that code is yet because we have't
+     * processed the source code of the expander -- we only invented
+     * it in the line above!
+     *
+     * We will process it in the call to idio_scm_meaning_assignment()
+     * immediately after this.
+     *
+     * So, we'll drop the "source" code of the expander into
+     * *expander-list* and later, when someone calls expander? for
+     * this name we'll notice the value is a pair and do a symbol
+     * lookup for the closure that was created via
+     * idio_scm_meaning_assignment().
+     *
+     * As an alternative we could evaluate the source to the expander
+     * now and install that code in *expander-list* directly.
+     *
+     * As a further twist, we really need to embed a call to
+     * idio_scm_install_expander in the *object* code too!  When
+     * someone in the future loads the object file containing this
+     * define-macro who will have called idio_scm_install_expander?
+     *
+     * In summary: we need the expander in the here and now as someone
+     * might use it in the next line of source and we need to embed a
+     * call to idio_scm_install_expander in the object code for future
+     * users.
+     */
+    idio_scm_install_expander (name, expander, expander);
+
+    return idio_scm_meaning_assignment (name, expander, nametree, 0);
 }
 
-static IDIO idio_scm_meaning_sequence (IDIO ep, IDIO nametree, int tailp);
+static IDIO idio_scm_meaning_sequence (IDIO ep, IDIO nametree, int tailp, IDIO keyword);
 
 static IDIO idio_scm_meanings_single_sequence (IDIO e, IDIO nametree, int tailp)
 {
@@ -937,31 +1129,48 @@ static IDIO idio_scm_meanings_single_sequence (IDIO e, IDIO nametree, int tailp)
     return idio_scm_meaning (e, nametree, tailp);
 }
 
-static IDIO idio_scm_meanings_multiple_sequence (IDIO e, IDIO ep, IDIO nametree, int tailp)
+static IDIO idio_scm_meanings_multiple_sequence (IDIO e, IDIO ep, IDIO nametree, int tailp, IDIO keyword)
 {
     IDIO_ASSERT (e);
     IDIO_ASSERT (ep);
+    IDIO_ASSERT (keyword);
     IDIO_ASSERT (nametree);
     IDIO_TYPE_ASSERT (list, nametree);
 
     IDIO m = idio_scm_meaning (e, nametree, 0);
-    IDIO mp = idio_scm_meaning_sequence (ep, nametree, tailp);
-    
-    return IDIO_LIST2 (m, mp);
+    IDIO mp = idio_scm_meaning_sequence (ep, nametree, tailp, keyword);
+
+    if (idio_S_and == keyword) {
+	return IDIO_LIST3 (idio_I_AND, m, mp);
+    } else if (idio_S_or == keyword) {
+	return IDIO_LIST3 (idio_I_OR, m, mp);
+    } else if (idio_S_begin == keyword) {
+	return IDIO_LIST2 (m, mp);
+    } else {
+	char *ks = idio_as_string (keyword, 1);
+	idio_error_message ("unexpected sequence keyword: %s", ks);
+	free (ks);
+	return idio_S_unspec;
+    }
 }
 
-static IDIO idio_scm_meaning_sequence (IDIO ep, IDIO nametree, int tailp)
+static IDIO idio_scm_meaning_sequence (IDIO ep, IDIO nametree, int tailp, IDIO keyword)
 {
     IDIO_ASSERT (ep);
     IDIO_ASSERT (nametree);
+    IDIO_ASSERT (keyword);
     IDIO_TYPE_ASSERT (list, nametree);
 
+    char *eps = idio_as_string (ep, 1);
+    fprintf (stderr, "scm-meaning-sequence: %s\n", eps);
+    free (eps);
+    
     if (idio_isa_pair (ep)) {
 	IDIO eph = IDIO_PAIR_H (ep);
 	IDIO ept = IDIO_PAIR_T (ep);
 
 	if (idio_isa_pair (ept)) {
-	    return idio_scm_meanings_multiple_sequence (eph, ept, nametree, tailp);
+	    return idio_scm_meanings_multiple_sequence (eph, ept, nametree, tailp, keyword);
 	} else {
 	    return idio_scm_meanings_single_sequence (eph, nametree, tailp);
 	}
@@ -985,7 +1194,7 @@ static IDIO idio_scm_meaning_fix_abstraction (IDIO ns, IDIO ep, IDIO nametree, i
     size_t arity = idio_list_length (ns);
     IDIO nt2 = idio_nametree_extend (nametree, ns);
 
-    IDIO mp = idio_scm_meaning_sequence (ep, nt2, 1);
+    IDIO mp = idio_scm_meaning_sequence (ep, nt2, 1, idio_S_begin);
 
     return IDIO_LIST3 (idio_I_FIX_CLOSURE, mp, IDIO_FIXNUM (arity));
 }
@@ -1000,7 +1209,7 @@ static IDIO idio_scm_meaning_dotted_abstraction (IDIO ns, IDIO n, IDIO ep, IDIO 
 
     size_t arity = idio_list_length (ns);
     IDIO nt2 = idio_nametree_extend (nametree, idio_list_append2 (ns, IDIO_LIST1 (n)));
-    IDIO mp = idio_scm_meaning_sequence (ep, nt2, 1);
+    IDIO mp = idio_scm_meaning_sequence (ep, nt2, 1, idio_S_begin);
 
     return IDIO_LIST3 (idio_I_NARY_CLOSURE, mp, IDIO_FIXNUM (arity));
 }
@@ -1076,7 +1285,7 @@ static IDIO idio_scm_meaning_fix_closed_application (IDIO ns, IDIO body, IDIO es
 
     IDIO ms = idio_scm_meanings (es, nametree, idio_list_length (es), 0);
     IDIO nt2 = idio_nametree_extend (nametree, ns);
-    IDIO mbody = idio_scm_meaning_sequence (body, nt2, tailp);
+    IDIO mbody = idio_scm_meaning_sequence (body, nt2, tailp, idio_S_begin);
 
     if (tailp) {
 	return IDIO_LIST3 (idio_I_TR_FIX_LET, ms, mbody);
@@ -1137,7 +1346,7 @@ static IDIO idio_scm_meaning_dotted_closed_application (IDIO ns, IDIO n, IDIO bo
 
     IDIO ms = idio_scm_meaning_dotteds (es, nametree, idio_list_length (es), idio_list_length (ns), 0);
     IDIO nt2 = idio_nametree_extend (nametree, idio_list_append2 (ns, IDIO_LIST1 (n)));
-    IDIO mbody = idio_scm_meaning_sequence (body, nt2, tailp);
+    IDIO mbody = idio_scm_meaning_sequence (body, nt2, tailp, idio_S_begin);
 
     if (tailp) {
 	return IDIO_LIST3 (idio_I_TR_FIX_LET, ms, mbody);
@@ -1411,7 +1620,7 @@ static IDIO idio_scm_meaning_dynamic_let (IDIO name, IDIO e, IDIO ep, IDIO namet
 
     if (index >= 0) {
 	IDIO m = idio_scm_meaning (e, nametree, 0);
-	IDIO mp = idio_scm_meaning_sequence (ep, nametree, 0);
+	IDIO mp = idio_scm_meaning_sequence (ep, nametree, 0, idio_S_begin);
 
 	return IDIO_LIST5 (m, idio_I_PUSH_DYNAMIC, IDIO_FIXNUM (index), mp, idio_I_POP_DYNAMIC);
     } else {
@@ -1428,9 +1637,45 @@ static IDIO idio_scm_meaning_monitor (IDIO e, IDIO ep, IDIO nametree, int tailp)
     IDIO_TYPE_ASSERT (list, nametree);
 
     IDIO m = idio_scm_meaning (e, nametree, 0);
-    IDIO mp = idio_scm_meaning_sequence (ep, nametree, 0);
+    IDIO mp = idio_scm_meaning_sequence (ep, nametree, 0, idio_S_begin);
 
     return IDIO_LIST4 (m, idio_I_PUSH_HANDLER, mp, idio_I_POP_HANDLER);
+}
+
+static IDIO idio_scm_meaning_expander (IDIO e, IDIO nametree, int tailp)
+{
+    IDIO_ASSERT (e);
+    IDIO_ASSERT (nametree);
+    IDIO_TYPE_ASSERT (list, nametree);
+
+    char *es = idio_as_string (e, 4);
+    fprintf (stderr, "scm-meaning-expander: %s\n", es);
+
+    IDIO cthr = idio_current_thread ();
+    idio_set_current_thread (idio_scm_expander_thread);
+    idio_thread_save_state (idio_scm_expander_thread);
+    idio_vm_default_pc (idio_scm_expander_thread);
+    
+    /* fprintf (stderr, "scm-meaning-expander: %s: thread-set %p -> %p\n", es, cthr, idio_scm_expander_thread); */
+
+    idio_scm_macro_expand (e);
+    /* fprintf (stderr, "scm-meaning-expander: %s: post-macro-expand/pre-vm-run\n", es); */
+    IDIO me = idio_vm_run (idio_scm_expander_thread);
+    
+    idio_thread_restore_state (idio_scm_expander_thread);
+    idio_set_current_thread (cthr);
+    /* fprintf (stderr, "scm-meaning-expander: %s: thread-set %p -> %p\n", es, idio_scm_expander_thread, cthr); */
+
+    char *mes = idio_as_string (me, 4);
+    fprintf (stderr, "scm-meaning-expander: %s\nme=%s\n", es, mes);
+    free (es);
+    free (mes);
+
+    if (idio_S_nil == me) {
+	idio_error_message ("scm-meaning-expander: bad expansion");
+    }
+    
+    return idio_scm_meaning (me, nametree, tailp);
 }
 
 static IDIO idio_scm_meaning (IDIO e, IDIO nametree, int tailp)
@@ -1450,14 +1695,17 @@ static IDIO idio_scm_meaning (IDIO e, IDIO nametree, int tailp)
 	    idio_S_and == eh ||
 	    idio_S_or == eh) {
 	    if (idio_isa_pair (et)) {
-		return idio_scm_meaning_sequence (et, nametree, tailp);
+		return idio_scm_meaning_sequence (et, nametree, tailp, eh);
 	    } else if (idio_S_begin == eh) {
-		return idio_S_unspec;
+		return idio_scm_meaning (idio_S_void, nametree, tailp);
 	    } else if (idio_S_and == eh) {
-		return idio_S_true;
+		return idio_scm_meaning (idio_S_true, nametree, tailp);
 	    } else if (idio_S_or == eh) {
-		return idio_S_false;
+		return idio_scm_meaning (idio_S_false, nametree, tailp);
 	    } else {
+		char *ehs = idio_as_string (eh, 1);
+		idio_error_message ("unexpected sequence keyword: %s", ehs);
+		free (ehs);
 		IDIO_C_ASSERT (0);
 	    }
 	} else if (idio_S_quote == eh) {
@@ -1466,6 +1714,14 @@ static IDIO idio_scm_meaning (IDIO e, IDIO nametree, int tailp)
 		return idio_scm_meaning_quotation (IDIO_PAIR_H (et), nametree, tailp);
 	    } else {
 		idio_error_param_nil ("(quote)");
+		return idio_S_unspec;
+	    }
+	} else if (idio_S_quasiquote == eh) {
+	    /* (quasiquote x) */
+	    if (idio_isa_pair (et)) {
+		return idio_scm_meaning_quasiquotation (IDIO_PAIR_H (et), nametree, tailp);
+	    } else {
+		idio_error_param_nil ("(quasiquote)");
 		return idio_S_unspec;
 	    }
 	} else if (idio_S_lambda == eh) {
@@ -1482,7 +1738,7 @@ static IDIO idio_scm_meaning (IDIO e, IDIO nametree, int tailp)
 		IDIO ett = IDIO_PAIR_T (et);
 		if (idio_isa_pair (ett)) {
 		    IDIO ettt = IDIO_PAIR_T (ett);
-		    IDIO ettth = idio_S_nil;
+		    IDIO ettth = idio_S_void;
 		    if (idio_isa_pair (ettt)) {
 			ettth = IDIO_PAIR_H (ettt);
 		    }
@@ -1590,24 +1846,7 @@ static IDIO idio_scm_meaning (IDIO e, IDIO nametree, int tailp)
 
 		if (idio_S_nil != k) {
 		    if (idio_S_false != idio_scm_expanderp (eh)) {
-			IDIO cthr = idio_current_thread ();
-			idio_set_current_thread (idio_scm_expander_thread);
-			char *e1s = idio_as_string (e, 1);
-			fprintf (stderr, "scm-meaning: (macro-expand %s)\n", e1s);
-			free (e1s);
-			IDIO macro_expand_sym = idio_symbols_C_intern ("macro-expand");
-			IDIO macro_expand = idio_symbol_lookup (macro_expand_sym, idio_current_module ());
-			if (idio_S_unspec == macro_expand) {
-			    idio_error_module_unbound_name (macro_expand_sym, idio_current_module ());
-			}
-			IDIO me = idio_apply (macro_expand, e);
-			idio_set_current_thread (cthr);
-			char *es = idio_as_string (e, 4);
-			char *mes = idio_as_string (me, 4);
-			fprintf (stderr, "macro-expand:\ne=%s\nme=%s\n", es, mes);
-			free (es);
-			free (mes);
-			return idio_scm_meaning (me, nametree, tailp);
+			return idio_scm_meaning_expander (e, nametree, tailp);
 		    }
 		}
 	    }
@@ -1669,7 +1908,11 @@ IDIO idio_scm_evaluate (IDIO e)
     }
 
     idio_vm_codegen (idio_current_thread (), m);
-    idio_vm_run (idio_current_thread ());
+    IDIO r = idio_vm_run (idio_current_thread ());
+
+    char *rs = idio_as_string (r, 1);
+    fprintf (stderr, "scm-evaluate: => %s\n", rs);
+    free (rs);
     
     return m;
 }
@@ -1701,10 +1944,11 @@ void idio_init_scm_evaluate ()
 
 void idio_scm_evaluate_add_primitives ()
 {
-    idio_scm_expander_thread = idio_thread (100);
+    idio_scm_expander_thread = idio_thread (40);
     idio_gc_protect (idio_scm_expander_thread);
 
     IDIO_THREAD_MODULE (idio_scm_expander_thread) = idio_scm_evaluation_module;
+    IDIO_THREAD_PC (idio_scm_expander_thread) = 1;
 
     IDIO_ADD_PRIMITIVE (expanderp);
     IDIO_ADD_EXPANDER (let);

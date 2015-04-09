@@ -89,11 +89,11 @@
 #define IDIO_A_ALLOCATE_FRAME          55
 #define IDIO_A_ALLOCATE_DOTTED_FRAME   56
 
-#define IDIO_A_POP_FRAME0              60
-#define IDIO_A_POP_FRAME1              61
-#define IDIO_A_POP_FRAME2              62
-#define IDIO_A_POP_FRAME3              63
-#define IDIO_A_POP_FRAME               64
+#define IDIO_A_POP_ENV0                60
+#define IDIO_A_POP_ENV1                61
+#define IDIO_A_POP_ENV2                62
+#define IDIO_A_POP_ENV3                63
+#define IDIO_A_POP_ENV                 64
 
 #define IDIO_A_ARITYP1                 71
 #define IDIO_A_ARITYP2                 72
@@ -103,8 +103,8 @@
 #define IDIO_A_ARITYGEP                78
 
 #define IDIO_A_SHORT_NUMBER            79
-
-#define IDIO_A_CONSTANT_M1             80
+#define IDIO_A_SHORT_NEG_NUMBER        80
+/* #define IDIO_A_CONSTANT_M1             80 */
 #define IDIO_A_CONSTANT_0              81
 #define IDIO_A_CONSTANT_1              82
 #define IDIO_A_CONSTANT_2              83
@@ -143,6 +143,9 @@
 #define IDIO_A_PRIMCALL3               132
 #define IDIO_A_PRIMCALL                133
 
+#define IDIO_A_LONG_JUMP_TRUE          135
+#define IDIO_A_SHORT_JUMP_TRUE         136
+
 #define IDIO_A_DYNAMIC_REF             240
 #define IDIO_A_POP_DYNAMIC             241
 #define IDIO_A_PUSH_DYNAMIC            242
@@ -155,6 +158,10 @@
 
 /*
  * Some unique constants for the VM
+ *
+ * They don't have to be different to any other constants but if they
+ * are then we can help with debugging.  (There's plenty of room in
+ * the constants table.)
  */
 #define IDIO_VM_CODE_BASE		   2000
 #define IDIO_VM_CODE_SHALLOW_ARGUMENT_REF  (IDIO_VM_CODE_BASE+0)
@@ -188,6 +195,8 @@
 #define IDIO_VM_CODE_DYNAMIC_REF	   (IDIO_VM_CODE_BASE+28)
 #define IDIO_VM_CODE_PUSH_HANDLER	   (IDIO_VM_CODE_BASE+29)
 #define IDIO_VM_CODE_POP_HANDLER	   (IDIO_VM_CODE_BASE+30)
+#define IDIO_VM_CODE_AND		   (IDIO_VM_CODE_BASE+31)
+#define IDIO_VM_CODE_OR			   (IDIO_VM_CODE_BASE+32)
 
 /*
  * Idio Intermediate code: idio_I_*
@@ -226,9 +235,11 @@
 #define idio_I_DYNAMIC_REF           ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_DYNAMIC_REF))
 #define idio_I_PUSH_HANDLER          ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_PUSH_HANDLER))
 #define idio_I_POP_HANDLER           ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_POP_HANDLER))
+#define idio_I_AND		     ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_AND))
+#define idio_I_OR		     ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_OR))
 
 void idio_vm_codegen (IDIO thr, IDIO m);
-void idio_vm_run (IDIO thr);
+IDIO idio_vm_run (IDIO thr);
 
 idio_ai_t idio_vm_extend_constants (IDIO v);
 IDIO idio_vm_constants_ref (idio_ai_t i);
@@ -244,6 +255,7 @@ void idio_signal_exception (int continuablep, IDIO e);
 IDIO idio_apply (IDIO fn, IDIO args);
 
 void idio_vm_thread_init (IDIO thr);
+void idio_vm_default_pc (IDIO thr);
 void idio_init_vm ();
 void idio_vm_add_primitives ();
 void idio_final_vm ();

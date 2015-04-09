@@ -25,12 +25,17 @@
 
 extern IDIO idio_S_ampersand;
 extern IDIO idio_S_and;
+extern IDIO idio_S_append;
+extern IDIO idio_S_apply;
 extern IDIO idio_S_asterisk;
 extern IDIO idio_S_begin;
 extern IDIO idio_S_block;
+extern IDIO idio_S_car;
+extern IDIO idio_S_cdr;
 extern IDIO idio_S_c_struct;
 extern IDIO idio_S_class;
 extern IDIO idio_S_cond;
+extern IDIO idio_S_cons;
 extern IDIO idio_S_define;
 extern IDIO idio_S_define_macro;
 extern IDIO idio_S_dloads;
@@ -45,6 +50,7 @@ extern IDIO idio_S_init;
 extern IDIO idio_S_lambda;
 extern IDIO idio_S_let;
 extern IDIO idio_S_letrec;
+extern IDIO idio_S_list;
 extern IDIO idio_S_monitor;
 extern IDIO idio_S_namespace;
 extern IDIO idio_S_or;

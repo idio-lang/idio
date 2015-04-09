@@ -29,7 +29,7 @@ void idio_error_vfprintf (char *format, va_list argp)
 
 void idio_error_message (char *format, ...)
 {
-    fprintf (stderr, "ERROR: ");
+    fprintf (stderr, "\n\nERROR: ");
 
     va_list fmt_args;
     va_start (fmt_args, format);

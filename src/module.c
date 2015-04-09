@@ -270,7 +270,7 @@ IDIO idio_module_symbols (IDIO module)
 
 IDIO idio_module_current_symbols ()
 {
-    return idio_module_symbols (idio_toplevel_module);
+    return idio_module_symbols (idio_current_module ());
 }
 
 IDIO idio_module_primitive_symbols ()
@@ -298,7 +298,7 @@ IDIO idio_module_defined (IDIO module)
 
 IDIO idio_module_current_defined ()
 {
-    return idio_module_defined (idio_toplevel_module);
+    return idio_module_defined (idio_current_module ());
 }
 
 IDIO idio_module_primitive_defined ()
@@ -321,7 +321,7 @@ void idio_module_current_extend_defined (IDIO name)
 {
     IDIO_ASSERT (name);
     
-    idio_module_extend_defined (idio_toplevel_module, name);
+    idio_module_extend_defined (idio_current_module (), name);
 }
 
 void idio_module_primitive_extend_defined (IDIO name)
@@ -350,7 +350,7 @@ IDIO idio_symbol_lookup_imports (IDIO symbol, IDIO module)
 
     if (idio_S_unspec != sv) {
 	if (idio_toplevel_module == module ||
-	    idio_primitive_module == module ||
+	    idio_primitive_module == module || 
 	    idio_S_false != idio_list_memq (symbol, IDIO_MODULE_EXPORTS (module))) {
 	    return sv;
 	}
@@ -403,7 +403,7 @@ IDIO idio_symbol_lookup (IDIO symbol, IDIO m_or_n)
 
 	return idio_S_unspec;
     }
-    
+
     return sv;    
 }
 

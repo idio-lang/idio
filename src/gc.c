@@ -873,8 +873,8 @@ void idio_gc_stats ();
 
 void idio_gc_collect ()
 {
-    idio_gc_walk_tree ();
-    idio_gc_stats ();
+    /* idio_gc_walk_tree (); */
+    /* idio_gc_stats (); */
     
     IDIO_C_ASSERT (idio_gc->pause == 0);
 
@@ -1174,7 +1174,7 @@ void idio_init_gc ()
 {
     idio_gc = idio_gc_new ();
 
-    idio_gc->verbose = 1;
+    idio_gc->verbose = 0;
     
     idio_gc_finalizer_hash = IDIO_HASH_EQP (64);
     idio_gc_protect (idio_gc_finalizer_hash);
