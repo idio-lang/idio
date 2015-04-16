@@ -161,8 +161,8 @@ void idio_thread_save_state (IDIO thr)
     IDIO_ASSERT (thr);
     IDIO_TYPE_ASSERT (thread, thr);
 
-    fprintf (stderr, "thread: %p save-state: ", thr);
-    idio_dump (thr, 1);
+    /* idio_debug ("thread: %p save-state: ", thr); */
+
     IDIO stack = IDIO_THREAD_STACK (thr);
     idio_array_push (stack, IDIO_FIXNUM (IDIO_THREAD_PC (thr)));
 }
@@ -172,11 +172,10 @@ void idio_thread_restore_state (IDIO thr)
     IDIO_ASSERT (thr);
     IDIO_TYPE_ASSERT (thread, thr);
 
-    fprintf (stderr, "thread: %p restore-state: ", thr);
-    idio_dump (thr, 1);
+    /* idio_debug ("thread: %p restore-state: ", thr); */
+
     IDIO stack = IDIO_THREAD_STACK (thr);
     IDIO_THREAD_PC (thr) = IDIO_FIXNUM_VAL (idio_array_pop (stack));
-    idio_dump (thr, 1);
 }
 
 void idio_init_thread ()

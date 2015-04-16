@@ -233,9 +233,8 @@ IDIO idio_C_pointer (void *p)
     IDIO_C_TYPE_POINTER_P (co) = p;
     IDIO_C_TYPE_POINTER_FREEP (co) = 0;
 
-    char *cos = idio_as_string (co, 1);
-    fprintf (stderr, "C-pointer: %s\n", cos);
-    free (cos);
+    /* idio_debug ("C-pointer: %s\n", co); */
+
     return co;
 }
 

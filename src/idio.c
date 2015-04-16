@@ -114,7 +114,6 @@ void idio_final ()
     idio_final_module ();
     idio_final_symbol ();
 
-    idio_gc_set_verboseness (3);
     idio_final_gc ();
 }
 

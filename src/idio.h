@@ -24,6 +24,7 @@
 #define IDIO_H
 
 #define IDIO_DEBUG	1
+/* #undef IDIO_DEBUG */
 
 #if IDIO_DEBUG
 #else

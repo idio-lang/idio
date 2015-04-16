@@ -563,7 +563,10 @@ void IDIO_FPRINTF (FILE *stream, const char *format, ...)
     IDIO_GC_VFPRINTF (stream, format, fmt_args);
     va_end (fmt_args);
 }
-
+#else
+void IDIO_FPRINTF (FILE *stream, const char *format, ...)
+{
+}
 #endif
 
 void idio_gc_walk_tree ()
@@ -1213,6 +1216,7 @@ void idio_final_gc ()
     idio_gc_finalizer_hash = idio_S_nil;
 
     fprintf (stderr, "\n\n\nFINAL GC\n\n\n");
+    idio_gc_stats ();
     idio_gc_collect ();
 
     idio_gc_free ();

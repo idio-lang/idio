@@ -366,7 +366,7 @@ int idio_file_handle_close (IDIO fh)
 
     IDIO_TYPE_ASSERT (file_handle, fh);
 
-    idio_debug ("file-handle-close: %s\n", fh);
+    /* idio_debug ("file-handle-close: %s\n", fh); */
 
     if (IDIO_HANDLE_FLAGS (fh) & IDIO_HANDLE_FLAG_CLOSED) {
 	fprintf (stderr, "already closed\n");
@@ -466,7 +466,7 @@ int idio_file_handle_flush (IDIO fh)
      */
     if (IDIO_HANDLE_INPUTP (fh) &&
 	! IDIO_HANDLE_OUTPUTP (fh)) {
-	fprintf (stderr, "WARNING: flush (%s) open for reading\n", IDIO_HANDLE_NAME (fh));
+	/* fprintf (stderr, "WARNING: flush (%s) open for reading\n", IDIO_HANDLE_NAME (fh)); */
     }
 
     int r = fwrite (IDIO_FILE_HANDLE_BUF (fh), 1, IDIO_FILE_HANDLE_COUNT (fh), IDIO_FILE_HANDLE_FILEP (fh));
@@ -588,8 +588,8 @@ IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (
     IDIO_ASSERT (fh);
     IDIO_C_ASSERT (reader);
 
-    fprintf (stderr, "load-file-handle: %-20s: start ", IDIO_HANDLE_NAME (fh));
-    idio_dump (idio_current_thread (), 2);
+    /* fprintf (stderr, "load-file-handle: %-20s: start ", IDIO_HANDLE_NAME (fh)); */
+    /* idio_debug ("%s\n", idio_current_thread ()); */
     idio_ai_t sp0 = idio_array_size (IDIO_THREAD_STACK (idio_current_thread ()));
 
     /*
@@ -599,6 +599,9 @@ IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (
      */
     idio_remember_file_handle (fh);
     
+    struct timeval t0;
+    gettimeofday (&t0, NULL);
+
     for (;;) {
 	IDIO e = (*reader) (fh);
 
@@ -611,22 +614,32 @@ IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (
 	fprintf (stderr, "idio_load_filehandle: line %zd: e=%s\n", IDIO_HANDLE_LINE (fh), es);
 	free (es);
 
-	struct timeval t0;
-	gettimeofday (&t0, NULL);
+	struct timeval tb;
+	gettimeofday (&tb, NULL);
 	
 	(*evaluator) (e);
-	struct timeval t1;
-	gettimeofday (&t1, NULL);
+	struct timeval ta;
+	gettimeofday (&ta, NULL);
 
-	time_t s = t1.tv_sec - t0.tv_sec;
-	suseconds_t us = t1.tv_usec - t0.tv_usec;
+	time_t s = ta.tv_sec - t0.tv_sec;
+	suseconds_t us = ta.tv_usec - t0.tv_usec;
 
 	if (us < 0) {
 	    us += 1000000;
 	    s -= 1;
 	}
 	
-	fprintf (stderr, "time +%ld.%03ld\n\n", s, us / 1000);
+	fprintf (stderr, "time %ld.%03ld ", s, us / 1000);
+
+	s = ta.tv_sec - tb.tv_sec;
+	us = ta.tv_usec - tb.tv_usec;
+
+	if (us < 0) {
+	    us += 1000000;
+	    s -= 1;
+	}
+	
+	fprintf (stderr, "+%ld.%03ld\n\n", s, us / 1000);
 	sleep (0);
     }
     
@@ -635,15 +648,15 @@ IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (
     IDIO_HANDLE_M_CLOSE (fh) (fh);
 
     idio_ai_t sp = idio_array_size (IDIO_THREAD_STACK (idio_current_thread ()));
-    fprintf (stderr, "load-file-handle: %-20s: end   ", IDIO_HANDLE_NAME (fh));
-    idio_dump (idio_current_thread (), 2);
+    /* fprintf (stderr, "load-file-handle: %-20s: end   ", IDIO_HANDLE_NAME (fh)); */
+    /* idio_debug ("%s\n", idio_current_thread ()); */
 
     if (sp != sp0) {
 	fprintf (stderr, "load-file-handle: SP %zd != %zd: ", sp, sp0);
-	idio_dump (IDIO_THREAD_STACK (idio_current_thread ()), 2);
+	idio_debug ("%s\n", IDIO_THREAD_STACK (idio_current_thread ()));
     } else {
 	fprintf (stderr, "load-file-handle: SP %zd == %zd: ", sp, sp0);
-	idio_dump (IDIO_THREAD_STACK (idio_current_thread ()), 2);
+	idio_debug ("%s\n", IDIO_THREAD_STACK (idio_current_thread ()));
     }
     return idio_S_true;
 }

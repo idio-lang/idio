@@ -618,7 +618,6 @@ static IDIO idio_scm_read_number_C (IDIO handle, char *str)
 	has_exp ||
 	inexact) {
 	num = idio_bignum_C (str);
-	idio_debug ("scm-read: %s\n", num);
     } else {
 	/*
 	 * It might be possible to use a fixnum -- if it's small

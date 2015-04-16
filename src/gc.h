@@ -627,9 +627,7 @@ idio_root_t *idio_root_new ();
 void idio_root_dump (idio_root_t *root);
 void idio_root_mark (idio_root_t *root, unsigned colour);
 idio_gc_t *idio_gc_new ();
-#ifdef IDIO_DEBUG
 void IDIO_FPRINTF (FILE *stream, const char *format, ...);
-#endif
 void idio_gc_dump ();
 void idio_gc_stats_inc (idio_type_e type);
 void idio_gc_protect (IDIO o);

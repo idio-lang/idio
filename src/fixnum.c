@@ -348,7 +348,6 @@ IDIO idio_fixnum_primitive_multiply (IDIO args)
 	    return idio_bignum_primitive_add (idio_list_reverse (bn_args));
 	}
 
-	fprintf (stderr, "fixnum *: %zd < %zd < %zd\n", IDIO_FIXNUM_MIN, ir, IDIO_FIXNUM_MAX);
 	args = IDIO_PAIR_T (args);
     }
 
@@ -496,9 +495,9 @@ IDIO idio_fixnum_primitive_quotient (IDIO a, IDIO b)
 	return idio_S_unspec;
     }
 
-    idio_debug ("fixnum quotient: %s", a);
-    idio_debug (" / %s", b);
-    idio_debug (" = %s\n", IDIO_FIXNUM (IDIO_FIXNUM_VAL (a) / ib));
+    /* idio_debug ("fixnum quotient: %s", a); */
+    /* idio_debug (" / %s", b); */
+    /* idio_debug (" = %s\n", IDIO_FIXNUM (IDIO_FIXNUM_VAL (a) / ib)); */
     return IDIO_FIXNUM (IDIO_FIXNUM_VAL (a) / ib);
 }
 
@@ -507,8 +506,8 @@ IDIO_DEFINE_PRIMITIVE2 ("quotient", quotient, (IDIO a, IDIO b))
     IDIO_ASSERT (a);
     IDIO_ASSERT (b);
     
-    idio_debug ("primitive: quotient: %s", a);
-    idio_debug (" / %s\n", b);
+    /* idio_debug ("primitive: quotient: %s", a); */
+    /* idio_debug (" / %s\n", b); */
 
     IDIO num;
     
@@ -613,7 +612,7 @@ IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(gt, >)
 	    }								\
 									\
 	    bn_args = idio_list_reverse (bn_args);			\
-	    idio_debug ("primitive: " #cname ": -> bignum: %s\n", bn_args); \
+	    /* idio_debug ("primitive: " #cname ": -> bignum: %s\n", bn_args); */ \
 	    IDIO num = idio_bignum_primitive_ ## cname (bn_args); \
 									\
 	    /* convert to a fixnum if possible */			\
@@ -625,7 +624,7 @@ IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(gt, >)
 	    return num;							\
 									\
 	} else {							\
-	    idio_debug ("primitive: " #cname ": -> fixnum: %s\n", args); \
+	    /* idio_debug ("primitive: " #cname ": -> fixnum: %s\n", args); */ \
 	    return idio_fixnum_primitive_ ## cname (args);		\
         }								\
     }
@@ -684,7 +683,7 @@ IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(gt, >)
 	    }								\
 	    								\
 	    bn_args = idio_list_reverse (bn_args);			\
-	    idio_debug ("primitive: " #cname ": -> bignum: %s\n", bn_args); \
+	    /* idio_debug ("primitive: " #cname ": -> bignum: %s\n", bn_args); */ \
 	    IDIO num = idio_bignum_primitive_ ## cname (bn_args); \
 									\
 	    /* convert to a fixnum if possible */			\
@@ -696,7 +695,7 @@ IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(gt, >)
 	    return num;							\
 	    								\
 	} else {							\
-	    idio_debug ("primitive: " #cname ": -> fixnum: %s\n", args); \
+	    /* idio_debug ("primitive: " #cname ": -> fixnum: %s\n", args); */ \
 	    return idio_fixnum_primitive_ ## cname (args);		\
         }								\
     }
@@ -755,10 +754,10 @@ IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(gt, >)
 	    }								\
 	    								\
 	    bn_args = idio_list_reverse (bn_args);			\
-	    idio_debug ("primitive: " #cname ": -> bignum: %s\n", bn_args); \
+	    /* idio_debug ("primitive: " #cname ": -> bignum: %s\n", bn_args); */ \
 	    return idio_bignum_primitive_ ## cname (bn_args); \
 	} else {							\
-	    idio_debug ("primitive: " #cname ": -> fixnum: %s\n", args); \
+	    /* idio_debug ("primitive: " #cname ": -> fixnum: %s\n", args); */ \
 	    return idio_fixnum_primitive_ ## cname (args);		\
         }								\
     }

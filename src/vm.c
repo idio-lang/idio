@@ -257,18 +257,15 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m)
     IDIO_ASSERT (m);
     IDIO_TYPE_ASSERT (pair, m);
 
-    char *ms = idio_as_string (m, 1);
-    fprintf (stderr, "compile: %s\n", ms);
-    free (ms);
+    /* idio_debug ("compile: %s\n", m); */
     
     IDIO mh = IDIO_PAIR_H (m);
     IDIO mt = IDIO_PAIR_T (m);
 
     if (! IDIO_TYPE_CONSTANTP (mh)) {
 	if (idio_isa_pair (mh)) {
-	    char *ms = idio_as_string (m, 1);
-	    fprintf (stderr, "compile: is a sequence: %s\n", ms);
-	    free (ms);
+	    /* idio_debug ("compile: is a sequence: %s\n", m); */
+
 	    while (idio_S_nil != m) {
 		idio_vm_compile (thr, ia, IDIO_PAIR_H (m));
 		m = IDIO_PAIR_T (m);
@@ -279,12 +276,10 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m)
 		    return;
 		}
 	    }
-	    fprintf (stderr, "done sequence\n");
+	    /* fprintf (stderr, "done sequence\n"); */
 	    return;
 	} else {
-	    char *mhs = idio_as_string (mh, 1);
-	    fprintf (stderr, "\nWARNING: not a CONSTANT|pair: unexpected intermediate code: %s\n\n", mhs);
-	    free (mhs);
+	    idio_debug ("\nWARNING: not a CONSTANT|pair: unexpected intermediate code: %s\n\n", mh);
 	    return;
 	}
     }
@@ -600,9 +595,10 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m)
 	    default:
 		{
 		    idio_ai_t i = idio_vm_extend_constants (j);
-		    char *js = idio_as_string (j, 1);
-		    fprintf (stderr, "vm-extend-constants: %zd == %s\n", i, js);
-		    free (js);
+
+		    /* fprintf (stderr, "vm-extend-constants: %zd", i); */
+		    /* idio_debug (" == %s\n", j); */
+
 		    IDIO_IA_PUSH1 (IDIO_A_CONSTANT_REF);
 		    IDIO_IA_PUSH_VARUINT (i);
 		    return;
@@ -1264,30 +1260,28 @@ void idio_vm_codegen (IDIO thr, IDIO m)
     IDIO_TYPE_ASSERT (thread, thr);
     IDIO_TYPE_ASSERT (pair, m);
     
-    char *ms = idio_as_string (m, 1);
-    fprintf (stderr, "codegen: in %s\n", ms);
-    free (ms);
+    /* idio_debug ("codegen: in %s\n", m); */
 
     idio_i_array_t *ia = idio_i_array (100);
     
     idio_vm_compile (thr, ia, m);
 
-    fprintf (stderr, "vm-codegen: %zd ins (%zd): ", ia->i, idio_all_code->i);
-    size_t n = idio_all_code->i;
-    size_t i;
-    for (i = 0; i < ia->i; i++, n++) {
-	if (0 == (n % 10)) {
-	    fprintf (stderr, "\n  %5zd ", n);
-	}
-	fprintf (stderr, "%3d ", ia->ae[i]);
-    }
-    fprintf (stderr, "\n");
-    sleep (0);
+    /* fprintf (stderr, "vm-codegen: %zd ins (%zd): ", ia->i, idio_all_code->i); */
+    /* size_t n = idio_all_code->i; */
+    /* size_t i; */
+    /* for (i = 0; i < ia->i; i++, n++) { */
+    /* 	if (0 == (n % 10)) { */
+    /* 	    fprintf (stderr, "\n  %5zd ", n); */
+    /* 	} */
+    /* 	fprintf (stderr, "%3d ", ia->ae[i]); */
+    /* } */
+    /* fprintf (stderr, "\n"); */
+    /* sleep (0); */
 
     IDIO_THREAD_PC (thr) = idio_all_code->i;
     idio_i_array_append (idio_all_code, ia);
     idio_i_array_free (ia);
-    fprintf (stderr, "vm-codegen: total %zd ins: ", idio_all_code->i);
+    /* fprintf (stderr, "vm-codegen: total %zd ins: ", idio_all_code->i); */
 }
 
 static uint64_t idio_thread_fetch_varuint (IDIO thr)
@@ -1379,13 +1373,13 @@ void idio_thread_invoke (IDIO thr, IDIO func, int tailp)
 	break;
     }
 
-    fprintf (stderr, "invoke: thr %p func %p tailp %d\n", thr, func, tailp);
+    /* fprintf (stderr, "invoke: thr %p func %p tailp %d\n", thr, func, tailp); */
 
     switch (func->type) {
     case IDIO_TYPE_CLOSURE:
 	{
-	    fprintf (stderr, "invoke: closure @%zd ", IDIO_CLOSURE_CODE (func));
-	    idio_dump (IDIO_FRAME_ARGS (IDIO_THREAD_VAL (thr)), 10);
+	    /* fprintf (stderr, "invoke: closure @%zd ", IDIO_CLOSURE_CODE (func)); */
+	    /* idio_debug ("%s\n", IDIO_FRAME_ARGS (IDIO_THREAD_VAL (thr))); */
 
 	    if (0 == tailp) {
 		IDIO_THREAD_STACK_PUSH (IDIO_FIXNUM (IDIO_THREAD_PC (thr)));
@@ -1429,8 +1423,8 @@ void idio_thread_invoke (IDIO thr, IDIO func, int tailp)
 	    IDIO val = IDIO_THREAD_VAL (thr);
 	    IDIO args_a = IDIO_FRAME_ARGS (val);
 	    
-	    fprintf (stderr, "invoke: primitive: %s arity=%zd%s: nargs=%zd/%zd: ", IDIO_PRIMITIVE_NAME (func),  IDIO_PRIMITIVE_ARITY (func), IDIO_PRIMITIVE_VARARGS (func) ? "+" : "", idio_array_size (args_a), IDIO_FRAME_NARGS (val));
-	    idio_dump (args_a, 10);
+	    /* fprintf (stderr, "invoke: primitive: %s arity=%zd%s: nargs=%zd/%zd: ", IDIO_PRIMITIVE_NAME (func),  IDIO_PRIMITIVE_ARITY (func), IDIO_PRIMITIVE_VARARGS (func) ? "+" : "", idio_array_size (args_a), IDIO_FRAME_NARGS (val)); */
+	    /* idio_debug ("%s\n", args_a); */
 
 	    IDIO last = idio_array_pop (args_a);
 	    IDIO_FRAME_NARGS (val) -= 1;
@@ -1478,7 +1472,7 @@ void idio_thread_invoke (IDIO thr, IDIO func, int tailp)
 		break;
 	    }
 
-	    idio_debug ("invoke: primitive: => %s\n", IDIO_THREAD_VAL (thr));
+	    /* idio_debug ("invoke: primitive: => %s\n", IDIO_THREAD_VAL (thr)); */
 
 	    size_t pc = IDIO_THREAD_PC (thr); 
 
@@ -1605,9 +1599,8 @@ void idio_signal_exception (int continuablep, IDIO e)
 {
     IDIO_ASSERT (e);
 
-    char *es = idio_as_string (e, 1);
-    fprintf (stderr, "signal-exception: %d %s\n", continuablep, es);
-    free (es);
+    /* fprintf (stderr, "signal-exception: %d", continuablep); */
+    /* idio_debug (" %s\n", e); */
     
     IDIO thr = idio_current_thread ();
     IDIO stack = IDIO_THREAD_STACK (thr);
@@ -1642,14 +1635,10 @@ void idio_signal_exception (int continuablep, IDIO e)
 	idio_array_push (stack, IDIO_FIXNUM (idio_finish_pc - 1)); /* NON-CONT-ERR */
     }
 
-    fprintf (stderr, "THREAD=");
-    idio_dump (thr, 10);
-    fprintf (stderr, "STACK=");
-    idio_dump (IDIO_THREAD_STACK (thr), 10);
+    /* idio_debug ("THREAD=%s\n", thr); */
+    /* idio_debug ("STACK=%s\n", IDIO_THREAD_STACK (thr)); */
 
-    char *hs = idio_as_string (idio_array_get_index (stack, next), 10);
-    fprintf (stderr, "invoking handler %s\n", hs);
-    free (hs);
+    /* idio_debug ("invoking handler %s\n", idio_array_get_index (stack, next)); */
     
     /* God speed! */
     idio_thread_invoke (thr, idio_array_get_index (stack, next), 1);
@@ -1660,12 +1649,11 @@ IDIO idio_apply (IDIO fn, IDIO args)
     IDIO_ASSERT (fn);
     IDIO_ASSERT (args);
 
-    char *fns = idio_as_string (fn, 1);
-    char *argss = idio_as_string (args, 10);
-    fprintf (stderr, "apply: %s %s\n", fns, argss);
+    /* idio_debug ("apply: %s", fn); */
+    /* idio_debug (" %s\n", args); */
 
     size_t nargs = idio_list_length (args);
-    fprintf (stderr, "apply: %s nargs = %zd\n", fns, nargs);
+    /* fprintf (stderr, "apply: %s nargs = %zd\n", fns, nargs); */
     
     /*
      * (apply + 1 2 '(3 4 5))
@@ -1687,11 +1675,11 @@ IDIO idio_apply (IDIO fn, IDIO args)
 	larg = IDIO_PAIR_H (larg);
     }
 
-    fprintf (stderr, "apply: %s larg=%s\n", fns, idio_as_string (larg, 1));
+    /* fprintf (stderr, "apply: %s larg=%s\n", fns, idio_as_string (larg, 1)); */
     
     size_t size = (nargs - 1) + idio_list_length (larg);
 
-    fprintf (stderr, "apply: %s -> %zd args\n", fns, size);
+    /* fprintf (stderr, "apply: %s -> %zd args\n", fns, size); */
     
     IDIO vs = idio_frame_allocate (size + 1);
 
@@ -1715,9 +1703,6 @@ IDIO idio_apply (IDIO fn, IDIO args)
     /* fprintf (stderr, "apply: %s post-thread-invoke: ", fns); */
     /* idio_dump (thr, 1); */
 
-    free (fns);
-    free (argss);
-
     return IDIO_THREAD_VAL (thr);
 }
 
@@ -1726,9 +1711,8 @@ IDIO_DEFINE_PRIMITIVE1V ("apply", apply, (IDIO fn, IDIO args))
     IDIO_ASSERT (fn);
     IDIO_ASSERT (args);
 
-    char *as = idio_as_string (args, 1);
-    fprintf (stderr, "primitive-apply: %s\n", as);
-    free (as);
+    /* idio_debug ("primitive-apply: %s\n", args); */
+
     return idio_apply (fn, args);
 }
 
@@ -2685,7 +2669,7 @@ IDIO idio_vm_run (IDIO thr, int run_gc)
     IDIO_ASSERT (thr);
     IDIO_TYPE_ASSERT (thread, thr);
 
-    fprintf (stderr, "vm-run: %p\n", thr);
+    /* fprintf (stderr, "vm-run: %p\n", thr); */
     
     idio_vm_thread_init (thr);
 
@@ -2710,9 +2694,7 @@ IDIO idio_vm_run (IDIO thr, int run_gc)
 
     IDIO r = IDIO_THREAD_VAL (thr);
     
-    char *rs = idio_as_string (r, 1);
-    fprintf (stderr, "vm-run: RESULT => %s\n", rs);
-    free (rs);
+    /* idio_debug ("vm-run: RESULT => %s\n", r); */
 
     int bail = 0;
     if (IDIO_THREAD_PC (thr) != (idio_finish_pc + 1)) {
@@ -2742,7 +2724,7 @@ IDIO idio_vm_run (IDIO thr, int run_gc)
 	sleep (0);
     }
 
-    fprintf (stderr, "vm-run: pop-handler\n");
+    /* fprintf (stderr, "vm-run: pop-handler\n"); */
     idio_vm_pop_handler (thr);
 
     if (run_gc) {
@@ -2879,4 +2861,6 @@ void idio_final_vm ()
     idio_gc_expose (idio_vm_primitives);
     fprintf (stderr, "final-vm: created %zd dynamics\n", idio_array_size (idio_vm_dynamics));
     idio_gc_expose (idio_vm_dynamics);
+    idio_gc_expose (idio_vm_dynamic_mark);
+    idio_gc_expose (idio_vm_handler_mark);
 }

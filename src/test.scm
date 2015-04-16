@@ -46,11 +46,6 @@
 
 ; --- syntax ---
 
-(define-syntax keyword
-  (syntax-rules ()
-    ((_) '())))
-(test (keyword) '())
-
 ; symbols
 
 (test 'x 'x)
