@@ -388,6 +388,7 @@ void idio_process_grey (unsigned colour)
 	idio_mark (IDIO_MODULE_EXPORTS (o), colour); 
 	idio_mark (IDIO_MODULE_IMPORTS (o), colour); 
 	idio_mark (IDIO_MODULE_SYMBOLS (o), colour); 
+	idio_mark (IDIO_MODULE_DEFINED (o), colour); 
 	break;
     case IDIO_TYPE_FRAME:
 	IDIO_C_ASSERT (idio_gc->grey != IDIO_FRAME_GREY (o));
@@ -861,7 +862,7 @@ void idio_gc_sweep ()
 	    idio_gc->free = co;
 	    
 	} else {
-	    IDIO_FPRINTF (stderr, "idio_gc_sweep: keeing %10p %x == %x %x == %x\n", co, co->flags & IDIO_FLAG_STICKY_MASK, IDIO_FLAG_NOTSTICKY, co->flags & IDIO_FLAG_GCC_MASK, IDIO_FLAG_GCC_WHITE);
+	    IDIO_FPRINTF (stderr, "idio_gc_sweep: keeping %10p %x == %x %x == %x\n", co, co->flags & IDIO_FLAG_STICKY_MASK, IDIO_FLAG_NOTSTICKY, co->flags & IDIO_FLAG_GCC_MASK, IDIO_FLAG_GCC_WHITE);
 	    po = co;
 	}
 
@@ -874,7 +875,7 @@ void idio_gc_stats ();
 void idio_gc_collect ()
 {
     /* idio_gc_walk_tree (); */
-    /* idio_gc_stats (); */
+    /* idio_gc_stats ();  */
     
     IDIO_C_ASSERT (idio_gc->pause == 0);
 
@@ -998,7 +999,8 @@ void idio_gc_stats ()
     while (root) {
 	switch (root->object->type) {
 	default:
-	    idio_dump (root->object, 3);
+	    fprintf (stderr, "%p ", root->object);
+	    idio_debug ("root object: %s\n", root->object);
 	    rc++;
 	    break;
 	}
@@ -1178,6 +1180,7 @@ void idio_init_gc ()
     
     idio_gc_finalizer_hash = IDIO_HASH_EQP (64);
     idio_gc_protect (idio_gc_finalizer_hash);
+    IDIO_HASH_FLAGS (idio_gc_finalizer_hash) |= IDIO_HASH_FLAG_STRING_KEYS;
 }
 
 void idio_run_all_finalizers ()
@@ -1209,6 +1212,7 @@ void idio_final_gc ()
     /*  prevent it being used */
     idio_gc_finalizer_hash = idio_S_nil;
 
+    fprintf (stderr, "\n\n\nFINAL GC\n\n\n");
     idio_gc_collect ();
 
     idio_gc_free ();

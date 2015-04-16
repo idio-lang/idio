@@ -477,7 +477,7 @@ IDIO idio_scm_read_bignum (IDIO handle, char basec, int radix)
 	return idio_S_unspec;
     }
 
-    idio_t* base = idio_bignum_integer_int64 (radix);
+    IDIO base = idio_bignum_integer_int64 (radix);
     IDIO bn = idio_bignum_integer_int64 (0);
     
     int ndigits = 0;
@@ -520,6 +520,12 @@ IDIO idio_scm_read_bignum (IDIO handle, char basec, int radix)
 
     if (neg) {
 	bn = idio_bignum_negate (bn);
+    }
+
+    /* convert to a fixnum if possible */
+    IDIO fn = idio_bignum_to_fixnum (bn);
+    if (idio_S_nil != fn) {
+	bn = fn;
     }
 
     return bn;
@@ -612,6 +618,7 @@ static IDIO idio_scm_read_number_C (IDIO handle, char *str)
 	has_exp ||
 	inexact) {
 	num = idio_bignum_C (str);
+	idio_debug ("scm-read: %s\n", num);
     } else {
 	/*
 	 * It might be possible to use a fixnum -- if it's small
@@ -620,11 +627,17 @@ static IDIO idio_scm_read_number_C (IDIO handle, char *str)
 	 * log2(10) => 3.22 bits per decimal digit, we have (i-1)
 	 * digits so multiple that by four for some rounding error.
 	 */
-	if (((i - 1) * 4) < ((sizeof (void *) * 8) >> 2)) {
+	if (((i - 1) * 4) < ((sizeof (intptr_t) * 8) - 2)) {
 	    num = idio_fixnum_C (str, 10);
 	    idio_gc_stats_inc (IDIO_TYPE_FIXNUM);
 	} else {
 	    num = idio_bignum_C (str);
+
+	    /* convert to a fixnum if possible */
+	    IDIO fn = idio_bignum_to_fixnum (num);
+	    if (idio_S_nil != fn) {
+		num = fn;
+	    }
 	}
     }
 
@@ -735,7 +748,11 @@ static IDIO idio_scm_read_expr (IDIO handle, int depth)
 			IDIO bn = idio_scm_read_expr (handle, depth);
 
 			if (IDIO_TYPE_FIXNUMP (bn)) {
-			    return bn;
+			    if (0 == inexact) {
+				return bn;
+			    } else {
+				bn = idio_bignum_integer_int64 (IDIO_FIXNUM_VAL (bn));
+			    }
 			}
 
 			if (! idio_isa_bignum (bn)) {
@@ -835,24 +852,6 @@ IDIO idio_scm_read_char (IDIO handle)
     } else {
 	return IDIO_CHARACTER (c);
     }
-}
-
-void idio_scm_write (IDIO handle, IDIO o)
-{
-    IDIO_ASSERT (handle);
-    IDIO_TYPE_ASSERT (handle, handle);
-    
-    IDIO_C_ASSERT (0);
-}
-
-void idio_scm_write_char (IDIO handle, IDIO c)
-{
-    IDIO_ASSERT (handle);
-    IDIO_ASSERT (c);
-    IDIO_TYPE_ASSERT (handle, handle);
-    IDIO_TYPE_ASSERT (character, c);
-
-    idio_handle_putc (handle, IDIO_CHARACTER_VAL (c));
 }
 
 void idio_init_scm_read ()

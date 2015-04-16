@@ -108,7 +108,7 @@ void idio_set_current_input_handle (IDIO h)
     IDIO_TYPE_ASSERT (handle, h);
 
     IDIO thr = idio_current_thread ();
-    IDIO_THREAD_OUTPUT_HANDLE (thr) = h;
+    IDIO_THREAD_INPUT_HANDLE (thr) = h;
 }
 
 IDIO idio_current_output_handle ()
@@ -123,7 +123,7 @@ void idio_set_current_output_handle (IDIO h)
     IDIO_TYPE_ASSERT (handle, h);
 
     IDIO thr = idio_current_thread ();
-    IDIO_THREAD_INPUT_HANDLE (thr) = h;
+    IDIO_THREAD_OUTPUT_HANDLE (thr) = h;
 }
 
 IDIO idio_current_error_handle ()
@@ -161,7 +161,8 @@ void idio_thread_save_state (IDIO thr)
     IDIO_ASSERT (thr);
     IDIO_TYPE_ASSERT (thread, thr);
 
-    fprintf (stderr, "thread: %p save-state\n", thr);
+    fprintf (stderr, "thread: %p save-state: ", thr);
+    idio_dump (thr, 1);
     IDIO stack = IDIO_THREAD_STACK (thr);
     idio_array_push (stack, IDIO_FIXNUM (IDIO_THREAD_PC (thr)));
 }
@@ -171,9 +172,11 @@ void idio_thread_restore_state (IDIO thr)
     IDIO_ASSERT (thr);
     IDIO_TYPE_ASSERT (thread, thr);
 
-    fprintf (stderr, "thread: %p restore-state\n", thr);
+    fprintf (stderr, "thread: %p restore-state: ", thr);
+    idio_dump (thr, 1);
     IDIO stack = IDIO_THREAD_STACK (thr);
     IDIO_THREAD_PC (thr) = IDIO_FIXNUM_VAL (idio_array_pop (stack));
+    idio_dump (thr, 1);
 }
 
 void idio_init_thread ()

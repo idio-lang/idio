@@ -53,7 +53,7 @@
 
 ; There is no LET or LETREC yet, so
 
-(define-macro (let bindings expr . exprs)
+(define-macro (let-s9 bindings expr . exprs)
   ((lambda (split)
      ((lambda (tmp-split)
         (set! split tmp-split)
@@ -125,7 +125,8 @@
 
 ;; Type predicates
 
-(define number? real?)
+; conflicts with Idio fixnum/bignum
+;(define number? real?)
 
 (define (port? x)
   (or (input-port? x)
@@ -602,7 +603,7 @@
     ((sqrt2 (lambda (x last)
        (if (= last x)
            x
-           (sqrt2 (/ (+ x (/ square x)) 2)
+           (sqrt2 (/ (+ x (/ square x)) 2.0)
                   x)))))
     (if (negative? square)
         (error "sqrt: negative argument" square)
@@ -915,7 +916,7 @@
 
 ;;----- Quasi-quote-expander -----
 
-(define-macro quasiquote
+(define-macro quasiquote-s9
   (lambda (form)
     (letrec
       ((qq-cons
@@ -994,7 +995,7 @@
                            (a (cdr va)))
                        `((lambda ,v ,a2 ,@a3) ,@a)))))))))
 
-(define-macro let %ext-let)
+(define-macro let-s9 %ext-let)
 
 ; Also define a clean version of LETREC.
 
@@ -1019,9 +1020,9 @@
                ,expr
                ,@exprs)))))))
 
-(define-macro letrec %clean-letrec)
+(define-macro letrec-s9 %clean-letrec)
 
-(define-macro let*
+(define-macro let*-s9
   (let ((check-bindings check-bindings))
     (lambda (bindings expr . exprs)
       (letrec

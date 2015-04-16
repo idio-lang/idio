@@ -37,7 +37,7 @@
 #define IDIO_A_DEEP_ARGUMENT_REF       6
 #define IDIO_A_GLOBAL_REF              7
 #define IDIO_A_CHECKED_GLOBAL_REF      8
-#define IDIO_A_CONSTANT                9
+#define IDIO_A_CONSTANT_REF            9 
 
 #define IDIO_A_PREDEFINED0             10
 #define IDIO_A_PREDEFINED1             11
@@ -145,6 +145,12 @@
 
 #define IDIO_A_LONG_JUMP_TRUE          135
 #define IDIO_A_SHORT_JUMP_TRUE         136
+#define IDIO_A_FIXNUM		       137
+#define IDIO_A_NEG_FIXNUM	       138
+#define IDIO_A_CHARACTER	       139
+#define IDIO_A_NEG_CHARACTER	       140
+#define IDIO_A_CONSTANT		       141
+#define IDIO_A_NEG_CONSTANT	       142
 
 #define IDIO_A_DYNAMIC_REF             240
 #define IDIO_A_POP_DYNAMIC             241
@@ -239,7 +245,7 @@
 #define idio_I_OR		     ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_OR))
 
 void idio_vm_codegen (IDIO thr, IDIO m);
-IDIO idio_vm_run (IDIO thr);
+IDIO idio_vm_run (IDIO thr, int run_gc);
 
 idio_ai_t idio_vm_extend_constants (IDIO v);
 IDIO idio_vm_constants_ref (idio_ai_t i);

@@ -74,14 +74,15 @@
  */
 
 #ifdef __LP64__
+/*
+#define IDIO_BIGNUM_DPW           18 
+#define IDIO_BIGNUM_INT_SEG_LIMIT 1000000000000000000LL 
+#define IDIO_BIGNUM_SIG_SEGMENTS  5 
+*/
 #define IDIO_BIGNUM_DPW           18
 #define IDIO_BIGNUM_INT_SEG_LIMIT 1000000000000000000LL
-#define IDIO_BIGNUM_SIG_SEGMENTS  5
-/*
-#define IDIO_BIGNUM_DPW           3
-#define IDIO_BIGNUM_INT_SEG_LIMIT 1000L
-#define IDIO_BIGNUM_SIG_SEGMENTS  2
-*/
+#define IDIO_BIGNUM_SIG_SEGMENTS  1
+
 #else
 #define IDIO_BIGNUM_DPW           9
 #define IDIO_BIGNUM_INT_SEG_LIMIT 1000000000L
@@ -115,6 +116,7 @@ int idio_bignum_real_equal_p (IDIO a, IDIO b);
 IDIO idio_bignum_scale_significand (IDIO bn, int64_t desired_exp, int max_size);
 IDIO idio_bignum_integer_argument (IDIO bn);
 int64_t idio_bignum_int64_value (IDIO bn);
+IDIO idio_bignum_to_fixnum (IDIO bn);
 IDIO idio_bignum_abs (IDIO bn);
 int idio_bignum_negative_p (IDIO bn);
 IDIO idio_bignum_negate (IDIO bn);
@@ -148,6 +150,7 @@ IDIO idio_bignum_primitive_multiply (IDIO args);
 IDIO idio_bignum_primitive_divide (IDIO args);
 IDIO idio_bignum_primitive_floor (IDIO bn);
 IDIO idio_bignum_primitive_quotient (IDIO a, IDIO b);
+IDIO idio_bignum_primitive_remainder (IDIO a, IDIO b);
 IDIO idio_bignum_primitive_lt (IDIO args);
 IDIO idio_bignum_primitive_le (IDIO args);
 IDIO idio_bignum_primitive_gt (IDIO args);

@@ -73,6 +73,7 @@ void idio_error_param_type (char *etype, IDIO who)
 
 void idio_error_add_C (const char *s)
 {
+    idio_error_message (s);
 }
 
 IDIO_DEFINE_PRIMITIVE1V ("error", error, (IDIO m, IDIO args))

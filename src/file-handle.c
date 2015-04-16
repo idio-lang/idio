@@ -30,6 +30,7 @@ static IDIO idio_stderr = idio_S_nil;
 #define IDIO_FILE_HANDLE_FLAG_NONE	  0
 #define IDIO_FILE_HANDLE_FLAG_EOF	  (1<<0)
 #define IDIO_FILE_HANDLE_FLAG_INTERACTIVE (1<<1)
+#define IDIO_FILE_HANDLE_FLAG_STDIO	  (1<<2)
 
 typedef struct idio_file_handle_stream_s {
     FILE *filep;		/* or NULL! */
@@ -91,7 +92,7 @@ static void idio_error_file_delete (IDIO filename)
     idio_error_message ("remove (%s): %s", IDIO_STRING_S (filename), strerror (errno));
 }
 
-static IDIO idio_open_file_handle (char *name, FILE *filep, int mflag)
+static IDIO idio_open_file_handle (char *name, FILE *filep, int mflag, int sflags)
 {
     IDIO_C_ASSERT (filep);
     
@@ -100,7 +101,6 @@ static IDIO idio_open_file_handle (char *name, FILE *filep, int mflag)
 
     int fd = fileno (filep);
 
-    int sflags = IDIO_FILE_HANDLE_FLAG_NONE;
     if (isatty (fd)) {
 	sflags |= IDIO_FILE_HANDLE_FLAG_INTERACTIVE;
     }
@@ -115,12 +115,18 @@ static IDIO idio_open_file_handle (char *name, FILE *filep, int mflag)
 
     IDIO fh = idio_handle ();
 
+    char *name_copy = idio_alloc (strlen (name) + 1);
+    strcpy (name_copy, name);
+
     IDIO_HANDLE_FLAGS (fh) |= mflag | IDIO_HANDLE_FLAG_FILE;
-    IDIO_HANDLE_NAME (fh) = name;
+    IDIO_HANDLE_NAME (fh) = name_copy;
     IDIO_HANDLE_STREAM (fh) = fhsp;
     IDIO_HANDLE_METHODS (fh) = &idio_file_handle_methods;
 
-    idio_register_file_handle (fh);
+    if ((sflags & IDIO_FILE_HANDLE_FLAG_STDIO) == 0) {
+	idio_register_finalizer (fh, idio_file_handle_finalizer);
+	/* idio_register_file_handle (fh); */
+    }
     
     return fh;
 }
@@ -151,19 +157,29 @@ IDIO idio_open_file_handle_C (char *name, char *mode)
 	break;
     }
 
-    FILE *filep = fopen (name, mode);
+    FILE *filep;
+    int tries;
+    for (tries = 2; tries > 0 ; tries--) {
+	filep = fopen (name, mode);
+	if (NULL == filep) {
+	    idio_gc_collect ();
+	} else {
+	    break;
+	}
+    }
+
     if (NULL == filep) {
 	idio_error_message ("fopen (\"%s\", \"%s\"): %s", name, mode, strerror (errno));
     }
 
-    return idio_open_file_handle (name, filep, mflag);
+    return idio_open_file_handle (name, filep, mflag, IDIO_FILE_HANDLE_FLAG_NONE);
 }
 
 static IDIO idio_open_std_file_handle (FILE *filep)
 {
     IDIO_C_ASSERT (filep);
 
-    int mflag = 0;
+    int mflag = IDIO_HANDLE_FLAG_NONE;
     char *name = NULL;
     
     if (filep == stdin) {
@@ -180,7 +196,7 @@ static IDIO idio_open_std_file_handle (FILE *filep)
 	return idio_S_unspec;
     }
 
-    return idio_open_file_handle (name, filep, mflag);
+    return idio_open_file_handle (name, filep, mflag, IDIO_FILE_HANDLE_FLAG_STDIO);
 }
 
 IDIO idio_stdin_file_handle ()
@@ -234,19 +250,17 @@ void idio_file_handle_finalizer (IDIO fh)
     }
 }
 
-void idio_register_file_handle (IDIO fh)
+void idio_remember_file_handle (IDIO fh)
 {
     IDIO_ASSERT (fh);
 
     idio_hash_put (idio_file_handles, fh, idio_S_nil);
-    idio_register_finalizer (fh, idio_file_handle_finalizer);
 }
 
-void idio_deregister_file_handle (IDIO fh)
+void idio_forget_file_handle (IDIO fh)
 {
     IDIO_ASSERT (fh);
 
-    idio_deregister_finalizer (fh);
     idio_hash_delete (idio_file_handles, fh);
 }
 
@@ -256,6 +270,7 @@ void idio_file_handle_free (IDIO fh)
 
     free (IDIO_FILE_HANDLE_BUF (fh));
     free (IDIO_HANDLE_STREAM (fh));
+    free (IDIO_HANDLE_NAME (fh));
 }
 
 int idio_file_handle_readyp (IDIO fh)
@@ -317,7 +332,7 @@ int idio_file_handle_getc (IDIO fh)
     IDIO_ASSERT (fh);
 
     if (! idio_input_file_handlep (fh)) {
-	idio_error_param_type ("not an input file-handle", fh);
+	idio_error_param_type ("input file-handle", fh);
 	IDIO_C_ASSERT (0);
     }
 
@@ -351,8 +366,10 @@ int idio_file_handle_close (IDIO fh)
 
     IDIO_TYPE_ASSERT (file_handle, fh);
 
+    idio_debug ("file-handle-close: %s\n", fh);
+
     if (IDIO_HANDLE_FLAGS (fh) & IDIO_HANDLE_FLAG_CLOSED) {
-	idio_error_file_closed (fh);
+	fprintf (stderr, "already closed\n");
 
 	errno = EBADF;
 	return EOF;
@@ -362,7 +379,8 @@ int idio_file_handle_close (IDIO fh)
 	}
 
 	IDIO_HANDLE_FLAGS (fh) |= IDIO_HANDLE_FLAG_CLOSED;
-	idio_deregister_file_handle (fh);
+	idio_deregister_finalizer (fh);
+	/* idio_deregister_file_handle (fh); */
 	return fclose (IDIO_FILE_HANDLE_FILEP (fh));
     }
 }
@@ -372,7 +390,7 @@ int idio_file_handle_putc (IDIO fh, int c)
     IDIO_ASSERT (fh);
 
     if (! idio_output_file_handlep (fh)) {
-	idio_error_param_type ("not an output file-handle", fh);
+	idio_error_param_type ("output file-handle", fh);
 	IDIO_C_ASSERT (0);
     }
     
@@ -423,7 +441,7 @@ int idio_file_handle_puts (IDIO fh, char *s, size_t l)
 	IDIO_FILE_HANDLE_PTR (fh) = IDIO_FILE_HANDLE_BUF (fh);
 	IDIO_FILE_HANDLE_COUNT (fh) = 0;
     } else {
-	memcpy (IDIO_FILE_HANDLE_BUF (fh), s, l);
+	memcpy (IDIO_FILE_HANDLE_PTR (fh), s, l);
 	IDIO_FILE_HANDLE_PTR (fh) += l;
 	IDIO_FILE_HANDLE_COUNT (fh) += l;
 	r = l;
@@ -472,7 +490,7 @@ void idio_file_handle_print (IDIO fh, IDIO o)
     IDIO_ASSERT (fh);
 
     if (! idio_output_file_handlep (fh)) {
-	idio_error_param_type ("not an output file-handle", fh);
+	idio_error_param_type ("output file-handle", fh);
 	IDIO_C_ASSERT (0);
     }
 
@@ -495,7 +513,7 @@ IDIO_DEFINE_PRIMITIVE2 ("open-file", open_file, (IDIO name, IDIO mode))
 	name_C = idio_string_as_C (name);
 	break;
     default:
-	idio_error_param_type ("not a string", name);
+	idio_error_param_type ("string", name);
 	break;
     }
     
@@ -507,13 +525,59 @@ IDIO_DEFINE_PRIMITIVE2 ("open-file", open_file, (IDIO name, IDIO mode))
 	mode_C = idio_string_as_C (mode);
 	break;
     default:
-	idio_error_param_type ("not a string", mode);
+	idio_error_param_type ("string", mode);
 	break;
     }
     
     IDIO r = idio_open_file_handle_C (name_C, mode_C);
 
     free (mode_C);
+    free (name_C);
+
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("open-input-file", open_input_file, (IDIO name))
+{
+    IDIO_ASSERT (name);
+
+    char *name_C = NULL;
+
+    switch (idio_type (name)) {
+    case IDIO_TYPE_STRING:
+    case IDIO_TYPE_SUBSTRING:
+	name_C = idio_string_as_C (name);
+	break;
+    default:
+	idio_error_param_type ("string", name);
+	break;
+    }
+    
+    IDIO r = idio_open_file_handle_C (name_C, "r");
+
+    free (name_C);
+
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("open-output-file", open_output_file, (IDIO name))
+{
+    IDIO_ASSERT (name);
+
+    char *name_C = NULL;
+
+    switch (idio_type (name)) {
+    case IDIO_TYPE_STRING:
+    case IDIO_TYPE_SUBSTRING:
+	name_C = idio_string_as_C (name);
+	break;
+    default:
+	idio_error_param_type ("string", name);
+	break;
+    }
+    
+    IDIO r = idio_open_file_handle_C (name_C, "w");
+
     free (name_C);
 
     return r;
@@ -527,6 +591,14 @@ IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (
     fprintf (stderr, "load-file-handle: %-20s: start ", IDIO_HANDLE_NAME (fh));
     idio_dump (idio_current_thread (), 2);
     idio_ai_t sp0 = idio_array_size (IDIO_THREAD_STACK (idio_current_thread ()));
+
+    /*
+     * When we call (*evaluator) (e) we are at risk of the garbage
+     * collector being called so we need to save the current file
+     * handle so it isn't collected
+     */
+    idio_remember_file_handle (fh);
+    
     for (;;) {
 	IDIO e = (*reader) (fh);
 
@@ -539,10 +611,26 @@ IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (
 	fprintf (stderr, "idio_load_filehandle: line %zd: e=%s\n", IDIO_HANDLE_LINE (fh), es);
 	free (es);
 
+	struct timeval t0;
+	gettimeofday (&t0, NULL);
+	
 	(*evaluator) (e);
-	fprintf (stderr, "\n");
+	struct timeval t1;
+	gettimeofday (&t1, NULL);
+
+	time_t s = t1.tv_sec - t0.tv_sec;
+	suseconds_t us = t1.tv_usec - t0.tv_usec;
+
+	if (us < 0) {
+	    us += 1000000;
+	    s -= 1;
+	}
+	
+	fprintf (stderr, "time +%ld.%03ld\n\n", s, us / 1000);
 	sleep (0);
     }
+    
+    idio_forget_file_handle (fh);
     
     IDIO_HANDLE_M_CLOSE (fh) (fh);
 
@@ -568,8 +656,8 @@ typedef struct idio_file_extension_s {
 
 static idio_file_extension_t idio_file_extensions[] = {
     { NULL, idio_scm_read, idio_scm_evaluate },
-    { "idio", idio_scm_read, idio_scm_evaluate },
-    { "scm", idio_scm_read, idio_scm_evaluate },
+    { ".idio", idio_scm_read, idio_scm_evaluate },
+    { ".scm", idio_scm_read, idio_scm_evaluate },
     { NULL, NULL }
 };
 
@@ -578,7 +666,7 @@ IDIO idio_load_file (IDIO filename)
     IDIO_ASSERT (filename);
 
     if (! idio_isa_string (filename)) {
-	idio_error_param_type ("not a string", filename);
+	idio_error_param_type ("string", filename);
 	return idio_S_unspec;
     }
 
@@ -597,15 +685,7 @@ IDIO idio_load_file (IDIO filename)
     char *dot = strrchr (slash, '.');
 
     if (NULL == dot) {
-	if ((l + 1) >= PATH_MAX) {
-	    idio_error_filename_too_long (filename);
-	    return idio_S_unspec;
-	}
-	    
 	dot = strrchr (slash, '\0'); /* end of string */
-	strcpy (dot, ".");
-	dot++;
-	l++;
 	    
 	idio_file_extension_t *fe = idio_file_extensions;
     
@@ -645,7 +725,7 @@ IDIO idio_load_file (IDIO filename)
     return idio_S_unspec;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("load-file", load_file, (IDIO filename))
+IDIO_DEFINE_PRIMITIVE1 ("load", load, (IDIO filename))
 {
     IDIO_ASSERT (filename);
 
@@ -713,7 +793,9 @@ void idio_init_file_handle ()
 void idio_file_handle_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (open_file);
-    IDIO_ADD_PRIMITIVE (load_file);
+    IDIO_ADD_PRIMITIVE (open_input_file);
+    IDIO_ADD_PRIMITIVE (open_output_file);
+    IDIO_ADD_PRIMITIVE (load);
     IDIO_ADD_PRIMITIVE (file_exists_p);
     IDIO_ADD_PRIMITIVE (delete_file);
 }

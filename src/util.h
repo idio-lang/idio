@@ -41,6 +41,7 @@ IDIO idio_list_memq (IDIO k, IDIO l);
 IDIO idio_list_assq (IDIO k, IDIO l);
 IDIO idio_list_set_difference (IDIO set1, IDIO set2);
 void idio_dump (IDIO o, int detail);
+void idio_debug (const char *fmt, IDIO o);
 
 void idio_init_util ();
 void idio_util_add_primitives ();

@@ -45,6 +45,7 @@ void idio_init ()
     idio_init_array ();
     idio_init_fixnum ();
     idio_init_bignum ();
+    idio_init_closure ();
     idio_init_error ();
     idio_init_vm ();
     
@@ -74,6 +75,7 @@ void idio_init ()
     idio_array_add_primitives ();
     idio_fixnum_add_primitives ();
     idio_bignum_add_primitives ();
+    idio_closure_add_primitives ();
     idio_error_add_primitives ();
     idio_vm_add_primitives ();
 
@@ -92,6 +94,7 @@ void idio_final ()
      */
     idio_final_vm ();
     idio_final_error ();
+    idio_final_closure ();
     idio_final_bignum ();
     idio_final_fixnum ();
     idio_final_array ();
@@ -111,6 +114,7 @@ void idio_final ()
     idio_final_module ();
     idio_final_symbol ();
 
+    idio_gc_set_verboseness (3);
     idio_final_gc ();
 }
 

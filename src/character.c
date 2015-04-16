@@ -99,8 +99,6 @@ IDIO_DEFINE_PRIMITIVE1 ("char?",  char_p, (IDIO o))
 {
     IDIO_ASSERT (o);
 
-    IDIO_VERIFY_PARAM_TYPE (character, o);
-
     IDIO r = idio_S_false;
 
     if (idio_isa_character (o)) {
@@ -216,41 +214,52 @@ IDIO_DEFINE_PRIMITIVE1 ("char-upper-case?",  char_upper_case_p, (IDIO c))
 /*
  * All the char-*? are essentially identical
  */
-#define IDIO_DEFINE_CHARACTER_PRIMITIVE2(name,cname,cmp,accessor)	\
-    IDIO_DEFINE_PRIMITIVE2 (name, cname, (IDIO c1, IDIO c2))		\
+#define IDIO_DEFINE_CHARACTER_PRIMITIVE2V(name,cname,cmp,accessor)	\
+    IDIO_DEFINE_PRIMITIVE2V (name, cname, (IDIO c1, IDIO c2, IDIO args)) \
     {									\
 	IDIO_ASSERT (c1);						\
 	IDIO_ASSERT (c2);						\
+	IDIO_ASSERT (args);						\
 									\
 	IDIO_VERIFY_PARAM_TYPE (character, c1);				\
 	IDIO_VERIFY_PARAM_TYPE (character, c2);				\
+	IDIO_VERIFY_PARAM_TYPE (list, args);				\
 									\
-	IDIO r = idio_S_false;						\
+	args = idio_pair (c2, args);					\
 									\
-	if (accessor (c1) cmp accessor (c2)) {				\
-	    r = idio_S_true;						\
+	IDIO r = idio_S_true;						\
+									\
+	while (idio_S_nil != args) {					\
+	    c2 = IDIO_PAIR_H (args);					\
+	    IDIO_VERIFY_PARAM_TYPE (character, c2);			\
+	    if (! (accessor (c1) cmp accessor (c2))) {			\
+		r = idio_S_false;					\
+		break;							\
+	    }								\
+	    c1 = c2;							\
+	    args = IDIO_PAIR_T (args);					\
 	}								\
 									\
 	return r;							\
     }
 
-#define IDIO_DEFINE_CHARACTER_CS_PRIMITIVE2(name,cname,cmp)		\
-    IDIO_DEFINE_CHARACTER_PRIMITIVE2 (name, char_ci_ ## cname ## _p, cmp, IDIO_CHARACTER_IVAL)
+#define IDIO_DEFINE_CHARACTER_CS_PRIMITIVE2V(name,cname,cmp)		\
+    IDIO_DEFINE_CHARACTER_PRIMITIVE2V (name, char_ci_ ## cname ## _p, cmp, IDIO_CHARACTER_VAL)
 
-#define IDIO_DEFINE_CHARACTER_CI_PRIMITIVE2(name,cname,cmp)		\
-    IDIO_DEFINE_CHARACTER_PRIMITIVE2 (name, char_ ## cname ## _p, cmp, IDIO_CHARACTER_VAL)
+#define IDIO_DEFINE_CHARACTER_CI_PRIMITIVE2V(name,cname,cmp)		\
+    IDIO_DEFINE_CHARACTER_PRIMITIVE2V (name, char_ ## cname ## _p, cmp, IDIO_CHARACTER_IVAL)
 
-IDIO_DEFINE_CHARACTER_CI_PRIMITIVE2 ("char-ci<=?", le, <=)
-IDIO_DEFINE_CHARACTER_CI_PRIMITIVE2 ("char-ci<?", lt, <)
-IDIO_DEFINE_CHARACTER_CI_PRIMITIVE2 ("char-ci=?", eq, ==)
-IDIO_DEFINE_CHARACTER_CI_PRIMITIVE2 ("char-ci>=?", ge, >=)
-IDIO_DEFINE_CHARACTER_CI_PRIMITIVE2 ("char-ci>?", gt, >)
+IDIO_DEFINE_CHARACTER_CI_PRIMITIVE2V ("char-ci<=?", le, <=)
+IDIO_DEFINE_CHARACTER_CI_PRIMITIVE2V ("char-ci<?", lt, <)
+IDIO_DEFINE_CHARACTER_CI_PRIMITIVE2V ("char-ci=?", eq, ==)
+IDIO_DEFINE_CHARACTER_CI_PRIMITIVE2V ("char-ci>=?", ge, >=)
+IDIO_DEFINE_CHARACTER_CI_PRIMITIVE2V ("char-ci>?", gt, >)
 
-IDIO_DEFINE_CHARACTER_CS_PRIMITIVE2 ("char<=?", le, <=)
-IDIO_DEFINE_CHARACTER_CS_PRIMITIVE2 ("char<?", lt, <)
-IDIO_DEFINE_CHARACTER_CS_PRIMITIVE2 ("char=?", eq, ==)
-IDIO_DEFINE_CHARACTER_CS_PRIMITIVE2 ("char>=?", ge, >=)
-IDIO_DEFINE_CHARACTER_CS_PRIMITIVE2 ("char>?", gt, >)
+IDIO_DEFINE_CHARACTER_CS_PRIMITIVE2V ("char<=?", le, <=)
+IDIO_DEFINE_CHARACTER_CS_PRIMITIVE2V ("char<?", lt, <)
+IDIO_DEFINE_CHARACTER_CS_PRIMITIVE2V ("char=?", eq, ==)
+IDIO_DEFINE_CHARACTER_CS_PRIMITIVE2V ("char>=?", ge, >=)
+IDIO_DEFINE_CHARACTER_CS_PRIMITIVE2V ("char>?", gt, >)
 
 #define IDIO_CHARACTER_INTERN_C(name,c)	(idio_characters_C_intern (name, IDIO_CHARACTER (c)))
 

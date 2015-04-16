@@ -24,6 +24,7 @@
 #define FIXNUM_H
 
 IDIO idio_fixnum_C (char *str, int base);
+int idio_isa_integer (IDIO o);
 IDIO idio_fixnum_primitive_add (IDIO args);
 IDIO idio_fixnum_primitive_subtract (IDIO args);
 IDIO idio_fixnum_primitive_multiply (IDIO args);
@@ -33,7 +34,20 @@ IDIO idio_fixnum_primitive_lt (IDIO args);
 IDIO idio_fixnum_primitive_eq (IDIO args);
 IDIO idio_fixnum_primitive_ge (IDIO args);
 IDIO idio_fixnum_primitive_gt (IDIO args);
+IDIO idio_fixnum_primitive_floor (IDIO a);
+IDIO idio_fixnum_primitive_quotient (IDIO a, IDIO b);
 IDIO idio_fixnum_primitive_remainder (IDIO a, IDIO b);
+
+IDIO idio_defprimitive_add ();
+IDIO idio_defprimitive_subtract ();
+IDIO idio_defprimitive_multiply ();
+IDIO idio_defprimitive_divide ();
+IDIO idio_defprimitive_lt ();
+IDIO idio_defprimitive_le ();
+IDIO idio_defprimitive_eq ();
+IDIO idio_defprimitive_ge ();
+IDIO idio_defprimitive_gt ();
+IDIO idio_defprimitive_remainder ();
 
 void idio_init_fixnum ();
 void idio_fixnum_add_primitives ();

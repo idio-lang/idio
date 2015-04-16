@@ -446,6 +446,52 @@ IDIO_DEFINE_PRIMITIVE1 ("vector?", vector_p, (IDIO o))
     return r;
 }
 
+IDIO_DEFINE_PRIMITIVE1V ("make-vector", make_vector, (IDIO size, IDIO args))
+{
+    IDIO_ASSERT (size);
+    IDIO_ASSERT (args);
+
+    intptr_t vlen = -1;
+    
+    if (idio_isa_fixnum (size)) {
+	vlen = IDIO_FIXNUM_VAL (size);
+    } else if (idio_isa_bignum (size)) {
+	if (IDIO_BIGNUM_INTEGER_P (size)) {
+	    vlen = idio_bignum_int64_value (size);
+	} else {
+	    IDIO size_i = idio_bignum_real_to_integer (size);
+	    if (idio_S_nil == size_i) {
+		idio_error_param_type ("number", size);
+	    } else {
+		vlen = idio_bignum_int64_value (size_i);
+	    }
+	}
+    } else {
+	idio_error_param_type ("number", size);
+    }
+
+    IDIO_VERIFY_PARAM_TYPE (list, args);
+
+    IDIO dv = idio_S_false; /* S9fES -- Scheme specs say unspecified */
+
+    if (idio_S_nil != args) {
+	dv = IDIO_PAIR_H (args);
+    }
+
+    if (vlen < 0) {
+	idio_error_message ("invalid length: %zd", vlen);
+    }
+    
+    IDIO a = idio_array (vlen);
+    
+    size_t i;
+    for (i = 0; i < vlen; i++) {
+	idio_array_insert_index (a, dv, i);
+    }
+
+    return a;
+}
+
 IDIO_DEFINE_PRIMITIVE2 ("vector-fill!", vector_fill, (IDIO a, IDIO fill))
 {
     IDIO_ASSERT (a);
@@ -478,11 +524,27 @@ IDIO_DEFINE_PRIMITIVE2 ("vector-ref", vector_ref, (IDIO a, IDIO index))
     IDIO_ASSERT (index);
 
     IDIO_VERIFY_PARAM_TYPE (array, a);
-    IDIO_VERIFY_PARAM_TYPE (fixnum, index);
+
+    intptr_t i = -1;
+    
+    if (idio_isa_fixnum (index)) {
+	i = IDIO_FIXNUM_VAL (index);
+    } else if (idio_isa_bignum (index)) {
+	if (IDIO_BIGNUM_INTEGER_P (index)) {
+	    i = idio_bignum_int64_value (index);
+	} else {
+	    IDIO index_i = idio_bignum_real_to_integer (index);
+	    if (idio_S_nil == index_i) {
+		idio_error_param_type ("number", index);
+	    } else {
+		i = idio_bignum_int64_value (index_i);
+	    }
+	}
+    } else {
+	idio_error_param_type ("number", index);
+    }
 
     idio_ai_t al = idio_array_size (a);
-
-    idio_ai_t i = IDIO_FIXNUM_VAL (index);
 
     if (i < 0) {
 	i += al;
@@ -506,11 +568,27 @@ IDIO_DEFINE_PRIMITIVE3 ("vector-set!", vector_set, (IDIO a, IDIO index, IDIO v))
     IDIO_ASSERT (v);
 
     IDIO_VERIFY_PARAM_TYPE (array, a);
-    IDIO_VERIFY_PARAM_TYPE (fixnum, index);
+
+    intptr_t i = -1;
+    
+    if (idio_isa_fixnum (index)) {
+	i = IDIO_FIXNUM_VAL (index);
+    } else if (idio_isa_bignum (index)) {
+	if (IDIO_BIGNUM_INTEGER_P (index)) {
+	    i = idio_bignum_int64_value (index);
+	} else {
+	    IDIO index_i = idio_bignum_real_to_integer (index);
+	    if (idio_S_nil == index_i) {
+		idio_error_param_type ("number", index);
+	    } else {
+		i = idio_bignum_int64_value (index_i);
+	    }
+	}
+    } else {
+	idio_error_param_type ("number", index);
+    }
 
     idio_ai_t al = idio_array_size (a);
-
-    idio_ai_t i = IDIO_FIXNUM_VAL (index);
 
     if (i < 0) {
 	i += al;
@@ -545,6 +623,7 @@ void idio_init_array ()
 void idio_array_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (vector_p);
+    IDIO_ADD_PRIMITIVE (make_vector);
     IDIO_ADD_PRIMITIVE (vector_fill);
     IDIO_ADD_PRIMITIVE (vector_length);
     IDIO_ADD_PRIMITIVE (vector_ref);

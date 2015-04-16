@@ -128,6 +128,18 @@ IDIO_DEFINE_PRIMITIVE1 ("car", pair_head, (IDIO p))
     return idio_list_head (p);
 }
 
+IDIO_DEFINE_PRIMITIVE2 ("set-car!", set_car, (IDIO p, IDIO v))
+{
+    IDIO_ASSERT (p);
+    IDIO_ASSERT (v);
+
+    IDIO_VERIFY_PARAM_TYPE (pair, p);
+
+    IDIO_PAIR_H (p) = v;
+
+    return idio_S_unspec;
+}
+
 IDIO idio_list_tail (IDIO p)
 {
     IDIO_ASSERT (p);
@@ -148,6 +160,18 @@ IDIO_DEFINE_PRIMITIVE1 ("cdr", pair_tail, (IDIO p))
     IDIO_VERIFY_PARAM_TYPE (pair, p);
 
     return idio_list_tail (p);
+}
+
+IDIO_DEFINE_PRIMITIVE2 ("set-cdr!", set_cdr, (IDIO p, IDIO v))
+{
+    IDIO_ASSERT (p);
+    IDIO_ASSERT (v);
+
+    IDIO_VERIFY_PARAM_TYPE (pair, p);
+
+    IDIO_PAIR_T (p) = v;
+
+    return idio_S_unspec;
 }
 
 void idio_list_bind (IDIO *list, size_t nargs, ...)
@@ -399,6 +423,8 @@ void idio_pair_add_primitives ()
     IDIO_ADD_PRIMITIVE (pair);
     IDIO_ADD_PRIMITIVE (pair_head);
     IDIO_ADD_PRIMITIVE (pair_tail);
+    IDIO_ADD_PRIMITIVE (set_car);
+    IDIO_ADD_PRIMITIVE (set_cdr);
 
     IDIO_ADD_PRIMITIVE (list);
     IDIO_ADD_PRIMITIVE (append);

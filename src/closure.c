@@ -58,3 +58,29 @@ void idio_free_closure (IDIO c)
     free (c->u.closure);
 }
 
+IDIO_DEFINE_PRIMITIVE1 ("procedure?", closurep, (IDIO o))
+{
+    IDIO_ASSERT (o);
+
+    IDIO r = idio_S_false;
+
+    if (idio_isa_closure (o)) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
+void idio_init_closure ()
+{
+}
+
+void idio_closure_add_primitives ()
+{
+    IDIO_ADD_PRIMITIVE (closurep)
+}
+
+void idio_final_closure ()
+{
+}
+

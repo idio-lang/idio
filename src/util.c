@@ -226,6 +226,18 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 	return 0;
     case IDIO_TYPE_POINTER_MARK:
 	{
+	    int m2 = (intptr_t) o2 & 3;
+    
+	    switch (m2) {
+	    case IDIO_TYPE_FIXNUM_MARK:
+	    case IDIO_TYPE_CONSTANT_MARK:
+	    case IDIO_TYPE_CHARACTER_MARK:
+		/* we would have matched at the top */
+		return 0;
+	    default:
+		break;
+	    }
+	    
 	    if (o1->type != o2->type) {
 		return 0;
 	    }
@@ -399,6 +411,8 @@ char *idio_as_string (IDIO o, int depth)
     char *r;
     size_t i;
     
+    IDIO_C_ASSERT (depth >= -10000);
+
     switch ((intptr_t) o & 3) {
     case IDIO_TYPE_FIXNUM_MARK:
 	{
@@ -414,12 +428,12 @@ char *idio_as_string (IDIO o, int depth)
 	    long v = IDIO_CONSTANT_VAL (o);
 	    
 	    switch (v) {
-	    case IDIO_CONSTANT_NIL:             t = "#nil";            break;
+	    case IDIO_CONSTANT_NIL:             t = "'()";            break;
 	    case IDIO_CONSTANT_UNDEF:           t = "#undef";          break;
 	    case IDIO_CONSTANT_UNSPEC:          t = "#unspec";         break;
 	    case IDIO_CONSTANT_EOF:             t = "#eof";            break;
-	    case IDIO_CONSTANT_TRUE:            t = "#true";           break;
-	    case IDIO_CONSTANT_FALSE:           t = "#false";          break;
+	    case IDIO_CONSTANT_TRUE:            t = "#t";           break;
+	    case IDIO_CONSTANT_FALSE:           t = "#f";          break;
 	    case IDIO_CONSTANT_VOID:            t = "#void";           break;
 	    case IDIO_CONSTANT_NAN:             t = "#NaN";            break;
 
@@ -642,7 +656,7 @@ char *idio_as_string (IDIO o, int depth)
 		}
 		break;
 	    case IDIO_TYPE_ARRAY:
-		if (asprintf (&r, "#[ ") == -1) {
+		if (asprintf (&r, "#( ") == -1) {
 		    return NULL;
 		}
 		if (depth > 0) {
@@ -662,7 +676,7 @@ char *idio_as_string (IDIO o, int depth)
 		} else {
 		    IDIO_STRCAT (r, "... ");
 		}
-		IDIO_STRCAT (r, "]");
+		IDIO_STRCAT (r, ")");
 		break;
 	    case IDIO_TYPE_HASH:
 		if (asprintf (&r, "{ ") == -1) {
@@ -713,7 +727,7 @@ char *idio_as_string (IDIO o, int depth)
 		break;
 	    case IDIO_TYPE_CLOSURE:
 		{
-		    if (asprintf (&r, "#CLOS{@%zd}", IDIO_CLOSURE_CODE (o)) == -1) {
+		    if (asprintf (&r, "#CLOS{@%zd/%p}", IDIO_CLOSURE_CODE (o), IDIO_CLOSURE_ENV (o)) == -1) {
 			return NULL;
 		    }
 		    break;
@@ -773,7 +787,7 @@ char *idio_as_string (IDIO o, int depth)
 		    break;
 		}
 	    case IDIO_TYPE_HANDLE:
-		if (asprintf (&r, "#H-%p{%s:%zu:%zu}", o, IDIO_HANDLE_NAME (o), IDIO_HANDLE_LINE (o), IDIO_HANDLE_POS (o)) == -1) {
+		if (asprintf (&r, "#H{\"%s\":%zu:%zu}", IDIO_HANDLE_NAME (o), IDIO_HANDLE_LINE (o), IDIO_HANDLE_POS (o)) == -1) {
 		    return NULL;
 		}
 		break;
@@ -1347,6 +1361,16 @@ void idio_dump (IDIO o, int detail)
     }
 
     fprintf (stderr, "\n");
+}
+
+void idio_debug (const char *fmt, IDIO o)
+{
+    IDIO_C_ASSERT (fmt);
+    IDIO_ASSERT (o);
+
+    char *os = idio_as_string (o, 1);
+    fprintf (stderr, fmt, os);
+    free (os);
 }
 
 void idio_init_util ()

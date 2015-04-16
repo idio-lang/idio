@@ -293,6 +293,58 @@ IDIO_DEFINE_PRIMITIVE1 ("string?", string_p, (IDIO o))
     return r;
 }
 
+IDIO_DEFINE_PRIMITIVE1V ("make-string", make_string, (IDIO size, IDIO args))
+{
+    IDIO_ASSERT (size);
+    IDIO_ASSERT (args);
+
+    intptr_t blen = -1;
+    
+    if (idio_isa_fixnum (size)) {
+	blen = IDIO_FIXNUM_VAL (size);
+    } else if (idio_isa_bignum (size)) {
+	if (IDIO_BIGNUM_INTEGER_P (size)) {
+	    blen = idio_bignum_int64_value (size);
+	} else {
+	    IDIO size_i = idio_bignum_real_to_integer (size);
+	    if (idio_S_nil == size_i) {
+		idio_error_param_type ("number", size);
+	    } else {
+		blen = idio_bignum_int64_value (size_i);
+	    }
+	}
+    } else {
+	idio_error_param_type ("number", size);
+    }
+
+    IDIO_VERIFY_PARAM_TYPE (list, args);
+
+    char fillc = ' ';
+    if (idio_S_nil != args) {
+	IDIO fill = IDIO_PAIR_H (args);
+	IDIO_VERIFY_PARAM_TYPE (character, fill);
+	fillc = IDIO_CHARACTER_VAL (fill);
+    }
+
+    if (blen < 0) {
+	idio_error_message ("invalid length: %zd", blen);
+    }
+    
+    char *sC = idio_alloc (blen + 1);
+
+    size_t i;
+    for (i = 0; i < blen; i++) {
+	sC[i] = fillc;
+    }
+    sC[i] = '\0';
+
+    IDIO s = idio_string_C (sC);
+
+    free (sC);
+    
+    return s;
+}
+
 IDIO_DEFINE_PRIMITIVE1 ("string->list", string2list, (IDIO s))
 {
     IDIO_ASSERT (s);
@@ -302,7 +354,7 @@ IDIO_DEFINE_PRIMITIVE1 ("string->list", string2list, (IDIO s))
     char *sC = idio_string_s (s);
     size_t sl = idio_string_blen (s);
 
-    size_t si;
+    intptr_t si;
     
     IDIO r = idio_S_nil;
 
@@ -368,7 +420,7 @@ IDIO_DEFINE_PRIMITIVE1 ("string-copy", string_copy, (IDIO s))
     return idio_string_copy (s);
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("string-fill", string_fill, (IDIO s, IDIO fill))
+IDIO_DEFINE_PRIMITIVE2 ("string-fill!", string_fill, (IDIO s, IDIO fill))
 {
     IDIO_ASSERT (s);
     IDIO_ASSERT (fill);
@@ -406,12 +458,29 @@ IDIO_DEFINE_PRIMITIVE2 ("string-ref", string_ref, (IDIO s, IDIO index))
     IDIO_ASSERT (index);
 
     IDIO_VERIFY_PARAM_TYPE (string, s);
-    IDIO_VERIFY_PARAM_TYPE (fixnum, index);
+
+    intptr_t i = -1;
+    
+    if (idio_isa_fixnum (index)) {
+	i = IDIO_FIXNUM_VAL (index);
+    } else if (idio_isa_bignum (index)) {
+	if (IDIO_BIGNUM_INTEGER_P (index)) {
+	    i = idio_bignum_int64_value (index);
+	} else {
+	    IDIO index_i = idio_bignum_real_to_integer (index);
+	    if (idio_S_nil == index_i) {
+		idio_error_param_type ("number", index);
+	    } else {
+		i = idio_bignum_int64_value (index_i);
+	    }
+	}
+    } else {
+	idio_error_param_type ("number", index);
+    }
+
 
     char *Cs = idio_string_s (s);
     size_t l = idio_string_blen (s);
-
-    intptr_t i = IDIO_FIXNUM_VAL (index);
 
     if (i < 0 ||
 	i > l) {
@@ -429,8 +498,26 @@ IDIO_DEFINE_PRIMITIVE3 ("string-set!", string_set, (IDIO s, IDIO index, IDIO c))
     IDIO_ASSERT (c);
 
     IDIO_VERIFY_PARAM_TYPE (string, s);
-    IDIO_VERIFY_PARAM_TYPE (fixnum, index);
     IDIO_VERIFY_PARAM_TYPE (character, c);
+
+    intptr_t i = -1;
+    
+    if (idio_isa_fixnum (index)) {
+	i = IDIO_FIXNUM_VAL (index);
+    } else if (idio_isa_bignum (index)) {
+	if (IDIO_BIGNUM_INTEGER_P (index)) {
+	    i = idio_bignum_int64_value (index);
+	} else {
+	    IDIO index_i = idio_bignum_real_to_integer (index);
+	    if (idio_S_nil == index_i) {
+		idio_error_param_type ("number", index);
+	    } else {
+		i = idio_bignum_int64_value (index_i);
+	    }
+	}
+    } else {
+	idio_error_param_type ("number", index);
+    }
 
     if (idio_isa_substring (s)) {
 	s = idio_string_copy (s);
@@ -438,8 +525,6 @@ IDIO_DEFINE_PRIMITIVE3 ("string-set!", string_set, (IDIO s, IDIO index, IDIO c))
 
     char *Cs = idio_string_s (s);
     size_t l = idio_string_blen (s);
-
-    intptr_t i = IDIO_FIXNUM_VAL (index);
 
     if (i < 0 ||
 	i > l) {
@@ -459,13 +544,45 @@ IDIO_DEFINE_PRIMITIVE3 ("substring", substring, (IDIO s, IDIO p0, IDIO pn))
     IDIO_ASSERT (pn);
 
     IDIO_VERIFY_PARAM_TYPE (string, s);
-    IDIO_VERIFY_PARAM_TYPE (fixnum, p0);
-    IDIO_VERIFY_PARAM_TYPE (fixnum, pn);
+
+    intptr_t ip0 = -1;
+    intptr_t ipn = -1;
+
+    if (idio_isa_fixnum (p0)) {
+	ip0 = IDIO_FIXNUM_VAL (p0);
+    } else if (idio_isa_bignum (p0)) {
+	if (IDIO_BIGNUM_INTEGER_P (p0)) {
+	    ip0 = idio_bignum_int64_value (p0);
+	} else {
+	    IDIO p0_i = idio_bignum_real_to_integer (p0);
+	    if (idio_S_nil == p0_i) {
+		idio_error_param_type ("number", p0);
+	    } else {
+		ip0 = idio_bignum_int64_value (p0_i);
+	    }
+	}
+    } else {
+	idio_error_param_type ("number", p0);
+    }
+
+    if (idio_isa_fixnum (pn)) {
+	ipn = IDIO_FIXNUM_VAL (pn);
+    } else if (idio_isa_bignum (pn)) {
+	if (IDIO_BIGNUM_INTEGER_P (pn)) {
+	    ipn = idio_bignum_int64_value (pn);
+	} else {
+	    IDIO pn_i = idio_bignum_real_to_integer (pn);
+	    if (idio_S_nil == pn_i) {
+		idio_error_param_type ("number", pn);
+	    } else {
+		ipn = idio_bignum_int64_value (pn_i);
+	    }
+	}
+    } else {
+	idio_error_param_type ("number", pn);
+    }
 
     size_t l = idio_string_blen (s);
-
-    intptr_t ip0 = IDIO_FIXNUM_VAL (p0);
-    intptr_t ipn = IDIO_FIXNUM_VAL (pn);
 
     if (ip0 < 0 ||
 	ip0 > l ||
@@ -509,60 +626,69 @@ IDIO_DEFINE_PRIMITIVE3 ("substring", substring, (IDIO s, IDIO p0, IDIO pn))
  * than the longer string.
  *
  */
-#define IDIO_DEFINE_STRING_PRIMITIVE2(name,cname,cmp,scmp)		\
-    IDIO_DEFINE_PRIMITIVE2 (name, cname, (IDIO s1, IDIO s2))		\
+#define IDIO_DEFINE_STRING_PRIMITIVE2V(name,cname,cmp,scmp)		\
+    IDIO_DEFINE_PRIMITIVE2V (name, cname, (IDIO s1, IDIO s2, IDIO args)) \
     {									\
 	IDIO_ASSERT (s1);						\
 	IDIO_ASSERT (s2);						\
 									\
 	IDIO_VERIFY_PARAM_TYPE (string, s1);				\
 	IDIO_VERIFY_PARAM_TYPE (string, s2);				\
+	IDIO_VERIFY_PARAM_TYPE (list, args);				\
+									\
+	args = idio_pair (s2, args);					\
 									\
 	char *C1 = idio_string_s (s1);					\
 	size_t l1 = idio_string_blen (s1);				\
-	char *C2 = idio_string_s (s2);					\
-	size_t l2 = idio_string_blen (s2);				\
 									\
-	int l = l1;							\
-	if (l2 < l1) {							\
-	    l = l2;							\
+	while (idio_S_nil != args) {					\
+	    s2 = IDIO_PAIR_H (args);					\
+	    char *C2 = idio_string_s (s2);				\
+	    size_t l2 = idio_string_blen (s2);				\
+									\
+	    int l = l1;							\
+	    if (l2 < l1) {						\
+		l = l2;							\
+	    }								\
+									\
+	    int sc = scmp (C1, C2, l);					\
+									\
+	    /* C result */						\
+	    int cr = (sc cmp 0);					\
+									\
+	    if (0 == sc) {						\
+		cr = (l1 cmp l2);					\
+	    }								\
+									\
+	    if (0 == cr) {						\
+		return idio_S_false;					\
+	    }								\
+									\
+	    C1 = C2;							\
+	    l1 = l2;							\
+	    args = IDIO_PAIR_T (args);					\
 	}								\
 									\
-	int sc = scmp (C1, C2, l);					\
-									\
-	/* C result */							\
-	int cr = (sc cmp 0);						\
-									\
-	if (0 == sc) {							\
-	    cr = (l1 cmp l2);						\
-	}								\
-									\
-	IDIO r = idio_S_false;						\
-									\
-	if (cr) {							\
-	    r = idio_S_true;						\
-	}								\
-									\
-	return r;							\
+	return idio_S_true;						\
     }
 
-#define IDIO_DEFINE_STRING_CS_PRIMITIVE2(name,cname,cmp)		\
-    IDIO_DEFINE_STRING_PRIMITIVE2 (name, string_ci_ ## cname ## _p, cmp, strncasecmp)
+#define IDIO_DEFINE_STRING_CS_PRIMITIVE2V(name,cname,cmp)		\
+    IDIO_DEFINE_STRING_PRIMITIVE2V (name, string_ci_ ## cname ## _p, cmp, strncmp)
 
-#define IDIO_DEFINE_STRING_CI_PRIMITIVE2(name,cname,cmp)		\
-    IDIO_DEFINE_STRING_PRIMITIVE2 (name, string_ ## cname ## _p, cmp, strncmp)
+#define IDIO_DEFINE_STRING_CI_PRIMITIVE2V(name,cname,cmp)		\
+    IDIO_DEFINE_STRING_PRIMITIVE2V (name, string_ ## cname ## _p, cmp, strncasecmp)
 
-IDIO_DEFINE_STRING_CI_PRIMITIVE2 ("string-ci<=?", le, <=)
-IDIO_DEFINE_STRING_CI_PRIMITIVE2 ("string-ci<?", lt, <)
-IDIO_DEFINE_STRING_CI_PRIMITIVE2 ("string-ci=?", eq, ==)
-IDIO_DEFINE_STRING_CI_PRIMITIVE2 ("string-ci>=?", ge, >=)
-IDIO_DEFINE_STRING_CI_PRIMITIVE2 ("string-ci>?", gt, >)
+IDIO_DEFINE_STRING_CI_PRIMITIVE2V ("string-ci<=?", le, <=)
+IDIO_DEFINE_STRING_CI_PRIMITIVE2V ("string-ci<?", lt, <)
+IDIO_DEFINE_STRING_CI_PRIMITIVE2V ("string-ci=?", eq, ==)
+IDIO_DEFINE_STRING_CI_PRIMITIVE2V ("string-ci>=?", ge, >=)
+IDIO_DEFINE_STRING_CI_PRIMITIVE2V ("string-ci>?", gt, >)
 
-IDIO_DEFINE_STRING_CS_PRIMITIVE2 ("string<=?", le, <=)
-IDIO_DEFINE_STRING_CS_PRIMITIVE2 ("string<?", lt, <)
-IDIO_DEFINE_STRING_CS_PRIMITIVE2 ("string=?", eq, ==)
-IDIO_DEFINE_STRING_CS_PRIMITIVE2 ("string>=?", ge, >=)
-IDIO_DEFINE_STRING_CS_PRIMITIVE2 ("string>?", gt, >)
+IDIO_DEFINE_STRING_CS_PRIMITIVE2V ("string<=?", le, <=)
+IDIO_DEFINE_STRING_CS_PRIMITIVE2V ("string<?", lt, <)
+IDIO_DEFINE_STRING_CS_PRIMITIVE2V ("string=?", eq, ==)
+IDIO_DEFINE_STRING_CS_PRIMITIVE2V ("string>=?", ge, >=)
+IDIO_DEFINE_STRING_CS_PRIMITIVE2V ("string>?", gt, >)
 
 void idio_init_string ()
 {
@@ -571,6 +697,7 @@ void idio_init_string ()
 void idio_string_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (string_p);
+    IDIO_ADD_PRIMITIVE (make_string);
     IDIO_ADD_PRIMITIVE (string2list);
     IDIO_ADD_PRIMITIVE (string2symbol);
     IDIO_ADD_PRIMITIVE (string_append);

@@ -73,7 +73,7 @@ typedef uint8_t IDIO_I;
 #define IDIO_FLAG_STICKY_SHIFT	5 /* memory pinning */
 #define IDIO_FLAG_MACRO_SHIFT	6 /* (closure) is a macro */
 
-#define IDIO_FLAG_GCC_MASK	(3 << IDIO_FLAG_GCC_SHIFT)
+#define IDIO_FLAG_GCC_MASK	(0xf << IDIO_FLAG_GCC_SHIFT)
 #define IDIO_FLAG_GCC_UMASK	(~ IDIO_FLAG_GCC_MASK)
 #define IDIO_FLAG_GCC_BLACK	(1 << (IDIO_FLAG_GCC_SHIFT+0))
 #define IDIO_FLAG_GCC_DGREY	(1 << (IDIO_FLAG_GCC_SHIFT+1))
@@ -172,8 +172,6 @@ typedef struct idio_hash_s {
     size_t (*hashf) (struct idio_s *h, void *k); /* hashing function */
     idio_hash_entry_t *he;			 /* a C array */
 } idio_hash_t;
-
-typedef size_t idio_hi_t;
 
 #define IDIO_HASH_GREY(H)	((H)->u.hash->grey)
 #define IDIO_HASH_SIZE(H)	((H)->u.hash->size)

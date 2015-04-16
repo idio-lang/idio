@@ -51,6 +51,7 @@
 #include <ctype.h>
 
 #include <sys/resource.h>
+#include <sys/time.h>
 
 #ifdef assert
 

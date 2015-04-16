@@ -32,9 +32,9 @@ void idio_error_frame_range (IDIO fo, size_t d, size_t i)
     idio_error_message ("frame #%zd index #%zd is out of range for %p", d, i, fo);
 }
 
-IDIO idio_frame_allocate (idio_ai_t nargs)
+IDIO idio_frame_allocate (idio_ai_t arityp1)
 {
-    IDIO_C_ASSERT (nargs);
+    IDIO_C_ASSERT (arityp1);
     
     IDIO fo = idio_gc_get (IDIO_TYPE_FRAME);
 
@@ -44,28 +44,27 @@ IDIO idio_frame_allocate (idio_ai_t nargs)
     IDIO_FRAME_FLAGS (fo) = IDIO_FRAME_FLAG_NONE;
     IDIO_FRAME_NEXT (fo) = idio_S_nil;
 
-    IDIO_FRAME_NARGS (fo) = nargs;
-    IDIO_FRAME_ARGS (fo) = idio_array (nargs);
+    IDIO_FRAME_NARGS (fo) = arityp1;
+    IDIO_FRAME_ARGS (fo) = idio_array (arityp1);
 
     /*
-     * We must supply values into the array otherwise the array will
-     * think it is empty (and flag errors when you try to access any
-     * element).
+     * We must supply values into the array otherwise the array code
+     * will think it is nominally empty (and flag errors when you try
+     * to access any element).
      *
      * This array is arity+1 in length where the last argument is a
      * putative list of varargs.  It will have been be initialised by
-     * the array code to idio_S_nil.  The others should be initialised
-     * to idio_S_undef so that we might spot misuse.
-     *
-     * We don't touch the last argument otherwise the array will think
-     * it is set and therefore it'll be passed as a list of nil,
-     * "(nil)", rather than just nil.
+     * the array code to idio_S_nil but unless we set it then the
+     * array code will only allow access to the first arity elements.
+     * The others should be initialised to idio_S_undef so that we
+     * might spot misuse.
      */
     idio_ai_t i;
-    for (i = 0; i < nargs - 1; i++) {
+    for (i = 0; i < arityp1 - 1; i++) {
 	idio_array_insert_index (IDIO_FRAME_ARGS (fo), idio_S_undef, i);
     }
-
+    idio_array_insert_index (IDIO_FRAME_ARGS (fo), idio_S_nil, i);
+    
     return fo;
 }
 

@@ -23,7 +23,6 @@
 #ifndef FILE_HANDLE_H
 #define FILE_HANDLE_H
 
-IDIO idio_open_file_handle_C (char *name, char *mode);
 int idio_isa_file_handle (IDIO fh);
 void idio_file_handle_finalizer (IDIO fh);
 void idio_register_file_handle (IDIO fh);

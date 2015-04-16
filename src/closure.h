@@ -27,6 +27,10 @@ IDIO idio_closure (size_t code, IDIO env);
 int idio_isa_closure (IDIO o);
 void idio_free_closure (IDIO c);
 
+void idio_init_closure ();
+void idio_closure_add_primitives ();
+void idio_final_closure ();
+
 #endif
 
 /* Local Variables: */

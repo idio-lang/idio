@@ -237,7 +237,7 @@ void idio_init_symbol ()
     idio_S_dynamic = idio_symbols_C_intern ("dynamic");
     idio_S_dynamic_let = idio_symbols_C_intern ("dynamic-let");
     idio_S_else = idio_symbols_C_intern ("else");
-    idio_S_eq_gt = idio_symbols_C_intern ("eq_gt");
+    idio_S_eq_gt = idio_symbols_C_intern ("=>");
     idio_S_error = idio_symbols_C_intern ("error");
     idio_S_fixed_template = idio_symbols_C_intern ("fixed_template");
     idio_S_if = idio_symbols_C_intern ("if");
