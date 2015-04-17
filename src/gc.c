@@ -76,6 +76,9 @@ IDIO idio_gc_get (idio_type_e type)
     idio_gc->stats.tgets[type]++;
     idio_gc->stats.igets++;
 
+    if ((idio_gc->stats.igets & 0xffff) == 0) {
+	fprintf (stderr, "igets = %zd\n", idio_gc->stats.igets);
+    }
     IDIO o = idio_gc->free;
     if (NULL == o) {
 	idio_gc->stats.allocs++;
@@ -242,13 +245,13 @@ void idio_mark (IDIO o, unsigned colour)
 	    IDIO_CLOSURE_GREY (o) = idio_gc->grey;
 	    idio_gc->grey = o;
 	    break;
-	case IDIO_TYPE_BIGNUM:
-	    IDIO_C_ASSERT (IDIO_BIGNUM_GREY (o) != o);
-	    IDIO_C_ASSERT (idio_gc->grey != o);
-	    o->flags |= IDIO_FLAG_GCC_LGREY;
-	    IDIO_BIGNUM_GREY (o) = idio_gc->grey;
-	    idio_gc->grey = o;
-	    break;
+	/* case IDIO_TYPE_BIGNUM: */
+	/*     IDIO_C_ASSERT (IDIO_BIGNUM_GREY (o) != o); */
+	/*     IDIO_C_ASSERT (idio_gc->grey != o); */
+	/*     o->flags |= IDIO_FLAG_GCC_LGREY; */
+	/*     IDIO_BIGNUM_GREY (o) = idio_gc->grey; */
+	/*     idio_gc->grey = o; */
+	/*     break; */
 	case IDIO_TYPE_MODULE:
 	    IDIO_C_ASSERT (IDIO_MODULE_GREY (o) != o);
 	    IDIO_C_ASSERT (idio_gc->grey != o);
@@ -376,11 +379,11 @@ void idio_process_grey (unsigned colour)
 	idio_gc->grey = IDIO_CLOSURE_GREY (o);
 	idio_mark (IDIO_CLOSURE_ENV (o), colour);
 	break;
-    case IDIO_TYPE_BIGNUM:
-	IDIO_C_ASSERT (idio_gc->grey != IDIO_BIGNUM_GREY (o));
-	idio_gc->grey = IDIO_BIGNUM_GREY (o);
-	idio_mark (IDIO_BIGNUM_SIG (o), colour);
-	break;
+    /* case IDIO_TYPE_BIGNUM: */
+    /* 	IDIO_C_ASSERT (idio_gc->grey != IDIO_BIGNUM_GREY (o)); */
+    /* 	idio_gc->grey = IDIO_BIGNUM_GREY (o); */
+    /* 	idio_mark (IDIO_BIGNUM_SIG (o), colour); */
+    /* 	break; */
     case IDIO_TYPE_MODULE:
 	IDIO_C_ASSERT (idio_gc->grey != IDIO_MODULE_GREY (o));
 	idio_gc->grey = IDIO_MODULE_GREY (o);
@@ -875,10 +878,18 @@ void idio_gc_sweep ()
 
 void idio_gc_stats ();
 
+void idio_gc_possibly_collect ()
+{
+    if (idio_gc->pause == 0 &&
+	idio_gc->stats.igets > 0xfffff) {
+	idio_gc_collect ();
+    }
+}
+
 void idio_gc_collect ()
 {
     /* idio_gc_walk_tree (); */
-    /* idio_gc_stats ();  */
+    /* idio_gc_stats ();   */
     
     IDIO_C_ASSERT (idio_gc->pause == 0);
 

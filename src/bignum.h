@@ -65,11 +65,12 @@
   overflowing IDIO_BIGNUM_DPW.
 
   IDIO_BIGNUM_SIG_SEGMENTS is simply the number of elements we want to
-  have in our bignum array and therefore the number of significant
-  digits we can keep.  How many significant digits do you want?  There
-  are 10^80 atoms in the universe.  By any measure of sensible
-  characteristics of a programming language we should be able to
-  accurately count that many...
+  have in our bignum array and therefore defines the number of
+  significant digits we can keep.  How many significant digits do you
+  want?  There are, by several estimates, approximately 10^80 atoms in
+  the universe.  By any measure of sensible characteristics of a
+  programming language we should be able to count to such a number
+  accurately...
   
  */
 
@@ -106,14 +107,14 @@
 
 #define IDIO_BIGNUM_NAN			"NaN"
 
-IDIO idio_bignum (int flags, int64_t exp, IDIO sig_a);
+IDIO idio_bignum (int flags, IDIO_BS_T exp, IDIO_BSA sig_a);
 int idio_isa_bignum (IDIO bn);
 void idio_free_bignum (IDIO bn);
 IDIO idio_bignum_integer_int64 (int64_t i);
-IDIO idio_bignum_integer (IDIO sig_a);
+IDIO idio_bignum_integer (IDIO_BSA sig_a);
 int idio_bignum_real_zero_p (IDIO a);
 int idio_bignum_real_equal_p (IDIO a, IDIO b);
-IDIO idio_bignum_scale_significand (IDIO bn, int64_t desired_exp, int max_size);
+IDIO idio_bignum_scale_significand (IDIO bn, IDIO_BS_T desired_exp, size_t max_size);
 IDIO idio_bignum_integer_argument (IDIO bn);
 int64_t idio_bignum_int64_value (IDIO bn);
 IDIO idio_bignum_to_fixnum (IDIO bn);
@@ -130,14 +131,14 @@ IDIO idio_bignum_shift_right (IDIO a);
 IDIO idio_bignum_multiply (IDIO a, IDIO b);
 IDIO idio_bignum_equalize (IDIO a, IDIO b);
 IDIO idio_bignum_divide (IDIO a, IDIO b);
-IDIO idio_bignum_real (int flags, int64_t exp, IDIO sig_a);
+IDIO idio_bignum_real (int flags, IDIO_BS_T exp, IDIO_BSA sig_a);
 IDIO idio_bignum_real_to_integer (IDIO bn);
 IDIO idio_bignum_real_to_inexact (IDIO bn);
 IDIO idio_bignum_real_to_exact (IDIO bn);
 char *idio_bignum_integer_as_string (IDIO o);
 char *idio_bignum_real_as_string (IDIO o);
 char *idio_bignum_as_string (IDIO o);
-int idio_bignum_count_digits (IDIO sig_a);
+size_t idio_bignum_count_digits (IDIO_BSA sig_a);
 IDIO idio_bignum_normalize (IDIO o);
 char *idio_bignum_C_without_inexact (char *nums);
 IDIO idio_bignum_integer_C (char *nums, int req_exact);

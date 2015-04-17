@@ -2683,6 +2683,7 @@ IDIO idio_vm_run (IDIO thr, int run_gc)
     for (;;) {
 	if (idio_vm_run1 (thr, 0)) {
 	    sleep (0);
+	    /* idio_gc_possibly_collect (); */
 	} else {
 	    sleep (0);
 	    break;

@@ -247,18 +247,42 @@ typedef struct idio_frame_s {
 #define IDIO_BIGNUM_FLAG_REAL_INEXACT  (1<<3)
 #define IDIO_BIGNUM_FLAG_NAN           (1<<4)
 
+/*
+ * Bignum Significand Array
+ *
+ * The array of words where each word holds IDIO_BIGNUM_DPW
+ * significant digits.
+ */
+
+typedef int64_t IDIO_BS_T;
+
+typedef struct idio_bsa_s {
+    size_t refs;
+    size_t avail;
+    size_t size;
+    IDIO_BS_T *ae;
+} idio_bsa_t;
+
+typedef idio_bsa_t* IDIO_BSA;
+
+#define IDIO_BSA_AVAIL(BSA)	((BSA)->avail)
+#define IDIO_BSA_SIZE(BSA)	((BSA)->size)
+#define IDIO_BSA_AE(BSA,i)	((BSA)->ae[i])
+
 typedef struct idio_bignum_s {
-    struct idio_s *grey;
+    /* struct idio_s *grey; */
     char *nums;
-    int64_t exp;		/* exponent, a raw int64_t */
-    struct idio_s *sig;		/* significand, an array of C_int64 */
+    IDIO_BS_T exp;		/* exponent, a raw int64_t */
+    /* struct idio_s *sig;         significand, an array of C_int64 */
+    IDIO_BSA sig;
 } idio_bignum_t;
 
-#define IDIO_BIGNUM_GREY(B)  ((B)->u.bignum->grey)
+/* #define IDIO_BIGNUM_GREY(B)  ((B)->u.bignum->grey) */
 #define IDIO_BIGNUM_NUMS(B)  ((B)->u.bignum->nums)
 #define IDIO_BIGNUM_FLAGS(B) ((B)->tflags)
 #define IDIO_BIGNUM_EXP(B)   ((B)->u.bignum->exp)
 #define IDIO_BIGNUM_SIG(B)   ((B)->u.bignum->sig)
+#define IDIO_BIGNUM_SIG_AE(B,i)   IDIO_BSA_AE((B)->u.bignum->sig,i)
 
 typedef struct idio_handle_methods_s {
     void (*free) (struct idio_s *h);
@@ -635,6 +659,7 @@ void idio_gc_expose (IDIO o);
 void idio_gc_expose_all ();
 void idio_gc_mark ();
 void idio_gc_sweep ();
+void idio_gc_possibly_collect ();
 void idio_gc_collect ();
 void idio_gc_pause ();
 void idio_gc_resume ();

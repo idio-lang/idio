@@ -2198,39 +2198,42 @@ static IDIO idio_scm_meaning (IDIO e, IDIO nametree, int tailp)
 IDIO idio_scm_evaluate (IDIO e)
 {
     IDIO m = idio_scm_meaning (e, idio_S_nil, 1);
-    IDIO d = idio_module_current_defined ();
-    IDIO t = idio_module_current_symbols ();
+
+    if (0) {
+	IDIO d = idio_module_current_defined ();
+	IDIO t = idio_module_current_symbols ();
 
 
-    /*
-     * 1. Have we tried to use a name without having seen a definition
-     * for it?
-     */
-    IDIO diff = idio_list_set_difference (t, d);
-    if (idio_S_nil != diff) {
-	idio_warning_static_undefineds (diff);
-    }
+	/*
+	 * 1. Have we tried to use a name without having seen a definition
+	 * for it?
+	 */
+	IDIO diff = idio_list_set_difference (t, d);
+	if (idio_S_nil != diff) {
+	    idio_warning_static_undefineds (diff);
+	}
 
-    size_t tl = idio_list_length (t);
-    size_t dl = idio_list_length (d);
-    if (tl > dl) {
-	fprintf (stderr, "scm-evaluate: module=%s\n", IDIO_SYMBOL_S (IDIO_MODULE_NAME (idio_current_module ())));
-	idio_debug ("scm-evaluate: e=%s\n", e);
+	size_t tl = idio_list_length (t);
+	size_t dl = idio_list_length (d);
+	if (tl > dl) {
+	    fprintf (stderr, "scm-evaluate: module=%s\n", IDIO_SYMBOL_S (IDIO_MODULE_NAME (idio_current_module ())));
+	    idio_debug ("scm-evaluate: e=%s\n", e);
 
-	fprintf (stderr, "scm-evaluate: after: %zd toplevel vars\n", tl);
-	fprintf (stderr, "scm-evaluate: after: %zd defined vars\n", dl);
+	    fprintf (stderr, "scm-evaluate: after: %zd toplevel vars\n", tl);
+	    fprintf (stderr, "scm-evaluate: after: %zd defined vars\n", dl);
 
-	idio_debug ("diff t, d = %s\n", diff);
+	    idio_debug ("diff t, d = %s\n", diff);
 
-	diff = idio_list_set_difference (d, t);
+	    diff = idio_list_set_difference (d, t);
 
-	idio_debug ("diff d, t = %s\n", diff);
+	    idio_debug ("diff d, t = %s\n", diff);
 
-	idio_debug ("t = %s\n", t);
+	    idio_debug ("t = %s\n", t);
 
-	idio_debug ("d = %s\n", d);
+	    idio_debug ("d = %s\n", d);
 
-	sleep (0);
+	    sleep (0);
+	}
     }
 
     idio_vm_codegen (idio_current_thread (), m);

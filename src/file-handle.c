@@ -610,16 +610,18 @@ IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (
 	    break;
 	}
 
-	char *es = idio_as_string (e, 1);
-	fprintf (stderr, "idio_load_filehandle: line %zd: e=%s\n", IDIO_HANDLE_LINE (fh), es);
-	free (es);
+	fprintf (stderr, "idio_load_filehandle: line %zd:", IDIO_HANDLE_LINE (fh));
+	idio_debug (" e=%s\n", e);
 
 	struct timeval tb;
 	gettimeofday (&tb, NULL);
 	
 	(*evaluator) (e);
+
 	struct timeval ta;
 	gettimeofday (&ta, NULL);
+
+	idio_debug (" => %s\n", IDIO_THREAD_VAL (idio_current_thread ()));
 
 	time_t s = ta.tv_sec - t0.tv_sec;
 	suseconds_t us = ta.tv_usec - t0.tv_usec;
