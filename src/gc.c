@@ -51,13 +51,19 @@ void *idio_realloc (void *p, size_t s)
  */
 IDIO idio_gc_get_alloc ()
 {
-    
-    IDIO o = idio_alloc (sizeof (idio_t));
-    o->next = NULL;
-    
-    idio_gc->stats.nbytes += sizeof (idio_t);
-    idio_gc->stats.tbytes += sizeof (idio_t);
-    
+    IDIO o;
+    int n;
+    for (n = 0 ; n < 40 * 1024; n++) {
+	o = idio_alloc (sizeof (idio_t));
+	o->next = idio_gc->free;
+	idio_gc->free = o;
+	
+	idio_gc->stats.nbytes += sizeof (idio_t);
+	idio_gc->stats.tbytes += sizeof (idio_t);
+    }
+
+    o = idio_gc->free;
+    idio_gc->free = o->next;
     return o;
 }
 
@@ -77,7 +83,7 @@ IDIO idio_gc_get (idio_type_e type)
     idio_gc->stats.igets++;
 
     if ((idio_gc->stats.igets & 0xffff) == 0) {
-	fprintf (stderr, "igets = %zd\n", idio_gc->stats.igets);
+	IDIO_FPRINTF (stderr, "igets = %llu\n", idio_gc->stats.igets);
     }
     IDIO o = idio_gc->free;
     if (NULL == o) {
@@ -148,6 +154,7 @@ void idio_register_finalizer (IDIO o, void (*func) (IDIO o))
     IDIO ofunc = idio_C_pointer (func);
 
     idio_hash_put (idio_gc_finalizer_hash, o, ofunc);
+    o->flags |= IDIO_FLAG_FINALIZER;
 }
 
 void idio_deregister_finalizer (IDIO o)
@@ -155,6 +162,7 @@ void idio_deregister_finalizer (IDIO o)
     IDIO_ASSERT (o);
 
     idio_hash_delete (idio_gc_finalizer_hash, o);
+    o->flags &= IDIO_FLAG_FINALIZER_UMASK;
 }
 
 void idio_finalizer_run (IDIO o)
@@ -176,9 +184,9 @@ void idio_finalizer_run (IDIO o)
 
 	void (*p) (IDIO o) = IDIO_C_TYPE_POINTER_P (ofunc);
 	(*p) (o);
-    }
 
-    idio_hash_delete (idio_gc_finalizer_hash, o);
+	idio_hash_delete (idio_gc_finalizer_hash, o);
+    }
 }
 
 void idio_mark (IDIO o, unsigned colour)
@@ -544,7 +552,7 @@ idio_gc_t *idio_gc_new ()
     return c;
 }
 
-#ifdef IDIO_DEBUG
+#if IDIO_DEBUG > 2
 /*
  * http://c-faq.com/varargs/handoff.html
  */
@@ -568,10 +576,6 @@ void IDIO_FPRINTF (FILE *stream, const char *format, ...)
     va_start (fmt_args, format);
     IDIO_GC_VFPRINTF (stream, format, fmt_args);
     va_end (fmt_args);
-}
-#else
-void IDIO_FPRINTF (FILE *stream, const char *format, ...)
-{
 }
 #endif
 
@@ -742,7 +746,9 @@ void idio_gc_sweep_free_value (IDIO vo)
 	return;
     }
 
-    idio_finalizer_run (vo);
+    if (vo->flags & IDIO_FLAG_FINALIZER) {
+	idio_finalizer_run (vo);
+    }
 
     /* idio_free_lex (vo); */
 
@@ -830,14 +836,8 @@ void idio_gc_sweep_free_value (IDIO vo)
 
 void idio_gc_sweep ()
 {
-
-    IDIO_FPRINTF (stderr, "idio_gc_sweep: clear free list\n");
-    /* while (idio_gc->free) { */
-    /* 	IDIO fo = idio_gc->free; */
-    /* 	idio_gc->free = fo->next; */
-    /* 	free (fo); */
-    /* } */
-
+    idio_gc->free = NULL;
+    
     IDIO_FPRINTF (stderr, "idio_gc_sweep: used list\n");
     IDIO co = idio_gc->used;
     IDIO po = NULL;
@@ -884,7 +884,7 @@ void idio_gc_stats ();
 void idio_gc_possibly_collect ()
 {
     if (idio_gc->pause == 0 &&
-	idio_gc->stats.igets > 0xfffff) {
+	idio_gc->stats.igets > 0x1ffff) {
 	idio_gc_collect ();
     }
 }
@@ -894,7 +894,9 @@ void idio_gc_collect ()
     /* idio_gc_walk_tree (); */
     /* idio_gc_stats ();   */
     
-    IDIO_C_ASSERT (idio_gc->pause == 0);
+    if (idio_gc->pause) {
+	return;
+    }
 
     struct timeval t0;
     gettimeofday (&t0, NULL);
@@ -926,7 +928,7 @@ void idio_gc_collect ()
 	s -= 1;
     }
 	
-    fprintf (stderr, "idio-gc-collect: GC time %ld.%03ld\n", s, us / 1000);
+    IDIO_FPRINTF (stderr, "idio-gc-collect: GC time %ld.%03ld\n", s, us / 1000);
 
     idio_gc->stats.dur.tv_usec += us;
     if (idio_gc->stats.dur.tv_usec > 1000000) {
@@ -1220,6 +1222,32 @@ void idio_init_gc ()
     idio_gc = idio_gc_new ();
 
     idio_gc->verbose = 0;
+
+    if (0) {
+	fprintf (stderr, "sizeof (struct idio_s)                 = %zd\n", sizeof (struct idio_s));
+	fprintf (stderr, "sizeof (struct idio_string_s)          = %zd\n", sizeof (struct idio_string_s));
+	fprintf (stderr, "sizeof (struct idio_substring_s)       = %zd\n", sizeof (struct idio_substring_s));
+	fprintf (stderr, "sizeof (struct idio_symbol_s)          = %zd\n", sizeof (struct idio_symbol_s));
+	fprintf (stderr, "sizeof (struct idio_pair_s)            = %zd\n", sizeof (struct idio_pair_s));
+	fprintf (stderr, "sizeof (struct idio_array_s)           = %zd\n", sizeof (struct idio_array_s));
+	fprintf (stderr, "sizeof (struct idio_hash_s)            = %zd\n", sizeof (struct idio_hash_s));
+	fprintf (stderr, "sizeof (struct idio_closure_s)         = %zd\n", sizeof (struct idio_closure_s));
+	fprintf (stderr, "sizeof (struct idio_primitive_s)       = %zd\n", sizeof (struct idio_primitive_s));
+	fprintf (stderr, "sizeof (struct idio_bignum_s)          = %zd\n", sizeof (struct idio_bignum_s));
+	fprintf (stderr, "sizeof (struct idio_module_s)          = %zd\n", sizeof (struct idio_module_s));
+	fprintf (stderr, "sizeof (struct idio_frame_s)           = %zd\n", sizeof (struct idio_frame_s));
+	fprintf (stderr, "sizeof (struct idio_handle_s)          = %zd\n", sizeof (struct idio_handle_s));
+	fprintf (stderr, "sizeof (struct idio_struct_type_s)     = %zd\n", sizeof (struct idio_struct_type_s));
+	fprintf (stderr, "sizeof (struct idio_struct_instance_s) = %zd\n", sizeof (struct idio_struct_instance_s));
+	fprintf (stderr, "sizeof (struct idio_thread_s)          = %zd\n", sizeof (struct idio_thread_s));
+	fprintf (stderr, "sizeof (struct idio_C_type_s)          = %zd\n", sizeof (struct idio_C_type_s));
+	fprintf (stderr, "sizeof (struct idio_C_typedef_s)       = %zd\n", sizeof (struct idio_C_typedef_s));
+	fprintf (stderr, "sizeof (struct idio_C_struct_s)        = %zd\n", sizeof (struct idio_C_struct_s));
+	fprintf (stderr, "sizeof (struct idio_C_instance_s)      = %zd\n", sizeof (struct idio_C_instance_s));
+	fprintf (stderr, "sizeof (struct idio_C_FFI_s)           = %zd\n", sizeof (struct idio_C_FFI_s));
+	fprintf (stderr, "sizeof (struct idio_opaque_s)          = %zd\n", sizeof (struct idio_opaque_s));
+	fprintf (stderr, "sizeof (struct idio_continuation_s)    = %zd\n", sizeof (struct idio_continuation_s));
+    }
     
     idio_gc_finalizer_hash = IDIO_HASH_EQP (64);
     idio_gc_protect (idio_gc_finalizer_hash);

@@ -53,7 +53,7 @@
 
 ; There is no LET or LETREC yet, so
 
-(define-macro (let-s9 bindings expr . exprs)
+(define-macro (let bindings expr . exprs)
   ((lambda (split)
      ((lambda (tmp-split)
         (set! split tmp-split)
@@ -85,7 +85,7 @@
     (set! mapcar1 tmp-mapcar1)
     (mapcar1 a))))
 
-(define (map-s9 f a b)
+(define (map f a b)
   (let ((map2 #f))
     (let ((tmp-map2
             (lambda (a b)
@@ -603,7 +603,7 @@
     ((sqrt2 (lambda (x last)
        (if (= last x)
            x
-           (sqrt2 (/ (+ x (/ square x)) 2.0)
+           (sqrt2 (/ (+ x (/ square x)) 2)
                   x)))))
     (if (negative? square)
         (error "sqrt: negative argument" square)
@@ -995,7 +995,7 @@
                            (a (cdr va)))
                        `((lambda ,v ,a2 ,@a3) ,@a)))))))))
 
-(define-macro let-s9 %ext-let)
+(define-macro let %ext-let)
 
 ; Also define a clean version of LETREC.
 
@@ -1020,9 +1020,9 @@
                ,expr
                ,@exprs)))))))
 
-(define-macro letrec-s9 %clean-letrec)
+(define-macro letrec %clean-letrec)
 
-(define-macro let*-s9
+(define-macro let*
   (let ((check-bindings check-bindings))
     (lambda (bindings expr . exprs)
       (letrec

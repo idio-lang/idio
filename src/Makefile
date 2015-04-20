@@ -29,15 +29,17 @@ LIBFFI_INC	= -I$(LIBFFI_INCDIR)
 endif
 endif
 
-ifdef LEAN
-DEBUG	       := -O3
+ifdef MAKE_LEAN
+CDEBUG	       := -O3 -UIDIO_DEBUG
+else ifdef MAKE_DEBUG
+CDEBUG	       := -DIDIO_DEBUG=3 -g
 else
-DEBUG	       := -DGC1_DEBUG -g
+CDEBUG	       := -DIDIO_DEBUG -g
 endif 
 
 
 PROFLAGS	=
-CFLAGS	       := ${PROFLAGS} ${DEBUG} -Wall -fPIC ${LIBFFI_INC}
+CFLAGS	       := ${PROFLAGS} ${CDEBUG} -Wall -fPIC ${LIBFFI_INC}
 LDFLAGS        := ${PROFLAGS} ${LDFLAGS}
 LIBS	       := ${LIBS} -lffi
 
@@ -52,10 +54,13 @@ all : tags idio
 #all : idio scm1-c-structs.scm1 ${DLIBS} tags
 
 profiled :
-	$(MAKE) LEAN=1 PROFLAGS=-pg
+	$(MAKE) MAKE_LEAN=1 PROFLAGS=-pg
 
 lean :
-	$(MAKE) LEAN=1
+	$(MAKE) MAKE_LEAN=1
+
+debug :
+	$(MAKE) MAKE_DEBUG=1
 
 include $(subst .c,.d,$(sources))
 

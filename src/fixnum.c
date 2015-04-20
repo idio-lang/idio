@@ -700,6 +700,48 @@ IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(gt, >)
         }								\
     }
 
+/*
+ * For divide we should always convert to bignums: 1 / 3 is 0; 9 / 2
+ * is 4 in fixnums; 10 / 2 will be converted back to a fixnum.
+ */
+#define IDIO_DEFINE_ARITHMETIC_BIGNUM_PRIMITIVE1V(name,cname)	\
+    IDIO_DEFINE_PRIMITIVE1V (name, cname, (IDIO n1, IDIO args))	\
+    {								\
+	IDIO_ASSERT (n1);					\
+	IDIO_ASSERT (args);					\
+								\
+	args = idio_pair (n1, args);				\
+	IDIO a = args;						\
+	IDIO bn_args = idio_S_nil;				\
+								\
+	while (idio_S_nil != a) {				\
+	    IDIO h = IDIO_PAIR_H (a);				\
+	    							\
+	    if (idio_isa_fixnum (h)) {					\
+		bn_args = idio_pair (idio_bignum_integer_int64 (IDIO_FIXNUM_VAL (h)), bn_args); \
+	    } else if (idio_isa_bignum (h)) {				\
+		bn_args = idio_pair (h, bn_args);			\
+	    } else {							\
+		idio_error_param_type ("number", h);			\
+		return idio_S_unspec;					\
+	    }								\
+	    								\
+	    a = IDIO_PAIR_T (a);					\
+	}								\
+	bn_args = idio_list_reverse (bn_args);				\
+									\
+	/* idio_debug ("primitive: " #cname ": -> bignum: %s\n", bn_args); */ \
+	IDIO num = idio_bignum_primitive_ ## cname (bn_args);		\
+									\
+	/* convert to a fixnum if possible */				\
+	IDIO fn = idio_bignum_to_fixnum (num);				\
+	if (idio_S_nil != fn) {						\
+	    num = fn;							\
+	}								\
+									\
+	return num;							\
+    }
+
 #define IDIO_DEFINE_ARITHMETIC_CMP_PRIMITIVE1V(name,cname)	\
     IDIO_DEFINE_PRIMITIVE1V (name, cname, (IDIO n1, IDIO args))	\
     {								\
@@ -766,7 +808,7 @@ IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(gt, >)
 IDIO_DEFINE_ARITHMETIC_PRIMITIVE0V ("+", add)
 IDIO_DEFINE_ARITHMETIC_PRIMITIVE1V ("-", subtract)
 IDIO_DEFINE_ARITHMETIC_PRIMITIVE0V ("*", multiply)
-IDIO_DEFINE_ARITHMETIC_PRIMITIVE1V ("/", divide)
+IDIO_DEFINE_ARITHMETIC_BIGNUM_PRIMITIVE1V ("/", divide)
 
 IDIO_DEFINE_ARITHMETIC_CMP_PRIMITIVE1V ("<=", le)
 IDIO_DEFINE_ARITHMETIC_CMP_PRIMITIVE1V ("<", lt)

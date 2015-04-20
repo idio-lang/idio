@@ -2859,23 +2859,7 @@ IDIO idio_vm_run (IDIO thr, int run_gc)
     idio_vm_pop_handler (thr);
 
     if (run_gc) {
-	struct timeval t0;
-	gettimeofday (&t0, NULL);
-
 	idio_gc_collect ();
-
-	struct timeval t1;
-	gettimeofday (&t1, NULL);
-
-	time_t s = t1.tv_sec - t0.tv_sec;
-	suseconds_t us = t1.tv_usec - t0.tv_usec;
-
-	if (us < 0) {
-	    us += 1000000;
-	    s -= 1;
-	}
-	
-	fprintf (stderr, "vm-run: GC time %ld.%03ld\n", s, us / 1000);
     }
 
     return r;
