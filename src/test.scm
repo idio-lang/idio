@@ -13,6 +13,7 @@
     ;;                       "\" before running this test.")))
 
 (define Errors 0)
+(define Tests 0)
 
 (define (void) (if #f #f))
 
@@ -25,21 +26,21 @@
 
 (define (fail expr result expected)
   (begin (display "test failed: ")
-	 (write expr)
-	 (newline)
+	 (write expr) (newline)
 	 (display "got result:  ")
-	 (write result)
-	 (newline)
+	 (write result) (newline)
 	 (display "expected:    ")
-	 (write expected)
-	 (newline)
-	 (fail-exit)
-	 (set! Errors (+ 1 Errors))))
+	 (write expected) (newline)
+	 (set! Errors (+ 1 Errors))
+	 (display "Errors:    ")
+	 (write Errors) (newline)))
 
 (define (test3 expr result expected)
 ;  (write expr) (display " => ") (write result) (newline)
+;  (set! Tests (+ 1 Tests))
+;  (display "test #") (write Tests) (display ": ") (write expr)(display " => ") (write result) (newline)
   (if (not (equal? result expected))
-	     (fail expr result expected)))
+      (fail expr result expected)))
 
 (define-macro (test form result)
   `(test3 ',form ,form ,result))
@@ -3014,3 +3015,6 @@
 (display #\newline)
 
 (if (file-exists? testfile) (delete-file testfile))
+
+(display "Total tests: ")
+(write Tests) (newline)

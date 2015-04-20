@@ -161,6 +161,18 @@ void idio_i_array_append (idio_i_array_t *ia1, idio_i_array_t *ia2)
     }
 }
 
+void idio_i_array_copy (idio_i_array_t *iad, idio_i_array_t *ias)
+{
+    if (iad->n < ias->i) {
+	idio_i_array_resize_by (iad, ias->i - iad->n);
+    }
+    size_t i;
+    for (i = 0; i < ias->i; i++) {
+	iad->ae[i] = ias->ae[i];
+    }
+    iad->i = ias->i;
+}
+
 void idio_i_array_push (idio_i_array_t *ia, IDIO_I ins)
 {
     /* fprintf (stderr, "idio_i_array_push: %p %zd %zd (%zd)\n", ia, ia->n, ia->i, (ia->n - ia->i)); */
@@ -252,7 +264,7 @@ idio_i_array_t *idio_i_array_compute_varuint (size_t offset)
  * The flip side of that is more code both in compilation and
  * interpretation of the resultant byte code.
  */
-void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m)
+void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 {
     IDIO_ASSERT (m);
     IDIO_TYPE_ASSERT (pair, m);
@@ -265,9 +277,13 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m)
     if (! IDIO_TYPE_CONSTANTP (mh)) {
 	if (idio_isa_pair (mh)) {
 	    /* idio_debug ("compile: is a sequence: %s\n", m); */
-
+	    size_t n = idio_list_length (m);
+	    fprintf (stderr, "compile: sequence of %zd parts\n", n);
+	    size_t i = 1;
 	    while (idio_S_nil != m) {
-		idio_vm_compile (thr, ia, IDIO_PAIR_H (m));
+		fprintf (stderr, "%d %zd/%zd: ", depth, i++, n);
+		idio_debug ("compile:seq: %s\n", IDIO_PAIR_H (m));
+		idio_vm_compile (thr, ia, IDIO_PAIR_H (m), depth + 1);
 		m = IDIO_PAIR_T (m);
 		if (! idio_isa_list (m)) {
 		    char *ms = idio_as_string (m, 1);
@@ -402,7 +418,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m)
 
 	    IDIO m1 = IDIO_PAIR_H (IDIO_PAIR_T (mt));
 
-	    idio_vm_compile (thr, ia, m1);
+	    idio_vm_compile (thr, ia, m1, depth + 1);
 
 	    switch (IDIO_FIXNUM_VAL (j)) {
 	    case 0: IDIO_IA_PUSH1 (IDIO_A_SHALLOW_ARGUMENT_SET0); break;
@@ -440,7 +456,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m)
 
 	    IDIO m1 = IDIO_PAIR_H (IDIO_PAIR_T (IDIO_PAIR_T (mt)));
 
-	    idio_vm_compile (thr, ia, m1);
+	    idio_vm_compile (thr, ia, m1, depth + 1);
 
 	    IDIO_IA_PUSH1 (IDIO_A_DEEP_ARGUMENT_SET);
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (i));
@@ -502,7 +518,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m)
 
 	    IDIO m1 = IDIO_PAIR_H (IDIO_PAIR_T (mt));
 	    
-	    idio_vm_compile (thr, ia, m1);
+	    idio_vm_compile (thr, ia, m1, depth + 1);
 
 	    IDIO_IA_PUSH1 (IDIO_A_GLOBAL_SET);
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (j));
@@ -639,13 +655,13 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m)
 	     */
 
 	    /* 2: */
-	    idio_vm_compile (thr, ia, m1);
+	    idio_vm_compile (thr, ia, m1, depth + 1);
 
 	    idio_i_array_t *ia2 = idio_i_array (100);
-	    idio_vm_compile (thr, ia2, m2);
+	    idio_vm_compile (thr, ia2, m2, depth + 1);
 
 	    idio_i_array_t *ia3 = idio_i_array (100);
-	    idio_vm_compile (thr, ia3, m3);
+	    idio_vm_compile (thr, ia3, m3, depth + 1);
 
 	    idio_i_array_t *g7;
 	    size_t g7_len = 0;
@@ -705,70 +721,177 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m)
 	    IDIO m1 = IDIO_PAIR_H (mt);
 	    IDIO mp = IDIO_PAIR_H (IDIO_PAIR_T (mt));
 
-	    idio_vm_compile (thr, ia, m1);
-	    idio_vm_compile (thr, ia, mp);
+	    idio_vm_compile (thr, ia, m1, depth + 1);
+	    idio_vm_compile (thr, ia, mp, depth + 1);
 	}
 	break;
     case IDIO_VM_CODE_AND:
 	{
 	    if (! idio_isa_pair (mt) ||
-		idio_list_length (mt) != 2) {
-		idio_error_vm_compile_param_args ("AND m1 m+");
+		idio_list_length (mt) < 1) {
+		idio_error_vm_compile_param_args ("AND m+");
 		return;
 	    }
-	    
+
+	    /*
+	     * We don't know how far to jump to the end of the AND
+	     * sequence until we have generated the code for the
+	     * remaining clauses *and* the inter-clause jumps
+	     */
 	    IDIO m1 = IDIO_PAIR_H (mt);
-	    IDIO mp = IDIO_PAIR_H (IDIO_PAIR_T (mt));
+	    mt = IDIO_PAIR_T (mt);
 
-	    idio_vm_compile (thr, ia, m1);
+	    idio_vm_compile (thr, ia, m1, depth + 1);
 
-	    idio_i_array_t *iap = idio_i_array (100);
-	    idio_vm_compile (thr, iap, mp);
+	    size_t n = idio_list_length (mt);
+	    
+	    idio_i_array_t *iac[n];
+	    intptr_t i;
 
-	    if (iap->i < IDIO_I_MAX) {
-		IDIO_IA_PUSH1 (IDIO_A_SHORT_JUMP_FALSE);
-		IDIO_IA_PUSH1 (iap->i);
-	    } else {
-		idio_i_array_t *jf = idio_i_array_compute_varuint (iap->i);
-		IDIO_IA_PUSH1 (IDIO_A_LONG_JUMP_FALSE);
-		idio_i_array_append (ia, jf);
-		idio_i_array_free (jf);	    
+	    /*
+	     * 1st pass, l is only the accumulated code size for
+	     * allocating iar/iat
+	     */
+	    size_t l = 0;
+	    for (i = 0; i < n ; i++) {
+		iac[i] = idio_i_array (100);
+		idio_vm_compile (thr, iac[i], IDIO_PAIR_H (mt), depth + 1);
+		l += iac[i]->i;
+		mt = IDIO_PAIR_T (mt);
 	    }
 
-	    idio_i_array_append (ia, iap);
+	    /*
+	     * How much temporary instruction space?
+	     * 
+	     * largest varuint is 9 bytes, jump ins is one and there
+	     * will be n of them.
+	     *
+	     * To grow the result we need (jump+iac[i]) in iat then
+	     * append iar then copy iat back to iar
+	     */
+	    idio_i_array_t *iar = idio_i_array (l + n * (1 + 9));
+	    idio_i_array_t *iat = idio_i_array (l + n * (1 + 9));
 
-	    idio_i_array_free (iap);
+	    /*
+	     * 2nd pass, l now includes jump sizes
+	     */
+	    l = 0;
+	    for (i = n - 1; i >= 0 ; i--) {
+		l += iac[i]->i;
+		if (l < IDIO_I_MAX) {
+		    idio_i_array_push (iat, IDIO_A_SHORT_JUMP_FALSE);
+		    idio_i_array_push (iat, l);
+		} else {
+		    idio_i_array_t *jf = idio_i_array_compute_varuint (l);
+		    idio_i_array_push (iat, IDIO_A_LONG_JUMP_FALSE);
+		    idio_i_array_append (iat, jf);
+		    idio_i_array_free (jf);	    
+		}
+
+		idio_i_array_append (iat, iac[i]);
+		idio_i_array_free (iac[i]);
+
+		idio_i_array_append (iat, iar);
+		idio_i_array_copy (iar, iat);
+		iat->i = 0;
+		l = iar->i;
+	    }
+
+
+	    idio_i_array_append (ia, iar);
+	    idio_i_array_free (iar);
+	    idio_i_array_free (iat);
 	}
 	break;
     case IDIO_VM_CODE_OR:
 	{
 	    if (! idio_isa_pair (mt) ||
-		idio_list_length (mt) != 2) {
-		idio_error_vm_compile_param_args ("OR m1 m+");
+		idio_list_length (mt) < 1) {
+		idio_error_vm_compile_param_args ("OR m+");
 		return;
 	    }
 	    
+	    /*
+	     * We don't know how far to jump to the end of the OR
+	     * sequence until we have generated the code for the
+	     * remaining clauses *and* the inter-clause jumps
+	     */
 	    IDIO m1 = IDIO_PAIR_H (mt);
-	    IDIO mp = IDIO_PAIR_H (IDIO_PAIR_T (mt));
+	    mt = IDIO_PAIR_T (mt);
 
-	    idio_vm_compile (thr, ia, m1);
+	    idio_vm_compile (thr, ia, m1, depth + 1);
 
-	    idio_i_array_t *iap = idio_i_array (100);
-	    idio_vm_compile (thr, iap, mp);
+	    size_t n = idio_list_length (mt);
+	    
+	    idio_i_array_t *iac[n];
+	    intptr_t i;
 
-	    if (iap->i < IDIO_I_MAX) {
-		IDIO_IA_PUSH1 (IDIO_A_SHORT_JUMP_TRUE);
-		IDIO_IA_PUSH1 (iap->i);
-	    } else {
-		idio_i_array_t *jt = idio_i_array_compute_varuint (iap->i);
-		IDIO_IA_PUSH1 (IDIO_A_LONG_JUMP_TRUE);
-		idio_i_array_append (ia, jt);
-		idio_i_array_free (jt);	    
+	    /*
+	     * 1st pass, l is only the accumulated code size for
+	     * allocating iar/iat
+	     */
+	    size_t l = 0;
+	    for (i = 0; i < n ; i++) {
+		iac[i] = idio_i_array (100);
+		idio_vm_compile (thr, iac[i], IDIO_PAIR_H (mt), depth + 1);
+		l += iac[i]->i;
+		mt = IDIO_PAIR_T (mt);
 	    }
 
-	    idio_i_array_append (ia, iap);
+	    /*
+	     * How much temporary instruction space?
+	     * 
+	     * largest varuint is 9 bytes, jump ins is one and there
+	     * will be n of them.
+	     *
+	     * To grow the result we need (jump+iac[i]) in iat then
+	     * append iar then copy iat backto iar
+	     */
+	    idio_i_array_t *iar = idio_i_array (l + n * (1 + 9));
+	    idio_i_array_t *iat = idio_i_array (l + n * (1 + 9));
 
-	    idio_i_array_free (iap);
+	    /*
+	     * 2nd pass, l now includes jump sizes
+	     */
+	    l = 0;
+	    for (i = n - 1; i >= 0 ; i--) {
+		l += iac[i]->i;
+		if (l < IDIO_I_MAX) {
+		    idio_i_array_push (iat, IDIO_A_SHORT_JUMP_TRUE);
+		    idio_i_array_push (iat, l);
+		} else {
+		    idio_i_array_t *jf = idio_i_array_compute_varuint (l);
+		    idio_i_array_push (iat, IDIO_A_LONG_JUMP_TRUE);
+		    idio_i_array_append (iat, jf);
+		    idio_i_array_free (jf);	    
+		}
+
+		idio_i_array_append (iat, iac[i]);
+		idio_i_array_free (iac[i]);
+
+		idio_i_array_append (iat, iar);
+		idio_i_array_copy (iar, iat);
+		iat->i = 0;
+		l = iar->i;
+	    }
+
+	    idio_i_array_append (ia, iar);
+	    idio_i_array_free (iar);
+	    idio_i_array_free (iat);
+	}
+	break;
+    case IDIO_VM_CODE_BEGIN:
+	{
+	    if (! idio_isa_pair (mt) ||
+		idio_list_length (mt) < 1) {
+		idio_error_vm_compile_param_args ("BEGIN m+");
+		return;
+	    }
+	    
+	    while (idio_S_nil != mt) {
+		idio_vm_compile (thr, ia, IDIO_PAIR_H (mt), depth + 1);
+		mt = IDIO_PAIR_T (mt);
+	    }
 	}
 	break;
     case IDIO_VM_CODE_TR_FIX_LET:
@@ -782,9 +905,9 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m)
 	    IDIO ms = IDIO_PAIR_H (mt);
 	    IDIO mp = IDIO_PAIR_H (IDIO_PAIR_T (mt));
 
-	    idio_vm_compile (thr, ia, ms);
+	    idio_vm_compile (thr, ia, ms, depth + 1);
 	    IDIO_IA_PUSH1 (IDIO_A_EXTEND_ENV);
-	    idio_vm_compile (thr, ia, mp);
+	    idio_vm_compile (thr, ia, mp, depth + 1);
 	}
 	break;
     case IDIO_VM_CODE_FIX_LET:
@@ -798,9 +921,9 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m)
 	    IDIO ms = IDIO_PAIR_H (mt);
 	    IDIO mp = IDIO_PAIR_H (IDIO_PAIR_T (mt));
 
-	    idio_vm_compile (thr, ia, ms);
+	    idio_vm_compile (thr, ia, ms, depth + 1);
 	    IDIO_IA_PUSH1 (IDIO_A_EXTEND_ENV);
-	    idio_vm_compile (thr, ia, mp);
+	    idio_vm_compile (thr, ia, mp, depth + 1);
 	    IDIO_IA_PUSH1 (IDIO_A_UNLINK_ENV);
 	}
 	break;
@@ -828,7 +951,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m)
 	    IDIO ins = IDIO_PAIR_H (mt);
 	    IDIO m1 = IDIO_PAIR_H (IDIO_PAIR_T (mt));
 
-	    idio_vm_compile (thr, ia, m1);
+	    idio_vm_compile (thr, ia, m1, depth + 1);
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (ins));
 	}
 	break;
@@ -845,9 +968,9 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m)
 	    IDIO m1 = IDIO_PAIR_H (IDIO_PAIR_T (mt));
 	    IDIO m2 = IDIO_PAIR_H (IDIO_PAIR_T (IDIO_PAIR_T (mt)));
 	    
-	    idio_vm_compile (thr, ia, m1);
+	    idio_vm_compile (thr, ia, m1, depth + 1);
 	    IDIO_IA_PUSH1 (IDIO_A_PUSH_VALUE);
-	    idio_vm_compile (thr, ia, m2);
+	    idio_vm_compile (thr, ia, m2, depth + 1);
 	    IDIO_IA_PUSH1 (IDIO_A_POP_REG1);
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (ins));
 	}
@@ -866,11 +989,11 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m)
 	    IDIO m2 = IDIO_PAIR_H (IDIO_PAIR_T (IDIO_PAIR_T (mt)));
 	    IDIO m3 = IDIO_PAIR_H (IDIO_PAIR_T (IDIO_PAIR_T (IDIO_PAIR_T (mt))));
 
-	    idio_vm_compile (thr, ia, m1);
+	    idio_vm_compile (thr, ia, m1, depth + 1);
 	    IDIO_IA_PUSH1 (IDIO_A_PUSH_VALUE);
-	    idio_vm_compile (thr, ia, m2);
+	    idio_vm_compile (thr, ia, m2, depth + 1);
 	    IDIO_IA_PUSH1 (IDIO_A_PUSH_VALUE);
-	    idio_vm_compile (thr, ia, m3);
+	    idio_vm_compile (thr, ia, m3, depth + 1);
 	    IDIO_IA_PUSH2 (IDIO_A_POP_REG2, IDIO_A_POP_REG1);
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (ins));
 	}
@@ -921,7 +1044,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m)
 		break;
 	    }
 	    idio_i_array_push (iap, IDIO_A_EXTEND_ENV);
-	    idio_vm_compile (thr, iap, mp);
+	    idio_vm_compile (thr, iap, mp, depth + 1);
 	    idio_i_array_push (iap, IDIO_A_RETURN);
 
 	    if (iap->i < IDIO_I_MAX) {
@@ -991,7 +1114,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m)
 	    idio_i_array_free (a);
 
 	    idio_i_array_push (iap, IDIO_A_EXTEND_ENV);
-	    idio_vm_compile (thr, iap, mp);
+	    idio_vm_compile (thr, iap, mp, depth + 1);
 	    idio_i_array_push (iap, IDIO_A_RETURN);
 
 	    if (iap->i < IDIO_I_MAX) {
@@ -1029,9 +1152,9 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m)
 	    IDIO m1 = IDIO_PAIR_H (mt);
 	    IDIO ms = IDIO_PAIR_H (IDIO_PAIR_T (mt));
 
-	    idio_vm_compile (thr, ia, m1);
+	    idio_vm_compile (thr, ia, m1, depth + 1);
 	    IDIO_IA_PUSH1 (IDIO_A_PUSH_VALUE);
-	    idio_vm_compile (thr, ia, ms);
+	    idio_vm_compile (thr, ia, ms, depth + 1);
 	    IDIO_IA_PUSH2 (IDIO_A_POP_FUNCTION, IDIO_A_FUNCTION_GOTO);
 	}
 	break;
@@ -1046,9 +1169,9 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m)
 	    IDIO m1 = IDIO_PAIR_H (mt);
 	    IDIO ms = IDIO_PAIR_H (IDIO_PAIR_T (mt));
 
-	    idio_vm_compile (thr, ia, m1);
+	    idio_vm_compile (thr, ia, m1, depth + 1);
 	    IDIO_IA_PUSH1 (IDIO_A_PUSH_VALUE);
-	    idio_vm_compile (thr, ia, ms);
+	    idio_vm_compile (thr, ia, ms, depth + 1);
 	    IDIO_IA_PUSH4 (IDIO_A_POP_FUNCTION, IDIO_A_PRESERVE_ENV, IDIO_A_FUNCTION_INVOKE, IDIO_A_RESTORE_ENV);
 	}
 	break;
@@ -1069,9 +1192,9 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m)
 		return;
 	    }
 
-	    idio_vm_compile (thr, ia, m1);
+	    idio_vm_compile (thr, ia, m1, depth + 1);
 	    IDIO_IA_PUSH1 (IDIO_A_PUSH_VALUE);
-	    idio_vm_compile (thr, ia, ms);
+	    idio_vm_compile (thr, ia, ms, depth + 1);
 	    switch (IDIO_FIXNUM_VAL (rank)) {
 	    case 0: IDIO_IA_PUSH1 (IDIO_A_POP_ENV0); break;
 	    case 1: IDIO_IA_PUSH1 (IDIO_A_POP_ENV1); break;
@@ -1096,9 +1219,9 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m)
 	    IDIO ms = IDIO_PAIR_H (IDIO_PAIR_T (mt));
 	    IDIO arity = IDIO_PAIR_H (IDIO_PAIR_T (IDIO_PAIR_T (mt)));
 
-	    idio_vm_compile (thr, ia, m1);
+	    idio_vm_compile (thr, ia, m1, depth + 1);
 	    IDIO_IA_PUSH1 (IDIO_A_PUSH_VALUE);
-	    idio_vm_compile (thr, ia, ms);
+	    idio_vm_compile (thr, ia, ms, depth + 1);
 	    IDIO_IA_PUSH1 (IDIO_A_POP_CONS_FRAME);
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (arity));
 	}
@@ -1223,6 +1346,22 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m)
 	    IDIO_IA_PUSH1 (IDIO_A_POP_HANDLER);
 	}
 	break;
+    case IDIO_VM_CODE_EXPANDER:
+	{
+	    if (! idio_isa_pair (mt) ||
+		idio_list_length (mt) != 2) {
+		idio_error_vm_compile_param_args ("EXPANDER i m");
+		return;
+	    }
+
+	    IDIO i = IDIO_PAIR_H (mt);
+	    IDIO m = IDIO_PAIR_H (IDIO_PAIR_T (mt));
+	    
+	    idio_vm_compile (thr, ia, m, depth + 1);
+	    IDIO_IA_PUSH1 (IDIO_A_EXPANDER);
+	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (i));
+	}
+	break;
     default:
 	idio_error_message ("bad instruction: %s", idio_as_string (mh, 1));
 	break;
@@ -1262,23 +1401,13 @@ void idio_vm_codegen (IDIO thr, IDIO m)
     
     /* idio_debug ("codegen: in %s\n", m); */
 
+    IDIO_THREAD_PC (thr) = idio_all_code->i;
+    
     idio_i_array_t *ia = idio_i_array (100);
     
-    idio_vm_compile (thr, ia, m);
+    idio_vm_compile (thr, ia, m, 0);
 
-    /* fprintf (stderr, "vm-codegen: %zd ins (%zd): ", ia->i, idio_all_code->i); */
-    /* size_t n = idio_all_code->i; */
-    /* size_t i; */
-    /* for (i = 0; i < ia->i; i++, n++) { */
-    /* 	if (0 == (n % 10)) { */
-    /* 	    fprintf (stderr, "\n  %5zd ", n); */
-    /* 	} */
-    /* 	fprintf (stderr, "%3d ", ia->ae[i]); */
-    /* } */
-    /* fprintf (stderr, "\n"); */
-    /* sleep (0); */
-
-    IDIO_THREAD_PC (thr) = idio_all_code->i;
+    /* IDIO_THREAD_PC (thr) = idio_all_code->i; */
     idio_i_array_append (idio_all_code, ia);
     idio_i_array_free (ia);
     /* fprintf (stderr, "vm-codegen: total %zd ins: ", idio_all_code->i); */
@@ -1478,7 +1607,7 @@ void idio_thread_invoke (IDIO thr, IDIO func, int tailp)
 
 	    if (0 == tailp &&
 		pc != pc0) {
-		fprintf (stderr, "invoke: primitive: WARNING: %s set PC %zd: pushing %zd as not in tail position\n", IDIO_PRIMITIVE_NAME (func), pc, pc0);
+		/* fprintf (stderr, "invoke: primitive: WARNING: %s set PC %zd: pushing %zd as not in tail position\n", IDIO_PRIMITIVE_NAME (func), pc, pc0); */
 		IDIO_THREAD_STACK_PUSH (IDIO_FIXNUM (pc0));
 	    }
 
@@ -1649,11 +1778,11 @@ IDIO idio_apply (IDIO fn, IDIO args)
     IDIO_ASSERT (fn);
     IDIO_ASSERT (args);
 
-    /* idio_debug ("apply: %s", fn); */
-    /* idio_debug (" %s\n", args); */
+    /* idio_debug ("apply: %s", fn);   */
+    /* idio_debug (" %s\n", args);   */
 
     size_t nargs = idio_list_length (args);
-    /* fprintf (stderr, "apply: %s nargs = %zd\n", fns, nargs); */
+    /* fprintf (stderr, "apply: %s nargs = %zd\n", fns, nargs);  */
     
     /*
      * (apply + 1 2 '(3 4 5))
@@ -1675,11 +1804,13 @@ IDIO idio_apply (IDIO fn, IDIO args)
 	larg = IDIO_PAIR_H (larg);
     }
 
-    /* fprintf (stderr, "apply: %s larg=%s\n", fns, idio_as_string (larg, 1)); */
+    /* idio_debug ("apply: %s", fn);  */
+    /* idio_debug (" larg=%s\n", larg);   */
     
     size_t size = (nargs - 1) + idio_list_length (larg);
 
-    /* fprintf (stderr, "apply: %s -> %zd args\n", fns, size); */
+    /* idio_debug ("apply: %s", fn);  */
+    /* fprintf (stderr, " -> %zd args\n", size);   */
     
     IDIO vs = idio_frame_allocate (size + 1);
 
@@ -1777,25 +1908,17 @@ int idio_vm_run1 (IDIO thr, int dis)
 	    IDIO_VM_RUN_DIS ("CHECKED-GLOBAL-REF %zd %s", i, IDIO_SYMBOL_S (sym));
 	    IDIO_THREAD_VAL (thr) = idio_symbol_lookup (sym, IDIO_THREAD_MODULE (thr));
 	    if (idio_S_undef == IDIO_THREAD_VAL (thr)) {
-		char *syms = idio_as_string (sym, 1);
-		char *ss = idio_as_string (idio_vm_symbols, 2);
-		fprintf (stderr, "\nCHECKED-GLOBAL-REF: %s in %s\n", syms, ss);
-		free (syms);
-		free (ss);
+		idio_debug ("\nCHECKED-GLOBAL-REF: %s", sym);
+		idio_debug (" in symbols %s\n", idio_vm_symbols);
 		idio_dump (thr, 2);
-		fprintf (stderr, "c-m: %p\n", idio_current_module ());
-		idio_dump (idio_current_module (), 2);
-		idio_error_message ("undefined toplevel: %d", i);
+		idio_debug ("c-m: %s\n", idio_current_module ());
+		idio_error_message ("undefined toplevel: %zd", i);
 	    } else if (idio_S_unspec == IDIO_THREAD_VAL (thr)) {
-		char *syms = idio_as_string (sym, 1);
-		char *ss = idio_as_string (idio_vm_symbols, 2);
-		fprintf (stderr, "\nCHECKED-GLOBAL-REF: %s in %s\n", syms, ss);
-		free (syms);
-		free (ss);
+		idio_debug ("\nCHECKED-GLOBAL-REF: %s", sym);
+		idio_debug (" in symbols %s\n", idio_vm_symbols);
 		idio_dump (thr, 2);
-		fprintf (stderr, "c-m: %p\n", idio_current_module ());
-		idio_dump (idio_current_module (), 2);
-		idio_error_message ("unspecified toplevel: %d", i);
+		idio_debug ("c-m: %s\n", idio_current_module ());
+		idio_error_message ("unspecified toplevel: %zd", i);
 	    }
 	}
 	break;
@@ -2591,6 +2714,14 @@ int idio_vm_run1 (IDIO thr, int dis)
 	    idio_signal_exception (0, IDIO_LIST1 (idio_string_C ("non-cont-error")));
 	}
 	break;
+    case IDIO_A_EXPANDER:
+	{
+	    uint64_t index = idio_thread_fetch_varuint (thr);
+	    IDIO_VM_RUN_DIS ("EXPANDER %zd", index);
+	    IDIO sym = idio_vm_symbols_ref (index);
+	    idio_install_expander (sym, IDIO_THREAD_VAL (thr));
+	}
+	break;
     default:
 	{
 	    idio_ai_t pc = IDIO_THREAD_PC (thr);
@@ -2613,8 +2744,7 @@ int idio_vm_run1 (IDIO thr, int dis)
 		fprintf (stderr, "%3d ", idio_all_code->ae[pc]);
 	    }
 	    fprintf (stderr, "\n");
-		
-	    idio_error_message ("unexpected instruction: %3d\n", ins);
+	    idio_error_message ("unexpected instruction: %3d @%zd\n", ins, IDIO_THREAD_PC (thr) - 1);
 	}
 	break;
     }
@@ -2683,7 +2813,7 @@ IDIO idio_vm_run (IDIO thr, int run_gc)
     for (;;) {
 	if (idio_vm_run1 (thr, 0)) {
 	    sleep (0);
-	    /* idio_gc_possibly_collect (); */
+	    idio_gc_possibly_collect (); 
 	} else {
 	    sleep (0);
 	    break;
@@ -2729,7 +2859,23 @@ IDIO idio_vm_run (IDIO thr, int run_gc)
     idio_vm_pop_handler (thr);
 
     if (run_gc) {
+	struct timeval t0;
+	gettimeofday (&t0, NULL);
+
 	idio_gc_collect ();
+
+	struct timeval t1;
+	gettimeofday (&t1, NULL);
+
+	time_t s = t1.tv_sec - t0.tv_sec;
+	suseconds_t us = t1.tv_usec - t0.tv_usec;
+
+	if (us < 0) {
+	    us += 1000000;
+	    s -= 1;
+	}
+	
+	fprintf (stderr, "vm-run: GC time %ld.%03ld\n", s, us / 1000);
     }
 
     return r;
@@ -2737,6 +2883,8 @@ IDIO idio_vm_run (IDIO thr, int run_gc)
 
 idio_ai_t idio_vm_extend_constants (IDIO v)
 {
+    IDIO_ASSERT (v);
+    
     idio_ai_t i = idio_array_size (idio_vm_constants);
     idio_array_push (idio_vm_constants, v);
     return i;
@@ -2749,6 +2897,9 @@ IDIO idio_vm_constants_ref (idio_ai_t i)
 
 idio_ai_t idio_vm_extend_symbols (IDIO v)
 {
+    IDIO_ASSERT (v);
+    IDIO_TYPE_ASSERT (symbol, v);
+    
     idio_ai_t i = idio_array_size (idio_vm_symbols);
     idio_array_push (idio_vm_symbols, v);
     return i;
@@ -2759,8 +2910,27 @@ IDIO idio_vm_symbols_ref (idio_ai_t i)
     return idio_array_get_index (idio_vm_symbols, i);
 }
 
+idio_ai_t idio_vm_symbols_lookup (IDIO v)
+{
+    IDIO_ASSERT (v);
+    IDIO_TYPE_ASSERT (symbol, v);
+    
+    idio_ai_t al = idio_array_size (idio_vm_symbols);
+    idio_ai_t i;
+    for (i = 0 ; i < al; i++) {
+	if (idio_eqp (v, idio_array_get_index (idio_vm_symbols, i))) {
+	    return i;
+	}
+    }
+
+    return -1;
+}
+
 idio_ai_t idio_vm_extend_primitives (IDIO v)
 {
+    IDIO_ASSERT (v);
+    IDIO_TYPE_ASSERT (primitive, v);
+    
     idio_ai_t i = idio_array_size (idio_vm_primitives);
     idio_array_push (idio_vm_primitives, v);
     return i;
@@ -2773,6 +2943,9 @@ IDIO idio_vm_primitives_ref (idio_ai_t i)
 
 idio_ai_t idio_vm_extend_dynamics (IDIO v)
 {
+    IDIO_ASSERT (v);
+    IDIO_TYPE_ASSERT (symbol, v);
+    
     idio_ai_t i = idio_array_size (idio_vm_dynamics);
     idio_array_push (idio_vm_dynamics, v);
     return i;
@@ -2815,16 +2988,16 @@ void idio_vm_abort_thread (IDIO thr)
 
 void idio_init_vm ()
 {
-    idio_all_code = idio_i_array (20000);
+    idio_all_code = idio_i_array (200000);
     
     idio_finish_pc = idio_vm_code_prologue (idio_all_code);
     idio_prologue_len = idio_all_code->i;
 
-    idio_vm_constants = idio_array (800);
+    idio_vm_constants = idio_array (8000);
     idio_gc_protect (idio_vm_constants);
-    idio_vm_symbols = idio_array (200);
+    idio_vm_symbols = idio_array (400);
     idio_gc_protect (idio_vm_symbols);
-    idio_vm_primitives = idio_array (100);
+    idio_vm_primitives = idio_array (400);
     idio_gc_protect (idio_vm_primitives);
     idio_vm_dynamics = idio_array (100);
     idio_gc_protect (idio_vm_dynamics);

@@ -152,6 +152,8 @@
 #define IDIO_A_CONSTANT		       141
 #define IDIO_A_NEG_CONSTANT	       142
 
+#define IDIO_A_EXPANDER		       150
+
 #define IDIO_A_DYNAMIC_REF             240
 #define IDIO_A_POP_DYNAMIC             241
 #define IDIO_A_PUSH_DYNAMIC            242
@@ -203,6 +205,8 @@
 #define IDIO_VM_CODE_POP_HANDLER	   (IDIO_VM_CODE_BASE+30)
 #define IDIO_VM_CODE_AND		   (IDIO_VM_CODE_BASE+31)
 #define IDIO_VM_CODE_OR			   (IDIO_VM_CODE_BASE+32)
+#define IDIO_VM_CODE_BEGIN		   (IDIO_VM_CODE_BASE+33)
+#define IDIO_VM_CODE_EXPANDER		   (IDIO_VM_CODE_BASE+34)
 
 /*
  * Idio Intermediate code: idio_I_*
@@ -243,6 +247,8 @@
 #define idio_I_POP_HANDLER           ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_POP_HANDLER))
 #define idio_I_AND		     ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_AND))
 #define idio_I_OR		     ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_OR))
+#define idio_I_BEGIN		     ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_BEGIN))
+#define idio_I_EXPANDER		     ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_EXPANDER))
 
 void idio_vm_codegen (IDIO thr, IDIO m);
 IDIO idio_vm_run (IDIO thr, int run_gc);
@@ -251,6 +257,7 @@ idio_ai_t idio_vm_extend_constants (IDIO v);
 IDIO idio_vm_constants_ref (idio_ai_t i);
 idio_ai_t idio_vm_extend_symbols (IDIO v);
 IDIO idio_vm_symbols_ref (idio_ai_t i);
+idio_ai_t idio_vm_symbols_lookup (IDIO v);
 idio_ai_t idio_vm_extend_primitives (IDIO v);
 IDIO idio_vm_primitives_ref (idio_ai_t i);
 idio_ai_t idio_vm_extend_dynamics (IDIO v);

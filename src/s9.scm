@@ -85,7 +85,7 @@
     (set! mapcar1 tmp-mapcar1)
     (mapcar1 a))))
 
-(define (map f a b)
+(define (map-s9 f a b)
   (let ((map2 #f))
     (let ((tmp-map2
             (lambda (a b)

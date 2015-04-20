@@ -32,6 +32,8 @@ IDIO idio_scm_predef_ref (idio_ai_t i);
 IDIO idio_scm_toplevel_ref (idio_ai_t i);
 void idio_scm_toplevel_update (idio_ai_t i, IDIO v);
 
+void idio_install_expander (IDIO id, IDIO proc);
+
 IDIO idio_scm_evaluate (IDIO e);
 void idio_init_scm_evaluate ();
 void idio_scm_evaluate_add_primitives ();

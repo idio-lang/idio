@@ -195,6 +195,34 @@ IDIO_DEFINE_PRIMITIVE2 ("eq?", eqp, (IDIO o1, IDIO o2))
     return r;
 }
 
+IDIO_DEFINE_PRIMITIVE2 ("eqv?", eqvp, (IDIO o1, IDIO o2))
+{
+    IDIO_ASSERT (o1);
+    IDIO_ASSERT (o2);
+
+    IDIO r = idio_S_false;
+
+    if (idio_eqvp (o1, o2)) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE2 ("equal?", equalp, (IDIO o1, IDIO o2))
+{
+    IDIO_ASSERT (o1);
+    IDIO_ASSERT (o2);
+
+    IDIO r = idio_S_false;
+
+    if (idio_equalp (o1, o2)) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
 int idio_eqvp (void *o1, void *o2)
 {
     return idio_equal ((IDIO) o1, (IDIO) o2, IDIO_EQUAL_EQVP);
@@ -319,7 +347,7 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 			return 0;
 		    }
 		}
-		break;
+		return 1;
 	    case IDIO_TYPE_HASH:
 		if (IDIO_EQUAL_EQP == eqp) {
 		    return (o1->u.hash == o2->u.hash);
@@ -335,7 +363,7 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 			return 0;
 		    }
 		}
-		break;
+		return 1;
 	    case IDIO_TYPE_CLOSURE:
 		return (o1->u.closure == o2->u.closure);
 	    case IDIO_TYPE_PRIMITIVE:
@@ -428,14 +456,14 @@ char *idio_as_string (IDIO o, int depth)
 	    long v = IDIO_CONSTANT_VAL (o);
 	    
 	    switch (v) {
-	    case IDIO_CONSTANT_NIL:             t = "'()";            break;
-	    case IDIO_CONSTANT_UNDEF:           t = "#undef";          break;
-	    case IDIO_CONSTANT_UNSPEC:          t = "#unspec";         break;
-	    case IDIO_CONSTANT_EOF:             t = "#eof";            break;
-	    case IDIO_CONSTANT_TRUE:            t = "#t";           break;
-	    case IDIO_CONSTANT_FALSE:           t = "#f";          break;
-	    case IDIO_CONSTANT_VOID:            t = "#void";           break;
-	    case IDIO_CONSTANT_NAN:             t = "#NaN";            break;
+	    case IDIO_CONSTANT_NIL:                  t = "'()";                   break;
+	    case IDIO_CONSTANT_UNDEF:                t = "#undef";                break;
+	    case IDIO_CONSTANT_UNSPEC:               t = "#unspec";               break;
+	    case IDIO_CONSTANT_EOF:                  t = "#eof";                  break;
+	    case IDIO_CONSTANT_TRUE:                 t = "#t";                    break;
+	    case IDIO_CONSTANT_FALSE:                t = "#f";                    break;
+	    case IDIO_CONSTANT_VOID:                 t = "#void";                 break;
+	    case IDIO_CONSTANT_NAN:                  t = "#NaN";                  break;
 
 	    case IDIO_VM_CODE_SHALLOW_ARGUMENT_REF:  t = "SHALLOW-ARGUMENT-REF";  break;
 	    case IDIO_VM_CODE_PREDEFINED:            t = "PREDEFINED";            break;
@@ -462,6 +490,15 @@ char *idio_as_string (IDIO o, int depth)
 	    case IDIO_VM_CODE_CONS_ARGUMENT:         t = "CONS-ARGUMENT";         break;
 	    case IDIO_VM_CODE_ALLOCATE_FRAME:        t = "ALLOCATE-FRAME";        break;
 	    case IDIO_VM_CODE_ALLOCATE_DOTTED_FRAME: t = "ALLOCATE-DOTTED-FRAME"; break;
+	    case IDIO_VM_CODE_FINISH:                t = "FINISH";                break;
+	    case IDIO_VM_CODE_PUSH_DYNAMIC:          t = "PUSH-DYNAMIC";          break;
+	    case IDIO_VM_CODE_POP_DYNAMIC:           t = "POP-DYNAMIC";           break;
+	    case IDIO_VM_CODE_DYNAMIC_REF:           t = "DYNAMIC-REF";           break;
+	    case IDIO_VM_CODE_PUSH_HANDLER:          t = "PUSH-HANDLER";          break;
+	    case IDIO_VM_CODE_POP_HANDLER:           t = "POP-HANDLER";           break;
+	    case IDIO_VM_CODE_AND:                   t = "AND";                   break;
+	    case IDIO_VM_CODE_OR:                    t = "OR";                    break;
+	    case IDIO_VM_CODE_EXPANDER:              t = "EXPANDER";              break;
 	    default:
 		break;
 	    }
@@ -1053,22 +1090,32 @@ char *idio_display_string (IDIO o)
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("map", map, (IDIO fn, IDIO l))
+/* 
+ * Basic map -- only one list and the function must be a primitive so
+ * we can call it directly.  We can't apply a closure as apply only
+ * changes the PC, it doesn't actually do anything!
+ *
+ * The real map is defined early on in bootstrap.
+ */
+IDIO_DEFINE_PRIMITIVE2 ("%map1", map1, (IDIO fn, IDIO list))
 {
     IDIO_ASSERT (fn);
-    IDIO_ASSERT (l);
+    IDIO_ASSERT (list);
 
-    IDIO_VERIFY_PARAM_TYPE (list, l);
+    IDIO_VERIFY_PARAM_TYPE (primitive, fn);
+    IDIO_VERIFY_PARAM_TYPE (list, list);
 
     IDIO r = idio_S_nil;
 
-    while (idio_S_nil != l) {
-	r = idio_pair (idio_apply (fn, IDIO_PAIR_H (l)), r);
-	
-	l = IDIO_PAIR_T (l);
-	IDIO_TYPE_ASSERT (list, l);
+    /* idio_debug ("map: in: %s\n", list); */
+
+    while (idio_S_nil != list) {
+	r = idio_pair (IDIO_PRIMITIVE_F (fn) (IDIO_PAIR_H (list)), r);
+	list = IDIO_PAIR_T (list);
     }
-    
+
+    r = idio_list_reverse (r);
+    /* idio_debug ("map => %s\n", r); */
     return r;
 }
 
@@ -1383,8 +1430,10 @@ void idio_util_add_primitives ()
     IDIO_ADD_PRIMITIVE (booleanp);
     IDIO_ADD_PRIMITIVE (not);
     IDIO_ADD_PRIMITIVE (eqp);
+    IDIO_ADD_PRIMITIVE (eqvp);
+    IDIO_ADD_PRIMITIVE (equalp);
     IDIO_ADD_PRIMITIVE (zerop);
-    IDIO_ADD_PRIMITIVE (map);
+    IDIO_ADD_PRIMITIVE (map1);
     IDIO_ADD_PRIMITIVE (memq);
     IDIO_ADD_PRIMITIVE (assq);
 }

@@ -574,6 +574,7 @@ typedef struct idio_gc_s {
 	unsigned long long nused[IDIO_TYPE_MAX]; /* per-type usage */
 	unsigned long long collections;	/* # times gc has been run */
 	unsigned long long bounces;
+	struct timeval dur;
     }  stats;
 } idio_gc_t;
 

@@ -790,7 +790,7 @@ static IDIO idio_scm_application_expander (IDIO x, IDIO e)
 			   idio_scm_application_expander (mcdr, e));
 	}
     } else {
-	fprintf (stderr, "application-expander: else\n");
+	/* fprintf (stderr, "application-expander: else\n"); */
 	if (idio_S_false == e) {
 	    r = idio_pair (x, r);
 	} else {
@@ -837,10 +837,12 @@ static IDIO idio_scm_initial_expander (IDIO x, IDIO e)
     }
 }
 
-static void idio_scm_install_expander (IDIO id, IDIO proc, IDIO code)
+void idio_install_expander (IDIO id, IDIO proc)
 {
-    /* idio_debug ("install-expander: %s\n", id); */
-
+    IDIO_ASSERT (id);
+    IDIO_ASSERT (proc);
+    IDIO_TYPE_ASSERT (symbol, id);
+    
     IDIO el = idio_module_symbol_value (idio_scm_expander_list, idio_scm_evaluation_module);
     IDIO old = idio_list_assq (id, el);
 
@@ -852,9 +854,16 @@ static void idio_scm_install_expander (IDIO id, IDIO proc, IDIO code)
     } else {
 	IDIO_PAIR_T (old) = proc;
     }
+}
+
+static void idio_scm_install_expander (IDIO id, IDIO proc, IDIO code)
+{
+    /* idio_debug ("install-expander: %s\n", id); */
+
+    idio_install_expander (id, proc);
 
     IDIO els = idio_module_symbol_value (idio_scm_expander_list_src, idio_scm_evaluation_module);
-    old = idio_list_assq (id, els);
+    IDIO old = idio_list_assq (id, els);
     if (idio_S_false == old) {
 	idio_module_set_symbol_value (idio_scm_expander_list_src,
 				      idio_pair (idio_pair (id, proc),
@@ -863,6 +872,27 @@ static void idio_scm_install_expander (IDIO id, IDIO proc, IDIO code)
     } else {
 	IDIO_PAIR_T (old) = proc;
     }
+}
+
+static IDIO idio_scm_install_expander_code (IDIO m)
+{
+    IDIO_ASSERT (m);
+
+    /* idio_debug ("install-expander-code: %s\n", m); */
+
+    IDIO cthr = idio_current_thread ();
+    idio_set_current_thread (idio_scm_expander_thread);
+    idio_thread_save_state (idio_scm_expander_thread);
+    idio_vm_default_pc (idio_scm_expander_thread);
+
+    idio_vm_codegen (idio_scm_expander_thread, m);
+    IDIO r = idio_vm_run (idio_scm_expander_thread, 0);
+    
+    idio_thread_restore_state (idio_scm_expander_thread);
+    idio_set_current_thread (cthr);
+
+    /* idio_debug ("scm-install-expander-code: out: %s\n", r);  */
+    return r;
 }
 
 /* static void idio_scm_push_expander (IDIO id, IDIO proc) */
@@ -904,8 +934,8 @@ static IDIO idio_scm_macro_expand (IDIO e)
 {
     IDIO_ASSERT (e);
 
-    /* fprintf (stderr, "scm-macro-expand: %zd args in ", idio_list_length (e)); */
-    /* idio_debug (" %s\n", e); */
+    /* fprintf (stderr, "scm-macro-expand: %zd args in ", idio_list_length (e));  */
+    /* idio_debug (" %s\n", e);  */
     
     return idio_scm_evaluate_expander (e, idio_S_unspec);
 }
@@ -1256,8 +1286,8 @@ static IDIO idio_scm_meaning_define_macro (IDIO name, IDIO e, IDIO nametree, int
     IDIO_ASSERT (nametree);
     IDIO_TYPE_ASSERT (list, nametree);
 
-    /* idio_debug ("scm-meaning-define-macro:\nname=%s\n", name); */
-    /* idio_debug ("e=%s\n", e); */
+    /* idio_debug ("scm-meaning-define-macro:\nname=%s\n", name);  */
+    /* idio_debug ("e=%s\n", e);  */
 
     /*
      * (define-macro (func arg) ...) => (define-macro func (lambda (arg) ...))
@@ -1292,8 +1322,8 @@ static IDIO idio_scm_meaning_define_macro (IDIO name, IDIO e, IDIO nametree, int
      *
      * where proc is (lambda (arg) ...) from above, ie. e
      */
-    IDIO x_sym = idio_symbols_C_intern ("x");
-    IDIO e_sym = idio_symbols_C_intern ("e");
+    IDIO x_sym = idio_symbols_C_intern ("xx");
+    IDIO e_sym = idio_symbols_C_intern ("ee");
     IDIO expander = IDIO_LIST3 (idio_S_lambda,
 				IDIO_LIST2 (x_sym, e_sym),
 				IDIO_LIST3 (idio_S_apply,
@@ -1316,14 +1346,15 @@ static IDIO idio_scm_meaning_define_macro (IDIO name, IDIO e, IDIO nametree, int
      * (in particular where they are creating an enhanced version of b
      * which requires using the existing b to define itself hence
      * defining some other name, "%b", which can use "b" freely then
-     * reset b to this new version)
+     * redefine b to this new version)
      *
      * However, we can't just use the current value of "%b" in
-     * (define-macro b %b) as we are replacing the nominal definition
-     * of a macro with an expander which takes two arguments then the
-     * cdr of its first argument.  Left alone, expander "b" will take
-     * the cdr then expander "%b" will take the cdr....  A cdr too
-     * far, one would say in hindsight.
+     * (define-macro b %b) as this macro-expander association means we
+     * are replacing the nominal definition of a macro with an
+     * expander which takes two arguments and the body of which will
+     * take the cdr of its first argument.  Left alone, expander "b"
+     * will take the cdr then expander "%b" will take the cdr....  A
+     * Cdr Too Far, one would say, in hindsight.
      *
      * So catch the case where the value is already an expander.
      */
@@ -1342,10 +1373,7 @@ static IDIO idio_scm_meaning_define_macro (IDIO name, IDIO e, IDIO nametree, int
      * We really want the entry in *expander-list* to be some compiled
      * code but we don't know what that code is yet because we have't
      * processed the source code of the expander -- we only invented
-     * it a couple of lines above!
-     *
-     * We will process it in the call to idio_scm_meaning_assignment()
-     * immediately after this.
+     * it a couple of lines above -- let alone compiled it!
      *
      * So, we'll drop the "source" code of the expander into
      * *expander-list* and later, when someone calls expander? for
@@ -1366,9 +1394,30 @@ static IDIO idio_scm_meaning_define_macro (IDIO name, IDIO e, IDIO nametree, int
      * call to idio_scm_install_expander in the object code for future
      * users.
      */
+
+    IDIO m_a = idio_scm_meaning_assignment (name, expander, nametree, 0);
+
     idio_scm_install_expander (name, expander, expander);
 
-    return idio_scm_meaning_assignment (name, expander, nametree, 0);
+    idio_scm_install_expander_code (m_a);
+
+    idio_ai_t i = idio_vm_symbols_lookup (name);
+    if (-1 == i) {
+	idio_debug ("extending symbols for define-macro %s\n", name);
+	i = idio_vm_extend_symbols (name);
+    }
+
+    /*
+     * NB.  This effectively creates/stores the macro body code a
+     * second time *in this instance of the engine*.  When the object
+     * code is read in there won't be an instance of the macro body
+     * code lying around -- at least not one we can access.
+     */
+
+    IDIO r = IDIO_LIST3 (idio_I_EXPANDER, IDIO_FIXNUM (i), m_a);
+    /* idio_debug ("idio-scm-meaning-define-macro %s", name);  */
+    /* idio_debug (" r=%s\n", r);  */
+    return r;
 }
 
 static IDIO idio_scm_meaning_sequence (IDIO ep, IDIO nametree, int tailp, IDIO keyword);
@@ -1398,7 +1447,7 @@ static IDIO idio_scm_meanings_multiple_sequence (IDIO e, IDIO ep, IDIO nametree,
     } else if (idio_S_or == keyword) {
 	return IDIO_LIST3 (idio_I_OR, m, mp);
     } else if (idio_S_begin == keyword) {
-	return IDIO_LIST2 (m, mp);
+	return IDIO_LIST3 (idio_I_BEGIN, m, mp);
     } else {
 	char *ks = idio_as_string (keyword, 1);
 	idio_error_message ("unexpected sequence keyword: %s", ks);
@@ -1414,14 +1463,68 @@ static IDIO idio_scm_meaning_sequence (IDIO ep, IDIO nametree, int tailp, IDIO k
     IDIO_ASSERT (keyword);
     IDIO_TYPE_ASSERT (list, nametree);
 
-    /* idio_debug ("scm-meaning-sequence: %s\n", ep); */
+    /* idio_debug ("scm-meaning-sequence: %s\n", ep);  */
     
     if (idio_isa_pair (ep)) {
 	IDIO eph = IDIO_PAIR_H (ep);
 	IDIO ept = IDIO_PAIR_T (ep);
 
 	if (idio_isa_pair (ept)) {
-	    return idio_scm_meanings_multiple_sequence (eph, ept, nametree, tailp, keyword);
+	    /*
+	     * If we have just loaded a file, a sequence can be
+	     * "really quite long" and blow C's stack up...  So,
+	     * rather than calling
+	     * idio_scm_meanings_multiple_sequence() which calls us
+	     * which ... we'll have to generate the solution in a
+	     * loop.
+	     */
+	    /* IDIO r1 = idio_scm_meanings_multiple_sequence (eph, ept, nametree, tailp, keyword); */
+	    /* idio_debug ("o-m-s: %s\n", r1); */
+	    /* return r1; */
+	    IDIO c = idio_S_nil;
+	    if (idio_S_and == keyword) {
+		c = idio_I_AND;
+	    } else if (idio_S_or == keyword) {
+		c = idio_I_OR;
+	    } else if (idio_S_begin == keyword) {
+		c = idio_I_BEGIN;
+	    } else {
+		char *ks = idio_as_string (keyword, 1);
+		idio_error_message ("unexpected sequence keyword: %s", ks);
+		free (ks);
+		return idio_S_unspec;
+	    }
+
+	    IDIO e = IDIO_PAIR_H (ep);
+	    ep = IDIO_PAIR_T (ep);
+
+	    IDIO mp = idio_S_nil;
+
+	    /* 
+	     * Generate meanings in order (partly so any defined names
+	     * come out in order)
+	     */
+	    for (;;) {
+		IDIO m = idio_scm_meaning (e, nametree, 0);
+		mp = idio_pair (m, mp);
+		if (idio_S_nil == ep) {
+		    break;
+		}
+		e = IDIO_PAIR_H (ep);
+		ep = IDIO_PAIR_T (ep);
+	    }
+
+	    /* 
+	     * now loop over the reversed list of meanings prefixing
+	     * AND/OR/BEGIN.
+	     */
+	    IDIO r = idio_S_nil;
+	    for (;idio_S_nil != mp;) {
+		r = idio_pair (IDIO_PAIR_H (mp), r);
+		mp = IDIO_PAIR_T (mp);
+	    }
+
+	    return idio_pair (c, r);
 	} else {
 	    return idio_scm_meanings_single_sequence (eph, nametree, tailp);
 	}
@@ -2019,7 +2122,7 @@ static IDIO idio_scm_meaning (IDIO e, IDIO nametree, int tailp)
     IDIO_ASSERT (nametree);
     IDIO_TYPE_ASSERT (list, nametree);
 
-    /* idio_debug ("meaning: %s\n", e); */
+    /* idio_debug ("scm-meaning: e %s\n", e); */
 
     if (idio_isa_pair (e)) {
 	IDIO eh = IDIO_PAIR_H (e);
@@ -2197,7 +2300,9 @@ static IDIO idio_scm_meaning (IDIO e, IDIO nametree, int tailp)
 
 IDIO idio_scm_evaluate (IDIO e)
 {
+    idio_gc_pause ();
     IDIO m = idio_scm_meaning (e, idio_S_nil, 1);
+    idio_gc_resume ();
 
     if (0) {
 	IDIO d = idio_module_current_defined ();
@@ -2236,10 +2341,7 @@ IDIO idio_scm_evaluate (IDIO e)
 	}
     }
 
-    idio_vm_codegen (idio_current_thread (), m);
-    IDIO r = idio_vm_run (idio_current_thread (), 1);
-
-    /* idio_debug ("scm-evaluate: => %s\n", r); */
+    /* idio_debug ("scm-meaning: => %s\n", m); */
     
     return m;
 }
@@ -2294,6 +2396,6 @@ void idio_final_scm_evaluate ()
 }
 
 /* Local Variables: */
-/* mode: C/l */
+/* mode: C */
 /* buffer-file-coding-system: undecided-unix */
 /* End: */

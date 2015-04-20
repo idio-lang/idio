@@ -530,6 +530,9 @@ idio_gc_t *idio_gc_new ()
     }
     c->stats.collections = 0;
     c->stats.bounces = 0;
+    c->stats.dur.tv_sec = 0;
+    c->stats.dur.tv_sec = 0;
+    c->stats.dur.tv_usec = 0;
 
     c->symbols = NULL;
     c->ports = NULL;
@@ -829,11 +832,11 @@ void idio_gc_sweep ()
 {
 
     IDIO_FPRINTF (stderr, "idio_gc_sweep: clear free list\n");
-    while (idio_gc->free) {
-	IDIO fo = idio_gc->free;
-	idio_gc->free = fo->next;
-	free (fo);
-    }
+    /* while (idio_gc->free) { */
+    /* 	IDIO fo = idio_gc->free; */
+    /* 	idio_gc->free = fo->next; */
+    /* 	free (fo); */
+    /* } */
 
     IDIO_FPRINTF (stderr, "idio_gc_sweep: used list\n");
     IDIO co = idio_gc->used;
@@ -893,6 +896,9 @@ void idio_gc_collect ()
     
     IDIO_C_ASSERT (idio_gc->pause == 0);
 
+    struct timeval t0;
+    gettimeofday (&t0, NULL);
+
     idio_gc->stats.collections++;
     if (idio_gc->stats.igets > idio_gc->stats.mgets) {
 	idio_gc->stats.mgets = idio_gc->stats.igets;
@@ -908,6 +914,26 @@ void idio_gc_collect ()
     idio_gc_sweep ();
     /* IDIO_FPRINTF (stderr, "\nidio_gc_collect: %2d: post-sweep dump\n", idio_gc->stats.collections); */
     /* idio_gc_dump (f); */
+
+    struct timeval t1;
+    gettimeofday (&t1, NULL);
+
+    time_t s = t1.tv_sec - t0.tv_sec;
+    suseconds_t us = t1.tv_usec - t0.tv_usec;
+
+    if (us < 0) {
+	us += 1000000;
+	s -= 1;
+    }
+	
+    fprintf (stderr, "idio-gc-collect: GC time %ld.%03ld\n", s, us / 1000);
+
+    idio_gc->stats.dur.tv_usec += us;
+    if (idio_gc->stats.dur.tv_usec > 1000000) {
+	idio_gc->stats.dur.tv_usec -= 1000000;
+	idio_gc->stats.dur.tv_sec += 1;
+    }
+    idio_gc->stats.dur.tv_sec += s;
 }
 
 void idio_hcount (unsigned long long *bytes, int *scale)
@@ -1063,6 +1089,9 @@ void idio_gc_stats ()
     idio_hcount (&count, &scale);
     
     fprintf (stderr, "idio_gc_stats: %4lld%c  on used list\n", count, scales[scale]);
+
+    fprintf (stderr, "idio-gc-stats: GC time %ld.%03ld\n", idio_gc->stats.dur.tv_sec, idio_gc->stats.dur.tv_usec / 1000);
+
 }
 
 void idio_gc_pause ()

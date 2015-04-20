@@ -40,19 +40,6 @@ IDIO idio_pair (IDIO h, IDIO t)
     return p;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("pair?", pair_p, (IDIO o))
-{
-    IDIO_ASSERT (o);
-
-    IDIO r = idio_S_false;
-
-    if (idio_isa_pair (o)) {
-	r = idio_S_true;
-    }
-    
-    return r;
-}
-
 IDIO_DEFINE_PRIMITIVE2 ("cons", pair, (IDIO h, IDIO t))
 {
     IDIO_ASSERT (h);
@@ -66,6 +53,19 @@ int idio_isa_pair (IDIO p)
     IDIO_ASSERT (p);
 
     return idio_isa (p, IDIO_TYPE_PAIR);
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("pair?", pair_p, (IDIO o))
+{
+    IDIO_ASSERT (o);
+
+    IDIO r = idio_S_false;
+
+    if (idio_isa_pair (o)) {
+	r = idio_S_true;
+    }
+    
+    return r;
 }
 
 int idio_isa_list (IDIO p)
@@ -123,6 +123,10 @@ IDIO_DEFINE_PRIMITIVE1 ("car", pair_head, (IDIO p))
 {
     IDIO_ASSERT (p);
 
+    if (idio_S_nil == p) {
+	return idio_S_nil;
+    }
+
     IDIO_VERIFY_PARAM_TYPE (pair, p);
 
     return idio_list_head (p);
@@ -156,6 +160,10 @@ IDIO idio_list_tail (IDIO p)
 IDIO_DEFINE_PRIMITIVE1 ("cdr", pair_tail, (IDIO p))
 {
     IDIO_ASSERT (p);
+
+    if (idio_S_nil == p) {
+	return idio_S_nil;
+    }
 
     IDIO_VERIFY_PARAM_TYPE (pair, p);
 
