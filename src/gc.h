@@ -551,18 +551,12 @@ typedef struct idio_root_s {
 typedef struct idio_gc_s {
     struct idio_gc_s *next;
     idio_root_t *roots;
-    IDIO namespace;
-    IDIO symbols;
-    IDIO ports;			/* SCM/S9fES ports */
-    IDIO input_port;		/* SCM/S9fES ports */
-    IDIO output_port;		/* SCM/S9fES ports */
-    IDIO error_port;		/* SCM/S9fES ports */
-    IDIO C_typedefs;
     IDIO free;
     IDIO used;
     IDIO grey;
     unsigned int pause;
     unsigned char verbose;
+    unsigned char request;
     struct stats {
 	unsigned long long tgets[IDIO_TYPE_MAX];
 	unsigned long long igets;

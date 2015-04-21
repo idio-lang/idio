@@ -45,6 +45,7 @@ static IDIO idio_vm_dynamics;
 static IDIO idio_vm_dynamic_mark;
 static IDIO idio_vm_handler_mark;
 static IDIO idio_vm_base_error_handler_primdata;
+static IDIO idio_vm_closure_name;
 
 static void idio_vm_panic (IDIO thr, char *m)
 {
@@ -1362,6 +1363,8 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (i));
 	}
 	break;
+    case IDIO_VM_CODE_NOP:
+	break;
     default:
 	idio_error_message ("bad instruction: %s", idio_as_string (mh, 1));
 	break;
@@ -1849,7 +1852,7 @@ IDIO_DEFINE_PRIMITIVE1V ("apply", apply, (IDIO fn, IDIO args))
 
 #define IDIO_VM_RUN_DIS(...)	if (dis) { fprintf (stderr, __VA_ARGS__); }
 
-int idio_vm_run1 (IDIO thr, int dis)
+int idio_vm_run1 (IDIO thr, int dis, int tracing)
 {
     IDIO_ASSERT (thr);
     IDIO_TYPE_ASSERT (thread, thr);
@@ -2034,7 +2037,11 @@ int idio_vm_run1 (IDIO thr, int dis)
 	    uint64_t i = idio_thread_fetch_varuint (thr);
 	    IDIO sym = idio_vm_symbols_ref (i);
 	    IDIO_VM_RUN_DIS ("GLOBAL-SET %zd %s", i, IDIO_SYMBOL_S (sym));
-	    idio_module_current_set_symbol_value (sym, IDIO_THREAD_VAL (thr));
+	    IDIO val = IDIO_THREAD_VAL (thr);
+	    idio_module_current_set_symbol_value (sym, val);
+	    if (idio_isa_closure (val)) {
+		idio_hash_put (idio_vm_closure_name, IDIO_FIXNUM (IDIO_CLOSURE_CODE (val)), sym);
+	    }
 	}
 	break;
     case IDIO_A_LONG_GOTO:
@@ -2157,6 +2164,9 @@ int idio_vm_run1 (IDIO thr, int dis)
 		idio_vm_panic (thr, "RETURN: impossible stack pointer on stack top");
 	    }
 	    IDIO_THREAD_PC (thr) = sp;
+	    if (tracing) {
+		idio_debug (" => %s\n", IDIO_THREAD_VAL (thr));
+	    }
 	}
 	break;
     case IDIO_A_PACK_FRAME:
@@ -2168,13 +2178,51 @@ int idio_vm_run1 (IDIO thr, int dis)
 	break;
     case IDIO_A_FUNCTION_INVOKE:
 	{
-	    IDIO_VM_RUN_DIS ("FUNCTION-INVOKE ...\n");
+	    IDIO_VM_RUN_DIS ("FUNCTION-INVOKE ... ");
+	    if (tracing) {
+		IDIO func = IDIO_THREAD_FUNC (thr);
+		IDIO val = IDIO_THREAD_VAL (thr);
+		IDIO args = idio_S_nil;
+		if (IDIO_FRAME_NARGS (val) > 1) {
+		    IDIO fargs = idio_array_copy (IDIO_FRAME_ARGS (val), 0);
+		    idio_array_pop (fargs);
+		    args = idio_array_to_list (fargs);
+		}
+		IDIO expr = idio_list_append2 (IDIO_LIST1 (func), args);
+		if (idio_isa_closure (func)) {
+		    IDIO name = idio_hash_get (idio_vm_closure_name, IDIO_FIXNUM (IDIO_CLOSURE_CODE (func)));
+		    idio_debug ("%20s ", name);
+		} else {
+		    fprintf (stderr, "                     ");
+		}
+		idio_debug ("%s", expr);
+		fprintf (stderr, "\n");
+	    }
 	    idio_thread_invoke (thr, IDIO_THREAD_FUNC (thr), 0);
 	}
 	break;
     case IDIO_A_FUNCTION_GOTO:
 	{
-	    IDIO_VM_RUN_DIS ("FUNCTION-GOTO ...\n");
+	    IDIO_VM_RUN_DIS ("FUNCTION-GOTO ...");
+	    if (tracing) {
+		IDIO func = IDIO_THREAD_FUNC (thr);
+		IDIO val = IDIO_THREAD_VAL (thr);
+		IDIO args = idio_S_nil;
+		if (IDIO_FRAME_NARGS (val) > 1) {
+		    IDIO fargs = idio_array_copy (IDIO_FRAME_ARGS (val), 0);
+		    idio_array_pop (fargs);
+		    args = idio_array_to_list (fargs);
+		}
+		IDIO expr = idio_list_append2 (IDIO_LIST1 (func), args);
+		if (idio_isa_closure (func)) {
+		    IDIO name = idio_hash_get (idio_vm_closure_name, IDIO_FIXNUM (IDIO_CLOSURE_CODE (func)));
+		    idio_debug ("%20s ", name);
+		} else {
+		    fprintf (stderr, "                     ");
+		}
+		idio_debug ("%s", expr);
+		fprintf (stderr, "\n");
+	    }
 	    idio_thread_invoke (thr, IDIO_THREAD_FUNC (thr), 1);
 	}
 	break;
@@ -2811,7 +2859,7 @@ IDIO idio_vm_run (IDIO thr, int run_gc)
     idio_i_array_push (idio_all_code, IDIO_A_RETURN);
 
     for (;;) {
-	if (idio_vm_run1 (thr, 0)) {
+	if (idio_vm_run1 (thr, 0, 0)) {
 	    sleep (0);
 	    idio_gc_possibly_collect (); 
 	} else {
@@ -3000,6 +3048,9 @@ void idio_init_vm ()
      */
     IDIO index = IDIO_ADD_SPECIAL_PRIMITIVE (base_error_handler);
     idio_vm_base_error_handler_primdata = idio_vm_primitives_ref (IDIO_FIXNUM_VAL (index));
+
+    idio_vm_closure_name = IDIO_HASH_EQP (256);
+    idio_gc_protect (idio_vm_closure_name);
 }
 
 void idio_vm_add_primitives ()
@@ -3021,4 +3072,5 @@ void idio_final_vm ()
     idio_gc_expose (idio_vm_dynamics);
     idio_gc_expose (idio_vm_dynamic_mark);
     idio_gc_expose (idio_vm_handler_mark);
+    idio_gc_expose (idio_vm_closure_name);
 }

@@ -209,6 +209,11 @@ IDIO_DEFINE_PRIMITIVE2 ("eqv?", eqvp, (IDIO o1, IDIO o2))
     return r;
 }
 
+/*
+ * s9.scm redefines equal? from eq? and eqv? and recurses on itself --
+ * or it will if we do not define a primitive equal? which would be
+ * used in its definition
+
 IDIO_DEFINE_PRIMITIVE2 ("equal?", equalp, (IDIO o1, IDIO o2))
 {
     IDIO_ASSERT (o1);
@@ -222,6 +227,7 @@ IDIO_DEFINE_PRIMITIVE2 ("equal?", equalp, (IDIO o1, IDIO o2))
 
     return r;
 }
+*/
 
 int idio_eqvp (void *o1, void *o2)
 {
@@ -498,6 +504,7 @@ char *idio_as_string (IDIO o, int depth)
 	    case IDIO_VM_CODE_POP_HANDLER:           t = "POP-HANDLER";           break;
 	    case IDIO_VM_CODE_AND:                   t = "AND";                   break;
 	    case IDIO_VM_CODE_OR:                    t = "OR";                    break;
+	    case IDIO_VM_CODE_BEGIN:                 t = "BEGIN";                 break;
 	    case IDIO_VM_CODE_EXPANDER:              t = "EXPANDER";              break;
 	    default:
 		break;
@@ -1431,7 +1438,7 @@ void idio_util_add_primitives ()
     IDIO_ADD_PRIMITIVE (not);
     IDIO_ADD_PRIMITIVE (eqp);
     IDIO_ADD_PRIMITIVE (eqvp);
-    IDIO_ADD_PRIMITIVE (equalp);
+    /* IDIO_ADD_PRIMITIVE (equalp); */
     IDIO_ADD_PRIMITIVE (zerop);
     IDIO_ADD_PRIMITIVE (map1);
     IDIO_ADD_PRIMITIVE (memq);

@@ -47,6 +47,7 @@ IDIO idio_S_eq_gt;
 IDIO idio_S_error;
 IDIO idio_S_fixed_template;
 IDIO idio_S_if;
+IDIO idio_S_include;
 IDIO idio_S_init;
 IDIO idio_S_lambda;
 IDIO idio_S_let;
@@ -241,6 +242,7 @@ void idio_init_symbol ()
     idio_S_error = idio_symbols_C_intern ("error");
     idio_S_fixed_template = idio_symbols_C_intern ("fixed_template");
     idio_S_if = idio_symbols_C_intern ("if");
+    idio_S_include = idio_symbols_C_intern ("include");
     idio_S_init = idio_symbols_C_intern ("init");
     idio_S_lambda = idio_symbols_C_intern ("lambda");
     idio_S_let = idio_symbols_C_intern ("let");

@@ -417,6 +417,9 @@ idio_hi_t idio_hash_hashval (IDIO h, void *kv)
     idio_hi_t hv = IDIO_HASH_SIZE (h) + 1;
     
     switch (idio_type (k)) {
+    case IDIO_TYPE_FIXNUM:
+	hv = idio_hash_hashval_uintmax_t ((uintptr_t) k);
+	break;
     case IDIO_TYPE_STRING:
 	hv = idio_hash_hashval_string_C (IDIO_STRING_BLEN (k), IDIO_STRING_S (k)); 
 	break;
@@ -924,11 +927,11 @@ IDIO idio_hash_keys_to_list (IDIO h)
 	    fprintf (stderr, "h = %s\n", idio_as_string (h, 2));
 	    idio_error_message ("key is NULL");
 	}
-	IDIO_ASSERT (k);
 	if (idio_S_nil != k) {
 	    if (IDIO_HASH_FLAGS (h) & IDIO_HASH_FLAG_STRING_KEYS) {
 		r = idio_pair (idio_string_C ((char *) k), r);
 	    } else {
+		IDIO_ASSERT (k);
 		r = idio_pair (k, r);
 	    }
 	}

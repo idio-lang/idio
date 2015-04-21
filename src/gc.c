@@ -53,7 +53,8 @@ IDIO idio_gc_get_alloc ()
 {
     IDIO o;
     int n;
-    for (n = 0 ; n < 40 * 1024; n++) {
+    idio_gc->request = 1;
+    for (n = 0 ; n < 1024; n++) {
 	o = idio_alloc (sizeof (idio_t));
 	o->next = idio_gc->free;
 	idio_gc->free = o;
@@ -522,6 +523,7 @@ idio_gc_t *idio_gc_new ()
     c->grey = NULL;
     c->pause = 0;
     c->verbose = 0;
+    c->request = 0;
 
     int i;
     for (i = 0; i < IDIO_TYPE_MAX; i++) {
@@ -542,13 +544,6 @@ idio_gc_t *idio_gc_new ()
     c->stats.dur.tv_sec = 0;
     c->stats.dur.tv_usec = 0;
 
-    c->symbols = NULL;
-    c->ports = NULL;
-    c->input_port = NULL;
-    c->output_port = NULL;
-    c->error_port = NULL;
-    c->namespace = NULL;
-    
     return c;
 }
 
@@ -837,6 +832,8 @@ void idio_gc_sweep_free_value (IDIO vo)
 void idio_gc_sweep ()
 {
     idio_gc->free = NULL;
+    size_t nobj = 0;
+    size_t freed = 0;
     
     IDIO_FPRINTF (stderr, "idio_gc_sweep: used list\n");
     IDIO co = idio_gc->used;
@@ -844,6 +841,7 @@ void idio_gc_sweep ()
     IDIO no = NULL;
     while (co) {
 	IDIO_ASSERT (co);
+	nobj++;
 	if ((co->flags & IDIO_FLAG_FREE_MASK) == IDIO_FLAG_FREE) {
 	    fprintf (stderr, "idio_gc_sweep: already free?: ");
 	    idio_gc->verbose++;
@@ -869,7 +867,7 @@ void idio_gc_sweep ()
 	    co->flags = (co->flags & IDIO_FLAG_FREE_UMASK) | IDIO_FLAG_FREE;
 	    co->next = idio_gc->free;
 	    idio_gc->free = co;
-	    
+	    freed++;
 	} else {
 	    IDIO_FPRINTF (stderr, "idio_gc_sweep: keeping %10p %x == %x %x == %x\n", co, co->flags & IDIO_FLAG_STICKY_MASK, IDIO_FLAG_NOTSTICKY, co->flags & IDIO_FLAG_GCC_MASK, IDIO_FLAG_GCC_WHITE);
 	    po = co;
@@ -877,6 +875,14 @@ void idio_gc_sweep ()
 
 	co = no;
     }
+
+    /*
+    if (nobj) {
+	fprintf (stderr, "idio_gc_sweep: freed %zd/%zd %.1f%%, left %zd\n", freed, nobj, freed * 100.0 / nobj, nobj - freed);
+    } else {
+	fprintf (stderr, "idio_gc_sweep: freed %zd/%zd ??%%, left %zd\n", freed, nobj, nobj - freed);
+    }
+    */
 }
 
 void idio_gc_stats ();
@@ -884,7 +890,8 @@ void idio_gc_stats ();
 void idio_gc_possibly_collect ()
 {
     if (idio_gc->pause == 0 &&
-	idio_gc->stats.igets > 0x1ffff) {
+	(idio_gc->request ||
+	 idio_gc->stats.igets > 0x1ffff)) {
 	idio_gc_collect ();
     }
 }
@@ -898,6 +905,8 @@ void idio_gc_collect ()
 	return;
     }
 
+    idio_gc->request = 0;
+    
     struct timeval t0;
     gettimeofday (&t0, NULL);
 

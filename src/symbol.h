@@ -46,6 +46,7 @@ extern IDIO idio_S_eq_gt;
 extern IDIO idio_S_error;
 extern IDIO idio_S_fixed_template;
 extern IDIO idio_S_if;
+extern IDIO idio_S_include;
 extern IDIO idio_S_init;
 extern IDIO idio_S_lambda;
 extern IDIO idio_S_let;

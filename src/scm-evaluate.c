@@ -1463,7 +1463,7 @@ static IDIO idio_scm_meaning_sequence (IDIO ep, IDIO nametree, int tailp, IDIO k
     IDIO_ASSERT (keyword);
     IDIO_TYPE_ASSERT (list, nametree);
 
-    /* idio_debug ("scm-meaning-sequence: %s\n", ep);  */
+    /* idio_debug ("scm-meaning-sequence: %s\n", ep);   */
     
     if (idio_isa_pair (ep)) {
 	IDIO eph = IDIO_PAIR_H (ep);
@@ -1622,19 +1622,37 @@ static IDIO idio_scm_rewrite_body (IDIO e)
 		return l;
 	    } else {
 		defs = idio_list_reverse (defs);
-		/* poor man's letrec */
-		IDIO r = idio_S_nil;
+		/*
+		 * poor man's letrec*
+		 *
+		 * We are aiming for:
+		 *
+		 * (let ((v1 #f)
+		 *	 (v2 #f))
+		 *   (set! v1 a1)
+		 *   (set1 v2 a2)
+		 *   body)
+		 *
+		 * but we return it as a list of one, ((let
+		 * ... body)), so that idio_scm_meaning_sequence will
+		 * re-read the first element in the list and interpret
+		 * it as the expander "let"
+		 */
+		IDIO bindings = idio_S_nil;
 		IDIO ns = idio_list_mapcar (defs);
 		while (idio_S_nil != ns) {
-		  r = idio_pair (IDIO_LIST3 (idio_S_set, IDIO_PAIR_H (ns), idio_S_false), r);
+		    bindings = idio_pair (IDIO_LIST2 (IDIO_PAIR_H (ns), idio_S_false), bindings);
 		    ns = IDIO_PAIR_T (ns);
 		}
+		IDIO body = idio_S_nil;
 		IDIO vs = defs;
 		while (idio_S_nil != vs) {
-		  r = idio_pair (idio_list_append2 (IDIO_LIST1 (idio_S_set), IDIO_PAIR_H (vs)), r);
+		    IDIO assign = idio_list_append2 (IDIO_LIST1 (idio_S_set), IDIO_PAIR_H (vs));
+		    body = idio_list_append2 (IDIO_LIST1 (assign), body);
 		    vs = IDIO_PAIR_T (vs);
 		}
-		return idio_list_append2 (idio_list_reverse (r), l);
+		body = idio_list_append2 (body, l);
+		return IDIO_LIST1 (idio_list_append2 (IDIO_LIST2 (idio_S_let, bindings), body));
 	    }
 	}
     }
@@ -1671,9 +1689,9 @@ static IDIO idio_scm_meaning_abstraction (IDIO nns, IDIO ep, IDIO nametree, int 
      * Of course that means muggins has to do the legwork.
      */
 
-    /* idio_debug ("scm-meaning-abstraction: in: %s\nep=%s\n", ep); */
+    /* idio_debug ("scm-meaning-abstraction: in: %s\nep=%s\n", ep);  */
     ep = idio_scm_rewrite_body (ep); 
-    /* idio_debug ("scm-meaning-abstraction: in: %s\nep=%s\n", ep); */
+    /* idio_debug ("scm-meaning-abstraction: in: %s\nep=%s\n", ep);  */
 
     IDIO ns = nns;
     IDIO regular = idio_S_nil;
@@ -1737,6 +1755,8 @@ static IDIO idio_scm_meaning_fix_closed_application (IDIO ns, IDIO body, IDIO es
     IDIO_ASSERT (nametree);
     IDIO_TYPE_ASSERT (list, nametree);
 
+    body = idio_scm_rewrite_body (body);
+    
     IDIO ms = idio_scm_meanings (es, nametree, idio_list_length (es), 0);
     IDIO nt2 = idio_nametree_extend (nametree, ns);
     IDIO mbody = idio_scm_meaning_sequence (body, nt2, tailp, idio_S_begin);
@@ -1815,6 +1835,8 @@ static IDIO idio_scm_meaning_closed_application (IDIO e, IDIO ees, IDIO nametree
     IDIO_ASSERT (ees);
     IDIO_ASSERT (nametree);
     IDIO_TYPE_ASSERT (list, nametree);
+
+    /* idio_debug ("scm-meaning-closed-application: %s\n", e); */
 
     /*
      * ((lambda ...) args)
@@ -2096,6 +2118,19 @@ static IDIO idio_scm_meaning_monitor (IDIO e, IDIO ep, IDIO nametree, int tailp)
     return IDIO_LIST4 (m, idio_I_PUSH_HANDLER, mp, idio_I_POP_HANDLER);
 }
 
+static IDIO idio_scm_meaning_include (IDIO e, IDIO nametree, int tailp)
+{
+    IDIO_ASSERT (e);
+    IDIO_ASSERT (nametree);
+    IDIO_TYPE_ASSERT (list, nametree);
+
+    idio_thread_save_state (idio_current_thread ());
+    idio_load_file (e);
+    idio_thread_restore_state (idio_current_thread ());
+
+    return IDIO_LIST1 (idio_I_NOP);
+}
+
 static IDIO idio_scm_meaning_expander (IDIO e, IDIO nametree, int tailp)
 {
     IDIO_ASSERT (e);
@@ -2274,6 +2309,14 @@ static IDIO idio_scm_meaning (IDIO e, IDIO nametree, int tailp)
 		idio_error_param_nil ("(monitor)");
 		return idio_S_unspec;
 	    }
+	} else if (idio_S_include == eh) {
+	    /* (include filename) */
+	    if (idio_isa_pair (et)) {
+		return idio_scm_meaning_include (IDIO_PAIR_H (et), nametree, tailp);
+	    } else {
+		idio_error_param_nil ("(include)");
+		return idio_S_unspec;
+	    }
 	} else {
 	    if (idio_isa_symbol (eh)) {
 		IDIO k = idio_scm_variable_kind (nametree, eh);
@@ -2301,10 +2344,10 @@ static IDIO idio_scm_meaning (IDIO e, IDIO nametree, int tailp)
 IDIO idio_scm_evaluate (IDIO e)
 {
     idio_gc_pause ();
-    IDIO m = idio_scm_meaning (e, idio_S_nil, 1);
+    IDIO m = idio_scm_meaning (e, idio_module_current_defined (), 1);
     idio_gc_resume ();
 
-    if (0) {
+    if (1) {
 	IDIO d = idio_module_current_defined ();
 	IDIO t = idio_module_current_symbols ();
 
