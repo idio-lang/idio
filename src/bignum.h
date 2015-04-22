@@ -71,20 +71,32 @@
   the universe.  By any measure of sensible characteristics of a
   programming language we should be able to count to such a number
   accurately...
-  
+
+  NB. IDIO_BIGNUM_MDPW (max digits per word) is used if you happen to
+  set IDIO_BIGNUM_DPW below that value for debugging.  Otherwise we
+  need a dynamic calculation as to how many segments of DPW digits
+  will fit in an int64_t.
  */
 
 #ifdef __LP64__
+#define IDIO_BIGNUM_MDPW          18 
 /*
 #define IDIO_BIGNUM_DPW           18 
 #define IDIO_BIGNUM_INT_SEG_LIMIT 1000000000000000000LL 
 #define IDIO_BIGNUM_SIG_SEGMENTS  5 
 */
+
 #define IDIO_BIGNUM_DPW           18
 #define IDIO_BIGNUM_INT_SEG_LIMIT 1000000000000000000LL
 #define IDIO_BIGNUM_SIG_SEGMENTS  1
 
+/*
+#define IDIO_BIGNUM_DPW           1
+#define IDIO_BIGNUM_INT_SEG_LIMIT 10LL
+#define IDIO_BIGNUM_SIG_SEGMENTS  18
+*/
 #else
+#define IDIO_BIGNUM_MDPW          9
 #define IDIO_BIGNUM_DPW           9
 #define IDIO_BIGNUM_INT_SEG_LIMIT 1000000000L
 #define IDIO_BIGNUM_SIG_SEGMENTS  10

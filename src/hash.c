@@ -166,7 +166,6 @@ void idio_free_hash (IDIO h)
     idio_gc_stats_free (sizeof (idio_hash_t));
     idio_gc_stats_free (IDIO_HASH_SIZE (h) * sizeof (idio_hash_entry_t));
 
-    fprintf (stderr, "idio_free_hash: %p\n", h);
     if (IDIO_HASH_FLAGS (h) & IDIO_HASH_FLAG_STRING_KEYS) {
 	idio_hi_t i;
 	for (i = 0; i < IDIO_HASH_SIZE (h); i++) {

@@ -307,7 +307,7 @@ IDIO idio_fixnum_primitive_multiply (IDIO args)
 		bits++;
 	    }
 
-	    if (bits > ((sizeof (intptr_t) * 8) - 2)) {
+	    if (bits >= ((sizeof (intptr_t) * 8) - 2)) {
 		/*
 		 * Definitely overflowed!  Probably.
 		 */
@@ -320,8 +320,9 @@ IDIO idio_fixnum_primitive_multiply (IDIO args)
 		    bn_args = idio_pair (idio_bignum_integer_int64 (IDIO_FIXNUM_VAL (h)), bn_args);
 		    args = IDIO_PAIR_T (args);
 		}
-	    
-		return idio_bignum_primitive_multiply (idio_list_reverse (bn_args));
+
+		bn_args = idio_list_reverse (bn_args);
+		return idio_bignum_primitive_multiply (bn_args);
 	    } else {
 		ir = ir * ih;
 	    }
@@ -344,8 +345,9 @@ IDIO idio_fixnum_primitive_multiply (IDIO args)
 		bn_args = idio_pair (idio_bignum_integer_int64 (IDIO_FIXNUM_VAL (h)), bn_args);
 		args = IDIO_PAIR_T (args);
 	    }
-	    
-	    return idio_bignum_primitive_add (idio_list_reverse (bn_args));
+
+	    bn_args = idio_list_reverse (bn_args);
+	    return idio_bignum_primitive_add (bn_args);
 	}
 
 	args = IDIO_PAIR_T (args);
@@ -786,20 +788,18 @@ IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(gt, >)
 	    while (idio_S_nil != args) {			\
 		IDIO h = IDIO_PAIR_H (args);			\
 								\
-		if (idio_isa_fixnum (h)) {			\
+		if (idio_isa_fixnum (h)) {				\
 		    bn_args = idio_pair (idio_bignum_integer_int64 (IDIO_FIXNUM_VAL (h)), bn_args); \
-		} else {					\
-		    bn_args = idio_pair (h, bn_args);		\
-		}						\
-								\
+		} else {						\
+		    bn_args = idio_pair (h, bn_args);			\
+		}							\
+									\
 		args = IDIO_PAIR_T (args);				\
 	    }								\
 	    								\
 	    bn_args = idio_list_reverse (bn_args);			\
-	    /* idio_debug ("primitive: " #cname ": -> bignum: %s\n", bn_args); */ \
-	    return idio_bignum_primitive_ ## cname (bn_args); \
+	    return idio_bignum_primitive_ ## cname (bn_args);		\
 	} else {							\
-	    /* idio_debug ("primitive: " #cname ": -> fixnum: %s\n", args); */ \
 	    return idio_fixnum_primitive_ ## cname (args);		\
         }								\
     }

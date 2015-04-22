@@ -369,8 +369,6 @@ int idio_file_handle_close (IDIO fh)
     /* idio_debug ("file-handle-close: %s\n", fh); */
 
     if (IDIO_HANDLE_FLAGS (fh) & IDIO_HANDLE_FLAG_CLOSED) {
-	fprintf (stderr, "already closed\n");
-
 	errno = EBADF;
 	return EOF;
     } else {

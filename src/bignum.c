@@ -22,10 +22,18 @@
 
 #include "idio.h"
 
+size_t idio_bignums = 0;
+size_t idio_bignums_max = 0;
+size_t idio_bignum_seg_max = 0;
+
 IDIO_BSA idio_bsa (size_t n)
 {
     if (n <= 0) {
 	n = IDIO_BIGNUM_SIG_SEGMENTS;
+    }
+
+    if (n > idio_bignum_seg_max) {
+	idio_bignum_seg_max = n;
     }
 
     /* fprintf (stderr, "idio_bsa: %zd\n", n); */
@@ -41,6 +49,10 @@ IDIO_BSA idio_bsa (size_t n)
     }
 
     /* fprintf (stderr, "idio_bsa %zd: %p %p\n", n, bsa, bsa->ae);   */
+    idio_bignums++;
+    if (idio_bignums > idio_bignums_max) {
+	idio_bignums_max = idio_bignums;
+    }
 
     return bsa;
 }
@@ -54,17 +66,20 @@ void idio_bsa_free (IDIO_BSA bsa)
     } else {
 	free (bsa->ae);
 	free (bsa);
+	idio_bignums--;
     }
 }
 
 static void idio_bsa_resize_by (IDIO_BSA bsa, size_t n)
 {
-    /* fprintf (stderr, "idio_bsa_resize: %p from %zd by %zd\n", bsa, bsa->size, n);   */
+    /* fprintf (stderr, "idio_bsa_resize: %p from %zd by %zd\n", bsa, bsa->size, n);    */
     bsa->size += n;
     if (bsa->size > bsa->avail) {
 	bsa->ae = idio_realloc (bsa->ae, bsa->size * sizeof (IDIO_BS_T));
 	bsa->avail = bsa->size;
     }
+
+    IDIO_C_ASSERT (bsa->size < 200); /* reading pi with 61 sig digits */
 }
 
 IDIO_BS_T idio_bsa_get (IDIO_BSA bsa, size_t i)
@@ -79,7 +94,7 @@ IDIO_BS_T idio_bsa_get (IDIO_BSA bsa, size_t i)
 
 void idio_bsa_set (IDIO_BSA bsa, IDIO_BS_T v, size_t i)
 {
-    /* fprintf (stderr, "idio_bsa_set: %p %zd/%zd => %zd\n", bsa, i, bsa->size, v);   */
+    /* fprintf (stderr, "idio_bsa_set: %p %zd/%zd => %zd\n", bsa, i, bsa->size, v);    */
     if (i >= bsa->size) {
 	/* one beyond the current usage is OK */
 	/* fprintf (stderr, "idio_bsa_set: %p i >= bsa->size\n", bsa);   */
@@ -182,6 +197,9 @@ void idio_bignum_dump (IDIO bn)
 		fmt = "%0*zd ";
 	    }
 	    
+	    if (IDIO_BSA_AE (sig_a, i) > IDIO_BIGNUM_INT_SEG_LIMIT) {
+		fprintf (stderr, "!");
+	    }
 	    fprintf (stderr, fmt, IDIO_BIGNUM_DPW, IDIO_BSA_AE (sig_a, i));
 	}
     }
@@ -234,9 +252,32 @@ IDIO idio_bignum_copy (IDIO bn)
 IDIO idio_bignum_integer_int64 (IDIO_BS_T i)
 {
     IDIO_BSA sig_a = idio_bsa (1);
-    
-    idio_bsa_set (sig_a, i, 0);
-    
+
+    int neg = 0;
+
+    if (i < 0) {
+	neg = 1;
+	i = -i;
+    }
+
+    size_t ai = 0;
+    if (i >= IDIO_BIGNUM_INT_SEG_LIMIT) {
+	while (i) {
+	    int64_t m = i % IDIO_BIGNUM_INT_SEG_LIMIT;
+	    idio_bsa_set (sig_a, m, ai++);
+	    i -= m;
+	    i /= IDIO_BIGNUM_INT_SEG_LIMIT;
+	}
+    } else {
+	idio_bsa_set (sig_a, i, ai++);
+    }
+
+    if (neg) {
+	ai--;
+	IDIO_BS_T v = idio_bsa_get (sig_a, ai);
+	idio_bsa_set (sig_a, -v, ai);
+    }
+
     return idio_bignum (IDIO_BIGNUM_FLAG_INTEGER, 0, sig_a);
 }
 
@@ -267,8 +308,12 @@ int64_t idio_bignum_int64_value (IDIO bn)
     size_t al = IDIO_BSA_SIZE (sig_a);
 
     if (al > 1) {
-	idio_error_add_C ("bignum too large to convert to int_64_t");
-	return 0;
+	IDIO fn = idio_bignum_to_fixnum (bn_i);
+	if (idio_S_nil == fn) {
+	    idio_error_message ("failed to convert");
+	} else {
+	    return IDIO_FIXNUM_VAL (fn);
+	}
     }
     
     return idio_bsa_get (sig_a, al - 1);
@@ -291,17 +336,38 @@ IDIO idio_bignum_to_fixnum (IDIO bn)
     IDIO_BSA sig_a = IDIO_BIGNUM_SIG (bn_i);
     size_t al = IDIO_BSA_SIZE (sig_a);
 
-    if (al > 1) {
+    if (al * IDIO_BIGNUM_DPW > IDIO_BIGNUM_MDPW) {
 	return idio_S_nil;
     }
     
-    IDIO_BS_T iv = idio_bsa_get (sig_a, al - 1);
+    IDIO_BS_T iv = 0;
+    int neg = 0;
+    
+    intptr_t ai;
+    for (ai = al -1 ; ai >= 0 ; ai--) {
+	iv *= IDIO_BIGNUM_INT_SEG_LIMIT;
+	IDIO_BS_T v = idio_bsa_get (sig_a, ai);
+	if (v < 0) {
+	    IDIO_C_ASSERT (ai == al - 1);
+	    iv += -v;
+	    neg = 1;
+	} else {
+	    iv += v;
+	}
+    }
 
+    if (neg) {
+	iv = -iv;
+    }
+    
     if (iv < IDIO_FIXNUM_MAX &&
 	iv > IDIO_FIXNUM_MIN) {
+	idio_gc_stats_inc (IDIO_TYPE_FIXNUM);
 	return IDIO_FIXNUM (iv);
     }
 
+    fprintf (stderr, "failed to convert: %zd from ", iv);
+    idio_debug ("%s\n", bn);
     return idio_S_nil;
 }
 
@@ -407,10 +473,12 @@ IDIO idio_bignum_add (IDIO a, IDIO b)
 
 	if (ai < al) {
 	    ia = idio_bsa_get (IDIO_BIGNUM_SIG (a), ai);
+	    IDIO_C_ASSERT (ia < IDIO_BIGNUM_INT_SEG_LIMIT);
 	}
 
 	if (bi < bl) {
 	    ib = idio_bsa_get (IDIO_BIGNUM_SIG (b), bi);
+	    IDIO_C_ASSERT (ib < IDIO_BIGNUM_INT_SEG_LIMIT);
 	}
 
 	IDIO_BS_T ir = ia + ib + carry;
@@ -429,7 +497,7 @@ IDIO idio_bignum_add (IDIO a, IDIO b)
     }
 
     IDIO r = idio_bignum_integer (ra);
-    
+
     return r;
 }
 
@@ -615,7 +683,7 @@ IDIO idio_bignum_subtract (IDIO a, IDIO b)
 	    ir += IDIO_BIGNUM_INT_SEG_LIMIT;
 	    borrow = 1;
 	    borrow_bug++;
-	    IDIO_C_ASSERT (borrow_bug < 10);
+	    IDIO_C_ASSERT (borrow_bug < (10 + IDIO_BIGNUM_SIG_SEGMENTS));
 	}
 
 	idio_bsa_set (ra, ir, ri);
@@ -645,7 +713,9 @@ IDIO idio_bignum_shift_left (IDIO a, int fill)
     IDIO_BSA sig_a = IDIO_BIGNUM_SIG (a);
     size_t al = IDIO_BSA_SIZE (sig_a);
     IDIO_BSA ra = idio_bsa (al);
-    
+
+    /* idio_debug ("bignum-shift-left: a %s\n", a); */
+    /* idio_bignum_dump (a); */
     size_t ai;
 
     int carry = fill;
@@ -654,13 +724,19 @@ IDIO idio_bignum_shift_left (IDIO a, int fill)
 	IDIO_BS_T i = idio_bsa_get (sig_a, ai);
 	IDIO_BS_T r;
 	
+	if (ai < (al - 1) &&
+	    i < 0) {
+	    IDIO_C_ASSERT (0);
+	}
 	if (i >= (IDIO_BIGNUM_INT_SEG_LIMIT / 10)) {
 	    IDIO_BS_T c = i / (IDIO_BIGNUM_INT_SEG_LIMIT / 10);
 	    r = i % (IDIO_BIGNUM_INT_SEG_LIMIT / 10) * 10;
 	    r += carry;
+	    IDIO_C_ASSERT (r >= 0);
 	    carry = c;
 	} else {
 	    r = i * 10 + carry;
+	    IDIO_C_ASSERT (r >= 0);
 	    carry = 0;
 	}
 
@@ -673,6 +749,9 @@ IDIO idio_bignum_shift_left (IDIO a, int fill)
 
     IDIO r = idio_bignum_integer (ra);
     
+    /* idio_debug ("bignum-shift-left: r %s\n", r); */
+    /* idio_bignum_dump (r); */
+
     return r;
 }
 
@@ -741,6 +820,9 @@ IDIO idio_bignum_multiply (IDIO a, IDIO b)
     
     IDIO ab = idio_bignum_abs (b);
     
+    /* idio_debug ("bignum-multiply: aa %s ", aa); */
+    /* idio_debug ("* %s\n", ab); */
+
     IDIO r = idio_bignum_integer_int64 (0);
     
     /*
@@ -757,7 +839,7 @@ IDIO idio_bignum_multiply (IDIO a, IDIO b)
 	IDIO_BS_T i = idio_bsa_get (IDIO_BIGNUM_SIG (ibsrt), 0);
 	
 	aa = IDIO_PAIR_H (ibsr);
-	
+
 	while (i) {
 	    r = idio_bignum_add (r, ab);
 	    i--;
@@ -909,6 +991,7 @@ IDIO idio_bignum_divide (IDIO a, IDIO b)
 	}
 
 	r_div = idio_bignum_shift_left (r_div, i - 1);
+
 	r_mod = idio_bignum_subtract (r_mod, c0);
 
 	IDIO ibsr = idio_bignum_shift_right (sf);
@@ -1045,7 +1128,7 @@ IDIO idio_bignum_normalize (IDIO bn)
 
     /* significand-only part */
     IDIO bn_s = idio_bignum_copy (bn);
-    
+
     size_t digits = idio_bignum_count_digits (sig_a);
     int inexact = IDIO_BIGNUM_REAL_INEXACT_P (bn);
 
@@ -1535,28 +1618,29 @@ IDIO idio_bignum_real_divide (IDIO a, IDIO b)
     }
 
     /*
-        The actual division is an integer division of the significand
-	digits (keeping track of the exponents separately).
+      The actual division is an integer division of the significand
+      digits (keeping track of the exponents separately).
 
-        However, the integer division of 13/4 is 3.  We don't seem to
-	have as many significant digits in the result as we would like
-	for a division of what are real numbers: 13.0/4 is 3.0.
-	Really?
+      However, the integer division of 13/4 is 3.  We don't seem to
+      have as many significant digits in the result as we would like
+      for a division of what are real numbers: 13.0/4 is 3.0. Really?
 
-	But wait, the integer division of 13000/4 is 3250, so if we
-	bumped the numerator up by 10^n (and decremented its exponent
-	by n), in this case n=3, then we'll have more significant
-	digits in our answer and the combined exponent, now -3+0=-3,
-	makes the resultant real 3250e-3 or 3.250.  Hurrah!
+      But wait, the integer division of 13000/4 is 3250, so if we
+      bumped the numerator up by 10^n (and decremented its exponent by
+      n), in this case n=3, then we'll have more significant digits in
+      our answer and the combined exponent, now -3+0=-3, makes the
+      resultant real 3250e-3 or 3.250.  Hurrah!
 
-	So what value of n?  As big as we can!
+      So what value of n?  As big as we can!
 
-	Here we can abuse our normal
-	IDIO_BIGNUM_SIG_MAX_DIGITS limit and say that we want
-	to make n such that digits(a*10^n) == digits(b)+MAX_DIGITS.
-	This way, without losing precision in b (by shrinking it) we
-	can bump a up such that the resultant integer division has
-	MAX_DIGITS significant digits.
+      Here we can abuse our normal IDIO_BIGNUM_SIG_MAX_DIGITS limit
+      and say that we want to make n such that digits(a*10^n) ==
+      digits(b)+MAX_DIGITS. This way, without losing precision in b
+      (by shrinking it) we can bump a up such that the resultant
+      integer division has MAX_DIGITS significant digits.
+
+      Note that if digits(a) is MAX_DIGITS and digits(b) is one then
+      digits(a) after this will be 2*MAX_DIGITS.
      */
     
     size_t nd = idio_bignum_count_digits (IDIO_BIGNUM_SIG (ra));
@@ -1713,7 +1797,7 @@ char *idio_bignum_real_as_string (IDIO bn)
     if (asprintf (&vs, "%zd", v) == -1) {
 	idio_error_message ("bignum real->string: asprintf");
     }
-    char vs_rest[IDIO_BIGNUM_DPW];
+    char vs_rest[IDIO_BIGNUM_DPW+1]; /* +1 in case DPW is 1 for debug! */
     strcpy (vs_rest, vs + 1);
     vs[1] = '\0';
 
@@ -1831,7 +1915,7 @@ IDIO idio_bignum_integer_C (char *nums, int req_exact)
     IDIO_BSA ra = idio_bsa (1);
     
     size_t ri = 0;
-    
+
     while (nl) {
 	int eos = (nl < IDIO_BIGNUM_DPW) ? nl : IDIO_BIGNUM_DPW;
 	char *end;
@@ -1878,6 +1962,16 @@ IDIO idio_bignum_integer_C (char *nums, int req_exact)
 
     free (buf);
     
+    /* remove leading zeroes */
+    size_t rl = ri;
+    IDIO_BS_T ir = idio_bsa_get (ra, rl - 1);
+    while (0 == ir &&
+	   rl > 1) {
+	idio_bsa_pop (ra);
+	rl--;
+	ir = idio_bsa_get (ra, rl - 1);
+    }
+
     if (req_exact ||
 	is_exact) {
 	IDIO r = idio_bignum_integer (ra);
@@ -1958,10 +2052,21 @@ IDIO idio_bignum_real_C (char *nums)
 	exp += idio_bignum_int64_value (n);
     }
 
+    /* remove leading zeroes */
+    IDIO_BSA ra = IDIO_BIGNUM_SIG (sig_bn);
+    size_t rl = IDIO_BSA_SIZE (ra);
+    IDIO_BS_T ir = idio_bsa_get (ra, rl - 1);
+    while (0 == ir &&
+	   rl > 1) {
+	idio_bsa_pop (ra);
+	rl--;
+	ir = idio_bsa_get (ra, rl - 1);
+    }
+
     IDIO r = idio_bignum_real (((neg ? IDIO_BIGNUM_FLAG_REAL_NEGATIVE : 0) |
 				(exact ? 0 : IDIO_BIGNUM_FLAG_REAL_INEXACT)),
 			       exp,
-			       IDIO_BIGNUM_SIG (sig_bn));
+			       ra);
 
     return idio_bignum_normalize (r);
 }
@@ -2541,4 +2646,5 @@ void idio_bignum_add_primitives ()
 
 void idio_final_bignum ()
 {
+    fprintf (stderr, "bignums: current %zd of simultaneous max %zd; max segs %zd/%d (%zd significant digits)\n", idio_bignums, idio_bignums_max, idio_bignum_seg_max, IDIO_BIGNUM_SIG_SEGMENTS, idio_bignum_seg_max * IDIO_BIGNUM_DPW);
 }

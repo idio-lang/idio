@@ -1271,7 +1271,7 @@ static IDIO idio_scm_meaning_define (IDIO name, IDIO e, IDIO nametree, int tailp
     IDIO d = idio_list_memq (name, idio_module_current_defined ());
 
     if (idio_isa_pair (d)) {
-	idio_warning_static_redefine (name);
+	/* idio_warning_static_redefine (name); */
     } else {
 	idio_module_current_extend_defined (name);
     }
@@ -1312,7 +1312,7 @@ static IDIO idio_scm_meaning_define_macro (IDIO name, IDIO e, IDIO nametree, int
     IDIO d = idio_list_memq (name, idio_module_current_defined ());
 
     if (idio_isa_pair (d)) {
-	idio_warning_static_redefine (name);
+	/* idio_warning_static_redefine (name); */
     } else {
 	idio_module_current_extend_defined (name);
     }
@@ -2365,7 +2365,7 @@ IDIO idio_scm_evaluate (IDIO e)
 	size_t dl = idio_list_length (d);
 	if (tl > dl) {
 	    fprintf (stderr, "scm-evaluate: module=%s\n", IDIO_SYMBOL_S (IDIO_MODULE_NAME (idio_current_module ())));
-	    idio_debug ("scm-evaluate: e=%s\n", e);
+	    /* idio_debug ("scm-evaluate: e=%s\n", e); */
 
 	    fprintf (stderr, "scm-evaluate: after: %zd toplevel vars\n", tl);
 	    fprintf (stderr, "scm-evaluate: after: %zd defined vars\n", dl);
@@ -2376,9 +2376,9 @@ IDIO idio_scm_evaluate (IDIO e)
 
 	    idio_debug ("diff d, t = %s\n", diff);
 
-	    idio_debug ("t = %s\n", t);
+	    /* idio_debug ("t = %s\n", t); */
 
-	    idio_debug ("d = %s\n", d);
+	    /* idio_debug ("d = %s\n", d); */
 
 	    sleep (0);
 	}
