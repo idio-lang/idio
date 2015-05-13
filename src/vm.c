@@ -1334,10 +1334,12 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 0) {
-		idio_error_vm_compile_param_args ("PUSH-HANDLER");
+		idio_error_vm_compile_param_args ("PUSH-HANDLER index");
 		return;
 	    }
 
+	    IDIO index = IDIO_PAIR_H (mt);
+	    
 	    IDIO_IA_PUSH1 (IDIO_A_PUSH_HANDLER);
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (index));
 	}

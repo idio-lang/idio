@@ -183,6 +183,7 @@ IDIO idio_gensym ()
 
     idio_error_message ("gensym: looped!");
     IDIO_C_ASSERT (0);
+    return idio_S_unspec;
 }
 
 IDIO_DEFINE_PRIMITIVE1 ("symbol?", symbol_p, (IDIO o))

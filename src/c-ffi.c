@@ -64,6 +64,8 @@ ffi_type *idio_C_FFI_type (IDIO slot_data)
 	}
 	break;
     }
+
+    return NULL;
 }
 
 ffi_type **idio_C_FFI_ffi_arg_types (size_t nargs, IDIO args)

@@ -1,4 +1,5 @@
 OS=$(shell uname -s)
+ARCH=$(shell uname -m)
 
 ifeq ($(OS),Darwin)
 LIBFFI_INCDIR	= /usr/include/ffi
@@ -13,6 +14,7 @@ CC	       := gcc
 LIBFFI_INCDIR	= $(wildcard /usr/local/lib/libffi-*/include)
 LDFLAGS		= -L/usr/local/lib -R/usr/local/lib
 LIBS=-ldl
+CFLAGS		= -D__EXTENSIONS__
 else ifeq ($(OS),FreeBSD)
 CC	       := /usr/local/bin/gcc47
 LIBFFI_INCDIR	= /usr/local/include
@@ -39,7 +41,7 @@ endif
 
 
 PROFLAGS	=
-CFLAGS	       := ${PROFLAGS} ${CDEBUG} -std=c99 -Wall -fPIC ${LIBFFI_INC}
+CFLAGS	       := ${CFLAGS} ${PROFLAGS} ${CDEBUG} -std=c99 -Wall -fPIC ${LIBFFI_INC}
 LDFLAGS        := ${PROFLAGS} ${LDFLAGS}
 LIBS	       := ${LIBS} -lffi
 

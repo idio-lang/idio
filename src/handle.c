@@ -503,6 +503,7 @@ IDIO idio_handle_or_current (IDIO h, unsigned mode)
     }
 
     IDIO_C_ASSERT (0);
+    return idio_S_unspec;
 }
 
 IDIO_DEFINE_PRIMITIVE0V ("read", read, (IDIO args))
