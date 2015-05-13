@@ -77,7 +77,7 @@ int idio_isa_character (IDIO o)
     IDIO_ASSERT (o);
 
     if (((intptr_t) o & 3) == IDIO_TYPE_CHARACTER_MARK) {
-	uintptr_t cv = IDIO_CHARACTER_VAL (o);
+	intptr_t cv = IDIO_CHARACTER_VAL (o);
 
 	/*
 	 * https://www.gnu.org/software/guile/manual/html_node/Characters.html

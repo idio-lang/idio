@@ -315,7 +315,7 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		    return 0;
 		}
 		    
-		return strncmp (IDIO_STRING_S (o1), IDIO_STRING_S (o2), IDIO_STRING_BLEN (o1) == 0);
+		return (strncmp (IDIO_STRING_S (o1), IDIO_STRING_S (o2), IDIO_STRING_BLEN (o1)) == 0);
 	    case IDIO_TYPE_SUBSTRING:
 		if (IDIO_EQUAL_EQP == eqp) {
 		    return (o1->u.substring == o2->u.substring);
@@ -325,7 +325,7 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		    return 0;
 		}
 		    
-		return strncmp (IDIO_SUBSTRING_S (o1), IDIO_SUBSTRING_S (o2), IDIO_SUBSTRING_BLEN (o1) == 0);
+		return (strncmp (IDIO_SUBSTRING_S (o1), IDIO_SUBSTRING_S (o2), IDIO_SUBSTRING_BLEN (o1)) == 0);
 	    case IDIO_TYPE_SYMBOL:
 		if (o1 != o2) {
 		    return 0;

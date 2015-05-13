@@ -452,7 +452,7 @@ IDIO_DEFINE_PRIMITIVE2 ("remainder", remainder, (IDIO a, IDIO b))
     IDIO_ASSERT (a);
     IDIO_ASSERT (b);
 
-    IDIO num;
+    IDIO num = idio_S_unspec;
     
     if (idio_isa_fixnum (a)) {
 	if (idio_isa_fixnum (b)) {
@@ -511,7 +511,7 @@ IDIO_DEFINE_PRIMITIVE2 ("quotient", quotient, (IDIO a, IDIO b))
     /* idio_debug ("primitive: quotient: %s", a); */
     /* idio_debug (" / %s\n", b); */
 
-    IDIO num;
+    IDIO num = idio_S_unspec;
     
     if (idio_isa_fixnum (a)) {
 	if (idio_isa_fixnum (b)) {

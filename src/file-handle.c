@@ -629,7 +629,7 @@ IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (
 	s -= 1;
     }
 	
-    fprintf (stderr, "load-file-handle: %s: read time %ld.%03ld\n", IDIO_HANDLE_NAME (fh), s, us / 1000);
+    fprintf (stderr, "load-file-handle: %s: read time %ld.%03ld\n", IDIO_HANDLE_NAME (fh), s, (long) us / 1000);
 
     e = idio_list_append2 (IDIO_LIST1 (idio_S_begin), idio_list_reverse (e));
     /* idio_debug ("load-file-handle: e %s\n", e); */
@@ -646,7 +646,7 @@ IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (
 	s -= 1;
     }
 	
-    fprintf (stderr, "load-file-handle: %s: evaluation time %ld.%03ld\n", IDIO_HANDLE_NAME (fh), s, us / 1000);
+    fprintf (stderr, "load-file-handle: %s: evaluation time %ld.%03ld\n", IDIO_HANDLE_NAME (fh), s, (long) us / 1000);
 
     IDIO thr = idio_current_thread ();
     idio_vm_codegen (thr, IDIO_PAIR_H (m));
@@ -664,7 +664,7 @@ IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (
 	s -= 1;
     }
 	
-    fprintf (stderr, "load-file-handle: %s: compile time %ld.%03ld\n", IDIO_HANDLE_NAME (fh), s, us / 1000);
+    fprintf (stderr, "load-file-handle: %s: compile time %ld.%03ld\n", IDIO_HANDLE_NAME (fh), s, (long) us / 1000);
 
     /* idio_debug ("load-file-handle: THR %s\n", idio_current_thread ()); */
     IDIO r = idio_vm_run (idio_current_thread (), 1);
@@ -680,7 +680,7 @@ IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (
 	s -= 1;
     }
 	
-    fprintf (stderr, "load-file-handle: %s: run time %ld.%03ld\n", IDIO_HANDLE_NAME (fh), s, us / 1000);
+    fprintf (stderr, "load-file-handle: %s: run time %ld.%03ld\n", IDIO_HANDLE_NAME (fh), s, (long) us / 1000);
 
     s = tr.tv_sec - t0.tv_sec;
     us = tr.tv_usec - t0.tv_usec;
@@ -690,7 +690,7 @@ IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (
 	s -= 1;
     }
 	
-    fprintf (stderr, "load-file-handle: %s: elapsed time %ld.%03ld\n", IDIO_HANDLE_NAME (fh), s, us / 1000);
+    fprintf (stderr, "load-file-handle: %s: elapsed time %ld.%03ld\n", IDIO_HANDLE_NAME (fh), s, (long) us / 1000);
     idio_debug (" => %s\n", r);
     
     idio_ai_t sp = idio_array_size (IDIO_THREAD_STACK (idio_current_thread ()));

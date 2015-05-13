@@ -27,6 +27,7 @@ void idio_add_description (IDIO sym, IDIO desc);
 IDIO idio_get_description (IDIO sym);
 IDIO idio_add_primitive (idio_primitive_t *d);
 IDIO idio_add_special_primitive (idio_primitive_t *d);
+void idio_add_expander_primitive (idio_primitive_t *d);
 
 IDIO idio_predef_ref (idio_ai_t i);
 IDIO idio_toplevel_ref (idio_ai_t i);

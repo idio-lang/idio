@@ -89,7 +89,7 @@ IDIO idio_gc_get (idio_type_e type)
     IDIO o = idio_gc->free;
     if (NULL == o) {
 	idio_gc->stats.allocs++;
-	o = idio_gc_get_alloc (idio_gc);
+	o = idio_gc_get_alloc ();
     } else {
 	idio_gc->stats.reuse++;
 	idio_gc->free = o->next;
@@ -647,7 +647,7 @@ void idio_gc_protect (IDIO o)
 	r = r->next;
     }
 
-    r = idio_root_new (idio_gc);
+    r = idio_root_new ();
     r->object = o;
 }
 
@@ -1101,7 +1101,7 @@ void idio_gc_stats ()
     
     fprintf (stderr, "idio_gc_stats: %4lld%c  on used list\n", count, scales[scale]);
 
-    fprintf (stderr, "idio-gc-stats: GC time %ld.%03ld\n", idio_gc->stats.dur.tv_sec, idio_gc->stats.dur.tv_usec / 1000);
+    fprintf (stderr, "idio-gc-stats: GC time %ld.%03ld\n", idio_gc->stats.dur.tv_sec, (long) idio_gc->stats.dur.tv_usec / 1000);
 
 }
 
