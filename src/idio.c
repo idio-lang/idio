@@ -31,6 +31,7 @@ void idio_init ()
     idio_init_module ();
     idio_init_thread ();
 
+    idio_init_evaluate ();
     idio_init_scm_evaluate ();
     idio_init_pair ();
     idio_init_handle ();
@@ -47,6 +48,8 @@ void idio_init ()
     idio_init_bignum ();
     idio_init_closure ();
     idio_init_error ();
+    idio_init_read ();
+    idio_init_scm_read ();
     idio_init_vm ();
     
     /*
@@ -61,6 +64,7 @@ void idio_init ()
     idio_symbol_add_primitives ();
     idio_module_add_primitives ();
     idio_thread_add_primitives ();
+    idio_evaluate_add_primitives ();
     idio_scm_evaluate_add_primitives ();
     idio_pair_add_primitives ();
     idio_handle_add_primitives ();
@@ -77,6 +81,8 @@ void idio_init ()
     idio_bignum_add_primitives ();
     idio_closure_add_primitives ();
     idio_error_add_primitives ();
+    idio_read_add_primitives ();
+    idio_scm_read_add_primitives ();
     idio_vm_add_primitives ();
 
     /*
@@ -93,6 +99,8 @@ void idio_final ()
      * reverse order of idio_init () ??
      */
     idio_final_vm ();
+    idio_final_scm_read ();
+    idio_final_read ();
     idio_final_error ();
     idio_final_closure ();
     idio_final_bignum ();
@@ -109,6 +117,7 @@ void idio_final ()
     idio_final_handle ();
     idio_final_pair ();
     idio_final_scm_evaluate ();
+    idio_final_evaluate ();
 
     idio_final_thread ();
     idio_final_module ();
@@ -125,7 +134,14 @@ int main (int argc, char **argv, char **envp)
 
     idio_init ();
 
-    idio_load_file (idio_string_C ("bootstrap"));
+    if (argc > 1) {
+	int i;
+	for (i = 1 ; i < argc; i++) {
+	    idio_load_file (idio_string_C (argv[i]));
+	}
+    } else {
+	idio_load_file (idio_string_C ("bootstrap"));
+    }
 
     /*
       IDIO inp = idio_array_get_index (IDIO_FRAME_GC (idio_G_frame)->input_port, 0);

@@ -16,28 +16,30 @@
  */
 
 /*
- * scm-evaluate.h
+ * evaluate.h
  * 
  */
 
-#ifndef SCM_EVALUATE_H
-#define SCM_EVALUATE_H
+#ifndef EVALUATE_H
+#define EVALUATE_H
 
-void idio_scm_add_description (IDIO sym, IDIO desc);
-IDIO idio_scm_get_description (IDIO sym);
-IDIO idio_scm_add_primitive (idio_primitive_t *d);
-IDIO idio_scm_add_special_primitive (idio_primitive_t *d);
+void idio_add_description (IDIO sym, IDIO desc);
+IDIO idio_get_description (IDIO sym);
+IDIO idio_add_primitive (idio_primitive_t *d);
+IDIO idio_add_special_primitive (idio_primitive_t *d);
 
-IDIO idio_scm_predef_ref (idio_ai_t i);
-IDIO idio_scm_toplevel_ref (idio_ai_t i);
-void idio_scm_toplevel_update (idio_ai_t i, IDIO v);
+IDIO idio_predef_ref (idio_ai_t i);
+IDIO idio_toplevel_ref (idio_ai_t i);
+void idio_toplevel_update (idio_ai_t i, IDIO v);
 
 void idio_install_expander (IDIO id, IDIO proc);
+void idio_install_operator (IDIO id, IDIO proc);
 
-IDIO idio_scm_evaluate (IDIO e);
-void idio_init_scm_evaluate ();
-void idio_scm_evaluate_add_primitives ();
-void idio_final_scm_evaluate ();
+IDIO idio_meaning_operators (IDIO e, int depth);
+IDIO idio_evaluate (IDIO e);
+void idio_init_evaluate ();
+void idio_evaluate_add_primitives ();
+void idio_final_evaluate ();
 
 #endif
 

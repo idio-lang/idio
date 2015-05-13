@@ -434,6 +434,57 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 }
 
 /*
+ * reconstruct C escapes in s
+ */
+char *idio_escape_string (size_t blen, char *s)
+{
+    size_t i;
+    size_t n = 0;
+    for (i = 0; i < blen; i++) {
+	n++;
+	switch (s[i]) {
+	case '\a': n++; break;
+	case '\b': n++; break;
+	case '\f': n++; break;
+	case '\n': n++; break;
+	case '\r': n++; break;
+	case '\t': n++; break;
+	case '\v': n++; break;
+	}
+    }
+
+    /* 2 for "s and 1 for \0 */
+    char *r = idio_alloc (1 + n + 1 + 1);
+
+    n = 0;
+    r[n++] = '"';
+    for (i = 0; i < blen; i++) {
+	char c = 0;
+	switch (s[i]) {
+	case '\a': c = 'a'; break;
+	case '\b': c = 'b'; break;
+	case '\f': c = 'f'; break;
+	case '\n': c = 'n'; break;
+	case '\r': c = 'r'; break;
+	case '\t': c = 't'; break;
+	case '\v': c = 'v'; break;
+	}
+
+	if (c) {
+	    r[n++] = '\\';
+	    r[n++] = c;
+	} else {
+	    r[n++] = s[i];
+	}
+    }
+
+    r[n++] = '"';
+    r[n] = '\0';
+    
+    return r;
+}
+
+/*
   Scheme-ish write -- internal representation (where appropriate)
   suitable for (read).  Primarily:
 
@@ -462,7 +513,7 @@ char *idio_as_string (IDIO o, int depth)
 	    long v = IDIO_CONSTANT_VAL (o);
 	    
 	    switch (v) {
-	    case IDIO_CONSTANT_NIL:                  t = "'()";                   break;
+	    case IDIO_CONSTANT_NIL:                  t = "#n";                   break;
 	    case IDIO_CONSTANT_UNDEF:                t = "#undef";                break;
 	    case IDIO_CONSTANT_UNSPEC:               t = "#unspec";               break;
 	    case IDIO_CONSTANT_EOF:                  t = "#eof";                  break;
@@ -470,6 +521,15 @@ char *idio_as_string (IDIO o, int depth)
 	    case IDIO_CONSTANT_FALSE:                t = "#f";                    break;
 	    case IDIO_CONSTANT_VOID:                 t = "#void";                 break;
 	    case IDIO_CONSTANT_NAN:                  t = "#NaN";                  break;
+
+	    case IDIO_TOKEN_DOT:                     t = "T/.";                     break;
+	    case IDIO_TOKEN_LPAREN:                  t = "T/(";                     break;
+	    case IDIO_TOKEN_RPAREN:                  t = "T/)";                     break;
+	    case IDIO_TOKEN_LBRACE:                  t = "T/{";                     break;
+	    case IDIO_TOKEN_RBRACE:                  t = "T/}";                     break;
+	    case IDIO_TOKEN_EOL:                     t = "T/EOL";                   break;
+	    case IDIO_TOKEN_AMPERSAND:               t = "T/&";                     break;
+
 
 	    case IDIO_VM_CODE_SHALLOW_ARGUMENT_REF:  t = "SHALLOW-ARGUMENT-REF";  break;
 	    case IDIO_VM_CODE_PREDEFINED:            t = "PREDEFINED";            break;
@@ -506,6 +566,7 @@ char *idio_as_string (IDIO o, int depth)
 	    case IDIO_VM_CODE_OR:                    t = "OR";                    break;
 	    case IDIO_VM_CODE_BEGIN:                 t = "BEGIN";                 break;
 	    case IDIO_VM_CODE_EXPANDER:              t = "EXPANDER";              break;
+	    case IDIO_VM_CODE_NOP:		     t = "NOP";			  break;
 	    default:
 		break;
 	    }
@@ -608,14 +669,10 @@ char *idio_as_string (IDIO o, int depth)
 		}
 		break;
 	    case IDIO_TYPE_STRING:
-		if (asprintf (&r, "\"%.*s\"", (int) IDIO_STRING_BLEN (o), IDIO_STRING_S (o)) == -1) {
-		    return NULL;
-		}
+		r = idio_escape_string (IDIO_STRING_BLEN (o), IDIO_STRING_S (o));
 		break;
 	    case IDIO_TYPE_SUBSTRING:
-		if (asprintf (&r, "\"%.*s\"", (int) IDIO_SUBSTRING_BLEN (o), IDIO_SUBSTRING_S (o)) == -1) {
-		    return NULL;
-		}
+		r = idio_escape_string (IDIO_SUBSTRING_BLEN (o), IDIO_SUBSTRING_S (o));
 		break;
 	    case IDIO_TYPE_SYMBOL:
 		if (asprintf (&r, "%s", IDIO_SYMBOL_S (o)) == -1) {

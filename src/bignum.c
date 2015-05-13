@@ -1026,7 +1026,7 @@ IDIO idio_bignum_integer_argument (IDIO bn)
     
     IDIO bn_i = idio_bignum_real_to_integer (bn);
     if (idio_S_nil == bn_i ||
-	IDIO_BIGNUM_REAL_INEXACT_P (bn_i)) {
+	IDIO_BIGNUM_REAL_INEXACT_P (bn)) {
 	return idio_S_nil;
     }
 

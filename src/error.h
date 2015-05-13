@@ -29,6 +29,7 @@ void idio_raise_exception (IDIO e);
 IDIO idio_make_exception (IDIO e);
 
 void idio_error_message (char *format, ...);
+void idio_warning_message (char *format, ...);
 void idio_error_alloc ();
 void idio_error_param_nil (char *name);
 void idio_error_param_type (char *etype, IDIO who);

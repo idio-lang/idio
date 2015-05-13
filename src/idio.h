@@ -108,16 +108,47 @@
 
 /*
  * A few helper macros for defining the C function that implements a
- * primitive and then for binding that C function to a language
+ * primitive and then for binding that C function to an Idio language
  * primitive.
  *
  * iname is the C string of how it appears to Idio users, cname should
- * be (unqiue) C name.  cname is embedded within other C names,
- * eg. idio_defprimitive_cname.
+ * be a (unique) C name.  cname is never used standalone but is
+ * embedded within other C names, eg. idio_defprimitive_<cname>.
+ *
+ * params should be the list of type/name pairs that make up the
+ * regular C argument list and will be inserted into C verbatim.
+ *
+ * The body of the primitive should follow immediately.
  *
  * PRIMITIVEx indicates that x is the arity of the function with
  * PRIMITIVExV meaning it has a variable arity with a minimum arity of
  * x.
+ *
+ * We are looking for the following for foo, ie. Idio's "foo"
+
+   IDIO_DEFINE_PRIMITIVE2 ("foo", foo, (T1 a1, T2, a2))
+   {
+     ...
+   }
+
+ * should become
+   
+   IDIO idio_defprimitive_foo (T1 a1, T2 a2);
+   static struct idio_primitive_s idio_primitive_data_foo = {
+      idio_defprimitive_foo,
+      "foo",
+      2,
+      0
+   };
+   IDIO idio_defprimitive_foo (T1 a1, T2 a2)
+   {
+     ...
+   }
+
+
+ * IDIO_ADD_PRIMITIVE (foo) can then access the static struct
+ * idio_primitive_s called idio_defprimitive_data_foo and pass it to
+ * the code to actually add a primitive.
  *
  */
 
@@ -161,6 +192,21 @@
 
 #define IDIO_ADD_EXPANDER(cname)	  idio_add_expander_primitive (&idio_primitive_data_ ## cname);
 
+#define IDIO_DEFINE_OPERATOR_DESC(iname,cname,params,arity,varargs)	\
+    IDIO idio_defoperator_ ## cname params;				\
+    static struct idio_primitive_s idio_operator_data_ ## cname = { \
+	idio_defoperator_ ## cname,					\
+	iname,								\
+	arity,								\
+	varargs								\
+    };									\
+    IDIO idio_defoperator_ ## cname params
+
+#define IDIO_DEFINE_OPERATOR(iname,cname,params)			\
+    IDIO_DEFINE_OPERATOR_DESC(iname,cname,params,2,1)
+
+#define IDIO_ADD_OPERATOR(cname)	  idio_add_operator_primitive (&idio_operator_data_ ## cname);
+
 #define IDIO_VERIFY_PARAM_TYPE(type,param)		\
     {							\
 	if (! idio_isa_ ## type (param)) {		\
@@ -181,6 +227,7 @@
 #include "character.h"
 #include "closure.h"
 #include "error.h"
+#include "evaluate.h"
 #include "scm-evaluate.h"
 #include "file-handle.h"
 #include "fixnum.h"
@@ -191,6 +238,7 @@
 #include "primitive.h"
 #include "pair.h"
 #include "path.h"
+#include "read.h"
 #include "scm-read.h"
 #include "specialform.h"
 #include "string.h"

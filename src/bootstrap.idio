@@ -1,0 +1,6 @@
+display "This is bootstrap.idio\n"
+include "s9.idio"
+
+load "test.idio"
+
+print "\nThis is the end of bootstrap.idio bringing you today's number, π: " pi "\n"

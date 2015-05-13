@@ -23,11 +23,12 @@
 #ifndef SCM_READ_H
 #define SCM_READ_H
 
-void idio_init_scm_read ();
-void idio_final_scm_read ();
-
 IDIO idio_scm_read (IDIO handle);
 IDIO idio_scm_read_char (IDIO handle);
+
+void idio_init_scm_read ();
+void idio_scm_read_add_primitives ();
+void idio_final_scm_read ();
 
 #endif
 

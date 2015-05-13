@@ -717,7 +717,7 @@ typedef struct idio_file_extension_s {
 
 static idio_file_extension_t idio_file_extensions[] = {
     { NULL, idio_scm_read, idio_scm_evaluate },
-    { ".idio", idio_scm_read, idio_scm_evaluate },
+    { ".idio", idio_read, idio_evaluate },
     { ".scm", idio_scm_read, idio_scm_evaluate },
     { NULL, NULL }
 };
@@ -773,12 +773,27 @@ IDIO idio_load_file (IDIO filename)
 	    *dot = '\0';
 	}
     } else {
+	IDIO (*reader) (IDIO h) = idio_read;
+	IDIO (*evaluator) (IDIO h) = idio_evaluate;
+	
+	idio_file_extension_t *fe = idio_file_extensions;
+    
+	for (;NULL != fe->reader;fe++) {
+	    if (NULL != fe->ext) {
+		if (strncmp (dot, fe->ext, strlen (fe->ext)) == 0) {
+		    reader = fe->reader;
+		    evaluator = fe->evaluator;
+		    break;
+		}
+	    }
+	}
+
 	if (access (lfn, R_OK) == 0) {
 	    IDIO fh = idio_open_file_handle_C (lfn, "r");
 
 	    free (filename_C);
 
-	    return idio_load_filehandle (fh, idio_scm_read, idio_scm_evaluate);
+	    return idio_load_filehandle (fh, reader, evaluator);
 	}	
     }
 

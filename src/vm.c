@@ -28,6 +28,7 @@ typedef struct idio_i_array_s {
     IDIO_I *ae;
 } idio_i_array_t;
     
+static int idio_vm_tracing = 0;
 
 /*
  * We don't know is some arbitrary code is going to set a global value
@@ -107,13 +108,18 @@ static void idio_decode_arity_next (IDIO thr)
     fprintf (stderr, "\n");
 }
 
-static void idio_error_arity (size_t given, size_t arity)
+static void idio_vm_function_trace (IDIO_I ins, IDIO thr);
+static void idio_error_arity (IDIO_I ins, IDIO thr, size_t given, size_t arity)
 {
+    fprintf (stderr, "\n\nARITY != %zd\n", arity);
+    idio_vm_function_trace (ins, thr);
     idio_error_message ("incorrect arity: %zd args for an arity-%zd function", given, arity);
 }
 
-static void idio_error_arity_varargs (size_t given, size_t arity)
+static void idio_error_arity_varargs (IDIO_I ins, IDIO thr, size_t given, size_t arity)
 {
+    fprintf (stderr, "\n\nARITY < %zd\n", arity);
+    idio_vm_function_trace (ins, thr);
     idio_error_message ("incorrect arity: %zd args for an arity-%zd+ function", given, arity);
 }
 
@@ -1518,6 +1524,10 @@ void idio_thread_invoke (IDIO thr, IDIO func, int tailp)
 	    }
 	    IDIO_THREAD_ENV (thr) = IDIO_CLOSURE_ENV (func);
 	    IDIO_THREAD_PC (thr) = IDIO_CLOSURE_CODE (func);
+
+	    if (idio_vm_tracing) {
+		idio_vm_tracing++;
+	    }
 	}
 	break;
     case IDIO_TYPE_PRIMITIVE:
@@ -1527,7 +1537,7 @@ void idio_thread_invoke (IDIO thr, IDIO func, int tailp)
 	     *
 	     * If we are not in tail position then we should push the
 	     * current PC onto the stack so that when the invoked code
-	     * call RETURN it will return to whomever called us.  As
+	     * calls RETURN it will return to whomever called us -- as
 	     * the CLOSURE code does above.
 	     *
 	     * By and large, though, primitives do not change the PC
@@ -1612,6 +1622,17 @@ void idio_thread_invoke (IDIO thr, IDIO func, int tailp)
 		pc != pc0) {
 		/* fprintf (stderr, "invoke: primitive: WARNING: %s set PC %zd: pushing %zd as not in tail position\n", IDIO_PRIMITIVE_NAME (func), pc, pc0); */
 		IDIO_THREAD_STACK_PUSH (IDIO_FIXNUM (pc0));
+	    }
+	    
+	    if (idio_vm_tracing) {
+		fprintf (stderr, "                       %*.s", idio_vm_tracing, "");
+		/* XXX - why is idio_vm_tracing one less hence an extra space? */
+		idio_debug (" => %s\n", IDIO_THREAD_VAL (thr));
+		if (1 == idio_vm_tracing) {
+		    fprintf (stderr, "XXX tracing depth!\n");
+		} else {
+		    /* idio_vm_tracing--; */
+		}
 	    }
 
 	    return;
@@ -1852,7 +1873,89 @@ IDIO_DEFINE_PRIMITIVE1V ("apply", apply, (IDIO fn, IDIO args))
 
 #define IDIO_VM_RUN_DIS(...)	if (dis) { fprintf (stderr, __VA_ARGS__); }
 
-int idio_vm_run1 (IDIO thr, int dis, int tracing)
+static void idio_vm_function_trace (IDIO_I ins, IDIO thr)
+{
+    IDIO func = IDIO_THREAD_FUNC (thr);
+    IDIO val = IDIO_THREAD_VAL (thr);
+    IDIO args = idio_S_nil;
+    if (IDIO_FRAME_NARGS (val) > 1) {
+	IDIO fargs = idio_array_copy (IDIO_FRAME_ARGS (val), 0);
+	idio_array_pop (fargs);
+	args = idio_array_to_list (fargs);
+    }
+    IDIO expr = idio_list_append2 (IDIO_LIST1 (func), args);
+
+    /*
+     * %20s	- closure name (if available)
+     * SPACE
+     * %3s	- tail call indicator
+     * %*s	- trace-depth indent
+     * %s	- expression
+     */
+    if (idio_isa_closure (func)) {
+	IDIO name = idio_hash_get (idio_vm_closure_name, IDIO_FIXNUM (IDIO_CLOSURE_CODE (func)));
+	if (idio_S_unspec != name) {
+	    idio_debug ("%20s ", name);
+	} else {
+	    fprintf (stderr, "                   - ");
+	}
+    } else {
+	fprintf (stderr, "                     ");
+    }
+
+    switch (ins) {
+    case IDIO_A_FUNCTION_GOTO:
+	fprintf (stderr, "TC ");
+	break;
+    case IDIO_A_FUNCTION_INVOKE:
+	fprintf (stderr, "   ");
+	break;
+    }
+    fprintf (stderr, "%*.s", idio_vm_tracing, "");
+    idio_debug ("%s", expr);
+    fprintf (stderr, "\n");
+}
+
+static void idio_vm_primitive_call_trace (char *name, IDIO thr, int nargs)
+{
+    /*
+     * %20s	- closure name (if available)
+     * SPACE
+     * %3s	- tail call indicator
+     * %*s	- trace-depth indent
+     * %s	- expression
+     */
+    fprintf (stderr, "                        ");
+
+    fprintf (stderr, "%*.s", idio_vm_tracing, "");
+    fprintf (stderr, "(%s", name);
+    if (nargs > 1) {
+	idio_debug (" %s", IDIO_THREAD_REG1 (thr));
+    }
+    if (nargs > 0) {
+	idio_debug (" %s", IDIO_THREAD_VAL (thr));
+    }
+    fprintf (stderr, ")\n");
+}
+
+static void idio_vm_primitive_result_trace (IDIO thr)
+{
+    IDIO val = IDIO_THREAD_VAL (thr);
+
+    /*
+     * %20s	- closure name (if available)
+     * SPACE
+     * %3s	- tail call indicator
+     * %*s	- trace-depth indent
+     * %s	- expression
+     */
+    fprintf (stderr, "                        ");
+
+    fprintf (stderr, "%*.s", idio_vm_tracing, "");
+    idio_debug ("=> %s\n", val);
+}
+
+int idio_vm_run1 (IDIO thr, int dis)
 {
     IDIO_ASSERT (thr);
     IDIO_TYPE_ASSERT (thread, thr);
@@ -2164,8 +2267,14 @@ int idio_vm_run1 (IDIO thr, int dis, int tracing)
 		idio_vm_panic (thr, "RETURN: impossible stack pointer on stack top");
 	    }
 	    IDIO_THREAD_PC (thr) = sp;
-	    if (tracing) {
-		idio_debug (" => %s\n", IDIO_THREAD_VAL (thr));
+	    if (idio_vm_tracing) {
+		fprintf (stderr, "                       %*.s", idio_vm_tracing, "");
+		idio_debug ("=> %s\n", IDIO_THREAD_VAL (thr));
+		if (1 == idio_vm_tracing) {
+		    fprintf (stderr, "XXX RETURN tracing depth!\n");
+		} else {
+		    idio_vm_tracing--;
+		}
 	    }
 	}
 	break;
@@ -2179,24 +2288,8 @@ int idio_vm_run1 (IDIO thr, int dis, int tracing)
     case IDIO_A_FUNCTION_INVOKE:
 	{
 	    IDIO_VM_RUN_DIS ("FUNCTION-INVOKE ... ");
-	    if (tracing) {
-		IDIO func = IDIO_THREAD_FUNC (thr);
-		IDIO val = IDIO_THREAD_VAL (thr);
-		IDIO args = idio_S_nil;
-		if (IDIO_FRAME_NARGS (val) > 1) {
-		    IDIO fargs = idio_array_copy (IDIO_FRAME_ARGS (val), 0);
-		    idio_array_pop (fargs);
-		    args = idio_array_to_list (fargs);
-		}
-		IDIO expr = idio_list_append2 (IDIO_LIST1 (func), args);
-		if (idio_isa_closure (func)) {
-		    IDIO name = idio_hash_get (idio_vm_closure_name, IDIO_FIXNUM (IDIO_CLOSURE_CODE (func)));
-		    idio_debug ("%20s ", name);
-		} else {
-		    fprintf (stderr, "                     ");
-		}
-		idio_debug ("%s", expr);
-		fprintf (stderr, "\n");
+	    if (idio_vm_tracing) {
+		idio_vm_function_trace (ins, thr);
 	    }
 	    idio_thread_invoke (thr, IDIO_THREAD_FUNC (thr), 0);
 	}
@@ -2204,24 +2297,8 @@ int idio_vm_run1 (IDIO thr, int dis, int tracing)
     case IDIO_A_FUNCTION_GOTO:
 	{
 	    IDIO_VM_RUN_DIS ("FUNCTION-GOTO ...");
-	    if (tracing) {
-		IDIO func = IDIO_THREAD_FUNC (thr);
-		IDIO val = IDIO_THREAD_VAL (thr);
-		IDIO args = idio_S_nil;
-		if (IDIO_FRAME_NARGS (val) > 1) {
-		    IDIO fargs = idio_array_copy (IDIO_FRAME_ARGS (val), 0);
-		    idio_array_pop (fargs);
-		    args = idio_array_to_list (fargs);
-		}
-		IDIO expr = idio_list_append2 (IDIO_LIST1 (func), args);
-		if (idio_isa_closure (func)) {
-		    IDIO name = idio_hash_get (idio_vm_closure_name, IDIO_FIXNUM (IDIO_CLOSURE_CODE (func)));
-		    idio_debug ("%20s ", name);
-		} else {
-		    fprintf (stderr, "                     ");
-		}
-		idio_debug ("%s", expr);
-		fprintf (stderr, "\n");
+	    if (idio_vm_tracing) {
+		idio_vm_function_trace (ins, thr);
 	    }
 	    idio_thread_invoke (thr, IDIO_THREAD_FUNC (thr), 1);
 	}
@@ -2323,7 +2400,7 @@ int idio_vm_run1 (IDIO thr, int dis, int tracing)
 		nargs = IDIO_FRAME_NARGS (IDIO_THREAD_VAL (thr));
 	    }
 	    if (1 != nargs) {
-		idio_error_arity (nargs - 1, 0);
+		idio_error_arity (ins, thr, nargs - 1, 0);
 		return 0;
 	    }
 	}
@@ -2336,7 +2413,7 @@ int idio_vm_run1 (IDIO thr, int dis, int tracing)
 		nargs = IDIO_FRAME_NARGS (IDIO_THREAD_VAL (thr));
 	    }
 	    if (2 != nargs) {
-		idio_error_arity (nargs - 1, 1);
+		idio_error_arity (ins, thr, nargs - 1, 1);
 		return 0;
 	    }
 	}
@@ -2358,7 +2435,7 @@ int idio_vm_run1 (IDIO thr, int dis, int tracing)
 		idio_dump (IDIO_FRAME_ARGS (IDIO_THREAD_VAL (thr)), 10);
 		idio_gc_set_verboseness (0);
 		
-		idio_error_arity (nargs - 1, 2);
+		idio_error_arity (ins, thr, nargs - 1, 2);
 		return 0;
 	    }
 	}
@@ -2371,7 +2448,7 @@ int idio_vm_run1 (IDIO thr, int dis, int tracing)
 		nargs = IDIO_FRAME_NARGS (IDIO_THREAD_VAL (thr));
 	    }
 	    if (4 != nargs) {
-		idio_error_arity (nargs - 1, 3);
+		idio_error_arity (ins, thr, nargs - 1, 3);
 		return 0;
 	    }
 	}
@@ -2386,7 +2463,7 @@ int idio_vm_run1 (IDIO thr, int dis, int tracing)
 	    }
 	    if (arityp1 != nargs) {
 		idio_decode_arity_next (thr);
-		idio_error_arity (nargs - 1, arityp1 - 1);
+		idio_error_arity (ins, thr, nargs - 1, arityp1 - 1);
 		return 0;
 	    }
 	}
@@ -2409,7 +2486,7 @@ int idio_vm_run1 (IDIO thr, int dis, int tracing)
 		idio_gc_set_verboseness (3);
 		idio_dump (IDIO_FRAME_ARGS (IDIO_THREAD_VAL (thr)), 4);
 		idio_gc_set_verboseness (0);
-		idio_error_arity_varargs (nargs - 1, arityp1 - 1);
+		idio_error_arity_varargs (ins, thr, nargs - 1, arityp1 - 1);
 		return 0;
 	    }
 	}
@@ -2515,13 +2592,22 @@ int idio_vm_run1 (IDIO thr, int dis, int tracing)
     case IDIO_A_PRIMCALL0_NEWLINE:
 	{
 	    IDIO_VM_RUN_DIS ("PRIMITIVE0 newline");
+	    if (idio_vm_tracing) {
+		idio_vm_primitive_call_trace ("newline", thr, 0);
+	    }
 	    IDIO_THREAD_VAL (thr) = idio_character_lookup ("newline");
 	}
 	break;
     case IDIO_A_PRIMCALL0_READ:
 	{
 	    IDIO_VM_RUN_DIS ("PRIMITIVE0 read");
+	    if (idio_vm_tracing) {
+		idio_vm_primitive_call_trace ("read", thr, 0);
+	    }
 	    IDIO_THREAD_VAL (thr) = idio_scm_read (IDIO_THREAD_INPUT_HANDLE (thr));
+	    if (idio_vm_tracing) {
+		idio_vm_primitive_result_trace (thr);
+	    }
 	}
 	break;
     case IDIO_A_PRIMCALL0:
@@ -2529,45 +2615,78 @@ int idio_vm_run1 (IDIO thr, int dis, int tracing)
 	    uint64_t index = idio_thread_fetch_varuint (thr);
 	    IDIO primdata = idio_vm_primitives_ref (index);
 	    IDIO_VM_RUN_DIS ("PRIMITIVE0 %zd %s", index, IDIO_PRIMITIVE_NAME (primdata));
+	    if (idio_vm_tracing) {
+		idio_vm_primitive_call_trace (IDIO_PRIMITIVE_NAME (primdata), thr, 0);
+	    }
 	    
 	    IDIO_THREAD_VAL (thr) = IDIO_PRIMITIVE_F (primdata) ();
+	    if (idio_vm_tracing) {
+		idio_vm_primitive_result_trace (thr);
+	    }
 	}
 	break;
     case IDIO_A_PRIMCALL1_CAR:
 	{
 	    IDIO_VM_RUN_DIS ("PRIMITIVE1 car");
+	    if (idio_vm_tracing) {
+		idio_vm_primitive_call_trace ("car", thr, 1);
+	    }
 	    IDIO_THREAD_VAL (thr) = idio_list_head (IDIO_THREAD_VAL (thr));
+	    if (idio_vm_tracing) {
+		idio_vm_primitive_result_trace (thr);
+	    }
 	}
 	break;
     case IDIO_A_PRIMCALL1_CDR:
 	{
 	    IDIO_VM_RUN_DIS ("PRIMITIVE1 cdr");
+	    if (idio_vm_tracing) {
+		idio_vm_primitive_call_trace ("cdr", thr, 1);
+	    }
 	    IDIO_THREAD_VAL (thr) = idio_list_tail (IDIO_THREAD_VAL (thr));
+	    if (idio_vm_tracing) {
+		idio_vm_primitive_result_trace (thr);
+	    }
 	}
 	break;
     case IDIO_A_PRIMCALL1_PAIRP:
 	{
 	    IDIO_VM_RUN_DIS ("PRIMITIVE1 pair?");
+	    if (idio_vm_tracing) {
+		idio_vm_primitive_call_trace ("pair?", thr, 1);
+	    }
 	    if (idio_isa_pair (IDIO_THREAD_VAL (thr))) {
 		IDIO_THREAD_VAL (thr) = idio_S_true;
 	    } else {
 		IDIO_THREAD_VAL (thr) = idio_S_false;
+	    }
+	    if (idio_vm_tracing) {
+		idio_vm_primitive_result_trace (thr);
 	    }
 	}
 	break;
     case IDIO_A_PRIMCALL1_SYMBOLP:
 	{
 	    IDIO_VM_RUN_DIS ("PRIMITIVE1 symbol?");
+	    if (idio_vm_tracing) {
+		idio_vm_primitive_call_trace ("symbol?", thr, 1);
+	    }
 	    if (idio_isa_symbol (IDIO_THREAD_VAL (thr))) {
 		IDIO_THREAD_VAL (thr) = idio_S_true;
 	    } else {
 		IDIO_THREAD_VAL (thr) = idio_S_false;
+	    }
+	    if (idio_vm_tracing) {
+		idio_vm_primitive_result_trace (thr);
 	    }
 	}
 	break;
     case IDIO_A_PRIMCALL1_DISPLAY:
 	{
 	    IDIO_VM_RUN_DIS ("PRIMITIVE1 display");
+	    if (idio_vm_tracing) {
+		idio_vm_primitive_call_trace ("display", thr, 1);
+	    }
 	    IDIO h = IDIO_THREAD_OUTPUT_HANDLE (thr);
 	    char *vs = idio_display_string (IDIO_THREAD_VAL (thr));
 	    IDIO_HANDLE_M_PUTS (h) (h, vs, strlen (vs));
@@ -2577,20 +2696,32 @@ int idio_vm_run1 (IDIO thr, int dis, int tracing)
     case IDIO_A_PRIMCALL1_PRIMITIVEP:
 	{
 	    IDIO_VM_RUN_DIS ("PRIMITIVE1 primitive?");
+	    if (idio_vm_tracing) {
+		idio_vm_primitive_call_trace ("primitive?", thr, 1);
+	    }
 	    if (idio_isa_primitive (IDIO_THREAD_VAL (thr))) {
 		IDIO_THREAD_VAL (thr) = idio_S_true;
 	    } else {
 		IDIO_THREAD_VAL (thr) = idio_S_false;
+	    }
+	    if (idio_vm_tracing) {
+		idio_vm_primitive_result_trace (thr);
 	    }
 	}
 	break;
     case IDIO_A_PRIMCALL1_NULLP:
 	{
 	    IDIO_VM_RUN_DIS ("PRIMITIVE1 null?");
+	    if (idio_vm_tracing) {
+		idio_vm_primitive_call_trace ("null?", thr, 1);
+	    }
 	    if (idio_S_nil == IDIO_THREAD_VAL (thr)) {
 		IDIO_THREAD_VAL (thr) = idio_S_true;
 	    } else {
 		IDIO_THREAD_VAL (thr) = idio_S_false;
+	    }
+	    if (idio_vm_tracing) {
+		idio_vm_primitive_result_trace (thr);
 	    }
 	}
 	break;
@@ -2603,10 +2734,16 @@ int idio_vm_run1 (IDIO thr, int dis, int tracing)
     case IDIO_A_PRIMCALL1_EOFP:
 	{
 	    IDIO_VM_RUN_DIS ("PRIMITIVE1 eof?");
+	    if (idio_vm_tracing) {
+		idio_vm_primitive_call_trace ("eof?", thr, 1);
+	    }
 	    if (idio_handle_eofp (IDIO_THREAD_VAL (thr))) {
 		IDIO_THREAD_VAL (thr) = idio_S_true;
 	    } else {
 		IDIO_THREAD_VAL (thr) = idio_S_false;
+	    }
+	    if (idio_vm_tracing) {
+		idio_vm_primitive_result_trace (thr);
 	    }
 	}
 	break;
@@ -2615,99 +2752,183 @@ int idio_vm_run1 (IDIO thr, int dis, int tracing)
 	    uint64_t index = idio_thread_fetch_varuint (thr);
 	    IDIO primdata = idio_vm_primitives_ref (index);
 	    IDIO_VM_RUN_DIS ("PRIMITIVE1 %zd %s", index, IDIO_PRIMITIVE_NAME (primdata));
+	    if (idio_vm_tracing) {
+		idio_vm_primitive_call_trace (IDIO_PRIMITIVE_NAME (primdata), thr, 1);
+	    }
 	    
 	    IDIO_THREAD_VAL (thr) = IDIO_PRIMITIVE_F (primdata) (IDIO_THREAD_VAL (thr));
+	    if (idio_vm_tracing) {
+		idio_vm_primitive_result_trace (thr);
+	    }
 	}
 	break;
     case IDIO_A_PRIMCALL2_CONS:
 	{
 	    IDIO_VM_RUN_DIS ("PRIMITIVE2 cons");
+	    if (idio_vm_tracing) {
+		idio_vm_primitive_call_trace ("cons", thr, 2);
+	    }
 	    IDIO_THREAD_VAL (thr) = idio_pair (IDIO_THREAD_REG1 (thr), IDIO_THREAD_VAL (thr));
+	    if (idio_vm_tracing) {
+		idio_vm_primitive_result_trace (thr);
+	    }
 	}
 	break;
     case IDIO_A_PRIMCALL2_EQP:
 	{
 	    IDIO_VM_RUN_DIS ("PRIMITIVE2 eq?");
+	    if (idio_vm_tracing) {
+		idio_vm_primitive_call_trace ("eq?", thr, 2);
+	    }
 	    if (idio_eqp (IDIO_THREAD_REG1 (thr), IDIO_THREAD_VAL (thr))) {
 		IDIO_THREAD_VAL (thr) = idio_S_true;
 	    } else {
 		IDIO_THREAD_VAL (thr) = idio_S_false;
+	    }
+	    if (idio_vm_tracing) {
+		idio_vm_primitive_result_trace (thr);
 	    }
 	}
 	break;
     case IDIO_A_PRIMCALL2_SET_CAR:
 	{
 	    IDIO_VM_RUN_DIS ("PRIMITIVE2 set-car!");
+	    if (idio_vm_tracing) {
+		idio_vm_primitive_call_trace ("set-car!", thr, 2);
+	    }
 	    IDIO_THREAD_VAL (thr) = idio_pair_set_head (IDIO_THREAD_REG1 (thr), IDIO_THREAD_VAL (thr));
+	    if (idio_vm_tracing) {
+		idio_vm_primitive_result_trace (thr);
+	    }
 	}
 	break;
     case IDIO_A_PRIMCALL2_SET_CDR:
 	{
 	    IDIO_VM_RUN_DIS ("PRIMITIVE2 set-cdr!");
+	    if (idio_vm_tracing) {
+		idio_vm_primitive_call_trace ("set-cdr!", thr, 2);
+	    }
 	    IDIO_THREAD_VAL (thr) = idio_pair_set_tail (IDIO_THREAD_REG1 (thr), IDIO_THREAD_VAL (thr));
+	    if (idio_vm_tracing) {
+		idio_vm_primitive_result_trace (thr);
+	    }
 	}
 	break;
     case IDIO_A_PRIMCALL2_ADD:
 	{
 	    IDIO_VM_RUN_DIS ("PRIMITIVE2 add");
+	    if (idio_vm_tracing) {
+		idio_vm_primitive_call_trace ("add", thr, 2);
+	    }
 	    IDIO_THREAD_VAL (thr) = idio_defprimitive_add (IDIO_LIST2 (IDIO_THREAD_REG1 (thr),
 								       IDIO_THREAD_VAL (thr)));
+	    if (idio_vm_tracing) {
+		idio_vm_primitive_result_trace (thr);
+	    }
 	}
 	break;
     case IDIO_A_PRIMCALL2_SUBTRACT:
 	{
 	    IDIO_VM_RUN_DIS ("PRIMITIVE2 subtract");
+	    if (idio_vm_tracing) {
+		idio_vm_primitive_call_trace ("subtract", thr, 2);
+	    }
 	    IDIO_THREAD_VAL (thr) = idio_defprimitive_subtract (IDIO_LIST2 (IDIO_THREAD_REG1 (thr),
 									    IDIO_THREAD_VAL (thr)));
+	    if (idio_vm_tracing) {
+		idio_vm_primitive_result_trace (thr);
+	    }
 	}
 	break;
     case IDIO_A_PRIMCALL2_EQ:
 	{
 	    IDIO_VM_RUN_DIS ("PRIMITIVE2 =");
+	    if (idio_vm_tracing) {
+		idio_vm_primitive_call_trace ("=", thr, 2);
+	    }
 	    IDIO_THREAD_VAL (thr) = idio_defprimitive_eq (IDIO_LIST2 (IDIO_THREAD_REG1 (thr),
 								      IDIO_THREAD_VAL (thr)));
+	    if (idio_vm_tracing) {
+		idio_vm_primitive_result_trace (thr);
+	    }
 	}
 	break;
     case IDIO_A_PRIMCALL2_LT:
 	{
 	    IDIO_VM_RUN_DIS ("PRIMITIVE2 <");
+	    if (idio_vm_tracing) {
+		idio_vm_primitive_call_trace ("<", thr, 2);
+	    }
 	    IDIO_THREAD_VAL (thr) = idio_defprimitive_lt (IDIO_LIST2 (IDIO_THREAD_REG1 (thr),
 								      IDIO_THREAD_VAL (thr)));
+	    if (idio_vm_tracing) {
+		idio_vm_primitive_result_trace (thr);
+	    }
 	}
 	break;
     case IDIO_A_PRIMCALL2_GT:
 	{
 	    IDIO_VM_RUN_DIS ("PRIMITIVE2 >");
+	    if (idio_vm_tracing) {
+		idio_vm_primitive_call_trace (">", thr, 2);
+	    }
 	    IDIO_THREAD_VAL (thr) = idio_defprimitive_gt (IDIO_LIST2 (IDIO_THREAD_REG1 (thr),
 								      IDIO_THREAD_VAL (thr)));
+	    if (idio_vm_tracing) {
+		idio_vm_primitive_result_trace (thr);
+	    }
 	}
 	break;
     case IDIO_A_PRIMCALL2_MULTIPLY:
 	{
 	    IDIO_VM_RUN_DIS ("PRIMITIVE2 *");
+	    if (idio_vm_tracing) {
+		idio_vm_primitive_call_trace ("*", thr, 2);
+	    }
 	    IDIO_THREAD_VAL (thr) = idio_defprimitive_multiply (IDIO_LIST2 (IDIO_THREAD_REG1 (thr),
 									    IDIO_THREAD_VAL (thr)));
+	    if (idio_vm_tracing) {
+		idio_vm_primitive_result_trace (thr);
+	    }
 	}
 	break;
     case IDIO_A_PRIMCALL2_LE:
 	{
 	    IDIO_VM_RUN_DIS ("PRIMITIVE2 <=");
+	    if (idio_vm_tracing) {
+		idio_vm_primitive_call_trace ("<=", thr, 2);
+	    }
 	    IDIO_THREAD_VAL (thr) = idio_defprimitive_le (IDIO_LIST2 (IDIO_THREAD_REG1 (thr),
 								      IDIO_THREAD_VAL (thr)));
+	    if (idio_vm_tracing) {
+		idio_vm_primitive_result_trace (thr);
+	    }
 	}
 	break;
     case IDIO_A_PRIMCALL2_GE:
 	{
 	    IDIO_VM_RUN_DIS ("PRIMITIVE2 >=");
+	    if (idio_vm_tracing) {
+		idio_vm_primitive_call_trace (">=", thr, 2);
+	    }
 	    IDIO_THREAD_VAL (thr) = idio_defprimitive_ge (IDIO_LIST2 (IDIO_THREAD_REG1 (thr),
 								      IDIO_THREAD_VAL (thr)));
+	    if (idio_vm_tracing) {
+		idio_vm_primitive_result_trace (thr);
+	    }
 	}
 	break;
     case IDIO_A_PRIMCALL2_REMAINDER:
 	{
 	    IDIO_VM_RUN_DIS ("PRIMITIVE2 remainder");
+	    if (idio_vm_tracing) {
+		idio_vm_primitive_call_trace ("remainder", thr, 2);
+	    }
 	    IDIO_THREAD_VAL (thr) = idio_defprimitive_remainder (IDIO_THREAD_REG1 (thr),
 								 IDIO_THREAD_VAL (thr));
+	    if (idio_vm_tracing) {
+		idio_vm_primitive_result_trace (thr);
+	    }
 	}
 	break;
     case IDIO_A_PRIMCALL2:
@@ -2715,8 +2936,14 @@ int idio_vm_run1 (IDIO thr, int dis, int tracing)
 	    uint64_t index = idio_thread_fetch_varuint (thr);
 	    IDIO primdata = idio_vm_primitives_ref (index);
 	    IDIO_VM_RUN_DIS ("PRIMITIVE2 %zd %s", index, IDIO_PRIMITIVE_NAME (primdata));
+	    if (idio_vm_tracing) {
+		idio_vm_primitive_call_trace (IDIO_PRIMITIVE_NAME (primdata), thr, 2);
+	    }
 	    
 	    IDIO_THREAD_VAL (thr) = IDIO_PRIMITIVE_F (primdata) (IDIO_THREAD_REG1 (thr), IDIO_THREAD_VAL (thr));
+	    if (idio_vm_tracing) {
+		idio_vm_primitive_result_trace (thr);
+	    }
 	}
 	break;
     case IDIO_A_NOP:
@@ -2858,10 +3085,16 @@ IDIO idio_vm_run (IDIO thr, int run_gc)
     idio_i_array_push (idio_all_code, IDIO_A_NOP);
     idio_i_array_push (idio_all_code, IDIO_A_RETURN);
 
+    idio_vm_tracing = 0;
+
+    int loops = 0;
     for (;;) {
-	if (idio_vm_run1 (thr, 0, 0)) {
+	if (idio_vm_run1 (thr, 0)) {
 	    sleep (0);
-	    idio_gc_possibly_collect (); 
+	    if (loops++ > 100) {
+		idio_gc_possibly_collect ();
+		loops = 0;
+	    }
 	} else {
 	    sleep (0);
 	    break;

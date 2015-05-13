@@ -47,6 +47,23 @@ void idio_error_message (char *format, ...)
     IDIO_C_ASSERT (0);
 }
 
+void idio_warning_message (char *format, ...)
+{
+    fprintf (stderr, "WARNING: ");
+
+    va_list fmt_args;
+    va_start (fmt_args, format);
+    idio_error_vfprintf (format, fmt_args);
+    va_end (fmt_args);
+
+    switch (format[strlen(format)-1]) {
+    case '\n':
+	break;
+    default:
+	fprintf (stderr, "\n");
+    }
+}
+
 void idio_error_alloc (IDIO f)
 {
     IDIO_ASSERT (f);
