@@ -501,7 +501,7 @@ char *idio_as_string (IDIO o, int depth)
     switch ((intptr_t) o & 3) {
     case IDIO_TYPE_FIXNUM_MARK:
 	{
-	    if (asprintf (&r, "%ld", IDIO_FIXNUM_VAL (o)) == -1) {
+	    if (asprintf (&r, "%" PRIdPTR, IDIO_FIXNUM_VAL (o)) == -1) {
 		return NULL;
 	    }
 	    break;
@@ -510,7 +510,7 @@ char *idio_as_string (IDIO o, int depth)
 	{
 	    char *t = NULL;
 	    
-	    long v = IDIO_CONSTANT_VAL (o);
+	    intptr_t v = IDIO_CONSTANT_VAL (o);
 	    
 	    switch (v) {
 	    case IDIO_CONSTANT_NIL:                  t = "#n";                   break;
@@ -572,7 +572,7 @@ char *idio_as_string (IDIO o, int depth)
 	    }
 
 	    if (NULL == t) {
-		if (asprintf (&r, "C=%zd", v) == -1) {
+		if (asprintf (&r, "C=%" PRIdPTR, v) == -1) {
 		    return NULL;
 		}
 	    } else {
@@ -644,12 +644,12 @@ char *idio_as_string (IDIO o, int depth)
 		}
 		break;
 	    case IDIO_TYPE_C_INT64:
-		if (asprintf (&r, "%ld", IDIO_C_TYPE_INT64 (o)) == -1) {
+		if (asprintf (&r, "%" PRId64, IDIO_C_TYPE_INT64 (o)) == -1) {
 		    return NULL;
 		}
 		break;
 	    case IDIO_TYPE_C_UINT64:
-		if (asprintf (&r, "%lu", IDIO_C_TYPE_UINT64 (o)) == -1) {
+		if (asprintf (&r, "%" PRId64, IDIO_C_TYPE_UINT64 (o)) == -1) {
 		    return NULL;
 		}
 		break;
@@ -888,7 +888,7 @@ char *idio_as_string (IDIO o, int depth)
 		    break;
 		}
 	    case IDIO_TYPE_HANDLE:
-		if (asprintf (&r, "#H{\"%s\":%zu:%zu}", IDIO_HANDLE_NAME (o), IDIO_HANDLE_LINE (o), IDIO_HANDLE_POS (o)) == -1) {
+		if (asprintf (&r, "#H{\"%s\":%llu:%llu}", IDIO_HANDLE_NAME (o), (unsigned long long) IDIO_HANDLE_LINE (o), (unsigned long long) IDIO_HANDLE_POS (o)) == -1) {
 		    return NULL;
 		}
 		break;

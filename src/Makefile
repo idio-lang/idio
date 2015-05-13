@@ -39,7 +39,7 @@ endif
 
 
 PROFLAGS	=
-CFLAGS	       := ${PROFLAGS} ${CDEBUG} -Wall -fPIC ${LIBFFI_INC}
+CFLAGS	       := ${PROFLAGS} ${CDEBUG} -std=c99 -Wall -fPIC ${LIBFFI_INC}
 LDFLAGS        := ${PROFLAGS} ${LDFLAGS}
 LIBS	       := ${LIBS} -lffi
 

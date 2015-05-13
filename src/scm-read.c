@@ -90,9 +90,9 @@
 #define IDIO_SCM_TOKEN_LPAREN	(IDIO_SCM_TOKEN_BASE+1)
 #define IDIO_SCM_TOKEN_RPAREN	(IDIO_SCM_TOKEN_BASE+2)
 
-#define idio_T_dot		((const IDIO) IDIO_CONSTANT (IDIO_SCM_TOKEN_DOT))
-#define idio_T_lparen		((const IDIO) IDIO_CONSTANT (IDIO_SCM_TOKEN_LPAREN))
-#define idio_T_rparen		((const IDIO) IDIO_CONSTANT (IDIO_SCM_TOKEN_RPAREN))
+#define idio_ST_dot		((const IDIO) IDIO_CONSTANT (IDIO_SCM_TOKEN_DOT))
+#define idio_ST_lparen		((const IDIO) IDIO_CONSTANT (IDIO_SCM_TOKEN_LPAREN))
+#define idio_ST_rparen		((const IDIO) IDIO_CONSTANT (IDIO_SCM_TOKEN_RPAREN))
 
 static void idio_error_scm_read_parse (IDIO handle, char *msg)
 {
@@ -156,8 +156,8 @@ static IDIO idio_scm_read_list (IDIO handle, IDIO opendel, int depth)
     int count = 0;		/* # of elements in list */
 
     IDIO closedel;
-    if (opendel == idio_T_lparen) {
-	closedel = idio_T_rparen;
+    if (opendel == idio_ST_lparen) {
+	closedel = idio_ST_rparen;
     } else {
 	idio_error_message ("unexpected list open delimeter '%s'", idio_as_string (opendel, 1));
 	return idio_S_unspec;
@@ -171,7 +171,7 @@ static IDIO idio_scm_read_list (IDIO handle, IDIO opendel, int depth)
 	if (idio_handle_eofp (handle)) {
 	    idio_error_scm_read_list_eof (handle);
 	    return idio_S_unspec;
-	} else if (idio_T_dot == e) {
+	} else if (idio_ST_dot == e) {
 	    /* ( . a) */
 	    if (count < 1) {
 		idio_error_scm_read_list_dot (handle, "nothing before dot in list");
@@ -446,7 +446,7 @@ IDIO idio_scm_read_vector (IDIO handle, int depth)
 {
     IDIO_ASSERT (handle);
 
-    IDIO e = idio_scm_read_list (handle, idio_T_lparen, depth);
+    IDIO e = idio_scm_read_list (handle, idio_ST_lparen, depth);
     return idio_list_to_array (e);
 }
 
@@ -695,10 +695,10 @@ static IDIO idio_scm_read_expr (IDIO handle, int depth)
 	    idio_scm_read_whitespace (handle);
 	    break;
 	case IDIO_SCM_CHAR_LPAREN:
-	    return idio_scm_read_list (handle, idio_T_lparen, depth + 1);
+	    return idio_scm_read_list (handle, idio_ST_lparen, depth + 1);
 	case IDIO_SCM_CHAR_RPAREN:
 	    if (depth) {
-		return idio_T_rparen;
+		return idio_ST_rparen;
 	    } else {
 		idio_error_scm_read_parse (handle, "unexpected ')'");
 		return idio_S_unspec;
@@ -805,7 +805,7 @@ static IDIO idio_scm_read_expr (IDIO handle, int depth)
 
 		if (IDIO_SCM_SEPARATOR (cp)) {
 		    if (depth) {
-			return idio_T_dot;
+			return idio_ST_dot;
 		    } else {
 			idio_error_scm_read_parse (handle, "unexpected dot outside of list");
 			return idio_S_unspec;

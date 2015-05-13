@@ -88,7 +88,7 @@ void idio_error_param_type (char *etype, IDIO who)
     free (whos);
 }
 
-void idio_error_add_C (const char *s)
+void idio_error_add_C (char *s)
 {
     idio_error_message (s);
 }

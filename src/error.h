@@ -33,7 +33,7 @@ void idio_warning_message (char *format, ...);
 void idio_error_alloc ();
 void idio_error_param_nil (char *name);
 void idio_error_param_type (char *etype, IDIO who);
-void idio_error_add_C (const char *s);
+void idio_error_add_C (char *s);
 
 void idio_init_error ();
 void idio_error_add_primitives ();

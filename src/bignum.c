@@ -203,7 +203,7 @@ void idio_bignum_dump (IDIO bn)
 	    fprintf (stderr, fmt, IDIO_BIGNUM_DPW, IDIO_BSA_AE (sig_a, i));
 	}
     }
-    fprintf (stderr, "e%zd\n", exp);
+    fprintf (stderr, "e%" PRId64 "\n", exp);
 }
 
 /* bignum code from S9fES */
@@ -340,7 +340,7 @@ IDIO idio_bignum_to_fixnum (IDIO bn)
 	return idio_S_nil;
     }
     
-    IDIO_BS_T iv = 0;
+    intptr_t iv = 0;
     int neg = 0;
     
     intptr_t ai;
@@ -1734,7 +1734,7 @@ char *idio_bignum_expanded_real_as_string (IDIO bn, IDIO_BS_T exp, int digits, i
     for (ai = al - 1; ai >= 0; ai--) {
 	IDIO_BS_T v = idio_bsa_get (sig_a, ai);
 	char *vs;
-	if (asprintf (&vs, "%zd", v) == -1) {
+	if (asprintf (&vs, "%" PRId64, v) == -1) {
 	    idio_error_message ("bignum->string: asprintf");
 	}
 	IDIO_STRCAT_FREE (s, vs);
@@ -1789,12 +1789,12 @@ char *idio_bignum_real_as_string (IDIO bn)
     IDIO_BS_T v = idio_bsa_get (sig_a, i);
 
     /*
-      vs can be n digits long (n >= 1).  We want to add vs[0] then
-	".".  If vs is more than 1 digit then add the rest of vs.  If
-	there are no more digits to add then add "0".
+     * vs can be n digits long (n >= 1).  We want to add vs[0] then
+     * ".".  If vs is more than 1 digit then add the rest of vs.  If
+     * there are no more digits to add then add "0".
      */
     char *vs;
-    if (asprintf (&vs, "%zd", v) == -1) {
+    if (asprintf (&vs, "%" PRId64, v) == -1) {
 	idio_error_message ("bignum real->string: asprintf");
     }
     char vs_rest[IDIO_BIGNUM_DPW+1]; /* +1 in case DPW is 1 for debug! */
@@ -1816,7 +1816,7 @@ char *idio_bignum_real_as_string (IDIO bn)
     for (i--; i >= 0; i--) {
 	v = idio_bsa_get (sig_a, i);
 	char buf[BUFSIZ];
-	sprintf (buf, "%0*zd", IDIO_BIGNUM_DPW, v);
+	sprintf (buf, "%0*" PRId64, IDIO_BIGNUM_DPW, v);
 	s = idio_strcat (s, buf);
     }
 
@@ -1825,7 +1825,7 @@ char *idio_bignum_real_as_string (IDIO bn)
     /* 	IDIO_STRCAT (s, "+"); */
     /* } */
     v = exp + digits - 1;
-    if (asprintf (&vs, "%+zd", v) == -1) {
+    if (asprintf (&vs, "%+" PRId64, v) == -1) {
 	idio_error_message ("bignum real->string: asprintf");
     }
     s = idio_strcat_free (s, vs);
@@ -2615,7 +2615,7 @@ IDIO_DEFINE_PRIMITIVE1 ("exponent", exponent, (IDIO n))
     if (IDIO_BIGNUM_INTEGER_P (n)) {
         r = IDIO_FIXNUM (0);
     } else {
-	IDIO_BS_T exp = IDIO_BIGNUM_EXP (n);
+	intptr_t exp = IDIO_BIGNUM_EXP (n);
 
 	if (exp >= IDIO_FIXNUM_MIN &&
 	    exp <= IDIO_FIXNUM_MAX) {

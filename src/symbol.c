@@ -171,7 +171,7 @@ IDIO idio_gensym ()
     IDIO sym;
     
     for (;idio_gensym_id;idio_gensym_id++) {
-	sprintf (buf, "%s/%zd", prefix, idio_gensym_id);
+	sprintf (buf, "%s/%" PRIu64, prefix, idio_gensym_id);
 
 	sym = idio_hash_get (idio_symbols_hash, buf);
 
