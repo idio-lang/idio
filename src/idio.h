@@ -124,30 +124,30 @@
  * PRIMITIVExV meaning it has a variable arity with a minimum arity of
  * x.
  *
- * We are looking for the following for foo, ie. Idio's "foo"
+ * We are looking for the following for foo_C, ie. Idio's "foo-idio"
 
-   IDIO_DEFINE_PRIMITIVE2 ("foo", foo, (T1 a1, T2, a2))
+   IDIO_DEFINE_PRIMITIVE2 ("foo-idio", foo_C, (T1 a1, T2, a2))
    {
      ...
    }
 
  * should become
    
-   IDIO idio_defprimitive_foo (T1 a1, T2 a2);
-   static struct idio_primitive_s idio_primitive_data_foo = {
-      idio_defprimitive_foo,
-      "foo",
+   IDIO idio_defprimitive_foo_C (T1 a1, T2 a2);
+   static struct idio_primitive_s idio_primitive_data_foo_C = {
+      idio_defprimitive_foo_C,
+      "foo-idio",
       2,
       0
    };
-   IDIO idio_defprimitive_foo (T1 a1, T2 a2)
+   IDIO idio_defprimitive_foo_C (T1 a1, T2 a2)
    {
      ...
    }
 
 
- * IDIO_ADD_PRIMITIVE (foo) can then access the static struct
- * idio_primitive_s called idio_defprimitive_data_foo and pass it to
+ * IDIO_ADD_PRIMITIVE (foo_C) can then access the static struct
+ * idio_primitive_s called idio_defprimitive_data_foo_C and pass it to
  * the code to actually add a primitive.
  *
  */

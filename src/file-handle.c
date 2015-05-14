@@ -713,13 +713,14 @@ typedef struct idio_file_extension_s {
     char *ext;
     IDIO (*reader) (IDIO h);
     IDIO (*evaluator) (IDIO h);
+    IDIO (*modulep) (void);
 } idio_file_extension_t;
 
 static idio_file_extension_t idio_file_extensions[] = {
-    { NULL, idio_scm_read, idio_scm_evaluate },
-    { ".idio", idio_read, idio_evaluate },
-    { ".scm", idio_scm_read, idio_scm_evaluate },
-    { NULL, NULL }
+    { NULL, idio_scm_read, idio_scm_evaluate, idio_main_module },
+    { ".idio", idio_read, idio_evaluate, idio_main_module },
+    { ".scm", idio_scm_read, idio_scm_evaluate, idio_main_scm_module },
+    { NULL, NULL, NULL }
 };
 
 IDIO idio_load_file (IDIO filename)
@@ -766,6 +767,7 @@ IDIO idio_load_file (IDIO filename)
 
 		free (filename_C);
 
+		idio_set_current_module ((*fe->modulep) ());
 		return idio_load_filehandle (fh, fe->reader, fe->evaluator);
 	    }
 
@@ -793,6 +795,7 @@ IDIO idio_load_file (IDIO filename)
 
 	    free (filename_C);
 
+	    idio_set_current_module ((*fe->modulep) ());
 	    return idio_load_filehandle (fh, reader, evaluator);
 	}	
     }

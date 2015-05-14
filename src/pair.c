@@ -40,7 +40,7 @@ IDIO idio_pair (IDIO h, IDIO t)
     return p;
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("cons", pair, (IDIO h, IDIO t))
+IDIO_DEFINE_PRIMITIVE2 ("pair", pair, (IDIO h, IDIO t))
 {
     IDIO_ASSERT (h);
     IDIO_ASSERT (t);
@@ -119,7 +119,7 @@ IDIO idio_list_head (IDIO p)
     return IDIO_PAIR_H (p);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("car", pair_head, (IDIO p))
+IDIO_DEFINE_PRIMITIVE1 ("ph", pair_head, (IDIO p))
 {
     IDIO_ASSERT (p);
 
@@ -132,7 +132,7 @@ IDIO_DEFINE_PRIMITIVE1 ("car", pair_head, (IDIO p))
     return idio_list_head (p);
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("set-car!", set_car, (IDIO p, IDIO v))
+IDIO_DEFINE_PRIMITIVE2 ("set-ph!", set_pair_head, (IDIO p, IDIO v))
 {
     IDIO_ASSERT (p);
     IDIO_ASSERT (v);
@@ -157,7 +157,7 @@ IDIO idio_list_tail (IDIO p)
     return IDIO_PAIR_T (p);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("cdr", pair_tail, (IDIO p))
+IDIO_DEFINE_PRIMITIVE1 ("pt", pair_tail, (IDIO p))
 {
     IDIO_ASSERT (p);
 
@@ -170,7 +170,7 @@ IDIO_DEFINE_PRIMITIVE1 ("cdr", pair_tail, (IDIO p))
     return idio_list_tail (p);
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("set-cdr!", set_cdr, (IDIO p, IDIO v))
+IDIO_DEFINE_PRIMITIVE2 ("set-pt!", set_pair_tail, (IDIO p, IDIO v))
 {
     IDIO_ASSERT (p);
     IDIO_ASSERT (v);
@@ -431,8 +431,8 @@ void idio_pair_add_primitives ()
     IDIO_ADD_PRIMITIVE (pair);
     IDIO_ADD_PRIMITIVE (pair_head);
     IDIO_ADD_PRIMITIVE (pair_tail);
-    IDIO_ADD_PRIMITIVE (set_car);
-    IDIO_ADD_PRIMITIVE (set_cdr);
+    IDIO_ADD_PRIMITIVE (set_pair_head);
+    IDIO_ADD_PRIMITIVE (set_pair_tail);
 
     IDIO_ADD_PRIMITIVE (list);
     IDIO_ADD_PRIMITIVE (append);

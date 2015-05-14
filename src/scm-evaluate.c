@@ -2404,6 +2404,7 @@ void idio_init_scm_evaluate ()
     idio_gc_protect (idio_scm_dynamic_names);
 
     idio_scm_evaluation_module = idio_module (idio_symbols_C_intern ("SCM.evaluation"));
+    IDIO_MODULE_IMPORTS (idio_scm_evaluation_module) = IDIO_LIST1 (idio_main_scm_module ());
 
     idio_scm_expander_list = idio_symbols_C_intern ("*expander-list*");
     idio_module_set_symbol_value (idio_scm_expander_list, idio_S_nil, idio_scm_evaluation_module);

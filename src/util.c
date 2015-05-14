@@ -527,6 +527,10 @@ char *idio_as_string (IDIO o, int depth)
 	    case IDIO_TOKEN_RPAREN:                  t = "T/)";                     break;
 	    case IDIO_TOKEN_LBRACE:                  t = "T/{";                     break;
 	    case IDIO_TOKEN_RBRACE:                  t = "T/}";                     break;
+	    case IDIO_TOKEN_LBRACKET:                t = "T/[";                     break;
+	    case IDIO_TOKEN_RBRACKET:                t = "T/]";                     break;
+	    case IDIO_TOKEN_LANGLE:                  t = "T/<";                     break;
+	    case IDIO_TOKEN_RANGLE:                  t = "T/>";                     break;
 	    case IDIO_TOKEN_EOL:                     t = "T/EOL";                   break;
 	    case IDIO_TOKEN_AMPERSAND:               t = "T/&";                     break;
 

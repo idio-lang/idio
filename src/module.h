@@ -28,6 +28,7 @@ IDIO idio_module (IDIO name);
 int idio_isa_module (IDIO o);
 void idio_free_module (IDIO fo);
 IDIO idio_main_module ();
+IDIO idio_main_scm_module ();
 IDIO idio_current_module ();
 IDIO idio_module_symbols (IDIO module);
 IDIO idio_module_current_symbols ();

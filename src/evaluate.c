@@ -198,7 +198,7 @@ static IDIO idio_predef_extend (IDIO name, IDIO primdata)
     IDIO i = IDIO_FIXNUM (index);
     
     IDIO_PAIR_H (idio_predef_names) = idio_pair (IDIO_LIST3 (name, idio_S_predef, i),
-						     IDIO_PAIR_H (idio_predef_names));
+						 IDIO_PAIR_H (idio_predef_names));
 
     /* for idio_symbol_lookup etc. */
     idio_module_primitive_set_symbol_value (name, primdata);
@@ -904,7 +904,7 @@ static IDIO idio_meaning_dequasiquote (IDIO e, int level)
 	    }
 	} else if (idio_S_unquotesplicing == eh) {
 	    if (level <= 0) {
-		return IDIO_LIST3 (idio_S_cons,
+		return IDIO_LIST3 (idio_S_pair,
 				   idio_meaning_dequasiquote (IDIO_PAIR_H (e), level),
 				   idio_meaning_dequasiquote (IDIO_PAIR_T (e), level));
 	    } else {
@@ -927,7 +927,7 @@ static IDIO idio_meaning_dequasiquote (IDIO e, int level)
 								  level));
 	    }
 	} else {
-	    return IDIO_LIST3 (idio_S_cons,
+	    return IDIO_LIST3 (idio_S_pair,
 			       idio_meaning_dequasiquote (IDIO_PAIR_H (e), level),
 			       idio_meaning_dequasiquote (IDIO_PAIR_T (e), level));
 	}
@@ -1189,7 +1189,7 @@ static IDIO idio_meaning_define_macro (IDIO name, IDIO e, IDIO nametree, int tai
 				IDIO_LIST2 (x_sym, e_sym),
 				IDIO_LIST3 (idio_S_apply,
 					    e,
-					    IDIO_LIST2 (idio_S_cdr, x_sym)));
+					    IDIO_LIST2 (idio_S_pt, x_sym)));
 
     /* idio_debug ("define-macro: => expander %s\n", e); */
 
@@ -1886,9 +1886,11 @@ static IDIO idio_meaning_primitive_application (IDIO e, IDIO es, IDIO nametree, 
 	    {
 		IDIO m1 = idio_meaning (IDIO_PAIR_H (es), nametree, 0);
 	    
-		if (IDIO_STREQP (name, "car")) {
+		if (IDIO_STREQP (name, "car") ||
+		    IDIO_STREQP (name, "ph")) {
 		    return IDIO_LIST3 (idio_I_PRIMCALL1, IDIO_FIXNUM (IDIO_A_PRIMCALL1_CAR), m1);
-		} else if (IDIO_STREQP (name, "cdr")) {
+		} else if (IDIO_STREQP (name, "cdr") ||
+			   IDIO_STREQP (name, "pt")) {
 		    return IDIO_LIST3 (idio_I_PRIMCALL1, IDIO_FIXNUM (IDIO_A_PRIMCALL1_CDR), m1);
 		} else if (IDIO_STREQP (name, "pair?")) {
 		    return IDIO_LIST3 (idio_I_PRIMCALL1, IDIO_FIXNUM (IDIO_A_PRIMCALL1_PAIRP), m1);
@@ -1914,13 +1916,16 @@ static IDIO idio_meaning_primitive_application (IDIO e, IDIO es, IDIO nametree, 
 		IDIO m1 = idio_meaning (IDIO_PAIR_H (es), nametree, 0);
 		IDIO m2 = idio_meaning (IDIO_PAIR_H (IDIO_PAIR_T (es)), nametree, 0);
 
-		if (IDIO_STREQP (name, "cons")) {
+		if (IDIO_STREQP (name, "cons") ||
+		    IDIO_STREQP (name, "pair")) {
 		    return IDIO_LIST4 (idio_I_PRIMCALL2, IDIO_FIXNUM (IDIO_A_PRIMCALL2_CONS), m1, m2);
 		} else if (IDIO_STREQP (name, "eq?")) {
 		    return IDIO_LIST4 (idio_I_PRIMCALL2, IDIO_FIXNUM (IDIO_A_PRIMCALL2_EQP), m1, m2);
-		} else if (IDIO_STREQP (name, "set-car!")) {
+		} else if (IDIO_STREQP (name, "set-car!") ||
+			   IDIO_STREQP (name, "set-ph!")) {
 		    return IDIO_LIST4 (idio_I_PRIMCALL2, IDIO_FIXNUM (IDIO_A_PRIMCALL2_SET_CAR), m1, m2);
-		} else if (IDIO_STREQP (name, "set-cdr!")) {
+		} else if (IDIO_STREQP (name, "set-cdr!") ||
+			   IDIO_STREQP (name, "set-pt!")) {
 		    return IDIO_LIST4 (idio_I_PRIMCALL2, IDIO_FIXNUM (IDIO_A_PRIMCALL2_SET_CDR), m1, m2);
 		} else if (IDIO_STREQP (name, "+")) {
 		    return IDIO_LIST4 (idio_I_PRIMCALL2, IDIO_FIXNUM (IDIO_A_PRIMCALL2_ADD), m1, m2);
@@ -1928,15 +1933,19 @@ static IDIO idio_meaning_primitive_application (IDIO e, IDIO es, IDIO nametree, 
 		    return IDIO_LIST4 (idio_I_PRIMCALL2, IDIO_FIXNUM (IDIO_A_PRIMCALL2_SUBTRACT), m1, m2);
 		} else if (IDIO_STREQP (name, "=")) {
 		    return IDIO_LIST4 (idio_I_PRIMCALL2, IDIO_FIXNUM (IDIO_A_PRIMCALL2_EQ), m1, m2);
-		} else if (IDIO_STREQP (name, "<")) {
+		} else if (IDIO_STREQP (name, "<") ||
+			   IDIO_STREQP (name, "lt")) {
 		    return IDIO_LIST4 (idio_I_PRIMCALL2, IDIO_FIXNUM (IDIO_A_PRIMCALL2_LT), m1, m2);
-		} else if (IDIO_STREQP (name, ">")) {
+		} else if (IDIO_STREQP (name, ">") ||
+			   IDIO_STREQP (name, "gt")) {
 		    return IDIO_LIST4 (idio_I_PRIMCALL2, IDIO_FIXNUM (IDIO_A_PRIMCALL2_GT), m1, m2);
 		} else if (IDIO_STREQP (name, "*")) {
 		    return IDIO_LIST4 (idio_I_PRIMCALL2, IDIO_FIXNUM (IDIO_A_PRIMCALL2_MULTIPLY), m1, m2);
-		} else if (IDIO_STREQP (name, "<=")) {
+		} else if (IDIO_STREQP (name, "<=") ||
+			   IDIO_STREQP (name, "le")) {
 		    return IDIO_LIST4 (idio_I_PRIMCALL2, IDIO_FIXNUM (IDIO_A_PRIMCALL2_LE), m1, m2);
-		} else if (IDIO_STREQP (name, ">=")) {
+		} else if (IDIO_STREQP (name, ">=") ||
+			   IDIO_STREQP (name, "ge")) {
 		    return IDIO_LIST4 (idio_I_PRIMCALL2, IDIO_FIXNUM (IDIO_A_PRIMCALL2_GE), m1, m2);
 		} else if (IDIO_STREQP (name, "remainder")) {
 		    return IDIO_LIST4 (idio_I_PRIMCALL2, IDIO_FIXNUM (IDIO_A_PRIMCALL2_REMAINDER), m1, m2);
@@ -2463,7 +2472,9 @@ IDIO_DEFINE_OPERATOR ("=", set, (IDIO n, IDIO b, IDIO args))
     IDIO_ASSERT (b);
     IDIO_ASSERT (args);
 
-    idio_debug ("op: = args %s\n", args);
+    idio_debug ("op: = %s", n);
+    idio_debug (" %s", b);
+    idio_debug (" %s\n", args);
     if (idio_S_nil != IDIO_PAIR_T (b)) {
 	idio_error_message ("too many args before =");
     }

@@ -100,7 +100,7 @@ test '() '()
 test '(a b c) '(a b c)
 test '(a (b) c) '(a (b) c)
 test '(((((x))))) '(((((x)))))
-test '((caar & cdar) & (cadr & cddr)) '((caar & cdar) & (cadr & cddr))
+test '((phh & pth) & (pht & ptt)) '((phh & pth) & (pht & ptt))
 
 ; vectors
 
@@ -108,7 +108,7 @@ test '#() '#()
 test '#(a b c) '#(a b c)
 test '#(a (b) c) '#(a (b) c)
 test '#(((((x))))) '#(((((x)))))
-test '#((caar cadar) (caadr  cadadr)) '#((caar cadar) (caadr  cadadr))
+test '#((phh cadar) (caadr  cadadr)) '#((phh cadar) (caadr  cadadr))
 test '#(#(a b c) #(d e f)) '#(#(a b c) #(d e f))
 test '#(#(#(#(#(x))))) '#(#(#(#(#(x)))))
 
@@ -453,7 +453,7 @@ test ((function () '())) '()
 test ((function (x) x) 1) 1
 test ((function (x y z) (list x y z)) 1 2 3) '(1 2 3)
 
-test (((function (x) (function (y) (cons x y))) 1) 2) '(1 & 2)
+test (((function (x) (function (y) (pair x y))) 1) 2) '(1 & 2)
 
 test ((function (a & b) a) 'foo) 'foo
 test ((function (a & b) b) 'foo) '()
@@ -553,19 +553,19 @@ test {
 ;; (test (letrec
 ;;          ((even-p
 ;;             (lambda (x)
-;;               (or (null? x) (odd-p (cdr x)))))
+;;               (or (null? x) (odd-p (pt x)))))
 ;;           (odd-p
 ;;             (lambda (x)
-;;               (if (null? x) #f (even-p (cdr x))))))
+;;               (if (null? x) #f (even-p (pt x))))))
 ;;           (list (odd-p '(i i i i i))
 ;;                 (even-p '(i i i i i))))
 ;;       '(#t #f))
 test {
   even-p :+ function (x) {
-    or (null? x) (odd-p (cdr x))
+    or (null? x) (odd-p (pt x))
   }
   odd-p :+ function (x) {
-    if (null? x) #f (even-p (cdr x))
+    if (null? x) #f (even-p (pt x))
   }
   list (odd-p '(i i i i i)) (even-p '(i i i i i))
 } '(#t #f)
@@ -605,25 +605,25 @@ test {
   }
 } 5
 ;; (test (let* ((x 3)
-;;               (y (cons 2 x))
-;;               (z (cons 1 y)))
+;;               (y (pair 2 x))
+;;               (z (pair 1 y)))
 ;;          z)
 ;;       '(1 2 & 3))
 test {
   x := 3
-  y := cons 2 x
-  z := cons 1 y
+  y := pair 2 x
+  z := pair 1 y
   z
 } '(1 2 & 3)
 ;; (test (let* ((x 3)
-;;               (x (cons 2 x))
-;;               (x (cons 1 x)))
+;;               (x (pair 2 x))
+;;               (x (pair 1 x)))
 ;;          x)
 ;;       '(1 2 & 3))
 test {
   x := 3
-  x := cons 2 x
-  x := cons 1 x
+  x := pair 2 x
+  x := pair 1 x
   x
 } '(1 2 & 3)
 
@@ -709,15 +709,15 @@ test {
   x
 } 2
 
-define p (cons 1 2)
-; (test (begin (set-car! p 'a) p) '(a & 2))
+define p (pair 1 2)
+; (test (begin (set-ph! p 'a) p) '(a & 2))
 test {
-  set-car! p 'a
+  set-ph! p 'a
   p
 } '(a & 2)
-; (test (begin (set-cdr! p 'b) p) '(a & b))
+; (test (begin (set-pt! p 'b) p) '(a & b))
 test {
-  set-cdr! p 'b
+  set-pt! p 'b
   p
 } '(a & b)
 
@@ -732,8 +732,8 @@ test (boolean? (function () #f)) #f
 test (boolean? "string") #f
 test (boolean? 'symbol) #f
 test (boolean? '#(vector)) #f
-test (boolean? (current-input-port)) #f
-test (boolean? (current-output-port)) #f
+test (boolean? (current-input-handle)) #f
+test (boolean? (current-output-handle)) #f
 
 test (char? #f) #f
 test (char? #\c) #t
@@ -744,20 +744,20 @@ test (char? (function () #f)) #f
 test (char? "string") #f
 test (char? 'symbol) #f
 test (char? '#(vector)) #f
-test (char? (current-input-port)) #f
-test (char? (current-output-port)) #f
+test (char? (current-input-handle)) #f
+test (char? (current-output-handle)) #f
 
-test (input-port? #f) #f
-test (input-port? #\c) #f
-test (input-port? 1) #f
-test (input-port? 0.1) #f
-test (input-port? '(pair)) #f
-test (input-port? (function () #f)) #f
-test (input-port? "string") #f
-test (input-port? 'symbol) #f
-test (input-port? '#(vector)) #f
-test (input-port? (current-input-port)) #t
-test (input-port? (current-output-port)) #f
+test (input-handle? #f) #f
+test (input-handle? #\c) #f
+test (input-handle? 1) #f
+test (input-handle? 0.1) #f
+test (input-handle? '(pair)) #f
+test (input-handle? (function () #f)) #f
+test (input-handle? "string") #f
+test (input-handle? 'symbol) #f
+test (input-handle? '#(vector)) #f
+test (input-handle? (current-input-handle)) #t
+test (input-handle? (current-output-handle)) #f
 
 test (integer? #f) #f
 test (integer? #\c) #f
@@ -769,8 +769,8 @@ test (integer? (function () #f)) #f
 test (integer? "string") #f
 test (integer? 'symbol) #f
 test (integer? '#(vector)) #f
-test (integer? (current-input-port)) #f
-test (integer? (current-output-port)) #f
+test (integer? (current-input-handle)) #f
+test (integer? (current-output-handle)) #f
 
 test (number? #f) #f
 test (number? #\c) #f
@@ -781,20 +781,20 @@ test (number? (function () #f)) #f
 test (number? "string") #f
 test (number? 'symbol) #f
 test (number? '#(vector)) #f
-test (number? (current-input-port)) #f
-test (number? (current-output-port)) #f
+test (number? (current-input-handle)) #f
+test (number? (current-output-handle)) #f
 
-test (output-port? #f) #f
-test (output-port? #\c) #f
-test (output-port? 1) #f
-test (output-port? 0.1) #f
-test (output-port? '(pair)) #f
-test (output-port? (function () #f)) #f
-test (output-port? "string") #f
-test (output-port? 'symbol) #f
-test (output-port? '#(vector)) #f
-test (output-port? (current-input-port)) #f
-test (output-port? (current-output-port)) #t
+test (output-handle? #f) #f
+test (output-handle? #\c) #f
+test (output-handle? 1) #f
+test (output-handle? 0.1) #f
+test (output-handle? '(pair)) #f
+test (output-handle? (function () #f)) #f
+test (output-handle? "string") #f
+test (output-handle? 'symbol) #f
+test (output-handle? '#(vector)) #f
+test (output-handle? (current-input-handle)) #f
+test (output-handle? (current-output-handle)) #t
 
 test (pair? #f) #f
 test (pair? #\c) #f
@@ -805,8 +805,8 @@ test (pair? (function () #f)) #f
 test (pair? "string") #f
 test (pair? 'symbol) #f
 test (pair? '#(vector)) #f
-test (pair? (current-input-port)) #f
-test (pair? (current-output-port)) #f
+test (pair? (current-input-handle)) #f
+test (pair? (current-output-handle)) #f
 
 test (port? #f) #f
 test (port? #\c) #f
@@ -817,8 +817,8 @@ test (port? (function () #f)) #f
 test (port? "string") #f
 test (port? 'symbol) #f
 test (port? '#(vector)) #f
-test (port? (current-input-port)) #t
-test (port? (current-output-port)) #t
+test (port? (current-input-handle)) #t
+test (port? (current-output-handle)) #t
 
 test (procedure? #f) #f
 test (procedure? #\c) #f
@@ -829,8 +829,8 @@ test (procedure? (function () #f)) #t
 test (procedure? "string") #f
 test (procedure? 'symbol) #f
 test (procedure? '#(vector)) #f
-test (procedure? (current-input-port)) #f
-test (procedure? (current-output-port)) #f
+test (procedure? (current-input-handle)) #f
+test (procedure? (current-output-handle)) #f
 
 test (string? #f) #f
 test (string? #\c) #f
@@ -841,8 +841,8 @@ test (string? (function () #f)) #f
 test (string? "string") #t
 test (string? 'symbol) #f
 test (string? '#(vector)) #f
-test (string? (current-input-port)) #f
-test (string? (current-output-port)) #f
+test (string? (current-input-handle)) #f
+test (string? (current-output-handle)) #f
 
 test (symbol? #f) #f
 test (symbol? #\c) #f
@@ -853,8 +853,8 @@ test (symbol? (function () #f)) #f
 test (symbol? "string") #f
 test (symbol? 'symbol) #t
 test (symbol? '#(vector)) #f
-test (symbol? (current-input-port)) #f
-test (symbol? (current-output-port)) #f
+test (symbol? (current-input-handle)) #f
+test (symbol? (current-output-handle)) #f
 
 test (vector? #f) #f
 test (vector? #\c) #f
@@ -865,8 +865,8 @@ test (vector? (function () #f)) #f
 test (vector? "string") #f
 test (vector? 'symbol) #f
 test (vector? '#(vector)) #t
-test (vector? (current-input-port)) #f
-test (vector? (current-output-port)) #f
+test (vector? (current-input-handle)) #f
+test (vector? (current-output-handle)) #f
 
 ; --- conversion procedures ---
 
@@ -907,9 +907,9 @@ test (vector->list '#()) '()
 ; --- more control ---
 
 test (apply (function () 1) '()) 1
-test (apply car '((a & b))) 'a
-test (apply cdr '((a & b))) 'b
-test (apply cons '(1 2)) '(1 & 2)
+test (apply ph '((a & b))) 'a
+test (apply pt '((a & b))) 'b
+test (apply pair '(1 2)) '(1 & 2)
 test (apply list '(1 2 3)) '(1 2 3)
 test (apply list 1 '(2 3)) '(1 2 3)
 test (apply list 1 2 '(3)) '(1 2 3)
@@ -934,36 +934,36 @@ test (case 'x ((y) #f)) (void)
 
 test (do () (#t 123)) 123
 test (do () (#t)) (void)
-test (do ((i 1 (1 + i))) ((= i 10) i) i) 10
-test (do ((i 1 (1 + i)) (j 17)) ((= i 10) j) i) 17
-test (do ((i 1 (1 + i)) (j 2 (2 + j))) ((= i 10) j) i) 20
-test (do ((i 1 (1 + i)) (j 2 (2 + j))) ((= i 10) (* i j)) i) 200
-; (test (let ((j 1)) (do ((i 0 (+ 1 i))) ((= i 10) j) (set! j (+ j 3)))) 31)
+test (do ((i 1 (1 + i))) ((== i 10) i) i) 10
+test (do ((i 1 (1 + i)) (j 17)) ((== i 10) j) i) 17
+test (do ((i 1 (1 + i)) (j 2 (2 + j))) ((== i 10) j) i) 20
+test (do ((i 1 (1 + i)) (j 2 (2 + j))) ((== i 10) (* i j)) i) 200
+; (test (let ((j 1)) (do ((i 0 (+ 1 i))) ((== i 10) j) (set! j (+ j 3)))) 31)
 test {
   j := 1
 
-  do ((i 0 (1 + i))) ((= i 10) j) (set! j (+ j 3))
+  do ((i 0 (1 + i))) ((== i 10) j) (set! j (+ j 3))
 } 31
-test (do ((i 1 (1 + i)) (j 0)) ((= i 10) j) (set! j 1)) 1
-test (do ((i 1 (1 + i)) (j 0)) ((= i 10) j) 1 2 3 (set! j 1)) 1
+test (do ((i 1 (1 + i)) (j 0)) ((== i 10) j) (set! j 1)) 1
+test (do ((i 1 (1 + i)) (j 0)) ((== i 10) j) 1 2 3 (set! j 1)) 1
 
 ;; (test (let ((a (list (list 'a) (list 'b) (list 'c))))
-;;          (for-each (lambda (x) (set-car! x 'x)) a)
+;;          (for-each (lambda (x) (set-ph! x 'x)) a)
 ;;          a)
 ;;       '((x) (x) (x)))
 test {
   a := (list (list 'a) (list 'b) (list 'c))
 
-  for-each (function (x) (set-car! x 'x)) a
+  for-each (function (x) (set-ph! x 'x)) a
   a
 } '((x) (x) (x))
 ;; (test (let ((a (list (list 'a) (list 'b) (list 'c))))
-;;          (for-each (lambda (x y) (set-car! x y)) a '(x y z))
+;;          (for-each (lambda (x y) (set-ph! x y)) a '(x y z))
 ;;          a)
 ;;       '((x) (y) (z)))
 test {
   a := (list (list 'a) (list 'b) (list 'c))
-  for-each (function (x y) (set-car! x y)) a '(x y z)
+  for-each (function (x y) (set-ph! x y)) a '(x y z)
   a
 } '((x) (y) (z))
 
@@ -975,7 +975,7 @@ test (list (force x) (force x) (force x)) '(2 2 2)
 ; (test (map - '(1 2 3)) '(-1 -2 -3))
 test (map \- '(1 2 3)) '(-1 -2 -3)
 test {
-  map cons '(1 2 3) '(a b c)
+  map pair '(1 2 3) '(a b c)
 } '((1 & a) (2 & b) (3 & c))
 test {
   map list '(1 2 3) '(a b c) '(#\x #\y #\z)
@@ -1037,42 +1037,42 @@ test (assq "x" '(("x" & x))) #f
 define tree '((((1 & 2) & (3 & 4)) & ((5 & 6) & (7 & 8)))
               &
               (((9 & 10) & (11 & 12)) & ((13 & 14) & (15 & 16))))
-test (caar tree) '((1 & 2) & (3 & 4))
-test (cadr tree) '((9 & 10) & (11 & 12))
-test (cdar tree) '((5 & 6) & (7 & 8))
-test (cddr tree) '((13 & 14) & (15 & 16))
-test (caaar tree) '(1 & 2)
-test (caadr tree) '(9 & 10)
-test (cadar tree) '(5 & 6)
-test (caddr tree) '(13 & 14)
-test (cdaar tree) '(3 & 4)
-test (cdadr tree) '(11 & 12)
-test (cddar tree) '(7 & 8)
-test (cdddr tree) '(15 & 16)
-test (caaaar tree) 1
-test (caaadr tree) 9
-test (caadar tree) 5
-test (caaddr tree) 13
-test (cadaar tree) 3
-test (cadadr tree) 11
-test (caddar tree) 7
-test (cadddr tree) 15
-test (cdaaar tree) 2
-test (cdaadr tree) 10
-test (cdadar tree) 6
-test (cdaddr tree) 14
-test (cddaar tree) 4
-test (cddadr tree) 12
-test (cdddar tree) 8
-test (cddddr tree) 16
+test (phh tree) '((1 & 2) & (3 & 4))
+test (pht tree) '((9 & 10) & (11 & 12))
+test (pth tree) '((5 & 6) & (7 & 8))
+test (ptt tree) '((13 & 14) & (15 & 16))
+test (phhh tree) '(1 & 2)
+test (phht tree) '(9 & 10)
+test (phth tree) '(5 & 6)
+test (phtt tree) '(13 & 14)
+test (pthh tree) '(3 & 4)
+test (ptht tree) '(11 & 12)
+test (ptth tree) '(7 & 8)
+test (pttt tree) '(15 & 16)
+test (phhhh tree) 1
+test (phhht tree) 9
+test (phhth tree) 5
+test (phhtt tree) 13
+test (phthh tree) 3
+test (phtht tree) 11
+test (phtth tree) 7
+test (phttt tree) 15
+test (pthhh tree) 2
+test (pthht tree) 10
+test (pthth tree) 6
+test (pthtt tree) 14
+test (ptthh tree) 4
+test (pttht tree) 12
+test (pttth tree) 8
+test (ptttt tree) 16
 
-test (car '(1 1)) 1
-test (car '(1 & 2)) 1
-test (cdr '(1 2)) '(2)
-test (cdr '(1 & 2)) 2
-test (cons 1 2) '(1 & 2)
-test (cons 1 '(2)) '(1 2)
-test (cons 1 (cons 2 '())) '(1 2)
+test (ph '(1 1)) 1
+test (ph '(1 & 2)) 1
+test (pt '(1 2)) '(2)
+test (pt '(1 & 2)) 2
+test (pair 1 2) '(1 & 2)
+test (pair 1 '(2)) '(1 2)
+test (pair 1 (pair 2 '())) '(1 2)
 
 test (length '()) 0
 test (length '(1)) 1
@@ -1104,8 +1104,8 @@ test (list? (function () #f)) #f
 test (list? "string") #f
 test (list? 'symbol) #f
 test (list? '#(vector)) #f
-test (list? (current-input-port)) #f
-test (list? (current-output-port)) #f
+test (list? (current-input-handle)) #f
+test (list? (current-output-handle)) #f
 test (list? '()) #t
 test (list? '(1)) #t
 test (list? '(1 & ())) #t
@@ -1113,7 +1113,7 @@ test (list? '(1 2 3)) #t
 test (list? '(1 & 2)) #f
 test (list? '(1 2 & 3)) #f
 ;; (let ((cyclic (list 1 2 3)))
-;;   (set-cdr! (cddr cyclic) cyclic)
+;;   (set-pt! (ptt cyclic) cyclic)
 ;;   (if (list? cyclic)
 ;;       (fail '(list? 'cyclic) #t)
 ;;       (test (list? 'cyclic) #f)))
@@ -1151,8 +1151,8 @@ test (null? (function () #f)) #f
 test (null? "string") #f
 test (null? 'symbol) #f
 test (null? '#(vector)) #f
-test (null? (current-input-port)) #f
-test (null? (current-output-port)) #f
+test (null? (current-input-handle)) #f
+test (null? (current-output-handle)) #f
 test (null? '()) #t
 
 test (reverse '(1)) '(1)
@@ -1406,492 +1406,492 @@ test (/ 2.0) 0.5
 test (/ 5.0) 0.2
 test (/ 128.0 64 32 16 8 4 2 1) 6.103515625e-5
 
-test (<  1234567890  9876543210) #t
-test (<  1234567890 -9876543210) #f
-test (< -1234567890  9876543210) #t
-test (< -1234567890 -9876543210) #f
-test (<  9876543210  1234567890) #f
-test (<  9876543210 -1234567890) #f
-test (< -9876543210  1234567890) #t
-test (< -9876543210 -1234567890) #t
-test (< -1234567890 -1234567890) #f
-test (<  1234567890  1234567890) #f
-test (< 1234567890 0) #f
-test (< 0 1234567890) #t
-test (< 1 2 3 4 5 6 7 8 9 10) #t
-test (< 1 2 3 4 5 6 7 8 9 9) #f
+test (lt  1234567890  9876543210) #t
+test (lt  1234567890 -9876543210) #f
+test (lt -1234567890  9876543210) #t
+test (lt -1234567890 -9876543210) #f
+test (lt  9876543210  1234567890) #f
+test (lt  9876543210 -1234567890) #f
+test (lt -9876543210  1234567890) #t
+test (lt -9876543210 -1234567890) #t
+test (lt -1234567890 -1234567890) #f
+test (lt  1234567890  1234567890) #f
+test (lt 1234567890 0) #f
+test (lt 0 1234567890) #t
+test (lt 1 2 3 4 5 6 7 8 9 10) #t
+test (lt 1 2 3 4 5 6 7 8 9 9) #f
 
-test (<  0.0  0.0) #f
-test (< -0.0  0.0) #f
-test (<  0.0 -0.0) #f
-test (< -0.0 -0.0) #f
-test (<  1.0  1.0) #f
-test (< -1.0  1.0) #t
-test (<  1.0 -1.0) #f
-test (< -1.0 -1.0) #f
-test (<  0.1  0.1) #f
-test (< -0.1  0.1) #t
-test (<  0.1 -0.1) #f
-test (< -0.1 -0.1) #f
-test (<  123.45e+67  123.45e+67) #f
-test (<  123.45e+67  123.45e-67) #f
-test (<  123.45e-67  123.45e+67) #t
-test (<  123.45e-67  123.45e-67) #f
-test (<  123.45e+67 -123.45e+67) #f
-test (<  123.45e+67 -123.45e-67) #f
-test (<  123.45e-67 -123.45e+67) #f
-test (<  123.45e-67 -123.45e-67) #f
-test (< -123.45e+67  123.45e+67) #t
-test (< -123.45e+67  123.45e-67) #t
-test (< -123.45e-67  123.45e+67) #t
-test (< -123.45e-67  123.45e-67) #t
-test (< -123.45e+67 -123.45e+67) #f
-test (< -123.45e+67 -123.45e-67) #t
-test (< -123.45e-67 -123.45e+67) #f
-test (< -123.45e-67 -123.45e-67) #f
-test (<  0.0 0.0) #f
-test (<  1.0 0.0) #f
-test (< -1.0 0.0) #t
-test (<  0.1 0.0) #f
-test (< -0.1 0.0) #t
-test (<  1e+0 0.0) #f
-test (< -1e+0 0.0) #t
-test (<  1e-0 0.0) #f
-test (< -1e-0 0.0) #t
-test (<  1e+100 0.0) #f
-test (< -1e+100 0.0) #t
-test (<  1e-100 0.0) #f
-test (< -1e-100 0.0) #t
-test (<  1e+10000 0.0) #f
-test (< -1e+10000 0.0) #t
-test (<  1e-10000 0.0) #f
-test (< -1e-10000 0.0) #t
-test (< 0.0  0.0) #f
-test (< 0.0  1.0) #t
-test (< 0.0 -1.0) #f
-test (< 0.0  0.1) #t
-test (< 0.0 -0.1) #f
-test (< 0.0  1e+0) #t
-test (< 0.0 -1e+0) #f
-test (< 0.0  1e-0) #t
-test (< 0.0 -1e-0) #f
-test (< 0.0  1e+100) #t
-test (< 0.0 -1e+100) #f
-test (< 0.0  1e-100) #t
-test (< 0.0 -1e-100) #f
-test (< 0.0  1e+10000) #t
-test (< 0.0 -1e+10000) #f
-test (< 0.0  1e-10000) #t
-test (< 0.0 -1e-10000) #f
-test (<  1.0e14  1.0e14) #f
-test (<  1.0e14 -1.0e14) #f
-test (< -1.0e14  1.0e14) #t
-test (< -1.0e14 -1.0e14) #f
-test (<  1.0e14  1.1e14) #t
-test (<  1.0e14 -1.1e14) #f
-test (< -1.0e14  1.1e14) #t
-test (< -1.0e14 -1.1e14) #f
-test (<  1.0e-14  1.0e-14) #f
-test (<  1.0e-14 -1.0e-14) #f
-test (< -1.0e-14  1.0e-14) #t
-test (< -1.0e-14 -1.0e-14) #f
-test (<  1.0e-14  1.1e-14) #t
-test (<  1.0e-14 -1.1e-14) #f
-test (< -1.0e-14  1.1e-14) #t
-test (< -1.0e-14 -1.1e-14) #f
-test (<  1234567890123.4  1234567890123) #f
-test (<  1234567890123.4 -1234567890123) #f
-test (< -1234567890123.4  1234567890123) #t
-test (< -1234567890123.4 -1234567890123) #t
-test (<  1234567890123  1234567890123.4) #t
-test (<  1234567890123 -1234567890123.4) #f
-test (< -1234567890123  1234567890123.4) #t
-test (< -1234567890123 -1234567890123.4) #f
-test (< 1e-5 1e-4 1e-3 0.01 0.1 1.0 10.0) #t
-test (< 1e-5 1e-4 1e-3 0.01 0.1 1.0  1.0) #f
-test (< 1.0 1.0 1.0 1.0 1.0 1.0) #f
+test (lt  0.0  0.0) #f
+test (lt -0.0  0.0) #f
+test (lt  0.0 -0.0) #f
+test (lt -0.0 -0.0) #f
+test (lt  1.0  1.0) #f
+test (lt -1.0  1.0) #t
+test (lt  1.0 -1.0) #f
+test (lt -1.0 -1.0) #f
+test (lt  0.1  0.1) #f
+test (lt -0.1  0.1) #t
+test (lt  0.1 -0.1) #f
+test (lt -0.1 -0.1) #f
+test (lt  123.45e+67  123.45e+67) #f
+test (lt  123.45e+67  123.45e-67) #f
+test (lt  123.45e-67  123.45e+67) #t
+test (lt  123.45e-67  123.45e-67) #f
+test (lt  123.45e+67 -123.45e+67) #f
+test (lt  123.45e+67 -123.45e-67) #f
+test (lt  123.45e-67 -123.45e+67) #f
+test (lt  123.45e-67 -123.45e-67) #f
+test (lt -123.45e+67  123.45e+67) #t
+test (lt -123.45e+67  123.45e-67) #t
+test (lt -123.45e-67  123.45e+67) #t
+test (lt -123.45e-67  123.45e-67) #t
+test (lt -123.45e+67 -123.45e+67) #f
+test (lt -123.45e+67 -123.45e-67) #t
+test (lt -123.45e-67 -123.45e+67) #f
+test (lt -123.45e-67 -123.45e-67) #f
+test (lt  0.0 0.0) #f
+test (lt  1.0 0.0) #f
+test (lt -1.0 0.0) #t
+test (lt  0.1 0.0) #f
+test (lt -0.1 0.0) #t
+test (lt  1e+0 0.0) #f
+test (lt -1e+0 0.0) #t
+test (lt  1e-0 0.0) #f
+test (lt -1e-0 0.0) #t
+test (lt  1e+100 0.0) #f
+test (lt -1e+100 0.0) #t
+test (lt  1e-100 0.0) #f
+test (lt -1e-100 0.0) #t
+test (lt  1e+10000 0.0) #f
+test (lt -1e+10000 0.0) #t
+test (lt  1e-10000 0.0) #f
+test (lt -1e-10000 0.0) #t
+test (lt 0.0  0.0) #f
+test (lt 0.0  1.0) #t
+test (lt 0.0 -1.0) #f
+test (lt 0.0  0.1) #t
+test (lt 0.0 -0.1) #f
+test (lt 0.0  1e+0) #t
+test (lt 0.0 -1e+0) #f
+test (lt 0.0  1e-0) #t
+test (lt 0.0 -1e-0) #f
+test (lt 0.0  1e+100) #t
+test (lt 0.0 -1e+100) #f
+test (lt 0.0  1e-100) #t
+test (lt 0.0 -1e-100) #f
+test (lt 0.0  1e+10000) #t
+test (lt 0.0 -1e+10000) #f
+test (lt 0.0  1e-10000) #t
+test (lt 0.0 -1e-10000) #f
+test (lt  1.0e14  1.0e14) #f
+test (lt  1.0e14 -1.0e14) #f
+test (lt -1.0e14  1.0e14) #t
+test (lt -1.0e14 -1.0e14) #f
+test (lt  1.0e14  1.1e14) #t
+test (lt  1.0e14 -1.1e14) #f
+test (lt -1.0e14  1.1e14) #t
+test (lt -1.0e14 -1.1e14) #f
+test (lt  1.0e-14  1.0e-14) #f
+test (lt  1.0e-14 -1.0e-14) #f
+test (lt -1.0e-14  1.0e-14) #t
+test (lt -1.0e-14 -1.0e-14) #f
+test (lt  1.0e-14  1.1e-14) #t
+test (lt  1.0e-14 -1.1e-14) #f
+test (lt -1.0e-14  1.1e-14) #t
+test (lt -1.0e-14 -1.1e-14) #f
+test (lt  1234567890123.4  1234567890123) #f
+test (lt  1234567890123.4 -1234567890123) #f
+test (lt -1234567890123.4  1234567890123) #t
+test (lt -1234567890123.4 -1234567890123) #t
+test (lt  1234567890123  1234567890123.4) #t
+test (lt  1234567890123 -1234567890123.4) #f
+test (lt -1234567890123  1234567890123.4) #t
+test (lt -1234567890123 -1234567890123.4) #f
+test (lt 1e-5 1e-4 1e-3 0.01 0.1 1.0 10.0) #t
+test (lt 1e-5 1e-4 1e-3 0.01 0.1 1.0  1.0) #f
+test (lt 1.0 1.0 1.0 1.0 1.0 1.0) #f
 
-test (<=  1234567890  9876543210) #t
-test (<=  1234567890 -9876543210) #f
-test (<= -1234567890  9876543210) #t
-test (<= -1234567890 -9876543210) #f
-test (<=  9876543210  1234567890) #f
-test (<=  9876543210 -1234567890) #f
-test (<= -9876543210  1234567890) #t
-test (<= -9876543210 -1234567890) #t
-test (<= -1234567890 -1234567890) #t
-test (<=  1234567890  1234567890) #t
-test (<= 1234567890 0) #f
-test (<= 0 1234567890) #t
-test (<= 1 2 3 4 5 6 7 8 9 10) #t
-test (<= 1 2 3 4 5 6 7 8 9 9) #t
+test (le  1234567890  9876543210) #t
+test (le  1234567890 -9876543210) #f
+test (le -1234567890  9876543210) #t
+test (le -1234567890 -9876543210) #f
+test (le  9876543210  1234567890) #f
+test (le  9876543210 -1234567890) #f
+test (le -9876543210  1234567890) #t
+test (le -9876543210 -1234567890) #t
+test (le -1234567890 -1234567890) #t
+test (le  1234567890  1234567890) #t
+test (le 1234567890 0) #f
+test (le 0 1234567890) #t
+test (le 1 2 3 4 5 6 7 8 9 10) #t
+test (le 1 2 3 4 5 6 7 8 9 9) #t
 
-test (<=  0.0  0.0) #t
-test (<= -0.0  0.0) #t
-test (<=  0.0 -0.0) #t
-test (<= -0.0 -0.0) #t
-test (<=  1.0  1.0) #t
-test (<= -1.0  1.0) #t
-test (<=  1.0 -1.0) #f
-test (<= -1.0 -1.0) #t
-test (<=  0.1  0.1) #t
-test (<= -0.1  0.1) #t
-test (<=  0.1 -0.1) #f
-test (<= -0.1 -0.1) #t
-test (<=  123.45e+67  123.45e+67) #t
-test (<=  123.45e+67  123.45e-67) #f
-test (<=  123.45e-67  123.45e+67) #t
-test (<=  123.45e-67  123.45e-67) #t
-test (<=  123.45e+67 -123.45e+67) #f
-test (<=  123.45e+67 -123.45e-67) #f
-test (<=  123.45e-67 -123.45e+67) #f
-test (<=  123.45e-67 -123.45e-67) #f
-test (<= -123.45e+67  123.45e+67) #t
-test (<= -123.45e+67  123.45e-67) #t
-test (<= -123.45e-67  123.45e+67) #t
-test (<= -123.45e-67  123.45e-67) #t
-test (<= -123.45e+67 -123.45e+67) #t
-test (<= -123.45e+67 -123.45e-67) #t
-test (<= -123.45e-67 -123.45e+67) #f
-test (<= -123.45e-67 -123.45e-67) #t
-test (<=  0.0 0.0) #t
-test (<=  1.0 0.0) #f
-test (<= -1.0 0.0) #t
-test (<=  0.1 0.0) #f
-test (<= -0.1 0.0) #t
-test (<=  1e+0 0.0) #f
-test (<= -1e+0 0.0) #t
-test (<=  1e-0 0.0) #f
-test (<= -1e-0 0.0) #t
-test (<=  1e+100 0.0) #f
-test (<= -1e+100 0.0) #t
-test (<=  1e-100 0.0) #f
-test (<= -1e-100 0.0) #t
-test (<=  1e+10000 0.0) #f
-test (<= -1e+10000 0.0) #t
-test (<=  1e-10000 0.0) #f
-test (<= -1e-10000 0.0) #t
-test (<= 0.0  0.0) #t
-test (<= 0.0  1.0) #t
-test (<= 0.0 -1.0) #f
-test (<= 0.0  0.1) #t
-test (<= 0.0 -0.1) #f
-test (<= 0.0  1e+0) #t
-test (<= 0.0 -1e+0) #f
-test (<= 0.0  1e-0) #t
-test (<= 0.0 -1e-0) #f
-test (<= 0.0  1e+100) #t
-test (<= 0.0 -1e+100) #f
-test (<= 0.0  1e-100) #t
-test (<= 0.0 -1e-100) #f
-test (<= 0.0  1e+10000) #t
-test (<= 0.0 -1e+10000) #f
-test (<= 0.0  1e-10000) #t
-test (<= 0.0 -1e-10000) #f
-test (<=  1.0e14  1.0e14) #t
-test (<=  1.0e14 -1.0e14) #f
-test (<= -1.0e14  1.0e14) #t
-test (<= -1.0e14 -1.0e14) #t
-test (<=  1.0e14  1.1e14) #t
-test (<=  1.0e14 -1.1e14) #f
-test (<= -1.0e14  1.1e14) #t
-test (<= -1.0e14 -1.1e14) #f
-test (<=  1.0e-14  1.0e-14) #t
-test (<=  1.0e-14 -1.0e-14) #f
-test (<= -1.0e-14  1.0e-14) #t
-test (<= -1.0e-14 -1.0e-14) #t
-test (<=  1.0e-14  1.1e-14) #t
-test (<=  1.0e-14 -1.1e-14) #f
-test (<= -1.0e-14  1.1e-14) #t
-test (<= -1.0e-14 -1.1e-14) #f
-test (<=  1234567890123.4  1234567890123) #f
-test (<=  1234567890123.4 -1234567890123) #f
-test (<= -1234567890123.4  1234567890123) #t
-test (<= -1234567890123.4 -1234567890123) #t
-test (<=  1234567890123  1234567890123.4) #t
-test (<=  1234567890123 -1234567890123.4) #f
-test (<= -1234567890123  1234567890123.4) #t
-test (<= -1234567890123 -1234567890123.4) #f
-test (<= 1e-5 1e-4 1e-3 0.01 0.1 1.0 10.0) #t
-test (<= 1e-5 1e-4 1e-3 0.01 0.1 1.0  1.0) #t
-test (<= 1.0 1.0 1.0 1.0 1.0 1.0) #t
+test (le  0.0  0.0) #t
+test (le -0.0  0.0) #t
+test (le  0.0 -0.0) #t
+test (le -0.0 -0.0) #t
+test (le  1.0  1.0) #t
+test (le -1.0  1.0) #t
+test (le  1.0 -1.0) #f
+test (le -1.0 -1.0) #t
+test (le  0.1  0.1) #t
+test (le -0.1  0.1) #t
+test (le  0.1 -0.1) #f
+test (le -0.1 -0.1) #t
+test (le  123.45e+67  123.45e+67) #t
+test (le  123.45e+67  123.45e-67) #f
+test (le  123.45e-67  123.45e+67) #t
+test (le  123.45e-67  123.45e-67) #t
+test (le  123.45e+67 -123.45e+67) #f
+test (le  123.45e+67 -123.45e-67) #f
+test (le  123.45e-67 -123.45e+67) #f
+test (le  123.45e-67 -123.45e-67) #f
+test (le -123.45e+67  123.45e+67) #t
+test (le -123.45e+67  123.45e-67) #t
+test (le -123.45e-67  123.45e+67) #t
+test (le -123.45e-67  123.45e-67) #t
+test (le -123.45e+67 -123.45e+67) #t
+test (le -123.45e+67 -123.45e-67) #t
+test (le -123.45e-67 -123.45e+67) #f
+test (le -123.45e-67 -123.45e-67) #t
+test (le  0.0 0.0) #t
+test (le  1.0 0.0) #f
+test (le -1.0 0.0) #t
+test (le  0.1 0.0) #f
+test (le -0.1 0.0) #t
+test (le  1e+0 0.0) #f
+test (le -1e+0 0.0) #t
+test (le  1e-0 0.0) #f
+test (le -1e-0 0.0) #t
+test (le  1e+100 0.0) #f
+test (le -1e+100 0.0) #t
+test (le  1e-100 0.0) #f
+test (le -1e-100 0.0) #t
+test (le  1e+10000 0.0) #f
+test (le -1e+10000 0.0) #t
+test (le  1e-10000 0.0) #f
+test (le -1e-10000 0.0) #t
+test (le 0.0  0.0) #t
+test (le 0.0  1.0) #t
+test (le 0.0 -1.0) #f
+test (le 0.0  0.1) #t
+test (le 0.0 -0.1) #f
+test (le 0.0  1e+0) #t
+test (le 0.0 -1e+0) #f
+test (le 0.0  1e-0) #t
+test (le 0.0 -1e-0) #f
+test (le 0.0  1e+100) #t
+test (le 0.0 -1e+100) #f
+test (le 0.0  1e-100) #t
+test (le 0.0 -1e-100) #f
+test (le 0.0  1e+10000) #t
+test (le 0.0 -1e+10000) #f
+test (le 0.0  1e-10000) #t
+test (le 0.0 -1e-10000) #f
+test (le  1.0e14  1.0e14) #t
+test (le  1.0e14 -1.0e14) #f
+test (le -1.0e14  1.0e14) #t
+test (le -1.0e14 -1.0e14) #t
+test (le  1.0e14  1.1e14) #t
+test (le  1.0e14 -1.1e14) #f
+test (le -1.0e14  1.1e14) #t
+test (le -1.0e14 -1.1e14) #f
+test (le  1.0e-14  1.0e-14) #t
+test (le  1.0e-14 -1.0e-14) #f
+test (le -1.0e-14  1.0e-14) #t
+test (le -1.0e-14 -1.0e-14) #t
+test (le  1.0e-14  1.1e-14) #t
+test (le  1.0e-14 -1.1e-14) #f
+test (le -1.0e-14  1.1e-14) #t
+test (le -1.0e-14 -1.1e-14) #f
+test (le  1234567890123.4  1234567890123) #f
+test (le  1234567890123.4 -1234567890123) #f
+test (le -1234567890123.4  1234567890123) #t
+test (le -1234567890123.4 -1234567890123) #t
+test (le  1234567890123  1234567890123.4) #t
+test (le  1234567890123 -1234567890123.4) #f
+test (le -1234567890123  1234567890123.4) #t
+test (le -1234567890123 -1234567890123.4) #f
+test (le 1e-5 1e-4 1e-3 0.01 0.1 1.0 10.0) #t
+test (le 1e-5 1e-4 1e-3 0.01 0.1 1.0  1.0) #t
+test (le 1.0 1.0 1.0 1.0 1.0 1.0) #t
 
-test (=  1234567890  9876543210) #f
-test (=  1234567890 -9876543210) #f
-test (= -1234567890  9876543210) #f
-test (= -1234567890 -9876543210) #f
-test (=  9876543210  1234567890) #f
-test (=  9876543210 -1234567890) #f
-test (= -9876543210  1234567890) #f
-test (= -9876543210 -1234567890) #f
-test (= -1234567890  1234567890) #f
-test (=  1234567890 -1234567890) #f
-test (=  1234567890  1234567890) #t
-test (= -1234567890 -1234567890) #t
-test (= 0 0) #t
-test (= 0 1234567890) #f
-test (= 1234567890 0) #f
-test (= 1 1 1 1 1 1 1 1 1 1) #t
-test (= 1 1 1 1 1 1 1 1 1 0) #f
+test (==  1234567890  9876543210) #f
+test (==  1234567890 -9876543210) #f
+test (== -1234567890  9876543210) #f
+test (== -1234567890 -9876543210) #f
+test (==  9876543210  1234567890) #f
+test (==  9876543210 -1234567890) #f
+test (== -9876543210  1234567890) #f
+test (== -9876543210 -1234567890) #f
+test (== -1234567890  1234567890) #f
+test (==  1234567890 -1234567890) #f
+test (==  1234567890  1234567890) #t
+test (== -1234567890 -1234567890) #t
+test (== 0 0) #t
+test (== 0 1234567890) #f
+test (== 1234567890 0) #f
+test (== 1 1 1 1 1 1 1 1 1 1) #t
+test (== 1 1 1 1 1 1 1 1 1 0) #f
 
-test (=  0.0  0.0) #t
-test (=  0.0 -0.0) #t
-test (= -0.0  0.0) #t
-test (= -0.0 -0.0) #t
-test (=  1.0  1.0) #t
-test (=  1.0 -1.0) #f
-test (= -1.0  1.0) #f
-test (= -1.0 -1.0) #t
-test (=  0.1  0.1) #t
-test (=  0.1 -0.1) #f
-test (= -0.1  0.1) #f
-test (= -0.1 -0.1) #t
-test (= 1.0   1) #t
-test (=   1 1.0) #t
-test (=  123.456e3 123456) #t
-test (=  123.456e4 1234560) #t
-test (=  123.456e5 12345600) #t
-test (=  123.456e10 1234560000000) #t
-test (= -123.456e3  -123456) #t
-test (= -123.456e4  -1234560) #t
-test (= -123.456e5  -12345600) #t
-test (= -123.456e10 -1234560000000) #t
-test (=  1.2345678901234  12345678901234.) #f
-test (=  1.2345678901234  1234567890123.4) #f
-test (=  1.2345678901234  123456789012.34) #f
-test (=  1.2345678901234  12345678901.234) #f
-test (=  1.2345678901234  1234567890.1234) #f
-test (=  1.2345678901234  123456789.01234) #f
-test (=  1.2345678901234  12345678.901234) #f
-test (=  1.2345678901234  1234567.8901234) #f
-test (=  1.2345678901234  123456.78901234) #f
-test (=  1.2345678901234  12345.678901234) #f
-test (=  1.2345678901234  1234.5678901234) #f
-test (=  1.2345678901234  123.45678901234) #f
-test (=  1.2345678901234  12.345678901234) #f
-test (=  1.2345678901234  1.2345678901234) #t
-test (= -1.2345678901234 1.2345678901234) #f
-test (=  1.2345678901234 -1.2345678901234) #f
-test (=  1.2345678901234  1.2345678901233) #f
-test (=  1.2345678901234  1.2345678901235) #f
-test (= 1e50 100000000000000000000000000000000000000000000000000) #t
-test (= 100000000000000000000000000000000000000000000000000 1e50) #t
-test (= 12345678901234.0 12345678901234) #t
-test (= 12345678901234 12345678901234.0) #t
-test (= -12345678901234.0 -12345678901234) #t
-test (= -12345678901234 -12345678901234.0) #t
-test (= 1.0 1.0 1.0 1.0 1.0 1.0 1.0) #t
-test (= 1.0 1.0 1.0 1.0 1.0 1.0  .1) #f
+test (==  0.0  0.0) #t
+test (==  0.0 -0.0) #t
+test (== -0.0  0.0) #t
+test (== -0.0 -0.0) #t
+test (==  1.0  1.0) #t
+test (==  1.0 -1.0) #f
+test (== -1.0  1.0) #f
+test (== -1.0 -1.0) #t
+test (==  0.1  0.1) #t
+test (==  0.1 -0.1) #f
+test (== -0.1  0.1) #f
+test (== -0.1 -0.1) #t
+test (== 1.0   1) #t
+test (==   1 1.0) #t
+test (==  123.456e3 123456) #t
+test (==  123.456e4 1234560) #t
+test (==  123.456e5 12345600) #t
+test (==  123.456e10 1234560000000) #t
+test (== -123.456e3  -123456) #t
+test (== -123.456e4  -1234560) #t
+test (== -123.456e5  -12345600) #t
+test (== -123.456e10 -1234560000000) #t
+test (==  1.2345678901234  12345678901234.) #f
+test (==  1.2345678901234  1234567890123.4) #f
+test (==  1.2345678901234  123456789012.34) #f
+test (==  1.2345678901234  12345678901.234) #f
+test (==  1.2345678901234  1234567890.1234) #f
+test (==  1.2345678901234  123456789.01234) #f
+test (==  1.2345678901234  12345678.901234) #f
+test (==  1.2345678901234  1234567.8901234) #f
+test (==  1.2345678901234  123456.78901234) #f
+test (==  1.2345678901234  12345.678901234) #f
+test (==  1.2345678901234  1234.5678901234) #f
+test (==  1.2345678901234  123.45678901234) #f
+test (==  1.2345678901234  12.345678901234) #f
+test (==  1.2345678901234  1.2345678901234) #t
+test (== -1.2345678901234 1.2345678901234) #f
+test (==  1.2345678901234 -1.2345678901234) #f
+test (==  1.2345678901234  1.2345678901233) #f
+test (==  1.2345678901234  1.2345678901235) #f
+test (== 1e50 100000000000000000000000000000000000000000000000000) #t
+test (== 100000000000000000000000000000000000000000000000000 1e50) #t
+test (== 12345678901234.0 12345678901234) #t
+test (== 12345678901234 12345678901234.0) #t
+test (== -12345678901234.0 -12345678901234) #t
+test (== -12345678901234 -12345678901234.0) #t
+test (== 1.0 1.0 1.0 1.0 1.0 1.0 1.0) #t
+test (== 1.0 1.0 1.0 1.0 1.0 1.0  .1) #f
 
-test (>  1234567890  9876543210) #f
-test (>  1234567890 -9876543210) #t
-test (> -1234567890  9876543210) #f
-test (> -1234567890 -9876543210) #t
-test (>  9876543210  1234567890) #t
-test (>  9876543210 -1234567890) #t
-test (> -9876543210  1234567890) #f
-test (> -9876543210 -1234567890) #f
-test (> -1234567890 -1234567890) #f
-test (>  1234567890  1234567890) #f
-test (> 1234567890 0) #t
-test (> 0 1234567890) #f
-test (> 9 8 7 6 5 4 3 2 1 0) #t
-test (> 9 8 7 6 5 4 3 2 1 1) #f
+test (gt  1234567890  9876543210) #f
+test (gt  1234567890 -9876543210) #t
+test (gt -1234567890  9876543210) #f
+test (gt -1234567890 -9876543210) #t
+test (gt  9876543210  1234567890) #t
+test (gt  9876543210 -1234567890) #t
+test (gt -9876543210  1234567890) #f
+test (gt -9876543210 -1234567890) #f
+test (gt -1234567890 -1234567890) #f
+test (gt  1234567890  1234567890) #f
+test (gt 1234567890 0) #t
+test (gt 0 1234567890) #f
+test (gt 9 8 7 6 5 4 3 2 1 0) #t
+test (gt 9 8 7 6 5 4 3 2 1 1) #f
 
-test (>  0.0  0.0) #f
-test (> -0.0  0.0) #f
-test (>  0.0 -0.0) #f
-test (> -0.0 -0.0) #f
-test (>  1.0  1.0) #f
-test (> -1.0  1.0) #f
-test (>  1.0 -1.0) #t
-test (> -1.0 -1.0) #f
-test (>  0.1  0.1) #f
-test (> -0.1  0.1) #f
-test (>  0.1 -0.1) #t
-test (> -0.1 -0.1) #f
-test (>  123.45e+67  123.45e+67) #f
-test (>  123.45e+67  123.45e-67) #t
-test (>  123.45e-67  123.45e+67) #f
-test (>  123.45e-67  123.45e-67) #f
-test (>  123.45e+67 -123.45e+67) #t
-test (>  123.45e+67 -123.45e-67) #t
-test (>  123.45e-67 -123.45e+67) #t
-test (>  123.45e-67 -123.45e-67) #t
-test (> -123.45e+67  123.45e+67) #f
-test (> -123.45e+67  123.45e-67) #f
-test (> -123.45e-67  123.45e+67) #f
-test (> -123.45e-67  123.45e-67) #f
-test (> -123.45e+67 -123.45e+67) #f
-test (> -123.45e+67 -123.45e-67) #f
-test (> -123.45e-67 -123.45e+67) #t
-test (> -123.45e-67 -123.45e-67) #f
-test (>  0.0 0.0) #f
-test (>  1.0 0.0) #t
-test (> -1.0 0.0) #f
-test (>  0.1 0.0) #t
-test (> -0.1 0.0) #f
-test (>  1e+0 0.0) #t
-test (> -1e+0 0.0) #f
-test (>  1e-0 0.0) #t
-test (> -1e-0 0.0) #f
-test (>  1e+100 0.0) #t
-test (> -1e+100 0.0) #f
-test (>  1e-100 0.0) #t
-test (> -1e-100 0.0) #f
-test (>  1e+10000 0.0) #t
-test (> -1e+10000 0.0) #f
-test (>  1e-10000 0.0) #t
-test (> -1e-10000 0.0) #f
-test (> 0.0  0.0) #f
-test (> 0.0  1.0) #f
-test (> 0.0 -1.0) #t
-test (> 0.0  0.1) #f
-test (> 0.0 -0.1) #t
-test (> 0.0  1e+0) #f
-test (> 0.0 -1e+0) #t
-test (> 0.0  1e-0) #f
-test (> 0.0 -1e-0) #t
-test (> 0.0  1e+100) #f
-test (> 0.0 -1e+100) #t
-test (> 0.0  1e-100) #f
-test (> 0.0 -1e-100) #t
-test (> 0.0  1e+10000) #f
-test (> 0.0 -1e+10000) #t
-test (> 0.0  1e-10000) #f
-test (> 0.0 -1e-10000) #t
-test (>  1.0e14  1.0e14) #f
-test (>  1.0e14 -1.0e14) #t
-test (> -1.0e14  1.0e14) #f
-test (> -1.0e14 -1.0e14) #f
-test (>  1.0e14  1.1e14) #f
-test (>  1.0e14 -1.1e14) #t
-test (> -1.0e14  1.1e14) #f
-test (> -1.0e14 -1.1e14) #t
-test (>  1.0e-14  1.0e-14) #f
-test (>  1.0e-14 -1.0e-14) #t
-test (> -1.0e-14  1.0e-14) #f
-test (> -1.0e-14 -1.0e-14) #f
-test (>  1.0e-14  1.1e-14) #f
-test (>  1.0e-14 -1.1e-14) #t
-test (> -1.0e-14  1.1e-14) #f
-test (> -1.0e-14 -1.1e-14) #t
-test (>  1234567890123.4  1234567890123) #t
-test (>  1234567890123.4 -1234567890123) #t
-test (> -1234567890123.4  1234567890123) #f
-test (> -1234567890123.4 -1234567890123) #f
-test (>  1234567890123  1234567890123.4) #f
-test (>  1234567890123 -1234567890123.4) #t
-test (> -1234567890123  1234567890123.4) #f
-test (> -1234567890123 -1234567890123.4) #t
-test (> 10.0 1.0 0.1 0.01 1e-3 1e-4 1e-5) #t
-test (> 10.0 1.0 0.1 0.01 1e-3 1e-4 1e-4) #f
-test (> 1.0 1.0 1.0 1.0 1.0 1.0) #f
+test (gt  0.0  0.0) #f
+test (gt -0.0  0.0) #f
+test (gt  0.0 -0.0) #f
+test (gt -0.0 -0.0) #f
+test (gt  1.0  1.0) #f
+test (gt -1.0  1.0) #f
+test (gt  1.0 -1.0) #t
+test (gt -1.0 -1.0) #f
+test (gt  0.1  0.1) #f
+test (gt -0.1  0.1) #f
+test (gt  0.1 -0.1) #t
+test (gt -0.1 -0.1) #f
+test (gt  123.45e+67  123.45e+67) #f
+test (gt  123.45e+67  123.45e-67) #t
+test (gt  123.45e-67  123.45e+67) #f
+test (gt  123.45e-67  123.45e-67) #f
+test (gt  123.45e+67 -123.45e+67) #t
+test (gt  123.45e+67 -123.45e-67) #t
+test (gt  123.45e-67 -123.45e+67) #t
+test (gt  123.45e-67 -123.45e-67) #t
+test (gt -123.45e+67  123.45e+67) #f
+test (gt -123.45e+67  123.45e-67) #f
+test (gt -123.45e-67  123.45e+67) #f
+test (gt -123.45e-67  123.45e-67) #f
+test (gt -123.45e+67 -123.45e+67) #f
+test (gt -123.45e+67 -123.45e-67) #f
+test (gt -123.45e-67 -123.45e+67) #t
+test (gt -123.45e-67 -123.45e-67) #f
+test (gt  0.0 0.0) #f
+test (gt  1.0 0.0) #t
+test (gt -1.0 0.0) #f
+test (gt  0.1 0.0) #t
+test (gt -0.1 0.0) #f
+test (gt  1e+0 0.0) #t
+test (gt -1e+0 0.0) #f
+test (gt  1e-0 0.0) #t
+test (gt -1e-0 0.0) #f
+test (gt  1e+100 0.0) #t
+test (gt -1e+100 0.0) #f
+test (gt  1e-100 0.0) #t
+test (gt -1e-100 0.0) #f
+test (gt  1e+10000 0.0) #t
+test (gt -1e+10000 0.0) #f
+test (gt  1e-10000 0.0) #t
+test (gt -1e-10000 0.0) #f
+test (gt 0.0  0.0) #f
+test (gt 0.0  1.0) #f
+test (gt 0.0 -1.0) #t
+test (gt 0.0  0.1) #f
+test (gt 0.0 -0.1) #t
+test (gt 0.0  1e+0) #f
+test (gt 0.0 -1e+0) #t
+test (gt 0.0  1e-0) #f
+test (gt 0.0 -1e-0) #t
+test (gt 0.0  1e+100) #f
+test (gt 0.0 -1e+100) #t
+test (gt 0.0  1e-100) #f
+test (gt 0.0 -1e-100) #t
+test (gt 0.0  1e+10000) #f
+test (gt 0.0 -1e+10000) #t
+test (gt 0.0  1e-10000) #f
+test (gt 0.0 -1e-10000) #t
+test (gt  1.0e14  1.0e14) #f
+test (gt  1.0e14 -1.0e14) #t
+test (gt -1.0e14  1.0e14) #f
+test (gt -1.0e14 -1.0e14) #f
+test (gt  1.0e14  1.1e14) #f
+test (gt  1.0e14 -1.1e14) #t
+test (gt -1.0e14  1.1e14) #f
+test (gt -1.0e14 -1.1e14) #t
+test (gt  1.0e-14  1.0e-14) #f
+test (gt  1.0e-14 -1.0e-14) #t
+test (gt -1.0e-14  1.0e-14) #f
+test (gt -1.0e-14 -1.0e-14) #f
+test (gt  1.0e-14  1.1e-14) #f
+test (gt  1.0e-14 -1.1e-14) #t
+test (gt -1.0e-14  1.1e-14) #f
+test (gt -1.0e-14 -1.1e-14) #t
+test (gt  1234567890123.4  1234567890123) #t
+test (gt  1234567890123.4 -1234567890123) #t
+test (gt -1234567890123.4  1234567890123) #f
+test (gt -1234567890123.4 -1234567890123) #f
+test (gt  1234567890123  1234567890123.4) #f
+test (gt  1234567890123 -1234567890123.4) #t
+test (gt -1234567890123  1234567890123.4) #f
+test (gt -1234567890123 -1234567890123.4) #t
+test (gt 10.0 1.0 0.1 0.01 1e-3 1e-4 1e-5) #t
+test (gt 10.0 1.0 0.1 0.01 1e-3 1e-4 1e-4) #f
+test (gt 1.0 1.0 1.0 1.0 1.0 1.0) #f
 
-test (>=  1234567890  9876543210) #f
-test (>=  1234567890 -9876543210) #t
-test (>= -1234567890  9876543210) #f
-test (>= -1234567890 -9876543210) #t
-test (>=  9876543210  1234567890) #t
-test (>=  9876543210 -1234567890) #t
-test (>= -9876543210  1234567890) #f
-test (>= -9876543210 -1234567890) #f
-test (>= -1234567890 -1234567890) #t
-test (>=  1234567890  1234567890) #t
-test (>= 1234567890 0) #t
-test (>= 0 1234567890) #f
-test (>= 9 8 7 6 5 4 3 2 1 0) #t
-test (>= 9 8 7 6 5 4 3 2 1 1) #t
+test (ge  1234567890  9876543210) #f
+test (ge  1234567890 -9876543210) #t
+test (ge -1234567890  9876543210) #f
+test (ge -1234567890 -9876543210) #t
+test (ge  9876543210  1234567890) #t
+test (ge  9876543210 -1234567890) #t
+test (ge -9876543210  1234567890) #f
+test (ge -9876543210 -1234567890) #f
+test (ge -1234567890 -1234567890) #t
+test (ge  1234567890  1234567890) #t
+test (ge 1234567890 0) #t
+test (ge 0 1234567890) #f
+test (ge 9 8 7 6 5 4 3 2 1 0) #t
+test (ge 9 8 7 6 5 4 3 2 1 1) #t
 
-test (>=  0.0  0.0) #t
-test (>= -0.0  0.0) #t
-test (>=  0.0 -0.0) #t
-test (>= -0.0 -0.0) #t
-test (>=  1.0  1.0) #t
-test (>= -1.0  1.0) #f
-test (>=  1.0 -1.0) #t
-test (>= -1.0 -1.0) #t
-test (>=  0.1  0.1) #t
-test (>= -0.1  0.1) #f
-test (>=  0.1 -0.1) #t
-test (>= -0.1 -0.1) #t
-test (>=  123.45e+67  123.45e+67) #t
-test (>=  123.45e+67  123.45e-67) #t
-test (>=  123.45e-67  123.45e+67) #f
-test (>=  123.45e-67  123.45e-67) #t
-test (>=  123.45e+67 -123.45e+67) #t
-test (>=  123.45e+67 -123.45e-67) #t
-test (>=  123.45e-67 -123.45e+67) #t
-test (>=  123.45e-67 -123.45e-67) #t
-test (>= -123.45e+67  123.45e+67) #f
-test (>= -123.45e+67  123.45e-67) #f
-test (>= -123.45e-67  123.45e+67) #f
-test (>= -123.45e-67  123.45e-67) #f
-test (>= -123.45e+67 -123.45e+67) #t
-test (>= -123.45e+67 -123.45e-67) #f
-test (>= -123.45e-67 -123.45e+67) #t
-test (>= -123.45e-67 -123.45e-67) #t
-test (>=  0.0 0.0) #t
-test (>=  1.0 0.0) #t
-test (>= -1.0 0.0) #f
-test (>=  0.1 0.0) #t
-test (>= -0.1 0.0) #f
-test (>=  1e+0 0.0) #t
-test (>= -1e+0 0.0) #f
-test (>=  1e-0 0.0) #t
-test (>= -1e-0 0.0) #f
-test (>=  1e+100 0.0) #t
-test (>= -1e+100 0.0) #f
-test (>=  1e-100 0.0) #t
-test (>= -1e-100 0.0) #f
-test (>=  1e+10000 0.0) #t
-test (>= -1e+10000 0.0) #f
-test (>=  1e-10000 0.0) #t
-test (>= -1e-10000 0.0) #f
-test (>= 0.0  0.0) #t
-test (>= 0.0  1.0) #f
-test (>= 0.0 -1.0) #t
-test (>= 0.0  0.1) #f
-test (>= 0.0 -0.1) #t
-test (>= 0.0  1e+0) #f
-test (>= 0.0 -1e+0) #t
-test (>= 0.0  1e-0) #f
-test (>= 0.0 -1e-0) #t
-test (>= 0.0  1e+100) #f
-test (>= 0.0 -1e+100) #t
-test (>= 0.0  1e-100) #f
-test (>= 0.0 -1e-100) #t
-test (>= 0.0  1e+10000) #f
-test (>= 0.0 -1e+10000) #t
-test (>= 0.0  1e-10000) #f
-test (>= 0.0 -1e-10000) #t
-test (>=  1.0e14  1.0e14) #t
-test (>=  1.0e14 -1.0e14) #t
-test (>= -1.0e14  1.0e14) #f
-test (>= -1.0e14 -1.0e14) #t
-test (>=  1.0e14  1.1e14) #f
-test (>=  1.0e14 -1.1e14) #t
-test (>= -1.0e14  1.1e14) #f
-test (>= -1.0e14 -1.1e14) #t
-test (>=  1.0e-14  1.0e-14) #t
-test (>=  1.0e-14 -1.0e-14) #t
-test (>= -1.0e-14  1.0e-14) #f
-test (>= -1.0e-14 -1.0e-14) #t
-test (>=  1.0e-14  1.1e-14) #f
-test (>=  1.0e-14 -1.1e-14) #t
-test (>= -1.0e-14  1.1e-14) #f
-test (>= -1.0e-14 -1.1e-14) #t
-test (>=  1234567890123.4  1234567890123) #t
-test (>=  1234567890123.4 -1234567890123) #t
-test (>= -1234567890123.4  1234567890123) #f
-test (>= -1234567890123.4 -1234567890123) #f
-test (>=  1234567890123  1234567890123.4) #f
-test (>=  1234567890123 -1234567890123.4) #t
-test (>= -1234567890123  1234567890123.4) #f
-test (>= -1234567890123 -1234567890123.4) #t
-test (>= 10.0 1.0 0.1 0.01 1e-3 1e-4 1e-5) #t
-test (>= 10.0 1.0 0.1 0.01 1e-3 1e-4 1e-4) #t
-test (>= 1.0 1.0 1.0 1.0 1.0 1.0) #t
+test (ge  0.0  0.0) #t
+test (ge -0.0  0.0) #t
+test (ge  0.0 -0.0) #t
+test (ge -0.0 -0.0) #t
+test (ge  1.0  1.0) #t
+test (ge -1.0  1.0) #f
+test (ge  1.0 -1.0) #t
+test (ge -1.0 -1.0) #t
+test (ge  0.1  0.1) #t
+test (ge -0.1  0.1) #f
+test (ge  0.1 -0.1) #t
+test (ge -0.1 -0.1) #t
+test (ge  123.45e+67  123.45e+67) #t
+test (ge  123.45e+67  123.45e-67) #t
+test (ge  123.45e-67  123.45e+67) #f
+test (ge  123.45e-67  123.45e-67) #t
+test (ge  123.45e+67 -123.45e+67) #t
+test (ge  123.45e+67 -123.45e-67) #t
+test (ge  123.45e-67 -123.45e+67) #t
+test (ge  123.45e-67 -123.45e-67) #t
+test (ge -123.45e+67  123.45e+67) #f
+test (ge -123.45e+67  123.45e-67) #f
+test (ge -123.45e-67  123.45e+67) #f
+test (ge -123.45e-67  123.45e-67) #f
+test (ge -123.45e+67 -123.45e+67) #t
+test (ge -123.45e+67 -123.45e-67) #f
+test (ge -123.45e-67 -123.45e+67) #t
+test (ge -123.45e-67 -123.45e-67) #t
+test (ge  0.0 0.0) #t
+test (ge  1.0 0.0) #t
+test (ge -1.0 0.0) #f
+test (ge  0.1 0.0) #t
+test (ge -0.1 0.0) #f
+test (ge  1e+0 0.0) #t
+test (ge -1e+0 0.0) #f
+test (ge  1e-0 0.0) #t
+test (ge -1e-0 0.0) #f
+test (ge  1e+100 0.0) #t
+test (ge -1e+100 0.0) #f
+test (ge  1e-100 0.0) #t
+test (ge -1e-100 0.0) #f
+test (ge  1e+10000 0.0) #t
+test (ge -1e+10000 0.0) #f
+test (ge  1e-10000 0.0) #t
+test (ge -1e-10000 0.0) #f
+test (ge 0.0  0.0) #t
+test (ge 0.0  1.0) #f
+test (ge 0.0 -1.0) #t
+test (ge 0.0  0.1) #f
+test (ge 0.0 -0.1) #t
+test (ge 0.0  1e+0) #f
+test (ge 0.0 -1e+0) #t
+test (ge 0.0  1e-0) #f
+test (ge 0.0 -1e-0) #t
+test (ge 0.0  1e+100) #f
+test (ge 0.0 -1e+100) #t
+test (ge 0.0  1e-100) #f
+test (ge 0.0 -1e-100) #t
+test (ge 0.0  1e+10000) #f
+test (ge 0.0 -1e+10000) #t
+test (ge 0.0  1e-10000) #f
+test (ge 0.0 -1e-10000) #t
+test (ge  1.0e14  1.0e14) #t
+test (ge  1.0e14 -1.0e14) #t
+test (ge -1.0e14  1.0e14) #f
+test (ge -1.0e14 -1.0e14) #t
+test (ge  1.0e14  1.1e14) #f
+test (ge  1.0e14 -1.1e14) #t
+test (ge -1.0e14  1.1e14) #f
+test (ge -1.0e14 -1.1e14) #t
+test (ge  1.0e-14  1.0e-14) #t
+test (ge  1.0e-14 -1.0e-14) #t
+test (ge -1.0e-14  1.0e-14) #f
+test (ge -1.0e-14 -1.0e-14) #t
+test (ge  1.0e-14  1.1e-14) #f
+test (ge  1.0e-14 -1.1e-14) #t
+test (ge -1.0e-14  1.1e-14) #f
+test (ge -1.0e-14 -1.1e-14) #t
+test (ge  1234567890123.4  1234567890123) #t
+test (ge  1234567890123.4 -1234567890123) #t
+test (ge -1234567890123.4  1234567890123) #f
+test (ge -1234567890123.4 -1234567890123) #f
+test (ge  1234567890123  1234567890123.4) #f
+test (ge  1234567890123 -1234567890123.4) #t
+test (ge -1234567890123  1234567890123.4) #f
+test (ge -1234567890123 -1234567890123.4) #t
+test (ge 10.0 1.0 0.1 0.01 1e-3 1e-4 1e-5) #t
+test (ge 10.0 1.0 0.1 0.01 1e-3 1e-4 1e-4) #t
+test (ge 1.0 1.0 1.0 1.0 1.0 1.0) #t
 
 test (abs 1234567890) 1234567890
 test (abs -1234567890) 1234567890
@@ -1901,35 +1901,35 @@ test (abs 1.234567890) 1.23456789
 test (abs 0.0) 0.0
 test (abs -0.0) 0.0
 
-test (< 1.570796320 (acos 0.00) 1.570796329) #t
-test (< 1.318116070 (acos 0.25) 1.318116079) #t
-test (< 1.047197550 (acos 0.50) 1.047197559) #t
-test (< 0.722734240 (acos 0.75) 0.722734249) #t
-test (< 3.141592650 (acos -1.00) 3.141592659) #t
-test (< 2.418858400 (acos -0.75) 2.418858409) #t
-test (< 2.094395100 (acos -0.50) 2.094395109) #t
-test (< 1.823476580 (acos -0.25) 1.823476589) #t
+test (lt 1.570796320 (acos 0.00) 1.570796329) #t
+test (lt 1.318116070 (acos 0.25) 1.318116079) #t
+test (lt 1.047197550 (acos 0.50) 1.047197559) #t
+test (lt 0.722734240 (acos 0.75) 0.722734249) #t
+test (lt 3.141592650 (acos -1.00) 3.141592659) #t
+test (lt 2.418858400 (acos -0.75) 2.418858409) #t
+test (lt 2.094395100 (acos -0.50) 2.094395109) #t
+test (lt 1.823476580 (acos -0.25) 1.823476589) #t
 test (acos 1) 0
 
 test (asin 0) 0
-test (< 0.252680250 (asin 0.25) 0.252680259) #t
-test (< 0.523598770 (asin 0.50) 0.523598779) #t
-test (< 0.848062070 (asin 0.75) 0.848062079) #t
-test (< 1.570796320 (asin 1.00) 1.570796329) #t
-test (< -1.570796329 (asin -1.00) -1.570796320) #t
-test (< -0.848062079 (asin -0.75) -0.848062070) #t
-test (< -0.523598779 (asin -0.50) -0.523598770) #t
-test (< -0.252680259 (asin -0.25) -0.252680250) #t
+test (lt 0.252680250 (asin 0.25) 0.252680259) #t
+test (lt 0.523598770 (asin 0.50) 0.523598779) #t
+test (lt 0.848062070 (asin 0.75) 0.848062079) #t
+test (lt 1.570796320 (asin 1.00) 1.570796329) #t
+test (lt -1.570796329 (asin -1.00) -1.570796320) #t
+test (lt -0.848062079 (asin -0.75) -0.848062070) #t
+test (lt -0.523598779 (asin -0.50) -0.523598770) #t
+test (lt -0.252680259 (asin -0.25) -0.252680250) #t
 
 test (atan 0) 0
-test (< 0.244978660 (atan 0.25) 0.244978669) #t
-test (< 0.463647600 (atan 0.50) 0.463647610) #t
-test (< 0.643501100 (atan 0.75) 0.643501109) #t
-test (< 0.785398160 (atan 1.00) 0.785398169) #t
-test (< -0.244978669 (atan -0.25) -0.244978660) #t
-test (< -0.463647610 (atan -0.50) -0.463647600) #t
-test (< -0.643501109 (atan -0.75) -0.643501100) #t
-test (< -0.785398169 (atan -1.00) -0.785398160) #t
+test (lt 0.244978660 (atan 0.25) 0.244978669) #t
+test (lt 0.463647600 (atan 0.50) 0.463647610) #t
+test (lt 0.643501100 (atan 0.75) 0.643501109) #t
+test (lt 0.785398160 (atan 1.00) 0.785398169) #t
+test (lt -0.244978669 (atan -0.25) -0.244978660) #t
+test (lt -0.463647610 (atan -0.50) -0.463647600) #t
+test (lt -0.643501109 (atan -0.75) -0.643501100) #t
+test (lt -0.785398169 (atan -1.00) -0.785398160) #t
 
 test (ceiling  0.0) 0.0
 test (ceiling  1.0) 1.0
@@ -1957,14 +1957,14 @@ test (cos  pi/2) 0.0
 test (cos  pi  ) -1.0
 test (cos 3pi/2) 0.0
 test (cos 2pi  ) 1.0
-test (<  0.7071067810 (cos  pi/4)  0.7071067819) #t
-test (< -0.7071067819 (cos 3pi/4) -0.7071067810) #t
-test (< -0.7071067819 (cos 5pi/4) -0.7071067810) #t
-test (<  0.7071067810 (cos 7pi/4)  0.7071067819) #t
-test (<  0.1699671420 (cos   1.4)  0.1699671430) #t
-test (< -0.9422223409 (cos   2.8) -0.9422223400) #t
-test (< -0.4902608219 (cos   4.2) -0.4902608210) #t
-test (<  0.7755658780 (cos   5.6)  0.7755658789) #t
+test (lt  0.7071067810 (cos  pi/4)  0.7071067819) #t
+test (lt -0.7071067819 (cos 3pi/4) -0.7071067810) #t
+test (lt -0.7071067819 (cos 5pi/4) -0.7071067810) #t
+test (lt  0.7071067810 (cos 7pi/4)  0.7071067819) #t
+test (lt  0.1699671420 (cos   1.4)  0.1699671430) #t
+test (lt -0.9422223409 (cos   2.8) -0.9422223400) #t
+test (lt -0.4902608219 (cos   4.2) -0.4902608210) #t
+test (lt  0.7755658780 (cos   5.6)  0.7755658789) #t
 
 test (even? -1) #f
 test (even? 0) #t
@@ -2127,10 +2127,10 @@ test (exact? (inexact->exact #i-1.2345e+100)) #t
 test (exact? (inexact->exact #i-1.2345e-100)) #t
 
 test (exp 0) 1
-test (< 1.6487212700 (exp 0.5) 1.6487212709) #t
-test (< 2.7182818280 (exp 1.0) 2.7182818289) #t
-test (< 7.3890560980 (exp 2.0) 7.3890560990) #t
-test (< 20.085536920 (exp 3.0) 20.085536929) #t
+test (lt 1.6487212700 (exp 0.5) 1.6487212709) #t
+test (lt 2.7182818280 (exp 1.0) 2.7182818289) #t
+test (lt 7.3890560980 (exp 2.0) 7.3890560990) #t
+test (lt 20.085536920 (exp 3.0) 20.085536929) #t
 
 test (inexact?  0) #f
 test (inexact?  1) #f
@@ -2177,9 +2177,9 @@ test (lcm 12 18) 36
 test (lcm 5 12 18) 180
 
 test (log 1) 0.0
-test (< -2.3025850930 (log 0.1) -2.3025850920) #t
-test (<  0.6931471800 (log 2.0)  0.6931471809) #t
-test (<  1.0986122880 (log 3.0)  1.0986122889) #t
+test (lt -2.3025850930 (log 0.1) -2.3025850920) #t
+test (lt  0.6931471800 (log 2.0)  0.6931471809) #t
+test (lt  1.0986122880 (log 3.0)  1.0986122889) #t
 
 test (min 1) 1
 test (min 2 1 3) 1
@@ -2232,8 +2232,8 @@ test (not (function () #f)) #f
 test (not "string") #f
 test (not 'symbol) #f
 test (not '#(vector)) #f
-test (not (current-input-port)) #f
-test (not (current-output-port)) #f
+test (not (current-input-handle)) #f
+test (not (current-output-handle)) #f
 
 test (odd? -1) #t
 test (odd? 0) #f
@@ -2299,22 +2299,22 @@ test (sin   pi/2) 1.0
 test (sin   pi  ) 0.0
 test (sin  3pi/2) -1.0
 test (sin    2pi) 0.0
-test (<  0.7071067810 (sin  pi/4)  0.7071067819) #t
-test (<  0.7071067810 (sin 3pi/4)  0.7071067819) #t
-test (< -0.7071067819 (sin 5pi/4) -0.7071067810) #t
-test (< -0.7071067819 (sin 7pi/4) -0.7071067810) #t
-test (<  0.9854497290 (sin   1.4)  0.9854497300) #t
-test (<  0.3349881500 (sin   2.8)  0.3349881509) #t
-test (< -0.8715757729 (sin   4.2) -0.8715757720) #t
-test (< -0.6312666379 (sin   5.6) -0.6312666370) #t
+test (lt  0.7071067810 (sin  pi/4)  0.7071067819) #t
+test (lt  0.7071067810 (sin 3pi/4)  0.7071067819) #t
+test (lt -0.7071067819 (sin 5pi/4) -0.7071067810) #t
+test (lt -0.7071067819 (sin 7pi/4) -0.7071067810) #t
+test (lt  0.9854497290 (sin   1.4)  0.9854497300) #t
+test (lt  0.3349881500 (sin   2.8)  0.3349881509) #t
+test (lt -0.8715757729 (sin   4.2) -0.8715757720) #t
+test (lt -0.6312666379 (sin   5.6) -0.6312666370) #t
 
 test (sqrt 0) 0
 test (sqrt 1) 1
 test (sqrt 144) 12
 test (sqrt 15241578750190521) 123456789
 test (sqrt 15241578750190521.0) 123456789.0
-test (< 1.4142135620   (sqrt 2) 1.4142135629) #t
-test (< 11.090536500 (sqrt 123) 11.090536509) #t
+test (lt 1.4142135620   (sqrt 2) 1.4142135629) #t
+test (lt 11.090536500 (sqrt 123) 11.090536509) #t
 test (sqrt 15239.9025) 123.45
 test (sqrt 1e20) 1e10
 
@@ -2324,10 +2324,10 @@ test (tan  3pi/4) -1.0
 test (tan  5pi/4) 1.0
 test (tan  7pi/4) -1.0
 test (tan  2pi  ) 0.0
-test (<  5.7978837150 (tan 1.4)  5.7978837159) #t
-test (< -0.3555298319 (tan 2.8) -0.3555298310) #t
-test (<  1.7777797740 (tan 4.2)  1.7777797749) #t
-test (< -0.8139432839 (tan 5.6) -0.8139432830) #t
+test (lt  5.7978837150 (tan 1.4)  5.7978837159) #t
+test (lt -0.3555298319 (tan 2.8) -0.3555298310) #t
+test (lt  1.7777797740 (tan 4.2)  1.7777797749) #t
+test (lt -0.8139432839 (tan 5.6) -0.8139432830) #t
 
 test (truncate  0.0) 0.0
 test (truncate  1.0) 1.0
@@ -3131,13 +3131,13 @@ if (file-exists? testfile) (delete-file testfile)
 ;; (test (call-with-output-file testfile
 ;;          (lambda (out)
 ;;            (write '(this is a test) out)
-;;            (close-output-port out)
+;;            (close-output-handle out)
 ;;            (call-with-input-file testfile read)))
 ;;       '(this is a test))
 test {
   call-with-output-file testfile (function (out) {
     write '(this is a test) out
-    close-output-port out
+    close-output-handle out
     call-with-input-file testfile read
   })
 } '(this is a test)
@@ -3146,21 +3146,21 @@ delete-file testfile
 
 ;; (test (let ((out (open-output-file testfile)))
 ;;          (write '(this is a test) out)
-;;          (close-output-port out)
+;;          (close-output-handle out)
 ;;          (let ((in (open-input-file testfile)))
 ;;            (let ((x (read in)))
-;;              (close-input-port in)
+;;              (close-input-handle in)
 ;;              x)))
 ;;       '(this is a test))
 test {
   out := open-output-file testfile
   write '(this is a test) out
-  close-output-port out
+  close-output-handle out
   {
     in := open-input-file testfile
     {
       x := read in
-      close-input-port in
+      close-input-handle in
       x
     } 
   }
@@ -3170,22 +3170,22 @@ delete-file testfile
 
 ;; (test (let ((out (open-output-file testfile)))
 ;;          (display "Hello-World" out)
-;;          (close-output-port out)
+;;          (close-output-handle out)
 ;;          (let ((in (open-input-file testfile)))
 ;;            (let ((x (read in)))
-;;              (close-input-port in)
+;;              (close-input-handle in)
 ;;              x)))
 ;;       ; idio is case-sensitive 'hello-world
 ;;       'Hello-World)
 test {
   out := open-output-file testfile
   display "Hello-World" out
-  close-output-port out
+  close-output-handle out
   {
     in := open-input-file testfile
     {
       x := read in
-      close-input-port in
+      close-input-handle in
       x
     }
   }
@@ -3214,14 +3214,14 @@ define (visibility-check x) {
     display x out
     display #\space out
     write 'the-end out
-    close-output-port out
+    close-output-handle out
     {
       in := open-input-file testfile
       {
         vis := read in
         {
 	  invis := read in
-          close-input-port in
+          close-input-handle in
           list vis invis
         }
       }
@@ -3264,31 +3264,31 @@ delete-file testfile
 
 ;; (test (begin (call-with-output-file testfile
 ;;                (function (out) (newline out)
-;;                              (close-output-port out)))
+;;                              (close-output-handle out)))
 ;;              (call-with-input-file testfile read-char))
 ;;       #\newline)
 test {
   call-with-output-file testfile (function (out) {
     newline out
-    close-output-port out
+    close-output-handle out
   })
   call-with-input-file testfile read-char
 } #\newline
 
 delete-file testfile
 
-;; (test (begin (close-output-port (open-output-file testfile))
+;; (test (begin (close-output-handle (open-output-file testfile))
 ;;              (let* ((in (open-input-file testfile))
 ;;                     (e (read in)))
-;;                (close-input-port in)
+;;                (close-input-handle in)
 ;;                (eof-object? e)))
 ;;       #t)
 test {
-  close-output-port (open-output-file testfile)
+  close-output-handle (open-output-file testfile)
   {
     in := open-input-file testfile
     e := read in
-    close-input-port in
+    close-input-handle in
     eof-object? e
   }
 } #t
@@ -3298,21 +3298,21 @@ delete-file testfile
 define foo 'bar
 ;; (test (let ((out (open-output-file testfile)))
 ;;          (write '(define foo 'baz) out)
-;;          (close-output-port out)
+;;          (close-output-handle out)
 ;;          (load testfile)
 ;;          foo)
 ;;       'baz)
 test {
   out := open-output-file testfile
   write '(define foo 'baz) out
-  close-output-port out
+  close-output-handle out
   load testfile
   foo
 } 'baz
 
 define (with-range lo hi fn) {
-  if (< hi lo) '() {
-    cons (fn lo) (with-range (1 + lo) hi fn)
+  if (lt hi lo) '() {
+    pair (fn lo) (with-range (1 + lo) hi fn)
   }
 }
 
@@ -3336,7 +3336,7 @@ test {
 define (while-not-eof input fn) {
   c := fn input
   if (eof-object? c) '() {
-    cons c (while-not-eof input fn)
+    pair c (while-not-eof input fn)
   }
 }
 
@@ -3350,30 +3350,30 @@ test {
 
 ;; (test (let ((in (open-input-file testfile)))
 ;;          (let ((c (peek-char in)))
-;;            (cons c (while-not-eof in read-char))))
-;;        (cons #\space (with-range 32 126 integer->char)))
+;;            (pair c (while-not-eof in read-char))))
+;;        (pair #\space (with-range 32 126 integer->char)))
 test {
   in := open-input-file testfile
   c := peek-char in
-  cons c (while-not-eof in read-char)
-} (cons #\space (with-range 32 126 integer->char))
+  pair c (while-not-eof in read-char)
+} (pair #\space (with-range 32 126 integer->char))
 
 ; does GC close unused files?
 ; Set NFILES to a number that is greater than MAX_PORTS in s9.h
-;; (let ((NFILES 1030))			; ie. > ulimit -n
+;; (let ((NFILES 1030))			; ie. gt ulimit -n
 ;;   (test (letrec
 ;;           ((open
 ;;              (function (n)
 ;;                (open-input-file testfile)
-;;                (if (< n 1) #t (open (- n 1))))))
+;;                (if (lt n 1) #t (open (- n 1))))))
 ;;           (open NFILES))
 ;;         #t))
 { 
-  NFILES := 1030			; ie. > ulimit -n
+  NFILES := 1030			; ie. gt ulimit -n
   test {
     open :+ function (n) {
       open-input-file testfile
-      if (< n 1) #t (open (n - 1))
+      if (lt n 1) #t (open (n - 1))
     }
 
     open NFILES
@@ -3402,7 +3402,7 @@ test (iff #f then (error "error") else 'bar) 'bar
 define-syntax foo-syntax \
   (syntax-rules ()
     ((_ x) x)
-    ((_ x y ...) (cons x (foo-syntax y ...))))
+    ((_ x y ...) (pair x (foo-syntax y ...))))
 test (foo-syntax 1 2 3 4 5) '(1 2 3 4 & 5)
 
 define-syntax bar-syntax \
@@ -3420,7 +3420,7 @@ define-syntax rev-syntax \
     ((_ (a & d) r) (rev-syntax d (a & r)))
     ((_ x) (rev-syntax x ())))
 test (rev-syntax ()) '()
-test (rev-syntax (2 1 cons)) '(1 & 2)
+test (rev-syntax (2 1 pair)) '(1 & 2)
 test (rev-syntax ('bar 'foo #t if)) 'foo
 
 define-syntax ell \
@@ -3470,7 +3470,7 @@ test {
 if+ (zero? Errors) (display "Everything fine!") \
     else {
       display Errors
-      if (> Errors 1) {
+      if (gt Errors 1) {
         display " errors."
       } {
 	display " error."

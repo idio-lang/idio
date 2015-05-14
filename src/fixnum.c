@@ -542,6 +542,9 @@ IDIO_DEFINE_PRIMITIVE2 ("quotient", quotient, (IDIO a, IDIO b))
     return num;
 }
 
+/*
+ * First up define some fixnum comparators
+ */
 #define IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(cname,cmp)			\
     IDIO idio_fixnum_primitive_ ## cname (IDIO args)			\
     {									\
@@ -572,7 +575,10 @@ IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(eq, ==)
 IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(ge, >=)
 IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(gt, >)
 
-
+/*
+ * Second, define some generic primitives that look out for bignum
+ * arguments
+ */
 #define IDIO_DEFINE_ARITHMETIC_PRIMITIVE0V(name,cname)			\
     IDIO_DEFINE_PRIMITIVE0V (name, cname, (IDIO args))			\
     {									\
@@ -810,11 +816,11 @@ IDIO_DEFINE_ARITHMETIC_PRIMITIVE1V ("-", subtract)
 IDIO_DEFINE_ARITHMETIC_PRIMITIVE0V ("*", multiply)
 IDIO_DEFINE_ARITHMETIC_BIGNUM_PRIMITIVE1V ("/", divide)
 
-IDIO_DEFINE_ARITHMETIC_CMP_PRIMITIVE1V ("<=", le)
-IDIO_DEFINE_ARITHMETIC_CMP_PRIMITIVE1V ("<", lt)
-IDIO_DEFINE_ARITHMETIC_CMP_PRIMITIVE1V ("=", eq)
-IDIO_DEFINE_ARITHMETIC_CMP_PRIMITIVE1V (">=", ge)
-IDIO_DEFINE_ARITHMETIC_CMP_PRIMITIVE1V (">", gt)
+IDIO_DEFINE_ARITHMETIC_CMP_PRIMITIVE1V ("le", le)
+IDIO_DEFINE_ARITHMETIC_CMP_PRIMITIVE1V ("lt", lt)
+IDIO_DEFINE_ARITHMETIC_CMP_PRIMITIVE1V ("==", eq)
+IDIO_DEFINE_ARITHMETIC_CMP_PRIMITIVE1V ("ge", ge)
+IDIO_DEFINE_ARITHMETIC_CMP_PRIMITIVE1V ("gt", gt)
 
 IDIO_DEFINE_PRIMITIVE1 ("integer->char", integer2char, (IDIO i))
 {

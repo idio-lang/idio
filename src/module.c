@@ -34,6 +34,7 @@ static IDIO idio_modules_hash = idio_S_nil;
  */
 static IDIO idio_primitive_module = idio_S_nil;
 static IDIO idio_toplevel_module = idio_S_nil;
+static IDIO idio_toplevel_scm_module = idio_S_nil;
 
 void idio_error_module_duplicate_name (IDIO name)
 {
@@ -139,6 +140,11 @@ IDIO idio_find_module (IDIO name)
 IDIO idio_main_module ()
 {
     return idio_toplevel_module;
+}
+
+IDIO idio_main_scm_module ()
+{
+    return idio_toplevel_scm_module;
 }
 
 IDIO_DEFINE_PRIMITIVE1 ("%create-module", create_module, (IDIO name))
@@ -251,6 +257,8 @@ IDIO_DEFINE_PRIMITIVE1 ("module-exports", module_exports, (IDIO module))
 
     if (idio_toplevel_module == module) {
 	return idio_hash_keys_to_list (IDIO_MODULE_SYMBOLS (module));
+    } else if (idio_toplevel_scm_module == module) {
+	return idio_hash_keys_to_list (IDIO_MODULE_SYMBOLS (module));
     } else {
 	return IDIO_MODULE_EXPORTS (module);
     }
@@ -350,6 +358,7 @@ IDIO idio_symbol_lookup_imports (IDIO symbol, IDIO module)
 
     if (idio_S_unspec != sv) {
 	if (idio_toplevel_module == module ||
+	    idio_toplevel_scm_module == module ||
 	    idio_primitive_module == module || 
 	    idio_S_false != idio_list_memq (symbol, IDIO_MODULE_EXPORTS (module))) {
 	    return sv;
@@ -513,6 +522,9 @@ void idio_init_module ()
 
     idio_toplevel_module = idio_module (idio_symbols_C_intern ("Idio"));
     IDIO_MODULE_IMPORTS (idio_toplevel_module) = IDIO_LIST1 (idio_primitive_module);
+
+    idio_toplevel_scm_module = idio_module (idio_symbols_C_intern ("SCM"));
+    IDIO_MODULE_IMPORTS (idio_toplevel_scm_module) = IDIO_LIST1 (idio_primitive_module);
 }
 
 void idio_module_add_primitives ()

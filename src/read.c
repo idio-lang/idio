@@ -22,29 +22,32 @@
 
 #include "idio.h"
 
-#define IDIO_CHAR_SPACE     ' '
-#define IDIO_CHAR_TAB       '\t'
-#define IDIO_CHAR_NL        '\n'
-#define IDIO_CHAR_CR        '\r'
+#define IDIO_CHAR_SPACE		' '
+#define IDIO_CHAR_TAB		'\t'
+#define IDIO_CHAR_NL		'\n'
+#define IDIO_CHAR_CR		'\r'
 
-#define IDIO_CHAR_LPAREN    '('
-#define IDIO_CHAR_RPAREN    ')'
-#define IDIO_CHAR_LBRACE    '{'
-#define IDIO_CHAR_RBRACE    '}'
-#define IDIO_CHAR_LBRACKET  '['
-#define IDIO_CHAR_RBRACKET  ']'
-#define IDIO_CHAR_LANGLE    '<'
-#define IDIO_CHAR_RANGLE    '>'
-#define IDIO_CHAR_SQUOTE    '\''
-#define IDIO_CHAR_COMMA     ','
-#define IDIO_CHAR_BACKQUOTE '`'
-#define IDIO_CHAR_DOT       '.'
-#define IDIO_CHAR_SEMICOLON ';'
-#define IDIO_CHAR_DQUOTE    '"'
-#define IDIO_CHAR_HASH      '#'
-#define IDIO_CHAR_AT        '@'
-#define IDIO_CHAR_BACKSLASH '\\'
-#define IDIO_CHAR_AMPERSAND '&'
+#define IDIO_CHAR_LPAREN	'('
+#define IDIO_CHAR_RPAREN	')'
+#define IDIO_CHAR_LBRACE	'{'
+#define IDIO_CHAR_RBRACE	'}'
+#define IDIO_CHAR_LBRACKET	'['
+#define IDIO_CHAR_RBRACKET	']'
+#define IDIO_CHAR_LANGLE	'<'
+#define IDIO_CHAR_RANGLE	'>'
+#define IDIO_CHAR_SQUOTE	'\''
+#define IDIO_CHAR_COMMA		','
+#define IDIO_CHAR_BACKQUOTE	'`'
+#define IDIO_CHAR_DOT		'.'
+#define IDIO_CHAR_SEMICOLON	';'
+#define IDIO_CHAR_DQUOTE	'"'
+#define IDIO_CHAR_HASH		'#'
+#define IDIO_CHAR_AT		'@'
+#define IDIO_CHAR_BACKSLASH	'\\'
+#define IDIO_CHAR_AMPERSAND	'&'
+#define IDIO_CHAR_PERCENT	'%'
+#define IDIO_CHAR_DOLLARS	'$'
+#define IDIO_CHAR_EXCLAMATION	'!'
 
 #define IDIO_SEPARATOR(c)	(IDIO_CHAR_SPACE == (c) ||		\
 				 IDIO_CHAR_TAB == (c) ||		\
@@ -57,6 +60,24 @@
 				 IDIO_CHAR_BACKQUOTE == (c) ||		\
 				 IDIO_CHAR_COMMA == (c) ||		\
 				 IDIO_CHAR_DQUOTE == (c))
+
+#define IDIO_OPEN_DELIMITER(c)	(IDIO_CHAR_LPAREN == (c) ||		\
+				 IDIO_CHAR_LBRACE == (c) ||		\
+				 IDIO_CHAR_LBRACKET == (c) ||		\
+				 IDIO_CHAR_LANGLE == (c))
+
+/*
+ * Default interpolation characters:
+ *
+ * IDIO_CHAR_DOT == use default (ie. skip) => IDIO_CHAR_DOT cannot be
+ * one of the three
+ *
+ * 1. expression substitution == unquote
+ * 2. expression splicing == unquotesplicing
+ * 3. escape char
+ */
+char idio_default_interpolation_chars[] = { IDIO_CHAR_DOLLARS, IDIO_CHAR_AT, IDIO_CHAR_BACKSLASH };
+#define IDIO_INTERPOLATION_CHARS 3
 
 /*
  * In the case of named characters, eg. #\newline (as opposed to #\a,
@@ -115,7 +136,8 @@ static void idio_error_read_character_unknown_name (IDIO handle, char *name)
     idio_error_message ("%s:%zd:%zd: unknown character name %s", IDIO_HANDLE_NAME (handle), IDIO_HANDLE_POS (handle), IDIO_HANDLE_POS (handle), name);
 }
 
-static IDIO idio_read_expr (IDIO handle, int depth);
+static IDIO idio_read_expr (IDIO handle, char *ic, int depth);
+static IDIO idio_read_block (IDIO handle, IDIO closedel, char *ic, int depth);
 
 static void idio_read_whitespace (IDIO handle)
 {
@@ -153,7 +175,7 @@ static void idio_read_newline (IDIO handle)
     }
 }
 
-static IDIO idio_read_list (IDIO handle, IDIO opendel, int depth)
+static IDIO idio_read_list (IDIO handle, IDIO opendel, char *ic, int depth)
 {
     int count = 0;		/* # of elements in list */
 
@@ -168,7 +190,7 @@ static IDIO idio_read_list (IDIO handle, IDIO opendel, int depth)
     IDIO r = idio_S_nil;
     
     for (;;) {
-	IDIO e = idio_read_expr (handle, depth);
+	IDIO e = idio_read_expr (handle, ic, depth);
 
 	if (idio_handle_eofp (handle)) {
 	    idio_error_read_list_eof (handle);
@@ -186,9 +208,9 @@ static IDIO idio_read_list (IDIO handle, IDIO opendel, int depth)
 	     * XXX should only expect a single expr after ampersand, ie. not
 	     * a list: (a & b c)
 	     */
-	    IDIO cdr = idio_read_expr (handle, depth);
+	    IDIO cdr = idio_read_expr (handle, ic, depth);
 	    while (idio_T_eol == cdr) {
-		cdr = idio_read_expr (handle, depth);
+		cdr = idio_read_expr (handle, ic, depth);
 	    }
 
 	    if (idio_handle_eofp (handle)) {
@@ -203,9 +225,9 @@ static IDIO idio_read_list (IDIO handle, IDIO opendel, int depth)
 	    /*
 	     * This should be the closing delimiter
 	     */
-	    IDIO del = idio_read_expr (handle, depth);
+	    IDIO del = idio_read_expr (handle, ic, depth);
 	    while (idio_T_eol == del) {
-		del = idio_read_expr (handle, depth);
+		del = idio_read_expr (handle, ic, depth);
 	    }
 
 	    if (idio_handle_eofp (handle)) {
@@ -238,57 +260,57 @@ static IDIO idio_read_list (IDIO handle, IDIO opendel, int depth)
     return idio_S_unspec;
 }
 
-IDIO idio_read_quote (IDIO handle, int depth)
+static IDIO idio_read_quote (IDIO handle, char *ic, int depth)
 {
     IDIO_ASSERT (handle);
 
-    IDIO e = idio_read_expr (handle, depth);
+    IDIO e = idio_read_expr (handle, ic, depth);
     e = IDIO_LIST2 (idio_S_quote, e);
 
     return e;
 }
 
-IDIO idio_read_quasiquote (IDIO handle, int depth)
+static IDIO idio_read_quasiquote (IDIO handle, char *ic, int depth)
 {
     IDIO_ASSERT (handle);
 
-    IDIO e = idio_read_expr (handle, depth);
+    IDIO e = idio_read_expr (handle, ic, depth);
     e = IDIO_LIST2 (idio_S_quasiquote, e);
 
     return e;
 }
 
-IDIO idio_read_unquote_splicing (IDIO handle, int depth)
+static IDIO idio_read_unquote_splicing (IDIO handle, char *ic, int depth)
 {
     IDIO_ASSERT (handle);
 
-    IDIO e = idio_read_expr (handle, depth);
+    IDIO e = idio_read_expr (handle, ic, depth);
     e = IDIO_LIST2 (idio_S_unquotesplicing, e);
 
     return e;
 }
 
-IDIO idio_read_unquote (IDIO handle, int depth)
+static IDIO idio_read_unquote (IDIO handle, char *ic, int depth)
 {
     IDIO_ASSERT (handle);
 
-    IDIO e = idio_read_expr (handle, depth);
+    IDIO e = idio_read_expr (handle, ic, depth);
     e = IDIO_LIST2 (idio_S_unquote, e);
     
     return e;
 }
 
-IDIO idio_read_escape (IDIO handle, int depth)
+static IDIO idio_read_escape (IDIO handle, char *ic, int depth)
 {
     IDIO_ASSERT (handle);
 
-    IDIO e = idio_read_expr (handle, depth);
+    IDIO e = idio_read_expr (handle, ic, depth);
     e = IDIO_LIST2 (idio_S_escape, e);
     
     return e;
 }
 
-void idio_read_comment (IDIO handle, int depth)
+static void idio_read_comment (IDIO handle, int depth)
 {
     IDIO_ASSERT (handle);
 
@@ -308,7 +330,7 @@ void idio_read_comment (IDIO handle, int depth)
     }
 }
 
-IDIO idio_read_string (IDIO handle)
+static IDIO idio_read_string (IDIO handle)
 {
     IDIO_ASSERT (handle);
 
@@ -406,7 +428,7 @@ IDIO idio_read_string (IDIO handle)
     return r;
 }
 
-IDIO idio_read_character (IDIO handle)
+static IDIO idio_read_character (IDIO handle)
 {
     IDIO_ASSERT (handle);
 
@@ -459,15 +481,72 @@ IDIO idio_read_character (IDIO handle)
     return r;
 }
 
-IDIO idio_read_vector (IDIO handle, int depth)
+static IDIO idio_read_vector (IDIO handle, char *ic, int depth)
 {
     IDIO_ASSERT (handle);
 
-    IDIO e = idio_read_list (handle, idio_T_lparen, depth);
+    IDIO e = idio_read_list (handle, idio_T_lparen, ic, depth);
     return idio_list_to_array (e);
 }
 
-IDIO idio_read_bignum (IDIO handle, char basec, int radix)
+static IDIO idio_read_template (IDIO handle, int depth)
+{
+    IDIO_ASSERT (handle);
+
+    int i;
+    char ic[IDIO_INTERPOLATION_CHARS];
+    for (i = 0; i < IDIO_INTERPOLATION_CHARS; i++) {
+	ic[i] = idio_default_interpolation_chars[i];
+    }
+    i = 0;
+    
+    int c = idio_handle_getc (handle);
+
+    while (! IDIO_OPEN_DELIMITER (c)) {
+	if (i > (IDIO_INTERPOLATION_CHARS + 1)) {
+	    idio_error_message ("too many interpolation characters: #%d: %c (%#x)", i, c, c);
+	    return idio_S_unspec;
+	}
+
+	switch (c) {
+	case EOF:
+	    idio_error_read_character (handle, "EOF");
+	    return idio_S_unspec;
+	default:
+	    if (IDIO_CHAR_DOT != c) {
+		ic[i] = c;
+	    }
+	}
+
+	i++;
+	c = idio_handle_getc (handle);
+    }
+
+    IDIO closedel = idio_S_nil;
+    switch (c) {
+    case IDIO_CHAR_LPAREN:
+	closedel = idio_T_rparen;
+	break;
+    case IDIO_CHAR_LBRACE:
+	closedel = idio_T_rbrace;
+	break;
+    case IDIO_CHAR_LBRACKET:
+	closedel = idio_T_rbracket;
+	break;
+    case IDIO_CHAR_LANGLE:
+	closedel = idio_T_rangle;
+	break;
+    default:
+	idio_error_message ("unexpected template delimiter: %c (%#x)", c, c);
+	return idio_S_unspec;
+    }
+
+    IDIO e = idio_read_block (handle, closedel, ic, depth);
+    idio_debug ("read template %s\n", e);
+    return IDIO_LIST2 (idio_S_quasiquote, e);
+}
+
+static IDIO idio_read_bignum (IDIO handle, char basec, int radix)
 {
     IDIO_ASSERT (handle);
 
@@ -697,13 +776,24 @@ static IDIO idio_read_word (IDIO handle, int c)
     return r;
 }
 
-static IDIO idio_read_block (IDIO handle, int depth);
-
-static IDIO idio_read_expr (IDIO handle, int depth)
+static IDIO idio_read_expr (IDIO handle, char *ic, int depth)
 {
     int c = idio_handle_getc (handle);
 
     for (;;) {
+
+	/*
+	 * cf. handling of , and ,@
+	 */
+	if (c == ic[0]) {
+	    c = idio_handle_getc (handle);
+	    if (c == ic[1]) {
+		return idio_read_unquote_splicing (handle, ic, depth);
+	    }
+	    idio_handle_ungetc (handle, c);
+	    return idio_read_unquote (handle, ic, depth);
+	}
+
 	switch (c) {
 	case EOF:
 	    return idio_S_eof;
@@ -725,12 +815,12 @@ static IDIO idio_read_expr (IDIO handle, int depth)
 		    break;
 		default:
 		    idio_handle_ungetc (handle, c);
-		    return idio_read_escape (handle, depth);
+		    return idio_read_escape (handle, ic, depth);
 		}
 	    }
 	    break;
 	case IDIO_CHAR_LPAREN:
-	    return idio_read_list (handle, idio_T_lparen, depth + 1);
+	    return idio_read_list (handle, idio_T_lparen, ic, depth + 1);
 	case IDIO_CHAR_RPAREN:
 	    if (depth) {
 		return idio_T_rparen;
@@ -740,7 +830,7 @@ static IDIO idio_read_expr (IDIO handle, int depth)
 	    }
 	    break;
 	case IDIO_CHAR_LBRACE:
-	    return idio_read_block (handle, depth + 1);
+	    return idio_read_block (handle, idio_T_rbrace, ic, depth + 1);
 	case IDIO_CHAR_RBRACE:
 	    if (depth) {
 		return idio_T_rbrace;
@@ -749,18 +839,34 @@ static IDIO idio_read_expr (IDIO handle, int depth)
 		return idio_S_unspec;
 	    }
 	    break;
+	case IDIO_CHAR_RBRACKET:
+	    if (depth) {
+		return idio_T_rbracket;
+	    } else {
+		idio_error_read_parse (handle, "unexpected ']'");
+		return idio_S_unspec;
+	    }
+	    break;
+	case IDIO_CHAR_RANGLE:
+	    if (depth) {
+		return idio_T_rangle;
+	    } else {
+		idio_error_read_parse (handle, "unexpected '>'");
+		return idio_S_unspec;
+	    }
+	    break;
 	case IDIO_CHAR_SQUOTE:
-	    return idio_read_quote (handle, depth);
+	    return idio_read_quote (handle, ic, depth);
 	case IDIO_CHAR_BACKQUOTE:
-	    return idio_read_quasiquote (handle, depth);
+	    return idio_read_quasiquote (handle, ic, depth);
 	case IDIO_CHAR_COMMA:
 	    {
 		c = idio_handle_getc (handle);
 		if (IDIO_CHAR_AT == c) {
-		    return idio_read_unquote_splicing (handle, depth);
+		    return idio_read_unquote_splicing (handle, ic, depth);
 		}
 		idio_handle_ungetc (handle, c);
-		return idio_read_unquote (handle, depth);
+		return idio_read_unquote (handle, ic, depth);
 	    }
 	case IDIO_CHAR_HASH:
 	    {
@@ -775,7 +881,7 @@ static IDIO idio_read_expr (IDIO handle, int depth)
 		case '\\':
 		    return idio_read_character (handle);
 		case '(':
-		    return idio_read_vector (handle, depth + 1);
+		    return idio_read_vector (handle, ic, depth + 1);
 		case 'b':
 		    return idio_read_bignum (handle, c, 2);
 		case 'd':
@@ -788,7 +894,7 @@ static IDIO idio_read_expr (IDIO handle, int depth)
 		case 'i':
 		    {
 			int inexact = ('i' == c);
-			IDIO bn = idio_read_expr (handle, depth);
+			IDIO bn = idio_read_expr (handle, ic, depth);
 
 			if (IDIO_TYPE_FIXNUMP (bn)) {
 			    if (0 == inexact) {
@@ -846,6 +952,18 @@ static IDIO idio_read_expr (IDIO handle, int depth)
 		}
 	    }
 	    break;
+	case IDIO_CHAR_PERCENT:
+	    {
+		int c = idio_handle_getc (handle);
+		switch (c) {
+		case 'T':
+		    return idio_read_template (handle, depth + 1);
+		default:
+		    idio_handle_ungetc (handle, c);
+		    return idio_read_word (handle, IDIO_CHAR_PERCENT);
+		}
+	    }
+	    break;
 	case IDIO_CHAR_AMPERSAND:
 	    {
 		int cp = idio_handle_peek (handle);
@@ -880,12 +998,12 @@ static IDIO idio_read_expr (IDIO handle, int depth)
  * becomes "(expr)" so check to see if the collected list is one
  * element long and use only the head if so.
  */
-static IDIO idio_read_line (IDIO handle, int depth)
+static IDIO idio_read_line (IDIO handle, IDIO closedel, char *ic, int depth)
 {
     IDIO r = idio_S_nil;
     
     for (;;) {
-	IDIO expr = idio_read_expr (handle, depth);
+	IDIO expr = idio_read_expr (handle, ic, depth);
 	if (! (idio_T_eol == expr &&
 	       idio_S_nil == r)) {
 	}
@@ -913,7 +1031,7 @@ static IDIO idio_read_line (IDIO handle, int depth)
 	    } else {
 		/* blank line */
 	    }
-	} else if (idio_T_rbrace == expr) {
+	} else if (closedel == expr) {
 	    if (idio_S_nil != r) {
 		r = idio_list_reverse (r);
 		if (idio_S_nil == IDIO_PAIR_T (r)) {
@@ -921,9 +1039,9 @@ static IDIO idio_read_line (IDIO handle, int depth)
 		} else {
 		    r = idio_meaning_operators (r, 0);
 		}
-		return idio_pair (r, idio_T_rbrace);
+		return idio_pair (r, closedel);
 	    } else {
-		return idio_pair (r, idio_T_rbrace);
+		return idio_pair (r, closedel);
 	    }
 	} else {
 	    r = idio_pair (expr, r);
@@ -931,12 +1049,12 @@ static IDIO idio_read_line (IDIO handle, int depth)
     }
 }
 
-static IDIO idio_read_block (IDIO handle, int depth)
+static IDIO idio_read_block (IDIO handle, IDIO closedel, char *ic, int depth)
 {
     IDIO r = idio_S_nil;
     
     for (;;) {
-	IDIO line = idio_read_line (handle, depth);
+	IDIO line = idio_read_line (handle, closedel, ic, depth);
 	IDIO expr = IDIO_PAIR_H (line);
 	IDIO reason = IDIO_PAIR_T (line);
 
@@ -955,7 +1073,7 @@ static IDIO idio_read_block (IDIO handle, int depth)
 	    } else {
 		return idio_S_eof;
 	    }
-	} else if (idio_T_rbrace == reason) {
+	} else if (closedel == reason) {
 	    r = idio_list_reverse (r);
 	    if (depth) {
 		return idio_list_append2 (IDIO_LIST1 (idio_S_block), r);
@@ -972,7 +1090,11 @@ IDIO idio_read (IDIO handle)
     IDIO_TYPE_ASSERT (handle, handle);
 
     idio_gc_pause ();
-    IDIO line = idio_read_line (handle, 0);
+
+    /*
+     * dummy value for closedel
+     */
+    IDIO line = idio_read_line (handle, idio_T_eol, idio_default_interpolation_chars, 0);
     idio_gc_resume ();
     
     return IDIO_PAIR_H (line);

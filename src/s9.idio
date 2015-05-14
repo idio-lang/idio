@@ -9,36 +9,36 @@
 
 ;; Some obvious procedures first
 
-define (caaaar x) (car (car (car (car x))))
-define (caaadr x) (car (car (car (cdr x))))
-define (caadar x) (car (car (cdr (car x))))
-define (caaddr x) (car (car (cdr (cdr x))))
-define (cadaar x) (car (cdr (car (car x))))
-define (cadadr x) (car (cdr (car (cdr x))))
-define (caddar x) (car (cdr (cdr (car x))))
-define (cadddr x) (car (cdr (cdr (cdr x))))
-define (cdaaar x) (cdr (car (car (car x))))
-define (cdaadr x) (cdr (car (car (cdr x))))
-define (cdadar x) (cdr (car (cdr (car x))))
-define (cdaddr x) (cdr (car (cdr (cdr x))))
-define (cddaar x) (cdr (cdr (car (car x))))
-define (cddadr x) (cdr (cdr (car (cdr x))))
-define (cdddar x) (cdr (cdr (cdr (car x))))
-define (cddddr x) (cdr (cdr (cdr (cdr x))))
+define (phhhh x) (ph (ph (ph (ph x))))
+define (phhht x) (ph (ph (ph (pt x))))
+define (phhth x) (ph (ph (pt (ph x))))
+define (phhtt x) (ph (ph (pt (pt x))))
+define (phthh x) (ph (pt (ph (ph x))))
+define (phtht x) (ph (pt (ph (pt x))))
+define (phtth x) (ph (pt (pt (ph x))))
+define (phttt x) (ph (pt (pt (pt x))))
+define (pthhh x) (pt (ph (ph (ph x))))
+define (pthht x) (pt (ph (ph (pt x))))
+define (pthth x) (pt (ph (pt (ph x))))
+define (pthtt x) (pt (ph (pt (pt x))))
+define (ptthh x) (pt (pt (ph (ph x))))
+define (pttht x) (pt (pt (ph (pt x))))
+define (pttth x) (pt (pt (pt (ph x))))
+define (ptttt x) (pt (pt (pt (pt x))))
 
-define (caaar x) (car (car (car x)))
-define (caadr x) (car (car (cdr x)))
-define (cadar x) (car (cdr (car x)))
-define (caddr x) (car (cdr (cdr x)))
-define (cdaar x) (cdr (car (car x)))
-define (cdadr x) (cdr (car (cdr x)))
-define (cddar x) (cdr (cdr (car x)))
-define (cdddr x) (cdr (cdr (cdr x)))
+define (phhh x) (ph (ph (ph x)))
+define (phht x) (ph (ph (pt x)))
+define (phth x) (ph (pt (ph x)))
+define (phtt x) (ph (pt (pt x)))
+define (pthh x) (pt (ph (ph x)))
+define (ptht x) (pt (ph (pt x)))
+define (ptth x) (pt (pt (ph x)))
+define (pttt x) (pt (pt (pt x)))
 
-define (caar x) (car (car x))
-define (cadr x) (car (cdr x))
-define (cdar x) (cdr (car x))
-define (cddr x) (cdr (cdr x))
+define (phh x) (ph (ph x))
+define (pht x) (ph (pt x))
+define (pth x) (pt (ph x))
+define (ptt x) (pt (pt x))
 
 define (list & x) x
 
@@ -54,7 +54,7 @@ define (void) (if #f #f)
 append = {
   %append :+ function (a b) {
     if (null? a) b {
-      cons (car a) (%append (cdr a) b)
+      pair (ph a) (%append (pt a) b)
     }
   }
   %append
@@ -80,23 +80,23 @@ define-macro (let-s9 bindings expr & exprs) {
  	 if (null? bind*) {
 	   list vars args
 	 } {
-	   split (cdr bind*) \
-		 (cons (caar bind*) vars)
-		 (cons (cadr (car bind*)) args)
+	   split (pt bind*) \
+		 (pair (phh bind*) vars)
+		 (pair (pht (ph bind*)) args)
 	 }
        })))
    #f)
 }
 
-define (map-car f a) {
-  %mapcar :+ function (a) {
+define (map-ph f a) {
+  %mapph :+ function (a) {
     if (null? a) {
       '#n
     } {
-      cons (f (car a)) (%mapcar (cdr a))
+      pair (f (ph a)) (%mapph (pt a))
     }
   }
-  %mapcar a
+  %mapph a
 }
 
 define (map f a b) {
@@ -104,7 +104,7 @@ define (map f a b) {
     if (null? a) {
       '#n
     } {
-      cons (f (car a) (car b)) (map2 (cdr a) (cdr b))
+      pair (f (ph a) (ph b)) (map2 (pt a) (pt b))
     }
   }
   map2 a b
@@ -114,11 +114,11 @@ define-macro (letrec-s9 bindings expr & exprs) {
   append3 := function (a b c) {
     append a (append b c)
   }
-  tmps := map-car (function (x) (gensym)) bindings
-  vars := map-car car bindings
-  args := map-car cadr bindings
+  tmps := map-ph (function (x) (gensym)) bindings
+  vars := map-ph ph bindings
+  args := map-ph pht bindings
 
-  undefineds := map-car (function (v) (list v #f)) vars
+  undefineds := map-ph (function (v) (list v #f)) vars
   tmp-bindings := map list tmps args
   updates := map (function (v t) (list 'set! v t)) vars tmps
   list 'let \
@@ -139,14 +139,14 @@ define-macro (if+ & clauses) {
   loop :+ function (c) {
     cond ((null? c) '#n) \
 	 ((not (pair? c)) (error "bad syntax")) \
-	 ((null? (cdr c)) {
-	   list 'else (car c)
+	 ((null? (pt c)) {
+	   list 'else (ph c)
 	 }) (else {
-	  cons (list (car c) (car (cdr c))) (loop (cdr (cdr c)))
+	  pair (list (ph c) (ph (pt c))) (loop (pt (pt c)))
 	 })
   }
 
-  `(cond ,@(loop clauses))
+  %T(cond $@(loop clauses))
 }
 
 ;; Booleans
@@ -159,15 +159,15 @@ define (not x) (eq? #f x)
 ;(define number? real?)
 
 define (port? x) {
-  or (input-port? x) \
-     (output-port? x)
+  or (input-handle? x) \
+     (output-handle? x)
 }
 
 ;; Equivalence predicates
 
 define (eqv? a b) {
   if+ (number? a) (and (number? b)
-		       (= a b)) \
+		       (== a b)) \
       (char? a)   (and (char? b)
 		       (char=? a b)) \
       else        (eq? a b)
@@ -176,8 +176,8 @@ define (eqv? a b) {
 define (equal? a b) {
   if+ (eq? a b) #t \
       (and (pair? a)
-	   (pair? b)) (and (equal? (car a) (car b))
-			   (equal? (cdr a) (cdr b))) \
+	   (pair? b)) (and (equal? (ph a) (ph b))
+			   (equal? (pt a) (pt b))) \
       (string? a) (and (string? b)
 		       (string=? a b)) \
       (vector? a) (and (vector? b)
@@ -192,57 +192,57 @@ define (list? x) {
   l? :+ function (x y) {
     if+ (eq? x y) #f \
 	(null? x) #t \
-	(pair? x) (or (null? (cdr x))
-		      (and (pair? (cdr x))
-			   (l? (cddr x) (cdr y)))) \
+	(pair? x) (or (null? (pt x))
+		      (and (pair? (pt x))
+			   (l? (ptt x) (pt y)))) \
         else #f
     }
 
   or (null? x) \
      (and (pair? x)
-	  (l? (cdr x) x))
+	  (l? (pt x) x))
 }
 
 define (assoc x a) {
   if+ (null? a) #f \
-      (equal? (caar a) x) (car a) \
-      else (assoc x (cdr a))
+      (equal? (phh a) x) (ph a) \
+      else (assoc x (pt a))
 }
 
 define (assq x a) {
   if+ (null? a) #f \
-      (eq? (caar a) x) (car a) \
-      else (assq x (cdr a))
+      (eq? (phh a) x) (ph a) \
+      else (assq x (pt a))
 }
 
 define (assv x a) {
   if+ (null? a) #f \
-      (eqv? (caar a) x) (car a) \
-      else (assv x (cdr a))
+      (eqv? (phh a) x) (ph a) \
+      else (assv x (pt a))
 }
 
 define (member x a) {
   if+ (null? a) #f \
-      (equal? (car a) x) a \
-      else (member x (cdr a))
+      (equal? (ph a) x) a \
+      else (member x (pt a))
 }
 
 define (memq x a) {
   if+ (null? a) #f \
-      (eq? (car a) x) a \
-      else (memq x (cdr a))
+      (eq? (ph a) x) a \
+      else (memq x (pt a))
 }
 
 define (memv x a) {
   if+ (null? a) #f \
-      (eqv? (car a) x) a \
-      else (memv x (cdr a))
+      (eqv? (ph a) x) a \
+      else (memv x (pt a))
 }
 
 define (reverse a) {
   reverse2 :+ function (a b) {
     if (null? a) b {
-      reverse2 (cdr a) (cons (car a) b)
+      reverse2 (pt a) (pair (ph a) b)
     }
   }
   reverse2 a '#n
@@ -250,52 +250,52 @@ define (reverse a) {
 
 ; Auxiliary functions for FOLD-LEFT, FOLD-RIGHT, MAP
 
-define (map-car f a) {
-  mapcar1 :+ function (a r) {
+define (map-ph f a) {
+  mapph1 :+ function (a r) {
     if (null? a) {
       reverse r
     } {
-      mapcar1 (cdr a) (cons (f (car a)) r)
+      mapph1 (pt a) (pair (f (ph a)) r)
     }
   }
 
-  mapcar1 a '#n
+  mapph1 a '#n
 }
 
-car-of := {
-  map-car := map-car
+ph-of := {
+  map-ph := map-ph
 
   function (a*) {
-    map-car car a*
+    map-ph ph a*
   }
 }
 
-cdr-of := {
-  map-car := map-car
+pt-of := {
+  map-ph := map-ph
 
   function (a*) {
-    map-car cdr a*
+    map-ph pt a*
   }
 }
 
 any-null? := {
-  map-car := map-car
+  map-ph := map-ph
 
   function (a*) {
-    and (memq #t (map-car null? a*)) \
+    and (memq #t (map-ph null? a*)) \
 	#t
   }
 }
 
 fold-left := {
-  car-of := car-of
-  cdr-of := cdr-of
+  ph-of := ph-of
+  pt-of := pt-of
   any-null? := any-null?
 
   function (f b & a*) {
     fold :+ function (a* r) {
       if (any-null? a*) r {
-        fold (cdr-of a*) (apply f r (car-of a*))
+        fold (pt-of a*) (apply f r (ph-of a*))
       }
     }
  
@@ -308,15 +308,15 @@ fold-left := {
 }
 
 fold-right := {
-  car-of := car-of
-  cdr-of := cdr-of
+  ph-of := ph-of
+  pt-of := pt-of
   any-null? := any-null?
-  map-car := map-car
+  map-ph := map-ph
 
   function (f b & a*) {
     foldr :+ function (a* r) {
       if (any-null? a*) r {
-         foldr (cdr-of a*) (apply f (append (car-of a*)
+         foldr (pt-of a*) (apply f (append (ph-of a*)
 					    (list r)))
       }
     }
@@ -324,7 +324,7 @@ fold-right := {
     if (null? a*) {
       error "fold-right: too few arguments"
     } {
-      foldr (map-car reverse a*) b
+      foldr (map-ph reverse a*) b
     }
   }
 }
@@ -335,7 +335,7 @@ append := {
   function a {
     append2 :+ function (a b) {
       if (null? a) b {
-        append2 (cdr a) (cons (car a) b)
+        append2 (pt a) (pair (ph a) b)
       }
     }
     append-wrapper :+ function (a b) {
@@ -351,7 +351,7 @@ append := {
 define (length x) {
   length2 :+ function (x r) {
     if (null? x) r {
-      length2 (cdr x) (+ r 1)
+      length2 (pt x) (+ r 1)
     }
   }
 
@@ -361,24 +361,24 @@ define (length x) {
 define (list-tail x n) {
   if+ (zero? n) x \
       (null? x) (error "list-tail: index out of range" n) \
-      else (list-tail (cdr x) (- n 1))
+      else (list-tail (pt x) (- n 1))
 }
 
 define (list-ref x n) {
-  car (list-tail x n)
+  ph (list-tail x n)
 }
 
 map := {
-  car-of := car-of
-  cdr-of := cdr-of
+  ph-of := ph-of
+  pt-of := pt-of
   any-null? := any-null?
 
   function (f & a*) {
     map2 :+ function (a* r) {
-      if (null? (car a*)) {
+      if (null? (ph a*)) {
         reverse r
       } {
-	map2 (cdr-of a*) (cons (apply f (car-of a*))
+	map2 (pt-of a*) (pair (apply f (ph-of a*))
 			       r)
       }
     }
@@ -402,7 +402,7 @@ define (for-each f & a*) {
 
 ;; Arithmetic procedures
 
-define (abs x) (if (< x 0) (- x) x)
+define (abs x) (if (lt x 0) (- x) x)
 
 define (even? x) (zero? (remainder x 2))
 
@@ -428,7 +428,7 @@ gcd := {
     gcd2 :+ function (a b) {
       if+ (zero? b) a \
 	  (zero? a) b \
-	  (< a b) (gcd2 a (remainder b a)) \
+	  (lt a b) (gcd2 a (remainder b a)) \
 	  else (gcd2 b (remainder a b))
     }
 
@@ -457,9 +457,9 @@ max := {
   function (a & b) {
     fold-left (function (a b) {
       if (or (inexact? a) (inexact? b)) {
-        exact->inexact (if (> a b) a b)
+        exact->inexact (if (gt a b) a b)
       } {
-        if (> a b) a b
+        if (gt a b) a b
       }
     }) a b
   }
@@ -471,9 +471,9 @@ min := {
   function (a & b) {
     fold-left (function (a b) {
       if (or (inexact? a) (inexact? b)) {
-        exact->inexact (if (< a b) a b)
+        exact->inexact (if (lt a b) a b)
       } {
-	if (< a b) a b
+	if (lt a b) a b
       }
     }) a b
   }
@@ -487,11 +487,11 @@ define (modulo a b) {
       else (+ b rem)
 }
 
-define (negative? x) (< x 0)
+define (negative? x) (lt x 0)
 
 define (odd? x) (not (even? x))
 
-define (positive? x) (> x 0)
+define (positive? x) (gt x 0)
 
 define (ceiling x) (- (floor (- x)))
 
@@ -500,18 +500,18 @@ define (round x) {
   rx := floor x+
 
   if (and (odd? (inexact->exact rx))
-	  (= x+ rx)) {
+	  (== x+ rx)) {
     rx - 1
   } rx
 }
 
 define (truncate x) {
-  (if (< x 0) ceiling floor) x
+  (if (lt x 0) ceiling floor) x
 }
 
 ; used by EXP and SIN
 define (fact2 x r) {
-  if (= x 0) r {
+  if (== x 0) r {
     fact2 (x - 1) (x * r)
   }
 }
@@ -521,7 +521,7 @@ exp := {
 
   function (x) {
     e-series :+ function (x y r last) {
-      if (= r last) r {
+      if (== r last) r {
         e-series x \
 		 (1 + y) \
 		 (r + ((expt x y) /
@@ -530,7 +530,7 @@ exp := {
       }
     }
 
-    if (>= x 2.0) {
+    if (ge x 2.0) {
       e^x/2 := 1 + (x / 2) + (e-series (x / 2) 
 				       2 
 				       0.0 
@@ -549,7 +549,7 @@ exp := {
 define (log x) {
   l-series :+ function (x y r last lim) {
     if+ (and lim (zero? lim)) r \
-	(= r last) (2 * r) \
+	(== r last) (2 * r) \
 	else (l-series x
 		       (2 + y)
 		       (r + ((expt ((x - 1) /
@@ -561,7 +561,7 @@ define (log x) {
     }
 
     if+ (negative? x) (1.0 / 0) \
-        (< 0.1 x 5) (l-series x 
+        (lt 0.1 x 5) (l-series x 
 			      1 
 			      0.0 
 			      1.0 
@@ -602,7 +602,7 @@ p-series  := {
   fact2 := fact2
 
   function (x y r add last) {
-    if (= r last) r {
+    if (== r last) r {
       p-series x \
 	       (2 + y) \
 	       ((if add \+ \-) r ((expt x y) / (fact2 y 1))) \
@@ -623,13 +623,13 @@ cos := {
   function (x) {
     x := ->circle x
 
-    if+ (= 0     x)       (if (inexact? x)  #i1.0  1.0) \
-        (= pi/2  x)       (if (inexact? x)  #i0.0  0.0) \
-	(= pi    x)       (if (inexact? x) #i-1.0 -1.0) \
-	(= 3pi/2 x)       (if (inexact? x)  #i0.0  0.0) \
-	(<= 0    x pi/2)  (p-series    x         2 1.0 #f 0) \
-	(<= pi/2 x pi)    (- (p-series (- pi x)  2 1.0 #f 0)) \
-	(<= pi   x 3pi/2) (- (p-series (- x pi)  2 1.0 #f 0)) \
+    if+ (== 0     x)       (if (inexact? x)  #i1.0  1.0) \
+        (== pi/2  x)       (if (inexact? x)  #i0.0  0.0) \
+	(== pi    x)       (if (inexact? x) #i-1.0 -1.0) \
+	(== 3pi/2 x)       (if (inexact? x)  #i0.0  0.0) \
+	(le 0    x pi/2)  (p-series    x         2 1.0 #f 0) \
+	(le pi/2 x pi)    (- (p-series (- pi x)  2 1.0 #f 0)) \
+	(le pi   x 3pi/2) (- (p-series (- x pi)  2 1.0 #f 0)) \
 	else              (p-series    (- 2pi x) 2 1.0 #f 0)
   }
 }
@@ -645,17 +645,17 @@ sin := {
   function (x) {
     x := ->circle x
 
-    if+ (= 0     x) (if (inexact? x)  #i0.0  0.0) \
-        (= pi/2  x) (if (inexact? x)  #i1.0  1.0) \
-	(= pi    x) (if (inexact? x)  #i0.0  0.0) \
-	(= 3pi/2 x) (if (inexact? x) #i-1.0 -1.0) \
+    if+ (== 0     x) (if (inexact? x)  #i0.0  0.0) \
+        (== pi/2  x) (if (inexact? x)  #i1.0  1.0) \
+	(== pi    x) (if (inexact? x)  #i0.0  0.0) \
+	(== 3pi/2 x) (if (inexact? x) #i-1.0 -1.0) \
 	else {
-	  z := if+ (<= 0    x  pi/2) x \
-	           (<= pi/2 x  pi)   (- pi x) \
-		   (<= pi   x 3pi/2) (- x pi) \
+	  z := if+ (le 0    x  pi/2) x \
+	           (le pi/2 x  pi)   (- pi x) \
+		   (le pi   x 3pi/2) (- x pi) \
 		   else              (- 2pi x)
 
-	  if (> x pi) {
+	  if (gt x pi) {
 	    - (p-series z 3 z #f 0)
           } {
 	    p-series z 3 z #f 0
@@ -674,9 +674,9 @@ tan := {
 
   function (x) {
     x := ->circle x
-    if+ (or (= x 0)     (= x  pi))   (if (inexact? x)  #i0.0  0.0) \
-        (or (= x  pi/4) (= x 5pi/4)) (if (inexact? x)  #i1.0  1.0) \
-	(or (= x 3pi/4) (= x 7pi/4)) (if (inexact? x) #i-1.0 -1.0) \
+    if+ (or (== x 0)     (== x  pi))   (if (inexact? x)  #i0.0  0.0) \
+        (or (== x  pi/4) (== x 5pi/4)) (if (inexact? x)  #i1.0  1.0) \
+	(or (== x 3pi/4) (== x 7pi/4)) (if (inexact? x) #i-1.0 -1.0) \
 	else                         ((sin x) / (cos x))
   }
 }
@@ -684,7 +684,7 @@ tan := {
 atan := {
   pi/2 := pi/2
   at-series :+ function (x y r last) {
-    if (= r last) r {
+    if (== r last) r {
       at-series x \
 		(1 + y) \
 		(r + ((((expt 2 (y + y)) * (expt (fact2 y 1) 2)) /
@@ -697,13 +697,13 @@ atan := {
 
   function (x) {
     if+ (negative? x) (- (at-series (- x) 0.0 0 1)) \
-	(> x 1) (pi/2 - (atan (/ x))) \
+	(gt x 1) (pi/2 - (atan (/ x))) \
 	else (at-series x 0.0 0 1)
   }
 }
 
 define (asin x) {
-  if+ (= 1 x) (2 * (atan x)) \
+  if+ (== 1 x) (2 * (atan x)) \
       (negative? x) (- (asin (- x))) \
       else (atan (x / (sqrt (1 - (x * x)))))
 }
@@ -713,15 +713,15 @@ acos := {
   pi/2 := pi/2
 
   function (x) {
-    if+ (= -1 x) pi \
-	(=  1 x) 0 \
+    if+ (== -1 x) pi \
+	(==  1 x) 0 \
 	else (pi/2 - (asin x))
   }
 }
 
 define (sqrt square) {
   sqrt2 :+ function (x last) {
-    if (= last x) x {
+    if (== last x) x {
       sqrt2 ((x + (square / x)) / 2) x
     }
   }
@@ -730,13 +730,13 @@ define (sqrt square) {
     error "sqrt: negative argument" square
   } {
     rt := sqrt2 square 0
-    if (= square (* rt rt)) {
+    if (== square (* rt rt)) {
       inexact->exact rt
     } rt
   }
 }
 
-define (zero? x) (= 0 x)
+define (zero? x) (== 0 x)
 
 ;; String procedures
 
@@ -762,13 +762,13 @@ define number->string {
       } {
 	conv (quotient n rdx) \
 	     rdx \
-	     (cons (vector-ref digits (remainder n rdx))
+	     (pair (vector-ref digits (remainder n rdx))
 		   res)
       }
     }
     conv-int :+ function (n rdx) {
       if (negative? n) {
-        list->string (cons #\- (conv (abs n) rdx '#n))
+        list->string (pair #\- (conv (abs n) rdx '#n))
       } {
 	list->string (conv n rdx '#n)
       }
@@ -780,15 +780,15 @@ define number->string {
       k := string-length ms
       string-append (substring ms 0 i) \
 		    "." \
-		    (if (= k i) "0" (substring ms i k)) \
+		    (if (== k i) "0" (substring ms i k)) \
 		    "e" \
-		    (if (<= 0 e) "+" "") \
+		    (if (le 0 e) "+" "") \
 		    es
     }
     zeroes :+ function (n) {
       loop :+ function (n z) {
         if (positive? n) {
-          loop (- n 1) (cons #\0 z)
+          loop (- n 1) (pair #\0 z)
         } {
 	  list->string z
         }
@@ -805,7 +805,7 @@ define number->string {
 		    {
 		      ms := conv-int m 10
 		      k := string-length ms
-		      if (<= 0 offset k){
+		      if (le 0 offset k){
                         string-append (substring ms 0 offset) \
 				      "." \
 				      (substring ms offset k)
@@ -819,7 +819,7 @@ define number->string {
       e := exponent n
       d := number-of-digits m 0
 
-      if (< -4 (+ e d) 10) {
+      if (lt -4 (+ e d) 10) {
         conv-expanded-real m (e + d)
       } {
 	conv-sci-real m (e + d + -1)
@@ -827,13 +827,13 @@ define number->string {
     }
     get-radix :+ function () {
       if+ (null? radix) 10 \
-	  (<= 2 (car radix) 36) (car radix) \
+	  (le 2 (ph radix) 36) (ph radix) \
 	  else (error "number->string: invalid radix"
-                                (car radix))
+                                (ph radix))
     }
 
     r := (get-radix)
-    if+ (not (or (integer? n) (= 10 r))) \
+    if+ (not (or (integer? n) (== 10 r))) \
           (error "number->string: real number needs a radix of 10" n) \
 	(integer? n) (conv-int (inexact->exact n) r) \
 	else (conv-real n)
@@ -849,28 +849,28 @@ string->number := {
     value-of-digit :+ function (x) {
       v :+ function (x d n) {
         if+ (null? d) 36 \
-	    (char=? (car d) x) n \
-	    else (v x (cdr d) (n + 1))
+	    (char=? (ph d) x) n \
+	    else (v x (pt d) (n + 1))
       }
       v (char-downcase x) digits 0
     }
     find-exponent-mark :+ function (c) {
       memv c '(#\d #\D #\e #\E #\f #\F #\l #\L #\s #\S)
     }
-    result :+ cons
-    value :+ car
-    rest :+ cdr
+    result :+ pair
+    value :+ ph
+    rest :+ pt
     FAIL :+ '(#f & #f)
-    failed? :+ function (res) (eq? #f (cdr res))
-    ok? :+ function (res) (not (eq? #f (cdr res)))
+    failed? :+ function (res) (eq? #f (pt res))
+    ok? :+ function (res) (not (eq? #f (pt res)))
     conv3 :+ function (lst val rdx) {
       if (null? lst) {
         result val '#n
       } {
-	dval := value-of-digit (car lst)
-	if (< dval rdx) {
-          conv3 (cdr lst) \
-		((value-of-digit (car lst)) + (val * rdx)) \
+	dval := value-of-digit (ph lst)
+	if (lt dval rdx) {
+          conv3 (pt lst) \
+		((value-of-digit (ph lst)) + (val * rdx)) \
 		rdx
         } {
 	  result val lst
@@ -884,9 +884,9 @@ string->number := {
     }
     conv-int :+ function (lst rdx) {
       if+ (null? lst) FAIL \
-	  (char=? (car lst) #\+) (conv (cdr lst) rdx) \
-	  (char=? (car lst) #\-) {
-            r := conv (cdr lst) rdx
+	  (char=? (ph lst) #\+) (conv (pt lst) rdx) \
+	  (char=? (ph lst) #\-) {
+            r := conv (pt lst) rdx
 	    if (ok? r) {
               result (- (value r)) (rest r)
             } FAIL 
@@ -911,26 +911,26 @@ string->number := {
     }
     conv-decimals :+ function (int lst) {
       if+ (null? lst) (result (0.0 + int) '#n) \
-	  (find-exponent-mark (car lst)) (conv-exponent int 10 (cdr lst)) \
+	  (find-exponent-mark (ph lst)) (conv-exponent int 10 (pt lst)) \
 	  else {
             frag-part := conv3 lst 1 10
 	    if (null? (rest frag-part)) {
               result (make-real int (value frag-part) 0) '#n
             } {
-	      conv-exponent int (value frag-part) (cdr (rest frag-part))
+	      conv-exponent int (value frag-part) (pt (rest frag-part))
             }
           }
     }
     radix-ten? :+ function (rdx) {
-      if (not (= 10 rdx)) {
+      if (not (== 10 rdx)) {
         if (null? radix) #f (error "string->number: real number needs a radix of 10")
       } #t
     }
     mantissa-digits? :+ function (x) {
       if+ (null? x)                    #f \
-	  (char-numeric? (car x))      #t \
-	  (find-exponent-mark (car x)) #f \
-	  else (mantissa-digits? (cdr x))
+	  (char-numeric? (ph x))      #t \
+	  (find-exponent-mark (ph x)) #f \
+	  else (mantissa-digits? (pt x))
     }
     conv-real :+ function (lst rdx) {
       int-part := conv-int lst rdx
@@ -938,43 +938,43 @@ string->number := {
           (and (zero? (value int-part))
 	       (not (mantissa-digits? lst))) FAIL \
 	  (null? (rest int-part)) int-part \
-	  (find-exponent-mark (car (rest int-part))) {
+	  (find-exponent-mark (ph (rest int-part))) {
             if (radix-ten? rdx) {
               conv-exponent (value int-part) \
 			    10 \
-			    (cdr (rest int-part))
+			    (pt (rest int-part))
             } FAIL
 	  } \
-	  (char=? #\. (car (rest int-part))) {
+	  (char=? #\. (ph (rest int-part))) {
             if (radix-ten? rdx) {
-              conv-decimals (value int-part) (cdr (rest int-part))
+              conv-decimals (value int-part) (pt (rest int-part))
             } FAIL
           } \
 	  else int-part
     }
     replace-inexact-digits! :+ function (a) {
       if+ (null? a) #f \
-	  (char=? #\# (car a)) {
-            set-car! a #\5
+	  (char=? #\# (ph a)) {
+            set-ph! a #\5
             set! inexact #t
-            replace-inexact-digits! (cdr a)
+            replace-inexact-digits! (pt a)
           } \
-	  else (replace-inexact-digits! (cdr a))
+	  else (replace-inexact-digits! (pt a))
     }
     get-radix :+ function () {
       if+ (null? radix) 10 \
-	  (<= 2 (car radix) 36) (car radix) \
-	  else (error "string->number: invalid radix" (car radix))
+	  (le 2 (ph radix) 36) (ph radix) \
+	  else (error "string->number: invalid radix" (ph radix))
     }
 
     set! inexact #f
     radix :+ (get-radix)
     lst :+ string->list str
 
-    if (and (> (string-length str) 1)
-	    (char=? #\# (car lst))) {
-      mod := cadr lst
-      set! lst (cddr lst)
+    if (and (gt (string-length str) 1)
+	    (char=? #\# (ph lst))) {
+      mod := pht lst
+      set! lst (ptt lst)
       if+ (char=? mod #\e) (void) \
           (char=? mod #\d) (void) \
 	  (char=? mod #\i) (set! inexact #t) \
@@ -984,17 +984,17 @@ string->number := {
 	  else             (set! lst '#n)
     }
     if (or (null? lst)
-	   (memv (car lst) '(#\+ #\- #\.))
-	   (char-numeric? (car lst))) {
+	   (memv (ph lst) '(#\+ #\- #\.))
+	   (char-numeric? (ph lst))) {
       replace-inexact-digits! lst
     }
 
     r := if+ (null? lst) FAIL \
-             (char=? #\- (car lst)) (conv-real (cdr lst) radix) \
+             (char=? #\- (ph lst)) (conv-real (pt lst) radix) \
 	     else (conv-real lst radix)
 
     if (null? (rest r)) {
-      v := if (char=? #\- (car lst)) {
+      v := if (char=? #\- (ph lst)) {
         - (value r)
       } {
 	value r
@@ -1015,41 +1015,41 @@ define (newline & port) (apply write-char #\newline port)
 define (call-with-input-file file proc) {
   f := open-input-file file
   r := proc f
-  close-input-port f
+  close-input-handle f
   r
 }
 
 define (call-with-output-file file proc) {
   f := open-output-file file
   r := proc f
-  close-output-port f
+  close-output-handle f
   r
 }
 
 with-input-from-file := {
-  set-input-port! := set-input-port!
+  set-input-handle! := set-input-handle!
 
   function (file thunk) {
-    outer-port := (current-input-port)
-    new-port := open-input-file file
-    set-input-port! new-port
+    outer-handle := (current-input-handle)
+    new-handle := open-input-file file
+    set-input-handle! new-handle
     input := (thunk)
-    close-input-port new-port
-    set-input-port! outer-port
+    close-input-handle new-handle
+    set-input-handle! outer-handle
     input
   }
 }
 
 with-output-to-file := {
-  set-output-port! := set-output-port!
+  set-output-handle! := set-output-handle!
 
   function (file thunk) {
-    outer-port := (current-output-port)
-    new-port := open-output-file file
-    set-output-port! new-port
+    outer-handle := (current-output-handle)
+    new-handle := open-output-file file
+    set-output-handle! new-handle
     (thunk)
-    close-output-port new-port
-    set-output-port! outer-port
+    close-output-handle new-handle
+    set-output-handle! outer-handle
   }
 }
 
@@ -1057,30 +1057,30 @@ with-output-to-file := {
 
 define-macro (quasiquote-s9) \
   function (form) {
-    qq-cons :+ function (a b) {
+    qq-pair :+ function (a b) {
       if+ (and (pair? a)
-	       (eq? 'unquote-splicing (car a))) {
+	       (eq? 'unquote-splicing (ph a))) {
             if (and (pair? b)
-		    (eq? 'quote (car b))
-		    (null? (cadr b))) {
-              cadr a
+		    (eq? 'quote (ph b))
+		    (null? (pht b))) {
+              pht a
             } {
-	      list 'append (cadr a) b
+	      list 'append (pht a) b
             }
           } \
-          else (list 'cons a b)
+          else (list 'pair a b)
     }
     qq-expand :+ function (x) {
       if+ (vector? x) (list 'list->vector (qq-expand (vector->list x))) \
 	  (not (pair? x)) (list 'quote x) \
-	  (and (eq? 'unquote (car x))
-	       (pair? (cdr x))) (cadr x) \
-	  (and (eq? 'unquote-splicing (car x))
-	       (pair? (cdr x))) (list 'unquote-splicing (cadr x)) \
-	  (and (eq? 'quasiquote (car x))
-	       (pair? (cdr x))) (error "quasiquote: may not be nested") \
-	  else (qq-cons (qq-expand (car x))
-			(qq-expand (cdr x)))
+	  (and (eq? 'unquote (ph x))
+	       (pair? (pt x))) (pht x) \
+	  (and (eq? 'unquote-splicing (ph x))
+	       (pair? (pt x))) (list 'unquote-splicing (pht x)) \
+	  (and (eq? 'quasiquote (ph x))
+	       (pair? (pt x))) (error "quasiquote: may not be nested") \
+	  else (qq-pair (qq-expand (ph x))
+			(qq-expand (pt x)))
     }
 
     qq-expand form
@@ -1093,11 +1093,11 @@ define-macro (quasiquote-s9) \
 define (check-bindings b who) {
   if+ (null? b) #t \
       (or (not (pair? b))
-	  (not (pair? (car b)))
-	  (not (symbol? (caar b)))
-	  (not (pair? (cdar b)))
-	  (not (null? (cddar b)))) (error (string-append who ": invalid syntax") b) \
-      else (check-bindings (cdr b) who)
+	  (not (pair? (ph b)))
+	  (not (symbol? (phh b)))
+	  (not (pair? (pth b)))
+	  (not (null? (ptth b)))) (error (string-append who ": invalid syntax") b) \
+      else (check-bindings (pt b) who)
 }
 
 ; Now that the QQ expander is here, define a
@@ -1109,11 +1109,11 @@ define-macro %ext-let {
   function (a1 a2 & a3) {
     split :+ function (bind* vars args) {
       if (null? bind*) {
-        cons vars args
+        pair vars args
       } {
-	split (cdr bind*) \
-	      (cons (caar bind*) vars) \
-	      (cons (cadar bind*) args)
+	split (pt bind*) \
+	      (pair (phh bind*) vars) \
+	      (pair (phth bind*) args)
       }
     }
        
@@ -1123,15 +1123,15 @@ define-macro %ext-let {
       } {
 	 check-bindings a2 "let"
          va := split a2 '#n '#n
-	 v := reverse (car va)
-	 a := reverse (cdr va)
+	 v := reverse (ph va)
+	 a := reverse (pt va)
 	 `((letrec ((,a1 (function ,v ,@a3))) ,a1) ,@a)
       }
     } {
       check-bindings a1 "let"
       va := split a1 '#n '#n
-      v := car va
-      a := cdr va
+      v := ph va
+      a := pt va
       `((function ,v ,a2 ,@a3) ,@a)
     }
   }
@@ -1147,8 +1147,8 @@ define-macro %clean-letrec {
   function (bindings expr & exprs) {
     check-bindings bindings "letrec"
     tmps := map (function (x) (gensym)) bindings
-    vars := map car bindings
-    args := map cadr bindings
+    vars := map ph bindings
+    args := map pht bindings
 
     undefineds := map (function (v) (list v #f)) vars
     tmp-bindings := map (function (t a) (list t a)) tmps args
@@ -1168,11 +1168,11 @@ define-macro let* {
 
   function (bindings expr & exprs) {
     nest-let :+ function (b) {
-      if+ (null? b) (cons expr exprs) \
-	  (null? (cdr b)) `(let ((,(caar b) ,(cadar b)))
-                                ,@(nest-let (cdr b))) \
-          else `(let ((,(caar b) ,(cadar b)))
-		     ,(nest-let (cdr b)))
+      if+ (null? b) (pair expr exprs) \
+	  (null? (pt b)) `(let ((,(phh b) ,(phth b)))
+                                ,@(nest-let (pt b))) \
+          else `(let ((,(phh b) ,(phth b)))
+		     ,(nest-let (pt b)))
     }
 
     check-bindings bindings "let*"
@@ -1188,17 +1188,17 @@ define-macro (case key & clauses) {
   gen-clauses :+ function (k c*) {
     if+ (null? c*) '#n \
 	(or (not (pair? c*))
-	    (not (pair? (car c*)))
-	    (not (pair? (cdar c*)))) (error "case: invalid syntax" c*) \
-	(null? (cdr c*)) {
-          if (eq? 'else (caar c*)) {
-            `((else ,@(cdar c*)))
+	    (not (pair? (ph c*)))
+	    (not (pair? (pth c*)))) (error "case: invalid syntax" c*) \
+	(null? (pt c*)) {
+          if (eq? 'else (phh c*)) {
+            `((else ,@(pth c*)))
           } {
-	    `(((memv ,k ',(caar c*)) ,@(cdar c*)))
+	    `(((memv ,k ',(phh c*)) ,@(pth c*)))
           }
         } \
-	else `(((memv ,k ',(caar c*)) ,@(cdar c*))
-	         ,@(gen-clauses k (cdr c*)))
+	else `(((memv ,k ',(phh c*)) ,@(pth c*))
+	         ,@(gen-clauses k (pt c*)))
   }
 
   k := (gensym)
@@ -1209,32 +1209,32 @@ define-macro (do var-clauses test & body) {
   split :+ function (clauses vars inits steps) {
     if+ (null? clauses) (list vars inits steps) \
 	(or (not (pair? clauses))
-	    (not (pair? (car clauses)))
-	    (not (symbol? (caar clauses)))
-	    (not (pair? (cdar clauses)))) (error "do: invalid syntax" clauses) \
-	else (split (cdr clauses)
-		    (cons (caar clauses) vars)
-		    (cons (cadar clauses) inits)
-		    (if (null? (cddar clauses))
-			(cons (caar clauses) steps)
-			(cons (caddar clauses) steps)))
+	    (not (pair? (ph clauses)))
+	    (not (symbol? (phh clauses)))
+	    (not (pair? (pth clauses)))) (error "do: invalid syntax" clauses) \
+	else (split (pt clauses)
+		    (pair (phh clauses) vars)
+		    (pair (phth clauses) inits)
+		    (if (null? (ptth clauses))
+			(pair (phh clauses) steps)
+			(pair (phtth clauses) steps)))
   }
 
   if (or (not (pair? test))
-	 (not (list? (cdr test)))) {
+	 (not (list? (pt test)))) {
     error "do: invalid syntax" test
   } {
     loop := (gensym)
     var+init+step := split var-clauses '#n '#n '#n
-    v := car var+init+step
-    i := cadr var+init+step
-    s := caddr var+init+step
+    v := ph var+init+step
+    i := pht var+init+step
+    s := phtt var+init+step
 
     `(letrec
 	 ((,loop
 	   (function ,v
-	     (if ,(car test)
-		 (begin ,@(cdr test))
+	     (if ,(ph test)
+		 (begin ,@(pt test))
 		 (begin ,@body (,loop ,@s))))))
        (,loop ,@i))
   }
@@ -1244,12 +1244,12 @@ define-macro (delay expr) {
   `(let ((value #f))
      (function ()
        (if value
-           (car value)
+           (ph value)
            (let ((x ,expr))
              (if value
-                 (car value)
-                 (begin (set! value (cons x '()))
-                        (car value)))))))
+                 (ph value)
+                 (begin (set! value (pair x '()))
+                        (ph value)))))))
 }
 
 define (force x) (x)
@@ -1275,7 +1275,7 @@ define (force x) (x)
 ;              (error "invalid syntax" g283))))
 ;    #<PROCEDURE syntax-expand>
 ;    #<PROCEDURE syntax-match>
-;    (cons 'iff g283)))
+;    (pair 'iff g283)))
 
 ; Match FORM against PATTERN.
 ; KEYWORDS contains the keywords of SYNTAX-RULES.
@@ -1291,17 +1291,17 @@ define (force x) (x)
 define (syntax-match form pattern keywords env) {
   match :+ function (form pattern keywords env) {
     if+ (pair? pattern) {
-          if+ (and (pair? (cdr pattern)) \
-		   (eq? '... (cadr pattern))) {
+          if+ (and (pair? (pt pattern)) \
+		   (eq? '... (pht pattern))) {
                 e* := map (function (x)
-			    (match x (car pattern) keywords '#n)) \
+			    (match x (ph pattern) keywords '#n)) \
 		      form
-		cons (cons '... e*) env
+		pair (pair '... e*) env
               } \
 	      (pair? form) {
-                e := match (car form) (car pattern) keywords env
+                e := match (ph form) (ph pattern) keywords env
 		and e \
-		    (match (cdr form) (cdr pattern) keywords e)
+		    (match (pt form) (pt pattern) keywords e)
               } \
               else #f
         } \
@@ -1309,7 +1309,7 @@ define (syntax-match form pattern keywords env) {
           if (eq? pattern form) env #f
         } \
 	(symbol? pattern) {
-          cons (cons pattern form) env
+          pair (pair pattern form) env
         } \
         else {
           if (equal? pattern form) env #f
@@ -1328,52 +1328,52 @@ define (syntax-match form pattern keywords env) {
 ;
 define (alpha-conv form bound) {
   subst :+ function (x env) {
-    if+ (assq x env) (=> cdr) \
+    if+ (assq x env) (=> pt) \
 	else x
   }
   map-improper :+ function (f a r) {
     if+ (null? a) (reverse r) \
 	(not (pair? a)) (append (reverse r) (f a)) \
-	else (map-improper f (cdr a) (cons (f (car a)) r))
+	else (map-improper f (pt a) (pair (f (ph a)) r))
   }
   remove-bound :+ function (env bound) {
     if+ (null? env) '#n \
-	(memq (caar env) bound) (remove-bound (cdr env) bound) \
-	else (cons (car env) (remove-bound (cdr env) bound))
+	(memq (phh env) bound) (remove-bound (pt env) bound) \
+	else (pair (ph env) (remove-bound (pt env) bound))
   }
   conv :+ function (form env) {
     if+ (symbol? form) (subst form env) \
 	(not (pair? form)) form \
-	(and (eq? 'quote (car form)) \
-	     (pair? (cdr form)) \
-	     (null? (cddr form))) form \
-	(and (eq? 'function (car form)) \
-	     (pair? (cdr form)) \
-	     (pair? (cddr form))) {
+	(and (eq? 'quote (ph form)) \
+	     (pair? (pt form)) \
+	     (null? (ptt form))) form \
+	(and (eq? 'function (ph form)) \
+	     (pair? (pt form)) \
+	     (pair? (ptt form))) {
 	  e := map-improper (function (x) 
-			      (cons x (gensym))) \
-			    (cadr form) \
+			      (pair x (gensym))) \
+			    (pht form) \
 			    '#n
 
-	  `(function ,@(conv (cdr form)
+	  `(function ,@(conv (pt form)
 			   (append (remove-bound e bound)
 				   env)))
         } \
-	(and (or (eq? (car form) 'let) \
-		 (eq? (car form) 'letrec) \
-		 (eq? (car form) 'let*)) \
-	     (pair? (cdr form)) \
-	     (pair? (cadr form)) \
-	     (pair? (caadr form)) \
-	     (pair? (cddr form))) {
+	(and (or (eq? (ph form) 'let) \
+		 (eq? (ph form) 'letrec) \
+		 (eq? (ph form) 'let*)) \
+	     (pair? (pt form)) \
+	     (pair? (pht form)) \
+	     (pair? (phht form)) \
+	     (pair? (ptt form))) {
 	e := map-improper (function (x)
-			    (cons x (gensym))) \
+			    (pair x (gensym))) \
 			  (map (function (x)
-				 (if (pair? x) (car x) #f))
-			       (cadr form)) \
+				 (if (pair? x) (ph x) #f))
+			       (pht form)) \
 			  '()
 
-        `(,(car form) ,@(conv (cdr form)
+        `(,(ph form) ,@(conv (pt form)
 			      (append (remove-bound e bound)
 				      env)))
         } \
@@ -1391,26 +1391,26 @@ define (syntax-expand bound tmpl env) {
   alpha-conv := alpha-conv
   expand :+ function (tmpl env) {
     if+ (not (pair? tmpl)) {
-      (cond ((assq tmpl env) => cdr)
+      (cond ((assq tmpl env) => pt)
 	    (else tmpl))
         } \
 	(and (pair? tmpl) \
-	     (pair? (cdr tmpl)) \
-	     (eq? (cadr tmpl) '...)) {
+	     (pair? (pt tmpl)) \
+	     (eq? (pht tmpl) '...)) {
 	  eenv := assq '... env
 
 	  if (not eenv) {
 	    error "syntax-rules: template without matching ... in pattern" tmpl
           } {
-	    set-car! eenv '(#f)
+	    set-ph! eenv '(#f)
             map (function (x)
-		  (expand (car tmpl) x)) \
-	        (cdr eenv)
+		  (expand (ph tmpl) x)) \
+	        (pt eenv)
           }
         } \
 	else {
-	  cons (expand (car tmpl) env) \
-	       (expand (cdr tmpl) env)
+	  pair (expand (ph tmpl) env) \
+	       (expand (pt tmpl) env)
 	}
   }
 
@@ -1423,14 +1423,14 @@ define (syntax-expand bound tmpl env) {
 define-macro define-syntax {
   flatten :+ function (x r) {
     if+ (null? x) r \
-	(pair? x) (flatten (car x)
-			   (flatten (cdr x) r)) \
-        else (cons x r)
+	(pair? x) (flatten (ph x)
+			   (flatten (pt x) r)) \
+        else (pair x r)
   }
   list-of? :+ function (p a) {
       or (null? a) \
-	 (and (p (car a)) \
-	      (list-of? p (cdr a)))
+	 (and (p (ph a)) \
+	      (list-of? p (pt a)))
   }
   keywords-ok? :+ function (x) {
     list-of? symbol? x
@@ -1438,21 +1438,21 @@ define-macro define-syntax {
   rules-ok? :+ function (x) {
     list-of? (function (x)
 	       (and (pair? x) \
-		    (pair? (car x)) \
-		    (pair? (cdr x)) \
-		    (null? (cddr x)))) \
+		    (pair? (ph x)) \
+		    (pair? (pt x)) \
+		    (null? (ptt x)))) \
 	     x
   }
-  pattern := caar
-  template := cadar
+  pattern := phh
+  template := phth
   rewrite-rules :+ function (app keywords rules-in rules-out) {
     if (null? rules-in) {
       reverse rules-out
     } {
       rewrite-rules app \
 		    keywords \
-		    (cdr rules-in) \
-		    (cons `((syntax-match ,app
+		    (pt rules-in) \
+		    (pair `((syntax-match ,app
 					  ',(pattern rules-in)
 					  ',keywords
 					  '#n)
@@ -1467,22 +1467,22 @@ define-macro define-syntax {
   function (name rules) {
     if+ (not (symbol? name)) (error "define-syntax: expected symbol, got" name) \
         (or (not (pair? rules)) \
-	    (not (eq? 'syntax-rules (car rules)))) (error "define-syntax: expected syntax-rules, got" rules) \
-	(or (not (pair? (cdr rules))) \
-	    (not (pair? (cddr rules)))) (error "syntax-rules: too few arguments" rules) \
-	(not (keywords-ok? (cadr rules))) (error "syntax-rules: malformed keyword list" (cadr rules)) \
-        (not (rules-ok? (cddr rules))) (error "syntax-rules: invalid clause in rules" (cddr rules)) \
+	    (not (eq? 'syntax-rules (ph rules)))) (error "define-syntax: expected syntax-rules, got" rules) \
+	(or (not (pair? (pt rules))) \
+	    (not (pair? (ptt rules)))) (error "syntax-rules: too few arguments" rules) \
+	(not (keywords-ok? (pht rules))) (error "syntax-rules: malformed keyword list" (pht rules)) \
+        (not (rules-ok? (ptt rules))) (error "syntax-rules: invalid clause in rules" (ptt rules)) \
         else {
           app := (gensym)
 	  default := `((else (error "invalid syntax" ,app)))
 
-	  `(define-macro ,(cons name app)
-	     (let ((,app (cons ',name ,app))
+	  `(define-macro ,(pair name app)
+	     (let ((,app (pair ',name ,app))
 		   (syntax-match ,syntax-match)
 		   (syntax-expand ,syntax-expand))
 	       (cond ,@(append (rewrite-rules app
-					      (cadr rules)
-					      (cddr rules)
+					      (pht rules)
+					      (ptt rules)
 					      '())
 			       default))))
         }
@@ -1495,8 +1495,8 @@ define (print & x*) {
   p :+ function (x* first) {
     if+ (not (null? x*)) {
       if (not first) (write-char #\space)
-      write (car x*)
-      p (cdr x*) #f
+      write (ph x*)
+      p (pt x*) #f
     }
   }
 
@@ -1509,19 +1509,19 @@ define (locate-file file) {
     loop :+ function (in tmp out) {
       if+ (null? in) {
             if (null? tmp) out {
-              reverse (cons (list->string (reverse tmp))
+              reverse (pair (list->string (reverse tmp))
 			    out)
             }
           } \
-	  (char=? #\: (car in)) {
-            loop (cdr in) \
+	  (char=? #\: (ph in)) {
+            loop (pt in) \
 		 '#n \
-		 (cons (list->string (reverse tmp))
+		 (pair (list->string (reverse tmp))
 		       out)
           } \
 	  else {
-	    loop (cdr in) \
-		 (cons (car in) tmp) \
+	    loop (pt in) \
+		 (pair (ph in) tmp) \
 		 out
           }
     }
@@ -1531,10 +1531,10 @@ define (locate-file file) {
 
   loop :+ function (path) {
     if (null? path) #f {
-      full-path := string-append (car path) "/" file
+      full-path := string-append (ph path) "/" file
 
       if (file-exists? full-path) full-path {
-        loop (cdr path)
+        loop (pt path)
       }
     }
   }
