@@ -974,19 +974,20 @@ static IDIO idio_meaning_alternative (IDIO e1, IDIO e2, IDIO e3, IDIO nametree, 
 
 static IDIO idio_rewrite_cond (IDIO c)
 {
-    /* idio_debug ("cond-rewrite: %s\n", c); */
+    /* idio_debug ("cond-rewrite: %s\n", c);    */
 
     if (idio_S_nil == c) {
-	/* fprintf (stderr, "cond-rewrite: nil clause\n"); */
+	/* fprintf (stderr, "cond-rewrite: nil clause\n");   */
 	return idio_S_void;
     } else if (! idio_isa_pair (c)) {
 	idio_error_param_type ("pair", c);
 	return idio_undefined_code ("cond: %s", idio_as_string (c, 1));
     } else if (! idio_isa_pair (IDIO_PAIR_H (c))) {
+	/* idio_debug ("pair/pair: c %s\n", c); */
 	idio_error_param_type ("pair/pair", c);
 	return idio_undefined_code ("cond: %s", idio_as_string (c, 1));
     } else if (idio_S_else == IDIO_PAIR_H (IDIO_PAIR_H (c))) {
-	/* fprintf (stderr, "cond-rewrite: else clause\n"); */
+	/* fprintf (stderr, "cond-rewrite: else clause\n");  */
 	if (idio_S_nil == IDIO_PAIR_T (c)) {
 	    return idio_list_append2 (IDIO_LIST1 (idio_S_begin), IDIO_PAIR_T (IDIO_PAIR_H (c)));
 	} else {
@@ -996,7 +997,7 @@ static IDIO idio_rewrite_cond (IDIO c)
 
     if (idio_isa_pair (IDIO_PAIR_T (IDIO_PAIR_H (c))) &&
 	idio_S_eq_gt == IDIO_PAIR_H (IDIO_PAIR_T (IDIO_PAIR_H (c)))) {
-	/* fprintf (stderr, "cond-rewrite: => clause\n"); */
+	/* fprintf (stderr, "cond-rewrite: => clause\n");  */
 	if (idio_isa_list (IDIO_PAIR_H (c)) &&
 	    idio_list_length (IDIO_PAIR_H (c)) == 3) {
 	    IDIO gs = idio_gensym ();
@@ -1018,7 +1019,7 @@ static IDIO idio_rewrite_cond (IDIO c)
 	    return idio_undefined_code ("cond: => bad format", idio_as_string (c, 1));
 	}
     } else if (idio_S_nil == IDIO_PAIR_T (IDIO_PAIR_H (c))) {
-	/* fprintf (stderr, "cond-rewrite: null? cdar clause\n"); */
+	/* fprintf (stderr, "cond-rewrite: null? cdar clause\n");  */
 	IDIO gs = idio_gensym ();
 	/*
 	  `(let ((gs ,(caar c)))
@@ -1031,7 +1032,7 @@ static IDIO idio_rewrite_cond (IDIO c)
 				       gs,
 				       idio_rewrite_cond (IDIO_PAIR_T (c))));
     } else {
-	/* fprintf (stderr, "cond-rewrite: default clause\n"); */
+	/* fprintf (stderr, "cond-rewrite: default clause\n");  */
 	return IDIO_LIST4 (idio_S_if,
 			   IDIO_PAIR_H (IDIO_PAIR_H (c)),
 			   idio_list_append2 (IDIO_LIST1 (idio_S_begin), IDIO_PAIR_T (IDIO_PAIR_H (c))),
@@ -1435,7 +1436,7 @@ static IDIO idio_rewrite_body (IDIO e)
 {
     IDIO l = e;
 
-    idio_debug ("rewrite-body: %s\n", l); 
+    /* idio_debug ("rewrite-body: %s\n", l);  */
 
     IDIO r = idio_S_nil;
     
@@ -1460,19 +1461,19 @@ static IDIO idio_rewrite_body (IDIO e)
 		   (idio_S_define == IDIO_PAIR_H (cur) ||
 		    idio_S_colon_plus == IDIO_PAIR_H (cur))) {
 	    /* internal define -> letrec */
-	    idio_debug ("irb: internal define: cur %s\n", cur); 
+	    /* idio_debug ("irb: internal define: cur %s\n", cur);  */
 
 	    IDIO body = idio_list_append2 (IDIO_LIST1 (cur), IDIO_PAIR_T (l));
-	    idio_debug ("irb: internal define: body %s\n", body);
+	    /* idio_debug ("irb: internal define: body %s\n", body); */
 	    r = idio_pair (idio_rewrite_body_letrec (body), r);
 	    break;
 	} else if (idio_isa_pair (cur) &&
 		   idio_S_colon_eq == IDIO_PAIR_H (cur)) {
 	    /* internal := -> let* */
-	    idio_debug ("irb: internal := cur %s\n", cur); 
+	    /* idio_debug ("irb: internal := cur %s\n", cur);  */
 
 	    IDIO body = idio_rewrite_body (IDIO_PAIR_T (l));
-	    idio_debug ("irb: internal := body %s\n", body);
+	    /* idio_debug ("irb: internal := body %s\n", body); */
 	    if (idio_S_nil != r) {
 		r = idio_list_reverse (r);
 	    }
@@ -1480,12 +1481,13 @@ static IDIO idio_rewrite_body (IDIO e)
 				   IDIO_LIST1 (IDIO_LIST3 (idio_S_let,
 							   IDIO_LIST1 (IDIO_PAIR_T (cur)),
 							   idio_list_append2 (IDIO_LIST1 (idio_S_begin), body))));
-	    idio_debug ("irb: internal := r %s\n", r);
+	    /* idio_debug ("irb: internal := r %s\n", r); */
 	    return r;
 	} else if (idio_isa_pair (cur) &&
 		   idio_S_define_macro == IDIO_PAIR_H (cur)) {
 	    /* internal define-macro */
-	     idio_error_message ("internal define-macro");
+	    idio_debug ("%s\n", cur);
+	     idio_error_message ("rewrite-body: internal define-macro");
 	     return idio_S_unspec;
 	} else {
 	    /* body proper */
@@ -1503,7 +1505,7 @@ static IDIO idio_rewrite_body_letrec (IDIO e)
     IDIO l = e;
     IDIO defs = idio_S_nil;
 
-    idio_debug ("rewrite-body-letrec: %s\n", l); 
+    /* idio_debug ("rewrite-body-letrec: %s\n", l);  */
 
     for (;;) {
 	IDIO cur = idio_S_unspec;
@@ -1526,7 +1528,7 @@ static IDIO idio_rewrite_body_letrec (IDIO e)
 	} else if (idio_isa_pair (cur) &&
 		   (idio_S_define == IDIO_PAIR_H (cur) ||
 		    idio_S_colon_plus == IDIO_PAIR_H (cur))) {
-	    idio_debug ("irbd: internal letrec: cur %s\n", cur); 
+	    /* idio_debug ("irbd: internal letrec: cur %s\n", cur);  */
 
 	    IDIO bindings = IDIO_PAIR_H (IDIO_PAIR_T (cur));
 	    IDIO form = idio_S_unspec;
@@ -1544,13 +1546,13 @@ static IDIO idio_rewrite_body_letrec (IDIO e)
 	} else if (idio_isa_pair (cur) &&
 		   idio_S_define_macro == IDIO_PAIR_H (cur)) {
 	    /* internal define-macro */
-	     idio_error_message ("internal define-macro");
+	     idio_error_message ("letrec: internal define-macro");
 	     return idio_S_unspec;
 	} else {
 	    /* body proper */
 	    l = idio_rewrite_body (l);
 
-	    idio_debug ("irb-letrec: body: l %s\n", l); 
+	    /* idio_debug ("irb-letrec: body: l %s\n", l);  */
 
 	    if (idio_S_nil == defs) {
 		return l;
@@ -1652,11 +1654,11 @@ static IDIO idio_meaning_block (IDIO es, IDIO nametree, int tailp)
     IDIO_ASSERT (nametree);
     IDIO_TYPE_ASSERT (list, nametree);
 
-    idio_debug ("meaning-block:  in { %s }\n", es); 
+    /* idio_debug ("meaning-block:  in { %s }\n", es);  */
 
     es = idio_rewrite_body (es);
 
-    idio_debug ("meaning-block: out { %s }\n", es); 
+    /* idio_debug ("meaning-block: out { %s }\n", es);  */
 
     return idio_meaning_sequence (es, nametree, tailp, idio_S_begin);
 }
@@ -2102,7 +2104,7 @@ static IDIO idio_meaning_expander (IDIO e, IDIO nametree, int tailp)
     IDIO me = idio_macro_expand (e);
     
     /* idio_debug ("meaning-expander: %s\n", e); */
-    /* idio_debug ("me=%s\n", me); */
+    /* idio_debug ("me=%s\n", me);  */
 
     /* if (idio_S_nil == me) { */
     /* 	fprintf (stderr, "meaning-expander: bad expansion?\n"); */
@@ -2115,7 +2117,8 @@ IDIO idio_meaning_operators (IDIO e, int depth)
 {
     IDIO_ASSERT (e);
 
-    idio_debug ("meaning-operators: %s\n", e);
+    /* idio_debug ("meaning-operators: %s\n", e); */
+
     if (idio_isa_pair (e)) {
 	IDIO b = IDIO_LIST1 (IDIO_PAIR_H (e));
 	e = IDIO_PAIR_T (e);
@@ -2131,11 +2134,11 @@ IDIO idio_meaning_operators (IDIO e, int depth)
 
 		if (idio_S_false != opex) {
 		    IDIO rhs =  idio_meaning_operators (IDIO_PAIR_T (e), depth + 1);
-		    idio_debug ("meaning-operator:pre b %s: ", b);
-		    idio_debug ("rhs %s\n", rhs);
+		    /* idio_debug ("meaning-operator:pre b %s: ", b); */
+		    /* idio_debug ("rhs %s\n", rhs); */
 		    b = idio_evaluate_operator (h, opex, b, rhs);
-		    fprintf (stderr, "meaning-operator: depth %d: ", depth);
-		    idio_debug ("%s\n", b);
+		    /* fprintf (stderr, "meaning-operator: depth %d: ", depth); */
+		    /* idio_debug ("%s\n", b); */
 		    if (0 && 0 == depth) {
 			if (idio_isa_pair (b)) {
 			    b = IDIO_PAIR_H (b);
@@ -2160,7 +2163,7 @@ static IDIO idio_meaning (IDIO e, IDIO nametree, int tailp)
     IDIO_ASSERT (nametree);
     IDIO_TYPE_ASSERT (list, nametree);
 
-    idio_debug ("meaning: e  in %s\n", e); 
+    /* idio_debug ("meaning: e  in %s\n", e);  */
     
     if (idio_isa_pair (e)) {
 	IDIO eh = IDIO_PAIR_H (e);
@@ -2229,11 +2232,23 @@ static IDIO idio_meaning (IDIO e, IDIO nametree, int tailp)
 	    }
 	} else if (idio_S_cond == eh) {
 	    /* (cond clause ...) */
-	    IDIO etc = idio_rewrite_cond (et);
-	    IDIO c = idio_meaning (etc, nametree, tailp);
-	    /* idio_debug ("cond in: %s\n", et); */
-	    /* idio_debug ("cond out: %s\n", c); */
-	    return c;
+	    if (idio_isa_pair (et)) {
+		if (idio_S_nil == IDIO_PAIR_T (et)) {
+		    IDIO eth = IDIO_PAIR_H (et);
+		    if (idio_isa_pair (eth) &&
+			idio_S_block == IDIO_PAIR_H (eth)) {
+			et = IDIO_PAIR_T (eth);
+		    }
+		} 
+		IDIO etc = idio_rewrite_cond (et);
+		IDIO c = idio_meaning (etc, nametree, tailp);
+		/* idio_debug ("cond in: %s\n", et); */
+		/* idio_debug ("cond out: %s\n", c); */
+		return c;
+	    } else {
+		idio_error_message ("cond clause*");
+		return idio_S_unspec;
+	    }
 	} else if (idio_S_set == eh) {
 	    /* (set! var expr) */
 	    if (idio_isa_pair (et)) {
@@ -2432,7 +2447,7 @@ IDIO idio_evaluate (IDIO e)
 	IDIO_ASSERT (b);						\
 	IDIO_ASSERT (args);						\
 									\
-	idio_debug ("op: " #iname " args %s\n", args);			\
+	/* idio_debug ("op: " #iname " args %s\n", args); */		\
 	IDIO prefix = idio_S_nil;					\
 	while (idio_S_nil != IDIO_PAIR_T (b)) {				\
 	    prefix = idio_pair (IDIO_PAIR_H (b), prefix);		\
@@ -2472,9 +2487,9 @@ IDIO_DEFINE_OPERATOR ("=", set, (IDIO n, IDIO b, IDIO args))
     IDIO_ASSERT (b);
     IDIO_ASSERT (args);
 
-    idio_debug ("op: = %s", n);
-    idio_debug (" %s", b);
-    idio_debug (" %s\n", args);
+    /* idio_debug ("op: = %s", n); */
+    /* idio_debug (" %s", b); */
+    /* idio_debug (" %s\n", args); */
     if (idio_S_nil != IDIO_PAIR_T (b)) {
 	idio_error_message ("too many args before =");
     }
@@ -2499,7 +2514,7 @@ IDIO_DEFINE_OPERATOR (":=", colon_eq, (IDIO n, IDIO b, IDIO args))
     IDIO_ASSERT (b);
     IDIO_ASSERT (args);
 
-    idio_debug ("op: := args %s\n", args);
+    /* idio_debug ("op: := args %s\n", args); */
     if (idio_S_nil != IDIO_PAIR_T (b)) {
 	idio_error_message ("too many args before :=");
     }
@@ -2524,7 +2539,7 @@ IDIO_DEFINE_OPERATOR (":+", colon_plus, (IDIO n, IDIO b, IDIO args))
     IDIO_ASSERT (b);
     IDIO_ASSERT (args);
 
-    idio_debug ("op: :+ args %s\n", args);
+    /* idio_debug ("op: :+ args %s\n", args); */
     if (idio_S_nil != IDIO_PAIR_T (b)) {
 	idio_error_message ("too many args before :+");
     }

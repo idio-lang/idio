@@ -1,7 +1,7 @@
 ;; define Scheme's primitives from Idio's
 (define <= le)
 (define < lt)
-(define = eq)
+(define = ==)
 (define >= ge)
 (define > gt)
 

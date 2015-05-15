@@ -32,19 +32,12 @@ define (seq) {
 }
 
 define (fail expr result expected) {
-  display "test failed: "
-  write expr
-  (newline)
-  display "got result:  "
-  write result
-  (newline)
-  display "expected:    "
-  write expected 
-  (newline)
+  display "test #" Tests " failed: " expr
+  display "got result:  " result 
+  display "expected:    " expected 
+
   set! Errors (1 + Errors)
-  display "Errors:    "
-  write Errors
-  (newline)
+  display "Errors:    " Errors
 }
 
 define (test3 expr result expected) {
@@ -57,7 +50,7 @@ define (test3 expr result expected) {
 }
 
 define-macro (test form result) {
-  `(test3 ',form ,form ,result)
+  %T{ test3 '$form $form $result }
 }
 
 ; --- syntax ---
@@ -984,17 +977,17 @@ test {
 ; --- quasiquotation ---
 
 define x 'foo
-test `x 'x
-test `,x 'foo
-test `(1 2 3) '(1 2 3)
-test `(y ,x z) '(y foo z)
-test `(1 2 3 ,(list 4 5)) '(1 2 3 (4 5))
-test `(1 2 3 ,@(list 4 5)) '(1 2 3 4 5)
-test `#(y ,x z) '#(y foo z)
-test `#(1 2 3 ,(list 4 5)) '#(1 2 3 (4 5))
-test `#(1 2 3 ,@(list 4 5)) '#(1 2 3 4 5)
-test `(a b c (,x y z)) '(a b c (foo y z))
-test `(a b c (,x ,@(list 'y 'z))) '(a b c (foo y z))
+test %T{ x } 'x
+test %T{ $x } 'foo
+test %T{ (1 2 3) } '(1 2 3)
+test %T{ (y $x z) } '(y foo z)
+test %T{ (1 2 3 $(list 4 5)) } '(1 2 3 (4 5))
+test %T{ (1 2 3 $@(list 4 5)) } '(1 2 3 4 5)
+test %T{ #(y $x z) } '#(y foo z)
+test %T{ #(1 2 3 $(list 4 5)) } '#(1 2 3 (4 5))
+test %T{ #(1 2 3 $@(list 4 5)) } '#(1 2 3 4 5)
+test %T{ (a b c ($x y z)) } '(a b c (foo y z))
+test %T{ (a b c ($x $@(list 'y 'z))) } '(a b c (foo y z))
 
 ; --- lists ---
 

@@ -48,6 +48,7 @@
 #define IDIO_CHAR_PERCENT	'%'
 #define IDIO_CHAR_DOLLARS	'$'
 #define IDIO_CHAR_EXCLAMATION	'!'
+#define IDIO_CHAR_EQUALS	'='
 
 #define IDIO_SEPARATOR(c)	(IDIO_CHAR_SPACE == (c) ||		\
 				 IDIO_CHAR_TAB == (c) ||		\
@@ -542,8 +543,15 @@ static IDIO idio_read_template (IDIO handle, int depth)
     }
 
     IDIO e = idio_read_block (handle, closedel, ic, depth);
-    idio_debug ("read template %s\n", e);
-    return IDIO_LIST2 (idio_S_quasiquote, e);
+    /*
+     * idio_read_block has returned (block expr) and we only want expr
+     *
+     * Note that (block expr1 expr2+) means we only return expr1 --
+     * like quasiquote
+     */
+    /* idio_debug ("read-template: %s\n", e); */
+    /* idio_debug ("read-template: %s\n", IDIO_PAIR_H (IDIO_PAIR_T (e))); */
+    return IDIO_LIST2 (idio_S_quasiquote, IDIO_PAIR_H (IDIO_PAIR_T (e)));
 }
 
 static IDIO idio_read_bignum (IDIO handle, char basec, int radix)
@@ -840,25 +848,29 @@ static IDIO idio_read_expr (IDIO handle, char *ic, int depth)
 	    }
 	    break;
 	case IDIO_CHAR_RBRACKET:
-	    if (depth) {
-		return idio_T_rbracket;
-	    } else {
-		idio_error_read_parse (handle, "unexpected ']'");
-		return idio_S_unspec;
-	    }
+	    return idio_T_rbracket;
 	    break;
 	case IDIO_CHAR_RANGLE:
-	    if (depth) {
-		return idio_T_rangle;
-	    } else {
-		idio_error_read_parse (handle, "unexpected '>'");
-		return idio_S_unspec;
+	    {
+		c = idio_handle_peek (handle);
+		switch (c) {
+		case EOF:
+		    return idio_T_rangle;
+		case IDIO_CHAR_EQUALS:
+		    return idio_read_word (handle, IDIO_CHAR_RANGLE);
+		default:
+		    return idio_T_rangle;
+		}
 	    }
 	    break;
 	case IDIO_CHAR_SQUOTE:
 	    return idio_read_quote (handle, ic, depth);
 	case IDIO_CHAR_BACKQUOTE:
-	    return idio_read_quasiquote (handle, ic, depth);
+	    {
+		char qq_ic[] = { IDIO_CHAR_COMMA, IDIO_CHAR_AT, IDIO_CHAR_BACKSLASH };
+		return idio_read_quasiquote (handle, qq_ic, depth);
+	    }
+	    /*
 	case IDIO_CHAR_COMMA:
 	    {
 		c = idio_handle_getc (handle);
@@ -868,6 +880,7 @@ static IDIO idio_read_expr (IDIO handle, char *ic, int depth)
 		idio_handle_ungetc (handle, c);
 		return idio_read_unquote (handle, ic, depth);
 	    }
+	    */
 	case IDIO_CHAR_HASH:
 	    {
 		int c = idio_handle_getc (handle);

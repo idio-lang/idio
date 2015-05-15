@@ -110,7 +110,7 @@ define (map f a b) {
   map2 a b
 }
 
-define-macro (letrec-s9 bindings expr & exprs) {
+define-macro (letrec bindings expr & exprs) {
   append3 := function (a b c) {
     append a (append b c)
   }
@@ -142,11 +142,24 @@ define-macro (if+ & clauses) {
 	 ((null? (pt c)) {
 	   list 'else (ph c)
 	 }) (else {
-	  pair (list (ph c) (ph (pt c))) (loop (pt (pt c)))
+	   pair (list (ph c) (ph (pt c))) (loop (pt (pt c)))
 	 })
   }
 
-  %T(cond $@(loop clauses))
+  %T{ cond $@(loop clauses) }
+}
+
+define (display* & x*) {
+  p :+ function (x* first) {
+    if+ (not (null? x*)) {
+      if (not first) (write-char #\space)
+      display* (ph x*)
+      p (pt x*) #f
+    }
+  }
+
+  p x* #t
+  (newline)
 }
 
 ;; Booleans
@@ -183,7 +196,7 @@ define (equal? a b) {
       (vector? a) (and (vector? b)
 		       (equal? (vector->list a)
 			       (vector->list b))) \
-      else (eqv? a b)
+      else	  (eqv? a b)
 }
 
 ;; List procedures
@@ -1119,20 +1132,25 @@ define-macro %ext-let {
        
     if (symbol? a1) {
       if (null? a3) {
-        error "named let: missing body" `(let ,a1 ,a2 ,@a3)
+        error "named let: missing body" %T{ let $a1 $a2 $@a3 }
       } {
 	 check-bindings a2 "let"
          va := split a2 '#n '#n
 	 v := reverse (ph va)
 	 a := reverse (pt va)
-	 `((letrec ((,a1 (function ,v ,@a3))) ,a1) ,@a)
+	 %T{ 
+	     {
+	       $a1 :+ function $v $@a3
+	       $a1 $@a
+	     }
+	   }
       }
     } {
       check-bindings a1 "let"
       va := split a1 '#n '#n
       v := ph va
       a := pt va
-      `((function ,v ,a2 ,@a3) ,@a)
+      %T{ (function $v $a2 $@a3) $@a }
     }
   }
 }
@@ -1153,11 +1171,10 @@ define-macro %clean-letrec {
     undefineds := map (function (v) (list v #f)) vars
     tmp-bindings := map (function (t a) (list t a)) tmps args
     updates := map (function (v t) (list 'set! v t)) vars tmps
-    `(let ,undefineds
-       (let ,tmp-bindings
-	    ,@updates
-	    ,expr
-	    ,@exprs))
+    %T{ let $undefineds (let $tmp-bindings
+    	    		     $@updates
+			     $expr
+			     $@exprs) }
   }
 }
 
@@ -1169,15 +1186,28 @@ define-macro let* {
   function (bindings expr & exprs) {
     nest-let :+ function (b) {
       if+ (null? b) (pair expr exprs) \
-	  (null? (pt b)) `(let ((,(phh b) ,(phth b)))
-                                ,@(nest-let (pt b))) \
-          else `(let ((,(phh b) ,(phth b)))
-		     ,(nest-let (pt b)))
+	  (null? (pt b)) %T{ 
+			     {
+			       $(phh b) := $(phth b)
+			       $@(nest-let (pt b))
+			     }
+			 } \
+          else %T{ 
+		   {
+		     $(phh b) := $(phth b)
+		     $(nest-let (pt b))
+		   }
+	       }
     }
 
     check-bindings bindings "let*"
     if (null? bindings) {
-      `(let () ,expr ,@exprs)
+      %T{ 
+	  {
+	    $expr
+	    $@exprs
+	  }
+      }
     } {
       nest-let bindings
     }
@@ -1192,17 +1222,24 @@ define-macro (case key & clauses) {
 	    (not (pair? (pth c*)))) (error "case: invalid syntax" c*) \
 	(null? (pt c*)) {
           if (eq? 'else (phh c*)) {
-            `((else ,@(pth c*)))
-          } {
-	    `(((memv ,k ',(phh c*)) ,@(pth c*)))
-          }
+	    %T{ ((else $@(pth c*))) }
+	  } {
+	    %T{ (((memv $k '$(phh c*)) $@(pth c*))) }
+	  }          
         } \
-	else `(((memv ,k ',(phh c*)) ,@(pth c*))
-	         ,@(gen-clauses k (pt c*)))
+	else {
+	  %T{ (((memv $k '$(phh c*)) $@(pth c*)) $@(gen-clauses k (pt c*))) }
+	}
+	
   }
 
   k := (gensym)
-  `(let ((,k ,key)) (cond ,@(gen-clauses k clauses)))
+  %T{ 
+      {
+        $k := $key
+	cond $@(gen-clauses k clauses)
+      }
+  }
 }
 
 define-macro (do var-clauses test & body) {
@@ -1230,26 +1267,41 @@ define-macro (do var-clauses test & body) {
     i := pht var+init+step
     s := phtt var+init+step
 
-    `(letrec
-	 ((,loop
-	   (function ,v
-	     (if ,(ph test)
-		 (begin ,@(pt test))
-		 (begin ,@body (,loop ,@s))))))
-       (,loop ,@i))
+    %T{ 
+        {
+	  $loop :+ function $v {
+            if $(ph test) { 
+              $@(pt test)
+	    } { 
+	      $@body
+	      ($loop $@s)
+	    }
+	  }
+	  $loop $@i
+	}
+    }
   }
 }
 
 define-macro (delay expr) {
-  `(let ((value #f))
-     (function ()
-       (if value
-           (ph value)
-           (let ((x ,expr))
-             (if value
-                 (ph value)
-                 (begin (set! value (pair x '()))
-                        (ph value)))))))
+  %T{ 
+      {
+        value := #f
+	function () {
+          if value {
+            ph value
+	  } {
+	    x := $expr
+	    if value {
+              ph value
+	    } {
+	      value = pair x '#n
+	      ph value
+	    }
+	  }
+        }
+      }
+  }
 }
 
 define (force x) (x)
@@ -1355,9 +1407,9 @@ define (alpha-conv form bound) {
 			    (pht form) \
 			    '#n
 
-	  `(function ,@(conv (pt form)
-			   (append (remove-bound e bound)
-				   env)))
+	  %T{ (function $@(conv (pt form)
+				(append (remove-bound e bound)
+					env))) }
         } \
 	(and (or (eq? (ph form) 'let) \
 		 (eq? (ph form) 'letrec) \
@@ -1371,11 +1423,11 @@ define (alpha-conv form bound) {
 			  (map (function (x)
 				 (if (pair? x) (ph x) #f))
 			       (pht form)) \
-			  '()
+			  '#n
 
-        `(,(ph form) ,@(conv (pt form)
-			      (append (remove-bound e bound)
-				      env)))
+        %T{ ($(ph form) $@(conv (pt form)
+				(append (remove-bound e bound)
+					env))) }
         } \
 	else (map-improper (function (x) (conv x env))
 			   form
@@ -1452,14 +1504,14 @@ define-macro define-syntax {
       rewrite-rules app \
 		    keywords \
 		    (pt rules-in) \
-		    (pair `((syntax-match ,app
-					  ',(pattern rules-in)
-					  ',keywords
-					  '#n)
-			    => (function (env)
-				 (syntax-expand ',(flatten (pattern rules-in) '())
-						',(template rules-in)
-						env)))
+		    (pair %T{ ((syntax-match $app
+					     '$(pattern rules-in)
+					     '$keywords
+					     '#n)
+			       => (function (env)
+					    (syntax-expand '$(flatten (pattern rules-in) '#n)
+							   '$(template rules-in)
+							   env))) }
 			  rules-out)
     }
   }
@@ -1474,17 +1526,21 @@ define-macro define-syntax {
         (not (rules-ok? (ptt rules))) (error "syntax-rules: invalid clause in rules" (ptt rules)) \
         else {
           app := (gensym)
-	  default := `((else (error "invalid syntax" ,app)))
+	  default := %T{ ((else (error "invalid syntax" $app))) }
 
-	  `(define-macro ,(pair name app)
-	     (let ((,app (pair ',name ,app))
-		   (syntax-match ,syntax-match)
-		   (syntax-expand ,syntax-expand))
-	       (cond ,@(append (rewrite-rules app
-					      (pht rules)
-					      (ptt rules)
-					      '())
-			       default))))
+	  %T{ 
+	     define-macro $(pair name app) {
+               $app := pair '$name $app
+	       syntax-match := $syntax-match
+	       syntax-expand := $syntax-expand
+
+	       cond $@(append (rewrite-rules app
+					     (pht rules)
+					     (ptt rules)
+					     '#n)
+			      default)
+	      }
+	  }
         }
   }
 }

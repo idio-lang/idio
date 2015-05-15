@@ -28,7 +28,7 @@ typedef struct idio_i_array_s {
     IDIO_I *ae;
 } idio_i_array_t;
     
-static int idio_vm_tracing = 0;
+static int idio_vm_tracing = 1;
 
 /*
  * We don't know is some arbitrary code is going to set a global value
@@ -1527,7 +1527,8 @@ void idio_thread_invoke (IDIO thr, IDIO func, int tailp)
 	    IDIO_THREAD_ENV (thr) = IDIO_CLOSURE_ENV (func);
 	    IDIO_THREAD_PC (thr) = IDIO_CLOSURE_CODE (func);
 
-	    if (idio_vm_tracing) {
+	    if (idio_vm_tracing &&
+		0 == tailp) {
 		idio_vm_tracing++;
 	    }
 	}
@@ -1630,8 +1631,8 @@ void idio_thread_invoke (IDIO thr, IDIO func, int tailp)
 		fprintf (stderr, "                       %*.s", idio_vm_tracing, "");
 		/* XXX - why is idio_vm_tracing one less hence an extra space? */
 		idio_debug (" => %s\n", IDIO_THREAD_VAL (thr));
-		if (1 == idio_vm_tracing) {
-		    fprintf (stderr, "XXX tracing depth!\n");
+		if (idio_vm_tracing < 1) {
+		    fprintf (stderr, "XXX PRIM tracing depth < 1!\n");
 		} else {
 		    /* idio_vm_tracing--; */
 		}
@@ -1871,6 +1872,17 @@ IDIO_DEFINE_PRIMITIVE1V ("apply", apply, (IDIO fn, IDIO args))
     /* idio_debug ("primitive-apply: %s\n", args); */
 
     return idio_apply (fn, args);
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("vm-trace", vm_trace, (IDIO trace))
+{
+    IDIO_ASSERT (trace);
+
+    IDIO_VERIFY_PARAM_TYPE (fixnum, trace);
+
+    idio_vm_tracing = IDIO_FIXNUM_VAL (trace);
+    
+    return idio_S_unspec;
 }
 
 #define IDIO_VM_RUN_DIS(...)	if (dis) { fprintf (stderr, __VA_ARGS__); }
@@ -2272,8 +2284,8 @@ int idio_vm_run1 (IDIO thr, int dis)
 	    if (idio_vm_tracing) {
 		fprintf (stderr, "                       %*.s", idio_vm_tracing, "");
 		idio_debug ("=> %s\n", IDIO_THREAD_VAL (thr));
-		if (1 == idio_vm_tracing) {
-		    fprintf (stderr, "XXX RETURN tracing depth!\n");
+		if (idio_vm_tracing <= 1) {
+		    fprintf (stderr, "XXX RETURN tracing depth <= 1!\n");
 		} else {
 		    idio_vm_tracing--;
 		}
@@ -3309,6 +3321,7 @@ void idio_init_vm ()
 void idio_vm_add_primitives ()
 {
     IDIO_ADD_SPECIAL_PRIMITIVE (apply);
+    IDIO_ADD_SPECIAL_PRIMITIVE (vm_trace);
 }
 
 void idio_final_vm ()
