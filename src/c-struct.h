@@ -34,13 +34,13 @@
 	idio_CTD_##t = idio_C_typedefs_add_value (sym, idio_S_nil);	\
     }
     
-#define IDIO_C_SLOT_DATA_TAG       0
-#define IDIO_C_SLOT_DATA_ALIGNMENT 1
-#define IDIO_C_SLOT_DATA_TYPE      2
-#define IDIO_C_SLOT_DATA_OFFSET    3
-#define IDIO_C_SLOT_DATA_SIZE      4
-#define IDIO_C_SLOT_DATA_NELEM     5
-#define IDIO_C_SLOT_DATA_MAX       6
+#define IDIO_C_FIELD_DATA_TAG       0
+#define IDIO_C_FIELD_DATA_ALIGNMENT 1
+#define IDIO_C_FIELD_DATA_TYPE      2
+#define IDIO_C_FIELD_DATA_OFFSET    3
+#define IDIO_C_FIELD_DATA_SIZE      4
+#define IDIO_C_FIELD_DATA_NELEM     5
+#define IDIO_C_FIELD_DATA_MAX       6
 
 extern IDIO idio_CTD_int8;
 extern IDIO idio_CTD_uint8;
@@ -71,8 +71,8 @@ IDIO idio_C_typedefs_exists (IDIO s);
 IDIO idio_C_typedefs_get (IDIO s);
 IDIO idio_C_typedefs_add_value (IDIO s, IDIO v);
 IDIO idio_C_typedefs_add (IDIO s);
-IDIO idio_C_slots_array (IDIO slots);
-IDIO idio_C_struct (IDIO slots_array, IDIO methods, IDIO frame);
+IDIO idio_C_fields_array (IDIO fields);
+IDIO idio_C_struct (IDIO fields_array, IDIO methods, IDIO frame);
 void idio_free_C_struct (IDIO s);
 IDIO idio_C_instance (IDIO c_struct, IDIO frame);
 void idio_free_C_instance (IDIO s);

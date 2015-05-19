@@ -153,7 +153,7 @@ define (display* & x*) {
   p :+ function (x* first) {
     if+ (not (null? x*)) {
       if (not first) (write-char #\space)
-      display* (ph x*)
+      display (ph x*)
       p (pt x*) #f
     }
   }

@@ -22,9 +22,9 @@
 
 #include "idio.h"
 
-ffi_type *idio_C_FFI_type (IDIO slot_data)
+ffi_type *idio_C_FFI_type (IDIO field_data)
 {
-    IDIO type = idio_array_get_index (slot_data, IDIO_C_SLOT_DATA_TYPE);
+    IDIO type = idio_array_get_index (field_data, IDIO_C_FIELD_DATA_TYPE);
     
     if (idio_S_nil == type) {
 	return &ffi_type_void;
@@ -113,15 +113,15 @@ IDIO idio_C_FFI (IDIO symbol, IDIO arg_types, IDIO result_type)
     }
 
     IDIO_C_FFI_SYMBOL (o) = symbol;
-    IDIO_C_FFI_NAME (o) = idio_C_slots_array (arg_types);
-    IDIO_C_FFI_RESULT (o) = idio_C_slots_array (idio_pair (result_type, idio_S_nil));
+    IDIO_C_FFI_NAME (o) = idio_C_fields_array (arg_types);
+    IDIO_C_FFI_RESULT (o) = idio_C_fields_array (idio_pair (result_type, idio_S_nil));
     IDIO_C_FFI_NAME (o) = symbol->u.opaque->args;
 
     IDIO_C_FFI_NARGS (o) = nargs;
     IDIO_C_FFI_ARG_TYPES (o) = idio_C_FFI_ffi_arg_types (nargs, IDIO_C_FFI_ARGS (o));
 
-    IDIO result_slot_data = idio_array_get_index (IDIO_C_FFI_RESULT (o), 0);
-    IDIO_C_FFI_RTYPE (o) = idio_C_FFI_type (result_slot_data);
+    IDIO result_field_data = idio_array_get_index (IDIO_C_FFI_RESULT (o), 0);
+    IDIO_C_FFI_RTYPE (o) = idio_C_FFI_type (result_field_data);
 
     IDIO_C_FFI_CIFP (o) = idio_alloc (sizeof (ffi_cif));
 

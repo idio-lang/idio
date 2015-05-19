@@ -508,6 +508,25 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (j));
 	}
 	break;
+    case IDIO_VM_CODE_CHECKED_GLOBAL_FUNCTION_REF:
+	{
+	    if (! idio_isa_pair (mt) ||
+		idio_list_length (mt) != 1) {
+		idio_error_vm_compile_param_args ("CHECKED-GLOBAL-FUNCTION-REF j");
+		return;
+	    }
+	    
+	    IDIO j = IDIO_PAIR_H (mt);
+
+	    if (! idio_isa_fixnum (j)) {
+		idio_error_vm_compile_param_type ("fixnum", j);
+		return;
+	    }
+
+	    IDIO_IA_PUSH1 (IDIO_A_CHECKED_GLOBAL_FUNCTION_REF);
+	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (j));
+	}
+	break;
     case IDIO_VM_CODE_GLOBAL_SET:
 	{
 	    if (! idio_isa_pair (mt) ||
@@ -1493,6 +1512,70 @@ void idio_thread_listify (IDIO frame, size_t arity)
     }
 }
 
+static char *idio_find_command (IDIO func)
+{
+    char *command = IDIO_SYMBOL_S (func);
+    fprintf (stderr, "idio_find_command: looking for %s\n", command);
+
+    char *cmd_dir = "/usr/bin";
+    
+    char *pathname = idio_alloc (strlen (cmd_dir) + 1 + strlen (command) + 1);
+    strcpy (pathname, cmd_dir);
+    strcat (pathname, "/");
+    strcat (pathname, command);
+    
+    return pathname;
+}
+
+static IDIO idio_invoke_command (IDIO func, IDIO thr, char *pathname)
+{
+    IDIO val = IDIO_THREAD_VAL (thr);
+    idio_debug ("invoke: symbol %s ", func); 
+    idio_debug ("%s\n", IDIO_FRAME_ARGS (val)); 
+    IDIO args_a = IDIO_FRAME_ARGS (val);
+    IDIO last = idio_array_pop (args_a);
+    IDIO_FRAME_NARGS (val) -= 1;
+
+    if (idio_S_nil != last) {
+	char *ls = idio_as_string (last, 1);
+	fprintf (stderr, "invoke: last arg != nil: %s\n", ls);
+	free (ls);
+	IDIO_C_ASSERT (0);
+    }
+
+    /*
+     * argv[] needs:
+     * 1. (nominally) path to command
+     * 2+ arg1+
+     * 3. NULL (terminator)
+     *
+     * Here we will flatten any lists and expand filename
+     * patterns which means the arg list will grow as we
+     * determine what each argument means
+     */
+    int argc = 1 + IDIO_FRAME_NARGS (val) + 1;
+    char **argv = idio_alloc (argc * sizeof (char *));
+    int nargs;		/* index into frame args */
+    int i = 0;		/* index into argv */
+
+    argv[i++] = pathname;
+    for (nargs = 0; nargs < IDIO_FRAME_NARGS (val); nargs++) {
+	IDIO o = idio_array_get_index (args_a, nargs);
+	
+	idio_as_flat_string (o, argv, &i);
+    }
+    argv[i++] = NULL;
+
+    int j;
+    for (j = 0; j < i; j++) {
+	fprintf (stderr, "argv[%d] = %s\n", j, argv[j]);
+    }
+
+    execv (argv[0], argv);
+    perror ("execv");
+    return idio_S_nil;
+}
+
 void idio_thread_invoke (IDIO thr, IDIO func, int tailp)
 {
     IDIO_ASSERT (thr);
@@ -1612,8 +1695,29 @@ void idio_thread_invoke (IDIO thr, IDIO func, int tailp)
 		    IDIO_THREAD_VAL (thr) = (IDIO_PRIMITIVE_F (func)) (arg1, arg2, arg3, args);
 		}
 		break;
+	    case 4:
+		{
+		    IDIO arg1 = idio_array_shift (args_a);
+		    IDIO arg2 = idio_array_shift (args_a);
+		    IDIO arg3 = idio_array_shift (args_a);
+		    IDIO arg4 = idio_array_shift (args_a);
+		    IDIO args = idio_array_to_list (args_a);
+		    IDIO_THREAD_VAL (thr) = (IDIO_PRIMITIVE_F (func)) (arg1, arg2, arg3, arg4, args);
+		}
+		break;
+	    case 5:
+		{
+		    IDIO arg1 = idio_array_shift (args_a);
+		    IDIO arg2 = idio_array_shift (args_a);
+		    IDIO arg3 = idio_array_shift (args_a);
+		    IDIO arg4 = idio_array_shift (args_a);
+		    IDIO arg5 = idio_array_shift (args_a);
+		    IDIO args = idio_array_to_list (args_a);
+		    IDIO_THREAD_VAL (thr) = (IDIO_PRIMITIVE_F (func)) (arg1, arg2, arg3, arg4, arg5, args);
+		}
+		break;
 	    default:
-		idio_error_message ("invoke: arity: primitive %s", IDIO_PRIMITIVE_NAME (func));
+		idio_error_message ("invoke: primitive %s: arity %d unexpected", IDIO_PRIMITIVE_NAME (func), IDIO_PRIMITIVE_ARITY (func));
 		break;
 	    }
 
@@ -1639,6 +1743,17 @@ void idio_thread_invoke (IDIO thr, IDIO func, int tailp)
 	    }
 
 	    return;
+	}
+	break;
+    case IDIO_TYPE_SYMBOL:
+	{
+	    char *pathname = idio_find_command (func);
+	    if (NULL != pathname) {
+		IDIO v = idio_invoke_command (func, thr, pathname);
+	    } else {
+		idio_debug ("\n\ninvoke command %s\n", func);
+		idio_error_message ("command not found");
+	    }
 	}
 	break;
     default:
@@ -1805,11 +1920,10 @@ IDIO idio_apply (IDIO fn, IDIO args)
     IDIO_ASSERT (fn);
     IDIO_ASSERT (args);
 
-    /* idio_debug ("apply: %s", fn);   */
-    /* idio_debug (" %s\n", args);   */
+    /* idio_debug ("apply: %s", fn);    */
+    /* idio_debug (" %s\n", args);    */
 
     size_t nargs = idio_list_length (args);
-    /* fprintf (stderr, "apply: %s nargs = %zd\n", fns, nargs);  */
     
     /*
      * (apply + 1 2 '(3 4 5))
@@ -1831,13 +1945,13 @@ IDIO idio_apply (IDIO fn, IDIO args)
 	larg = IDIO_PAIR_H (larg);
     }
 
-    /* idio_debug ("apply: %s", fn);  */
-    /* idio_debug (" larg=%s\n", larg);   */
+    /* idio_debug ("apply: %s", fn);   */
+    /* idio_debug (" larg=%s\n", larg);    */
     
     size_t size = (nargs - 1) + idio_list_length (larg);
 
-    /* idio_debug ("apply: %s", fn);  */
-    /* fprintf (stderr, " -> %zd args\n", size);   */
+    /* idio_debug ("apply: %s", fn);   */
+    /* fprintf (stderr, " -> %zd args\n", size);    */
     
     IDIO vs = idio_frame_allocate (size + 1);
 
@@ -1855,10 +1969,8 @@ IDIO idio_apply (IDIO fn, IDIO args)
     IDIO thr = idio_current_thread ();
     IDIO_THREAD_VAL (thr) = vs;
 
-    /* fprintf (stderr, "apply: %s pre-thread-invoke: ", fns); */
-    /* idio_dump (thr, 1); */
+    /* idio_dump (thr, 1);  */
     idio_thread_invoke (thr, fn, 1);
-    /* fprintf (stderr, "apply: %s post-thread-invoke: ", fns); */
     /* idio_dump (thr, 1); */
 
     return IDIO_THREAD_VAL (thr);
@@ -2026,19 +2138,50 @@ int idio_vm_run1 (IDIO thr, int dis)
 	    uint64_t i = idio_thread_fetch_varuint (thr);
 	    IDIO sym = idio_vm_symbols_ref (i);
 	    IDIO_VM_RUN_DIS ("CHECKED-GLOBAL-REF %" PRId64 " %s", i, IDIO_SYMBOL_S (sym));
-	    IDIO_THREAD_VAL (thr) = idio_symbol_lookup (sym, IDIO_THREAD_MODULE (thr));
-	    if (idio_S_undef == IDIO_THREAD_VAL (thr)) {
+	    IDIO val = idio_symbol_lookup (sym, IDIO_THREAD_MODULE (thr));
+	    if (idio_S_undef == val) {
+		/*
 		idio_debug ("\nCHECKED-GLOBAL-REF: %s", sym);
 		idio_debug (" in symbols %s\n", idio_vm_symbols);
 		idio_dump (thr, 2);
 		idio_debug ("c-m: %s\n", idio_current_module ());
 		idio_error_message ("undefined toplevel: %" PRId64 "", i);
-	    } else if (idio_S_unspec == IDIO_THREAD_VAL (thr)) {
+		*/
+		IDIO_THREAD_VAL (thr) = sym;
+	    } else if (idio_S_unspec == val) {
 		idio_debug ("\nCHECKED-GLOBAL-REF: %s", sym);
 		idio_debug (" in symbols %s\n", idio_vm_symbols);
 		idio_dump (thr, 2);
 		idio_debug ("c-m: %s\n", idio_current_module ());
 		idio_error_message ("unspecified toplevel: %" PRId64 "", i);
+	    } else {
+		IDIO_THREAD_VAL (thr) = val;
+	    }
+	}
+	break;
+    case IDIO_A_CHECKED_GLOBAL_FUNCTION_REF:
+	{
+	    uint64_t i = idio_thread_fetch_varuint (thr);
+	    IDIO sym = idio_vm_symbols_ref (i);
+	    IDIO_VM_RUN_DIS ("CHECKED-GLOBAL-FUNCTION-REF %" PRId64 " %s", i, IDIO_SYMBOL_S (sym));
+	    IDIO val = idio_symbol_lookup (sym, IDIO_THREAD_MODULE (thr));
+	    if (idio_S_undef == val) {
+		/*
+		idio_debug ("\nCHECKED-GLOBAL-FUNCTION-REF: %s", sym);
+		idio_debug (" in symbols %s\n", idio_vm_symbols);
+		idio_dump (thr, 2);
+		idio_debug ("c-m: %s\n", idio_current_module ());
+		idio_error_message ("undefined toplevel: %" PRId64 "", i);
+		*/
+		IDIO_THREAD_VAL (thr) = sym;
+	    } else if (idio_S_unspec == val) {
+		idio_debug ("\nCHECKED-GLOBAL-REF: %s", sym);
+		idio_debug (" in symbols %s\n", idio_vm_symbols);
+		idio_dump (thr, 2);
+		idio_debug ("c-m: %s\n", idio_current_module ());
+		idio_error_message ("unspecified toplevel: %" PRId64 "", i);
+	    } else {
+		IDIO_THREAD_VAL (thr) = val;
 	    }
 	}
 	break;

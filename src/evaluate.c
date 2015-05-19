@@ -873,6 +873,47 @@ static IDIO idio_meaning_reference (IDIO name, IDIO nametree, int tailp)
     }
 }
 
+static IDIO idio_meaning_function_reference (IDIO name, IDIO nametree, int tailp)
+{
+    IDIO_ASSERT (name);
+    IDIO_ASSERT (nametree);
+    IDIO_TYPE_ASSERT (symbol, name);
+    IDIO_TYPE_ASSERT (list, nametree);
+
+    IDIO k = idio_variable_kind (nametree, name);
+
+    if (idio_S_nil == k) {
+	/*
+	 * shouldn't get here as unknowns are automatically
+	 * toplevel...
+	 */
+	idio_error_static_unbound (name);
+	return idio_undefined_code ("meaning-reference: %s", idio_as_string (name, 1));
+    }
+
+    IDIO kt = IDIO_PAIR_H (k);
+    IDIO kv = IDIO_PAIR_T (k);
+    IDIO i = IDIO_PAIR_H (kv);
+    
+    if (idio_S_local == kt) {
+	kv = IDIO_PAIR_T (kv);
+	IDIO j = IDIO_PAIR_H (kv);
+	if (0 == IDIO_FIXNUM_VAL (i)) {
+	    return IDIO_LIST2 (idio_I_SHALLOW_ARGUMENT_REF, j);
+	} else {
+	    return IDIO_LIST3 (idio_I_DEEP_ARGUMENT_REF, i, j);
+	}
+    } else if (idio_S_toplevel == kt) {
+	return IDIO_LIST2 (idio_I_CHECKED_GLOBAL_FUNCTION_REF, i);
+    } else if (idio_S_predef == kt) {
+	/* fprintf (stderr, "meaning-reference: predefined #%zd\n", IDIO_FIXNUM_VAL (i)); */
+	return IDIO_LIST2 (idio_I_PREDEFINED, i);
+    } else {
+	idio_error_static_unbound (name);
+	return idio_undefined_code ("meaning-reference: %s", idio_as_string (name, 1));
+    }
+}
+
 static IDIO idio_meaning_quotation (IDIO v, IDIO nametree, int tailp)
 {
     IDIO_ASSERT (v);
@@ -891,7 +932,7 @@ static IDIO idio_meaning_dequasiquote (IDIO e, int level)
 	    return IDIO_LIST3 (idio_S_list,
 			       IDIO_LIST2 (idio_S_quote, idio_S_quasiquote),
 			       idio_meaning_dequasiquote (IDIO_PAIR_H (IDIO_PAIR_T (e)),
-							      level + 1));
+							  level + 1));
 	} else if (idio_S_unquote == eh) {
 	    if (level <= 0) {
 		return IDIO_PAIR_H (IDIO_PAIR_T (e));
@@ -900,7 +941,7 @@ static IDIO idio_meaning_dequasiquote (IDIO e, int level)
 		return IDIO_LIST3 (idio_S_list,
 				   IDIO_LIST2 (idio_S_quote, idio_S_unquote),
 				   idio_meaning_dequasiquote (IDIO_PAIR_H (IDIO_PAIR_T (e)),
-								  level - 1));
+							      level - 1));
 	    }
 	} else if (idio_S_unquotesplicing == eh) {
 	    if (level <= 0) {
@@ -912,7 +953,7 @@ static IDIO idio_meaning_dequasiquote (IDIO e, int level)
 		return IDIO_LIST3 (idio_S_list,
 				   IDIO_LIST2 (idio_S_quote, idio_S_unquotesplicing),
 				   idio_meaning_dequasiquote (IDIO_PAIR_H (IDIO_PAIR_T (e)),
-								  level - 1));
+							      level - 1));
 	    }
 	} else if (level <= 0 &&
 		   idio_isa_pair (IDIO_PAIR_H (e)) &&
@@ -924,7 +965,7 @@ static IDIO idio_meaning_dequasiquote (IDIO e, int level)
 		return IDIO_LIST3 (idio_S_append,
 				   IDIO_PAIR_H (IDIO_PAIR_T (IDIO_PAIR_H (e))),
 				   idio_meaning_dequasiquote (IDIO_PAIR_T (e),
-								  level));
+							      level));
 	    }
 	} else {
 	    return IDIO_LIST3 (idio_S_pair,
@@ -947,9 +988,9 @@ static IDIO idio_meaning_quasiquotation (IDIO e, IDIO nametree, int tailp)
 {
     IDIO_ASSERT (e);
 
+    /* idio_debug ("meaning-quasiquote: in %s\n", e);  */
     IDIO dq = idio_meaning_dequasiquote (e, 0);
-    /* idio_debug ("meaning-quasiquote: in %s\n", e); */
-    /* idio_debug ("meaning-quasiquote: dq %s\n", dq); */
+    /* idio_debug ("meaning-quasiquote: dq %s\n", dq);  */
 
     IDIO dqm = idio_meaning (dq, nametree, tailp);
     /* idio_debug ("meaning-quasiquote: m => %s\n", dqm); */
@@ -1976,7 +2017,14 @@ static IDIO idio_meaning_regular_application (IDIO e, IDIO es, IDIO nametree, in
     IDIO_ASSERT (nametree);
     IDIO_TYPE_ASSERT (list, nametree);
 
-    IDIO m = idio_meaning (e, nametree, 0);
+    /* idio_debug ("imra: %s", e); */
+    /* idio_debug (" es %s\n", es); */
+    IDIO m;
+    if (idio_isa_symbol (e)) {
+	m = idio_meaning_function_reference (e, nametree, tailp);
+    } else {
+	m = idio_meaning (e, nametree, 0);
+    }
     IDIO ms = idio_meanings (es, nametree, idio_list_length (es), 0);
 
     if (tailp) {

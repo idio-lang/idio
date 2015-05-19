@@ -7,52 +7,6 @@
 
 ;  This is a comment
 
-testfile := "__testfile__"
-
-if (file-exists? testfile) {
-  delete-file testfile
-}
-    ;; (error (string-append "Please delete the file \""
-    ;;                       testfile
-    ;;                       "\" before running this test.")))
-
-Errors := 0
-Tests := 0
-
-define (void) (if #f #f)
-
-define (seq) {
-  n := 1
-
-  function () {
-    x := n
-    set! n (1 + n)
-    x
-  }
-}
-
-define (fail expr result expected) {
-  display "test #" Tests " failed: " expr
-  display "got result:  " result 
-  display "expected:    " expected 
-
-  set! Errors (1 + Errors)
-  display "Errors:    " Errors
-}
-
-define (test3 expr result expected) {
-;  (write expr) (display " => ") (write result) (newline)
-  set! Tests (1 + Tests)
-;  (display "test #") (write Tests) (display ": ") (write expr)(display " => ") (write result) (newline)
-  if (not (equal? result expected)) {
-    fail expr result expected
-  }
-}
-
-define-macro (test form result) {
-  %T{ test3 '$form $form $result }
-}
-
 ; --- syntax ---
 
 ; symbols
@@ -3460,19 +3414,3 @@ test {
   list x y z
 } '(0 1 2)
 
-if+ (zero? Errors) (display "Everything fine!") \
-    else {
-      display Errors
-      if (gt Errors 1) {
-        display " errors."
-      } {
-	display " error."
-      }
-    }
-display #\newline
-
-if (file-exists? testfile) (delete-file testfile)
-
-display "Total tests: "
-write Tests
-(newline)

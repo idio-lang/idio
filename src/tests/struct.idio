@@ -1,0 +1,20 @@
+
+define-struct foo a b
+test (struct-type? foo) #t
+test (struct-instance? foo) #f
+test (struct-type-name foo) 'foo
+test (struct-type-parent foo) #n
+test (struct-type-fields foo) '(a b)
+
+fooi := make-foo 3 6
+test (foo? fooi) #t
+test (struct-instance? fooi) #t
+test (struct-type? fooi) #f
+test (struct-type-name (struct-instance-type fooi)) 'foo
+test (struct-instance-fields fooi) '(3 6)
+test (struct-instance-ref fooi 'a) 3
+test (foo-a fooi) 3
+
+set-foo-b! fooi 10
+test (struct-instance-ref fooi 'b) 10
+test (foo-b fooi) 10

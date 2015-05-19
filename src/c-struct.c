@@ -168,7 +168,7 @@ IDIO idio_resolve_C_typedef (IDIO ctd)
     }
 }
 
-IDIO idio_C_slots_array (IDIO C_typedefs)
+IDIO idio_C_fields_array (IDIO C_typedefs)
 {
     IDIO_ASSERT (C_typedefs);
     
@@ -181,14 +181,14 @@ IDIO idio_C_slots_array (IDIO C_typedefs)
 	sp = idio_list_tail (sp);
     }
 
-    IDIO slots_array = idio_array (sc);
+    IDIO fields_array = idio_array (sc);
 
     size_t offset = 0;
     while (idio_S_nil != C_typedefs) {
 	IDIO C_typedef = idio_list_head (C_typedefs);
 
-	IDIO slot_data = idio_array (IDIO_C_SLOT_DATA_MAX);
-	idio_array_push (slot_data, C_typedef);
+	IDIO field_data = idio_array (IDIO_C_FIELD_DATA_MAX);
+	idio_array_push (field_data, C_typedef);
 
 	size_t alignment;
 	size_t size;
@@ -259,62 +259,62 @@ IDIO idio_C_slots_array (IDIO C_typedefs)
 	    type = IDIO_TYPE_STRING;
 	} else {
 	    idio_error_add_C ("unexpected type\n");
-	    return slots_array;
+	    return fields_array;
 	}
 
 	/* add any alignment required */
 	offset += offset % alignment;
 
-	idio_array_push (slot_data, idio_C_uint64 (alignment));
-	idio_array_push (slot_data, idio_C_uint64 (type));
-	idio_array_push (slot_data, idio_C_uint64 (offset));
-	idio_array_push (slot_data, idio_C_uint64 (size));
-	idio_array_push (slot_data, idio_C_uint64 (nelem));
+	idio_array_push (field_data, idio_C_uint64 (alignment));
+	idio_array_push (field_data, idio_C_uint64 (type));
+	idio_array_push (field_data, idio_C_uint64 (offset));
+	idio_array_push (field_data, idio_C_uint64 (size));
+	idio_array_push (field_data, idio_C_uint64 (nelem));
 
-	idio_array_push (slots_array, slot_data);
+	idio_array_push (fields_array, field_data);
 
 	offset += size;
 	
 	C_typedefs = idio_list_tail (C_typedefs);
     }
 
-    return slots_array;
+    return fields_array;
 }
 
-size_t idio_sizeof_C_struct (IDIO slots_array)
+size_t idio_sizeof_C_struct (IDIO fields_array)
 {
-    IDIO_ASSERT (slots_array);
+    IDIO_ASSERT (fields_array);
 
     size_t r = 0;
 
-    size_t sas = idio_array_size (slots_array);
+    size_t sas = idio_array_size (fields_array);
 
-    IDIO slot_data = idio_array_get_index (slots_array, sas - 1);
-    IDIO offset = idio_array_get_index (slot_data, IDIO_C_SLOT_DATA_OFFSET);
-    IDIO size = idio_array_get_index (slot_data, IDIO_C_SLOT_DATA_SIZE);
+    IDIO field_data = idio_array_get_index (fields_array, sas - 1);
+    IDIO offset = idio_array_get_index (field_data, IDIO_C_FIELD_DATA_OFFSET);
+    IDIO size = idio_array_get_index (field_data, IDIO_C_FIELD_DATA_SIZE);
 
     r = IDIO_C_TYPE_INT64 (offset) + IDIO_C_TYPE_UINT64 (size);
 
     return r;
 }
 
-IDIO idio_C_struct (IDIO slots_array, IDIO methods, IDIO frame)
+IDIO idio_C_struct (IDIO fields_array, IDIO methods, IDIO frame)
 {
-    IDIO_ASSERT (slots_array);
+    IDIO_ASSERT (fields_array);
     IDIO_ASSERT (methods);
     IDIO_ASSERT (frame);
 
     IDIO cs = idio_gc_get (IDIO_TYPE_C_STRUCT);
 
-    IDIO_FPRINTF (stderr, "idio_C_struct: %10p = (%10p %10p)\n", cs, slots_array, methods);
+    IDIO_FPRINTF (stderr, "idio_C_struct: %10p = (%10p %10p)\n", cs, fields_array, methods);
 
     IDIO_GC_ALLOC (cs->u.C_struct, sizeof (idio_C_struct_t));
 
     IDIO_C_STRUCT_GREY (cs) = NULL;
-    IDIO_C_STRUCT_SLOTS (cs) = slots_array;
+    IDIO_C_STRUCT_FIELDS (cs) = fields_array;
     IDIO_C_STRUCT_METHODS (cs) = methods;
     IDIO_C_STRUCT_FRAME (cs) = frame;
-    IDIO_C_STRUCT_SIZE (cs) = idio_sizeof_C_struct (slots_array);
+    IDIO_C_STRUCT_SIZE (cs) = idio_sizeof_C_struct (fields_array);
 
     return cs;
 }

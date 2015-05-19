@@ -392,7 +392,7 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		
 		if (! idio_equalp (IDIO_STRUCT_TYPE_NAME (o1), IDIO_STRUCT_TYPE_NAME (o2)) ||
 		    ! idio_equalp (IDIO_STRUCT_TYPE_PARENT (o1), IDIO_STRUCT_TYPE_PARENT (o2)) ||
-		    ! idio_equalp (IDIO_STRUCT_TYPE_SLOTS (o1), IDIO_STRUCT_TYPE_SLOTS (o2))) {
+		    ! idio_equalp (IDIO_STRUCT_TYPE_FIELDS (o1), IDIO_STRUCT_TYPE_FIELDS (o2))) {
 		    return 0;
 		}
 		break;
@@ -402,7 +402,7 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		}
 		
 		if (! idio_equalp (IDIO_STRUCT_INSTANCE_TYPE (o1), IDIO_STRUCT_INSTANCE_TYPE (o2)) ||
-		    ! idio_equalp (IDIO_STRUCT_INSTANCE_SLOTS (o1), IDIO_STRUCT_INSTANCE_SLOTS (o2))) {
+		    ! idio_equalp (IDIO_STRUCT_INSTANCE_FIELDS (o1), IDIO_STRUCT_INSTANCE_FIELDS (o2))) {
 		    return 0;
 		}
 		break;
@@ -542,6 +542,7 @@ char *idio_as_string (IDIO o, int depth)
 	    case IDIO_VM_CODE_DEEP_ARGUMENT_SET:     t = "DEEP-ARGUMENT-SET";     break;
 	    case IDIO_VM_CODE_GLOBAL_REF:            t = "GLOBAL-REF";            break;
 	    case IDIO_VM_CODE_CHECKED_GLOBAL_REF:    t = "CHECKED-GLOBAL-REF";    break;
+	    case IDIO_VM_CODE_CHECKED_GLOBAL_FUNCTION_REF:    t = "CHECKED-GLOBAL-FUNCTION-REF";    break;
 	    case IDIO_VM_CODE_GLOBAL_SET:            t = "GLOBAL-SET";            break;
 	    case IDIO_VM_CODE_CONSTANT:              t = "CONSTANT";              break;
 	    case IDIO_VM_CODE_ALTERNATIVE:           t = "ALTERNATIVE";           break;
@@ -967,8 +968,8 @@ char *idio_as_string (IDIO o, int depth)
 		    if (asprintf (&r, "c_struct %10p { ", o) == -1) {
 			return NULL;
 		    }
-		    IDIO_STRCAT (r, "\n\tslots: ");
-		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_C_STRUCT_SLOTS (o), depth - 1));
+		    IDIO_STRCAT (r, "\n\tfields: ");
+		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_C_STRUCT_FIELDS (o), depth - 1));
 
 		    IDIO mh = IDIO_C_STRUCT_METHODS (o);
 	    
@@ -1156,6 +1157,82 @@ char *idio_display_string (IDIO o)
     }
     
     return r;
+}
+
+void idio_as_flat_string (IDIO o, char **argv, int *i)
+{
+    switch ((intptr_t) o & 3) {
+    case IDIO_TYPE_FIXNUM_MARK:
+    case IDIO_TYPE_CONSTANT_MARK:
+    case IDIO_TYPE_CHARACTER_MARK:
+	{
+	    argv[*i++] = idio_as_string (o, 1);
+	}
+	break;
+    case IDIO_TYPE_POINTER_MARK:
+	{
+	    switch (idio_type (o)) {
+	    case IDIO_TYPE_C_INT8:
+	    case IDIO_TYPE_C_UINT8:
+	    case IDIO_TYPE_C_INT16:
+	    case IDIO_TYPE_C_UINT16:
+	    case IDIO_TYPE_C_INT32:
+	    case IDIO_TYPE_C_UINT32:
+	    case IDIO_TYPE_C_INT64:
+	    case IDIO_TYPE_C_UINT64:
+	    case IDIO_TYPE_C_FLOAT:
+	    case IDIO_TYPE_C_DOUBLE:
+		{
+		    argv[(*i)++] = idio_as_string (o, 1);
+		}
+		break;
+	    case IDIO_TYPE_STRING:
+		if (asprintf (&argv[(*i)++], "%.*s", (int) IDIO_STRING_BLEN (o), IDIO_STRING_S (o)) == -1) {
+		    return;
+		}
+		break;
+	    case IDIO_TYPE_SUBSTRING:
+		if (asprintf (&argv[(*i)++], "%.*s", (int) IDIO_SUBSTRING_BLEN (o), IDIO_SUBSTRING_S (o)) == -1) {
+		    return;
+		}
+		break;
+	    case IDIO_TYPE_SYMBOL:
+		if (asprintf (&argv[(*i)++], "%s", IDIO_SYMBOL_S (o)) == -1) {
+		    return;
+		}
+		break;
+	    case IDIO_TYPE_PAIR:
+	    case IDIO_TYPE_ARRAY:
+	    case IDIO_TYPE_HASH:
+	    case IDIO_TYPE_BIGNUM:
+		{
+		    argv[(*i)++] = idio_as_string (o, 1);
+		}
+		break;
+	    case IDIO_TYPE_C_POINTER:
+	    case IDIO_TYPE_CLOSURE:
+	    case IDIO_TYPE_PRIMITIVE:
+	    case IDIO_TYPE_MODULE:
+	    case IDIO_TYPE_FRAME:
+	    case IDIO_TYPE_HANDLE:
+	    case IDIO_TYPE_STRUCT_TYPE:
+	    case IDIO_TYPE_STRUCT_INSTANCE:
+	    case IDIO_TYPE_THREAD:
+	    case IDIO_TYPE_C_TYPEDEF:
+	    case IDIO_TYPE_C_STRUCT:
+	    case IDIO_TYPE_C_INSTANCE:
+	    case IDIO_TYPE_C_FFI:
+	    case IDIO_TYPE_OPAQUE:
+	    default:
+		idio_warning_message ("unexpected object type: %s", idio_type2string (o));
+		break;
+	    }
+	}
+	break;
+    default:
+	idio_warning_message ("unexpected object type: %s", idio_type2string (o));
+	break;
+    }
 }
 
 /* 

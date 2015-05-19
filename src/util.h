@@ -35,6 +35,7 @@ int idio_equal (IDIO o1, IDIO o2, int eqp);
 IDIO idio_value (IDIO o);
 char *idio_as_string (IDIO o, int depth);
 char *idio_display_string (IDIO o);
+void idio_as_flat_string (IDIO o, char **argv, int *i);
 IDIO idio_list_mapcar (IDIO l);
 IDIO idio_list_mapcdr (IDIO l);
 IDIO idio_list_memq (IDIO k, IDIO l);

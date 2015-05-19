@@ -546,12 +546,16 @@ static IDIO idio_read_template (IDIO handle, int depth)
     /*
      * idio_read_block has returned (block expr) and we only want expr
      *
-     * Note that (block expr1 expr2+) means we only return expr1 --
-     * like quasiquote
+     * Note that (block expr1 expr2+) means we need to wrap a begin
+     * round expr1 expr2+ -- unlike quasiquote!
      */
-    /* idio_debug ("read-template: %s\n", e); */
-    /* idio_debug ("read-template: %s\n", IDIO_PAIR_H (IDIO_PAIR_T (e))); */
-    return IDIO_LIST2 (idio_S_quasiquote, IDIO_PAIR_H (IDIO_PAIR_T (e)));
+    if (idio_S_nil == IDIO_PAIR_T (IDIO_PAIR_T (e))) {
+	return IDIO_LIST2 (idio_S_quasiquote, IDIO_PAIR_H (IDIO_PAIR_T (e)));
+    } else {
+	return IDIO_LIST2 (idio_S_quasiquote,
+			   idio_list_append2 (IDIO_LIST1 (idio_S_begin),
+					      IDIO_PAIR_T (e)));
+    }
 }
 
 static IDIO idio_read_bignum (IDIO handle, char basec, int radix)

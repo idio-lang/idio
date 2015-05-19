@@ -413,13 +413,13 @@ void idio_process_grey (unsigned colour)
 	idio_gc->grey = IDIO_STRUCT_TYPE_GREY (o);
 	idio_mark (IDIO_STRUCT_TYPE_NAME (o), colour);
 	idio_mark (IDIO_STRUCT_TYPE_PARENT (o), colour);
-	idio_mark (IDIO_STRUCT_TYPE_SLOTS (o), colour);
+	idio_mark (IDIO_STRUCT_TYPE_FIELDS (o), colour);
 	break;
     case IDIO_TYPE_STRUCT_INSTANCE:
 	IDIO_C_ASSERT (idio_gc->grey != IDIO_STRUCT_INSTANCE_GREY (o));
 	idio_gc->grey = IDIO_STRUCT_INSTANCE_GREY (o);
 	idio_mark (IDIO_STRUCT_INSTANCE_TYPE (o), colour);
-	idio_mark (IDIO_STRUCT_INSTANCE_SLOTS (o), colour);
+	idio_mark (IDIO_STRUCT_INSTANCE_FIELDS (o), colour);
 	break;
     case IDIO_TYPE_THREAD:
 	IDIO_C_ASSERT (idio_gc->grey != IDIO_THREAD_GREY (o));
@@ -443,7 +443,7 @@ void idio_process_grey (unsigned colour)
     case IDIO_TYPE_C_STRUCT:
 	IDIO_C_ASSERT (idio_gc->grey != IDIO_C_STRUCT_GREY (o));
 	idio_gc->grey = IDIO_C_STRUCT_GREY (o);
-	idio_mark (IDIO_C_STRUCT_SLOTS (o), colour);
+	idio_mark (IDIO_C_STRUCT_FIELDS (o), colour);
 	idio_mark (IDIO_C_STRUCT_METHODS (o), colour);
 	idio_mark (IDIO_C_STRUCT_FRAME (o), colour);
 	break;
@@ -902,6 +902,7 @@ void idio_gc_collect ()
     /* idio_gc_stats ();   */
     
     if (idio_gc->pause) {
+	/* fprintf (stderr, "GC paused\n"); */
 	return;
     }
 

@@ -230,7 +230,7 @@ typedef struct idio_module_s {
 typedef struct idio_frame_s {
     struct idio_s *grey;
     struct idio_s *next;
-    size_t nargs;
+    idio_ai_t nargs;
     struct idio_s *args;
 } idio_frame_t;
 
@@ -342,23 +342,23 @@ typedef struct idio_struct_type_s {
     struct idio_s *grey;
     struct idio_s *name;	/* a string */
     struct idio_s *parent;	/* a struct-type */
-    struct idio_s *slots;	/* an array of strings */
+    struct idio_s *fields;	/* an array of strings */
 } idio_struct_type_t;
 
 #define IDIO_STRUCT_TYPE_GREY(S)	((S)->u.struct_type->grey)
 #define IDIO_STRUCT_TYPE_NAME(S)	((S)->u.struct_type->name)
 #define IDIO_STRUCT_TYPE_PARENT(S)	((S)->u.struct_type->parent)
-#define IDIO_STRUCT_TYPE_SLOTS(S)	((S)->u.struct_type->slots)
+#define IDIO_STRUCT_TYPE_FIELDS(S)	((S)->u.struct_type->fields)
 
 typedef struct idio_struct_instance_s {
     struct idio_s *grey;
     struct idio_s *type;	/* a struct-type */
-    struct idio_s *slots;	/* an array */
+    struct idio_s *fields;	/* an array */
 } idio_struct_instance_t;
 
 #define IDIO_STRUCT_INSTANCE_GREY(I)	((I)->u.struct_instance->grey)
 #define IDIO_STRUCT_INSTANCE_TYPE(I)	((I)->u.struct_instance->type)
-#define IDIO_STRUCT_INSTANCE_SLOTS(I)	((I)->u.struct_instance->slots)
+#define IDIO_STRUCT_INSTANCE_FIELDS(I)	((I)->u.struct_instance->fields)
 
 typedef struct idio_thread_s {
     struct idio_s *grey;
@@ -437,14 +437,14 @@ typedef struct idio_C_typedef_s {
 
 typedef struct idio_C_struct_s {
     struct idio_s *grey;
-    struct idio_s *slots;
+    struct idio_s *fields;
     struct idio_s *methods;
     struct idio_s *frame;
     size_t size;
 } idio_C_struct_t;
 
 #define IDIO_C_STRUCT_GREY(C)    ((C)->u.C_struct->grey)
-#define IDIO_C_STRUCT_SLOTS(C)   ((C)->u.C_struct->slots)
+#define IDIO_C_STRUCT_FIELDS(C)   ((C)->u.C_struct->fields)
 #define IDIO_C_STRUCT_METHODS(C) ((C)->u.C_struct->methods)
 #define IDIO_C_STRUCT_FRAME(C)   ((C)->u.C_struct->frame)
 #define IDIO_C_STRUCT_SIZE(C)    ((C)->u.C_struct->size)
@@ -573,8 +573,8 @@ typedef struct idio_gc_s {
 } idio_gc_t;
 
 /*
-  the alignment of a structure slot of type TYPE can be determined by
-  looking at the offset of such a slot in a structure where the first
+  the alignment of a structure field of type TYPE can be determined by
+  looking at the offset of such a field in a structure where the first
   element is a single char
 */
 
@@ -590,13 +590,14 @@ typedef struct idio_gc_s {
 
  * The three types are:
 
- * - fixnums: small integers (for small being at least +/- 2**29)
+ * - fixnums: small integers (for small being ~ +/- 2**29 on 32 bit
+     platforms: 32 less the two bits above and a sign bit)
 
  * - small constants the user can see and use: #t, #f, #eof etc..
      Negative values cannot be evaluated.
 
  * - characters: as a distinct type from fixnums to avoid the
-     awkwardness of trying to evaluate: 1 + ®
+     awkwardness of trying to evaluate: 1 + #\®
 
  * All three will then have a minimum of 30 bits of useful space.
  */

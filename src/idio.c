@@ -36,6 +36,7 @@ void idio_init ()
     idio_init_pair ();
     idio_init_handle ();
     idio_init_file_handle ();
+    idio_init_struct ();
     idio_init_C_struct ();
     idio_init_frame ();
     idio_init_util ();
@@ -69,6 +70,7 @@ void idio_init ()
     idio_pair_add_primitives ();
     idio_handle_add_primitives ();
     idio_file_handle_add_primitives ();
+    idio_struct_add_primitives ();
     idio_C_struct_add_primitives ();
     idio_frame_add_primitives ();
     idio_util_add_primitives ();
@@ -113,6 +115,7 @@ void idio_final ()
     idio_final_util ();
     idio_final_frame ();
     idio_final_C_struct ();
+    idio_final_struct ();
     idio_final_file_handle ();
     idio_final_handle ();
     idio_final_pair ();

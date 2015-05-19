@@ -186,6 +186,12 @@
 #define IDIO_DEFINE_PRIMITIVE3V(iname,cname,params)			\
     IDIO_DEFINE_PRIMITIVE_DESC(iname,cname,params,3,1)
 
+#define IDIO_DEFINE_PRIMITIVE4(iname,cname,params)			\
+    IDIO_DEFINE_PRIMITIVE_DESC(iname,cname,params,4,0)
+
+#define IDIO_DEFINE_PRIMITIVE5(iname,cname,params)			\
+    IDIO_DEFINE_PRIMITIVE_DESC(iname,cname,params,5,0)
+
 #define IDIO_ADD_PRIMITIVE(cname)	  idio_add_primitive (&idio_primitive_data_ ## cname);
 
 #define IDIO_ADD_SPECIAL_PRIMITIVE(cname) idio_add_special_primitive (&idio_primitive_data_ ## cname);
