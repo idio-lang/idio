@@ -53,6 +53,7 @@
 
 #include <sys/resource.h>
 #include <sys/time.h>
+#include <sys/wait.h>
 
 #ifdef assert
 
@@ -232,6 +233,7 @@
 #include "c-type.h"
 #include "character.h"
 #include "closure.h"
+#include "command.h"
 #include "error.h"
 #include "evaluate.h"
 #include "scm-evaluate.h"

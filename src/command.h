@@ -16,24 +16,20 @@
  */
 
 /*
- * struct.h
+ * command.h
  * 
  */
 
-#ifndef STRUCT_H
-#define STRUCT_H
+#ifndef COMMAND_H
+#define COMMAND_H
 
-IDIO idio_struct_type (IDIO name, IDIO parent, IDIO fields);
-int idio_isa_struct_type (IDIO p);
-void idio_free_struct_type (IDIO p);
-IDIO idio_struct_instance (IDIO st, IDIO fields);
-int idio_isa_struct_instance (IDIO p);
-void idio_free_struct_instance (IDIO p);
+char *idio_find_command (IDIO func);
+IDIO idio_invoke_command (IDIO func, IDIO thr, char *pathname);
 
-IDIO idio_struct_instance_ref (IDIO si, IDIO field);
-IDIO idio_struct_instance_ref_direct (IDIO si, idio_ai_t index);
-IDIO idio_struct_instance_set (IDIO si, IDIO field, IDIO v);
-IDIO idio_struct_instance_set_direct (IDIO si, idio_ai_t index, IDIO v);
+void idio_init_command ();
+void idio_command_add_primitives ();
+void idio_final_command ();
+
 
 #endif
 

@@ -51,6 +51,7 @@ void idio_init ()
     idio_init_error ();
     idio_init_read ();
     idio_init_scm_read ();
+    idio_init_command ();
     idio_init_vm ();
     
     /*
@@ -85,6 +86,7 @@ void idio_init ()
     idio_error_add_primitives ();
     idio_read_add_primitives ();
     idio_scm_read_add_primitives ();
+    idio_command_add_primitives ();
     idio_vm_add_primitives ();
 
     /*
@@ -101,6 +103,7 @@ void idio_final ()
      * reverse order of idio_init () ??
      */
     idio_final_vm ();
+    idio_final_command ();
     idio_final_scm_read ();
     idio_final_read ();
     idio_final_error ();

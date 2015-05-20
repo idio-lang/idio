@@ -256,13 +256,13 @@ IDIO_DEFINE_PRIMITIVE1 ("struct-instance-fields", struct_instance_fields, (IDIO 
     return idio_array_to_list (IDIO_STRUCT_INSTANCE_FIELDS (si));
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("struct-instance-ref", struct_instance_ref, (IDIO si, IDIO field))
+IDIO idio_struct_instance_ref (IDIO si, IDIO field)
 {
     IDIO_ASSERT (si);
     IDIO_ASSERT (field);
 
-    IDIO_VERIFY_PARAM_TYPE (struct_instance, si);
-    IDIO_VERIFY_PARAM_TYPE (symbol, field);
+    IDIO_TYPE_ASSERT (struct_instance, si);
+    IDIO_TYPE_ASSERT (symbol, field);
 
     IDIO st = IDIO_STRUCT_INSTANCE_TYPE (si);
     idio_ai_t i = idio_array_find_eqp (IDIO_STRUCT_TYPE_FIELDS (st), field, 0);
@@ -273,6 +273,26 @@ IDIO_DEFINE_PRIMITIVE2 ("struct-instance-ref", struct_instance_ref, (IDIO si, ID
     }
 
     return idio_array_get_index (IDIO_STRUCT_INSTANCE_FIELDS (si), i);
+}
+
+IDIO_DEFINE_PRIMITIVE2 ("struct-instance-ref", struct_instance_ref, (IDIO si, IDIO field))
+{
+    IDIO_ASSERT (si);
+    IDIO_ASSERT (field);
+
+    IDIO_VERIFY_PARAM_TYPE (struct_instance, si);
+    IDIO_VERIFY_PARAM_TYPE (symbol, field);
+
+    return idio_struct_instance_ref (si, field);
+}
+
+IDIO idio_struct_instance_ref_direct (IDIO si, idio_ai_t index)
+{
+    IDIO_ASSERT (si);
+
+    IDIO_TYPE_ASSERT (struct_instance, si);
+
+    return idio_array_get_index (IDIO_STRUCT_INSTANCE_FIELDS (si), index);
 }
 
 IDIO_DEFINE_PRIMITIVE4 ("%struct-instance-ref-direct", struct_instance_ref_direct, (IDIO si, IDIO st, IDIO fname, IDIO index))
@@ -291,7 +311,29 @@ IDIO_DEFINE_PRIMITIVE4 ("%struct-instance-ref-direct", struct_instance_ref_direc
 	idio_error_message ("bad structure ref");
     }
     
-    return idio_array_get_index (IDIO_STRUCT_INSTANCE_FIELDS (si), IDIO_FIXNUM_VAL (index));
+    return idio_struct_instance_ref_direct (si, IDIO_FIXNUM_VAL (index));
+}
+
+IDIO idio_struct_instance_set (IDIO si, IDIO field, IDIO v)
+{
+    IDIO_ASSERT (si);
+    IDIO_ASSERT (field);
+    IDIO_ASSERT (v);
+
+    IDIO_TYPE_ASSERT (struct_instance, si);
+    IDIO_TYPE_ASSERT (symbol, field);
+
+    IDIO st = IDIO_STRUCT_INSTANCE_TYPE (si);
+    idio_ai_t i = idio_array_find_eqp (IDIO_STRUCT_TYPE_FIELDS (st), field, 0);
+
+    if (-1 == i) {
+	fprintf (stderr, "struct-instance-set: field not found");
+	IDIO_C_ASSERT (0);
+    }
+
+    idio_array_insert_index (IDIO_STRUCT_INSTANCE_FIELDS (si), v, i);
+
+    return idio_S_unspec;
 }
 
 IDIO_DEFINE_PRIMITIVE3 ("struct-instance-set", struct_instance_set, (IDIO si, IDIO field, IDIO v))
@@ -303,15 +345,17 @@ IDIO_DEFINE_PRIMITIVE3 ("struct-instance-set", struct_instance_set, (IDIO si, ID
     IDIO_VERIFY_PARAM_TYPE (struct_instance, si);
     IDIO_VERIFY_PARAM_TYPE (symbol, field);
 
-    IDIO st = IDIO_STRUCT_INSTANCE_TYPE (si);
-    idio_ai_t i = idio_array_find_eqp (IDIO_STRUCT_TYPE_FIELDS (st), field, 0);
+    return idio_struct_instance_set (si, field, v);
+}
 
-    if (-1 == i) {
-	fprintf (stderr, "struct-instance-set: field not found");
-	IDIO_C_ASSERT (0);
-    }
+IDIO idio_struct_instance_set_direct (IDIO si, idio_ai_t index, IDIO v)
+{
+    IDIO_ASSERT (si);
+    IDIO_ASSERT (v);
 
-    idio_array_insert_index (IDIO_STRUCT_INSTANCE_FIELDS (si), v, IDIO_FIXNUM_VAL (index));
+    IDIO_TYPE_ASSERT (struct_instance, si);
+
+    idio_array_insert_index (IDIO_STRUCT_INSTANCE_FIELDS (si), v, index);
 
     return idio_S_unspec;
 }
@@ -333,9 +377,7 @@ IDIO_DEFINE_PRIMITIVE5 ("%struct-instance-set-direct", struct_instance_set_direc
 	idio_error_message ("bad structure set");
     }
     
-    idio_array_insert_index (IDIO_STRUCT_INSTANCE_FIELDS (si), v, IDIO_FIXNUM_VAL (index));
-
-    return idio_S_unspec;
+    return idio_struct_instance_set_direct (si, IDIO_FIXNUM_VAL (index), v);
 }
 
 static IDIO idio_struct_instance_isa (IDIO si, IDIO st)

@@ -898,13 +898,43 @@ char *idio_as_string (IDIO o, int depth)
 		}
 		break;
 	    case IDIO_TYPE_STRUCT_TYPE:
-		if (asprintf (&r, "#ST{%p}", o) == -1) {
-		    return NULL;
+		{
+		    if (asprintf (&r, "#ST{%p %s %s", o, idio_as_string (IDIO_STRUCT_TYPE_NAME (o), 1), idio_as_string (IDIO_STRUCT_TYPE_PARENT (o), 1)) == -1) {
+			return NULL;
+		    }
+
+		    IDIO stf = IDIO_STRUCT_TYPE_FIELDS (o);
+
+		    idio_ai_t al = idio_array_size (stf);
+		    idio_ai_t ai;
+		    for (ai = 0; ai < al; ai++) {
+			IDIO_STRCAT (r, " ");
+			IDIO_STRCAT_FREE (r, idio_as_string (idio_array_get_index (stf, ai), 1));
+		    }
+
+		    IDIO_STRCAT (r, "}");
 		}
 		break;
 	    case IDIO_TYPE_STRUCT_INSTANCE:
-		if (asprintf (&r, "#SI{%p}", o) == -1) {
-		    return NULL;
+		{
+		    if (asprintf (&r, "#SI{%p", o) == -1) {
+			return NULL;
+		    }
+
+		    IDIO st = IDIO_STRUCT_INSTANCE_TYPE (o);
+		    IDIO stf = IDIO_STRUCT_TYPE_FIELDS (st);
+		    IDIO sif = IDIO_STRUCT_INSTANCE_FIELDS (o);
+
+		    idio_ai_t al = idio_array_size (stf);
+		    idio_ai_t ai;
+		    for (ai = 0; ai < al; ai++) {
+			IDIO_STRCAT (r, " ");
+			IDIO_STRCAT_FREE (r, idio_as_string (idio_array_get_index (stf, ai), 1));
+			IDIO_STRCAT (r, ":");
+			IDIO_STRCAT_FREE (r, idio_as_string (idio_array_get_index (sif, ai), 1));
+		    }
+
+		    IDIO_STRCAT (r, "}");
 		}
 		break;
 	    case IDIO_TYPE_THREAD:
@@ -1166,7 +1196,7 @@ void idio_as_flat_string (IDIO o, char **argv, int *i)
     case IDIO_TYPE_CONSTANT_MARK:
     case IDIO_TYPE_CHARACTER_MARK:
 	{
-	    argv[*i++] = idio_as_string (o, 1);
+	    argv[(*i)++] = idio_as_string (o, 1);
 	}
 	break;
     case IDIO_TYPE_POINTER_MARK:

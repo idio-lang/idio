@@ -76,7 +76,7 @@ scm1-c-structs.scm1 : scm1-c-structs
 	./scm1-c-structs > $@
 
 clean : tidy
-	rm -f *.o *.d idio scm1-c-structs *.so scm1-c-structs.scm1 tests/e TAGS
+	rm -f *.o *.d idio scm1-c-structs *.so scm1-c-structs.scm1 o e TAGS
 
 tidy :
 	rm -f vgcore.* core.* core *~

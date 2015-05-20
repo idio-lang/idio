@@ -1512,70 +1512,6 @@ void idio_thread_listify (IDIO frame, size_t arity)
     }
 }
 
-static char *idio_find_command (IDIO func)
-{
-    char *command = IDIO_SYMBOL_S (func);
-    fprintf (stderr, "idio_find_command: looking for %s\n", command);
-
-    char *cmd_dir = "/usr/bin";
-    
-    char *pathname = idio_alloc (strlen (cmd_dir) + 1 + strlen (command) + 1);
-    strcpy (pathname, cmd_dir);
-    strcat (pathname, "/");
-    strcat (pathname, command);
-    
-    return pathname;
-}
-
-static IDIO idio_invoke_command (IDIO func, IDIO thr, char *pathname)
-{
-    IDIO val = IDIO_THREAD_VAL (thr);
-    idio_debug ("invoke: symbol %s ", func); 
-    idio_debug ("%s\n", IDIO_FRAME_ARGS (val)); 
-    IDIO args_a = IDIO_FRAME_ARGS (val);
-    IDIO last = idio_array_pop (args_a);
-    IDIO_FRAME_NARGS (val) -= 1;
-
-    if (idio_S_nil != last) {
-	char *ls = idio_as_string (last, 1);
-	fprintf (stderr, "invoke: last arg != nil: %s\n", ls);
-	free (ls);
-	IDIO_C_ASSERT (0);
-    }
-
-    /*
-     * argv[] needs:
-     * 1. (nominally) path to command
-     * 2+ arg1+
-     * 3. NULL (terminator)
-     *
-     * Here we will flatten any lists and expand filename
-     * patterns which means the arg list will grow as we
-     * determine what each argument means
-     */
-    int argc = 1 + IDIO_FRAME_NARGS (val) + 1;
-    char **argv = idio_alloc (argc * sizeof (char *));
-    int nargs;		/* index into frame args */
-    int i = 0;		/* index into argv */
-
-    argv[i++] = pathname;
-    for (nargs = 0; nargs < IDIO_FRAME_NARGS (val); nargs++) {
-	IDIO o = idio_array_get_index (args_a, nargs);
-	
-	idio_as_flat_string (o, argv, &i);
-    }
-    argv[i++] = NULL;
-
-    int j;
-    for (j = 0; j < i; j++) {
-	fprintf (stderr, "argv[%d] = %s\n", j, argv[j]);
-    }
-
-    execv (argv[0], argv);
-    perror ("execv");
-    return idio_S_nil;
-}
-
 void idio_thread_invoke (IDIO thr, IDIO func, int tailp)
 {
     IDIO_ASSERT (thr);
@@ -1749,7 +1685,7 @@ void idio_thread_invoke (IDIO thr, IDIO func, int tailp)
 	{
 	    char *pathname = idio_find_command (func);
 	    if (NULL != pathname) {
-		IDIO v = idio_invoke_command (func, thr, pathname);
+		IDIO_THREAD_VAL (thr) = idio_invoke_command (func, thr, pathname);
 	    } else {
 		idio_debug ("\n\ninvoke command %s\n", func);
 		idio_error_message ("command not found");
