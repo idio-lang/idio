@@ -137,7 +137,7 @@ static void idio_error_read_character_unknown_name (IDIO handle, char *name)
     idio_error_message ("%s:%zd:%zd: unknown character name %s", IDIO_HANDLE_NAME (handle), IDIO_HANDLE_POS (handle), IDIO_HANDLE_POS (handle), name);
 }
 
-static IDIO idio_read_expr (IDIO handle, char *ic, int depth);
+static IDIO idio_read_1_expr (IDIO handle, char *ic, int depth);
 static IDIO idio_read_block (IDIO handle, IDIO closedel, char *ic, int depth);
 
 static void idio_read_whitespace (IDIO handle)
@@ -191,7 +191,7 @@ static IDIO idio_read_list (IDIO handle, IDIO opendel, char *ic, int depth)
     IDIO r = idio_S_nil;
     
     for (;;) {
-	IDIO e = idio_read_expr (handle, ic, depth);
+	IDIO e = idio_read_1_expr (handle, ic, depth);
 
 	if (idio_handle_eofp (handle)) {
 	    idio_error_read_list_eof (handle);
@@ -209,9 +209,9 @@ static IDIO idio_read_list (IDIO handle, IDIO opendel, char *ic, int depth)
 	     * XXX should only expect a single expr after ampersand, ie. not
 	     * a list: (a & b c)
 	     */
-	    IDIO cdr = idio_read_expr (handle, ic, depth);
+	    IDIO cdr = idio_read_1_expr (handle, ic, depth);
 	    while (idio_T_eol == cdr) {
-		cdr = idio_read_expr (handle, ic, depth);
+		cdr = idio_read_1_expr (handle, ic, depth);
 	    }
 
 	    if (idio_handle_eofp (handle)) {
@@ -226,9 +226,9 @@ static IDIO idio_read_list (IDIO handle, IDIO opendel, char *ic, int depth)
 	    /*
 	     * This should be the closing delimiter
 	     */
-	    IDIO del = idio_read_expr (handle, ic, depth);
+	    IDIO del = idio_read_1_expr (handle, ic, depth);
 	    while (idio_T_eol == del) {
-		del = idio_read_expr (handle, ic, depth);
+		del = idio_read_1_expr (handle, ic, depth);
 	    }
 
 	    if (idio_handle_eofp (handle)) {
@@ -265,7 +265,7 @@ static IDIO idio_read_quote (IDIO handle, char *ic, int depth)
 {
     IDIO_ASSERT (handle);
 
-    IDIO e = idio_read_expr (handle, ic, depth);
+    IDIO e = idio_read_1_expr (handle, ic, depth);
     e = IDIO_LIST2 (idio_S_quote, e);
 
     return e;
@@ -275,7 +275,7 @@ static IDIO idio_read_quasiquote (IDIO handle, char *ic, int depth)
 {
     IDIO_ASSERT (handle);
 
-    IDIO e = idio_read_expr (handle, ic, depth);
+    IDIO e = idio_read_1_expr (handle, ic, depth);
     e = IDIO_LIST2 (idio_S_quasiquote, e);
 
     return e;
@@ -285,7 +285,7 @@ static IDIO idio_read_unquote_splicing (IDIO handle, char *ic, int depth)
 {
     IDIO_ASSERT (handle);
 
-    IDIO e = idio_read_expr (handle, ic, depth);
+    IDIO e = idio_read_1_expr (handle, ic, depth);
     e = IDIO_LIST2 (idio_S_unquotesplicing, e);
 
     return e;
@@ -295,7 +295,7 @@ static IDIO idio_read_unquote (IDIO handle, char *ic, int depth)
 {
     IDIO_ASSERT (handle);
 
-    IDIO e = idio_read_expr (handle, ic, depth);
+    IDIO e = idio_read_1_expr (handle, ic, depth);
     e = IDIO_LIST2 (idio_S_unquote, e);
     
     return e;
@@ -305,7 +305,7 @@ static IDIO idio_read_escape (IDIO handle, char *ic, int depth)
 {
     IDIO_ASSERT (handle);
 
-    IDIO e = idio_read_expr (handle, ic, depth);
+    IDIO e = idio_read_1_expr (handle, ic, depth);
     e = IDIO_LIST2 (idio_S_escape, e);
     
     return e;
@@ -355,7 +355,7 @@ static IDIO idio_read_string (IDIO handle)
     while (! done) {
 	int c = idio_handle_getc (handle);
 
-	if (idio_handle_eofp (handle)) {
+	if (EOF == c) {
 	    idio_error_read_string (handle, "unterminated");
 	    return idio_S_unspec;
 	}
@@ -440,7 +440,7 @@ static IDIO idio_read_character (IDIO handle)
     for (i = 0 ; i < IDIO_CHARACTER_MAX_NAME_LEN; i++) {
 	c = idio_handle_getc (handle);
 
-	if (idio_handle_eofp (handle)) {
+	if (EOF == c) {
 	    idio_error_read_character (handle, "EOF");
 	    return idio_S_unspec;
 	}
@@ -788,7 +788,7 @@ static IDIO idio_read_word (IDIO handle, int c)
     return r;
 }
 
-static IDIO idio_read_expr (IDIO handle, char *ic, int depth)
+static IDIO idio_read_1_expr (IDIO handle, char *ic, int depth)
 {
     int c = idio_handle_getc (handle);
 
@@ -911,7 +911,7 @@ static IDIO idio_read_expr (IDIO handle, char *ic, int depth)
 		case 'i':
 		    {
 			int inexact = ('i' == c);
-			IDIO bn = idio_read_expr (handle, ic, depth);
+			IDIO bn = idio_read_1_expr (handle, ic, depth);
 
 			if (IDIO_TYPE_FIXNUMP (bn)) {
 			    if (0 == inexact) {
@@ -1020,7 +1020,7 @@ static IDIO idio_read_line (IDIO handle, IDIO closedel, char *ic, int depth)
     IDIO r = idio_S_nil;
     
     for (;;) {
-	IDIO expr = idio_read_expr (handle, ic, depth);
+	IDIO expr = idio_read_1_expr (handle, ic, depth);
 	if (! (idio_T_eol == expr &&
 	       idio_S_nil == r)) {
 	}
@@ -1115,6 +1115,32 @@ IDIO idio_read (IDIO handle)
     idio_gc_resume ();
     
     return IDIO_PAIR_H (line);
+}
+
+IDIO idio_read_expr (IDIO handle)
+{
+    IDIO_ASSERT (handle);
+    IDIO_TYPE_ASSERT (handle, handle);
+
+    idio_gc_pause ();
+
+    /*
+     * There's an Idio/Scheme semantic cross-over here.  Should
+     * reading an Idio expression fault at EOL?
+     *
+     * For the sake of the existing (S9) tests we'll hold to Scheme
+     * semantics.
+     */
+    IDIO expr = idio_T_eol;
+    while (idio_T_eol == expr) {
+	expr = idio_read_1_expr (handle, idio_default_interpolation_chars, 0);
+	if (idio_S_eof == expr) {
+	    break;
+	}
+    }
+    idio_gc_resume ();
+
+    return expr;
 }
 
 IDIO idio_read_char (IDIO handle)

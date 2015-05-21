@@ -250,6 +250,7 @@
 #include "scm-read.h"
 #include "specialform.h"
 #include "string.h"
+#include "string-handle.h"
 #include "struct.h"
 #include "symbol.h"
 #include "thread.h"

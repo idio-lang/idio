@@ -52,6 +52,24 @@ IDIO idio_string_C (const char *s_C)
     return so;
 }
 
+IDIO idio_string_C_len (const char *s_C, size_t blen)
+{
+    IDIO_C_ASSERT (s_C);
+
+    IDIO so = idio_gc_get (IDIO_TYPE_STRING);
+    
+    IDIO_FPRINTF (stderr, "idio_string_C: %10p = '%s'\n", so, s_C);
+
+    IDIO_GC_ALLOC (so->u.string, sizeof (idio_string_t));
+    IDIO_GC_ALLOC (IDIO_STRING_S (so), blen + 1);
+    
+    memcpy (IDIO_STRING_S (so), s_C, blen);
+    IDIO_STRING_S (so)[blen] = '\0';
+    IDIO_STRING_BLEN (so) = blen;
+
+    return so;
+}
+
 IDIO idio_string_C_array (size_t ns, char *a_C[])
 {
     IDIO_C_ASSERT (a_C);

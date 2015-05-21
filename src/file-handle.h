@@ -37,7 +37,7 @@ int idio_file_handle_getc (IDIO fh);
 int idio_file_handle_eofp (IDIO fh);
 int idio_file_handle_close (IDIO fh);
 int idio_file_handle_putc (IDIO fh, int c);
-int idio_file_handle_puts (IDIO fh, char *s, size_t l);
+size_t idio_file_handle_puts (IDIO fh, char *s, size_t slen);
 int idio_file_handle_flush (IDIO fh);
 off_t idio_file_handle_seek (IDIO fh, off_t offset, int whence);
 void idio_file_handle_print (IDIO fh, IDIO o);

@@ -23,12 +23,11 @@ define (seq) {
 }
 
 define (fail expr result expected) {
-  display "test #" Tests " failed: " expr
-  display "got result:  " result 
-  display "expected:    " expected 
-
   set! Errors (1 + Errors)
-  display "Errors:    " Errors
+  display* "Error #" Errors
+  display* "test #" Tests " failed: " expr
+  display* "got result:  " result 
+  display* "expected:    " expected 
 }
 
 define (test3 expr result expected) {
@@ -46,7 +45,10 @@ define-macro (test form result) {
 
 display* "This is test.idio"
 
-load "tests/test.idio"
+;load "tests/s9-test.idio"
+load "tests/file-handle.idio"
+load "tests/string-handle.idio"
+load "tests/handle.idio"
 load "tests/struct.idio"
 
 if+ (zero? Errors) (display* "All" Tests "tests passed!") \

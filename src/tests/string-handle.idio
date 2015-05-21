@@ -1,0 +1,75 @@
+;; check predicates fail for non-string-handle
+string := "foo"
+test (string-handle? string) #f
+test (input-string-handle? string) #f
+test (output-string-handle? string) #f
+
+;; write to a string-handle
+osh := (open-output-string)
+test (string-handle? osh) #t
+test (output-string-handle? osh) #t
+test (input-string-handle? osh) #f
+
+sho := "Hello"
+write sho osh
+close-handle osh
+
+test (string-handle? osh) #t
+test (output-string-handle? osh) #t
+test (input-string-handle? osh) #f
+
+;; get the text written to the string
+shis := (get-output-string osh)
+
+; shis = "Hello"; sho = Hello
+;test (equal? shis sho) #t
+
+;; use the text read in as (read) will consume the "s
+ish := open-input-string shis
+test (string-handle? ish) #t
+test (input-string-handle? ish) #t
+test (output-string-handle? ish) #f
+
+shi := read ish
+close-handle ish
+
+test (string-handle? ish) #t
+test (input-string-handle? ish) #t
+test (output-string-handle? ish) #f
+
+test shi sho
+
+;; use the text read in again
+ish := open-input-string shis
+test (string-handle? ish) #t
+test (input-string-handle? ish) #t
+test (output-string-handle? ish) #f
+
+;; seek to the third character of "Hello" , #\e
+isn = handle-seek ish 2
+test isn 2
+
+shi := read-char ish
+
+test shi #\e
+test (peek-char ish) #\l
+
+; default is SEEK_SET
+handle-seek ish 2
+test (peek-char ish) #\e
+
+handle-seek ish -2 'cur
+test (peek-char ish) #\"
+
+handle-seek ish 2 'set
+test (peek-char ish) #\e
+
+handle-seek ish -2 'end
+test (peek-char ish) #\o
+
+handle-rewind ish
+test (peek-char ish) #\"
+
+test (handle-current-pos ish) 0
+handle-seek ish 2
+test (handle-current-pos ish) 2

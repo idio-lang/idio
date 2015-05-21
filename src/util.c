@@ -893,7 +893,7 @@ char *idio_as_string (IDIO o, int depth)
 		    break;
 		}
 	    case IDIO_TYPE_HANDLE:
-		if (asprintf (&r, "#H{\"%s\":%llu:%llu}", IDIO_HANDLE_NAME (o), (unsigned long long) IDIO_HANDLE_LINE (o), (unsigned long long) IDIO_HANDLE_POS (o)) == -1) {
+		if (asprintf (&r, "#H{%x\"%s\":%llu:%llu}", IDIO_HANDLE_FLAGS (o), IDIO_HANDLE_NAME (o), (unsigned long long) IDIO_HANDLE_LINE (o), (unsigned long long) IDIO_HANDLE_POS (o)) == -1) {
 		    return NULL;
 		}
 		break;

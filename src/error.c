@@ -96,24 +96,23 @@ void idio_error_add_C (char *s)
 IDIO_DEFINE_PRIMITIVE1V ("error", error, (IDIO m, IDIO args))
 {
     IDIO_ASSERT (m);
-    /* IDIO_ASSERT (args); */
+    IDIO_ASSERT (args); 
     
-    fprintf (stderr, "primitive-error: ");
-    char *ms = idio_as_string (m, 1);
-    fprintf (stderr, "%s", ms);
-    free (ms);
+    IDIO sh = idio_open_output_string_handle_C ();
+    idio_display (m, sh);
 
-    /* IDIO_TYPE_ASSERT (list, args); */
-    /* while (idio_S_nil != args) { */
-    /* 	char *s = idio_as_string (IDIO_PAIR_H (args), 1); */
-    /* 	fprintf (stderr, " %s", s); */
-    /* 	free (s); */
-    /* 	args = IDIO_PAIR_T (args); */
-    /* 	IDIO_TYPE_ASSERT (list, args); */
-    /* } */
-    fprintf (stderr, "\n");
+    IDIO_TYPE_ASSERT (list, args); 
+    while (idio_S_nil != args) { 
+	idio_write_char (IDIO_CHARACTER (' '), sh);
+	idio_write (IDIO_PAIR_H (args), sh);
+	
+    	args = IDIO_PAIR_T (args); 
+    	IDIO_TYPE_ASSERT (list, args); 
+    } 
 
-    idio_signal_exception (0, m);
+    IDIO s = idio_get_output_string (sh);
+    idio_debug ("error: msg: %s\n", s);
+    idio_signal_exception (0, s);
 
     fprintf (stderr, "primitive-error: return from signal exception: XXX abort!\n");
     idio_vm_abort_thread (idio_current_thread ());

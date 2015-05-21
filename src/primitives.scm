@@ -22,3 +22,6 @@
 (define set-car! set-ph!)
 (define cdr pt)
 (define set-cdr! set-pt!)
+
+(define read scm-read)
+

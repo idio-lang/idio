@@ -35,6 +35,7 @@ void idio_init ()
     idio_init_scm_evaluate ();
     idio_init_pair ();
     idio_init_handle ();
+    idio_init_string_handle ();
     idio_init_file_handle ();
     idio_init_struct ();
     idio_init_C_struct ();
@@ -70,6 +71,7 @@ void idio_init ()
     idio_scm_evaluate_add_primitives ();
     idio_pair_add_primitives ();
     idio_handle_add_primitives ();
+    idio_string_handle_add_primitives ();
     idio_file_handle_add_primitives ();
     idio_struct_add_primitives ();
     idio_C_struct_add_primitives ();
@@ -120,6 +122,7 @@ void idio_final ()
     idio_final_C_struct ();
     idio_final_struct ();
     idio_final_file_handle ();
+    idio_final_string_handle ();
     idio_final_handle ();
     idio_final_pair ();
     idio_final_scm_evaluate ();

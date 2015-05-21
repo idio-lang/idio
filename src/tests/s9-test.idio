@@ -3154,26 +3154,21 @@ test {
 
 define (visibility-check x) {
   delete-file testfile
-  {
-    out := open-output-file testfile
-    write x out
-    display #\space out
-    display x out
-    display #\space out
-    write 'the-end out
-    close-output-handle out
-    {
-      in := open-input-file testfile
-      {
-        vis := read in
-        {
-	  invis := read in
-          close-input-handle in
-          list vis invis
-        }
-      }
-    }
-  }
+
+  out := open-output-file testfile
+  write x out
+  display #\space out
+  display x out
+  display #\space out
+  write 'the-end out
+  close-output-handle out
+
+  in := open-input-file testfile
+  vis := read-expr in
+  invis := read-expr in
+  close-input-handle in
+
+  list vis invis
 }
 
 test (visibility-check #f) '(#f #f)
@@ -3226,7 +3221,7 @@ delete-file testfile
 
 ;; (test (begin (close-output-handle (open-output-file testfile))
 ;;              (let* ((in (open-input-file testfile))
-;;                     (e (read in)))
+;;                     (e (read-expr in)))
 ;;                (close-input-handle in)
 ;;                (eof-object? e)))
 ;;       #t)
@@ -3234,7 +3229,7 @@ test {
   close-output-handle (open-output-file testfile)
   {
     in := open-input-file testfile
-    e := read in
+    e := read-expr in
     close-input-handle in
     eof-object? e
   }

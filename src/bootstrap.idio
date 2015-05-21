@@ -3,8 +3,9 @@ display "This is bootstrap.idio\n"
 include "s9.idio"
 include "struct.idio"
 
-;load "test.idio"
+load "test.idio"
 
+;error "bad arg" 1
 ls -la *.scm
 ls (sleep 10) 
 

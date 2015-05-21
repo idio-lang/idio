@@ -213,8 +213,6 @@ IDIO idio_bignum (int flags, IDIO_BS_T exp, IDIO_BSA sig_a)
 
     IDIO_GC_ALLOC (o->u.bignum, sizeof (idio_bignum_t));
 
-    /* IDIO_BIGNUM_GREY (o) = NULL; */
-    IDIO_BIGNUM_NUMS (o) = NULL;
     IDIO_BIGNUM_FLAGS (o) = flags;
     IDIO_BIGNUM_EXP (o) = exp;
     IDIO_BIGNUM_SIG (o) = sig_a;

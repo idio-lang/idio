@@ -42,7 +42,9 @@ void *idio_alloc (size_t s)
 
 void *idio_realloc (void *p, size_t s)
 {
-    return realloc (p, s);
+    p = realloc (p, s);
+    IDIO_C_ASSERT (p);
+    return p;
 }
 
 /*
@@ -1234,29 +1236,49 @@ void idio_init_gc ()
     idio_gc->verbose = 0;
 
     if (0) {
-	fprintf (stderr, "sizeof (struct idio_s)                 = %zd\n", sizeof (struct idio_s));
-	fprintf (stderr, "sizeof (struct idio_string_s)          = %zd\n", sizeof (struct idio_string_s));
-	fprintf (stderr, "sizeof (struct idio_substring_s)       = %zd\n", sizeof (struct idio_substring_s));
-	fprintf (stderr, "sizeof (struct idio_symbol_s)          = %zd\n", sizeof (struct idio_symbol_s));
-	fprintf (stderr, "sizeof (struct idio_pair_s)            = %zd\n", sizeof (struct idio_pair_s));
-	fprintf (stderr, "sizeof (struct idio_array_s)           = %zd\n", sizeof (struct idio_array_s));
-	fprintf (stderr, "sizeof (struct idio_hash_s)            = %zd\n", sizeof (struct idio_hash_s));
-	fprintf (stderr, "sizeof (struct idio_closure_s)         = %zd\n", sizeof (struct idio_closure_s));
-	fprintf (stderr, "sizeof (struct idio_primitive_s)       = %zd\n", sizeof (struct idio_primitive_s));
-	fprintf (stderr, "sizeof (struct idio_bignum_s)          = %zd\n", sizeof (struct idio_bignum_s));
-	fprintf (stderr, "sizeof (struct idio_module_s)          = %zd\n", sizeof (struct idio_module_s));
-	fprintf (stderr, "sizeof (struct idio_frame_s)           = %zd\n", sizeof (struct idio_frame_s));
-	fprintf (stderr, "sizeof (struct idio_handle_s)          = %zd\n", sizeof (struct idio_handle_s));
-	fprintf (stderr, "sizeof (struct idio_struct_type_s)     = %zd\n", sizeof (struct idio_struct_type_s));
-	fprintf (stderr, "sizeof (struct idio_struct_instance_s) = %zd\n", sizeof (struct idio_struct_instance_s));
-	fprintf (stderr, "sizeof (struct idio_thread_s)          = %zd\n", sizeof (struct idio_thread_s));
-	fprintf (stderr, "sizeof (struct idio_C_type_s)          = %zd\n", sizeof (struct idio_C_type_s));
-	fprintf (stderr, "sizeof (struct idio_C_typedef_s)       = %zd\n", sizeof (struct idio_C_typedef_s));
-	fprintf (stderr, "sizeof (struct idio_C_struct_s)        = %zd\n", sizeof (struct idio_C_struct_s));
-	fprintf (stderr, "sizeof (struct idio_C_instance_s)      = %zd\n", sizeof (struct idio_C_instance_s));
-	fprintf (stderr, "sizeof (struct idio_C_FFI_s)           = %zd\n", sizeof (struct idio_C_FFI_s));
-	fprintf (stderr, "sizeof (struct idio_opaque_s)          = %zd\n", sizeof (struct idio_opaque_s));
-	fprintf (stderr, "sizeof (struct idio_continuation_s)    = %zd\n", sizeof (struct idio_continuation_s));
+	size_t n = 0;
+	size_t sum = 0;
+	
+#define IDIO_GC_STRUCT_SIZE(s)	{					\
+	    size_t size = sizeof (struct s);				\
+	    sum += size;						\
+	    n++;							\
+	    fprintf (stderr, "sizeof (struct %-24s = %zd\n", #s ")", size); \
+	}
+	
+	IDIO_GC_STRUCT_SIZE (idio_s);
+
+	n = 0;
+	sum = 0;
+	
+	IDIO_GC_STRUCT_SIZE (idio_string_s);
+	IDIO_GC_STRUCT_SIZE (idio_substring_s);
+	IDIO_GC_STRUCT_SIZE (idio_symbol_s);
+	IDIO_GC_STRUCT_SIZE (idio_pair_s);
+	IDIO_GC_STRUCT_SIZE (idio_array_s);
+	IDIO_GC_STRUCT_SIZE (idio_hash_s);
+	IDIO_GC_STRUCT_SIZE (idio_closure_s);
+	IDIO_GC_STRUCT_SIZE (idio_primitive_s);
+	IDIO_GC_STRUCT_SIZE (idio_bignum_s);
+	IDIO_GC_STRUCT_SIZE (idio_module_s);
+	IDIO_GC_STRUCT_SIZE (idio_frame_s);
+	IDIO_GC_STRUCT_SIZE (idio_handle_s);
+	IDIO_GC_STRUCT_SIZE (idio_struct_type_s);
+	IDIO_GC_STRUCT_SIZE (idio_struct_instance_s);
+	IDIO_GC_STRUCT_SIZE (idio_thread_s);
+	IDIO_GC_STRUCT_SIZE (idio_C_type_s);
+	IDIO_GC_STRUCT_SIZE (idio_C_typedef_s);
+	IDIO_GC_STRUCT_SIZE (idio_C_struct_s);
+	IDIO_GC_STRUCT_SIZE (idio_C_instance_s);
+	IDIO_GC_STRUCT_SIZE (idio_C_FFI_s);
+	IDIO_GC_STRUCT_SIZE (idio_opaque_s);
+	IDIO_GC_STRUCT_SIZE (idio_continuation_s);
+
+	fprintf (stderr, "sum = %zd, avg = %zd\n", sum, sum / n);
+
+	sum -= 96;		/* thread */
+	fprintf (stderr, "sum = %zd, avg = %zd\n", sum, sum / n); 
+
     }
     
     idio_gc_finalizer_hash = IDIO_HASH_EQP (64);

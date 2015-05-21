@@ -2715,7 +2715,7 @@ int idio_vm_run1 (IDIO thr, int dis)
 	    if (idio_vm_tracing) {
 		idio_vm_primitive_call_trace ("read", thr, 0);
 	    }
-	    IDIO_THREAD_VAL (thr) = idio_scm_read (IDIO_THREAD_INPUT_HANDLE (thr));
+	    IDIO_THREAD_VAL (thr) = idio_read (IDIO_THREAD_INPUT_HANDLE (thr));
 	    if (idio_vm_tracing) {
 		idio_vm_primitive_result_trace (thr);
 	    }
@@ -3164,7 +3164,7 @@ void idio_vm_default_pc (IDIO thr)
 
     /*
      * The problem for an external user,
-     * eg. idio_scm_meaning_expander, is that if the expander is a
+     * eg. idio_meaning_expander, is that if the expander is a
      * primtive then idio_vm_run() pushes idio_finish_pc on the stack
      * expecting the code to run through to the NOP/RETURN it added on
      * the end.  However, for a primitive idio_thread_invoke() will

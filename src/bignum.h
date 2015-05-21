@@ -38,10 +38,8 @@
   - up to IDIO_BIGNUM_SIG_MAX_DIGITS significant decimal digits spread
     across several machine words.
 
-  Those words are organized as a dynamically sized array of C_int64.
-  That could/should be an array of int64_t and would be proportionally
-  quicker but there are some fleeting aspirations to making the data
-  structure user-visible.
+  Those words are organized as a dynamically sized (reference
+  counted!) array of int64_t.
 
   The first word in the array represents the least significant word of
   the bignum meaning that index zero remains the LSS as the bignum
@@ -49,9 +47,8 @@
 
   Sign: For a real the sign is in a distinct flag.  For an integer,
   the most significant segment is signed.
- */
 
-/*
+
   How many decimal digits can fit in a machine word?  log2(10) is
   3.322, ie each base10 digit uses 3.322 binary bits.  19 of those
   would be 63.12 bits which means we'd not be able to store the sign
@@ -76,6 +73,17 @@
   set IDIO_BIGNUM_DPW below that value for debugging.  Otherwise we
   need a dynamic calculation as to how many segments of DPW digits
   will fit in an int64_t.
+
+  Using a large IDIO_BIGNUM_SIG_SEGMENTS means your calculations are
+  more accurate.  However, remember that even relatively simple
+  calculations can result in an arbitrarily large number of
+  significant digits.  Consider how many significant digits are
+  required to accurately represent dividing one by three.
+
+  In addition, IDIO_BIGNUM_SIG_SEGMENTS != 1 makes for exponentially
+  slow performance...
+
+  The S9fES bignum tests work well with 18 significant digits.
  */
 
 #ifdef __LP64__
@@ -177,6 +185,6 @@ void idio_final_bignum ();
 #endif
 
 /* Local Variables: */
-/* mode: C/l */
+/* mode: C */
 /* coding: utf-8-unix */
 /* End: */

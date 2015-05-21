@@ -36,7 +36,7 @@ int idio_handle_peek (IDIO h);
 int idio_handle_eofp (IDIO h);
 int idio_handle_close (IDIO h);
 int idio_handle_putc (IDIO h, int c);
-int idio_handle_puts (IDIO h, char *s, size_t l);
+size_t idio_handle_puts (IDIO h, char *s, size_t slen);
 int idio_handle_flush (IDIO h);
 off_t idio_handle_seek (IDIO h, off_t offset, int whence);
 void idio_handle_print (IDIO h, IDIO o);
@@ -48,7 +48,9 @@ IDIO idio_current_input_handle ();
 IDIO idio_current_output_handle ();
 
 IDIO idio_open_handle (IDIO pathname, char *mode);
-IDIO idio_read (IDIO h);
+IDIO idio_write (IDIO o, IDIO args);
+IDIO idio_write_char (IDIO c, IDIO args);
+IDIO idio_display (IDIO o, IDIO args);
 
 void idio_init_handle ();
 void idio_handle_add_primitives ();

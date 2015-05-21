@@ -56,6 +56,7 @@
 #define idio_T_ampersand	((const IDIO) IDIO_CONSTANT (IDIO_TOKEN_AMPERSAND))
 
 IDIO idio_read (IDIO handle);
+IDIO idio_read_expr (IDIO handle);
 IDIO idio_read_char (IDIO handle);
 
 void idio_init_read ();

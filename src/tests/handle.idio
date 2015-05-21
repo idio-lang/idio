@@ -1,0 +1,57 @@
+vm-trace 0
+
+;; check predicates fail for non-handle
+string := "foo"
+test (handle? string) #f
+test (input-handle? string) #f
+test (output-handle? string) #f
+
+str := "Hello"
+define (write-handle oh) {
+  ;; write to a handle 
+  test (handle? oh) #t
+  test (output-handle? oh) #t
+  test (input-handle? oh) #f
+
+  write str oh
+  close-handle oh
+
+  test (handle? oh) #t
+  test (output-handle? oh) #t
+  test (input-handle? oh) #f
+}
+
+define (read-handle ih) {
+  test (handle? ih) #t
+  test (input-handle? ih) #t
+  test (output-handle? ih) #f
+
+  istr := read ih
+  close-handle ih
+
+  test (handle? ih) #t
+  test (input-handle? ih) #t
+  test (output-handle? ih) #f
+
+  test (equal? istr str) #t
+}
+
+osh := (open-output-string)
+write-handle osh
+
+;; get the text written to the string
+text := (get-output-string osh)
+
+; text = "Hello"; sho = Hello
+;test (equal? shis sho) #t
+
+;; use the test read in as (read) will consume the "s
+ish := open-input-string shis
+read-handle ish
+
+ofh := open-output-file testfile
+write-handle ofh
+
+ifh := open-input-file testfile
+read-handle ifh
+

@@ -270,15 +270,10 @@ typedef idio_bsa_t* IDIO_BSA;
 #define IDIO_BSA_AE(BSA,i)	((BSA)->ae[i])
 
 typedef struct idio_bignum_s {
-    /* struct idio_s *grey; */
-    char *nums;
     IDIO_BS_T exp;		/* exponent, a raw int64_t */
-    /* struct idio_s *sig;         significand, an array of C_int64 */
     IDIO_BSA sig;
 } idio_bignum_t;
 
-/* #define IDIO_BIGNUM_GREY(B)  ((B)->u.bignum->grey) */
-#define IDIO_BIGNUM_NUMS(B)  ((B)->u.bignum->nums)
 #define IDIO_BIGNUM_FLAGS(B) ((B)->tflags)
 #define IDIO_BIGNUM_EXP(B)   ((B)->u.bignum->exp)
 #define IDIO_BIGNUM_SIG(B)   ((B)->u.bignum->sig)
@@ -291,7 +286,7 @@ typedef struct idio_handle_methods_s {
     int (*eofp) (struct idio_s *h);
     int (*close) (struct idio_s *h);
     int (*putc) (struct idio_s *h, int c);
-    int (*puts) (struct idio_s *h, char *s, size_t l);
+    size_t (*puts) (struct idio_s *h, char *s, size_t slen);
     int (*flush) (struct idio_s *h);
     off_t (*seek) (struct idio_s *h, off_t offset, int whence);
     void (*print) (struct idio_s *h, struct idio_s *o);
@@ -512,7 +507,28 @@ typedef struct idio_s {
     unsigned char flags;	/* generic type flags */
     unsigned char tflags;	/* type-specific flags (since we have
 				   room here) */
-
+    /*
+     * Rationale for union.  We need to decide whether the union
+     * should embed the object or have a pointer to it.
+     *
+     * Far and away the most commonly used object is a pair(*) which
+     * consists of three pointers (grey, head and tail).  If this
+     * union is a pointer to such an object then we use a pointer here
+     * in the union and then two pointers from malloc(3) as well as
+     * the three pointers in the pair.
+     *
+     * (*) Unless you start using bignums (two pointers) in which case
+     * they dominate.
+     *
+     * Of course, the moment we use the (three pointer) object
+     * directly in the union then the original pointer from the union
+     * is shadowed by the three pointers of the pair directly here.
+     * We still save the two malloc(3) pointers and the cost of
+     * malloc(3)/free(3).
+     *
+     * Any other object that is three pointers or less can then also
+     * be used directly in the union with no extra cost.
+     */
     union idio_s_u {
 	idio_string_t          *string;
 	idio_substring_t       *substring;

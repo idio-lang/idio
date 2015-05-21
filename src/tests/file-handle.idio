@@ -1,0 +1,67 @@
+
+string := "foo"
+test (file-handle? string) #f
+test (input-file-handle? string) #f
+test (output-file-handle? string) #f
+
+ofh := open-output-file testfile
+test (file-handle? ofh) #t
+test (output-file-handle? ofh) #t
+test (input-file-handle? ofh) #f
+
+fho := "Hello"
+write fho ofh
+close-handle ofh
+
+test (file-handle? ofh) #t
+test (output-file-handle? ofh) #t
+test (input-file-handle? ofh) #f
+
+ifh := open-input-file testfile
+test (file-handle? ifh) #t
+test (input-file-handle? ifh) #t
+test (output-file-handle? ifh) #f
+
+fhi := read ifh
+close-handle ifh
+
+test (file-handle? ifh) #t
+test (input-file-handle? ifh) #t
+test (output-file-handle? ifh) #f
+
+test fhi fho
+
+;; use the text read in again
+ifh := open-input-file testfile
+test (file-handle? ifh) #t
+test (input-file-handle? ifh) #t
+test (output-file-handle? ifh) #f
+
+;; seek to the third character of "Hello" , #\e
+ifn := handle-seek ifh 2
+test ifn 2
+
+fhi := read-char ifh
+
+test fhi #\e
+test (peek-char ifh) #\l
+
+; default is SEEK_SET
+handle-seek ifh 2
+test (peek-char ifh) #\e
+
+handle-seek ifh -2 'cur
+test (peek-char ifh) #\"
+
+handle-seek ifh 2 'set
+test (peek-char ifh) #\e
+
+handle-seek ifh -2 'end
+test (peek-char ifh) #\o
+
+handle-rewind ifh
+test (peek-char ifh) #\"
+
+test (handle-current-pos ifh) 0
+handle-seek ifh 2
+test (handle-current-pos ifh) 2
