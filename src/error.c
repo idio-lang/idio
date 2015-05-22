@@ -93,13 +93,14 @@ void idio_error_add_C (char *s)
     idio_error_message (s);
 }
 
-IDIO idio_error (IDIO m, IDIO args)
+IDIO idio_error (IDIO who, IDIO msg, IDIO args)
 {
-    IDIO_ASSERT (m);
+    IDIO_ASSERT (who);
+    IDIO_ASSERT (msg);
     IDIO_ASSERT (args); 
-    
+
     IDIO sh = idio_open_output_string_handle_C ();
-    idio_display (m, sh);
+    idio_display (msg, sh);
 
     IDIO_TYPE_ASSERT (list, args); 
     while (idio_S_nil != args) { 
@@ -111,7 +112,8 @@ IDIO idio_error (IDIO m, IDIO args)
     } 
 
     IDIO s = idio_get_output_string (sh);
-    idio_debug ("error: msg: %s\n", s);
+    idio_debug ("error: %s", who);
+    idio_debug (" %s\n", s);
     idio_signal_exception (0, s);
 
     fprintf (stderr, "primitive-error: return from signal exception: XXX abort!\n");
@@ -124,18 +126,24 @@ IDIO idio_error_C (char *msg, IDIO args)
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (args); 
 
-    return idio_error (idio_string_C (msg), args);
+    return idio_error (idio_S_nil, idio_string_C (msg), args);
 }
 
-IDIO_DEFINE_PRIMITIVE1V ("error", error, (IDIO m, IDIO args))
+IDIO_DEFINE_PRIMITIVE1V ("error", error, (IDIO msg, IDIO args))
 {
-    IDIO_ASSERT (m);
+    IDIO_ASSERT (msg);
     IDIO_ASSERT (args); 
-    
-    IDIO_VERIFY_PARAM_TYPE (string, m);
     IDIO_VERIFY_PARAM_TYPE (list, args);
 
-    return idio_error (m, args);
+    IDIO who = idio_S_nil;
+    
+    if (idio_isa_symbol (msg)) {
+	who = msg;
+	msg = idio_list_head (args);
+	args = idio_list_tail (args);
+    }
+
+    return idio_error (who, msg, args);
 }
 
 void idio_init_error ()

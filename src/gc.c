@@ -855,7 +855,7 @@ void idio_gc_sweep_free_value (IDIO vo)
 
 void idio_gc_sweep ()
 {
-    while (idio_gc->stats.nfree > 0x10000) { 
+    while (idio_gc->stats.nfree > 0x1000) { 
     	IDIO fo = idio_gc->free;
 	idio_gc->free = fo->next;
 	free (fo);
