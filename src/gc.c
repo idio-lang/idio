@@ -51,22 +51,31 @@ void *idio_realloc (void *p, size_t s)
  * idio_gc_get_alloc allocates another IDIO -- or pool thereof
  * -- and returns it
  */
+
+#define IDIO_GC_ALLOC_POOL	1024
+
 IDIO idio_gc_get_alloc ()
 {
     IDIO o;
     int n;
     idio_gc->request = 1;
-    for (n = 0 ; n < 1024; n++) {
+    IDIO p = NULL;
+    for (n = 0 ; n < IDIO_GC_ALLOC_POOL; n++) {
 	o = idio_alloc (sizeof (idio_t));
-	o->next = idio_gc->free;
-	idio_gc->free = o;
+	if (NULL == p) {
+	    o->next = idio_gc->free;
+	} else {
+	    o->next = p;
+	}
+	p = o;
 	
 	idio_gc->stats.nbytes += sizeof (idio_t);
 	idio_gc->stats.tbytes += sizeof (idio_t);
     }
 
-    o = idio_gc->free;
+    o = p;
     idio_gc->free = o->next;
+    idio_gc->stats.nfree += IDIO_GC_ALLOC_POOL - 1;
     return o;
 }
 
@@ -93,6 +102,7 @@ IDIO idio_gc_get (idio_type_e type)
 	idio_gc->stats.allocs++;
 	o = idio_gc_get_alloc ();
     } else {
+	idio_gc->stats.nfree--;
 	idio_gc->stats.reuse++;
 	idio_gc->free = o->next;
     }
@@ -527,6 +537,7 @@ idio_gc_t *idio_gc_new ()
     c->verbose = 0;
     c->request = 0;
 
+    c->stats.nfree = 0;
     int i;
     for (i = 0; i < IDIO_TYPE_MAX; i++) {
 	c->stats.tgets[i] = 0;
@@ -599,18 +610,23 @@ void idio_gc_walk_tree ()
 
 void idio_gc_dump ()
 {
-
+    idio_gc->verbose = 3;
+    
     IDIO_FPRINTF (stderr, "\ndump\n");
     IDIO_FPRINTF (stderr, "idio_gc_dump: self @%10p\n", idio_gc);
-    
+
+    size_t n = 0;
     idio_root_t *root = idio_gc->roots;
     while (root) {
+	n++;
 	idio_root_dump (root);
 	root = root->next;
     }
-
+    IDIO_FPRINTF (stderr, "idio_gc_dump: %" PRIdPTR " roots\n", n);
+    
     IDIO_FPRINTF (stderr, "idio_gc_dump: free list\n");
     IDIO o = idio_gc->free;
+    n = 0;
     while (o) {
 	/*
 	  Can't actually dump the free objects as the code to print
@@ -619,15 +635,21 @@ void idio_gc_dump ()
 	  However, walking down the chain checks the chain is valid.
 	 */
 	o = o->next;
+	n++;
     }
+    IDIO_FPRINTF (stderr, "idio_gc_dump: %" PRIdPTR " on free list\n", n);
+    IDIO_C_ASSERT (n == idio_gc->stats.nfree);
 
     IDIO_FPRINTF (stderr, "idio_gc_dump: used list\n");
     o = idio_gc->used;
+    n = 0;
     while (o) {
 	IDIO_ASSERT (o);
 	idio_dump (o, 1);
 	o = o->next;
+	n++;
     }
+    IDIO_FPRINTF (stderr, "idio_gc_dump: %" PRIdPTR " on used list\n", n);
 }
 
 void idio_gc_protect (IDIO o)
@@ -833,7 +855,13 @@ void idio_gc_sweep_free_value (IDIO vo)
 
 void idio_gc_sweep ()
 {
-    idio_gc->free = NULL;
+    while (idio_gc->stats.nfree > 0x10000) { 
+    	IDIO fo = idio_gc->free;
+	idio_gc->free = fo->next;
+	free (fo);
+	idio_gc->stats.nfree--;
+    } 
+
     size_t nobj = 0;
     size_t freed = 0;
     
@@ -869,6 +897,7 @@ void idio_gc_sweep ()
 	    co->flags = (co->flags & IDIO_FLAG_FREE_UMASK) | IDIO_FLAG_FREE;
 	    co->next = idio_gc->free;
 	    idio_gc->free = co;
+	    idio_gc->stats.nfree++;
 	    freed++;
 	} else {
 	    IDIO_FPRINTF (stderr, "idio_gc_sweep: keeping %10p %x == %x %x == %x\n", co, co->flags & IDIO_FLAG_STICKY_MASK, IDIO_FLAG_NOTSTICKY, co->flags & IDIO_FLAG_GCC_MASK, IDIO_FLAG_GCC_WHITE);
@@ -1150,11 +1179,24 @@ void idio_gc_free ()
      */
     idio_gc_collect ();
 
+    size_t n = 0;
     while (idio_gc->free) {
 	IDIO co = idio_gc->free;
 	idio_gc->free = co->next;
 	free (co);
+	n++;
     }
+    IDIO_FPRINTF (stderr, "idio_gc_free: %" PRIdPTR " on free list\n", n);
+    IDIO_C_ASSERT (n == idio_gc->stats.nfree);
+
+    n = 0;
+    while (idio_gc->used) {
+	IDIO co = idio_gc->used;
+	idio_gc->used = co->next;
+	free (co);
+	n++;
+    }
+    IDIO_FPRINTF (stderr, "idio_gc_free: %" PRIdPTR " on used list\n", n);
 
     free (idio_gc);
 }
@@ -1318,7 +1360,7 @@ void idio_final_gc ()
     fprintf (stderr, "\n\n\nFINAL GC\n\n\n");
     idio_gc_stats ();
     idio_gc_collect ();
-
+    idio_gc_dump ();
     idio_gc_free ();
 }
 

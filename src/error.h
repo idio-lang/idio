@@ -34,6 +34,8 @@ void idio_error_alloc ();
 void idio_error_param_nil (char *name);
 void idio_error_param_type (char *etype, IDIO who);
 void idio_error_add_C (char *s);
+IDIO idio_error (IDIO m, IDIO args);
+IDIO idio_error_C (char *msg, IDIO args);
 
 void idio_init_error ();
 void idio_error_add_primitives ();

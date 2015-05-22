@@ -319,7 +319,7 @@ idio_hi_t idio_hash_hashval_symbol (IDIO h)
 {
     IDIO_ASSERT (h);
 
-    return idio_hash_hashval_void (h->u.symbol); 
+    return idio_hash_hashval_void (IDIO_SYMBOL_S (h)); 
 }
 
 idio_hi_t idio_hash_hashval_pair (IDIO h)
@@ -346,8 +346,10 @@ idio_hi_t idio_hash_hashval_hash (IDIO h)
 idio_hi_t idio_idio_hash_hashval_closure (IDIO h)
 {
     IDIO_ASSERT (h);
-    
-    return idio_hash_hashval_void (h->u.closure);
+
+    idio_hi_t hv = idio_hash_hashval_uintmax_t (IDIO_CLOSURE_CODE (h));
+    hv ^= idio_hash_hashval_void (IDIO_CLOSURE_ENV (h));
+    return hv;
 }
 
 idio_hi_t idio_idio_hash_hashval_primitive (IDIO h)

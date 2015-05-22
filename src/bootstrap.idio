@@ -6,7 +6,7 @@ include "struct.idio"
 load "test.idio"
 
 ;error "bad arg" 1
-ls -la *.scm
-ls (sleep 10) 
+;ls -la *.scm
+;ls (sleep 10) 
 
 ;print "\nThis is the end of bootstrap.idio bringing you today's number, π: " pi "\n"

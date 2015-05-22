@@ -308,7 +308,8 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		return (IDIO_C_TYPE_POINTER_P (o1) == IDIO_C_TYPE_POINTER_P (o2));
 	    case IDIO_TYPE_STRING:
 		if (IDIO_EQUAL_EQP == eqp) {
-		    return (o1->u.string == o2->u.string);
+		    return (o1 == o2);
+		    /* return (o1->u.string == o2->u.string); */
 		}
 		
 		if (IDIO_STRING_BLEN (o1) != IDIO_STRING_BLEN (o2)) {
@@ -318,7 +319,8 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		return (strncmp (IDIO_STRING_S (o1), IDIO_STRING_S (o2), IDIO_STRING_BLEN (o1)) == 0);
 	    case IDIO_TYPE_SUBSTRING:
 		if (IDIO_EQUAL_EQP == eqp) {
-		    return (o1->u.substring == o2->u.substring);
+		    return (o1 == o2);
+		    /* return (o1->u.substring == o2->u.substring); */
 		}
 		    
 		if (IDIO_SUBSTRING_BLEN (o1) != IDIO_SUBSTRING_BLEN (o2)) {
@@ -327,14 +329,13 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		    
 		return (strncmp (IDIO_SUBSTRING_S (o1), IDIO_SUBSTRING_S (o2), IDIO_SUBSTRING_BLEN (o1)) == 0);
 	    case IDIO_TYPE_SYMBOL:
-		if (o1 != o2) {
-		    return 0;
-		}
+		return (o1 == o2);
 		
 		break;
 	    case IDIO_TYPE_PAIR:
 		if (IDIO_EQUAL_EQP == eqp) {
-		    return (o1->u.pair == o2->u.pair);
+		    return (o1 == o2);
+		    /* return (o1->u.pair == o2->u.pair); */
 		}
 		
 		return (idio_equalp (IDIO_PAIR_H (o1), IDIO_PAIR_H (o2)) &&
@@ -371,9 +372,11 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		}
 		return 1;
 	    case IDIO_TYPE_CLOSURE:
-		return (o1->u.closure == o2->u.closure);
+		return (o1 == o2);
+		/* return (o1->u.closure == o2->u.closure); */
 	    case IDIO_TYPE_PRIMITIVE:
-		return (o1->u.primitive == o2->u.primitive);
+		return (o1 == o2);
+		/* return (o1->u.primitive == o2->u.primitive); */
 	    case IDIO_TYPE_BIGNUM:
 		return idio_bignum_real_equal_p (o1, o2);
 	    case IDIO_TYPE_HANDLE:

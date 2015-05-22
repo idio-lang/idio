@@ -197,9 +197,7 @@ void idio_string_handle_free (IDIO sh)
 {
     IDIO_ASSERT (sh);
 
-    if (idio_output_string_handlep (sh)) {
-	free (IDIO_STRING_HANDLE_BUF (sh));
-    }
+    free (IDIO_STRING_HANDLE_BUF (sh));
     free (IDIO_HANDLE_STREAM (sh));
 }
 

@@ -31,7 +31,7 @@ IDIO idio_closure (size_t code, IDIO env)
 
     IDIO_FPRINTF (stderr, "idio_closure: %10p = (%10p %10p)\n", c, code, env);
 
-    IDIO_GC_ALLOC (c->u.closure, sizeof (idio_closure_t));
+    /* IDIO_GC_ALLOC (c->u.closure, sizeof (idio_closure_t)); */
 
     IDIO_CLOSURE_GREY (c) = NULL;
     IDIO_CLOSURE_CODE (c) = code;
@@ -53,9 +53,9 @@ void idio_free_closure (IDIO c)
 
     IDIO_TYPE_ASSERT (closure, c);
 
-    idio_gc_stats_free (sizeof (idio_closure_t));
+    /* idio_gc_stats_free (sizeof (idio_closure_t)); */
 
-    free (c->u.closure);
+    /* free (c->u.closure); */
 }
 
 IDIO_DEFINE_PRIMITIVE1 ("procedure?", closurep, (IDIO o))

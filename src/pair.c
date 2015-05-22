@@ -31,7 +31,7 @@ IDIO idio_pair (IDIO h, IDIO t)
 
     IDIO_FPRINTF (stderr, "idio_pair: %10p = (%10p %10p)\n", p, h, t);
 
-    IDIO_GC_ALLOC (p->u.pair, sizeof (idio_pair_t));
+    /* IDIO_GC_ALLOC (p->u.pair, sizeof (idio_pair_t)); */
 
     IDIO_PAIR_GREY (p) = NULL;
     IDIO_PAIR_H (p) = h;
@@ -81,9 +81,9 @@ void idio_free_pair (IDIO p)
     IDIO_ASSERT (p);
     IDIO_TYPE_ASSERT (pair, p);
 
-    idio_gc_stats_free (sizeof (idio_pair_t));
+    /* idio_gc_stats_free (sizeof (idio_pair_t)); */
 
-    free (p->u.pair);
+    /* free (p->u.pair); */
 }
 
 IDIO idio_pair_set_head (IDIO p, IDIO v)
@@ -329,10 +329,7 @@ IDIO idio_list_append2 (IDIO l1, IDIO l2)
 	    break;
 	}
 	if (! idio_isa_pair (l1)) {
-	    char *l1s = idio_as_string (l1, 1);
-	    idio_error_message ("append2: not a list: %s", l1s);
-	    free (l1s);
-	    return idio_S_unspec;
+	    return idio_error_C ("append2: not a list:", l1);
 	}
 
 	IDIO t = idio_pair (IDIO_PAIR_H (l1), idio_S_nil);

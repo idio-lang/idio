@@ -42,7 +42,7 @@ IDIO idio_string_C (const char *s_C)
 
     size_t blen = strlen (s_C);
 
-    IDIO_GC_ALLOC (so->u.string, sizeof (idio_string_t));
+    /* IDIO_GC_ALLOC (so->u.string, sizeof (idio_string_t)); */
     IDIO_GC_ALLOC (IDIO_STRING_S (so), blen + 1);
     
     memcpy (IDIO_STRING_S (so), s_C, blen);
@@ -60,7 +60,7 @@ IDIO idio_string_C_len (const char *s_C, size_t blen)
     
     IDIO_FPRINTF (stderr, "idio_string_C: %10p = '%s'\n", so, s_C);
 
-    IDIO_GC_ALLOC (so->u.string, sizeof (idio_string_t));
+    /* IDIO_GC_ALLOC (so->u.string, sizeof (idio_string_t)); */
     IDIO_GC_ALLOC (IDIO_STRING_S (so), blen + 1);
     
     memcpy (IDIO_STRING_S (so), s_C, blen);
@@ -85,7 +85,7 @@ IDIO idio_string_C_array (size_t ns, char *a_C[])
 	blen += strlen (a_C[ai]);
     }
 
-    IDIO_GC_ALLOC (so->u.string, sizeof (idio_string_t));
+    /* IDIO_GC_ALLOC (so->u.string, sizeof (idio_string_t)); */
     IDIO_GC_ALLOC (IDIO_STRING_S (so), blen + 1);
     
     size_t ao = 0;
@@ -143,10 +143,11 @@ void idio_free_string (IDIO so)
 
     IDIO_TYPE_ASSERT (string, so);
 
-    idio_gc_stats_free (sizeof (idio_string_t) + IDIO_STRING_BLEN (so));
+    /* idio_gc_stats_free (sizeof (idio_string_t) + IDIO_STRING_BLEN (so)); */
+    idio_gc_stats_free (IDIO_STRING_BLEN (so));
 
     free (IDIO_STRING_S (so));
-    free (so->u.string);
+    /* free (so->u.string); */
 }
 
 IDIO idio_substring_offset (IDIO p, size_t offset, size_t blen)
@@ -158,7 +159,7 @@ IDIO idio_substring_offset (IDIO p, size_t offset, size_t blen)
 
     IDIO_FPRINTF (stderr, "idio_substring_offset: %10p = '%.*s'\n", so, blen, IDIO_STRING_S (p) + offset);
 
-    IDIO_GC_ALLOC (so->u.substring, sizeof (idio_substring_t));
+    /* IDIO_GC_ALLOC (so->u.substring, sizeof (idio_substring_t)); */
 
     IDIO_FPRINTF (stderr, "idio_substring_offset: %d@%d in '%.*s' -> '%.*s'\n", blen, offset, IDIO_STRING_BLEN (p), IDIO_STRING_S (p), blen, IDIO_STRING_S (p) + offset);
 
@@ -182,9 +183,9 @@ void idio_free_substring (IDIO so)
 
     IDIO_TYPE_ASSERT (substring, so);
 
-    idio_gc_stats_free (sizeof (idio_substring_t));
+    /* idio_gc_stats_free (sizeof (idio_substring_t)); */
 
-    free (so->u.substring);
+    /* free (so->u.substring); */
 }
 
 int idio_string_cmp_C (IDIO so, char *s_C)

@@ -105,10 +105,10 @@ IDIO idio_symbol_C (const char *s_C)
 
     IDIO o = idio_gc_get (IDIO_TYPE_SYMBOL);
 
-    IDIO_GC_ALLOC (o->u.symbol, sizeof (idio_symbol_t));
+    /* IDIO_GC_ALLOC (o->u.symbol, sizeof (idio_symbol_t)); */
 
     size_t blen = strlen (s_C);
-    IDIO_GC_ALLOC (o->u.symbol->s, blen + 1);
+    IDIO_GC_ALLOC (IDIO_SYMBOL_S (o), blen + 1);
     strcpy (IDIO_SYMBOL_S (o), s_C);
     
     return o;
@@ -126,7 +126,7 @@ void idio_free_symbol (IDIO s)
     IDIO_ASSERT (s);
     IDIO_TYPE_ASSERT (symbol, s);
 
-    free (s->u.symbol);
+    /* free (s->u.symbol); */
 }
 
 IDIO idio_symbols_C_intern (char *s)

@@ -211,7 +211,7 @@ IDIO idio_bignum (int flags, IDIO_BS_T exp, IDIO_BSA sig_a)
 {
     IDIO o = idio_gc_get (IDIO_TYPE_BIGNUM);
 
-    IDIO_GC_ALLOC (o->u.bignum, sizeof (idio_bignum_t));
+    /* IDIO_GC_ALLOC (o->u.bignum, sizeof (idio_bignum_t)); */
 
     IDIO_BIGNUM_FLAGS (o) = flags;
     IDIO_BIGNUM_EXP (o) = exp;
@@ -233,10 +233,10 @@ void idio_free_bignum (IDIO bn)
     IDIO_ASSERT (bn);
     IDIO_TYPE_ASSERT (bignum, bn);
 
-    idio_gc_stats_free (sizeof (idio_bignum_t));
+    /* idio_gc_stats_free (sizeof (idio_bignum_t)); */
 
     idio_bsa_free (IDIO_BIGNUM_SIG (bn)); 
-    free (bn->u.bignum);
+    /* free (bn->u.bignum); */
 }
 
 IDIO idio_bignum_copy (IDIO bn)

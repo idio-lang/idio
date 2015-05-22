@@ -93,7 +93,7 @@ void idio_error_add_C (char *s)
     idio_error_message (s);
 }
 
-IDIO_DEFINE_PRIMITIVE1V ("error", error, (IDIO m, IDIO args))
+IDIO idio_error (IDIO m, IDIO args)
 {
     IDIO_ASSERT (m);
     IDIO_ASSERT (args); 
@@ -117,6 +117,25 @@ IDIO_DEFINE_PRIMITIVE1V ("error", error, (IDIO m, IDIO args))
     fprintf (stderr, "primitive-error: return from signal exception: XXX abort!\n");
     idio_vm_abort_thread (idio_current_thread ());
     return idio_S_unspec;
+}
+
+IDIO idio_error_C (char *msg, IDIO args)
+{
+    IDIO_C_ASSERT (msg);
+    IDIO_ASSERT (args); 
+
+    return idio_error (idio_string_C (msg), args);
+}
+
+IDIO_DEFINE_PRIMITIVE1V ("error", error, (IDIO m, IDIO args))
+{
+    IDIO_ASSERT (m);
+    IDIO_ASSERT (args); 
+    
+    IDIO_VERIFY_PARAM_TYPE (string, m);
+    IDIO_VERIFY_PARAM_TYPE (list, args);
+
+    return idio_error (m, args);
 }
 
 void idio_init_error ()

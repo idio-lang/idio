@@ -71,7 +71,7 @@ typedef uint8_t IDIO_I;
 #define IDIO_FLAG_GCC_SHIFT		0	/* GC colours -- four bits */
 #define IDIO_FLAG_FREE_SHIFT		4	/* debug */
 #define IDIO_FLAG_STICKY_SHIFT		5	/* memory pinning */
-#define IDIO_FLAG_FINALIZER_SHIFT	6	/* (closure) is a macro */
+#define IDIO_FLAG_FINALIZER_SHIFT	6
 
 #define IDIO_FLAG_GCC_MASK		(0xf << IDIO_FLAG_GCC_SHIFT)
 #define IDIO_FLAG_GCC_UMASK		(~ IDIO_FLAG_GCC_MASK)
@@ -100,8 +100,8 @@ typedef struct idio_string_s {
     char *s;
 } idio_string_t;
 
-#define IDIO_STRING_BLEN(S)	((S)->u.string->blen)
-#define IDIO_STRING_S(S)	((S)->u.string->s)
+#define IDIO_STRING_BLEN(S)	((S)->u.string.blen)
+#define IDIO_STRING_S(S)	((S)->u.string.s)
 
 typedef struct idio_substring_s {
     /*
@@ -114,15 +114,15 @@ typedef struct idio_substring_s {
 				   parent's string */
 } idio_substring_t;
 
-#define IDIO_SUBSTRING_BLEN(S)	((S)->u.substring->blen)
-#define IDIO_SUBSTRING_S(S)	((S)->u.substring->s)
-#define IDIO_SUBSTRING_PARENT(S) ((S)->u.substring->parent)
+#define IDIO_SUBSTRING_BLEN(S)	((S)->u.substring.blen)
+#define IDIO_SUBSTRING_S(S)	((S)->u.substring.s)
+#define IDIO_SUBSTRING_PARENT(S) ((S)->u.substring.parent)
 
 typedef struct idio_symbol_s {
     char *s;			/* C string */
 } idio_symbol_t;
 
-#define IDIO_SYMBOL_S(S)	((S)->u.symbol->s)
+#define IDIO_SYMBOL_S(S)	((S)->u.symbol.s)
 
 typedef struct idio_pair_s {
     struct idio_s *grey;
@@ -130,9 +130,9 @@ typedef struct idio_pair_s {
     struct idio_s *t;
 } idio_pair_t;
 
-#define IDIO_PAIR_GREY(P)	((P)->u.pair->grey)
-#define IDIO_PAIR_H(P)		((P)->u.pair->h)
-#define IDIO_PAIR_T(P)		((P)->u.pair->t)
+#define IDIO_PAIR_GREY(P)	((P)->u.pair.grey)
+#define IDIO_PAIR_H(P)		((P)->u.pair.h)
+#define IDIO_PAIR_T(P)		((P)->u.pair.t)
 
 typedef ptrdiff_t idio_ai_t;
 
@@ -189,21 +189,21 @@ typedef struct idio_closure_s {
     struct idio_s *env;
 } idio_closure_t;
 
-#define IDIO_CLOSURE_GREY(C)	((C)->u.closure->grey)
-#define IDIO_CLOSURE_CODE(C)	((C)->u.closure->code)
-#define IDIO_CLOSURE_ENV(C)	((C)->u.closure->env)
+#define IDIO_CLOSURE_GREY(C)	((C)->u.closure.grey)
+#define IDIO_CLOSURE_CODE(C)	((C)->u.closure.code)
+#define IDIO_CLOSURE_ENV(C)	((C)->u.closure.env)
 
 typedef struct idio_primitive_s {
     struct idio_s *(*f) ();	/* don't declare args */
     char *name;
-    size_t arity;
+    unsigned char arity;
     char varargs;
 } idio_primitive_t;
 
-#define IDIO_PRIMITIVE_F(P)       ((P)->u.primitive->f)
-#define IDIO_PRIMITIVE_NAME(P)    ((P)->u.primitive->name)
-#define IDIO_PRIMITIVE_ARITY(P)   ((P)->u.primitive->arity)
-#define IDIO_PRIMITIVE_VARARGS(P) ((P)->u.primitive->varargs)
+#define IDIO_PRIMITIVE_F(P)       ((P)->u.primitive.f)
+#define IDIO_PRIMITIVE_NAME(P)    ((P)->u.primitive.name)
+#define IDIO_PRIMITIVE_ARITY(P)   ((P)->u.primitive.arity)
+#define IDIO_PRIMITIVE_VARARGS(P) ((P)->u.primitive.varargs)
 
 typedef struct idio_module_s {
     struct idio_s *grey;
@@ -275,9 +275,9 @@ typedef struct idio_bignum_s {
 } idio_bignum_t;
 
 #define IDIO_BIGNUM_FLAGS(B) ((B)->tflags)
-#define IDIO_BIGNUM_EXP(B)   ((B)->u.bignum->exp)
-#define IDIO_BIGNUM_SIG(B)   ((B)->u.bignum->sig)
-#define IDIO_BIGNUM_SIG_AE(B,i)   IDIO_BSA_AE((B)->u.bignum->sig,i)
+#define IDIO_BIGNUM_EXP(B)   ((B)->u.bignum.exp)
+#define IDIO_BIGNUM_SIG(B)   ((B)->u.bignum.sig)
+#define IDIO_BIGNUM_SIG_AE(B,i)   IDIO_BSA_AE((B)->u.bignum.sig,i)
 
 typedef struct idio_handle_methods_s {
     void (*free) (struct idio_s *h);
@@ -530,15 +530,15 @@ typedef struct idio_s {
      * be used directly in the union with no extra cost.
      */
     union idio_s_u {
-	idio_string_t          *string;
-	idio_substring_t       *substring;
-	idio_symbol_t          *symbol;
-	idio_pair_t            *pair;
+	idio_string_t          string;
+	idio_substring_t       substring;
+	idio_symbol_t          symbol;
+	idio_pair_t            pair;
 	idio_array_t           *array;
 	idio_hash_t            *hash;
-	idio_closure_t         *closure;
-	idio_primitive_t       *primitive;
-	idio_bignum_t          *bignum;
+	idio_closure_t         closure;
+	idio_primitive_t       primitive;
+	idio_bignum_t          bignum;
 	idio_module_t          *module;
 	idio_frame_t           *frame;
 	idio_handle_t          *handle;
@@ -574,13 +574,14 @@ typedef struct idio_gc_s {
     unsigned char verbose;
     unsigned char request;
     struct stats {
+	unsigned long long nfree; /* # on free list */
 	unsigned long long tgets[IDIO_TYPE_MAX];
-	unsigned long long igets;
-	unsigned long long mgets;
-	unsigned long long reuse;
-	unsigned long long allocs;	/* # allocations */
-	unsigned long long tbytes;	/* # bytes ever allocated */
-	unsigned long long nbytes;	/* # bytes currently allocated */
+	unsigned long long igets; /* gets since last collection */
+	unsigned long long mgets; /* max igets */
+	unsigned long long reuse; /* objects from free list */
+	unsigned long long allocs; /* # allocations */
+	unsigned long long tbytes; /* # bytes ever allocated */
+	unsigned long long nbytes; /* # bytes currently allocated */
 	unsigned long long nused[IDIO_TYPE_MAX]; /* per-type usage */
 	unsigned long long collections;	/* # times gc has been run */
 	unsigned long long bounces;
