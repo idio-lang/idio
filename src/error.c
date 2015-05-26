@@ -22,28 +22,37 @@
 
 #include "idio.h"
 
+static IDIO idio_S_internal;
+static IDIO idio_S_user;
+
 void idio_error_vfprintf (char *format, va_list argp)
 {
     vfprintf (stderr, format, argp);
 }
 
+IDIO idio_error_string (char *format, va_list argp)
+{
+    char *s;
+    if (-1 == vasprintf (&s, format, argp)) {
+	idio_signal_exception (0, IDIO_LIST1 (idio_string_C ("idio-error-message: vasprintf")));
+    }
+
+    IDIO sh = idio_open_output_string_handle_C ();
+    idio_display_C (s, sh);
+    free (s);
+
+    return idio_get_output_string (sh);
+}
+
 void idio_error_message (char *format, ...)
 {
-    fprintf (stderr, "\n\nERROR: ");
-
     va_list fmt_args;
     va_start (fmt_args, format);
-    idio_error_vfprintf (format, fmt_args);
+    IDIO msg = idio_error_string (format, fmt_args);
     va_end (fmt_args);
 
-    switch (format[strlen(format)-1]) {
-    case '\n':
-	break;
-    default:
-	fprintf (stderr, "\n");
-    }
-    
-    idio_signal_exception (0, IDIO_LIST1 (idio_string_C ("idio-error-message")));
+    IDIO c = idio_condition_idio_error (msg, idio_S_internal, idio_S_nil);
+    idio_signal_exception (0, c);
     IDIO_C_ASSERT (0);
 }
 
@@ -64,11 +73,16 @@ void idio_warning_message (char *format, ...)
     }
 }
 
+void idio_strerror (char *msg)
+{
+    idio_error_message ("%s: %s", msg, strerror (errno));
+}
+
 void idio_error_alloc (IDIO f)
 {
     IDIO_ASSERT (f);
 
-    idio_error_message ("general allocation fault: %s", strerror (errno));
+    idio_strerror ("general allocation fault");
 }
 
 void idio_error_param_nil (char *name)
@@ -86,11 +100,6 @@ void idio_error_param_type (char *etype, IDIO who)
     char *whos = idio_as_string (who, 1);
     idio_error_message ("not a %s: %s", etype, whos);
     free (whos);
-}
-
-void idio_error_add_C (char *s)
-{
-    idio_error_message (s);
 }
 
 IDIO idio_error (IDIO who, IDIO msg, IDIO args)
@@ -111,10 +120,10 @@ IDIO idio_error (IDIO who, IDIO msg, IDIO args)
     	IDIO_TYPE_ASSERT (list, args); 
     } 
 
-    IDIO s = idio_get_output_string (sh);
-    idio_debug ("error: %s", who);
-    idio_debug (" %s\n", s);
-    idio_signal_exception (0, s);
+    IDIO c = idio_condition_idio_error (idio_get_output_string (sh),
+					who,
+					idio_S_nil);
+    idio_signal_exception (0, c);
 
     fprintf (stderr, "primitive-error: return from signal exception: XXX abort!\n");
     idio_vm_abort_thread (idio_current_thread ());
@@ -126,7 +135,7 @@ IDIO idio_error_C (char *msg, IDIO args)
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (args); 
 
-    return idio_error (idio_S_nil, idio_string_C (msg), args);
+    return idio_error (idio_S_internal, idio_string_C (msg), args);
 }
 
 IDIO_DEFINE_PRIMITIVE1V ("error", error, (IDIO msg, IDIO args))
@@ -135,7 +144,7 @@ IDIO_DEFINE_PRIMITIVE1V ("error", error, (IDIO msg, IDIO args))
     IDIO_ASSERT (args); 
     IDIO_VERIFY_PARAM_TYPE (list, args);
 
-    IDIO who = idio_S_nil;
+    IDIO who = idio_S_user;
     
     if (idio_isa_symbol (msg)) {
 	who = msg;
@@ -148,6 +157,10 @@ IDIO_DEFINE_PRIMITIVE1V ("error", error, (IDIO msg, IDIO args))
 
 void idio_init_error ()
 {
+    idio_S_internal = idio_symbols_C_intern ("internal");
+    idio_gc_protect (idio_S_internal);
+    idio_S_user = idio_symbols_C_intern ("user");
+    idio_gc_protect (idio_S_user);
 }
 
 void idio_error_add_primitives ()
@@ -157,5 +170,7 @@ void idio_error_add_primitives ()
 
 void idio_final_error ()
 {
+    idio_gc_expose (idio_S_internal);
+    idio_gc_expose (idio_S_user);
 }
 

@@ -1144,8 +1144,8 @@ static IDIO idio_meaning_define (IDIO name, IDIO e, IDIO nametree, int tailp)
     IDIO_ASSERT (nametree);
     IDIO_TYPE_ASSERT (list, nametree);
 
-    /* idio_debug ("meaning-define: (define %s", name); */
-    /* idio_debug (" %s)\n", e); */
+    /* idio_debug ("meaning-define: (define %s", name);  */
+    /* idio_debug (" %s)\n", e);  */
 
     if (idio_isa_pair (name)) {
 	/*

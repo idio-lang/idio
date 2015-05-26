@@ -63,12 +63,8 @@
 #define IDIO_TYPE_ASSERT(t,x) {						\
 	if (! idio_isa_ ## t (x)) {					\
 	    char em[BUFSIZ];						\
-	    sprintf (em, "%s is a %s not a %s", #x, idio_type2string (x), #t); \
-	    idio_error_add_C (em);					\
-	    fprintf (stderr, "%s\n", em);				\
-	    idio_expr_dump (x);						\
-	    /*idio_frame_trace (f);*/					\
-	    IDIO_C_ASSERT (0);						\
+	    sprintf (em, "%s is a %s not a %s:", #x, idio_type2string (x), #t); \
+	    idio_error_C (em, IDIO_LIST1 (x));				\
 	}								\
     }
 
@@ -234,6 +230,7 @@
 #include "character.h"
 #include "closure.h"
 #include "command.h"
+#include "condition.h"
 #include "error.h"
 #include "evaluate.h"
 #include "scm-evaluate.h"

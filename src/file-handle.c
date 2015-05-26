@@ -399,8 +399,8 @@ int idio_file_handle_readyp (IDIO fh)
     if (IDIO_FILE_HANDLE_COUNT (fh) > 0) {
 	return 1;
     }
-    
-    return feof (IDIO_FILE_HANDLE_FILEP (fh));
+
+    return (feof (IDIO_FILE_HANDLE_FILEP (fh)) == 0);
 }
 
 void idio_file_handle_read_more (IDIO fh)
@@ -569,7 +569,10 @@ size_t idio_file_handle_puts (IDIO fh, char *s, size_t slen)
 	r = slen;
     }
 
-    idio_file_handle_flush (fh);
+    if (EOF == idio_file_handle_flush (fh)) {
+	return EOF;
+    }
+
     return r;
 }
 
@@ -604,6 +607,12 @@ off_t idio_file_handle_seek (IDIO fh, off_t offset, int whence)
 
     IDIO_TYPE_ASSERT (file_handle, fh);
 
+    if (feof (IDIO_FILE_HANDLE_FILEP (fh))) {
+	clearerr (IDIO_FILE_HANDLE_FILEP (fh));
+    }
+
+    IDIO_FILE_HANDLE_FLAGS (fh) &= ~IDIO_FILE_HANDLE_FLAG_EOF;
+    
     return lseek (IDIO_FILE_HANDLE_FD (fh), offset, whence);
 }
 

@@ -178,7 +178,12 @@ int idio_handle_getc (IDIO h)
 	r = IDIO_HANDLE_M_GETC (h) (h);
     }
 
-    if ('\n' == r) {
+    /*
+     * Only increment the line number if we have a valid line number
+     * to start with
+     */
+    if ('\n' == r &&
+	IDIO_HANDLE_LINE (h)) {
 	IDIO_HANDLE_LINE (h) += 1;
     }
 
@@ -204,7 +209,12 @@ int idio_handle_ungetc (IDIO h, int c)
 
     IDIO_HANDLE_LC (h) = c;
     
-    if ('\n' == c) {
+    /*
+     * Only decrement the line number if we have a valid line number
+     * to start with
+     */
+    if ('\n' == c &&
+	IDIO_HANDLE_LINE (h)) {
 	IDIO_HANDLE_LINE (h) -= 1;
     }
 
@@ -247,6 +257,21 @@ int idio_handle_eofp (IDIO h)
     }
 
     return IDIO_HANDLE_M_EOFP (h) (h);
+}
+
+IDIO_DEFINE_PRIMITIVE0V ("eof?", eofp, (IDIO args))
+{
+    IDIO_ASSERT (args);
+
+    IDIO h = idio_handle_or_current (idio_list_head (args), IDIO_HANDLE_FLAG_READ);
+
+    IDIO r = idio_S_false;
+
+    if (idio_handle_eofp (h)) {
+	r = idio_S_true;
+    }
+
+    return r;
 }
 
 int idio_handle_close (IDIO h)
@@ -320,7 +345,7 @@ off_t idio_handle_seek (IDIO h, off_t offset, int whence)
     if (0 == offset && SEEK_SET == whence) {
 	IDIO_HANDLE_LINE (h) = 1;
     } else {
-	IDIO_HANDLE_LINE (h) = -1;
+	IDIO_HANDLE_LINE (h) = 0;
     }
 
     if (SEEK_CUR == whence) {
@@ -710,6 +735,17 @@ IDIO idio_display (IDIO o, IDIO h)
     return idio_S_unspec;
 }
 
+IDIO idio_display_C (char *s, IDIO h)
+{
+    IDIO_C_ASSERT (s);
+    IDIO_ASSERT (h);
+    IDIO_TYPE_ASSERT (handle, h);
+
+    IDIO_HANDLE_M_PUTS (h) (h, s, strlen (s));
+
+    return idio_S_unspec;
+}
+
 IDIO_DEFINE_PRIMITIVE1V ("display", display, (IDIO o, IDIO args))
 {
     IDIO_ASSERT (o);
@@ -781,6 +817,7 @@ void idio_handle_add_primitives ()
     IDIO_ADD_PRIMITIVE (scm_read);
     IDIO_ADD_PRIMITIVE (read_char);
     IDIO_ADD_PRIMITIVE (peek_char);
+    IDIO_ADD_PRIMITIVE (eofp);
     IDIO_ADD_PRIMITIVE (write);
     IDIO_ADD_PRIMITIVE (write_char);
     IDIO_ADD_PRIMITIVE (newline);
@@ -795,3 +832,7 @@ void idio_final_handle ()
 {
 }
 
+/* Local Variables: */
+/* mode: C/l */
+/* buffer-file-coding-system: undecided-unix */
+/* End: */

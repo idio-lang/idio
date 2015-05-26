@@ -27,17 +27,20 @@ typedef struct idio_string_handle_stream_s {
     size_t blen;
     char *ptr;			/* ptr into buffer */
     char *end;			/* end of buffer */
+    char eof;			/* EOF flag */
 } idio_string_handle_stream_t;
 
-#define IDIO_STRING_HANDLE_STREAM_BUF(S)    ((S)->buf)
+#define IDIO_STRING_HANDLE_STREAM_BUF(S)  ((S)->buf)
 #define IDIO_STRING_HANDLE_STREAM_BLEN(S) ((S)->blen)
-#define IDIO_STRING_HANDLE_STREAM_PTR(S)    ((S)->ptr)
+#define IDIO_STRING_HANDLE_STREAM_PTR(S)  ((S)->ptr)
 #define IDIO_STRING_HANDLE_STREAM_END(S)  ((S)->end)
+#define IDIO_STRING_HANDLE_STREAM_EOF(S)  ((S)->eof)
 
-#define IDIO_STRING_HANDLE_BUF(H)    IDIO_STRING_HANDLE_STREAM_BUF((idio_string_handle_stream_t *) IDIO_HANDLE_STREAM(H))
+#define IDIO_STRING_HANDLE_BUF(H)  IDIO_STRING_HANDLE_STREAM_BUF((idio_string_handle_stream_t *) IDIO_HANDLE_STREAM(H))
 #define IDIO_STRING_HANDLE_BLEN(H) IDIO_STRING_HANDLE_STREAM_BLEN((idio_string_handle_stream_t *) IDIO_HANDLE_STREAM(H))
-#define IDIO_STRING_HANDLE_PTR(H)    IDIO_STRING_HANDLE_STREAM_PTR((idio_string_handle_stream_t *) IDIO_HANDLE_STREAM(H))
+#define IDIO_STRING_HANDLE_PTR(H)  IDIO_STRING_HANDLE_STREAM_PTR((idio_string_handle_stream_t *) IDIO_HANDLE_STREAM(H))
 #define IDIO_STRING_HANDLE_END(H)  IDIO_STRING_HANDLE_STREAM_END((idio_string_handle_stream_t *) IDIO_HANDLE_STREAM(H))
+#define IDIO_STRING_HANDLE_EOF(H)  IDIO_STRING_HANDLE_STREAM_EOF((idio_string_handle_stream_t *) IDIO_HANDLE_STREAM(H))
 
 #define IDIO_STRING_HANDLE_DEFAULT_OUTPUT_SIZE	256
 
@@ -74,6 +77,8 @@ static IDIO idio_open_string_handle (char *str, size_t blen, int sflags)
 	IDIO_STRING_HANDLE_STREAM_END (shsp) = str + blen;
     }
 
+    IDIO_STRING_HANDLE_STREAM_EOF (shsp) = 0;
+    
     IDIO sh = idio_handle ();
 
     IDIO_HANDLE_FLAGS (sh) |= sflags | IDIO_HANDLE_FLAG_STRING;
@@ -222,6 +227,7 @@ int idio_string_handle_getc (IDIO sh)
 	IDIO_STRING_HANDLE_PTR (sh) += 1;
 	return c;
     } else {
+	IDIO_STRING_HANDLE_EOF (sh) = 1;
 	return EOF;
     }
 }
@@ -232,7 +238,7 @@ int idio_string_handle_eofp (IDIO sh)
 
     IDIO_TYPE_ASSERT (string_handle, sh);
 
-    return (IDIO_STRING_HANDLE_PTR (sh) >= IDIO_STRING_HANDLE_END (sh));
+    return IDIO_STRING_HANDLE_EOF (sh);
 }
 
 int idio_string_handle_close (IDIO sh)
@@ -345,6 +351,7 @@ off_t idio_string_handle_seek (IDIO sh, off_t offset, int whence)
      */
     if (IDIO_STRING_HANDLE_BUF (sh) <= ptr &&
 	ptr <= IDIO_STRING_HANDLE_END (sh)) {
+	IDIO_STRING_HANDLE_EOF (sh) = 0;
 	IDIO_STRING_HANDLE_PTR (sh) = ptr;
 	return (ptr - IDIO_STRING_HANDLE_BUF (sh));
     } else {

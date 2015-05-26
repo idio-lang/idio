@@ -897,7 +897,7 @@ IDIO idio_bignum_divide (IDIO a, IDIO b)
     IDIO_TYPE_ASSERT (bignum, b);
 
     if (idio_bignum_zero_p (b)) {
-	idio_error_add_C ("divide by zero");
+	idio_error_message ("divide by zero");
 	return idio_S_nil;
     }
 
@@ -2218,7 +2218,7 @@ IDIO idio_bignum_primitive_divide (IDIO args)
 	}
 
 	if (idio_bignum_zero_p (h)) {
-	    idio_error_add_C ("divide by zero");
+	    idio_error_message ("divide by zero");
 	    break;
 	}
 

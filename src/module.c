@@ -460,6 +460,14 @@ IDIO idio_module_current_symbol_value (IDIO symbol)
     return idio_module_symbol_value (symbol, idio_current_module ());    
 }
 
+IDIO idio_module_toplevel_symbol_value (IDIO symbol)
+{
+    IDIO_ASSERT (symbol);
+    IDIO_TYPE_ASSERT (symbol, symbol);
+
+    return idio_module_symbol_value (symbol, idio_main_module ());    
+}
+
 IDIO_DEFINE_PRIMITIVE2 ("symbol-value", symbol_value, (IDIO symbol, IDIO module))
 {
     IDIO_ASSERT (symbol);
@@ -500,7 +508,16 @@ IDIO idio_module_current_set_symbol_value (IDIO symbol, IDIO value)
     return idio_module_set_symbol_value (symbol, value, idio_current_module ());
 }
 
-IDIO_DEFINE_PRIMITIVE3 ("set-symbol-value", set_symbol_value, (IDIO symbol, IDIO value, IDIO module))
+IDIO idio_module_toplevel_set_symbol_value (IDIO symbol, IDIO value)
+{
+    IDIO_ASSERT (symbol);
+    IDIO_ASSERT (value);
+    IDIO_TYPE_ASSERT (symbol, symbol);
+
+    return idio_module_set_symbol_value (symbol, value, idio_main_module ());
+}
+
+IDIO_DEFINE_PRIMITIVE3 ("set-symbol-value!", set_symbol_value, (IDIO symbol, IDIO value, IDIO module))
 {
     IDIO_ASSERT (symbol);
     IDIO_ASSERT (value);

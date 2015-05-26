@@ -42,9 +42,11 @@ IDIO idio_symbol_lookup (IDIO symbol, IDIO module);
 IDIO idio_module_symbol_value (IDIO symbol, IDIO module);
 IDIO idio_module_primitive_symbol_value (IDIO symbol);
 IDIO idio_module_current_symbol_value (IDIO symbol);
+IDIO idio_module_toplevel_symbol_value (IDIO symbol);
 IDIO idio_module_set_symbol_value (IDIO symbol, IDIO value, IDIO module);
 IDIO idio_module_primitive_set_symbol_value (IDIO symbol, IDIO value);
 IDIO idio_module_current_set_symbol_value (IDIO symbol, IDIO value);
+IDIO idio_module_toplevel_set_symbol_value (IDIO symbol, IDIO value);
 
 void idio_init_module (void);
 void idio_module_add_primitives ();

@@ -228,7 +228,7 @@ size_t idio_string_blen (IDIO so)
 	{
 	    char em[BUFSIZ];
 	    sprintf (em, "idio_type_string: unexpected string type %d", idio_type (so));
-	    idio_error_add_C (em);
+	    idio_error_message (em);
 	    break;
 	}
     }
@@ -255,7 +255,7 @@ char *idio_string_s (IDIO so)
 	{
 	    char em[BUFSIZ];
 	    sprintf (em, "idio_type_string: unexpected string type %d", idio_type (so));
-	    idio_error_add_C (em);
+	    idio_error_message (em);
 	    break;
 	}
     }
@@ -285,7 +285,7 @@ char *idio_string_as_C (IDIO so)
 	{
 	    char em[BUFSIZ];
 	    sprintf (em, "idio_type_string: unexpected string type %d", idio_type (so));
-	    idio_error_add_C (em);
+	    idio_error_message (em);
 	    break;
 	}
     }

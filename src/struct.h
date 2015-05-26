@@ -25,9 +25,12 @@
 
 IDIO idio_struct_type (IDIO name, IDIO parent, IDIO fields);
 int idio_isa_struct_type (IDIO p);
+int idio_struct_type_isa (IDIO st, IDIO type);
 void idio_free_struct_type (IDIO p);
+IDIO idio_allocate_struct_instance (IDIO st, int fill);
 IDIO idio_struct_instance (IDIO st, IDIO fields);
 int idio_isa_struct_instance (IDIO p);
+int idio_struct_instance_isa (IDIO si, IDIO st);
 void idio_free_struct_instance (IDIO p);
 
 IDIO idio_struct_instance_ref (IDIO si, IDIO field);

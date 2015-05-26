@@ -135,7 +135,7 @@ IDIO idio_C_typedefs_add_value (IDIO s, IDIO v)
 		char em[BUFSIZ];
 		sprintf (em, "target C_typedef '%s' does not exist", vs);
 		free (vs);
-		idio_error_add_C (em);
+		idio_error_message (em);
 	    }
 	}
 	r = idio_hash_put (idio_C_typedefs_hash, s, v);
@@ -258,7 +258,7 @@ IDIO idio_C_fields_array (IDIO C_typedefs)
 	    size = nelem * sizeof (char*);
 	    type = IDIO_TYPE_STRING;
 	} else {
-	    idio_error_add_C ("unexpected type\n");
+	    idio_error_message ("unexpected type\n");
 	    return fields_array;
 	}
 

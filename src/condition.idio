@@ -1,0 +1,48 @@
+
+define-macro (define-condition-type name parent & fields) {
+  arg := (gensym)
+  val := (gensym)
+  pred-fname := string->symbol (string-append (symbol->string name) "?")
+
+  %T{
+    define $name (make-condition-type '$name $parent $@(map (function (field) { %T{ '$field } }) fields))
+
+    define ($pred-fname $arg) {
+      and (condition-type? $arg) \
+	  (condition-isa $arg $name)
+    }
+
+    $@(map (function (field) {
+              get-fname := string->symbol (string-append 
+					   (symbol->string name) 
+					   "-"
+					   (symbol->string field))
+
+	      %T{
+		define ($get-fname $arg) {
+                  condition-ref $arg '$field
+                } 
+	     }
+	   })
+	   fields)
+
+    $name
+  }
+}
+
+define-macro (condition type & field-bindings) {
+  c := (gensym)
+
+  %T{
+    $c := allocate-condition $type 
+
+    $@(map (function (field-binding) {
+              %T{
+	        condition-set! $c '$(ph field-binding) $(pht field-binding)
+	      }
+            })
+	   field-bindings)
+
+    $c
+  }
+}

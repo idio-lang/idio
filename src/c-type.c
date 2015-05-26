@@ -301,7 +301,7 @@ IDIO idio_C_number_cast (IDIO co, int type)
     if (! IDIO_TYPE_POINTERP (co)) {
 	char em[BUFSIZ];
 	sprintf (em, "idio_C_number_cast: conversion not possible from %s %d to %d", idio_type2string (co), idio_type (co), type);
-	idio_error_add_C (em);
+	idio_error_message (em);
 	return idio_S_nil;
     }
 
@@ -550,7 +550,7 @@ IDIO idio_C_number_cast (IDIO co, int type)
     if (fail) {
 	char em[BUFSIZ];
 	sprintf (em, "idio_C_number_cast: conversion not possible from %s %d to %d", idio_type2string (co), idio_type (co), type);
-	idio_error_add_C (em);
+	idio_error_message (em);
     }
 
     return r;

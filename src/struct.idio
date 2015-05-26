@@ -84,11 +84,11 @@ define-macro (define-struct name & fields) {
       ;; }
       $@(map (function (field) {
                 set-fname := string->symbol (string-append
-					 "set-"
-					 (symbol->string name)
-					 "-"
-					 (symbol->string field)
-					 "!")
+					     "set-"
+					     (symbol->string name)
+					     "-"
+					     (symbol->string field)
+					     "!")
 					  
                 %T{
 		  define ($set-fname $arg $val) {

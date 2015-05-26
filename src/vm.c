@@ -1410,9 +1410,37 @@ idio_ai_t idio_vm_code_prologue (idio_i_array_t *ia)
  * XXX base_error_handler must not raise an exception otherwise we'll
  * loop forever
  */
-IDIO_DEFINE_PRIMITIVE0V ("base-error-handler", base_error_handler, ())
+IDIO_DEFINE_PRIMITIVE2 ("base-error-handler", base_error_handler, (IDIO cont, IDIO cond))
 {
-    fprintf (stderr, "base error handler\n");
+    IDIO_ASSERT (cont);
+    IDIO_ASSERT (cond);
+    /* IDIO_TYPE_ASSERT (condition, c); */
+
+    fprintf (stderr, "\n\nbase-error-handler\n");
+    int continuablep = 0;
+    if (IDIO_TYPE_FIXNUMP (cont)) {
+	continuablep = IDIO_FIXNUM_VAL (cont);
+    }
+
+    if (idio_isa_condition (cond)) {
+	IDIO st = IDIO_STRUCT_INSTANCE_TYPE (cond);
+	IDIO stf = IDIO_STRUCT_TYPE_FIELDS (st);
+	IDIO sif = IDIO_STRUCT_INSTANCE_FIELDS (cond);
+
+	idio_ai_t al = idio_array_size (stf);
+	idio_ai_t ai;
+	for (ai = 0; ai < al; ai++) {
+	    idio_debug ("%s: ", idio_array_get_index (stf, ai));
+	    idio_debug ("%s\n", idio_array_get_index (sif, ai));
+	}
+    } else {
+	fprintf (stderr, "base-error-handler: expected a condition not a %s\n", idio_type2string (cond));
+	idio_debug ("%s\n", cond);
+    }
+
+    if (continuablep) {
+	fprintf (stderr, "should continue but won't!\n");
+    }
     idio_dump (idio_current_thread (), 10);
     IDIO_C_ASSERT (0);
     return idio_S_unspec;

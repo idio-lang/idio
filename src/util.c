@@ -896,16 +896,19 @@ char *idio_as_string (IDIO o, int depth)
 		    break;
 		}
 	    case IDIO_TYPE_HANDLE:
-		if (asprintf (&r, "#H{%x\"%s\":%llu:%llu}", IDIO_HANDLE_FLAGS (o), IDIO_HANDLE_NAME (o), (unsigned long long) IDIO_HANDLE_LINE (o), (unsigned long long) IDIO_HANDLE_POS (o)) == -1) {
+		if (asprintf (&r, "#H{%x\"%s\":%lld:%lld}", IDIO_HANDLE_FLAGS (o), IDIO_HANDLE_NAME (o), (unsigned long long) IDIO_HANDLE_LINE (o), (unsigned long long) IDIO_HANDLE_POS (o)) == -1) {
 		    return NULL;
 		}
 		break;
 	    case IDIO_TYPE_STRUCT_TYPE:
 		{
-		    if (asprintf (&r, "#ST{%p %s %s", o, idio_as_string (IDIO_STRUCT_TYPE_NAME (o), 1), idio_as_string (IDIO_STRUCT_TYPE_PARENT (o), 1)) == -1) {
+		    if (asprintf (&r, "#ST{%p ", o) == -1) {
 			return NULL;
 		    }
-
+		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_STRUCT_TYPE_NAME (o), 1));
+		    IDIO_STRCAT (r, " ");
+		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_STRUCT_TYPE_PARENT (o), 1));
+		    
 		    IDIO stf = IDIO_STRUCT_TYPE_FIELDS (o);
 
 		    idio_ai_t al = idio_array_size (stf);

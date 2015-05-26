@@ -16,30 +16,21 @@
  */
 
 /*
- * error.h
+ * condition.h
  * 
  */
 
-#ifndef ERROR_H
-#define ERROR_H
+#ifndef CONDITION_H
+#define CONDITION_H
 
-extern IDIO idio_io_read_exception;
+int idio_isa_condition_type (IDIO o);
+int idio_isa_condition (IDIO o);
 
-void idio_raise_exception (IDIO e);
-IDIO idio_make_exception (IDIO e);
+IDIO idio_condition_idio_error (IDIO message, IDIO location, IDIO detail);
 
-void idio_error_message (char *format, ...);
-void idio_warning_message (char *format, ...);
-void idio_strerror (char *msg);
-void idio_error_alloc ();
-void idio_error_param_nil (char *name);
-void idio_error_param_type (char *etype, IDIO who);
-IDIO idio_error (IDIO who, IDIO msg, IDIO args);
-IDIO idio_error_C (char *msg, IDIO args);
-
-void idio_init_error ();
-void idio_error_add_primitives ();
-void idio_final_error ();
+void idio_init_condition ();
+void idio_condition_add_primitives ();
+void idio_final_condition ();
 
 #endif
 

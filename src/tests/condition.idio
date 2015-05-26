@@ -1,0 +1,104 @@
+
+test (condition-type? ^condition) #t
+test (message-condition? ^condition) #f
+test (condition? ^condition) #f
+
+test (condition-type? ^message) #t
+test (message-condition? ^message) #t
+test (error? ^message) #f
+
+test (condition-type? ^error) #t
+test (message-condition? ^error) #f
+test (error? ^error) #t
+
+;; make-condition-type
+mct1 := make-condition-type 'mct1 ^condition 'f1
+test (condition-type? mct1) #t
+test (error? mct1) #f
+
+c1 := condition mct1 (f1 10)
+test (condition? c1) #t
+test (condition-type? c1) #f
+test (condition-ref c1 f1) 10
+
+mct2 := make-condition-type 'mct2 ^message 'f2
+test (condition-type? mct2) #t
+test (message-condition? mct2) #t
+test (error? mct2) #f
+
+c2.1 := condition mct2 (f2 20)
+test (condition? c2.1) #t
+test (condition-type? c2.1) #f
+test (condition-ref c2.1 f2) 20
+
+msg := "bob"
+c2.2 := condition mct2 (f2 20) (message msg)
+test (condition? c2.2) #t
+test (condition-type? c2.2) #f
+test (condition-ref c2.2 message) msg
+test (condition-message c2.2) msg
+test (condition-ref c2.2 f2) 20
+
+c2.3 := condition mct2 (message msg) (f2 20)
+test (condition? c2.3) #t
+test (condition-type? c2.3) #f
+test (condition-ref c2.3 message) msg
+test (condition-message c2.3) msg
+test (condition-ref c2.3 f2) 20
+
+mct3 := make-condition-type 'mct3 ^error 'f3
+test (condition-type? mct3) #t
+test (message-condition? mct3) #f
+test (error? mct3) #t
+
+c3 := condition mct3 (f3 30)
+test (condition? c3) #t
+test (condition-type? c3) #f
+test (condition-ref c3 f3) 30
+
+mct4 := make-condition-type 'mct4 ^error 'f4.1 'f4.2
+test (condition-type? mct4) #t
+test (message-condition? mct4) #f
+test (error? mct4) #t
+
+c4 := condition mct4 (f4.1 41) (f4.2 42)
+test (condition? c4) #t
+test (condition-type? c4) #f
+test (condition-ref c4 f4.1) 41
+
+;; define-condition-type
+define-condition-type dct5 ^condition f5
+display* "dct5:" dct5
+test (condition-type? dct5) #t
+test (error? dct5) #f
+
+c5 := condition dct5 (f5 50)
+test (condition? c5) #t
+test (condition-type? c5) #f
+test (condition-ref c5 f5) 50
+test (dct5-f5 c5) 50
+
+define-condition-type dct6 ^condition f6.1 f6.2
+display* "dct6:" dct6
+test (condition-type? dct6) #t
+test (error? dct6) #f
+
+c6 := condition dct6 (f6.1 60)
+test (condition? c6) #t
+test (condition-type? c6) #f
+test (condition-ref c6 f6.1) 60
+test (dct6-f6.1 c6) 60
+
+define-condition-type dct7 ^message f7
+display* "dct7:" dct7
+test (condition-type? dct7) #t
+test (message-condition? dct7) #t
+test (error? dct7) #f
+
+c7 := condition dct7 (f7 70) (message msg)
+test (condition? c7) #t
+test (condition-type? c7) #f
+test (condition-ref c7 f7) 70
+test (dct7-f7 c7) 70
+test (condition-ref c7 message) msg
+test (condition-message c7) msg

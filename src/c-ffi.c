@@ -59,7 +59,7 @@ ffi_type *idio_C_FFI_type (IDIO field_data)
 	{
 	    char em[BUFSIZ];
 	    sprintf (em, "unexpected C_FFI type %" PRIu64 ": %s", IDIO_C_TYPE_UINT64 (type), idio_type2string (type));
-	    idio_error_add_C (em);
+	    idio_error_message (em);
 	    IDIO_C_ASSERT (0);
 	}
 	break;
@@ -129,7 +129,7 @@ IDIO idio_C_FFI (IDIO symbol, IDIO arg_types, IDIO result_type)
     if (s != FFI_OK) {
 	char em[BUFSIZ];
 	sprintf (em, "ffi_prep_cif failed");
-	idio_error_add_C (em);
+	idio_error_message (em);
 	return idio_S_nil;
     }
     

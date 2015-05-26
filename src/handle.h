@@ -51,6 +51,7 @@ IDIO idio_open_handle (IDIO pathname, char *mode);
 IDIO idio_write (IDIO o, IDIO args);
 IDIO idio_write_char (IDIO c, IDIO args);
 IDIO idio_display (IDIO o, IDIO args);
+IDIO idio_display_C (char *s, IDIO h);
 
 void idio_init_handle ();
 void idio_handle_add_primitives ();

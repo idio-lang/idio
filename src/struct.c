@@ -43,14 +43,15 @@ IDIO idio_struct_type (IDIO name, IDIO parent, IDIO fields)
     IDIO_STRUCT_TYPE_PARENT (st) = parent;
 
     idio_ai_t nfields = 0;
-    IDIO field = fields;
-    while (idio_S_nil != field) {
-	if (! idio_isa_symbol (IDIO_PAIR_H (field))) {
-	    fprintf (stderr, "struct-type name parent fields: fields must be symbols");
+    IDIO fs = fields;
+    while (idio_S_nil != fs) {
+	IDIO f = IDIO_PAIR_H (fs);
+	if (! idio_isa_symbol (f)) {
+	    fprintf (stderr, "struct-type name parent fs: fs must be symbols\n");
 	    IDIO_C_ASSERT (0);
 	}
 	nfields++;
-	field = IDIO_PAIR_T (field);
+	fs = IDIO_PAIR_T (fs);
     }
 
     idio_ai_t pfields = 0;
@@ -61,11 +62,11 @@ IDIO idio_struct_type (IDIO name, IDIO parent, IDIO fields)
 	IDIO_STRUCT_TYPE_FIELDS (st) = idio_array (nfields);
     }
 
-    field = fields;
+    fs = fields;
     idio_ai_t i;
     for (i = 0; i < nfields; i++) {
-	idio_array_insert_index (IDIO_STRUCT_TYPE_FIELDS (st), IDIO_PAIR_H (field), pfields + i);
-	field = IDIO_PAIR_T (field);	
+	idio_array_insert_index (IDIO_STRUCT_TYPE_FIELDS (st), IDIO_PAIR_H (fs), pfields + i);
+	fs = IDIO_PAIR_T (fs);	
     }
 
     return st;
@@ -156,14 +157,44 @@ IDIO_DEFINE_PRIMITIVE1 ("struct-type-fields", struct_type_fields, (IDIO st))
     return idio_array_to_list (IDIO_STRUCT_TYPE_FIELDS (st));
 }
 
-IDIO idio_struct_instance (IDIO st, IDIO fields)
+int idio_struct_type_isa (IDIO st, IDIO type)
 {
     IDIO_ASSERT (st);
-    IDIO_ASSERT (fields);
+    IDIO_ASSERT (type);
 
-    if (! idio_isa_struct_type (st)) {
-	fprintf (stderr, "make-struct-instance type fields: type must be a struct-type");
+    if (st == type) {
+	return 1;
+    } else {
+	if (idio_S_nil != IDIO_STRUCT_TYPE_PARENT (st)) {
+	    return idio_struct_type_isa (IDIO_STRUCT_TYPE_PARENT (st), type);
+	}
     }
+    
+    return 0;
+}
+
+IDIO_DEFINE_PRIMITIVE2 ("struct-type-isa", struct_type_isa, (IDIO st, IDIO type))
+{
+    IDIO_ASSERT (st);
+    IDIO_ASSERT (type);
+
+    IDIO_VERIFY_PARAM_TYPE (struct_type, st);
+    IDIO_VERIFY_PARAM_TYPE (struct_type, type);
+
+    IDIO r = idio_S_false;
+
+    if (idio_struct_type_isa (st, type)) {
+	r = idio_S_true;
+    }
+    
+    return r;
+}
+
+IDIO idio_allocate_struct_instance (IDIO st, int fill)
+{
+    IDIO_ASSERT (st);
+
+    IDIO_TYPE_ASSERT (struct_type, st);
 
     IDIO si = idio_gc_get (IDIO_TYPE_STRUCT_INSTANCE);
 
@@ -175,36 +206,68 @@ IDIO idio_struct_instance (IDIO st, IDIO fields)
     idio_ai_t size = idio_array_size (IDIO_STRUCT_TYPE_FIELDS (st));
     IDIO_STRUCT_INSTANCE_FIELDS (si) = idio_array (size);
 
+    if (fill) {
+	idio_ai_t i = 0;
+	for (i = 0; i < size; i++) {
+	    idio_array_insert_index (IDIO_STRUCT_INSTANCE_FIELDS (si), idio_S_nil, i);
+	}
+    }
+    
+    return si;
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("allocate-struct-instance", allocate_struct_instance, (IDIO st))
+{
+    IDIO_ASSERT (st);
+
+    IDIO_VERIFY_PARAM_TYPE (struct_type, st);
+
+    return idio_allocate_struct_instance (st, 1);
+}
+
+IDIO idio_struct_instance (IDIO st, IDIO values)
+{
+    IDIO_ASSERT (st);
+    IDIO_ASSERT (values);
+
+    IDIO_TYPE_ASSERT (struct_type, st);
+
+    IDIO si = idio_allocate_struct_instance (st, 0);
+
     idio_ai_t i = 0;
-    IDIO field = fields;
-    while (idio_S_nil != field) {
-	idio_array_insert_index (IDIO_STRUCT_INSTANCE_FIELDS (si), IDIO_PAIR_H (field), i);
+    IDIO value = values;
+    while (idio_S_nil != value) {
+	idio_array_insert_index (IDIO_STRUCT_INSTANCE_FIELDS (si), IDIO_PAIR_H (value), i);
 	i++;
-	field = IDIO_PAIR_T (field);
+	value = IDIO_PAIR_T (value);
     }
 
+    idio_ai_t size = idio_array_size (IDIO_STRUCT_TYPE_FIELDS (st));
+
     if (i < size) {
-	fprintf (stderr, "make-struct-instance: not enough fields: %" PRIdPTR " < %" PRIdPTR, i, size);
+	fprintf (stderr, "make-struct-instance: not enough values: %" PRIdPTR " < %" PRIdPTR "\n", i, size);
+	idio_debug ("fields: %s\n", st);
+	idio_debug ("values: %s\n", values);
 	IDIO_C_ASSERT (0);
     }
 
-    if (idio_S_nil != field) {
-	fprintf (stderr, "make-struct-instance: too many fields");
+    if (idio_S_nil != value) {
+	fprintf (stderr, "make-struct-instance: too many values\n");
 	IDIO_C_ASSERT (0);
     }
 
     return si;
 }
 
-IDIO_DEFINE_PRIMITIVE1V ("make-struct-instance", make_struct_instance, (IDIO st, IDIO fields))
+IDIO_DEFINE_PRIMITIVE1V ("make-struct-instance", make_struct_instance, (IDIO st, IDIO values))
 {
     IDIO_ASSERT (st);
-    IDIO_ASSERT (fields);
+    IDIO_ASSERT (values);
 
     IDIO_VERIFY_PARAM_TYPE (struct_type, st);
-    IDIO_VERIFY_PARAM_TYPE (list, fields);
+    IDIO_VERIFY_PARAM_TYPE (list, values);
 
-    return idio_struct_instance (st, fields);
+    return idio_struct_instance (st, values);
 }
 
 int idio_isa_struct_instance (IDIO p)
@@ -327,6 +390,9 @@ IDIO idio_struct_instance_set (IDIO si, IDIO field, IDIO v)
     idio_ai_t i = idio_array_find_eqp (IDIO_STRUCT_TYPE_FIELDS (st), field, 0);
 
     if (-1 == i) {
+	idio_debug ("sis!: %s", st);
+	idio_debug (": %s", si);
+	idio_debug (": %s\n", field);
 	fprintf (stderr, "struct-instance-set: field not found");
 	IDIO_C_ASSERT (0);
     }
@@ -380,20 +446,14 @@ IDIO_DEFINE_PRIMITIVE5 ("%struct-instance-set-direct", struct_instance_set_direc
     return idio_struct_instance_set_direct (si, IDIO_FIXNUM_VAL (index), v);
 }
 
-static IDIO idio_struct_instance_isa (IDIO si, IDIO st)
+int idio_struct_instance_isa (IDIO si, IDIO st)
 {
     IDIO_ASSERT (si);
     IDIO_ASSERT (st);
+    IDIO_TYPE_ASSERT (struct_instance, si);
+    IDIO_TYPE_ASSERT (struct_type, st);
 
-    if (IDIO_STRUCT_INSTANCE_TYPE (si) == st) {
-	return idio_S_true;
-    } else {
-	if (idio_S_nil != IDIO_STRUCT_TYPE_PARENT (st)) {
-	    return idio_struct_instance_isa (si, IDIO_STRUCT_TYPE_PARENT (st));
-	}
-    }
-    
-    return idio_S_false;
+    return idio_struct_type_isa (IDIO_STRUCT_INSTANCE_TYPE (si), st);
 }
 
 IDIO_DEFINE_PRIMITIVE2 ("struct-instance-isa", struct_instance_isa, (IDIO si, IDIO st))
@@ -404,7 +464,13 @@ IDIO_DEFINE_PRIMITIVE2 ("struct-instance-isa", struct_instance_isa, (IDIO si, ID
     IDIO_VERIFY_PARAM_TYPE (struct_instance, si);
     IDIO_VERIFY_PARAM_TYPE (struct_type, st);
 
-    return idio_struct_instance_isa (si, st);
+    IDIO r = idio_S_false;
+
+    if (idio_struct_instance_isa (si, st)) {
+	r = idio_S_true;
+    }
+    
+    return r;
 }
 
 void idio_init_struct ()
@@ -418,7 +484,9 @@ void idio_struct_add_primitives ()
     IDIO_ADD_PRIMITIVE (struct_type_name);
     IDIO_ADD_PRIMITIVE (struct_type_parent);
     IDIO_ADD_PRIMITIVE (struct_type_fields);
+    IDIO_ADD_PRIMITIVE (struct_type_isa);
 
+    IDIO_ADD_PRIMITIVE (allocate_struct_instance);
     IDIO_ADD_PRIMITIVE (make_struct_instance);
     IDIO_ADD_PRIMITIVE (struct_instancep);
     IDIO_ADD_PRIMITIVE (struct_instance_type);

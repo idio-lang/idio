@@ -36,22 +36,59 @@ define (read-handle ih) {
   test (equal? istr str) #t
 }
 
+define (multi-line-read-handle ih) {
+  test (handle-current-line ih) 1
+  r-ih := read ih
+  test (handle-current-line ih) 2
+
+  handle-seek ih 2
+  test (handle-current-line ih) 0
+  r-ih = read ih
+  test (handle-current-line ih) 0
+
+  handle-seek ih 0
+  test (handle-current-line ih) 1
+  r-ih = read ih
+  test (handle-current-line ih) 2
+}
+
+;; generic write to a string
 osh := (open-output-string)
 write-handle osh
 
 ;; get the text written to the string
-text := (get-output-string osh)
+gos-osh := (get-output-string osh)
 
-; text = "Hello"; sho = Hello
-;test (equal? shis sho) #t
+; gos-osh == "Hello"; sho == Hello
+; test (equal? gos-osh sho) #t
 
-;; use the test read in as (read) will consume the "s
-ish := open-input-string shis
+;; use the text read in as (read) will consume the "s
+ish := open-input-string gos-osh
 read-handle ish
 
+;; generic write to a file
 ofh := open-output-file testfile
 write-handle ofh
 
 ifh := open-input-file testfile
 read-handle ifh
 
+;; multi-line to a string
+mls := "list '(one\n\ttwo)"
+
+osh = (open-output-string)
+display mls osh
+close-handle osh
+
+ish = open-input-string (get-output-string osh)
+multi-line-read-handle ish
+close-handle ish
+
+;; multi-line to a file
+ofh = open-output-file testfile
+display mls ofh
+close-handle ofh
+
+ifh = open-input-file testfile
+multi-line-read-handle ifh
+close-handle ifh
