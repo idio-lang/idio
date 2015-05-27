@@ -636,7 +636,9 @@ IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (
     IDIO_ASSERT (fh);
     IDIO_C_ASSERT (reader);
 
-    fprintf (stderr, "load-file-handle: %s: start\n", IDIO_HANDLE_NAME (fh)); 
+    int timing = 0;
+    
+    /* fprintf (stderr, "load-file-handle: %s: start\n", IDIO_HANDLE_NAME (fh));  */
     /* idio_debug ("%s\n", idio_current_thread ()); */
     idio_ai_t sp0 = idio_array_size (IDIO_THREAD_STACK (idio_current_thread ()));
 
@@ -647,6 +649,8 @@ IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (
      */
     idio_remember_file_handle (fh);
     
+    time_t s;
+    suseconds_t us;
     struct timeval t0;
     gettimeofday (&t0, NULL);
 
@@ -659,7 +663,7 @@ IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (
 	IDIO en = (*reader) (fh);
 	
 	if (idio_S_eof == en) {
-	    fprintf (stderr, "load-file-handle: %s: EOF\n", IDIO_HANDLE_NAME (fh));
+	    /* fprintf (stderr, "load-file-handle: %s: EOF\n", IDIO_HANDLE_NAME (fh)); */
 	    break;
 	} else {
 	    e = idio_pair (en, e);
@@ -669,69 +673,77 @@ IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (
     IDIO_HANDLE_M_CLOSE (fh) (fh);
 
     struct timeval t_read;
-    gettimeofday (&t_read, NULL);
+    if (timing) {
+	gettimeofday (&t_read, NULL);
 
-    time_t s = t_read.tv_sec - t0.tv_sec;
-    suseconds_t us = t_read.tv_usec - t0.tv_usec;
+	s = t_read.tv_sec - t0.tv_sec;
+	us = t_read.tv_usec - t0.tv_usec;
 
-    if (us < 0) {
-	us += 1000000;
-	s -= 1;
-    }
+	if (us < 0) {
+	    us += 1000000;
+	    s -= 1;
+	}
 	
-    fprintf (stderr, "load-file-handle: %s: read time %ld.%03ld\n", IDIO_HANDLE_NAME (fh), s, (long) us / 1000);
-
+	fprintf (stderr, "load-file-handle: %s: read time %ld.%03ld\n", IDIO_HANDLE_NAME (fh), s, (long) us / 1000);
+    }
+    
     e = idio_list_append2 (IDIO_LIST1 (idio_S_begin), idio_list_reverse (e));
     /* idio_debug ("load-file-handle: e %s\n", e); */
     IDIO_PAIR_H (m) = (*evaluator) (e);
 
     struct timeval te;
-    gettimeofday (&te, NULL);
+    if (timing) {
+	gettimeofday (&te, NULL);
 
-    s = te.tv_sec - t_read.tv_sec;
-    us = te.tv_usec - t_read.tv_usec;
+	s = te.tv_sec - t_read.tv_sec;
+	us = te.tv_usec - t_read.tv_usec;
 
-    if (us < 0) {
-	us += 1000000;
-	s -= 1;
-    }
+	if (us < 0) {
+	    us += 1000000;
+	    s -= 1;
+	}
 	
-    fprintf (stderr, "load-file-handle: %s: evaluation time %ld.%03ld\n", IDIO_HANDLE_NAME (fh), s, (long) us / 1000);
-
+	fprintf (stderr, "load-file-handle: %s: evaluation time %ld.%03ld\n", IDIO_HANDLE_NAME (fh), s, (long) us / 1000);
+    }
+    
     IDIO thr = idio_current_thread ();
     idio_vm_codegen (thr, IDIO_PAIR_H (m));
 
     idio_gc_expose (m);
 
     struct timeval tc;
-    gettimeofday (&tc, NULL);
+    if (timing) {
+	gettimeofday (&tc, NULL);
 	
-    s = tc.tv_sec - te.tv_sec;
-    us = tc.tv_usec - te.tv_usec;
+	s = tc.tv_sec - te.tv_sec;
+	us = tc.tv_usec - te.tv_usec;
 
-    if (us < 0) {
-	us += 1000000;
-	s -= 1;
+	if (us < 0) {
+	    us += 1000000;
+	    s -= 1;
+	}
+	
+	fprintf (stderr, "load-file-handle: %s: compile time %ld.%03ld\n", IDIO_HANDLE_NAME (fh), s, (long) us / 1000);
     }
-	
-    fprintf (stderr, "load-file-handle: %s: compile time %ld.%03ld\n", IDIO_HANDLE_NAME (fh), s, (long) us / 1000);
-
+    
     /* idio_debug ("load-file-handle: THR %s\n", idio_current_thread ()); */
     IDIO r = idio_vm_run (idio_current_thread (), 1);
 
     struct timeval tr;
     gettimeofday (&tr, NULL);
 	
-    s = tr.tv_sec - tc.tv_sec;
-    us = tr.tv_usec - tc.tv_usec;
+    if (timing) {
+	s = tr.tv_sec - tc.tv_sec;
+	us = tr.tv_usec - tc.tv_usec;
 
-    if (us < 0) {
-	us += 1000000;
-	s -= 1;
-    }
+	if (us < 0) {
+	    us += 1000000;
+	    s -= 1;
+	}
 	
-    fprintf (stderr, "load-file-handle: %s: run time %ld.%03ld\n", IDIO_HANDLE_NAME (fh), s, (long) us / 1000);
-
+	fprintf (stderr, "load-file-handle: %s: run time %ld.%03ld\n", IDIO_HANDLE_NAME (fh), s, (long) us / 1000);
+    }
+    
     s = tr.tv_sec - t0.tv_sec;
     us = tr.tv_usec - t0.tv_usec;
 

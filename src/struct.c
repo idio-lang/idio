@@ -77,10 +77,6 @@ IDIO_DEFINE_PRIMITIVE3 ("make-struct-type", make_struct_type, (IDIO name, IDIO p
     IDIO_ASSERT (parent);
     IDIO_ASSERT (fields);
 
-    idio_debug ("make-struct-type: name %s", name);
-    idio_debug (" parent %s", parent);
-    idio_debug (" fields %s\n", fields);
-
     IDIO_VERIFY_PARAM_TYPE (symbol, name);
     if (idio_S_nil != parent) {
 	IDIO_VERIFY_PARAM_TYPE (struct_type, parent);

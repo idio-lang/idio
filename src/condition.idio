@@ -25,8 +25,6 @@ define-macro (define-condition-type name parent & fields) {
 	     }
 	   })
 	   fields)
-
-    $name
   }
 }
 

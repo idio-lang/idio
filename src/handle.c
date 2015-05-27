@@ -780,7 +780,6 @@ IDIO_DEFINE_PRIMITIVE0V ("handle-current-pos", handle_current_pos, (IDIO args))
 
     IDIO h = idio_handle_or_current (idio_list_head (args), IDIO_HANDLE_FLAG_READ);
 
-    idio_debug ("ihp: %s\n", h);
     IDIO r;
     off_t pos = IDIO_HANDLE_POS (h);
     if (pos < IDIO_FIXNUM_MAX &&

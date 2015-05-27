@@ -68,7 +68,6 @@ test (condition-ref c4 f4.1) 41
 
 ;; define-condition-type
 define-condition-type dct5 ^condition f5
-display* "dct5:" dct5
 test (condition-type? dct5) #t
 test (error? dct5) #f
 
@@ -79,7 +78,6 @@ test (condition-ref c5 f5) 50
 test (dct5-f5 c5) 50
 
 define-condition-type dct6 ^condition f6.1 f6.2
-display* "dct6:" dct6
 test (condition-type? dct6) #t
 test (error? dct6) #f
 
@@ -90,7 +88,6 @@ test (condition-ref c6 f6.1) 60
 test (dct6-f6.1 c6) 60
 
 define-condition-type dct7 ^message f7
-display* "dct7:" dct7
 test (condition-type? dct7) #t
 test (message-condition? dct7) #t
 test (error? dct7) #f
@@ -102,3 +99,4 @@ test (condition-ref c7 f7) 70
 test (dct7-f7 c7) 70
 test (condition-ref c7 message) msg
 test (condition-message c7) msg
+

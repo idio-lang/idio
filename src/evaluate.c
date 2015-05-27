@@ -2446,7 +2446,7 @@ IDIO idio_evaluate (IDIO e)
 
     /* idio_debug ("evaluate: m %s\n", m); */
 
-    if (1) {
+    if (0) {
 	IDIO d = idio_module_current_defined ();
 	IDIO t = idio_module_current_symbols ();
 
