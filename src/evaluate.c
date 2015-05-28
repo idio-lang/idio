@@ -2125,7 +2125,7 @@ static IDIO idio_meaning_monitor (IDIO e, IDIO ep, IDIO nametree, int tailp)
     IDIO m = idio_meaning (e, nametree, 0);
     IDIO mp = idio_meaning_sequence (ep, nametree, 0, idio_S_begin);
 
-    return IDIO_LIST4 (m, idio_I_PUSH_HANDLER, mp, idio_I_POP_HANDLER);
+    return IDIO_LIST4 (m, IDIO_LIST1 (idio_I_PUSH_HANDLER), mp, IDIO_LIST1 (idio_I_POP_HANDLER));
 }
 
 static IDIO idio_meaning_include (IDIO e, IDIO nametree, int tailp)

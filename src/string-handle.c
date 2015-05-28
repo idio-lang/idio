@@ -218,8 +218,7 @@ int idio_string_handle_getc (IDIO sh)
     IDIO_ASSERT (sh);
 
     if (! idio_input_string_handlep (sh)) {
-	idio_error_param_type ("input string-handle", sh);
-	IDIO_C_ASSERT (0);
+	idio_error_read_handle (sh);
     }
 
     if (IDIO_STRING_HANDLE_PTR (sh) < IDIO_STRING_HANDLE_END (sh)) {
@@ -255,8 +254,7 @@ int idio_string_handle_putc (IDIO sh, int c)
     IDIO_ASSERT (sh);
 
     if (! idio_output_string_handlep (sh)) {
-	idio_error_param_type ("output string-handle", sh);
-	IDIO_C_ASSERT (0);
+	idio_error_write_handle (sh);
     }
     
     if (IDIO_STRING_HANDLE_PTR (sh) >= IDIO_STRING_HANDLE_END (sh)) {
@@ -287,15 +285,16 @@ size_t idio_string_handle_puts (IDIO sh, char *s, size_t slen)
     IDIO_ASSERT (sh);
 
     if (! idio_output_string_handlep (sh)) {
-	idio_error_param_type ("output string-handle", sh);
-	IDIO_C_ASSERT (0);
+	idio_error_write_handle (sh);
     }
     
     if ((IDIO_STRING_HANDLE_PTR (sh) + slen) >= (IDIO_STRING_HANDLE_BUF (sh) + IDIO_STRING_HANDLE_BLEN (sh))) {
 	size_t blen = IDIO_STRING_HANDLE_BLEN (sh);
 	char *buf = IDIO_STRING_HANDLE_BUF (sh);
 	size_t offset = IDIO_STRING_HANDLE_PTR (sh) - buf;
-	buf = idio_realloc (buf, blen + slen + IDIO_STRING_HANDLE_DEFAULT_OUTPUT_SIZE);
+
+	blen = blen + slen + IDIO_STRING_HANDLE_DEFAULT_OUTPUT_SIZE;
+	buf = idio_realloc (buf, blen);
 
 	/*
 	 * realloc can relocate data in memory!
@@ -305,6 +304,7 @@ size_t idio_string_handle_puts (IDIO sh, char *s, size_t slen)
 	IDIO_STRING_HANDLE_BLEN (sh) = blen;
 	IDIO_STRING_HANDLE_END (sh) = IDIO_STRING_HANDLE_PTR (sh) + slen;
     }
+
     memcpy (IDIO_STRING_HANDLE_PTR (sh), s, slen);
     IDIO_STRING_HANDLE_PTR (sh) += slen;
     if (IDIO_STRING_HANDLE_PTR (sh) > IDIO_STRING_HANDLE_END (sh)) {
@@ -364,8 +364,7 @@ void idio_string_handle_print (IDIO sh, IDIO o)
     IDIO_ASSERT (sh);
 
     if (! idio_output_string_handlep (sh)) {
-	idio_error_param_type ("output string-handle", sh);
-	IDIO_C_ASSERT (0);
+	idio_error_write_handle (sh);
     }
 
     char *os = idio_display_string (o);

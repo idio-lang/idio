@@ -1,4 +1,4 @@
-vm-trace 0
+%%vm-trace 0
 
 ;; check predicates fail for non-handle
 string := "foo"

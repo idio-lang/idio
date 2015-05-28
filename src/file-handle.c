@@ -71,24 +71,117 @@ static idio_handle_methods_t idio_file_handle_methods = {
     idio_file_handle_print
 };
 
-static void idio_error_file_closed (IDIO fh)
+static IDIO idio_error_filename (IDIO filename)
 {
-    idio_error_message ("file-handle %s already closed", IDIO_HANDLE_NAME (fh));
+    IDIO sh = idio_open_output_string_handle_C ();
+    idio_display_C ("generic filename '", sh);
+    idio_display (filename, sh);
+    idio_display_C ("' error: ", sh);
+    idio_display_C (strerror (errno), sh);
+    IDIO c = idio_struct_instance (idio_condition_io_filename_error_type, IDIO_LIST4 (idio_get_output_string (sh),
+										      idio_S_nil,
+										      idio_string_C (strerror (errno)),
+										      filename));
+    return idio_signal_exception (idio_S_true, c);
 }
 
-static void idio_error_filename_too_long (IDIO filename)
+static IDIO idio_error_filename_C (char *name)
 {
-    idio_error_message ("filename %s is too long", IDIO_STRING_S (filename));
+    return idio_error_filename (idio_string_C (name));
 }
 
-static void idio_error_file_not_found (IDIO filename)
+static IDIO idio_error_filename_delete (IDIO filename)
 {
-    idio_error_message ("filename %s not found", IDIO_STRING_S (filename));
+    IDIO sh = idio_open_output_string_handle_C ();
+    idio_display_C ("remove '", sh);
+    idio_display (filename, sh);
+    idio_display_C ("': ", sh);
+    idio_display_C (strerror (errno), sh);
+    IDIO c = idio_struct_instance (idio_condition_io_filename_error_type, IDIO_LIST4 (idio_get_output_string (sh),
+										      idio_S_nil,
+										      idio_S_nil,
+										      filename));
+    return idio_signal_exception (idio_S_true, c);
 }
 
-static void idio_error_file_delete (IDIO filename)
+static IDIO idio_error_filename_delete_C (char *name)
 {
-    idio_error_message ("remove (%s): %s", IDIO_STRING_S (filename), strerror (errno));
+    return idio_error_filename_delete (idio_string_C (name));
+}
+
+static IDIO idio_error_bad_filename (IDIO filename)
+{
+    IDIO sh = idio_open_output_string_handle_C ();
+    idio_display_C ("bad filename '", sh);
+    idio_display (filename, sh);
+    idio_display_C ("': ", sh);
+    idio_display_C (strerror (errno), sh);
+    IDIO c = idio_struct_instance (idio_condition_io_malformed_filename_error_type, IDIO_LIST4 (idio_get_output_string (sh),
+												idio_S_nil,
+												idio_S_nil,
+												filename));
+    return idio_signal_exception (idio_S_true, c);
+}
+
+static IDIO idio_error_bad_filename_C (char *name)
+{
+    return idio_error_bad_filename (idio_string_C (name));
+}
+
+static IDIO idio_error_filename_protection (IDIO filename)
+{
+    IDIO sh = idio_open_output_string_handle_C ();
+    idio_display_C ("filename '", sh);
+    idio_display (filename, sh);
+    idio_display_C ("' access: ", sh);
+    idio_display_C (strerror (errno), sh);
+    IDIO c = idio_struct_instance (idio_condition_io_file_protection_error_type, IDIO_LIST4 (idio_get_output_string (sh),
+											     idio_S_nil,
+											     idio_S_nil,
+											     filename));
+    return idio_signal_exception (idio_S_true, c);
+}
+
+static IDIO idio_error_filename_protection_C (char *name)
+{
+    return idio_error_filename_protection (idio_string_C (name));
+}
+
+static IDIO idio_error_filename_already_exists (IDIO filename)
+{
+    IDIO sh = idio_open_output_string_handle_C ();
+    idio_display_C ("filename '", sh);
+    idio_display (filename, sh);
+    idio_display_C ("' already exists: ", sh);
+    idio_display_C (strerror (errno), sh);
+    IDIO c = idio_struct_instance (idio_condition_io_file_already_exists_error_type, IDIO_LIST4 (idio_get_output_string (sh),
+												 idio_S_nil,
+												 idio_S_nil,
+												 filename));
+    return idio_signal_exception (idio_S_true, c);
+}
+
+static IDIO idio_error_filename_already_exists_C (char *name)
+{
+    return idio_error_filename_already_exists (idio_string_C (name));
+}
+
+static IDIO idio_error_filename_not_found (IDIO filename)
+{
+    IDIO sh = idio_open_output_string_handle_C ();
+    idio_display_C ("filename '", sh);
+    idio_display (filename, sh);
+    idio_display_C ("' not found", sh);
+    IDIO c = idio_struct_instance (idio_condition_io_no_such_file_error_type, IDIO_LIST4 (idio_get_output_string (sh),
+											  idio_S_nil,
+											  idio_S_nil,
+											  filename));
+    return idio_signal_exception (idio_S_true, c);
+}
+
+static IDIO idio_error_filename_not_found_C (char *name)
+{
+    return idio_error_filename_not_found (idio_string_C (name));
 }
 
 static IDIO idio_open_file_handle (char *name, FILE *filep, int mflag, int sflags)
@@ -140,14 +233,14 @@ IDIO idio_open_file_handle_C (char *name, char *mode)
     switch (mode[0]) {
     case 'r':
 	mflag = IDIO_HANDLE_FLAG_READ;
-	if ('+' == mode[1]) {
+	if (strchr (mode, '+') != NULL) {
 	    mflag |= IDIO_HANDLE_FLAG_WRITE;
 	}
 	break;
     case 'a':
     case'w':
 	mflag = IDIO_HANDLE_FLAG_WRITE;
-	if ('+' == mode[1]) {
+	if (strchr (mode, '+') != NULL) {
 	    mflag |= IDIO_HANDLE_FLAG_READ;
 	}
 	break;
@@ -161,7 +254,32 @@ IDIO idio_open_file_handle_C (char *name, char *mode)
     for (tries = 2; tries > 0 ; tries--) {
 	filep = fopen (name, mode);
 	if (NULL == filep) {
-	    idio_gc_collect ();
+	    switch (errno) {
+	    case EMFILE:	/* process max */
+	    case ENFILE:	/* system max */
+		idio_gc_collect ();
+		break;
+	    case EACCES:
+		return idio_error_filename_protection_C (name);
+	    case EEXIST:
+		return idio_error_filename_already_exists_C (name);
+	    case ENAMETOOLONG:
+		return idio_error_bad_filename_C (name);
+	    case ENOENT:
+		return idio_error_filename_not_found_C (name);
+	    default:
+		/*
+		 * Arguably we might want to be raising a
+		 * idio_condition_system_error_type rather than an
+		 * idio_condition_io_filename_error_type as we do.
+		 *
+		 * We would need to specify all the errno cases where
+		 * the error is filename related and call
+		 * idio_error_filename_C and otherwise default to an
+		 * idio_error_system_C (not currently written).
+		 */
+		return idio_error_filename_C (name);
+	    }
 	} else {
 	    break;
 	}
@@ -451,8 +569,7 @@ int idio_file_handle_getc (IDIO fh)
     IDIO_ASSERT (fh);
 
     if (! idio_input_file_handlep (fh)) {
-	idio_error_param_type ("input file-handle", fh);
-	IDIO_C_ASSERT (0);
+	idio_error_read_handle (fh);
     }
 
     for (;;) {
@@ -488,6 +605,7 @@ int idio_file_handle_close (IDIO fh)
     /* idio_debug ("file-handle-close: %s\n", fh); */
 
     if (IDIO_HANDLE_FLAGS (fh) & IDIO_HANDLE_FLAG_CLOSED) {
+	idio_error_closed_handle (fh);
 	errno = EBADF;
 	return EOF;
     } else {
@@ -507,8 +625,7 @@ int idio_file_handle_putc (IDIO fh, int c)
     IDIO_ASSERT (fh);
 
     if (! idio_output_file_handlep (fh)) {
-	idio_error_param_type ("output file-handle", fh);
-	IDIO_C_ASSERT (0);
+	idio_error_write_handle (fh);
     }
     
     for (;;) {
@@ -539,8 +656,7 @@ size_t idio_file_handle_puts (IDIO fh, char *s, size_t slen)
     IDIO_ASSERT (fh);
 
     if (! idio_output_file_handlep (fh)) {
-	idio_error_param_type ("output file-handle", fh);
-	IDIO_C_ASSERT (0);
+	idio_error_write_handle (fh);
     }
     
     size_t r;
@@ -621,8 +737,7 @@ void idio_file_handle_print (IDIO fh, IDIO o)
     IDIO_ASSERT (fh);
 
     if (! idio_output_file_handlep (fh)) {
-	idio_error_param_type ("output file-handle", fh);
-	IDIO_C_ASSERT (0);
+	idio_error_write_handle (fh);
     }
 
     char *os = idio_display_string (o);
@@ -817,7 +932,7 @@ IDIO idio_load_file (IDIO filename)
 	    if (NULL != fe->ext) {
 
 		if ((l + strlen (fe->ext)) >= PATH_MAX) {
-		    idio_error_filename_too_long (filename);
+		    idio_error_bad_filename (filename);
 		    return idio_S_unspec;
 		}
 	    
@@ -862,7 +977,7 @@ IDIO idio_load_file (IDIO filename)
 	}	
     }
 
-    idio_error_file_not_found (filename);
+    idio_error_filename_not_found (filename);
     return idio_S_unspec;
 }
 
@@ -910,7 +1025,7 @@ IDIO_DEFINE_PRIMITIVE1 ("delete-file", delete_file, (IDIO filename))
 
     if (remove (Cfn)) {
 	free (Cfn);
-	idio_error_file_delete (filename);
+	idio_error_filename_delete (filename);
 	return idio_S_unspec;
     } else {
 	r = idio_S_true;

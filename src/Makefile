@@ -92,3 +92,5 @@ TAGS : *.[ch]
 
 test : idio scm1-c-structs.scm1
 	(cd tests; IDIO_PATH=${PWD} IDIO=${PWD}/idio ./rtest 2>e)
+
+# valgrind --leak-check=full --show-leak-kinds=all --child-silent-after-fork=yes ./idio 2>&1 | less +/^==

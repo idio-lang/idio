@@ -1,26 +1,40 @@
 
-define-macro (define-condition-type name parent & fields) {
+;; define-condition-type/accessors name super pred & fields
+;; field == (field accessor)
+define-macro (define-condition-type/accessors name parent pred-fname & fields) {
+  %T{
+    define $name (make-condition-type '$name $parent $@(map (function (field) { %T{ '$(ph field) } }) fields))
+
+    define-condition-type-accessors-only $name $parent $pred-fname $@fields
+  }
+}
+
+;; define-condition-type-accessors-only name super pred & fields
+;; field == (field accessor)
+;;
+;; We have this two-step tomfoolery as the basic conditions
+;; (eg. ^error) are defined in C-land for internal use yet the
+;; predicate/accessors are defined here, in Idio-land, as it is much
+;; easier.  If we defined the conditions themselves here as well then
+;; we'd have two distinct objects with the same name.  Which is
+;; generally considered to be "an issue."
+define-macro (define-condition-type-accessors-only name parent pred-fname & fields) {
   arg := (gensym)
-  val := (gensym)
-  pred-fname := string->symbol (string-append (symbol->string name) "?")
 
   %T{
-    define $name (make-condition-type '$name $parent $@(map (function (field) { %T{ '$field } }) fields))
-
     define ($pred-fname $arg) {
-      and (condition-type? $arg) \
-	  (condition-isa $arg $name)
+      and (condition? $arg) \
+	  (condition-isa? $arg $name)
     }
 
     $@(map (function (field) {
-              get-fname := string->symbol (string-append 
-					   (symbol->string name) 
-					   "-"
-					   (symbol->string field))
-
 	      %T{
-		define ($get-fname $arg) {
-                  condition-ref $arg '$field
+		define ($(pht field) $arg) {
+                  if ($pred-fname $arg) {
+                    condition-ref $arg '$(ph field)
+		  } {
+		    error '$(pht field) '$pred-fname "not a condition:" $arg
+		  }
                 } 
 	     }
 	   })
@@ -28,6 +42,28 @@ define-macro (define-condition-type name parent & fields) {
   }
 }
 
+;; define-condition-type
+;; 
+;; generate default pred/accessor names for
+;; define-condition-type/accessors
+define-macro (define-condition-type name parent & fields) {
+  pred-fname := string->symbol (string-append (symbol->string name) "?")
+  fa := map (function (field) {
+    list field (string->symbol (string-append 
+				(symbol->string name) 
+				"-"
+				(symbol->string field)))
+  }) fields
+
+  %T{
+    define-condition-type/accessors $name $parent $pred-fname $@fa
+  }
+}
+
+;; condition
+;;
+;; use a sequence of condition-set! expressions rather than than
+;; anything more direct to allow for multi-type conditions
 define-macro (condition type & field-bindings) {
   c := (gensym)
 
@@ -44,3 +80,25 @@ define-macro (condition type & field-bindings) {
     $c
   }
 }
+
+;; SRFI-36-ish standard conditions
+define-condition-type-accessors-only ^i/o-error ^error i/o-error?
+
+define-condition-type-accessors-only ^i/o-handle-error ^i/o-error i/o-handle-error? (handle i/o-error-handle)
+
+define-condition-type-accessors-only ^i/o-read-error ^i/o-handle-error i/o-read-error?
+define-condition-type-accessors-only ^i/o-write-error ^i/o-handle-error i/o-write-error?
+define-condition-type-accessors-only ^i/o-closed-error ^i/o-handle-error i/o-closed-error?
+
+define-condition-type-accessors-only ^i/o-filename-error ^i/o-error i/o-filename-error? (filename i/o-error-filename)
+
+define-condition-type-accessors-only ^i/o-malformed-filename-error ^i/o-filename-error i/o-malformed-filename-error?
+
+define-condition-type-accessors-only ^i/o-file-protection-error ^i/o-filename-error i/o-file-protection-error?
+
+define-condition-type-accessors-only ^i/o-file-is-read-only-error ^i/o-file-protection-error i/o-file-is-read-only-error?
+
+define-condition-type-accessors-only ^i/o-file-already-exists-error ^i/o-filename-error i/o-file-already-exists-error?
+
+define-condition-type-accessors-only ^i/o-no-such-file-error ^i/o-filename-error i/o-no-such-file-error?
+

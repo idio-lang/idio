@@ -24,10 +24,23 @@
 
 #include "idio.h"
 
-static IDIO idio_condition_root_type;
-static IDIO idio_condition_message_type;
-static IDIO idio_condition_error_type;
-static IDIO idio_condition_idio_error_type;
+IDIO idio_condition_root_type;
+IDIO idio_condition_message_type;
+IDIO idio_condition_error_type;
+IDIO idio_condition_io_error_type;
+IDIO idio_condition_io_handle_error_type;
+IDIO idio_condition_io_read_error_type;
+IDIO idio_condition_io_write_error_type;
+IDIO idio_condition_io_closed_error_type;
+IDIO idio_condition_io_filename_error_type;
+IDIO idio_condition_io_malformed_filename_error_type;
+IDIO idio_condition_io_file_protection_error_type;
+IDIO idio_condition_io_file_is_read_only_error_type;
+IDIO idio_condition_io_file_already_exists_error_type;
+IDIO idio_condition_io_no_such_file_error_type;
+IDIO idio_condition_read_error_type;
+IDIO idio_condition_idio_error_type;
+IDIO idio_condition_system_error_type;
 
 IDIO_DEFINE_PRIMITIVE2V ("make-condition-type", make_condition_type, (IDIO name, IDIO parent, IDIO fields))
 {
@@ -164,7 +177,7 @@ IDIO_DEFINE_PRIMITIVE1 ("condition?", conditionp, (IDIO o))
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("condition-isa?", condition_isap, (IDIO c, IDIO ct))
+IDIO_DEFINE_PRIMITIVE2 ("condition-isa?", condition_isap, (IDIO c, IDIO ct))
 {
     IDIO_ASSERT (c);
     IDIO_ASSERT (ct);
@@ -217,33 +230,66 @@ IDIO_DEFINE_PRIMITIVE3 ("condition-set!", condition_set, (IDIO c, IDIO field, ID
     return idio_struct_instance_set (c, field, value);
 }
 
+#define IDIO_DEFINE_CONDITION0(v,n,p) {		\
+    IDIO sym = idio_symbols_C_intern (n);	\
+    v = idio_struct_type (sym, p, idio_S_nil);	\
+    idio_gc_protect (v);			\
+    idio_module_toplevel_set_symbol_value (sym, v);	\
+    }
+
+#define IDIO_DEFINE_CONDITION1(v,n,p,f1) {	\
+    IDIO sym = idio_symbols_C_intern (n);	\
+    v = idio_struct_type (sym, p, IDIO_LIST1 (idio_symbols_C_intern (f1)));	\
+    idio_gc_protect (v);			\
+    idio_module_toplevel_set_symbol_value (sym, v);	\
+    }
+
+#define IDIO_DEFINE_CONDITION2(v,n,p,f1,f2) {	\
+    IDIO sym = idio_symbols_C_intern (n);	\
+    v = idio_struct_type (sym, p, IDIO_LIST2 (idio_symbols_C_intern (f1), idio_symbols_C_intern (f2))); \
+    idio_gc_protect (v);			\
+    idio_module_toplevel_set_symbol_value (sym, v);	\
+    }
+
+#define IDIO_DEFINE_CONDITION3(v,n,p,f1,f2,f3) {	\
+    IDIO sym = idio_symbols_C_intern (n);	\
+    v = idio_struct_type (sym, p, IDIO_LIST3 (idio_symbols_C_intern (f1), idio_symbols_C_intern (f2), idio_symbols_C_intern (f3))); \
+    idio_gc_protect (v);			\
+    idio_module_toplevel_set_symbol_value (sym, v);	\
+    }
+
 void idio_init_condition ()
 {
-    IDIO sym = idio_symbols_C_intern ("^condition");
-    idio_condition_root_type = idio_struct_type (sym, idio_S_nil, idio_S_nil);
-    idio_gc_protect (idio_condition_root_type);
-    idio_module_toplevel_set_symbol_value (sym, idio_condition_root_type);
+    /* SRFI-35-ish */
+    IDIO_DEFINE_CONDITION0 (idio_condition_root_type, "^condition", idio_S_nil);
+    IDIO_DEFINE_CONDITION1 (idio_condition_message_type, "^message", idio_condition_root_type, "message");
+    IDIO_DEFINE_CONDITION0 (idio_condition_error_type, "^error", idio_condition_root_type);
 
-    sym = idio_symbols_C_intern ("^message");
-    idio_condition_message_type = idio_struct_type (sym,
-						    idio_condition_root_type,
-						    IDIO_LIST1 (idio_symbols_C_intern ("message")));
-    idio_gc_protect (idio_condition_message_type);
-    idio_module_toplevel_set_symbol_value (sym, idio_condition_message_type);
+    /* Idio */
+    IDIO_DEFINE_CONDITION3 (idio_condition_idio_error_type, "^idio-error", idio_condition_error_type, "message", "location", "detail");
 
-    sym = idio_symbols_C_intern ("^error");
-    idio_condition_error_type = idio_struct_type (sym, idio_condition_root_type, idio_S_nil);
-    idio_gc_protect (idio_condition_error_type);
-    idio_module_toplevel_set_symbol_value (sym, idio_condition_error_type);
+    /* SRFI-36-ish */
+    IDIO_DEFINE_CONDITION0 (idio_condition_io_error_type, "^i/o-error", idio_condition_idio_error_type);
 
-    sym = idio_symbols_C_intern ("^idio-error");
-    idio_condition_idio_error_type = idio_struct_type (sym,
-						       idio_condition_error_type,
-						       IDIO_LIST3 (idio_symbols_C_intern ("message"),
-								   idio_symbols_C_intern ("location"),
-								   idio_symbols_C_intern ("detail")));
-    idio_gc_protect (idio_condition_idio_error_type);
-    idio_module_toplevel_set_symbol_value (sym, idio_condition_idio_error_type);
+    IDIO_DEFINE_CONDITION1 (idio_condition_io_handle_error_type, "^i/o-handle-error", idio_condition_io_error_type, "handle");
+    IDIO_DEFINE_CONDITION0 (idio_condition_io_read_error_type, "^i/o-read-error", idio_condition_io_handle_error_type);
+    IDIO_DEFINE_CONDITION0 (idio_condition_io_write_error_type, "^i/o-write-error", idio_condition_io_handle_error_type);
+    IDIO_DEFINE_CONDITION0 (idio_condition_io_closed_error_type, "^i/o-closed-error", idio_condition_io_handle_error_type);
+
+    IDIO_DEFINE_CONDITION1 (idio_condition_io_filename_error_type, "^i/o-filename-error", idio_condition_io_error_type, "filename");
+    IDIO_DEFINE_CONDITION0 (idio_condition_io_malformed_filename_error_type, "^i/o-malformed-filename-error", idio_condition_io_filename_error_type);
+
+    IDIO_DEFINE_CONDITION0 (idio_condition_io_file_protection_error_type, "^i/o-file-protection-error", idio_condition_io_filename_error_type);
+    IDIO_DEFINE_CONDITION0 (idio_condition_io_file_is_read_only_error_type, "^i/o-file-is-read-only-error", idio_condition_io_file_protection_error_type);
+
+    IDIO_DEFINE_CONDITION0 (idio_condition_io_file_already_exists_error_type, "^i/o-file-already-exists-error", idio_condition_io_filename_error_type);
+    IDIO_DEFINE_CONDITION0 (idio_condition_io_no_such_file_error_type, "^i/o-no-such-file-error", idio_condition_io_filename_error_type);
+
+    /* no column or span! */
+    IDIO_DEFINE_CONDITION2 (idio_condition_read_error_type, "^read-error", idio_condition_error_type, "line", "position");
+
+    /* Idio */
+    IDIO_DEFINE_CONDITION1 (idio_condition_system_error_type, "^system-error", idio_condition_idio_error_type, "errno");
 }
 
 void idio_condition_add_primitives ()
@@ -257,6 +303,7 @@ void idio_condition_add_primitives ()
     IDIO_ADD_PRIMITIVE (make_condition);
     IDIO_ADD_PRIMITIVE (idio_error_condition);
     IDIO_ADD_PRIMITIVE (conditionp);
+    IDIO_ADD_PRIMITIVE (condition_isap);
     IDIO_ADD_PRIMITIVE (condition_ref);
     IDIO_ADD_PRIMITIVE (condition_message);
     IDIO_ADD_PRIMITIVE (condition_set);
@@ -268,5 +315,18 @@ void idio_final_condition ()
     idio_gc_expose (idio_condition_message_type);
     idio_gc_expose (idio_condition_error_type);
     idio_gc_expose (idio_condition_idio_error_type);
+    idio_gc_expose (idio_condition_io_error_type);
+    idio_gc_expose (idio_condition_io_handle_error_type);
+    idio_gc_expose (idio_condition_io_read_error_type);
+    idio_gc_expose (idio_condition_io_write_error_type);
+    idio_gc_expose (idio_condition_io_closed_error_type);
+    idio_gc_expose (idio_condition_io_filename_error_type);
+    idio_gc_expose (idio_condition_io_malformed_filename_error_type);
+    idio_gc_expose (idio_condition_io_file_protection_error_type);
+    idio_gc_expose (idio_condition_io_file_is_read_only_error_type);
+    idio_gc_expose (idio_condition_io_file_already_exists_error_type);
+    idio_gc_expose (idio_condition_io_no_such_file_error_type);
+    idio_gc_expose (idio_condition_read_error_type);
+    idio_gc_expose (idio_condition_system_error_type);
 }
 

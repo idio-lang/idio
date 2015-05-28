@@ -100,3 +100,255 @@ test (dct7-f7 c7) 70
 test (condition-ref c7 message) msg
 test (condition-message c7) msg
 
+;; SRFI-36-ish
+test (condition-type? ^i/o-error) #t
+test (error? ^i/o-error) #t
+
+c8 := condition ^i/o-error
+test (i/o-error? c8) #t
+
+test (condition-type? ^i/o-handle-error) #t
+test (error? ^i/o-handle-error) #t
+
+c9 := condition ^i/o-handle-error (handle (current-input-handle))
+test (i/o-handle-error? c9) #t
+test (i/o-error? c9) #t
+test (i/o-error-handle c9) (current-input-handle)
+
+test (condition-type? ^i/o-no-such-file-error) #t
+test (error? ^i/o-no-such-file-error) #t
+
+test_filename := "..test-file.."
+c10 := condition ^i/o-no-such-file-error (filename test_filename)
+test (i/o-no-such-file-error? c10) #t
+test (i/o-filename-error? c10) #t
+test (i/o-error? c10) #t
+test (i/o-error-filename c10) test_filename
+
+;; Try to capture the various continuable io errors generated
+;; internally together with some "repair" in the handler code.
+;; 
+;; Exceptions generating exceptions is a bit too hairy for this
+;; simplistic testing.
+
+;; ^i/o-read-error
+;;
+;; This is generated in several places but the user-level functions
+;; all run the same wrapper which tests the validity of the handle
+;; before calling the rest of the code.
+;;
+;; So, at the moment, both file-handles and string-handles are tested
+;; in idio_handle_or_current in handle.c
+monitor (function (cont cond) {
+  ;; display* "read handle monitor condition:" (struct-type-name cond)
+  test (i/o-read-error? cond) #t
+  if cont {
+    if (i/o-read-error? cond) {
+      filename := condition-ref cond 'handle
+
+      #t
+    } (error "read handle: unexpected condition" cond)
+  } (error "read handle: unexpected non-continuable error" cond)
+}) {
+  ;; display* "read handle condition"
+  touch test_filename
+  chmod +r test_filename
+
+  ifh := open-output-file test_filename
+  expr := read ifh
+  close-handle ifh
+  test expr #t
+}
+
+;; ^i/o-write-error
+;;
+;; This is generated in several places but the user-level functions
+;; all run the same wrapper which tests the validity of the handle
+;; before calling the rest of the code.
+;;
+;; So, at the moment, both file-handles and string-handles are tested
+;; in idio_handle_or_current in handle.c
+monitor (function (cont cond) {
+  ;; display* "write handle monitor condition:" (struct-type-name cond)
+  test (i/o-write-error? cond) #t
+  if cont {
+    if (i/o-write-error? cond) {
+      filename := condition-ref cond 'handle
+
+      #t
+    } (error "write handle: unexpected condition" cond)
+  } (error "write handle: unexpected non-continuable error" cond)
+}) {
+  ;; display* "write handle condition"
+  touch test_filename
+  chmod +r test_filename
+
+  ifh := open-input-file test_filename
+  write "Hello" ifh
+  close-handle ifh
+}
+
+;; ^i/o-closed-error
+;;
+;; only file-handles generate this
+monitor (function (cont cond) {
+  ;; display* "closed handle monitor condition:" (struct-type-name cond)
+  test (i/o-closed-error? cond) #t
+  if cont {
+    if (i/o-closed-error? cond) {
+      filename := condition-ref cond 'handle
+
+      #t
+    } (error "closed handle: unexpected condition" cond)
+  } (error "closed handle: unexpected non-continuable error" cond)
+}) {
+  ;; display* "closed handle condition"
+  touch test_filename
+  chmod +r test_filename
+
+  ifh := open-input-file test_filename
+  close-handle ifh
+  close-handle ifh
+}
+
+;; ^i/o-filename-error
+;; 
+;; ie. none of the below.  Let's try ENOTDIR.  Opening
+;; ..../test_filename gets an ^i/o-no-such-file-error so you seem to
+;; need to use an existing non-dir file in the position of a directory
+;; (much like the man page says...).  Here, we'll use test_filename in
+;; a directory component as ./test_filename/test_filename
+monitor (function (cont cond) {
+  ;; display* "generic filename monitor condition:" (struct-type-name cond)
+  test (i/o-filename-error? cond) #t
+  if cont {
+    if (i/o-filename-error? cond) {
+      filename := condition-ref cond 'filename
+
+      ;; use a safe file instead of filename
+      open-output-file test_filename
+    } (error "generic filename: unexpected condition" cond)
+  } (error "generic filename: unexpected non-continuable error" cond)
+}) {
+  ;; display* "generic filename condition"
+  dir_filename := string-append "./" test_filename "/" test_filename
+
+  ofh := open-output-file dir_filename
+  ;; test we have a writeable fh
+  write "Hello" ofh
+  close-handle ofh
+}
+
+
+;; ^i/o-malformed-filename-error
+;;
+;; Slightly tricky this one.  Non-string filenames are captured
+;; separately as bad parameters.  The only thing we currently identify
+;; as a bad filename is ENAMETOOLONG.  This requires we generate a
+;; name that is greater than PATH_MAX.
+;;
+;; PATH_MAX?  POSIX says 256, Solaris & MacOS say 1024, Linux says 4096
+;;
+;; One of these days we'll be able to reference C/PATH_MAX directly
+;; rather than guess (hope) that 8192 is bigger than any ported
+;; system's PATH_MAX.
+monitor (function (cont cond) {
+  ;; display* "malformed filename monitor condition:" (struct-type-name cond)
+  test (i/o-malformed-filename-error? cond) #t
+  if cont {
+    if (i/o-malformed-filename-error? cond) {
+      filename := condition-ref cond 'filename
+
+      ;; use a safe file instead of filename
+      open-output-file test_filename
+    } (error "malformed filename: unexpected condition" cond)
+  } (error "malformed filename: unexpected non-continuable error" cond)
+}) {
+  ;; display* "opening malformed filename"
+  bad_filename := make-string 8192 #\a
+
+  ofh := open-output-file bad_filename
+  ;; test we have a writeable fh
+  write "Hello" ofh
+  close-handle ofh
+}
+
+;; ^i/o-file-protection-error
+;;
+;; NB. Nothing internally generates a ^i/o-file-is-read-only-error and
+;; read-only issues are collected under the guise of protection errors
+;; (EACCES)
+monitor (function (cont cond) {
+  ;; display* "0-perms monitor condition:" (struct-type-name cond)
+  test (i/o-file-protection-error? cond) #t
+  if cont {
+    if (i/o-file-protection-error? cond) {
+      filename := condition-ref cond 'filename
+      chmod +r filename
+      open-input-file filename
+    } (error "0-perms: unexpected condition" cond)
+  } (error "0-perms: unexpected non-continuable error" cond)
+}) {
+  ;; display* "opening 0-perms file"
+  touch test_filename
+  chmod =0 test_filename
+
+  ifh := open-input-file test_filename
+  close-handle ifh
+}
+
+;; ^i/o-file-already-exists-error
+;;
+;; The code to react to EEXIST is present but to generate it requires
+;; a non-POSIX extension, the "x" mode character for fopen(3).  This
+;; is part of ISO C11.
+;;
+;; This is suphandleed on Linux, MacOS.  Not suphandleed on Solaris
+;; (OpenIndiana).
+monitor (function (cont cond) {
+  ;; display* "already exists monitor condition:" (struct-type-name cond)
+  test (i/o-file-already-exists-error? cond) #t
+  if cont {
+    if (i/o-file-already-exists-error? cond) {
+      filename := condition-ref cond 'filename
+
+      ;; our "repair" is simply to open the file anyway
+      open-output-file filename
+    } (error "already exists: unexpected condition" cond)
+  } (error "already exists: unexpected non-continuable error" cond)
+}) {
+  ;; display* "opening existing file"
+  touch test_filename
+  chmod =rw test_filename
+
+  ofh := open-file test_filename "wx"
+  ;; test we have a writeable fh
+  write "Hello" ofh
+  close-handle ofh
+}
+
+;; ^i/o-no-such-file-error
+monitor (function (cont cond) {
+  ;; display* "non-existent monitor condition:" (struct-type-name cond)
+  test (i/o-no-such-file-error? cond) #t
+  if cont {
+    if (i/o-no-such-file-error? cond) {
+      filename := condition-ref cond 'filename
+
+      ;; we could simply touch(1) the file...
+      ofh := open-output-file filename
+      close-handle ofh
+
+      open-input-file filename
+    } (error "non-existent: unexpected condition" cond)
+  } (error "non-existent: unexpected non-continuable error" cond)
+}) {
+  ;; display* "opening non-existent file"
+  if (file-exists? test_filename) (delete-file test_filename)
+
+  ifh := open-input-file test_filename
+  close-handle ifh
+}
+
+
+if (file-exists? test_filename) (delete-file test_filename)

@@ -28,7 +28,8 @@ typedef struct idio_i_array_s {
     IDIO_I *ae;
 } idio_i_array_t;
     
-static int idio_vm_tracing = 1;
+static int idio_vm_tracing = 0;
+static int idio_vm_dis = 0;
 
 /*
  * We don't know is some arbitrary code is going to set a global value
@@ -276,7 +277,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
     IDIO_ASSERT (m);
     IDIO_TYPE_ASSERT (pair, m);
 
-    /* idio_debug ("compile: %s\n", m); */
+    /* idio_debug ("compile: %s\n", m);  */
     
     IDIO mh = IDIO_PAIR_H (m);
     IDIO mt = IDIO_PAIR_T (m);
@@ -284,18 +285,16 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
     if (! IDIO_TYPE_CONSTANTP (mh)) {
 	if (idio_isa_pair (mh)) {
 	    /* idio_debug ("compile: is a sequence: %s\n", m); */
-	    size_t n = idio_list_length (m);
-	    fprintf (stderr, "compile: sequence of %zd parts\n", n);
-	    size_t i = 1;
+	    /* size_t n = idio_list_length (m); */
+	    /* fprintf (stderr, "compile: sequence of %zd parts\n", n); */
+	    /* size_t i = 1; */
 	    while (idio_S_nil != m) {
-		fprintf (stderr, "%d %zd/%zd: ", depth, i++, n);
-		idio_debug ("compile:seq: %s\n", IDIO_PAIR_H (m));
+		/* fprintf (stderr, "%d %zd/%zd: ", depth, i++, n); */
+		/* idio_debug ("compile:seq: %s\n", IDIO_PAIR_H (m)); */
 		idio_vm_compile (thr, ia, IDIO_PAIR_H (m), depth + 1);
 		m = IDIO_PAIR_T (m);
 		if (! idio_isa_list (m)) {
-		    char *ms = idio_as_string (m, 1);
-		    idio_error_message ("compile: not a sequence: %s", ms);
-		    free (ms);
+		    idio_error_C ("compile: not a sequence", m);
 		    return;
 		}
 	    }
@@ -1351,22 +1350,17 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	break;
     case IDIO_VM_CODE_PUSH_HANDLER:
 	{
-	    if (! idio_isa_pair (mt) ||
-		idio_list_length (mt) != 0) {
-		idio_error_vm_compile_param_args ("PUSH-HANDLER index");
+	    if (idio_S_nil != mt) {
+		idio_error_vm_compile_param_args ("PUSH-HANDLER");
 		return;
 	    }
 
-	    IDIO index = IDIO_PAIR_H (mt);
-	    
 	    IDIO_IA_PUSH1 (IDIO_A_PUSH_HANDLER);
-	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (index));
 	}
 	break;
     case IDIO_VM_CODE_POP_HANDLER:
 	{
-	    if (! idio_isa_pair (mt) ||
-		idio_list_length (mt) != 0) {
+	    if (idio_S_nil != mt) {
 		idio_error_vm_compile_param_args ("POP-HANDLER");
 		return;
 	    }
@@ -1441,7 +1435,8 @@ IDIO_DEFINE_PRIMITIVE2 ("base-error-handler", base_error_handler, (IDIO cont, ID
     if (continuablep) {
 	fprintf (stderr, "should continue but won't!\n");
     }
-    idio_dump (idio_current_thread (), 10);
+    idio_debug ("THREAD: %s\n", idio_current_thread ());
+    idio_debug ("STACK:  %s\n", IDIO_THREAD_STACK (idio_current_thread ()));
     IDIO_C_ASSERT (0);
     return idio_S_unspec;
 }
@@ -1565,8 +1560,8 @@ void idio_thread_invoke (IDIO thr, IDIO func, int tailp)
     switch (func->type) {
     case IDIO_TYPE_CLOSURE:
 	{
-	    /* fprintf (stderr, "invoke: closure @%zd ", IDIO_CLOSURE_CODE (func)); */
-	    /* idio_debug ("%s\n", IDIO_FRAME_ARGS (IDIO_THREAD_VAL (thr))); */
+	    /* fprintf (stderr, "invoke: tailp=%d closure @%zd ", tailp, IDIO_CLOSURE_CODE (func));  */
+	    /* idio_debug ("%s\n", IDIO_FRAME_ARGS (IDIO_THREAD_VAL (thr)));  */
 
 	    if (0 == tailp) {
 		IDIO_THREAD_STACK_PUSH (IDIO_FIXNUM (IDIO_THREAD_PC (thr)));
@@ -1610,6 +1605,11 @@ void idio_thread_invoke (IDIO thr, IDIO func, int tailp)
 	     * PC ready to run the closure when we return from here)
 	     * *and* we are not in tail position then we push the
 	     * saved pc0 onto the stack.
+	     *
+	     * NB. If you push PC before calling the primitive (with a
+	     * view to popping it off if the PC didn't change) and the
+	     * primitive calls idio_signal_exception then there is an
+	     * extraneous PC on the stack.
 	     */
 	    size_t pc0 = IDIO_THREAD_PC (thr); 
 	    IDIO val = IDIO_THREAD_VAL (thr);
@@ -1691,7 +1691,8 @@ void idio_thread_invoke (IDIO thr, IDIO func, int tailp)
 
 	    if (0 == tailp &&
 		pc != pc0) {
-		/* fprintf (stderr, "invoke: primitive: WARNING: %s set PC %zd: pushing %zd as not in tail position\n", IDIO_PRIMITIVE_NAME (func), pc, pc0); */
+		/* idio_debug ("invoke: primitive: NOTICE: %s changed PC", func); */
+		/* fprintf (stderr, " %zd -> @%zd: pushing PC\n", pc0, pc); */
 		IDIO_THREAD_STACK_PUSH (IDIO_FIXNUM (pc0));
 	    }
 	    
@@ -1749,6 +1750,30 @@ static idio_ai_t idio_vm_next_mark (IDIO thr, IDIO mark)
 
 	sp--;
     }
+}
+
+static void idio_vm_preserve_environment (IDIO thr)
+{
+    IDIO_ASSERT (thr);
+    IDIO_TYPE_ASSERT (thread, thr);
+
+    IDIO_THREAD_STACK_PUSH (IDIO_THREAD_DYNAMICS (thr));
+    IDIO_THREAD_STACK_PUSH (IDIO_THREAD_HANDLERSP (thr));
+    IDIO_THREAD_STACK_PUSH (IDIO_THREAD_ENV (thr));
+}
+
+static void idio_vm_restore_environment (IDIO thr)
+{
+    IDIO_ASSERT (thr);
+    IDIO_TYPE_ASSERT (thread, thr);
+
+    IDIO_THREAD_ENV (thr) = IDIO_THREAD_STACK_POP ();
+    IDIO_THREAD_HANDLERSP (thr) = IDIO_THREAD_STACK_POP ();
+    IDIO_THREAD_DYNAMICS (thr) = IDIO_THREAD_STACK_POP ();
+    if (idio_S_nil != IDIO_THREAD_ENV (thr)) {
+	IDIO_TYPE_ASSERT (frame, IDIO_THREAD_ENV (thr));
+    }
+    IDIO_C_ASSERT (IDIO_FIXNUM_VAL (IDIO_THREAD_HANDLERSP (thr)) < 100);
 }
 
 static void idio_vm_push_dynamic (idio_ai_t index, IDIO thr, IDIO val)
@@ -1809,13 +1834,12 @@ static void idio_vm_push_handler (IDIO thr, IDIO val)
     IDIO_ASSERT (val);
     IDIO_TYPE_ASSERT (thread, thr);
 
-    idio_ai_t next = idio_vm_next_mark (thr, idio_vm_handler_mark);
-
     IDIO stack = IDIO_THREAD_STACK (thr);
 
-    idio_array_push (stack, IDIO_FIXNUM (next));
+    idio_array_push (stack, IDIO_THREAD_HANDLERSP (thr));
+    IDIO_THREAD_HANDLERSP (thr) = IDIO_FIXNUM (idio_array_size (stack));
+    IDIO_C_ASSERT (IDIO_FIXNUM_VAL (IDIO_THREAD_HANDLERSP (thr)) < 100);
     idio_array_push (stack, val);
-    idio_array_push (stack, idio_vm_handler_mark);
 }
 
 static void idio_vm_pop_handler (IDIO thr)
@@ -1824,59 +1848,78 @@ static void idio_vm_pop_handler (IDIO thr)
     IDIO_TYPE_ASSERT (thread, thr);
 
     IDIO stack = IDIO_THREAD_STACK (thr);
-
+    
     idio_array_pop (stack);
-    idio_array_pop (stack);
-    idio_array_pop (stack);
+    IDIO_THREAD_HANDLERSP (thr) = idio_array_pop (stack);
+    IDIO_C_ASSERT (IDIO_FIXNUM_VAL (IDIO_THREAD_HANDLERSP (thr)) < 100);
 }
 
-void idio_signal_exception (int continuablep, IDIO e)
+IDIO idio_signal_exception (IDIO continuablep, IDIO e)
 {
+    IDIO_ASSERT (continuablep);
     IDIO_ASSERT (e);
+    IDIO_TYPE_ASSERT (boolean, continuablep);
 
-    /* fprintf (stderr, "signal-exception: %d", continuablep); */
-    /* idio_debug (" %s\n", e); */
-    
+    /* idio_debug ("\n\nsignal-exception: %s", continuablep);  */
+    /* idio_debug (" %s\n", e);  */
+
     IDIO thr = idio_current_thread ();
     IDIO stack = IDIO_THREAD_STACK (thr);
+    idio_ai_t handlersp = IDIO_FIXNUM_VAL (IDIO_THREAD_HANDLERSP (thr));
+    IDIO handler = idio_array_get_index (stack, handlersp);
 
-    idio_ai_t next = idio_vm_next_mark (thr, idio_vm_handler_mark);
-
-    if (next < 1) {
-	fprintf (stderr, "idio_signal_exception: next = %zd\n", next);
-	idio_dump (thr, 1);
-	idio_dump (stack, 1);
-	IDIO_C_ASSERT (0);
-	next = 1;
-    }
-    IDIO vs = idio_frame (idio_S_nil, IDIO_LIST2 (IDIO_FIXNUM ((intptr_t) continuablep), e));
-
+    IDIO vs = idio_frame (idio_S_nil, IDIO_LIST2 (continuablep, e));
     IDIO_THREAD_VAL (thr) = vs;
-    idio_array_push (stack, IDIO_FIXNUM (IDIO_THREAD_PC (thr)));
-    idio_array_push (stack, IDIO_THREAD_ENV (thr)); /* PRESERVE-ENV */
 
-    /*
-     * have this handler run using the next handler as a safety net
-     *
-     * next is the sp to the current exception handler, next-1 is sp
-     * for the next exception handler
-     */
-    IDIO spn = idio_array_get_index (stack, next - 1);
-    idio_vm_push_handler (thr, idio_array_get_index (stack, IDIO_FIXNUM_VAL (spn)));
-
-    if (continuablep) {
+    if (idio_S_true == continuablep) {
+	idio_array_push (stack, IDIO_FIXNUM (IDIO_THREAD_PC (thr)));
+	idio_vm_preserve_environment (thr);
 	idio_array_push (stack, IDIO_FIXNUM (idio_finish_pc + 1)); /* POP-HANDLER, RESTORE-ENV, RETURN */
     } else {
 	idio_array_push (stack, IDIO_FIXNUM (idio_finish_pc - 1)); /* NON-CONT-ERR */
     }
 
-    /* idio_debug ("THREAD=%s\n", thr); */
-    /* idio_debug ("STACK=%s\n", IDIO_THREAD_STACK (thr)); */
+    /*
+     * have this handler run using the next handler as its safety net
+     */
+    IDIO_THREAD_HANDLERSP (thr) = idio_array_get_index (stack, handlersp - 1);
+    IDIO_C_ASSERT (IDIO_FIXNUM_VAL (IDIO_THREAD_HANDLERSP (thr)) < 100);
 
-    /* idio_debug ("invoking handler %s\n", idio_array_get_index (stack, next)); */
-    
     /* God speed! */
-    idio_thread_invoke (thr, idio_array_get_index (stack, next), 1);
+    idio_thread_invoke (thr, handler, 1);
+
+    /*
+     * Actually, for a user-defined error handler, which will be a
+     * closure, idio_thread_invoke did nothing much, the error
+     * handling closure will only be run when we continue looping
+     * around idio_vm_run1.
+     *
+     * Wait, though, consider how we've got to here.  Some
+     * (user-level) code called a C primitive which stumbled over an
+     * erroneous condition.  That C code called us,
+     * idio_signal_exception.
+     *
+     * Whilst we are ready to process the OOB exception handler in
+     * Idio-land, the C language part of us still thinks we've in a
+     * regular function call tree from the point of origin of the
+     * error, ie. we still have a trail of C language frames back
+     * through the caller (of idio_signal_exception) -- and, in turn,
+     * back up through to idio_vm_run1.  We need to make that trail
+     * disappear otherwise either we'll accidentally return() back
+     * down that C stack (erroneously) or, after enough
+     * idio_signal_exception()s, we'll blow up the C stack.
+     *
+     * That means longjmp(3).
+     *
+     * XXX longjmp means that we won't be free()ing any memory
+     * allocated during the life of that C stack.  Unless we think of
+     * something clever...
+     */
+    longjmp (IDIO_THREAD_JMP_BUF (thr), IDIO_VM_LONGJMP_SIGNAL_EXCEPTION);
+
+    /* not reached */
+    IDIO_C_ASSERT (0);
+    return idio_S_unspec;
 }
 
 IDIO idio_apply (IDIO fn, IDIO args)
@@ -1950,7 +1993,7 @@ IDIO_DEFINE_PRIMITIVE1V ("apply", apply, (IDIO fn, IDIO args))
     return idio_apply (fn, args);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("vm-trace", vm_trace, (IDIO trace))
+IDIO_DEFINE_PRIMITIVE1 ("%%vm-trace", vm_trace, (IDIO trace))
 {
     IDIO_ASSERT (trace);
 
@@ -1961,7 +2004,18 @@ IDIO_DEFINE_PRIMITIVE1 ("vm-trace", vm_trace, (IDIO trace))
     return idio_S_unspec;
 }
 
-#define IDIO_VM_RUN_DIS(...)	if (dis) { fprintf (stderr, __VA_ARGS__); }
+IDIO_DEFINE_PRIMITIVE1 ("%%vm-dis", vm_dis, (IDIO dis))
+{
+    IDIO_ASSERT (dis);
+
+    IDIO_VERIFY_PARAM_TYPE (fixnum, dis);
+
+    idio_vm_dis = IDIO_FIXNUM_VAL (dis);
+    
+    return idio_S_unspec;
+}
+
+#define IDIO_VM_RUN_DIS(...)	if (idio_vm_dis) { fprintf (stderr, __VA_ARGS__); }
 
 static void idio_vm_function_trace (IDIO_I ins, IDIO thr)
 {
@@ -2045,7 +2099,7 @@ static void idio_vm_primitive_result_trace (IDIO thr)
     idio_debug ("=> %s\n", val);
 }
 
-int idio_vm_run1 (IDIO thr, int dis)
+int idio_vm_run1 (IDIO thr)
 {
     IDIO_ASSERT (thr);
     IDIO_TYPE_ASSERT (thread, thr);
@@ -2351,16 +2405,13 @@ int idio_vm_run1 (IDIO thr, int dis)
     case IDIO_A_PRESERVE_ENV:
 	{
 	    IDIO_VM_RUN_DIS ("PRESERVE-ENV");
-	    IDIO_THREAD_STACK_PUSH (IDIO_THREAD_ENV (thr));
+	    idio_vm_preserve_environment (thr);
 	}
 	break;
     case IDIO_A_RESTORE_ENV:
 	{
 	    IDIO_VM_RUN_DIS ("RESTORE-ENV");
-	    IDIO_THREAD_ENV (thr) = IDIO_THREAD_STACK_POP ();
-	    if (idio_S_nil != IDIO_THREAD_ENV (thr)) {
-		IDIO_TYPE_ASSERT (frame, IDIO_THREAD_ENV (thr));
-	    }
+	    idio_vm_restore_environment (thr);
 	}
 	break;
     case IDIO_A_POP_FUNCTION:
@@ -3125,7 +3176,7 @@ int idio_vm_run1 (IDIO thr, int dis)
     case IDIO_A_NON_CONT_ERR:
 	{
 	    IDIO_VM_RUN_DIS ("NON-CONT-ERROR\n");
-	    idio_signal_exception (0, IDIO_LIST1 (idio_string_C ("non-cont-error")));
+	    idio_signal_exception (idio_S_false, idio_struct_instance (idio_condition_idio_error_type, IDIO_LIST3 (idio_string_C ("non-cont-error"), idio_S_nil, idio_S_nil)));
 	}
 	break;
     case IDIO_A_EXPANDER:
@@ -3164,7 +3215,7 @@ int idio_vm_run1 (IDIO thr, int dis)
     }
 
     IDIO_VM_RUN_DIS ("\n");
-    if (dis) {
+    if (idio_vm_dis) {
 	idio_debug ("vm-run1: after: %s\n", thr); 
     }
     return 1;
@@ -3180,9 +3231,16 @@ void idio_vm_thread_init (IDIO thr)
      * handler is itself (sp+1)
      */
     idio_ai_t sp = idio_array_size (IDIO_THREAD_STACK (thr));
-    IDIO_THREAD_STACK_PUSH (IDIO_FIXNUM (sp + 1));
-    IDIO_THREAD_STACK_PUSH (idio_vm_base_error_handler_primdata);
-    IDIO_THREAD_STACK_PUSH (idio_vm_handler_mark);
+    idio_ai_t hsp = IDIO_FIXNUM_VAL (IDIO_THREAD_HANDLERSP (thr));
+    IDIO_C_ASSERT (hsp <= sp);
+
+    if (0 == hsp) {
+	IDIO_THREAD_STACK_PUSH (IDIO_FIXNUM (sp + 1));
+	IDIO_THREAD_STACK_PUSH (idio_vm_base_error_handler_primdata);
+	IDIO_THREAD_HANDLERSP (thr) = IDIO_FIXNUM (sp + 1);
+	IDIO_C_ASSERT (IDIO_FIXNUM_VAL (IDIO_THREAD_HANDLERSP (thr)) < 100);
+	/* IDIO_THREAD_STACK_PUSH (idio_vm_handler_mark); */
+    }
 }
 
 void idio_vm_default_pc (IDIO thr)
@@ -3226,9 +3284,21 @@ IDIO idio_vm_run (IDIO thr, int run_gc)
 
     idio_vm_tracing = 0;
 
+    int sjv = setjmp (IDIO_THREAD_JMP_BUF (thr));
+
+    switch (sjv) {
+    case 0:
+	break;
+    case IDIO_VM_LONGJMP_SIGNAL_EXCEPTION:
+	break;
+    default:
+	fprintf (stderr, "setjmp: unexpected value: %d\n", sjv);
+	break;
+    }
+
     int loops = 0;
     for (;;) {
-	if (idio_vm_run1 (thr, 0)) {
+	if (idio_vm_run1 (thr)) {
 	    sleep (0);
 	    if (loops++ > 100) {
 		idio_gc_possibly_collect ();
@@ -3276,7 +3346,7 @@ IDIO idio_vm_run (IDIO thr, int run_gc)
     }
 
     /* fprintf (stderr, "vm-run: pop-handler\n"); */
-    idio_vm_pop_handler (thr);
+    /* idio_vm_pop_handler (thr); */
 
     if (run_gc) {
 	idio_gc_collect ();
@@ -3429,6 +3499,7 @@ void idio_vm_add_primitives ()
 {
     IDIO_ADD_SPECIAL_PRIMITIVE (apply);
     IDIO_ADD_SPECIAL_PRIMITIVE (vm_trace);
+    IDIO_ADD_SPECIAL_PRIMITIVE (vm_dis);
 }
 
 void idio_final_vm ()

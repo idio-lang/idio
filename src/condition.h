@@ -23,6 +23,24 @@
 #ifndef CONDITION_H
 #define CONDITION_H
 
+extern IDIO idio_condition_root_type;
+extern IDIO idio_condition_message_type;
+extern IDIO idio_condition_error_type;
+extern IDIO idio_condition_io_error_type;
+extern IDIO idio_condition_io_handle_error_type;
+extern IDIO idio_condition_io_read_error_type;
+extern IDIO idio_condition_io_write_error_type;
+extern IDIO idio_condition_io_closed_error_type;
+extern IDIO idio_condition_io_filename_error_type;
+extern IDIO idio_condition_io_malformed_filename_error_type;
+extern IDIO idio_condition_io_file_protection_error_type;
+extern IDIO idio_condition_io_file_is_read_only_error_type;
+extern IDIO idio_condition_io_file_already_exists_error_type;
+extern IDIO idio_condition_io_no_such_file_error_type;
+extern IDIO idio_condition_read_error_type;
+extern IDIO idio_condition_idio_error_type;
+extern IDIO idio_condition_system_error_type;
+
 int idio_isa_condition_type (IDIO o);
 int idio_isa_condition (IDIO o);
 

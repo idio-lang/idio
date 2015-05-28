@@ -439,6 +439,8 @@ void idio_process_grey (unsigned colour)
 	idio_mark (IDIO_THREAD_STACK (o), colour);
 	idio_mark (IDIO_THREAD_VAL (o), colour);
 	idio_mark (IDIO_THREAD_ENV (o), colour);
+	idio_mark (IDIO_THREAD_HANDLERSP (o), colour);
+	idio_mark (IDIO_THREAD_DYNAMICS (o), colour);
 	idio_mark (IDIO_THREAD_FUNC (o), colour);
 	idio_mark (IDIO_THREAD_REG1 (o), colour);
 	idio_mark (IDIO_THREAD_REG2 (o), colour);
@@ -702,6 +704,7 @@ void idio_gc_expose (IDIO o)
 
     if (0 == seen) {
 	fprintf (stderr, "idio_gc_expose: o %10p not previously protected\n", o);
+	idio_debug ("o = %s\n", o);
 	r = idio_gc->roots;
 	while (r) {
 	    fprintf (stderr, "idio_gc_expose: currently protected: %10p %s\n", r->object, idio_type2string (r->object));

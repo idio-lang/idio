@@ -34,7 +34,7 @@ IDIO idio_error_string (char *format, va_list argp)
 {
     char *s;
     if (-1 == vasprintf (&s, format, argp)) {
-	idio_signal_exception (0, IDIO_LIST1 (idio_string_C ("idio-error-message: vasprintf")));
+	idio_signal_exception (idio_S_false, IDIO_LIST1 (idio_string_C ("idio-error-message: vasprintf")));
     }
 
     IDIO sh = idio_open_output_string_handle_C ();
@@ -52,7 +52,8 @@ void idio_error_message (char *format, ...)
     va_end (fmt_args);
 
     IDIO c = idio_condition_idio_error (msg, idio_S_internal, idio_S_nil);
-    idio_signal_exception (0, c);
+    idio_signal_exception (idio_S_false, c);
+    idio_debug ("error-message: condition %s\n", c);
     IDIO_C_ASSERT (0);
 }
 
@@ -123,7 +124,7 @@ IDIO idio_error (IDIO who, IDIO msg, IDIO args)
     IDIO c = idio_condition_idio_error (idio_get_output_string (sh),
 					who,
 					idio_S_nil);
-    idio_signal_exception (0, c);
+    idio_signal_exception (idio_S_false, c);
 
     fprintf (stderr, "primitive-error: return from signal exception: XXX abort!\n");
     idio_vm_abort_thread (idio_current_thread ());

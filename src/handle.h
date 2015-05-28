@@ -23,6 +23,13 @@
 #ifndef HANDLE_H
 #define HANDLE_H
 
+IDIO idio_error_read_handle (IDIO h);
+IDIO idio_error_read_handle_C (char *name);
+IDIO idio_error_write_handle (IDIO h);
+IDIO idio_error_write_handle_C (char *name);
+IDIO idio_error_closed_handle (IDIO h);
+IDIO idio_error_closed_handle_C (char *name);
+
 IDIO idio_handle ();
 int idio_isa_handle (IDIO d);
 void idio_free_handle (IDIO d);

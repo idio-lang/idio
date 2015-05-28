@@ -86,11 +86,6 @@ IDIO idio_invoke_command (IDIO func, IDIO thr, char *pathname)
     }
     argv[i++] = NULL;
 
-    /* int j; */
-    /* for (j = 0; j < i; j++) { */
-    /* 	fprintf (stderr, "argv[%d] = %s\n", j, argv[j]); */
-    /* } */
-
     pid_t cpid;
     cpid = fork ();
     if (-1 == cpid) {
@@ -103,6 +98,12 @@ IDIO idio_invoke_command (IDIO func, IDIO thr, char *pathname)
 	perror ("execv");
 	exit (1);
     }
+
+    int j; 
+    for (j = 0; j < i; j++) { 
+    	free (argv[j]); 
+    }
+    free (argv);
 
     IDIO fn_cpid = IDIO_FIXNUM ((intptr_t) cpid);
     IDIO cstate = idio_struct_instance (idio_command_status_type,

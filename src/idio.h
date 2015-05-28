@@ -55,6 +55,8 @@
 #include <sys/time.h>
 #include <sys/wait.h>
 
+#include <setjmp.h>
+
 #ifdef assert
 
 #define IDIO_C_ASSERT(x)	(assert (x))

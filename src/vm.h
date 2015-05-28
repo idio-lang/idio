@@ -278,7 +278,7 @@ idio_ai_t idio_vm_extend_dynamics (IDIO v);
 IDIO idio_vm_dynamics_ref (idio_ai_t i);
 void idio_vm_abort_thread (IDIO thr);
 
-void idio_signal_exception (int continuablep, IDIO e);
+IDIO idio_signal_exception (IDIO continuablep, IDIO e);
 IDIO idio_apply (IDIO fn, IDIO args);
 
 void idio_vm_thread_init (IDIO thr);

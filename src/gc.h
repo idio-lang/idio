@@ -362,6 +362,11 @@ typedef struct idio_thread_s {
     struct idio_s *val;
     struct idio_s *env;
 
+    struct idio_s *handlersp;	/* SP to current handler; SP-1 is SP of next handler */
+    jmp_buf jmp_buf;		/* lets us clear the C-stack too */
+
+    struct idio_s *dynamics;
+
     struct idio_s *func;
     struct idio_s *reg1;
     struct idio_s *reg2;
@@ -378,6 +383,9 @@ typedef struct idio_thread_s {
 #define IDIO_THREAD_STACK(T)          ((T)->u.thread->stack)
 #define IDIO_THREAD_VAL(T)            ((T)->u.thread->val)
 #define IDIO_THREAD_ENV(T)            ((T)->u.thread->env)
+#define IDIO_THREAD_HANDLERSP(T)      ((T)->u.thread->handlersp)
+#define IDIO_THREAD_JMP_BUF(T)        ((T)->u.thread->jmp_buf)
+#define IDIO_THREAD_DYNAMICS(T)       ((T)->u.thread->dynamics)
 #define IDIO_THREAD_FUNC(T)           ((T)->u.thread->func)
 #define IDIO_THREAD_REG1(T)           ((T)->u.thread->reg1)
 #define IDIO_THREAD_REG2(T)           ((T)->u.thread->reg2)
@@ -386,6 +394,8 @@ typedef struct idio_thread_s {
 #define IDIO_THREAD_ERROR_HANDLE(T)   ((T)->u.thread->error_handle)
 #define IDIO_THREAD_MODULE(T)	      ((T)->u.thread->module)
 #define IDIO_THREAD_FLAGS(T)          ((T)->tflags)
+
+#define IDIO_VM_LONGJMP_SIGNAL_EXCEPTION 1
 
 typedef struct idio_C_pointer_s {
     void *p;

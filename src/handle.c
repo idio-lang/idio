@@ -22,6 +22,60 @@
 
 #include "idio.h"
 
+IDIO idio_error_read_handle (IDIO h)
+{
+    IDIO sh = idio_open_output_string_handle_C ();
+    idio_display_C ("handle name '", sh);
+    idio_display_C (IDIO_HANDLE_NAME (h), sh);
+    idio_display_C ("' read error", sh);
+    IDIO c = idio_struct_instance (idio_condition_io_read_error_type, IDIO_LIST4 (idio_get_output_string (sh),
+										  idio_S_nil,
+										  idio_S_nil,
+										  idio_string_C (IDIO_HANDLE_NAME (h))));
+    return idio_signal_exception (idio_S_true, c);
+}
+
+IDIO idio_error_read_handle_C (char *name)
+{
+    return idio_error_read_handle (idio_string_C (name));
+}
+
+IDIO idio_error_write_handle (IDIO h)
+{
+    IDIO sh = idio_open_output_string_handle_C ();
+    idio_display_C ("handle name '", sh);
+    idio_display_C (IDIO_HANDLE_NAME (h), sh);
+    idio_display_C ("' write error", sh);
+    IDIO c = idio_struct_instance (idio_condition_io_write_error_type, IDIO_LIST4 (idio_get_output_string (sh),
+										   idio_S_nil,
+										   idio_S_nil,
+										   idio_string_C (IDIO_HANDLE_NAME (h))));
+    return idio_signal_exception (idio_S_true, c);
+}
+
+IDIO idio_error_write_handle_C (char *name)
+{
+    return idio_error_write_handle (idio_string_C (name));
+}
+
+IDIO idio_error_closed_handle (IDIO h)
+{
+    IDIO sh = idio_open_output_string_handle_C ();
+    idio_display_C ("handle name '", sh);
+    idio_display_C (IDIO_HANDLE_NAME (h), sh);
+    idio_display_C ("' already closed", sh);
+    IDIO c = idio_struct_instance (idio_condition_io_closed_error_type, IDIO_LIST4 (idio_get_output_string (sh),
+										    idio_S_nil,
+										    idio_S_nil,
+										    idio_string_C (IDIO_HANDLE_NAME (h))));
+    return idio_signal_exception (idio_S_true, c);
+}
+
+IDIO idio_error_closed_handle_C (char *name)
+{
+    return idio_error_closed_handle (idio_string_C (name));
+}
+
 /*
  * lookahead char: getc(3) returns an "(int) unsigned char" or EOF
  * therefore a safe value for "there is no lookahead char available"
@@ -125,6 +179,20 @@ static void idio_error_bad_handle (IDIO h)
     IDIO_ASSERT (h);
 
     idio_error_param_type ("handle", h);
+}
+
+static void idio_error_bad_input_handle (IDIO h)
+{
+    IDIO_ASSERT (h);
+
+    idio_error_param_type ("input handle", h);
+}
+
+static void idio_error_bad_output_handle (IDIO h)
+{
+    IDIO_ASSERT (h);
+
+    idio_error_param_type ("output handle", h);
 }
 
 /*
@@ -598,7 +666,7 @@ IDIO idio_handle_or_current (IDIO h, unsigned mode)
 	    return idio_current_input_handle ();
 	} else {
 	    if (! IDIO_HANDLE_INPUTP (h)) {
-		idio_error_bad_handle (h);
+		idio_error_read_handle (h);
 	    } else {
 		return h;
 	    }
@@ -609,7 +677,7 @@ IDIO idio_handle_or_current (IDIO h, unsigned mode)
 	    return idio_current_output_handle ();
 	} else {
 	    if (! IDIO_HANDLE_OUTPUTP (h)) {
-		idio_error_bad_handle (h);
+		idio_error_write_handle (h);
 	    } else {
 		return h;
 	    }

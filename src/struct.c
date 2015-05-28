@@ -386,9 +386,9 @@ IDIO idio_struct_instance_set (IDIO si, IDIO field, IDIO v)
     idio_ai_t i = idio_array_find_eqp (IDIO_STRUCT_TYPE_FIELDS (st), field, 0);
 
     if (-1 == i) {
-	idio_debug ("sis!: %s", st);
-	idio_debug (": %s", si);
-	idio_debug (": %s\n", field);
+	idio_debug ("sis!: %s\n", st);
+	idio_debug ("%s\n", si);
+	idio_debug ("%s\n", field);
 	fprintf (stderr, "struct-instance-set: field not found");
 	IDIO_C_ASSERT (0);
     }
