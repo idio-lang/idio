@@ -211,13 +211,38 @@ monitor (function (cont cond) {
   close-handle ifh
 }
 
+;; discovered in s9-test.idio after adding the SRFI-36 conditions:
+monitor (function (cont cond) {
+  ;; display* "closed handle monitor condition:" (struct-type-name cond)
+  test (i/o-closed-error? cond) #t
+  if cont {
+    if (i/o-closed-error? cond) #t (error "closed handle: unexpected condition" cond)
+  } (error "closed handle: unexpected non-continuable error" cond)
+}) {
+  ;; display* "closed handle condition"
+  test {
+    call-with-output-file testfile (function (out) {
+      write '(this is a test) out
+
+      ;; the cause of the error -- call-with-output-file will also
+      ;; call close-output-handle (generating the condition) but we
+      ;; need to close the handle here otherwise call-with-input-file
+      ;; will get #eof
+      close-output-handle out
+      call-with-input-file testfile read
+    })
+  } '(this is a test)
+}
+
+
 ;; ^i/o-filename-error
 ;; 
-;; ie. none of the below.  Let's try ENOTDIR.  Opening
-;; ..../test_filename gets an ^i/o-no-such-file-error so you seem to
-;; need to use an existing non-dir file in the position of a directory
-;; (much like the man page says...).  Here, we'll use test_filename in
-;; a directory component as ./test_filename/test_filename
+;; ie. none of the below.  Let's try ENOTDIR.  Opening a non-existent
+;; directory name, eg.  ..../test_filename, gets an
+;; ^i/o-no-such-file-error so you seem to need to use an existing
+;; non-dir file in the position of a directory (actually, much like
+;; the man page says...).  Here, we'll use test_filename in a
+;; directory component as ./test_filename/test_filename
 monitor (function (cont cond) {
   ;; display* "generic filename monitor condition:" (struct-type-name cond)
   test (i/o-filename-error? cond) #t

@@ -711,6 +711,6 @@ void idio_expr_dump_ (IDIO e, const char *en, int depth);
 #endif
 
 /* Local Variables: */
-/* mode: C/l */
+/* mode: C */
 /* coding: utf-8-unix */
 /* End: */

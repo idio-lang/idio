@@ -3081,13 +3081,47 @@ if (file-exists? testfile) (delete-file testfile)
 ;;            (close-output-handle out)
 ;;            (call-with-input-file testfile read)))
 ;;       '(this is a test))
-test {
-  call-with-output-file testfile (function (out) {
-    write '(this is a test) out
-    close-output-handle out
-    call-with-input-file testfile read
-  })
-} '(this is a test)
+
+;; call-with-output-file with a function containing a
+;; close-output-handle will generate a ^i/o-closed-error when
+;; call-with-output-file calls close-handle itself after the function
+;; has returned.
+
+;; Inside the function, though, there's no way to ensure the write has
+;; been flushed to satisfy the immediately following read -- OK, OK,
+;; there *might* be but we (read: I) don't care enough to figure out a
+;; portable solution.
+
+;; The semantics of the original test suggest we want the read inside
+;; the function of call-with-output-file so we're left requiring to
+;; capture the error outside of call-with-output-file.
+
+;; A later test with call-with-output-file has the read outside of the
+;; call-with-output-file function in which case we can simply comment
+;; out the erroneous close-output-handle inside the function.  Whether
+;; we should have changed the code here or whether we want to satify
+;; the semantics of the original test is moot.
+
+;; Sticking to the original semantics means we do get to play with a
+;; monitor other than in the condition.idio tests.  In this case the
+;; monitor needs only return something (anything, so #t will do) if we
+;; have seen the condition we were expecting under these
+;; circumstances.  Any other condition should blow up as you would
+;; expect.
+
+monitor (function (cont cond) {
+  if cont {
+    if (i/o-closed-error? cond) #t (error "expecting ^i/o-closed-error" cond)
+  } (error "expecting a continuable error" cond)
+}) {
+  test {
+    call-with-output-file testfile (function (out) {
+      write '(this is a test) out
+      close-output-handle out
+      call-with-input-file testfile read
+    })
+  } '(this is a test)
+}
 
 delete-file testfile
 
@@ -3209,10 +3243,19 @@ delete-file testfile
 ;;                              (close-output-handle out)))
 ;;              (call-with-input-file testfile read-char))
 ;;       #\newline)
+
+;; call-with-output-file containing a close-output-handle will
+;; generate a ^i/o-closed-error when call-with-output-file calls
+;; close-handle itself.  Unlike the previous call-with-output-file,
+;; the original test has the read outside the body of the
+;; call-with-output-file so we're don't require to capture the error
+;; and can simply comment out the erroneous close-output-handle
+;; instead.
+
 test {
   call-with-output-file testfile (function (out) {
     newline out
-    close-output-handle out
+    ;;close-output-handle out
   })
   call-with-input-file testfile read-char
 } #\newline

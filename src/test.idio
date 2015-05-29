@@ -45,12 +45,12 @@ define-macro (test form result) {
 
 display* "This is test.idio"
 
-;load "tests/s9-test.idio"
-;load "tests/file-handle.idio"
-;load "tests/string-handle.idio"
-;load "tests/handle.idio"
-;load "tests/struct.idio"
-;load "tests/condition.idio"
+load "tests/s9-test.idio"
+load "tests/file-handle.idio"
+load "tests/string-handle.idio"
+load "tests/handle.idio"
+load "tests/struct.idio"
+load "tests/condition.idio"
 load "tests/dynamic.idio"
 
 if+ (zero? Errors) (display* "All" Tests "tests passed!") \
