@@ -345,9 +345,9 @@ IDIO_DEFINE_PRIMITIVE0 ("all-modules", all_modules, ())
 }
 
 /*
-  idio_symbol_lookup will chase down the exports of imported modules
+  idio_module_symbol_lookup will chase down the exports of imported modules
  */
-IDIO idio_symbol_lookup_imports (IDIO symbol, IDIO module)
+IDIO idio_module_symbol_lookup_imports (IDIO symbol, IDIO module)
 {
     IDIO_ASSERT (symbol);
     IDIO_ASSERT (module);
@@ -367,7 +367,7 @@ IDIO idio_symbol_lookup_imports (IDIO symbol, IDIO module)
 
     IDIO imports = IDIO_MODULE_IMPORTS (module);
     for (; idio_S_nil != imports; imports = IDIO_PAIR_T (imports)) {
-	sv = idio_symbol_lookup_imports (symbol, IDIO_PAIR_H (imports));
+	sv = idio_module_symbol_lookup_imports (symbol, IDIO_PAIR_H (imports));
 	if (idio_S_unspec != sv) {
 	    return sv;
 	}
@@ -376,7 +376,7 @@ IDIO idio_symbol_lookup_imports (IDIO symbol, IDIO module)
     return idio_S_unspec;
 }
 
-IDIO idio_symbol_lookup (IDIO symbol, IDIO m_or_n)
+IDIO idio_module_symbol_lookup (IDIO symbol, IDIO m_or_n)
 {
     IDIO_ASSERT (symbol);
     IDIO_ASSERT (m_or_n);
@@ -403,7 +403,7 @@ IDIO idio_symbol_lookup (IDIO symbol, IDIO m_or_n)
     if (idio_S_unspec == sv) {
 	IDIO imports = IDIO_MODULE_IMPORTS (module);
 	for (; idio_S_nil != imports; imports = IDIO_PAIR_T (imports)) {
-	    sv = idio_symbol_lookup_imports (symbol, IDIO_PAIR_H (imports));
+	    sv = idio_module_symbol_lookup_imports (symbol, IDIO_PAIR_H (imports));
 
 	    if (idio_S_unspec != sv) {
 		return sv;

@@ -37,6 +37,7 @@ IDIO idio_S_cdr;
 IDIO idio_S_class;
 IDIO idio_S_colon_eq;
 IDIO idio_S_colon_plus;
+IDIO idio_S_colon_star;
 IDIO idio_S_cond;
 IDIO idio_S_cons;
 IDIO idio_S_define;
@@ -240,6 +241,7 @@ void idio_init_symbol ()
     idio_S_class = idio_symbols_C_intern ("class");
     idio_S_colon_eq = idio_symbols_C_intern (":=");
     idio_S_colon_plus = idio_symbols_C_intern (":+");
+    idio_S_colon_star = idio_symbols_C_intern (":*");
     idio_S_cond = idio_symbols_C_intern ("cond");
     idio_S_cons = idio_symbols_C_intern ("cons");
     idio_S_define = idio_symbols_C_intern ("define");

@@ -36,6 +36,7 @@ extern IDIO idio_S_c_struct;
 extern IDIO idio_S_class;
 extern IDIO idio_S_colon_eq;
 extern IDIO idio_S_colon_plus;
+extern IDIO idio_S_colon_star;
 extern IDIO idio_S_cond;
 extern IDIO idio_S_cons;
 extern IDIO idio_S_define;

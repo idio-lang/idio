@@ -32,8 +32,16 @@
  * a fast index into a table of values for execution.
 
  * For module-level ("global") variables we can keep track of names we
- * have seen a definition for and the names we have seen used in the
- * body of code and produce a report on the difference.
+ * have seen a definition for and, separately, the names we have seen
+ * used in the body of code and produce a report on the difference.
+
+ *   At least a report on the difference would be a good idea in a
+ *   pure programming language.  One of our aims is to be a shell
+ *   where someone can invoke an arbitrarily named command, eg. "ls"
+ *   which we will not have seen a definition for.
+
+ * And just to keep us on our toes we need to be aware of dynamic and
+ * environment variables.
 
  * The order of lookup is:
 
@@ -52,8 +60,8 @@
  * 2. in symbols of the current module
 
  *    In the text these are denoted as toplevel names and are denoted
- *    as (idio_S_toplevel i) where i is an index into the VM's table
- *    of known symbols.
+ *    as (kind i) where kind can be idio_S_toplevel and i is an index
+ *    into the module's table of known symbols.
 
  *    There is a subtlety between referencing a variable and setting
  *    it.  You can reference a variable that is in the exported list
@@ -76,6 +84,10 @@ static IDIO idio_predef_values = idio_S_nil;
 
 static IDIO idio_toplevel_names = idio_S_nil;
 static IDIO idio_dynamic_names = idio_S_nil;
+
+#define IDIO_TOPLEVEL_REGULAR_NAME	0
+#define IDIO_TOPLEVEL_DYNAMIC_NAME	1
+#define IDIO_TOPLEVEL_ENVIRON_NAME	2
 
 /*
  * Expanders (aka macros) live in their own little world...
@@ -200,7 +212,7 @@ static IDIO idio_predef_extend (IDIO name, IDIO primdata)
     IDIO_PAIR_H (idio_predef_names) = idio_pair (IDIO_LIST3 (name, idio_S_predef, i),
 						 IDIO_PAIR_H (idio_predef_names));
 
-    /* for idio_symbol_lookup etc. */
+    /* for idio_module_symbol_lookup etc. */
     idio_module_primitive_set_symbol_value (name, primdata);
 
     return i;
@@ -271,7 +283,7 @@ static IDIO idio_variable_toplevelp (IDIO names, IDIO name)
     return idio_S_nil;
 }
 
-static IDIO idio_toplevel_extend (IDIO name)
+static IDIO idio_toplevel_extend (IDIO name, int variant)
 {
     IDIO_ASSERT (name);
     IDIO_TYPE_ASSERT (symbol, name);
@@ -279,10 +291,25 @@ static IDIO idio_toplevel_extend (IDIO name)
     idio_ai_t index = idio_vm_extend_symbols (name);
     IDIO i = IDIO_FIXNUM (index);
     
-    IDIO_PAIR_H (idio_toplevel_names) = idio_pair (IDIO_LIST3 (name, idio_S_toplevel, i),
-						       IDIO_PAIR_H (idio_toplevel_names));
+    IDIO kind;
+    IDIO names;
+    switch (variant) {
+    case IDIO_TOPLEVEL_REGULAR_NAME:
+	kind = idio_S_toplevel;
+	names = idio_toplevel_names;
+	break;
+    case IDIO_TOPLEVEL_DYNAMIC_NAME:
+	kind = idio_S_dynamic;
+	names = idio_dynamic_names;
+    default:
+	idio_error_message ("unexpected toplevel variant %d", variant);
+	return idio_S_unspec;
+    }
+    
+    IDIO_PAIR_H (names) = idio_pair (IDIO_LIST3 (name, kind, i),
+				     IDIO_PAIR_H (names));
 
-    IDIO cv = idio_symbol_lookup (name, idio_current_module ());
+    IDIO cv = idio_module_symbol_lookup (name, idio_current_module ());
     if (idio_S_unspec == cv) {
 	idio_module_current_set_symbol_value (name, idio_S_undef);
     }
@@ -309,11 +336,11 @@ static IDIO idio_dynamic_extend (IDIO name)
     IDIO_ASSERT (name);
     IDIO_TYPE_ASSERT (symbol, name);
 
-    idio_ai_t index = idio_vm_extend_symbols (name);
+    idio_ai_t index = idio_vm_extend_dynamics (name);
     IDIO i = IDIO_FIXNUM (index);
     
     IDIO_PAIR_H (idio_dynamic_names) = idio_pair (IDIO_LIST3 (name, idio_S_dynamic, i),
-						      IDIO_PAIR_H (idio_dynamic_names));
+						  IDIO_PAIR_H (idio_dynamic_names));
 
     return i;
 }
@@ -405,7 +432,7 @@ static IDIO idio_variable_kind (IDIO nametree, IDIO name)
 		 * primitive therefore we should (eventually) see a
 		 * definition for it
 		 */
-		idio_toplevel_extend (name);
+		idio_toplevel_extend (name, IDIO_TOPLEVEL_REGULAR_NAME);
 		r = idio_variable_toplevelp (IDIO_PAIR_H (idio_toplevel_names), name);
 	    }
 	}
@@ -505,7 +532,7 @@ static IDIO idio_expanderp (IDIO name)
 	IDIO v = IDIO_PAIR_T (assq);
 	if (idio_isa_pair (v)) {
 	    /* idio_debug ("expander?: %s isa PAIR\n", name); */
-	    IDIO lv = idio_symbol_lookup (name, idio_current_module ());
+	    IDIO lv = idio_module_symbol_lookup (name, idio_current_module ());
 	    /* idio_debug ("expander?: lookup -> %s\n", lv); */
 	    if (idio_isa_primitive (lv) ||
 		idio_isa_closure (lv)) {
@@ -816,7 +843,7 @@ static IDIO idio_operatorp (IDIO name)
 	IDIO v = IDIO_PAIR_T (assq);
 	if (idio_isa_pair (v)) {
 	    /* idio_debug ("operator?: %s isa PAIR\n", name); */
-	    IDIO lv = idio_symbol_lookup (name, idio_current_module ());
+	    IDIO lv = idio_module_symbol_lookup (name, idio_current_module ());
 	    /* idio_debug ("operator?: lookup -> %s\n", lv); */
 	    if (idio_isa_primitive (lv) ||
 		idio_isa_closure (lv)) {
@@ -1081,7 +1108,7 @@ static IDIO idio_rewrite_cond (IDIO c)
     }
 }
 
-static IDIO idio_meaning_assignment (IDIO name, IDIO e, IDIO nametree, int tailp)
+static IDIO idio_meaning_assignment (IDIO name, IDIO e, IDIO nametree, int tailp, int variant)
 {
     IDIO_ASSERT (name);
     IDIO_ASSERT (e);
@@ -1095,7 +1122,7 @@ static IDIO idio_meaning_assignment (IDIO name, IDIO e, IDIO nametree, int tailp
 	IDIO d = idio_list_memq (name, idio_module_current_defined ());
 	IDIO i = idio_S_nil;
 	if (idio_S_false == d) {
-	    i = idio_toplevel_extend (name);
+	    i = idio_toplevel_extend (name, variant);
 	} else {
 	    i = idio_variable_toplevelp (IDIO_PAIR_H (idio_toplevel_names), name);
 	}
@@ -1103,7 +1130,15 @@ static IDIO idio_meaning_assignment (IDIO name, IDIO e, IDIO nametree, int tailp
 	/*     fprintf (stderr, "meaning-assignment: %s not yet defined\n", idio_as_string (name, 1)); */
 	/* } */
 	IDIO_C_ASSERT (IDIO_TYPE_FIXNUM == idio_type (i));
-	return IDIO_LIST3 (idio_I_GLOBAL_SET, i, m);
+	switch (variant) {
+	case IDIO_TOPLEVEL_REGULAR_NAME:
+	    return IDIO_LIST3 (idio_I_GLOBAL_SET, i, m);
+	case IDIO_TOPLEVEL_DYNAMIC_NAME:
+	    return IDIO_LIST3 (idio_I_PUSH_DYNAMIC, i, m);
+	default:
+	    idio_error_message ("unexpected toplevel variant %d", variant);
+	    return idio_S_unspec;
+	}
     }
 
     IDIO kt = IDIO_PAIR_H (k);
@@ -1125,7 +1160,7 @@ static IDIO idio_meaning_assignment (IDIO name, IDIO e, IDIO nametree, int tailp
 	/*
 	 * We can shadow predefs...semantically dubious
 	 */
-	i = idio_toplevel_extend (name);
+	i = idio_toplevel_extend (name, IDIO_TOPLEVEL_REGULAR_NAME);
 	return IDIO_LIST3 (idio_I_GLOBAL_SET, i, m);
 
 	/* if we weren't allowing shadowing */
@@ -1179,7 +1214,7 @@ static IDIO idio_meaning_define (IDIO name, IDIO e, IDIO nametree, int tailp)
 	idio_module_current_extend_defined (name);
     }
 
-    return idio_meaning_assignment (name, e, nametree, tailp);
+    return idio_meaning_assignment (name, e, nametree, tailp, IDIO_TOPLEVEL_REGULAR_NAME);
 }
 
 static IDIO idio_meaning_define_macro (IDIO name, IDIO e, IDIO nametree, int tailp)
@@ -1266,7 +1301,7 @@ static IDIO idio_meaning_define_macro (IDIO name, IDIO e, IDIO nametree, int tai
 
 	if (idio_S_false != exp) {
 	    idio_install_expander_source (name, exp, expander);
-	    return idio_meaning_assignment (name, IDIO_PAIR_T (exp), nametree, 0);
+	    return idio_meaning_assignment (name, IDIO_PAIR_T (exp), nametree, 0, IDIO_TOPLEVEL_REGULAR_NAME);
 	}
     }
 
@@ -1298,7 +1333,7 @@ static IDIO idio_meaning_define_macro (IDIO name, IDIO e, IDIO nametree, int tai
      * users.
      */
 
-    IDIO m_a = idio_meaning_assignment (name, expander, nametree, 0);
+    IDIO m_a = idio_meaning_assignment (name, expander, nametree, 0, IDIO_TOPLEVEL_REGULAR_NAME);
 
     idio_install_expander_source (name, expander, expander);
 
@@ -1321,6 +1356,35 @@ static IDIO idio_meaning_define_macro (IDIO name, IDIO e, IDIO nametree, int tai
     /* idio_debug ("idio-meaning-define-macro %s", name);  */
     /* idio_debug (" r=%s\n", r);  */
     return r;
+}
+
+static IDIO idio_meaning_define_dynamic (IDIO name, IDIO e, IDIO nametree, int tailp)
+{
+    IDIO_ASSERT (name);
+    IDIO_ASSERT (e);
+    IDIO_ASSERT (nametree);
+    IDIO_TYPE_ASSERT (symbol, name);
+    IDIO_TYPE_ASSERT (list, nametree);
+
+    /* idio_debug ("meaning-define-dynamic: (define-dynamic %s", name);  */
+    /* idio_debug (" %s)\n", e);  */
+
+    if (idio_isa_pair (e)) {
+	e = IDIO_PAIR_H (e);
+    }
+
+    /* idio_debug ("meaning-define-dynamic: (define-dynamic %s", name); */
+    /* idio_debug (" %s)\n", e); */
+
+    idio_ai_t i = idio_vm_dynamics_lookup (name);
+    if (-1 == i) {
+	idio_debug ("extending dynamics for define-macro %s\n", name);
+	i = idio_vm_extend_dynamics (name);
+    }
+
+    IDIO m_a = idio_meaning_assignment (name, e, nametree, tailp, IDIO_TOPLEVEL_DYNAMIC_NAME);
+
+    return IDIO_LIST3 (idio_I_PUSH_DYNAMIC, IDIO_FIXNUM (i), m_a);
 }
 
 static IDIO idio_meaning_sequence (IDIO ep, IDIO nametree, int tailp, IDIO keyword);
@@ -1521,6 +1585,22 @@ static IDIO idio_rewrite_body (IDIO e)
 	    r = idio_list_append2 (r,
 				   IDIO_LIST1 (IDIO_LIST3 (idio_S_let,
 							   IDIO_LIST1 (IDIO_PAIR_T (cur)),
+							   idio_list_append2 (IDIO_LIST1 (idio_S_begin), body))));
+	    /* idio_debug ("irb: internal := r %s\n", r); */
+	    return r;
+	} else if (idio_isa_pair (cur) &&
+		   idio_S_colon_star == IDIO_PAIR_H (cur)) {
+	    /* internal :* -> dynamic-let */
+	    /* idio_debug ("irb: internal :* cur %s\n", cur);  */
+
+	    IDIO body = idio_rewrite_body (IDIO_PAIR_T (l));
+	    /* idio_debug ("irb: internal :* body %s\n", body); */
+	    if (idio_S_nil != r) {
+		r = idio_list_reverse (r);
+	    }
+	    r = idio_list_append2 (r,
+				   IDIO_LIST1 (IDIO_LIST3 (idio_S_dynamic_let,
+							   IDIO_PAIR_T (cur),
 							   idio_list_append2 (IDIO_LIST1 (idio_S_begin), body))));
 	    /* idio_debug ("irb: internal := r %s\n", r); */
 	    return r;
@@ -2108,7 +2188,9 @@ static IDIO idio_meaning_dynamic_let (IDIO name, IDIO e, IDIO ep, IDIO nametree,
 	IDIO m = idio_meaning (e, nametree, 0);
 	IDIO mp = idio_meaning_sequence (ep, nametree, 0, idio_S_begin);
 
-	return IDIO_LIST5 (m, idio_I_PUSH_DYNAMIC, IDIO_FIXNUM (index), mp, idio_I_POP_DYNAMIC);
+	return IDIO_LIST3 (IDIO_LIST3 (idio_I_PUSH_DYNAMIC, IDIO_FIXNUM (index), m),
+			   mp,
+			   IDIO_LIST1 (idio_I_POP_DYNAMIC));
     } else {
 	idio_error_static_unbound (name);
 	return idio_S_unspec;
@@ -2302,7 +2384,7 @@ static IDIO idio_meaning (IDIO e, IDIO nametree, int tailp)
 	    if (idio_isa_pair (et)) {
 		IDIO ett = IDIO_PAIR_T (et);
 		if (idio_isa_pair (ett)) {
-		    return idio_meaning_assignment (IDIO_PAIR_H (et), IDIO_PAIR_H (ett), nametree, tailp);
+		    return idio_meaning_assignment (IDIO_PAIR_H (et), IDIO_PAIR_H (ett), nametree, tailp, IDIO_TOPLEVEL_DYNAMIC_NAME);
 		} else {
 		    idio_error_param_nil ("(set! symbol)");
 		    return idio_S_unspec;
@@ -2359,6 +2441,24 @@ static IDIO idio_meaning (IDIO e, IDIO nametree, int tailp)
 		}
 	    } else {
 		idio_error_param_nil ("(:=)");
+		return idio_S_unspec;
+	    }
+	} else if (idio_S_colon_star == eh) {
+	    /*
+	     * (:* var expr)
+	     *
+	     * in the short term => define-dynamic
+	     */
+	    if (idio_isa_pair (et)) {
+		IDIO ett = IDIO_PAIR_T (et);
+		if (idio_isa_pair (ett)) {
+		    return idio_meaning_define_dynamic (IDIO_PAIR_H (et), ett, nametree, tailp);
+		} else {
+		    idio_error_param_nil ("(:* symbol)");
+		    return idio_S_unspec;
+		}
+	    } else {
+		idio_error_param_nil ("(:*)");
 		return idio_S_unspec;
 	    }
 	} else if (idio_S_block == eh) {
@@ -2606,6 +2706,31 @@ IDIO_DEFINE_OPERATOR (":+", colon_plus, (IDIO n, IDIO b, IDIO args))
     return idio_S_unspec;
 }
 
+IDIO_DEFINE_OPERATOR (":*", colon_star, (IDIO n, IDIO b, IDIO args))
+{
+    IDIO_ASSERT (n);
+    IDIO_ASSERT (b);
+    IDIO_ASSERT (args);
+
+    /* idio_debug ("op: :* args %s\n", args); */
+    if (idio_S_nil != IDIO_PAIR_T (b)) {
+	idio_error_message ("too many args before :*");
+    }
+
+    if (idio_S_nil != args) {
+	IDIO a = IDIO_PAIR_H (args);
+	if (idio_S_nil == a) {
+	    idio_error_message ("too few args after :*");
+	}
+	if (idio_S_nil == IDIO_PAIR_T (a)) { 
+	    a = IDIO_PAIR_H (a);
+	}
+	return IDIO_LIST3 (idio_S_colon_star, IDIO_PAIR_H (b), a);
+    }
+
+    return idio_S_unspec;
+}
+
 void idio_init_evaluate ()
 {
     idio_toplevel_names = idio_pair (idio_S_nil, idio_S_nil);
@@ -2650,6 +2775,7 @@ void idio_evaluate_add_primitives ()
     IDIO_ADD_OPERATOR (set);
     IDIO_ADD_OPERATOR (colon_eq);
     IDIO_ADD_OPERATOR (colon_plus);
+    IDIO_ADD_OPERATOR (colon_star);
 }
 
 void idio_final_evaluate ()

@@ -276,6 +276,7 @@ idio_ai_t idio_vm_extend_primitives (IDIO v);
 IDIO idio_vm_primitives_ref (idio_ai_t i);
 idio_ai_t idio_vm_extend_dynamics (IDIO v);
 IDIO idio_vm_dynamics_ref (idio_ai_t i);
+idio_ai_t idio_vm_dynamics_lookup (IDIO v);
 void idio_vm_abort_thread (IDIO thr);
 
 IDIO idio_signal_exception (IDIO continuablep, IDIO e);

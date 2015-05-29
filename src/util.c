@@ -971,8 +971,10 @@ char *idio_as_string (IDIO o, int depth)
 			    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_FRAME_ARGS (env), 1));
 			}
 		    }
-		    IDIO_STRCAT (r, " h-sp=");
+		    IDIO_STRCAT (r, " h/sp=");
 		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_HANDLERSP (o), 1));
+		    IDIO_STRCAT (r, " d/sp=");
+		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_DYNAMICSP (o), 1));
 		    if (depth > 1) {
 			IDIO_STRCAT (r, " env=");
 			IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_ENV (o), 1));
