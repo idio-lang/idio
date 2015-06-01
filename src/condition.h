@@ -38,8 +38,22 @@ extern IDIO idio_condition_io_file_is_read_only_error_type;
 extern IDIO idio_condition_io_file_already_exists_error_type;
 extern IDIO idio_condition_io_no_such_file_error_type;
 extern IDIO idio_condition_read_error_type;
+
 extern IDIO idio_condition_idio_error_type;
 extern IDIO idio_condition_system_error_type;
+
+extern IDIO idio_condition_static_error_type;
+extern IDIO idio_condition_st_variable_error_type;
+extern IDIO idio_condition_st_variable_type_error_type;
+extern IDIO idio_condition_st_function_error_type;
+extern IDIO idio_condition_st_function_arity_error_type;
+
+extern IDIO idio_condition_runtime_error_type;
+extern IDIO idio_condition_rt_variable_error_type;
+extern IDIO idio_condition_rt_dynamic_variable_error_type;
+extern IDIO idio_condition_rt_dynamic_variable_unbound_error_type;
+extern IDIO idio_condition_rt_function_error_type;
+extern IDIO idio_condition_rt_function_arity_error_type;
 
 int idio_isa_condition_type (IDIO o);
 int idio_isa_condition (IDIO o);

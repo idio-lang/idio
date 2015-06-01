@@ -153,15 +153,16 @@
 
 #define IDIO_A_EXPANDER                    160
 
-#define IDIO_A_DYNAMIC_REF                 240
-#define IDIO_A_POP_DYNAMIC                 241
-#define IDIO_A_PUSH_DYNAMIC                242
+#define IDIO_A_DYNAMIC_REF                 230
+#define IDIO_A_DYNAMIC_FUNCTION_REF	   231
+#define IDIO_A_POP_DYNAMIC                 232
+#define IDIO_A_PUSH_DYNAMIC                233
 
-#define IDIO_A_NON_CONT_ERR                245
-#define IDIO_A_PUSH_HANDLER                246
-#define IDIO_A_POP_HANDLER                 247
-#define IDIO_A_POP_ESCAPER                 250
-#define IDIO_A_PUSH_ESCAPER                251
+#define IDIO_A_NON_CONT_ERR                240
+#define IDIO_A_PUSH_HANDLER                241
+#define IDIO_A_POP_HANDLER                 242
+#define IDIO_A_POP_ESCAPER                 243
+#define IDIO_A_PUSH_ESCAPER                244
 
 /*
  * Some unique constants for the VM
@@ -208,6 +209,7 @@
 #define IDIO_VM_CODE_PUSH_DYNAMIC                (IDIO_VM_CODE_BASE+52)
 #define IDIO_VM_CODE_POP_DYNAMIC                 (IDIO_VM_CODE_BASE+53)
 #define IDIO_VM_CODE_DYNAMIC_REF                 (IDIO_VM_CODE_BASE+54)
+#define IDIO_VM_CODE_DYNAMIC_FUNCTION_REF	 (IDIO_VM_CODE_BASE+55)
     
 #define IDIO_VM_CODE_PUSH_HANDLER                (IDIO_VM_CODE_BASE+60)
 #define IDIO_VM_CODE_POP_HANDLER                 (IDIO_VM_CODE_BASE+61)
@@ -255,6 +257,7 @@
 #define idio_I_PUSH_DYNAMIC                ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_PUSH_DYNAMIC))
 #define idio_I_POP_DYNAMIC                 ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_POP_DYNAMIC))
 #define idio_I_DYNAMIC_REF                 ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_DYNAMIC_REF))
+#define idio_I_DYNAMIC_FUNCTION_REF	   ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_DYNAMIC_FUNCTION_REF))
 #define idio_I_PUSH_HANDLER                ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_PUSH_HANDLER))
 #define idio_I_POP_HANDLER                 ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_POP_HANDLER))
 #define idio_I_AND                         ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_AND))
@@ -272,11 +275,10 @@ IDIO idio_vm_constants_ref (idio_ai_t i);
 idio_ai_t idio_vm_extend_symbols (IDIO v);
 IDIO idio_vm_symbols_ref (idio_ai_t i);
 idio_ai_t idio_vm_symbols_lookup (IDIO v);
+IDIO idio_vm_values_ref (idio_ai_t i);
+void idio_vm_values_set (idio_ai_t i, IDIO v);
 idio_ai_t idio_vm_extend_primitives (IDIO v);
 IDIO idio_vm_primitives_ref (idio_ai_t i);
-idio_ai_t idio_vm_extend_dynamics (IDIO v);
-IDIO idio_vm_dynamics_ref (idio_ai_t i);
-idio_ai_t idio_vm_dynamics_lookup (IDIO v);
 void idio_vm_abort_thread (IDIO thr);
 
 IDIO idio_signal_exception (IDIO continuablep, IDIO e);
@@ -284,6 +286,7 @@ IDIO idio_apply (IDIO fn, IDIO args);
 
 void idio_vm_thread_init (IDIO thr);
 void idio_vm_default_pc (IDIO thr);
+void idio_init_vm_values ();
 void idio_init_vm ();
 void idio_vm_add_primitives ();
 void idio_final_vm ();

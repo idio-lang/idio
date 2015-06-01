@@ -525,6 +525,10 @@ char *idio_as_string (IDIO o, int depth)
 	    case IDIO_CONSTANT_VOID:                 t = "#void";                 break;
 	    case IDIO_CONSTANT_NAN:                  t = "#NaN";                  break;
 
+	    case IDIO_CONSTANT_TOPLEVEL:             t = "idio_S_toplevel";       break;
+	    case IDIO_CONSTANT_PREDEF:               t = "idio_S_predef";         break;
+	    case IDIO_CONSTANT_LOCAL:                t = "idio_S_local";          break;
+
 	    case IDIO_TOKEN_DOT:                     t = "T/.";                     break;
 	    case IDIO_TOKEN_LPAREN:                  t = "T/(";                     break;
 	    case IDIO_TOKEN_RPAREN:                  t = "T/)";                     break;

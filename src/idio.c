@@ -26,6 +26,7 @@ void idio_init ()
 {
     /* GC first then symbol for the symbol table then modules */
     idio_init_gc ();
+    idio_init_vm_values ();
 
     idio_init_symbol ();
     idio_init_module ();
@@ -68,6 +69,7 @@ void idio_init ()
     idio_symbol_add_primitives ();
     idio_module_add_primitives ();
     idio_thread_add_primitives ();
+
     idio_struct_add_primitives ();
     idio_condition_add_primitives ();
     idio_evaluate_add_primitives ();

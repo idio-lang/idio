@@ -728,7 +728,7 @@ static IDIO idio_scm_expanderp (IDIO name)
 	IDIO v = IDIO_PAIR_T (assq);
 	if (idio_isa_pair (v)) {
 	    /* idio_debug ("expander?: %s isa PAIR\n", name); */
-	    IDIO lv = idio_module_symbol_lookup (name, idio_current_module ());
+	    IDIO lv = idio_module_current_symbol_value_recurse (name);
 	    /* idio_debug ("expander?: lookup -> %s\n", lv); */
 	    if (idio_isa_primitive (lv) ||
 		idio_isa_closure (lv)) {
@@ -1190,6 +1190,7 @@ static IDIO idio_scm_meaning_assignment (IDIO name, IDIO e, IDIO nametree, int t
 
     if (idio_S_nil == k) {
 	IDIO d = idio_list_memq (name, idio_module_current_defined ());
+	IDIO s = idio_list_memq (name, idio_module_current_symbols ());
 	IDIO i = idio_S_nil;
 	if (idio_S_false == d) {
 	    i = idio_scm_toplevel_extend (name);
@@ -1269,6 +1270,7 @@ static IDIO idio_scm_meaning_define (IDIO name, IDIO e, IDIO nametree, int tailp
     /* idio_debug (" %s)\n", e); */
 
     IDIO d = idio_list_memq (name, idio_module_current_defined ());
+    IDIO s = idio_list_memq (name, idio_module_current_symbols ());
 
     if (idio_isa_pair (d)) {
 	/* idio_warning_static_redefine (name); */
@@ -1310,6 +1312,7 @@ static IDIO idio_scm_meaning_define_macro (IDIO name, IDIO e, IDIO nametree, int
     /* idio_debug ("e=%s\n", e); */
 
     IDIO d = idio_list_memq (name, idio_module_current_defined ());
+    IDIO s = idio_list_memq (name, idio_module_current_symbols ());
 
     if (idio_isa_pair (d)) {
 	/* idio_warning_static_redefine (name); */
@@ -2344,11 +2347,12 @@ static IDIO idio_scm_meaning (IDIO e, IDIO nametree, int tailp)
 IDIO idio_scm_evaluate (IDIO e)
 {
     idio_gc_pause ();
-    IDIO m = idio_scm_meaning (e, idio_module_current_defined (), 1);
+    /* IDIO m = idio_scm_meaning (e, idio_module_current_defined (), 1); */
+    IDIO m = idio_scm_meaning (e, idio_S_nil, 1);
     idio_gc_resume ();
 
-    if (1) {
-	IDIO d = idio_module_current_defined ();
+    if (0) {
+	IDIO d = idio_module_current_symbols ();
 	IDIO t = idio_module_current_symbols ();
 
 

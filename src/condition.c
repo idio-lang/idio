@@ -24,6 +24,7 @@
 
 #include "idio.h"
 
+/* SRFI-36 */
 IDIO idio_condition_root_type;
 IDIO idio_condition_message_type;
 IDIO idio_condition_error_type;
@@ -39,8 +40,23 @@ IDIO idio_condition_io_file_is_read_only_error_type;
 IDIO idio_condition_io_file_already_exists_error_type;
 IDIO idio_condition_io_no_such_file_error_type;
 IDIO idio_condition_read_error_type;
+
+/* Idio */
 IDIO idio_condition_idio_error_type;
 IDIO idio_condition_system_error_type;
+
+IDIO idio_condition_static_error_type;
+IDIO idio_condition_st_variable_error_type;
+IDIO idio_condition_st_variable_type_error_type;
+IDIO idio_condition_st_function_error_type;
+IDIO idio_condition_st_function_arity_error_type;
+
+IDIO idio_condition_runtime_error_type;
+IDIO idio_condition_rt_variable_error_type;
+IDIO idio_condition_rt_dynamic_variable_error_type;
+IDIO idio_condition_rt_dynamic_variable_unbound_error_type;
+IDIO idio_condition_rt_function_error_type;
+IDIO idio_condition_rt_function_arity_error_type;
 
 IDIO_DEFINE_PRIMITIVE2V ("make-condition-type", make_condition_type, (IDIO name, IDIO parent, IDIO fields))
 {
@@ -285,11 +301,26 @@ void idio_init_condition ()
     IDIO_DEFINE_CONDITION0 (idio_condition_io_file_already_exists_error_type, "^i/o-file-already-exists-error", idio_condition_io_filename_error_type);
     IDIO_DEFINE_CONDITION0 (idio_condition_io_no_such_file_error_type, "^i/o-no-such-file-error", idio_condition_io_filename_error_type);
 
-    /* no column or span! */
+    /* NB. no column or span! */
     IDIO_DEFINE_CONDITION2 (idio_condition_read_error_type, "^read-error", idio_condition_error_type, "line", "position");
 
     /* Idio */
     IDIO_DEFINE_CONDITION1 (idio_condition_system_error_type, "^system-error", idio_condition_idio_error_type, "errno");
+
+    IDIO_DEFINE_CONDITION0 (idio_condition_static_error_type, "^static-error", idio_condition_idio_error_type);
+    IDIO_DEFINE_CONDITION1 (idio_condition_st_variable_error_type, "^st-variable-error", idio_condition_static_error_type, "name");
+    IDIO_DEFINE_CONDITION0 (idio_condition_st_variable_type_error_type, "^st-variable-type-error", idio_condition_st_variable_error_type);
+
+    IDIO_DEFINE_CONDITION0 (idio_condition_st_function_error_type, "^st-function-error", idio_condition_static_error_type);
+    IDIO_DEFINE_CONDITION0 (idio_condition_st_function_arity_error_type, "^st-function-arity-error", idio_condition_st_function_error_type);
+
+    IDIO_DEFINE_CONDITION0 (idio_condition_runtime_error_type, "^runtime-error", idio_condition_idio_error_type);
+    IDIO_DEFINE_CONDITION1 (idio_condition_rt_variable_error_type, "^rt-variable-error", idio_condition_runtime_error_type, "name");
+    IDIO_DEFINE_CONDITION0 (idio_condition_rt_dynamic_variable_error_type, "^rt-dynamic-variable-error", idio_condition_rt_variable_error_type);
+    IDIO_DEFINE_CONDITION0 (idio_condition_rt_dynamic_variable_unbound_error_type, "^rt-dynamic-variable-unbound-error", idio_condition_rt_dynamic_variable_error_type);
+
+    IDIO_DEFINE_CONDITION0 (idio_condition_rt_function_error_type, "^rt-function-error", idio_condition_static_error_type);
+    IDIO_DEFINE_CONDITION0 (idio_condition_rt_function_arity_error_type, "^rt-function-arity-error", idio_condition_rt_function_error_type);
 }
 
 void idio_condition_add_primitives ()
@@ -328,5 +359,18 @@ void idio_final_condition ()
     idio_gc_expose (idio_condition_io_no_such_file_error_type);
     idio_gc_expose (idio_condition_read_error_type);
     idio_gc_expose (idio_condition_system_error_type);
+
+    idio_gc_expose (idio_condition_static_error_type);
+    idio_gc_expose (idio_condition_st_variable_error_type);
+    idio_gc_expose (idio_condition_st_variable_type_error_type);
+    idio_gc_expose (idio_condition_st_function_error_type);
+    idio_gc_expose (idio_condition_st_function_arity_error_type);
+
+    idio_gc_expose (idio_condition_runtime_error_type);
+    idio_gc_expose (idio_condition_rt_variable_error_type);
+    idio_gc_expose (idio_condition_rt_dynamic_variable_error_type);
+    idio_gc_expose (idio_condition_rt_dynamic_variable_unbound_error_type);
+    idio_gc_expose (idio_condition_rt_function_error_type);
+    idio_gc_expose (idio_condition_rt_function_arity_error_type);
 }
 

@@ -413,6 +413,7 @@ void idio_process_grey (unsigned colour)
 	idio_mark (IDIO_MODULE_IMPORTS (o), colour); 
 	idio_mark (IDIO_MODULE_SYMBOLS (o), colour); 
 	idio_mark (IDIO_MODULE_DEFINED (o), colour); 
+	idio_mark (IDIO_MODULE_NAMES (o), colour); 
 	break;
     case IDIO_TYPE_FRAME:
 	IDIO_C_ASSERT (idio_gc->grey != IDIO_FRAME_GREY (o));

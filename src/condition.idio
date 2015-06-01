@@ -12,12 +12,14 @@ define-macro (define-condition-type/accessors name parent pred-fname & fields) {
 ;; define-condition-type-accessors-only name super pred & fields
 ;; field == (field accessor)
 ;;
-;; We have this two-step tomfoolery as the basic conditions
-;; (eg. ^error) are defined in C-land for internal use yet the
-;; predicate/accessors are defined here, in Idio-land, as it is much
-;; easier.  If we defined the conditions themselves here as well then
-;; we'd have two distinct objects with the same name.  Which is
-;; generally considered to be "an issue."
+;; We have this two-step shimmy as the basic conditions (eg. ^error)
+;; are defined in C-land for internal use yet the predicate/accessors
+;; are defined here, in Idio-land, as it is much easier (and C never
+;; uses them anyway).  
+;;
+;; If we (re-)defined those conditions here as well then we'd have two
+;; distinct objects with the same name.  Which is generally considered
+;; to be "an issue."
 define-macro (define-condition-type-accessors-only name parent pred-fname & fields) {
   arg := (gensym)
 
@@ -86,19 +88,38 @@ define-condition-type-accessors-only ^i/o-error ^error i/o-error?
 
 define-condition-type-accessors-only ^i/o-handle-error ^i/o-error i/o-handle-error? (handle i/o-error-handle)
 
-define-condition-type-accessors-only ^i/o-read-error ^i/o-handle-error i/o-read-error?
-define-condition-type-accessors-only ^i/o-write-error ^i/o-handle-error i/o-write-error?
+define-condition-type-accessors-only ^i/o-read-error   ^i/o-handle-error i/o-read-error?
+define-condition-type-accessors-only ^i/o-write-error  ^i/o-handle-error i/o-write-error?
 define-condition-type-accessors-only ^i/o-closed-error ^i/o-handle-error i/o-closed-error?
 
-define-condition-type-accessors-only ^i/o-filename-error ^i/o-error i/o-filename-error? (filename i/o-error-filename)
+define-condition-type-accessors-only ^i/o-filename-error	    ^i/o-error		       i/o-filename-error? (filename i/o-error-filename)
 
-define-condition-type-accessors-only ^i/o-malformed-filename-error ^i/o-filename-error i/o-malformed-filename-error?
+define-condition-type-accessors-only ^i/o-malformed-filename-error  ^i/o-filename-error        i/o-malformed-filename-error?
 
-define-condition-type-accessors-only ^i/o-file-protection-error ^i/o-filename-error i/o-file-protection-error?
+define-condition-type-accessors-only ^i/o-file-protection-error     ^i/o-filename-error        i/o-file-protection-error?
 
-define-condition-type-accessors-only ^i/o-file-is-read-only-error ^i/o-file-protection-error i/o-file-is-read-only-error?
+define-condition-type-accessors-only ^i/o-file-is-read-only-error   ^i/o-file-protection-error i/o-file-is-read-only-error?
 
-define-condition-type-accessors-only ^i/o-file-already-exists-error ^i/o-filename-error i/o-file-already-exists-error?
+define-condition-type-accessors-only ^i/o-file-already-exists-error ^i/o-filename-error        i/o-file-already-exists-error?
 
-define-condition-type-accessors-only ^i/o-no-such-file-error ^i/o-filename-error i/o-no-such-file-error?
+define-condition-type-accessors-only ^i/o-no-such-file-error	    ^i/o-filename-error        i/o-no-such-file-error?
+
+;; Idio generated conditions
+define-condition-type-accessors-only ^system-error ^idio-error system-error? (errno system-error-errno)
+
+define-condition-type-accessors-only ^static-error           ^idio-error        static-error?
+define-condition-type-accessors-only ^st-variable-error      ^static-error      st-variable-error? (name variable-error-name)
+define-condition-type-accessors-only ^st-variable-type-error ^st-variable-error st-variable-type-error?
+
+define-condition-type-accessors-only ^st-function-error      ^static-error      st-function-error?
+define-condition-type-accessors-only ^st-function-type-error ^st-function-error st-function-type-error?
+
+define-condition-type-accessors-only ^runtime-error			^idio-error		   runtime-error?
+define-condition-type-accessors-only ^rt-variable-error			^runtime-error		   rt-variable-error? (name variable-error-name)
+define-condition-type-accessors-only ^rt-dynamic-variable-error         ^rt-variable-error         rt-dynamic-variable-error?
+define-condition-type-accessors-only ^rt-dynamic-variable-unbound-error ^rt-dynamic-variable-error rt-dynamic-variable-unbound-error?
+
+define-condition-type-accessors-only ^rt-function-error			^runtime-error		   rt-function-error?
+define-condition-type-accessors-only ^rt-function-type-error		^rt-function-error	   rt-function-type-error?
+
 

@@ -53,8 +53,6 @@ void idio_error_message (char *format, ...)
 
     IDIO c = idio_condition_idio_error (msg, idio_S_internal, idio_S_nil);
     idio_signal_exception (idio_S_false, c);
-    idio_debug ("error-message: condition %s\n", c);
-    IDIO_C_ASSERT (0);
 }
 
 void idio_warning_message (char *format, ...)
@@ -98,9 +96,9 @@ void idio_error_param_type (char *etype, IDIO who)
     IDIO_C_ASSERT (etype);
     IDIO_ASSERT (who);
 
-    char *whos = idio_as_string (who, 1);
-    idio_error_message ("not a %s: %s", etype, whos);
-    free (whos);
+    char em[BUFSIZ];
+    sprintf (em, "bad parameter type: not a %s:", etype);
+    idio_error_C (em, IDIO_LIST1 (who));
 }
 
 IDIO idio_error (IDIO who, IDIO msg, IDIO args)

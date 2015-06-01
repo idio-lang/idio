@@ -42,9 +42,8 @@ static size_t idio_prologue_len;
 
 static IDIO idio_vm_constants;
 static IDIO idio_vm_symbols;
+static IDIO idio_vm_values;
 static IDIO idio_vm_primitives;
-static IDIO idio_vm_dynamics;
-static IDIO idio_vm_dynamic_mark;
 static IDIO idio_vm_base_error_handler_primdata;
 static IDIO idio_vm_closure_name;
 
@@ -71,14 +70,60 @@ static void idio_error_vm_compile_param_type (char *m, IDIO t)
     free (ts);
 }
 
-static void idio_error_static_invoke (char *m, IDIO desc)
+static void idio_error_vm_function_invoke (char *msg, IDIO func)
 {
-    idio_error_message ("%s: cannot invoke %s", m, IDIO_PRIMITIVE_NAME (desc));
+    IDIO_C_ASSERT (msg);
+    IDIO_ASSERT (func);
+    
+    IDIO sh = idio_open_output_string_handle_C ();
+    idio_display_C (msg, sh);
+    idio_display (func, sh);
+    IDIO c = idio_struct_instance (idio_condition_rt_function_error_type, IDIO_LIST3 (idio_get_output_string (sh),
+										      idio_S_nil,
+										      idio_S_nil));
+    idio_signal_exception (idio_S_true, c);
+}
+
+static void idio_vm_function_trace (IDIO_I ins, IDIO thr);
+static void idio_error_vm_arity (IDIO_I ins, IDIO thr, size_t given, size_t arity)
+{
+    fprintf (stderr, "\n\nARITY != %zd\n", arity);
+    idio_vm_function_trace (ins, thr);
+
+    IDIO sh = idio_open_output_string_handle_C ();
+    char em[BUFSIZ];
+    sprintf (em, "incorrect arity: %zd args for an arity-%zd function", given, arity);
+    idio_display_C (em, sh);
+    IDIO c = idio_struct_instance (idio_condition_rt_function_arity_error_type, IDIO_LIST3 (idio_get_output_string (sh),
+											    idio_S_nil,
+											    idio_S_nil));
+    idio_signal_exception (idio_S_true, c);
+}
+
+static void idio_error_vm_arity_varargs (IDIO_I ins, IDIO thr, size_t given, size_t arity)
+{
+    fprintf (stderr, "\n\nARITY < %zd\n", arity);
+    idio_vm_function_trace (ins, thr);
+
+    IDIO sh = idio_open_output_string_handle_C ();
+    char em[BUFSIZ];
+    sprintf (em, "incorrect arity: %zd args for an arity-%zd+ function", given, arity);
+    idio_display_C (em, sh);
+    IDIO c = idio_struct_instance (idio_condition_rt_function_arity_error_type, IDIO_LIST3 (idio_get_output_string (sh),
+											    idio_S_nil,
+											    idio_S_nil));
+    idio_signal_exception (idio_S_true, c);
 }
 
 static void idio_error_dynamic_unbound (idio_ai_t index)
 {
-    idio_error_message ("No such dynamic binding: %zd", index);
+    IDIO sh = idio_open_output_string_handle_C ();
+    idio_display_C ("no such dynamic binding", sh);
+    IDIO c = idio_struct_instance (idio_condition_rt_dynamic_variable_unbound_error_type, IDIO_LIST4 (idio_get_output_string (sh),
+												      idio_S_nil,
+												      idio_S_nil,
+												      idio_vm_symbols_ref (index)));
+    idio_signal_exception (idio_S_true, c);
 }
 
 static void idio_decode_arity_next (IDIO thr)
@@ -106,21 +151,6 @@ static void idio_decode_arity_next (IDIO thr)
     }
 
     fprintf (stderr, "\n");
-}
-
-static void idio_vm_function_trace (IDIO_I ins, IDIO thr);
-static void idio_error_arity (IDIO_I ins, IDIO thr, size_t given, size_t arity)
-{
-    fprintf (stderr, "\n\nARITY != %zd\n", arity);
-    idio_vm_function_trace (ins, thr);
-    idio_error_message ("incorrect arity: %zd args for an arity-%zd function", given, arity);
-}
-
-static void idio_error_arity_varargs (IDIO_I ins, IDIO thr, size_t given, size_t arity)
-{
-    fprintf (stderr, "\n\nARITY < %zd\n", arity);
-    idio_vm_function_trace (ins, thr);
-    idio_error_message ("incorrect arity: %zd args for an arity-%zd+ function", given, arity);
 }
 
 idio_i_array_t *idio_i_array (size_t n)
@@ -1418,6 +1448,7 @@ IDIO_DEFINE_PRIMITIVE2 ("base-error-handler", base_error_handler, (IDIO cont, ID
     }
 
     if (idio_isa_condition (cond)) {
+	idio_debug ("type: %s\n", IDIO_STRUCT_TYPE_NAME (IDIO_STRUCT_INSTANCE_TYPE (cond)));
 	IDIO st = IDIO_STRUCT_INSTANCE_TYPE (cond);
 	IDIO stf = IDIO_STRUCT_TYPE_FIELDS (st);
 	IDIO sif = IDIO_STRUCT_INSTANCE_FIELDS (cond);
@@ -1547,9 +1578,7 @@ void idio_thread_invoke (IDIO thr, IDIO func, int tailp)
     case IDIO_TYPE_CHARACTER_MARK:
     case IDIO_TYPE_CONSTANT_MARK:
 	{
-	    char *funcs = idio_as_string (func, 1);
-	    idio_error_message ("cannot invoke constant type: %s", funcs);
-	    free (funcs);
+	    idio_error_vm_function_invoke ("cannot invoke constant type", func);
 	    return;
 	}
     default:
@@ -1682,7 +1711,7 @@ void idio_thread_invoke (IDIO thr, IDIO func, int tailp)
 		}
 		break;
 	    default:
-		idio_error_message ("invoke: primitive %s: arity %d unexpected", IDIO_PRIMITIVE_NAME (func), IDIO_PRIMITIVE_ARITY (func));
+		idio_error_vm_function_invoke ("arity unexpected", func);
 		break;
 	    }
 
@@ -1717,39 +1746,15 @@ void idio_thread_invoke (IDIO thr, IDIO func, int tailp)
 	    if (NULL != pathname) {
 		IDIO_THREAD_VAL (thr) = idio_invoke_command (func, thr, pathname);
 	    } else {
-		idio_debug ("\n\ninvoke command %s\n", func);
-		idio_error_message ("command not found");
+		idio_error_vm_function_invoke ("command not found", func);
 	    }
 	}
 	break;
     default:
 	{
-	    char *funcs = idio_as_string (func, 1);
-	    idio_error_message ("invoke: cannot invoke a %s: %s", idio_type2string (func), funcs);
-	    free (funcs);
+	    idio_error_vm_function_invoke ("cannot invoke", func);
 	}
 	break;
-    }
-}
-
-static idio_ai_t idio_vm_next_mark (IDIO thr, IDIO mark)
-{
-    IDIO_ASSERT (thr);
-    IDIO_TYPE_ASSERT (thread, thr);
-
-    IDIO stack = IDIO_THREAD_STACK (thr);
-    idio_ai_t sp = idio_array_size (stack);
-    sp--;
-    for (;;) {
-	if (sp < 0) {
-	    return sp;
-	}
-
-	if (idio_eqp (idio_array_get_index (stack, sp), mark)) {
-	    return (sp - 1);
-	}
-
-	sp--;
     }
 }
 
@@ -1799,7 +1804,7 @@ static void idio_vm_pop_dynamic (IDIO thr)
 
     idio_array_pop (stack);
     idio_array_pop (stack);
-    idio_array_pop (stack);
+    IDIO_THREAD_DYNAMICSP (thr) = idio_array_pop (stack);
 }
 
 static IDIO idio_vm_dynamic_ref (idio_ai_t index, IDIO thr)
@@ -1820,7 +1825,13 @@ static IDIO idio_vm_dynamic_ref (idio_ai_t index, IDIO thr)
 		sp = IDIO_FIXNUM_VAL (idio_array_get_index (stack, sp - 2));
 	    }
 	} else {
-	    idio_error_dynamic_unbound (index);
+	    IDIO v = idio_vm_values_ref (index);
+
+	    if (idio_S_undef == v) {
+		idio_error_dynamic_unbound (index);
+	    }
+
+	    return v;
 	}
     }
 }
@@ -2140,17 +2151,19 @@ int idio_vm_run1 (IDIO thr)
     case IDIO_A_GLOBAL_REF:
 	{
 	    uint64_t i = idio_thread_fetch_varuint (thr);
-	    IDIO sym = idio_vm_symbols_ref (i);
-	    IDIO_VM_RUN_DIS ("GLOBAL-REF %" PRId64 " %s", i, IDIO_SYMBOL_S (sym));
-	    IDIO_THREAD_VAL (thr) = idio_module_symbol_lookup (sym, IDIO_THREAD_MODULE (thr));
+	    IDIO sym = idio_vm_symbols_ref (i); 
+	    IDIO_VM_RUN_DIS ("GLOBAL-REF %" PRId64 " %s", i, IDIO_SYMBOL_S (sym)); 
+	    /* IDIO_THREAD_VAL (thr) = idio_module_symbol_lookup (sym, IDIO_THREAD_MODULE (thr)); */
+	    IDIO_THREAD_VAL (thr) = idio_vm_values_ref (i);
 	}
 	break;
     case IDIO_A_CHECKED_GLOBAL_REF:
 	{
 	    uint64_t i = idio_thread_fetch_varuint (thr);
-	    IDIO sym = idio_vm_symbols_ref (i);
-	    IDIO_VM_RUN_DIS ("CHECKED-GLOBAL-REF %" PRId64 " %s", i, IDIO_SYMBOL_S (sym));
-	    IDIO val = idio_module_symbol_lookup (sym, IDIO_THREAD_MODULE (thr));
+	    IDIO sym = idio_vm_symbols_ref (i); 
+	    IDIO_VM_RUN_DIS ("CHECKED-GLOBAL-REF %" PRId64 " %s", i, IDIO_SYMBOL_S (sym)); 
+	    /* IDIO val = idio_module_symbol_lookup (sym, IDIO_THREAD_MODULE (thr)); */
+	    IDIO val = idio_vm_values_ref (i);
 	    if (idio_S_undef == val) {
 		/*
 		idio_debug ("\nCHECKED-GLOBAL-REF: %s", sym);
@@ -2159,9 +2172,9 @@ int idio_vm_run1 (IDIO thr)
 		idio_debug ("c-m: %s\n", idio_current_module ());
 		idio_error_message ("undefined toplevel: %" PRId64 "", i);
 		*/
-		IDIO_THREAD_VAL (thr) = sym;
+		IDIO_THREAD_VAL (thr) = sym; 
 	    } else if (idio_S_unspec == val) {
-		idio_debug ("\nCHECKED-GLOBAL-REF: %s", sym);
+		idio_debug ("\nCHECKED-GLOBAL-REF: %s", sym); 
 		idio_debug (" in symbols %s\n", idio_vm_symbols);
 		idio_dump (thr, 2);
 		idio_debug ("c-m: %s\n", idio_current_module ());
@@ -2174,9 +2187,10 @@ int idio_vm_run1 (IDIO thr)
     case IDIO_A_CHECKED_GLOBAL_FUNCTION_REF:
 	{
 	    uint64_t i = idio_thread_fetch_varuint (thr);
-	    IDIO sym = idio_vm_symbols_ref (i);
-	    IDIO_VM_RUN_DIS ("CHECKED-GLOBAL-FUNCTION-REF %" PRId64 " %s", i, IDIO_SYMBOL_S (sym));
-	    IDIO val = idio_module_symbol_lookup (sym, IDIO_THREAD_MODULE (thr));
+	    IDIO sym = idio_vm_symbols_ref (i); 
+	    IDIO_VM_RUN_DIS ("CHECKED-GLOBAL-FUNCTION-REF %" PRId64 " %s", i, IDIO_SYMBOL_S (sym)); 
+	    /* IDIO val = idio_module_symbol_lookup (sym, IDIO_THREAD_MODULE (thr)); */
+	    IDIO val = idio_vm_values_ref (i);
 	    if (idio_S_undef == val) {
 		/*
 		idio_debug ("\nCHECKED-GLOBAL-FUNCTION-REF: %s", sym);
@@ -2185,9 +2199,9 @@ int idio_vm_run1 (IDIO thr)
 		idio_debug ("c-m: %s\n", idio_current_module ());
 		idio_error_message ("undefined toplevel: %" PRId64 "", i);
 		*/
-		IDIO_THREAD_VAL (thr) = sym;
+		IDIO_THREAD_VAL (thr) = sym; 
 	    } else if (idio_S_unspec == val) {
-		idio_debug ("\nCHECKED-GLOBAL-REF: %s", sym);
+		idio_debug ("\nCHECKED-GLOBAL-REF: %s", sym); 
 		idio_debug (" in symbols %s\n", idio_vm_symbols);
 		idio_dump (thr, 2);
 		idio_debug ("c-m: %s\n", idio_current_module ());
@@ -2307,10 +2321,11 @@ int idio_vm_run1 (IDIO thr)
     case IDIO_A_GLOBAL_SET:
 	{
 	    uint64_t i = idio_thread_fetch_varuint (thr);
-	    IDIO sym = idio_vm_symbols_ref (i);
-	    IDIO_VM_RUN_DIS ("GLOBAL-SET %" PRId64 " %s", i, IDIO_SYMBOL_S (sym));
+	    IDIO sym = idio_vm_symbols_ref (i); 
+	    IDIO_VM_RUN_DIS ("GLOBAL-SET %" PRId64 " %s", i, IDIO_SYMBOL_S (sym)); 
 	    IDIO val = IDIO_THREAD_VAL (thr);
-	    idio_module_current_set_symbol_value (sym, val);
+	    /* idio_module_current_set_symbol_value (sym, val); */
+	    idio_vm_values_set (i, val);
 	    if (idio_isa_closure (val)) {
 		idio_hash_put (idio_vm_closure_name, IDIO_FIXNUM (IDIO_CLOSURE_CODE (val)), sym);
 	    }
@@ -2566,7 +2581,7 @@ int idio_vm_run1 (IDIO thr)
 		nargs = IDIO_FRAME_NARGS (IDIO_THREAD_VAL (thr));
 	    }
 	    if (1 != nargs) {
-		idio_error_arity (ins, thr, nargs - 1, 0);
+		idio_error_vm_arity (ins, thr, nargs - 1, 0);
 		return 0;
 	    }
 	}
@@ -2579,7 +2594,7 @@ int idio_vm_run1 (IDIO thr)
 		nargs = IDIO_FRAME_NARGS (IDIO_THREAD_VAL (thr));
 	    }
 	    if (2 != nargs) {
-		idio_error_arity (ins, thr, nargs - 1, 1);
+		idio_error_vm_arity (ins, thr, nargs - 1, 1);
 		return 0;
 	    }
 	}
@@ -2601,7 +2616,7 @@ int idio_vm_run1 (IDIO thr)
 		idio_dump (IDIO_FRAME_ARGS (IDIO_THREAD_VAL (thr)), 10);
 		idio_gc_set_verboseness (0);
 		
-		idio_error_arity (ins, thr, nargs - 1, 2);
+		idio_error_vm_arity (ins, thr, nargs - 1, 2);
 		return 0;
 	    }
 	}
@@ -2614,7 +2629,7 @@ int idio_vm_run1 (IDIO thr)
 		nargs = IDIO_FRAME_NARGS (IDIO_THREAD_VAL (thr));
 	    }
 	    if (4 != nargs) {
-		idio_error_arity (ins, thr, nargs - 1, 3);
+		idio_error_vm_arity (ins, thr, nargs - 1, 3);
 		return 0;
 	    }
 	}
@@ -2629,7 +2644,7 @@ int idio_vm_run1 (IDIO thr)
 	    }
 	    if (arityp1 != nargs) {
 		idio_decode_arity_next (thr);
-		idio_error_arity (ins, thr, nargs - 1, arityp1 - 1);
+		idio_error_vm_arity (ins, thr, nargs - 1, arityp1 - 1);
 		return 0;
 	    }
 	}
@@ -2652,7 +2667,7 @@ int idio_vm_run1 (IDIO thr)
 		idio_gc_set_verboseness (3);
 		idio_dump (IDIO_FRAME_ARGS (IDIO_THREAD_VAL (thr)), 4);
 		idio_gc_set_verboseness (0);
-		idio_error_arity_varargs (ins, thr, nargs - 1, arityp1 - 1);
+		idio_error_vm_arity_varargs (ins, thr, nargs - 1, arityp1 - 1);
 		return 0;
 	    }
 	}
@@ -3361,13 +3376,14 @@ IDIO idio_vm_constants_ref (idio_ai_t i)
     return idio_array_get_index (idio_vm_constants, i);
 }
 
-idio_ai_t idio_vm_extend_symbols (IDIO v)
+idio_ai_t idio_vm_extend_symbols (IDIO name)
 {
-    IDIO_ASSERT (v);
-    IDIO_TYPE_ASSERT (symbol, v);
+    IDIO_ASSERT (name);
+    IDIO_TYPE_ASSERT (symbol, name);
     
-    idio_ai_t i = idio_array_size (idio_vm_symbols);
-    idio_array_push (idio_vm_symbols, v);
+    idio_ai_t i = idio_array_size (idio_vm_values);
+    idio_array_push (idio_vm_symbols, name);
+    idio_array_push (idio_vm_values, idio_S_undef);
     return i;
 }
 
@@ -3376,20 +3392,30 @@ IDIO idio_vm_symbols_ref (idio_ai_t i)
     return idio_array_get_index (idio_vm_symbols, i);
 }
 
-idio_ai_t idio_vm_symbols_lookup (IDIO v)
+idio_ai_t idio_vm_symbols_lookup (IDIO name)
 {
-    IDIO_ASSERT (v);
-    IDIO_TYPE_ASSERT (symbol, v);
+    IDIO_ASSERT (name);
+    IDIO_TYPE_ASSERT (symbol, name);
     
     idio_ai_t al = idio_array_size (idio_vm_symbols);
     idio_ai_t i;
     for (i = 0 ; i < al; i++) {
-	if (idio_eqp (v, idio_array_get_index (idio_vm_symbols, i))) {
+	if (idio_eqp (name, idio_array_get_index (idio_vm_symbols, i))) {
 	    return i;
 	}
     }
 
     return -1;
+}
+
+IDIO idio_vm_values_ref (idio_ai_t i)
+{
+    return idio_array_get_index (idio_vm_values, i);
+}
+
+void idio_vm_values_set (idio_ai_t i, IDIO v)
+{
+    idio_array_insert_index (idio_vm_values, v, i);
 }
 
 idio_ai_t idio_vm_extend_primitives (IDIO v)
@@ -3405,37 +3431,6 @@ idio_ai_t idio_vm_extend_primitives (IDIO v)
 IDIO idio_vm_primitives_ref (idio_ai_t i)
 {
     return idio_array_get_index (idio_vm_primitives, i);
-}
-
-idio_ai_t idio_vm_extend_dynamics (IDIO v)
-{
-    IDIO_ASSERT (v);
-    IDIO_TYPE_ASSERT (symbol, v);
-    
-    idio_ai_t i = idio_array_size (idio_vm_dynamics);
-    idio_array_push (idio_vm_dynamics, v);
-    return i;
-}
-
-IDIO idio_vm_dynamics_ref (idio_ai_t i)
-{
-    return idio_array_get_index (idio_vm_dynamics, i);
-}
-
-idio_ai_t idio_vm_dynamics_lookup (IDIO v)
-{
-    IDIO_ASSERT (v);
-    IDIO_TYPE_ASSERT (symbol, v);
-    
-    idio_ai_t al = idio_array_size (idio_vm_dynamics);
-    idio_ai_t i;
-    for (i = 0 ; i < al; i++) {
-	if (idio_eqp (v, idio_array_get_index (idio_vm_dynamics, i))) {
-	    return i;
-	}
-    }
-
-    return -1;
 }
 
 void idio_vm_abort_thread (IDIO thr)
@@ -3458,6 +3453,14 @@ void idio_vm_abort_thread (IDIO thr)
     IDIO_THREAD_PC (thr) = idio_finish_pc;
 }
 
+void idio_init_vm_values ()
+{
+    idio_vm_values = idio_array (400);
+    idio_gc_protect (idio_vm_values);
+    idio_vm_symbols = idio_array (400);
+    idio_gc_protect (idio_vm_symbols);
+}
+
 void idio_init_vm ()
 {
     idio_all_code = idio_i_array (200000);
@@ -3467,18 +3470,8 @@ void idio_init_vm ()
 
     idio_vm_constants = idio_array (8000);
     idio_gc_protect (idio_vm_constants);
-    idio_vm_symbols = idio_array (400);
-    idio_gc_protect (idio_vm_symbols);
     idio_vm_primitives = idio_array (400);
     idio_gc_protect (idio_vm_primitives);
-    idio_vm_dynamics = idio_array (100);
-    idio_gc_protect (idio_vm_dynamics);
-
-    /*
-     * a pair will be a unique identifier
-     */
-    idio_vm_dynamic_mark = idio_pair (idio_symbols_C_intern ("|dynamic|"), idio_S_nil);
-    idio_gc_protect (idio_vm_dynamic_mark);
 
     /*
      * XXX we need idio_vm_base_error_handler_primdata before anyone
@@ -3506,10 +3499,8 @@ void idio_final_vm ()
     idio_gc_expose (idio_vm_constants);
     fprintf (stderr, "final-vm: created %" PRIdPTR " symbols\n", idio_array_size (idio_vm_symbols));
     idio_gc_expose (idio_vm_symbols);
+    idio_gc_expose (idio_vm_values);
     fprintf (stderr, "final-vm: created %" PRIdPTR " primitives\n", idio_array_size (idio_vm_primitives));
     idio_gc_expose (idio_vm_primitives);
-    fprintf (stderr, "final-vm: created %" PRIdPTR " dynamics\n", idio_array_size (idio_vm_dynamics));
-    idio_gc_expose (idio_vm_dynamics);
-    idio_gc_expose (idio_vm_dynamic_mark);
     idio_gc_expose (idio_vm_closure_name);
 }
