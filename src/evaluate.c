@@ -304,17 +304,10 @@ static IDIO idio_evaluator_extend (IDIO name, IDIO primdata, IDIO module)
     IDIO_TYPE_ASSERT (primitive, primdata);
     IDIO_TYPE_ASSERT (module, module);
 
-    idio_debug ("evaluator: %s ", name);
-    idio_debug (" in %s\n", module);
-    
     IDIO cv = idio_module_symbol_lookup (name, module);
     if (idio_S_unspec != cv) {
 	IDIO fpi = IDIO_PAIR_H (IDIO_PAIR_T (cv));
 	IDIO pd = idio_vm_primitives_ref (IDIO_FIXNUM_VAL (fpi));
-
-	fprintf (stderr, "%p == %p\n", IDIO_PRIMITIVE_F (primdata), IDIO_PRIMITIVE_F (pd));
-	idio_debug ("ev primdata %s\n", primdata);
-	idio_debug ("ev pd %s\n", pd);
 
 	if (IDIO_PRIMITIVE_F (primdata) != IDIO_PRIMITIVE_F (pd)) {
 	    idio_static_error_redefine ("evaluator value change", name, pd, primdata);
@@ -343,19 +336,15 @@ IDIO idio_add_evaluation_primitive (idio_primitive_t *d, IDIO module)
 
 void idio_add_expander_primitive (idio_primitive_t *d)
 {
-    /* idio_add_evaluation_primitive (d, idio_current_module ()); */
-    idio_add_primitive (d);
+    idio_add_primitive (d); 
     IDIO primdata = idio_primitive_data (d);
-    /* idio_vm_extend_primitives (primdata); */
     idio_install_expander_source (idio_symbols_C_intern (d->name), primdata, primdata);
 }
 
 void idio_add_operator_primitive (idio_primitive_t *d)
 {
-    /* idio_add_evaluation_primitive (d, idio_current_module ()); */
-    idio_add_primitive (d);
+    idio_add_evaluation_primitive (d, idio_operator_module); 
     IDIO primdata = idio_primitive_data (d);
-    /* idio_vm_extend_primitives (primdata); */
     idio_install_operator (idio_symbols_C_intern (d->name), primdata);
 }
 
