@@ -22,7 +22,7 @@
 
 #include "idio.h"
 
-static void idio_error_fixnum_divide_by_zero ()
+static void idio_fixnum_error_divide_by_zero ()
 {
     idio_error_message ("divide by zero");
 }
@@ -390,7 +390,7 @@ IDIO idio_fixnum_primitive_divide (IDIO args)
 	}
     
 	if (0 == ih) {
-	    idio_error_fixnum_divide_by_zero ();
+	    idio_fixnum_error_divide_by_zero ();
 	    return idio_S_unspec;
 	}
 
@@ -493,7 +493,7 @@ IDIO idio_fixnum_primitive_quotient (IDIO a, IDIO b)
     intptr_t ib = IDIO_FIXNUM_VAL (b);
 
     if (0 == ib) {
-	idio_error_fixnum_divide_by_zero ();
+	idio_fixnum_error_divide_by_zero ();
 	return idio_S_unspec;
     }
 
@@ -856,15 +856,14 @@ void idio_fixnum_add_primitives ()
     IDIO_ADD_PRIMITIVE (fixnump);
     IDIO_ADD_PRIMITIVE (integerp);
     IDIO_ADD_PRIMITIVE (numberp);
-    IDIO_ADD_PRIMITIVE (eq);
+    IDIO_ADD_PRIMITIVE (floor);
+    IDIO_ADD_PRIMITIVE (remainder);
+    IDIO_ADD_PRIMITIVE (quotient);
 
     IDIO_ADD_PRIMITIVE (add);
     IDIO_ADD_PRIMITIVE (subtract);
     IDIO_ADD_PRIMITIVE (multiply);
     IDIO_ADD_PRIMITIVE (divide);
-    IDIO_ADD_PRIMITIVE (remainder);
-    IDIO_ADD_PRIMITIVE (floor);
-    IDIO_ADD_PRIMITIVE (quotient);
 
     IDIO_ADD_PRIMITIVE (le);
     IDIO_ADD_PRIMITIVE (lt);

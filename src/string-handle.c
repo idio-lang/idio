@@ -218,7 +218,7 @@ int idio_string_handle_getc (IDIO sh)
     IDIO_ASSERT (sh);
 
     if (! idio_input_string_handlep (sh)) {
-	idio_error_read_handle (sh);
+	idio_handle_error_read (sh);
     }
 
     if (IDIO_STRING_HANDLE_PTR (sh) < IDIO_STRING_HANDLE_END (sh)) {
@@ -254,7 +254,7 @@ int idio_string_handle_putc (IDIO sh, int c)
     IDIO_ASSERT (sh);
 
     if (! idio_output_string_handlep (sh)) {
-	idio_error_write_handle (sh);
+	idio_handle_error_write (sh);
     }
     
     if (IDIO_STRING_HANDLE_PTR (sh) >= IDIO_STRING_HANDLE_END (sh)) {
@@ -285,7 +285,7 @@ size_t idio_string_handle_puts (IDIO sh, char *s, size_t slen)
     IDIO_ASSERT (sh);
 
     if (! idio_output_string_handlep (sh)) {
-	idio_error_write_handle (sh);
+	idio_handle_error_write (sh);
     }
     
     if ((IDIO_STRING_HANDLE_PTR (sh) + slen) >= (IDIO_STRING_HANDLE_BUF (sh) + IDIO_STRING_HANDLE_BLEN (sh))) {
@@ -364,7 +364,7 @@ void idio_string_handle_print (IDIO sh, IDIO o)
     IDIO_ASSERT (sh);
 
     if (! idio_output_string_handlep (sh)) {
-	idio_error_write_handle (sh);
+	idio_handle_error_write (sh);
     }
 
     char *os = idio_display_string (o);

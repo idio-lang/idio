@@ -64,9 +64,7 @@
 /* IDIO_TYPE_ASSERT assumes a local variable f */
 #define IDIO_TYPE_ASSERT(t,x) {						\
 	if (! idio_isa_ ## t (x)) {					\
-	    char em[BUFSIZ];						\
-	    sprintf (em, "%s is a %s not a %s:", #x, idio_type2string (x), #t); \
-	    idio_error_C (em, IDIO_LIST1 (x));				\
+	    idio_error_param_type (#t, x);				\
 	}								\
     }
 

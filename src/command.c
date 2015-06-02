@@ -86,6 +86,7 @@ IDIO idio_invoke_command (IDIO func, IDIO thr, char *pathname)
     }
     argv[i++] = NULL;
 
+    return IDIO_FIXNUM (0);
     pid_t cpid;
     cpid = fork ();
     if (-1 == cpid) {

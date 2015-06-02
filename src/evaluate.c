@@ -27,89 +27,98 @@
  * variable.  idio_variable_kind is used to return an indication
  * as to what sort of variable it is and some useful detail about it.
 
- * For local and predefined variables this is split into two parts:
- * names and values.  Names are recorded during processing to provide
- * a fast index into a table of values for execution.
+ * For local variables this is split into two parts: names and values.
+ * Names are recorded during processing to provide a fast index into a
+ * table of values for execution.
 
- * For module-level ("global") variables we can keep track of names we
- * have seen a definition for and, separately, the names we have seen
- * used in the body of code and produce a report on the difference.
+ * For non-local variables we can keep track of names we have seen in
+ * each module.  Each new name is mapped into the VM's table of
+ * values.
 
- *   At least a report on the difference would be a good idea in a
- *   pure programming language.  One of our aims is to be a shell
- *   where someone can invoke an arbitrarily named command, eg. "ls"
- *   which we will not have seen a definition for.
-
- * And just to keep us on our toes we need to be aware of dynamic and
- * environment variables.
-
- * The order of lookup is:
-
+ * Dynamic and environment variables are like regular names in modules
+ * except we look them up differently (on the stack first)..
+ 
+ * The order of lookup as we see a symbol is:
+ 
  * 1. local environments:
-
+ 
  *    these are a hierarchy of (flat) environments corresponing to a
  *    hierarchy of new scopes as new blocks are entered.  So we have
  *    lists of association lists of the names to (idio_S_local i j)
  *    where i is the ith association list and j is the jth variable in
  *    that frame
-
+ 
  *    During execution we will be creating matching activation frames
  *    accessible through the *env* register and i/j can be used to
  *    dereference through *env* to access the value.
-
+ 
  * 2. in symbols of the current module
-
+ 
  *    In the text these are denoted as toplevel names and are denoted
- *    as (kind i) where kind can be idio_S_toplevel or idio_S_dynamic
- *    and i is an index into the VM's table of known values.
-
+ *    as (kind i) where kind can be idio_S_toplevel, idio_S_dynamic or
+ *    idio_S_environ and i is an index into the VM's table of known
+ *    values.
+ 
  *    There is a subtlety between referencing a variable and setting
  *    it.  You can reference a variable that is in the exported list
  *    of symbols of a module you import.  However, you can only set a
  *    variable if it is in the current module.
-
- * 3. in the table of predefined primitives.
-
+ 
+ * 3. in the predefined primitive functions.
+ 
  *    (These are not accessible to mortals, can only be looked up by
  *    the evaluation engine and are read-only.)
  *
  *    These are created by the IDIO_ADD_PRIMITIVE macros which
- *    populate a list of name to index mappings and the index is used
- *    during execution to access the table of (primitive) values
- *    directly.
+ *    populate a normal list of names in the Idio.primitives and
+ *    Idio.operator modules.
  *
+ *    Idio.primitives for the usual culprits ("+", "string-append",
+ *    etc.) and Idio.operators for operators (primarily because, say,
+ *    the operator "-" is an obvious name clash with the regular
+ *    subtraction primitive "-" and, in fact, is simply a transformer
+ *    into that).
+ 
+ *    As an aside, template expansion is done in idio_expander_thread
+ *    which has idio_expansion_module as its current-module --
+ *    expansion shouldn't sully the namespace of the current thread.
+ *    The list of known expanders is kept in the variable
+ *    *expander-list* in idio_expansion_module.
+ 
  * Modules Symbols and Compiling
- *
+
  * The compiler, when referencing toplevel values, should only be
  * using integer indexes.  It maintains a simple table of those values
  * which is the amalgamation of all the individual modules' toplevel
  * values.
- *
+ 
  * During compilation we need to maintain the artiface of modules when
- * we lookup symbols in which case each module will have a small
- * toplevel mapping from the symbol to the toplevel description
- * (nominally the pair (idio_S_toplevel . i) where i is in the index
- * into the compilers tables of all known toplevel values.
+ * we lookup symbols in which case the values of the symbols of each
+ * module will be a mapping to the toplevel description (nominally the
+ * pair (idio_S_toplevel . i) where i is in the index into the
+ * compilers tables of all known toplevel values.
+ *
  */
-
-static IDIO idio_predef_names = idio_S_nil;
-static IDIO idio_predef_values = idio_S_nil;
-
-static IDIO idio_toplevel_names = idio_S_nil;
-
-#define IDIO_TOPLEVEL_UNKNOWN_NAME	0
-#define IDIO_TOPLEVEL_REGULAR_NAME	1
-#define IDIO_TOPLEVEL_DYNAMIC_NAME	2
-#define IDIO_TOPLEVEL_ENVIRON_NAME	3
 
 /*
- * Expanders (aka macros) live in their own little world...
+ * Some flags for scope hints for non-local variables
+ */
+#define IDIO_UNKNOWN_SCOPE	0
+#define IDIO_LEXICAL_SCOPE	1 /* regular lexical globals */
+#define IDIO_DYNAMIC_SCOPE	2 /* dynamic globals */
+#define IDIO_ENVIRON_SCOPE	3 /* dynamics tagged as environment
+				     variables */
+
+/*
+ * Expanders (aka templates) live in their own little world...
  */
 
-static IDIO idio_evaluation_module = idio_S_nil;
+static IDIO idio_expansion_module = idio_S_nil;
 static IDIO idio_expander_list = idio_S_nil;
 static IDIO idio_expander_list_src = idio_S_nil;
 static IDIO idio_expander_thread = idio_S_nil;
+
+static IDIO idio_operator_module = idio_S_nil;
 static IDIO idio_operator_list = idio_S_nil;
 
 static IDIO idio_initial_expander (IDIO x, IDIO e);
@@ -123,7 +132,7 @@ static void idio_warning_static_undefineds (IDIO diff)
     idio_debug ("WARNING: undefined variables: %s\n", diff);
 }
 
-static void idio_error_static_redefine (char *msg, IDIO name, IDIO cv, IDIO new)
+static void idio_static_error_redefine (char *msg, IDIO name, IDIO cv, IDIO new)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (name);
@@ -140,14 +149,15 @@ static void idio_error_static_redefine (char *msg, IDIO name, IDIO cv, IDIO new)
     idio_display (cv, dsh);
     idio_display_C (": proposed: ", dsh);
     idio_display (new, dsh);
-    IDIO c = idio_struct_instance (idio_condition_st_variable_error_type, IDIO_LIST4 (idio_get_output_string (msh),
-										      idio_S_nil,
-										      idio_get_output_string (dsh),
-										      name));
+    IDIO c = idio_struct_instance (idio_condition_st_variable_error_type,
+				   IDIO_LIST4 (idio_get_output_string (msh),
+					       idio_S_nil,
+					       idio_get_output_string (dsh),
+					       name));
     idio_signal_exception (idio_S_true, c);
 }
 
-static void idio_error_static_variable (char *msg, IDIO name)
+static void idio_static_error_variable (char *msg, IDIO name)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (name);
@@ -156,30 +166,31 @@ static void idio_error_static_variable (char *msg, IDIO name)
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C (msg, msh);
 
-    IDIO c = idio_struct_instance (idio_condition_st_variable_error_type, IDIO_LIST4 (idio_get_output_string (msh),
-										      idio_S_nil,
-										      idio_S_nil,
-										      name));
+    IDIO c = idio_struct_instance (idio_condition_st_variable_error_type,
+				   IDIO_LIST4 (idio_get_output_string (msh),
+					       idio_S_nil,
+					       idio_S_nil,
+					       name));
     idio_signal_exception (idio_S_true, c);
 }
 
-static void idio_error_static_unbound (IDIO name)
+static void idio_static_error_unbound (IDIO name)
 {
     IDIO_ASSERT (name);
     IDIO_TYPE_ASSERT (symbol, name);
     
-    idio_error_static_variable ("unbound", name);
+    idio_static_error_variable ("unbound", name);
 }
 
-static void idio_error_static_immutable (IDIO name)
+static void idio_static_error_immutable (IDIO name)
 {
     IDIO_ASSERT (name);
     IDIO_TYPE_ASSERT (symbol, name);
     
-    idio_error_static_variable ("immutable", name);
+    idio_static_error_variable ("immutable", name);
 }
 
-static void idio_error_static_arity (char *msg, IDIO args)
+static void idio_static_error_arity (char *msg, IDIO args)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (args);
@@ -191,13 +202,14 @@ static void idio_error_static_arity (char *msg, IDIO args)
     IDIO dsh = idio_open_output_string_handle_C ();
     idio_display (args, dsh);
 
-    IDIO c = idio_struct_instance (idio_condition_st_function_arity_error_type, IDIO_LIST3 (idio_get_output_string (msh),
-											    idio_S_nil,
-											    idio_get_output_string (dsh)));
+    IDIO c = idio_struct_instance (idio_condition_st_function_arity_error_type,
+				   IDIO_LIST3 (idio_get_output_string (msh),
+					       idio_S_nil,
+					       idio_get_output_string (dsh)));
     idio_signal_exception (idio_S_true, c);
 }
 
-static void idio_error_static_primitive_arity (char *msg, IDIO f, IDIO args, IDIO primdata)
+static void idio_static_error_primitive_arity (char *msg, IDIO f, IDIO args, IDIO primdata)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (args);
@@ -208,18 +220,20 @@ static void idio_error_static_primitive_arity (char *msg, IDIO f, IDIO args, IDI
     idio_display_C (msg, msh);
 
     IDIO dsh = idio_open_output_string_handle_C ();
+    idio_display_C ("primitive '", dsh);
     idio_display (f, dsh);
     char em[BUFSIZ];
-    sprintf (em, "has arity %" PRId8 "%s; passed:", IDIO_PRIMITIVE_ARITY (primdata), IDIO_PRIMITIVE_VARARGS (primdata) ? "+" : "");
+    sprintf (em, "' has arity %" PRId8 "%s; passed: ", IDIO_PRIMITIVE_ARITY (primdata), IDIO_PRIMITIVE_VARARGS (primdata) ? "+" : "");
     idio_display_C (em, dsh);
     idio_display (args, dsh);
-    IDIO c = idio_struct_instance (idio_condition_st_function_arity_error_type, IDIO_LIST3 (idio_get_output_string (msh),
-											    idio_S_nil,
-											    idio_get_output_string (dsh)));
+    IDIO c = idio_struct_instance (idio_condition_st_function_arity_error_type,
+				   IDIO_LIST3 (idio_get_output_string (msh),
+					       idio_S_nil,
+					       idio_get_output_string (dsh)));
     idio_signal_exception (idio_S_true, c);
 }
 
-static IDIO idio_undefined_code (char *format, ...)
+static IDIO idio_static_error_undefined_code (char *format, ...)
 {
     char *s;
     
@@ -235,22 +249,6 @@ static IDIO idio_undefined_code (char *format, ...)
     return r;
 }
 
-static IDIO idio_variable_predefp (IDIO names, IDIO name)
-{
-    IDIO_ASSERT (names);
-    IDIO_ASSERT (name);
-    IDIO_TYPE_ASSERT (list, names);
-    IDIO_TYPE_ASSERT (symbol, name);
-
-    IDIO a = idio_list_assq (name, names);
-
-    if (idio_isa_pair (a)) {
-	return IDIO_PAIR_T (a);
-    }
-
-    return idio_S_nil;
-}
-
 static IDIO idio_predef_extend (IDIO name, IDIO primdata)
 {
     IDIO_ASSERT (name);
@@ -258,32 +256,26 @@ static IDIO idio_predef_extend (IDIO name, IDIO primdata)
     IDIO_TYPE_ASSERT (symbol, name);
     IDIO_TYPE_ASSERT (primitive, primdata);
 
-    idio_ai_t index = idio_vm_extend_primitives (primdata);
-    IDIO i = IDIO_FIXNUM (index);
-    
-    IDIO_PAIR_H (idio_predef_names) = idio_pair (IDIO_LIST3 (name, idio_S_predef, i),
-						 IDIO_PAIR_H (idio_predef_names));
+    IDIO cv = idio_module_primitive_symbol_lookup (name);
+    if (idio_S_unspec != cv) {
+	IDIO fpi = IDIO_PAIR_H (IDIO_PAIR_T (cv));
+	IDIO pd = idio_vm_primitives_ref (IDIO_FIXNUM_VAL (fpi));
 
-    /* for idio_module_symbol_lookup etc. */
-    idio_module_primitive_set_symbol_value (name, primdata);
-
-    return i;
-}
-
-IDIO idio_get_primitive_data (IDIO name)
-{
-    IDIO_ASSERT (name);
-    IDIO_TYPE_ASSERT (symbol, name);
-
-    IDIO k = idio_variable_predefp (IDIO_PAIR_H (idio_predef_names), name);
-
-    if (idio_S_nil != k) {
-	IDIO i = IDIO_PAIR_H (IDIO_PAIR_T (k));
-
-	return idio_vm_primitives_ref (IDIO_FIXNUM_VAL (i));
+	if (IDIO_PRIMITIVE_F (primdata) != IDIO_PRIMITIVE_F (pd)) {
+	    idio_debug ("WARNING: %s: ", name);
+	    fprintf (stderr, "%p -> %p\n", IDIO_PRIMITIVE_F (pd), IDIO_PRIMITIVE_F (primdata));
+	    /* idio_static_error_redefine ("primitive value change", name, pd, primdata); */
+	} else {
+	    return fpi;
+	}
     }
 
-    return idio_S_unspec;
+    idio_ai_t pi = idio_vm_extend_primitives (primdata);
+    IDIO fpi = IDIO_FIXNUM (pi);
+
+    idio_module_primitive_set_symbol (name, IDIO_LIST2 (idio_S_predef, fpi));  
+    
+    return fpi;
 }
 
 IDIO idio_add_primitive (idio_primitive_t *d)
@@ -303,8 +295,55 @@ IDIO idio_add_special_primitive (idio_primitive_t *d)
 
 static void idio_install_expander_source (IDIO id, IDIO proc, IDIO code);
 
+static IDIO idio_evaluator_extend (IDIO name, IDIO primdata, IDIO module)
+{
+    IDIO_ASSERT (name);
+    IDIO_ASSERT (primdata);
+    IDIO_ASSERT (module);
+    IDIO_TYPE_ASSERT (symbol, name);
+    IDIO_TYPE_ASSERT (primitive, primdata);
+    IDIO_TYPE_ASSERT (module, module);
+
+    idio_debug ("evaluator: %s ", name);
+    idio_debug (" in %s\n", module);
+    
+    IDIO cv = idio_module_symbol_lookup (name, module);
+    if (idio_S_unspec != cv) {
+	IDIO fpi = IDIO_PAIR_H (IDIO_PAIR_T (cv));
+	IDIO pd = idio_vm_primitives_ref (IDIO_FIXNUM_VAL (fpi));
+
+	fprintf (stderr, "%p == %p\n", IDIO_PRIMITIVE_F (primdata), IDIO_PRIMITIVE_F (pd));
+	idio_debug ("ev primdata %s\n", primdata);
+	idio_debug ("ev pd %s\n", pd);
+
+	if (IDIO_PRIMITIVE_F (primdata) != IDIO_PRIMITIVE_F (pd)) {
+	    idio_static_error_redefine ("evaluator value change", name, pd, primdata);
+	}
+	
+	return fpi;
+    }
+
+    idio_ai_t pi = idio_vm_extend_primitives (primdata);
+    IDIO fpi = IDIO_FIXNUM (pi);
+    
+    idio_module_set_symbol (name, IDIO_LIST2 (idio_S_predef, fpi), module);
+
+    return fpi;
+}
+
+IDIO idio_add_evaluation_primitive (idio_primitive_t *d, IDIO module)
+{
+    IDIO_ASSERT (module);
+    IDIO_TYPE_ASSERT (module, module);
+    
+    IDIO primdata = idio_primitive_data (d);
+    IDIO sym = idio_symbols_C_intern (d->name);
+    return idio_evaluator_extend (sym, primdata, module);
+}
+
 void idio_add_expander_primitive (idio_primitive_t *d)
 {
+    /* idio_add_evaluation_primitive (d, idio_current_module ()); */
     idio_add_primitive (d);
     IDIO primdata = idio_primitive_data (d);
     /* idio_vm_extend_primitives (primdata); */
@@ -313,23 +352,11 @@ void idio_add_expander_primitive (idio_primitive_t *d)
 
 void idio_add_operator_primitive (idio_primitive_t *d)
 {
+    /* idio_add_evaluation_primitive (d, idio_current_module ()); */
     idio_add_primitive (d);
     IDIO primdata = idio_primitive_data (d);
     /* idio_vm_extend_primitives (primdata); */
     idio_install_operator (idio_symbols_C_intern (d->name), primdata);
-}
-
-static IDIO idio_variable_toplevelp (IDIO name)
-{
-    IDIO_ASSERT (name);
-    IDIO_TYPE_ASSERT (symbol, name);
-
-    IDIO cv = idio_module_current_symbol_lookup (name);
-    if (idio_S_unspec == cv) {
-	return idio_S_nil;
-    }
-
-    return cv;
 }
 
 static IDIO idio_toplevel_extend (IDIO name, int variant)
@@ -339,13 +366,13 @@ static IDIO idio_toplevel_extend (IDIO name, int variant)
 
     IDIO kind;
     switch (variant) {
-    case IDIO_TOPLEVEL_UNKNOWN_NAME:
+    case IDIO_UNKNOWN_SCOPE:
 	idio_error_message ("unknown toplevel type");
 	break;
-    case IDIO_TOPLEVEL_REGULAR_NAME:
+    case IDIO_LEXICAL_SCOPE:
 	kind = idio_S_toplevel;
 	break;
-    case IDIO_TOPLEVEL_DYNAMIC_NAME:
+    case IDIO_DYNAMIC_SCOPE:
 	kind = idio_S_dynamic;
 	break;
     default:
@@ -355,16 +382,19 @@ static IDIO idio_toplevel_extend (IDIO name, int variant)
     
     IDIO cv = idio_module_current_symbol_lookup (name);
     if (idio_S_unspec != cv) {
-	if (kind != IDIO_PAIR_H (cv)) {
-	    idio_error_static_redefine ("type change", name, cv, kind);
+	IDIO curkind = IDIO_PAIR_H (cv);
+	if (kind != curkind) {
+	    if (idio_S_predef != curkind) {
+		idio_static_error_redefine ("type change", name, cv, kind);
+	    }
+	} else {
+	    return IDIO_PAIR_H (IDIO_PAIR_T (cv));
 	}
-
-	return IDIO_PAIR_H (IDIO_PAIR_T (cv));
     }
 
     idio_ai_t vi = idio_vm_extend_symbols (name);
     IDIO fvi = IDIO_FIXNUM (vi);
-    
+
     idio_module_current_set_symbol (name, IDIO_LIST2 (kind, fvi));
 
     return fvi;
@@ -460,19 +490,14 @@ static IDIO idio_variable_kind (IDIO nametree, IDIO name, int auto_type)
     IDIO r = idio_variable_localp (nametree, 0, name);
     
     if (idio_S_nil == r) {
-	r = idio_variable_toplevelp (name);
-	if (idio_S_nil == r) {
-	    r = idio_variable_predefp (IDIO_PAIR_H (idio_predef_names), name);
-	    if (idio_S_nil == r) {
-		/*
-		 * auto-extend toplevel names with this unknown
-		 * variable -- it wasn't a lexical and can't be a
-		 * primitive therefore we should (eventually) see a
-		 * definition for it
-		 */
-		idio_toplevel_extend (name, auto_type);
-		r = idio_variable_toplevelp (name);
-	    }
+        r = idio_module_current_symbol_lookup (name);
+	if (idio_S_unspec == r) {
+	    /*
+	     * auto-extend the toplevel with this unknown variable --
+	     * we should (eventually) see a definition for it
+	     */
+	    idio_toplevel_extend (name, auto_type);
+	    r = idio_module_current_symbol_lookup (name);
 	}
     }
 
@@ -484,7 +509,7 @@ static IDIO idio_evaluate_expander_source (IDIO x, IDIO e)
     IDIO_ASSERT (x);
     IDIO_ASSERT (e);
 
-    /* fprintf (stderr, "evaluate-expander: in\n"); */
+    /* idio_debug ("evaluate-expander: in: %s\n", x); */
 
     IDIO cthr = idio_current_thread ();
     idio_set_current_thread (idio_expander_thread);
@@ -497,7 +522,7 @@ static IDIO idio_evaluate_expander_source (IDIO x, IDIO e)
     idio_thread_restore_state (idio_expander_thread);
     idio_set_current_thread (cthr);
 
-    /* idio_debug ("evaluate-expander: out: %s\n", r); */
+    /* idio_debug ("evaluate-expander: out: %s\n", r);  */
 
     /* if (idio_S_nil == r) { */
     /* 	fprintf (stderr, "evaluate-expander: bad expansion?\n"); */
@@ -514,9 +539,9 @@ static IDIO idio_expanderp (IDIO name)
       return idio_S_false;
     }
 
-    IDIO expander_list = idio_module_symbol_value (idio_expander_list, idio_evaluation_module);
-    /* fprintf (stderr, "expander?: %p in %p: *expander-list* = %p\n", idio_expander_list, idio_evaluation_module, expander_list); */
-    /* idio_dump (expander_list, 1); */
+    IDIO expander_list = idio_module_symbol_value (idio_expander_list, idio_expansion_module);
+    /* fprintf (stderr, "expander?: %p in %p: *expander-list* = %p\n", idio_expander_list, idio_expansion_module, expander_list);   */
+    /* idio_dump (expander_list, 1);   */
     
     IDIO assq = idio_list_assq (name, expander_list);
 
@@ -525,13 +550,17 @@ static IDIO idio_expanderp (IDIO name)
     if (idio_S_false != assq) {
 	IDIO v = IDIO_PAIR_T (assq);
 	if (idio_isa_pair (v)) {
-	    /* idio_debug ("expander?: %s isa PAIR\n", name);  */
-	    /* idio_debug ("expander?: %s\n", v);  */
+	    /* idio_debug ("expander?: %s isa PAIR\n", name);   */
+	    /* idio_debug ("expander?: %s\n", v); */
+
 	    IDIO lv = idio_module_current_symbol_value_recurse (name);
-	    /* idio_debug ("expander?: lookup -> %s\n", lv);  */
+	    /* idio_debug ("expander?: lookup/curr -> %s\n", lv); */
+	    /* idio_debug ("/curr %s\n", idio_current_module ()); */
 	    if (idio_isa_primitive (lv) ||
 		idio_isa_closure (lv)) {
 		IDIO_PAIR_T (assq) = lv;
+	    } else {
+		idio_debug ("expander?: %s not an expander?\n", name);
 	    }
 	} else {
 	    /* fprintf (stderr, "expander?: isa %s\n", idio_type2string (v));  */
@@ -629,14 +658,14 @@ void idio_install_expander (IDIO id, IDIO proc)
     IDIO_ASSERT (proc);
     IDIO_TYPE_ASSERT (symbol, id);
     
-    IDIO el = idio_module_symbol_value (idio_expander_list, idio_evaluation_module);
+    IDIO el = idio_module_symbol_value (idio_expander_list, idio_expansion_module);
     IDIO old = idio_list_assq (id, el);
 
     if (idio_S_false == old) {
 	idio_module_set_symbol_value (idio_expander_list,
 				      idio_pair (idio_pair (id, proc),
 						 el),
-				      idio_evaluation_module);
+				      idio_expansion_module);
     } else {
 	IDIO_PAIR_T (old) = proc;
     }
@@ -644,17 +673,17 @@ void idio_install_expander (IDIO id, IDIO proc)
 
 static void idio_install_expander_source (IDIO id, IDIO proc, IDIO code)
 {
-    /* idio_debug ("install-expander: %s\n", id); */
+    /* idio_debug ("install-expander-source: %s\n", id); */
 
     idio_install_expander (id, proc);
 
-    IDIO els = idio_module_symbol_value (idio_expander_list_src, idio_evaluation_module);
+    IDIO els = idio_module_symbol_value (idio_expander_list_src, idio_expansion_module);
     IDIO old = idio_list_assq (id, els);
     if (idio_S_false == old) {
 	idio_module_set_symbol_value (idio_expander_list_src,
-				      idio_pair (idio_pair (id, proc),
+				      idio_pair (idio_pair (id, code),
 						 els),
-				      idio_evaluation_module);
+				      idio_expansion_module);
     } else {
 	IDIO_PAIR_T (old) = proc;
     }
@@ -677,7 +706,7 @@ static IDIO idio_evaluate_expander_code (IDIO m)
     idio_thread_restore_state (idio_expander_thread);
     idio_set_current_thread (cthr);
 
-    /* idio_debug ("install-expander-code: out: %s\n", r);  */
+    /* idio_debug ("install-expander-code: out: %s\n", r);   */
     return r;
 }
 
@@ -685,13 +714,13 @@ static IDIO idio_evaluate_expander_code (IDIO m)
 /* { */
 /*     idio_module_set_symbol_value (idio_expander_list, */
 /* 				  idio_pair (idio_pair (id, proc), */
-/* 					     idio_module_symbol_value (idio_expander_list, idio_evaluation_module)), */
-/* 				  idio_evaluation_module); */
+/* 					     idio_module_symbol_value (idio_expander_list, idio_expansion_module)), */
+/* 				  idio_expansion_module); */
 /* } */
 
 /* static void idio_delete_expander (IDIO id) */
 /* { */
-/*     IDIO el = idio_module_symbol_value (idio_expander_list, idio_evaluation_module); */
+/*     IDIO el = idio_module_symbol_value (idio_expander_list, idio_expansion_module); */
 /*     IDIO prv = idio_S_false; */
 
 /*     for (;;) { */
@@ -701,7 +730,7 @@ static IDIO idio_evaluate_expander_code (IDIO m)
 /* 	    if (idio_S_false == prv) { */
 /* 		idio_module_set_symbol_value (idio_expander_list, */
 /* 					      IDIO_PAIR_T (el), */
-/* 					      idio_evaluation_module); */
+/* 					      idio_expansion_module); */
 /* 		return; */
 /* 	    } else { */
 /* 		IDIO_PAIR_T (prv) = IDIO_PAIR_T (el); */
@@ -720,8 +749,8 @@ static IDIO idio_macro_expand (IDIO e)
 {
     IDIO_ASSERT (e);
 
-    /* fprintf (stderr, "macro-expand: %zd args in ", idio_list_length (e));   */
-    /* idio_debug (" %s\n", e);   */
+    /* fprintf (stderr, "macro-expand: %zd args in ", idio_list_length (e));    */
+    /* idio_debug (" %s\n", e);    */
     
     return idio_evaluate_expander_source (e, idio_S_unspec);
 }
@@ -731,8 +760,8 @@ static IDIO idio_macro_expands (IDIO e)
     IDIO_ASSERT (e);
 
     for (;;) {
-	/* fprintf (stderr, "macro-expand*: e: %zd args in", idio_list_length (e)); */
-	/* idio_debug (" %s\n", e); */
+	/* fprintf (stderr, "macro-expand*: e: %zd args in", idio_list_length (e));  */
+	/* idio_debug (" %s\n", e);  */
 
 	IDIO new = idio_evaluate_expander_source (e, idio_S_false);
 	/* idio_debug ("macro-expand*: new: %s\n", new); */
@@ -753,14 +782,14 @@ void idio_install_operator (IDIO id, IDIO proc)
     IDIO_ASSERT (proc);
     IDIO_TYPE_ASSERT (symbol, id);
     
-    IDIO el = idio_module_symbol_value (idio_operator_list, idio_evaluation_module);
+    IDIO el = idio_module_symbol_value (idio_operator_list, idio_operator_module);
     IDIO old = idio_list_assq (id, el);
 
     if (idio_S_false == old) {
 	idio_module_set_symbol_value (idio_operator_list,
 				      idio_pair (idio_pair (id, proc),
 						 el),
-				      idio_evaluation_module);
+				      idio_operator_module);
     } else {
 	IDIO_PAIR_T (old) = proc;
     }
@@ -807,10 +836,10 @@ static IDIO idio_evaluate_operator (IDIO n, IDIO e, IDIO b, IDIO a)
     idio_thread_restore_state (idio_expander_thread);
     idio_set_current_thread (cthr);
 
-    /* idio_debug ("evaluate-operator: out: %s\n", r); */
+    /* idio_debug ("evaluate-operator: out: %s\n", r);  */
 
     /* if (idio_S_nil == r) { */
-    /* 	fprintf (stderr, "evaluate-operator: bad expansion?\n"); */
+    /* 	fprintf (stderr, "evaluate-operator: bad operator?\n"); */
     /* } */
     
     return r;
@@ -824,8 +853,8 @@ static IDIO idio_operatorp (IDIO name)
       return idio_S_false;
     }
 
-    IDIO operator_list = idio_module_symbol_value (idio_operator_list, idio_evaluation_module);
-    /* fprintf (stderr, "operator?: %p in %p: *operator-list* = %p\n", idio_operator_list, idio_evaluation_module, operator_list); */
+    IDIO operator_list = idio_module_symbol_value (idio_operator_list, idio_operator_module);
+    /* fprintf (stderr, "operator?: %p in %p: *operator-list* = %p\n", idio_operator_list, idio_operator_module, operator_list); */
     /* idio_dump (operator_list, 1); */
     
     IDIO assq = idio_list_assq (name, operator_list);
@@ -864,8 +893,8 @@ static IDIO idio_meaning_reference (IDIO name, IDIO nametree, int tailp, int aut
 	 * shouldn't get here as unknowns are automatically
 	 * toplevel...
 	 */
-	idio_error_static_unbound (name);
-	return idio_undefined_code ("meaning-reference: %s", idio_as_string (name, 1));
+	idio_static_error_unbound (name);
+	return idio_static_error_undefined_code ("meaning-reference: %s", idio_as_string (name, 1));
     }
 
     IDIO kt = IDIO_PAIR_H (k);
@@ -888,8 +917,8 @@ static IDIO idio_meaning_reference (IDIO name, IDIO nametree, int tailp, int aut
 	/* fprintf (stderr, "meaning-reference: predefined #%zd\n", IDIO_FIXNUM_VAL (i)); */
 	return IDIO_LIST2 (idio_I_PREDEFINED, i);
     } else {
-	idio_error_static_unbound (name);
-	return idio_undefined_code ("meaning-reference: %s", idio_as_string (name, 1));
+	idio_static_error_unbound (name);
+	return idio_static_error_undefined_code ("meaning-reference: %s", idio_as_string (name, 1));
     }
 }
 
@@ -900,15 +929,15 @@ static IDIO idio_meaning_function_reference (IDIO name, IDIO nametree, int tailp
     IDIO_TYPE_ASSERT (symbol, name);
     IDIO_TYPE_ASSERT (list, nametree);
 
-    IDIO k = idio_variable_kind (nametree, name, IDIO_TOPLEVEL_REGULAR_NAME);
+    IDIO k = idio_variable_kind (nametree, name, IDIO_LEXICAL_SCOPE);
 
     if (idio_S_nil == k) {
 	/*
 	 * shouldn't get here as unknowns are automatically
 	 * toplevel...
 	 */
-	idio_error_static_unbound (name);
-	return idio_undefined_code ("meaning-reference: %s", idio_as_string (name, 1));
+	idio_static_error_unbound (name);
+	return idio_static_error_undefined_code ("meaning-reference: %s", idio_as_string (name, 1));
     }
 
     IDIO kt = IDIO_PAIR_H (k);
@@ -931,8 +960,8 @@ static IDIO idio_meaning_function_reference (IDIO name, IDIO nametree, int tailp
 	/* fprintf (stderr, "meaning-reference: predefined #%zd\n", IDIO_FIXNUM_VAL (i)); */
 	return IDIO_LIST2 (idio_I_PREDEFINED, i);
     } else {
-	idio_error_static_unbound (name);
-	return idio_undefined_code ("meaning-reference: %s", idio_as_string (name, 1));
+	idio_static_error_unbound (name);
+	return idio_static_error_undefined_code ("meaning-reference: %s", idio_as_string (name, 1));
     }
 }
 
@@ -1044,17 +1073,17 @@ static IDIO idio_rewrite_cond (IDIO c)
 	return idio_S_void;
     } else if (! idio_isa_pair (c)) {
 	idio_error_param_type ("pair", c);
-	return idio_undefined_code ("cond: %s", idio_as_string (c, 1));
+	return idio_static_error_undefined_code ("cond: %s", idio_as_string (c, 1));
     } else if (! idio_isa_pair (IDIO_PAIR_H (c))) {
 	/* idio_debug ("pair/pair: c %s\n", c); */
 	idio_error_param_type ("pair/pair", c);
-	return idio_undefined_code ("cond: %s", idio_as_string (c, 1));
+	return idio_static_error_undefined_code ("cond: %s", idio_as_string (c, 1));
     } else if (idio_S_else == IDIO_PAIR_H (IDIO_PAIR_H (c))) {
 	/* fprintf (stderr, "cond-rewrite: else clause\n");  */
 	if (idio_S_nil == IDIO_PAIR_T (c)) {
 	    return idio_list_append2 (IDIO_LIST1 (idio_S_begin), IDIO_PAIR_T (IDIO_PAIR_H (c)));
 	} else {
-	    return idio_undefined_code ("cond: else not in last clause", idio_as_string (c, 1));
+	    return idio_static_error_undefined_code ("cond: else not in last clause", idio_as_string (c, 1));
 	}
     }
 
@@ -1079,7 +1108,7 @@ static IDIO idio_rewrite_cond (IDIO c)
 					   idio_rewrite_cond (IDIO_PAIR_T (c))));
 	} else {
 	    idio_error_param_type ("=>", c);
-	    return idio_undefined_code ("cond: => bad format", idio_as_string (c, 1));
+	    return idio_static_error_undefined_code ("cond: => bad format", idio_as_string (c, 1));
 	}
     } else if (idio_S_nil == IDIO_PAIR_T (IDIO_PAIR_H (c))) {
 	/* fprintf (stderr, "cond-rewrite: null? cdar clause\n");  */
@@ -1111,7 +1140,7 @@ static IDIO idio_meaning_assignment (IDIO name, IDIO e, IDIO nametree, int tailp
     IDIO_TYPE_ASSERT (list, nametree);
 
     IDIO m = idio_meaning (e, nametree, 0);
-    IDIO k = idio_variable_kind (nametree, name, IDIO_TOPLEVEL_REGULAR_NAME);
+    IDIO k = idio_variable_kind (nametree, name, IDIO_LEXICAL_SCOPE);
 
     if (idio_S_nil == k) {
 	idio_error_C ("unknown variable:", name);
@@ -1133,10 +1162,10 @@ static IDIO idio_meaning_assignment (IDIO name, IDIO e, IDIO nametree, int tailp
 	/*
 	IDIO_C_ASSERT (IDIO_TYPE_FIXNUM == idio_type (i));
 	switch (variant) {
-	case IDIO_TOPLEVEL_UNKNOWN_NAME:
-	case IDIO_TOPLEVEL_REGULAR_NAME:
+	case IDIO_UNKNOWN_SCOPE:
+	case IDIO_LEXICAL_SCOPE:
 	    return IDIO_LIST3 (idio_I_GLOBAL_SET, i, m);
-	case IDIO_TOPLEVEL_DYNAMIC_NAME:
+	case IDIO_DYNAMIC_SCOPE:
 	    return IDIO_LIST3 (idio_I_GLOBAL_SET, i, m);
 	default:
 	    idio_error_message ("unexpected toplevel variant %d", variant);
@@ -1166,14 +1195,33 @@ static IDIO idio_meaning_assignment (IDIO name, IDIO e, IDIO nametree, int tailp
 	/*
 	 * We can shadow predefs...semantically dubious
 	 */
-	i = idio_toplevel_extend (name, variant);
-	return IDIO_LIST3 (idio_I_GLOBAL_SET, i, m);
+	IDIO newi = idio_toplevel_extend (name, variant);
+
+	/*
+	 * But now we have a problem.
+	 *
+	 * As we *compile* regular code, any subsequent reference to
+	 * {name} will find this new toplevel and we'll embed
+	 * GLOBAL-REFs to it etc..  All good for the future when we
+	 * *run* the compiled code.
+	 *
+	 * However, if any templates in the here and now refer to
+	 * {name} then we have a problem.  All we've done is extend
+	 * the VM's table of known toplevels and given it a value of
+	 * #undef.  If a template tries to use {name} it'll get back
+	 * #undef and things will start to go wrong.
+	 *
+	 * What we need to do is patch up the toplevel with the
+	 * current primitive value we're overriding.
+	 */
+	idio_module_current_set_symbol_value (name, idio_vm_primitives_ref (IDIO_FIXNUM_VAL (i)));
+	return IDIO_LIST3 (idio_I_GLOBAL_SET, newi, m);
 
 	/* if we weren't allowing shadowing */
-	idio_error_static_immutable (name);
+	idio_static_error_immutable (name);
 	return idio_S_unspec;
     } else {
-	idio_error_static_unbound (name);
+	idio_static_error_unbound (name);
 	return idio_S_unspec;
     }
 }
@@ -1185,8 +1233,8 @@ static IDIO idio_meaning_define (IDIO name, IDIO e, IDIO nametree, int tailp)
     IDIO_ASSERT (nametree);
     IDIO_TYPE_ASSERT (list, nametree);
 
-    /* idio_debug ("meaning-define: (define %s", name);  */
-    /* idio_debug (" %s)\n", e);  */
+    /* idio_debug ("meaning-define: (define %s", name);   */
+    /* idio_debug (" %s)\n", e);   */
 
     if (idio_isa_pair (name)) {
 	/*
@@ -1222,7 +1270,7 @@ static IDIO idio_meaning_define (IDIO name, IDIO e, IDIO nametree, int tailp)
     }
     */
 
-    return idio_meaning_assignment (name, e, nametree, tailp, IDIO_TOPLEVEL_REGULAR_NAME);
+    return idio_meaning_assignment (name, e, nametree, tailp, IDIO_LEXICAL_SCOPE);
 }
 
 static IDIO idio_meaning_define_macro (IDIO name, IDIO e, IDIO nametree, int tailp)
@@ -1239,32 +1287,12 @@ static IDIO idio_meaning_define_macro (IDIO name, IDIO e, IDIO nametree, int tai
      * (define-macro (func arg) ...) => (define-macro func (function (arg) ...))
      */
     if (idio_isa_pair (name)) {
-	/* idio_debug ("meaning-define-macro: rewrite: (define-macro %s", name); */
-	/* idio_debug (" %s)\n", e); */
 	e = IDIO_LIST3 (idio_S_function,  
 			IDIO_PAIR_T (name), 
 			e); 
-	/* e = idio_list_append2 (IDIO_LIST2 (idio_S_function,  */
-	/* 				   IDIO_PAIR_T (name)), */
-	/* 		       e); */
 	name = IDIO_PAIR_H (name);
-	/* fprintf (stderr, "meaning-define-macro: rewrite: (define-macro %s", IDIO_SYMBOL_S (name)); */
-	/* idio_debug (" %s)\n", e); */
     }
 
-    /* idio_debug ("meaning-define-macro:\nname=%s\n", name); */
-    /* idio_debug ("e=%s\n", e); */
-
-    /*
-    IDIO d = idio_list_memq (name, idio_module_current_defined ());
-    IDIO s = idio_list_memq (name, idio_module_current_symbols ());
-
-    if (idio_isa_pair (d)) {
-    } else {
-	idio_module_current_extend_defined (name);
-    }
-    */
-    
     /*
      * create an expander: (function (x e) (apply proc (cdr x)))
      *
@@ -1278,8 +1306,6 @@ static IDIO idio_meaning_define_macro (IDIO name, IDIO e, IDIO nametree, int tai
 					    e,
 					    IDIO_LIST2 (idio_S_pt, x_sym)));
 
-    /* idio_debug ("define-macro: => expander %s\n", e); */
-
     /*
      * In general (define-macro a ...) means that "a" is associated
      * with an expander and that expander takes the cdr of the
@@ -1292,7 +1318,7 @@ static IDIO idio_meaning_define_macro (IDIO name, IDIO e, IDIO nametree, int tai
      * (define-macro b %b)
      *
      * (in particular where they are creating an enhanced version of b
-     * which requires using the existing b to define itself hence
+     * which may require using the existing b to define itself hence
      * defining some other name, "%b", which can use "b" freely then
      * redefine b to this new version)
      *
@@ -1301,8 +1327,9 @@ static IDIO idio_meaning_define_macro (IDIO name, IDIO e, IDIO nametree, int tai
      * are replacing the nominal definition of a macro with an
      * expander which takes two arguments and the body of which will
      * take the cdr of its first argument.  Left alone, expander "b"
-     * will take the cdr then expander "%b" will take the cdr....  A
-     * Cdr Too Far, one would say, in hindsight.
+     * will take the cdr then expander "%b" will take the cdr....  "A
+     * Cdr Too Far", one would say, in hindsight and thinking of the
+     * big budget movie potential.
      *
      * So catch the case where the value is already an expander.
      */
@@ -1310,8 +1337,74 @@ static IDIO idio_meaning_define_macro (IDIO name, IDIO e, IDIO nametree, int tai
 	IDIO exp = idio_expanderp (e);
 
 	if (idio_S_false != exp) {
+	    /*
+	     * Another "feature."  At this point in time {exp} has the
+	     * value ({e} . {CLOS}) and so you might think that simply
+	     * supplying the (ultimate) code for {name}, pt exp,
+	     * ie. {CLOS}, would be enough.
+	     *
+	     * But no.  By suppling {exp}, which is a pair, we force
+	     * the code in expanderp to delay the rewrite of the value
+	     * of {name} to {CLOS} until after {name} has nominally
+	     * been assigned to in the body of the code during
+	     * runtime.  In the meanwhile, we obtain the current value
+	     * with idio_module_current_symbol_value_recurse() which
+	     * should, of course, exist in the usual way -- nominally
+	     * a primitive when inside a template.
+	     *
+	     * Why is this an issue?  Templates, of course!
+	     *
+	     * If a template comes along and tries to use the value of
+	     * {name}, nominally {CLOS}, it'll get into a heap of
+	     * trouble because {CLOS} can refer to variables/functions
+	     * defined in the normal code.  Which, of course, don't
+	     * exist yet as {CLOS} is being run during compilation.
+	     *
+	     * So, it's a bit of a hack, but by supplying a pair we
+	     * can continue to use {name} with its original value in
+	     * templates and, as the body of code is run, {name}'s
+	     * value will be set to {CLOS} in due course.
+	     *
+	     *
+	     * The canonical example is {let}.  On startup, {let} is
+	     * the primitive defined in scm-evaluate.c which is very
+	     * basic, PRIM{let}.
+	     *
+	     * A little later we define a template, {%ext-let},
+	     * "extended-let" which supports named lets, which uses a
+	     * regular function {check-bindings}.  If we are to use
+	     * the resultant closure, {CLOS}, before {check-bindings}
+	     * is assigned to during runtime then we are in trouble.
+	     *
+	     * {%ext-let} will initially be a pair, (function (xx ee)
+	     * (apply ...)), the same as any other template (see the
+	     * comments about "bootstrap" below) and the first use of
+	     * it as an expander will recognise this and call
+	     * --symbol_value_recurse() to get the value {CLOS}.
+	     *
+	     * We now define a template {let} to be {%ext-let}.  We
+	     * set the value of {let} to be the pair ({%ext-let}
+	     * . {CLOS}).  The first use of {let} as an expander will
+	     * see that the value is a pair and call
+	     * --symbol_value_recurse() and get the
+	     * value... PRIM{let}.  Subsequent use of {let} as an
+	     * expander will get PRIM{let}.
+	     *
+	     * But don't forget that the return statement here is
+	     * returning an assignment so that during runtime we will
+	     * change {let} to {CLOS} -- in fact, we will have created
+	     * a new toplevel {let} shadowing the predef {let} --
+	     * which is now fine as it will be after the definition
+	     * (and assignment) of {check-bindings}.  Thereafter, of
+	     * course, --symbol_value_recurse() in expanderp will
+	     * return toplevel {let}, ie. {CLOS}, rather than the
+	     * predef {let}, PRIM{let}.
+	     *
+	     * Got that?  Good.  My advice?  Don't muck it up as it is
+	     * "hard" to debug.
+	     */
 	    idio_install_expander_source (name, exp, expander);
-	    return idio_meaning_assignment (name, IDIO_PAIR_T (exp), nametree, 0, IDIO_TOPLEVEL_REGULAR_NAME);
+	    return idio_meaning_assignment (name, IDIO_PAIR_T (exp), nametree, 0, IDIO_LEXICAL_SCOPE);
 	}
     }
 
@@ -1343,7 +1436,7 @@ static IDIO idio_meaning_define_macro (IDIO name, IDIO e, IDIO nametree, int tai
      * users.
      */
 
-    IDIO m_a = idio_meaning_assignment (name, expander, nametree, 0, IDIO_TOPLEVEL_REGULAR_NAME);
+    IDIO m_a = idio_meaning_assignment (name, expander, nametree, 0, IDIO_LEXICAL_SCOPE);
 
     idio_install_expander_source (name, expander, expander);
 
@@ -1386,9 +1479,9 @@ static IDIO idio_meaning_define_dynamic (IDIO name, IDIO e, IDIO nametree, int t
     /* idio_debug ("meaning-define-dynamic: (define-dynamic %s", name); */
     /* idio_debug (" %s)\n", e); */
 
-    idio_toplevel_extend (name, IDIO_TOPLEVEL_DYNAMIC_NAME);
+    idio_toplevel_extend (name, IDIO_DYNAMIC_SCOPE);
     
-    return idio_meaning_assignment (name, e, nametree, tailp, IDIO_TOPLEVEL_DYNAMIC_NAME);
+    return idio_meaning_assignment (name, e, nametree, tailp, IDIO_DYNAMIC_SCOPE);
 }
 
 static IDIO idio_meaning_sequence (IDIO ep, IDIO nametree, int tailp, IDIO keyword);
@@ -1770,7 +1863,7 @@ static IDIO idio_meaning_abstraction (IDIO nns, IDIO ep, IDIO nametree, int tail
 	}
     }
 
-    return idio_undefined_code ("meaning-abstraction: %s %s", idio_as_string (nns, 1), idio_as_string (ep, 1));
+    return idio_static_error_undefined_code ("meaning-abstraction: %s %s", idio_as_string (nns, 1), idio_as_string (ep, 1));
 }
 
 static IDIO idio_meaning_block (IDIO es, IDIO nametree, int tailp)
@@ -1935,14 +2028,14 @@ static IDIO idio_meaning_closed_application (IDIO e, IDIO ees, IDIO nametree, in
 		ns = IDIO_PAIR_T (ns);
 		es = IDIO_PAIR_T (es);
 	    } else {
-		idio_error_static_arity ("not enough arguments", IDIO_LIST2 (nns, ees));
+		idio_static_error_arity ("not enough arguments", IDIO_LIST2 (nns, ees));
 		return idio_S_unspec;
 	    }
 	} else if (idio_S_nil == ns) {
 	    if (idio_S_nil == es) {
 		return idio_meaning_fix_closed_application (nns, IDIO_PAIR_T (et), ees, nametree, tailp);
 	    } else {
-		idio_error_static_arity ("too many arguments", IDIO_LIST2 (e, ees));
+		idio_static_error_arity ("too many arguments", IDIO_LIST2 (e, ees));
 		return idio_S_unspec;
 	    }
 	} else {
@@ -1950,7 +2043,7 @@ static IDIO idio_meaning_closed_application (IDIO e, IDIO ees, IDIO nametree, in
 	}
     }
 
-    return idio_undefined_code ("meaning-closed-application: %s %s", idio_as_string (e, 1), idio_as_string (ees, 1));
+    return idio_static_error_undefined_code ("meaning-closed-application: %s %s", idio_as_string (e, 1), idio_as_string (ees, 1));
 }
 
 static IDIO idio_meaning_regular_application (IDIO e, IDIO es, IDIO nametree, int tailp);
@@ -2101,8 +2194,6 @@ static IDIO idio_meaning_regular_application (IDIO e, IDIO es, IDIO nametree, in
     IDIO_ASSERT (nametree);
     IDIO_TYPE_ASSERT (list, nametree);
 
-    /* idio_debug ("imra: %s", e); */
-    /* idio_debug (" es %s\n", es); */
     IDIO m;
     if (idio_isa_symbol (e)) {
 	m = idio_meaning_function_reference (e, nametree, tailp);
@@ -2126,13 +2217,14 @@ static IDIO idio_meaning_application (IDIO e, IDIO es, IDIO nametree, int tailp)
     IDIO_TYPE_ASSERT (list, nametree);
 
     if (idio_isa_symbol (e)) {
-	IDIO k = idio_variable_kind (nametree, e, IDIO_TOPLEVEL_REGULAR_NAME);
+	IDIO k = idio_variable_kind (nametree, e, IDIO_LEXICAL_SCOPE);
 
 	if (idio_isa_pair (k)) {
 	    IDIO kt = IDIO_PAIR_H (k);
 
 	    if (idio_S_predef == kt) {
-		IDIO primdata = idio_get_primitive_data (e);
+		IDIO kv = IDIO_PAIR_H (IDIO_PAIR_T (k));
+		IDIO primdata = idio_vm_primitives_ref (IDIO_FIXNUM_VAL (kv));
 
 		if (idio_S_unspec != primdata) {
 
@@ -2145,7 +2237,7 @@ static IDIO idio_meaning_application (IDIO e, IDIO es, IDIO nametree, int tailp)
 			arity == nargs) {
 			return idio_meaning_primitive_application (e, es, nametree, tailp, arity, IDIO_PAIR_H (IDIO_PAIR_T (k)));
 		    } else {
-			idio_error_static_primitive_arity ("wrong arity for primitive", e, es, primdata);
+			idio_static_error_primitive_arity ("wrong arity for primitive", e, es, primdata);
 		    }
 		}
 	    }
@@ -2159,7 +2251,7 @@ static IDIO idio_meaning_application (IDIO e, IDIO es, IDIO nametree, int tailp)
 	return idio_meaning_regular_application (e, es, nametree, tailp);
     }
 
-    return idio_undefined_code ("meaning-application: %s %s", idio_as_string (e, 1), idio_as_string (es, 1));
+    return idio_static_error_undefined_code ("meaning-application: %s %s", idio_as_string (e, 1), idio_as_string (es, 1));
 }
 
 static IDIO idio_meaning_dynamic_reference (IDIO name, IDIO nametree, int tailp)
@@ -2168,7 +2260,7 @@ static IDIO idio_meaning_dynamic_reference (IDIO name, IDIO nametree, int tailp)
     IDIO_ASSERT (nametree);
     IDIO_TYPE_ASSERT (list, nametree);
 
-    return idio_meaning_reference (name, nametree, tailp, IDIO_TOPLEVEL_DYNAMIC_NAME);
+    return idio_meaning_reference (name, nametree, tailp, IDIO_DYNAMIC_SCOPE);
 }
 
 static IDIO idio_meaning_dynamic_let (IDIO name, IDIO e, IDIO ep, IDIO nametree, int tailp)
@@ -2184,7 +2276,7 @@ static IDIO idio_meaning_dynamic_let (IDIO name, IDIO e, IDIO ep, IDIO nametree,
     /*
      * Get a new toplevel for this dynamic variable
      */
-    IDIO fvi = idio_toplevel_extend (name, IDIO_TOPLEVEL_DYNAMIC_NAME);
+    IDIO fvi = idio_toplevel_extend (name, IDIO_DYNAMIC_SCOPE);
 
     /*
      * Tell the tree of "locals" about this dynamic variable and find
@@ -2295,7 +2387,7 @@ static IDIO idio_meaning (IDIO e, IDIO nametree, int tailp)
     IDIO_ASSERT (nametree);
     IDIO_TYPE_ASSERT (list, nametree);
 
-    /* idio_debug ("meaning: e  in %s\n", e);  */
+    /* idio_debug ("meaning: e  in %s\n", e);   */
     
     if (idio_isa_pair (e)) {
 	IDIO eh = IDIO_PAIR_H (e);
@@ -2386,7 +2478,7 @@ static IDIO idio_meaning (IDIO e, IDIO nametree, int tailp)
 	    if (idio_isa_pair (et)) {
 		IDIO ett = IDIO_PAIR_T (et);
 		if (idio_isa_pair (ett)) {
-		    return idio_meaning_assignment (IDIO_PAIR_H (et), IDIO_PAIR_H (ett), nametree, tailp, IDIO_TOPLEVEL_REGULAR_NAME);
+		    return idio_meaning_assignment (IDIO_PAIR_H (et), IDIO_PAIR_H (ett), nametree, tailp, IDIO_LEXICAL_SCOPE);
 		} else {
 		    idio_error_param_nil ("(set! symbol)");
 		    return idio_S_unspec;
@@ -2516,7 +2608,7 @@ static IDIO idio_meaning (IDIO e, IDIO nametree, int tailp)
 	    }
 	} else {
 	    if (idio_isa_symbol (eh)) {
-		IDIO k = idio_variable_kind (nametree, eh, IDIO_TOPLEVEL_REGULAR_NAME);
+		IDIO k = idio_variable_kind (nametree, eh, IDIO_LEXICAL_SCOPE);
 
 		if (idio_S_nil != k) {
 		    if (idio_S_false != idio_expanderp (eh)) {
@@ -2529,13 +2621,13 @@ static IDIO idio_meaning (IDIO e, IDIO nametree, int tailp)
 	}
     } else {
 	if (idio_isa_symbol (e)) {
-	    return idio_meaning_reference (e, nametree, tailp, IDIO_TOPLEVEL_REGULAR_NAME);
+	    return idio_meaning_reference (e, nametree, tailp, IDIO_LEXICAL_SCOPE);
 	} else {
 	    return idio_meaning_quotation (e, nametree, tailp);
 	}
     }
 
-    return idio_undefined_code ("meaning: %s", idio_as_string (e, 1));
+    return idio_static_error_undefined_code ("meaning: %s", idio_as_string (e, 1));
 }
 
 IDIO idio_evaluate (IDIO e)
@@ -2736,27 +2828,20 @@ IDIO_DEFINE_OPERATOR (":*", colon_star, (IDIO n, IDIO b, IDIO args))
 
 void idio_init_evaluate ()
 {
-    idio_toplevel_names = idio_pair (idio_S_nil, idio_S_nil);
-    idio_gc_protect (idio_toplevel_names);
-
-    idio_predef_names = idio_pair (idio_S_nil, idio_S_nil);
-    idio_gc_protect (idio_predef_names);
-
-    idio_predef_values = idio_array (1);
-    idio_gc_protect (idio_predef_values);
-
-    idio_evaluation_module = idio_module (idio_symbols_C_intern ("evaluation"));
+    idio_expansion_module = idio_module (idio_symbols_C_intern ("Idio.expansion"));
 
     idio_expander_list = idio_symbols_C_intern ("*expander-list*");
-    idio_module_set_symbol_value (idio_expander_list, idio_S_nil, idio_evaluation_module);
+    idio_module_set_symbol_value (idio_expander_list, idio_S_nil, idio_expansion_module);
 
-    IDIO_MODULE_EXPORTS (idio_evaluation_module) = idio_pair (idio_expander_list, IDIO_MODULE_EXPORTS (idio_evaluation_module));
+    IDIO_MODULE_EXPORTS (idio_expansion_module) = idio_pair (idio_expander_list, IDIO_MODULE_EXPORTS (idio_expansion_module));
     
     idio_expander_list_src = idio_symbols_C_intern ("*expander-list-src*");
-    idio_module_set_symbol_value (idio_expander_list_src, idio_S_nil, idio_evaluation_module);
+    idio_module_set_symbol_value (idio_expander_list_src, idio_S_nil, idio_expansion_module);
+
+    idio_operator_module = idio_module (idio_symbols_C_intern ("Idio.operator"));
 
     idio_operator_list = idio_symbols_C_intern ("*operator-list*");
-    idio_module_set_symbol_value (idio_operator_list, idio_S_nil, idio_evaluation_module);
+    idio_module_set_symbol_value (idio_operator_list, idio_S_nil, idio_operator_module);
 
 }
 
@@ -2765,7 +2850,7 @@ void idio_evaluate_add_primitives ()
     idio_expander_thread = idio_thread (40);
     idio_gc_protect (idio_expander_thread);
 
-    IDIO_THREAD_MODULE (idio_expander_thread) = idio_evaluation_module;
+    IDIO_THREAD_MODULE (idio_expander_thread) = idio_expansion_module;
     IDIO_THREAD_PC (idio_expander_thread) = 1;
 
     IDIO_ADD_OPERATOR (add);
@@ -2780,9 +2865,6 @@ void idio_evaluate_add_primitives ()
 
 void idio_final_evaluate ()
 {
-    idio_gc_expose (idio_toplevel_names);
-    idio_gc_expose (idio_predef_names);
-    idio_gc_expose (idio_predef_values);
     idio_gc_expose (idio_expander_thread);
 }
 

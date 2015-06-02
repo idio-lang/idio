@@ -39,6 +39,7 @@ void idio_module_extend_defined (IDIO module, IDIO name);
 void idio_module_current_extend_defined (IDIO name);
 IDIO idio_module_primitive_defined ();
 IDIO idio_module_symbol_lookup (IDIO symbol, IDIO module);
+IDIO idio_module_primitive_symbol_lookup (IDIO symbol);
 IDIO idio_module_current_symbol_lookup (IDIO symbol);
 IDIO idio_module_symbol_value (IDIO symbol, IDIO module);
 IDIO idio_module_primitive_symbol_value (IDIO symbol);

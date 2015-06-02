@@ -57,11 +57,11 @@ if+ (zero? Errors) (display* "All" Tests "tests passed!") \
     else {
       display Errors
       if (gt Errors 1) {
-        display " errors."
+        display " errors "
       } {
-	display " error."
+	display " error "
       }
-      display #\newline
+      display* "in" Tests "tests."
     }
 
 if (file-exists? testfile) (delete-file testfile)

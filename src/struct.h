@@ -38,6 +38,10 @@ IDIO idio_struct_instance_ref_direct (IDIO si, idio_ai_t index);
 IDIO idio_struct_instance_set (IDIO si, IDIO field, IDIO v);
 IDIO idio_struct_instance_set_direct (IDIO si, idio_ai_t index, IDIO v);
 
+void idio_init_struct ();
+void idio_struct_add_primitives ();
+void idio_final_struct ();
+
 #endif
 
 /* Local Variables: */

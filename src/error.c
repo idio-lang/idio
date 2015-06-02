@@ -97,7 +97,7 @@ void idio_error_param_type (char *etype, IDIO who)
     IDIO_ASSERT (who);
 
     char em[BUFSIZ];
-    sprintf (em, "bad parameter type: not a %s:", etype);
+    sprintf (em, "bad parameter type: a %s is not a %s:", idio_type2string (who), etype);
     idio_error_C (em, IDIO_LIST1 (who));
 }
 

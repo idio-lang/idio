@@ -24,7 +24,7 @@
 
 IDIO idio_G_frame;
 
-void idio_error_frame_range (IDIO fo, size_t d, size_t i)
+void idio_frame_error_range (IDIO fo, size_t d, size_t i)
 {
     char *fos = idio_as_string (fo, 1);
     fprintf (stderr, "%s\n", fos);
@@ -124,7 +124,7 @@ IDIO idio_frame_fetch (IDIO fo, size_t d, size_t i)
 	idio_gc_verboseness (0);
 	fprintf (stderr, "\n\nFRAME = ");
 	idio_dump (fo, 10);
-	idio_error_frame_range (fo, d, i);
+	idio_frame_error_range (fo, d, i);
 	return idio_S_unspec;
     }
     
@@ -144,7 +144,7 @@ void idio_frame_update (IDIO fo, size_t d, size_t i, IDIO v)
     }
 
     if (i > idio_array_size (IDIO_FRAME_ARGS (fo))) {
-	idio_error_frame_range (fo, d, i);
+	idio_frame_error_range (fo, d, i);
 	return;
     }
     

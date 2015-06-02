@@ -22,12 +22,12 @@
 
 #include "idio.h"
 
-void idio_error_string_length (char *m, IDIO s, intptr_t i)
+void idio_string_error_length (char *m, IDIO s, intptr_t i)
 {
     idio_error_message ("%s: \"%s\" %zd", m, idio_as_string (s, 1), i);
 }
 
-void idio_error_substring_index (char *m, IDIO s, intptr_t ip0, intptr_t ipn)
+void idio_substring_error_index (char *m, IDIO s, intptr_t ip0, intptr_t ipn)
 {
     idio_error_message ("%s: \"%s\" %zd %zd", m, idio_as_string (s, 1), ip0, ipn);
 }
@@ -503,7 +503,7 @@ IDIO_DEFINE_PRIMITIVE2 ("string-ref", string_ref, (IDIO s, IDIO index))
 
     if (i < 0 ||
 	i > l) {
-	idio_error_string_length ("string-ref: out of bounds", s, i);
+	idio_string_error_length ("string-ref: out of bounds", s, i);
 	return idio_S_unspec;
     }
 
@@ -547,7 +547,7 @@ IDIO_DEFINE_PRIMITIVE3 ("string-set!", string_set, (IDIO s, IDIO index, IDIO c))
 
     if (i < 0 ||
 	i > l) {
-	idio_error_string_length ("string-set: out of bounds", s, i);
+	idio_string_error_length ("string-set: out of bounds", s, i);
 	return idio_S_unspec;
     }
 
@@ -608,7 +608,7 @@ IDIO_DEFINE_PRIMITIVE3 ("substring", substring, (IDIO s, IDIO p0, IDIO pn))
 	ipn < 0 ||
 	ipn > l ||
 	ipn < ip0) {
-	idio_error_substring_index ("substring: out of bounds", s, ip0, ipn);
+	idio_substring_error_index ("substring: out of bounds", s, ip0, ipn);
 	return idio_S_unspec;
     }
 

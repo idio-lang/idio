@@ -89,7 +89,7 @@ static IDIO idio_scm_expander_thread = idio_S_nil;
 static IDIO idio_scm_initial_expander (IDIO x, IDIO e);
 static IDIO idio_scm_macro_expand (IDIO e);
 
-static void idio_warning_static_undefineds (IDIO diff)
+static void idio_scm_static_warning_undefineds (IDIO diff)
 {
     IDIO_ASSERT (diff);
     IDIO_TYPE_ASSERT (pair, diff);
@@ -97,7 +97,7 @@ static void idio_warning_static_undefineds (IDIO diff)
     idio_debug ("WARNING: undefined variables: %s\n", diff);
 }
 
-static void idio_error_static_redefine (IDIO name)
+static void idio_scm_static_error_redefine (IDIO name)
 {
     IDIO_ASSERT (name);
     IDIO_TYPE_ASSERT (symbol, name);
@@ -105,7 +105,7 @@ static void idio_error_static_redefine (IDIO name)
     idio_error_message ("redefinition of %s", IDIO_SYMBOL_S (name));
 }
 
-static void idio_warning_static_redefine (IDIO name)
+static void idio_scm_static_warning_redefine (IDIO name)
 {
     IDIO_ASSERT (name);
     IDIO_TYPE_ASSERT (symbol, name);
@@ -113,7 +113,7 @@ static void idio_warning_static_redefine (IDIO name)
     fprintf (stderr, "WARNING: redefinition of %s\n", IDIO_SYMBOL_S (name));
 }
 
-static void idio_error_static_unbound (IDIO name)
+static void idio_scm_static_error_unbound (IDIO name)
 {
     IDIO_ASSERT (name);
     IDIO_TYPE_ASSERT (symbol, name);
@@ -121,7 +121,7 @@ static void idio_error_static_unbound (IDIO name)
     idio_error_message ("%s is unbound", IDIO_SYMBOL_S (name));
 }
 
-static void idio_warning_static_unbound (IDIO name)
+static void idio_scm_static_warning_unbound (IDIO name)
 {
     IDIO_ASSERT (name);
     IDIO_TYPE_ASSERT (symbol, name);
@@ -129,7 +129,7 @@ static void idio_warning_static_unbound (IDIO name)
     fprintf (stderr, "WARNING: %s is unbound\n", IDIO_SYMBOL_S (name));
 }
 
-static void idio_error_static_immutable (IDIO name)
+static void idio_scm_static_error_immutable (IDIO name)
 {
     IDIO_ASSERT (name);
     IDIO_TYPE_ASSERT (symbol, name);
@@ -137,7 +137,7 @@ static void idio_error_static_immutable (IDIO name)
     idio_error_message ("%s is immutable", IDIO_SYMBOL_S (name));
 }
 
-static void idio_error_static_arity (char *m, IDIO args)
+static void idio_scm_static_error_arity (char *m, IDIO args)
 {
     IDIO_ASSERT (args);
     IDIO_TYPE_ASSERT (list, args);
@@ -145,7 +145,7 @@ static void idio_error_static_arity (char *m, IDIO args)
     idio_error_message ("%s: %s", m, idio_as_string (args, 2));
 }
 
-static void idio_error_static_primitive_arity (char *m, IDIO f, IDIO args, IDIO primdata)
+static void idio_scm_static_error_primitive_arity (char *m, IDIO f, IDIO args, IDIO primdata)
 {
     IDIO_ASSERT (args);
     IDIO_TYPE_ASSERT (symbol, f);
@@ -422,7 +422,7 @@ static IDIO idio_scm_variable_kind (IDIO nametree, IDIO name)
 /* 	if (idio_S_predef == IDIO_PAIR_H (k)) { */
 /* 	    idio_array_insert_index (idio_scm_predef_values, idio_S_undef, IDIO_FIXNUM_VAL (IDIO_PAIR_T (k))); */
 /* 	} else { */
-/* 	    idio_error_static_redefine (name); */
+/* 	    idio_scm_static_error_redefine (name); */
 /* 	} */
 /*     } */
 /* } */
@@ -443,7 +443,7 @@ static IDIO idio_scm_variable_kind (IDIO nametree, IDIO name)
 /* 	if (idio_S_toplevel == IDIO_PAIR_H (k)) { */
 /* 	    idio_array_insert_index (idio_module_current_symbol_value (idio_scm_toplevel_values), idio_S_undef, IDIO_FIXNUM_VAL (IDIO_PAIR_T (k))); */
 /* 	} else { */
-/* 	    idio_error_static_redefine (name); */
+/* 	    idio_scm_static_error_redefine (name); */
 /* 	} */
 /*     } */
 /* } */
@@ -495,7 +495,7 @@ IDIO_DEFINE_PRIMITIVE1 ("let", let, (IDIO e))
     size_t nargs = idio_list_length (e);
 
     if (nargs < 3) {
-	idio_error_static_arity ("let: wrong arguments", e);
+	idio_scm_static_error_arity ("let: wrong arguments", e);
 	return idio_S_unspec;
     }
 
@@ -574,7 +574,7 @@ IDIO_DEFINE_PRIMITIVE1 ("let*", lets, (IDIO e))
     size_t nargs = idio_list_length (e);
 
     if (nargs < 3) {
-	idio_error_static_arity ("let*: wrong arguments", e);
+	idio_scm_static_error_arity ("let*: wrong arguments", e);
     }
 
     /* idio_debug ("let*: in %s\n", e); */
@@ -634,7 +634,7 @@ IDIO_DEFINE_PRIMITIVE1 ("letrec", letrec, (IDIO e))
     size_t nargs = idio_list_length (e);
 
     if (nargs < 3) {
-	idio_error_static_arity ("letrec: wrong arguments", e);
+	idio_scm_static_error_arity ("letrec: wrong arguments", e);
 	return idio_S_unspec;
     }
 
@@ -985,7 +985,7 @@ static IDIO idio_scm_meaning_reference (IDIO name, IDIO nametree, int tailp)
 	 * shouldn't get here as unknowns are automatically
 	 * toplevel...
 	 */
-	idio_error_static_unbound (name);
+	idio_scm_static_error_unbound (name);
 	return idio_scm_undefined_code ("meaning-reference: %s", idio_as_string (name, 1));
     }
 
@@ -1007,7 +1007,7 @@ static IDIO idio_scm_meaning_reference (IDIO name, IDIO nametree, int tailp)
 	/* fprintf (stderr, "meaning-reference: predefined #%zd\n", IDIO_FIXNUM_VAL (i)); */
 	return IDIO_LIST2 (idio_I_PREDEFINED, i);
     } else {
-	idio_error_static_unbound (name);
+	idio_scm_static_error_unbound (name);
 	return idio_scm_undefined_code ("meaning-reference: %s", idio_as_string (name, 1));
     }
 }
@@ -1189,8 +1189,7 @@ static IDIO idio_scm_meaning_assignment (IDIO name, IDIO e, IDIO nametree, int t
     IDIO k = idio_scm_variable_kind (nametree, name);
 
     if (idio_S_nil == k) {
-	IDIO d = idio_list_memq (name, idio_module_current_defined ());
-	IDIO s = idio_list_memq (name, idio_module_current_symbols ());
+	IDIO d = idio_list_memq (name, idio_module_current_symbols ());
 	IDIO i = idio_S_nil;
 	if (idio_S_false == d) {
 	    i = idio_scm_toplevel_extend (name);
@@ -1227,10 +1226,10 @@ static IDIO idio_scm_meaning_assignment (IDIO name, IDIO e, IDIO nametree, int t
 	return IDIO_LIST3 (idio_I_GLOBAL_SET, i, m);
 
 	/* if we weren't allowing shadowing */
-	idio_error_static_immutable (name);
+	idio_scm_static_error_immutable (name);
 	return idio_S_unspec;
     } else {
-	idio_error_static_unbound (name);
+	idio_scm_static_error_unbound (name);
 	return idio_S_unspec;
     }
 }
@@ -1269,13 +1268,12 @@ static IDIO idio_scm_meaning_define (IDIO name, IDIO e, IDIO nametree, int tailp
     /* idio_debug ("scm-meaning-define: (define %s", name); */
     /* idio_debug (" %s)\n", e); */
 
-    IDIO d = idio_list_memq (name, idio_module_current_defined ());
-    IDIO s = idio_list_memq (name, idio_module_current_symbols ());
+    IDIO d = idio_list_memq (name, idio_module_current_symbols ());
 
     if (idio_isa_pair (d)) {
-	/* idio_warning_static_redefine (name); */
+	/* idio_scm_static_warning_redefine (name); */
     } else {
-	idio_module_current_extend_defined (name);
+	/* idio_module_current_extend_defined (name); */
     }
 
     return idio_scm_meaning_assignment (name, e, nametree, tailp);
@@ -1311,13 +1309,12 @@ static IDIO idio_scm_meaning_define_macro (IDIO name, IDIO e, IDIO nametree, int
     /* idio_debug ("scm-meaning-define-macro:\nname=%s\n", name); */
     /* idio_debug ("e=%s\n", e); */
 
-    IDIO d = idio_list_memq (name, idio_module_current_defined ());
-    IDIO s = idio_list_memq (name, idio_module_current_symbols ());
+    IDIO d = idio_list_memq (name, idio_module_current_symbols ());
 
     if (idio_isa_pair (d)) {
-	/* idio_warning_static_redefine (name); */
+	/* idio_scm_static_warning_redefine (name); */
     } else {
-	idio_module_current_extend_defined (name);
+	/* idio_module_current_extend_defined (name); */
     }
 
     /*
@@ -1860,14 +1857,14 @@ static IDIO idio_scm_meaning_closed_application (IDIO e, IDIO ees, IDIO nametree
 		ns = IDIO_PAIR_T (ns);
 		es = IDIO_PAIR_T (es);
 	    } else {
-		idio_error_static_arity ("not enough arguments", IDIO_LIST2 (nns, ees));
+		idio_scm_static_error_arity ("not enough arguments", IDIO_LIST2 (nns, ees));
 		return idio_S_unspec;
 	    }
 	} else if (idio_S_nil == ns) {
 	    if (idio_S_nil == es) {
 		return idio_scm_meaning_fix_closed_application (nns, IDIO_PAIR_T (et), ees, nametree, tailp);
 	    } else {
-		idio_error_static_arity ("too many arguments", IDIO_LIST2 (e, ees));
+		idio_scm_static_error_arity ("too many arguments", IDIO_LIST2 (e, ees));
 		return idio_S_unspec;
 	    }
 	} else {
@@ -2054,7 +2051,7 @@ static IDIO idio_scm_meaning_application (IDIO e, IDIO es, IDIO nametree, int ta
 			arity == nargs) {
 			return idio_scm_meaning_primitive_application (e, es, nametree, tailp, arity, IDIO_PAIR_H (IDIO_PAIR_T (k)));
 		    } else {
-			idio_error_static_primitive_arity ("wrong arity for primitive", e, es, primdata);
+			idio_scm_static_error_primitive_arity ("wrong arity for primitive", e, es, primdata);
 		    }
 		}
 	    }
@@ -2082,7 +2079,7 @@ static IDIO idio_scm_meaning_dynamic_reference (IDIO name, IDIO nametree, int ta
     if (index >= 0) {
 	return IDIO_LIST2 (idio_I_DYNAMIC_REF, IDIO_FIXNUM (index));
     } else {
-	idio_error_static_unbound (name);
+	idio_scm_static_error_unbound (name);
 	return idio_S_unspec;
     }
 }
@@ -2103,7 +2100,7 @@ static IDIO idio_scm_meaning_dynamic_let (IDIO name, IDIO e, IDIO ep, IDIO namet
 
 	return IDIO_LIST5 (m, idio_I_PUSH_DYNAMIC, IDIO_FIXNUM (index), mp, idio_I_POP_DYNAMIC);
     } else {
-	idio_error_static_unbound (name);
+	idio_scm_static_error_unbound (name);
 	return idio_S_unspec;
     }
 }
@@ -2362,7 +2359,7 @@ IDIO idio_scm_evaluate (IDIO e)
 	 */
 	IDIO diff = idio_list_set_difference (t, d);
 	if (idio_S_nil != diff) {
-	    idio_warning_static_undefineds (diff);
+	    idio_scm_static_warning_undefineds (diff);
 	}
 
 	size_t tl = idio_list_length (t);
