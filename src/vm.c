@@ -1422,6 +1422,20 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (index));
 	}
 	break;
+    case IDIO_VM_CODE_DYNAMIC_FUNCTION_REF:
+	{
+	    if (! idio_isa_pair (mt) ||
+		idio_list_length (mt) != 1) {
+		idio_vm_error_compile_param_args ("DYNAMIC-FUNCTION-REF index");
+		return;
+	    }
+
+	    IDIO index = IDIO_PAIR_H (mt);
+	    
+	    IDIO_IA_PUSH1 (IDIO_A_DYNAMIC_FUNCTION_REF);
+	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (index));
+	}
+	break;
     case IDIO_VM_CODE_PUSH_HANDLER:
 	{
 	    if (idio_S_nil != mt) {
@@ -3167,6 +3181,13 @@ int idio_vm_run1 (IDIO thr)
 	{
 	    uint64_t index = idio_vm_fetch_varuint (thr);
 	    IDIO_VM_RUN_DIS ("DYNAMIC-REF %" PRId64 "", index);
+	    IDIO_THREAD_VAL (thr) = idio_vm_dynamic_ref (index, thr);
+	}
+	break;
+    case IDIO_A_DYNAMIC_FUNCTION_REF:
+	{
+	    uint64_t index = idio_vm_fetch_varuint (thr);
+	    IDIO_VM_RUN_DIS ("DYNAMIC-FUNCTION-REF %" PRId64 "", index);
 	    IDIO_THREAD_VAL (thr) = idio_vm_dynamic_ref (index, thr);
 	}
 	break;

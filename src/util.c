@@ -525,9 +525,10 @@ char *idio_as_string (IDIO o, int depth)
 	    case IDIO_CONSTANT_VOID:                 t = "#void";                 break;
 	    case IDIO_CONSTANT_NAN:                  t = "#NaN";                  break;
 
-	    case IDIO_CONSTANT_TOPLEVEL:             t = "idio_S_toplevel";       break;
-	    case IDIO_CONSTANT_PREDEF:               t = "idio_S_predef";         break;
-	    case IDIO_CONSTANT_LOCAL:                t = "idio_S_local";          break;
+	    case IDIO_CONSTANT_TOPLEVEL:             t = "toplevel/c";       break;
+	    case IDIO_CONSTANT_PREDEF:               t = "predef/c";         break;
+	    case IDIO_CONSTANT_LOCAL:                t = "local/c";          break;
+	    case IDIO_CONSTANT_ENVIRON:              t = "environ/c";        break;
 
 	    case IDIO_TOKEN_DOT:                     t = "T/.";                     break;
 	    case IDIO_TOKEN_LPAREN:                  t = "T/(";                     break;
@@ -549,7 +550,7 @@ char *idio_as_string (IDIO o, int depth)
 	    case IDIO_VM_CODE_DEEP_ARGUMENT_SET:     t = "DEEP-ARGUMENT-SET";     break;
 	    case IDIO_VM_CODE_GLOBAL_REF:            t = "GLOBAL-REF";            break;
 	    case IDIO_VM_CODE_CHECKED_GLOBAL_REF:    t = "CHECKED-GLOBAL-REF";    break;
-	    case IDIO_VM_CODE_CHECKED_GLOBAL_FUNCTION_REF:    t = "CHECKED-GLOBAL-FUNCTION-REF";    break;
+	    case IDIO_VM_CODE_CHECKED_GLOBAL_FUNCTION_REF: t = "CHECKED-GLOBAL-FUNCTION-REF"; break;
 	    case IDIO_VM_CODE_GLOBAL_SET:            t = "GLOBAL-SET";            break;
 	    case IDIO_VM_CODE_CONSTANT:              t = "CONSTANT";              break;
 	    case IDIO_VM_CODE_ALTERNATIVE:           t = "ALTERNATIVE";           break;
@@ -572,6 +573,7 @@ char *idio_as_string (IDIO o, int depth)
 	    case IDIO_VM_CODE_PUSH_DYNAMIC:          t = "PUSH-DYNAMIC";          break;
 	    case IDIO_VM_CODE_POP_DYNAMIC:           t = "POP-DYNAMIC";           break;
 	    case IDIO_VM_CODE_DYNAMIC_REF:           t = "DYNAMIC-REF";           break;
+	    case IDIO_VM_CODE_DYNAMIC_FUNCTION_REF:  t = "DYNAMIC-FUNCTION-REF";  break;
 	    case IDIO_VM_CODE_PUSH_HANDLER:          t = "PUSH-HANDLER";          break;
 	    case IDIO_VM_CODE_POP_HANDLER:           t = "POP-HANDLER";           break;
 	    case IDIO_VM_CODE_AND:                   t = "AND";                   break;

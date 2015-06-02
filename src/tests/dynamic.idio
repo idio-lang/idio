@@ -50,7 +50,7 @@ monitor (function (cont cond) {
 }
 
 ;; create a toplevel dynamic variable
-dynx2 :* 11
+dynx2 :~ 11
 
 ;; test it here
 test dynx2 11

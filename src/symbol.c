@@ -35,9 +35,11 @@ IDIO idio_S_block;
 IDIO idio_S_car;
 IDIO idio_S_cdr;
 IDIO idio_S_class;
+IDIO idio_S_colon_caret;
 IDIO idio_S_colon_eq;
 IDIO idio_S_colon_plus;
 IDIO idio_S_colon_star;
+IDIO idio_S_colon_tilde;
 IDIO idio_S_cond;
 IDIO idio_S_cons;
 IDIO idio_S_define;
@@ -46,6 +48,7 @@ IDIO idio_S_dloads;
 IDIO idio_S_dynamic;
 IDIO idio_S_dynamic_let;
 IDIO idio_S_else;
+IDIO idio_S_environ_let;
 IDIO idio_S_eq_gt;
 IDIO idio_S_error;
 IDIO idio_S_escape;
@@ -147,7 +150,6 @@ IDIO idio_symbols_C_intern (char *s)
 IDIO idio_symbols_string_intern (IDIO str)
 {
     IDIO_ASSERT (str);
-
     IDIO_TYPE_ASSERT (string, str);
     
     char *s_C = idio_string_as_C (str);
@@ -239,9 +241,11 @@ void idio_init_symbol ()
     idio_S_car = idio_symbols_C_intern ("car");
     idio_S_cdr = idio_symbols_C_intern ("cdr");
     idio_S_class = idio_symbols_C_intern ("class");
+    idio_S_colon_caret = idio_symbols_C_intern (":^");
     idio_S_colon_eq = idio_symbols_C_intern (":=");
     idio_S_colon_plus = idio_symbols_C_intern (":+");
     idio_S_colon_star = idio_symbols_C_intern (":*");
+    idio_S_colon_tilde = idio_symbols_C_intern (":~");
     idio_S_cond = idio_symbols_C_intern ("cond");
     idio_S_cons = idio_symbols_C_intern ("cons");
     idio_S_define = idio_symbols_C_intern ("define");
@@ -250,6 +254,7 @@ void idio_init_symbol ()
     idio_S_dynamic = idio_symbols_C_intern ("dynamic");
     idio_S_dynamic_let = idio_symbols_C_intern ("dynamic-let");
     idio_S_else = idio_symbols_C_intern ("else");
+    idio_S_environ_let = idio_symbols_C_intern ("environ-let");
     idio_S_eq_gt = idio_symbols_C_intern ("=>");
     idio_S_error = idio_symbols_C_intern ("error");
     idio_S_escape = idio_symbols_C_intern ("escape");

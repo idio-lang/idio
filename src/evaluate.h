@@ -23,15 +23,22 @@
 #ifndef EVALUATE_H
 #define EVALUATE_H
 
+/*
+ * Some flags for scope hints for non-local variables
+ */
+#define IDIO_UNKNOWN_SCOPE	0
+#define IDIO_LEXICAL_SCOPE	1 /* regular lexical globals */
+#define IDIO_DYNAMIC_SCOPE	2 /* dynamic globals */
+#define IDIO_ENVIRON_SCOPE	3 /* dynamics tagged as environment
+				     variables */
+
 void idio_add_description (IDIO sym, IDIO desc);
 IDIO idio_get_description (IDIO sym);
 IDIO idio_add_primitive (idio_primitive_t *d);
 IDIO idio_add_special_primitive (idio_primitive_t *d);
 void idio_add_expander_primitive (idio_primitive_t *d);
 
-IDIO idio_predef_ref (idio_ai_t i);
-IDIO idio_toplevel_ref (idio_ai_t i);
-void idio_toplevel_update (idio_ai_t i, IDIO v);
+IDIO idio_toplevel_extend (IDIO name, int variant);
 
 void idio_install_expander (IDIO id, IDIO proc);
 void idio_install_operator (IDIO id, IDIO proc);

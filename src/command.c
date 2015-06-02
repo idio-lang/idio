@@ -181,8 +181,35 @@ void idio_init_command ()
     idio_array_insert_index (idio_command_status_types, idio_symbols_C_intern ("continued"), 4);
 }
 
+static void idio_command_add_environ ()
+{
+    char **env;
+    for (env = environ; *env ; env++) {
+	char *e = strchr (*env, '=');
+
+	IDIO var;
+	IDIO val = idio_S_undef;
+	
+	if (NULL != e) {
+	    char *name = idio_alloc (e - *env + 1);
+	    strncpy (name, *env, e - *env);
+	    name[e - *env] = '\0';
+	    var = idio_symbols_C_intern (name);
+	    free (name);
+	    
+	    val = idio_string_C (e + 1);
+	} else {
+	    var = idio_string_C (*env);
+	}
+
+	idio_toplevel_extend (var, IDIO_ENVIRON_SCOPE);
+	idio_module_current_set_symbol_value (var, val);
+    }
+}
+
 void idio_command_add_primitives ()
 {
+    idio_command_add_environ ();
 }
 
 void idio_final_command ()
