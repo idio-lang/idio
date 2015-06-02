@@ -188,6 +188,18 @@ static void idio_error_dynamic_unbound (idio_ai_t index)
     idio_signal_exception (idio_S_true, c);
 }
 
+static void idio_error_environ_unbound (idio_ai_t index)
+{
+    IDIO sh = idio_open_output_string_handle_C ();
+    idio_display_C ("no such environ binding", sh);
+    IDIO c = idio_struct_instance (idio_condition_rt_environ_variable_unbound_error_type,
+				   IDIO_LIST4 (idio_get_output_string (sh),
+					       idio_S_nil,
+					       idio_S_nil,
+					       idio_vm_symbols_ref (index)));
+    idio_signal_exception (idio_S_true, c);
+}
+
 /*
  * Idio instruction arrays.
  *
@@ -1436,6 +1448,47 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (index));
 	}
 	break;
+    case IDIO_VM_CODE_PUSH_ENVIRON:
+	{
+	    if (! idio_isa_pair (mt) ||
+		idio_list_length (mt) != 2) {
+		idio_vm_error_compile_param_args ("PUSH-ENVIRON index m");
+		return;
+	    }
+
+	    IDIO index = IDIO_PAIR_H (mt);
+	    IDIO m = IDIO_PAIR_H (IDIO_PAIR_T (mt));
+
+	    idio_vm_compile (thr, ia, m, depth + 1);
+
+	    IDIO_IA_PUSH1 (IDIO_A_PUSH_ENVIRON);
+	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (index));
+	}
+	break;
+    case IDIO_VM_CODE_POP_ENVIRON:
+	{
+	    if (idio_S_nil != mt) {
+		idio_vm_error_compile_param_args ("POP-ENVIRON");
+		return;
+	    }
+
+	    IDIO_IA_PUSH1 (IDIO_A_POP_ENVIRON);
+	}
+	break;
+    case IDIO_VM_CODE_ENVIRON_REF:
+	{
+	    if (! idio_isa_pair (mt) ||
+		idio_list_length (mt) != 1) {
+		idio_vm_error_compile_param_args ("ENVIRON-REF index");
+		return;
+	    }
+
+	    IDIO index = IDIO_PAIR_H (mt);
+	    
+	    IDIO_IA_PUSH1 (IDIO_A_ENVIRON_REF);
+	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (index));
+	}
+	break;
     case IDIO_VM_CODE_PUSH_HANDLER:
 	{
 	    if (idio_S_nil != mt) {
@@ -1780,9 +1833,10 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
 	break;
     case IDIO_TYPE_SYMBOL:
 	{
-	    char *pathname = idio_find_command (func);
+	    char *pathname = idio_command_find_exe (func);
 	    if (NULL != pathname) {
-		IDIO_THREAD_VAL (thr) = idio_invoke_command (func, thr, pathname);
+		IDIO_THREAD_VAL (thr) = idio_command_invoke (func, thr, pathname);
+		free (pathname);
 	    } else {
 		idio_vm_error_function_invoke ("command not found", func);
 	    }
@@ -1801,6 +1855,7 @@ static void idio_vm_preserve_environment (IDIO thr)
     IDIO_ASSERT (thr);
     IDIO_TYPE_ASSERT (thread, thr);
 
+    IDIO_THREAD_STACK_PUSH (IDIO_THREAD_ENVIRONSP (thr));
     IDIO_THREAD_STACK_PUSH (IDIO_THREAD_DYNAMICSP (thr));
     IDIO_THREAD_STACK_PUSH (IDIO_THREAD_HANDLERSP (thr));
     IDIO_THREAD_STACK_PUSH (IDIO_THREAD_ENV (thr));
@@ -1814,6 +1869,7 @@ static void idio_vm_restore_environment (IDIO thr)
     IDIO_THREAD_ENV (thr) = IDIO_THREAD_STACK_POP ();
     IDIO_THREAD_HANDLERSP (thr) = IDIO_THREAD_STACK_POP ();
     IDIO_THREAD_DYNAMICSP (thr) = IDIO_THREAD_STACK_POP ();
+    IDIO_THREAD_ENVIRONSP (thr) = IDIO_THREAD_STACK_POP ();
     if (idio_S_nil != IDIO_THREAD_ENV (thr)) {
 	IDIO_TYPE_ASSERT (frame, IDIO_THREAD_ENV (thr));
     }
@@ -1845,7 +1901,7 @@ static void idio_vm_pop_dynamic (IDIO thr)
     IDIO_THREAD_DYNAMICSP (thr) = idio_array_pop (stack);
 }
 
-static IDIO idio_vm_dynamic_ref (idio_ai_t index, IDIO thr)
+IDIO idio_vm_dynamic_ref (idio_ai_t index, IDIO thr)
 {
     IDIO_ASSERT (thr);
     IDIO_TYPE_ASSERT (thread, thr);
@@ -1870,6 +1926,113 @@ static IDIO idio_vm_dynamic_ref (idio_ai_t index, IDIO thr)
 	    }
 
 	    return v;
+	}
+    }
+}
+
+void idio_vm_dynamic_set (idio_ai_t index, IDIO v, IDIO thr)
+{
+    IDIO_ASSERT (v);
+    IDIO_ASSERT (thr);
+    IDIO_TYPE_ASSERT (thread, thr);
+
+    IDIO stack = IDIO_THREAD_STACK (thr);
+    idio_ai_t sp = IDIO_FIXNUM_VAL (IDIO_THREAD_DYNAMICSP (thr));
+
+    for (;;) {
+	if (sp >= 0) {
+	    IDIO si = idio_array_get_index (stack, sp);
+	    
+	    if (IDIO_FIXNUM_VAL (si) == index) {
+		idio_array_insert_index (stack, v, sp - 1);
+		break;
+	    } else {
+		sp = IDIO_FIXNUM_VAL (idio_array_get_index (stack, sp - 2));
+	    }
+	} else {
+	    idio_array_insert_index (idio_vm_values, v, index);
+	    break;
+	}
+    }
+}
+
+static void idio_vm_push_environ (idio_ai_t index, IDIO thr, IDIO val)
+{
+    IDIO_ASSERT (thr);
+    IDIO_ASSERT (val);
+    IDIO_TYPE_ASSERT (thread, thr);
+
+    IDIO stack = IDIO_THREAD_STACK (thr);
+
+    idio_array_push (stack, IDIO_THREAD_ENVIRONSP (thr));
+    idio_array_push (stack, val);
+    IDIO_THREAD_ENVIRONSP (thr) = IDIO_FIXNUM (idio_array_size (stack));
+    idio_array_push (stack, IDIO_FIXNUM (index));
+}
+
+static void idio_vm_pop_environ (IDIO thr)
+{
+    IDIO_ASSERT (thr);
+    IDIO_TYPE_ASSERT (thread, thr);
+
+    IDIO stack = IDIO_THREAD_STACK (thr);
+
+    idio_array_pop (stack);
+    idio_array_pop (stack);
+    IDIO_THREAD_ENVIRONSP (thr) = idio_array_pop (stack);
+}
+
+IDIO idio_vm_environ_ref (idio_ai_t index, IDIO thr)
+{
+    IDIO_ASSERT (thr);
+    IDIO_TYPE_ASSERT (thread, thr);
+
+    IDIO stack = IDIO_THREAD_STACK (thr);
+    idio_ai_t sp = IDIO_FIXNUM_VAL (IDIO_THREAD_ENVIRONSP (thr));
+
+    for (;;) {
+	if (sp >= 0) {
+	    IDIO si = idio_array_get_index (stack, sp);
+	    
+	    if (IDIO_FIXNUM_VAL (si) == index) {
+		return idio_array_get_index (stack, sp - 1);
+	    } else {
+		sp = IDIO_FIXNUM_VAL (idio_array_get_index (stack, sp - 2));
+	    }
+	} else {
+	    IDIO v = idio_vm_values_ref (index);
+
+	    if (idio_S_undef == v) {
+		idio_error_environ_unbound (index);
+	    }
+
+	    return v;
+	}
+    }
+}
+
+void idio_vm_environ_set (idio_ai_t index, IDIO v, IDIO thr)
+{
+    IDIO_ASSERT (v);
+    IDIO_ASSERT (thr);
+    IDIO_TYPE_ASSERT (thread, thr);
+
+    IDIO stack = IDIO_THREAD_STACK (thr);
+    idio_ai_t sp = IDIO_FIXNUM_VAL (IDIO_THREAD_ENVIRONSP (thr));
+
+    for (;;) {
+	if (sp >= 0) {
+	    IDIO si = idio_array_get_index (stack, sp);
+	    
+	    if (IDIO_FIXNUM_VAL (si) == index) {
+		idio_array_insert_index (stack, v, sp - 1);
+		break;
+	    } else {
+		sp = IDIO_FIXNUM_VAL (idio_array_get_index (stack, sp - 2));
+	    }
+	} else {
+	    idio_array_insert_index (idio_vm_values, v, index);
+	    break;
 	}
     }
 }
@@ -3189,6 +3352,26 @@ int idio_vm_run1 (IDIO thr)
 	    uint64_t index = idio_vm_fetch_varuint (thr);
 	    IDIO_VM_RUN_DIS ("DYNAMIC-FUNCTION-REF %" PRId64 "", index);
 	    IDIO_THREAD_VAL (thr) = idio_vm_dynamic_ref (index, thr);
+	}
+	break;
+    case IDIO_A_PUSH_ENVIRON:
+	{
+	    uint64_t index = idio_vm_fetch_varuint (thr);
+	    IDIO_VM_RUN_DIS ("PUSH-ENVIRON %" PRId64, index);
+	    idio_vm_push_environ (index, thr, IDIO_THREAD_VAL (thr));
+	}
+	break;
+    case IDIO_A_POP_ENVIRON:
+	{
+	    IDIO_VM_RUN_DIS ("POP-ENVIRON");
+	    idio_vm_pop_environ (thr);
+	}
+	break;
+    case IDIO_A_ENVIRON_REF:
+	{
+	    uint64_t index = idio_vm_fetch_varuint (thr);
+	    IDIO_VM_RUN_DIS ("ENVIRON-REF %" PRId64 "", index);
+	    IDIO_THREAD_VAL (thr) = idio_vm_environ_ref (index, thr);
 	}
 	break;
     case IDIO_A_PUSH_HANDLER:

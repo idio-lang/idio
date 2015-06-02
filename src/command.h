@@ -23,8 +23,8 @@
 #ifndef COMMAND_H
 #define COMMAND_H
 
-char *idio_find_command (IDIO func);
-IDIO idio_invoke_command (IDIO func, IDIO thr, char *pathname);
+char *idio_command_find_exe (IDIO func);
+IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname);
 
 void idio_init_command ();
 void idio_command_add_primitives ();

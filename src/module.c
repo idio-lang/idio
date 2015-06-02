@@ -43,49 +43,75 @@ static IDIO idio_toplevel_scm_module = idio_S_nil;
 
 void idio_module_error_duplicate_name (IDIO name)
 {
-    idio_error_message ("module: %s already exists", IDIO_SYMBOL_S (name));
+    IDIO_ASSERT (name);
+    IDIO_TYPE_ASSERT (symbol, name);
+    
+    IDIO sh = idio_open_output_string_handle_C ();
+    idio_display_C ("module already exists", sh);
+    IDIO c = idio_struct_instance (idio_condition_rt_module_error_type,
+				   IDIO_LIST4 (idio_get_output_string (sh),
+					       idio_S_nil,
+					       idio_S_nil,
+					       name));
+    idio_signal_exception (idio_S_true, c);
 }
 
 void idio_module_error_set_imports (IDIO module)
 {
-    idio_error_message ("module %s: cannot set imports", IDIO_SYMBOL_S (IDIO_MODULE_NAME (module)));
+    IDIO_ASSERT (module);
+    IDIO_TYPE_ASSERT (module, module);
+    
+    IDIO sh = idio_open_output_string_handle_C ();
+    idio_display_C ("cannot set imports", sh);
+    IDIO c = idio_struct_instance (idio_condition_rt_module_error_type,
+				   IDIO_LIST4 (idio_get_output_string (sh),
+					       idio_S_nil,
+					       idio_S_nil,
+					       IDIO_MODULE_NAME (module)));
+    idio_signal_exception (idio_S_true, c);
 }
 
 void idio_module_error_set_exports (IDIO module)
 {
-    idio_error_message ("module %s: cannot set exports", IDIO_SYMBOL_S (IDIO_MODULE_NAME (module)));
+    IDIO_ASSERT (module);
+    IDIO_TYPE_ASSERT (module, module);
+    
+    IDIO sh = idio_open_output_string_handle_C ();
+    idio_display_C ("cannot set exports", sh);
+    IDIO c = idio_struct_instance (idio_condition_rt_module_error_type,
+				   IDIO_LIST4 (idio_get_output_string (sh),
+					       idio_S_nil,
+					       idio_S_nil,
+					       IDIO_MODULE_NAME (module)));
+    idio_signal_exception (idio_S_true, c);
 }
 
-void idio_module_error_unbound (IDIO module)
+void idio_module_error_unbound (IDIO name)
 {
-    fprintf (stderr, "all-modules: %s\n", idio_as_string (idio_modules_hash, 3));
-    idio_error_message ("module %s unbound in all-modules?", IDIO_SYMBOL_S (IDIO_MODULE_NAME (module)));
+    IDIO_ASSERT (name);
+    IDIO_TYPE_ASSERT (symbol, name);
+    
+    IDIO sh = idio_open_output_string_handle_C ();
+    idio_display_C ("module name unbound", sh);
+    IDIO c = idio_struct_instance (idio_condition_rt_module_error_type,
+				   IDIO_LIST4 (idio_get_output_string (sh),
+					       idio_S_nil,
+					       idio_S_nil,
+					       name));
+    idio_signal_exception (idio_S_true, c);
 }
 
 void idio_module_error_unbound_name (IDIO symbol, IDIO module)
 {
-    char *ss = idio_as_string (symbol, 1);
-    fprintf (stderr, "%s is unbound in %s\n", ss, IDIO_SYMBOL_S (IDIO_MODULE_NAME (module)));
-    free (ss);
-
-    ss = idio_as_string (IDIO_MODULE_SYMBOLS (module), 1);
-    fprintf (stderr, "symbols: %s\n", ss);
-    free (ss);
-    
-    char *is = idio_as_string (IDIO_MODULE_IMPORTS (module), 1);
-    fprintf (stderr, "%s imports %s\n", IDIO_SYMBOL_S (IDIO_MODULE_NAME (module)), is);
-    free (is);
-    IDIO i = IDIO_MODULE_IMPORTS (module);
-    while (idio_S_nil != i) {
-	IDIO m = IDIO_PAIR_H (i);
-
-	char *es = idio_as_string (IDIO_MODULE_EXPORTS (m), 1);
-	fprintf (stderr, "  %s: %s\n", IDIO_SYMBOL_S (IDIO_MODULE_NAME (m)), es);
-	free (es);
-
-	i = IDIO_PAIR_T (i);
-    }
-    idio_error_message ("symbol %s unbound in module %s", IDIO_SYMBOL_S (symbol), IDIO_SYMBOL_S (IDIO_MODULE_NAME (module)));
+    IDIO sh = idio_open_output_string_handle_C ();
+    idio_display_C ("symbol unbound in module", sh);
+    IDIO c = idio_struct_instance (idio_condition_rt_module_unbound_error_type,
+				   IDIO_LIST5 (idio_get_output_string (sh),
+					       idio_S_nil,
+					       idio_S_nil,
+					       IDIO_MODULE_NAME (module),
+					       symbol));
+    idio_signal_exception (idio_S_true, c);
 }
 
 IDIO idio_module (IDIO name)
@@ -305,6 +331,81 @@ IDIO_DEFINE_PRIMITIVE1 ("module-symbols", module_symbols, (IDIO module))
     return idio_module_symbols (module);
 }
 
+IDIO idio_module_symbols_match_type (IDIO module, IDIO symbols, IDIO type)
+{
+    IDIO_ASSERT (module);
+    IDIO_ASSERT (symbols);
+    IDIO_ASSERT (type);
+    IDIO_TYPE_ASSERT (module, module);
+    IDIO_TYPE_ASSERT (list, symbols);
+    
+    IDIO r = idio_S_nil;
+
+    if (idio_S_nil == type) {
+	r = symbols;
+    } else {
+	while (idio_S_nil != symbols) {
+	    IDIO sv = idio_hash_get (IDIO_MODULE_SYMBOLS (module), IDIO_PAIR_H (symbols));
+	    if (idio_S_unspec == sv) {
+		idio_module_error_unbound_name (module, IDIO_PAIR_H (symbols));
+	    } else if (! idio_isa_pair (sv)) {
+		idio_error_C ("symbol not a pair", IDIO_LIST1 (sv));
+	    } else if (type == IDIO_PAIR_H (sv)) {
+		r = idio_pair (IDIO_PAIR_H (symbols), r);
+	    }
+
+	    symbols = IDIO_PAIR_T (symbols);
+	}
+    }
+
+    return r;
+}
+
+IDIO idio_module_visible_imported_symbols (IDIO module, IDIO type)
+{
+    IDIO_ASSERT (module);
+    IDIO_ASSERT (type);
+    IDIO_TYPE_ASSERT (module, module);
+
+    IDIO r = idio_S_nil;
+
+    IDIO symbols = IDIO_MODULE_EXPORTS (module);
+
+    r = idio_module_symbols_match_type (module, symbols, type);
+
+    IDIO imports = IDIO_MODULE_IMPORTS (module);
+    for (; idio_S_nil != imports; imports = IDIO_PAIR_T (imports)) {
+	r = idio_list_append2 (r, idio_module_visible_imported_symbols (IDIO_PAIR_H (imports), type));
+    }
+
+    return r;
+}
+
+IDIO idio_module_visible_symbols (IDIO module, IDIO type)
+{
+    IDIO_ASSERT (module);
+    IDIO_ASSERT (type);
+    IDIO_TYPE_ASSERT (module, module);
+    
+    if (! idio_isa_module (module)) {
+	idio_error_param_type ("module", module);
+	return idio_S_unspec;
+    }
+
+    IDIO r = idio_S_nil;
+
+    IDIO symbols = idio_hash_keys_to_list (IDIO_MODULE_SYMBOLS (module));
+
+    r = idio_module_symbols_match_type (module, symbols, type);
+
+    IDIO imports = IDIO_MODULE_IMPORTS (module);
+    for (; idio_S_nil != imports; imports = IDIO_PAIR_T (imports)) {
+	r = idio_list_append2 (r, idio_module_visible_imported_symbols (IDIO_PAIR_H (imports), type));
+    }
+
+    return r;
+}
+
 IDIO_DEFINE_PRIMITIVE0 ("all-modules", all_modules, ())
 {
     return idio_hash_keys_to_list (idio_modules_hash);
@@ -442,8 +543,18 @@ IDIO idio_module_symbol_value (IDIO symbol, IDIO m_or_n)
     IDIO sv = idio_hash_get (IDIO_MODULE_SYMBOLS (module), symbol);
 
     if (idio_S_unspec != sv) {
+	IDIO kind = IDIO_PAIR_H (sv);
 	IDIO fvi = IDIO_PAIR_H (IDIO_PAIR_T (sv));
-	sv = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+
+	if (idio_S_toplevel == kind) {
+	    sv = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+	} else if (idio_S_dynamic == kind) {
+	    sv = idio_vm_dynamic_ref (IDIO_FIXNUM_VAL (fvi), idio_current_thread ());
+	} else if (idio_S_environ == kind) {
+	    sv = idio_vm_environ_ref (IDIO_FIXNUM_VAL (fvi), idio_current_thread ());
+	} else {
+	    idio_error_C ("unexpected symbol kind", IDIO_LIST1 (sv));
+	}
     }
 
     return sv;
@@ -498,8 +609,18 @@ IDIO idio_module_symbol_value_recurse (IDIO symbol, IDIO m_or_n)
     IDIO sv = idio_module_symbol_lookup (symbol, module);
 
     if (idio_S_unspec != sv) {
+	IDIO kind = IDIO_PAIR_H (sv);
 	IDIO fvi = IDIO_PAIR_H (IDIO_PAIR_T (sv));
-	sv = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+
+	if (idio_S_toplevel == kind) {
+	    sv = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+	} else if (idio_S_dynamic == kind) {
+	    sv = idio_vm_dynamic_ref (IDIO_FIXNUM_VAL (fvi), idio_current_thread ());
+	} else if (idio_S_environ == kind) {
+	    sv = idio_vm_environ_ref (IDIO_FIXNUM_VAL (fvi), idio_current_thread ());
+	} else {
+	    idio_error_C ("unexpected symbol kind", IDIO_LIST1 (sv));
+	}
     }
 
     return sv;
@@ -587,18 +708,29 @@ IDIO idio_module_set_symbol_value (IDIO symbol, IDIO value, IDIO module)
     IDIO_TYPE_ASSERT (module, module);
 
     IDIO sv = idio_hash_get (IDIO_MODULE_SYMBOLS (module), symbol);
+    IDIO kind;
     IDIO fvi;
     
     if (idio_S_unspec == sv) {
 	idio_ai_t vi = idio_vm_extend_symbols (symbol);
+	kind = idio_S_toplevel;
 	fvi = IDIO_FIXNUM (vi);
 	
 	idio_hash_put (IDIO_MODULE_SYMBOLS (module), symbol, IDIO_LIST2 (idio_S_toplevel, fvi));
     } else {
+	kind = IDIO_PAIR_H (sv);
 	fvi = IDIO_PAIR_H (IDIO_PAIR_T (sv));
     }
 
-    idio_vm_values_set (IDIO_FIXNUM_VAL (fvi), value);
+    if (idio_S_toplevel == kind) {
+	idio_vm_values_set (IDIO_FIXNUM_VAL (fvi), value);
+    } else if (idio_S_dynamic == kind) {
+	idio_vm_dynamic_set (IDIO_FIXNUM_VAL (fvi), value, idio_current_thread ());
+    } else if (idio_S_environ == kind) {
+	idio_vm_environ_set (IDIO_FIXNUM_VAL (fvi), value, idio_current_thread ());
+    } else {
+	idio_error_C ("unexpected symbol kind", IDIO_LIST1 (sv));
+    }
 
     return value;
 }

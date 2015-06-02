@@ -116,10 +116,14 @@ define-condition-type-accessors-only ^st-function-type-error ^st-function-error 
 
 define-condition-type-accessors-only ^runtime-error			^idio-error		   runtime-error?
 define-condition-type-accessors-only ^rt-variable-error			^runtime-error		   rt-variable-error? (name variable-error-name)
+define-condition-type-accessors-only ^rt-variable-unbound-error		^rt-variable-error	   rt-variable-unbound-error?
 define-condition-type-accessors-only ^rt-dynamic-variable-error         ^rt-variable-error         rt-dynamic-variable-error?
 define-condition-type-accessors-only ^rt-dynamic-variable-unbound-error ^rt-dynamic-variable-error rt-dynamic-variable-unbound-error?
+define-condition-type-accessors-only ^rt-environ-variable-error         ^rt-variable-error         rt-environ-variable-error?
+define-condition-type-accessors-only ^rt-environ-variable-unbound-error ^rt-environ-variable-error rt-environ-variable-unbound-error?
 
 define-condition-type-accessors-only ^rt-function-error			^runtime-error		   rt-function-error?
 define-condition-type-accessors-only ^rt-function-type-error		^rt-function-error	   rt-function-type-error?
 
-
+define-condition-type-accessors-only ^rt-module-error			^runtime-error		   rt-module-error? (module module-error-module)
+define-condition-type-accessors-only ^rt-module-unbound-error		^rt-module-error	   rt-module-unbound-error? (symbol module-unbound-error-symbol)

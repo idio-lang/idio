@@ -53,10 +53,15 @@ IDIO idio_condition_st_function_arity_error_type;
 
 IDIO idio_condition_runtime_error_type;
 IDIO idio_condition_rt_variable_error_type;
+IDIO idio_condition_rt_variable_unbound_error_type;
 IDIO idio_condition_rt_dynamic_variable_error_type;
 IDIO idio_condition_rt_dynamic_variable_unbound_error_type;
+IDIO idio_condition_rt_environ_variable_error_type;
+IDIO idio_condition_rt_environ_variable_unbound_error_type;
 IDIO idio_condition_rt_function_error_type;
 IDIO idio_condition_rt_function_arity_error_type;
+IDIO idio_condition_rt_module_error_type;
+IDIO idio_condition_rt_module_unbound_error_type;
 
 IDIO_DEFINE_PRIMITIVE2V ("make-condition-type", make_condition_type, (IDIO name, IDIO parent, IDIO fields))
 {
@@ -316,11 +321,17 @@ void idio_init_condition ()
 
     IDIO_DEFINE_CONDITION0 (idio_condition_runtime_error_type, "^runtime-error", idio_condition_idio_error_type);
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_variable_error_type, "^rt-variable-error", idio_condition_runtime_error_type, "name");
+    IDIO_DEFINE_CONDITION0 (idio_condition_rt_variable_unbound_error_type, "^rt-variable-unbound-error", idio_condition_rt_variable_error_type);
     IDIO_DEFINE_CONDITION0 (idio_condition_rt_dynamic_variable_error_type, "^rt-dynamic-variable-error", idio_condition_rt_variable_error_type);
     IDIO_DEFINE_CONDITION0 (idio_condition_rt_dynamic_variable_unbound_error_type, "^rt-dynamic-variable-unbound-error", idio_condition_rt_dynamic_variable_error_type);
+    IDIO_DEFINE_CONDITION0 (idio_condition_rt_environ_variable_error_type, "^rt-environ-variable-error", idio_condition_rt_variable_error_type);
+    IDIO_DEFINE_CONDITION0 (idio_condition_rt_environ_variable_unbound_error_type, "^rt-environ-variable-unbound-error", idio_condition_rt_environ_variable_error_type);
 
     IDIO_DEFINE_CONDITION0 (idio_condition_rt_function_error_type, "^rt-function-error", idio_condition_static_error_type);
     IDIO_DEFINE_CONDITION0 (idio_condition_rt_function_arity_error_type, "^rt-function-arity-error", idio_condition_rt_function_error_type);
+
+    IDIO_DEFINE_CONDITION1 (idio_condition_rt_module_error_type, "^rt-module-error", idio_condition_runtime_error_type, "module");
+    IDIO_DEFINE_CONDITION1 (idio_condition_rt_module_unbound_error_type, "^rt-module-unbound-error", idio_condition_rt_module_error_type, "symbol");
 }
 
 void idio_condition_add_primitives ()
@@ -368,9 +379,14 @@ void idio_final_condition ()
 
     idio_gc_expose (idio_condition_runtime_error_type);
     idio_gc_expose (idio_condition_rt_variable_error_type);
+    idio_gc_expose (idio_condition_rt_variable_unbound_error_type);
     idio_gc_expose (idio_condition_rt_dynamic_variable_error_type);
     idio_gc_expose (idio_condition_rt_dynamic_variable_unbound_error_type);
+    idio_gc_expose (idio_condition_rt_environ_variable_error_type);
+    idio_gc_expose (idio_condition_rt_environ_variable_unbound_error_type);
     idio_gc_expose (idio_condition_rt_function_error_type);
     idio_gc_expose (idio_condition_rt_function_arity_error_type);
+    idio_gc_expose (idio_condition_rt_module_error_type);
+    idio_gc_expose (idio_condition_rt_module_unbound_error_type);
 }
 

@@ -27,28 +27,125 @@ static IDIO idio_command_last_pid;
 static IDIO idio_command_status_type;
 static IDIO idio_command_status_types;
 
+static IDIO idio_command_env_PATH;
+
 #define IDIO_COMMAND_STATUS_RUNNING	0
 #define IDIO_COMMAND_STATUS_EXITED	1
 #define IDIO_COMMAND_STATUS_KILLED	2
 #define IDIO_COMMAND_STATUS_STOPPED	3
 #define IDIO_COMMAND_STATUS_CONTINUED	4
 
-char *idio_find_command (IDIO func)
+static char **idio_command_get_envp ()
+{
+    IDIO symbols = idio_module_visible_symbols (idio_current_module (), idio_S_environ);
+    size_t n = idio_list_length (symbols);
+
+    char **envp = idio_alloc ((n + 1) * sizeof (char *));
+
+    n = 0;
+    while (idio_S_nil != symbols) {
+	IDIO symbol = IDIO_PAIR_H (symbols);
+	size_t slen = strlen (IDIO_SYMBOL_S (symbol));
+	IDIO val = idio_module_current_symbol_value_recurse (symbol);
+
+	size_t vlen = 0;
+	if (idio_S_undef != val) {
+	    IDIO_TYPE_ASSERT (string, val);
+	    vlen = IDIO_STRING_BLEN (val);
+	}
+
+	envp[n] = idio_alloc (slen + 1 + vlen + 1);
+	strcpy (envp[n], IDIO_SYMBOL_S (symbol));
+	strcat (envp[n], "=");
+	if (idio_S_undef != val) {
+	    strncat (envp[n], IDIO_STRING_S (val), vlen);
+	}
+	envp[n][slen + 1 + vlen] = '\0';
+
+	symbols = IDIO_PAIR_T (symbols);
+	n++;
+    }
+
+    return envp;
+}
+
+char *idio_command_find_exe (IDIO func)
 {
     char *command = IDIO_SYMBOL_S (func);
-    fprintf (stderr, "idio_find_command: looking for %s\n", command);
-
-    char *cmd_dir = "/usr/bin";
+    size_t cmdlen = strlen (command);
     
-    char *pathname = idio_alloc (strlen (cmd_dir) + 1 + strlen (command) + 1);
-    strcpy (pathname, cmd_dir);
-    strcat (pathname, "/");
-    strcat (pathname, command);
+    IDIO PATH = idio_module_current_symbol_value_recurse (idio_command_env_PATH);
+
+    char *path;
+    char *pathe;
+    if (idio_S_undef == PATH) {
+	path = "/bin:/usr/bin";
+	pathe = path + strlen (path);
+    } else {
+	path = IDIO_STRING_S (PATH);
+	pathe = path + IDIO_STRING_BLEN (PATH);
+    }
+
+    /*
+     * PATH_MAX varies: POSIX is 256, CentOS 7 is 4096
+     */
+    char exename[PATH_MAX];
+    int done = 0;
+    while (! done) {
+	size_t pathlen = pathe - path;
+
+	if (0 == pathlen) {
+	    idio_error_C ("empty dir in PATH", IDIO_LIST1 (PATH));
+	}
+	
+	char *colon = memchr (path, ':', pathlen);
+
+	if (NULL == colon) {
+	    if ((pathlen + 1 + cmdlen + 1) >= PATH_MAX) {
+		idio_error_C ("dir+command exename length", IDIO_LIST2 (PATH, func));
+	    }
+	    
+	    memcpy (exename, path, pathlen);
+	    exename[pathlen] = '\0';
+	} else {
+	    size_t dirlen = colon - path;
+	    
+	    if ((dirlen + 1 + cmdlen + 1) >= PATH_MAX) {
+		idio_error_C ("dir+command exename length", IDIO_LIST2 (PATH, func));
+	    }
+	    
+	    memcpy (exename, path, dirlen);
+	    exename[dirlen] = '\0';
+	}
+
+	strcat (exename, "/");
+	strcat (exename, command);
+
+	if (access (exename, X_OK) == 0) {
+	    done = 1;
+	    break;
+	}
+
+	if (NULL == colon) {
+	    done = 1;
+	    exename[0] = '\0';
+	    break;
+	}
+
+	path = colon + 1;
+    }
+    
+    char *pathname = NULL;
+
+    if (0 != exename[0]) {
+	pathname = idio_alloc (strlen (exename) + 1);
+	strcpy (pathname, exename);
+    }
     
     return pathname;
 }
 
-IDIO idio_invoke_command (IDIO func, IDIO thr, char *pathname)
+IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
 {
     IDIO val = IDIO_THREAD_VAL (thr);
     idio_debug ("invoke: symbol %s ", func); 
@@ -85,6 +182,8 @@ IDIO idio_invoke_command (IDIO func, IDIO thr, char *pathname)
 	idio_as_flat_string (o, argv, &i);
     }
     argv[i++] = NULL;
+
+    char **envp = idio_command_get_envp ();
 
     return IDIO_FIXNUM (0);
     pid_t cpid;
@@ -179,6 +278,8 @@ void idio_init_command ()
     idio_array_insert_index (idio_command_status_types, idio_symbols_C_intern ("killed"), 2);
     idio_array_insert_index (idio_command_status_types, idio_symbols_C_intern ("stopped"), 3);
     idio_array_insert_index (idio_command_status_types, idio_symbols_C_intern ("continued"), 4);
+
+    idio_command_env_PATH = idio_symbols_C_intern ("PATH");
 }
 
 static void idio_command_add_environ ()

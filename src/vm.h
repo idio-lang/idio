@@ -158,6 +158,10 @@
 #define IDIO_A_POP_DYNAMIC                 232
 #define IDIO_A_PUSH_DYNAMIC                233
 
+#define IDIO_A_ENVIRON_REF                 235
+#define IDIO_A_POP_ENVIRON                 236
+#define IDIO_A_PUSH_ENVIRON                237
+
 #define IDIO_A_NON_CONT_ERR                240
 #define IDIO_A_PUSH_HANDLER                241
 #define IDIO_A_POP_HANDLER                 242
@@ -211,13 +215,17 @@
 #define IDIO_VM_CODE_DYNAMIC_REF                 (IDIO_VM_CODE_BASE+54)
 #define IDIO_VM_CODE_DYNAMIC_FUNCTION_REF	 (IDIO_VM_CODE_BASE+55)
     
-#define IDIO_VM_CODE_PUSH_HANDLER                (IDIO_VM_CODE_BASE+60)
-#define IDIO_VM_CODE_POP_HANDLER                 (IDIO_VM_CODE_BASE+61)
-#define IDIO_VM_CODE_AND                         (IDIO_VM_CODE_BASE+62)
-#define IDIO_VM_CODE_OR                          (IDIO_VM_CODE_BASE+63)
-#define IDIO_VM_CODE_BEGIN                       (IDIO_VM_CODE_BASE+64)
+#define IDIO_VM_CODE_PUSH_ENVIRON                (IDIO_VM_CODE_BASE+60)
+#define IDIO_VM_CODE_POP_ENVIRON                 (IDIO_VM_CODE_BASE+61)
+#define IDIO_VM_CODE_ENVIRON_REF                 (IDIO_VM_CODE_BASE+62)
+    
+#define IDIO_VM_CODE_PUSH_HANDLER                (IDIO_VM_CODE_BASE+70)
+#define IDIO_VM_CODE_POP_HANDLER                 (IDIO_VM_CODE_BASE+71)
+#define IDIO_VM_CODE_AND                         (IDIO_VM_CODE_BASE+72)
+#define IDIO_VM_CODE_OR                          (IDIO_VM_CODE_BASE+73)
+#define IDIO_VM_CODE_BEGIN                       (IDIO_VM_CODE_BASE+74)
 
-#define IDIO_VM_CODE_EXPANDER                    (IDIO_VM_CODE_BASE+70)
+#define IDIO_VM_CODE_EXPANDER                    (IDIO_VM_CODE_BASE+80)
 
 #define IDIO_VM_CODE_NOP                         (IDIO_VM_CODE_BASE+99)
 
@@ -258,6 +266,9 @@
 #define idio_I_POP_DYNAMIC                 ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_POP_DYNAMIC))
 #define idio_I_DYNAMIC_REF                 ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_DYNAMIC_REF))
 #define idio_I_DYNAMIC_FUNCTION_REF	   ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_DYNAMIC_FUNCTION_REF))
+#define idio_I_PUSH_ENVIRON                ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_PUSH_ENVIRON))
+#define idio_I_POP_ENVIRON                 ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_POP_ENVIRON))
+#define idio_I_ENVIRON_REF                 ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_ENVIRON_REF))
 #define idio_I_PUSH_HANDLER                ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_PUSH_HANDLER))
 #define idio_I_POP_HANDLER                 ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_POP_HANDLER))
 #define idio_I_AND                         ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_AND))
@@ -280,6 +291,10 @@ void idio_vm_values_set (idio_ai_t i, IDIO v);
 idio_ai_t idio_vm_extend_primitives (IDIO v);
 IDIO idio_vm_primitives_ref (idio_ai_t i);
 void idio_vm_abort_thread (IDIO thr);
+IDIO idio_vm_dynamic_ref (idio_ai_t index, IDIO thr);
+void idio_vm_dynamic_set (idio_ai_t i, IDIO v, IDIO thr);
+IDIO idio_vm_environ_ref (idio_ai_t index, IDIO thr);
+void idio_vm_environ_set (idio_ai_t i, IDIO v, IDIO thr);
 
 IDIO idio_signal_exception (IDIO continuablep, IDIO e);
 IDIO idio_apply (IDIO fn, IDIO args);

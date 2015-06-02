@@ -895,9 +895,10 @@ static IDIO idio_meaning_reference (IDIO name, IDIO nametree, int tailp, int aut
 	}
     } else if (idio_S_toplevel == kt) {
 	return IDIO_LIST2 (idio_I_CHECKED_GLOBAL_REF, i);
-    } else if (idio_S_dynamic == kt ||
-	       idio_S_environ == kt) {
+    } else if (idio_S_dynamic == kt) {
 	return IDIO_LIST2 (idio_I_DYNAMIC_REF, i);
+    } else if (idio_S_environ == kt) {
+	return IDIO_LIST2 (idio_I_ENVIRON_REF, i);
     } else if (idio_S_predef == kt) {
 	/* fprintf (stderr, "meaning-reference: predefined #%zd\n", IDIO_FIXNUM_VAL (i)); */
 	return IDIO_LIST2 (idio_I_PREDEFINED, i);
@@ -939,9 +940,10 @@ static IDIO idio_meaning_function_reference (IDIO name, IDIO nametree, int tailp
 	}
     } else if (idio_S_toplevel == kt) {
 	return IDIO_LIST2 (idio_I_CHECKED_GLOBAL_FUNCTION_REF, i);
-    } else if (idio_S_dynamic == kt ||
-	       idio_S_environ == kt) {
+    } else if (idio_S_dynamic == kt) {
 	return IDIO_LIST2 (idio_I_DYNAMIC_FUNCTION_REF, i);
+    } else if (idio_S_environ == kt) {
+	return IDIO_LIST2 (idio_I_ENVIRON_REF, i);
     } else if (idio_S_predef == kt) {
 	/* fprintf (stderr, "meaning-reference: predefined #%zd\n", IDIO_FIXNUM_VAL (i)); */
 	return IDIO_LIST2 (idio_I_PREDEFINED, i);
@@ -2349,9 +2351,9 @@ static IDIO idio_meaning_environ_let (IDIO name, IDIO e, IDIO ep, IDIO nametree,
 
     IDIO mp = idio_meaning_sequence (ep, nt2, 0, idio_S_begin);
 
-    return IDIO_LIST3 (IDIO_LIST3 (idio_I_PUSH_DYNAMIC, fvi, m),
+    return IDIO_LIST3 (IDIO_LIST3 (idio_I_PUSH_ENVIRON, fvi, m),
 		       mp,
-		       IDIO_LIST1 (idio_I_POP_DYNAMIC));
+		       IDIO_LIST1 (idio_I_POP_ENVIRON));
 }
 
 static IDIO idio_meaning_monitor (IDIO e, IDIO ep, IDIO nametree, int tailp)

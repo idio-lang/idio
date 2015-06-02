@@ -50,10 +50,15 @@ extern IDIO idio_condition_st_function_arity_error_type;
 
 extern IDIO idio_condition_runtime_error_type;
 extern IDIO idio_condition_rt_variable_error_type;
+extern IDIO idio_condition_rt_variable_unbound_error_type;
 extern IDIO idio_condition_rt_dynamic_variable_error_type;
 extern IDIO idio_condition_rt_dynamic_variable_unbound_error_type;
+extern IDIO idio_condition_rt_environ_variable_error_type;
+extern IDIO idio_condition_rt_environ_variable_unbound_error_type;
 extern IDIO idio_condition_rt_function_error_type;
 extern IDIO idio_condition_rt_function_arity_error_type;
+extern IDIO idio_condition_rt_module_error_type;
+extern IDIO idio_condition_rt_module_unbound_error_type;
 
 int idio_isa_condition_type (IDIO o);
 int idio_isa_condition (IDIO o);
