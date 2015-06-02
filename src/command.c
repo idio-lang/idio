@@ -22,6 +22,9 @@
 
 #include "idio.h"
 
+/* MacOS & Solaris doesn't have environ in unistd.h */
+extern char **environ;
+
 static IDIO idio_command_pids;
 static IDIO idio_command_last_pid;
 static IDIO idio_command_status_type;
