@@ -101,7 +101,7 @@ void idio_error_param_type (char *etype, IDIO who)
     idio_error_C (em, IDIO_LIST1 (who));
 }
 
-IDIO idio_error (IDIO who, IDIO msg, IDIO args)
+void idio_error (IDIO who, IDIO msg, IDIO args)
 {
     IDIO_ASSERT (who);
     IDIO_ASSERT (msg);
@@ -109,32 +109,21 @@ IDIO idio_error (IDIO who, IDIO msg, IDIO args)
 
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display (msg, sh);
-
-    IDIO_TYPE_ASSERT (list, args); 
-    while (idio_S_nil != args) { 
-	idio_write_char (IDIO_CHARACTER (' '), sh);
-	idio_write (IDIO_PAIR_H (args), sh);
-	
-    	args = IDIO_PAIR_T (args); 
-    	IDIO_TYPE_ASSERT (list, args); 
-    } 
+    idio_display_C (" ", sh);
+    idio_display (args, sh);
 
     IDIO c = idio_condition_idio_error (idio_get_output_string (sh),
 					who,
 					idio_S_nil);
     idio_signal_exception (idio_S_false, c);
-
-    fprintf (stderr, "primitive-error: return from signal exception: XXX abort!\n");
-    idio_vm_abort_thread (idio_current_thread ());
-    return idio_S_unspec;
 }
 
-IDIO idio_error_C (char *msg, IDIO args)
+void idio_error_C (char *msg, IDIO args)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (args); 
 
-    return idio_error (idio_S_internal, idio_string_C (msg), args);
+    idio_error (idio_S_internal, idio_string_C (msg), args);
 }
 
 IDIO_DEFINE_PRIMITIVE1V ("error", error, (IDIO msg, IDIO args))
@@ -151,7 +140,34 @@ IDIO_DEFINE_PRIMITIVE1V ("error", error, (IDIO msg, IDIO args))
 	args = idio_list_tail (args);
     }
 
-    return idio_error (who, msg, args);
+    idio_error (who, msg, args);
+
+    /* not reached */
+    return idio_S_unspec;
+}
+
+void idio_error_system (char *msg, IDIO args, int err)
+{
+    IDIO_C_ASSERT (msg);
+    IDIO_ASSERT (args);
+    IDIO_TYPE_ASSERT (list, args);
+
+    IDIO msh = idio_open_output_string_handle_C ();
+    idio_display_C (msg, msh);
+    if (idio_S_nil != args) {
+	idio_display_C (": ", msh);
+	idio_display (args, msh);
+    }
+
+    IDIO dsh = idio_open_output_string_handle_C ();
+    idio_display_C (strerror (err), dsh);
+
+    IDIO c = idio_struct_instance (idio_condition_system_error_type,
+				   IDIO_LIST4 (idio_get_output_string (msh),
+					       idio_S_internal,
+					       idio_get_output_string (msh),
+					       IDIO_FIXNUM ((intptr_t) err)));
+    idio_signal_exception (idio_S_false, c);
 }
 
 void idio_init_error ()

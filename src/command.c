@@ -38,6 +38,20 @@ static IDIO idio_command_env_PATH;
 #define IDIO_COMMAND_STATUS_STOPPED	3
 #define IDIO_COMMAND_STATUS_CONTINUED	4
 
+static void idio_command_error_glob (IDIO pattern)
+{
+    IDIO_ASSERT (pattern);
+
+    IDIO sh = idio_open_output_string_handle_C ();
+    idio_display_C ("pattern glob failed", sh);
+    IDIO c = idio_struct_instance (idio_condition_rt_glob_error_type,
+				   IDIO_LIST4 (idio_get_output_string (sh),
+					       idio_S_nil,
+					       idio_S_nil,
+					       pattern));
+    idio_signal_exception (idio_S_true, c);
+}
+
 static char **idio_command_get_envp ()
 {
     IDIO symbols = idio_module_visible_symbols (idio_current_module (), idio_S_environ);
@@ -68,12 +82,16 @@ static char **idio_command_get_envp ()
 	symbols = IDIO_PAIR_T (symbols);
 	n++;
     }
+    envp[n] = NULL;
 
     return envp;
 }
 
 char *idio_command_find_exe (IDIO func)
 {
+    IDIO_ASSERT (func);
+    IDIO_TYPE_ASSERT (symbol, func);
+    
     char *command = IDIO_SYMBOL_S (func);
     size_t cmdlen = strlen (command);
     
@@ -81,7 +99,8 @@ char *idio_command_find_exe (IDIO func)
 
     char *path;
     char *pathe;
-    if (idio_S_undef == PATH) {
+    if (idio_S_undef == PATH ||
+	! idio_isa_string (PATH)) {
 	path = "/bin:/usr/bin";
 	pathe = path + strlen (path);
     } else {
@@ -93,32 +112,51 @@ char *idio_command_find_exe (IDIO func)
      * PATH_MAX varies: POSIX is 256, CentOS 7 is 4096
      */
     char exename[PATH_MAX];
+    char cwd[PATH_MAX];
+    if (getcwd (cwd, PATH_MAX) == NULL) {
+	idio_error_system ("cannot access CWD", idio_S_nil, errno);
+    }
+    size_t cwdlen = strlen (cwd);
+    
     int done = 0;
     while (! done) {
 	size_t pathlen = pathe - path;
-
-	if (0 == pathlen) {
-	    idio_error_C ("empty dir in PATH", IDIO_LIST1 (PATH));
-	}
+	char * colon = NULL;
 	
-	char *colon = memchr (path, ':', pathlen);
-
-	if (NULL == colon) {
-	    if ((pathlen + 1 + cmdlen + 1) >= PATH_MAX) {
-		idio_error_C ("dir+command exename length", IDIO_LIST2 (PATH, func));
+	if (0 == pathlen) {
+	    if ((cwdlen + 1 + cmdlen + 1) >= PATH_MAX) {
+		idio_error_system ("cwd+command exename length", IDIO_LIST2 (PATH, func), ENAMETOOLONG);
 	    }
 	    
-	    memcpy (exename, path, pathlen);
-	    exename[pathlen] = '\0';
+	    strcpy (exename, cwd);
 	} else {
-	    size_t dirlen = colon - path;
+	    colon = memchr (path, ':', pathlen);
+
+	    if (NULL == colon) {
+		if ((pathlen + 1 + cmdlen + 1) >= PATH_MAX) {
+		    idio_error_system ("dir+command exename length", IDIO_LIST2 (PATH, func), ENAMETOOLONG);
+		}
 	    
-	    if ((dirlen + 1 + cmdlen + 1) >= PATH_MAX) {
-		idio_error_C ("dir+command exename length", IDIO_LIST2 (PATH, func));
+		memcpy (exename, path, pathlen);
+		exename[pathlen] = '\0';
+	    } else {
+		size_t dirlen = colon - path;
+	    
+		if (0 == dirlen) {
+		    if ((cwdlen + 1 + cmdlen + 1) >= PATH_MAX) {
+			idio_error_system ("cwd+command exename length", IDIO_LIST2 (PATH, func), ENAMETOOLONG);
+		    }
+	    
+		    strcpy (exename, cwd);
+		} else {
+		    if ((dirlen + 1 + cmdlen + 1) >= PATH_MAX) {
+			idio_error_system ("dir+command exename length", IDIO_LIST2 (PATH, func), ENAMETOOLONG);
+		    }
+	    
+		    memcpy (exename, path, dirlen);
+		    exename[dirlen] = '\0';
+		}
 	    }
-	    
-	    memcpy (exename, path, dirlen);
-	    exename[dirlen] = '\0';
 	}
 
 	strcat (exename, "/");
@@ -148,11 +186,178 @@ char *idio_command_find_exe (IDIO func)
     return pathname;
 }
 
+static char *idio_command_glob_charp (char *src)
+{
+    IDIO_C_ASSERT (src);
+
+    while (*src) {
+	switch (*src) {
+	case '*':
+	case '?':
+	case '[':
+	    return src;
+	default:
+	    break;
+	}
+	src++;
+    }
+
+    return NULL;
+}
+
+static size_t idio_command_possible_filename_glob (IDIO arg, glob_t *gp)
+{
+    IDIO_ASSERT (arg);
+    IDIO_TYPE_ASSERT (symbol, arg);
+
+    char *match = idio_command_glob_charp (IDIO_SYMBOL_S (arg));
+
+    if (NULL == match) {
+	return 0;
+    } else {
+	if (glob (IDIO_SYMBOL_S (arg), GLOB_NOCHECK, NULL, gp) == 0) {
+	    return gp->gl_pathc;
+	} else {
+	    idio_command_error_glob (arg);
+	}
+    }
+    
+    idio_error_C ("dropped out", IDIO_LIST1 (arg));
+    return -1;
+}
+
+char **idio_command_argv (IDIO args)    
+{
+    IDIO_ASSERT (args);
+    IDIO_TYPE_ASSERT (list, args);
+
+    /*
+     * argv[] needs:
+     * 1. path to command
+     * 2+ arg1+
+     * 3. NULL (terminator)
+     *
+     * Here we will flatten any lists and expand filename
+     * patterns which means the arg list will grow as we
+     * determine what each argument means.
+     *
+     * We know the basic size
+     */
+    int argc = 1 + idio_list_length (args) + 1;
+    char **argv = idio_alloc (argc * sizeof (char *));
+    int i = 1;		/* index into argv */
+
+    while (idio_S_nil != args) {
+	IDIO arg = IDIO_PAIR_H (args);
+	
+	switch ((intptr_t) arg & 3) {
+	case IDIO_TYPE_FIXNUM_MARK:
+	case IDIO_TYPE_CONSTANT_MARK:
+	case IDIO_TYPE_CHARACTER_MARK:
+	    {
+		argv[i++] = idio_as_string (arg, 1);
+	    }
+	    break;
+	case IDIO_TYPE_POINTER_MARK:
+	    {
+		switch (idio_type (arg)) {
+		case IDIO_TYPE_C_INT8:
+		case IDIO_TYPE_C_UINT8:
+		case IDIO_TYPE_C_INT16:
+		case IDIO_TYPE_C_UINT16:
+		case IDIO_TYPE_C_INT32:
+		case IDIO_TYPE_C_UINT32:
+		case IDIO_TYPE_C_INT64:
+		case IDIO_TYPE_C_UINT64:
+		case IDIO_TYPE_C_FLOAT:
+		case IDIO_TYPE_C_DOUBLE:
+		    {
+			argv[i++] = idio_as_string (arg, 1);
+		    }
+		    break;
+		case IDIO_TYPE_STRING:
+		    if (asprintf (&argv[i++], "%.*s", (int) IDIO_STRING_BLEN (arg), IDIO_STRING_S (arg)) == -1) {
+			return NULL;
+		    }
+		    break;
+		case IDIO_TYPE_SUBSTRING:
+		    if (asprintf (&argv[i++], "%.*s", (int) IDIO_SUBSTRING_BLEN (arg), IDIO_SUBSTRING_S (arg)) == -1) {
+			return NULL;
+		    }
+		    break;
+		case IDIO_TYPE_SYMBOL:
+		    {
+			glob_t g;
+			size_t n = idio_command_possible_filename_glob (arg, &g);
+
+			if (0 == n) {
+			    if (asprintf (&argv[i++], "%s", IDIO_SYMBOL_S (arg)) == -1) {
+				return NULL;
+			    }
+			} else {
+			    /*
+			     * NB "gl_pathc - 1" as we reserved a slot
+			     * for the original pattern so the
+			     * increment is one less
+			     */
+			    argc += g.gl_pathc  - 1;
+
+			    argv = idio_realloc (argv, argc * sizeof (char *));
+			    
+			    size_t n;
+			    for (n = 0; n < g.gl_pathc; n++) {
+				size_t plen = strlen (g.gl_pathv[n]);
+				argv[i] = idio_alloc (plen + 1);
+				strcpy (argv[i++], g.gl_pathv[n]);
+			    }
+
+			    globfree (&g);
+			}
+		    }
+		    break;
+		case IDIO_TYPE_PAIR:
+		case IDIO_TYPE_ARRAY:
+		case IDIO_TYPE_HASH:
+		case IDIO_TYPE_BIGNUM:
+		    {
+			argv[i++] = idio_as_string (arg, 1);
+		    }
+		    break;
+		case IDIO_TYPE_C_POINTER:
+		case IDIO_TYPE_CLOSURE:
+		case IDIO_TYPE_PRIMITIVE:
+		case IDIO_TYPE_MODULE:
+		case IDIO_TYPE_FRAME:
+		case IDIO_TYPE_HANDLE:
+		case IDIO_TYPE_STRUCT_TYPE:
+		case IDIO_TYPE_STRUCT_INSTANCE:
+		case IDIO_TYPE_THREAD:
+		case IDIO_TYPE_C_TYPEDEF:
+		case IDIO_TYPE_C_STRUCT:
+		case IDIO_TYPE_C_INSTANCE:
+		case IDIO_TYPE_C_FFI:
+		case IDIO_TYPE_OPAQUE:
+		default:
+		    idio_warning_message ("unexpected object type: %s", idio_type2string (arg));
+		    break;
+		}
+	    }
+	    break;
+	default:
+	    idio_warning_message ("unexpected object type: %s", idio_type2string (arg));
+	    break;
+	}
+
+	args = IDIO_PAIR_T (args);
+    }
+    argv[i] = NULL;
+
+    return argv;
+}
+
 IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
 {
     IDIO val = IDIO_THREAD_VAL (thr);
-    idio_debug ("invoke: symbol %s ", func); 
-    idio_debug ("%s\n", IDIO_FRAME_ARGS (val)); 
     IDIO args_a = IDIO_FRAME_ARGS (val);
     IDIO last = idio_array_pop (args_a);
     IDIO_FRAME_NARGS (val) -= 1;
@@ -164,46 +369,36 @@ IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
 	IDIO_C_ASSERT (0);
     }
 
-    /*
-     * argv[] needs:
-     * 1. (nominally) path to command
-     * 2+ arg1+
-     * 3. NULL (terminator)
-     *
-     * Here we will flatten any lists and expand filename
-     * patterns which means the arg list will grow as we
-     * determine what each argument means
-     */
-    int argc = 1 + IDIO_FRAME_NARGS (val) + 1;
-    char **argv = idio_alloc (argc * sizeof (char *));
-    int nargs;		/* index into frame args */
-    int i = 0;		/* index into argv */
+    IDIO args = idio_array_to_list (IDIO_FRAME_ARGS (val));
 
-    argv[i++] = pathname;
-    for (nargs = 0; nargs < IDIO_FRAME_NARGS (val); nargs++) {
-	IDIO o = idio_array_get_index (args_a, nargs);
-	idio_as_flat_string (o, argv, &i);
+    char **argv = idio_command_argv (args);
+
+    if (NULL == argv) {
+	idio_error_C ("bad argv", IDIO_LIST2 (func, args));
     }
-    argv[i++] = NULL;
+    argv[0] = pathname;
 
-    char **envp = idio_command_get_envp ();
-
-    return IDIO_FIXNUM (0);
     pid_t cpid;
     cpid = fork ();
     if (-1 == cpid) {
 	perror ("fork");
+	idio_error_system ("fork failed", IDIO_LIST2 (func, args), errno);
 	exit (EXIT_FAILURE);
     }
     
     if (0 == cpid) {
-	execv (argv[0], argv);
+	char **envp = idio_command_get_envp ();
+
+	execve (argv[0], argv, envp);
 	perror ("execv");
 	exit (1);
     }
 
+    /*
+     * NB don't free pathname, argv[0] -- we didn't allocate it
+     */
     int j; 
-    for (j = 0; j < i; j++) { 
+    for (j = 1; NULL != argv[j]; j++) { 
     	free (argv[j]); 
     }
     free (argv);
@@ -221,6 +416,7 @@ IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
 	w = waitpid (cpid, &status, WUNTRACED | WCONTINUED);
 	if (1 == -w) {
 	    perror ("waitpid");
+	    idio_error_system ("waitpid failed", IDIO_LIST2 (func, args), errno);
 	    exit (EXIT_FAILURE);
 	}
 
@@ -285,6 +481,19 @@ void idio_init_command ()
     idio_command_env_PATH = idio_symbols_C_intern ("PATH");
 }
 
+static void idio_command_setenv_default (IDIO name, char *val)
+{
+    IDIO_ASSERT (name);
+    IDIO_C_ASSERT (val);
+    IDIO_TYPE_ASSERT (symbol, name);
+
+    IDIO PATH = idio_module_current_symbol_value (name);
+    if (idio_S_unspec == PATH) {
+	idio_toplevel_extend (name, IDIO_ENVIRON_SCOPE);
+	idio_module_current_set_symbol_value (name, idio_string_C (val));
+    }
+}
+
 static void idio_command_add_environ ()
 {
     char **env;
@@ -309,6 +518,17 @@ static void idio_command_add_environ ()
 	idio_toplevel_extend (var, IDIO_ENVIRON_SCOPE);
 	idio_module_current_set_symbol_value (var, val);
     }
+
+    /*
+     * Hmm.  What if we have a "difficult" environment?  A particular
+     * example is if we don't have a PATH.  We use the PATH internally
+     * at the very least and not having one is an issue.
+     *
+     * So we'll test for some environment variables we need and set a
+     * default if there isn't one.
+     */
+
+    idio_command_setenv_default (idio_command_env_PATH, "/bin:/usr/bin");
 }
 
 void idio_command_add_primitives ()

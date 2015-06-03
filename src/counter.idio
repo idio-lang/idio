@@ -1,0 +1,13 @@
+cter := function (n c) {
+  if (gt n 0) {
+    ; display* c
+    cter (- n 1) (+ c 1)
+  } c
+}
+
+;; each loop is ~ 50 instructions
+
+;; normal compilation => ~ 6000 i/ms
+;; lean compilation   => ~ 10-15k i/ms
+cter 40000 0
+

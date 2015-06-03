@@ -93,7 +93,7 @@ void idio_module_error_unbound (IDIO name)
     
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C ("module name unbound", sh);
-    IDIO c = idio_struct_instance (idio_condition_rt_module_error_type,
+    IDIO c = idio_struct_instance (idio_condition_rt_module_unbound_error_type,
 				   IDIO_LIST4 (idio_get_output_string (sh),
 					       idio_S_nil,
 					       idio_S_nil,
@@ -105,7 +105,7 @@ void idio_module_error_unbound_name (IDIO symbol, IDIO module)
 {
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C ("symbol unbound in module", sh);
-    IDIO c = idio_struct_instance (idio_condition_rt_module_unbound_error_type,
+    IDIO c = idio_struct_instance (idio_condition_rt_module_symbol_unbound_error_type,
 				   IDIO_LIST5 (idio_get_output_string (sh),
 					       idio_S_nil,
 					       idio_S_nil,

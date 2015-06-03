@@ -329,7 +329,7 @@ IDIO idio_list_append2 (IDIO l1, IDIO l2)
 	    break;
 	}
 	if (! idio_isa_pair (l1)) {
-	    return idio_error_C ("append2: not a list:", l1);
+	    idio_error_C ("append2: not a list:", l1);
 	}
 
 	IDIO t = idio_pair (IDIO_PAIR_H (l1), idio_S_nil);

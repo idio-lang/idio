@@ -1032,21 +1032,30 @@ void idio_gc_stats ()
     idio_hcount (&count, &scale);
     fprintf (stderr, "idio_gc_stats: %4lld%c current GC requests\n", count, scales[scale]);
     fprintf (stderr, "idio_gc_stats: %-10.10s %5.5s %4.4s %5.5s %4.4s\n", "type", "total", "%age", "used", "%age");
+    int types_unused = 0;
     for (i = 1; i < IDIO_TYPE_MAX; i++) {
 	unsigned long long tgets_count = idio_gc->stats.tgets[i];
-	int tgets_scale = 0;
-	idio_hcount (&tgets_count, &tgets_scale);
-	unsigned long long nused_count = idio_gc->stats.nused[i];
-	int nused_scale = 0;
-	idio_hcount (&nused_count, &nused_scale);
+
+	if (tgets_count) {
+	    int tgets_scale = 0;
+	    idio_hcount (&tgets_count, &tgets_scale);
+	    unsigned long long nused_count = idio_gc->stats.nused[i];
+	    int nused_scale = 0;
+	    idio_hcount (&nused_count, &nused_scale);
     
-	fprintf (stderr, "idio_gc_stats: %-10.10s %4lld%c %3lld %4lld%c %3lld\n",
-		 idio_type_enum2string (i),
-		 tgets_count, scales[tgets_scale],
-		 tgets ? idio_gc->stats.tgets[i] * 100 / tgets : -1,
-		 nused_count, scales[nused_scale],
-		 nused ? idio_gc->stats.nused[i] * 100 / nused : -1
-		 );
+	    fprintf (stderr, "idio_gc_stats: %-10.10s %4lld%c %3lld %4lld%c %3lld\n",
+		     idio_type_enum2string (i),
+		     tgets_count, scales[tgets_scale],
+		     tgets ? idio_gc->stats.tgets[i] * 100 / tgets : -1,
+		     nused_count, scales[nused_scale],
+		     nused ? idio_gc->stats.nused[i] * 100 / nused : -1
+		     );
+	} else {
+	    types_unused++;
+	}
+    }
+    if (types_unused) {
+	fprintf (stderr, "idio_gc_stats: %d types unused\n", types_unused);
     }
 
     count = idio_gc->stats.mgets;

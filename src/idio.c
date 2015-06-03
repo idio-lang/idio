@@ -144,13 +144,15 @@ int main (int argc, char **argv, char **envp)
 {
     idio_init ();
 
+    idio_load_file (idio_string_C ("bootstrap"));
+
     if (argc > 1) {
 	int i;
 	for (i = 1 ; i < argc; i++) {
 	    idio_load_file (idio_string_C (argv[i]));
 	}
     } else {
-	idio_load_file (idio_string_C ("bootstrap"));
+	/* repl */
     }
 
     idio_final ();

@@ -126,4 +126,7 @@ define-condition-type-accessors-only ^rt-function-error			^runtime-error		   rt-
 define-condition-type-accessors-only ^rt-function-type-error		^rt-function-error	   rt-function-type-error?
 
 define-condition-type-accessors-only ^rt-module-error			^runtime-error		   rt-module-error? (module module-error-module)
-define-condition-type-accessors-only ^rt-module-unbound-error		^rt-module-error	   rt-module-unbound-error? (symbol module-unbound-error-symbol)
+define-condition-type-accessors-only ^rt-module-unbound-error		^rt-module-error	   rt-module-unbound-error?
+define-condition-type-accessors-only ^rt-module-symbol-unbound-error	^rt-module-error	   rt-module-symbol-unbound-error? (symbol module-unbound-error-symbol)
+
+define-condition-type-accessors-only ^rt-glob-error			^runtime-error		   rt-glob-error? (pattern glob-error-pattern)

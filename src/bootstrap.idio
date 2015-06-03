@@ -4,16 +4,4 @@ include "s9.idio"
 include "struct.idio"
 include "condition.idio"
 
-load "test.idio"
-
-display* "env:" PATH
-{
-  PATH :* 27
-  display* "env:" PATH
-}
-display* "env:" PATH
-
-;ls -la *.scm
-;ls (sleep 10) 
-
 ;print "\nThis is the end of bootstrap.idio bringing you today's number, π: " pi "\n"

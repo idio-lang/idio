@@ -62,6 +62,8 @@ IDIO idio_condition_rt_function_error_type;
 IDIO idio_condition_rt_function_arity_error_type;
 IDIO idio_condition_rt_module_error_type;
 IDIO idio_condition_rt_module_unbound_error_type;
+IDIO idio_condition_rt_module_symbol_unbound_error_type;
+IDIO idio_condition_rt_glob_error_type;
 
 IDIO_DEFINE_PRIMITIVE2V ("make-condition-type", make_condition_type, (IDIO name, IDIO parent, IDIO fields))
 {
@@ -331,7 +333,9 @@ void idio_init_condition ()
     IDIO_DEFINE_CONDITION0 (idio_condition_rt_function_arity_error_type, "^rt-function-arity-error", idio_condition_rt_function_error_type);
 
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_module_error_type, "^rt-module-error", idio_condition_runtime_error_type, "module");
-    IDIO_DEFINE_CONDITION1 (idio_condition_rt_module_unbound_error_type, "^rt-module-unbound-error", idio_condition_rt_module_error_type, "symbol");
+    IDIO_DEFINE_CONDITION0 (idio_condition_rt_module_unbound_error_type, "^rt-module-unbound-error", idio_condition_rt_module_error_type);
+    IDIO_DEFINE_CONDITION1 (idio_condition_rt_module_symbol_unbound_error_type, "^rt-module-symbol-unbound-error", idio_condition_rt_module_error_type, "symbol");
+    IDIO_DEFINE_CONDITION1 (idio_condition_rt_glob_error_type, "^rt-glob-error", idio_condition_runtime_error_type, "pattern");
 }
 
 void idio_condition_add_primitives ()
@@ -369,6 +373,7 @@ void idio_final_condition ()
     idio_gc_expose (idio_condition_io_file_already_exists_error_type);
     idio_gc_expose (idio_condition_io_no_such_file_error_type);
     idio_gc_expose (idio_condition_read_error_type);
+
     idio_gc_expose (idio_condition_system_error_type);
 
     idio_gc_expose (idio_condition_static_error_type);
@@ -388,5 +393,7 @@ void idio_final_condition ()
     idio_gc_expose (idio_condition_rt_function_arity_error_type);
     idio_gc_expose (idio_condition_rt_module_error_type);
     idio_gc_expose (idio_condition_rt_module_unbound_error_type);
+    idio_gc_expose (idio_condition_rt_module_symbol_unbound_error_type);
+    idio_gc_expose (idio_condition_rt_glob_error_type);
 }
 

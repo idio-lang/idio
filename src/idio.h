@@ -50,6 +50,7 @@
 #include <assert.h>
 #include <ffi.h>
 #include <ctype.h>
+#include <glob.h>
 
 #include <sys/resource.h>
 #include <sys/time.h>

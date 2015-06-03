@@ -134,8 +134,9 @@ static void idio_vm_error_function_invoke (char *msg, IDIO func)
     
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C (msg, sh);
-    idio_display_C (" ", sh);
+    idio_display_C (": '", sh);
     idio_display (func, sh);
+    idio_display_C ("'", sh);
     IDIO c = idio_struct_instance (idio_condition_rt_function_error_type,
 				   IDIO_LIST3 (idio_get_output_string (sh),
 					       idio_S_nil,
@@ -3493,8 +3494,16 @@ IDIO idio_vm_run (IDIO thr, int run_gc)
     idio_i_array_push (idio_all_code, IDIO_A_NOP);
     idio_i_array_push (idio_all_code, IDIO_A_RETURN);
 
+    struct timeval t0;
+    gettimeofday (&t0, NULL);
+	
+    uintptr_t loops = 0;
+
     /*
      * Ready ourselves for idio_signal_exception to clear the decks.
+     *
+     * NB Keep counters above this setjmp (otherwise they get reset --
+     * duh)
      */
     int sjv = setjmp (IDIO_THREAD_JMP_BUF (thr));
 
@@ -3521,18 +3530,40 @@ IDIO idio_vm_run (IDIO thr, int run_gc)
      *
      * Often enough but not too often.
      */
-    int loops = 0;
     for (;;) {
 	if (idio_vm_run1 (thr)) {
 	    sleep (0);
-	    if (loops++ > 100) {
+	    if ((loops++ & 0xff) == 0) {
 		idio_gc_possibly_collect ();
-		loops = 0;
 	    }
 	} else {
 	    sleep (0);
 	    break;
 	}
+    }
+
+    struct timeval tr;
+    gettimeofday (&tr, NULL);
+	
+    time_t s = tr.tv_sec - t0.tv_sec;
+    suseconds_t us = tr.tv_usec - t0.tv_usec;
+
+    if (us < 0) {
+	us += 1000000;
+	s -= 1;
+    }
+
+    /*
+     * If we've taken long enough and done enough then record OPs/ms
+     *
+     * test.idio	=> ~1750/ms
+     * counter.idio	=> ~6000/ms
+     */
+    if (loops > 500000 &&
+	(s ||
+	 us > 100000)) {
+	uintptr_t ipms = loops / (s * 1000 + us / 1000);
+	fprintf (stderr, "vm_run: %" PRIdPTR " ins in time %ld.%03ld => %" PRIdPTR " i/ms\n", loops, s, (long) us / 1000, ipms);
     }
 
     /*
