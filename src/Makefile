@@ -83,9 +83,9 @@ tidy :
 
 tags : TAGS
 
-TAGS : *.[ch]
+TAGS : *.[ch] *.idio */*.idio
 	@echo TAGS: $?
-	@etags *.[ch]
+	@etags *.[ch] --language=none --regex=@idio.tags *.idio */*.idio
 
 %.d: %.c
 	$(CC) -MM -MP -MF $@ $(CFLAGS) $< -MT $*.o -MT $@

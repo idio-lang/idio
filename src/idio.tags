@@ -1,0 +1,18 @@
+ -- etags regexps for Idio files
+
+ -- NB language must be none -- there's no obvious way to augment to
+ -- filename extension/language mapping
+
+ -- NB comments start SPACE/TAB then --
+
+ -- definitions:
+ -- define foo bar
+ -- define (foo bar) ...
+ -- 
+ -- also:
+ -- define-macro
+ -- define-conditional
+ -- define-something-or-other
+{none}/define\(-[^ \t]+\)?[ \t]+\((\([^ \t)]+\)\|\([^ \t]+\)\)/\3/
+
+ -- 
