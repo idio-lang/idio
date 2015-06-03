@@ -1,12 +1,12 @@
  -- etags regexps for Idio files
 
- -- NB language must be none -- there's no obvious way to augment to
- -- filename extension/language mapping
+ -- NB language must be none -- there's no obvious way to augment
+ -- etags' stock filename extension/language mapping
 
  -- NB comments start SPACE/TAB then --
 
  -- definitions:
- -- define foo bar
+ -- define foo ...
  -- define (foo bar) ...
  -- 
  -- also:
