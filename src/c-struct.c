@@ -400,7 +400,7 @@ IDIO idio_opaque_final (void *p, void (*func) (IDIO o), IDIO args)
     IDIO_OPAQUE_P (o) = p;
     IDIO_OPAQUE_ARGS (o) = args;
 
-    idio_register_finalizer (o, func);
+    idio_gc_register_finalizer (o, func);
 
     return o;
 }

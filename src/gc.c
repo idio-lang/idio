@@ -159,7 +159,7 @@ void idio_gc_stats_free (size_t n)
     idio_gc->stats.nbytes -= n;
 }
 
-void idio_register_finalizer (IDIO o, void (*func) (IDIO o))
+void idio_gc_register_finalizer (IDIO o, void (*func) (IDIO o))
 {
     IDIO_ASSERT (o);
     IDIO_C_ASSERT (func);
@@ -170,7 +170,7 @@ void idio_register_finalizer (IDIO o, void (*func) (IDIO o))
     o->flags |= IDIO_FLAG_FINALIZER;
 }
 
-void idio_deregister_finalizer (IDIO o)
+void idio_gc_deregister_finalizer (IDIO o)
 {
     IDIO_ASSERT (o);
 
@@ -178,12 +178,12 @@ void idio_deregister_finalizer (IDIO o)
     o->flags &= IDIO_FLAG_FINALIZER_UMASK;
 }
 
-void idio_finalizer_run (IDIO o)
+static void idio_gc_finalizer_run (IDIO o)
 {
     IDIO_ASSERT (o);
 
     if (idio_S_nil == o) {
-	fprintf (stderr, "idio_finalizer_run: nil?\n");
+	fprintf (stderr, "idio_gc_finalizer_run: nil?\n");
 	return;
     }
 
@@ -306,6 +306,13 @@ void idio_mark (IDIO o, unsigned colour)
 	    IDIO_C_ASSERT (idio_gc->grey != o);
 	    o->flags |= IDIO_FLAG_GCC_LGREY;
 	    IDIO_THREAD_GREY (o) = idio_gc->grey;
+	    idio_gc->grey = o;
+	    break;
+	case IDIO_TYPE_CONTINUATION:
+	    IDIO_C_ASSERT (IDIO_CONTINUATION_GREY (o) != o);
+	    IDIO_C_ASSERT (idio_gc->grey != o);
+	    o->flags |= IDIO_FLAG_GCC_LGREY;
+	    IDIO_CONTINUATION_GREY (o) = idio_gc->grey;
 	    idio_gc->grey = o;
 	    break;
 	case IDIO_TYPE_C_TYPEDEF:
@@ -438,9 +445,9 @@ void idio_process_grey (unsigned colour)
 	idio_mark (IDIO_THREAD_STACK (o), colour);
 	idio_mark (IDIO_THREAD_VAL (o), colour);
 	idio_mark (IDIO_THREAD_ENV (o), colour);
-	idio_mark (IDIO_THREAD_HANDLERSP (o), colour);
-	idio_mark (IDIO_THREAD_DYNAMICSP (o), colour);
-	idio_mark (IDIO_THREAD_ENVIRONSP (o), colour);
+	idio_mark (IDIO_THREAD_HANDLER_SP (o), colour);
+	idio_mark (IDIO_THREAD_DYNAMIC_SP (o), colour);
+	idio_mark (IDIO_THREAD_ENVIRON_SP (o), colour);
 	idio_mark (IDIO_THREAD_FUNC (o), colour);
 	idio_mark (IDIO_THREAD_REG1 (o), colour);
 	idio_mark (IDIO_THREAD_REG2 (o), colour);
@@ -448,6 +455,11 @@ void idio_process_grey (unsigned colour)
 	idio_mark (IDIO_THREAD_OUTPUT_HANDLE (o), colour);
 	idio_mark (IDIO_THREAD_ERROR_HANDLE (o), colour);
 	idio_mark (IDIO_THREAD_MODULE (o), colour);
+	break;
+    case IDIO_TYPE_CONTINUATION:
+	IDIO_C_ASSERT (idio_gc->grey != IDIO_CONTINUATION_GREY (o));
+	idio_gc->grey = IDIO_CONTINUATION_GREY (o);
+	idio_mark (IDIO_CONTINUATION_STACK (o), colour);
 	break;
     case IDIO_TYPE_C_TYPEDEF:
 	IDIO_C_ASSERT (idio_gc->grey != IDIO_C_TYPEDEF_GREY (o));
@@ -769,7 +781,7 @@ void idio_gc_sweep_free_value (IDIO vo)
     }
 
     if (vo->flags & IDIO_FLAG_FINALIZER) {
-	idio_finalizer_run (vo);
+	idio_gc_finalizer_run (vo);
     }
 
     /* idio_free_lex (vo); */
@@ -834,6 +846,9 @@ void idio_gc_sweep_free_value (IDIO vo)
 	break;
     case IDIO_TYPE_THREAD:
 	idio_free_thread (vo);
+	break;
+    case IDIO_TYPE_CONTINUATION:
+	idio_free_continuation (vo);
 	break;
     case IDIO_TYPE_C_TYPEDEF:
 	idio_free_C_typedef (vo);
@@ -1337,22 +1352,24 @@ void idio_init_gc ()
     
     idio_gc_finalizer_hash = IDIO_HASH_EQP (64);
     idio_gc_protect (idio_gc_finalizer_hash);
-    IDIO_HASH_FLAGS (idio_gc_finalizer_hash) |= IDIO_HASH_FLAG_STRING_KEYS;
+    IDIO_HASH_FLAGS (idio_gc_finalizer_hash) |= IDIO_HASH_FLAG_STRING_KEYS; 
 }
 
-void idio_run_all_finalizers ()
+static void idio_gc_run_all_finalizers ()
 {
     if (idio_S_nil == idio_gc_finalizer_hash) {
 	return;
     }
-    
+
     idio_ai_t hi;
     for (hi = 0; hi < IDIO_HASH_SIZE (idio_gc_finalizer_hash); hi++) {
 	IDIO k = IDIO_HASH_HE_KEY (idio_gc_finalizer_hash, hi);
+	IDIO_ASSERT (k);
 	if (idio_S_nil != k) {
 	    /* apply the finalizer */
-	    idio_apply (IDIO_HASH_HE_VALUE (idio_gc_finalizer_hash, hi),
-			idio_pair (k, idio_S_nil));
+	    IDIO C_p = IDIO_HASH_HE_VALUE (idio_gc_finalizer_hash, hi);
+	    void (*func) (IDIO o) = IDIO_C_TYPE_POINTER_P (C_p);
+	    (*func) (k); 
 
 	    /* expunge the key/value pair from this hash */
 	    idio_hash_delete (idio_gc_finalizer_hash, k);
@@ -1362,7 +1379,7 @@ void idio_run_all_finalizers ()
 
 void idio_final_gc ()
 {
-    idio_run_all_finalizers ();
+    idio_gc_run_all_finalizers ();
 
     /* unprotect the finalizer hash itself */
     idio_gc_expose (idio_gc_finalizer_hash);

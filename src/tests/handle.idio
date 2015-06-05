@@ -1,10 +1,10 @@
 %%vm-trace 0
 
 ;; check predicates fail for non-handle
-string := "foo"
-test (handle? string) #f
-test (input-handle? string) #f
-test (output-handle? string) #f
+test-str := "foo"
+test (handle? test-str) #f
+test (input-handle? test-str) #f
+test (output-handle? test-str) #f
 
 str := "Hello"
 define (write-handle oh) {

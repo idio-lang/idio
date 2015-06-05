@@ -58,7 +58,7 @@
 
 #include <setjmp.h>
 
-#ifdef assert
+#ifdef IDIO_DEBUG
 
 #define IDIO_C_ASSERT(x)	(assert (x))
 
@@ -232,6 +232,7 @@
 #include "closure.h"
 #include "command.h"
 #include "condition.h"
+#include "continuation.h"
 #include "error.h"
 #include "evaluate.h"
 #include "scm-evaluate.h"

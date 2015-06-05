@@ -279,7 +279,7 @@
 #define idio_I_NOP                         ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_NOP))
 
 void idio_vm_codegen (IDIO thr, IDIO m);
-IDIO idio_vm_run (IDIO thr, int run_gc);
+IDIO idio_vm_run (IDIO thr);
 
 idio_ai_t idio_vm_extend_constants (IDIO v);
 IDIO idio_vm_constants_ref (idio_ai_t i);
@@ -296,7 +296,7 @@ void idio_vm_dynamic_set (idio_ai_t i, IDIO v, IDIO thr);
 IDIO idio_vm_environ_ref (idio_ai_t index, IDIO thr);
 void idio_vm_environ_set (idio_ai_t i, IDIO v, IDIO thr);
 
-IDIO idio_signal_exception (IDIO continuablep, IDIO e);
+void idio_signal_exception (IDIO continuablep, IDIO e);
 IDIO idio_apply (IDIO fn, IDIO args);
 
 void idio_vm_thread_init (IDIO thr);

@@ -461,7 +461,7 @@ static IDIO idio_scm_evaluate_expander (IDIO x, IDIO e)
     idio_vm_default_pc (idio_scm_expander_thread);
 
     idio_scm_initial_expander (x, e);
-    IDIO r = idio_vm_run (idio_scm_expander_thread, 0);
+    IDIO r = idio_vm_run (idio_scm_expander_thread);
     
     idio_thread_restore_state (idio_scm_expander_thread);
     idio_set_current_thread (cthr);
@@ -886,7 +886,7 @@ static IDIO idio_scm_install_expander_code (IDIO m)
     idio_vm_default_pc (idio_scm_expander_thread);
 
     idio_vm_codegen (idio_scm_expander_thread, m);
-    IDIO r = idio_vm_run (idio_scm_expander_thread, 0);
+    IDIO r = idio_vm_run (idio_scm_expander_thread);
     
     idio_thread_restore_state (idio_scm_expander_thread);
     idio_set_current_thread (cthr);

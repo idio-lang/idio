@@ -42,24 +42,25 @@
 #define IDIO_TYPE_STRUCT_TYPE     16
 #define IDIO_TYPE_STRUCT_INSTANCE 17
 #define IDIO_TYPE_THREAD	  18
-#define IDIO_TYPE_C_INT8          19
-#define IDIO_TYPE_C_UINT8         20
-#define IDIO_TYPE_C_INT16         21
-#define IDIO_TYPE_C_UINT16        22
-#define IDIO_TYPE_C_INT32         23
-#define IDIO_TYPE_C_UINT32        24
-#define IDIO_TYPE_C_INT64         25
-#define IDIO_TYPE_C_UINT64        26
-#define IDIO_TYPE_C_FLOAT         27
-#define IDIO_TYPE_C_DOUBLE        28
-#define IDIO_TYPE_C_POINTER       29
-#define IDIO_TYPE_C_VOID          30
-#define IDIO_TYPE_C_TYPEDEF       31
-#define IDIO_TYPE_C_STRUCT        32
-#define IDIO_TYPE_C_INSTANCE      33
-#define IDIO_TYPE_C_FFI           34
-#define IDIO_TYPE_OPAQUE          35
-#define IDIO_TYPE_MAX             36
+#define IDIO_TYPE_CONTINUATION	  19
+#define IDIO_TYPE_C_INT8          20
+#define IDIO_TYPE_C_UINT8         21
+#define IDIO_TYPE_C_INT16         22
+#define IDIO_TYPE_C_UINT16        23
+#define IDIO_TYPE_C_INT32         24
+#define IDIO_TYPE_C_UINT32        25
+#define IDIO_TYPE_C_INT64         26
+#define IDIO_TYPE_C_UINT64        27
+#define IDIO_TYPE_C_FLOAT         28
+#define IDIO_TYPE_C_DOUBLE        29
+#define IDIO_TYPE_C_POINTER       30
+#define IDIO_TYPE_C_VOID          31
+#define IDIO_TYPE_C_TYPEDEF       32
+#define IDIO_TYPE_C_STRUCT        33
+#define IDIO_TYPE_C_INSTANCE      34
+#define IDIO_TYPE_C_FFI           35
+#define IDIO_TYPE_OPAQUE          36
+#define IDIO_TYPE_MAX             37
 
 typedef unsigned char idio_type_e;
 
@@ -183,6 +184,14 @@ typedef struct idio_hash_s {
 #define IDIO_HASH_HE_NEXT(H,i)	((H)->u.hash->he[i].n)
 #define IDIO_HASH_FLAGS(H)	((H)->tflags)
 
+/*
+ * If we wanted to store the arity and varargs boolean of a closure
+ * (for a possible thunk? predicate) without increasing the size of
+ * idio_closure_s (and thus spoiling idio_s' union) then we should be
+ * able to sneak in an extra char in idio_s (after tflags) for the
+ * arity -- with a special value of 255 for 255+ arguments (how many
+ * of those might we see?) and use a bit in tflags for varargs.
+ */
 typedef struct idio_closure_s {
     struct idio_s *grey;
     size_t code;
@@ -193,6 +202,13 @@ typedef struct idio_closure_s {
 #define IDIO_CLOSURE_CODE(C)	((C)->u.closure.code)
 #define IDIO_CLOSURE_ENV(C)	((C)->u.closure.env)
 
+/*
+ * Having varargs (a boolean) using a slot in this data structure is a
+ * waste as it could be a flag (in tflags).  However, initialisation
+ * then becomes more opaque.  There's only a few (hundred) of them and
+ * we're currently are OK size-wise for a native object in the idio_s
+ * union.  So we'll leave as is.
+ */
 typedef struct idio_primitive_s {
     struct idio_s *(*f) ();	/* don't declare args */
     char *name;
@@ -360,11 +376,11 @@ typedef struct idio_thread_s {
     struct idio_s *val;
     struct idio_s *env;
 
-    struct idio_s *handlersp;	/* SP to current handler; SP-1 is SP of next handler */
+    struct idio_s *handler_sp;	/* SP to current handler; SP-1 is SP of next handler */
     jmp_buf jmp_buf;		/* lets us clear the C-stack too */
 
-    struct idio_s *dynamicsp;	/* SP to topmost dynamic variable */
-    struct idio_s *environsp;	/* SP to topmost environ variable */
+    struct idio_s *dynamic_sp;	/* SP to topmost dynamic variable */
+    struct idio_s *environ_sp;	/* SP to topmost environ variable */
 
     struct idio_s *func;
     struct idio_s *reg1;
@@ -382,10 +398,10 @@ typedef struct idio_thread_s {
 #define IDIO_THREAD_STACK(T)          ((T)->u.thread->stack)
 #define IDIO_THREAD_VAL(T)            ((T)->u.thread->val)
 #define IDIO_THREAD_ENV(T)            ((T)->u.thread->env)
-#define IDIO_THREAD_HANDLERSP(T)      ((T)->u.thread->handlersp)
+#define IDIO_THREAD_HANDLER_SP(T)     ((T)->u.thread->handler_sp)
 #define IDIO_THREAD_JMP_BUF(T)        ((T)->u.thread->jmp_buf)
-#define IDIO_THREAD_DYNAMICSP(T)      ((T)->u.thread->dynamicsp)
-#define IDIO_THREAD_ENVIRONSP(T)      ((T)->u.thread->environsp)
+#define IDIO_THREAD_DYNAMIC_SP(T)     ((T)->u.thread->dynamic_sp)
+#define IDIO_THREAD_ENVIRON_SP(T)     ((T)->u.thread->environ_sp)
 #define IDIO_THREAD_FUNC(T)           ((T)->u.thread->func)
 #define IDIO_THREAD_REG1(T)           ((T)->u.thread->reg1)
 #define IDIO_THREAD_REG2(T)           ((T)->u.thread->reg2)
@@ -395,7 +411,30 @@ typedef struct idio_thread_s {
 #define IDIO_THREAD_MODULE(T)	      ((T)->u.thread->module)
 #define IDIO_THREAD_FLAGS(T)          ((T)->tflags)
 
+/*
+ * A continuation needs to save everything important about the state
+ * of the current thread.  So all the SPs, the environment and the
+ * stack itself.
+ *
+ * We'll be duplicating the efforts of idio_vm_preserve_environment()
+ * but we can't call that as it modifies the stack.  That said, we'll
+ * be copying the stack so once we've done that we can push everything
+ * else idio_vm_restore_environment() needs onto that copy of the
+ * stack.
+ */
+typedef struct idio_continuation_s {
+    struct idio_s *grey;
+    struct idio_s *stack;
+} idio_continuation_t;
+
+#define IDIO_CONTINUATION_GREY(T)	((T)->u.continuation->grey)
+#define IDIO_CONTINUATION_STACK(T)	((T)->u.continuation->stack)
+
+/*
+ * Who called longjmp?  
+ */
 #define IDIO_VM_LONGJMP_SIGNAL_EXCEPTION 1
+#define IDIO_VM_LONGJMP_CONTINUATION     2
 
 typedef struct idio_C_pointer_s {
     void *p;
@@ -498,14 +537,6 @@ typedef struct idio_opaque_s {
 #define IDIO_OPAQUE_P(C)    ((C)->u.opaque->p)
 #define IDIO_OPAQUE_ARGS(C) ((C)->u.opaque->args)
 
-typedef struct idio_continuation_s {
-    struct idio_s *grey;
-    struct idio_s *func;
-    struct idio_s *args;
-    struct idio_s *frame;
-    struct idio_s *k;
-} idio_continuation_t;
-
 typedef struct idio_s {
     struct idio_s *next;
 
@@ -605,15 +636,15 @@ typedef struct idio_gc_s {
   element is a single char
 */
 
-#define IDIO_C_STRUCT_ALIGNMENT(TYPE)	offsetof (struct { char __gc1_c_struct_1; TYPE __gc1_c_struct_2; }, __gc1_c_struct_2)
+#define IDIO_C_STRUCT_ALIGNMENT(TYPE)	offsetof (struct { char __gc_c_struct_1; TYPE __gc_c_struct_2; }, __gc_c_struct_2)
 
 /*
  * Fixnums, characters and small constants
 
  * On a 32 bit processor a pointer to an Idio type structure will be
- * word-aligned meaning the bottom two bits will always be 00.  We can
- * use this to identify up to three other types which require less
- * than one word of data.
+ * four-byte word-aligned meaning the bottom two bits will always be
+ * 00.  We can use this to identify up to three other types which
+ * require less than one word of data.
 
  * The three types are:
 
@@ -621,12 +652,18 @@ typedef struct idio_gc_s {
      platforms: 32 less the two bits above and a sign bit)
 
  * - small constants the user can see and use: #t, #f, #eof etc..
-     Negative values cannot be evaluated.
 
  * - characters: as a distinct type from fixnums to avoid the
-     awkwardness of trying to evaluate: 1 + #\®
+     awkwardness of trying to evaluate: 1 + #\®. Unicode, I guess.
 
  * All three will then have a minimum of 30 bits of useful space.
+
+ * Of course, we could subdivide any of these into further types each
+ * using proportionally less space.  The constants (there's maybe a
+ * dozen) are an obvious candidate.  Characters could be handled
+ * similarly as even Unicode is only using some 10% of its 1,114,112
+ * possible characters.  Even if it used the lot that's less than
+ * 10**8 -- there's a bit of space left over!
  */
 
 #define IDIO_TYPE_MASK           0x3
@@ -655,8 +692,8 @@ typedef struct idio_gc_s {
 
 void idio_init_gc ();
 void idio_final_gc ();
-void idio_register_finalizer (IDIO o, void (*func) (IDIO o));
-void idio_deregister_finalizer (IDIO o);
+void idio_gc_register_finalizer (IDIO o, void (*func) (IDIO o));
+void idio_gc_deregister_finalizer (IDIO o);
 void idio_run_finalizer (IDIO o);
 void *idio_alloc (size_t s);
 void *idio_realloc (void *p, size_t s);

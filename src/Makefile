@@ -41,8 +41,9 @@ endif
 
 
 PROFLAGS	=
-CFLAGS	       := ${CFLAGS} ${PROFLAGS} ${CDEBUG} -std=c99 -Wall -fPIC ${LIBFFI_INC}
-LDFLAGS        := ${PROFLAGS} ${LDFLAGS}
+COVFLAGS	=
+CFLAGS	       := ${CFLAGS} ${PROFLAGS} ${COVFLAGS} ${CDEBUG} -std=c99 -Wall -fPIC ${LIBFFI_INC}
+LDFLAGS        := ${PROFLAGS} ${COVFLAGS} ${LDFLAGS}
 LIBS	       := ${LIBS} -lffi
 
 sources	       := $(wildcard *.c)
@@ -56,7 +57,10 @@ all : tags idio
 #all : idio scm1-c-structs.scm1 ${DLIBS} tags
 
 profiled :
-	$(MAKE) MAKE_LEAN=1 PROFLAGS=-pg
+	$(MAKE) PROFLAGS=-pg
+
+coverage :
+	$(MAKE) COVFLAGS="-fprofile-arcs -ftest-coverage"
 
 lean :
 	$(MAKE) MAKE_LEAN=1
@@ -79,7 +83,7 @@ clean : tidy
 	rm -f *.o *.d idio scm1-c-structs *.so scm1-c-structs.scm1 o e TAGS
 
 tidy :
-	rm -f vgcore.* core.* core *~
+	rm -f vgcore.* core.* core *~ *.gcda *.gcno *.gcov gmon.out
 
 tags : TAGS
 

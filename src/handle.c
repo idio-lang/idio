@@ -22,58 +22,61 @@
 
 #include "idio.h"
 
-IDIO idio_handle_error_read (IDIO h)
+void idio_handle_error_read (IDIO h)
 {
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C ("handle name '", sh);
     idio_display_C (IDIO_HANDLE_NAME (h), sh);
     idio_display_C ("' read error", sh);
-    IDIO c = idio_struct_instance (idio_condition_io_read_error_type, IDIO_LIST4 (idio_get_output_string (sh),
-										  idio_S_nil,
-										  idio_S_nil,
-										  idio_string_C (IDIO_HANDLE_NAME (h))));
-    return idio_signal_exception (idio_S_true, c);
+    IDIO c = idio_struct_instance (idio_condition_io_read_error_type,
+				   IDIO_LIST4 (idio_get_output_string (sh),
+					       idio_S_nil,
+					       idio_S_nil,
+					       idio_string_C (IDIO_HANDLE_NAME (h))));
+    idio_signal_exception (idio_S_true, c);
 }
 
-IDIO idio_handle_error_read_C (char *name)
+void idio_handle_error_read_C (char *name)
 {
-    return idio_handle_error_read (idio_string_C (name));
+    idio_handle_error_read (idio_string_C (name));
 }
 
-IDIO idio_handle_error_write (IDIO h)
+void idio_handle_error_write (IDIO h)
 {
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C ("handle name '", sh);
     idio_display_C (IDIO_HANDLE_NAME (h), sh);
     idio_display_C ("' write error", sh);
-    IDIO c = idio_struct_instance (idio_condition_io_write_error_type, IDIO_LIST4 (idio_get_output_string (sh),
-										   idio_S_nil,
-										   idio_S_nil,
-										   idio_string_C (IDIO_HANDLE_NAME (h))));
-    return idio_signal_exception (idio_S_true, c);
+    IDIO c = idio_struct_instance (idio_condition_io_write_error_type,
+				   IDIO_LIST4 (idio_get_output_string (sh),
+					       idio_S_nil,
+					       idio_S_nil,
+					       idio_string_C (IDIO_HANDLE_NAME (h))));
+    idio_signal_exception (idio_S_true, c);
 }
 
-IDIO idio_handle_error_write_C (char *name)
+void idio_handle_error_write_C (char *name)
 {
-    return idio_handle_error_write (idio_string_C (name));
+    idio_handle_error_write (idio_string_C (name));
 }
 
-IDIO idio_handle_error_closed (IDIO h)
+void idio_handle_error_closed (IDIO h)
 {
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C ("handle name '", sh);
     idio_display_C (IDIO_HANDLE_NAME (h), sh);
     idio_display_C ("' already closed", sh);
-    IDIO c = idio_struct_instance (idio_condition_io_closed_error_type, IDIO_LIST4 (idio_get_output_string (sh),
-										    idio_S_nil,
-										    idio_S_nil,
-										    idio_string_C (IDIO_HANDLE_NAME (h))));
-    return idio_signal_exception (idio_S_true, c);
+    IDIO c = idio_struct_instance (idio_condition_io_closed_error_type,
+				   IDIO_LIST4 (idio_get_output_string (sh),
+					       idio_S_nil,
+					       idio_S_nil,
+					       idio_string_C (IDIO_HANDLE_NAME (h))));
+    idio_signal_exception (idio_S_true, c);
 }
 
-IDIO idio_handle_error_closed_C (char *name)
+void idio_handle_error_closed_C (char *name)
 {
-    return idio_handle_error_closed (idio_string_C (name));
+    idio_handle_error_closed (idio_string_C (name));
 }
 
 /*

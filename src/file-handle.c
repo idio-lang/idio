@@ -71,117 +71,123 @@ static idio_handle_methods_t idio_file_handle_methods = {
     idio_file_handle_print
 };
 
-static IDIO idio_filehandle_error_filename (IDIO filename)
+static void idio_filehandle_error_filename (IDIO filename)
 {
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C ("generic filename '", sh);
     idio_display (filename, sh);
     idio_display_C ("' error: ", sh);
     idio_display_C (strerror (errno), sh);
-    IDIO c = idio_struct_instance (idio_condition_io_filename_error_type, IDIO_LIST4 (idio_get_output_string (sh),
-										      idio_S_nil,
-										      idio_string_C (strerror (errno)),
-										      filename));
-    return idio_signal_exception (idio_S_true, c);
+    IDIO c = idio_struct_instance (idio_condition_io_filename_error_type,
+				   IDIO_LIST4 (idio_get_output_string (sh),
+					       idio_S_nil,
+					       idio_string_C (strerror (errno)),
+					       filename));
+    idio_signal_exception (idio_S_true, c);
 }
 
-static IDIO idio_filehandle_error_filename_C (char *name)
+static void idio_filehandle_error_filename_C (char *name)
 {
-    return idio_filehandle_error_filename (idio_string_C (name));
+    idio_filehandle_error_filename (idio_string_C (name));
 }
 
-static IDIO idio_filehandle_error_filename_delete (IDIO filename)
+static void idio_filehandle_error_filename_delete (IDIO filename)
 {
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C ("remove '", sh);
     idio_display (filename, sh);
     idio_display_C ("': ", sh);
     idio_display_C (strerror (errno), sh);
-    IDIO c = idio_struct_instance (idio_condition_io_filename_error_type, IDIO_LIST4 (idio_get_output_string (sh),
-										      idio_S_nil,
-										      idio_S_nil,
-										      filename));
-    return idio_signal_exception (idio_S_true, c);
+    IDIO c = idio_struct_instance (idio_condition_io_filename_error_type,
+				   IDIO_LIST4 (idio_get_output_string (sh),
+					       idio_S_nil,
+					       idio_S_nil,
+					       filename));
+    idio_signal_exception (idio_S_true, c);
 }
 
-static IDIO idio_filehandle_error_filename_delete_C (char *name)
+static void idio_filehandle_error_filename_delete_C (char *name)
 {
-    return idio_filehandle_error_filename_delete (idio_string_C (name));
+    idio_filehandle_error_filename_delete (idio_string_C (name));
 }
 
-static IDIO idio_filehandle_error_bad_filename (IDIO filename)
+static void idio_filehandle_error_malformed_filename (IDIO filename)
 {
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C ("bad filename '", sh);
     idio_display (filename, sh);
     idio_display_C ("': ", sh);
     idio_display_C (strerror (errno), sh);
-    IDIO c = idio_struct_instance (idio_condition_io_malformed_filename_error_type, IDIO_LIST4 (idio_get_output_string (sh),
-												idio_S_nil,
-												idio_S_nil,
-												filename));
-    return idio_signal_exception (idio_S_true, c);
+    IDIO c = idio_struct_instance (idio_condition_io_malformed_filename_error_type,
+				   IDIO_LIST4 (idio_get_output_string (sh),
+					       idio_S_nil,
+					       idio_S_nil,
+					       filename));
+    idio_signal_exception (idio_S_true, c);
 }
 
-static IDIO idio_filehandle_error_bad_filename_C (char *name)
+static void idio_filehandle_error_malformed_filename_C (char *name)
 {
-    return idio_filehandle_error_bad_filename (idio_string_C (name));
+    idio_filehandle_error_malformed_filename (idio_string_C (name));
 }
 
-static IDIO idio_filehandle_error_filename_protection (IDIO filename)
+static void idio_filehandle_error_filename_protection (IDIO filename)
 {
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C ("filename '", sh);
     idio_display (filename, sh);
     idio_display_C ("' access: ", sh);
     idio_display_C (strerror (errno), sh);
-    IDIO c = idio_struct_instance (idio_condition_io_file_protection_error_type, IDIO_LIST4 (idio_get_output_string (sh),
-											     idio_S_nil,
-											     idio_S_nil,
-											     filename));
-    return idio_signal_exception (idio_S_true, c);
+    IDIO c = idio_struct_instance (idio_condition_io_file_protection_error_type,
+				   IDIO_LIST4 (idio_get_output_string (sh),
+					       idio_S_nil,
+					       idio_S_nil,
+					       filename));
+    idio_signal_exception (idio_S_true, c);
 }
 
-static IDIO idio_filehandle_error_filename_protection_C (char *name)
+static void idio_filehandle_error_filename_protection_C (char *name)
 {
-    return idio_filehandle_error_filename_protection (idio_string_C (name));
+    idio_filehandle_error_filename_protection (idio_string_C (name));
 }
 
-static IDIO idio_filehandle_error_filename_already_exists (IDIO filename)
+static void idio_filehandle_error_filename_already_exists (IDIO filename)
 {
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C ("filename '", sh);
     idio_display (filename, sh);
     idio_display_C ("' already exists: ", sh);
     idio_display_C (strerror (errno), sh);
-    IDIO c = idio_struct_instance (idio_condition_io_file_already_exists_error_type, IDIO_LIST4 (idio_get_output_string (sh),
-												 idio_S_nil,
-												 idio_S_nil,
-												 filename));
-    return idio_signal_exception (idio_S_true, c);
+    IDIO c = idio_struct_instance (idio_condition_io_file_already_exists_error_type,
+				   IDIO_LIST4 (idio_get_output_string (sh),
+					       idio_S_nil,
+					       idio_S_nil,
+					       filename));
+    idio_signal_exception (idio_S_true, c);
 }
 
-static IDIO idio_filehandle_error_filename_already_exists_C (char *name)
+static void idio_filehandle_error_filename_already_exists_C (char *name)
 {
-    return idio_filehandle_error_filename_already_exists (idio_string_C (name));
+    idio_filehandle_error_filename_already_exists (idio_string_C (name));
 }
 
-static IDIO idio_filehandle_error_filename_not_found (IDIO filename)
+static void idio_filehandle_error_filename_not_found (IDIO filename)
 {
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C ("filename '", sh);
     idio_display (filename, sh);
     idio_display_C ("' not found", sh);
-    IDIO c = idio_struct_instance (idio_condition_io_no_such_file_error_type, IDIO_LIST4 (idio_get_output_string (sh),
-											  idio_S_nil,
-											  idio_S_nil,
-											  filename));
-    return idio_signal_exception (idio_S_true, c);
+    IDIO c = idio_struct_instance (idio_condition_io_no_such_file_error_type,
+				   IDIO_LIST4 (idio_get_output_string (sh),
+					       idio_S_nil,
+					       idio_S_nil,
+					       filename));
+    idio_signal_exception (idio_S_true, c);
 }
 
-static IDIO idio_filehandle_error_filename_not_found_C (char *name)
+static void idio_filehandle_error_filename_not_found_C (char *name)
 {
-    return idio_filehandle_error_filename_not_found (idio_string_C (name));
+    idio_filehandle_error_filename_not_found (idio_string_C (name));
 }
 
 static IDIO idio_open_file_handle (char *name, FILE *filep, int mflag, int sflags)
@@ -216,8 +222,8 @@ static IDIO idio_open_file_handle (char *name, FILE *filep, int mflag, int sflag
     IDIO_HANDLE_METHODS (fh) = &idio_file_handle_methods;
 
     if ((sflags & IDIO_FILE_HANDLE_FLAG_STDIO) == 0) {
-	idio_register_finalizer (fh, idio_file_handle_finalizer);
-	/* idio_register_file_handle (fh); */
+	idio_gc_register_finalizer (fh, idio_file_handle_finalizer);
+	/* idio_gc_register_file_handle (fh); */
     }
     
     return fh;
@@ -260,13 +266,15 @@ IDIO idio_open_file_handle_C (char *name, char *mode)
 		idio_gc_collect ();
 		break;
 	    case EACCES:
-		return idio_filehandle_error_filename_protection_C (name);
+		idio_filehandle_error_filename_protection_C (name);
 	    case EEXIST:
-		return idio_filehandle_error_filename_already_exists_C (name);
+		idio_filehandle_error_filename_already_exists_C (name);
 	    case ENAMETOOLONG:
-		return idio_filehandle_error_bad_filename_C (name);
+		idio_filehandle_error_malformed_filename_C (name);
 	    case ENOENT:
-		return idio_filehandle_error_filename_not_found_C (name);
+		idio_filehandle_error_filename_not_found_C (name);
+	    case ENOTDIR:
+		idio_filehandle_error_filename_C (name);
 	    default:
 		/*
 		 * Arguably we might want to be raising a
@@ -278,7 +286,7 @@ IDIO idio_open_file_handle_C (char *name, char *mode)
 		 * idio_filehandle_error_filename_C and otherwise default to an
 		 * idio_error_system_C (not currently written).
 		 */
-		return idio_filehandle_error_filename_C (name);
+		idio_error_system ("fopen", IDIO_LIST1 (idio_string_C (name)), errno);
 	    }
 	} else {
 	    break;
@@ -286,7 +294,7 @@ IDIO idio_open_file_handle_C (char *name, char *mode)
     }
 
     if (NULL == filep) {
-	idio_error_message ("fopen (\"%s\", \"%s\"): %s", name, mode, strerror (errno));
+	idio_error_system ("fopen (final)", IDIO_LIST2 (idio_string_C (name), idio_string_C (mode)), errno);
     }
 
     return idio_open_file_handle (name, filep, mflag, IDIO_FILE_HANDLE_FLAG_NONE);
@@ -602,7 +610,7 @@ int idio_file_handle_close (IDIO fh)
 
     IDIO_TYPE_ASSERT (file_handle, fh);
 
-    /* idio_debug ("file-handle-close: %s\n", fh); */
+    /* idio_debug ("file-handle-close: %s\n", fh);  */
 
     if (IDIO_HANDLE_FLAGS (fh) & IDIO_HANDLE_FLAG_CLOSED) {
 	idio_handle_error_closed (fh);
@@ -614,8 +622,7 @@ int idio_file_handle_close (IDIO fh)
 	}
 
 	IDIO_HANDLE_FLAGS (fh) |= IDIO_HANDLE_FLAG_CLOSED;
-	idio_deregister_finalizer (fh);
-	/* idio_deregister_file_handle (fh); */
+	idio_gc_deregister_finalizer (fh);
 	return fclose (IDIO_FILE_HANDLE_FILEP (fh));
     }
 }
@@ -753,37 +760,28 @@ IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (
 
     int timing = 0;
     
-    /* fprintf (stderr, "load-file-handle: %s: start\n", IDIO_HANDLE_NAME (fh));  */
-    /* idio_debug ("%s\n", idio_current_thread ()); */
-    idio_ai_t sp0 = idio_array_size (IDIO_THREAD_STACK (idio_current_thread ()));
+    IDIO thr = idio_current_thread ();
+    idio_ai_t sp0 = idio_array_size (IDIO_THREAD_STACK (thr));
 
-    /*
-     * When we call (*evaluator) (e) we are at risk of the garbage
-     * collector being called so we need to save the current file
-     * handle so it isn't collected
-     */
-    idio_remember_file_handle (fh);
-    
     time_t s;
     suseconds_t us;
     struct timeval t0;
     gettimeofday (&t0, NULL);
 
-    IDIO m = idio_pair (idio_S_nil, idio_S_nil);
-    idio_gc_protect (m);
-
-    IDIO e = idio_S_nil;
+    IDIO es = idio_S_nil;
     
     for (;;) {
 	IDIO en = (*reader) (fh);
 	
 	if (idio_S_eof == en) {
-	    /* fprintf (stderr, "load-file-handle: %s: EOF\n", IDIO_HANDLE_NAME (fh)); */
 	    break;
 	} else {
-	    e = idio_pair (en, e);
+	    es = idio_pair (en, es);
 	}
     }
+    /* e = idio_list_append2 (IDIO_LIST1 (idio_S_begin), idio_list_reverse (e)); */
+    es = idio_list_reverse (es);
+    /* idio_debug ("load-file-handle: es %s\n", es);   */
     
     IDIO_HANDLE_M_CLOSE (fh) (fh);
 
@@ -802,10 +800,13 @@ IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (
 	fprintf (stderr, "load-file-handle: %s: read time %ld.%03ld\n", IDIO_HANDLE_NAME (fh), s, (long) us / 1000);
     }
     
-    e = idio_list_append2 (IDIO_LIST1 (idio_S_begin), idio_list_reverse (e));
-    /* idio_debug ("load-file-handle: e %s\n", e); */
-    IDIO_PAIR_H (m) = (*evaluator) (e);
-
+    IDIO ms = idio_S_nil;
+    while (es != idio_S_nil) {
+	ms = idio_pair ((*evaluator) (IDIO_PAIR_H (es)), ms);
+	es = IDIO_PAIR_T (es);
+    }
+    ms = idio_list_reverse (ms);
+    
     struct timeval te;
     if (timing) {
 	gettimeofday (&te, NULL);
@@ -821,42 +822,36 @@ IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (
 	fprintf (stderr, "load-file-handle: %s: evaluation time %ld.%03ld\n", IDIO_HANDLE_NAME (fh), s, (long) us / 1000);
     }
     
-    IDIO thr = idio_current_thread ();
-    idio_vm_codegen (thr, IDIO_PAIR_H (m));
+    /*
+     * When we call idio_vm_run() we are at risk of the garbage
+     * collector being called so we need to save the current file
+     * handle and any lists we're walking over
+     */
+    idio_remember_file_handle (fh); 
+    IDIO ms0 = ms;
+    idio_gc_protect (ms0);
 
-    idio_gc_expose (m);
-
-    struct timeval tc;
-    if (timing) {
-	gettimeofday (&tc, NULL);
-	
-	s = tc.tv_sec - te.tv_sec;
-	us = tc.tv_usec - te.tv_usec;
-
-	if (us < 0) {
-	    us += 1000000;
-	    s -= 1;
-	}
-	
-	fprintf (stderr, "load-file-handle: %s: compile time %ld.%03ld\n", IDIO_HANDLE_NAME (fh), s, (long) us / 1000);
+    IDIO r;
+    while (idio_S_nil != ms) {
+	idio_vm_codegen (thr, IDIO_PAIR_H (ms));
+	r = idio_vm_run (thr);
+	ms = IDIO_PAIR_T (ms);
     }
-    
-    /* idio_debug ("load-file-handle: THR %s\n", idio_current_thread ()); */
-    IDIO r = idio_vm_run (idio_current_thread (), 1);
+    idio_gc_expose (ms0);
 
     struct timeval tr;
     gettimeofday (&tr, NULL);
 	
     if (timing) {
-	s = tr.tv_sec - tc.tv_sec;
-	us = tr.tv_usec - tc.tv_usec;
+	s = tr.tv_sec - te.tv_sec;
+	us = tr.tv_usec - te.tv_usec;
 
 	if (us < 0) {
 	    us += 1000000;
 	    s -= 1;
 	}
 	
-	fprintf (stderr, "load-file-handle: %s: run time %ld.%03ld\n", IDIO_HANDLE_NAME (fh), s, (long) us / 1000);
+	fprintf (stderr, "load-file-handle: %s: compile/run time %ld.%03ld\n", IDIO_HANDLE_NAME (fh), s, (long) us / 1000);
     }
     
     s = tr.tv_sec - t0.tv_sec;
@@ -870,20 +865,16 @@ IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (
     fprintf (stderr, "load-file-handle: %s: elapsed time %ld.%03ld\n", IDIO_HANDLE_NAME (fh), s, (long) us / 1000);
     idio_debug (" => %s\n", r);
     
-    idio_ai_t sp = idio_array_size (IDIO_THREAD_STACK (idio_current_thread ()));
-    /* fprintf (stderr, "load-file-handle: %-20s: end   ", IDIO_HANDLE_NAME (fh)); */
-    /* idio_debug ("%s\n", idio_current_thread ()); */
+    idio_ai_t sp = idio_array_size (IDIO_THREAD_STACK (thr));
 
     if (sp != sp0) {
 	fprintf (stderr, "load-file-handle: %s: SP %zd != %zd: ", IDIO_HANDLE_NAME (fh), sp, sp0);
-	idio_debug ("%s\n", IDIO_THREAD_STACK (idio_current_thread ()));
-    } else {
-	/* fprintf (stderr, "load-file-handle: SP %zd == %zd: ", sp, sp0); */
-	/* idio_debug ("%s\n", IDIO_THREAD_STACK (idio_current_thread ())); */
+	idio_debug ("%s\n", IDIO_THREAD_STACK (thr));
     }
+    
     idio_forget_file_handle (fh);
     
-    return idio_S_true;
+    return r;
 }
 
 typedef struct idio_file_extension_s {
@@ -932,7 +923,7 @@ IDIO idio_load_file (IDIO filename)
 	    if (NULL != fe->ext) {
 
 		if ((l + strlen (fe->ext)) >= PATH_MAX) {
-		    idio_filehandle_error_bad_filename (filename);
+		    idio_filehandle_error_malformed_filename (filename);
 		    return idio_S_unspec;
 		}
 	    

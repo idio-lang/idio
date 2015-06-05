@@ -504,7 +504,7 @@ static IDIO idio_evaluate_expander_source (IDIO x, IDIO e)
     idio_vm_default_pc (idio_expander_thread);
 
     idio_initial_expander (x, e);
-    IDIO r = idio_vm_run (idio_expander_thread, 0);
+    IDIO r = idio_vm_run (idio_expander_thread);
     
     idio_thread_restore_state (idio_expander_thread);
     idio_set_current_thread (cthr);
@@ -688,7 +688,7 @@ static IDIO idio_evaluate_expander_code (IDIO m)
     idio_vm_default_pc (idio_expander_thread);
 
     idio_vm_codegen (idio_expander_thread, m);
-    IDIO r = idio_vm_run (idio_expander_thread, 0);
+    IDIO r = idio_vm_run (idio_expander_thread);
     
     idio_thread_restore_state (idio_expander_thread);
     idio_set_current_thread (cthr);
@@ -794,7 +794,7 @@ static IDIO idio_evaluate_operator_code (IDIO m)
     idio_vm_default_pc (idio_expander_thread);
 
     idio_vm_codegen (idio_expander_thread, m);
-    IDIO r = idio_vm_run (idio_expander_thread, 0);
+    IDIO r = idio_vm_run (idio_expander_thread);
     
     idio_thread_restore_state (idio_expander_thread);
     idio_set_current_thread (cthr);
@@ -819,7 +819,7 @@ static IDIO idio_evaluate_operator (IDIO n, IDIO e, IDIO b, IDIO a)
     idio_vm_default_pc (idio_expander_thread);
 
     idio_apply (IDIO_PAIR_T (e), IDIO_LIST3 (n, b, IDIO_LIST1 (a)));
-    IDIO r = idio_vm_run (idio_expander_thread, 0);
+    IDIO r = idio_vm_run (idio_expander_thread);
     
     idio_thread_restore_state (idio_expander_thread);
     idio_set_current_thread (cthr);
@@ -2733,8 +2733,27 @@ static IDIO idio_meaning (IDIO e, IDIO nametree, int tailp)
 
 IDIO idio_evaluate (IDIO e)
 {
-    /* idio_debug ("evaluate: e %s\n", e); */
-    
+    /* idio_debug ("evaluate: e %s\n", e);  */
+
+    /*
+     * In the course of evaluating expressions we create a lot of
+     * values in C-land which are not protected.  There is a strong
+     * possibility of invoking the code of an expander which will call
+     * the GC (in idio_vm_run()) which will, like as not, invalidate
+     * all those unprotected values.  Which is bad because we wanted
+     * to keep them...
+     *
+     * We could protect every individual value everywhere where a
+     * future C-function call might run an expander or we could simply
+     * pause the GC during the entirety of evaluation.
+     *
+     * The risk is we get a lot of cruft building up if the expression
+     * being evaluated is complex, eg. (begin <contents of file>).
+     *
+     * It will all get cleaned up eventually when the GC is finally
+     * called -- probably when the code is run shortly after returning
+     * from here.
+     */
     idio_gc_pause ();
     /* IDIO m = idio_meaning (e, idio_module_current_symbols (), 1); */
     IDIO m = idio_meaning (e, idio_S_nil, 1);

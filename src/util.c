@@ -61,6 +61,7 @@ const char *idio_type_enum2string (idio_type_e type)
     case IDIO_TYPE_STRUCT_TYPE: return "STRUCT_TYPE";
     case IDIO_TYPE_STRUCT_INSTANCE: return "STRUCT_INSTANCE";
     case IDIO_TYPE_THREAD: return "THREAD";
+    case IDIO_TYPE_CONTINUATION: return "CONTINUATION";
 	
     case IDIO_TYPE_C_INT8: return "C INT8";
     case IDIO_TYPE_C_UINT8: return "C UINT8";
@@ -411,6 +412,8 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		break;
 	    case IDIO_TYPE_THREAD:
 		return (o1->u.thread == o2->u.thread);
+	    case IDIO_TYPE_CONTINUATION:
+		return (o1->u.continuation == o2->u.continuation);
 	    case IDIO_TYPE_C_TYPEDEF:
 		return (o1->u.C_typedef == o2->u.C_typedef);
 	    case IDIO_TYPE_C_STRUCT:
@@ -978,9 +981,11 @@ char *idio_as_string (IDIO o, int depth)
 			}
 		    }
 		    IDIO_STRCAT (r, " h/sp=");
-		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_HANDLERSP (o), 1));
+		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_HANDLER_SP (o), 1));
 		    IDIO_STRCAT (r, " d/sp=");
-		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_DYNAMICSP (o), 1));
+		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_DYNAMIC_SP (o), 1));
+		    IDIO_STRCAT (r, " e/sp=");
+		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_ENVIRON_SP (o), 1));
 		    if (depth > 1) {
 			IDIO_STRCAT (r, " env=");
 			IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_ENV (o), 1));
@@ -999,6 +1004,16 @@ char *idio_as_string (IDIO o, int depth)
 			    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_MODULE (o), 1));
 			}
 		    }
+		    IDIO_STRCAT (r, "}");
+		}
+		break;
+	    case IDIO_TYPE_CONTINUATION:
+		{
+		    idio_ai_t sp = idio_array_size (IDIO_CONTINUATION_STACK (o));
+		    if (asprintf (&r, "#K{%p sp/top=%2zd/", o, sp) == -1) {
+			return NULL;
+		    }
+		    IDIO_STRCAT_FREE (r, idio_as_string (idio_array_top (IDIO_CONTINUATION_STACK (o)), 1));
 		    IDIO_STRCAT (r, "}");
 		}
 		break;
@@ -1180,6 +1195,7 @@ char *idio_display_string (IDIO o)
 	    case IDIO_TYPE_STRUCT_TYPE:
 	    case IDIO_TYPE_STRUCT_INSTANCE:
 	    case IDIO_TYPE_THREAD:
+	    case IDIO_TYPE_CONTINUATION:
 	    case IDIO_TYPE_C_TYPEDEF:
 	    case IDIO_TYPE_C_STRUCT:
 	    case IDIO_TYPE_C_INSTANCE:
@@ -1493,6 +1509,8 @@ void idio_dump (IDIO o, int detail)
 		break;
 	    case IDIO_TYPE_THREAD:
 		break;
+	    case IDIO_TYPE_CONTINUATION:
+		break;
 	    case IDIO_TYPE_C_TYPEDEF:
 		break;
 	    case IDIO_TYPE_C_STRUCT:
@@ -1535,6 +1553,17 @@ void idio_debug (const char *fmt, IDIO o)
     free (os);
 }
 
+IDIO_DEFINE_PRIMITIVE2 ("idio-debug", idio_debug, (IDIO fmt, IDIO o))
+{
+    IDIO_ASSERT (fmt);
+    IDIO_ASSERT (o);
+    IDIO_TYPE_ASSERT (string, fmt);
+
+    idio_debug (IDIO_STRING_S (fmt), o);
+
+    return idio_S_unspec;
+}
+
 void idio_init_util ()
 {
 }
@@ -1551,6 +1580,7 @@ void idio_util_add_primitives ()
     IDIO_ADD_PRIMITIVE (map1);
     IDIO_ADD_PRIMITIVE (memq);
     IDIO_ADD_PRIMITIVE (assq);
+    IDIO_ADD_PRIMITIVE (idio_debug);
 }
 
 void idio_final_util ()

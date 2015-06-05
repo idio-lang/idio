@@ -1,8 +1,8 @@
 
-string := "foo"
-test (file-handle? string) #f
-test (input-file-handle? string) #f
-test (output-file-handle? string) #f
+test-str := "foo"
+test (file-handle? test-str) #f
+test (input-file-handle? test-str) #f
+test (output-file-handle? test-str) #f
 
 ofh := open-output-file testfile
 test (file-handle? ofh) #t

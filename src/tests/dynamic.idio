@@ -57,6 +57,3 @@ test dynx2 11
 
 ;; test it in a prepared function
 test-dynx2
-
-%%vm-trace 0
-%%vm-dis 0

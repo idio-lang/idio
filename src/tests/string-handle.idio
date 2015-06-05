@@ -1,8 +1,8 @@
 ;; check predicates fail for non-string-handle
-string := "foo"
-test (string-handle? string) #f
-test (input-string-handle? string) #f
-test (output-string-handle? string) #f
+test-str := "foo"
+test (string-handle? test-str) #f
+test (input-string-handle? test-str) #f
+test (output-string-handle? test-str) #f
 
 ;; write to a string-handle
 osh := (open-output-string)
@@ -18,7 +18,7 @@ test (string-handle? osh) #t
 test (output-string-handle? osh) #t
 test (input-string-handle? osh) #f
 
-;; get the text written to the string
+;; get the text written to the test-str
 shis := (get-output-string osh)
 
 ; shis = "Hello"; sho = Hello
