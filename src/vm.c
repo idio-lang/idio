@@ -1904,6 +1904,7 @@ static void idio_vm_restore_environment (IDIO thr)
     IDIO_ASSERT (thr);
     IDIO_TYPE_ASSERT (thread, thr);
 
+    /* idio_debug ("ivre %s\n", IDIO_THREAD_STACK (thr)); */
     IDIO_THREAD_ENV (thr) = IDIO_THREAD_STACK_POP ();
     IDIO_THREAD_HANDLER_SP (thr) = IDIO_THREAD_STACK_POP ();
     IDIO_THREAD_DYNAMIC_SP (thr) = IDIO_THREAD_STACK_POP ();

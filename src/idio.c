@@ -54,6 +54,7 @@ void idio_init ()
     idio_init_error ();
     idio_init_read ();
     idio_init_scm_read ();
+    idio_init_env ();
     idio_init_command ();
     idio_init_vm ();
     
@@ -92,6 +93,7 @@ void idio_init ()
     idio_error_add_primitives ();
     idio_read_add_primitives ();
     idio_scm_read_add_primitives ();
+    idio_env_add_primitives ();
     idio_command_add_primitives ();
     idio_vm_add_primitives ();
 
@@ -110,6 +112,7 @@ void idio_final ()
      */
     idio_final_vm ();
     idio_final_command ();
+    idio_final_env ();
     idio_final_scm_read ();
     idio_final_read ();
     idio_final_error ();
@@ -144,6 +147,8 @@ int main (int argc, char **argv, char **envp)
 {
     idio_init ();
 
+    idio_env_init_idiolib (argv[0]);
+    
     idio_load_file (idio_string_C ("bootstrap"));
 
     if (argc > 1) {
@@ -153,6 +158,7 @@ int main (int argc, char **argv, char **envp)
 	}
     } else {
 	/* repl */
+	idio_load_filehandle (idio_current_input_handle (), idio_read, idio_evaluate);
     }
 
     idio_final ();

@@ -47,11 +47,15 @@ IDIO idio_S_define_macro;
 IDIO idio_S_dloads;
 IDIO idio_S_dynamic;
 IDIO idio_S_dynamic_let;
+IDIO idio_S_dynamic_unset;
 IDIO idio_S_else;
 IDIO idio_S_environ_let;
+IDIO idio_S_environ_unset;
 IDIO idio_S_eq_gt;
 IDIO idio_S_error;
 IDIO idio_S_escape;
+IDIO idio_S_ex_star;
+IDIO idio_S_ex_tilde;
 IDIO idio_S_fixed_template;
 IDIO idio_S_function;
 IDIO idio_S_if;
@@ -77,6 +81,7 @@ IDIO idio_S_template;
 IDIO idio_S_this;
 IDIO idio_S_unquote;
 IDIO idio_S_unquotesplicing;
+IDIO idio_S_unset;
 
 int idio_symbol_C_eqp (void *s1, void *s2)
 {
@@ -253,11 +258,15 @@ void idio_init_symbol ()
     idio_S_dloads = idio_symbols_C_intern ("dloads");
     idio_S_dynamic = idio_symbols_C_intern ("dynamic");
     idio_S_dynamic_let = idio_symbols_C_intern ("dynamic-let");
+    idio_S_dynamic_unset = idio_symbols_C_intern ("dynamic-unset");
     idio_S_else = idio_symbols_C_intern ("else");
     idio_S_environ_let = idio_symbols_C_intern ("environ-let");
+    idio_S_environ_unset = idio_symbols_C_intern ("environ-unset");
     idio_S_eq_gt = idio_symbols_C_intern ("=>");
     idio_S_error = idio_symbols_C_intern ("error");
     idio_S_escape = idio_symbols_C_intern ("escape");
+    idio_S_ex_star = idio_symbols_C_intern ("!*");
+    idio_S_ex_tilde = idio_symbols_C_intern ("!~");
     idio_S_fixed_template = idio_symbols_C_intern ("fixed_template");
     idio_S_function = idio_symbols_C_intern ("function");
     idio_S_if = idio_symbols_C_intern ("if");
@@ -283,6 +292,7 @@ void idio_init_symbol ()
     idio_S_this = idio_symbols_C_intern ("this");
     idio_S_unquote = idio_symbols_C_intern ("unquote");
     idio_S_unquotesplicing = idio_symbols_C_intern ("unquotesplicing");
+    idio_S_unset = idio_symbols_C_intern ("unset");
 }
 
 void idio_symbol_add_primitives ()

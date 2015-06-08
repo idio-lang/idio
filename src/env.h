@@ -16,21 +16,22 @@
  */
 
 /*
- * command.h
+ * env.h
  * 
  */
 
-#ifndef COMMAND_H
-#define COMMAND_H
+#ifndef ENV_H
+#define ENV_H
 
-char *idio_command_find_exe_C (char *command);
-char *idio_command_find_exe (IDIO func);
-IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname);
+extern char *idio_env_PATH_default;
+extern char *idio_env_IDIOLIB_default;
+extern IDIO idio_env_PATH_sym;
+extern IDIO idio_env_IDIOLIB_sym;
 
-void idio_init_command ();
-void idio_command_add_primitives ();
-void idio_final_command ();
-
+void idio_env_init_idiolib (char *argv0);
+void idio_init_env ();
+void idio_env_add_primitives ();
+void idio_final_env ();
 
 #endif
 

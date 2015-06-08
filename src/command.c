@@ -22,15 +22,10 @@
 
 #include "idio.h"
 
-/* MacOS & Solaris doesn't have environ in unistd.h */
-extern char **environ;
-
 static IDIO idio_command_pids;
 static IDIO idio_command_last_pid;
 static IDIO idio_command_status_type;
 static IDIO idio_command_status_types;
-
-static IDIO idio_command_env_PATH;
 
 #define IDIO_COMMAND_STATUS_RUNNING	0
 #define IDIO_COMMAND_STATUS_EXITED	1
@@ -66,7 +61,7 @@ static char **idio_command_get_envp ()
 	IDIO val = idio_module_current_symbol_value_recurse (symbol);
 
 	size_t vlen = 0;
-	if (idio_S_undef != val) {
+	if (idio_S_unset != val) {
 	    IDIO_TYPE_ASSERT (string, val);
 	    vlen = IDIO_STRING_BLEN (val);
 	}
@@ -79,6 +74,8 @@ static char **idio_command_get_envp ()
 	}
 	envp[n][slen + 1 + vlen] = '\0';
 
+	fprintf (stderr, "E: %s\n", envp[n]);
+
 	symbols = IDIO_PAIR_T (symbols);
 	n++;
     }
@@ -87,21 +84,19 @@ static char **idio_command_get_envp ()
     return envp;
 }
 
-char *idio_command_find_exe (IDIO func)
+char *idio_command_find_exe_C (char *command)
 {
-    IDIO_ASSERT (func);
-    IDIO_TYPE_ASSERT (symbol, func);
+    IDIO_C_ASSERT (command);
     
-    char *command = IDIO_SYMBOL_S (func);
     size_t cmdlen = strlen (command);
     
-    IDIO PATH = idio_module_current_symbol_value_recurse (idio_command_env_PATH);
+    IDIO PATH = idio_module_current_symbol_value_recurse (idio_env_PATH_sym);
 
     char *path;
     char *pathe;
     if (idio_S_undef == PATH ||
 	! idio_isa_string (PATH)) {
-	path = "/bin:/usr/bin";
+	path = idio_env_PATH_default;
 	pathe = path + strlen (path);
     } else {
 	path = IDIO_STRING_S (PATH);
@@ -110,6 +105,9 @@ char *idio_command_find_exe (IDIO func)
 
     /*
      * PATH_MAX varies: POSIX is 256, CentOS 7 is 4096
+     *
+     * The Linux man page for realpath(3) suggests that calling
+     * pathconf(3) doesn't improve matters a whole bunch.
      */
     char exename[PATH_MAX];
     char cwd[PATH_MAX];
@@ -125,7 +123,7 @@ char *idio_command_find_exe (IDIO func)
 	
 	if (0 == pathlen) {
 	    if ((cwdlen + 1 + cmdlen + 1) >= PATH_MAX) {
-		idio_error_system ("cwd+command exename length", IDIO_LIST2 (PATH, func), ENAMETOOLONG);
+		idio_error_system ("cwd+command exename length", IDIO_LIST2 (PATH, idio_string_C (command)), ENAMETOOLONG);
 	    }
 	    
 	    strcpy (exename, cwd);
@@ -134,7 +132,7 @@ char *idio_command_find_exe (IDIO func)
 
 	    if (NULL == colon) {
 		if ((pathlen + 1 + cmdlen + 1) >= PATH_MAX) {
-		    idio_error_system ("dir+command exename length", IDIO_LIST2 (PATH, func), ENAMETOOLONG);
+		    idio_error_system ("dir+command exename length", IDIO_LIST2 (PATH, idio_string_C (command)), ENAMETOOLONG);
 		}
 	    
 		memcpy (exename, path, pathlen);
@@ -144,13 +142,13 @@ char *idio_command_find_exe (IDIO func)
 	    
 		if (0 == dirlen) {
 		    if ((cwdlen + 1 + cmdlen + 1) >= PATH_MAX) {
-			idio_error_system ("cwd+command exename length", IDIO_LIST2 (PATH, func), ENAMETOOLONG);
+			idio_error_system ("cwd+command exename length", IDIO_LIST2 (PATH, idio_string_C (command)), ENAMETOOLONG);
 		    }
 	    
 		    strcpy (exename, cwd);
 		} else {
 		    if ((dirlen + 1 + cmdlen + 1) >= PATH_MAX) {
-			idio_error_system ("dir+command exename length", IDIO_LIST2 (PATH, func), ENAMETOOLONG);
+			idio_error_system ("dir+command exename length", IDIO_LIST2 (PATH, idio_string_C (command)), ENAMETOOLONG);
 		    }
 	    
 		    memcpy (exename, path, dirlen);
@@ -184,6 +182,14 @@ char *idio_command_find_exe (IDIO func)
     }
     
     return pathname;
+}
+
+char *idio_command_find_exe (IDIO func)
+{
+    IDIO_ASSERT (func);
+    IDIO_TYPE_ASSERT (symbol, func);
+    
+    return idio_command_find_exe_C (IDIO_SYMBOL_S (func));
 }
 
 static char *idio_command_glob_charp (char *src)
@@ -477,63 +483,10 @@ void idio_init_command ()
     idio_array_insert_index (idio_command_status_types, idio_symbols_C_intern ("killed"), 2);
     idio_array_insert_index (idio_command_status_types, idio_symbols_C_intern ("stopped"), 3);
     idio_array_insert_index (idio_command_status_types, idio_symbols_C_intern ("continued"), 4);
-
-    idio_command_env_PATH = idio_symbols_C_intern ("PATH");
-}
-
-static void idio_command_setenv_default (IDIO name, char *val)
-{
-    IDIO_ASSERT (name);
-    IDIO_C_ASSERT (val);
-    IDIO_TYPE_ASSERT (symbol, name);
-
-    IDIO PATH = idio_module_current_symbol_value (name);
-    if (idio_S_unspec == PATH) {
-	idio_toplevel_extend (name, IDIO_ENVIRON_SCOPE);
-	idio_module_current_set_symbol_value (name, idio_string_C (val));
-    }
-}
-
-static void idio_command_add_environ ()
-{
-    char **env;
-    for (env = environ; *env ; env++) {
-	char *e = strchr (*env, '=');
-
-	IDIO var;
-	IDIO val = idio_S_undef;
-	
-	if (NULL != e) {
-	    char *name = idio_alloc (e - *env + 1);
-	    strncpy (name, *env, e - *env);
-	    name[e - *env] = '\0';
-	    var = idio_symbols_C_intern (name);
-	    free (name);
-	    
-	    val = idio_string_C (e + 1);
-	} else {
-	    var = idio_string_C (*env);
-	}
-
-	idio_toplevel_extend (var, IDIO_ENVIRON_SCOPE);
-	idio_module_current_set_symbol_value (var, val);
-    }
-
-    /*
-     * Hmm.  What if we have a "difficult" environment?  A particular
-     * example is if we don't have a PATH.  We use the PATH internally
-     * at the very least and not having one is an issue.
-     *
-     * So we'll test for some environment variables we need and set a
-     * default if there isn't one.
-     */
-
-    idio_command_setenv_default (idio_command_env_PATH, "/bin:/usr/bin");
 }
 
 void idio_command_add_primitives ()
 {
-    idio_command_add_environ ();
 }
 
 void idio_final_command ()

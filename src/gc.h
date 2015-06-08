@@ -651,16 +651,33 @@ typedef struct idio_gc_s {
  * - fixnums: small integers (for small being ~ +/- 2**29 on 32 bit
      platforms: 32 less the two bits above and a sign bit)
 
- * - small constants the user can see and use: #t, #f, #eof etc..
+     Fixnums, being architecture-related have a porting issue as
+     clearly a 2**60 fixnum from a 64-bit machine encoded in a
+     compiled file can't be read as a fixnum on a 32-bit machine.
+
+     While we ponder the nuances, compiled files are
+     architecture-oriented.
+
+ * - small constants the user can see and use: #t, #f, #eof etc.. as
+     well as various internal well-known values (reader tokens,
+     idio_T_*, intermediate code idio_I_*, VM instructions idio_A_*
+     etc.).
+
+     This is a fixed set -- fixed in the sense that we know it isn't
+     going to be troubling a 32-bit boundary as we, in C-land, are in
+     control of it.
 
  * - characters: as a distinct type from fixnums to avoid the
-     awkwardness of trying to evaluate: 1 + #\®. Unicode, I guess.
+     awkwardness of trying to assign a meaning to: 1 + #\®.
+
+     Unicode, is a popular choice and is also a fixed set, not
+     troubling a 32-bit boundary.
 
  * All three will then have a minimum of 30 bits of useful space.
 
  * Of course, we could subdivide any of these into further types each
  * using proportionally less space.  The constants (there's maybe a
- * dozen) are an obvious candidate.  Characters could be handled
+ * few hundred) are an obvious candidate.  Characters could be handled
  * similarly as even Unicode is only using some 10% of its 1,114,112
  * possible characters.  Even if it used the lot that's less than
  * 10**8 -- there's a bit of space left over!

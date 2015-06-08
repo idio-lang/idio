@@ -1412,7 +1412,9 @@ static IDIO idio_meaning_define_macro (IDIO name, IDIO e, IDIO nametree, int tai
      * idio_meaning_assignment().
      *
      * As an alternative we could evaluate the source to the expander
-     * now and install that code in *expander-list* directly.
+     * now and install that code in *expander-list* directly -- but
+     * watch out for embedded calls to regular functions defined in
+     * the code (see comment above).
      *
      * As a further twist, we really need to embed a call to
      * idio_install_expander in the *object* code too!  When
@@ -1644,6 +1646,50 @@ static IDIO idio_meaning_dotted_abstraction (IDIO ns, IDIO n, IDIO ep, IDIO name
     return IDIO_LIST3 (idio_I_NARY_CLOSURE, mp, IDIO_FIXNUM (arity));
 }
 
+
+/*
+ * With idio_rewrite_body* we want to massage the code to support some
+ * semantic trickery.
+
+ * The two broad swathes are:
+ *
+ * 1. multiple function defines in (Scheme: at the start of) the body.
+ *
+ *    {
+ *      define (f) { ... }
+ *      define (g) { ... }
+ *      ...
+ *    }
+ *
+ *    Here, these two are expected to be self or mutually recursive
+ *    (as well as being of local scope) and so the body is rewritten
+ *    such that these are letrec definitions (and can safely be
+ *    self/mutually recursive) and the body becomes the body of the
+ *    letrec
+ *
+ *    In Scheme these are only allowed at the start of the body
+ *    whereas Idio allows them to appear anywhere in the body and when
+ *    one appears we combine them with any immediately following.
+
+ * 2. new variable introductions
+ *
+ *    a. := (let*)
+ *
+ *       This is an extension of the letrec mechanism above so that
+ *       the remaining body is transformed into a let* of the variable
+ *       assignment.
+ *
+ *    b. :* :~ !* !~
+ *
+ *       These require a similar transform as the introduction of
+ *       (potentially shadowing) environment/dynamic variables
+ *       requires that their definitions be removed from the stack at
+ *       the end of the body.
+ *
+ *       Essentially the same as introducing environment/dynamic
+ *       variables we can unset them which requires the same
+ *       technique.
+ */
 static IDIO idio_rewrite_body_letrec (IDIO e);
 
 static IDIO idio_rewrite_body (IDIO e)
@@ -1674,20 +1720,16 @@ static IDIO idio_rewrite_body (IDIO e)
 	} else if (idio_isa_pair (cur) &&
 		   (idio_S_define == IDIO_PAIR_H (cur) ||
 		    idio_S_colon_plus == IDIO_PAIR_H (cur))) {
-	    /* internal define -> letrec */
-	    /* idio_debug ("irb: internal define: cur %s\n", cur);  */
+	    /* :+ or define -> letrec */
 
 	    IDIO body = idio_list_append2 (IDIO_LIST1 (cur), IDIO_PAIR_T (l));
-	    /* idio_debug ("irb: internal define: body %s\n", body); */
 	    r = idio_pair (idio_rewrite_body_letrec (body), r);
 	    break;
 	} else if (idio_isa_pair (cur) &&
 		   idio_S_colon_eq == IDIO_PAIR_H (cur)) {
-	    /* internal := -> let* */
-	    /* idio_debug ("irb: internal := cur %s\n", cur);  */
+	    /* := -> let* */
 
 	    IDIO body = idio_rewrite_body (IDIO_PAIR_T (l));
-	    /* idio_debug ("irb: internal := body %s\n", body); */
 	    if (idio_S_nil != r) {
 		r = idio_list_reverse (r);
 	    }
@@ -1695,15 +1737,12 @@ static IDIO idio_rewrite_body (IDIO e)
 				   IDIO_LIST1 (IDIO_LIST3 (idio_S_let,
 							   IDIO_LIST1 (IDIO_PAIR_T (cur)),
 							   idio_list_append2 (IDIO_LIST1 (idio_S_begin), body))));
-	    /* idio_debug ("irb: internal := r %s\n", r); */
 	    return r;
 	} else if (idio_isa_pair (cur) &&
 		   idio_S_colon_star == IDIO_PAIR_H (cur)) {
-	    /* internal :* -> environ-let */
-	    /* idio_debug ("irb: internal :* cur %s\n", cur);   */
+	    /* :* -> environ-let */
 
 	    IDIO body = idio_rewrite_body (IDIO_PAIR_T (l));
-	    /* idio_debug ("irb: internal :* body %s\n", body);  */
 	    if (idio_S_nil != r) {
 		r = idio_list_reverse (r);
 	    }
@@ -1711,15 +1750,25 @@ static IDIO idio_rewrite_body (IDIO e)
 				   IDIO_LIST1 (IDIO_LIST3 (idio_S_environ_let,
 							   IDIO_PAIR_T (cur),
 							   idio_list_append2 (IDIO_LIST1 (idio_S_begin), body))));
-	    /* idio_debug ("irb: internal :* r %s\n", r);  */
+	    return r;
+	} else if (idio_isa_pair (cur) &&
+		   idio_S_ex_star == IDIO_PAIR_H (cur)) {
+	    /* !* -> environ-unset */
+
+	    IDIO body = idio_rewrite_body (IDIO_PAIR_T (l));
+	    if (idio_S_nil != r) {
+		r = idio_list_reverse (r);
+	    }
+	    r = idio_list_append2 (r,
+				   IDIO_LIST1 (IDIO_LIST3 (idio_S_environ_unset,
+							   IDIO_PAIR_H (IDIO_PAIR_T (cur)),
+							   idio_list_append2 (IDIO_LIST1 (idio_S_begin), body))));
 	    return r;
 	} else if (idio_isa_pair (cur) &&
 		   idio_S_colon_tilde == IDIO_PAIR_H (cur)) {
-	    /* internal :~ -> dynamic-let */
-	    /* idio_debug ("irb: internal :~ cur %s\n", cur);  */
+	    /* :~ -> dynamic-let */
 
 	    IDIO body = idio_rewrite_body (IDIO_PAIR_T (l));
-	    /* idio_debug ("irb: internal :~ body %s\n", body); */
 	    if (idio_S_nil != r) {
 		r = idio_list_reverse (r);
 	    }
@@ -1727,7 +1776,19 @@ static IDIO idio_rewrite_body (IDIO e)
 				   IDIO_LIST1 (IDIO_LIST3 (idio_S_dynamic_let,
 							   IDIO_PAIR_T (cur),
 							   idio_list_append2 (IDIO_LIST1 (idio_S_begin), body))));
-	    /* idio_debug ("irb: internal :~ r %s\n", r); */
+	    return r;
+	} else if (idio_isa_pair (cur) &&
+		   idio_S_ex_tilde == IDIO_PAIR_H (cur)) {
+	    /* !~ -> dynamic-unset */
+
+	    IDIO body = idio_rewrite_body (IDIO_PAIR_T (l));
+	    if (idio_S_nil != r) {
+		r = idio_list_reverse (r);
+	    }
+	    r = idio_list_append2 (r,
+				   IDIO_LIST1 (IDIO_LIST3 (idio_S_dynamic_unset,
+							   IDIO_PAIR_H (IDIO_PAIR_T (cur)),
+							   idio_list_append2 (IDIO_LIST1 (idio_S_begin), body))));
 	    return r;
 	} else if (idio_isa_pair (cur) &&
 		   idio_S_define_macro == IDIO_PAIR_H (cur)) {
@@ -1774,7 +1835,6 @@ static IDIO idio_rewrite_body_letrec (IDIO e)
 	} else if (idio_isa_pair (cur) &&
 		   (idio_S_define == IDIO_PAIR_H (cur) ||
 		    idio_S_colon_plus == IDIO_PAIR_H (cur))) {
-	    /* idio_debug ("irbd: internal letrec: cur %s\n", cur);  */
 
 	    IDIO bindings = IDIO_PAIR_H (IDIO_PAIR_T (cur));
 	    IDIO form = idio_S_unspec;
@@ -1849,33 +1909,7 @@ static IDIO idio_meaning_abstraction (IDIO nns, IDIO ep, IDIO nametree, int tail
     IDIO_ASSERT (nametree);
     IDIO_TYPE_ASSERT (list, nametree);
 
-    /*
-     * Internal defines:
-     *
-     * (function bindings
-     *   (define b1 e1)
-     *   (define b2 e2)
-     *   body)
-     *
-     * is equivalent to:
-     *
-     * (function bindings
-     *   (letrec ((b1 e1)
-     *            (b2 e2))
-     *     body))
-     *
-     * Noting that bX could be a pair and therefore a function
-     * expression.
-     *
-     * The idea being that you can define local functions in parallel
-     * with body rather than embedded as with a letrec directly.
-     *
-     * Of course that means muggins has to do the legwork.
-     */
-
-    /* idio_debug ("meaning-abstraction: in: %s\nep=%s\n", ep);  */
     ep = idio_rewrite_body (ep); 
-    /* idio_debug ("meaning-abstraction: in: %s\nep=%s\n", ep);  */
 
     IDIO ns = nns;
     IDIO regular = idio_S_nil;
@@ -1900,11 +1934,7 @@ static IDIO idio_meaning_block (IDIO es, IDIO nametree, int tailp)
     IDIO_ASSERT (nametree);
     IDIO_TYPE_ASSERT (list, nametree);
 
-    /* idio_debug ("meaning-block:  in { %s }\n", es);  */
-
     es = idio_rewrite_body (es);
-
-    /* idio_debug ("meaning-block: out { %s }\n", es);  */
 
     return idio_meaning_sequence (es, nametree, tailp, idio_S_begin);
 }
@@ -2319,6 +2349,15 @@ static IDIO idio_meaning_dynamic_let (IDIO name, IDIO e, IDIO ep, IDIO nametree,
 		       IDIO_LIST1 (idio_I_POP_DYNAMIC));
 }
 
+static IDIO idio_meaning_dynamic_unset (IDIO name, IDIO ep, IDIO nametree, int tailp)
+{
+    IDIO_ASSERT (name);
+    IDIO_ASSERT (nametree);
+    IDIO_TYPE_ASSERT (list, nametree);
+
+    return idio_meaning_dynamic_let (name, idio_S_unset, ep, nametree, tailp);
+}
+
 static IDIO idio_meaning_environ_reference (IDIO name, IDIO nametree, int tailp)
 {
     IDIO_ASSERT (name);
@@ -2354,6 +2393,15 @@ static IDIO idio_meaning_environ_let (IDIO name, IDIO e, IDIO ep, IDIO nametree,
     return IDIO_LIST3 (IDIO_LIST3 (idio_I_PUSH_ENVIRON, fvi, m),
 		       mp,
 		       IDIO_LIST1 (idio_I_POP_ENVIRON));
+}
+
+static IDIO idio_meaning_environ_unset (IDIO name, IDIO ep, IDIO nametree, int tailp)
+{
+    IDIO_ASSERT (name);
+    IDIO_ASSERT (nametree);
+    IDIO_TYPE_ASSERT (list, nametree);
+
+    return idio_meaning_environ_let (name, idio_S_unset, ep, nametree, tailp);
 }
 
 static IDIO idio_meaning_monitor (IDIO e, IDIO ep, IDIO nametree, int tailp)
@@ -2673,6 +2721,19 @@ static IDIO idio_meaning (IDIO e, IDIO nametree, int tailp)
 		idio_error_param_nil ("(dynamic-let)");
 		return idio_S_unspec;
 	    }
+	} else if (idio_S_dynamic_unset == eh) {
+	    /* (dynamic-unset var body) */
+	    if (idio_isa_pair (et)) {
+		IDIO eth = IDIO_PAIR_H (et);
+		if (idio_isa_symbol (eth)) {
+		    return idio_meaning_dynamic_unset (eth, IDIO_PAIR_T (et), nametree, tailp);
+		} else {
+		    idio_error_param_type ("symbol", eth);
+		}
+	    } else {
+		idio_error_param_nil ("(dynamic-unset)");
+		return idio_S_unspec;
+	    }
 	} else if (idio_S_environ_let == eh) {
 	    /* (environ-let (var expr) body) */
 	    if (idio_isa_pair (et)) {
@@ -2689,6 +2750,19 @@ static IDIO idio_meaning (IDIO e, IDIO nametree, int tailp)
 		}
 	    } else {
 		idio_error_param_nil ("(environ-let)");
+		return idio_S_unspec;
+	    }
+	} else if (idio_S_environ_unset == eh) {
+	    /* (environ-unset var body) */
+	    if (idio_isa_pair (et)) {
+		IDIO eth = IDIO_PAIR_H (et);
+		if (idio_isa_symbol (eth)) {
+		    return idio_meaning_environ_unset (eth, IDIO_PAIR_T (et), nametree, tailp);
+		} else {
+		    idio_error_param_type ("symbol", eth);
+		}
+	    } else {
+		idio_error_param_nil ("(environ-unset)");
 		return idio_S_unspec;
 	    }
 	} else if (idio_S_monitor == eh) {

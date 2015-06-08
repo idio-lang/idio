@@ -782,11 +782,7 @@ IDIO idio_load_filehandle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*
 	    break;
 	}
 
-	idio_debug ("ilfi THR %s\n", thr);
-	idio_debug ("ilfi THR %s\n", idio_module_current_symbol_lookup (idio_symbols_C_intern ("x")));
-	idio_debug ("ilfi: e %s\n", e);
 	IDIO m = (*evaluator) (e);
-	idio_debug ("ilfi: m %s\n", m);
 	idio_vm_codegen (thr, m);
 	IDIO r = idio_vm_run (thr);
 	idio_debug (" => %s\n", r);

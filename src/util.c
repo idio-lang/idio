@@ -139,6 +139,32 @@ IDIO_DEFINE_PRIMITIVE1 ("null?", nullp, (IDIO o))
     return r;
 }
 
+IDIO_DEFINE_PRIMITIVE1 ("unset?", unsetp, (IDIO o))
+{
+    IDIO_ASSERT (o);
+
+    IDIO r = idio_S_false;
+
+    if (idio_S_unset == o) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("undefined?", undefinedp, (IDIO o))
+{
+    IDIO_ASSERT (o);
+
+    IDIO r = idio_S_false;
+
+    if (idio_S_undef == o) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
 int idio_isa_boolean (IDIO o)
 {
     IDIO_ASSERT (o);
@@ -1572,6 +1598,8 @@ void idio_init_util ()
 void idio_util_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (nullp);
+    IDIO_ADD_PRIMITIVE (unsetp);
+    IDIO_ADD_PRIMITIVE (undefinedp);
     IDIO_ADD_PRIMITIVE (booleanp);
     IDIO_ADD_PRIMITIVE (not);
     IDIO_ADD_PRIMITIVE (eqp);

@@ -233,6 +233,7 @@
 #include "command.h"
 #include "condition.h"
 #include "continuation.h"
+#include "env.h"
 #include "error.h"
 #include "evaluate.h"
 #include "scm-evaluate.h"
@@ -293,6 +294,6 @@
 #endif
 
 /* Local Variables: */
-/* mode: C/l */
+/* mode: C */
 /* coding: utf-8-unix */
 /* End: */

@@ -87,7 +87,7 @@ dynamic-wind := #f
   original-call/cc := call/cc
 
   define (reroot! there) {
-    display* "reroot!" *here* there
+    ; display* "reroot!" *here* there
     if (not (eq? *here* there)) {
       reroot! (pt there)
       {

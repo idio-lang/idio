@@ -1,6 +1,8 @@
 OS=$(shell uname -s)
 ARCH=$(shell uname -m)
 
+BINDIR	= $(abspath $(PWD)/../bin)
+
 ifeq ($(OS),Darwin)
 LIBFFI_INCDIR	= /usr/include/ffi
 LDFLAGS		=  -rdynamic
@@ -53,7 +55,7 @@ ifneq ($(OS),Darwin)
 DLIBS = libos.so libposix-regex.so
 endif
 
-all : tags idio
+all : tags $(BINDIR)/idio
 #all : idio scm1-c-structs.scm1 ${DLIBS} tags
 
 profiled :
@@ -70,7 +72,7 @@ debug :
 
 include $(subst .c,.d,$(sources))
 
-idio : $(objects)
+$(BINDIR)/idio : $(objects)
 	${CC} ${LDFLAGS} -o $@ $^ ${LIBS}
 
 lib%.so : %.o
