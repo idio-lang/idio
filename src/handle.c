@@ -903,6 +903,6 @@ void idio_final_handle ()
 }
 
 /* Local Variables: */
-/* mode: C/l */
+/* mode: C */
 /* buffer-file-coding-system: undecided-unix */
 /* End: */

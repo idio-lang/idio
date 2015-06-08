@@ -577,6 +577,7 @@ char *idio_as_string (IDIO o, int depth)
 	    case IDIO_VM_CODE_POP_DYNAMIC:           t = "POP-DYNAMIC";           break;
 	    case IDIO_VM_CODE_DYNAMIC_REF:           t = "DYNAMIC-REF";           break;
 	    case IDIO_VM_CODE_DYNAMIC_FUNCTION_REF:  t = "DYNAMIC-FUNCTION-REF";  break;
+	    case IDIO_VM_CODE_ENVIRON_REF:           t = "ENVIRON-REF";           break;
 	    case IDIO_VM_CODE_PUSH_HANDLER:          t = "PUSH-HANDLER";          break;
 	    case IDIO_VM_CODE_POP_HANDLER:           t = "POP-HANDLER";           break;
 	    case IDIO_VM_CODE_AND:                   t = "AND";                   break;
@@ -1588,6 +1589,6 @@ void idio_final_util ()
 }
 
 /* Local Variables: */
-/* mode: C/l */
+/* mode: C */
 /* buffer-file-coding-system: undecided-unix */
 /* End: */
