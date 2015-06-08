@@ -1,0 +1,147 @@
+;;
+;; Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+;;
+;; Licensed under the Apache License, Version 2.0 (the "License"); you
+;; may not use this file except in compliance with the License.  You
+;; may obtain a copy of the License at
+;;
+;;     http://www.apache.org/licenses/LICENSE-2.0
+;;
+;; Unless required by applicable law or agreed to in writing, software
+;; distributed under the License is distributed on an "AS IS" BASIS,
+;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+;; See the License for the specific language governing permissions and
+;; limitations under the License.
+;;
+;;
+
+;;
+;; call-cc.idio
+;; 
+;;
+
+;; Much of this is derived from implementations as described in R5RS
+;; documentation.
+
+call/cc := %%call/cc
+
+;; values, call-with-values and call/cc are concomitant 
+
+;; from Kent Dybvig
+;; http://www.scheme.com/tspl3/control.html#./control:s53
+
+values := #f
+call-with-values := #f
+
+{
+  magic := pair 'multiple 'values
+
+  magic? := function (x) {
+    and (pair? x) (eq? (ph x) magic)
+  }
+
+  call/cc = {
+    primitive-call/cc := call/cc
+    function (p) {
+      primitive-call/cc (function (k) {
+        p (function args {
+          k (apply values args)
+        })
+      })
+    }
+  }
+
+  values = function args {
+    if (and (not (null? args)) (null? (pt args))) {
+      ph args
+    } {
+      pair magic args
+    }
+  }
+
+  call-with-values = function (producer consumer) {
+    x := (producer)
+    if (magic? x) {
+      apply consumer (pt x)
+    } {
+      consumer x
+    }
+  }
+}
+
+;; dynamic-wind and call/cc are concomitant
+
+;; From the R5RS report
+
+;; A state space is a tree with the current state at the root. Each
+;; node other than the root is a triple <before,after,parent>,
+;; represented in this implementation as two pairs ((before . after)
+;; . parent). Navigating between states requires re-rooting the tree
+;; by reversing parent-child links.
+
+call/cc := call/cc
+dynamic-wind := #f
+
+{
+  *here* := list #f
+  original-call/cc := call/cc
+
+  define (reroot! there) {
+    display* "reroot!" *here* there
+    if (not (eq? *here* there)) {
+      reroot! (pt there)
+      {
+        before := phh there
+	after := pth there
+	set-ph! *here* (pair after before)
+	set-pt! *here* there
+	set-ph! there #f
+	set-pt! there '()
+	*here* = there
+	(before)
+      }
+    }
+  }
+
+  call/cc = function (proc) {
+    here := *here*
+    original-call/cc (function (cont) {
+      proc (function results {
+        reroot! here
+        apply cont results
+      })
+    })
+  }
+  
+  dynamic-wind = function (before during after) {
+    here := *here*
+    reroot! (pair (pair before after) here)
+    call-with-values during (function results {
+      reroot! here
+      apply values results
+    })
+  }
+}
+
+call-with-current-continuation := call/cc
+
+;; Now we have a dynamic-wind, unwind-protect is a specialisation
+
+define-syntax unwind-protect (syntax-rules ()
+    ((_ body cleanup ...)
+     (dynamic-wind
+       (function () #f)
+       (function () body)
+       (function () cleanup ...))))
+
+
+;; define (values & things) {
+;;   call/cc (function (cont) {
+;;     apply cont things
+;;   })
+;; }
+;; 
+;; define (call-with-values producer consumer) {
+;;     apply consumer (producer)
+;; }
+
