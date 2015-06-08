@@ -788,7 +788,7 @@ static IDIO idio_read_word (IDIO handle, int c)
     return r;
 }
 
-static IDIO idio_read_1_expr (IDIO handle, char *ic, int depth)
+static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int nl)
 {
     int c = idio_handle_getc (handle);
 
@@ -815,7 +815,9 @@ static IDIO idio_read_1_expr (IDIO handle, char *ic, int depth)
 	    break;
 	case IDIO_CHAR_CR:
 	case IDIO_CHAR_NL:
-	    idio_read_newline (handle);
+	    if (0 == nl) {
+		idio_read_newline (handle);
+	    }
 	    return idio_T_eol;
 	case IDIO_CHAR_BACKSLASH:
 	    {
@@ -1010,6 +1012,11 @@ static IDIO idio_read_1_expr (IDIO handle, char *ic, int depth)
     }
 }
 
+static IDIO idio_read_1_expr (IDIO handle, char *ic, int depth)
+{
+    return idio_read_1_expr_nl (handle, ic, depth, 0);
+}
+
 /*
  * Looping around for EOF/EOL/"}" means that a single expression
  * becomes "(expr)" so check to see if the collected list is one
@@ -1020,10 +1027,7 @@ static IDIO idio_read_line (IDIO handle, IDIO closedel, char *ic, int depth)
     IDIO r = idio_S_nil;
     
     for (;;) {
-	IDIO expr = idio_read_1_expr (handle, ic, depth);
-	if (! (idio_T_eol == expr &&
-	       idio_S_nil == r)) {
-	}
+	IDIO expr = idio_read_1_expr_nl (handle, ic, depth, 1);
 	if (idio_S_eof == expr) {
 	    if (idio_S_nil != r) {
 		r = idio_list_reverse (r);

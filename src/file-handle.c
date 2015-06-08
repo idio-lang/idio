@@ -404,7 +404,7 @@ static IDIO idio_open_std_file_handle (FILE *filep)
 	return idio_S_unspec;
     }
 
-    return idio_open_file_handle (name, filep, mflag, IDIO_FILE_HANDLE_FLAG_STDIO);
+    return idio_open_file_handle (name, filep, mflag, IDIO_FILE_HANDLE_FLAG_STDIO | IDIO_FILE_HANDLE_FLAG_INTERACTIVE);
 }
 
 IDIO idio_stdin_file_handle ()
@@ -591,6 +591,12 @@ int idio_file_handle_getc (IDIO fh)
 	    if (idio_file_handle_eofp (fh)) {
 		return EOF;
 	    }
+	    if (IDIO_FILE_HANDLE_FLAGS (fh) & IDIO_FILE_HANDLE_FLAG_INTERACTIVE) {
+		IDIO_FILE_HANDLE_COUNT (fh) -= 1;
+		int c = (int) *(IDIO_FILE_HANDLE_PTR (fh));
+		IDIO_FILE_HANDLE_PTR (fh) += 1;
+		return c;
+	    }
 	}
     }
 }
@@ -753,10 +759,63 @@ void idio_file_handle_print (IDIO fh, IDIO o)
     free (os);
 }
 
+IDIO idio_load_filehandle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO h))
+{
+    IDIO_ASSERT (fh);
+    IDIO_C_ASSERT (reader);
+    IDIO_C_ASSERT (evaluator);
+    IDIO_TYPE_ASSERT (file_handle, fh);
+
+    IDIO thr = idio_current_thread ();
+    idio_ai_t sp0 = idio_array_size (IDIO_THREAD_STACK (thr));
+
+    /*
+     * When we call idio_vm_run() we are at risk of the garbage
+     * collector being called so we need to save the current file
+     * handle and any lists we're walking over
+     */
+    idio_remember_file_handle (fh); 
+
+    for (;;) {
+	IDIO e = (*reader) (fh);
+	if (idio_S_eof == e) {
+	    break;
+	}
+
+	idio_debug ("ilfi THR %s\n", thr);
+	idio_debug ("ilfi THR %s\n", idio_module_current_symbol_lookup (idio_symbols_C_intern ("x")));
+	idio_debug ("ilfi: e %s\n", e);
+	IDIO m = (*evaluator) (e);
+	idio_debug ("ilfi: m %s\n", m);
+	idio_vm_codegen (thr, m);
+	IDIO r = idio_vm_run (thr);
+	idio_debug (" => %s\n", r);
+    }
+    
+    IDIO_HANDLE_M_CLOSE (fh) (fh);
+
+    idio_ai_t sp = idio_array_size (IDIO_THREAD_STACK (thr));
+
+    if (sp != sp0) {
+	fprintf (stderr, "load-file-handle: %s: SP %zd != %zd: ", IDIO_HANDLE_NAME (fh), sp, sp0);
+	idio_debug ("%s\n", IDIO_THREAD_STACK (thr));
+    }
+    
+    idio_forget_file_handle (fh);
+    
+    return idio_S_unspec;
+}
+
 IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO h))
 {
     IDIO_ASSERT (fh);
     IDIO_C_ASSERT (reader);
+    IDIO_C_ASSERT (evaluator);
+    IDIO_TYPE_ASSERT (file_handle, fh);
+
+    if (IDIO_FILE_HANDLE_FLAGS (fh) & IDIO_FILE_HANDLE_FLAG_INTERACTIVE) {
+	return idio_load_filehandle_interactive (fh, reader, evaluator);
+    }
 
     int timing = 0;
     
