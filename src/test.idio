@@ -81,6 +81,7 @@ display* "This is test.idio"
 ;load "tests/dynamic.idio"
 load "tests/call-cc.idio"
 load "tests/env.idio"
+load "tests/command.idio"
 
 if+ (zero? Errors) (display* "All" Tests "tests passed!") \
     else {

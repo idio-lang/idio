@@ -61,6 +61,8 @@ extern IDIO idio_condition_rt_module_error_type;
 extern IDIO idio_condition_rt_module_unbound_error_type;
 extern IDIO idio_condition_rt_module_symbol_unbound_error_type;
 extern IDIO idio_condition_rt_glob_error_type;
+extern IDIO idio_condition_rt_command_exec_error_type;
+extern IDIO idio_condition_rt_command_status_error_type;
 
 int idio_isa_condition_type (IDIO o);
 int idio_isa_condition (IDIO o);

@@ -151,3 +151,7 @@ define-condition-type-accessors-only ^rt-module-unbound-error		^rt-module-error	
 define-condition-type-accessors-only ^rt-module-symbol-unbound-error	^rt-module-error	   rt-module-symbol-unbound-error? (symbol module-unbound-error-symbol)
 
 define-condition-type-accessors-only ^rt-glob-error			^runtime-error		   rt-glob-error? (pattern glob-error-pattern)
+
+define-condition-type-accessors-only ^rt-command-exec-error		^runtime-error		   rt-command-exec-error?
+define-condition-type-accessors-only ^rt-command-status-error		^runtime-error		   rt-command-status-error? (status command-error-status)
+

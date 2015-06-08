@@ -47,6 +47,33 @@ static void idio_command_error_glob (IDIO pattern)
     idio_signal_exception (idio_S_true, c);
 }
 
+static void idio_command_error_exec ()
+{
+    IDIO sh = idio_open_output_string_handle_C ();
+    idio_display_C ("exec", sh);
+    IDIO c = idio_struct_instance (idio_condition_rt_command_exec_error_type,
+				   IDIO_LIST4 (idio_get_output_string (sh),
+					       idio_S_nil,
+					       idio_S_nil,
+					       errno));
+    idio_signal_exception (idio_S_true, c);
+}
+
+static void idio_command_error_status (IDIO status)
+{
+    IDIO_ASSERT (status);
+    IDIO_TYPE_ASSERT (struct_instance, status)
+
+    IDIO sh = idio_open_output_string_handle_C ();
+    idio_display_C ("command status", sh);
+    IDIO c = idio_struct_instance (idio_condition_rt_command_status_error_type,
+				   IDIO_LIST4 (idio_get_output_string (sh),
+					       idio_S_nil,
+					       idio_S_nil,
+					       status));
+    idio_signal_exception (idio_S_true, c);
+}
+
 static char **idio_command_get_envp ()
 {
     IDIO symbols = idio_module_visible_symbols (idio_current_module (), idio_S_environ);
@@ -74,7 +101,7 @@ static char **idio_command_get_envp ()
 	}
 	envp[n][slen + 1 + vlen] = '\0';
 
-	fprintf (stderr, "E: %s\n", envp[n]);
+	/* fprintf (stderr, "E: %s\n", envp[n]); */
 
 	symbols = IDIO_PAIR_T (symbols);
 	n++;
@@ -397,6 +424,7 @@ IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
 
 	execve (argv[0], argv, envp);
 	perror ("execv");
+	idio_command_error_exec ();
 	exit (1);
     }
 
@@ -456,7 +484,12 @@ IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
 	}
     } while (!WIFEXITED (status) && !WIFSIGNALED (status));
 
-    return idio_struct_instance_ref_direct (cstate, 2);
+    if (WIFEXITED (status) &&
+	0 == WEXITSTATUS (status)) {
+	return idio_struct_instance_ref_direct (cstate, 2);
+    }
+
+    idio_command_error_status (cstate);
 }
 
 void idio_init_command ()

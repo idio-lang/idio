@@ -1,0 +1,70 @@
+;;
+;; Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+;;
+;; Licensed under the Apache License, Version 2.0 (the "License"); you
+;; may not use this file except in compliance with the License.  You
+;; may obtain a copy of the License at
+;;
+;;     http://www.apache.org/licenses/LICENSE-2.0
+;;
+;; Unless required by applicable law or agreed to in writing, software
+;; distributed under the License is distributed on an "AS IS" BASIS,
+;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+;; See the License for the specific language governing permissions and
+;; limitations under the License.
+;;
+;;
+
+;;
+;; command.idio
+;;
+
+;; How to test external commands?
+
+;; side-effects?
+
+;; tinker with the PATH
+OPATH := PATH
+PATH = string-append PATH ":" PWD 
+
+monitor (function (cont cond) {
+  test (rt-command-status-error? cond) #t
+  if cont {
+    if (rt-command-status-error? cond) {
+      #t
+    } (error "auto-exit: unexpected condition" cond)
+  } (error "auto-exit: unexpected non-continuable error" cond)
+}) {
+  test (auto-exit) 0
+}
+
+monitor (function (cont cond) {
+  test (rt-command-status-error? cond) #t
+  if cont {
+    if (rt-command-status-error? cond) {
+      status := command-error-status cond
+      test (struct-instance-ref status 'state) 'exited
+      test (struct-instance-ref status 'wait) 11
+
+      #t
+    } (error "auto-exit -e 11: unexpected condition" cond)
+  } (error "auto-exit -e 11: unexpected non-continuable error" cond)
+}) {
+  test (auto-exit -e 11) #t
+}
+
+monitor (function (cont cond) {
+  test (rt-command-status-error? cond) #t
+  if cont {
+    if (rt-command-status-error? cond) {
+      status := command-error-status cond
+      test (struct-instance-ref status 'state) 'killed
+      test (struct-instance-ref status 'wait) 15
+
+      #t
+    } (error "auto-exit -k 15: unexpected condition" cond)
+  } (error "auto-exit -k 15: unexpected non-continuable error" cond)
+}) {
+  test (auto-exit -k 15) #t
+}
+
