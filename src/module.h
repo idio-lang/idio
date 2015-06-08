@@ -61,6 +61,6 @@ void idio_final_module (void);
 #endif
 
 /* Local Variables: */
-/* mode: C/l */
+/* mode: C */
 /* coding: utf-8-unix */
 /* End: */

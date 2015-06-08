@@ -29,6 +29,6 @@ char *idio_find_file (const char *file);
 #endif
 
 /* Local Variables: */
-/* mode: C/l */
+/* mode: C */
 /* coding: utf-8-unix */
 /* End: */

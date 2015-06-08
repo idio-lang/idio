@@ -93,6 +93,6 @@ void idio_final_symbol (void);
 #endif
 
 /* Local Variables: */
-/* mode: C/l */
+/* mode: C */
 /* coding: utf-8-unix */
 /* End: */

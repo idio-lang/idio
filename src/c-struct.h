@@ -89,6 +89,6 @@ void idio_final_C_struct ();
 #endif
 
 /* Local Variables: */
-/* mode: C/l */
+/* mode: C */
 /* coding: utf-8-unix */
 /* End: */

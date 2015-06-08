@@ -54,6 +54,6 @@ IDIO idio_C_number_cast (IDIO co, int type);
 #endif
 
 /* Local Variables: */
-/* mode: C/l */
+/* mode: C */
 /* coding: utf-8-unix */
 /* End: */

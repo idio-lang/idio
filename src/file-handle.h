@@ -53,6 +53,6 @@ void idio_final_file_handle ();
 #endif
 
 /* Local Variables: */
-/* mode: C/l */
+/* mode: C */
 /* coding: utf-8-unix */
 /* End: */

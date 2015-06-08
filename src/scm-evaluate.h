@@ -42,6 +42,6 @@ void idio_final_scm_evaluate ();
 #endif
 
 /* Local Variables: */
-/* mode: C/l */
+/* mode: C */
 /* coding: utf-8-unix */
 /* End: */

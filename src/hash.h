@@ -54,6 +54,6 @@ IDIO idio_hash_keys_to_list (IDIO h);
 #endif
 
 /* Local Variables: */
-/* mode: C/l */
+/* mode: C */
 /* coding: utf-8-unix */
 /* End: */

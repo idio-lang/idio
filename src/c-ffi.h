@@ -30,6 +30,6 @@ void idio_free_C_FFI (IDIO o);
 #endif
 
 /* Local Variables: */
-/* mode: C/l */
+/* mode: C */
 /* coding: utf-8-unix */
 /* End: */
