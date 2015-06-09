@@ -71,14 +71,15 @@
  * Default interpolation characters:
  *
  * IDIO_CHAR_DOT == use default (ie. skip) => IDIO_CHAR_DOT cannot be
- * one of the three
+ * one of the interpolation characters
  *
  * 1. expression substitution == unquote
  * 2. expression splicing == unquotesplicing
- * 3. escape char
+ * 3. expression quoting
+ * 4. escape char
  */
-char idio_default_interpolation_chars[] = { IDIO_CHAR_DOLLARS, IDIO_CHAR_AT, IDIO_CHAR_BACKSLASH };
-#define IDIO_INTERPOLATION_CHARS 3
+char idio_default_interpolation_chars[] = { IDIO_CHAR_DOLLARS, IDIO_CHAR_AT, IDIO_CHAR_SQUOTE, IDIO_CHAR_BACKSLASH };
+#define IDIO_INTERPOLATION_CHARS 4
 
 /*
  * In the case of named characters, eg. #\newline (as opposed to #\a,
@@ -90,10 +91,10 @@ char idio_default_interpolation_chars[] = { IDIO_CHAR_DOLLARS, IDIO_CHAR_AT, IDI
  * That said, there's no reason why we shouldn't be able to use
  * Unicode named characters.  What's the longest one of those?
  * According to http://www.unicode.org/charts/charindex.html and
- * turning non-printing chars into _s, say, then "Aboriginal Syllabics
- * Extended, Unified Canadian" is some 47 chars long.  The longest is
- * 52 chars (Digraphs Matching Serbian Cyrillic Letters, Croatian,
- * 01C4).
+ * turning non-printing chars into underscores, say, then "Aboriginal
+ * Syllabics Extended, Unified Canadian" is some 47 chars long.  The
+ * longest is 52 chars ("Digraphs Matching Serbian Cyrillic Letters,
+ * Croatian, 01C4").
 
  * In the meanwhile, we only have a handler for "space" and
  * "newline"...
@@ -795,7 +796,8 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int nl)
     for (;;) {
 
 	/*
-	 * cf. handling of , and ,@
+	 * Template interpolation character handling.  cf. quasiquote
+	 * handling of , and ,@ and '
 	 */
 	if (c == ic[0]) {
 	    c = idio_handle_getc (handle);
@@ -804,6 +806,8 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int nl)
 	    }
 	    idio_handle_ungetc (handle, c);
 	    return idio_read_unquote (handle, ic, depth);
+	} else if (c == ic[2]) {
+	    return idio_read_quote (handle, ic, depth);
 	}
 
 	switch (c) {
@@ -869,11 +873,13 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int nl)
 		}
 	    }
 	    break;
+	    /*
 	case IDIO_CHAR_SQUOTE:
 	    return idio_read_quote (handle, ic, depth);
+	    */
 	case IDIO_CHAR_BACKQUOTE:
 	    {
-		char qq_ic[] = { IDIO_CHAR_COMMA, IDIO_CHAR_AT, IDIO_CHAR_BACKSLASH };
+		char qq_ic[] = { IDIO_CHAR_COMMA, IDIO_CHAR_AT, IDIO_CHAR_SQUOTE, IDIO_CHAR_BACKSLASH };
 		return idio_read_quasiquote (handle, qq_ic, depth);
 	    }
 	    /*
