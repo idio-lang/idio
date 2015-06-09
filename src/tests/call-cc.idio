@@ -26,14 +26,16 @@ member := function (x ls) {
   call/cc (function (break) {
     do ((ls ls (pt ls))) \
        ((null? ls) #f) \
-       (if (equal? x (ph ls)) (break ls))
+       (if (equal? x (ph ls)) 
+	   (break ls))
   })
 }
 
 test (member 'd '(a b c)) #f
 test (member 'b '(a b c)) '(b c)
 
-;; NB we need to apply the result of the call/cc
+;; NB The body of the call/cc returns a function which we need to
+;; apply to get the result
 test ((call/cc {
   x := 'a
   function (k) {
