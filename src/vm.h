@@ -152,6 +152,7 @@
 #define IDIO_A_NEG_CONSTANT                157
 
 #define IDIO_A_EXPANDER                    160
+#define IDIO_A_OPERATOR                    161
 
 #define IDIO_A_DYNAMIC_REF                 230
 #define IDIO_A_DYNAMIC_FUNCTION_REF	   231
@@ -226,6 +227,7 @@
 #define IDIO_VM_CODE_BEGIN                       (IDIO_VM_CODE_BASE+74)
 
 #define IDIO_VM_CODE_EXPANDER                    (IDIO_VM_CODE_BASE+80)
+#define IDIO_VM_CODE_OPERATOR                    (IDIO_VM_CODE_BASE+81)
 
 #define IDIO_VM_CODE_NOP                         (IDIO_VM_CODE_BASE+99)
 
@@ -275,6 +277,7 @@
 #define idio_I_OR                          ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_OR))
 #define idio_I_BEGIN                       ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_BEGIN))
 #define idio_I_EXPANDER                    ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_EXPANDER))
+#define idio_I_OPERATOR                    ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_OPERATOR))
 
 #define idio_I_NOP                         ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_NOP))
 

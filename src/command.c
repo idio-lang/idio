@@ -55,7 +55,7 @@ static void idio_command_error_exec ()
 				   IDIO_LIST4 (idio_get_output_string (sh),
 					       idio_S_nil,
 					       idio_S_nil,
-					       errno));
+					       IDIO_FIXNUM ((intptr_t) errno)));
     idio_signal_exception (idio_S_true, c);
 }
 

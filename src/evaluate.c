@@ -680,7 +680,7 @@ static IDIO idio_evaluate_expander_code (IDIO m)
 {
     IDIO_ASSERT (m);
 
-    /* idio_debug ("install-expander-code: %s\n", m); */
+    /* idio_debug ("evaluate-expander-code: %s\n", m); */
 
     IDIO cthr = idio_current_thread ();
     idio_set_current_thread (idio_expander_thread);
@@ -693,7 +693,7 @@ static IDIO idio_evaluate_expander_code (IDIO m)
     idio_thread_restore_state (idio_expander_thread);
     idio_set_current_thread (cthr);
 
-    /* idio_debug ("install-expander-code: out: %s\n", r);   */
+    /* idio_debug ("evaluate-expander-code: out: %s\n", r);   */
     return r;
 }
 
@@ -769,6 +769,9 @@ void idio_install_operator (IDIO id, IDIO proc)
     IDIO_ASSERT (proc);
     IDIO_TYPE_ASSERT (symbol, id);
     
+    idio_debug ("op install %s", id);
+    idio_debug (" as %s\n", proc);
+    
     IDIO el = idio_module_symbol_value (idio_operator_list, idio_operator_module);
     IDIO old = idio_list_assq (id, el);
 
@@ -786,7 +789,7 @@ static IDIO idio_evaluate_operator_code (IDIO m)
 {
     IDIO_ASSERT (m);
 
-    /* idio_debug ("install-operator-code: %s\n", m); */
+    /* idio_debug ("evaluate-operator-code: %s\n", m);  */
 
     IDIO cthr = idio_current_thread ();
     idio_set_current_thread (idio_expander_thread);
@@ -799,7 +802,7 @@ static IDIO idio_evaluate_operator_code (IDIO m)
     idio_thread_restore_state (idio_expander_thread);
     idio_set_current_thread (cthr);
 
-    /* idio_debug ("install-operator-code: out: %s\n", r);   */
+    /* idio_debug ("evaluate-operator-code: out: %s\n", r);    */
 
     return r;
 }
@@ -811,8 +814,10 @@ static IDIO idio_evaluate_operator (IDIO n, IDIO e, IDIO b, IDIO a)
     IDIO_ASSERT (b);
     IDIO_ASSERT (a);
 
-    /* fprintf (stderr, "evaluate-operator: in\n"); */
-
+    fprintf (stderr, "evaluate-operator: in\n"); 
+    idio_debug ("n %s", n);
+    idio_debug (" b %s", b);
+    idio_debug (" a %s\n", a);
     IDIO cthr = idio_current_thread ();
     idio_set_current_thread (idio_expander_thread);
     idio_thread_save_state (idio_expander_thread);
@@ -824,7 +829,7 @@ static IDIO idio_evaluate_operator (IDIO n, IDIO e, IDIO b, IDIO a)
     idio_thread_restore_state (idio_expander_thread);
     idio_set_current_thread (cthr);
 
-    /* idio_debug ("evaluate-operator: out: %s\n", r);   */
+    idio_debug ("evaluate-operator: out: %s\n", r);   
 
     return r;
 }
@@ -838,17 +843,18 @@ static IDIO idio_operatorp (IDIO name)
     }
 
     IDIO operator_list = idio_module_symbol_value (idio_operator_list, idio_operator_module);
-    /* fprintf (stderr, "operator?: %p in %p: *operator-list* = %p\n", idio_operator_list, idio_operator_module, operator_list); */
-    /* idio_dump (operator_list, 1); */
     
     IDIO assq = idio_list_assq (name, operator_list);
 
     if (idio_S_false != assq) {
+	idio_debug ("op %s?", name);
+	idio_debug (" %s\n", assq);
+
 	IDIO v = IDIO_PAIR_T (assq);
 	if (idio_isa_pair (v)) {
-	    /* idio_debug ("operator?: %s isa PAIR\n", name); */
+	    idio_debug ("operator?: %s isa PAIR\n", name); 
 	    IDIO lv = idio_module_current_symbol_value_recurse (name);
-	    /* idio_debug ("operator?: lookup -> %s\n", lv); */
+	    idio_debug ("operator?: lookup -> %s\n", lv); 
 	    if (idio_isa_primitive (lv) ||
 		idio_isa_closure (lv)) {
 		IDIO_PAIR_T (assq) = lv;
@@ -1448,6 +1454,53 @@ static IDIO idio_meaning_define_macro (IDIO name, IDIO e, IDIO nametree, int tai
 
     IDIO r = IDIO_LIST3 (idio_I_EXPANDER, IDIO_FIXNUM (i), m_a);
     /* idio_debug ("idio-meaning-define-macro %s", name);  */
+    /* idio_debug (" r=%s\n", r);  */
+    return r;
+}
+
+static IDIO idio_meaning_define_operator (IDIO name, IDIO e, IDIO nametree, int tailp)
+{
+    IDIO_ASSERT (name);
+    IDIO_ASSERT (e);
+    IDIO_ASSERT (nametree);
+    IDIO_TYPE_ASSERT (list, nametree);
+
+    /* idio_debug ("meaning-define-operator:\nname=%s\n", name);   */
+    /* idio_debug ("e=%s\n", e);   */
+
+    IDIO m_a;
+    if (idio_isa_symbol (e)) {
+	IDIO exp = idio_operatorp (e);
+	e = IDIO_PAIR_T (exp);
+	m_a = idio_meaning_assignment (name, e, nametree, 0, IDIO_LEXICAL_SCOPE);
+    } else {
+	IDIO nt2 = idio_nametree_extend (nametree, IDIO_LIST3 (idio_S_op, idio_S_before, idio_S_after));
+
+	e = IDIO_LIST3 (idio_S_function,
+			IDIO_LIST3 (idio_S_op, idio_S_before, idio_S_after),
+			e);
+    
+	m_a = idio_meaning_assignment (name, e, nt2, 0, IDIO_LEXICAL_SCOPE);
+    }
+
+    idio_install_operator (name, e);
+    idio_evaluate_operator_code (m_a);
+
+    idio_ai_t i = idio_vm_symbols_lookup (name);
+    if (-1 == i) {
+	idio_debug ("extending symbols for define-operator %s\n", name);
+	i = idio_vm_extend_symbols (name);
+    }
+
+    /*
+     * NB.  This effectively creates/stores the operator body code a
+     * second time *in this instance of the engine*.  When the object
+     * code is read in there won't be an instance of the operator body
+     * code lying around -- at least not one we can access.
+     */
+
+    IDIO r = IDIO_LIST3 (idio_I_OPERATOR, IDIO_FIXNUM (i), m_a);
+    /* idio_debug ("idio-meaning-define-operator %s", name);  */
     /* idio_debug (" r=%s\n", r);  */
     return r;
 }
@@ -2612,6 +2665,20 @@ static IDIO idio_meaning (IDIO e, IDIO nametree, int tailp)
 		}
 	    } else {
 		idio_error_param_nil ("(define-macro)");
+		return idio_S_unspec;
+	    }
+	} else if (idio_S_define_operator == eh) {
+	    /* (define-operator bindings body ...) */
+	    if (idio_isa_pair (et)) {
+		IDIO ett = IDIO_PAIR_T (et);
+		if (idio_isa_pair (ett)) {
+		    return idio_meaning_define_operator (IDIO_PAIR_H (et), IDIO_PAIR_H (ett), nametree, tailp);
+		} else {
+		    idio_error_param_nil ("(define-operator symbol)");
+		    return idio_S_unspec;
+		}
+	    } else {
+		idio_error_param_nil ("(define-operator)");
 		return idio_S_unspec;
 	    }
 	} else if (idio_S_define == eh) {

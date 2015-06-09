@@ -1545,6 +1545,22 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (i));
 	}
 	break;
+    case IDIO_VM_CODE_OPERATOR:
+	{
+	    if (! idio_isa_pair (mt) ||
+		idio_list_length (mt) != 2) {
+		idio_vm_error_compile_param_args ("OPERATOR i m");
+		return;
+	    }
+
+	    IDIO i = IDIO_PAIR_H (mt);
+	    IDIO m = IDIO_PAIR_H (IDIO_PAIR_T (mt));
+	    
+	    idio_vm_compile (thr, ia, m, depth + 1);
+	    IDIO_IA_PUSH1 (IDIO_A_OPERATOR);
+	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (i));
+	}
+	break;
     case IDIO_VM_CODE_NOP:
 	break;
     default:
@@ -3532,6 +3548,14 @@ int idio_vm_run1 (IDIO thr)
 	    IDIO_VM_RUN_DIS ("EXPANDER %" PRId64 "", index);
 	    IDIO sym = idio_vm_symbols_ref (index);
 	    idio_install_expander (sym, IDIO_THREAD_VAL (thr));
+	}
+	break;
+    case IDIO_A_OPERATOR:
+	{
+	    uint64_t index = idio_vm_fetch_varuint (thr);
+	    IDIO_VM_RUN_DIS ("OPERATOR %" PRId64 "", index);
+	    IDIO sym = idio_vm_symbols_ref (index);
+	    idio_install_operator (sym, IDIO_THREAD_VAL (thr));
 	}
 	break;
     default:

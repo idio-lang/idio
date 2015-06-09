@@ -28,6 +28,7 @@ extern IDIO idio_io_read_exception;
 void idio_raise_exception (IDIO e);
 IDIO idio_make_exception (IDIO e);
 
+IDIO idio_error_string (char *format, va_list argp);
 void idio_error_message (char *format, ...);
 void idio_warning_message (char *format, ...);
 void idio_strerror (char *msg);

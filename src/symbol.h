@@ -26,11 +26,13 @@
 #define IDIO_SYMBOL_DECL(n)		IDIO idio_S_ ## n
 #define IDIO_SYMBOL_DEF(iname,cname)	idio_S_ ## cname = idio_symbols_C_intern (iname);
 
+extern IDIO_SYMBOL_DECL (after);
 extern IDIO_SYMBOL_DECL (ampersand);
 extern IDIO_SYMBOL_DECL (and);
 extern IDIO_SYMBOL_DECL (append);
 extern IDIO_SYMBOL_DECL (apply);
 extern IDIO_SYMBOL_DECL (asterisk);
+extern IDIO_SYMBOL_DECL (before);
 extern IDIO_SYMBOL_DECL (begin);
 extern IDIO_SYMBOL_DECL (block);
 extern IDIO_SYMBOL_DECL (car);
@@ -61,6 +63,7 @@ extern IDIO_SYMBOL_DECL (ex_star);
 extern IDIO_SYMBOL_DECL (ex_tilde);
 extern IDIO_SYMBOL_DECL (fixed_template);
 extern IDIO_SYMBOL_DECL (function);
+extern IDIO_SYMBOL_DECL (gt);
 extern IDIO_SYMBOL_DECL (if);
 extern IDIO_SYMBOL_DECL (include);
 extern IDIO_SYMBOL_DECL (init);
@@ -68,8 +71,10 @@ extern IDIO_SYMBOL_DECL (lambda);
 extern IDIO_SYMBOL_DECL (let);
 extern IDIO_SYMBOL_DECL (letrec);
 extern IDIO_SYMBOL_DECL (list);
+extern IDIO_SYMBOL_DECL (lt);
 extern IDIO_SYMBOL_DECL (monitor);
 extern IDIO_SYMBOL_DECL (namespace);
+extern IDIO_SYMBOL_DECL (op);
 extern IDIO_SYMBOL_DECL (or);
 extern IDIO_SYMBOL_DECL (pair);
 extern IDIO_SYMBOL_DECL (ph);

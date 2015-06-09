@@ -312,7 +312,7 @@ void idio_init_condition ()
     IDIO_DEFINE_CONDITION0 (idio_condition_io_no_such_file_error_type, "^i/o-no-such-file-error", idio_condition_io_filename_error_type);
 
     /* NB. no column or span! */
-    IDIO_DEFINE_CONDITION2 (idio_condition_read_error_type, "^read-error", idio_condition_error_type, "line", "position");
+    IDIO_DEFINE_CONDITION2 (idio_condition_read_error_type, "^read-error", idio_condition_idio_error_type, "line", "position");
 
     /* Idio */
     IDIO_DEFINE_CONDITION1 (idio_condition_system_error_type, "^system-error", idio_condition_idio_error_type, "errno");

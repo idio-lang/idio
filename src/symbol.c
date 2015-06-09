@@ -25,11 +25,13 @@
 static IDIO idio_symbols_hash = idio_S_nil;
 
 IDIO_SYMBOL_DECL (C_struct);
+IDIO_SYMBOL_DECL (after);
 IDIO_SYMBOL_DECL (ampersand);
 IDIO_SYMBOL_DECL (and);
 IDIO_SYMBOL_DECL (append);
 IDIO_SYMBOL_DECL (apply);
 IDIO_SYMBOL_DECL (asterisk);
+IDIO_SYMBOL_DECL (before);
 IDIO_SYMBOL_DECL (begin);
 IDIO_SYMBOL_DECL (block);
 IDIO_SYMBOL_DECL (car);
@@ -59,6 +61,7 @@ IDIO_SYMBOL_DECL (ex_star);
 IDIO_SYMBOL_DECL (ex_tilde);
 IDIO_SYMBOL_DECL (fixed_template);
 IDIO_SYMBOL_DECL (function);
+IDIO_SYMBOL_DECL (gt);
 IDIO_SYMBOL_DECL (if);
 IDIO_SYMBOL_DECL (include);
 IDIO_SYMBOL_DECL (init);
@@ -66,8 +69,10 @@ IDIO_SYMBOL_DECL (lambda);
 IDIO_SYMBOL_DECL (let);
 IDIO_SYMBOL_DECL (letrec);
 IDIO_SYMBOL_DECL (list);
+IDIO_SYMBOL_DECL (lt);
 IDIO_SYMBOL_DECL (monitor);
 IDIO_SYMBOL_DECL (namespace);
+IDIO_SYMBOL_DECL (op);
 IDIO_SYMBOL_DECL (or);
 IDIO_SYMBOL_DECL (pair);
 IDIO_SYMBOL_DECL (ph);
@@ -238,10 +243,12 @@ void idio_init_symbol ()
 
     IDIO_SYMBOL_DEF ("c_struct", C_struct);
     IDIO_SYMBOL_DEF ("&", ampersand);
+    IDIO_SYMBOL_DEF ("after", after);
     IDIO_SYMBOL_DEF ("and", and);
     IDIO_SYMBOL_DEF ("append", append);
     IDIO_SYMBOL_DEF ("apply", apply);
     IDIO_SYMBOL_DEF ("*", asterisk);
+    IDIO_SYMBOL_DEF ("before", before);
     IDIO_SYMBOL_DEF ("begin", begin);
     IDIO_SYMBOL_DEF ("block", block);
     IDIO_SYMBOL_DEF ("car", car);
@@ -271,6 +278,7 @@ void idio_init_symbol ()
     IDIO_SYMBOL_DEF ("!~", ex_tilde);
     IDIO_SYMBOL_DEF ("fixed_template", fixed_template);
     IDIO_SYMBOL_DEF ("function", function);
+    IDIO_SYMBOL_DEF (">", gt);
     IDIO_SYMBOL_DEF ("if", if);
     IDIO_SYMBOL_DEF ("include", include);
     IDIO_SYMBOL_DEF ("init", init);
@@ -278,8 +286,10 @@ void idio_init_symbol ()
     IDIO_SYMBOL_DEF ("let", let);
     IDIO_SYMBOL_DEF ("letrec", letrec);
     IDIO_SYMBOL_DEF ("list", list);
+    IDIO_SYMBOL_DEF ("<", lt);
     IDIO_SYMBOL_DEF ("monitor", monitor);
     IDIO_SYMBOL_DEF ("namespace", namespace);
+    IDIO_SYMBOL_DEF ("op", op);
     IDIO_SYMBOL_DEF ("or", or);
     IDIO_SYMBOL_DEF ("pair", pair);
     IDIO_SYMBOL_DEF ("ph", ph);
