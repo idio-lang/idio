@@ -610,6 +610,7 @@ char *idio_as_string (IDIO o, int depth)
 	    case IDIO_VM_CODE_OR:                    t = "OR";                    break;
 	    case IDIO_VM_CODE_BEGIN:                 t = "BEGIN";                 break;
 	    case IDIO_VM_CODE_EXPANDER:              t = "EXPANDER";              break;
+	    case IDIO_VM_CODE_OPERATOR:              t = "OPERATOR";              break;
 	    case IDIO_VM_CODE_NOP:		     t = "NOP";			  break;
 	    default:
 		break;

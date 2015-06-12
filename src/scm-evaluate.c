@@ -200,7 +200,7 @@ static IDIO idio_scm_predef_extend (IDIO name, IDIO primdata)
     IDIO_PAIR_H (idio_scm_predef_names) = idio_pair (IDIO_LIST3 (name, idio_S_predef, i),
 						     IDIO_PAIR_H (idio_scm_predef_names));
 
-    /* for idio_module_symbol_lookup etc. */
+    /* for idio_module_symbol_recurse etc. */
     idio_module_primitive_set_symbol_value (name, primdata);
 
     return i;
@@ -274,7 +274,7 @@ static IDIO idio_scm_toplevel_extend (IDIO name)
     IDIO_PAIR_H (idio_scm_toplevel_names) = idio_pair (IDIO_LIST3 (name, idio_S_toplevel, i),
 						       IDIO_PAIR_H (idio_scm_toplevel_names));
 
-    IDIO cv = idio_module_symbol_lookup (name, idio_current_module ());
+    IDIO cv = idio_module_symbol_recurse (name, idio_current_module (), 1);
     if (idio_S_unspec == cv) {
 	idio_module_current_set_symbol_value (name, idio_S_undef);
     }

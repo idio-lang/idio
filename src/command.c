@@ -490,6 +490,9 @@ IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
     }
 
     idio_command_error_status (cstate);
+
+    /* notreached */
+    return idio_S_unspec;
 }
 
 void idio_init_command ()

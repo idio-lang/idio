@@ -1733,7 +1733,7 @@ char *idio_bignum_expanded_real_as_string (IDIO bn, IDIO_BS_T exp, int digits, i
 	IDIO_BS_T v = idio_bsa_get (sig_a, ai);
 	char *vs;
 	if (asprintf (&vs, "%" PRId64, v) == -1) {
-	    idio_error_message ("bignum->string: asprintf");
+	    idio_error_system ("bignum->string: asprintf", bn, errno);
 	}
 	IDIO_STRCAT_FREE (s, vs);
     }
@@ -1793,7 +1793,7 @@ char *idio_bignum_real_as_string (IDIO bn)
      */
     char *vs;
     if (asprintf (&vs, "%" PRId64, v) == -1) {
-	idio_error_message ("bignum real->string: asprintf");
+	idio_error_system ("bignum real->string: asprintf", bn, errno);
     }
     char vs_rest[IDIO_BIGNUM_DPW+1]; /* +1 in case DPW is 1 for debug! */
     strcpy (vs_rest, vs + 1);
@@ -1824,7 +1824,7 @@ char *idio_bignum_real_as_string (IDIO bn)
     /* } */
     v = exp + digits - 1;
     if (asprintf (&vs, "%+" PRId64, v) == -1) {
-	idio_error_message ("bignum real->string: asprintf");
+	idio_error_system ("bignum real->string: asprintf", bn, errno);
     }
     s = idio_strcat_free (s, vs);
 
@@ -2096,7 +2096,7 @@ IDIO idio_bignum_primitive_add (IDIO args)
 	IDIO h = IDIO_PAIR_H (args);
 
         if (! idio_isa_bignum (h)) {
-	    idio_error_message ("idio_bignum_primitive_add: expected a bignum, got a %s", idio_type2string (h));
+	    idio_error_param_type ("bignum", h);
 	    break;
 	}
 
@@ -2120,7 +2120,7 @@ IDIO idio_bignum_primitive_subtract (IDIO args)
 	IDIO h = IDIO_PAIR_H (args);
 
         if (! idio_isa_bignum (h)) {
-	    idio_error_message ("idio_bignum_primitive_subtract: expected a bignum, got a %s", idio_type2string (h));
+	    idio_error_param_type ("bignum", h);
 	    break;
 	}
 
@@ -2169,7 +2169,7 @@ IDIO idio_bignum_primitive_multiply (IDIO args)
 	IDIO h = IDIO_PAIR_H (args);
 
         if (! idio_isa_bignum (h)) {
-	    idio_error_message ("idio_bignum_primitive_multiply: expected a bignum, got a %s", idio_type2string (h));
+	    idio_error_param_type ("bignum", h);
 	    break;
 	}
 
@@ -2194,7 +2194,7 @@ IDIO idio_bignum_primitive_divide (IDIO args)
 	IDIO h = IDIO_PAIR_H (args);
 
         if (! idio_isa_bignum (h)) {
-	    idio_error_message ("idio_bignum_primitive_divide: expected a bignum, got a %s", idio_type2string (h));
+	    idio_error_param_type ("bignum", h);
 	    break;
 	}
 
@@ -2310,7 +2310,7 @@ IDIO idio_bignum_primitive_lt (IDIO args)
 	IDIO h = idio_list_head (args);
 	
         if (! idio_isa_bignum (h)) {
-	    idio_error_message ("idio_bignum_primitive_lt: expected a bignum, got a %s", idio_type2string (h));
+	    idio_error_param_type ("bignum", h);
 	    break;
 	}
 
@@ -2338,7 +2338,7 @@ IDIO idio_bignum_primitive_le (IDIO args)
 	IDIO h = idio_list_head (args);
 	
         if (! idio_isa_bignum (h)) {
-	    idio_error_message ("idio_bignum_primitive_le: expected a bignum, got a %s", idio_type2string (h));
+	    idio_error_param_type ("bignum", h);
 	    break;
 	}
 
@@ -2366,7 +2366,7 @@ IDIO idio_bignum_primitive_gt (IDIO args)
 	IDIO h = idio_list_head (args);
 	
         if (! idio_isa_bignum (h)) {
-	    idio_error_message ("idio_bignum_primitive_gt: expected a bignum, got a %s", idio_type2string (h));
+	    idio_error_param_type ("bignum", h);
 	    break;
 	}
 
@@ -2394,7 +2394,7 @@ IDIO idio_bignum_primitive_ge (IDIO args)
 	IDIO h = idio_list_head (args);
 	
         if (! idio_isa_bignum (h)) {
-	    idio_error_message ("idio_bignum_primitive_ge: expected a bignum, got a %s", idio_type2string (h));
+	    idio_error_param_type ("bignum", h);
 	    break;
 	}
 
@@ -2422,7 +2422,7 @@ IDIO idio_bignum_primitive_eq (IDIO args)
 	IDIO h = idio_list_head (args);
 	
         if (! idio_isa_bignum (h)) {
-	    idio_error_message ("idio_bignum_primitive_ge: expected a bignum, got a %s", idio_type2string (h));
+	    idio_error_param_type ("bignum", h);
 	    break;
 	}
 

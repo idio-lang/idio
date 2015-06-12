@@ -1613,8 +1613,12 @@ IDIO_DEFINE_PRIMITIVE2 ("base-error-handler", base_error_handler, (IDIO cont, ID
     if (continuablep) {
 	fprintf (stderr, "should continue but won't!\n");
     }
-    idio_debug ("THREAD: %s\n", idio_current_thread ());
-    idio_debug ("STACK:  %s\n", IDIO_THREAD_STACK (idio_current_thread ()));
+
+    IDIO thr = idio_current_thread ();
+    idio_debug ("THREAD:\t%s\n", thr);
+    idio_debug ("STACK:\t%s\n", IDIO_THREAD_STACK (thr));
+    idio_debug ("MODULE:\t%s\n", IDIO_MODULE_NAME (IDIO_THREAD_MODULE (thr)));
+    idio_debug ("INPUT:\t%s\n", IDIO_THREAD_INPUT_HANDLE (thr));
     IDIO_C_ASSERT (0);
     return idio_S_unspec;
 }
@@ -3658,7 +3662,8 @@ IDIO idio_vm_run (IDIO thr)
     uintptr_t loops0 = idio_vm_run_loops;
     
     /*
-     * Ready ourselves for idio_signal_exception to clear the decks.
+     * Ready ourselves for idio_signal_exception/continuations to
+     * clear the decks.
      *
      * NB Keep counters/timers above this setjmp (otherwise they get
      * reset -- duh)
@@ -3667,7 +3672,7 @@ IDIO idio_vm_run (IDIO thr)
 
     /*
      * Hmm, we really should consider caring whether we got here from
-     * a longjump...shouldn't we?
+     * a longjmp...shouldn't we?
      *
      * I'm not sure we do care.
      */
@@ -3684,15 +3689,18 @@ IDIO idio_vm_run (IDIO thr)
     }
 
     /*
-     * Finally, run the VM code.  Every so often we'll poke the GC to
-     * tidy up.  It has its own view on whether it is time and/or safe
-     * to garbage collect but we need to poke it to find out.
+     * Finally, run the VM code with idio_vm_run1(), one instruction
+     * at a time.
+     *
+     * Every so often we'll poke the GC to tidy up.  It has its own
+     * view on whether it is time and/or safe to garbage collect but
+     * we need to poke it to find out.
      *
      * NB. Perhaps, counter-inuitively, not running the GC slows
-     * things down dramtically as the Unix process struggles to jump
-     * around in virtual memory.  What you really want to be doing is
-     * constantly trimming the deadwood -- but only when you've done
-     * enough work to generate some deadwood.
+     * things down dramatically as the Unix process struggles to jump
+     * around in masses of virtual memory.  What you really want to be
+     * doing is constantly trimming the deadwood...but only when
+     * you've done enough work to generate some deadwood.
      *
      * That said, at the opposite extreme, calling the GC every time
      * round the loop is equally slow as you waste CPU cycles running
@@ -3709,12 +3717,10 @@ IDIO idio_vm_run (IDIO thr)
      */
     for (;;) {
 	if (idio_vm_run1 (thr)) {
-	    sleep (0);
 	    if ((idio_vm_run_loops++ & 0xff) == 0) {
 		idio_gc_possibly_collect ();
 	    }
 	} else {
-	    sleep (0);
 	    break;
 	}
     }
