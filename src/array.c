@@ -515,7 +515,7 @@ IDIO_DEFINE_PRIMITIVE1 ("vector-length", vector_length, (IDIO a))
 
     IDIO_VERIFY_PARAM_TYPE (array, a);
 
-    return IDIO_FIXNUM (idio_array_size (a));
+    return idio_fixnum (idio_array_size (a));
 }
 
 IDIO_DEFINE_PRIMITIVE2 ("vector-ref", vector_ref, (IDIO a, IDIO index))

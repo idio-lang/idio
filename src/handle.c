@@ -370,6 +370,9 @@ int idio_handle_putc (IDIO h, int c)
 
     if (EOF != n) {
 	IDIO_HANDLE_POS (h) += n;
+	if ('\n' == c) {
+	    IDIO_HANDLE_LINE (h) += 1;
+	}
     }
 
     return n;
@@ -477,13 +480,7 @@ IDIO_DEFINE_PRIMITIVE2V ("handle-seek", handle_seek, (IDIO h, IDIO pos, IDIO arg
 
     IDIO_HANDLE_POS (h) = n;
 
-    IDIO r;
-    if (offset < IDIO_FIXNUM_MAX &&
-	offset > IDIO_FIXNUM_MIN) {
-	r = IDIO_FIXNUM (n);
-    } else {
-	r = idio_bignum_integer_int64 (n);
-    }
+    IDIO r = idio_integer (n);
     
     return r;
 }
@@ -739,7 +736,8 @@ IDIO idio_write (IDIO o, IDIO h)
     
     char *os = idio_as_string (o, 10);
     
-    IDIO_HANDLE_M_PUTS (h) (h, os, strlen (os));
+    /* IDIO_HANDLE_M_PUTS (h) (h, os, strlen (os)); */
+    idio_handle_puts (h, os, strlen (os));
 
     free (os);
 
@@ -764,7 +762,8 @@ IDIO idio_write_char (IDIO c, IDIO h)
 
     IDIO_TYPE_ASSERT (character, c);
     
-    IDIO_HANDLE_M_PUTC (h) (h, IDIO_CHARACTER_VAL (c));
+    /* IDIO_HANDLE_M_PUTC (h) (h, IDIO_CHARACTER_VAL (c)); */
+    idio_handle_putc (h, IDIO_CHARACTER_VAL (c));
 
     return idio_S_unspec;
 }
@@ -787,7 +786,8 @@ IDIO_DEFINE_PRIMITIVE0V ("newline", newline, (IDIO args))
 
     IDIO h = idio_handle_or_current (idio_list_head (args), IDIO_HANDLE_FLAG_WRITE);
 
-    IDIO_HANDLE_M_PUTC (h) (h, '\n');
+    /* IDIO_HANDLE_M_PUTC (h) (h, '\n'); */
+    idio_handle_putc (h, '\n');
 
     return idio_S_unspec;
 }
@@ -800,7 +800,8 @@ IDIO idio_display (IDIO o, IDIO h)
 
     char *s = idio_display_string (o);
     
-    IDIO_HANDLE_M_PUTS (h) (h, s, strlen (s));
+    /* IDIO_HANDLE_M_PUTS (h) (h, s, strlen (s)); */
+    idio_handle_puts (h, s, strlen (s));
     free (s);
 
     return idio_S_unspec;
@@ -812,7 +813,8 @@ IDIO idio_display_C (char *s, IDIO h)
     IDIO_ASSERT (h);
     IDIO_TYPE_ASSERT (handle, h);
 
-    IDIO_HANDLE_M_PUTS (h) (h, s, strlen (s));
+    /* IDIO_HANDLE_M_PUTS (h) (h, s, strlen (s)); */
+    idio_handle_puts (h, s, strlen (s));
 
     return idio_S_unspec;
 }
@@ -835,12 +837,7 @@ IDIO_DEFINE_PRIMITIVE0V ("handle-current-line", handle_current_line, (IDIO args)
 
     IDIO r;
     off_t line = IDIO_HANDLE_LINE (h);
-    if (line < IDIO_FIXNUM_MAX &&
-	line > IDIO_FIXNUM_MIN) {
-	r = IDIO_FIXNUM (line);
-    } else {
-	r = idio_bignum_integer_int64 (line);
-    }
+    r = idio_integer (line);
     
     return r;
 }
@@ -853,12 +850,7 @@ IDIO_DEFINE_PRIMITIVE0V ("handle-current-pos", handle_current_pos, (IDIO args))
 
     IDIO r;
     off_t pos = IDIO_HANDLE_POS (h);
-    if (pos < IDIO_FIXNUM_MAX &&
-	pos > IDIO_FIXNUM_MIN) {
-	r = IDIO_FIXNUM (pos);
-    } else {
-	r = idio_bignum_integer_int64 (pos);
-    }
+    r = idio_integer (pos);
     
     return r;
 }

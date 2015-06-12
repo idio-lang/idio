@@ -293,11 +293,7 @@ IDIO_DEFINE_PRIMITIVE1 ("length", list_length, (IDIO o))
 
     size_t len = idio_list_length (o);
 
-    if (len > IDIO_FIXNUM_MAX) {
-	return idio_bignum_integer_int64 (len);
-    } else {
-	return IDIO_FIXNUM (len);
-    }
+    return idio_integer (len);
 }
 
 IDIO idio_list_copy (IDIO l)

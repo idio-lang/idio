@@ -39,9 +39,9 @@ IDIO idio_thread (idio_ai_t stack_size)
     IDIO_THREAD_STACK (t) = idio_array (stack_size);
     IDIO_THREAD_VAL (t) = idio_S_unspec;
     IDIO_THREAD_ENV (t) = idio_S_nil;
-    IDIO_THREAD_HANDLER_SP (t) = IDIO_FIXNUM (0);
-    IDIO_THREAD_DYNAMIC_SP (t) = IDIO_FIXNUM (-1);
-    IDIO_THREAD_ENVIRON_SP (t) = IDIO_FIXNUM (-1);
+    IDIO_THREAD_HANDLER_SP (t) = idio_fixnum (0);
+    IDIO_THREAD_DYNAMIC_SP (t) = idio_fixnum (-1);
+    IDIO_THREAD_ENVIRON_SP (t) = idio_fixnum (-1);
     IDIO_THREAD_FUNC (t) = idio_S_unspec;
     IDIO_THREAD_REG1 (t) = idio_S_unspec;
     IDIO_THREAD_REG2 (t) = idio_S_unspec;
@@ -167,7 +167,7 @@ void idio_thread_save_state (IDIO thr)
     /* idio_debug ("thread: %p save-state: ", thr); */
 
     IDIO stack = IDIO_THREAD_STACK (thr);
-    idio_array_push (stack, IDIO_FIXNUM (IDIO_THREAD_PC (thr)));
+    idio_array_push (stack, idio_fixnum (IDIO_THREAD_PC (thr)));
 }
 
 void idio_thread_restore_state (IDIO thr)

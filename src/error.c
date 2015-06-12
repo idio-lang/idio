@@ -167,7 +167,7 @@ void idio_error_system (char *msg, IDIO args, int err)
 				   IDIO_LIST4 (idio_get_output_string (msh),
 					       idio_S_internal,
 					       idio_get_output_string (dsh),
-					       IDIO_FIXNUM ((intptr_t) err)));
+					       idio_fixnum ((intptr_t) err)));
     idio_signal_exception (idio_S_false, c);
 }
 

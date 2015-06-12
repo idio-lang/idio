@@ -114,17 +114,9 @@ static void idio_read_error (IDIO handle, IDIO msg, IDIO det)
     IDIO_TYPE_ASSERT (handle, handle);
     
     IDIO line;
-    if (IDIO_HANDLE_LINE (handle) > IDIO_FIXNUM_MAX) {
-	line = idio_bignum_integer_int64 (IDIO_HANDLE_LINE (handle));
-    } else {
-	line = IDIO_FIXNUM (IDIO_HANDLE_LINE (handle));
-    }
+    line = idio_integer (IDIO_HANDLE_LINE (handle));
     IDIO pos;
-    if (IDIO_HANDLE_POS (handle) > IDIO_FIXNUM_MAX) {
-	pos = idio_bignum_integer_int64 (IDIO_HANDLE_POS (handle));
-    } else {
-	pos = IDIO_FIXNUM (IDIO_HANDLE_POS (handle));
-    }
+    pos = idio_integer (IDIO_HANDLE_POS (handle));
 
     IDIO c = idio_struct_instance (idio_condition_read_error_type,
 				   IDIO_LIST5 (msg,
@@ -712,8 +704,8 @@ static IDIO idio_read_bignum (IDIO handle, char basec, int radix)
 	return idio_S_unspec;
     }
 
-    IDIO base = idio_bignum_integer_int64 (radix);
-    IDIO bn = idio_bignum_integer_int64 (0);
+    IDIO base = idio_bignum_integer_intmax_t (radix);
+    IDIO bn = idio_bignum_integer_intmax_t (0);
     
     int ndigits = 0;
     int i;
@@ -735,7 +727,7 @@ static IDIO idio_read_bignum (IDIO handle, char basec, int radix)
 	    return idio_S_unspec;
 	}
 
-	IDIO bn_i = idio_bignum_integer_int64 (i);
+	IDIO bn_i = idio_bignum_integer_intmax_t (i);
 	
 	bn = idio_bignum_multiply (bn, base);
 	bn = idio_bignum_add (bn, bn_i);
@@ -1050,7 +1042,7 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int nl)
 			    if (0 == inexact) {
 				return bn;
 			    } else {
-				bn = idio_bignum_integer_int64 (IDIO_FIXNUM_VAL (bn));
+				bn = idio_bignum_integer_intmax_t (IDIO_FIXNUM_VAL (bn));
 			    }
 			}
 

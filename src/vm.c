@@ -1619,6 +1619,7 @@ IDIO_DEFINE_PRIMITIVE2 ("base-error-handler", base_error_handler, (IDIO cont, ID
     idio_debug ("STACK:\t%s\n", IDIO_THREAD_STACK (thr));
     idio_debug ("MODULE:\t%s\n", IDIO_MODULE_NAME (IDIO_THREAD_MODULE (thr)));
     idio_debug ("INPUT:\t%s\n", IDIO_THREAD_INPUT_HANDLE (thr));
+    idio_debug ("OUTPUT:\t%s\n", IDIO_THREAD_OUTPUT_HANDLE (thr));
     IDIO_C_ASSERT (0);
     return idio_S_unspec;
 }
@@ -1731,7 +1732,7 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
 	    /* idio_debug ("%s\n", IDIO_FRAME_ARGS (IDIO_THREAD_VAL (thr)));  */
 
 	    if (0 == tailp) {
-		IDIO_THREAD_STACK_PUSH (IDIO_FIXNUM (IDIO_THREAD_PC (thr)));
+		IDIO_THREAD_STACK_PUSH (idio_fixnum (IDIO_THREAD_PC (thr)));
 	    }
 	    IDIO_THREAD_ENV (thr) = IDIO_CLOSURE_ENV (func);
 	    IDIO_THREAD_PC (thr) = IDIO_CLOSURE_CODE (func);
@@ -1853,7 +1854,7 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
 
 	    if (0 == tailp &&
 		pc != pc0) {
-		IDIO_THREAD_STACK_PUSH (IDIO_FIXNUM (pc0));
+		IDIO_THREAD_STACK_PUSH (idio_fixnum (pc0));
 	    }
 	    
 	    if (idio_vm_tracing) {
@@ -1968,8 +1969,8 @@ static void idio_vm_push_dynamic (idio_ai_t index, IDIO thr, IDIO val)
 
     idio_array_push (stack, IDIO_THREAD_DYNAMIC_SP (thr));
     idio_array_push (stack, val);
-    IDIO_THREAD_DYNAMIC_SP (thr) = IDIO_FIXNUM (idio_array_size (stack));
-    idio_array_push (stack, IDIO_FIXNUM (index));
+    IDIO_THREAD_DYNAMIC_SP (thr) = idio_fixnum (idio_array_size (stack));
+    idio_array_push (stack, idio_fixnum (index));
 }
 
 static void idio_vm_pop_dynamic (IDIO thr)
@@ -2049,8 +2050,8 @@ static void idio_vm_push_environ (idio_ai_t index, IDIO thr, IDIO val)
 
     idio_array_push (stack, IDIO_THREAD_ENVIRON_SP (thr));
     idio_array_push (stack, val);
-    IDIO_THREAD_ENVIRON_SP (thr) = IDIO_FIXNUM (idio_array_size (stack));
-    idio_array_push (stack, IDIO_FIXNUM (index));
+    IDIO_THREAD_ENVIRON_SP (thr) = idio_fixnum (idio_array_size (stack));
+    idio_array_push (stack, idio_fixnum (index));
 }
 
 static void idio_vm_pop_environ (IDIO thr)
@@ -2129,7 +2130,7 @@ static void idio_vm_push_handler (IDIO thr, IDIO val)
     IDIO stack = IDIO_THREAD_STACK (thr);
 
     idio_array_push (stack, IDIO_THREAD_HANDLER_SP (thr));
-    IDIO_THREAD_HANDLER_SP (thr) = IDIO_FIXNUM (idio_array_size (stack));
+    IDIO_THREAD_HANDLER_SP (thr) = idio_fixnum (idio_array_size (stack));
     idio_array_push (stack, val);
 }
 
@@ -2162,11 +2163,11 @@ void idio_signal_exception (IDIO continuablep, IDIO e)
     IDIO_THREAD_VAL (thr) = vs;
 
     if (idio_S_true == continuablep) {
-	idio_array_push (stack, IDIO_FIXNUM (IDIO_THREAD_PC (thr)));
+	idio_array_push (stack, idio_fixnum (IDIO_THREAD_PC (thr)));
 	idio_vm_preserve_environment (thr);
-	idio_array_push (stack, IDIO_FIXNUM (idio_finish_pc + 1)); /* POP-HANDLER, RESTORE-ENV, RETURN */
+	idio_array_push (stack, idio_fixnum (idio_finish_pc + 1)); /* POP-HANDLER, RESTORE-ENV, RETURN */
     } else {
-	idio_array_push (stack, IDIO_FIXNUM (idio_finish_pc - 1)); /* NON-CONT-ERR */
+	idio_array_push (stack, idio_fixnum (idio_finish_pc - 1)); /* NON-CONT-ERR */
     }
 
     /*
@@ -2386,7 +2387,7 @@ static void idio_vm_function_trace (IDIO_I ins, IDIO thr)
      * %s	- expression
      */
     if (idio_isa_closure (func)) {
-	IDIO name = idio_hash_get (idio_vm_closure_name, IDIO_FIXNUM (IDIO_CLOSURE_CODE (func)));
+	IDIO name = idio_hash_get (idio_vm_closure_name, idio_fixnum (IDIO_CLOSURE_CODE (func)));
 	if (idio_S_unspec != name) {
 	    idio_debug ("%20s ", name);
 	} else {
@@ -2676,7 +2677,7 @@ int idio_vm_run1 (IDIO thr)
 	    idio_vm_values_set (i, val);
 
 	    if (idio_isa_closure (val)) {
-		idio_hash_put (idio_vm_closure_name, IDIO_FIXNUM (IDIO_CLOSURE_CODE (val)), sym);
+		idio_hash_put (idio_vm_closure_name, idio_fixnum (IDIO_CLOSURE_CODE (val)), sym);
 	    }
 	}
 	break;
@@ -3030,7 +3031,7 @@ int idio_vm_run1 (IDIO thr)
 	    if (IDIO_FIXNUM_MAX < v) {
 	      idio_error_message ("FIXNUM OOB: %" PRIu64 " > %" PRIu64, v, IDIO_FIXNUM_MAX);
 	    }
-	    IDIO_THREAD_VAL (thr) = IDIO_FIXNUM ((intptr_t) v);
+	    IDIO_THREAD_VAL (thr) = idio_fixnum ((intptr_t) v);
 	}
 	break;
     case IDIO_A_NEG_FIXNUM:
@@ -3041,7 +3042,7 @@ int idio_vm_run1 (IDIO thr)
 	    if (IDIO_FIXNUM_MIN > v) {
 	      idio_error_message ("FIXNUM OOB: %" PRIu64 " < %" PRIu64, v, IDIO_FIXNUM_MIN);
 	    }
-	    IDIO_THREAD_VAL (thr) = IDIO_FIXNUM ((intptr_t) v);
+	    IDIO_THREAD_VAL (thr) = idio_fixnum ((intptr_t) v);
 	}
 	break;
     case IDIO_A_CHARACTER:
@@ -3089,31 +3090,31 @@ int idio_vm_run1 (IDIO thr)
     case IDIO_A_CONSTANT_0:
 	{
 	    IDIO_VM_RUN_DIS ("CONSTANT 0");
-	    IDIO_THREAD_VAL (thr) = IDIO_FIXNUM (0);
+	    IDIO_THREAD_VAL (thr) = idio_fixnum (0);
 	}
 	break;
     case IDIO_A_CONSTANT_1:
 	{
 	    IDIO_VM_RUN_DIS ("CONSTANT 1");
-	    IDIO_THREAD_VAL (thr) = IDIO_FIXNUM (1);
+	    IDIO_THREAD_VAL (thr) = idio_fixnum (1);
 	}
 	break;
     case IDIO_A_CONSTANT_2:
 	{
 	    IDIO_VM_RUN_DIS ("CONSTANT 2");
-	    IDIO_THREAD_VAL (thr) = IDIO_FIXNUM (2);
+	    IDIO_THREAD_VAL (thr) = idio_fixnum (2);
 	}
 	break;
     case IDIO_A_CONSTANT_3:
 	{
 	    IDIO_VM_RUN_DIS ("CONSTANT 3");
-	    IDIO_THREAD_VAL (thr) = IDIO_FIXNUM (3);
+	    IDIO_THREAD_VAL (thr) = idio_fixnum (3);
 	}
 	break;
     case IDIO_A_CONSTANT_4:
 	{
 	    IDIO_VM_RUN_DIS ("CONSTANT 4");
-	    IDIO_THREAD_VAL (thr) = IDIO_FIXNUM (4);
+	    IDIO_THREAD_VAL (thr) = idio_fixnum (4);
 	}
 	break;
     case IDIO_A_PRIMCALL0_NEWLINE:
@@ -3607,9 +3608,9 @@ void idio_vm_thread_init (IDIO thr)
     IDIO_C_ASSERT (hsp <= sp);
 
     if (0 == hsp) {
-	IDIO_THREAD_STACK_PUSH (IDIO_FIXNUM (sp + 1));
+	IDIO_THREAD_STACK_PUSH (idio_fixnum (sp + 1));
 	IDIO_THREAD_STACK_PUSH (idio_vm_base_error_handler_primdata);
-	IDIO_THREAD_HANDLER_SP (thr) = IDIO_FIXNUM (sp + 1);
+	IDIO_THREAD_HANDLER_SP (thr) = idio_fixnum (sp + 1);
     }
 }
 
@@ -3652,7 +3653,7 @@ IDIO idio_vm_run (IDIO thr)
      *
      * XXX should this be in idio_vm_compile?
      */
-    IDIO_THREAD_STACK_PUSH (IDIO_FIXNUM (idio_finish_pc));
+    IDIO_THREAD_STACK_PUSH (idio_fixnum (idio_finish_pc));
     idio_i_array_push (idio_all_code, IDIO_A_NOP);
     idio_i_array_push (idio_all_code, IDIO_A_RETURN);
 

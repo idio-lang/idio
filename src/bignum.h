@@ -130,7 +130,7 @@
 IDIO idio_bignum (int flags, IDIO_BS_T exp, IDIO_BSA sig_a);
 int idio_isa_bignum (IDIO bn);
 void idio_free_bignum (IDIO bn);
-IDIO idio_bignum_integer_int64 (int64_t i);
+IDIO idio_bignum_integer_intmax_t (intmax_t i);
 IDIO idio_bignum_integer (IDIO_BSA sig_a);
 int idio_bignum_real_zero_p (IDIO a);
 int idio_bignum_real_equal_p (IDIO a, IDIO b);

@@ -195,7 +195,7 @@ static IDIO idio_scm_predef_extend (IDIO name, IDIO primdata)
     IDIO_TYPE_ASSERT (primitive, primdata);
 
     idio_ai_t index = idio_vm_extend_primitives (primdata);
-    IDIO i = IDIO_FIXNUM (index);
+    IDIO i = idio_fixnum (index);
     
     IDIO_PAIR_H (idio_scm_predef_names) = idio_pair (IDIO_LIST3 (name, idio_S_predef, i),
 						     IDIO_PAIR_H (idio_scm_predef_names));
@@ -269,7 +269,7 @@ static IDIO idio_scm_toplevel_extend (IDIO name)
     IDIO_TYPE_ASSERT (symbol, name);
 
     idio_ai_t index = idio_vm_extend_symbols (name);
-    IDIO i = IDIO_FIXNUM (index);
+    IDIO i = idio_fixnum (index);
     
     IDIO_PAIR_H (idio_scm_toplevel_names) = idio_pair (IDIO_LIST3 (name, idio_S_toplevel, i),
 						       IDIO_PAIR_H (idio_scm_toplevel_names));
@@ -302,7 +302,7 @@ static IDIO idio_scm_dynamic_extend (IDIO name)
     IDIO_TYPE_ASSERT (symbol, name);
 
     idio_ai_t index = idio_vm_extend_symbols (name);
-    IDIO i = IDIO_FIXNUM (index);
+    IDIO i = idio_fixnum (index);
     
     IDIO_PAIR_H (idio_scm_dynamic_names) = idio_pair (IDIO_LIST3 (name, idio_S_dynamic, i),
 						      IDIO_PAIR_H (idio_scm_dynamic_names));
@@ -337,7 +337,7 @@ static IDIO idio_scm_variable_localp (IDIO nametree, size_t i, IDIO name)
 	for (;;) {
 	    if (idio_isa_pair (names)) {
 		if (idio_eqp (name, IDIO_PAIR_H (names))) {
-		    return IDIO_LIST3 (idio_S_local, IDIO_FIXNUM (i), IDIO_FIXNUM (j));
+		    return IDIO_LIST3 (idio_S_local, idio_fixnum (i), idio_fixnum (j));
 		} else {
 		    names = IDIO_PAIR_T (names);
 		    j++;
@@ -356,7 +356,7 @@ static IDIO idio_scm_variable_localp (IDIO nametree, size_t i, IDIO name)
 		j = 0;
 	    } else {
 		if (idio_eqp (name, names)) {
-		    return IDIO_LIST3 (idio_S_local, IDIO_FIXNUM (i), IDIO_FIXNUM (j));
+		    return IDIO_LIST3 (idio_S_local, idio_fixnum (i), idio_fixnum (j));
 		} else {
 		    return idio_S_nil;
 		}
@@ -1414,7 +1414,7 @@ static IDIO idio_scm_meaning_define_macro (IDIO name, IDIO e, IDIO nametree, int
      * code lying around -- at least not one we can access.
      */
 
-    IDIO r = IDIO_LIST3 (idio_I_EXPANDER, IDIO_FIXNUM (i), m_a);
+    IDIO r = IDIO_LIST3 (idio_I_EXPANDER, idio_fixnum (i), m_a);
     /* idio_debug ("idio-scm-meaning-define-macro %s", name);  */
     /* idio_debug (" r=%s\n", r);  */
     return r;
@@ -1550,7 +1550,7 @@ static IDIO idio_scm_meaning_fix_abstraction (IDIO ns, IDIO ep, IDIO nametree, i
 
     IDIO mp = idio_scm_meaning_sequence (ep, nt2, 1, idio_S_begin);
 
-    return IDIO_LIST3 (idio_I_FIX_CLOSURE, mp, IDIO_FIXNUM (arity));
+    return IDIO_LIST3 (idio_I_FIX_CLOSURE, mp, idio_fixnum (arity));
 }
 
 static IDIO idio_scm_meaning_dotted_abstraction (IDIO ns, IDIO n, IDIO ep, IDIO nametree, int tailp)
@@ -1565,7 +1565,7 @@ static IDIO idio_scm_meaning_dotted_abstraction (IDIO ns, IDIO n, IDIO ep, IDIO 
     IDIO nt2 = idio_nametree_extend (nametree, idio_list_append2 (ns, IDIO_LIST1 (n)));
     IDIO mp = idio_scm_meaning_sequence (ep, nt2, 1, idio_S_begin);
 
-    return IDIO_LIST3 (idio_I_NARY_CLOSURE, mp, IDIO_FIXNUM (arity));
+    return IDIO_LIST3 (idio_I_NARY_CLOSURE, mp, idio_fixnum (arity));
 }
 
 static IDIO idio_scm_rewrite_body (IDIO e)
@@ -1723,7 +1723,7 @@ static IDIO idio_scm_meaning_some_arguments (IDIO e, IDIO es, IDIO nametree, siz
     IDIO ms = idio_scm_meanings (es, nametree, size, tailp);
     size_t rank = size - (idio_list_length (es) + 1);
 
-    return IDIO_LIST4 (idio_I_STORE_ARGUMENT, m, ms, IDIO_FIXNUM (rank));
+    return IDIO_LIST4 (idio_I_STORE_ARGUMENT, m, ms, idio_fixnum (rank));
 }
 
 static IDIO idio_scm_meaning_no_argument (IDIO nametree, size_t size, int tailp)
@@ -1731,7 +1731,7 @@ static IDIO idio_scm_meaning_no_argument (IDIO nametree, size_t size, int tailp)
     IDIO_ASSERT (nametree);
     IDIO_TYPE_ASSERT (list, nametree);
 
-    return IDIO_LIST2 (idio_I_ALLOCATE_FRAME, IDIO_FIXNUM (size));
+    return IDIO_LIST2 (idio_I_ALLOCATE_FRAME, idio_fixnum (size));
 }
 
 static IDIO idio_scm_meanings (IDIO es, IDIO nametree, size_t size, int tailp)
@@ -1782,9 +1782,9 @@ static IDIO idio_scm_meaning_some_dotted_arguments (IDIO e, IDIO es, IDIO nametr
     size_t rank = size - (idio_list_length (es) + 1);
 
     if (rank < arity) {
-	return IDIO_LIST4 (idio_I_STORE_ARGUMENT, m, ms, IDIO_FIXNUM (rank));
+	return IDIO_LIST4 (idio_I_STORE_ARGUMENT, m, ms, idio_fixnum (rank));
     } else {
-	return IDIO_LIST4 (idio_I_CONS_ARGUMENT, m, ms, IDIO_FIXNUM (arity));
+	return IDIO_LIST4 (idio_I_CONS_ARGUMENT, m, ms, idio_fixnum (arity));
     }
 }
 
@@ -1793,7 +1793,7 @@ static IDIO idio_scm_meaning_no_dotted_argument (IDIO nametree, size_t size, siz
     IDIO_ASSERT (nametree);
     IDIO_TYPE_ASSERT (list, nametree);
 
-    return IDIO_LIST2 (idio_I_ALLOCATE_FRAME, IDIO_FIXNUM (arity));
+    return IDIO_LIST2 (idio_I_ALLOCATE_FRAME, idio_fixnum (arity));
 }
 
 static IDIO idio_scm_meaning_dotteds (IDIO es, IDIO nametree, size_t size, size_t arity, int tailp)
@@ -1923,9 +1923,9 @@ static IDIO idio_scm_meaning_primitive_application (IDIO e, IDIO es, IDIO nametr
 	case 0:
 	    {
 		if (IDIO_STREQP (name, "read")) {
-		    return IDIO_LIST2 (idio_I_PRIMCALL0, IDIO_FIXNUM (IDIO_A_PRIMCALL0_READ));
+		    return IDIO_LIST2 (idio_I_PRIMCALL0, idio_fixnum (IDIO_A_PRIMCALL0_READ));
 		} else if (IDIO_STREQP (name, "newline")) {
-		    return IDIO_LIST2 (idio_I_PRIMCALL0, IDIO_FIXNUM (IDIO_A_PRIMCALL0_NEWLINE));
+		    return IDIO_LIST2 (idio_I_PRIMCALL0, idio_fixnum (IDIO_A_PRIMCALL0_NEWLINE));
 		} else {
 		    break;
 		}
@@ -1936,23 +1936,23 @@ static IDIO idio_scm_meaning_primitive_application (IDIO e, IDIO es, IDIO nametr
 		IDIO m1 = idio_scm_meaning (IDIO_PAIR_H (es), nametree, 0);
 	    
 		if (IDIO_STREQP (name, "car")) {
-		    return IDIO_LIST3 (idio_I_PRIMCALL1, IDIO_FIXNUM (IDIO_A_PRIMCALL1_CAR), m1);
+		    return IDIO_LIST3 (idio_I_PRIMCALL1, idio_fixnum (IDIO_A_PRIMCALL1_CAR), m1);
 		} else if (IDIO_STREQP (name, "cdr")) {
-		    return IDIO_LIST3 (idio_I_PRIMCALL1, IDIO_FIXNUM (IDIO_A_PRIMCALL1_CDR), m1);
+		    return IDIO_LIST3 (idio_I_PRIMCALL1, idio_fixnum (IDIO_A_PRIMCALL1_CDR), m1);
 		} else if (IDIO_STREQP (name, "pair?")) {
-		    return IDIO_LIST3 (idio_I_PRIMCALL1, IDIO_FIXNUM (IDIO_A_PRIMCALL1_PAIRP), m1);
+		    return IDIO_LIST3 (idio_I_PRIMCALL1, idio_fixnum (IDIO_A_PRIMCALL1_PAIRP), m1);
 		} else if (IDIO_STREQP (name, "symbol?")) {
-		    return IDIO_LIST3 (idio_I_PRIMCALL1, IDIO_FIXNUM (IDIO_A_PRIMCALL1_SYMBOLP), m1);
+		    return IDIO_LIST3 (idio_I_PRIMCALL1, idio_fixnum (IDIO_A_PRIMCALL1_SYMBOLP), m1);
 		} else if (IDIO_STREQP (name, "display")) {
-		    return IDIO_LIST3 (idio_I_PRIMCALL1, IDIO_FIXNUM (IDIO_A_PRIMCALL1_DISPLAY), m1);
+		    return IDIO_LIST3 (idio_I_PRIMCALL1, idio_fixnum (IDIO_A_PRIMCALL1_DISPLAY), m1);
 		} else if (IDIO_STREQP (name, "primitive?")) {
-		    return IDIO_LIST3 (idio_I_PRIMCALL1, IDIO_FIXNUM (IDIO_A_PRIMCALL1_PRIMITIVEP), m1);
+		    return IDIO_LIST3 (idio_I_PRIMCALL1, idio_fixnum (IDIO_A_PRIMCALL1_PRIMITIVEP), m1);
 		} else if (IDIO_STREQP (name, "null?")) {
-		    return IDIO_LIST3 (idio_I_PRIMCALL1, IDIO_FIXNUM (IDIO_A_PRIMCALL1_NULLP), m1);
+		    return IDIO_LIST3 (idio_I_PRIMCALL1, idio_fixnum (IDIO_A_PRIMCALL1_NULLP), m1);
 		} else if (IDIO_STREQP (name, "continuation?")) {
-		    return IDIO_LIST3 (idio_I_PRIMCALL1, IDIO_FIXNUM (IDIO_A_PRIMCALL1_CONTINUATIONP), m1);
+		    return IDIO_LIST3 (idio_I_PRIMCALL1, idio_fixnum (IDIO_A_PRIMCALL1_CONTINUATIONP), m1);
 		} else if (IDIO_STREQP (name, "eof?")) {
-		    return IDIO_LIST3 (idio_I_PRIMCALL1, IDIO_FIXNUM (IDIO_A_PRIMCALL1_EOFP), m1);
+		    return IDIO_LIST3 (idio_I_PRIMCALL1, idio_fixnum (IDIO_A_PRIMCALL1_EOFP), m1);
 		} else {
 		    break;
 		}
@@ -1964,33 +1964,33 @@ static IDIO idio_scm_meaning_primitive_application (IDIO e, IDIO es, IDIO nametr
 		IDIO m2 = idio_scm_meaning (IDIO_PAIR_H (IDIO_PAIR_T (es)), nametree, 0);
 
 		if (IDIO_STREQP (name, "cons")) {
-		    return IDIO_LIST4 (idio_I_PRIMCALL2, IDIO_FIXNUM (IDIO_A_PRIMCALL2_CONS), m1, m2);
+		    return IDIO_LIST4 (idio_I_PRIMCALL2, idio_fixnum (IDIO_A_PRIMCALL2_CONS), m1, m2);
 		} else if (IDIO_STREQP (name, "eq?")) {
-		    return IDIO_LIST4 (idio_I_PRIMCALL2, IDIO_FIXNUM (IDIO_A_PRIMCALL2_EQP), m1, m2);
+		    return IDIO_LIST4 (idio_I_PRIMCALL2, idio_fixnum (IDIO_A_PRIMCALL2_EQP), m1, m2);
 		} else if (IDIO_STREQP (name, "set-car!")) {
-		    return IDIO_LIST4 (idio_I_PRIMCALL2, IDIO_FIXNUM (IDIO_A_PRIMCALL2_SET_CAR), m1, m2);
+		    return IDIO_LIST4 (idio_I_PRIMCALL2, idio_fixnum (IDIO_A_PRIMCALL2_SET_CAR), m1, m2);
 		} else if (IDIO_STREQP (name, "set-cdr!")) {
-		    return IDIO_LIST4 (idio_I_PRIMCALL2, IDIO_FIXNUM (IDIO_A_PRIMCALL2_SET_CDR), m1, m2);
+		    return IDIO_LIST4 (idio_I_PRIMCALL2, idio_fixnum (IDIO_A_PRIMCALL2_SET_CDR), m1, m2);
 		} else if (IDIO_STREQP (name, "+")) {
-		    return IDIO_LIST4 (idio_I_PRIMCALL2, IDIO_FIXNUM (IDIO_A_PRIMCALL2_ADD), m1, m2);
+		    return IDIO_LIST4 (idio_I_PRIMCALL2, idio_fixnum (IDIO_A_PRIMCALL2_ADD), m1, m2);
 		} else if (IDIO_STREQP (name, "-")) {
-		    return IDIO_LIST4 (idio_I_PRIMCALL2, IDIO_FIXNUM (IDIO_A_PRIMCALL2_SUBTRACT), m1, m2);
+		    return IDIO_LIST4 (idio_I_PRIMCALL2, idio_fixnum (IDIO_A_PRIMCALL2_SUBTRACT), m1, m2);
 		} else if (IDIO_STREQP (name, "=")) {
-		    return IDIO_LIST4 (idio_I_PRIMCALL2, IDIO_FIXNUM (IDIO_A_PRIMCALL2_EQ), m1, m2);
+		    return IDIO_LIST4 (idio_I_PRIMCALL2, idio_fixnum (IDIO_A_PRIMCALL2_EQ), m1, m2);
 		} else if (IDIO_STREQP (name, "<")) {
-		    return IDIO_LIST4 (idio_I_PRIMCALL2, IDIO_FIXNUM (IDIO_A_PRIMCALL2_LT), m1, m2);
+		    return IDIO_LIST4 (idio_I_PRIMCALL2, idio_fixnum (IDIO_A_PRIMCALL2_LT), m1, m2);
 		} else if (IDIO_STREQP (name, ">")) {
-		    return IDIO_LIST4 (idio_I_PRIMCALL2, IDIO_FIXNUM (IDIO_A_PRIMCALL2_GT), m1, m2);
+		    return IDIO_LIST4 (idio_I_PRIMCALL2, idio_fixnum (IDIO_A_PRIMCALL2_GT), m1, m2);
 		} else if (IDIO_STREQP (name, "*")) {
-		    return IDIO_LIST4 (idio_I_PRIMCALL2, IDIO_FIXNUM (IDIO_A_PRIMCALL2_MULTIPLY), m1, m2);
+		    return IDIO_LIST4 (idio_I_PRIMCALL2, idio_fixnum (IDIO_A_PRIMCALL2_MULTIPLY), m1, m2);
 		} else if (IDIO_STREQP (name, "<=")) {
-		    return IDIO_LIST4 (idio_I_PRIMCALL2, IDIO_FIXNUM (IDIO_A_PRIMCALL2_LE), m1, m2);
+		    return IDIO_LIST4 (idio_I_PRIMCALL2, idio_fixnum (IDIO_A_PRIMCALL2_LE), m1, m2);
 		} else if (IDIO_STREQP (name, ">=")) {
-		    return IDIO_LIST4 (idio_I_PRIMCALL2, IDIO_FIXNUM (IDIO_A_PRIMCALL2_GE), m1, m2);
+		    return IDIO_LIST4 (idio_I_PRIMCALL2, idio_fixnum (IDIO_A_PRIMCALL2_GE), m1, m2);
 		} else if (IDIO_STREQP (name, "remainder")) {
-		    return IDIO_LIST4 (idio_I_PRIMCALL2, IDIO_FIXNUM (IDIO_A_PRIMCALL2_REMAINDER), m1, m2);
+		    return IDIO_LIST4 (idio_I_PRIMCALL2, idio_fixnum (IDIO_A_PRIMCALL2_REMAINDER), m1, m2);
 		} else if (IDIO_STREQP (name, "remainder")) {
-		    return IDIO_LIST4 (idio_I_PRIMCALL2, IDIO_FIXNUM (IDIO_A_PRIMCALL2_REMAINDER), m1, m2);
+		    return IDIO_LIST4 (idio_I_PRIMCALL2, idio_fixnum (IDIO_A_PRIMCALL2_REMAINDER), m1, m2);
 		} else {
 		    break;
 		}
@@ -2077,7 +2077,7 @@ static IDIO idio_scm_meaning_dynamic_reference (IDIO name, IDIO nametree, int ta
     idio_ai_t index = idio_scm_get_dynamic_index (name);
 
     if (index >= 0) {
-	return IDIO_LIST2 (idio_I_DYNAMIC_REF, IDIO_FIXNUM (index));
+	return IDIO_LIST2 (idio_I_DYNAMIC_REF, idio_fixnum (index));
     } else {
 	idio_scm_static_error_unbound (name);
 	return idio_S_unspec;
@@ -2098,7 +2098,7 @@ static IDIO idio_scm_meaning_dynamic_let (IDIO name, IDIO e, IDIO ep, IDIO namet
 	IDIO m = idio_scm_meaning (e, nametree, 0);
 	IDIO mp = idio_scm_meaning_sequence (ep, nametree, 0, idio_S_begin);
 
-	return IDIO_LIST5 (m, idio_I_PUSH_DYNAMIC, IDIO_FIXNUM (index), mp, idio_I_POP_DYNAMIC);
+	return IDIO_LIST5 (m, idio_I_PUSH_DYNAMIC, idio_fixnum (index), mp, idio_I_POP_DYNAMIC);
     } else {
 	idio_scm_static_error_unbound (name);
 	return idio_S_unspec;

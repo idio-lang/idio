@@ -770,7 +770,7 @@ IDIO idio_module_set_symbol_value (IDIO symbol, IDIO value, IDIO module)
     if (idio_S_unspec == sv) {
 	idio_ai_t vi = idio_vm_extend_symbols (symbol);
 	kind = idio_S_toplevel;
-	fvi = IDIO_FIXNUM (vi);
+	fvi = idio_fixnum (vi);
 	
 	idio_hash_put (IDIO_MODULE_SYMBOLS (module), symbol, IDIO_LIST2 (idio_S_toplevel, fvi));
     } else {

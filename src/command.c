@@ -55,7 +55,7 @@ static void idio_command_error_exec ()
 				   IDIO_LIST4 (idio_get_output_string (sh),
 					       idio_S_nil,
 					       idio_S_nil,
-					       IDIO_FIXNUM ((intptr_t) errno)));
+					       idio_fixnum ((intptr_t) errno)));
     idio_signal_exception (idio_S_true, c);
 }
 
@@ -437,7 +437,7 @@ IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
     }
     free (argv);
 
-    IDIO fn_cpid = IDIO_FIXNUM ((intptr_t) cpid);
+    IDIO fn_cpid = idio_fixnum ((intptr_t) cpid);
     IDIO cstate = idio_struct_instance (idio_command_status_type,
 					IDIO_LIST3 (fn_cpid,
 						    idio_array_get_index (idio_command_status_types, IDIO_COMMAND_STATUS_RUNNING),
@@ -454,7 +454,7 @@ IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
 	    exit (EXIT_FAILURE);
 	}
 
-	IDIO fn_w = IDIO_FIXNUM ((intptr_t) w);
+	IDIO fn_w = idio_fixnum ((intptr_t) w);
 	cstate = idio_hash_get (idio_command_pids, fn_w);
 	if (WIFEXITED (status)) {
 	    idio_struct_instance_set_direct (cstate,
@@ -462,21 +462,21 @@ IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
 					     idio_array_get_index (idio_command_status_types, IDIO_COMMAND_STATUS_EXITED));
 	    idio_struct_instance_set_direct (cstate,
 					     2,
-					     IDIO_FIXNUM ((intptr_t) WEXITSTATUS (status)));
+					     idio_fixnum ((intptr_t) WEXITSTATUS (status)));
 	} else if (WIFSIGNALED (status)) {
 	    idio_struct_instance_set_direct (cstate,
 					     1,
 					     idio_array_get_index (idio_command_status_types, IDIO_COMMAND_STATUS_KILLED));
 	    idio_struct_instance_set_direct (cstate,
 					     2,
-					     IDIO_FIXNUM ((intptr_t) WTERMSIG (status)));
+					     idio_fixnum ((intptr_t) WTERMSIG (status)));
 	} else if (WIFSTOPPED (status)) {
 	    idio_struct_instance_set_direct (cstate,
 					     1,
 					     idio_array_get_index (idio_command_status_types, IDIO_COMMAND_STATUS_STOPPED));
 	    idio_struct_instance_set_direct (cstate,
 					     2,
-					     IDIO_FIXNUM ((intptr_t) WSTOPSIG (status)));
+					     idio_fixnum ((intptr_t) WSTOPSIG (status)));
 	} else if (WIFCONTINUED (status)) {
 	    idio_struct_instance_set_direct (cstate,
 					     1,

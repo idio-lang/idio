@@ -247,7 +247,7 @@ IDIO idio_bignum_copy (IDIO bn)
     return idio_bignum (IDIO_BIGNUM_FLAGS (bn), IDIO_BIGNUM_EXP (bn), idio_bsa_copy (IDIO_BIGNUM_SIG (bn)));
 }
 
-IDIO idio_bignum_integer_int64 (IDIO_BS_T i)
+IDIO idio_bignum_integer_intmax_t (intmax_t i)
 {
     IDIO_BSA sig_a = idio_bsa (1);
 
@@ -361,7 +361,7 @@ IDIO idio_bignum_to_fixnum (IDIO bn)
     if (iv < IDIO_FIXNUM_MAX &&
 	iv > IDIO_FIXNUM_MIN) {
 	idio_gc_stats_inc (IDIO_TYPE_FIXNUM);
-	return IDIO_FIXNUM (iv);
+	return idio_fixnum (iv);
     }
 
     fprintf (stderr, "failed to convert: %zd from ", iv);
@@ -799,7 +799,7 @@ IDIO idio_bignum_shift_right (IDIO a)
 	}
     }
 
-    IDIO c_i = idio_bignum_integer_int64 (carry);
+    IDIO c_i = idio_bignum_integer_intmax_t (carry);
     
     IDIO r_i = idio_bignum_integer (ra);
     
@@ -821,7 +821,7 @@ IDIO idio_bignum_multiply (IDIO a, IDIO b)
     /* idio_debug ("bignum-multiply: aa %s ", aa); */
     /* idio_debug ("* %s\n", ab); */
 
-    IDIO r = idio_bignum_integer_int64 (0);
+    IDIO r = idio_bignum_integer_intmax_t (0);
     
     /*
       1234 * 11 =>
@@ -872,7 +872,7 @@ IDIO idio_bignum_equalize (IDIO a, IDIO b)
 
     IDIO rp = b;
     
-    IDIO fp = idio_bignum_integer_int64 (1);
+    IDIO fp = idio_bignum_integer_intmax_t (1);
     
     IDIO rn = rp;
     IDIO fn = fp;
@@ -907,7 +907,7 @@ IDIO idio_bignum_divide (IDIO a, IDIO b)
     IDIO aa = idio_bignum_abs (a);
     IDIO ab = idio_bignum_abs (b);
     
-    IDIO r_div = idio_bignum_integer_int64 (0);
+    IDIO r_div = idio_bignum_integer_intmax_t (0);
     IDIO r_mod = idio_bignum_copy (aa);
 
     /*
@@ -976,7 +976,7 @@ IDIO idio_bignum_divide (IDIO a, IDIO b)
      */
 
     while (! idio_bignum_zero_p (sf)) {
-	IDIO c = idio_bignum_integer_int64 (0);
+	IDIO c = idio_bignum_integer_intmax_t (0);
 	IDIO c0 = c;
 	
 	int i = 0;
@@ -1586,7 +1586,7 @@ IDIO idio_bignum_real_divide (IDIO a, IDIO b)
     if (IDIO_BIGNUM_INTEGER_P (a)) {
 	ra = idio_bignum_to_real (a);
 	if (idio_bignum_real_zero_p (ra)) {
-	    IDIO i0 = idio_bignum_integer_int64 (0);
+	    IDIO i0 = idio_bignum_integer_intmax_t (0);
 
 	    IDIO r = idio_bignum_real (0, 0, IDIO_BIGNUM_SIG (i0));
 
@@ -1991,7 +1991,7 @@ IDIO idio_bignum_real_C (char *nums)
 {
     IDIO_C_ASSERT (nums);
 
-    IDIO sig_bn = idio_bignum_integer_int64 (0);
+    IDIO sig_bn = idio_bignum_integer_intmax_t (0);
     
     IDIO_BS_T exp = 0;
     char *s = nums;
@@ -2031,7 +2031,7 @@ IDIO idio_bignum_real_C (char *nums)
 	    digit = *s - '0';
 	}
 
-	IDIO i = idio_bignum_integer_int64 (digit);
+	IDIO i = idio_bignum_integer_intmax_t (digit);
 	
 	sig_bn = idio_bignum_add (sig_bn, i);
 
@@ -2090,7 +2090,7 @@ IDIO idio_bignum_primitive_add (IDIO args)
     IDIO_ASSERT (args);
     IDIO_TYPE_ASSERT (list, args);
 
-    IDIO r = idio_bignum_integer_int64 (0);
+    IDIO r = idio_bignum_integer_intmax_t (0);
     
     while (idio_S_nil != args) {
 	IDIO h = IDIO_PAIR_H (args);
@@ -2163,7 +2163,7 @@ IDIO idio_bignum_primitive_multiply (IDIO args)
     IDIO_ASSERT (args);
     IDIO_TYPE_ASSERT (list, args);
 
-    IDIO r = idio_bignum_integer_int64 (1);
+    IDIO r = idio_bignum_integer_intmax_t (1);
     
     while (idio_S_nil != args) {
 	IDIO h = IDIO_PAIR_H (args);
@@ -2186,7 +2186,7 @@ IDIO idio_bignum_primitive_divide (IDIO args)
     IDIO_ASSERT (args);
     IDIO_TYPE_ASSERT (list, args);
 
-    IDIO r = idio_bignum_integer_int64 (1);
+    IDIO r = idio_bignum_integer_intmax_t (1);
 
     int first = 1;
     
@@ -2251,7 +2251,7 @@ IDIO idio_bignum_primitive_floor (IDIO bn)
 	}
 
 	if (IDIO_BIGNUM_REAL_NEGATIVE_P (bn)) {
-	    IDIO bn1 = idio_bignum_integer_int64 (1);
+	    IDIO bn1 = idio_bignum_integer_intmax_t (1);
 	    
 	    bn_i = idio_bignum_add (bn_i, bn1);
 	}
@@ -2477,7 +2477,7 @@ IDIO_DEFINE_PRIMITIVE1 ("real?", realp, (IDIO n))
 
 #define IDIO_BIGNUM_FIXNUM_TYPE(n)				\
     if (idio_isa_fixnum (n)) {					\
-	n = idio_bignum_integer_int64 (IDIO_FIXNUM_VAL (n));	\
+	n = idio_bignum_integer_intmax_t (IDIO_FIXNUM_VAL (n));	\
     } else {							\
 	IDIO_VERIFY_PARAM_TYPE (bignum, n);			\
     }
@@ -2527,7 +2527,7 @@ IDIO_DEFINE_PRIMITIVE1 ("exact->inexact", exact2inexact, (IDIO n))
     IDIO_BIGNUM_FIXNUM_TYPE (n);
 
     if (idio_isa_fixnum (n)) {
-	n = idio_bignum_integer_int64 (IDIO_FIXNUM_VAL (n));
+	n = idio_bignum_integer_intmax_t (IDIO_FIXNUM_VAL (n));
     }
 
     IDIO r = idio_S_unspec;
@@ -2611,16 +2611,10 @@ IDIO_DEFINE_PRIMITIVE1 ("exponent", exponent, (IDIO n))
     IDIO r = idio_S_unspec;
 
     if (IDIO_BIGNUM_INTEGER_P (n)) {
-        r = IDIO_FIXNUM (0);
+        r = idio_fixnum (0);
     } else {
 	intptr_t exp = IDIO_BIGNUM_EXP (n);
-
-	if (exp >= IDIO_FIXNUM_MIN &&
-	    exp <= IDIO_FIXNUM_MAX) {
-	    r = IDIO_FIXNUM (exp);
-	} else {
-	    r = idio_bignum_integer_int64 (exp);
-	}
+	r = idio_integer (exp);
     }
 
     return r;

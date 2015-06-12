@@ -478,8 +478,8 @@ IDIO idio_scm_read_bignum (IDIO handle, char basec, int radix)
 	return idio_S_unspec;
     }
 
-    IDIO base = idio_bignum_integer_int64 (radix);
-    IDIO bn = idio_bignum_integer_int64 (0);
+    IDIO base = idio_bignum_integer_intmax_t (radix);
+    IDIO bn = idio_bignum_integer_intmax_t (0);
     
     int ndigits = 0;
     int i;
@@ -501,7 +501,7 @@ IDIO idio_scm_read_bignum (IDIO handle, char basec, int radix)
 	    return idio_S_unspec;
 	}
 
-	IDIO bn_i = idio_bignum_integer_int64 (i);
+	IDIO bn_i = idio_bignum_integer_intmax_t (i);
 	
 	bn = idio_bignum_multiply (bn, base);
 	bn = idio_bignum_add (bn, bn_i);
@@ -747,7 +747,7 @@ static IDIO idio_scm_read_expr (IDIO handle, int depth)
 			    if (0 == inexact) {
 				return bn;
 			    } else {
-				bn = idio_bignum_integer_int64 (IDIO_FIXNUM_VAL (bn));
+				bn = idio_bignum_integer_intmax_t (IDIO_FIXNUM_VAL (bn));
 			    }
 			}
 

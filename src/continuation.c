@@ -42,7 +42,7 @@ IDIO idio_continuation (IDIO thr)
     idio_array_push (IDIO_CONTINUATION_STACK (k), IDIO_THREAD_HANDLER_SP (thr));
     idio_array_push (IDIO_CONTINUATION_STACK (k), IDIO_THREAD_ENV (thr));
 
-    idio_array_push (IDIO_CONTINUATION_STACK (k), IDIO_FIXNUM (IDIO_THREAD_PC (thr)));
+    idio_array_push (IDIO_CONTINUATION_STACK (k), idio_fixnum (IDIO_THREAD_PC (thr)));
 
     return k;
 }

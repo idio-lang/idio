@@ -114,7 +114,7 @@ IDIO_DEFINE_PRIMITIVE1 ("char->integer",  char2integer, (IDIO c))
 
     IDIO_VERIFY_PARAM_TYPE (character, c);
 
-    return IDIO_FIXNUM (IDIO_CHARACTER_VAL (c));
+    return idio_fixnum (IDIO_CHARACTER_VAL (c));
 }
 
 IDIO_DEFINE_PRIMITIVE1 ("char-alphabetic?",  char_alphabetic_p, (IDIO c))

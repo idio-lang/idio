@@ -702,6 +702,15 @@ size_t idio_file_handle_puts (IDIO fh, char *s, size_t slen)
 	return EOF;
     }
 
+    size_t nl = 0;
+    size_t i;
+    for (i = 0; i < slen; i++) {
+	if ('\n' == s[i]) {
+	    nl++;
+	}
+    }
+    IDIO_HANDLE_LINE (fh) += nl;
+
     return r;
 }
 

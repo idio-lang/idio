@@ -468,7 +468,7 @@ IDIO_DEFINE_PRIMITIVE1 ("string-length", string_length, (IDIO s))
 
     IDIO_VERIFY_PARAM_TYPE (string, s);
 
-    return IDIO_FIXNUM (idio_string_blen (s));
+    return idio_fixnum (idio_string_blen (s));
 }
 
 IDIO_DEFINE_PRIMITIVE2 ("string-ref", string_ref, (IDIO s, IDIO index))
