@@ -238,6 +238,14 @@ IDIO idio_list_reverse (IDIO l)
     return idio_improper_list_reverse (l, idio_S_nil);
 }
 
+IDIO_DEFINE_PRIMITIVE1 ("reverse", list_reverse, (IDIO l))
+{
+    IDIO_ASSERT (l);
+    IDIO_VERIFY_PARAM_TYPE (list, l);
+
+    return idio_list_reverse (l);
+}
+
 IDIO idio_list_to_array (IDIO l)
 {
     IDIO_ASSERT (l);
@@ -276,6 +284,20 @@ size_t idio_list_length (IDIO l)
     }
     
     return len;
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("length", list_length, (IDIO o))
+{
+    IDIO_ASSERT (o);
+    IDIO_VERIFY_PARAM_TYPE (list, o);
+
+    size_t len = idio_list_length (o);
+
+    if (len > IDIO_FIXNUM_MAX) {
+	return idio_bignum_integer_int64 (len);
+    } else {
+	return IDIO_FIXNUM (len);
+    }
 }
 
 IDIO idio_list_copy (IDIO l)
@@ -431,6 +453,8 @@ void idio_pair_add_primitives ()
     IDIO_ADD_PRIMITIVE (set_pair_head);
     IDIO_ADD_PRIMITIVE (set_pair_tail);
 
+    IDIO_ADD_PRIMITIVE (list_reverse);
+    IDIO_ADD_PRIMITIVE (list_length);
     IDIO_ADD_PRIMITIVE (list);
     IDIO_ADD_PRIMITIVE (append);
     IDIO_ADD_PRIMITIVE (list2string);

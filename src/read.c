@@ -104,7 +104,7 @@ char idio_default_interpolation_chars[] = { IDIO_CHAR_DOLLARS, IDIO_CHAR_AT, IDI
 #define IDIO_CHARACTER_NEWLINE		"newline"
 
 /*
- * SRFI-36 all parse errors are ^read-error
+ * SRFI-36: all parse errors are ^read-error
  */
 static void idio_read_error (IDIO handle, IDIO msg, IDIO det)
 {
@@ -349,8 +349,34 @@ static IDIO idio_read_list (IDIO handle, IDIO opendel, char *ic, int depth)
 
 	    if (closedel == e) {
 		r = idio_list_reverse (r);
-		r = idio_meaning_operators (r, 0);
+		r = idio_operator_expand (r, 0);
 		return r;
+	    }
+
+	    /*
+	     * A few tokens can slip through the net...
+	     */
+	    if (IDIO_TYPE_CONSTANTP (e)) {
+		uintptr_t ev = IDIO_CONSTANT_VAL (e);
+		switch (ev) {
+		case IDIO_CONSTANT_NIL:
+		case IDIO_CONSTANT_UNDEF:
+		case IDIO_CONSTANT_UNSPEC:
+		case IDIO_CONSTANT_EOF:
+		case IDIO_CONSTANT_TRUE:
+		case IDIO_CONSTANT_FALSE:
+		case IDIO_CONSTANT_VOID:
+		case IDIO_CONSTANT_NAN:
+		    break;
+		case IDIO_TOKEN_LANGLE:
+		    e = idio_S_lt;
+		    break;
+		case IDIO_TOKEN_RANGLE:
+		    e = idio_S_gt;
+		    break;
+		default:
+		    idio_error_C ("unexpected token", IDIO_LIST2 (handle, e));
+		}
 	    }
 
 	    r = idio_pair (e, r);
@@ -1126,6 +1152,13 @@ static IDIO idio_read_1_expr (IDIO handle, char *ic, int depth)
  * Looping around for EOF/EOL/"}" means that a single expression
  * becomes "(expr)" so check to see if the collected list is one
  * element long and use only the head if so.
+ *
+ * idio_read_line returns a tuple: ({expr} . {reason}) where {reason}
+ * is why the line was complete.
+ *
+ * The point being that a "line" could be terminated by an actual EOL
+ * or EOF or the closing brace of a block.  Which some people care
+ * about.
  */
 static IDIO idio_read_line (IDIO handle, IDIO closedel, char *ic, int depth)
 {
@@ -1139,7 +1172,7 @@ static IDIO idio_read_line (IDIO handle, IDIO closedel, char *ic, int depth)
 		if (idio_S_nil == IDIO_PAIR_T (r)) {
 		    r = IDIO_PAIR_H (r);
 		} else {
-		    r = idio_meaning_operators (r, 0);
+		    r = idio_operator_expand (r, 0);
 		}
 		return idio_pair (r, idio_S_eof);
 	    } else {
@@ -1151,7 +1184,7 @@ static IDIO idio_read_line (IDIO handle, IDIO closedel, char *ic, int depth)
 		if (idio_S_nil == IDIO_PAIR_T (r)) {
 		    r = IDIO_PAIR_H (r);
 		} else {
-		    r = idio_meaning_operators (r, 0);
+		    r = idio_operator_expand (r, 0);
 		}
 		return idio_pair (r, idio_T_eol);
 	    } else {
@@ -1163,7 +1196,7 @@ static IDIO idio_read_line (IDIO handle, IDIO closedel, char *ic, int depth)
 		if (idio_S_nil == IDIO_PAIR_T (r)) {
 		    r = IDIO_PAIR_H (r);
 		} else {
-		    r = idio_meaning_operators (r, 0);
+		    r = idio_operator_expand (r, 0);
 		}
 		return idio_pair (r, closedel);
 	    } else {
@@ -1191,6 +1224,9 @@ static IDIO idio_read_line (IDIO handle, IDIO closedel, char *ic, int depth)
 		    break;
 		case IDIO_TOKEN_RANGLE:
 		    expr = idio_S_gt;
+		    break;
+		case IDIO_TOKEN_AMPERSAND:
+		    expr = idio_S_ampersand;
 		    break;
 		default:
 		    idio_error_C ("unexpected token", IDIO_LIST2 (handle, expr));

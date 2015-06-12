@@ -1,0 +1,81 @@
+;;
+;; Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+;;
+;; Licensed under the Apache License, Version 2.0 (the "License"); you
+;; may not use this file except in compliance with the License.  You
+;; may obtain a copy of the License at
+;;
+;;     http://www.apache.org/licenses/LICENSE-2.0
+;;
+;; Unless required by applicable law or agreed to in writing, software
+;; distributed under the License is distributed on an "AS IS" BASIS,
+;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+;; See the License for the specific language governing permissions and
+;; limitations under the License.
+;;
+;;
+
+;;
+;; operator.idio
+;;
+
+define-operator > {
+  %T{ display* "results of" $@before '$op $@after }
+}
+
+;; standard arithmetic operator:
+;;
+;; X + Y		=> + X Y
+;; X + Y + Z		=> + X Y Z
+;; X + Y op Z		=> (+ X Y) op Z
+define-operator + {
+  if (not (null? (pt before))) (error "too many args before" op before)
+
+  split :+ function (op op-args after) {
+    cond ((null? after) (error "not enough args after" op (reverse op-args))) \
+         ((not (pair? after)) (error "bad syntax" op (reverse op-args) after)) \
+	 ((null? (pt after)) (list (reverse (pair (ph after) op-args)) #n)) \
+	 ((and (pair? after)
+	       (pair? (pt after))
+	       (eq? op (ph (pt after)))) (split op (pair (ph after) op-args) (pt (pt after)))) \
+	 (else (list op-args (operator-expand after)))
+  }
+
+  dis := split op before after
+  op-args := ph dis
+  rest := ph (pt dis)
+
+  if (null? rest) \
+    %T{ $op $@op-args } \
+    %T{ $op $@op-args ($@rest) }
+}
+
+define-operator - +
+define-operator * +
+define-operator / +
+
+;; logical operators work in the same way as arithmetic operators: a
+;; single intervening expression and they combine with adjacent
+;; operators of the same type
+define-operator and +
+define-operator or +
+
+;; pipeline
+;;
+;; e1 ... | e2 ... | e3 ...
+;;  =>
+;; | (e1 ...) (e2 ...) (e3 ...)
+define-operator | {
+  split :+ function (op op-args expr after) {
+    cond ((null? after) (reverse (pair (reverse expr) op-args))) \
+         ((not (pair? after)) (error "bad syntax" op (reverse op-args) after)) \
+	 ((eq? op (ph after)) (split op (pair (reverse expr) op-args) #n (pt after))) \
+	 (else (split op op-args (pair (ph after) expr) (pt after)))
+  }
+
+  op-args := split op (list before) #n after
+  idio-debug "op: %s" op
+  idio-debug " %s\n" op-args
+  %T{ $op $op-args }
+}
+

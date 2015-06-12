@@ -247,7 +247,7 @@ static IDIO idio_predef_extend (IDIO name, IDIO primdata)
     IDIO_TYPE_ASSERT (symbol, name);
     IDIO_TYPE_ASSERT (primitive, primdata);
 
-    IDIO cv = idio_module_primitive_symbol_lookup (name);
+    IDIO cv = idio_module_primitive_symbol_recurse (name);
     if (idio_S_unspec != cv) {
 	IDIO fpi = IDIO_PAIR_H (IDIO_PAIR_T (cv));
 	IDIO pd = idio_vm_primitives_ref (IDIO_FIXNUM_VAL (fpi));
@@ -295,7 +295,7 @@ static IDIO idio_evaluator_extend (IDIO name, IDIO primdata, IDIO module)
     IDIO_TYPE_ASSERT (primitive, primdata);
     IDIO_TYPE_ASSERT (module, module);
 
-    IDIO cv = idio_module_symbol_lookup (name, module);
+    IDIO cv = idio_module_symbol_recurse (name, module, 1);
     if (idio_S_unspec != cv) {
 	IDIO fpi = IDIO_PAIR_H (IDIO_PAIR_T (cv));
 	IDIO pd = idio_vm_primitives_ref (IDIO_FIXNUM_VAL (fpi));
@@ -363,7 +363,7 @@ IDIO idio_toplevel_extend (IDIO name, int variant)
 	return idio_S_unspec;
     }
     
-    IDIO cv = idio_module_current_symbol_lookup (name);
+    IDIO cv = idio_module_current_symbol_recurse (name);
     if (idio_S_unspec != cv) {
 	IDIO curkind = IDIO_PAIR_H (cv);
 	if (kind != curkind) {
@@ -477,14 +477,14 @@ static IDIO idio_variable_kind (IDIO nametree, IDIO name, int auto_type)
     IDIO r = idio_variable_localp (nametree, 0, name);
     
     if (idio_S_nil == r) {
-        r = idio_module_current_symbol_lookup (name);
+        r = idio_module_current_symbol_recurse (name);
 	if (idio_S_unspec == r) {
 	    /*
 	     * auto-extend the toplevel with this unknown variable --
 	     * we should (eventually) see a definition for it
 	     */
 	    idio_toplevel_extend (name, auto_type);
-	    r = idio_module_current_symbol_lookup (name);
+	    r = idio_module_current_symbol_recurse (name);
 	}
     }
 
@@ -769,16 +769,16 @@ void idio_install_operator (IDIO id, IDIO proc)
     IDIO_ASSERT (proc);
     IDIO_TYPE_ASSERT (symbol, id);
     
-    idio_debug ("op install %s", id);
-    idio_debug (" as %s\n", proc);
+    /* idio_debug ("op install %s", id); */
+    /* idio_debug (" as %s\n", proc); */
     
-    IDIO el = idio_module_symbol_value (idio_operator_list, idio_operator_module);
-    IDIO old = idio_list_assq (id, el);
+    IDIO ol = idio_module_symbol_value (idio_operator_list, idio_operator_module);
+    IDIO old = idio_list_assq (id, ol);
 
     if (idio_S_false == old) {
 	idio_module_set_symbol_value (idio_operator_list,
 				      idio_pair (idio_pair (id, proc),
-						 el),
+						 ol),
 				      idio_operator_module);
     } else {
 	IDIO_PAIR_T (old) = proc;
@@ -789,7 +789,7 @@ static IDIO idio_evaluate_operator_code (IDIO m)
 {
     IDIO_ASSERT (m);
 
-    /* idio_debug ("evaluate-operator-code: %s\n", m);  */
+    /* idio_debug ("evaluate-operator-code: %s\n", m);   */
 
     IDIO cthr = idio_current_thread ();
     idio_set_current_thread (idio_expander_thread);
@@ -802,7 +802,7 @@ static IDIO idio_evaluate_operator_code (IDIO m)
     idio_thread_restore_state (idio_expander_thread);
     idio_set_current_thread (cthr);
 
-    /* idio_debug ("evaluate-operator-code: out: %s\n", r);    */
+    /* idio_debug ("evaluate-operator-code: out: %s\n", r);     */
 
     return r;
 }
@@ -813,11 +813,17 @@ static IDIO idio_evaluate_operator (IDIO n, IDIO e, IDIO b, IDIO a)
     IDIO_ASSERT (e);
     IDIO_ASSERT (b);
     IDIO_ASSERT (a);
+    IDIO_TYPE_ASSERT (pair, e);
+    
+    /* idio_debug ("evaluate-operator: in n %s", n);  */
+    /* idio_debug (" b %s", b);  */
+    /* idio_debug (" a %s\n", a);  */
 
-    fprintf (stderr, "evaluate-operator: in\n"); 
-    idio_debug ("n %s", n);
-    idio_debug (" b %s", b);
-    idio_debug (" a %s\n", a);
+    IDIO func = IDIO_PAIR_T (e);
+    if (! (idio_isa_closure (func) ||
+	   idio_isa_primitive (func))) {
+	idio_error_C ("operator: invalid code", IDIO_LIST2 (n, e));
+    }
     IDIO cthr = idio_current_thread ();
     idio_set_current_thread (idio_expander_thread);
     idio_thread_save_state (idio_expander_thread);
@@ -829,7 +835,7 @@ static IDIO idio_evaluate_operator (IDIO n, IDIO e, IDIO b, IDIO a)
     idio_thread_restore_state (idio_expander_thread);
     idio_set_current_thread (cthr);
 
-    idio_debug ("evaluate-operator: out: %s\n", r);   
+    /* idio_debug ("evaluate-operator: out: %s\n", r);     */
 
     return r;
 }
@@ -843,18 +849,19 @@ static IDIO idio_operatorp (IDIO name)
     }
 
     IDIO operator_list = idio_module_symbol_value (idio_operator_list, idio_operator_module);
+    /* idio_debug ("op? ol %s\n", operator_list); */
     
     IDIO assq = idio_list_assq (name, operator_list);
 
     if (idio_S_false != assq) {
-	idio_debug ("op %s?", name);
-	idio_debug (" %s\n", assq);
+	/* idio_debug ("op %s?", name); */
+	/* idio_debug (" %s\n", assq); */
 
 	IDIO v = IDIO_PAIR_T (assq);
 	if (idio_isa_pair (v)) {
-	    idio_debug ("operator?: %s isa PAIR\n", name); 
+	    /* idio_debug ("operator?: %s isa PAIR\n", name);  */
 	    IDIO lv = idio_module_current_symbol_value_recurse (name);
-	    idio_debug ("operator?: lookup -> %s\n", lv); 
+	    /* idio_debug ("operator?: lookup -> %s\n", lv);  */
 	    if (idio_isa_primitive (lv) ||
 		idio_isa_closure (lv)) {
 		IDIO_PAIR_T (assq) = lv;
@@ -865,6 +872,13 @@ static IDIO idio_operatorp (IDIO name)
     }
 
     return assq;
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("operator?", operatorp, (IDIO x))
+{
+    IDIO_ASSERT (x);
+
+    return idio_operatorp (x);
 }
 
 static IDIO idio_meaning (IDIO e, IDIO nametree, int tailp);
@@ -1333,10 +1347,10 @@ static IDIO idio_meaning_define_macro (IDIO name, IDIO e, IDIO nametree, int tai
 
 	if (idio_S_false != exp) {
 	    /*
-	     * Another "feature."  At this point in time {exp} has the
-	     * value ({e} . {CLOS}) and so you might think that simply
-	     * supplying the (ultimate) code for {name}, pt exp,
-	     * ie. {CLOS}, would be enough.
+	     * Another "feature."  At this point in time {exp}'s value
+	     * is a pair, ({e} . {CLOS}), and so you might think that
+	     * simply supplying the (ultimate) code for {name}, ie (pt
+	     * {exp}), ie. {CLOS}, would be enough.
 	     *
 	     * But no.  By suppling {exp}, which is a pair, we force
 	     * the code in expanderp to delay the rewrite of the value
@@ -1344,8 +1358,8 @@ static IDIO idio_meaning_define_macro (IDIO name, IDIO e, IDIO nametree, int tai
 	     * been assigned to in the body of the code during
 	     * runtime.  In the meanwhile, we obtain the current value
 	     * with idio_module_current_symbol_value_recurse() which
-	     * should, of course, exist in the usual way -- nominally
-	     * a primitive when inside a template.
+	     * should, of course, exist in the usual way -- probably a
+	     * primitive when inside a template.
 	     *
 	     * Why is this an issue?  Templates, of course!
 	     *
@@ -1371,29 +1385,36 @@ static IDIO idio_meaning_define_macro (IDIO name, IDIO e, IDIO nametree, int tai
 	     * the resultant closure, {CLOS}, before {check-bindings}
 	     * is assigned to during runtime then we are in trouble.
 	     *
-	     * {%ext-let} will initially be a pair, (function (xx ee)
+	     * {%ext-let} will initially be a pair, the generic
+	     * expander function defined above, (function (xx ee)
 	     * (apply ...)), the same as any other template (see the
 	     * comments about "bootstrap" below) and the first use of
 	     * it as an expander will recognise this and call
 	     * --symbol_value_recurse() to get the value {CLOS}.
 	     *
 	     * We now define a template {let} to be {%ext-let}.  We
-	     * set the value of {let} to be the pair ({%ext-let}
-	     * . {CLOS}).  The first use of {let} as an expander will
-	     * see that the value is a pair and call
-	     * --symbol_value_recurse() and get the
-	     * value... PRIM{let}.  Subsequent use of {let} as an
-	     * expander will get PRIM{let}.
+	     * set the expander code's value of {let} to be {ext},
+	     * ie. the pair ({%ext-let} . {CLOS}).  The first use of
+	     * {let} as an expander will see that the value is a pair
+	     * and call --symbol_value_recurse() and get the
+	     * value... PRIM{let} -- because that's what {let} is
+	     * defined as in the main code (ie. nothing to do with
+	     * expanders), no-one has redefined it yet, we're
+	     * currently mucking about with templates not defining any
+	     * functions.  Subsequent use of {let} as an expander will
+	     * get PRIM{let}.
 	     *
 	     * But don't forget that the return statement here is
-	     * returning an assignment so that during runtime we will
-	     * change {let} to {CLOS} -- in fact, we will have created
-	     * a new toplevel {let} shadowing the predef {let} --
-	     * which is now fine as it will be after the definition
-	     * (and assignment) of {check-bindings}.  Thereafter, of
-	     * course, --symbol_value_recurse() in expanderp will
-	     * return toplevel {let}, ie. {CLOS}, rather than the
-	     * predef {let}, PRIM{let}.
+	     * returning an assignment (to the pair, (function (xx ee)
+	     * (apply ...))) so that during *runtime* we will change
+	     * the expander code's value of {let} to the pair -- in
+	     * addition, we will have created a new toplevel {let}
+	     * shadowing the predef {let} -- which is now fine as it
+	     * will be after the definition (and assignment) of
+	     * {check-bindings}.  Thereafter, of course,
+	     * --symbol_value_recurse() in expanderp will return
+	     * toplevel {let}, ie. {CLOS}, rather than the predef
+	     * {let}, PRIM{let}.
 	     *
 	     * Got that?  Good.  My advice?  Don't muck it up as it is
 	     * "hard" to debug.
@@ -1465,41 +1486,87 @@ static IDIO idio_meaning_define_operator (IDIO name, IDIO e, IDIO nametree, int 
     IDIO_ASSERT (nametree);
     IDIO_TYPE_ASSERT (list, nametree);
 
-    /* idio_debug ("meaning-define-operator:\nname=%s\n", name);   */
-    /* idio_debug ("e=%s\n", e);   */
+    /* idio_debug ("meaning-define-operator: %s", name);     */
+    /* idio_debug (" %s\n", e);     */
 
-    IDIO m_a;
+    /*
     if (idio_isa_symbol (e)) {
-	IDIO exp = idio_operatorp (e);
-	e = IDIO_PAIR_T (exp);
-	m_a = idio_meaning_assignment (name, e, nametree, 0, IDIO_LEXICAL_SCOPE);
-    } else {
-	IDIO nt2 = idio_nametree_extend (nametree, IDIO_LIST3 (idio_S_op, idio_S_before, idio_S_after));
-
-	e = IDIO_LIST3 (idio_S_function,
-			IDIO_LIST3 (idio_S_op, idio_S_before, idio_S_after),
-			e);
-    
-	m_a = idio_meaning_assignment (name, e, nt2, 0, IDIO_LEXICAL_SCOPE);
+        IDIO exp = idio_operatorp (e);
+        e = IDIO_PAIR_T (exp);
     }
 
-    idio_install_operator (name, e);
-    idio_evaluate_operator_code (m_a);
+    IDIO nt2 = idio_nametree_extend (nametree, IDIO_LIST3 (idio_symbols_C_intern ("op"),
+                                                           idio_symbols_C_intern ("before"),
+                                                           idio_symbols_C_intern ("after")));
 
-    idio_ai_t i = idio_vm_symbols_lookup (name);
-    if (-1 == i) {
-	idio_debug ("extending symbols for define-operator %s\n", name);
-	i = idio_vm_extend_symbols (name);
+    IDIO m_a = idio_meaning_assignment (name, e, nt2, 0, IDIO_LEXICAL_SCOPE);
+
+    idio_install_operator (name, e);
+    idio_evaluate_expander_code (m_a);
+
+     */
+
+    /*
+     * Step 1: find the existing symbol for {name} or create a new one
+     */
+    IDIO cv = idio_module_symbol (name, idio_operator_module);
+    IDIO fvi;
+    if (idio_S_unspec == cv) {
+	idio_ai_t vi = idio_vm_extend_symbols (name);
+	fvi = IDIO_FIXNUM (vi);
+	idio_module_set_symbol (name, IDIO_LIST2 (idio_S_toplevel, fvi), idio_operator_module);
+    } else {
+	fvi = IDIO_PAIR_H (IDIO_PAIR_T (cv));
     }
 
     /*
-     * NB.  This effectively creates/stores the operator body code a
-     * second time *in this instance of the engine*.  When the object
-     * code is read in there won't be an instance of the operator body
-     * code lying around -- at least not one we can access.
+     * Step 2: rework the expression into some appropriate code and
+     * compile
      */
+    IDIO m;
+    if (idio_isa_symbol (e)) {
+	IDIO exp = idio_operatorp (e);
+	/*
+	 * define-operator X Y
+	 *
+	 * We happen to have the closure for Y, (pt {exp}), in our
+	 * hands but when this object code is loaded the compiled
+	 * code's value could be anywhere so we should be looking the
+	 * value up.
+	 */
+	if (idio_S_false == exp) {
+	    idio_error_param_type ("operator", e);
+	}
 
-    IDIO r = IDIO_LIST3 (idio_I_OPERATOR, IDIO_FIXNUM (i), m_a);
+	IDIO sve = IDIO_LIST3 (idio_symbols_C_intern ("symbol-value"),
+			       IDIO_LIST2 (idio_S_quote, e),
+			       IDIO_LIST2 (idio_symbols_C_intern ("find-module"),
+					   IDIO_LIST2 (idio_S_quote, IDIO_MODULE_NAME (idio_operator_module))));
+	m = idio_meaning (sve, nametree, tailp);
+    } else {
+	/*
+	 * define-operator X { ... }
+	 *
+	 * should really be:
+	 *
+	 * define-operator (X op before after) { ... }
+	 */
+	IDIO def_args = IDIO_LIST3 (idio_S_op, idio_S_before, idio_S_after);
+	
+	IDIO fe = IDIO_LIST3 (idio_S_function,
+			      def_args,
+			      e);
+    
+	m = idio_meaning (fe, nametree, tailp);
+    }
+    IDIO r = IDIO_LIST3 (idio_I_OPERATOR, fvi, m);
+    IDIO cl = idio_evaluate_operator_code (r);
+
+    /*
+     * Step 3: insert the value "live"
+     */
+    idio_module_set_symbol_value (name, cl, idio_operator_module); 
+
     /* idio_debug ("idio-meaning-define-operator %s", name);  */
     /* idio_debug (" r=%s\n", r);  */
     return r;
@@ -2503,11 +2570,11 @@ static IDIO idio_meaning_expander (IDIO e, IDIO nametree, int tailp)
     return idio_meaning (me, nametree, tailp);
 }
 
-IDIO idio_meaning_operators (IDIO e, int depth)
+IDIO idio_operator_expand1 (IDIO e, int depth)
 {
     IDIO_ASSERT (e);
 
-    /* idio_debug ("meaning-operators: %s\n", e); */
+    /* idio_debug ("operator-expands: %s\n", e);  */
 
     if (idio_isa_pair (e)) {
 	IDIO b = IDIO_LIST1 (IDIO_PAIR_H (e));
@@ -2523,16 +2590,16 @@ IDIO idio_meaning_operators (IDIO e, int depth)
 		IDIO opex = idio_operatorp (h);
 
 		if (idio_S_false != opex) {
-		    IDIO rhs =  idio_meaning_operators (IDIO_PAIR_T (e), depth + 1);
-		    /* idio_debug ("meaning-operator:pre b %s: ", b); */
+		    IDIO rhs =  idio_operator_expand (IDIO_PAIR_T (e), depth + 1);
+		    /* idio_debug ("operator-expand:pre b %s: ", b); */
 		    /* idio_debug ("rhs %s\n", rhs); */
 		    b = idio_evaluate_operator (h, opex, b, rhs);
-		    /* fprintf (stderr, "meaning-operator: depth %d: ", depth); */
+		    /* fprintf (stderr, "operator-expand: depth %d: ", depth); */
 		    /* idio_debug ("%s\n", b); */
 		    if (0 && 0 == depth) {
 			if (idio_isa_pair (b)) {
 			    b = IDIO_PAIR_H (b);
-			    idio_debug ("meaning-operator: b %s\n", b);
+			    idio_debug ("operator-expand: b %s\n", b);
 			}
 		    }
 		    break;
@@ -2545,6 +2612,59 @@ IDIO idio_meaning_operators (IDIO e, int depth)
     }
 
     return e;
+}
+
+IDIO idio_operator_expand (IDIO e, int depth)
+{
+    IDIO_ASSERT (e);
+
+    /* idio_debug ("operator-expands: %s\n", e);  */
+
+    if (idio_isa_pair (e)) {
+	IDIO b = IDIO_LIST1 (IDIO_PAIR_H (e));
+	e = IDIO_PAIR_T (e);
+
+	while (idio_S_nil != e) {
+	    IDIO h = IDIO_PAIR_H (e);
+
+	    if (idio_isa_pair (h) &&
+		idio_S_escape == IDIO_PAIR_H (h)) {
+		h = IDIO_PAIR_H (IDIO_PAIR_T (h));
+	    } else {
+		IDIO opex = idio_operatorp (h);
+
+		if (idio_S_false != opex) {
+		    /* IDIO rhs =  idio_operator_expand (IDIO_PAIR_T (e), depth + 1); */
+		    /* idio_debug ("operator-expand:pre b %s: ", b); */
+		    /* idio_debug ("rhs %s\n", rhs); */
+		    /* b = idio_evaluate_operator (h, opex, b, rhs); */
+		    b = idio_evaluate_operator (h, opex, b, IDIO_PAIR_T (e));
+		    /* fprintf (stderr, "operator-expand: depth %d: ", depth); */
+		    /* idio_debug ("%s\n", b); */
+		    if (0 && 0 == depth) {
+			if (idio_isa_pair (b)) {
+			    b = IDIO_PAIR_H (b);
+			    idio_debug ("operator-expand: b %s\n", b);
+			}
+		    }
+		    break;
+		}
+	    }
+	    b = idio_list_append2 (b, IDIO_LIST1 (h));
+	    e = IDIO_PAIR_T (e);
+	}
+	e = b;
+    }
+
+    return e;
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("operator-expand", operator_expand, (IDIO l))
+{
+    IDIO_ASSERT (l);
+    IDIO_TYPE_ASSERT (list, l);
+
+    return idio_operator_expand (l, 0);
 }
 
 static IDIO idio_meaning (IDIO e, IDIO nametree, int tailp)
@@ -2639,7 +2759,8 @@ static IDIO idio_meaning (IDIO e, IDIO nametree, int tailp)
 		idio_error_C ("cond clause*:", e);
 		return idio_S_unspec;
 	    }
-	} else if (idio_S_set == eh) {
+	} else if (idio_S_set == eh ||
+		   idio_S_eq == eh) {
 	    /* (set! var expr) */
 	    if (idio_isa_pair (et)) {
 		IDIO ett = IDIO_PAIR_T (et);
@@ -2980,137 +3101,43 @@ IDIO idio_evaluate (IDIO e)
 	return idio_S_unspec;						\
     }
 
-IDIO_DEFINE_ARITHMETIC_OPERATOR ("+", add);
-IDIO_DEFINE_ARITHMETIC_OPERATOR ("-", subtract);
-IDIO_DEFINE_ARITHMETIC_OPERATOR ("*", multiply);
-IDIO_DEFINE_ARITHMETIC_OPERATOR ("/", divide);
+/* IDIO_DEFINE_ARITHMETIC_OPERATOR ("+", add); */
+/* IDIO_DEFINE_ARITHMETIC_OPERATOR ("-", subtract); */
+/* IDIO_DEFINE_ARITHMETIC_OPERATOR ("*", multiply); */
+/* IDIO_DEFINE_ARITHMETIC_OPERATOR ("/", divide); */
 
-IDIO_DEFINE_OPERATOR ("=", set, (IDIO n, IDIO b, IDIO args))
-{
-    IDIO_ASSERT (n);
-    IDIO_ASSERT (b);
-    IDIO_ASSERT (args);
-
-    /* idio_debug ("op: = %s", n); */
-    /* idio_debug (" %s", b); */
-    /* idio_debug (" %s\n", args); */
-    if (idio_S_nil != IDIO_PAIR_T (b)) {
-	idio_error_message ("too many args before =");
+#define IDIO_DEFINE_ASSIGNMENT_OPERATOR(iname,cname) \
+    IDIO_DEFINE_OPERATOR (iname, cname, (IDIO op, IDIO before, IDIO args)) \
+    {									\
+	IDIO_ASSERT (op);						\
+	IDIO_ASSERT (before);						\
+	IDIO_ASSERT (args);						\
+									\
+	if (idio_S_nil != IDIO_PAIR_T (before)) {			\
+	    idio_error_C ("too many args before " #iname, IDIO_LIST2 (before, args)); \
+	}								\
+    									\
+	if (idio_S_nil != args) {					\
+	    IDIO after = IDIO_PAIR_H (args);				\
+	    if (idio_S_nil == after) {					\
+		idio_error_C ("too few args after " #iname, IDIO_LIST1 (before)); \
+	    }								\
+	    if (idio_S_nil == IDIO_PAIR_T (after)) {			\
+		after = IDIO_PAIR_H (after);				\
+	    } else {							\
+		after = idio_operator_expand (after, 0);		\
+	    }								\
+	    return IDIO_LIST3 (op, IDIO_PAIR_H (before), after);	\
+	}								\
+									\
+	return idio_S_unspec;						\
     }
 
-    if (idio_S_nil != args) {
-	IDIO a = IDIO_PAIR_H (args);
-	if (idio_S_nil == a) {
-	    idio_error_message ("too few args after =");
-	}
-	if (idio_S_nil == IDIO_PAIR_T (a)) { 
-	    a = IDIO_PAIR_H (a);
-	}
-	return IDIO_LIST3 (idio_S_set, IDIO_PAIR_H (b), a);
-    }
-
-    return idio_S_unspec;
-}
-
-IDIO_DEFINE_OPERATOR (":=", colon_eq, (IDIO n, IDIO b, IDIO args))
-{
-    IDIO_ASSERT (n);
-    IDIO_ASSERT (b);
-    IDIO_ASSERT (args);
-
-    /* idio_debug ("op: := args %s\n", args); */
-    if (idio_S_nil != IDIO_PAIR_T (b)) {
-	idio_error_message ("too many args before :=");
-    }
-
-    if (idio_S_nil != args) {
-	IDIO a = IDIO_PAIR_H (args);
-	if (idio_S_nil == a) {
-	    idio_error_message ("too few args after :=");
-	}
-	if (idio_S_nil == IDIO_PAIR_T (a)) { 
-	    a = IDIO_PAIR_H (a);
-	}
-	return IDIO_LIST3 (idio_S_colon_eq, IDIO_PAIR_H (b), a);
-    }
-
-    return idio_S_unspec;
-}
-
-IDIO_DEFINE_OPERATOR (":+", colon_plus, (IDIO n, IDIO b, IDIO args))
-{
-    IDIO_ASSERT (n);
-    IDIO_ASSERT (b);
-    IDIO_ASSERT (args);
-
-    /* idio_debug ("op: :+ args %s\n", args); */
-    if (idio_S_nil != IDIO_PAIR_T (b)) {
-	idio_error_message ("too many args before :+");
-    }
-
-    if (idio_S_nil != args) {
-	IDIO a = IDIO_PAIR_H (args);
-	if (idio_S_nil == a) {
-	    idio_error_message ("too few args after :+");
-	}
-	if (idio_S_nil == IDIO_PAIR_T (a)) { 
-	    a = IDIO_PAIR_H (a);
-	}
-	return IDIO_LIST3 (idio_S_colon_plus, IDIO_PAIR_H (b), a);
-    }
-
-    return idio_S_unspec;
-}
-
-IDIO_DEFINE_OPERATOR (":*", colon_star, (IDIO n, IDIO b, IDIO args))
-{
-    IDIO_ASSERT (n);
-    IDIO_ASSERT (b);
-    IDIO_ASSERT (args);
-
-    /* idio_debug ("op: :* args %s\n", args); */
-    if (idio_S_nil != IDIO_PAIR_T (b)) {
-	idio_error_message ("too many args before :*");
-    }
-
-    if (idio_S_nil != args) {
-	IDIO a = IDIO_PAIR_H (args);
-	if (idio_S_nil == a) {
-	    idio_error_message ("too few args after :*");
-	}
-	if (idio_S_nil == IDIO_PAIR_T (a)) { 
-	    a = IDIO_PAIR_H (a);
-	}
-	return IDIO_LIST3 (idio_S_colon_star, IDIO_PAIR_H (b), a);
-    }
-
-    return idio_S_unspec;
-}
-
-IDIO_DEFINE_OPERATOR (":~", colon_tilde, (IDIO n, IDIO b, IDIO args))
-{
-    IDIO_ASSERT (n);
-    IDIO_ASSERT (b);
-    IDIO_ASSERT (args);
-
-    /* idio_debug ("op: :~ args %s\n", args); */
-    if (idio_S_nil != IDIO_PAIR_T (b)) {
-	idio_error_message ("too many args before :~");
-    }
-
-    if (idio_S_nil != args) {
-	IDIO a = IDIO_PAIR_H (args);
-	if (idio_S_nil == a) {
-	    idio_error_message ("too few args after :~");
-	}
-	if (idio_S_nil == IDIO_PAIR_T (a)) { 
-	    a = IDIO_PAIR_H (a);
-	}
-	return IDIO_LIST3 (idio_S_colon_tilde, IDIO_PAIR_H (b), a);
-    }
-
-    return idio_S_unspec;
-}
+IDIO_DEFINE_ASSIGNMENT_OPERATOR ("=", set);
+IDIO_DEFINE_ASSIGNMENT_OPERATOR (":=", colon_eq);
+IDIO_DEFINE_ASSIGNMENT_OPERATOR (":+", colon_plus);
+IDIO_DEFINE_ASSIGNMENT_OPERATOR (":*", colon_star);
+IDIO_DEFINE_ASSIGNMENT_OPERATOR (":~", colon_tilde);
 
 void idio_init_evaluate ()
 {
@@ -3139,15 +3166,17 @@ void idio_evaluate_add_primitives ()
     IDIO_THREAD_MODULE (idio_expander_thread) = idio_expansion_module;
     IDIO_THREAD_PC (idio_expander_thread) = 1;
 
-    IDIO_ADD_OPERATOR (add);
-    IDIO_ADD_OPERATOR (subtract);
-    IDIO_ADD_OPERATOR (multiply);
-    IDIO_ADD_OPERATOR (divide);
-    IDIO_ADD_OPERATOR (set);
-    IDIO_ADD_OPERATOR (colon_eq);
-    IDIO_ADD_OPERATOR (colon_plus);
-    IDIO_ADD_OPERATOR (colon_star);
-    IDIO_ADD_OPERATOR (colon_tilde);
+    IDIO_ADD_PRIMITIVE (operatorp);
+    IDIO_ADD_PRIMITIVE (operator_expand);
+    /* IDIO_ADD_OPERATOR (add); */
+    /* IDIO_ADD_OPERATOR (subtract); */
+    /* IDIO_ADD_OPERATOR (multiply); */
+    /* IDIO_ADD_OPERATOR (divide); */
+    IDIO_ADD_OPERATOR (set); 
+    IDIO_ADD_OPERATOR (colon_eq);  
+    IDIO_ADD_OPERATOR (colon_plus);  
+    IDIO_ADD_OPERATOR (colon_star);  
+    IDIO_ADD_OPERATOR (colon_tilde);  
 }
 
 void idio_final_evaluate ()

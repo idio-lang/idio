@@ -16,16 +16,25 @@
 ;;
 
 ;;
-;; bootstrap.idio
+;; common.idio
 ;;
 
-display "This is bootstrap.idio\n"
 
-include "operator.idio"
-include "s9.idio"
-include "common.idio"
-include "struct.idio"
-include "condition.idio"
-include "call-cc.idio"
+define (atom? x) {
+  not (pair? x)
+}
 
-;print "\nThis is the end of bootstrap.idio bringing you today's number, π: " pi "\n"
+;; http://stackoverflow.com/questions/15552057/is-it-possible-to-implement-define-macro-in-mit-scheme
+define-syntax define-syntax-rule (syntax-rules ()
+    ((define-syntax-rule (name & pattern) template)
+     (define-syntax name
+       (syntax-rules ()
+         ((name & pattern) template)))))
+
+define-syntax-rule (when test body ...) (
+  if test (begin body ...)
+)
+
+define-syntax-rule (unless test body ...) (
+  if (not test) (begin body ...)
+)

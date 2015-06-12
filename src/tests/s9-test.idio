@@ -232,9 +232,9 @@ test {
   x := (seq)
   y := 0
 
-  set! y (y - (x))
-  set! y (y - (x))
-  set! y (y - (x))
+  y = y - (x)
+  y = y - (x)
+  y = y - (x)
   y
 } -6
 
@@ -442,7 +442,7 @@ test ((function (x) ((function () x))) 1) 1
 
 test ((function () 1 2 3)) 3
 
-test ((function (x) ((function () (set! x 1))) x) 0) 1
+test ((function (x) ((function () (x = 1))) x) 0) 1
 
 ; let
 ; (test (let () 1) 1)
