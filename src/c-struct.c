@@ -86,14 +86,14 @@ int idio_C_typedef_type_cmp (IDIO C_typedef, IDIO val)
     int type = idio_type (val);
     
     switch (type) {
-    case IDIO_TYPE_C_INT8: return (C_typedef == idio_CTD_int8);
-    case IDIO_TYPE_C_UINT8: return (C_typedef == idio_CTD_uint8);
-    case IDIO_TYPE_C_INT16: return (C_typedef == idio_CTD_int16);
-    case IDIO_TYPE_C_UINT16: return (C_typedef == idio_CTD_uint16);
-    case IDIO_TYPE_C_INT32: return (C_typedef == idio_CTD_int32);
-    case IDIO_TYPE_C_UINT32: return (C_typedef == idio_CTD_uint32);
-    case IDIO_TYPE_C_INT64: return (C_typedef == idio_CTD_int64);
-    case IDIO_TYPE_C_UINT64: return (C_typedef == idio_CTD_uint64);
+    case IDIO_TYPE_C_INT8_T: return (C_typedef == idio_CTD_int8);
+    case IDIO_TYPE_C_UINT8_T: return (C_typedef == idio_CTD_uint8);
+    case IDIO_TYPE_C_INT16_T: return (C_typedef == idio_CTD_int16);
+    case IDIO_TYPE_C_UINT16_T: return (C_typedef == idio_CTD_uint16);
+    case IDIO_TYPE_C_INT32_T: return (C_typedef == idio_CTD_int32);
+    case IDIO_TYPE_C_UINT32_T: return (C_typedef == idio_CTD_uint32);
+    case IDIO_TYPE_C_INT64_T: return (C_typedef == idio_CTD_int64);
+    case IDIO_TYPE_C_UINT64_T: return (C_typedef == idio_CTD_uint64);
     case IDIO_TYPE_C_FLOAT: return (C_typedef == idio_CTD_float);
     case IDIO_TYPE_C_DOUBLE: return (C_typedef == idio_CTD_double);
     case IDIO_TYPE_C_POINTER: return (C_typedef == idio_CTD_asterisk);
@@ -197,8 +197,8 @@ IDIO idio_C_fields_array (IDIO C_typedefs)
 	int nelem = 1;
 	if (idio_isa_pair (C_typedef)) {
 	    IDIO v1 = idio_list_head (idio_list_tail (C_typedef));
-	    IDIO v2 = idio_C_number_cast (v1, IDIO_TYPE_C_UINT64);
-	    nelem = IDIO_C_TYPE_UINT64 (v2);
+	    IDIO v2 = idio_C_number_cast (v1, IDIO_TYPE_C_UINT64_T);
+	    nelem = IDIO_C_TYPE_UINT64_T (v2);
 
 	    C_typedef = idio_list_head (C_typedef);
 	}
@@ -211,36 +211,36 @@ IDIO idio_C_fields_array (IDIO C_typedefs)
 	    if (nelem > 1) {
 		type = IDIO_TYPE_STRING;
 	    } else {
-		type = IDIO_TYPE_C_INT8;
+		type = IDIO_TYPE_C_INT8_T;
 	    }
 	} else if (base_C_typedef == idio_CTD_uint8) {
 	    alignment = IDIO_C_STRUCT_ALIGNMENT (uint8_t);
 	    size = nelem * sizeof (uint8_t);
-	    type = IDIO_TYPE_C_UINT8;
+	    type = IDIO_TYPE_C_UINT8_T;
 	} else if (base_C_typedef == idio_CTD_int16) {
 	    alignment = IDIO_C_STRUCT_ALIGNMENT (int16_t);
 	    size = nelem * sizeof (int16_t);
-	    type = IDIO_TYPE_C_INT16;
+	    type = IDIO_TYPE_C_INT16_T;
 	} else if (base_C_typedef == idio_CTD_uint16) {
 	    alignment = IDIO_C_STRUCT_ALIGNMENT (uint16_t);
 	    size = nelem * sizeof (int16_t);
-	    type = IDIO_TYPE_C_UINT16;
+	    type = IDIO_TYPE_C_UINT16_T;
 	} else if (base_C_typedef == idio_CTD_int32) {
 	    alignment = IDIO_C_STRUCT_ALIGNMENT (int32_t);
 	    size = nelem * sizeof (int32_t);
-	    type = IDIO_TYPE_C_INT32;
+	    type = IDIO_TYPE_C_INT32_T;
 	} else if (base_C_typedef == idio_CTD_uint32) {
 	    alignment = IDIO_C_STRUCT_ALIGNMENT (uint32_t);
 	    size = nelem * sizeof (int32_t);
-	    type = IDIO_TYPE_C_UINT32;
+	    type = IDIO_TYPE_C_UINT32_T;
 	} else if (base_C_typedef == idio_CTD_int64) {
 	    alignment = IDIO_C_STRUCT_ALIGNMENT (int64_t);
 	    size = nelem * sizeof (int64_t);
-	    type = IDIO_TYPE_C_INT64;
+	    type = IDIO_TYPE_C_INT64_T;
 	} else if (base_C_typedef == idio_CTD_uint64) {
 	    alignment = IDIO_C_STRUCT_ALIGNMENT (uint64_t);
 	    size = nelem * sizeof (int64_t);
-	    type = IDIO_TYPE_C_UINT64;
+	    type = IDIO_TYPE_C_UINT64_T;
 	} else if (base_C_typedef == idio_CTD_float) {
 	    alignment = IDIO_C_STRUCT_ALIGNMENT (float);
 	    size = nelem * sizeof (float);
@@ -265,11 +265,11 @@ IDIO idio_C_fields_array (IDIO C_typedefs)
 	/* add any alignment required */
 	offset += offset % alignment;
 
-	idio_array_push (field_data, idio_C_uint64 (alignment));
-	idio_array_push (field_data, idio_C_uint64 (type));
-	idio_array_push (field_data, idio_C_uint64 (offset));
-	idio_array_push (field_data, idio_C_uint64 (size));
-	idio_array_push (field_data, idio_C_uint64 (nelem));
+	idio_array_push (field_data, idio_C_uint64_t (alignment));
+	idio_array_push (field_data, idio_C_uint64_t (type));
+	idio_array_push (field_data, idio_C_uint64_t (offset));
+	idio_array_push (field_data, idio_C_uint64_t (size));
+	idio_array_push (field_data, idio_C_uint64_t (nelem));
 
 	idio_array_push (fields_array, field_data);
 
@@ -293,7 +293,7 @@ size_t idio_sizeof_C_struct (IDIO fields_array)
     IDIO offset = idio_array_get_index (field_data, IDIO_C_FIELD_DATA_OFFSET);
     IDIO size = idio_array_get_index (field_data, IDIO_C_FIELD_DATA_SIZE);
 
-    r = IDIO_C_TYPE_INT64 (offset) + IDIO_C_TYPE_UINT64 (size);
+    r = IDIO_C_TYPE_INT64_T (offset) + IDIO_C_TYPE_UINT64_T (size);
 
     return r;
 }

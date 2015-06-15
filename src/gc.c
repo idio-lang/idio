@@ -87,8 +87,10 @@ IDIO idio_gc_get (idio_type_e type)
 {
     IDIO_C_ASSERT (type);
     
-    IDIO_C_ASSERT (type > IDIO_TYPE_NONE &&
-		   type < IDIO_TYPE_MAX);
+    IDIO_C_ASSERT ((type > IDIO_TYPE_NONE &&
+		    type < IDIO_TYPE_MAX) ||
+		   (type >= IDIO_TYPE_CAT_BASE &&
+		    type < IDIO_TYPE_CAT_MAX));
 
     idio_gc->stats.nused[type]++;
     idio_gc->stats.tgets[type]++;
@@ -786,22 +788,20 @@ void idio_gc_sweep_free_value (IDIO vo)
 
     /* idio_free_lex (vo); */
 
+    if (vo->type >= IDIO_TYPE_CAT_BASE) {
+	switch (vo->type) {
+	case IDIO_TYPE_C_POINTER:
+	    idio_free_C_pointer (vo);
+	    break;
+	default:
+	    idio_free_C_type (vo);
+	    break;
+	}
+
+	return;
+    }
+
     switch (vo->type) {
-    case IDIO_TYPE_C_INT8:
-    case IDIO_TYPE_C_UINT8:
-    case IDIO_TYPE_C_INT16:
-    case IDIO_TYPE_C_UINT16:
-    case IDIO_TYPE_C_INT32:
-    case IDIO_TYPE_C_UINT32:
-    case IDIO_TYPE_C_INT64:
-    case IDIO_TYPE_C_UINT64:
-    case IDIO_TYPE_C_FLOAT:
-    case IDIO_TYPE_C_DOUBLE:
-	idio_free_C_type (vo);
-	break;
-    case IDIO_TYPE_C_POINTER:
-	idio_free_C_pointer (vo);
-	break;
     case IDIO_TYPE_STRING:
 	idio_free_string (vo);
 	break;

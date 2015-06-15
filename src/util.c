@@ -41,6 +41,10 @@ int idio_type (IDIO o)
 
 const char *idio_type_enum2string (idio_type_e type)
 {
+    if (type >= IDIO_TYPE_CAT_BASE) {
+	return idio_type_C_enum2string (type);
+    }
+
     switch (type) {
     case IDIO_TYPE_NONE: return "NONE";
     case IDIO_TYPE_FIXNUM: return "FIXNUM";
@@ -63,17 +67,6 @@ const char *idio_type_enum2string (idio_type_e type)
     case IDIO_TYPE_THREAD: return "THREAD";
     case IDIO_TYPE_CONTINUATION: return "CONTINUATION";
 	
-    case IDIO_TYPE_C_INT8: return "C INT8";
-    case IDIO_TYPE_C_UINT8: return "C UINT8";
-    case IDIO_TYPE_C_INT16: return "C INT16";
-    case IDIO_TYPE_C_UINT16: return "C UINT16";
-    case IDIO_TYPE_C_INT32: return "C INT32";
-    case IDIO_TYPE_C_UINT32: return "C UINT32";
-    case IDIO_TYPE_C_INT64: return "C INT64";
-    case IDIO_TYPE_C_UINT64: return "C UINT64";
-    case IDIO_TYPE_C_FLOAT: return "C FLOAT";
-    case IDIO_TYPE_C_DOUBLE: return "C DOUBLE";
-    case IDIO_TYPE_C_POINTER: return "C POINTER";
     case IDIO_TYPE_C_VOID: return "C VOID";
 	
     case IDIO_TYPE_C_TYPEDEF: return "TAG";
@@ -310,29 +303,10 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 
 	    size_t i;
 
+	    if (o1->type >= IDIO_TYPE_CAT_BASE) {
+		return idio_C_equal (o1, o2);
+	    }
 	    switch (o1->type) {
-	    case IDIO_TYPE_C_INT8:
-		return (IDIO_C_TYPE_INT8 (o1) == IDIO_C_TYPE_INT8 (o2));
-	    case IDIO_TYPE_C_UINT8:
-		return (IDIO_C_TYPE_UINT8 (o1) == IDIO_C_TYPE_UINT8 (o2));
-	    case IDIO_TYPE_C_INT16:
-		return (IDIO_C_TYPE_INT16 (o1) == IDIO_C_TYPE_INT16 (o2));
-	    case IDIO_TYPE_C_UINT16:
-		return (IDIO_C_TYPE_UINT16 (o1) == IDIO_C_TYPE_UINT16 (o2));
-	    case IDIO_TYPE_C_INT32:
-		return (IDIO_C_TYPE_INT32 (o1) == IDIO_C_TYPE_INT32 (o2));
-	    case IDIO_TYPE_C_UINT32:
-		return (IDIO_C_TYPE_UINT32 (o1) == IDIO_C_TYPE_UINT32 (o2));
-	    case IDIO_TYPE_C_INT64:
-		return (IDIO_C_TYPE_INT64 (o1) == IDIO_C_TYPE_INT64 (o2));
-	    case IDIO_TYPE_C_UINT64:
-		return (IDIO_C_TYPE_UINT64 (o1) == IDIO_C_TYPE_UINT64 (o2));
-	    case IDIO_TYPE_C_FLOAT:
-		return (IDIO_C_TYPE_FLOAT (o1) == IDIO_C_TYPE_FLOAT (o2));
-	    case IDIO_TYPE_C_DOUBLE:
-		return (IDIO_C_TYPE_DOUBLE (o1) == IDIO_C_TYPE_DOUBLE (o2));
-	    case IDIO_TYPE_C_POINTER:
-		return (IDIO_C_TYPE_POINTER_P (o1) == IDIO_C_TYPE_POINTER_P (o2));
 	    case IDIO_TYPE_STRING:
 		if (IDIO_EQUAL_EQP == eqp) {
 		    return (o1 == o2);
@@ -657,62 +631,13 @@ char *idio_as_string (IDIO o, int depth)
 	}
     case IDIO_TYPE_POINTER_MARK:
 	{
-	    switch (idio_type (o)) {
-	    case IDIO_TYPE_C_INT8:
-		if (asprintf (&r, "%hhd", IDIO_C_TYPE_INT8 (o)) == -1) {
-		    return NULL;
-		}
-		break;
-	    case IDIO_TYPE_C_UINT8:
-		if (asprintf (&r, "%hhu", IDIO_C_TYPE_UINT8 (o)) == -1) {
-		    return NULL;
-		}
-		break;
-	    case IDIO_TYPE_C_INT16:
-		if (asprintf (&r, "%hd", IDIO_C_TYPE_INT16 (o)) == -1) {
-		    return NULL;
-		}
-		break;
-	    case IDIO_TYPE_C_UINT16:
-		if (asprintf (&r, "%hu", IDIO_C_TYPE_UINT16 (o)) == -1) {
-		    return NULL;
-		}
-		break;
-	    case IDIO_TYPE_C_INT32:
-		if (asprintf (&r, "%d", IDIO_C_TYPE_INT32 (o)) == -1) {
-		    return NULL;
-		}
-		break;
-	    case IDIO_TYPE_C_UINT32:
-		if (asprintf (&r, "%u", IDIO_C_TYPE_UINT32 (o)) == -1) {
-		    return NULL;
-		}
-		break;
-	    case IDIO_TYPE_C_INT64:
-		if (asprintf (&r, "%" PRId64, IDIO_C_TYPE_INT64 (o)) == -1) {
-		    return NULL;
-		}
-		break;
-	    case IDIO_TYPE_C_UINT64:
-		if (asprintf (&r, "%" PRId64, IDIO_C_TYPE_UINT64 (o)) == -1) {
-		    return NULL;
-		}
-		break;
-	    case IDIO_TYPE_C_FLOAT:
-		if (asprintf (&r, "%g", IDIO_C_TYPE_FLOAT (o)) == -1) {
-		    return NULL;
-		}
-		break;
-	    case IDIO_TYPE_C_DOUBLE:
-		if (asprintf (&r, "%g", IDIO_C_TYPE_DOUBLE (o)) == -1) {
-		    return NULL;
-		}
-		break;
-	    case IDIO_TYPE_C_POINTER:
-		if (asprintf (&r, "#C_p-%p{%p free=%d}", o, IDIO_C_TYPE_POINTER_P (o), IDIO_C_TYPE_POINTER_FREEP (o)) == -1) {
-		    return NULL;
-		}
-		break;
+	    idio_type_e type = idio_type (o);
+	    
+	    if (type >= IDIO_TYPE_CAT_BASE) {
+		return idio_C_as_string (o, depth);
+	    }
+
+	    switch (type) {
 	    case IDIO_TYPE_STRING:
 		r = idio_escape_string (IDIO_STRING_BLEN (o), IDIO_STRING_S (o));
 		break;
@@ -1187,19 +1112,6 @@ char *idio_display_string (IDIO o)
     case IDIO_TYPE_POINTER_MARK:
 	{
 	    switch (o->type) {
-	    case IDIO_TYPE_C_INT8:
-	    case IDIO_TYPE_C_UINT8:
-	    case IDIO_TYPE_C_INT16:
-	    case IDIO_TYPE_C_UINT16:
-	    case IDIO_TYPE_C_INT32:
-	    case IDIO_TYPE_C_UINT32:
-	    case IDIO_TYPE_C_INT64:
-	    case IDIO_TYPE_C_UINT64:
-	    case IDIO_TYPE_C_FLOAT:
-	    case IDIO_TYPE_C_DOUBLE:
-	    case IDIO_TYPE_C_POINTER:
-		r = idio_as_string (o, 4);
-		break;
 	    case IDIO_TYPE_STRING:
 		if (asprintf (&r, "%.*s", (int) IDIO_STRING_BLEN (o), IDIO_STRING_S (o)) == -1) {
 		    return NULL;
@@ -1210,31 +1122,8 @@ char *idio_display_string (IDIO o)
 		    return NULL;
 		}
 		break;
-	    case IDIO_TYPE_SYMBOL:
-	    case IDIO_TYPE_PAIR:
-	    case IDIO_TYPE_ARRAY:
-	    case IDIO_TYPE_HASH:
-	    case IDIO_TYPE_CLOSURE:
-	    case IDIO_TYPE_PRIMITIVE:
-	    case IDIO_TYPE_BIGNUM:
-	    case IDIO_TYPE_MODULE:
-	    case IDIO_TYPE_FRAME:
-	    case IDIO_TYPE_HANDLE:
-	    case IDIO_TYPE_STRUCT_TYPE:
-	    case IDIO_TYPE_STRUCT_INSTANCE:
-	    case IDIO_TYPE_THREAD:
-	    case IDIO_TYPE_CONTINUATION:
-	    case IDIO_TYPE_C_TYPEDEF:
-	    case IDIO_TYPE_C_STRUCT:
-	    case IDIO_TYPE_C_INSTANCE:
-	    case IDIO_TYPE_C_FFI:
-	    case IDIO_TYPE_OPAQUE:
-		r = idio_as_string (o, 4);
-		break;
 	    default:
-		if (asprintf (&r, "#?{%10p}", o) == -1) {
-		    return NULL;
-		}
+		r = idio_as_string (o, 4);
 		break;
 	    }
 	}
@@ -1428,21 +1317,6 @@ void idio_dump (IDIO o, int detail)
 	    }
     
 	    switch (o->type) {
-	    case IDIO_TYPE_C_INT8:
-	    case IDIO_TYPE_C_UINT8:
-	    case IDIO_TYPE_C_INT16:
-	    case IDIO_TYPE_C_UINT16:
-	    case IDIO_TYPE_C_INT32:
-	    case IDIO_TYPE_C_UINT32:
-	    case IDIO_TYPE_C_INT64:
-	    case IDIO_TYPE_C_UINT64:
-	    case IDIO_TYPE_C_FLOAT:
-	    case IDIO_TYPE_C_DOUBLE:
-		IDIO_FPRINTF (stderr, "n=");
-		break;
-	    case IDIO_TYPE_C_POINTER:
-		IDIO_FPRINTF (stderr, "p=");
-		break;
 	    case IDIO_TYPE_STRING:
 		if (detail) {
 		    IDIO_FPRINTF (stderr, "blen=%d s=", IDIO_STRING_BLEN (o));

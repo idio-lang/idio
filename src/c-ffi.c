@@ -30,22 +30,22 @@ ffi_type *idio_C_FFI_type (IDIO field_data)
 	return &ffi_type_void;
     }
     
-    switch (IDIO_C_TYPE_UINT64 (type)) {
-    case IDIO_TYPE_C_INT8:
+    switch (IDIO_C_TYPE_UINT64_T (type)) {
+    case IDIO_TYPE_C_INT8_T:
 	return &ffi_type_sint8;
-    case IDIO_TYPE_C_UINT8:
+    case IDIO_TYPE_C_UINT8_T:
 	return &ffi_type_uint8;
-    case IDIO_TYPE_C_INT16:
+    case IDIO_TYPE_C_INT16_T:
 	return &ffi_type_sint16;
-    case IDIO_TYPE_C_UINT16:
+    case IDIO_TYPE_C_UINT16_T:
 	return &ffi_type_uint16;
-    case IDIO_TYPE_C_INT32:
+    case IDIO_TYPE_C_INT32_T:
 	return &ffi_type_sint32;
-    case IDIO_TYPE_C_UINT32:
+    case IDIO_TYPE_C_UINT32_T:
 	return &ffi_type_uint32;
-    case IDIO_TYPE_C_INT64:
+    case IDIO_TYPE_C_INT64_T:
 	return &ffi_type_sint64;
-    case IDIO_TYPE_C_UINT64:
+    case IDIO_TYPE_C_UINT64_T:
 	return &ffi_type_uint64;
     case IDIO_TYPE_C_FLOAT:
 	return &ffi_type_float;
@@ -58,7 +58,7 @@ ffi_type *idio_C_FFI_type (IDIO field_data)
     default:
 	{
 	    char em[BUFSIZ];
-	    sprintf (em, "unexpected C_FFI type %" PRIu64 ": %s", IDIO_C_TYPE_UINT64 (type), idio_type2string (type));
+	    sprintf (em, "unexpected C_FFI type %" PRIu64 ": %s", IDIO_C_TYPE_UINT64_T (type), idio_type2string (type));
 	    idio_error_message (em);
 	    IDIO_C_ASSERT (0);
 	}

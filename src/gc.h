@@ -43,6 +43,7 @@
 #define IDIO_TYPE_STRUCT_INSTANCE 17
 #define IDIO_TYPE_THREAD	  18
 #define IDIO_TYPE_CONTINUATION	  19
+/*
 #define IDIO_TYPE_C_INT8          20
 #define IDIO_TYPE_C_UINT8         21
 #define IDIO_TYPE_C_INT16         22
@@ -51,16 +52,26 @@
 #define IDIO_TYPE_C_UINT32        25
 #define IDIO_TYPE_C_INT64         26
 #define IDIO_TYPE_C_UINT64        27
-#define IDIO_TYPE_C_FLOAT         28
-#define IDIO_TYPE_C_DOUBLE        29
-#define IDIO_TYPE_C_POINTER       30
-#define IDIO_TYPE_C_VOID          31
-#define IDIO_TYPE_C_TYPEDEF       32
-#define IDIO_TYPE_C_STRUCT        33
-#define IDIO_TYPE_C_INSTANCE      34
-#define IDIO_TYPE_C_FFI           35
-#define IDIO_TYPE_OPAQUE          36
-#define IDIO_TYPE_MAX             37
+#define IDIO_TYPE_C_CHAR          28
+#define IDIO_TYPE_C_UCHAR         29
+#define IDIO_TYPE_C_SHORT         30
+#define IDIO_TYPE_C_USHORT        31
+#define IDIO_TYPE_C_INT           32
+#define IDIO_TYPE_C_UINT          33
+#define IDIO_TYPE_C_LONG          34
+#define IDIO_TYPE_C_ULONG         35
+#define IDIO_TYPE_C_FLOAT         36
+#define IDIO_TYPE_C_DOUBLE        37
+#define IDIO_TYPE_C_POINTER       38
+*/
+#define IDIO_TYPE_C_VOID          39
+#define IDIO_TYPE_CTD             40
+#define IDIO_TYPE_C_TYPEDEF       41
+#define IDIO_TYPE_C_STRUCT        42
+#define IDIO_TYPE_C_INSTANCE      43
+#define IDIO_TYPE_C_FFI           44
+#define IDIO_TYPE_OPAQUE          45
+#define IDIO_TYPE_MAX             46
 
 typedef unsigned char idio_type_e;
 
@@ -436,6 +447,7 @@ typedef struct idio_continuation_s {
 #define IDIO_VM_LONGJMP_SIGNAL_EXCEPTION 1
 #define IDIO_VM_LONGJMP_CONTINUATION     2
 
+/*
 typedef struct idio_C_pointer_s {
     void *p;
     char freep;
@@ -451,6 +463,14 @@ typedef struct idio_C_type_s {
 	uint32_t          C_uint32;
 	int64_t           C_int64;
 	uint64_t          C_uint64;
+	char              C_char;
+	unsigned char     C_uchar;
+	short             C_short;
+	unsigned short    C_ushort;
+	int               C_int;
+	unsigned int      C_uint;
+	long              C_long;
+	unsigned long     C_ulong;
 	float             C_float;
 	double            C_double;
 	idio_C_pointer_t *C_pointer;
@@ -465,11 +485,22 @@ typedef struct idio_C_type_s {
 #define IDIO_C_TYPE_UINT32(C)        ((C)->u.C_type->u.C_uint32)
 #define IDIO_C_TYPE_INT64(C)         ((C)->u.C_type->u.C_int64)
 #define IDIO_C_TYPE_UINT64(C)        ((C)->u.C_type->u.C_uint64)
+#define IDIO_C_TYPE_CHAR(C)          ((C)->u.C_type->u.C_char)
+#define IDIO_C_TYPE_UCHAR(C)         ((C)->u.C_type->u.C_uchar)
+#define IDIO_C_TYPE_SHORT(C)         ((C)->u.C_type->u.C_short)
+#define IDIO_C_TYPE_USHORT(C)        ((C)->u.C_type->u.C_ushort)
+#define IDIO_C_TYPE_INT(C)           ((C)->u.C_type->u.C_int)
+#define IDIO_C_TYPE_UINT(C)          ((C)->u.C_type->u.C_uint)
+#define IDIO_C_TYPE_LONG(C)          ((C)->u.C_type->u.C_long)
+#define IDIO_C_TYPE_ULONG(C)         ((C)->u.C_type->u.C_ulong)
 #define IDIO_C_TYPE_FLOAT(C)         ((C)->u.C_type->u.C_float)
 #define IDIO_C_TYPE_DOUBLE(C)        ((C)->u.C_type->u.C_double)
 #define IDIO_C_TYPE_POINTER(C)       ((C)->u.C_type->u.C_pointer)
 #define IDIO_C_TYPE_POINTER_P(C)     ((C)->u.C_type->u.C_pointer->p)
 #define IDIO_C_TYPE_POINTER_FREEP(C) ((C)->u.C_type->u.C_pointer->freep)
+*/
+
+#include "auto-c-type.h"
 
 typedef struct idio_C_typedef_s {
     struct idio_s *grey;
