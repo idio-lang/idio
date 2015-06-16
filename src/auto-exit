@@ -63,6 +63,7 @@ while getopts "e:k:r:s:w:" opt ; do
     esac
 done
 
+var_read=1
 var_write=1
 
 if [[ ${opt_read} || $opt_write ]] ; then
@@ -80,7 +81,8 @@ if [[ ${opt_read} || $opt_write ]] ; then
 	if [[ ${opt_read} ]] ; then
 	    if [[ ${opt_read} -gt 0 ]] ; then
 		read line
-		echo "$$: read '${line}'"
+		echo "$$: read #${var_read} '${line}'"
+		var_read=$(( var_read + 1 ))
 		opt_read=$(( opt_read - 1 ))
 	    else
 		opt_read=

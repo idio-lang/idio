@@ -1067,8 +1067,8 @@ IDIO_DEFINE_PRIMITIVE0V ("%launch-pipeline", launch_pipeline, (IDIO commands))
 
     procs = idio_list_reverse (procs);
 
-    IDIO stdin = idio_fixnum (idio_file_handle_fd (idio_current_input_handle ()));
-    IDIO stdout = idio_fixnum (idio_file_handle_fd (idio_current_output_handle ()));
+    IDIO job_stdin = idio_C_int (STDIN_FILENO);
+    IDIO job_stdout = idio_C_int (STDOUT_FILENO);
     
     IDIO job = idio_struct_instance (idio_command_job_type,
 				     idio_pair (commands,
@@ -1076,8 +1076,8 @@ IDIO_DEFINE_PRIMITIVE0V ("%launch-pipeline", launch_pipeline, (IDIO commands))
 				     idio_pair (idio_fixnum (0),
 				     idio_pair (idio_S_false,
 				     idio_pair (idio_S_nil,
-				     idio_pair (stdin,
-				     idio_pair (stdout,
+				     idio_pair (job_stdin,
+				     idio_pair (job_stdout,
 				     idio_S_nil))))))));
     
     idio_command_launch_job (job, 1);

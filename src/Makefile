@@ -55,7 +55,7 @@ ifneq ($(OS),Darwin)
 DLIBS = libos.so libposix-regex.so
 endif
 
-all : tags $(BINDIR)/idio
+all : tags $(BINDIR) $(BINDIR)/idio
 #all : idio scm1-c-structs.scm1 ${DLIBS} tags
 
 profiled :
@@ -95,6 +95,9 @@ TAGS : *.[ch] *.idio */*.idio
 
 %.d: %.c
 	$(CC) -MM -MP -MF $@ $(CFLAGS) $< -MT $*.o -MT $@
+
+$(BINDIR):
+	@mkdir -p $(BINDIR)
 
 test : idio scm1-c-structs.scm1
 	(cd tests; IDIO_PATH=${PWD} IDIO=${PWD}/idio ./rtest 2>e)

@@ -37,6 +37,8 @@
  */
 #define _GNU_SOURCE
 
+#include <sys/types.h>
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -51,10 +53,16 @@
 #include <ffi.h>
 #include <ctype.h>
 #include <glob.h>
+#include <signal.h>
 
 #include <sys/resource.h>
 #include <sys/time.h>
 #include <sys/wait.h>
+
+/* Solaris doesn't define WAIT_ANY */
+#ifndef WAIT_ANY
+#define WAIT_ANY (-1)
+#endif
 
 #include <setjmp.h>
 
