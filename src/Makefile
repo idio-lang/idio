@@ -1,35 +1,52 @@
-OS=$(shell uname -s)
-ARCH=$(shell uname -m)
+OS		:= $(shell uname -s)
+ARCH		:= $(shell uname -m)
 
-BINDIR	= $(abspath $(PWD)/../bin)
+BINDIR		:= $(abspath $(PWD)/../bin)
 
 ifeq ($(OS),Darwin)
-LIBFFI_INCDIR	= /usr/include/ffi
-LDFLAGS		=  -rdynamic
-LIBS		=-ldl
+
+LIBFFI_INCDIR	:= /usr/include/ffi
+LDFLAGS		:= -rdynamic
+LIBS		:= -ldl
+
 else ifeq ($(OS),Linux)
+
 LIBFFI_INCDIR	= $(wildcard /usr/lib*/libffi-*/include)
-LDFLAGS		=  -rdynamic
-LIBS		=-ldl
+LDFLAGS		:= -rdynamic
+LIBS		:= -ldl
+ifeq ($(ARCH),x86_64)
+CFLAGS		:= $(CFLAGS) -m64
+LDFLAGS		:= $(LDFLAGS) -m64
+endif
+
 else ifeq ($(OS),SunOS)
-CC	       := gcc
+
+CC		:= gcc
 LIBFFI_INCDIR	= $(wildcard /usr/local/lib/libffi-*/include)
-LDFLAGS		= -L/usr/local/lib -R/usr/local/lib
-LIBS=-ldl
-CFLAGS		= -D__EXTENSIONS__
+LDFLAGS		:= -L/usr/local/lib -R/usr/local/lib
+LIBS		:= -ldl
+CFLAGS		:= -D__EXTENSIONS__
+M64		:= $(filter %64, $(shell isainfo))
+ifeq ($(M64),amd64)
+CFLAGS		:= $(CFLAGS) -m64
+LDFLAGS		:= $(LDFLAGS) -m64
+endif
+
 else ifeq ($(OS),FreeBSD)
-CC	       := /usr/local/bin/gcc47
-LIBFFI_INCDIR	= /usr/local/include
-LDFLAGS		= -L/usr/local/lib
+
+CC		:= /usr/local/bin/gcc47
+LIBFFI_INCDIR	:= /usr/local/include
+LDFLAGS		:= -L/usr/local/lib
+
 endif
 
 ifndef LIBFFI_INCDIR
 $(error LIBFFI_INCDIR is unset)
 else
 ifeq "$(LIBFFI_INCDIR)" ""
-LIBFFI_INC	=
+LIBFFI_INC	:=
 else
-LIBFFI_INC	= -I$(LIBFFI_INCDIR)
+LIBFFI_INC	:= -I$(LIBFFI_INCDIR)
 endif
 endif
 
@@ -42,8 +59,8 @@ CDEBUG	       := -DIDIO_DEBUG -g
 endif 
 
 
-PROFLAGS	=
-COVFLAGS	=
+PROFLAGS	:=
+COVFLAGS	:=
 CFLAGS	       := ${CFLAGS} ${PROFLAGS} ${COVFLAGS} ${CDEBUG} -std=c99 -Wall -fPIC ${LIBFFI_INC}
 LDFLAGS        := ${PROFLAGS} ${COVFLAGS} ${LDFLAGS}
 LIBS	       := ${LIBS} -lffi
@@ -52,7 +69,7 @@ sources	       := $(filter-out c-type.c,$(wildcard *.c))
 objects	       := $(patsubst %.c,%.o,$(sources))
 
 ifneq ($(OS),Darwin)
-DLIBS = libos.so libposix-regex.so
+DLIBS := libos.so libposix-regex.so
 endif
 
 all : tags $(BINDIR) $(BINDIR)/idio
