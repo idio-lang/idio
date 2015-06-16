@@ -537,7 +537,7 @@ EOF
 	*int64_t)	size=PRI${sign}64 ;;
 	float|double)	size=\"g\" ;;
 	size_t)		size=\"z${sign}\" ;;
-	off_t)		size=PRI${sign}64 ;;
+	off_t)		size=\"z${sign}\" ;;
 	*)		size=\"${sign}\" ;;
 	esac
 	cat <<EOF

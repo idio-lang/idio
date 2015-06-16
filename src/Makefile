@@ -86,6 +86,9 @@ clean : tidy
 
 tidy :
 	rm -f vgcore.* core.* core *~ *.gcda *.gcno *.gcov gmon.out
+ifeq ($(OS),Darwin)
+	rm -f /cores/*
+endif
 
 tags : TAGS
 
