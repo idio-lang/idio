@@ -58,7 +58,7 @@ ffi_type *idio_C_FFI_type (IDIO field_data)
     default:
 	{
 	    char em[BUFSIZ];
-	    sprintf (em, "unexpected C_FFI type %" PRIu64 ": %s", IDIO_C_TYPE_UINT (type), idio_type2string (type));
+	    sprintf (em, "unexpected C_FFI type %ju: %s", IDIO_C_TYPE_UINT (type), idio_type2string (type));
 	    idio_error_message (em);
 	    IDIO_C_ASSERT (0);
 	}
