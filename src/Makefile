@@ -65,7 +65,7 @@ CFLAGS	       := ${CFLAGS} ${PROFLAGS} ${COVFLAGS} ${CDEBUG} -std=c99 -Wall -fPI
 LDFLAGS        := ${PROFLAGS} ${COVFLAGS} ${LDFLAGS}
 LIBS	       := ${LIBS} -lffi
 
-sources	       := $(filter-out c-type.c,$(wildcard *.c))
+sources	       := $(wildcard *.c)
 objects	       := $(patsubst %.c,%.o,$(sources))
 
 ifneq ($(OS),Darwin)

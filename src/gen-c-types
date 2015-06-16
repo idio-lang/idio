@@ -1,6 +1,7 @@
 #! /bin/bash
 
 types=( \
+    intmax_t uintmax_t
     char "unsigned char" \
     short "unsigned short" \
     int "unsigned int" \

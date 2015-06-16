@@ -418,62 +418,73 @@ idio_hi_t idio_hash_hashval (IDIO h, void *kv)
     idio_hi_t hv = IDIO_HASH_SIZE (h) + 1;
     idio_type_e type = idio_type (k);
     
-    if (type >= IDIO_TYPE_CAT_BASE) {
-	hv = idio_hash_C_hashval (k);
-    } else {
-	switch (type) {
-	case IDIO_TYPE_FIXNUM:
-	    hv = idio_hash_hashval_uintmax_t ((uintptr_t) k);
-	    break;
-	case IDIO_TYPE_STRING:
-	    hv = idio_hash_hashval_string_C (IDIO_STRING_BLEN (k), IDIO_STRING_S (k)); 
-	    break;
-	case IDIO_TYPE_SUBSTRING:
-	    hv = idio_hash_hashval_string_C (IDIO_SUBSTRING_BLEN (k), IDIO_SUBSTRING_S (k));
-	    break;
-	case IDIO_TYPE_SYMBOL:
-	    hv = idio_hash_hashval_symbol (k);  
-	    break;
-	case IDIO_TYPE_PAIR:
-	    hv = idio_hash_hashval_pair (k);
-	    break;
-	case IDIO_TYPE_ARRAY:
-	    hv = idio_hash_hashval_array (k);
-	    break;
-	case IDIO_TYPE_HASH:
-	    hv = idio_hash_hashval_hash (k);
-	    break;
-	case IDIO_TYPE_CLOSURE:
-	    hv = idio_idio_hash_hashval_closure (k);
-	    break;
-	case IDIO_TYPE_PRIMITIVE:
-	    hv = idio_idio_hash_hashval_primitive (k);
-	    break;
-	case IDIO_TYPE_MODULE:
-	    hv = idio_idio_hash_hashval_module (k);
-	    break;
-	case IDIO_TYPE_FRAME:
-	    hv = idio_idio_hash_hashval_frame (k);
-	    break;
-	case IDIO_TYPE_BIGNUM:
-	    hv = idio_idio_hash_hashval_bignum (k);
-	    break;
-	case IDIO_TYPE_HANDLE:
-	    hv = idio_idio_hash_hashval_handle (k);
-	    break;
-	case IDIO_TYPE_C_STRUCT:
-	    hv = idio_hash_hashval_C_struct (k);
-	    break;
-	case IDIO_TYPE_C_INSTANCE:
-	    hv = idio_hash_hashval_C_instance (k);
-	    break;
-	case IDIO_TYPE_C_FFI:
-	    hv = idio_hash_hashval_C_FFI (k);
-	    break;
-	default:
-	    fprintf (stderr, "idio_hash_hashval: type n/k\n");
-	    IDIO_C_ASSERT (0);
-	}
+    switch (type) {
+    case IDIO_TYPE_FIXNUM:
+	hv = idio_hash_hashval_uintmax_t ((uintptr_t) k);
+	break;
+    case IDIO_TYPE_STRING:
+	hv = idio_hash_hashval_string_C (IDIO_STRING_BLEN (k), IDIO_STRING_S (k)); 
+	break;
+    case IDIO_TYPE_SUBSTRING:
+	hv = idio_hash_hashval_string_C (IDIO_SUBSTRING_BLEN (k), IDIO_SUBSTRING_S (k));
+	break;
+    case IDIO_TYPE_SYMBOL:
+	hv = idio_hash_hashval_symbol (k);  
+	break;
+    case IDIO_TYPE_PAIR:
+	hv = idio_hash_hashval_pair (k);
+	break;
+    case IDIO_TYPE_ARRAY:
+	hv = idio_hash_hashval_array (k);
+	break;
+    case IDIO_TYPE_HASH:
+	hv = idio_hash_hashval_hash (k);
+	break;
+    case IDIO_TYPE_CLOSURE:
+	hv = idio_idio_hash_hashval_closure (k);
+	break;
+    case IDIO_TYPE_PRIMITIVE:
+	hv = idio_idio_hash_hashval_primitive (k);
+	break;
+    case IDIO_TYPE_MODULE:
+	hv = idio_idio_hash_hashval_module (k);
+	break;
+    case IDIO_TYPE_FRAME:
+	hv = idio_idio_hash_hashval_frame (k);
+	break;
+    case IDIO_TYPE_BIGNUM:
+	hv = idio_idio_hash_hashval_bignum (k);
+	break;
+    case IDIO_TYPE_HANDLE:
+	hv = idio_idio_hash_hashval_handle (k);
+	break;
+    case IDIO_TYPE_C_INT:
+	hv = idio_hash_hashval_uintmax_t ((uintmax_t) IDIO_C_TYPE_INT (k));
+	break;
+    case IDIO_TYPE_C_UINT:
+	hv = idio_hash_hashval_uintmax_t ((uintmax_t) IDIO_C_TYPE_UINT (k));
+	break;
+    case IDIO_TYPE_C_FLOAT:
+	hv = idio_hash_hashval_uintmax_t ((uintmax_t) IDIO_C_TYPE_FLOAT (k));
+	break;
+    case IDIO_TYPE_C_DOUBLE:
+	hv = idio_hash_hashval_uintmax_t ((uintmax_t) IDIO_C_TYPE_DOUBLE (k));
+	break;
+    case IDIO_TYPE_C_POINTER:
+	hv = idio_hash_hashval_uintmax_t ((uintmax_t) IDIO_C_TYPE_POINTER_P (k));
+	break;
+    case IDIO_TYPE_C_STRUCT:
+	hv = idio_hash_hashval_C_struct (k);
+	break;
+    case IDIO_TYPE_C_INSTANCE:
+	hv = idio_hash_hashval_C_instance (k);
+	break;
+    case IDIO_TYPE_C_FFI:
+	hv = idio_hash_hashval_C_FFI (k);
+	break;
+    default:
+	fprintf (stderr, "idio_hash_hashval: type n/k\n");
+	IDIO_C_ASSERT (0);
     }
 
     return (hv & IDIO_HASH_MASK (h));

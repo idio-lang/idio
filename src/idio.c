@@ -40,7 +40,7 @@ void idio_init ()
     idio_init_handle ();
     idio_init_string_handle ();
     idio_init_file_handle ();
-    idio_init_auto_c_type ();
+    idio_init_c_type ();
     idio_init_C_struct ();
     idio_init_frame ();
     idio_init_util ();
@@ -82,7 +82,7 @@ void idio_init ()
     idio_handle_add_primitives ();
     idio_string_handle_add_primitives ();
     idio_file_handle_add_primitives ();
-    idio_auto_c_type_add_primtives ();
+    idio_c_type_add_primtives ();
     idio_C_struct_add_primitives ();
     idio_frame_add_primitives ();
     idio_util_add_primitives ();
@@ -135,7 +135,7 @@ void idio_final ()
     idio_final_util ();
     idio_final_frame ();
     idio_final_C_struct ();
-    idio_final_auto_c_type ();
+    idio_final_c_type ();
     idio_final_file_handle ();
     idio_final_string_handle ();
     idio_final_handle ();

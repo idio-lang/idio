@@ -78,7 +78,7 @@ IDIO_DEFINE_PRIMITIVE0 ("c/fork", C_fork, ())
 	idio_error_system_errno ("fork", idio_S_nil);
     }
 
-    return idio_C_pid_t (pid);
+    return idio_C_int (pid);
 }
 
 IDIO_DEFINE_PRIMITIVE0 ("c/getpgrp", C_getpgrp, ())
@@ -89,7 +89,7 @@ IDIO_DEFINE_PRIMITIVE0 ("c/getpgrp", C_getpgrp, ())
 	idio_error_system_errno ("getpgrp", idio_S_nil);
     }
 
-    return idio_C_pid_t (pid);
+    return idio_C_int (pid);
 }
 
 IDIO_DEFINE_PRIMITIVE0 ("c/getpid", C_getpid, ())
@@ -100,7 +100,7 @@ IDIO_DEFINE_PRIMITIVE0 ("c/getpid", C_getpid, ())
 	idio_error_system_errno ("getpid", idio_S_nil);
     }
 
-    return idio_C_pid_t (pid);
+    return idio_C_int (pid);
 }
 
 IDIO_DEFINE_PRIMITIVE1 ("c/isatty", C_isatty, (IDIO ifd))
@@ -123,10 +123,10 @@ IDIO_DEFINE_PRIMITIVE1 ("c/kill", C_kill, (IDIO ipid, IDIO isig))
 {
     IDIO_ASSERT (ipid);
     IDIO_ASSERT (isig);
-    IDIO_VERIFY_PARAM_TYPE (C_pid_t, ipid);
+    IDIO_VERIFY_PARAM_TYPE (C_int, ipid);
     IDIO_VERIFY_PARAM_TYPE (C_int, isig);
     
-    pid_t pid = IDIO_C_TYPE_PID_T (ipid);
+    pid_t pid = IDIO_C_TYPE_INT (ipid);
     int sig = IDIO_C_TYPE_INT (isig);
 
     int r = kill (pid, sig);
@@ -175,11 +175,11 @@ IDIO_DEFINE_PRIMITIVE2 ("c/setpgid", C_setpgid, (IDIO ipid, IDIO ipgid))
 {
     IDIO_ASSERT (ipid);
     IDIO_ASSERT (ipgid);
-    IDIO_VERIFY_PARAM_TYPE (C_pid_t, ipid);
-    IDIO_VERIFY_PARAM_TYPE (C_pid_t, ipgid);
+    IDIO_VERIFY_PARAM_TYPE (C_int, ipid);
+    IDIO_VERIFY_PARAM_TYPE (C_int, ipgid);
     
-    pid_t pid = IDIO_C_TYPE_PID_T (ipid);
-    pid_t pgid = IDIO_C_TYPE_PID_T (ipgid);
+    pid_t pid = IDIO_C_TYPE_INT (ipid);
+    pid_t pgid = IDIO_C_TYPE_INT (ipgid);
 
     int r = setpgid (pid, pgid);
     
@@ -239,7 +239,7 @@ IDIO_DEFINE_PRIMITIVE1 ("c/tcgetpgrp", C_tcgetpgrp, (IDIO ifd))
 	idio_error_system_errno ("tcgetpgrp", ifd);
     }
 
-    return idio_C_pid_t (pid);
+    return idio_C_int (pid);
 }
 
 IDIO_DEFINE_PRIMITIVE3 ("c/tcsetattr", C_tcsetattr, (IDIO ifd, IDIO ioptions, IDIO itcattrs))
@@ -269,10 +269,10 @@ IDIO_DEFINE_PRIMITIVE2 ("c/tcsetpgrp", C_tcsetpgrp, (IDIO ifd, IDIO ipgrp))
     IDIO_ASSERT (ifd);
     IDIO_ASSERT (ipgrp);
     IDIO_VERIFY_PARAM_TYPE (C_int, ifd);
-    IDIO_VERIFY_PARAM_TYPE (C_pid_t, ipgrp);
+    IDIO_VERIFY_PARAM_TYPE (C_int, ipgrp);
 
     int fd = IDIO_C_TYPE_INT (ifd);
-    pid_t pgrp = IDIO_C_TYPE_PID_T (ipgrp);
+    pid_t pgrp = IDIO_C_TYPE_INT (ipgrp);
     
 
     int r = tcsetpgrp (fd, pgrp);
@@ -288,10 +288,10 @@ IDIO_DEFINE_PRIMITIVE2 ("c/waitpid", C_waitpid, (IDIO ipid, IDIO ioptions))
 {
     IDIO_ASSERT (ipid);
     IDIO_ASSERT (ioptions);
-    IDIO_VERIFY_PARAM_TYPE (C_pid_t, ipid);
+    IDIO_VERIFY_PARAM_TYPE (C_int, ipid);
     IDIO_VERIFY_PARAM_TYPE (C_int, ioptions);
 
-    pid_t pid = IDIO_C_TYPE_PID_T (ipid);
+    pid_t pid = IDIO_C_TYPE_INT (ipid);
     int options = IDIO_C_TYPE_INT (ioptions);
 
     int *statusp = idio_alloc (sizeof (int));
@@ -304,7 +304,7 @@ IDIO_DEFINE_PRIMITIVE2 ("c/waitpid", C_waitpid, (IDIO ipid, IDIO ioptions))
 
     IDIO istatus = idio_C_pointer_free_me (statusp);
 
-    return IDIO_LIST2 (idio_C_pid_t (r), istatus);
+    return IDIO_LIST2 (idio_C_int (r), istatus);
 }
 
 IDIO_DEFINE_PRIMITIVE1 ("c/WIFSIGNALED", C_WIFSIGNALED, (IDIO istatus))
@@ -369,7 +369,7 @@ void idio_init_libc_wrap ()
     idio_module_set_symbol_value (idio_symbols_C_intern ("c/STDOUT_FILENO"), idio_C_int (STDOUT_FILENO), idio_main_module ());
     idio_module_set_symbol_value (idio_symbols_C_intern ("c/TCSADRAIN"), idio_C_int (TCSADRAIN), idio_main_module ());
     idio_module_set_symbol_value (idio_symbols_C_intern ("c/TCSAFLUSH"), idio_C_int (TCSAFLUSH), idio_main_module ());
-    idio_module_set_symbol_value (idio_symbols_C_intern ("c/WAIT_ANY"), idio_C_pid_t (WAIT_ANY), idio_main_module ());
+    idio_module_set_symbol_value (idio_symbols_C_intern ("c/WAIT_ANY"), idio_C_int (WAIT_ANY), idio_main_module ());
     idio_module_set_symbol_value (idio_symbols_C_intern ("c/WUNTRACED"), idio_C_int (WUNTRACED), idio_main_module ());
 }
 

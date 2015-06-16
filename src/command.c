@@ -320,77 +320,76 @@ char **idio_command_argv (IDIO args)
 	    break;
 	case IDIO_TYPE_POINTER_MARK:
 	    {
-		idio_type_e type = idio_type (arg);
-
-		if (type >= IDIO_TYPE_CAT_BASE) {
-		    argv[i++] = idio_as_string (arg, 1);
-		} else {
-		    switch (idio_type (arg)) {
-		    case IDIO_TYPE_STRING:
-			if (asprintf (&argv[i++], "%.*s", (int) IDIO_STRING_BLEN (arg), IDIO_STRING_S (arg)) == -1) {
-			    return NULL;
-			}
-			break;
-		    case IDIO_TYPE_SUBSTRING:
-			if (asprintf (&argv[i++], "%.*s", (int) IDIO_SUBSTRING_BLEN (arg), IDIO_SUBSTRING_S (arg)) == -1) {
-			    return NULL;
-			}
-			break;
-		    case IDIO_TYPE_SYMBOL:
-			{
-			    glob_t g;
-			    size_t n = idio_command_possible_filename_glob (arg, &g);
-
-			    if (0 == n) {
-				if (asprintf (&argv[i++], "%s", IDIO_SYMBOL_S (arg)) == -1) {
-				    return NULL;
-				}
-			    } else {
-				/*
-				 * NB "gl_pathc - 1" as we reserved a slot
-				 * for the original pattern so the
-				 * increment is one less
-				 */
-				argc += g.gl_pathc - 1;
-
-				argv = idio_realloc (argv, argc * sizeof (char *));
-			    
-				size_t n;
-				for (n = 0; n < g.gl_pathc; n++) {
-				    size_t plen = strlen (g.gl_pathv[n]);
-				    argv[i] = idio_alloc (plen + 1);
-				    strcpy (argv[i++], g.gl_pathv[n]);
-				}
-
-				globfree (&g);
-			    }
-			}
-			break;
-		    case IDIO_TYPE_PAIR:
-		    case IDIO_TYPE_ARRAY:
-		    case IDIO_TYPE_HASH:
-		    case IDIO_TYPE_BIGNUM:
-			{
-			    argv[i++] = idio_as_string (arg, 1);
-			}
-			break;
-		    case IDIO_TYPE_CLOSURE:
-		    case IDIO_TYPE_PRIMITIVE:
-		    case IDIO_TYPE_MODULE:
-		    case IDIO_TYPE_FRAME:
-		    case IDIO_TYPE_HANDLE:
-		    case IDIO_TYPE_STRUCT_TYPE:
-		    case IDIO_TYPE_STRUCT_INSTANCE:
-		    case IDIO_TYPE_THREAD:
-		    case IDIO_TYPE_C_TYPEDEF:
-		    case IDIO_TYPE_C_STRUCT:
-		    case IDIO_TYPE_C_INSTANCE:
-		    case IDIO_TYPE_C_FFI:
-		    case IDIO_TYPE_OPAQUE:
-		    default:
-			idio_warning_message ("unexpected object type: %s", idio_type2string (arg));
-			break;
+		switch (idio_type (arg)) {
+		case IDIO_TYPE_STRING:
+		    if (asprintf (&argv[i++], "%.*s", (int) IDIO_STRING_BLEN (arg), IDIO_STRING_S (arg)) == -1) {
+			return NULL;
 		    }
+		    break;
+		case IDIO_TYPE_SUBSTRING:
+		    if (asprintf (&argv[i++], "%.*s", (int) IDIO_SUBSTRING_BLEN (arg), IDIO_SUBSTRING_S (arg)) == -1) {
+			return NULL;
+		    }
+		    break;
+		case IDIO_TYPE_SYMBOL:
+		    {
+			glob_t g;
+			size_t n = idio_command_possible_filename_glob (arg, &g);
+
+			if (0 == n) {
+			    if (asprintf (&argv[i++], "%s", IDIO_SYMBOL_S (arg)) == -1) {
+				return NULL;
+			    }
+			} else {
+			    /*
+			     * NB "gl_pathc - 1" as we reserved a slot
+			     * for the original pattern so the
+			     * increment is one less
+			     */
+			    argc += g.gl_pathc - 1;
+
+			    argv = idio_realloc (argv, argc * sizeof (char *));
+			    
+			    size_t n;
+			    for (n = 0; n < g.gl_pathc; n++) {
+				size_t plen = strlen (g.gl_pathv[n]);
+				argv[i] = idio_alloc (plen + 1);
+				strcpy (argv[i++], g.gl_pathv[n]);
+			    }
+
+			    globfree (&g);
+			}
+		    }
+		    break;
+		case IDIO_TYPE_PAIR:
+		case IDIO_TYPE_ARRAY:
+		case IDIO_TYPE_HASH:
+		case IDIO_TYPE_BIGNUM:
+		case IDIO_TYPE_C_INT:
+		case IDIO_TYPE_C_UINT:
+		case IDIO_TYPE_C_FLOAT:
+		case IDIO_TYPE_C_DOUBLE:
+		case IDIO_TYPE_C_POINTER:
+		    {
+			argv[i++] = idio_as_string (arg, 1);
+		    }
+		    break;
+		case IDIO_TYPE_CLOSURE:
+		case IDIO_TYPE_PRIMITIVE:
+		case IDIO_TYPE_MODULE:
+		case IDIO_TYPE_FRAME:
+		case IDIO_TYPE_HANDLE:
+		case IDIO_TYPE_STRUCT_TYPE:
+		case IDIO_TYPE_STRUCT_INSTANCE:
+		case IDIO_TYPE_THREAD:
+		case IDIO_TYPE_C_TYPEDEF:
+		case IDIO_TYPE_C_STRUCT:
+		case IDIO_TYPE_C_INSTANCE:
+		case IDIO_TYPE_C_FFI:
+		case IDIO_TYPE_OPAQUE:
+		default:
+		    idio_warning_message ("unexpected object type: %s", idio_type2string (arg));
+		    break;
 		}
 	    }
 	    break;
@@ -1139,7 +1138,7 @@ void idio_init_command ()
 	}
 
 	idio_module_set_symbol_value (idio_symbols_C_intern ("%idio-pgid"),
-				      idio_C_pid_t (idio_command_pgid),
+				      idio_C_int (idio_command_pgid),
 				      idio_main_module ());
     
 	/*

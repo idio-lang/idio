@@ -197,8 +197,8 @@ IDIO idio_C_fields_array (IDIO C_typedefs)
 	int nelem = 1;
 	if (idio_isa_pair (C_typedef)) {
 	    IDIO v1 = idio_list_head (idio_list_tail (C_typedef));
-	    IDIO v2 = idio_C_number_cast (v1, IDIO_TYPE_C_UINT64_T);
-	    nelem = IDIO_C_TYPE_UINT64_T (v2);
+	    IDIO v2 = idio_C_number_cast (v1, IDIO_TYPE_C_UINT);
+	    nelem = IDIO_C_TYPE_UINT (v2);
 
 	    C_typedef = idio_list_head (C_typedef);
 	}
@@ -265,11 +265,11 @@ IDIO idio_C_fields_array (IDIO C_typedefs)
 	/* add any alignment required */
 	offset += offset % alignment;
 
-	idio_array_push (field_data, idio_C_uint64_t (alignment));
-	idio_array_push (field_data, idio_C_uint64_t (type));
-	idio_array_push (field_data, idio_C_uint64_t (offset));
-	idio_array_push (field_data, idio_C_uint64_t (size));
-	idio_array_push (field_data, idio_C_uint64_t (nelem));
+	idio_array_push (field_data, idio_C_uint (alignment));
+	idio_array_push (field_data, idio_C_uint (type));
+	idio_array_push (field_data, idio_C_uint (offset));
+	idio_array_push (field_data, idio_C_uint (size));
+	idio_array_push (field_data, idio_C_uint (nelem));
 
 	idio_array_push (fields_array, field_data);
 
@@ -293,7 +293,7 @@ size_t idio_sizeof_C_struct (IDIO fields_array)
     IDIO offset = idio_array_get_index (field_data, IDIO_C_FIELD_DATA_OFFSET);
     IDIO size = idio_array_get_index (field_data, IDIO_C_FIELD_DATA_SIZE);
 
-    r = IDIO_C_TYPE_INT64_T (offset) + IDIO_C_TYPE_UINT64_T (size);
+    r = IDIO_C_TYPE_INT (offset) + IDIO_C_TYPE_UINT (size);
 
     return r;
 }
