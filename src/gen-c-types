@@ -521,6 +521,24 @@ for type in "${types[@]}" ; do
 		break;
 EOF
 	;;
+    pid_t)
+	cat <<EOF
+	    case IDIO_TYPE_C_${CTYPE}:
+		if (asprintf (&r, "%ld", (long) IDIO_C_TYPE_${CTYPE} (o)) == -1) {
+		    return NULL;
+		}
+		break;
+EOF
+	;;
+    off_t)
+	cat <<EOF
+	    case IDIO_TYPE_C_${CTYPE}:
+		if (asprintf (&r, "%jd", (intmax_t) IDIO_C_TYPE_${CTYPE} (o)) == -1) {
+		    return NULL;
+		}
+		break;
+EOF
+	;;
     *)
 	case ${ctype} in
 	u*)	sign=u ;;
@@ -537,7 +555,6 @@ EOF
 	*int64_t)	size=PRI${sign}64 ;;
 	float|double)	size=\"g\" ;;
 	size_t)		size=\"z${sign}\" ;;
-	off_t)		size=\"z${sign}\" ;;
 	*)		size=\"${sign}\" ;;
 	esac
 	cat <<EOF
