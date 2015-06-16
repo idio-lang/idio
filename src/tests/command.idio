@@ -44,7 +44,7 @@ monitor (function (cont cond) {
     if (rt-command-status-error? cond) {
       status := command-error-status cond
       test (struct-instance-ref status 'state) 'exited
-      test (struct-instance-ref status 'wait) 11
+      test (struct-instance-ref status 'reason) 11
 
       #t
     } (error "auto-exit -e 11: unexpected condition" cond)
@@ -59,7 +59,7 @@ monitor (function (cont cond) {
     if (rt-command-status-error? cond) {
       status := command-error-status cond
       test (struct-instance-ref status 'state) 'killed
-      test (struct-instance-ref status 'wait) 15
+      test (struct-instance-ref status 'reason) 15
 
       #t
     } (error "auto-exit -k 15: unexpected condition" cond)

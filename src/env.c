@@ -99,7 +99,7 @@ void idio_env_init_idiolib (char *argv0)
     char *path = realpath (argv0, NULL);
 
     if (NULL == path) {
-	idio_error_system ("realpath(3) => NULL", idio_S_nil, errno);
+	idio_error_system_errno ("realpath(3) => NULL", idio_S_nil);
     }
 
     dir = rindex (path, '/');

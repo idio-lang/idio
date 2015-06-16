@@ -34,7 +34,7 @@ IDIO idio_integer (intmax_t i)
 	idio_gc_stats_inc (IDIO_TYPE_FIXNUM);
 	return IDIO_FIXNUM (i);
     } else {
-	idio_bignum_integer_intmax_t (i);
+	return idio_bignum_integer_intmax_t (i);
     }
 }    
 
@@ -45,7 +45,7 @@ IDIO idio_fixnum (intmax_t i)
 	idio_gc_stats_inc (IDIO_TYPE_FIXNUM);
 	return IDIO_FIXNUM (i);
     } else {
-	idio_bignum_integer_intmax_t (i);
+	return idio_bignum_integer_intmax_t (i);
     }
 }    
 

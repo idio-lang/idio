@@ -27,13 +27,19 @@ usage ()
 	echo "where options are:" 
 	echo "	-e STATUS	exit with STATUS" 
 	echo "	-k SIGNAL	kill self with SIGNAL" 
+	echo "	-r NUM		read NUM lines (-s N seconds apart)" 
+	echo "	-s NUM		sleep for NUM seconds" 
+	echo "	-w NUM		write NUM lines (-s N seconds apart)" 
     ) >&2
 }
 
 opt_exit=0
 opt_kill=
+opr_read=
+opt_sleep=0
+opt_write=
 
-while getopts "e:k:" opt ; do
+while getopts "e:k:r:s:w:" opt ; do
     case "${opt}" in
     e)
 	opt_exit=${OPTARG}
@@ -41,12 +47,49 @@ while getopts "e:k:" opt ; do
     k)
 	opt_kill=${OPTARG}
 	;;
+    r)
+	opt_read=${OPTARG}
+	;;
+    s)
+	opt_sleep=${OPTARG}
+	;;
+    w)
+	opt_write=${OPTARG}
+	;;
     *)
 	usage
 	exit 1
 	;;
     esac
 done
+
+var_write=1
+
+if [[ ${opt_read} || $opt_write ]] ; then
+    while [[ ${opt_read} || ${opt_write} ]] ; do
+	if [[ ${opt_write} ]] ; then
+	    if [[ ${opt_write} -gt 0 ]] ; then
+		echo "$$: line ${var_write}"
+		var_write=$(( var_write + 1 ))
+		opt_write=$(( opt_write - 1 ))
+	    else
+		opt_write=
+	    fi
+	fi
+	sleep $opt_sleep
+	if [[ ${opt_read} ]] ; then
+	    if [[ ${opt_read} -gt 0 ]] ; then
+		read line
+		echo "$$: read '${line}'"
+		opt_read=$(( opt_read - 1 ))
+	    else
+		opt_read=
+	    fi
+	fi
+    done
+else
+    sleep $opt_sleep
+fi
 
 if [[ ${opt_kill} ]] ; then
     kill -${opt_kill} $$

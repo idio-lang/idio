@@ -24,6 +24,7 @@
 #define FILE_HANDLE_H
 
 int idio_isa_file_handle (IDIO fh);
+int idio_file_handle_fd (IDIO fh);
 void idio_file_handle_finalizer (IDIO fh);
 void idio_gc_register_file_handle (IDIO fh);
 void idio_gc_deregister_file_handle (IDIO fh);

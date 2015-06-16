@@ -150,7 +150,6 @@ void idio_error_system (char *msg, IDIO args, int err)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (args);
-    IDIO_TYPE_ASSERT (list, args);
 
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C (msg, msh);
@@ -169,6 +168,14 @@ void idio_error_system (char *msg, IDIO args, int err)
 					       idio_get_output_string (dsh),
 					       idio_fixnum ((intptr_t) err)));
     idio_signal_exception (idio_S_false, c);
+}
+
+void idio_error_system_errno (char *msg, IDIO args)
+{
+    IDIO_C_ASSERT (msg);
+    IDIO_ASSERT (args);
+
+    idio_error_system_errno (msg, args);
 }
 
 void idio_init_error ()

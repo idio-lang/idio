@@ -58,6 +58,8 @@
 
 #include <setjmp.h>
 
+#include <termios.h>
+
 #ifdef IDIO_DEBUG
 
 #define IDIO_C_ASSERT(x)	(assert (x))
@@ -78,7 +80,7 @@
  *
  * obviously some random C pointer might pass but that's *always* true
  */
-#define IDIO_ASSERT(x)		(assert(x),(((intptr_t) x)&3)?1:(assert((x)->type),assert((x)->type < IDIO_TYPE_MAX)))
+#define IDIO_ASSERT(x)		(assert(x),(((intptr_t) x)&3)?1:(assert((x)->type),assert(((x)->type < IDIO_TYPE_MAX) || ((x)->type >= IDIO_TYPE_CAT_BASE && (x)->type < IDIO_TYPE_CAT_MAX))))
 #define IDIO_ASSERT_FREE(x)	((((intptr_t) x)&3)?1:(assert(((x)->flags & IDIO_FLAG_FREE_MASK) == IDIO_FLAG_FREE)))
 #define IDIO_ASSERT_NOT_FREED(x) ((((intptr_t) x)&3)?1:(assert(((x)->flags & IDIO_FLAG_FREE_MASK) != IDIO_FLAG_FREE)))
 #define IDIO_EXIT(x)		{IDIO_C_ASSERT(0);exit(x);}
@@ -227,7 +229,6 @@
 #include "bignum.h"
 #include "c-ffi.h"
 #include "c-struct.h"
-#include "c-type.h"
 #include "character.h"
 #include "closure.h"
 #include "command.h"
@@ -256,6 +257,8 @@
 #include "thread.h"
 #include "util.h"
 #include "vm.h"
+
+#include "libc-wrap.h"
 
 /*
  * Some well-known constants.

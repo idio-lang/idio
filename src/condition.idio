@@ -106,7 +106,7 @@ define-macro (condition type & field-bindings) {
 
 define-condition-type-accessors-only ^idio-error			^error				i/o-error? \
 	(message idio-error-message) \
-	(localtion idio-error-location) \
+	(location idio-error-location) \
 	(detail idio-error-detail)
 
 ;; SRFI-36-ish standard conditions

@@ -121,12 +121,12 @@ for type in "${types[@]}" ; do
     case ${ctype} in
     pointer)
 	cat <<EOF
-#define IDIO_C_TYPE_POINTER_P(C)       ((C)->u.C_type->u.C_pointer->p)
-#define IDIO_C_TYPE_POINTER_FREEP(C)   ((C)->u.C_type->u.C_pointer->freep)
+#define IDIO_C_TYPE_POINTER_P(C)       ((C)->u.C_type.u.C_pointer->p)
+#define IDIO_C_TYPE_POINTER_FREEP(C)   ((C)->u.C_type.u.C_pointer->freep)
 EOF
 	;;
     *)
-	printf "#define %-30s ((C)->u.C_type->u.C_${ctype})\n" "IDIO_C_TYPE_${CTYPE}(C)"
+	printf "#define %-30s ((C)->u.C_type.u.C_${ctype})\n" "IDIO_C_TYPE_${CTYPE}(C)"
 	;;
     esac
 done
@@ -161,6 +161,10 @@ char *idio_C_as_string (struct idio_s *o, int depth);
 idio_hi_t idio_hash_C_hashval (struct idio_s *k);
 struct idio_s *idio_C_number_cast (struct idio_s *co, int type);
 
+void idio_init_auto_c_type ();
+void idio_auto_c_type_add_primtives ();
+void idio_final_auto_c_type ();
+
 #endif /* AUTO_C_TYPE_H */
 
 EOF
@@ -181,9 +185,11 @@ void idio_free_C_type (IDIO co)
 {
     IDIO_ASSERT (co);
 
+    /*
     idio_gc_stats_free (sizeof (idio_C_type_t));
 
     free (co->u.C_type);
+    */
 }
 
 EOF
@@ -196,12 +202,14 @@ for type in "${types[@]}" ; do
 	cat <<EOF
 IDIO idio_C_${ctype} (${type} v)
 {
-    IDIO_C_ASSERT (v);
-    
+    /*
+     * NB Don't IDIO_C_ASSERT (v) as we could be instantiating with NULL
+     */
+
     IDIO co = idio_gc_get (IDIO_TYPE_C_${CTYPE});
 
-    IDIO_GC_ALLOC (co->u.C_type, sizeof (idio_C_type_t));
-    IDIO_GC_ALLOC (co->u.C_type->u.C_pointer, sizeof (idio_C_pointer_t));
+    /* IDIO_GC_ALLOC (co->u.C_type, sizeof (idio_C_type_t)); */
+    IDIO_GC_ALLOC (co->u.C_type.u.C_pointer, sizeof (idio_C_pointer_t));
     
     IDIO_C_TYPE_${CTYPE}_P (co) = v;
     IDIO_C_TYPE_${CTYPE}_FREEP (co) = 0;
@@ -211,6 +219,9 @@ IDIO idio_C_${ctype} (${type} v)
 
 IDIO idio_C_${ctype}_free_me (${type} v)
 {
+    /*
+     * NB We must IDIO_C_ASSERT (v) as we will be trying to free v
+     */
     IDIO_C_ASSERT (v);
     
     IDIO co = idio_C_${ctype} (v);
@@ -239,14 +250,14 @@ void idio_free_C_${ctype} (IDIO co)
 {
     IDIO_ASSERT (co);
 
-    idio_gc_stats_free (sizeof (idio_C_${ctype}_t));
+    /* idio_gc_stats_free (sizeof (idio_C_${ctype}_t)); */
 
     if (IDIO_C_TYPE_${CTYPE}_FREEP (co)) {
 	free (IDIO_C_TYPE_${CTYPE}_P (co));
     }
 
-    free (co->u.C_type->u.C_${ctype});
-    idio_free_C_type (co);
+    free (co->u.C_type.u.C_${ctype});
+    /* idio_free_C_type (co); */
 }
 
 EOF
@@ -257,7 +268,7 @@ IDIO idio_C_${ctype} (${type} v)
 {
     IDIO co = idio_gc_get (IDIO_TYPE_C_${CTYPE});
 
-    IDIO_GC_ALLOC (co->u.C_type, sizeof (idio_C_type_t));
+    /* IDIO_GC_ALLOC (co->u.C_type, sizeof (idio_C_type_t)); */
     
     IDIO_C_TYPE_${CTYPE} (co) = v;
 
@@ -331,6 +342,38 @@ int idio_C_equal (IDIO o1, IDIO o2)
     
 	    switch (m2) {
 	    case IDIO_TYPE_FIXNUM_MARK:
+		{
+		    intptr_t v2 = IDIO_FIXNUM_VAL (o2);
+		    switch (o1->type) {
+EOF
+
+for type in "${types[@]}" ; do
+    ctype=$(cname "${type}")
+    CTYPE=${ctype^^}
+    case ${ctype} in
+    pointer)
+	cat <<EOF
+		    case IDIO_TYPE_C_${CTYPE}:
+			return 0;
+EOF
+	;;
+    *)
+	cat <<EOF
+		    case IDIO_TYPE_C_${CTYPE}:
+			return (IDIO_C_TYPE_${CTYPE} (o1) == v2);
+EOF
+	;;
+    esac
+done
+
+cat <<EOF
+		    default:
+			fprintf (stderr, "idio_C_equal: IDIO_TYPE_POINTER_MARK: o1->type %d unexpected\n", o1->type);
+			IDIO_C_ASSERT (0);
+			return 0;
+	    }
+		}
+	        break;
 	    case IDIO_TYPE_CONSTANT_MARK:
 	    case IDIO_TYPE_CHARACTER_MARK:
 		/* we would have matched at the top */
@@ -378,13 +421,78 @@ cat <<EOF
 	    }
 	}
     default:
-	fprintf (stderr, "idio_equal: o1->type %p unexpected\n", o1);
+	fprintf (stderr, "idio_C_equal: o1->type %p unexpected\n", o1);
 	IDIO_C_ASSERT (0);
 	return 0;
     }
 
     return 1;
 }
+
+#define IDIO_DEFINE_C_ARITHMETIC_CMP_PRIMITIVE(name,cname,cmp)	\\
+    IDIO_DEFINE_PRIMITIVE2 (name, cname, (IDIO n1, IDIO n2))	\\
+    {								\\
+	IDIO_ASSERT (n1);					\\
+	IDIO_ASSERT (n2);					\\
+								\\
+	int result;						\\
+								\\
+	if (idio_isa_fixnum (n2)) {				\\
+	    if (idio_isa_fixnum (n1)) {				\\
+		result = idio_eqp (n1, n2);			\\
+	    } else {						\\
+		intptr_t v2 = IDIO_FIXNUM_VAL (n2);		\\
+		switch (idio_type (n1)) {			\\
+EOF
+
+for type in "${types[@]}" ; do
+    ctype=$(cname "${type}")
+    CTYPE=${ctype^^}
+    case ${ctype} in
+    pointer)
+	cat <<EOF
+		case IDIO_TYPE_C_${CTYPE}:			\\
+		    result = 0;					\\
+		    break;					\\
+EOF
+	;;
+    *)
+	cat <<EOF
+		case IDIO_TYPE_C_${CTYPE}:			\\
+		    result = (IDIO_C_TYPE_${CTYPE} (n1) cmp v2); \\
+		    break;					\\
+EOF
+	;;
+    esac
+done
+
+cat <<EOF
+		default:					\\
+		    fprintf (stderr, #name ": IDIO_TYPE_POINTER_MARK: n1->type %d unexpected\n", n1->type); \\
+		    IDIO_C_ASSERT (0);				\\
+		    result = 0;					\\
+		    break;					\\
+		}						\\
+	    }							\\
+	} else {						\\
+	    result = idio_C_equal (n1, n2);			\\
+	}							\\
+								\\
+	IDIO r = idio_S_false;					\\
+								\\
+	if (result) {						\\
+	    r = idio_S_true;					\\
+	}							\\
+								\\
+	return r;						\\
+    }
+
+
+IDIO_DEFINE_C_ARITHMETIC_CMP_PRIMITIVE ("c/le", C_le, <=)
+IDIO_DEFINE_C_ARITHMETIC_CMP_PRIMITIVE ("c/lt", C_lt, <)
+IDIO_DEFINE_C_ARITHMETIC_CMP_PRIMITIVE ("c/eq", C_eq, ==)
+IDIO_DEFINE_C_ARITHMETIC_CMP_PRIMITIVE ("c/ge", C_ge, >=)
+IDIO_DEFINE_C_ARITHMETIC_CMP_PRIMITIVE ("c/gt", C_gt, >)
 
 char *idio_C_as_string (IDIO o, int depth)
 {
@@ -564,6 +672,23 @@ IDIO idio_C_number_cast (IDIO co, int type)
     }
 
     return r;
+}
+
+void idio_init_auto_c_type ()
+{
+}
+
+void idio_auto_c_type_add_primtives ()
+{
+    IDIO_ADD_PRIMITIVE (C_le);
+    IDIO_ADD_PRIMITIVE (C_lt);
+    IDIO_ADD_PRIMITIVE (C_eq);
+    IDIO_ADD_PRIMITIVE (C_ge);
+    IDIO_ADD_PRIMITIVE (C_gt);
+}
+
+void idio_final_auto_c_type ()
+{
 }
 
 EOF

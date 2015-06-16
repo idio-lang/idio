@@ -286,7 +286,7 @@ IDIO idio_open_file_handle_C (char *name, char *mode)
 		 * idio_filehandle_error_filename_C and otherwise default to an
 		 * idio_error_system_C (not currently written).
 		 */
-		idio_error_system ("fopen", IDIO_LIST1 (idio_string_C (name)), errno);
+		idio_error_system_errno ("fopen", IDIO_LIST1 (idio_string_C (name)));
 	    }
 	} else {
 	    break;
@@ -294,7 +294,7 @@ IDIO idio_open_file_handle_C (char *name, char *mode)
     }
 
     if (NULL == filep) {
-	idio_error_system ("fopen (final)", IDIO_LIST2 (idio_string_C (name), idio_string_C (mode)), errno);
+	idio_error_system_errno ("fopen (final)", IDIO_LIST2 (idio_string_C (name), idio_string_C (mode)));
     }
 
     return idio_open_file_handle (name, filep, mflag, IDIO_FILE_HANDLE_FLAG_NONE);
@@ -483,6 +483,22 @@ IDIO_DEFINE_PRIMITIVE1 ("output-file-handle?", output_file_handlep, (IDIO o))
     }
 
     return r;
+}
+
+int idio_file_handle_fd (IDIO fh)
+{
+    IDIO_ASSERT (fh);
+    IDIO_TYPE_ASSERT (file_handle, fh);
+    
+    return IDIO_FILE_HANDLE_FD (fh);
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("file-handle-fd", file_handle_fd, (IDIO fh))
+{
+    IDIO_ASSERT (fh);
+    IDIO_VERIFY_PARAM_TYPE (file_handle, fh);
+    
+    return idio_fixnum (IDIO_FILE_HANDLE_FD (fh));
 }
 
 void idio_file_handle_finalizer (IDIO fh)
@@ -1109,6 +1125,7 @@ void idio_file_handle_add_primitives ()
     IDIO_ADD_PRIMITIVE (file_handlep);
     IDIO_ADD_PRIMITIVE (input_file_handlep);
     IDIO_ADD_PRIMITIVE (output_file_handlep);
+    IDIO_ADD_PRIMITIVE (file_handle_fd);
     IDIO_ADD_PRIMITIVE (load);
     IDIO_ADD_PRIMITIVE (file_exists_p);
     IDIO_ADD_PRIMITIVE (delete_file);

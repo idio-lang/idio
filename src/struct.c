@@ -22,6 +22,21 @@
 
 #include "idio.h"
 
+static void idio_struct_error_field_not_found (IDIO field)
+{
+    IDIO_ASSERT (field);
+    
+    IDIO sh = idio_open_output_string_handle_C ();
+    idio_display_C ("field '", sh);
+    idio_display (field, sh);
+    idio_display_C ("' not found", sh);
+    IDIO c = idio_struct_instance (idio_condition_runtime_error_type,
+				   IDIO_LIST3 (idio_get_output_string (sh),
+					       idio_S_nil,
+					       idio_S_nil));
+    idio_signal_exception (idio_S_true, c);
+}
+
 IDIO idio_struct_type (IDIO name, IDIO parent, IDIO fields)
 {
     IDIO_ASSERT (name);
@@ -327,8 +342,7 @@ IDIO idio_struct_instance_ref (IDIO si, IDIO field)
     idio_ai_t i = idio_array_find_eqp (IDIO_STRUCT_TYPE_FIELDS (st), field, 0);
 
     if (-1 == i) {
-	fprintf (stderr, "struct-instance-ref: field not found");
-	IDIO_C_ASSERT (0);
+	idio_struct_error_field_not_found (field);
     }
 
     return idio_array_get_index (IDIO_STRUCT_INSTANCE_FIELDS (si), i);

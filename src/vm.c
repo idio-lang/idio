@@ -116,16 +116,16 @@ static void idio_vm_panic (IDIO thr, char *m)
     IDIO_C_ASSERT (0);
 }
 
-static void idio_vm_error_compile_param_args (char *m)
+static void idio_vm_error_compile_param_args (char *m, IDIO mt)
 {
-    idio_error_message ("expected arguments: %s", m);
+    IDIO_ASSERT (mt);
+    
+    idio_error_C (m, mt);
 }
 
 static void idio_vm_error_compile_param_type (char *m, IDIO t)
 {
-    char *ts = idio_display_string (t);
-    idio_error_message ("not a %s: %s", m, ts);
-    free (ts);
+    idio_error_param_type (m, t);
 }
 
 static void idio_vm_error_function_invoke (char *msg, IDIO args)
@@ -392,7 +392,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 1) {
-		idio_vm_error_compile_param_args ("SHALLOW-ARGUMENT-REF j");
+		idio_vm_error_compile_param_args ("SHALLOW-ARGUMENT-REF j", mt);
 		return;
 	    }
 	    
@@ -419,7 +419,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 1) {
-		idio_vm_error_compile_param_args ("PREDEFINED i");
+		idio_vm_error_compile_param_args ("PREDEFINED i", mt);
 		return;
 	    }
 	    
@@ -469,7 +469,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 2) {
-		idio_vm_error_compile_param_args ("DEEP-ARGUMENT-REF i j");
+		idio_vm_error_compile_param_args ("DEEP-ARGUMENT-REF i j", mt);
 		return;
 	    }
 	    
@@ -496,7 +496,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 2) {
-		idio_vm_error_compile_param_args ("SHALLOW-ARGUMENT-SET j m1");
+		idio_vm_error_compile_param_args ("SHALLOW-ARGUMENT-SET j m1", mt);
 		return;
 	    }
 	    
@@ -527,7 +527,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 3) {
-		idio_vm_error_compile_param_args ("DEEP-ARGUMENT-SET i j m1");
+		idio_vm_error_compile_param_args ("DEEP-ARGUMENT-SET i j m1", mt);
 		return;
 	    }
 	    
@@ -558,7 +558,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 1) {
-		idio_vm_error_compile_param_args ("GLOBAL-REF j");
+		idio_vm_error_compile_param_args ("GLOBAL-REF j", mt);
 		return;
 	    }
 	    
@@ -577,7 +577,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 1) {
-		idio_vm_error_compile_param_args ("CHECKED-GLOBAL-REF j");
+		idio_vm_error_compile_param_args ("CHECKED-GLOBAL-REF j", mt);
 		return;
 	    }
 	    
@@ -596,7 +596,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 1) {
-		idio_vm_error_compile_param_args ("CHECKED-GLOBAL-FUNCTION-REF j");
+		idio_vm_error_compile_param_args ("CHECKED-GLOBAL-FUNCTION-REF j", mt);
 		return;
 	    }
 	    
@@ -615,7 +615,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 2) {
-		idio_vm_error_compile_param_args ("GLOBAL-SET j m1");
+		idio_vm_error_compile_param_args ("GLOBAL-SET j m1", mt);
 		return;
 	    }
 	    
@@ -638,7 +638,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 1) {
-		idio_vm_error_compile_param_args ("CONSTANT j");
+		idio_vm_error_compile_param_args ("CONSTANT j", mt);
 		return;
 	    }
 	    
@@ -737,7 +737,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 3) {
-		idio_vm_error_compile_param_args ("ALTERNATIVE m1 m2 m3");
+		idio_vm_error_compile_param_args ("ALTERNATIVE m1 m2 m3", mt);
 		return;
 	    }
 	    
@@ -825,7 +825,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 2) {
-		idio_vm_error_compile_param_args ("SEQUENCE m1 m+");
+		idio_vm_error_compile_param_args ("SEQUENCE m1 m+", mt);
 		return;
 	    }
 	    
@@ -840,7 +840,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) < 1) {
-		idio_vm_error_compile_param_args ("AND m+");
+		idio_vm_error_compile_param_args ("AND m+", mt);
 		return;
 	    }
 
@@ -918,7 +918,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) < 1) {
-		idio_vm_error_compile_param_args ("OR m+");
+		idio_vm_error_compile_param_args ("OR m+", mt);
 		return;
 	    }
 	    
@@ -995,7 +995,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) < 1) {
-		idio_vm_error_compile_param_args ("BEGIN m+");
+		idio_vm_error_compile_param_args ("BEGIN m+", mt);
 		return;
 	    }
 	    
@@ -1009,7 +1009,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 2) {
-		idio_vm_error_compile_param_args ("TR-FIX-LET m* m+");
+		idio_vm_error_compile_param_args ("TR-FIX-LET m* m+", mt);
 		return;
 	    }
 	    
@@ -1025,7 +1025,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 2) {
-		idio_vm_error_compile_param_args ("FIX-LET m* m+");
+		idio_vm_error_compile_param_args ("FIX-LET m* m+", mt);
 		return;
 	    }
 	    
@@ -1042,7 +1042,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 1) {
-		idio_vm_error_compile_param_args ("CALL0 ins");
+		idio_vm_error_compile_param_args ("CALL0 ins", mt);
 		return;
 	    }
 	    
@@ -1055,7 +1055,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 2) {
-		idio_vm_error_compile_param_args ("CALL1 ins m1");
+		idio_vm_error_compile_param_args ("CALL1 ins m1", mt);
 		return;
 	    }
 	    
@@ -1070,7 +1070,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 3) {
-		idio_vm_error_compile_param_args ("CALL2 ins m1 m2");
+		idio_vm_error_compile_param_args ("CALL2 ins m1 m2", mt);
 		return;
 	    }
 	    
@@ -1090,7 +1090,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 4) {
-		idio_vm_error_compile_param_args ("CALL3 ins m1 m2 m3");
+		idio_vm_error_compile_param_args ("CALL3 ins m1 m2 m3", mt);
 		return;
 	    }
 	    
@@ -1113,7 +1113,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 2) {
-		idio_vm_error_compile_param_args ("FIX-CLOSURE m+ arity");
+		idio_vm_error_compile_param_args ("FIX-CLOSURE m+ arity", mt);
 		return;
 	    }
 	    
@@ -1204,7 +1204,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 2) {
-		idio_vm_error_compile_param_args ("NARY-CLOSURE m+ arity");
+		idio_vm_error_compile_param_args ("NARY-CLOSURE m+ arity", mt);
 		return;
 	    }
 	    
@@ -1274,7 +1274,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 2) {
-		idio_vm_error_compile_param_args ("TR-REGULAR-CALL m1 m*");
+		idio_vm_error_compile_param_args ("TR-REGULAR-CALL m1 m*", mt);
 		return;
 	    }
 	    
@@ -1291,7 +1291,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 2) {
-		idio_vm_error_compile_param_args ("REGULAR-CALL m1 m*");
+		idio_vm_error_compile_param_args ("REGULAR-CALL m1 m*", mt);
 		return;
 	    }
 	    
@@ -1308,7 +1308,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 3) {
-		idio_vm_error_compile_param_args ("STORE-ARGUMENT m1 m* rank");
+		idio_vm_error_compile_param_args ("STORE-ARGUMENT m1 m* rank", mt);
 		return;
 	    }
 	    
@@ -1340,7 +1340,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 3) {
-		idio_vm_error_compile_param_args ("CONS-ARGUMENT m1 m* arity");
+		idio_vm_error_compile_param_args ("CONS-ARGUMENT m1 m* arity", mt);
 		return;
 	    }
 	    
@@ -1359,7 +1359,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 1) {
-		idio_vm_error_compile_param_args ("ALLOCATE-FRAME size");
+		idio_vm_error_compile_param_args ("ALLOCATE-FRAME size", mt);
 		return;
 	    }
 	    
@@ -1387,7 +1387,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 1) {
-		idio_vm_error_compile_param_args ("ALLOCATE-DOTTED-FRAME size");
+		idio_vm_error_compile_param_args ("ALLOCATE-DOTTED-FRAME size", mt);
 		return;
 	    }
 	    
@@ -1406,7 +1406,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 0) {
-		idio_vm_error_compile_param_args ("FINISH");
+		idio_vm_error_compile_param_args ("FINISH", mt);
 		return;
 	    }
 	    
@@ -1417,7 +1417,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 2) {
-		idio_vm_error_compile_param_args ("PUSH-DYNAMIC index m");
+		idio_vm_error_compile_param_args ("PUSH-DYNAMIC index m", mt);
 		return;
 	    }
 
@@ -1433,7 +1433,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
     case IDIO_VM_CODE_POP_DYNAMIC:
 	{
 	    if (idio_S_nil != mt) {
-		idio_vm_error_compile_param_args ("POP-DYNAMIC");
+		idio_vm_error_compile_param_args ("POP-DYNAMIC", mt);
 		return;
 	    }
 
@@ -1444,7 +1444,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 1) {
-		idio_vm_error_compile_param_args ("DYNAMIC-REF index");
+		idio_vm_error_compile_param_args ("DYNAMIC-REF index", mt);
 		return;
 	    }
 
@@ -1458,7 +1458,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 1) {
-		idio_vm_error_compile_param_args ("DYNAMIC-FUNCTION-REF index");
+		idio_vm_error_compile_param_args ("DYNAMIC-FUNCTION-REF index", mt);
 		return;
 	    }
 
@@ -1472,7 +1472,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 2) {
-		idio_vm_error_compile_param_args ("PUSH-ENVIRON index m");
+		idio_vm_error_compile_param_args ("PUSH-ENVIRON index m", mt);
 		return;
 	    }
 
@@ -1488,7 +1488,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
     case IDIO_VM_CODE_POP_ENVIRON:
 	{
 	    if (idio_S_nil != mt) {
-		idio_vm_error_compile_param_args ("POP-ENVIRON");
+		idio_vm_error_compile_param_args ("POP-ENVIRON", mt);
 		return;
 	    }
 
@@ -1499,7 +1499,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 1) {
-		idio_vm_error_compile_param_args ("ENVIRON-REF index");
+		idio_vm_error_compile_param_args ("ENVIRON-REF index", mt);
 		return;
 	    }
 
@@ -1512,7 +1512,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
     case IDIO_VM_CODE_PUSH_HANDLER:
 	{
 	    if (idio_S_nil != mt) {
-		idio_vm_error_compile_param_args ("PUSH-HANDLER");
+		idio_vm_error_compile_param_args ("PUSH-HANDLER", mt);
 		return;
 	    }
 
@@ -1522,7 +1522,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
     case IDIO_VM_CODE_POP_HANDLER:
 	{
 	    if (idio_S_nil != mt) {
-		idio_vm_error_compile_param_args ("POP-HANDLER");
+		idio_vm_error_compile_param_args ("POP-HANDLER", mt);
 		return;
 	    }
 
@@ -1533,7 +1533,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 2) {
-		idio_vm_error_compile_param_args ("EXPANDER i m");
+		idio_vm_error_compile_param_args ("EXPANDER i m", mt);
 		return;
 	    }
 
@@ -1549,7 +1549,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 2) {
-		idio_vm_error_compile_param_args ("OPERATOR i m");
+		idio_vm_error_compile_param_args ("OPERATOR i m", mt);
 		return;
 	    }
 

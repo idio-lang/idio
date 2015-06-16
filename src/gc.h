@@ -618,7 +618,7 @@ typedef struct idio_s {
 	idio_struct_instance_t *struct_instance;
 	idio_thread_t	       *thread;
                                
-	idio_C_type_t          *C_type;
+	idio_C_type_t          C_type;
                                
 	idio_C_typedef_t       *C_typedef;
 	idio_C_struct_t        *C_struct;

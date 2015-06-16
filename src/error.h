@@ -38,6 +38,7 @@ void idio_error_param_type (char *etype, IDIO who);
 void idio_error (IDIO who, IDIO msg, IDIO args);
 void idio_error_C (char *msg, IDIO args);
 void idio_error_system (char *msg, IDIO args, int err);
+void idio_error_system_errno (char *msg, IDIO args);
 
 void idio_init_error ();
 void idio_error_add_primitives ();

@@ -1733,7 +1733,7 @@ char *idio_bignum_expanded_real_as_string (IDIO bn, IDIO_BS_T exp, int digits, i
 	IDIO_BS_T v = idio_bsa_get (sig_a, ai);
 	char *vs;
 	if (asprintf (&vs, "%" PRId64, v) == -1) {
-	    idio_error_system ("bignum->string: asprintf", bn, errno);
+	    idio_error_system_errno ("bignum->string: asprintf", bn);
 	}
 	IDIO_STRCAT_FREE (s, vs);
     }
@@ -1793,7 +1793,7 @@ char *idio_bignum_real_as_string (IDIO bn)
      */
     char *vs;
     if (asprintf (&vs, "%" PRId64, v) == -1) {
-	idio_error_system ("bignum real->string: asprintf", bn, errno);
+	idio_error_system_errno ("bignum real->string: asprintf", bn);
     }
     char vs_rest[IDIO_BIGNUM_DPW+1]; /* +1 in case DPW is 1 for debug! */
     strcpy (vs_rest, vs + 1);
@@ -1824,7 +1824,7 @@ char *idio_bignum_real_as_string (IDIO bn)
     /* } */
     v = exp + digits - 1;
     if (asprintf (&vs, "%+" PRId64, v) == -1) {
-	idio_error_system ("bignum real->string: asprintf", bn, errno);
+	idio_error_system_errno ("bignum real->string: asprintf", bn);
     }
     s = idio_strcat_free (s, vs);
 
