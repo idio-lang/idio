@@ -182,6 +182,23 @@ define (display* & x*) {
   (newline)
 }
 
+define (edisplay x) {
+  display x (current-error-handle)
+}
+
+define (edisplay* & x*) {
+  p :+ function (x* first) {
+    if+ (not (null? x*)) {
+      if (not first) (write-char #\space (current-error-handle))
+      edisplay (ph x*)
+      p (pt x*) #f
+    }
+  }
+
+  p x* #t
+  newline (current-error-handle)
+}
+
 ;; Booleans
 
 define (not x) (eq? #f x)

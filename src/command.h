@@ -27,6 +27,7 @@ char *idio_command_find_exe_C (char *command);
 char *idio_command_find_exe (IDIO func);
 IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname);
 
+extern sig_atomic_t idio_command_sigchld_flag;
 void idio_init_command ();
 void idio_command_add_primitives ();
 void idio_final_command ();

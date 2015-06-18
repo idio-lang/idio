@@ -60,3 +60,5 @@ define-operator / +
 define-operator and +
 define-operator or +
 
+;; C bitwise-or
+define-operator c/| +

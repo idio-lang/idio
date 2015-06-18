@@ -19,103 +19,234 @@
 ;; command.idio
 ;;
 
-define (job-is-stopped job) {
+;;
+;; These algorithms are directly from the libc info pages on Job
+;; Control
+;;
+
+define (job-is-stopped-1 job) {
   loop :+ function (procs) {
     if+ (null? procs) #t \
-	(and (not (%command-process-completed (ph procs)))
-	     (not (%command-process-stopped (ph procs)))) #f \
+	(and (not (%idio-process-completed (ph procs)))
+	     (not (%idio-process-stopped (ph procs)))) #f \
 	else (loop (pt procs))
   }
 
-  loop (%command-job-procs job)
+  loop (%idio-job-procs job)
 }
 
-define (job-is-completed job) {
+define (job-is-completed-1 job) {
   loop :+ function (procs) {
     if+ (null? procs) #t \
-	(not (%command-process-completed (ph procs))) #f \
+	(not (%idio-process-completed (ph procs))) #f \
 	else (loop (pt procs))
   }
 
-  loop (%command-job-procs job)
+  loop (%idio-job-procs job)
 }
 
-define (mark-process-status pid status) {
-  if+ (c/gt pid 0) {
+define (job-failed-1 job) {
+  loop :+ function (procs) {
+    if (null? procs) #f {
+      status := %idio-process-status (ph procs)
+      if+ (c/WIFEXITED status) {
+	    if (not (c/== (c/WEXITSTATUS status) 0)) #t {
+	      loop (pt procs)
+	    }
+          } (c/WIFSIGNALED status) #t \
+	  else {
+	    loop (pt procs)
+	  }
+    }
+  }
+
+  if (job-is-completed job) {
+    loop (%idio-job-procs job)
+  } #f
+}
+
+define (job-status-1 job) {
+  loop :+ function (procs) {
+    if (null? procs) #f {
+      status := %idio-process-status (ph procs)
+      if+ (c/WIFEXITED status) {
+	    if (not (c/== (c/WEXITSTATUS status) 0)) (list 'exit (c/WEXITSTATUS status)) {
+	      loop (pt procs)
+	    }
+          } (c/WIFSIGNALED status) (list 'killed (c/WTERMSIG status)) \
+	  else {
+	    loop (pt procs)
+	  }
+    }
+  }
+
+  ;; return rightmost non-zero exit status or the status from the last
+  ;; (or any as they all succeeded but the last is top of procs)
+  procs := reverse (%idio-job-procs job)
+  or (loop procs) \
+     (list 'exit (c/WEXITSTATUS (%idio-process-status (ph procs))))
+}
+
+define (mark-process-status-1 pid status) {
+  if+ (c/> pid 0) {
     jobs-loop :+ function (jobs) {
       if+ (null? jobs) {
-	    display* "no child process" pid
+	    edisplay* "no child process" pid
 	    #t
 	  } else {
 	    procs-loop :+ function (procs) {
-              if (null? procs) #n \
-		 (c/eq pid (%command-proc-pid (ph procs))) {
-                   set-%command-process-status! (ph procs) status
-                   if (c/WIFSTOPPED status) {
-                     set-%command-process-stopped (ph procs) #t
-                   } {
-                     set-%command-process-completed (ph procs) #t
-                     if (c/WIFSIGNALED status) {
-                       display* pid "Terminated by signal" (c/WTERMSIG status)
-                     }
-		   }
-		   #t
-                 } else (procs-loop (pt procs))
+              if+ (null? procs) #f \
+	          (c/== pid (%idio-process-pid (ph procs))) {
+                    set-%idio-process-status! (ph procs) status
+                    if (c/WIFSTOPPED status) {
+                      set-%idio-process-stopped! (ph procs) #t
+                    } {
+                      set-%idio-process-completed! (ph procs) #t
+                      if (c/WIFSIGNALED status) {
+                        edisplay* pid "Terminated by signal" (c/WTERMSIG status) "(" (c/strsignal (c/WTERMSIG status)) ")"
+                      }
+		    }
+		    #f
+                  } else {
+		    procs-loop (pt procs)
+		  }
             }
 
-	    procs-loop (%command-job-procs job)
+	    procs-loop (%idio-job-procs (ph jobs))
           }
     }
 
-    jobs-loop %command-jobs
-  } (and (c/eq pid 0)
-	 (c/eq c/errno ECHLD)) {
-    #f
+    jobs-loop %idio-jobs
+  } (or (c/== pid 0)
+	 #t ;(c/== c/errno ECHLD)
+	 ) {
+    #t
   } else {
-    error "mark-process-status: impossible!" pid status
+    ;; an error in c/waitpid would have been signalled there
+    error "mark-process-status: inconceivable!" pid status
   }
 }
 
-define (update-status) {
+define (update-status-1) {
+  waitany := function () {
+    apply values (c/waitpid c/WAIT_ANY (c/WUNTRACED c/| c/WNOHANG))
+  }
+
+  do () ((call-with-values waitany mark-process-status) #n) #n
+}
+
+define (wait-for-job-1 job) {
   waitany := function () {
     apply values (c/waitpid c/WAIT_ANY c/WUNTRACED)
   }
-  do () (call-with-values waitany mark-process-status) #n
+
+  do () ((not (and (not (call-with-values waitany mark-process-status))
+	      (not (job-is-stopped job))
+	      (not (job-is-completed job)))) #n) #n
 }
 
-define (wait-for-job job) {
-  waitany := function () {
-    apply values (c/waitpid c/WAIT_ANY c/WUNTRACED)
+define (format-job-info-1 job msg) {
+  edisplay* "job:" (%idio-job-pgid job) "(" msg ")"
+}
+
+define (do-job-notification) {
+  ;; get the latest data
+  (update-status)
+
+  failed-jobs := #n
+
+  loop :+ function (jobs r) {
+    if+ (null? jobs) (reverse r) \
+	else {
+          job := ph jobs
+          if+ (job-is-completed job) {
+            format-job-info job "completed"
+	    if (job-failed job) {
+	      failed-jobs = pair job failed-jobs
+	    }
+            ;; remove job from list (by not including it!)
+            loop (pt jobs) r
+          } (job-is-stopped job) {
+            if (not (%idio-job-notified job)) {
+              format-job-info job "stopped"
+              set-%idio-job-notified! job #t
+            }
+            loop (pt jobs) (pair job r)
+          } else {
+	    loop (pt jobs) (pair job r)
+          }
+        }
   }
-  do () (and (call-with-values waitany mark-process-status)
-	     (not (job-is-stopped job))
-	     (not (job-is-completed job))) #n
+
+  %idio-jobs = loop %idio-jobs #n
+
+  if (not (null? failed-jobs)) {
+    report :+ function (jobs) {
+      if+ (null? jobs) #n \
+          else {
+	    job := ph jobs
+	    c := make-condition ^rt-command-status-error "job failed" (job-failed job) (%idio-job-pgid job) (job-status job)
+	    raise #t c
+
+	    ;; if someone handled that error and returned (anything)
+	    ;; then we can loop onto the next
+	    report (pt jobs)
+	  }
+    }
+
+    report failed-jobs
+  }
 }
 
-define (foreground-job job cont) {
-  job-pgid := %command-job-pgid job
+define (foreground-job-1 job cont) {
+  job-pgid := %idio-job-pgid job
   if cont {
-    c/tcsetattr %idio-terminal c/TCSADRAIN (%command-job-tcattrs job)
+    c/tcsetattr %idio-terminal c/TCSADRAIN (%idio-job-tcattrs job)
     kill (- job-pgid) c/SIGCONT
   }
   wait-for-job job
   c/tcsetpgrp %idio-terminal %idio-pgid
-  set-%command-job-tcattrs! job (c/tcgetattr %idio-terminal)
+  set-%idio-job-tcattrs! job (c/tcgetattr %idio-terminal)
   c/tcsetattr %idio-terminal c/TCSADRAIN %idio-tcattrs
+  job-status job
 }
 
-define (background-job job cont) {
-  job-pgid := %command-job-pgid job
+define (background-job-1 job cont) {
+  job-pgid := %idio-job-pgid job
   if cont {
     kill (- job-pgid) c/SIGCONT
   }
+
+  ;; result of a backgrounded job is 0
+  0
 }
 
-define (prep-process pgid infile outfile foreground) {
-  display* "prep-process: pgid" pgid infile "->" outfile "fg" foreground "int?" %idio-interactive
+define (mark-job-as-running-1 job) {
+  loop := function (procs) {
+    if+ (null? procs) #n \
+	else {
+      set-%idio-process-stopped! (ph procs) #f
+      loop (pt procs)
+    }
+  }
+
+  loop (%idio-job-procs job)
+  set-%idio-job-notified! job #f
+}
+
+define (continue-job-1 job foreground) {
+  mark-job-as-running job
+  if foreground {
+    foreground-job job #t
+  } {
+    background-job job #t
+  }
+}
+
+define (prep-process-1 pgid infile outfile foreground) {
   if %idio-interactive {
     pid := (c/getpid)
-    if (c/eq pgid 0) {
+    if (c/== pgid 0) {
       pgid = pid
     }
     c/setpgid pid pgid
@@ -128,11 +259,11 @@ define (prep-process pgid infile outfile foreground) {
       c/signal c/SIGTTOU c/SIG_DFL
       c/signal c/SIGCHLD c/SIG_DFL
     }
-    if (not (c/eq infile c/STDIN_FILENO)) {
+    if (not (c/== infile c/STDIN_FILENO)) {
       c/dup2 infile c/STDIN_FILENO
       c/close infile
     }
-    if (not (c/eq outfile c/STDOUT_FILENO)) {
+    if (not (c/== outfile c/STDOUT_FILENO)) {
       c/dup2 outfile c/STDOUT_FILENO
       c/close outfile
     }
@@ -166,54 +297,102 @@ define-operator | {
       stdout := c/STDOUT_FILENO
       outfile := stdout
       pgid := 0
-      job := make-%command-job '$pipeline procs pgid #f #n stdin stdout
+      job := make-%idio-job '$pipeline procs pgid #f #n stdin stdout
       proc-id := 0
       pipe := #n
       $@(map (function (cmd) {
 	        %T{
 		  {
-		    proc := make-%command-process cmd -1 #f #f #n
-		    $procs := pair proc $procs
+		    proc := make-%idio-process cmd -1 #f #f #n
+		    $procs = pair proc $procs
 		    if (le ($proc-id + 2) $nprocs) {
-		      display* "new pipe because" ($proc-id + 2) "le" $nprocs
 		      $pipe = (c/pipe)
 		      $outfile = (c/pipe-writer $pipe)
 		    } {
 		      $outfile = stdout
 		    }
 		    pid := (c/fork)
-		    if+ (c/eq pid 0) {
+		    if+ (c/== pid 0) {
 		      prep-process $pgid $infile $outfile $foreground
 		      $cmd
-		      c/exit 3
+
+		      ;; If {cmd} was some Idio scripting then it will
+		      ;; do its thing and continue onto here.  So we
+		      ;; ought to stop.
+		      c/exit 0
 		    } else {
-		      set-%command-process-pid! proc pid
+		      set-%idio-process-pid! proc pid
 		      if %idio-interactive {
-			if (c/eq $pgid 0) {
+			if (c/== $pgid 0) {
 			  $pgid = pid
-			  set-%command-job-pgid! $job $pgid
+			  set-%idio-job-pgid! $job $pgid
 			}
 			c/setpgid pid $pgid
 		      }
 		    }
-		    if (not (c/eq $infile $stdin)) (c/close $infile)
-		    if (not (c/eq $outfile $stdout)) (c/close $outfile)
+		    if (not (c/== $infile $stdin)) (c/close $infile)
+		    if (not (c/== $outfile $stdout)) (c/close $outfile)
 		    $infile = (c/pipe-reader $pipe)
 		    $proc-id = $proc-id + 1
 		  }
 	        }
 	      })
 	     op-args)
-      set-%command-job-procs! job (reverse procs)
-      %command-jobs := pair job %command-jobs
+      set-%idio-job-procs! job (reverse procs)
+      %idio-jobs = pair job %idio-jobs
       if+ (not %idio-interactive) {
-	wait-for-job $job
-      } $foreground {
-	foreground-job $job #f
-      } else {
-	background-job $job #f
-      }
+	    wait-for-job $job
+	  } $foreground {
+	    foreground-job $job #f
+	  } else {
+	    background-job $job #f
+          }
     }
+  }
+}
+
+define (launch-1proc foreground & command) {
+  stdin := c/STDIN_FILENO
+  stdout := c/STDOUT_FILENO
+  pgid := 0
+  proc := make-%idio-process command -1 #f #f #n
+  job := make-%idio-job command (list proc) pgid #f #n stdin stdout
+
+  pid := (c/fork)
+  if+ (c/== pid 0) {
+    prep-process pgid stdin stdout foreground
+    ;; command is a list so apply %exec to it
+    apply %exec command
+    error "exec" command
+  } else {
+    set-%idio-process-pid! proc pid
+    if %idio-interactive {
+      pgid = pid
+      set-%idio-job-pgid! job pgid
+      c/setpgid pid pgid
+    }
+  }
+
+  %idio-jobs = pair job %idio-jobs
+
+  if+ (not %idio-interactive) {
+    wait-for-job job
+  } foreground {
+    foreground-job job #f
+  } else {
+    background-job job #f
+  }
+}
+
+define-macro (launch-1proc-fg & command) {
+  %T{
+    launch-1proc #t $@command
+  }
+}
+
+define-macro (launch-1proc-bg & command) {
+  %T{
+    launch-1proc #f $@command
   }
 }
 

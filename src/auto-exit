@@ -20,6 +20,9 @@
 # auto-exit -- die deterministically
 #
 
+# -e should only apply to read (write?) and broken pipes
+set -ue
+
 usage () 
 {
     (
@@ -35,7 +38,7 @@ usage ()
 
 opt_exit=0
 opt_kill=
-opr_read=
+opt_read=
 opt_sleep=0
 opt_write=
 

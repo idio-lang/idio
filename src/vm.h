@@ -166,8 +166,10 @@
 #define IDIO_A_NON_CONT_ERR                240
 #define IDIO_A_PUSH_HANDLER                241
 #define IDIO_A_POP_HANDLER                 242
-#define IDIO_A_POP_ESCAPER                 243
-#define IDIO_A_PUSH_ESCAPER                244
+#define IDIO_A_RESTORE_HANDLER             243
+
+#define IDIO_A_POP_ESCAPER                 245
+#define IDIO_A_PUSH_ESCAPER                246
 
 /*
  * Some unique constants for the VM

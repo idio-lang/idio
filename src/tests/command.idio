@@ -28,43 +28,63 @@ OPATH := PATH
 PATH = string-append PATH ":" PWD 
 
 monitor (function (cont cond) {
+  ;; edisplay* "auto-exit: monitor" cont cond
   test (rt-command-status-error? cond) #t
   if cont {
     if (rt-command-status-error? cond) {
       #t
-    } (error "auto-exit: unexpected condition" cond)
-  } (error "auto-exit: unexpected non-continuable error" cond)
+    } {
+      edisplay* "unexpected condition" cond
+      raise cont cond
+    }
+  } {
+    edisplay* "unexpected non-continuable condition" cond
+    raise cont cond
+  }
 }) {
-  test (auto-exit) 0
+  test (auto-exit) '(exit 0)
 }
 
 monitor (function (cont cond) {
+  ;; edisplay* "auto-exit -e 11: monitor" cont cond
   test (rt-command-status-error? cond) #t
   if cont {
     if (rt-command-status-error? cond) {
       status := command-error-status cond
-      test (struct-instance-ref status 'state) 'exited
-      test (struct-instance-ref status 'reason) 11
+      test status '(exit 11)
 
+      ;; edisplay* "auto-exit -e 11: monitor" cont cond
       #t
-    } (error "auto-exit -e 11: unexpected condition" cond)
-  } (error "auto-exit -e 11: unexpected non-continuable error" cond)
+    } {
+      edisplay* "unexpected condition" cond
+      raise cont cond
+    }
+  } {
+    edisplay* "unexpected non-continuable condition" cond
+    raise cont cond
+  }
 }) {
-  test (auto-exit -e 11) #t
+  test (auto-exit -e 11) '(exit 11)
 }
 
 monitor (function (cont cond) {
+  ;; edisplay* "auto-exit -k 15: monitor" cont cond
   test (rt-command-status-error? cond) #t
   if cont {
     if (rt-command-status-error? cond) {
       status := command-error-status cond
-      test (struct-instance-ref status 'state) 'killed
-      test (struct-instance-ref status 'reason) 15
+      test status '(killed 15)
 
       #t
-    } (error "auto-exit -k 15: unexpected condition" cond)
-  } (error "auto-exit -k 15: unexpected non-continuable error" cond)
+    } {
+      edisplay* "unexpected condition" cond
+      raise cont cond
+    }
+  } {
+    edisplay* "unexpected non-continuable condition" cond
+    raise cont cond
+  }
 }) {
-  test (auto-exit -k 15) #t
+  test (auto-exit -k 15) '(killed 15)
 }
 

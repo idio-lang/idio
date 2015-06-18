@@ -887,7 +887,7 @@ char *idio_as_string (IDIO o, int depth)
 		}
 		break;
 	    case IDIO_TYPE_C_POINTER:
-		if (asprintf (&r, "{%p%s}", IDIO_C_TYPE_POINTER_P (o), IDIO_C_TYPE_POINTER_FREEP (o) ? " free" : "") == -1) {
+		if (asprintf (&r, "#c/*{%p%s}", IDIO_C_TYPE_POINTER_P (o), IDIO_C_TYPE_POINTER_FREEP (o) ? " free" : "") == -1) {
 		    return NULL;
 		}
 		break;

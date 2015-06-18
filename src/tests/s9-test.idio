@@ -3312,6 +3312,7 @@ test {
   out := open-output-file testfile
   write '(define foo 'baz) out
   close-output-handle out
+  cat testfile
   load testfile
   foo
 } 'baz

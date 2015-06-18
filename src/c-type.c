@@ -18,10 +18,10 @@
 /*
  * c-type.c
  *
- * Handling external C types is a mess.  When comparing (or printing)
- * arbitrary C integral types (char, long, pid_t, off_t etc.) we end
- * up with a combinatorial explosion of potential cases such that we
- * can correctly decode the original types and leave the C compiler to
+ * Handling C types is a mess.  When comparing (or printing) arbitrary
+ * C integral types (char, long, pid_t, off_t etc.) we end up with a
+ * combinatorial explosion of potential cases such that we can
+ * correctly decode the original types and leave the C compiler to
  * perform integer promotion as it sees fit.
  *
  * Alternatively, C integral types are dropped into either an intmax_t
@@ -317,11 +317,11 @@ IDIO idio_C_number_cast (IDIO co, idio_type_e type)
     }
 
 
-IDIO_DEFINE_C_ARITHMETIC_CMP_PRIMITIVE ("c/le", C_le, <=)
-IDIO_DEFINE_C_ARITHMETIC_CMP_PRIMITIVE ("c/lt", C_lt, <)
-IDIO_DEFINE_C_ARITHMETIC_CMP_PRIMITIVE ("c/eq", C_eq, ==)
-IDIO_DEFINE_C_ARITHMETIC_CMP_PRIMITIVE ("c/ge", C_ge, >=)
-IDIO_DEFINE_C_ARITHMETIC_CMP_PRIMITIVE ("c/gt", C_gt, >)
+IDIO_DEFINE_C_ARITHMETIC_CMP_PRIMITIVE ("c/<=", C_le, <=)
+IDIO_DEFINE_C_ARITHMETIC_CMP_PRIMITIVE ("c/<", C_lt, <)
+IDIO_DEFINE_C_ARITHMETIC_CMP_PRIMITIVE ("c/==", C_eq, ==)
+IDIO_DEFINE_C_ARITHMETIC_CMP_PRIMITIVE ("c/>=", C_ge, >=)
+IDIO_DEFINE_C_ARITHMETIC_CMP_PRIMITIVE ("c/>", C_gt, >)
 
 void idio_init_c_type ()
 {

@@ -565,6 +565,11 @@ IDIO_DEFINE_PRIMITIVE0 ("current-output-handle", current_output_handle, ())
     return idio_current_output_handle ();
 }
 
+IDIO_DEFINE_PRIMITIVE0 ("current-error-handle", current_error_handle, ())
+{
+    return idio_current_error_handle ();
+}
+
 IDIO_DEFINE_PRIMITIVE1 ("set-input-handle!", set_input_handle, (IDIO h))
 {
     IDIO_ASSERT (h);
@@ -866,6 +871,7 @@ void idio_handle_add_primitives ()
     IDIO_ADD_PRIMITIVE (output_handlep);
     IDIO_ADD_PRIMITIVE (current_input_handle);
     IDIO_ADD_PRIMITIVE (current_output_handle);
+    IDIO_ADD_PRIMITIVE (current_error_handle);
     IDIO_ADD_PRIMITIVE (set_input_handle);
     IDIO_ADD_PRIMITIVE (set_output_handle);
     IDIO_ADD_PRIMITIVE (close_handle);

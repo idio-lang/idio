@@ -20,7 +20,7 @@
 ;;
 
 
-; structures
+;; flat structures
 
 ;; define-struct name & fields
 ;;
@@ -57,10 +57,10 @@ define-macro (define-struct name & fields) {
   }
 }
 
-;; We have this two-step shimmy as some structs (eg. %command-job) are
+;; We have this two-step shimmy as some structs (eg. %idio-job) are
 ;; defined in C-land for internal use yet the predicate/accessors are
-;; defined here, in Idio-land, as it is much easier (and C never uses
-;; them anyway).
+;; defined here, in Idio-land, as it is much easier (and they are
+;; never used in C-land anyway).
 ;;
 ;; cf. condition.idio
 define-macro (define-struct-accessors-only name & fields) {
@@ -134,7 +134,7 @@ define-macro (define-struct-accessors-only name & fields) {
   }
 }
 
-define-struct-accessors-only %command-process	argv pid completed stopped status
-define-struct-accessors-only %command-job	pipeline procs pgid notified tcattrs stdin stdout
-define-struct-accessors-only %command-status	pid state reason
+define-struct-accessors-only %idio-process	argv pid completed stopped status
+define-struct-accessors-only %idio-job		pipeline procs pgid notified tcattrs stdin stdout
+define-struct-accessors-only %idio-status	pid state reason
 

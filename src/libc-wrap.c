@@ -60,9 +60,13 @@ IDIO_DEFINE_PRIMITIVE2 ("c/dup2", C_dup2, (IDIO ioldfd, IDIO inewfd))
 IDIO_DEFINE_PRIMITIVE1 ("c/exit", C_exit, (IDIO istatus))
 {
     IDIO_ASSERT (istatus);
-    IDIO_VERIFY_PARAM_TYPE (C_int, istatus);
 
-    int status = IDIO_C_TYPE_INT (istatus);
+    int status;
+    if (idio_isa_fixnum (istatus)) {
+	status = IDIO_FIXNUM_VAL (istatus);
+    } else {
+	idio_error_param_type ("fixnum", istatus);
+    }
 
     exit (status);
 
@@ -209,6 +213,43 @@ IDIO_DEFINE_PRIMITIVE2 ("c/signal", C_signal, (IDIO isig, IDIO ifunc))
     return idio_C_pointer (r);
 }
 
+IDIO_DEFINE_PRIMITIVE1 ("c/sleep", C_sleep, (IDIO iseconds))
+{
+    IDIO_ASSERT (iseconds);
+    
+    unsigned int seconds;
+    if (idio_isa_fixnum (iseconds) &&
+	IDIO_FIXNUM_VAL (iseconds) >= 0) {
+	seconds = IDIO_FIXNUM_VAL (iseconds);
+    } else if (idio_isa_C_uint (iseconds)) {
+	seconds = IDIO_C_TYPE_UINT (iseconds);
+    } else {
+	idio_error_param_type ("unsigned fixnum|C_uint", iseconds);
+    }
+
+    unsigned int r = sleep (seconds);
+    
+    return idio_C_uint (r);
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("c/strsignal", C_strsignal, (IDIO isignum))
+{
+    IDIO_ASSERT (isignum);
+
+    int signum;
+    if (idio_isa_fixnum (isignum)) {
+	signum = IDIO_FIXNUM_VAL (isignum);
+    } else if (idio_isa_C_int (isignum)) {
+	signum = IDIO_C_TYPE_INT (isignum);
+    } else {
+	idio_error_param_type ("unsigned fixnum|C_int", isignum);
+    }
+
+    char *r = strsignal (signum);
+    
+    return idio_string_C (r);
+}
+
 IDIO_DEFINE_PRIMITIVE1 ("c/tcgetattr", C_tcgetattr, (IDIO ifd))
 {
     IDIO_ASSERT (ifd);
@@ -299,6 +340,9 @@ IDIO_DEFINE_PRIMITIVE2 ("c/waitpid", C_waitpid, (IDIO ipid, IDIO ioptions))
     pid_t r = waitpid (pid, statusp, options);
 
     if (-1 == r) {
+	if (ECHILD == errno) {
+	    return IDIO_LIST2 (idio_C_int (0), idio_S_nil);
+	}
 	idio_error_system_errno ("waitpid", IDIO_LIST2 (ipid, ioptions));
     }
 
@@ -307,16 +351,42 @@ IDIO_DEFINE_PRIMITIVE2 ("c/waitpid", C_waitpid, (IDIO ipid, IDIO ioptions))
     return IDIO_LIST2 (idio_C_int (r), istatus);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("c/WIFSIGNALED", C_WIFSIGNALED, (IDIO istatus))
+IDIO_DEFINE_PRIMITIVE1 ("c/WEXITSTATUS", C_WEXITSTATUS, (IDIO istatus))
 {
     IDIO_ASSERT (istatus);
-    IDIO_VERIFY_PARAM_TYPE (C_int, istatus);
+    IDIO_VERIFY_PARAM_TYPE (C_pointer, istatus);
 
-    int status = IDIO_C_TYPE_INT (istatus);
+    int *statusp = IDIO_C_TYPE_POINTER_P (istatus);
+
+    return idio_C_int (WEXITSTATUS (*statusp));
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("c/WIFEXITED", C_WIFEXITED, (IDIO istatus))
+{
+    IDIO_ASSERT (istatus);
+    IDIO_VERIFY_PARAM_TYPE (C_pointer, istatus);
+
+    int *statusp = IDIO_C_TYPE_POINTER_P (istatus);
 
     IDIO r = idio_S_false;
 
-    if (WIFSIGNALED (status)) {
+    if (WIFEXITED (*statusp)) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("c/WIFSIGNALED", C_WIFSIGNALED, (IDIO istatus))
+{
+    IDIO_ASSERT (istatus);
+    IDIO_VERIFY_PARAM_TYPE (C_pointer, istatus);
+
+    int *statusp = IDIO_C_TYPE_POINTER_P (istatus);
+
+    IDIO r = idio_S_false;
+
+    if (WIFSIGNALED (*statusp)) {
 	r = idio_S_true;
     }
 
@@ -326,13 +396,13 @@ IDIO_DEFINE_PRIMITIVE1 ("c/WIFSIGNALED", C_WIFSIGNALED, (IDIO istatus))
 IDIO_DEFINE_PRIMITIVE1 ("c/WIFSTOPPED", C_WIFSTOPPED, (IDIO istatus))
 {
     IDIO_ASSERT (istatus);
-    IDIO_VERIFY_PARAM_TYPE (C_int, istatus);
+    IDIO_VERIFY_PARAM_TYPE (C_pointer, istatus);
 
-    int status = IDIO_C_TYPE_INT (istatus);
+    int *statusp = IDIO_C_TYPE_POINTER_P (istatus);
 
     IDIO r = idio_S_false;
 
-    if (WIFSTOPPED (status)) {
+    if (WIFSTOPPED (*statusp)) {
 	r = idio_S_true;
     }
 
@@ -342,11 +412,69 @@ IDIO_DEFINE_PRIMITIVE1 ("c/WIFSTOPPED", C_WIFSTOPPED, (IDIO istatus))
 IDIO_DEFINE_PRIMITIVE1 ("c/WTERMSIG", C_WTERMSIG, (IDIO istatus))
 {
     IDIO_ASSERT (istatus);
-    IDIO_VERIFY_PARAM_TYPE (C_int, istatus);
+    IDIO_VERIFY_PARAM_TYPE (C_pointer, istatus);
 
-    int status = IDIO_C_TYPE_INT (istatus);
+    int *statusp = IDIO_C_TYPE_POINTER_P (istatus);
 
-    return idio_C_int (WTERMSIG (status));
+    return idio_C_int (WTERMSIG (*statusp));
+}
+
+IDIO_DEFINE_PRIMITIVE1V ("c/|", C_bw_or, (IDIO v1, IDIO args))
+{
+    IDIO_ASSERT (v1);
+    IDIO_ASSERT (args);
+    IDIO_VERIFY_PARAM_TYPE (C_int, v1);
+
+    int r = IDIO_C_TYPE_INT (v1);
+    while (idio_S_nil != args) {
+	IDIO arg = IDIO_PAIR_H (args);
+	IDIO_VERIFY_PARAM_TYPE (C_int, arg);
+	r = r | IDIO_C_TYPE_INT (arg);
+	args = IDIO_PAIR_T (args);
+    }
+    return idio_C_int (r);
+}
+
+IDIO_DEFINE_PRIMITIVE1V ("c/&", C_bw_and, (IDIO v1, IDIO args))
+{
+    IDIO_ASSERT (v1);
+    IDIO_ASSERT (args);
+    IDIO_VERIFY_PARAM_TYPE (C_int, v1);
+
+    int r = IDIO_C_TYPE_INT (v1);
+    while (idio_S_nil != args) {
+	IDIO arg = IDIO_PAIR_H (args);
+	IDIO_VERIFY_PARAM_TYPE (C_int, arg);
+	r = r & IDIO_C_TYPE_INT (arg);
+	args = IDIO_PAIR_T (args);
+    }
+    return idio_C_int (r);
+}
+
+IDIO_DEFINE_PRIMITIVE1V ("c/^", C_bw_xor, (IDIO v1, IDIO args))
+{
+    IDIO_ASSERT (v1);
+    IDIO_ASSERT (args);
+    IDIO_VERIFY_PARAM_TYPE (C_int, v1);
+
+    int r = IDIO_C_TYPE_INT (v1);
+    while (idio_S_nil != args) {
+	IDIO arg = IDIO_PAIR_H (args);
+	IDIO_VERIFY_PARAM_TYPE (C_int, arg);
+	r = r ^ IDIO_C_TYPE_INT (arg);
+	args = IDIO_PAIR_T (args);
+    }
+    return idio_C_int (r);
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("c/~", C_bw_complement, (IDIO v1))
+{
+    IDIO_ASSERT (v1);
+    IDIO_VERIFY_PARAM_TYPE (C_int, v1);
+
+    int v = IDIO_C_TYPE_INT (v1);
+
+    return idio_C_int (~ v);
 }
 
 void idio_init_libc_wrap ()
@@ -370,6 +498,7 @@ void idio_init_libc_wrap ()
     idio_module_set_symbol_value (idio_symbols_C_intern ("c/TCSADRAIN"), idio_C_int (TCSADRAIN), idio_main_module ());
     idio_module_set_symbol_value (idio_symbols_C_intern ("c/TCSAFLUSH"), idio_C_int (TCSAFLUSH), idio_main_module ());
     idio_module_set_symbol_value (idio_symbols_C_intern ("c/WAIT_ANY"), idio_C_int (WAIT_ANY), idio_main_module ());
+    idio_module_set_symbol_value (idio_symbols_C_intern ("c/WNOHANG"), idio_C_int (WNOHANG), idio_main_module ());
     idio_module_set_symbol_value (idio_symbols_C_intern ("c/WUNTRACED"), idio_C_int (WUNTRACED), idio_main_module ());
 }
 
@@ -388,14 +517,23 @@ void idio_libc_wrap_add_primitives ()
     IDIO_ADD_PRIMITIVE (C_pipe_writer);
     IDIO_ADD_PRIMITIVE (C_setpgid);
     IDIO_ADD_PRIMITIVE (C_signal);
+    IDIO_ADD_PRIMITIVE (C_sleep);
+    IDIO_ADD_PRIMITIVE (C_strsignal);
     IDIO_ADD_PRIMITIVE (C_tcgetattr);
     IDIO_ADD_PRIMITIVE (C_tcgetpgrp);
     IDIO_ADD_PRIMITIVE (C_tcsetattr);
     IDIO_ADD_PRIMITIVE (C_tcsetpgrp);
     IDIO_ADD_PRIMITIVE (C_waitpid);
+    IDIO_ADD_PRIMITIVE (C_WEXITSTATUS);
+    IDIO_ADD_PRIMITIVE (C_WIFEXITED);
     IDIO_ADD_PRIMITIVE (C_WIFSIGNALED);
     IDIO_ADD_PRIMITIVE (C_WIFSTOPPED);
     IDIO_ADD_PRIMITIVE (C_WTERMSIG);
+
+    IDIO_ADD_PRIMITIVE (C_bw_or);
+    IDIO_ADD_PRIMITIVE (C_bw_and);
+    IDIO_ADD_PRIMITIVE (C_bw_xor);
+    IDIO_ADD_PRIMITIVE (C_bw_complement);
 }
 
 void idio_final_libc_wrap ()

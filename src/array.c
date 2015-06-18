@@ -27,6 +27,21 @@ void idio_error_vector_length (char *m, idio_ai_t i)
     idio_error_message ("%s: %zd", m, i);
 }
 
+static void idio_array_error_bounds (idio_ai_t index, idio_ai_t size)
+{
+    char em[BUFSIZ];
+
+    sprintf (em, "array bounds error: %jd > %jd", index, size);
+    
+    IDIO sh = idio_open_output_string_handle_C ();
+    idio_display_C (em, sh);
+    IDIO c = idio_struct_instance (idio_condition_rt_array_bounds_error_type,
+				   IDIO_LIST3 (idio_get_output_string (sh),
+					       idio_S_nil,
+					       idio_S_nil));
+    idio_signal_exception (idio_S_true, c);
+}
+
 void idio_assign_array (IDIO a, idio_ai_t asize)
 {
     IDIO_ASSERT (a);
@@ -138,8 +153,7 @@ void idio_array_insert_index (IDIO a, IDIO o, idio_ai_t index)
 	index += IDIO_ARRAY_USIZE (a);
 	if (index < 0) {
 	    index -= IDIO_ARRAY_USIZE (a);
-	    fprintf (stderr, "idio_array_insert_index: index %3zd is OOB (%zd)\n", index, IDIO_ARRAY_USIZE (a));
-	    IDIO_C_EXIT (1);
+	    idio_array_error_bounds (index, IDIO_ARRAY_USIZE (a));
 	}
     } else if (index >= IDIO_ARRAY_ASIZE (a)) {
 	/*
@@ -148,8 +162,7 @@ void idio_array_insert_index (IDIO a, IDIO o, idio_ai_t index)
 	if (index < (IDIO_ARRAY_ASIZE (a) * 2)) {
 	    idio_array_resize (a);
 	} else {	
-	    fprintf (stderr, "idio_array_insert_index: index %3zd is OOB (%zd)\n", index, IDIO_ARRAY_ASIZE (a));
-	    IDIO_C_EXIT (1);
+	    idio_array_error_bounds (index, IDIO_ARRAY_ASIZE (a));
 	}
     }
 
@@ -279,14 +292,12 @@ IDIO idio_array_get_index (IDIO a, idio_ai_t index)
 	index += IDIO_ARRAY_USIZE (a);
 	if (index < 0) {
 	    index -= IDIO_ARRAY_USIZE (a);
-	    fprintf (stderr, "idio_array_get_index: index %3zd is OOB (%zd)\n", index, IDIO_ARRAY_USIZE (a));
-	    IDIO_C_EXIT (1);
+	    idio_array_error_bounds (index, IDIO_ARRAY_USIZE (a));
 	}
     }
 
     if (index >= IDIO_ARRAY_USIZE (a)) {
-	fprintf (stderr, "idio_array_get_index: index %3zd is OOB (%zd)\n", index, IDIO_ARRAY_USIZE (a));
-	IDIO_C_EXIT (1);
+	idio_array_error_bounds (index, IDIO_ARRAY_USIZE (a));
     }
 
     return IDIO_ARRAY_AE (a, index);
@@ -299,13 +310,11 @@ idio_ai_t idio_array_find_free_index (IDIO a, idio_ai_t index)
     IDIO_TYPE_ASSERT (array, a);
     
     if (index < 0) {
-	fprintf (stderr, "idio_array_find_free_index: index %3zd is OOB (%zd)\n", index, IDIO_ARRAY_USIZE (a));
-	IDIO_C_EXIT (1);
+	idio_array_error_bounds (index, IDIO_ARRAY_USIZE (a));
     }
 
     if (index >= IDIO_ARRAY_USIZE (a)) {
-	fprintf (stderr, "idio_array_find_free_index: index %3zd is OOB (%zd)\n", index, IDIO_ARRAY_USIZE (a));
-	IDIO_C_EXIT (1);
+	idio_array_error_bounds (index, IDIO_ARRAY_USIZE (a));
     }
 
     for (; index < IDIO_ARRAY_USIZE (a); index++) {
@@ -324,13 +333,11 @@ idio_ai_t idio_array_find_eqp (IDIO a, IDIO e, idio_ai_t index)
     IDIO_TYPE_ASSERT (array, a);
     
     if (index < 0) {
-	fprintf (stderr, "idio_array_find_eqp: index %3zd is OOB (%zd)\n", index, IDIO_ARRAY_USIZE (a));
-	IDIO_C_EXIT (1);
+	idio_array_error_bounds (index, IDIO_ARRAY_USIZE (a));
     }
 
     if (index >= IDIO_ARRAY_USIZE (a)) {
-	fprintf (stderr, "idio_array_find_eqp: index %3zd is OOB (%zd)\n", index, IDIO_ARRAY_USIZE (a));
-	IDIO_C_EXIT (1);
+	idio_array_error_bounds (index, IDIO_ARRAY_USIZE (a));
     }
 
     for (; index < IDIO_ARRAY_USIZE (a); index++) {
@@ -349,11 +356,7 @@ void idio_array_bind (IDIO a, idio_ai_t nargs, ...)
     IDIO_TYPE_ASSERT (array, a);
 
     if (IDIO_ARRAY_USIZE (a) < nargs) {
-	char *os = idio_display_string (a);
-	fprintf (stderr, "idio_array_bind: o=%s\n", os);
-	free (os);
-	idio_expr_dump (a);
-	IDIO_C_ASSERT (0);
+	idio_error_C ("idio_array_bind", a);
     }
 
     va_list ap;
@@ -418,14 +421,12 @@ int idio_array_delete_index (IDIO a, idio_ai_t index)
 	index += IDIO_ARRAY_USIZE (a);
 	if (index < 0) {
 	    index -= IDIO_ARRAY_USIZE (a);
-	    fprintf (stderr, "idio_array_delete_index: index %3zd is OOB (%zd)\n", index, IDIO_ARRAY_USIZE (a));
-	    IDIO_C_EXIT (1);
+	    idio_array_error_bounds (index, IDIO_ARRAY_USIZE (a));
 	}
     }
 
     if (index >= IDIO_ARRAY_USIZE (a)) {
-	fprintf (stderr, "idio_array_delete_index: index %3zd is OOB (%zd)\n", index, IDIO_ARRAY_USIZE (a));
-	IDIO_C_EXIT (1);
+	idio_array_error_bounds (index, IDIO_ARRAY_USIZE (a));
     }
 
     IDIO_ARRAY_AE (a, index) = idio_S_nil;

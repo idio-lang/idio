@@ -175,7 +175,7 @@ void idio_error_system_errno (char *msg, IDIO args)
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (args);
 
-    idio_error_system_errno (msg, args);
+    idio_error_system (msg, args, errno);
 }
 
 void idio_init_error ()

@@ -173,3 +173,7 @@ define-condition-type-accessors-only ^rt-command-exec-error		^runtime-error			rt
 define-condition-type-accessors-only ^rt-command-status-error		^runtime-error			rt-command-status-error? \
 	(status command-error-status)
 
+define-condition-type-accessors-only ^rt-array-bounds-error		^runtime-error			rt-array-bounds-error?
+
+define-condition-type-accessors-only ^rt-signal				^error				rt-signal? \
+	(signal rt-signal-signal)
