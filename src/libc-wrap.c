@@ -188,7 +188,23 @@ IDIO_DEFINE_PRIMITIVE2 ("c/setpgid", C_setpgid, (IDIO ipid, IDIO ipgid))
     int r = setpgid (pid, pgid);
     
     if (-1 == r) {
+#ifdef __sun && __SRV4
+      if (EACCES == errno) {
+	/* 
+	 * This appears to be a simple race condition in Solaris: the
+	 * child has already successfully executed exec() => EACCES
+	 * for us.
+	 *
+	 * Since the child also ran setpgid() on itself before calling
+	 * exec() we should be good.
+	 */
+	r = 0;
+      } else {
+#endif
 	idio_error_system_errno ("setpgid", IDIO_LIST2 (ipid, ipgid));
+#ifdef __sun && __SRV4
+      }
+#endif
     }
 
     return idio_C_int (r);
