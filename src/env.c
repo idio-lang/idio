@@ -27,10 +27,11 @@ extern char **environ;
 
 char *idio_env_PATH_default = "/bin:/usr/bin";
 char *idio_env_IDIOLIB_default = NULL;
-IDIO idio_env_PATH_sym;
 IDIO idio_env_IDIOLIB_sym;
+IDIO idio_env_PATH_sym;
+IDIO idio_env_PWD_sym;
 
-static void idio_env_set_default (IDIO name, char *val)
+static int idio_env_set_default (IDIO name, char *val)
 {
     IDIO_ASSERT (name);
     IDIO_C_ASSERT (val);
@@ -40,7 +41,10 @@ static void idio_env_set_default (IDIO name, char *val)
     if (idio_S_unspec == ENV) {
 	idio_toplevel_extend (name, IDIO_ENVIRON_SCOPE);
 	idio_module_current_set_symbol_value (name, idio_string_C (val));
+	return 1;
     }
+
+    return 0;
 }
 
 static void idio_env_add_environ ()
@@ -78,13 +82,43 @@ static void idio_env_add_environ ()
      */
 
     idio_env_set_default (idio_env_PATH_sym, idio_env_PATH_default);
+
+    char *cwd = getcwd (NULL, PATH_MAX);
+
+    if (NULL == cwd) {
+	idio_error_system_errno ("getcwd", idio_S_nil);
+    }
+
+    if (idio_env_set_default (idio_env_PWD_sym, cwd) == 0) {
+	/*
+	 * On Mac OS X (Mavericks):
+	 *
+	 * (lldb) process launch -t -w X -- ...
+	 *
+	 * may well change the working directory to X but it doesn't
+	 * change the environment variable PWD.  There must be any
+	 * number of other situations where a process changes the
+	 * working directory but doesn't change the environment
+	 * variable -- no reason why it should, of course.
+	 *
+	 * For testing we can use:
+	 *
+	 * env PWD=/ .../idio
+	 *
+	 * So, if we didn't create a new variable in
+	 * idio_env_set_default() then set the value regardless now.
+	 */
+	idio_module_current_set_symbol_value (idio_env_PWD_sym, idio_string_C (cwd));
+    }
+
+    free (cwd);
 }
 
 /*
  * We want to generate a nominal IDIOLIB based on the path to the
- * running executable.  If argv0 is "idio" then we need to discover
- * where on th PATH it was found, otherwise we can nornalize argv0
- * with realpath(3).
+ * running executable.  If argv0 is simply "idio" then we need to
+ * discover where on the PATH it was found, otherwise we can normalize
+ * argv0 with realpath(3).
  */
 void idio_env_init_idiolib (char *argv0)
 {
@@ -125,15 +159,34 @@ void idio_env_init_idiolib (char *argv0)
     free (path);
 }
 
+IDIO_DEFINE_PRIMITIVE1 ("environ?", environp, (IDIO name))
+{
+    IDIO_ASSERT (name);
+    IDIO_VERIFY_PARAM_TYPE (symbol, name);
+
+    IDIO r = idio_S_false;
+
+    IDIO kind = idio_module_current_symbol_recurse (name);
+
+    if (idio_S_unspec != kind &&
+	idio_S_environ == IDIO_PAIR_H (kind)) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
 void idio_init_env ()
 {
-    idio_env_PATH_sym = idio_symbols_C_intern ("PATH");
     idio_env_IDIOLIB_sym = idio_symbols_C_intern ("IDIOLIB");
+    idio_env_PATH_sym = idio_symbols_C_intern ("PATH");
+    idio_env_PWD_sym = idio_symbols_C_intern ("PWD");
 }
 
 void idio_env_add_primitives ()
 {
     idio_env_add_environ ();
+    IDIO_ADD_PRIMITIVE (environp);
 }
 
 void idio_final_env ()

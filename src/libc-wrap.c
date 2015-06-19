@@ -85,6 +85,21 @@ IDIO_DEFINE_PRIMITIVE0 ("c/fork", C_fork, ())
     return idio_C_int (pid);
 }
 
+IDIO_DEFINE_PRIMITIVE0 ("c/getcwd", C_getcwd, ())
+{
+    
+    char *cwd = getcwd (NULL, PATH_MAX);
+
+    if (NULL == cwd) {
+	idio_error_system_errno ("getcwd", idio_S_nil);
+    }
+
+    IDIO r = idio_string_C (cwd);
+    free (cwd);
+
+    return r;
+}
+
 IDIO_DEFINE_PRIMITIVE0 ("c/getpgrp", C_getpgrp, ())
 {
     pid_t pid = getpgrp ();
@@ -495,6 +510,7 @@ IDIO_DEFINE_PRIMITIVE1 ("c/~", C_bw_complement, (IDIO v1))
 
 void idio_init_libc_wrap ()
 {
+    idio_module_set_symbol_value (idio_symbols_C_intern ("c/NULL"), idio_C_pointer (NULL), idio_main_module ());
     idio_module_set_symbol_value (idio_symbols_C_intern ("c/SIGHUP"), idio_C_int (SIGHUP), idio_main_module ());
     idio_module_set_symbol_value (idio_symbols_C_intern ("c/SIGINT"), idio_C_int (SIGINT), idio_main_module ());
     idio_module_set_symbol_value (idio_symbols_C_intern ("c/SIGQUIT"), idio_C_int (SIGQUIT), idio_main_module ());
@@ -524,6 +540,7 @@ void idio_libc_wrap_add_primitives ()
     IDIO_ADD_PRIMITIVE (C_dup2);
     IDIO_ADD_PRIMITIVE (C_exit);
     IDIO_ADD_PRIMITIVE (C_fork);
+    IDIO_ADD_PRIMITIVE (C_getcwd);
     IDIO_ADD_PRIMITIVE (C_getpgrp);
     IDIO_ADD_PRIMITIVE (C_getpid);
     IDIO_ADD_PRIMITIVE (C_isatty);
