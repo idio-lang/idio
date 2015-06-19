@@ -188,7 +188,7 @@ IDIO_DEFINE_PRIMITIVE2 ("c/setpgid", C_setpgid, (IDIO ipid, IDIO ipgid))
     int r = setpgid (pid, pgid);
     
     if (-1 == r) {
-#ifdef __sun && __SRV4
+#if defined(__sun) && defined(__SVR4)
       if (EACCES == errno) {
 	/* 
 	 * This appears to be a simple race condition in Solaris: the
@@ -202,7 +202,7 @@ IDIO_DEFINE_PRIMITIVE2 ("c/setpgid", C_setpgid, (IDIO ipid, IDIO ipgid))
       } else {
 #endif
 	idio_error_system_errno ("setpgid", IDIO_LIST2 (ipid, ipgid));
-#ifdef __sun && __SRV4
+#if defined(__sun) && defined(__SVR4)
       }
 #endif
     }
