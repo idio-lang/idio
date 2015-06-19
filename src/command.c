@@ -1394,10 +1394,7 @@ IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
     IDIO_FRAME_NARGS (val) -= 1;
 
     if (idio_S_nil != last) {
-	char *ls = idio_as_string (last, 1);
-	fprintf (stderr, "invoke: last arg != nil: %s\n", ls);
-	free (ls);
-	IDIO_C_ASSERT (0);
+	idio_error_C ("invoke: last arg != nil", last);
     }
 
     IDIO args = idio_array_to_list (IDIO_FRAME_ARGS (val));

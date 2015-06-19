@@ -240,7 +240,7 @@ IDIO_DEFINE_PRIMITIVE1 ("condition-message", condition_message, (IDIO c))
     IDIO_VERIFY_PARAM_TYPE (condition, c);
 
     if (! idio_struct_instance_isa (c, idio_condition_message_type)) {
-	idio_error_message ("not a message condition", c);
+	idio_error_printf ("not a message condition", c);
 	return idio_S_unspec;
     }
 

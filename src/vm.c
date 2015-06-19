@@ -1635,7 +1635,7 @@ IDIO_DEFINE_PRIMITIVE2 ("base-error-handler", base_error_handler, (IDIO cont, ID
 
     fprintf (stderr, "this is a non-continuable condition\n");
     idio_vm_abort_thread (thr);
-    /* IDIO_C_ASSERT (0); */
+
     return idio_S_unspec;
 }
 
@@ -2611,7 +2611,7 @@ int idio_vm_run1 (IDIO thr)
 		idio_debug ("c-m: %s\n", idio_current_module ());
 		idio_debug ("/main symbols %s\n", idio_hash_keys_to_list (IDIO_MODULE_SYMBOLS (idio_main_module ())));
 		*/
-		/* idio_error_message ("undefined toplevel: %" PRId64 "", i); */
+		/* idio_error_printf ("undefined toplevel: %" PRId64 "", i); */
 
 		IDIO_THREAD_VAL (thr) = sym; 
 	    } else if (idio_S_unspec == val) {
@@ -2620,7 +2620,7 @@ int idio_vm_run1 (IDIO thr)
 		idio_debug (" #unspec in symbols %s\n", idio_vm_symbols);
 		idio_dump (thr, 2);
 		idio_debug ("c-m: %s\n", idio_current_module ());
-		idio_error_message ("unspecified toplevel: %" PRId64 "", i);
+		idio_error_printf ("unspecified toplevel: %" PRId64 "", i);
 	    } else {
 		IDIO_THREAD_VAL (thr) = val;
 	    }
@@ -2641,7 +2641,7 @@ int idio_vm_run1 (IDIO thr)
 		idio_debug ("c-m: %s\n", idio_current_module ());
 		*/
 		/*
-		idio_error_message ("undefined toplevel: %" PRId64 "", i);
+		idio_error_printf ("undefined toplevel: %" PRId64 "", i);
 		*/
 		IDIO_THREAD_VAL (thr) = sym; 
 	    } else if (idio_S_unspec == val) {
@@ -2650,7 +2650,7 @@ int idio_vm_run1 (IDIO thr)
 		idio_debug (" #unspec in symbols %s\n", idio_vm_symbols);
 		idio_dump (thr, 2);
 		idio_debug ("c-m: %s\n", idio_current_module ());
-		idio_error_message ("unspecified toplevel: %" PRId64 "", i);
+		idio_error_printf ("unspecified toplevel: %" PRId64 "", i);
 	    } else {
 		IDIO_THREAD_VAL (thr) = val;
 	    }
@@ -2684,37 +2684,37 @@ int idio_vm_run1 (IDIO thr)
     case IDIO_A_PREDEFINED3:
 	{
 	    IDIO_THREAD_VAL (thr) = idio_vm_primitives_ref (3);
-	    idio_error_message ("predef 3");
+	    idio_error_printf ("predef 3");
 	}
 	break;
     case IDIO_A_PREDEFINED4:
 	{
 	    IDIO_THREAD_VAL (thr) = idio_vm_primitives_ref (4);
-	    idio_error_message ("predef 4");
+	    idio_error_printf ("predef 4");
 	}
 	break;
     case IDIO_A_PREDEFINED5:
 	{
 	    IDIO_THREAD_VAL (thr) = idio_vm_primitives_ref (5);
-	    idio_error_message ("predef 5");
+	    idio_error_printf ("predef 5");
 	}
 	break;
     case IDIO_A_PREDEFINED6:
 	{
 	    IDIO_THREAD_VAL (thr) = idio_vm_primitives_ref (6);
-	    idio_error_message ("predef 6");
+	    idio_error_printf ("predef 6");
 	}
 	break;
     case IDIO_A_PREDEFINED7:
 	{
 	    IDIO_THREAD_VAL (thr) = idio_vm_primitives_ref (7);
-	    idio_error_message ("predef 7");
+	    idio_error_printf ("predef 7");
 	}
 	break;
     case IDIO_A_PREDEFINED8:
 	{
 	    IDIO_THREAD_VAL (thr) = idio_vm_primitives_ref (8);
-	    idio_error_message ("predef 8");
+	    idio_error_printf ("predef 8");
 	}
 	break;
     case IDIO_A_PREDEFINED:
@@ -3124,7 +3124,7 @@ int idio_vm_run1 (IDIO thr)
 	    uint64_t v = idio_vm_fetch_varuint (thr);
 	    IDIO_VM_RUN_DIS ("FIXNUM %" PRId64 "", v);
 	    if (IDIO_FIXNUM_MAX < v) {
-	      idio_error_message ("FIXNUM OOB: %" PRIu64 " > %" PRIu64, v, IDIO_FIXNUM_MAX);
+	      idio_error_printf ("FIXNUM OOB: %" PRIu64 " > %" PRIu64, v, IDIO_FIXNUM_MAX);
 	    }
 	    IDIO_THREAD_VAL (thr) = idio_fixnum ((intptr_t) v);
 	}
@@ -3135,7 +3135,7 @@ int idio_vm_run1 (IDIO thr)
 	    v = -v;
 	    IDIO_VM_RUN_DIS ("NEG-FIXNUM %" PRId64 "", v);
 	    if (IDIO_FIXNUM_MIN > v) {
-	      idio_error_message ("FIXNUM OOB: %" PRIu64 " < %" PRIu64, v, IDIO_FIXNUM_MIN);
+	      idio_error_printf ("FIXNUM OOB: %" PRIu64 " < %" PRIu64, v, IDIO_FIXNUM_MIN);
 	    }
 	    IDIO_THREAD_VAL (thr) = idio_fixnum ((intptr_t) v);
 	}
@@ -3145,7 +3145,7 @@ int idio_vm_run1 (IDIO thr)
 	    uint64_t v = idio_vm_fetch_varuint (thr);
 	    IDIO_VM_RUN_DIS ("CHARACTER %" PRId64 "", v);
 	    if (IDIO_FIXNUM_MAX < v) {
-	      idio_error_message ("CHARACTER OOB: %" PRIu64 " > %" PRIu64, v, IDIO_FIXNUM_MAX);
+	      idio_error_printf ("CHARACTER OOB: %" PRIu64 " > %" PRIu64, v, IDIO_FIXNUM_MAX);
 	    }
 	    IDIO_THREAD_VAL (thr) = IDIO_CHARACTER ((intptr_t) v);
 	}
@@ -3156,7 +3156,7 @@ int idio_vm_run1 (IDIO thr)
 	    v = -v;
 	    IDIO_VM_RUN_DIS ("NEG-CHARACTER %" PRId64 "", v);
 	    if (IDIO_FIXNUM_MIN > v) {
-	      idio_error_message ("CHARACTER OOB: %" PRIu64 " < %" PRIu64, v, IDIO_FIXNUM_MIN);
+	      idio_error_printf ("CHARACTER OOB: %" PRIu64 " < %" PRIu64, v, IDIO_FIXNUM_MIN);
 	    }
 	    IDIO_THREAD_VAL (thr) = IDIO_CHARACTER ((intptr_t) v);
 	}
@@ -3166,7 +3166,7 @@ int idio_vm_run1 (IDIO thr)
 	    uint64_t v = idio_vm_fetch_varuint (thr);
 	    IDIO_VM_RUN_DIS ("CONSTANT %" PRId64 "", v);
 	    if (IDIO_FIXNUM_MAX < v) {
-	      idio_error_message ("CONSTANT OOB: %" PRIu64 " > %" PRIu64, v, IDIO_FIXNUM_MAX);
+	      idio_error_printf ("CONSTANT OOB: %" PRIu64 " > %" PRIu64, v, IDIO_FIXNUM_MAX);
 	    }
 	    IDIO_THREAD_VAL (thr) = IDIO_CONSTANT ((intptr_t) v);
 	}
@@ -3177,7 +3177,7 @@ int idio_vm_run1 (IDIO thr)
 	    v = -v;
 	    IDIO_VM_RUN_DIS ("NEG-CONSTANT %" PRId64 "", v);
 	    if (IDIO_FIXNUM_MIN > v) {
-	      idio_error_message ("CONSTANT OOB: %" PRIu64 " < %" PRIu64, v, IDIO_FIXNUM_MIN);
+	      idio_error_printf ("CONSTANT OOB: %" PRIu64 " < %" PRIu64, v, IDIO_FIXNUM_MIN);
 	    }
 	    IDIO_THREAD_VAL (thr) = IDIO_CONSTANT ((intptr_t) v);
 	}
@@ -3351,7 +3351,7 @@ int idio_vm_run1 (IDIO thr)
     case IDIO_A_PRIMCALL1_CONTINUATIONP:
 	{
 	    IDIO_VM_RUN_DIS ("PRIMITIVE1 continuation?");
-	    idio_error_message ("continuation?");
+	    idio_error_printf ("continuation?");
 	}
 	break;
     case IDIO_A_PRIMCALL1_EOFP:
@@ -3686,7 +3686,7 @@ int idio_vm_run1 (IDIO thr)
 		fprintf (stderr, "%3d ", idio_all_code->ae[pc]);
 	    }
 	    fprintf (stderr, "\n");
-	    idio_error_message ("unexpected instruction: %3d @%" PRId64 "\n", ins, IDIO_THREAD_PC (thr) - 1);
+	    idio_error_printf ("unexpected instruction: %3d @%" PRId64 "\n", ins, IDIO_THREAD_PC (thr) - 1);
 	}
 	break;
     }

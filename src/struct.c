@@ -62,8 +62,7 @@ IDIO idio_struct_type (IDIO name, IDIO parent, IDIO fields)
     while (idio_S_nil != fs) {
 	IDIO f = IDIO_PAIR_H (fs);
 	if (! idio_isa_symbol (f)) {
-	    fprintf (stderr, "struct-type name parent fs: fs must be symbols\n");
-	    IDIO_C_ASSERT (0);
+	    idio_error_printf ("struct-type name parent fs: fs must be symbols");
 	}
 	nfields++;
 	fs = IDIO_PAIR_T (fs);
@@ -256,15 +255,13 @@ IDIO idio_struct_instance (IDIO st, IDIO values)
     idio_ai_t size = idio_array_size (IDIO_STRUCT_TYPE_FIELDS (st));
 
     if (i < size) {
-	fprintf (stderr, "make-struct-instance: not enough values: %" PRIdPTR " < %" PRIdPTR "\n", i, size);
 	idio_debug ("fields: %s\n", st);
 	idio_debug ("values: %s\n", values);
-	IDIO_C_ASSERT (0);
+	idio_error_printf ("make-struct-instance: not enough values: %" PRIdPTR " < %" PRIdPTR, i, size);
     }
 
     if (idio_S_nil != value) {
-	fprintf (stderr, "make-struct-instance: too many values\n");
-	IDIO_C_ASSERT (0);
+	idio_error_C ("make-struct-instance: too many values: the following are left over:", values);
     }
 
     return si;
@@ -381,7 +378,7 @@ IDIO_DEFINE_PRIMITIVE4 ("%struct-instance-ref-direct", struct_instance_ref_direc
     IDIO_VERIFY_PARAM_TYPE (fixnum, index);
 
     if (st != IDIO_STRUCT_INSTANCE_TYPE (si)) {
-	idio_error_message ("bad structure ref");
+	idio_error_printf ("bad structure ref");
     }
     
     return idio_struct_instance_ref_direct (si, IDIO_FIXNUM_VAL (index));
@@ -403,8 +400,7 @@ IDIO idio_struct_instance_set (IDIO si, IDIO field, IDIO v)
 	idio_debug ("sis!: %s\n", st);
 	idio_debug ("%s\n", si);
 	idio_debug ("%s\n", field);
-	fprintf (stderr, "struct-instance-set: field not found");
-	IDIO_C_ASSERT (0);
+	idio_error_printf ("struct-instance-set: field not found");
     }
 
     idio_array_insert_index (IDIO_STRUCT_INSTANCE_FIELDS (si), v, i);
@@ -450,7 +446,7 @@ IDIO_DEFINE_PRIMITIVE5 ("%struct-instance-set-direct", struct_instance_set_direc
     IDIO_VERIFY_PARAM_TYPE (fixnum, index);
 
     if (st != IDIO_STRUCT_INSTANCE_TYPE (si)) {
-	idio_error_message ("bad structure set");
+	idio_error_printf ("bad structure set");
     }
     
     return idio_struct_instance_set_direct (si, IDIO_FIXNUM_VAL (index), v);

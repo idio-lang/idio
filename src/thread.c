@@ -75,7 +75,7 @@ void idio_free_thread (IDIO t)
 IDIO idio_current_thread ()
 {
     if (idio_S_nil == idio_running_thread) {
-	idio_error_message ("current_module unset");
+	idio_error_printf ("current_module unset");
 	return idio_S_nil;
     }
     
@@ -96,7 +96,7 @@ void idio_thread_codegen (IDIO code)
     IDIO_ASSERT (code);
     IDIO_TYPE_ASSERT (pair, code);
 
-    IDIO_C_ASSERT (0);
+    idio_error_printf ("thread-codegen: unimplemented");
 }
 
 IDIO idio_current_input_handle ()

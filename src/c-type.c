@@ -190,9 +190,9 @@ IDIO idio_C_number_cast (IDIO co, idio_type_e type)
     IDIO_C_ASSERT (type);
 
     if (! IDIO_TYPE_POINTERP (co)) {
-	char em[BUFSIZ];
-	sprintf (em, "idio_C_number_cast: conversion not possible from %s %d to %d", idio_type2string (co), idio_type (co), type);
-	idio_error_message (em);
+	idio_error_printf ("idio_C_number_cast: conversion not possible from %s %d to %d", idio_type2string (co), idio_type (co), type);
+
+	/* notreached */
 	return idio_S_nil;
     }
 
@@ -231,9 +231,7 @@ IDIO idio_C_number_cast (IDIO co, idio_type_e type)
     }
 
     if (fail) {
-	char em[BUFSIZ];
-	sprintf (em, "idio_C_number_cast: conversion not possible from %s %d to %d", idio_type2string (co), idio_type (co), type);
-	idio_error_message (em);
+	idio_error_printf ("idio_C_number_cast: conversion not possible from %s %d to %d", idio_type2string (co), idio_type (co), type);
     }
 
     return r;
@@ -260,9 +258,7 @@ IDIO idio_C_number_cast (IDIO co, idio_type_e type)
 		    result = (v1 cmp IDIO_C_TYPE_UINT (n2));		\
 		    break;						\
 		default:						\
-		    fprintf (stderr, #name ": n2->type %d unexpected\n", n2->type); \
-		    IDIO_C_ASSERT (0);					\
-		    result = 0;						\
+		    idio_error_C (#name ": n2->type unexpected", n2);	\
 		    break;						\
 		}							\
 	    }								\
@@ -276,15 +272,11 @@ IDIO idio_C_number_cast (IDIO co, idio_type_e type)
 		result = (IDIO_C_TYPE_UINT (n1) cmp v2);		\
 		break;							\
 	    default:							\
-		fprintf (stderr, #name ": n1->type %d unexpected\n", n1->type); \
-		IDIO_C_ASSERT (0);					\
-		result = 0;						\
+		idio_error_C (#name ": n1->type unexpected", n1);	\
 		break;							\
 	    }								\
 	} else if (idio_type (n1) != idio_type (n2)) {			\
-		fprintf (stderr, #name ": n1->type %d != n2->type %d\n", n1->type, n2->type); \
-		IDIO_C_ASSERT (0);					\
-		result = 0;						\
+	    idio_error_C (#name ": n1->type != n2->type", IDIO_LIST2 (n1, n2)); \
 	} else {							\
 	    switch (idio_type (n1)) {					\
 	    case IDIO_TYPE_C_INT:					\
@@ -300,9 +292,7 @@ IDIO idio_C_number_cast (IDIO co, idio_type_e type)
 		result = (IDIO_C_TYPE_DOUBLE (n1) cmp IDIO_C_TYPE_DOUBLE (n2)); \
 		break;							\
 	    default:							\
-		fprintf (stderr, #name ": n1->type %d unexpected\n", n1->type); \
-		IDIO_C_ASSERT (0);					\
-		result = 0;						\
+		idio_error_C (#name ": n1->type unexpected", n1);	\
 		break;							\
 	    }								\
 	}								\

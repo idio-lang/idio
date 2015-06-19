@@ -104,7 +104,7 @@ char idio_default_interpolation_chars[] = { IDIO_CHAR_DOLLARS, IDIO_CHAR_AT, IDI
 #define IDIO_CHARACTER_NEWLINE		"newline"
 
 /*
- * SRFI-36: all parse errors are ^read-error
+ * SRFI-36: all parse errors are decendents of ^read-error
  */
 static void idio_read_error (IDIO handle, IDIO msg, IDIO det)
 {
@@ -127,7 +127,32 @@ static void idio_read_error (IDIO handle, IDIO msg, IDIO det)
     idio_signal_exception (idio_S_true, c);
 }
 
-static void idio_read_error_parse_C (IDIO handle, char *fmt, ...)
+static void idio_read_error_parse (IDIO handle, char *msg)
+{
+    IDIO_ASSERT (handle);
+    IDIO_C_ASSERT (msg);
+    IDIO_TYPE_ASSERT (handle, handle);
+    
+    IDIO sh = idio_open_output_string_handle_C ();
+    idio_display_C (msg, sh);
+
+    idio_read_error (handle, idio_get_output_string (sh), idio_S_nil);
+}
+
+static void idio_read_error_parse_args (IDIO handle, char *msg, IDIO args)
+{
+    IDIO_ASSERT (handle);
+    IDIO_C_ASSERT (msg);
+    IDIO_ASSERT (args);
+    IDIO_TYPE_ASSERT (handle, handle);
+    
+    IDIO sh = idio_open_output_string_handle_C ();
+    idio_display_C (msg, sh);
+
+    idio_read_error (handle, idio_get_output_string (sh), args);
+}
+
+static void idio_read_error_parse_printf (IDIO handle, char *fmt, ...)
 {
     IDIO_ASSERT (handle);
     IDIO_C_ASSERT (fmt);
@@ -139,18 +164,6 @@ static void idio_read_error_parse_C (IDIO handle, char *fmt, ...)
     va_end (fmt_args);
 
     idio_read_error (handle, msg, idio_S_nil);
-}
-
-static void idio_read_error_parse (IDIO handle, char *msg)
-{
-    IDIO_ASSERT (handle);
-    IDIO_C_ASSERT (msg);
-    IDIO_TYPE_ASSERT (handle, handle);
-    
-    IDIO sh = idio_open_output_string_handle_C ();
-    idio_display_C (msg, sh);
-
-    idio_read_error (handle, idio_get_output_string (sh), idio_S_nil);
 }
 
 static void idio_read_error_parse_word_too_long (IDIO handle, char *word)
@@ -276,7 +289,7 @@ static IDIO idio_read_list (IDIO handle, IDIO opendel, char *ic, int depth)
     if (opendel == idio_T_lparen) {
 	closedel = idio_T_rparen;
     } else {
-	idio_read_error_parse_C (handle, "unexpected list open delimeter '%s'", idio_as_string (opendel, 1));
+	idio_read_error_parse_args (handle, "unexpected list open delimiter '%s'", opendel);
 	return idio_S_unspec;
     }
 
@@ -375,7 +388,7 @@ static IDIO idio_read_list (IDIO handle, IDIO opendel, char *ic, int depth)
 	}
     }
 
-    idio_read_error_parse_C (handle, "idio_read_list: impossible!");
+    idio_read_error_parse_printf (handle, "idio_read_list: impossible!");
     return idio_S_unspec;
 }
 
@@ -623,7 +636,7 @@ static IDIO idio_read_template (IDIO handle, int depth)
 
     while (! IDIO_OPEN_DELIMITER (c)) {
 	if (i > (IDIO_INTERPOLATION_CHARS + 1)) {
-	    idio_read_error_parse_C (handle, "too many interpolation characters: #%d: %c (%#x)", i, c, c);
+	    idio_read_error_parse_printf (handle, "too many interpolation characters: #%d: %c (%#x)", i, c, c);
 	    return idio_S_unspec;
 	}
 
@@ -656,7 +669,7 @@ static IDIO idio_read_template (IDIO handle, int depth)
 	closedel = idio_T_rangle;
 	break;
     default:
-	idio_read_error_parse_C (handle, "unexpected template delimiter: %c (%#x)", c, c);
+	idio_read_error_parse_printf (handle, "unexpected template delimiter: %c (%#x)", c, c);
 	return idio_S_unspec;
     }
 

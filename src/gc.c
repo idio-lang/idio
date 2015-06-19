@@ -149,7 +149,8 @@ int idio_isa (IDIO o, idio_type_e type)
     case IDIO_TYPE_POINTER_MARK:
 	return (o->type == type);
     default:
-	idio_error_message ("isa: unexpected object type %x", o);
+	/* inconceivable! */
+	idio_error_printf ("isa: unexpected object mark type %#x", o);
 	return 0;
     }
 }
@@ -214,8 +215,8 @@ void idio_mark (IDIO o, unsigned colour)
     case IDIO_TYPE_POINTER_MARK:
 	break;
     default:
-	fprintf (stderr, "idio_mark: u/k type %p\n", o);
-	IDIO_C_ASSERT (0);
+	/* inconceivable! */
+	idio_error_printf ("isa: unexpected object mark type %#x", o);
     }
 
     IDIO_FPRINTF (stderr, "idio_mark: mark %10p -> %10p t=%2d/%.5s f=%2x colour=%d\n", o, o->next, o->type, idio_type2string (o), o->flags, colour);
@@ -356,8 +357,7 @@ void idio_mark (IDIO o, unsigned colour)
 	}
 	break;
     default:
-	IDIO_C_ASSERT (0);
-	IDIO_FPRINTF (stderr, "idio_mark: unexpected colour %d\n", colour);
+	idio_error_printf ("idio_mark: unexpected colour %d", colour);
 	break;
     }
 }
@@ -493,8 +493,7 @@ void idio_process_grey (unsigned colour)
 	idio_mark (IDIO_OPAQUE_ARGS (o), colour);
 	break;
     default:
-	IDIO_C_ASSERT (0);
-	IDIO_FPRINTF (stderr, "idio_process_grey: unexpected type %x\n", o->type);
+	idio_error_C ("idio_process_grey: unexpected type", o);
 	break;
     }
 }
@@ -776,7 +775,7 @@ void idio_gc_sweep_free_value (IDIO vo)
     IDIO_ASSERT (vo);
 
     if (idio_S_nil == vo) {
-	fprintf (stderr, "idio_gc_sweep_free_value: nil??\n");
+	idio_error_printf ("idio_gc_sweep_free_value: nil");
 	return;
     }
 
@@ -857,7 +856,7 @@ void idio_gc_sweep_free_value (IDIO vo)
 	idio_free_opaque (vo);
 	break;
     default:
-	IDIO_C_ASSERT (0);
+	idio_error_C ("idio_gc_sweep_free_value: unexpected type", vo);
 	break;
     }
 }
@@ -1001,7 +1000,7 @@ void idio_hcount (unsigned long long *bytes, int *scale)
 void idio_gc_stats_inc (idio_type_e type)
 {
     if (type > IDIO_TYPE_MAX) {
-	idio_error_message ("GC stats: bad type %#x", type);
+	idio_error_printf ("GC stats: bad type %jd", type);
     } else {
 	idio_gc->stats.tgets[type]++;
     }
@@ -1186,7 +1185,7 @@ void idio_gc_free ()
 	idio_root_t *root = idio_gc->roots;
 	idio_gc->roots = root->next;
 	if (idio_S_nil == root->object) {
-	    idio_error_param_nil ("root->object?");
+	    idio_error_param_nil ("root->object");
 	}
 	free (root);
     }    

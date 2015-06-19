@@ -24,7 +24,7 @@
 
 void idio_error_vector_length (char *m, idio_ai_t i)
 {
-    idio_error_message ("%s: %zd", m, i);
+    idio_error_printf ("%s: %zd", m, i);
 }
 
 static void idio_array_error_bounds (idio_ai_t index, idio_ai_t size)
@@ -480,7 +480,7 @@ IDIO_DEFINE_PRIMITIVE1V ("make-vector", make_vector, (IDIO size, IDIO args))
     }
 
     if (vlen < 0) {
-	idio_error_message ("invalid length: %zd", vlen);
+	idio_error_printf ("invalid length: %zd", vlen);
     }
     
     IDIO a = idio_array (vlen);

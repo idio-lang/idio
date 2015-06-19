@@ -85,7 +85,7 @@ static void idio_bsa_resize_by (IDIO_BSA bsa, size_t n)
 IDIO_BS_T idio_bsa_get (IDIO_BSA bsa, size_t i)
 {
     if (i >= bsa->size) {
-	idio_error_message ("bignum significand array access OOB: get %zd/%zd", i, bsa->size);
+	idio_error_printf ("bignum significand array access OOB: get %zd/%zd", i, bsa->size);
     }
     
     /* fprintf (stderr, "idio_bsa_get: %p %zd/%zd => %zd\n", bsa, i, bsa->size, bsa->ae[i]);  */
@@ -102,7 +102,7 @@ void idio_bsa_set (IDIO_BSA bsa, IDIO_BS_T v, size_t i)
 	    /* fprintf (stderr, "idio_bsa_set: %p bsa->size == i\n", bsa);   */
 	    idio_bsa_resize_by (bsa, 1);
 	} else {
-	    idio_error_message ("bignum significand array access OOB: set %zd/%zd", i, bsa->size);
+	    idio_error_printf ("bignum significand array access OOB: set %zd/%zd", i, bsa->size);
 	}
     }
     
@@ -119,7 +119,7 @@ void idio_bsa_shift (IDIO_BSA bsa)
 	}
 	bsa->size--;
     } else {
-	idio_error_message ("bignum significand shift: zero length already");
+	idio_error_printf ("bignum significand shift: zero length already");
     }
 }
 
@@ -129,7 +129,7 @@ void idio_bsa_pop (IDIO_BSA bsa)
     if (bsa->size) {
 	bsa->size--;
     } else {
-	idio_error_message ("bignum significand pop: zero length already");
+	idio_error_printf ("bignum significand pop: zero length already");
     }
 }
 
@@ -308,7 +308,7 @@ int64_t idio_bignum_int64_value (IDIO bn)
     if (al > 1) {
 	IDIO fn = idio_bignum_to_fixnum (bn_i);
 	if (idio_S_nil == fn) {
-	    idio_error_message ("failed to convert");
+	    idio_error_printf ("failed to convert");
 	} else {
 	    return IDIO_FIXNUM_VAL (fn);
 	}
@@ -724,7 +724,7 @@ IDIO idio_bignum_shift_left (IDIO a, int fill)
 	
 	if (ai < (al - 1) &&
 	    i < 0) {
-	    IDIO_C_ASSERT (0);
+	    idio_error_printf ("non-last bignum segment < 0");
 	}
 	if (i >= (IDIO_BIGNUM_INT_SEG_LIMIT / 10)) {
 	    IDIO_BS_T c = i / (IDIO_BIGNUM_INT_SEG_LIMIT / 10);
@@ -897,7 +897,7 @@ IDIO idio_bignum_divide (IDIO a, IDIO b)
     IDIO_TYPE_ASSERT (bignum, b);
 
     if (idio_bignum_zero_p (b)) {
-	idio_error_message ("divide by zero");
+	idio_error_printf ("divide by zero");
 	return idio_S_nil;
     }
 
@@ -1926,23 +1926,30 @@ IDIO idio_bignum_integer_C (char *nums, int req_exact)
 	      i == LLONG_MIN)) ||
 	    (errno != 0 &&
 	     i == 0)) {
-	    idio_error_message ("strtoll (%s) = %ld: %s", nums, i, strerror (errno));
 	    free (buf);
+	    char em[BUFSIZ];
+	    sprintf (em, "strtoll (%s) = %lld", nums, i);
+	    idio_error_system_errno (em, idio_S_nil);
 
+	    /* notreached */
 	    return idio_S_nil;
 	}
 
 	if (end == nums) {
-	    idio_error_message ("strtoll (%s): No digits?", nums);
 	    free (buf);
+	    char em[BUFSIZ];
+	    sprintf (em, "strtoll (%s): No digits?", nums);
+	    idio_error_system_errno (em, idio_S_nil);
 
+	    /* notreached */
 	    return idio_S_nil;
 	}
 	
 	if ('\0' != *end) {
-	    idio_error_message ("strtoll (%s) = %ld", nums, i);
 	    free (buf);
+	    idio_error_printf ("strtoll (%s) = %ld", nums, i);
 
+	    /* notreached */
 	    return idio_S_nil;
 	}
 
@@ -1983,8 +1990,6 @@ IDIO idio_bignum_integer_C (char *nums, int req_exact)
 	
 	return idio_bignum_normalize (r);
     }
-
-    IDIO_C_ASSERT (0);
 }
 
 IDIO idio_bignum_real_C (char *nums)
@@ -2218,7 +2223,7 @@ IDIO idio_bignum_primitive_divide (IDIO args)
 	}
 
 	if (idio_bignum_zero_p (h)) {
-	    idio_error_message ("divide by zero");
+	    idio_error_printf ("divide by zero");
 	    break;
 	}
 

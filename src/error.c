@@ -44,7 +44,7 @@ IDIO idio_error_string (char *format, va_list argp)
     return idio_get_output_string (sh);
 }
 
-void idio_error_message (char *format, ...)
+void idio_error_printf (char *format, ...)
 {
     va_list fmt_args;
     va_start (fmt_args, format);
@@ -74,21 +74,21 @@ void idio_warning_message (char *format, ...)
 
 void idio_strerror (char *msg)
 {
-    idio_error_message ("%s: %s", msg, strerror (errno));
+    idio_error_printf ("%s: %s", msg, strerror (errno));
 }
 
 void idio_error_alloc (IDIO f)
 {
     IDIO_ASSERT (f);
 
-    idio_strerror ("general allocation fault");
+    idio_error_system_errno ("general allocation fault", idio_S_nil);
 }
 
 void idio_error_param_nil (char *name)
 {
     IDIO_C_ASSERT (name);
     
-    idio_error_message ("%s is nil", name);
+    idio_error_printf ("%s is nil", name);
 }
 
 void idio_error_param_type (char *etype, IDIO who)
@@ -159,7 +159,6 @@ void idio_error_system (char *msg, IDIO args, int err)
     }
 
     IDIO dsh = idio_open_output_string_handle_C ();
-    idio_display_C ("strerror (errno): ", dsh);
     idio_display_C (strerror (err), dsh);
 
     IDIO c = idio_struct_instance (idio_condition_system_error_type,

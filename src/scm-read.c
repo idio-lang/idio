@@ -96,37 +96,37 @@
 
 static void idio_scm_read_error_parse (IDIO handle, char *msg)
 {
-    idio_error_message ("%s:%zd:%zd: %s", IDIO_HANDLE_NAME (handle), IDIO_HANDLE_LINE (handle), IDIO_HANDLE_POS (handle), msg);
+    idio_error_printf ("%s:%zd:%zd: %s", IDIO_HANDLE_NAME (handle), IDIO_HANDLE_LINE (handle), IDIO_HANDLE_POS (handle), msg);
 }
 
 static void idio_scm_read_error_parse_word_too_long (IDIO handle, char *w)
 {
-    idio_error_message ("%s:%zd:%zd: word is too long: %s...", IDIO_HANDLE_NAME (handle), IDIO_HANDLE_LINE (handle), IDIO_HANDLE_POS (handle), w);
+    idio_error_printf ("%s:%zd:%zd: word is too long: %s...", IDIO_HANDLE_NAME (handle), IDIO_HANDLE_LINE (handle), IDIO_HANDLE_POS (handle), w);
 }
 
 static void idio_scm_read_error_list_eof (IDIO handle)
 {
-    idio_error_message ("%s: EOF in list", IDIO_HANDLE_NAME (handle));
+    idio_error_printf ("%s: EOF in list", IDIO_HANDLE_NAME (handle));
 }
 
 static void idio_scm_read_error_list_dot (IDIO handle, char *msg)
 {
-    idio_error_message ("%s:%zd:%zd: %s", IDIO_HANDLE_NAME (handle), IDIO_HANDLE_POS (handle), IDIO_HANDLE_POS (handle), msg);
+    idio_error_printf ("%s:%zd:%zd: %s", IDIO_HANDLE_NAME (handle), IDIO_HANDLE_POS (handle), IDIO_HANDLE_POS (handle), msg);
 }
 
 static void idio_scm_read_error_string (IDIO handle, char *msg)
 {
-    idio_error_message ("%s:%zd:%zd: string %s", IDIO_HANDLE_NAME (handle), IDIO_HANDLE_POS (handle), IDIO_HANDLE_POS (handle), msg);
+    idio_error_printf ("%s:%zd:%zd: string %s", IDIO_HANDLE_NAME (handle), IDIO_HANDLE_POS (handle), IDIO_HANDLE_POS (handle), msg);
 }
 
 static void idio_scm_read_error_character (IDIO handle, char *msg)
 {
-    idio_error_message ("%s:%zd:%zd: character %s", IDIO_HANDLE_NAME (handle), IDIO_HANDLE_POS (handle), IDIO_HANDLE_POS (handle), msg);
+    idio_error_printf ("%s:%zd:%zd: character %s", IDIO_HANDLE_NAME (handle), IDIO_HANDLE_POS (handle), IDIO_HANDLE_POS (handle), msg);
 }
 
 static void idio_scm_read_error_character_unknown_name (IDIO handle, char *name)
 {
-    idio_error_message ("%s:%zd:%zd: unknown character name %s", IDIO_HANDLE_NAME (handle), IDIO_HANDLE_POS (handle), IDIO_HANDLE_POS (handle), name);
+    idio_error_printf ("%s:%zd:%zd: unknown character name %s", IDIO_HANDLE_NAME (handle), IDIO_HANDLE_POS (handle), IDIO_HANDLE_POS (handle), name);
 }
 
 static IDIO idio_scm_read_expr (IDIO handle, int depth);
@@ -159,7 +159,7 @@ static IDIO idio_scm_read_list (IDIO handle, IDIO opendel, int depth)
     if (opendel == idio_ST_lparen) {
 	closedel = idio_ST_rparen;
     } else {
-	idio_error_message ("unexpected list open delimeter '%s'", idio_as_string (opendel, 1));
+	idio_error_C ("unexpected list open delimiter", opendel);
 	return idio_S_unspec;
     }
 
@@ -219,7 +219,7 @@ static IDIO idio_scm_read_list (IDIO handle, IDIO opendel, int depth)
 	r = idio_pair (e, r);
     }
 
-    idio_error_message ("impossible!");
+    idio_error_printf ("impossible!");
     return idio_S_unspec;
 }
 

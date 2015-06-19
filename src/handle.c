@@ -164,7 +164,7 @@ void idio_free_handle (IDIO h)
 
 void idio_handle_lookahead_error (IDIO h, int c)
 {
-    idio_error_message ("handle lookahead: %s->unget => %#x (!= EOF)", IDIO_HANDLE_NAME (h), c);
+    idio_error_printf ("handle lookahead: %s->unget => %#x (!= EOF)", IDIO_HANDLE_NAME (h), c);
 }
 
 void idio_handle_finalizer (IDIO handle)
@@ -173,7 +173,6 @@ void idio_handle_finalizer (IDIO handle)
 
     if (! idio_isa_handle (handle)) {
 	idio_error_param_type ("handle", handle);
-	IDIO_C_ASSERT (0);
     }
 }
 
@@ -456,7 +455,7 @@ IDIO_DEFINE_PRIMITIVE2V ("handle-seek", handle_seek, (IDIO h, IDIO pos, IDIO arg
 	} else if (IDIO_STREQP (IDIO_SYMBOL_S (w), "cur")) {
 	    whence = SEEK_CUR;
 	} else {
-	    idio_error_message ("bad seek request: %s", IDIO_SYMBOL_S (w));
+	    idio_error_printf ("bad seek request: %s", IDIO_SYMBOL_S (w));
 	    return idio_S_unspec;
 	}
     } else {
@@ -474,7 +473,7 @@ IDIO_DEFINE_PRIMITIVE2V ("handle-seek", handle_seek, (IDIO h, IDIO pos, IDIO arg
     off_t n = idio_handle_seek (h, offset, whence);
 
     if (n < 0) {
-	idio_error_message ("cannot seek to %" PRId64, offset);
+	idio_error_printf ("cannot seek to %" PRId64, offset);
 	return idio_S_unspec;
     }
 
@@ -689,11 +688,11 @@ IDIO idio_handle_or_current (IDIO h, unsigned mode)
 	}
 	break;
     default:
-	IDIO_C_ASSERT (0);
+	idio_error_printf ("handle-or-current: unexpected mode %d", mode);
 	break;
     }
 
-    IDIO_C_ASSERT (0);
+    /* notreached */
     return idio_S_unspec;
 }
 
@@ -741,7 +740,6 @@ IDIO idio_write (IDIO o, IDIO h)
     
     char *os = idio_as_string (o, 10);
     
-    /* IDIO_HANDLE_M_PUTS (h) (h, os, strlen (os)); */
     idio_handle_puts (h, os, strlen (os));
 
     free (os);
@@ -767,7 +765,6 @@ IDIO idio_write_char (IDIO c, IDIO h)
 
     IDIO_TYPE_ASSERT (character, c);
     
-    /* IDIO_HANDLE_M_PUTC (h) (h, IDIO_CHARACTER_VAL (c)); */
     idio_handle_putc (h, IDIO_CHARACTER_VAL (c));
 
     return idio_S_unspec;
@@ -791,7 +788,6 @@ IDIO_DEFINE_PRIMITIVE0V ("newline", newline, (IDIO args))
 
     IDIO h = idio_handle_or_current (idio_list_head (args), IDIO_HANDLE_FLAG_WRITE);
 
-    /* IDIO_HANDLE_M_PUTC (h) (h, '\n'); */
     idio_handle_putc (h, '\n');
 
     return idio_S_unspec;
@@ -805,7 +801,6 @@ IDIO idio_display (IDIO o, IDIO h)
 
     char *s = idio_display_string (o);
     
-    /* IDIO_HANDLE_M_PUTS (h) (h, s, strlen (s)); */
     idio_handle_puts (h, s, strlen (s));
     free (s);
 
@@ -818,7 +813,6 @@ IDIO idio_display_C (char *s, IDIO h)
     IDIO_ASSERT (h);
     IDIO_TYPE_ASSERT (handle, h);
 
-    /* IDIO_HANDLE_M_PUTS (h) (h, s, strlen (s)); */
     idio_handle_puts (h, s, strlen (s));
 
     return idio_S_unspec;

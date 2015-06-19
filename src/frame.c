@@ -26,10 +26,9 @@ IDIO idio_G_frame;
 
 void idio_frame_error_range (IDIO fo, size_t d, size_t i)
 {
-    char *fos = idio_as_string (fo, 1);
-    fprintf (stderr, "%s\n", fos);
-    free (fos);
-    idio_error_message ("frame #%zd index #%zd is out of range for %p", d, i, fo);
+    char em[BUFSIZ];
+    sprintf (em, "frame #%zd index #%zd is out of range", d, i);
+    idio_error_C (em, fo);
 }
 
 IDIO idio_frame_allocate (idio_ai_t arityp1)

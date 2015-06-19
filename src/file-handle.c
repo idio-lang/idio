@@ -73,15 +73,18 @@ static idio_handle_methods_t idio_file_handle_methods = {
 
 static void idio_filehandle_error_filename (IDIO filename)
 {
-    IDIO sh = idio_open_output_string_handle_C ();
-    idio_display_C ("generic filename '", sh);
-    idio_display (filename, sh);
-    idio_display_C ("' error: ", sh);
-    idio_display_C (strerror (errno), sh);
+    IDIO msh = idio_open_output_string_handle_C ();
+    idio_display_C ("generic filename '", msh);
+    idio_display (filename, msh);
+    idio_display_C ("' error", msh);
+    
+    IDIO dsh = idio_open_output_string_handle_C ();
+    idio_display_C (strerror (errno), dsh);
+
     IDIO c = idio_struct_instance (idio_condition_io_filename_error_type,
-				   IDIO_LIST4 (idio_get_output_string (sh),
+				   IDIO_LIST4 (idio_get_output_string (msh),
 					       idio_S_nil,
-					       idio_string_C (strerror (errno)),
+					       idio_get_output_string (dsh),
 					       filename));
     idio_signal_exception (idio_S_true, c);
 }
@@ -93,15 +96,18 @@ static void idio_filehandle_error_filename_C (char *name)
 
 static void idio_filehandle_error_filename_delete (IDIO filename)
 {
-    IDIO sh = idio_open_output_string_handle_C ();
-    idio_display_C ("remove '", sh);
-    idio_display (filename, sh);
-    idio_display_C ("': ", sh);
-    idio_display_C (strerror (errno), sh);
+    IDIO msh = idio_open_output_string_handle_C ();
+    idio_display_C ("remove '", msh);
+    idio_display (filename, msh);
+    idio_display_C ("'", msh);
+
+    IDIO dsh = idio_open_output_string_handle_C ();
+    idio_display_C (strerror (errno), dsh);
+
     IDIO c = idio_struct_instance (idio_condition_io_filename_error_type,
-				   IDIO_LIST4 (idio_get_output_string (sh),
+				   IDIO_LIST4 (idio_get_output_string (msh),
 					       idio_S_nil,
-					       idio_S_nil,
+					       idio_get_output_string (dsh),
 					       filename));
     idio_signal_exception (idio_S_true, c);
 }
@@ -113,15 +119,18 @@ static void idio_filehandle_error_filename_delete_C (char *name)
 
 static void idio_filehandle_error_malformed_filename (IDIO filename)
 {
-    IDIO sh = idio_open_output_string_handle_C ();
-    idio_display_C ("bad filename '", sh);
-    idio_display (filename, sh);
-    idio_display_C ("': ", sh);
-    idio_display_C (strerror (errno), sh);
+    IDIO msh = idio_open_output_string_handle_C ();
+    idio_display_C ("bad filename '", msh);
+    idio_display (filename, msh);
+    idio_display_C ("'", msh);
+
+    IDIO dsh = idio_open_output_string_handle_C ();
+    idio_display_C (strerror (errno), dsh);
+
     IDIO c = idio_struct_instance (idio_condition_io_malformed_filename_error_type,
-				   IDIO_LIST4 (idio_get_output_string (sh),
+				   IDIO_LIST4 (idio_get_output_string (msh),
 					       idio_S_nil,
-					       idio_S_nil,
+					       idio_get_output_string (dsh),
 					       filename));
     idio_signal_exception (idio_S_true, c);
 }
@@ -133,15 +142,18 @@ static void idio_filehandle_error_malformed_filename_C (char *name)
 
 static void idio_filehandle_error_filename_protection (IDIO filename)
 {
-    IDIO sh = idio_open_output_string_handle_C ();
-    idio_display_C ("filename '", sh);
-    idio_display (filename, sh);
-    idio_display_C ("' access: ", sh);
-    idio_display_C (strerror (errno), sh);
+    IDIO msh = idio_open_output_string_handle_C ();
+    idio_display_C ("filename '", msh);
+    idio_display (filename, msh);
+    idio_display_C ("' access", msh);
+
+    IDIO dsh = idio_open_output_string_handle_C ();
+    idio_display_C (strerror (errno), dsh);
+
     IDIO c = idio_struct_instance (idio_condition_io_file_protection_error_type,
-				   IDIO_LIST4 (idio_get_output_string (sh),
+				   IDIO_LIST4 (idio_get_output_string (msh),
 					       idio_S_nil,
-					       idio_S_nil,
+					       idio_get_output_string (dsh),
 					       filename));
     idio_signal_exception (idio_S_true, c);
 }
@@ -153,15 +165,18 @@ static void idio_filehandle_error_filename_protection_C (char *name)
 
 static void idio_filehandle_error_filename_already_exists (IDIO filename)
 {
-    IDIO sh = idio_open_output_string_handle_C ();
-    idio_display_C ("filename '", sh);
-    idio_display (filename, sh);
-    idio_display_C ("' already exists: ", sh);
-    idio_display_C (strerror (errno), sh);
+    IDIO msh = idio_open_output_string_handle_C ();
+    idio_display_C ("filename '", msh);
+    idio_display (filename, msh);
+    idio_display_C ("' already exists", msh);
+
+    IDIO dsh = idio_open_output_string_handle_C ();
+    idio_display_C (strerror (errno), dsh);
+
     IDIO c = idio_struct_instance (idio_condition_io_file_already_exists_error_type,
-				   IDIO_LIST4 (idio_get_output_string (sh),
+				   IDIO_LIST4 (idio_get_output_string (msh),
 					       idio_S_nil,
-					       idio_S_nil,
+					       idio_get_output_string (dsh),
 					       filename));
     idio_signal_exception (idio_S_true, c);
 }
@@ -173,12 +188,13 @@ static void idio_filehandle_error_filename_already_exists_C (char *name)
 
 static void idio_filehandle_error_filename_not_found (IDIO filename)
 {
-    IDIO sh = idio_open_output_string_handle_C ();
-    idio_display_C ("filename '", sh);
-    idio_display (filename, sh);
-    idio_display_C ("' not found", sh);
+    IDIO msh = idio_open_output_string_handle_C ();
+    idio_display_C ("filename '", msh);
+    idio_display (filename, msh);
+    idio_display_C ("' not found", msh);
+
     IDIO c = idio_struct_instance (idio_condition_io_no_such_file_error_type,
-				   IDIO_LIST4 (idio_get_output_string (sh),
+				   IDIO_LIST4 (idio_get_output_string (msh),
 					       idio_S_nil,
 					       idio_S_nil,
 					       filename));
@@ -251,7 +267,7 @@ IDIO idio_open_file_handle_C (char *name, char *mode)
 	}
 	break;
     default:
-	idio_error_message ("unexpected mode", mode);
+	idio_error_printf ("unexpected mode", mode);
 	break;
     }
 
@@ -400,7 +416,7 @@ static IDIO idio_open_std_file_handle (FILE *filep)
 	mflag = IDIO_HANDLE_FLAG_WRITE;
 	name = "*stderr*";
     } else {
-	idio_error_message ("unexpected standard IO stream");
+	idio_error_printf ("unexpected standard IO stream");
 	return idio_S_unspec;
     }
 
@@ -701,8 +717,7 @@ size_t idio_file_handle_puts (IDIO fh, char *s, size_t slen)
 	}
 	r = fwrite (s, 1, slen, IDIO_FILE_HANDLE_FILEP (fh));
 	if (r < slen) {
-	    fprintf (stderr, "puts: fwrite (%s) => %zd / %zd\n", IDIO_HANDLE_NAME (fh), r, slen);
-	    IDIO_C_ASSERT (0);
+	    idio_error_printf ("puts: fwrite (%s) => %zd / %zd", IDIO_HANDLE_NAME (fh), r, slen);
 	}
 
 	IDIO_FILE_HANDLE_PTR (fh) = IDIO_FILE_HANDLE_BUF (fh);

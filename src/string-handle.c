@@ -342,7 +342,7 @@ off_t idio_string_handle_seek (IDIO sh, off_t offset, int whence)
 	ptr = IDIO_STRING_HANDLE_END (sh) + offset;
 	break;
     default:
-	idio_error_message ("idio_string_handle_seek: unexpected whence %d", whence);
+	idio_error_printf ("idio_string_handle_seek: unexpected whence %d", whence);
 	return -1;
     }
 

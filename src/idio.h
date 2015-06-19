@@ -55,6 +55,8 @@
 #include <glob.h>
 #include <signal.h>
 
+#include <strings.h>
+
 #include <sys/resource.h>
 #include <sys/time.h>
 #include <sys/wait.h>

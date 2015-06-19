@@ -24,12 +24,16 @@
 
 void idio_string_error_length (char *m, IDIO s, intptr_t i)
 {
-    idio_error_message ("%s: \"%s\" %zd", m, idio_as_string (s, 1), i);
+    char em[BUFSIZ];
+    sprintf (em, "%s: %zd", m, i);
+    idio_error_printf (em, s);
 }
 
 void idio_substring_error_index (char *m, IDIO s, intptr_t ip0, intptr_t ipn)
 {
-    idio_error_message ("%s: \"%s\" %zd %zd", m, idio_as_string (s, 1), ip0, ipn);
+    char em[BUFSIZ];
+    sprintf (em, "%s: %zd %zd", m, ip0, ipn);
+    idio_error_printf (em, s);
 }
 
 IDIO idio_string_C (const char *s_C)
@@ -226,10 +230,7 @@ size_t idio_string_blen (IDIO so)
 	break;
     default:
 	{
-	    char em[BUFSIZ];
-	    sprintf (em, "idio_type_string: unexpected string type %d", idio_type (so));
-	    idio_error_message (em);
-	    break;
+	    idio_error_C ("idio_string_blen: unexpected string type", so);
 	}
     }
 
@@ -253,10 +254,7 @@ char *idio_string_s (IDIO so)
 	break;
     default:
 	{
-	    char em[BUFSIZ];
-	    sprintf (em, "idio_type_string: unexpected string type %d", idio_type (so));
-	    idio_error_message (em);
-	    break;
+	    idio_error_C ("idio_string_s: unexpected string type", so);
 	}
     }
 
@@ -283,10 +281,7 @@ char *idio_string_as_C (IDIO so)
 	break;
     default:
 	{
-	    char em[BUFSIZ];
-	    sprintf (em, "idio_type_string: unexpected string type %d", idio_type (so));
-	    idio_error_message (em);
-	    break;
+	    idio_error_C ("idio_string_as_C: unexpected string type", so);
 	}
     }
 
@@ -346,7 +341,7 @@ IDIO_DEFINE_PRIMITIVE1V ("make-string", make_string, (IDIO size, IDIO args))
     }
 
     if (blen < 0) {
-	idio_error_message ("invalid length: %zd", blen);
+	idio_error_printf ("invalid length: %zd", blen);
     }
     
     char *sC = idio_alloc (blen + 1);
@@ -626,7 +621,7 @@ IDIO_DEFINE_PRIMITIVE3 ("substring", substring, (IDIO s, IDIO p0, IDIO pn))
 	    IDIO_SUBSTRING_S (r) = IDIO_SUBSTRING_S (s);
 	    break;
 	default:
-	    IDIO_C_ASSERT (0);
+	    idio_error_C ("unexpected string type", s);
 	}
     } else {
 	r = idio_string_C ("");
