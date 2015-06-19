@@ -259,7 +259,9 @@ IDIO idio_C_number_cast (IDIO co, idio_type_e type)
 		    break;						\
 		default:						\
 		    idio_error_C (#name ": n2->type unexpected", n2);	\
-		    break;						\
+									\
+		    /* notreached */					\
+		    return 0;						\
 		}							\
 	    }								\
 	} else if (idio_isa_fixnum (n2)) {				\
@@ -273,10 +275,15 @@ IDIO idio_C_number_cast (IDIO co, idio_type_e type)
 		break;							\
 	    default:							\
 		idio_error_C (#name ": n1->type unexpected", n1);	\
-		break;							\
+									\
+		/* notreached */					\
+		return 0;						\
 	    }								\
 	} else if (idio_type (n1) != idio_type (n2)) {			\
 	    idio_error_C (#name ": n1->type != n2->type", IDIO_LIST2 (n1, n2)); \
+									\
+	    /* notreached */						\
+	    return 0;							\
 	} else {							\
 	    switch (idio_type (n1)) {					\
 	    case IDIO_TYPE_C_INT:					\
@@ -293,7 +300,9 @@ IDIO idio_C_number_cast (IDIO co, idio_type_e type)
 		break;							\
 	    default:							\
 		idio_error_C (#name ": n1->type unexpected", n1);	\
-		break;							\
+									\
+		/* notreached */					\
+		return 0;						\
 	    }								\
 	}								\
 									\
