@@ -185,7 +185,7 @@ define (do-job-notification) {
       if+ (null? jobs) #n \
           else {
 	    job := ph jobs
-	    c := make-condition ^rt-command-status-error "job failed" (job-failed job) (%idio-job-pgid job) (job-status job)
+	    c := make-condition ^rt-command-status-error "job failed" (%idio-job-pipeline job) (%idio-job-pgid job) (job-status job)
 	    raise #t c
 
 	    ;; if someone handled that error and returned (anything)
