@@ -4086,7 +4086,7 @@ void idio_vm_abort_thread (IDIO thr)
 
     fprintf (stderr, "\nTHREAD ABORT\n");
     idio_debug ("THREAD:\t%s\n", thr);
-    idio_debug ("STACK:\t%s\n", IDIO_THREAD_STACK (thr));
+    idio_debug ("STACK:\t%s\n", stack);
 
     while (idio_S_nil != env) {
 	idio_debug ("env: %s\n", IDIO_FRAME_ARGS (env));
@@ -4097,7 +4097,7 @@ void idio_vm_abort_thread (IDIO thr)
     idio_debug ("INPUT:\t%s\n", IDIO_THREAD_INPUT_HANDLE (thr));
     idio_debug ("OUTPUT:\t%s\n", IDIO_THREAD_OUTPUT_HANDLE (thr));
 
-    idio_ai_t sp = idio_array_size (IDIO_THREAD_STACK (thr));
+    idio_ai_t sp = idio_array_size (stack);
     while (sp > 2) {
 	IDIO v = IDIO_THREAD_STACK_POP ();
 	fprintf (stderr, "popping: ");

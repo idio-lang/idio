@@ -61,7 +61,7 @@ IDIO_DEFINE_PRIMITIVE1 ("c/exit", C_exit, (IDIO istatus))
 {
     IDIO_ASSERT (istatus);
 
-    int status;
+    int status = 0;
     if (idio_isa_fixnum (istatus)) {
 	status = IDIO_FIXNUM_VAL (istatus);
     } else {
@@ -217,7 +217,7 @@ IDIO_DEFINE_PRIMITIVE1 ("c/sleep", C_sleep, (IDIO iseconds))
 {
     IDIO_ASSERT (iseconds);
     
-    unsigned int seconds;
+    unsigned int seconds = 0;
     if (idio_isa_fixnum (iseconds) &&
 	IDIO_FIXNUM_VAL (iseconds) >= 0) {
 	seconds = IDIO_FIXNUM_VAL (iseconds);
@@ -236,7 +236,7 @@ IDIO_DEFINE_PRIMITIVE1 ("c/strsignal", C_strsignal, (IDIO isignum))
 {
     IDIO_ASSERT (isignum);
 
-    int signum;
+    int signum = 0;
     if (idio_isa_fixnum (isignum)) {
 	signum = IDIO_FIXNUM_VAL (isignum);
     } else if (idio_isa_C_int (isignum)) {

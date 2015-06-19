@@ -851,7 +851,7 @@ static IDIO idio_command_foreground_job (IDIO job, int cont)
      * termios if necessary
      */
     IDIO job_tcattrs = idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_TCATTRS);
-    struct termios *tcattrsp;
+    struct termios *tcattrsp = NULL;
     if (idio_S_nil == job_tcattrs) {
 	tcattrsp = idio_alloc (sizeof (struct termios));
 	job_tcattrs = idio_C_pointer_free_me (tcattrsp);
@@ -1126,7 +1126,7 @@ IDIO_DEFINE_PRIMITIVE4 ("prep-process", prep_process, (IDIO ipgid, IDIO iinfile,
     IDIO_VERIFY_PARAM_TYPE (C_int, ioutfile);
     IDIO_VERIFY_PARAM_TYPE (boolean, iforeground);
 
-    pid_t pgid;
+    pid_t pgid = 0;
     if (idio_isa_fixnum (ipgid)) {
 	pgid = IDIO_FIXNUM_VAL (ipgid);
     } else if (idio_isa_C_int (ipgid)) {
