@@ -1000,7 +1000,7 @@ void idio_hcount (unsigned long long *bytes, int *scale)
 void idio_gc_stats_inc (idio_type_e type)
 {
     if (type > IDIO_TYPE_MAX) {
-	idio_error_printf ("GC stats: bad type %jd", type);
+	idio_error_printf ("GC stats: bad type %hhu", type);
     } else {
 	idio_gc->stats.tgets[type]++;
     }

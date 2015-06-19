@@ -27,7 +27,7 @@ static void idio_fixnum_error_divide_by_zero ()
     idio_error_printf ("divide by zero");
 }
 
-IDIO idio_integer (intmax_t i)
+IDIO idio_integer (intptr_t i)
 {
     if (i < IDIO_FIXNUM_MAX &&
 	i > IDIO_FIXNUM_MIN) {
@@ -38,7 +38,7 @@ IDIO idio_integer (intmax_t i)
     }
 }    
 
-IDIO idio_fixnum (intmax_t i)
+IDIO idio_fixnum (intptr_t i)
 {
     if (i < IDIO_FIXNUM_MAX &&
 	i > IDIO_FIXNUM_MIN) {
@@ -61,7 +61,7 @@ IDIO idio_fixnum_C (char *str, int base)
 	(errno != 0 &&
 	 val == 0)) {
 	char em[BUFSIZ];
-	sprintf (em, "idio_fixnum_C: strtoll (%s) = %ld", str, val);
+	sprintf (em, "idio_fixnum_C: strtoll (%s) = %td", str, val);
 	idio_error_system_errno (em, idio_S_nil);
 
 	/* notreached */
@@ -78,7 +78,7 @@ IDIO idio_fixnum_C (char *str, int base)
     if ('\0' == *end) {
 	return idio_fixnum (val);
     } else {
-	idio_error_printf ("idio_fixnum_C: strtoll (%s) = %ld", str, val);
+	idio_error_printf ("idio_fixnum_C: strtoll (%s) = %td", str, val);
 
 	/* notreached */
 	return idio_S_nil;

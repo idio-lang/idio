@@ -471,7 +471,7 @@ idio_hi_t idio_hash_hashval (IDIO h, void *kv)
 	hv = idio_hash_hashval_uintmax_t ((uintmax_t) IDIO_C_TYPE_DOUBLE (k));
 	break;
     case IDIO_TYPE_C_POINTER:
-	hv = idio_hash_hashval_uintmax_t ((uintmax_t) IDIO_C_TYPE_POINTER_P (k));
+	hv = idio_hash_hashval_void (IDIO_C_TYPE_POINTER_P (k));
 	break;
     case IDIO_TYPE_C_STRUCT:
 	hv = idio_hash_hashval_C_struct (k);
@@ -904,7 +904,7 @@ IDIO idio_hash_keys_to_list (IDIO h)
 	IDIO k = IDIO_HASH_HE_KEY (h, i);
 	if (! k) {
 	    char em[BUFSIZ];
-	    sprintf (em, "hash-keys-to-list: key #%jd is NULL", i);
+	    sprintf (em, "hash-keys-to-list: key #%zd is NULL", i);
 	    idio_error_C (em, h);
 	}
 	if (idio_S_nil != k) {

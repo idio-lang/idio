@@ -31,7 +31,7 @@ static void idio_array_error_bounds (idio_ai_t index, idio_ai_t size)
 {
     char em[BUFSIZ];
 
-    sprintf (em, "array bounds error: %jd > %jd", index, size);
+    sprintf (em, "array bounds error: %td > %td", index, size);
     
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C (em, sh);
