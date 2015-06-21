@@ -176,9 +176,13 @@ IDIO idio_symbols_string_intern (IDIO str)
 
 static uintmax_t idio_gensym_id = 1;
 
-IDIO idio_gensym ()
+IDIO idio_gensym (char *pref_prefix)
 {
     char *prefix = "g";
+
+    if (NULL != pref_prefix) {
+	prefix = pref_prefix;
+    }
 
     /*
      * strlen ("/") == 1
@@ -206,6 +210,38 @@ IDIO idio_gensym ()
     return idio_S_unspec;
 }
 
+IDIO_DEFINE_PRIMITIVE0V ("gensym", gensym, (IDIO args))
+{
+    IDIO_ASSERT (args);
+
+    char *prefix = NULL;
+    int free_me = 0;
+    
+    if (idio_isa_pair (args)) {
+	IDIO iprefix = IDIO_PAIR_H (args);
+
+	if (idio_isa_string (iprefix)) {
+	    prefix = idio_string_as_C (iprefix);
+	    free_me = 1;
+	} else if (idio_isa_symbol (iprefix)) {
+	    prefix = IDIO_SYMBOL_S (iprefix);
+	} else {
+	    idio_error_param_type ("string|symbol", iprefix);
+
+	    /* notreached */
+	    return idio_S_unspec;
+	}
+    }
+    
+    IDIO sym = idio_gensym (prefix);
+
+    if (free_me) {
+	free (prefix);
+    }
+
+    return sym;
+}
+
 IDIO_DEFINE_PRIMITIVE1 ("symbol?", symbol_p, (IDIO o))
 {
     IDIO_ASSERT (o);
@@ -217,11 +253,6 @@ IDIO_DEFINE_PRIMITIVE1 ("symbol?", symbol_p, (IDIO o))
     }
     
     return r;
-}
-
-IDIO_DEFINE_PRIMITIVE0 ("gensym", gensym, ())
-{
-    return idio_gensym ();
 }
 
 IDIO_DEFINE_PRIMITIVE1 ("symbol->string", symbol2string, (IDIO s))

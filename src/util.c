@@ -163,6 +163,19 @@ IDIO_DEFINE_PRIMITIVE1 ("undefined?", undefinedp, (IDIO o))
     return r;
 }
 
+IDIO_DEFINE_PRIMITIVE1 ("unspecified?", unspecifiedp, (IDIO o))
+{
+    IDIO_ASSERT (o);
+
+    IDIO r = idio_S_false;
+
+    if (idio_S_unspec == o) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
 int idio_isa_boolean (IDIO o)
 {
     IDIO_ASSERT (o);
@@ -1431,33 +1444,24 @@ void idio_dump (IDIO o, int detail)
 		}
 		break;
 	    case IDIO_TYPE_CLOSURE:
-		break;
 	    case IDIO_TYPE_PRIMITIVE:
-		break;
 	    case IDIO_TYPE_BIGNUM:
-		break;
 	    case IDIO_TYPE_MODULE:
-		break;
 	    case IDIO_TYPE_FRAME:
-		break;
 	    case IDIO_TYPE_HANDLE:
-		break;
 	    case IDIO_TYPE_STRUCT_TYPE:
-		break;
 	    case IDIO_TYPE_STRUCT_INSTANCE:
-		break;
 	    case IDIO_TYPE_THREAD:
-		break;
 	    case IDIO_TYPE_CONTINUATION:
-		break;
+	    case IDIO_TYPE_C_INT:
+	    case IDIO_TYPE_C_UINT:
+	    case IDIO_TYPE_C_FLOAT:
+	    case IDIO_TYPE_C_DOUBLE:
+	    case IDIO_TYPE_C_POINTER:
 	    case IDIO_TYPE_C_TYPEDEF:
-		break;
 	    case IDIO_TYPE_C_STRUCT:
-		break;
 	    case IDIO_TYPE_C_INSTANCE:
-		break;
 	    case IDIO_TYPE_C_FFI:
-		break;
 	    case IDIO_TYPE_OPAQUE:
 		break;
 	    default:
@@ -1511,6 +1515,7 @@ void idio_util_add_primitives ()
     IDIO_ADD_PRIMITIVE (nullp);
     IDIO_ADD_PRIMITIVE (unsetp);
     IDIO_ADD_PRIMITIVE (undefinedp);
+    IDIO_ADD_PRIMITIVE (unspecifiedp);
     IDIO_ADD_PRIMITIVE (booleanp);
     IDIO_ADD_PRIMITIVE (not);
     IDIO_ADD_PRIMITIVE (eqp);

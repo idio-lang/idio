@@ -633,7 +633,7 @@ IDIO_DEFINE_PRIMITIVE1 ("letrec", letrec, (IDIO e))
 	IDIO binding = IDIO_PAIR_H (bindings);
 	IDIO_TYPE_ASSERT (pair, bindings);
 	vars = idio_pair (IDIO_PAIR_H (binding), vars);
-	tmps = idio_pair (idio_gensym (), tmps);
+	tmps = idio_pair (idio_gensym (NULL), tmps);
 	vals = idio_pair (IDIO_PAIR_H (IDIO_PAIR_T (binding)), vals);
 	
 	bindings = IDIO_PAIR_T (bindings);
@@ -1134,7 +1134,7 @@ static IDIO idio_scm_rewrite_cond (IDIO c)
 	/* fprintf (stderr, "scm-cond-rewrite: => clause\n"); */
 	if (idio_isa_list (IDIO_PAIR_H (c)) &&
 	    idio_list_length (IDIO_PAIR_H (c)) == 3) {
-	    IDIO gs = idio_gensym ();
+	    IDIO gs = idio_gensym (NULL);
 	    /*
 	      `(let ((gs ,(caar c)))
 	         (if gs
@@ -1156,7 +1156,7 @@ static IDIO idio_scm_rewrite_cond (IDIO c)
 	}
     } else if (idio_S_nil == IDIO_PAIR_T (IDIO_PAIR_H (c))) {
 	/* fprintf (stderr, "scm-cond-rewrite: null? cdar clause\n"); */
-	IDIO gs = idio_gensym ();
+	IDIO gs = idio_gensym (NULL);
 	/*
 	  `(let ((gs ,(caar c)))
 	     (or gs

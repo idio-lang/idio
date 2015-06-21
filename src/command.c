@@ -100,23 +100,24 @@ static char **idio_command_get_envp ()
 	IDIO val = idio_module_current_symbol_value_recurse (symbol);
 
 	size_t vlen = 0;
-	if (idio_S_unset != val) {
+	if (idio_S_unset != val &&
+	    idio_S_undef != val) {
 	    IDIO_TYPE_ASSERT (string, val);
 	    vlen = IDIO_STRING_BLEN (val);
-	}
 
-	envp[n] = idio_alloc (slen + 1 + vlen + 1);
-	strcpy (envp[n], IDIO_SYMBOL_S (symbol));
-	strcat (envp[n], "=");
-	if (idio_S_undef != val) {
-	    strncat (envp[n], IDIO_STRING_S (val), vlen);
+	    envp[n] = idio_alloc (slen + 1 + vlen + 1);
+	    strcpy (envp[n], IDIO_SYMBOL_S (symbol));
+	    strcat (envp[n], "=");
+	    if (idio_S_undef != val) {
+		strncat (envp[n], IDIO_STRING_S (val), vlen);
+	    }
+	    envp[n][slen + 1 + vlen] = '\0';
+	    n++;
+	} else {
+	    /* idio_debug ("!E: %s\n", symbol);  */
 	}
-	envp[n][slen + 1 + vlen] = '\0';
-
-	/* fprintf (stderr, "E: %s\n", envp[n]); */
 
 	symbols = IDIO_PAIR_T (symbols);
-	n++;
     }
     envp[n] = NULL;
 

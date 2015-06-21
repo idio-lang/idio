@@ -100,7 +100,7 @@ int idio_isa_symbol (IDIO s);
 IDIO idio_symbols_C_intern (char *s);
 IDIO idio_symbols_string_intern (IDIO str);
 
-IDIO idio_gensym ();
+IDIO idio_gensym (char *pref_prefix);
 
 void idio_init_symbol (void);
 void idio_symbol_add_primitives (void);

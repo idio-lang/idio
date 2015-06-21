@@ -1097,7 +1097,7 @@ static IDIO idio_rewrite_cond (IDIO c)
 	/* fprintf (stderr, "cond-rewrite: => clause\n");  */
 	if (idio_isa_list (IDIO_PAIR_H (c)) &&
 	    idio_list_length (IDIO_PAIR_H (c)) == 3) {
-	    IDIO gs = idio_gensym ();
+	    IDIO gs = idio_gensym (NULL);
 	    /*
 	      `(let ((gs ,(caar c)))
 	         (if gs
@@ -1119,7 +1119,7 @@ static IDIO idio_rewrite_cond (IDIO c)
 	}
     } else if (idio_S_nil == IDIO_PAIR_T (IDIO_PAIR_H (c))) {
 	/* fprintf (stderr, "cond-rewrite: null? cdar clause\n");  */
-	IDIO gs = idio_gensym ();
+	IDIO gs = idio_gensym (NULL);
 	/*
 	  `(let ((gs ,(caar c)))
 	     (or gs

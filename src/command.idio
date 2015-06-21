@@ -385,14 +385,10 @@ define (launch-1proc foreground & command) {
 }
 
 define-macro (launch-1proc-fg & command) {
-  %T{
-    launch-1proc #t $@command
-  }
+  %T{ launch-1proc #t $@command }
 }
 
 define-macro (launch-1proc-bg & command) {
-  %T{
-    launch-1proc #f $@command
-  }
+  %T{ launch-1proc #f $@command }
 }
 
