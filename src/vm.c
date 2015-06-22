@@ -2283,7 +2283,7 @@ void idio_signal_exception (IDIO continuablep, IDIO e)
      * allocated during the life of that C stack.  Unless we think of
      * something clever...
      */
-    longjmp (IDIO_THREAD_JMP_BUF (thr), IDIO_VM_LONGJMP_SIGNAL_EXCEPTION);
+    longjmp (*(IDIO_THREAD_JMP_BUF (thr)), IDIO_VM_LONGJMP_SIGNAL_EXCEPTION);
 
     /* not reached */
     IDIO_C_ASSERT (0);
@@ -2404,7 +2404,7 @@ IDIO_DEFINE_PRIMITIVE2 ("%%restore-continuation", restore_continuation, (IDIO k,
     
     IDIO thr = idio_current_thread ();
 
-    longjmp (IDIO_THREAD_JMP_BUF (thr), IDIO_VM_LONGJMP_CONTINUATION);
+    longjmp (*(IDIO_THREAD_JMP_BUF (thr)), IDIO_VM_LONGJMP_CONTINUATION);
 
     /* not reached */
     IDIO_C_ASSERT (0);
@@ -2424,7 +2424,7 @@ IDIO_DEFINE_PRIMITIVE1 ("%%call/cc", call_cc, (IDIO proc))
 
     idio_vm_invoke (thr, proc, 0);
 
-    longjmp (IDIO_THREAD_JMP_BUF (thr), IDIO_VM_LONGJMP_CONTINUATION);
+    longjmp (*(IDIO_THREAD_JMP_BUF (thr)), IDIO_VM_LONGJMP_CONTINUATION);
 
     /* not reached */
     IDIO_C_ASSERT (0);
@@ -3768,6 +3768,10 @@ IDIO idio_vm_run (IDIO thr)
 
     uintptr_t loops0 = idio_vm_run_loops;
     
+    jmp_buf jb;
+    jmp_buf *ojb = IDIO_THREAD_JMP_BUF (thr);
+    IDIO_THREAD_JMP_BUF (thr) = &jb;
+
     /*
      * Ready ourselves for idio_signal_exception/continuations to
      * clear the decks.
@@ -3775,7 +3779,7 @@ IDIO idio_vm_run (IDIO thr)
      * NB Keep counters/timers above this setjmp (otherwise they get
      * reset -- duh)
      */
-    int sjv = setjmp (IDIO_THREAD_JMP_BUF (thr));
+    int sjv = setjmp (*(IDIO_THREAD_JMP_BUF (thr)));
 
     /*
      * Hmm, we really should consider caring whether we got here from
@@ -3787,8 +3791,10 @@ IDIO idio_vm_run (IDIO thr)
     case 0:
 	break;
     case IDIO_VM_LONGJMP_SIGNAL_EXCEPTION:
+	/* fprintf (stderr, "setjmp from exception\n"); */
 	break;
     case IDIO_VM_LONGJMP_CONTINUATION:
+	/* fprintf (stderr, "setjmp from continuation\n"); */
 	break;
     default:
 	fprintf (stderr, "setjmp: unexpected value: %d\n", sjv);
@@ -3841,87 +3847,81 @@ IDIO idio_vm_run (IDIO thr)
 		if (idio_S_unspec != exists) {
 		    idio_vm_sigchld_handler = idio_module_symbol_value_recurse (idio_vm_sigchld_handler_name, idio_main_module ());
 		}
-		/* idio_debug ("\nSIGCHLD: %s\n", idio_vm_sigchld_handler);  */
+		/* idio_debug ("\nSIGCHLD: %s\n", idio_vm_sigchld_handler);   */
 		
 		if (idio_S_nil != idio_vm_sigchld_handler) {
+		    jmp_buf jb;
+		    jmp_buf *ojb = IDIO_THREAD_JMP_BUF (thr);
+		    IDIO_THREAD_JMP_BUF (thr) = &jb;
+
 		    idio_gc_pause ();
 		    IDIO val = IDIO_THREAD_VAL (thr);
 		    IDIO k = idio_continuation (thr);
 
-		    /* idio_debug ("SIGCHLD: pre-inv: %s\n", thr); */
-		    /* idio_debug ("SIGCHLD: pre-inv: %s\n", IDIO_THREAD_STACK (thr)); */
-		    idio_ai_t pc0 = IDIO_THREAD_PC (thr);
-		    IDIO vs = idio_frame_allocate (1);
-		    IDIO_THREAD_VAL (thr) = vs;
-		    idio_vm_invoke (thr, idio_vm_sigchld_handler, 1);
+		    int sjv = setjmp (*(IDIO_THREAD_JMP_BUF (thr)));
 
-		    /*
-		     * If idio_vm_sigchld_handler was a primitive and
-		     * that primitive raised an exception then we
-		     * won't reach here because idio_signal_exception
-		     * calls longjmp(3) which drops us back to the
-		     * setjmp(3) above and we continue (restart?)
-		     * looping around idio_vm_run1() again.
-		     *
-		     * Very confusing! :)
-		     */
-
-		    if (IDIO_THREAD_PC (thr) != pc0) {
-			/* idio_debug ("SIGCHLD: pre-run: %s\n", thr);  */
-			/* idio_debug ("SIGCHLD: pre-run: %s\n", IDIO_THREAD_STACK (thr));  */
-			idio_vm_run (thr);
+		    if (0 == sjv) {
+			/* idio_debug ("SIGCHLD: pre-inv: %s\n", thr); */
+			/* idio_debug ("SIGCHLD: pre-inv: %s\n", IDIO_THREAD_STACK (thr)); */
+			idio_ai_t pc0 = IDIO_THREAD_PC (thr);
+			IDIO vs = idio_frame_allocate (1);
+			IDIO_THREAD_VAL (thr) = vs;
+			idio_vm_invoke (thr, idio_vm_sigchld_handler, 1);
 
 			/*
-			 * idio_vm_sigchld_handler is a closure
-			 * (because idio_vm_invoke() changed the PC).
-			 * If it raises an exception then we do reach
-			 * here as it is just regular Idio-land code
-			 * throwing exceptions between itself.
+			 * If idio_vm_sigchld_handler was a primitive and
+			 * that primitive raised an exception then we
+			 * won't reach here because idio_signal_exception
+			 * calls longjmp(3) which drops us back to the
+			 * setjmp(3) above and we continue (restart?)
+			 * looping around idio_vm_run1() again.
+			 *
+			 * Very confusing! :)
 			 */
 
-			/* idio_debug ("SIGCHLD handler => %s\n", IDIO_THREAD_VAL (thr)); */
+			if (IDIO_THREAD_PC (thr) != pc0) {
+			    /* idio_debug ("SIGCHLD: pre-run: %s\n", thr);  */
+			    /* idio_debug ("SIGCHLD: pre-run: %s\n", IDIO_THREAD_STACK (thr));  */
+			    idio_vm_run (thr);
 
-			/* idio_debug ("SIGCHLD: post-run: %s\n", thr);  */
-			/* idio_debug ("SIGCHLD: post-run: %s\n", IDIO_THREAD_STACK (thr));  */
+			    /*
+			     * idio_vm_sigchld_handler is a closure
+			     * (because idio_vm_invoke() changed the PC).
+			     * If it raises an exception then we do reach
+			     * here as it is just regular Idio-land code
+			     * throwing exceptions between itself.
+			     */
+
+			    /* idio_debug ("SIGCHLD handler => %s\n", IDIO_THREAD_VAL (thr));  */
+
+			    /* idio_debug ("SIGCHLD: post-run: %s\n", thr);   */
+			    /* idio_debug ("SIGCHLD: post-run: %s\n", IDIO_THREAD_STACK (thr));   */
+			}
+		    } else {
+			switch (sjv) {
+			case 0:
+			    break;
+			case IDIO_VM_LONGJMP_SIGNAL_EXCEPTION:
+			    fprintf (stderr, "SIGCHLD: setjmp from exception\n");
+			    break;
+			case IDIO_VM_LONGJMP_CONTINUATION:
+			    fprintf (stderr, "SIGCHLD: setjmp from continuation\n");
+			    break;
+			default:
+			    fprintf (stderr, "SIGCHLD: setjmp: unexpected value: %d\n", sjv);
+			    break;
+			}
+
 		    }
-		    /* idio_debug ("SIGCHLD: pre-con: %s\n", thr); */
-		    /* idio_debug ("SIGCHLD: pre-con: %s\n", IDIO_THREAD_STACK (thr)); */
-		    /* idio_debug ("SIGCHLD restoring VAL: %s\n", val); */
+		    
+		    /* idio_debug ("SIGCHLD: pre-con: %s\n", thr);  */
+		    /* idio_debug ("SIGCHLD: pre-con: %s\n", IDIO_THREAD_STACK (thr));  */
+		    /* idio_debug ("SIGCHLD restoring VAL: %s\n", val);  */
 		    idio_vm_restore_continuation (k, val);
-		    /* idio_debug ("SIGCHLD: post-con: %s\n", thr); */
-		    /* idio_debug ("SIGCHLD: post-con: %s\n", IDIO_THREAD_STACK (thr)); */
+		    IDIO_THREAD_JMP_BUF (thr) = ojb;
+		    /* idio_debug ("SIGCHLD: post-con: %s\n", thr);  */
+		    /* idio_debug ("SIGCHLD: post-con: %s\n", IDIO_THREAD_STACK (thr));  */
 		    idio_gc_resume ();
-
-		    /*
-		     * C's return, here, will go back through C's stack
-		     * frames which looks a bit like:
-		     *
-		     *   idio_vm_run()
-		     *     setjmp(3)
-		     *     if (sigchld)
-		     *       idio_signal_exception()
-		     *         idio_vm_invoke()
-		     *           <here>
-		     *         longjmp(3)
-		     *
-		     * In other words, we return to idio_vm_invoke() and
-		     * into idio_signal_exception() which will immediately
-		     * call longjmp(3) back into idio_vm_run().
-		     *
-		     * In Idio-land, idio_signal_exception() will have
-		     * prepped the stack with how to return.  So we need
-		     * to use that.
-		     */
-		    if (0) {
-			fprintf (stderr, "\n\nwill continue\n");
-			IDIO_THREAD_PC (thr) = IDIO_FIXNUM_VAL (IDIO_THREAD_STACK_POP ());
-
-			/*
-			 * Whatever we return is about to be discarded.
-			 * Probably.
-			 */
-			return IDIO_THREAD_VAL (thr);
-		    }
 		} else {
 		    fprintf (stderr, "VM: no sighandler\n");
 		}
@@ -3934,6 +3934,8 @@ IDIO idio_vm_run (IDIO thr)
 	    break;
 	}
     }
+
+    IDIO_THREAD_JMP_BUF (thr) = ojb;
 
     struct timeval tr;
     gettimeofday (&tr, NULL);
@@ -4119,6 +4121,7 @@ void idio_vm_abort_thread (IDIO thr)
 	sp--;
     }
     IDIO_THREAD_PC (thr) = idio_finish_pc;
+    IDIO_C_ASSERT (0);
 }
 
 void idio_init_vm_values ()

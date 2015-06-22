@@ -42,6 +42,7 @@ IDIO idio_thread (idio_ai_t stack_size)
     IDIO_THREAD_HANDLER_SP (t) = idio_fixnum (0);
     IDIO_THREAD_DYNAMIC_SP (t) = idio_fixnum (-1);
     IDIO_THREAD_ENVIRON_SP (t) = idio_fixnum (-1);
+    IDIO_THREAD_JMP_BUF (t) = NULL;
     IDIO_THREAD_FUNC (t) = idio_S_unspec;
     IDIO_THREAD_REG1 (t) = idio_S_unspec;
     IDIO_THREAD_REG2 (t) = idio_S_unspec;

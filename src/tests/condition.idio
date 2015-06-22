@@ -349,7 +349,7 @@ monitor (function (cont cond) {
 ;; a non-POSIX extension, the "x" mode character for fopen(3).  This
 ;; is part of ISO C11.
 ;;
-;; This is suphandleed on Linux, MacOS.  Not suphandleed on Solaris
+;; This is supported on Linux, MacOS.  Not supported on Solaris
 ;; (OpenIndiana).
 monitor (function (cont cond) {
   ;; display* "already exists monitor condition:" (struct-type-name cond)
@@ -395,6 +395,11 @@ monitor (function (cont cond) {
   ifh := open-input-file test_filename
   close-handle ifh
 }
+
+;; a non-continuable error should abort the thread -- so we can't test
+;; anything
+;(raise #f (make-condition ^error))
+edisplay* "raise #t => " (raise #t (make-condition ^error))
 
 
 if (file-exists? test_filename) (delete-file test_filename)

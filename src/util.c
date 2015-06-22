@@ -959,7 +959,7 @@ char *idio_as_string (IDIO o, int depth)
 		    if (asprintf (&r, "#T{%p pc=%4zd sp/top=%2zd/",
 				  o,
 				  IDIO_THREAD_PC (o),
-				  sp) == -1) {
+				  sp - 1) == -1) {
 			return NULL;
 		    }
 		    IDIO_STRCAT_FREE (r, idio_as_string (idio_array_top (IDIO_THREAD_STACK (o)), 1));
@@ -1107,6 +1107,9 @@ char *idio_as_string (IDIO o, int depth)
 		}
 	    default:
 		{
+		    /*
+		     * Oh dear, bad data.  Can we dump any clues?
+		     */
 		    size_t n = strnlen ((char *) o, 40);
 		    if (40 == n) {
 			if (asprintf (&r, "#?{%10p}", o) == -1) {
@@ -1117,6 +1120,7 @@ char *idio_as_string (IDIO o, int depth)
 			    return NULL;
 			}
 		    }
+		    IDIO_C_ASSERT (0);
 		}
 		break;
 	    }

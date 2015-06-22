@@ -391,7 +391,7 @@ typedef struct idio_thread_s {
     struct idio_s *env;
 
     struct idio_s *handler_sp;	/* SP to current handler; SP-1 is SP of next handler */
-    jmp_buf jmp_buf;		/* lets us clear the C-stack too */
+    jmp_buf *jmp_buf;		/* lets us clear the C-stack too */
 
     struct idio_s *dynamic_sp;	/* SP to topmost dynamic variable */
     struct idio_s *environ_sp;	/* SP to topmost environ variable */
