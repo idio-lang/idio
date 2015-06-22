@@ -526,12 +526,12 @@ IDIO_DEFINE_PRIMITIVE1 ("c/~", C_bw_complement, (IDIO v1))
  * RTLEN - 10 => max n of 9999
  */
 #define IDIO_LIBC_SIGNAMELEN 14
-static idio_libc_set_signal_names ()
+static void idio_libc_set_signal_names ()
 {
-    idio_libc_signal_names = idio_alloc (NSIG * sizeof (char *));
+    idio_libc_signal_names = idio_alloc ((NSIG + 1) * sizeof (char *));
 
     int i;
-    for (i = 0; i < (NSIG - 1); i++) {
+    for (i = 0; i < NSIG; i++) {
 	idio_libc_signal_names[i] = idio_alloc (IDIO_LIBC_SIGNAMELEN);
 	*(idio_libc_signal_names[i]) = '\0';
     }
@@ -811,6 +811,7 @@ void idio_libc_wrap_add_primitives ()
     IDIO_ADD_PRIMITIVE (C_setpgid);
     IDIO_ADD_PRIMITIVE (C_signal);
     IDIO_ADD_PRIMITIVE (C_sleep);
+    IDIO_ADD_PRIMITIVE (C_sig_name);
     IDIO_ADD_PRIMITIVE (C_strsignal);
     IDIO_ADD_PRIMITIVE (C_tcgetattr);
     IDIO_ADD_PRIMITIVE (C_tcgetpgrp);
