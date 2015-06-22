@@ -597,7 +597,7 @@ static int idio_command_mark_process_status (pid_t pid, int status)
 		    } else {
 			idio_struct_instance_set_direct (proc, IDIO_PROCESS_TYPE_COMPLETED, idio_S_true);
 			if (WIFSIGNALED (status)) {
-			    fprintf (stderr, "Job Terminated: kill -%d %ld: ", WTERMSIG (status), (long) pid);
+			    fprintf (stderr, "Job Terminated: kill -%s %ld: ", idio_libc_sig_name (WTERMSIG (status)), (long) pid);
 			    idio_debug ("%s\n", idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PIPELINE));
 			}
 		    }

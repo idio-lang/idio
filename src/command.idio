@@ -103,7 +103,7 @@ define (mark-process-status-1 pid status) {
                     } {
                       set-%idio-process-completed! (ph procs) #t
                       if (c/WIFSIGNALED status) {
-                        edisplay* "Job Terminated: kill -" (c/WTERMSIG status)  pid ":" (c/strsignal (c/WTERMSIG status))
+                        edisplay* "Job Terminated: kill -" (c/sig-name (c/WTERMSIG status))  pid ":" (c/strsignal (c/WTERMSIG status))
                       }
 		    }
 		    #f
