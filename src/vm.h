@@ -295,13 +295,13 @@ IDIO idio_vm_values_ref (idio_ai_t i);
 void idio_vm_values_set (idio_ai_t i, IDIO v);
 idio_ai_t idio_vm_extend_primitives (IDIO v);
 IDIO idio_vm_primitives_ref (idio_ai_t i);
-void idio_vm_abort_thread (IDIO thr);
+void idio_vm_unwind_thread (IDIO thr, int verbose);
 IDIO idio_vm_dynamic_ref (idio_ai_t index, IDIO thr);
 void idio_vm_dynamic_set (idio_ai_t i, IDIO v, IDIO thr);
 IDIO idio_vm_environ_ref (idio_ai_t index, IDIO thr);
 void idio_vm_environ_set (idio_ai_t i, IDIO v, IDIO thr);
 
-void idio_signal_exception (IDIO continuablep, IDIO e);
+void idio_raise_condition (IDIO continuablep, IDIO e);
 IDIO idio_apply (IDIO fn, IDIO args);
 
 void idio_vm_thread_init (IDIO thr);

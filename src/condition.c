@@ -25,7 +25,7 @@
 #include "idio.h"
 
 /* SRFI-36 */
-IDIO idio_condition_root_type;
+IDIO idio_condition_condition_type;
 IDIO idio_condition_message_type;
 IDIO idio_condition_error_type;
 IDIO idio_condition_io_error_type;
@@ -91,7 +91,7 @@ int idio_isa_condition_type (IDIO o)
     IDIO_ASSERT (o);
 
     if (idio_isa_struct_type (o) &&
-	idio_struct_type_isa (o, idio_condition_root_type)) {
+	idio_struct_type_isa (o, idio_condition_condition_type)) {
 	return 1;
     }
 
@@ -118,8 +118,8 @@ IDIO_DEFINE_PRIMITIVE1 ("message-condition?", message_conditionp, (IDIO o))
 
     IDIO r = idio_S_false;
 
-    if (idio_isa_condition_type (o) &&
-	idio_struct_type_isa (o, idio_condition_message_type)) {
+    if (idio_isa_struct_instance (o) &&
+	idio_struct_instance_isa (o, idio_condition_message_type)) {
 	r = idio_S_true;
     }
 
@@ -133,8 +133,8 @@ IDIO_DEFINE_PRIMITIVE1 ("error?", errorp, (IDIO o))
 
     IDIO r = idio_S_false;
 
-    if (idio_isa_condition_type (o) &&
-	idio_struct_type_isa (o, idio_condition_error_type)) {
+    if (idio_isa_struct_instance (o) &&
+	idio_struct_instance_isa (o, idio_condition_error_type)) {
 	r = idio_S_true;
     }
 
@@ -186,7 +186,7 @@ int idio_isa_condition (IDIO o)
     IDIO_ASSERT (o);
 
     if (idio_isa_struct_instance (o) &&
-	idio_struct_instance_isa (o, idio_condition_root_type)) {
+	idio_struct_instance_isa (o, idio_condition_condition_type)) {
 	return 1;
     }
 
@@ -290,9 +290,9 @@ IDIO_DEFINE_PRIMITIVE3 ("condition-set!", condition_set, (IDIO c, IDIO field, ID
 void idio_init_condition ()
 {
     /* SRFI-35-ish */
-    IDIO_DEFINE_CONDITION0 (idio_condition_root_type, "^condition", idio_S_nil);
-    IDIO_DEFINE_CONDITION1 (idio_condition_message_type, "^message", idio_condition_root_type, "message");
-    IDIO_DEFINE_CONDITION0 (idio_condition_error_type, "^error", idio_condition_root_type);
+    IDIO_DEFINE_CONDITION0 (idio_condition_condition_type, "^condition", idio_S_nil);
+    IDIO_DEFINE_CONDITION1 (idio_condition_message_type, "^message", idio_condition_condition_type, "message");
+    IDIO_DEFINE_CONDITION0 (idio_condition_error_type, "^error", idio_condition_condition_type);
 
     /* Idio */
     IDIO_DEFINE_CONDITION3 (idio_condition_idio_error_type, "^idio-error", idio_condition_error_type, "message", "location", "detail");
@@ -370,7 +370,7 @@ void idio_condition_add_primitives ()
 
 void idio_final_condition ()
 {
-    idio_gc_expose (idio_condition_root_type);
+    idio_gc_expose (idio_condition_condition_type);
     idio_gc_expose (idio_condition_message_type);
     idio_gc_expose (idio_condition_error_type);
     idio_gc_expose (idio_condition_idio_error_type);

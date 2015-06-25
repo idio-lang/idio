@@ -635,9 +635,10 @@ void idio_gc_dump ()
 	idio_root_dump (root);
 	root = root->next;
     }
-    IDIO_FPRINTF (stderr, "idio_gc_dump: %" PRIdPTR " roots\n", n);
+    if (n) {
+	fprintf (stderr, "idio_gc_dump: %" PRIdPTR " roots\n", n);
+    }
     
-    IDIO_FPRINTF (stderr, "idio_gc_dump: free list\n");
     IDIO o = idio_gc->free;
     n = 0;
     while (o) {
@@ -653,14 +654,21 @@ void idio_gc_dump ()
     IDIO_FPRINTF (stderr, "idio_gc_dump: %" PRIdPTR " on free list\n", n);
     IDIO_C_ASSERT (n == idio_gc->stats.nfree);
 
-    IDIO_FPRINTF (stderr, "idio_gc_dump: used list\n");
     o = idio_gc->used;
     n = 0;
-    while (o) {
-	IDIO_ASSERT (o);
-	idio_dump (o, 1);
-	o = o->next;
-	n++;
+    if (NULL != o) {
+	fprintf (stderr, "idio_gc_dump: used list\n");
+	while (NULL != o) {
+	    IDIO_ASSERT (o);
+	    if (n < 10) {
+		idio_dump (o, 1);
+	    }
+	    o = o->next;
+	    n++;
+	}
+	if (n >= 10) {
+	    fprintf (stderr, "... +%zd more\n", n - 10);
+	}
     }
     IDIO_FPRINTF (stderr, "idio_gc_dump: %" PRIdPTR " on used list\n", n);
 }

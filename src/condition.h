@@ -23,7 +23,7 @@
 #ifndef CONDITION_H
 #define CONDITION_H
 
-extern IDIO idio_condition_root_type;
+extern IDIO idio_condition_condition_type;
 extern IDIO idio_condition_message_type;
 extern IDIO idio_condition_error_type;
 extern IDIO idio_condition_io_error_type;

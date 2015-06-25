@@ -34,7 +34,7 @@ static void idio_struct_error_field_not_found (IDIO field)
 				   IDIO_LIST3 (idio_get_output_string (sh),
 					       idio_S_nil,
 					       idio_S_nil));
-    idio_signal_exception (idio_S_true, c);
+    idio_raise_condition (idio_S_true, c);
 }
 
 IDIO idio_struct_type (IDIO name, IDIO parent, IDIO fields)

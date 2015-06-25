@@ -192,6 +192,42 @@ IDIO_DEFINE_PRIMITIVE1 ("c/pipe-writer", C_pipe_writer, (IDIO ipipefd))
     return idio_C_int (pipefd[1]);
 }
 
+IDIO_DEFINE_PRIMITIVE1V ("c/read", C_read, (IDIO ifd, IDIO icount))
+{
+    IDIO_ASSERT (ifd);
+    IDIO_VERIFY_PARAM_TYPE (C_int, ifd);
+
+    int fd = IDIO_C_TYPE_INT (ifd);
+
+    size_t count = BUFSIZ;
+
+    if (idio_S_nil != icount) {
+	icount = IDIO_PAIR_H (icount);
+	
+	if (idio_isa_fixnum (icount)) {
+	    count = IDIO_FIXNUM_VAL (icount);
+	} else if (idio_isa_C_int (icount)) {
+	    count = IDIO_C_TYPE_INT (icount);
+	} else {
+	    idio_error_param_type ("fixnum|C_int", icount);
+	}
+    }
+
+    char buf[count];
+
+    ssize_t n = read (fd, buf, count);
+
+    IDIO r;
+    
+    if (n) {
+	r = idio_string_C_len (buf, n);
+    } else {
+	r = idio_S_eof;
+    }
+    
+    return r;
+}
+
 IDIO_DEFINE_PRIMITIVE2 ("c/setpgid", C_setpgid, (IDIO ipid, IDIO ipgid))
 {
     IDIO_ASSERT (ipid);
@@ -205,25 +241,20 @@ IDIO_DEFINE_PRIMITIVE2 ("c/setpgid", C_setpgid, (IDIO ipid, IDIO ipgid))
     int r = setpgid (pid, pgid);
     
     if (-1 == r) {
-#if defined(__sun) && defined(__SVR4)
-      if (EACCES == errno) {
-	/* 
-	 * This appears to be a simple race condition in Solaris: the
-	 * child has already successfully executed exec() => EACCES
-	 * for us.
-	 *
-	 * Since the child also ran setpgid() on itself before calling
-	 * exec() we should be good.
-	 */
-	r = 0;
-      } else {
-#endif
-	idio_error_system_errno ("setpgid", IDIO_LIST2 (ipid, ipgid));
-#if defined(__sun) && defined(__SVR4)
-      }
-#endif
+	if (EACCES == errno) {
+	    /* 
+	     * The child has already successfully executed exec() =>
+	     * EACCES for us.
+	     *
+	     * Since the child also ran setpgid() on itself before
+	     * calling exec() we should be good.
+	     */
+	    r = 0;
+	} else {
+	    idio_error_system_errno ("setpgid", IDIO_LIST2 (ipid, ipgid));
+	}
     }
-
+    
     return idio_C_int (r);
 }
 
@@ -452,6 +483,26 @@ IDIO_DEFINE_PRIMITIVE1 ("c/WTERMSIG", C_WTERMSIG, (IDIO istatus))
     return idio_C_int (WTERMSIG (*statusp));
 }
 
+IDIO_DEFINE_PRIMITIVE2 ("c/write", C_write, (IDIO ifd, IDIO istr))
+{
+    IDIO_ASSERT (ifd);
+    IDIO_ASSERT (istr);
+    IDIO_VERIFY_PARAM_TYPE (C_int, ifd);
+    IDIO_VERIFY_PARAM_TYPE (string, istr);
+
+    int fd = IDIO_C_TYPE_INT (ifd);
+
+    size_t blen = idio_string_blen (istr);
+    
+    ssize_t n = write (fd, idio_string_s (istr), blen);
+
+    if (-1 == n) {
+	idio_error_system_errno ("write", IDIO_LIST2 (ifd, istr));
+    }
+
+    return idio_integer (n);
+}
+
 IDIO_DEFINE_PRIMITIVE1V ("c/|", C_bw_or, (IDIO v1, IDIO args))
 {
     IDIO_ASSERT (v1);
@@ -546,7 +597,6 @@ static void idio_libc_set_signal_names ()
 	idio_libc_signal_names[SIGRTMAX] = "SIGRTMAX";
 
 	int rtmid = (rtmax - rtmin) / 2;
-	fprintf (stderr, "rtm* %d < %d < %d\n", rtmin, rtmid, rtmax);
 	for (i = 1; i < rtmid ; i++) {
 	    sprintf (idio_libc_signal_names[rtmin + i], "SIGRTMIN+%d", i);
 	    sprintf (idio_libc_signal_names[rtmax - i], "SIGRTMAX-%d", i);
@@ -808,6 +858,7 @@ void idio_libc_wrap_add_primitives ()
     IDIO_ADD_PRIMITIVE (C_pipe);
     IDIO_ADD_PRIMITIVE (C_pipe_reader);
     IDIO_ADD_PRIMITIVE (C_pipe_writer);
+    IDIO_ADD_PRIMITIVE (C_read);
     IDIO_ADD_PRIMITIVE (C_setpgid);
     IDIO_ADD_PRIMITIVE (C_signal);
     IDIO_ADD_PRIMITIVE (C_sleep);
@@ -823,6 +874,7 @@ void idio_libc_wrap_add_primitives ()
     IDIO_ADD_PRIMITIVE (C_WIFSIGNALED);
     IDIO_ADD_PRIMITIVE (C_WIFSTOPPED);
     IDIO_ADD_PRIMITIVE (C_WTERMSIG);
+    IDIO_ADD_PRIMITIVE (C_write);
 
     IDIO_ADD_PRIMITIVE (C_bw_or);
     IDIO_ADD_PRIMITIVE (C_bw_and);

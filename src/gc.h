@@ -449,6 +449,7 @@ typedef struct idio_continuation_s {
  */
 #define IDIO_VM_LONGJMP_SIGNAL_EXCEPTION 1
 #define IDIO_VM_LONGJMP_CONTINUATION     2
+#define IDIO_VM_LONGJMP_CALLCC		 3
 
 typedef struct idio_C_pointer_s {
     void *p;

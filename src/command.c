@@ -71,7 +71,7 @@ static void idio_command_error_glob (IDIO pattern)
 					       idio_S_nil,
 					       idio_S_nil,
 					       pattern));
-    idio_signal_exception (idio_S_true, c);
+    idio_raise_condition (idio_S_true, c);
 }
 
 static void idio_command_error_exec ()
@@ -83,7 +83,7 @@ static void idio_command_error_exec ()
 					       idio_S_nil,
 					       idio_S_nil,
 					       idio_fixnum ((intptr_t) errno)));
-    idio_signal_exception (idio_S_true, c);
+    idio_raise_condition (idio_S_true, c);
 }
 
 static char **idio_command_get_envp ()
@@ -540,16 +540,16 @@ static IDIO idio_command_job_status (IDIO job)
 
 	if (WIFEXITED (*statusp)) {
 	    if (WEXITSTATUS (*statusp)) {
-		return IDIO_LIST2 (idio_S_exit, idio_fixnum (WEXITSTATUS (*statusp)));
+		return idio_S_false;
 	    }
 	} else if (WIFSIGNALED (*statusp)) {
-	    return IDIO_LIST2 (idio_S_killed, idio_fixnum (WTERMSIG (*statusp)));
+	    return idio_S_false;
 	}
 
 	procs = IDIO_PAIR_T (procs);
     }
 
-    return IDIO_LIST2 (idio_S_exit, idio_fixnum (0));
+    return idio_S_true;
 }
 
 IDIO_DEFINE_PRIMITIVE1 ("job-status", job_status, (IDIO job))
@@ -562,6 +562,47 @@ IDIO_DEFINE_PRIMITIVE1 ("job-status", job_status, (IDIO job))
     }
 
     return idio_command_job_status (job);
+}
+
+static IDIO idio_command_job_detail (IDIO job)
+{
+    IDIO_ASSERT (job);
+    IDIO_TYPE_ASSERT (struct_instance, job);
+
+    if (! idio_struct_instance_isa (job, idio_command_job_type)) {
+	idio_error_param_type ("job", job);
+    }
+
+    IDIO procs = idio_list_reverse (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PROCS));
+    while (idio_S_nil != procs) {
+	IDIO proc = IDIO_PAIR_H (procs);
+	IDIO istatus = idio_struct_instance_ref_direct (proc, IDIO_PROCESS_TYPE_STATUS);
+	int *statusp = IDIO_C_TYPE_POINTER_P (istatus);
+
+	if (WIFEXITED (*statusp)) {
+	    if (WEXITSTATUS (*statusp)) {
+		return IDIO_LIST2 (idio_S_exit, idio_fixnum (WEXITSTATUS (*statusp)));
+	    }
+	} else if (WIFSIGNALED (*statusp)) {
+	    return IDIO_LIST2 (idio_S_killed, idio_fixnum (WTERMSIG (*statusp)));
+	}
+
+	procs = IDIO_PAIR_T (procs);
+    }
+
+    return IDIO_LIST2 (idio_S_exit, idio_fixnum (0));
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("job-detail", job_detail, (IDIO job))
+{
+    IDIO_ASSERT (job);
+    IDIO_VERIFY_PARAM_TYPE (struct_instance, job);
+
+    if (! idio_struct_instance_isa (job, idio_command_job_type)) {
+	idio_error_param_type ("%idio-job", job);
+    }
+
+    return idio_command_job_detail (job);
 }
 
 static int idio_command_mark_process_status (pid_t pid, int status)
@@ -774,15 +815,16 @@ void idio_command_do_job_notification (void)
 	
 	IDIO c = idio_struct_instance (idio_condition_rt_command_status_error_type,
 				       IDIO_LIST4 (idio_string_C ("job failed"),
-						   idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PIPELINE),
-						   idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PGID),
+						   job,
+						   idio_S_nil,
 						   idio_command_job_status (job)));
-	idio_signal_exception (idio_S_true, c);
+
+	idio_raise_condition (idio_S_true, c);
 
 	/*
 	 * Unlike an Idio-variant of this function, we won't return
 	 * here with our C hats on because of the longjmp(3) in
-	 * idio_signal_exception() that jumps back into idio_vm_run().
+	 * idio_raise_condition() that jumps back into idio_vm_run().
 	 *
 	 * If we (somehow) did, then we'd loop around again.
 	 */
@@ -1604,6 +1646,7 @@ void idio_command_add_primitives ()
     IDIO_ADD_PRIMITIVE (job_is_completed);
     IDIO_ADD_PRIMITIVE (job_failed);
     IDIO_ADD_PRIMITIVE (job_status);
+    IDIO_ADD_PRIMITIVE (job_detail);
     IDIO_ADD_PRIMITIVE (mark_process_status);
     IDIO_ADD_PRIMITIVE (update_status);
     IDIO_ADD_PRIMITIVE (wait_for_job);

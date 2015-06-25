@@ -145,7 +145,7 @@ static void idio_static_error_redefine (char *msg, IDIO name, IDIO cv, IDIO new)
 					       idio_S_nil,
 					       idio_get_output_string (dsh),
 					       name));
-    idio_signal_exception (idio_S_true, c);
+    idio_raise_condition (idio_S_true, c);
 }
 
 static void idio_static_error_variable (char *msg, IDIO name)
@@ -162,7 +162,7 @@ static void idio_static_error_variable (char *msg, IDIO name)
 					       idio_S_nil,
 					       idio_S_nil,
 					       name));
-    idio_signal_exception (idio_S_true, c);
+    idio_raise_condition (idio_S_true, c);
 }
 
 static void idio_static_error_unbound (IDIO name)
@@ -197,7 +197,7 @@ static void idio_static_error_arity (char *msg, IDIO args)
 				   IDIO_LIST3 (idio_get_output_string (msh),
 					       idio_S_nil,
 					       idio_get_output_string (dsh)));
-    idio_signal_exception (idio_S_true, c);
+    idio_raise_condition (idio_S_true, c);
 }
 
 static void idio_static_error_primitive_arity (char *msg, IDIO f, IDIO args, IDIO primdata)
@@ -221,7 +221,7 @@ static void idio_static_error_primitive_arity (char *msg, IDIO f, IDIO args, IDI
 				   IDIO_LIST3 (idio_get_output_string (msh),
 					       idio_S_nil,
 					       idio_get_output_string (dsh)));
-    idio_signal_exception (idio_S_true, c);
+    idio_raise_condition (idio_S_true, c);
 }
 
 static IDIO idio_predef_extend (IDIO name, IDIO primdata)
@@ -824,7 +824,7 @@ static IDIO idio_evaluate_operator (IDIO n, IDIO e, IDIO b, IDIO a)
     return r;
 }
 
-static IDIO idio_operatorp (IDIO name)
+IDIO idio_operatorp (IDIO name)
 {
     IDIO_ASSERT (name);
 
@@ -1660,7 +1660,7 @@ static IDIO idio_meaning_sequence (IDIO ep, IDIO nametree, int tailp, IDIO keywo
     IDIO_ASSERT (keyword);
     IDIO_TYPE_ASSERT (list, nametree);
 
-    /* idio_debug ("meaning-sequence: %s\n", ep);   */
+    /* idio_debug ("meaning-sequence: %s\n", ep);    */
     
     if (idio_isa_pair (ep)) {
 	IDIO eph = IDIO_PAIR_H (ep);
@@ -1702,11 +1702,18 @@ static IDIO idio_meaning_sequence (IDIO ep, IDIO nametree, int tailp, IDIO keywo
 	     * come out in order)
 	     */
 	    for (;;) {
-		IDIO m = idio_meaning (e, nametree, 0);
+		int tp = 0;
+		if (idio_S_nil == ep) {
+		    tp = tailp;
+		}
+		
+		IDIO m = idio_meaning (e, nametree, tp);
 		mp = idio_pair (m, mp);
+
 		if (idio_S_nil == ep) {
 		    break;
 		}
+
 		e = IDIO_PAIR_H (ep);
 		ep = IDIO_PAIR_T (ep);
 	    }
@@ -2681,7 +2688,8 @@ static IDIO idio_meaning (IDIO e, IDIO nametree, int tailp)
     IDIO_ASSERT (nametree);
     IDIO_TYPE_ASSERT (list, nametree);
 
-    /* idio_debug ("meaning: e  in %s\n", e);   */
+    /* idio_debug ("meaning: e  in %s ", e);  */
+    /* fprintf (stderr, "tail=%d\n", tailp);  */
     
     if (idio_isa_pair (e)) {
 	IDIO eh = IDIO_PAIR_H (e);

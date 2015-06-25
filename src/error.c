@@ -34,7 +34,7 @@ IDIO idio_error_string (char *format, va_list argp)
 {
     char *s;
     if (-1 == vasprintf (&s, format, argp)) {
-	idio_signal_exception (idio_S_false, IDIO_LIST1 (idio_string_C ("idio-error-message: vasprintf")));
+	idio_raise_condition (idio_S_false, IDIO_LIST1 (idio_string_C ("idio-error-message: vasprintf")));
     }
 
     IDIO sh = idio_open_output_string_handle_C ();
@@ -52,7 +52,7 @@ void idio_error_printf (char *format, ...)
     va_end (fmt_args);
 
     IDIO c = idio_condition_idio_error (msg, idio_S_internal, idio_S_nil);
-    idio_signal_exception (idio_S_false, c);
+    idio_raise_condition (idio_S_false, c);
 }
 
 void idio_warning_message (char *format, ...)
@@ -115,7 +115,7 @@ void idio_error (IDIO who, IDIO msg, IDIO args)
     IDIO c = idio_condition_idio_error (idio_get_output_string (sh),
 					who,
 					idio_S_nil);
-    idio_signal_exception (idio_S_false, c);
+    idio_raise_condition (idio_S_false, c);
 }
 
 void idio_error_C (char *msg, IDIO args)
@@ -166,7 +166,7 @@ void idio_error_system (char *msg, IDIO args, int err)
 					       idio_S_internal,
 					       idio_get_output_string (dsh),
 					       idio_fixnum ((intptr_t) err)));
-    idio_signal_exception (idio_S_false, c);
+    idio_raise_condition (idio_S_false, c);
 }
 
 void idio_error_system_errno (char *msg, IDIO args)

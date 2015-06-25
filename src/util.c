@@ -872,11 +872,10 @@ char *idio_as_string (IDIO o, int depth)
 		}
 	    case IDIO_TYPE_FRAME:
 		{
-		    if (asprintf (&r, "{frame %10p f=%02x next=%p nargs=%zd", o, IDIO_FRAME_FLAGS (o), IDIO_FRAME_NEXT (o), IDIO_FRAME_NARGS (o)) == -1) {
+		    if (asprintf (&r, "#FRAME{%p ", o) == -1) {
 			return NULL;
 		    }
-		    IDIO_STRCAT (r, " args=");
-		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_FRAME_ARGS (o), depth - 1));
+		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_FRAME_ARGS (o), 1));
 		    IDIO_STRCAT (r, " }");
 		    break;
 		}
@@ -933,11 +932,13 @@ char *idio_as_string (IDIO o, int depth)
 		break;
 	    case IDIO_TYPE_STRUCT_INSTANCE:
 		{
-		    if (asprintf (&r, "#SI{%p", o) == -1) {
+		    if (asprintf (&r, "#SI{%p ", o) == -1) {
 			return NULL;
 		    }
 
 		    IDIO st = IDIO_STRUCT_INSTANCE_TYPE (o);
+		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_STRUCT_TYPE_NAME (st), 1));
+		    
 		    IDIO stf = IDIO_STRUCT_TYPE_FIELDS (st);
 		    IDIO sif = IDIO_STRUCT_INSTANCE_FIELDS (o);
 
@@ -956,7 +957,7 @@ char *idio_as_string (IDIO o, int depth)
 	    case IDIO_TYPE_THREAD:
 		{
 		    idio_ai_t sp = idio_array_size (IDIO_THREAD_STACK (o));
-		    if (asprintf (&r, "#T{%p pc=%4zd sp/top=%2zd/",
+		    if (asprintf (&r, "#T{%p pc=%6zd sp/top=%2zd/",
 				  o,
 				  IDIO_THREAD_PC (o),
 				  sp - 1) == -1) {
@@ -1510,6 +1511,16 @@ IDIO_DEFINE_PRIMITIVE2 ("idio-debug", idio_debug, (IDIO fmt, IDIO o))
     return idio_S_unspec;
 }
 
+IDIO_DEFINE_PRIMITIVE0 ("idio-state", idio_state, ())
+{
+    IDIO thr = idio_current_thread ();
+
+    idio_debug ("state: THR %s\n", thr);
+    idio_debug ("state: STK %s\n", IDIO_THREAD_STACK (thr));
+
+    return idio_S_unspec;
+}
+
 void idio_init_util ()
 {
 }
@@ -1530,6 +1541,7 @@ void idio_util_add_primitives ()
     IDIO_ADD_PRIMITIVE (memq);
     IDIO_ADD_PRIMITIVE (assq);
     IDIO_ADD_PRIMITIVE (idio_debug);
+    IDIO_ADD_PRIMITIVE (idio_state);
 }
 
 void idio_final_util ()

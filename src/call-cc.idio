@@ -20,9 +20,6 @@
 ;; 
 ;;
 
-;; Much of this is derived from implementations as described in R5RS
-;; documentation.
-
 call/cc := %%call/cc
 
 ;; values, call-with-values and call/cc are concomitant 
@@ -68,6 +65,9 @@ call-with-values := #f
     }
   }
 }
+
+;; This is derived from implementations as described in R5RS
+;; documentation.
 
 ;; dynamic-wind and call/cc are concomitant
 
@@ -133,15 +133,4 @@ define-syntax unwind-protect (syntax-rules ()
        (function () #f)
        (function () body)
        (function () cleanup ...))))
-
-
-;; define (values & things) {
-;;   call/cc (function (cont) {
-;;     apply cont things
-;;   })
-;; }
-;; 
-;; define (call-with-values producer consumer) {
-;;     apply consumer (producer)
-;; }
 

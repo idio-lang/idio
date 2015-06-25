@@ -32,6 +32,7 @@ usage ()
 	echo "	-k SIGNAL	kill self with SIGNAL" 
 	echo "	-r NUM		read NUM lines (-s N seconds apart)" 
 	echo "	-s NUM		sleep for NUM seconds" 
+	echo "	-t NUM		set read's timeout to NUM seconds, '' for default [${opt_timeout}]" 
 	echo "	-w NUM		write NUM lines (-s N seconds apart)" 
     ) >&2
 }
@@ -40,9 +41,10 @@ opt_exit=0
 opt_kill=
 opt_read=
 opt_sleep=0
+opt_timeout=
 opt_write=
 
-while getopts "e:k:r:s:w:" opt ; do
+while getopts "e:k:r:s:t:w:" opt ; do
     case "${opt}" in
     e)
 	opt_exit=${OPTARG}
@@ -55,6 +57,9 @@ while getopts "e:k:r:s:w:" opt ; do
 	;;
     s)
 	opt_sleep=${OPTARG}
+	;;
+    t)
+	opt_timeout=${OPTARG}
 	;;
     w)
 	opt_write=${OPTARG}
@@ -83,7 +88,7 @@ if [[ ${opt_read} || $opt_write ]] ; then
 	sleep $opt_sleep
 	if [[ ${opt_read} ]] ; then
 	    if [[ ${opt_read} -gt 0 ]] ; then
-		read line
+		read ${opt_timeout:+-t ${opt_timeout}} line
 		echo "$$: read #${var_read} '${line}'"
 		var_read=$(( var_read + 1 ))
 		opt_read=$(( opt_read - 1 ))

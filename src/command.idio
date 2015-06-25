@@ -149,7 +149,7 @@ define (format-job-info-1 job msg) {
   edisplay* "job:" (%idio-job-pgid job) "(" msg ")"
 }
 
-define (do-job-notification) {
+define (do-job-notification-1) {
   ;; get the latest data
   (update-status)
 
@@ -284,43 +284,97 @@ define-operator | {
   op-args := split op (list before) #n after
 
   ;; looping over the list of commands prepping the children uses a
-  ;; number of variables which are a pain to manage as they will be
-  ;; doubly indirected inside templates.  So we'll "cheat" and use the
-  ;; outer template to generate a block to hold our working variables.
+  ;; number of variables which are a pain to manage as we don't want
+  ;; to pollute the calling environment and they will be doubly
+  ;; indirected inside templates.  So we'll "cheat" and use the outer
+  ;; template to generate a block to hold our working variables.
+
+  ;; There's also a little process coordination trickery ported from
+  ;; Bash -- where if the problem occurs in a slick and fast pure C
+  ;; environment then we've no hope!
+  ;;
+  ;; We need to prevent the first process in the pipeline from
+  ;; starting until all the others are in place -- otherwise you can
+  ;; have the first process, the process group leader, run and exit
+  ;; before you manage to start any of the others!  That also leaves
+  ;; the small issue of trying to setpgid with a process group that no
+  ;; longer exists (and, worse, could have been replaced with a
+  ;; different process all together).  That's all bad for business.
+  ;;
+  ;; The trick is to open another pipe and have the first process
+  ;; block reading from the pipe just before it starts.  All the other
+  ;; processes in the pipeline simply close the pipe when they're
+  ;; about to exec/start.  When the last one has closed the pipe the
+  ;; first will have its blocking read() return (with zero bytes, ie
+  ;; EOF -- we don't care) and we're good to go.
+  ;;
+  ;; Technically, as we created the pipe in the main Idio process, it
+  ;; too holds the pipe open so we can be fairly confident that all
+  ;; the child processes are set up and running when the main Idio
+  ;; process closes the (last?) pipe write-end.
+  ;;
+  ;; Well, probably, there's always a race condition between closing
+  ;; the pgrp-pipe and exec()ing or starting processing the Idio code
+  ;; in which the last process can be prevented from running before
+  ;; all the previous processes have been and gone.  But we've done a
+  ;; decent job, what more can we do?
+
   foreground := #t
   nprocs := length op-args
   %T{
     {
-      procs := #n
       stdin := c/STDIN_FILENO
       infile := stdin
       stdout := c/STDOUT_FILENO
       outfile := stdout
       pgid := 0
-      job := make-%idio-job '$pipeline procs pgid #f #n stdin stdout
-      proc-id := 0
+      job := make-%idio-job '$pipeline #n pgid #f #n stdin stdout
+      %idio-jobs = pair job %idio-jobs
+
+      proc-id := 1
       pipe := #n
+      pgrp-pipe := (c/pipe)
+
       $@(map (function (cmd) {
 	        %T{
 		  {
-		    proc := make-%idio-process cmd -1 #f #f #n
-		    $procs = pair proc $procs
-		    if (le ($proc-id + 2) $nprocs) {
+		    proc := make-%idio-process '$cmd -1 #f #f #n
+
+		    ;; NB. Update the procs list asap as we can get a
+		    ;; signal about processes in the pipeline at any
+		    ;; time including, annoyingly, before we've
+		    ;; finished creating the pipeline.
+		    ;; do-job-notification/update-status will want to
+		    ;; have a proc entry to update.
+		    set-%idio-job-procs! job (pair proc (%idio-job-procs job))
+
+		    if (lt $proc-id $nprocs) {
 		      $pipe = (c/pipe)
 		      $outfile = (c/pipe-writer $pipe)
 		    } {
-		      $outfile = stdout
+		      $outfile = $stdout
 		    }
 		    pid := (c/fork)
-		    if+ (c/== pid 0) {
+		    if (c/== pid 0) {
 		      prep-process $pgid $infile $outfile $foreground
+		      if (c/== $pgid 0) {
+			c/close (c/pipe-writer $pgrp-pipe)
+			c/read (c/pipe-reader $pgrp-pipe) 1
+			c/close (c/pipe-reader $pgrp-pipe)
+                      } {
+			c/close (c/pipe-reader $pgrp-pipe)
+			c/close (c/pipe-writer $pgrp-pipe)
+		      }
 		      $cmd
 
-		      ;; If {cmd} was some Idio scripting then it will
-		      ;; do its thing and continue onto here.  So we
-		      ;; ought to stop.
+		      ;; If {cmd} was an external command then this
+		      ;; child will have exec()'d it otherwise it is
+		      ;; some Idio scripting whereon it will do its
+		      ;; thing and continue onto here.  So we ought to
+		      ;; stop before this child continues back into
+		      ;; the main Idio engine.
 		      c/exit 0
-		    } else {
+		    } {
 		      set-%idio-process-pid! proc pid
 		      if %idio-interactive {
 			if (c/== $pgid 0) {
@@ -338,14 +392,17 @@ define-operator | {
 	        }
 	      })
 	     op-args)
-      set-%idio-job-procs! job (reverse procs)
-      %idio-jobs = pair job %idio-jobs
+
+      ;; finally let the first process go
+      c/close (c/pipe-reader $pgrp-pipe)
+      c/close (c/pipe-writer $pgrp-pipe)
+
       if+ (not %idio-interactive) {
-	    wait-for-job $job
+	    wait-for-job job
 	  } $foreground {
-	    foreground-job $job #f
+	    foreground-job job #f
 	  } else {
-	    background-job $job #f
+	    background-job job #f
           }
     }
   }

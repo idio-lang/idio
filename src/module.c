@@ -53,7 +53,7 @@ void idio_module_error_duplicate_name (IDIO name)
 					       idio_S_nil,
 					       idio_S_nil,
 					       name));
-    idio_signal_exception (idio_S_true, c);
+    idio_raise_condition (idio_S_true, c);
 }
 
 void idio_module_error_set_imports (IDIO module)
@@ -68,7 +68,7 @@ void idio_module_error_set_imports (IDIO module)
 					       idio_S_nil,
 					       idio_S_nil,
 					       IDIO_MODULE_NAME (module)));
-    idio_signal_exception (idio_S_true, c);
+    idio_raise_condition (idio_S_true, c);
 }
 
 void idio_module_error_set_exports (IDIO module)
@@ -83,7 +83,7 @@ void idio_module_error_set_exports (IDIO module)
 					       idio_S_nil,
 					       idio_S_nil,
 					       IDIO_MODULE_NAME (module)));
-    idio_signal_exception (idio_S_true, c);
+    idio_raise_condition (idio_S_true, c);
 }
 
 void idio_module_error_unbound (IDIO name)
@@ -98,7 +98,7 @@ void idio_module_error_unbound (IDIO name)
 					       idio_S_nil,
 					       idio_S_nil,
 					       name));
-    idio_signal_exception (idio_S_true, c);
+    idio_raise_condition (idio_S_true, c);
 }
 
 void idio_module_error_unbound_name (IDIO symbol, IDIO module)
@@ -111,7 +111,7 @@ void idio_module_error_unbound_name (IDIO symbol, IDIO module)
 					       idio_S_nil,
 					       IDIO_MODULE_NAME (module),
 					       symbol));
-    idio_signal_exception (idio_S_true, c);
+    idio_raise_condition (idio_S_true, c);
 }
 
 IDIO idio_module (IDIO name)

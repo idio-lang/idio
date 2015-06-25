@@ -86,7 +86,7 @@ static void idio_filehandle_error_filename (IDIO filename)
 					       idio_S_nil,
 					       idio_get_output_string (dsh),
 					       filename));
-    idio_signal_exception (idio_S_true, c);
+    idio_raise_condition (idio_S_true, c);
 }
 
 static void idio_filehandle_error_filename_C (char *name)
@@ -109,7 +109,7 @@ static void idio_filehandle_error_filename_delete (IDIO filename)
 					       idio_S_nil,
 					       idio_get_output_string (dsh),
 					       filename));
-    idio_signal_exception (idio_S_true, c);
+    idio_raise_condition (idio_S_true, c);
 }
 
 static void idio_filehandle_error_filename_delete_C (char *name)
@@ -132,7 +132,7 @@ static void idio_filehandle_error_malformed_filename (IDIO filename)
 					       idio_S_nil,
 					       idio_get_output_string (dsh),
 					       filename));
-    idio_signal_exception (idio_S_true, c);
+    idio_raise_condition (idio_S_true, c);
 }
 
 static void idio_filehandle_error_malformed_filename_C (char *name)
@@ -155,7 +155,7 @@ static void idio_filehandle_error_filename_protection (IDIO filename)
 					       idio_S_nil,
 					       idio_get_output_string (dsh),
 					       filename));
-    idio_signal_exception (idio_S_true, c);
+    idio_raise_condition (idio_S_true, c);
 }
 
 static void idio_filehandle_error_filename_protection_C (char *name)
@@ -178,7 +178,7 @@ static void idio_filehandle_error_filename_already_exists (IDIO filename)
 					       idio_S_nil,
 					       idio_get_output_string (dsh),
 					       filename));
-    idio_signal_exception (idio_S_true, c);
+    idio_raise_condition (idio_S_true, c);
 }
 
 static void idio_filehandle_error_filename_already_exists_C (char *name)
@@ -198,7 +198,7 @@ static void idio_filehandle_error_filename_not_found (IDIO filename)
 					       idio_S_nil,
 					       idio_S_nil,
 					       filename));
-    idio_signal_exception (idio_S_true, c);
+    idio_raise_condition (idio_S_true, c);
 }
 
 static void idio_filehandle_error_filename_not_found_C (char *name)
@@ -833,8 +833,9 @@ IDIO idio_load_filehandle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*
     idio_ai_t sp = idio_array_size (IDIO_THREAD_STACK (thr));
 
     if (sp != sp0) {
-	fprintf (stderr, "load-file-handle: %s: SP %zd != %zd: ", IDIO_HANDLE_NAME (fh), sp, sp0);
-	idio_debug ("%s\n", IDIO_THREAD_STACK (thr));
+	fprintf (stderr, "load-file-handle: %s: SP %zd != SP0 %zd\n", IDIO_HANDLE_NAME (fh), sp, sp0);
+	idio_debug ("THR %s\n", thr);
+	idio_debug ("STK %s\n", IDIO_THREAD_STACK (thr));
     }
     
     idio_forget_file_handle (fh);
@@ -856,7 +857,10 @@ IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (
     int timing = 0;
     
     IDIO thr = idio_current_thread ();
-    idio_ai_t sp0 = idio_array_size (IDIO_THREAD_STACK (thr));
+    idio_ai_t ss0 = idio_array_size (IDIO_THREAD_STACK (thr));
+    /* fprintf (stderr, "load-file-handle: %s\n", IDIO_HANDLE_NAME (fh)); */
+    /* idio_debug ("THR %s\n", thr); */
+    /* idio_debug ("STK %s\n", IDIO_THREAD_STACK (thr)); */
 
     time_t s;
     suseconds_t us;
@@ -875,8 +879,9 @@ IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (
 	}
     }
     /* e = idio_list_append2 (IDIO_LIST1 (idio_S_begin), idio_list_reverse (e)); */
-    es = idio_list_reverse (es);
-    /* idio_debug ("load-file-handle: es %s\n", es);   */
+    /* es = idio_list_reverse (es); */
+    es = IDIO_LIST1 (idio_pair (idio_S_begin, idio_list_reverse (es)));
+    /* idio_debug ("load-file-handle: es %s\n", es);    */
     
     IDIO_HANDLE_M_CLOSE (fh) (fh);
 
@@ -901,6 +906,7 @@ IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (
 	es = IDIO_PAIR_T (es);
     }
     ms = idio_list_reverse (ms);
+    /* idio_debug ("load-file-handle: ms %s\n", ms);    */
     
     struct timeval te;
     if (timing) {
@@ -926,12 +932,19 @@ IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (
     IDIO ms0 = ms;
     idio_gc_protect (ms0);
 
+    idio_ai_t lfh_pc = -1;
     IDIO r;
     while (idio_S_nil != ms) {
 	idio_vm_codegen (thr, IDIO_PAIR_H (ms));
-	r = idio_vm_run (thr);
+	if (-1 == lfh_pc) {
+	    lfh_pc = IDIO_THREAD_PC (thr);
+	    /* fprintf (stderr, "\n\n%s lfh_pc == %jd\n", IDIO_HANDLE_NAME (fh), lfh_pc); */
+	}
+	/* r = idio_vm_run (thr); */
 	ms = IDIO_PAIR_T (ms);
     }
+    IDIO_THREAD_PC (thr) = lfh_pc;
+    r = idio_vm_run (thr); 
     idio_gc_expose (ms0);
 
     struct timeval tr;
@@ -960,11 +973,12 @@ IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (
     fprintf (stderr, "load-file-handle: %s: elapsed time %ld.%03ld\n", IDIO_HANDLE_NAME (fh), s, (long) us / 1000);
     idio_debug (" => %s\n", r);
     
-    idio_ai_t sp = idio_array_size (IDIO_THREAD_STACK (thr));
+    idio_ai_t ss = idio_array_size (IDIO_THREAD_STACK (thr));
 
-    if (sp != sp0) {
-	fprintf (stderr, "load-file-handle: %s: SP %zd != %zd: ", IDIO_HANDLE_NAME (fh), sp, sp0);
-	idio_debug ("%s\n", IDIO_THREAD_STACK (thr));
+    if (ss != ss0) {
+	fprintf (stderr, "load-file-handle: %s: SS %zd != %zd\n", IDIO_HANDLE_NAME (fh), ss, ss0);
+	idio_debug ("THR %s\n", thr);
+	idio_debug ("STK %s\n", IDIO_THREAD_STACK (thr));
     }
     
     idio_forget_file_handle (fh);

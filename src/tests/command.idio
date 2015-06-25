@@ -32,39 +32,41 @@ monitor (function (cont cond) {
   test (rt-command-status-error? cond) #t
   if cont {
     if (rt-command-status-error? cond) {
-      #t
+      edisplay* "auto-exit: unexpected status error" cond
+
+      'job-failed
     } {
-      edisplay* "unexpected condition" cond
+      edisplay* "auto-exit: unexpected condition" cond
       raise cont cond
     }
   } {
-    edisplay* "unexpected non-continuable condition" cond
+    edisplay* "auto-exit: unexpected non-continuable condition" cond
     raise cont cond
   }
 }) {
-  test (auto-exit) '(exit 0)
+  test (auto-exit) #t
 }
 
 monitor (function (cont cond) {
-  ;; edisplay* "auto-exit -e 11: monitor" cont cond
+  edisplay* "auto-exit -e 11: monitor" cont cond
   test (rt-command-status-error? cond) #t
   if cont {
     if (rt-command-status-error? cond) {
-      status := command-error-status cond
-      test status '(exit 11)
+      job := idio-error-location cond
+      test (job-detail job) '(exit 11)
 
       ;; edisplay* "auto-exit -e 11: monitor" cont cond
-      #t
+      command-error-status cond
     } {
-      edisplay* "unexpected condition" cond
+      edisplay* "auto-exit -e 11: unexpected condition" cond
       raise cont cond
     }
   } {
-    edisplay* "unexpected non-continuable condition" cond
+    edisplay* "auto-exit -e 11: unexpected non-continuable condition" cond
     raise cont cond
   }
 }) {
-  test (auto-exit -e 11) '(exit 11)
+  test (auto-exit -e 11) #f
 }
 
 monitor (function (cont cond) {
@@ -72,19 +74,19 @@ monitor (function (cont cond) {
   test (rt-command-status-error? cond) #t
   if cont {
     if (rt-command-status-error? cond) {
-      status := command-error-status cond
-      test status '(killed 15)
+      job := idio-error-location cond
+      test (job-detail job) '(killed 15)
 
-      #t
+      command-error-status cond
     } {
-      edisplay* "unexpected condition" cond
+      edisplay* "auto-exit -k 15: unexpected condition" cond
       raise cont cond
     }
   } {
-    edisplay* "unexpected non-continuable condition" cond
+    edisplay* "auto-exit -k 15: unexpected non-continuable condition" cond
     raise cont cond
   }
 }) {
-  test (auto-exit -k 15) '(killed 15)
+  test (auto-exit -k 15) #f
 }
 

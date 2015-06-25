@@ -104,7 +104,9 @@ define-macro (condition type & field-bindings) {
   }
 }
 
-define-condition-type-accessors-only ^idio-error			^error				i/o-error? \
+define-condition-type-accessors-only ^error				^condition			error?
+
+define-condition-type-accessors-only ^idio-error			^error				idio-error? \
 	(message idio-error-message) \
 	(location idio-error-location) \
 	(detail idio-error-detail)

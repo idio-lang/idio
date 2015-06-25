@@ -42,6 +42,7 @@ IDIO idio_toplevel_extend (IDIO name, int variant);
 
 void idio_install_expander (IDIO id, IDIO proc);
 void idio_install_operator (IDIO id, IDIO proc);
+IDIO idio_operatorp (IDIO name);
 
 IDIO idio_operator_expand (IDIO e, int depth);
 IDIO idio_evaluate (IDIO e);
