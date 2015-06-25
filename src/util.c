@@ -969,17 +969,17 @@ char *idio_as_string (IDIO o, int depth)
 		    IDIO_STRCAT (r, " func=");
 		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_FUNC (o), 1));
 		    if (1 == depth) {
-			IDIO env = IDIO_THREAD_FRAME (o);
+			IDIO frame = IDIO_THREAD_FRAME (o);
 
-			if (idio_S_nil == env) {
-			    IDIO_STRCAT (r, " env=nil");
+			if (idio_S_nil == frame) {
+			    IDIO_STRCAT (r, " fr=nil");
 			} else {
 			    char *es;
-			    if (asprintf (&es, " env=%p ", env) == -1) {
+			    if (asprintf (&es, " fr=%p ", frame) == -1) {
 				return NULL;
 			    }
 			    IDIO_STRCAT_FREE (r, es);
-			    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_FRAME_ARGS (env), 1));
+			    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_FRAME_ARGS (frame), 1));
 			}
 		    }
 		    IDIO_STRCAT (r, " h/sp=");
@@ -989,7 +989,7 @@ char *idio_as_string (IDIO o, int depth)
 		    IDIO_STRCAT (r, " e/sp=");
 		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_ENVIRON_SP (o), 1));
 		    if (depth > 1) {
-			IDIO_STRCAT (r, " env=");
+			IDIO_STRCAT (r, " fr=");
 			IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_FRAME (o), 1));
 			if (depth > 2) {
 			    IDIO_STRCAT (r, " reg1=");

@@ -66,8 +66,8 @@
 #define IDIO_A_SHORT_GOTO                  42
 #define IDIO_A_SHORT_JUMP_FALSE            43
 
-#define IDIO_A_EXTEND_ENV                  50
-#define IDIO_A_UNLINK_ENV                  51
+#define IDIO_A_EXTEND_FRAME                50
+#define IDIO_A_UNLINK_FRAME                51
 #define IDIO_A_PRESERVE_ENV                52
 #define IDIO_A_RESTORE_ENV                 53
 #define IDIO_A_PUSH_VALUE                  54

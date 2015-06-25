@@ -1025,7 +1025,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	    IDIO mp = IDIO_PAIR_H (IDIO_PAIR_T (mt));
 
 	    idio_vm_compile (thr, ia, ms, depth + 1);
-	    IDIO_IA_PUSH1 (IDIO_A_EXTEND_ENV);
+	    IDIO_IA_PUSH1 (IDIO_A_EXTEND_FRAME);
 	    idio_vm_compile (thr, ia, mp, depth + 1);
 	}
 	break;
@@ -1041,9 +1041,9 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	    IDIO mp = IDIO_PAIR_H (IDIO_PAIR_T (mt));
 
 	    idio_vm_compile (thr, ia, ms, depth + 1);
-	    IDIO_IA_PUSH1 (IDIO_A_EXTEND_ENV);
+	    IDIO_IA_PUSH1 (IDIO_A_EXTEND_FRAME);
 	    idio_vm_compile (thr, ia, mp, depth + 1);
-	    IDIO_IA_PUSH1 (IDIO_A_UNLINK_ENV);
+	    IDIO_IA_PUSH1 (IDIO_A_UNLINK_FRAME);
 	}
 	break;
     case IDIO_VM_CODE_PRIMCALL0:
@@ -1180,7 +1180,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 		}
 		break;
 	    }
-	    idio_i_array_push (iap, IDIO_A_EXTEND_ENV);
+	    idio_i_array_push (iap, IDIO_A_EXTEND_FRAME);
 	    idio_vm_compile (thr, iap, mp, depth + 1);
 	    idio_i_array_push (iap, IDIO_A_RETURN);
 
@@ -1250,7 +1250,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	    idio_i_array_append (iap, a);
 	    idio_i_array_free (a);
 
-	    idio_i_array_push (iap, IDIO_A_EXTEND_ENV);
+	    idio_i_array_push (iap, IDIO_A_EXTEND_FRAME);
 	    idio_vm_compile (thr, iap, mp, depth + 1);
 	    idio_i_array_push (iap, IDIO_A_RETURN);
 
@@ -2253,7 +2253,7 @@ void idio_raise_condition (IDIO continuablep, IDIO e)
     if (idio_S_true == continuablep) {
 	/* idio_debug ("SE: continuable %s\n", e); */
 	/* idio_debug ("SE: continuable %s\n", thr); */
-	idio_array_push (stack, idio_fixnum (idio_vm_FINISH_pc + 1)); /* => RESTORE-HANDLER, RESTORE-ENV, RETURN */
+	idio_array_push (stack, idio_fixnum (idio_vm_FINISH_pc + 1)); /* => RESTORE-HANDLER, RESTORE-FRAME, RETURN */
     } else {
 	idio_array_push (stack, idio_fixnum (idio_vm_FINISH_pc - 1)); /* => NON-CONT-ERR */
     }
@@ -2844,15 +2844,15 @@ int idio_vm_run1 (IDIO thr)
 	    }
 	}
 	break;
-    case IDIO_A_EXTEND_ENV:
+    case IDIO_A_EXTEND_FRAME:
 	{
-	    IDIO_VM_RUN_DIS ("EXTEND-ENV");
+	    IDIO_VM_RUN_DIS ("EXTEND-FRAME");
 	    IDIO_THREAD_FRAME (thr) = idio_frame_extend (IDIO_THREAD_FRAME (thr), IDIO_THREAD_VAL (thr));
 	}
 	break;
-    case IDIO_A_UNLINK_ENV:
+    case IDIO_A_UNLINK_FRAME:
 	{
-	    IDIO_VM_RUN_DIS ("UNLINK-ENV");
+	    IDIO_VM_RUN_DIS ("UNLINK-FRAME");
 	    IDIO_THREAD_FRAME (thr) = IDIO_FRAME_NEXT (IDIO_THREAD_FRAME (thr));
 	}
 	break;
@@ -4122,30 +4122,30 @@ IDIO idio_vm_primitives_ref (idio_ai_t i)
     return idio_array_get_index (idio_vm_primitives, i);
 }
 
-IDIO_DEFINE_PRIMITIVE0 ("idio-vm-state", idio_vm_state, ())
+IDIO_DEFINE_PRIMITIVE0 ("idio-thread-state", idio_thread_state, ())
 {
     IDIO thr = idio_current_thread ();
     IDIO stack = IDIO_THREAD_STACK (thr);
 
-    idio_debug ("vm-state: THR %s\n", thr);
-    idio_debug ("vm-state: STK %s\n", stack);
+    idio_debug ("thread-state: THR %s\n", thr);
+    idio_debug ("thread-state: STK %s\n", stack);
 
-    IDIO env = IDIO_THREAD_FRAME (thr);
-    while (idio_S_nil != env) {
-	idio_debug ("vm-state: env: %s\n", IDIO_FRAME_ARGS (env));
-	env = IDIO_FRAME_NEXT (env);
+    IDIO frame = IDIO_THREAD_FRAME (thr);
+    while (idio_S_nil != frame) {
+	idio_debug ("thread-state: frame: %s\n", IDIO_FRAME_ARGS (frame));
+	frame = IDIO_FRAME_NEXT (frame);
     }
 
     idio_ai_t hsp = IDIO_FIXNUM_VAL (IDIO_THREAD_HANDLER_SP (thr));
     while (hsp != 1) {
-	fprintf (stderr, "vm-state: handler: SP %3td ", hsp);
+	fprintf (stderr, "thread-state: handler: SP %3td ", hsp);
 	idio_debug ("%s\n", idio_array_get_index (stack, hsp));
 	hsp = IDIO_FIXNUM_VAL (idio_array_get_index (stack, hsp - 1));
     }
 
     idio_ai_t dsp = IDIO_FIXNUM_VAL (IDIO_THREAD_DYNAMIC_SP (thr));
     while (dsp != -1) {
-	fprintf (stderr, "vm-state: dynamic: SP %3td ", dsp);
+	fprintf (stderr, "thread-state: dynamic: SP %3td ", dsp);
 	idio_ai_t index = IDIO_FIXNUM_VAL (idio_array_get_index (stack, dsp));
 	idio_debug ("%s = ", idio_vm_symbols_ref (index));
 	idio_debug ("%s\n", idio_array_get_index (stack, dsp - 1));
@@ -4154,7 +4154,7 @@ IDIO_DEFINE_PRIMITIVE0 ("idio-vm-state", idio_vm_state, ())
 
     idio_ai_t esp = IDIO_FIXNUM_VAL (IDIO_THREAD_ENVIRON_SP (thr));
     while (esp != -1) {
-	fprintf (stderr, "vm-state: environ: SP %3td ", esp);
+	fprintf (stderr, "thread-state: environ: SP %3td ", esp);
 	idio_ai_t index = IDIO_FIXNUM_VAL (idio_array_get_index (stack, esp));
 	idio_debug ("%s = ", idio_vm_symbols_ref (index));
 	idio_debug ("%s\n", idio_array_get_index (stack, esp - 1));
@@ -4169,18 +4169,18 @@ void idio_vm_unwind_thread (IDIO thr, int verbose)
     IDIO_ASSERT (thr);
     IDIO_TYPE_ASSERT (thread, thr);
 
-    IDIO stack = IDIO_THREAD_STACK (thr);
-    IDIO env = IDIO_THREAD_FRAME (thr);
-
     if (verbose) {
 	fprintf (stderr, "\nTHREAD UNWIND\n");
+
+	IDIO stack = IDIO_THREAD_STACK (thr);
+	IDIO frame = IDIO_THREAD_FRAME (thr);
 
 	idio_debug ("THR:\t%s\n", thr);
 	idio_debug ("STK:\t%s\n", stack);
 
-	while (idio_S_nil != env) {
-	    idio_debug ("env: %s\n", IDIO_FRAME_ARGS (env));
-	    env = IDIO_FRAME_NEXT (env);
+	while (idio_S_nil != frame) {
+	    idio_debug ("frame: %s\n", IDIO_FRAME_ARGS (frame));
+	    frame = IDIO_FRAME_NEXT (frame);
 	}
     
 	idio_debug ("MODULE:\t%s\n", IDIO_MODULE_NAME (IDIO_THREAD_MODULE (thr)));
@@ -4250,7 +4250,7 @@ void idio_vm_add_primitives ()
 #ifdef IDIO_DEBUG
     IDIO_ADD_SPECIAL_PRIMITIVE (vm_dis);
 #endif
-    IDIO_ADD_PRIMITIVE (idio_vm_state);
+    IDIO_ADD_PRIMITIVE (idio_thread_state);
 }
 
 void idio_final_vm ()
