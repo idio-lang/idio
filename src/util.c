@@ -969,7 +969,7 @@ char *idio_as_string (IDIO o, int depth)
 		    IDIO_STRCAT (r, " func=");
 		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_FUNC (o), 1));
 		    if (1 == depth) {
-			IDIO env = IDIO_THREAD_ENV (o);
+			IDIO env = IDIO_THREAD_FRAME (o);
 
 			if (idio_S_nil == env) {
 			    IDIO_STRCAT (r, " env=nil");
@@ -990,7 +990,7 @@ char *idio_as_string (IDIO o, int depth)
 		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_ENVIRON_SP (o), 1));
 		    if (depth > 1) {
 			IDIO_STRCAT (r, " env=");
-			IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_ENV (o), 1));
+			IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_FRAME (o), 1));
 			if (depth > 2) {
 			    IDIO_STRCAT (r, " reg1=");
 			    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_REG1 (o), 1));
@@ -1511,16 +1511,6 @@ IDIO_DEFINE_PRIMITIVE2 ("idio-debug", idio_debug, (IDIO fmt, IDIO o))
     return idio_S_unspec;
 }
 
-IDIO_DEFINE_PRIMITIVE0 ("idio-state", idio_state, ())
-{
-    IDIO thr = idio_current_thread ();
-
-    idio_debug ("state: THR %s\n", thr);
-    idio_debug ("state: STK %s\n", IDIO_THREAD_STACK (thr));
-
-    return idio_S_unspec;
-}
-
 void idio_init_util ()
 {
 }
@@ -1541,7 +1531,6 @@ void idio_util_add_primitives ()
     IDIO_ADD_PRIMITIVE (memq);
     IDIO_ADD_PRIMITIVE (assq);
     IDIO_ADD_PRIMITIVE (idio_debug);
-    IDIO_ADD_PRIMITIVE (idio_state);
 }
 
 void idio_final_util ()

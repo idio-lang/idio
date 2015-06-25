@@ -388,7 +388,7 @@ typedef struct idio_thread_s {
     size_t pc;
     struct idio_s *stack;
     struct idio_s *val;
-    struct idio_s *env;
+    struct idio_s *frame;
 
     struct idio_s *handler_sp;	/* SP to current handler; SP-1 is SP of next handler */
     jmp_buf *jmp_buf;		/* lets us clear the C-stack too */
@@ -411,7 +411,7 @@ typedef struct idio_thread_s {
 #define IDIO_THREAD_PC(T)             ((T)->u.thread->pc)
 #define IDIO_THREAD_STACK(T)          ((T)->u.thread->stack)
 #define IDIO_THREAD_VAL(T)            ((T)->u.thread->val)
-#define IDIO_THREAD_ENV(T)            ((T)->u.thread->env)
+#define IDIO_THREAD_FRAME(T)            ((T)->u.thread->frame)
 #define IDIO_THREAD_HANDLER_SP(T)     ((T)->u.thread->handler_sp)
 #define IDIO_THREAD_JMP_BUF(T)        ((T)->u.thread->jmp_buf)
 #define IDIO_THREAD_DYNAMIC_SP(T)     ((T)->u.thread->dynamic_sp)

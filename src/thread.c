@@ -38,7 +38,7 @@ IDIO idio_thread (idio_ai_t stack_size)
     IDIO_THREAD_PC (t) = 0;
     IDIO_THREAD_STACK (t) = idio_array (stack_size);
     IDIO_THREAD_VAL (t) = idio_S_unspec;
-    IDIO_THREAD_ENV (t) = idio_S_nil;
+    IDIO_THREAD_FRAME (t) = idio_S_nil;
     IDIO_THREAD_HANDLER_SP (t) = idio_fixnum (0);
     IDIO_THREAD_DYNAMIC_SP (t) = idio_fixnum (-1);
     IDIO_THREAD_ENVIRON_SP (t) = idio_fixnum (-1);

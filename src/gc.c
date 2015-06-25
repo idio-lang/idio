@@ -444,7 +444,7 @@ void idio_process_grey (unsigned colour)
 	idio_gc->grey = IDIO_THREAD_GREY (o);
 	idio_mark (IDIO_THREAD_STACK (o), colour);
 	idio_mark (IDIO_THREAD_VAL (o), colour);
-	idio_mark (IDIO_THREAD_ENV (o), colour);
+	idio_mark (IDIO_THREAD_FRAME (o), colour);
 	idio_mark (IDIO_THREAD_HANDLER_SP (o), colour);
 	idio_mark (IDIO_THREAD_DYNAMIC_SP (o), colour);
 	idio_mark (IDIO_THREAD_ENVIRON_SP (o), colour);
