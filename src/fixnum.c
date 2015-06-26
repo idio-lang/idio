@@ -38,6 +38,16 @@ IDIO idio_integer (intptr_t i)
     }
 }    
 
+IDIO idio_uinteger (uintptr_t ui)
+{
+    if (ui < IDIO_FIXNUM_MAX) {
+	idio_gc_stats_inc (IDIO_TYPE_FIXNUM);
+	return IDIO_FIXNUM (ui);
+    } else {
+	return idio_bignum_integer_uintmax_t (ui);
+    }
+}    
+
 IDIO idio_fixnum (intptr_t i)
 {
     if (i < IDIO_FIXNUM_MAX &&

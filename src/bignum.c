@@ -279,6 +279,25 @@ IDIO idio_bignum_integer_intmax_t (intmax_t i)
     return idio_bignum (IDIO_BIGNUM_FLAG_INTEGER, 0, sig_a);
 }
 
+IDIO idio_bignum_integer_uintmax_t (uintmax_t ui)
+{
+    IDIO_BSA sig_a = idio_bsa (1);
+
+    size_t ai = 0;
+    if (ui >= IDIO_BIGNUM_INT_SEG_LIMIT) {
+	while (ui) {
+	    int64_t m = ui % IDIO_BIGNUM_INT_SEG_LIMIT;
+	    idio_bsa_set (sig_a, m, ai++);
+	    ui -= m;
+	    ui /= IDIO_BIGNUM_INT_SEG_LIMIT;
+	}
+    } else {
+	idio_bsa_set (sig_a, ui, ai++);
+    }
+
+    return idio_bignum (IDIO_BIGNUM_FLAG_INTEGER, 0, sig_a);
+}
+
 IDIO idio_bignum_integer (IDIO_BSA sig_a)
 {
     return idio_bignum (IDIO_BIGNUM_FLAG_INTEGER, 0, sig_a);

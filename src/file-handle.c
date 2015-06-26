@@ -140,7 +140,7 @@ static void idio_filehandle_error_malformed_filename_C (char *name)
     idio_filehandle_error_malformed_filename (idio_string_C (name));
 }
 
-static void idio_filehandle_error_filename_protection (IDIO filename)
+static void idio_filehandle_error_file_protection (IDIO filename)
 {
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C ("filename '", msh);
@@ -158,9 +158,9 @@ static void idio_filehandle_error_filename_protection (IDIO filename)
     idio_raise_condition (idio_S_true, c);
 }
 
-static void idio_filehandle_error_filename_protection_C (char *name)
+static void idio_filehandle_error_file_protection_C (char *name)
 {
-    idio_filehandle_error_filename_protection (idio_string_C (name));
+    idio_filehandle_error_file_protection (idio_string_C (name));
 }
 
 static void idio_filehandle_error_filename_already_exists (IDIO filename)
@@ -282,7 +282,7 @@ IDIO idio_open_file_handle_C (char *name, char *mode)
 		idio_gc_collect ();
 		break;
 	    case EACCES:
-		idio_filehandle_error_filename_protection_C (name);
+		idio_filehandle_error_file_protection_C (name);
 	    case EEXIST:
 		idio_filehandle_error_filename_already_exists_C (name);
 	    case ENAMETOOLONG:

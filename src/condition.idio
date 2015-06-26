@@ -122,7 +122,7 @@ define-condition-type-accessors-only ^i/o-write-error			^i/o-handle-error		i/o-w
 define-condition-type-accessors-only ^i/o-closed-error			^i/o-handle-error		i/o-closed-error?
 
 define-condition-type-accessors-only ^i/o-filename-error		^i/o-error			i/o-filename-error? \
-	(filename i/o-error-filename)
+	(filename i/o-filename-error-filename)
 
 define-condition-type-accessors-only ^i/o-malformed-filename-error	^i/o-filename-error		i/o-malformed-filename-error?
 
@@ -144,7 +144,7 @@ define-condition-type-accessors-only ^system-error			^idio-error			system-error?
 
 define-condition-type-accessors-only ^static-error			^idio-error			static-error?
 define-condition-type-accessors-only ^st-variable-error			^static-error			st-variable-error? \
-	(name variable-error-name)
+	(name st-variable-error-name)
 define-condition-type-accessors-only ^st-variable-type-error		^st-variable-error		st-variable-type-error?
 
 define-condition-type-accessors-only ^st-function-error			^static-error			st-function-error?
@@ -152,7 +152,7 @@ define-condition-type-accessors-only ^st-function-type-error		^st-function-error
 
 define-condition-type-accessors-only ^runtime-error			^idio-error			runtime-error?
 define-condition-type-accessors-only ^rt-variable-error			^runtime-error			rt-variable-error? \
-	(name variable-error-name)
+	(name rt-variable-error-name)
 define-condition-type-accessors-only ^rt-variable-unbound-error		^rt-variable-error		rt-variable-unbound-error?
 define-condition-type-accessors-only ^rt-dynamic-variable-error         ^rt-variable-error		rt-dynamic-variable-error?
 define-condition-type-accessors-only ^rt-dynamic-variable-unbound-error ^rt-dynamic-variable-error	rt-dynamic-variable-unbound-error?
@@ -163,17 +163,17 @@ define-condition-type-accessors-only ^rt-function-error			^runtime-error			rt-fu
 define-condition-type-accessors-only ^rt-function-type-error		^rt-function-error		rt-function-type-error?
 
 define-condition-type-accessors-only ^rt-module-error			^runtime-error			rt-module-error? \
-	(module module-error-module)
+	(module rt-module-error-module)
 define-condition-type-accessors-only ^rt-module-unbound-error		^rt-module-error		rt-module-unbound-error?
 define-condition-type-accessors-only ^rt-module-symbol-unbound-error	^rt-module-error		rt-module-symbol-unbound-error? \
-	(symbol module-unbound-error-symbol)
+	(symbol rt-module-symbol-unbound-error-symbol)
 
 define-condition-type-accessors-only ^rt-glob-error			^runtime-error			rt-glob-error? \
-	(pattern glob-error-pattern)
+	(pattern rt-glob-error-pattern)
 
 define-condition-type-accessors-only ^rt-command-exec-error		^runtime-error			rt-command-exec-error?
 define-condition-type-accessors-only ^rt-command-status-error		^runtime-error			rt-command-status-error? \
-	(status command-error-status)
+	(status rt-command-status-error-status)
 
 define-condition-type-accessors-only ^rt-array-bounds-error		^runtime-error			rt-array-bounds-error?
 

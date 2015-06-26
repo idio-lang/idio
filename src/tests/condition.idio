@@ -155,7 +155,7 @@ c10 := condition ^i/o-no-such-file-error (filename test_filename)
 test (i/o-no-such-file-error? c10) #t
 test (i/o-filename-error? c10) #t
 test (i/o-error? c10) #t
-test (i/o-error-filename c10) test_filename
+test (i/o-filename-error-filename c10) test_filename
 
 ;; Try to capture the various continuable io errors generated
 ;; internally together with some "repair" in the handler code.
@@ -165,59 +165,45 @@ test (i/o-error-filename c10) test_filename
 
 ;; ^i/o-read-error
 ;;
-;; This is generated in several places but the user-level functions
-;; all run the same wrapper which tests the validity of the handle
-;; before calling the rest of the code.
-;;
-;; So, at the moment, both file-handles and string-handles are tested
-;; in idio_handle_or_current in handle.c
 monitor (function (cont cond) {
   ;; display* "read handle monitor condition:" (struct-type-name cond)
   test (i/o-read-error? cond) #t
   if cont {
     if (i/o-read-error? cond) {
-      filename := condition-ref cond 'handle
+      handle := i/o-error-handle cond
 
-      #t
+      'caught-a-read-error
     } (error "read handle: unexpected condition" cond)
   } (error "read handle: unexpected non-continuable error" cond)
 }) {
   ;; display* "read handle condition"
-  touch test_filename
-  chmod +r test_filename
 
-  ifh := open-output-file test_filename
-  expr := read ifh
-  close-handle ifh
-  test expr #t
+  osh := (open-output-string)
+  expr := read osh
+  close-handle osh
+  test expr 'caught-a-read-error
 }
 
 ;; ^i/o-write-error
 ;;
-;; This is generated in several places but the user-level functions
-;; all run the same wrapper which tests the validity of the handle
-;; before calling the rest of the code.
-;;
-;; So, at the moment, both file-handles and string-handles are tested
-;; in idio_handle_or_current in handle.c
 monitor (function (cont cond) {
   ;; display* "write handle monitor condition:" (struct-type-name cond)
   test (i/o-write-error? cond) #t
   if cont {
     if (i/o-write-error? cond) {
-      filename := condition-ref cond 'handle
+      handle := i/o-error-handle cond
 
-      #t
+      'caught-a-write-error
     } (error "write handle: unexpected condition" cond)
   } (error "write handle: unexpected non-continuable error" cond)
 }) {
   ;; display* "write handle condition"
-  touch test_filename
-  chmod +r test_filename
 
-  ifh := open-input-file test_filename
-  write "Hello" ifh
-  close-handle ifh
+  ish := open-input-string "bob"
+  r := write "Hello" ish
+  close-handle ish
+
+  test r 'caught-a-write-error
 }
 
 ;; ^i/o-closed-error
@@ -228,7 +214,7 @@ monitor (function (cont cond) {
   test (i/o-closed-error? cond) #t
   if cont {
     if (i/o-closed-error? cond) {
-      filename := condition-ref cond 'handle
+      handle := i/o-error-handle cond
 
       #t
     } (error "closed handle: unexpected condition" cond)
@@ -280,14 +266,19 @@ monitor (function (cont cond) {
   test (i/o-filename-error? cond) #t
   if cont {
     if (i/o-filename-error? cond) {
-      filename := condition-ref cond 'filename
+      filename := i/o-filename-error-filename cond
 
-      ;; use a safe file instead of filename
+      ;; use a safe file instead of {filename} (which just had an
+      ;; error!)
+      ;;
+      ;; test_filename *is* safe as {filename} is
+      ;; ./test_filename/test_filename
       open-output-file test_filename
     } (error "generic filename: unexpected condition" cond)
   } (error "generic filename: unexpected non-continuable error" cond)
 }) {
   ;; display* "generic filename condition"
+  touch test_filename
   dir_filename := string-append "./" test_filename "/" test_filename
 
   ofh := open-output-file dir_filename
@@ -306,9 +297,6 @@ monitor (function (cont cond) {
 ;;
 ;; PATH_MAX?  POSIX says 256, Solaris & MacOS say 1024, Linux says 4096
 ;;
-;; One of these days we'll be able to reference C/PATH_MAX directly
-;; rather than guess (hope) that 8192 is bigger than any ported
-;; system's PATH_MAX.
 monitor (function (cont cond) {
   ;; display* "malformed filename monitor condition:" (struct-type-name cond)
   test (i/o-malformed-filename-error? cond) #t
@@ -322,7 +310,7 @@ monitor (function (cont cond) {
   } (error "malformed filename: unexpected non-continuable error" cond)
 }) {
   ;; display* "opening malformed filename"
-  bad_filename := make-string 8192 #\a
+  bad_filename := make-string ((c/->integer c/PATH_MAX) + 100) #\a
 
   ofh := open-output-file bad_filename
   ;; test we have a writeable fh
@@ -348,7 +336,9 @@ monitor (function (cont cond) {
 }) {
   ;; display* "opening 0-perms file"
   touch test_filename
-  chmod =0 test_filename
+  ;; NB need to escape '=' otherwise we are assigning to the variable
+  ;; 'chmod'
+  chmod \= test_filename
 
   ifh := open-input-file test_filename
   close-handle ifh

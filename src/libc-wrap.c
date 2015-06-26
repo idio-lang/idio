@@ -816,9 +816,26 @@ IDIO_DEFINE_PRIMITIVE1 ("c/sig-name", C_sig_name, (IDIO isignum))
     return idio_string_C (idio_libc_sig_name (IDIO_C_TYPE_INT (isignum)));
 }
 
+IDIO_DEFINE_PRIMITIVE1 ("c/->integer", C_to_integer, (IDIO inum))
+{
+    IDIO_ASSERT (inum);
+
+    if (idio_isa_C_uint (inum)) {
+	return idio_uinteger (IDIO_C_TYPE_UINT (inum));
+    } else if (idio_isa_C_int (inum)) {
+	return idio_integer (IDIO_C_TYPE_INT (inum));
+    } else {
+	idio_error_param_type ("C_int|C_uint", inum);
+    }
+
+    /* notreached */
+    return idio_S_unspec;
+}
+
 void idio_init_libc_wrap ()
 {
     idio_module_set_symbol_value (idio_symbols_C_intern ("c/NULL"), idio_C_pointer (NULL), idio_main_module ());
+    idio_module_set_symbol_value (idio_symbols_C_intern ("c/PATH_MAX"), idio_C_int (PATH_MAX), idio_main_module ());
     idio_module_set_symbol_value (idio_symbols_C_intern ("c/SIGHUP"), idio_C_int (SIGHUP), idio_main_module ());
     idio_module_set_symbol_value (idio_symbols_C_intern ("c/SIGINT"), idio_C_int (SIGINT), idio_main_module ());
     idio_module_set_symbol_value (idio_symbols_C_intern ("c/SIGQUIT"), idio_C_int (SIGQUIT), idio_main_module ());
@@ -862,7 +879,6 @@ void idio_libc_wrap_add_primitives ()
     IDIO_ADD_PRIMITIVE (C_setpgid);
     IDIO_ADD_PRIMITIVE (C_signal);
     IDIO_ADD_PRIMITIVE (C_sleep);
-    IDIO_ADD_PRIMITIVE (C_sig_name);
     IDIO_ADD_PRIMITIVE (C_strsignal);
     IDIO_ADD_PRIMITIVE (C_tcgetattr);
     IDIO_ADD_PRIMITIVE (C_tcgetpgrp);
@@ -880,6 +896,9 @@ void idio_libc_wrap_add_primitives ()
     IDIO_ADD_PRIMITIVE (C_bw_and);
     IDIO_ADD_PRIMITIVE (C_bw_xor);
     IDIO_ADD_PRIMITIVE (C_bw_complement);
+
+    IDIO_ADD_PRIMITIVE (C_sig_name);
+    IDIO_ADD_PRIMITIVE (C_to_integer);
 }
 
 void idio_final_libc_wrap ()
