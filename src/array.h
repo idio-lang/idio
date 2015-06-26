@@ -28,24 +28,45 @@
 /*
  * Array Indices
  *
+ * I've misread things.  size_t is for *arrays* and arrays can be
+ * indexed up to SIZE_MAX.  Arrays are not pointers!
+ *
+ * On normal machines size_t is probably the same as intptr_t (an
+ * integral type that can contain a pointer).  On segmented
+ * architectures, SIZE_MAX might be the minimum 65536.
+ *
+ * Following that, ptrdiff_t is the difference between the indices of
+ * two elements *in the same array* (and is not well defined
+ * otherwise).  Technically, ptrdiff_t requires one more bit than
+ * size_t (as it can be negative) but otherwise is the same (broad)
+ * size and unrelated to pointers.
+ *
+ * Hence, if you are using array indexing, "a[i]", then you should be
+ * using size_t/ptrdiff_t to be portable.  We are using array
+ * indexing, usually via "IDIO_ARRAY_AE (a, i)" although the odd a[i]
+ * creeps in.
+ *
+ * So, let's revisit the original comment:
+ *
  * C99 suggests that sizes should be size_t so we could create an
- * array with UINTMAX_MAX elements (2**n).  In practice, such a memory
- * allocation will almost certainly fail(1) but, sticking to
+ * array with SIZE_MAX elements.  On non-segmented architectures, such
+ * a memory allocation will almost certainly fail(1) but, sticking to
  * principles, someone might want to create a just-over-half-of-memory
  * (2**(n-1))+1 element array.
  *
- * (1) as every index is a pointer, ie 4 or 8 bytes, then we can't
- * physically allocate nor address 2**32 * 4 bytes or 2**64 * 8 bytes
- * just for the array.  So, in practice, we're limited to arrays of
- * length 2**30 or 2**61 -- with no room for data!
+ * (1) as every Idio array element is a pointer, ie 4 or 8 bytes, then
+ * we can't physically allocate nor address 2**32 * 4 bytes or 2**64 *
+ * 8 bytes just for the array as those are 4 and 8 times larger than
+ * addressable memory.  So, in practice, we're limited to arrays of
+ * length 2**30 or 2**61 -- with no room for any other data!
  *
  * However, at some point we should accomodate negative array indices,
- * eg. array[-1], the last index.  The means a signed type, the
- * largest integral signed type is intmax_t/intptr_t/ptrdiff_t and
- * therefore the largest positive index is PTRDIFF_MAX.  We're talking
- * about creating an array (of pointers) with (2**n)-1 elements.  We
- * shouldn't get too upset we can't create anything bigger, that's
- * still pretty big.
+ * eg. the nominal, array[-i], which we take to mean the i'th last
+ * index.  The means using a signed type even if we won't ever
+ * actually use a[-i] -- as we'll convert it into a[size-i].
+ *
+ * So, the type we use must be ptrdiff_t and therefore the largest
+ * positive index is PTRDIFF_MAX.
  *
  * in gc.h:
  *

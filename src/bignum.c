@@ -26,6 +26,19 @@ size_t idio_bignums = 0;
 size_t idio_bignums_max = 0;
 size_t idio_bignum_seg_max = 0;
 
+static void idio_bignum_error_conversion (char *msg, IDIO bn)
+{
+    IDIO msh = idio_open_output_string_handle_C ();
+    idio_display_C (msg, msh);
+
+    IDIO c = idio_struct_instance (idio_condition_rt_bignum_conversion_error_type,
+				   IDIO_LIST4 (idio_get_output_string (msh),
+					       idio_S_nil,
+					       idio_S_nil,
+					       bn));
+    idio_raise_condition (idio_S_true, c);
+}
+
 IDIO_BSA idio_bsa (size_t n)
 {
     if (n <= 0) {
@@ -184,7 +197,7 @@ void idio_bignum_dump (IDIO bn)
 	have that many.  We can then compare columnally.  Much easier
 	on the eye.
      */
-    intptr_t i;
+    ptrdiff_t i;
     for (i = segs; i >= 0; i--) {
 	if (i > al - 1) {
 	    fprintf (stderr, "%*s ", IDIO_BIGNUM_DPW, "");
@@ -327,13 +340,218 @@ int64_t idio_bignum_int64_value (IDIO bn)
     if (al > 1) {
 	IDIO fn = idio_bignum_to_fixnum (bn_i);
 	if (idio_S_nil == fn) {
-	    idio_error_printf ("failed to convert");
+	    /*
+	     * Grr! *shakes fist*
+	     *
+	     * LP64 INTMAX_MAX is 9223372036854775807, 19 digits long
+	     * -- just over the default DPW yet small enough to fit
+	     * into an int64_t.
+	     */
+	    if (2 == al) {
+		IDIO_BS_T a1 = idio_bsa_get (sig_a, 1);
+		
+		if (a1 <= 9) {
+		    int64_t v = (int64_t) idio_bsa_get (sig_a, 0);
+		    v += a1 * IDIO_BIGNUM_INT_SEG_LIMIT;
+
+		    idio_debug ("b->i64: %s ", bn);
+		    fprintf (stderr, "%jd\n", v);
+		    return v;
+		}
+	    }
+	    idio_bignum_dump (bn);
+	    idio_bignum_dump (bn_i);
+	    idio_bignum_error_conversion ("too large for int64_t", bn);
 	} else {
 	    return IDIO_FIXNUM_VAL (fn);
 	}
     }
     
-    return idio_bsa_get (sig_a, al - 1);
+    return (int64_t) idio_bsa_get (sig_a, al - 1);
+}
+
+uint64_t idio_bignum_uint64_value (IDIO bn)
+{
+    IDIO_ASSERT (bn);
+    IDIO_TYPE_ASSERT (bignum, bn);
+
+    IDIO bn_i = idio_bignum_integer_argument (bn);
+    if (idio_S_nil == bn_i) {
+	return 0;
+    }
+
+    IDIO_BSA sig_a = IDIO_BIGNUM_SIG (bn_i);
+    size_t al = IDIO_BSA_SIZE (sig_a);
+
+    if (al > 1) {
+	IDIO fn = idio_bignum_to_fixnum (bn_i);
+	if (idio_S_nil == fn) {
+	    /*
+	     * Grr! *shakes fist*
+	     *
+	     * LP64 UINTMAX_MAX is 18446744073709551615, 20 digits
+	     * long -- just over the default DPW yet small enough to
+	     * fit into an uint64_t.
+	     */
+	    if (2 == al) {
+		IDIO_BS_T a1 = idio_bsa_get (sig_a, 1);
+		
+		if (a1 <= 18) {
+		    uint64_t v = (uint64_t) idio_bsa_get (sig_a, 0);
+		    v += a1 * IDIO_BIGNUM_INT_SEG_LIMIT;
+
+		    idio_debug ("b->ui64: %s ", bn);
+		    fprintf (stderr, "%ju\n", v);
+		    return v;
+		}
+	    }
+	    idio_bignum_dump (bn);
+	    idio_bignum_dump (bn_i);
+	    idio_bignum_error_conversion ("too large for uint64_t", bn);
+	} else {
+	    return IDIO_FIXNUM_VAL (fn);
+	}
+    }
+    
+    return (uint64_t) idio_bsa_get (sig_a, al - 1);
+}
+
+ptrdiff_t idio_bignum_ptrdiff_value (IDIO bn)
+{
+    IDIO_ASSERT (bn);
+    IDIO_TYPE_ASSERT (bignum, bn);
+
+    IDIO bn_i = idio_bignum_integer_argument (bn);
+    if (idio_S_nil == bn_i) {
+	return 0;
+    }
+
+    IDIO_BSA sig_a = IDIO_BIGNUM_SIG (bn_i);
+    size_t al = IDIO_BSA_SIZE (sig_a);
+
+    if (al > 1) {
+	IDIO fn = idio_bignum_to_fixnum (bn_i);
+	if (idio_S_nil == fn) {
+	    /*
+	     * Grr! *shakes fist*
+	     *
+	     * LP64 PTRDIFF_MAX is 9223372036854775807, 19 digits long
+	     * -- just over the default DPW yet small enough to fit
+	     * into an ptrdiff_t.
+	     */
+	    if (2 == al) {
+		IDIO_BS_T a1 = idio_bsa_get (sig_a, 1);
+		
+		if (a1 <= 9) {
+		    ptrdiff_t v = (ptrdiff_t) idio_bsa_get (sig_a, 0);
+		    v += a1 * IDIO_BIGNUM_INT_SEG_LIMIT;
+
+		    idio_debug ("b->pd: %s ", bn);
+		    fprintf (stderr, "%ju\n", v);
+		    return v;
+		}
+	    }
+	    idio_bignum_dump (bn);
+	    idio_bignum_dump (bn_i);
+	    idio_bignum_error_conversion ("too large for ptrdiff_t", bn);
+	} else {
+	    return IDIO_FIXNUM_VAL (fn);
+	}
+    }
+    
+    return (ptrdiff_t) idio_bsa_get (sig_a, al - 1);
+}
+
+intptr_t idio_bignum_intptr_value (IDIO bn)
+{
+    IDIO_ASSERT (bn);
+    IDIO_TYPE_ASSERT (bignum, bn);
+
+    IDIO bn_i = idio_bignum_integer_argument (bn);
+    if (idio_S_nil == bn_i) {
+	return 0;
+    }
+
+    IDIO_BSA sig_a = IDIO_BIGNUM_SIG (bn_i);
+    size_t al = IDIO_BSA_SIZE (sig_a);
+
+    if (al > 1) {
+	IDIO fn = idio_bignum_to_fixnum (bn_i);
+	if (idio_S_nil == fn) {
+	    /*
+	     * Grr! *shakes fist*
+	     *
+	     * LP64 INTPTR_MAX is 9223372036854775807, 19 digits long
+	     * -- just over the default DPW yet small enough to fit
+	     * into an intptr_t.
+	     */
+	    if (2 == al) {
+		IDIO_BS_T a1 = idio_bsa_get (sig_a, 1);
+		
+		if (a1 <= 9) {
+		    intptr_t v = (intptr_t) idio_bsa_get (sig_a, 0);
+		    v += a1 * IDIO_BIGNUM_INT_SEG_LIMIT;
+
+		    idio_debug ("b->ip: %s ", bn);
+		    fprintf (stderr, "%jd\n", v);
+		    return v;
+		}
+	    }
+	    idio_bignum_dump (bn);
+	    idio_bignum_dump (bn_i);
+	    idio_bignum_error_conversion ("too large for intptr_t", bn);
+	} else {
+	    return IDIO_FIXNUM_VAL (fn);
+	}
+    }
+    
+    return (intptr_t) idio_bsa_get (sig_a, al - 1);
+}
+
+intmax_t idio_bignum_intmax_value (IDIO bn)
+{
+    IDIO_ASSERT (bn);
+    IDIO_TYPE_ASSERT (bignum, bn);
+
+    IDIO bn_i = idio_bignum_integer_argument (bn);
+    if (idio_S_nil == bn_i) {
+	return 0;
+    }
+
+    IDIO_BSA sig_a = IDIO_BIGNUM_SIG (bn_i);
+    size_t al = IDIO_BSA_SIZE (sig_a);
+
+    if (al > 1) {
+	IDIO fn = idio_bignum_to_fixnum (bn_i);
+	if (idio_S_nil == fn) {
+	    /*
+	     * Grr! *shakes fist*
+	     *
+	     * LP64 INTMAX_MAX is 9223372036854775807, 19 digits long
+	     * -- just over the default DPW yet small enough to fit
+	     * into an intmax_t.
+	     */
+	    if (2 == al) {
+		IDIO_BS_T a1 = idio_bsa_get (sig_a, 1);
+		
+		if (a1 <= 9) {
+		    intmax_t v = (intmax_t) idio_bsa_get (sig_a, 0);
+		    v += a1 * IDIO_BIGNUM_INT_SEG_LIMIT;
+
+		    idio_debug ("b->ip: %s ", bn);
+		    fprintf (stderr, "%jd\n", v);
+		    return v;
+		}
+	    }
+	    idio_bignum_dump (bn);
+	    idio_bignum_dump (bn_i);
+	    idio_bignum_error_conversion ("too large for intmax_t", bn);
+	} else {
+	    return IDIO_FIXNUM_VAL (fn);
+	}
+    }
+    
+    return (intmax_t) idio_bsa_get (sig_a, al - 1);
 }
 
 IDIO idio_bignum_to_fixnum (IDIO bn)
@@ -377,12 +595,15 @@ IDIO idio_bignum_to_fixnum (IDIO bn)
 	iv = -iv;
     }
     
-    if (iv < IDIO_FIXNUM_MAX &&
-	iv > IDIO_FIXNUM_MIN) {
+    if (iv <= IDIO_FIXNUM_MAX &&
+	iv >= IDIO_FIXNUM_MIN) {
 	idio_gc_stats_inc (IDIO_TYPE_FIXNUM);
 	return idio_fixnum (iv);
     }
 
+    idio_bignum_error_conversion ("failed to convert", bn);
+
+    /* notreached */
     fprintf (stderr, "failed to convert: %zd from ", iv);
     idio_debug ("%s\n", bn);
     return idio_S_nil;

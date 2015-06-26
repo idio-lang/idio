@@ -468,7 +468,19 @@ IDIO_DEFINE_PRIMITIVE2V ("handle-seek", handle_seek, (IDIO h, IDIO pos, IDIO arg
     if (idio_isa_fixnum (pos)) {
 	offset = IDIO_FIXNUM_VAL (pos);
     } else {
-	offset = idio_bignum_int64_value (pos);
+	/*
+	 * XXX intmax_t should be at least as large as off_t but we
+	 * might still get into trouble.
+	 *
+	 * intmax_t is in the CXX (C99?) standards meaning the largest
+	 * integral type whereas off_t is POSIX and relates to file
+	 * offsets.  But whether off_t == off64_t may depend on
+	 * whether you've compiled with _FILE_OFFSET_BITS=64
+	 *
+	 * That means there's a risk our intmax_t could overflow off_t
+	 * with "hilarious" results.
+	 */
+	offset = idio_bignum_intmax_value (pos);
     }
     off_t n = idio_handle_seek (h, offset, whence);
 

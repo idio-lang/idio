@@ -32,12 +32,17 @@ typedef struct idio_i_array_s {
  * Some debugging aids.
  *
  * idio_vm_tracing reports the nominal function call and arguments and
- * return value.  You can enable/disable it in code with %%vm-trace
- * {val}.
+ * return value.  You can enable/disable it in code with
+ *
+ * %%vm-trace {val}.
  *
  * idio_vm_dis reports the byte-instruction by byte-instruction flow.
- * You can enable/disable it in code with %%vm-dis {val}.  It is very
- * verbose.  You were warned.  I don't feel bad about your pain.
+ * You can enable/disable it in code with
+ *
+ * %%vm-dis {val}
+ *
+ * It is very^W verbose.  You were warned.  I don't feel bad about
+ * your new found pain.
  */
 static int idio_vm_tracing = 0;
 #ifdef IDIO_DEBUG
@@ -50,7 +55,7 @@ static int idio_vm_dis = 0;
  *
  * Prologue
  *
- * There is a prologue which defines some universal get-out functions
+ * There is a prologue which defines some universal get-out behaviour
  * (from Queinnec).  idio_vm_FINISH_pc is the PC for the FINISH
  * instruction and idio_prologue_len how big the prologue is.
  */
@@ -89,6 +94,10 @@ static size_t idio_prologue_len;
  *   location) so you can see if a recursive call is actually
  *   recursive or calling a previous definition (which may be
  *   recursive).
+ *
+ *   When a reflective evaluator is implemented this table should go
+ *   (as the details will be indexes to constants and embedded in the
+ *   code).
  */
 static IDIO idio_vm_constants;
 static IDIO idio_vm_symbols;
@@ -214,12 +223,12 @@ static void idio_error_environ_unbound (idio_ai_t index)
  *
  * We generate our byte compiled code into these.  There's often
  * several floating around at once as in order to determine how far to
- * jump over some unnecessary code to move onto the next (source code)
- * statement we need to have byte compiled the unnecessary code.
- * Which we can then copy.
+ * jump over some not-immediately-relevant code to move onto the next
+ * (source code) statement we need to have already byte compiled the
+ * not-immediately-relevant code.  Which we can then copy.
  *
  * XXX These are reference counted for reasons to do with an
- * undiscovered bug.
+ * undiscovered bug^W^Wundocumented feature.
  */
 idio_i_array_t *idio_i_array (size_t n)
 {
@@ -293,8 +302,8 @@ void idio_i_array_push (idio_i_array_t *ia, IDIO_I ins)
  * Variable length integers
  *
  * We want to be able to encode integers -- usually indexes but also
- * fixnums and characters -- reasonably efficiently but there is the
- * potential for some large values.
+ * fixnums and characters -- reasonably efficiently (ie. a small
+ * number of bytes) but there is the potential for some large values.
 
  * SQLite4 varuint: https://sqlite.org/src4/doc/trunk/www/varint.wiki
  *
@@ -379,6 +388,10 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
     IDIO mt = IDIO_PAIR_T (m);
 
     if (! IDIO_TYPE_CONSTANTP (mh)) {
+	/*
+	 * A sequence of idio_I_* code segments will appear here as a
+	 * list so we simply recurse for each one.
+	 */
 	if (idio_isa_pair (mh)) {
 	    while (idio_S_nil != m) {
 		idio_vm_compile (thr, ia, IDIO_PAIR_H (m), depth + 1);

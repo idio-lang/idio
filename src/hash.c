@@ -34,15 +34,7 @@
  * index of the next same-hash value in the chain.
  *
  * We use hsize+1, ie. beyond the allocated size, as a marker that
- * there is no next in chain.  It ought to be possible, if unwise, to
- * create a hash table that is one element more than half the size of
- * available memory which would require a size_t, not a
- * ssize_t/ptrdiff_t/intmax_t, therefore we can't use -1 as a flag.
- *
- * We should avoid the problem of someone allocating an array of
- * UINT_MAX elements and therefore not being able to use hsize+1 as a
- * marker as malloc's own data structures will get in the way and
- * prevent allocation of something so big.  Probably.
+ * there is no next in chain.  
  *
  * With a coalesced hash the internal API (which leaks out -- grr!!)
  * is slightly different.  Having determing the hash value of a key
@@ -420,7 +412,7 @@ idio_hi_t idio_hash_hashval (IDIO h, void *kv)
     
     switch (type) {
     case IDIO_TYPE_FIXNUM:
-	hv = idio_hash_hashval_uintmax_t ((uintptr_t) k);
+	hv = idio_hash_hashval_uintmax_t ((uintmax_t) k);
 	break;
     case IDIO_TYPE_STRING:
 	hv = idio_hash_hashval_string_C (IDIO_STRING_BLEN (k), IDIO_STRING_S (k)); 

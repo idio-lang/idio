@@ -47,6 +47,19 @@ int idio_isa_C_int (IDIO co)
     return idio_isa (co, IDIO_TYPE_C_INT);
 }
 
+IDIO_DEFINE_PRIMITIVE1 ("c/int?", C_intp, (IDIO o))
+{
+    IDIO_ASSERT (o);
+
+    IDIO r = idio_S_false;
+
+    if (idio_isa_C_int (o)) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
 intmax_t idio_C_int_get (IDIO co)
 {
     IDIO_ASSERT (co);
@@ -69,6 +82,19 @@ int idio_isa_C_uint (IDIO co)
     IDIO_ASSERT (co);
 
     return idio_isa (co, IDIO_TYPE_C_UINT);
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("c/uint?", C_uintp, (IDIO o))
+{
+    IDIO_ASSERT (o);
+
+    IDIO r = idio_S_false;
+
+    if (idio_isa_C_uint (o)) {
+	r = idio_S_true;
+    }
+
+    return r;
 }
 
 uintmax_t idio_C_uint_get (IDIO co)
@@ -95,6 +121,19 @@ int idio_isa_C_float (IDIO co)
     return idio_isa (co, IDIO_TYPE_C_FLOAT);
 }
 
+IDIO_DEFINE_PRIMITIVE1 ("c/float?", C_floatp, (IDIO o))
+{
+    IDIO_ASSERT (o);
+
+    IDIO r = idio_S_false;
+
+    if (idio_isa_C_float (o)) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
 float idio_C_float_get (IDIO co)
 {
     IDIO_ASSERT (co);
@@ -117,6 +156,19 @@ int idio_isa_C_double (IDIO co)
     IDIO_ASSERT (co);
 
     return idio_isa (co, IDIO_TYPE_C_DOUBLE);
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("c/double?", C_doublep, (IDIO o))
+{
+    IDIO_ASSERT (o);
+
+    IDIO r = idio_S_false;
+
+    if (idio_isa_C_double (o)) {
+	r = idio_S_true;
+    }
+
+    return r;
 }
 
 double idio_C_double_get (IDIO co)
@@ -163,6 +215,19 @@ int idio_isa_C_pointer (IDIO co)
     IDIO_ASSERT (co);
 
     return idio_isa (co, IDIO_TYPE_C_POINTER);
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("c/pointer?", C_pointerp, (IDIO o))
+{
+    IDIO_ASSERT (o);
+
+    IDIO r = idio_S_false;
+
+    if (idio_isa_C_pointer (o)) {
+	r = idio_S_true;
+    }
+
+    return r;
 }
 
 void * idio_C_pointer_get (IDIO co)
@@ -328,6 +393,11 @@ void idio_init_c_type ()
 
 void idio_c_type_add_primtives ()
 {
+    IDIO_ADD_PRIMITIVE (C_intp);
+    IDIO_ADD_PRIMITIVE (C_uintp);
+    IDIO_ADD_PRIMITIVE (C_floatp);
+    IDIO_ADD_PRIMITIVE (C_doublep);
+    IDIO_ADD_PRIMITIVE (C_pointerp);
     IDIO_ADD_PRIMITIVE (C_le);
     IDIO_ADD_PRIMITIVE (C_lt);
     IDIO_ADD_PRIMITIVE (C_eq);

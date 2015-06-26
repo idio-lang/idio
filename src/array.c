@@ -452,19 +452,19 @@ IDIO_DEFINE_PRIMITIVE1V ("make-vector", make_vector, (IDIO size, IDIO args))
     IDIO_ASSERT (size);
     IDIO_ASSERT (args);
 
-    intptr_t vlen = -1;
+    ptrdiff_t vlen = -1;
     
     if (idio_isa_fixnum (size)) {
 	vlen = IDIO_FIXNUM_VAL (size);
     } else if (idio_isa_bignum (size)) {
 	if (IDIO_BIGNUM_INTEGER_P (size)) {
-	    vlen = idio_bignum_int64_value (size);
+	    vlen = idio_bignum_ptrdiff_value (size);
 	} else {
 	    IDIO size_i = idio_bignum_real_to_integer (size);
 	    if (idio_S_nil == size_i) {
 		idio_error_param_type ("number", size);
 	    } else {
-		vlen = idio_bignum_int64_value (size_i);
+		vlen = idio_bignum_ptrdiff_value (size_i);
 	    }
 	}
     } else {
@@ -526,19 +526,19 @@ IDIO_DEFINE_PRIMITIVE2 ("vector-ref", vector_ref, (IDIO a, IDIO index))
 
     IDIO_VERIFY_PARAM_TYPE (array, a);
 
-    intptr_t i = -1;
+    ptrdiff_t i = -1;
     
     if (idio_isa_fixnum (index)) {
 	i = IDIO_FIXNUM_VAL (index);
     } else if (idio_isa_bignum (index)) {
 	if (IDIO_BIGNUM_INTEGER_P (index)) {
-	    i = idio_bignum_int64_value (index);
+	    i = idio_bignum_ptrdiff_value (index);
 	} else {
 	    IDIO index_i = idio_bignum_real_to_integer (index);
 	    if (idio_S_nil == index_i) {
 		idio_error_param_type ("number", index);
 	    } else {
-		i = idio_bignum_int64_value (index_i);
+		i = idio_bignum_ptrdiff_value (index_i);
 	    }
 	}
     } else {
@@ -570,19 +570,19 @@ IDIO_DEFINE_PRIMITIVE3 ("vector-set!", vector_set, (IDIO a, IDIO index, IDIO v))
 
     IDIO_VERIFY_PARAM_TYPE (array, a);
 
-    intptr_t i = -1;
+    ptrdiff_t i = -1;
     
     if (idio_isa_fixnum (index)) {
 	i = IDIO_FIXNUM_VAL (index);
     } else if (idio_isa_bignum (index)) {
 	if (IDIO_BIGNUM_INTEGER_P (index)) {
-	    i = idio_bignum_int64_value (index);
+	    i = idio_bignum_ptrdiff_value (index);
 	} else {
 	    IDIO index_i = idio_bignum_real_to_integer (index);
 	    if (idio_S_nil == index_i) {
 		idio_error_param_type ("number", index);
 	    } else {
-		i = idio_bignum_int64_value (index_i);
+		i = idio_bignum_ptrdiff_value (index_i);
 	    }
 	}
     } else {

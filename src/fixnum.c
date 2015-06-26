@@ -27,10 +27,23 @@ static void idio_fixnum_error_divide_by_zero ()
     idio_error_printf ("divide by zero");
 }
 
+static void idio_fixnum_error_conversion (char *msg, IDIO fn)
+{
+    IDIO msh = idio_open_output_string_handle_C ();
+    idio_display_C (msg, msh);
+
+    IDIO c = idio_struct_instance (idio_condition_rt_fixnum_conversion_error_type,
+				   IDIO_LIST4 (idio_get_output_string (msh),
+					       idio_S_nil,
+					       idio_S_nil,
+					       fn));
+    idio_raise_condition (idio_S_true, c);
+}
+
 IDIO idio_integer (intptr_t i)
 {
-    if (i < IDIO_FIXNUM_MAX &&
-	i > IDIO_FIXNUM_MIN) {
+    if (i <= IDIO_FIXNUM_MAX &&
+	i >= IDIO_FIXNUM_MIN) {
 	idio_gc_stats_inc (IDIO_TYPE_FIXNUM);
 	return IDIO_FIXNUM (i);
     } else {
@@ -40,7 +53,7 @@ IDIO idio_integer (intptr_t i)
 
 IDIO idio_uinteger (uintptr_t ui)
 {
-    if (ui < IDIO_FIXNUM_MAX) {
+    if (ui <= IDIO_FIXNUM_MAX) {
 	idio_gc_stats_inc (IDIO_TYPE_FIXNUM);
 	return IDIO_FIXNUM (ui);
     } else {
@@ -50,13 +63,19 @@ IDIO idio_uinteger (uintptr_t ui)
 
 IDIO idio_fixnum (intptr_t i)
 {
-    if (i < IDIO_FIXNUM_MAX &&
-	i > IDIO_FIXNUM_MIN) {
+    if (i <= IDIO_FIXNUM_MAX &&
+	i >= IDIO_FIXNUM_MIN) {
 	idio_gc_stats_inc (IDIO_TYPE_FIXNUM);
 	return IDIO_FIXNUM (i);
     } else {
-	return idio_bignum_integer_intmax_t (i);
+	char em[BUFSIZ];
+
+	sprintf (em, "%jd too large", i);
+	idio_fixnum_error_conversion (em, idio_S_nil);
     }
+
+    /* notreached */
+    return idio_S_unspec;
 }    
 
 IDIO idio_fixnum_C (char *str, int base)
@@ -72,14 +91,16 @@ IDIO idio_fixnum_C (char *str, int base)
 	 val == 0)) {
 	char em[BUFSIZ];
 	sprintf (em, "idio_fixnum_C: strtoll (%s) = %td", str, val);
-	idio_error_system_errno (em, idio_S_nil);
+	idio_fixnum_error_conversion (em, idio_S_nil);
 
 	/* notreached */
 	return idio_S_nil;
     }
 
     if (end == str) {
-	idio_error_printf ("idio_fixnum_C: strtoll (%s): No digits?", str);
+	char em[BUFSIZ];
+	sprintf (em, "idio_fixnum_C: strtoll (%s): No digits?", str);
+	idio_fixnum_error_conversion (em, idio_S_nil);
 
 	/* notreached */
 	return idio_S_nil;
@@ -88,7 +109,9 @@ IDIO idio_fixnum_C (char *str, int base)
     if ('\0' == *end) {
 	return idio_fixnum (val);
     } else {
-	idio_error_printf ("idio_fixnum_C: strtoll (%s) = %td", str, val);
+	char em[BUFSIZ];
+	sprintf (em, "idio_fixnum_C: strtoll (%s) = %td", str, val);
+	idio_fixnum_error_conversion (em, idio_S_nil);
 
 	/* notreached */
 	return idio_S_nil;
@@ -871,10 +894,10 @@ IDIO_DEFINE_PRIMITIVE1 ("integer->char", integer2char, (IDIO i))
     if (idio_isa_fixnum (i)) {
 	c = IDIO_CHARACTER (IDIO_FIXNUM_VAL (i));
     } else if (idio_isa_bignum (i)) {
-	int64_t iv = idio_bignum_int64_value (i);
+	intptr_t iv = idio_bignum_intptr_value (i);
 
 	if (iv >= 0 &&
-	    iv < IDIO_FIXNUM_MAX) {
+	    iv <= IDIO_FIXNUM_MAX) {
 	    c = IDIO_CHARACTER (iv);
 	}
     }
@@ -893,6 +916,9 @@ void idio_init_fixnum ()
 
 void idio_fixnum_add_primitives ()
 {
+    idio_module_set_symbol_value (idio_symbols_C_intern ("FIXNUM-MAX"), idio_fixnum (IDIO_FIXNUM_MAX), idio_main_module ());
+    idio_module_set_symbol_value (idio_symbols_C_intern ("FIXNUM-MIN"), idio_fixnum (IDIO_FIXNUM_MIN), idio_main_module ());
+
     IDIO_ADD_PRIMITIVE (fixnump);
     IDIO_ADD_PRIMITIVE (integerp);
     IDIO_ADD_PRIMITIVE (numberp);

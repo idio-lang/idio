@@ -163,15 +163,6 @@ typedef struct idio_array_s {
 #define IDIO_ARRAY_USIZE(A)	((A)->u.array->usize)
 #define IDIO_ARRAY_AE(A,i)	((A)->u.array->ae[i])
 
-typedef struct idio_hash_entry_s {
-    struct idio_s *k;
-    struct idio_s *v;
-    size_t n;			/* next in chain */
-} idio_hash_entry_t;
-
-#define IDIO_HASH_FLAG_NONE		0
-#define IDIO_HASH_FLAG_STRING_KEYS	(1<<0)
-
 /*
  * idio_hi_t must be a size_t as, though we may only create an
  * array of 2**(n-1)-1, we need a size+1 marker to indicate out of
@@ -179,13 +170,22 @@ typedef struct idio_hash_entry_s {
  */
 typedef size_t idio_hi_t;
 
+typedef struct idio_hash_entry_s {
+    struct idio_s *k;
+    struct idio_s *v;
+    idio_hi_t n;		/* next in chain */
+} idio_hash_entry_t;
+
+#define IDIO_HASH_FLAG_NONE		0
+#define IDIO_HASH_FLAG_STRING_KEYS	(1<<0)
+
 typedef struct idio_hash_s {
     struct idio_s *grey;
     idio_hi_t size;   /* nominal hash size */
     idio_hi_t mask;   /* bitmask for easy modulo arithmetic */
     int (*equal) (void *k1, void *k2);
-    size_t (*hashf) (struct idio_s *h, void *k); /* hashing function */
-    idio_hash_entry_t *he;			 /* a C array */
+    idio_hi_t (*hashf) (struct idio_s *h, void *k); /* hashing function */
+    idio_hash_entry_t *he;			    /* a C array */
 } idio_hash_t;
 
 #define IDIO_HASH_GREY(H)	((H)->u.hash->grey)

@@ -64,6 +64,8 @@ extern IDIO idio_condition_rt_glob_error_type;
 extern IDIO idio_condition_rt_command_exec_error_type;
 extern IDIO idio_condition_rt_command_status_error_type;
 extern IDIO idio_condition_rt_array_bounds_error_type;
+extern IDIO idio_condition_rt_bignum_conversion_error_type;
+extern IDIO idio_condition_rt_fixnum_conversion_error_type;
 
 extern IDIO idio_condition_rt_signal_type;
 

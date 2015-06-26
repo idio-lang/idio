@@ -177,5 +177,11 @@ define-condition-type-accessors-only ^rt-command-status-error		^runtime-error			
 
 define-condition-type-accessors-only ^rt-array-bounds-error		^runtime-error			rt-array-bounds-error?
 
+define-condition-type-accessors-only ^rt-bignum-conversion-error	^runtime-error			rt-bignum-conversion-error? \
+	(bignum rt-bignum-conversion-error-bignum)
+
+define-condition-type-accessors-only ^rt-fixnum-conversion-error	^runtime-error			rt-fixnum-conversion-error? \
+	(fixnum rt-fixnum-conversion-error-fixnum)
+
 define-condition-type-accessors-only ^rt-signal				^error				rt-signal? \
 	(signal rt-signal-signal)

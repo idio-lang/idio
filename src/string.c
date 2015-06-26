@@ -22,14 +22,14 @@
 
 #include "idio.h"
 
-void idio_string_error_length (char *m, IDIO s, intptr_t i)
+void idio_string_error_length (char *m, IDIO s, ptrdiff_t i)
 {
     char em[BUFSIZ];
     sprintf (em, "%s: %zd", m, i);
     idio_error_printf (em, s);
 }
 
-void idio_substring_error_index (char *m, IDIO s, intptr_t ip0, intptr_t ipn)
+void idio_substring_error_index (char *m, IDIO s, ptrdiff_t ip0, ptrdiff_t ipn)
 {
     char em[BUFSIZ];
     sprintf (em, "%s: %zd %zd", m, ip0, ipn);
@@ -46,7 +46,6 @@ IDIO idio_string_C (const char *s_C)
 
     size_t blen = strlen (s_C);
 
-    /* IDIO_GC_ALLOC (so->u.string, sizeof (idio_string_t)); */
     IDIO_GC_ALLOC (IDIO_STRING_S (so), blen + 1);
     
     memcpy (IDIO_STRING_S (so), s_C, blen);
@@ -64,7 +63,6 @@ IDIO idio_string_C_len (const char *s_C, size_t blen)
     
     IDIO_FPRINTF (stderr, "idio_string_C: %10p = '%s'\n", so, s_C);
 
-    /* IDIO_GC_ALLOC (so->u.string, sizeof (idio_string_t)); */
     IDIO_GC_ALLOC (IDIO_STRING_S (so), blen + 1);
     
     memcpy (IDIO_STRING_S (so), s_C, blen);
@@ -89,7 +87,6 @@ IDIO idio_string_C_array (size_t ns, char *a_C[])
 	blen += strlen (a_C[ai]);
     }
 
-    /* IDIO_GC_ALLOC (so->u.string, sizeof (idio_string_t)); */
     IDIO_GC_ALLOC (IDIO_STRING_S (so), blen + 1);
     
     size_t ao = 0;
@@ -147,11 +144,9 @@ void idio_free_string (IDIO so)
 
     IDIO_TYPE_ASSERT (string, so);
 
-    /* idio_gc_stats_free (sizeof (idio_string_t) + IDIO_STRING_BLEN (so)); */
     idio_gc_stats_free (IDIO_STRING_BLEN (so));
 
     free (IDIO_STRING_S (so));
-    /* free (so->u.string); */
 }
 
 IDIO idio_substring_offset (IDIO p, size_t offset, size_t blen)
@@ -162,8 +157,6 @@ IDIO idio_substring_offset (IDIO p, size_t offset, size_t blen)
     IDIO so = idio_gc_get (IDIO_TYPE_SUBSTRING);
 
     IDIO_FPRINTF (stderr, "idio_substring_offset: %10p = '%.*s'\n", so, blen, IDIO_STRING_S (p) + offset);
-
-    /* IDIO_GC_ALLOC (so->u.substring, sizeof (idio_substring_t)); */
 
     IDIO_FPRINTF (stderr, "idio_substring_offset: %d@%d in '%.*s' -> '%.*s'\n", blen, offset, IDIO_STRING_BLEN (p), IDIO_STRING_S (p), blen, IDIO_STRING_S (p) + offset);
 
@@ -186,10 +179,6 @@ void idio_free_substring (IDIO so)
     IDIO_ASSERT (so);
 
     IDIO_TYPE_ASSERT (substring, so);
-
-    /* idio_gc_stats_free (sizeof (idio_substring_t)); */
-
-    /* free (so->u.substring); */
 }
 
 int idio_string_cmp_C (IDIO so, char *s_C)
@@ -312,19 +301,19 @@ IDIO_DEFINE_PRIMITIVE1V ("make-string", make_string, (IDIO size, IDIO args))
     IDIO_ASSERT (size);
     IDIO_ASSERT (args);
 
-    intptr_t blen = -1;
+    ptrdiff_t blen = -1;
     
     if (idio_isa_fixnum (size)) {
 	blen = IDIO_FIXNUM_VAL (size);
     } else if (idio_isa_bignum (size)) {
 	if (IDIO_BIGNUM_INTEGER_P (size)) {
-	    blen = idio_bignum_int64_value (size);
+	    blen = idio_bignum_ptrdiff_value (size);
 	} else {
 	    IDIO size_i = idio_bignum_real_to_integer (size);
 	    if (idio_S_nil == size_i) {
 		idio_error_param_type ("number", size);
 	    } else {
-		blen = idio_bignum_int64_value (size_i);
+		blen = idio_bignum_ptrdiff_value (size_i);
 	    }
 	}
     } else {
@@ -368,7 +357,7 @@ IDIO_DEFINE_PRIMITIVE1 ("string->list", string2list, (IDIO s))
     char *sC = idio_string_s (s);
     size_t sl = idio_string_blen (s);
 
-    intptr_t si;
+    ptrdiff_t si;
     
     IDIO r = idio_S_nil;
 
@@ -473,19 +462,19 @@ IDIO_DEFINE_PRIMITIVE2 ("string-ref", string_ref, (IDIO s, IDIO index))
 
     IDIO_VERIFY_PARAM_TYPE (string, s);
 
-    intptr_t i = -1;
+    ptrdiff_t i = -1;
     
     if (idio_isa_fixnum (index)) {
 	i = IDIO_FIXNUM_VAL (index);
     } else if (idio_isa_bignum (index)) {
 	if (IDIO_BIGNUM_INTEGER_P (index)) {
-	    i = idio_bignum_int64_value (index);
+	    i = idio_bignum_ptrdiff_value (index);
 	} else {
 	    IDIO index_i = idio_bignum_real_to_integer (index);
 	    if (idio_S_nil == index_i) {
 		idio_error_param_type ("number", index);
 	    } else {
-		i = idio_bignum_int64_value (index_i);
+		i = idio_bignum_ptrdiff_value (index_i);
 	    }
 	}
     } else {
@@ -514,19 +503,19 @@ IDIO_DEFINE_PRIMITIVE3 ("string-set!", string_set, (IDIO s, IDIO index, IDIO c))
     IDIO_VERIFY_PARAM_TYPE (string, s);
     IDIO_VERIFY_PARAM_TYPE (character, c);
 
-    intptr_t i = -1;
+    ptrdiff_t i = -1;
     
     if (idio_isa_fixnum (index)) {
 	i = IDIO_FIXNUM_VAL (index);
     } else if (idio_isa_bignum (index)) {
 	if (IDIO_BIGNUM_INTEGER_P (index)) {
-	    i = idio_bignum_int64_value (index);
+	    i = idio_bignum_ptrdiff_value (index);
 	} else {
 	    IDIO index_i = idio_bignum_real_to_integer (index);
 	    if (idio_S_nil == index_i) {
 		idio_error_param_type ("number", index);
 	    } else {
-		i = idio_bignum_int64_value (index_i);
+		i = idio_bignum_ptrdiff_value (index_i);
 	    }
 	}
     } else {
@@ -559,20 +548,20 @@ IDIO_DEFINE_PRIMITIVE3 ("substring", substring, (IDIO s, IDIO p0, IDIO pn))
 
     IDIO_VERIFY_PARAM_TYPE (string, s);
 
-    intptr_t ip0 = -1;
-    intptr_t ipn = -1;
+    ptrdiff_t ip0 = -1;
+    ptrdiff_t ipn = -1;
 
     if (idio_isa_fixnum (p0)) {
 	ip0 = IDIO_FIXNUM_VAL (p0);
     } else if (idio_isa_bignum (p0)) {
 	if (IDIO_BIGNUM_INTEGER_P (p0)) {
-	    ip0 = idio_bignum_int64_value (p0);
+	    ip0 = idio_bignum_ptrdiff_value (p0);
 	} else {
 	    IDIO p0_i = idio_bignum_real_to_integer (p0);
 	    if (idio_S_nil == p0_i) {
 		idio_error_param_type ("number", p0);
 	    } else {
-		ip0 = idio_bignum_int64_value (p0_i);
+		ip0 = idio_bignum_ptrdiff_value (p0_i);
 	    }
 	}
     } else {
@@ -583,13 +572,13 @@ IDIO_DEFINE_PRIMITIVE3 ("substring", substring, (IDIO s, IDIO p0, IDIO pn))
 	ipn = IDIO_FIXNUM_VAL (pn);
     } else if (idio_isa_bignum (pn)) {
 	if (IDIO_BIGNUM_INTEGER_P (pn)) {
-	    ipn = idio_bignum_int64_value (pn);
+	    ipn = idio_bignum_ptrdiff_value (pn);
 	} else {
 	    IDIO pn_i = idio_bignum_real_to_integer (pn);
 	    if (idio_S_nil == pn_i) {
 		idio_error_param_type ("number", pn);
 	    } else {
-		ipn = idio_bignum_int64_value (pn_i);
+		ipn = idio_bignum_ptrdiff_value (pn_i);
 	    }
 	}
     } else {
@@ -608,7 +597,7 @@ IDIO_DEFINE_PRIMITIVE3 ("substring", substring, (IDIO s, IDIO p0, IDIO pn))
     }
 
     IDIO r = idio_S_unspec;
-    intptr_t rl = ipn - ip0;
+    ptrdiff_t rl = ipn - ip0;
 
     if (rl) {
 	switch (s->type) {
