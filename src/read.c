@@ -124,7 +124,7 @@ static void idio_read_error (IDIO handle, IDIO msg, IDIO det)
 					       det,
 					       line,
 					       pos));
-    idio_signal_exception (idio_S_true, c);
+    idio_raise_condition (idio_S_true, c);
 }
 
 static void idio_read_error_parse (IDIO handle, char *msg)
@@ -380,7 +380,7 @@ static IDIO idio_read_list (IDIO handle, IDIO opendel, char *ic, int depth)
 		    e = idio_S_gt;
 		    break;
 		default:
-		    idio_error_C ("unexpected token", IDIO_LIST2 (handle, e));
+		    idio_error_C ("unexpected token in list", IDIO_LIST2 (handle, e));
 		}
 	    }
 
@@ -1234,7 +1234,7 @@ static IDIO idio_read_line (IDIO handle, IDIO closedel, char *ic, int depth)
 		    expr = idio_S_ampersand;
 		    break;
 		default:
-		    idio_error_C ("unexpected token", IDIO_LIST2 (handle, expr));
+		    idio_error_C ("unexpected token in line", IDIO_LIST2 (handle, expr));
 		}
 	    }
 	    r = idio_pair (expr, r);
