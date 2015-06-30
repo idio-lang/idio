@@ -1346,12 +1346,12 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	    IDIO_IA_PUSH1 (IDIO_A_PUSH_VALUE);
 	    idio_vm_compile (thr, ia, ms, depth + 1);
 	    switch (IDIO_FIXNUM_VAL (rank)) {
-	    case 0: IDIO_IA_PUSH1 (IDIO_A_POP_ENV0); break;
-	    case 1: IDIO_IA_PUSH1 (IDIO_A_POP_ENV1); break;
-	    case 2: IDIO_IA_PUSH1 (IDIO_A_POP_ENV2); break;
-	    case 3: IDIO_IA_PUSH1 (IDIO_A_POP_ENV3); break;
+	    case 0: IDIO_IA_PUSH1 (IDIO_A_POP_FRAME0); break;
+	    case 1: IDIO_IA_PUSH1 (IDIO_A_POP_FRAME1); break;
+	    case 2: IDIO_IA_PUSH1 (IDIO_A_POP_FRAME2); break;
+	    case 3: IDIO_IA_PUSH1 (IDIO_A_POP_FRAME3); break;
 	    default:
-		IDIO_IA_PUSH1 (IDIO_A_POP_ENV);
+		IDIO_IA_PUSH1 (IDIO_A_POP_FRAME);
 		IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (rank));
 		break;
 	    }
@@ -2875,6 +2875,12 @@ int idio_vm_run1 (IDIO thr)
 	    IDIO_THREAD_STACK_PUSH (IDIO_THREAD_VAL (thr));
 	}
 	break;
+    case IDIO_A_POP_VALUE:
+	{
+	    IDIO_VM_RUN_DIS ("POP-VALUE");
+	    IDIO_THREAD_VAL (thr) = IDIO_THREAD_STACK_POP ();
+	}
+	break;
     case IDIO_A_POP_REG1:
 	{
 	    IDIO_VM_RUN_DIS ("POP-REG1");
@@ -3025,31 +3031,31 @@ int idio_vm_run1 (IDIO thr)
 	    IDIO_THREAD_VAL (thr) = vs;
 	}
 	break;
-    case IDIO_A_POP_ENV0:
+    case IDIO_A_POP_FRAME0:
 	{
 	    IDIO_VM_RUN_DIS ("POP-FRAME 0");
 	    idio_frame_update (IDIO_THREAD_VAL (thr), 0, 0, IDIO_THREAD_STACK_POP ());
 	}
 	break;
-    case IDIO_A_POP_ENV1:
+    case IDIO_A_POP_FRAME1:
 	{
 	    IDIO_VM_RUN_DIS ("POP-FRAME 1");
 	    idio_frame_update (IDIO_THREAD_VAL (thr), 0, 1, IDIO_THREAD_STACK_POP ());
 	}
 	break;
-    case IDIO_A_POP_ENV2:
+    case IDIO_A_POP_FRAME2:
 	{
 	    IDIO_VM_RUN_DIS ("POP-FRAME 2");
 	    idio_frame_update (IDIO_THREAD_VAL (thr), 0, 2, IDIO_THREAD_STACK_POP ());
 	}
 	break;
-    case IDIO_A_POP_ENV3:
+    case IDIO_A_POP_FRAME3:
 	{
 	    IDIO_VM_RUN_DIS ("POP-FRAME 3");
 	    idio_frame_update (IDIO_THREAD_VAL (thr), 0, 3, IDIO_THREAD_STACK_POP ());
 	}
 	break;
-    case IDIO_A_POP_ENV:
+    case IDIO_A_POP_FRAME:
 	{
 	    uint64_t rank = idio_vm_fetch_varuint (thr);
 	    IDIO_VM_RUN_DIS ("POP-FRAME %" PRId64 "", rank);
