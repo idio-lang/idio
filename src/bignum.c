@@ -447,7 +447,7 @@ ptrdiff_t idio_bignum_ptrdiff_value (IDIO bn)
 		    v += a1 * IDIO_BIGNUM_INT_SEG_LIMIT;
 
 		    idio_debug ("b->pd: %s ", bn);
-		    fprintf (stderr, "%ju\n", v);
+		    fprintf (stderr, "%tu\n", v);
 		    return v;
 		}
 	    }
@@ -493,7 +493,7 @@ intptr_t idio_bignum_intptr_value (IDIO bn)
 		    v += a1 * IDIO_BIGNUM_INT_SEG_LIMIT;
 
 		    idio_debug ("b->ip: %s ", bn);
-		    fprintf (stderr, "%jd\n", v);
+		    fprintf (stderr, "%" PRIdPTR "\n", v);
 		    return v;
 		}
 	    }

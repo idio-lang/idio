@@ -2994,7 +2994,7 @@ int idio_vm_run1 (IDIO thr)
 		fprintf (stderr, "                       %*.s", idio_vm_tracing, "");
 		idio_debug ("=> %s\n", IDIO_THREAD_VAL (thr));
 		if (idio_vm_tracing <= 1) {
-		    fprintf (stderr, "XXX RETURN to %jd: tracing depth <= 1!\n", pc);
+		    fprintf (stderr, "XXX RETURN to %td: tracing depth <= 1!\n", pc);
 		} else {
 		    idio_vm_tracing--;
 		}
@@ -4039,7 +4039,7 @@ IDIO idio_vm_run (IDIO thr)
 	while (ss > ss0) {
 	    IDIO v = IDIO_THREAD_STACK_POP ();
 #ifdef IDIO_DEBUG
-	    fprintf (stderr, "popping %3jd: ", ss - 1);
+	    fprintf (stderr, "popping %3td: ", ss - 1);
 	    if (idio_isa_frame (v)) {
 		fprintf (stderr, "%20s ", "frame");
 		idio_debug ("%s\n", IDIO_FRAME_ARGS (v));
