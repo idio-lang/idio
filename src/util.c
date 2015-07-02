@@ -1511,6 +1511,22 @@ IDIO_DEFINE_PRIMITIVE2 ("idio-debug", idio_debug, (IDIO fmt, IDIO o))
     return idio_S_unspec;
 }
 
+#if ! defined (strnlen)
+/*
+ * Mac OS X - 10.5.8
+ */
+size_t strnlen (const char *s, size_t maxlen)
+{
+    size_t n = 0;
+    while (*s &&
+	   n < maxlen) {
+	n++;
+    }
+
+    return n;
+}
+#endif
+
 void idio_init_util ()
 {
 }

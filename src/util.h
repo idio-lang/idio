@@ -45,6 +45,10 @@ IDIO idio_list_set_difference (IDIO set1, IDIO set2);
 void idio_dump (IDIO o, int detail);
 void idio_debug (const char *fmt, IDIO o);
 
+#if ! defined (strnlen)
+size_t strnlen (const char *s, size_t maxlen);
+#endif
+
 void idio_init_util ();
 void idio_util_add_primitives ();
 void idio_final_util ();

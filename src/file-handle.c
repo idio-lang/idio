@@ -833,7 +833,7 @@ IDIO idio_load_filehandle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*
     idio_ai_t sp = idio_array_size (IDIO_THREAD_STACK (thr));
 
     if (sp != sp0) {
-	fprintf (stderr, "load-file-handle: %s: SP %zd != SP0 %zd\n", IDIO_HANDLE_NAME (fh), sp, sp0);
+	fprintf (stderr, "load-file-handle: %s: SP %td != SP0 %td\n", IDIO_HANDLE_NAME (fh), sp, sp0);
 	idio_debug ("THR %s\n", thr);
 	idio_debug ("STK %s\n", IDIO_THREAD_STACK (thr));
     }
@@ -976,7 +976,7 @@ IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (
     idio_ai_t ss = idio_array_size (IDIO_THREAD_STACK (thr));
 
     if (ss != ss0) {
-	fprintf (stderr, "load-file-handle: %s: SS %zd != %zd\n", IDIO_HANDLE_NAME (fh), ss, ss0);
+	fprintf (stderr, "load-file-handle: %s: SS %td != %td\n", IDIO_HANDLE_NAME (fh), ss, ss0);
 	idio_debug ("THR %s\n", thr);
 	idio_debug ("STK %s\n", IDIO_THREAD_STACK (thr));
     }

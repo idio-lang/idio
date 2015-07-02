@@ -412,7 +412,7 @@ idio_hi_t idio_hash_hashval (IDIO h, void *kv)
     
     switch (type) {
     case IDIO_TYPE_FIXNUM:
-	hv = idio_hash_hashval_uintmax_t ((uintmax_t) k);
+	hv = idio_hash_hashval_uintmax_t ((uintptr_t) k);
 	break;
     case IDIO_TYPE_STRING:
 	hv = idio_hash_hashval_string_C (IDIO_STRING_BLEN (k), IDIO_STRING_S (k)); 

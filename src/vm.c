@@ -319,7 +319,7 @@ void idio_i_array_push (idio_i_array_t *ia, IDIO_I ins)
  * This encoding supports positive numbers only hence extra
  * instructions to reference negative values.
  */
-idio_i_array_t *idio_i_array_compute_varuint (uintptr_t offset)
+idio_i_array_t *idio_i_array_compute_varuint (uint64_t offset)
 {
     idio_i_array_t *ia = idio_i_array (10);
     
@@ -337,16 +337,16 @@ idio_i_array_t *idio_i_array_compute_varuint (uintptr_t offset)
 	if (offset <= 16777215) {
 	    IDIO_IA_PUSH1 (250);
 	    n = 3;
-	} else if (offset <= 4294967295) {
+	} else if (offset <= 4294967295LL) {
 	    IDIO_IA_PUSH1 (251);
 	    n = 4;
-	} else if (offset <= 1099511627775) {
+	} else if (offset <= 1099511627775LL) {
 	    IDIO_IA_PUSH1 (252);
 	    n = 5;
-	} else if (offset <= 281474976710655) {
+	} else if (offset <= 281474976710655LL) {
 	    IDIO_IA_PUSH1 (253);
 	    n = 6;
-	} else if (offset <= 72057594037927935) {
+	} else if (offset <= 72057594037927935LL) {
 	    IDIO_IA_PUSH1 (254);
 	    n = 7;
 	} else {
@@ -2737,7 +2737,7 @@ int idio_vm_run1 (IDIO thr)
     case IDIO_A_CONSTANT_REF: 
     	{ 
     	    idio_ai_t i = idio_vm_fetch_varuint (thr); 
-    	    IDIO_VM_RUN_DIS ("CONSTANT %" PRIdPTR "", i); 
+    	    IDIO_VM_RUN_DIS ("CONSTANT %td", i); 
     	    IDIO_THREAD_VAL (thr) = idio_vm_constants_ref (i); 
     	} 
     	break; 
@@ -2984,7 +2984,7 @@ int idio_vm_run1 (IDIO thr)
 	    idio_ai_t pc = IDIO_FIXNUM_VAL (ipc);
 	    if (pc > idio_all_code->i ||
 		pc < 0) {
-		fprintf (stderr, "\n\nPC= %"PRIdPTR "?\n", pc);
+		fprintf (stderr, "\n\nPC= %td?\n", pc);
 		idio_dump (thr, 1);
 		idio_dump (IDIO_THREAD_STACK (thr), 1);
 		idio_vm_panic (thr, "RETURN: impossible PC on stack top");
@@ -3770,14 +3770,14 @@ int idio_vm_run1 (IDIO thr)
 	    }
 	    if (pc % 10) {
 		idio_ai_t pc1 = pc - (pc % 10);
-		fprintf (stderr, "\n  %5zd ", pc1);
+		fprintf (stderr, "\n  %5td ", pc1);
 		for (; pc1 < pc; pc1++) {
 		    fprintf (stderr, "    ");
 		}
 	    }
 	    for (; pc < pcm; pc++) {
 		if (0 == (pc % 10)) {
-		    fprintf (stderr, "\n  %5zd ", pc);
+		    fprintf (stderr, "\n  %5td ", pc);
 		}
 		fprintf (stderr, "%3d ", idio_all_code->ae[pc]);
 	    }
@@ -4023,14 +4023,14 @@ IDIO idio_vm_run (IDIO thr)
      */
     int bail = 0;
     if (IDIO_THREAD_PC (thr) != (idio_vm_FINISH_pc + 1)) {
-	fprintf (stderr, "vm-run: THREAD FAIL: PC %zu != %" PRIdPTR "\n", IDIO_THREAD_PC (thr), (idio_vm_FINISH_pc + 1));
+	fprintf (stderr, "vm-run: THREAD FAIL: PC %zu != %td\n", IDIO_THREAD_PC (thr), (idio_vm_FINISH_pc + 1));
 	bail = 1;
     }
     
     idio_ai_t ss = idio_array_size (IDIO_THREAD_STACK (thr));
 
     if (ss != ss0) {
-	fprintf (stderr, "vm-run: THREAD FAIL: SP %" PRIdPTR " != SP0 %" PRIdPTR "\n", ss - 1, ss0 - 1);
+	fprintf (stderr, "vm-run: THREAD FAIL: SP %td != SP0 %td\n", ss - 1, ss0 - 1);
 	if (ss < ss0) {
 	    idio_vm_panic (thr, "current stack smaller than when we started");
 	}
@@ -4278,12 +4278,12 @@ void idio_final_vm ()
 {
     fprintf (stderr, "final-vm: created %zu instructions\n", idio_all_code->i);
     idio_i_array_free (idio_all_code);
-    fprintf (stderr, "final-vm: created %" PRIdPTR " constants\n", idio_array_size (idio_vm_constants));
+    fprintf (stderr, "final-vm: created %td constants\n", idio_array_size (idio_vm_constants));
     idio_gc_expose (idio_vm_constants);
-    fprintf (stderr, "final-vm: created %" PRIdPTR " symbols\n", idio_array_size (idio_vm_symbols));
+    fprintf (stderr, "final-vm: created %td symbols\n", idio_array_size (idio_vm_symbols));
     idio_gc_expose (idio_vm_symbols);
     idio_gc_expose (idio_vm_values);
-    fprintf (stderr, "final-vm: created %" PRIdPTR " primitives\n", idio_array_size (idio_vm_primitives));
+    fprintf (stderr, "final-vm: created %td primitives\n", idio_array_size (idio_vm_primitives));
     idio_gc_expose (idio_vm_primitives);
     idio_gc_expose (idio_vm_closure_name);
     idio_gc_expose (idio_vm_sigchld_handler_name);

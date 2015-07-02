@@ -45,7 +45,7 @@ IDIO idio_integer (intmax_t i)
     if (i <= IDIO_FIXNUM_MAX &&
 	i >= IDIO_FIXNUM_MIN) {
 	idio_gc_stats_inc (IDIO_TYPE_FIXNUM);
-	return IDIO_FIXNUM (i);
+	return IDIO_FIXNUM ((intptr_t) i);
     } else {
 	return idio_bignum_integer_intmax_t (i);
     }
@@ -55,7 +55,7 @@ IDIO idio_uinteger (uintmax_t ui)
 {
     if (ui <= IDIO_FIXNUM_MAX) {
 	idio_gc_stats_inc (IDIO_TYPE_FIXNUM);
-	return IDIO_FIXNUM (ui);
+	return IDIO_FIXNUM ((uintptr_t) ui);
     } else {
 	return idio_bignum_integer_uintmax_t (ui);
     }
@@ -82,7 +82,7 @@ IDIO idio_fixnum_C (char *str, int base)
 {
     char *end;
     errno = 0;
-    intptr_t val = strtoll (str, &end, base);
+    long long int val = strtoll (str, &end, base);
 
     if ((errno == ERANGE &&
 	 (val == LLONG_MAX ||
@@ -90,7 +90,7 @@ IDIO idio_fixnum_C (char *str, int base)
 	(errno != 0 &&
 	 val == 0)) {
 	char em[BUFSIZ];
-	sprintf (em, "idio_fixnum_C: strtoll (%s) = %td", str, val);
+	sprintf (em, "idio_fixnum_C: strtoll (%s) = %lld", str, val);
 	idio_fixnum_error_conversion (em, idio_S_nil);
 
 	/* notreached */
@@ -107,10 +107,10 @@ IDIO idio_fixnum_C (char *str, int base)
     }
 	
     if ('\0' == *end) {
-	return idio_fixnum (val);
+	return idio_fixnum ((intptr_t) val);
     } else {
 	char em[BUFSIZ];
-	sprintf (em, "idio_fixnum_C: strtoll (%s) = %td", str, val);
+	sprintf (em, "idio_fixnum_C: strtoll (%s) = %lld", str, val);
 	idio_fixnum_error_conversion (em, idio_S_nil);
 
 	/* notreached */

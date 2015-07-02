@@ -25,14 +25,14 @@
 void idio_string_error_length (char *m, IDIO s, ptrdiff_t i)
 {
     char em[BUFSIZ];
-    sprintf (em, "%s: %zd", m, i);
+    sprintf (em, "%s: %td", m, i);
     idio_error_printf (em, s);
 }
 
 void idio_substring_error_index (char *m, IDIO s, ptrdiff_t ip0, ptrdiff_t ipn)
 {
     char em[BUFSIZ];
-    sprintf (em, "%s: %zd %zd", m, ip0, ipn);
+    sprintf (em, "%s: %td %td", m, ip0, ipn);
     idio_error_printf (em, s);
 }
 
