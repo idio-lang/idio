@@ -355,7 +355,7 @@ int64_t idio_bignum_int64_value (IDIO bn)
 		    v += a1 * IDIO_BIGNUM_INT_SEG_LIMIT;
 
 		    idio_debug ("b->i64: %s ", bn);
-		    fprintf (stderr, "%jd\n", v);
+		    fprintf (stderr, "%" PRId64 "\n", v);
 		    return v;
 		}
 	    }
@@ -401,7 +401,7 @@ uint64_t idio_bignum_uint64_value (IDIO bn)
 		    v += a1 * IDIO_BIGNUM_INT_SEG_LIMIT;
 
 		    idio_debug ("b->ui64: %s ", bn);
-		    fprintf (stderr, "%ju\n", v);
+		    fprintf (stderr, "%" PRIu64 "\n", v);
 		    return v;
 		}
 	    }
