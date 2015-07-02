@@ -470,7 +470,7 @@ ptrdiff_t idio_bignum_ptrdiff_value (IDIO bn)
 	    idio_bignum_dump (bn);
 	    idio_bignum_dump (bn_i);
 	    char em[BUFSIZ];
-	    sprintf (em, "too large for ptrdiff_t (%" PRIdPTR ")", PTRDIFF_MAX);
+	    sprintf (em, "too large for ptrdiff_t (%td)", (ptrdiff_t) PTRDIFF_MAX);
 	    idio_bignum_error_conversion (em, bn);
 	} else {
 	    return IDIO_FIXNUM_VAL (fn);
@@ -523,7 +523,7 @@ intptr_t idio_bignum_intptr_value (IDIO bn)
 	    idio_bignum_dump (bn);
 	    idio_bignum_dump (bn_i);
 	    char em[BUFSIZ];
-	    sprintf (em, "too large for intptr_t (%" PRIdPTR ")", INTPTR_MAX);
+	    sprintf (em, "too large for intptr_t (%" PRIdPTR ")", (intptr_t) INTPTR_MAX);
 	    idio_bignum_error_conversion (em, bn);
 	} else {
 	    return IDIO_FIXNUM_VAL (fn);
@@ -576,7 +576,7 @@ intmax_t idio_bignum_intmax_value (IDIO bn)
 	    idio_bignum_dump (bn_i);
 
 	    char em[BUFSIZ];
-	    sprintf (em, "too large for intmax_t (%jd)", INTMAX_MAX);
+	    sprintf (em, "too large for intmax_t (%jd)", (intmax_t) INTMAX_MAX);
 	    idio_bignum_error_conversion (em, bn);
 	} else {
 	    return IDIO_FIXNUM_VAL (fn);
