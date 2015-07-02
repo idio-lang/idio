@@ -70,7 +70,7 @@ IDIO idio_fixnum (intptr_t i)
     } else {
 	char em[BUFSIZ];
 
-	sprintf (em, "%jd too large", i);
+	sprintf (em, "%" PRIdPTR " too large", i);
 	idio_fixnum_error_conversion (em, idio_S_nil);
     }
 
