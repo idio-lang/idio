@@ -35,7 +35,7 @@ IDIO idio_continuation (IDIO thr)
     IDIO_CONTINUATION_STACK (k) = idio_array_copy (IDIO_THREAD_STACK (thr), 5);
 
     /*
-     * XXX same order as idio_vm_preserve_environment() !!!
+     * XXX same order as idio_vm_preserve_state() !!!
      */
     idio_array_push (IDIO_CONTINUATION_STACK (k), IDIO_THREAD_ENVIRON_SP (thr));
     idio_array_push (IDIO_CONTINUATION_STACK (k), IDIO_THREAD_DYNAMIC_SP (thr));

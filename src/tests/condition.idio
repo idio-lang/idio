@@ -268,17 +268,23 @@ monitor (function (cont cond) {
     if (i/o-filename-error? cond) {
       filename := i/o-filename-error-filename cond
 
-      ;; use a safe file instead of {filename} (which just had an
-      ;; error!)
+      ;; use a safe file instead of {filename} (which is
+      ;; ./test_filename/test_filename and just had an error!)
       ;;
-      ;; test_filename *is* safe as {filename} is
-      ;; ./test_filename/test_filename
+      ;; test_filename on its own *is* safe but make sure it's
+      ;; writable
+      chmod +w test_filename
       open-output-file test_filename
     } (error "generic filename: unexpected condition" cond)
   } (error "generic filename: unexpected non-continuable error" cond)
 }) {
   ;; display* "generic filename condition"
+
+  ;; we need to ensure that {test_filename} exists as a file in order
+  ;; to provoke the condition when trying to use it as a directory
+  rm test_filename
   touch test_filename
+
   dir_filename := string-append "./" test_filename "/" test_filename
 
   ofh := open-output-file dir_filename
@@ -400,6 +406,7 @@ monitor (function (cont cond) {
 ;; a continuable error, if it reaches base-error-handler will have the
 ;; value of the condition itself.  We can't test that but we can test
 ;; its type:
+display* "raising a continuable condition"
 test (error? (raise #t (make-condition ^error))) #t
 
 ;; a non-continuable error should abort the thread -- so we can't test

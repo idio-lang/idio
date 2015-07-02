@@ -48,15 +48,15 @@ monitor (function (cont cond) {
 }
 
 monitor (function (cont cond) {
-  edisplay* "auto-exit -e 11: monitor" cont cond
+  ;; edisplay* "auto-exit -e 11: monitor" cont cond
   test (rt-command-status-error? cond) #t
   if cont {
     if (rt-command-status-error? cond) {
       job := idio-error-location cond
       test (job-detail job) '(exit 11)
 
-      ;; edisplay* "auto-exit -e 11: monitor" cont cond
-      command-error-status cond
+      ;; return the original status
+      rt-command-status-error-status cond
     } {
       edisplay* "auto-exit -e 11: unexpected condition" cond
       raise cont cond
@@ -77,7 +77,8 @@ monitor (function (cont cond) {
       job := idio-error-location cond
       test (job-detail job) '(killed 15)
 
-      command-error-status cond
+      ;; return the original status
+      rt-command-status-error-status cond
     } {
       edisplay* "auto-exit -k 15: unexpected condition" cond
       raise cont cond

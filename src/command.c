@@ -872,7 +872,7 @@ static IDIO idio_command_foreground_job (IDIO job, int cont)
 	}
     }
 
-    idio_command_wait_for_job (job);
+    IDIO r = idio_command_wait_for_job (job);
 
     /*
      * Put the shell back in the foreground.
@@ -909,7 +909,7 @@ static IDIO idio_command_foreground_job (IDIO job, int cont)
 	idio_error_system_errno ("tcgetattr", IDIO_LIST1 (idio_C_int (idio_command_terminal)));
     }
 
-    return idio_command_job_status (job);
+    return r;
 }
 
 IDIO_DEFINE_PRIMITIVE2 ("foreground-job", foreground_job, (IDIO job, IDIO icont))

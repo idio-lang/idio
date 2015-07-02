@@ -388,14 +388,36 @@ typedef struct idio_thread_s {
     size_t pc;
     struct idio_s *stack;
     struct idio_s *val;
+
+    /*
+     * frame is linked arrays of local variable values
+     */
     struct idio_s *frame;
+    
+    /*
+     * handler_sp is the SP of the current handler with SP-1
+     * containing the SP of the next handler
+     */
+    struct idio_s *handler_sp;
 
-    struct idio_s *handler_sp;	/* SP to current handler; SP-1 is SP of next handler */
-    jmp_buf *jmp_buf;		/* lets us clear the C-stack too */
+    /*
+     * jmp_buf is used to clear the C-stack
+     *
+     * NB it is a pointer to a C stack variable
+     */
+    jmp_buf *jmp_buf;
 
-    struct idio_s *dynamic_sp;	/* SP to topmost dynamic variable */
-    struct idio_s *environ_sp;	/* SP to topmost environ variable */
+    /*
+     * dynamic_sp, environ_sp are the SP of the topmost
+     * dynamic/environ variable
+     */
+    struct idio_s *dynamic_sp;
+    struct idio_s *environ_sp;
 
+    /*
+     * func, reg1 and reg1 are transient registers, ie. they don't
+     * require preserving/restoring
+     */
     struct idio_s *func;
     struct idio_s *reg1;
     struct idio_s *reg2;
@@ -427,14 +449,13 @@ typedef struct idio_thread_s {
 
 /*
  * A continuation needs to save everything important about the state
- * of the current thread.  So all the SPs, the environment and the
+ * of the current thread.  So all the SPs, the current frame and the
  * stack itself.
  *
- * We'll be duplicating the efforts of idio_vm_preserve_environment()
- * but we can't call that as it modifies the stack.  That said, we'll
- * be copying the stack so once we've done that we can push everything
- * else idio_vm_restore_environment() needs onto that copy of the
- * stack.
+ * We'll be duplicating the efforts of idio_vm_preserve_state() but we
+ * can't call that as it modifies the stack.  That said, we'll be
+ * copying the stack so once we've done that we can push everything
+ * else idio_vm_restore_state() needs onto that copy of the stack.
  */
 typedef struct idio_continuation_s {
     struct idio_s *grey;
@@ -450,6 +471,7 @@ typedef struct idio_continuation_s {
 #define IDIO_VM_LONGJMP_SIGNAL_EXCEPTION 1
 #define IDIO_VM_LONGJMP_CONTINUATION     2
 #define IDIO_VM_LONGJMP_CALLCC		 3
+#define IDIO_VM_LONGJMP_EVENT		 4
 
 typedef struct idio_C_pointer_s {
     void *p;

@@ -64,13 +64,14 @@
 #define IDIO_A_SHORT_GOTO                  42
 #define IDIO_A_SHORT_JUMP_FALSE            43
 
-#define IDIO_A_PRESERVE_ENV                50
-#define IDIO_A_RESTORE_ENV                 51
-#define IDIO_A_PUSH_VALUE                  52
-#define IDIO_A_POP_VALUE                   53
-#define IDIO_A_POP_REG1                    54
-#define IDIO_A_POP_REG2                    55
-#define IDIO_A_POP_FUNCTION                56
+#define IDIO_A_PUSH_VALUE                  50
+#define IDIO_A_POP_VALUE                   51
+#define IDIO_A_POP_REG1                    52
+#define IDIO_A_POP_REG2                    53
+#define IDIO_A_POP_FUNCTION                54
+#define IDIO_A_PRESERVE_STATE              55
+#define IDIO_A_RESTORE_STATE               56
+#define IDIO_A_RESTORE_ALL_STATE           57
 
 #define IDIO_A_CREATE_CLOSURE              60
 #define IDIO_A_FUNCTION_INVOKE             61
