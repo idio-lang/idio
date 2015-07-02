@@ -165,7 +165,7 @@ void idio_bignum_dump (IDIO bn)
     IDIO_ASSERT (bn);
     IDIO_TYPE_ASSERT (bignum, bn);
     
-    IDIO_BS_T exp = IDIO_BIGNUM_EXP (bn);	    
+    int64_t exp = IDIO_BIGNUM_EXP (bn);	    
     IDIO_BSA sig_a = IDIO_BIGNUM_SIG (bn);	    
     size_t al = IDIO_BSA_SIZE (sig_a);
 
@@ -274,7 +274,7 @@ IDIO idio_bignum_integer_intmax_t (intmax_t i)
     size_t ai = 0;
     if (i >= IDIO_BIGNUM_INT_SEG_LIMIT) {
 	while (i) {
-	    int64_t m = i % IDIO_BIGNUM_INT_SEG_LIMIT;
+	    intptr_t m = i % IDIO_BIGNUM_INT_SEG_LIMIT;
 	    idio_bsa_set (sig_a, m, ai++);
 	    i -= m;
 	    i /= IDIO_BIGNUM_INT_SEG_LIMIT;
@@ -299,7 +299,7 @@ IDIO idio_bignum_integer_uintmax_t (uintmax_t ui)
     size_t ai = 0;
     if (ui >= IDIO_BIGNUM_INT_SEG_LIMIT) {
 	while (ui) {
-	    int64_t m = ui % IDIO_BIGNUM_INT_SEG_LIMIT;
+	    intptr_t m = ui % IDIO_BIGNUM_INT_SEG_LIMIT;
 	    idio_bsa_set (sig_a, m, ai++);
 	    ui -= m;
 	    ui /= IDIO_BIGNUM_INT_SEG_LIMIT;
@@ -347,12 +347,16 @@ int64_t idio_bignum_int64_value (IDIO bn)
 	     * -- just over the default DPW yet small enough to fit
 	     * into an int64_t.
 	     */
-	    if (2 == al) {
-		IDIO_BS_T a1 = idio_bsa_get (sig_a, 1);
+	    if ((IDIO_BIGNUM_WORD_OFFSET + 1) == al) {
+		IDIO_BS_T a1 = idio_bsa_get (sig_a, IDIO_BIGNUM_WORD_OFFSET);
 		
-		if (a1 <= 9) {
-		    int64_t v = (int64_t) idio_bsa_get (sig_a, 0);
-		    v += a1 * IDIO_BIGNUM_INT_SEG_LIMIT;
+		if (a1 <= 9 &&
+		    a1 >= -9) {
+		    int64_t v = 0;
+		    for (; al > 0 ; al--) {
+		      v *= IDIO_BIGNUM_INT_SEG_LIMIT;
+		      v += idio_bsa_get (sig_a, al - 1);
+		    }
 
 		    idio_debug ("b->i64: %s ", bn);
 		    fprintf (stderr, "%" PRId64 "\n", v);
@@ -361,7 +365,9 @@ int64_t idio_bignum_int64_value (IDIO bn)
 	    }
 	    idio_bignum_dump (bn);
 	    idio_bignum_dump (bn_i);
-	    idio_bignum_error_conversion ("too large for int64_t", bn);
+	    char em[BUFSIZ];
+	    sprintf (em, "too large for int64_t (%" PRId64 ")", INT64_MAX);
+	    idio_bignum_error_conversion (em, bn);
 	} else {
 	    return IDIO_FIXNUM_VAL (fn);
 	}
@@ -393,12 +399,16 @@ uint64_t idio_bignum_uint64_value (IDIO bn)
 	     * long -- just over the default DPW yet small enough to
 	     * fit into an uint64_t.
 	     */
-	    if (2 == al) {
-		IDIO_BS_T a1 = idio_bsa_get (sig_a, 1);
+	    if ((IDIO_BIGNUM_WORD_OFFSET + 1) == al) {
+		IDIO_BS_T a1 = idio_bsa_get (sig_a, IDIO_BIGNUM_WORD_OFFSET);
 		
-		if (a1 <= 18) {
-		    uint64_t v = (uint64_t) idio_bsa_get (sig_a, 0);
-		    v += a1 * IDIO_BIGNUM_INT_SEG_LIMIT;
+		if (a1 <= 18 &&
+		    a1 >= 0) {
+		    uint64_t v = 0;
+		    for (; al > 0 ; al--) {
+		      v *= IDIO_BIGNUM_INT_SEG_LIMIT;
+		      v += idio_bsa_get (sig_a, al - 1);
+		    }
 
 		    idio_debug ("b->ui64: %s ", bn);
 		    fprintf (stderr, "%" PRIu64 "\n", v);
@@ -407,7 +417,9 @@ uint64_t idio_bignum_uint64_value (IDIO bn)
 	    }
 	    idio_bignum_dump (bn);
 	    idio_bignum_dump (bn_i);
-	    idio_bignum_error_conversion ("too large for uint64_t", bn);
+	    char em[BUFSIZ];
+	    sprintf (em, "too large for uint64_t (%" PRIu64 ")", UINT64_MAX);
+	    idio_bignum_error_conversion (em, bn);
 	} else {
 	    return IDIO_FIXNUM_VAL (fn);
 	}
@@ -439,12 +451,16 @@ ptrdiff_t idio_bignum_ptrdiff_value (IDIO bn)
 	     * -- just over the default DPW yet small enough to fit
 	     * into an ptrdiff_t.
 	     */
-	    if (2 == al) {
-		IDIO_BS_T a1 = idio_bsa_get (sig_a, 1);
+	    if ((IDIO_BIGNUM_WORD_OFFSET + 1) == al) {
+		IDIO_BS_T a1 = idio_bsa_get (sig_a, IDIO_BIGNUM_WORD_OFFSET);
 		
-		if (a1 <= 9) {
-		    ptrdiff_t v = (ptrdiff_t) idio_bsa_get (sig_a, 0);
-		    v += a1 * IDIO_BIGNUM_INT_SEG_LIMIT;
+		if (a1 <= 9 &&
+		    a1 >= -9) {
+		    ptrdiff_t v = 0;
+		    for (; al > 0 ; al--) {
+		      v *= IDIO_BIGNUM_INT_SEG_LIMIT;
+		      v += idio_bsa_get (sig_a, al - 1);
+		    }
 
 		    idio_debug ("b->pd: %s ", bn);
 		    fprintf (stderr, "%tu\n", v);
@@ -453,7 +469,9 @@ ptrdiff_t idio_bignum_ptrdiff_value (IDIO bn)
 	    }
 	    idio_bignum_dump (bn);
 	    idio_bignum_dump (bn_i);
-	    idio_bignum_error_conversion ("too large for ptrdiff_t", bn);
+	    char em[BUFSIZ];
+	    sprintf (em, "too large for ptrdiff_t (%" PRIdPTR ")", PTRDIFF_MAX);
+	    idio_bignum_error_conversion (em, bn);
 	} else {
 	    return IDIO_FIXNUM_VAL (fn);
 	}
@@ -482,15 +500,20 @@ intptr_t idio_bignum_intptr_value (IDIO bn)
 	     * Grr! *shakes fist*
 	     *
 	     * LP64 INTPTR_MAX is 9223372036854775807, 19 digits long
-	     * -- just over the default DPW yet small enough to fit
-	     * into an intptr_t.
+	     * -- just over the default 64bit DPW (and into the third
+	     * word in 32bit DPW) yet small enough to fit into an
+	     * intptr_t.
 	     */
-	    if (2 == al) {
-		IDIO_BS_T a1 = idio_bsa_get (sig_a, 1);
+	    if ((IDIO_BIGNUM_WORD_OFFSET + 1) == al) {
+		IDIO_BS_T a1 = idio_bsa_get (sig_a, IDIO_BIGNUM_WORD_OFFSET);
 		
-		if (a1 <= 9) {
-		    intptr_t v = (intptr_t) idio_bsa_get (sig_a, 0);
-		    v += a1 * IDIO_BIGNUM_INT_SEG_LIMIT;
+		if (a1 <= 9 &&
+		    a1 >= -9) {
+		    intptr_t v = 0;
+		    for (; al > 0 ; al--) {
+		      v *= IDIO_BIGNUM_INT_SEG_LIMIT;
+		      v += idio_bsa_get (sig_a, al - 1);
+		    }
 
 		    idio_debug ("b->ip: %s ", bn);
 		    fprintf (stderr, "%" PRIdPTR "\n", v);
@@ -499,7 +522,9 @@ intptr_t idio_bignum_intptr_value (IDIO bn)
 	    }
 	    idio_bignum_dump (bn);
 	    idio_bignum_dump (bn_i);
-	    idio_bignum_error_conversion ("too large for intptr_t", bn);
+	    char em[BUFSIZ];
+	    sprintf (em, "too large for intptr_t (%" PRIdPTR ")", INTPTR_MAX);
+	    idio_bignum_error_conversion (em, bn);
 	} else {
 	    return IDIO_FIXNUM_VAL (fn);
 	}
@@ -531,21 +556,28 @@ intmax_t idio_bignum_intmax_value (IDIO bn)
 	     * -- just over the default DPW yet small enough to fit
 	     * into an intmax_t.
 	     */
-	    if (2 == al) {
-		IDIO_BS_T a1 = idio_bsa_get (sig_a, 1);
+	    if ((IDIO_BIGNUM_WORD_OFFSET + 1) == al) {
+		IDIO_BS_T a1 = idio_bsa_get (sig_a, IDIO_BIGNUM_WORD_OFFSET);
 		
-		if (a1 <= 9) {
-		    intmax_t v = (intmax_t) idio_bsa_get (sig_a, 0);
-		    v += a1 * IDIO_BIGNUM_INT_SEG_LIMIT;
+		if (a1 <= 9 &&
+		    a1 >= -9) {
+		    intmax_t v = 0;
+		    for (; al > 0 ; al--) {
+		      v *= IDIO_BIGNUM_INT_SEG_LIMIT;
+		      v += idio_bsa_get (sig_a, al - 1);
+		    }
 
-		    idio_debug ("b->ip: %s ", bn);
+		    idio_debug ("b->im: %s ", bn);
 		    fprintf (stderr, "%jd\n", v);
 		    return v;
 		}
 	    }
 	    idio_bignum_dump (bn);
 	    idio_bignum_dump (bn_i);
-	    idio_bignum_error_conversion ("too large for intmax_t", bn);
+
+	    char em[BUFSIZ];
+	    sprintf (em, "too large for intmax_t (%jd)", INTMAX_MAX);
+	    idio_bignum_error_conversion (em, bn);
 	} else {
 	    return IDIO_FIXNUM_VAL (fn);
 	}
@@ -1972,7 +2004,7 @@ char *idio_bignum_expanded_real_as_string (IDIO bn, IDIO_BS_T exp, int digits, i
     for (ai = al - 1; ai >= 0; ai--) {
 	IDIO_BS_T v = idio_bsa_get (sig_a, ai);
 	char *vs;
-	if (asprintf (&vs, "%" PRId64, v) == -1) {
+	if (asprintf (&vs, "%" PRIdPTR, v) == -1) {
 	    idio_error_system_errno ("bignum->string: asprintf", bn);
 	}
 	IDIO_STRCAT_FREE (s, vs);
@@ -2032,7 +2064,7 @@ char *idio_bignum_real_as_string (IDIO bn)
      * there are no more digits to add then add "0".
      */
     char *vs;
-    if (asprintf (&vs, "%" PRId64, v) == -1) {
+    if (asprintf (&vs, "%" PRIdPTR, v) == -1) {
 	idio_error_system_errno ("bignum real->string: asprintf", bn);
     }
     char vs_rest[IDIO_BIGNUM_DPW+1]; /* +1 in case DPW is 1 for debug! */
@@ -2054,7 +2086,7 @@ char *idio_bignum_real_as_string (IDIO bn)
     for (i--; i >= 0; i--) {
 	v = idio_bsa_get (sig_a, i);
 	char buf[BUFSIZ];
-	sprintf (buf, "%0*" PRId64, IDIO_BIGNUM_DPW, v);
+	sprintf (buf, "%0*" PRIdPTR, IDIO_BIGNUM_DPW, v);
 	s = idio_strcat (s, buf);
     }
 
@@ -2063,7 +2095,7 @@ char *idio_bignum_real_as_string (IDIO bn)
     /* 	IDIO_STRCAT (s, "+"); */
     /* } */
     v = exp + digits - 1;
-    if (asprintf (&vs, "%+" PRId64, v) == -1) {
+    if (asprintf (&vs, "%+" PRIdPTR, v) == -1) {
 	idio_error_system_errno ("bignum real->string: asprintf", bn);
     }
     s = idio_strcat_free (s, vs);

@@ -39,7 +39,7 @@
     across several machine words.
 
   Those words are organized as a dynamically sized (reference
-  counted!) array of int64_t.
+  counted!) array of IDIO_BS_T.
 
   The first word in the array represents the least significant word of
   the bignum meaning that index zero remains the LSS as the bignum
@@ -72,7 +72,7 @@
   NB. IDIO_BIGNUM_MDPW (max digits per word) is used if you happen to
   set IDIO_BIGNUM_DPW below that value for debugging.  Otherwise we
   need a dynamic calculation as to how many segments of DPW digits
-  will fit in an int64_t.
+  will fit in an intptr_t.
 
   Using a large IDIO_BIGNUM_SIG_SEGMENTS means your calculations are
   more accurate.  However, remember that even relatively simple
@@ -97,7 +97,7 @@
 #define IDIO_BIGNUM_DPW           18
 #define IDIO_BIGNUM_INT_SEG_LIMIT 1000000000000000000LL
 #define IDIO_BIGNUM_SIG_SEGMENTS  1
-
+#define IDIO_BIGNUM_WORD_OFFSET	  1
 /*
 #define IDIO_BIGNUM_DPW           1
 #define IDIO_BIGNUM_INT_SEG_LIMIT 10LL
@@ -108,6 +108,7 @@
 #define IDIO_BIGNUM_DPW           9
 #define IDIO_BIGNUM_INT_SEG_LIMIT 1000000000L
 #define IDIO_BIGNUM_SIG_SEGMENTS  2
+#define IDIO_BIGNUM_WORD_OFFSET	  2
 #endif
 
 #define IDIO_BIGNUM_SIG_MAX_DIGITS	  (IDIO_BIGNUM_SIG_SEGMENTS * IDIO_BIGNUM_DPW)

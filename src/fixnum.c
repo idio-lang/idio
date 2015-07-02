@@ -40,7 +40,7 @@ static void idio_fixnum_error_conversion (char *msg, IDIO fn)
     idio_raise_condition (idio_S_true, c);
 }
 
-IDIO idio_integer (intptr_t i)
+IDIO idio_integer (intmax_t i)
 {
     if (i <= IDIO_FIXNUM_MAX &&
 	i >= IDIO_FIXNUM_MIN) {
@@ -51,7 +51,7 @@ IDIO idio_integer (intptr_t i)
     }
 }    
 
-IDIO idio_uinteger (uintptr_t ui)
+IDIO idio_uinteger (uintmax_t ui)
 {
     if (ui <= IDIO_FIXNUM_MAX) {
 	idio_gc_stats_inc (IDIO_TYPE_FIXNUM);

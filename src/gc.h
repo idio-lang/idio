@@ -282,7 +282,7 @@ typedef struct idio_frame_s {
  * significant digits.
  */
 
-typedef int64_t IDIO_BS_T;
+typedef intptr_t IDIO_BS_T;
 
 typedef struct idio_bsa_s {
     size_t refs;

@@ -23,8 +23,8 @@
 #ifndef FIXNUM_H
 #define FIXNUM_H
 
-IDIO idio_integer (intptr_t i);
-IDIO idio_uinteger (uintptr_t ui);
+IDIO idio_integer (intmax_t i);
+IDIO idio_uinteger (uintmax_t ui);
 IDIO idio_fixnum (intptr_t i);
 IDIO idio_fixnum_C (char *str, int base);
 int idio_isa_integer (IDIO o);
