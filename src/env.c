@@ -129,8 +129,9 @@ void idio_env_init_idiolib (char *argv0)
     if (NULL == dir) {
 	argv0 = idio_command_find_exe_C (argv0);
     }
-    
-    char *path = realpath (argv0, NULL);
+
+    char resolved_path[PATH_MAX];
+    char *path = realpath (argv0, resolved_path);
 
     if (NULL == path) {
 	idio_error_system_errno ("realpath(3) => NULL", idio_S_nil);
@@ -155,8 +156,6 @@ void idio_env_init_idiolib (char *argv0)
 	    }
 	}
     }
-
-    free (path);
 }
 
 IDIO_DEFINE_PRIMITIVE1 ("environ?", environp, (IDIO name))
