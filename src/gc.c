@@ -1343,14 +1343,17 @@ void idio_init_gc ()
 
 	fprintf (stderr, "sum = %zd, avg = %zd\n", sum, sum / n);
 
-	sum -= 96;		/* thread */
+	/*
+	 * deduct sizeof (idio_thread_t) as there aren't may of them
+	 * in use and it skews the stats of regular user objects
+	 */
+	sum -= 96;
 	fprintf (stderr, "sum = %zd, avg = %zd\n", sum, sum / n); 
 
     }
     
     idio_gc_finalizer_hash = IDIO_HASH_EQP (64);
     idio_gc_protect (idio_gc_finalizer_hash);
-    IDIO_HASH_FLAGS (idio_gc_finalizer_hash) |= IDIO_HASH_FLAG_STRING_KEYS; 
 }
 
 static void idio_gc_run_all_finalizers ()
