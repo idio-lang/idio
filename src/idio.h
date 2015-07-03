@@ -61,6 +61,20 @@
 #include <sys/time.h>
 #include <sys/wait.h>
 
+/* 
+ * BSD markers
+ */
+#if defined (__unix__)
+#include <sys/param.h>
+/* 
+ * Now test for 
+ *
+ * #if defined(BSD)
+ * ...
+ * #endif
+ */
+#endif
+
 /* Solaris doesn't define WAIT_ANY */
 #ifndef WAIT_ANY
 #define WAIT_ANY (-1)

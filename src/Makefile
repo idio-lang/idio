@@ -34,7 +34,7 @@ endif
 
 else ifeq ($(OS),FreeBSD)
 
-CC		:= /usr/local/bin/gcc47
+CC		:= $(wildcard /usr/local/bin/gcc4?)
 LIBFFI_INCDIR	:= /usr/local/include
 LDFLAGS		:= -L/usr/local/lib
 

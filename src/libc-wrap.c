@@ -571,18 +571,36 @@ IDIO_DEFINE_PRIMITIVE1 ("c/~", C_bw_complement, (IDIO v1))
  * Bash's support/signames.c leads the way
  */
 
+/* 
+ * How many signals are there?
+ *
+ * Linux, OpenSolaris and Mac OS X all seem to define NSIG as the
+ * highest signal number.  On FreeBSD, NSIG is the "number of old
+ * signals".  SIGRT* are in a range of their own.
+ */
+
+#if defined (BSD)
+#define IDIO_LIBC_NSIG (SIGRTMAX + 1)
+#else
+#define IDIO_LIBC_NSIG NSIG
+#endif
+
 /*
  * How many chars in SIGRTMIN+n ?
  *
- * RTLEN - 10 => max n of 9999
+ * strlen ("SIGRTMIN+") == 9
+ * +1 for NUL == 10 chars
+ *
+ * IDIO_LIBC_SIGNAMELEN - 10 => max n of 9999
  */
 #define IDIO_LIBC_SIGNAMELEN 14
+
 static void idio_libc_set_signal_names ()
 {
     idio_libc_signal_names = idio_alloc ((NSIG + 1) * sizeof (char *));
 
     int i;
-    for (i = 0; i < NSIG; i++) {
+    for (i = 0; i < IDIO_LIBC_NSIG; i++) {
 	idio_libc_signal_names[i] = idio_alloc (IDIO_LIBC_SIGNAMELEN);
 	*(idio_libc_signal_names[i]) = '\0';
     }
@@ -593,8 +611,8 @@ static void idio_libc_set_signal_names ()
     int rtmax = SIGRTMAX;
     if (rtmax > rtmin &&
 	(rtmax - rtmin) > 7) {
-	idio_libc_signal_names[SIGRTMIN] = "SIGRTMIN";
-	idio_libc_signal_names[SIGRTMAX] = "SIGRTMAX";
+        sprintf (idio_libc_signal_names[SIGRTMIN], "SIGRTMIN");
+	sprintf (idio_libc_signal_names[SIGRTMAX], "SIGRTMAX");
 
 	int rtmid = (rtmax - rtmin) / 2;
 	for (i = 1; i < rtmid ; i++) {
@@ -785,7 +803,7 @@ static void idio_libc_set_signal_names ()
     sprintf (idio_libc_signal_names[SIGSTKFLT], "SIGSTKFLT");
 #endif
 
-    for (i = 0 ; i < NSIG ; i++) {
+    for (i = 0 ; i < IDIO_LIBC_NSIG ; i++) {
 	if ('\0' == *(idio_libc_signal_names[i])) {
 	    sprintf (idio_libc_signal_names[i], "SIGJUNK%d", i);
 	}
@@ -795,8 +813,8 @@ static void idio_libc_set_signal_names ()
 char *idio_libc_sig_name (int signum)
 {
     if (signum < 1 ||
-	signum > NSIG) {
-	idio_error_param_type ("int < NSIG", idio_C_int (signum));
+	signum > IDIO_LIBC_NSIG) {
+	idio_error_param_type ("int < NSIG (or SIGRTMAX)", idio_C_int (signum));
     }
 
     char *signame = idio_libc_signal_names[signum];
