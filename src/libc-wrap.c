@@ -943,7 +943,7 @@ void idio_libc_wrap_add_primitives ()
 void idio_final_libc_wrap ()
 {
     int i;
-    for (i = 0; *idio_libc_signal_names[i]; i++) {
+    for (i = 0; NULL != idio_libc_signal_names[i]; i++) {
         free (idio_libc_signal_names[i]);
     }
     free (idio_libc_signal_names);
