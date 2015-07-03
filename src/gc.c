@@ -393,7 +393,8 @@ void idio_process_grey (unsigned colour)
     case IDIO_TYPE_HASH:
 	idio_gc->grey = IDIO_HASH_GREY (o);
 	for (i = 0; i < IDIO_HASH_SIZE (o); i++) {
-	    if (0 == (IDIO_HASH_FLAGS (o) & IDIO_HASH_FLAG_STRING_KEYS)) {
+	    if (!((IDIO_HASH_FLAGS (o) & IDIO_HASH_FLAG_STRING_KEYS) ||
+		  (IDIO_HASH_FLAGS (o) & IDIO_HASH_FLAG_WEAK_KEYS))) {
 		if (idio_S_nil != IDIO_HASH_HE_KEY (o, i)) {
 		    idio_mark (IDIO_HASH_HE_KEY (o, i), colour);
 		}
@@ -1354,6 +1355,7 @@ void idio_init_gc ()
     
     idio_gc_finalizer_hash = IDIO_HASH_EQP (64);
     idio_gc_protect (idio_gc_finalizer_hash);
+    IDIO_HASH_FLAGS (idio_gc_finalizer_hash) |= IDIO_HASH_FLAG_WEAK_KEYS;
 }
 
 static void idio_gc_run_all_finalizers ()

@@ -178,6 +178,7 @@ typedef struct idio_hash_entry_s {
 
 #define IDIO_HASH_FLAG_NONE		0
 #define IDIO_HASH_FLAG_STRING_KEYS	(1<<0)
+#define IDIO_HASH_FLAG_WEAK_KEYS	(1<<1)
 
 typedef struct idio_hash_s {
     struct idio_s *grey;
