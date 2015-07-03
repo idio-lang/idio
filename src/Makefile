@@ -99,7 +99,7 @@ scm1-c-structs.scm1 : scm1-c-structs
 	./scm1-c-structs > $@
 
 clean : tidy
-	rm -f *.o *.d idio scm1-c-structs *.so scm1-c-structs.scm1 o e TAGS
+	rm -f *.o *.d ${BINDIR)/idio scm1-c-structs *.so scm1-c-structs.scm1 o e TAGS
 
 tidy :
 	rm -f vgcore.* core.* core *~ *.gcda *.gcno *.gcov gmon.out
@@ -121,7 +121,4 @@ TAGS : *.[ch] *.idio */*.idio
 $(BINDIR):
 	@mkdir -p $(BINDIR)
 
-test : idio scm1-c-structs.scm1
-	(cd tests; IDIO_PATH=${PWD} IDIO=${PWD}/idio ./rtest 2>e)
-
-# valgrind --leak-check=full --show-leak-kinds=all --child-silent-after-fork=yes ./idio 2>&1 | less +/^==
+# valgrind --leak-check=full --show-leak-kinds=all --child-silent-after-fork=yes ../bin/idio 2>&1 | less +/^==
