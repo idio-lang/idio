@@ -1350,7 +1350,6 @@ void idio_init_gc ()
     
     idio_gc_finalizer_hash = IDIO_HASH_EQP (64);
     idio_gc_protect (idio_gc_finalizer_hash);
-    IDIO_HASH_FLAGS (idio_gc_finalizer_hash) |= IDIO_HASH_FLAG_STRING_KEYS; 
 }
 
 static void idio_gc_run_all_finalizers ()
