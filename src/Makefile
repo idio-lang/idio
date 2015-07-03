@@ -105,6 +105,8 @@ tidy :
 	rm -f vgcore.* core.* core *~ *.gcda *.gcno *.gcov gmon.out
 ifeq ($(OS),Darwin)
 	rm -f /cores/*
+else ifeq ($(OS),FreeBSD)
+	rm -f idio.core
 endif
 
 tags : TAGS
