@@ -282,7 +282,7 @@ monitor (function (cont cond) {
 
   ;; we need to ensure that {test_filename} exists as a file in order
   ;; to provoke the condition when trying to use it as a directory
-  rm test_filename
+  rm -f test_filename
   touch test_filename
 
   dir_filename := string-append "./" test_filename "/" test_filename
@@ -403,17 +403,21 @@ monitor (function (cont cond) {
   close-handle ifh
 }
 
-;; a continuable error, if it reaches base-error-handler will have the
-;; value of the condition itself.  We can't test that but we can test
-;; its type:
+if (file-exists? test_filename) (delete-file test_filename)
+
+;; a continuable error, if it reaches base-error-handler then
+;; base-error-handler will return the condition itself.  
+;;
+;; We can't test that directly (as it is a transient instance of a
+;; condition) but we can test its type:
 display* "raising a continuable condition"
 test (error? (raise #t (make-condition ^error))) #t
 
-;; a non-continuable error should abort the thread -- so we can't test
-;; anything
+;; a non-continuable error should abort this thread's current "run" --
+;; which will be the idio_vm_run() in idio_load_filehandle, ie. the
+;; sequence of expressions in this file -- so we can't test anything
+;; in this file after this
 display* "raising NON-CONT condition"
 raise #f (make-condition ^error)
 
 ;; XXX Rest of file lost due to non-cont error above
-
-if (file-exists? test_filename) (delete-file test_filename)

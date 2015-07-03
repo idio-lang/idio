@@ -84,6 +84,16 @@
   slow performance...
 
   The S9fES bignum tests work well with 18 significant digits.
+
+  In addition, we have occasion to convert back into a C integer.  C's
+  *_MAX are generally represent by significand arrays which are
+  greater than one, eg. INT64_MAX is 9223372036854775807, 19 digits
+  long, so two or three segments depending on OS+ARCH.
+
+  That means we need to know how many segments will be used to
+  represent such a number and what the first digit of that number is
+  (both of which we can use as accelerators to decide if it's worth
+  bothering to convert at all).
  */
 
 #ifdef __LP64__
@@ -97,7 +107,9 @@
 #define IDIO_BIGNUM_DPW           18
 #define IDIO_BIGNUM_INT_SEG_LIMIT 1000000000000000000LL
 #define IDIO_BIGNUM_SIG_SEGMENTS  1
+
 #define IDIO_BIGNUM_WORD_OFFSET	  1
+#define IDIO_BIGNUM_INT64_WORDS   2
 /*
 #define IDIO_BIGNUM_DPW           1
 #define IDIO_BIGNUM_INT_SEG_LIMIT 10LL
@@ -108,10 +120,48 @@
 #define IDIO_BIGNUM_DPW           9
 #define IDIO_BIGNUM_INT_SEG_LIMIT 1000000000L
 #define IDIO_BIGNUM_SIG_SEGMENTS  2
+
 #define IDIO_BIGNUM_WORD_OFFSET	  2
+#define IDIO_BIGNUM_INT64_WORDS   3
 #endif
 
 #define IDIO_BIGNUM_SIG_MAX_DIGITS	  (IDIO_BIGNUM_SIG_SEGMENTS * IDIO_BIGNUM_DPW)
+
+#if PTRDIFF_MAX == 9223372036854775807LL
+#define IDIO_BIGNUM_PTRDIFF_WORDS 2
+#define IDIO_BIGNUM_PTRDIFF_FIRST 9
+#else
+#if PTRDIFF_MAX == 2147483647L
+#define IDIO_BIGNUM_PTRDIFF_WORDS 2
+#define IDIO_BIGNUM_PTRDIFF_FIRST 2
+#else
+#error unexpected PTRDIFF_MAX
+#endif
+#endif
+
+#if INTPTR_MAX == 9223372036854775807LL
+#define IDIO_BIGNUM_INTPTR_WORDS 2
+#define IDIO_BIGNUM_INTPTR_FIRST 9
+#else
+#if INTPTR_MAX == 2147483647L
+#define IDIO_BIGNUM_INTPTR_WORDS 2
+#define IDIO_BIGNUM_INTPTR_FIRST 2
+#else
+#error unexpected INTPTR_MAX
+#endif
+#endif
+
+#if INTMAX_MAX == 9223372036854775807LL
+#define IDIO_BIGNUM_INTMAX_WORDS 2
+#define IDIO_BIGNUM_INTMAX_FIRST 9
+#else
+#if INTMAX_MAX == 2147483647L
+#define IDIO_BIGNUM_INTMAX_WORDS 2
+#define IDIO_BIGNUM_INTMAX_FIRST 2
+#else
+#error unexpected INTMAX_MAX
+#endif
+#endif
 
 #define IDIO_BIGNUM_EXP_CHAR(c)	('d' == c || 'D' == c ||	 \
 				 'e' == c || 'E' == c ||	 \

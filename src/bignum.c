@@ -265,17 +265,48 @@ IDIO idio_bignum_integer_intmax_t (intmax_t i)
     IDIO_BSA sig_a = idio_bsa (1);
 
     int neg = 0;
-
+    int carry = 0;
+    
     if (i < 0) {
 	neg = 1;
-	i = -i;
+	if (INTMAX_MIN == i) {
+	    carry = 1;
+	    i = INTMAX_MAX;
+	} else {
+	    i = -i;
+	}
     }
 
     size_t ai = 0;
     if (i >= IDIO_BIGNUM_INT_SEG_LIMIT) {
 	while (i) {
-	    intptr_t m = i % IDIO_BIGNUM_INT_SEG_LIMIT;
-	    idio_bsa_set (sig_a, m, ai++);
+	    /*
+	     * This is slightly uglier than it needs to be.
+	     * INTMAX_MIN has no negated value we can represent in an
+	     * intmax_t -- hence the {carry} flag.
+	     *
+	     * We need to retain the modulus {m} (to subtract from {i}
+	     * each time round the loop) but calculate a separate {v}
+	     * (which will include {carry} when appropriate) to be set
+	     * in the sig_a.
+	     *
+	     * This code is generic but we know that {carry} is only
+	     * set for -2**n which is never(?) going to align with
+	     * IDIO_BIGNUM_INT_SEG_LIMIT (which is a 10**n).  No
+	     * -(2**X)+1 will align with 10**Y so we could simply say
+	     * that if {carry} is set, add 1 to {m} and be done.
+	     */
+	    IDIO_BS_T m = i % IDIO_BIGNUM_INT_SEG_LIMIT;
+	    IDIO_BS_T v = m;
+	    if (carry) {
+		carry = 0;
+		v++;
+		if (v == IDIO_BIGNUM_INT_SEG_LIMIT) {
+		    carry = 1;
+		    v = 0;
+		}
+	    }
+	    idio_bsa_set (sig_a, v, ai++);
 	    i -= m;
 	    i /= IDIO_BIGNUM_INT_SEG_LIMIT;
 	}
@@ -343,12 +374,12 @@ int64_t idio_bignum_int64_value (IDIO bn)
 	    /*
 	     * Grr! *shakes fist*
 	     *
-	     * LP64 INTMAX_MAX is 9223372036854775807, 19 digits long
-	     * -- just over the default DPW yet small enough to fit
-	     * into an int64_t.
+	     * INT64_MAX is 9223372036854775807, 19 digits long, just
+	     * over the 64bit DPW yet small enough to fit into an
+	     * int64_t -- and well over the 32bit DPW
 	     */
-	    if ((IDIO_BIGNUM_WORD_OFFSET + 1) == al) {
-		IDIO_BS_T a1 = idio_bsa_get (sig_a, IDIO_BIGNUM_WORD_OFFSET);
+	    if (IDIO_BIGNUM_INT64_WORDS == al) {
+		IDIO_BS_T a1 = idio_bsa_get (sig_a, al - 1);
 		
 		if (a1 <= 9 &&
 		    a1 >= -9) {
@@ -358,13 +389,20 @@ int64_t idio_bignum_int64_value (IDIO bn)
 		      v += idio_bsa_get (sig_a, al - 1);
 		    }
 
-		    idio_debug ("b->i64: %s ", bn);
-		    fprintf (stderr, "%" PRId64 "\n", v);
-		    return v;
+		    /*
+		     * Check we haven't overflowed the C int64_t
+		     */
+		    if ((a1 < 0 &&
+			 v < 0) ||
+			(a1 >= 0 &&
+			 v >= 0)) {
+
+			/* idio_debug ("b->i64: %s ", bn); */
+			/* fprintf (stderr, "%" PRId64 "\n", v); */
+			return v;
+		    }
 		}
 	    }
-	    idio_bignum_dump (bn);
-	    idio_bignum_dump (bn_i);
 	    char em[BUFSIZ];
 	    sprintf (em, "too large for int64_t (%" PRId64 ")", INT64_MAX);
 	    idio_bignum_error_conversion (em, bn);
@@ -395,12 +433,12 @@ uint64_t idio_bignum_uint64_value (IDIO bn)
 	    /*
 	     * Grr! *shakes fist*
 	     *
-	     * LP64 UINTMAX_MAX is 18446744073709551615, 20 digits
-	     * long -- just over the default DPW yet small enough to
-	     * fit into an uint64_t.
+	     * UINT64_MAX is 18446744073709551615, 20 digits long,
+	     * just over the default DPW yet small enough to fit into
+	     * a uint64_t -- and well over the 32bit DPW
 	     */
-	    if ((IDIO_BIGNUM_WORD_OFFSET + 1) == al) {
-		IDIO_BS_T a1 = idio_bsa_get (sig_a, IDIO_BIGNUM_WORD_OFFSET);
+	    if (IDIO_BIGNUM_INT64_WORDS == al) {
+		IDIO_BS_T a1 = idio_bsa_get (sig_a, al - 1);
 		
 		if (a1 <= 18 &&
 		    a1 >= 0) {
@@ -410,13 +448,15 @@ uint64_t idio_bignum_uint64_value (IDIO bn)
 		      v += idio_bsa_get (sig_a, al - 1);
 		    }
 
-		    idio_debug ("b->ui64: %s ", bn);
-		    fprintf (stderr, "%" PRIu64 "\n", v);
+		    /*
+		     * XXX how do we tell if we've overflowed?
+		     */
+
+		    /* idio_debug ("b->ui64: %s ", bn); */
+		    /* fprintf (stderr, "%" PRIu64 "\n", v); */
 		    return v;
 		}
 	    }
-	    idio_bignum_dump (bn);
-	    idio_bignum_dump (bn_i);
 	    char em[BUFSIZ];
 	    sprintf (em, "too large for uint64_t (%" PRIu64 ")", UINT64_MAX);
 	    idio_bignum_error_conversion (em, bn);
@@ -447,28 +487,39 @@ ptrdiff_t idio_bignum_ptrdiff_value (IDIO bn)
 	    /*
 	     * Grr! *shakes fist*
 	     *
-	     * LP64 PTRDIFF_MAX is 9223372036854775807, 19 digits long
-	     * -- just over the default DPW yet small enough to fit
+	     * LP64 PTRDIFF_MAX is 9223372036854775807, 19 digits
+	     * long, just over the default DPW yet small enough to fit
 	     * into an ptrdiff_t.
+	     *
+	     * LP32 PTRDIFF_MAX is 2147483647, 10 digits long, just
+	     * over the default DPW yet small enough to fit into an
+	     * ptrdiff_t.
 	     */
-	    if ((IDIO_BIGNUM_WORD_OFFSET + 1) == al) {
-		IDIO_BS_T a1 = idio_bsa_get (sig_a, IDIO_BIGNUM_WORD_OFFSET);
+	    if (IDIO_BIGNUM_PTRDIFF_WORDS == al) {
+		IDIO_BS_T a1 = idio_bsa_get (sig_a, al - 1);
 		
-		if (a1 <= 9 &&
-		    a1 >= -9) {
+		if (a1 <= IDIO_BIGNUM_PTRDIFF_FIRST &&
+		    a1 >= -IDIO_BIGNUM_PTRDIFF_FIRST) {
 		    ptrdiff_t v = 0;
 		    for (; al > 0 ; al--) {
 		      v *= IDIO_BIGNUM_INT_SEG_LIMIT;
 		      v += idio_bsa_get (sig_a, al - 1);
 		    }
 
-		    idio_debug ("b->pd: %s ", bn);
-		    fprintf (stderr, "%tu\n", v);
-		    return v;
+		    /*
+		     * Check we haven't overflowed the C ptrdiff_t
+		     */
+		    if ((a1 < 0 &&
+			 v < 0) ||
+			(a1 >= 0 &&
+			 v >= 0)) {
+
+			/* idio_debug ("b->pd: %s ", bn); */
+			/* fprintf (stderr, "%tu\n", v); */
+			return v;
+		    }
 		}
 	    }
-	    idio_bignum_dump (bn);
-	    idio_bignum_dump (bn_i);
 	    char em[BUFSIZ];
 	    sprintf (em, "too large for ptrdiff_t (%td)", (ptrdiff_t) PTRDIFF_MAX);
 	    idio_bignum_error_conversion (em, bn);
@@ -500,28 +551,38 @@ intptr_t idio_bignum_intptr_value (IDIO bn)
 	     * Grr! *shakes fist*
 	     *
 	     * LP64 INTPTR_MAX is 9223372036854775807, 19 digits long
-	     * -- just over the default 64bit DPW (and into the third
-	     * word in 32bit DPW) yet small enough to fit into an
+	     * -- just over the default 64bit DPW yet small enough to
+	     * fit into an intptr_t.
+	     *
+	     * LP32 INTPTR_MAX is 2147483647, 10 digits long, just
+	     * over the default DPW yet small enough to fit into an
 	     * intptr_t.
 	     */
-	    if ((IDIO_BIGNUM_WORD_OFFSET + 1) == al) {
-		IDIO_BS_T a1 = idio_bsa_get (sig_a, IDIO_BIGNUM_WORD_OFFSET);
+	    if (IDIO_BIGNUM_INTPTR_WORDS == al) {
+		IDIO_BS_T a1 = idio_bsa_get (sig_a, al - 1);
 		
-		if (a1 <= 9 &&
-		    a1 >= -9) {
+		if (a1 <= IDIO_BIGNUM_INTPTR_FIRST &&
+		    a1 >= -IDIO_BIGNUM_INTPTR_FIRST) {
 		    intptr_t v = 0;
 		    for (; al > 0 ; al--) {
 		      v *= IDIO_BIGNUM_INT_SEG_LIMIT;
 		      v += idio_bsa_get (sig_a, al - 1);
 		    }
 
-		    idio_debug ("b->ip: %s ", bn);
-		    fprintf (stderr, "%" PRIdPTR "\n", v);
-		    return v;
+		    /*
+		     * Check we haven't overflowed the C intptr_t
+		     */
+		    if ((a1 < 0 &&
+			 v < 0) ||
+			(a1 >= 0 &&
+			 v >= 0)) {
+
+			/* idio_debug ("b->ip: %s ", bn); */
+			/* fprintf (stderr, "%" PRIdPTR "\n", v); */
+			return v;
+		    }
 		}
 	    }
-	    idio_bignum_dump (bn);
-	    idio_bignum_dump (bn_i);
 	    char em[BUFSIZ];
 	    sprintf (em, "too large for intptr_t (%" PRIdPTR ")", (intptr_t) INTPTR_MAX);
 	    idio_bignum_error_conversion (em, bn);
@@ -555,26 +616,40 @@ intmax_t idio_bignum_intmax_value (IDIO bn)
 	     * LP64 INTMAX_MAX is 9223372036854775807, 19 digits long
 	     * -- just over the default DPW yet small enough to fit
 	     * into an intmax_t.
+	     *
+	     * LP32 INTMAX_MAX is 2147483647, 10 digits long, just
+	     * over the default DPW yet small enough to fit into an
+	     * intmax_t.
 	     */
-	    if ((IDIO_BIGNUM_WORD_OFFSET + 1) == al) {
-		IDIO_BS_T a1 = idio_bsa_get (sig_a, IDIO_BIGNUM_WORD_OFFSET);
+	    if (IDIO_BIGNUM_INTMAX_WORDS == al) {
+		IDIO_BS_T a1 = idio_bsa_get (sig_a, al - 1);
 		
-		if (a1 <= 9 &&
-		    a1 >= -9) {
+		if (a1 <= IDIO_BIGNUM_INTMAX_FIRST &&
+		    a1 >= -IDIO_BIGNUM_INTMAX_FIRST) {
 		    intmax_t v = 0;
 		    for (; al > 0 ; al--) {
 		      v *= IDIO_BIGNUM_INT_SEG_LIMIT;
-		      v += idio_bsa_get (sig_a, al - 1);
+			if (v < 0) {
+			    v -= idio_bsa_get (sig_a, al - 1);
+			} else {
+			    v += idio_bsa_get (sig_a, al - 1);
+			}
 		    }
 
-		    idio_debug ("b->im: %s ", bn);
-		    fprintf (stderr, "%jd\n", v);
-		    return v;
+		    /*
+		     * Check we haven't overflowed the C intmax_t
+		     */
+		    if ((a1 < 0 &&
+			 v < 0) ||
+			(a1 >= 0 &&
+			 v >= 0)) {
+
+			/* idio_debug ("b->im: %s ", bn); */
+			/* fprintf (stderr, "%jd\n", v); */
+			return v;
+		    }
 		}
 	    }
-	    idio_bignum_dump (bn);
-	    idio_bignum_dump (bn_i);
-
 	    char em[BUFSIZ];
 	    sprintf (em, "too large for intmax_t (%jd)", (intmax_t) INTMAX_MAX);
 	    idio_bignum_error_conversion (em, bn);
@@ -653,7 +728,7 @@ IDIO idio_bignum_abs (IDIO bn)
     
     IDIO_BS_T i = idio_bsa_get (sig_a, al - 1);
     idio_bsa_set (sig_a, llabs (i), al - 1);
-    
+
     return bnc;
 }
 

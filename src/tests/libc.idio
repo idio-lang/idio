@@ -39,24 +39,63 @@ define (c/number-cmp low high) {
 }
 ;; numbers
 
-display* "FIXNUM-MAX" FIXNUM-MAX
-display* "c/INTMAX_MAX" c/INTMAX_MAX
-
+;; quick type tests of the primitively-definied c/INTMAX_MAX and the
+;; locally defined INTMAX_MAX
+test (c/int? c/INTMAX_MAX) #t
 INTMAX_MAX := c/INTMAX_MAX
-INTMAX_MAX-1 := (c/integer-> ((c/->integer INTMAX_MAX) - 1))
+test (c/int? INTMAX_MAX) #t
 
-monitor (function (cont cond) {
-  test (rt-bignum-conversion-error? cond) #t
-  #f
-})
-INTMAX_MAX+1 := (c/integer-> ((c/->integer INTMAX_MAX) + 1))
-
+;; comparison tests vs. 0
 c/number-cmp (c/integer-> 0) c/INTMAX_MAX
+c/number-cmp c/INTMAX_MIN (c/integer-> 0)
+
+;; comparison tests vs lim-1
+INTMAX_MAX-1 := c/integer-> ((c/->integer c/INTMAX_MAX) - 1)
 c/number-cmp INTMAX_MAX-1 c/INTMAX_MAX
 
-display* "INTMAX_MAX" INTMAX_MAX
-display* "INTMAX_MAX-1" INTMAX_MAX-1
-display* "INTMAX_MAX+1" INTMAX_MAX+1
-test (c/int? INTMAX_MAX) #t
-test (c/int? INTMAX_MAX-1) #t
-test (c/int? INTMAX_MAX+1) #t
+;; comparison tests vs lim+1
+INTMAX_MIN+1 := c/integer-> ((c/->integer c/INTMAX_MIN) + 1)
+c/number-cmp c/INTMAX_MIN INTMAX_MIN+1
+
+;; overflow conversion tests -- one beyond the C MAX/MIN
+monitor (function (cont cond) {
+  ;; edisplay* "bignum INTMAX_MAX+1 conversion error" cont cond
+  test (rt-bignum-conversion-error? cond) #t
+  #f
+}) {
+  INTMAX_MAX+1 := (c/integer-> ((c/->integer c/INTMAX_MAX) + 1))
+  test INTMAX_MAX+1 #f
+  ;; display* "INTMAX_MAX+1" c/INTMAX_MAX INTMAX_MAX+1
+}
+
+monitor (function (cont cond) {
+  ;; edisplay* "bignum INTMAX_MIN-1 conversion error" cont cond
+  test (rt-bignum-conversion-error? cond) #t
+  #f
+}) {
+  INTMAX_MIN-1 := (c/integer-> ((c/->integer c/INTMAX_MIN) - 1))
+  test INTMAX_MIN-1 #f
+  ;; display* "INTMAX_MIN-1" c/INTMAX_MIN INTMAX_MIN-1
+}
+
+;; overflow conversion tests -- many beyond the C MAX/MIN
+monitor (function (cont cond) {
+  ;; edisplay* "bignum INTMAX_MAX+1 conversion error" cont cond
+  test (rt-bignum-conversion-error? cond) #t
+  #f
+}) {
+  INTMAX_MAX+1 := (c/integer-> ((c/->integer c/INTMAX_MAX) * 100000))
+  test INTMAX_MAX+1 #f
+  ;; display* "INTMAX_MAX+1" c/INTMAX_MAX INTMAX_MAX+1
+}
+
+monitor (function (cont cond) {
+  ;; edisplay* "bignum INTMAX_MIN-1 conversion error" cont cond
+  test (rt-bignum-conversion-error? cond) #t
+  #f
+}) {
+  INTMAX_MIN-1 := (c/integer-> ((c/->integer c/INTMAX_MIN) * 100000))
+  test INTMAX_MIN-1 #f
+  ;; display* "INTMAX_MIN-1" c/INTMAX_MIN INTMAX_MIN-1
+}
+
