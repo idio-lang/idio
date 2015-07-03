@@ -597,7 +597,7 @@ IDIO_DEFINE_PRIMITIVE1 ("c/~", C_bw_complement, (IDIO v1))
 
 static void idio_libc_set_signal_names ()
 {
-    idio_libc_signal_names = idio_alloc ((NSIG + 1) * sizeof (char *));
+    idio_libc_signal_names = idio_alloc ((IDIO_LIBC_NSIG + 1) * sizeof (char *));
 
     int i;
     for (i = 0; i < IDIO_LIBC_NSIG; i++) {
@@ -942,6 +942,10 @@ void idio_libc_wrap_add_primitives ()
 
 void idio_final_libc_wrap ()
 {
+    int i;
+    for (i = 0; *idio_libc_signal_names[i]; i++) {
+        free (idio_libc_signal_names[i]);
+    }
     free (idio_libc_signal_names);
 }
 

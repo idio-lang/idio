@@ -149,7 +149,7 @@ void idio_env_init_idiolib (char *argv0)
 	if (pdir >= path) {
 	    if (strncmp (pdir, "/bin", 4) == 0) {
 		/* ... + /lib */
-		char *idio_env_IDIOLIB_default = idio_alloc (pdir - path + 4 + 1);
+		idio_env_IDIOLIB_default = idio_alloc (pdir - path + 4 + 1);
 		strncpy (idio_env_IDIOLIB_default, path, pdir - path);
 		idio_env_IDIOLIB_default[pdir - path] = '\0';
 		strcat (idio_env_IDIOLIB_default, "/lib");
