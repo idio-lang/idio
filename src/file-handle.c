@@ -648,8 +648,6 @@ int idio_file_handle_close (IDIO fh)
 
     IDIO_TYPE_ASSERT (file_handle, fh);
 
-    /* idio_debug ("file-handle-close: %s\n", fh);  */
-
     if (IDIO_HANDLE_FLAGS (fh) & IDIO_HANDLE_FLAG_CLOSED) {
 	idio_handle_error_closed (fh);
 	errno = EBADF;
@@ -929,9 +927,8 @@ IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (
      * handle and any lists we're walking over
      */
     idio_remember_file_handle (fh); 
-    IDIO ms0 = ms;
-    idio_gc_protect (ms0);
-
+    idio_array_push (IDIO_THREAD_STACK (thr), ms);
+    
     idio_ai_t lfh_pc = -1;
     IDIO r;
     while (idio_S_nil != ms) {
@@ -945,8 +942,9 @@ IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (
     }
     IDIO_THREAD_PC (thr) = lfh_pc;
     r = idio_vm_run (thr); 
-    idio_gc_expose (ms0);
 
+    idio_array_pop (IDIO_THREAD_STACK (thr));
+    
     struct timeval tr;
     gettimeofday (&tr, NULL);
 	
@@ -1167,7 +1165,9 @@ void idio_final_file_handle ()
     while (idio_S_nil != fhl) {
 	IDIO fh = IDIO_PAIR_H (fhl);
 
-	IDIO_HANDLE_M_CLOSE (fh) (fh);
+	if (0 == (IDIO_HANDLE_FLAGS (fh) & IDIO_HANDLE_FLAG_CLOSED)) {
+	    IDIO_HANDLE_M_CLOSE (fh) (fh);
+	}
 
 	fhl = IDIO_PAIR_T (fhl);
     }

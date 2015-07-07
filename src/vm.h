@@ -309,6 +309,8 @@ IDIO idio_apply (IDIO fn, IDIO args);
 
 void idio_vm_thread_init (IDIO thr);
 void idio_vm_default_pc (IDIO thr);
+void idio_vm_thread_state ();
+
 void idio_init_vm_values ();
 void idio_init_vm ();
 void idio_vm_add_primitives ();

@@ -2349,7 +2349,12 @@ void idio_raise_condition (IDIO continuablep, IDIO e)
      * allocated during the life of that C stack.  Unless we think of
      * something clever...well?...er, still waiting...
      */
-    longjmp (*(IDIO_THREAD_JMP_BUF (thr)), IDIO_VM_LONGJMP_SIGNAL_EXCEPTION);
+    if (NULL != IDIO_THREAD_JMP_BUF (thr)) {
+	longjmp (*(IDIO_THREAD_JMP_BUF (thr)), IDIO_VM_LONGJMP_SIGNAL_EXCEPTION);
+    } else {
+	fprintf (stderr, "WARNING: raise: unable to use jmp_buf\n");
+	return;
+    }
 
     /* not reached */
     IDIO_C_ASSERT (0);
@@ -2463,8 +2468,17 @@ static void idio_vm_restore_continuation (IDIO k, IDIO val)
     idio_vm_restore_state (thr);
 
     IDIO_THREAD_VAL (thr) = val;
+    IDIO_THREAD_JMP_BUF (thr) = IDIO_CONTINUATION_JMP_BUF (k);
+    
     /* idio_debug ("K restore: THR %s\n", thr); */
     /* idio_debug ("K restore: STK %s\n", IDIO_THREAD_STACK (thr)); */
+
+    if (NULL != IDIO_THREAD_JMP_BUF (thr)) {
+	longjmp (*(IDIO_THREAD_JMP_BUF (thr)), IDIO_VM_LONGJMP_CONTINUATION);
+    } else {
+	fprintf (stderr, "WARNING: restore-continuation: unable to use jmp_buf\n");
+	return;
+    }
 }
 
 IDIO_DEFINE_PRIMITIVE2 ("%%restore-continuation", restore_continuation, (IDIO k, IDIO val))
@@ -2475,10 +2489,6 @@ IDIO_DEFINE_PRIMITIVE2 ("%%restore-continuation", restore_continuation, (IDIO k,
     
     idio_vm_restore_continuation (k, val);
     
-    IDIO thr = idio_current_thread ();
-
-    longjmp (*(IDIO_THREAD_JMP_BUF (thr)), IDIO_VM_LONGJMP_CONTINUATION);
-
     /* not reached */
     IDIO_C_ASSERT (0);
     return idio_S_unspec;
@@ -2502,7 +2512,12 @@ IDIO_DEFINE_PRIMITIVE1 ("%%call/cc", call_cc, (IDIO proc))
     
     idio_vm_invoke (thr, proc, 0);
 
-    longjmp (*(IDIO_THREAD_JMP_BUF (thr)), IDIO_VM_LONGJMP_CALLCC);
+    if (NULL != IDIO_THREAD_JMP_BUF (thr)) {
+	longjmp (*(IDIO_THREAD_JMP_BUF (thr)), IDIO_VM_LONGJMP_CALLCC);
+    } else {
+	fprintf (stderr, "WARNING: %%call/cc: unable to use jmp_buf\n");
+	return idio_S_unspec;
+    }
 
     /* not reached */
     IDIO_C_ASSERT (0);
@@ -3846,11 +3861,11 @@ IDIO idio_vm_run (IDIO thr)
     IDIO_ASSERT (thr);
     IDIO_TYPE_ASSERT (thread, thr);
 
-    /* idio_debug ("vm-run: b THR %s\n", thr); */
+    /* idio_debug ("vm-run: b THR %s\n", thr);  */
     /* idio_vm_thread_init (thr); */
 
     idio_ai_t ss0 = idio_array_size (IDIO_THREAD_STACK (thr));
-
+    
     /*
      * make sure this segment returns to idio_vm_FINISH_pc
      *
@@ -3967,7 +3982,11 @@ IDIO idio_vm_run (IDIO thr)
 		    IDIO_THREAD_VAL (thr) = vs;
 		    idio_vm_invoke (thr, idio_vm_sigchld_handler, 1);
 
-		    longjmp (*(IDIO_THREAD_JMP_BUF (thr)), IDIO_VM_LONGJMP_EVENT);
+		    if (NULL != IDIO_THREAD_JMP_BUF (thr)) {
+			longjmp (*(IDIO_THREAD_JMP_BUF (thr)), IDIO_VM_LONGJMP_EVENT);
+		    } else {
+			fprintf (stderr, "WARNING: SIGCHLD: unable to use jmp_buf\n");
+		    }
 		} else {
 		    fprintf (stderr, "VM: no sighandler\n");
 		}
@@ -4032,33 +4051,36 @@ IDIO idio_vm_run (IDIO thr)
     if (ss != ss0) {
 	fprintf (stderr, "vm-run: THREAD FAIL: SP %td != SP0 %td\n", ss - 1, ss0 - 1);
 	if (ss < ss0) {
-	    idio_vm_panic (thr, "current stack smaller than when we started");
+	    fprintf (stderr, "\n\nNOTICE: current stack smaller than when we started\n");
+	    idio_vm_thread_state ();
 	}
-	/* idio_debug ("THR %s\n", thr); */
-	/* idio_debug ("STK %s\n", IDIO_THREAD_STACK (thr)); */
-	while (ss > ss0) {
-	    IDIO v = IDIO_THREAD_STACK_POP ();
+	else {
+	    /* idio_debug ("THR %s\n", thr); */
+	    /* idio_debug ("STK %s\n", IDIO_THREAD_STACK (thr)); */
+	    while (ss > ss0) {
+		IDIO v = IDIO_THREAD_STACK_POP ();
 #ifdef IDIO_DEBUG
-	    fprintf (stderr, "popping %3td: ", ss - 1);
-	    if (idio_isa_frame (v)) {
-		fprintf (stderr, "%20s ", "frame");
-		idio_debug ("%s\n", IDIO_FRAME_ARGS (v));
-	    } else if (idio_isa_closure (v)) {
-		IDIO name = idio_hash_get (idio_vm_closure_name, idio_fixnum (IDIO_CLOSURE_CODE (v)));
-		if (idio_S_unspec != name) {
-		    idio_debug ("%20s ", name);
+		fprintf (stderr, "popping %3td: ", ss - 1);
+		if (idio_isa_frame (v)) {
+		    fprintf (stderr, "%20s ", "frame");
+		    idio_debug ("%s\n", IDIO_FRAME_ARGS (v));
+		} else if (idio_isa_closure (v)) {
+		    IDIO name = idio_hash_get (idio_vm_closure_name, idio_fixnum (IDIO_CLOSURE_CODE (v)));
+		    if (idio_S_unspec != name) {
+			idio_debug ("%20s ", name);
+		    } else {
+			fprintf (stderr, "              -anon- ");
+		    }
+		    idio_debug ("%s\n", v);
 		} else {
-		    fprintf (stderr, "              -anon- ");
+		    fprintf (stderr, "%20s ", "");
+		    idio_debug ("%s\n", v);
 		}
-		idio_debug ("%s\n", v);
-	    } else {
-		fprintf (stderr, "%20s ", "");
-		idio_debug ("%s\n", v);
-	    }
 #endif
-	    ss--;
+		ss--;
+	    }
+	    /* bail = 1; */
 	}
-	/* bail = 1; */
     }
 
     if (bail) {
@@ -4143,7 +4165,7 @@ IDIO idio_vm_primitives_ref (idio_ai_t i)
     return idio_array_get_index (idio_vm_primitives, i);
 }
 
-IDIO_DEFINE_PRIMITIVE0 ("idio-thread-state", idio_thread_state, ())
+void idio_vm_thread_state ()
 {
     IDIO thr = idio_current_thread ();
     IDIO stack = IDIO_THREAD_STACK (thr);
@@ -4181,6 +4203,11 @@ IDIO_DEFINE_PRIMITIVE0 ("idio-thread-state", idio_thread_state, ())
 	idio_debug ("%s\n", idio_array_get_index (stack, esp - 1));
 	esp = IDIO_FIXNUM_VAL (idio_array_get_index (stack, esp - 2));
     }
+}
+
+IDIO_DEFINE_PRIMITIVE0 ("idio-thread-state", idio_thread_state, ())
+{
+    idio_vm_thread_state ();
 
     return idio_S_unspec;
 }

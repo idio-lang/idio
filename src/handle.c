@@ -352,9 +352,10 @@ int idio_handle_close (IDIO h)
 	idio_handle_error_bad (h);
     }
 
+    int r = IDIO_HANDLE_M_CLOSE (h) (h);
     IDIO_HANDLE_FLAGS (h) |= IDIO_HANDLE_FLAG_CLOSED;
     
-    return IDIO_HANDLE_M_CLOSE (h) (h);
+    return r;
 }
 
 int idio_handle_putc (IDIO h, int c)

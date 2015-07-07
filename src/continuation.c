@@ -32,6 +32,7 @@ IDIO idio_continuation (IDIO thr)
     IDIO_GC_ALLOC (k->u.continuation, sizeof (idio_continuation_t));
 
     IDIO_CONTINUATION_GREY (k) = NULL;
+    IDIO_CONTINUATION_JMP_BUF (k) = IDIO_THREAD_JMP_BUF (thr);
     IDIO_CONTINUATION_STACK (k) = idio_array_copy (IDIO_THREAD_STACK (thr), 5);
 
     /*

@@ -453,6 +453,11 @@ typedef struct idio_thread_s {
  * of the current thread.  So all the SPs, the current frame and the
  * stack itself.
  *
+ * Also, the current jmp_buf.  In a single span of code the jmp_buf is
+ * unchanged, however when we "load" a file we get a new, nested
+ * jmp_buf. If a continuation from the "outer" idio_vm_run() is
+ * invoked then we must use its contextually correct jmp_buf.
+ *
  * We'll be duplicating the efforts of idio_vm_preserve_state() but we
  * can't call that as it modifies the stack.  That said, we'll be
  * copying the stack so once we've done that we can push everything
@@ -460,10 +465,12 @@ typedef struct idio_thread_s {
  */
 typedef struct idio_continuation_s {
     struct idio_s *grey;
+    jmp_buf *jmp_buf;
     struct idio_s *stack;
 } idio_continuation_t;
 
 #define IDIO_CONTINUATION_GREY(T)	((T)->u.continuation->grey)
+#define IDIO_CONTINUATION_JMP_BUF(T)	((T)->u.continuation->jmp_buf)
 #define IDIO_CONTINUATION_STACK(T)	((T)->u.continuation->stack)
 
 /*

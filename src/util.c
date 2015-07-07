@@ -531,6 +531,10 @@ char *idio_as_string (IDIO o, int depth)
     
     IDIO_C_ASSERT (depth >= -10000);
 
+    if (depth < 0) {
+	return NULL;
+    }
+    
     switch ((intptr_t) o & 3) {
     case IDIO_TYPE_FIXNUM_MARK:
 	{
