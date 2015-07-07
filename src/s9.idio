@@ -182,6 +182,10 @@ define (display* & x*) {
   (newline)
 }
 
+define (ewrite x) {
+  write x (current-error-handle)
+}
+
 define (edisplay x) {
   display x (current-error-handle)
 }

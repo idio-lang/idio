@@ -38,3 +38,25 @@ define-syntax-rule (when test body ...) (
 define-syntax-rule (unless test body ...) (
   if (not test) (begin body ...)
 )
+
+define (load filename) {
+  if (not (string? filename)) (error "not a string" filename)
+
+  load-k := #n
+
+  monitor (function (cont cond) {
+    if (not cont) {
+      edisplay "load "
+      ewrite filename
+      edisplay* ": non-cont-error caught; invoking safe continuation"
+      load-k cond
+    } {
+      raise cont cond
+    }
+  }) {
+    call/cc (function (k) {
+      load-k = k
+      load filename
+    })
+  }
+}
