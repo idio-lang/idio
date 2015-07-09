@@ -532,7 +532,7 @@ static IDIO idio_command_job_status (IDIO job)
 	idio_error_param_type ("job", job);
     }
 
-    IDIO procs = idio_list_reverse (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PROCS));
+    IDIO procs = idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PROCS);
     while (idio_S_nil != procs) {
 	IDIO proc = IDIO_PAIR_H (procs);
 	IDIO istatus = idio_struct_instance_ref_direct (proc, IDIO_PROCESS_TYPE_STATUS);

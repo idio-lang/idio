@@ -74,6 +74,7 @@ display* "This is test.idio"
 
 load "tests/s9-test.idio"
 load "tests/operator.idio"
+load "tests/template.idio"
 load "tests/file-handle.idio"
 load "tests/string-handle.idio"
 load "tests/handle.idio"
@@ -89,8 +90,8 @@ load "tests/libc.idio"
 ;; that?  Erm, they've not been counted and are dynamic in number so
 ;; test we've seen at least as many as the largest number we've
 ;; seen.  Wait, some tests are OS-specific.  Drat!
-;test (eq? Tests 2786) #t
-;test (ge Tests 2786) #t
+;test (eq? Tests 2820) #t
+;test (ge Tests 2820) #t
 
 if+ (zero? Errors) (display* "All" Tests "tests passed!") \
     else {

@@ -938,210 +938,209 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int nl)
 	    return idio_read_unquote (handle, ic, depth);
 	} else if (c == ic[2]) {
 	    return idio_read_quote (handle, ic, depth);
-	}
-
-	switch (c) {
-	case EOF:
-	    return idio_S_eof;
-	case IDIO_CHAR_SPACE:
-	case IDIO_CHAR_TAB:
-	    idio_read_whitespace (handle);
-	    break;
-	case IDIO_CHAR_CR:
-	case IDIO_CHAR_NL:
-	    if (0 == nl) {
+	} else if (c == ic[3]) {
+	    c = idio_handle_getc (handle);
+	    switch (c) {
+	    case IDIO_CHAR_CR:
+	    case IDIO_CHAR_NL:
 		idio_read_newline (handle);
+		break;
+	    default:
+		idio_handle_ungetc (handle, c); 
+		return idio_read_escape (handle, ic, depth);
 	    }
-	    return idio_T_eol;
-	case IDIO_CHAR_BACKSLASH:
-	    {
-		c = idio_handle_getc (handle);
-		switch (c) {
-		case IDIO_CHAR_CR:
-		case IDIO_CHAR_NL:
+	} else {
+
+	    switch (c) {
+	    case EOF:
+		return idio_S_eof;
+	    case IDIO_CHAR_SPACE:
+	    case IDIO_CHAR_TAB:
+		idio_read_whitespace (handle);
+		break;
+	    case IDIO_CHAR_CR:
+	    case IDIO_CHAR_NL:
+		if (0 == nl) {
 		    idio_read_newline (handle);
-		    break;
-		default:
-		    idio_handle_ungetc (handle, c);
-		    return idio_read_escape (handle, ic, depth);
 		}
-	    }
-	    break;
-	case IDIO_CHAR_LPAREN:
-	    return idio_read_list (handle, idio_T_lparen, ic, depth + 1);
-	case IDIO_CHAR_RPAREN:
-	    if (depth) {
-		return idio_T_rparen;
-	    } else {
-		idio_read_error_parse (handle, "unexpected ')'");
-		return idio_S_unspec;
-	    }
-	    break;
-	case IDIO_CHAR_LBRACE:
-	    return idio_read_block (handle, idio_T_rbrace, ic, depth + 1);
-	case IDIO_CHAR_RBRACE:
-	    if (depth) {
-		return idio_T_rbrace;
-	    } else {
-		idio_read_error_parse (handle, "unexpected '}'");
-		return idio_S_unspec;
-	    }
-	    break;
-	case IDIO_CHAR_RBRACKET:
-	    return idio_T_rbracket;
-	    break;
-	case IDIO_CHAR_RANGLE:
-	    {
-		c = idio_handle_peek (handle);
-		switch (c) {
-		case EOF:
-		    return idio_T_rangle;
-		case IDIO_CHAR_EQUALS:
-		    return idio_read_word (handle, IDIO_CHAR_RANGLE);
-		default:
-		    return idio_T_rangle;
+		return idio_T_eol;
+		/*
+	    case IDIO_CHAR_BACKSLASH:
+		{
+		    c = idio_handle_getc (handle);
+		    switch (c) {
+		    case IDIO_CHAR_CR:
+		    case IDIO_CHAR_NL:
+			idio_read_newline (handle);
+			break;
+		    default:
+			idio_handle_ungetc (handle, c); 
+			return idio_read_escape (handle, ic, depth);
+		    }
 		}
-	    }
-	    break;
-	    /*
-	case IDIO_CHAR_SQUOTE:
-	    return idio_read_quote (handle, ic, depth);
-	    */
-	case IDIO_CHAR_BACKQUOTE:
-	    {
-		char qq_ic[] = { IDIO_CHAR_COMMA, IDIO_CHAR_AT, IDIO_CHAR_SQUOTE, IDIO_CHAR_BACKSLASH };
-		return idio_read_quasiquote (handle, qq_ic, depth);
-	    }
-	    /*
-	case IDIO_CHAR_COMMA:
-	    {
-		c = idio_handle_getc (handle);
-		if (IDIO_CHAR_AT == c) {
-		    return idio_read_unquote_splicing (handle, ic, depth);
+		break;
+		*/
+	    case IDIO_CHAR_LPAREN:
+		return idio_read_list (handle, idio_T_lparen, ic, depth + 1);
+	    case IDIO_CHAR_RPAREN:
+		if (depth) {
+		    return idio_T_rparen;
+		} else {
+		    idio_read_error_parse (handle, "unexpected ')'");
+		    return idio_S_unspec;
 		}
-		idio_handle_ungetc (handle, c);
-		return idio_read_unquote (handle, ic, depth);
-	    }
-	    */
-	case IDIO_CHAR_HASH:
-	    {
-		int c = idio_handle_getc (handle);
-		switch (c) {
-		case 'f':
-		    return idio_S_false;
-		case 't':
-		    return idio_S_true;
-		case 'n':
-		    return idio_S_nil;
-		case '\\':
-		    return idio_read_character (handle);
-		case '(':
-		    return idio_read_vector (handle, ic, depth + 1);
-		case 'b':
-		    return idio_read_bignum (handle, c, 2);
-		case 'd':
-		    return idio_read_bignum (handle, c, 10);
-		case 'o':
-		    return idio_read_bignum (handle, c, 8);
-		case 'x':
-		    return idio_read_bignum (handle, c, 16);
-		case 'e':
-		case 'i':
-		    {
-			int inexact = ('i' == c);
-			IDIO bn = idio_read_1_expr (handle, ic, depth);
+		break;
+	    case IDIO_CHAR_LBRACE:
+		return idio_read_block (handle, idio_T_rbrace, ic, depth + 1);
+	    case IDIO_CHAR_RBRACE:
+		if (depth) {
+		    return idio_T_rbrace;
+		} else {
+		    idio_read_error_parse (handle, "unexpected '}'");
+		    return idio_S_unspec;
+		}
+		break;
+	    case IDIO_CHAR_RBRACKET:
+		return idio_T_rbracket;
+		break;
+	    case IDIO_CHAR_RANGLE:
+		{
+		    c = idio_handle_peek (handle);
+		    switch (c) {
+		    case EOF:
+			return idio_T_rangle;
+		    case IDIO_CHAR_EQUALS:
+			return idio_read_word (handle, IDIO_CHAR_RANGLE);
+		    default:
+			return idio_T_rangle;
+		    }
+		}
+		break;
+	    case IDIO_CHAR_BACKQUOTE:
+		{
+		    char qq_ic[] = { IDIO_CHAR_COMMA, IDIO_CHAR_AT, IDIO_CHAR_SQUOTE, IDIO_CHAR_BACKSLASH };
+		    return idio_read_quasiquote (handle, qq_ic, depth);
+		}
+	    case IDIO_CHAR_HASH:
+		{
+		    int c = idio_handle_getc (handle);
+		    switch (c) {
+		    case 'f':
+			return idio_S_false;
+		    case 't':
+			return idio_S_true;
+		    case 'n':
+			return idio_S_nil;
+		    case '\\':
+			return idio_read_character (handle);
+		    case '(':
+			return idio_read_vector (handle, ic, depth + 1);
+		    case 'b':
+			return idio_read_bignum (handle, c, 2);
+		    case 'd':
+			return idio_read_bignum (handle, c, 10);
+		    case 'o':
+			return idio_read_bignum (handle, c, 8);
+		    case 'x':
+			return idio_read_bignum (handle, c, 16);
+		    case 'e':
+		    case 'i':
+			{
+			    int inexact = ('i' == c);
+			    IDIO bn = idio_read_1_expr (handle, ic, depth);
 
-			if (IDIO_TYPE_FIXNUMP (bn)) {
-			    if (0 == inexact) {
-				return bn;
-			    } else {
-				bn = idio_bignum_integer_intmax_t (IDIO_FIXNUM_VAL (bn));
+			    if (IDIO_TYPE_FIXNUMP (bn)) {
+				if (0 == inexact) {
+				    return bn;
+				} else {
+				    bn = idio_bignum_integer_intmax_t (IDIO_FIXNUM_VAL (bn));
+				}
 			    }
-			}
 
-			if (! idio_isa_bignum (bn)) {
+			    if (! idio_isa_bignum (bn)) {
+				char em[BUFSIZ];
+				sprintf (em, "number expected after #%c: got %s", inexact ? 'i' : 'e', idio_type2string (bn));
+				idio_read_error_parse (handle, em);
+				return idio_S_unspec;
+			    }
+
+			    if (IDIO_BIGNUM_INTEGER_P (bn)) {
+				if (! inexact) {
+				    return bn;
+				}
+
+				int flags = 0;
+				if (idio_bignum_negative_p (bn)) {
+				    flags |= IDIO_BIGNUM_FLAG_REAL_NEGATIVE;
+				}
+			    
+				bn = idio_bignum_abs (bn);
+
+				bn = idio_bignum_real (flags, 0, IDIO_BIGNUM_SIG (bn));
+
+				bn = idio_bignum_normalize (bn);
+			    }
+			
+			    if (inexact) {
+				IDIO_BIGNUM_FLAGS (bn) |= IDIO_BIGNUM_FLAG_REAL_INEXACT;
+			    }
+
+			    return bn;
+			}
+		    case '<':
+			{
 			    char em[BUFSIZ];
-			    sprintf (em, "number expected after #%c: got %s", inexact ? 'i' : 'e', idio_type2string (bn));
+			    sprintf (em, "not ready for # format: %c (%02x)", c, c);
 			    idio_read_error_parse (handle, em);
 			    return idio_S_unspec;
 			}
-
-			if (IDIO_BIGNUM_INTEGER_P (bn)) {
-			    if (! inexact) {
-				return bn;
-			    }
-
-			    int flags = 0;
-			    if (idio_bignum_negative_p (bn)) {
-				flags |= IDIO_BIGNUM_FLAG_REAL_NEGATIVE;
-			    }
-			    
-			    bn = idio_bignum_abs (bn);
-
-			    bn = idio_bignum_real (flags, 0, IDIO_BIGNUM_SIG (bn));
-
-			    bn = idio_bignum_normalize (bn);
+		    default:
+			{
+			    char em[BUFSIZ];
+			    sprintf (em, "unexpected # format: %c (%02x)", c, c);
+			    idio_read_error_parse (handle, em);
+			    return idio_S_unspec;
 			}
-			
-			if (inexact) {
-			    IDIO_BIGNUM_FLAGS (bn) |= IDIO_BIGNUM_FLAG_REAL_INEXACT;
-			}
-
-			return bn;
-		    }
-		case '<':
-		    {
-			char em[BUFSIZ];
-			sprintf (em, "not ready for # format: %c (%02x)", c, c);
-			idio_read_error_parse (handle, em);
-			return idio_S_unspec;
-		    }
-		default:
-		    {
-			char em[BUFSIZ];
-			sprintf (em, "unexpected # format: %c (%02x)", c, c);
-			idio_read_error_parse (handle, em);
-			return idio_S_unspec;
-		    }
 		    
-		}
-	    }
-	    break;
-	case IDIO_CHAR_PERCENT:
-	    {
-		int c = idio_handle_getc (handle);
-		switch (c) {
-		case 'T':
-		    return idio_read_template (handle, depth + 1);
-		default:
-		    idio_handle_ungetc (handle, c);
-		    return idio_read_word (handle, IDIO_CHAR_PERCENT);
-		}
-	    }
-	    break;
-	case IDIO_CHAR_AMPERSAND:
-	    {
-		int cp = idio_handle_peek (handle);
-
-		if (IDIO_SEPARATOR (cp)) {
-		    if (depth) {
-			return idio_T_ampersand;
-		    } else {
-			idio_read_error_parse (handle, "unexpected ampersand outside of list");
-			return idio_S_unspec;
 		    }
 		}
+		break;
+	    case IDIO_CHAR_PERCENT:
+		{
+		    int c = idio_handle_getc (handle);
+		    switch (c) {
+		    case 'T':
+			return idio_read_template (handle, depth + 1);
+		    default:
+			idio_handle_ungetc (handle, c);
+			return idio_read_word (handle, IDIO_CHAR_PERCENT);
+		    }
+		}
+		break;
+	    case IDIO_CHAR_AMPERSAND:
+		{
+		    int cp = idio_handle_peek (handle);
 
+		    if (IDIO_SEPARATOR (cp)) {
+			if (depth) {
+			    return idio_T_ampersand;
+			} else {
+			    idio_read_error_parse (handle, "unexpected ampersand outside of list");
+			    return idio_S_unspec;
+			}
+		    }
+
+		    return idio_read_word (handle, c);
+		}
+	    case IDIO_CHAR_SEMICOLON:
+		idio_read_comment (handle, depth);
+		break;
+	    case IDIO_CHAR_DQUOTE:
+		return idio_read_string (handle);
+		break;
+	    default:
 		return idio_read_word (handle, c);
 	    }
-	case IDIO_CHAR_SEMICOLON:
-	    idio_read_comment (handle, depth);
-	    break;
-	case IDIO_CHAR_DQUOTE:
-	    return idio_read_string (handle);
-	    break;
-	default:
-	    return idio_read_word (handle, c);
 	}
 
 	c = idio_handle_getc (handle);

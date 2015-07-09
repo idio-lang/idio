@@ -831,7 +831,7 @@ IDIO idio_load_filehandle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*
     idio_ai_t sp = idio_array_size (IDIO_THREAD_STACK (thr));
 
     if (sp != sp0) {
-	fprintf (stderr, "load-file-handle: %s: SP %td != SP0 %td\n", IDIO_HANDLE_NAME (fh), sp, sp0);
+	fprintf (stderr, "load-file-handle-interactive: %s: SP %td != SP0 %td\n", IDIO_HANDLE_NAME (fh), sp, sp0);
 	idio_debug ("THR %s\n", thr);
 	idio_debug ("STK %s\n", IDIO_THREAD_STACK (thr));
     }
@@ -927,6 +927,20 @@ IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (
      * handle and any lists we're walking over
      */
     idio_remember_file_handle (fh); 
+    /*
+     * We might have called idio_gc_protect (and later idio_gc_expose)
+     * to safeguard {ms} however we know (because we wrote the code)
+     * that "load" might call a continuation (to a state before we
+     * were called) which will unwind the stack and call longjmp(3).
+     * That means we'll never reach the idio_gc_expose() call and
+     * stuff starts to accumulate in the GC never to be released.
+     *
+     * However, invoking that continuation will clear the stack
+     * including anything we stick on it here.  Very convenient.
+     *
+     * If you dump the stack you will find an enormous list, {ms},
+     * representing the loaded file.  Which is annoying.
+     */
     idio_array_push (IDIO_THREAD_STACK (thr), ms);
     
     idio_ai_t lfh_pc = -1;

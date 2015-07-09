@@ -78,7 +78,7 @@ if [[ ${opt_read} || $opt_write ]] ; then
     while [[ ${opt_read} || ${opt_write} ]] ; do
 	if [[ ${opt_write} ]] ; then
 	    if [[ ${opt_write} -gt 0 ]] ; then
-		echo "$$: line ${var_write}"
+		echo "$$: wrote line ${var_write}"
 		var_write=$(( var_write + 1 ))
 		opt_write=$(( opt_write - 1 ))
 	    else

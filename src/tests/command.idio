@@ -91,3 +91,6 @@ monitor (function (cont cond) {
   test (auto-exit -k 15) #f
 }
 
+
+
+PATH = OPATH

@@ -746,11 +746,16 @@ void idio_gc_expose_all ()
 {
 
     IDIO_FPRINTF (stderr, "idio_gc_expose_all\n");
-    fprintf (stderr, "idio_gc_expose_all\n");
     idio_root_t *r = idio_gc->roots;
+    size_t n = 0;
     while (r) {
 	r->object = idio_S_nil;
 	r = r->next;
+	n++;
+    }
+
+    if (n) {
+	fprintf (stderr, "idio_gc_expose_all for %zd objects\n", n);
     }
 }
 
@@ -1391,6 +1396,7 @@ void idio_final_gc ()
 
     fprintf (stderr, "\n\n\nFINAL GC\n\n\n");
     idio_gc_stats ();
+    idio_gc_expose_all ();
     idio_gc_collect ();
     idio_gc_dump ();
     idio_gc_free ();

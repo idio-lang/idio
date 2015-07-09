@@ -4227,7 +4227,7 @@ void idio_vm_unwind_thread (IDIO thr, int verbose)
 	idio_debug ("STK:\t%s\n", stack);
 
 	while (idio_S_nil != frame) {
-	    idio_debug ("frame: %s\n", IDIO_FRAME_ARGS (frame));
+	    idio_debug ("call frame: %s\n", IDIO_FRAME_ARGS (frame));
 	    frame = IDIO_FRAME_NEXT (frame);
 	}
     

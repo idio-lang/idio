@@ -19,6 +19,7 @@
 ;; command.idio
 ;;
 
+%%last-job := #n
 ;;
 ;; These algorithms are directly from the libc info pages on Job
 ;; Control
@@ -82,9 +83,30 @@ define (job-status-1 job) {
 
   ;; return rightmost non-zero exit status or the status from the last
   ;; (or any as they all succeeded but the last is top of procs)
-  procs := reverse (%idio-job-procs job)
+  ;;
+  ;; NB. the procs were pushed onto the list in reverse order so
+  ;; walking down the list we encounter the rightmost first
+  procs := %idio-job-procs job
   or (loop procs) \
      (list 'exit (c/WEXITSTATUS (%idio-process-status (ph procs))))
+}
+
+define (pipeline-detail job) {
+  loop :+ function (procs st) {
+    if (null? procs) st {
+      status := %idio-process-status (ph procs)
+      if+ (c/WIFEXITED status) {
+            loop (pt procs) (pair (list 'exit (c/WEXITSTATUS status)) st)
+          } (c/WIFSIGNALED status) {
+	    loop (pt procs) (pair (list 'killed (c/WTERMSIG status)) st)
+	  } \
+	  else {
+	    loop (pt procs) (pair (list 'unknown) st)
+	  }
+    }
+  }
+
+  loop (%idio-job-procs job) #n
 }
 
 define (mark-process-status-1 pid status) {
@@ -271,6 +293,7 @@ define (prep-process-1 pgid infile outfile foreground) {
 }
 
 define-operator | {
+  edisplay* "operator" op before after
   pipeline := append before (append (list op) after)
 
   ;; we want a list of lists -- a list of the |-separated commands
@@ -282,6 +305,7 @@ define-operator | {
   }
 
   op-args := split op (list before) #n after
+  edisplay* "operator" op op-args
 
   ;; looping over the list of commands prepping the children uses a
   ;; number of variables which are a pain to manage as we don't want
@@ -290,16 +314,17 @@ define-operator | {
   ;; template to generate a block to hold our working variables.
 
   ;; There's also a little process coordination trickery ported from
-  ;; Bash -- where if the problem occurs in a slick and fast pure C
-  ;; environment then we've no hope!
+  ;; Bash -- noting that if the race condition occurs in a slick and
+  ;; fast pure C environment then our meandering and inefficient
+  ;; script has no hope!
   ;;
   ;; We need to prevent the first process in the pipeline from
   ;; starting until all the others are in place -- otherwise you can
   ;; have the first process, the process group leader, run and exit
   ;; before you manage to start any of the others!  That also leaves
-  ;; the small issue of trying to setpgid with a process group that no
-  ;; longer exists (and, worse, could have been replaced with a
-  ;; different process all together).  That's all bad for business.
+  ;; the small issue of trying to call setpgid with a process group
+  ;; that no longer exists (and, worse, could have been replaced with
+  ;; a different process all together).  That's all bad for business.
   ;;
   ;; The trick is to open another pipe and have the first process
   ;; block reading from the pipe just before it starts.  All the other
@@ -308,7 +333,7 @@ define-operator | {
   ;; first will have its blocking read() return (with zero bytes, ie
   ;; EOF -- we don't care) and we're good to go.
   ;;
-  ;; Technically, as we created the pipe in the main Idio process, it
+  ;; Incidentally, as we created the pipe in the main Idio process, it
   ;; too holds the pipe open so we can be fairly confident that all
   ;; the child processes are set up and running when the main Idio
   ;; process closes the (last?) pipe write-end.
@@ -359,13 +384,22 @@ define-operator | {
 		      prep-process $pgid $infile $outfile $foreground
 		      if (c/== $pgid 0) {
 			c/close (c/pipe-writer $pgrp-pipe)
+
+			;; $pgid is 0 so we must be the first in the
+			;; pipeline -- block reading a single byte
+			;; from the $pgrp-pipe
 			c/read (c/pipe-reader $pgrp-pipe) 1
 			c/close (c/pipe-reader $pgrp-pipe)
                       } {
 			c/close (c/pipe-reader $pgrp-pipe)
 			c/close (c/pipe-writer $pgrp-pipe)
 		      }
-		      $cmd
+		      edisplay* "child" (c/getpid) "cmd" '$cmd
+		      if+ (pair? (ph '$cmd)) {
+			    edisplay* "=>" (ph '$cmd)
+			    (ph '$cmd)
+			  } \
+			  else $cmd
 
 		      ;; If {cmd} was an external command then this
 		      ;; child will have exec()'d it otherwise it is
@@ -394,8 +428,10 @@ define-operator | {
 	     op-args)
 
       ;; finally let the first process go
-      c/close (c/pipe-reader $pgrp-pipe)
-      c/close (c/pipe-writer $pgrp-pipe)
+      c/close (c/pipe-reader pgrp-pipe)
+      c/close (c/pipe-writer pgrp-pipe)
+
+      %%last-job = job
 
       if+ (not %idio-interactive) {
 	    wait-for-job job
