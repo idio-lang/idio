@@ -799,6 +799,8 @@ void idio_command_do_job_notification (void)
 		idio_struct_instance_set_direct (job, IDIO_JOB_TYPE_NOTIFIED, idio_S_true);
 	    }
 	    njobs = idio_pair (job, njobs);
+	} else {
+	    njobs = idio_pair (job, njobs);
 	}
 
 	/*

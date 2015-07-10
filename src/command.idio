@@ -142,6 +142,7 @@ define (mark-process-status pid status) {
   } (or (c/== pid 0)
 	 #t ;(c/== c/errno ECHLD)
 	 ) {
+    edisplay* "MPS: pid == 0"
     #t
   } else {
     ;; an error in c/waitpid would have been signalled there
@@ -225,6 +226,8 @@ define (do-job-notification-1) {
 }
 
 define (foreground-job job cont) {
+
+  ;; put the job in the foreground
   job-pgid := %idio-job-pgid job
   c/tcsetpgrp %idio-terminal job-pgid
   if cont {
@@ -234,11 +237,15 @@ define (foreground-job job cont) {
 
   r := wait-for-job job
 
+  ;; put the shell back in the foreground
   c/tcsetpgrp %idio-terminal %idio-pgid
+
+  ;; save the job's current terminal state
   set-%idio-job-tcattrs! job (c/tcgetattr %idio-terminal)
+
+  ;; restore the shell's terminal state
   c/tcsetattr %idio-terminal c/TCSADRAIN %idio-tcattrs
 
-  job-status job
   r
 }
 
@@ -248,7 +255,7 @@ define (background-job job cont) {
     c/kill (- job-pgid) c/SIGCONT
   }
 
-  ;; result of a backgrounded job is 0
+  ;; result of a backgrounded job is always successful, ie. 0
   0
 }
 
@@ -289,12 +296,18 @@ define (prep-process pgid infile outfile foreground) {
     if (c/== pgid 0) {
       pgid = pid
     }
+
+    ;; put the process in the process group -- dupe of parent to avoid
+    ;; race conditions
     c/setpgid pid pgid
 
     if foreground {
+      ;; give the terminal to the process group -- dupe of parent to
+      ;; avoid race conditions
       c/tcsetpgrp %idio-terminal pgid
     }
 
+    ;; set job control signals back to default
     c/signal c/SIGINT c/SIG_DFL
     c/signal c/SIGQUIT c/SIG_DFL
     c/signal c/SIGTSTP c/SIG_DFL
@@ -303,6 +316,7 @@ define (prep-process pgid infile outfile foreground) {
     c/signal c/SIGCHLD c/SIG_DFL
   }
 
+  ;; switch to the supplied stdin/stdout
   if (not (c/== infile c/STDIN_FILENO)) {
     c/dup2 infile c/STDIN_FILENO
     c/close infile
@@ -440,6 +454,8 @@ define-operator | {
 			c/setpgid pid $pgid
 		      }
 		    }
+
+		    ;; tidy up any trailing pipes
 		    if (not (c/== $infile $stdin)) (c/close $infile)
 		    if (not (c/== $outfile $stdout)) (c/close $outfile)
 		    $infile = (c/pipe-reader $pipe)
@@ -499,11 +515,11 @@ define (launch-1proc foreground & command) {
   }
 }
 
-define-macro (launch-1proc-fg & command) {
+define-macro (fg-job & command) {
   %T{ launch-1proc #t $@command }
 }
 
-define-macro (launch-1proc-bg & command) {
+define-macro (bg-job & command) {
   %T{ launch-1proc #f $@command }
 }
 
