@@ -26,6 +26,8 @@
 ;;
 
 define (job-is-stopped job) {
+  if (null? job) (error 'job-is-stopped "null job" job)
+
   loop :+ function (procs) {
     if+ (null? procs) #t \
 	(and (not (%idio-process-completed (ph procs)))
@@ -37,6 +39,8 @@ define (job-is-stopped job) {
 }
 
 define (job-is-completed job) {
+  if (null? job) (error 'job-is-completed "null job" job)
+
   loop :+ function (procs) {
     if+ (null? procs) #t \
 	(not (%idio-process-completed (ph procs))) #f \
@@ -47,10 +51,14 @@ define (job-is-completed job) {
 }
 
 define (job-failed job) {
+  if (null? job) (error 'job-failed "null job" job)
+
   loop :+ function (procs) {
     if (null? procs) #f {
       status := %idio-process-status (ph procs)
-      if+ (c/WIFEXITED status) {
+      if+ (null? status) {
+	    loop (pt procs)
+	  } (c/WIFEXITED status) {
 	    if (not (c/== (c/WEXITSTATUS status) 0)) #t {
 	      loop (pt procs)
 	    }
@@ -67,10 +75,14 @@ define (job-failed job) {
 }
 
 define (job-status job) {
+  if (null? job) (error 'job-status "null job" job)
+
   loop :+ function (procs) {
     if (null? procs) #f {
       status := %idio-process-status (ph procs)
-      if+ (c/WIFEXITED status) {
+      if+ (null? status) {
+	    loop (pt procs)
+	  } (c/WIFEXITED status) {
 	    if (not (c/== (c/WEXITSTATUS status) 0)) (list 'exit (c/WEXITSTATUS status)) {
 	      loop (pt procs)
 	    }
@@ -92,10 +104,14 @@ define (job-status job) {
 }
 
 define (pipeline-detail job) {
+  if (null? job) (error 'pipeline-detail "null job" job)
+
   loop :+ function (procs st) {
     if (null? procs) st {
       status := %idio-process-status (ph procs)
-      if+ (c/WIFEXITED status) {
+      if+ (null? status) {
+	    loop (pt procs) (pair (list 'no-status) st)
+	  } (c/WIFEXITED status) {
             loop (pt procs) (pair (list 'exit (c/WEXITSTATUS status)) st)
           } (c/WIFSIGNALED status) {
 	    loop (pt procs) (pair (list 'killed (c/WTERMSIG status)) st)
@@ -329,6 +345,13 @@ define (prep-process pgid infile outfile foreground) {
 
 define-operator | {
   edisplay* "operator" op before after
+
+  foreground := #t
+  if (eq? 'bg-job (ph before)) {
+    before = pt before
+    foreground = #f
+  }
+
   pipeline := append before (append (list op) after)
 
   ;; we want a list of lists -- a list of the |-separated commands
@@ -379,7 +402,6 @@ define-operator | {
   ;; all the previous processes have been and gone.  But we've done a
   ;; decent job, what more can we do?
 
-  foreground := #t
   nprocs := length op-args
   %T{
     {
@@ -390,6 +412,7 @@ define-operator | {
       pgid := 0
       job := make-%idio-job '$pipeline #n pgid #f #n stdin stdout
       %idio-jobs = pair job %idio-jobs
+      %%last-job = job
 
       proc-id := 1
       pipe := #n
@@ -430,10 +453,11 @@ define-operator | {
 			c/close (c/pipe-reader $pgrp-pipe)
 			c/close (c/pipe-writer $pgrp-pipe)
 		      }
-		      ;; edisplay* "child" (c/getpid) "cmd" '$cmd
+		      edisplay* "child" (c/getpid) "cmd" '$cmd
 		      if+ (pair? (ph '$cmd)) {
-			    ;; edisplay* "=>" (ph '$cmd)
-			    (ph '$cmd)
+			    edisplay* "pair =>" (ph '$cmd)
+			    ;(ph '$cmd)
+			    $@cmd
 			  } \
 			  else $cmd
 
@@ -469,7 +493,6 @@ define-operator | {
       c/close (c/pipe-reader pgrp-pipe)
       c/close (c/pipe-writer pgrp-pipe)
 
-      %%last-job = job
       %%vm-trace 0
       if+ (not %idio-interactive) {
 	    wait-for-job job
@@ -482,44 +505,58 @@ define-operator | {
   }
 }
 
-define (launch-1proc foreground & command) {
-  stdin := c/STDIN_FILENO
-  stdout := c/STDOUT_FILENO
-  pgid := 0
-  proc := make-%idio-process command -1 #f #f #n
-  job := make-%idio-job command (list proc) pgid #f #n stdin stdout
+define-macro (launch-1proc foreground & cmd) {
+  %T{
+  {
+    stdin := c/STDIN_FILENO
+    stdout := c/STDOUT_FILENO
+    pgid := 0
+    proc := make-%idio-process '$cmd -1 #f #f #n
+    job := make-%idio-job '$cmd (list proc) pgid #f #n stdin stdout
 
-  pid := (c/fork)
-  if+ (c/== pid 0) {
-    prep-process pgid stdin stdout foreground
-    ;; command is a list so apply %exec to it
-    apply %exec command
-    error "exec" command
-  } else {
-    set-%idio-process-pid! proc pid
-    if %idio-interactive {
-      pgid = pid
-      set-%idio-job-pgid! job pgid
-      c/setpgid pid pgid
+    pid := (c/fork)
+    if+ (c/== pid 0) {
+      prep-process pgid stdin stdout $foreground
+      if+ (pair? (ph '$cmd)) {
+            edisplay* "pair =>" (ph '$cmd)
+            $@cmd
+            ;$cmd
+	  } \
+	    else $cmd
+
+      ;; cmd is a list so apply %exec to it
+      ;apply %exec $cmd
+      ;error "exec" '$cmd
+
+      c/exit 0
+    } else {
+      set-%idio-process-pid! proc pid
+      if %idio-interactive {
+	pgid = pid
+	set-%idio-job-pgid! job pgid
+	c/setpgid pid pgid
+      }
+    }
+
+    %idio-jobs = pair job %idio-jobs
+    %%last-job = job
+
+    if+ (not %idio-interactive) {
+      wait-for-job job
+    } $foreground {
+      foreground-job job #f
+    } else {
+      background-job job #f
     }
   }
-
-  %idio-jobs = pair job %idio-jobs
-
-  if+ (not %idio-interactive) {
-    wait-for-job job
-  } foreground {
-    foreground-job job #f
-  } else {
-    background-job job #f
   }
 }
 
-define-macro (fg-job & command) {
-  %T{ launch-1proc #t $@command }
+define-macro (fg-job & cmd) {
+  %T{ launch-1proc #t $@cmd }
 }
 
-define-macro (bg-job & command) {
-  %T{ launch-1proc #f $@command }
+define-macro (bg-job & cmd) {
+  %T{ launch-1proc #f $@cmd }
 }
 
