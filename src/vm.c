@@ -2991,7 +2991,7 @@ int idio_vm_run1 (IDIO thr)
 	    IDIO_VM_RUN_DIS ("RETURN");
 	    IDIO ipc = IDIO_THREAD_STACK_POP ();
 	    if (! IDIO_TYPE_FIXNUMP (ipc)) {
-		idio_debug ("RETURN {fixnum} not %s\n", ipc);
+		idio_debug ("RETURN {fixnum}: not %s\n", ipc);
 		idio_debug ("THR %s\n", thr);
 		idio_debug ("STK %s\n", IDIO_THREAD_STACK (thr));
 		idio_error_C ("RETURN: not a number", IDIO_LIST1 (ipc));

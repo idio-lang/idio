@@ -140,7 +140,7 @@ IDIO_DEFINE_PRIMITIVE1 ("c/isatty", C_isatty, (IDIO ifd))
     return idio_C_int (r);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("c/kill", C_kill, (IDIO ipid, IDIO isig))
+IDIO_DEFINE_PRIMITIVE2 ("c/kill", C_kill, (IDIO ipid, IDIO isig))
 {
     IDIO_ASSERT (ipid);
     IDIO_ASSERT (isig);
