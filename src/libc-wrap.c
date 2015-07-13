@@ -650,7 +650,12 @@ static void idio_libc_set_signal_names ()
 	sprintf (idio_libc_signal_names[SIGRTMAX], "SIGRTMAX");
 
 	int rtmid = (rtmax - rtmin) / 2;
-	for (i = 1; i <= rtmid ; i++) {
+	int rtdiff = (rtmax - rtmin) - (rtmid * 2);
+	if (rtdiff) {
+	    rtmid++;
+	}
+	
+	for (i = 1; i < rtmid ; i++) {
 	    sprintf (idio_libc_signal_names[rtmin + i], "SIGRTMIN+%d", i);
 	    sprintf (idio_libc_signal_names[rtmax - i], "SIGRTMAX-%d", i);
 	}
@@ -660,7 +665,7 @@ static void idio_libc_set_signal_names ()
 	 * don't forget it is SIGRTMIN -> SIGRTMAX *inclusive* so
 	 * there is an off-by-one error tempting us here...
 	 */
-	if (0 == ((rtmax - rtmin) - (rtmid * 2))) {
+	if (0 == rtdiff) {
 	    sprintf (idio_libc_signal_names[rtmin + i], "SIGRTMIN+%d", i);
 	}
     }
