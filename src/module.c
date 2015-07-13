@@ -849,7 +849,7 @@ IDIO idio_module_add_computed_symbol (IDIO symbol, IDIO get, IDIO set, IDIO modu
 
     IDIO sv = idio_hash_get (IDIO_MODULE_SYMBOLS (module), symbol);
     IDIO kind;
-    IDIO fvi;
+    IDIO fvi = idio_S_unspec;
     
     if (idio_S_unspec == sv) {
 	idio_ai_t vi = idio_vm_extend_symbols (symbol);
