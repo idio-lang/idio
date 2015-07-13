@@ -27,6 +27,100 @@
 OPATH := PATH
 PATH = string-append PATH ":" PWD 
 
+;; to avoid repeating the bulk of the error handler we'll just
+;; (re)define the interesting bit, rt-command-status-error-handler
+rcseh := #n
+
+monitor (function (cont cond) {
+  edisplay* "command tests: monitor" cont cond
+  test (rt-command-status-error? cond) #t
+  if cont {
+    if (rt-command-status-error? cond) {
+      rcseh cond
+    } {
+      edisplay* "command tests: unexpected condition" cond
+      raise cont cond
+    }
+  } {
+    edisplay* "command tests: unexpected non-continuable condition" cond
+    raise cont cond
+  }
+}) {
+
+  ;; define some rt-command-status-error-handlers for the conditions
+  ;; we are contriving to generate so that we can switch between them
+  ;; as we go along
+
+  ;; for exit0 we don't expect this code to be run at all -- hence
+  ;; complaining loudly and testing for something that isn't generated
+  ;; (spotting an error in the summary is easier to spot)
+  exit0 := function (cond) {
+    edisplay* "command tests: unexpected status error" cond
+    job := idio-error-location cond
+    edisplay* "pipeline:" (%idio-job-pipeline job)
+    edisplay* "detail:" (pipeline-detail job)
+    test (rt-command-status-error-status cond) 'job-failed
+  }
+
+  exit1 := function (cond) {
+    job := idio-error-location cond
+    test (job-detail job) '(exit 1)
+    rt-command-status-error-status cond
+  }
+
+  killed1 := function (cond) {
+    job := idio-error-location cond
+    test (job-detail job) '(killed 1)
+    rt-command-status-error-status cond
+  }
+
+  rcseh = exit1
+  display* "One: -e 1"
+  test (auto-exit -e 1) #f
+
+  rcseh = killed1
+  display* "Two: -k 1"
+  test (auto-exit -k 1) #f
+
+  rcseh = exit0
+  display* "Three: -w 1"
+  test (auto-exit -w 1) #t
+
+  ;; backgrounded job
+  display* "Four: -w 1 &"
+  bg-job auto-exit -w 1
+  wait %%last-job
+  display* "Four: test"
+  test (job-failed %%last-job) #f
+  display* "Four: done"
+
+  ;; pipeline
+  display* "Five: -w 1 | -r 1"
+  test (auto-exit -w 1 | auto-exit -r 1) #t
+
+  ;; second command should finish first
+  display* "Six: -w 2 | -r 1"
+  test (auto-exit -w 2 -s 1 | auto-exit -r 1) #t
+
+  ;; pipeline with regular Idio as the writer
+  display* "Seven: display | -r 1"
+  test (display* "first" | auto-exit -r 1) #t
+
+  ;; second job should fail to read a line and Bash's read will cause
+  ;; Bash to "exit 1"
+  display* "\n\nLast command"
+  rcseh = exit1
+  test ((auto-exit -e 0) | auto-exit -r 1) #f
+  %%vm-trace 0
+
+  edisplay* "waiting..."
+  (wait)
+  c/sleep 1
+  (wait)
+  c/sleep 1
+  (wait)
+}
+
 monitor (function (cont cond) {
   ;; edisplay* "auto-exit: monitor" cont cond
   test (rt-command-status-error? cond) #t

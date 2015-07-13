@@ -24,7 +24,7 @@
 #define LIBC_WRAP_H
 
 extern char **idio_libc_signal_names;
-char *idio_libc_sig_name (int signum);
+char *idio_libc_signal_name (int signum);
 
 void idio_init_libc_wrap ();
 void idio_libc_wrap_add_primitives ();

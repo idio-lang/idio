@@ -598,6 +598,8 @@ IDIO_DEFINE_PRIMITIVE1 ("c/~", C_bw_complement, (IDIO v1))
  * signals".  SIGRT* are in a range of their own.
  */
 
+#define IDIO_LIBC_FSIG 1
+
 #if defined (BSD)
 #define IDIO_LIBC_NSIG (SIGRTMAX + 1)
 #else
@@ -619,7 +621,7 @@ static void idio_libc_set_signal_names ()
     idio_libc_signal_names = idio_alloc ((IDIO_LIBC_NSIG + 1) * sizeof (char *));
 
     int i;
-    for (i = 0; i < IDIO_LIBC_NSIG; i++) {
+    for (i = IDIO_LIBC_FSIG; i < IDIO_LIBC_NSIG; i++) {
 	idio_libc_signal_names[i] = idio_alloc (IDIO_LIBC_SIGNAMELEN);
 	*(idio_libc_signal_names[i]) = '\0';
     }
@@ -840,7 +842,7 @@ static void idio_libc_set_signal_names ()
 
 #if IDIO_DEBUG
     int first = 1;
-    for (i = 1 ; i < IDIO_LIBC_NSIG ; i++) {
+    for (i = IDIO_LIBC_FSIG ; i < IDIO_LIBC_NSIG ; i++) {
 	if ('\0' == *(idio_libc_signal_names[i])) {
 	    sprintf (idio_libc_signal_names[i], "SIGJUNK%d", i);
 	    if (first) {
@@ -856,9 +858,9 @@ static void idio_libc_set_signal_names ()
 #endif
 }
 
-char *idio_libc_sig_name (int signum)
+char *idio_libc_signal_name (int signum)
 {
-    if (signum < 1 ||
+    if (signum < IDIO_LIBC_FSIG ||
 	signum > IDIO_LIBC_NSIG) {
 	idio_error_param_type ("int < NSIG (or SIGRTMAX)", idio_C_int (signum));
     }
@@ -872,12 +874,24 @@ char *idio_libc_sig_name (int signum)
     }
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("c/sig-name", C_sig_name, (IDIO isignum))
+IDIO_DEFINE_PRIMITIVE1 ("c/signal-name", C_signal_name, (IDIO isignum))
 {
     IDIO_ASSERT (isignum);
     IDIO_VERIFY_PARAM_TYPE (C_int, isignum);
 
-    return idio_string_C (idio_libc_sig_name (IDIO_C_TYPE_INT (isignum)));
+    return idio_string_C (idio_libc_signal_name (IDIO_C_TYPE_INT (isignum)));
+}
+
+IDIO_DEFINE_PRIMITIVE0 ("c/signal-names", C_signal_names, ())
+{
+    IDIO r = idio_S_nil;
+
+    int i;
+    for (i = IDIO_LIBC_FSIG; i < IDIO_LIBC_NSIG ; i++) {
+	r = idio_pair (idio_pair (idio_C_int (i), idio_string_C (idio_libc_signal_name (i))), r);
+    }
+
+    return idio_list_reverse (r);
 }
 
 /*
@@ -1884,7 +1898,8 @@ void idio_libc_wrap_add_primitives ()
     IDIO_ADD_PRIMITIVE (C_bw_xor);
     IDIO_ADD_PRIMITIVE (C_bw_complement);
 
-    IDIO_ADD_PRIMITIVE (C_sig_name);
+    IDIO_ADD_PRIMITIVE (C_signal_name);
+    IDIO_ADD_PRIMITIVE (C_signal_names);
     IDIO_ADD_PRIMITIVE (C_strerrno);
     IDIO_ADD_PRIMITIVE (C_to_integer);
     IDIO_ADD_PRIMITIVE (C_integer_to);
@@ -1893,7 +1908,7 @@ void idio_libc_wrap_add_primitives ()
 void idio_final_libc_wrap ()
 {
     int i;
-    for (i = 0; NULL != idio_libc_signal_names[i]; i++) {
+    for (i = IDIO_LIBC_FSIG; NULL != idio_libc_signal_names[i]; i++) {
         free (idio_libc_signal_names[i]);
     }
     free (idio_libc_signal_names);

@@ -1500,7 +1500,7 @@ void idio_debug (const char *fmt, IDIO o)
     IDIO_C_ASSERT (fmt);
     IDIO_ASSERT (o);
 
-    char *os = idio_as_string (o, 1);
+    char *os = idio_as_string (o, 4);
     fprintf (stderr, fmt, os);
     free (os);
 }
