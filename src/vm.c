@@ -227,6 +227,18 @@ static void idio_error_environ_unbound (idio_ai_t index)
     idio_raise_condition (idio_S_true, c);
 }
 
+static void idio_vm_error_computed (char *msg, idio_ai_t index)
+{
+    IDIO sh = idio_open_output_string_handle_C ();
+    idio_display_C (msg, sh);
+    IDIO c = idio_struct_instance (idio_condition_rt_variable_error_type,
+				   IDIO_LIST4 (idio_get_output_string (sh),
+					       idio_S_nil,
+					       idio_S_nil,
+					       idio_vm_symbols_ref (index)));
+    idio_raise_condition (idio_S_true, c);
+}
+
 /*
  * Idio instruction arrays.
  *
@@ -641,6 +653,25 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (j));
 	}
 	break;
+    case IDIO_VM_CODE_COMPUTED_REF:
+	{
+	    if (! idio_isa_pair (mt) ||
+		idio_list_length (mt) != 1) {
+		idio_vm_error_compile_param_args ("COMPUTED-REF j", mt);
+		return;
+	    }
+	    
+	    IDIO j = IDIO_PAIR_H (mt);
+
+	    if (! idio_isa_fixnum (j)) {
+		idio_vm_error_compile_param_type ("fixnum", j);
+		return;
+	    }
+
+	    IDIO_IA_PUSH1 (IDIO_A_COMPUTED_REF);
+	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (j));
+	}
+	break;
     case IDIO_VM_CODE_GLOBAL_SET:
 	{
 	    if (! idio_isa_pair (mt) ||
@@ -661,6 +692,29 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	    idio_vm_compile (thr, ia, m1, depth + 1);
 
 	    IDIO_IA_PUSH1 (IDIO_A_GLOBAL_SET);
+	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (j));
+	}
+	break;
+    case IDIO_VM_CODE_COMPUTED_SET:
+	{
+	    if (! idio_isa_pair (mt) ||
+		idio_list_length (mt) != 2) {
+		idio_vm_error_compile_param_args ("COMPUTED-SET j m1", mt);
+		return;
+	    }
+	    
+	    IDIO j = IDIO_PAIR_H (mt);
+
+	    if (! idio_isa_fixnum (j)) {
+		idio_vm_error_compile_param_type ("fixnum", j);
+		return;
+	    }
+
+	    IDIO m1 = IDIO_PAIR_H (IDIO_PAIR_T (mt));
+	    
+	    idio_vm_compile (thr, ia, m1, depth + 1);
+
+	    IDIO_IA_PUSH1 (IDIO_A_COMPUTED_SET);
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (j));
 	}
 	break;
@@ -2231,6 +2285,42 @@ void idio_vm_environ_set (idio_ai_t index, IDIO v, IDIO thr)
     }
 }
 
+void idio_vm_computed_ref (idio_ai_t index)
+{
+    IDIO gns = idio_array_get_index (idio_vm_values, index);
+    
+    if (idio_isa_pair (gns)) {
+	IDIO get = IDIO_PAIR_H (gns);
+	if (idio_isa_primitive (get) ||
+	    idio_isa_closure (get)) {
+	    idio_apply (get, IDIO_LIST1 (idio_S_nil));
+	} else {
+	    idio_vm_error_computed ("no get accessor", index);
+	}
+    } else {
+	idio_vm_error_computed ("no accessors", index);
+    }
+}
+
+void idio_vm_computed_set (idio_ai_t index, IDIO v)
+{
+    IDIO_ASSERT (v);
+
+    IDIO gns = idio_array_get_index (idio_vm_values, index);
+    
+    if (idio_isa_pair (gns)) {
+	IDIO set = IDIO_PAIR_T (gns);
+	if (idio_isa_primitive (set) ||
+	    idio_isa_closure (set)) {
+	    idio_apply (set, IDIO_LIST1 (v));
+	} else {
+	    idio_vm_error_computed ("no set accessor", index);
+	}
+    } else {
+	idio_vm_error_computed ("no accessors", index);
+    }
+}
+
 static void idio_vm_push_handler (IDIO thr, IDIO val)
 {
     IDIO_ASSERT (thr);
@@ -2756,6 +2846,14 @@ int idio_vm_run1 (IDIO thr)
     	    IDIO_THREAD_VAL (thr) = idio_vm_constants_ref (i); 
     	} 
     	break; 
+    case IDIO_A_COMPUTED_REF:
+	{
+	    uint64_t i = idio_vm_fetch_varuint (thr);
+	    IDIO sym = idio_vm_symbols_ref (i); 
+	    IDIO_VM_RUN_DIS ("COMPUTED-REF %" PRId64 " %s", i, IDIO_SYMBOL_S (sym)); 
+	    idio_vm_computed_ref (i);
+	}
+	break;
     case IDIO_A_PREDEFINED0:
 	{
 	    IDIO_VM_RUN_DIS ("PREDEFINED 0 #t");
@@ -2867,6 +2965,15 @@ int idio_vm_run1 (IDIO thr)
 	    if (idio_isa_closure (val)) {
 		idio_hash_put (idio_vm_closure_name, idio_fixnum (IDIO_CLOSURE_CODE (val)), sym);
 	    }
+	}
+	break;
+    case IDIO_A_COMPUTED_SET:
+	{
+	    uint64_t i = idio_vm_fetch_varuint (thr);
+	    IDIO sym = idio_vm_symbols_ref (i); 
+	    IDIO_VM_RUN_DIS ("COMPUTED-SET %" PRId64 " %s", i, IDIO_SYMBOL_S (sym)); 
+	    IDIO val = IDIO_THREAD_VAL (thr);
+	    idio_vm_computed_set (i, val);
 	}
 	break;
     case IDIO_A_LONG_GOTO:

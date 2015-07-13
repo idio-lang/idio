@@ -574,6 +574,8 @@ IDIO idio_module_symbol_value (IDIO symbol, IDIO m_or_n)
 	    sv = idio_vm_dynamic_ref (IDIO_FIXNUM_VAL (fvi), idio_current_thread ());
 	} else if (idio_S_environ == kind) {
 	    sv = idio_vm_environ_ref (IDIO_FIXNUM_VAL (fvi), idio_current_thread ());
+	} else if (idio_S_computed == kind) {
+	    idio_error_C ("cannot get a computed variable from C", IDIO_LIST1 (sv));
 	} else {
 	    idio_error_C ("unexpected symbol kind", IDIO_LIST1 (sv));
 	}
@@ -663,6 +665,8 @@ IDIO idio_module_symbol_value_recurse (IDIO symbol, IDIO m_or_n)
 	    sv = idio_vm_dynamic_ref (IDIO_FIXNUM_VAL (fvi), idio_current_thread ());
 	} else if (idio_S_environ == kind) {
 	    sv = idio_vm_environ_ref (IDIO_FIXNUM_VAL (fvi), idio_current_thread ());
+	} else if (idio_S_computed == kind) {
+	    idio_error_C ("cannot get a computed variable from C", IDIO_LIST1 (sv));
 	} else {
 	    idio_error_C ("unexpected symbol kind", IDIO_LIST1 (sv));
 	}
@@ -772,7 +776,7 @@ IDIO idio_module_set_symbol_value (IDIO symbol, IDIO value, IDIO module)
 	kind = idio_S_toplevel;
 	fvi = idio_fixnum (vi);
 	
-	idio_hash_put (IDIO_MODULE_SYMBOLS (module), symbol, IDIO_LIST2 (idio_S_toplevel, fvi));
+	idio_hash_put (IDIO_MODULE_SYMBOLS (module), symbol, IDIO_LIST2 (kind, fvi));
     } else {
 	kind = IDIO_PAIR_H (sv);
 	fvi = IDIO_PAIR_H (IDIO_PAIR_T (sv));
@@ -784,6 +788,8 @@ IDIO idio_module_set_symbol_value (IDIO symbol, IDIO value, IDIO module)
 	idio_vm_dynamic_set (IDIO_FIXNUM_VAL (fvi), value, idio_current_thread ());
     } else if (idio_S_environ == kind) {
 	idio_vm_environ_set (IDIO_FIXNUM_VAL (fvi), value, idio_current_thread ());
+    } else if (idio_S_computed == kind) {
+	idio_vm_computed_set (IDIO_FIXNUM_VAL (fvi), value);
     } else if (idio_S_predef == kind) {
 	idio_error_C ("cannot set a primitive", IDIO_LIST1 (symbol));
     } else {
@@ -830,6 +836,37 @@ IDIO_DEFINE_PRIMITIVE3 ("set-symbol-value!", set_symbol_value, (IDIO symbol, IDI
     IDIO_VERIFY_PARAM_TYPE (module, module);
 
     return idio_module_set_symbol_value (symbol, value, module);
+}
+
+IDIO idio_module_add_computed_symbol (IDIO symbol, IDIO get, IDIO set, IDIO module)
+{
+    IDIO_ASSERT (symbol);
+    IDIO_ASSERT (get);
+    IDIO_ASSERT (set);
+    IDIO_ASSERT (module);
+    IDIO_TYPE_ASSERT (symbol, symbol);
+    IDIO_TYPE_ASSERT (module, module);
+
+    IDIO sv = idio_hash_get (IDIO_MODULE_SYMBOLS (module), symbol);
+    IDIO kind;
+    IDIO fvi;
+    
+    if (idio_S_unspec == sv) {
+	idio_ai_t vi = idio_vm_extend_symbols (symbol);
+	kind = idio_S_computed;
+	fvi = idio_fixnum (vi);
+	
+	idio_hash_put (IDIO_MODULE_SYMBOLS (module), symbol, IDIO_LIST2 (kind, fvi));
+    } else {
+	kind = IDIO_PAIR_H (sv);
+	if (idio_S_computed != kind) {
+	    idio_error_C ("computed variable already defined", IDIO_LIST2 (symbol, kind));
+	}
+    }
+
+    idio_vm_values_set (IDIO_FIXNUM_VAL (fvi), idio_pair (get, set));
+
+    return idio_S_unspec;
 }
 
 void idio_init_module ()

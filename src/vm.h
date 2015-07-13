@@ -39,6 +39,7 @@
 #define IDIO_A_CHECKED_GLOBAL_REF          8
 #define IDIO_A_CHECKED_GLOBAL_FUNCTION_REF 9
 #define IDIO_A_CONSTANT_REF                10 
+#define IDIO_A_COMPUTED_REF                11
 
 #define IDIO_A_PREDEFINED0                 20
 #define IDIO_A_PREDEFINED1                 21
@@ -58,6 +59,7 @@
 #define IDIO_A_SHALLOW_ARGUMENT_SET        34
 #define IDIO_A_DEEP_ARGUMENT_SET           35
 #define IDIO_A_GLOBAL_SET                  36
+#define IDIO_A_COMPUTED_SET                37
 
 #define IDIO_A_LONG_GOTO                   40
 #define IDIO_A_LONG_JUMP_FALSE             41
@@ -195,6 +197,8 @@
 #define IDIO_VM_CODE_CHECKED_GLOBAL_FUNCTION_REF (IDIO_VM_CODE_BASE+12)
 #define IDIO_VM_CODE_GLOBAL_SET                  (IDIO_VM_CODE_BASE+13)
 #define IDIO_VM_CODE_CONSTANT                    (IDIO_VM_CODE_BASE+14)
+#define IDIO_VM_CODE_COMPUTED_REF                (IDIO_VM_CODE_BASE+15)
+#define IDIO_VM_CODE_COMPUTED_SET                (IDIO_VM_CODE_BASE+16)
     
 #define IDIO_VM_CODE_ALTERNATIVE                 (IDIO_VM_CODE_BASE+20)
 #define IDIO_VM_CODE_SEQUENCE                    (IDIO_VM_CODE_BASE+21)
@@ -251,6 +255,8 @@
 #define idio_I_CHECKED_GLOBAL_REF          ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_CHECKED_GLOBAL_REF))
 #define idio_I_CHECKED_GLOBAL_FUNCTION_REF ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_CHECKED_GLOBAL_FUNCTION_REF))
 #define idio_I_GLOBAL_SET                  ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_GLOBAL_SET))
+#define idio_I_COMPUTED_REF                ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_COMPUTED_REF))
+#define idio_I_COMPUTED_SET                ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_COMPUTED_SET))
 #define idio_I_CONSTANT                    ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_CONSTANT))
 #define idio_I_ALTERNATIVE                 ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_ALTERNATIVE))
 #define idio_I_SEQUENCE                    ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_SEQUENCE))
@@ -303,6 +309,8 @@ IDIO idio_vm_dynamic_ref (idio_ai_t index, IDIO thr);
 void idio_vm_dynamic_set (idio_ai_t i, IDIO v, IDIO thr);
 IDIO idio_vm_environ_ref (idio_ai_t index, IDIO thr);
 void idio_vm_environ_set (idio_ai_t i, IDIO v, IDIO thr);
+void idio_vm_computed_ref (idio_ai_t index);
+void idio_vm_computed_set (idio_ai_t i, IDIO v);
 
 void idio_raise_condition (IDIO continuablep, IDIO e);
 IDIO idio_apply (IDIO fn, IDIO args);

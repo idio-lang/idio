@@ -303,6 +303,7 @@
 #define IDIO_CONSTANT_PREDEF           31
 #define IDIO_CONSTANT_LOCAL            32
 #define IDIO_CONSTANT_ENVIRON          33
+#define IDIO_CONSTANT_COMPUTED         34
 
 
 #define idio_S_nil		((const IDIO) IDIO_CONSTANT (IDIO_CONSTANT_NIL))
@@ -318,6 +319,7 @@
 #define idio_S_predef		((const IDIO) IDIO_CONSTANT (IDIO_CONSTANT_PREDEF))
 #define idio_S_local		((const IDIO) IDIO_CONSTANT (IDIO_CONSTANT_LOCAL))
 #define idio_S_environ		((const IDIO) IDIO_CONSTANT (IDIO_CONSTANT_ENVIRON))
+#define idio_S_computed		((const IDIO) IDIO_CONSTANT (IDIO_CONSTANT_COMPUTED))
 
 #endif
 

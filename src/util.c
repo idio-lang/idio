@@ -563,6 +563,7 @@ char *idio_as_string (IDIO o, int depth)
 	    case IDIO_CONSTANT_PREDEF:               t = "predef/c";         break;
 	    case IDIO_CONSTANT_LOCAL:                t = "local/c";          break;
 	    case IDIO_CONSTANT_ENVIRON:              t = "environ/c";        break;
+	    case IDIO_CONSTANT_COMPUTED:             t = "computed/c";       break;
 
 	    case IDIO_TOKEN_DOT:                     t = "T/.";                     break;
 	    case IDIO_TOKEN_LPAREN:                  t = "T/(";                     break;

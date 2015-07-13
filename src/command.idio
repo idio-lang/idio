@@ -126,6 +126,10 @@ define (pipeline-detail job) {
 }
 
 define (mark-process-status pid status) {
+  display* "mps:" pid
+  edisplay* "mps jobs:" (map (function (job) { 
+				%idio-job-pipeline job
+			      }) %idio-jobs)
   if+ (c/> pid 0) {
     jobs-loop :+ function (jobs) {
       if+ (null? jobs) {
@@ -144,21 +148,21 @@ define (mark-process-status pid status) {
                         edisplay* "Job Terminated: kill -" (c/sig-name (c/WTERMSIG status))  pid ":" (c/strsignal (c/WTERMSIG status))
                       }
 		    }
-		    #f
+		    #t
                   } else {
 		    procs-loop (pt procs)
 		  }
             }
 
-	    procs-loop (%idio-job-procs (ph jobs))
+	    (or (procs-loop (%idio-job-procs (ph jobs)))
+		(jobs-loop (pt jobs)))
           }
     }
 
     jobs-loop %idio-jobs
   } (or (c/== pid 0)
-	 #t ;(c/== c/errno ECHLD)
-	 ) {
-    edisplay* "MPS: pid == 0"
+	(c/== c/errno ECHLD)) {
+    edisplay* "MPS: pid ==" pid ", errno ==" (c/strerrno c/errno)
     #t
   } else {
     ;; an error in c/waitpid would have been signalled there
@@ -171,6 +175,7 @@ define (update-status) {
     apply values (c/waitpid c/WAIT_ANY (c/WUNTRACED c/| c/WNOHANG))
   }
 
+  edisplay* "us"
   do () ((call-with-values waitany mark-process-status) #n) #n
 }
 
@@ -179,24 +184,27 @@ define (wait-for-job job) {
     apply values (c/waitpid c/WAIT_ANY c/WUNTRACED)
   }
 
+  edisplay* "wfj"
   do () ((not (and (not (call-with-values waitany mark-process-status))
-	      (not (job-is-stopped job))
-	      (not (job-is-completed job)))) #n) #n
+	           (not (job-is-stopped job))
+	           (not (job-is-completed job)))) 
+         (not (job-failed job))) #n
 }
 
 define (format-job-info job msg) {
   edisplay* "job:" (%idio-job-pgid job) "(" msg ")"
 }
 
-define (do-job-notification-1) {
+define (do-job-notification) {
+  edisplay* "djn"
   ;; get the latest data
   (update-status)
 
-  %%vm-trace 1
+  ;%%vm-trace 1
   failed-jobs := #n
 
-  loop :+ function (jobs r) {
-    if+ (null? jobs) (reverse r) \
+  loop :+ function (jobs njobs) {
+    if+ (null? jobs) (reverse njobs) \
 	else {
           job := ph jobs
           if+ (job-is-completed job) {
@@ -205,15 +213,15 @@ define (do-job-notification-1) {
 	      failed-jobs = pair job failed-jobs
 	    }
             ;; remove job from list (by not including it!)
-            loop (pt jobs) r
+            loop (pt jobs) njobs
           } (job-is-stopped job) {
             if (not (%idio-job-notified job)) {
               format-job-info job "stopped"
               set-%idio-job-notified! job #t
             }
-            loop (pt jobs) (pair job r)
+            loop (pt jobs) (pair job njobs)
           } else {
-	    loop (pt jobs) (pair job r)
+	    loop (pt jobs) (pair job njobs)
           }
         }
   }
@@ -271,8 +279,8 @@ define (background-job job cont) {
     c/kill (- job-pgid) c/SIGCONT
   }
 
-  ;; result of a backgrounded job is always successful, ie. 0
-  0
+  ;; result of a backgrounded job is always successful, ie. #t
+  #t
 }
 
 define (hangup-job job) {
@@ -344,7 +352,7 @@ define (prep-process pgid infile outfile foreground) {
 }
 
 define-operator | {
-  edisplay* "operator" op before after
+  ;; edisplay* "operator" op before after
 
   foreground := #t
   if (eq? 'bg-job (ph before)) {
@@ -363,7 +371,7 @@ define-operator | {
   }
 
   op-args := split op (list before) #n after
-  edisplay* "operator" op op-args
+  ;; edisplay* "operator" op op-args
 
   ;; looping over the list of commands prepping the children uses a
   ;; number of variables which are a pain to manage as we don't want
@@ -453,9 +461,9 @@ define-operator | {
 			c/close (c/pipe-reader $pgrp-pipe)
 			c/close (c/pipe-writer $pgrp-pipe)
 		      }
-		      edisplay* "child" (c/getpid) "cmd" '$cmd
+		      ;; edisplay* "child" (c/getpid) "cmd" '$cmd
 		      if+ (pair? (ph '$cmd)) {
-			    edisplay* "pair =>" (ph '$cmd)
+			    ;; edisplay* "pair =>" (ph '$cmd)
 			    ;(ph '$cmd)
 			    $@cmd
 			  } \
@@ -518,7 +526,7 @@ define-macro (launch-1proc foreground & cmd) {
     if+ (c/== pid 0) {
       prep-process pgid stdin stdout $foreground
       if+ (pair? (ph '$cmd)) {
-            edisplay* "pair =>" (ph '$cmd)
+            ;; edisplay* "pair =>" (ph '$cmd)
             $@cmd
             ;$cmd
 	  } \
@@ -560,3 +568,23 @@ define-macro (bg-job & cmd) {
   %T{ launch-1proc #f $@cmd }
 }
 
+define (wait & jobs) {
+  loop :+ function (jobs) {
+    if (null? jobs) #t {
+      wait-for-job (ph jobs)
+      loop (pt jobs)
+    }
+  }
+
+  if (null? jobs) {
+    edisplay* "wait:" (map (function (job) { 
+			     %idio-job-pipeline job
+			   }) %idio-jobs)
+    loop %idio-jobs
+  } {
+    edisplay* "wait jobs:" (map (function (job) { 
+				  %idio-job-pipeline job
+				}) jobs)
+    loop jobs
+  }
+}

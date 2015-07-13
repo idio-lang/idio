@@ -342,6 +342,9 @@ IDIO idio_toplevel_extend (IDIO name, int variant)
     case IDIO_ENVIRON_SCOPE:
 	kind = idio_S_environ;
 	break;
+    case IDIO_COMPUTED_SCOPE:
+	kind = idio_S_computed;
+	break;
     default:
 	idio_error_printf ("toplevel-extend: unexpected toplevel variant %d", variant);
 	return idio_S_unspec;
@@ -905,6 +908,8 @@ static IDIO idio_meaning_reference (IDIO name, IDIO nametree, int tailp, int aut
 	return IDIO_LIST2 (idio_I_DYNAMIC_REF, i);
     } else if (idio_S_environ == kt) {
 	return IDIO_LIST2 (idio_I_ENVIRON_REF, i);
+    } else if (idio_S_computed == kt) {
+	return IDIO_LIST2 (idio_I_COMPUTED_REF, i);
     } else if (idio_S_predef == kt) {
 	/* fprintf (stderr, "meaning-reference: predefined #%zd\n", IDIO_FIXNUM_VAL (i)); */
 	return IDIO_LIST2 (idio_I_PREDEFINED, i);
@@ -952,6 +957,8 @@ static IDIO idio_meaning_function_reference (IDIO name, IDIO nametree, int tailp
 	return IDIO_LIST2 (idio_I_DYNAMIC_FUNCTION_REF, i);
     } else if (idio_S_environ == kt) {
 	return IDIO_LIST2 (idio_I_ENVIRON_REF, i);
+    } else if (idio_S_computed == kt) {
+	return IDIO_LIST2 (idio_I_COMPUTED_REF, i);
     } else if (idio_S_predef == kt) {
 	/* fprintf (stderr, "meaning-reference: predefined #%zd\n", IDIO_FIXNUM_VAL (i)); */
 	return IDIO_LIST2 (idio_I_PREDEFINED, i);
@@ -1199,6 +1206,8 @@ static IDIO idio_meaning_assignment (IDIO name, IDIO e, IDIO nametree, int tailp
     } else if (idio_S_dynamic == kt ||
 	       idio_S_environ == kt) {
 	return IDIO_LIST3 (idio_I_GLOBAL_SET, i, m);
+    } else if (idio_S_computed == kt) {
+	return IDIO_LIST3 (idio_I_COMPUTED_SET, i, m);
     } else if (idio_S_predef == kt) {
 	/*
 	 * We can shadow predefs...semantically dubious
@@ -1615,6 +1624,29 @@ static IDIO idio_meaning_define_environ (IDIO name, IDIO e, IDIO nametree, int t
     idio_toplevel_extend (name, IDIO_ENVIRON_SCOPE);
     
     return idio_meaning_assignment (name, e, nametree, tailp, IDIO_ENVIRON_SCOPE);
+}
+
+static IDIO idio_meaning_define_computed (IDIO name, IDIO e, IDIO nametree, int tailp)
+{
+    IDIO_ASSERT (name);
+    IDIO_ASSERT (e);
+    IDIO_ASSERT (nametree);
+    IDIO_TYPE_ASSERT (symbol, name);
+    IDIO_TYPE_ASSERT (list, nametree);
+
+    /* idio_debug ("meaning-define-computed: (define-computed %s", name);  */
+    /* idio_debug (" %s)\n", e);  */
+
+    if (idio_isa_pair (e)) {
+	e = IDIO_PAIR_H (e);
+    }
+
+    /* idio_debug ("meaning-define-computed: (define-computed %s", name); */
+    /* idio_debug (" %s)\n", e); */
+
+    idio_toplevel_extend (name, IDIO_COMPUTED_SCOPE);
+    
+    return idio_meaning_assignment (name, e, nametree, tailp, IDIO_COMPUTED_SCOPE);
 }
 
 static IDIO idio_meaning_sequence (IDIO ep, IDIO nametree, int tailp, IDIO keyword);
@@ -2537,6 +2569,15 @@ static IDIO idio_meaning_environ_unset (IDIO name, IDIO ep, IDIO nametree, int t
     IDIO_TYPE_ASSERT (list, nametree);
 
     return idio_meaning_environ_let (name, idio_S_unset, ep, nametree, tailp);
+}
+
+static IDIO idio_meaning_computed_reference (IDIO name, IDIO nametree, int tailp)
+{
+    IDIO_ASSERT (name);
+    IDIO_ASSERT (nametree);
+    IDIO_TYPE_ASSERT (list, nametree);
+
+    return idio_meaning_reference (name, nametree, tailp, IDIO_COMPUTED_SCOPE);
 }
 
 static IDIO idio_meaning_monitor (IDIO e, IDIO ep, IDIO nametree, int tailp)

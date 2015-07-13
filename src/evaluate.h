@@ -31,6 +31,7 @@
 #define IDIO_DYNAMIC_SCOPE	2 /* dynamic globals */
 #define IDIO_ENVIRON_SCOPE	3 /* dynamics tagged as environment
 				     variables */
+#define IDIO_COMPUTED_SCOPE	4 /* computed variables */
 
 void idio_add_description (IDIO sym, IDIO desc);
 IDIO idio_get_description (IDIO sym);

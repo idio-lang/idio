@@ -56,6 +56,7 @@ IDIO idio_module_set_symbol_value (IDIO symbol, IDIO value, IDIO module);
 IDIO idio_module_primitive_set_symbol_value (IDIO symbol, IDIO value);
 IDIO idio_module_current_set_symbol_value (IDIO symbol, IDIO value);
 IDIO idio_module_toplevel_set_symbol_value (IDIO symbol, IDIO value);
+IDIO idio_module_add_computed_symbol (IDIO symbol, IDIO get, IDIO set, IDIO module);
 
 void idio_init_module (void);
 void idio_module_add_primitives ();
