@@ -836,6 +836,7 @@ static void idio_libc_set_signal_names ()
     sprintf (idio_libc_signal_names[SIGSTKFLT], "SIGSTKFLT");
 #endif
 
+#if IDIO_DEBUG
     int first = 1;
     for (i = 1 ; i < IDIO_LIBC_NSIG ; i++) {
 	if ('\0' == *(idio_libc_signal_names[i])) {
@@ -850,6 +851,7 @@ static void idio_libc_set_signal_names ()
     if (0 == first) {
 	fprintf (stderr, "\n");
     }
+#endif
 }
 
 char *idio_libc_sig_name (int signum)
@@ -1722,6 +1724,7 @@ static void idio_libc_set_errno_names ()
     sprintf (idio_libc_errno_names[EXFULL], "EXFULL");
 #endif
 
+#if IDIO_DEBUG
     int first = 1;
     for (i = 1 ; i < IDIO_LIBC_NERRNO ; i++) {
 	if ('\0' == *(idio_libc_errno_names[i])) {
@@ -1736,6 +1739,7 @@ static void idio_libc_set_errno_names ()
     if (0 == first) {
 	fprintf (stderr, "\n");
     }
+#endif
 }
 
 char *idio_libc_errno_name (int errnum)
