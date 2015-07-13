@@ -626,14 +626,14 @@ static void idio_libc_set_signal_names ()
     idio_libc_signal_names[i] = NULL;
 
     /*
-     * Linux are SIGRTMIN are a slippery pair.  To be fair, the header
+     * Linux and SIGRTMIN are a slippery pair.  To be fair, the header
      * file, asm-generic/signal.h, says "These should not be
      * considered constants from userland." [ie. userland, us, should
-     * not consider these values as constants] but defines SIGRTMIN as
-     * 32.
+     * not consider these values as constants] but immediately defines
+     * SIGRTMIN as 32.
      *
-     * In practice, I see SIGRTMIN as 34 and a quick grep has
-     * bits/signum.h suggesting SIGRTMIN is (__libc_current_sigrtmin
+     * In practice, the code sees SIGRTMIN as 34 and a quick grep has
+     * bits/signum.h #define'ing SIGRTMIN as (__libc_current_sigrtmin
      * ()).
      *
      * Which is neither clear nor portable (assuming bits/signum.h
@@ -648,15 +648,17 @@ static void idio_libc_set_signal_names ()
 	sprintf (idio_libc_signal_names[SIGRTMAX], "SIGRTMAX");
 
 	int rtmid = (rtmax - rtmin) / 2;
-	for (i = 1; i < rtmid ; i++) {
+	for (i = 1; i <= rtmid ; i++) {
 	    sprintf (idio_libc_signal_names[rtmin + i], "SIGRTMIN+%d", i);
 	    sprintf (idio_libc_signal_names[rtmax - i], "SIGRTMAX-%d", i);
 	}
 	
 	/*
-	 * Can have an extra SIGRTMIN+n if there's an odd number
+	 * Can have an extra SIGRTMIN+n if there's an odd number --
+	 * don't forget it is SIGRTMIN -> SIGRTMAX *inclusive* so
+	 * there is an off-by-one error tempting us here...
 	 */
-	if ((rtmax - rtmin + 1) - (rtmid * 2)) {
+	if (0 == ((rtmax - rtmin) - (rtmid * 2))) {
 	    sprintf (idio_libc_signal_names[rtmin + i], "SIGRTMIN+%d", i);
 	}
     }
@@ -881,8 +883,8 @@ IDIO_DEFINE_PRIMITIVE1 ("c/sig-name", C_sig_name, (IDIO isignum))
 /*
  * idio_libc_set_errno_names
  *
- * Surprisingly, despite using the macro value, say, ECHLD in code
- * there is no way to get the descriptive string "ECHLD" back out of
+ * Surprisingly, despite using the macro value, say, ECHILD in code
+ * there is no way to get the descriptive string "ECHILD" back out of
  * the system.  strerror(3) provides the helpful string "No child
  * processes".
  *
@@ -892,16 +894,20 @@ IDIO_DEFINE_PRIMITIVE1 ("c/sig-name", C_sig_name, (IDIO isignum))
 /* 
  * How many errnos are there?
  *
+ * FreeBSD and OS X define ELAST but many others do not.
+ *
  * Linux's errno(3) suggests we might be referring to the set
  * including *at least* Linux's own definitions, those of POSIX.1-2001
  * and those of C99.  (Open)Solaris' Intro(2) mentions the Single Unix
- * Specification as the source of all errnos.
+ * Specification as the source of all errnos and has gaps in its own
+ * definitions for some BSD Networking (100-119) and XENIX (135-142).
  *
- * And anything else that we stumble across.
+ * And there's a stragglers found in anything else that we stumble
+ * across.
  *
  * CentOS 6&7	EHWPOISON	133
  * OI 151a8	ESTALE		151
- * OS 10.10.4	EOPNOTSUPP	102
+ * OS 10.10.4	EQFULL		106
  * FreeBSD 10	EOWNERDEAD	96
  * Ubuntu 14	EHWPOISON	133	
  * Debian 8	EHWPOISON	133	
@@ -913,7 +919,7 @@ IDIO_DEFINE_PRIMITIVE1 ("c/sig-name", C_sig_name, (IDIO isignum))
 #elif defined (__linux__)
 #define IDIO_LIBC_NERRNO (EHWPOISON + 1)
 #elif defined (__APPLE__) && defined (__MACH__)
-#define IDIO_LIBC_NERRNO (EOPNOTSUPP + 1)
+#define IDIO_LIBC_NERRNO (EQFULL + 1)
 #elif defined (__sun) && defined (__SVR4)
 #define IDIO_LIBC_NERRNO (ESTALE + 1)
 #else
