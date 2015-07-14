@@ -691,7 +691,6 @@ static void idio_command_update_status (void)
     int status;
     pid_t pid;
 
-    fprintf (stderr, "icus\n");
     do
 	pid = waitpid (WAIT_ANY, &status, WUNTRACED | WNOHANG);
     while (!idio_command_mark_process_status (pid, status));
@@ -717,7 +716,6 @@ static IDIO idio_command_wait_for_job (IDIO job)
     int status;
     pid_t pid;
 
-    fprintf (stderr, "icwfj\n");
     do
 	pid = waitpid (WAIT_ANY, &status, WUNTRACED);
     while (!idio_command_mark_process_status (pid, status) &&
@@ -779,11 +777,9 @@ void idio_command_do_job_notification (void)
     /*
      * Get up to date info
      */
-    fprintf (stderr, "icdjn\n");
     idio_command_update_status ();
 
     IDIO jobs = idio_module_symbol_value (idio_command_jobs_name, idio_main_module ());
-    idio_debug ("icdjn: %s\n", jobs);
     IDIO njobs = idio_S_nil;
     IDIO failed_jobs = idio_S_nil;
     

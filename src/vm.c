@@ -36,6 +36,11 @@ typedef struct idio_i_array_s {
  *
  * %%vm-trace {val}.
  *
+ * Note that as you can start it deep inside some nested call
+ * structure and have it continue to run until well outside that nest
+ * then the indentation will be wrong.
+ *
+ *
  * idio_vm_dis reports the byte-instruction by byte-instruction flow.
  * You can enable/disable it in code with
  *
@@ -122,6 +127,9 @@ static IDIO idio_S_sigchld;
 #define IDIO_THREAD_FETCH_NEXT()	(idio_all_code->ae[IDIO_THREAD_PC(thr)++])
 #define IDIO_THREAD_STACK_PUSH(v)	(idio_array_push (IDIO_THREAD_STACK(thr), v))
 #define IDIO_THREAD_STACK_POP()		(idio_array_pop (IDIO_THREAD_STACK(thr)))
+
+#define IDIO_VM_INVOKE_REGULAR	 0
+#define IDIO_VM_INVOKE_TAIL_CALL 1
 
 static void idio_vm_panic (IDIO thr, char *m)
 {
@@ -2114,7 +2122,7 @@ static void idio_vm_invoke_C (IDIO thr, IDIO command)
     }
     IDIO_THREAD_VAL (thr) = vs;
     IDIO func = idio_module_current_symbol_value (IDIO_PAIR_H (command));
-    idio_vm_invoke (thr, func, 1);
+    idio_vm_invoke (thr, func, IDIO_VM_INVOKE_TAIL_CALL);
     idio_vm_run (thr);
 		    
     IDIO_THREAD_VAL (thr) = IDIO_THREAD_STACK_POP ();
@@ -2409,7 +2417,7 @@ void idio_raise_condition (IDIO continuablep, IDIO e)
     }
 
     /* God speed! */
-    idio_vm_invoke (thr, handler, 1);
+    idio_vm_invoke (thr, handler, IDIO_VM_INVOKE_TAIL_CALL);
 
     /*
      * Actually, for a user-defined error handler, which will be a
@@ -2517,7 +2525,7 @@ IDIO idio_apply (IDIO fn, IDIO args)
     IDIO thr = idio_current_thread ();
     IDIO_THREAD_VAL (thr) = vs;
 
-    idio_vm_invoke (thr, fn, 1);
+    idio_vm_invoke (thr, fn, IDIO_VM_INVOKE_TAIL_CALL);
 
     return IDIO_THREAD_VAL (thr);
 }
@@ -2600,7 +2608,7 @@ IDIO_DEFINE_PRIMITIVE1 ("%%call/cc", call_cc, (IDIO proc))
     /* idio_debug ("%%%%call/cc: THR %s\n", thr); */
     /* idio_debug ("%%%%call/cc: STK %s\n", IDIO_THREAD_STACK (thr)); */
     
-    idio_vm_invoke (thr, proc, 0);
+    idio_vm_invoke (thr, proc, IDIO_VM_INVOKE_REGULAR);
 
     if (NULL != IDIO_THREAD_JMP_BUF (thr)) {
 	longjmp (*(IDIO_THREAD_JMP_BUF (thr)), IDIO_VM_LONGJMP_CALLCC);
@@ -3136,7 +3144,7 @@ int idio_vm_run1 (IDIO thr)
 	    if (idio_vm_tracing) {
 		idio_vm_function_trace (ins, thr);
 	    }
-	    idio_vm_invoke (thr, IDIO_THREAD_FUNC (thr), 0);
+	    idio_vm_invoke (thr, IDIO_THREAD_FUNC (thr), IDIO_VM_INVOKE_REGULAR);
 	}
 	break;
     case IDIO_A_FUNCTION_GOTO:
@@ -3145,7 +3153,7 @@ int idio_vm_run1 (IDIO thr)
 	    if (idio_vm_tracing) {
 		idio_vm_function_trace (ins, thr);
 	    }
-	    idio_vm_invoke (thr, IDIO_THREAD_FUNC (thr), 1);
+	    idio_vm_invoke (thr, IDIO_THREAD_FUNC (thr), IDIO_VM_INVOKE_TAIL_CALL);
 	}
 	break;
     case IDIO_A_POP_CONS_FRAME:
@@ -4076,6 +4084,37 @@ IDIO idio_vm_run (IDIO thr)
 		/* idio_debug ("\nSIGCHLD: %s\n", idio_vm_sigchld_handler);     */
 		
 		if (idio_S_nil != idio_vm_sigchld_handler) {
+		    /*
+		     * We're about to call an event handler which
+		     * could be either a primitive or a closure.
+		     *
+		     * Either way, we are in the middle of some
+		     * sequence of instructions -- we are *not* at a
+		     * safe point, eg. in between two lines of source
+		     * code (assuming such a point would itself be
+		     * "safe").  So we need to preserve all state on
+		     * the stack.
+		     *
+		     * Including the current PC.  We'll replace it
+		     * with idio_vm_IHR_pc which knows how to unpick
+		     * what we've just pushed onto the stack and
+		     * RETURN to the current PC.
+		     *
+		     * In case the handler is a closure, we need to
+		     * create an empty argument frame in
+		     * IDIO_THREAD_VAL(thr).
+		     *
+		     * If the handler is a primitive then it'll run
+		     * through to completion and we'll immediately
+		     * start running idio_vm_IHR_pc to get us back to
+		     * where we interrupted.  All good.
+		     *
+		     * If it is a closure then we need to invoke it
+		     * such that it will return back to the current
+		     * PC, idio_vm_IHR_pc.  It we must invoke it as a
+		     * regular call, ie. not in tail position.
+		     */
+		    
 		    /* idio_debug ("SIGCHLD: pre-inv: %s\n", thr);  */
 		    /* idio_debug ("SIGCHLD: pre-inv: %s\n", IDIO_THREAD_STACK (thr)); */
 		    IDIO_THREAD_STACK_PUSH (idio_fixnum (IDIO_THREAD_PC (thr)));
@@ -4087,7 +4126,7 @@ IDIO idio_vm_run (IDIO thr)
 			
 		    IDIO vs = idio_frame_allocate (1);
 		    IDIO_THREAD_VAL (thr) = vs;
-		    idio_vm_invoke (thr, idio_vm_sigchld_handler, 1);
+		    idio_vm_invoke (thr, idio_vm_sigchld_handler, IDIO_VM_INVOKE_REGULAR);
 
 		    if (NULL != IDIO_THREAD_JMP_BUF (thr)) {
 			longjmp (*(IDIO_THREAD_JMP_BUF (thr)), IDIO_VM_LONGJMP_EVENT);

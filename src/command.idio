@@ -126,10 +126,6 @@ define (pipeline-detail job) {
 }
 
 define (mark-process-status pid status) {
-  display* "mps:" pid
-  edisplay* "mps jobs:" (map (function (job) { 
-				%idio-job-pipeline job
-			      }) %idio-jobs)
   if+ (c/> pid 0) {
     jobs-loop :+ function (jobs) {
       if+ (null? jobs) {
@@ -175,7 +171,6 @@ define (update-status) {
     apply values (c/waitpid c/WAIT_ANY (c/WUNTRACED c/| c/WNOHANG))
   }
 
-  edisplay* "us"
   do () ((call-with-values waitany mark-process-status) #n) #n
 }
 
@@ -184,7 +179,6 @@ define (wait-for-job job) {
     apply values (c/waitpid c/WAIT_ANY c/WUNTRACED)
   }
 
-  edisplay* "wfj"
   do () ((not (and (not (call-with-values waitany mark-process-status))
 	           (not (job-is-stopped job))
 	           (not (job-is-completed job)))) 
@@ -196,11 +190,9 @@ define (format-job-info job msg) {
 }
 
 define (do-job-notification) {
-  edisplay* "djn"
   ;; get the latest data
   (update-status)
 
-  ;%%vm-trace 1
   failed-jobs := #n
 
   loop :+ function (jobs njobs) {
@@ -245,7 +237,6 @@ define (do-job-notification) {
     report failed-jobs
   }
 
-  %%vm-trace 0
   #n
 }
 
