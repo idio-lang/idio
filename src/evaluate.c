@@ -1494,8 +1494,8 @@ static IDIO idio_meaning_define_operator (IDIO name, IDIO e, IDIO nametree, int 
     IDIO_ASSERT (nametree);
     IDIO_TYPE_ASSERT (list, nametree);
 
-    /* idio_debug ("meaning-define-operator: %s", name);     */
-    /* idio_debug (" %s\n", e);     */
+    /* idio_debug ("meaning-define-operator: %s", name);      */
+    /* idio_debug (" %s\n", e);      */
 
     /*
     if (idio_isa_symbol (e)) {
@@ -1575,8 +1575,9 @@ static IDIO idio_meaning_define_operator (IDIO name, IDIO e, IDIO nametree, int 
      */
     idio_module_set_symbol_value (name, cl, idio_operator_module); 
 
-    /* idio_debug ("idio-meaning-define-operator %s", name);  */
-    /* idio_debug (" r=%s\n", r);  */
+    /* idio_debug ("idio-meaning-define-operator %s", name);   */
+    /* idio_debug (" cl=%s", cl);   */
+    /* idio_debug (" r=%s\n", r);   */
     return r;
 }
 

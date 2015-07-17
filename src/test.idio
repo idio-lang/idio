@@ -58,9 +58,8 @@ define (fail expr result expected) {
 }
 
 define (test3 expr result expected) {
-;  (write expr) (display " => ") (write result) (newline)
   set! Tests (1 + Tests)
-;  (display "test #") (write Tests) (display ": ") (write expr)(display " => ") (write result) (newline)
+  ;display* "test #" Tests ":" expr "=>" result
   if (not (equal? result expected)) {
     fail expr result expected
   }

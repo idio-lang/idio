@@ -2096,17 +2096,15 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
 /*
  * Given a command as a list, (foo bar baz), run the code
  */
-static void idio_vm_invoke_C (IDIO thr, IDIO command)
+IDIO idio_vm_invoke_C (IDIO thr, IDIO command)
 {
     IDIO_ASSERT (thr);
     IDIO_ASSERT (command);
     IDIO_TYPE_ASSERT (thread, thr);
     IDIO_TYPE_ASSERT (pair, command);
 
-    idio_gc_pause ();
-    idio_vm_preserve_state (thr);
     IDIO_THREAD_STACK_PUSH (idio_fixnum (IDIO_THREAD_PC (thr)));
-    IDIO_THREAD_STACK_PUSH (IDIO_THREAD_VAL (thr));
+    idio_vm_preserve_all_state (thr);
 		
     /*
      * (length command) will give us the +1 frame allocation we need
@@ -2121,14 +2119,16 @@ static void idio_vm_invoke_C (IDIO thr, IDIO command)
 	args = IDIO_PAIR_T (args);
     }
     IDIO_THREAD_VAL (thr) = vs;
-    IDIO func = idio_module_current_symbol_value (IDIO_PAIR_H (command));
-    idio_vm_invoke (thr, func, IDIO_VM_INVOKE_TAIL_CALL);
+    /* IDIO func = idio_module_current_symbol_value (IDIO_PAIR_H (command)); */
+    idio_vm_invoke (thr, IDIO_PAIR_H (command), IDIO_VM_INVOKE_TAIL_CALL);
     idio_vm_run (thr);
-		    
-    IDIO_THREAD_VAL (thr) = IDIO_THREAD_STACK_POP ();
+
+    IDIO r = IDIO_THREAD_VAL (thr);
+    
+    idio_vm_restore_all_state (thr);
     IDIO_THREAD_PC (thr) = IDIO_FIXNUM_VAL (IDIO_THREAD_STACK_POP ());
-    idio_vm_restore_state (thr);
-    idio_gc_resume ();
+
+    return r;
 }
 
 static void idio_vm_push_dynamic (idio_ai_t index, IDIO thr, IDIO val)
@@ -4019,16 +4019,16 @@ IDIO idio_vm_run (IDIO thr)
     case 0:
 	break;
     case IDIO_VM_LONGJMP_SIGNAL_EXCEPTION:
-	fprintf (stderr, "longjmp from exception\n"); 
+	/* fprintf (stderr, "longjmp from exception\n");  */
 	break;
     case IDIO_VM_LONGJMP_CONTINUATION:
-	fprintf (stderr, "longjmp from continuation\n"); 
+	/* fprintf (stderr, "longjmp from continuation\n");  */
 	break;
     case IDIO_VM_LONGJMP_CALLCC:
-	fprintf (stderr, "longjmp from callcc\n"); 
+	/* fprintf (stderr, "longjmp from callcc\n");  */
 	break;
     case IDIO_VM_LONGJMP_EVENT:
-	fprintf (stderr, "longjmp from event\n"); 
+	/* fprintf (stderr, "longjmp from event\n");  */
 	break;
     default:
 	fprintf (stderr, "setjmp: unexpected value: %d\n", sjv);
@@ -4081,7 +4081,7 @@ IDIO idio_vm_run (IDIO thr)
 		if (idio_S_unspec != exists) {
 		    idio_vm_sigchld_handler = idio_module_symbol_value_recurse (idio_vm_sigchld_handler_name, idio_main_module ());
 		}
-		/* idio_debug ("\nSIGCHLD: %s\n", idio_vm_sigchld_handler);     */
+		/* idio_debug ("\nSIGCHLD: %s\n", idio_vm_sigchld_handler); */
 		
 		if (idio_S_nil != idio_vm_sigchld_handler) {
 		    /*

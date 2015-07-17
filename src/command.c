@@ -31,10 +31,14 @@ static int idio_command_interactive;
 
 static IDIO idio_command_process_type;
 static IDIO idio_command_job_type;
-static IDIO idio_command_jobs_name;
+static IDIO idio_command_jobs;
+static IDIO idio_command_last_job;
 
+static IDIO idio_S_background_job;
 static IDIO idio_S_exit;
+static IDIO idio_S_foreground_job;
 static IDIO idio_S_killed;
+static IDIO idio_S_wait_for_job;
 
 /*
  * Indexes into structures for direct references
@@ -573,7 +577,7 @@ static IDIO idio_command_job_detail (IDIO job)
 	idio_error_param_type ("job", job);
     }
 
-    IDIO procs = idio_list_reverse (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PROCS));
+    IDIO procs = idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PROCS);
     while (idio_S_nil != procs) {
 	IDIO proc = IDIO_PAIR_H (procs);
 	IDIO istatus = idio_struct_instance_ref_direct (proc, IDIO_PROCESS_TYPE_STATUS);
@@ -581,10 +585,10 @@ static IDIO idio_command_job_detail (IDIO job)
 
 	if (WIFEXITED (*statusp)) {
 	    if (WEXITSTATUS (*statusp)) {
-		return IDIO_LIST2 (idio_S_exit, idio_fixnum (WEXITSTATUS (*statusp)));
+		return IDIO_LIST2 (idio_S_exit, idio_C_int (WEXITSTATUS (*statusp)));
 	    }
 	} else if (WIFSIGNALED (*statusp)) {
-	    return IDIO_LIST2 (idio_S_killed, idio_fixnum (WTERMSIG (*statusp)));
+	    return IDIO_LIST2 (idio_S_killed, idio_C_int (WTERMSIG (*statusp)));
 	}
 
 	procs = IDIO_PAIR_T (procs);
@@ -612,7 +616,7 @@ static int idio_command_mark_process_status (pid_t pid, int status)
 	 * Some arbitrary process has a status update so we need to
 	 * dig it out.
 	 */
-	IDIO jobs = idio_module_symbol_value (idio_command_jobs_name, idio_main_module ());
+	IDIO jobs = idio_module_symbol_value (idio_command_jobs, idio_main_module ());
 	while (idio_S_nil != jobs) {
 	    IDIO job = IDIO_PAIR_H (jobs);
 
@@ -722,6 +726,16 @@ static IDIO idio_command_wait_for_job (IDIO job)
 	   !idio_command_job_is_stopped (job) &&
 	   !idio_command_job_is_completed (job));
 
+    if (idio_command_job_failed (job)) {
+	IDIO c = idio_struct_instance (idio_condition_rt_command_status_error_type,
+				       IDIO_LIST4 (idio_string_C ("job failed"),
+						   job,
+						   idio_S_nil,
+						   idio_command_job_status (job)));
+
+	idio_raise_condition (idio_S_true, c); 
+    }
+
     return idio_command_job_status (job);
 }
 
@@ -779,7 +793,7 @@ void idio_command_do_job_notification (void)
      */
     idio_command_update_status ();
 
-    IDIO jobs = idio_module_symbol_value (idio_command_jobs_name, idio_main_module ());
+    IDIO jobs = idio_module_symbol_value (idio_command_jobs, idio_main_module ());
     IDIO njobs = idio_S_nil;
     IDIO failed_jobs = idio_S_nil;
     
@@ -810,8 +824,9 @@ void idio_command_do_job_notification (void)
 	jobs = IDIO_PAIR_T (jobs);
     }
 
-    idio_module_set_symbol_value (idio_command_jobs_name, njobs, idio_main_module ());
+    idio_module_set_symbol_value (idio_command_jobs, njobs, idio_main_module ());
 
+    if (0) {
     while (idio_S_nil != failed_jobs) {
 	IDIO job = IDIO_PAIR_H (failed_jobs);
 	
@@ -821,7 +836,7 @@ void idio_command_do_job_notification (void)
 						   idio_S_nil,
 						   idio_command_job_status (job)));
 
-	idio_raise_condition (idio_S_true, c);
+	idio_raise_condition (idio_S_true, c); 
 
 	/*
 	 * Unlike an Idio-variant of this function, we won't return
@@ -831,6 +846,7 @@ void idio_command_do_job_notification (void)
 	 * If we (somehow) did, then we'd loop around again.
 	 */
 	failed_jobs = IDIO_PAIR_T (failed_jobs);
+    }
     }
 }
 
@@ -993,6 +1009,7 @@ static void idio_command_hangup_job (IDIO job)
 	    idio_error_system_errno ("kill SIGCONT", IDIO_LIST1 (idio_C_int (-job_pgid)));
 	}
     }
+
     if (kill (-job_pgid, SIGHUP) < 0) {
 	if (ESRCH != errno) {
 	    idio_error_system_errno ("kill SIGHUP", IDIO_LIST1 (idio_C_int (-job_pgid)));
@@ -1288,6 +1305,9 @@ static IDIO idio_command_launch_1proc_job (IDIO job, int foreground, char **argv
     IDIO_ASSERT (job);
     IDIO_TYPE_ASSERT (struct_instance, job);
 
+    /* fprintf (stderr, "icl1pj %d/%d", idio_command_pid, getpid ()); */
+    /* idio_debug (" %s\n", job); */
+
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("job", job);
     }
@@ -1308,6 +1328,11 @@ static IDIO idio_command_launch_1proc_job (IDIO job, int foreground, char **argv
      * original Idio's pid.
      */
     if (idio_command_pid == getpid ()) {
+	IDIO jobs = idio_module_symbol_value (idio_command_jobs, idio_main_module ());
+	idio_module_set_symbol_value (idio_command_jobs, idio_pair (job, jobs), idio_main_module ());
+
+	idio_module_set_symbol_value (idio_command_last_job, job, idio_main_module ());
+
 	pid_t pid = fork ();
 	if (pid < 0) {
 	    idio_error_system_errno ("fork", IDIO_LIST2 (proc, job));
@@ -1338,17 +1363,26 @@ static IDIO idio_command_launch_1proc_job (IDIO job, int foreground, char **argv
 		}
 	    }
 
-
-	    IDIO jobs = idio_module_symbol_value (idio_command_jobs_name, idio_main_module ());
-	    idio_module_set_symbol_value (idio_command_jobs_name, idio_pair (job, jobs), idio_main_module ());
-
+	    /*
+	     * We want to prefer the most recently defined versions of
+	     * the following functions.  If not we'll always use the C
+	     * variant which means we're maintaining two versions.
+	     * Which we ought to do but you know how it is...  The C
+	     * version won't get used once the Idio version is
+	     * defined.
+	     */
+	    IDIO cmd = idio_S_nil;
 	    if (! idio_command_interactive) {
-		return idio_command_wait_for_job (job);
+		IDIO wfj = idio_module_symbol_value_recurse (idio_S_wait_for_job, idio_main_module ());
+		cmd = IDIO_LIST2 (wfj, job);
 	    } else if (foreground) {
-		return idio_command_foreground_job (job, 0);
+		IDIO fj = idio_module_symbol_value_recurse (idio_S_foreground_job, idio_main_module ());
+		cmd = IDIO_LIST3 (fj, job, idio_S_false);
 	    } else {
-		return idio_command_background_job (job, 0);
+		IDIO bj = idio_module_symbol_value_recurse (idio_S_background_job, idio_main_module ());
+		cmd = IDIO_LIST3 (bj, job, idio_S_false);
 	    }
+	    return idio_vm_invoke_C (idio_current_thread (), cmd);
 	}
     } else {
 	/*
@@ -1513,8 +1547,11 @@ IDIO_DEFINE_PRIMITIVE1V ("%exec", exec, (IDIO command, IDIO args))
 
 void idio_init_command ()
 {
+    idio_S_background_job = idio_symbols_C_intern ("background-job");
     idio_S_exit = idio_symbols_C_intern ("exit");
+    idio_S_foreground_job = idio_symbols_C_intern ("foreground-job");
     idio_S_killed = idio_symbols_C_intern ("killed");
+    idio_S_wait_for_job = idio_symbols_C_intern ("wait-for-job");
     
     struct termios *tcattrsp = idio_alloc (sizeof (struct termios));
     idio_command_tcattrs = idio_C_pointer_free_me (tcattrsp);
@@ -1612,8 +1649,10 @@ void idio_init_command ()
 	}
     }
 
-    idio_command_jobs_name = idio_symbols_C_intern ("%idio-jobs");
-    idio_module_set_symbol_value (idio_command_jobs_name, idio_S_nil, idio_main_module ());
+    idio_command_jobs = idio_symbols_C_intern ("%idio-jobs");
+    idio_module_set_symbol_value (idio_command_jobs, idio_S_nil, idio_main_module ());
+    idio_command_last_job = idio_symbols_C_intern ("%%last-job");
+    idio_module_set_symbol_value (idio_command_last_job, idio_S_nil, idio_main_module ());
 
     IDIO name;
 
@@ -1674,16 +1713,24 @@ void idio_final_command ()
     struct termios *tcattrsp = IDIO_C_TYPE_POINTER_P (idio_command_tcattrs);
     tcsetattr (idio_command_terminal, TCSADRAIN, tcattrsp);
 
+    /*
+     * Be a good citizen and tidy up.  This will reported completed
+     * jobs, though.  Maybe we should suppress the reports.
+     *
+     * This deliberately uses the C versions as other modules have
+     * been shutting down -- we don't want to be running any more Idio
+     * code here!
+     */
     idio_command_do_job_notification ();
 
-    IDIO jobs = idio_module_symbol_value (idio_command_jobs_name, idio_main_module ());
+    IDIO jobs = idio_module_symbol_value (idio_command_jobs, idio_main_module ());
     if (idio_S_nil != jobs) {
-	fprintf (stderr, "There are stopped jobs\n");
+	fprintf (stderr, "There are outstanding jobs\n");
 	while (idio_S_nil != jobs) {
 	    IDIO job = IDIO_PAIR_H (jobs);
 	    IDIO pgid = idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PGID);
 	    IDIO pipeline = idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PIPELINE);
-	    idio_debug ("  %s: ", pgid);
+	    idio_debug ("  hangup-job %s: ", pgid);
 	    idio_debug ("%s\n", pipeline);
 	    idio_command_hangup_job (job);
 	    jobs = IDIO_PAIR_T (jobs);

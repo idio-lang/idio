@@ -314,6 +314,7 @@ void idio_vm_computed_set (idio_ai_t i, IDIO v);
 
 void idio_raise_condition (IDIO continuablep, IDIO e);
 IDIO idio_apply (IDIO fn, IDIO args);
+IDIO idio_vm_invoke_C (IDIO thr, IDIO command);
 
 void idio_vm_thread_init (IDIO thr);
 void idio_vm_default_pc (IDIO thr);

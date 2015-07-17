@@ -33,11 +33,15 @@ void *idio_alloc (size_t s)
     void *blob = malloc (s);
     IDIO_C_ASSERT (blob);
 
+#if IDIO_DEBUG
     /*
      * memset to something not all-zeroes and not all-ones to try to
      * catch assumptions about default memory bugs
      */
-    return memset (blob, 0x5e, s);
+    memset (blob, 0x5e, s);
+#endif
+    
+    return blob;
 }
 
 void *idio_realloc (void *p, size_t s)

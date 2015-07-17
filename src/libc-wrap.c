@@ -933,6 +933,8 @@ IDIO_DEFINE_PRIMITIVE0 ("c/signal-names", C_signal_names, ())
  *
  */
 
+#define IDIO_LIBC_FERRNO 1
+
 #if defined (BSD)
 #define IDIO_LIBC_NERRNO (EOWNERDEAD + 1)
 #elif defined (__linux__)
@@ -963,6 +965,8 @@ static void idio_libc_set_errno_names ()
 	*(idio_libc_errno_names[i]) = '\0';
     }
     idio_libc_errno_names[i] = NULL;
+
+    sprintf (idio_libc_errno_names[0], "E0");
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (E2BIG)
@@ -1751,7 +1755,7 @@ static void idio_libc_set_errno_names ()
 
 #if IDIO_DEBUG
     int first = 1;
-    for (i = 1 ; i < IDIO_LIBC_NERRNO ; i++) {
+    for (i = IDIO_LIBC_FERRNO ; i < IDIO_LIBC_NERRNO ; i++) {
 	if ('\0' == *(idio_libc_errno_names[i])) {
 	    sprintf (idio_libc_errno_names[i], "ERRNO%d", i);
 	    if (first) {
@@ -1769,9 +1773,9 @@ static void idio_libc_set_errno_names ()
 
 char *idio_libc_errno_name (int errnum)
 {
-    if (errnum < 1 ||
+    if (errnum < 0 ||
 	errnum > IDIO_LIBC_NERRNO) {
-	idio_error_param_type ("int < NERR (or ERRRTMAX)", idio_C_int (errnum));
+	idio_error_param_type ("int < 0 (or > NERRNO)", idio_C_int (errnum));
     }
 
     char *errname = idio_libc_errno_names[errnum];
@@ -1917,7 +1921,7 @@ void idio_final_libc_wrap ()
         free (idio_libc_signal_names[i]);
     }
     free (idio_libc_signal_names);
-    for (i = 0; NULL != idio_libc_errno_names[i]; i++) {
+    for (i = IDIO_LIBC_FERRNO; NULL != idio_libc_errno_names[i]; i++) {
         free (idio_libc_errno_names[i]);
     }
     free (idio_libc_errno_names);

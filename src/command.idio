@@ -20,6 +20,7 @@
 ;;
 
 %%last-job := #n
+%%idio-job-notify-interactive := #f
 ;;
 ;; These algorithms are directly from the libc info pages on Job
 ;; Control
@@ -44,7 +45,9 @@ define (job-is-completed job) {
   loop :+ function (procs) {
     if+ (null? procs) #t \
 	(not (%idio-process-completed (ph procs))) #f \
-	else (loop (pt procs))
+	else {
+           loop (pt procs)
+        }
   }
 
   loop (%idio-job-procs job)
@@ -74,8 +77,38 @@ define (job-failed job) {
   } #f
 }
 
+;; job-status => #t/#f
 define (job-status job) {
   if (null? job) (error 'job-status "null job" job)
+
+  loop :+ function (procs) {
+    if (null? procs) #t {
+      status := %idio-process-status (ph procs)
+      if+ (null? status) {
+	    loop (pt procs)
+	  } (c/WIFEXITED status) {
+	    if (not (c/== (c/WEXITSTATUS status) 0)) #f {
+	      loop (pt procs)
+	    }
+          } (c/WIFSIGNALED status) #f \
+	  else {
+	    loop (pt procs)
+	  }
+    }
+  }
+
+  ;; return rightmost non-zero exit status or the status from the last
+  ;; (or any as they all succeeded but the last is top of procs)
+  ;;
+  ;; NB. the procs were pushed onto the list in reverse order so
+  ;; walking down the list we encounter the rightmost first
+  procs := %idio-job-procs job
+  loop procs
+}
+
+;; job-detail => '(exit X) or '(killed Y)
+define (job-detail job) {
+  if (null? job) (error 'job-detail "null job" job)
 
   loop :+ function (procs) {
     if (null? procs) #f {
@@ -125,6 +158,13 @@ define (pipeline-detail job) {
   loop (%idio-job-procs job) #n
 }
 
+;; mark-process-status -- store the {status} of the process {pid} that
+;; was returned by c/waitpid.  Return #f if all went well, some true
+;; value otherwise.
+
+;; This (inverted) convention follows the Libc texinfo algorithm and
+;; is for the benefit of the do loops in update-status and
+;; wait-for-job
 define (mark-process-status pid status) {
   if+ (c/> pid 0) {
     jobs-loop :+ function (jobs) {
@@ -132,8 +172,11 @@ define (mark-process-status pid status) {
 	    edisplay* "no child process" pid
 	    #t
 	  } else {
+	    ;; procs-loop follows the same convention as the outer
+	    ;; jobs-loop as returning success (#f!) will be the return
+	    ;; value of jobs-loop
 	    procs-loop :+ function (procs) {
-              if+ (null? procs) #f \
+              if+ (null? procs) #t \
 	          (c/== pid (%idio-process-pid (ph procs))) {
                     set-%idio-process-status! (ph procs) status
                     if (c/WIFSTOPPED status) {
@@ -141,24 +184,24 @@ define (mark-process-status pid status) {
                     } {
                       set-%idio-process-completed! (ph procs) #t
                       if (c/WIFSIGNALED status) {
-                        edisplay* "Job Terminated: kill -" (c/sig-name (c/WTERMSIG status))  pid ":" (c/strsignal (c/WTERMSIG status))
+                        edisplay* "Job Terminated: kill" (string-append "-" (c/signal-name (c/WTERMSIG status)))  pid
                       }
 		    }
-		    #t
+		    #f
                   } else {
 		    procs-loop (pt procs)
 		  }
             }
 
-	    (or (procs-loop (%idio-job-procs (ph jobs)))
-		(jobs-loop (pt jobs)))
+	    (and (procs-loop (%idio-job-procs (ph jobs)))
+		 (jobs-loop (pt jobs)))
           }
     }
 
     jobs-loop %idio-jobs
   } (or (c/== pid 0)
 	(c/== c/errno ECHLD)) {
-    edisplay* "MPS: pid ==" pid ", errno ==" (c/strerrno c/errno)
+    ;; edisplay* "mps: pid ==" pid ", errno ==" (c/strerrno c/errno)
     #t
   } else {
     ;; an error in c/waitpid would have been signalled there
@@ -182,14 +225,27 @@ define (wait-for-job job) {
   do () ((not (and (not (call-with-values waitany mark-process-status))
 	           (not (job-is-stopped job))
 	           (not (job-is-completed job)))) 
-         (not (job-failed job))) #n
+         #n) #n
+
+  ;; display* "wfj" (%idio-job-pgid job) "completed?" (job-is-completed job) "stopped?" (job-is-stopped job) (if (job-failed job) "failed" "succeeded") (pipeline-detail job)
+  if (job-failed job) {
+    c := make-condition ^rt-command-status-error "job failed" job (pipeline-detail job) (job-detail job)
+    raise #t c
+  }
+
+  job-status job
 }
 
 define (format-job-info job msg) {
-  edisplay* "job:" (%idio-job-pgid job) "(" msg ")"
+  if %%idio-job-notify-interactive {
+    edisplay* "job" (%idio-job-pgid job) ":" (%idio-job-pipeline job) "(" msg ")"
+  }
 }
 
 define (do-job-notification) {
+  ;; edisplay* "djn:" (map (function (job) { 
+  ;; 			   %idio-job-pipeline job
+  ;; 			 }) %idio-jobs)
   ;; get the latest data
   (update-status)
 
@@ -220,13 +276,39 @@ define (do-job-notification) {
 
   %idio-jobs = loop %idio-jobs #n
 
+  ;; This report->raise condition for failed jobs is badly positioned.
+  ;; The problem lies in that we, do-job-notification, have run on the
+  ;; back of a SIGCHLD event but will have had nothing to report (in
+  ;; the simplest case) because our call to update-status resulted in
+  ;; a pid of 0 and/or errno ECHILD.  That's because foreground-job,
+  ;; say, was blocked in wait-for-job who had (successfully) called
+  ;; c/waitpid but further processing has been suspended while the
+  ;; event handler runs.  Only when we return will it be able to
+  ;; continue and usefully call mark-process-status with a proper pid
+  ;; and status.
+
+  ;; This isn't an Idio-issue, the Libc texinfo C version (from which
+  ;; this is ported) appears to suffer the same problem.
+
+  ;; Underlying that is that, perhaps, we shouldn't be calling
+  ;; do-job-notification from the signal handler.  The texinfo
+  ;; suggests SIGCHLD->do-job-notification should only enabled when
+  ;; waiting at the prompt for user input and not, say, while
+  ;; generically processing loaded files.
+
+  ;; All good, but that leaves us with the question of when to raise a
+  ;; condition to alert the Idio code?  I've migrated that to
+  ;; wait-for-job itself.  It knows the job is complete and can assert
+  ;; if the job failed.
+
   if (not (null? failed-jobs)) {
     report :+ function (jobs) {
       if+ (null? jobs) #n \
           else {
 	    job := ph jobs
-	    c := make-condition ^rt-command-status-error "job failed" job #n (job-status job)
-	    raise #t c
+	    c := make-condition ^rt-command-status-error "job failed" job (pipeline-detail job) (job-detail job)
+	    ;edisplay* "raising for job" job
+	    ;raise #t c
 
 	    ;; if someone handled that error and returned (anything)
 	    ;; then we can loop onto the next
@@ -270,7 +352,7 @@ define (background-job job cont) {
     c/kill (- job-pgid) c/SIGCONT
   }
 
-  ;; result of a backgrounded job is always successful, ie. #t
+  ;; result of background-job is always successful, ie. #t
   #t
 }
 
@@ -279,8 +361,16 @@ define (hangup-job job) {
   c/kill (- job-pgid) c/SIGCONT
   c/kill (- job-pgid) c/SIGHUP
 
-  ;; result of a hungup job is 0
-  0
+  ;; result of hungup-job is #t
+  #t
+}
+
+define (stop-job job) {
+  job-pgid := %idio-job-pgid job
+  c/kill (- job-pgid) c/SIGSTOP
+
+  ;; result of stop-job is #t
+  #t
 }
 
 define (mark-job-as-running job) {
@@ -454,8 +544,6 @@ define-operator | {
 		      }
 		      ;; edisplay* "child" (c/getpid) "cmd" '$cmd
 		      if+ (pair? (ph '$cmd)) {
-			    ;; edisplay* "pair =>" (ph '$cmd)
-			    ;(ph '$cmd)
 			    $@cmd
 			  } \
 			  else $cmd
@@ -517,15 +605,9 @@ define-macro (launch-1proc foreground & cmd) {
     if+ (c/== pid 0) {
       prep-process pgid stdin stdout $foreground
       if+ (pair? (ph '$cmd)) {
-            ;; edisplay* "pair =>" (ph '$cmd)
             $@cmd
-            ;$cmd
 	  } \
 	    else $cmd
-
-      ;; cmd is a list so apply %exec to it
-      ;apply %exec $cmd
-      ;error "exec" '$cmd
 
       c/exit 0
     } else {
@@ -560,22 +642,25 @@ define-macro (bg-job & cmd) {
 }
 
 define (wait & jobs) {
+  notify := #f
+
   loop :+ function (jobs) {
     if (null? jobs) #t {
+      notify = #t
       wait-for-job (ph jobs)
       loop (pt jobs)
     }
   }
 
   if (null? jobs) {
-    edisplay* "wait:" (map (function (job) { 
-			     %idio-job-pipeline job
-			   }) %idio-jobs)
-    loop %idio-jobs
-  } {
-    edisplay* "wait jobs:" (map (function (job) { 
-				  %idio-job-pipeline job
-				}) jobs)
-    loop jobs
+    jobs = %idio-jobs
   }
+
+  ;; edisplay* "wait jobs:" (map (function (job) { 
+  ;; 				%idio-job-pipeline job
+  ;; 			      }) jobs)
+  loop jobs
+
+  ;; display* "notify?" notify
+  if notify (do-job-notification)
 }

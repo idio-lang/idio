@@ -78,7 +78,7 @@ if [[ ${opt_read} || $opt_write ]] ; then
     while [[ ${opt_read} || ${opt_write} ]] ; do
 	if [[ ${opt_write} ]] ; then
 	    if [[ ${opt_write} -gt 0 ]] ; then
-		echo "$$: wrote line ${var_write}"
+		echo "${0##*/}: $$: wrote line ${var_write}"
 		var_write=$(( var_write + 1 ))
 		opt_write=$(( opt_write - 1 ))
 	    else
@@ -89,7 +89,7 @@ if [[ ${opt_read} || $opt_write ]] ; then
 	if [[ ${opt_read} ]] ; then
 	    if [[ ${opt_read} -gt 0 ]] ; then
 		read ${opt_timeout:+-t ${opt_timeout}} line
-		echo "$$: read #${var_read} '${line}'"
+		echo "${0##*/}: $$: read #${var_read} '${line}'"
 		var_read=$(( var_read + 1 ))
 		opt_read=$(( opt_read - 1 ))
 	    else
@@ -98,10 +98,14 @@ if [[ ${opt_read} || $opt_write ]] ; then
 	fi
     done
 else
+    if [[ ${opt_sleep} -gt 0 ]] ; then
+	echo "${0##*/}: $$: sleep ${opt_sleep}"
+    fi
     sleep $opt_sleep
 fi
 
 if [[ ${opt_kill} ]] ; then
+    echo "${0##*/}: $$: kill -${opt_kill} $$"
     kill -${opt_kill} $$
 fi
 

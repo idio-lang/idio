@@ -32,7 +32,7 @@ PATH = string-append PATH ":" PWD
 rcseh := #n
 
 monitor (function (cont cond) {
-  edisplay* "command tests: monitor" cont cond
+  ;; edisplay* "command tests: monitor" cont cond
   test (rt-command-status-error? cond) #t
   if cont {
     if (rt-command-status-error? cond) {
@@ -55,7 +55,7 @@ monitor (function (cont cond) {
   ;; complaining loudly and testing for something that isn't generated
   ;; (spotting an error in the summary is easier to spot)
   exit0 := function (cond) {
-    edisplay* "command tests: unexpected status error" cond
+    edisplay* "command tests: exit0: unexpected status error" cond
     job := idio-error-location cond
     edisplay* "pipeline:" (%idio-job-pipeline job)
     edisplay* "detail:" (pipeline-detail job)
@@ -63,128 +63,148 @@ monitor (function (cont cond) {
   }
 
   exit1 := function (cond) {
+    ;; edisplay* "command tests: exit1" cond
     job := idio-error-location cond
-    test (job-detail job) '(exit 1)
+    test (job-detail job) %T{ (exit $(c/integer-> 1)) }
     rt-command-status-error-status cond
   }
 
   killed1 := function (cond) {
+    ;; edisplay* "command tests: killed1" cond
     job := idio-error-location cond
-    test (job-detail job) '(killed 1)
+    test (job-detail job) %T{ (killed $(c/integer-> 1)) }
     rt-command-status-error-status cond
   }
 
-  rcseh = exit1
-  display* "One: -e 1"
-  test (auto-exit -e 1) #f
+  ;; Testing the tests!  We need to be sure that the OOB handlers are
+  ;; successfully kicked off (or not kicked off) so we'll have a
+  ;; couple of functions to store and check the Tests number has been
+  ;; incremented OOB as we expect.
 
-  rcseh = killed1
-  display* "Two: -k 1"
-  test (auto-exit -k 1) #f
+  ;; Remember, though, the test itself, as written in the rest of this
+  ;; block, will increment Tests as well as any potential OOB handler.
+  ;; The OOB handler will increment Tests twice: once to check the
+  ;; condition is an rt-command-status-error and once in exit1/killed1
+  ;; to verify the value of the status.
+
+  test-id := Tests
+
+  ;; test= exists to be sure of resetting test-id
+  define (test=) {
+    test-id = Tests
+  }
+
+  define (test+0) {
+    test-cur-n := Tests
+    test (test-id + 0) test-cur-n
+    test-id = Tests
+  }
+
+  define (test+1) {
+    test-cur-n := Tests
+    test (test-id + 1) test-cur-n
+    test-id = Tests
+  }
+
+  define (test+2) {
+    test-cur-n := Tests
+    test (test-id + 2) test-cur-n
+    test-id = Tests
+  }
+
+  define (test+3) {
+    test-cur-n := Tests
+    test (test-id + 3) test-cur-n
+    test-id = Tests
+  }
 
   rcseh = exit0
-  display* "Three: -w 1"
+  (test=)
+  test (auto-exit -e 0) #t
+  (test+1)
+
+  rcseh = exit1
+  (test=)
+  test (auto-exit -e 1) #f
+  (test+3)
+
+  rcseh = killed1
+  (test=)
+  test (auto-exit -k 1) #f
+  (test+3)
+
+  rcseh = exit0
+  (test=)
   test (auto-exit -w 1) #t
+  (test+1)
 
   ;; backgrounded job
-  display* "Four: -w 1 &"
-  bg-job auto-exit -w 1
+  (test=)
+  bg-job auto-exit -s 1
+
+  ;; As the bg-job is to sleep for one second we can be moderately
+  ;; confident that an immediate test here that nothing has happened
+  ;; will be OK.  But it is technically a race condition as this
+  ;; parent process could have been stalled.  YMMV.
+  (test+0)
+
+  ;; If we wait for the job to finish we should have...no change as it
+  ;; should have exited 0.
   wait %%last-job
-  display* "Four: test"
+  (test+0)
+
+  ;; check the bg-job didn't fail
   test (job-failed %%last-job) #f
-  display* "Four: done"
+  (test+1)
 
   ;; pipeline
-  display* "Five: -w 1 | -r 1"
+  (test=)
   test (auto-exit -w 1 | auto-exit -r 1) #t
+  (test+1)
 
   ;; second command should finish first
-  display* "Six: -w 2 | -r 1"
+  (test=)
   test (auto-exit -w 2 -s 1 | auto-exit -r 1) #t
+  (test+1)
 
   ;; pipeline with regular Idio as the writer
-  display* "Seven: display | -r 1"
+  (test=)
   test (display* "first" | auto-exit -r 1) #t
+  (test+1)
 
-  ;; second job should fail to read a line and Bash's read will cause
-  ;; Bash to "exit 1"
-  display* "\n\nLast command"
+  ;; pipeline with the writer not writing anything
   rcseh = exit1
-  test ((auto-exit -e 0) | auto-exit -r 1) #f
-  %%vm-trace 0
+  (test=)
+  test (auto-exit -e 0 | auto-exit -r 1) #f
+  (test+3)
 
-  edisplay* "waiting..."
-  (wait)
-  c/sleep 1
-  (wait)
-  c/sleep 1
-  (wait)
+  ;; bg-job pipeline
+  (test=)
+  bg-job auto-exit -w 1 | auto-exit -r 1
+  ;; no sleep this time so the only safe bet is to wait for the job to
+  ;; finish
+  wait %%last-job
+  ;; no error so no increment in test-id
+  (test+0)
+
+  ;; check the bg-job didn't fail
+  test (job-failed %%last-job) #f
+  (test+1)
+
+  ;; bg-job pipeline fail
+  rcseh = exit1
+  (test=)
+  bg-job auto-exit -w 1 | auto-exit -r 2
+  ;; no sleep this time so the only safe bet is to wait for the job to
+  ;; finish
+  wait %%last-job
+  ;; this time we should have hit the two OOB tests
+  (test+2)
+
+  ;; check the bg-job DID fail
+  test (job-failed %%last-job) #t
+  (test+1)
+
 }
-
-monitor (function (cont cond) {
-  ;; edisplay* "auto-exit: monitor" cont cond
-  test (rt-command-status-error? cond) #t
-  if cont {
-    if (rt-command-status-error? cond) {
-      edisplay* "auto-exit: unexpected status error" cond
-
-      'job-failed
-    } {
-      edisplay* "auto-exit: unexpected condition" cond
-      raise cont cond
-    }
-  } {
-    edisplay* "auto-exit: unexpected non-continuable condition" cond
-    raise cont cond
-  }
-}) {
-  test (auto-exit) #t
-}
-
-monitor (function (cont cond) {
-  ;; edisplay* "auto-exit -e 11: monitor" cont cond
-  test (rt-command-status-error? cond) #t
-  if cont {
-    if (rt-command-status-error? cond) {
-      job := idio-error-location cond
-      test (job-detail job) '(exit 11)
-
-      ;; return the original status
-      rt-command-status-error-status cond
-    } {
-      edisplay* "auto-exit -e 11: unexpected condition" cond
-      raise cont cond
-    }
-  } {
-    edisplay* "auto-exit -e 11: unexpected non-continuable condition" cond
-    raise cont cond
-  }
-}) {
-  test (auto-exit -e 11) #f
-}
-
-monitor (function (cont cond) {
-  ;; edisplay* "auto-exit -k 15: monitor" cont cond
-  test (rt-command-status-error? cond) #t
-  if cont {
-    if (rt-command-status-error? cond) {
-      job := idio-error-location cond
-      test (job-detail job) '(killed 15)
-
-      ;; return the original status
-      rt-command-status-error-status cond
-    } {
-      edisplay* "auto-exit -k 15: unexpected condition" cond
-      raise cont cond
-    }
-  } {
-    edisplay* "auto-exit -k 15: unexpected non-continuable condition" cond
-    raise cont cond
-  }
-}) {
-  test (auto-exit -k 15) #f
-}
-
-
 
 PATH = OPATH

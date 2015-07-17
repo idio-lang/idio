@@ -48,7 +48,9 @@ define (load filename) {
     if (not cont) {
       edisplay "load "
       ewrite filename
-      edisplay* ": non-cont-error caught; invoking safe continuation"
+      edisplay* ": non-cont-error caught"
+      edisplay* cond
+      edisplay* "invoking safe continuation"
       load-k cond
     } {
       raise cont cond
