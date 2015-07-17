@@ -349,6 +349,35 @@ static IDIO idio_read_list (IDIO handle, IDIO opendel, char *ic, int depth)
 	    }
 	}
 
+	IDIO op = idio_operatorp (e);
+
+	if (idio_S_false != op) {
+	    /* ( ... {op} <EOL>
+	     *   ... )
+	     */
+
+	    /*
+	     * An operator cannot be in functional position although
+	     * several operators and functional names clash!  So, skip
+	     * if it's the first element in the list.
+	     */
+	    if (count > 0) {
+		IDIO ne = idio_read_1_expr (handle, ic, depth);
+		while (idio_T_eol == ne) {
+		    ne = idio_read_1_expr (handle, ic, depth);
+		}
+
+		if (idio_handle_eofp (handle)) {
+		    idio_read_error_list_eof (handle);
+		    return idio_S_unspec;
+		}
+
+		r = idio_pair (e, r);
+		count++;
+		e = ne;
+	    }
+	}
+
 	if (idio_T_eol != e) {
 	    count++;
 
@@ -1167,6 +1196,7 @@ static IDIO idio_read_1_expr (IDIO handle, char *ic, int depth)
 static IDIO idio_read_line (IDIO handle, IDIO closedel, char *ic, int depth)
 {
     IDIO r = idio_S_nil;
+    int count = 0;
     
     for (;;) {
 	IDIO expr = idio_read_1_expr_nl (handle, ic, depth, 1);
@@ -1208,6 +1238,35 @@ static IDIO idio_read_line (IDIO handle, IDIO closedel, char *ic, int depth)
 	    }
 	} else {
 
+	    IDIO op = idio_operatorp (expr);
+
+	    if (idio_S_false != op) {
+		/* ( ... {op} <EOL>
+		 *   ... )
+		 */
+
+		/*
+		 * An operator cannot be in functional position although
+		 * several operators and functional names clash!  So, skip
+		 * if it's the first element in the list.
+		 */
+		if (count > 0) {
+		    IDIO ne = idio_read_1_expr (handle, ic, depth);
+		    while (idio_T_eol == ne) {
+			ne = idio_read_1_expr (handle, ic, depth);
+		    }
+
+		    if (idio_handle_eofp (handle)) {
+			idio_read_error_list_eof (handle);
+			return idio_S_unspec;
+		    }
+
+		    r = idio_pair (expr, r);
+		    count++;
+		    expr = ne;
+		}
+	    }
+
 	    /*
 	     * A few tokens can slip through the net...
 	     */
@@ -1238,6 +1297,7 @@ static IDIO idio_read_line (IDIO handle, IDIO closedel, char *ic, int depth)
 	    }
 	    r = idio_pair (expr, r);
 	}
+	count++;
     }
 }
 
