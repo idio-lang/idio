@@ -1348,6 +1348,18 @@ static IDIO idio_command_launch_1proc_job (IDIO job, int foreground, char **argv
 
 	idio_module_set_symbol_value (idio_command_last_job, job, idio_main_module ());
 
+	/*
+	 * Even launching a single process we can get caught with
+	 * synchronisation issues (a process can have execve()'d
+	 * before the parent has setpgid()'d) so we'll use the same
+	 * pgrp_pipe trick as per a pipeline (see operator | in
+	 * operator.idio).
+	 */
+	int pgrp_pipe[2];
+	if (pipe (pgrp_pipe) < 0) {
+	    idio_error_system_errno ("pipe", idio_S_nil, IDIO_C_LOCATION ("idio_command_launch_1proc_job"));
+	}
+
 	pid_t pid = fork ();
 	if (pid < 0) {
 	    idio_error_system_errno ("fork", IDIO_LIST2 (proc, job), IDIO_C_LOCATION ("idio_command_launch_1proc_job"));
@@ -1358,6 +1370,19 @@ static IDIO idio_command_launch_1proc_job (IDIO job, int foreground, char **argv
 				       foreground);
 
 	    char **envp = idio_command_get_envp ();
+
+	    if (close (pgrp_pipe[1]) < 0) {
+		idio_error_system_errno ("close", IDIO_LIST1 (idio_fixnum (pgrp_pipe[1])), IDIO_C_LOCATION ("idio_command_launch_1proc_job"));
+	    }
+
+	    /*
+	     * Block reading the pgrp_pipe
+	     */
+	    char buf[BUFSIZ];
+	    read (pgrp_pipe[0], buf, 1);
+	    if (close (pgrp_pipe[0]) < 0) {
+		idio_error_system_errno ("close", IDIO_LIST1 (idio_fixnum (pgrp_pipe[0])), IDIO_C_LOCATION ("idio_command_launch_1proc_job"));
+	    }
 
 	    execve (argv[0], argv, envp);
 	    perror ("execv");
@@ -1371,14 +1396,29 @@ static IDIO idio_command_launch_1proc_job (IDIO job, int foreground, char **argv
 		    idio_struct_instance_set_direct (job, IDIO_JOB_TYPE_PGID, idio_C_int (job_pgid));
 		}
 		if (setpgid (pid, job_pgid) < 0) {
-		    idio_error_system ("setpgid",
-				       IDIO_LIST4 (idio_C_int (pid),
-						   idio_C_int (job_pgid),
-						   proc,
-						   job),
-				       errno,
-				       IDIO_C_LOCATION ("idio_command_launch_1proc_job"));
+		    /*
+		     * Duplicate check as per c/setpgid in libc-wrap.c
+		     */
+		    if (EACCES != errno) {
+			idio_error_system ("setpgid",
+					   IDIO_LIST4 (idio_C_int (pid), 
+						       idio_C_int (job_pgid), 
+						       proc, 
+						       job),
+					   errno,
+					   IDIO_C_LOCATION ("idio_command_launch_1proc_job")); 
+		    }
 		}
+	    }
+
+	    /*
+	     * synchronise!
+	     */
+	    if (close (pgrp_pipe[0]) < 0) {
+		idio_error_system_errno ("close", IDIO_LIST1 (idio_fixnum (pgrp_pipe[0])), IDIO_C_LOCATION ("idio_command_launch_1proc_job"));
+	    }
+	    if (close (pgrp_pipe[1]) < 0) {
+		idio_error_system_errno ("close", IDIO_LIST1 (idio_fixnum (pgrp_pipe[1])), IDIO_C_LOCATION ("idio_command_launch_1proc_job"));
 	    }
 
 	    /*
