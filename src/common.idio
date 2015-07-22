@@ -51,6 +51,7 @@ define (load filename) {
       edisplay* ": non-cont-error caught"
       edisplay* cond
       edisplay* "invoking safe continuation"
+      c/sleep 5
       load-k cond
     } {
       raise cont cond
@@ -60,5 +61,27 @@ define (load filename) {
       load-k = k
       load filename
     })
+  }
+}
+
+define-macro (suppress-errors & cmd) {
+  %T{
+    monitor (function (cont cond) {
+      if (cont) {
+	;;edisplay* "suppressing" '$cmd cond
+	;;c/sleep 2
+
+	;; What should we return?  Something hard to mistake for a
+	;; possible normal value.  Probably.
+	(void)
+      } {
+	raise cont cond
+      }
+    }) {
+      ;;edisplay* "s-e" '$cmd "=>" '$@cmd "=>" 
+      if (pair? (ph '$cmd)) {
+	$@cmd 
+      } $cmd
+    }
   }
 }

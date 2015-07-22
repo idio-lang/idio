@@ -409,7 +409,7 @@ static IDIO idio_read_list (IDIO handle, IDIO opendel, char *ic, int depth)
 		    e = idio_S_gt;
 		    break;
 		default:
-		    idio_error_C ("unexpected token in list", IDIO_LIST2 (handle, e));
+		    idio_error_C ("unexpected token in list", IDIO_LIST2 (handle, e), IDIO_C_LOCATION ("idio_read_list"));
 		}
 	    }
 
@@ -1292,7 +1292,7 @@ static IDIO idio_read_line (IDIO handle, IDIO closedel, char *ic, int depth)
 		    expr = idio_S_ampersand;
 		    break;
 		default:
-		    idio_error_C ("unexpected token in line", IDIO_LIST2 (handle, expr));
+		    idio_error_C ("unexpected token in line", IDIO_LIST2 (handle, expr), IDIO_C_LOCATION ("idio_read_line"));
 		}
 	    }
 	    r = idio_pair (expr, r);

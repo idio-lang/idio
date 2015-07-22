@@ -44,14 +44,18 @@ IDIO idio_error_string (char *format, va_list argp)
     return idio_get_output_string (sh);
 }
 
-void idio_error_printf (char *format, ...)
+void idio_error_printf (IDIO loc, char *format, ...)
 {
+    IDIO_ASSERT (loc);
+    IDIO_C_ASSERT (format);
+    IDIO_TYPE_ASSERT (string, loc);
+
     va_list fmt_args;
     va_start (fmt_args, format);
     IDIO msg = idio_error_string (format, fmt_args);
     va_end (fmt_args);
 
-    IDIO c = idio_condition_idio_error (msg, idio_S_internal, idio_S_nil);
+    IDIO c = idio_condition_idio_error (msg, loc, idio_S_nil);
     idio_raise_condition (idio_S_false, c);
 }
 
@@ -72,40 +76,64 @@ void idio_warning_message (char *format, ...)
     }
 }
 
-void idio_strerror (char *msg)
+void idio_strerror (char *msg, IDIO loc)
 {
-    idio_error_printf ("%s: %s", msg, strerror (errno));
+    IDIO_C_ASSERT (msg);
+    IDIO_ASSERT (loc);
+    IDIO_TYPE_ASSERT (string, loc);
+
+    idio_error_printf (loc, "%s: %s", msg, strerror (errno));
 }
 
-void idio_error_alloc (IDIO f)
+void idio_error_alloc (IDIO loc)
 {
-    IDIO_ASSERT (f);
+    IDIO_ASSERT (loc);
+    IDIO_TYPE_ASSERT (string, loc);
 
-    idio_error_system_errno ("general allocation fault", idio_S_nil);
+    idio_error_system_errno ("general allocation fault", idio_S_nil, loc);
 }
 
-void idio_error_param_nil (char *name)
+void idio_error_param_nil (char *name, IDIO loc)
 {
     IDIO_C_ASSERT (name);
+    IDIO_ASSERT (loc);
+    IDIO_TYPE_ASSERT (string, loc);
     
-    idio_error_printf ("%s is nil", name);
+    idio_error_printf (loc, "%s is nil", name);
 }
 
-void idio_error_param_type (char *etype, IDIO who)
+void idio_error_param_type (char *etype, IDIO who, IDIO loc)
+{
+    IDIO_C_ASSERT (etype);
+    IDIO_ASSERT (who);
+    IDIO_ASSERT (loc);
+    IDIO_TYPE_ASSERT (string, loc);
+
+    char em[BUFSIZ];
+    sprintf (em, "bad parameter type: a %s is not a %s:", idio_type2string (who), etype);
+    idio_error_C (em, IDIO_LIST1 (who), loc);
+}
+
+void idio_error_param_type_C (char *etype, IDIO who, char *file, const char *func, int line)
 {
     IDIO_C_ASSERT (etype);
     IDIO_ASSERT (who);
 
     char em[BUFSIZ];
     sprintf (em, "bad parameter type: a %s is not a %s:", idio_type2string (who), etype);
-    idio_error_C (em, IDIO_LIST1 (who));
+    char lm[BUFSIZ];
+    sprintf (lm, "%s:%s:%d", func, file, line);
+    idio_error_C (em, IDIO_LIST1 (who), idio_string_C (lm));
 }
 
-void idio_error (IDIO who, IDIO msg, IDIO args)
+void idio_error (IDIO who, IDIO msg, IDIO args, IDIO loc)
 {
     IDIO_ASSERT (who);
     IDIO_ASSERT (msg);
     IDIO_ASSERT (args); 
+    IDIO_ASSERT (loc);
+    IDIO_TYPE_ASSERT (list, args);
+    IDIO_TYPE_ASSERT (string, loc);
 
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display (msg, sh);
@@ -113,17 +141,20 @@ void idio_error (IDIO who, IDIO msg, IDIO args)
     idio_display (args, sh);
 
     IDIO c = idio_condition_idio_error (idio_get_output_string (sh),
-					who,
-					idio_S_nil);
+					loc,
+					who);
     idio_raise_condition (idio_S_false, c);
 }
 
-void idio_error_C (char *msg, IDIO args)
+void idio_error_C (char *msg, IDIO args, IDIO loc)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (args); 
+    IDIO_ASSERT (loc);
+    IDIO_TYPE_ASSERT (list, args);
+    IDIO_TYPE_ASSERT (string, loc);
 
-    idio_error (idio_S_internal, idio_string_C (msg), args);
+    idio_error (idio_S_internal, idio_string_C (msg), args, loc);
 }
 
 IDIO_DEFINE_PRIMITIVE1V ("error", error, (IDIO msg, IDIO args))
@@ -140,16 +171,19 @@ IDIO_DEFINE_PRIMITIVE1V ("error", error, (IDIO msg, IDIO args))
 	args = idio_list_tail (args);
     }
 
-    idio_error (who, msg, args);
+    idio_error (who, msg, args, idio_S_user);
 
     /* not reached */
     return idio_S_unspec;
 }
 
-void idio_error_system (char *msg, IDIO args, int err)
+void idio_error_system (char *msg, IDIO args, int err, IDIO loc)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (args);
+    IDIO_ASSERT (loc);
+    IDIO_TYPE_ASSERT (list, args);
+    IDIO_TYPE_ASSERT (string, loc);
 
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C (msg, msh);
@@ -163,18 +197,21 @@ void idio_error_system (char *msg, IDIO args, int err)
 
     IDIO c = idio_struct_instance (idio_condition_system_error_type,
 				   IDIO_LIST4 (idio_get_output_string (msh),
-					       idio_S_internal,
+					       loc,
 					       idio_get_output_string (dsh),
 					       idio_fixnum ((intptr_t) err)));
     idio_raise_condition (idio_S_false, c);
 }
 
-void idio_error_system_errno (char *msg, IDIO args)
+void idio_error_system_errno (char *msg, IDIO args, IDIO loc)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (args);
+    IDIO_ASSERT (loc);
+    IDIO_TYPE_ASSERT (list, args);    
+    IDIO_TYPE_ASSERT (string, loc);
 
-    idio_error_system (msg, args, errno);
+    idio_error_system (msg, args, errno, loc);
 }
 
 void idio_init_error ()

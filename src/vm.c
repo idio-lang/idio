@@ -149,22 +149,33 @@ static void idio_vm_panic (IDIO thr, char *m)
     IDIO_C_ASSERT (0);
 }
 
-static void idio_vm_error_compile_param_args (char *m, IDIO mt)
+static void idio_vm_error_compile_param_args (char *m, IDIO mt, IDIO loc)
 {
+    IDIO_C_ASSERT (m);
     IDIO_ASSERT (mt);
+    IDIO_ASSERT (loc);
+    IDIO_TYPE_ASSERT (string, loc);
     
-    idio_error_C (m, mt);
+    idio_error_C (m, mt, loc);
 }
 
-static void idio_vm_error_compile_param_type (char *m, IDIO t)
+static void idio_vm_error_compile_param_type (char *m, IDIO t, IDIO loc)
 {
-    idio_error_param_type (m, t);
+    IDIO_C_ASSERT (m);
+    IDIO_ASSERT (t);
+    IDIO_ASSERT (loc);
+    IDIO_TYPE_ASSERT (string, loc);
+
+    idio_error_param_type (m, t, loc);
 }
 
-static void idio_vm_error_function_invoke (char *msg, IDIO args)
+static void idio_vm_error_function_invoke (char *msg, IDIO args, IDIO loc)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (args);
+    IDIO_ASSERT (loc);
+    IDIO_TYPE_ASSERT (list, args);
+    IDIO_TYPE_ASSERT (string, loc);
     
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C (msg, sh);
@@ -173,14 +184,19 @@ static void idio_vm_error_function_invoke (char *msg, IDIO args)
     idio_display_C ("'", sh);
     IDIO c = idio_struct_instance (idio_condition_rt_function_error_type,
 				   IDIO_LIST3 (idio_get_output_string (sh),
-					       idio_S_nil,
+					       loc,
 					       idio_S_nil));
     idio_raise_condition (idio_S_true, c);
 }
 
 static void idio_vm_function_trace (IDIO_I ins, IDIO thr);
-static void idio_vm_error_arity (IDIO_I ins, IDIO thr, size_t given, size_t arity)
+static void idio_vm_error_arity (IDIO_I ins, IDIO thr, size_t given, size_t arity, IDIO loc)
 {
+    IDIO_ASSERT (thr);
+    IDIO_ASSERT (loc);
+    IDIO_TYPE_ASSERT (thread, thr);
+    IDIO_TYPE_ASSERT (string, loc);
+
     fprintf (stderr, "\n\nARITY != %zd\n", arity);
     idio_vm_function_trace (ins, thr);
 
@@ -190,13 +206,18 @@ static void idio_vm_error_arity (IDIO_I ins, IDIO thr, size_t given, size_t arit
     idio_display_C (em, sh);
     IDIO c = idio_struct_instance (idio_condition_rt_function_arity_error_type,
 				   IDIO_LIST3 (idio_get_output_string (sh),
-					       idio_S_nil,
+					       loc,
 					       idio_S_nil));
     idio_raise_condition (idio_S_true, c);
 }
 
-static void idio_vm_error_arity_varargs (IDIO_I ins, IDIO thr, size_t given, size_t arity)
+static void idio_vm_error_arity_varargs (IDIO_I ins, IDIO thr, size_t given, size_t arity, IDIO loc)
 {
+    IDIO_ASSERT (thr);
+    IDIO_ASSERT (loc);
+    IDIO_TYPE_ASSERT (thread, thr);
+    IDIO_TYPE_ASSERT (string, loc);
+
     fprintf (stderr, "\n\nARITY < %zd\n", arity);
     idio_vm_function_trace (ins, thr);
 
@@ -206,42 +227,52 @@ static void idio_vm_error_arity_varargs (IDIO_I ins, IDIO thr, size_t given, siz
     idio_display_C (em, sh);
     IDIO c = idio_struct_instance (idio_condition_rt_function_arity_error_type,
 				   IDIO_LIST3 (idio_get_output_string (sh),
-					       idio_S_nil,
+					       loc,
 					       idio_S_nil));
     idio_raise_condition (idio_S_true, c);
 }
 
-static void idio_error_dynamic_unbound (idio_ai_t index)
+static void idio_error_dynamic_unbound (idio_ai_t index, IDIO loc)
 {
+    IDIO_ASSERT (loc);
+    IDIO_TYPE_ASSERT (string, loc);
+
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C ("no such dynamic binding", sh);
     IDIO c = idio_struct_instance (idio_condition_rt_dynamic_variable_unbound_error_type,
 				   IDIO_LIST4 (idio_get_output_string (sh),
-					       idio_S_nil,
+					       loc,
 					       idio_S_nil,
 					       idio_vm_symbols_ref (index)));
     idio_raise_condition (idio_S_true, c);
 }
 
-static void idio_error_environ_unbound (idio_ai_t index)
+static void idio_error_environ_unbound (idio_ai_t index, IDIO loc)
 {
+    IDIO_ASSERT (loc);
+    IDIO_TYPE_ASSERT (string, loc);
+
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C ("no such environ binding", sh);
     IDIO c = idio_struct_instance (idio_condition_rt_environ_variable_unbound_error_type,
 				   IDIO_LIST4 (idio_get_output_string (sh),
-					       idio_S_nil,
+					       loc,
 					       idio_S_nil,
 					       idio_vm_symbols_ref (index)));
     idio_raise_condition (idio_S_true, c);
 }
 
-static void idio_vm_error_computed (char *msg, idio_ai_t index)
+static void idio_vm_error_computed (char *msg, idio_ai_t index, IDIO loc)
 {
+    IDIO_C_ASSERT (msg);
+    IDIO_ASSERT (loc);
+    IDIO_TYPE_ASSERT (string, loc);
+
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C (msg, sh);
     IDIO c = idio_struct_instance (idio_condition_rt_variable_error_type,
 				   IDIO_LIST4 (idio_get_output_string (sh),
-					       idio_S_nil,
+					       loc,
 					       idio_S_nil,
 					       idio_vm_symbols_ref (index)));
     idio_raise_condition (idio_S_true, c);
@@ -426,7 +457,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 		idio_vm_compile (thr, ia, IDIO_PAIR_H (m), depth + 1);
 		m = IDIO_PAIR_T (m);
 		if (! idio_isa_list (m)) {
-		    idio_error_C ("compile: not a sequence", m);
+		    idio_error_C ("compile: not a sequence", m, IDIO_C_LOCATION ("idio_vm_compile"));
 		    return;
 		}
 	    }
@@ -442,14 +473,14 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 1) {
-		idio_vm_error_compile_param_args ("SHALLOW-ARGUMENT-REF j", mt);
+		idio_vm_error_compile_param_args ("SHALLOW-ARGUMENT-REF j", mt, IDIO_C_LOCATION ("idio_vm_compile/SHALLOW-ARGUMENT-REF"));
 		return;
 	    }
 	    
 	    IDIO j = IDIO_PAIR_H (mt);
 
 	    if (! idio_isa_fixnum (j)) {
-		idio_vm_error_compile_param_type ("fixnum", j);
+		idio_vm_error_compile_param_type ("fixnum", j, IDIO_C_LOCATION ("idio_vm_compile/SHALLOW-ARGUMENT-REF"));
 		return;
 	    }
 
@@ -469,14 +500,14 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 1) {
-		idio_vm_error_compile_param_args ("PREDEFINED i", mt);
+		idio_vm_error_compile_param_args ("PREDEFINED i", mt, IDIO_C_LOCATION ("idio_vm_compile/PREDEFINED"));
 		return;
 	    }
 	    
 	    IDIO i = IDIO_PAIR_H (mt);
 
 	    if (! idio_isa_fixnum (i)) {
-		idio_vm_error_compile_param_type ("fixnum", i);
+		idio_vm_error_compile_param_type ("fixnum", i, IDIO_C_LOCATION ("idio_vm_compile/PREDEFINED"));
 		return;
 	    }
 
@@ -519,21 +550,21 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 2) {
-		idio_vm_error_compile_param_args ("DEEP-ARGUMENT-REF i j", mt);
+		idio_vm_error_compile_param_args ("DEEP-ARGUMENT-REF i j", mt, IDIO_C_LOCATION ("idio_vm_compile/DEEP-ARGUMENT-REF"));
 		return;
 	    }
 	    
 	    IDIO i = IDIO_PAIR_H (mt);
 
 	    if (! idio_isa_fixnum (i)) {
-		idio_vm_error_compile_param_type ("fixnum", i);
+		idio_vm_error_compile_param_type ("fixnum", i, IDIO_C_LOCATION ("idio_vm_compile/DEEP-ARGUMENT-REF"));
 		return;
 	    }
 
 	    IDIO j = IDIO_PAIR_H (IDIO_PAIR_T (mt));
 
 	    if (! idio_isa_fixnum (j)) {
-		idio_vm_error_compile_param_type ("fixnum", j);
+		idio_vm_error_compile_param_type ("fixnum", j, IDIO_C_LOCATION ("idio_vm_compile/DEEP-ARGUMENT-REF"));
 		return;
 	    }
 
@@ -546,14 +577,14 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 2) {
-		idio_vm_error_compile_param_args ("SHALLOW-ARGUMENT-SET j m1", mt);
+		idio_vm_error_compile_param_args ("SHALLOW-ARGUMENT-SET j m1", mt, IDIO_C_LOCATION ("idio_vm_compile/SHALLOW-ARGUMENT-SET"));
 		return;
 	    }
 	    
 	    IDIO j = IDIO_PAIR_H (mt);
 
 	    if (! idio_isa_fixnum (j)) {
-		idio_vm_error_compile_param_type ("fixnum", j);
+		idio_vm_error_compile_param_type ("fixnum", j, IDIO_C_LOCATION ("idio_vm_compile/SHALLOW-ARGUMENT-SET"));
 		return;
 	    }
 
@@ -577,21 +608,21 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 3) {
-		idio_vm_error_compile_param_args ("DEEP-ARGUMENT-SET i j m1", mt);
+		idio_vm_error_compile_param_args ("DEEP-ARGUMENT-SET i j m1", mt, IDIO_C_LOCATION ("idio_vm_compile/DEEP-ARGUMENT-SET"));
 		return;
 	    }
 	    
 	    IDIO i = IDIO_PAIR_H (mt);
 
 	    if (! idio_isa_fixnum (i)) {
-		idio_vm_error_compile_param_type ("fixnum", i);
+		idio_vm_error_compile_param_type ("fixnum", i, IDIO_C_LOCATION ("idio_vm_compile/DEEP-ARGUMENT-SET"));
 		return;
 	    }
 
 	    IDIO j = IDIO_PAIR_H (IDIO_PAIR_T (mt));
 
 	    if (! idio_isa_fixnum (j)) {
-		idio_vm_error_compile_param_type ("fixnum", j);
+		idio_vm_error_compile_param_type ("fixnum", j, IDIO_C_LOCATION ("idio_vm_compile/DEEP-ARGUMENT-SET"));
 		return;
 	    }
 
@@ -608,14 +639,14 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 1) {
-		idio_vm_error_compile_param_args ("GLOBAL-REF j", mt);
+		idio_vm_error_compile_param_args ("GLOBAL-REF j", mt, IDIO_C_LOCATION ("idio_vm_compile/GLOBAL-REF"));
 		return;
 	    }
 	    
 	    IDIO j = IDIO_PAIR_H (mt);
 
 	    if (! idio_isa_fixnum (j)) {
-		idio_vm_error_compile_param_type ("fixnum", j);
+		idio_vm_error_compile_param_type ("fixnum", j, IDIO_C_LOCATION ("idio_vm_compile/GLOBAL-REF"));
 		return;
 	    }
 
@@ -627,14 +658,14 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 1) {
-		idio_vm_error_compile_param_args ("CHECKED-GLOBAL-REF j", mt);
+		idio_vm_error_compile_param_args ("CHECKED-GLOBAL-REF j", mt, IDIO_C_LOCATION ("idio_vm_compile/CHECKED-GLOBAL-REF"));
 		return;
 	    }
 	    
 	    IDIO j = IDIO_PAIR_H (mt);
 
 	    if (! idio_isa_fixnum (j)) {
-		idio_vm_error_compile_param_type ("fixnum", j);
+		idio_vm_error_compile_param_type ("fixnum", j, IDIO_C_LOCATION ("idio_vm_compile/CHECKED-GLOBAL-REF"));
 		return;
 	    }
 
@@ -646,14 +677,14 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 1) {
-		idio_vm_error_compile_param_args ("CHECKED-GLOBAL-FUNCTION-REF j", mt);
+		idio_vm_error_compile_param_args ("CHECKED-GLOBAL-FUNCTION-REF j", mt, IDIO_C_LOCATION ("idio_vm_compile/CHECKED-GLOBAL-FUNCTION-REF"));
 		return;
 	    }
 	    
 	    IDIO j = IDIO_PAIR_H (mt);
 
 	    if (! idio_isa_fixnum (j)) {
-		idio_vm_error_compile_param_type ("fixnum", j);
+		idio_vm_error_compile_param_type ("fixnum", j, IDIO_C_LOCATION ("idio_vm_compile/CHECKED-GLOBAL-FUNCTION-REF"));
 		return;
 	    }
 
@@ -665,14 +696,14 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 1) {
-		idio_vm_error_compile_param_args ("COMPUTED-REF j", mt);
+		idio_vm_error_compile_param_args ("COMPUTED-REF j", mt, IDIO_C_LOCATION ("idio_vm_compile/COMPUTED-REF"));
 		return;
 	    }
 	    
 	    IDIO j = IDIO_PAIR_H (mt);
 
 	    if (! idio_isa_fixnum (j)) {
-		idio_vm_error_compile_param_type ("fixnum", j);
+		idio_vm_error_compile_param_type ("fixnum", j, IDIO_C_LOCATION ("idio_vm_compile/COMPUTED-REF"));
 		return;
 	    }
 
@@ -684,14 +715,14 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 2) {
-		idio_vm_error_compile_param_args ("GLOBAL-SET j m1", mt);
+		idio_vm_error_compile_param_args ("GLOBAL-SET j m1", mt, IDIO_C_LOCATION ("idio_vm_compile/GLOBAL-SET"));
 		return;
 	    }
 	    
 	    IDIO j = IDIO_PAIR_H (mt);
 
 	    if (! idio_isa_fixnum (j)) {
-		idio_vm_error_compile_param_type ("fixnum", j);
+		idio_vm_error_compile_param_type ("fixnum", j, IDIO_C_LOCATION ("idio_vm_compile/GLOBAL-SET"));
 		return;
 	    }
 
@@ -707,14 +738,14 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 2) {
-		idio_vm_error_compile_param_args ("COMPUTED-SET j m1", mt);
+		idio_vm_error_compile_param_args ("COMPUTED-SET j m1", mt, IDIO_C_LOCATION ("idio_vm_compile/COMPUTED-SET"));
 		return;
 	    }
 	    
 	    IDIO j = IDIO_PAIR_H (mt);
 
 	    if (! idio_isa_fixnum (j)) {
-		idio_vm_error_compile_param_type ("fixnum", j);
+		idio_vm_error_compile_param_type ("fixnum", j, IDIO_C_LOCATION ("idio_vm_compile/COMPUTED-SET"));
 		return;
 	    }
 
@@ -730,7 +761,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 1) {
-		idio_vm_error_compile_param_args ("CONSTANT j", mt);
+		idio_vm_error_compile_param_args ("CONSTANT j", mt, IDIO_C_LOCATION ("idio_vm_compile/CONSTANT"));
 		return;
 	    }
 	    
@@ -829,7 +860,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 3) {
-		idio_vm_error_compile_param_args ("ALTERNATIVE m1 m2 m3", mt);
+		idio_vm_error_compile_param_args ("ALTERNATIVE m1 m2 m3", mt, IDIO_C_LOCATION ("idio_vm_compile/ALTERNATIVE"));
 		return;
 	    }
 	    
@@ -917,7 +948,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 2) {
-		idio_vm_error_compile_param_args ("SEQUENCE m1 m+", mt);
+		idio_vm_error_compile_param_args ("SEQUENCE m1 m+", mt, IDIO_C_LOCATION ("idio_vm_compile/SEQUENCE"));
 		return;
 	    }
 	    
@@ -932,7 +963,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) < 1) {
-		idio_vm_error_compile_param_args ("AND m+", mt);
+		idio_vm_error_compile_param_args ("AND m+", mt, IDIO_C_LOCATION ("idio_vm_compile/AND"));
 		return;
 	    }
 
@@ -1010,7 +1041,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) < 1) {
-		idio_vm_error_compile_param_args ("OR m+", mt);
+		idio_vm_error_compile_param_args ("OR m+", mt, IDIO_C_LOCATION ("idio_vm_compile/OR"));
 		return;
 	    }
 	    
@@ -1087,7 +1118,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) < 1) {
-		idio_vm_error_compile_param_args ("BEGIN m+", mt);
+		idio_vm_error_compile_param_args ("BEGIN m+", mt, IDIO_C_LOCATION ("idio_vm_compile/BEGIN"));
 		return;
 	    }
 	    
@@ -1101,7 +1132,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 2) {
-		idio_vm_error_compile_param_args ("TR-FIX-LET m* m+", mt);
+		idio_vm_error_compile_param_args ("TR-FIX-LET m* m+", mt, IDIO_C_LOCATION ("idio_vm_compile/TR-FIX-LET"));
 		return;
 	    }
 	    
@@ -1117,7 +1148,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 2) {
-		idio_vm_error_compile_param_args ("FIX-LET m* m+", mt);
+		idio_vm_error_compile_param_args ("FIX-LET m* m+", mt, IDIO_C_LOCATION ("idio_vm_compile/FIX-LET"));
 		return;
 	    }
 	    
@@ -1134,7 +1165,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 1) {
-		idio_vm_error_compile_param_args ("CALL0 ins", mt);
+		idio_vm_error_compile_param_args ("CALL0 ins", mt, IDIO_C_LOCATION ("idio_vm_compile/CALL0"));
 		return;
 	    }
 	    
@@ -1147,7 +1178,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 2) {
-		idio_vm_error_compile_param_args ("CALL1 ins m1", mt);
+		idio_vm_error_compile_param_args ("CALL1 ins m1", mt, IDIO_C_LOCATION ("idio_vm_compile/CALL1"));
 		return;
 	    }
 	    
@@ -1162,7 +1193,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 3) {
-		idio_vm_error_compile_param_args ("CALL2 ins m1 m2", mt);
+		idio_vm_error_compile_param_args ("CALL2 ins m1 m2", mt, IDIO_C_LOCATION ("idio_vm_compile/CALL2"));
 		return;
 	    }
 	    
@@ -1182,7 +1213,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 4) {
-		idio_vm_error_compile_param_args ("CALL3 ins m1 m2 m3", mt);
+		idio_vm_error_compile_param_args ("CALL3 ins m1 m2 m3", mt, IDIO_C_LOCATION ("idio_vm_compile/CALL3"));
 		return;
 	    }
 	    
@@ -1205,7 +1236,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 2) {
-		idio_vm_error_compile_param_args ("FIX-CLOSURE m+ arity", mt);
+		idio_vm_error_compile_param_args ("FIX-CLOSURE m+ arity", mt, IDIO_C_LOCATION ("idio_vm_compile/FIX-CLOSURE"));
 		return;
 	    }
 	    
@@ -1213,7 +1244,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	    IDIO arity = IDIO_PAIR_H (IDIO_PAIR_T (mt));
 
 	    if (! idio_isa_fixnum (arity)) {
-		idio_vm_error_compile_param_type ("fixnum", arity);
+		idio_vm_error_compile_param_type ("fixnum", arity, IDIO_C_LOCATION ("idio_vm_compile/FIX-CLOSURE"));
 		return;
 	    }
 
@@ -1296,7 +1327,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 2) {
-		idio_vm_error_compile_param_args ("NARY-CLOSURE m+ arity", mt);
+		idio_vm_error_compile_param_args ("NARY-CLOSURE m+ arity", mt, IDIO_C_LOCATION ("idio_vm_compile/NARY-CLOSURE"));
 		return;
 	    }
 	    
@@ -1304,7 +1335,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	    IDIO arity = IDIO_PAIR_H (IDIO_PAIR_T (mt));
 
 	    if (! idio_isa_fixnum (arity)) {
-		idio_vm_error_compile_param_type ("fixnum", arity);
+		idio_vm_error_compile_param_type ("fixnum", arity, IDIO_C_LOCATION ("idio_vm_compile/NARY-CLOSURE"));
 		return;
 	    }
 
@@ -1366,7 +1397,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 2) {
-		idio_vm_error_compile_param_args ("TR-REGULAR-CALL m1 m*", mt);
+		idio_vm_error_compile_param_args ("TR-REGULAR-CALL m1 m*", mt, IDIO_C_LOCATION ("idio_vm_compile/TR-REGULAR-CALL"));
 		return;
 	    }
 	    
@@ -1383,7 +1414,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 2) {
-		idio_vm_error_compile_param_args ("REGULAR-CALL m1 m*", mt);
+		idio_vm_error_compile_param_args ("REGULAR-CALL m1 m*", mt, IDIO_C_LOCATION ("idio_vm_compile/REGULAR-CALL"));
 		return;
 	    }
 	    
@@ -1400,7 +1431,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 3) {
-		idio_vm_error_compile_param_args ("STORE-ARGUMENT m1 m* rank", mt);
+		idio_vm_error_compile_param_args ("STORE-ARGUMENT m1 m* rank", mt, IDIO_C_LOCATION ("idio_vm_compile/STORE-ARGUMENT"));
 		return;
 	    }
 	    
@@ -1409,7 +1440,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	    IDIO rank = IDIO_PAIR_H (IDIO_PAIR_T (IDIO_PAIR_T (mt)));
 
 	    if (! idio_isa_fixnum (rank)) {
-		idio_vm_error_compile_param_type ("fixnum", rank);
+		idio_vm_error_compile_param_type ("fixnum", rank, IDIO_C_LOCATION ("idio_vm_compile/STORE-ARGUMENT"));
 		return;
 	    }
 
@@ -1432,7 +1463,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 3) {
-		idio_vm_error_compile_param_args ("CONS-ARGUMENT m1 m* arity", mt);
+		idio_vm_error_compile_param_args ("CONS-ARGUMENT m1 m* arity", mt, IDIO_C_LOCATION ("idio_vm_compile/CONS-ARGUMENT"));
 		return;
 	    }
 	    
@@ -1451,14 +1482,14 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 1) {
-		idio_vm_error_compile_param_args ("ALLOCATE-FRAME size", mt);
+		idio_vm_error_compile_param_args ("ALLOCATE-FRAME size", mt, IDIO_C_LOCATION ("idio_vm_compile/ALLOCATE-FRAME"));
 		return;
 	    }
 	    
 	    IDIO size = IDIO_PAIR_H (mt);
 
 	    if (! idio_isa_fixnum (size)) {
-		idio_vm_error_compile_param_type ("fixnum", size);
+		idio_vm_error_compile_param_type ("fixnum", size, IDIO_C_LOCATION ("idio_vm_compile/ALLOCATE-FRAME"));
 		return;
 	    }
 
@@ -1479,14 +1510,14 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 1) {
-		idio_vm_error_compile_param_args ("ALLOCATE-DOTTED-FRAME size", mt);
+		idio_vm_error_compile_param_args ("ALLOCATE-DOTTED-FRAME size", mt, IDIO_C_LOCATION ("idio_vm_compile/ALLOCATE-DOTTED-FRAME"));
 		return;
 	    }
 	    
 	    IDIO size = IDIO_PAIR_H (mt);
 
 	    if (! idio_isa_fixnum (size)) {
-		idio_vm_error_compile_param_type ("fixnum", size);
+		idio_vm_error_compile_param_type ("fixnum", size, IDIO_C_LOCATION ("idio_vm_compile/ALLOCATE-DOTTED-FRAME"));
 		return;
 	    }
 
@@ -1498,7 +1529,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 0) {
-		idio_vm_error_compile_param_args ("FINISH", mt);
+		idio_vm_error_compile_param_args ("FINISH", mt, IDIO_C_LOCATION ("idio_vm_compile/FINISH"));
 		return;
 	    }
 	    
@@ -1509,7 +1540,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 2) {
-		idio_vm_error_compile_param_args ("PUSH-DYNAMIC index m", mt);
+		idio_vm_error_compile_param_args ("PUSH-DYNAMIC index m", mt, IDIO_C_LOCATION ("idio_vm_compile/PUSH-DYNAMIC"));
 		return;
 	    }
 
@@ -1525,7 +1556,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
     case IDIO_VM_CODE_POP_DYNAMIC:
 	{
 	    if (idio_S_nil != mt) {
-		idio_vm_error_compile_param_args ("POP-DYNAMIC", mt);
+		idio_vm_error_compile_param_args ("POP-DYNAMIC", mt, IDIO_C_LOCATION ("idio_vm_compile/POP-DYNAMIC"));
 		return;
 	    }
 
@@ -1536,7 +1567,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 1) {
-		idio_vm_error_compile_param_args ("DYNAMIC-REF index", mt);
+		idio_vm_error_compile_param_args ("DYNAMIC-REF index", mt, IDIO_C_LOCATION ("idio_vm_compile/DYNAMIC-REF"));
 		return;
 	    }
 
@@ -1550,7 +1581,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 1) {
-		idio_vm_error_compile_param_args ("DYNAMIC-FUNCTION-REF index", mt);
+		idio_vm_error_compile_param_args ("DYNAMIC-FUNCTION-REF index", mt, IDIO_C_LOCATION ("idio_vm_compile/DYNAMIC-FUNCTION-REF"));
 		return;
 	    }
 
@@ -1564,7 +1595,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 2) {
-		idio_vm_error_compile_param_args ("PUSH-ENVIRON index m", mt);
+		idio_vm_error_compile_param_args ("PUSH-ENVIRON index m", mt, IDIO_C_LOCATION ("idio_vm_compile/PUSH-ENVIRON"));
 		return;
 	    }
 
@@ -1580,7 +1611,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
     case IDIO_VM_CODE_POP_ENVIRON:
 	{
 	    if (idio_S_nil != mt) {
-		idio_vm_error_compile_param_args ("POP-ENVIRON", mt);
+		idio_vm_error_compile_param_args ("POP-ENVIRON", mt, IDIO_C_LOCATION ("idio_vm_compile/POP-ENVIRON"));
 		return;
 	    }
 
@@ -1591,7 +1622,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 1) {
-		idio_vm_error_compile_param_args ("ENVIRON-REF index", mt);
+		idio_vm_error_compile_param_args ("ENVIRON-REF index", mt, IDIO_C_LOCATION ("idio_vm_compile/ENVIRON-REF"));
 		return;
 	    }
 
@@ -1604,7 +1635,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
     case IDIO_VM_CODE_PUSH_HANDLER:
 	{
 	    if (idio_S_nil != mt) {
-		idio_vm_error_compile_param_args ("PUSH-HANDLER", mt);
+		idio_vm_error_compile_param_args ("PUSH-HANDLER", mt, IDIO_C_LOCATION ("idio_vm_compile/PUSH-HANDLER"));
 		return;
 	    }
 
@@ -1614,7 +1645,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
     case IDIO_VM_CODE_POP_HANDLER:
 	{
 	    if (idio_S_nil != mt) {
-		idio_vm_error_compile_param_args ("POP-HANDLER", mt);
+		idio_vm_error_compile_param_args ("POP-HANDLER", mt, IDIO_C_LOCATION ("idio_vm_compile/POP-HANDLER"));
 		return;
 	    }
 
@@ -1625,7 +1656,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 2) {
-		idio_vm_error_compile_param_args ("EXPANDER i m", mt);
+		idio_vm_error_compile_param_args ("EXPANDER i m", mt, IDIO_C_LOCATION ("idio_vm_compile/EXPANDER"));
 		return;
 	    }
 
@@ -1640,23 +1671,25 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
     case IDIO_VM_CODE_OPERATOR:
 	{
 	    if (! idio_isa_pair (mt) ||
-		idio_list_length (mt) != 2) {
-		idio_vm_error_compile_param_args ("OPERATOR i m", mt);
+		idio_list_length (mt) != 3) {
+		idio_vm_error_compile_param_args ("OPERATOR i p m", mt, IDIO_C_LOCATION ("idio_vm_compile/OPERATOR"));
 		return;
 	    }
 
 	    IDIO i = IDIO_PAIR_H (mt);
-	    IDIO m = IDIO_PAIR_H (IDIO_PAIR_T (mt));
+	    IDIO p = IDIO_PAIR_H (IDIO_PAIR_T (mt));
+	    IDIO m = IDIO_PAIR_H (IDIO_PAIR_T (IDIO_PAIR_T (mt)));
 	    
 	    idio_vm_compile (thr, ia, m, depth + 1);
 	    IDIO_IA_PUSH1 (IDIO_A_OPERATOR);
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (i));
+	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (p));
 	}
 	break;
     case IDIO_VM_CODE_NOP:
 	break;
     default:
-	idio_error_C ("bad instruction", IDIO_LIST1 (mh));
+	idio_error_C ("bad instruction", IDIO_LIST1 (mh), IDIO_C_LOCATION ("idio_vm_compile"));
 	break;
     }
 }
@@ -1713,7 +1746,7 @@ IDIO_DEFINE_PRIMITIVE2 ("base-error-handler", base_error_handler, (IDIO cont, ID
 
 #ifdef IDIO_DEBUG
     idio_debug ("THR %s\n", thr);
-    idio_debug ("STK %s\n", IDIO_THREAD_STACK (thr));
+    idio_debug ("STK %.1000s\n", IDIO_THREAD_STACK (thr));
 #endif
 
     if (idio_S_true == cont) {
@@ -1855,24 +1888,24 @@ static void idio_vm_restore_state (IDIO thr)
 	 * As we've just ascertained we don't have an error handler
 	 * this will end in even more tears...
 	 */
-	idio_error_C ("bad HANDLER SP: < 1", IDIO_LIST2 (thr, IDIO_THREAD_STACK (thr)));
+	idio_error_C ("bad HANDLER SP: < 1", IDIO_LIST2 (thr, IDIO_THREAD_STACK (thr)), IDIO_C_LOCATION ("idio_vm_restore_state"));
     }
 
     if (hsp >= idio_array_size (IDIO_THREAD_STACK (thr))) {
-	idio_error_C ("bad HANDLER SP: > stack", IDIO_LIST2 (thr, IDIO_THREAD_STACK (thr)));
+	idio_error_C ("bad HANDLER SP: > stack", IDIO_LIST2 (thr, IDIO_THREAD_STACK (thr)), IDIO_C_LOCATION ("idio_vm_restore_state"));
     }
 
     IDIO_THREAD_DYNAMIC_SP (thr) = IDIO_THREAD_STACK_POP ();
     idio_ai_t dsp = IDIO_FIXNUM_VAL (IDIO_THREAD_DYNAMIC_SP (thr));
     if (dsp >= idio_array_size (IDIO_THREAD_STACK (thr))) {
-	idio_error_C ("bad DYNAMIC SP: > stack", IDIO_LIST2 (thr, IDIO_THREAD_STACK (thr)));
+	idio_error_C ("bad DYNAMIC SP: > stack", IDIO_LIST2 (thr, IDIO_THREAD_STACK (thr)), IDIO_C_LOCATION ("idio_vm_restore_state"));
     }
 
     IDIO_THREAD_ENVIRON_SP (thr) = IDIO_THREAD_STACK_POP ();
 
     idio_ai_t esp = IDIO_FIXNUM_VAL (IDIO_THREAD_ENVIRON_SP (thr));
     if (esp >= idio_array_size (IDIO_THREAD_STACK (thr))) {
-	idio_error_C ("bad ENVIRON SP: > stack", IDIO_LIST2 (thr, IDIO_THREAD_STACK (thr)));
+	idio_error_C ("bad ENVIRON SP: > stack", IDIO_LIST2 (thr, IDIO_THREAD_STACK (thr)), IDIO_C_LOCATION ("idio_vm_restore_state"));
     }
 
 }
@@ -1902,7 +1935,7 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
     case IDIO_TYPE_CHARACTER_MARK:
     case IDIO_TYPE_CONSTANT_MARK:
 	{
-	    idio_vm_error_function_invoke ("cannot invoke constant type", func);
+	    idio_vm_error_function_invoke ("cannot invoke constant type", func, IDIO_C_LOCATION ("idio_vm_invoke"));
 	    return;
 	}
     default:
@@ -1974,7 +2007,7 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
 	    IDIO_FRAME_NARGS (val) -= 1;
 
 	    if (idio_S_nil != last) {
-		idio_error_C ("invoke: primitive: varargs?", IDIO_LIST1 (last));
+		idio_error_C ("primitive: varargs?", IDIO_LIST1 (last), IDIO_C_LOCATION ("idio_vm_invoke"));
 	    }
 
 	    switch (IDIO_PRIMITIVE_ARITY (func)) {
@@ -2030,7 +2063,7 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
 		}
 		break;
 	    default:
-		idio_vm_error_function_invoke ("arity unexpected", IDIO_LIST2 (func, args_a));
+		idio_vm_error_function_invoke ("arity unexpected", IDIO_LIST2 (func, args_a), IDIO_C_LOCATION ("idio_vm_invoke"));
 		break;
 	    }
 
@@ -2064,11 +2097,11 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
 	    IDIO_FRAME_NARGS (val) -= 1;
 
 	    if (idio_S_nil != last) {
-		idio_error_C ("invoke: continuation: varargs?", IDIO_LIST1 (last));
+		idio_error_C ("continuation: varargs?", IDIO_LIST1 (last), IDIO_C_LOCATION ("idio_vm_invoke"));
 	    }
 
 	    if (IDIO_FRAME_NARGS (val) != 1) {
-		idio_vm_error_function_invoke ("unary continuation", IDIO_LIST2 (func, args_a));
+		idio_vm_error_function_invoke ("unary continuation", IDIO_LIST2 (func, args_a), IDIO_C_LOCATION ("idio_vm_invoke"));
 	    }
 	    
 	    idio_vm_restore_continuation (func, idio_array_get_index (args_a, 0));
@@ -2081,13 +2114,17 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
 		IDIO_THREAD_VAL (thr) = idio_command_invoke (func, thr, pathname);
 		free (pathname);
 	    } else {
-		idio_vm_error_function_invoke ("command not found", IDIO_LIST2 (func, IDIO_FRAME_ARGS (IDIO_THREAD_VAL (thr))));
+		idio_vm_error_function_invoke ("command not found",
+					       IDIO_LIST2 (func, IDIO_FRAME_ARGS (IDIO_THREAD_VAL (thr))),
+					       IDIO_C_LOCATION ("idio_vm_invoke"));
 	    }
 	}
 	break;
     default:
 	{
-	    idio_vm_error_function_invoke ("cannot invoke", IDIO_LIST2 (func, IDIO_FRAME_ARGS (IDIO_THREAD_VAL (thr))));
+	    idio_vm_error_function_invoke ("cannot invoke",
+					   IDIO_LIST2 (func, IDIO_FRAME_ARGS (IDIO_THREAD_VAL (thr))),
+					   IDIO_C_LOCATION ("idio_vm_invoke"));
 	}
 	break;
     }
@@ -2178,7 +2215,7 @@ IDIO idio_vm_dynamic_ref (idio_ai_t index, IDIO thr)
 	    IDIO v = idio_vm_values_ref (index);
 
 	    if (idio_S_undef == v) {
-		idio_error_dynamic_unbound (index);
+		idio_error_dynamic_unbound (index, IDIO_C_LOCATION ("idio_vm_dynamic_ref"));
 	    }
 
 	    return v;
@@ -2259,7 +2296,7 @@ IDIO idio_vm_environ_ref (idio_ai_t index, IDIO thr)
 	    IDIO v = idio_vm_values_ref (index);
 
 	    if (idio_S_undef == v) {
-		idio_error_environ_unbound (index);
+		idio_error_environ_unbound (index, IDIO_C_LOCATION ("idio_vm_environ_ref"));
 	    }
 
 	    return v;
@@ -2303,10 +2340,10 @@ void idio_vm_computed_ref (idio_ai_t index)
 	    idio_isa_closure (get)) {
 	    idio_apply (get, IDIO_LIST1 (idio_S_nil));
 	} else {
-	    idio_vm_error_computed ("no get accessor", index);
+	    idio_vm_error_computed ("no get accessor", index, IDIO_C_LOCATION ("idio_vm_computed_ref"));
 	}
     } else {
-	idio_vm_error_computed ("no accessors", index);
+	idio_vm_error_computed ("no accessors", index, IDIO_C_LOCATION ("idio_vm_computed_ref"));
     }
 }
 
@@ -2322,10 +2359,10 @@ void idio_vm_computed_set (idio_ai_t index, IDIO v)
 	    idio_isa_closure (set)) {
 	    idio_apply (set, IDIO_LIST1 (v));
 	} else {
-	    idio_vm_error_computed ("no set accessor", index);
+	    idio_vm_error_computed ("no set accessor", index, IDIO_C_LOCATION ("idio_vm_computed_set"));
 	}
     } else {
-	idio_vm_error_computed ("no accessors", index);
+	idio_vm_error_computed ("no accessors", index, IDIO_C_LOCATION ("idio_vm_computed_set"));
     }
 }
 
@@ -2740,7 +2777,7 @@ int idio_vm_run1 (IDIO thr)
     if (IDIO_THREAD_PC(thr) > idio_all_code->i) {
 	fprintf (stderr, "\n\nPC %" PRIdPTR " > max code PC %" PRIdPTR"\n", IDIO_THREAD_PC (thr), idio_all_code->i);
 	idio_debug ("THR %s\n", thr);
-	idio_debug ("STK %s\n", IDIO_THREAD_STACK (thr));
+	idio_debug ("STK %.1000s\n", IDIO_THREAD_STACK (thr));
 	idio_vm_panic (thr, "bad PC!");
     }
     IDIO_I ins = IDIO_THREAD_FETCH_NEXT ();
@@ -2811,7 +2848,7 @@ int idio_vm_run1 (IDIO thr)
 		idio_debug (" #unspec in symbols %s\n", idio_vm_symbols);
 		idio_dump (thr, 2);
 		idio_debug ("c-m: %s\n", idio_current_module ());
-		idio_error_printf ("unspecified toplevel: %" PRId64 "", i);
+		idio_error_printf (IDIO_C_LOCATION ("idio_vm_run1/CHECKED-GLOBAL-REF"), "unspecified toplevel: %" PRId64 "", i);
 	    } else {
 		IDIO_THREAD_VAL (thr) = val;
 	    }
@@ -2841,7 +2878,7 @@ int idio_vm_run1 (IDIO thr)
 		idio_debug (" #unspec in symbols %s\n", idio_vm_symbols);
 		idio_dump (thr, 2);
 		idio_debug ("c-m: %s\n", idio_current_module ());
-		idio_error_printf ("unspecified toplevel: %" PRId64 "", i);
+		idio_error_printf (IDIO_C_LOCATION ("idio_vm_run1/CHECKED-GLOBAL-FUNCTION-REF"), "unspecified toplevel: %" PRId64 "", i);
 	    } else {
 		IDIO_THREAD_VAL (thr) = val;
 	    }
@@ -2883,37 +2920,37 @@ int idio_vm_run1 (IDIO thr)
     case IDIO_A_PREDEFINED3:
 	{
 	    IDIO_THREAD_VAL (thr) = idio_vm_primitives_ref (3);
-	    idio_error_printf ("predef 3");
+	    idio_error_C ("predef 3", idio_S_nil, IDIO_C_LOCATION ("idio_vm_run1/PREDEFINED3"));
 	}
 	break;
     case IDIO_A_PREDEFINED4:
 	{
 	    IDIO_THREAD_VAL (thr) = idio_vm_primitives_ref (4);
-	    idio_error_printf ("predef 4");
+	    idio_error_C ("predef 4", idio_S_nil, IDIO_C_LOCATION ("idio_vm_run1/PREDEFINED4"));
 	}
 	break;
     case IDIO_A_PREDEFINED5:
 	{
 	    IDIO_THREAD_VAL (thr) = idio_vm_primitives_ref (5);
-	    idio_error_printf ("predef 5");
+	    idio_error_C ("predef 5", idio_S_nil, IDIO_C_LOCATION ("idio_vm_run1/PREDEFINED5"));
 	}
 	break;
     case IDIO_A_PREDEFINED6:
 	{
 	    IDIO_THREAD_VAL (thr) = idio_vm_primitives_ref (6);
-	    idio_error_printf ("predef 6");
+	    idio_error_C ("predef 6", idio_S_nil, IDIO_C_LOCATION ("idio_vm_run1/PREDEFINED6"));
 	}
 	break;
     case IDIO_A_PREDEFINED7:
 	{
 	    IDIO_THREAD_VAL (thr) = idio_vm_primitives_ref (7);
-	    idio_error_printf ("predef 7");
+	    idio_error_C ("predef 7", idio_S_nil, IDIO_C_LOCATION ("idio_vm_run1/PREDEFINED7"));
 	}
 	break;
     case IDIO_A_PREDEFINED8:
 	{
 	    IDIO_THREAD_VAL (thr) = idio_vm_primitives_ref (8);
-	    idio_error_printf ("predef 8");
+	    idio_error_C ("predef 8", idio_S_nil, IDIO_C_LOCATION ("idio_vm_run1/PREDEFINED8"));
 	}
 	break;
     case IDIO_A_PREDEFINED:
@@ -3109,7 +3146,7 @@ int idio_vm_run1 (IDIO thr)
 		idio_debug ("RETURN {fixnum}: not %s\n", ipc);
 		idio_debug ("THR %s\n", thr);
 		idio_debug ("STK %s\n", IDIO_THREAD_STACK (thr));
-		idio_error_C ("RETURN: not a number", IDIO_LIST1 (ipc));
+		idio_error_C ("RETURN: not a number", IDIO_LIST1 (ipc), IDIO_C_LOCATION ("idio_vm_run1/RETURN"));
 	    }
 	    idio_ai_t pc = IDIO_FIXNUM_VAL (ipc);
 	    if (pc > idio_all_code->i ||
@@ -3253,7 +3290,7 @@ int idio_vm_run1 (IDIO thr)
 		nargs = IDIO_FRAME_NARGS (IDIO_THREAD_VAL (thr));
 	    }
 	    if (1 != nargs) {
-		idio_vm_error_arity (ins, thr, nargs - 1, 0);
+		idio_vm_error_arity (ins, thr, nargs - 1, 0, IDIO_C_LOCATION ("idio_vm_run1/ARITYP1"));
 		return 0;
 	    }
 	}
@@ -3266,7 +3303,7 @@ int idio_vm_run1 (IDIO thr)
 		nargs = IDIO_FRAME_NARGS (IDIO_THREAD_VAL (thr));
 	    }
 	    if (2 != nargs) {
-		idio_vm_error_arity (ins, thr, nargs - 1, 1);
+		idio_vm_error_arity (ins, thr, nargs - 1, 1, IDIO_C_LOCATION ("idio_vm_run1/ARITYP2"));
 		return 0;
 	    }
 	}
@@ -3288,7 +3325,7 @@ int idio_vm_run1 (IDIO thr)
 		idio_dump (IDIO_FRAME_ARGS (IDIO_THREAD_VAL (thr)), 10);
 		idio_gc_set_verboseness (0);
 		
-		idio_vm_error_arity (ins, thr, nargs - 1, 2);
+		idio_vm_error_arity (ins, thr, nargs - 1, 2, IDIO_C_LOCATION ("idio_vm_run1/ARITYP3"));
 		return 0;
 	    }
 	}
@@ -3301,7 +3338,7 @@ int idio_vm_run1 (IDIO thr)
 		nargs = IDIO_FRAME_NARGS (IDIO_THREAD_VAL (thr));
 	    }
 	    if (4 != nargs) {
-		idio_vm_error_arity (ins, thr, nargs - 1, 3);
+		idio_vm_error_arity (ins, thr, nargs - 1, 3, IDIO_C_LOCATION ("idio_vm_run1/ARITYP4"));
 		return 0;
 	    }
 	}
@@ -3315,7 +3352,7 @@ int idio_vm_run1 (IDIO thr)
 		nargs = IDIO_FRAME_NARGS (IDIO_THREAD_VAL (thr));
 	    }
 	    if (arityp1 != nargs) {
-		idio_vm_error_arity (ins, thr, nargs - 1, arityp1 - 1);
+		idio_vm_error_arity (ins, thr, nargs - 1, arityp1 - 1, IDIO_C_LOCATION ("idio_vm_run1/ARITYEQP"));
 		return 0;
 	    }
 	}
@@ -3337,7 +3374,7 @@ int idio_vm_run1 (IDIO thr)
 		idio_gc_set_verboseness (3);
 		idio_dump (IDIO_FRAME_ARGS (IDIO_THREAD_VAL (thr)), 4);
 		idio_gc_set_verboseness (0);
-		idio_vm_error_arity_varargs (ins, thr, nargs - 1, arityp1 - 1);
+		idio_vm_error_arity_varargs (ins, thr, nargs - 1, arityp1 - 1, IDIO_C_LOCATION ("idio_vm_run1/ARITYGEP"));
 		return 0;
 	    }
 	}
@@ -3347,7 +3384,7 @@ int idio_vm_run1 (IDIO thr)
 	    uint64_t v = idio_vm_fetch_varuint (thr);
 	    IDIO_VM_RUN_DIS ("FIXNUM %" PRId64 "", v);
 	    if (IDIO_FIXNUM_MAX < v) {
-	      idio_error_printf ("FIXNUM OOB: %" PRIu64 " > %" PRIu64, v, IDIO_FIXNUM_MAX);
+		idio_error_printf (IDIO_C_LOCATION ("idio_vm_run1/FIXNUM"), "FIXNUM OOB: %" PRIu64 " > %" PRIu64, v, IDIO_FIXNUM_MAX);
 	    }
 	    IDIO_THREAD_VAL (thr) = idio_fixnum ((intptr_t) v);
 	}
@@ -3358,7 +3395,7 @@ int idio_vm_run1 (IDIO thr)
 	    v = -v;
 	    IDIO_VM_RUN_DIS ("NEG-FIXNUM %" PRId64 "", v);
 	    if (IDIO_FIXNUM_MIN > v) {
-	      idio_error_printf ("FIXNUM OOB: %" PRIu64 " < %" PRIu64, v, IDIO_FIXNUM_MIN);
+		idio_error_printf (IDIO_C_LOCATION ("idio_vm_run1/NEG-FIXNUM"), "FIXNUM OOB: %" PRIu64 " < %" PRIu64, v, IDIO_FIXNUM_MIN);
 	    }
 	    IDIO_THREAD_VAL (thr) = idio_fixnum ((intptr_t) v);
 	}
@@ -3368,7 +3405,7 @@ int idio_vm_run1 (IDIO thr)
 	    uint64_t v = idio_vm_fetch_varuint (thr);
 	    IDIO_VM_RUN_DIS ("CHARACTER %" PRId64 "", v);
 	    if (IDIO_FIXNUM_MAX < v) {
-	      idio_error_printf ("CHARACTER OOB: %" PRIu64 " > %" PRIu64, v, IDIO_FIXNUM_MAX);
+		idio_error_printf (IDIO_C_LOCATION ("idio_vm_run1/CHARACTER"), "CHARACTER OOB: %" PRIu64 " > %" PRIu64, v, IDIO_FIXNUM_MAX);
 	    }
 	    IDIO_THREAD_VAL (thr) = IDIO_CHARACTER ((intptr_t) v);
 	}
@@ -3379,7 +3416,7 @@ int idio_vm_run1 (IDIO thr)
 	    v = -v;
 	    IDIO_VM_RUN_DIS ("NEG-CHARACTER %" PRId64 "", v);
 	    if (IDIO_FIXNUM_MIN > v) {
-	      idio_error_printf ("CHARACTER OOB: %" PRIu64 " < %" PRIu64, v, IDIO_FIXNUM_MIN);
+		idio_error_printf (IDIO_C_LOCATION ("idio_vm_run1/NEG-CHARACTER"), "CHARACTER OOB: %" PRIu64 " < %" PRIu64, v, IDIO_FIXNUM_MIN);
 	    }
 	    IDIO_THREAD_VAL (thr) = IDIO_CHARACTER ((intptr_t) v);
 	}
@@ -3389,7 +3426,7 @@ int idio_vm_run1 (IDIO thr)
 	    uint64_t v = idio_vm_fetch_varuint (thr);
 	    IDIO_VM_RUN_DIS ("CONSTANT %" PRId64 "", v);
 	    if (IDIO_FIXNUM_MAX < v) {
-	      idio_error_printf ("CONSTANT OOB: %" PRIu64 " > %" PRIu64, v, IDIO_FIXNUM_MAX);
+		idio_error_printf (IDIO_C_LOCATION ("idio_vm_run1/CONSTANT"), "CONSTANT OOB: %" PRIu64 " > %" PRIu64, v, IDIO_FIXNUM_MAX);
 	    }
 	    IDIO_THREAD_VAL (thr) = IDIO_CONSTANT ((intptr_t) v);
 	}
@@ -3400,7 +3437,7 @@ int idio_vm_run1 (IDIO thr)
 	    v = -v;
 	    IDIO_VM_RUN_DIS ("NEG-CONSTANT %" PRId64 "", v);
 	    if (IDIO_FIXNUM_MIN > v) {
-	      idio_error_printf ("CONSTANT OOB: %" PRIu64 " < %" PRIu64, v, IDIO_FIXNUM_MIN);
+		idio_error_printf (IDIO_C_LOCATION ("idio_vm_run1/NEG-CONSTANT"), "CONSTANT OOB: %" PRIu64 " < %" PRIu64, v, IDIO_FIXNUM_MIN);
 	    }
 	    IDIO_THREAD_VAL (thr) = IDIO_CONSTANT ((intptr_t) v);
 	}
@@ -3574,7 +3611,7 @@ int idio_vm_run1 (IDIO thr)
     case IDIO_A_PRIMCALL1_CONTINUATIONP:
 	{
 	    IDIO_VM_RUN_DIS ("PRIMITIVE1 continuation?");
-	    idio_error_printf ("continuation?");
+	    idio_error_printf (IDIO_C_LOCATION ("idio_vm_run1/CONTINUATION"), "continuation?");
 	}
 	break;
     case IDIO_A_PRIMCALL1_EOFP:
@@ -3870,7 +3907,7 @@ int idio_vm_run1 (IDIO thr)
 	    IDIO_VM_RUN_DIS ("NON-CONT-ERROR\n");
 	    idio_raise_condition (idio_S_false, idio_struct_instance (idio_condition_idio_error_type,
 								      IDIO_LIST3 (idio_string_C ("non-cont-error"),
-										  idio_S_nil,
+										  IDIO_C_LOCATION ("idio_vm_run1/NON_CONT_ERR"),
 										  IDIO_THREAD_VAL (thr))));
 	}
 	break;
@@ -3885,9 +3922,10 @@ int idio_vm_run1 (IDIO thr)
     case IDIO_A_OPERATOR:
 	{
 	    uint64_t index = idio_vm_fetch_varuint (thr);
+	    uint64_t pri = idio_vm_fetch_varuint (thr);
 	    IDIO_VM_RUN_DIS ("OPERATOR %" PRId64 "", index);
 	    IDIO sym = idio_vm_symbols_ref (index);
-	    idio_install_operator (sym, IDIO_THREAD_VAL (thr));
+	    idio_install_operator (sym, IDIO_THREAD_VAL (thr), pri);
 	}
 	break;
     default:
@@ -3912,7 +3950,7 @@ int idio_vm_run1 (IDIO thr)
 		fprintf (stderr, "%3d ", idio_all_code->ae[pc]);
 	    }
 	    fprintf (stderr, "\n");
-	    idio_error_printf ("unexpected instruction: %3d @%" PRId64 "\n", ins, IDIO_THREAD_PC (thr) - 1);
+	    idio_error_printf (IDIO_C_LOCATION ("idio_vm_run1"), "unexpected instruction: %3d @%" PRId64 "\n", ins, IDIO_THREAD_PC (thr) - 1);
 	}
 	break;
     }
@@ -4233,7 +4271,7 @@ IDIO idio_vm_run (IDIO thr)
 	fprintf (stderr, "vm-run: thread bailed out\n");
 
 	idio_debug ("THR %s\n", thr);
-	idio_debug ("STK %s\n", IDIO_THREAD_STACK (thr));
+	idio_debug ("STK %.1000s\n", IDIO_THREAD_STACK (thr));
 	sleep (0);
     }
 
@@ -4317,7 +4355,7 @@ void idio_vm_thread_state ()
     IDIO stack = IDIO_THREAD_STACK (thr);
 
     idio_debug ("thread-state: THR %s\n", thr);
-    idio_debug ("thread-state: STK %s\n", stack);
+    idio_debug ("thread-state: STK %.1000s\n", stack);
 
     IDIO frame = IDIO_THREAD_FRAME (thr);
     while (idio_S_nil != frame) {
@@ -4370,7 +4408,7 @@ void idio_vm_unwind_thread (IDIO thr, int verbose)
 	IDIO frame = IDIO_THREAD_FRAME (thr);
 
 	idio_debug ("THR:\t%s\n", thr);
-	idio_debug ("STK:\t%s\n", stack);
+	idio_debug ("STK:\t%.1000s\n", stack);
 
 	while (idio_S_nil != frame) {
 	    idio_debug ("call frame: %s\n", IDIO_FRAME_ARGS (frame));

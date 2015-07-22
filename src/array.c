@@ -22,13 +22,20 @@
 
 #include "idio.h"
 
-void idio_error_vector_length (char *m, idio_ai_t i)
+void idio_error_vector_length (char *m, idio_ai_t i, IDIO loc)
 {
-    idio_error_printf ("%s: %zd", m, i);
+    IDIO_C_ASSERT (m);
+    IDIO_ASSERT (loc);
+    IDIO_TYPE_ASSERT (string, loc);
+    
+    idio_error_printf (loc, "%s: %zd", m, i);
 }
 
-static void idio_array_error_bounds (idio_ai_t index, idio_ai_t size)
+static void idio_array_error_bounds (idio_ai_t index, idio_ai_t size, IDIO loc)
 {
+    IDIO_ASSERT (loc);
+    IDIO_TYPE_ASSERT (string, loc);
+
     char em[BUFSIZ];
 
     sprintf (em, "array bounds error: %td > %td", index, size);
@@ -37,7 +44,7 @@ static void idio_array_error_bounds (idio_ai_t index, idio_ai_t size)
     idio_display_C (em, sh);
     IDIO c = idio_struct_instance (idio_condition_rt_array_bounds_error_type,
 				   IDIO_LIST3 (idio_get_output_string (sh),
-					       idio_S_nil,
+					       loc,
 					       idio_S_nil));
     idio_raise_condition (idio_S_true, c);
 }
@@ -153,7 +160,7 @@ void idio_array_insert_index (IDIO a, IDIO o, idio_ai_t index)
 	index += IDIO_ARRAY_USIZE (a);
 	if (index < 0) {
 	    index -= IDIO_ARRAY_USIZE (a);
-	    idio_array_error_bounds (index, IDIO_ARRAY_USIZE (a));
+	    idio_array_error_bounds (index, IDIO_ARRAY_USIZE (a), IDIO_C_LOCATION ("idio_array_insert_index"));
 	}
     } else if (index >= IDIO_ARRAY_ASIZE (a)) {
 	/*
@@ -162,7 +169,7 @@ void idio_array_insert_index (IDIO a, IDIO o, idio_ai_t index)
 	if (index < (IDIO_ARRAY_ASIZE (a) * 2)) {
 	    idio_array_resize (a);
 	} else {	
-	    idio_array_error_bounds (index, IDIO_ARRAY_ASIZE (a));
+	    idio_array_error_bounds (index, IDIO_ARRAY_ASIZE (a), IDIO_C_LOCATION ("idio_array_insert_index"));
 	}
     }
 
@@ -292,12 +299,12 @@ IDIO idio_array_get_index (IDIO a, idio_ai_t index)
 	index += IDIO_ARRAY_USIZE (a);
 	if (index < 0) {
 	    index -= IDIO_ARRAY_USIZE (a);
-	    idio_array_error_bounds (index, IDIO_ARRAY_USIZE (a));
+	    idio_array_error_bounds (index, IDIO_ARRAY_USIZE (a), IDIO_C_LOCATION ("idio_array_get_index"));
 	}
     }
 
     if (index >= IDIO_ARRAY_USIZE (a)) {
-	idio_array_error_bounds (index, IDIO_ARRAY_USIZE (a));
+	idio_array_error_bounds (index, IDIO_ARRAY_USIZE (a), IDIO_C_LOCATION ("idio_array_get_index"));
     }
 
     return IDIO_ARRAY_AE (a, index);
@@ -310,11 +317,11 @@ idio_ai_t idio_array_find_free_index (IDIO a, idio_ai_t index)
     IDIO_TYPE_ASSERT (array, a);
     
     if (index < 0) {
-	idio_array_error_bounds (index, IDIO_ARRAY_USIZE (a));
+	idio_array_error_bounds (index, IDIO_ARRAY_USIZE (a), IDIO_C_LOCATION ("idio_array_find_free_index"));
     }
 
     if (index >= IDIO_ARRAY_USIZE (a)) {
-	idio_array_error_bounds (index, IDIO_ARRAY_USIZE (a));
+	idio_array_error_bounds (index, IDIO_ARRAY_USIZE (a), IDIO_C_LOCATION ("idio_array_find_free_index"));
     }
 
     for (; index < IDIO_ARRAY_USIZE (a); index++) {
@@ -333,11 +340,11 @@ idio_ai_t idio_array_find_eqp (IDIO a, IDIO e, idio_ai_t index)
     IDIO_TYPE_ASSERT (array, a);
     
     if (index < 0) {
-	idio_array_error_bounds (index, IDIO_ARRAY_USIZE (a));
+	idio_array_error_bounds (index, IDIO_ARRAY_USIZE (a), IDIO_C_LOCATION ("idio_array_find_eqp"));
     }
 
     if (index >= IDIO_ARRAY_USIZE (a)) {
-	idio_array_error_bounds (index, IDIO_ARRAY_USIZE (a));
+	idio_array_error_bounds (index, IDIO_ARRAY_USIZE (a), IDIO_C_LOCATION ("idio_array_find_eqp"));
     }
 
     for (; index < IDIO_ARRAY_USIZE (a); index++) {
@@ -356,7 +363,7 @@ void idio_array_bind (IDIO a, idio_ai_t nargs, ...)
     IDIO_TYPE_ASSERT (array, a);
 
     if (IDIO_ARRAY_USIZE (a) < nargs) {
-	idio_error_C ("idio_array_bind", a);
+	idio_error_C ("too many args", a, IDIO_C_LOCATION ("idio_array_bind"));
     }
 
     va_list ap;
@@ -421,12 +428,12 @@ int idio_array_delete_index (IDIO a, idio_ai_t index)
 	index += IDIO_ARRAY_USIZE (a);
 	if (index < 0) {
 	    index -= IDIO_ARRAY_USIZE (a);
-	    idio_array_error_bounds (index, IDIO_ARRAY_USIZE (a));
+	    idio_array_error_bounds (index, IDIO_ARRAY_USIZE (a), IDIO_C_LOCATION ("idio_array_delete_index"));
 	}
     }
 
     if (index >= IDIO_ARRAY_USIZE (a)) {
-	idio_array_error_bounds (index, IDIO_ARRAY_USIZE (a));
+	idio_array_error_bounds (index, IDIO_ARRAY_USIZE (a), IDIO_C_LOCATION ("idio_array_delete_index"));
     }
 
     IDIO_ARRAY_AE (a, index) = idio_S_nil;
@@ -462,13 +469,13 @@ IDIO_DEFINE_PRIMITIVE1V ("make-vector", make_vector, (IDIO size, IDIO args))
 	} else {
 	    IDIO size_i = idio_bignum_real_to_integer (size);
 	    if (idio_S_nil == size_i) {
-		idio_error_param_type ("number", size);
+		idio_error_param_type ("number", size, IDIO_C_LOCATION ("make-vector"));
 	    } else {
 		vlen = idio_bignum_ptrdiff_value (size_i);
 	    }
 	}
     } else {
-	idio_error_param_type ("number", size);
+	idio_error_param_type ("number", size, IDIO_C_LOCATION ("make-vector"));
     }
 
     IDIO_VERIFY_PARAM_TYPE (list, args);
@@ -480,7 +487,7 @@ IDIO_DEFINE_PRIMITIVE1V ("make-vector", make_vector, (IDIO size, IDIO args))
     }
 
     if (vlen < 0) {
-	idio_error_printf ("invalid length: %zd", vlen);
+	idio_error_printf (IDIO_C_LOCATION ("make-vector"), "invalid length: %zd", vlen);
     }
     
     IDIO a = idio_array (vlen);
@@ -536,13 +543,13 @@ IDIO_DEFINE_PRIMITIVE2 ("vector-ref", vector_ref, (IDIO a, IDIO index))
 	} else {
 	    IDIO index_i = idio_bignum_real_to_integer (index);
 	    if (idio_S_nil == index_i) {
-		idio_error_param_type ("number", index);
+		idio_error_param_type ("number", index, IDIO_C_LOCATION ("vector-ref"));
 	    } else {
 		i = idio_bignum_ptrdiff_value (index_i);
 	    }
 	}
     } else {
-	idio_error_param_type ("number", index);
+	idio_error_param_type ("number", index, IDIO_C_LOCATION ("vector-ref"));
     }
 
     idio_ai_t al = idio_array_size (a);
@@ -551,11 +558,11 @@ IDIO_DEFINE_PRIMITIVE2 ("vector-ref", vector_ref, (IDIO a, IDIO index))
 	i += al;
 	if (i < 0) {
 	    i -= al;
-	    idio_error_vector_length ("vector-ref: out of bounds", i);
+	    idio_error_vector_length ("out of bounds", i, IDIO_C_LOCATION ("vector-ref"));
 	    return idio_S_unspec;
 	}
     } else if (i >= al) {
-	idio_error_vector_length ("vector-ref: out of bounds", i);
+	idio_error_vector_length ("out of bounds", i, IDIO_C_LOCATION ("vector-ref"));
 	return idio_S_unspec;
     }
 
@@ -580,13 +587,13 @@ IDIO_DEFINE_PRIMITIVE3 ("vector-set!", vector_set, (IDIO a, IDIO index, IDIO v))
 	} else {
 	    IDIO index_i = idio_bignum_real_to_integer (index);
 	    if (idio_S_nil == index_i) {
-		idio_error_param_type ("number", index);
+		idio_error_param_type ("number", index, IDIO_C_LOCATION ("vector-set!"));
 	    } else {
 		i = idio_bignum_ptrdiff_value (index_i);
 	    }
 	}
     } else {
-	idio_error_param_type ("number", index);
+	idio_error_param_type ("number", index, IDIO_C_LOCATION ("vector-set!"));
     }
 
     idio_ai_t al = idio_array_size (a);
@@ -595,11 +602,11 @@ IDIO_DEFINE_PRIMITIVE3 ("vector-set!", vector_set, (IDIO a, IDIO index, IDIO v))
 	i += al;
 	if (i < 0) {
 	    i -= al;
-	    idio_error_vector_length ("vector-set: out of bounds", i);
+	    idio_error_vector_length ("out of bounds", i, IDIO_C_LOCATION ("vector-set!"));
 	    return idio_S_unspec;
 	}
     } else if (i >= al) {
-	idio_error_vector_length ("vector-set: out of bounds", i);
+	idio_error_vector_length ("out of bounds", i, IDIO_C_LOCATION ("vector-set!"));
 	return idio_S_unspec;
     }
 

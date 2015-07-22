@@ -29,16 +29,17 @@ void idio_raise_exception (IDIO e);
 IDIO idio_make_exception (IDIO e);
 
 IDIO idio_error_string (char *format, va_list argp);
-void idio_error_printf (char *format, ...);
+void idio_error_printf (IDIO loc, char *format, ...);
 void idio_warning_message (char *format, ...);
-void idio_strerror (char *msg);
-void idio_error_alloc ();
-void idio_error_param_nil (char *name);
-void idio_error_param_type (char *etype, IDIO who);
-void idio_error (IDIO who, IDIO msg, IDIO args);
-void idio_error_C (char *msg, IDIO args);
-void idio_error_system (char *msg, IDIO args, int err);
-void idio_error_system_errno (char *msg, IDIO args);
+void idio_strerror (char *msg, IDIO loc);
+void idio_error_alloc (IDIO loc);
+void idio_error_param_nil (char *name, IDIO loc);
+void idio_error_param_type (char *etype, IDIO who, IDIO loc);
+void idio_error_param_type_C (char *etype, IDIO who, char *file, const char *func, int line);
+void idio_error (IDIO who, IDIO msg, IDIO args, IDIO loc);
+void idio_error_C (char *msg, IDIO args, IDIO loc);
+void idio_error_system (char *msg, IDIO args, int err, IDIO loc);
+void idio_error_system_errno (char *msg, IDIO args, IDIO loc);
 
 void idio_init_error ();
 void idio_error_add_primitives ();

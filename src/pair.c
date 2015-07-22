@@ -347,7 +347,7 @@ IDIO idio_list_append2 (IDIO l1, IDIO l2)
 	    break;
 	}
 	if (! idio_isa_pair (l1)) {
-	    idio_error_C ("append2: not a list:", l1);
+	    idio_error_C ("not a list:", l1, IDIO_C_LOCATION ("idio_list_append2"));
 	}
 
 	IDIO t = idio_pair (IDIO_PAIR_H (l1), idio_S_nil);
@@ -405,7 +405,7 @@ IDIO idio_list_list2string (IDIO l)
 	if (idio_isa_character (h)) {
 	    s[i] = IDIO_CHARACTER_VAL (h);
 	} else {
-	    idio_error_param_type ("character", h);
+	    idio_error_param_type ("character", h, IDIO_C_LOCATION ("idio_list_list2string"));
 	    return idio_S_unspec;
 	}
 

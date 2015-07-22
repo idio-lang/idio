@@ -326,7 +326,7 @@ define (foreground-job job cont) {
 
   ;; put the job in the foreground
   job-pgid := %idio-job-pgid job
-  c/tcsetpgrp %idio-terminal job-pgid
+  suppress-errors c/tcsetpgrp %idio-terminal job-pgid
   if cont {
     c/tcsetattr %idio-terminal c/TCSADRAIN (%idio-job-tcattrs job)
     c/kill (- job-pgid) c/SIGCONT
@@ -404,12 +404,12 @@ define (prep-process pgid infile outfile foreground) {
 
     ;; put the process in the process group -- dupe of parent to avoid
     ;; race conditions
-    c/setpgid pid pgid
+    suppress-errors c/setpgid pid pgid
 
     if foreground {
       ;; give the terminal to the process group -- dupe of parent to
       ;; avoid race conditions
-      c/tcsetpgrp %idio-terminal pgid
+      suppress-errors c/tcsetpgrp %idio-terminal pgid
     }
 
     ;; set job control signals back to default
@@ -432,7 +432,7 @@ define (prep-process pgid infile outfile foreground) {
   }
 }
 
-define-operator | {
+define-operator | 300 {
   ;; edisplay* "operator" op before after
 
   foreground := #t
@@ -452,6 +452,10 @@ define-operator | {
   }
 
   op-args := split op (list before) #n after
+  ;;edisplay* "operator /1" op op-args
+  op-args = map operator-expand op-args
+  ;;edisplay* "operator /2" op op-args
+
   ;; edisplay* "operator" op op-args
 
   ;; looping over the list of commands prepping the children uses a
@@ -562,7 +566,7 @@ define-operator | {
 			  $pgid = pid
 			  set-%idio-job-pgid! $job $pgid
 			}
-			c/setpgid pid $pgid
+			suppress-errors c/setpgid pid $pgid
 		      }
 		    }
 
@@ -615,7 +619,7 @@ define-macro (launch-1proc foreground & cmd) {
       if %idio-interactive {
 	pgid = pid
 	set-%idio-job-pgid! job pgid
-	c/setpgid pid pgid
+	suppress-errors c/setpgid pid pgid
       }
     }
 

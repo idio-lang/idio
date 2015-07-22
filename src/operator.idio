@@ -19,18 +19,148 @@
 ;; operator.idio
 ;;
 
-define-operator > {
-  %T{ display* "results of" $@before '$op $@after }
+define (operator-expand1 exp) {
+  idio-debug "OE %s\n" exp
+
+  precedence-loop :+ function (exp groups) {
+    ogp := ph groups
+    ops := pt ogp
+
+    before := list (ph exp)
+    after := pt exp
+    ops-loop :+ function () {
+      op := ph after
+      if (null? op) before {
+	opex := assq op ops
+        if opex {
+	  (pt opex) op before (pt after)
+        } {
+	  before = append before (list op)
+          after = pt after
+          (ops-loop)
+        }
+      }
+    }
+
+    new := (ops-loop)
+    if (equal? new exp) \
+       new \
+       (precedence-loop (pt groups))
+  }
+
+  if (pair? exp) {
+    precedence-loop exp (symbol-value *operator-group* (find-module 'Idio.operator))
+  } exp
+}
+
+define (operator-expand* exp) {
+  new := operator-expand exp
+  if (equal? new exp) new {
+    operator-expand* new
+  }
 }
 
 ;; standard arithmetic operator:
 ;;
 ;; X + Y		=> + X Y
-;; X + Y + Z		=> + X Y Z
-;; X + Y op Z		=> (+ X Y) op Z
-define-operator + {
-  if (not (null? (pt before))) (error "too many args before" op before)
+;; X + Y Z		=> (+ X Y) Z
+;; X Y + Z		=> X (+ Y Z)
+define-operator + 900 {
+  prefix := #n
 
+  if (not (null? (pt before))) {
+    prefix = before
+    loop :+ function (before) {
+      cond ((null? (pt before)) {
+	      before
+	    }) \
+	    ((null? (pt (pt before))) {
+	      r := pt before
+	      set-pt! before #n
+	      r
+	    }) \
+	    (else {
+	      loop (pt before)
+	    })
+    }
+
+    ;; before must be a list of at least one (as an operator cannot be
+    ;; in functional position)
+    before = loop before
+  }
+
+  suffix := #n
+
+  if (and (pair? after)
+	  (pair? (pt after))
+	  (not (null? (pt (pt after))))) {
+    suffix = pt after
+    after = (list (ph after))
+  }
+
+  result := #n
+
+  if (not (null? prefix)) {
+    result = prefix
+  }
+
+  op+args := list op (ph before) (ph after)
+
+  if (null? result) {
+    if (null? suffix) {
+      result = op+args
+    } {
+      result = list op+args
+    }
+  } {
+    result = append result (list op+args)
+  }
+
+  if (not (null? suffix)) {
+    result = append result suffix
+  }
+
+  %T{ $result }
+}
+
+define-operator - 900 +
+define-operator * 800 +
+define-operator / 800 +
+
+;; logical operators take a single expression either side and combine
+;; with adjacent operators of the same type
+
+;; X and Y		=> and X Y
+;; X and Y and Z	=> and X Y Z
+;; X and Y or Z		=> or (and X Y) Z
+;; X Y and Z		=> X (and Y Z)
+;; X and Y Z		=> (and X Y) Z
+define-operator and 1000 {
+  prefix := #n
+
+  if (not (null? (pt before))) {
+    prefix = before
+    loop :+ function (before) {
+      cond ((null? (pt before)) {
+	      before
+	    }) \
+	    ((null? (pt (pt before))) {
+	      r := pt before
+	      set-pt! before #n
+	      r
+	    }) \
+	    (else {
+	      loop (pt before)
+	    })
+    }
+
+    ;; before must be a list of at least one (as an operator cannot be
+    ;; in functional position)
+    before = loop before
+  }
+
+  ;; split - we want to consume (into op-args) the set of expressions
+  ;; that successive {op}s are operating on
   split :+ function (op op-args after) {
     cond ((null? after) (error "not enough args after" op (reverse op-args))) \
          ((not (pair? after)) (error "bad syntax" op (reverse op-args) after)) \
@@ -38,27 +168,124 @@ define-operator + {
 	 ((and (pair? after)
 	       (pair? (pt after))
 	       (eq? op (ph (pt after)))) (split op (pair (ph after) op-args) (pt (pt after)))) \
-	 (else (list op-args (operator-expand after)))
+	 (else (list (reverse op-args) after))
   }
 
   dis := split op before after
+  ;edisplay* "dis" dis
   op-args := ph dis
-  rest := ph (pt dis)
+  after = ph (pt dis)
 
-  if (null? rest) \
-    %T{ $op $@op-args } \
-    %T{ $op $@op-args ($@rest) }
+  suffix := #n
+
+  if (and (pair? after)
+	  (pair? (pt after))
+	  (not (null? (pt (pt after))))) {
+    suffix = pt after
+    after = (list (ph after))
+  }
+
+  result := #n
+
+  if (not (null? prefix)) {
+    result = prefix
+  }
+
+  op+args := %T{ $op $@op-args }
+  if (not (null? after)) {
+    op+args = append op+args after
+  }
+
+  if (null? result) {
+    if (null? suffix) {
+      result = op+args
+    } {
+      result = list op+args
+    }
+  } {
+    result = append result (list op+args)
+  }
+
+  if (not (null? suffix)) {
+    result = append result suffix
+  }
+
+  %T{ $result }
+  ;; if (null? rest) \
+  ;;   %T{ $op $@op-args } \
+  ;;   %T{ $op $@op-args ($@rest) }
 }
 
-define-operator - +
-define-operator * +
-define-operator / +
+define-operator or 1000 and
 
-;; logical operators work in the same way as arithmetic operators: a
-;; single intervening expression and they combine with adjacent
-;; operators of the same type
-define-operator and +
-define-operator or +
+;; Shell logical lists
+define-macro (&& & e*) {
+  %T{ 
+  {
+    monitor (function (cont cond) {
+      if (and cont
+	      (rt-command-status-error? cond)) {
+	job := idio-error-location cond
+        if (job-is-completed job) {
+	  ;;edisplay* "&& suppressing" cond
+	  rt-command-status-error-status cond
+        } (raise cont cond)
+      } (raise cont cond)
+    }) {
+      and $@e* 
+    }
+  }
+  }
+}
+
+define-macro (|| & e*) {
+  %T{ 
+  {
+    monitor (function (cont cond) {
+      if (and cont
+	      (rt-command-status-error? cond)) {
+	job := idio-error-location cond
+        if (job-is-completed job) {
+	  ;;edisplay* "|| suppressing" cond
+	  rt-command-status-error-status cond
+        } (raise cont cond)
+      } (raise cont cond)
+    }) {
+      or $@e* 
+    }
+  }
+  }
+}
+
+;; e1 ... || e2 ...		=> || (e1 ...) (e2 ...)
+define-operator && 200 {
+  ;;edisplay* "operator" op before after
+
+  ;; we want a list of lists -- a list of the {op}-separated lists
+  split :+ function (op op-args expr after) {
+    cond ((null? after) (reverse (pair (reverse expr) op-args))) \
+         ((not (pair? after)) (error "bad syntax" op (reverse op-args) after)) \
+	 ((eq? op (ph after)) (split op (pair (reverse expr) op-args) #n (pt after))) \
+	 (else (split op op-args (pair (ph after) expr) (pt after)))
+  }
+
+  op-args := split op (list before) #n after
+  ;;edisplay* "operator /1" op op-args
+  op-args = map operator-expand op-args
+  ;;edisplay* "operator /2" op op-args
+
+  reduce := function (e) {
+    cond ((atom? e) e) \
+	 ((null? (pt e)) (ph e)) \
+	 (else e)
+  }
+  op-args = map reduce op-args
+  ;;edisplay* "operator /3" op op-args
+
+  %T{ $op $@op-args }
+}
+
+define-operator || 200 &&
 
 ;; C bitwise-or
-define-operator c/| +
+define-operator c/| 600 and
