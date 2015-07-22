@@ -86,7 +86,7 @@ static void idio_env_add_environ ()
     char *cwd = getcwd (NULL, PATH_MAX);
 
     if (NULL == cwd) {
-	idio_error_system_errno ("getcwd", idio_S_nil);
+	idio_error_system_errno ("getcwd", idio_S_nil, IDIO_C_LOCATION ("idio_env_add_environ"));
     }
 
     if (idio_env_set_default (idio_env_PWD_sym, cwd) == 0) {
@@ -134,7 +134,7 @@ void idio_env_init_idiolib (char *argv0)
     char *path = realpath (argv0, resolved_path);
 
     if (NULL == path) {
-	idio_error_system_errno ("realpath(3) => NULL", idio_S_nil);
+	idio_error_system_errno ("realpath(3) => NULL", idio_S_nil, IDIO_C_LOCATION ("idio_env_init_idiolib"));
     }
 
     dir = rindex (path, '/');

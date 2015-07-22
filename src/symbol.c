@@ -204,7 +204,7 @@ IDIO idio_gensym (char *pref_prefix)
 	}
     }
 
-    idio_error_printf ("gensym: looped!");
+    idio_error_printf (IDIO_C_LOCATION ("gensym"), "looped!");
 
     /* notreached */
     return idio_S_unspec;
@@ -226,7 +226,7 @@ IDIO_DEFINE_PRIMITIVE0V ("gensym", gensym, (IDIO args))
 	} else if (idio_isa_symbol (iprefix)) {
 	    prefix = IDIO_SYMBOL_S (iprefix);
 	} else {
-	    idio_error_param_type ("string|symbol", iprefix);
+	    idio_error_param_type ("string|symbol", iprefix, IDIO_C_LOCATION ("gensym"));
 
 	    /* notreached */
 	    return idio_S_unspec;

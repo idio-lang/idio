@@ -50,7 +50,6 @@ int idio_isa_closure (IDIO o)
 void idio_free_closure (IDIO c)
 {
     IDIO_ASSERT (c);
-
     IDIO_TYPE_ASSERT (closure, c);
 
     /* idio_gc_stats_free (sizeof (idio_closure_t)); */

@@ -24,11 +24,16 @@
 
 IDIO idio_G_frame;
 
-void idio_frame_error_range (IDIO fo, size_t d, size_t i)
+void idio_frame_error_range (IDIO fo, size_t d, size_t i, IDIO loc)
 {
+    IDIO_ASSERT (fo);
+    IDIO_ASSERT (loc);
+    IDIO_TYPE_ASSERT (frame, fo);
+    IDIO_TYPE_ASSERT (string, loc);
+
     char em[BUFSIZ];
     sprintf (em, "frame #%zd index #%zd is out of range", d, i);
-    idio_error_C (em, fo);
+    idio_error_C (em, fo, loc);
 }
 
 IDIO idio_frame_allocate (idio_ai_t arityp1)
@@ -123,7 +128,7 @@ IDIO idio_frame_fetch (IDIO fo, size_t d, size_t i)
 	idio_gc_verboseness (0);
 	fprintf (stderr, "\n\nFRAME = ");
 	idio_dump (fo, 10);
-	idio_frame_error_range (fo, d, i);
+	idio_frame_error_range (fo, d, i, IDIO_C_LOCATION ("idio_frame_fetch"));
 	return idio_S_unspec;
     }
     
@@ -143,7 +148,7 @@ void idio_frame_update (IDIO fo, size_t d, size_t i, IDIO v)
     }
 
     if (i > idio_array_size (IDIO_FRAME_ARGS (fo))) {
-	idio_frame_error_range (fo, d, i);
+	idio_frame_error_range (fo, d, i, IDIO_C_LOCATION ("idio_frame_update"));
 	return;
     }
     

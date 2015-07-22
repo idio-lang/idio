@@ -35,7 +35,7 @@ IDIO_DEFINE_PRIMITIVE1 ("c/close", C_close, (IDIO ifd))
     int r = close (fd);
 
     if (-1 == r) {
-	idio_error_system_errno ("close", ifd);
+	idio_error_system_errno ("close", ifd, IDIO_C_LOCATION ("c/close"));
     }
 
     return idio_C_int (r);
@@ -54,7 +54,7 @@ IDIO_DEFINE_PRIMITIVE2 ("c/dup2", C_dup2, (IDIO ioldfd, IDIO inewfd))
     int r = dup2 (oldfd, newfd);
 
     if (-1 == r) {
-	idio_error_system_errno ("dup2", IDIO_LIST2 (ioldfd, inewfd));
+	idio_error_system_errno ("dup2", IDIO_LIST2 (ioldfd, inewfd), IDIO_C_LOCATION ("c/dup2"));
     }
 
     return idio_C_int (r);
@@ -68,7 +68,7 @@ IDIO_DEFINE_PRIMITIVE1 ("c/exit", C_exit, (IDIO istatus))
     if (idio_isa_fixnum (istatus)) {
 	status = IDIO_FIXNUM_VAL (istatus);
     } else {
-	idio_error_param_type ("fixnum", istatus);
+	idio_error_param_type ("fixnum", istatus, IDIO_C_LOCATION ("c/exit"));
     }
 
     exit (status);
@@ -82,7 +82,7 @@ IDIO_DEFINE_PRIMITIVE0 ("c/fork", C_fork, ())
     pid_t pid = fork ();
 
     if (-1 == pid) {
-	idio_error_system_errno ("fork", idio_S_nil);
+	idio_error_system_errno ("fork", idio_S_nil, IDIO_C_LOCATION ("c/fork"));
     }
 
     return idio_C_int (pid);
@@ -94,7 +94,7 @@ IDIO_DEFINE_PRIMITIVE0 ("c/getcwd", C_getcwd, ())
     char *cwd = getcwd (NULL, PATH_MAX);
 
     if (NULL == cwd) {
-	idio_error_system_errno ("getcwd", idio_S_nil);
+	idio_error_system_errno ("getcwd", idio_S_nil, IDIO_C_LOCATION ("c/getcwd"));
     }
 
     IDIO r = idio_string_C (cwd);
@@ -108,7 +108,7 @@ IDIO_DEFINE_PRIMITIVE0 ("c/getpgrp", C_getpgrp, ())
     pid_t pid = getpgrp ();
 
     if (-1 == pid) {
-	idio_error_system_errno ("getpgrp", idio_S_nil);
+	idio_error_system_errno ("getpgrp", idio_S_nil, IDIO_C_LOCATION ("c/getpgrp"));
     }
 
     return idio_C_int (pid);
@@ -119,7 +119,7 @@ IDIO_DEFINE_PRIMITIVE0 ("c/getpid", C_getpid, ())
     pid_t pid = getpid ();
 
     if (-1 == pid) {
-	idio_error_system_errno ("getpid", idio_S_nil);
+	idio_error_system_errno ("getpid", idio_S_nil, IDIO_C_LOCATION ("c/getpid"));
     }
 
     return idio_C_int (pid);
@@ -135,7 +135,7 @@ IDIO_DEFINE_PRIMITIVE1 ("c/isatty", C_isatty, (IDIO ifd))
     int r = isatty (fd);
 
     if (0 == r) {
-	idio_error_system_errno ("isatty", ifd);
+	idio_error_system_errno ("isatty", ifd, IDIO_C_LOCATION ("c/isatty"));
     }
 
     return idio_C_int (r);
@@ -154,7 +154,7 @@ IDIO_DEFINE_PRIMITIVE2 ("c/kill", C_kill, (IDIO ipid, IDIO isig))
     int r = kill (pid, sig);
     
     if (-1 == r) {
-	idio_error_system_errno ("kill", IDIO_LIST2 (ipid, isig));
+	idio_error_system_errno ("kill", IDIO_LIST2 (ipid, isig), IDIO_C_LOCATION ("c/kill"));
     }
 
     return idio_C_int (r);
@@ -167,7 +167,7 @@ IDIO_DEFINE_PRIMITIVE0 ("c/pipe", C_pipe, ())
     int r = pipe (pipefd);
 
     if (-1 == r) {
-	idio_error_system_errno ("pipe", idio_S_nil);
+	idio_error_system_errno ("pipe", idio_S_nil, IDIO_C_LOCATION ("c/pipe"));
     }
 
     return idio_C_pointer_free_me (pipefd);
@@ -210,7 +210,7 @@ IDIO_DEFINE_PRIMITIVE1V ("c/read", C_read, (IDIO ifd, IDIO icount))
 	} else if (idio_isa_C_int (icount)) {
 	    count = IDIO_C_TYPE_INT (icount);
 	} else {
-	    idio_error_param_type ("fixnum|C_int", icount);
+	    idio_error_param_type ("fixnum|C_int", icount, IDIO_C_LOCATION ("c/read"));
 	}
     }
 
@@ -252,7 +252,7 @@ IDIO_DEFINE_PRIMITIVE2 ("c/setpgid", C_setpgid, (IDIO ipid, IDIO ipgid))
 	     */
 	    r = 0;
 	} else {
-	    idio_error_system_errno ("setpgid", IDIO_LIST2 (ipid, ipgid));
+	    idio_error_system_errno ("setpgid", IDIO_LIST2 (ipid, ipgid), IDIO_C_LOCATION ("c/setpgid"));
 	}
     }
     
@@ -272,7 +272,7 @@ IDIO_DEFINE_PRIMITIVE2 ("c/signal", C_signal, (IDIO isig, IDIO ifunc))
     void (*r) (int) = signal (sig, func);
     
     if (SIG_ERR == r) {
-	idio_error_system_errno ("signal", IDIO_LIST2 (isig, ifunc));
+	idio_error_system_errno ("signal", IDIO_LIST2 (isig, ifunc), IDIO_C_LOCATION ("c/signal"));
     }
 
     return idio_C_pointer (r);
@@ -289,7 +289,7 @@ IDIO_DEFINE_PRIMITIVE1 ("c/sleep", C_sleep, (IDIO iseconds))
     } else if (idio_isa_C_uint (iseconds)) {
 	seconds = IDIO_C_TYPE_UINT (iseconds);
     } else {
-	idio_error_param_type ("unsigned fixnum|C_uint", iseconds);
+	idio_error_param_type ("unsigned fixnum|C_uint", iseconds, IDIO_C_LOCATION ("c/sleep"));
     }
 
     unsigned int r = sleep (seconds);
@@ -307,7 +307,7 @@ IDIO_DEFINE_PRIMITIVE1 ("c/strerror", C_strerror, (IDIO ierrnum))
     } else if (idio_isa_C_int (ierrnum)) {
 	errnum = IDIO_C_TYPE_INT (ierrnum);
     } else {
-	idio_error_param_type ("unsigned fixnum|C_int", ierrnum);
+	idio_error_param_type ("unsigned fixnum|C_int", ierrnum, IDIO_C_LOCATION ("c/strerror"));
     }
 
     char *r = strerror (errnum);
@@ -325,7 +325,7 @@ IDIO_DEFINE_PRIMITIVE1 ("c/strsignal", C_strsignal, (IDIO isignum))
     } else if (idio_isa_C_int (isignum)) {
 	signum = IDIO_C_TYPE_INT (isignum);
     } else {
-	idio_error_param_type ("unsigned fixnum|C_int", isignum);
+	idio_error_param_type ("unsigned fixnum|C_int", isignum, IDIO_C_LOCATION ("c/strsignal"));
     }
 
     char *r = strsignal (signum);
@@ -344,7 +344,7 @@ IDIO_DEFINE_PRIMITIVE1 ("c/tcgetattr", C_tcgetattr, (IDIO ifd))
     int r = tcgetattr (fd, tcattrs);
 
     if (-1 == r) {
-	idio_error_system_errno ("tcgetattr", ifd);
+	idio_error_system_errno ("tcgetattr", ifd, IDIO_C_LOCATION ("c/tcgetattr"));
     }
 
     return idio_C_pointer_free_me (tcattrs);
@@ -360,7 +360,7 @@ IDIO_DEFINE_PRIMITIVE1 ("c/tcgetpgrp", C_tcgetpgrp, (IDIO ifd))
     pid_t pid = tcgetpgrp (fd);
 
     if (-1 == pid) {
-	idio_error_system_errno ("tcgetpgrp", ifd);
+	idio_error_system_errno ("tcgetpgrp", ifd, IDIO_C_LOCATION ("c/tcgetpgrp"));
     }
 
     return idio_C_int (pid);
@@ -382,7 +382,7 @@ IDIO_DEFINE_PRIMITIVE3 ("c/tcsetattr", C_tcsetattr, (IDIO ifd, IDIO ioptions, ID
     int r = tcsetattr (fd, options, tcattrs);
 
     if (-1 == r) {
-	idio_error_system_errno ("tcsetattr", IDIO_LIST3 (ifd, ioptions, itcattrs));
+	idio_error_system_errno ("tcsetattr", IDIO_LIST3 (ifd, ioptions, itcattrs), IDIO_C_LOCATION ("c/tcsetattr"));
     }
 
     return idio_C_int (r);
@@ -402,7 +402,7 @@ IDIO_DEFINE_PRIMITIVE2 ("c/tcsetpgrp", C_tcsetpgrp, (IDIO ifd, IDIO ipgrp))
     int r = tcsetpgrp (fd, pgrp);
 
     if (-1 == r) {
-	idio_error_system_errno ("tcsetpgrp", IDIO_LIST2 (ifd, ipgrp));
+	idio_error_system_errno ("tcsetpgrp", IDIO_LIST2 (ifd, ipgrp), IDIO_C_LOCATION ("c/tcsetpgrp"));
     }
 
     return idio_C_int (r);
@@ -426,7 +426,7 @@ IDIO_DEFINE_PRIMITIVE2 ("c/waitpid", C_waitpid, (IDIO ipid, IDIO ioptions))
 	if (ECHILD == errno) {
 	    return IDIO_LIST2 (idio_C_int (0), idio_S_nil);
 	}
-	idio_error_system_errno ("waitpid", IDIO_LIST2 (ipid, ioptions));
+	idio_error_system_errno ("waitpid", IDIO_LIST2 (ipid, ioptions), IDIO_C_LOCATION ("c/waitpid"));
     }
 
     IDIO istatus = idio_C_pointer_free_me (statusp);
@@ -516,7 +516,7 @@ IDIO_DEFINE_PRIMITIVE2 ("c/write", C_write, (IDIO ifd, IDIO istr))
     ssize_t n = write (fd, idio_string_s (istr), blen);
 
     if (-1 == n) {
-	idio_error_system_errno ("write", IDIO_LIST2 (ifd, istr));
+	idio_error_system_errno ("write", IDIO_LIST2 (ifd, istr), IDIO_C_LOCATION ("c/write"));
     }
 
     return idio_integer (n);
@@ -867,7 +867,7 @@ char *idio_libc_signal_name (int signum)
 {
     if (signum < IDIO_LIBC_FSIG ||
 	signum > IDIO_LIBC_NSIG) {
-	idio_error_param_type ("int < NSIG (or SIGRTMAX)", idio_C_int (signum));
+	idio_error_param_type ("int < NSIG (or SIGRTMAX)", idio_C_int (signum), IDIO_C_LOCATION ("idio_libc_signal_name"));
     }
 
     char *signame = idio_libc_signal_names[signum];
@@ -1775,7 +1775,7 @@ char *idio_libc_errno_name (int errnum)
 {
     if (errnum < 0 ||
 	errnum > IDIO_LIBC_NERRNO) {
-	idio_error_param_type ("int < 0 (or > NERRNO)", idio_C_int (errnum));
+	idio_error_param_type ("int < 0 (or > NERRNO)", idio_C_int (errnum), IDIO_C_LOCATION ("idio_libc_errno_name"));
     }
 
     char *errname = idio_libc_errno_names[errnum];
@@ -1804,7 +1804,7 @@ IDIO_DEFINE_PRIMITIVE1 ("c/->integer", C_to_integer, (IDIO inum))
     } else if (idio_isa_C_int (inum)) {
 	return idio_integer (IDIO_C_TYPE_INT (inum));
     } else {
-	idio_error_param_type ("C_int|C_uint", inum);
+	idio_error_param_type ("C_int|C_uint", inum, IDIO_C_LOCATION ("c/->integer"));
     }
 
     /* notreached */
@@ -1820,7 +1820,7 @@ IDIO_DEFINE_PRIMITIVE1 ("c/integer->", C_integer_to, (IDIO inum))
     } else if (idio_isa_bignum (inum)) {
 	return idio_C_int (idio_bignum_intmax_value (inum));
     } else {
-	idio_error_param_type ("fixnum|bignum", inum);
+	idio_error_param_type ("fixnum|bignum", inum, IDIO_C_LOCATION ("c/integer->"));
     }
 
     /* notreached */

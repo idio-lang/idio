@@ -35,7 +35,7 @@ int idio_type (IDIO o)
 	return o->type;
     default:
 	/* inconceivable! */
-	idio_error_printf ("type: unexpected object type %#x", o);
+	idio_error_printf (IDIO_C_LOCATION ("idio_type"), "type: unexpected object type %#x", o);
 
 	/* notreached */
 	return IDIO_TYPE_NONE;
@@ -94,7 +94,7 @@ const char *idio_type2string (IDIO o)
     case IDIO_TYPE_POINTER_MARK:
 	return idio_type_enum2string (o->type);
     default:
-	idio_error_C ("idio_type2string: unexpected type", o);
+	idio_error_C ("idio_type2string: unexpected type", o, IDIO_C_LOCATION ("idio_type2string"));
 
 	/* notreached */
 	return "NOT KNOWN";
@@ -450,14 +450,14 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 	    case IDIO_TYPE_OPAQUE:
 		return (o1->u.opaque == o2->u.opaque);
 	    default:
-		idio_error_C ("idio_equal: IDIO_TYPE_POINTER_MARK: o1->type unexpected", o1);
+		idio_error_C ("IDIO_TYPE_POINTER_MARK: o1->type unexpected", o1, IDIO_C_LOCATION ("idio_equal"));
 
 		/* notreached */
 		return 0;
 	    }
 	}
     default:
-	idio_error_C ("idio_equal: o1->type unexpected", o1);
+	idio_error_C ("o1->type unexpected", o1, IDIO_C_LOCATION ("idio_equal"));
 
 	/* notreached */
 	return 0;
@@ -1315,7 +1315,7 @@ IDIO idio_list_assq (IDIO k, IDIO l)
 	}
 
 	if (! idio_isa_pair (p)) {
-	    idio_error_C ("assq: not a pair in list", IDIO_LIST2 (p, l));
+	    idio_error_C ("not a pair in list", IDIO_LIST2 (p, l), IDIO_C_LOCATION ("idio_list_assq"));
 	}
 
 	if (idio_eqp (k, IDIO_PAIR_H (p))) {
@@ -1348,7 +1348,7 @@ IDIO idio_list_set_difference (IDIO set1, IDIO set2)
 	}
     } else {
 	if (idio_S_nil != set1) {
-	    idio_error_C ("set1", set1);
+	    idio_error_C ("set1", set1, IDIO_C_LOCATION ("idio_list_set_difference"));
 
 	    /* notreached */
 	    return idio_S_unspec;
@@ -1475,14 +1475,14 @@ void idio_dump (IDIO o, int detail)
 	    case IDIO_TYPE_OPAQUE:
 		break;
 	    default:
-		idio_error_C ("idio_dump: unimplemented type", o);
+		idio_error_C ("unimplemented type", o, IDIO_C_LOCATION ("idio_dump"));
 		break;
 	    }
 	}
 	break;
     default:
 	/* inconceivable! */
-	idio_error_printf ("v=n/k o=%#p o&3=%x F=%x C=%x P=%x", o, (intptr_t) o & 3, IDIO_TYPE_FIXNUM_MARK, IDIO_TYPE_CONSTANT_MARK, IDIO_TYPE_POINTER_MARK);
+	idio_error_printf (IDIO_C_LOCATION ("idio_dump"), "v=n/k o=%#p o&3=%x F=%x C=%x P=%x", o, (intptr_t) o & 3, IDIO_TYPE_FIXNUM_MARK, IDIO_TYPE_CONSTANT_MARK, IDIO_TYPE_POINTER_MARK);
 
 	break;
     }	
@@ -1500,7 +1500,7 @@ void idio_debug (const char *fmt, IDIO o)
     IDIO_C_ASSERT (fmt);
     IDIO_ASSERT (o);
 
-    char *os = idio_as_string (o, 4);
+    char *os = idio_as_string (o, 40);
     fprintf (stderr, fmt, os);
     free (os);
 }

@@ -119,7 +119,7 @@ IDIO_DEFINE_PRIMITIVE1 ("open-input-string", open_input_string_handle, (IDIO str
 	str_C = idio_string_as_C (str);
 	break;
     default:
-	idio_error_param_type ("string", str);
+	idio_error_param_type ("string", str, IDIO_C_LOCATION ("open-input-string"));
 	break;
     }
     
@@ -218,7 +218,7 @@ int idio_string_handle_getc (IDIO sh)
     IDIO_ASSERT (sh);
 
     if (! idio_input_string_handlep (sh)) {
-	idio_handle_error_read (sh);
+	idio_handle_error_read (sh, IDIO_C_LOCATION ("idio_string_handle_getc"));
     }
 
     if (IDIO_STRING_HANDLE_PTR (sh) < IDIO_STRING_HANDLE_END (sh)) {
@@ -254,7 +254,7 @@ int idio_string_handle_putc (IDIO sh, int c)
     IDIO_ASSERT (sh);
 
     if (! idio_output_string_handlep (sh)) {
-	idio_handle_error_write (sh);
+	idio_handle_error_write (sh, IDIO_C_LOCATION ("idio_string_handle_putc"));
     }
     
     if (IDIO_STRING_HANDLE_PTR (sh) >= IDIO_STRING_HANDLE_END (sh)) {
@@ -285,7 +285,7 @@ size_t idio_string_handle_puts (IDIO sh, char *s, size_t slen)
     IDIO_ASSERT (sh);
 
     if (! idio_output_string_handlep (sh)) {
-	idio_handle_error_write (sh);
+	idio_handle_error_write (sh, IDIO_C_LOCATION ("idio_string_handle_puts"));
     }
     
     if ((IDIO_STRING_HANDLE_PTR (sh) + slen) >= (IDIO_STRING_HANDLE_BUF (sh) + IDIO_STRING_HANDLE_BLEN (sh))) {
@@ -342,7 +342,7 @@ off_t idio_string_handle_seek (IDIO sh, off_t offset, int whence)
 	ptr = IDIO_STRING_HANDLE_END (sh) + offset;
 	break;
     default:
-	idio_error_printf ("idio_string_handle_seek: unexpected whence %d", whence);
+	idio_error_printf (IDIO_C_LOCATION ("idio_string_handle_seek"), "idio_string_handle_seek: unexpected whence %d", whence);
 	return -1;
     }
 
@@ -364,7 +364,7 @@ void idio_string_handle_print (IDIO sh, IDIO o)
     IDIO_ASSERT (sh);
 
     if (! idio_output_string_handlep (sh)) {
-	idio_handle_error_write (sh);
+	idio_handle_error_write (sh, IDIO_C_LOCATION ("idio_string_handle_print"));
     }
 
     char *os = idio_display_string (o);

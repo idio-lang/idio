@@ -22,9 +22,11 @@
 
 #include "idio.h"
 
-static void idio_struct_error_field_not_found (IDIO field)
+static void idio_struct_error_field_not_found (IDIO field, IDIO loc)
 {
     IDIO_ASSERT (field);
+    IDIO_ASSERT (loc);
+    IDIO_TYPE_ASSERT (string, loc);
     
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C ("field '", sh);
@@ -32,7 +34,7 @@ static void idio_struct_error_field_not_found (IDIO field)
     idio_display_C ("' not found", sh);
     IDIO c = idio_struct_instance (idio_condition_runtime_error_type,
 				   IDIO_LIST3 (idio_get_output_string (sh),
-					       idio_S_nil,
+					       loc,
 					       idio_S_nil));
     idio_raise_condition (idio_S_true, c);
 }
@@ -62,7 +64,7 @@ IDIO idio_struct_type (IDIO name, IDIO parent, IDIO fields)
     while (idio_S_nil != fs) {
 	IDIO f = IDIO_PAIR_H (fs);
 	if (! idio_isa_symbol (f)) {
-	    idio_error_printf ("struct-type name parent fs: fs must be symbols");
+	    idio_error_printf (IDIO_C_LOCATION ("idio_struct_type"), "struct-type name parent fs: fs must be symbols");
 	}
 	nfields++;
 	fs = IDIO_PAIR_T (fs);
@@ -257,11 +259,11 @@ IDIO idio_struct_instance (IDIO st, IDIO values)
     if (i < size) {
 	idio_debug ("fields: %s\n", st);
 	idio_debug ("values: %s\n", values);
-	idio_error_printf ("make-struct-instance: not enough values: %" PRIdPTR " < %" PRIdPTR, i, size);
+	idio_error_printf (IDIO_C_LOCATION ("idio_struct_instance"), "make-struct-instance: not enough values: %" PRIdPTR " < %" PRIdPTR, i, size);
     }
 
     if (idio_S_nil != value) {
-	idio_error_C ("make-struct-instance: too many values: the following are left over:", values);
+	idio_error_C ("make-struct-instance: too many values: the following are left over:", values, IDIO_C_LOCATION ("idio_struct_instance"));
     }
 
     return si;
@@ -339,7 +341,7 @@ IDIO idio_struct_instance_ref (IDIO si, IDIO field)
     idio_ai_t i = idio_array_find_eqp (IDIO_STRUCT_TYPE_FIELDS (st), field, 0);
 
     if (-1 == i) {
-	idio_struct_error_field_not_found (field);
+	idio_struct_error_field_not_found (field, IDIO_C_LOCATION ("idio_struct_instance_ref"));
     }
 
     return idio_array_get_index (IDIO_STRUCT_INSTANCE_FIELDS (si), i);
@@ -378,7 +380,7 @@ IDIO_DEFINE_PRIMITIVE4 ("%struct-instance-ref-direct", struct_instance_ref_direc
     IDIO_VERIFY_PARAM_TYPE (fixnum, index);
 
     if (st != IDIO_STRUCT_INSTANCE_TYPE (si)) {
-	idio_error_printf ("bad structure ref");
+	idio_error_printf (IDIO_C_LOCATION ("%struct-instance-ref-direct"), "bad structure ref");
     }
     
     return idio_struct_instance_ref_direct (si, IDIO_FIXNUM_VAL (index));
@@ -400,7 +402,7 @@ IDIO idio_struct_instance_set (IDIO si, IDIO field, IDIO v)
 	idio_debug ("sis!: %s\n", st);
 	idio_debug ("%s\n", si);
 	idio_debug ("%s\n", field);
-	idio_error_printf ("struct-instance-set: field not found");
+	idio_error_printf (IDIO_C_LOCATION ("struct-instance-set"), "field not found");
     }
 
     idio_array_insert_index (IDIO_STRUCT_INSTANCE_FIELDS (si), v, i);
@@ -446,7 +448,7 @@ IDIO_DEFINE_PRIMITIVE5 ("%struct-instance-set-direct", struct_instance_set_direc
     IDIO_VERIFY_PARAM_TYPE (fixnum, index);
 
     if (st != IDIO_STRUCT_INSTANCE_TYPE (si)) {
-	idio_error_printf ("bad structure set");
+	idio_error_printf (IDIO_C_LOCATION ("%struct-instance-set-direct"), "bad structure set");
     }
     
     return idio_struct_instance_set_direct (si, IDIO_FIXNUM_VAL (index), v);

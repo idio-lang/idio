@@ -154,7 +154,7 @@ int idio_isa (IDIO o, idio_type_e type)
 	return (o->type == type);
     default:
 	/* inconceivable! */
-	idio_error_printf ("isa: unexpected object mark type %#x", o);
+	idio_error_printf (IDIO_C_LOCATION ("idio_isa"), "unexpected object mark type %#x", o);
 	return 0;
     }
 }
@@ -220,7 +220,7 @@ void idio_mark (IDIO o, unsigned colour)
 	break;
     default:
 	/* inconceivable! */
-	idio_error_printf ("isa: unexpected object mark type %#x", o);
+	idio_error_printf (IDIO_C_LOCATION ("idio_mark"), "unexpected object mark type %#x", o);
     }
 
     IDIO_FPRINTF (stderr, "idio_mark: mark %10p -> %10p t=%2d/%.5s f=%2x colour=%d\n", o, o->next, o->type, idio_type2string (o), o->flags, colour);
@@ -361,7 +361,7 @@ void idio_mark (IDIO o, unsigned colour)
 	}
 	break;
     default:
-	idio_error_printf ("idio_mark: unexpected colour %d", colour);
+	idio_error_printf (IDIO_C_LOCATION ("idio_mark"), "unexpected colour %d", colour);
 	break;
     }
 }
@@ -498,7 +498,7 @@ void idio_process_grey (unsigned colour)
 	idio_mark (IDIO_OPAQUE_ARGS (o), colour);
 	break;
     default:
-	idio_error_C ("idio_process_grey: unexpected type", o);
+	idio_error_C ("unexpected type", o, IDIO_C_LOCATION ("idio_process_grey"));
 	break;
     }
 }
@@ -683,7 +683,7 @@ void idio_gc_protect (IDIO o)
     IDIO_ASSERT (o);
 
     if (idio_S_nil == o) {
-	idio_error_param_nil ("protect");
+	idio_error_param_nil ("protect", IDIO_C_LOCATION ("idio_gc_protect"));
     }
     
     IDIO_FPRINTF (stderr, "idio_gc_protect: %10p\n", o);
@@ -793,7 +793,7 @@ void idio_gc_sweep_free_value (IDIO vo)
     IDIO_ASSERT (vo);
 
     if (idio_S_nil == vo) {
-	idio_error_printf ("idio_gc_sweep_free_value: nil");
+	idio_error_param_nil ("vo", IDIO_C_LOCATION ("idio_gc_sweep_free_value"));
 	return;
     }
 
@@ -874,7 +874,7 @@ void idio_gc_sweep_free_value (IDIO vo)
 	idio_free_opaque (vo);
 	break;
     default:
-	idio_error_C ("idio_gc_sweep_free_value: unexpected type", vo);
+	idio_error_C ("unexpected type", vo, IDIO_C_LOCATION ("idio_gc_sweep_free_value"));
 	break;
     }
 }
@@ -1018,7 +1018,7 @@ void idio_hcount (unsigned long long *bytes, int *scale)
 void idio_gc_stats_inc (idio_type_e type)
 {
     if (type > IDIO_TYPE_MAX) {
-	idio_error_printf ("GC stats: bad type %hhu", type);
+	idio_error_printf (IDIO_C_LOCATION ("idio_gc_stats_inc"), "bad type %hhu", type);
     } else {
 	idio_gc->stats.tgets[type]++;
     }
@@ -1203,7 +1203,7 @@ void idio_gc_free ()
 	idio_root_t *root = idio_gc->roots;
 	idio_gc->roots = root->next;
 	if (idio_S_nil == root->object) {
-	    idio_error_param_nil ("root->object");
+	    idio_error_param_nil ("root->object", IDIO_C_LOCATION ("idio_gc_free"));
 	}
 	free (root);
     }    

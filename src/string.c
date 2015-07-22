@@ -22,18 +22,30 @@
 
 #include "idio.h"
 
-void idio_string_error_length (char *m, IDIO s, ptrdiff_t i)
+void idio_string_error_length (char *m, IDIO s, ptrdiff_t i, IDIO loc)
 {
+    IDIO_C_ASSERT (m);
+    IDIO_ASSERT (s);
+    IDIO_ASSERT (loc);
+    IDIO_TYPE_ASSERT (string, s);
+    IDIO_TYPE_ASSERT (string, loc);
+
     char em[BUFSIZ];
     sprintf (em, "%s: %td", m, i);
-    idio_error_printf (em, s);
+    idio_error_printf (loc, em, s);
 }
 
-void idio_substring_error_index (char *m, IDIO s, ptrdiff_t ip0, ptrdiff_t ipn)
+void idio_substring_error_index (char *m, IDIO s, ptrdiff_t ip0, ptrdiff_t ipn, IDIO loc)
 {
+    IDIO_C_ASSERT (m);
+    IDIO_ASSERT (s);
+    IDIO_ASSERT (loc);
+    IDIO_TYPE_ASSERT (string, s);
+    IDIO_TYPE_ASSERT (string, loc);
+
     char em[BUFSIZ];
     sprintf (em, "%s: %td %td", m, ip0, ipn);
-    idio_error_printf (em, s);
+    idio_error_printf (loc, em, s);
 }
 
 IDIO idio_string_C (const char *s_C)
@@ -219,7 +231,7 @@ size_t idio_string_blen (IDIO so)
 	break;
     default:
 	{
-	    idio_error_C ("idio_string_blen: unexpected string type", so);
+	    idio_error_C ("unexpected string type", so, IDIO_C_LOCATION ("idio_string_blen"));
 	}
     }
 
@@ -243,7 +255,7 @@ char *idio_string_s (IDIO so)
 	break;
     default:
 	{
-	    idio_error_C ("idio_string_s: unexpected string type", so);
+	    idio_error_C ("unexpected string type", so, IDIO_C_LOCATION ("idio_string_s"));
 	}
     }
 
@@ -270,7 +282,7 @@ char *idio_string_as_C (IDIO so)
 	break;
     default:
 	{
-	    idio_error_C ("idio_string_as_C: unexpected string type", so);
+	    idio_error_C ("unexpected string type", so, IDIO_C_LOCATION ("idio_string_as_C"));
 	}
     }
 
@@ -311,13 +323,13 @@ IDIO_DEFINE_PRIMITIVE1V ("make-string", make_string, (IDIO size, IDIO args))
 	} else {
 	    IDIO size_i = idio_bignum_real_to_integer (size);
 	    if (idio_S_nil == size_i) {
-		idio_error_param_type ("number", size);
+		idio_error_param_type ("number", size, IDIO_C_LOCATION ("make-string"));
 	    } else {
 		blen = idio_bignum_ptrdiff_value (size_i);
 	    }
 	}
     } else {
-	idio_error_param_type ("number", size);
+	idio_error_param_type ("number", size, IDIO_C_LOCATION ("make-string"));
     }
 
     IDIO_VERIFY_PARAM_TYPE (list, args);
@@ -330,7 +342,7 @@ IDIO_DEFINE_PRIMITIVE1V ("make-string", make_string, (IDIO size, IDIO args))
     }
 
     if (blen < 0) {
-	idio_error_printf ("invalid length: %zd", blen);
+	idio_error_printf (IDIO_C_LOCATION ("make-string"), "invalid length: %zd", blen);
     }
     
     char *sC = idio_alloc (blen + 1);
@@ -472,13 +484,13 @@ IDIO_DEFINE_PRIMITIVE2 ("string-ref", string_ref, (IDIO s, IDIO index))
 	} else {
 	    IDIO index_i = idio_bignum_real_to_integer (index);
 	    if (idio_S_nil == index_i) {
-		idio_error_param_type ("number", index);
+		idio_error_param_type ("number", index, IDIO_C_LOCATION ("string-ref"));
 	    } else {
 		i = idio_bignum_ptrdiff_value (index_i);
 	    }
 	}
     } else {
-	idio_error_param_type ("number", index);
+	idio_error_param_type ("number", index, IDIO_C_LOCATION ("string-ref"));
     }
 
 
@@ -487,7 +499,7 @@ IDIO_DEFINE_PRIMITIVE2 ("string-ref", string_ref, (IDIO s, IDIO index))
 
     if (i < 0 ||
 	i > l) {
-	idio_string_error_length ("string-ref: out of bounds", s, i);
+	idio_string_error_length ("out of bounds", s, i, IDIO_C_LOCATION ("string-ref"));
 	return idio_S_unspec;
     }
 
@@ -513,13 +525,13 @@ IDIO_DEFINE_PRIMITIVE3 ("string-set!", string_set, (IDIO s, IDIO index, IDIO c))
 	} else {
 	    IDIO index_i = idio_bignum_real_to_integer (index);
 	    if (idio_S_nil == index_i) {
-		idio_error_param_type ("number", index);
+		idio_error_param_type ("number", index, IDIO_C_LOCATION ("string-set!"));
 	    } else {
 		i = idio_bignum_ptrdiff_value (index_i);
 	    }
 	}
     } else {
-	idio_error_param_type ("number", index);
+	idio_error_param_type ("number", index, IDIO_C_LOCATION ("string-set!"));
     }
 
     if (idio_isa_substring (s)) {
@@ -531,7 +543,7 @@ IDIO_DEFINE_PRIMITIVE3 ("string-set!", string_set, (IDIO s, IDIO index, IDIO c))
 
     if (i < 0 ||
 	i > l) {
-	idio_string_error_length ("string-set: out of bounds", s, i);
+	idio_string_error_length ("out of bounds", s, i, IDIO_C_LOCATION ("string-set!"));
 	return idio_S_unspec;
     }
 
@@ -559,13 +571,13 @@ IDIO_DEFINE_PRIMITIVE3 ("substring", substring, (IDIO s, IDIO p0, IDIO pn))
 	} else {
 	    IDIO p0_i = idio_bignum_real_to_integer (p0);
 	    if (idio_S_nil == p0_i) {
-		idio_error_param_type ("number", p0);
+		idio_error_param_type ("number", p0, IDIO_C_LOCATION ("substring"));
 	    } else {
 		ip0 = idio_bignum_ptrdiff_value (p0_i);
 	    }
 	}
     } else {
-	idio_error_param_type ("number", p0);
+	idio_error_param_type ("number", p0, IDIO_C_LOCATION ("substring"));
     }
 
     if (idio_isa_fixnum (pn)) {
@@ -576,13 +588,13 @@ IDIO_DEFINE_PRIMITIVE3 ("substring", substring, (IDIO s, IDIO p0, IDIO pn))
 	} else {
 	    IDIO pn_i = idio_bignum_real_to_integer (pn);
 	    if (idio_S_nil == pn_i) {
-		idio_error_param_type ("number", pn);
+		idio_error_param_type ("number", pn, IDIO_C_LOCATION ("substring"));
 	    } else {
 		ipn = idio_bignum_ptrdiff_value (pn_i);
 	    }
 	}
     } else {
-	idio_error_param_type ("number", pn);
+	idio_error_param_type ("number", pn, IDIO_C_LOCATION ("substring"));
     }
 
     size_t l = idio_string_blen (s);
@@ -592,7 +604,7 @@ IDIO_DEFINE_PRIMITIVE3 ("substring", substring, (IDIO s, IDIO p0, IDIO pn))
 	ipn < 0 ||
 	ipn > l ||
 	ipn < ip0) {
-	idio_substring_error_index ("substring: out of bounds", s, ip0, ipn);
+	idio_substring_error_index ("out of bounds", s, ip0, ipn, IDIO_C_LOCATION ("substring"));
 	return idio_S_unspec;
     }
 
@@ -610,7 +622,7 @@ IDIO_DEFINE_PRIMITIVE3 ("substring", substring, (IDIO s, IDIO p0, IDIO pn))
 	    IDIO_SUBSTRING_S (r) = IDIO_SUBSTRING_S (s);
 	    break;
 	default:
-	    idio_error_C ("unexpected string type", s);
+	    idio_error_C ("unexpected string type", s, IDIO_C_LOCATION ("substring"));
 	}
     } else {
 	r = idio_string_C ("");

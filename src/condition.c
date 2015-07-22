@@ -168,6 +168,8 @@ IDIO idio_condition_idio_error (IDIO message, IDIO location, IDIO detail)
     IDIO_ASSERT (message);
     IDIO_ASSERT (location);
     IDIO_ASSERT (detail);
+    IDIO_TYPE_ASSERT (string, message);
+    IDIO_TYPE_ASSERT (string, location);
 
     return idio_struct_instance (idio_condition_idio_error_type, IDIO_LIST3 (message, location, detail));
 }
@@ -242,7 +244,7 @@ IDIO_DEFINE_PRIMITIVE1 ("condition-message", condition_message, (IDIO c))
     IDIO_VERIFY_PARAM_TYPE (condition, c);
 
     if (! idio_struct_instance_isa (c, idio_condition_message_type)) {
-	idio_error_printf ("not a message condition", c);
+	idio_error_printf (IDIO_C_LOCATION ("condition-message"), "not a message condition", c);
 	return idio_S_unspec;
     }
 

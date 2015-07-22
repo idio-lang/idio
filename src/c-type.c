@@ -255,7 +255,7 @@ IDIO idio_C_number_cast (IDIO co, idio_type_e type)
     IDIO_C_ASSERT (type);
 
     if (! IDIO_TYPE_POINTERP (co)) {
-	idio_error_printf ("idio_C_number_cast: conversion not possible from %s %d to %d", idio_type2string (co), idio_type (co), type);
+	idio_error_printf (IDIO_C_LOCATION ("idio_C_number_cast"), "conversion not possible from %s %d to %d", idio_type2string (co), idio_type (co), type);
 
 	/* notreached */
 	return idio_S_nil;
@@ -296,7 +296,7 @@ IDIO idio_C_number_cast (IDIO co, idio_type_e type)
     }
 
     if (fail) {
-	idio_error_printf ("idio_C_number_cast: conversion not possible from %s %d to %d", idio_type2string (co), idio_type (co), type);
+	idio_error_printf (IDIO_C_LOCATION ("idio_C_number_cast"), "conversion not possible from %s %d to %d", idio_type2string (co), idio_type (co), type);
     }
 
     return r;
@@ -323,7 +323,7 @@ IDIO idio_C_number_cast (IDIO co, idio_type_e type)
 		    result = (v1 cmp IDIO_C_TYPE_UINT (n2));		\
 		    break;						\
 		default:						\
-		    idio_error_C (#name ": n2->type unexpected", n2);	\
+		    idio_error_C ("n2->type unexpected", n2, idio_string_C (#name)); \
 									\
 		    /* notreached */					\
 		    return 0;						\
@@ -339,13 +339,13 @@ IDIO idio_C_number_cast (IDIO co, idio_type_e type)
 		result = (IDIO_C_TYPE_UINT (n1) cmp v2);		\
 		break;							\
 	    default:							\
-		idio_error_C (#name ": n1->type unexpected", n1);	\
+		idio_error_C ("n1->type unexpected", n1, idio_string_C (#name)); \
 									\
 		/* notreached */					\
 		return 0;						\
 	    }								\
 	} else if (idio_type (n1) != idio_type (n2)) {			\
-	    idio_error_C (#name ": n1->type != n2->type", IDIO_LIST2 (n1, n2)); \
+	    idio_error_C ("n1->type != n2->type", IDIO_LIST2 (n1, n2), idio_string_C (#name)); \
 									\
 	    /* notreached */						\
 	    return 0;							\
@@ -364,7 +364,7 @@ IDIO idio_C_number_cast (IDIO co, idio_type_e type)
 		result = (IDIO_C_TYPE_DOUBLE (n1) cmp IDIO_C_TYPE_DOUBLE (n2)); \
 		break;							\
 	    default:							\
-		idio_error_C (#name ": n1->type unexpected", n1);	\
+		idio_error_C ("n1->type unexpected", n1, idio_string_C (#name)); \
 									\
 		/* notreached */					\
 		return 0;						\

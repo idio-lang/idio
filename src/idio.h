@@ -91,7 +91,7 @@
 /* IDIO_TYPE_ASSERT assumes a local variable f */
 #define IDIO_TYPE_ASSERT(t,x) {						\
 	if (! idio_isa_ ## t (x)) {					\
-	    idio_error_param_type (#t, x);				\
+	    idio_error_param_type_C (#t, x, __FILE__, __func__, __LINE__); \
 	}								\
     }
 
@@ -110,6 +110,11 @@
 #define IDIO_EXIT(x)		{IDIO_C_ASSERT(0);exit(x);}
 #define IDIO_C_EXIT(x)		{IDIO_C_ASSERT(0);exit(x);}
 
+#define IDIO_S1(x)		#x
+#define IDIO_S2(x)		IDIO_S1(x)
+#define IDIO__LINE__		IDIO_S2(__LINE__)
+#define IDIO_C_LOCATION(s)	(idio_string_C (s ":" __FILE__ ":" IDIO__LINE__))
+
 #else
 
 #define IDIO_C_ASSERT(x)	((void) 0)
@@ -119,6 +124,7 @@
 #define IDIO_ASSERT_NOT_FREED(x) ((void) 0)
 #define IDIO_EXIT(x)		{exit(x);}
 #define IDIO_C_EXIT(x)		{exit(x);}
+#define IDIO_C_LOCATION(s)	(idio_string_C (s))
 
 #endif
 
@@ -240,7 +246,7 @@
 #define IDIO_VERIFY_PARAM_TYPE(type,param)		\
     {							\
 	if (! idio_isa_ ## type (param)) {		\
-	    idio_error_param_type (#type, param);	\
+	    idio_error_param_type_C (#type, param, __FILE__, __func__, __LINE__); \
 	    return idio_S_unspec;			\
 	}						\
     }

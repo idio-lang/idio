@@ -22,19 +22,28 @@
 
 #include "idio.h"
 
-static void idio_fixnum_error_divide_by_zero ()
+static void idio_fixnum_error_divide_by_zero (IDIO loc)
 {
-    idio_error_printf ("divide by zero");
+    IDIO_ASSERT (loc);
+    IDIO_TYPE_ASSERT (string, loc);
+
+    idio_error_C ("divide by zero", idio_S_nil, loc);
 }
 
-static void idio_fixnum_error_conversion (char *msg, IDIO fn)
+static void idio_fixnum_error_conversion (char *msg, IDIO fn, IDIO loc)
 {
+    IDIO_C_ASSERT (msg);
+    IDIO_ASSERT (fn);
+    IDIO_ASSERT (loc);
+    IDIO_TYPE_ASSERT (fixnum, fn);
+    IDIO_TYPE_ASSERT (string, loc);
+
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C (msg, msh);
 
     IDIO c = idio_struct_instance (idio_condition_rt_fixnum_conversion_error_type,
 				   IDIO_LIST4 (idio_get_output_string (msh),
-					       idio_S_nil,
+					       loc,
 					       idio_S_nil,
 					       fn));
     idio_raise_condition (idio_S_true, c);
@@ -71,7 +80,7 @@ IDIO idio_fixnum (intptr_t i)
 	char em[BUFSIZ];
 
 	sprintf (em, "%" PRIdPTR " too large", i);
-	idio_fixnum_error_conversion (em, idio_S_nil);
+	idio_fixnum_error_conversion (em, idio_S_nil, IDIO_C_LOCATION ("idio_fixnum"));
     }
 
     /* notreached */
@@ -91,7 +100,7 @@ IDIO idio_fixnum_C (char *str, int base)
 	 val == 0)) {
 	char em[BUFSIZ];
 	sprintf (em, "idio_fixnum_C: strtoll (%s) = %lld", str, val);
-	idio_fixnum_error_conversion (em, idio_S_nil);
+	idio_fixnum_error_conversion (em, idio_S_nil, IDIO_C_LOCATION ("idio_fixnum_C"));
 
 	/* notreached */
 	return idio_S_nil;
@@ -100,7 +109,7 @@ IDIO idio_fixnum_C (char *str, int base)
     if (end == str) {
 	char em[BUFSIZ];
 	sprintf (em, "idio_fixnum_C: strtoll (%s): No digits?", str);
-	idio_fixnum_error_conversion (em, idio_S_nil);
+	idio_fixnum_error_conversion (em, idio_S_nil, IDIO_C_LOCATION ("idio_fixnum_C"));
 
 	/* notreached */
 	return idio_S_nil;
@@ -111,7 +120,7 @@ IDIO idio_fixnum_C (char *str, int base)
     } else {
 	char em[BUFSIZ];
 	sprintf (em, "idio_fixnum_C: strtoll (%s) = %lld", str, val);
-	idio_fixnum_error_conversion (em, idio_S_nil);
+	idio_fixnum_error_conversion (em, idio_S_nil, IDIO_C_LOCATION ("idio_fixnum_C"));
 
 	/* notreached */
 	return idio_S_nil;
@@ -453,7 +462,7 @@ IDIO idio_fixnum_primitive_divide (IDIO args)
 	}
     
 	if (0 == ih) {
-	    idio_fixnum_error_divide_by_zero ();
+	    idio_fixnum_error_divide_by_zero (IDIO_C_LOCATION ("idio_fixnum_primitive_divide"));
 	    return idio_S_unspec;
 	}
 
@@ -490,7 +499,7 @@ IDIO_DEFINE_PRIMITIVE1 ("floor", floor, (IDIO a))
 
 	return num;
     } else {
-	idio_error_param_type ("number", a);
+	idio_error_param_type ("number", a, IDIO_C_LOCATION ("floor"));
 	return idio_S_unspec;
     }
 }
@@ -523,7 +532,7 @@ IDIO_DEFINE_PRIMITIVE2 ("remainder", remainder, (IDIO a, IDIO b))
 	} if (idio_isa_bignum (b)) {
 	    num = idio_bignum_primitive_remainder (idio_bignum_integer_intmax_t (IDIO_FIXNUM_VAL (a)), b);
 	} else {
-	    idio_error_param_type ("number", b);
+	    idio_error_param_type ("number", b, IDIO_C_LOCATION ("remainder"));
 	}
     } else if (idio_isa_bignum (a)) {
 	if (idio_isa_fixnum (b)) {
@@ -531,10 +540,10 @@ IDIO_DEFINE_PRIMITIVE2 ("remainder", remainder, (IDIO a, IDIO b))
 	} else if (idio_isa_bignum (b)) {
 	    num = idio_bignum_primitive_remainder (a, b);
 	} else {
-	    idio_error_param_type ("number", b);
+	    idio_error_param_type ("number", b, IDIO_C_LOCATION ("remainder"));
 	}
     } else {
-	idio_error_param_type ("number", a);
+	idio_error_param_type ("number", a, IDIO_C_LOCATION ("remainder"));
     }
 
     /* convert to a fixnum if possible */
@@ -556,7 +565,7 @@ IDIO idio_fixnum_primitive_quotient (IDIO a, IDIO b)
     intptr_t ib = IDIO_FIXNUM_VAL (b);
 
     if (0 == ib) {
-	idio_fixnum_error_divide_by_zero ();
+	idio_fixnum_error_divide_by_zero (IDIO_C_LOCATION ("idio_fixnum_primitive_quotient"));
 	return idio_S_unspec;
     }
 
@@ -582,7 +591,7 @@ IDIO_DEFINE_PRIMITIVE2 ("quotient", quotient, (IDIO a, IDIO b))
 	} else if (idio_isa_bignum (b)) {
 	    num = idio_bignum_primitive_quotient (idio_bignum_integer_intmax_t (IDIO_FIXNUM_VAL (a)), b);
 	} else {
-	    idio_error_param_type ("number", b);
+	    idio_error_param_type ("number", b, IDIO_C_LOCATION ("quotient"));
 	}
     } else if (idio_isa_bignum (a)) {
 	if (idio_isa_fixnum (b)) {
@@ -590,10 +599,10 @@ IDIO_DEFINE_PRIMITIVE2 ("quotient", quotient, (IDIO a, IDIO b))
 	} else if (idio_isa_bignum (b)) {
 	    num = idio_bignum_primitive_quotient (a, b);
 	} else {
-	    idio_error_param_type ("number", b);
+	    idio_error_param_type ("number", b, IDIO_C_LOCATION ("quotient"));
 	}
     } else {
-	idio_error_param_type ("number", a);
+	idio_error_param_type ("number", a, IDIO_C_LOCATION ("quotient"));
     }
 
     /* convert to a fixnum if possible */
@@ -659,7 +668,7 @@ IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(gt, >)
 		break;							\
 	    } else {							\
 		if (! idio_isa_fixnum (h)) {				\
-		    idio_error_param_type ("number", h);		\
+		    idio_error_param_type ("number", h, idio_string_C (#name));	\
 		    return idio_S_unspec;				\
 		}							\
 	    }								\
@@ -711,7 +720,7 @@ IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(gt, >)
 	    ibn = idio_isa_bignum (n1);				\
 								\
 	    if (0 == ibn) {					\
-		idio_error_param_type ("number", n1);		\
+		idio_error_param_type ("number", n1, idio_string_C (#name)); \
 		return idio_S_unspec;				\
 	    }							\
 	}							\
@@ -727,7 +736,7 @@ IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(gt, >)
 		    break;					\
 		} else {					\
 		    if (! idio_isa_fixnum (h)) {		\
-			idio_error_param_type ("number", h);	\
+			idio_error_param_type ("number", h, idio_string_C (#name)); \
 			return idio_S_unspec;			\
 		    }						\
 		}						\
@@ -793,7 +802,7 @@ IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(gt, >)
 	    } else if (idio_isa_bignum (h)) {				\
 		bn_args = idio_pair (h, bn_args);			\
 	    } else {							\
-		idio_error_param_type ("number", h);			\
+		idio_error_param_type ("number", h, idio_string_C (#name)); \
 		return idio_S_unspec;					\
 	    }								\
 	    								\
@@ -824,7 +833,7 @@ IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(gt, >)
 	    ibn = idio_isa_bignum (n1);				\
 								\
 	    if (0 == ibn) {					\
-		idio_error_param_type ("number", n1);		\
+		idio_error_param_type ("number", n1, idio_string_C (#name)); \
 		return idio_S_unspec;				\
 	    }							\
 	}							\
@@ -840,7 +849,7 @@ IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(gt, >)
 		    break;					\
 		} else {					\
 		    if (! idio_isa_fixnum (h)) {		\
-			idio_error_param_type ("number", h);	\
+			idio_error_param_type ("number", h, idio_string_C (#name)); \
 			return idio_S_unspec;			\
 		    }						\
 		}						\
@@ -903,7 +912,7 @@ IDIO_DEFINE_PRIMITIVE1 ("integer->char", integer2char, (IDIO i))
     }
 
     if (! idio_isa_character (c)) {
-	idio_error_printf ("invalid integer");
+	idio_error_printf (IDIO_C_LOCATION ("integer->char"), "invalid integer");
 	return idio_S_unspec;
     }
 
