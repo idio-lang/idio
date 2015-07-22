@@ -1371,10 +1371,13 @@ static IDIO idio_command_launch_1proc_job (IDIO job, int foreground, char **argv
 		    idio_struct_instance_set_direct (job, IDIO_JOB_TYPE_PGID, idio_C_int (job_pgid));
 		}
 		if (setpgid (pid, job_pgid) < 0) {
-		    idio_error_system ("setpgid", IDIO_LIST4 (idio_C_int (pid),
-							      idio_C_int (job_pgid),
-							      proc,
-							      job), errno);
+		    idio_error_system ("setpgid",
+				       IDIO_LIST4 (idio_C_int (pid),
+						   idio_C_int (job_pgid),
+						   proc,
+						   job),
+				       errno,
+				       IDIO_C_LOCATION ("idio_command_launch_1proc_job"));
 		}
 	    }
 
