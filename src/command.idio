@@ -457,16 +457,12 @@ define-operator | 300 {
   ;; them
   op-args = map operator-expand op-args
 
-  ;; looping over the list of commands prepping the children uses a
-  ;; number of variables which are a pain to manage as we don't want
-  ;; to pollute the calling environment and they will be doubly
-  ;; indirected inside templates.  So we'll "cheat" and use the outer
-  ;; template to generate a block to hold our working variables.
+  ;; pgrp-pipe:
 
-  ;; There's also a little process coordination trickery ported from
-  ;; Bash -- noting that if the race condition occurs in a slick and
-  ;; fast pure C environment then our meandering and inefficient
-  ;; script has no hope!
+  ;; There's a little process coordination trickery ported from Bash
+  ;; -- noting that if the race condition occurs in a slick and fast
+  ;; pure C environment then our meandering and inefficient
+  ;; byte-compiled script has no hope!
   ;;
   ;; We need to prevent the first process in the pipeline from
   ;; starting until all the others are in place -- otherwise you can
@@ -494,27 +490,47 @@ define-operator | 300 {
   ;; all the previous processes have been and gone.  But we've done a
   ;; decent job, what more can we do?
 
+
+  ;; Hygiene
+
+  ;; Looping over the list of commands prepping the children uses a
+  ;; number of variables which are at risk of polluting the called
+  ;; code (if it is Idio code -- obviously if it is an external
+  ;; command we exec()'d it wouldn't matter).  Strict hygiene, please!
+
+  stdin := (gensym)
+  infile := (gensym)
+  stdout := (gensym)
+  outfile := (gensym)
+  pgid := (gensym)
+  job := (gensym)
+  proc-id := (gensym)
+  pipe := (gensym)
+  pgrp-pipe := (gensym)
+  proc := (gensym)
+  pid := (gensym)
+
   nprocs := length op-args
   %T{
     {
-      stdin := c/STDIN_FILENO
-      infile := stdin
-      stdout := c/STDOUT_FILENO
-      outfile := stdout
-      pgid := 0
-      job := make-%idio-job '$pipeline #n pgid #f #n stdin stdout
-      %idio-jobs = pair job %idio-jobs
-      %%last-job = job
+      $stdin := c/STDIN_FILENO
+      $infile := $stdin
+      $stdout := c/STDOUT_FILENO
+      $outfile := $stdout
+      $pgid := 0
+      $job := make-%idio-job '$pipeline #n $pgid #f #n $stdin $stdout
+      %idio-jobs = pair $job %idio-jobs
+      %%last-job = $job
 
-      proc-id := 1
-      pipe := #n
-      pgrp-pipe := (c/pipe)
+      $proc-id := 1
+      $pipe := #n
+      $pgrp-pipe := (c/pipe)
 
       $@(map (function (cmd) {
 	        %T{
 		  {
 		    ;%%vm-trace 1
-		    proc := make-%idio-process '$cmd -1 #f #f #n
+		    $proc := make-%idio-process '$cmd -1 #f #f #n
 
 		    ;; NB. Update the procs list asap as we can get a
 		    ;; signal about processes in the pipeline at any
@@ -522,7 +538,7 @@ define-operator | 300 {
 		    ;; finished creating the pipeline.
 		    ;; do-job-notification/update-status will want to
 		    ;; have a proc entry to update.
-		    set-%idio-job-procs! job (pair proc (%idio-job-procs job))
+		    set-%idio-job-procs! $job (pair $proc (%idio-job-procs $job))
 
 		    if (lt $proc-id $nprocs) {
 		      $pipe = (c/pipe)
@@ -530,8 +546,8 @@ define-operator | 300 {
 		    } {
 		      $outfile = $stdout
 		    }
-		    pid := (c/fork)
-		    if (c/== pid 0) {
+		    $pid := (c/fork)
+		    if (c/== $pid 0) {
 		      prep-process $pgid $infile $outfile $foreground
 		      if (c/== $pgid 0) {
 			c/close (c/pipe-writer $pgrp-pipe)
@@ -559,13 +575,13 @@ define-operator | 300 {
 		      ;; the main Idio engine.
 		      c/exit 0
 		    } {
-		      set-%idio-process-pid! proc pid
+		      set-%idio-process-pid! $proc $pid
 		      if %idio-interactive {
 			if (c/== $pgid 0) {
-			  $pgid = pid
+			  $pgid = $pid
 			  set-%idio-job-pgid! $job $pgid
 			}
-			suppress-errors c/setpgid pid $pgid
+			suppress-errors c/setpgid $pid $pgid
 		      }
 		    }
 
@@ -580,33 +596,40 @@ define-operator | 300 {
 	     op-args)
 
       ;; finally let the first process go
-      c/close (c/pipe-reader pgrp-pipe)
-      c/close (c/pipe-writer pgrp-pipe)
+      c/close (c/pipe-reader $pgrp-pipe)
+      c/close (c/pipe-writer $pgrp-pipe)
 
       %%vm-trace 0
       if+ (not %idio-interactive) {
-	    wait-for-job job
+	    wait-for-job $job
 	  } $foreground {
-	    foreground-job job #f
+	    foreground-job $job #f
 	  } else {
-	    background-job job #f
+	    background-job $job #f
           }
     }
   }
 }
 
 define-macro (launch-1proc foreground & cmd) {
+  stdin := (gensym)
+  stdout := (gensym)
+  pgid := (gensym)
+  proc := (gensym)
+  job := (gensym)
+  pid := (gensym)
+
   %T{
   {
-    stdin := c/STDIN_FILENO
-    stdout := c/STDOUT_FILENO
-    pgid := 0
-    proc := make-%idio-process '$cmd -1 #f #f #n
-    job := make-%idio-job '$cmd (list proc) pgid #f #n stdin stdout
+    $stdin := c/STDIN_FILENO
+    $stdout := c/STDOUT_FILENO
+    $pgid := 0
+    $proc := make-%idio-process '$cmd -1 #f #f #n
+    $job := make-%idio-job '$cmd (list $proc) $pgid #f #n $stdin $stdout
 
-    pid := (c/fork)
-    if+ (c/== pid 0) {
-      prep-process pgid stdin stdout $foreground
+    $pid := (c/fork)
+    if+ (c/== $pid 0) {
+      prep-process $pgid $stdin $stdout $foreground
       if+ (pair? (ph '$cmd)) {
             $@cmd
 	  } \
@@ -614,23 +637,23 @@ define-macro (launch-1proc foreground & cmd) {
 
       c/exit 0
     } else {
-      set-%idio-process-pid! proc pid
+      set-%idio-process-pid! $proc $pid
       if %idio-interactive {
-	pgid = pid
-	set-%idio-job-pgid! job pgid
-	suppress-errors c/setpgid pid pgid
+	$pgid = $pid
+	set-%idio-job-pgid! $job $pgid
+	suppress-errors c/setpgid $pid $pgid
       }
     }
 
-    %idio-jobs = pair job %idio-jobs
-    %%last-job = job
+    %idio-jobs = pair $job %idio-jobs
+    %%last-job = $job
 
     if+ (not %idio-interactive) {
-      wait-for-job job
+      wait-for-job $job
     } $foreground {
-      foreground-job job #f
+      foreground-job $job #f
     } else {
-      background-job job #f
+      background-job $job #f
     }
   }
   }
