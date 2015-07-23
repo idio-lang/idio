@@ -1671,17 +1671,19 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
     case IDIO_VM_CODE_OPERATOR:
 	{
 	    if (! idio_isa_pair (mt) ||
-		idio_list_length (mt) != 2) {
+		idio_list_length (mt) != 3) {
 		idio_vm_error_compile_param_args ("OPERATOR i p m", mt, IDIO_C_LOCATION ("idio_vm_compile/OPERATOR"));
 		return;
 	    }
 
 	    IDIO i = IDIO_PAIR_H (mt);
-	    IDIO m = IDIO_PAIR_H (IDIO_PAIR_T (mt));
+	    IDIO p = IDIO_PAIR_H (IDIO_PAIR_T (mt));
+	    IDIO m = IDIO_PAIR_H (IDIO_PAIR_T (IDIO_PAIR_T (mt)));
 	    
 	    idio_vm_compile (thr, ia, m, depth + 1);
 	    IDIO_IA_PUSH1 (IDIO_A_OPERATOR);
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (i));
+	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (p));
 	}
 	break;
     case IDIO_VM_CODE_NOP:
@@ -1933,7 +1935,7 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
     case IDIO_TYPE_CHARACTER_MARK:
     case IDIO_TYPE_CONSTANT_MARK:
 	{
-	    idio_vm_error_function_invoke ("cannot invoke constant type", func, IDIO_C_LOCATION ("idio_vm_invoke"));
+	    idio_vm_error_function_invoke ("cannot invoke constant type", IDIO_LIST1 (func), IDIO_C_LOCATION ("idio_vm_invoke"));
 	    return;
 	}
     default:
@@ -2073,14 +2075,9 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
 	    }
 	    
 	    if (idio_vm_tracing) {
-		fprintf (stderr, "                       %*.s", idio_vm_tracing, "");
+		fprintf (stderr, "                               %*.s", idio_vm_tracing, "");
 		/* XXX - why is idio_vm_tracing one less hence an extra space? */
 		idio_debug (" => %s\n", IDIO_THREAD_VAL (thr));
-		if (idio_vm_tracing < 1) {
-		    fprintf (stderr, "XXX PRIM tracing depth < 1!\n");
-		} else {
-		    /* idio_vm_tracing--; */
-		}
 	    }
 
 	    return;
@@ -2698,12 +2695,16 @@ static void idio_vm_function_trace (IDIO_I ins, IDIO thr)
     IDIO expr = idio_list_append2 (IDIO_LIST1 (func), args);
 
     /*
+     * %7zd	- PC of ins
+     * SPACE
      * %20s	- closure name (if available)
      * SPACE
      * %3s	- tail call indicator
      * %*s	- trace-depth indent
      * %s	- expression
      */
+    fprintf (stderr, "%7zd ", IDIO_THREAD_PC (thr) - 1);
+
     if (idio_isa_closure (func)) {
 	IDIO name = idio_hash_get (idio_vm_closure_name, idio_fixnum (IDIO_CLOSURE_CODE (func)));
 	if (idio_S_unspec != name) {
@@ -2731,12 +2732,16 @@ static void idio_vm_function_trace (IDIO_I ins, IDIO thr)
 static void idio_vm_primitive_call_trace (char *name, IDIO thr, int nargs)
 {
     /*
+     * %7zd	- PC of ins
+     * SPACE
      * %20s	- closure name (if available)
      * SPACE
      * %3s	- tail call indicator
-     * %*s	- trace-depth indent
+     * %*s	- trace-depth indent (>= 1)
      * %s	- expression
      */
+    fprintf (stderr, "%7zd ", IDIO_THREAD_PC (thr) - 1);
+
     fprintf (stderr, "        __primcall__    ");
 
     fprintf (stderr, "%*.s", idio_vm_tracing, "");
@@ -2758,10 +2763,10 @@ static void idio_vm_primitive_result_trace (IDIO thr)
      * %20s	- closure name (if available)
      * SPACE
      * %3s	- tail call indicator
-     * %*s	- trace-depth indent
+     * %*s	- trace-depth indent (>= 1)
      * %s	- expression
      */
-    fprintf (stderr, "                        ");
+    fprintf (stderr, "                                ");
 
     fprintf (stderr, "%*.s", idio_vm_tracing, "");
     idio_debug ("=> %s\n", val);
@@ -3156,10 +3161,10 @@ int idio_vm_run1 (IDIO thr)
 	    }
 	    IDIO_THREAD_PC (thr) = pc;
 	    if (idio_vm_tracing) {
-		fprintf (stderr, "                       %*.s", idio_vm_tracing, "");
+		fprintf (stderr, "                               %*.s", idio_vm_tracing, "");
 		idio_debug ("=> %s\n", IDIO_THREAD_VAL (thr));
 		if (idio_vm_tracing <= 1) {
-		    fprintf (stderr, "XXX RETURN to %td: tracing depth <= 1!\n", pc);
+		    /* fprintf (stderr, "XXX RETURN to %td: tracing depth <= 1!\n", pc); */
 		} else {
 		    idio_vm_tracing--;
 		}
@@ -3920,9 +3925,10 @@ int idio_vm_run1 (IDIO thr)
     case IDIO_A_OPERATOR:
 	{
 	    uint64_t index = idio_vm_fetch_varuint (thr);
+	    uint64_t pri = idio_vm_fetch_varuint (thr);
 	    IDIO_VM_RUN_DIS ("OPERATOR %" PRId64 "", index);
 	    IDIO sym = idio_vm_symbols_ref (index);
-	    idio_install_operator (sym, IDIO_THREAD_VAL (thr));
+	    idio_install_operator (sym, IDIO_THREAD_VAL (thr), pri);
 	}
 	break;
     default:

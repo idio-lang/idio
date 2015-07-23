@@ -241,7 +241,7 @@
 #define IDIO_DEFINE_OPERATOR(iname,cname,params)			\
     IDIO_DEFINE_OPERATOR_DESC(iname,cname,params,2,1)
 
-#define IDIO_ADD_OPERATOR(cname)	  idio_add_operator_primitive (&idio_operator_data_ ## cname);
+#define IDIO_ADD_OPERATOR(cname,pri)	  idio_add_operator_primitive (&idio_operator_data_ ## cname, pri);
 
 #define IDIO_VERIFY_PARAM_TYPE(type,param)		\
     {							\

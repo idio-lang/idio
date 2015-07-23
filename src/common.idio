@@ -62,3 +62,21 @@ define (load filename) {
     })
   }
 }
+
+define-macro (suppress-errors & cmd) {
+  %T{
+    monitor (function (cont cond) {
+      if cont {
+	;; What should we return?  Something hard to mistake for a
+	;; possible normal value.  Probably.
+	(void)
+      } {
+	raise cont cond
+      }
+    }) {
+      if (pair? (ph '$cmd)) {
+	$@cmd 
+      } $cmd
+    }
+  }
+}

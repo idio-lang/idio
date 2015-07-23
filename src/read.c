@@ -956,7 +956,12 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int nl)
 
 	/*
 	 * Template interpolation character handling.  cf. quasiquote
-	 * handling of , and ,@ and '
+	 * handling of , and ,@ and ' with added \
+	 *
+	 * ic[0] - unquote
+	 * ic[1] - unquote-splicing
+	 * ic[2] - quote
+	 * ic[3] - escape operator handling: map \+ '(1 2 3) =!=> + map '(1 2 3)
 	 */
 	if (c == ic[0]) {
 	    c = idio_handle_getc (handle);
@@ -993,22 +998,6 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int nl)
 		    idio_read_newline (handle);
 		}
 		return idio_T_eol;
-		/*
-	    case IDIO_CHAR_BACKSLASH:
-		{
-		    c = idio_handle_getc (handle);
-		    switch (c) {
-		    case IDIO_CHAR_CR:
-		    case IDIO_CHAR_NL:
-			idio_read_newline (handle);
-			break;
-		    default:
-			idio_handle_ungetc (handle, c); 
-			return idio_read_escape (handle, ic, depth);
-		    }
-		}
-		break;
-		*/
 	    case IDIO_CHAR_LPAREN:
 		return idio_read_list (handle, idio_T_lparen, ic, depth + 1);
 	    case IDIO_CHAR_RPAREN:
