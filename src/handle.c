@@ -558,7 +558,7 @@ int idio_handle_printf (IDIO h, char *format, ...)
     va_list fmt_args;
     va_start (fmt_args, format);
     if (-1 == vasprintf (&buf, format, fmt_args)) {
-	idio_error_alloc (IDIO_C_LOCATION ("idio_handle_printf"));
+	idio_error_alloc ("vasprintf");
     }
     va_end (fmt_args);
 

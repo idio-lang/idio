@@ -34,7 +34,7 @@ IDIO idio_error_string (char *format, va_list argp)
 {
     char *s;
     if (-1 == vasprintf (&s, format, argp)) {
-	idio_raise_condition (idio_S_false, IDIO_LIST1 (idio_string_C ("idio-error-message: vasprintf")));
+	idio_error_alloc ("asprintf");
     }
 
     IDIO sh = idio_open_output_string_handle_C ();
@@ -85,12 +85,21 @@ void idio_strerror (char *msg, IDIO loc)
     idio_error_printf (loc, "%s: %s", msg, strerror (errno));
 }
 
-void idio_error_alloc (IDIO loc)
+void idio_error_alloc (char *m)
 {
-    IDIO_ASSERT (loc);
-    IDIO_TYPE_ASSERT (string, loc);
+    IDIO_C_ASSERT (m);
 
-    idio_error_system_errno ("general allocation fault", idio_S_nil, loc);
+    /*
+     * This wants to be a lean'n'mean error "handler" as we've
+     * (probably) run out of memory.  The chances are {m} is a static
+     * string and has been pushed onto the stack so no allocation
+     * there.
+     *
+     * perror(3) ought to be able to work in this situation and in the
+     * end we assert(0) and therefore abort(3).
+     */
+    perror (m);
+    IDIO_C_ASSERT (0);
 }
 
 void idio_error_param_nil (char *name, IDIO loc)

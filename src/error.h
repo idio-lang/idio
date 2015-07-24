@@ -32,7 +32,7 @@ IDIO idio_error_string (char *format, va_list argp);
 void idio_error_printf (IDIO loc, char *format, ...);
 void idio_warning_message (char *format, ...);
 void idio_strerror (char *msg, IDIO loc);
-void idio_error_alloc (IDIO loc);
+void idio_error_alloc (char *m);
 void idio_error_param_nil (char *name, IDIO loc);
 void idio_error_param_type (char *etype, IDIO who, IDIO loc);
 void idio_error_param_type_C (char *etype, IDIO who, char *file, const char *func, int line);

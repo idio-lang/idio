@@ -31,7 +31,9 @@ static IDIO idio_gc_finalizer_hash = idio_S_nil;
 void *idio_alloc (size_t s)
 {
     void *blob = malloc (s);
-    IDIO_C_ASSERT (blob);
+    if (NULL == blob) {
+	idio_error_alloc ("malloc");
+    }
 
 #if IDIO_DEBUG
     /*
@@ -47,7 +49,11 @@ void *idio_alloc (size_t s)
 void *idio_realloc (void *p, size_t s)
 {
     p = realloc (p, s);
-    IDIO_C_ASSERT (p);
+
+    if (NULL == p) {
+	idio_error_alloc ("realloc");
+    }
+
     return p;
 }
 
@@ -1274,7 +1280,7 @@ char *idio_strcat (char *s1, const char *s2)
 	return s1;
     }
     
-    char *r = realloc (s1, strlen (s1) + strlen (s2) + 1);
+    char *r = idio_realloc (s1, strlen (s1) + strlen (s2) + 1);
     if (NULL != r) {
 	strcat (r, s2);
     }

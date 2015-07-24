@@ -320,12 +320,12 @@ char **idio_command_argv (IDIO args)
 		switch (idio_type (arg)) {
 		case IDIO_TYPE_STRING:
 		    if (asprintf (&argv[i++], "%.*s", (int) IDIO_STRING_BLEN (arg), IDIO_STRING_S (arg)) == -1) {
-			return NULL;
+			idio_error_alloc ("asprintf");
 		    }
 		    break;
 		case IDIO_TYPE_SUBSTRING:
 		    if (asprintf (&argv[i++], "%.*s", (int) IDIO_SUBSTRING_BLEN (arg), IDIO_SUBSTRING_S (arg)) == -1) {
-			return NULL;
+			idio_error_alloc ("asprintf");
 		    }
 		    break;
 		case IDIO_TYPE_SYMBOL:
@@ -335,7 +335,7 @@ char **idio_command_argv (IDIO args)
 
 			if (0 == n) {
 			    if (asprintf (&argv[i++], "%s", IDIO_SYMBOL_S (arg)) == -1) {
-				return NULL;
+				idio_error_alloc ("asprintf");
 			    }
 			} else {
 			    /*

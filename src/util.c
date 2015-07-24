@@ -539,7 +539,7 @@ char *idio_as_string (IDIO o, int depth)
     case IDIO_TYPE_FIXNUM_MARK:
 	{
 	    if (asprintf (&r, "%" PRIdPTR, IDIO_FIXNUM_VAL (o)) == -1) {
-		return NULL;
+		idio_error_alloc ("asprintf");
 	    }
 	    break;
 	}
@@ -624,11 +624,11 @@ char *idio_as_string (IDIO o, int depth)
 
 	    if (NULL == t) {
 		if (asprintf (&r, "C=%" PRIdPTR, v) == -1) {
-		    return NULL;
+		    idio_error_alloc ("asprintf");
 		}
 	    } else {
 		if (asprintf (&r, "%s", t) == -1) {
-		    return NULL;
+		    idio_error_alloc ("asprintf");
 		}
 	    }
 	}
@@ -639,22 +639,22 @@ char *idio_as_string (IDIO o, int depth)
 	    switch (c) {
 	    case ' ':
 		if (asprintf (&r, "#\\space") == -1) {
-		    return NULL;
+		    idio_error_alloc ("asprintf");
 		}
 		break;
 	    case '\n':
 		if (asprintf (&r, "#\\newline") == -1) {
-		    return NULL;
+		    idio_error_alloc ("asprintf");
 		}
 		break;
 	    default:
 		if (isprint (c)) {
 		    if (asprintf (&r, "#\\%c", c) == -1) {
-			return NULL;
+			idio_error_alloc ("asprintf");
 		    }
 		} else {
 		    if (asprintf (&r, "#\\%#x", c) == -1) {
-			return NULL;
+			idio_error_alloc ("asprintf");
 		    }
 		}
 		break;
@@ -674,7 +674,7 @@ char *idio_as_string (IDIO o, int depth)
 		break;
 	    case IDIO_TYPE_SYMBOL:
 		if (asprintf (&r, "%s", IDIO_SYMBOL_S (o)) == -1) {
-		    return NULL;
+		    idio_error_alloc ("asprintf");
 		}
 		break;
 	    case IDIO_TYPE_PAIR:
@@ -698,22 +698,22 @@ char *idio_as_string (IDIO o, int depth)
 			if (idio_S_quote == IDIO_PAIR_H (o)) {
 			    special = 1;
 			    if (asprintf (&r, "'") == -1) {
-				return NULL;
+				idio_error_alloc ("asprintf");
 			    }
 			} else if (idio_S_unquote == IDIO_PAIR_H (o)) {
 			    special = 1;
 			    if (asprintf (&r, ",") == -1) {
-				return NULL;
+				idio_error_alloc ("asprintf");
 			    }
 			} else if (idio_S_unquotesplicing == IDIO_PAIR_H (o)) {
 			    special = 1;
 			    if (asprintf (&r, ",@") == -1) {
-				return NULL;
+				idio_error_alloc ("asprintf");
 			    }
 			} else if (idio_S_quasiquote == IDIO_PAIR_H (o)) {
 			    special = 1;
 			    if (asprintf (&r, "`") == -1) {
-				return NULL;
+				idio_error_alloc ("asprintf");
 			    }
 			}
 
@@ -728,7 +728,7 @@ char *idio_as_string (IDIO o, int depth)
 		    }
 	    
 		    if (asprintf (&r, "(") == -1) {
-			return NULL;
+			idio_error_alloc ("asprintf");
 		    }
 		    while (1) {
 			IDIO_STRCAT_FREE (r, idio_as_string (IDIO_PAIR_H (o), depth - 1));
@@ -741,7 +741,7 @@ char *idio_as_string (IDIO o, int depth)
 				if (asprintf (&ps, " . %s", t) == -1) {
 				    free (t);
 				    free (r);
-				    return NULL;
+				    idio_error_alloc ("asprintf");
 				}
 				free (t);
 				IDIO_STRCAT_FREE (r, ps);
@@ -756,7 +756,7 @@ char *idio_as_string (IDIO o, int depth)
 		break;
 	    case IDIO_TYPE_ARRAY:
 		if (asprintf (&r, "#( ") == -1) {
-		    return NULL;
+		    idio_error_alloc ("asprintf");
 		}
 		if (depth > 0) {
 		    for (i = 0; i < IDIO_ARRAY_USIZE (o); i++) {
@@ -766,7 +766,7 @@ char *idio_as_string (IDIO o, int depth)
 			    if (asprintf (&aes, "%s ", t) == -1) {
 				free (t);
 				free (r);
-				return NULL;
+				idio_error_alloc ("asprintf");
 			    }
 			    free (t);
 			    IDIO_STRCAT_FREE (r, aes);
@@ -779,7 +779,7 @@ char *idio_as_string (IDIO o, int depth)
 		break;
 	    case IDIO_TYPE_HASH:
 		if (asprintf (&r, "{ ") == -1) {
-		    return NULL;
+		    idio_error_alloc ("asprintf");
 		}
 		if (depth > 0) {
 		    for (i = 0; i < IDIO_HASH_SIZE (o); i++) {
@@ -796,7 +796,7 @@ char *idio_as_string (IDIO o, int depth)
 				    free (t);
 				}
 				free (r);
-				return NULL;
+				idio_error_alloc ("asprintf");
 			    }
 			    if (! (IDIO_HASH_FLAGS (o) & IDIO_HASH_FLAG_STRING_KEYS)) {
 				free (t);
@@ -807,13 +807,13 @@ char *idio_as_string (IDIO o, int depth)
 			    } else {
 				if (asprintf (&t, "-") == -1) {
 				    free (r);
-				    return NULL;
+				    idio_error_alloc ("asprintf");
 				}
 			    }
 			    if (asprintf (&hes, "%s ", t) == -1) {
 				free (t);
 				free (r);
-				return NULL;
+				idio_error_alloc ("asprintf");
 			    }
 			    free (t);
 			    IDIO_STRCAT_FREE (r, hes);
@@ -827,13 +827,13 @@ char *idio_as_string (IDIO o, int depth)
 	    case IDIO_TYPE_CLOSURE:
 		{
 		    if (asprintf (&r, "#CLOS{@%zd/%p}", IDIO_CLOSURE_CODE (o), IDIO_CLOSURE_ENV (o)) == -1) {
-			return NULL;
+			idio_error_alloc ("asprintf");
 		    }
 		    break;
 		}
 	    case IDIO_TYPE_PRIMITIVE:
 		if (asprintf (&r, "#PRIM{%s}", IDIO_PRIMITIVE_NAME (o)) == -1) {
-		    return NULL;
+		    idio_error_alloc ("asprintf");
 		}
 		break;
 	    case IDIO_TYPE_BIGNUM:
@@ -844,7 +844,7 @@ char *idio_as_string (IDIO o, int depth)
 	    case IDIO_TYPE_MODULE:
 		{
 		    if (asprintf (&r, "{module %10p", o) == -1) {
-			return NULL;
+			idio_error_alloc ("asprintf");
 		    }
 		    IDIO_STRCAT (r, " name=");
 		    if (idio_S_nil == IDIO_MODULE_NAME (o)) {
@@ -878,7 +878,7 @@ char *idio_as_string (IDIO o, int depth)
 	    case IDIO_TYPE_FRAME:
 		{
 		    if (asprintf (&r, "#FRAME{%p ", o) == -1) {
-			return NULL;
+			idio_error_alloc ("asprintf");
 		    }
 		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_FRAME_ARGS (o), 1));
 		    IDIO_STRCAT (r, " }");
@@ -886,38 +886,38 @@ char *idio_as_string (IDIO o, int depth)
 		}
 	    case IDIO_TYPE_HANDLE:
 		if (asprintf (&r, "#H{%x\"%s\":%lld:%lld}", IDIO_HANDLE_FLAGS (o), IDIO_HANDLE_NAME (o), (unsigned long long) IDIO_HANDLE_LINE (o), (unsigned long long) IDIO_HANDLE_POS (o)) == -1) {
-		    return NULL;
+		    idio_error_alloc ("asprintf");
 		}
 		break;
 	    case IDIO_TYPE_C_INT:
 		if (asprintf (&r, "%jd", IDIO_C_TYPE_INT (o)) == -1) {
-		    return NULL;
+		    idio_error_alloc ("asprintf");
 		}
 		break;
 	    case IDIO_TYPE_C_UINT:
 		if (asprintf (&r, "%ju", IDIO_C_TYPE_UINT (o)) == -1) {
-		    return NULL;
+		    idio_error_alloc ("asprintf");
 		}
 		break;
 	    case IDIO_TYPE_C_FLOAT:
 		if (asprintf (&r, "%g", IDIO_C_TYPE_FLOAT (o)) == -1) {
-		    return NULL;
+		    idio_error_alloc ("asprintf");
 		}
 		break;
 	    case IDIO_TYPE_C_DOUBLE:
 		if (asprintf (&r, "%g", IDIO_C_TYPE_DOUBLE (o)) == -1) {
-		    return NULL;
+		    idio_error_alloc ("asprintf");
 		}
 		break;
 	    case IDIO_TYPE_C_POINTER:
 		if (asprintf (&r, "#c/*{%p%s}", IDIO_C_TYPE_POINTER_P (o), IDIO_C_TYPE_POINTER_FREEP (o) ? " free" : "") == -1) {
-		    return NULL;
+		    idio_error_alloc ("asprintf");
 		}
 		break;
 	    case IDIO_TYPE_STRUCT_TYPE:
 		{
 		    if (asprintf (&r, "#ST{%p ", o) == -1) {
-			return NULL;
+			idio_error_alloc ("asprintf");
 		    }
 		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_STRUCT_TYPE_NAME (o), 1));
 		    IDIO_STRCAT (r, " ");
@@ -938,7 +938,7 @@ char *idio_as_string (IDIO o, int depth)
 	    case IDIO_TYPE_STRUCT_INSTANCE:
 		{
 		    if (asprintf (&r, "#SI{%p ", o) == -1) {
-			return NULL;
+			idio_error_alloc ("asprintf");
 		    }
 
 		    IDIO st = IDIO_STRUCT_INSTANCE_TYPE (o);
@@ -966,7 +966,7 @@ char *idio_as_string (IDIO o, int depth)
 				  o,
 				  IDIO_THREAD_PC (o),
 				  sp - 1) == -1) {
-			return NULL;
+			idio_error_alloc ("asprintf");
 		    }
 		    IDIO_STRCAT_FREE (r, idio_as_string (idio_array_top (IDIO_THREAD_STACK (o)), 1));
 		    IDIO_STRCAT (r, " val=");
@@ -981,7 +981,7 @@ char *idio_as_string (IDIO o, int depth)
 			} else {
 			    char *es;
 			    if (asprintf (&es, " fr=%p ", frame) == -1) {
-				return NULL;
+				idio_error_alloc ("asprintf");
 			    }
 			    IDIO_STRCAT_FREE (r, es);
 			    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_FRAME_ARGS (frame), 1));
@@ -1018,7 +1018,7 @@ char *idio_as_string (IDIO o, int depth)
 		{
 		    idio_ai_t sp = idio_array_size (IDIO_CONTINUATION_STACK (o));
 		    if (asprintf (&r, "#K{%p sp/top=%2zd/", o, sp) == -1) {
-			return NULL;
+			idio_error_alloc ("asprintf");
 		    }
 		    IDIO_STRCAT_FREE (r, idio_as_string (idio_array_top (IDIO_CONTINUATION_STACK (o)), 1));
 		    IDIO_STRCAT (r, "}");
@@ -1027,14 +1027,14 @@ char *idio_as_string (IDIO o, int depth)
 	    case IDIO_TYPE_C_TYPEDEF:
 		{
 		    if (asprintf (&r, "#CTD{%10p}", IDIO_C_TYPEDEF_SYM (o)) == -1) {
-			return NULL;
+			idio_error_alloc ("asprintf");
 		    }
 		    break;
 		}
 	    case IDIO_TYPE_C_STRUCT:
 		{
 		    if (asprintf (&r, "c_struct %10p { ", o) == -1) {
-			return NULL;
+			idio_error_alloc ("asprintf");
 		    }
 		    IDIO_STRCAT (r, "\n\tfields: ");
 		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_C_STRUCT_FIELDS (o), depth - 1));
@@ -1050,7 +1050,7 @@ char *idio_as_string (IDIO o, int depth)
 				if (asprintf (&hes, "\n\t%10s:", t) == -1) {
 				    free (t);
 				    free (r);
-				    return NULL;
+				    idio_error_alloc ("asprintf");
 				}
 				free (t);
 				IDIO_STRCAT_FREE (r, hes);
@@ -1059,13 +1059,13 @@ char *idio_as_string (IDIO o, int depth)
 				} else {
 				    if (asprintf (&t, "-") == -1) {
 					free (r);
-					return NULL;
+					idio_error_alloc ("asprintf");
 				    }
 				}
 				if (asprintf (&hes, "%s ", t) == -1) {
 				    free (t);
 				    free (r);
-				    return NULL;
+				    idio_error_alloc ("asprintf");
 				}
 				free (t);
 				IDIO_STRCAT_FREE (r, hes);
@@ -1080,7 +1080,7 @@ char *idio_as_string (IDIO o, int depth)
 	    case IDIO_TYPE_C_INSTANCE:
 		{
 		    if (asprintf (&r, "c_instance %10p { C_ptr=%10p c-struct=%10p}", o, IDIO_C_INSTANCE_P (o), IDIO_C_INSTANCE_C_STRUCT (o)) == -1) {
-			return NULL;
+			idio_error_alloc ("asprintf");
 		    }
 		    break;
 		}
@@ -1089,7 +1089,7 @@ char *idio_as_string (IDIO o, int depth)
 		    char *t = idio_as_string (IDIO_C_FFI_NAME (o), depth - 1);
 		    if (asprintf (&r, "#F_CFFI{%s ", t) == -1) {
 			free (t);
-			return NULL;
+			idio_error_alloc ("asprintf");
 		    }
 		    free (t);
 		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_C_FFI_SYMBOL (o), depth - 1));
@@ -1105,7 +1105,7 @@ char *idio_as_string (IDIO o, int depth)
 	    case IDIO_TYPE_OPAQUE:
 		{
 		    if (asprintf (&r, "#O{%10p ", IDIO_OPAQUE_P (o)) == -1) {
-			return NULL;
+			idio_error_alloc ("asprintf");
 		    }
 		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_OPAQUE_ARGS (o), depth - 1));
 		    IDIO_STRCAT (r, "}");
@@ -1119,11 +1119,11 @@ char *idio_as_string (IDIO o, int depth)
 		    size_t n = strnlen ((char *) o, 40);
 		    if (40 == n) {
 			if (asprintf (&r, "#?{%10p}", o) == -1) {
-			    return NULL;
+			    idio_error_alloc ("asprintf");
 			}
 		    } else {
 			if (asprintf (&r, "#?s{%s}", (char *) o) == -1) {
-			    return NULL;
+			    idio_error_alloc ("asprintf");
 			}
 		    }
 		    IDIO_C_ASSERT (0);
@@ -1134,7 +1134,7 @@ char *idio_as_string (IDIO o, int depth)
 	break;
     default:
 	if (asprintf (&r, "#??{%10p}", o) == -1) {
-	    return NULL;
+	    idio_error_alloc ("asprintf");
 	}
 	break;
     }
@@ -1164,7 +1164,7 @@ char *idio_display_string (IDIO o)
 	break;
     case IDIO_TYPE_CHARACTER_MARK:
 	if (asprintf (&r, "%c", (char) IDIO_CHARACTER_VAL (o)) == -1) {
-	    return NULL;
+	    idio_error_alloc ("asprintf");
 	}
 	break;
     case IDIO_TYPE_POINTER_MARK:
@@ -1172,12 +1172,12 @@ char *idio_display_string (IDIO o)
 	    switch (o->type) {
 	    case IDIO_TYPE_STRING:
 		if (asprintf (&r, "%.*s", (int) IDIO_STRING_BLEN (o), IDIO_STRING_S (o)) == -1) {
-		    return NULL;
+		    idio_error_alloc ("asprintf");
 		}
 		break;
 	    case IDIO_TYPE_SUBSTRING:
 		if (asprintf (&r, "%.*s", (int) IDIO_SUBSTRING_BLEN (o), IDIO_SUBSTRING_S (o)) == -1) {
-		    return NULL;
+		    idio_error_alloc ("asprintf");
 		}
 		break;
 	    default:
@@ -1188,7 +1188,7 @@ char *idio_display_string (IDIO o)
 	break;
     default:
 	if (asprintf (&r, "type %d n/k", o->type) == -1) {
-	    return NULL;
+	    idio_error_alloc ("asprintf");
 	}
 	break;
     }
@@ -1443,7 +1443,7 @@ void idio_dump (IDIO o, int detail)
 				    s = idio_as_string (IDIO_HASH_HE_VALUE (o, i), 4);
 				} else {
 				    if (asprintf (&s, "-") == -1) {
-					break;
+					idio_error_alloc ("asprintf");
 				    }
 				}
 				IDIO_FPRINTF (stderr, "%-10s\n", s);

@@ -2086,7 +2086,7 @@ char *idio_bignum_expanded_real_as_string (IDIO bn, IDIO_BS_T exp, int digits, i
 	IDIO_BS_T v = idio_bsa_get (sig_a, ai);
 	char *vs;
 	if (asprintf (&vs, "%" PRIdPTR, v) == -1) {
-	    idio_error_system_errno ("bignum->string: asprintf", bn, IDIO_C_LOCATION ("idio_bignum_expanded_real_as_string"));
+	    idio_error_alloc ("asprintf");
 	}
 	IDIO_STRCAT_FREE (s, vs);
     }
@@ -2146,7 +2146,7 @@ char *idio_bignum_real_as_string (IDIO bn)
      */
     char *vs;
     if (asprintf (&vs, "%" PRIdPTR, v) == -1) {
-	idio_error_system_errno ("bignum real->string: asprintf", bn, IDIO_C_LOCATION ("idio_bignum_real_as_string"));
+	idio_error_alloc ("asprintf");
     }
     char vs_rest[IDIO_BIGNUM_DPW+1]; /* +1 in case DPW is 1 for debug! */
     strcpy (vs_rest, vs + 1);
@@ -2177,7 +2177,7 @@ char *idio_bignum_real_as_string (IDIO bn)
     /* } */
     v = exp + digits - 1;
     if (asprintf (&vs, "%+" PRIdPTR, v) == -1) {
-	idio_error_system_errno ("bignum real->string: asprintf", bn, IDIO_C_LOCATION ("idio_bignum_real_as_string"));
+	idio_error_alloc ("asprintf");
     }
     s = idio_strcat_free (s, vs);
 
