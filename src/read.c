@@ -50,6 +50,24 @@
 #define IDIO_CHAR_EXCLAMATION	'!'
 #define IDIO_CHAR_EQUALS	'='
 
+/*
+ * What separates words from one another in Idio?
+ *
+ * Whitespace - SPACE TAB NL CR
+ *
+ * start and end of lists LPAREN RPAREN
+ *
+ *	A(B)C	=>	A ( B ) C
+ *
+ * SEMICOLON ??
+ *
+ * Quoted objects - SQUOTE BACKQUOTE COMMA
+ *  (these should be deprecated in favour of interpolation character array)
+ *
+ * Strings - DQUOTE (start and end)
+ *
+ *	A"B"C	=>	A "B" C
+ */
 #define IDIO_SEPARATOR(c)	(IDIO_CHAR_SPACE == (c) ||		\
 				 IDIO_CHAR_TAB == (c) ||		\
 				 IDIO_CHAR_NL == (c) ||			\
@@ -76,7 +94,7 @@
  * 1. expression substitution == unquote
  * 2. expression splicing == unquotesplicing
  * 3. expression quoting
- * 4. escape char
+ * 4. escape char to prevent operator handling
  */
 char idio_default_interpolation_chars[] = { IDIO_CHAR_DOLLARS, IDIO_CHAR_AT, IDIO_CHAR_SQUOTE, IDIO_CHAR_BACKSLASH };
 #define IDIO_INTERPOLATION_CHARS 4
