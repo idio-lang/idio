@@ -549,6 +549,38 @@ define-operator | 300 {
 		    $pid := (c/fork)
 		    if (c/== $pid 0) {
 		      prep-process $pgid $infile $outfile $foreground
+
+		      ;; The Libc texinfo page seems to have missed
+		      ;; this.  On the basis that a $pipe is owned
+		      ;; (created?) by the left hand process of the
+		      ;; two being connected, then *infile* is the
+		      ;; (c/pipe-reader $pipe) of the left-hand
+		      ;; process and will have been closed in
+		      ;; prep-process, above (unless it was $stdin).
+
+		      ;; In turn, the current (c/pipe-reader $pipe)
+		      ;; will become the $infile of the right-hand
+		      ;; process (as the parent Idio also has it open
+		      ;; and will pass it on).  But what of us?  Who
+		      ;; closes (c/pipe-reader $pipe) in us?
+
+		      ;; Ah, OK.  We do.
+		      if (lt $proc-id $nprocs) {
+			c/close (c/pipe-reader $pipe)
+		      }
+
+		      ;; We don't have the same problem with
+		      ;; (c/pipe-writer $pipe) because we only create
+		      ;; the $pipe when we know there is another
+		      ;; process in the pipeline and $outfile
+		      ;; immediately becomes (c/pipe-writer $pipe).
+
+		      ;; $infile is a left-over from the pipe of the
+		      ;; left hand process and we are suffering an
+		      ;; off-by-one error and the left-over one is the
+		      ;; current (c/pipe-reader $pipe) we have in our
+		      ;; hands.
+
 		      if (c/== $pgid 0) {
 			c/close (c/pipe-writer $pgrp-pipe)
 
@@ -586,8 +618,12 @@ define-operator | 300 {
 		    }
 
 		    ;; tidy up any trailing pipes
-		    if (not (c/== $infile $stdin)) (c/close $infile)
-		    if (not (c/== $outfile $stdout)) (c/close $outfile)
+		    if (not (c/== $infile $stdin)) {
+		      c/close $infile
+		    }
+		    if (not (c/== $outfile $stdout)) {
+		      c/close $outfile
+		    }
 		    $infile = (c/pipe-reader $pipe)
 		    $proc-id = $proc-id + 1
 		  }
