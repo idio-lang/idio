@@ -35,7 +35,7 @@ IDIO_DEFINE_PRIMITIVE1 ("c/close", C_close, (IDIO ifd))
     int r = close (fd);
 
     if (-1 == r) {
-	idio_error_system_errno ("close", ifd, IDIO_C_LOCATION ("c/close"));
+	idio_error_system_errno ("close", IDIO_LIST1 (ifd), IDIO_C_LOCATION ("c/close"));
     }
 
     return idio_C_int (r);
@@ -135,7 +135,7 @@ IDIO_DEFINE_PRIMITIVE1 ("c/isatty", C_isatty, (IDIO ifd))
     int r = isatty (fd);
 
     if (0 == r) {
-	idio_error_system_errno ("isatty", ifd, IDIO_C_LOCATION ("c/isatty"));
+	idio_error_system_errno ("isatty", IDIO_LIST1 (ifd), IDIO_C_LOCATION ("c/isatty"));
     }
 
     return idio_C_int (r);
@@ -344,7 +344,7 @@ IDIO_DEFINE_PRIMITIVE1 ("c/tcgetattr", C_tcgetattr, (IDIO ifd))
     int r = tcgetattr (fd, tcattrs);
 
     if (-1 == r) {
-	idio_error_system_errno ("tcgetattr", ifd, IDIO_C_LOCATION ("c/tcgetattr"));
+	idio_error_system_errno ("tcgetattr", IDIO_LIST1 (ifd), IDIO_C_LOCATION ("c/tcgetattr"));
     }
 
     return idio_C_pointer_free_me (tcattrs);
@@ -360,7 +360,7 @@ IDIO_DEFINE_PRIMITIVE1 ("c/tcgetpgrp", C_tcgetpgrp, (IDIO ifd))
     pid_t pid = tcgetpgrp (fd);
 
     if (-1 == pid) {
-	idio_error_system_errno ("tcgetpgrp", ifd, IDIO_C_LOCATION ("c/tcgetpgrp"));
+	idio_error_system_errno ("tcgetpgrp", IDIO_LIST1 (ifd), IDIO_C_LOCATION ("c/tcgetpgrp"));
     }
 
     return idio_C_int (pid);
