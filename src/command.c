@@ -1167,8 +1167,11 @@ static void idio_command_prep_process (pid_t job_pgid, int infile, int outfile, 
 			       errno,
 			       IDIO_C_LOCATION ("idio_command_prep_process"));
 	}
-	if (close (infile) < 0) {
-	    idio_error_system ("close", IDIO_LIST1 (idio_C_int (infile)), errno, IDIO_C_LOCATION ("idio_command_prep_process"));		
+	if (infile != STDOUT_FILENO &&
+	    infile != STDERR_FILENO) {
+	    if (close (infile) < 0) {
+		idio_error_system ("close", IDIO_LIST1 (idio_C_int (infile)), errno, IDIO_C_LOCATION ("idio_command_prep_process"));
+	    }
 	}
     }
 
@@ -1179,8 +1182,11 @@ static void idio_command_prep_process (pid_t job_pgid, int infile, int outfile, 
 			       errno,
 			       IDIO_C_LOCATION ("idio_command_prep_process"));
 	}
-	if (close (outfile) < 0) {
-	    idio_error_system ("close", IDIO_LIST1 (idio_C_int (outfile)), errno, IDIO_C_LOCATION ("idio_command_prep_process"));
+	if (outfile != STDOUT_FILENO &&
+	    outfile != STDERR_FILENO) {
+	    if (close (outfile) < 0) {
+		idio_error_system ("close", IDIO_LIST1 (idio_C_int (outfile)), errno, IDIO_C_LOCATION ("idio_command_prep_process"));
+	    }
 	}
     }
 }

@@ -424,11 +424,19 @@ define (prep-process pgid infile outfile foreground) {
   ;; switch to the supplied stdin/stdout
   if (not (c/== infile c/STDIN_FILENO)) {
     c/dup2 infile c/STDIN_FILENO
-    c/close infile
+
+    if (and (not (c/== infile c/STDOUT_FILENO))
+	    (not (c/== infile c/STDERR_FILENO))) {
+      c/close infile
+    }
   }
   if (not (c/== outfile c/STDOUT_FILENO)) {
     c/dup2 outfile c/STDOUT_FILENO
-    c/close outfile
+
+    if (and (not (c/== outfile c/STDIN_FILENO))
+	    (not (c/== outfile c/STDERR_FILENO))) {
+      c/close outfile
+    }
   }
 }
 
