@@ -54,6 +54,7 @@
 #include <ctype.h>
 #include <glob.h>
 #include <signal.h>
+#include <fcntl.h>
 
 #include <strings.h>
 

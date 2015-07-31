@@ -77,6 +77,85 @@ IDIO_DEFINE_PRIMITIVE1 ("c/exit", C_exit, (IDIO istatus))
     return idio_S_unspec;
 }
 
+IDIO_DEFINE_PRIMITIVE2V ("c/fcntl", C_fcntl, (IDIO ifd, IDIO icmd, IDIO args))
+{
+    IDIO_ASSERT (ifd);
+    IDIO_ASSERT (icmd);
+    IDIO_ASSERT (args);
+
+    int fd = 0;
+    if (idio_isa_fixnum (ifd)) {
+	fd = IDIO_FIXNUM_VAL (ifd);
+    } else if (idio_isa_C_int (ifd)) {
+	fd = IDIO_C_TYPE_INT (ifd);
+    } else {
+	idio_error_param_type ("fixnum|C_int ifd", ifd, IDIO_C_LOCATION ("c/fcntl"));
+    }
+
+    int cmd = 0;
+    if (idio_isa_C_int (icmd)) {
+	cmd = IDIO_C_TYPE_INT (icmd);
+    } else {
+	idio_error_param_type ("C_int icmd", icmd, IDIO_C_LOCATION ("c/fcntl"));
+    }
+
+    IDIO iarg = idio_list_head (args);
+    
+    int r;
+
+    switch (cmd) {
+    case F_DUPFD:
+	{
+	    int arg;
+	    if (idio_isa_fixnum (iarg)) {
+		arg = IDIO_FIXNUM_VAL (iarg);
+	    } else if (idio_isa_C_int (iarg)) {
+		arg = IDIO_C_TYPE_INT (iarg);
+	    } else {
+		idio_error_param_type ("fixnum|C_int", iarg, IDIO_C_LOCATION ("c/fcntl"));
+	    }
+	    r = fcntl (fd, cmd, arg);
+	}
+	break;
+#if defined (F_DUPFD_CLOEXEC)
+    case F_DUPFD_CLOEXEC:
+	{
+	    int arg;
+	    if (idio_isa_fixnum (iarg)) {
+		arg = IDIO_FIXNUM_VAL (iarg);
+	    } else if (idio_isa_C_int (iarg)) {
+		arg = IDIO_C_TYPE_INT (iarg);
+	    } else {
+		idio_error_param_type ("fixnum|C_int", iarg, IDIO_C_LOCATION ("c/fcntl"));
+	    }
+	    r = fcntl (fd, cmd, arg);
+	}
+	break;
+#endif
+    case F_GETFD:
+	{
+	    r = fcntl (fd, cmd);
+	}
+	break;
+    case F_SETFD:
+	{
+	    int arg;
+	    if (idio_isa_C_int (iarg)) {
+		arg = IDIO_C_TYPE_INT (iarg);
+	    } else {
+		idio_error_param_type ("C_int", iarg, IDIO_C_LOCATION ("c/fcntl"));
+	    }
+	    r = fcntl (fd, cmd, arg);
+	}
+	break;
+    default:
+	idio_error_C ("unexpected cmd", IDIO_LIST2 (ifd, icmd), IDIO_C_LOCATION ("c/fcntl"));
+	break;
+    }
+
+    return idio_C_int (r);
+}
+
 IDIO_DEFINE_PRIMITIVE0 ("c/fork", C_fork, ())
 {
     pid_t pid = fork ();
@@ -1834,10 +1913,16 @@ IDIO_DEFINE_PRIMITIVE0 ("c/errno/get", C_errno_get, (void))
 
 void idio_init_libc_wrap ()
 {
-    idio_module_set_symbol_value (idio_symbols_C_intern ("c/NULL"), idio_C_pointer (NULL), idio_main_module ());
-    idio_module_set_symbol_value (idio_symbols_C_intern ("c/INTMAX_MAX"), idio_C_int (INTMAX_MAX), idio_main_module ());
-    idio_module_set_symbol_value (idio_symbols_C_intern ("c/INTMAX_MIN"), idio_C_int (INTMAX_MIN), idio_main_module ());
-    idio_module_set_symbol_value (idio_symbols_C_intern ("c/PATH_MAX"), idio_C_int (PATH_MAX), idio_main_module ());
+    idio_module_set_symbol_value (idio_symbols_C_intern ("c/0U"), idio_C_uint (0U), idio_main_module ());
+
+    /* fcntl.h */
+    idio_module_set_symbol_value (idio_symbols_C_intern ("c/F_DUPFD"), idio_C_int (F_DUPFD), idio_main_module ());
+    idio_module_set_symbol_value (idio_symbols_C_intern ("c/F_DUPFD_CLOEXEC"), idio_C_int (F_DUPFD_CLOEXEC), idio_main_module ());
+    idio_module_set_symbol_value (idio_symbols_C_intern ("c/FD_CLOEXEC"), idio_C_int (FD_CLOEXEC), idio_main_module ());
+    idio_module_set_symbol_value (idio_symbols_C_intern ("c/F_GETFD"), idio_C_int (F_GETFD), idio_main_module ());
+    idio_module_set_symbol_value (idio_symbols_C_intern ("c/F_SETFD"), idio_C_int (F_SETFD), idio_main_module ());
+
+    /* signal.h */
     idio_module_set_symbol_value (idio_symbols_C_intern ("c/SIGHUP"), idio_C_int (SIGHUP), idio_main_module ());
     idio_module_set_symbol_value (idio_symbols_C_intern ("c/SIGINT"), idio_C_int (SIGINT), idio_main_module ());
     idio_module_set_symbol_value (idio_symbols_C_intern ("c/SIGQUIT"), idio_C_int (SIGQUIT), idio_main_module ());
@@ -1852,17 +1937,30 @@ void idio_init_libc_wrap ()
     idio_module_set_symbol_value (idio_symbols_C_intern ("c/SIGWINCH"), idio_C_int (SIGWINCH), idio_main_module ());
     idio_module_set_symbol_value (idio_symbols_C_intern ("c/SIG_DFL"), idio_C_pointer (SIG_DFL), idio_main_module ());
     idio_module_set_symbol_value (idio_symbols_C_intern ("c/SIG_IGN"), idio_C_pointer (SIG_IGN), idio_main_module ());
-    idio_module_set_symbol_value (idio_symbols_C_intern ("c/STDIN_FILENO"), idio_C_int (STDIN_FILENO), idio_main_module ());
-    idio_module_set_symbol_value (idio_symbols_C_intern ("c/STDOUT_FILENO"), idio_C_int (STDOUT_FILENO), idio_main_module ());
-    idio_module_set_symbol_value (idio_symbols_C_intern ("c/STDERR_FILENO"), idio_C_int (STDERR_FILENO), idio_main_module ());
-    idio_module_set_symbol_value (idio_symbols_C_intern ("c/TCSADRAIN"), idio_C_int (TCSADRAIN), idio_main_module ());
-    idio_module_set_symbol_value (idio_symbols_C_intern ("c/TCSAFLUSH"), idio_C_int (TCSAFLUSH), idio_main_module ());
+    
+    /* stdio.h */
+    idio_module_set_symbol_value (idio_symbols_C_intern ("c/NULL"), idio_C_pointer (NULL), idio_main_module ());
+
+    /* stdint.h */
+    idio_module_set_symbol_value (idio_symbols_C_intern ("c/INTMAX_MAX"), idio_C_int (INTMAX_MAX), idio_main_module ());
+    idio_module_set_symbol_value (idio_symbols_C_intern ("c/INTMAX_MIN"), idio_C_int (INTMAX_MIN), idio_main_module ());
     idio_module_set_symbol_value (idio_symbols_C_intern ("c/UINTMAX_MAX"), idio_C_uint (UINTMAX_MAX), idio_main_module ());
-    idio_module_set_symbol_value (idio_symbols_C_intern ("c/0U"), idio_C_uint (0U), idio_main_module ());
+
+    /* sys/wait.h */
     idio_module_set_symbol_value (idio_symbols_C_intern ("c/WAIT_ANY"), idio_C_int (WAIT_ANY), idio_main_module ());
     idio_module_set_symbol_value (idio_symbols_C_intern ("c/WNOHANG"), idio_C_int (WNOHANG), idio_main_module ());
     idio_module_set_symbol_value (idio_symbols_C_intern ("c/WUNTRACED"), idio_C_int (WUNTRACED), idio_main_module ());
 
+    /* termios.h */
+    idio_module_set_symbol_value (idio_symbols_C_intern ("c/TCSADRAIN"), idio_C_int (TCSADRAIN), idio_main_module ());
+    idio_module_set_symbol_value (idio_symbols_C_intern ("c/TCSAFLUSH"), idio_C_int (TCSAFLUSH), idio_main_module ());
+    
+    /* unistd.h */
+    idio_module_set_symbol_value (idio_symbols_C_intern ("c/PATH_MAX"), idio_C_int (PATH_MAX), idio_main_module ());
+    idio_module_set_symbol_value (idio_symbols_C_intern ("c/STDIN_FILENO"), idio_C_int (STDIN_FILENO), idio_main_module ());
+    idio_module_set_symbol_value (idio_symbols_C_intern ("c/STDOUT_FILENO"), idio_C_int (STDOUT_FILENO), idio_main_module ());
+    idio_module_set_symbol_value (idio_symbols_C_intern ("c/STDERR_FILENO"), idio_C_int (STDERR_FILENO), idio_main_module ());
+    
     IDIO index = IDIO_ADD_SPECIAL_PRIMITIVE (C_errno_get);
 
     idio_module_add_computed_symbol (idio_symbols_C_intern ("c/errno"), idio_vm_primitives_ref (IDIO_FIXNUM_VAL (index)), idio_S_nil, idio_main_module ());
@@ -1876,6 +1974,7 @@ void idio_libc_wrap_add_primitives ()
     IDIO_ADD_PRIMITIVE (C_close);
     IDIO_ADD_PRIMITIVE (C_dup2);
     IDIO_ADD_PRIMITIVE (C_exit);
+    IDIO_ADD_PRIMITIVE (C_fcntl);
     IDIO_ADD_PRIMITIVE (C_fork);
     IDIO_ADD_PRIMITIVE (C_getcwd);
     IDIO_ADD_PRIMITIVE (C_getpgrp);
