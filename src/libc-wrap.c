@@ -106,6 +106,10 @@ IDIO_DEFINE_PRIMITIVE2V ("c/fcntl", C_fcntl, (IDIO ifd, IDIO icmd, IDIO args))
     switch (cmd) {
     case F_DUPFD:
 	{
+	    /*
+	     * CentOS 6 i386 fcntl(2) says it wants long but accepts
+	     * int
+	     */
 	    int arg;
 	    if (idio_isa_fixnum (iarg)) {
 		arg = IDIO_FIXNUM_VAL (iarg);
@@ -120,6 +124,10 @@ IDIO_DEFINE_PRIMITIVE2V ("c/fcntl", C_fcntl, (IDIO ifd, IDIO icmd, IDIO args))
 #if defined (F_DUPFD_CLOEXEC)
     case F_DUPFD_CLOEXEC:
 	{
+	    /*
+	     * CentOS 6 i386 fcntl(2) says it wants long but accepts
+	     * int
+	     */
 	    int arg;
 	    if (idio_isa_fixnum (iarg)) {
 		arg = IDIO_FIXNUM_VAL (iarg);
@@ -1005,8 +1013,9 @@ IDIO_DEFINE_PRIMITIVE0 ("c/signal-names", C_signal_names, ())
  *
  * CentOS 6&7	EHWPOISON	133
  * OI 151a8	ESTALE		151
- * OS 10.10.4	EQFULL		106
- * FreeBSD 10	EOWNERDEAD	96
+ * OS 10.9.8	ENOPOLICY	103	aka ELAST
+ * OS 10.10.4	EQFULL		106	aka ELAST
+ * FreeBSD 10	EOWNERDEAD	96	aka ELAST
  * Ubuntu 14	EHWPOISON	133	
  * Debian 8	EHWPOISON	133	
  *
@@ -1015,11 +1024,11 @@ IDIO_DEFINE_PRIMITIVE0 ("c/signal-names", C_signal_names, ())
 #define IDIO_LIBC_FERRNO 1
 
 #if defined (BSD)
-#define IDIO_LIBC_NERRNO (EOWNERDEAD + 1)
+#define IDIO_LIBC_NERRNO (ELAST + 1)
 #elif defined (__linux__)
 #define IDIO_LIBC_NERRNO (EHWPOISON + 1)
 #elif defined (__APPLE__) && defined (__MACH__)
-#define IDIO_LIBC_NERRNO (EQFULL + 1)
+#define IDIO_LIBC_NERRNO (ELAST + 1)
 #elif defined (__sun) && defined (__SVR4)
 #define IDIO_LIBC_NERRNO (ESTALE + 1)
 #else
@@ -1917,7 +1926,9 @@ void idio_init_libc_wrap ()
 
     /* fcntl.h */
     idio_module_set_symbol_value (idio_symbols_C_intern ("c/F_DUPFD"), idio_C_int (F_DUPFD), idio_main_module ());
+#if defined (F_DUPFD_CLOEXEC)
     idio_module_set_symbol_value (idio_symbols_C_intern ("c/F_DUPFD_CLOEXEC"), idio_C_int (F_DUPFD_CLOEXEC), idio_main_module ());
+#endif
     idio_module_set_symbol_value (idio_symbols_C_intern ("c/FD_CLOEXEC"), idio_C_int (FD_CLOEXEC), idio_main_module ());
     idio_module_set_symbol_value (idio_symbols_C_intern ("c/F_GETFD"), idio_C_int (F_GETFD), idio_main_module ());
     idio_module_set_symbol_value (idio_symbols_C_intern ("c/F_SETFD"), idio_C_int (F_SETFD), idio_main_module ());
