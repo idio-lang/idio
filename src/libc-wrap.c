@@ -188,7 +188,9 @@ IDIO_DEFINE_PRIMITIVE0 ("c/fork", C_fork, ())
 
 IDIO_DEFINE_PRIMITIVE0 ("c/getcwd", C_getcwd, ())
 {
-    
+    /*
+     * See comment in command.c re: getcwd(3) and PATH_MAX
+     */
     char *cwd = getcwd (NULL, PATH_MAX);
 
     if (NULL == cwd) {
