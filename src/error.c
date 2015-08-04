@@ -209,7 +209,7 @@ void idio_error_system (char *msg, IDIO args, int err, IDIO loc)
 					       loc,
 					       idio_get_output_string (dsh),
 					       idio_fixnum ((intptr_t) err)));
-    idio_raise_condition (idio_S_false, c);
+    idio_raise_condition (idio_S_true, c);
 }
 
 void idio_error_system_errno (char *msg, IDIO args, IDIO loc)
