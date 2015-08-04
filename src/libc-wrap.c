@@ -758,185 +758,273 @@ static void idio_libc_set_signal_names ()
     }
 #endif
 
+    IDIO sig_sym;
+    
 #if defined(SIGHUP)
-    sprintf (idio_libc_signal_names[SIGHUP], "SIGHUP");
+    sig_sym = idio_symbols_C_intern ("c/SIGHUP");
+    idio_module_set_symbol_value (sig_sym, idio_C_int (SIGHUP), idio_main_module ());
+    sprintf (idio_libc_signal_names[SIGHUP], IDIO_SYMBOL_S (sig_sym) + 2);
 #endif
 
 #if defined(SIGINT)
-    sprintf (idio_libc_signal_names[SIGINT], "SIGINT");
+    sig_sym = idio_symbols_C_intern ("c/SIGINT");
+    idio_module_set_symbol_value (sig_sym, idio_C_int (SIGINT), idio_main_module ());
+    sprintf (idio_libc_signal_names[SIGINT], IDIO_SYMBOL_S (sig_sym) + 2);
 #endif
 
 #if defined(SIGQUIT)
-    sprintf (idio_libc_signal_names[SIGQUIT], "SIGQUIT");
+    sig_sym = idio_symbols_C_intern ("c/SIGQUIT");
+    idio_module_set_symbol_value (sig_sym, idio_C_int (SIGQUIT), idio_main_module ());
+    sprintf (idio_libc_signal_names[SIGQUIT], IDIO_SYMBOL_S (sig_sym) + 2);
 #endif
 
 #if defined(SIGILL)
-    sprintf (idio_libc_signal_names[SIGILL], "SIGILL");
+    sig_sym = idio_symbols_C_intern ("c/SIGILL");
+    idio_module_set_symbol_value (sig_sym, idio_C_int (SIGILL), idio_main_module ());
+    sprintf (idio_libc_signal_names[SIGILL], IDIO_SYMBOL_S (sig_sym) + 2);
 #endif
 
 #if defined(SIGTRAP)
-    sprintf (idio_libc_signal_names[SIGTRAP], "SIGTRAP");
+    sig_sym = idio_symbols_C_intern ("c/SIGTRAP");
+    idio_module_set_symbol_value (sig_sym, idio_C_int (SIGTRAP), idio_main_module ());
+    sprintf (idio_libc_signal_names[SIGTRAP], IDIO_SYMBOL_S (sig_sym) + 2);
 #endif
 
 #if defined(SIGIOT)
-    sprintf (idio_libc_signal_names[SIGIOT], "SIGIOT");
+    sig_sym = idio_symbols_C_intern ("c/SIGIOT");
+    idio_module_set_symbol_value (sig_sym, idio_C_int (SIGIOT), idio_main_module ());
+    sprintf (idio_libc_signal_names[SIGIOT], IDIO_SYMBOL_S (sig_sym) + 2);
 #endif
 
 #if defined(SIGEMT)
-    sprintf (idio_libc_signal_names[SIGEMT], "SIGEMT");
+    sig_sym = idio_symbols_C_intern ("c/SIGEMT");
+    idio_module_set_symbol_value (sig_sym, idio_C_int (SIGEMT), idio_main_module ());
+    sprintf (idio_libc_signal_names[SIGEMT], IDIO_SYMBOL_S (sig_sym) + 2);
 #endif
 
 #if defined(SIGFPE)
-    sprintf (idio_libc_signal_names[SIGFPE], "SIGFPE");
+    sig_sym = idio_symbols_C_intern ("c/SIGFPE");
+    idio_module_set_symbol_value (sig_sym, idio_C_int (SIGFPE), idio_main_module ());
+    sprintf (idio_libc_signal_names[SIGFPE], IDIO_SYMBOL_S (sig_sym) + 2);
 #endif
 
 #if defined(SIGKILL)
-    sprintf (idio_libc_signal_names[SIGKILL], "SIGKILL");
+    sig_sym = idio_symbols_C_intern ("c/SIGKILL");
+    idio_module_set_symbol_value (sig_sym, idio_C_int (SIGKILL), idio_main_module ());
+    sprintf (idio_libc_signal_names[SIGKILL], IDIO_SYMBOL_S (sig_sym) + 2);
 #endif
 
 #if defined(SIGBUS)
-    sprintf (idio_libc_signal_names[SIGBUS], "SIGBUS");
+    sig_sym = idio_symbols_C_intern ("c/SIGBUS");
+    idio_module_set_symbol_value (sig_sym, idio_C_int (SIGBUS), idio_main_module ());
+    sprintf (idio_libc_signal_names[SIGBUS], IDIO_SYMBOL_S (sig_sym) + 2);
 #endif
 
 #if defined(SIGSEGV)
-    sprintf (idio_libc_signal_names[SIGSEGV], "SIGSEGV");
+    sig_sym = idio_symbols_C_intern ("c/SIGSEGV");
+    idio_module_set_symbol_value (sig_sym, idio_C_int (SIGSEGV), idio_main_module ());
+    sprintf (idio_libc_signal_names[SIGSEGV], IDIO_SYMBOL_S (sig_sym) + 2);
 #endif
 
 #if defined(SIGSYS)
-    sprintf (idio_libc_signal_names[SIGSYS], "SIGSYS");
+    sig_sym = idio_symbols_C_intern ("c/SIGSYS");
+    idio_module_set_symbol_value (sig_sym, idio_C_int (SIGSYS), idio_main_module ());
+    sprintf (idio_libc_signal_names[SIGSYS], IDIO_SYMBOL_S (sig_sym) + 2);
 #endif
 
 #if defined(SIGPIPE)
-    sprintf (idio_libc_signal_names[SIGPIPE], "SIGPIPE");
+    sig_sym = idio_symbols_C_intern ("c/SIGPIPE");
+    idio_module_set_symbol_value (sig_sym, idio_C_int (SIGPIPE), idio_main_module ());
+    sprintf (idio_libc_signal_names[SIGPIPE], IDIO_SYMBOL_S (sig_sym) + 2);
 #endif
 
 #if defined(SIGALRM)
-    sprintf (idio_libc_signal_names[SIGALRM], "SIGALRM");
+    sig_sym = idio_symbols_C_intern ("c/SIGALRM");
+    idio_module_set_symbol_value (sig_sym, idio_C_int (SIGALRM), idio_main_module ());
+    sprintf (idio_libc_signal_names[SIGALRM], IDIO_SYMBOL_S (sig_sym) + 2);
 #endif
 
 #if defined(SIGTERM)
-    sprintf (idio_libc_signal_names[SIGTERM], "SIGTERM");
+    sig_sym = idio_symbols_C_intern ("c/SIGTERM");
+    idio_module_set_symbol_value (sig_sym, idio_C_int (SIGTERM), idio_main_module ());
+    sprintf (idio_libc_signal_names[SIGTERM], IDIO_SYMBOL_S (sig_sym) + 2);
 #endif
 
 #if defined(SIGUSR1)
-    sprintf (idio_libc_signal_names[SIGUSR1], "SIGUSR1");
+    sig_sym = idio_symbols_C_intern ("c/SIGUSR1");
+    idio_module_set_symbol_value (sig_sym, idio_C_int (SIGUSR1), idio_main_module ());
+    sprintf (idio_libc_signal_names[SIGUSR1], IDIO_SYMBOL_S (sig_sym) + 2);
 #endif
 
 #if defined(SIGUSR2)
-    sprintf (idio_libc_signal_names[SIGUSR2], "SIGUSR2");
+    sig_sym = idio_symbols_C_intern ("c/SIGUSR2");
+    idio_module_set_symbol_value (sig_sym, idio_C_int (SIGUSR2), idio_main_module ());
+    sprintf (idio_libc_signal_names[SIGUSR2], IDIO_SYMBOL_S (sig_sym) + 2);
 #endif
 
 #if defined(SIGCHLD)
-    sprintf (idio_libc_signal_names[SIGCHLD], "SIGCHLD");
+    sig_sym = idio_symbols_C_intern ("c/SIGCHLD");
+    idio_module_set_symbol_value (sig_sym, idio_C_int (SIGCHLD), idio_main_module ());
+    sprintf (idio_libc_signal_names[SIGCHLD], IDIO_SYMBOL_S (sig_sym) + 2);
 #endif
 
 #if defined(SIGPWR)
-    sprintf (idio_libc_signal_names[SIGPWR], "SIGPWR");
+    sig_sym = idio_symbols_C_intern ("c/SIGPWR");
+    idio_module_set_symbol_value (sig_sym, idio_C_int (SIGPWR), idio_main_module ());
+    sprintf (idio_libc_signal_names[SIGPWR], IDIO_SYMBOL_S (sig_sym) + 2);
 #endif
 
 #if defined(SIGWINCH)
-    sprintf (idio_libc_signal_names[SIGWINCH], "SIGWINCH");
+    sig_sym = idio_symbols_C_intern ("c/SIGWINCH");
+    idio_module_set_symbol_value (sig_sym, idio_C_int (SIGWINCH), idio_main_module ());
+    sprintf (idio_libc_signal_names[SIGWINCH], IDIO_SYMBOL_S (sig_sym) + 2);
 #endif
 
 #if defined(SIGURG)
-    sprintf (idio_libc_signal_names[SIGURG], "SIGURG");
+    sig_sym = idio_symbols_C_intern ("c/SIGURG");
+    idio_module_set_symbol_value (sig_sym, idio_C_int (SIGURG), idio_main_module ());
+    sprintf (idio_libc_signal_names[SIGURG], IDIO_SYMBOL_S (sig_sym) + 2);
 #endif
 
 #if defined(SIGPOLL)
-    sprintf (idio_libc_signal_names[SIGPOLL], "SIGPOLL");
+    sig_sym = idio_symbols_C_intern ("c/SIGPOLL");
+    idio_module_set_symbol_value (sig_sym, idio_C_int (SIGPOLL), idio_main_module ());
+    sprintf (idio_libc_signal_names[SIGPOLL], IDIO_SYMBOL_S (sig_sym) + 2);
 #endif
 
 #if defined(SIGSTOP)
-    sprintf (idio_libc_signal_names[SIGSTOP], "SIGSTOP");
+    sig_sym = idio_symbols_C_intern ("c/SIGSTOP");
+    idio_module_set_symbol_value (sig_sym, idio_C_int (SIGSTOP), idio_main_module ());
+    sprintf (idio_libc_signal_names[SIGSTOP], IDIO_SYMBOL_S (sig_sym) + 2);
 #endif
 
 #if defined(SIGTSTP)
-    sprintf (idio_libc_signal_names[SIGTSTP], "SIGTSTP");
+    sig_sym = idio_symbols_C_intern ("c/SIGTSTP");
+    idio_module_set_symbol_value (sig_sym, idio_C_int (SIGTSTP), idio_main_module ());
+    sprintf (idio_libc_signal_names[SIGTSTP], IDIO_SYMBOL_S (sig_sym) + 2);
 #endif
 
 #if defined(SIGCONT)
-    sprintf (idio_libc_signal_names[SIGCONT], "SIGCONT");
+    sig_sym = idio_symbols_C_intern ("c/SIGCONT");
+    idio_module_set_symbol_value (sig_sym, idio_C_int (SIGCONT), idio_main_module ());
+    sprintf (idio_libc_signal_names[SIGCONT], IDIO_SYMBOL_S (sig_sym) + 2);
 #endif
 
 #if defined(SIGTTIN)
-    sprintf (idio_libc_signal_names[SIGTTIN], "SIGTTIN");
+    sig_sym = idio_symbols_C_intern ("c/SIGTTIN");
+    idio_module_set_symbol_value (sig_sym, idio_C_int (SIGTTIN), idio_main_module ());
+    sprintf (idio_libc_signal_names[SIGTTIN], IDIO_SYMBOL_S (sig_sym) + 2);
 #endif
 
 #if defined(SIGTTOU)
-    sprintf (idio_libc_signal_names[SIGTTOU], "SIGTTOU");
+    sig_sym = idio_symbols_C_intern ("c/SIGTTOU");
+    idio_module_set_symbol_value (sig_sym, idio_C_int (SIGTTOU), idio_main_module ());
+    sprintf (idio_libc_signal_names[SIGTTOU], IDIO_SYMBOL_S (sig_sym) + 2);
 #endif
 
 #if defined(SIGVTALRM)
-    sprintf (idio_libc_signal_names[SIGVTALRM], "SIGVTALRM");
+    sig_sym = idio_symbols_C_intern ("c/SIGVTALRM");
+    idio_module_set_symbol_value (sig_sym, idio_C_int (SIGVTALRM), idio_main_module ());
+    sprintf (idio_libc_signal_names[SIGVTALRM], IDIO_SYMBOL_S (sig_sym) + 2);
 #endif
 
 #if defined(SIGPROF)
-    sprintf (idio_libc_signal_names[SIGPROF], "SIGPROF");
+    sig_sym = idio_symbols_C_intern ("c/SIGPROF");
+    idio_module_set_symbol_value (sig_sym, idio_C_int (SIGPROF), idio_main_module ());
+    sprintf (idio_libc_signal_names[SIGPROF], IDIO_SYMBOL_S (sig_sym) + 2);
 #endif
 
 #if defined(SIGXCPU)
-    sprintf (idio_libc_signal_names[SIGXCPU], "SIGXCPU");
+    sig_sym = idio_symbols_C_intern ("c/SIGXCPU");
+    idio_module_set_symbol_value (sig_sym, idio_C_int (SIGXCPU), idio_main_module ());
+    sprintf (idio_libc_signal_names[SIGXCPU], IDIO_SYMBOL_S (sig_sym) + 2);
 #endif
 
 #if defined(SIGXFSZ)
-    sprintf (idio_libc_signal_names[SIGXFSZ], "SIGXFSZ");
+    sig_sym = idio_symbols_C_intern ("c/SIGXFSZ");
+    idio_module_set_symbol_value (sig_sym, idio_C_int (SIGXFSZ), idio_main_module ());
+    sprintf (idio_libc_signal_names[SIGXFSZ], IDIO_SYMBOL_S (sig_sym) + 2);
 #endif
 
     /* SunOS */
 #if defined(SIGWAITING)
-    sprintf (idio_libc_signal_names[SIGWAITING], "SIGWAITING");
+    sig_sym = idio_symbols_C_intern ("c/SIGWAITING");
+    idio_module_set_symbol_value (sig_sym, idio_C_int (SIGWAITING), idio_main_module ());
+    sprintf (idio_libc_signal_names[SIGWAITING], IDIO_SYMBOL_S (sig_sym) + 2);
 #endif
 
     /* SunOS */
 #if defined(SIGLWP)
-    sprintf (idio_libc_signal_names[SIGLWP], "SIGLWP");
+    sig_sym = idio_symbols_C_intern ("c/SIGLWP");
+    idio_module_set_symbol_value (sig_sym, idio_C_int (SIGLWP), idio_main_module ());
+    sprintf (idio_libc_signal_names[SIGLWP], IDIO_SYMBOL_S (sig_sym) + 2);
 #endif
 
     /* SunOS */
 #if defined(SIGFREEZE)
-    sprintf (idio_libc_signal_names[SIGFREEZE], "SIGFREEZE");
+    sig_sym = idio_symbols_C_intern ("c/SIGFREEZE");
+    idio_module_set_symbol_value (sig_sym, idio_C_int (SIGFREEZE), idio_main_module ());
+    sprintf (idio_libc_signal_names[SIGFREEZE], IDIO_SYMBOL_S (sig_sym) + 2);
 #endif
 
     /* SunOS */
 #if defined(SIGTHAW)
-    sprintf (idio_libc_signal_names[SIGTHAW], "SIGTHAW");
+    sig_sym = idio_symbols_C_intern ("c/SIGTHAW");
+    idio_module_set_symbol_value (sig_sym, idio_C_int (SIGTHAW), idio_main_module ());
+    sprintf (idio_libc_signal_names[SIGTHAW], IDIO_SYMBOL_S (sig_sym) + 2);
 #endif
 
     /* SunOS */
 #if defined(SIGCANCEL)
-    sprintf (idio_libc_signal_names[SIGCANCEL], "SIGCANCEL");
+    sig_sym = idio_symbols_C_intern ("c/SIGCANCEL");
+    idio_module_set_symbol_value (sig_sym, idio_C_int (SIGCANCEL), idio_main_module ());
+    sprintf (idio_libc_signal_names[SIGCANCEL], IDIO_SYMBOL_S (sig_sym) + 2);
 #endif
 
     /* SunOS */
 #if defined(SIGLOST)
-    sprintf (idio_libc_signal_names[SIGLOST], "SIGLOST");
+    sig_sym = idio_symbols_C_intern ("c/SIGLOST");
+    idio_module_set_symbol_value (sig_sym, idio_C_int (SIGLOST), idio_main_module ());
+    sprintf (idio_libc_signal_names[SIGLOST], IDIO_SYMBOL_S (sig_sym) + 2);
 #endif
 
     /* SunOS */
 #if defined(SIGXRES)
-    sprintf (idio_libc_signal_names[SIGXRES], "SIGXRES");
+    sig_sym = idio_symbols_C_intern ("c/SIGXRES");
+    idio_module_set_symbol_value (sig_sym, idio_C_int (SIGXRES), idio_main_module ());
+    sprintf (idio_libc_signal_names[SIGXRES], IDIO_SYMBOL_S (sig_sym) + 2);
 #endif
 
     /* SunOS */
 #if defined(SIGJVM1)
-    sprintf (idio_libc_signal_names[SIGJVM1], "SIGJVM1");
+    sig_sym = idio_symbols_C_intern ("c/SIGJVM1");
+    idio_module_set_symbol_value (sig_sym, idio_C_int (SIGJVM1), idio_main_module ());
+    sprintf (idio_libc_signal_names[SIGJVM1], IDIO_SYMBOL_S (sig_sym) + 2);
 #endif
 
     /* SunOS */
 #if defined(SIGJVM2)
-    sprintf (idio_libc_signal_names[SIGJVM2], "SIGJVM2");
+    sig_sym = idio_symbols_C_intern ("c/SIGJVM2");
+    idio_module_set_symbol_value (sig_sym, idio_C_int (SIGJVM2), idio_main_module ());
+    sprintf (idio_libc_signal_names[SIGJVM2], IDIO_SYMBOL_S (sig_sym) + 2);
 #endif
 
     /* Linux */
 #if defined(SIGSTKFLT)
-    sprintf (idio_libc_signal_names[SIGSTKFLT], "SIGSTKFLT");
+    sig_sym = idio_symbols_C_intern ("c/SIGSTKFLT");
+    idio_module_set_symbol_value (sig_sym, idio_C_int (SIGSTKFLT), idio_main_module ());
+    sprintf (idio_libc_signal_names[SIGSTKFLT], IDIO_SYMBOL_S (sig_sym) + 2);
 #endif
 
 #if IDIO_DEBUG
     int first = 1;
     for (i = IDIO_LIBC_FSIG ; i < IDIO_LIBC_NSIG ; i++) {
 	if ('\0' == *(idio_libc_signal_names[i])) {
-	    sprintf (idio_libc_signal_names[i], "SIGJUNK%d", i);
+	    char sig_name[IDIO_LIBC_SIGNAMELEN + 2];
+	    sprintf (sig_name, "c/SIGJUNK%d", i);
+	    sig_sym = idio_symbols_C_intern (sig_name);
+	    idio_module_set_symbol_value (sig_sym, idio_C_int (i), idio_main_module ());
+	    sprintf (idio_libc_signal_names[i], sig_name + 2);
 	    if (first) {
 		first = 0;
 		fprintf (stderr, "Undefined signals:");
@@ -1056,796 +1144,1116 @@ static void idio_libc_set_errno_names ()
 
     sprintf (idio_libc_errno_names[0], "E0");
 
+    IDIO err_sym;
+    
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (E2BIG)
-    sprintf (idio_libc_errno_names[E2BIG], "E2BIG");
+    err_sym = idio_symbols_C_intern ("c/E2BIG");
+    idio_module_set_symbol_value (err_sym, idio_C_int (E2BIG), idio_main_module ());
+    sprintf (idio_libc_errno_names[E2BIG], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (EACCES)
-    sprintf (idio_libc_errno_names[EACCES], "EACCES");
+    err_sym = idio_symbols_C_intern ("c/EACCES");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EACCES), idio_main_module ());
+    sprintf (idio_libc_errno_names[EACCES], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (EADDRINUSE)
-    sprintf (idio_libc_errno_names[EADDRINUSE], "EADDRINUSE");
+    err_sym = idio_symbols_C_intern ("c/EADDRINUSE");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EADDRINUSE), idio_main_module ());
+    sprintf (idio_libc_errno_names[EADDRINUSE], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (EADDRNOTAVAIL)
-    sprintf (idio_libc_errno_names[EADDRNOTAVAIL], "EADDRNOTAVAIL");
+    err_sym = idio_symbols_C_intern ("c/EADDRNOTAVAIL");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EADDRNOTAVAIL), idio_main_module ());
+    sprintf (idio_libc_errno_names[EADDRNOTAVAIL], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* Linux, Solaris */
 #if defined (EADV)
-    sprintf (idio_libc_errno_names[EADV], "EADV");
+    err_sym = idio_symbols_C_intern ("c/EADV");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EADV), idio_main_module ());
+    sprintf (idio_libc_errno_names[EADV], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (EAFNOSUPPORT)
-    sprintf (idio_libc_errno_names[EAFNOSUPPORT], "EAFNOSUPPORT");
+    err_sym = idio_symbols_C_intern ("c/EAFNOSUPPORT");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EAFNOSUPPORT), idio_main_module ());
+    sprintf (idio_libc_errno_names[EAFNOSUPPORT], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (EAGAIN)
-    sprintf (idio_libc_errno_names[EAGAIN], "EAGAIN");
+    err_sym = idio_symbols_C_intern ("c/EAGAIN");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EAGAIN), idio_main_module ());
+    sprintf (idio_libc_errno_names[EAGAIN], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (EALREADY)
-    sprintf (idio_libc_errno_names[EALREADY], "EALREADY");
+    err_sym = idio_symbols_C_intern ("c/EALREADY");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EALREADY), idio_main_module ());
+    sprintf (idio_libc_errno_names[EALREADY], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, OSX */
 #if defined (EAUTH)
-    sprintf (idio_libc_errno_names[EAUTH], "EAUTH");
+    err_sym = idio_symbols_C_intern ("c/EAUTH");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EAUTH), idio_main_module ());
+    sprintf (idio_libc_errno_names[EAUTH], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* OSX */
 #if defined (EBADARCH)
-    sprintf (idio_libc_errno_names[EBADARCH], "EBADARCH");
+    err_sym = idio_symbols_C_intern ("c/EBADARCH");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EBADARCH), idio_main_module ());
+    sprintf (idio_libc_errno_names[EBADARCH], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* Linux, Solaris */
 #if defined (EBADE)
-    sprintf (idio_libc_errno_names[EBADE], "EBADE");
+    err_sym = idio_symbols_C_intern ("c/EBADE");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EBADE), idio_main_module ());
+    sprintf (idio_libc_errno_names[EBADE], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* OSX */
 #if defined (EBADEXEC)
-    sprintf (idio_libc_errno_names[EBADEXEC], "EBADEXEC");
+    err_sym = idio_symbols_C_intern ("c/EBADEXEC");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EBADEXEC), idio_main_module ());
+    sprintf (idio_libc_errno_names[EBADEXEC], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (EBADF)
-    sprintf (idio_libc_errno_names[EBADF], "EBADF");
+    err_sym = idio_symbols_C_intern ("c/EBADF");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EBADF), idio_main_module ());
+    sprintf (idio_libc_errno_names[EBADF], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* Linux, Solaris */
 #if defined (EBADFD)
-    sprintf (idio_libc_errno_names[EBADFD], "EBADFD");
+    err_sym = idio_symbols_C_intern ("c/EBADFD");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EBADFD), idio_main_module ());
+    sprintf (idio_libc_errno_names[EBADFD], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* OSX */
 #if defined (EBADMACHO)
-    sprintf (idio_libc_errno_names[EBADMACHO], "EBADMACHO");
+    err_sym = idio_symbols_C_intern ("c/EBADMACHO");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EBADMACHO), idio_main_module ());
+    sprintf (idio_libc_errno_names[EBADMACHO], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (EBADMSG)
-    sprintf (idio_libc_errno_names[EBADMSG], "EBADMSG");
+    err_sym = idio_symbols_C_intern ("c/EBADMSG");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EBADMSG), idio_main_module ());
+    sprintf (idio_libc_errno_names[EBADMSG], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* Linux, Solaris */
 #if defined (EBADR)
-    sprintf (idio_libc_errno_names[EBADR], "EBADR");
+    err_sym = idio_symbols_C_intern ("c/EBADR");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EBADR), idio_main_module ());
+    sprintf (idio_libc_errno_names[EBADR], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, OSX */
 #if defined (EBADRPC)
-    sprintf (idio_libc_errno_names[EBADRPC], "EBADRPC");
+    err_sym = idio_symbols_C_intern ("c/EBADRPC");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EBADRPC), idio_main_module ());
+    sprintf (idio_libc_errno_names[EBADRPC], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* Linux, Solaris */
 #if defined (EBADRQC)
-    sprintf (idio_libc_errno_names[EBADRQC], "EBADRQC");
+    err_sym = idio_symbols_C_intern ("c/EBADRQC");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EBADRQC), idio_main_module ());
+    sprintf (idio_libc_errno_names[EBADRQC], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* Linux, Solaris */
 #if defined (EBADSLT)
-    sprintf (idio_libc_errno_names[EBADSLT], "EBADSLT");
+    err_sym = idio_symbols_C_intern ("c/EBADSLT");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EBADSLT), idio_main_module ());
+    sprintf (idio_libc_errno_names[EBADSLT], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* Linux, Solaris */
 #if defined (EBFONT)
-    sprintf (idio_libc_errno_names[EBFONT], "EBFONT");
+    err_sym = idio_symbols_C_intern ("c/EBFONT");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EBFONT), idio_main_module ());
+    sprintf (idio_libc_errno_names[EBFONT], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (EBUSY)
-    sprintf (idio_libc_errno_names[EBUSY], "EBUSY");
+    err_sym = idio_symbols_C_intern ("c/EBUSY");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EBUSY), idio_main_module ());
+    sprintf (idio_libc_errno_names[EBUSY], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (ECANCELED)
-    sprintf (idio_libc_errno_names[ECANCELED], "ECANCELED");
+    err_sym = idio_symbols_C_intern ("c/ECANCELED");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ECANCELED), idio_main_module ());
+    sprintf (idio_libc_errno_names[ECANCELED], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD */
 #if defined (ECAPMODE)
-    sprintf (idio_libc_errno_names[ECAPMODE], "ECAPMODE");
+    err_sym = idio_symbols_C_intern ("c/ECAPMODE");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ECAPMODE), idio_main_module ());
+    sprintf (idio_libc_errno_names[ECAPMODE], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (ECHILD)
-    sprintf (idio_libc_errno_names[ECHILD], "ECHILD");
+    err_sym = idio_symbols_C_intern ("c/ECHILD");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ECHILD), idio_main_module ());
+    sprintf (idio_libc_errno_names[ECHILD], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* Linux, Solaris */
 #if defined (ECHRNG)
-    sprintf (idio_libc_errno_names[ECHRNG], "ECHRNG");
+    err_sym = idio_symbols_C_intern ("c/ECHRNG");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ECHRNG), idio_main_module ());
+    sprintf (idio_libc_errno_names[ECHRNG], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* Linux, Solaris */
 #if defined (ECOMM)
-    sprintf (idio_libc_errno_names[ECOMM], "ECOMM");
+    err_sym = idio_symbols_C_intern ("c/ECOMM");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ECOMM), idio_main_module ());
+    sprintf (idio_libc_errno_names[ECOMM], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (ECONNABORTED)
-    sprintf (idio_libc_errno_names[ECONNABORTED], "ECONNABORTED");
+    err_sym = idio_symbols_C_intern ("c/ECONNABORTED");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ECONNABORTED), idio_main_module ());
+    sprintf (idio_libc_errno_names[ECONNABORTED], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (ECONNREFUSED)
-    sprintf (idio_libc_errno_names[ECONNREFUSED], "ECONNREFUSED");
+    err_sym = idio_symbols_C_intern ("c/ECONNREFUSED");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ECONNREFUSED), idio_main_module ());
+    sprintf (idio_libc_errno_names[ECONNREFUSED], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (ECONNRESET)
-    sprintf (idio_libc_errno_names[ECONNRESET], "ECONNRESET");
+    err_sym = idio_symbols_C_intern ("c/ECONNRESET");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ECONNRESET), idio_main_module ());
+    sprintf (idio_libc_errno_names[ECONNRESET], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (EDEADLK)
-    sprintf (idio_libc_errno_names[EDEADLK], "EDEADLK");
+    err_sym = idio_symbols_C_intern ("c/EDEADLK");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EDEADLK), idio_main_module ());
+    sprintf (idio_libc_errno_names[EDEADLK], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* Linux, Solaris */
 #if defined (EDEADLOCK)
-    sprintf (idio_libc_errno_names[EDEADLOCK], "EDEADLOCK");
+    err_sym = idio_symbols_C_intern ("c/EDEADLOCK");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EDEADLOCK), idio_main_module ());
+    sprintf (idio_libc_errno_names[EDEADLOCK], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (EDESTADDRREQ)
-    sprintf (idio_libc_errno_names[EDESTADDRREQ], "EDESTADDRREQ");
+    err_sym = idio_symbols_C_intern ("c/EDESTADDRREQ");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EDESTADDRREQ), idio_main_module ());
+    sprintf (idio_libc_errno_names[EDESTADDRREQ], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* OSX */
 #if defined (EDEVERR)
-    sprintf (idio_libc_errno_names[EDEVERR], "EDEVERR");
+    err_sym = idio_symbols_C_intern ("c/EDEVERR");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EDEVERR), idio_main_module ());
+    sprintf (idio_libc_errno_names[EDEVERR], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (EDOM)
-    sprintf (idio_libc_errno_names[EDOM], "EDOM");
+    err_sym = idio_symbols_C_intern ("c/EDOM");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EDOM), idio_main_module ());
+    sprintf (idio_libc_errno_names[EDOM], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD */
 #if defined (EDOOFUS)
-    sprintf (idio_libc_errno_names[EDOOFUS], "EDOOFUS");
+    err_sym = idio_symbols_C_intern ("c/EDOOFUS");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EDOOFUS), idio_main_module ());
+    sprintf (idio_libc_errno_names[EDOOFUS], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* Linux */
 #if defined (EDOTDOT)
-    sprintf (idio_libc_errno_names[EDOTDOT], "EDOTDOT");
+    err_sym = idio_symbols_C_intern ("c/EDOTDOT");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EDOTDOT), idio_main_module ());
+    sprintf (idio_libc_errno_names[EDOTDOT], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (EDQUOT)
-    sprintf (idio_libc_errno_names[EDQUOT], "EDQUOT");
+    err_sym = idio_symbols_C_intern ("c/EDQUOT");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EDQUOT), idio_main_module ());
+    sprintf (idio_libc_errno_names[EDQUOT], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (EEXIST)
-    sprintf (idio_libc_errno_names[EEXIST], "EEXIST");
+    err_sym = idio_symbols_C_intern ("c/EEXIST");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EEXIST), idio_main_module ());
+    sprintf (idio_libc_errno_names[EEXIST], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (EFAULT)
-    sprintf (idio_libc_errno_names[EFAULT], "EFAULT");
+    err_sym = idio_symbols_C_intern ("c/EFAULT");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EFAULT), idio_main_module ());
+    sprintf (idio_libc_errno_names[EFAULT], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (EFBIG)
-    sprintf (idio_libc_errno_names[EFBIG], "EFBIG");
+    err_sym = idio_symbols_C_intern ("c/EFBIG");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EFBIG), idio_main_module ());
+    sprintf (idio_libc_errno_names[EFBIG], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, OSX */
 #if defined (EFTYPE)
-    sprintf (idio_libc_errno_names[EFTYPE], "EFTYPE");
+    err_sym = idio_symbols_C_intern ("c/EFTYPE");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EFTYPE), idio_main_module ());
+    sprintf (idio_libc_errno_names[EFTYPE], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (EHOSTDOWN)
-    sprintf (idio_libc_errno_names[EHOSTDOWN], "EHOSTDOWN");
+    err_sym = idio_symbols_C_intern ("c/EHOSTDOWN");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EHOSTDOWN), idio_main_module ());
+    sprintf (idio_libc_errno_names[EHOSTDOWN], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (EHOSTUNREACH)
-    sprintf (idio_libc_errno_names[EHOSTUNREACH], "EHOSTUNREACH");
+    err_sym = idio_symbols_C_intern ("c/EHOSTUNREACH");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EHOSTUNREACH), idio_main_module ());
+    sprintf (idio_libc_errno_names[EHOSTUNREACH], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* Linux */
 #if defined (EHWPOISON)
-    sprintf (idio_libc_errno_names[EHWPOISON], "EHWPOISON");
+    err_sym = idio_symbols_C_intern ("c/EHWPOISON");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EHWPOISON), idio_main_module ());
+    sprintf (idio_libc_errno_names[EHWPOISON], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (EIDRM)
-    sprintf (idio_libc_errno_names[EIDRM], "EIDRM");
+    err_sym = idio_symbols_C_intern ("c/EIDRM");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EIDRM), idio_main_module ());
+    sprintf (idio_libc_errno_names[EIDRM], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (EILSEQ)
-    sprintf (idio_libc_errno_names[EILSEQ], "EILSEQ");
+    err_sym = idio_symbols_C_intern ("c/EILSEQ");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EILSEQ), idio_main_module ());
+    sprintf (idio_libc_errno_names[EILSEQ], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (EINPROGRESS)
-    sprintf (idio_libc_errno_names[EINPROGRESS], "EINPROGRESS");
+    err_sym = idio_symbols_C_intern ("c/EINPROGRESS");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EINPROGRESS), idio_main_module ());
+    sprintf (idio_libc_errno_names[EINPROGRESS], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (EINTR)
-    sprintf (idio_libc_errno_names[EINTR], "EINTR");
+    err_sym = idio_symbols_C_intern ("c/EINTR");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EINTR), idio_main_module ());
+    sprintf (idio_libc_errno_names[EINTR], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (EINVAL)
-    sprintf (idio_libc_errno_names[EINVAL], "EINVAL");
+    err_sym = idio_symbols_C_intern ("c/EINVAL");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EINVAL), idio_main_module ());
+    sprintf (idio_libc_errno_names[EINVAL], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (EIO)
-    sprintf (idio_libc_errno_names[EIO], "EIO");
+    err_sym = idio_symbols_C_intern ("c/EIO");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EIO), idio_main_module ());
+    sprintf (idio_libc_errno_names[EIO], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (EISCONN)
-    sprintf (idio_libc_errno_names[EISCONN], "EISCONN");
+    err_sym = idio_symbols_C_intern ("c/EISCONN");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EISCONN), idio_main_module ());
+    sprintf (idio_libc_errno_names[EISCONN], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (EISDIR)
-    sprintf (idio_libc_errno_names[EISDIR], "EISDIR");
+    err_sym = idio_symbols_C_intern ("c/EISDIR");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EISDIR), idio_main_module ());
+    sprintf (idio_libc_errno_names[EISDIR], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* Linux */
 #if defined (EISNAM)
-    sprintf (idio_libc_errno_names[EISNAM], "EISNAM");
+    err_sym = idio_symbols_C_intern ("c/EISNAM");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EISNAM), idio_main_module ());
+    sprintf (idio_libc_errno_names[EISNAM], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* Linux */
 #if defined (EKEYEXPIRED)
-    sprintf (idio_libc_errno_names[EKEYEXPIRED], "EKEYEXPIRED");
+    err_sym = idio_symbols_C_intern ("c/EKEYEXPIRED");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EKEYEXPIRED), idio_main_module ());
+    sprintf (idio_libc_errno_names[EKEYEXPIRED], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* Linux */
 #if defined (EKEYREJECTED)
-    sprintf (idio_libc_errno_names[EKEYREJECTED], "EKEYREJECTED");
+    err_sym = idio_symbols_C_intern ("c/EKEYREJECTED");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EKEYREJECTED), idio_main_module ());
+    sprintf (idio_libc_errno_names[EKEYREJECTED], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* Linux */
 #if defined (EKEYREVOKED)
-    sprintf (idio_libc_errno_names[EKEYREVOKED], "EKEYREVOKED");
+    err_sym = idio_symbols_C_intern ("c/EKEYREVOKED");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EKEYREVOKED), idio_main_module ());
+    sprintf (idio_libc_errno_names[EKEYREVOKED], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* Linux, Solaris */
 #if defined (EL2HLT)
-    sprintf (idio_libc_errno_names[EL2HLT], "EL2HLT");
+    err_sym = idio_symbols_C_intern ("c/EL2HLT");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EL2HLT), idio_main_module ());
+    sprintf (idio_libc_errno_names[EL2HLT], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* Linux, Solaris */
 #if defined (EL2NSYNC)
-    sprintf (idio_libc_errno_names[EL2NSYNC], "EL2NSYNC");
+    err_sym = idio_symbols_C_intern ("c/EL2NSYNC");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EL2NSYNC), idio_main_module ());
+    sprintf (idio_libc_errno_names[EL2NSYNC], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* Linux, Solaris */
 #if defined (EL3HLT)
-    sprintf (idio_libc_errno_names[EL3HLT], "EL3HLT");
+    err_sym = idio_symbols_C_intern ("c/EL3HLT");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EL3HLT), idio_main_module ());
+    sprintf (idio_libc_errno_names[EL3HLT], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* Linux, Solaris */
 #if defined (EL3RST)
-    sprintf (idio_libc_errno_names[EL3RST], "EL3RST");
+    err_sym = idio_symbols_C_intern ("c/EL3RST");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EL3RST), idio_main_module ());
+    sprintf (idio_libc_errno_names[EL3RST], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* Linux, Solaris */
 #if defined (ELIBACC)
-    sprintf (idio_libc_errno_names[ELIBACC], "ELIBACC");
+    err_sym = idio_symbols_C_intern ("c/ELIBACC");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ELIBACC), idio_main_module ());
+    sprintf (idio_libc_errno_names[ELIBACC], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* Linux, Solaris */
 #if defined (ELIBBAD)
-    sprintf (idio_libc_errno_names[ELIBBAD], "ELIBBAD");
+    err_sym = idio_symbols_C_intern ("c/ELIBBAD");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ELIBBAD), idio_main_module ());
+    sprintf (idio_libc_errno_names[ELIBBAD], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* Linux, Solaris */
 #if defined (ELIBEXEC)
-    sprintf (idio_libc_errno_names[ELIBEXEC], "ELIBEXEC");
+    err_sym = idio_symbols_C_intern ("c/ELIBEXEC");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ELIBEXEC), idio_main_module ());
+    sprintf (idio_libc_errno_names[ELIBEXEC], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* Linux, Solaris */
 #if defined (ELIBMAX)
-    sprintf (idio_libc_errno_names[ELIBMAX], "ELIBMAX");
+    err_sym = idio_symbols_C_intern ("c/ELIBMAX");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ELIBMAX), idio_main_module ());
+    sprintf (idio_libc_errno_names[ELIBMAX], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* Linux, Solaris */
 #if defined (ELIBSCN)
-    sprintf (idio_libc_errno_names[ELIBSCN], "ELIBSCN");
+    err_sym = idio_symbols_C_intern ("c/ELIBSCN");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ELIBSCN), idio_main_module ());
+    sprintf (idio_libc_errno_names[ELIBSCN], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* Linux, Solaris */
 #if defined (ELNRNG)
-    sprintf (idio_libc_errno_names[ELNRNG], "ELNRNG");
+    err_sym = idio_symbols_C_intern ("c/ELNRNG");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ELNRNG), idio_main_module ());
+    sprintf (idio_libc_errno_names[ELNRNG], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* Solaris */
 #if defined (ELOCKUNMAPPED)
-    sprintf (idio_libc_errno_names[ELOCKUNMAPPED], "ELOCKUNMAPPED");
+    err_sym = idio_symbols_C_intern ("c/ELOCKUNMAPPED");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ELOCKUNMAPPED), idio_main_module ());
+    sprintf (idio_libc_errno_names[ELOCKUNMAPPED], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (ELOOP)
-    sprintf (idio_libc_errno_names[ELOOP], "ELOOP");
+    err_sym = idio_symbols_C_intern ("c/ELOOP");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ELOOP), idio_main_module ());
+    sprintf (idio_libc_errno_names[ELOOP], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* Linux */
 #if defined (EMEDIUMTYPE)
-    sprintf (idio_libc_errno_names[EMEDIUMTYPE], "EMEDIUMTYPE");
+    err_sym = idio_symbols_C_intern ("c/EMEDIUMTYPE");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EMEDIUMTYPE), idio_main_module ());
+    sprintf (idio_libc_errno_names[EMEDIUMTYPE], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (EMFILE)
-    sprintf (idio_libc_errno_names[EMFILE], "EMFILE");
+    err_sym = idio_symbols_C_intern ("c/EMFILE");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EMFILE), idio_main_module ());
+    sprintf (idio_libc_errno_names[EMFILE], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (EMLINK)
-    sprintf (idio_libc_errno_names[EMLINK], "EMLINK");
+    err_sym = idio_symbols_C_intern ("c/EMLINK");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EMLINK), idio_main_module ());
+    sprintf (idio_libc_errno_names[EMLINK], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (EMSGSIZE)
-    sprintf (idio_libc_errno_names[EMSGSIZE], "EMSGSIZE");
+    err_sym = idio_symbols_C_intern ("c/EMSGSIZE");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EMSGSIZE), idio_main_module ());
+    sprintf (idio_libc_errno_names[EMSGSIZE], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (EMULTIHOP)
-    sprintf (idio_libc_errno_names[EMULTIHOP], "EMULTIHOP");
+    err_sym = idio_symbols_C_intern ("c/EMULTIHOP");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EMULTIHOP), idio_main_module ());
+    sprintf (idio_libc_errno_names[EMULTIHOP], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (ENAMETOOLONG)
-    sprintf (idio_libc_errno_names[ENAMETOOLONG], "ENAMETOOLONG");
+    err_sym = idio_symbols_C_intern ("c/ENAMETOOLONG");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ENAMETOOLONG), idio_main_module ());
+    sprintf (idio_libc_errno_names[ENAMETOOLONG], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* Linux */
 #if defined (ENAVAIL)
-    sprintf (idio_libc_errno_names[ENAVAIL], "ENAVAIL");
+    err_sym = idio_symbols_C_intern ("c/ENAVAIL");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ENAVAIL), idio_main_module ());
+    sprintf (idio_libc_errno_names[ENAVAIL], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, OSX */
 #if defined (ENEEDAUTH)
-    sprintf (idio_libc_errno_names[ENEEDAUTH], "ENEEDAUTH");
+    err_sym = idio_symbols_C_intern ("c/ENEEDAUTH");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ENEEDAUTH), idio_main_module ());
+    sprintf (idio_libc_errno_names[ENEEDAUTH], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (ENETDOWN)
-    sprintf (idio_libc_errno_names[ENETDOWN], "ENETDOWN");
+    err_sym = idio_symbols_C_intern ("c/ENETDOWN");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ENETDOWN), idio_main_module ());
+    sprintf (idio_libc_errno_names[ENETDOWN], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (ENETRESET)
-    sprintf (idio_libc_errno_names[ENETRESET], "ENETRESET");
+    err_sym = idio_symbols_C_intern ("c/ENETRESET");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ENETRESET), idio_main_module ());
+    sprintf (idio_libc_errno_names[ENETRESET], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (ENETUNREACH)
-    sprintf (idio_libc_errno_names[ENETUNREACH], "ENETUNREACH");
+    err_sym = idio_symbols_C_intern ("c/ENETUNREACH");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ENETUNREACH), idio_main_module ());
+    sprintf (idio_libc_errno_names[ENETUNREACH], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (ENFILE)
-    sprintf (idio_libc_errno_names[ENFILE], "ENFILE");
+    err_sym = idio_symbols_C_intern ("c/ENFILE");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ENFILE), idio_main_module ());
+    sprintf (idio_libc_errno_names[ENFILE], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* Linux, Solaris */
 #if defined (ENOANO)
-    sprintf (idio_libc_errno_names[ENOANO], "ENOANO");
+    err_sym = idio_symbols_C_intern ("c/ENOANO");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ENOANO), idio_main_module ());
+    sprintf (idio_libc_errno_names[ENOANO], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, OSX */
 #if defined (ENOATTR)
-    sprintf (idio_libc_errno_names[ENOATTR], "ENOATTR");
+    err_sym = idio_symbols_C_intern ("c/ENOATTR");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ENOATTR), idio_main_module ());
+    sprintf (idio_libc_errno_names[ENOATTR], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (ENOBUFS)
-    sprintf (idio_libc_errno_names[ENOBUFS], "ENOBUFS");
+    err_sym = idio_symbols_C_intern ("c/ENOBUFS");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ENOBUFS), idio_main_module ());
+    sprintf (idio_libc_errno_names[ENOBUFS], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* Linux, Solaris */
 #if defined (ENOCSI)
-    sprintf (idio_libc_errno_names[ENOCSI], "ENOCSI");
+    err_sym = idio_symbols_C_intern ("c/ENOCSI");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ENOCSI), idio_main_module ());
+    sprintf (idio_libc_errno_names[ENOCSI], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* Linux, OSX, Solaris */
 #if defined (ENODATA)
-    sprintf (idio_libc_errno_names[ENODATA], "ENODATA");
+    err_sym = idio_symbols_C_intern ("c/ENODATA");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ENODATA), idio_main_module ());
+    sprintf (idio_libc_errno_names[ENODATA], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (ENODEV)
-    sprintf (idio_libc_errno_names[ENODEV], "ENODEV");
+    err_sym = idio_symbols_C_intern ("c/ENODEV");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ENODEV), idio_main_module ());
+    sprintf (idio_libc_errno_names[ENODEV], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (ENOENT)
-    sprintf (idio_libc_errno_names[ENOENT], "ENOENT");
+    err_sym = idio_symbols_C_intern ("c/ENOENT");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ENOENT), idio_main_module ());
+    sprintf (idio_libc_errno_names[ENOENT], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (ENOEXEC)
-    sprintf (idio_libc_errno_names[ENOEXEC], "ENOEXEC");
+    err_sym = idio_symbols_C_intern ("c/ENOEXEC");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ENOEXEC), idio_main_module ());
+    sprintf (idio_libc_errno_names[ENOEXEC], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* Linux */
 #if defined (ENOKEY)
-    sprintf (idio_libc_errno_names[ENOKEY], "ENOKEY");
+    err_sym = idio_symbols_C_intern ("c/ENOKEY");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ENOKEY), idio_main_module ());
+    sprintf (idio_libc_errno_names[ENOKEY], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (ENOLCK)
-    sprintf (idio_libc_errno_names[ENOLCK], "ENOLCK");
+    err_sym = idio_symbols_C_intern ("c/ENOLCK");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ENOLCK), idio_main_module ());
+    sprintf (idio_libc_errno_names[ENOLCK], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (ENOLINK)
-    sprintf (idio_libc_errno_names[ENOLINK], "ENOLINK");
+    err_sym = idio_symbols_C_intern ("c/ENOLINK");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ENOLINK), idio_main_module ());
+    sprintf (idio_libc_errno_names[ENOLINK], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* Linux */
 #if defined (ENOMEDIUM)
-    sprintf (idio_libc_errno_names[ENOMEDIUM], "ENOMEDIUM");
+    err_sym = idio_symbols_C_intern ("c/ENOMEDIUM");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ENOMEDIUM), idio_main_module ());
+    sprintf (idio_libc_errno_names[ENOMEDIUM], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (ENOMEM)
-    sprintf (idio_libc_errno_names[ENOMEM], "ENOMEM");
+    err_sym = idio_symbols_C_intern ("c/ENOMEM");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ENOMEM), idio_main_module ());
+    sprintf (idio_libc_errno_names[ENOMEM], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (ENOMSG)
-    sprintf (idio_libc_errno_names[ENOMSG], "ENOMSG");
+    err_sym = idio_symbols_C_intern ("c/ENOMSG");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ENOMSG), idio_main_module ());
+    sprintf (idio_libc_errno_names[ENOMSG], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* Linux, Solaris */
 #if defined (ENONET)
-    sprintf (idio_libc_errno_names[ENONET], "ENONET");
+    err_sym = idio_symbols_C_intern ("c/ENONET");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ENONET), idio_main_module ());
+    sprintf (idio_libc_errno_names[ENONET], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* Linux, Solaris */
 #if defined (ENOPKG)
-    sprintf (idio_libc_errno_names[ENOPKG], "ENOPKG");
+    err_sym = idio_symbols_C_intern ("c/ENOPKG");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ENOPKG), idio_main_module ());
+    sprintf (idio_libc_errno_names[ENOPKG], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* OSX */
 #if defined (ENOPOLICY)
-    sprintf (idio_libc_errno_names[ENOPOLICY], "ENOPOLICY");
+    err_sym = idio_symbols_C_intern ("c/ENOPOLICY");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ENOPOLICY), idio_main_module ());
+    sprintf (idio_libc_errno_names[ENOPOLICY], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (ENOPROTOOPT)
-    sprintf (idio_libc_errno_names[ENOPROTOOPT], "ENOPROTOOPT");
+    err_sym = idio_symbols_C_intern ("c/ENOPROTOOPT");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ENOPROTOOPT), idio_main_module ());
+    sprintf (idio_libc_errno_names[ENOPROTOOPT], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (ENOSPC)
-    sprintf (idio_libc_errno_names[ENOSPC], "ENOSPC");
+    err_sym = idio_symbols_C_intern ("c/ENOSPC");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ENOSPC), idio_main_module ());
+    sprintf (idio_libc_errno_names[ENOSPC], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* Linux, OSX, Solaris */
 #if defined (ENOSR)
-    sprintf (idio_libc_errno_names[ENOSR], "ENOSR");
+    err_sym = idio_symbols_C_intern ("c/ENOSR");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ENOSR), idio_main_module ());
+    sprintf (idio_libc_errno_names[ENOSR], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* Linux, OSX, Solaris */
 #if defined (ENOSTR)
-    sprintf (idio_libc_errno_names[ENOSTR], "ENOSTR");
+    err_sym = idio_symbols_C_intern ("c/ENOSTR");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ENOSTR), idio_main_module ());
+    sprintf (idio_libc_errno_names[ENOSTR], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (ENOSYS)
-    sprintf (idio_libc_errno_names[ENOSYS], "ENOSYS");
+    err_sym = idio_symbols_C_intern ("c/ENOSYS");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ENOSYS), idio_main_module ());
+    sprintf (idio_libc_errno_names[ENOSYS], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* Solaris */
 #if defined (ENOTACTIVE)
-    sprintf (idio_libc_errno_names[ENOTACTIVE], "ENOTACTIVE");
+    err_sym = idio_symbols_C_intern ("c/ENOTACTIVE");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ENOTACTIVE), idio_main_module ());
+    sprintf (idio_libc_errno_names[ENOTACTIVE], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (ENOTBLK)
-    sprintf (idio_libc_errno_names[ENOTBLK], "ENOTBLK");
+    err_sym = idio_symbols_C_intern ("c/ENOTBLK");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ENOTBLK), idio_main_module ());
+    sprintf (idio_libc_errno_names[ENOTBLK], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD */
 #if defined (ENOTCAPABLE)
-    sprintf (idio_libc_errno_names[ENOTCAPABLE], "ENOTCAPABLE");
+    err_sym = idio_symbols_C_intern ("c/ENOTCAPABLE");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ENOTCAPABLE), idio_main_module ());
+    sprintf (idio_libc_errno_names[ENOTCAPABLE], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (ENOTCONN)
-    sprintf (idio_libc_errno_names[ENOTCONN], "ENOTCONN");
+    err_sym = idio_symbols_C_intern ("c/ENOTCONN");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ENOTCONN), idio_main_module ());
+    sprintf (idio_libc_errno_names[ENOTCONN], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (ENOTDIR)
-    sprintf (idio_libc_errno_names[ENOTDIR], "ENOTDIR");
+    err_sym = idio_symbols_C_intern ("c/ENOTDIR");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ENOTDIR), idio_main_module ());
+    sprintf (idio_libc_errno_names[ENOTDIR], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (ENOTEMPTY)
-    sprintf (idio_libc_errno_names[ENOTEMPTY], "ENOTEMPTY");
+    err_sym = idio_symbols_C_intern ("c/ENOTEMPTY");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ENOTEMPTY), idio_main_module ());
+    sprintf (idio_libc_errno_names[ENOTEMPTY], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* Linux */
 #if defined (ENOTNAM)
-    sprintf (idio_libc_errno_names[ENOTNAM], "ENOTNAM");
+    err_sym = idio_symbols_C_intern ("c/ENOTNAM");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ENOTNAM), idio_main_module ());
+    sprintf (idio_libc_errno_names[ENOTNAM], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (ENOTRECOVERABLE)
-    sprintf (idio_libc_errno_names[ENOTRECOVERABLE], "ENOTRECOVERABLE");
+    err_sym = idio_symbols_C_intern ("c/ENOTRECOVERABLE");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ENOTRECOVERABLE), idio_main_module ());
+    sprintf (idio_libc_errno_names[ENOTRECOVERABLE], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (ENOTSOCK)
-    sprintf (idio_libc_errno_names[ENOTSOCK], "ENOTSOCK");
+    err_sym = idio_symbols_C_intern ("c/ENOTSOCK");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ENOTSOCK), idio_main_module ());
+    sprintf (idio_libc_errno_names[ENOTSOCK], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, OSX, Solaris */
 #if defined (ENOTSUP)
-    sprintf (idio_libc_errno_names[ENOTSUP], "ENOTSUP");
+    err_sym = idio_symbols_C_intern ("c/ENOTSUP");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ENOTSUP), idio_main_module ());
+    sprintf (idio_libc_errno_names[ENOTSUP], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (ENOTTY)
-    sprintf (idio_libc_errno_names[ENOTTY], "ENOTTY");
+    err_sym = idio_symbols_C_intern ("c/ENOTTY");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ENOTTY), idio_main_module ());
+    sprintf (idio_libc_errno_names[ENOTTY], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* Linux, Solaris */
 #if defined (ENOTUNIQ)
-    sprintf (idio_libc_errno_names[ENOTUNIQ], "ENOTUNIQ");
+    err_sym = idio_symbols_C_intern ("c/ENOTUNIQ");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ENOTUNIQ), idio_main_module ());
+    sprintf (idio_libc_errno_names[ENOTUNIQ], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (ENXIO)
-    sprintf (idio_libc_errno_names[ENXIO], "ENXIO");
+    err_sym = idio_symbols_C_intern ("c/ENXIO");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ENXIO), idio_main_module ());
+    sprintf (idio_libc_errno_names[ENXIO], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, OSX, Solaris */
 #if defined (EOPNOTSUPP)
-    sprintf (idio_libc_errno_names[EOPNOTSUPP], "EOPNOTSUPP");
+    err_sym = idio_symbols_C_intern ("c/EOPNOTSUPP");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EOPNOTSUPP), idio_main_module ());
+    sprintf (idio_libc_errno_names[EOPNOTSUPP], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (EOVERFLOW)
-    sprintf (idio_libc_errno_names[EOVERFLOW], "EOVERFLOW");
+    err_sym = idio_symbols_C_intern ("c/EOVERFLOW");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EOVERFLOW), idio_main_module ());
+    sprintf (idio_libc_errno_names[EOVERFLOW], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (EOWNERDEAD)
-    sprintf (idio_libc_errno_names[EOWNERDEAD], "EOWNERDEAD");
+    err_sym = idio_symbols_C_intern ("c/EOWNERDEAD");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EOWNERDEAD), idio_main_module ());
+    sprintf (idio_libc_errno_names[EOWNERDEAD], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (EPERM)
-    sprintf (idio_libc_errno_names[EPERM], "EPERM");
+    err_sym = idio_symbols_C_intern ("c/EPERM");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EPERM), idio_main_module ());
+    sprintf (idio_libc_errno_names[EPERM], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (EPFNOSUPPORT)
-    sprintf (idio_libc_errno_names[EPFNOSUPPORT], "EPFNOSUPPORT");
+    err_sym = idio_symbols_C_intern ("c/EPFNOSUPPORT");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EPFNOSUPPORT), idio_main_module ());
+    sprintf (idio_libc_errno_names[EPFNOSUPPORT], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (EPIPE)
-    sprintf (idio_libc_errno_names[EPIPE], "EPIPE");
+    err_sym = idio_symbols_C_intern ("c/EPIPE");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EPIPE), idio_main_module ());
+    sprintf (idio_libc_errno_names[EPIPE], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, OSX */
 #if defined (EPROCLIM)
-    sprintf (idio_libc_errno_names[EPROCLIM], "EPROCLIM");
+    err_sym = idio_symbols_C_intern ("c/EPROCLIM");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EPROCLIM), idio_main_module ());
+    sprintf (idio_libc_errno_names[EPROCLIM], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, OSX */
 #if defined (EPROCUNAVAIL)
-    sprintf (idio_libc_errno_names[EPROCUNAVAIL], "EPROCUNAVAIL");
+    err_sym = idio_symbols_C_intern ("c/EPROCUNAVAIL");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EPROCUNAVAIL), idio_main_module ());
+    sprintf (idio_libc_errno_names[EPROCUNAVAIL], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, OSX */
 #if defined (EPROGMISMATCH)
-    sprintf (idio_libc_errno_names[EPROGMISMATCH], "EPROGMISMATCH");
+    err_sym = idio_symbols_C_intern ("c/EPROGMISMATCH");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EPROGMISMATCH), idio_main_module ());
+    sprintf (idio_libc_errno_names[EPROGMISMATCH], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, OSX */
 #if defined (EPROGUNAVAIL)
-    sprintf (idio_libc_errno_names[EPROGUNAVAIL], "EPROGUNAVAIL");
+    err_sym = idio_symbols_C_intern ("c/EPROGUNAVAIL");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EPROGUNAVAIL), idio_main_module ());
+    sprintf (idio_libc_errno_names[EPROGUNAVAIL], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (EPROTO)
-    sprintf (idio_libc_errno_names[EPROTO], "EPROTO");
+    err_sym = idio_symbols_C_intern ("c/EPROTO");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EPROTO), idio_main_module ());
+    sprintf (idio_libc_errno_names[EPROTO], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (EPROTONOSUPPORT)
-    sprintf (idio_libc_errno_names[EPROTONOSUPPORT], "EPROTONOSUPPORT");
+    err_sym = idio_symbols_C_intern ("c/EPROTONOSUPPORT");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EPROTONOSUPPORT), idio_main_module ());
+    sprintf (idio_libc_errno_names[EPROTONOSUPPORT], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (EPROTOTYPE)
-    sprintf (idio_libc_errno_names[EPROTOTYPE], "EPROTOTYPE");
+    err_sym = idio_symbols_C_intern ("c/EPROTOTYPE");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EPROTOTYPE), idio_main_module ());
+    sprintf (idio_libc_errno_names[EPROTOTYPE], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* OSX */
 #if defined (EPWROFF)
-    sprintf (idio_libc_errno_names[EPWROFF], "EPWROFF");
+    err_sym = idio_symbols_C_intern ("c/EPWROFF");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EPWROFF), idio_main_module ());
+    sprintf (idio_libc_errno_names[EPWROFF], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* OSX */
 #if defined (EQFULL)
-    sprintf (idio_libc_errno_names[EQFULL], "EQFULL");
+    err_sym = idio_symbols_C_intern ("c/EQFULL");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EQFULL), idio_main_module ());
+    sprintf (idio_libc_errno_names[EQFULL], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (ERANGE)
-    sprintf (idio_libc_errno_names[ERANGE], "ERANGE");
+    err_sym = idio_symbols_C_intern ("c/ERANGE");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ERANGE), idio_main_module ());
+    sprintf (idio_libc_errno_names[ERANGE], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* Linux, Solaris */
 #if defined (EREMCHG)
-    sprintf (idio_libc_errno_names[EREMCHG], "EREMCHG");
+    err_sym = idio_symbols_C_intern ("c/EREMCHG");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EREMCHG), idio_main_module ());
+    sprintf (idio_libc_errno_names[EREMCHG], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (EREMOTE)
-    sprintf (idio_libc_errno_names[EREMOTE], "EREMOTE");
+    err_sym = idio_symbols_C_intern ("c/EREMOTE");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EREMOTE), idio_main_module ());
+    sprintf (idio_libc_errno_names[EREMOTE], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* Linux */
 #if defined (EREMOTEIO)
-    sprintf (idio_libc_errno_names[EREMOTEIO], "EREMOTEIO");
+    err_sym = idio_symbols_C_intern ("c/EREMOTEIO");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EREMOTEIO), idio_main_module ());
+    sprintf (idio_libc_errno_names[EREMOTEIO], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* Linux, Solaris */
 #if defined (ERESTART)
-    sprintf (idio_libc_errno_names[ERESTART], "ERESTART");
+    err_sym = idio_symbols_C_intern ("c/ERESTART");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ERESTART), idio_main_module ());
+    sprintf (idio_libc_errno_names[ERESTART], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* Linux */
 #if defined (ERFKILL)
-    sprintf (idio_libc_errno_names[ERFKILL], "ERFKILL");
+    err_sym = idio_symbols_C_intern ("c/ERFKILL");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ERFKILL), idio_main_module ());
+    sprintf (idio_libc_errno_names[ERFKILL], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (EROFS)
-    sprintf (idio_libc_errno_names[EROFS], "EROFS");
+    err_sym = idio_symbols_C_intern ("c/EROFS");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EROFS), idio_main_module ());
+    sprintf (idio_libc_errno_names[EROFS], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, OSX */
 #if defined (ERPCMISMATCH)
-    sprintf (idio_libc_errno_names[ERPCMISMATCH], "ERPCMISMATCH");
+    err_sym = idio_symbols_C_intern ("c/ERPCMISMATCH");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ERPCMISMATCH), idio_main_module ());
+    sprintf (idio_libc_errno_names[ERPCMISMATCH], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* OSX */
 #if defined (ESHLIBVERS)
-    sprintf (idio_libc_errno_names[ESHLIBVERS], "ESHLIBVERS");
+    err_sym = idio_symbols_C_intern ("c/ESHLIBVERS");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ESHLIBVERS), idio_main_module ());
+    sprintf (idio_libc_errno_names[ESHLIBVERS], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (ESHUTDOWN)
-    sprintf (idio_libc_errno_names[ESHUTDOWN], "ESHUTDOWN");
+    err_sym = idio_symbols_C_intern ("c/ESHUTDOWN");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ESHUTDOWN), idio_main_module ());
+    sprintf (idio_libc_errno_names[ESHUTDOWN], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (ESOCKTNOSUPPORT)
-    sprintf (idio_libc_errno_names[ESOCKTNOSUPPORT], "ESOCKTNOSUPPORT");
+    err_sym = idio_symbols_C_intern ("c/ESOCKTNOSUPPORT");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ESOCKTNOSUPPORT), idio_main_module ());
+    sprintf (idio_libc_errno_names[ESOCKTNOSUPPORT], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (ESPIPE)
-    sprintf (idio_libc_errno_names[ESPIPE], "ESPIPE");
+    err_sym = idio_symbols_C_intern ("c/ESPIPE");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ESPIPE), idio_main_module ());
+    sprintf (idio_libc_errno_names[ESPIPE], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (ESRCH)
-    sprintf (idio_libc_errno_names[ESRCH], "ESRCH");
+    err_sym = idio_symbols_C_intern ("c/ESRCH");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ESRCH), idio_main_module ());
+    sprintf (idio_libc_errno_names[ESRCH], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* Linux, Solaris */
 #if defined (ESRMNT)
-    sprintf (idio_libc_errno_names[ESRMNT], "ESRMNT");
+    err_sym = idio_symbols_C_intern ("c/ESRMNT");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ESRMNT), idio_main_module ());
+    sprintf (idio_libc_errno_names[ESRMNT], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (ESTALE)
-    sprintf (idio_libc_errno_names[ESTALE], "ESTALE");
+    err_sym = idio_symbols_C_intern ("c/ESTALE");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ESTALE), idio_main_module ());
+    sprintf (idio_libc_errno_names[ESTALE], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* Linux, Solaris */
 #if defined (ESTRPIPE)
-    sprintf (idio_libc_errno_names[ESTRPIPE], "ESTRPIPE");
+    err_sym = idio_symbols_C_intern ("c/ESTRPIPE");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ESTRPIPE), idio_main_module ());
+    sprintf (idio_libc_errno_names[ESTRPIPE], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* Linux, OSX, Solaris */
 #if defined (ETIME)
-    sprintf (idio_libc_errno_names[ETIME], "ETIME");
+    err_sym = idio_symbols_C_intern ("c/ETIME");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ETIME), idio_main_module ());
+    sprintf (idio_libc_errno_names[ETIME], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (ETIMEDOUT)
-    sprintf (idio_libc_errno_names[ETIMEDOUT], "ETIMEDOUT");
+    err_sym = idio_symbols_C_intern ("c/ETIMEDOUT");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ETIMEDOUT), idio_main_module ());
+    sprintf (idio_libc_errno_names[ETIMEDOUT], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (ETOOMANYREFS)
-    sprintf (idio_libc_errno_names[ETOOMANYREFS], "ETOOMANYREFS");
+    err_sym = idio_symbols_C_intern ("c/ETOOMANYREFS");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ETOOMANYREFS), idio_main_module ());
+    sprintf (idio_libc_errno_names[ETOOMANYREFS], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (ETXTBSY)
-    sprintf (idio_libc_errno_names[ETXTBSY], "ETXTBSY");
+    err_sym = idio_symbols_C_intern ("c/ETXTBSY");
+    idio_module_set_symbol_value (err_sym, idio_C_int (ETXTBSY), idio_main_module ());
+    sprintf (idio_libc_errno_names[ETXTBSY], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* Linux */
 #if defined (EUCLEAN)
-    sprintf (idio_libc_errno_names[EUCLEAN], "EUCLEAN");
+    err_sym = idio_symbols_C_intern ("c/EUCLEAN");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EUCLEAN), idio_main_module ());
+    sprintf (idio_libc_errno_names[EUCLEAN], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* Linux, Solaris */
 #if defined (EUNATCH)
-    sprintf (idio_libc_errno_names[EUNATCH], "EUNATCH");
+    err_sym = idio_symbols_C_intern ("c/EUNATCH");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EUNATCH), idio_main_module ());
+    sprintf (idio_libc_errno_names[EUNATCH], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (EUSERS)
-    sprintf (idio_libc_errno_names[EUSERS], "EUSERS");
+    err_sym = idio_symbols_C_intern ("c/EUSERS");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EUSERS), idio_main_module ());
+    sprintf (idio_libc_errno_names[EUSERS], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (EWOULDBLOCK)
-    sprintf (idio_libc_errno_names[EWOULDBLOCK], "EWOULDBLOCK");
+    err_sym = idio_symbols_C_intern ("c/EWOULDBLOCK");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EWOULDBLOCK), idio_main_module ());
+    sprintf (idio_libc_errno_names[EWOULDBLOCK], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (EXDEV)
-    sprintf (idio_libc_errno_names[EXDEV], "EXDEV");
+    err_sym = idio_symbols_C_intern ("c/EXDEV");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EXDEV), idio_main_module ());
+    sprintf (idio_libc_errno_names[EXDEV], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
     /* Linux, Solaris */
 #if defined (EXFULL)
-    sprintf (idio_libc_errno_names[EXFULL], "EXFULL");
+    err_sym = idio_symbols_C_intern ("c/EXFULL");
+    idio_module_set_symbol_value (err_sym, idio_C_int (EXFULL), idio_main_module ());
+    sprintf (idio_libc_errno_names[EXFULL], IDIO_SYMBOL_S (err_sym) + 2);
 #endif
 
 #if IDIO_DEBUG
     int first = 1;
     for (i = IDIO_LIBC_FERRNO ; i < IDIO_LIBC_NERRNO ; i++) {
 	if ('\0' == *(idio_libc_errno_names[i])) {
-	    sprintf (idio_libc_errno_names[i], "ERRNO%d", i);
+	    char err_name[IDIO_LIBC_ERRNAMELEN + 2];
+	    sprintf (err_name, "c/ERRNO%d", i);
+	    err_sym = idio_symbols_C_intern (err_name);
+	    idio_module_set_symbol_value (err_sym, idio_C_int (i), idio_main_module ());
+	    sprintf (idio_libc_errno_names[i], err_name + 2);
 	    if (first) {
 		first = 0;
 		fprintf (stderr, "Undefined errno:");
@@ -1875,6 +2283,29 @@ char *idio_libc_errno_name (int errnum)
     }
 }
 
+IDIO_DEFINE_PRIMITIVE1 ("c/errno-name", C_errno_name, (IDIO ierrnum))
+{
+    IDIO_ASSERT (ierrnum);
+    IDIO_VERIFY_PARAM_TYPE (C_int, ierrnum);
+
+    return idio_string_C (idio_libc_errno_name (IDIO_C_TYPE_INT (ierrnum)));
+}
+
+IDIO_DEFINE_PRIMITIVE0 ("c/errno-names", C_errno_names, ())
+{
+    IDIO r = idio_S_nil;
+
+    int i;
+    for (i = IDIO_LIBC_FERRNO; i < IDIO_LIBC_NERRNO ; i++) {
+	r = idio_pair (idio_pair (idio_C_int (i), idio_string_C (idio_libc_errno_name (i))), r);
+    }
+
+    return idio_list_reverse (r);
+}
+
+/*
+ * Moral equivalent of strsignal(3) -- identical to errno-name, above.
+ */
 IDIO_DEFINE_PRIMITIVE1 ("c/strerrno", C_strerrno, (IDIO ierrnum))
 {
     IDIO_ASSERT (ierrnum);
@@ -1934,18 +2365,6 @@ void idio_init_libc_wrap ()
     idio_module_set_symbol_value (idio_symbols_C_intern ("c/F_SETFD"), idio_C_int (F_SETFD), idio_main_module ());
 
     /* signal.h */
-    idio_module_set_symbol_value (idio_symbols_C_intern ("c/SIGHUP"), idio_C_int (SIGHUP), idio_main_module ());
-    idio_module_set_symbol_value (idio_symbols_C_intern ("c/SIGINT"), idio_C_int (SIGINT), idio_main_module ());
-    idio_module_set_symbol_value (idio_symbols_C_intern ("c/SIGQUIT"), idio_C_int (SIGQUIT), idio_main_module ());
-    idio_module_set_symbol_value (idio_symbols_C_intern ("c/SIGPIPE"), idio_C_int (SIGPIPE), idio_main_module ());
-    idio_module_set_symbol_value (idio_symbols_C_intern ("c/SIGALRM"), idio_C_int (SIGALRM), idio_main_module ());
-    idio_module_set_symbol_value (idio_symbols_C_intern ("c/SIGTERM"), idio_C_int (SIGTERM), idio_main_module ());
-    idio_module_set_symbol_value (idio_symbols_C_intern ("c/SIGCHLD"), idio_C_int (SIGCHLD), idio_main_module ());
-    idio_module_set_symbol_value (idio_symbols_C_intern ("c/SIGCONT"), idio_C_int (SIGCONT), idio_main_module ());
-    idio_module_set_symbol_value (idio_symbols_C_intern ("c/SIGTSTP"), idio_C_int (SIGTSTP), idio_main_module ());
-    idio_module_set_symbol_value (idio_symbols_C_intern ("c/SIGTTIN"), idio_C_int (SIGTTIN), idio_main_module ());
-    idio_module_set_symbol_value (idio_symbols_C_intern ("c/SIGTTOU"), idio_C_int (SIGTTOU), idio_main_module ());
-    idio_module_set_symbol_value (idio_symbols_C_intern ("c/SIGWINCH"), idio_C_int (SIGWINCH), idio_main_module ());
     idio_module_set_symbol_value (idio_symbols_C_intern ("c/SIG_DFL"), idio_C_pointer (SIG_DFL), idio_main_module ());
     idio_module_set_symbol_value (idio_symbols_C_intern ("c/SIG_IGN"), idio_C_pointer (SIG_IGN), idio_main_module ());
     
@@ -2020,6 +2439,8 @@ void idio_libc_wrap_add_primitives ()
 
     IDIO_ADD_PRIMITIVE (C_signal_name);
     IDIO_ADD_PRIMITIVE (C_signal_names);
+    IDIO_ADD_PRIMITIVE (C_errno_name);
+    IDIO_ADD_PRIMITIVE (C_errno_names);
     IDIO_ADD_PRIMITIVE (C_strerrno);
     IDIO_ADD_PRIMITIVE (C_to_integer);
     IDIO_ADD_PRIMITIVE (C_integer_to);
