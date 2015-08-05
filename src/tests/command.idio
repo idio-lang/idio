@@ -76,6 +76,13 @@ monitor (function (cont cond) {
     rt-command-status-error-status cond
   }
 
+  killed13 := function (cond) {
+    ;; edisplay* "command tests: killed13" cond
+    job := idio-error-location cond
+    test (job-detail job) %T{ (killed $(c/integer-> 13)) }
+    rt-command-status-error-status cond
+  }
+
   ;; Testing the tests!  We need to be sure that the OOB handlers are
   ;; successfully kicked off (or not kicked off) so we'll have a
   ;; couple of functions to store and check the Tests number has been
@@ -162,12 +169,14 @@ monitor (function (cont cond) {
   test (auto-exit -w 1 | auto-exit -r 1) #t
   (test+1)
 
-  ;; second command should finish first
+  ;; second command should finish first causing a SIGPIPE in the first
+  rcseh = killed13
   (test=)
-  test (auto-exit -w 2 -s 1 | auto-exit -r 1) #t
-  (test+1)
+  test (auto-exit -w 2 -s 1 | auto-exit -r 1) #f
+  (test+3)
 
   ;; pipeline with regular Idio as the writer
+  rcseh = exit0
   (test=)
   test (display* "first" | auto-exit -r 1) #t
   (test+1)
