@@ -1,0 +1,165 @@
+;;
+;; Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+;;
+;; Licensed under the Apache License, Version 2.0 (the "License"); you
+;; may not use this file except in compliance with the License.  You
+;; may obtain a copy of the License at
+;;
+;;     http://www.apache.org/licenses/LICENSE-2.0
+;;
+;; Unless required by applicable law or agreed to in writing, software
+;; distributed under the License is distributed on an "AS IS" BASIS,
+;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+;; See the License for the specific language governing permissions and
+;; limitations under the License.
+;;
+;;
+
+;;
+;; libc-wrap.idio
+;;
+
+;; stdin/stdout
+;;
+;; Idio doesn't make any particular handle stdin or stdout directly.
+;; Rather, each Idio *thread* simply has stdin and stdout attributes
+;; which reference an existing handle.  All of the output directives,
+;; say, look up the current output handle and write their output
+;; there.
+;;
+;; *nix make file descriptors 0, 1 and 2 special -- c/STDIN_FILENO,
+;; c/STDOUT_FILENO and c/STDERR_FILENO to be precise.  Programs
+;; (blindly) write to file descriptor 1 (or the FILE* {stdout}) for
+;; output.
+;;
+;; How do we make them align?  Especially if we want to use exotic
+;; types such as string-handles for stdin or stdout.
+;;
+;; The problem is acute when we want to run a pipeline or an external
+;; process.  To prepare the external process, nominally, we start
+;; referencing c/STDIN_FILENO etc..  Rather than that, call a function
+;; to look at what Idio's thread thinks the current input or output is
+;; and then make a decision then.
+;;
+;; For a file-handle the decision is easy: call file-handle-fd (or,
+;; rather, c/fileno as we want a C "int" type).
+;;
+;; For a string-handle we can use temporary files.  For input, this is
+;; like using a "here-string" in Bash, ie. we create a temporary file,
+;; write the string into it then open the file and use it as stdin.
+;;
+;; We can't quite do the same for output as sematically it's
+;; different: ``ls -l > sym'' is saying that when we subsequently use
+;; {sym} in Idio its value should be the output of "ls -l".  That
+;; means we can't be in a subshell or anything, the parent Idio must
+;; set things up so that "ls -l" sends its output to a temporary file,
+;; the parent then reads the contents of the file back in to be the
+;; value of {sym}, creating {sym} (if necessary) in the process.
+;;
+;; Remembering to delete any temporary files, of course!
+;;
+;; That requires a slew of supporting functions.
+
+
+;; File Permissions
+define (%c/file-access file mode) {
+  
+}
+
+;; Temporary Files
+
+;; We can call the mkstemp(3) interface but we need a suitable
+;; directory and then a template.
+
+;; We'll follow the style of Bash .../lib/sh/tmpfile.c
+
+;; "." is not the ideal fallback!
+%c/sys-tmpdirs := '("/tmp" "var/tmp" "usr/tmp" ".")
+
+%c/sys-tmpdir := #f
+%c/default-tmpname-prefix := "idio-tmp-"
+%%c/mkstemp-template := "XXXXXX"
+
+define (%c/get-sys-tmpdir) {
+  loop :+ function (dirs) {
+    if (null? dirs) (error '%c/get-sys-tmpdir "no remaining %c/sys-tmpdirs" %c/sys-tmpdirs) {
+      dir := ph dirs
+      if (c/access dir c/W_OK) dir {
+	loop (pt dirs)
+      }
+    }
+  }
+
+  if %c/sys-tmpdir %c/sys-tmpdir {
+    %c/sys-tmpdir = loop %c/sys-tmpdirs
+  }
+}
+
+define (%c/get-tmpdir) {
+  tmpdir := #f
+
+  if ((environ? 'TMPDIR) and
+      (c/access TMPDIR c/W_OK)) {
+    tmpdir = TMPDIR
+  } {
+    tmpdir = (%c/get-sys-tmpdir)
+  }
+}
+
+define (%c/make-tmp-fd & args) {
+  tmpdir := (%c/get-tmpdir)
+  prefix = %c/default-tmpname-prefix
+  if (not (null? args)) {
+    prefix = ph args
+  }
+
+  tmpfilename := string-append tmpdir "/" prefix "-" %%c/mkstemp-template
+  fd := c/mkstemp tmpfilename
+  list fd tmpfilename
+}
+
+define (make-tmp-file-handle & prefix) {
+  fd-name := %c/make-tmp-fd %T{ $@prefix }
+
+  
+}
+
+;;
+define (stdin-fileno) {
+  ih := (current-input-handle)
+  cond ((input-file-handle? ih) (c/fileno ih)) \
+       ((file-handle? ih) (error 'stdin-fileno "not an input-file-handle" ih)) \
+       ((input-string-handle? ih) {
+	 ;; 1. create a temporary file
+	 fd+name := %c/make-tmp-fd "idio-ish"
+	 handle := open-input-file-from-fd (ph fd+name) (pht fd+name) "r+"
+	 ;; 2. write the string to it
+	 display (get-output-string ih) handle
+	 ;; 3. *before* we unlink or close the original fd, open as
+	 ;; the input file
+	 fd := c/fileno (open-input-file (pht fd+name))
+	 ;; 4. unlink and close the original -- this flushes any output!
+	 c/unlink (pht fd+name)
+	 close-handle handle
+	 ;; 5. return the fd of "stdin" -- as a list to mark it special
+	 list fd
+       }) \
+       (else (error 'stdin-fileno "unexpected current-input-handle" ih))
+}
+
+;;
+define (stdout-fileno) {
+  oh := (current-output-handle)
+  cond ((output-file-handle? oh) (c/fileno oh)) \
+       ((file-handle? oh) (error 'stdout-fileno "not an output-file-handle" oh)) \
+       ((output-string-handle? oh) {
+	 ;; 1. create a temporary file
+	 fd+name := %c/make-tmp-fd "idio-ish"
+	 ;; 2. unlink the tmpfile
+	 c/unlink (pht fd+name)
+	 ;; 3. return the tuple {fd,oh} of "stdout"
+	 list (ph fd+name) oh
+       }) \
+       (else (error 'stdout-fileno "unexpected current-output-handle" oh))
+}
+
