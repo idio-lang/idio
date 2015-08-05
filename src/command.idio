@@ -508,8 +508,10 @@ define-operator | 300 {
 
   stdin := (gensym)
   infile := (gensym)
+  close-stdin := (gensym)
   stdout := (gensym)
   outfile := (gensym)
+  recover-stdout := (gensym)
   pgid := (gensym)
   job := (gensym)
   proc-id := (gensym)
@@ -517,13 +519,24 @@ define-operator | 300 {
   pgrp-pipe := (gensym)
   proc := (gensym)
   pid := (gensym)
+  status := (gensym)
 
   nprocs := length op-args
   %T{
     {
-      $stdin := c/STDIN_FILENO
+      $stdin := (stdin-fileno) ; c/STDIN_FILENO
+      $close-stdin := #f
+      if (pair? $stdin) {
+	$stdin = ph $stdin
+	$close-stdin = $stdin
+      }
       $infile := $stdin
-      $stdout := c/STDOUT_FILENO
+      $stdout := (stdout-fileno) ; c/STDOUT_FILENO
+      $recover-stdout := #f
+      if (pair? $stdout) {
+	$recover-stdout = pht $stdout
+	$stdout = ph $stdout
+      }
       $outfile := $stdout
       $pgid := 0
       $job := make-%idio-job '$pipeline #n $pgid #f #n $stdin $stdout
@@ -632,6 +645,7 @@ define-operator | 300 {
 		    if (not (c/== $outfile $stdout)) {
 		      c/close $outfile
 		    }
+
 		    $infile = (c/pipe-reader $pipe)
 		    $proc-id = $proc-id + 1
 		  }
@@ -643,63 +657,104 @@ define-operator | 300 {
       c/close (c/pipe-reader $pgrp-pipe)
       c/close (c/pipe-writer $pgrp-pipe)
 
-      %%vm-trace 0
+      $status := #f
       if+ (not %idio-interactive) {
-	    wait-for-job $job
+	    $status = wait-for-job $job
 	  } $foreground {
-	    foreground-job $job #f
+	    $status = foreground-job $job #f
 	  } else {
-	    background-job $job #f
+	    $status = background-job $job #f
           }
+
+      if $close-stdin {
+	c/close $close-stdin
+      }
+
+      if $recover-stdout {
+	;; if the job was backgrounded then this won't do much!
+        ih := open-input-file-from-fd $stdout
+	handle-seek ih 0 'set
+        display (read-lines ih) $recover-stdout
+	close-handle ih
+      }
+
+      $status
     }
   }
 }
 
 define-macro (launch-1proc foreground & cmd) {
   stdin := (gensym)
+  close-stdin := (gensym)
   stdout := (gensym)
+  recover-stdout := (gensym)
   pgid := (gensym)
   proc := (gensym)
   job := (gensym)
   pid := (gensym)
+  status := (gensym)
 
   %T{
-  {
-    $stdin := c/STDIN_FILENO
-    $stdout := c/STDOUT_FILENO
-    $pgid := 0
-    $proc := make-%idio-process '$cmd -1 #f #f #n
-    $job := make-%idio-job '$cmd (list $proc) $pgid #f #n $stdin $stdout
-
-    $pid := (c/fork)
-    if+ (c/== $pid 0) {
-      prep-process $pgid $stdin $stdout $foreground
-      if+ (pair? (ph '$cmd)) {
-            $@cmd
-	  } \
-	    else $cmd
-
-      c/exit 0
-    } else {
-      set-%idio-process-pid! $proc $pid
-      if %idio-interactive {
-	$pgid = $pid
-	set-%idio-job-pgid! $job $pgid
-	suppress-errors c/setpgid $pid $pgid
+    {
+      $stdin := (stdin-fileno) ; c/STDIN_FILENO
+      $close-stdin := #f
+      if (pair? $stdin) {
+	$stdin = ph $stdin
+	$close-stdin = $stdin
       }
-    }
+      $stdout := (stdout-fileno) ; c/STDOUT_FILENO
+      $recover-stdout := #f
+      if (pair? $stdout) {
+	$recover-stdout = pht $stdout
+	$stdout = ph $stdout
+      }
+      $pgid := 0
+      $proc := make-%idio-process '$cmd -1 #f #f #n
+      $job := make-%idio-job '$cmd (list $proc) $pgid #f #n $stdin $stdout
 
-    %idio-jobs = pair $job %idio-jobs
-    %%last-job = $job
+      $pid := (c/fork)
+      if+ (c/== $pid 0) {
+	prep-process $pgid $stdin $stdout $foreground
+	if+ (pair? (ph '$cmd)) {
+	      $@cmd
+	    } \
+	      else $cmd
 
-    if+ (not %idio-interactive) {
-      wait-for-job $job
-    } $foreground {
-      foreground-job $job #f
-    } else {
-      background-job $job #f
+	c/exit 0
+      } else {
+	set-%idio-process-pid! $proc $pid
+	if %idio-interactive {
+	  $pgid = $pid
+	  set-%idio-job-pgid! $job $pgid
+	  suppress-errors c/setpgid $pid $pgid
+	}
+      }
+
+      %idio-jobs = pair $job %idio-jobs
+      %%last-job = $job
+
+      $status := #f
+      if+ (not %idio-interactive) {
+	$status = wait-for-job $job
+      } $foreground {
+	$status = foreground-job $job #f
+      } else {
+	$status = background-job $job #f
+      }
+
+      if $close-stdin {
+	c/close $close-stdin
+      }
+
+      if $recover-stdout {
+        ih := open-input-file-from-fd $stdout
+	handle-seek ih 0 'set
+        display (read-lines ih) $recover-stdout
+	close-handle ih
+      }
+
+      $status
     }
-  }
   }
 }
 

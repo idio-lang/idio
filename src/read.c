@@ -1193,14 +1193,14 @@ static IDIO idio_read_1_expr (IDIO handle, char *ic, int depth)
  * becomes "(expr)" so check to see if the collected list is one
  * element long and use only the head if so.
  *
- * idio_read_line returns a tuple: ({expr} . {reason}) where {reason}
+ * idio_read_expr_line returns a tuple: ({expr} . {reason}) where {reason}
  * is why the line was complete.
  *
  * The point being that a "line" could be terminated by an actual EOL
  * or EOF or the closing brace of a block.  Which some people care
  * about.
  */
-static IDIO idio_read_line (IDIO handle, IDIO closedel, char *ic, int depth)
+static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, char *ic, int depth)
 {
     IDIO r = idio_S_nil;
     int count = 0;
@@ -1299,7 +1299,7 @@ static IDIO idio_read_line (IDIO handle, IDIO closedel, char *ic, int depth)
 		    expr = idio_S_ampersand;
 		    break;
 		default:
-		    idio_error_C ("unexpected token in line", IDIO_LIST2 (handle, expr), IDIO_C_LOCATION ("idio_read_line"));
+		    idio_error_C ("unexpected token in line", IDIO_LIST2 (handle, expr), IDIO_C_LOCATION ("idio_read_expr_line"));
 		}
 	    }
 	    r = idio_pair (expr, r);
@@ -1313,7 +1313,7 @@ static IDIO idio_read_block (IDIO handle, IDIO closedel, char *ic, int depth)
     IDIO r = idio_S_nil;
     
     for (;;) {
-	IDIO line = idio_read_line (handle, closedel, ic, depth);
+	IDIO line = idio_read_expr_line (handle, closedel, ic, depth);
 	IDIO expr = IDIO_PAIR_H (line);
 	IDIO reason = IDIO_PAIR_T (line);
 
@@ -1353,7 +1353,7 @@ IDIO idio_read (IDIO handle)
     /*
      * dummy value for closedel
      */
-    IDIO line = idio_read_line (handle, idio_T_eol, idio_default_interpolation_chars, 0);
+    IDIO line = idio_read_expr_line (handle, idio_T_eol, idio_default_interpolation_chars, 0);
     idio_gc_resume ();
     
     return IDIO_PAIR_H (line);

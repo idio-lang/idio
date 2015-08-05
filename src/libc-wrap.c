@@ -25,6 +25,49 @@
 char **idio_libc_signal_names = NULL;
 char **idio_libc_errno_names = NULL;
 
+IDIO_DEFINE_PRIMITIVE0V ("c/system-error", C_system_error, (IDIO args))
+{
+    IDIO_ASSERT (args);
+    IDIO_VERIFY_PARAM_TYPE (list, args);
+
+    char *name = "n/k";
+    
+    if (idio_S_nil != args) {
+	IDIO h = IDIO_PAIR_H (args);
+	if (idio_isa_string (h)) {
+	    name = idio_string_s (h);
+	    args = IDIO_PAIR_T (args);
+	} else if (idio_isa_symbol (h)) {
+	    name = IDIO_SYMBOL_S (h);
+	    args = IDIO_PAIR_T (args);
+	}
+    }
+
+    idio_error_system_errno (name, args, IDIO_C_LOCATION ("c/system-error"));
+
+    /* notreached */
+    return idio_S_unspec;
+}
+
+IDIO_DEFINE_PRIMITIVE2 ("c/access", C_access, (IDIO ipath, IDIO imode))
+{
+    IDIO_ASSERT (ipath);
+    IDIO_ASSERT (imode);
+    IDIO_VERIFY_PARAM_TYPE (string, ipath);
+    IDIO_VERIFY_PARAM_TYPE (C_int, imode);
+
+    char *path = idio_string_s (ipath);
+    int mode = IDIO_C_TYPE_INT (imode);
+
+    IDIO r = idio_S_false;
+    
+    if (0 == access (path, mode)) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
 IDIO_DEFINE_PRIMITIVE1 ("c/close", C_close, (IDIO ifd))
 {
     IDIO_ASSERT (ifd);
@@ -175,6 +218,23 @@ IDIO_DEFINE_PRIMITIVE2V ("c/fcntl", C_fcntl, (IDIO ifd, IDIO icmd, IDIO args))
     return idio_C_int (r);
 }
 
+IDIO_DEFINE_PRIMITIVE1 ("c/fileno", C_fileno, (IDIO ifilep))
+{
+    IDIO_ASSERT (ifilep);
+
+    int fd = 0;
+    if (idio_isa_file_handle (ifilep)) {
+	fd = idio_file_handle_fd (ifilep);
+    } else {
+	idio_error_param_type ("file-handle", ifilep, IDIO_C_LOCATION ("c/fileno"));
+
+	/* notreached */
+	return idio_S_unspec;
+    }
+
+    return idio_C_int (fd);
+}
+
 IDIO_DEFINE_PRIMITIVE0 ("c/fork", C_fork, ())
 {
     pid_t pid = fork ();
@@ -255,6 +315,22 @@ IDIO_DEFINE_PRIMITIVE2 ("c/kill", C_kill, (IDIO ipid, IDIO isig))
     
     if (-1 == r) {
 	idio_error_system_errno ("kill", IDIO_LIST2 (ipid, isig), IDIO_C_LOCATION ("c/kill"));
+    }
+
+    return idio_C_int (r);
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("c/mkstemp", C_mkstemp, (IDIO ifilename))
+{
+    IDIO_ASSERT (ifilename);
+    IDIO_VERIFY_PARAM_TYPE (string, ifilename);
+    
+    char *filename = idio_string_s (ifilename);
+
+    int r = mkstemp (filename);
+    
+    if (-1 == r) {
+	idio_error_system_errno ("mkstemp", IDIO_LIST1 (ifilename), IDIO_C_LOCATION ("c/mkstemp"));
     }
 
     return idio_C_int (r);
@@ -503,6 +579,22 @@ IDIO_DEFINE_PRIMITIVE2 ("c/tcsetpgrp", C_tcsetpgrp, (IDIO ifd, IDIO ipgrp))
 
     if (-1 == r) {
 	idio_error_system_errno ("tcsetpgrp", IDIO_LIST2 (ifd, ipgrp), IDIO_C_LOCATION ("c/tcsetpgrp"));
+    }
+
+    return idio_C_int (r);
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("c/unlink", C_unlink, (IDIO ipath))
+{
+    IDIO_ASSERT (ipath);
+    IDIO_VERIFY_PARAM_TYPE (string, ipath);
+
+    char *path = idio_string_s (ipath);
+
+    int r = unlink (path);
+
+    if (-1 == r) {
+	idio_error_system_errno ("unlink", IDIO_LIST1 (ipath), IDIO_C_LOCATION ("c/unlink"));
     }
 
     return idio_C_int (r);
@@ -2398,6 +2490,21 @@ IDIO_DEFINE_PRIMITIVE0 ("c/errno/get", C_errno_get, (void))
     return idio_C_int (errno);
 }
 
+IDIO_DEFINE_PRIMITIVE0 ("c/STDIN/get", C_STDIN_get, (void))
+{
+    return idio_current_input_handle ();
+}
+
+IDIO_DEFINE_PRIMITIVE0 ("c/STDOUT/get", C_STDOUT_get, (void))
+{
+    return idio_current_output_handle ();
+}
+
+IDIO_DEFINE_PRIMITIVE0 ("c/STDERR/get", C_STDERR_get, (void))
+{
+    return idio_current_error_handle ();
+}
+
 void idio_init_libc_wrap ()
 {
     idio_module_set_symbol_value (idio_symbols_C_intern ("c/0U"), idio_C_uint (0U), idio_main_module ());
@@ -2437,10 +2544,23 @@ void idio_init_libc_wrap ()
     idio_module_set_symbol_value (idio_symbols_C_intern ("c/STDIN_FILENO"), idio_C_int (STDIN_FILENO), idio_main_module ());
     idio_module_set_symbol_value (idio_symbols_C_intern ("c/STDOUT_FILENO"), idio_C_int (STDOUT_FILENO), idio_main_module ());
     idio_module_set_symbol_value (idio_symbols_C_intern ("c/STDERR_FILENO"), idio_C_int (STDERR_FILENO), idio_main_module ());
+    idio_module_set_symbol_value (idio_symbols_C_intern ("c/R_OK"), idio_C_int (R_OK), idio_main_module ());
+    idio_module_set_symbol_value (idio_symbols_C_intern ("c/W_OK"), idio_C_int (W_OK), idio_main_module ());
+    idio_module_set_symbol_value (idio_symbols_C_intern ("c/X_OK"), idio_C_int (X_OK), idio_main_module ());
+    idio_module_set_symbol_value (idio_symbols_C_intern ("c/F_OK"), idio_C_int (F_OK), idio_main_module ());
     
-    IDIO index = IDIO_ADD_SPECIAL_PRIMITIVE (C_errno_get);
+    IDIO geti;
+    geti = IDIO_ADD_SPECIAL_PRIMITIVE (C_errno_get);
+    idio_module_add_computed_symbol (idio_symbols_C_intern ("c/errno"), idio_vm_primitives_ref (IDIO_FIXNUM_VAL (geti)), idio_S_nil, idio_main_module ());
 
-    idio_module_add_computed_symbol (idio_symbols_C_intern ("c/errno"), idio_vm_primitives_ref (IDIO_FIXNUM_VAL (index)), idio_S_nil, idio_main_module ());
+    geti = IDIO_ADD_SPECIAL_PRIMITIVE (C_STDIN_get);
+    idio_module_add_computed_symbol (idio_symbols_C_intern ("c/STDIN"), idio_vm_primitives_ref (IDIO_FIXNUM_VAL (geti)), idio_S_nil, idio_main_module ());
+
+    geti = IDIO_ADD_SPECIAL_PRIMITIVE (C_STDOUT_get);
+    idio_module_add_computed_symbol (idio_symbols_C_intern ("c/STDOUT"), idio_vm_primitives_ref (IDIO_FIXNUM_VAL (geti)), idio_S_nil, idio_main_module ());
+
+    geti = IDIO_ADD_SPECIAL_PRIMITIVE (C_STDERR_get);
+    idio_module_add_computed_symbol (idio_symbols_C_intern ("c/STDERR"), idio_vm_primitives_ref (IDIO_FIXNUM_VAL (geti)), idio_S_nil, idio_main_module ());
 
     idio_libc_set_signal_names ();
     idio_libc_set_errno_names ();
@@ -2448,16 +2568,20 @@ void idio_init_libc_wrap ()
 
 void idio_libc_wrap_add_primitives ()
 {
+    IDIO_ADD_PRIMITIVE (C_system_error);
+    IDIO_ADD_PRIMITIVE (C_access);
     IDIO_ADD_PRIMITIVE (C_close);
     IDIO_ADD_PRIMITIVE (C_dup2);
     IDIO_ADD_PRIMITIVE (C_exit);
     IDIO_ADD_PRIMITIVE (C_fcntl);
+    IDIO_ADD_PRIMITIVE (C_fileno);
     IDIO_ADD_PRIMITIVE (C_fork);
     IDIO_ADD_PRIMITIVE (C_getcwd);
     IDIO_ADD_PRIMITIVE (C_getpgrp);
     IDIO_ADD_PRIMITIVE (C_getpid);
     IDIO_ADD_PRIMITIVE (C_isatty);
     IDIO_ADD_PRIMITIVE (C_kill);
+    IDIO_ADD_PRIMITIVE (C_mkstemp);
     IDIO_ADD_PRIMITIVE (C_pipe);
     IDIO_ADD_PRIMITIVE (C_pipe_reader);
     IDIO_ADD_PRIMITIVE (C_pipe_writer);
@@ -2471,6 +2595,7 @@ void idio_libc_wrap_add_primitives ()
     IDIO_ADD_PRIMITIVE (C_tcgetpgrp);
     IDIO_ADD_PRIMITIVE (C_tcsetattr);
     IDIO_ADD_PRIMITIVE (C_tcsetpgrp);
+    IDIO_ADD_PRIMITIVE (C_unlink);
     IDIO_ADD_PRIMITIVE (C_waitpid);
     IDIO_ADD_PRIMITIVE (C_WEXITSTATUS);
     IDIO_ADD_PRIMITIVE (C_WIFEXITED);

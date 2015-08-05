@@ -733,6 +733,65 @@ IDIO_DEFINE_PRIMITIVE0V ("read-expr", read_expr, (IDIO args))
     return idio_read_expr (h);
 }
 
+IDIO idio_read_line (IDIO h)
+{
+    IDIO_ASSERT (h);
+    IDIO_TYPE_ASSERT (handle, h);
+
+    IDIO osh = idio_open_output_string_handle_C ();
+
+    for (;;) {
+	int c = idio_handle_getc (h);
+	switch (c) {
+	case EOF:
+	case '\n':
+	    return idio_get_output_string (osh);
+	default:
+	    idio_string_handle_putc (osh, c);
+	    break;
+	}
+    }
+    
+}
+
+IDIO_DEFINE_PRIMITIVE0V ("read-line", read_line, (IDIO args))
+{
+    IDIO_ASSERT (args);
+    
+    IDIO h = idio_handle_or_current (idio_list_head (args), IDIO_HANDLE_FLAG_READ);
+
+    return idio_read_line (h);
+}
+
+IDIO idio_read_lines (IDIO h)
+{
+    IDIO_ASSERT (h);
+    IDIO_TYPE_ASSERT (handle, h);
+
+    IDIO osh = idio_open_output_string_handle_C ();
+
+    for (;;) {
+	int c = idio_handle_getc (h);
+	switch (c) {
+	case EOF:
+	    return idio_get_output_string (osh);
+	default:
+	    idio_string_handle_putc (osh, c);
+	    break;
+	}
+    }
+    
+}
+
+IDIO_DEFINE_PRIMITIVE0V ("read-lines", read_lines, (IDIO args))
+{
+    IDIO_ASSERT (args);
+    
+    IDIO h = idio_handle_or_current (idio_list_head (args), IDIO_HANDLE_FLAG_READ);
+
+    return idio_read_lines (h);
+}
+
 IDIO_DEFINE_PRIMITIVE0V ("scm-read", scm_read, (IDIO args))
 {
     IDIO_ASSERT (args);
@@ -895,6 +954,8 @@ void idio_handle_add_primitives ()
     IDIO_ADD_PRIMITIVE (readyp);
     IDIO_ADD_PRIMITIVE (read);
     IDIO_ADD_PRIMITIVE (read_expr);
+    IDIO_ADD_PRIMITIVE (read_line);
+    IDIO_ADD_PRIMITIVE (read_lines);
     IDIO_ADD_PRIMITIVE (scm_read);
     IDIO_ADD_PRIMITIVE (read_char);
     IDIO_ADD_PRIMITIVE (peek_char);

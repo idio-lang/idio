@@ -299,6 +299,59 @@ static IDIO idio_open_file_handle (char *name, FILE *filep, int mflag, int sflag
     return fh;
 }
 
+IDIO_DEFINE_PRIMITIVE1V ("open-input-file-from-fd", open_input_file_handle_from_fd, (IDIO ifd, IDIO args))
+{
+    IDIO_ASSERT (ifd);
+    IDIO_ASSERT (args);
+    IDIO_VERIFY_PARAM_TYPE (C_int, ifd);
+    IDIO_VERIFY_PARAM_TYPE (list, args);
+    
+    int fd = IDIO_C_TYPE_INT (ifd);
+
+    char name[PATH_MAX];
+    sprintf (name, "/dev/fd/%d", fd);
+
+    if (idio_S_nil != args) {
+	IDIO iname = IDIO_PAIR_H (args);
+	if (idio_isa_string (iname)) {
+	    if (idio_string_blen (iname) >= PATH_MAX) {
+		idio_error_C ("name too long", IDIO_LIST1 (iname), IDIO_C_LOCATION ("open-input-file-from-fd"));
+
+		/* notreached */
+		return idio_S_unspec;
+	    }
+	    sprintf (name, "%.*s", PATH_MAX - 1, idio_string_s (iname));
+	    args = IDIO_PAIR_T (args);
+	} else {
+	    idio_error_param_type ("string", iname, IDIO_C_LOCATION ("open-input-file-from-fd"));
+	}
+    }
+
+    char *mode = "r";
+    
+    if (idio_S_nil != args) {
+	IDIO imode = IDIO_PAIR_H (args);
+	if (idio_isa_string (imode)) {
+	    mode = idio_string_s (imode);
+	    args = IDIO_PAIR_T (args);
+	} else {
+	    idio_error_param_type ("string", imode, IDIO_C_LOCATION ("open-input-file-from-fd"));
+	}
+    }
+
+    FILE *filep = fdopen (fd, mode);
+    if (NULL == filep) {
+	idio_error_system_errno ("fdopen", IDIO_LIST2 (idio_string_C (name), idio_string_C (mode)), IDIO_C_LOCATION ("open-input-file-from-fd"));
+    }
+
+    int mflag = IDIO_HANDLE_FLAG_READ;
+    if (strchr (mode, '+') != NULL) {
+	mflag |= IDIO_HANDLE_FLAG_WRITE;
+    }
+
+    return idio_open_file_handle (name, filep, mflag, IDIO_FILE_HANDLE_FLAG_NONE);
+}
+
 IDIO idio_open_file_handle_C (char *name, char *mode)
 {
     IDIO_C_ASSERT (name);
@@ -314,7 +367,7 @@ IDIO idio_open_file_handle_C (char *name, char *mode)
 	}
 	break;
     case 'a':
-    case'w':
+    case 'w':
 	mflag = IDIO_HANDLE_FLAG_WRITE;
 	if (strchr (mode, '+') != NULL) {
 	    mflag |= IDIO_HANDLE_FLAG_READ;
@@ -1214,6 +1267,7 @@ void idio_init_file_handle ()
 
 void idio_file_handle_add_primitives ()
 {
+    IDIO_ADD_PRIMITIVE (open_input_file_handle_from_fd);
     IDIO_ADD_PRIMITIVE (open_file_handle);
     IDIO_ADD_PRIMITIVE (open_input_file_handle);
     IDIO_ADD_PRIMITIVE (open_output_file_handle);
