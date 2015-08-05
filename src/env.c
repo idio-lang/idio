@@ -84,7 +84,7 @@ static void idio_env_add_environ ()
     idio_env_set_default (idio_env_PATH_sym, idio_env_PATH_default);
 
     /*
-     * See comment in command.c re: getcwd(3) and PATH_MAX
+     * See comment in libc-wrap.c re: getcwd(3)
      */
     char *cwd = getcwd (NULL, PATH_MAX);
 

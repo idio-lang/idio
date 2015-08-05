@@ -153,17 +153,7 @@ char *idio_command_find_exe_C (char *command)
     }
 
     /*
-     * getcwd(3) and its {size} argument
-     *
-     * PATH_MAX varies: POSIX is 256, CentOS 7 is 4096
-     *
-     * The Linux man page for realpath(3) suggests that calling
-     * pathconf(3) for _PC_PATH_MAX doesn't improve matters a whole
-     * bunch as it can return a value that is infeasible to allocate
-     * in memory.
-     *
-     * Some systems (OS X, FreeBSD) suggest getcwd(3) should accept
-     * MAXPATHLEN (which is #define'd as PATH_MAX in <sys/param.h>).
+     * See comment in libc-wrap.c re: getcwd(3)
      */
     char exename[PATH_MAX];
     char cwd[PATH_MAX];

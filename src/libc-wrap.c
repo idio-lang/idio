@@ -249,7 +249,38 @@ IDIO_DEFINE_PRIMITIVE0 ("c/fork", C_fork, ())
 IDIO_DEFINE_PRIMITIVE0 ("c/getcwd", C_getcwd, ())
 {
     /*
-     * See comment in command.c re: getcwd(3) and PATH_MAX
+     * getcwd(3) and its arguments
+     *
+     * A sensible {size}?
+     *
+     * PATH_MAX varies: POSIX is 256, CentOS 7 is 4096
+     *
+     * The Linux man page for realpath(3) suggests that calling
+     * pathconf(3) for _PC_PATH_MAX doesn't improve matters a whole
+     * bunch as it can return a value that is infeasible to allocate
+     * in memory.
+     *
+     * Some systems (OS X, FreeBSD) suggest getcwd(3) should accept
+     * MAXPATHLEN (which is #define'd as PATH_MAX in <sys/param.h>).
+     *
+     * A NULL {buf}?
+     *
+     * Some systems (older OS X, FreeBSD) do not support a zero {size}
+     * parameter.  If passed a NULL {buf}, those systems seem to
+     * allocate as much memory as is required to contain the result,
+     * regardless of {size}.
+     *
+     * On systems that do support a zero {size} parameter then they
+     * will limit themselves to allocating a maximum of {size} bytes
+     * if passed a NULL {buf} and a non-zero {size}.
+     *
+     * Given that we can't set {size} to zero on some systems then
+     * always set {size} to PATH_MAX which should be be enough.
+     *
+     * If getcwd(3) returns a value that consumes all of PATH_MAX (or
+     * more) then we're doomed to hit other problems in the near
+     * future anyway as other parts of the system try to use the
+     * result.
      */
     char *cwd = getcwd (NULL, PATH_MAX);
 
