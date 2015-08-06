@@ -28,14 +28,19 @@ OPATH := PATH
 PATH = string-append PATH ":" PWD 
 
 ;; to avoid repeating the bulk of the error handler we'll just
-;; (re)define the interesting bit, rt-command-status-error-handler
+;; (re)define the interesting bit, rt-command-status-error-handler or
+;; rcseh:
 rcseh := #n
 
 monitor (function (cont cond) {
   ;; edisplay* "command tests: monitor" cont cond
   test (rt-command-status-error? cond) #t
   if cont {
+    ;; We are deliberately trying to provoke command status errors so
+    ;; we should check that the condition is a command status error
+    ;; and complain loudly otherwise
     if (rt-command-status-error? cond) {
+      ;; Finally we can run our error-specific handler
       rcseh cond
     } {
       edisplay* "command tests: unexpected condition" cond
@@ -83,10 +88,12 @@ monitor (function (cont cond) {
     rt-command-status-error-status cond
   }
 
-  ;; Testing the tests!  We need to be sure that the OOB handlers are
-  ;; successfully kicked off (or not kicked off) so we'll have a
-  ;; couple of functions to store and check the Tests number has been
-  ;; incremented OOB as we expect.
+  ;; Testing the tests! 
+  ;; 
+  ;; We need to be sure that the OOB handlers are successfully kicked
+  ;; off (or not kicked off) so we'll have a couple of functions to
+  ;; store and check the Tests number has been incremented OOB (in the
+  ;; main monitor handler and the rcseh functions above) as we expect.
 
   ;; Remember, though, the test itself, as written in the rest of this
   ;; block, will increment Tests as well as any potential OOB handler.
@@ -149,10 +156,11 @@ monitor (function (cont cond) {
   (test=)
   bg-job auto-exit -s 1
 
-  ;; As the bg-job is to sleep for one second we can be moderately
-  ;; confident that an immediate test here that nothing has happened
-  ;; will be OK.  But it is technically a race condition as this
-  ;; parent process could have been stalled.  YMMV.
+  ;; As the bg-job's purpose is to sleep for one second we can be
+  ;; moderately confident that an immediate test here that nothing has
+  ;; happened to the number of tests will be OK.  But it is
+  ;; technically a race condition as this parent process could have
+  ;; been stalled.  YMMV.
   (test+0)
 
   ;; If we wait for the job to finish we should have...no change as it
@@ -169,11 +177,29 @@ monitor (function (cont cond) {
   test (auto-exit -w 1 | auto-exit -r 1) #t
   (test+1)
 
-  ;; second command should finish first causing a SIGPIPE in the first
-  ;; command
-  rcseh = killed13
+  ;; In the following test the second command should finish first
+  ;; causing a SIGPIPE in the first command.
+
+  ;; However, the likes of gdb conspire to have SIGPIPE sigignore()d
+  ;; by children and ultimately auto-exit.  Rather than auto-exit's
+  ;; write to the pipe be killed by a SIGPIPE for '(killed 13) we'll
+  ;; get an '(exit 1).
+  ;;
+  ;; There's no obvious way to test for being run under gdb (nor
+  ;; anything else that predisposes itself to have children ignore
+  ;; SIGPIPE).  All we can usefully do is look at and see if SIGPIPE
+  ;; is being ignored and use the appropriate handler.
+  ;;
+  ;; This doesn't look like art.  Maybe it's contemporary art, then.
+
+  if (c/== (c/signal-handler c/SIGPIPE) c/SIG_IGN) {
+    rcseh = exit1
+  } {
+    rcseh = killed13
+  }
   (test=)
   test (auto-exit -w 2 -s 1 | auto-exit -r 1) #f
+  edisplay* "??" %%last-job (pipeline-detail %%last-job)
   (test+3)
 
   ;; pipeline with regular Idio as the writer
@@ -222,24 +248,38 @@ monitor (function (cont cond) {
   oih := (current-input-handle)
   ooh := (current-output-handle)
 
-  ;; first of all, create a file that external commands can access
+  ;; first of all, create {testfile} that external commands can access
   test-str := "Hello world"
   with-output-to-file testfile (function () {
     display test-str
   })
 
+  stdinfile := "..stdin.."
   stdoutfile := "..stdout.."
 
-  with-output-to-file stdoutfile (function () {
+  ;; Test (implied) file-handle stdout
+  with-output-to stdoutfile (function () {
     cat testfile
   })
 
   th := open-input-file stdoutfile
-  out-str := read-lines th
+  fho-str := read-lines th
   close-handle th
 
-  test out-str test-str
+  test fho-str test-str
 
+  stdoutstring := (open-output-string)
+  ;; Test (implied) string-handle stdout
+  with-output-to stdoutstring (function () {
+    cat testfile
+  })
+
+  edisplay* "sho" stdoutstring
+  sho-str := get-output-string stdoutstring
+
+  test sho-str test-str
+
+  if (file-exists? stdinfile) (delete-file stdinfile)
   if (file-exists? stdoutfile) (delete-file stdoutfile)
 
   set-input-handle! oih

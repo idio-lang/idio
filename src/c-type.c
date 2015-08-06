@@ -363,6 +363,9 @@ IDIO idio_C_number_cast (IDIO co, idio_type_e type)
 	    case IDIO_TYPE_C_DOUBLE:					\
 		result = (IDIO_C_TYPE_DOUBLE (n1) cmp IDIO_C_TYPE_DOUBLE (n2)); \
 		break;							\
+	    case IDIO_TYPE_C_POINTER:					\
+		result = (IDIO_C_TYPE_POINTER_P (n1) cmp IDIO_C_TYPE_POINTER_P (n2)); \
+		break;							\
 	    default:							\
 		idio_error_C ("n1->type unexpected", n1, idio_string_C (#name)); \
 									\

@@ -24,7 +24,16 @@
 
 char **idio_libc_signal_names = NULL;
 char **idio_libc_errno_names = NULL;
+static IDIO idio_libc_struct_sigaction = NULL;
 
+/*
+ * Indexes into structures for direct references
+ */
+#define IDIO_SIGACTION_SA_HANDLER	0
+#define IDIO_SIGACTION_SA_SIGACTION	1
+#define IDIO_SIGACTION_SA_MASK		2
+#define IDIO_SIGACTION_SA_FLAGS		3
+	
 IDIO_DEFINE_PRIMITIVE0V ("c/system-error", C_system_error, (IDIO args))
 {
     IDIO_ASSERT (args);
@@ -482,6 +491,47 @@ IDIO_DEFINE_PRIMITIVE2 ("c/signal", C_signal, (IDIO isig, IDIO ifunc))
 	idio_error_system_errno ("signal", IDIO_LIST2 (isig, ifunc), IDIO_C_LOCATION ("c/signal"));
     }
 
+    return idio_C_pointer (r);
+}
+
+/*
+ * c/signal-handler isn't a real libc function.  It has been added in
+ * to aid spotting if a parent process has kindly sigignored()d
+ * SIGPIPE for us:
+ *
+ * c/== (s/signal-handler c/SIGPIPE) c/SIG_IGN
+ *
+ * Hopefully we'll find other uses for it.
+ */
+IDIO_DEFINE_PRIMITIVE1 ("c/signal-handler", C_signal_handler, (IDIO isig))
+{
+    IDIO_ASSERT (isig);
+    IDIO_VERIFY_PARAM_TYPE (C_int, isig);
+    
+    int sig = IDIO_C_TYPE_INT (isig);
+
+    struct sigaction osa;
+
+    if (sigaction (sig, NULL, &osa) < 0) {
+	idio_error_system_errno ("sigaction", idio_S_nil, IDIO_C_LOCATION ("c/signal-handler"));
+    }
+
+    /*
+     * Our result be be either of:
+
+     void     (*sa_handler)(int);
+     void     (*sa_sigaction)(int, siginfo_t *, void *);
+
+     * so, uh, prototype with no args!
+     */
+    void (*r) ();
+    
+    if (osa.sa_flags & SA_SIGINFO) {
+	r = osa.sa_sigaction;
+    } else {
+	r = osa.sa_handler;
+    }
+    
     return idio_C_pointer (r);
 }
 
@@ -2593,6 +2643,17 @@ void idio_init_libc_wrap ()
     geti = IDIO_ADD_SPECIAL_PRIMITIVE (C_STDERR_get);
     idio_module_add_computed_symbol (idio_symbols_C_intern ("c/STDERR"), idio_vm_primitives_ref (IDIO_FIXNUM_VAL (geti)), idio_S_nil, idio_main_module ());
 
+    IDIO name;
+    name = idio_symbols_C_intern ("c/struct-sigaction");
+    idio_libc_struct_sigaction = idio_struct_type (name,
+						   idio_S_nil,
+						   idio_pair (idio_symbols_C_intern ("sa-handler"),
+						   idio_pair (idio_symbols_C_intern ("sa-sigaction"),
+						   idio_pair (idio_symbols_C_intern ("sa-mask"),
+						   idio_pair (idio_symbols_C_intern ("sa-flags"),
+						   idio_S_nil)))));
+    idio_module_set_symbol_value (name, idio_libc_struct_sigaction, idio_main_module ());
+
     idio_libc_set_signal_names ();
     idio_libc_set_errno_names ();
 }
@@ -2619,6 +2680,7 @@ void idio_libc_wrap_add_primitives ()
     IDIO_ADD_PRIMITIVE (C_read);
     IDIO_ADD_PRIMITIVE (C_setpgid);
     IDIO_ADD_PRIMITIVE (C_signal);
+    IDIO_ADD_PRIMITIVE (C_signal_handler);
     IDIO_ADD_PRIMITIVE (C_sleep);
     IDIO_ADD_PRIMITIVE (C_strerror);
     IDIO_ADD_PRIMITIVE (C_strsignal);

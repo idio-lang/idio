@@ -169,7 +169,11 @@ IDIO idio_condition_idio_error (IDIO message, IDIO location, IDIO detail)
     IDIO_ASSERT (location);
     IDIO_ASSERT (detail);
     IDIO_TYPE_ASSERT (string, message);
-    IDIO_TYPE_ASSERT (string, location);
+
+    if (! (idio_isa_string (location) ||
+	   idio_isa_symbol (location))) {
+	idio_error_param_type ("string|symbol", location, IDIO_C_LOCATION ("idio_condition_idio_error"));
+    }
 
     return idio_struct_instance (idio_condition_idio_error_type, IDIO_LIST3 (message, location, detail));
 }

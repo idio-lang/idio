@@ -19,6 +19,8 @@
 ;; libc-wrap.idio
 ;;
 
+define-struct-accessors-only c/struct-sigaction		sa-handler sa-sigaction sa-mask sa-flags
+
 ;; stdin/stdout
 ;;
 ;; Idio doesn't make any particular handle stdin or stdout directly.

@@ -748,6 +748,10 @@ define-macro (launch-1proc foreground & cmd) {
 
       if $recover-stdout {
         ih := open-input-file-from-fd $stdout
+
+	;; NB the temporary file has just been written to so the file
+	;; pointer is currently at the end, we need to set it back to
+	;; the start to be able to read anything!
 	handle-seek ih 0 'set
         display (read-lines ih) $recover-stdout
 	close-handle ih
@@ -788,4 +792,43 @@ define (wait & jobs) {
 
   ;; display* "notify?" notify
   if notify (do-job-notification)
+}
+
+with-output-to := {
+  set-output-handle! := set-output-handle!
+
+  function (out thunk) {
+    ;; old and new output handles
+    ooh := (current-output-handle)
+    noh := #f
+
+    ;; if we created a new output handle we need to close it
+    ;; afterwards
+    coh := #f
+
+    cond ((output-file-handle? out) (noh = out)) \
+	 ((file-handle? out) (error 'with-output-to "not an output-file-handle" out)) \
+	 ((output-string-handle? out) (noh = out)) \
+	 ((string-handle? out) (error 'with-output-to "not an output-string-handle" out)) \
+	 ((string? out) {
+	   noh = open-output-file out
+	   coh = #t
+	 }) \
+	 (else (error 'with-output-to "unexpected output" out))
+
+    if noh {
+      set-output-handle! noh
+    } {
+      error 'with-output-to "unexpected output" out
+    }
+
+    unwind-protect {
+      (thunk)
+    } {
+      if coh {
+	close-handle noh
+      }
+      set-output-handle! ooh
+    }
+  }
 }

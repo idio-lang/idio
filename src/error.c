@@ -24,6 +24,7 @@
 
 static IDIO idio_S_internal;
 static IDIO idio_S_user;
+static IDIO idio_S_user_code;
 
 void idio_error_vfprintf (char *format, va_list argp)
 {
@@ -142,7 +143,11 @@ void idio_error (IDIO who, IDIO msg, IDIO args, IDIO loc)
     IDIO_ASSERT (args); 
     IDIO_ASSERT (loc);
     IDIO_TYPE_ASSERT (list, args);
-    IDIO_TYPE_ASSERT (string, loc);
+
+    if (! (idio_isa_string (loc) ||
+	   idio_isa_symbol (loc))) {
+	idio_error_param_type ("string|symbol", loc, IDIO_C_LOCATION ("idio_error"));
+    }
 
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display (msg, sh);
@@ -180,7 +185,7 @@ IDIO_DEFINE_PRIMITIVE1V ("error", error, (IDIO msg, IDIO args))
 	args = idio_list_tail (args);
     }
 
-    idio_error (who, msg, args, idio_S_user);
+    idio_error (idio_S_user_code, msg, args, who);
 
     /* not reached */
     return idio_S_unspec;
@@ -229,6 +234,8 @@ void idio_init_error ()
     idio_gc_protect (idio_S_internal);
     idio_S_user = idio_symbols_C_intern ("user");
     idio_gc_protect (idio_S_user);
+    idio_S_user_code = idio_string_C ("user code");
+    idio_gc_protect (idio_S_user_code);
 }
 
 void idio_error_add_primitives ()
@@ -240,5 +247,6 @@ void idio_final_error ()
 {
     idio_gc_expose (idio_S_internal);
     idio_gc_expose (idio_S_user);
+    idio_gc_expose (idio_S_user_code);
 }
 

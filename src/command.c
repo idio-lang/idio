@@ -1443,6 +1443,11 @@ static IDIO idio_command_launch_1proc_job (IDIO job, int foreground, char **argv
 		IDIO bj = idio_module_symbol_value_recurse (idio_S_background_job, idio_main_module ());
 		cmd = IDIO_LIST3 (bj, job, idio_S_false);
 	    }
+
+	    /*
+	     * As we simply return the result of idio_vm_invoke_C(),
+	     * no need to protect anything here.
+	     */
 	    return idio_vm_invoke_C (idio_current_thread (), cmd);
 	}
     } else {
@@ -1522,6 +1527,15 @@ IDIO_DEFINE_PRIMITIVE0V ("%launch-pipeline", launch_pipeline, (IDIO commands))
     return idio_S_unspec;
 }
 
+/*
+ * idio_vm_invoke() has spotted that the argument in functional
+ * position is a symbol *and* that the "symbol" exists as an
+ * executable entry on PATH so it's calling us to exec() the command
+ * with whatever args were passed.
+ *
+ * It would be better if we could call the Idio code that does this
+ * and not have everything duplicated.
+ */
 IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
 {
     IDIO val = IDIO_THREAD_VAL (thr);
@@ -1582,12 +1596,14 @@ IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
 	recover_stdout = IDIO_PAIR_H (IDIO_PAIR_T (job_stdout));
 	job_stdout = IDIO_PAIR_H (job_stdout);
     }
-
+    idio_array_push (protected, job_stdout);
+    idio_array_push (protected, recover_stdout);
+    
     /*
-     * That was the last call to idio_vm_invoke_C() so no more need to
-     * protect objects
+     * That was the last call to idio_vm_invoke_C() in this function
+     * but idio_command_launch_1proc_job() also calls
+     * idio_vm_invoke_C() so keep protecting objects!
      */
-    idio_gc_expose (protected);
 
     IDIO job = idio_struct_instance (idio_command_job_type,
 				     idio_pair (command,
@@ -1598,9 +1614,15 @@ IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
 				     idio_pair (job_stdin,
 				     idio_pair (job_stdout,
 				     idio_S_nil))))))));
+    idio_array_push (protected, job);
     
     IDIO r = idio_command_launch_1proc_job (job, 1, argv);
-    
+
+    /*
+     * OK, we're in the clear now!
+     */
+    idio_gc_expose (protected);
+
     if (idio_S_false != close_stdin) {
 	if (close (IDIO_C_TYPE_INT (close_stdin)) < 0) {
 	    idio_error_system_errno ("close", IDIO_LIST1 (close_stdin), IDIO_C_LOCATION ("idio_command_invoke"));
@@ -1612,6 +1634,15 @@ IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
 
 	if (NULL == filep) {
 	    idio_error_system_errno ("fdopen", IDIO_LIST1 (job_stdout), IDIO_C_LOCATION ("idio_command_invoke"));
+	}
+
+	/*
+	 * NB the temporary file has just been written to so the file
+	 * pointer is currently at the end, we need to set it back to
+	 * the start to be able to read anything!
+	 */
+	if (fseek (filep, 0, SEEK_SET) < 0) {
+	    idio_error_system_errno ("fseek 0 SEEK_SET", IDIO_LIST1 (job_stdout), IDIO_C_LOCATION ("idio_command_invoke"));
 	}
 
 	int done = 0;
