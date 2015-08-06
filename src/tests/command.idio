@@ -170,6 +170,7 @@ monitor (function (cont cond) {
   (test+1)
 
   ;; second command should finish first causing a SIGPIPE in the first
+  ;; command
   rcseh = killed13
   (test=)
   test (auto-exit -w 2 -s 1 | auto-exit -r 1) #f
@@ -214,6 +215,35 @@ monitor (function (cont cond) {
   test (job-failed %%last-job) #t
   (test+1)
 
+}
+
+;; IO redirection
+{
+  oih := (current-input-handle)
+  ooh := (current-output-handle)
+
+  ;; first of all, create a file that external commands can access
+  test-str := "Hello world"
+  with-output-to-file testfile (function () {
+    display test-str
+  })
+
+  stdoutfile := "..stdout.."
+
+  with-output-to-file stdoutfile (function () {
+    cat testfile
+  })
+
+  th := open-input-file stdoutfile
+  out-str := read-lines th
+  close-handle th
+
+  test out-str test-str
+
+  if (file-exists? stdoutfile) (delete-file stdoutfile)
+
+  set-input-handle! oih
+  set-output-handle! ooh
 }
 
 PATH = OPATH

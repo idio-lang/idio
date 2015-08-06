@@ -39,6 +39,8 @@ static IDIO idio_S_exit;
 static IDIO idio_S_foreground_job;
 static IDIO idio_S_killed;
 static IDIO idio_S_wait_for_job;
+static IDIO idio_S_stdin_fileno;
+static IDIO idio_S_stdout_fileno;
 
 /*
  * Indexes into structures for direct references
@@ -1540,7 +1542,19 @@ IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
     }
     argv[0] = pathname;
 
+    /*
+     * We're going to call idio_vm_invoke_C() which may in turn call
+     * idio_gc_collect().  That means that any IDIO objects we have
+     * here are at risk of being collected unless we protect them.
+     *
+     * Given we have a hotchpotch of objects, create a (protected)
+     * array and just push anything we want to keep on the end.
+     */
+    IDIO protected = idio_array (10);
+    idio_gc_protect (protected);
+
     IDIO command = idio_list_append2 (IDIO_LIST1 (func), args);
+    idio_array_push (protected, command);
     
     IDIO proc = idio_struct_instance (idio_command_process_type,
 				      IDIO_LIST5 (command,
@@ -1548,10 +1562,33 @@ IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
 						  idio_S_false,
 						  idio_S_false,
 						  idio_S_nil));
+    idio_array_push (protected, proc);
 
-    IDIO job_stdin = idio_C_int (STDIN_FILENO);
-    IDIO job_stdout = idio_C_int (STDOUT_FILENO);
-    
+    IDIO cmd_sym;
+    cmd_sym = idio_module_symbol_value_recurse (idio_S_stdin_fileno, idio_main_module ());
+    IDIO job_stdin = idio_vm_invoke_C (idio_current_thread (), IDIO_LIST1 (cmd_sym));
+    IDIO close_stdin = idio_S_false;
+    if (idio_isa_pair (job_stdin)) {
+	job_stdin = IDIO_PAIR_H (job_stdin);
+	close_stdin = job_stdin;
+    }
+    idio_array_push (protected, job_stdin);
+    idio_array_push (protected, close_stdin);
+
+    cmd_sym = idio_module_symbol_value_recurse (idio_S_stdout_fileno, idio_main_module ());
+    IDIO job_stdout = idio_vm_invoke_C (idio_current_thread (), IDIO_LIST1 (cmd_sym));
+    IDIO recover_stdout = idio_S_false;
+    if (idio_isa_pair (job_stdout)) {
+	recover_stdout = IDIO_PAIR_H (IDIO_PAIR_T (job_stdout));
+	job_stdout = IDIO_PAIR_H (job_stdout);
+    }
+
+    /*
+     * That was the last call to idio_vm_invoke_C() so no more need to
+     * protect objects
+     */
+    idio_gc_expose (protected);
+
     IDIO job = idio_struct_instance (idio_command_job_type,
 				     idio_pair (command,
 				     idio_pair (IDIO_LIST1 (proc),
@@ -1563,6 +1600,35 @@ IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
 				     idio_S_nil))))))));
     
     IDIO r = idio_command_launch_1proc_job (job, 1, argv);
+    
+    if (idio_S_false != close_stdin) {
+	if (close (IDIO_C_TYPE_INT (close_stdin)) < 0) {
+	    idio_error_system_errno ("close", IDIO_LIST1 (close_stdin), IDIO_C_LOCATION ("idio_command_invoke"));
+	}
+    }
+
+    if (idio_S_false != recover_stdout) {
+	FILE *filep = fdopen (IDIO_C_TYPE_INT (job_stdout), "r");
+
+	if (NULL == filep) {
+	    idio_error_system_errno ("fdopen", IDIO_LIST1 (job_stdout), IDIO_C_LOCATION ("idio_command_invoke"));
+	}
+
+	int done = 0;
+	
+	while (! done) {
+	    int c = fgetc (filep);
+
+	    switch (c) {
+	    case EOF:
+		done = 1;
+		break;
+	    default:
+		idio_string_handle_putc (recover_stdout, c);
+		break;
+	    }
+	}
+    }
 
     /*
      * NB don't free pathname, argv[0] -- we didn't allocate it
@@ -1611,6 +1677,8 @@ void idio_init_command ()
     idio_S_foreground_job = idio_symbols_C_intern ("foreground-job");
     idio_S_killed = idio_symbols_C_intern ("killed");
     idio_S_wait_for_job = idio_symbols_C_intern ("wait-for-job");
+    idio_S_stdin_fileno = idio_symbols_C_intern ("stdin-fileno");
+    idio_S_stdout_fileno = idio_symbols_C_intern ("stdout-fileno");
     
     struct termios *tcattrsp = idio_alloc (sizeof (struct termios));
     idio_command_tcattrs = idio_C_pointer_free_me (tcattrsp);

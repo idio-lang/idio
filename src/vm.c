@@ -2127,6 +2127,10 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
 
 /*
  * Given a command as a list, (foo bar baz), run the code
+ *
+ * WARNING: in the calling environment idio_gc_protect() any IDIO
+ * objects you want to use after calling this function (as it may call
+ * idio_gc_collect())
  */
 IDIO idio_vm_invoke_C (IDIO thr, IDIO command)
 {
