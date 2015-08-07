@@ -257,9 +257,45 @@ monitor (function (cont cond) {
   stdinfile := "..stdin.."
   stdoutfile := "..stdout.."
 
+  with-output-to-file stdinfile (function () {
+    display test-str
+  })
+
+  ;; STDIN
+
+  fhi-str := #f
+  ;; Test (implied) file-handle stdin
+  with-input-from stdinfile (function () {
+    fhi-str = (read-lines)
+  })
+
+  test fhi-str test-str
+
+  stdinstring := (open-input-string test-str)
+  shi-str := #f
+  ;; Test (implied) string-handle stdin
+  with-input-from stdinstring (function () {
+    shi-str = (read-lines)
+  })
+
+  test shi-str test-str
+
+  ;; STDOUT
+
   ;; Test (implied) file-handle stdout
   with-output-to stdoutfile (function () {
     cat testfile
+  })
+
+  th := open-input-file stdoutfile
+  fho-str := read-lines th
+  close-handle th
+
+  test fho-str test-str
+
+  ;; Test (implied) file-handle stdout for pipeline
+  with-output-to stdoutfile (function () {
+    cat testfile | cat
   })
 
   th := open-input-file stdoutfile
@@ -274,7 +310,18 @@ monitor (function (cont cond) {
     cat testfile
   })
 
-  edisplay* "sho" stdoutstring
+  sho-str := get-output-string stdoutstring
+
+  test sho-str test-str
+
+  ;; reset stdoutstring!
+  stdoutstring = (open-output-string)
+
+  ;; Test (implied) string-handle stdout pipeline
+  with-output-to stdoutstring (function () {
+    cat testfile | cat
+  })
+
   sho-str := get-output-string stdoutstring
 
   test sho-str test-str

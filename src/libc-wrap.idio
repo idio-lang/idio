@@ -140,10 +140,12 @@ define (stdin-fileno) {
 	 ;; 3. *before* we unlink or close the original fd, open as
 	 ;; the input file
 	 fd := c/fileno (open-input-file (pht fd+name))
-	 ;; 4. unlink and close the original -- this flushes any output!
+	 ;; 4. unlink and close the original -- this flushes any
+	 ;; output!
 	 c/unlink (pht fd+name)
 	 close-handle handle
-	 ;; 5. return the fd of "stdin" -- as a list to mark it special
+	 ;; 5. return the fd of "stdin" -- as a list to mark it
+	 ;; special
 	 list fd
        }) \
        (else (error 'stdin-fileno "unexpected current-input-handle" ih))
@@ -159,7 +161,8 @@ define (stdout-fileno) {
 	 fd+name := %c/make-tmp-fd "idio-ish"
 	 ;; 2. unlink the tmpfile
 	 c/unlink (pht fd+name)
-	 ;; 3. return the tuple {fd,oh} of "stdout"
+	 ;; 3. return the tuple {fd,oh} of "stdout" -- as a list to
+	 ;; mark it special
 	 list (ph fd+name) oh
        }) \
        (else (error 'stdout-fileno "unexpected current-output-handle" oh))

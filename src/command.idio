@@ -794,6 +794,55 @@ define (wait & jobs) {
   if notify (do-job-notification)
 }
 
+;; with-input-from in thunk
+;;
+;; {in} can be an input handle (file or string) or it can be a literal
+;; string which will be interpreted as the name of the file to open as
+;; per open-input-file {in}
+with-input-from := {
+  set-input-handle! := set-input-handle!
+
+  function (in thunk) {
+    ;; old and new input handles
+    oih := (current-input-handle)
+    nih := #f
+
+    ;; if we created a new input handle we need to close it
+    ;; afterwards
+    cih := #f
+
+    cond ((input-file-handle? in) (nih = in)) \
+	 ((file-handle? in) (error 'with-input-from "not an input-file-handle" in)) \
+	 ((input-string-handle? in) (nih = in)) \
+	 ((string-handle? in) (error 'with-input-from "not an input-string-handle" in)) \
+	 ((string? in) {
+	   nih = open-input-file in
+	   cih = #t
+	 }) \
+	 (else (error 'with-input-from "unexpected input" in))
+
+    if nih {
+      set-input-handle! nih
+    } {
+      error 'with-input-from "unexpected input" in
+    }
+
+    unwind-protect {
+      (thunk)
+    } {
+      if cih {
+	close-handle nih
+      }
+      set-input-handle! oih
+    }
+  }
+}
+
+;; with-output-to out thunk
+;;
+;; {out} can be an output handle (file or string) or it can be a
+;; literal string which will be interpreted as the name of the file to
+;; open as per: open-output-file {out}
 with-output-to := {
   set-output-handle! := set-output-handle!
 
