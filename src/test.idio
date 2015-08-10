@@ -71,7 +71,7 @@ define-macro (test form result) {
 
 display* "This is test.idio"
 
-load "tests/s9-test.idio"
+;load "tests/s9-test.idio"
 load "tests/operator.idio"
 load "tests/template.idio"
 load "tests/file-handle.idio"
