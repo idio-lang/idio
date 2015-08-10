@@ -200,7 +200,7 @@ define (mark-process-status pid status) {
 
     jobs-loop %idio-jobs
   } (or (c/== pid 0)
-	(c/== c/errno ECHLD)) {
+	(c/== c/errno ECHILD)) {
     ;; edisplay* "mps: pid ==" pid ", errno ==" (c/strerrno c/errno)
     #t
   } else {
@@ -855,7 +855,10 @@ with-output-to := {
     ;; afterwards
     coh := #f
 
-    cond ((output-file-handle? out) (noh = out)) \
+    cond ((output-file-handle? out) {
+	   file-handle-fflush out
+	   noh = out
+	 }) \
 	 ((file-handle? out) (error 'with-output-to "not an output-file-handle" out)) \
 	 ((output-string-handle? out) (noh = out)) \
 	 ((string-handle? out) (error 'with-output-to "not an output-string-handle" out)) \
@@ -881,3 +884,177 @@ with-output-to := {
     }
   }
 }
+
+;; with-error-to err thunk
+;;
+;; {err} can be an output handle (file or string) or it can be a
+;; literal string which will be interpreted as the name of the file to
+;; open as per: open-output-file {err}
+with-error-to := {
+  set-error-handle! := set-error-handle!
+
+  function (err thunk) {
+    ;; old and new output handles
+    oeh := (current-error-handle)
+    neh := #f
+
+    ;; if we created a new output handle we need to close it
+    ;; afterwards
+    ceh := #f
+
+    cond ((output-file-handle? err) {
+	   file-handle-fflush err
+	   neh = err
+	 }) \
+	 ((file-handle? err) (error 'with-error-to "not an output-file-handle" err)) \
+	 ((output-string-handle? err) (neh = err)) \
+	 ((string-handle? err) (error 'with-error-to "not an output-string-handle" err)) \
+	 ((string? err) {
+	   neh = open-output-file err
+	   ceh = #t
+	 }) \
+	 (else (error 'with-error-to "unexpected output" err))
+
+    if neh {
+      set-error-handle! neh
+    } {
+      error 'with-error-to "unexpected output" err
+    }
+
+    unwind-protect {
+      (thunk)
+    } {
+      if ceh {
+	close-handle neh
+      }
+      set-error-handle! oeh
+    }
+  }
+}
+
+;; dup-output-to out thunk
+;;
+;; {out} can be an output handle (file or string) or it can be a C int
+;; or a fixnum which will be interpreted as a file descriptor to call
+;; c/dup2 with
+dup-output-to := {
+  set-output-handle! := set-output-handle!
+
+  function (out thunk) {
+    ;; old and new output handles
+    ooh := (current-output-handle)
+    noh := #f
+
+    ;; if we created a new output handle we need to close it
+    ;; afterwards
+    coh := #f
+
+    ;; if we dup'ed a file descriptor we need to revert it afterwards
+    doh := #f
+
+    cond ((output-file-handle? out) {
+	   file-handle-fflush out
+	   noh = out
+	 }) \
+	 ((file-handle? out) (error 'dup-output-to "not an output-file-handle" out)) \
+	 ((output-string-handle? out) (noh = out)) \
+	 ((string-handle? out) (error 'dup-output-to "not an output-string-handle" out)) \
+	 ((c/int? out) {
+	   doh = out
+	 }) \
+	 ((fixnum? out) {
+	   doh = c/integer-> out
+	 }) \
+	 (else (error 'dup-output-to "unexpected output" out))
+
+    if+ noh {
+      set-output-handle! noh
+    } doh {
+      c/dup2 out 1
+    } else {
+      error 'dup-output-to "unexpected output" out
+    }
+
+    unwind-protect {
+      (thunk)
+    } {
+      if+ coh {
+	close-handle noh
+      } doh {
+	c/dup2 doh 1
+      }
+      set-output-handle! ooh
+    }
+  }
+}
+
+;; ... > e1 ...
+define-operator > 400 {
+  suffix := #n
+
+  if (and (pair? after)
+	  (pair? (pt after))
+	  (not (null? (pt (pt after))))) {
+    suffix = pt after
+    after = (list (ph after))
+  }
+
+  io-redir := 'with-output-to
+  if (eq? op '2>) {
+    io-redir = 'with-error-to
+  }
+
+  result := #n
+
+  if (null? suffix) {
+    result = %T{ $io-redir $(ph after) (function () {
+        $before
+      })
+    }
+  } {
+    result = %T{ $io-redir $(ph after) (function () {
+        $(operator-expand (append before suffix))
+      })
+    }
+  }
+
+  edisplay* "result:" result
+  result
+}
+
+define-operator 2> 400 >
+
+;; ... >! e1 ...
+define-operator >& 400 {
+  suffix := #n
+
+  if (and (pair? after)
+	  (pair? (pt after))
+	  (not (null? (pt (pt after))))) {
+    suffix = pt after
+    after = (list (ph after))
+  }
+
+  io-redir := 'dup-output-to
+  if (eq? op '2&>) {
+    io-redir = 'dup-error-to
+  }
+
+  result := #n
+
+  if (null? suffix) {
+    result = %T{ $io-redir $(ph after) (function () {
+        $before
+      })
+    }
+  } {
+    result = %T{ $io-redir $(ph after) (function () {
+        $(operator-expand (append before suffix))
+      })
+    }
+  }
+
+  edisplay* "result:" result
+  result
+}
+

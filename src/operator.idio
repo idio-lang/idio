@@ -19,6 +19,20 @@
 ;; operator.idio
 ;;
 
+define (operator-precedence-table) {
+  og := symbol-value '*operator-group* (find-module 'Idio.operator)
+  loop :+ function (groups r) {
+    cond ((null? groups) (reverse r)) \
+	 (else {
+	   prec-group := ph groups
+	   ops := map ph (pt prec-group)
+	   loop (pt groups) (pair (pair (ph prec-group) ops) r)
+         })
+  }
+
+  loop og #n
+}
+
 define (operator-expand1 exp) {
   idio-debug "OE %s\n" exp
 
@@ -259,7 +273,6 @@ define-macro (|| & e*) {
 
 ;; e1 ... || e2 ...		=> || (e1 ...) (e2 ...)
 define-operator && 200 {
-  ;;edisplay* "operator" op before after
 
   ;; we want a list of lists -- a list of the {op}-separated lists
   split :+ function (op op-args expr after) {
@@ -270,9 +283,10 @@ define-operator && 200 {
   }
 
   op-args := split op (list before) #n after
-  ;;edisplay* "operator /1" op op-args
+
+  ;; we have created new lists so we should expand any operators in
+  ;; them
   op-args = map operator-expand op-args
-  ;;edisplay* "operator /2" op op-args
 
   reduce := function (e) {
     cond ((atom? e) e) \
@@ -280,7 +294,6 @@ define-operator && 200 {
 	 (else e)
   }
   op-args = map reduce op-args
-  ;;edisplay* "operator /3" op op-args
 
   %T{ $op $@op-args }
 }

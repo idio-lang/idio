@@ -352,6 +352,59 @@ IDIO_DEFINE_PRIMITIVE1V ("open-input-file-from-fd", open_input_file_handle_from_
     return idio_open_file_handle (name, filep, mflag, IDIO_FILE_HANDLE_FLAG_NONE);
 }
 
+IDIO_DEFINE_PRIMITIVE1V ("open-output-file-from-fd", open_output_file_handle_from_fd, (IDIO ifd, IDIO args))
+{
+    IDIO_ASSERT (ifd);
+    IDIO_ASSERT (args);
+    IDIO_VERIFY_PARAM_TYPE (C_int, ifd);
+    IDIO_VERIFY_PARAM_TYPE (list, args);
+    
+    int fd = IDIO_C_TYPE_INT (ifd);
+
+    char name[PATH_MAX];
+    sprintf (name, "/dev/fd/%d", fd);
+
+    if (idio_S_nil != args) {
+	IDIO iname = IDIO_PAIR_H (args);
+	if (idio_isa_string (iname)) {
+	    if (idio_string_blen (iname) >= PATH_MAX) {
+		idio_error_C ("name too long", IDIO_LIST1 (iname), IDIO_C_LOCATION ("open-output-file-from-fd"));
+
+		/* notreached */
+		return idio_S_unspec;
+	    }
+	    sprintf (name, "%.*s", PATH_MAX - 1, idio_string_s (iname));
+	    args = IDIO_PAIR_T (args);
+	} else {
+	    idio_error_param_type ("string", iname, IDIO_C_LOCATION ("open-output-file-from-fd"));
+	}
+    }
+
+    char *mode = "w";
+    
+    if (idio_S_nil != args) {
+	IDIO imode = IDIO_PAIR_H (args);
+	if (idio_isa_string (imode)) {
+	    mode = idio_string_s (imode);
+	    args = IDIO_PAIR_T (args);
+	} else {
+	    idio_error_param_type ("string", imode, IDIO_C_LOCATION ("open-output-file-from-fd"));
+	}
+    }
+
+    FILE *filep = fdopen (fd, mode);
+    if (NULL == filep) {
+	idio_error_system_errno ("fdopen", IDIO_LIST2 (idio_string_C (name), idio_string_C (mode)), IDIO_C_LOCATION ("open-output-file-from-fd"));
+    }
+
+    int mflag = IDIO_HANDLE_FLAG_WRITE;
+    if (strchr (mode, '+') != NULL) {
+	mflag |= IDIO_HANDLE_FLAG_READ;
+    }
+
+    return idio_open_file_handle (name, filep, mflag, IDIO_FILE_HANDLE_FLAG_NONE);
+}
+
 IDIO idio_open_file_handle_C (char *name, char *mode)
 {
     IDIO_C_ASSERT (name);
@@ -862,6 +915,16 @@ int idio_file_handle_flush (IDIO fh)
      * underlying file, but has not been consumed by the application."
      *
      * ??
+     *
+     * Anyway, all we do here is fwrite(3) the contents of *our*
+     * buffer to the FILE* stream.
+     *
+     * Of course the FILE* stream is itself buffered (probably) so we
+     * may not have achieved very much as far as a third party
+     * process/observer is concerned.
+     *
+     * There's the file-handle-specific file-handle-fflush, below, if
+     * needed.
      */
     if (IDIO_HANDLE_INPUTP (fh) &&
 	! IDIO_HANDLE_OUTPUTP (fh)) {
@@ -873,6 +936,17 @@ int idio_file_handle_flush (IDIO fh)
     IDIO_FILE_HANDLE_COUNT (fh) = 0;
 
     return r;
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("file-handle-fflush", file_handle_fflush, (IDIO fh))
+{
+    IDIO_ASSERT (fh);
+    IDIO_VERIFY_PARAM_TYPE (file_handle, fh);
+
+    idio_file_handle_flush (fh);
+    int r = fflush (IDIO_FILE_HANDLE_FILEP (fh));
+
+    return idio_fixnum (r);
 }
 
 off_t idio_file_handle_seek (IDIO fh, off_t offset, int whence)
@@ -1268,12 +1342,14 @@ void idio_init_file_handle ()
 void idio_file_handle_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (open_input_file_handle_from_fd);
+    IDIO_ADD_PRIMITIVE (open_output_file_handle_from_fd);
     IDIO_ADD_PRIMITIVE (open_file_handle);
     IDIO_ADD_PRIMITIVE (open_input_file_handle);
     IDIO_ADD_PRIMITIVE (open_output_file_handle);
     IDIO_ADD_PRIMITIVE (file_handlep);
     IDIO_ADD_PRIMITIVE (input_file_handlep);
     IDIO_ADD_PRIMITIVE (output_file_handlep);
+    IDIO_ADD_PRIMITIVE (file_handle_fflush);
     IDIO_ADD_PRIMITIVE (file_handle_fd);
     IDIO_ADD_PRIMITIVE (load);
     IDIO_ADD_PRIMITIVE (file_exists_p);

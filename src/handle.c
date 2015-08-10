@@ -413,6 +413,17 @@ int idio_handle_flush (IDIO h)
     return IDIO_HANDLE_M_FLUSH (h) (h);
 }
 
+IDIO_DEFINE_PRIMITIVE1 ("handle-flush", handle_flush, (IDIO h))
+{
+    IDIO_ASSERT (h);
+    
+    IDIO_VERIFY_PARAM_TYPE (handle, h);
+
+    idio_handle_flush (h);
+
+    return idio_S_unspec;
+}
+
 off_t idio_handle_seek (IDIO h, off_t offset, int whence)
 {
     IDIO_ASSERT (h);
@@ -606,6 +617,17 @@ IDIO_DEFINE_PRIMITIVE1 ("set-output-handle!", set_output_handle, (IDIO h))
     IDIO_VERIFY_PARAM_TYPE (handle, h);
     
     idio_set_current_output_handle (h);
+
+    return idio_S_unspec;
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("set-error-handle!", set_error_handle, (IDIO h))
+{
+    IDIO_ASSERT (h);
+
+    IDIO_VERIFY_PARAM_TYPE (handle, h);
+    
+    idio_set_current_error_handle (h);
 
     return idio_S_unspec;
 }
@@ -946,6 +968,7 @@ void idio_handle_add_primitives ()
     IDIO_ADD_PRIMITIVE (current_error_handle);
     IDIO_ADD_PRIMITIVE (set_input_handle);
     IDIO_ADD_PRIMITIVE (set_output_handle);
+    IDIO_ADD_PRIMITIVE (set_error_handle);
     IDIO_ADD_PRIMITIVE (close_handle);
     IDIO_ADD_PRIMITIVE (close_input_handle);
     IDIO_ADD_PRIMITIVE (close_output_handle);
@@ -966,6 +989,7 @@ void idio_handle_add_primitives ()
     IDIO_ADD_PRIMITIVE (display);
     IDIO_ADD_PRIMITIVE (handle_current_line);
     IDIO_ADD_PRIMITIVE (handle_current_pos);
+    IDIO_ADD_PRIMITIVE (handle_flush);
     IDIO_ADD_PRIMITIVE (handle_seek);
     IDIO_ADD_PRIMITIVE (handle_rewind);
 }
