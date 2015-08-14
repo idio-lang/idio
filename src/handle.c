@@ -376,7 +376,8 @@ int idio_handle_putc (IDIO h, int c)
 
     if (EOF != n) {
 	IDIO_HANDLE_POS (h) += n;
-	if ('\n' == c) {
+	if ('\n' == c &&
+	    IDIO_HANDLE_LINE (h)) {
 	    IDIO_HANDLE_LINE (h) += 1;
 	}
     }
@@ -503,7 +504,23 @@ IDIO_DEFINE_PRIMITIVE2V ("handle-seek", handle_seek, (IDIO h, IDIO pos, IDIO arg
     off_t n = idio_handle_seek (h, offset, whence);
 
     if (n < 0) {
-	idio_error_printf (IDIO_C_LOCATION ("handle-seek"), "cannot seek to %" PRId64, offset);
+	idio_debug ("handle-seek %s", h);
+	idio_debug (" %s", pos);
+	if (idio_S_nil != args) {
+	    idio_debug (" %s", IDIO_PAIR_H (args));
+	}
+	fprintf (stderr, "\n");
+
+	char *ws;
+	switch (whence) {
+	case SEEK_SET: ws = "SEEK_SET"; break;
+	case SEEK_END: ws = "SEEK_END"; break;
+	case SEEK_CUR: ws = "SEEK_CUR"; break;
+	default: ws = "u/k"; break;
+	}
+	idio_error_printf (IDIO_C_LOCATION ("handle-seek"), "cannot seek (%" PRId64 ", %s)", offset, ws);
+
+	/* notreached */
 	return idio_S_unspec;
     }
 
