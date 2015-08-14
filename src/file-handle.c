@@ -27,37 +27,6 @@ static IDIO idio_stdin = idio_S_nil;
 static IDIO idio_stdout = idio_S_nil;
 static IDIO idio_stderr = idio_S_nil;
 
-#define IDIO_FILE_HANDLE_FLAG_NONE	  0
-#define IDIO_FILE_HANDLE_FLAG_EOF	  (1<<0)
-#define IDIO_FILE_HANDLE_FLAG_INTERACTIVE (1<<1)
-#define IDIO_FILE_HANDLE_FLAG_STDIO	  (1<<2)
-
-typedef struct idio_file_handle_stream_s {
-    FILE *filep;		/* or NULL! */
-    int fd;
-    int flags;			/* IDIO_FILE_HANDLE_FLAG_* */
-    char *buf;			/* buffer */
-    int bufsiz;
-    char *ptr;			/* ptr into buffer */
-    int count;			/* bytes in buffer */
-} idio_file_handle_stream_t;
-
-#define IDIO_FILE_HANDLE_STREAM_FILEP(S)  ((S)->filep)
-#define IDIO_FILE_HANDLE_STREAM_FD(S)     ((S)->fd)
-#define IDIO_FILE_HANDLE_STREAM_FLAGS(S)  ((S)->flags)
-#define IDIO_FILE_HANDLE_STREAM_BUF(S)    ((S)->buf)
-#define IDIO_FILE_HANDLE_STREAM_BUFSIZ(S) ((S)->bufsiz)
-#define IDIO_FILE_HANDLE_STREAM_PTR(S)    ((S)->ptr)
-#define IDIO_FILE_HANDLE_STREAM_COUNT(S)  ((S)->count)
-
-#define IDIO_FILE_HANDLE_FILEP(H)  IDIO_FILE_HANDLE_STREAM_FILEP((idio_file_handle_stream_t *) IDIO_HANDLE_STREAM(H))
-#define IDIO_FILE_HANDLE_FD(H)     IDIO_FILE_HANDLE_STREAM_FD((idio_file_handle_stream_t *) IDIO_HANDLE_STREAM(H))
-#define IDIO_FILE_HANDLE_FLAGS(H)  IDIO_FILE_HANDLE_STREAM_FLAGS((idio_file_handle_stream_t *) IDIO_HANDLE_STREAM(H))
-#define IDIO_FILE_HANDLE_BUF(H)    IDIO_FILE_HANDLE_STREAM_BUF((idio_file_handle_stream_t *) IDIO_HANDLE_STREAM(H))
-#define IDIO_FILE_HANDLE_BUFSIZ(H) IDIO_FILE_HANDLE_STREAM_BUFSIZ((idio_file_handle_stream_t *) IDIO_HANDLE_STREAM(H))
-#define IDIO_FILE_HANDLE_PTR(H)    IDIO_FILE_HANDLE_STREAM_PTR((idio_file_handle_stream_t *) IDIO_HANDLE_STREAM(H))
-#define IDIO_FILE_HANDLE_COUNT(H)  IDIO_FILE_HANDLE_STREAM_COUNT((idio_file_handle_stream_t *) IDIO_HANDLE_STREAM(H))
-
 static idio_handle_methods_t idio_file_handle_methods = {
     idio_file_handle_free,
     idio_file_handle_readyp,
@@ -260,7 +229,7 @@ static void idio_filehandle_error_filename_not_found_C (char *name, IDIO loc)
     idio_filehandle_error_filename_not_found (idio_string_C (name), loc);
 }
 
-static IDIO idio_open_file_handle (char *name, FILE *filep, int mflag, int sflags)
+static IDIO idio_open_file_handle (char *name, FILE *filep, int h_flags, int s_flags)
 {
     IDIO_C_ASSERT (filep);
     
@@ -270,12 +239,12 @@ static IDIO idio_open_file_handle (char *name, FILE *filep, int mflag, int sflag
     int fd = fileno (filep);
 
     if (isatty (fd)) {
-	sflags |= IDIO_FILE_HANDLE_FLAG_INTERACTIVE;
+	s_flags |= IDIO_FILE_HANDLE_FLAG_INTERACTIVE;
     }
     
     IDIO_FILE_HANDLE_STREAM_FILEP (fhsp) = filep;
     IDIO_FILE_HANDLE_STREAM_FD (fhsp) = fd;
-    IDIO_FILE_HANDLE_STREAM_FLAGS (fhsp) = sflags;
+    IDIO_FILE_HANDLE_STREAM_FLAGS (fhsp) = s_flags;
     IDIO_FILE_HANDLE_STREAM_BUF (fhsp) = idio_alloc (bufsiz);
     IDIO_FILE_HANDLE_STREAM_BUFSIZ (fhsp) = bufsiz;
     IDIO_FILE_HANDLE_STREAM_PTR (fhsp) = IDIO_FILE_HANDLE_STREAM_BUF (fhsp);
@@ -286,12 +255,12 @@ static IDIO idio_open_file_handle (char *name, FILE *filep, int mflag, int sflag
     char *name_copy = idio_alloc (strlen (name) + 1);
     strcpy (name_copy, name);
 
-    IDIO_HANDLE_FLAGS (fh) |= mflag | IDIO_HANDLE_FLAG_FILE;
+    IDIO_HANDLE_FLAGS (fh) |= h_flags | IDIO_HANDLE_FLAG_FILE;
     IDIO_HANDLE_NAME (fh) = name_copy;
     IDIO_HANDLE_STREAM (fh) = fhsp;
     IDIO_HANDLE_METHODS (fh) = &idio_file_handle_methods;
 
-    if ((sflags & IDIO_FILE_HANDLE_FLAG_STDIO) == 0) {
+    if ((s_flags & IDIO_FILE_HANDLE_FLAG_STDIO) == 0) {
 	idio_gc_register_finalizer (fh, idio_file_handle_finalizer);
 	/* idio_gc_register_file_handle (fh); */
     }
@@ -410,20 +379,20 @@ IDIO idio_open_file_handle_C (char *name, char *mode)
     IDIO_C_ASSERT (name);
     IDIO_C_ASSERT (mode);
 
-    int mflag = 0;
+    int h_flags = 0;
     
     switch (mode[0]) {
     case 'r':
-	mflag = IDIO_HANDLE_FLAG_READ;
+	h_flags = IDIO_HANDLE_FLAG_READ;
 	if (strchr (mode, '+') != NULL) {
-	    mflag |= IDIO_HANDLE_FLAG_WRITE;
+	    h_flags |= IDIO_HANDLE_FLAG_WRITE;
 	}
 	break;
     case 'a':
     case 'w':
-	mflag = IDIO_HANDLE_FLAG_WRITE;
+	h_flags = IDIO_HANDLE_FLAG_WRITE;
 	if (strchr (mode, '+') != NULL) {
-	    mflag |= IDIO_HANDLE_FLAG_READ;
+	    h_flags |= IDIO_HANDLE_FLAG_READ;
 	}
 	break;
     default:
@@ -473,7 +442,26 @@ IDIO idio_open_file_handle_C (char *name, char *mode)
 	idio_error_system_errno ("fopen (final)", IDIO_LIST2 (idio_string_C (name), idio_string_C (mode)), IDIO_C_LOCATION ("idio_open_file_handle_C"));
     }
 
-    return idio_open_file_handle (name, filep, mflag, IDIO_FILE_HANDLE_FLAG_NONE);
+    int s_flags = IDIO_FILE_HANDLE_FLAG_NONE;
+    if (strchr (mode, 'e') != NULL) {
+	s_flags |= IDIO_FILE_HANDLE_FLAG_CLOEXEC;
+
+#if (defined (__APPLE__) && defined (__MACH__))
+	/*
+	 * Some systems don't support the "e" (close-on-exec) mode
+	 * character -- on the plus side they don't complain either!
+	 *
+	 * We'll have to set the close-on-exec flag ourselves, if
+	 * required
+	 */
+	int fd = fileno (filep);
+	if (fcntl (fd, F_SETFD, FD_CLOEXEC) == -1) {
+	    idio_error_system_errno ("fcntl F_SETFD FD_CLOEXEC", IDIO_LIST3 (idio_string_C (name), idio_string_C (mode), idio_C_int (fd)), IDIO_C_LOCATION ("idio_open_file_handle_C"));
+	}
+#endif
+    }
+
+    return idio_open_file_handle (name, filep, h_flags, s_flags);
 }
 
 IDIO_DEFINE_PRIMITIVE2 ("open-file", open_file_handle, (IDIO name, IDIO mode))
@@ -529,7 +517,7 @@ IDIO_DEFINE_PRIMITIVE1 ("open-input-file", open_input_file_handle, (IDIO name))
 	break;
     }
     
-    IDIO r = idio_open_file_handle_C (name_C, "r");
+    IDIO r = idio_open_file_handle_C (name_C, "re");
 
     free (name_C);
 
@@ -552,7 +540,7 @@ IDIO_DEFINE_PRIMITIVE1 ("open-output-file", open_output_file_handle, (IDIO name)
 	break;
     }
     
-    IDIO r = idio_open_file_handle_C (name_C, "w");
+    IDIO r = idio_open_file_handle_C (name_C, "we");
 
     free (name_C);
 
@@ -978,6 +966,25 @@ void idio_file_handle_print (IDIO fh, IDIO o)
     free (os);
 }
 
+IDIO_DEFINE_PRIMITIVE1 ("close-file-handle-on-exec", close_file_handle_on_exec, (IDIO fh))
+{
+    IDIO_ASSERT (fh);
+
+    IDIO_VERIFY_PARAM_TYPE (file_handle, fh);
+
+    int fd = IDIO_FILE_HANDLE_FD (fh);
+
+    int r = fcntl (fd, F_SETFD, FD_CLOEXEC);
+
+    if (-1 == r) {
+	idio_error_system_errno ("fcntl F_SETFD FD_CLOEXEC", IDIO_LIST1 (fh), IDIO_C_LOCATION ("close-file-handle-on-exec"));
+    }
+
+    IDIO_FILE_HANDLE_FLAGS (fh) |= IDIO_FILE_HANDLE_FLAG_CLOEXEC;
+
+    return idio_C_int (r);
+}
+
 IDIO idio_load_filehandle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO h))
 {
     IDIO_ASSERT (fh);
@@ -1354,6 +1361,7 @@ void idio_file_handle_add_primitives ()
     IDIO_ADD_PRIMITIVE (load);
     IDIO_ADD_PRIMITIVE (file_exists_p);
     IDIO_ADD_PRIMITIVE (delete_file);
+    IDIO_ADD_PRIMITIVE (close_file_handle_on_exec);
 }
 
 void idio_final_file_handle ()

@@ -23,6 +23,38 @@
 #ifndef FILE_HANDLE_H
 #define FILE_HANDLE_H
 
+#define IDIO_FILE_HANDLE_FLAG_NONE	  0
+#define IDIO_FILE_HANDLE_FLAG_EOF	  (1<<0)
+#define IDIO_FILE_HANDLE_FLAG_INTERACTIVE (1<<1)
+#define IDIO_FILE_HANDLE_FLAG_STDIO	  (1<<2)
+#define IDIO_FILE_HANDLE_FLAG_CLOEXEC	  (1<<3)
+
+typedef struct idio_file_handle_stream_s {
+    FILE *filep;		/* or NULL! */
+    int fd;
+    FLAGS_T flags;		/* IDIO_FILE_HANDLE_FLAG_* */
+    char *buf;			/* buffer */
+    int bufsiz;
+    char *ptr;			/* ptr into buffer */
+    int count;			/* bytes in buffer */
+} idio_file_handle_stream_t;
+
+#define IDIO_FILE_HANDLE_STREAM_FILEP(S)  ((S)->filep)
+#define IDIO_FILE_HANDLE_STREAM_FD(S)     ((S)->fd)
+#define IDIO_FILE_HANDLE_STREAM_FLAGS(S)  ((S)->flags)
+#define IDIO_FILE_HANDLE_STREAM_BUF(S)    ((S)->buf)
+#define IDIO_FILE_HANDLE_STREAM_BUFSIZ(S) ((S)->bufsiz)
+#define IDIO_FILE_HANDLE_STREAM_PTR(S)    ((S)->ptr)
+#define IDIO_FILE_HANDLE_STREAM_COUNT(S)  ((S)->count)
+
+#define IDIO_FILE_HANDLE_FILEP(H)  IDIO_FILE_HANDLE_STREAM_FILEP((idio_file_handle_stream_t *) IDIO_HANDLE_STREAM(H))
+#define IDIO_FILE_HANDLE_FD(H)     IDIO_FILE_HANDLE_STREAM_FD((idio_file_handle_stream_t *) IDIO_HANDLE_STREAM(H))
+#define IDIO_FILE_HANDLE_FLAGS(H)  IDIO_FILE_HANDLE_STREAM_FLAGS((idio_file_handle_stream_t *) IDIO_HANDLE_STREAM(H))
+#define IDIO_FILE_HANDLE_BUF(H)    IDIO_FILE_HANDLE_STREAM_BUF((idio_file_handle_stream_t *) IDIO_HANDLE_STREAM(H))
+#define IDIO_FILE_HANDLE_BUFSIZ(H) IDIO_FILE_HANDLE_STREAM_BUFSIZ((idio_file_handle_stream_t *) IDIO_HANDLE_STREAM(H))
+#define IDIO_FILE_HANDLE_PTR(H)    IDIO_FILE_HANDLE_STREAM_PTR((idio_file_handle_stream_t *) IDIO_HANDLE_STREAM(H))
+#define IDIO_FILE_HANDLE_COUNT(H)  IDIO_FILE_HANDLE_STREAM_COUNT((idio_file_handle_stream_t *) IDIO_HANDLE_STREAM(H))
+
 int idio_isa_file_handle (IDIO fh);
 int idio_file_handle_fd (IDIO fh);
 void idio_file_handle_finalizer (IDIO fh);

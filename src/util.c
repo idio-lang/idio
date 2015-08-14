@@ -885,8 +885,49 @@ char *idio_as_string (IDIO o, int depth)
 		    break;
 		}
 	    case IDIO_TYPE_HANDLE:
-		if (asprintf (&r, "#H{%x:\"%s\":%lld:%lld}", IDIO_HANDLE_FLAGS (o), IDIO_HANDLE_NAME (o), (unsigned long long) IDIO_HANDLE_LINE (o), (unsigned long long) IDIO_HANDLE_POS (o)) == -1) {
-		    idio_error_alloc ("asprintf");
+		{
+		    if (asprintf (&r, "#H{") == -1) {
+			idio_error_alloc ("asprintf");
+		    }
+		    if (idio_isa_file_handle (o)) {
+			char *fds;
+			if (asprintf (&fds, "%d:", idio_file_handle_fd (o)) == -1) {
+			    free (r);
+			    idio_error_alloc ("asprintf");
+			}
+			IDIO_STRCAT_FREE (r, fds);
+		    } else {
+			IDIO_STRCAT (r, "-");
+		    }
+
+		    FLAGS_T h_flags = IDIO_HANDLE_FLAGS (o);
+		    if (h_flags & IDIO_HANDLE_FLAG_STRING) {
+			IDIO_STRCAT (r, "s");
+		    }
+		    if (h_flags & IDIO_HANDLE_FLAG_FILE) {
+			IDIO_STRCAT (r, "f");
+
+			FLAGS_T s_flags = IDIO_FILE_HANDLE_FLAGS (o);
+			if (s_flags & IDIO_FILE_HANDLE_FLAG_CLOEXEC) {
+			    IDIO_STRCAT (r, "E");
+			}
+		    }
+		    if (h_flags & IDIO_HANDLE_FLAG_CLOSED) {
+			IDIO_STRCAT (r, "C");
+		    }
+		    if (h_flags & IDIO_HANDLE_FLAG_READ) {
+			IDIO_STRCAT (r, "r");
+		    }
+		    if (h_flags & IDIO_HANDLE_FLAG_WRITE) {
+			IDIO_STRCAT (r, "w");
+		    }
+
+		    char *info;
+		    if (asprintf (&info, ":\"%s\":%lld:%lld}", IDIO_HANDLE_NAME (o), (unsigned long long) IDIO_HANDLE_LINE (o), (unsigned long long) IDIO_HANDLE_POS (o)) == -1) {
+			free (r);
+			idio_error_alloc ("asprintf");
+		    }
+		    IDIO_STRCAT_FREE (r, info);
 		}
 		break;
 	    case IDIO_TYPE_C_INT:

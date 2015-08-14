@@ -608,6 +608,8 @@ typedef struct idio_opaque_s {
 #define IDIO_OPAQUE_P(C)    ((C)->u.opaque->p)
 #define IDIO_OPAQUE_ARGS(C) ((C)->u.opaque->args)
 
+typedef unsigned char FLAGS_T;
+
 typedef struct idio_s {
     struct idio_s *next;
 
@@ -616,8 +618,8 @@ typedef struct idio_s {
      * of room for "info"
      */
     idio_type_e type;
-    unsigned char flags;	/* generic type flags */
-    unsigned char tflags;	/* type-specific flags (since we have
+    FLAGS_T flags;		/* generic type flags */
+    FLAGS_T tflags;		/* type-specific flags (since we have
 				   room here) */
     /*
      * Rationale for union.  We need to decide whether the union
