@@ -93,15 +93,51 @@ IDIO_DEFINE_PRIMITIVE1 ("c/close", C_close, (IDIO ifd))
     return idio_C_int (r);
 }
 
+IDIO_DEFINE_PRIMITIVE1 ("c/dup", C_dup, (IDIO ioldfd))
+{
+    IDIO_ASSERT (ioldfd);
+
+    int oldfd = -1;
+    if (idio_isa_fixnum (ioldfd)) {
+	oldfd = IDIO_FIXNUM_VAL (ioldfd);
+    } else if (idio_isa_C_int (ioldfd)) {
+	oldfd = IDIO_C_TYPE_INT (ioldfd);
+    } else {
+	idio_error_param_type ("fixnum|C_int ioldfd", ioldfd, IDIO_C_LOCATION ("c/dup"));
+    }
+
+    int r = dup (oldfd);
+
+    if (-1 == r) {
+	idio_error_system_errno ("dup", IDIO_LIST1 (ioldfd), IDIO_C_LOCATION ("c/dup"));
+    }
+
+    return idio_C_int (r);
+}
+
 IDIO_DEFINE_PRIMITIVE2 ("c/dup2", C_dup2, (IDIO ioldfd, IDIO inewfd))
 {
     IDIO_ASSERT (ioldfd);
     IDIO_ASSERT (inewfd);
-    IDIO_VERIFY_PARAM_TYPE (C_int, ioldfd);
-    IDIO_VERIFY_PARAM_TYPE (C_int, inewfd);
 
-    int oldfd = IDIO_C_TYPE_INT (ioldfd);
-    int newfd = IDIO_C_TYPE_INT (inewfd);
+    int oldfd = -1;
+    if (idio_isa_fixnum (ioldfd)) {
+	oldfd = IDIO_FIXNUM_VAL (ioldfd);
+    } else if (idio_isa_C_int (ioldfd)) {
+	oldfd = IDIO_C_TYPE_INT (ioldfd);
+    } else {
+	idio_error_param_type ("fixnum|C_int ioldfd", ioldfd, IDIO_C_LOCATION ("c/dup"));
+    }
+
+    int newfd = -1;
+    if (idio_isa_fixnum (inewfd)) {
+	newfd = IDIO_FIXNUM_VAL (inewfd);
+    } else if (idio_isa_C_int (inewfd)) {
+	newfd = IDIO_C_TYPE_INT (inewfd);
+    } else {
+	idio_error_param_type ("fixnum|C_int inewfd", inewfd, IDIO_C_LOCATION ("c/dup"));
+    }
+
 
     int r = dup2 (oldfd, newfd);
 
@@ -2663,6 +2699,7 @@ void idio_libc_wrap_add_primitives ()
     IDIO_ADD_PRIMITIVE (C_system_error);
     IDIO_ADD_PRIMITIVE (C_access);
     IDIO_ADD_PRIMITIVE (C_close);
+    IDIO_ADD_PRIMITIVE (C_dup);
     IDIO_ADD_PRIMITIVE (C_dup2);
     IDIO_ADD_PRIMITIVE (C_exit);
     IDIO_ADD_PRIMITIVE (C_fcntl);
