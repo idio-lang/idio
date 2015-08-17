@@ -258,6 +258,9 @@ monitor (function (cont cond) {
   stdoutfile := "..stdout.."
   stderrfile := "..stderr.."
 
+  ;; lsof gets a bit sniffy if the files have recently appeared
+  touch stdinfile stdoutfile stderrfile
+
   with-output-to-file stdinfile (function () {
     display test-str
   })
@@ -338,6 +341,9 @@ monitor (function (cont cond) {
     redir-infile := "..redir-in.."
     redir-outfile := "..redir-out.."
     redir-errfile := "..redir-err.."
+
+    ;; lsof gets a bit sniffy if the files have recently appeared
+    touch redir-infile redir-outfile redir-errfile
 
     where-in := (string-append "/" redir-infile)
     where-out := (string-append "/" redir-outfile)

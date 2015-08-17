@@ -71,7 +71,7 @@ pfiles ${opt_p} > ${pfiles_file}
 # bash    2845  idf    0u   CHR  136,0      0t0    3 /dev/pts/0
 
 if [[ ! ${opt_F} ]] ; then
-    printf "%-7s %5s %4s %4s %5s %6s %8s %9s %s\n" COMMAND  PID USER   FD   TYPE DEVICE SIZE/OFF NODE NAME
+    printf "%-7s %5s %4s %4s %5s %9s %8s %9s %s\n" COMMAND  PID USER   FD   TYPE DEVICE SIZE/OFF NODE NAME
 fi
 
 (
@@ -89,7 +89,7 @@ fi
 
     # 0: S_IFCHR mode:0620 dev:548,0 ino:705874198 uid:101 gid:7 rdev:241,1
 
-    while read fd type mode dev ino uid gid rdev ; do
+    while read fd ftype mode dev ino uid gid rdev ; do
 	fd=${fd%:}
 
 	p=
@@ -107,30 +107,52 @@ fi
 	    continue
 	fi
 
-	case "${rdev}" in
-	size:*)
-	    rdev=-
-	    ;;
-	esac
-
 	case "${opt_F}" in
 	*f*)
 	    echo f${fd}
 	    ;;
 	esac
 
-	case "${type}" in
+	case "${ftype}" in
 	S_IFCHR|S_IFREG)
+	    case "${opt_F}" in
+	    *t*)
+		echo t${ftype#S_IF}
+		;;
+	    esac
 	    read rest # O_* flags
+
+	    # sometimes there's no name and it's straight into offset
+	    #
+	    # where there is a name, patch up /dev/null to consistency
+	    offset=
 	    read file
+	    case "${file}" in
+	    /devices/pseudo/mm@0:null)
+		file=/dev/null
+		;;
+	    offset:*)
+		offset="${file}"
+		file=
+	    esac
 	    case "${opt_F}" in
 	    *n*)
 		echo n${file}
 		;;
 	    esac
-	    read offset
+	    if [[ ! ${offset} ]] ; then
+		read offset
+	    fi
 	    ;;
 	S_IFIFO)
+	    ftype=PIPE
+	    offset=-
+	    file=pipe
+	    case "${opt_F}" in
+	    *t*)
+		echo t${ftype}
+		;;
+	    esac
 	    read rest # O_* flags
 	    case "${opt_F}" in
 	    *n*)
@@ -143,9 +165,16 @@ fi
 	    read rest # filename
 	    ;;
 	*)
-	    echo "unexpected type: ${type}" >&2
+	    echo "unexpected ftype: '${ftype}'" >&2
 	    pfiles ${opt_p} >&2
+	    set >&2
 	    exit 1
+	    ;;
+	esac
+
+	case "${opt_F}" in
+	*r*)
+	    echo r${rdev#rdev:}
 	    ;;
 	esac
 
@@ -154,7 +183,7 @@ fi
 	fi
 
 	if [[ ${p} ]] ; then
-	    printf "%-7s %5s %4s %4s %5s %6s %8s %9s %s\n" ${command} ${pid} ${uid#uid:} ${fd} ${type#S_IF} ${rdev#rdev:} ${offset#offset:} ${ino#ino:} ${file}
+	    printf "%-7s %5s %4s %4s %5s %9s %8s %9s %s\n" ${command} ${pid} ${uid#uid:} ${fd} ${ftype#S_IF} ${dev#dev:} ${offset#offset:} ${ino#ino:} ${file}
 	fi
     done
 ) < ${pfiles_file}

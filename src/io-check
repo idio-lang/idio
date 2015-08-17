@@ -72,12 +72,17 @@ error ()
 _uname=( $(uname -mrps) )
 OS=${_uname[0]}
 
-typeset -a stdio
+case "${OS}" in
+FreeBSD)
+    dev_null_dev=$(stat -f 0x%Xr /dev/null)
+    ;;
+esac
+
+typeset -a stdio ftype rdev
 
 lsof_data ()
 {
-    typeset fd
-    typeset file
+    typeset fd file
 
     # whoops!
     #
@@ -89,7 +94,7 @@ lsof_data ()
 
     tmpfile=/tmp/${0##*/}.$$
 
-    lsof -a -p ${pid} -d 0-2 -F fn > ${tmpfile}
+    lsof -a -p ${pid} -d 0-2 -F ftnr > ${tmpfile}
 
     while read line ; do
 	case "${line}" in
@@ -97,17 +102,44 @@ lsof_data ()
 	f[0-2])
 	    fd="${line#f}"
 	    ;;
+	t*)
+	    ftype[fd]="${line#t}"
+	    ;;
+	r*)
+	    rdev[fd]="${line#r}"
+	    ;;
 	n*)
 	    file="${line#n}"
 
-	    # Normalise the output of lsof.  On CentOS it reports
-	    # "pipe" for a pipe 'device'.  On FreeBSD/Darwin it
-	    # reports "->0x..." with a 64bit hex number.
+	    # Normalise the output of lsof.  
+	    #
+	    # pipe: On CentOS it reports "pipe" for a pipe 'device'.
+	    # On FreeBSD/Darwin it reports "->0x..." with a 64bit hex
+	    # number.
+	    #
+	    # /dev/null: On FreeBSD /dev/null is just a regular
+	    # /dev/fd/n.  However, the device should match the output
+	    # from stat(1).
 	    case "${OS}" in
 	    FreeBSD|Darwin)
 		case "${file}" in
 		"->0x"*)
 		    file=pipe
+		    ;;
+		esac
+		;;
+	    esac
+	    case "${OS}" in
+	    FreeBSD)
+		case "${file}" in
+		/dev/fd/*)
+		    case "${ftype[fd]}" in
+		    VCHR)
+			if [[ ${rdev[fd]} = ${dev_null_dev} ]] ; then
+			    file=/dev/null
+			fi
+			;;
+		    esac
 		    ;;
 		esac
 		;;
@@ -130,7 +162,7 @@ if [[ ${opt_input} ]] ; then
 	fi
 	;;
     pipe) 
-	if [[ ${stdio[0]} != pipe ]] ; then
+	if [[ ${ftype[0]} != PIPE ]] ; then
 	    error "stdin: != pipe"
 	fi
 	;;
@@ -164,7 +196,7 @@ if [[ ${opt_output} ]] ; then
 	fi
 	;;
     pipe) 
-	if [[ ${stdio[1]} != pipe ]] ; then
+	if [[ ${ftype[1]} != PIPE ]] ; then
 	    error "stdout: != pipe"
 	fi
 	;;
@@ -192,7 +224,7 @@ if [[ ${opt_error} ]] ; then
 	fi
 	;;
     pipe) 
-	if [[ ${stdio[2]} != pipe ]] ; then
+	if [[ ${ftype[2]} != PIPE ]] ; then
 	    error "stderr: != pipe"
 	fi
 	;;
