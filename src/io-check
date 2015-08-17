@@ -104,6 +104,11 @@ lsof_data ()
 	    ;;
 	t*)
 	    ftype[fd]="${line#t}"
+	    case "${ftype[fd]}" in
+	    FIFO)
+		ftype[fd]=PIPE
+		;;
+	    esac
 	    ;;
 	r*)
 	    rdev[fd]="${line#r}"
