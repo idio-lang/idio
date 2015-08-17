@@ -296,7 +296,7 @@ IDIO_DEFINE_PRIMITIVE1V ("open-input-file-from-fd", open_input_file_handle_from_
 	}
     }
 
-    char *mode = "r";
+    char *mode = "re";
     
     if (idio_S_nil != args) {
 	IDIO imode = IDIO_PAIR_H (args);
@@ -349,7 +349,7 @@ IDIO_DEFINE_PRIMITIVE1V ("open-output-file-from-fd", open_output_file_handle_fro
 	}
     }
 
-    char *mode = "w";
+    char *mode = "we";
     
     if (idio_S_nil != args) {
 	IDIO imode = IDIO_PAIR_H (args);
@@ -446,14 +446,15 @@ IDIO idio_open_file_handle_C (char *name, char *mode)
     if (strchr (mode, 'e') != NULL) {
 	s_flags |= IDIO_FILE_HANDLE_FLAG_CLOEXEC;
 
-#if (defined (__APPLE__) && defined (__MACH__))
 	/*
 	 * Some systems don't support the "e" (close-on-exec) mode
-	 * character -- on the plus side they don't complain either!
+	 * character for fopen(3) -- on the plus side they don't
+	 * complain either!
 	 *
 	 * We'll have to set the close-on-exec flag ourselves, if
 	 * required
 	 */
+#if (defined (__APPLE__) && defined (__MACH__))
 	int fd = fileno (filep);
 	if (fcntl (fd, F_SETFD, FD_CLOEXEC) == -1) {
 	    idio_error_system_errno ("fcntl F_SETFD FD_CLOEXEC", IDIO_LIST3 (idio_string_C (name), idio_string_C (mode), idio_C_int (fd)), IDIO_C_LOCATION ("idio_open_file_handle_C"));

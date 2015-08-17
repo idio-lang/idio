@@ -199,7 +199,6 @@ monitor (function (cont cond) {
   }
   (test=)
   test (auto-exit -w 2 -s 1 | auto-exit -r 1) #f
-  edisplay* "??" %%last-job (pipeline-detail %%last-job)
   (test+3)
 
   ;; pipeline with regular Idio as the writer
@@ -247,6 +246,7 @@ monitor (function (cont cond) {
 {
   oih := (current-input-handle)
   ooh := (current-output-handle)
+  oeh := (current-error-handle)
 
   ;; first of all, create {testfile} that external commands can access
   test-str := "Hello world"
@@ -256,10 +256,13 @@ monitor (function (cont cond) {
 
   stdinfile := "..stdin.."
   stdoutfile := "..stdout.."
+  stderrfile := "..stderr.."
 
   with-output-to-file stdinfile (function () {
     display test-str
   })
+
+  ;; Scheme-style IO redirection: with-*
 
   ;; STDIN
 
@@ -322,15 +325,100 @@ monitor (function (cont cond) {
     cat testfile | cat
   })
 
-  sho-str := get-output-string stdoutstring
+  sho-str = get-output-string stdoutstring
 
   test sho-str test-str
 
+  ;; shell-style IO redirection: > >& etc.
+  ;; check the basics before we start!  stdin & stdout and stdout and
+  ;; stderr should be the same
+  test (io-check -i 1 -o 2) #t
+
+  define (io-redir-tests) {
+    redir-infile := "..redir-in.."
+    redir-outfile := "..redir-out.."
+    redir-errfile := "..redir-err.."
+
+    where-in := (string-append "/" redir-infile)
+    where-out := (string-append "/" redir-outfile)
+    where-err := (string-append "/" redir-errfile)
+
+    with-output-to-file redir-infile (function () {
+      display test-str
+    })
+
+    ;; STDIN
+    ;; stdin from a file
+    test (io-check -i where-in < redir-infile) #t
+
+    ;; stdin from /dev/null
+    test (io-check -i null < #n) #t
+
+    ;; stdin from a pipe
+    test (cat "/dev/null" | io-check -i pipe) #t
+
+    ;; output: STDOUT and/or STDERR
+
+    ;; to a file
+    ;; stdout to a file
+    test (io-check -o where-out > redir-outfile) #t
+
+    ;; stderr to a file
+    test (io-check -e where-err 2> redir-errfile) #t
+
+    ;; stdout to a file & stderr to same
+    test (io-check -o where-out -e where-out > redir-outfile 2>& 1) #t
+
+    ;; stderr to a file & stdout to same
+    test (io-check -o where-err -e where-err 2> redir-errfile >& 2) #t
+
+    ;; stdout to /dev/null
+    test (io-check -o null > #n) #t
+
+    ;; stderr to /dev/null
+    test (io-check -e null 2> #n) #t
+
+    ;; stdout to a pipe
+    test (io-check -o pipe | cat > #n) #t
+
+    ;; stdout & stderr to a pipe
+    test (io-check -o pipe -e pipe 2>& 1 | cat > #n) #t
+
+    if (file-exists? redir-infile) (delete-file redir-infile)
+    if (file-exists? redir-outfile) (delete-file redir-outfile)
+    if (file-exists? redir-errfile) (delete-file redir-errfile)
+  }
+
+  ;; stock tests
+  (io-redir-tests)
+
+  ;; Test (implied) file-handle stdin
+  with-input-from stdinfile (function () {
+    (io-redir-tests)
+  })
+
+  ;; Test (implied) string-handle stdin
+  with-input-from stdinstring (function () {
+    (io-redir-tests)
+  })
+
+  ;; Test (implied) file-handle stdout
+  with-output-to stdoutfile (function () {
+    (io-redir-tests)
+  })
+
+  ;; Test (implied) string-handle stdout
+  with-output-to stdoutstring (function () {
+    (io-redir-tests)
+  })
+
   if (file-exists? stdinfile) (delete-file stdinfile)
   if (file-exists? stdoutfile) (delete-file stdoutfile)
+  if (file-exists? stderrfile) (delete-file stderrfile)
 
   set-input-handle! oih
   set-output-handle! ooh
+  set-error-handle! oeh
 }
 
 PATH = OPATH

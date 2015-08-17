@@ -38,6 +38,8 @@ usage ()
     ) >&2
 }
 
+pid=$$
+
 opt_input=
 opt_output=
 opt_error=
@@ -63,6 +65,7 @@ done
 error ()
 {
     echo $* >&2
+    lsof -a -p ${pid} -d 0-2
     exit 1
 }
 
@@ -72,9 +75,21 @@ lsof_data ()
     typeset fd
     typeset file
 
+    # whoops!
+    #
+    # while ... < <(...)
+    #
+    # causes the shell's own stdin to be a pipe (from the process
+    # substitution) for the duration of the while loop, ie. we're
+    # reporting a Bash side-effect not The Truth.
+
+    tmpfile=/tmp/${0##*/}.$$
+
+    lsof -a -p ${pid} -d 0-2 -F fn > ${tmpfile}
+
     while read line ; do
 	case "${line}" in
-	p$$) ;;
+	p${pid}) ;;
 	f[0-2])
 	    fd="${line#f}"
 	    ;;
@@ -83,27 +98,33 @@ lsof_data ()
 	    stdio[fd]="${file}"
 	    ;;
 	esac
-    done < <(lsof -a -p $$ -d 0-3 -F fn)
+    done < ${tmpfile}
+
+    rm -f ${tmpfile}
 }
 
-def_tty=$(tty)
 lsof_data
 
 if [[ ${opt_input} ]] ; then
     case "${opt_input}" in
     null) 
-	if [[ ${stdio[1]} != /dev/null ]] ; then
+	if [[ ${stdio[0]} != /dev/null ]] ; then
 	    error "stdin: != /dev/null"
 	fi
 	;;
+    pipe) 
+	if [[ ${stdio[0]} != pipe ]] ; then
+	    error "stdin: != pipe"
+	fi
+	;;
     [0-2])
-	if [[ ${stdio[1]} != ${stdio[opt_input]} ]] ; then
-	    error "stdin: ${stdio[1]} != ${stdio[${out_input}]}"
+	if [[ ${stdio[0]} != ${stdio[opt_input]} ]] ; then
+	    error "stdin: ${stdio[0]} != ${stdio[${opt_input}]}"
 	fi
 	;;
     /*)
-	if [[ ! ${stdio[1]} =~ .*${opt_input}$ ]] ; then
-	    error "stdin: ${stdio[1]} != .*${opt_input}$"
+	if [[ ! ${stdio[0]} =~ .*${opt_input}$ ]] ; then
+	    error "stdin: ${stdio[0]} !~ .*${opt_input}$"
 	fi
 	;;
     *)
@@ -111,7 +132,7 @@ if [[ ${opt_input} ]] ; then
 	case "$line" in
 	"${opt_input}") ;;
 	*)
-	    error "stdin: $line != ${opt_input}"
+	    error "stdin: read => $line != ${opt_input}"
 	    ;;
 	esac
 	;;
@@ -125,14 +146,19 @@ if [[ ${opt_output} ]] ; then
 	    error "stdout: != /dev/null"
 	fi
 	;;
+    pipe) 
+	if [[ ${stdio[1]} != pipe ]] ; then
+	    error "stdout: != pipe"
+	fi
+	;;
     [0-2])
 	if [[ ${stdio[1]} != ${stdio[opt_output]} ]] ; then
-	    error "stdout: ${stdio[1]} != ${stdio[${out_output}]}"
+	    error "stdout: ${stdio[1]} != ${stdio[${opt_output}]}"
 	fi
 	;;
     /*)
 	if [[ ! ${stdio[1]} =~ .*${opt_output}$ ]] ; then
-	    error "stdout: ${stdio[1]} != .*${opt_output}$"
+	    error "stdout: ${stdio[1]} !~ .*${opt_output}$"
 	fi
 	;;
     *)
@@ -144,18 +170,23 @@ fi
 if [[ ${opt_error} ]] ; then
     case "${opt_error}" in
     null) 
-	if [[ ${stdio[1]} != /dev/null ]] ; then
+	if [[ ${stdio[2]} != /dev/null ]] ; then
 	    error "stderr: != /dev/null"
 	fi
 	;;
+    pipe) 
+	if [[ ${stdio[2]} != pipe ]] ; then
+	    error "stderr: != pipe"
+	fi
+	;;
     [0-2])
-	if [[ ${stdio[1]} != ${stdio[opt_error]} ]] ; then
-	    error "stderr: ${stdio[1]} != ${stdio[${out_error}]}"
+	if [[ ${stdio[2]} != ${stdio[opt_error]} ]] ; then
+	    error "stderr: ${stdio[2]} != ${stdio[${opt_error}]}"
 	fi
 	;;
     /*)
-	if [[ ! ${stdio[1]} =~ .*${opt_error}$ ]] ; then
-	    error "stderr: ${stdio[1]} != .*${opt_error}$"
+	if [[ ! ${stdio[2]} =~ .*${opt_error}$ ]] ; then
+	    error "stderr: ${stdio[2]} !~ .*${opt_error}$"
 	fi
 	;;
     *)

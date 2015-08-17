@@ -135,6 +135,6 @@ define-macro (define-struct-accessors-only name & fields) {
 }
 
 define-struct-accessors-only %idio-process	argv pid completed stopped status
-define-struct-accessors-only %idio-job		pipeline procs pgid notified tcattrs stdin stdout
+define-struct-accessors-only %idio-job		pipeline procs pgid notified tcattrs stdin stdout stderr
 define-struct-accessors-only %idio-status	pid state reason
 

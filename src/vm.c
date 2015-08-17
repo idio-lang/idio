@@ -4403,6 +4403,25 @@ IDIO_DEFINE_PRIMITIVE0 ("idio-thread-state", idio_thread_state, ())
     return idio_S_unspec;
 }
 
+IDIO_DEFINE_PRIMITIVE1 ("exit", exit, (IDIO istatus))
+{
+    IDIO_ASSERT (istatus);
+
+    int status = -1;
+    if (idio_isa_fixnum (istatus)) {
+	status = IDIO_FIXNUM_VAL (istatus);
+    } else if (idio_isa_C_int (istatus)) {
+	status = IDIO_C_TYPE_INT (istatus);
+    } else {
+	idio_error_param_type ("fixnum|C_int istatus", istatus, IDIO_C_LOCATION ("exit"));
+    }
+
+    idio_handle_flush (idio_current_output_handle ());
+    idio_handle_flush (idio_current_error_handle ());
+    
+    exit (status);
+}
+
 void idio_vm_unwind_thread (IDIO thr, int verbose)
 {
     IDIO_ASSERT (thr);
@@ -4490,6 +4509,7 @@ void idio_vm_add_primitives ()
     IDIO_ADD_SPECIAL_PRIMITIVE (vm_dis);
 #endif
     IDIO_ADD_PRIMITIVE (idio_thread_state);
+    IDIO_ADD_PRIMITIVE (exit);
 }
 
 void idio_final_vm ()

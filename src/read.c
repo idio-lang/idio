@@ -85,6 +85,22 @@
 				 IDIO_CHAR_LBRACKET == (c) ||		\
 				 IDIO_CHAR_LANGLE == (c))
 
+#define IDIO_LIST_DEPTH_MARK	(0xffff)
+#define IDIO_LIST_PAREN_MARK	(1<<16)
+#define IDIO_LIST_BRACE_MARK	(1<<17)
+#define IDIO_LIST_BRACKET_MARK	(1<<18)
+#define IDIO_LIST_ANGLE_MARK	(1<<19)
+
+#define IDIO_LIST_PAREN(d)	(IDIO_LIST_PAREN_MARK | ((d) & IDIO_LIST_DEPTH_MARK))
+#define IDIO_LIST_BRACE(d)	(IDIO_LIST_BRACE_MARK | ((d) & IDIO_LIST_DEPTH_MARK))
+#define IDIO_LIST_BRACKET(d)	(IDIO_LIST_BRACKET_MARK | ((d) & IDIO_LIST_DEPTH_MARK))
+#define IDIO_LIST_ANGLE(d)	(IDIO_LIST_ANGLE_MARK | ((d) & IDIO_LIST_DEPTH_MARK))
+
+#define IDIO_LIST_PAREN_P(d)	(((d) & IDIO_LIST_PAREN_MARK) && ((d) & IDIO_LIST_DEPTH_MARK))
+#define IDIO_LIST_BRACE_P(d)	(((d) & IDIO_LIST_BRACE_MARK) && ((d) & IDIO_LIST_DEPTH_MARK))
+#define IDIO_LIST_BRACKET_P(d)	(((d) & IDIO_LIST_BRACKET_MARK) && ((d) & IDIO_LIST_DEPTH_MARK))
+#define IDIO_LIST_ANGLE_P(d)	(((d) & IDIO_LIST_ANGLE_MARK) && ((d) & IDIO_LIST_DEPTH_MARK))
+
 /*
  * Default interpolation characters:
  *
@@ -713,15 +729,19 @@ static IDIO idio_read_template (IDIO handle, int depth)
     switch (c) {
     case IDIO_CHAR_LPAREN:
 	closedel = idio_T_rparen;
+	depth = IDIO_LIST_PAREN (depth + 1);
 	break;
     case IDIO_CHAR_LBRACE:
 	closedel = idio_T_rbrace;
+	depth = IDIO_LIST_BRACE (depth + 1);
 	break;
     case IDIO_CHAR_LBRACKET:
 	closedel = idio_T_rbracket;
+	depth = IDIO_LIST_BRACKET (depth + 1);
 	break;
     case IDIO_CHAR_LANGLE:
 	closedel = idio_T_rangle;
+	depth = IDIO_LIST_ANGLE (depth + 1);
 	break;
     default:
 	idio_read_error_parse_printf (handle, IDIO_C_LOCATION ("idio_read_template"), "unexpected template delimiter: %c (%#x)", c, c);
@@ -1025,9 +1045,9 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int nl)
 		}
 		return idio_T_eol;
 	    case IDIO_CHAR_LPAREN:
-		return idio_read_list (handle, idio_T_lparen, ic, depth + 1);
+		return idio_read_list (handle, idio_T_lparen, ic, IDIO_LIST_PAREN (depth) + 1);
 	    case IDIO_CHAR_RPAREN:
-		if (depth) {
+		if (IDIO_LIST_PAREN_P (depth)) {
 		    return idio_T_rparen;
 		} else {
 		    idio_read_error_parse (handle, IDIO_C_LOCATION ("idio_read_1_expr_nl"), "unexpected ')'");
@@ -1035,15 +1055,16 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int nl)
 		}
 		break;
 	    case IDIO_CHAR_LBRACE:
-		return idio_read_block (handle, idio_T_rbrace, ic, depth + 1);
+		return idio_read_block (handle, idio_T_rbrace, ic, IDIO_LIST_BRACE (depth + 1));
 	    case IDIO_CHAR_RBRACE:
-		if (depth) {
+		if (IDIO_LIST_BRACE_P (depth)) {
 		    return idio_T_rbrace;
 		} else {
 		    idio_read_error_parse (handle, IDIO_C_LOCATION ("idio_read_1_expr_nl"), "unexpected '}'");
 		    return idio_S_unspec;
 		}
 		break;
+		/*
 	    case IDIO_CHAR_RBRACKET:
 		return idio_T_rbracket;
 		break;
@@ -1060,6 +1081,7 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int nl)
 		    }
 		}
 		break;
+		*/
 	    case IDIO_CHAR_BACKQUOTE:
 		{
 		    char qq_ic[] = { IDIO_CHAR_COMMA, IDIO_CHAR_AT, IDIO_CHAR_SQUOTE, IDIO_CHAR_BACKSLASH };
@@ -1078,7 +1100,7 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int nl)
 		    case '\\':
 			return idio_read_character (handle);
 		    case '(':
-			return idio_read_vector (handle, ic, depth + 1);
+			return idio_read_vector (handle, ic, IDIO_LIST_PAREN (depth + 1));
 		    case 'b':
 			return idio_read_bignum (handle, c, 2);
 		    case 'd':
@@ -1154,7 +1176,7 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int nl)
 		    int c = idio_handle_getc (handle);
 		    switch (c) {
 		    case 'T':
-			return idio_read_template (handle, depth + 1);
+			return idio_read_template (handle, depth);
 		    default:
 			idio_handle_ungetc (handle, c);
 			return idio_read_word (handle, IDIO_CHAR_PERCENT);
@@ -1215,6 +1237,7 @@ static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, char *ic, int depth
     
     for (;;) {
 	IDIO expr = idio_read_1_expr_nl (handle, ic, depth, 1);
+
 	if (idio_S_eof == expr) {
 	    if (idio_S_nil != r) {
 		r = idio_list_reverse (r);

@@ -395,7 +395,75 @@ define (continue-job job foreground) {
   }
 }
 
-define (prep-process pgid infile outfile foreground) {
+define (prep-io infile outfile errfile) {
+  edisplay* "prep-io" infile outfile errfile
+
+  ;; The nominal libc texinfo algorithm is:
+
+  ;;   Switch stdin/stdout/stderr to the supplied file descriptor if
+  ;;   it isn't already stdin/stdout/stderr.  (Here, the supplied file
+  ;;   descriptor would commonly be one end or other of a pipe(2).)
+
+  ;;   We can then close the supplied file descriptor if it is >
+  ;;   c/STDERR_FILENO (ie. > 2) and isn't one of the later ones.
+
+  ;;   That latter case is for: ls > "foo" 2>& 1
+
+  ;;   Here, "stdout" will be fd N, say, having opened "foo" which we
+  ;;   would close because N > 2, before we reached the "2>& 1" which
+  ;;   tries to dup2(N, 2)
+
+  ;; However, we *must* set the Idio thread-specific
+  ;; input/output/error handles.  The problem lies in that this code,
+  ;; prep-io, is most likely called from the | operator in Idio-land
+  ;; in which case we are the *first* IO redirection.  However, the
+  ;; later IO redirections, (> >& etc.) reference the Idio
+  ;; thread-specific IO handles and *not* simply the STD*_FILENO file
+  ;; descriptors.  They do that because we can (seamlessly) use
+  ;; file-handles, string-handles, file desriptor numbers and
+  ;; ... instead of straight file names.  The use of string-handles
+  ;; means we have to create temporary files etc..
+
+  ;; In fact they call (stdin-fileno) etc. which furtles about and
+  ;; conjures up a file descriptor which represents stdin etc..
+
+  ;; So, leave the final resolution of handle -> *nix file descriptor
+  ;; until the last thing before execve().  Just set Idio-level
+  ;; params.
+
+  if (not (c/== infile c/STDIN_FILENO)) {
+    ;c/dup2 infile c/STDIN_FILENO
+    set-input-handle! (open-input-file-from-fd infile)
+
+    ;; if ((c/> infile c/STDERR_FILENO) and
+    ;; 	(not ((c/== infile outfile) or
+    ;; 	      (c/== infile errfile)))) {
+    ;;   c/close infile
+    ;; }
+  }
+
+  if (not (c/== outfile c/STDOUT_FILENO)) {
+    ;c/dup2 outfile c/STDOUT_FILENO
+    set-output-handle! (open-output-file-from-fd outfile)
+
+    ;; if ((c/> outfile c/STDERR_FILENO) and
+    ;; 	(not (c/== outfile errfile))) {
+    ;;   c/close outfile
+    ;; }
+  }
+
+  if (not (c/== errfile c/STDERR_FILENO)) {
+    ;c/dup2 errfile c/STDERR_FILENO
+    set-error-handle! (open-output-file-from-fd errfile)
+
+    ;; if (c/> errfile c/STDOUT_FILENO) {
+    ;;   c/close errfile
+    ;; }
+  }
+}
+
+define (prep-process pgid infile outfile errfile foreground) {
+  ;; edisplay* "pp:" (c/getpid) infile outfile errfile
   if %idio-interactive {
     pid := (c/getpid)
     if (c/== pgid 0) {
@@ -421,23 +489,7 @@ define (prep-process pgid infile outfile foreground) {
     c/signal c/SIGCHLD c/SIG_DFL
   }
 
-  ;; switch to the supplied stdin/stdout
-  if (not (c/== infile c/STDIN_FILENO)) {
-    c/dup2 infile c/STDIN_FILENO
-
-    if (and (not (c/== infile c/STDOUT_FILENO))
-	    (not (c/== infile c/STDERR_FILENO))) {
-      c/close infile
-    }
-  }
-  if (not (c/== outfile c/STDOUT_FILENO)) {
-    c/dup2 outfile c/STDOUT_FILENO
-
-    if (and (not (c/== outfile c/STDIN_FILENO))
-	    (not (c/== outfile c/STDERR_FILENO))) {
-      c/close outfile
-    }
-  }
+  prep-io infile outfile errfile
 }
 
 define-operator | 300 {
@@ -453,10 +505,10 @@ define-operator | 300 {
 
   ;; we want a list of lists -- a list of the |-separated commands
   split :+ function (op op-args expr after) {
-    cond ((null? after) (reverse (pair (reverse expr) op-args))) \
-         ((not (pair? after)) (error "bad syntax" op (reverse op-args) after)) \
-	 ((eq? op (ph after)) (split op (pair (reverse expr) op-args) #n (pt after))) \
-	 (else (split op op-args (pair (ph after) expr) (pt after)))
+    cond ((null? after)		(reverse (pair (reverse expr) op-args))) \
+         ((not (pair? after))	(error "bad syntax" op (reverse op-args) after)) \
+	 ((eq? op (ph after))	(split op (pair (reverse expr) op-args) #n (pt after))) \
+	 (else			(split op op-args (pair (ph after) expr) (pt after)))
   }
 
   op-args := split op (list before) #n after
@@ -512,6 +564,7 @@ define-operator | 300 {
   stdout := (gensym)
   outfile := (gensym)
   recover-stdout := (gensym)
+  stderr := (gensym)
   pgid := (gensym)
   job := (gensym)
   proc-id := (gensym)
@@ -538,8 +591,9 @@ define-operator | 300 {
 	$stdout = ph $stdout
       }
       $outfile := $stdout
+      $stderr := (stderr-fileno) ; c/STDERR_FILENO
       $pgid := 0
-      $job := make-%idio-job '$pipeline #n $pgid #f #n $stdin $stdout
+      $job := make-%idio-job '$pipeline #n $pgid #f #n $stdin $stdout $stderr
       %idio-jobs = pair $job %idio-jobs
       %%last-job = $job
 
@@ -569,7 +623,7 @@ define-operator | 300 {
 		    }
 		    $pid := (c/fork)
 		    if (c/== $pid 0) {
-		      prep-process $pgid $infile $outfile $foreground
+		      prep-process $pgid $infile $outfile $stderr $foreground
 
 		      ;; The Libc texinfo page seems to have missed
 		      ;; this.  On the basis that a $pipe is owned
@@ -614,6 +668,7 @@ define-operator | 300 {
 			c/close (c/pipe-reader $pgrp-pipe)
 			c/close (c/pipe-writer $pgrp-pipe)
 		      }
+		      
 		      ;; edisplay* "child" (c/getpid) "cmd" '$cmd
 		      if+ (pair? (ph '$cmd)) {
 			    $@cmd
@@ -626,7 +681,8 @@ define-operator | 300 {
 		      ;; thing and continue onto here.  So we ought to
 		      ;; stop before this child continues back into
 		      ;; the main Idio engine.
-		      c/exit 0
+
+		      exit 0
 		    } {
 		      set-%idio-process-pid! $proc $pid
 		      if %idio-interactive {
@@ -683,11 +739,13 @@ define-operator | 300 {
   }
 }
 
-define-macro (launch-1proc foreground & cmd) {
+define-macro (fork-command foreground & cmd) {
   stdin := (gensym)
   close-stdin := (gensym)
   stdout := (gensym)
   recover-stdout := (gensym)
+  stderr := (gensym)
+  recover-stderr := (gensym)
   pgid := (gensym)
   proc := (gensym)
   job := (gensym)
@@ -708,13 +766,19 @@ define-macro (launch-1proc foreground & cmd) {
 	$recover-stdout = pht $stdout
 	$stdout = ph $stdout
       }
+      $stderr := (stderr-fileno) ; c/STDERR_FILENO
+      $recover-stderr := #f
+      if (pair? $stderr) {
+	$recover-stderr = pht $stderr
+	$stderr = ph $stderr
+      }
       $pgid := 0
       $proc := make-%idio-process '$cmd -1 #f #f #n
-      $job := make-%idio-job '$cmd (list $proc) $pgid #f #n $stdin $stdout
+      $job := make-%idio-job '$cmd (list $proc) $pgid #f #n $stdin $stdout $stderr
 
       $pid := (c/fork)
       if+ (c/== $pid 0) {
-	prep-process $pgid $stdin $stdout $foreground
+	prep-process $pgid $stdin $stdout $stderr $foreground
 	if+ (pair? (ph '$cmd)) {
 	      $@cmd
 	    } \
@@ -757,17 +821,28 @@ define-macro (launch-1proc foreground & cmd) {
 	close-handle ih
       }
 
+      if $recover-stderr {
+        ih := open-input-file-from-fd $stderr
+
+	;; NB the temporary file has just been written to so the file
+	;; pointer is currently at the end, we need to set it back to
+	;; the start to be able to read anything!
+	handle-seek ih 0 'set
+        display (read-lines ih) $recover-stderr
+	close-handle ih
+      }
+
       $status
     }
   }
 }
 
 define-macro (fg-job & cmd) {
-  %T{ launch-1proc #t $@cmd }
+  %T{ fork-command #t $@cmd }
 }
 
 define-macro (bg-job & cmd) {
-  %T{ launch-1proc #f $@cmd }
+  %T{ fork-command #f $@cmd }
 }
 
 define (wait & jobs) {
@@ -794,201 +869,216 @@ define (wait & jobs) {
   if notify (do-job-notification)
 }
 
-;; with-input-from in thunk
+;; with-handle-redir type s/d thunk
 ;;
-;; {in} can be an input handle (file or string) or it can be a literal
-;; string which will be interpreted as the name of the file to open as
-;; per open-input-file {in}
-with-input-from := {
+;; wrapper functions with-input-from, with-output-to and with-error-to
+;; are identical barring some "directional" function calls.  We'll
+;; have a generic function instead.
+;;
+;; {type} is the symolic name of the handle being modified: 'input,
+;; 'output, 'error
+;;
+;; {s/d} (source/destination) can be:
+;; 1. a handle (file or string) 
+;; 2. a literal string which will be interpreted as the name of the
+;;    file to open as per: 
+;;      open-output-file {s/d} or 
+;;      open-input-file {s/d}
+;; 3. #n as shorthand for the string "/dev/null"
+;;
+;; {thunk} is the 0-arg function to invoke
+with-handle-redir := {
+  current-input-handle := current-input-handle
+  current-output-handle := current-output-handle
+  current-error-handle := current-error-handle
   set-input-handle! := set-input-handle!
-
-  function (in thunk) {
-    ;; old and new input handles
-    oih := (current-input-handle)
-    nih := #f
-
-    ;; if we created a new input handle we need to close it
-    ;; afterwards
-    cih := #f
-
-    cond ((input-file-handle? in) (nih = in)) \
-	 ((file-handle? in) (error 'with-input-from "not an input-file-handle" in)) \
-	 ((input-string-handle? in) (nih = in)) \
-	 ((string-handle? in) (error 'with-input-from "not an input-string-handle" in)) \
-	 ((string? in) {
-	   nih = open-input-file in
-	   cih = #t
-	 }) \
-	 (else (error 'with-input-from "unexpected input" in))
-
-    if nih {
-      set-input-handle! nih
-    } {
-      error 'with-input-from "unexpected input" in
-    }
-
-    unwind-protect {
-      (thunk)
-    } {
-      if cih {
-	close-handle nih
-      }
-      set-input-handle! oih
-    }
-  }
-}
-
-;; with-output-to out thunk
-;;
-;; {out} can be an output handle (file or string) or it can be a
-;; literal string which will be interpreted as the name of the file to
-;; open as per: open-output-file {out}
-with-output-to := {
   set-output-handle! := set-output-handle!
-
-  function (out thunk) {
-    ;; old and new output handles
-    ooh := (current-output-handle)
-    noh := #f
-
-    ;; if we created a new output handle we need to close it
-    ;; afterwards
-    coh := #f
-
-    cond ((output-file-handle? out) {
-	   file-handle-fflush out
-	   noh = out
-	 }) \
-	 ((file-handle? out) (error 'with-output-to "not an output-file-handle" out)) \
-	 ((output-string-handle? out) (noh = out)) \
-	 ((string-handle? out) (error 'with-output-to "not an output-string-handle" out)) \
-	 ((string? out) {
-	   noh = open-output-file out
-	   coh = #t
-	 }) \
-	 (else (error 'with-output-to "unexpected output" out))
-
-    if noh {
-      set-output-handle! noh
-    } {
-      error 'with-output-to "unexpected output" out
-    }
-
-    unwind-protect {
-      (thunk)
-    } {
-      if coh {
-	close-handle noh
-      }
-      set-output-handle! ooh
-    }
-  }
-}
-
-;; with-error-to err thunk
-;;
-;; {err} can be an output handle (file or string) or it can be a
-;; literal string which will be interpreted as the name of the file to
-;; open as per: open-output-file {err}
-with-error-to := {
   set-error-handle! := set-error-handle!
 
-  function (err thunk) {
-    ;; old and new output handles
-    oeh := (current-error-handle)
-    neh := #f
-
-    ;; if we created a new output handle we need to close it
-    ;; afterwards
-    ceh := #f
-
-    cond ((output-file-handle? err) {
-	   file-handle-fflush err
-	   neh = err
+  function (type s/d thunk) {
+    ;; handle-oriented indirection function/variables
+    get-current-h := #f
+    open-file-h := #f
+    set-h! := #f
+    dir-file-h? := #f
+    dir-string-h? := #f
+    msg-h := #f
+    cond ((eq? type 'input) {
+	   get-current-h = current-input-handle
+	   open-file-h = open-input-file
+	   set-h! = set-input-handle!
+	   dir-file-h? = input-file-handle?
+	   dir-string-h? = input-string-handle?
+	   msg-h = "input"
 	 }) \
-	 ((file-handle? err) (error 'with-error-to "not an output-file-handle" err)) \
-	 ((output-string-handle? err) (neh = err)) \
-	 ((string-handle? err) (error 'with-error-to "not an output-string-handle" err)) \
-	 ((string? err) {
-	   neh = open-output-file err
-	   ceh = #t
+	 ((eq? type 'output) {
+	   get-current-h = current-output-handle
+	   open-file-h = open-output-file
+	   set-h! = set-output-handle!
+	   dir-file-h? = output-file-handle?
+	   dir-string-h? = output-string-handle?
+	   msg-h = "output"
 	 }) \
-	 (else (error 'with-error-to "unexpected output" err))
+	 ((eq? type 'error) {
+	   get-current-h = current-error-handle
+	   open-file-h = open-output-file
+	   set-h! = set-error-handle!
+	   dir-file-h? = output-file-handle?
+	   dir-string-h? = output-string-handle?
+	   msg-h = "output"
+	 }) \
+	 (else (error 'with-handle-redir "unexpected handle type" type))
 
-    if neh {
-      set-error-handle! neh
+    ;; old and new handles
+    old-h := (get-current-h)
+    new-h := #f
+
+    ;; if we create a new handle we need to close it afterwards
+    close-h := #f
+
+    cond ((dir-file-h? s/d) {
+	   file-handle-fflush s/d
+	   new-h = s/d
+	 }) \
+	 ((file-handle? s/d) (error 'with-handle-redir (string-append "not an " msg-h "-file-handle") s/d)) \
+	 ((dir-string-h? s/d) (new-h = s/d)) \
+	 ((string-handle? s/d) (error 'with-handle-redir (string-append "not an " msg-h "-string-handle") s/d)) \
+	 ((string? s/d) {
+	   new-h = open-file-h s/d
+	   close-file-handle-on-exec new-h
+	   close-h = #t
+	 }) \
+	 ((null? s/d) {
+	   new-h = open-file-h "/dev/null"
+	   close-file-handle-on-exec new-h
+	   close-h = #t
+	 }) \
+	 (else (error 'with-handle-redir (string-append "unexpected " msg-h) s/d))
+
+    if new-h {
+      set-h! new-h
     } {
-      error 'with-error-to "unexpected output" err
+      error 'with-handle-redir (string-append "unexpected " msg-h) s/d
     }
 
     unwind-protect {
       (thunk)
     } {
-      if ceh {
-	close-handle neh
+      if close-h {
+	close-handle new-h
       }
-      set-error-handle! oeh
+      set-h! old-h
     }
   }
 }
 
-;; dup-output-to out thunk
+define (with-input-from src thunk) {
+  with-handle-redir 'input src thunk
+}
+
+define (with-output-to dst thunk) {
+  with-handle-redir 'output dst thunk
+}
+
+define (with-error-to dst thunk) {
+  with-handle-redir 'error dst thunk
+}
+
+;; with-handle-dup type new thunk
 ;;
-;; {out} can be an output handle (file or string) or it can be a C int
-;; or a fixnum which will be interpreted as a file descriptor to call
-;; c/dup2 with
-dup-output-to := {
+;; nominal functions dup-input-from, dup-output-to and dup-error-to
+;; are identical barring some "directional" function calls.  We'll
+;; have a generic function instead.
+;;
+;; {type} is the symolic name of the handle being modified: 'input,
+;; 'output, 'error
+;;
+;; {new} can be:
+;; 1. a handle (file or string) 
+;; 2. a C int or fixnum which will be interpreted as the name of the
+;;    file descriptor to call c/dup2(2) with
+;;
+;; {thunk} is the 0-arg function to invoke
+with-handle-dup := {
+  current-input-handle := current-input-handle
+  current-output-handle := current-output-handle
+  current-error-handle := current-error-handle
+  set-input-handle! := set-input-handle!
   set-output-handle! := set-output-handle!
+  set-error-handle! := set-error-handle!
 
-  function (out thunk) {
-    ;; old and new output handles
-    ooh := (current-output-handle)
-    noh := #f
-
-    ;; if we created a new output handle we need to close it
-    ;; afterwards
-    coh := #f
-
-    ;; if we dup'ed a file descriptor we need to revert it afterwards
-    doh := #f
-
-    cond ((output-file-handle? out) {
-	   file-handle-fflush out
-	   noh = out
+  function (type new thunk) {
+    ;; edisplay* 'with-handle-dup type new 
+    ;; handle-oriented indirection function/variables
+    get-current-h := #f
+    set-h! := #f
+    dir-file-h? := #f
+    dir-string-h? := #f
+    msg-h := #f
+    cond ((eq? type 'input) {
+	   get-current-h = current-input-handle
+	   set-h! = set-input-handle!
+	   dir-file-h? = input-file-handle?
+	   dir-string-h? = input-string-handle?
+	   msg-h = "input"
 	 }) \
-	 ((file-handle? out) (error 'dup-output-to "not an output-file-handle" out)) \
-	 ((output-string-handle? out) (noh = out)) \
-	 ((string-handle? out) (error 'dup-output-to "not an output-string-handle" out)) \
-	 ((c/int? out) {
-	   doh = out
+	 ((eq? type 'output) {
+	   get-current-h = current-output-handle
+	   set-h! = set-output-handle!
+	   dir-file-h? = output-file-handle?
+	   dir-string-h? = output-string-handle?
+	   msg-h = "output"
 	 }) \
-	 ((fixnum? out) {
-	   doh = c/integer-> out
+	 ((eq? type 'error) {
+	   get-current-h = current-error-handle
+	   set-h! = set-error-handle!
+	   dir-file-h? = output-file-handle?
+	   dir-string-h? = output-string-handle?
+	   msg-h = "output"
 	 }) \
-	 (else (error 'dup-output-to "unexpected output" out))
+	 (else (error 'with-handle-dup "unexpected handle type" type))
 
-    if+ noh {
-      set-output-handle! noh
-    } doh {
-      c/dup2 out 1
+    ;; old and new handles
+    old-h := (get-current-h)
+    new-h := #f
+
+    cond ((dir-file-h? new) {
+	   file-handle-fflush new
+	   new-h = new
+	 }) \
+	 ((file-handle? new) (error 'with-handle-dup (string-append "not an " msg-h "-file-handle") new)) \
+	 ((dir-string-h? new) (new-h = new)) \
+	 ((string-handle? new) (error 'with-handle-dup (string-append "not an " msg-h "-string-handle") new)) \
+	 (((c/int? new) or
+	   (fixnum? new)) {
+	   if (c/int? new) (new = c/->integer new)
+	   if+ (eq? new 0) {
+	     new-h = (current-input-handle)
+	   } (eq? new 1) {
+	     new-h = (current-output-handle)
+	   } (eq? new 2) {
+	     new-h = (current-error-handle)
+	   }
+	 }) \
+	 (else (error 'with-handle-dup (string-append "unexpected " msg-h) new))
+
+    if+ new-h {
+      set-h! new-h
     } else {
-      error 'dup-output-to "unexpected output" out
+      error 'with-handle-dup (string-append "unexpected " msg-h) new
     }
 
     unwind-protect {
       (thunk)
     } {
-      if+ coh {
-	close-handle noh
-      } doh {
-	c/dup2 doh 1
-      }
-      set-output-handle! ooh
+      set-h! old-h
     }
   }
 }
 
+;; ... < e1 ...
 ;; ... > e1 ...
+;; ... 2> e1 ...
 define-operator > 400 {
   suffix := #n
 
@@ -999,32 +1089,42 @@ define-operator > 400 {
     after = (list (ph after))
   }
 
-  io-redir := 'with-output-to
-  if (eq? op '2>) {
-    io-redir = 'with-error-to
-  }
+  type := #f
+  cond ((eq? op '<) {
+         type = 'input
+       }) \
+       ((eq? op '>) {
+         type = 'output
+       }) \
+       ((eq? op '2>) {
+         type = 'error
+       }) \
+       (else (error op "unexpected op" op))
 
   result := #n
 
   if (null? suffix) {
-    result = %T{ $io-redir $(ph after) (function () {
+    result = %T{ with-handle-redir '$type $(ph after) (function () {
         $before
       })
     }
   } {
-    result = %T{ $io-redir $(ph after) (function () {
+    result = %T{ with-handle-redir '$type $(ph after) (function () {
         $(operator-expand (append before suffix))
       })
     }
   }
 
-  edisplay* "result:" result
+  ;; edisplay* "with-handle-redir result:" result
   result
 }
 
+define-operator < 400 >
 define-operator 2> 400 >
 
-;; ... >! e1 ...
+;; ... <& e1 ...
+;; ... >& e1 ...
+;; ... 2>& e1 ...
 define-operator >& 400 {
   suffix := #n
 
@@ -1035,26 +1135,35 @@ define-operator >& 400 {
     after = (list (ph after))
   }
 
-  io-redir := 'dup-output-to
-  if (eq? op '2&>) {
-    io-redir = 'dup-error-to
-  }
+  type := #f
+  cond ((eq? op '<&) {
+	 type = 'input
+       }) \
+       ((eq? op '>&) {
+	 type = 'output
+       }) \
+       ((eq? op '2>&) {
+	 type = 'error
+       }) \
+       (else (error op "unexpected op" op))
 
   result := #n
 
   if (null? suffix) {
-    result = %T{ $io-redir $(ph after) (function () {
+    result = %T{ with-handle-dup '$type $(ph after) (function () {
         $before
       })
     }
   } {
-    result = %T{ $io-redir $(ph after) (function () {
+    result = %T{ with-handle-dup '$type $(ph after) (function () {
         $(operator-expand (append before suffix))
       })
     }
   }
 
-  edisplay* "result:" result
+  ;; edisplay* "with-handle-dup result:" result
   result
 }
 
+define-operator <& 400 >&
+define-operator 2>& 400 >&

@@ -39,8 +39,6 @@ test %T{ $x-sym } 'x
 ;; vary the delimiters
 test %T{ (list $x-sym) } '(list x)
 test %T( (list $x-sym) ) '(list x)
-test %T< (list $x-sym) > '(list x)
-test %T[ (list $x-sym) ] '(list x)
 
 ;; dereference-splicing
 test %T{ $x-list } '(1 2)
