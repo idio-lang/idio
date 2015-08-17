@@ -396,7 +396,7 @@ define (continue-job job foreground) {
 }
 
 define (prep-io infile outfile errfile) {
-  edisplay* "prep-io" infile outfile errfile
+  ;; edisplay* "prep-io" infile outfile errfile
 
   ;; The nominal libc texinfo algorithm is:
 

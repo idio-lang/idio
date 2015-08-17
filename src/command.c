@@ -1116,7 +1116,7 @@ IDIO_DEFINE_PRIMITIVE2 ("continue-job", continue_job, (IDIO job, IDIO iforegroun
 
 static void idio_command_prep_io (int infile, int outfile, int errfile)
 {
-    fprintf (stderr, "idio_command_prep_io: %d %d %d\n", infile, outfile, errfile);
+    /* fprintf (stderr, "idio_command_prep_io: %d %d %d\n", infile, outfile, errfile); */
     /*
      * Use the supplied stdin/stdout/stderr
      *
