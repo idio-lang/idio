@@ -1,0 +1,162 @@
+#! /usr/bin/env bash
+
+# Copyright (c) 2015 Ian Fitchet <idf@idio-lang.org>
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you
+# may not use this file except in compliance with the License.  You
+# may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+#
+
+# lsof -- a poor man's lsof cobbled from pfiles
+
+handle_EXIT ()
+{
+    if [[ ${pfiles_file} && -f ${pfiles_file} ]] ; then
+	rm -f ${pfiles_file}
+    fi
+}
+
+_uname=( $(uname -mrps) )
+OS=${_uname[0]}
+
+case "${OS}" in
+SunOS) ;;
+*)
+    echo "$0: SunOS only" >&2
+    exit 1
+    ;;
+esac
+
+
+opt_p=$$
+opt_d=
+opt_F=
+
+while getopts "ap:d:F:" opt ; do
+    case "${opt}" in
+    a)
+	;;
+    p)
+	opt_p=${OPTARG}
+	;;
+    d)
+	opt_d=${OPTARG}
+	;;
+    F)
+	opt_F=${OPTARG}
+	;;
+    *)
+	usage
+	exit 1
+	;;
+    esac
+done
+
+pfiles_file=/tmp/${0##*/}.$$.pfiles
+
+pfiles ${opt_p} > ${pfiles_file}
+
+# lsof generic output
+
+# COMMAND  PID USER   FD   TYPE DEVICE SIZE/OFF NODE NAME
+# bash    2845  idf    0u   CHR  136,0      0t0    3 /dev/pts/0
+
+if [[ ! ${opt_F} ]] ; then
+    printf "%-7s %5s %4s %4s %5s %6s %8s %9s %s\n" COMMAND  PID USER   FD   TYPE DEVICE SIZE/OFF NODE NAME
+fi
+
+(
+    read pid command rest
+    pid=${pid%:}
+
+    if [[ ${opt_F} ]] ; then
+	echo p${pid}
+    fi
+
+    read			# current rlimit
+
+    # sys/stat.h gives the full list of mode types of
+    # which we cover "enough" to avoid trouble
+
+    # 0: S_IFCHR mode:0620 dev:548,0 ino:705874198 uid:101 gid:7 rdev:241,1
+
+    while read fd type mode dev ino uid gid rdev ; do
+	fd=${fd%:}
+
+	p=
+	if [[ ${opt_d} ]] ; then
+	    case "${fd}" in
+	    [${opt_d}])
+		p=1
+		;;
+	    esac
+	else
+	    p=1
+	fi
+
+	if [[ ${opt_F} && ! ${p} ]] ; then
+	    continue
+	fi
+
+	case "${rdev}" in
+	size:*)
+	    rdev=-
+	    ;;
+	esac
+
+	case "${opt_F}" in
+	*f*)
+	    echo f${fd}
+	    ;;
+	esac
+
+	case "${type}" in
+	S_IFCHR|S_IFREG)
+	    read rest # O_* flags
+	    read file
+	    case "${opt_F}" in
+	    *n*)
+		echo n${file}
+		;;
+	    esac
+	    read offset
+	    ;;
+	S_IFIFO)
+	    read rest # O_* flags
+	    case "${opt_F}" in
+	    *n*)
+		echo npipe
+		;;
+	    esac
+	    ;;
+	S_IFDOOR)
+	    read rest # O_* flags
+	    read rest # filename
+	    ;;
+	*)
+	    echo "unexpected type: ${type}" >&2
+	    pfiles ${opt_p} >&2
+	    exit 1
+	    ;;
+	esac
+
+	if [[ ${opt_F} ]] ; then
+	    continue
+	fi
+
+	if [[ ${p} ]] ; then
+	    printf "%-7s %5s %4s %4s %5s %6s %8s %9s %s\n" ${command} ${pid} ${uid#uid:} ${fd} ${type#S_IF} ${rdev#rdev:} ${offset#offset:} ${ino#ino:} ${file}
+	fi
+    done
+) < ${pfiles_file}
+
+rm -f ${pfiles_file}

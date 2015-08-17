@@ -17,7 +17,7 @@
 #
 
 # 
-# auto-exit -- die deterministically
+# io-check -- verify the stdin/out/err are what they should be
 #
 
 # -e should only apply to read (write?) and broken pipes
@@ -69,7 +69,11 @@ error ()
     exit 1
 }
 
+_uname=( $(uname -mrps) )
+OS=${_uname[0]}
+
 typeset -a stdio
+
 lsof_data ()
 {
     typeset fd
@@ -95,6 +99,19 @@ lsof_data ()
 	    ;;
 	n*)
 	    file="${line#n}"
+
+	    # Normalise the output of lsof.  On CentOS it reports
+	    # "pipe" for a pipe 'device'.  On FreeBSD/Darwin it
+	    # reports "->0x..." with a 64bit hex number.
+	    case "${OS}" in
+	    FreeBSD|Darwin)
+		case "${file}" in
+		"->0x"*)
+		    file=pipe
+		    ;;
+		esac
+		;;
+	    esac
 	    stdio[fd]="${file}"
 	    ;;
 	esac
