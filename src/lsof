@@ -178,6 +178,12 @@ fi
 	    ;;
 	esac
 
+	case "${opt_F}" in
+	*i*)
+	    echo i${ino#ino:}
+	    ;;
+	esac
+
 	if [[ ${opt_F} ]] ; then
 	    continue
 	fi

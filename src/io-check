@@ -78,7 +78,7 @@ FreeBSD)
     ;;
 esac
 
-typeset -a stdio ftype rdev
+typeset -a stdio ftype rdev inode
 
 lsof_data ()
 {
@@ -94,7 +94,7 @@ lsof_data ()
 
     tmpfile=/tmp/${0##*/}.$$
 
-    lsof -a -p ${pid} -d 0-2 -F ftnr > ${tmpfile}
+    lsof -a -p ${pid} -d 0-2 -F ftnri > ${tmpfile}
 
     while read line ; do
 	case "${line}" in
@@ -112,6 +112,9 @@ lsof_data ()
 	    ;;
 	r*)
 	    rdev[fd]="${line#r}"
+	    ;;
+	i*)
+	    inode[fd]="${line#i}"
 	    ;;
 	n*)
 	    file="${line#n}"
@@ -142,6 +145,51 @@ lsof_data ()
 		    VCHR)
 			if [[ ${rdev[fd]} = ${dev_null_dev} ]] ; then
 			    file=/dev/null
+			fi
+			;;
+		    esac
+		    ;;
+		*" ("*")")
+		    # FreeBSD hasn't looked the file name up yet, we
+		    # probably have a value that looks like
+		    # "mount-point (filesystem)"
+		    #
+		    # Obviously, if the target file really is of the
+		    # form "something (something else)" then this
+		    # isn't the best approach.  My advice would be to
+		    # change your test.
+		    #
+		    # What we can do is if the expected entity is a
+		    # file, "/file", then stat(1) it and compare the
+		    # inode of the stat()'d file with the inode
+		    # associated with the file descriptor from lsof.
+		    # If the inodes match then fix the "found" file to
+		    # be a construction of the current working
+		    # directory and the expected file name.
+		    #
+		    # We ought to derive the directory from the lsof
+		    # reported device but there's a limit...
+
+		    stat_ino=
+		    var_file=
+		    case "${fd}" in
+		    0)
+			var_file="${opt_input}"
+			;;
+		    1)
+			var_file="${opt_output}"
+			;;
+		    2)
+			var_file="${opt_error}"
+			;;
+		    esac
+
+		    case "${var_file}" in
+		    /*)
+			stat_ino=$(stat -f %i $PWD${var_file})
+
+			if [[ ${stat_ino} = ${inode[fd]} ]] ; then
+			    file=$PWD${var_file}
 			fi
 			;;
 		    esac
