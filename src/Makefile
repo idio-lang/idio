@@ -1,7 +1,10 @@
 OS		:= $(shell uname -s)
 ARCH		:= $(shell uname -m)
 
+TOPDIR		:= $(abspath $(PWD)/..)
 BINDIR		:= $(abspath $(PWD)/../bin)
+LIBDIR		:= $(abspath $(PWD)/../lib)
+TESTSDIR	:= $(abspath $(PWD)/../tests)
 
 ifeq ($(OS),Darwin)
 
@@ -88,7 +91,7 @@ debug :
 	$(MAKE) MAKE_DEBUG=1
 
 test : $(BINDIR)/idio
-	$(BINDIR)/idio test
+	IDIOLIB=$(TOPDIR) $(BINDIR)/idio test
 
 include $(subst .c,.d,$(sources))
 
@@ -114,9 +117,9 @@ endif
 
 tags : TAGS
 
-TAGS : *.[ch] *.idio */*.idio
+TAGS : *.[ch] $(LIBDIR)/*.idio $(TESTSDIR)/*.idio
 	@echo TAGS: $?
-	@etags *.[ch] --language=none --regex=@idio.tags *.idio */*.idio
+	@etags *.[ch] --language=none --regex=@idio.tags $(LIBDIR)/*.idio $(TESTSDIR)/*.idio
 
 %.d: %.c
 	$(CC) -MM -MP -MF $@ $(CFLAGS) $< -MT $*.o -MT $@

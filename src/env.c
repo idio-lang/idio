@@ -122,6 +122,12 @@ static void idio_env_add_environ ()
  * running executable.  If argv0 is simply "idio" then we need to
  * discover where on the PATH it was found, otherwise we can normalize
  * argv0 with realpath(3).
+ *
+ * NB. We are called after idio_env_add_environ() as main() has to
+ * pass us argv0.  main() could have passed argv0 to idio_init() then
+ * to idio_env_add_primitives() then to idio_env_add_environ() and
+ * then here to us.  Or it could just call us separately.  Which it
+ * does.
  */
 void idio_env_init_idiolib (char *argv0)
 {
@@ -156,6 +162,8 @@ void idio_env_init_idiolib (char *argv0)
 		strncpy (idio_env_IDIOLIB_default, path, pdir - path);
 		idio_env_IDIOLIB_default[pdir - path] = '\0';
 		strcat (idio_env_IDIOLIB_default, "/lib");
+
+		idio_env_set_default (idio_env_IDIOLIB_sym, idio_env_IDIOLIB_default);
 	    }
 	}
     }

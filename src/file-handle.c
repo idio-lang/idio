@@ -1201,6 +1201,214 @@ static idio_file_extension_t idio_file_extensions[] = {
     { NULL, NULL, NULL }
 };
 
+char *idio_libfile_find_C (char *file)
+{
+    IDIO_C_ASSERT (file);
+    
+    size_t filelen = strlen (file);
+    
+    IDIO IDIOLIB = idio_module_current_symbol_value_recurse (idio_env_IDIOLIB_sym);
+
+    /*
+     * idiolib is that start of the current IDIOLIB pathname element
+     * -- colon will mark the end
+     *
+     * idiolibe is the end of the whole IDIOLIB string, used to
+     * calculate when we've tried all parts
+     */
+    char *idiolib;
+    char *idiolibe;
+    if (idio_S_undef == IDIOLIB ||
+	! idio_isa_string (IDIOLIB)) {
+	idiolib = idio_env_IDIOLIB_default;
+	idiolibe = idiolib + strlen (idiolib);
+    } else {
+	idiolib = IDIO_STRING_S (IDIOLIB);
+	idiolibe = idiolib + IDIO_STRING_BLEN (IDIOLIB);
+    }
+
+    /*
+     * find the longest filename extension -- so we don't overrun
+     * PATH_MAX
+     */
+    size_t max_ext_len = 0;
+    idio_file_extension_t *fe = idio_file_extensions;
+    
+    for (;NULL != fe->reader;fe++) {
+	if (NULL != fe->ext) {
+	    size_t el = strlen (fe->ext);
+	    if (el > max_ext_len) {
+		max_ext_len = el;
+	    }
+	}
+    }
+
+    /*
+     * See comment in libc-wrap.c re: getcwd(3)
+     */
+    char libname[PATH_MAX];
+    char cwd[PATH_MAX];
+    if (getcwd (cwd, PATH_MAX) == NULL) {
+	idio_error_system_errno ("getcwd", idio_S_nil, IDIO_C_LOCATION ("idio_command_find_exe_C"));
+    }
+    size_t cwdlen = strlen (cwd);
+    
+    int done = 0;
+    while (! done) {
+	size_t idioliblen = idiolibe - idiolib;
+	char * colon = NULL;
+	
+	if (0 == idioliblen) {
+	    return NULL;
+	}
+
+	colon = memchr (idiolib, ':', idioliblen);
+
+	if (NULL == colon) {
+	    if ((idioliblen + 1 + filelen + max_ext_len + 1) >= PATH_MAX) {
+		idio_error_system ("dir+file.idio libname length", IDIO_LIST2 (IDIOLIB, idio_string_C (file)), ENAMETOOLONG, IDIO_C_LOCATION ("idio_libfile_find_C"));
+	    }
+	    
+	    memcpy (libname, idiolib, idioliblen);
+	    libname[idioliblen] = '\0';
+	} else {
+	    size_t dirlen = colon - idiolib;
+	    
+	    if (0 == dirlen) {
+		/*
+		 * An empty value, eg. ::, in IDIOLIB means PWD.  This
+		 * is a hangover behaviour from the shell's PATH.
+		 *
+		 * Is that a good thing?
+		 */
+		if ((cwdlen + 1 + filelen + max_ext_len + 1) >= PATH_MAX) {
+		    idio_error_system ("cwd+file.idio libname length", IDIO_LIST2 (IDIOLIB, idio_string_C (file)), ENAMETOOLONG, IDIO_C_LOCATION ("idio_libfile_find_C"));
+		}
+	    
+		strcpy (libname, cwd);
+	    } else {
+		if ((dirlen + 1 + filelen + max_ext_len + 1) >= PATH_MAX) {
+		    idio_error_system ("dir+file.idio libname length", IDIO_LIST2 (IDIOLIB, idio_string_C (file)), ENAMETOOLONG, IDIO_C_LOCATION ("idio_libfile_find_C"));
+		}
+	    
+		memcpy (libname, idiolib, dirlen);
+		libname[dirlen] = '\0';
+	    }
+	}
+
+	strcat (libname, "/");
+	strcat (libname, file);
+
+	/*
+	 * libname now contains "/path/to/file".
+	 *
+	 * We now try each extension in turn by maintaining lne which
+	 * points at the end of the current value of libname.  That
+	 * is, it points at the '\0' at the end of "/path/to/file".
+	 */
+	size_t lnlen = strlen (libname);
+	char *lne = strrchr (libname, '\0');
+
+	fe = idio_file_extensions;
+    
+	for (;NULL != fe->reader;fe++) {
+	    if (NULL != fe->ext) {
+
+		if ((lnlen + strlen (fe->ext)) >= PATH_MAX) {
+		    idio_filehandle_error_malformed_filename (idio_string_C (libname), IDIO_C_LOCATION ("idio_libfile_find_C"));
+
+		    /* notreached */
+		    return NULL;
+		}
+	    
+		strncpy (lne, fe->ext, PATH_MAX - lnlen - 1);
+	    }
+
+	    if (access (libname, R_OK) == 0) {
+		done = 1;
+		break;
+	    }
+
+	    /* reset libname without ext */
+	    *lne = '\0';
+	}
+
+	/*
+	 * Sadly we can't do a double break without a GOTO -- which is
+	 * considered harmful.  So we need to check and break again,
+	 * here.
+	 *
+	 * No GOTOs in C, even though we've implemented continuations
+	 * in Idio...
+	 */
+	if (done) {
+	    break;
+	}
+
+	if (NULL == colon) {
+	    /*
+	     * Nothing left to try in IDIOLIB so as a final throw of
+	     * the dice, let's try idio_env_IDIOLIB_default.
+	     *
+	     * Unless that was the last thing we tried.
+	     */
+	    size_t dl = strlen (idio_env_IDIOLIB_default);
+	    if (strncmp (libname, idio_env_IDIOLIB_default, dl) == 0 &&
+		'/' == libname[dl]) {
+		done = 1;
+		libname[0] = '\0';
+		break;
+	    } else {
+		idiolib = idio_env_IDIOLIB_default;
+		idiolibe = idiolib + strlen (idiolib);
+		colon = idiolib - 1;
+	    }
+	}
+
+	idiolib = colon + 1;
+    }
+    
+    char *idiolibname = NULL;
+
+    if (0 != libname[0]) {
+	idiolibname = idio_alloc (strlen (libname) + 1);
+	strcpy (idiolibname, libname);
+    }
+    
+    return idiolibname;
+}
+
+char *idio_libfile_find (IDIO file)
+{
+    IDIO_ASSERT (file);
+    IDIO_TYPE_ASSERT (string, file);
+
+    char *file_s = idio_string_s (file);
+
+    char *r = idio_libfile_find_C (file_s);
+
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("find-lib", find_lib, (IDIO file))
+{
+    IDIO_ASSERT (file);
+    IDIO_VERIFY_PARAM_TYPE (string, file);
+    
+    char *file_s = idio_string_s (file);
+
+    char *r_C = idio_libfile_find_C (file_s);
+
+    IDIO r = idio_S_nil;
+
+    if (NULL != r_C) {
+	r = idio_string_C (r_C);
+	free (r_C);
+    }
+    
+    return  r;
+}
+
 IDIO idio_load_file (IDIO filename)
 {
     IDIO_ASSERT (filename);
@@ -1213,8 +1421,17 @@ IDIO idio_load_file (IDIO filename)
     char *filename_C = idio_string_as_C (filename);
     char lfn[PATH_MAX];
     size_t l;
+
+    char *libfile = idio_libfile_find_C (filename_C);
+
+    if (NULL == libfile) {
+	idio_filehandle_error_filename_not_found (filename, IDIO_C_LOCATION ("idio_load_file"));
+
+	/* notreached */
+	return idio_S_unspec;
+    }
     
-    strncpy (lfn, filename_C, PATH_MAX - 1);
+    strncpy (lfn, libfile, PATH_MAX - 1);
     l = strlen (lfn);
 
     char *slash = strrchr (lfn, '/');
@@ -1359,6 +1576,7 @@ void idio_file_handle_add_primitives ()
     IDIO_ADD_PRIMITIVE (output_file_handlep);
     IDIO_ADD_PRIMITIVE (file_handle_fflush);
     IDIO_ADD_PRIMITIVE (file_handle_fd);
+    IDIO_ADD_PRIMITIVE (find_lib);
     IDIO_ADD_PRIMITIVE (load);
     IDIO_ADD_PRIMITIVE (file_exists_p);
     IDIO_ADD_PRIMITIVE (delete_file);
