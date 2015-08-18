@@ -483,6 +483,7 @@ char *idio_escape_string (size_t blen, char *s)
 	case '\r': n++; break;
 	case '\t': n++; break;
 	case '\v': n++; break;
+	case '"': n++; break;
 	}
     }
 
@@ -501,6 +502,7 @@ char *idio_escape_string (size_t blen, char *s)
 	case '\r': c = 'r'; break;
 	case '\t': c = 't'; break;
 	case '\v': c = 'v'; break;
+	case '"': c = '"'; break;
 	}
 
 	if (c) {

@@ -50,7 +50,7 @@ define (load filename) {
       ewrite filename
       edisplay* ": non-cont-error caught"
       edisplay* cond
-      edisplay* "invoking safe continuation"
+      edisplay* "load: invoking safe continuation"
       load-k cond
     } {
       raise cont cond
