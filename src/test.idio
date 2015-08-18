@@ -71,6 +71,10 @@ define-macro (test form result) {
 
 display* "This is test.idio"
 
+;; tinker with the PATH
+OPATH := PATH
+PATH = string-append PATH ":" (string-append PWD "/../utils") 
+
 load "tests/s9-test.idio"
 load "tests/operator.idio"
 load "tests/template.idio"
@@ -104,3 +108,5 @@ if+ (zero? Errors) (display* "All" Tests "tests passed!") \
     }
 
 if (file-exists? testfile) (delete-file testfile)
+
+PATH = OPATH

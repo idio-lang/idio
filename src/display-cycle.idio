@@ -1,0 +1,47 @@
+define (display-cyclic-spine list) {
+  define (scan l1 l2 flip) {
+    if+ (atom? l1) {
+	  unless (null? l1) {
+	    display " . "
+	    display (pt l1)
+	  }
+	  display ")"
+	} \
+	(eq? l1 l2) (display "...)") \
+	else {
+	  display (ph l1)
+	  when (pair? (pt l1)) (display " ")
+	  scan (pt l1) (if (and flip (pair? l2)) (pt l2) l2) (not flip)
+        }
+  }
+
+  display "cyclic spine: ("
+  scan list (pair 123 list) #f
+  (newline)
+}
+
+define (has-cycle-helper s f) {
+  if+ (null? f) #f \
+      (null? (pt f)) #f \
+      (eq? f s) #t \
+      else (has-cycle-helper (pt s) (ptt f))
+}
+
+define (has-cycle? l) {
+  if+ (null? l) #f \
+      else (has-cycle-helper l (pt l))
+}
+
+;; has-cycle? {
+;;   l := list 1 2 3 4
+;;   set-pt! (pttt l) l
+;;   l
+;; }
+
+; prints {\tt(1 2 3 4 1 ...)}
+;; display-cyclic-spine {
+;;   l := list 1 2 3 4
+;;   set-pt! (pttt l) (ptt l)
+;;   l
+;; }
+

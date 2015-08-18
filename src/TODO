@@ -1,0 +1,92 @@
+Arrays
+
+Hashes
+
+Member Access
+	- obj.mem
+
+Qualifiers
+	- expr ; expr ; expr
+
+split
+
+sort
+	- sort files by mtime (requires sorting L1 on stat() attributes)
+
+C structs
+	- sigset_t (sigaction(2))
+	- sb-grovel for typedef/struct/union
+
+CFFI
+	- revisit
+
+
+Modules
+	- import/export
+	- name resolution
+	- direct binding: (c/exit 0) vs. (import c) (exit 0)
+
+Disassembler
+	- standalone command
+
+Compiler
+	- standalone command
+
+PIC
+	- GOT -- Global Offset Table
+	- PLT -- Procedure Linkage Table
+	- http://eli.thegreenplace.net/2011/11/03/position-independent-code-pic-in-shared-libraries/
+
+library load (requires PIC)
+	- any order
+
+Reflection
+	- eg. for functions:
+		1. CREATE-CLOSURE @5
+		2. GOTO #6
+		3. EXPLICIT-CONSTANT definition (function bindings body) 
+		4. EXPLICIT-CONSTANT environment  
+		5. BODY 
+		6. ...
+	- environment is an extension of compute-kind with "name" field
+
+Type Inference
+	- particularly for multi-layer struct de-references
+
+Debugger
+	- interactive
+	- backtrace
+
+Escape Handlers
+	- bind-exit
+	- handler-case (try/catch/finally)
+	- lexical
+	- dynamic
+	- function's "return" == lexical escape
+
+Docstrings
+	- sphinx
+	- sphinxcontrib-cldomain for Common Lisp (~/src/sphinxcontrib-cldomain-...)
+	- python-docstring
+	- Yasnippets -- http://tiborsimko.org/emacs-epydoc-snippets.html
+	- sphinx-doc -- http://www.avilpage.com/2014/12/generate-sphinx-friendly-docstrings-for.html
+
+Objects
+	- simple
+	- TinyCLOS
+
+I18N
+	- gettext
+	- .po
+
+Networking
+	- more!
+	- some!
+
+Threading
+	- crude
+	- pthreads
+	  * mutex locks etc.
+
+screen
+	- restoreable/reattachable

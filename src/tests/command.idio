@@ -23,10 +23,6 @@
 
 ;; side-effects?
 
-;; tinker with the PATH
-OPATH := PATH
-PATH = string-append PATH ":" PWD 
-
 ;; to avoid repeating the bulk of the error handler we'll just
 ;; (re)define the interesting bit, rt-command-status-error-handler or
 ;; rcseh:
@@ -426,5 +422,3 @@ monitor (function (cont cond) {
   set-output-handle! ooh
   set-error-handle! oeh
 }
-
-PATH = OPATH

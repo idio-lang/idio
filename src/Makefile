@@ -87,6 +87,9 @@ lean :
 debug :
 	$(MAKE) MAKE_DEBUG=1
 
+test : $(BINDIR)/idio
+	$(BINDIR)/idio test
+
 include $(subst .c,.d,$(sources))
 
 $(BINDIR)/idio : $(objects)
