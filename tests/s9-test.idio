@@ -3309,11 +3309,13 @@ define foo 'bar
 ;;          foo)
 ;;       'baz)
 test {
-  out := open-output-file testfile
+  testfile.idio := string-append testfile ".idio"
+  out := open-output-file testfile.idio
   write '(define foo 'baz) out
   close-output-handle out
-  cat testfile
+
   load testfile
+  delete-file testfile.idio
   foo
 } 'baz
 
@@ -3322,8 +3324,6 @@ define (with-range lo hi fn) {
     pair (fn lo) (with-range (1 + lo) hi fn)
   }
 }
-
-delete-file testfile
 
 ;; (test (call-with-output-file testfile
 ;;         (function (out)
