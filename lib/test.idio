@@ -75,6 +75,9 @@ display* "This is test.idio"
 OPATH := PATH
 PATH = string-append PATH ":" (string-append PWD "/../utils") 
 
+OIDIOLIB := IDIOLIB
+IDIOLIB = string-append IDIOLIB ":" PWD
+
 load "tests/s9-test.idio"
 load "tests/operator.idio"
 load "tests/template.idio"
@@ -109,4 +112,5 @@ if+ (zero? Errors) (display* "All" Tests "tests passed!") \
 
 if (file-exists? testfile) (delete-file testfile)
 
+IDIOLIB = OIDIOLIB
 PATH = OPATH
