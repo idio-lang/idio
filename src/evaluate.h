@@ -42,10 +42,17 @@ void idio_add_expander_primitive (idio_primitive_t *d);
 IDIO idio_toplevel_extend (IDIO name, int variant);
 
 void idio_install_expander (IDIO id, IDIO proc);
-void idio_install_operator (IDIO id, IDIO proc, int pri);
-IDIO idio_operatorp (IDIO name);
+
+void idio_install_infix_operator (IDIO id, IDIO proc, int pri);
+IDIO idio_infix_operatorp (IDIO name);
+IDIO idio_infix_operator_expand (IDIO e, int depth);
+
+void idio_install_postfix_operator (IDIO id, IDIO proc, int pri);
+IDIO idio_postfix_operatorp (IDIO name);
+IDIO idio_postfix_operator_expand (IDIO e, int depth);
 
 IDIO idio_operator_expand (IDIO e, int depth);
+
 IDIO idio_evaluate (IDIO e);
 void idio_init_evaluate ();
 void idio_evaluate_add_primitives ();

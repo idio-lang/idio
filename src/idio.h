@@ -229,9 +229,9 @@
 
 #define IDIO_ADD_EXPANDER(cname)	  idio_add_expander_primitive (&idio_primitive_data_ ## cname);
 
-#define IDIO_DEFINE_OPERATOR_DESC(iname,cname,params,arity,varargs)	\
+#define IDIO_DEFINE_INFIX_OPERATOR_DESC(iname,cname,params,arity,varargs)	\
     IDIO idio_defoperator_ ## cname params;				\
-    static struct idio_primitive_s idio_operator_data_ ## cname = { \
+    static struct idio_primitive_s idio_infix_operator_data_ ## cname = { \
 	idio_defoperator_ ## cname,					\
 	iname,								\
 	arity,								\
@@ -239,10 +239,25 @@
     };									\
     IDIO idio_defoperator_ ## cname params
 
-#define IDIO_DEFINE_OPERATOR(iname,cname,params)			\
-    IDIO_DEFINE_OPERATOR_DESC(iname,cname,params,2,1)
+#define IDIO_DEFINE_INFIX_OPERATOR(iname,cname,params)			\
+    IDIO_DEFINE_INFIX_OPERATOR_DESC(iname,cname,params,2,1)
 
-#define IDIO_ADD_OPERATOR(cname,pri)	  idio_add_operator_primitive (&idio_operator_data_ ## cname, pri);
+#define IDIO_ADD_INFIX_OPERATOR(cname,pri)	  idio_add_infix_operator_primitive (&idio_infix_operator_data_ ## cname, pri);
+
+#define IDIO_DEFINE_POSTFIX_OPERATOR_DESC(iname,cname,params,arity,varargs)	\
+    IDIO idio_defoperator_ ## cname params;				\
+    static struct idio_primitive_s idio_postfix_operator_data_ ## cname = { \
+	idio_defoperator_ ## cname,					\
+	iname,								\
+	arity,								\
+	varargs								\
+    };									\
+    IDIO idio_defoperator_ ## cname params
+
+#define IDIO_DEFINE_POSTFIX_OPERATOR(iname,cname,params)			\
+    IDIO_DEFINE_POSTFIX_OPERATOR_DESC(iname,cname,params,2,1)
+
+#define IDIO_ADD_POSTFIX_OPERATOR(cname,pri)	  idio_add_postfix_operator_primitive (&idio_postfix_operator_data_ ## cname, pri);
 
 #define IDIO_VERIFY_PARAM_TYPE(type,param)		\
     {							\

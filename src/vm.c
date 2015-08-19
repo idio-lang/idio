@@ -1668,7 +1668,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (i));
 	}
 	break;
-    case IDIO_VM_CODE_OPERATOR:
+    case IDIO_VM_CODE_INFIX_OPERATOR:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 3) {
@@ -1681,7 +1681,25 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	    IDIO m = IDIO_PAIR_H (IDIO_PAIR_T (IDIO_PAIR_T (mt)));
 	    
 	    idio_vm_compile (thr, ia, m, depth + 1);
-	    IDIO_IA_PUSH1 (IDIO_A_OPERATOR);
+	    IDIO_IA_PUSH1 (IDIO_A_INFIX_OPERATOR);
+	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (i));
+	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (p));
+	}
+	break;
+    case IDIO_VM_CODE_POSTFIX_OPERATOR:
+	{
+	    if (! idio_isa_pair (mt) ||
+		idio_list_length (mt) != 3) {
+		idio_vm_error_compile_param_args ("OPERATOR i p m", mt, IDIO_C_LOCATION ("idio_vm_compile/OPERATOR"));
+		return;
+	    }
+
+	    IDIO i = IDIO_PAIR_H (mt);
+	    IDIO p = IDIO_PAIR_H (IDIO_PAIR_T (mt));
+	    IDIO m = IDIO_PAIR_H (IDIO_PAIR_T (IDIO_PAIR_T (mt)));
+	    
+	    idio_vm_compile (thr, ia, m, depth + 1);
+	    IDIO_IA_PUSH1 (IDIO_A_POSTFIX_OPERATOR);
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (i));
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (p));
 	}
@@ -3926,13 +3944,22 @@ int idio_vm_run1 (IDIO thr)
 	    idio_install_expander (sym, IDIO_THREAD_VAL (thr));
 	}
 	break;
-    case IDIO_A_OPERATOR:
+    case IDIO_A_INFIX_OPERATOR:
 	{
 	    uint64_t index = idio_vm_fetch_varuint (thr);
 	    uint64_t pri = idio_vm_fetch_varuint (thr);
 	    IDIO_VM_RUN_DIS ("OPERATOR %" PRId64 "", index);
 	    IDIO sym = idio_vm_symbols_ref (index);
-	    idio_install_operator (sym, IDIO_THREAD_VAL (thr), pri);
+	    idio_install_infix_operator (sym, IDIO_THREAD_VAL (thr), pri);
+	}
+	break;
+    case IDIO_A_POSTFIX_OPERATOR:
+	{
+	    uint64_t index = idio_vm_fetch_varuint (thr);
+	    uint64_t pri = idio_vm_fetch_varuint (thr);
+	    IDIO_VM_RUN_DIS ("OPERATOR %" PRId64 "", index);
+	    IDIO sym = idio_vm_symbols_ref (index);
+	    idio_install_postfix_operator (sym, IDIO_THREAD_VAL (thr), pri);
 	}
 	break;
     default:

@@ -75,12 +75,15 @@ display* "This is test.idio"
 OPATH := PATH
 PATH = string-append PATH ":" (string-append PWD "/../utils") 
 
+;; at least one test creates a local file then tries to "load" it --
+;; so we need PWD on IDIOLIB
 OIDIOLIB := IDIOLIB
 IDIOLIB = string-append IDIOLIB ":" PWD
 
 load "tests/s9-test.idio"
 load "tests/operator.idio"
 load "tests/template.idio"
+load "tests/array.idio"
 load "tests/file-handle.idio"
 load "tests/string-handle.idio"
 load "tests/handle.idio"

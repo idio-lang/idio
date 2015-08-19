@@ -615,6 +615,52 @@ IDIO_DEFINE_PRIMITIVE3 ("array-set!", array_set, (IDIO a, IDIO index, IDIO v))
     return idio_S_unspec;
 }
 
+IDIO_DEFINE_PRIMITIVE2 ("array-push!", array_push, (IDIO a, IDIO v))
+{
+    IDIO_ASSERT (a);
+    IDIO_ASSERT (v);
+
+    IDIO_VERIFY_PARAM_TYPE (array, a);
+
+    idio_array_push (a, v);
+
+    return idio_S_unspec;
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("array-pop!", array_pop, (IDIO a))
+{
+    IDIO_ASSERT (a);
+
+    IDIO_VERIFY_PARAM_TYPE (array, a);
+
+    IDIO v = idio_array_pop (a);
+
+    return v;
+}
+
+IDIO_DEFINE_PRIMITIVE2 ("array-unshift!", array_unshift, (IDIO a, IDIO v))
+{
+    IDIO_ASSERT (a);
+    IDIO_ASSERT (v);
+
+    IDIO_VERIFY_PARAM_TYPE (array, a);
+
+    idio_array_unshift (a, v);
+
+    return idio_S_unspec;
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("array-shift!", array_shift, (IDIO a))
+{
+    IDIO_ASSERT (a);
+
+    IDIO_VERIFY_PARAM_TYPE (array, a);
+
+    IDIO v = idio_array_shift (a);
+
+    return v;
+}
+
 IDIO_DEFINE_PRIMITIVE1 ("array->list", array2list, (IDIO a))
 {
     IDIO_ASSERT (a);
@@ -636,6 +682,10 @@ void idio_array_add_primitives ()
     IDIO_ADD_PRIMITIVE (array_length);
     IDIO_ADD_PRIMITIVE (array_ref);
     IDIO_ADD_PRIMITIVE (array_set);
+    IDIO_ADD_PRIMITIVE (array_push);
+    IDIO_ADD_PRIMITIVE (array_pop);
+    IDIO_ADD_PRIMITIVE (array_unshift);
+    IDIO_ADD_PRIMITIVE (array_shift);
     IDIO_ADD_PRIMITIVE (array2list);
 }
 

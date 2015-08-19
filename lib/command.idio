@@ -492,7 +492,7 @@ define (prep-process pgid infile outfile errfile foreground) {
   prep-io infile outfile errfile
 }
 
-define-operator | 300 {
+define-infix-operator | 300 {
   ;; edisplay* "operator" op before after
 
   foreground := #t
@@ -1079,7 +1079,7 @@ with-handle-dup := {
 ;; ... < e1 ...
 ;; ... > e1 ...
 ;; ... 2> e1 ...
-define-operator > 400 {
+define-infix-operator > 400 {
   suffix := #n
 
   if (and (pair? after)
@@ -1119,13 +1119,13 @@ define-operator > 400 {
   result
 }
 
-define-operator < 400 >
-define-operator 2> 400 >
+define-infix-operator < 400 >
+define-infix-operator 2> 400 >
 
 ;; ... <& e1 ...
 ;; ... >& e1 ...
 ;; ... 2>& e1 ...
-define-operator >& 400 {
+define-infix-operator >& 400 {
   suffix := #n
 
   if (and (pair? after)
@@ -1165,5 +1165,5 @@ define-operator >& 400 {
   result
 }
 
-define-operator <& 400 >&
-define-operator 2>& 400 >&
+define-infix-operator <& 400 >&
+define-infix-operator 2>& 400 >&

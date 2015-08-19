@@ -394,7 +394,7 @@ static IDIO idio_read_list (IDIO handle, IDIO opendel, char *ic, int depth)
 	    }
 	}
 
-	IDIO op = idio_operatorp (e);
+	IDIO op = idio_infix_operatorp (e);
 
 	if (idio_S_false != op) {
 	    /* ( ... {op} <EOL>
@@ -1271,7 +1271,7 @@ static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, char *ic, int depth
 	    }
 	} else {
 
-	    IDIO op = idio_operatorp (expr);
+	    IDIO op = idio_infix_operatorp (expr);
 
 	    if (idio_S_false != op) {
 		/* ( ... {op} <EOL>

@@ -110,8 +110,10 @@ static IDIO idio_expander_list_src = idio_S_nil;
 static IDIO idio_expander_thread = idio_S_nil;
 
 static IDIO idio_operator_module = idio_S_nil;
-static IDIO idio_operator_list = idio_S_nil;
-static IDIO idio_operator_group = idio_S_nil;
+static IDIO idio_infix_operator_list = idio_S_nil;
+static IDIO idio_infix_operator_group = idio_S_nil;
+static IDIO idio_postfix_operator_list = idio_S_nil;
+static IDIO idio_postfix_operator_group = idio_S_nil;
 
 static IDIO idio_initial_expander (IDIO x, IDIO e);
 static IDIO idio_macro_expand (IDIO e);
@@ -330,11 +332,18 @@ void idio_add_expander_primitive (idio_primitive_t *d)
     idio_install_expander_source (idio_symbols_C_intern (d->name), primdata, primdata);
 }
 
-void idio_add_operator_primitive (idio_primitive_t *d, int pri)
+void idio_add_infix_operator_primitive (idio_primitive_t *d, int pri)
 {
     idio_add_evaluation_primitive (d, idio_operator_module); 
     IDIO primdata = idio_primitive_data (d);
-    idio_install_operator (idio_symbols_C_intern (d->name), primdata, pri);
+    idio_install_infix_operator (idio_symbols_C_intern (d->name), primdata, pri);
+}
+
+void idio_add_postfix_operator_primitive (idio_primitive_t *d, int pri)
+{
+    idio_add_evaluation_primitive (d, idio_operator_module); 
+    IDIO primdata = idio_primitive_data (d);
+    idio_install_postfix_operator (idio_symbols_C_intern (d->name), primdata, pri);
 }
 
 IDIO idio_toplevel_extend (IDIO name, int variant)
@@ -766,7 +775,7 @@ static IDIO idio_macro_expands (IDIO e)
     }
 }
 
-void idio_install_operator (IDIO id, IDIO proc, int pri)
+void idio_install_infix_operator (IDIO id, IDIO proc, int pri)
 {
     IDIO_ASSERT (id);
     IDIO_ASSERT (proc);
@@ -775,11 +784,11 @@ void idio_install_operator (IDIO id, IDIO proc, int pri)
     /* idio_debug ("op install %s", id); */
     /* idio_debug (" as %s\n", proc); */
     
-    IDIO ol = idio_module_symbol_value (idio_operator_list, idio_operator_module);
+    IDIO ol = idio_module_symbol_value (idio_infix_operator_list, idio_operator_module);
     IDIO op = idio_list_assq (id, ol);
 
     if (idio_S_false == op) {
-	idio_module_set_symbol_value (idio_operator_list, 
+	idio_module_set_symbol_value (idio_infix_operator_list, 
 				      idio_pair (idio_pair (id, proc),
 						 ol), 
 				      idio_operator_module); 
@@ -787,7 +796,7 @@ void idio_install_operator (IDIO id, IDIO proc, int pri)
 	IDIO_PAIR_T (op) = proc;
     }
 
-    IDIO og = idio_module_symbol_value (idio_operator_group, idio_operator_module);
+    IDIO og = idio_module_symbol_value (idio_infix_operator_group, idio_operator_module);
 
     IDIO fpri = idio_fixnum (pri);
     IDIO grp = idio_list_assq (fpri, og);
@@ -796,7 +805,7 @@ void idio_install_operator (IDIO id, IDIO proc, int pri)
 	grp = IDIO_LIST1 (idio_pair (id, proc));
 
 	if (idio_S_nil == og) {
-	    idio_module_set_symbol_value (idio_operator_group,
+	    idio_module_set_symbol_value (idio_infix_operator_group,
 					  idio_pair (idio_pair (fpri, grp),
 						     og),
 					  idio_operator_module);
@@ -807,7 +816,7 @@ void idio_install_operator (IDIO id, IDIO proc, int pri)
 		IDIO cpri = IDIO_PAIR_H (IDIO_PAIR_H (c));
 		if (IDIO_FIXNUM_VAL (cpri) > pri) {
 		    if (idio_S_nil == p) {
-			idio_module_set_symbol_value (idio_operator_group,
+			idio_module_set_symbol_value (idio_infix_operator_group,
 						      idio_pair (idio_pair (fpri, grp),
 								 c),
 						      idio_operator_module);
@@ -837,11 +846,11 @@ void idio_install_operator (IDIO id, IDIO proc, int pri)
     }
 }
 
-static IDIO idio_evaluate_operator_code (IDIO m)
+static IDIO idio_evaluate_infix_operator_code (IDIO m)
 {
     IDIO_ASSERT (m);
 
-    /* idio_debug ("evaluate-operator-code: %s\n", m);   */
+    /* idio_debug ("evaluate-infix-operator-code: %s\n", m);   */
 
     IDIO cthr = idio_current_thread ();
     idio_set_current_thread (idio_expander_thread);
@@ -854,12 +863,12 @@ static IDIO idio_evaluate_operator_code (IDIO m)
     idio_thread_restore_state (idio_expander_thread);
     idio_set_current_thread (cthr);
 
-    /* idio_debug ("evaluate-operator-code: out: %s\n", r);     */
+    /* idio_debug ("evaluate-infix-operator-code: out: %s\n", r);     */
 
     return r;
 }
 
-static IDIO idio_evaluate_operator (IDIO n, IDIO e, IDIO b, IDIO a)
+static IDIO idio_evaluate_infix_operator (IDIO n, IDIO e, IDIO b, IDIO a)
 {
     IDIO_ASSERT (n);
     IDIO_ASSERT (e);
@@ -867,14 +876,14 @@ static IDIO idio_evaluate_operator (IDIO n, IDIO e, IDIO b, IDIO a)
     IDIO_ASSERT (a);
     IDIO_TYPE_ASSERT (pair, e);
     
-    /* idio_debug ("evaluate-operator: in n %s", n);  */
+    /* idio_debug ("evaluate-infix-operator: in n %s", n);  */
     /* idio_debug (" b %s", b);  */
     /* idio_debug (" a %s\n", a);  */
 
     IDIO func = IDIO_PAIR_T (e);
     if (! (idio_isa_closure (func) ||
 	   idio_isa_primitive (func))) {
-	idio_error_C ("operator: invalid code", IDIO_LIST2 (n, e), IDIO_C_LOCATION ("idio_evaluate_operator"));
+	idio_error_C ("operator: invalid code", IDIO_LIST2 (n, e), IDIO_C_LOCATION ("idio_evaluate_infix_operator"));
     }
     IDIO cthr = idio_current_thread ();
     idio_set_current_thread (idio_expander_thread);
@@ -887,12 +896,12 @@ static IDIO idio_evaluate_operator (IDIO n, IDIO e, IDIO b, IDIO a)
     idio_thread_restore_state (idio_expander_thread);
     idio_set_current_thread (cthr);
 
-    /* idio_debug ("evaluate-operator: out: %s\n", r);     */
+    /* idio_debug ("evaluate-infix-operator: out: %s\n", r);     */
 
     return r;
 }
 
-IDIO idio_operatorp (IDIO name)
+IDIO idio_infix_operatorp (IDIO name)
 {
     IDIO_ASSERT (name);
 
@@ -900,7 +909,7 @@ IDIO idio_operatorp (IDIO name)
       return idio_S_false;
     }
 
-    IDIO operator_list = idio_module_symbol_value (idio_operator_list, idio_operator_module);
+    IDIO operator_list = idio_module_symbol_value (idio_infix_operator_list, idio_operator_module);
     /* idio_debug ("op? ol %s\n", operator_list); */
     
     IDIO assq = idio_list_assq (name, operator_list);
@@ -921,6 +930,196 @@ IDIO idio_operatorp (IDIO name)
 	} else {
 	    /* fprintf (stderr, "operator?: isa %s\n", idio_type2string (v)); */
 	}
+    }
+
+    return assq;
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("infix-operator?", infix_operatorp, (IDIO x))
+{
+    IDIO_ASSERT (x);
+
+    return idio_infix_operatorp (x);
+}
+
+void idio_install_postfix_operator (IDIO id, IDIO proc, int pri)
+{
+    IDIO_ASSERT (id);
+    IDIO_ASSERT (proc);
+    IDIO_TYPE_ASSERT (symbol, id);
+    
+    /* idio_debug ("op install %s", id); */
+    /* idio_debug (" as %s\n", proc); */
+    
+    IDIO ol = idio_module_symbol_value (idio_postfix_operator_list, idio_operator_module);
+    IDIO op = idio_list_assq (id, ol);
+
+    if (idio_S_false == op) {
+	idio_module_set_symbol_value (idio_postfix_operator_list, 
+				      idio_pair (idio_pair (id, proc),
+						 ol), 
+				      idio_operator_module); 
+    } else {
+	IDIO_PAIR_T (op) = proc;
+    }
+
+    IDIO og = idio_module_symbol_value (idio_postfix_operator_group, idio_operator_module);
+
+    IDIO fpri = idio_fixnum (pri);
+    IDIO grp = idio_list_assq (fpri, og);
+
+    if (idio_S_false == grp) {
+	grp = IDIO_LIST1 (idio_pair (id, proc));
+
+	if (idio_S_nil == og) {
+	    idio_module_set_symbol_value (idio_postfix_operator_group,
+					  idio_pair (idio_pair (fpri, grp),
+						     og),
+					  idio_operator_module);
+	} else {
+	    IDIO c = og;
+	    IDIO p = idio_S_nil;
+	    while (idio_S_nil != c) {
+		IDIO cpri = IDIO_PAIR_H (IDIO_PAIR_H (c));
+		if (IDIO_FIXNUM_VAL (cpri) > pri) {
+		    if (idio_S_nil == p) {
+			idio_module_set_symbol_value (idio_postfix_operator_group,
+						      idio_pair (idio_pair (fpri, grp),
+								 c),
+						      idio_operator_module);
+		    } else {
+			IDIO_PAIR_T (p) = idio_pair (idio_pair (fpri, grp),
+						     c);
+		    }
+		    break;
+		}
+		p = c;
+		c = IDIO_PAIR_T (c);
+	    }
+	    if (idio_S_nil == c) {
+		IDIO_PAIR_T (p) = idio_pair (idio_pair (fpri, grp),
+					     c);
+	    }
+	}
+    } else {
+	IDIO procs = IDIO_PAIR_T (grp);
+	IDIO old = idio_list_assq (id, procs);
+
+	if (idio_S_false == old) {
+	    IDIO_PAIR_T (grp) = idio_pair (idio_pair (id, proc), procs);
+	} else {
+	    IDIO_PAIR_T (old) = proc;
+	}
+    }
+}
+
+static IDIO idio_evaluate_postfix_operator_code (IDIO m)
+{
+    IDIO_ASSERT (m);
+
+    /* idio_debug ("evaluate-postfix-operator-code: %s\n", m);   */
+
+    IDIO cthr = idio_current_thread ();
+    idio_set_current_thread (idio_expander_thread);
+    idio_thread_save_state (idio_expander_thread);
+    idio_vm_default_pc (idio_expander_thread);
+
+    idio_vm_codegen (idio_expander_thread, m);
+    IDIO r = idio_vm_run (idio_expander_thread);
+    
+    idio_thread_restore_state (idio_expander_thread);
+    idio_set_current_thread (cthr);
+
+    /* idio_debug ("evaluate-postfix-operator-code: out: %s\n", r);     */
+
+    return r;
+}
+
+static IDIO idio_evaluate_postfix_operator (IDIO n, IDIO e, IDIO b, IDIO a)
+{
+    IDIO_ASSERT (n);
+    IDIO_ASSERT (e);
+    IDIO_ASSERT (b);
+    IDIO_ASSERT (a);
+    IDIO_TYPE_ASSERT (pair, e);
+    
+    /* idio_debug ("evaluate-postfix-operator: in n %s", n);  */
+    /* idio_debug (" b %s", b);  */
+    /* idio_debug (" a %s\n", a);  */
+
+    IDIO func = IDIO_PAIR_T (e);
+    if (! (idio_isa_closure (func) ||
+	   idio_isa_primitive (func))) {
+	idio_error_C ("operator: invalid code", IDIO_LIST2 (n, e), IDIO_C_LOCATION ("idio_evaluate_postfix_operator"));
+    }
+    IDIO cthr = idio_current_thread ();
+    idio_set_current_thread (idio_expander_thread);
+    idio_thread_save_state (idio_expander_thread);
+    idio_vm_default_pc (idio_expander_thread);
+
+    idio_apply (IDIO_PAIR_T (e), IDIO_LIST3 (n, b, IDIO_LIST1 (a)));
+    IDIO r = idio_vm_run (idio_expander_thread);
+    
+    idio_thread_restore_state (idio_expander_thread);
+    idio_set_current_thread (cthr);
+
+    /* idio_debug ("evaluate-postfix-operator: out: %s\n", r);     */
+
+    return r;
+}
+
+IDIO idio_postfix_operatorp (IDIO name)
+{
+    IDIO_ASSERT (name);
+
+    if (! idio_isa_symbol (name)) {
+      return idio_S_false;
+    }
+
+    IDIO operator_list = idio_module_symbol_value (idio_postfix_operator_list, idio_operator_module);
+    /* idio_debug ("op? ol %s\n", operator_list); */
+    
+    IDIO assq = idio_list_assq (name, operator_list);
+
+    if (idio_S_false != assq) {
+	/* idio_debug ("op %s?", name); */
+	/* idio_debug (" %s\n", assq); */
+
+	IDIO v = IDIO_PAIR_T (assq);
+	if (idio_isa_pair (v)) {
+	    /* idio_debug ("operator?: %s isa PAIR\n", name);  */
+	    IDIO lv = idio_module_current_symbol_value_recurse (name);
+	    /* idio_debug ("operator?: lookup -> %s\n", lv);  */
+	    if (idio_isa_primitive (lv) ||
+		idio_isa_closure (lv)) {
+		IDIO_PAIR_T (assq) = lv;
+	    }
+	} else {
+	    /* fprintf (stderr, "operator?: isa %s\n", idio_type2string (v)); */
+	}
+    }
+
+    return assq;
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("postfix-operator?", postfix_operatorp, (IDIO x))
+{
+    IDIO_ASSERT (x);
+
+    return idio_postfix_operatorp (x);
+}
+
+IDIO idio_operatorp (IDIO name)
+{
+    IDIO_ASSERT (name);
+
+    if (! idio_isa_symbol (name)) {
+      return idio_S_false;
+    }
+
+    IDIO assq = idio_infix_operatorp (name);
+    if (idio_S_false == assq) {
+	assq = idio_postfix_operatorp (name);
     }
 
     return assq;
@@ -1559,7 +1758,7 @@ static IDIO idio_meaning_define_macro (IDIO name, IDIO e, IDIO nametree, int tai
     return r;
 }
 
-static IDIO idio_meaning_define_operator (IDIO name, IDIO pri, IDIO e, IDIO nametree, int tailp)
+static IDIO idio_meaning_define_infix_operator (IDIO name, IDIO pri, IDIO e, IDIO nametree, int tailp)
 {
     IDIO_ASSERT (name);
     IDIO_ASSERT (pri);
@@ -1569,7 +1768,7 @@ static IDIO idio_meaning_define_operator (IDIO name, IDIO pri, IDIO e, IDIO name
     IDIO_TYPE_ASSERT (list, nametree);
 
     if (IDIO_FIXNUM_VAL (pri) < 0) {
-	idio_error_param_type ("positive fixnum", pri, IDIO_C_LOCATION ("idio_meaning_define_operator"));
+	idio_error_param_type ("positive fixnum", pri, IDIO_C_LOCATION ("idio_meaning_define_infix_operator"));
     }
 
     /*
@@ -1591,9 +1790,9 @@ static IDIO idio_meaning_define_operator (IDIO name, IDIO pri, IDIO e, IDIO name
      */
     IDIO m;
     if (idio_isa_symbol (e)) {
-	IDIO exp = idio_operatorp (e);
+	IDIO exp = idio_infix_operatorp (e);
 	/*
-	 * define-operator X pri Y
+	 * define-infix-operator X pri Y
 	 *
 	 * We happen to have the closure for Y, (pt {exp}), in our
 	 * hands but when this object code is loaded the compiled
@@ -1601,7 +1800,7 @@ static IDIO idio_meaning_define_operator (IDIO name, IDIO pri, IDIO e, IDIO name
 	 * value up.
 	 */
 	if (idio_S_false == exp) {
-	    idio_error_param_type ("operator", e, IDIO_C_LOCATION ("idio_meaning_define_operator"));
+	    idio_error_param_type ("operator", e, IDIO_C_LOCATION ("idio_meaning_define_infix_operator"));
 	}
 
 	IDIO sve = IDIO_LIST3 (idio_symbols_C_intern ("symbol-value"),
@@ -1611,12 +1810,12 @@ static IDIO idio_meaning_define_operator (IDIO name, IDIO pri, IDIO e, IDIO name
 	m = idio_meaning (sve, nametree, tailp);
     } else {
 	/*
-	 * define-operator X pri { ... }
+	 * define-infix-operator X pri { ... }
 	 *
 	 * should really be a function definition with args: {op},
 	 * {before} and {after}:
 	 *
-	 * define-operator (X op before after) { ... }
+	 * define-infix-operator (X op before after) { ... }
 	 */
 	IDIO def_args = IDIO_LIST3 (idio_S_op, idio_S_before, idio_S_after);
 	
@@ -1626,20 +1825,106 @@ static IDIO idio_meaning_define_operator (IDIO name, IDIO pri, IDIO e, IDIO name
     
 	m = idio_meaning (fe, nametree, tailp);
     }
-    IDIO r = IDIO_LIST4 (idio_I_OPERATOR, fvi, pri, m);
+    IDIO r = IDIO_LIST4 (idio_I_INFIX_OPERATOR, fvi, pri, m);
 
     /*
-     * NB.  idio_evaluate_operator_code will invoke
-     * idio_install_operator (see IDIO_A_OPERATOR in vm.c).
+     * NB.  idio_evaluate_infix_operator_code will invoke
+     * idio_install_infix_operator (see IDIO_A_INFIX_OPERATOR in vm.c).
      */
-    IDIO cl = idio_evaluate_operator_code (r);
+    IDIO cl = idio_evaluate_infix_operator_code (r);
 
     /*
      * Step 3: insert the value "live"
      */
     idio_module_set_symbol_value (name, cl, idio_operator_module); 
 
-    /* idio_debug ("idio-meaning-define-operator %s", name);   */
+    /* idio_debug ("idio-meaning-define-infix-operator %s", name);   */
+    /* idio_debug (" cl=%s", cl);   */
+    /* idio_debug (" r=%s\n", r);   */
+    return r;
+}
+
+static IDIO idio_meaning_define_postfix_operator (IDIO name, IDIO pri, IDIO e, IDIO nametree, int tailp)
+{
+    IDIO_ASSERT (name);
+    IDIO_ASSERT (pri);
+    IDIO_ASSERT (e);
+    IDIO_ASSERT (nametree);
+    IDIO_TYPE_ASSERT (fixnum, pri);
+    IDIO_TYPE_ASSERT (list, nametree);
+
+    if (IDIO_FIXNUM_VAL (pri) < 0) {
+	idio_error_param_type ("positive fixnum", pri, IDIO_C_LOCATION ("idio_meaning_define_postfix_operator"));
+    }
+
+    /*
+     * Step 1: find the existing symbol for {name} or create a new one
+     */
+    IDIO cv = idio_module_symbol (name, idio_operator_module);
+    IDIO fvi;
+    if (idio_S_unspec == cv) {
+	idio_ai_t vi = idio_vm_extend_symbols (name);
+	fvi = idio_fixnum (vi);
+	idio_module_set_symbol (name, IDIO_LIST2 (idio_S_toplevel, fvi), idio_operator_module);
+    } else {
+	fvi = IDIO_PAIR_H (IDIO_PAIR_T (cv));
+    }
+
+    /*
+     * Step 2: rework the expression into some appropriate code and
+     * compile
+     */
+    IDIO m;
+    if (idio_isa_symbol (e)) {
+	IDIO exp = idio_postfix_operatorp (e);
+	/*
+	 * define-postfix-operator X pri Y
+	 *
+	 * We happen to have the closure for Y, (pt {exp}), in our
+	 * hands but when this object code is loaded the compiled
+	 * code's value could be anywhere so we should be looking the
+	 * value up.
+	 */
+	if (idio_S_false == exp) {
+	    idio_error_param_type ("operator", e, IDIO_C_LOCATION ("idio_meaning_define_postfix_operator"));
+	}
+
+	IDIO sve = IDIO_LIST3 (idio_symbols_C_intern ("symbol-value"),
+			       IDIO_LIST2 (idio_S_quote, e),
+			       IDIO_LIST2 (idio_symbols_C_intern ("find-module"),
+					   IDIO_LIST2 (idio_S_quote, IDIO_MODULE_NAME (idio_operator_module))));
+	m = idio_meaning (sve, nametree, tailp);
+    } else {
+	/*
+	 * define-postfix-operator X pri { ... }
+	 *
+	 * should really be a function definition with args: {op},
+	 * {before} and {after}:
+	 *
+	 * define-postfix-operator (X op before after) { ... }
+	 */
+	IDIO def_args = IDIO_LIST3 (idio_S_op, idio_S_before, idio_S_after);
+	
+	IDIO fe = IDIO_LIST3 (idio_S_function,
+			      def_args,
+			      e);
+    
+	m = idio_meaning (fe, nametree, tailp);
+    }
+    IDIO r = IDIO_LIST4 (idio_I_POSTFIX_OPERATOR, fvi, pri, m);
+
+    /*
+     * NB.  idio_evaluate_postfix_operator_code will invoke
+     * idio_install_postfix_operator (see IDIO_A_POSTFIX_OPERATOR in vm.c).
+     */
+    IDIO cl = idio_evaluate_postfix_operator_code (r);
+
+    /*
+     * Step 3: insert the value "live"
+     */
+    idio_module_set_symbol_value (name, cl, idio_operator_module); 
+
+    /* idio_debug ("idio-meaning-define-postfix-operator %s", name);   */
     /* idio_debug (" cl=%s", cl);   */
     /* idio_debug (" r=%s\n", r);   */
     return r;
@@ -2691,14 +2976,14 @@ static IDIO idio_meaning_expander (IDIO e, IDIO nametree, int tailp)
     return idio_meaning (me, nametree, tailp);
 }
 
-IDIO idio_operator_expand (IDIO e, int depth)
+IDIO idio_infix_operator_expand (IDIO e, int depth)
 {
     IDIO_ASSERT (e);
 
-    /* idio_debug ("operator-expands:   %s\n", e); */
+    /* idio_debug ("infix-operator-expand:   %s\n", e); */
 
     if (idio_isa_pair (e)) {
-	IDIO og = idio_module_symbol_value (idio_operator_group, idio_operator_module);
+	IDIO og = idio_module_symbol_value (idio_infix_operator_group, idio_operator_module);
 	while (idio_S_nil != og) {
 	    IDIO ogp = IDIO_PAIR_H (og);
 	    IDIO ops = IDIO_PAIR_T (ogp);
@@ -2715,8 +3000,8 @@ IDIO idio_operator_expand (IDIO e, int depth)
 		    IDIO opex = idio_list_assq (s, ops);
 		    
 		    if (idio_S_false != opex) {
-			b = idio_evaluate_operator (s, opex, b, IDIO_PAIR_T (a));
-			return idio_operator_expand (b, depth + 1);
+			b = idio_evaluate_infix_operator (s, opex, b, IDIO_PAIR_T (a));
+			return idio_infix_operator_expand (b, depth + 1);
 			break;
 		    }
 		}
@@ -2728,6 +3013,75 @@ IDIO idio_operator_expand (IDIO e, int depth)
 	    og = IDIO_PAIR_T (og);
 	}
     }
+
+    return e;
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("infix-operator-expand", infix_operator_expand, (IDIO l))
+{
+    IDIO_ASSERT (l);
+    IDIO_TYPE_ASSERT (list, l);
+
+    return idio_infix_operator_expand (l, 0);
+}
+
+IDIO idio_postfix_operator_expand (IDIO e, int depth)
+{
+    IDIO_ASSERT (e);
+
+    /* idio_debug ("postfix-operator-expand:   %s\n", e); */
+
+    if (idio_isa_pair (e)) {
+	IDIO pog = idio_module_symbol_value (idio_postfix_operator_group, idio_operator_module);
+	while (idio_S_nil != pog) {
+	    IDIO pogp = IDIO_PAIR_H (pog);
+	    IDIO ops = IDIO_PAIR_T (pogp);
+
+	    IDIO b = IDIO_LIST1 (IDIO_PAIR_H (e));
+	    IDIO a = IDIO_PAIR_T (e);
+	    while (idio_S_nil != a) {
+		IDIO s = IDIO_PAIR_H (a);
+
+		if (idio_isa_pair (s) &&
+		    idio_S_escape == IDIO_PAIR_H (s)) {
+		    /* s = IDIO_PAIR_H (IDIO_PAIR_T (s)); */
+		} else {
+		    IDIO opex = idio_list_assq (s, ops);
+		    
+		    if (idio_S_false != opex) {
+			b = idio_evaluate_postfix_operator (s, opex, b, IDIO_PAIR_T (a));
+			return idio_postfix_operator_expand (b, depth + 1);
+			break;
+		    }
+		}
+		b = idio_list_append2 (b, IDIO_LIST1 (s));
+		a = IDIO_PAIR_T (a);
+	    }
+
+	    e = b;
+	    pog = IDIO_PAIR_T (pog);
+	}
+    }
+
+    return e;
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("postfix-operator-expand", postfix_operator_expand, (IDIO l))
+{
+    IDIO_ASSERT (l);
+    IDIO_TYPE_ASSERT (list, l);
+
+    return idio_postfix_operator_expand (l, 0);
+}
+
+IDIO idio_operator_expand (IDIO e, int depth)
+{
+    IDIO_ASSERT (e);
+
+    /* idio_debug ("operator-expand:   %s\n", e); */
+
+    e = idio_infix_operator_expand (e, depth);
+    e = idio_postfix_operator_expand (e, depth);
 
     return e;
 }
@@ -2867,24 +3221,44 @@ static IDIO idio_meaning (IDIO e, IDIO nametree, int tailp)
 		idio_error_param_nil ("(define-macro)", IDIO_C_LOCATION ("idio_meaning"));
 		return idio_S_unspec;
 	    }
-	} else if (idio_S_define_operator == eh) {
-	    /* (define-operator bindings body ...) */
+	} else if (idio_S_define_infix_operator == eh) {
+	    /* (define-infix-operator bindings body ...) */
 	    if (idio_isa_pair (et)) {
 		IDIO ett = IDIO_PAIR_T (et);
 		if (idio_isa_pair (ett)) {
 		    IDIO ettt = IDIO_PAIR_T (ett);
 		    if (idio_isa_pair (ettt)) {
-			return idio_meaning_define_operator (IDIO_PAIR_H (et), IDIO_PAIR_H (ett), IDIO_PAIR_H (ettt), nametree, tailp);
+			return idio_meaning_define_infix_operator (IDIO_PAIR_H (et), IDIO_PAIR_H (ett), IDIO_PAIR_H (ettt), nametree, tailp);
 		    } else {
-			idio_error_param_nil ("(define-operator symbol pri)", IDIO_C_LOCATION ("idio_meaning"));
+			idio_error_param_nil ("(define-infix-operator symbol pri)", IDIO_C_LOCATION ("idio_meaning"));
 			return idio_S_unspec;
 		    }
 		} else {
-		    idio_error_param_nil ("(define-operator symbol)", IDIO_C_LOCATION ("idio_meaning"));
+		    idio_error_param_nil ("(define-infix-operator symbol)", IDIO_C_LOCATION ("idio_meaning"));
 		    return idio_S_unspec;
 		}
 	    } else {
-		idio_error_param_nil ("(define-operator)", IDIO_C_LOCATION ("idio_meaning"));
+		idio_error_param_nil ("(define-infix-operator)", IDIO_C_LOCATION ("idio_meaning"));
+		return idio_S_unspec;
+	    }
+	} else if (idio_S_define_postfix_operator == eh) {
+	    /* (define-postfix-operator bindings body ...) */
+	    if (idio_isa_pair (et)) {
+		IDIO ett = IDIO_PAIR_T (et);
+		if (idio_isa_pair (ett)) {
+		    IDIO ettt = IDIO_PAIR_T (ett);
+		    if (idio_isa_pair (ettt)) {
+			return idio_meaning_define_postfix_operator (IDIO_PAIR_H (et), IDIO_PAIR_H (ett), IDIO_PAIR_H (ettt), nametree, tailp);
+		    } else {
+			idio_error_param_nil ("(define-postfix-operator symbol pri)", IDIO_C_LOCATION ("idio_meaning"));
+			return idio_S_unspec;
+		    }
+		} else {
+		    idio_error_param_nil ("(define-postfix-operator symbol)", IDIO_C_LOCATION ("idio_meaning"));
+		    return idio_S_unspec;
+		}
+	    } else {
+		idio_error_param_nil ("(define-postfix-operator)", IDIO_C_LOCATION ("idio_meaning"));
 		return idio_S_unspec;
 	    }
 	} else if (idio_S_define == eh) {
@@ -3153,8 +3527,8 @@ IDIO idio_evaluate (IDIO e)
     return m;
 }
 
-#define IDIO_DEFINE_ARITHMETIC_OPERATOR(iname,cname)			\
-    IDIO_DEFINE_OPERATOR (iname, cname, (IDIO n, IDIO b, IDIO args))	\
+#define IDIO_DEFINE_ARITHMETIC_INFIX_OPERATOR(iname,cname)			\
+    IDIO_DEFINE_INFIX_OPERATOR (iname, cname, (IDIO n, IDIO b, IDIO args))	\
     {									\
 	IDIO_ASSERT (n);						\
 	IDIO_ASSERT (b);						\
@@ -3189,13 +3563,13 @@ IDIO idio_evaluate (IDIO e)
 	return idio_S_unspec;						\
     }
 
-/* IDIO_DEFINE_ARITHMETIC_OPERATOR ("+", add); */
-/* IDIO_DEFINE_ARITHMETIC_OPERATOR ("-", subtract); */
-/* IDIO_DEFINE_ARITHMETIC_OPERATOR ("*", multiply); */
-/* IDIO_DEFINE_ARITHMETIC_OPERATOR ("/", divide); */
+/* IDIO_DEFINE_ARITHMETIC_INFIX_OPERATOR ("+", add); */
+/* IDIO_DEFINE_ARITHMETIC_INFIX_OPERATOR ("-", subtract); */
+/* IDIO_DEFINE_ARITHMETIC_INFIX_OPERATOR ("*", multiply); */
+/* IDIO_DEFINE_ARITHMETIC_INFIX_OPERATOR ("/", divide); */
 
-#define IDIO_DEFINE_ASSIGNMENT_OPERATOR(iname,cname) \
-    IDIO_DEFINE_OPERATOR (iname, cname, (IDIO op, IDIO before, IDIO args)) \
+#define IDIO_DEFINE_ASSIGNMENT_INFIX_OPERATOR(iname,cname) \
+    IDIO_DEFINE_INFIX_OPERATOR (iname, cname, (IDIO op, IDIO before, IDIO args)) \
     {									\
 	IDIO_ASSERT (op);						\
 	IDIO_ASSERT (before);						\
@@ -3221,11 +3595,11 @@ IDIO idio_evaluate (IDIO e)
 	return idio_S_unspec;						\
     }
 
-IDIO_DEFINE_ASSIGNMENT_OPERATOR ("=", set);
-IDIO_DEFINE_ASSIGNMENT_OPERATOR (":=", colon_eq);
-IDIO_DEFINE_ASSIGNMENT_OPERATOR (":+", colon_plus);
-IDIO_DEFINE_ASSIGNMENT_OPERATOR (":*", colon_star);
-IDIO_DEFINE_ASSIGNMENT_OPERATOR (":~", colon_tilde);
+IDIO_DEFINE_ASSIGNMENT_INFIX_OPERATOR ("=", set);
+IDIO_DEFINE_ASSIGNMENT_INFIX_OPERATOR (":=", colon_eq);
+IDIO_DEFINE_ASSIGNMENT_INFIX_OPERATOR (":+", colon_plus);
+IDIO_DEFINE_ASSIGNMENT_INFIX_OPERATOR (":*", colon_star);
+IDIO_DEFINE_ASSIGNMENT_INFIX_OPERATOR (":~", colon_tilde);
 
 void idio_init_evaluate ()
 {
@@ -3241,11 +3615,17 @@ void idio_init_evaluate ()
 
     idio_operator_module = idio_module (idio_symbols_C_intern ("Idio.operator"));
 
-    idio_operator_list = idio_symbols_C_intern ("*operator-list*");
-    idio_module_set_symbol_value (idio_operator_list, idio_S_nil, idio_operator_module);
+    idio_infix_operator_list = idio_symbols_C_intern ("*infix-operator-list*");
+    idio_module_set_symbol_value (idio_infix_operator_list, idio_S_nil, idio_operator_module);
 
-    idio_operator_group = idio_symbols_C_intern ("*operator-group*");
-    idio_module_set_symbol_value (idio_operator_group, idio_S_nil, idio_operator_module);
+    idio_infix_operator_group = idio_symbols_C_intern ("*infix-operator-group*");
+    idio_module_set_symbol_value (idio_infix_operator_group, idio_S_nil, idio_operator_module);
+
+    idio_postfix_operator_list = idio_symbols_C_intern ("*postfix-operator-list*");
+    idio_module_set_symbol_value (idio_postfix_operator_list, idio_S_nil, idio_operator_module);
+
+    idio_postfix_operator_group = idio_symbols_C_intern ("*postfix-operator-group*");
+    idio_module_set_symbol_value (idio_postfix_operator_group, idio_S_nil, idio_operator_module);
 }
 
 void idio_evaluate_add_primitives ()
@@ -3256,17 +3636,21 @@ void idio_evaluate_add_primitives ()
     IDIO_THREAD_MODULE (idio_expander_thread) = idio_expansion_module;
     IDIO_THREAD_PC (idio_expander_thread) = 1;
 
+    IDIO_ADD_PRIMITIVE (infix_operatorp);
+    IDIO_ADD_PRIMITIVE (infix_operator_expand);
+    IDIO_ADD_PRIMITIVE (postfix_operatorp);
+    IDIO_ADD_PRIMITIVE (postfix_operator_expand);
     IDIO_ADD_PRIMITIVE (operatorp);
     IDIO_ADD_PRIMITIVE (operator_expand);
-    /* IDIO_ADD_OPERATOR (add); */
-    /* IDIO_ADD_OPERATOR (subtract); */
-    /* IDIO_ADD_OPERATOR (multiply); */
-    /* IDIO_ADD_OPERATOR (divide); */
-    IDIO_ADD_OPERATOR (set, 1000); 
-    IDIO_ADD_OPERATOR (colon_eq, 1000);  
-    IDIO_ADD_OPERATOR (colon_plus, 1000);  
-    IDIO_ADD_OPERATOR (colon_star, 1000);  
-    IDIO_ADD_OPERATOR (colon_tilde, 1000);  
+    /* IDIO_ADD_INFIX_OPERATOR (add); */
+    /* IDIO_ADD_INFIX_OPERATOR (subtract); */
+    /* IDIO_ADD_INFIX_OPERATOR (multiply); */
+    /* IDIO_ADD_INFIX_OPERATOR (divide); */
+    IDIO_ADD_INFIX_OPERATOR (set, 1000); 
+    IDIO_ADD_INFIX_OPERATOR (colon_eq, 1000);  
+    IDIO_ADD_INFIX_OPERATOR (colon_plus, 1000);  
+    IDIO_ADD_INFIX_OPERATOR (colon_star, 1000);  
+    IDIO_ADD_INFIX_OPERATOR (colon_tilde, 1000);  
 }
 
 void idio_final_evaluate ()
