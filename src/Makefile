@@ -108,7 +108,7 @@ clean : tidy
 	rm -f *.o *.d ${BINDIR}/idio scm1-c-structs *.so scm1-c-structs.scm1 o e TAGS
 
 tidy :
-	rm -f vgcore.* core.* core *~ *.gcda *.gcno *.gcov gmon.out
+	rm -f vgcore.* core.* core *~ $(LIBDIR)/*~ $(TESTSDIR)/*~ *.gcda *.gcno *.gcov gmon.out
 ifeq ($(OS),Darwin)
 	rm -f /cores/*
 else ifeq ($(OS),FreeBSD)
