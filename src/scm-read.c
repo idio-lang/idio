@@ -483,7 +483,7 @@ IDIO idio_scm_read_character (IDIO handle)
     return r;
 }
 
-IDIO idio_scm_read_vector (IDIO handle, int depth)
+IDIO idio_scm_read_array (IDIO handle, int depth)
 {
     IDIO_ASSERT (handle);
 
@@ -769,7 +769,7 @@ static IDIO idio_scm_read_expr (IDIO handle, int depth)
 		case '\\':
 		    return idio_scm_read_character (handle);
 		case '(':
-		    return idio_scm_read_vector (handle, depth + 1);
+		    return idio_scm_read_array (handle, depth + 1);
 		case 'b':
 		    return idio_scm_read_bignum (handle, c, 2);
 		case 'd':

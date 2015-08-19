@@ -757,7 +757,7 @@ char *idio_as_string (IDIO o, int depth)
 		}
 		break;
 	    case IDIO_TYPE_ARRAY:
-		if (asprintf (&r, "#( ") == -1) {
+		if (asprintf (&r, "#[ ") == -1) {
 		    idio_error_alloc ("asprintf");
 		}
 		if (depth > 0) {
@@ -777,7 +777,7 @@ char *idio_as_string (IDIO o, int depth)
 		} else {
 		    IDIO_STRCAT (r, "... ");
 		}
-		IDIO_STRCAT (r, ")");
+		IDIO_STRCAT (r, "]");
 		break;
 	    case IDIO_TYPE_HASH:
 		if (asprintf (&r, "{ ") == -1) {

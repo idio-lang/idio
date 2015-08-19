@@ -427,7 +427,7 @@ IDIO_DEFINE_PRIMITIVE1 ("list->string", list2string, (IDIO l))
     return idio_list_list2string (l);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("list->vector", list2array, (IDIO l))
+IDIO_DEFINE_PRIMITIVE1 ("list->array", list2array, (IDIO l))
 {
     IDIO_ASSERT (l);
 

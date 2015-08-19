@@ -1075,7 +1075,7 @@ static IDIO idio_scm_meaning_dequasiquote (IDIO e, int level)
 			       idio_scm_meaning_dequasiquote (IDIO_PAIR_T (e), level));
 	}
     } else if (idio_isa_array (e)) {
-	return IDIO_LIST2 (idio_symbols_C_intern ("list->vector"), idio_scm_meaning_dequasiquote (idio_array_to_list (e), level));
+	return IDIO_LIST2 (idio_symbols_C_intern ("list->array"), idio_scm_meaning_dequasiquote (idio_array_to_list (e), level));
     } else if (idio_isa_symbol (e)) {
 	return IDIO_LIST2 (idio_S_quote, e);
     } else {

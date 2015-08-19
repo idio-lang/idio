@@ -22,7 +22,7 @@
 
 #include "idio.h"
 
-void idio_error_vector_length (char *m, idio_ai_t i, IDIO loc)
+void idio_error_array_length (char *m, idio_ai_t i, IDIO loc)
 {
     IDIO_C_ASSERT (m);
     IDIO_ASSERT (loc);
@@ -441,7 +441,7 @@ int idio_array_delete_index (IDIO a, idio_ai_t index)
     return 1;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("vector?", vector_p, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1 ("array?", array_p, (IDIO o))
 {
     IDIO_ASSERT (o);
 
@@ -454,7 +454,7 @@ IDIO_DEFINE_PRIMITIVE1 ("vector?", vector_p, (IDIO o))
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1V ("make-vector", make_vector, (IDIO size, IDIO args))
+IDIO_DEFINE_PRIMITIVE1V ("make-array", make_array, (IDIO size, IDIO args))
 {
     IDIO_ASSERT (size);
     IDIO_ASSERT (args);
@@ -469,13 +469,13 @@ IDIO_DEFINE_PRIMITIVE1V ("make-vector", make_vector, (IDIO size, IDIO args))
 	} else {
 	    IDIO size_i = idio_bignum_real_to_integer (size);
 	    if (idio_S_nil == size_i) {
-		idio_error_param_type ("number", size, IDIO_C_LOCATION ("make-vector"));
+		idio_error_param_type ("number", size, IDIO_C_LOCATION ("make-array"));
 	    } else {
 		vlen = idio_bignum_ptrdiff_value (size_i);
 	    }
 	}
     } else {
-	idio_error_param_type ("number", size, IDIO_C_LOCATION ("make-vector"));
+	idio_error_param_type ("number", size, IDIO_C_LOCATION ("make-array"));
     }
 
     IDIO_VERIFY_PARAM_TYPE (list, args);
@@ -487,7 +487,7 @@ IDIO_DEFINE_PRIMITIVE1V ("make-vector", make_vector, (IDIO size, IDIO args))
     }
 
     if (vlen < 0) {
-	idio_error_printf (IDIO_C_LOCATION ("make-vector"), "invalid length: %zd", vlen);
+	idio_error_printf (IDIO_C_LOCATION ("make-array"), "invalid length: %zd", vlen);
     }
     
     IDIO a = idio_array (vlen);
@@ -500,7 +500,7 @@ IDIO_DEFINE_PRIMITIVE1V ("make-vector", make_vector, (IDIO size, IDIO args))
     return a;
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("vector-fill!", vector_fill, (IDIO a, IDIO fill))
+IDIO_DEFINE_PRIMITIVE2 ("array-fill!", array_fill, (IDIO a, IDIO fill))
 {
     IDIO_ASSERT (a);
     IDIO_ASSERT (fill);
@@ -517,7 +517,7 @@ IDIO_DEFINE_PRIMITIVE2 ("vector-fill!", vector_fill, (IDIO a, IDIO fill))
     return idio_S_unspec;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("vector-length", vector_length, (IDIO a))
+IDIO_DEFINE_PRIMITIVE1 ("array-length", array_length, (IDIO a))
 {
     IDIO_ASSERT (a);
 
@@ -526,7 +526,7 @@ IDIO_DEFINE_PRIMITIVE1 ("vector-length", vector_length, (IDIO a))
     return idio_fixnum (idio_array_size (a));
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("vector-ref", vector_ref, (IDIO a, IDIO index))
+IDIO_DEFINE_PRIMITIVE2 ("array-ref", array_ref, (IDIO a, IDIO index))
 {
     IDIO_ASSERT (a);
     IDIO_ASSERT (index);
@@ -543,13 +543,13 @@ IDIO_DEFINE_PRIMITIVE2 ("vector-ref", vector_ref, (IDIO a, IDIO index))
 	} else {
 	    IDIO index_i = idio_bignum_real_to_integer (index);
 	    if (idio_S_nil == index_i) {
-		idio_error_param_type ("number", index, IDIO_C_LOCATION ("vector-ref"));
+		idio_error_param_type ("number", index, IDIO_C_LOCATION ("array-ref"));
 	    } else {
 		i = idio_bignum_ptrdiff_value (index_i);
 	    }
 	}
     } else {
-	idio_error_param_type ("number", index, IDIO_C_LOCATION ("vector-ref"));
+	idio_error_param_type ("number", index, IDIO_C_LOCATION ("array-ref"));
     }
 
     idio_ai_t al = idio_array_size (a);
@@ -558,18 +558,18 @@ IDIO_DEFINE_PRIMITIVE2 ("vector-ref", vector_ref, (IDIO a, IDIO index))
 	i += al;
 	if (i < 0) {
 	    i -= al;
-	    idio_error_vector_length ("out of bounds", i, IDIO_C_LOCATION ("vector-ref"));
+	    idio_error_array_length ("out of bounds", i, IDIO_C_LOCATION ("array-ref"));
 	    return idio_S_unspec;
 	}
     } else if (i >= al) {
-	idio_error_vector_length ("out of bounds", i, IDIO_C_LOCATION ("vector-ref"));
+	idio_error_array_length ("out of bounds", i, IDIO_C_LOCATION ("array-ref"));
 	return idio_S_unspec;
     }
 
     return idio_array_get_index (a, i);
 }
 
-IDIO_DEFINE_PRIMITIVE3 ("vector-set!", vector_set, (IDIO a, IDIO index, IDIO v))
+IDIO_DEFINE_PRIMITIVE3 ("array-set!", array_set, (IDIO a, IDIO index, IDIO v))
 {
     IDIO_ASSERT (a);
     IDIO_ASSERT (index);
@@ -587,13 +587,13 @@ IDIO_DEFINE_PRIMITIVE3 ("vector-set!", vector_set, (IDIO a, IDIO index, IDIO v))
 	} else {
 	    IDIO index_i = idio_bignum_real_to_integer (index);
 	    if (idio_S_nil == index_i) {
-		idio_error_param_type ("number", index, IDIO_C_LOCATION ("vector-set!"));
+		idio_error_param_type ("number", index, IDIO_C_LOCATION ("array-set!"));
 	    } else {
 		i = idio_bignum_ptrdiff_value (index_i);
 	    }
 	}
     } else {
-	idio_error_param_type ("number", index, IDIO_C_LOCATION ("vector-set!"));
+	idio_error_param_type ("number", index, IDIO_C_LOCATION ("array-set!"));
     }
 
     idio_ai_t al = idio_array_size (a);
@@ -602,11 +602,11 @@ IDIO_DEFINE_PRIMITIVE3 ("vector-set!", vector_set, (IDIO a, IDIO index, IDIO v))
 	i += al;
 	if (i < 0) {
 	    i -= al;
-	    idio_error_vector_length ("out of bounds", i, IDIO_C_LOCATION ("vector-set!"));
+	    idio_error_array_length ("out of bounds", i, IDIO_C_LOCATION ("array-set!"));
 	    return idio_S_unspec;
 	}
     } else if (i >= al) {
-	idio_error_vector_length ("out of bounds", i, IDIO_C_LOCATION ("vector-set!"));
+	idio_error_array_length ("out of bounds", i, IDIO_C_LOCATION ("array-set!"));
 	return idio_S_unspec;
     }
 
@@ -615,7 +615,7 @@ IDIO_DEFINE_PRIMITIVE3 ("vector-set!", vector_set, (IDIO a, IDIO index, IDIO v))
     return idio_S_unspec;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("vector->list", vector2list, (IDIO a))
+IDIO_DEFINE_PRIMITIVE1 ("array->list", array2list, (IDIO a))
 {
     IDIO_ASSERT (a);
 
@@ -630,13 +630,13 @@ void idio_init_array ()
 
 void idio_array_add_primitives ()
 {
-    IDIO_ADD_PRIMITIVE (vector_p);
-    IDIO_ADD_PRIMITIVE (make_vector);
-    IDIO_ADD_PRIMITIVE (vector_fill);
-    IDIO_ADD_PRIMITIVE (vector_length);
-    IDIO_ADD_PRIMITIVE (vector_ref);
-    IDIO_ADD_PRIMITIVE (vector_set);
-    IDIO_ADD_PRIMITIVE (vector2list);
+    IDIO_ADD_PRIMITIVE (array_p);
+    IDIO_ADD_PRIMITIVE (make_array);
+    IDIO_ADD_PRIMITIVE (array_fill);
+    IDIO_ADD_PRIMITIVE (array_length);
+    IDIO_ADD_PRIMITIVE (array_ref);
+    IDIO_ADD_PRIMITIVE (array_set);
+    IDIO_ADD_PRIMITIVE (array2list);
 }
 
 void idio_final_array ()

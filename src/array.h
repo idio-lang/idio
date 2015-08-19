@@ -33,7 +33,9 @@
  *
  * On normal machines size_t is probably the same as intptr_t (an
  * integral type that can contain a pointer).  On segmented
- * architectures, SIZE_MAX might be the minimum 65536.
+ * architectures, SIZE_MAX might be 65535, the index of the largest
+ * addressable element of an array on this architecture if it has
+ * 16bit segments.
  *
  * Following that, ptrdiff_t is the difference between the indices of
  * two elements *in the same array* (and is not well defined

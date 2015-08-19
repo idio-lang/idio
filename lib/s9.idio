@@ -234,9 +234,9 @@ define (equal? a b) {
 			   (equal? (pt a) (pt b))) \
       (string? a) (and (string? b)
 		       (string=? a b)) \
-      (vector? a) (and (vector? b)
-		       (equal? (vector->list a)
-			       (vector->list b))) \
+      (array? a) (and (array? b)
+		       (equal? (array->list a)
+			       (array->list b))) \
       else	  (eqv? a b)
 }
 
@@ -809,14 +809,14 @@ define number->string {
   number-of-digits := number-of-digits
 
   function (n & radix) {
-    digits :+ list->vector (string->list "0123456789abcdefghijklmnopqrstuvwxyz")
+    digits :+ list->array (string->list "0123456789abcdefghijklmnopqrstuvwxyz")
     conv :+ function (n rdx res) {
       if (zero? n) {
         if (null? res) '(#\0) res
       } {
 	conv (quotient n rdx) \
 	     rdx \
-	     (pair (vector-ref digits (remainder n rdx))
+	     (pair (array-ref digits (remainder n rdx))
 		   res)
       }
     }
@@ -1058,9 +1058,9 @@ string->number := {
   }
 }
 
-;; Vector procedures
+;; Array procedures
 
-define (vector & x) (list->vector x)
+define (array & x) (list->array x)
 
 ;; Input/output procedures
 
@@ -1125,7 +1125,7 @@ define-macro (quasiquote-s9) \
           else (list 'pair a b)
     }
     qq-expand :+ function (x) {
-      if+ (vector? x) (list 'list->vector (qq-expand (vector->list x))) \
+      if+ (array? x) (list 'list->array (qq-expand (array->list x))) \
 	  (not (pair? x)) (list 'quote x) \
 	  (and (eq? 'unquote (ph x))
 	       (pair? (pt x))) (pht x) \

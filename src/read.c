@@ -74,6 +74,7 @@
 				 IDIO_CHAR_CR == (c) ||			\
 				 IDIO_CHAR_LPAREN == (c) ||		\
 				 IDIO_CHAR_RPAREN == (c) ||		\
+				 IDIO_CHAR_RBRACKET == (c) ||		\
 				 IDIO_CHAR_SEMICOLON == (c) ||		\
 				 IDIO_CHAR_SQUOTE == (c) ||		\
 				 IDIO_CHAR_BACKQUOTE == (c) ||		\
@@ -330,6 +331,8 @@ static IDIO idio_read_list (IDIO handle, IDIO opendel, char *ic, int depth)
     IDIO closedel;
     if (opendel == idio_T_lparen) {
 	closedel = idio_T_rparen;
+    } else if (opendel == idio_T_lbracket) {
+	closedel = idio_T_rbracket;
     } else {
 	idio_read_error_parse_args (handle, "unexpected list open delimiter '%s'", opendel);
 	return idio_S_unspec;
@@ -684,11 +687,11 @@ static IDIO idio_read_character (IDIO handle)
     return r;
 }
 
-static IDIO idio_read_vector (IDIO handle, char *ic, int depth)
+static IDIO idio_read_array (IDIO handle, char *ic, int depth)
 {
     IDIO_ASSERT (handle);
 
-    IDIO e = idio_read_list (handle, idio_T_lparen, ic, depth);
+    IDIO e = idio_read_list (handle, idio_T_lbracket, ic, IDIO_LIST_BRACKET (depth + 1));
     return idio_list_to_array (e);
 }
 
@@ -1064,24 +1067,16 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int nl)
 		    return idio_S_unspec;
 		}
 		break;
-		/*
+	    case IDIO_CHAR_LBRACKET:
+		return idio_read_block (handle, idio_T_rbracket, ic, IDIO_LIST_BRACKET (depth + 1));
 	    case IDIO_CHAR_RBRACKET:
-		return idio_T_rbracket;
-		break;
-	    case IDIO_CHAR_RANGLE:
-		{
-		    c = idio_handle_peek (handle);
-		    switch (c) {
-		    case EOF:
-			return idio_T_rangle;
-		    case IDIO_CHAR_EQUALS:
-			return idio_read_word (handle, IDIO_CHAR_RANGLE);
-		    default:
-			return idio_T_rangle;
-		    }
+		if (IDIO_LIST_BRACKET_P (depth)) {
+		    return idio_T_rbracket;
+		} else {
+		    idio_read_error_parse (handle, IDIO_C_LOCATION ("idio_read_1_expr_nl"), "unexpected ']'");
+		    return idio_S_unspec;
 		}
 		break;
-		*/
 	    case IDIO_CHAR_BACKQUOTE:
 		{
 		    char qq_ic[] = { IDIO_CHAR_COMMA, IDIO_CHAR_AT, IDIO_CHAR_SQUOTE, IDIO_CHAR_BACKSLASH };
@@ -1099,8 +1094,8 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int nl)
 			return idio_S_nil;
 		    case '\\':
 			return idio_read_character (handle);
-		    case '(':
-			return idio_read_vector (handle, ic, IDIO_LIST_PAREN (depth + 1));
+		    case '[':
+			return idio_read_array (handle, ic, IDIO_LIST_BRACKET (depth + 1));
 		    case 'b':
 			return idio_read_bignum (handle, c, 2);
 		    case 'd':

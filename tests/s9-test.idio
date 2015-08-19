@@ -70,15 +70,15 @@ test '(a (b) c) '(a (b) c)
 test '(((((x))))) '(((((x)))))
 test '((phh & pth) & (pht & ptt)) '((phh & pth) & (pht & ptt))
 
-; vectors
+; arrays
 
-test '#() '#()
-test '#(a b c) '#(a b c)
-test '#(a (b) c) '#(a (b) c)
-test '#(((((x))))) '#(((((x)))))
-test '#((phh cadar) (caadr  cadadr)) '#((phh cadar) (caadr  cadadr))
-test '#(#(a b c) #(d e f)) '#(#(a b c) #(d e f))
-test '#(#(#(#(#(x))))) '#(#(#(#(#(x)))))
+test '#[] '#[]
+test '#[a b c] '#[a b c]
+test '#[a (b) c] '#[a (b) c]
+test '#[((((x))))] '#[((((x))))]
+test '#[(phh cadar) (caadr  cadadr)] '#[(phh cadar) (caadr  cadadr)]
+test '#[#[a b c] #[d e f]] '#[#[a b c] #[d e f]]
+test '#[#[#[#[#[x]]]]] '#[#[#[#[#[x]]]]]
 
 ; numbers -- integers
 
@@ -214,7 +214,7 @@ test (and #\x) #\x
 test (and "x") "x"
 test (and '(x)) '(x)
 test (and '()) '()
-test (and '#(x)) '#(x)
+test (and '#[x]) '#[x]
 test (and (function (x) x) #t) #t
 
 ; begin
@@ -247,7 +247,7 @@ test (cond (#\x 1)) 1
 test (cond ("x" 1)) 1
 test (cond ('(a b c) 1)) 1
 test (cond ('() 1)) 1
-test (cond (#(1 2 3) 1)) 1
+test (cond (#[1 2 3] 1)) 1
 test (cond (#f 1)) (void)
 test (cond (#f 1) (#t 2)) 2
 test (cond (#f 1) (else 2)) 2
@@ -411,7 +411,7 @@ test (if #\a 1) 1
 test (if "a" 1) 1
 test (if '(1 2 3) 1) 1
 test (if '() 1) 1
-test (if '#(1 2 3) 1) 1
+test (if '#[1 2 3] 1) 1
 test (if #t 1 2) 1
 test (if #f 1 2) 2
 test (if #f (#f)) (void)
@@ -613,7 +613,7 @@ test (or #\x) #\x
 test (or "x") "x"
 test (or '(x)) '(x)
 test (or '()) '()
-test (or '#(x)) '#(x)
+test (or '#[x]) '#[x]
 
 ; quote
 test (quote foo) 'foo
@@ -624,7 +624,7 @@ test (quote #\X) #\X
 test (quote "abc") "abc"
 test (quote ()) '()
 test (quote (1 2 3)) '(1 2 3)
-test (quote #(1 2 3)) '#(1 2 3)
+test (quote #[1 2 3]) '#[1 2 3]
 test (quote (function (x) x)) '(function (x) x)
 test '1 '1
 test ''1 ''1
@@ -699,7 +699,7 @@ test (boolean? '(pair)) #f
 test (boolean? (function () #f)) #f
 test (boolean? "string") #f
 test (boolean? 'symbol) #f
-test (boolean? '#(vector)) #f
+test (boolean? '#[array]) #f
 test (boolean? (current-input-handle)) #f
 test (boolean? (current-output-handle)) #f
 
@@ -711,7 +711,7 @@ test (char? '(pair)) #f
 test (char? (function () #f)) #f
 test (char? "string") #f
 test (char? 'symbol) #f
-test (char? '#(vector)) #f
+test (char? '#[array]) #f
 test (char? (current-input-handle)) #f
 test (char? (current-output-handle)) #f
 
@@ -723,7 +723,7 @@ test (input-handle? '(pair)) #f
 test (input-handle? (function () #f)) #f
 test (input-handle? "string") #f
 test (input-handle? 'symbol) #f
-test (input-handle? '#(vector)) #f
+test (input-handle? '#[array]) #f
 test (input-handle? (current-input-handle)) #t
 test (input-handle? (current-output-handle)) #f
 
@@ -736,7 +736,7 @@ test (integer? '(pair)) #f
 test (integer? (function () #f)) #f
 test (integer? "string") #f
 test (integer? 'symbol) #f
-test (integer? '#(vector)) #f
+test (integer? '#[array]) #f
 test (integer? (current-input-handle)) #f
 test (integer? (current-output-handle)) #f
 
@@ -748,7 +748,7 @@ test (number? '(pair)) #f
 test (number? (function () #f)) #f
 test (number? "string") #f
 test (number? 'symbol) #f
-test (number? '#(vector)) #f
+test (number? '#[array]) #f
 test (number? (current-input-handle)) #f
 test (number? (current-output-handle)) #f
 
@@ -760,7 +760,7 @@ test (output-handle? '(pair)) #f
 test (output-handle? (function () #f)) #f
 test (output-handle? "string") #f
 test (output-handle? 'symbol) #f
-test (output-handle? '#(vector)) #f
+test (output-handle? '#[array]) #f
 test (output-handle? (current-input-handle)) #f
 test (output-handle? (current-output-handle)) #t
 
@@ -772,7 +772,7 @@ test (pair? '(pair)) #t
 test (pair? (function () #f)) #f
 test (pair? "string") #f
 test (pair? 'symbol) #f
-test (pair? '#(vector)) #f
+test (pair? '#[array]) #f
 test (pair? (current-input-handle)) #f
 test (pair? (current-output-handle)) #f
 
@@ -784,7 +784,7 @@ test (port? '(pair)) #f
 test (port? (function () #f)) #f
 test (port? "string") #f
 test (port? 'symbol) #f
-test (port? '#(vector)) #f
+test (port? '#[array]) #f
 test (port? (current-input-handle)) #t
 test (port? (current-output-handle)) #t
 
@@ -796,7 +796,7 @@ test (procedure? '(procedure)) #f
 test (procedure? (function () #f)) #t
 test (procedure? "string") #f
 test (procedure? 'symbol) #f
-test (procedure? '#(vector)) #f
+test (procedure? '#[array]) #f
 test (procedure? (current-input-handle)) #f
 test (procedure? (current-output-handle)) #f
 
@@ -808,7 +808,7 @@ test (string? '(pair)) #f
 test (string? (function () #f)) #f
 test (string? "string") #t
 test (string? 'symbol) #f
-test (string? '#(vector)) #f
+test (string? '#[array]) #f
 test (string? (current-input-handle)) #f
 test (string? (current-output-handle)) #f
 
@@ -820,21 +820,21 @@ test (symbol? '(pair)) #f
 test (symbol? (function () #f)) #f
 test (symbol? "string") #f
 test (symbol? 'symbol) #t
-test (symbol? '#(vector)) #f
+test (symbol? '#[array]) #f
 test (symbol? (current-input-handle)) #f
 test (symbol? (current-output-handle)) #f
 
-test (vector? #f) #f
-test (vector? #\c) #f
-test (vector? 1) #f
-test (vector? 0.1) #f
-test (vector? '(pair)) #f
-test (vector? (function () #f)) #f
-test (vector? "string") #f
-test (vector? 'symbol) #f
-test (vector? '#(vector)) #t
-test (vector? (current-input-handle)) #f
-test (vector? (current-output-handle)) #f
+test (array? #f) #f
+test (array? #\c) #f
+test (array? 1) #f
+test (array? 0.1) #f
+test (array? '(pair)) #f
+test (array? (function () #f)) #f
+test (array? "string") #f
+test (array? 'symbol) #f
+test (array? '#[array]) #t
+test (array? (current-input-handle)) #f
+test (array? (current-output-handle)) #f
 
 ; --- conversion procedures ---
 
@@ -852,9 +852,9 @@ test (integer->char 65.0) #\A
 test (list->string '(#\S #\t #\r #\i #\n #\g)) "String"
 test (list->string '()) ""
 
-test (list->vector '(#t foo 1 #\c "s" (1 2 3) #(u v))) \
-      '#(#t foo 1 #\c "s" (1 2 3) #(u v))
-test (list->vector '()) '#()
+test (list->array '(#t foo 1 #\c "s" (1 2 3) #[u v])) \
+      '#[#t foo 1 #\c "s" (1 2 3) #[u v]]
+test (list->array '()) '#[]
 
 test (string->list "String") '(#\S #\t #\r #\i #\n #\g)
 test (string->list "") '()
@@ -868,9 +868,9 @@ test (symbol->string (string->symbol "miSSissiPPi")) "miSSissiPPi"
 
 test (eq? (string->symbol "foo") 'foo) #t
 
-test (vector->list '#(#t foo 1 #\c "s" (1 2 3) #(u v))) \
-      '(#t foo 1 #\c "s" (1 2 3) #(u v))
-test (vector->list '#()) '()
+test (array->list '#[#t foo 1 #\c "s" (1 2 3) #[u v]]) \
+      '(#t foo 1 #\c "s" (1 2 3) #[u v])
+test (array->list '#[]) '()
 
 ; --- more control ---
 
@@ -958,9 +958,9 @@ test %T{ (1 2 3) } '(1 2 3)
 test %T{ (y $x z) } '(y foo z)
 test %T{ (1 2 3 $(list 4 5)) } '(1 2 3 (4 5))
 test %T{ (1 2 3 $@(list 4 5)) } '(1 2 3 4 5)
-test %T{ #(y $x z) } '#(y foo z)
-test %T{ #(1 2 3 $(list 4 5)) } '#(1 2 3 (4 5))
-test %T{ #(1 2 3 $@(list 4 5)) } '#(1 2 3 4 5)
+test %T{ #[y $x z] } '#[y foo z]
+test %T{ #[1 2 3 $(list 4 5)] } '#[1 2 3 (4 5)]
+test %T{ #[1 2 3 $@(list 4 5)] } '#[1 2 3 4 5]
 test %T{ (a b c ($x y z)) } '(a b c (foo y z))
 test %T{ (a b c ($x $@(list 'y 'z))) } '(a b c (foo y z))
 
@@ -1071,7 +1071,7 @@ test (list? '(pair)) #t
 test (list? (function () #f)) #f
 test (list? "string") #f
 test (list? 'symbol) #f
-test (list? '#(vector)) #f
+test (list? '#[array]) #f
 test (list? (current-input-handle)) #f
 test (list? (current-output-handle)) #f
 test (list? '()) #t
@@ -1118,7 +1118,7 @@ test (null? '(pair)) #f
 test (null? (function () #f)) #f
 test (null? "string") #f
 test (null? 'symbol) #f
-test (null? '#(vector)) #f
+test (null? '#[array]) #f
 test (null? (current-input-handle)) #f
 test (null? (current-output-handle)) #f
 test (null? '()) #t
@@ -2199,7 +2199,7 @@ test (not '(pair)) #f
 test (not (function () #f)) #f
 test (not "string") #f
 test (not 'symbol) #f
-test (not '#(vector)) #f
+test (not '#[array]) #f
 test (not (current-input-handle)) #f
 test (not (current-output-handle)) #f
 
@@ -2337,7 +2337,7 @@ test (eq? (list 'pair) (list 'pair)) #f
 test (eq? (function () #f) (function () #f)) #f
 test (eq? "string" "string") #f
 test (eq? 'symbol 'symbol) #t
-test (eq? (vector 'vector) (vector 'vector)) #f
+test (eq? (array 'array) (array 'array)) #f
 
 test (eqv? #f #f) #t
 test (eqv? #\c #\c) #t
@@ -2346,7 +2346,7 @@ test (eqv? (list 'pair) (list 'pair)) #f
 test (eqv? (function () #f) (function () #f)) #f
 test (eqv? "string" "string") #f
 test (eqv? 'symbol 'symbol) #t
-test (eqv? (vector 'vector) (vector 'vector)) #f
+test (eqv? (array 'array) (array 'array)) #f
 
 test (equal? #f #f) #t
 test (equal? #\c #\c) #t
@@ -2355,7 +2355,7 @@ test (equal? '(pair) '(pair)) #t
 test (equal? (function () #f) (function () #f)) #f
 test (equal? "string" "string") #t
 test (equal? 'symbol 'symbol) #t
-test (equal? '#(vector) #(vector)) #t
+test (equal? '#[array] #[array]) #t
 test (equal? tree tree) #t
 
 ; --- chars ---
@@ -3034,63 +3034,63 @@ test (substring "abc" 2 3) "c"
 test (substring "abc" 3 3) ""
 test (substring "abc" 0.0 3.0) "abc"
 
-; --- vectors ---
+; --- arrays ---
 
-test (make-vector 0) #()
-test (make-vector 1) #(#f)
-test (make-vector 3 'x) #(x x x)
-test (make-vector 2.0 'x) #(x x)
+test (make-array 0) #[]
+test (make-array 1) #[#f]
+test (make-array 3 'x) #[x x x]
+test (make-array 2.0 'x) #[x x]
 
-test (vector) '#()
-test (vector 'x) '#(x)
-test (vector 1 2 3) '#(1 2 3)
-test (vector (vector 'x)) '#(#(x))
+test (array) '#[]
+test (array 'x) '#[x]
+test (array 1 2 3) '#[1 2 3]
+test (array (array 'x)) '#[#[x]]
 
-; (test (let ((v (vector))) (vector-fill! v 'x) v) '#())
+; (test (let ((v (array))) (array-fill! v 'x) v) '#[])
 test {
-  v := (vector)
-  vector-fill! v 'x
+  v := (array)
+  array-fill! v 'x
   v
-} '#()
-; (test (let ((v (vector 1 2 3))) (vector-fill! v 'z) v) '#(z z z))
+} '#[]
+; (test (let ((v (array 1 2 3))) (array-fill! v 'z) v) '#[z z z])
 test {
-  v := vector 1 2 3
-  vector-fill! v 'z
+  v := array 1 2 3
+  array-fill! v 'z
   v
-} '#(z z z)
+} '#[z z z]
 
-test (vector-length #()) 0
-test (vector-length #(a)) 1
-test (vector-length #(a b)) 2
-test (vector-length #(a b c)) 3
-test (vector-length #(1 2 3 #(4 5 6) 7 8 9)) 7
+test (array-length #[]) 0
+test (array-length #[a]) 1
+test (array-length #[a b]) 2
+test (array-length #[a b c]) 3
+test (array-length #[1 2 3 #[4 5 6] 7 8 9]) 7
 
-test (vector-ref #(a b c) 0) 'a
-test (vector-ref #(a b c) 1) 'b
-test (vector-ref #(a b c) 2) 'c
-test (vector-ref #(a b c) 2.0) 'c
+test (array-ref #[a b c] 0) 'a
+test (array-ref #[a b c] 1) 'b
+test (array-ref #[a b c] 2) 'c
+test (array-ref #[a b c] 2.0) 'c
 
-define v (vector 1 2 3)
-; (test (begin (vector-set! v 0 'a) v) '#(a 2 3))
+define v (array 1 2 3)
+; (test (begin (array-set! v 0 'a) v) '#[a 2 3])
 test {
-  vector-set! v 0 'a
+  array-set! v 0 'a
   v
-} '#(a 2 3)
-; (test (begin (vector-set! v 2 'c) v) '#(a 2 c))
+} '#[a 2 3]
+; (test (begin (array-set! v 2 'c) v) '#[a 2 c])
 test {
-  vector-set! v 2 'c
+  array-set! v 2 'c
   v
-} '#(a 2 c)
-; (test (begin (vector-set! v 1 'b) v) '#(a b c))
+} '#[a 2 c]
+; (test (begin (array-set! v 1 'b) v) '#[a b c])
 test {
-  vector-set! v 1 'b
+  array-set! v 1 'b
   v
-} '#(a b c)
-; (test (begin (vector-set! v 1.0 'x) v) '#(a x c))
+} '#[a b c]
+; (test (begin (array-set! v 1.0 'x) v) '#[a x c])
 test {
-  vector-set! v 1.0 'x
+  array-set! v 1.0 'x
   v
-} '#(a x c)
+} '#[a x c]
 
 ; --- I/O ---
 
@@ -3242,7 +3242,7 @@ test (visibility-check #\A) '(#\A A) ; idio is case-sensitive, was '(#\A a)
 test (visibility-check "x y") '("x y" x)
 test (visibility-check 'foo) '(foo foo)
 test (visibility-check '(1 2 3)) '((1 2 3) (1 2 3))
-test (visibility-check '#(1 2 3)) '(#(1 2 3) #(1 2 3))
+test (visibility-check '#[1 2 3]) '(#[1 2 3] #[1 2 3])
 test (visibility-check " ") '(" " the-end)
 test (visibility-check #\space) '(#\space the-end)
 test (visibility-check #\newline) '(#\newline the-end)
