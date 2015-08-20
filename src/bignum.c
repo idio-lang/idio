@@ -714,11 +714,6 @@ IDIO idio_bignum_to_fixnum (IDIO bn)
 	return idio_fixnum (iv);
     }
 
-    idio_bignum_error_conversion ("failed to convert", bn, IDIO_C_LOCATION ("idio_bignum_to_fixnum"));
-
-    /* notreached */
-    fprintf (stderr, "failed to convert: %zd from ", iv);
-    idio_debug ("%s\n", bn);
     return idio_S_nil;
 }
 
