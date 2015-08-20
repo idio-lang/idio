@@ -51,6 +51,7 @@ extern IDIO_SYMBOL_DECL (define_macro);
 extern IDIO_SYMBOL_DECL (define_infix_operator);
 extern IDIO_SYMBOL_DECL (define_postfix_operator);
 extern IDIO_SYMBOL_DECL (dloads);
+extern IDIO_SYMBOL_DECL (dot);
 extern IDIO_SYMBOL_DECL (dynamic);
 extern IDIO_SYMBOL_DECL (dynamic_let);
 extern IDIO_SYMBOL_DECL (dynamic_unset);

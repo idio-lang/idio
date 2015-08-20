@@ -49,6 +49,7 @@ IDIO_SYMBOL_DECL (define_macro);
 IDIO_SYMBOL_DECL (define_infix_operator);
 IDIO_SYMBOL_DECL (define_postfix_operator);
 IDIO_SYMBOL_DECL (dloads);
+IDIO_SYMBOL_DECL (dot);
 IDIO_SYMBOL_DECL (dynamic);
 IDIO_SYMBOL_DECL (dynamic_let);
 IDIO_SYMBOL_DECL (dynamic_unset);
@@ -301,6 +302,7 @@ void idio_init_symbol ()
     IDIO_SYMBOL_DEF ("define-infix-operator", define_infix_operator);
     IDIO_SYMBOL_DEF ("define-postfix-operator", define_postfix_operator);
     IDIO_SYMBOL_DEF ("dloads", dloads);
+    IDIO_SYMBOL_DEF (".", dot);
     IDIO_SYMBOL_DEF ("dynamic", dynamic);
     IDIO_SYMBOL_DEF ("dynamic-let", dynamic_let);
     IDIO_SYMBOL_DEF ("dynamic-unset", dynamic_unset);

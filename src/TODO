@@ -90,3 +90,6 @@ Threading
 
 screen
 	- restoreable/reattachable
+
+Readline
+	- ^P !!

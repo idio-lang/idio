@@ -20,7 +20,7 @@
 ;;
 
 define (operator-precedence-table) {
-  og := symbol-value '*operator-group* (find-module 'Idio.operator)
+  og := symbol-value '*operator-group* (find-module 'IDIO/operator)
   loop :+ function (groups r) {
     cond ((null? groups) (reverse r)) \
 	 (else {
@@ -63,7 +63,7 @@ define (operator-expand1 exp) {
   }
 
   if (pair? exp) {
-    precedence-loop exp (symbol-value *operator-group* (find-module 'Idio.operator))
+    precedence-loop exp (symbol-value *operator-group* (find-module 'IDIO/operator))
   } exp
 }
 
@@ -428,3 +428,60 @@ define-postfix-operator =- 700 {
 ;; Arrays: shift
 define-postfix-operator -= 700 =-
 
+define-infix-operator . 800 {
+  prefix := #n
+
+  if (not (null? (pt before))) {
+    prefix = before
+    loop :+ function (before) {
+      cond ((null? (pt before)) {
+	      before
+	    }) \
+	    ((null? (pt (pt before))) {
+	      r := pt before
+	      set-pt! before #n
+	      r
+	    }) \
+	    (else {
+	      loop (pt before)
+	    })
+    }
+
+    ;; before must be a list of at least one (as an operator cannot be
+    ;; in functional position)
+    before = loop before
+  }
+
+  suffix := #n
+
+  if (and (pair? after)
+	  (pair? (pt after))
+	  (not (null? (pt (pt after))))) {
+    suffix = pt after
+    after = (list (ph after))
+  }
+
+  result := #n
+
+  if (not (null? prefix)) {
+    result = prefix
+  }
+
+  op+args := list 'value-index (ph before) (ph after)
+
+  if (null? result) {
+    if (null? suffix) {
+      result = op+args
+    } {
+      result = list op+args
+    }
+  } {
+    result = append result (list op+args)
+  }
+
+  if (not (null? suffix)) {
+    result = append result suffix
+  }
+
+  %T{ $result }
+}

@@ -889,7 +889,7 @@ void idio_init_module ()
     idio_modules_hash = IDIO_HASH_EQP (1<<4);
     idio_gc_protect (idio_modules_hash);
 
-    idio_primitive_module = idio_module (idio_symbols_C_intern ("Idio.primitives"));
+    idio_primitive_module = idio_module (idio_symbols_C_intern ("IDIO/primitives"));
     IDIO_MODULE_IMPORTS (idio_primitive_module) = idio_S_nil;
 
     idio_toplevel_module = idio_module (idio_symbols_C_intern ("Idio"));

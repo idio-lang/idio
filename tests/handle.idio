@@ -18,8 +18,7 @@
 ;;
 ;; handle.idio
 ;;
-
-%%vm-trace 0
+handle0 = Tests
 
 ;; check predicates fail for non-handle
 test-str := "foo"
@@ -113,3 +112,6 @@ close-handle ofh
 ifh = open-input-file testfile
 multi-line-read-handle ifh
 close-handle ifh
+
+;; all done?
+test (handle0 + 41) Tests

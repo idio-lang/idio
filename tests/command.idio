@@ -18,6 +18,7 @@
 ;;
 ;; command.idio
 ;;
+command0 = Tests
 
 ;; How to test external commands?
 
@@ -422,3 +423,6 @@ monitor (function (cont cond) {
   set-output-handle! ooh
   set-error-handle! oeh
 }
+
+;; all done?
+test (command0 + 98) Tests

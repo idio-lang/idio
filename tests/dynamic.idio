@@ -18,7 +18,7 @@
 ;;
 ;; dynamic.idio
 ;;
-
+dynamic0 = Tests
 
 ;; dynamic values
 
@@ -78,3 +78,6 @@ test dynx2 11
 
 ;; test it in a prepared function
 test-dynx2
+
+;; all done?
+test (dynamic0 + 7) Tests

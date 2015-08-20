@@ -18,7 +18,7 @@
 ;;
 ;; struct.idio
 ;;
-
+struct0 = Tests
 
 define-struct foo a b
 test (struct-type? foo) #t
@@ -39,3 +39,6 @@ test (foo-a fooi) 3
 set-foo-b! fooi 10
 test (struct-instance-ref fooi 'b) 10
 test (foo-b fooi) 10
+
+;; all done?
+test (struct0 + 14) Tests

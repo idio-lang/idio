@@ -18,7 +18,7 @@
 ;;
 ;; condition.idio
 ;;
-
+condition0 = Tests
 
 test (condition-type? ^condition) #t
 test (message-condition? ^condition) #f
@@ -47,26 +47,26 @@ test (condition-type? mct2) #t
 test (message-condition? mct2) #f
 test (error? mct2) #f
 
-c2.1 := condition mct2 (f2 20)
-test (condition? c2.1) #t
-test (condition-type? c2.1) #f
-test (message-condition? c2.1) #t
-test (condition-ref c2.1 'f2) 20
+c2/1 := condition mct2 (f2 20)
+test (condition? c2/1) #t
+test (condition-type? c2/1) #f
+test (message-condition? c2/1) #t
+test (condition-ref c2/1 'f2) 20
 
 msg := "bob"
-c2.2 := condition mct2 (f2 20) (message msg)
-test (condition? c2.2) #t
-test (condition-type? c2.2) #f
-test (condition-ref c2.2 'message) msg
-test (condition-message c2.2) msg
-test (condition-ref c2.2 'f2) 20
+c2/2 := condition mct2 (f2 20) (message msg)
+test (condition? c2/2) #t
+test (condition-type? c2/2) #f
+test (condition-ref c2/2 'message) msg
+test (condition-message c2/2) msg
+test (condition-ref c2/2 'f2) 20
 
-c2.3 := condition mct2 (message msg) (f2 20)
-test (condition? c2.3) #t
-test (condition-type? c2.3) #f
-test (condition-ref c2.3 'message) msg
-test (condition-message c2.3) msg
-test (condition-ref c2.3 'f2) 20
+c2/3 := condition mct2 (message msg) (f2 20)
+test (condition? c2/3) #t
+test (condition-type? c2/3) #f
+test (condition-ref c2/3 'message) msg
+test (condition-message c2/3) msg
+test (condition-ref c2/3 'f2) 20
 
 mct3 := make-condition-type 'mct3 ^error 'f3
 test (condition-type? mct3) #t
@@ -80,17 +80,17 @@ test (message-condition? c3) #f
 test (error? c3) #t
 test (condition-ref c3 'f3) 30
 
-mct4 := make-condition-type 'mct4 ^error 'f4.1 'f4.2
+mct4 := make-condition-type 'mct4 ^error 'f4/1 'f4/2
 test (condition-type? mct4) #t
 test (message-condition? mct4) #f
 test (error? mct4) #f
 
-c4 := condition mct4 (f4.1 41) (f4.2 42)
+c4 := condition mct4 (f4/1 41) (f4/2 42)
 test (condition? c4) #t
 test (condition-type? c4) #f
 test (message-condition? c4) #f
 test (error? c4) #t
-test (condition-ref c4 'f4.1) 41
+test (condition-ref c4 'f4/1) 41
 
 ;; define-condition-type
 define-condition-type dct5 ^condition f5
@@ -104,16 +104,16 @@ test (dct5? c5) #t
 test (condition-ref c5 'f5) 50
 test (dct5-f5 c5) 50
 
-define-condition-type dct6 ^condition f6.1 f6.2
+define-condition-type dct6 ^condition f6/1 f6/2
 test (condition-type? dct6) #t
 test (error? dct6) #f
 
-c6 := condition dct6 (f6.1 60)
+c6 := condition dct6 (f6/1 60)
 test (condition-type? c6) #f
 test (condition? c6) #t
 test (dct6? c6) #t
-test (condition-ref c6 'f6.1) 60
-test (dct6-f6.1 c6) 60
+test (condition-ref c6 'f6/1) 60
+test (dct6-f6/1 c6) 60
 
 define-condition-type dct7 ^message f7
 test (condition-type? dct7) #t
@@ -412,6 +412,9 @@ if (file-exists? test_filename) (delete-file test_filename)
 ;; condition) but we can test its type:
 display* "raising a continuable condition"
 test (error? (raise #t (make-condition ^error))) #t
+
+;; all done?
+test (condition0 + 101) Tests
 
 ;; a non-continuable error should abort this thread's current "run" --
 ;; which will be the idio_vm_run() in idio_load_filehandle, ie. the

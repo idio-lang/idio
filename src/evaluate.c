@@ -70,11 +70,11 @@
  *    the evaluation engine and are read-only.)
  *
  *    These are created by the IDIO_ADD_PRIMITIVE macros which
- *    populate a normal list of names in the Idio.primitives and
- *    Idio.operator modules.
+ *    populate a normal list of names in the IDIO/primitives and
+ *    IDIO/operator modules.
  *
- *    Idio.primitives for the usual culprits ("+", "string-append",
- *    etc.) and Idio.operators for operators (primarily because, say,
+ *    IDIO/primitives for the usual culprits ("+", "string-append",
+ *    etc.) and IDIO/operators for operators (primarily because, say,
  *    the operator "-" is an obvious name clash with the regular
  *    subtraction primitive "-" and, in fact, is simply a transformer
  *    into that).
@@ -3603,7 +3603,7 @@ IDIO_DEFINE_ASSIGNMENT_INFIX_OPERATOR (":~", colon_tilde);
 
 void idio_init_evaluate ()
 {
-    idio_expansion_module = idio_module (idio_symbols_C_intern ("Idio.expansion"));
+    idio_expansion_module = idio_module (idio_symbols_C_intern ("IDIO/expansion"));
 
     idio_expander_list = idio_symbols_C_intern ("*expander-list*");
     idio_module_set_symbol_value (idio_expander_list, idio_S_nil, idio_expansion_module);
@@ -3613,7 +3613,7 @@ void idio_init_evaluate ()
     idio_expander_list_src = idio_symbols_C_intern ("*expander-list-src*");
     idio_module_set_symbol_value (idio_expander_list_src, idio_S_nil, idio_expansion_module);
 
-    idio_operator_module = idio_module (idio_symbols_C_intern ("Idio.operator"));
+    idio_operator_module = idio_module (idio_symbols_C_intern ("IDIO/operator"));
 
     idio_infix_operator_list = idio_symbols_C_intern ("*infix-operator-list*");
     idio_module_set_symbol_value (idio_infix_operator_list, idio_S_nil, idio_operator_module);

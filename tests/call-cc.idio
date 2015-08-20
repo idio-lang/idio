@@ -18,6 +18,7 @@
 ;;
 ;; call-cc.idio
 ;;
+call-cc0 = Tests
 
 ;; Some tests from
 ;; http://www.scheme.com/tspl3/control.html#./control:s53
@@ -42,3 +43,6 @@ test ((call/cc {
     unwind-protect (k (function () x)) (set! x 'b)
   }
 })) 'b
+
+;; all done?
+test (call-cc0 + 3) Tests

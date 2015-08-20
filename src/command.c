@@ -84,13 +84,44 @@ static void idio_command_error_glob (IDIO pattern, IDIO loc)
     idio_raise_condition (idio_S_true, c);
 }
 
-static void idio_command_error_exec (IDIO loc)
+static void idio_command_error_exec (char **argv, char **envp, IDIO loc)
 {
     IDIO_ASSERT (loc);
     IDIO_TYPE_ASSERT (string, loc);
 
     IDIO sh = idio_open_output_string_handle_C ();
-    idio_display_C ("exec", sh);
+    idio_display_C ("exec:", sh);
+    int j;
+    for (j = 0; NULL != argv[j]; j++) {
+	/*
+	 * prefix each argv[*] with a space
+	 */
+    	idio_display_C (" ", sh);
+
+	/*
+	 * quote argv[*] if necessary
+	 *
+	 * XXX needs smarter quoting for "s, 's, etc.
+	 *
+	 * try:
+
+	 char *qs = NULL;
+	 qs = "\"";
+	 idio_display_C (qs, sh);
+	 
+	 */
+	int q = 0;
+	if (strchr (argv[j], ' ') != NULL) {
+	    q = 1;
+	}
+	if (q) {
+	    idio_display_C ("\"", sh);
+	}
+    	idio_display_C (argv[j], sh); 
+	if (q) {
+	    idio_display_C ("\"", sh);
+	}
+    }
     IDIO c = idio_struct_instance (idio_condition_rt_command_exec_error_type,
 				   IDIO_LIST4 (idio_get_output_string (sh),
 					       loc,
@@ -211,8 +242,16 @@ char *idio_command_find_exe_C (char *command)
 	strcat (exename, command);
 
 	if (access (exename, X_OK) == 0) {
-	    done = 1;
-	    break;
+	    struct stat sb;
+
+	    if (stat (exename, &sb) == -1) {
+		idio_error_system_errno ("stat", IDIO_LIST1 (idio_string_C (exename)), IDIO_C_LOCATION ("idio_command_find_exe_C"));
+	    }
+
+	    if (S_ISREG (sb.st_mode)) {
+		done = 1;
+		break;
+	    }
 	}
 
 	if (NULL == colon) {
@@ -1429,7 +1468,7 @@ static IDIO idio_command_launch_1proc_job (IDIO job, int foreground, char **argv
 
 	    execve (argv[0], argv, envp);
 	    perror ("execv");
-	    idio_command_error_exec (IDIO_C_LOCATION ("idio_command_launch_1proc_job"));
+	    idio_command_error_exec (argv, envp, IDIO_C_LOCATION ("idio_command_launch_1proc_job"));
 	    exit (1);
 	} else {
 	    idio_struct_instance_set_direct (proc, IDIO_PROCESS_TYPE_PID, idio_C_int (pid));
@@ -1502,7 +1541,7 @@ static IDIO idio_command_launch_1proc_job (IDIO job, int foreground, char **argv
 
 	execve (argv[0], argv, envp);
 	perror ("execv");
-	idio_command_error_exec (IDIO_C_LOCATION ("idio_command_launch_1proc_job"));
+	idio_command_error_exec (argv, envp, IDIO_C_LOCATION ("idio_command_launch_1proc_job"));
 	exit (1);
     }
 
@@ -1778,7 +1817,7 @@ IDIO_DEFINE_PRIMITIVE1V ("%exec", exec, (IDIO command, IDIO args))
 
     execve (argv[0], argv, envp);
     perror ("execv");
-    idio_command_error_exec (IDIO_C_LOCATION ("%exec"));
+    idio_command_error_exec (argv, envp, IDIO_C_LOCATION ("%exec"));
     exit (1);
 
     return idio_S_unspec;

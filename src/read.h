@@ -42,6 +42,7 @@
 #define IDIO_TOKEN_RANGLE	(IDIO_TOKEN_BASE+8)
 #define IDIO_TOKEN_EOL		(IDIO_TOKEN_BASE+9)
 #define IDIO_TOKEN_AMPERSAND	(IDIO_TOKEN_BASE+10)
+#define IDIO_TOKEN_SEMICOLON	(IDIO_TOKEN_BASE+11)
 
 #define idio_T_dot		((const IDIO) IDIO_CONSTANT (IDIO_TOKEN_DOT))
 #define idio_T_lparen		((const IDIO) IDIO_CONSTANT (IDIO_TOKEN_LPAREN))
@@ -54,6 +55,7 @@
 #define idio_T_rangle		((const IDIO) IDIO_CONSTANT (IDIO_TOKEN_RANGLE))
 #define idio_T_eol		((const IDIO) IDIO_CONSTANT (IDIO_TOKEN_EOL))
 #define idio_T_ampersand	((const IDIO) IDIO_CONSTANT (IDIO_TOKEN_AMPERSAND))
+#define idio_T_semicolon	((const IDIO) IDIO_CONSTANT (IDIO_TOKEN_SEMICOLON))
 
 IDIO idio_read (IDIO handle);
 IDIO idio_read_expr (IDIO handle);

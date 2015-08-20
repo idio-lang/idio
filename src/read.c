@@ -59,7 +59,21 @@
  *
  *	A(B)C	=>	A ( B ) C
  *
- * SEMICOLON ??
+ * end of arrays RBRACKET
+ *
+ *	(start is handled by #[ -- HASH LBRACKET )
+ *
+ *	#[A]B	=>	#[ A ] B
+ *
+ * value indexing - DOT
+ *
+ *	A.B	=>	A . B
+ *	A.B.C	=>	A . B . C
+ *
+ * result qualifying - SEMICOLON
+ *
+ *	A;B	=>	A ; B
+ *	A;B;C	=>	A ; B ; C
  *
  * Quoted objects - SQUOTE BACKQUOTE COMMA
  *  (these should be deprecated in favour of interpolation character array)
@@ -75,6 +89,7 @@
 				 IDIO_CHAR_LPAREN == (c) ||		\
 				 IDIO_CHAR_RPAREN == (c) ||		\
 				 IDIO_CHAR_RBRACKET == (c) ||		\
+				 IDIO_CHAR_DOT == (c) ||		\
 				 IDIO_CHAR_SEMICOLON == (c) ||		\
 				 IDIO_CHAR_SQUOTE == (c) ||		\
 				 IDIO_CHAR_BACKQUOTE == (c) ||		\
@@ -452,6 +467,9 @@ static IDIO idio_read_list (IDIO handle, IDIO opendel, char *ic, int depth)
 		    break;
 		case IDIO_TOKEN_RANGLE:
 		    e = idio_S_gt;
+		    break;
+		case IDIO_TOKEN_DOT:
+		    e = idio_S_dot;
 		    break;
 		default:
 		    idio_error_C ("unexpected token in list", IDIO_LIST2 (handle, e), IDIO_C_LOCATION ("idio_read_list"));
@@ -980,6 +998,50 @@ static IDIO idio_read_word (IDIO handle, int c)
 	    break;
 	}
 
+	/*
+	 * Hmm.  DOT is notionally a word separator (for value
+	 * indexing) but it's seen in floating point numbers too...
+	 * We need to spot the difference.
+	 *
+	 * Oh, and don't forget the symbol ... is used in
+	 * syntax-rules.
+	 *
+	 * And .# is an inexact number constructor
+	 *
+	 * NB If we get a second DOT later in the "number" then
+	 * idio_read_number_C() should fail and we'll fall through to
+	 * the word separator clause.
+	 *
+	 * This means that if we were reading:
+	 *
+	 * var.index	- var is not a number => word separator
+	 *
+	 * 3.141	- 3 is a number => continue for 3.141
+	 *
+	 * var.3.141	- => var DOT 3.141
+	 *		  var is indexed by the bignum 3.141
+	 */
+	if (IDIO_CHAR_DOT == c) {
+	    buf[i] = '\0';
+
+	    IDIO r = idio_read_number_C (handle, buf);
+
+	    if (idio_S_nil != r) {
+		continue;
+	    }
+
+	    /*
+	     * Remember, i will be >= 1 and c is effectively the
+	     * lookahead char
+	     *
+	     * If the previous charcater was also DOT then this is a
+	     * symbol, eg. ..., so continue reading characters.
+	     */
+	    if (IDIO_CHAR_DOT == buf[i-1]) {
+		continue;
+	    }
+	}
+
 	if (IDIO_SEPARATOR (c)) {
 	    idio_handle_ungetc (handle, c);
 	    break;
@@ -1077,6 +1139,27 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int nl)
 		    return idio_S_unspec;
 		}
 		break;
+	    case IDIO_CHAR_DOT:
+		{
+		    /*
+		     * We could be looking at the ... symbol for
+		     * syntax-rules.  certainly, multiple sequential
+		     * DOTs are not an indexing operation
+		     */
+		    int c = idio_handle_getc (handle);
+		    switch (c) {
+		    case '.':
+			{
+			    idio_handle_ungetc (handle, c);
+			    return idio_read_word (handle, IDIO_CHAR_DOT);
+			}
+			break;
+		    default:
+			idio_handle_ungetc (handle, c);
+			return idio_T_dot;
+		    }
+		}
+		break;
 	    case IDIO_CHAR_BACKQUOTE:
 		{
 		    char qq_ic[] = { IDIO_CHAR_COMMA, IDIO_CHAR_AT, IDIO_CHAR_SQUOTE, IDIO_CHAR_BACKSLASH };
@@ -1158,7 +1241,7 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int nl)
 		    default:
 			{
 			    char em[BUFSIZ];
-			    sprintf (em, "unexpected # format: %c (%02x)", c, c);
+			    sprintf (em, "unexpected # format: '%c' (%#02x)", c, c);
 			    idio_read_error_parse (handle, IDIO_C_LOCATION ("idio_read_1_expr_nl"), em);
 			    return idio_S_unspec;
 			}
@@ -1320,6 +1403,9 @@ static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, char *ic, int depth
 		    break;
 		case IDIO_TOKEN_RANGLE:
 		    expr = idio_S_gt;
+		    break;
+		case IDIO_TOKEN_DOT:
+		    expr = idio_S_dot;
 		    break;
 		case IDIO_TOKEN_AMPERSAND:
 		    expr = idio_S_ampersand;

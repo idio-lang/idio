@@ -18,6 +18,7 @@
 ;;
 ;; string-handle.idio
 ;;
+string-handle0 = Tests
 
 ;; check predicates fail for non-string-handle
 test-str := "foo"
@@ -94,3 +95,6 @@ test (peek-char ish) #\"
 test (handle-current-pos ish) 0
 handle-seek ish 2
 test (handle-current-pos ish) 2
+
+;; all done?
+test (string-handle0 + 29) Tests

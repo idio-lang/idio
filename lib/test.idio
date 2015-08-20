@@ -71,7 +71,7 @@ define-macro (test form result) {
 
 display* "This is test.idio"
 
-;; tinker with the PATH
+;; put the testing utilities on the PATH
 OPATH := PATH
 PATH = string-append PATH ":" (string-append PWD "/../utils") 
 
@@ -99,7 +99,7 @@ load "tests/libc-wrap.idio"
 ;; that?  Erm, they've not been counted and are dynamic in number so
 ;; test we've seen at least as many as the largest number we've
 ;; seen.  Wait, some tests are OS-specific.  Drat!
-;test (eq? Tests 2820) #t
+;test (eq? Tests 2958) #t
 ;test (ge Tests 2820) #t
 
 if+ (zero? Errors) (display* "All" Tests "tests passed!") \
