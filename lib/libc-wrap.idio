@@ -19,7 +19,9 @@
 ;; libc-wrap.idio
 ;;
 
+;; define structure accessors
 define-struct-accessors-only c/struct-sigaction		sa-handler sa-sigaction sa-mask sa-flags
+define-struct-accessors-only c/struct-utsname		sysname nodename release version machine
 
 ;; stdin/stdout
 ;;

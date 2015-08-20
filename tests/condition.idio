@@ -358,26 +358,31 @@ monitor (function (cont cond) {
 ;;
 ;; This is supported on Linux, MacOS.  Not supported on Solaris
 ;; (OpenIndiana).
-monitor (function (cont cond) {
-  ;; display* "already exists monitor condition:" (struct-type-name cond)
-  test (i/o-file-already-exists-error? cond) #t
-  if cont {
-    if (i/o-file-already-exists-error? cond) {
-      filename := condition-ref cond 'filename
+if (equal? (c/struct-utsname-sysname Idio/uname) "SunOS") {
+  ;; edisplay* "Solaris: no fopen (\"x\") flag: skipping"
+  Tests = Tests + 1
+} {
+  monitor (function (cont cond) {
+    ;; display* "already exists monitor condition:" (struct-type-name cond)
+    test (i/o-file-already-exists-error? cond) #t
+    if cont {
+      if (i/o-file-already-exists-error? cond) {
+	filename := condition-ref cond 'filename
 
-      ;; our "repair" is simply to open the file anyway
-      open-output-file filename
-    } (error "already exists: unexpected condition" cond)
-  } (error "already exists: unexpected non-continuable error" cond)
-}) {
-  ;; display* "opening existing file"
-  touch test_filename
-  chmod =rw test_filename
+	;; our "repair" is simply to open the file anyway
+	open-output-file filename
+      } (error "already exists: unexpected condition" cond)
+    } (error "already exists: unexpected non-continuable error" cond)
+  }) {
+    ;; display* "opening existing file"
+    touch test_filename
+    chmod =rw test_filename
 
-  ofh := open-file test_filename "wx"
-  ;; test we have a writeable fh
-  write "Hello" ofh
-  close-handle ofh
+    ofh := open-file test_filename "wx"
+    ;; test we have a writeable fh
+    write "Hello" ofh
+    close-handle ofh
+  }
 }
 
 ;; ^i/o-no-such-file-error

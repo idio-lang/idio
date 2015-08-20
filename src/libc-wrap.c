@@ -25,6 +25,7 @@
 char **idio_libc_signal_names = NULL;
 char **idio_libc_errno_names = NULL;
 static IDIO idio_libc_struct_sigaction = NULL;
+static IDIO idio_libc_struct_utsname = NULL;
 
 /*
  * Indexes into structures for direct references
@@ -33,6 +34,12 @@ static IDIO idio_libc_struct_sigaction = NULL;
 #define IDIO_SIGACTION_SA_SIGACTION	1
 #define IDIO_SIGACTION_SA_MASK		2
 #define IDIO_SIGACTION_SA_FLAGS		3
+	
+#define IDIO_UTSNAME_SYSNAME		0
+#define IDIO_UTSNAME_NODENAME		1
+#define IDIO_UTSNAME_RELEASE		2
+#define IDIO_UTSNAME_VERSION		3
+#define IDIO_UTSNAME_MACHINE		4
 	
 IDIO_DEFINE_PRIMITIVE0V ("c/system-error", C_system_error, (IDIO args))
 {
@@ -699,6 +706,33 @@ IDIO_DEFINE_PRIMITIVE2 ("c/tcsetpgrp", C_tcsetpgrp, (IDIO ifd, IDIO ipgrp))
     }
 
     return idio_C_int (r);
+}
+
+IDIO idio_libc_uname ()
+{
+    struct utsname u;
+
+    if (uname (&u) == -1) {
+	idio_error_system_errno ("uname", idio_S_nil, IDIO_C_LOCATION ("idio_libc_uname"));
+    }
+
+    return idio_struct_instance (idio_libc_struct_utsname, IDIO_LIST5 (idio_string_C (u.sysname),
+								       idio_string_C (u.nodename),
+								       idio_string_C (u.release),
+								       idio_string_C (u.version),
+								       idio_string_C (u.machine)));
+}
+
+IDIO_DEFINE_PRIMITIVE0 ("c/uname", C_uname, ())
+{
+    struct utsname *up;
+    up = idio_alloc (sizeof (struct utsname));
+
+    if (uname (up) == -1) {
+	idio_error_system_errno ("uname", idio_S_nil, IDIO_C_LOCATION ("c/uname"));
+    }
+    
+    return idio_C_pointer_free_me (up);
 }
 
 IDIO_DEFINE_PRIMITIVE1 ("c/unlink", C_unlink, (IDIO ipath))
@@ -2690,6 +2724,20 @@ void idio_init_libc_wrap ()
 						   idio_S_nil)))));
     idio_module_set_symbol_value (name, idio_libc_struct_sigaction, idio_main_module ());
 
+    name = idio_symbols_C_intern ("c/struct-utsname");
+    idio_libc_struct_utsname = idio_struct_type (name,
+						 idio_S_nil,
+						 idio_pair (idio_symbols_C_intern ("sysname"),
+						 idio_pair (idio_symbols_C_intern ("nodename"),
+						 idio_pair (idio_symbols_C_intern ("release"),
+						 idio_pair (idio_symbols_C_intern ("version"),
+						 idio_pair (idio_symbols_C_intern ("machine"),
+						 idio_S_nil))))));
+    idio_module_set_symbol_value (name, idio_libc_struct_utsname, idio_main_module ());
+
+    name = idio_symbols_C_intern ("Idio/uname");
+    idio_module_set_symbol_value (name, idio_libc_uname (), idio_main_module ());
+
     idio_libc_set_signal_names ();
     idio_libc_set_errno_names ();
 }
@@ -2725,6 +2773,7 @@ void idio_libc_wrap_add_primitives ()
     IDIO_ADD_PRIMITIVE (C_tcgetpgrp);
     IDIO_ADD_PRIMITIVE (C_tcsetattr);
     IDIO_ADD_PRIMITIVE (C_tcsetpgrp);
+    IDIO_ADD_PRIMITIVE (C_uname);
     IDIO_ADD_PRIMITIVE (C_unlink);
     IDIO_ADD_PRIMITIVE (C_waitpid);
     IDIO_ADD_PRIMITIVE (C_WEXITSTATUS);

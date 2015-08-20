@@ -400,6 +400,18 @@ IDIO idio_open_file_handle_C (char *name, char *mode)
 	break;
     }
 
+    /*
+     * XXX
+     *
+     * Solaris (OpenIndiana 0.151.1.8) does not support the "x" (ie.
+     * O_EXCL) mode flag.
+     *
+     * To fix that would require we change fopen() to open() changing
+     * all the character string mode flags to fcntl O_* flags (and
+     * with "x" mapping to O_EXCL) followed by fdopen() to get the
+     * FILE*.
+     */
+
     FILE *filep;
     int tries;
     for (tries = 2; tries > 0 ; tries--) {
@@ -421,16 +433,6 @@ IDIO idio_open_file_handle_C (char *name, char *mode)
 	    case ENOTDIR:
 		idio_filehandle_error_filename_C (name, IDIO_C_LOCATION ("idio_open_file_handle_C"));
 	    default:
-		/*
-		 * Arguably we might want to be raising a
-		 * idio_condition_system_error_type rather than an
-		 * idio_condition_io_filename_error_type as we do.
-		 *
-		 * We would need to specify all the errno cases where
-		 * the error is filename related and call
-		 * idio_filehandle_error_filename_C and otherwise default to an
-		 * idio_error_system_C (not currently written).
-		 */
 		idio_error_system_errno ("fopen", IDIO_LIST1 (idio_string_C (name)), IDIO_C_LOCATION ("idio_open_file_handle_C"));
 	    }
 	} else {
