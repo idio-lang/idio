@@ -49,10 +49,35 @@
 
 #include "idio.h"
 
+void idio_hash_error (char *m, IDIO loc)
+{
+    IDIO_C_ASSERT (m);
+    IDIO_ASSERT (loc);
+    IDIO_TYPE_ASSERT (string, loc);
+    
+    idio_error_printf (loc, "%s", m);
+}
+
+void idio_hash_error_key_not_found (IDIO key, IDIO loc)
+{
+    IDIO_ASSERT (key);
+    IDIO_ASSERT (loc);
+    IDIO_TYPE_ASSERT (string, loc);
+    
+    IDIO msh = idio_open_output_string_handle_C ();
+    idio_display_C ("key not found", msh);
+    
+    IDIO c = idio_struct_instance (idio_condition_rt_hash_key_not_found_error_type,
+				   IDIO_LIST4 (idio_get_output_string (msh),
+					       loc,
+					       idio_S_nil,
+					       key));
+    idio_raise_condition (idio_S_true, c);
+}
+
 static int idio_assign_hash_he (IDIO h, idio_hi_t size)
 {
     IDIO_ASSERT (h);
-
     IDIO_TYPE_ASSERT (hash, h);
 
     IDIO_FPRINTF (stderr, "idio_assign_hash: %10p = reqd size {%d}\n", h, size);
@@ -124,22 +149,95 @@ static int idio_assign_hash_he (IDIO h, idio_hi_t size)
     return 1;
 }
 
-IDIO idio_hash (idio_hi_t size, int (*equal) (void *k1, void *k2), idio_hi_t (*hashf) (IDIO h, void *k))
+IDIO idio_hash (idio_hi_t size, int (*equal) (void *k1, void *k2), idio_hi_t (*hashf) (IDIO h, void *k), IDIO comp, IDIO hash)
 {
     IDIO_C_ASSERT (size);
-    IDIO_C_ASSERT (equal);
-    IDIO_C_ASSERT (hashf);
+    /* IDIO_C_ASSERT (equal); */
+    /* IDIO_C_ASSERT (hashf); */
+    IDIO_ASSERT (comp);
+    IDIO_ASSERT (hash);
+
+    if (NULL == equal &&
+	idio_S_nil == comp) {
+	idio_hash_error ("no comparator supplied", IDIO_C_LOCATION ("idio_hash"));
+    } else if (idio_S_nil != comp) {
+	idio_hash_error ("two comparators supplied", IDIO_C_LOCATION ("idio_hash"));
+    }
+
+    if (NULL == hashf &&
+	idio_S_nil == hash) {
+	idio_hash_error ("no hashing function supplied", IDIO_C_LOCATION ("idio_hash"));
+    } else if (idio_S_nil != hash) {
+	idio_hash_error ("two hashing functions supplied", IDIO_C_LOCATION ("idio_hash"));
+    }
 
     IDIO h = idio_gc_get (IDIO_TYPE_HASH);
     IDIO_GC_ALLOC (h->u.hash, sizeof (idio_hash_t));
     IDIO_HASH_GREY (h) = NULL;
     IDIO_HASH_EQUAL (h) = equal;
     IDIO_HASH_HASHF (h) = hashf;
+    IDIO_HASH_COMP (h) = comp;
+    IDIO_HASH_HASH (h) = hash;
     IDIO_HASH_FLAGS (h) = IDIO_HASH_FLAG_NONE;
 
     idio_assign_hash_he (h, size);
 
     return h;
+}
+
+IDIO idio_hash_copy (IDIO orig)
+{
+    IDIO_ASSERT (orig);
+    IDIO_TYPE_ASSERT (hash, orig);
+
+    IDIO new = idio_gc_get (IDIO_TYPE_HASH);
+    IDIO_GC_ALLOC (new->u.hash, sizeof (idio_hash_t));
+    IDIO_HASH_GREY (new) = NULL;
+    IDIO_HASH_EQUAL (new) = IDIO_HASH_EQUAL (orig);
+    IDIO_HASH_HASHF (new) = IDIO_HASH_HASHF (orig);
+    IDIO_HASH_COMP (new) = IDIO_HASH_COMP (orig);
+    IDIO_HASH_HASH (new) = IDIO_HASH_HASH (orig);
+    IDIO_HASH_FLAGS (new) = IDIO_HASH_FLAGS (orig);
+
+    idio_assign_hash_he (new, idio_hash_hcount (orig));
+
+    idio_hi_t i;
+    for (i = 0; i < IDIO_HASH_SIZE (orig); i++) {
+	IDIO k = IDIO_HASH_HE_KEY (orig, i);
+	if (! k) {
+	    char em[BUFSIZ];
+	    sprintf (em, "hash-copy: key #%zd is NULL", i);
+	    idio_error_C (em, orig, IDIO_C_LOCATION ("idio_hash_copy"));
+	}
+	if (idio_S_nil != k) {
+	    IDIO v = IDIO_HASH_HE_VALUE (orig, i);
+	    idio_hash_put (new, k, v);
+	}
+    }
+
+    return new;
+}
+
+/*
+ * SRFI 69 -- allows a destructive merge
+ */
+IDIO idio_hash_merge (IDIO ht1, IDIO ht2)
+{
+    idio_hi_t i;
+    for (i = 0; i < IDIO_HASH_SIZE (ht2); i++) {
+	IDIO k = IDIO_HASH_HE_KEY (ht2, i);
+	if (! k) {
+	    char em[BUFSIZ];
+	    sprintf (em, "hash-merge: key #%zd is NULL", i);
+	    idio_error_C (em, ht2, IDIO_C_LOCATION ("idio_hash_merge"));
+	}
+	if (idio_S_nil != k) {
+	    IDIO v = IDIO_HASH_HE_VALUE (ht2, i);
+	    idio_hash_put (ht1, k, v);
+	}
+    }
+
+    return ht1;
 }
 
 int idio_isa_hash (IDIO h)
@@ -152,7 +250,6 @@ int idio_isa_hash (IDIO h)
 void idio_free_hash (IDIO h)
 {
     IDIO_ASSERT (h);
-
     IDIO_TYPE_ASSERT (hash, h);
 
     idio_gc_stats_free (sizeof (idio_hash_t));
@@ -175,7 +272,6 @@ void idio_free_hash (IDIO h)
 idio_hi_t idio_hash_hcount (IDIO h)
 {
     IDIO_ASSERT (h);
-
     IDIO_TYPE_ASSERT (hash, h);
 
     idio_hi_t count = 0;
@@ -193,7 +289,6 @@ idio_hi_t idio_hash_hcount (IDIO h)
 void idio_hash_resize (IDIO h)
 {
     IDIO_ASSERT (h);
-
     IDIO_TYPE_ASSERT (hash, h);
 
     idio_hi_t ohsize = h->u.hash->size;
@@ -484,7 +579,6 @@ idio_hi_t idio_hash_hashval (IDIO h, void *kv)
 void idio_hash_verify_chain (IDIO h, void *kv)
 {
     IDIO_ASSERT (h);
-
     IDIO_TYPE_ASSERT (hash, h);
 
     if (idio_gc_verboseness (2)) {
@@ -509,7 +603,6 @@ void idio_hash_verify_chain (IDIO h, void *kv)
 void idio_hash_verify_all_keys (IDIO h)
 {
     IDIO_ASSERT (h);
-
     IDIO_TYPE_ASSERT (hash, h);
 
     IDIO_FPRINTF (stderr, "idio_hash_verify_all_keys:\n");
@@ -533,7 +626,6 @@ void idio_hash_verify_all_keys (IDIO h)
 idio_hi_t idio_hash_find_free_slot (IDIO h)
 {
     IDIO_ASSERT (h);
-
     IDIO_TYPE_ASSERT (hash, h);
 
     /*
@@ -571,7 +663,6 @@ idio_hi_t idio_hash_find_free_slot (IDIO h)
 IDIO idio_hash_put (IDIO h, void *kv, IDIO v)
 {
     IDIO_ASSERT (h);
-
     IDIO_TYPE_ASSERT (hash, h);
 
     if (idio_S_nil == kv) {
@@ -683,7 +774,6 @@ IDIO idio_hash_put (IDIO h, void *kv, IDIO v)
 idio_hi_t idio_hash_hv_follow_chain (IDIO h, void *kv)
 {
     IDIO_ASSERT (h);
-
     IDIO_TYPE_ASSERT (hash, h);
 
     if (idio_S_nil == kv) {
@@ -886,7 +976,6 @@ int idio_hash_delete (IDIO h, void *kv)
 IDIO idio_hash_keys_to_list (IDIO h)
 {
     IDIO_ASSERT (h);
-
     IDIO_TYPE_ASSERT (hash, h);
 
     IDIO r = idio_S_nil;
@@ -911,3 +1000,336 @@ IDIO idio_hash_keys_to_list (IDIO h)
 
     return r;
 }
+
+IDIO idio_hash_values_to_list (IDIO h)
+{
+    IDIO_ASSERT (h);
+    IDIO_TYPE_ASSERT (hash, h);
+
+    IDIO r = idio_S_nil;
+
+    idio_hi_t i;
+    for (i = 0; i < IDIO_HASH_SIZE (h); i++) {
+	IDIO k = IDIO_HASH_HE_KEY (h, i);
+	if (! k) {
+	    char em[BUFSIZ];
+	    sprintf (em, "hash-values-to-list: key #%zd is NULL", i);
+	    idio_error_C (em, h, IDIO_C_LOCATION ("idio_hash_values_to_list"));
+	}
+	if (idio_S_nil != k) {
+	    r = idio_pair (IDIO_HASH_HE_VALUE (h, i), r);
+	}
+    }
+
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("hash?", hash_p, (IDIO o))
+{
+    IDIO_ASSERT (o);
+
+    IDIO r = idio_S_false;
+
+    if (idio_isa_hash (o)) {
+	r = idio_S_true;
+    }
+    
+    return r;
+}
+
+/*
+ * SRFI-69
+ *
+ * make-hash-table [ equiv-func [ hash-func ]]
+ *
+ * hash-func defaults to hash-table-hash
+ * equiv-func defaults to equal?
+ *
+ * If either is #n use the default.
+ *
+ * As an accelerator if comp is the *symbol* eq? eqv? equal? then use
+ * the underlying C function.  So:
+ *
+ *  make-hash eq?
+ *
+ *  make-hash 'eq?
+ *
+ * are not (necessarily) the same.
+ */
+IDIO_DEFINE_PRIMITIVE0V ("make-hash", make_hash, (IDIO args))
+{
+    IDIO_ASSERT (args);
+    IDIO_VERIFY_PARAM_TYPE (list, args);
+
+    idio_hi_t size = 32;
+    int (*equal) (void *k1, void *k2) = idio_equalp;
+    idio_hi_t (*hashf) (IDIO h, void *k) = idio_hash_hashval;
+    IDIO comp = idio_S_nil;
+    IDIO hash = idio_S_nil;
+
+    if (idio_S_nil != args) {
+	comp = IDIO_PAIR_H (args);
+
+	if (idio_S_nil != comp) {
+	    equal = NULL;
+	    if (idio_S_eqp == comp) {
+		equal = idio_eqp;
+		comp = idio_S_nil;
+	    } else if (idio_S_eqvp == comp) {
+		equal = idio_eqvp;
+		comp = idio_S_nil;
+	    } else if (idio_S_equalp == comp) {
+		equal = idio_equalp;
+		comp = idio_S_nil;
+	    }
+	}
+
+	args = IDIO_PAIR_T (args);
+    }
+
+    if (idio_S_nil != args) {
+	hash = IDIO_PAIR_H (args);
+
+	if (idio_S_nil != hash) {
+	    hashf = NULL;
+	}
+	
+	args = IDIO_PAIR_T (args);
+    }
+
+    /*
+     * SRFI-69 -- remaining args are implementation specific
+     */
+
+    IDIO ht = idio_hash (size, equal, hashf, comp, hash);
+    
+    return ht;
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("hash-size", hash_size, (IDIO ht))
+{
+    IDIO_ASSERT (ht);
+    IDIO_VERIFY_PARAM_TYPE (hash, ht);
+
+    /*
+     * Can we create a hash table with entries than IDIO_FIXNUM_MAX?
+     * You imagine something else would have fallen over first...
+     *
+     * Better safe than sorry, though.  Call idio_integer() rather
+     * than idio_fixnum().
+     */
+    return idio_integer (idio_hash_hcount (ht));
+}
+
+IDIO idio_hash_ref (IDIO ht, IDIO key, IDIO args)
+{
+    IDIO_ASSERT (ht);
+    IDIO_ASSERT (key);
+    IDIO_ASSERT (args);
+    IDIO_VERIFY_PARAM_TYPE (hash, ht);
+    IDIO_VERIFY_PARAM_TYPE (list, args);
+
+    IDIO r = idio_hash_get (ht, key);
+
+    if (idio_S_unspec == r) {
+	if (idio_S_nil != args) {
+	    IDIO dv = IDIO_PAIR_H (args);
+	    r = idio_vm_invoke_C (idio_current_thread (), dv);
+	} else {
+	    idio_hash_error_key_not_found (key, IDIO_C_LOCATION ("hash-ref"));
+	}
+    }
+
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE2V ("hash-ref", hash_ref, (IDIO ht, IDIO key, IDIO args))
+{
+    IDIO_ASSERT (ht);
+    IDIO_ASSERT (key);
+    IDIO_ASSERT (args);
+    IDIO_VERIFY_PARAM_TYPE (hash, ht);
+    IDIO_VERIFY_PARAM_TYPE (list, args);
+
+    return idio_hash_ref (ht, key, args);
+}
+
+IDIO_DEFINE_PRIMITIVE3 ("hash-set!", hash_set, (IDIO ht, IDIO key, IDIO v))
+{
+    IDIO_ASSERT (ht);
+    IDIO_ASSERT (key);
+    IDIO_ASSERT (v);
+    IDIO_VERIFY_PARAM_TYPE (hash, ht);
+
+    idio_hash_put (ht, key, v);
+
+    return idio_S_unspec;
+}
+
+/*
+ * SRFI 69 -- not an error to delete a non-existent key
+ */
+IDIO_DEFINE_PRIMITIVE2 ("hash-delete!", hash_delete, (IDIO ht, IDIO key))
+{
+    IDIO_ASSERT (ht);
+    IDIO_ASSERT (key);
+    IDIO_VERIFY_PARAM_TYPE (hash, ht);
+
+    idio_hash_delete (ht, key);
+    
+    return idio_S_unspec;
+}
+
+IDIO_DEFINE_PRIMITIVE2 ("hash-exists?", hash_existsp, (IDIO ht, IDIO key))
+{
+    IDIO_ASSERT (ht);
+    IDIO_ASSERT (key);
+    IDIO_VERIFY_PARAM_TYPE (hash, ht);
+
+    IDIO r = idio_S_false;
+    
+    if (idio_hash_exists_key (ht, key)) {
+	r = idio_S_true;
+    }
+    
+    return r;
+}
+
+/*
+ * SRFI 69:
+ *
+ * Semantically equivalent to, but may be implemented more efficiently
+ * than, the following code:
+
+   (hash-table-set! hash-table key
+		    (function (hash-table-ref hash-table key thunk)))
+
+ *
+ * That is, call {func} on the existing value and set the key to the
+ * returned value
+ */
+IDIO_DEFINE_PRIMITIVE3V ("hash-update!", hash_update, (IDIO ht, IDIO key, IDIO func, IDIO args))
+{
+    IDIO_ASSERT (ht);
+    IDIO_ASSERT (key);
+    IDIO_ASSERT (func);
+    IDIO_ASSERT (args);
+    IDIO_VERIFY_PARAM_TYPE (hash, ht);
+    IDIO_VERIFY_PARAM_TYPE (list, args);
+
+    IDIO cv = idio_hash_ref (ht, key, args);
+
+    IDIO nv = idio_vm_invoke_C (idio_current_thread (), IDIO_LIST2 (func, cv));
+    
+    idio_hash_put (ht, key, nv);
+    
+    return idio_S_unspec;
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("hash-keys", hash_keys, (IDIO ht))
+{
+    IDIO_ASSERT (ht);
+    IDIO_VERIFY_PARAM_TYPE (hash, ht);
+
+    return idio_hash_keys_to_list (ht);
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("hash-values", hash_values, (IDIO ht))
+{
+    IDIO_ASSERT (ht);
+    IDIO_VERIFY_PARAM_TYPE (hash, ht);
+
+    return idio_hash_values_to_list (ht);
+}
+
+IDIO_DEFINE_PRIMITIVE2 ("hash-walk", hash_walk, (IDIO ht, IDIO func))
+{
+    IDIO_ASSERT (ht);
+    IDIO_ASSERT (func);
+    IDIO_VERIFY_PARAM_TYPE (hash, ht);
+
+    idio_hi_t i;
+    for (i = 0; i < IDIO_HASH_SIZE (ht); i++) {
+	IDIO k = IDIO_HASH_HE_KEY (ht, i);
+	if (! k) {
+	    char em[BUFSIZ];
+	    sprintf (em, "hash-walk: key #%zd is NULL", i);
+	    idio_error_C (em, ht, IDIO_C_LOCATION ("hash-walk"));
+	}
+	if (idio_S_nil != k) {
+	    IDIO v = IDIO_HASH_HE_VALUE (ht, i);
+	    idio_vm_invoke_C (idio_current_thread (), IDIO_LIST3 (func, k, v));
+	}
+    }
+
+    return idio_S_unspec;
+}
+
+IDIO_DEFINE_PRIMITIVE3 ("hash-fold", hash_fold, (IDIO ht, IDIO func, IDIO val))
+{
+    IDIO_ASSERT (ht);
+    IDIO_ASSERT (func);
+    IDIO_ASSERT (val);
+    IDIO_VERIFY_PARAM_TYPE (hash, ht);
+
+    idio_hi_t i;
+    for (i = 0; i < IDIO_HASH_SIZE (ht); i++) {
+	IDIO k = IDIO_HASH_HE_KEY (ht, i);
+	if (! k) {
+	    char em[BUFSIZ];
+	    sprintf (em, "hash-fold: key #%zd is NULL", i);
+	    idio_error_C (em, ht, IDIO_C_LOCATION ("hash-fold"));
+	}
+	if (idio_S_nil != k) {
+	    IDIO v = IDIO_HASH_HE_VALUE (ht, i);
+	    val = idio_vm_invoke_C (idio_current_thread (), IDIO_LIST4 (func, k, v, val));
+	}
+    }
+
+    return val;
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("hash-copy", hash_copy, (IDIO ht))
+{
+    IDIO_ASSERT (ht);
+    IDIO_VERIFY_PARAM_TYPE (hash, ht);
+
+    return idio_hash_copy (ht);
+}
+
+IDIO_DEFINE_PRIMITIVE2 ("hash-merge!", hash_merge, (IDIO ht1, IDIO ht2))
+{
+    IDIO_ASSERT (ht1);
+    IDIO_ASSERT (ht2);
+    IDIO_VERIFY_PARAM_TYPE (hash, ht1);
+    IDIO_VERIFY_PARAM_TYPE (hash, ht2);
+
+    return idio_hash_merge (ht1, ht2);
+}
+
+void idio_init_hash ()
+{
+}
+
+void idio_hash_add_primitives ()
+{
+    IDIO_ADD_PRIMITIVE (hash_p);
+    IDIO_ADD_PRIMITIVE (make_hash);
+    IDIO_ADD_PRIMITIVE (hash_size);
+    IDIO_ADD_PRIMITIVE (hash_ref);
+    IDIO_ADD_PRIMITIVE (hash_set);
+    IDIO_ADD_PRIMITIVE (hash_delete);
+    IDIO_ADD_PRIMITIVE (hash_existsp);
+    IDIO_ADD_PRIMITIVE (hash_update);
+    IDIO_ADD_PRIMITIVE (hash_keys);
+    IDIO_ADD_PRIMITIVE (hash_values);
+    IDIO_ADD_PRIMITIVE (hash_walk);
+    IDIO_ADD_PRIMITIVE (hash_fold);
+    IDIO_ADD_PRIMITIVE (hash_copy);
+    IDIO_ADD_PRIMITIVE (hash_merge);
+}
+
+void idio_final_hash ()
+{
+}
+

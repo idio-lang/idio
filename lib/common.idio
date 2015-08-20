@@ -81,9 +81,3 @@ define-macro (suppress-errors & cmd) {
   }
 }
 
-define (value-index o i) {
-  cond ((array? o) {
-    array-ref o i
-  }) \
-       (else (error 'value-index "non-indexable object" o i))
-}

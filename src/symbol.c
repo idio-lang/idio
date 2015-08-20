@@ -57,6 +57,9 @@ IDIO_SYMBOL_DECL (else);
 IDIO_SYMBOL_DECL (environ_let);
 IDIO_SYMBOL_DECL (environ_unset);
 IDIO_SYMBOL_DECL (eq);
+IDIO_SYMBOL_DECL (eqp);
+IDIO_SYMBOL_DECL (eqvp);
+IDIO_SYMBOL_DECL (equalp);
 IDIO_SYMBOL_DECL (eq_gt);
 IDIO_SYMBOL_DECL (error);
 IDIO_SYMBOL_DECL (escape);
@@ -273,7 +276,7 @@ IDIO_DEFINE_PRIMITIVE0 ("symbols", symbols, ())
 
 void idio_init_symbol ()
 {
-    idio_symbols_hash = idio_hash (1<<7, idio_symbol_C_eqp, idio_symbol_C_hash);
+    idio_symbols_hash = idio_hash (1<<7, idio_symbol_C_eqp, idio_symbol_C_hash, idio_S_nil, idio_S_nil);
     idio_gc_protect (idio_symbols_hash);
     IDIO_HASH_FLAGS (idio_symbols_hash) |= IDIO_HASH_FLAG_STRING_KEYS;
 
@@ -310,6 +313,9 @@ void idio_init_symbol ()
     IDIO_SYMBOL_DEF ("environ-let", environ_let);
     IDIO_SYMBOL_DEF ("environ-unset", environ_unset);
     IDIO_SYMBOL_DEF ("=", eq);
+    IDIO_SYMBOL_DEF ("eq?", eqp);
+    IDIO_SYMBOL_DEF ("eqv?", eqvp);
+    IDIO_SYMBOL_DEF ("equal?", equalp);
     IDIO_SYMBOL_DEF ("=>", eq_gt);
     IDIO_SYMBOL_DEF ("error", error);
     IDIO_SYMBOL_DEF ("escape", escape);

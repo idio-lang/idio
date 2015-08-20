@@ -2155,30 +2155,44 @@ IDIO idio_vm_invoke_C (IDIO thr, IDIO command)
     IDIO_ASSERT (thr);
     IDIO_ASSERT (command);
     IDIO_TYPE_ASSERT (thread, thr);
-    IDIO_TYPE_ASSERT (pair, command);
 
     IDIO_THREAD_STACK_PUSH (idio_fixnum (IDIO_THREAD_PC (thr)));
     idio_vm_preserve_all_state (thr);
-		
-    /*
-     * (length command) will give us the +1 frame allocation we need
-     * because it will allocate a slot for the command name even
-     * though it won't go there.
-     */
-    IDIO vs = idio_frame_allocate (idio_list_length (command));
-    idio_ai_t fai;
-    IDIO args = IDIO_PAIR_T (command);
-    for (fai = 0; idio_S_nil != args; fai++) {
-	idio_frame_update (vs, 0, fai, IDIO_PAIR_H (args));
-	args = IDIO_PAIR_T (args);
-    }
-    IDIO_THREAD_VAL (thr) = vs;
-    /* IDIO func = idio_module_current_symbol_value (IDIO_PAIR_H (command)); */
-    idio_vm_invoke (thr, IDIO_PAIR_H (command), IDIO_VM_INVOKE_TAIL_CALL);
-    idio_vm_run (thr);
 
-    IDIO r = IDIO_THREAD_VAL (thr);
+    switch (command->type) {
+    case IDIO_TYPE_PAIR:
+	{
+	    /*
+	     * (length command) will give us the +1 frame allocation we need
+	     * because it will allocate a slot for the command name even
+	     * though it won't go there.
+	     */
+	    IDIO vs = idio_frame_allocate (idio_list_length (command));
+	    idio_ai_t fai;
+	    IDIO args = IDIO_PAIR_T (command);
+	    for (fai = 0; idio_S_nil != args; fai++) {
+		idio_frame_update (vs, 0, fai, IDIO_PAIR_H (args));
+		args = IDIO_PAIR_T (args);
+	    }
+	    IDIO_THREAD_VAL (thr) = vs;
+	    /* IDIO func = idio_module_current_symbol_value (IDIO_PAIR_H (command)); */
+	    idio_vm_invoke (thr, IDIO_PAIR_H (command), IDIO_VM_INVOKE_TAIL_CALL);
+	}
+	break;
+    case IDIO_TYPE_CLOSURE:
+	{
+	    /*
+	     * Must be a thunk
+	     */
+	    IDIO vs = idio_frame_allocate (1);
+	    IDIO_THREAD_VAL (thr) = vs;
+	    idio_vm_invoke (thr, command, IDIO_VM_INVOKE_TAIL_CALL);
+	}
+    }
     
+    idio_vm_run (thr);
+    IDIO r = IDIO_THREAD_VAL (thr);
+
     idio_vm_restore_all_state (thr);
     IDIO_THREAD_PC (thr) = IDIO_FIXNUM_VAL (IDIO_THREAD_STACK_POP ());
 

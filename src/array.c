@@ -22,7 +22,7 @@
 
 #include "idio.h"
 
-void idio_error_array_length (char *m, idio_ai_t i, IDIO loc)
+void idio_array_error_length (char *m, idio_ai_t i, IDIO loc)
 {
     IDIO_C_ASSERT (m);
     IDIO_ASSERT (loc);
@@ -53,7 +53,6 @@ void idio_assign_array (IDIO a, idio_ai_t asize)
 {
     IDIO_ASSERT (a);
     IDIO_C_ASSERT (asize);
-
     IDIO_TYPE_ASSERT (array, a);
 
     IDIO_FPRINTF (stderr, "idio_assign_array: %10p = [%d]\n", a, asize);
@@ -93,7 +92,6 @@ int idio_isa_array (IDIO a)
 void idio_free_array (IDIO a)
 {
     IDIO_ASSERT (a);
-
     IDIO_TYPE_ASSERT (array, a);
 
     idio_gc_stats_free (sizeof (idio_array_t) + IDIO_ARRAY_ASIZE (a) * sizeof (idio_t));
@@ -105,7 +103,6 @@ void idio_free_array (IDIO a)
 void idio_array_resize (IDIO a)
 {
     IDIO_ASSERT (a);
-
     IDIO_TYPE_ASSERT (array, a);
 
     idio_array_t *oarray = a->u.array;
@@ -139,7 +136,6 @@ void idio_array_resize (IDIO a)
 idio_ai_t idio_array_size (IDIO a)
 {
     IDIO_ASSERT (a);
-
     IDIO_TYPE_ASSERT (array, a);
 
     return IDIO_ARRAY_USIZE (a);
@@ -149,7 +145,6 @@ void idio_array_insert_index (IDIO a, IDIO o, idio_ai_t index)
 {
     IDIO_ASSERT (a);
     IDIO_ASSERT (o);
-
     IDIO_TYPE_ASSERT (array, a);
 
     if (index < 0) {
@@ -188,7 +183,6 @@ void idio_array_push (IDIO a, IDIO o)
 {
     IDIO_ASSERT (a);
     IDIO_ASSERT (o);
-
     IDIO_TYPE_ASSERT (array, a);
 
     idio_array_insert_index (a, o, IDIO_ARRAY_USIZE (a));
@@ -197,7 +191,6 @@ void idio_array_push (IDIO a, IDIO o)
 IDIO idio_array_pop (IDIO a)
 {
     IDIO_ASSERT (a);
-
     IDIO_TYPE_ASSERT (array, a);
 
     if (IDIO_ARRAY_USIZE (a) < 1) {
@@ -218,7 +211,6 @@ IDIO idio_array_pop (IDIO a)
 IDIO idio_array_shift (IDIO a)
 {
     IDIO_ASSERT (a);
-
     IDIO_TYPE_ASSERT (array, a);
 
     if (IDIO_ARRAY_USIZE (a) < 1) {
@@ -244,7 +236,6 @@ void idio_array_unshift (IDIO a, IDIO o)
 {
     IDIO_ASSERT (a);
     IDIO_ASSERT (o);
-
     IDIO_TYPE_ASSERT (array, a);
 
     idio_ai_t i;
@@ -264,7 +255,6 @@ void idio_array_unshift (IDIO a, IDIO o)
 IDIO idio_array_head (IDIO a)
 {
     IDIO_ASSERT (a);
-
     IDIO_TYPE_ASSERT (array, a);
 
     if (IDIO_ARRAY_USIZE (a) < 1) {
@@ -278,7 +268,6 @@ IDIO idio_array_head (IDIO a)
 IDIO idio_array_top (IDIO a)
 {
     IDIO_ASSERT (a);
-
     IDIO_TYPE_ASSERT (array, a);
 
     if (IDIO_ARRAY_USIZE (a) < 1) {
@@ -292,7 +281,6 @@ IDIO idio_array_top (IDIO a)
 IDIO idio_array_get_index (IDIO a, idio_ai_t index)
 {
     IDIO_ASSERT (a);
-
     IDIO_TYPE_ASSERT (array, a);
 
     if (index < 0) {
@@ -313,7 +301,6 @@ IDIO idio_array_get_index (IDIO a, idio_ai_t index)
 idio_ai_t idio_array_find_free_index (IDIO a, idio_ai_t index)
 {
     IDIO_ASSERT (a);
-
     IDIO_TYPE_ASSERT (array, a);
     
     if (index < 0) {
@@ -336,7 +323,6 @@ idio_ai_t idio_array_find_free_index (IDIO a, idio_ai_t index)
 idio_ai_t idio_array_find_eqp (IDIO a, IDIO e, idio_ai_t index)
 {
     IDIO_ASSERT (a);
-
     IDIO_TYPE_ASSERT (array, a);
     
     if (index < 0) {
@@ -359,7 +345,6 @@ idio_ai_t idio_array_find_eqp (IDIO a, IDIO e, idio_ai_t index)
 void idio_array_bind (IDIO a, idio_ai_t nargs, ...)
 {
     IDIO_ASSERT (a);
-
     IDIO_TYPE_ASSERT (array, a);
 
     if (IDIO_ARRAY_USIZE (a) < nargs) {
@@ -382,7 +367,6 @@ void idio_array_bind (IDIO a, idio_ai_t nargs, ...)
 IDIO idio_array_copy (IDIO a, idio_ai_t extra)
 {
     IDIO_ASSERT (a);
-
     IDIO_TYPE_ASSERT (array, a);
 
     idio_ai_t osz = IDIO_ARRAY_USIZE (a);
@@ -402,7 +386,6 @@ IDIO idio_array_copy (IDIO a, idio_ai_t extra)
 IDIO idio_array_to_list (IDIO a)
 {
     IDIO_ASSERT (a);
-
     IDIO_TYPE_ASSERT (array, a);
 
     idio_ai_t al = IDIO_ARRAY_USIZE (a);
@@ -421,7 +404,6 @@ IDIO idio_array_to_list (IDIO a)
 int idio_array_delete_index (IDIO a, idio_ai_t index)
 {
     IDIO_ASSERT (a);
-
     IDIO_TYPE_ASSERT (array, a);
 
     if (index < 0) {
@@ -504,7 +486,6 @@ IDIO_DEFINE_PRIMITIVE2 ("array-fill!", array_fill, (IDIO a, IDIO fill))
 {
     IDIO_ASSERT (a);
     IDIO_ASSERT (fill);
-
     IDIO_VERIFY_PARAM_TYPE (array, a);
 
     idio_ai_t al = idio_array_size (a);
@@ -520,17 +501,15 @@ IDIO_DEFINE_PRIMITIVE2 ("array-fill!", array_fill, (IDIO a, IDIO fill))
 IDIO_DEFINE_PRIMITIVE1 ("array-length", array_length, (IDIO a))
 {
     IDIO_ASSERT (a);
-
     IDIO_VERIFY_PARAM_TYPE (array, a);
 
     return idio_fixnum (idio_array_size (a));
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("array-ref", array_ref, (IDIO a, IDIO index))
+IDIO idio_array_ref (IDIO a, IDIO index)
 {
     IDIO_ASSERT (a);
     IDIO_ASSERT (index);
-
     IDIO_VERIFY_PARAM_TYPE (array, a);
 
     ptrdiff_t i = -1;
@@ -558,15 +537,24 @@ IDIO_DEFINE_PRIMITIVE2 ("array-ref", array_ref, (IDIO a, IDIO index))
 	i += al;
 	if (i < 0) {
 	    i -= al;
-	    idio_error_array_length ("out of bounds", i, IDIO_C_LOCATION ("array-ref"));
+	    idio_array_error_length ("out of bounds", i, IDIO_C_LOCATION ("array-ref"));
 	    return idio_S_unspec;
 	}
     } else if (i >= al) {
-	idio_error_array_length ("out of bounds", i, IDIO_C_LOCATION ("array-ref"));
+	idio_array_error_length ("out of bounds", i, IDIO_C_LOCATION ("array-ref"));
 	return idio_S_unspec;
     }
 
     return idio_array_get_index (a, i);
+}
+
+IDIO_DEFINE_PRIMITIVE2 ("array-ref", array_ref, (IDIO a, IDIO index))
+{
+    IDIO_ASSERT (a);
+    IDIO_ASSERT (index);
+    IDIO_VERIFY_PARAM_TYPE (array, a);
+
+    return idio_array_ref (a, index);
 }
 
 IDIO_DEFINE_PRIMITIVE3 ("array-set!", array_set, (IDIO a, IDIO index, IDIO v))
@@ -574,7 +562,6 @@ IDIO_DEFINE_PRIMITIVE3 ("array-set!", array_set, (IDIO a, IDIO index, IDIO v))
     IDIO_ASSERT (a);
     IDIO_ASSERT (index);
     IDIO_ASSERT (v);
-
     IDIO_VERIFY_PARAM_TYPE (array, a);
 
     ptrdiff_t i = -1;
@@ -602,11 +589,11 @@ IDIO_DEFINE_PRIMITIVE3 ("array-set!", array_set, (IDIO a, IDIO index, IDIO v))
 	i += al;
 	if (i < 0) {
 	    i -= al;
-	    idio_error_array_length ("out of bounds", i, IDIO_C_LOCATION ("array-set!"));
+	    idio_array_error_length ("out of bounds", i, IDIO_C_LOCATION ("array-set!"));
 	    return idio_S_unspec;
 	}
     } else if (i >= al) {
-	idio_error_array_length ("out of bounds", i, IDIO_C_LOCATION ("array-set!"));
+	idio_array_error_length ("out of bounds", i, IDIO_C_LOCATION ("array-set!"));
 	return idio_S_unspec;
     }
 
@@ -619,7 +606,6 @@ IDIO_DEFINE_PRIMITIVE2 ("array-push!", array_push, (IDIO a, IDIO v))
 {
     IDIO_ASSERT (a);
     IDIO_ASSERT (v);
-
     IDIO_VERIFY_PARAM_TYPE (array, a);
 
     idio_array_push (a, v);
@@ -630,7 +616,6 @@ IDIO_DEFINE_PRIMITIVE2 ("array-push!", array_push, (IDIO a, IDIO v))
 IDIO_DEFINE_PRIMITIVE1 ("array-pop!", array_pop, (IDIO a))
 {
     IDIO_ASSERT (a);
-
     IDIO_VERIFY_PARAM_TYPE (array, a);
 
     IDIO v = idio_array_pop (a);
@@ -642,7 +627,6 @@ IDIO_DEFINE_PRIMITIVE2 ("array-unshift!", array_unshift, (IDIO a, IDIO v))
 {
     IDIO_ASSERT (a);
     IDIO_ASSERT (v);
-
     IDIO_VERIFY_PARAM_TYPE (array, a);
 
     idio_array_unshift (a, v);
@@ -653,7 +637,6 @@ IDIO_DEFINE_PRIMITIVE2 ("array-unshift!", array_unshift, (IDIO a, IDIO v))
 IDIO_DEFINE_PRIMITIVE1 ("array-shift!", array_shift, (IDIO a))
 {
     IDIO_ASSERT (a);
-
     IDIO_VERIFY_PARAM_TYPE (array, a);
 
     IDIO v = idio_array_shift (a);
@@ -664,7 +647,6 @@ IDIO_DEFINE_PRIMITIVE1 ("array-shift!", array_shift, (IDIO a))
 IDIO_DEFINE_PRIMITIVE1 ("array->list", array2list, (IDIO a))
 {
     IDIO_ASSERT (a);
-
     IDIO_VERIFY_PARAM_TYPE (array, a);
 
     return idio_array_to_list (a);

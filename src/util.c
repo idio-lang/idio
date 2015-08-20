@@ -1401,6 +1401,37 @@ IDIO idio_list_set_difference (IDIO set1, IDIO set2)
     }
 }
 
+IDIO_DEFINE_PRIMITIVE2 ("value-index", value_index, (IDIO o, IDIO i))
+{
+    IDIO_ASSERT (o);
+    IDIO_ASSERT (i);
+
+    switch ((intptr_t) o & 3) {
+    case IDIO_TYPE_FIXNUM_MARK:
+    case IDIO_TYPE_CONSTANT_MARK:
+    case IDIO_TYPE_CHARACTER_MARK:
+	break;
+    case IDIO_TYPE_POINTER_MARK:
+	{
+	    switch (o->type) {
+	    case IDIO_TYPE_ARRAY:
+		return idio_array_ref (o, i);
+	    case IDIO_TYPE_HASH:
+		return idio_hash_ref (o, i, idio_S_nil);
+	    default:
+		break;
+	    }
+	}
+    default:
+	break;
+    }
+
+    idio_error_C ("non-indexable object", IDIO_LIST2 (o, i), IDIO_C_LOCATION ("value-index"));
+
+    /* notreached */
+    return idio_S_unspec;
+}
+
 void idio_dump (IDIO o, int detail)
 {
     IDIO_ASSERT (o);
@@ -1595,6 +1626,7 @@ void idio_util_add_primitives ()
     IDIO_ADD_PRIMITIVE (map1);
     IDIO_ADD_PRIMITIVE (memq);
     IDIO_ADD_PRIMITIVE (assq);
+    IDIO_ADD_PRIMITIVE (value_index);
     IDIO_ADD_PRIMITIVE (idio_debug);
 }
 

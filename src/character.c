@@ -265,7 +265,7 @@ IDIO_DEFINE_CHARACTER_CS_PRIMITIVE2V ("char>?", gt, >)
 
 void idio_init_character ()
 {
-    idio_characters_hash = idio_hash (1<<7, idio_character_C_eqp, idio_character_C_hash);
+    idio_characters_hash = idio_hash (1<<7, idio_character_C_eqp, idio_character_C_hash, idio_S_nil, idio_S_nil);
     idio_gc_protect (idio_characters_hash);
     IDIO_HASH_FLAGS (idio_characters_hash) |= IDIO_HASH_FLAG_STRING_KEYS;
 
