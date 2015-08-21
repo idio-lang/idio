@@ -149,6 +149,11 @@ typedef struct idio_pair_s {
 #define IDIO_PAIR_H(P)		((P)->u.pair.h)
 #define IDIO_PAIR_T(P)		((P)->u.pair.t)
 
+/*
+ * This character is used by util.c and read.c
+ */
+#define IDIO_PAIR_SEPARATOR	'&'
+
 typedef ptrdiff_t idio_ai_t;
 
 typedef struct idio_array_s {

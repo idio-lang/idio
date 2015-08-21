@@ -83,6 +83,7 @@ extern IDIO_SYMBOL_DECL (namespace);
 extern IDIO_SYMBOL_DECL (op);
 extern IDIO_SYMBOL_DECL (or);
 extern IDIO_SYMBOL_DECL (pair);
+extern IDIO_SYMBOL_DECL (pair_separator);
 extern IDIO_SYMBOL_DECL (ph);
 extern IDIO_SYMBOL_DECL (pipe);
 extern IDIO_SYMBOL_DECL (pt);

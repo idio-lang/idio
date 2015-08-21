@@ -107,6 +107,189 @@ ht = hash-merge! ht nht
 test (hash-size ht) 3
 test (hash-fold ht accv 0) 117
 
+;; Other forms of creation:
+
+;; alist->hash
+ht = alist->hash '((b & 5) (c & 109))
+test (hash-exists? ht 'a) #f
+test (hash-exists? ht 'b) #t
+test (hash-size ht) 2
+test (hash-fold ht accv 0) 114
+
+;; #{ ... }
+ht = #{ (b & 5) (c & 109) }
+test (hash-exists? ht 'a) #f
+test (hash-exists? ht 'b) #t
+test (hash-size ht) 2
+test (hash-fold ht accv 0) 114
+
+;; equivalence functions
+
+;; default is the C-land equal? and we'll get the symbol back
+ht = (make-hash)
+test (hash-equivalence-function ht) 'equal?
+
+;; same default if you pass #n
+ht = (make-hash #n)
+test (hash-equivalence-function ht) 'equal?
+
+;; same default if you pass the symbol 'equal?
+ht = (make-hash 'equal?)
+test (hash-equivalence-function ht) 'equal?
+
+;; use C-land eq?
+ht = (make-hash 'eq?)
+test (hash-equivalence-function ht) 'eq?
+
+;; use our own: define a numeric comparator
+ht-num-eq := function (k1 k2) {
+  cond (((null? k1) or
+	 (null? k2)) #f) \
+       (else (== k1 k2))
+}
+
+ht = make-hash ht-num-eq
+test (hash-equivalence-function ht) ht-num-eq
+
+;; make sure it works!
+hash-set! ht 1 "apple"
+hash-set! ht 2 "banana"
+test (hash-size ht) 2
+test (hash-exists? ht 1) #t
+test (hash-exists? ht 3) #f
+test (hash-ref ht 2) "banana"
+
+;; Make sure it fails!  That is to say, check we are actually using
+;; it.
+
+;; Here we want to provoke the == in ht-num-eq into producing an
+;; error, an ^rt-parameter-type-error in particular, because we're
+;; trying to insert a character as a key when == only works with
+;; numbers.
+
+;; We can't guarantee that a given key will collide with any other so
+;; we have to loop over a few until one collides -- once we've
+;; "collided" with all the #n keys that exist in a new hash.
+done := #f
+monitor (function (cont cond) {
+  ;; display* "hash equivalence function fail monitor condition:" (struct-type-name cond)
+  if cont {
+    if (rt-parameter-type-error? cond) {
+      ;; NB only increment the test count once as ht-num-eq might be
+      ;; called several times when a key collides in which case we'll
+      ;; get an error riased several times.
+      if (not done) (test #t #t)
+
+      ;; set done
+      done = #t
+
+      ;; return #f (to ht-num-eq, hopefully)
+      #f
+    } (error "hash equivalence function fail: unexpected condition" cond)
+  } (error "hash equivalence function fail: unexpected non-continuable error" cond)
+}) {
+  ;; need plenty of values to provoke a key collision
+  loop :+ function (i) {
+    c := integer->char i
+    hash-set! ht c "carrot"
+    if (not done) (loop (i + 1))
+  }
+
+  loop 16
+}
+
+;; if we copy the hash we should copy the equivalence function
+
+;; NB get a fresh hash (with our equivalence function) as the existing
+;; one is full of character keys that generate errors during the copy
+ht = make-hash ht-num-eq
+hash-set! ht 1 "apple"
+hash-set! ht 2 "banana"
+
+nht = hash-copy ht
+test (hash-equivalence-function nht) ht-num-eq
+
+;; hashing functions
+
+;; default is the C-land idio_hash_hashval and we'll get the #n symbol
+;; back
+ht = (make-hash)
+test (hash-hash-function ht) #n
+
+;; same default if you pass #n
+ht = (make-hash #n #n)
+test (hash-hash-function ht) #n
+
+;; use our own: define a numeric hashing function
+ht-num-hash := {
+  bound := (expt 2 29) - 3
+
+  function (v) {
+    remainder v bound
+  }
+}
+
+ht = make-hash #n ht-num-hash
+test (hash-hash-function ht) ht-num-hash
+
+;; make sure it works!
+hash-set! ht 1 "apple"
+hash-set! ht 2 "banana"
+test (hash-size ht) 2
+test (hash-exists? ht 1) #t
+test (hash-exists? ht 3) #f
+test (hash-ref ht 2) "banana"
+
+;; Make sure it fails!  That is to say, check we are actually using
+;; it.
+
+;; Here we want to provoke the {remainder} in ht-num-hash into
+;; producing an error, an ^rt-parameter-type-error in particular,
+;; because we're trying to insert a character as a key when
+;; {remainder} only works with numbers.
+
+;; We can't guarantee that a given key will collide with any other so
+;; we have to loop over a few until one collides -- once we've
+;; "collided" with all the #n keys that exist in a new hash.
+done := #f
+monitor (function (cont cond) {
+  ;; display* "hash hash function fail monitor condition:" (struct-type-name cond)
+  if cont {
+    if (rt-parameter-type-error? cond) {
+      ;; NB only increment the test count once as ht-num-eq might be
+      ;; called several times when a key collides in which case we'll
+      ;; get an error riased several times.
+      if (not done) (test #t #t)
+
+      ;; set done
+      done = #t
+
+      ;; return #f (to ht-num-eq, hopefully)
+      #f
+    } (error "hash hash function fail: unexpected condition" cond)
+  } (error "hash hash function fail: unexpected non-continuable error" cond)
+}) {
+  ;; need plenty of values to provoke a key collision
+  loop :+ function (i) {
+    c := integer->char i
+    hash-set! ht c "carrot"
+    if (not done) (loop (i + 1))
+  }
+
+  loop 16
+}
+
+;; if we copy the hash we should copy the hash function
+
+;; NB get a fresh hash (with our hash function) as the existing
+;; one is full of character keys that generate errors during the copy
+ht = make-hash #n ht-num-hash
+hash-set! ht 1 "apple"
+hash-set! ht 2 "banana"
+
+nht = hash-copy ht
+test (hash-hash-function nht) ht-num-hash
+
 ;; all done?
-test (hash0 + 26) Tests
+test (hash0 + 54) Tests
 

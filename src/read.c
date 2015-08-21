@@ -245,7 +245,7 @@ static void idio_read_error_list_eof (IDIO handle, IDIO detail)
     idio_read_error (handle, idio_get_output_string (sh), detail);
 }
 
-static void idio_read_error_list_ampersand (IDIO handle, IDIO detail, char *msg)
+static void idio_read_error_pair_separator (IDIO handle, IDIO detail, char *msg)
 {
     IDIO_ASSERT (handle);
     IDIO_ASSERT (detail);
@@ -346,6 +346,8 @@ static IDIO idio_read_list (IDIO handle, IDIO opendel, char *ic, int depth)
     IDIO closedel;
     if (opendel == idio_T_lparen) {
 	closedel = idio_T_rparen;
+    } else if (opendel == idio_T_lbrace) {
+	closedel = idio_T_rbrace;
     } else if (opendel == idio_T_lbracket) {
 	closedel = idio_T_rbracket;
     } else {
@@ -363,16 +365,18 @@ static IDIO idio_read_list (IDIO handle, IDIO opendel, char *ic, int depth)
 	    return idio_S_unspec;
 	} else if (idio_T_eol == e) {
 	    /* continue */
-	} else if (idio_T_ampersand == e) {
+	} else if (idio_T_pair_separator == e) {
 	    /* ( & a) */
 	    if (count < 1) {
-		idio_read_error_list_ampersand (handle, IDIO_C_LOCATION ("idio_read_list"), "nothing before & in list");
+		char em[BUFSIZ];
+		sprintf (em, "nothing before %c in list", IDIO_PAIR_SEPARATOR);
+		idio_read_error_pair_separator (handle, IDIO_C_LOCATION ("idio_read_list"), em);
 		return idio_S_unspec;
 	    }
 
 	    /*
-	     * XXX should only expect a single expr after ampersand, ie. not
-	     * a list: (a & b c)
+	     * XXX should only expect a single expr after
+	     * IDIO_PAIR_SEPARATOR, ie. not a list: (a . b c)
 	     */
 	    IDIO cdr = idio_read_1_expr (handle, ic, depth);
 	    while (idio_T_eol == cdr) {
@@ -384,7 +388,9 @@ static IDIO idio_read_list (IDIO handle, IDIO opendel, char *ic, int depth)
 		return idio_S_unspec;
 	    } else if (closedel == cdr) {
 		/* (a &) */
-		idio_read_error_list_ampersand (handle, IDIO_C_LOCATION ("idio_read_list"), "nothing after & in list");
+		char em[BUFSIZ];
+		sprintf (em, "nothing after %c in list", IDIO_PAIR_SEPARATOR);
+		idio_read_error_pair_separator (handle, IDIO_C_LOCATION ("idio_read_list"), em);
 		return idio_S_unspec;
 	    }
 
@@ -404,7 +410,9 @@ static IDIO idio_read_list (IDIO handle, IDIO opendel, char *ic, int depth)
 	    } else {
 		/* (a & b c) */
 		idio_debug ("extra=%s\n", del);
-		idio_read_error_list_ampersand (handle, IDIO_C_LOCATION ("idio_read_list"), "more than one expression after & in list");
+		char em[BUFSIZ];
+		sprintf (em, "more than one expression after %c in list", IDIO_PAIR_SEPARATOR);
+		idio_read_error_pair_separator (handle, IDIO_C_LOCATION ("idio_read_list"), em);
 		return idio_S_unspec;
 	    }
 	}
@@ -711,6 +719,15 @@ static IDIO idio_read_array (IDIO handle, char *ic, int depth)
 
     IDIO e = idio_read_list (handle, idio_T_lbracket, ic, IDIO_LIST_BRACKET (depth + 1));
     return idio_list_to_array (e);
+}
+
+static IDIO idio_read_hash (IDIO handle, char *ic, int depth)
+{
+    IDIO_ASSERT (handle);
+
+    IDIO e = idio_read_list (handle, idio_T_lbrace, ic, IDIO_LIST_BRACE (depth + 1));
+    
+    return idio_hash_alist_to_hash (e, idio_S_nil);
 }
 
 static IDIO idio_read_template (IDIO handle, int depth)
@@ -1179,6 +1196,8 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int nl)
 			return idio_read_character (handle);
 		    case '[':
 			return idio_read_array (handle, ic, IDIO_LIST_BRACKET (depth + 1));
+		    case '{':
+			return idio_read_hash (handle, ic, IDIO_LIST_BRACE (depth + 1));
 		    case 'b':
 			return idio_read_bignum (handle, c, 2);
 		    case 'd':
@@ -1261,15 +1280,17 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int nl)
 		    }
 		}
 		break;
-	    case IDIO_CHAR_AMPERSAND:
+	    case IDIO_PAIR_SEPARATOR:
 		{
 		    int cp = idio_handle_peek (handle);
 
 		    if (IDIO_SEPARATOR (cp)) {
 			if (depth) {
-			    return idio_T_ampersand;
+			    return idio_T_pair_separator;
 			} else {
-			    idio_read_error_parse (handle, IDIO_C_LOCATION ("idio_read_1_expr_nl"), "unexpected ampersand outside of list");
+			    char em[BUFSIZ];
+			    sprintf (em, "unexpected %c outside of list", IDIO_PAIR_SEPARATOR);
+			    idio_read_error_parse (handle, IDIO_C_LOCATION ("idio_read_1_expr_nl"), em);
 			    return idio_S_unspec;
 			}
 		    }
@@ -1407,8 +1428,8 @@ static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, char *ic, int depth
 		case IDIO_TOKEN_DOT:
 		    expr = idio_S_dot;
 		    break;
-		case IDIO_TOKEN_AMPERSAND:
-		    expr = idio_S_ampersand;
+		case IDIO_TOKEN_PAIR_SEPARATOR:
+		    expr = idio_S_pair_separator;
 		    break;
 		default:
 		    idio_error_C ("unexpected token in line", IDIO_LIST2 (handle, expr), IDIO_C_LOCATION ("idio_read_expr_line"));

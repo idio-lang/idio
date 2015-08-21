@@ -306,20 +306,20 @@ void idio_init_character ()
 
     /* C and other common names*/
     /* nul as above */
-    IDIO_CHARACTER_INTERN_C ("alarm", '\a');	       /* 0x07 */
-    IDIO_CHARACTER_INTERN_C ("backspace", '\b');       /* 0x08 */
-    IDIO_CHARACTER_INTERN_C ("tab", '\t');	       /* 0x09 */
-    IDIO_CHARACTER_INTERN_C ("linefeed", '\n');	       /* 0x0a */
-    IDIO_CHARACTER_INTERN_C ("newline", '\n');	       /* 0x0a */
-    IDIO_CHARACTER_INTERN_C ("vtab", '\v');	       /* 0x0b */
-    IDIO_CHARACTER_INTERN_C ("page", '\f');	       /* 0x0c */
-    IDIO_CHARACTER_INTERN_C ("return", '\r');	       /* 0x0d */
+    IDIO_CHARACTER_INTERN_C ("alarm",		'\a'); /* 0x07 */
+    IDIO_CHARACTER_INTERN_C ("backspace",	'\b'); /* 0x08 */
+    IDIO_CHARACTER_INTERN_C ("tab",		'\t'); /* 0x09 */
+    IDIO_CHARACTER_INTERN_C ("linefeed",	'\n'); /* 0x0a */
+    IDIO_CHARACTER_INTERN_C ("newline",		'\n'); /* 0x0a */
+    IDIO_CHARACTER_INTERN_C ("vtab",		'\v'); /* 0x0b */
+    IDIO_CHARACTER_INTERN_C ("page",		'\f'); /* 0x0c */
+    IDIO_CHARACTER_INTERN_C ("return",		'\r'); /* 0x0d */
     IDIO_CHARACTER_INTERN_C ("carriage-return", '\r'); /* 0x0d */
-    IDIO_CHARACTER_INTERN_C ("esc", 0x1b);	       /* 0x1b */
-    IDIO_CHARACTER_INTERN_C ("escape", 0x1b);	       /* 0x1b */
-    IDIO_CHARACTER_INTERN_C ("space", ' ');	       /* 0x20 */
-    IDIO_CHARACTER_INTERN_C ("del", 0x7f);	       /* 0x7f */
-    IDIO_CHARACTER_INTERN_C ("delete", 0x7f);	       /* 0x7f */
+    IDIO_CHARACTER_INTERN_C ("esc",		0x1b); /* 0x1b */
+    IDIO_CHARACTER_INTERN_C ("escape",		0x1b); /* 0x1b */
+    IDIO_CHARACTER_INTERN_C ("space",		' ');  /* 0x20 */
+    IDIO_CHARACTER_INTERN_C ("del",		0x7f); /* 0x7f */
+    IDIO_CHARACTER_INTERN_C ("delete",		0x7f); /* 0x7f */
 
     /* Unicode code points... */
 }

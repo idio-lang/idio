@@ -40,6 +40,10 @@ PIC
 library load (requires PIC)
 	- any order
 
+code signing
+	- encryption
+	- GPG-style, single session, session key encrypted by user keys
+
 Reflection
 	- eg. for functions:
 		1. CREATE-CLOSURE @5
@@ -87,6 +91,9 @@ Threading
 	- crude
 	- pthreads
 	  * mutex locks etc.
+
+send/expect
+	- pty
 
 screen
 	- restoreable/reattachable

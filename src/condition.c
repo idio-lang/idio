@@ -52,6 +52,8 @@ IDIO idio_condition_st_function_error_type;
 IDIO idio_condition_st_function_arity_error_type;
 
 IDIO idio_condition_runtime_error_type;
+IDIO idio_condition_rt_parameter_type_error_type;
+IDIO idio_condition_rt_parameter_nil_error_type;
 IDIO idio_condition_rt_variable_error_type;
 IDIO idio_condition_rt_variable_unbound_error_type;
 IDIO idio_condition_rt_dynamic_variable_error_type;
@@ -337,6 +339,10 @@ void idio_init_condition ()
     IDIO_DEFINE_CONDITION0 (idio_condition_st_function_arity_error_type, "^st-function-arity-error", idio_condition_st_function_error_type);
 
     IDIO_DEFINE_CONDITION0 (idio_condition_runtime_error_type, "^runtime-error", idio_condition_idio_error_type);
+    
+    IDIO_DEFINE_CONDITION0 (idio_condition_rt_parameter_type_error_type, "^rt-parameter-type-error", idio_condition_runtime_error_type);
+    IDIO_DEFINE_CONDITION0 (idio_condition_rt_parameter_nil_error_type, "^rt-parameter-nil-error", idio_condition_runtime_error_type);
+    
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_variable_error_type, "^rt-variable-error", idio_condition_runtime_error_type, "name");
     IDIO_DEFINE_CONDITION0 (idio_condition_rt_variable_unbound_error_type, "^rt-variable-unbound-error", idio_condition_rt_variable_error_type);
     IDIO_DEFINE_CONDITION0 (idio_condition_rt_dynamic_variable_error_type, "^rt-dynamic-variable-error", idio_condition_rt_variable_error_type);
@@ -408,6 +414,8 @@ void idio_final_condition ()
     idio_gc_expose (idio_condition_st_function_arity_error_type);
 
     idio_gc_expose (idio_condition_runtime_error_type);
+    idio_gc_expose (idio_condition_rt_parameter_type_error_type);
+    idio_gc_expose (idio_condition_rt_parameter_nil_error_type);
     idio_gc_expose (idio_condition_rt_variable_error_type);
     idio_gc_expose (idio_condition_rt_variable_unbound_error_type);
     idio_gc_expose (idio_condition_rt_dynamic_variable_error_type);

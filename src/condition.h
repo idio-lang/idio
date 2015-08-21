@@ -49,6 +49,8 @@ extern IDIO idio_condition_st_function_error_type;
 extern IDIO idio_condition_st_function_arity_error_type;
 
 extern IDIO idio_condition_runtime_error_type;
+extern IDIO idio_condition_rt_parameter_type_error_type;
+extern IDIO idio_condition_rt_parameter_nil_error_type;
 extern IDIO idio_condition_rt_variable_error_type;
 extern IDIO idio_condition_rt_variable_unbound_error_type;
 extern IDIO idio_condition_rt_dynamic_variable_error_type;

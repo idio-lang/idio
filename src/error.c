@@ -109,6 +109,15 @@ void idio_error_param_nil (char *name, IDIO loc)
     IDIO_ASSERT (loc);
     IDIO_TYPE_ASSERT (string, loc);
     
+    IDIO sh = idio_open_output_string_handle_C ();
+    idio_display_C (name, sh);
+    idio_display_C (" is nil", sh);
+
+    IDIO c = idio_struct_instance (idio_condition_rt_parameter_nil_error_type,
+				   IDIO_LIST3 (idio_get_output_string (sh),
+					       loc,
+					       idio_S_nil));
+    idio_raise_condition (idio_S_true, c);
     idio_error_printf (loc, "%s is nil", name);
 }
 
@@ -119,21 +128,31 @@ void idio_error_param_type (char *etype, IDIO who, IDIO loc)
     IDIO_ASSERT (loc);
     IDIO_TYPE_ASSERT (string, loc);
 
-    char em[BUFSIZ];
-    sprintf (em, "bad parameter type: a %s is not a %s:", idio_type2string (who), etype);
-    idio_error_C (em, IDIO_LIST1 (who), loc);
+    IDIO sh = idio_open_output_string_handle_C ();
+    idio_display_C ("bad parameter type: a ", sh);
+    idio_display_C ((char *) idio_type2string (who), sh);
+    idio_display_C (" is not a ", sh);
+    idio_display_C (etype, sh);
+
+    IDIO c = idio_struct_instance (idio_condition_rt_parameter_type_error_type,
+				   IDIO_LIST3 (idio_get_output_string (sh),
+					       loc,
+					       who));
+    idio_raise_condition (idio_S_true, c);
 }
 
+/*
+ * Used by IDIO_TYPE_ASSERT
+ */
 void idio_error_param_type_C (char *etype, IDIO who, char *file, const char *func, int line)
 {
     IDIO_C_ASSERT (etype);
     IDIO_ASSERT (who);
 
-    char em[BUFSIZ];
-    sprintf (em, "bad parameter type: a %s is not a %s:", idio_type2string (who), etype);
-    char lm[BUFSIZ];
-    sprintf (lm, "%s:%s:%d", func, file, line);
-    idio_error_C (em, IDIO_LIST1 (who), idio_string_C (lm));
+    char loc[BUFSIZ];
+    sprintf (loc, "%s:%s:%d", func, file, line);
+
+    idio_error_param_type (etype, who, idio_string_C (loc));
 }
 
 void idio_error (IDIO who, IDIO msg, IDIO args, IDIO loc)

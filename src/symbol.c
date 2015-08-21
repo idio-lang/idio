@@ -81,6 +81,7 @@ IDIO_SYMBOL_DECL (namespace);
 IDIO_SYMBOL_DECL (op);
 IDIO_SYMBOL_DECL (or);
 IDIO_SYMBOL_DECL (pair);
+IDIO_SYMBOL_DECL (pair_separator);
 IDIO_SYMBOL_DECL (ph);
 IDIO_SYMBOL_DECL (pipe);
 IDIO_SYMBOL_DECL (pt);
@@ -337,6 +338,10 @@ void idio_init_symbol ()
     IDIO_SYMBOL_DEF ("op", op);
     IDIO_SYMBOL_DEF ("or", or);
     IDIO_SYMBOL_DEF ("pair", pair);
+
+    char buf[2];
+    sprintf (buf, "%c", IDIO_PAIR_SEPARATOR);
+    IDIO_SYMBOL_DEF (buf, pair_separator);
     IDIO_SYMBOL_DEF ("ph", ph);
     IDIO_SYMBOL_DEF ("|", pipe);
     IDIO_SYMBOL_DEF ("pt", pt);

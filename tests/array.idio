@@ -89,12 +89,15 @@ test (a.(1 + 1)) 3
 
 test (a.1) '#[ 10 20 30 ]
 
-;; a.1.1 looks like a . 1.1 so use a variable instead of any literal
-;; integer followed by a DOT
+;; a.1.1 looks like a . 1.1 so use whitespace or a variable instead of
+;; any literal integer followed by a DOT
+test (a . 1 . 1) 20
+test (a.1 .1) 20
+
 i = 1
 test (a.i.i) 20
 test (a.i.1) 20
 test (a.(0 + 1).(0 + 1)) 20
 
 ;; all done?
-test (array0 + 28) Tests
+test (array0 + 30) Tests

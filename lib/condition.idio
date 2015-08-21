@@ -151,6 +151,10 @@ define-condition-type-accessors-only ^st-function-error			^static-error			st-fun
 define-condition-type-accessors-only ^st-function-type-error		^st-function-error		st-function-type-error?
 
 define-condition-type-accessors-only ^runtime-error			^idio-error			runtime-error?
+
+define-condition-type-accessors-only ^rt-parameter-type-error		^runtime-error			rt-parameter-type-error?
+define-condition-type-accessors-only ^rt-parameter-nil-error		^runtime-error			rt-parameter-nil-error?
+
 define-condition-type-accessors-only ^rt-variable-error			^runtime-error			rt-variable-error? \
 	(name rt-variable-error-name)
 define-condition-type-accessors-only ^rt-variable-unbound-error		^rt-variable-error		rt-variable-unbound-error?

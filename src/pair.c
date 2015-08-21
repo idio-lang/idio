@@ -403,7 +403,14 @@ IDIO idio_list_list2string (IDIO l)
 	IDIO h = IDIO_PAIR_H (l);
 
 	if (idio_isa_character (h)) {
-	    s[i] = IDIO_CHARACTER_VAL (h);
+	    intptr_t c = IDIO_CHARACTER_VAL (h);
+
+	    if (c > INT8_MAX ||
+		c < INT8_MIN) {
+		idio_error_C ("character too large for C string", h, IDIO_C_LOCATION ("idio_list_list2string"));
+	    }
+	    
+	    s[i] = c;
 	} else {
 	    idio_error_param_type ("character", h, IDIO_C_LOCATION ("idio_list_list2string"));
 	    return idio_S_unspec;

@@ -338,6 +338,11 @@ IDIO_DEFINE_PRIMITIVE1V ("make-string", make_string, (IDIO size, IDIO args))
     if (idio_S_nil != args) {
 	IDIO fill = IDIO_PAIR_H (args);
 	IDIO_VERIFY_PARAM_TYPE (character, fill);
+	if (IDIO_CHARACTER_VAL (fill) > INT8_MAX ||
+	    IDIO_CHARACTER_VAL (fill) < INT8_MIN) {
+	    idio_error_C ("fill character too large", fill, IDIO_C_LOCATION ("make-string"));
+	}
+
 	fillc = IDIO_CHARACTER_VAL (fill);
     }
 
@@ -452,6 +457,11 @@ IDIO_DEFINE_PRIMITIVE2 ("string-fill!", string_fill, (IDIO s, IDIO fill))
 
     size_t i;
     for (i = 0; i < l; i++) {
+	if (IDIO_CHARACTER_VAL (fill) > INT8_MAX ||
+	    IDIO_CHARACTER_VAL (fill) < INT8_MIN) {
+	    idio_error_C ("fill character too large", fill, IDIO_C_LOCATION ("string-fill!"));
+	}
+
 	Cs[i] = IDIO_CHARACTER_VAL (fill);
     }
 
@@ -545,6 +555,11 @@ IDIO_DEFINE_PRIMITIVE3 ("string-set!", string_set, (IDIO s, IDIO index, IDIO c))
 	i > l) {
 	idio_string_error_length ("out of bounds", s, i, IDIO_C_LOCATION ("string-set!"));
 	return idio_S_unspec;
+    }
+
+    if (IDIO_CHARACTER_VAL (c) > INT8_MAX ||
+	IDIO_CHARACTER_VAL (c) < INT8_MIN) {
+	idio_error_C ("character too large for C string", c, IDIO_C_LOCATION ("string-set!"));
     }
 
     Cs[i] = IDIO_CHARACTER_VAL (c);

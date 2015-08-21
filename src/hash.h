@@ -29,6 +29,7 @@
 #define IDIO_HASH_EQUALP(s)	(IDIO_HASH ((s), idio_equalp, idio_hash_hashval, idio_S_nil, idio_S_nil))
 
 IDIO idio_hash (size_t size, int (*equal) (void *k1, void *k2), size_t (*hashf) (IDIO h, void *k), IDIO comp, IDIO hash);
+IDIO idio_hash_alist_to_hash (IDIO alist, IDIO args);
 int idio_isa_hash (IDIO h);
 void idio_free_hash (IDIO h);
 size_t idio_hash_hcount (IDIO h);
