@@ -1435,6 +1435,7 @@ IDIO idio_load_file (IDIO filename)
     
     strncpy (lfn, libfile, PATH_MAX - 1);
     l = strlen (lfn);
+    free (libfile);
 
     char *slash = strrchr (lfn, '/');
     if (NULL == slash) {
