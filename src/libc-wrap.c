@@ -2802,11 +2802,11 @@ void idio_libc_wrap_add_primitives ()
 void idio_final_libc_wrap ()
 {
     int i;
-    for (i = 0; NULL != idio_libc_signal_names[i]; i++) {
+    for (i = IDIO_LIBC_FSIG; NULL != idio_libc_signal_names[i]; i++) {
         free (idio_libc_signal_names[i]);
     }
     free (idio_libc_signal_names);
-    for (i = 0; NULL != idio_libc_errno_names[i]; i++) {
+    for (i = IDIO_LIBC_FERRNO; NULL != idio_libc_errno_names[i]; i++) {
         free (idio_libc_errno_names[i]);
     }
     free (idio_libc_errno_names);
