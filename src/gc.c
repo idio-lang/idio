@@ -817,6 +817,9 @@ void idio_gc_sweep_free_value (IDIO vo)
     case IDIO_TYPE_SYMBOL:
 	idio_free_symbol (vo);
 	break;
+    case IDIO_TYPE_KEYWORD:
+	idio_free_keyword (vo);
+	break;
     case IDIO_TYPE_PAIR:
 	idio_free_pair (vo);
 	break;
@@ -1337,6 +1340,7 @@ void idio_init_gc ()
 	IDIO_GC_STRUCT_SIZE (idio_string_s);
 	IDIO_GC_STRUCT_SIZE (idio_substring_s);
 	IDIO_GC_STRUCT_SIZE (idio_symbol_s);
+	IDIO_GC_STRUCT_SIZE (idio_keyword_s);
 	IDIO_GC_STRUCT_SIZE (idio_pair_s);
 	IDIO_GC_STRUCT_SIZE (idio_array_s);
 	IDIO_GC_STRUCT_SIZE (idio_hash_s);

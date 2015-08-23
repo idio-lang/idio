@@ -52,6 +52,7 @@ const char *idio_type_enum2string (idio_type_e type)
     case IDIO_TYPE_STRING: return "STRING";
     case IDIO_TYPE_SUBSTRING: return "SUBSTRING";
     case IDIO_TYPE_SYMBOL: return "SYMBOL";
+    case IDIO_TYPE_KEYWORD: return "KEYWORD";
     case IDIO_TYPE_PAIR: return "PAIR";
     case IDIO_TYPE_ARRAY: return "ARRAY";
     case IDIO_TYPE_HASH: return "HASH";
@@ -347,6 +348,10 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		    
 		return (strncmp (IDIO_SUBSTRING_S (o1), IDIO_SUBSTRING_S (o2), IDIO_SUBSTRING_BLEN (o1)) == 0);
 	    case IDIO_TYPE_SYMBOL:
+		return (o1 == o2);
+		
+		break;
+	    case IDIO_TYPE_KEYWORD:
 		return (o1 == o2);
 		
 		break;
@@ -687,6 +692,11 @@ char *idio_as_string (IDIO o, int depth)
 		break;
 	    case IDIO_TYPE_SYMBOL:
 		if (asprintf (&r, "%s", IDIO_SYMBOL_S (o)) == -1) {
+		    idio_error_alloc ("asprintf");
+		}
+		break;
+	    case IDIO_TYPE_KEYWORD:
+		if (asprintf (&r, ":%s", IDIO_KEYWORD_S (o)) == -1) {
 		    idio_error_alloc ("asprintf");
 		}
 		break;
@@ -1495,6 +1505,9 @@ void idio_dump (IDIO o, int detail)
 		break;
 	    case IDIO_TYPE_SYMBOL:
 		IDIO_FPRINTF (stderr, "sym=");
+		break;
+	    case IDIO_TYPE_KEYWORD:
+		IDIO_FPRINTF (stderr, "key=");
 		break;
 	    case IDIO_TYPE_PAIR:
 		if (detail > 1) {

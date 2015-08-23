@@ -291,6 +291,7 @@
 #include "frame.h"
 #include "handle.h"
 #include "hash.h"
+#include "keyword.h"
 #include "module.h"
 #include "pair.h"
 #include "path.h"

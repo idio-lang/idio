@@ -30,34 +30,37 @@
 #define IDIO_TYPE_STRING          4
 #define IDIO_TYPE_SUBSTRING       5
 #define IDIO_TYPE_SYMBOL          6
-#define IDIO_TYPE_PAIR            7
-#define IDIO_TYPE_ARRAY           8
-#define IDIO_TYPE_HASH            9
-#define IDIO_TYPE_CLOSURE         10
-#define IDIO_TYPE_PRIMITIVE       11
-#define IDIO_TYPE_BIGNUM          12
-#define IDIO_TYPE_MODULE          13
-#define IDIO_TYPE_FRAME           14
-#define IDIO_TYPE_HANDLE          15
-#define IDIO_TYPE_STRUCT_TYPE     16
-#define IDIO_TYPE_STRUCT_INSTANCE 17
-#define IDIO_TYPE_THREAD	  18
-#define IDIO_TYPE_CONTINUATION	  19
-#define IDIO_TYPE_C_INT           20
-#define IDIO_TYPE_C_UINT          21
-#define IDIO_TYPE_C_FLOAT         22
-#define IDIO_TYPE_C_DOUBLE        23
-#define IDIO_TYPE_C_POINTER       24
-#define IDIO_TYPE_C_VOID          25
+#define IDIO_TYPE_KEYWORD         7
+#define IDIO_TYPE_PAIR            8
+#define IDIO_TYPE_ARRAY           9
+#define IDIO_TYPE_HASH            10
+#define IDIO_TYPE_CLOSURE         11
+#define IDIO_TYPE_PRIMITIVE       12
+#define IDIO_TYPE_BIGNUM          13
 
-#define IDIO_TYPE_C_INT8_T        26
-#define IDIO_TYPE_C_UINT8_T       27
-#define IDIO_TYPE_C_INT16_T       28
-#define IDIO_TYPE_C_UINT16_T      29
-#define IDIO_TYPE_C_INT32_T       30
-#define IDIO_TYPE_C_UINT32_T      31
-#define IDIO_TYPE_C_INT64_T       32
-#define IDIO_TYPE_C_UINT64_T      33
+#define IDIO_TYPE_MODULE          20
+#define IDIO_TYPE_FRAME           21
+#define IDIO_TYPE_HANDLE          22
+#define IDIO_TYPE_STRUCT_TYPE     23
+#define IDIO_TYPE_STRUCT_INSTANCE 24
+#define IDIO_TYPE_THREAD	  25
+#define IDIO_TYPE_CONTINUATION	  26
+
+#define IDIO_TYPE_C_INT           30
+#define IDIO_TYPE_C_UINT          31
+#define IDIO_TYPE_C_FLOAT         32
+#define IDIO_TYPE_C_DOUBLE        33
+#define IDIO_TYPE_C_POINTER       34
+#define IDIO_TYPE_C_VOID          35
+
+#define IDIO_TYPE_C_INT8_T        36
+#define IDIO_TYPE_C_UINT8_T       37
+#define IDIO_TYPE_C_INT16_T       38
+#define IDIO_TYPE_C_UINT16_T      39
+#define IDIO_TYPE_C_INT32_T       40
+#define IDIO_TYPE_C_UINT32_T      41
+#define IDIO_TYPE_C_INT64_T       42
+#define IDIO_TYPE_C_UINT64_T      43
 /*
 #define IDIO_TYPE_C_CHAR          28
 #define IDIO_TYPE_C_UCHAR         29
@@ -68,13 +71,13 @@
 #define IDIO_TYPE_C_LONG          34
 #define IDIO_TYPE_C_ULONG         35
 */
-#define IDIO_TYPE_CTD             40
-#define IDIO_TYPE_C_TYPEDEF       41
-#define IDIO_TYPE_C_STRUCT        42
-#define IDIO_TYPE_C_INSTANCE      43
-#define IDIO_TYPE_C_FFI           44
-#define IDIO_TYPE_OPAQUE          45
-#define IDIO_TYPE_MAX             46
+#define IDIO_TYPE_CTD             50
+#define IDIO_TYPE_C_TYPEDEF       51
+#define IDIO_TYPE_C_STRUCT        52
+#define IDIO_TYPE_C_INSTANCE      53
+#define IDIO_TYPE_C_FFI           54
+#define IDIO_TYPE_OPAQUE          55
+#define IDIO_TYPE_MAX             56
 
 typedef unsigned char idio_type_e;
 
@@ -138,6 +141,12 @@ typedef struct idio_symbol_s {
 } idio_symbol_t;
 
 #define IDIO_SYMBOL_S(S)	((S)->u.symbol.s)
+
+typedef struct idio_keyword_s {
+    char *s;			/* C string */
+} idio_keyword_t;
+
+#define IDIO_KEYWORD_S(S)	((S)->u.keyword.s)
 
 typedef struct idio_pair_s {
     struct idio_s *grey;
@@ -656,6 +665,7 @@ typedef struct idio_s {
 	idio_string_t          string;
 	idio_substring_t       substring;
 	idio_symbol_t          symbol;
+	idio_keyword_t         keyword;
 	idio_pair_t            pair;
 	idio_array_t           *array;
 	idio_hash_t            *hash;

@@ -411,6 +411,13 @@ idio_hi_t idio_hash_hashval_symbol (IDIO h)
     return idio_hash_hashval_void (IDIO_SYMBOL_S (h)); 
 }
 
+idio_hi_t idio_hash_hashval_keyword (IDIO h)
+{
+    IDIO_ASSERT (h);
+
+    return idio_hash_hashval_void (IDIO_KEYWORD_S (h)); 
+}
+
 idio_hi_t idio_hash_hashval_pair (IDIO h)
 {
     IDIO_ASSERT (h);
@@ -521,6 +528,9 @@ idio_hi_t idio_hash_hashval (IDIO h, void *kv)
 	break;
     case IDIO_TYPE_SYMBOL:
 	hv = idio_hash_hashval_symbol (k);  
+	break;
+    case IDIO_TYPE_KEYWORD:
+	hv = idio_hash_hashval_keyword (k);  
 	break;
     case IDIO_TYPE_PAIR:
 	hv = idio_hash_hashval_pair (k);

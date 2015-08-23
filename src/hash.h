@@ -51,6 +51,7 @@ IDIO idio_hash_exists (IDIO h, void *k);
 IDIO idio_hash_get (IDIO h, void *k);
 int idio_hash_delete (IDIO h, void *k);
 IDIO idio_hash_keys_to_list (IDIO h);
+IDIO idio_hash_make_hash (IDIO args);
 IDIO idio_hash_ref (IDIO ht, IDIO key, IDIO args);
 
 void idio_init_hash ();

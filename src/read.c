@@ -1070,7 +1070,21 @@ static IDIO idio_read_word (IDIO handle, int c)
     IDIO r = idio_read_number_C (handle, buf);
 
     if (idio_S_nil == r) {
-	r = idio_symbols_C_intern (buf);
+	/*
+	 * Could be a symbol or a keyword.
+	 *
+	 * Awkwardly, := is a symbol.
+	 *
+	 * All keywords will be : followed by a non-punctutation char
+	 */
+	if ((':' == buf[0] &&
+	     i > 1 &&
+	     ! ispunct (buf[1])) ||
+	    ':' == buf[i-1]) {
+	    r = idio_keywords_C_intern (buf);
+	} else {
+	    r = idio_symbols_C_intern (buf);
+	}
     }
 
     return r;

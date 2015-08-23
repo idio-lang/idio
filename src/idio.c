@@ -54,6 +54,7 @@ void idio_init ()
     idio_init_bignum ();
     idio_init_closure ();
     idio_init_error ();
+    idio_init_keyword ();
     idio_init_read ();
     idio_init_scm_read ();
     idio_init_env ();
@@ -97,6 +98,7 @@ void idio_init ()
     idio_bignum_add_primitives ();
     idio_closure_add_primitives ();
     idio_error_add_primitives ();
+    idio_keyword_add_primitives ();
     idio_read_add_primitives ();
     idio_scm_read_add_primitives ();
     idio_env_add_primitives ();
@@ -125,6 +127,7 @@ void idio_final ()
     idio_final_env ();
     idio_final_scm_read ();
     idio_final_read ();
+    idio_final_keyword ();
     idio_final_error ();
     idio_final_closure ();
     idio_final_bignum ();
