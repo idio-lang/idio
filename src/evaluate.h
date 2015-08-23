@@ -23,15 +23,27 @@
 #ifndef EVALUATE_H
 #define EVALUATE_H
 
-/*
- * Some flags for scope hints for non-local variables
- */
-#define IDIO_UNKNOWN_SCOPE	0
-#define IDIO_LEXICAL_SCOPE	1 /* regular lexical globals */
-#define IDIO_DYNAMIC_SCOPE	2 /* dynamic globals */
-#define IDIO_ENVIRON_SCOPE	3 /* dynamics tagged as environment
-				     variables */
-#define IDIO_COMPUTED_SCOPE	4 /* computed variables */
+#define IDIO_MEANING_FLAG_NONE			0
+#define IDIO_MEANING_FLAG_TAILP			(1<<0)
+#define IDIO_MEANING_FLAG_LEXICAL_SCOPE		(1<<1)
+#define IDIO_MEANING_FLAG_DYNAMIC_SCOPE		(1<<2)
+#define IDIO_MEANING_FLAG_ENVIRON_SCOPE		(1<<3)
+#define IDIO_MEANING_FLAG_COMPUTED_SCOPE	(1<<4)
+
+#define IDIO_MEANING_IS_TAILP(f)		((f) & IDIO_MEANING_FLAG_TAILP)
+#define IDIO_MEANING_SET_TAILP(f)		((f) & IDIO_MEANING_FLAG_TAILP)
+#define IDIO_MEANING_NOT_TAILP(f)		((f) & (~ IDIO_MEANING_FLAG_TAILP))
+
+#define IDIO_MEANING_SCOPE_MASK			(IDIO_MEANING_FLAG_LEXICAL_SCOPE | \
+						 IDIO_MEANING_FLAG_DYNAMIC_SCOPE | \
+						 IDIO_MEANING_FLAG_ENVIRON_SCOPE | \
+						 IDIO_MEANING_FLAG_COMPUTED_SCOPE)
+
+#define IDIO_MEANING_SCOPE(f)			((f) & IDIO_MEANING_SCOPE_MASK)
+#define IDIO_MEANING_LEXICAL_SCOPE(f)		(((f) & (~ IDIO_MEANING_SCOPE_MASK)) | IDIO_MEANING_FLAG_LEXICAL_SCOPE)
+#define IDIO_MEANING_DYNAMIC_SCOPE(f)		(((f) & (~ IDIO_MEANING_SCOPE_MASK)) | IDIO_MEANING_FLAG_DYNAMIC_SCOPE)
+#define IDIO_MEANING_ENVIRON_SCOPE(f)		(((f) & (~ IDIO_MEANING_SCOPE_MASK)) | IDIO_MEANING_FLAG_ENVIRON_SCOPE)
+#define IDIO_MEANING_COMPUTED_SCOPE(f)		(((f) & (~ IDIO_MEANING_SCOPE_MASK)) | IDIO_MEANING_FLAG_COMPUTED_SCOPE)
 
 void idio_add_description (IDIO sym, IDIO desc);
 IDIO idio_get_description (IDIO sym);
