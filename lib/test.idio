@@ -82,6 +82,7 @@ IDIOLIB = string-append IDIOLIB ":" PWD
 
 load "tests/s9-test.idio"
 load "tests/operator.idio"
+load "tests/closure.idio"
 load "tests/keyword.idio"
 load "tests/template.idio"
 load "tests/array.idio"

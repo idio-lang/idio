@@ -1077,11 +1077,10 @@ static IDIO idio_read_word (IDIO handle, int c)
 	 *
 	 * All keywords will be : followed by a non-punctutation char
 	 */
-	if ((':' == buf[0] &&
+	if (':' == buf[0] &&
 	     i > 1 &&
-	     ! ispunct (buf[1])) ||
-	    ':' == buf[i-1]) {
-	    r = idio_keywords_C_intern (buf);
+	     ! ispunct (buf[1])) {
+	    r = idio_keywords_C_intern (buf + 1);
 	} else {
 	    r = idio_symbols_C_intern (buf);
 	}

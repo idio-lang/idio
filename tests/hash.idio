@@ -50,6 +50,7 @@ test (hash-ref ht 'b default) 99
 hash-set! ht 'b 5
 test (hash-ref ht 'b default) 5
 
+;; hash-update!
 add10 := function (v) {
   v + 10
 }
@@ -290,6 +291,32 @@ hash-set! ht 2 "banana"
 nht = hash-copy ht
 test (hash-hash-function nht) ht-num-hash
 
+;; hash index operators
+test (ht.1) "apple"
+test (ht . 1) "apple"
+test (ht. 1) "apple"
+test (ht .1) "apple"
+
+b := 2
+test (ht.b) "banana"
+test (ht.(1 + 1)) "banana"
+
+hash-set! ht 1 #{ ("cat" & 10) ("dog" & 20) }
+test (ht.1 ."cat") 10
+
+test (hash-exists? ht.1 "elephant") #f
+
+;; setter
+set! ht.2 "carrot"
+test (ht.2) "carrot"
+ht.4 = "durian"
+test (ht.4) "durian"
+
+ht = #{ (1 & "apple") (2 & #{ ("cow" "beef") ("sheep" "lamb")}) }
+ht.2 ."pig" = "pork"
+test (ht.2 ."pig") "pork"
+
+
 ;; all done?
-test (hash0 + 54) Tests
+test (hash0 + 65) Tests
 

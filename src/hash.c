@@ -1314,6 +1314,18 @@ IDIO_DEFINE_PRIMITIVE2V ("hash-ref", hash_ref, (IDIO ht, IDIO key, IDIO args))
     return idio_hash_ref (ht, key, args);
 }
 
+IDIO idio_hash_set (IDIO ht, IDIO key, IDIO v)
+{
+    IDIO_ASSERT (ht);
+    IDIO_ASSERT (key);
+    IDIO_ASSERT (v);
+    IDIO_TYPE_ASSERT (hash, ht);
+
+    idio_hash_put (ht, key, v);
+
+    return idio_S_unspec;
+}
+
 IDIO_DEFINE_PRIMITIVE3 ("hash-set!", hash_set, (IDIO ht, IDIO key, IDIO v))
 {
     IDIO_ASSERT (ht);
@@ -1321,9 +1333,7 @@ IDIO_DEFINE_PRIMITIVE3 ("hash-set!", hash_set, (IDIO ht, IDIO key, IDIO v))
     IDIO_ASSERT (v);
     IDIO_VERIFY_PARAM_TYPE (hash, ht);
 
-    idio_hash_put (ht, key, v);
-
-    return idio_S_unspec;
+    return idio_hash_set (ht, key, v);
 }
 
 /*

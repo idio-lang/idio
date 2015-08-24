@@ -16,19 +16,21 @@
 ;;
 
 ;;
-;; bootstrap.idio
+;; closure.idio
 ;;
+closure0 = Tests
 
-display "This is bootstrap.idio\n"
+;; setters
 
-include "operator.idio"
-include "closure.idio"
-include "s9.idio"
-include "common.idio"
-include "struct.idio"
-include "condition.idio"
-include "call-cc.idio"
-include "libc-wrap.idio"
-include "command.idio"
+;; assuming no-one's changed anything
+test (setter ph) set-ph!
 
-;print "\nThis is the end of bootstrap.idio bringing you today's number, π: " pi "\n"
+l := '(1 2)
+set! (ph l) 3
+test (ph l) 3
+
+(ph l) = 4
+test (ph l) 4
+
+;; all done?
+test (closure0 + 3) Tests

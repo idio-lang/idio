@@ -560,13 +560,13 @@ char *idio_as_string (IDIO o, int depth)
 	    
 	    switch (v) {
 	    case IDIO_CONSTANT_NIL:                        t = "#n";                          break;
-	    case IDIO_CONSTANT_UNDEF:                      t = "#undef";                      break;
-	    case IDIO_CONSTANT_UNSPEC:                     t = "#unspec";                     break;
-	    case IDIO_CONSTANT_EOF:                        t = "#eof";                        break;
+	    case IDIO_CONSTANT_UNDEF:                      t = "#<undef>";                    break;
+	    case IDIO_CONSTANT_UNSPEC:                     t = "#<unspec>";                   break;
+	    case IDIO_CONSTANT_EOF:                        t = "#<eof>";                      break;
 	    case IDIO_CONSTANT_TRUE:                       t = "#t";                          break;
 	    case IDIO_CONSTANT_FALSE:                      t = "#f";                          break;
-	    case IDIO_CONSTANT_VOID:                       t = "#void";                       break;
-	    case IDIO_CONSTANT_NAN:                        t = "#NaN";                        break;
+	    case IDIO_CONSTANT_VOID:                       t = "#<void>";                     break;
+	    case IDIO_CONSTANT_NAN:                        t = "#<NaN>";                      break;
 
 		/*
 		 * We shouldn't really see any of the following
@@ -641,7 +641,7 @@ char *idio_as_string (IDIO o, int depth)
 	    }
 
 	    if (NULL == t) {
-		if (asprintf (&r, "C=%" PRIdPTR, v) == -1) {
+		if (asprintf (&r, "#<C=%" PRIdPTR ">", v) == -1) {
 		    idio_error_alloc ("asprintf");
 		}
 	    } else {
@@ -1473,6 +1473,38 @@ IDIO_DEFINE_PRIMITIVE2 ("value-index", value_index, (IDIO o, IDIO i))
     return idio_S_unspec;
 }
 
+IDIO_DEFINE_PRIMITIVE3 ("set-value-index!", set_value_index, (IDIO o, IDIO i, IDIO v))
+{
+    IDIO_ASSERT (o);
+    IDIO_ASSERT (i);
+    IDIO_ASSERT (v);
+
+    switch ((intptr_t) o & 3) {
+    case IDIO_TYPE_FIXNUM_MARK:
+    case IDIO_TYPE_CONSTANT_MARK:
+    case IDIO_TYPE_CHARACTER_MARK:
+	break;
+    case IDIO_TYPE_POINTER_MARK:
+	{
+	    switch (o->type) {
+	    case IDIO_TYPE_ARRAY:
+		return idio_array_set (o, i, v);
+	    case IDIO_TYPE_HASH:
+		return idio_hash_set (o, i, v);
+	    default:
+		break;
+	    }
+	}
+    default:
+	break;
+    }
+
+    idio_error_C ("non-indexable object", IDIO_LIST2 (o, i), IDIO_C_LOCATION ("value-index"));
+
+    /* notreached */
+    return idio_S_unspec;
+}
+
 void idio_dump (IDIO o, int detail)
 {
     IDIO_ASSERT (o);
@@ -1671,6 +1703,7 @@ void idio_util_add_primitives ()
     IDIO_ADD_PRIMITIVE (memq);
     IDIO_ADD_PRIMITIVE (assq);
     IDIO_ADD_PRIMITIVE (value_index);
+    IDIO_ADD_PRIMITIVE (set_value_index);
     IDIO_ADD_PRIMITIVE (idio_debug);
 }
 

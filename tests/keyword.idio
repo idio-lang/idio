@@ -22,10 +22,8 @@ keyword0 = Tests
 
 test (keyword? a) #f
 test (keyword? :a) #t
-test (keyword? a:) #t
 
 test (symbol? :a) #f
-test (symbol? a:) #f
 
 ;; check operators don't get mistaken for keywords
 test (keyword? \:=) #f
@@ -60,4 +58,4 @@ keyword-set! kw-table :a "apple"
 test (keyword-get kw-table :a) "apple"
 
 ;; all done?
-test (keyword0 + 14) Tests
+test (keyword0 + 12) Tests

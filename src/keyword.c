@@ -175,29 +175,38 @@ IDIO_DEFINE_PRIMITIVE0 ("keywords", keywords, ())
     return idio_hash_keys_to_list (idio_keywords_hash);
 }
 
+IDIO idio_hash_make_keyword_table (IDIO args)
+{
+    IDIO_ASSERT (args);
+    IDIO_VERIFY_PARAM_TYPE (list, args);
+    
+    return idio_hash_make_hash (idio_list_append2 (IDIO_LIST1 (idio_S_eqp), args));
+}
+
 IDIO_DEFINE_PRIMITIVE0V ("make-keyword-table", make_keyword_table, (IDIO args))
 {
     IDIO_ASSERT (args);
     IDIO_VERIFY_PARAM_TYPE (list, args);
     
-    return idio_hash_make_hash (IDIO_LIST1 (idio_S_eqp));
+    return idio_hash_make_keyword_table (args);
 }
 
-IDIO_DEFINE_PRIMITIVE2V ("keyword-get", keyword_get, (IDIO ht, IDIO kw, IDIO args))
+IDIO idio_keyword_get (IDIO ht, IDIO kw, IDIO args)
 {
     IDIO_ASSERT (ht);
     IDIO_ASSERT (kw);
     IDIO_ASSERT (args);
-    IDIO_VERIFY_PARAM_TYPE (hash, ht);
-    IDIO_VERIFY_PARAM_TYPE (keyword, kw);
-    IDIO_VERIFY_PARAM_TYPE (list, args);
+    IDIO_TYPE_ASSERT (keyword, kw);
+    IDIO_TYPE_ASSERT (list, args);
 
     if (idio_S_nil == ht) {
-	idio_error_param_nil ("nil keyword table", IDIO_C_LOCATION ("keyword-get"));
+	idio_error_param_nil ("keyword table", IDIO_C_LOCATION ("keyword-get"));
 
 	/* notreached */
 	return idio_S_unspec;
     }
+
+    IDIO_TYPE_ASSERT (hash, ht);
 
     IDIO v = idio_hash_get (ht, kw);
 
@@ -215,24 +224,45 @@ IDIO_DEFINE_PRIMITIVE2V ("keyword-get", keyword_get, (IDIO ht, IDIO kw, IDIO arg
     }
 }
 
-IDIO_DEFINE_PRIMITIVE3 ("keyword-set!", keyword_set, (IDIO ht, IDIO kw, IDIO v))
+IDIO_DEFINE_PRIMITIVE2V ("keyword-get", keyword_get, (IDIO ht, IDIO kw, IDIO args))
+{
+    IDIO_ASSERT (ht);
+    IDIO_ASSERT (kw);
+    IDIO_ASSERT (args);
+    IDIO_VERIFY_PARAM_TYPE (keyword, kw);
+    IDIO_VERIFY_PARAM_TYPE (list, args);
+
+    return idio_keyword_get (ht, kw, args);
+}
+
+IDIO idio_keyword_set (IDIO ht, IDIO kw, IDIO v)
 {
     IDIO_ASSERT (ht);
     IDIO_ASSERT (kw);
     IDIO_ASSERT (v);
-    IDIO_VERIFY_PARAM_TYPE (hash, ht);
-    IDIO_VERIFY_PARAM_TYPE (keyword, kw);
+    IDIO_TYPE_ASSERT (keyword, kw);
 
     if (idio_S_nil == ht) {
-	idio_error_param_nil ("nil keyword table", IDIO_C_LOCATION ("keyword-set!"));
+	idio_error_param_nil ("keyword table", IDIO_C_LOCATION ("keyword-set!"));
 
 	/* notreached */
 	return idio_S_unspec;
     }
 
+    IDIO_TYPE_ASSERT (hash, ht);
+
     idio_hash_put (ht, kw, v);
 
     return idio_S_unspec;
+}
+IDIO_DEFINE_PRIMITIVE3 ("keyword-set!", keyword_set, (IDIO ht, IDIO kw, IDIO v))
+{
+    IDIO_ASSERT (ht);
+    IDIO_ASSERT (kw);
+    IDIO_ASSERT (v);
+    IDIO_VERIFY_PARAM_TYPE (keyword, kw);
+
+    return idio_keyword_set (ht, kw, v);
 }
 
 void idio_init_keyword ()

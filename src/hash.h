@@ -53,6 +53,7 @@ int idio_hash_delete (IDIO h, void *k);
 IDIO idio_hash_keys_to_list (IDIO h);
 IDIO idio_hash_make_hash (IDIO args);
 IDIO idio_hash_ref (IDIO ht, IDIO key, IDIO args);
+IDIO idio_hash_set (IDIO ht, IDIO key, IDIO v);
 
 void idio_init_hash ();
 void idio_hash_add_primitives ();

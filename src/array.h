@@ -96,6 +96,7 @@ IDIO idio_array_copy (IDIO a, idio_ai_t extra);
 IDIO idio_array_to_list (IDIO a);
 int idio_array_delete_index (IDIO a, idio_ai_t index);
 IDIO idio_array_ref (IDIO a, IDIO index);
+IDIO idio_array_set (IDIO a, IDIO index, IDIO v);
 
 void idio_init_array ();
 void idio_array_add_primitives ();

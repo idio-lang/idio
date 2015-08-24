@@ -411,12 +411,10 @@ monitor (function (cont cond) {
 if (file-exists? test_filename) (delete-file test_filename)
 
 ;; a continuable error, if it reaches base-error-handler then
-;; base-error-handler will return the condition itself.  
-;;
-;; We can't test that directly (as it is a transient instance of a
-;; condition) but we can test its type:
+;; base-error-handler will return #void.  If something else returned
+;; #void then we're none the wiser.
 display* "raising a continuable condition"
-test (error? (raise #t (make-condition ^error))) #t
+test (raise #t (make-condition ^error)) (void)
 
 ;; all done?
 test (condition0 + 101) Tests

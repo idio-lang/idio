@@ -269,14 +269,14 @@ static IDIO idio_predef_extend (IDIO name, IDIO primdata)
     return fpi;
 }
 
-IDIO idio_add_primitive (idio_primitive_t *d)
+IDIO idio_add_primitive (idio_primitive_desc_t *d)
 {
     IDIO primdata = idio_primitive_data (d);
     IDIO sym = idio_symbols_C_intern (d->name);
     return idio_predef_extend (sym, primdata);
 }
 
-IDIO idio_add_special_primitive (idio_primitive_t *d)
+IDIO idio_add_special_primitive (idio_primitive_desc_t *d)
 {
     IDIO primdata = idio_primitive_data (d);
     IDIO sym = idio_symbols_C_intern (d->name);
@@ -315,7 +315,7 @@ static IDIO idio_evaluator_extend (IDIO name, IDIO primdata, IDIO module)
     return fpi;
 }
 
-IDIO idio_add_evaluation_primitive (idio_primitive_t *d, IDIO module)
+IDIO idio_add_evaluation_primitive (idio_primitive_desc_t *d, IDIO module)
 {
     IDIO_ASSERT (module);
     IDIO_TYPE_ASSERT (module, module);
@@ -325,21 +325,21 @@ IDIO idio_add_evaluation_primitive (idio_primitive_t *d, IDIO module)
     return idio_evaluator_extend (sym, primdata, module);
 }
 
-void idio_add_expander_primitive (idio_primitive_t *d)
+void idio_add_expander_primitive (idio_primitive_desc_t *d)
 {
     idio_add_primitive (d); 
     IDIO primdata = idio_primitive_data (d);
     idio_install_expander_source (idio_symbols_C_intern (d->name), primdata, primdata);
 }
 
-void idio_add_infix_operator_primitive (idio_primitive_t *d, int pri)
+void idio_add_infix_operator_primitive (idio_primitive_desc_t *d, int pri)
 {
     idio_add_evaluation_primitive (d, idio_operator_module); 
     IDIO primdata = idio_primitive_data (d);
     idio_install_infix_operator (idio_symbols_C_intern (d->name), primdata, pri);
 }
 
-void idio_add_postfix_operator_primitive (idio_primitive_t *d, int pri)
+void idio_add_postfix_operator_primitive (idio_primitive_desc_t *d, int pri)
 {
     idio_add_evaluation_primitive (d, idio_operator_module); 
     IDIO primdata = idio_primitive_data (d);
@@ -1421,6 +1421,26 @@ static IDIO idio_meaning_assignment (IDIO name, IDIO e, IDIO nametree, int flags
     IDIO_ASSERT (nametree);
     IDIO_TYPE_ASSERT (list, nametree);
 
+    if (idio_isa_pair (name)) {
+	/*
+	 * set! (foo x y z) v
+	 *
+	 * `((setter ,(car name)) ,@(cdr name) ,e)
+	 */
+	IDIO se = idio_list_append2 (IDIO_LIST1 (IDIO_LIST2 (idio_S_setter,
+							     IDIO_PAIR_H (name))),
+				     IDIO_PAIR_T (name));
+	se = idio_list_append2 (se, IDIO_LIST1 (e));
+	return idio_meaning (se,
+			     nametree,
+			     flags);
+    } else if (! idio_isa_symbol (name)) {
+	idio_error_C ("cannot assign to", name, IDIO_C_LOCATION ("idio_meaning_assignment"));
+    }
+
+    /*
+     * Normal assignment to a symbol
+     */
     IDIO m = idio_meaning (e, nametree, IDIO_MEANING_NOT_TAILP (flags));
     IDIO k = idio_variable_kind (nametree, name, IDIO_MEANING_LEXICAL_SCOPE (flags));
 

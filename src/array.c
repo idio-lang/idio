@@ -43,9 +43,10 @@ static void idio_array_error_bounds (idio_ai_t index, idio_ai_t size, IDIO loc)
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C (em, sh);
     IDIO c = idio_struct_instance (idio_condition_rt_array_bounds_error_type,
-				   IDIO_LIST3 (idio_get_output_string (sh),
+				   IDIO_LIST4 (idio_get_output_string (sh),
 					       loc,
-					       idio_S_nil));
+					       idio_S_nil,
+					       idio_integer (index)));
     idio_raise_condition (idio_S_true, c);
 }
 
@@ -451,13 +452,13 @@ IDIO_DEFINE_PRIMITIVE1V ("make-array", make_array, (IDIO size, IDIO args))
 	} else {
 	    IDIO size_i = idio_bignum_real_to_integer (size);
 	    if (idio_S_nil == size_i) {
-		idio_error_param_type ("number", size, IDIO_C_LOCATION ("make-array"));
+		idio_error_param_type ("integer", size, IDIO_C_LOCATION ("make-array"));
 	    } else {
 		vlen = idio_bignum_ptrdiff_value (size_i);
 	    }
 	}
     } else {
-	idio_error_param_type ("number", size, IDIO_C_LOCATION ("make-array"));
+	idio_error_param_type ("integer", size, IDIO_C_LOCATION ("make-array"));
     }
 
     IDIO_VERIFY_PARAM_TYPE (list, args);
@@ -510,7 +511,7 @@ IDIO idio_array_ref (IDIO a, IDIO index)
 {
     IDIO_ASSERT (a);
     IDIO_ASSERT (index);
-    IDIO_VERIFY_PARAM_TYPE (array, a);
+    IDIO_TYPE_ASSERT (array, a);
 
     ptrdiff_t i = -1;
     
@@ -522,13 +523,13 @@ IDIO idio_array_ref (IDIO a, IDIO index)
 	} else {
 	    IDIO index_i = idio_bignum_real_to_integer (index);
 	    if (idio_S_nil == index_i) {
-		idio_error_param_type ("number", index, IDIO_C_LOCATION ("array-ref"));
+		idio_error_param_type ("integer", index, IDIO_C_LOCATION ("array-ref"));
 	    } else {
 		i = idio_bignum_ptrdiff_value (index_i);
 	    }
 	}
     } else {
-	idio_error_param_type ("number", index, IDIO_C_LOCATION ("array-ref"));
+	idio_error_param_type ("integer", index, IDIO_C_LOCATION ("array-ref"));
     }
 
     idio_ai_t al = idio_array_size (a);
@@ -537,11 +538,11 @@ IDIO idio_array_ref (IDIO a, IDIO index)
 	i += al;
 	if (i < 0) {
 	    i -= al;
-	    idio_array_error_length ("out of bounds", i, IDIO_C_LOCATION ("array-ref"));
+	    idio_array_error_bounds (i, IDIO_ARRAY_USIZE (a), IDIO_C_LOCATION ("array-ref"));
 	    return idio_S_unspec;
 	}
     } else if (i >= al) {
-	idio_array_error_length ("out of bounds", i, IDIO_C_LOCATION ("array-ref"));
+	idio_array_error_bounds (i, IDIO_ARRAY_USIZE (a), IDIO_C_LOCATION ("array-ref"));
 	return idio_S_unspec;
     }
 
@@ -557,12 +558,12 @@ IDIO_DEFINE_PRIMITIVE2 ("array-ref", array_ref, (IDIO a, IDIO index))
     return idio_array_ref (a, index);
 }
 
-IDIO_DEFINE_PRIMITIVE3 ("array-set!", array_set, (IDIO a, IDIO index, IDIO v))
+IDIO idio_array_set (IDIO a, IDIO index, IDIO v)
 {
     IDIO_ASSERT (a);
     IDIO_ASSERT (index);
     IDIO_ASSERT (v);
-    IDIO_VERIFY_PARAM_TYPE (array, a);
+    IDIO_TYPE_ASSERT (array, a);
 
     ptrdiff_t i = -1;
     
@@ -574,13 +575,13 @@ IDIO_DEFINE_PRIMITIVE3 ("array-set!", array_set, (IDIO a, IDIO index, IDIO v))
 	} else {
 	    IDIO index_i = idio_bignum_real_to_integer (index);
 	    if (idio_S_nil == index_i) {
-		idio_error_param_type ("number", index, IDIO_C_LOCATION ("array-set!"));
+		idio_error_param_type ("integer", index, IDIO_C_LOCATION ("array-set!"));
 	    } else {
 		i = idio_bignum_ptrdiff_value (index_i);
 	    }
 	}
     } else {
-	idio_error_param_type ("number", index, IDIO_C_LOCATION ("array-set!"));
+	idio_error_param_type ("integer", index, IDIO_C_LOCATION ("array-set!"));
     }
 
     idio_ai_t al = idio_array_size (a);
@@ -589,17 +590,27 @@ IDIO_DEFINE_PRIMITIVE3 ("array-set!", array_set, (IDIO a, IDIO index, IDIO v))
 	i += al;
 	if (i < 0) {
 	    i -= al;
-	    idio_array_error_length ("out of bounds", i, IDIO_C_LOCATION ("array-set!"));
+	    idio_array_error_bounds (i, IDIO_ARRAY_USIZE (a), IDIO_C_LOCATION ("array-set!"));
 	    return idio_S_unspec;
 	}
     } else if (i >= al) {
-	idio_array_error_length ("out of bounds", i, IDIO_C_LOCATION ("array-set!"));
+	idio_array_error_bounds (i, IDIO_ARRAY_USIZE (a), IDIO_C_LOCATION ("array-set!"));
 	return idio_S_unspec;
     }
 
     idio_array_insert_index (a, v, i);
 
     return idio_S_unspec;
+}
+
+IDIO_DEFINE_PRIMITIVE3 ("array-set!", array_set, (IDIO a, IDIO index, IDIO v))
+{
+    IDIO_ASSERT (a);
+    IDIO_ASSERT (index);
+    IDIO_ASSERT (v);
+    IDIO_VERIFY_PARAM_TYPE (array, a);
+
+    return idio_array_set (a, index, v);
 }
 
 IDIO_DEFINE_PRIMITIVE2 ("array-push!", array_push, (IDIO a, IDIO v))

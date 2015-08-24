@@ -222,14 +222,14 @@ IDIO idio_scm_get_primitive_data (IDIO name)
     return idio_S_unspec;
 }
 
-IDIO idio_scm_add_primitive (idio_primitive_t *d)
+IDIO idio_scm_add_primitive (idio_primitive_desc_t *d)
 {
     IDIO primdata = idio_primitive_data (d);
     IDIO sym = idio_symbols_C_intern (d->name);
     return idio_scm_predef_extend (sym, primdata);
 }
 
-IDIO idio_scm_add_special_primitive (idio_primitive_t *d)
+IDIO idio_scm_add_special_primitive (idio_primitive_desc_t *d)
 {
     IDIO primdata = idio_primitive_data (d);
     IDIO sym = idio_symbols_C_intern (d->name);
@@ -239,7 +239,7 @@ IDIO idio_scm_add_special_primitive (idio_primitive_t *d)
 
 static void idio_scm_install_expander_source (IDIO id, IDIO proc, IDIO code);
 
-void idio_scm_add_expander_primitive (idio_primitive_t *d)
+void idio_scm_add_expander_primitive (idio_primitive_desc_t *d)
 {
     idio_scm_add_primitive (d);
     IDIO primdata = idio_primitive_data (d);

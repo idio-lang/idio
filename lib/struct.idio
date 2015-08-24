@@ -111,10 +111,10 @@ define-macro (define-struct-accessors-only name & fields) {
 	     fields)
 
       ;; define (set-bar-x! g/7 g/8) {
-      ;;   %struct-instance-set-direct g/7 bar 'bar-x 0 g/8
+      ;;   %struct-instance-set-direct! g/7 bar 'bar-x 0 g/8
       ;; }
       ;; define (set-bar-y! g/7 g/8) {
-      ;;   %struct-instance-set-direct g/7 bar 'bar-y 1 g/8
+      ;;   %struct-instance-set-direct! g/7 bar 'bar-y 1 g/8
       ;; }
       $@(map (function (field) {
                 set-fname := string->symbol (string-append
@@ -126,7 +126,7 @@ define-macro (define-struct-accessors-only name & fields) {
 					  
                 %T{
 		  define ($set-fname $arg $val) {
-                    %struct-instance-set-direct $arg $name '$set-fname $(field-index field fields) $val
+                    %struct-instance-set-direct! $arg $name '$set-fname $(field-index field fields) $val
                   }
                 }
               })

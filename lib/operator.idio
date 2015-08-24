@@ -33,40 +33,6 @@ define (operator-precedence-table) {
   loop og #n
 }
 
-define (operator-expand1 exp) {
-  idio-debug "OE %s\n" exp
-
-  precedence-loop :+ function (exp groups) {
-    ogp := ph groups
-    ops := pt ogp
-
-    before := list (ph exp)
-    after := pt exp
-    ops-loop :+ function () {
-      op := ph after
-      if (null? op) before {
-	opex := assq op ops
-        if opex {
-	  (pt opex) op before (pt after)
-        } {
-	  before = append before (list op)
-          after = pt after
-          (ops-loop)
-        }
-      }
-    }
-
-    new := (ops-loop)
-    if (equal? new exp) \
-       new \
-       (precedence-loop (pt groups))
-  }
-
-  if (pair? exp) {
-    precedence-loop exp (symbol-value *operator-group* (find-module 'IDIO/operator))
-  } exp
-}
-
 define (operator-expand* exp) {
   new := operator-expand exp
   if (equal? new exp) new {
@@ -108,7 +74,7 @@ define-infix-operator + 900 {
   if (and (pair? after)
 	  (pair? (pt after))
 	  (not (null? (pt (pt after))))) {
-    suffix = pt after
+    suffix = operator-expand (pt after)
     after = (list (ph after))
   }
 
@@ -186,16 +152,14 @@ define-infix-operator and 1000 {
   }
 
   dis := split op before after
-  ;edisplay* "dis" dis
   op-args := ph dis
   after = ph (pt dis)
 
   suffix := #n
 
   if (and (pair? after)
-	  (pair? (pt after))
-	  (not (null? (pt (pt after))))) {
-    suffix = pt after
+	  (pair? (pt after))) {
+    suffix = operator-expand (pt after)
     after = (list (ph after))
   }
 
@@ -241,7 +205,6 @@ define-macro (&& & e*) {
 	      (rt-command-status-error? cond)) {
 	job := idio-error-location cond
         if (job-is-completed job) {
-	  ;;edisplay* "&& suppressing" cond
 	  rt-command-status-error-status cond
         } (raise cont cond)
       } (raise cont cond)
@@ -260,7 +223,6 @@ define-macro (|| & e*) {
 	      (rt-command-status-error? cond)) {
 	job := idio-error-location cond
         if (job-is-completed job) {
-	  ;;edisplay* "|| suppressing" cond
 	  rt-command-status-error-status cond
         } (raise cont cond)
       } (raise cont cond)
@@ -331,9 +293,8 @@ define-infix-operator =+ 700 {
   suffix := #n
 
   if (and (pair? after)
-	  (pair? (pt after))
-	  (not (null? (pt (pt after))))) {
-    suffix = pt after
+	  (pair? (pt after))) {
+    suffix = operator-expand (pt after)
     after = (list (ph after))
   }
 
@@ -452,14 +413,21 @@ define-infix-operator . 800 {
     before = loop before
   }
 
-  suffix := #n
-
-  if (and (pair? after)
-	  (pair? (pt after))
-	  (not (null? (pt (pt after))))) {
-    suffix = pt after
-    after = (list (ph after))
+  ;; split - we want to consume (into indices) the set of expressions
+  ;; that successive {op}s are operating on
+  split :+ function (op indices after) {
+    cond ((null? after) (error "not enough args after" op (reverse indices))) \
+         ((not (pair? after)) (error "bad syntax" op (reverse indices) after)) \
+	 ((null? (pt after)) (list (reverse (pair (ph after) indices)) #n)) \
+	 ((and (pair? after)
+	       (pair? (pt after))
+	       (eq? op (ph (pt after)))) (split op (pair (ph after) indices) (pt (pt after)))) \
+	 (else (list (reverse (pair (ph after) indices)) (pt after)))
   }
+
+  dis := split op #n after
+  indices := ph dis
+  after = ph (pt dis)
 
   result := #n
 
@@ -467,10 +435,15 @@ define-infix-operator . 800 {
     result = prefix
   }
 
-  op+args := list 'value-index (ph before) (ph after)
+  ;; the result we want is for each index in indices to wrap the
+  ;; "previous" result in (value-index <prev> <index>)
+  op+args := ph before
+  for-each (function (index) {
+    op+args = list 'value-index op+args index
+  }) indices
 
   if (null? result) {
-    if (null? suffix) {
+    if (null? after) {
       result = op+args
     } {
       result = list op+args
@@ -479,8 +452,8 @@ define-infix-operator . 800 {
     result = append result (list op+args)
   }
 
-  if (not (null? suffix)) {
-    result = append result suffix
+  if (not (null? after)) {
+    result = append result after
   }
 
   %T{ $result }

@@ -229,11 +229,28 @@ typedef struct idio_closure_s {
     struct idio_s *grey;
     size_t code;
     struct idio_s *env;
+    struct idio_s *properties;
 } idio_closure_t;
 
-#define IDIO_CLOSURE_GREY(C)	((C)->u.closure.grey)
-#define IDIO_CLOSURE_CODE(C)	((C)->u.closure.code)
-#define IDIO_CLOSURE_ENV(C)	((C)->u.closure.env)
+#define IDIO_CLOSURE_GREY(C)       ((C)->u.closure->grey)
+#define IDIO_CLOSURE_CODE(C)       ((C)->u.closure->code)
+#define IDIO_CLOSURE_ENV(C)        ((C)->u.closure->env)
+#define IDIO_CLOSURE_PROPERTIES(C) ((C)->u.closure->properties)
+
+/*
+ * idio_prinitimve_desc_t is for the static allocation in C of the
+ * description of a primitive value.
+ *
+ * Yes, it contains much of an idio_primitive_t but it is never *used*
+ * as an idio_primitive_t, the data is always copied in
+ * idio_primitive_data()
+ */
+typedef struct idio_primitive_desc_s {
+    struct idio_s *(*f) ();	/* don't declare args */
+    char *name;
+    uint8_t arity;
+    char varargs;
+} idio_primitive_desc_t;
 
 /*
  * Having varargs (a boolean) using a slot in this data structure is a
@@ -243,16 +260,20 @@ typedef struct idio_closure_s {
  * union.  So we'll leave as is.
  */
 typedef struct idio_primitive_s {
+    struct idio_s *grey;
     struct idio_s *(*f) ();	/* don't declare args */
     char *name;
+    struct idio_s *properties;
     uint8_t arity;
     char varargs;
 } idio_primitive_t;
 
-#define IDIO_PRIMITIVE_F(P)       ((P)->u.primitive.f)
-#define IDIO_PRIMITIVE_NAME(P)    ((P)->u.primitive.name)
-#define IDIO_PRIMITIVE_ARITY(P)   ((P)->u.primitive.arity)
-#define IDIO_PRIMITIVE_VARARGS(P) ((P)->u.primitive.varargs)
+#define IDIO_PRIMITIVE_GREY(P)       ((P)->u.primitive->grey)
+#define IDIO_PRIMITIVE_F(P)          ((P)->u.primitive->f)
+#define IDIO_PRIMITIVE_NAME(P)       ((P)->u.primitive->name)
+#define IDIO_PRIMITIVE_PROPERTIES(P) ((P)->u.primitive->properties)
+#define IDIO_PRIMITIVE_ARITY(P)      ((P)->u.primitive->arity)
+#define IDIO_PRIMITIVE_VARARGS(P)    ((P)->u.primitive->varargs)
 
 typedef struct idio_module_s {
     struct idio_s *grey;
@@ -669,8 +690,8 @@ typedef struct idio_s {
 	idio_pair_t            pair;
 	idio_array_t           *array;
 	idio_hash_t            *hash;
-	idio_closure_t         closure;
-	idio_primitive_t       primitive;
+	idio_closure_t         *closure;
+	idio_primitive_t       *primitive;
 	idio_bignum_t          bignum;
 	idio_module_t          *module;
 	idio_frame_t           *frame;

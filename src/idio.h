@@ -157,6 +157,8 @@
  * PRIMITIVExV meaning it has a variable arity with a minimum arity of
  * x.
  *
+ * The idio_S_nil is the default procedure properties.
+ *
  * We are looking for the following for foo_C, ie. Idio's "foo-idio"
 
    IDIO_DEFINE_PRIMITIVE2 ("foo-idio", foo_C, (T1 a1, T2, a2))
@@ -167,9 +169,10 @@
  * should become
    
    IDIO idio_defprimitive_foo_C (T1 a1, T2 a2);
-   static struct idio_primitive_s idio_primitive_data_foo_C = {
+   static struct idio_primitive_desc_s idio_primitive_data_foo_C = {
       idio_defprimitive_foo_C,
       "foo-idio",
+      idio_S_nil,
       2,
       0
    };
@@ -180,14 +183,13 @@
 
 
  * IDIO_ADD_PRIMITIVE (foo_C) can then access the static struct
- * idio_primitive_s called idio_defprimitive_data_foo_C and pass it to
- * the code to actually add a primitive.
- *
+ * idio_primitive_desc_s called idio_defprimitive_data_foo_C and pass
+ * it to the code to actually add a primitive.
  */
 
 #define IDIO_DEFINE_PRIMITIVE_DESC(iname,cname,params,arity,varargs)	\
     IDIO idio_defprimitive_ ## cname params;				\
-    static struct idio_primitive_s idio_primitive_data_ ## cname = { \
+    static struct idio_primitive_desc_s idio_primitive_data_ ## cname = { \
 	idio_defprimitive_ ## cname,					\
 	iname,								\
 	arity,								\
@@ -231,9 +233,9 @@
 
 #define IDIO_ADD_EXPANDER(cname)	  idio_add_expander_primitive (&idio_primitive_data_ ## cname);
 
-#define IDIO_DEFINE_INFIX_OPERATOR_DESC(iname,cname,params,arity,varargs)	\
+#define IDIO_DEFINE_INFIX_OPERATOR_DESC(iname,cname,params,arity,varargs) \
     IDIO idio_defoperator_ ## cname params;				\
-    static struct idio_primitive_s idio_infix_operator_data_ ## cname = { \
+    static struct idio_primitive_desc_s idio_infix_operator_data_ ## cname = { \
 	idio_defoperator_ ## cname,					\
 	iname,								\
 	arity,								\
@@ -246,9 +248,9 @@
 
 #define IDIO_ADD_INFIX_OPERATOR(cname,pri)	  idio_add_infix_operator_primitive (&idio_infix_operator_data_ ## cname, pri);
 
-#define IDIO_DEFINE_POSTFIX_OPERATOR_DESC(iname,cname,params,arity,varargs)	\
+#define IDIO_DEFINE_POSTFIX_OPERATOR_DESC(iname,cname,params,arity,varargs) \
     IDIO idio_defoperator_ ## cname params;				\
-    static struct idio_primitive_s idio_postfix_operator_data_ ## cname = { \
+    static struct idio_primitive_desc_s idio_postfix_operator_data_ ## cname = { \
 	idio_defoperator_ ## cname,					\
 	iname,								\
 	arity,								\
@@ -256,17 +258,17 @@
     };									\
     IDIO idio_defoperator_ ## cname params
 
-#define IDIO_DEFINE_POSTFIX_OPERATOR(iname,cname,params)			\
+#define IDIO_DEFINE_POSTFIX_OPERATOR(iname,cname,params)		\
     IDIO_DEFINE_POSTFIX_OPERATOR_DESC(iname,cname,params,2,1)
 
 #define IDIO_ADD_POSTFIX_OPERATOR(cname,pri)	  idio_add_postfix_operator_primitive (&idio_postfix_operator_data_ ## cname, pri);
 
-#define IDIO_VERIFY_PARAM_TYPE(type,param)		\
-    {							\
-	if (! idio_isa_ ## type (param)) {		\
+#define IDIO_VERIFY_PARAM_TYPE(type,param)				\
+    {									\
+	if (! idio_isa_ ## type (param)) {				\
 	    idio_error_param_type_C (#type, param, __FILE__, __func__, __LINE__); \
-	    return idio_S_unspec;			\
-	}						\
+	    return idio_S_unspec;					\
+	}								\
     }
 
 #define IDIO_STREQP(s,cs)	(strlen (s) == strlen (cs) && strncmp (s, cs, strlen (cs)) == 0)

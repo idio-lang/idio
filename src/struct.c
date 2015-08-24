@@ -402,7 +402,7 @@ IDIO idio_struct_instance_set (IDIO si, IDIO field, IDIO v)
 	idio_debug ("sis!: %s\n", st);
 	idio_debug ("%s\n", si);
 	idio_debug ("%s\n", field);
-	idio_error_printf (IDIO_C_LOCATION ("struct-instance-set"), "field not found");
+	idio_error_printf (IDIO_C_LOCATION ("struct-instance-set!"), "field not found");
     }
 
     idio_array_insert_index (IDIO_STRUCT_INSTANCE_FIELDS (si), v, i);
@@ -410,7 +410,7 @@ IDIO idio_struct_instance_set (IDIO si, IDIO field, IDIO v)
     return idio_S_unspec;
 }
 
-IDIO_DEFINE_PRIMITIVE3 ("struct-instance-set", struct_instance_set, (IDIO si, IDIO field, IDIO v))
+IDIO_DEFINE_PRIMITIVE3 ("struct-instance-set!", struct_instance_set, (IDIO si, IDIO field, IDIO v))
 {
     IDIO_ASSERT (si);
     IDIO_ASSERT (field);
@@ -434,7 +434,7 @@ IDIO idio_struct_instance_set_direct (IDIO si, idio_ai_t index, IDIO v)
     return idio_S_unspec;
 }
 
-IDIO_DEFINE_PRIMITIVE5 ("%struct-instance-set-direct", struct_instance_set_direct, (IDIO si, IDIO st, IDIO fname, IDIO index, IDIO v))
+IDIO_DEFINE_PRIMITIVE5 ("%struct-instance-set-direct!", struct_instance_set_direct, (IDIO si, IDIO st, IDIO fname, IDIO index, IDIO v))
 {
     IDIO_ASSERT (si);
     IDIO_ASSERT (st);
@@ -448,7 +448,7 @@ IDIO_DEFINE_PRIMITIVE5 ("%struct-instance-set-direct", struct_instance_set_direc
     IDIO_VERIFY_PARAM_TYPE (fixnum, index);
 
     if (st != IDIO_STRUCT_INSTANCE_TYPE (si)) {
-	idio_error_printf (IDIO_C_LOCATION ("%struct-instance-set-direct"), "bad structure set");
+	idio_error_printf (IDIO_C_LOCATION ("%struct-instance-set-direct!"), "bad structure set");
     }
     
     return idio_struct_instance_set_direct (si, IDIO_FIXNUM_VAL (index), v);

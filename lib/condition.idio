@@ -180,7 +180,8 @@ define-condition-type-accessors-only ^rt-command-exec-error		^runtime-error			rt
 define-condition-type-accessors-only ^rt-command-status-error		^runtime-error			rt-command-status-error? \
 	(status rt-command-status-error-status)
 
-define-condition-type-accessors-only ^rt-array-bounds-error		^runtime-error			rt-array-bounds-error?
+define-condition-type-accessors-only ^rt-array-bounds-error		^runtime-error			rt-array-bounds-error? \
+	(index rt-array-bounds-error-index)
 
 define-condition-type-accessors-only ^rt-hash-key-not-found		^runtime-error			rt-hash-key-not-found? \
 	(key rt-hash-key-not-found-key)

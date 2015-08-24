@@ -1777,7 +1777,7 @@ IDIO_DEFINE_PRIMITIVE2 ("base-error-handler", base_error_handler, (IDIO cont, ID
 	 * on the top of the stack...
 	 */
 	IDIO_THREAD_PC (thr) = IDIO_FIXNUM_VAL (IDIO_THREAD_STACK_POP ());
-	return cond;
+	return idio_S_void;
     }
 
     fprintf (stderr, "this is a non-continuable condition\n");

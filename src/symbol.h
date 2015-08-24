@@ -92,6 +92,7 @@ extern IDIO_SYMBOL_DECL (quasiquote);
 extern IDIO_SYMBOL_DECL (quote);
 extern IDIO_SYMBOL_DECL (root);
 extern IDIO_SYMBOL_DECL (set);
+extern IDIO_SYMBOL_DECL (setter);
 extern IDIO_SYMBOL_DECL (super);
 extern IDIO_SYMBOL_DECL (template);
 extern IDIO_SYMBOL_DECL (this);

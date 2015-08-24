@@ -24,7 +24,7 @@
 #define KEYWORD_H
 
 #define IDIO_KEYWORD_DECL(n)		IDIO idio_KW_ ## n
-#define IDIO_KEYWORD_DEF(iname,cname)	idio_KW_ ## cname = idio_keywords_C_intern (":" iname);
+#define IDIO_KEYWORD_DEF(iname,cname)	idio_KW_ ## cname = idio_keywords_C_intern (iname);
 
 extern IDIO_KEYWORD_DECL (setter);
 
@@ -34,6 +34,9 @@ void idio_free_keyword (IDIO s);
 int idio_isa_keyword (IDIO s);
 IDIO idio_keywords_C_intern (char *s);
 IDIO idio_keywords_string_intern (IDIO str);
+IDIO idio_hash_make_keyword_table (IDIO args);
+IDIO idio_keyword_get (IDIO ht, IDIO kw, IDIO args);
+IDIO idio_keyword_set (IDIO ht, IDIO kw, IDIO v);
 
 void idio_init_keyword (void);
 void idio_keyword_add_primitives (void);

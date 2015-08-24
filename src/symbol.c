@@ -90,6 +90,7 @@ IDIO_SYMBOL_DECL (quasiquote);
 IDIO_SYMBOL_DECL (quote);
 IDIO_SYMBOL_DECL (root);
 IDIO_SYMBOL_DECL (set);
+IDIO_SYMBOL_DECL (setter);
 IDIO_SYMBOL_DECL (super);
 IDIO_SYMBOL_DECL (template);
 IDIO_SYMBOL_DECL (this);
@@ -350,6 +351,7 @@ void idio_init_symbol ()
     IDIO_SYMBOL_DEF ("quote", quote);
     IDIO_SYMBOL_DEF ("root", root);
     IDIO_SYMBOL_DEF ("set!", set);
+    IDIO_SYMBOL_DEF ("setter", setter);
     IDIO_SYMBOL_DEF ("super", super);
     IDIO_SYMBOL_DEF ("template", template);
     IDIO_SYMBOL_DEF ("this", this);

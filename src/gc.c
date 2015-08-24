@@ -277,13 +277,11 @@ void idio_mark (IDIO o, unsigned colour)
 	    IDIO_CLOSURE_GREY (o) = idio_gc->grey;
 	    idio_gc->grey = o;
 	    break;
-	/* case IDIO_TYPE_BIGNUM: */
-	/*     IDIO_C_ASSERT (IDIO_BIGNUM_GREY (o) != o); */
-	/*     IDIO_C_ASSERT (idio_gc->grey != o); */
-	/*     o->flags |= IDIO_FLAG_GCC_LGREY; */
-	/*     IDIO_BIGNUM_GREY (o) = idio_gc->grey; */
-	/*     idio_gc->grey = o; */
-	/*     break; */
+	case IDIO_TYPE_PRIMITIVE:
+	    o->flags |= IDIO_FLAG_GCC_LGREY;
+	    IDIO_PRIMITIVE_GREY (o) = idio_gc->grey;
+	    idio_gc->grey = o;
+	    break;
 	case IDIO_TYPE_MODULE:
 	    IDIO_C_ASSERT (IDIO_MODULE_GREY (o) != o);
 	    IDIO_C_ASSERT (idio_gc->grey != o);
@@ -416,13 +414,13 @@ void idio_process_grey (unsigned colour)
 	break;
     case IDIO_TYPE_CLOSURE:
 	idio_gc->grey = IDIO_CLOSURE_GREY (o);
+	idio_mark (IDIO_CLOSURE_PROPERTIES (o), colour);
 	idio_mark (IDIO_CLOSURE_ENV (o), colour);
 	break;
-    /* case IDIO_TYPE_BIGNUM: */
-    /* 	IDIO_C_ASSERT (idio_gc->grey != IDIO_BIGNUM_GREY (o)); */
-    /* 	idio_gc->grey = IDIO_BIGNUM_GREY (o); */
-    /* 	idio_mark (IDIO_BIGNUM_SIG (o), colour); */
-    /* 	break; */
+    case IDIO_TYPE_PRIMITIVE:
+	idio_gc->grey = IDIO_PRIMITIVE_GREY (o);
+	idio_mark (IDIO_PRIMITIVE_PROPERTIES (o), colour);
+	break;
     case IDIO_TYPE_MODULE:
 	IDIO_C_ASSERT (idio_gc->grey != IDIO_MODULE_GREY (o));
 	idio_gc->grey = IDIO_MODULE_GREY (o);
