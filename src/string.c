@@ -368,7 +368,6 @@ IDIO_DEFINE_PRIMITIVE1V ("make-string", make_string, (IDIO size, IDIO args))
 IDIO_DEFINE_PRIMITIVE1 ("string->list", string2list, (IDIO s))
 {
     IDIO_ASSERT (s);
-
     IDIO_VERIFY_PARAM_TYPE (string, s);
     
     char *sC = idio_string_s (s);
@@ -388,7 +387,6 @@ IDIO_DEFINE_PRIMITIVE1 ("string->list", string2list, (IDIO s))
 IDIO_DEFINE_PRIMITIVE1 ("string->symbol", string2symbol, (IDIO s))
 {
     IDIO_ASSERT (s);
-
     IDIO_VERIFY_PARAM_TYPE (string, s);
     
     char *sC = idio_string_as_C (s);
@@ -404,7 +402,6 @@ IDIO_DEFINE_PRIMITIVE1V ("string-append", string_append, (IDIO s, IDIO args))
 {
     IDIO_ASSERT (s);
     IDIO_ASSERT (args);
-
     IDIO_VERIFY_PARAM_TYPE (string, s);
     IDIO_VERIFY_PARAM_TYPE (list, args);
 
@@ -434,7 +431,6 @@ IDIO_DEFINE_PRIMITIVE1V ("string-append", string_append, (IDIO s, IDIO args))
 IDIO_DEFINE_PRIMITIVE1 ("string-copy", string_copy, (IDIO s))
 {
     IDIO_ASSERT (s);
-
     IDIO_VERIFY_PARAM_TYPE (string, s);
 
     return idio_string_copy (s);
@@ -444,7 +440,6 @@ IDIO_DEFINE_PRIMITIVE2 ("string-fill!", string_fill, (IDIO s, IDIO fill))
 {
     IDIO_ASSERT (s);
     IDIO_ASSERT (fill);
-
     IDIO_VERIFY_PARAM_TYPE (string, s);
     IDIO_VERIFY_PARAM_TYPE (character, fill);
 
@@ -471,18 +466,16 @@ IDIO_DEFINE_PRIMITIVE2 ("string-fill!", string_fill, (IDIO s, IDIO fill))
 IDIO_DEFINE_PRIMITIVE1 ("string-length", string_length, (IDIO s))
 {
     IDIO_ASSERT (s);
-
     IDIO_VERIFY_PARAM_TYPE (string, s);
 
     return idio_fixnum (idio_string_blen (s));
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("string-ref", string_ref, (IDIO s, IDIO index))
+IDIO idio_string_ref (IDIO s, IDIO index)
 {
     IDIO_ASSERT (s);
     IDIO_ASSERT (index);
-
-    IDIO_VERIFY_PARAM_TYPE (string, s);
+    IDIO_TYPE_ASSERT (string, s);
 
     ptrdiff_t i = -1;
     
@@ -516,14 +509,22 @@ IDIO_DEFINE_PRIMITIVE2 ("string-ref", string_ref, (IDIO s, IDIO index))
     return IDIO_CHARACTER (Cs[i]);
 }
 
-IDIO_DEFINE_PRIMITIVE3 ("string-set!", string_set, (IDIO s, IDIO index, IDIO c))
+IDIO_DEFINE_PRIMITIVE2 ("string-ref", string_ref, (IDIO s, IDIO index))
+{
+    IDIO_ASSERT (s);
+    IDIO_ASSERT (index);
+    IDIO_VERIFY_PARAM_TYPE (string, s);
+
+    return idio_string_ref (s, index);
+}
+
+IDIO idio_string_set (IDIO s, IDIO index, IDIO c)
 {
     IDIO_ASSERT (s);
     IDIO_ASSERT (index);
     IDIO_ASSERT (c);
-
-    IDIO_VERIFY_PARAM_TYPE (string, s);
-    IDIO_VERIFY_PARAM_TYPE (character, c);
+    IDIO_TYPE_ASSERT (string, s);
+    IDIO_TYPE_ASSERT (character, c);
 
     ptrdiff_t i = -1;
     
@@ -567,12 +568,22 @@ IDIO_DEFINE_PRIMITIVE3 ("string-set!", string_set, (IDIO s, IDIO index, IDIO c))
     return s;
 }
 
+IDIO_DEFINE_PRIMITIVE3 ("string-set!", string_set, (IDIO s, IDIO index, IDIO c))
+{
+    IDIO_ASSERT (s);
+    IDIO_ASSERT (index);
+    IDIO_ASSERT (c);
+    IDIO_VERIFY_PARAM_TYPE (string, s);
+    IDIO_VERIFY_PARAM_TYPE (character, c);
+
+    return idio_string_set (s, index, c);
+}
+
 IDIO_DEFINE_PRIMITIVE3 ("substring", substring, (IDIO s, IDIO p0, IDIO pn))
 {
     IDIO_ASSERT (s);
     IDIO_ASSERT (p0);
     IDIO_ASSERT (pn);
-
     IDIO_VERIFY_PARAM_TYPE (string, s);
 
     ptrdiff_t ip0 = -1;
@@ -661,7 +672,6 @@ IDIO_DEFINE_PRIMITIVE3 ("substring", substring, (IDIO s, IDIO p0, IDIO pn))
     {									\
 	IDIO_ASSERT (s1);						\
 	IDIO_ASSERT (s2);						\
-									\
 	IDIO_VERIFY_PARAM_TYPE (string, s1);				\
 	IDIO_VERIFY_PARAM_TYPE (string, s2);				\
 	IDIO_VERIFY_PARAM_TYPE (list, args);				\

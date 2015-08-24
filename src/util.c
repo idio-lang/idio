@@ -1455,10 +1455,15 @@ IDIO_DEFINE_PRIMITIVE2 ("value-index", value_index, (IDIO o, IDIO i))
     case IDIO_TYPE_POINTER_MARK:
 	{
 	    switch (o->type) {
+	    case IDIO_TYPE_SUBSTRING:
+	    case IDIO_TYPE_STRING:
+		return idio_string_ref (o, i);
 	    case IDIO_TYPE_ARRAY:
 		return idio_array_ref (o, i);
 	    case IDIO_TYPE_HASH:
 		return idio_hash_ref (o, i, idio_S_nil);
+	    case IDIO_TYPE_STRUCT_INSTANCE:
+		return idio_struct_instance_ref (o, i);
 	    default:
 		break;
 	    }
@@ -1487,10 +1492,15 @@ IDIO_DEFINE_PRIMITIVE3 ("set-value-index!", set_value_index, (IDIO o, IDIO i, ID
     case IDIO_TYPE_POINTER_MARK:
 	{
 	    switch (o->type) {
+	    case IDIO_TYPE_SUBSTRING:
+	    case IDIO_TYPE_STRING:
+		return idio_string_set (o, i, v);
 	    case IDIO_TYPE_ARRAY:
 		return idio_array_set (o, i, v);
 	    case IDIO_TYPE_HASH:
 		return idio_hash_set (o, i, v);
+	    case IDIO_TYPE_STRUCT_INSTANCE:
+		return idio_struct_instance_set (o, i, v);
 	    default:
 		break;
 	    }
@@ -1499,7 +1509,7 @@ IDIO_DEFINE_PRIMITIVE3 ("set-value-index!", set_value_index, (IDIO o, IDIO i, ID
 	break;
     }
 
-    idio_error_C ("non-indexable object", IDIO_LIST2 (o, i), IDIO_C_LOCATION ("value-index"));
+    idio_error_C ("non-indexable object", IDIO_LIST2 (o, i), IDIO_C_LOCATION ("set-value-index!"));
 
     /* notreached */
     return idio_S_unspec;

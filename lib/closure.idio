@@ -61,8 +61,10 @@
 set! (setter ph)				set-ph!
 set! (setter pt)				set-pt!
 set! (setter array-ref)				array-set!
+set! (setter hash-ref)				hash-set!
 set! (setter string-ref)			string-set!
 set! (setter struct-instance-ref)		struct-instance-set!
 set! (setter %struct-instance-ref-direct)	%struct-instance-set-direct!
 
+;; the . operator uses value-index so it needs a setter
 set! (setter value-index)			set-value-index!

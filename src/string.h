@@ -37,6 +37,8 @@ void idio_free_substring (IDIO so);
 size_t idio_string_blen (IDIO so);
 char *idio_string_s (IDIO so);
 char *idio_string_as_C (IDIO so);
+IDIO idio_string_ref (IDIO s, IDIO index);
+IDIO idio_string_set (IDIO s, IDIO index, IDIO c);
 
 void idio_init_string ();
 void idio_string_add_primitives ();

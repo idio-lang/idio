@@ -40,5 +40,17 @@ set-foo-b! fooi 10
 test (struct-instance-ref fooi 'b) 10
 test (foo-b fooi) 10
 
+test (fooi.'b) 10
+
+sym := 'b
+test (fooi.sym) 10
+
+;; setters
+set! fooi.sym 20
+test (fooi.sym) 20
+
+fooi.sym = 30
+test (fooi.sym) 30
+
 ;; all done?
-test (struct0 + 14) Tests
+test (struct0 + 18) Tests
