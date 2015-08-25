@@ -83,6 +83,9 @@ Escape Handlers
 	- dynamic
 	- function's "return" == lexical escape
 
+conditions/restart
+	- mostly restarts
+
 Docstrings
 	- sphinx
 	- sphinxcontrib-cldomain for Common Lisp (~/src/sphinxcontrib-cldomain-...)
@@ -123,3 +126,6 @@ tainted
 serialization
 	- persistence
 	- restoration
+
+let-values
+	- cf. values

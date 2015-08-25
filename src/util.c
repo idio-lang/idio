@@ -1515,6 +1515,13 @@ IDIO_DEFINE_PRIMITIVE3 ("set-value-index!", set_value_index, (IDIO o, IDIO i, ID
     return idio_S_unspec;
 }
 
+IDIO_DEFINE_PRIMITIVE1 ("identity", identity, (IDIO o))
+{
+    IDIO_ASSERT (o);
+
+    return o;
+}
+
 void idio_dump (IDIO o, int detail)
 {
     IDIO_ASSERT (o);
@@ -1714,6 +1721,7 @@ void idio_util_add_primitives ()
     IDIO_ADD_PRIMITIVE (assq);
     IDIO_ADD_PRIMITIVE (value_index);
     IDIO_ADD_PRIMITIVE (set_value_index);
+    IDIO_ADD_PRIMITIVE (identity);
     IDIO_ADD_PRIMITIVE (idio_debug);
 }
 

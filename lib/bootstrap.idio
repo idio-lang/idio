@@ -31,4 +31,4 @@ include "call-cc.idio"
 include "libc-wrap.idio"
 include "command.idio"
 
-;print "\nThis is the end of bootstrap.idio bringing you today's number, π: " pi "\n"
+include "SRFI-95.idio"			; sort, merge
