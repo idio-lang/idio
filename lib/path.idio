@@ -16,20 +16,41 @@
 ;;
 
 ;;
-;; bootstrap.idio
+;; path.idio
 ;;
 
-display "This is bootstrap.idio\n"
+define-struct-accessors-only ~path		pattern
 
-include "operator.idio"
-include "closure.idio"
-include "s9.idio"
-include "common.idio"
-include "struct.idio"
-include "condition.idio"
-include "call-cc.idio"
-include "libc-wrap.idio"
-include "path.idio"
-include "command.idio"
+sort_mtime := #n
 
-include "SRFI-95.idio"			; sort, merge
+{
+  sort_stats := #n
+
+  key_stat_size := function (p) {
+    sort_stats.p.sb_size
+  }
+
+  key_stat_mtime := function (p) {
+    sort_stats.p.sb_mtime
+  }
+
+  sort_size = function (l) {
+    sort_stats = (make-hash #n #n ((length l) + 10)) 
+
+    map (function (p) {
+      sort_stats.p = c/stat p
+    }) l
+
+    sort l c/< key_stat_size
+  }
+
+  sort_mtime = function (l) {
+    sort_stats = (make-hash #n #n ((length l) + 10)) 
+
+    map (function (p) {
+      sort_stats.p = c/stat p
+    }) l
+
+    sort l c/< key_stat_mtime
+  }
+}

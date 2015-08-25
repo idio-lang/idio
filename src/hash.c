@@ -1109,7 +1109,7 @@ IDIO_DEFINE_PRIMITIVE1 ("hash?", hash_p, (IDIO o))
 /*
  * SRFI-69
  *
- * make-hash-table [ equiv-func [ hash-func ]]
+ * make-hash-table [ equiv-func [ hash-func [size]]]
  *
  * hash-func defaults to hash-table-hash
  * equiv-func defaults to equal?
@@ -1169,6 +1169,18 @@ IDIO idio_hash_make_hash (IDIO args)
     /*
      * SRFI-69 -- remaining args are implementation specific
      */
+    if (idio_S_nil != args) {
+	IDIO isize = IDIO_PAIR_H (args);
+
+	if (idio_isa_fixnum (isize)) {
+	    size = IDIO_FIXNUM_VAL (isize);
+	} else {
+	    idio_error_param_type ("fixnum", isize, IDIO_C_LOCATION ("make-hash"));
+	}
+	
+	args = IDIO_PAIR_T (args);
+    }
+
 
     IDIO ht = idio_hash (size, equal, hashf, comp, hash);
     

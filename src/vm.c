@@ -4403,7 +4403,15 @@ idio_ai_t idio_vm_symbols_lookup (IDIO name)
 
 IDIO idio_vm_values_ref (idio_ai_t i)
 {
-    return idio_array_get_index (idio_vm_values, i);
+    IDIO v = idio_array_get_index (idio_vm_values, i);
+
+    if (idio_isa_struct_instance (v)) {
+	if (idio_struct_type_isa (IDIO_STRUCT_INSTANCE_TYPE (v), idio_path_type)) {
+	    v = idio_path_expand (v);
+	}
+    }
+
+    return v;
 }
 
 void idio_vm_values_set (idio_ai_t i, IDIO v)

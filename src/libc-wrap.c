@@ -26,20 +26,21 @@ char **idio_libc_signal_names = NULL;
 char **idio_libc_errno_names = NULL;
 static IDIO idio_libc_struct_sigaction = NULL;
 static IDIO idio_libc_struct_utsname = NULL;
+IDIO idio_libc_struct_stat = NULL;
 
 /*
  * Indexes into structures for direct references
  */
-#define IDIO_SIGACTION_SA_HANDLER	0
-#define IDIO_SIGACTION_SA_SIGACTION	1
-#define IDIO_SIGACTION_SA_MASK		2
-#define IDIO_SIGACTION_SA_FLAGS		3
+#define IDIO_STRUCT_SIGACTION_SA_HANDLER	0
+#define IDIO_STRUCT_SIGACTION_SA_SIGACTION	1
+#define IDIO_STRUCT_SIGACTION_SA_MASK		2
+#define IDIO_STRUCT_SIGACTION_SA_FLAGS		3
 	
-#define IDIO_UTSNAME_SYSNAME		0
-#define IDIO_UTSNAME_NODENAME		1
-#define IDIO_UTSNAME_RELEASE		2
-#define IDIO_UTSNAME_VERSION		3
-#define IDIO_UTSNAME_MACHINE		4
+#define IDIO_STRUCT_UTSNAME_SYSNAME		0
+#define IDIO_STRUCT_UTSNAME_NODENAME		1
+#define IDIO_STRUCT_UTSNAME_RELEASE		2
+#define IDIO_STRUCT_UTSNAME_VERSION		3
+#define IDIO_STRUCT_UTSNAME_MACHINE		4
 	
 IDIO_DEFINE_PRIMITIVE0V ("c/system-error", C_system_error, (IDIO args))
 {
@@ -595,6 +596,50 @@ IDIO_DEFINE_PRIMITIVE1 ("c/sleep", C_sleep, (IDIO iseconds))
     unsigned int r = sleep (seconds);
     
     return idio_C_uint (r);
+}
+
+IDIO idio_libc_stat (IDIO p)
+{
+    IDIO_ASSERT (p);
+    IDIO_TYPE_ASSERT (string, p);
+
+    char *p_C = idio_string_as_C (p);
+    
+    struct stat sb;
+
+    if (stat (p_C, &sb) == -1) {
+	idio_error_system_errno ("stat", IDIO_LIST1 (p), IDIO_C_LOCATION ("idio_libc_stat"));
+    }
+
+    /*
+     * XXX idio_C_uint for everything?  We should know more.
+     */
+    IDIO r = idio_struct_instance (idio_libc_struct_stat,
+				   idio_pair (idio_C_uint (sb.st_dev),
+				   idio_pair (idio_C_uint (sb.st_ino),
+				   idio_pair (idio_C_uint (sb.st_mode),
+				   idio_pair (idio_C_uint (sb.st_nlink),
+				   idio_pair (idio_C_uint (sb.st_uid),
+				   idio_pair (idio_C_uint (sb.st_gid),
+				   idio_pair (idio_C_uint (sb.st_rdev),
+				   idio_pair (idio_C_uint (sb.st_size),
+				   idio_pair (idio_C_uint (sb.st_blksize),
+				   idio_pair (idio_C_uint (sb.st_blocks),
+				   idio_pair (idio_C_uint (sb.st_atime),
+				   idio_pair (idio_C_uint (sb.st_mtime),
+				   idio_pair (idio_C_uint (sb.st_ctime),
+				   idio_S_nil))))))))))))));
+    free (p_C);
+    
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("c/stat", C_stat, (IDIO p))
+{
+    IDIO_ASSERT (p);
+    IDIO_VERIFY_PARAM_TYPE (string, p);
+
+    return idio_libc_stat (p);
 }
 
 IDIO_DEFINE_PRIMITIVE1 ("c/strerror", C_strerror, (IDIO ierrnum))
@@ -2717,10 +2762,10 @@ void idio_init_libc_wrap ()
     name = idio_symbols_C_intern ("c/struct-sigaction");
     idio_libc_struct_sigaction = idio_struct_type (name,
 						   idio_S_nil,
-						   idio_pair (idio_symbols_C_intern ("sa-handler"),
-						   idio_pair (idio_symbols_C_intern ("sa-sigaction"),
-						   idio_pair (idio_symbols_C_intern ("sa-mask"),
-						   idio_pair (idio_symbols_C_intern ("sa-flags"),
+						   idio_pair (idio_symbols_C_intern ("sa_handler"),
+						   idio_pair (idio_symbols_C_intern ("sa_sigaction"),
+						   idio_pair (idio_symbols_C_intern ("sa_mask"),
+						   idio_pair (idio_symbols_C_intern ("sa_flags"),
 						   idio_S_nil)))));
     idio_module_set_symbol_value (name, idio_libc_struct_sigaction, idio_main_module ());
 
@@ -2734,6 +2779,11 @@ void idio_init_libc_wrap ()
 						 idio_pair (idio_symbols_C_intern ("machine"),
 						 idio_S_nil))))));
     idio_module_set_symbol_value (name, idio_libc_struct_utsname, idio_main_module ());
+
+    {
+	char *field_names[] = { "sb_dev", "sb_ino", "sb_mode", "sb_nlink", "sb_uid", "sb_gid", "sb_rdev", "sb_size", "sb_blksize", "sb_blocks", "sb_atime", "sb_mtime", "sb_ctime", NULL };
+	IDIO_DEFINE_STRUCTn (idio_libc_struct_stat, "struct-stat", idio_S_nil);
+    }
 
     name = idio_symbols_C_intern ("Idio/uname");
     idio_module_set_symbol_value (name, idio_libc_uname (), idio_main_module ());
@@ -2767,6 +2817,7 @@ void idio_libc_wrap_add_primitives ()
     IDIO_ADD_PRIMITIVE (C_signal);
     IDIO_ADD_PRIMITIVE (C_signal_handler);
     IDIO_ADD_PRIMITIVE (C_sleep);
+    IDIO_ADD_PRIMITIVE (C_stat);
     IDIO_ADD_PRIMITIVE (C_strerror);
     IDIO_ADD_PRIMITIVE (C_strsignal);
     IDIO_ADD_PRIMITIVE (C_tcgetattr);
@@ -2810,5 +2861,6 @@ void idio_final_libc_wrap ()
         free (idio_libc_errno_names[i]);
     }
     free (idio_libc_errno_names);
+    idio_gc_expose (idio_libc_struct_stat);
 }
 

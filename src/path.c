@@ -22,6 +22,24 @@
 
 #include "idio.h"
 
+IDIO idio_path_type;
+
+static void idio_path_error_glob (IDIO pattern, IDIO loc)
+{
+    IDIO_ASSERT (pattern);
+    IDIO_ASSERT (loc);
+    IDIO_TYPE_ASSERT (string, loc);
+
+    IDIO sh = idio_open_output_string_handle_C ();
+    idio_display_C ("pattern glob failed", sh);
+    IDIO c = idio_struct_instance (idio_condition_rt_glob_error_type,
+				   IDIO_LIST4 (idio_get_output_string (sh),
+					       loc,
+					       idio_S_nil,
+					       pattern));
+    idio_raise_condition (idio_S_true, c);
+}
+
 char **idio_path_env_split (const char *path_env)
 {
     int ndirs = 0;
@@ -141,4 +159,59 @@ char *idio_find_file (const char *file)
     
     return filename;
 }
+
+IDIO idio_path_expand (IDIO p)
+{
+    IDIO_ASSERT (p);
+    IDIO_TYPE_ASSERT (struct_instance, p);
+
+    if (! idio_struct_type_isa (IDIO_STRUCT_INSTANCE_TYPE (p), idio_path_type)) {
+	idio_error_param_type ("~path", p, IDIO_C_LOCATION ("idio_path_expand"));
+    }
+
+    IDIO pat = idio_array_get_index (IDIO_STRUCT_INSTANCE_FIELDS (p), IDIO_PATH_PATTERN);
+
+    IDIO_TYPE_ASSERT (string, pat);
+    char *pat_C = idio_string_as_C (pat);
+    
+    glob_t g;
+    IDIO r = idio_S_nil;
+    
+    int ret = glob (pat_C, 0, NULL, &g);
+    
+    switch (ret) {
+    case GLOB_NOMATCH:
+	break;
+    case 0:
+	{
+	    size_t i;
+	    for (i = 0; i < g.gl_pathc; i++) {
+		r = idio_pair (idio_string_C (g.gl_pathv[i]), r);
+	    }
+	}
+	break;
+    default:
+	idio_path_error_glob (pat, IDIO_C_LOCATION ("idio_path_error_glob"));
+	break;
+    }
+
+    free (pat_C);
+
+    return idio_list_reverse (r);
+}
+
+void idio_init_path ()
+{
+    IDIO_DEFINE_STRUCT1 (idio_path_type, "~path", idio_S_nil, "pattern");
+}
+
+void idio_path_add_primitives ()
+{
+}
+
+void idio_final_path ()
+{
+    idio_gc_expose (idio_path_type);
+}
+
 

@@ -23,8 +23,20 @@
 #ifndef PATH_H
 #define PATH_H
 
+/*
+ * Indexes into structures for direct references
+ */
+#define IDIO_PATH_PATTERN		0
+
+extern IDIO idio_path_type;
+
 char **idio_path_env_split (const char *path_env);
 char *idio_find_file (const char *file);
+IDIO idio_path_expand (IDIO p);
+
+void idio_init_path ();
+void idio_path_add_primitives ();
+void idio_final_path ();
 
 #endif
 

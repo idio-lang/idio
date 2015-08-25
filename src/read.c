@@ -802,6 +802,44 @@ static IDIO idio_read_template (IDIO handle, int depth)
     }
 }
 
+static IDIO idio_read_pathname (IDIO handle, int depth)
+{
+    IDIO_ASSERT (handle);
+
+    int i;
+    char ic[IDIO_INTERPOLATION_CHARS];
+    for (i = 0; i < IDIO_INTERPOLATION_CHARS; i++) {
+	ic[i] = idio_default_interpolation_chars[i];
+    }
+    i = 0;
+    
+    int c = idio_handle_getc (handle);
+
+    while (IDIO_CHAR_DQUOTE != c) {
+	if (i > (IDIO_INTERPOLATION_CHARS + 1)) {
+	    idio_read_error_parse_printf (handle, IDIO_C_LOCATION ("idio_read_pathname"), "too many interpolation characters: #%d: %c (%#x)", i, c, c);
+	    return idio_S_unspec;
+	}
+
+	switch (c) {
+	case EOF:
+	    idio_read_error_character (handle, IDIO_C_LOCATION ("idio_read_pathname"), "EOF");
+	    return idio_S_unspec;
+	default:
+	    if (IDIO_CHAR_DOT != c) {
+		ic[i] = c;
+	    }
+	}
+
+	i++;
+	c = idio_handle_getc (handle);
+    }
+
+    IDIO e = idio_read_string (handle);
+
+    return idio_struct_instance (idio_path_type, IDIO_LIST1 (e));
+}
+
 static IDIO idio_read_bignum (IDIO handle, char basec, int radix)
 {
     IDIO_ASSERT (handle);
@@ -1287,6 +1325,8 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int nl)
 		    switch (c) {
 		    case 'T':
 			return idio_read_template (handle, depth);
+		    case 'P':
+			return idio_read_pathname (handle, depth);
 		    default:
 			idio_handle_ungetc (handle, c);
 			return idio_read_word (handle, IDIO_CHAR_PERCENT);

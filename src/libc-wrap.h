@@ -23,6 +23,22 @@
 #ifndef LIBC_WRAP_H
 #define LIBC_WRAP_H
 
+extern IDIO idio_libc_struct_stat;
+
+#define IDIO_STRUCT_STAT_DEV		0
+#define IDIO_STRUCT_STAT_INO		1
+#define IDIO_STRUCT_STAT_MODE		2
+#define IDIO_STRUCT_STAT_NLINK		3
+#define IDIO_STRUCT_STAT_UID		4
+#define IDIO_STRUCT_STAT_GID		5
+#define IDIO_STRUCT_STAT_RDEV		6
+#define IDIO_STRUCT_STAT_SIZE		7
+#define IDIO_STRUCT_STAT_BLKSIZE	8
+#define IDIO_STRUCT_STAT_BLOCKS		9
+#define IDIO_STRUCT_STAT_ATIME		10
+#define IDIO_STRUCT_STAT_MTIME		11
+#define IDIO_STRUCT_STAT_CTIME		12
+
 extern char **idio_libc_signal_names;
 char *idio_libc_signal_name (int signum);
 

@@ -49,6 +49,9 @@ PIC
 library load (requires PIC)
 	- any order
 
+shared library load
+	- .so containing primitive used by associated library
+
 code signing
 	- encryption
 	- GPG-style, single session, session key encrypted by user keys
@@ -129,3 +132,6 @@ serialization
 
 let-values
 	- cf. values
+
+signal handlers
+	-
