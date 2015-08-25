@@ -1744,12 +1744,41 @@ IDIO_DEFINE_PRIMITIVE2 ("base-error-handler", base_error_handler, (IDIO cont, ID
     IDIO thr = idio_current_thread ();
 
     if (idio_isa_condition (cond)) {
-	fprintf (stderr, "\nbase-error-handler -- condition details:\n");
-	fprintf (stderr, "%20s: ", "type");
-	idio_debug ("%s\n", IDIO_STRUCT_TYPE_NAME (IDIO_STRUCT_INSTANCE_TYPE (cond)));
 	IDIO st = IDIO_STRUCT_INSTANCE_TYPE (cond);
 	IDIO stf = IDIO_STRUCT_TYPE_FIELDS (st);
 	IDIO sif = IDIO_STRUCT_INSTANCE_FIELDS (cond);
+
+	if (idio_struct_type_isa (st, idio_condition_idio_error_type)) {
+	    IDIO eh = idio_current_error_handle ();
+	    int printed = 0;
+
+	    idio_display_C ("\n", eh);
+	    IDIO m = idio_array_get_index (sif, IDIO_ERROR_TYPE_MESSAGE);
+	    if (idio_S_nil != m) {
+		idio_display (m, eh);
+		printed = 1;
+	    }
+	    IDIO l = idio_array_get_index (sif, IDIO_ERROR_TYPE_LOCATION);
+	    if (idio_S_nil != l) {
+		if (printed) {
+		    idio_display_C (": ", eh);
+		}
+		idio_display (l, eh);
+		printed = 1;
+	    }
+	    IDIO d = idio_array_get_index (sif, IDIO_ERROR_TYPE_DETAIL);
+	    if (idio_S_nil != d) {
+		if (printed) {
+		    idio_display_C (": ", eh);
+		}
+		idio_display (d, eh);
+	    }
+	    idio_display_C ("\n", eh);
+	}
+
+	fprintf (stderr, "\nbase-error-handler -- condition details:\n");
+	fprintf (stderr, "%20s: ", "type");
+	idio_debug ("%s\n", IDIO_STRUCT_TYPE_NAME (st));
 
 	idio_ai_t al = idio_array_size (stf);
 	idio_ai_t ai;

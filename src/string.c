@@ -405,10 +405,10 @@ IDIO_DEFINE_PRIMITIVE1V ("string-append", string_append, (IDIO s, IDIO args))
     IDIO_VERIFY_PARAM_TYPE (string, s);
     IDIO_VERIFY_PARAM_TYPE (list, args);
 
-    int n = 1 + idio_list_length (args);
+    ptrdiff_t n = 1 + idio_list_length (args);
     char *copies[n];
 
-    int i = 0;
+    ptrdiff_t i = 0;
     copies[i] = idio_string_as_C (s);
 
     for (i++; idio_S_nil != args; i++) {
@@ -730,6 +730,170 @@ IDIO_DEFINE_STRING_CS_PRIMITIVE2V ("string=?", eq, ==)
 IDIO_DEFINE_STRING_CS_PRIMITIVE2V ("string>=?", ge, >=)
 IDIO_DEFINE_STRING_CS_PRIMITIVE2V ("string>?", gt, >)
 
+/*
+ * Tokenizing Strings
+ *
+ * strtok(3)/strtok_r(3)/strsep(3) all tokenize a string but modify
+ * the original string at the same time (actually, they not only
+ * insert NUL but therefore lose the identity of the character that
+ * caused the tokenization).
+ *
+ * Here in Idio we want to take advantage of Idio substrings being
+ * true substrings of a parent string.  The reason they exist, in
+ * fact, is for string-splitting.
+ *
+ * Clearly we can't run around destroying the original string as
+ * anyone referencing it will be "disappointed."  Hence, we need to
+ * have a tokenizer that will return both start and end (preferably
+ * length) of the token.  Clearly we can't return two things in C so
+ * we'll have to pass in a modifyable length parameter.  Noting the
+ * re-entrancy issues with strtok (and presumably strsep) we should
+ * presumably pass in a modifyable "saved" parameter too.
+ *
+ * We can pass a flag to indicate how aggressive we should be in
+ * tokenizing -- primarily whether adjacent delimiters generate
+ * multiple tokens (strtok() vs. strsep()).  That is, does "a::b" with
+ * a ":" delimter become 2 tokens: "a" and "b" or three tokens: "a",
+ * "" and "b"?
+ *
+ * As we should have the previous token-causing delimiter available to
+ * us we can then be just plain weird and generate tokens only if the
+ * adjacent delimiters differ.  (Must find a use-case for that.)
+ */
+char *idio_string_token (char *in, char *delim, int flags, char **saved, size_t *blen)
+{
+    char prev_delim = '\0';
+    
+    if (NULL == in) {
+	in = *saved;
+	if (NULL == in) {
+	    *blen = 0;
+	    return NULL;
+	}
+	prev_delim = *(in - 1);
+    }
+
+    if (IDIO_STRING_TOKEN_INEXACT (flags)) {
+	in += strspn (in, delim);
+    } else if (0 &&
+	       '\0' != prev_delim) {
+	char *start = in;
+	char *end = in + strspn (in, delim);
+	for (; in < end; in++) {
+	    if (prev_delim != *in) {
+		*blen = start - in;
+		return in;
+	    }
+	}
+    }
+
+    char *start = strpbrk (in, delim);
+
+    if ('\0' == *in) {
+	*saved = NULL;
+	*blen = 0;
+	return NULL;
+    }
+
+    if (NULL == start) {
+	*saved = NULL;
+	*blen = strlen (in);
+    } else {
+	*saved = start + 1;
+	*blen = start - in;
+    }
+
+    return in;
+}
+
+IDIO idio_string_split (IDIO iin, IDIO idelim)
+{
+    IDIO_ASSERT (iin);
+    IDIO_ASSERT (idelim);
+    IDIO_TYPE_ASSERT (string, iin);
+    IDIO_TYPE_ASSERT (string, idelim);
+    
+    IDIO r = idio_S_nil;
+
+    char *in = idio_string_s (iin);
+    char *in0 = in;
+    char *delim = idio_string_s (idelim);
+
+    char *saved;
+    size_t blen = idio_string_blen (iin);
+
+    if (blen > 0) {
+	for (; ; in = NULL) {
+	    char *start = idio_string_token (in, delim, IDIO_STRING_TOKEN_FLAG_NONE, &saved, &blen);
+
+	    if (NULL == start) {
+		break;
+	    }
+
+	    IDIO subs = idio_substring_offset (iin, start - in0, blen);
+	    r = idio_pair (subs, r);
+	}
+    } else {
+	r = idio_pair (iin, r);
+    }
+
+    return idio_list_reverse (r);
+}
+
+IDIO_DEFINE_PRIMITIVE2 ("split", split, (IDIO in, IDIO delim))
+{
+    IDIO_ASSERT (in);
+    IDIO_ASSERT (delim);
+    IDIO_VERIFY_PARAM_TYPE (string, in);
+    IDIO_VERIFY_PARAM_TYPE (string, delim);
+
+    return idio_string_split (in, delim);
+}
+
+IDIO idio_string_join (IDIO delim, IDIO args)
+{
+    IDIO_ASSERT (delim);
+    IDIO_ASSERT (args);
+    IDIO_TYPE_ASSERT (string, delim);
+    IDIO_TYPE_ASSERT (list, args);
+    
+    if (idio_S_nil == args) {
+	return idio_string_C_len ("", 0);
+    }
+
+    ptrdiff_t n = 2 * idio_list_length (args) - 1;
+    char *copies[n];
+
+    ptrdiff_t i;
+    for (i = 0; idio_S_nil != args; i += 2) {
+	IDIO_VERIFY_PARAM_TYPE (string, IDIO_PAIR_H (args));
+	
+	copies[i] = idio_string_as_C (IDIO_PAIR_H (args));
+	copies[i+1] = idio_string_as_C (delim);
+
+	args = IDIO_PAIR_T (args);
+    }
+    
+    IDIO r = idio_string_C_array (n, copies);
+
+    for (i = 0; i < n; i++) {
+	free (copies[i]);
+    }
+
+    return r;
+}
+
+
+IDIO_DEFINE_PRIMITIVE2 ("join", join, (IDIO delim, IDIO args))
+{
+    IDIO_ASSERT (delim);
+    IDIO_ASSERT (args);
+    IDIO_VERIFY_PARAM_TYPE (string, delim);
+    IDIO_VERIFY_PARAM_TYPE (list, args);
+
+    return idio_string_join (delim, args);
+}
+
 void idio_init_string ()
 {
 }
@@ -758,6 +922,9 @@ void idio_string_add_primitives ()
     IDIO_ADD_PRIMITIVE (string_eq_p);
     IDIO_ADD_PRIMITIVE (string_ge_p);
     IDIO_ADD_PRIMITIVE (string_gt_p);
+
+    IDIO_ADD_PRIMITIVE (split);
+    IDIO_ADD_PRIMITIVE (join);
 }
 
 void idio_final_string ()

@@ -23,6 +23,13 @@
 #ifndef CONDITION_H
 #define CONDITION_H
 
+/*
+ * Indexes into structures for direct references
+ */
+#define IDIO_ERROR_TYPE_MESSAGE		0
+#define IDIO_ERROR_TYPE_LOCATION	1
+#define IDIO_ERROR_TYPE_DETAIL		2
+	
 extern IDIO idio_condition_condition_type;
 extern IDIO idio_condition_message_type;
 extern IDIO idio_condition_error_type;

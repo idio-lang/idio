@@ -22,7 +22,25 @@ string0 = Tests
 
 ;; most regular string tests are in s9-tests.idio
 
-;; operators here
+;; split
+test (split "abc" "b") '("a" "c")
+test (split "abc" "a") '("bc")
+test (split "abc" "c") '("ab")
+
+test (split "abbc" "b") '("a" "c")
+test (split "aabc" "a") '("bc")
+test (split "abcc" "c") '("ab")
+
+test (split "abc" "z") '("abc")
+test (split "" "z") '("")
+
+;; join
+test (join "b" '("a" "c")) "abc"
+test (join "b" '("a")) "a"
+test (join "" '("a" "c")) "ac"
+test (join "b" #n) ""
+
+;; operators
 s := "abc"
 test (string-ref s 0) #\a
 test (s.0) #\a
@@ -41,4 +59,4 @@ test (s.2) #\z
 test s "xyz"
 
 ;; all done?
-test (string0 + 7) Tests
+test (string0 + 19) Tests

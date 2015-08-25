@@ -1,10 +1,19 @@
 Qualifiers
 	- expr ; expr ; expr
 
-split
+computed variables
+	- :$ getter setter
+
+regexps
+	- POSIX extended RE
+	- pattern matching
+	- %R{ ... }
+
+filename matching
+	- %F{ ... }
 
 sort
-	- sort files by mtime (requires sorting L1 on stat() attributes)
+	- sort files by mtime/size (requires sorting L1 on stat() attributes)
 
 C structs
 	- sigset_t (sigaction(2))
@@ -13,6 +22,13 @@ C structs
 CFFI
 	- revisit
 
+format
+	- ~S etc.
+
+getopt
+
+named arguments
+	- cf. keyword arguments & SRFI 89??
 
 Modules
 	- import/export
@@ -47,12 +63,18 @@ Reflection
 		6. ...
 	- environment is an extension of compute-kind with "name" field
 
+eval
+
 Type Inference
 	- particularly for multi-layer struct de-references
+
+REPL
 
 Debugger
 	- interactive
 	- backtrace
+
+Profiler
 
 Escape Handlers
 	- bind-exit
@@ -93,3 +115,11 @@ screen
 
 Readline
 	- ^P !!
+
+setuid
+
+tainted
+
+serialization
+	- persistence
+	- restoration
