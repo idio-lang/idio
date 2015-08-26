@@ -10,12 +10,6 @@ regexps
 	- %R{ ... }
 	- SRFI 115
 
-filename matching
-	- %F{ ... }
-
-sort
-	- sort files by mtime/size (requires sorting L1 on stat() attributes)
-
 C structs
 	- sigset_t (sigaction(2))
 	- sb-grovel for typedef/struct/union
@@ -25,6 +19,9 @@ CFFI
 
 format
 	- ~S etc.
+
+formatted strings
+	- %S...
 
 getopt
 
@@ -125,7 +122,7 @@ Readline
 
 setuid
 
-tainted
+tainted values
 
 const values
 
@@ -138,3 +135,7 @@ let-values
 
 signal handlers
 	-
+portable filename globbing
+	- support for [:class:] etc
+	- Bash lib/glob/smatch.c
+
