@@ -117,15 +117,28 @@ define (%c/make-tmp-fd & args) {
     prefix = ph args
   }
 
-  tmpfilename := string-append tmpdir "/" prefix "-" %%c/mkstemp-template
+  tmpfilename := string-append tmpdir "/" prefix %%c/mkstemp-template
   fd := c/mkstemp tmpfilename
   list fd tmpfilename
 }
 
 define (make-tmp-file-handle & prefix) {
-  fd-name := %c/make-tmp-fd %T{ $@prefix }
+  fd-name := apply %c/make-tmp-fd prefix
 
-  
+  ;; c/mkstemp opens the file for reading and writing and we should
+  ;; set close-on-exec
+  open-file-from-fd (ph fd-name) (pht fd-name) "rwe"
+}
+
+define (make-tmp-dir & args) {
+  tmpdir := (%c/get-tmpdir)
+  prefix = %c/default-tmpname-prefix
+  if (not (null? args)) {
+    prefix = ph args
+  }
+
+  tmpdirname := string-append tmpdir "/" prefix %%c/mkstemp-template
+  c/mkdtemp tmpdirname
 }
 
 ;; stdin-fileno

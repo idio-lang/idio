@@ -8,6 +8,7 @@ regexps
 	- POSIX extended RE
 	- pattern matching
 	- %R{ ... }
+	- SRFI 115
 
 filename matching
 	- %F{ ... }
@@ -125,6 +126,8 @@ Readline
 setuid
 
 tainted
+
+const values
 
 serialization
 	- persistence

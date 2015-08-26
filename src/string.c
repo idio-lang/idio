@@ -32,7 +32,7 @@ void idio_string_error_length (char *m, IDIO s, ptrdiff_t i, IDIO loc)
 
     char em[BUFSIZ];
     sprintf (em, "%s: %td", m, i);
-    idio_error_printf (loc, em, s);
+    idio_error_C (em, IDIO_LIST1 (s), loc);
 }
 
 void idio_substring_error_index (char *m, IDIO s, ptrdiff_t ip0, ptrdiff_t ipn, IDIO loc)
@@ -45,7 +45,7 @@ void idio_substring_error_index (char *m, IDIO s, ptrdiff_t ip0, ptrdiff_t ipn, 
 
     char em[BUFSIZ];
     sprintf (em, "%s: %td %td", m, ip0, ipn);
-    idio_error_printf (loc, em, s);
+    idio_error_C (em, IDIO_LIST1 (s), loc);
 }
 
 IDIO idio_string_C (const char *s_C)
@@ -579,6 +579,15 @@ IDIO_DEFINE_PRIMITIVE3 ("string-set!", string_set, (IDIO s, IDIO index, IDIO c))
     return idio_string_set (s, index, c);
 }
 
+/*
+ * substring
+ *
+ * This is the Scheme style interface: substring str offset end
+ *
+ * where {end} is *not* included in the substring.
+ *
+ * The (nost common) alternative is: substring str offset len
+ */
 IDIO_DEFINE_PRIMITIVE3 ("substring", substring, (IDIO s, IDIO p0, IDIO pn))
 {
     IDIO_ASSERT (s);

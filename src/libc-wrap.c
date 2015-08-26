@@ -52,7 +52,7 @@ IDIO_DEFINE_PRIMITIVE0V ("c/system-error", C_system_error, (IDIO args))
     if (idio_S_nil != args) {
 	IDIO h = IDIO_PAIR_H (args);
 	if (idio_isa_string (h)) {
-	    name = idio_string_s (h);
+	    name = idio_string_as_C (h);
 	    args = IDIO_PAIR_T (args);
 	} else if (idio_isa_symbol (h)) {
 	    name = IDIO_SYMBOL_S (h);
@@ -73,7 +73,7 @@ IDIO_DEFINE_PRIMITIVE2 ("c/access", C_access, (IDIO ipath, IDIO imode))
     IDIO_VERIFY_PARAM_TYPE (string, ipath);
     IDIO_VERIFY_PARAM_TYPE (C_int, imode);
 
-    char *path = idio_string_s (ipath);
+    char *path = idio_string_as_C (ipath);
     int mode = IDIO_C_TYPE_INT (imode);
 
     IDIO r = idio_S_false;
@@ -82,6 +82,8 @@ IDIO_DEFINE_PRIMITIVE2 ("c/access", C_access, (IDIO ipath, IDIO imode))
 	r = idio_S_true;
     }
 
+    free (path);
+    
     return r;
 }
 
@@ -404,17 +406,69 @@ IDIO_DEFINE_PRIMITIVE2 ("c/kill", C_kill, (IDIO ipid, IDIO isig))
     return idio_C_int (r);
 }
 
+IDIO_DEFINE_PRIMITIVE1 ("c/mkdtemp", C_mkdtemp, (IDIO idirname))
+{
+    IDIO_ASSERT (idirname);
+    IDIO_VERIFY_PARAM_TYPE (string, idirname);
+    
+    /*
+     * XXX mkdtemp() requires a NUL-terminated C string and it will
+     * modify the template part.
+     *
+     * If we are passed a SUBSTRING then we must substitute a
+     * NUL-terminated C string and copy the result back.
+     */
+    char *dirname = idio_string_s (idirname);
+
+    int isa_substring = 0;
+    if (idio_isa_substring (idirname)) {
+	isa_substring = 1;
+	dirname = idio_string_as_C (idirname);
+    }
+
+    char *d = mkdtemp (dirname);
+
+    if (NULL == d) {
+	idio_error_system_errno ("mkdtemp", IDIO_LIST1 (idirname), IDIO_C_LOCATION ("c/mkdtemp"));
+    }
+
+    if (isa_substring) {
+	memcpy (idio_string_s (idirname), dirname, idio_string_blen (idirname));
+	free (dirname);
+    }
+
+    return idio_string_C (d);
+}
+
 IDIO_DEFINE_PRIMITIVE1 ("c/mkstemp", C_mkstemp, (IDIO ifilename))
 {
     IDIO_ASSERT (ifilename);
     IDIO_VERIFY_PARAM_TYPE (string, ifilename);
     
+    /*
+     * XXX mkstemp() requires a NUL-terminated C string and it will
+     * modify the template part.
+     *
+     * If we are passed a SUBSTRING then we must substitute a
+     * NUL-terminated C string and copy the result back.
+     */
     char *filename = idio_string_s (ifilename);
 
+    int isa_substring = 0;
+    if (idio_isa_substring (ifilename)) {
+	isa_substring = 1;
+	filename = idio_string_as_C (ifilename);
+    }
+
     int r = mkstemp (filename);
-    
+
     if (-1 == r) {
 	idio_error_system_errno ("mkstemp", IDIO_LIST1 (ifilename), IDIO_C_LOCATION ("c/mkstemp"));
+    }
+
+    if (isa_substring) {
+	memcpy (idio_string_s (ifilename), filename, idio_string_blen (ifilename));
+	free (filename);
     }
 
     return idio_C_int (r);
@@ -785,10 +839,12 @@ IDIO_DEFINE_PRIMITIVE1 ("c/unlink", C_unlink, (IDIO ipath))
     IDIO_ASSERT (ipath);
     IDIO_VERIFY_PARAM_TYPE (string, ipath);
 
-    char *path = idio_string_s (ipath);
+    char *path = idio_string_as_C (ipath);
 
     int r = unlink (path);
 
+    free (path);
+    
     if (-1 == r) {
 	idio_error_system_errno ("unlink", IDIO_LIST1 (ipath), IDIO_C_LOCATION ("c/unlink"));
     }
@@ -900,7 +956,11 @@ IDIO_DEFINE_PRIMITIVE2 ("c/write", C_write, (IDIO ifd, IDIO istr))
     int fd = IDIO_C_TYPE_INT (ifd);
 
     size_t blen = idio_string_blen (istr);
-    
+
+    /*
+     * A rare occasion we can use idio_string_s() as we are also using
+     * blen.
+     */
     ssize_t n = write (fd, idio_string_s (istr), blen);
 
     if (-1 == n) {
@@ -2808,6 +2868,7 @@ void idio_libc_wrap_add_primitives ()
     IDIO_ADD_PRIMITIVE (C_getpid);
     IDIO_ADD_PRIMITIVE (C_isatty);
     IDIO_ADD_PRIMITIVE (C_kill);
+    IDIO_ADD_PRIMITIVE (C_mkdtemp);
     IDIO_ADD_PRIMITIVE (C_mkstemp);
     IDIO_ADD_PRIMITIVE (C_pipe);
     IDIO_ADD_PRIMITIVE (C_pipe_reader);

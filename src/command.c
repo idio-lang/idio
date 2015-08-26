@@ -147,13 +147,13 @@ static char **idio_command_get_envp ()
 	if (idio_S_unset != val &&
 	    idio_S_undef != val) {
 	    IDIO_TYPE_ASSERT (string, val);
-	    vlen = IDIO_STRING_BLEN (val);
+	    vlen = idio_string_blen (val);
 
 	    envp[n] = idio_alloc (slen + 1 + vlen + 1);
 	    strcpy (envp[n], IDIO_SYMBOL_S (symbol));
 	    strcat (envp[n], "=");
 	    if (idio_S_undef != val) {
-		strncat (envp[n], IDIO_STRING_S (val), vlen);
+		strncat (envp[n], idio_string_s (val), vlen);
 	    }
 	    envp[n][slen + 1 + vlen] = '\0';
 	    n++;
@@ -183,8 +183,8 @@ char *idio_command_find_exe_C (char *command)
 	path = idio_env_PATH_default;
 	pathe = path + strlen (path);
     } else {
-	path = IDIO_STRING_S (PATH);
-	pathe = path + IDIO_STRING_BLEN (PATH);
+	path = idio_string_s (PATH);
+	pathe = path + idio_string_blen (PATH);
     }
 
     /*
