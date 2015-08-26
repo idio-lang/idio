@@ -21,7 +21,10 @@
 
 define-struct-accessors-only ~path		pattern
 
+sort_size := #n
+sort_atime := #n
 sort_mtime := #n
+sort_ctime := #n
 
 {
   sort_stats := #n
@@ -30,8 +33,16 @@ sort_mtime := #n
     sort_stats.p.sb_size
   }
 
+  key_stat_atime := function (p) {
+    sort_stats.p.sb_atime
+  }
+
   key_stat_mtime := function (p) {
     sort_stats.p.sb_mtime
+  }
+
+  key_stat_ctime := function (p) {
+    sort_stats.p.sb_ctime
   }
 
   sort_size = function (l) {
@@ -44,6 +55,16 @@ sort_mtime := #n
     sort l c/< key_stat_size
   }
 
+  sort_atime = function (l) {
+    sort_stats = (make-hash #n #n ((length l) + 10)) 
+
+    map (function (p) {
+      sort_stats.p = c/stat p
+    }) l
+
+    sort l c/< key_stat_atime
+  }
+
   sort_mtime = function (l) {
     sort_stats = (make-hash #n #n ((length l) + 10)) 
 
@@ -52,5 +73,15 @@ sort_mtime := #n
     }) l
 
     sort l c/< key_stat_mtime
+  }
+
+  sort_ctime = function (l) {
+    sort_stats = (make-hash #n #n ((length l) + 10)) 
+
+    map (function (p) {
+      sort_stats.p = c/stat p
+    }) l
+
+    sort l c/< key_stat_ctime
   }
 }
