@@ -1,9 +1,6 @@
 Qualifiers
 	- expr ; expr ; expr
 
-computed variables
-	- :$ getter setter
-
 regexps
 	- POSIX extended RE
 	- pattern matching
@@ -20,7 +17,7 @@ CFFI
 format
 	- ~S etc.
 
-formatted strings
+reader formatted strings
 	- %S...
 
 getopt

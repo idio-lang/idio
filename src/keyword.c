@@ -180,7 +180,7 @@ IDIO idio_hash_make_keyword_table (IDIO args)
     IDIO_ASSERT (args);
     IDIO_VERIFY_PARAM_TYPE (list, args);
     
-    return idio_hash_make_hash (idio_list_append2 (IDIO_LIST1 (idio_S_eqp), args));
+    return idio_hash_make_hash (idio_list_append2 (IDIO_LIST2 (idio_S_eqp, idio_S_nil), args));
 }
 
 IDIO_DEFINE_PRIMITIVE0V ("make-keyword-table", make_keyword_table, (IDIO args))

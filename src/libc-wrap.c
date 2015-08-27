@@ -2746,6 +2746,126 @@ IDIO_DEFINE_PRIMITIVE0 ("c/errno/get", C_errno_get, (void))
     return idio_C_int (errno);
 }
 
+IDIO_DEFINE_PRIMITIVE0 ("EGID/get", EGID_get, (void))
+{
+    return idio_integer (getegid ());
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("EGID/set", EGID_set, (IDIO iegid))
+{
+    IDIO_ASSERT (iegid);
+
+    gid_t egid = -1;
+    
+    if (idio_isa_fixnum (iegid)) {
+	egid = IDIO_FIXNUM_VAL (iegid);
+    } else if (idio_isa_bignum (iegid)) {
+	egid = idio_bignum_intmax_value (iegid);
+    } else if (idio_isa_C_int (iegid)) {
+	egid = IDIO_C_TYPE_INT (iegid);
+    } else {
+	idio_error_param_type ("fixnum|bignum|C_int", iegid, IDIO_C_LOCATION ("EGID/set"));
+    }
+
+    int r = setegid (egid);
+
+    if (-1 == r) {
+	idio_error_system_errno ("setegid", iegid, IDIO_C_LOCATION ("EGID/set"));
+    }
+    
+    return idio_fixnum (r);
+}
+
+IDIO_DEFINE_PRIMITIVE0 ("EUID/get", EUID_get, (void))
+{
+    return idio_integer (geteuid ());
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("EUID/set", EUID_set, (IDIO ieuid))
+{
+    IDIO_ASSERT (ieuid);
+
+    uid_t euid = -1;
+    
+    if (idio_isa_fixnum (ieuid)) {
+	euid = IDIO_FIXNUM_VAL (ieuid);
+    } else if (idio_isa_bignum (ieuid)) {
+	euid = idio_bignum_intmax_value (ieuid);
+    } else if (idio_isa_C_int (ieuid)) {
+	euid = IDIO_C_TYPE_INT (ieuid);
+    } else {
+	idio_error_param_type ("fixnum|bignum|C_int", ieuid, IDIO_C_LOCATION ("EUID/set"));
+    }
+
+    int r = seteuid (euid);
+
+    if (-1 == r) {
+	idio_error_system_errno ("seteuid", ieuid, IDIO_C_LOCATION ("EUID/set"));
+    }
+    
+    return idio_fixnum (r);
+}
+
+IDIO_DEFINE_PRIMITIVE0 ("GID/get", GID_get, (void))
+{
+    return idio_integer (getgid ());
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("GID/set", GID_set, (IDIO igid))
+{
+    IDIO_ASSERT (igid);
+
+    gid_t gid = -1;
+    
+    if (idio_isa_fixnum (igid)) {
+	gid = IDIO_FIXNUM_VAL (igid);
+    } else if (idio_isa_bignum (igid)) {
+	gid = idio_bignum_intmax_value (igid);
+    } else if (idio_isa_C_int (igid)) {
+	gid = IDIO_C_TYPE_INT (igid);
+    } else {
+	idio_error_param_type ("fixnum|bignum|C_int", igid, IDIO_C_LOCATION ("GID/set"));
+    }
+
+    int r = setgid (gid);
+
+    if (-1 == r) {
+	idio_error_system_errno ("setgid", igid, IDIO_C_LOCATION ("GID/set"));
+    }
+    
+    return idio_fixnum (r);
+}
+
+IDIO_DEFINE_PRIMITIVE0 ("UID/get", UID_get, (void))
+{
+    return idio_integer (getuid ());
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("UID/set", UID_set, (IDIO iuid))
+{
+    IDIO_ASSERT (iuid);
+
+    uid_t uid = -1;
+    
+    if (idio_isa_fixnum (iuid)) {
+	uid = IDIO_FIXNUM_VAL (iuid);
+    } else if (idio_isa_bignum (iuid)) {
+	uid = idio_bignum_intmax_value (iuid);
+    } else if (idio_isa_C_int (iuid)) {
+	uid = IDIO_C_TYPE_INT (iuid);
+    } else {
+	idio_error_param_type ("fixnum|bignum|C_int", iuid, IDIO_C_LOCATION ("UID/set"));
+    }
+
+    int r = setuid (uid);
+
+    if (-1 == r) {
+	idio_error_system_errno ("setuid", iuid, IDIO_C_LOCATION ("UID/set"));
+    }
+    
+    return idio_fixnum (r);
+}
+
 IDIO_DEFINE_PRIMITIVE0 ("c/STDIN/get", C_STDIN_get, (void))
 {
     return idio_current_input_handle ();
@@ -2804,8 +2924,9 @@ void idio_init_libc_wrap ()
     idio_module_set_symbol_value (idio_symbols_C_intern ("c/W_OK"), idio_C_int (W_OK), idio_main_module ());
     idio_module_set_symbol_value (idio_symbols_C_intern ("c/X_OK"), idio_C_int (X_OK), idio_main_module ());
     idio_module_set_symbol_value (idio_symbols_C_intern ("c/F_OK"), idio_C_int (F_OK), idio_main_module ());
-    
+
     IDIO geti;
+    IDIO seti;
     geti = IDIO_ADD_SPECIAL_PRIMITIVE (C_errno_get);
     idio_module_add_computed_symbol (idio_symbols_C_intern ("c/errno"), idio_vm_primitives_ref (IDIO_FIXNUM_VAL (geti)), idio_S_nil, idio_main_module ());
 
@@ -2850,6 +2971,105 @@ void idio_init_libc_wrap ()
 
     idio_libc_set_signal_names ();
     idio_libc_set_errno_names ();
+
+    /*
+     * Define some host/user/process variables
+     */
+    struct utsname u;
+    if (uname (&u) == -1) {
+	idio_error_system_errno ("uname", idio_S_nil, IDIO_C_LOCATION ("idio_init_libc_wrap"));
+    }
+    idio_module_set_symbol_value (idio_symbols_C_intern ("HOSTNAME"), idio_string_C (u.nodename), idio_main_module ());
+
+    /*
+     * From getpwuid(3) on CentOS
+     */
+    /*
+    struct passwd pwd;
+    struct passwd *pwd_result;
+    char *pwd_buf;
+    size_t pwd_bufsize;
+    int pwd_s;
+
+    pwd_bufsize = sysconf (_SC_GETPW_R_SIZE_MAX);
+    if (pwd_bufsize == -1)
+	pwd_bufsize = 16384;
+
+    pwd_buf = idio_alloc (pwd_bufsize);
+
+    int pwd_exists = 1;
+    pwd_s = getpwuid_r (getuid (), &pwd, pwd_buf, pwd_bufsize, &pwd_result);
+    if (pwd_result == NULL) {
+	if (pwd_s) {
+	    errno = pwd_s;
+	    idio_error_system_errno ("getpwnam_r", idio_integer (getuid ()), IDIO_C_LOCATION ("idio_init_libc_wrap"));
+	}
+	pwd_exists = 0;
+    }
+
+    IDIO UID = IDIO_FIXNUM (-1);
+    IDIO GID = IDIO_FIXNUM (-1);
+    IDIO blank = idio_string_C ("");
+    IDIO HOME = blank;
+    IDIO SHELL = blank;
+    if (pwd_exists) {
+	UID = idio_integer (pwd.pw_uid);
+	GID = idio_integer (pwd.pw_gid);
+	HOME = idio_string_C (pwd.pw_dir);
+	SHELL = idio_string_C (pwd.pw_shell);
+    }
+    idio_module_set_symbol_value (idio_symbols_C_intern ("UID"), UID, idio_main_module ());
+    idio_module_set_symbol_value (idio_symbols_C_intern ("GID"), GID, idio_main_module ());
+    idio_module_set_symbol_value (idio_symbols_C_intern ("HOME"), HOME, idio_main_module ());
+    idio_module_set_symbol_value (idio_symbols_C_intern ("SHELL"), SHELL, idio_main_module ());
+    */
+    
+    geti = IDIO_ADD_SPECIAL_PRIMITIVE (UID_get);
+    seti = IDIO_ADD_SPECIAL_PRIMITIVE (UID_set);
+    idio_module_add_computed_symbol (idio_symbols_C_intern ("UID"), idio_vm_primitives_ref (IDIO_FIXNUM_VAL (geti)), idio_vm_primitives_ref (IDIO_FIXNUM_VAL (seti)), idio_main_module ());
+
+    geti = IDIO_ADD_SPECIAL_PRIMITIVE (EUID_get);
+    seti = IDIO_ADD_SPECIAL_PRIMITIVE (EUID_set);
+    idio_module_add_computed_symbol (idio_symbols_C_intern ("EUID"), idio_vm_primitives_ref (IDIO_FIXNUM_VAL (geti)), idio_vm_primitives_ref (IDIO_FIXNUM_VAL (seti)), idio_main_module ());
+
+    geti = IDIO_ADD_SPECIAL_PRIMITIVE (GID_get);
+    seti = IDIO_ADD_SPECIAL_PRIMITIVE (GID_set);
+    idio_module_add_computed_symbol (idio_symbols_C_intern ("GID"), idio_vm_primitives_ref (IDIO_FIXNUM_VAL (geti)), idio_vm_primitives_ref (IDIO_FIXNUM_VAL (seti)), idio_main_module ());
+
+    geti = IDIO_ADD_SPECIAL_PRIMITIVE (EGID_get);
+    seti = IDIO_ADD_SPECIAL_PRIMITIVE (EGID_set);
+    idio_module_add_computed_symbol (idio_symbols_C_intern ("EGID"), idio_vm_primitives_ref (IDIO_FIXNUM_VAL (geti)), idio_vm_primitives_ref (IDIO_FIXNUM_VAL (seti)), idio_main_module ());
+
+    int ngroups = getgroups (0, (gid_t *) NULL);
+
+    if (-1 == ngroups) {
+	idio_error_system_errno ("getgroups", idio_S_nil, IDIO_C_LOCATION ("idio_init_libc_wrap"));
+    }
+    
+    gid_t grp_list[ngroups];
+
+    int ng = getgroups (ngroups, grp_list);
+    if (-1 == ng) {
+	idio_error_system_errno ("getgroups", idio_S_nil, IDIO_C_LOCATION ("idio_init_libc_wrap"));
+    }
+
+    /*
+     * Could this ever happen?
+     */
+    if (ngroups != ng) {
+	idio_error_C ("getgroups", idio_S_nil, IDIO_C_LOCATION ("idio_init_libc_wrap"));
+    }
+    
+    IDIO GROUPS = idio_array (ngroups);
+
+    for (ng = 0; ng < ngroups ; ng++) {
+	idio_array_insert_index (GROUPS, idio_integer (grp_list[ng]), ng);
+    }
+    idio_module_set_symbol_value (idio_symbols_C_intern ("GROUPS"), GROUPS, idio_main_module ());
+
+    idio_module_set_symbol_value (idio_symbols_C_intern ("PID"), idio_integer (getpid ()), idio_main_module ());
+    idio_module_set_symbol_value (idio_symbols_C_intern ("PPID"), idio_integer (getppid ()), idio_main_module ());
+
 }
 
 void idio_libc_wrap_add_primitives ()

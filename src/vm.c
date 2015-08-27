@@ -124,6 +124,8 @@ static IDIO idio_vm_sigchld_handler_name;
 static IDIO idio_vm_sigchld_handler;
 static IDIO idio_S_sigchld;
 
+static time_t idio_vm_t0;
+
 #define IDIO_THREAD_FETCH_NEXT()	(idio_all_code->ae[IDIO_THREAD_PC(thr)++])
 #define IDIO_THREAD_STACK_PUSH(v)	(idio_array_push (IDIO_THREAD_STACK(thr), v))
 #define IDIO_THREAD_STACK_POP()		(idio_array_pop (IDIO_THREAD_STACK(thr)))
@@ -2247,6 +2249,19 @@ IDIO idio_vm_invoke_C (IDIO thr, IDIO command)
 	    IDIO_THREAD_VAL (thr) = vs;
 	    /* IDIO func = idio_module_current_symbol_value (IDIO_PAIR_H (command)); */
 	    idio_vm_invoke (thr, IDIO_PAIR_H (command), IDIO_VM_INVOKE_TAIL_CALL);
+
+	    /*
+	     * XXX
+	     *
+	     * If the command was a primitive then we called
+	     * idio_vm_run() we'd be continuing our parent's loop.
+	     *
+	     * Need to figure out the whole invoke-from-C thing
+	     * properly (or at least consistently).
+	     */
+	    if (! idio_isa_primitive (IDIO_PAIR_H (command))) {
+		idio_vm_run (thr);
+	    }
 	}
 	break;
     case IDIO_TYPE_CLOSURE:
@@ -2257,10 +2272,10 @@ IDIO idio_vm_invoke_C (IDIO thr, IDIO command)
 	    IDIO vs = idio_frame_allocate (1);
 	    IDIO_THREAD_VAL (thr) = vs;
 	    idio_vm_invoke (thr, command, IDIO_VM_INVOKE_TAIL_CALL);
+	    idio_vm_run (thr);
 	}
     }
     
-    idio_vm_run (thr);
     IDIO r = IDIO_THREAD_VAL (thr);
 
     idio_vm_restore_all_state (thr);
@@ -4579,6 +4594,11 @@ IDIO_DEFINE_PRIMITIVE1 ("exit", exit, (IDIO istatus))
     exit (status);
 }
 
+IDIO_DEFINE_PRIMITIVE0 ("SECONDS/get", SECONDS_get, (void))
+{
+    return idio_integer (time ((time_t *) NULL) - idio_vm_t0);
+}
+
 void idio_vm_reset_thread (IDIO thr, int verbose)
 {
     IDIO_ASSERT (thr);
@@ -4627,6 +4647,8 @@ void idio_init_vm_values ()
 
 void idio_init_vm ()
 {
+    idio_vm_t0 = time ((time_t *) NULL);
+    
     idio_all_code = idio_i_array (200000);
     
     idio_vm_code_prologue (idio_all_code);
@@ -4652,6 +4674,11 @@ void idio_init_vm ()
 
     idio_vm_closure_name = IDIO_HASH_EQP (256);
     idio_gc_protect (idio_vm_closure_name);
+
+    IDIO geti;
+    geti = IDIO_ADD_SPECIAL_PRIMITIVE (SECONDS_get);
+    idio_module_add_computed_symbol (idio_symbols_C_intern ("SECONDS"), idio_vm_primitives_ref (IDIO_FIXNUM_VAL (geti)), idio_S_nil, idio_main_module ());
+
 }
 
 void idio_vm_add_primitives ()

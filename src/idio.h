@@ -55,8 +55,10 @@
 #include <glob.h>
 #include <signal.h>
 #include <fcntl.h>
-
+#include <time.h>
 #include <strings.h>
+#include <pwd.h>
+#include <grp.h>
 
 #include <sys/resource.h>
 #include <sys/stat.h>

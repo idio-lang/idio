@@ -22,7 +22,7 @@
 
 #include "idio.h"
 
-void idio_init ()
+void idio_init (int argc, char **argv)
 {
     /* GC first then symbol for the symbol table then modules */
     idio_init_gc ();
@@ -64,6 +64,27 @@ void idio_init ()
 
     idio_init_libc_wrap ();
 
+    /*
+     * Arguments
+     *
+     * We'll have a separate ARGV0, a la Bash then remaining args in
+     * ARGC/ARGV
+     */
+    idio_module_set_symbol_value (idio_symbols_C_intern ("ARGV0"), idio_string_C (argv[0]), idio_main_module ());
+
+    IDIO args = idio_array (argc - 1);
+    size_t i;
+    for (i = 1; i < argc; i++) {
+	idio_array_insert_index (args, idio_string_C (argv[i]), i - 1);
+    }
+
+    idio_module_set_symbol_value (idio_symbols_C_intern ("ARGC"), idio_integer (argc - 1), idio_main_module ());
+    idio_module_set_symbol_value (idio_symbols_C_intern ("ARGV"), args, idio_main_module ());
+
+}
+
+void idio_add_primitives ()
+{
     /*
      * race condition!  We can't bind any symbols into the "current
      * module" in idio_init_symbol() until we have modules initialised
@@ -164,7 +185,8 @@ void idio_final ()
 
 int main (int argc, char **argv, char **envp)
 {
-    idio_init ();
+    idio_init (argc, argv);
+    idio_add_primitives ();
 
     idio_env_init_idiolib (argv[0]);
     
