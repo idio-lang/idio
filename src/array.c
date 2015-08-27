@@ -50,7 +50,7 @@ static void idio_array_error_bounds (idio_ai_t index, idio_ai_t size, IDIO loc)
     idio_raise_condition (idio_S_true, c);
 }
 
-void idio_assign_array (IDIO a, idio_ai_t asize)
+void idio_assign_array (IDIO a, idio_ai_t asize, IDIO dv)
 {
     IDIO_ASSERT (a);
     IDIO_C_ASSERT (asize);
@@ -67,20 +67,25 @@ void idio_assign_array (IDIO a, idio_ai_t asize)
 
     idio_ai_t i;
     for (i = 0; i < asize; i++) {
-	IDIO_ARRAY_AE (a, i) = idio_S_nil;
+	IDIO_ARRAY_AE (a, i) = dv;
     }
 }
 
-IDIO idio_array (idio_ai_t size)
+IDIO idio_array_default (idio_ai_t size, IDIO dv)
 {
-
     if (0 == size) {
 	size = 1;
     }
     
     IDIO a = idio_gc_get (IDIO_TYPE_ARRAY);
-    idio_assign_array (a, size);
+    idio_assign_array (a, size, dv);
+    
     return a;
+}
+
+IDIO idio_array (idio_ai_t size)
+{
+    return idio_array_default (size, idio_S_nil);
 }
 
 int idio_isa_array (IDIO a)
@@ -112,7 +117,7 @@ void idio_array_resize (IDIO a)
     idio_ai_t nsize = oasize << 1;
 
     IDIO_FPRINTF (stderr, "idio_array_resize: %10p = {%d} -> {%d}\n", a, oasize, nsize);
-    idio_assign_array (a, nsize);
+    idio_assign_array (a, nsize, idio_S_nil);
 
     idio_ai_t i;
     for (i = 0 ; i < oarray->usize; i++) {
@@ -442,19 +447,19 @@ IDIO_DEFINE_PRIMITIVE1V ("make-array", make_array, (IDIO size, IDIO args))
     IDIO_ASSERT (size);
     IDIO_ASSERT (args);
 
-    ptrdiff_t vlen = -1;
+    ptrdiff_t alen = -1;
     
     if (idio_isa_fixnum (size)) {
-	vlen = IDIO_FIXNUM_VAL (size);
+	alen = IDIO_FIXNUM_VAL (size);
     } else if (idio_isa_bignum (size)) {
 	if (IDIO_BIGNUM_INTEGER_P (size)) {
-	    vlen = idio_bignum_ptrdiff_value (size);
+	    alen = idio_bignum_ptrdiff_value (size);
 	} else {
 	    IDIO size_i = idio_bignum_real_to_integer (size);
 	    if (idio_S_nil == size_i) {
 		idio_error_param_type ("integer", size, IDIO_C_LOCATION ("make-array"));
 	    } else {
-		vlen = idio_bignum_ptrdiff_value (size_i);
+		alen = idio_bignum_ptrdiff_value (size_i);
 	    }
 	}
     } else {
@@ -469,16 +474,12 @@ IDIO_DEFINE_PRIMITIVE1V ("make-array", make_array, (IDIO size, IDIO args))
 	dv = IDIO_PAIR_H (args);
     }
 
-    if (vlen < 0) {
-	idio_error_printf (IDIO_C_LOCATION ("make-array"), "invalid length: %zd", vlen);
+    if (alen < 0) {
+	idio_error_printf (IDIO_C_LOCATION ("make-array"), "invalid length: %zd", alen);
     }
     
-    IDIO a = idio_array (vlen);
-    
-    size_t i;
-    for (i = 0; i < vlen; i++) {
-	idio_array_insert_index (a, dv, i);
-    }
+    IDIO a = idio_array_default (alen, dv);
+    IDIO_ARRAY_USIZE (a) = alen;
 
     return a;
 }

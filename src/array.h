@@ -75,7 +75,7 @@
  * typedef ptrdiff_t idio_ai_t;
  */
 
-void idio_assign_array (IDIO a, idio_ai_t size);
+void idio_assign_array (IDIO a, idio_ai_t size, IDIO dv);
 IDIO idio_array (idio_ai_t size);
 int idio_isa_array (IDIO a);
 void idio_free_array (IDIO a);
