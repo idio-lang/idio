@@ -181,6 +181,15 @@ typedef struct idio_array_s {
  * idio_hi_t must be a size_t as, though we may only create an
  * array of 2**(n-1)-1, we need a size+1 marker to indicate out of
  * bounds.
+ *
+ *   As a real-world example, on an OpenSolaris 4GB/32bit machine:
+ *
+ *     make-hash #n #n ((expt 2 27) - 1)
+ *
+ *   was successful.  2**28-1 was not.
+ *
+ *   XXX This is two powers less than make-array (see array.h).  Why?
+ *
  */
 typedef size_t idio_hi_t;
 
@@ -820,8 +829,6 @@ typedef struct idio_gc_s {
 #define IDIO_CHARACTER_IVAL(x)	(tolower (IDIO_CHARACTER_VAL (x)))
 #define IDIO_CHARACTER(x)	((const IDIO) (((intptr_t) x) << 2 | IDIO_TYPE_CHARACTER_MARK))
 
-void idio_init_gc ();
-void idio_final_gc ();
 void idio_gc_register_finalizer (IDIO o, void (*func) (IDIO o));
 void idio_gc_deregister_finalizer (IDIO o);
 void idio_run_finalizer (IDIO o);
@@ -867,6 +874,10 @@ char *idio_strcat_free (char *s1, char *s2);
 
 int idio_gc_verboseness (int n);
 void idio_gc_set_verboseness (int n);
+
+void idio_init_gc ();
+void idio_gc_add_primitives ();
+void idio_final_gc ();
 
 /*
   XXX delete me

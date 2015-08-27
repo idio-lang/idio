@@ -73,6 +73,7 @@ void idio_init ()
      * Neither of which can happen until scm_evaluate is up and
      * running...
      */
+    idio_gc_add_primitives ();
     idio_symbol_add_primitives ();
     idio_module_add_primitives ();
     idio_thread_add_primitives ();

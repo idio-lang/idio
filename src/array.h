@@ -62,6 +62,12 @@
  * addressable memory.  So, in practice, we're limited to arrays of
  * length 2**30 or 2**61 -- with no room for any other data!
  *
+ *   As a real-world example, on an OpenSolaris 4GB/32bit machine:
+ *
+ *     make-array ((expt 2 29) - 1)
+ *
+ *   was successful.  2**30-1 was not.
+ *
  * However, at some point we should accomodate negative array indices,
  * eg. the nominal, array[-i], which we take to mean the i'th last
  * index.  The means using a signed type even if we won't ever
