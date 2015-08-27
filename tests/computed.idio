@@ -27,7 +27,6 @@ define (get-var) {
 }
 
 define (set-var v) {
-  edisplay* "set-var" v
   v + 10
 }
 
@@ -77,5 +76,27 @@ monitor (function (cont cond) {
   test cvar-s 'no-get-accessor
 }
 
+;; concomitant get/set
+shared-get-var := #n
+shared-set-var := #n
+
+{
+  shared-v := 19
+
+  shared-get-var = function () {
+    shared-v + 10
+  }
+
+  shared-set-var = function (v) {
+    shared-v = v
+  }
+}
+
+cvar-gs :$ shared-get-var shared-set-var
+test (computed? 'cvar-gs) #t
+test cvar-gs 29
+test (cvar-gs = 105) 105
+test cvar-gs 115
+
 ;; all done?
-test (computed0 + 12) Tests
+test (computed0 + 16) Tests
