@@ -163,7 +163,23 @@ IDIO idio_frame_extend (IDIO f1, IDIO f2)
     if (idio_S_nil != f1) {
 	IDIO_TYPE_ASSERT (frame, f1);
     }
-    IDIO_TYPE_ASSERT (frame, f2);
+
+    if (! idio_isa_frame (f2)) {
+	/*
+	 * The reason we should be here is because we've computed an
+	 * argument frame and want to extend the current frame.  If f2
+	 * isn't a frame value then something has gone horribly wrong.
+	 *
+	 * Abort!  Abort!  Abort!
+	 *
+	 * Hmm.  Aborting isn't that easy.  We can unwind the stack
+	 * and then invoke a condition.  It shouldn't matter if the
+	 * condition is continuable as we've just unwound the stack so
+	 * there's no handlers to do anything with it.
+	 */
+	idio_vm_reset_thread (idio_current_thread (), 1);
+	idio_error_C ("not a frame", IDIO_LIST1 (f2), IDIO_C_LOCATION ("idio_frame_extend"));
+    }
 
     IDIO_FRAME_NEXT (f2) = f1;
 

@@ -1,0 +1,81 @@
+;;
+;; Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+;;
+;; Licensed under the Apache License, Version 2.0 (the "License"); you
+;; may not use this file except in compliance with the License.  You
+;; may obtain a copy of the License at
+;;
+;;     http://www.apache.org/licenses/LICENSE-2.0
+;;
+;; Unless required by applicable law or agreed to in writing, software
+;; distributed under the License is distributed on an "AS IS" BASIS,
+;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+;; See the License for the specific language governing permissions and
+;; limitations under the License.
+;;
+;;
+
+;;
+;; computed.idio
+;;
+computed0 = Tests
+
+;; XXX be careful to use new non-lexical toplevel symbols...
+
+define (get-var) {
+  "got"
+}
+
+define (set-var v) {
+  edisplay* "set-var" v
+  v + 10
+}
+
+cvar-g :$ get-var
+test (computed? 'cvar-g) #t
+test cvar-g "got"
+
+;; set should fail
+monitor (function (cont cond) {
+  ;; display* "no computed set accessor monitor condition:" (struct-type-name cond)
+  test (rt-computed-variable-no-accessor-error? cond) #t
+  if cont {
+    if (rt-computed-variable-no-accessor-error? cond) {
+      name := condition-ref cond 'name
+
+      'no-set-accessor
+    } (error "no computed set accessor: unexpected condition" cond)
+  } (error "no computed set accessor: unexpected non-continuable error" cond)
+}) {
+  ;; display* "using set-less computed variable"
+  test (cvar-g = 3) 'no-set-accessor
+}
+
+cvar-gs :$ get-var set-var
+test (computed? 'cvar-gs) #t
+test cvar-gs "got"
+test (cvar-gs = 55) 65
+test cvar-gs "got"
+
+cvar-s :$ #n set-var
+test (computed? 'cvar-s) #t
+test (cvar-s = 55) 65
+
+;; get should fail
+monitor (function (cont cond) {
+  ;; display* "no computed get accessor monitor condition:" (struct-type-name cond)
+  test (rt-computed-variable-no-accessor-error? cond) #t
+  if cont {
+    if (rt-computed-variable-no-accessor-error? cond) {
+      name := condition-ref cond 'name
+
+      'no-get-accessor
+    } (error "no computed get accessor: unexpected condition" cond)
+  } (error "no computed get accessor: unexpected non-continuable error" cond)
+}) {
+  ;; display* "using get-less computed variable"
+  test cvar-s 'no-get-accessor
+}
+
+;; all done?
+test (computed0 + 12) Tests

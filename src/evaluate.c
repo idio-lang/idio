@@ -1467,7 +1467,11 @@ static IDIO idio_meaning_assignment (IDIO name, IDIO e, IDIO nametree, int flags
 	       idio_S_environ == kt) {
 	return IDIO_LIST3 (idio_I_GLOBAL_SET, i, m);
     } else if (idio_S_computed == kt) {
-	return IDIO_LIST3 (idio_I_COMPUTED_SET, i, m);
+	if (IDIO_MEANING_IS_COMPUTED_DEFINE (flags)) {
+	    return IDIO_LIST3 (idio_I_COMPUTED_DEFINE, i, m);
+	} else {
+	    return IDIO_LIST3 (idio_I_COMPUTED_SET, i, m);
+	}
     } else if (idio_S_predef == kt) {
 	/*
 	 * We can shadow predefs...semantically dubious
@@ -1965,6 +1969,12 @@ static IDIO idio_meaning_define_environ (IDIO name, IDIO e, IDIO nametree, int f
     return idio_meaning_assignment (name, e, nametree, IDIO_MEANING_ENVIRON_SCOPE (flags));
 }
 
+/*
+ * A computed variable's value should be a pair, (getter & setter).
+ * Either of getter or setter can be #n.
+ *
+ * We shouldn't have both #n as it wouldn't be much use.
+ */
 static IDIO idio_meaning_define_computed (IDIO name, IDIO e, IDIO nametree, int flags)
 {
     IDIO_ASSERT (name);
@@ -1973,19 +1983,47 @@ static IDIO idio_meaning_define_computed (IDIO name, IDIO e, IDIO nametree, int 
     IDIO_TYPE_ASSERT (symbol, name);
     IDIO_TYPE_ASSERT (list, nametree);
 
-    /* idio_debug ("meaning-define-computed: (define-computed %s", name);  */
-    /* idio_debug (" %s)\n", e);  */
+    /* idio_debug ("meaning-define-computed: (define-computed %s", name);   */
+    /* idio_debug (" %s)\n", e);   */
+
+    IDIO getter = idio_S_nil;
+    IDIO setter = idio_S_nil;
 
     if (idio_isa_pair (e)) {
-	e = IDIO_PAIR_H (e);
+	IDIO val = IDIO_PAIR_H (e);
+
+	if (idio_isa_pair (val)) {
+	    getter = IDIO_PAIR_H (val);
+	    setter = IDIO_PAIR_H (IDIO_PAIR_T (val));
+	} else {
+	    getter = val;
+	}
+    } else {
+	idio_static_error_variable ("define-computed name (pair getter setter)", name, IDIO_C_LOCATION ("idio_meaning_define_computed"));
+    }
+
+    if (idio_S_nil == getter &&
+	idio_S_nil == setter) {
+	idio_static_error_variable ("define-computed name: both setter and getter are #n", name, IDIO_C_LOCATION ("idio_meaning_define_computed"));
     }
 
     /* idio_debug ("meaning-define-computed: (define-computed %s", name); */
     /* idio_debug (" %s)\n", e); */
 
     idio_toplevel_extend (name, IDIO_MEANING_COMPUTED_SCOPE (flags));
-    
-    return idio_meaning_assignment (name, e, nametree, IDIO_MEANING_COMPUTED_SCOPE (flags));
+
+    /*
+     * There are no property lists associated with variables so we
+     * can't pull the same (set! (proc ...) v) => ((setter proc)
+     * ... v) trick as we can with procs.
+     *
+     * So, to set the actual getter/setter pair, as opposed to setting
+     * the variable (which is a call to the setter proc), we need a
+     * magic flag for idio_meaning_assignment():
+     * IDIO_MEANING_FLAG_COMPUTED_DEFINE.
+     */
+    return idio_meaning_assignment (name, IDIO_LIST3 (idio_S_pair, getter, setter), nametree,
+				    IDIO_MEANING_COMPUTED_DEFINE (IDIO_MEANING_COMPUTED_SCOPE (flags)));
 }
 
 static IDIO idio_meaning_sequence (IDIO ep, IDIO nametree, int flags, IDIO keyword);
@@ -2161,8 +2199,8 @@ static IDIO idio_meaning_dotted_abstraction (IDIO ns, IDIO n, IDIO ep, IDIO name
  *    Here, these two are expected to be self or mutually recursive
  *    (as well as being of local scope) and so the body is rewritten
  *    such that these are letrec definitions (and can safely be
- *    self/mutually recursive) and the body becomes the body of the
- *    letrec
+ *    self/mutually recursive) and rest of the the body becomes the
+ *    body of the letrec
  *
  *    In Scheme these are only allowed at the start of the body
  *    whereas Idio allows them to appear anywhere in the body and when
@@ -3322,6 +3360,24 @@ static IDIO idio_meaning (IDIO e, IDIO nametree, int flags)
 		idio_error_param_nil ("(:~)", IDIO_C_LOCATION ("idio_meaning"));
 		return idio_S_unspec;
 	    }
+	} else if (idio_S_colon_dollar == eh) {
+	    /*
+	     * (:$ var getter setter)
+	     *
+	     * in the short term => define-computed
+	     */
+	    if (idio_isa_pair (et)) {
+		IDIO ett = IDIO_PAIR_T (et);
+		if (idio_isa_pair (ett)) {
+		    return idio_meaning_define_computed (IDIO_PAIR_H (et), ett, nametree, flags);
+		} else {
+		    idio_error_param_nil ("(:$ symbol)", IDIO_C_LOCATION ("idio_meaning"));
+		    return idio_S_unspec;
+		}
+	    } else {
+		idio_error_param_nil ("(:$)", IDIO_C_LOCATION ("idio_meaning"));
+		return idio_S_unspec;
+	    }
 	} else if (idio_S_block == eh) {
 	    /*
 	     * { ...}
@@ -3589,6 +3645,58 @@ IDIO_DEFINE_ASSIGNMENT_INFIX_OPERATOR (":=", colon_eq);
 IDIO_DEFINE_ASSIGNMENT_INFIX_OPERATOR (":+", colon_plus);
 IDIO_DEFINE_ASSIGNMENT_INFIX_OPERATOR (":*", colon_star);
 IDIO_DEFINE_ASSIGNMENT_INFIX_OPERATOR (":~", colon_tilde);
+IDIO_DEFINE_ASSIGNMENT_INFIX_OPERATOR (":$", colon_dollar);
+
+IDIO_DEFINE_PRIMITIVE1 ("environ?", environp, (IDIO name))
+{
+    IDIO_ASSERT (name);
+    IDIO_VERIFY_PARAM_TYPE (symbol, name);
+
+    IDIO r = idio_S_false;
+
+    IDIO kind = idio_module_current_symbol_recurse (name);
+
+    if (idio_S_unspec != kind &&
+	idio_S_environ == IDIO_PAIR_H (kind)) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("dynamic?", dynamicp, (IDIO name))
+{
+    IDIO_ASSERT (name);
+    IDIO_VERIFY_PARAM_TYPE (symbol, name);
+
+    IDIO r = idio_S_false;
+
+    IDIO kind = idio_module_current_symbol_recurse (name);
+
+    if (idio_S_unspec != kind &&
+	idio_S_dynamic == IDIO_PAIR_H (kind)) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("computed?", computedp, (IDIO name))
+{
+    IDIO_ASSERT (name);
+    IDIO_VERIFY_PARAM_TYPE (symbol, name);
+
+    IDIO r = idio_S_false;
+
+    IDIO kind = idio_module_current_symbol_recurse (name);
+
+    if (idio_S_unspec != kind &&
+	idio_S_computed == IDIO_PAIR_H (kind)) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
 
 void idio_init_evaluate ()
 {
@@ -3640,6 +3748,11 @@ void idio_evaluate_add_primitives ()
     IDIO_ADD_INFIX_OPERATOR (colon_plus, 1000);  
     IDIO_ADD_INFIX_OPERATOR (colon_star, 1000);  
     IDIO_ADD_INFIX_OPERATOR (colon_tilde, 1000);  
+    IDIO_ADD_INFIX_OPERATOR (colon_dollar, 1000);  
+
+    IDIO_ADD_PRIMITIVE (environp);
+    IDIO_ADD_PRIMITIVE (dynamicp);
+    IDIO_ADD_PRIMITIVE (computedp);
 }
 
 void idio_final_evaluate ()

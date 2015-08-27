@@ -40,6 +40,7 @@ extern IDIO_SYMBOL_DECL (cdr);
 extern IDIO_SYMBOL_DECL (c_struct);
 extern IDIO_SYMBOL_DECL (class);
 extern IDIO_SYMBOL_DECL (colon_caret);
+extern IDIO_SYMBOL_DECL (colon_dollar);
 extern IDIO_SYMBOL_DECL (colon_eq);
 extern IDIO_SYMBOL_DECL (colon_plus);
 extern IDIO_SYMBOL_DECL (colon_star);

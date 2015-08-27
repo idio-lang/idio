@@ -1316,6 +1316,8 @@ void idio_gc_set_verboseness (int n)
 IDIO_DEFINE_PRIMITIVE0 ("gc/collect", gc_collect, (void))
 {
     idio_gc_collect ();
+
+    return idio_S_unspec;
 }
 
 void idio_init_gc ()

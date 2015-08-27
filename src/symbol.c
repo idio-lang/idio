@@ -38,6 +38,7 @@ IDIO_SYMBOL_DECL (car);
 IDIO_SYMBOL_DECL (cdr);
 IDIO_SYMBOL_DECL (class);
 IDIO_SYMBOL_DECL (colon_caret);
+IDIO_SYMBOL_DECL (colon_dollar);
 IDIO_SYMBOL_DECL (colon_eq);
 IDIO_SYMBOL_DECL (colon_plus);
 IDIO_SYMBOL_DECL (colon_star);
@@ -296,6 +297,7 @@ void idio_init_symbol ()
     IDIO_SYMBOL_DEF ("cdr", cdr);
     IDIO_SYMBOL_DEF ("class", class);
     IDIO_SYMBOL_DEF (":^", colon_caret);
+    IDIO_SYMBOL_DEF (":$", colon_dollar);
     IDIO_SYMBOL_DEF (":=", colon_eq);
     IDIO_SYMBOL_DEF (":+", colon_plus);
     IDIO_SYMBOL_DEF (":*", colon_star);

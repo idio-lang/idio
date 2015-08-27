@@ -270,7 +270,24 @@ static void idio_vm_error_computed (char *msg, idio_ai_t index, IDIO loc)
 
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C (msg, sh);
-    IDIO c = idio_struct_instance (idio_condition_rt_variable_error_type,
+    IDIO c = idio_struct_instance (idio_condition_rt_computed_variable_error_type,
+				   IDIO_LIST4 (idio_get_output_string (sh),
+					       loc,
+					       idio_S_nil,
+					       idio_vm_symbols_ref (index)));
+    idio_raise_condition (idio_S_true, c);
+}
+
+static void idio_vm_error_computed_no_accessor (char *msg, idio_ai_t index, IDIO loc)
+{
+    IDIO_ASSERT (loc);
+    IDIO_TYPE_ASSERT (string, loc);
+
+    IDIO sh = idio_open_output_string_handle_C ();
+    idio_display_C ("no ", sh);
+    idio_display_C (msg, sh);
+    idio_display_C (" accessor", sh);
+    IDIO c = idio_struct_instance (idio_condition_rt_computed_variable_no_accessor_error_type,
 				   IDIO_LIST4 (idio_get_output_string (sh),
 					       loc,
 					       idio_S_nil,
@@ -754,6 +771,29 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	    idio_vm_compile (thr, ia, m1, depth + 1);
 
 	    IDIO_IA_PUSH1 (IDIO_A_COMPUTED_SET);
+	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (j));
+	}
+	break;
+    case IDIO_VM_CODE_COMPUTED_DEFINE:
+	{
+	    if (! idio_isa_pair (mt) ||
+		idio_list_length (mt) != 2) {
+		idio_vm_error_compile_param_args ("COMPUTED-DEFINE j m1", mt, IDIO_C_LOCATION ("idio_vm_compile/COMPUTED-DEFINE"));
+		return;
+	    }
+	    
+	    IDIO j = IDIO_PAIR_H (mt);
+
+	    if (! idio_isa_fixnum (j)) {
+		idio_vm_error_compile_param_type ("fixnum", j, IDIO_C_LOCATION ("idio_vm_compile/COMPUTED-DEFINE"));
+		return;
+	    }
+
+	    IDIO m1 = IDIO_PAIR_H (IDIO_PAIR_T (mt));
+	    
+	    idio_vm_compile (thr, ia, m1, depth + 1);
+
+	    IDIO_IA_PUSH1 (IDIO_A_COMPUTED_DEFINE);
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (j));
 	}
 	break;
@@ -1295,6 +1335,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 		}
 		break;
 	    }
+
 	    idio_i_array_push (iap, IDIO_A_EXTEND_FRAME);
 	    idio_vm_compile (thr, iap, mp, depth + 1);
 	    idio_i_array_push (iap, IDIO_A_RETURN);
@@ -1810,7 +1851,7 @@ IDIO_DEFINE_PRIMITIVE2 ("base-error-handler", base_error_handler, (IDIO cont, ID
     }
 
     fprintf (stderr, "this is a non-continuable condition\n");
-    idio_vm_unwind_thread (thr, 1);
+    idio_vm_reset_thread (thr, 1);
 
     return idio_S_unspec;
 }
@@ -2390,26 +2431,34 @@ void idio_vm_environ_set (idio_ai_t index, IDIO v, IDIO thr)
     }
 }
 
-void idio_vm_computed_ref (idio_ai_t index)
+IDIO idio_vm_computed_ref (idio_ai_t index, IDIO thr)
 {
+    IDIO_ASSERT (thr);
+    IDIO_TYPE_ASSERT (thread, thr);
+
     IDIO gns = idio_array_get_index (idio_vm_values, index);
     
     if (idio_isa_pair (gns)) {
 	IDIO get = IDIO_PAIR_H (gns);
 	if (idio_isa_primitive (get) ||
 	    idio_isa_closure (get)) {
-	    idio_apply (get, IDIO_LIST1 (idio_S_nil));
+	    return idio_vm_invoke_C (thr, IDIO_LIST1 (get));
 	} else {
-	    idio_vm_error_computed ("no get accessor", index, IDIO_C_LOCATION ("idio_vm_computed_ref"));
+	    idio_vm_error_computed_no_accessor ("get", index, IDIO_C_LOCATION ("idio_vm_computed_ref"));
 	}
     } else {
 	idio_vm_error_computed ("no accessors", index, IDIO_C_LOCATION ("idio_vm_computed_ref"));
     }
+
+    /* notreached */
+    return idio_S_unspec;
 }
 
-void idio_vm_computed_set (idio_ai_t index, IDIO v)
+IDIO idio_vm_computed_set (idio_ai_t index, IDIO v, IDIO thr)
 {
     IDIO_ASSERT (v);
+    IDIO_ASSERT (thr);
+    IDIO_TYPE_ASSERT (thread, thr);
 
     IDIO gns = idio_array_get_index (idio_vm_values, index);
     
@@ -2417,13 +2466,26 @@ void idio_vm_computed_set (idio_ai_t index, IDIO v)
 	IDIO set = IDIO_PAIR_T (gns);
 	if (idio_isa_primitive (set) ||
 	    idio_isa_closure (set)) {
-	    idio_apply (set, IDIO_LIST1 (v));
+	    return idio_vm_invoke_C (thr, IDIO_LIST2 (set, v));
 	} else {
-	    idio_vm_error_computed ("no set accessor", index, IDIO_C_LOCATION ("idio_vm_computed_set"));
+	    idio_vm_error_computed_no_accessor ("set", index, IDIO_C_LOCATION ("idio_vm_computed_set"));
 	}
     } else {
 	idio_vm_error_computed ("no accessors", index, IDIO_C_LOCATION ("idio_vm_computed_set"));
     }
+
+    /* notreached */
+    return idio_S_unspec;
+}
+
+void idio_vm_computed_define (idio_ai_t index, IDIO v, IDIO thr)
+{
+    IDIO_ASSERT (v);
+    IDIO_ASSERT (thr);
+    IDIO_TYPE_ASSERT (pair, v);
+    IDIO_TYPE_ASSERT (thread, thr);
+
+    idio_array_insert_index (idio_vm_values, v, index);
 }
 
 static void idio_vm_push_handler (IDIO thr, IDIO val)
@@ -2577,6 +2639,7 @@ IDIO idio_apply (IDIO fn, IDIO args)
     /* idio_debug (" %s\n", args);    */
 
     size_t nargs = idio_list_length (args);
+    size_t size = nargs;
     
     /*
      * (apply + 1 2 '(3 4 5))
@@ -2596,27 +2659,28 @@ IDIO idio_apply (IDIO fn, IDIO args)
     }
     if (idio_S_nil != larg) {
 	larg = IDIO_PAIR_H (larg);
+	size = (nargs - 1) + idio_list_length (larg);
     }
 
     /* idio_debug ("apply: %s", fn);   */
     /* idio_debug (" larg=%s\n", larg);    */
     
-    size_t size = (nargs - 1) + idio_list_length (larg);
-
     /* idio_debug ("apply: %s", fn);   */
     /* fprintf (stderr, " -> %zd args\n", size);    */
     
     IDIO vs = idio_frame_allocate (size + 1);
 
-    idio_ai_t vsi;
-    for (vsi = 0; vsi < nargs - 1; vsi++) {
-	idio_frame_update (vs, 0, vsi, IDIO_PAIR_H (args));
-	args = IDIO_PAIR_T (args);
-    }
-    args = larg;
-    for (; idio_S_nil != args; vsi++) {
-	idio_frame_update (vs, 0, vsi, IDIO_PAIR_H (args));
-	args = IDIO_PAIR_T (args);
+    if (nargs) {
+	idio_ai_t vsi;
+	for (vsi = 0; vsi < nargs - 1; vsi++) {
+	    idio_frame_update (vs, 0, vsi, IDIO_PAIR_H (args));
+	    args = IDIO_PAIR_T (args);
+	}
+	args = larg;
+	for (; idio_S_nil != args; vsi++) {
+	    idio_frame_update (vs, 0, vsi, IDIO_PAIR_H (args));
+	    args = IDIO_PAIR_T (args);
+	}
     }
     
     IDIO thr = idio_current_thread ();
@@ -2964,7 +3028,7 @@ int idio_vm_run1 (IDIO thr)
 	    uint64_t i = idio_vm_fetch_varuint (thr);
 	    IDIO sym = idio_vm_symbols_ref (i); 
 	    IDIO_VM_RUN_DIS ("COMPUTED-REF %" PRId64 " %s", i, IDIO_SYMBOL_S (sym)); 
-	    idio_vm_computed_ref (i);
+	    IDIO_THREAD_VAL (thr) = idio_vm_computed_ref (i, thr);
 	}
 	break;
     case IDIO_A_PREDEFINED0:
@@ -3086,7 +3150,22 @@ int idio_vm_run1 (IDIO thr)
 	    IDIO sym = idio_vm_symbols_ref (i); 
 	    IDIO_VM_RUN_DIS ("COMPUTED-SET %" PRId64 " %s", i, IDIO_SYMBOL_S (sym)); 
 	    IDIO val = IDIO_THREAD_VAL (thr);
-	    idio_vm_computed_set (i, val);
+
+	    /*
+	     * For other values, *val* remains the value "set".  For a
+	     * computed value, setting it runs an arbitrary piece of
+	     * code which returns a value.
+	     */
+	    IDIO_THREAD_VAL (thr) = idio_vm_computed_set (i, val, thr);
+	}
+	break;
+    case IDIO_A_COMPUTED_DEFINE:
+	{
+	    uint64_t i = idio_vm_fetch_varuint (thr);
+	    IDIO sym = idio_vm_symbols_ref (i); 
+	    IDIO_VM_RUN_DIS ("COMPUTED-DEFINE %" PRId64 " %s", i, IDIO_SYMBOL_S (sym)); 
+	    IDIO val = IDIO_THREAD_VAL (thr);
+	    idio_vm_computed_define (i, val, thr);
 	}
 	break;
     case IDIO_A_LONG_GOTO:
@@ -4500,7 +4579,7 @@ IDIO_DEFINE_PRIMITIVE1 ("exit", exit, (IDIO istatus))
     exit (status);
 }
 
-void idio_vm_unwind_thread (IDIO thr, int verbose)
+void idio_vm_reset_thread (IDIO thr, int verbose)
 {
     IDIO_ASSERT (thr);
     IDIO_TYPE_ASSERT (thread, thr);
@@ -4525,8 +4604,8 @@ void idio_vm_unwind_thread (IDIO thr, int verbose)
     }
 
     /*
-     * There was code to pop the stack here as where better to clear
-     * down the stack than in the unwind code?  But the question was,
+     * There was code to clear the stack here as where better to clear
+     * down the stack than in the reset code?  But the question was,
      * clear down to what to ensure the engine kept running?  Whatever
      * value was chosen always seemed to end in tears.
      *

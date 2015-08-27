@@ -94,6 +94,7 @@ load "tests/handle.idio"
 load "tests/struct.idio"
 load "tests/condition.idio"
 load "tests/dynamic.idio"
+load "tests/computed.idio"
 load "tests/call-cc.idio"
 load "tests/env.idio"
 load "tests/path.idio"
@@ -104,8 +105,8 @@ load "tests/libc-wrap.idio"
 ;; that?  Erm, they've not been counted and are dynamic in number so
 ;; test we've seen at least as many as the largest number we've
 ;; seen.  Wait, some tests are OS-specific.  Drat!
-;test (eq? Tests 2958) #t
-;test (ge Tests 2820) #t
+test (eq? Tests 3120) #t
+;test (ge Tests 3120) #t
 
 if+ (zero? Errors) (display* "All" Tests "tests passed!") \
     else {

@@ -590,7 +590,7 @@ IDIO idio_module_symbol_value (IDIO symbol, IDIO m_or_n)
 	} else if (idio_S_environ == kind) {
 	    sv = idio_vm_environ_ref (IDIO_FIXNUM_VAL (fvi), idio_current_thread ());
 	} else if (idio_S_computed == kind) {
-	    idio_error_C ("cannot get a computed variable from C", IDIO_LIST1 (sv), IDIO_C_LOCATION ("idio_module_symbol_value"));
+	    sv = idio_vm_computed_ref (IDIO_FIXNUM_VAL (fvi), idio_current_thread ());
 	} else {
 	    idio_error_C ("unexpected symbol kind", IDIO_LIST1 (sv), IDIO_C_LOCATION ("idio_module_symbol_value"));
 	}
@@ -804,7 +804,7 @@ IDIO idio_module_set_symbol_value (IDIO symbol, IDIO value, IDIO module)
     } else if (idio_S_environ == kind) {
 	idio_vm_environ_set (IDIO_FIXNUM_VAL (fvi), value, idio_current_thread ());
     } else if (idio_S_computed == kind) {
-	idio_vm_computed_set (IDIO_FIXNUM_VAL (fvi), value);
+	idio_vm_computed_set (IDIO_FIXNUM_VAL (fvi), value, idio_current_thread ());
     } else if (idio_S_predef == kind) {
 	idio_error_C ("cannot set a primitive", IDIO_LIST1 (symbol), IDIO_C_LOCATION ("idio_module_set_symbol_value"));
     } else {

@@ -176,6 +176,7 @@ void idio_error (IDIO who, IDIO msg, IDIO args, IDIO loc)
     IDIO c = idio_condition_idio_error (idio_get_output_string (sh),
 					loc,
 					who);
+
     idio_raise_condition (idio_S_false, c);
 }
 

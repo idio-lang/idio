@@ -169,23 +169,6 @@ void idio_env_init_idiolib (char *argv0)
     }
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("environ?", environp, (IDIO name))
-{
-    IDIO_ASSERT (name);
-    IDIO_VERIFY_PARAM_TYPE (symbol, name);
-
-    IDIO r = idio_S_false;
-
-    IDIO kind = idio_module_current_symbol_recurse (name);
-
-    if (idio_S_unspec != kind &&
-	idio_S_environ == IDIO_PAIR_H (kind)) {
-	r = idio_S_true;
-    }
-
-    return r;
-}
-
 void idio_init_env ()
 {
     idio_env_IDIOLIB_sym = idio_symbols_C_intern ("IDIOLIB");
@@ -196,7 +179,6 @@ void idio_init_env ()
 void idio_env_add_primitives ()
 {
     idio_env_add_environ ();
-    IDIO_ADD_PRIMITIVE (environp);
 }
 
 void idio_final_env ()

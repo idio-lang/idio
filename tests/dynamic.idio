@@ -24,32 +24,34 @@ dynamic0 = Tests
 
 ;; XXX be careful to use new non-lexical toplevel symbols...
 
-;; have functions ready to test a future dynamic variables
-define (test-dynx1 exp) {
+;; have functions ready to test future dynamic variables
+define (test-dvar-x1 exp) {
   ;; test a regular local
   test exp x
 
   ;; test the dynamic variable
-  test (dynamic dynx1) exp
+  test (dynamic dvar-x1) exp
 }
 
-define (test-dynx2 exp) {
+define (test-dvar-x2 exp) {
   ;; test a regular local
   test exp x
 
   ;; test the dynamic variable
-  test (dynamic dynx2) exp
+  test (dynamic dvar-x2) exp
 }
 
 x = 10
 
 ;; create a local dynamic variable
-dynamic-let (dynx1 x) {
+dynamic-let (dvar-x1 x) {
+  test (dynamic? 'dvar-x1) #t
+
   ;; test it here
-  test (dynamic dynx1) x
+  test (dynamic dvar-x1) x
 
   ;; test it in our prepared function
-  test-dynx1 x
+  test-dvar-x1 x
 }
 
 ;; ^rt-dynamic-variable-unbound-error is raised when calling a
@@ -61,23 +63,24 @@ monitor (function (cont cond) {
     if (rt-dynamic-variable-unbound-error? cond) {
       name := condition-ref cond 'name
 
-      ;; we know that test-dynx1 in our body was passed x
+      ;; we know that test-dvar-x1 in our body was passed x
       x
     } (error "unbound dynamic: unexpected condition" cond)
   } (error "unbound dynamic: unexpected non-continuable error" cond)
 }) {
   ;; display* "using unbound dynamic variable"
-  test-dynx1 x
+  test-dvar-x1 x
 }
 
 ;; create a toplevel dynamic variable
-dynx2 :~ 11
+dvar-x2 :~ 11
+test (dynamic? 'dvar-x2) #t
 
 ;; test it here
-test dynx2 11
+test dvar-x2 11
 
 ;; test it in a prepared function
-test-dynx2
+test-dvar-x2
 
 ;; all done?
-test (dynamic0 + 7) Tests
+test (dynamic0 + 9) Tests
