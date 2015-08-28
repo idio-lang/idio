@@ -793,8 +793,8 @@ static IDIO idio_read_template (IDIO handle, int depth)
      * Note that (block expr1 expr2+) means we need to wrap a begin
      * round expr1 expr2+ -- unlike quasiquote!
      */
-    if (idio_S_nil == IDIO_PAIR_T (IDIO_PAIR_T (e))) {
-	return IDIO_LIST2 (idio_S_quasiquote, IDIO_PAIR_H (IDIO_PAIR_T (e)));
+    if (idio_S_nil == IDIO_PAIR_TT (e)) {
+	return IDIO_LIST2 (idio_S_quasiquote, IDIO_PAIR_HT (e));
     } else {
 	return IDIO_LIST2 (idio_S_quasiquote,
 			   idio_list_append2 (IDIO_LIST1 (idio_S_begin),

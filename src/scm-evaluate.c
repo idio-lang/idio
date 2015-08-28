@@ -214,7 +214,7 @@ IDIO idio_scm_get_primitive_data (IDIO name)
     IDIO k = idio_scm_variable_predefp (IDIO_PAIR_H (idio_scm_predef_names), name);
 
     if (idio_S_nil != k) {
-	IDIO i = IDIO_PAIR_H (IDIO_PAIR_T (k));
+	IDIO i = IDIO_PAIR_HT (k);
 
 	return idio_vm_primitives_ref (IDIO_FIXNUM_VAL (i));
     }
@@ -320,7 +320,7 @@ static idio_ai_t idio_scm_get_dynamic_index (IDIO name)
     if (idio_S_nil == k) {
 	return IDIO_FIXNUM_VAL (idio_scm_dynamic_extend (name));
     } else {
-	return IDIO_FIXNUM_VAL (IDIO_PAIR_H (IDIO_PAIR_T (k)));
+	return IDIO_FIXNUM_VAL (IDIO_PAIR_HT (k));
     }
 }
 
@@ -515,7 +515,7 @@ IDIO_DEFINE_PRIMITIVE1 ("let", let, (IDIO e))
 	IDIO binding = IDIO_PAIR_H (bindings);
 	IDIO_TYPE_ASSERT (pair, bindings);
 	vars = idio_pair (IDIO_PAIR_H (binding), vars);
-	vals = idio_pair (IDIO_PAIR_H (IDIO_PAIR_T (binding)), vals);
+	vals = idio_pair (IDIO_PAIR_HT (binding), vals);
 	
 	bindings = IDIO_PAIR_T (bindings);
     }
@@ -649,7 +649,7 @@ IDIO_DEFINE_PRIMITIVE1 ("letrec", letrec, (IDIO e))
 	IDIO_TYPE_ASSERT (pair, bindings);
 	vars = idio_pair (IDIO_PAIR_H (binding), vars);
 	tmps = idio_pair (idio_gensym (NULL), tmps);
-	vals = idio_pair (IDIO_PAIR_H (IDIO_PAIR_T (binding)), vals);
+	vals = idio_pair (IDIO_PAIR_HT (binding), vals);
 	
 	bindings = IDIO_PAIR_T (bindings);
     }
@@ -911,7 +911,7 @@ static IDIO idio_scm_install_expander_code (IDIO m)
 /*     for (;;) { */
 /* 	if (idio_S_nil == el) { */
 /* 	    return; */
-/* 	} else if (idio_eqp (IDIO_PAIR_H (IDIO_PAIR_H (el)), id)) { */
+/* 	} else if (idio_eqp (IDIO_PAIR_HH (el)), id)) { */
 /* 	    if (idio_S_false == prv) { */
 /* 		idio_module_set_symbol_value (idio_scm_expander_list, */
 /* 					      IDIO_PAIR_T (el), */
@@ -1033,16 +1033,16 @@ static IDIO idio_scm_meaning_dequasiquote (IDIO e, int level)
 	    /* ('list ''quasiquote (deqq (cadr e) (+ level 1))) */
 	    return IDIO_LIST3 (idio_S_list,
 			       IDIO_LIST2 (idio_S_quote, idio_S_quasiquote),
-			       idio_scm_meaning_dequasiquote (IDIO_PAIR_H (IDIO_PAIR_T (e)),
+			       idio_scm_meaning_dequasiquote (IDIO_PAIR_HT (e),
 							      level + 1));
 	} else if (idio_S_unquote == eh) {
 	    if (level <= 0) {
-		return IDIO_PAIR_H (IDIO_PAIR_T (e));
+		return IDIO_PAIR_HT (e);
 	    } else {
 		/* ('list ''unquote (deqq (cadr e) (- level 1))) */
 		return IDIO_LIST3 (idio_S_list,
 				   IDIO_LIST2 (idio_S_quote, idio_S_unquote),
-				   idio_scm_meaning_dequasiquote (IDIO_PAIR_H (IDIO_PAIR_T (e)),
+				   idio_scm_meaning_dequasiquote (IDIO_PAIR_HT (e),
 								  level - 1));
 	    }
 	} else if (idio_S_unquotesplicing == eh) {
@@ -1054,18 +1054,18 @@ static IDIO idio_scm_meaning_dequasiquote (IDIO e, int level)
 		/* ('list ''unquotesplicing (deqq (cadr e) (- level 1))) */
 		return IDIO_LIST3 (idio_S_list,
 				   IDIO_LIST2 (idio_S_quote, idio_S_unquotesplicing),
-				   idio_scm_meaning_dequasiquote (IDIO_PAIR_H (IDIO_PAIR_T (e)),
+				   idio_scm_meaning_dequasiquote (IDIO_PAIR_HT (e),
 								  level - 1));
 	    }
 	} else if (level <= 0 &&
 		   idio_isa_pair (IDIO_PAIR_H (e)) &&
-		   idio_S_unquotesplicing == IDIO_PAIR_H (IDIO_PAIR_H (e))) {
+		   idio_S_unquotesplicing == IDIO_PAIR_HH (e)) {
 	    if (idio_S_nil == IDIO_PAIR_T (e)) {
-		return IDIO_PAIR_H (IDIO_PAIR_T (IDIO_PAIR_H (e)));
+		return IDIO_PAIR_HTH (e);
 	    } else {
 		/* ('append (cadar e) (deqq (cdr e) level)) */
 		return IDIO_LIST3 (idio_S_append,
-				   IDIO_PAIR_H (IDIO_PAIR_T (IDIO_PAIR_H (e))),
+				   IDIO_PAIR_HTH (e),
 				   idio_scm_meaning_dequasiquote (IDIO_PAIR_T (e),
 								  level));
 	    }
@@ -1132,10 +1132,10 @@ static IDIO idio_scm_rewrite_cond (IDIO c)
 
 	/* notreached */
 	return idio_S_unspec;
-    } else if (idio_S_else == IDIO_PAIR_H (IDIO_PAIR_H (c))) {
+    } else if (idio_S_else == IDIO_PAIR_HH (c)) {
 	/* fprintf (stderr, "scm-cond-rewrite: else clause\n"); */
 	if (idio_S_nil == IDIO_PAIR_T (c)) {
-	    return idio_list_append2 (IDIO_LIST1 (idio_S_begin), IDIO_PAIR_T (IDIO_PAIR_H (c)));
+	    return idio_list_append2 (IDIO_LIST1 (idio_S_begin), IDIO_PAIR_TH (c));
 	} else {
 	    idio_error_C ("cond: else not in last clause", c, IDIO_C_LOCATION ("idio_scm_rewrite_cond"));
 
@@ -1144,8 +1144,8 @@ static IDIO idio_scm_rewrite_cond (IDIO c)
 	}
     }
 
-    if (idio_isa_pair (IDIO_PAIR_T (IDIO_PAIR_H (c))) &&
-	       idio_S_eq_gt == IDIO_PAIR_H (IDIO_PAIR_T (IDIO_PAIR_H (c)))) {
+    if (idio_isa_pair (IDIO_PAIR_TH (c)) &&
+	       idio_S_eq_gt == IDIO_PAIR_HTH (c)) {
 	/* fprintf (stderr, "scm-cond-rewrite: => clause\n"); */
 	if (idio_isa_list (IDIO_PAIR_H (c)) &&
 	    idio_list_length (IDIO_PAIR_H (c)) == 3) {
@@ -1157,10 +1157,10 @@ static IDIO idio_scm_rewrite_cond (IDIO c)
 	             ,(rewrite-cond-clauses (cdr c))))
 	     */
 	    return IDIO_LIST3 (idio_S_let,
-			       IDIO_LIST1 (IDIO_LIST2 (gs, IDIO_PAIR_H (IDIO_PAIR_H (c)))),
+			       IDIO_LIST1 (IDIO_LIST2 (gs, IDIO_PAIR_HH (c))),
 			       IDIO_LIST4 (idio_S_if,
 					   gs,
-					   IDIO_LIST2 (IDIO_PAIR_H (IDIO_PAIR_T (IDIO_PAIR_T (IDIO_PAIR_H (c)))),
+					   IDIO_LIST2 (IDIO_PAIR_HTTH (c),
 						       gs),
 					   idio_scm_rewrite_cond (IDIO_PAIR_T (c))));
 	} else {
@@ -1169,7 +1169,7 @@ static IDIO idio_scm_rewrite_cond (IDIO c)
 	    /* notreached */
 	    return idio_S_unspec;
 	}
-    } else if (idio_S_nil == IDIO_PAIR_T (IDIO_PAIR_H (c))) {
+    } else if (idio_S_nil == IDIO_PAIR_TH (c)) {
 	/* fprintf (stderr, "scm-cond-rewrite: null? cdar clause\n"); */
 	IDIO gs = idio_gensym (NULL);
 	/*
@@ -1178,15 +1178,15 @@ static IDIO idio_scm_rewrite_cond (IDIO c)
 	         ,(rewrite-cond-clauses (cdr c))))
 	*/
 	return IDIO_LIST3 (idio_S_let,
-			   IDIO_LIST1 (IDIO_LIST2 (gs, IDIO_PAIR_H (IDIO_PAIR_H (c)))),
+			   IDIO_LIST1 (IDIO_LIST2 (gs, IDIO_PAIR_HH (c))),
 			   IDIO_LIST3 (idio_S_or,
 				       gs,
 				       idio_scm_rewrite_cond (IDIO_PAIR_T (c))));
     } else {
 	/* fprintf (stderr, "scm-cond-rewrite: default clause\n"); */
 	return IDIO_LIST4 (idio_S_if,
-			   IDIO_PAIR_H (IDIO_PAIR_H (c)),
-			   idio_list_append2 (IDIO_LIST1 (idio_S_begin), IDIO_PAIR_T (IDIO_PAIR_H (c))),
+			   IDIO_PAIR_HH (c),
+			   idio_list_append2 (IDIO_LIST1 (idio_S_begin), IDIO_PAIR_TH (c)),
 			   idio_scm_rewrite_cond (IDIO_PAIR_T (c)));
     }
 }
@@ -1595,7 +1595,7 @@ static IDIO idio_scm_rewrite_body (IDIO e)
 	    return idio_S_unspec;
 	} else if (idio_isa_pair (l) &&
 		   idio_isa_pair (IDIO_PAIR_H (l)) &&
-		   idio_S_false != idio_scm_expanderp (IDIO_PAIR_H (IDIO_PAIR_H (l)))) {
+		   idio_S_false != idio_scm_expanderp (IDIO_PAIR_HH (l))) {
 	    cur = idio_scm_macro_expands (IDIO_PAIR_H (l));
 	} else {
 	    cur = IDIO_PAIR_H (l);
@@ -1611,13 +1611,13 @@ static IDIO idio_scm_rewrite_body (IDIO e)
 	    /* internal define */
 	    /* idio_debug ("cur %s\n", cur); */
 
-	    IDIO bindings = IDIO_PAIR_H (IDIO_PAIR_T (cur));
+	    IDIO bindings = IDIO_PAIR_HT (cur);
 	    IDIO form = idio_S_unspec;
 	    if (idio_isa_pair (bindings)) {
 		form = IDIO_LIST2 (IDIO_PAIR_H (bindings),
 				   idio_list_append2 (IDIO_LIST2 (idio_S_lambda,
 								  IDIO_PAIR_T (bindings)),
-						      IDIO_PAIR_T (IDIO_PAIR_T (cur))));
+						      IDIO_PAIR_TT (cur)));
 	    } else {
 		form = IDIO_PAIR_T (cur);
 	    }
@@ -1980,7 +1980,7 @@ static IDIO idio_scm_meaning_primitive_application (IDIO e, IDIO es, IDIO nametr
 	case 2:
 	    {
 		IDIO m1 = idio_scm_meaning (IDIO_PAIR_H (es), nametree, 0);
-		IDIO m2 = idio_scm_meaning (IDIO_PAIR_H (IDIO_PAIR_T (es)), nametree, 0);
+		IDIO m2 = idio_scm_meaning (IDIO_PAIR_HT (es), nametree, 0);
 
 		if (IDIO_STREQP (name, "cons")) {
 		    return IDIO_LIST4 (idio_I_PRIMCALL2, idio_fixnum (IDIO_A_PRIMCALL2_CONS), m1, m2);
@@ -2068,7 +2068,7 @@ static IDIO idio_scm_meaning_application (IDIO e, IDIO es, IDIO nametree, int ta
 		    if ((IDIO_PRIMITIVE_VARARGS (primdata) &&
 			 nargs >= arity) ||
 			arity == nargs) {
-			return idio_scm_meaning_primitive_application (e, es, nametree, tailp, arity, IDIO_PAIR_H (IDIO_PAIR_T (k)));
+			return idio_scm_meaning_primitive_application (e, es, nametree, tailp, arity, IDIO_PAIR_HT (k));
 		    } else {
 			idio_scm_static_error_primitive_arity ("wrong arity for primitive", e, es, primdata, IDIO_C_LOCATION ("idio_scm_meaning_application"));
 		    }

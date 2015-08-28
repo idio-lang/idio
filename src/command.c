@@ -1675,7 +1675,7 @@ IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
     IDIO job_stdout = idio_vm_invoke_C (idio_current_thread (), IDIO_LIST1 (cmd_sym));
     IDIO recover_stdout = idio_S_false;
     if (idio_isa_pair (job_stdout)) {
-	recover_stdout = IDIO_PAIR_H (IDIO_PAIR_T (job_stdout));
+	recover_stdout = IDIO_PAIR_HT (job_stdout);
 	job_stdout = IDIO_PAIR_H (job_stdout);
     }
     idio_array_push (protected, job_stdout);
@@ -1685,7 +1685,7 @@ IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
     IDIO job_stderr = idio_vm_invoke_C (idio_current_thread (), IDIO_LIST1 (cmd_sym));
     IDIO recover_stderr = idio_S_false;
     if (idio_isa_pair (job_stderr)) {
-	recover_stderr = IDIO_PAIR_H (IDIO_PAIR_T (job_stderr));
+	recover_stderr = IDIO_PAIR_HT (job_stderr);
 	job_stderr = IDIO_PAIR_H (job_stderr);
     }
     idio_array_push (protected, job_stderr);

@@ -579,7 +579,7 @@ IDIO idio_module_symbol_value (IDIO symbol, IDIO m_or_n)
 
     if (idio_S_unspec != sv) {
 	IDIO kind = IDIO_PAIR_H (sv);
-	IDIO fvi = IDIO_PAIR_H (IDIO_PAIR_T (sv));
+	IDIO fvi = IDIO_PAIR_HT (sv);
 
 	if (idio_S_toplevel == kind) {
 	    sv = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
@@ -670,7 +670,7 @@ IDIO idio_module_symbol_value_recurse (IDIO symbol, IDIO m_or_n)
 
     if (idio_S_unspec != sv) {
 	IDIO kind = IDIO_PAIR_H (sv);
-	IDIO fvi = IDIO_PAIR_H (IDIO_PAIR_T (sv));
+	IDIO fvi = IDIO_PAIR_HT (sv);
 
 	if (idio_S_toplevel == kind) {
 	    sv = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
@@ -794,7 +794,7 @@ IDIO idio_module_set_symbol_value (IDIO symbol, IDIO value, IDIO module)
 	idio_hash_put (IDIO_MODULE_SYMBOLS (module), symbol, IDIO_LIST2 (kind, fvi));
     } else {
 	kind = IDIO_PAIR_H (sv);
-	fvi = IDIO_PAIR_H (IDIO_PAIR_T (sv));
+	fvi = IDIO_PAIR_HT (sv);
     }
 
     if (idio_S_toplevel == kind) {

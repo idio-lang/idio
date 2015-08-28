@@ -580,7 +580,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 		return;
 	    }
 
-	    IDIO j = IDIO_PAIR_H (IDIO_PAIR_T (mt));
+	    IDIO j = IDIO_PAIR_HT (mt);
 
 	    if (! idio_isa_fixnum (j)) {
 		idio_vm_error_compile_param_type ("fixnum", j, IDIO_C_LOCATION ("idio_vm_compile/DEEP-ARGUMENT-REF"));
@@ -607,7 +607,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 		return;
 	    }
 
-	    IDIO m1 = IDIO_PAIR_H (IDIO_PAIR_T (mt));
+	    IDIO m1 = IDIO_PAIR_HT (mt);
 
 	    idio_vm_compile (thr, ia, m1, depth + 1);
 
@@ -638,14 +638,14 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 		return;
 	    }
 
-	    IDIO j = IDIO_PAIR_H (IDIO_PAIR_T (mt));
+	    IDIO j = IDIO_PAIR_HT (mt);
 
 	    if (! idio_isa_fixnum (j)) {
 		idio_vm_error_compile_param_type ("fixnum", j, IDIO_C_LOCATION ("idio_vm_compile/DEEP-ARGUMENT-SET"));
 		return;
 	    }
 
-	    IDIO m1 = IDIO_PAIR_H (IDIO_PAIR_T (IDIO_PAIR_T (mt)));
+	    IDIO m1 = IDIO_PAIR_HTT (mt);
 
 	    idio_vm_compile (thr, ia, m1, depth + 1);
 
@@ -745,7 +745,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 		return;
 	    }
 
-	    IDIO m1 = IDIO_PAIR_H (IDIO_PAIR_T (mt));
+	    IDIO m1 = IDIO_PAIR_HT (mt);
 	    
 	    idio_vm_compile (thr, ia, m1, depth + 1);
 
@@ -768,7 +768,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 		return;
 	    }
 
-	    IDIO m1 = IDIO_PAIR_H (IDIO_PAIR_T (mt));
+	    IDIO m1 = IDIO_PAIR_HT (mt);
 	    
 	    idio_vm_compile (thr, ia, m1, depth + 1);
 
@@ -791,7 +791,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 		return;
 	    }
 
-	    IDIO m1 = IDIO_PAIR_H (IDIO_PAIR_T (mt));
+	    IDIO m1 = IDIO_PAIR_HT (mt);
 	    
 	    idio_vm_compile (thr, ia, m1, depth + 1);
 
@@ -907,8 +907,8 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	    }
 	    
 	    IDIO m1 = IDIO_PAIR_H (mt);
-	    IDIO m2 = IDIO_PAIR_H (IDIO_PAIR_T (mt));
-	    IDIO m3 = IDIO_PAIR_H (IDIO_PAIR_T (IDIO_PAIR_T (mt)));
+	    IDIO m2 = IDIO_PAIR_HT (mt);
+	    IDIO m3 = IDIO_PAIR_HTT (mt);
 
 	    /*
 	     * Think about the code to be generated where we can only
@@ -995,7 +995,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	    }
 	    
 	    IDIO m1 = IDIO_PAIR_H (mt);
-	    IDIO mp = IDIO_PAIR_H (IDIO_PAIR_T (mt));
+	    IDIO mp = IDIO_PAIR_HT (mt);
 
 	    idio_vm_compile (thr, ia, m1, depth + 1);
 	    idio_vm_compile (thr, ia, mp, depth + 1);
@@ -1179,7 +1179,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	    }
 	    
 	    IDIO ms = IDIO_PAIR_H (mt);
-	    IDIO mp = IDIO_PAIR_H (IDIO_PAIR_T (mt));
+	    IDIO mp = IDIO_PAIR_HT (mt);
 
 	    idio_vm_compile (thr, ia, ms, depth + 1);
 	    IDIO_IA_PUSH1 (IDIO_A_EXTEND_FRAME);
@@ -1195,7 +1195,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	    }
 	    
 	    IDIO ms = IDIO_PAIR_H (mt);
-	    IDIO mp = IDIO_PAIR_H (IDIO_PAIR_T (mt));
+	    IDIO mp = IDIO_PAIR_HT (mt);
 
 	    idio_vm_compile (thr, ia, ms, depth + 1);
 	    IDIO_IA_PUSH1 (IDIO_A_EXTEND_FRAME);
@@ -1225,7 +1225,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	    }
 	    
 	    IDIO ins = IDIO_PAIR_H (mt);
-	    IDIO m1 = IDIO_PAIR_H (IDIO_PAIR_T (mt));
+	    IDIO m1 = IDIO_PAIR_HT (mt);
 
 	    idio_vm_compile (thr, ia, m1, depth + 1);
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (ins));
@@ -1241,8 +1241,8 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	    
 	    IDIO ins = IDIO_PAIR_H (mt);
 	    
-	    IDIO m1 = IDIO_PAIR_H (IDIO_PAIR_T (mt));
-	    IDIO m2 = IDIO_PAIR_H (IDIO_PAIR_T (IDIO_PAIR_T (mt)));
+	    IDIO m1 = IDIO_PAIR_HT (mt);
+	    IDIO m2 = IDIO_PAIR_HTT (mt);
 	    
 	    idio_vm_compile (thr, ia, m1, depth + 1);
 	    IDIO_IA_PUSH1 (IDIO_A_PUSH_VALUE);
@@ -1261,9 +1261,9 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	    
 	    IDIO ins = IDIO_PAIR_H (mt);
 	    
-	    IDIO m1 = IDIO_PAIR_H (IDIO_PAIR_T (mt));
-	    IDIO m2 = IDIO_PAIR_H (IDIO_PAIR_T (IDIO_PAIR_T (mt)));
-	    IDIO m3 = IDIO_PAIR_H (IDIO_PAIR_T (IDIO_PAIR_T (IDIO_PAIR_T (mt))));
+	    IDIO m1 = IDIO_PAIR_HT (mt);
+	    IDIO m2 = IDIO_PAIR_HTT (mt);
+	    IDIO m3 = IDIO_PAIR_HTTT (mt);
 
 	    idio_vm_compile (thr, ia, m1, depth + 1);
 	    IDIO_IA_PUSH1 (IDIO_A_PUSH_VALUE);
@@ -1283,7 +1283,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	    }
 	    
 	    IDIO mp = IDIO_PAIR_H (mt);
-	    IDIO arity = IDIO_PAIR_H (IDIO_PAIR_T (mt));
+	    IDIO arity = IDIO_PAIR_HT (mt);
 
 	    if (! idio_isa_fixnum (arity)) {
 		idio_vm_error_compile_param_type ("fixnum", arity, IDIO_C_LOCATION ("idio_vm_compile/FIX-CLOSURE"));
@@ -1375,7 +1375,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	    }
 	    
 	    IDIO mp = IDIO_PAIR_H (mt);
-	    IDIO arity = IDIO_PAIR_H (IDIO_PAIR_T (mt));
+	    IDIO arity = IDIO_PAIR_HT (mt);
 
 	    if (! idio_isa_fixnum (arity)) {
 		idio_vm_error_compile_param_type ("fixnum", arity, IDIO_C_LOCATION ("idio_vm_compile/NARY-CLOSURE"));
@@ -1445,7 +1445,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	    }
 	    
 	    IDIO m1 = IDIO_PAIR_H (mt);
-	    IDIO ms = IDIO_PAIR_H (IDIO_PAIR_T (mt));
+	    IDIO ms = IDIO_PAIR_HT (mt);
 
 	    idio_vm_compile (thr, ia, m1, depth + 1);
 	    IDIO_IA_PUSH1 (IDIO_A_PUSH_VALUE);
@@ -1462,7 +1462,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	    }
 	    
 	    IDIO m1 = IDIO_PAIR_H (mt);
-	    IDIO ms = IDIO_PAIR_H (IDIO_PAIR_T (mt));
+	    IDIO ms = IDIO_PAIR_HT (mt);
 
 	    idio_vm_compile (thr, ia, m1, depth + 1);
 	    IDIO_IA_PUSH1 (IDIO_A_PUSH_VALUE);
@@ -1479,8 +1479,8 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	    }
 	    
 	    IDIO m1 = IDIO_PAIR_H (mt);
-	    IDIO ms = IDIO_PAIR_H (IDIO_PAIR_T (mt));
-	    IDIO rank = IDIO_PAIR_H (IDIO_PAIR_T (IDIO_PAIR_T (mt)));
+	    IDIO ms = IDIO_PAIR_HT (mt);
+	    IDIO rank = IDIO_PAIR_HTT (mt);
 
 	    if (! idio_isa_fixnum (rank)) {
 		idio_vm_error_compile_param_type ("fixnum", rank, IDIO_C_LOCATION ("idio_vm_compile/STORE-ARGUMENT"));
@@ -1511,8 +1511,8 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	    }
 	    
 	    IDIO m1 = IDIO_PAIR_H (mt);
-	    IDIO ms = IDIO_PAIR_H (IDIO_PAIR_T (mt));
-	    IDIO arity = IDIO_PAIR_H (IDIO_PAIR_T (IDIO_PAIR_T (mt)));
+	    IDIO ms = IDIO_PAIR_HT (mt);
+	    IDIO arity = IDIO_PAIR_HTT (mt);
 
 	    idio_vm_compile (thr, ia, m1, depth + 1);
 	    IDIO_IA_PUSH1 (IDIO_A_PUSH_VALUE);
@@ -1588,7 +1588,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	    }
 
 	    IDIO index = IDIO_PAIR_H (mt);
-	    IDIO m = IDIO_PAIR_H (IDIO_PAIR_T (mt));
+	    IDIO m = IDIO_PAIR_HT (mt);
 
 	    idio_vm_compile (thr, ia, m, depth + 1);
 
@@ -1643,7 +1643,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	    }
 
 	    IDIO index = IDIO_PAIR_H (mt);
-	    IDIO m = IDIO_PAIR_H (IDIO_PAIR_T (mt));
+	    IDIO m = IDIO_PAIR_HT (mt);
 
 	    idio_vm_compile (thr, ia, m, depth + 1);
 
@@ -1704,7 +1704,7 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	    }
 
 	    IDIO i = IDIO_PAIR_H (mt);
-	    IDIO m = IDIO_PAIR_H (IDIO_PAIR_T (mt));
+	    IDIO m = IDIO_PAIR_HT (mt);
 	    
 	    idio_vm_compile (thr, ia, m, depth + 1);
 	    IDIO_IA_PUSH1 (IDIO_A_EXPANDER);
@@ -1720,8 +1720,8 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	    }
 
 	    IDIO i = IDIO_PAIR_H (mt);
-	    IDIO p = IDIO_PAIR_H (IDIO_PAIR_T (mt));
-	    IDIO m = IDIO_PAIR_H (IDIO_PAIR_T (IDIO_PAIR_T (mt)));
+	    IDIO p = IDIO_PAIR_HT (mt);
+	    IDIO m = IDIO_PAIR_HTT (mt);
 	    
 	    idio_vm_compile (thr, ia, m, depth + 1);
 	    IDIO_IA_PUSH1 (IDIO_A_INFIX_OPERATOR);
@@ -1738,8 +1738,8 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
 	    }
 
 	    IDIO i = IDIO_PAIR_H (mt);
-	    IDIO p = IDIO_PAIR_H (IDIO_PAIR_T (mt));
-	    IDIO m = IDIO_PAIR_H (IDIO_PAIR_T (IDIO_PAIR_T (mt)));
+	    IDIO p = IDIO_PAIR_HT (mt);
+	    IDIO m = IDIO_PAIR_HTT (mt);
 	    
 	    idio_vm_compile (thr, ia, m, depth + 1);
 	    IDIO_IA_PUSH1 (IDIO_A_POSTFIX_OPERATOR);

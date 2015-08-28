@@ -158,6 +158,27 @@ typedef struct idio_pair_s {
 #define IDIO_PAIR_H(P)		((P)->u.pair.h)
 #define IDIO_PAIR_T(P)		((P)->u.pair.t)
 
+#define IDIO_PAIR_HH(P)		IDIO_PAIR_H (IDIO_PAIR_H (P))
+#define IDIO_PAIR_HT(P)		IDIO_PAIR_H (IDIO_PAIR_T (P))
+#define IDIO_PAIR_TH(P)		IDIO_PAIR_T (IDIO_PAIR_H (P))
+#define IDIO_PAIR_TT(P)		IDIO_PAIR_T (IDIO_PAIR_T (P))
+
+#define IDIO_PAIR_HHH(P)	IDIO_PAIR_H (IDIO_PAIR_HH (P))
+#define IDIO_PAIR_THH(P)	IDIO_PAIR_T (IDIO_PAIR_HH (P))
+#define IDIO_PAIR_HHT(P)	IDIO_PAIR_H (IDIO_PAIR_HT (P))
+#define IDIO_PAIR_THT(P)	IDIO_PAIR_T (IDIO_PAIR_HT (P))
+
+#define IDIO_PAIR_HTH(P)	IDIO_PAIR_H (IDIO_PAIR_TH (P))
+#define IDIO_PAIR_TTH(P)	IDIO_PAIR_T (IDIO_PAIR_TH (P))
+#define IDIO_PAIR_HTT(P)	IDIO_PAIR_H (IDIO_PAIR_TT (P))
+#define IDIO_PAIR_TTT(P)	IDIO_PAIR_T (IDIO_PAIR_TT (P))
+
+#define IDIO_PAIR_TTH(P)	IDIO_PAIR_T (IDIO_PAIR_TH (P))
+#define IDIO_PAIR_HTTH(P)	IDIO_PAIR_H (IDIO_PAIR_TTH (P))
+
+#define IDIO_PAIR_TTT(P)	IDIO_PAIR_T (IDIO_PAIR_TT (P))
+#define IDIO_PAIR_HTTT(P)	IDIO_PAIR_H (IDIO_PAIR_TTT (P))
+
 /*
  * This character is used by util.c and read.c
  */

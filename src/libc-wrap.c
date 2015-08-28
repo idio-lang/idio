@@ -2979,7 +2979,7 @@ void idio_init_libc_wrap ()
     if (uname (&u) == -1) {
 	idio_error_system_errno ("uname", idio_S_nil, IDIO_C_LOCATION ("idio_init_libc_wrap"));
     }
-    idio_module_set_symbol_value (idio_symbols_C_intern ("HOSTNAME"), idio_string_C (u.nodename), idio_main_module ());
+    idio_module_set_symbol_value (idio_symbols_C_intern ("NODENAME"), idio_string_C (u.nodename), idio_main_module ());
 
     /*
      * From getpwuid(3) on CentOS

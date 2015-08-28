@@ -249,7 +249,7 @@ static IDIO idio_predef_extend (IDIO name, IDIO primdata)
 
     IDIO cv = idio_module_primitive_symbol_recurse (name);
     if (idio_S_unspec != cv) {
-	IDIO fpi = IDIO_PAIR_H (IDIO_PAIR_T (cv));
+	IDIO fpi = IDIO_PAIR_HT (cv);
 	IDIO pd = idio_vm_primitives_ref (IDIO_FIXNUM_VAL (fpi));
 
 	if (IDIO_PRIMITIVE_F (primdata) != IDIO_PRIMITIVE_F (pd)) {
@@ -297,7 +297,7 @@ static IDIO idio_evaluator_extend (IDIO name, IDIO primdata, IDIO module)
 
     IDIO cv = idio_module_symbol_recurse (name, module, 1);
     if (idio_S_unspec != cv) {
-	IDIO fpi = IDIO_PAIR_H (IDIO_PAIR_T (cv));
+	IDIO fpi = IDIO_PAIR_HT (cv);
 	IDIO pd = idio_vm_primitives_ref (IDIO_FIXNUM_VAL (fpi));
 
 	if (IDIO_PRIMITIVE_F (primdata) != IDIO_PRIMITIVE_F (pd)) {
@@ -378,7 +378,7 @@ IDIO idio_toplevel_extend (IDIO name, int flags)
 		idio_static_error_redefine ("toplevel-extend: type change", name, cv, kind, IDIO_C_LOCATION ("idio_toplevel_extend"));
 	    }
 	} else {
-	    return IDIO_PAIR_H (IDIO_PAIR_T (cv));
+	    return IDIO_PAIR_HT (cv);
 	}
     }
 
@@ -403,9 +403,9 @@ static IDIO idio_variable_localp (IDIO nametree, size_t i, IDIO name)
 	    if (idio_isa_pair (names)) {
 		IDIO assq = idio_list_assq (name, names);
 		if (idio_S_false != assq) {
-		    IDIO kind = IDIO_PAIR_H (IDIO_PAIR_T (assq));
+		    IDIO kind = IDIO_PAIR_HT (assq);
 		    if (idio_S_local == kind) {
-			return IDIO_LIST3 (kind, idio_fixnum (i), IDIO_PAIR_H (IDIO_PAIR_T (IDIO_PAIR_T (assq))));
+			return IDIO_LIST3 (kind, idio_fixnum (i), IDIO_PAIR_HTT (assq));
 		    } else if (idio_S_dynamic == kind ||
 			       idio_S_environ == kind) {
 			return IDIO_PAIR_T (assq);
@@ -720,7 +720,7 @@ static IDIO idio_evaluate_expander_code (IDIO m)
 /*     for (;;) { */
 /* 	if (idio_S_nil == el) { */
 /* 	    return; */
-/* 	} else if (idio_eqp (IDIO_PAIR_H (IDIO_PAIR_H (el)), id)) { */
+/* 	} else if (idio_eqp (IDIO_PAIR_HH (el)), id)) { */
 /* 	    if (idio_S_false == prv) { */
 /* 		idio_module_set_symbol_value (idio_expander_list, */
 /* 					      IDIO_PAIR_T (el), */
@@ -810,7 +810,7 @@ void idio_install_infix_operator (IDIO id, IDIO proc, int pri)
 	    IDIO c = og;
 	    IDIO p = idio_S_nil;
 	    while (idio_S_nil != c) {
-		IDIO cpri = IDIO_PAIR_H (IDIO_PAIR_H (c));
+		IDIO cpri = IDIO_PAIR_HH (c);
 		if (IDIO_FIXNUM_VAL (cpri) > pri) {
 		    if (idio_S_nil == p) {
 			idio_module_set_symbol_value (idio_infix_operator_group,
@@ -977,7 +977,7 @@ void idio_install_postfix_operator (IDIO id, IDIO proc, int pri)
 	    IDIO c = og;
 	    IDIO p = idio_S_nil;
 	    while (idio_S_nil != c) {
-		IDIO cpri = IDIO_PAIR_H (IDIO_PAIR_H (c));
+		IDIO cpri = IDIO_PAIR_HH (c);
 		if (IDIO_FIXNUM_VAL (cpri) > pri) {
 		    if (idio_S_nil == p) {
 			idio_module_set_symbol_value (idio_postfix_operator_group,
@@ -1255,16 +1255,16 @@ static IDIO idio_meaning_dequasiquote (IDIO e, int level)
 	    /* ('list ''quasiquote (deqq (cadr e) (+ level 1))) */
 	    return IDIO_LIST3 (idio_S_list,
 			       IDIO_LIST2 (idio_S_quote, idio_S_quasiquote),
-			       idio_meaning_dequasiquote (IDIO_PAIR_H (IDIO_PAIR_T (e)),
+			       idio_meaning_dequasiquote (IDIO_PAIR_HT (e),
 							  level + 1));
 	} else if (idio_S_unquote == eh) {
 	    if (level <= 0) {
-		return IDIO_PAIR_H (IDIO_PAIR_T (e));
+		return IDIO_PAIR_HT (e);
 	    } else {
 		/* ('list ''unquote (deqq (cadr e) (- level 1))) */
 		return IDIO_LIST3 (idio_S_list,
 				   IDIO_LIST2 (idio_S_quote, idio_S_unquote),
-				   idio_meaning_dequasiquote (IDIO_PAIR_H (IDIO_PAIR_T (e)),
+				   idio_meaning_dequasiquote (IDIO_PAIR_HT (e),
 							      level - 1));
 	    }
 	} else if (idio_S_unquotesplicing == eh) {
@@ -1276,18 +1276,18 @@ static IDIO idio_meaning_dequasiquote (IDIO e, int level)
 		/* ('list ''unquotesplicing (deqq (cadr e) (- level 1))) */
 		return IDIO_LIST3 (idio_S_list,
 				   IDIO_LIST2 (idio_S_quote, idio_S_unquotesplicing),
-				   idio_meaning_dequasiquote (IDIO_PAIR_H (IDIO_PAIR_T (e)),
+				   idio_meaning_dequasiquote (IDIO_PAIR_HT (e),
 							      level - 1));
 	    }
 	} else if (level <= 0 &&
 		   idio_isa_pair (IDIO_PAIR_H (e)) &&
-		   idio_S_unquotesplicing == IDIO_PAIR_H (IDIO_PAIR_H (e))) {
+		   idio_S_unquotesplicing == IDIO_PAIR_HH (e)) {
 	    if (idio_S_nil == IDIO_PAIR_T (e)) {
-		return IDIO_PAIR_H (IDIO_PAIR_T (IDIO_PAIR_H (e)));
+		return IDIO_PAIR_HTH (e);
 	    } else {
 		/* ('append (cadar e) (deqq (cdr e) level)) */
 		return IDIO_LIST3 (idio_S_append,
-				   IDIO_PAIR_H (IDIO_PAIR_T (IDIO_PAIR_H (e))),
+				   IDIO_PAIR_HTH (e),
 				   idio_meaning_dequasiquote (IDIO_PAIR_T (e),
 							      level));
 	    }
@@ -1355,10 +1355,10 @@ static IDIO idio_rewrite_cond (IDIO c)
 
 	/* notreached */
 	return idio_S_unspec;
-    } else if (idio_S_else == IDIO_PAIR_H (IDIO_PAIR_H (c))) {
+    } else if (idio_S_else == IDIO_PAIR_HH (c)) {
 	/* fprintf (stderr, "cond-rewrite: else clause\n");  */
 	if (idio_S_nil == IDIO_PAIR_T (c)) {
-	    return idio_list_append2 (IDIO_LIST1 (idio_S_begin), IDIO_PAIR_T (IDIO_PAIR_H (c)));
+	    return idio_list_append2 (IDIO_LIST1 (idio_S_begin), IDIO_PAIR_TH (c));
 	} else {
 	    idio_error_C ("cond: else not in last clause", c, IDIO_C_LOCATION ("idio_rewrite_cond"));
 
@@ -1367,8 +1367,8 @@ static IDIO idio_rewrite_cond (IDIO c)
 	}
     }
 
-    if (idio_isa_pair (IDIO_PAIR_T (IDIO_PAIR_H (c))) &&
-	idio_S_eq_gt == IDIO_PAIR_H (IDIO_PAIR_T (IDIO_PAIR_H (c)))) {
+    if (idio_isa_pair (IDIO_PAIR_TH (c)) &&
+	idio_S_eq_gt == IDIO_PAIR_HTH (c)) {
 	/* fprintf (stderr, "cond-rewrite: => clause\n");  */
 	if (idio_isa_list (IDIO_PAIR_H (c)) &&
 	    idio_list_length (IDIO_PAIR_H (c)) == 3) {
@@ -1380,10 +1380,10 @@ static IDIO idio_rewrite_cond (IDIO c)
 	             ,(rewrite-cond-clauses (cdr c))))
 	     */
 	    return IDIO_LIST3 (idio_S_let,
-			       IDIO_LIST1 (IDIO_LIST2 (gs, IDIO_PAIR_H (IDIO_PAIR_H (c)))),
+			       IDIO_LIST1 (IDIO_LIST2 (gs, IDIO_PAIR_HH (c))),
 			       IDIO_LIST4 (idio_S_if,
 					   gs,
-					   IDIO_LIST2 (IDIO_PAIR_H (IDIO_PAIR_T (IDIO_PAIR_T (IDIO_PAIR_H (c)))),
+					   IDIO_LIST2 (IDIO_PAIR_HTTH (c),
 						       gs),
 					   idio_rewrite_cond (IDIO_PAIR_T (c))));
 	} else {
@@ -1392,7 +1392,7 @@ static IDIO idio_rewrite_cond (IDIO c)
 	    /* notreached */
 	    return idio_S_unspec;
 	}
-    } else if (idio_S_nil == IDIO_PAIR_T (IDIO_PAIR_H (c))) {
+    } else if (idio_S_nil == IDIO_PAIR_TH (c)) {
 	/* fprintf (stderr, "cond-rewrite: null? cdar clause\n");  */
 	IDIO gs = idio_gensym (NULL);
 	/*
@@ -1401,15 +1401,15 @@ static IDIO idio_rewrite_cond (IDIO c)
 	         ,(rewrite-cond-clauses (cdr c))))
 	*/
 	return IDIO_LIST3 (idio_S_let,
-			   IDIO_LIST1 (IDIO_LIST2 (gs, IDIO_PAIR_H (IDIO_PAIR_H (c)))),
+			   IDIO_LIST1 (IDIO_LIST2 (gs, IDIO_PAIR_HH (c))),
 			   IDIO_LIST3 (idio_S_or,
 				       gs,
 				       idio_rewrite_cond (IDIO_PAIR_T (c))));
     } else {
 	/* fprintf (stderr, "cond-rewrite: default clause\n");  */
 	return IDIO_LIST4 (idio_S_if,
-			   IDIO_PAIR_H (IDIO_PAIR_H (c)),
-			   idio_list_append2 (IDIO_LIST1 (idio_S_begin), IDIO_PAIR_T (IDIO_PAIR_H (c))),
+			   IDIO_PAIR_HH (c),
+			   idio_list_append2 (IDIO_LIST1 (idio_S_begin), IDIO_PAIR_TH (c)),
 			   idio_rewrite_cond (IDIO_PAIR_T (c)));
     }
 }
@@ -1774,7 +1774,7 @@ static IDIO idio_meaning_define_infix_operator (IDIO name, IDIO pri, IDIO e, IDI
 	fvi = idio_fixnum (vi);
 	idio_module_set_symbol (name, IDIO_LIST2 (idio_S_toplevel, fvi), idio_operator_module);
     } else {
-	fvi = IDIO_PAIR_H (IDIO_PAIR_T (cv));
+	fvi = IDIO_PAIR_HT (cv);
     }
 
     /*
@@ -1860,7 +1860,7 @@ static IDIO idio_meaning_define_postfix_operator (IDIO name, IDIO pri, IDIO e, I
 	fvi = idio_fixnum (vi);
 	idio_module_set_symbol (name, IDIO_LIST2 (idio_S_toplevel, fvi), idio_operator_module);
     } else {
-	fvi = IDIO_PAIR_H (IDIO_PAIR_T (cv));
+	fvi = IDIO_PAIR_HT (cv);
     }
 
     /*
@@ -1994,7 +1994,7 @@ static IDIO idio_meaning_define_computed (IDIO name, IDIO e, IDIO nametree, int 
 
 	if (idio_isa_pair (val)) {
 	    getter = IDIO_PAIR_H (val);
-	    setter = IDIO_PAIR_H (IDIO_PAIR_T (val));
+	    setter = IDIO_PAIR_HT (val);
 	} else {
 	    getter = val;
 	}
@@ -2241,7 +2241,7 @@ static IDIO idio_rewrite_body (IDIO e)
 	    break;
 	} else if (idio_isa_pair (l) &&
 		   idio_isa_pair (IDIO_PAIR_H (l)) &&
-		   idio_S_false != idio_expanderp (IDIO_PAIR_H (IDIO_PAIR_H (l)))) {
+		   idio_S_false != idio_expanderp (IDIO_PAIR_HH (l))) {
 	    cur = idio_macro_expands (IDIO_PAIR_H (l));
 	} else {
 	    cur = IDIO_PAIR_H (l);
@@ -2296,7 +2296,7 @@ static IDIO idio_rewrite_body (IDIO e)
 	    }
 	    r = idio_list_append2 (r,
 				   IDIO_LIST1 (IDIO_LIST3 (idio_S_environ_unset,
-							   IDIO_PAIR_H (IDIO_PAIR_T (cur)),
+							   IDIO_PAIR_HT (cur),
 							   idio_list_append2 (IDIO_LIST1 (idio_S_begin), body))));
 	    return r;
 	} else if (idio_isa_pair (cur) &&
@@ -2322,7 +2322,7 @@ static IDIO idio_rewrite_body (IDIO e)
 	    }
 	    r = idio_list_append2 (r,
 				   IDIO_LIST1 (IDIO_LIST3 (idio_S_dynamic_unset,
-							   IDIO_PAIR_H (IDIO_PAIR_T (cur)),
+							   IDIO_PAIR_HT (cur),
 							   idio_list_append2 (IDIO_LIST1 (idio_S_begin), body))));
 	    return r;
 	} else if (idio_isa_pair (cur) &&
@@ -2356,7 +2356,7 @@ static IDIO idio_rewrite_body_letrec (IDIO e)
 	    return idio_S_nil;
 	} else if (idio_isa_pair (l) &&
 		   idio_isa_pair (IDIO_PAIR_H (l)) &&
-		   idio_S_false != idio_expanderp (IDIO_PAIR_H (IDIO_PAIR_H (l)))) {
+		   idio_S_false != idio_expanderp (IDIO_PAIR_HH (l))) {
 	    cur = idio_macro_expands (IDIO_PAIR_H (l));
 	} else {
 	    cur = IDIO_PAIR_H (l);
@@ -2371,13 +2371,13 @@ static IDIO idio_rewrite_body_letrec (IDIO e)
 		   (idio_S_define == IDIO_PAIR_H (cur) ||
 		    idio_S_colon_plus == IDIO_PAIR_H (cur))) {
 
-	    IDIO bindings = IDIO_PAIR_H (IDIO_PAIR_T (cur));
+	    IDIO bindings = IDIO_PAIR_HT (cur);
 	    IDIO form = idio_S_unspec;
 	    if (idio_isa_pair (bindings)) {
 		form = IDIO_LIST2 (IDIO_PAIR_H (bindings),
 				   idio_list_append2 (IDIO_LIST2 (idio_S_function,
 								  IDIO_PAIR_T (bindings)),
-						      IDIO_PAIR_T (IDIO_PAIR_T (cur))));
+						      IDIO_PAIR_TT (cur)));
 	    } else {
 		form = IDIO_PAIR_T (cur);
 	    }
@@ -2733,7 +2733,7 @@ static IDIO idio_meaning_primitive_application (IDIO e, IDIO es, IDIO nametree, 
 	case 2:
 	    {
 		IDIO m1 = idio_meaning (IDIO_PAIR_H (es), nametree, IDIO_MEANING_NOT_TAILP (flags));
-		IDIO m2 = idio_meaning (IDIO_PAIR_H (IDIO_PAIR_T (es)), nametree, IDIO_MEANING_NOT_TAILP (flags));
+		IDIO m2 = idio_meaning (IDIO_PAIR_HT (es), nametree, IDIO_MEANING_NOT_TAILP (flags));
 
 		if (IDIO_STREQP (name, "cons") ||
 		    IDIO_STREQP (name, "pair")) {
@@ -2822,7 +2822,7 @@ static IDIO idio_meaning_application (IDIO e, IDIO es, IDIO nametree, int flags)
 	    IDIO kt = IDIO_PAIR_H (k);
 
 	    if (idio_S_predef == kt) {
-		IDIO kv = IDIO_PAIR_H (IDIO_PAIR_T (k));
+		IDIO kv = IDIO_PAIR_HT (k);
 		IDIO primdata = idio_vm_primitives_ref (IDIO_FIXNUM_VAL (kv));
 
 		if (idio_S_unspec != primdata) {
@@ -2834,7 +2834,7 @@ static IDIO idio_meaning_application (IDIO e, IDIO es, IDIO nametree, int flags)
 		    if ((IDIO_PRIMITIVE_VARARGS (primdata) &&
 			 nargs >= arity) ||
 			arity == nargs) {
-			return idio_meaning_primitive_application (e, es, nametree, flags, arity, IDIO_PAIR_H (IDIO_PAIR_T (k)));
+			return idio_meaning_primitive_application (e, es, nametree, flags, arity, IDIO_PAIR_HT (k));
 		    } else {
 			idio_static_error_primitive_arity ("wrong arity for primitive", e, es, primdata, IDIO_C_LOCATION ("idio_meaning_application"));
 		    }
@@ -3022,7 +3022,7 @@ IDIO idio_infix_operator_expand (IDIO e, int depth)
 
 		if (idio_isa_pair (s) &&
 		    idio_S_escape == IDIO_PAIR_H (s)) {
-		    /* s = IDIO_PAIR_H (IDIO_PAIR_T (s)); */
+		    /* s = IDIO_PAIR_HT (s); */
 		} else {
 		    IDIO opex = idio_list_assq (s, ops);
 		    
@@ -3071,7 +3071,7 @@ IDIO idio_postfix_operator_expand (IDIO e, int depth)
 
 		if (idio_isa_pair (s) &&
 		    idio_S_escape == IDIO_PAIR_H (s)) {
-		    /* s = IDIO_PAIR_H (IDIO_PAIR_T (s)); */
+		    /* s = IDIO_PAIR_HT (s); */
 		} else {
 		    IDIO opex = idio_list_assq (s, ops);
 		    
