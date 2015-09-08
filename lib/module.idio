@@ -1,0 +1,163 @@
+;;
+;; Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+;;
+;; Licensed under the Apache License, Version 2.0 (the "License"); you
+;; may not use this file except in compliance with the License.  You
+;; may obtain a copy of the License at
+;;
+;;     http://www.apache.org/licenses/LICENSE-2.0
+;;
+;; Unless required by applicable law or agreed to in writing, software
+;; distributed under the License is distributed on an "AS IS" BASIS,
+;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+;; See the License for the specific language governing permissions and
+;; limitations under the License.
+;;
+;;
+
+;;
+;; module.idio
+;;
+
+;; Following in the style of STklos
+
+;; define-module
+;;
+;; We'll use a stack while processing (nested) define-module
+;; statements which we can unwind if there's an error
+%module-stack := #n
+
+define (%module-push name) {
+  %module-stack = pair (current-module) %module-stack
+  %find-or-create-module name
+}
+
+define (%module-pop) {
+  prev := ph %module-stack
+  %module-stack = pt %module-stack
+  prev
+}
+
+define (%module-handler cont cond) {
+  mod := (%module-pop)
+  %set-current-module! mod
+  raise cont cond
+}
+
+define-macro (define-module name & body) {
+  %T{
+    with-handler %module-handler {
+      %set-current-module! (%module-push $name)
+      $@body
+      %set-current-module! (%module-pop)
+      (void)
+    }
+  }
+}
+
+;; module and load are concomitant
+;;
+;; {module} simply sets the current module but {load} now needs to be
+;; module-aware and restore the original value at the end of file or
+;; on an error
+define-macro (module name) {
+  %T{
+    %set-current-module! (%find-or-create-module '$name)
+  }
+}
+
+load = {
+  orig-load := load
+  cmod := (current-module)
+
+  function (filename) {
+    if (not (string? filename)) (error 'load "not a string" filename)
+
+    load-k := #n
+
+    monitor (function (cont cond) {
+      if (not cont) {
+	edisplay "load/module "
+	ewrite filename
+	edisplay* ": non-cont-error caught"
+	edisplay* cond
+	edisplay* "load/module: invoking safe continuation"
+	load-k cond
+      } {
+	raise cont cond
+      }
+    }) {
+      call/cc (function (k) {
+	load-k = k
+	orig-load filename
+      })
+    }
+
+    edisplay* "load/module: restoring module" cmod
+    %set-current-module! cmod
+  }
+}
+
+
+;; module-import
+define (%module-import importer modules) {
+  loop :+ function (mods result) {
+    cond ((null? mods) {
+	    %set-module-imports! importer (reverse result)
+	 }) \
+	 (else {
+	   mod := find-module (ph mods) #f
+	   if mod {
+	     loop (pt mods) (if ((eq? mod importer) or
+				 (memq mod result))
+				result
+				(pair mod result))
+	   } {
+	     error 'import "module does not exist" (ph mods)
+	   }
+	 })
+    }
+
+  loop modules (reverse (module-imports importer))
+}
+
+define-macro (import & modules) {
+  if (null? modules) #n %T{
+    %module-import (current-module) '$modules
+  }
+}
+
+;; module-export
+define (%module-export exporter symbols) {
+  loop :+ function (syms result) {
+    if (null? syms) {
+      %set-module-exports! exporter result
+    } {
+      sym := ph syms
+      if (symbol? sym) {
+	loop (pt syms) (if (memq sym result) result (pair sym result))
+      } {
+	error 'export "not a symbol" sym
+      }
+    }
+  }
+
+  loop symbols (module-exports exporter)
+}
+
+;; export sym ...
+;; export (sym
+;;	   ...)
+define-macro (export & symbols) {
+  cond ((null? symbols) #n) \
+       ((pair? (ph symbols)) {
+	 %T{
+	   %module-export (current-module) '$(ph symbols)
+	 }
+       }) \
+       (else {
+	 %T{
+	   %module-export (current-module) '$symbols
+	 }
+       })
+}
