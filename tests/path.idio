@@ -18,12 +18,15 @@
 ;;
 ;; path.idio
 ;;
-path0 = Tests
+module tests/path
+import libc
 
-d = make-tmp-dir "idio-test-"
-f1 = string-append d "/a"
-f2 = string-append d "/b"
-f3 = string-append d "/c"
+path0 := Tests
+
+d := make-tmp-dir "idio-test-"
+f1 := string-append d "/a"
+f2 := string-append d "/b"
+f3 := string-append d "/c"
 
 with-output-to-file f1 (function () {
   display "123"
@@ -46,7 +49,7 @@ touch -a -t "200001010000.00" f3
 touch -a -t "200001010000.01" f1
 touch -a -t "200001010000.02" f2
 
-p = make-struct-instance ~path (string-append d "/a")
+p := make-struct-instance ~path (string-append d "/a")
 test (length p) 1
 
 p = make-struct-instance ~path (string-append d "/*")
@@ -77,8 +80,8 @@ test (length p) 2
 ;; XXX should be [:lower:] but for lack of OS support.
 p = make-struct-instance ~path (string-append d "/[a-z]")
 
-;; The stat() sorts use "c/<" as a comparator, so numerically smallest
-;; first
+;; The stat() sorts use "libc/<" as a comparator, so numerically
+;; smallest first
 test (sort_size p) (list f3 f2 f1)
 test (sort_mtime p) (list f1 f2 f3)
 test (sort_atime p) (list f3 f1 f2)

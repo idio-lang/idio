@@ -18,7 +18,7 @@
 ;;
 ;; template.idio
 ;;
-template0 = Tests
+template0 := Tests
 
 x-sym := 'x
 x-str := symbol->string x-sym

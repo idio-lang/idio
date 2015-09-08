@@ -62,7 +62,7 @@
      * in order -- to avoid an unecessary call to idio_list_reverse().
      * So go to the end first.
      */
-#define IDIO_DEFINE_STRUCTn(v,n,p) {					\
+#define IDIO_DEFINE_MODULE_STRUCTn(m,v,n,p) {				\
 	IDIO sym = idio_symbols_C_intern (n);				\
 	ptrdiff_t i;							\
 	for (i = 0; NULL != field_names[i]; i++) {			\
@@ -74,8 +74,10 @@
 	}								\
 	v = idio_struct_type (sym, p, fields);				\
 	idio_gc_protect (v);						\
-	idio_module_toplevel_set_symbol_value (sym, v);			\
+	idio_module_set_symbol_value (sym, v, m);			\
     }
+
+#define IDIO_DEFINE_STRUCTn(v,n,p)	IDIO_DEFINE_MODULE_STRUCTn(idio_Idio_module_instance(),v,n,p)
 
 IDIO idio_struct_type (IDIO name, IDIO parent, IDIO fields);
 int idio_isa_struct_type (IDIO p);

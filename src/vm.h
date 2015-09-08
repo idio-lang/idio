@@ -28,6 +28,8 @@
  *
  * These are broadly following the intermediate instructions but
  * specialize for the common cases.  For loose values of common.
+ *
+ * As a byte-compiler there should be less than 256 of these!
  */
 #define IDIO_A_SHALLOW_ARGUMENT_REF0       1
 #define IDIO_A_SHALLOW_ARGUMENT_REF1       2
@@ -38,7 +40,7 @@
 #define IDIO_A_GLOBAL_REF                  7
 #define IDIO_A_CHECKED_GLOBAL_REF          8
 #define IDIO_A_CHECKED_GLOBAL_FUNCTION_REF 9
-#define IDIO_A_CONSTANT_REF                10 
+#define IDIO_A_CONSTANT_REF                10
 #define IDIO_A_COMPUTED_REF                11
 
 #define IDIO_A_PREDEFINED0                 20
@@ -52,114 +54,116 @@
 #define IDIO_A_PREDEFINED8                 28
 #define IDIO_A_PREDEFINED                  29
 
-#define IDIO_A_SHALLOW_ARGUMENT_SET0       30
-#define IDIO_A_SHALLOW_ARGUMENT_SET1       31
-#define IDIO_A_SHALLOW_ARGUMENT_SET2       32
-#define IDIO_A_SHALLOW_ARGUMENT_SET3       33
-#define IDIO_A_SHALLOW_ARGUMENT_SET        34
-#define IDIO_A_DEEP_ARGUMENT_SET           35
-#define IDIO_A_GLOBAL_SET                  36
-#define IDIO_A_COMPUTED_SET                37
-#define IDIO_A_COMPUTED_DEFINE             38
+#define IDIO_A_SHALLOW_ARGUMENT_SET0       60
+#define IDIO_A_SHALLOW_ARGUMENT_SET1       61
+#define IDIO_A_SHALLOW_ARGUMENT_SET2       62
+#define IDIO_A_SHALLOW_ARGUMENT_SET3       63
+#define IDIO_A_SHALLOW_ARGUMENT_SET        64
+#define IDIO_A_DEEP_ARGUMENT_SET           65
+#define IDIO_A_GLOBAL_DEF                  66
+#define IDIO_A_GLOBAL_SET                  67
+#define IDIO_A_COMPUTED_SET                68
+#define IDIO_A_COMPUTED_DEFINE             69
 
-#define IDIO_A_LONG_GOTO                   40
-#define IDIO_A_LONG_JUMP_FALSE             41
-#define IDIO_A_SHORT_GOTO                  42
-#define IDIO_A_SHORT_JUMP_FALSE            43
+#define IDIO_A_LONG_GOTO                   80
+#define IDIO_A_LONG_JUMP_FALSE             81
+#define IDIO_A_SHORT_GOTO                  82
+#define IDIO_A_SHORT_JUMP_FALSE            83
 
-#define IDIO_A_PUSH_VALUE                  50
-#define IDIO_A_POP_VALUE                   51
-#define IDIO_A_POP_REG1                    52
-#define IDIO_A_POP_REG2                    53
-#define IDIO_A_POP_FUNCTION                54
-#define IDIO_A_PRESERVE_STATE              55
-#define IDIO_A_RESTORE_STATE               56
-#define IDIO_A_RESTORE_ALL_STATE           57
+#define IDIO_A_PUSH_VALUE                  90
+#define IDIO_A_POP_VALUE                   91
+#define IDIO_A_POP_REG1                    92
+#define IDIO_A_POP_REG2                    93
+#define IDIO_A_POP_FUNCTION                94
+#define IDIO_A_PRESERVE_STATE              95
+#define IDIO_A_RESTORE_STATE               96
+#define IDIO_A_RESTORE_ALL_STATE           97
 
-#define IDIO_A_CREATE_CLOSURE              60
-#define IDIO_A_FUNCTION_INVOKE             61
-#define IDIO_A_FUNCTION_GOTO               62
-#define IDIO_A_RETURN                      63
-#define IDIO_A_FINISH                      64
+#define IDIO_A_CREATE_CLOSURE              100
+#define IDIO_A_FUNCTION_INVOKE             101
+#define IDIO_A_FUNCTION_GOTO               102
+#define IDIO_A_RETURN                      103
+#define IDIO_A_FINISH                      104
 
-#define IDIO_A_ALLOCATE_FRAME1             70
-#define IDIO_A_ALLOCATE_FRAME2             71
-#define IDIO_A_ALLOCATE_FRAME3             72
-#define IDIO_A_ALLOCATE_FRAME4             73
-#define IDIO_A_ALLOCATE_FRAME5             74
-#define IDIO_A_ALLOCATE_FRAME              75
-#define IDIO_A_ALLOCATE_DOTTED_FRAME       76
+#define IDIO_A_ALLOCATE_FRAME1             110
+#define IDIO_A_ALLOCATE_FRAME2             111
+#define IDIO_A_ALLOCATE_FRAME3             112
+#define IDIO_A_ALLOCATE_FRAME4             113
+#define IDIO_A_ALLOCATE_FRAME5             114
+#define IDIO_A_ALLOCATE_FRAME              115
+#define IDIO_A_ALLOCATE_DOTTED_FRAME       116
 
-#define IDIO_A_POP_FRAME0                  80
-#define IDIO_A_POP_FRAME1                  81
-#define IDIO_A_POP_FRAME2                  82
-#define IDIO_A_POP_FRAME3                  83
-#define IDIO_A_POP_FRAME                   84
+#define IDIO_A_POP_FRAME0                  120
+#define IDIO_A_POP_FRAME1                  121
+#define IDIO_A_POP_FRAME2                  122
+#define IDIO_A_POP_FRAME3                  123
+#define IDIO_A_POP_FRAME                   124
 
-#define IDIO_A_EXTEND_FRAME                90
-#define IDIO_A_UNLINK_FRAME                91
-#define IDIO_A_PACK_FRAME                  92
-#define IDIO_A_POP_CONS_FRAME              93
+#define IDIO_A_EXTEND_FRAME                130
+#define IDIO_A_UNLINK_FRAME                131
+#define IDIO_A_PACK_FRAME                  132
+#define IDIO_A_POP_CONS_FRAME              133
 
-#define IDIO_A_ARITYP1                     100
-#define IDIO_A_ARITYP2                     101
-#define IDIO_A_ARITYP3                     102
-#define IDIO_A_ARITYP4                     103
-#define IDIO_A_ARITYEQP                    104
-#define IDIO_A_ARITYGEP                    105
+#define IDIO_A_ARITYP1                     140
+#define IDIO_A_ARITYP2                     141
+#define IDIO_A_ARITYP3                     142
+#define IDIO_A_ARITYP4                     143
+#define IDIO_A_ARITYEQP                    144
+#define IDIO_A_ARITYGEP                    145
 
-#define IDIO_A_SHORT_NUMBER                110
-#define IDIO_A_SHORT_NEG_NUMBER            111
-#define IDIO_A_CONSTANT_0                  112
-#define IDIO_A_CONSTANT_1                  113
-#define IDIO_A_CONSTANT_2                  114
-#define IDIO_A_CONSTANT_3                  115
-#define IDIO_A_CONSTANT_4                  116
+#define IDIO_A_SHORT_NUMBER                150
+#define IDIO_A_SHORT_NEG_NUMBER            151
+#define IDIO_A_CONSTANT_0                  152
+#define IDIO_A_CONSTANT_1                  153
+#define IDIO_A_CONSTANT_2                  154
+#define IDIO_A_CONSTANT_3                  155
+#define IDIO_A_CONSTANT_4                  156
 
-#define IDIO_A_PRIMCALL0_NEWLINE           120
-#define IDIO_A_PRIMCALL0_READ              121
-#define IDIO_A_PRIMCALL1_CAR               122
-#define IDIO_A_PRIMCALL1_CDR               123
-#define IDIO_A_PRIMCALL1_PAIRP             124
-#define IDIO_A_PRIMCALL1_SYMBOLP           125
-#define IDIO_A_PRIMCALL1_DISPLAY           126
-#define IDIO_A_PRIMCALL1_PRIMITIVEP        127
-#define IDIO_A_PRIMCALL1_NULLP             128
-#define IDIO_A_PRIMCALL1_CONTINUATIONP     129
-#define IDIO_A_PRIMCALL1_EOFP              130
-#define IDIO_A_PRIMCALL2_CONS              131
-#define IDIO_A_PRIMCALL2_EQP               132
-#define IDIO_A_PRIMCALL2_SET_CAR           133
-#define IDIO_A_PRIMCALL2_SET_CDR           134
-#define IDIO_A_PRIMCALL2_ADD               135
-#define IDIO_A_PRIMCALL2_SUBTRACT          136
-#define IDIO_A_PRIMCALL2_EQ                137
-#define IDIO_A_PRIMCALL2_LT                138
-#define IDIO_A_PRIMCALL2_GT                139
-#define IDIO_A_PRIMCALL2_MULTIPLY          140
-#define IDIO_A_PRIMCALL2_LE                141
-#define IDIO_A_PRIMCALL2_GE                142
-#define IDIO_A_PRIMCALL2_REMAINDER         143
+#define IDIO_A_PRIMCALL0_NEWLINE           160
+#define IDIO_A_PRIMCALL0_READ              161
+#define IDIO_A_PRIMCALL1_CAR               162
+#define IDIO_A_PRIMCALL1_CDR               163
+#define IDIO_A_PRIMCALL1_PAIRP             164
+#define IDIO_A_PRIMCALL1_SYMBOLP           165
+#define IDIO_A_PRIMCALL1_DISPLAY           166
+#define IDIO_A_PRIMCALL1_PRIMITIVEP        167
+#define IDIO_A_PRIMCALL1_NULLP             168
+#define IDIO_A_PRIMCALL1_CONTINUATIONP     169
+#define IDIO_A_PRIMCALL1_EOFP              170
+#define IDIO_A_PRIMCALL1_SET_CUR_MOD	   171
+#define IDIO_A_PRIMCALL2_CONS              172
+#define IDIO_A_PRIMCALL2_EQP               173
+#define IDIO_A_PRIMCALL2_SET_CAR           174
+#define IDIO_A_PRIMCALL2_SET_CDR           175
+#define IDIO_A_PRIMCALL2_ADD               176
+#define IDIO_A_PRIMCALL2_SUBTRACT          177
+#define IDIO_A_PRIMCALL2_EQ                178
+#define IDIO_A_PRIMCALL2_LT                179
+#define IDIO_A_PRIMCALL2_GT                180
+#define IDIO_A_PRIMCALL2_MULTIPLY          181
+#define IDIO_A_PRIMCALL2_LE                182
+#define IDIO_A_PRIMCALL2_GE                183
+#define IDIO_A_PRIMCALL2_REMAINDER         184
 
-#define IDIO_A_NOP                         150
-#define IDIO_A_PRIMCALL0                   151
-#define IDIO_A_PRIMCALL1                   152
-#define IDIO_A_PRIMCALL2                   153
-#define IDIO_A_PRIMCALL3                   154
-#define IDIO_A_PRIMCALL                    155
+#define IDIO_A_NOP                         190
+#define IDIO_A_PRIMCALL0                   191
+#define IDIO_A_PRIMCALL1                   192
+#define IDIO_A_PRIMCALL2                   193
+#define IDIO_A_PRIMCALL3                   194
+#define IDIO_A_PRIMCALL                    195
 
-#define IDIO_A_LONG_JUMP_TRUE              160
-#define IDIO_A_SHORT_JUMP_TRUE             161
-#define IDIO_A_FIXNUM                      162
-#define IDIO_A_NEG_FIXNUM                  163
-#define IDIO_A_CHARACTER                   164
-#define IDIO_A_NEG_CHARACTER               165
-#define IDIO_A_CONSTANT                    166
-#define IDIO_A_NEG_CONSTANT                167
+#define IDIO_A_LONG_JUMP_TRUE              200
+#define IDIO_A_SHORT_JUMP_TRUE             201
+#define IDIO_A_FIXNUM                      202
+#define IDIO_A_NEG_FIXNUM                  203
+#define IDIO_A_CHARACTER                   204
+#define IDIO_A_NEG_CHARACTER               205
+#define IDIO_A_CONSTANT                    206
+#define IDIO_A_NEG_CONSTANT                207
 
-#define IDIO_A_EXPANDER                    170
-#define IDIO_A_INFIX_OPERATOR              171
-#define IDIO_A_POSTFIX_OPERATOR            172
+#define IDIO_A_EXPANDER                    210
+#define IDIO_A_INFIX_OPERATOR              211
+#define IDIO_A_POSTFIX_OPERATOR            212
 
 #define IDIO_A_DYNAMIC_REF                 230
 #define IDIO_A_DYNAMIC_FUNCTION_REF	   231
@@ -197,11 +201,12 @@
 #define IDIO_VM_CODE_GLOBAL_REF                  (IDIO_VM_CODE_BASE+10)
 #define IDIO_VM_CODE_CHECKED_GLOBAL_REF          (IDIO_VM_CODE_BASE+11)
 #define IDIO_VM_CODE_CHECKED_GLOBAL_FUNCTION_REF (IDIO_VM_CODE_BASE+12)
-#define IDIO_VM_CODE_GLOBAL_SET                  (IDIO_VM_CODE_BASE+13)
-#define IDIO_VM_CODE_CONSTANT                    (IDIO_VM_CODE_BASE+14)
-#define IDIO_VM_CODE_COMPUTED_REF                (IDIO_VM_CODE_BASE+15)
-#define IDIO_VM_CODE_COMPUTED_SET                (IDIO_VM_CODE_BASE+16)
-#define IDIO_VM_CODE_COMPUTED_DEFINE             (IDIO_VM_CODE_BASE+17)
+#define IDIO_VM_CODE_GLOBAL_DEF                  (IDIO_VM_CODE_BASE+13)
+#define IDIO_VM_CODE_GLOBAL_SET                  (IDIO_VM_CODE_BASE+14)
+#define IDIO_VM_CODE_CONSTANT                    (IDIO_VM_CODE_BASE+15)
+#define IDIO_VM_CODE_COMPUTED_REF                (IDIO_VM_CODE_BASE+16)
+#define IDIO_VM_CODE_COMPUTED_SET                (IDIO_VM_CODE_BASE+17)
+#define IDIO_VM_CODE_COMPUTED_DEFINE             (IDIO_VM_CODE_BASE+18)
     
 #define IDIO_VM_CODE_ALTERNATIVE                 (IDIO_VM_CODE_BASE+20)
 #define IDIO_VM_CODE_SEQUENCE                    (IDIO_VM_CODE_BASE+21)
@@ -258,6 +263,7 @@
 #define idio_I_GLOBAL_REF                  ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_GLOBAL_REF))
 #define idio_I_CHECKED_GLOBAL_REF          ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_CHECKED_GLOBAL_REF))
 #define idio_I_CHECKED_GLOBAL_FUNCTION_REF ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_CHECKED_GLOBAL_FUNCTION_REF))
+#define idio_I_GLOBAL_DEF                  ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_GLOBAL_DEF))
 #define idio_I_GLOBAL_SET                  ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_GLOBAL_SET))
 #define idio_I_COMPUTED_REF                ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_COMPUTED_REF))
 #define idio_I_COMPUTED_SET                ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_COMPUTED_SET))
@@ -302,22 +308,21 @@ void idio_vm_codegen (IDIO thr, IDIO m);
 IDIO idio_vm_run (IDIO thr);
 
 idio_ai_t idio_vm_extend_constants (IDIO v);
-IDIO idio_vm_constants_ref (idio_ai_t i);
-idio_ai_t idio_vm_extend_symbols (IDIO v);
-IDIO idio_vm_symbols_ref (idio_ai_t i);
-idio_ai_t idio_vm_symbols_lookup (IDIO v);
-IDIO idio_vm_values_ref (idio_ai_t i);
-void idio_vm_values_set (idio_ai_t i, IDIO v);
+IDIO idio_vm_constants_ref (idio_ai_t gci);
+idio_ai_t idio_vm_constants_lookup (IDIO v);
+idio_ai_t idio_vm_constants_lookup_or_extend (IDIO v);
+idio_ai_t idio_vm_extend_values ();
+IDIO idio_vm_values_ref (idio_ai_t gvi);
+void idio_vm_values_set (idio_ai_t gvi, IDIO v);
 idio_ai_t idio_vm_extend_primitives (IDIO v);
-IDIO idio_vm_primitives_ref (idio_ai_t i);
 void idio_vm_reset_thread (IDIO thr, int verbose);
-IDIO idio_vm_dynamic_ref (idio_ai_t index, IDIO thr);
-void idio_vm_dynamic_set (idio_ai_t i, IDIO v, IDIO thr);
-IDIO idio_vm_environ_ref (idio_ai_t index, IDIO thr);
-void idio_vm_environ_set (idio_ai_t i, IDIO v, IDIO thr);
-IDIO idio_vm_computed_ref (idio_ai_t index, IDIO thr);
-IDIO idio_vm_computed_set (idio_ai_t i, IDIO v, IDIO thr);
-void idio_vm_computed_define (idio_ai_t i, IDIO v, IDIO thr);
+IDIO idio_vm_dynamic_ref (idio_ai_t msi, idio_ai_t gvi, IDIO thr);
+void idio_vm_dynamic_set (idio_ai_t msi, idio_ai_t gvi, IDIO v, IDIO thr);
+IDIO idio_vm_environ_ref (idio_ai_t msi, idio_ai_t gvi, IDIO thr);
+void idio_vm_environ_set (idio_ai_t msi, idio_ai_t gvi, IDIO v, IDIO thr);
+IDIO idio_vm_computed_ref (idio_ai_t msi, idio_ai_t gvi, IDIO thr);
+IDIO idio_vm_computed_set (idio_ai_t msi, idio_ai_t gvi, IDIO v, IDIO thr);
+void idio_vm_computed_define (idio_ai_t msi, idio_ai_t gvi, IDIO v, IDIO thr);
 
 void idio_raise_condition (IDIO continuablep, IDIO e);
 IDIO idio_apply (IDIO fn, IDIO args);

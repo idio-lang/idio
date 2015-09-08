@@ -23,6 +23,7 @@
 #ifndef LIBC_WRAP_H
 #define LIBC_WRAP_H
 
+extern IDIO idio_libc_wrap_module;
 extern IDIO idio_libc_struct_stat;
 
 #define IDIO_STRUCT_STAT_DEV		0

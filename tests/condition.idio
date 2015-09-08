@@ -18,7 +18,10 @@
 ;;
 ;; condition.idio
 ;;
-condition0 = Tests
+module tests/condition
+import libc
+
+condition0 := Tests
 
 test (condition-type? ^condition) #t
 test (message-condition? ^condition) #f
@@ -316,7 +319,7 @@ monitor (function (cont cond) {
   } (error "malformed filename: unexpected non-continuable error" cond)
 }) {
   ;; display* "opening malformed filename"
-  bad_filename := make-string ((c/->integer c/PATH_MAX) + 100) #\a
+  bad_filename := make-string ((C/->integer PATH_MAX) + 100) #\a
 
   ofh := open-output-file bad_filename
   ;; test we have a writeable fh
@@ -358,7 +361,7 @@ monitor (function (cont cond) {
 ;;
 ;; This is supported on Linux, MacOS.  Not supported on Solaris
 ;; (OpenIndiana).
-if (equal? (c/struct-utsname-sysname Idio/uname) "SunOS") {
+if (equal? (struct-utsname-sysname Idio/uname) "SunOS") {
   ;; edisplay* "Solaris: no fopen (\"x\") flag: skipping"
   Tests = Tests + 1
 } {
@@ -419,6 +422,8 @@ test (raise #t (make-condition ^error)) (void)
 ;; all done?
 test (condition0 + 101) Tests
 
+;; NOTICE
+;;
 ;; a non-continuable error should abort this thread's current "run" --
 ;; which will be the idio_vm_run() in idio_load_filehandle, ie. the
 ;; sequence of expressions in this file -- so we can't test anything
@@ -426,4 +431,9 @@ test (condition0 + 101) Tests
 display* "raising NON-CONT condition"
 raise #f (make-condition ^error)
 
-;; XXX Rest of file lost due to non-cont error above
+;; WARNING
+;;
+;; Rest of file lost due to non-cont error above.
+;;
+;; So don't bother adding anything below here, it won't be seen.
+

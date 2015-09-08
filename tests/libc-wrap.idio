@@ -18,45 +18,48 @@
 ;;
 ;; libc.idio
 ;;
-libc-wrap0 = Tests
+module tests/libc-wrap
+import libc C
 
-define (c/number-cmp low high) {
+libc-wrap0 := Tests
+
+define (number-cmp low high) {
   if (not (eqv? low high)) {
-    test (c/< low high) #t
-    test (c/< high low) #f
-    test (c/<= low high) #t
-    test (c/<= high low) #f
-    test (c/<= high high) #t
-    test (c/== high high) #t
-    test (c/== low high) #f
-    test (c/> low high) #f
-    test (c/> high low) #t
-    test (c/>= low high) #f
-    test (c/>= high low) #t
-    test (c/>= high high) #t
+    test (C/< low high) #t
+    test (C/< high low) #f
+    test (C/<= low high) #t
+    test (C/<= high low) #f
+    test (C/<= high high) #t
+    test (C/== high high) #t
+    test (C/== low high) #f
+    test (C/> low high) #f
+    test (C/> high low) #t
+    test (C/>= low high) #f
+    test (C/>= high low) #t
+    test (C/>= high high) #t
   } {
-    test (c/== low high) #t
+    test (C/== low high) #t
   }
 }
 ;; numbers
 
-;; quick type tests of the primitively-definied c/INTMAX_MAX and the
+;; quick type tests of the primitively-definied INTMAX_MAX and the
 ;; locally defined INTMAX_MAX
-test (c/int? c/INTMAX_MAX) #t
-INTMAX_MAX := c/INTMAX_MAX
-test (c/int? INTMAX_MAX) #t
+test (int? INTMAX_MAX) #t
+INTMAX_MAX := INTMAX_MAX
+test (int? INTMAX_MAX) #t
 
 ;; comparison tests vs. 0
-c/number-cmp (c/integer-> 0) c/INTMAX_MAX
-c/number-cmp c/INTMAX_MIN (c/integer-> 0)
+number-cmp (C/integer-> 0) INTMAX_MAX
+number-cmp INTMAX_MIN (C/integer-> 0)
 
 ;; comparison tests vs lim-1
-INTMAX_MAX-1 := c/integer-> ((c/->integer c/INTMAX_MAX) - 1)
-c/number-cmp INTMAX_MAX-1 c/INTMAX_MAX
+INTMAX_MAX-1 := C/integer-> ((->integer INTMAX_MAX) - 1)
+number-cmp INTMAX_MAX-1 INTMAX_MAX
 
 ;; comparison tests vs lim+1
-INTMAX_MIN+1 := c/integer-> ((c/->integer c/INTMAX_MIN) + 1)
-c/number-cmp c/INTMAX_MIN INTMAX_MIN+1
+INTMAX_MIN+1 := C/integer-> ((->integer INTMAX_MIN) + 1)
+number-cmp INTMAX_MIN INTMAX_MIN+1
 
 ;; overflow conversion tests -- one beyond the C MAX/MIN
 monitor (function (cont cond) {
@@ -64,9 +67,9 @@ monitor (function (cont cond) {
   test (rt-bignum-conversion-error? cond) #t
   #f
 }) {
-  INTMAX_MAX+1 := (c/integer-> ((c/->integer c/INTMAX_MAX) + 1))
+  INTMAX_MAX+1 := (C/integer-> ((->integer INTMAX_MAX) + 1))
   test INTMAX_MAX+1 #f
-  ;; display* "INTMAX_MAX+1" c/INTMAX_MAX INTMAX_MAX+1
+  ;; display* "INTMAX_MAX+1" INTMAX_MAX INTMAX_MAX+1
 }
 
 monitor (function (cont cond) {
@@ -74,9 +77,9 @@ monitor (function (cont cond) {
   test (rt-bignum-conversion-error? cond) #t
   #f
 }) {
-  INTMAX_MIN-1 := (c/integer-> ((c/->integer c/INTMAX_MIN) - 1))
+  INTMAX_MIN-1 := (C/integer-> ((->integer INTMAX_MIN) - 1))
   test INTMAX_MIN-1 #f
-  ;; display* "INTMAX_MIN-1" c/INTMAX_MIN INTMAX_MIN-1
+  ;; display* "INTMAX_MIN-1" INTMAX_MIN INTMAX_MIN-1
 }
 
 ;; overflow conversion tests -- many beyond the C MAX/MIN
@@ -85,9 +88,9 @@ monitor (function (cont cond) {
   test (rt-bignum-conversion-error? cond) #t
   #f
 }) {
-  INTMAX_MAX+1 := (c/integer-> ((c/->integer c/INTMAX_MAX) * 100000))
+  INTMAX_MAX+1 := (C/integer-> ((->integer INTMAX_MAX) * 100000))
   test INTMAX_MAX+1 #f
-  ;; display* "INTMAX_MAX+1" c/INTMAX_MAX INTMAX_MAX+1
+  ;; display* "INTMAX_MAX+1" INTMAX_MAX INTMAX_MAX+1
 }
 
 monitor (function (cont cond) {
@@ -95,9 +98,9 @@ monitor (function (cont cond) {
   test (rt-bignum-conversion-error? cond) #t
   #f
 }) {
-  INTMAX_MIN-1 := (c/integer-> ((c/->integer c/INTMAX_MIN) * 100000))
+  INTMAX_MIN-1 := (C/integer-> ((->integer INTMAX_MIN) * 100000))
   test INTMAX_MIN-1 #f
-  ;; display* "INTMAX_MIN-1" c/INTMAX_MIN INTMAX_MIN-1
+  ;; display* "INTMAX_MIN-1" INTMAX_MIN INTMAX_MIN-1
 }
 
 ;; all done?

@@ -48,8 +48,8 @@ void idio_handle_print (IDIO h, IDIO o);
 IDIO idio_handle_or_current (IDIO h, unsigned mode);
 IDIO idio_close_input_handle (IDIO h);
 IDIO idio_close_output_handle (IDIO h);
-IDIO idio_current_input_handle ();
-IDIO idio_current_output_handle ();
+IDIO idio_thread_current_input_handle ();
+IDIO idio_thread_current_output_handle ();
 
 IDIO idio_open_handle (IDIO pathname, char *mode);
 IDIO idio_write (IDIO o, IDIO args);

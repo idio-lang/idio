@@ -258,12 +258,14 @@ typedef struct idio_hash_s {
 typedef struct idio_closure_s {
     struct idio_s *grey;
     size_t code;
+    struct idio_s *frame;
     struct idio_s *env;
     struct idio_s *properties;
 } idio_closure_t;
 
 #define IDIO_CLOSURE_GREY(C)       ((C)->u.closure->grey)
 #define IDIO_CLOSURE_CODE(C)       ((C)->u.closure->code)
+#define IDIO_CLOSURE_FRAME(C)      ((C)->u.closure->frame)
 #define IDIO_CLOSURE_ENV(C)        ((C)->u.closure->env)
 #define IDIO_CLOSURE_PROPERTIES(C) ((C)->u.closure->properties)
 
@@ -311,6 +313,8 @@ typedef struct idio_module_s {
     struct idio_s *exports;	/* symbols */
     struct idio_s *imports;	/* modules */
     struct idio_s *symbols;	/* hash table */
+    struct idio_s *vci;		/* hash table: VM constant index mapping: module-specific -> global */
+    struct idio_s *vvi;		/* hash table: VM value index mapping: module-specific -> global */
 } idio_module_t;
 
 #define IDIO_MODULE_GREY(F)	((F)->u.module->grey)
@@ -318,6 +322,8 @@ typedef struct idio_module_s {
 #define IDIO_MODULE_EXPORTS(F)	((F)->u.module->exports)
 #define IDIO_MODULE_IMPORTS(F)	((F)->u.module->imports)
 #define IDIO_MODULE_SYMBOLS(F)	((F)->u.module->symbols)
+#define IDIO_MODULE_VCI(F)	((F)->u.module->vci)
+#define IDIO_MODULE_VVI(F)	((F)->u.module->vvi)
 
 #define IDIO_FRAME_FLAG_NONE	 0
 #define IDIO_FRAME_FLAG_ETRACE   (1<<0)
@@ -460,9 +466,15 @@ typedef struct idio_thread_s {
     struct idio_s *val;
 
     /*
-     * frame is linked arrays of local variable values
+     * frame is linked arrays of local variable values for the
+     * currently executing closure
      */
     struct idio_s *frame;
+
+    /*
+     * env is the operating module for the currently executing closure
+     */
+    struct idio_s *env;
     
     /*
      * handler_sp is the SP of the current handler with SP-1
@@ -496,6 +508,9 @@ typedef struct idio_thread_s {
     struct idio_s *output_handle;
     struct idio_s *error_handle;
 
+    /*
+     * module is the current module -- distinct from env, above
+     */
     struct idio_s *module;
 } idio_thread_t;
 
@@ -504,6 +519,7 @@ typedef struct idio_thread_s {
 #define IDIO_THREAD_STACK(T)          ((T)->u.thread->stack)
 #define IDIO_THREAD_VAL(T)            ((T)->u.thread->val)
 #define IDIO_THREAD_FRAME(T)          ((T)->u.thread->frame)
+#define IDIO_THREAD_ENV(T)            ((T)->u.thread->env)
 #define IDIO_THREAD_HANDLER_SP(T)     ((T)->u.thread->handler_sp)
 #define IDIO_THREAD_JMP_BUF(T)        ((T)->u.thread->jmp_buf)
 #define IDIO_THREAD_DYNAMIC_SP(T)     ((T)->u.thread->dynamic_sp)

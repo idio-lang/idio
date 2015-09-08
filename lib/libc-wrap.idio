@@ -19,9 +19,17 @@
 ;; libc-wrap.idio
 ;;
 
+module libc
+
+export (make-tmp-file-handle 
+	make-tmp-dir
+	stdin-fileno
+	stdout-fileno
+	stderr-fileno)
+
 ;; define structure accessors
-define-struct-accessors-only c/struct-sigaction		sa-handler sa-sigaction sa-mask sa-flags
-define-struct-accessors-only c/struct-utsname		sysname nodename release version machine
+export-struct-accessors-only struct-sigaction		sa-handler sa-sigaction sa-mask sa-flags
+export-struct-accessors-only struct-utsname		sysname nodename release version machine
 
 ;; stdin/stdout
 ;;
@@ -31,8 +39,8 @@ define-struct-accessors-only c/struct-utsname		sysname nodename release version 
 ;; say, look up the current output handle and write their output
 ;; there.
 ;;
-;; *nix make file descriptors 0, 1 and 2 special -- c/STDIN_FILENO,
-;; c/STDOUT_FILENO and c/STDERR_FILENO to be precise.  Programs
+;; *nix make file descriptors 0, 1 and 2 special -- STDIN_FILENO,
+;; STDOUT_FILENO and STDERR_FILENO to be precise.  Programs
 ;; (blindly) write to file descriptor 1 (or the FILE* {stdout}) for
 ;; output.
 ;;
@@ -41,12 +49,12 @@ define-struct-accessors-only c/struct-utsname		sysname nodename release version 
 ;;
 ;; The problem is acute when we want to run a pipeline or an external
 ;; process.  To prepare the external process, nominally, we start
-;; referencing c/STDIN_FILENO etc..  Rather than that, call a function
+;; referencing STDIN_FILENO etc..  Rather than that, call a function
 ;; to look at what Idio's thread thinks the current input or output is
 ;; and then make a decision then.
 ;;
 ;; For a file-handle the decision is easy: call file-handle-fd (or,
-;; rather, c/fileno as we want a C "int" type).
+;; rather, fileno as we want a C "int" type).
 ;;
 ;; For a string-handle we can use temporary files.  For input, this is
 ;; like using a "here-string" in Bash, ie. we create a temporary file,
@@ -66,7 +74,7 @@ define-struct-accessors-only c/struct-utsname		sysname nodename release version 
 
 
 ;; File Permissions
-define (%c/file-access file mode) {
+define (%file-access file mode) {
   
 }
 
@@ -78,67 +86,67 @@ define (%c/file-access file mode) {
 ;; We'll follow the style of Bash .../lib/sh/tmpfile.c
 
 ;; "." is not the ideal fallback!
-%c/sys-tmpdirs := '("/tmp" "var/tmp" "usr/tmp" ".")
+%sys-tmpdirs := '("/tmp" "var/tmp" "usr/tmp" ".")
 
-%c/sys-tmpdir := #f
-%c/default-tmpname-prefix := "idio-tmp-"
-%%c/mkstemp-template := "XXXXXX"
+%sys-tmpdir := #f
+%default-tmpname-prefix := "idio-tmp-"
+%%mkstemp-template := "XXXXXX"
 
-define (%c/get-sys-tmpdir) {
+define (%get-sys-tmpdir) {
   loop :+ function (dirs) {
-    if (null? dirs) (error '%c/get-sys-tmpdir "no remaining %c/sys-tmpdirs" %c/sys-tmpdirs) {
+    if (null? dirs) (error '%get-sys-tmpdir "no remaining %sys-tmpdirs" %sys-tmpdirs) {
       dir := ph dirs
-      if (c/access dir c/W_OK) dir {
+      if (access dir W_OK) dir {
 	loop (pt dirs)
       }
     }
   }
 
-  if %c/sys-tmpdir %c/sys-tmpdir {
-    %c/sys-tmpdir = loop %c/sys-tmpdirs
+  if %sys-tmpdir %sys-tmpdir {
+    %sys-tmpdir = loop %sys-tmpdirs
   }
 }
 
-define (%c/get-tmpdir) {
+define (%get-tmpdir) {
   tmpdir := #f
 
   if ((environ? 'TMPDIR) and
-      (c/access TMPDIR c/W_OK)) {
+      (access TMPDIR W_OK)) {
     tmpdir = TMPDIR
   } {
-    tmpdir = (%c/get-sys-tmpdir)
+    tmpdir = (%get-sys-tmpdir)
   }
 }
 
-define (%c/make-tmp-fd & args) {
-  tmpdir := (%c/get-tmpdir)
-  prefix = %c/default-tmpname-prefix
+define (%make-tmp-fd & args) {
+  tmpdir := (%get-tmpdir)
+  prefix := %default-tmpname-prefix
   if (not (null? args)) {
     prefix = ph args
   }
 
-  tmpfilename := string-append tmpdir "/" prefix %%c/mkstemp-template
-  fd := c/mkstemp tmpfilename
+  tmpfilename := string-append tmpdir "/" prefix %%mkstemp-template
+  fd := mkstemp tmpfilename
   list fd tmpfilename
 }
 
 define (make-tmp-file-handle & prefix) {
-  fd-name := apply %c/make-tmp-fd prefix
+  fd-name := apply %make-tmp-fd prefix
 
-  ;; c/mkstemp opens the file for reading and writing and we should
+  ;; mkstemp opens the file for reading and writing and we should
   ;; set close-on-exec
   open-file-from-fd (ph fd-name) (pht fd-name) "rwe"
 }
 
 define (make-tmp-dir & args) {
-  tmpdir := (%c/get-tmpdir)
-  prefix = %c/default-tmpname-prefix
+  tmpdir := (%get-tmpdir)
+  prefix := %default-tmpname-prefix
   if (not (null? args)) {
     prefix = ph args
   }
 
-  tmpdirname := string-append tmpdir "/" prefix %%c/mkstemp-template
-  c/mkdtemp tmpdirname
+  tmpdirname := string-append tmpdir "/" prefix %%mkstemp-template
+  mkdtemp tmpdirname
 }
 
 ;; stdin-fileno
@@ -154,23 +162,23 @@ define (make-tmp-dir & args) {
 ;; (lib/sh/tmpfile.c).
 define (stdin-fileno) {
   ih := (current-input-handle)
-  cond ((input-file-handle? ih) (c/fileno ih)) \
+  cond ((input-file-handle? ih) (fileno ih)) \
        ((file-handle? ih) (error 'stdin-fileno "not an input-file-handle" ih)) \
        ((input-string-handle? ih) {
 	 ;; 1. create and open a temporary file
-	 fd+name := %c/make-tmp-fd "idio-ish"
+	 fd+name := %make-tmp-fd "idio-ish"
 	 handle := open-input-file-from-fd (ph fd+name) (pht fd+name) "r+"
 	 ;; 2. write the string to it
 	 display (get-output-string ih) handle
 	 ;; 3. *before* we unlink or close the original fd, open as
 	 ;; the input file
-	 fd := c/fileno (open-input-file (pht fd+name))
+	 fd := fileno (open-input-file (pht fd+name))
 	 ;; 4. unlink and close the original -- this flushes any
 	 ;; output!
-	 c/unlink (pht fd+name)
+	 unlink (pht fd+name)
 	 close-handle handle
 	 ;; 5. set the close-on-exec flag
-	 c/fcntl fd c/F_SETFD c/FD_CLOEXEC
+	 fcntl fd F_SETFD FD_CLOEXEC
 	 ;; 6. return the fd of "stdin" -- as a list to mark it
 	 ;; special
 	 list fd
@@ -181,15 +189,15 @@ define (stdin-fileno) {
 ;;
 define (stdout-fileno) {
   oh := (current-output-handle)
-  cond ((output-file-handle? oh) (c/fileno oh)) \
+  cond ((output-file-handle? oh) (fileno oh)) \
        ((file-handle? oh) (error 'stdout-fileno "not an output-file-handle" oh)) \
        ((output-string-handle? oh) {
 	 ;; 1. create a temporary file
-	 fd+name := %c/make-tmp-fd "idio-osh"
+	 fd+name := %make-tmp-fd "idio-osh"
 	 ;; 2. unlink the tmpfile
-	 c/unlink (pht fd+name)
+	 unlink (pht fd+name)
 	 ;; 3. set the close-on-exec flag
-	 c/fcntl (ph fd+name) c/F_SETFD c/FD_CLOEXEC
+	 fcntl (ph fd+name) F_SETFD FD_CLOEXEC
 	 ;; 4. return the tuple {fd,oh} of "stdout" -- as a list to
 	 ;; mark it special
 	 list (ph fd+name) oh
@@ -200,19 +208,20 @@ define (stdout-fileno) {
 ;;
 define (stderr-fileno) {
   oh := (current-error-handle)
-  cond ((output-file-handle? oh) (c/fileno oh)) \
+  cond ((output-file-handle? oh) (fileno oh)) \
        ((file-handle? oh) (error 'stderr-fileno "not an output-file-handle" oh)) \
        ((output-string-handle? oh) {
 	 ;; 1. create a temporary file
-	 fd+name := %c/make-tmp-fd "idio-esh"
+	 fd+name := %make-tmp-fd "idio-esh"
 	 ;; 2. unlink the tmpfile
-	 c/unlink (pht fd+name)
+	 unlink (pht fd+name)
 	 ;; 3. set the close-on-exec flag
-	 c/fcntl (ph fd+name) c/F_SETFD c/FD_CLOEXEC
+	 fcntl (ph fd+name) F_SETFD FD_CLOEXEC
 	 ;; 4. return the tuple {fd,oh} of "stderr" -- as a list to
 	 ;; mark it special
 	 list (ph fd+name) oh
        }) \
        (else (error 'stderr-fileno "unexpected current-error-handle" oh))
 }
+
 

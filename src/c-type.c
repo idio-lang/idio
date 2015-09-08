@@ -31,6 +31,8 @@
 
 #include "idio.h"
 
+static IDIO idio_C_module = idio_S_nil;
+
 IDIO idio_C_int (intmax_t v)
 {
     IDIO co = idio_gc_get (IDIO_TYPE_C_INT);
@@ -47,7 +49,7 @@ int idio_isa_C_int (IDIO co)
     return idio_isa (co, IDIO_TYPE_C_INT);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("c/int?", C_intp, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1 ("int?", C_intp, (IDIO o))
 {
     IDIO_ASSERT (o);
 
@@ -84,7 +86,7 @@ int idio_isa_C_uint (IDIO co)
     return idio_isa (co, IDIO_TYPE_C_UINT);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("c/uint?", C_uintp, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1 ("uint?", C_uintp, (IDIO o))
 {
     IDIO_ASSERT (o);
 
@@ -121,7 +123,7 @@ int idio_isa_C_float (IDIO co)
     return idio_isa (co, IDIO_TYPE_C_FLOAT);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("c/float?", C_floatp, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1 ("float?", C_floatp, (IDIO o))
 {
     IDIO_ASSERT (o);
 
@@ -158,7 +160,7 @@ int idio_isa_C_double (IDIO co)
     return idio_isa (co, IDIO_TYPE_C_DOUBLE);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("c/double?", C_doublep, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1 ("double?", C_doublep, (IDIO o))
 {
     IDIO_ASSERT (o);
 
@@ -217,7 +219,7 @@ int idio_isa_C_pointer (IDIO co)
     return idio_isa (co, IDIO_TYPE_C_POINTER);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("c/pointer?", C_pointerp, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1 ("pointer?", C_pointerp, (IDIO o))
 {
     IDIO_ASSERT (o);
 
@@ -302,14 +304,14 @@ IDIO idio_C_number_cast (IDIO co, idio_type_e type)
     return r;
 }
 
-#define IDIO_DEFINE_C_ARITHMETIC_CMP_PRIMITIVE(name,cname,cmp)	\
-    IDIO_DEFINE_PRIMITIVE2 (name, cname, (IDIO n1, IDIO n2))	\
-    {								\
-	IDIO_ASSERT (n1);					\
-	IDIO_ASSERT (n2);					\
-								\
-	int result;						\
-								\
+#define IDIO_DEFINE_C_ARITHMETIC_CMP_PRIMITIVE(name,cname,cmp)		\
+    IDIO_DEFINE_PRIMITIVE2 (name, cname, (IDIO n1, IDIO n2))		\
+    {									\
+	IDIO_ASSERT (n1);						\
+	IDIO_ASSERT (n2);						\
+									\
+	int result;							\
+									\
 	if (idio_isa_fixnum (n1)) {					\
 	    if (idio_isa_fixnum (n2)) {					\
 		result = idio_eqp (n1, n2);				\
@@ -384,28 +386,132 @@ IDIO idio_C_number_cast (IDIO co, idio_type_e type)
     }
 
 
-IDIO_DEFINE_C_ARITHMETIC_CMP_PRIMITIVE ("c/<=", C_le, <=)
-IDIO_DEFINE_C_ARITHMETIC_CMP_PRIMITIVE ("c/<", C_lt, <)
-IDIO_DEFINE_C_ARITHMETIC_CMP_PRIMITIVE ("c/==", C_eq, ==)
-IDIO_DEFINE_C_ARITHMETIC_CMP_PRIMITIVE ("c/>=", C_ge, >=)
-IDIO_DEFINE_C_ARITHMETIC_CMP_PRIMITIVE ("c/>", C_gt, >)
+IDIO_DEFINE_C_ARITHMETIC_CMP_PRIMITIVE ("<=", C_le, <=)
+IDIO_DEFINE_C_ARITHMETIC_CMP_PRIMITIVE ("<", C_lt, <)
+IDIO_DEFINE_C_ARITHMETIC_CMP_PRIMITIVE ("==", C_eq, ==)
+IDIO_DEFINE_C_ARITHMETIC_CMP_PRIMITIVE (">=", C_ge, >=)
+IDIO_DEFINE_C_ARITHMETIC_CMP_PRIMITIVE (">", C_gt, >)
+
+IDIO_DEFINE_PRIMITIVE1 ("->integer", C_to_integer, (IDIO inum))
+{
+    IDIO_ASSERT (inum);
+
+    if (idio_isa_C_uint (inum)) {
+	return idio_uinteger (IDIO_C_TYPE_UINT (inum));
+    } else if (idio_isa_C_int (inum)) {
+	return idio_integer (IDIO_C_TYPE_INT (inum));
+    } else {
+	idio_error_param_type ("C_int|C_uint", inum, IDIO_C_LOCATION ("->integer"));
+    }
+
+    /* notreached */
+    return idio_S_unspec;
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("integer->", C_integer_to, (IDIO inum))
+{
+    IDIO_ASSERT (inum);
+
+    if (idio_isa_fixnum (inum)) {
+	return idio_C_int (IDIO_FIXNUM_VAL (inum));
+    } else if (idio_isa_bignum (inum)) {
+	return idio_C_int (idio_bignum_intmax_value (inum));
+    } else {
+	idio_error_param_type ("fixnum|bignum", inum, IDIO_C_LOCATION ("integer->"));
+    }
+
+    /* notreached */
+    return idio_S_unspec;
+}
+
+IDIO_DEFINE_PRIMITIVE1V ("|", C_bw_or, (IDIO v1, IDIO args))
+{
+    IDIO_ASSERT (v1);
+    IDIO_ASSERT (args);
+    IDIO_VERIFY_PARAM_TYPE (C_int, v1);
+
+    int r = IDIO_C_TYPE_INT (v1);
+    while (idio_S_nil != args) {
+	IDIO arg = IDIO_PAIR_H (args);
+	IDIO_VERIFY_PARAM_TYPE (C_int, arg);
+	r = r | IDIO_C_TYPE_INT (arg);
+	args = IDIO_PAIR_T (args);
+    }
+    return idio_C_int (r);
+}
+
+IDIO_DEFINE_PRIMITIVE1V ("&", C_bw_and, (IDIO v1, IDIO args))
+{
+    IDIO_ASSERT (v1);
+    IDIO_ASSERT (args);
+    IDIO_VERIFY_PARAM_TYPE (C_int, v1);
+
+    int r = IDIO_C_TYPE_INT (v1);
+    while (idio_S_nil != args) {
+	IDIO arg = IDIO_PAIR_H (args);
+	IDIO_VERIFY_PARAM_TYPE (C_int, arg);
+	r = r & IDIO_C_TYPE_INT (arg);
+	args = IDIO_PAIR_T (args);
+    }
+    return idio_C_int (r);
+}
+
+IDIO_DEFINE_PRIMITIVE1V ("^", C_bw_xor, (IDIO v1, IDIO args))
+{
+    IDIO_ASSERT (v1);
+    IDIO_ASSERT (args);
+    IDIO_VERIFY_PARAM_TYPE (C_int, v1);
+
+    int r = IDIO_C_TYPE_INT (v1);
+    while (idio_S_nil != args) {
+	IDIO arg = IDIO_PAIR_H (args);
+	IDIO_VERIFY_PARAM_TYPE (C_int, arg);
+	r = r ^ IDIO_C_TYPE_INT (arg);
+	args = IDIO_PAIR_T (args);
+    }
+    return idio_C_int (r);
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("~", C_bw_complement, (IDIO v1))
+{
+    IDIO_ASSERT (v1);
+    IDIO_VERIFY_PARAM_TYPE (C_int, v1);
+
+    int v = IDIO_C_TYPE_INT (v1);
+
+    return idio_C_int (~ v);
+}
 
 void idio_init_c_type ()
 {
+    idio_C_module = idio_module (idio_symbols_C_intern ("C"));
 }
 
 void idio_c_type_add_primtives ()
 {
-    IDIO_ADD_PRIMITIVE (C_intp);
-    IDIO_ADD_PRIMITIVE (C_uintp);
-    IDIO_ADD_PRIMITIVE (C_floatp);
-    IDIO_ADD_PRIMITIVE (C_doublep);
-    IDIO_ADD_PRIMITIVE (C_pointerp);
-    IDIO_ADD_PRIMITIVE (C_le);
-    IDIO_ADD_PRIMITIVE (C_lt);
-    IDIO_ADD_PRIMITIVE (C_eq);
-    IDIO_ADD_PRIMITIVE (C_ge);
-    IDIO_ADD_PRIMITIVE (C_gt);
+    /*
+     * NB As "<", "==", ">" etc. conflict with operators or primitives
+     * in the *primitives* module then you should access these
+     * directly as "C/>"
+     */
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_intp);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_uintp);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_floatp);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_doublep);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_pointerp);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_le);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_lt);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_eq);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_ge);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_gt);
+
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_to_integer);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_integer_to);
+
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_bw_or);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_bw_and);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_bw_xor);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_bw_complement);
 }
 
 void idio_final_c_type ()

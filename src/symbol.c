@@ -124,7 +124,21 @@ idio_hi_t idio_symbol_C_hash (IDIO h, void *s)
     return (hvalue & IDIO_HASH_MASK (h));
 }
 
-IDIO idio_symbol_C (const char *s_C)
+/*
+ * WARNING:
+ *
+ * You have no reason to call idio_symbol_C()!  Almost certainly you
+ * will end up with two conflicting symbols and you will have the
+ * equivalent of
+ *
+ *   (eq? 'foo 'foo) => #f
+ *
+ * Which is hard to debug!
+ *
+ * You should be calling idio_symbols_C_intern() which will check for
+ * an existing symbol of the same name for you.
+ */
+static IDIO idio_symbol_C (const char *s_C)
 {
     IDIO_C_ASSERT (s_C);
 

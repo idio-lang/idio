@@ -18,7 +18,7 @@
 ;;
 ;; keyword.idio
 ;;
-keyword0 = Tests
+keyword0 := Tests
 
 test (keyword? a) #f
 test (keyword? :a) #t

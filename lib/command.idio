@@ -18,6 +18,23 @@
 ;;
 ;; command.idio
 ;;
+module *command*
+import libc
+export (%%last-job
+	job-failed
+	job-detail
+	pipeline-detail
+	%prep-process
+	background-job
+	foreground-job
+	wait-for-job
+	bg-job
+	wait)
+
+
+export-struct-accessors-only %idio-process	argv pid completed stopped status
+export-struct-accessors-only %idio-job		pipeline procs pgid notified tcattrs stdin stdout stderr
+export-struct-accessors-only %idio-status	pid state reason
 
 %%last-job := #n
 %%idio-job-notify-interactive := #f
@@ -61,11 +78,11 @@ define (job-failed job) {
       status := %idio-process-status (ph procs)
       if+ (null? status) {
 	    loop (pt procs)
-	  } (c/WIFEXITED status) {
-	    if (not (c/== (c/WEXITSTATUS status) 0)) #t {
+	  } (WIFEXITED status) {
+	    if (not (C/== (WEXITSTATUS status) 0)) #t {
 	      loop (pt procs)
 	    }
-          } (c/WIFSIGNALED status) #t \
+          } (WIFSIGNALED status) #t \
 	  else {
 	    loop (pt procs)
 	  }
@@ -86,11 +103,11 @@ define (job-status job) {
       status := %idio-process-status (ph procs)
       if+ (null? status) {
 	    loop (pt procs)
-	  } (c/WIFEXITED status) {
-	    if (not (c/== (c/WEXITSTATUS status) 0)) #f {
+	  } (WIFEXITED status) {
+	    if (not (C/== (WEXITSTATUS status) 0)) #f {
 	      loop (pt procs)
 	    }
-          } (c/WIFSIGNALED status) #f \
+          } (WIFSIGNALED status) #f \
 	  else {
 	    loop (pt procs)
 	  }
@@ -115,11 +132,11 @@ define (job-detail job) {
       status := %idio-process-status (ph procs)
       if+ (null? status) {
 	    loop (pt procs)
-	  } (c/WIFEXITED status) {
-	    if (not (c/== (c/WEXITSTATUS status) 0)) (list 'exit (c/WEXITSTATUS status)) {
+	  } (WIFEXITED status) {
+	    if (not (C/== (WEXITSTATUS status) 0)) (list 'exit (WEXITSTATUS status)) {
 	      loop (pt procs)
 	    }
-          } (c/WIFSIGNALED status) (list 'killed (c/WTERMSIG status)) \
+          } (WIFSIGNALED status) (list 'killed (WTERMSIG status)) \
 	  else {
 	    loop (pt procs)
 	  }
@@ -133,7 +150,7 @@ define (job-detail job) {
   ;; walking down the list we encounter the rightmost first
   procs := %idio-job-procs job
   or (loop procs) \
-     (list 'exit (c/WEXITSTATUS (%idio-process-status (ph procs))))
+     (list 'exit (WEXITSTATUS (%idio-process-status (ph procs))))
 }
 
 define (pipeline-detail job) {
@@ -144,10 +161,10 @@ define (pipeline-detail job) {
       status := %idio-process-status (ph procs)
       if+ (null? status) {
 	    loop (pt procs) (pair (list 'no-status) st)
-	  } (c/WIFEXITED status) {
-            loop (pt procs) (pair (list 'exit (c/WEXITSTATUS status)) st)
-          } (c/WIFSIGNALED status) {
-	    loop (pt procs) (pair (list 'killed (c/WTERMSIG status)) st)
+	  } (WIFEXITED status) {
+            loop (pt procs) (pair (list 'exit (WEXITSTATUS status)) st)
+          } (WIFSIGNALED status) {
+	    loop (pt procs) (pair (list 'killed (WTERMSIG status)) st)
 	  } \
 	  else {
 	    loop (pt procs) (pair (list 'unknown) st)
@@ -159,14 +176,14 @@ define (pipeline-detail job) {
 }
 
 ;; mark-process-status -- store the {status} of the process {pid} that
-;; was returned by c/waitpid.  Return #f if all went well, some true
+;; was returned by waitpid.  Return #f if all went well, some true
 ;; value otherwise.
 
 ;; This (inverted) convention follows the Libc texinfo algorithm and
 ;; is for the benefit of the do loops in update-status and
 ;; wait-for-job
 define (mark-process-status pid status) {
-  if+ (c/> pid 0) {
+  if+ (C/> pid 0) {
     jobs-loop :+ function (jobs) {
       if+ (null? jobs) {
 	    edisplay* "no child process" pid
@@ -177,14 +194,14 @@ define (mark-process-status pid status) {
 	    ;; value of jobs-loop
 	    procs-loop :+ function (procs) {
               if+ (null? procs) #t \
-	          (c/== pid (%idio-process-pid (ph procs))) {
+	          (C/== pid (%idio-process-pid (ph procs))) {
                     set-%idio-process-status! (ph procs) status
-                    if (c/WIFSTOPPED status) {
+                    if (WIFSTOPPED status) {
                       set-%idio-process-stopped! (ph procs) #t
                     } {
                       set-%idio-process-completed! (ph procs) #t
-                      if (c/WIFSIGNALED status) {
-                        edisplay* "Job Terminated: kill" (string-append "-" (c/signal-name (c/WTERMSIG status)))  pid
+                      if (WIFSIGNALED status) {
+                        edisplay* "Job Terminated: kill" (string-append "-" (signal-name (WTERMSIG status)))  pid
                       }
 		    }
 		    #f
@@ -199,19 +216,19 @@ define (mark-process-status pid status) {
     }
 
     jobs-loop %idio-jobs
-  } (or (c/== pid 0)
-	(c/== c/errno ECHILD)) {
-    ;; edisplay* "mps: pid ==" pid ", errno ==" (c/strerrno c/errno)
+  } (or (C/== pid 0)
+	(C/== errno ECHILD)) {
+    ;; edisplay* "mps: pid ==" pid ", errno ==" (strerrno errno)
     #t
   } else {
-    ;; an error in c/waitpid would have been signalled there
+    ;; an error in waitpid would have been signalled there
     error "mark-process-status: inconceivable!" pid status
   }
 }
 
 define (update-status) {
   waitany := function () {
-    apply values (c/waitpid c/WAIT_ANY (c/WUNTRACED c/| c/WNOHANG))
+    apply values (waitpid WAIT_ANY (WUNTRACED C/| WNOHANG))
   }
 
   do () ((call-with-values waitany mark-process-status) #n) #n
@@ -219,7 +236,7 @@ define (update-status) {
 
 define (wait-for-job job) {
   waitany := function () {
-    apply values (c/waitpid c/WAIT_ANY c/WUNTRACED)
+    apply values (waitpid WAIT_ANY WUNTRACED)
   }
 
   do () ((not (and (not (call-with-values waitany mark-process-status))
@@ -227,7 +244,8 @@ define (wait-for-job job) {
 	           (not (job-is-completed job)))) 
          #n) #n
 
-  ;; display* "wfj" (%idio-job-pgid job) "completed?" (job-is-completed job) "stopped?" (job-is-stopped job) (if (job-failed job) "failed" "succeeded") (pipeline-detail job)
+  ;;edisplay* "wfj" (%idio-job-pgid job) "completed?" (job-is-completed job) "stopped?" (job-is-stopped job) (if (job-failed job) "failed" "succeeded") (pipeline-detail job)
+
   if (job-failed job) {
     c := make-condition ^rt-command-status-error "job failed" job (pipeline-detail job) (job-detail job)
     raise #t c
@@ -282,7 +300,7 @@ define (do-job-notification) {
   ;; the simplest case) because our call to update-status resulted in
   ;; a pid of 0 and/or errno ECHILD.  That's because foreground-job,
   ;; say, was blocked in wait-for-job who had (successfully) called
-  ;; c/waitpid but further processing has been suspended while the
+  ;; waitpid but further processing has been suspended while the
   ;; event handler runs.  Only when we return will it be able to
   ;; continue and usefully call mark-process-status with a proper pid
   ;; and status.
@@ -326,22 +344,22 @@ define (foreground-job job cont) {
 
   ;; put the job in the foreground
   job-pgid := %idio-job-pgid job
-  suppress-errors c/tcsetpgrp %idio-terminal job-pgid
+  suppress-errors tcsetpgrp %idio-terminal job-pgid
   if cont {
-    c/tcsetattr %idio-terminal c/TCSADRAIN (%idio-job-tcattrs job)
-    c/kill (- job-pgid) c/SIGCONT
+    tcsetattr %idio-terminal TCSADRAIN (%idio-job-tcattrs job)
+    kill (- job-pgid) SIGCONT
   }
 
   r := wait-for-job job
 
   ;; put the shell back in the foreground
-  c/tcsetpgrp %idio-terminal %idio-pgid
+  tcsetpgrp %idio-terminal %idio-pgid
 
   ;; save the job's current terminal state
-  set-%idio-job-tcattrs! job (c/tcgetattr %idio-terminal)
+  set-%idio-job-tcattrs! job (tcgetattr %idio-terminal)
 
   ;; restore the shell's terminal state
-  c/tcsetattr %idio-terminal c/TCSADRAIN %idio-tcattrs
+  tcsetattr %idio-terminal TCSADRAIN %idio-tcattrs
 
   r
 }
@@ -349,7 +367,7 @@ define (foreground-job job cont) {
 define (background-job job cont) {
   job-pgid := %idio-job-pgid job
   if cont {
-    c/kill (- job-pgid) c/SIGCONT
+    kill (- job-pgid) SIGCONT
   }
 
   ;; result of background-job is always successful, ie. #t
@@ -358,8 +376,8 @@ define (background-job job cont) {
 
 define (hangup-job job) {
   job-pgid := %idio-job-pgid job
-  c/kill (- job-pgid) c/SIGCONT
-  c/kill (- job-pgid) c/SIGHUP
+  kill (- job-pgid) SIGCONT
+  kill (- job-pgid) SIGHUP
 
   ;; result of hungup-job is #t
   #t
@@ -367,7 +385,7 @@ define (hangup-job job) {
 
 define (stop-job job) {
   job-pgid := %idio-job-pgid job
-  c/kill (- job-pgid) c/SIGSTOP
+  kill (- job-pgid) SIGSTOP
 
   ;; result of stop-job is #t
   #t
@@ -405,7 +423,7 @@ define (prep-io infile outfile errfile) {
   ;;   descriptor would commonly be one end or other of a pipe(2).)
 
   ;;   We can then close the supplied file descriptor if it is >
-  ;;   c/STDERR_FILENO (ie. > 2) and isn't one of the later ones.
+  ;;   STDERR_FILENO (ie. > 2) and isn't one of the later ones.
 
   ;;   That latter case is for: ls > "foo" 2>& 1
 
@@ -431,62 +449,62 @@ define (prep-io infile outfile errfile) {
   ;; until the last thing before execve().  Just set Idio-level
   ;; params.
 
-  if (not (c/== infile c/STDIN_FILENO)) {
-    ;c/dup2 infile c/STDIN_FILENO
+  if (not (C/== infile STDIN_FILENO)) {
+    ;dup2 infile STDIN_FILENO
     set-input-handle! (open-input-file-from-fd infile)
 
-    ;; if ((c/> infile c/STDERR_FILENO) and
-    ;; 	(not ((c/== infile outfile) or
-    ;; 	      (c/== infile errfile)))) {
-    ;;   c/close infile
+    ;; if ((C/> infile STDERR_FILENO) and
+    ;; 	(not ((C/== infile outfile) or
+    ;; 	      (C/== infile errfile)))) {
+    ;;   close infile
     ;; }
   }
 
-  if (not (c/== outfile c/STDOUT_FILENO)) {
-    ;c/dup2 outfile c/STDOUT_FILENO
+  if (not (C/== outfile STDOUT_FILENO)) {
+    ;dup2 outfile STDOUT_FILENO
     set-output-handle! (open-output-file-from-fd outfile)
 
-    ;; if ((c/> outfile c/STDERR_FILENO) and
-    ;; 	(not (c/== outfile errfile))) {
-    ;;   c/close outfile
+    ;; if ((C/> outfile STDERR_FILENO) and
+    ;; 	(not (C/== outfile errfile))) {
+    ;;   close outfile
     ;; }
   }
 
-  if (not (c/== errfile c/STDERR_FILENO)) {
-    ;c/dup2 errfile c/STDERR_FILENO
+  if (not (C/== errfile STDERR_FILENO)) {
+    ;dup2 errfile STDERR_FILENO
     set-error-handle! (open-output-file-from-fd errfile)
 
-    ;; if (c/> errfile c/STDOUT_FILENO) {
-    ;;   c/close errfile
+    ;; if (C/> errfile STDOUT_FILENO) {
+    ;;   close errfile
     ;; }
   }
 }
 
-define (prep-process pgid infile outfile errfile foreground) {
-  ;; edisplay* "pp:" (c/getpid) infile outfile errfile
+define (%prep-process pgid infile outfile errfile foreground) {
+  ;; edisplay* "pp:" (getpid) infile outfile errfile
   if %idio-interactive {
-    pid := (c/getpid)
-    if (c/== pgid 0) {
+    pid := (getpid)
+    if (C/== pgid 0) {
       pgid = pid
     }
 
     ;; put the process in the process group -- dupe of parent to avoid
     ;; race conditions
-    suppress-errors c/setpgid pid pgid
+    suppress-errors setpgid pid pgid
 
     if foreground {
       ;; give the terminal to the process group -- dupe of parent to
       ;; avoid race conditions
-      suppress-errors c/tcsetpgrp %idio-terminal pgid
+      suppress-errors tcsetpgrp %idio-terminal pgid
     }
 
     ;; set job control signals back to default
-    c/signal c/SIGINT c/SIG_DFL
-    c/signal c/SIGQUIT c/SIG_DFL
-    c/signal c/SIGTSTP c/SIG_DFL
-    c/signal c/SIGTTIN c/SIG_DFL
-    c/signal c/SIGTTOU c/SIG_DFL
-    c/signal c/SIGCHLD c/SIG_DFL
+    signal SIGINT SIG_DFL
+    signal SIGQUIT SIG_DFL
+    signal SIGTSTP SIG_DFL
+    signal SIGTTIN SIG_DFL
+    signal SIGTTOU SIG_DFL
+    signal SIGCHLD SIG_DFL
   }
 
   prep-io infile outfile errfile
@@ -535,7 +553,7 @@ define-infix-operator | 300 {
   ;; The trick is to open another pipe and have the first process
   ;; block reading from the pipe just before it starts.  All the other
   ;; processes in the pipeline simply close the pipe when they're
-  ;; about to exec/start.  When the last one has closed the pipe the
+  ;; about to exelibc/start.  When the last one has closed the pipe the
   ;; first will have its blocking read() return (with zero bytes, ie
   ;; EOF -- we don't care) and we're good to go.
   ;;
@@ -577,21 +595,21 @@ define-infix-operator | 300 {
   nprocs := length op-args
   %T{
     {
-      $stdin := (stdin-fileno) ; c/STDIN_FILENO
+      $stdin := (stdin-fileno) ; STDIN_FILENO
       $close-stdin := #f
       if (pair? $stdin) {
 	$stdin = ph $stdin
 	$close-stdin = $stdin
       }
       $infile := $stdin
-      $stdout := (stdout-fileno) ; c/STDOUT_FILENO
+      $stdout := (stdout-fileno) ; STDOUT_FILENO
       $recover-stdout := #f
       if (pair? $stdout) {
 	$recover-stdout = pht $stdout
 	$stdout = ph $stdout
       }
       $outfile := $stdout
-      $stderr := (stderr-fileno) ; c/STDERR_FILENO
+      $stderr := (stderr-fileno) ; STDERR_FILENO
       $pgid := 0
       $job := make-%idio-job '$pipeline #n $pgid #f #n $stdin $stdout $stderr
       %idio-jobs = pair $job %idio-jobs
@@ -599,12 +617,11 @@ define-infix-operator | 300 {
 
       $proc-id := 1
       $pipe := #n
-      $pgrp-pipe := (c/pipe)
+      $pgrp-pipe := (pipe)
 
       $@(map (function (cmd) {
 	        %T{
 		  {
-		    ;%%vm-trace 1
 		    $proc := make-%idio-process '$cmd -1 #f #f #n
 
 		    ;; NB. Update the procs list asap as we can get a
@@ -616,60 +633,60 @@ define-infix-operator | 300 {
 		    set-%idio-job-procs! $job (pair $proc (%idio-job-procs $job))
 
 		    if (lt $proc-id $nprocs) {
-		      $pipe = (c/pipe)
-		      $outfile = (c/pipe-writer $pipe)
+		      $pipe = (pipe)
+		      $outfile = (pipe-writer $pipe)
 		    } {
 		      $outfile = $stdout
 		    }
-		    $pid := (c/fork)
-		    if (c/== $pid 0) {
-		      prep-process $pgid $infile $outfile $stderr $foreground
+		    $pid := (fork)
+		    if (C/== $pid 0) {
+		      %prep-process $pgid $infile $outfile $stderr $foreground
 
 		      ;; The Libc texinfo page seems to have missed
 		      ;; this.  On the basis that a $pipe is owned
 		      ;; (created?) by the left hand process of the
 		      ;; two being connected, then *infile* is the
-		      ;; (c/pipe-reader $pipe) of the left-hand
+		      ;; (pipe-reader $pipe) of the left-hand
 		      ;; process and will have been closed in
-		      ;; prep-process, above (unless it was $stdin).
+		      ;; %prep-process, above (unless it was $stdin).
 
-		      ;; In turn, the current (c/pipe-reader $pipe)
+		      ;; In turn, the current (pipe-reader $pipe)
 		      ;; will become the $infile of the right-hand
 		      ;; process (as the parent Idio also has it open
 		      ;; and will pass it on).  But what of us?  Who
-		      ;; closes (c/pipe-reader $pipe) in us?
+		      ;; closes (pipe-reader $pipe) in us?
 
 		      ;; Ah, OK.  We do.
 		      if (lt $proc-id $nprocs) {
-			c/close (c/pipe-reader $pipe)
+			close (pipe-reader $pipe)
 		      }
 
 		      ;; We don't have the same problem with
-		      ;; (c/pipe-writer $pipe) because we only create
+		      ;; (pipe-writer $pipe) because we only create
 		      ;; the $pipe when we know there is another
 		      ;; process in the pipeline and $outfile
-		      ;; immediately becomes (c/pipe-writer $pipe).
+		      ;; immediately becomes (pipe-writer $pipe).
 
 		      ;; $infile is a left-over from the pipe of the
 		      ;; left hand process and we are suffering an
 		      ;; off-by-one error and the left-over one is the
-		      ;; current (c/pipe-reader $pipe) we have in our
+		      ;; current (pipe-reader $pipe) we have in our
 		      ;; hands.
 
-		      if (c/== $pgid 0) {
-			c/close (c/pipe-writer $pgrp-pipe)
+		      if (C/== $pgid 0) {
+			close (pipe-writer $pgrp-pipe)
 
 			;; $pgid is 0 so we must be the first in the
 			;; pipeline -- block reading a single byte
 			;; from the $pgrp-pipe
-			c/read (c/pipe-reader $pgrp-pipe) 1
-			c/close (c/pipe-reader $pgrp-pipe)
+			read (pipe-reader $pgrp-pipe) 1
+			close (pipe-reader $pgrp-pipe)
                       } {
-			c/close (c/pipe-reader $pgrp-pipe)
-			c/close (c/pipe-writer $pgrp-pipe)
+			close (pipe-reader $pgrp-pipe)
+			close (pipe-writer $pgrp-pipe)
 		      }
 		      
-		      ;; edisplay* "child" (c/getpid) "cmd" '$cmd
+		      ;; edisplay* "child" (getpid) "cmd" '$cmd
 		      if+ (pair? (ph '$cmd)) {
 			    $@cmd
 			  } \
@@ -686,23 +703,23 @@ define-infix-operator | 300 {
 		    } {
 		      set-%idio-process-pid! $proc $pid
 		      if %idio-interactive {
-			if (c/== $pgid 0) {
+			if (C/== $pgid 0) {
 			  $pgid = $pid
 			  set-%idio-job-pgid! $job $pgid
 			}
-			suppress-errors c/setpgid $pid $pgid
+			suppress-errors setpgid $pid $pgid
 		      }
 		    }
 
 		    ;; tidy up any trailing pipes
-		    if (not (c/== $infile $stdin)) {
-		      c/close $infile
+		    if (not (C/== $infile $stdin)) {
+		      close $infile
 		    }
-		    if (not (c/== $outfile $stdout)) {
-		      c/close $outfile
+		    if (not (C/== $outfile $stdout)) {
+		      close $outfile
 		    }
 
-		    $infile = (c/pipe-reader $pipe)
+		    $infile = (pipe-reader $pipe)
 		    $proc-id = $proc-id + 1
 		  }
 	        }
@@ -710,8 +727,8 @@ define-infix-operator | 300 {
 	     op-args)
 
       ;; finally let the first process go
-      c/close (c/pipe-reader $pgrp-pipe)
-      c/close (c/pipe-writer $pgrp-pipe)
+      close (pipe-reader $pgrp-pipe)
+      close (pipe-writer $pgrp-pipe)
 
       $status := #f
       if+ (not %idio-interactive) {
@@ -723,7 +740,7 @@ define-infix-operator | 300 {
           }
 
       if $close-stdin {
-	c/close $close-stdin
+	close $close-stdin
       }
 
       if $recover-stdout {
@@ -754,19 +771,19 @@ define-macro (fork-command foreground & cmd) {
 
   %T{
     {
-      $stdin := (stdin-fileno) ; c/STDIN_FILENO
+      $stdin := (stdin-fileno) ; STDIN_FILENO
       $close-stdin := #f
       if (pair? $stdin) {
 	$stdin = ph $stdin
 	$close-stdin = $stdin
       }
-      $stdout := (stdout-fileno) ; c/STDOUT_FILENO
+      $stdout := (stdout-fileno) ; STDOUT_FILENO
       $recover-stdout := #f
       if (pair? $stdout) {
 	$recover-stdout = pht $stdout
 	$stdout = ph $stdout
       }
-      $stderr := (stderr-fileno) ; c/STDERR_FILENO
+      $stderr := (stderr-fileno) ; STDERR_FILENO
       $recover-stderr := #f
       if (pair? $stderr) {
 	$recover-stderr = pht $stderr
@@ -776,21 +793,21 @@ define-macro (fork-command foreground & cmd) {
       $proc := make-%idio-process '$cmd -1 #f #f #n
       $job := make-%idio-job '$cmd (list $proc) $pgid #f #n $stdin $stdout $stderr
 
-      $pid := (c/fork)
-      if+ (c/== $pid 0) {
-	prep-process $pgid $stdin $stdout $stderr $foreground
+      $pid := (fork)
+      if+ (C/== $pid 0) {
+	%prep-process $pgid $stdin $stdout $stderr $foreground
 	if+ (pair? (ph '$cmd)) {
 	      $@cmd
 	    } \
 	      else $cmd
 
-	c/exit 0
+	exit 0
       } else {
 	set-%idio-process-pid! $proc $pid
 	if %idio-interactive {
 	  $pgid = $pid
 	  set-%idio-job-pgid! $job $pgid
-	  suppress-errors c/setpgid $pid $pgid
+	  suppress-errors setpgid $pid $pgid
 	}
       }
 
@@ -807,7 +824,7 @@ define-macro (fork-command foreground & cmd) {
       }
 
       if $close-stdin {
-	c/close $close-stdin
+	close $close-stdin
       }
 
       if $recover-stdout {
@@ -996,7 +1013,7 @@ define (with-error-to dst thunk) {
 ;; {new} can be:
 ;; 1. a handle (file or string) 
 ;; 2. a C int or fixnum which will be interpreted as the name of the
-;;    file descriptor to call c/dup2(2) with
+;;    file descriptor to call dup2(2) with
 ;;
 ;; {thunk} is the 0-arg function to invoke
 with-handle-dup := {
@@ -1049,9 +1066,9 @@ with-handle-dup := {
 	 ((file-handle? new) (error 'with-handle-dup (string-append "not an " msg-h "-file-handle") new)) \
 	 ((dir-string-h? new) (new-h = new)) \
 	 ((string-handle? new) (error 'with-handle-dup (string-append "not an " msg-h "-string-handle") new)) \
-	 (((c/int? new) or
+	 (((int? new) or
 	   (fixnum? new)) {
-	   if (c/int? new) (new = c/->integer new)
+	   if (int? new) (new = C/->integer new)
 	   if+ (eq? new 0) {
 	     new-h = (current-input-handle)
 	   } (eq? new 1) {

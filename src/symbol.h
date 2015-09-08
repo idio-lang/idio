@@ -101,8 +101,6 @@ extern IDIO_SYMBOL_DECL (unquote);
 extern IDIO_SYMBOL_DECL (unquotesplicing);
 extern IDIO_SYMBOL_DECL (unset);
 
-IDIO idio_symbol_C (const char *s_C);
-IDIO idio_tag_C (const char *s_C);
 void idio_free_symbol (IDIO s);
 int idio_isa_symbol (IDIO s);
 IDIO idio_symbols_C_intern (char *s);

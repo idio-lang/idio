@@ -18,7 +18,7 @@
 ;;
 ;; computed.idio
 ;;
-computed0 = Tests
+computed0 := Tests
 
 ;; XXX be careful to use new non-lexical toplevel symbols...
 

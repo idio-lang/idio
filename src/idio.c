@@ -35,7 +35,7 @@ void idio_init (int argc, char **argv)
     idio_init_struct ();
     idio_init_condition ();
     idio_init_evaluate ();
-    idio_init_scm_evaluate ();
+    /* idio_init_scm_evaluate (); */
     idio_init_pair ();
     idio_init_handle ();
     idio_init_string_handle ();
@@ -56,7 +56,7 @@ void idio_init (int argc, char **argv)
     idio_init_error ();
     idio_init_keyword ();
     idio_init_read ();
-    idio_init_scm_read ();
+    /* idio_init_scm_read (); */
     idio_init_env ();
     idio_init_path ();
     idio_init_command ();
@@ -70,7 +70,7 @@ void idio_init (int argc, char **argv)
      * We'll have a separate ARGV0, a la Bash then remaining args in
      * ARGC/ARGV
      */
-    idio_module_set_symbol_value (idio_symbols_C_intern ("ARGV0"), idio_string_C (argv[0]), idio_main_module ());
+    idio_module_set_symbol_value (idio_symbols_C_intern ("ARGV0"), idio_string_C (argv[0]), idio_Idio_module_instance ());
 
     IDIO args = idio_array (argc - 1);
     size_t i;
@@ -78,8 +78,8 @@ void idio_init (int argc, char **argv)
 	idio_array_insert_index (args, idio_string_C (argv[i]), i - 1);
     }
 
-    idio_module_set_symbol_value (idio_symbols_C_intern ("ARGC"), idio_integer (argc - 1), idio_main_module ());
-    idio_module_set_symbol_value (idio_symbols_C_intern ("ARGV"), args, idio_main_module ());
+    idio_module_set_symbol_value (idio_symbols_C_intern ("ARGC"), idio_integer (argc - 1), idio_Idio_module_instance ());
+    idio_module_set_symbol_value (idio_symbols_C_intern ("ARGV"), args, idio_Idio_module_instance ());
 
 }
 
@@ -102,7 +102,7 @@ void idio_add_primitives ()
     idio_struct_add_primitives ();
     idio_condition_add_primitives ();
     idio_evaluate_add_primitives ();
-    idio_scm_evaluate_add_primitives ();
+    /* idio_scm_evaluate_add_primitives (); */
     idio_pair_add_primitives ();
     idio_handle_add_primitives ();
     idio_string_handle_add_primitives ();
@@ -123,7 +123,7 @@ void idio_add_primitives ()
     idio_error_add_primitives ();
     idio_keyword_add_primitives ();
     idio_read_add_primitives ();
-    idio_scm_read_add_primitives ();
+    /* idio_scm_read_add_primitives (); */
     idio_env_add_primitives ();
     idio_path_add_primitives ();
     idio_command_add_primitives ();
@@ -150,7 +150,7 @@ void idio_final ()
     idio_final_command ();
     idio_final_path ();
     idio_final_env ();
-    idio_final_scm_read ();
+    /* idio_final_scm_read (); */
     idio_final_read ();
     idio_final_keyword ();
     idio_final_error ();
@@ -171,7 +171,7 @@ void idio_final ()
     idio_final_string_handle ();
     idio_final_handle ();
     idio_final_pair ();
-    idio_final_scm_evaluate ();
+    /* idio_final_scm_evaluate (); */
     idio_final_evaluate ();
     idio_final_condition ();
     idio_final_struct ();
@@ -199,7 +199,7 @@ int main (int argc, char **argv, char **envp)
 	}
     } else {
 	/* repl */
-	idio_load_filehandle (idio_current_input_handle (), idio_read, idio_evaluate);
+	idio_load_filehandle (idio_thread_current_input_handle (), idio_read, idio_evaluate);
     }
 
     idio_final ();

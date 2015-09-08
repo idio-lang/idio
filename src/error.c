@@ -60,7 +60,24 @@ void idio_error_printf (IDIO loc, char *format, ...)
     idio_raise_condition (idio_S_false, c);
 }
 
-void idio_warning_message (char *format, ...)
+void idio_error_error_message (char *format, ...)
+{
+    fprintf (stderr, "ERROR: ");
+
+    va_list fmt_args;
+    va_start (fmt_args, format);
+    idio_error_vfprintf (format, fmt_args);
+    va_end (fmt_args);
+
+    switch (format[strlen(format)-1]) {
+    case '\n':
+	break;
+    default:
+	fprintf (stderr, "\n");
+    }
+}
+
+void idio_error_warning_message (char *format, ...)
 {
     fprintf (stderr, "WARNING: ");
 
@@ -77,7 +94,7 @@ void idio_warning_message (char *format, ...)
     }
 }
 
-void idio_strerror (char *msg, IDIO loc)
+void idio_error_strerror (char *msg, IDIO loc)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (loc);
@@ -117,8 +134,7 @@ void idio_error_param_nil (char *name, IDIO loc)
 				   IDIO_LIST3 (idio_get_output_string (sh),
 					       loc,
 					       idio_S_nil));
-    idio_raise_condition (idio_S_true, c);
-    idio_error_printf (loc, "%s is nil", name);
+    idio_raise_condition (idio_S_false, c);
 }
 
 void idio_error_param_type (char *etype, IDIO who, IDIO loc)
@@ -138,7 +154,7 @@ void idio_error_param_type (char *etype, IDIO who, IDIO loc)
 				   IDIO_LIST3 (idio_get_output_string (sh),
 					       loc,
 					       who));
-    idio_raise_condition (idio_S_true, c);
+    idio_raise_condition (idio_S_false, c);
 }
 
 /*

@@ -177,7 +177,7 @@ IDIO idio_frame_extend (IDIO f1, IDIO f2)
 	 * condition is continuable as we've just unwound the stack so
 	 * there's no handlers to do anything with it.
 	 */
-	idio_vm_reset_thread (idio_current_thread (), 1);
+	idio_vm_reset_thread (idio_thread_current_thread (), 1);
 	idio_error_C ("not a frame", IDIO_LIST1 (f2), IDIO_C_LOCATION ("idio_frame_extend"));
     }
 

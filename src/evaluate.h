@@ -29,7 +29,7 @@
 #define IDIO_MEANING_FLAG_DYNAMIC_SCOPE		(1<<2)
 #define IDIO_MEANING_FLAG_ENVIRON_SCOPE		(1<<3)
 #define IDIO_MEANING_FLAG_COMPUTED_SCOPE	(1<<4)
-#define IDIO_MEANING_FLAG_COMPUTED_DEFINE	(1<<5)
+#define IDIO_MEANING_FLAG_DEFINE		(1<<5)
 
 #define IDIO_MEANING_IS_TAILP(f)		((f) & IDIO_MEANING_FLAG_TAILP)
 #define IDIO_MEANING_SET_TAILP(f)		((f) | IDIO_MEANING_FLAG_TAILP)
@@ -46,16 +46,21 @@
 #define IDIO_MEANING_ENVIRON_SCOPE(f)		(((f) & (~ IDIO_MEANING_SCOPE_MASK)) | IDIO_MEANING_FLAG_ENVIRON_SCOPE)
 #define IDIO_MEANING_COMPUTED_SCOPE(f)		(((f) & (~ IDIO_MEANING_SCOPE_MASK)) | IDIO_MEANING_FLAG_COMPUTED_SCOPE)
 
-#define IDIO_MEANING_IS_COMPUTED_DEFINE(f)	((f) & IDIO_MEANING_FLAG_COMPUTED_DEFINE)
-#define IDIO_MEANING_COMPUTED_DEFINE(f)		((f) | IDIO_MEANING_FLAG_COMPUTED_DEFINE)
+#define IDIO_MEANING_IS_DEFINE(f)		((f) & IDIO_MEANING_FLAG_DEFINE)
+#define IDIO_MEANING_DEFINE(f)			((f) | IDIO_MEANING_FLAG_DEFINE)
+#define IDIO_MEANING_NO_DEFINE(f)		((f) & (~ IDIO_MEANING_FLAG_DEFINE))
+
+IDIO idio_expander_module;
+IDIO idio_operator_module;
 
 void idio_add_description (IDIO sym, IDIO desc);
 IDIO idio_get_description (IDIO sym);
+IDIO idio_add_module_primitive (IDIO module, idio_primitive_desc_t *d);
+IDIO idio_export_module_primitive (IDIO module, idio_primitive_desc_t *d);
 IDIO idio_add_primitive (idio_primitive_desc_t *d);
-IDIO idio_add_special_primitive (idio_primitive_desc_t *d);
-void idio_add_expander_primitive (idio_primitive_desc_t *d);
 
 IDIO idio_toplevel_extend (IDIO name, int variant);
+IDIO idio_environ_extend (IDIO name, IDIO val);
 
 void idio_install_expander (IDIO id, IDIO proc);
 

@@ -49,39 +49,39 @@ sort_ctime := #n
     sort_stats = (make-hash #n #n ((length l) + 10)) 
 
     map (function (p) {
-      sort_stats.p = c/stat p
+      sort_stats.p = libc/stat p
     }) l
 
-    sort l c/< key_stat_size
+    sort l C/< key_stat_size
   }
 
   sort_atime = function (l) {
     sort_stats = (make-hash #n #n ((length l) + 10)) 
 
     map (function (p) {
-      sort_stats.p = c/stat p
+      sort_stats.p = libc/stat p
     }) l
 
-    sort l c/< key_stat_atime
+    sort l C/< key_stat_atime
   }
 
   sort_mtime = function (l) {
     sort_stats = (make-hash #n #n ((length l) + 10)) 
 
     map (function (p) {
-      sort_stats.p = c/stat p
+      sort_stats.p = libc/stat p
     }) l
 
-    sort l c/< key_stat_mtime
+    sort l C/< key_stat_mtime
   }
 
   sort_ctime = function (l) {
     sort_stats = (make-hash #n #n ((length l) + 10)) 
 
     map (function (p) {
-      sort_stats.p = c/stat p
+      sort_stats.p = libc/stat p
     }) l
 
-    sort l c/< key_stat_ctime
+    sort l C/< key_stat_ctime
   }
 }

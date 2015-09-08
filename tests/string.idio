@@ -18,7 +18,7 @@
 ;;
 ;; string.idio
 ;;
-string0 = Tests
+string0 := Tests
 
 ;; most regular string tests are in s9-tests.idio
 

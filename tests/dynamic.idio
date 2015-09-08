@@ -18,7 +18,7 @@
 ;;
 ;; dynamic.idio
 ;;
-dynamic0 = Tests
+dynamic0 := Tests
 
 ;; dynamic values
 

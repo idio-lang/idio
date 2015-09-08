@@ -39,27 +39,31 @@ define-syntax-rule (unless test body ...) (
   if (not test) (begin body ...)
 )
 
-define (load filename) {
-  if (not (string? filename)) (error "not a string" filename)
+load = {
+  orig-load := load
 
-  load-k := #n
+  function (filename) {
+    if (not (string? filename)) (error 'load "not a string" filename)
 
-  monitor (function (cont cond) {
-    if (not cont) {
-      edisplay "load "
-      ewrite filename
-      edisplay* ": non-cont-error caught"
-      edisplay* cond
-      edisplay* "load: invoking safe continuation"
-      load-k cond
-    } {
-      raise cont cond
+    load-k := #n
+
+    monitor (function (cont cond) {
+      if (not cont) {
+	edisplay "load "
+	ewrite filename
+	edisplay* ": non-cont-error caught"
+	edisplay* cond
+	edisplay* "load: invoking safe continuation"
+	load-k cond
+      } {
+	raise cont cond
+      }
+    }) {
+      call/cc (function (k) {
+	load-k = k
+	orig-load filename
+      })
     }
-  }) {
-    call/cc (function (k) {
-      load-k = k
-      load filename
-    })
   }
 }
 
@@ -80,4 +84,16 @@ define-macro (suppress-errors & cmd) {
     }
   }
 }
+
+;; SRFI-8 receive
+;; (define-syntax receive
+;;   (syntax-rules ()
+;;     ((receive formals expression body ...)
+;;      (call-with-values (lambda () expression)
+;;                        (lambda formals body ...)))))
+
+define-syntax with-values-from \
+  (syntax-rules ()
+    ((with-values-from formals expression body ...)
+     (call-with-values (function () expression) (function formals body ...))))
 

@@ -18,7 +18,7 @@
 ;;
 ;; hash.idio
 ;;
-hash0 = Tests
+hash0 := Tests
 
 ;; hash operator tests
 ht := (make-hash)
@@ -142,15 +142,30 @@ test (hash-equivalence-function ht) 'equal?
 ht = (make-hash 'eq?)
 test (hash-equivalence-function ht) 'eq?
 
-;; use our own: define a numeric comparator
-ht-num-eq := function (k1 k2) {
+;; use our own: define an integer comparator
+;;
+;; Remember the default key is #n so we will be asked to compare #n
+;; several times.  Catch those and return #f.
+;;
+;; Explicitly catch non-integers and raise a continuable
+;; ^rt-parameter-type-error -- as the C code for {==} generates
+;; non-continuable conditions
+ht-integer-eq? := function (k1 k2) {
   cond (((null? k1) or
 	 (null? k2)) #f) \
+       ((not (integer? k1)) {
+	 c := make-condition ^rt-parameter-type-error "not an integer" 'ht-integer-eq? k1
+	 raise #t c
+       }) \
+       ((not (integer? k2)) {
+	 c := make-condition ^rt-parameter-type-error "not an integer" 'ht-integer-eq? k2
+	 raise #t c
+       }) \
        (else (== k1 k2))
 }
 
-ht = make-hash ht-num-eq
-test (hash-equivalence-function ht) ht-num-eq
+ht = make-hash ht-integer-eq?
+test (hash-equivalence-function ht) ht-integer-eq?
 
 ;; make sure it works!
 hash-set! ht 1 "apple"
@@ -163,31 +178,31 @@ test (hash-ref ht 2) "banana"
 ;; Make sure it fails!  That is to say, check we are actually using
 ;; it.
 
-;; Here we want to provoke the == in ht-num-eq into producing an
-;; error, an ^rt-parameter-type-error in particular, because we're
-;; trying to insert a character as a key when == only works with
-;; numbers.
+;; Here we want to provoke ht-integer-eq? into producing an error, an
+;; ^rt-parameter-type-error in particular, because we're trying to
+;; insert a character as a key when ht-integer-eq? only works with
+;; integers (and #n).
 
 ;; We can't guarantee that a given key will collide with any other so
 ;; we have to loop over a few until one collides -- once we've
-;; "collided" with all the #n keys that exist in a new hash.
+;; "collided" with all the default #n keys that exist in a new hash.
 done := #f
 monitor (function (cont cond) {
   ;; display* "hash equivalence function fail monitor condition:" (struct-type-name cond)
   if cont {
     if (rt-parameter-type-error? cond) {
-      ;; NB only increment the test count once as ht-num-eq might be
-      ;; called several times when a key collides in which case we'll
-      ;; get an error riased several times.
+      ;; NB only increment the test count once as ht-integer-eq? might
+      ;; be called several times when a key collides in which case
+      ;; we'll get an error riased several times.
       if (not done) (test #t #t)
 
       ;; set done
       done = #t
 
-      ;; return #f (to ht-num-eq, hopefully)
+      ;; return #f (to ht-integer-eq?, hopefully)
       #f
     } (error "hash equivalence function fail: unexpected condition" cond)
-  } (error "hash equivalence function fail: unexpected non-continuable error" cond)
+  } (error "hash equivalence function fail: unexpected non-continuable error" cond) 
 }) {
   ;; need plenty of values to provoke a key collision
   loop :+ function (i) {
@@ -203,12 +218,12 @@ monitor (function (cont cond) {
 
 ;; NB get a fresh hash (with our equivalence function) as the existing
 ;; one is full of character keys that generate errors during the copy
-ht = make-hash ht-num-eq
+ht = make-hash ht-integer-eq?
 hash-set! ht 1 "apple"
 hash-set! ht 2 "banana"
 
 nht = hash-copy ht
-test (hash-equivalence-function nht) ht-num-eq
+test (hash-equivalence-function nht) ht-integer-eq?
 
 ;; hashing functions
 
@@ -222,16 +237,39 @@ ht = (make-hash #n #n)
 test (hash-hash-function ht) #n
 
 ;; use our own: define a numeric hashing function
-ht-num-hash := {
+;;
+;; Explicitly catch non-integers and raise a continuable
+;; ^rt-parameter-type-error -- as the C code for {remainder} generates
+;; non-continuable ^rt-parameter-type-error conditions
+ht-integer-hash := {
   bound := (expt 2 29) - 3
 
   function (v) {
-    remainder v bound
+    edisplay* "ht-integer-hash" v (integer? v)
+    if (not (integer? v)) {
+      c := make-condition ^rt-parameter-type-error "not an integer" 'ht-integer-hash v
+
+      ;; WARNING: our monitor (below) will return 0 as the result of
+      ;; this {raise}.  Hence we cannot fall through to the call to
+      ;; {remainder} as it will still generate a non-cont
+      ;; ^rt-parameter-type-error as {v} is unchanged.
+      ;;
+      ;; This {raise} must be the final clause of ht-integer-hash so
+      ;; that it, in turn, returns the 0.
+      ;;
+      ;;   Or we could assign to {v} or something but at this point we
+      ;;   know we've failed (and set {done} in the monitor) so
+      ;;   there's no point in any further calculation.  Return
+      ;;   whatever the monitor gave us and be done with it.
+      raise #t c
+    } {
+      remainder v bound
+    }
   }
 }
 
-ht = make-hash #n ht-num-hash
-test (hash-hash-function ht) ht-num-hash
+ht = make-hash #n ht-integer-hash
+test (hash-hash-function ht) ht-integer-hash
 
 ;; make sure it works!
 hash-set! ht 1 "apple"
@@ -244,10 +282,10 @@ test (hash-ref ht 2) "banana"
 ;; Make sure it fails!  That is to say, check we are actually using
 ;; it.
 
-;; Here we want to provoke the {remainder} in ht-num-hash into
-;; producing an error, an ^rt-parameter-type-error in particular,
-;; because we're trying to insert a character as a key when
-;; {remainder} only works with numbers.
+;; Here we want to provoke the ht-integer-hash into producing an
+;; error, an ^rt-parameter-type-error in particular, because we're
+;; trying to insert a character as a key when ht-integer-hash only
+;; works with integers.
 
 ;; We can't guarantee that a given key will collide with any other so
 ;; we have to loop over a few until one collides -- once we've
@@ -257,16 +295,17 @@ monitor (function (cont cond) {
   ;; display* "hash hash function fail monitor condition:" (struct-type-name cond)
   if cont {
     if (rt-parameter-type-error? cond) {
-      ;; NB only increment the test count once as ht-num-eq might be
-      ;; called several times when a key collides in which case we'll
-      ;; get an error riased several times.
+      ;; NB only increment the test count once as ht-integer-hash
+      ;; might be called several times when a key collides in which
+      ;; case we'll get an error riased several times.
       if (not done) (test #t #t)
 
       ;; set done
       done = #t
 
-      ;; return #f (to ht-num-eq, hopefully)
-      #f
+      ;; return 0 (to ht-integer-hash, which returns it to the
+      ;; internals of hash-set!)
+      0
     } (error "hash hash function fail: unexpected condition" cond)
   } (error "hash hash function fail: unexpected non-continuable error" cond)
 }) {
@@ -282,14 +321,14 @@ monitor (function (cont cond) {
 
 ;; if we copy the hash we should copy the hash function
 
-;; NB get a fresh hash (with our hash function) as the existing
-;; one is full of character keys that generate errors during the copy
-ht = make-hash #n ht-num-hash
+;; NB get a fresh hash (with our hash function) as the existing one is
+;; full of character keys that generate errors during the copy
+ht = make-hash #n ht-integer-hash
 hash-set! ht 1 "apple"
 hash-set! ht 2 "banana"
 
 nht = hash-copy ht
-test (hash-hash-function nht) ht-num-hash
+test (hash-hash-function nht) ht-integer-hash
 
 ;; hash index operators
 test (ht.1) "apple"

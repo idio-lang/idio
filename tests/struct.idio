@@ -18,7 +18,7 @@
 ;;
 ;; struct.idio
 ;;
-struct0 = Tests
+struct0 := Tests
 
 define-struct foo a b
 test (struct-type? foo) #t

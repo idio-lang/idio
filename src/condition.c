@@ -83,8 +83,8 @@ IDIO_DEFINE_PRIMITIVE2V ("make-condition-type", make_condition_type, (IDIO name,
     IDIO_ASSERT (name);
     IDIO_ASSERT (parent);
     IDIO_ASSERT (fields);
-
     IDIO_VERIFY_PARAM_TYPE (symbol, name);
+
     if (idio_S_nil != parent) {
 	IDIO_VERIFY_PARAM_TYPE (condition_type, parent);
     }
@@ -151,7 +151,6 @@ IDIO_DEFINE_PRIMITIVE1 ("error?", errorp, (IDIO o))
 IDIO_DEFINE_PRIMITIVE1 ("allocate-condition", allocate_condition, (IDIO ct))
 {
     IDIO_ASSERT (ct);
-
     IDIO_VERIFY_PARAM_TYPE (condition_type, ct);
 
     return idio_allocate_struct_instance (ct, 1);
@@ -161,7 +160,6 @@ IDIO_DEFINE_PRIMITIVE1V ("make-condition", make_condition, (IDIO ct, IDIO values
 {
     IDIO_ASSERT (ct);
     IDIO_ASSERT (values);
-
     IDIO_VERIFY_PARAM_TYPE (condition_type, ct);
     IDIO_VERIFY_PARAM_TYPE (list, values);
 
@@ -187,7 +185,6 @@ IDIO_DEFINE_PRIMITIVE1V ("%idio-error-condition", idio_error_condition, (IDIO me
 {
     IDIO_ASSERT (message);
     IDIO_ASSERT (args);
-
     IDIO_VERIFY_PARAM_TYPE (string, message);
     IDIO_VERIFY_PARAM_TYPE (list, args);
 
@@ -223,7 +220,6 @@ IDIO_DEFINE_PRIMITIVE2 ("condition-isa?", condition_isap, (IDIO c, IDIO ct))
 {
     IDIO_ASSERT (c);
     IDIO_ASSERT (ct);
-
     IDIO_VERIFY_PARAM_TYPE (condition, c);
     IDIO_VERIFY_PARAM_TYPE (condition_type, ct);
     
@@ -265,39 +261,50 @@ IDIO_DEFINE_PRIMITIVE3 ("condition-set!", condition_set, (IDIO c, IDIO field, ID
     IDIO_ASSERT (c);
     IDIO_ASSERT (field);
     IDIO_ASSERT (value);
-
     IDIO_VERIFY_PARAM_TYPE (condition, c);
     IDIO_VERIFY_PARAM_TYPE (symbol, field);
 
     return idio_struct_instance_set (c, field, value);
 }
 
-#define IDIO_DEFINE_CONDITION0(v,n,p) {		\
-    IDIO sym = idio_symbols_C_intern (n);	\
-    v = idio_struct_type (sym, p, idio_S_nil);	\
-    idio_gc_protect (v);			\
-    idio_module_toplevel_set_symbol_value (sym, v);	\
+#define IDIO_DEFINE_CONDITION0(v,n,p) {					\
+	IDIO sym = idio_symbols_C_intern (n);				\
+	v = idio_struct_type (sym, p, idio_S_nil);			\
+	idio_gc_protect (v);						\
+	idio_ai_t gci = idio_vm_constants_lookup_or_extend (sym);	\
+	idio_ai_t gvi = idio_vm_extend_values ();			\
+	idio_module_toplevel_set_symbol (sym, IDIO_LIST3 (idio_S_toplevel, idio_fixnum (gci), idio_fixnum (gvi))); \
+	idio_module_toplevel_set_symbol_value (sym, v);			\
     }
 
-#define IDIO_DEFINE_CONDITION1(v,n,p,f1) {	\
-    IDIO sym = idio_symbols_C_intern (n);	\
-    v = idio_struct_type (sym, p, IDIO_LIST1 (idio_symbols_C_intern (f1)));	\
-    idio_gc_protect (v);			\
-    idio_module_toplevel_set_symbol_value (sym, v);	\
+#define IDIO_DEFINE_CONDITION1(v,n,p,f1) {				\
+	IDIO sym = idio_symbols_C_intern (n);				\
+	v = idio_struct_type (sym, p, IDIO_LIST1 (idio_symbols_C_intern (f1))); \
+	idio_gc_protect (v);						\
+	idio_ai_t gci = idio_vm_constants_lookup_or_extend (sym);	\
+	idio_ai_t gvi = idio_vm_extend_values ();			\
+	idio_module_toplevel_set_symbol (sym, IDIO_LIST3 (idio_S_toplevel, idio_fixnum (gci), idio_fixnum (gvi))); \
+	idio_module_toplevel_set_symbol_value (sym, v);			\
     }
 
-#define IDIO_DEFINE_CONDITION2(v,n,p,f1,f2) {	\
-    IDIO sym = idio_symbols_C_intern (n);	\
-    v = idio_struct_type (sym, p, IDIO_LIST2 (idio_symbols_C_intern (f1), idio_symbols_C_intern (f2))); \
-    idio_gc_protect (v);			\
-    idio_module_toplevel_set_symbol_value (sym, v);	\
+#define IDIO_DEFINE_CONDITION2(v,n,p,f1,f2) {				\
+	IDIO sym = idio_symbols_C_intern (n);				\
+	v = idio_struct_type (sym, p, IDIO_LIST2 (idio_symbols_C_intern (f1), idio_symbols_C_intern (f2))); \
+	idio_gc_protect (v);						\
+	idio_ai_t gci = idio_vm_constants_lookup_or_extend (sym);	\
+	idio_ai_t gvi = idio_vm_extend_values ();			\
+	idio_module_toplevel_set_symbol (sym, IDIO_LIST3 (idio_S_toplevel, idio_fixnum (gci), idio_fixnum (gvi))); \
+	idio_module_toplevel_set_symbol_value (sym, v);			\
     }
 
-#define IDIO_DEFINE_CONDITION3(v,n,p,f1,f2,f3) {	\
-    IDIO sym = idio_symbols_C_intern (n);	\
-    v = idio_struct_type (sym, p, IDIO_LIST3 (idio_symbols_C_intern (f1), idio_symbols_C_intern (f2), idio_symbols_C_intern (f3))); \
-    idio_gc_protect (v);			\
-    idio_module_toplevel_set_symbol_value (sym, v);	\
+#define IDIO_DEFINE_CONDITION3(v,n,p,f1,f2,f3) {			\
+	IDIO sym = idio_symbols_C_intern (n);				\
+	v = idio_struct_type (sym, p, IDIO_LIST3 (idio_symbols_C_intern (f1), idio_symbols_C_intern (f2), idio_symbols_C_intern (f3))); \
+	idio_gc_protect (v);						\
+	idio_ai_t gci = idio_vm_constants_lookup_or_extend (sym);	\
+	idio_ai_t gvi = idio_vm_extend_values ();			\
+	idio_module_toplevel_set_symbol (sym, IDIO_LIST3 (idio_S_toplevel, idio_fixnum (gci), idio_fixnum (gvi))); \
+	idio_module_toplevel_set_symbol_value (sym, v);			\
     }
 
 void idio_init_condition ()

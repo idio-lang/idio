@@ -1078,7 +1078,7 @@ IDIO idio_load_filehandle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*
     IDIO_C_ASSERT (evaluator);
     IDIO_TYPE_ASSERT (file_handle, fh);
 
-    IDIO thr = idio_current_thread ();
+    IDIO thr = idio_thread_current_thread ();
     idio_ai_t sp0 = idio_array_size (IDIO_THREAD_STACK (thr));
 
     /*
@@ -1128,7 +1128,7 @@ IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (
 
     int timing = 0;
     
-    IDIO thr = idio_current_thread ();
+    IDIO thr = idio_thread_current_thread ();
     idio_ai_t ss0 = idio_array_size (IDIO_THREAD_STACK (thr));
     /* fprintf (stderr, "load-file-handle: %s\n", IDIO_HANDLE_NAME (fh)); */
     /* idio_debug ("THR %s\n", thr); */
@@ -1280,9 +1280,9 @@ typedef struct idio_file_extension_s {
 } idio_file_extension_t;
 
 static idio_file_extension_t idio_file_extensions[] = {
-    { NULL, idio_scm_read, idio_scm_evaluate, idio_main_module },
-    { ".idio", idio_read, idio_evaluate, idio_main_module },
-    { ".scm", idio_scm_read, idio_scm_evaluate, idio_main_scm_module },
+    { NULL, idio_read, idio_evaluate, idio_Idio_module_instance }, 
+    { ".idio", idio_read, idio_evaluate, idio_Idio_module_instance },
+    /* { ".scm", idio_scm_read, idio_scm_evaluate, idio_main_scm_module_instance }, */
     { NULL, NULL, NULL }
 };
 
@@ -1295,8 +1295,8 @@ char *idio_libfile_find_C (char *file)
     IDIO IDIOLIB = idio_module_current_symbol_value_recurse (idio_env_IDIOLIB_sym);
 
     /*
-     * idiolib is that start of the current IDIOLIB pathname element
-     * -- colon will mark the end
+     * idiolib is the start of the current IDIOLIB pathname element --
+     * colon will mark the end
      *
      * idiolibe is the end of the whole IDIOLIB string, used to
      * calculate when we've tried all parts
@@ -1552,7 +1552,7 @@ IDIO idio_load_file (IDIO filename)
 
 		free (filename_C);
 
-		idio_set_current_module ((*fe->modulep) ());
+		idio_thread_set_current_module ((*fe->modulep) ());
 		return idio_load_filehandle (fh, fe->reader, fe->evaluator);
 	    }
 
@@ -1580,7 +1580,7 @@ IDIO idio_load_file (IDIO filename)
 
 	    free (filename_C);
 
-	    idio_set_current_module ((*fe->modulep) ());
+	    idio_thread_set_current_module ((*fe->modulep) ());
 	    return idio_load_filehandle (fh, reader, evaluator);
 	}	
     }
@@ -1595,9 +1595,9 @@ IDIO_DEFINE_PRIMITIVE1 ("load", load, (IDIO filename))
 
     IDIO_VERIFY_PARAM_TYPE (string, filename);
 
-    idio_thread_save_state (idio_current_thread ());
+    idio_thread_save_state (idio_thread_current_thread ());
     IDIO r = idio_load_file (filename);
-    idio_thread_restore_state (idio_current_thread ());
+    idio_thread_restore_state (idio_thread_current_thread ());
     
     return r;
 }

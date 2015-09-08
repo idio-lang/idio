@@ -39,8 +39,7 @@ static int idio_env_set_default (IDIO name, char *val)
 
     IDIO ENV = idio_module_current_symbol_value (name);
     if (idio_S_unspec == ENV) {
-	idio_toplevel_extend (name, IDIO_MEANING_ENVIRON_SCOPE (0));
-	idio_module_current_set_symbol_value (name, idio_string_C (val));
+	idio_environ_extend (name, idio_string_C (val));
 	return 1;
     }
 
@@ -68,8 +67,7 @@ static void idio_env_add_environ ()
 	    var = idio_string_C (*env);
 	}
 
-	idio_toplevel_extend (var, IDIO_MEANING_ENVIRON_SCOPE (0));
-	idio_module_current_set_symbol_value (var, val);
+	idio_environ_extend (var, val);
     }
 
     /*

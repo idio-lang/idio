@@ -18,7 +18,10 @@
 ;;
 ;; command.idio
 ;;
-command0 = Tests
+module tests/command
+import *command* libc
+
+command0 := Tests
 
 ;; How to test external commands?
 
@@ -67,21 +70,21 @@ monitor (function (cont cond) {
   exit1 := function (cond) {
     ;; edisplay* "command tests: exit1" cond
     job := idio-error-location cond
-    test (job-detail job) %T{ (exit $(c/integer-> 1)) }
+    test (job-detail job) %T{ (exit $(C/integer-> 1)) }
     rt-command-status-error-status cond
   }
 
   killed1 := function (cond) {
     ;; edisplay* "command tests: killed1" cond
     job := idio-error-location cond
-    test (job-detail job) %T{ (killed $(c/integer-> 1)) }
+    test (job-detail job) %T{ (killed $(C/integer-> 1)) }
     rt-command-status-error-status cond
   }
 
   killed13 := function (cond) {
     ;; edisplay* "command tests: killed13" cond
     job := idio-error-location cond
-    test (job-detail job) %T{ (killed $(c/integer-> 13)) }
+    test (job-detail job) %T{ (killed $(C/integer-> 13)) }
     rt-command-status-error-status cond
   }
 
@@ -189,7 +192,7 @@ monitor (function (cont cond) {
   ;;
   ;; This doesn't look like art.  Maybe it's contemporary art, then.
 
-  if (c/== (c/signal-handler c/SIGPIPE) c/SIG_IGN) {
+  if (libc/== (signal-handler SIGPIPE) SIG_IGN) {
     rcseh = exit1
   } {
     rcseh = killed13

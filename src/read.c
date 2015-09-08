@@ -1211,7 +1211,7 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int nl)
 		{
 		    /*
 		     * We could be looking at the ... symbol for
-		     * syntax-rules.  certainly, multiple sequential
+		     * syntax-rules.  certainly, multiple consecutive
 		     * DOTs are not an indexing operation
 		     */
 		    int c = idio_handle_getc (handle);

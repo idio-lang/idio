@@ -24,21 +24,27 @@
 ;; The general 'setter' meme is for when you want to set! the result
 ;; of a procedure call:
 ;;
+;;   (foo ...) = val
+;;
+;; ie.
+;;
 ;;   set! (foo ...) val
 ;;
 ;; which the meme says is rewritten as:
 ;;
 ;;   (setter foo) ... val
 ;;
-;; ie. call {setter} to look up the "setter" of foo -- which will be a
-;; procedure -- and call that with all of the original arguments.
+;; ie. call {setter} to look up the "setter of foo" -- which will be a
+;; procedure -- and call the resultant {setter-of-foo} procedure with
+;; all of the original arguments.
 ;;
-;; How do you bootstrap this?  How do you set the setter of foo?  Why:
+;; How do you bootstrap this?  How do you set! the "setter of foo"?
+;; Why, it's:
 ;;
 ;;   set! (setter foo) setter-of-foo
 ;;
-;; of course!.  But wait, this looks like calling set! on the result
-;; of a procedure call.  According to the original meme we will now be
+;; of course!  But wait, this looks like calling set! on the result of
+;; a procedure call.  According to this setter meme we will now be
 ;; calling:
 ;;
 ;;   (setter setter) foo setter-of-foo
@@ -47,22 +53,30 @@
 ;; the setter of its first argument!  If we can magically craft the
 ;; setter of {setter} then everything else just follows.
 ;;
-;; :setter is an example of a property of a procedure.
+;;
+;; The implementation of this meme is to use property lists.  In
+;; particular, property lists of procedures.  Here we want to be
+;; defining the "setter" property.  Other procedure properties might
+;; be "documentation", "signature", "arity", "source" etc..
+;;
+;; :setter (with a leading colon) is an example of a keyword and we'll
+;; use keyword lists as our properties.
 ;;
 ;; NB The canonical implementation of keyword lists uses, um, lists so
 ;; it doesn't need to do this bootstrap-a-keyword-table mularkey.
 ;;
 ;; Why a keyword-table size of 4?  We don't have many procedure
-;; properties so why waste space?
+;; properties so why waste space?  Actually, why not just use a
+;; list...?
 {
-  ;; bootstrap {setter}'s properties
+  ;; bootstrap {setter}'s own properties
   setter-kwt := %procedure-properties setter
   if (null? setter-kwt) {
-    setter-kwt = (make-keyword-table 4)
+    setter-kwt = make-keyword-table 4
     %set-procedure-properties! setter setter-kwt
   }
 
-  ;; actually set {setter}'s setter to a function that takes a proc
+  ;; The magic: set {setter}'s setter to a function that takes a proc
   ;; and a setter.  From the example above:
   ;;
   ;;   (setter setter) foo setter-of-foo
@@ -76,7 +90,7 @@
     ;; bootstrap proc's properties
     proc-kwt := %procedure-properties proc
     if (null? proc-kwt) {
-      proc-kwt = (make-keyword-table 4)
+      proc-kwt = make-keyword-table 4
       %set-procedure-properties! proc proc-kwt
     }
 

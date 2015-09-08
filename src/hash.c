@@ -598,7 +598,7 @@ idio_hi_t idio_hash_value (IDIO ht, void *kv)
     if (IDIO_HASH_HASHF (ht) != NULL) {
 	return IDIO_HASH_HASHF (ht) (ht, kv);
     } else {
-	IDIO ihv = idio_vm_invoke_C (idio_current_thread (), IDIO_LIST2 (IDIO_HASH_HASH (ht), (IDIO) kv));
+	IDIO ihv = idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST2 (IDIO_HASH_HASH (ht), (IDIO) kv));
 
 	idio_hi_t hv = IDIO_HASH_SIZE (ht) + 1;
 
@@ -633,7 +633,7 @@ int idio_hash_equal (IDIO ht, void *kv1, void *kv2)
     if (IDIO_HASH_EQUAL (ht) != NULL) {
 	return IDIO_HASH_EQUAL (ht) (kv1, kv2);
     } else {
-	IDIO r = idio_vm_invoke_C (idio_current_thread (), IDIO_LIST3 (IDIO_HASH_COMP (ht), (IDIO) kv1, (IDIO) kv2));
+	IDIO r = idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST3 (IDIO_HASH_COMP (ht), (IDIO) kv1, (IDIO) kv2));
 	if (idio_S_false == r) {
 	    return 0;
 	} else {
@@ -1054,7 +1054,7 @@ IDIO idio_hash_keys_to_list (IDIO h)
 	IDIO k = IDIO_HASH_HE_KEY (h, i);
 	if (! k) {
 	    char em[BUFSIZ];
-	    sprintf (em, "hash-keys-to-list: key #%zd is NULL", i);
+	    sprintf (em, "key #%zd is NULL", i);
 	    idio_error_C (em, h, IDIO_C_LOCATION ("idio_hash_keys_to_list"));
 	}
 	if (idio_S_nil != k) {
@@ -1306,7 +1306,7 @@ IDIO idio_hash_ref (IDIO ht, IDIO key, IDIO args)
     if (idio_S_unspec == r) {
 	if (idio_S_nil != args) {
 	    IDIO dv = IDIO_PAIR_H (args);
-	    r = idio_vm_invoke_C (idio_current_thread (), dv);
+	    r = idio_vm_invoke_C (idio_thread_current_thread (), dv);
 	} else {
 	    idio_hash_error_key_not_found (key, IDIO_C_LOCATION ("hash-ref"));
 	}
@@ -1401,7 +1401,7 @@ IDIO_DEFINE_PRIMITIVE3V ("hash-update!", hash_update, (IDIO ht, IDIO key, IDIO f
 
     IDIO cv = idio_hash_ref (ht, key, args);
 
-    IDIO nv = idio_vm_invoke_C (idio_current_thread (), IDIO_LIST2 (func, cv));
+    IDIO nv = idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST2 (func, cv));
     
     idio_hash_put (ht, key, nv);
     
@@ -1440,7 +1440,7 @@ IDIO_DEFINE_PRIMITIVE2 ("hash-walk", hash_walk, (IDIO ht, IDIO func))
 	}
 	if (idio_S_nil != k) {
 	    IDIO v = IDIO_HASH_HE_VALUE (ht, i);
-	    idio_vm_invoke_C (idio_current_thread (), IDIO_LIST3 (func, k, v));
+	    idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST3 (func, k, v));
 	}
     }
 
@@ -1464,7 +1464,7 @@ IDIO_DEFINE_PRIMITIVE3 ("hash-fold", hash_fold, (IDIO ht, IDIO func, IDIO val))
 	}
 	if (idio_S_nil != k) {
 	    IDIO v = IDIO_HASH_HE_VALUE (ht, i);
-	    val = idio_vm_invoke_C (idio_current_thread (), IDIO_LIST4 (func, k, v, val));
+	    val = idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST4 (func, k, v, val));
 	}
     }
 

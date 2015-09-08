@@ -18,7 +18,7 @@
 ;;
 ;; string-handle.idio
 ;;
-string-handle0 = Tests
+string-handle0 := Tests
 
 ;; check predicates fail for non-string-handle
 test-str := "foo"
@@ -68,7 +68,7 @@ test (input-string-handle? ish) #t
 test (output-string-handle? ish) #f
 
 ;; seek to the third character of "Hello" , #\e
-isn = handle-seek ish 2
+isn := handle-seek ish 2
 test isn 2
 
 shi := read-char ish

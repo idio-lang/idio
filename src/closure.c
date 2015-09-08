@@ -22,10 +22,16 @@
 
 #include "idio.h"
 
-IDIO idio_closure (size_t code, IDIO env)
+IDIO idio_closure (size_t code, IDIO frame, IDIO env)
 {
     IDIO_C_ASSERT (code);
+    IDIO_ASSERT (frame);
     IDIO_ASSERT (env);
+
+    if (idio_S_nil != frame) {
+	IDIO_TYPE_ASSERT (frame, frame);
+    }
+    IDIO_TYPE_ASSERT (module, env);
 
     IDIO c = idio_gc_get (IDIO_TYPE_CLOSURE);
 
@@ -35,6 +41,7 @@ IDIO idio_closure (size_t code, IDIO env)
 
     IDIO_CLOSURE_GREY (c) = NULL;
     IDIO_CLOSURE_CODE (c) = code;
+    IDIO_CLOSURE_FRAME (c) = frame;
     IDIO_CLOSURE_ENV (c) = env;
     IDIO_CLOSURE_PROPERTIES (c) = idio_S_nil;
 
@@ -161,12 +168,15 @@ void idio_closure_add_primitives ()
      * NB Can't set setter's setter until it's been added as a
      * primitive
      */
-    IDIO setter = idio_module_symbol_value_recurse (idio_S_setter, idio_main_module ());
+    IDIO setter = idio_module_symbol_value_recurse (idio_S_setter, idio_Idio_module_instance ());
     
     IDIO kwt = idio_closure_procedure_properties (setter);
 
     if (idio_S_nil == kwt) {
-	kwt = idio_hash_make_keyword_table (idio_S_nil);
+	/*
+	 * See closure.idio for why  a keyword-table of size 4.
+	 */
+	kwt = idio_hash_make_keyword_table (IDIO_LIST1 (idio_fixnum (4)));
     }
 
     idio_closure_set_procedure_properties (setter, kwt);

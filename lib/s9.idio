@@ -154,7 +154,7 @@ define-macro (letrec bindings expr & exprs) {
 
 ;; if+ a b c d e
 ;; =>
-;; (cond (a b) (c d) (else e))
+;; cond (a b) (c d) (else e)
 define-macro (if+ & clauses) {
   loop :+ function (c) {
     cond ((null? c) '#n) \
@@ -166,6 +166,7 @@ define-macro (if+ & clauses) {
 	 })
   }
 
+  ;;idio-debug "if+ %s\n" (loop clauses)
   %T{ cond $@(loop clauses) }
 }
 
@@ -1421,8 +1422,8 @@ define (syntax-match form pattern keywords env) {
 ;
 define (alpha-conv form bound) {
   subst :+ function (x env) {
-    if+ (assq x env) (=> pt) \
-	else x
+    cond ((assq x env) => pt) \
+	 (else x)
   }
   map-improper :+ function (f a r) {
     if+ (null? a) (reverse r) \
@@ -1484,8 +1485,8 @@ define (syntax-expand bound tmpl env) {
   alpha-conv := alpha-conv
   expand :+ function (tmpl env) {
     if+ (not (pair? tmpl)) {
-      (cond ((assq tmpl env) => pt)
-	    (else tmpl))
+      cond ((assq tmpl env) => pt) \
+	    (else tmpl)
         } \
 	(and (pair? tmpl) \
 	     (pair? (pt tmpl)) \

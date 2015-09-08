@@ -34,11 +34,14 @@ IDIO idio_thread (idio_ai_t stack_size)
 
     IDIO_GC_ALLOC (t->u.thread, sizeof (idio_thread_t));
 
+    IDIO main_module = idio_Idio_module_instance ();
+
     IDIO_THREAD_GREY (t) = NULL;
     IDIO_THREAD_PC (t) = 0;
     IDIO_THREAD_STACK (t) = idio_array (stack_size);
     IDIO_THREAD_VAL (t) = idio_S_unspec;
     IDIO_THREAD_FRAME (t) = idio_S_nil;
+    IDIO_THREAD_ENV (t) = main_module;
     IDIO_THREAD_HANDLER_SP (t) = idio_fixnum (0);
     IDIO_THREAD_DYNAMIC_SP (t) = idio_fixnum (-1);
     IDIO_THREAD_ENVIRON_SP (t) = idio_fixnum (-1);
@@ -49,7 +52,7 @@ IDIO idio_thread (idio_ai_t stack_size)
     IDIO_THREAD_INPUT_HANDLE (t) = idio_stdin_file_handle ();
     IDIO_THREAD_OUTPUT_HANDLE (t) = idio_stdout_file_handle ();
     IDIO_THREAD_ERROR_HANDLE (t) = idio_stderr_file_handle ();
-    IDIO_THREAD_MODULE (t) = idio_main_module ();
+    IDIO_THREAD_MODULE (t) = main_module;
 
     idio_vm_thread_init (t);
 
@@ -73,17 +76,17 @@ void idio_free_thread (IDIO t)
     free (t->u.thread);
 }
 
-IDIO idio_current_thread ()
+IDIO idio_thread_current_thread ()
 {
     if (idio_S_nil == idio_running_thread) {
-	idio_error_C ("current_module unset", idio_S_nil, IDIO_C_LOCATION ("idio_current_thread"));
-	return idio_S_nil;
+	idio_error_error_message ("current_module unset");
+	IDIO_C_ASSERT (0);
     }
     
     return idio_running_thread;
 }
 
-void idio_set_current_thread (IDIO thr)
+void idio_thread_set_current_thread (IDIO thr)
 {
     IDIO_ASSERT (thr);
     IDIO_TYPE_ASSERT (thread, thr);
@@ -100,64 +103,74 @@ void idio_thread_codegen (IDIO code)
     idio_error_C ("unimplemented", idio_S_nil, IDIO_C_LOCATION ("thread-codegen"));
 }
 
-IDIO idio_current_input_handle ()
+IDIO idio_thread_current_env ()
 {
-    IDIO thr = idio_current_thread ();
+    IDIO thr = idio_thread_current_thread ();
+    return IDIO_THREAD_ENV (thr);
+}
+
+IDIO idio_thread_current_input_handle ()
+{
+    IDIO thr = idio_thread_current_thread ();
     return IDIO_THREAD_INPUT_HANDLE (thr);
 }
 
-void idio_set_current_input_handle (IDIO h)
+void idio_thread_set_current_input_handle (IDIO h)
 {
     IDIO_ASSERT (h);
     IDIO_TYPE_ASSERT (handle, h);
 
-    IDIO thr = idio_current_thread ();
+    IDIO thr = idio_thread_current_thread ();
     IDIO_THREAD_INPUT_HANDLE (thr) = h;
 }
 
-IDIO idio_current_output_handle ()
+IDIO idio_thread_current_output_handle ()
 {
-    IDIO thr = idio_current_thread ();
+    IDIO thr = idio_thread_current_thread ();
     return IDIO_THREAD_OUTPUT_HANDLE (thr);
 }
 
-void idio_set_current_output_handle (IDIO h)
+void idio_thread_set_current_output_handle (IDIO h)
 {
     IDIO_ASSERT (h);
     IDIO_TYPE_ASSERT (handle, h);
 
-    IDIO thr = idio_current_thread ();
+    IDIO thr = idio_thread_current_thread ();
     IDIO_THREAD_OUTPUT_HANDLE (thr) = h;
 }
 
-IDIO idio_current_error_handle ()
+IDIO idio_thread_current_error_handle ()
 {
-    IDIO thr = idio_current_thread ();
+    IDIO thr = idio_thread_current_thread ();
     return IDIO_THREAD_ERROR_HANDLE (thr);
 }
 
-void idio_set_current_error_handle (IDIO h)
+void idio_thread_set_current_error_handle (IDIO h)
 {
     IDIO_ASSERT (h);
     IDIO_TYPE_ASSERT (handle, h);
 
-    IDIO thr = idio_current_thread ();
+    IDIO thr = idio_thread_current_thread ();
     IDIO_THREAD_ERROR_HANDLE (thr) = h;
 }
 
-IDIO idio_current_module ()
+IDIO idio_thread_current_module ()
 {
-    IDIO thr = idio_current_thread ();
+    IDIO thr = idio_thread_current_thread ();
     return IDIO_THREAD_MODULE (thr);
 }
 
-void idio_set_current_module (IDIO m)
+void idio_thread_set_current_module (IDIO m)
 {
     IDIO_ASSERT (m);
     IDIO_TYPE_ASSERT (module, m);
 
-    IDIO thr = idio_current_thread ();
+    IDIO thr = idio_thread_current_thread ();
+    idio_debug ("iscm: cm %s", IDIO_THREAD_MODULE (thr));
+    idio_debug (" ce %s", IDIO_THREAD_ENV (thr));
+    idio_debug (" -> %s\n", m);
     IDIO_THREAD_MODULE (thr) = m;
+    IDIO_THREAD_ENV (thr) = m;
 }
 
 void idio_thread_save_state (IDIO thr)

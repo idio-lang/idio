@@ -18,12 +18,12 @@
 ;;
 ;; array.idio
 ;;
-array0 = Tests
+array0 := Tests
 
 test (array? #[ 1 2 ]) #t
 test (array? "foo") #f
 
-a = (make-array 3)
+a := (make-array 3)
 test (array? a) #t
 test (array-length a) 3
 test (array-ref a 0) #f
@@ -34,7 +34,7 @@ test (array-length a) 5
 test (array-ref a 0) "foo"
 
 ;; basic array access
-a := #[ 1 2 3 ]
+a = #[ 1 2 3 ]
 
 test (array? a) #t
 test a '#[ 1 2 3 ]
@@ -82,7 +82,7 @@ test a '#[ 1 2 3 ]
 test (array->list a) '( 1 2 3 )
 
 ;; array operator tests
-a := #[ 1 2 3 ]
+a = #[ 1 2 3 ]
 
 ;; push
 a =+ 'r
@@ -153,7 +153,7 @@ test (a.1) '#[ 10 20 30 ]
 test (a . 1 . 1) 20
 test (a.1 .1) 20
 
-i = 1
+i := 1
 test (a.i.i) 20
 test (a.i.1) 20
 test (a.(0 + 1).(0 + 1)) 20

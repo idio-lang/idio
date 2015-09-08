@@ -415,6 +415,7 @@ void idio_process_grey (unsigned colour)
     case IDIO_TYPE_CLOSURE:
 	idio_gc->grey = IDIO_CLOSURE_GREY (o);
 	idio_mark (IDIO_CLOSURE_PROPERTIES (o), colour);
+	idio_mark (IDIO_CLOSURE_FRAME (o), colour);
 	idio_mark (IDIO_CLOSURE_ENV (o), colour);
 	break;
     case IDIO_TYPE_PRIMITIVE:
@@ -428,6 +429,8 @@ void idio_process_grey (unsigned colour)
 	idio_mark (IDIO_MODULE_EXPORTS (o), colour); 
 	idio_mark (IDIO_MODULE_IMPORTS (o), colour); 
 	idio_mark (IDIO_MODULE_SYMBOLS (o), colour); 
+	idio_mark (IDIO_MODULE_VCI (o), colour); 
+	idio_mark (IDIO_MODULE_VVI (o), colour); 
 	break;
     case IDIO_TYPE_FRAME:
 	IDIO_C_ASSERT (idio_gc->grey != IDIO_FRAME_GREY (o));
@@ -454,6 +457,7 @@ void idio_process_grey (unsigned colour)
 	idio_mark (IDIO_THREAD_STACK (o), colour);
 	idio_mark (IDIO_THREAD_VAL (o), colour);
 	idio_mark (IDIO_THREAD_FRAME (o), colour);
+	idio_mark (IDIO_THREAD_ENV (o), colour);
 	idio_mark (IDIO_THREAD_HANDLER_SP (o), colour);
 	idio_mark (IDIO_THREAD_DYNAMIC_SP (o), colour);
 	idio_mark (IDIO_THREAD_ENVIRON_SP (o), colour);
@@ -1210,7 +1214,7 @@ void idio_gc_free ()
 	idio_root_t *root = idio_gc->roots;
 	idio_gc->roots = root->next;
 	if (idio_S_nil == root->object) {
-	    idio_error_param_nil ("root->object", IDIO_C_LOCATION ("idio_gc_free"));
+	    idio_error_error_message ("root->object is #n at %s:%d", __FILE__, IDIO__LINE__);
 	}
 	free (root);
     }    

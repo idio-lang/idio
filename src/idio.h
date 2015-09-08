@@ -229,11 +229,13 @@
 #define IDIO_DEFINE_PRIMITIVE5(iname,cname,params)			\
     IDIO_DEFINE_PRIMITIVE_DESC(iname,cname,params,5,0)
 
-#define IDIO_ADD_PRIMITIVE(cname)	  idio_add_primitive (&idio_primitive_data_ ## cname);
+#define IDIO_ADD_MODULE_PRIMITIVE(m,cname)	idio_add_module_primitive (m, &idio_primitive_data_ ## cname);
 
-#define IDIO_ADD_SPECIAL_PRIMITIVE(cname) idio_add_special_primitive (&idio_primitive_data_ ## cname);
+#define IDIO_EXPORT_MODULE_PRIMITIVE(m,cname)	idio_export_module_primitive (m, &idio_primitive_data_ ## cname);
 
-#define IDIO_ADD_EXPANDER(cname)	  idio_add_expander_primitive (&idio_primitive_data_ ## cname);
+#define IDIO_ADD_PRIMITIVE(cname)		idio_add_primitive (&idio_primitive_data_ ## cname);
+
+#define IDIO_ADD_EXPANDER(cname)		idio_add_expander_primitive (&idio_primitive_data_ ## cname);
 
 #define IDIO_DEFINE_INFIX_OPERATOR_DESC(iname,cname,params,arity,varargs) \
     IDIO idio_defoperator_ ## cname params;				\
@@ -301,8 +303,6 @@
 #include "path.h"
 #include "primitive.h"
 #include "read.h"
-#include "scm-evaluate.h"
-#include "scm-read.h"
 #include "specialform.h"
 #include "string-handle.h"
 #include "string.h"

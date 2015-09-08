@@ -47,13 +47,21 @@
 ;; set-bar-y! foo 10		=> #unspec
 ;; bar-y foo			=> 10
 
-
 define-macro (define-struct name & fields) {
   %T{
       ;; define bar (make-struct-type 'bar #n '(x y))
       define $name (make-struct-type '$name #n '$fields)
 
       define-struct-accessors-only $name $@fields
+  }
+}
+
+define-macro (export-struct name & fields) {
+  %T{
+      define-struct $name $@fields
+      export $name
+
+      export-struct-accessors-only $name $@fields
   }
 }
 
@@ -134,7 +142,37 @@ define-macro (define-struct-accessors-only name & fields) {
   }
 }
 
-define-struct-accessors-only %idio-process	argv pid completed stopped status
-define-struct-accessors-only %idio-job		pipeline procs pgid notified tcattrs stdin stdout stderr
-define-struct-accessors-only %idio-status	pid state reason
+define-macro (export-struct-accessors-only name & fields) {
+  ;; handy parameters
+  arg := (gensym)
+  val := (gensym)
+  field-index := function (field fields) {
+    mq := memq field fields
+    (length fields) - (length mq)
+  }
 
+  make-fname := string->symbol (string-append "make-" (symbol->string name))
+  pred-fname := string->symbol (string-append (symbol->string name) "?")
+
+  %T{
+    define-struct-accessors-only $name $@fields
+    export $make-fname $pred-fname
+    $@(map (function (field) {
+	      get-fname := string->symbol (string-append 
+					   (symbol->string name) 
+					   "-"
+					   (symbol->string field))
+	      set-fname := string->symbol (string-append
+					   "set-"
+					   (symbol->string name)
+					   "-"
+					   (symbol->string field)
+					   "!")
+
+	      %T{
+		 export $get-fname $set-fname
+	      }
+	    })
+	   fields)
+  }
+}

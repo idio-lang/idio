@@ -603,17 +603,17 @@ int idio_handle_printf (IDIO h, char *format, ...)
 
 IDIO_DEFINE_PRIMITIVE0 ("current-input-handle", current_input_handle, ())
 {
-    return idio_current_input_handle ();
+    return idio_thread_current_input_handle ();
 }
 
 IDIO_DEFINE_PRIMITIVE0 ("current-output-handle", current_output_handle, ())
 {
-    return idio_current_output_handle ();
+    return idio_thread_current_output_handle ();
 }
 
 IDIO_DEFINE_PRIMITIVE0 ("current-error-handle", current_error_handle, ())
 {
-    return idio_current_error_handle ();
+    return idio_thread_current_error_handle ();
 }
 
 IDIO_DEFINE_PRIMITIVE1 ("set-input-handle!", set_input_handle, (IDIO h))
@@ -622,7 +622,7 @@ IDIO_DEFINE_PRIMITIVE1 ("set-input-handle!", set_input_handle, (IDIO h))
 
     IDIO_VERIFY_PARAM_TYPE (handle, h);
     
-    idio_set_current_input_handle (h);
+    idio_thread_set_current_input_handle (h);
 
     return idio_S_unspec;
 }
@@ -633,7 +633,7 @@ IDIO_DEFINE_PRIMITIVE1 ("set-output-handle!", set_output_handle, (IDIO h))
 
     IDIO_VERIFY_PARAM_TYPE (handle, h);
     
-    idio_set_current_output_handle (h);
+    idio_thread_set_current_output_handle (h);
 
     return idio_S_unspec;
 }
@@ -644,7 +644,7 @@ IDIO_DEFINE_PRIMITIVE1 ("set-error-handle!", set_error_handle, (IDIO h))
 
     IDIO_VERIFY_PARAM_TYPE (handle, h);
     
-    idio_set_current_error_handle (h);
+    idio_thread_set_current_error_handle (h);
 
     return idio_S_unspec;
 }
@@ -725,7 +725,7 @@ IDIO idio_handle_or_current (IDIO h, unsigned mode)
     switch (mode) {
     case IDIO_HANDLE_FLAG_READ:
 	if (idio_S_nil == h) {
-	    return idio_current_input_handle ();
+	    return idio_thread_current_input_handle ();
 	} else {
 	    if (! IDIO_HANDLE_INPUTP (h)) {
 		idio_handle_error_read (h, IDIO_C_LOCATION ("idio_handle_or_current"));
@@ -736,7 +736,7 @@ IDIO idio_handle_or_current (IDIO h, unsigned mode)
 	break;
     case IDIO_HANDLE_FLAG_WRITE:
 	if (idio_S_nil == h) {
-	    return idio_current_output_handle ();
+	    return idio_thread_current_output_handle ();
 	} else {
 	    if (! IDIO_HANDLE_OUTPUTP (h)) {
 		idio_handle_error_write (h, IDIO_C_LOCATION ("idio_handle_or_current"));
@@ -831,14 +831,14 @@ IDIO_DEFINE_PRIMITIVE0V ("read-lines", read_lines, (IDIO args))
     return idio_read_lines (h);
 }
 
-IDIO_DEFINE_PRIMITIVE0V ("scm-read", scm_read, (IDIO args))
-{
-    IDIO_ASSERT (args);
+/* IDIO_DEFINE_PRIMITIVE0V ("scm-read", scm_read, (IDIO args)) */
+/* { */
+/*     IDIO_ASSERT (args); */
     
-    IDIO h = idio_handle_or_current (idio_list_head (args), IDIO_HANDLE_FLAG_READ);
+/*     IDIO h = idio_handle_or_current (idio_list_head (args), IDIO_HANDLE_FLAG_READ); */
 
-    return idio_scm_read (h);
-}
+/*     return idio_scm_read (h); */
+/* } */
 
 IDIO_DEFINE_PRIMITIVE0V ("read-char", read_char, (IDIO args))
 {
@@ -996,7 +996,7 @@ void idio_handle_add_primitives ()
     IDIO_ADD_PRIMITIVE (read_expr);
     IDIO_ADD_PRIMITIVE (read_line);
     IDIO_ADD_PRIMITIVE (read_lines);
-    IDIO_ADD_PRIMITIVE (scm_read);
+    /* IDIO_ADD_PRIMITIVE (scm_read); */
     IDIO_ADD_PRIMITIVE (read_char);
     IDIO_ADD_PRIMITIVE (peek_char);
     IDIO_ADD_PRIMITIVE (eofp);

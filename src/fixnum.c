@@ -925,8 +925,8 @@ void idio_init_fixnum ()
 
 void idio_fixnum_add_primitives ()
 {
-    idio_module_set_symbol_value (idio_symbols_C_intern ("FIXNUM-MAX"), idio_fixnum (IDIO_FIXNUM_MAX), idio_main_module ());
-    idio_module_set_symbol_value (idio_symbols_C_intern ("FIXNUM-MIN"), idio_fixnum (IDIO_FIXNUM_MIN), idio_main_module ());
+    idio_module_set_symbol_value (idio_symbols_C_intern ("FIXNUM-MAX"), idio_fixnum (IDIO_FIXNUM_MAX), idio_Idio_module_instance ());
+    idio_module_set_symbol_value (idio_symbols_C_intern ("FIXNUM-MIN"), idio_fixnum (IDIO_FIXNUM_MIN), idio_Idio_module_instance ());
 
     IDIO_ADD_PRIMITIVE (fixnump);
     IDIO_ADD_PRIMITIVE (integerp);

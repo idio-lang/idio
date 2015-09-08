@@ -79,7 +79,7 @@ call-with-values := #f
 ;; . parent). Navigating between states requires re-rooting the tree
 ;; by reversing parent-child links.
 
-call/cc := call/cc
+;call/cc := call/cc
 dynamic-wind := #f
 
 {
@@ -133,4 +133,20 @@ define-syntax unwind-protect (syntax-rules ()
        (function () #f)
        (function () body)
        (function () cleanup ...))))
+
+define-macro (with-handler handler & body) {
+  ;; edisplay* "with-handler" handler body
+  %T{
+    load-k := #n
+
+    monitor (function (cont cond) {
+      load-k ($handler cont cond)
+    }) {
+      call/cc (function (k) {
+        load-k = k
+        $@body
+      })
+    }
+  }
+}
 

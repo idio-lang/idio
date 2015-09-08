@@ -18,7 +18,7 @@
 ;;
 ;; operator.idio
 ;;
-operator0 = Tests
+operator0 := Tests
 
 test (10 + 9) 19
 test (10 - 9) 1
