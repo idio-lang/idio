@@ -33,7 +33,7 @@ command0 := Tests
 rcseh := #n
 
 monitor (function (cont cond) {
-  ;; edisplay* "command tests: monitor" cont cond
+  ;; edisplay* "command tests:" PID "monitor" cont cond
   test (rt-command-status-error? cond) #t
   if cont {
     ;; We are deliberately trying to provoke command status errors so
@@ -43,11 +43,11 @@ monitor (function (cont cond) {
       ;; Finally we can run our error-specific handler
       rcseh cond
     } {
-      edisplay* "command tests: unexpected condition" cond
+      edisplay* "command tests:" PID "unexpected condition" cond
       raise cont cond
     }
   } {
-    edisplay* "command tests: unexpected non-continuable condition" cond
+    edisplay* "command tests:" PID "unexpected non-continuable condition" cond
     raise cont cond
   }
 }) {
@@ -60,7 +60,7 @@ monitor (function (cont cond) {
   ;; complaining loudly and testing for something that isn't generated
   ;; (spotting an error in the summary is easier to spot)
   exit0 := function (cond) {
-    edisplay* "command tests: exit0: unexpected status error" cond
+    edisplay* "command tests:" PID "exit0: unexpected status error" cond
     job := idio-error-location cond
     edisplay* "pipeline:" (%idio-job-pipeline job)
     edisplay* "detail:" (pipeline-detail job)
@@ -68,21 +68,21 @@ monitor (function (cont cond) {
   }
 
   exit1 := function (cond) {
-    ;; edisplay* "command tests: exit1" cond
+    ;; edisplay* "command tests:" PID "exit1" cond
     job := idio-error-location cond
     test (job-detail job) %T{ (exit $(C/integer-> 1)) }
     rt-command-status-error-status cond
   }
 
   killed1 := function (cond) {
-    ;; edisplay* "command tests: killed1" cond
+    ;; edisplay* "command tests:" PID "killed1" cond
     job := idio-error-location cond
     test (job-detail job) %T{ (killed $(C/integer-> 1)) }
     rt-command-status-error-status cond
   }
 
   killed13 := function (cond) {
-    ;; edisplay* "command tests: killed13" cond
+    ;; edisplay* "command tests:" PID "killed13" cond
     job := idio-error-location cond
     test (job-detail job) %T{ (killed $(C/integer-> 13)) }
     rt-command-status-error-status cond
@@ -192,7 +192,7 @@ monitor (function (cont cond) {
   ;;
   ;; This doesn't look like art.  Maybe it's contemporary art, then.
 
-  if (libc/== (signal-handler SIGPIPE) SIG_IGN) {
+  if (C/== (signal-handler SIGPIPE) SIG_IGN) {
     rcseh = exit1
   } {
     rcseh = killed13
@@ -361,7 +361,10 @@ monitor (function (cont cond) {
     test (io-check -i null < #n) #t
 
     ;; stdin from a pipe
-    test (cat "/dev/null" | io-check -i pipe) #t
+    ;;
+    ;; NB use the string "pipe" to avoid implicitly using the symbol
+    ;; pipe from libc!
+    test (cat "/dev/null" | io-check -i "pipe") #t
 
     ;; output: STDOUT and/or STDERR
 
@@ -385,10 +388,10 @@ monitor (function (cont cond) {
     test (io-check -e null 2> #n) #t
 
     ;; stdout to a pipe
-    test (io-check -o pipe | cat > #n) #t
+    test (io-check -o "pipe" | cat > #n) #t
 
     ;; stdout & stderr to a pipe
-    test (io-check -o pipe -e pipe 2>& 1 | cat > #n) #t
+    test (io-check -o "pipe" -e "pipe" 2>& 1 | cat > #n) #t
 
     if (file-exists? redir-infile) (delete-file redir-infile)
     if (file-exists? redir-outfile) (delete-file redir-outfile)

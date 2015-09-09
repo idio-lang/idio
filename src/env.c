@@ -37,7 +37,7 @@ static int idio_env_set_default (IDIO name, char *val)
     IDIO_C_ASSERT (val);
     IDIO_TYPE_ASSERT (symbol, name);
 
-    IDIO ENV = idio_module_current_symbol_value (name);
+    IDIO ENV = idio_module_env_symbol_value (name);
     if (idio_S_unspec == ENV) {
 	idio_environ_extend (name, idio_string_C (val));
 	return 1;
@@ -109,7 +109,7 @@ static void idio_env_add_environ ()
 	 * So, if we didn't create a new variable in
 	 * idio_env_set_default() then set the value regardless now.
 	 */
-	idio_module_current_set_symbol_value (idio_env_PWD_sym, idio_string_C (cwd));
+	idio_module_env_set_symbol_value (idio_env_PWD_sym, idio_string_C (cwd));
     }
 
     free (cwd);

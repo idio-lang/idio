@@ -154,6 +154,12 @@ void idio_thread_set_current_error_handle (IDIO h)
     IDIO_THREAD_ERROR_HANDLE (thr) = h;
 }
 
+IDIO idio_thread_env_module ()
+{
+    IDIO thr = idio_thread_current_thread ();
+    return IDIO_THREAD_ENV (thr);
+}
+
 IDIO idio_thread_current_module ()
 {
     IDIO thr = idio_thread_current_thread ();
@@ -166,7 +172,7 @@ void idio_thread_set_current_module (IDIO m)
     IDIO_TYPE_ASSERT (module, m);
 
     IDIO thr = idio_thread_current_thread ();
-    idio_debug ("iscm: cm %s", IDIO_THREAD_MODULE (thr));
+    idio_debug ("itscm: cm %s", IDIO_THREAD_MODULE (thr));
     idio_debug (" ce %s", IDIO_THREAD_ENV (thr));
     idio_debug (" -> %s\n", m);
     IDIO_THREAD_MODULE (thr) = m;

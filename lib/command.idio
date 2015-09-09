@@ -29,7 +29,12 @@ export (%%last-job
 	foreground-job
 	wait-for-job
 	bg-job
-	wait)
+	wait
+	with-input-from
+	with-output-to
+	with-error-to
+	with-handle-dup
+	with-handle-redir)
 
 
 export-struct-accessors-only %idio-process	argv pid completed stopped status
@@ -679,7 +684,7 @@ define-infix-operator | 300 {
 			;; $pgid is 0 so we must be the first in the
 			;; pipeline -- block reading a single byte
 			;; from the $pgrp-pipe
-			read (pipe-reader $pgrp-pipe) 1
+			libc/read (pipe-reader $pgrp-pipe) 1
 			close (pipe-reader $pgrp-pipe)
                       } {
 			close (pipe-reader $pgrp-pipe)
@@ -757,37 +762,39 @@ define-infix-operator | 300 {
 }
 
 define-macro (fork-command foreground & cmd) {
-  stdin := (gensym)
-  close-stdin := (gensym)
-  stdout := (gensym)
+  stdin          := (gensym)
+  close-stdin    := (gensym)
+  stdout         := (gensym)
   recover-stdout := (gensym)
-  stderr := (gensym)
+  stderr         := (gensym)
   recover-stderr := (gensym)
-  pgid := (gensym)
-  proc := (gensym)
-  job := (gensym)
-  pid := (gensym)
-  status := (gensym)
+  pgid           := (gensym)
+  proc           := (gensym)
+  job            := (gensym)
+  pid            := (gensym)
+  status         := (gensym)
 
   %T{
     {
-      $stdin := (stdin-fileno) ; STDIN_FILENO
+      $stdin       := (stdin-fileno) ; STDIN_FILENO
       $close-stdin := #f
       if (pair? $stdin) {
-	$stdin = ph $stdin
+	$stdin       = ph $stdin
 	$close-stdin = $stdin
       }
-      $stdout := (stdout-fileno) ; STDOUT_FILENO
+
+      $stdout         := (stdout-fileno) ; STDOUT_FILENO
       $recover-stdout := #f
       if (pair? $stdout) {
 	$recover-stdout = pht $stdout
-	$stdout = ph $stdout
+	$stdout         = ph $stdout
       }
-      $stderr := (stderr-fileno) ; STDERR_FILENO
+
+      $stderr         := (stderr-fileno) ; STDERR_FILENO
       $recover-stderr := #f
       if (pair? $stderr) {
 	$recover-stderr = pht $stderr
-	$stderr = ph $stderr
+	$stderr         = ph $stderr
       }
       $pgid := 0
       $proc := make-%idio-process '$cmd -1 #f #f #n
@@ -905,44 +912,44 @@ define (wait & jobs) {
 ;;
 ;; {thunk} is the 0-arg function to invoke
 with-handle-redir := {
-  current-input-handle := current-input-handle
+  current-input-handle	:= current-input-handle
   current-output-handle := current-output-handle
-  current-error-handle := current-error-handle
-  set-input-handle! := set-input-handle!
-  set-output-handle! := set-output-handle!
-  set-error-handle! := set-error-handle!
+  current-error-handle	:= current-error-handle
+  set-input-handle!	:= set-input-handle!
+  set-output-handle!	:= set-output-handle!
+  set-error-handle!	:= set-error-handle!
 
   function (type s/d thunk) {
     ;; handle-oriented indirection function/variables
     get-current-h := #f
-    open-file-h := #f
-    set-h! := #f
-    dir-file-h? := #f
+    open-file-h   := #f
+    set-h!        := #f
+    dir-file-h?   := #f
     dir-string-h? := #f
-    msg-h := #f
+    msg-h         := #f
     cond ((eq? type 'input) {
 	   get-current-h = current-input-handle
-	   open-file-h = open-input-file
-	   set-h! = set-input-handle!
-	   dir-file-h? = input-file-handle?
+	   open-file-h   = open-input-file
+	   set-h!        = set-input-handle!
+	   dir-file-h?   = input-file-handle?
 	   dir-string-h? = input-string-handle?
-	   msg-h = "input"
+	   msg-h         = "input"
 	 }) \
 	 ((eq? type 'output) {
 	   get-current-h = current-output-handle
-	   open-file-h = open-output-file
-	   set-h! = set-output-handle!
-	   dir-file-h? = output-file-handle?
+	   open-file-h   = open-output-file
+	   set-h!        = set-output-handle!
+	   dir-file-h?   = output-file-handle?
 	   dir-string-h? = output-string-handle?
-	   msg-h = "output"
+	   msg-h         = "output"
 	 }) \
 	 ((eq? type 'error) {
 	   get-current-h = current-error-handle
-	   open-file-h = open-output-file
-	   set-h! = set-error-handle!
-	   dir-file-h? = output-file-handle?
+	   open-file-h   = open-output-file
+	   set-h!        = set-error-handle!
+	   dir-file-h?   = output-file-handle?
 	   dir-string-h? = output-string-handle?
-	   msg-h = "output"
+	   msg-h         = "output"
 	 }) \
 	 (else (error 'with-handle-redir "unexpected handle type" type))
 
@@ -1017,41 +1024,41 @@ define (with-error-to dst thunk) {
 ;;
 ;; {thunk} is the 0-arg function to invoke
 with-handle-dup := {
-  current-input-handle := current-input-handle
+  current-input-handle  := current-input-handle
   current-output-handle := current-output-handle
-  current-error-handle := current-error-handle
-  set-input-handle! := set-input-handle!
-  set-output-handle! := set-output-handle!
-  set-error-handle! := set-error-handle!
+  current-error-handle  := current-error-handle
+  set-input-handle!     := set-input-handle!
+  set-output-handle!    := set-output-handle!
+  set-error-handle!     := set-error-handle!
 
   function (type new thunk) {
     ;; edisplay* 'with-handle-dup type new 
     ;; handle-oriented indirection function/variables
     get-current-h := #f
-    set-h! := #f
-    dir-file-h? := #f
+    set-h!        := #f
+    dir-file-h?   := #f
     dir-string-h? := #f
-    msg-h := #f
+    msg-h         := #f
     cond ((eq? type 'input) {
 	   get-current-h = current-input-handle
-	   set-h! = set-input-handle!
-	   dir-file-h? = input-file-handle?
+	   set-h!        = set-input-handle!
+	   dir-file-h?   = input-file-handle?
 	   dir-string-h? = input-string-handle?
-	   msg-h = "input"
+	   msg-h         = "input"
 	 }) \
 	 ((eq? type 'output) {
 	   get-current-h = current-output-handle
-	   set-h! = set-output-handle!
-	   dir-file-h? = output-file-handle?
+	   set-h!        = set-output-handle!
+	   dir-file-h?   = output-file-handle?
 	   dir-string-h? = output-string-handle?
-	   msg-h = "output"
+	   msg-h         = "output"
 	 }) \
 	 ((eq? type 'error) {
 	   get-current-h = current-error-handle
-	   set-h! = set-error-handle!
-	   dir-file-h? = output-file-handle?
+	   set-h!        = set-error-handle!
+	   dir-file-h?   = output-file-handle?
 	   dir-string-h? = output-string-handle?
-	   msg-h = "output"
+	   msg-h         = "output"
 	 }) \
 	 (else (error 'with-handle-dup "unexpected handle type" type))
 
@@ -1066,9 +1073,9 @@ with-handle-dup := {
 	 ((file-handle? new) (error 'with-handle-dup (string-append "not an " msg-h "-file-handle") new)) \
 	 ((dir-string-h? new) (new-h = new)) \
 	 ((string-handle? new) (error 'with-handle-dup (string-append "not an " msg-h "-string-handle") new)) \
-	 (((int? new) or
+	 (((C/int? new) or
 	   (fixnum? new)) {
-	   if (int? new) (new = C/->integer new)
+	   if (C/int? new) (new = C/->integer new)
 	   if+ (eq? new 0) {
 	     new-h = (current-input-handle)
 	   } (eq? new 1) {

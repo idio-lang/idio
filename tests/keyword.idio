@@ -20,13 +20,13 @@
 ;;
 keyword0 := Tests
 
-test (keyword? a) #f
+test (keyword? 'a) #f
 test (keyword? :a) #t
 
 test (symbol? :a) #f
 
 ;; check operators don't get mistaken for keywords
-test (keyword? \:=) #f
+test (keyword? ':=) #f
 
 kw := make-keyword "b"
 

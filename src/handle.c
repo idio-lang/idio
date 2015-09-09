@@ -757,7 +757,7 @@ IDIO idio_handle_or_current (IDIO h, unsigned mode)
 IDIO_DEFINE_PRIMITIVE0V ("read", read, (IDIO args))
 {
     IDIO_ASSERT (args);
-    
+
     IDIO h = idio_handle_or_current (idio_list_head (args), IDIO_HANDLE_FLAG_READ);
 
     return idio_read (h);

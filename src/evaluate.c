@@ -342,7 +342,7 @@ static IDIO idio_evaluator_extend (IDIO name, IDIO primdata, IDIO module)
     IDIO_TYPE_ASSERT (primitive, primdata);
     IDIO_TYPE_ASSERT (module, module);
 
-    IDIO cv = idio_module_symbol_recurse (name, module, 1);
+    IDIO cv = idio_module_symbol (name, module);
     if (idio_S_unspec != cv) {
 	IDIO fvi = IDIO_PAIR_HTT (cv);
 	IDIO pd = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
@@ -432,7 +432,7 @@ IDIO idio_toplevel_extend (IDIO name, int flags)
 	return idio_S_unspec;
     }
     
-    IDIO cv = idio_module_current_symbol_recurse (name);
+    IDIO cv = idio_module_symbol (name, idio_evaluation_module);
     if (idio_S_unspec != cv) {
 	IDIO curkind = IDIO_PAIR_H (cv);
 	if (kind != curkind) {
@@ -461,9 +461,9 @@ IDIO idio_environ_extend (IDIO name, IDIO val)
     IDIO_ASSERT (name);
     IDIO_TYPE_ASSERT (symbol, name);
 
-    IDIO cm = idio_thread_current_module ();
+    IDIO im = idio_Idio_module_instance ();
     
-    IDIO sk = idio_module_symbol (name, idio_evaluation_module);
+    IDIO sk = idio_module_symbol (name, im);
     if (idio_S_unspec != sk) {
 	IDIO kind = IDIO_PAIR_H (sk);
 	IDIO fmci = IDIO_PAIR_HT (sk);
@@ -485,10 +485,10 @@ IDIO idio_environ_extend (IDIO name, IDIO val)
      * XXX fmci -> fmci mapping this assumes there's no C init
      * module-specific symbol index mapping conflicts...
      */
-    idio_module_vci_set (idio_evaluation_module, fmci, fmci);
-    idio_module_vvi_set (idio_evaluation_module, fmci, fgvi);
-    idio_module_set_symbol (name, IDIO_LIST3 (idio_S_environ, fmci, fgvi), idio_evaluation_module);
-    idio_module_set_symbol_value (name, val, idio_evaluation_module);
+    idio_module_vci_set (im, fmci, fmci);
+    idio_module_vvi_set (im, fmci, fgvi);
+    idio_module_set_symbol (name, IDIO_LIST3 (idio_S_environ, fmci, fgvi), im);
+    idio_module_set_symbol_value (name, val, im);
     
     return fmci;
 }
@@ -587,65 +587,28 @@ static IDIO idio_variable_kind (IDIO nametree, IDIO name, int flags)
     IDIO r = idio_variable_localp (nametree, 0, name);
     
     if (idio_S_nil == r) {
-        r = idio_module_current_symbol_recurse (name);
+	/*
+	 * NOTICE This must be a recursive lookup.  Otherwise we'll
+	 * not see any bindings in Idio or *primitives*
+	 */
+        r = idio_module_symbol_recurse (name, idio_evaluation_module, 1);
 	if (idio_S_unspec == r) {
 
-	    /*
-	     * if name is like M/S and M is a module and S is exported
-	     * by that module then it's also good.
-	     *
-	     * Avoid S/, ie. a symbol ending in '/'
-	     */
-	    char *name_C = IDIO_SYMBOL_S (name);
-	    char *slash = strrchr (name_C, '/');
-	    if (NULL != slash &&
-		'\0' != slash[1]) {
+	    r = idio_module_direct_reference (name);
+
+	    if (idio_S_unspec != r) {
+		r = IDIO_PAIR_HTT (r);
+		idio_module_set_symbol (name, r, idio_evaluation_module);
+	    } else {
 		/*
-		 * Interning a symbol requires a NUL-terminated
-		 * string.  Just to be safe we'll use a copy of name.
+		 * auto-extend the toplevel with this unknown variable
+		 * -- we should (eventually) see a definition for it
 		 */
-		char *copy_C = idio_alloc (strlen (name_C) + 1);
-		strcpy (copy_C, name_C);
-		slash = strrchr (copy_C, '/');
-
-		if (NULL == slash) {
-		    idio_error_C ("failed to copy a string", IDIO_LIST1 (name), IDIO_C_LOCATION ("idio_variable_kind"));
-		}
-		*slash = '\0';
-		
-
-		IDIO m_sym = idio_symbols_C_intern (copy_C);
-		IDIO s_sym = idio_symbols_C_intern (slash + 1);
-
-		free (copy_C);
-		
-		IDIO mod = idio_module_find_module (m_sym);
-
-		if (idio_S_unspec != mod) {
-		    IDIO f = idio_list_memq (s_sym, IDIO_MODULE_EXPORTS (mod));
-
-		    if (idio_S_false != f) {
-			r = idio_module_symbol (s_sym, mod);
-
-			if (idio_S_unspec != r) {
-			    idio_debug ("i_var_kind: sym %-20s", name);
-			    idio_debug (" aka %10s", m_sym);
-			    idio_debug (" %s", s_sym);
-			    idio_debug (" found as %s", r);
-			    idio_debug (" in %s\n", mod);
-			    return r;
-			}
-		    }
-		}
+		idio_toplevel_extend (name, flags);
+		r = idio_module_symbol (name, idio_evaluation_module);
+		idio_debug ("i_var_kind: %-20s auto toplevel extend", name);
+		idio_debug (" => %s\n", r);
 	    }
-
-	    /*
-	     * auto-extend the toplevel with this unknown variable --
-	     * we should (eventually) see a definition for it
-	     */
-	    idio_debug ("toplevel_extend %s\n", name);
-	    idio_toplevel_extend (name, flags);
-	    r = idio_module_current_symbol_recurse (name);
 	}
     }
 
@@ -1193,7 +1156,13 @@ void idio_install_infix_operator (IDIO id, IDIO proc, int pri)
     
     /* idio_debug ("op install %s", id); */
     /* idio_debug (" as %s\n", proc); */
+
+    if (idio_S_undef == proc) {
+	IDIO_C_ASSERT (0);
+    }
     
+    idio_module_set_symbol_value (id, proc, idio_operator_module);
+
     IDIO ol = idio_module_symbol_value (idio_infix_operator_list, idio_operator_module);
     IDIO op = idio_list_assq (id, ol);
 
@@ -1367,6 +1336,8 @@ void idio_install_postfix_operator (IDIO id, IDIO proc, int pri)
     /* idio_debug ("op install %s", id); */
     /* idio_debug (" as %s\n", proc); */
     
+    idio_module_set_symbol_value (id, proc, idio_operator_module);
+
     IDIO ol = idio_module_symbol_value (idio_postfix_operator_list, idio_operator_module);
     IDIO op = idio_list_assq (id, ol);
 
@@ -1886,7 +1857,8 @@ static IDIO idio_meaning_assignment (IDIO name, IDIO e, IDIO nametree, int flags
 	assign = IDIO_LIST3 (idio_I_GLOBAL_SET, fmci, m);
     } else if (idio_S_computed == kind) {
 	if (IDIO_MEANING_IS_DEFINE (flags)) {
-	    return IDIO_LIST2 (IDIO_LIST2 (idio_I_GLOBAL_DEF, name), IDIO_LIST3 (idio_I_COMPUTED_DEFINE, fmci, m));
+	    return IDIO_LIST2 (IDIO_LIST3 (idio_I_GLOBAL_DEF, name, kind),
+			       IDIO_LIST3 (idio_I_COMPUTED_DEFINE, fmci, m));
 	} else {
 	    return IDIO_LIST3 (idio_I_COMPUTED_SET, fmci, m);
 	}
@@ -1937,7 +1909,8 @@ static IDIO idio_meaning_assignment (IDIO name, IDIO e, IDIO nametree, int flags
     }
 
     if (IDIO_MEANING_IS_DEFINE (flags)) {
-	return IDIO_LIST2 (IDIO_LIST2 (idio_I_GLOBAL_DEF, name), assign);
+	return IDIO_LIST2 (IDIO_LIST3 (idio_I_GLOBAL_DEF, name, kind),
+			   assign);
     } else {
 	return assign;
     }
@@ -2156,10 +2129,6 @@ static IDIO idio_meaning_define_macro (IDIO name, IDIO e, IDIO nametree, int fla
 
     IDIO ce = idio_thread_current_env ();
 
-    /*
-     * XXX fmci -> fmci mapping this assumes there's no C init
-     * module-specific symbol index mapping conflicts...
-     */
     idio_module_vci_set (ce, fmci, fmci);
     idio_module_vvi_set (ce, fmci, fgvi);
     idio_module_set_symbol (name, IDIO_LIST3 (idio_S_toplevel, fmci, fgvi), ce);
@@ -2203,28 +2172,19 @@ static IDIO idio_meaning_define_infix_operator (IDIO name, IDIO pri, IDIO e, IDI
     /*
      * Step 1: find the existing symbol for {name} or create a new one
      */
-    IDIO cv = idio_module_symbol (name, idio_operator_module);
-    IDIO fmci;
-    if (idio_S_unspec == cv) {
-	idio_ai_t mci = idio_vm_constants_lookup_or_extend (name);
-	fmci = idio_fixnum (mci);
-	idio_ai_t gvi = idio_vm_extend_values ();
-	IDIO fgvi = idio_fixnum (gvi);
-	
-	/*
-	 * XXX fmci -> fmci mapping this assumes there's no C init
-	 * module-specific symbol index mapping conflicts...
-	 */
-	idio_module_vci_set (idio_operator_module, fmci, fmci);
-	idio_module_vvi_set (idio_operator_module, fmci, fgvi);
-	idio_module_set_symbol (name, IDIO_LIST3 (idio_S_toplevel, fmci, fgvi), idio_operator_module);
+    idio_ai_t mci = idio_vm_constants_lookup_or_extend (name);
+    IDIO fmci = idio_fixnum (mci);
 
-	idio_debug ("imdio: %s", name);
-	fprintf (stderr, " mci %td -> gvi %td\n", mci, gvi);
-	idio_debug ("imdio? ivsr(mci) => %s\n", idio_vm_constants_ref (mci));
-    } else {
-	fmci = IDIO_PAIR_HT (cv);
-    }
+    idio_ai_t gvi = idio_vm_extend_values ();
+    IDIO fgvi = idio_fixnum (gvi);
+
+    idio_module_vci_set (idio_operator_module, fmci, fmci);
+    idio_module_vvi_set (idio_operator_module, fmci, fgvi);
+    idio_module_set_symbol (name, IDIO_LIST3 (idio_S_toplevel, fmci, fgvi), idio_operator_module);
+
+    idio_debug ("imdio: %s", name);
+    fprintf (stderr, " mci %td -> gvi %td\n", mci, gvi);
+    idio_debug ("imdio? ivsr(mci) => %s\n", idio_vm_constants_ref (mci));
 
     /*
      * Step 2: rework the expression into some appropriate code and
@@ -2249,6 +2209,8 @@ static IDIO idio_meaning_define_infix_operator (IDIO name, IDIO pri, IDIO e, IDI
 			       IDIO_LIST2 (idio_S_quote, e),
 			       IDIO_LIST2 (idio_symbols_C_intern ("find-module"),
 					   IDIO_LIST2 (idio_S_quote, IDIO_MODULE_NAME (idio_operator_module))));
+
+	idio_debug ("imdio: sve %s\n", sve);
 	m = idio_meaning (sve, nametree, flags);
     } else {
 	/*
@@ -2265,6 +2227,7 @@ static IDIO idio_meaning_define_infix_operator (IDIO name, IDIO pri, IDIO e, IDI
 			      def_args,
 			      e);
     
+	idio_debug ("imdio:  fe %s\n", fe);
 	m = idio_meaning (fe, nametree, flags);
     }
     IDIO r = IDIO_LIST4 (idio_I_INFIX_OPERATOR, fmci, pri, m);
@@ -2302,24 +2265,15 @@ static IDIO idio_meaning_define_postfix_operator (IDIO name, IDIO pri, IDIO e, I
     /*
      * Step 1: find the existing symbol for {name} or create a new one
      */
-    IDIO cv = idio_module_symbol (name, idio_operator_module);
-    IDIO fmci;
-    if (idio_S_unspec == cv) {
-	idio_ai_t mci = idio_vm_constants_lookup_or_extend (name);
-	fmci = idio_fixnum (mci);
-	idio_ai_t gvi = idio_vm_extend_values ();
-	IDIO fgvi = idio_fixnum (gvi);
+    idio_ai_t mci = idio_vm_constants_lookup_or_extend (name);
+    IDIO fmci = idio_fixnum (mci);
+
+    idio_ai_t gvi = idio_vm_extend_values ();
+    IDIO fgvi = idio_fixnum (gvi);
 	
-	/*
-	 * XXX fmci -> fmci mapping this assumes there's no C init
-	 * module-specific symbol index mapping conflicts...
-	 */
-	idio_module_vci_set (idio_operator_module, fmci, fmci);
-	idio_module_vvi_set (idio_operator_module, fmci, fgvi);
-	idio_module_set_symbol (name, IDIO_LIST3 (idio_S_toplevel, fmci, fgvi), idio_operator_module);
-    } else {
-	fmci = IDIO_PAIR_HT (cv);
-    }
+    idio_module_vci_set (idio_operator_module, fmci, fmci);
+    idio_module_vvi_set (idio_operator_module, fmci, fgvi);
+    idio_module_set_symbol (name, IDIO_LIST3 (idio_S_toplevel, fmci, fgvi), idio_operator_module);
 
     /*
      * Step 2: rework the expression into some appropriate code and
@@ -3361,7 +3315,7 @@ static IDIO idio_meaning_dynamic_let (IDIO name, IDIO e, IDIO ep, IDIO nametree,
     idio_ai_t vi = idio_vm_extend_values ();
     IDIO fvi = idio_fixnum (vi);
 
-    IDIO sk = idio_module_symbol (name, idio_thread_current_module ());
+    IDIO sk = idio_module_symbol (name, idio_evaluation_module);
     IDIO_PAIR_HTT (sk) = fvi;
     
     /*
@@ -3372,7 +3326,8 @@ static IDIO idio_meaning_dynamic_let (IDIO name, IDIO e, IDIO ep, IDIO nametree,
 
     IDIO mp = idio_meaning_sequence (ep, nt2, IDIO_MEANING_NOT_TAILP (flags), idio_S_begin);
 
-    return IDIO_LIST3 (IDIO_LIST3 (idio_I_PUSH_DYNAMIC, fmci, m),
+    return IDIO_LIST4 (IDIO_LIST3 (idio_I_GLOBAL_DEF, name, idio_S_dynamic),
+		       IDIO_LIST3 (idio_I_PUSH_DYNAMIC, fmci, m),
 		       mp,
 		       IDIO_LIST1 (idio_I_POP_DYNAMIC));
 }
@@ -3416,7 +3371,7 @@ static IDIO idio_meaning_environ_let (IDIO name, IDIO e, IDIO ep, IDIO nametree,
     idio_ai_t vi = idio_vm_extend_values ();
     IDIO fvi = idio_fixnum (vi);
 
-    IDIO sk = idio_module_symbol (name, idio_thread_current_module ());
+    IDIO sk = idio_module_symbol (name, idio_evaluation_module);
     IDIO_PAIR_HTT (sk) = fvi;
     
     /*
@@ -3427,7 +3382,8 @@ static IDIO idio_meaning_environ_let (IDIO name, IDIO e, IDIO ep, IDIO nametree,
 
     IDIO mp = idio_meaning_sequence (ep, nt2, IDIO_MEANING_NOT_TAILP (flags), idio_S_begin);
 
-    return IDIO_LIST3 (IDIO_LIST3 (idio_I_PUSH_ENVIRON, fmci, m),
+    return IDIO_LIST4 (IDIO_LIST3 (idio_I_GLOBAL_DEF, name, idio_S_environ),
+		       IDIO_LIST3 (idio_I_PUSH_ENVIRON, fmci, m),
 		       mp,
 		       IDIO_LIST1 (idio_I_POP_ENVIRON));
 }
@@ -4021,7 +3977,24 @@ IDIO idio_evaluate (IDIO e)
      */
     idio_gc_pause ();
     /* IDIO m = idio_meaning (e, idio_module_current_symbols (), 1); */
-    IDIO m = idio_meaning (e, idio_S_nil, IDIO_MEANING_FLAG_TAILP);
+
+    /*
+     * XXX
+     *
+     * This call to idio_meaning used to be with flags set to
+     * IDIO_MEANING_FLAG_TAILP as it is obvious that this call is made
+     * in tail position.
+     *
+     * However, with the advent of modules we get in a bit of a bind.
+     * A TAILP function call will switch but not restore the
+     * environment.  If {e} is a call to a function from outside of
+     * this environment and calls any function in a non-TAILP position
+     * then that second function will save and restore the definition
+     * environment of the function in {e}.  But {e} won't restore what
+     * we think is the current environment because {e} was in TAILP.
+     *
+     */
+    IDIO m = idio_meaning (e, idio_S_nil, IDIO_MEANING_FLAG_NONE);
     idio_gc_resume ();
 
     /* idio_debug ("evaluate: m %s\n", m); */
@@ -4070,8 +4043,8 @@ IDIO_DEFINE_PRIMITIVE1 ("environ?", environp, (IDIO name))
 
     IDIO r = idio_S_false;
 
-    IDIO sk = idio_module_current_symbol_recurse (name);
-
+    IDIO sk = idio_module_env_symbol_recurse (name);
+    
     if (idio_S_unspec != sk &&
 	idio_S_environ == IDIO_PAIR_H (sk)) {
 	r = idio_S_true;
@@ -4087,7 +4060,7 @@ IDIO_DEFINE_PRIMITIVE1 ("dynamic?", dynamicp, (IDIO name))
 
     IDIO r = idio_S_false;
 
-    IDIO sk = idio_module_current_symbol_recurse (name);
+    IDIO sk = idio_module_env_symbol_recurse (name);
 
     if (idio_S_unspec != sk &&
 	idio_S_dynamic == IDIO_PAIR_H (sk)) {
@@ -4104,7 +4077,7 @@ IDIO_DEFINE_PRIMITIVE1 ("computed?", computedp, (IDIO name))
 
     IDIO r = idio_S_false;
 
-    IDIO sk = idio_module_current_symbol_recurse (name);
+    IDIO sk = idio_module_env_symbol_recurse (name);
 
     if (idio_S_unspec != sk &&
 	idio_S_computed == IDIO_PAIR_H (sk)) {
@@ -4116,7 +4089,8 @@ IDIO_DEFINE_PRIMITIVE1 ("computed?", computedp, (IDIO name))
 
 void idio_init_evaluate ()
 {
-    idio_evaluation_module = idio_Idio_module_instance ();
+    idio_evaluation_module = idio_module (idio_symbols_C_intern ("*evaluation*"));
+    /* idio_evaluation_module = idio_Idio_module_instance (); */
 
     idio_expander_module = idio_module (idio_symbols_C_intern ("*expander*"));
     

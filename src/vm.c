@@ -343,18 +343,20 @@ static void idio_vm_error_arity_varargs (IDIO_I ins, IDIO thr, size_t given, siz
     idio_raise_condition (idio_S_true, c);
 }
 
-static void idio_error_dynamic_unbound (idio_ai_t mci, IDIO loc)
+static void idio_error_dynamic_unbound (idio_ai_t mci, idio_ai_t gvi, IDIO loc)
 {
     IDIO_ASSERT (loc);
     IDIO_TYPE_ASSERT (string, loc);
 
     IDIO sh = idio_open_output_string_handle_C ();
-    idio_display_C ("no such dynamic binding: ", sh);
+    idio_display_C ("no such dynamic binding: mci ", sh);
     IDIO fmci = idio_fixnum (mci);
     idio_display (fmci, sh);
-    idio_display_C (" -> ", sh);
+    idio_display_C (" -> gci ", sh);
     IDIO fgci = idio_module_vci_get (idio_thread_current_env (), fmci);
     idio_display (fgci, sh);
+    idio_display_C (" -> gvi ", sh);
+    idio_display (idio_fixnum (gvi), sh);
 
     IDIO sym = idio_S_unspec;
     if (idio_S_unspec != fgci) {
@@ -369,18 +371,20 @@ static void idio_error_dynamic_unbound (idio_ai_t mci, IDIO loc)
     idio_raise_condition (idio_S_true, c);
 }
 
-static void idio_error_environ_unbound (idio_ai_t mci, IDIO loc)
+static void idio_error_environ_unbound (idio_ai_t mci, idio_ai_t gvi, IDIO loc)
 {
     IDIO_ASSERT (loc);
     IDIO_TYPE_ASSERT (string, loc);
 
     IDIO sh = idio_open_output_string_handle_C ();
-    idio_display_C ("no such environ binding: ", sh);
+    idio_display_C ("no such environ binding: mci ", sh);
     IDIO fmci = idio_fixnum (mci);
     idio_display (fmci, sh);
-    idio_display_C (" -> ", sh);
+    idio_display_C (" -> gci ", sh);
     IDIO fgci = idio_module_vci_get (idio_thread_current_env (), fmci);
     idio_display (fgci, sh);
+    idio_display_C (" -> gvi ", sh);
+    idio_display (idio_fixnum (gvi), sh);
 
     IDIO sym = idio_S_unspec;
     if (idio_S_unspec != fgci) {
@@ -395,7 +399,7 @@ static void idio_error_environ_unbound (idio_ai_t mci, IDIO loc)
     idio_raise_condition (idio_S_true, c);
 }
 
-static void idio_vm_error_computed (char *msg, idio_ai_t mci, IDIO loc)
+static void idio_vm_error_computed (char *msg, idio_ai_t mci, idio_ai_t gvi, IDIO loc)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (loc);
@@ -403,12 +407,14 @@ static void idio_vm_error_computed (char *msg, idio_ai_t mci, IDIO loc)
 
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C (msg, sh);
-    idio_display_C (": ", sh);
+    idio_display_C (": mci ", sh);
     IDIO fmci = idio_fixnum (mci);
     idio_display (fmci, sh);
-    idio_display_C (" -> ", sh);
+    idio_display_C (" -> gci ", sh);
     IDIO fgci = idio_module_vci_get (idio_thread_current_env (), fmci);
     idio_display (fgci, sh);
+    idio_display_C (" -> gvi ", sh);
+    idio_display (idio_fixnum (gvi), sh);
 
     IDIO sym = idio_S_unspec;
     if (idio_S_unspec != fgci) {
@@ -423,7 +429,7 @@ static void idio_vm_error_computed (char *msg, idio_ai_t mci, IDIO loc)
     idio_raise_condition (idio_S_true, c);
 }
 
-static void idio_vm_error_computed_no_accessor (char *msg, idio_ai_t mci, IDIO loc)
+static void idio_vm_error_computed_no_accessor (char *msg, idio_ai_t mci, idio_ai_t gvi, IDIO loc)
 {
     IDIO_ASSERT (loc);
     IDIO_TYPE_ASSERT (string, loc);
@@ -431,12 +437,14 @@ static void idio_vm_error_computed_no_accessor (char *msg, idio_ai_t mci, IDIO l
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C ("no ", sh);
     idio_display_C (msg, sh);
-    idio_display_C (" accessor: ", sh);
+    idio_display_C (" accessor: mci ", sh);
     IDIO fmci = idio_fixnum (mci);
     idio_display (fmci, sh);
-    idio_display_C (" -> ", sh);
+    idio_display_C (" -> gci ", sh);
     IDIO fgci = idio_module_vci_get (idio_thread_current_env (), fmci);
     idio_display (fgci, sh);
+    idio_display_C (" -> gvi ", sh);
+    idio_display (idio_fixnum (gvi), sh);
 
     IDIO sym = idio_S_unspec;
     if (idio_S_unspec != fgci) {
@@ -946,23 +954,36 @@ void idio_vm_compile (IDIO thr, idio_i_array_t *ia, IDIO m, int depth)
     case IDIO_VM_CODE_GLOBAL_DEF:
 	{
 	    if (! idio_isa_pair (mt) ||
-		idio_list_length (mt) != 1) {
-		idio_vm_error_compile_param_args ("GLOBAL-DEF name", mt, IDIO_C_LOCATION ("idio_vm_compile/GLOBAL-DEF"));
+		idio_list_length (mt) != 2) {
+		idio_vm_error_compile_param_args ("GLOBAL-DEF name kind", mt, IDIO_C_LOCATION ("idio_vm_compile/GLOBAL-DEF"));
 		return;
 	    }
 	    
 	    IDIO name = IDIO_PAIR_H (mt);
+	    IDIO kind = IDIO_PAIR_HT (mt);
 
 	    if (! idio_isa_symbol (name)) {
 		idio_vm_error_compile_param_type ("symbol", name, IDIO_C_LOCATION ("idio_vm_compile/GLOBAL-DEF"));
 		return;
 	    }
 
+	    if (! (idio_S_predef == kind ||
+		   idio_S_toplevel == kind ||
+		   idio_S_dynamic == kind ||
+		   idio_S_environ == kind ||
+		   idio_S_computed == kind)) {
+		idio_vm_error_compile_param_type ("symbol predef|toplevel|dynamic|environ|computed", kind, IDIO_C_LOCATION ("idio_vm_compile/GLOBAL-DEF"));
+		return;
+	    }
+
 	    IDIO_IA_PUSH1 (IDIO_A_GLOBAL_DEF);
 	    idio_ai_t mci = idio_vm_constants_lookup_or_extend (name);
 	    IDIO_IA_PUSH_REF (mci);
+	    mci = idio_vm_constants_lookup_or_extend (kind);
+	    IDIO_IA_PUSH_VARUINT (mci);
 	    idio_debug ("IDIO_VM_CODE_GLOBAL_DEF: %-20s", name);
-	    fprintf (stderr, " -> mci %td\n", mci);
+	    fprintf (stderr, " -> mci %td", mci);
+	    idio_debug (" as %s\n", kind);
 	}
 	break;
     case IDIO_VM_CODE_GLOBAL_SET:
@@ -2056,20 +2077,27 @@ IDIO_DEFINE_PRIMITIVE2 ("base-error-handler", base_error_handler, (IDIO cont, ID
 	    int printed = 0;
 
 	    idio_display_C ("\n", eh);
-	    IDIO m = idio_array_get_index (sif, IDIO_ERROR_TYPE_MESSAGE);
+	    IDIO m = idio_array_get_index (sif, IDIO_IDIO_ERROR_TYPE_MESSAGE);
 	    if (idio_S_nil != m) {
 		idio_display (m, eh);
 		printed = 1;
 	    }
-	    IDIO l = idio_array_get_index (sif, IDIO_ERROR_TYPE_LOCATION);
+	    IDIO l = idio_array_get_index (sif, IDIO_IDIO_ERROR_TYPE_LOCATION);
 	    if (idio_S_nil != l) {
 		if (printed) {
 		    idio_display_C (": ", eh);
 		}
 		idio_display (l, eh);
 		printed = 1;
+
+		if (idio_struct_type_isa (st, idio_condition_read_error_type)) {
+		    idio_display_C (":", eh);
+		    idio_display (idio_array_get_index (sif, IDIO_READ_ERROR_TYPE_LINE), eh);
+		    idio_display_C (":", eh);
+		    idio_display (idio_array_get_index (sif, IDIO_READ_ERROR_TYPE_POSITION), eh);
+		}
 	    }
-	    IDIO d = idio_array_get_index (sif, IDIO_ERROR_TYPE_DETAIL);
+	    IDIO d = idio_array_get_index (sif, IDIO_IDIO_ERROR_TYPE_DETAIL);
 	    if (idio_S_nil != d) {
 		if (printed) {
 		    idio_display_C (": ", eh);
@@ -2272,7 +2300,7 @@ static void idio_vm_restore_state (IDIO thr)
     if (idio_S_nil != IDIO_THREAD_ENV (thr)) {
 	IDIO_TYPE_ASSERT (module, IDIO_THREAD_ENV (thr));
     }
-    /* idio_debug ("ivre ce -> %s\n", IDIO_THREAD_ENV (thr));  */
+    /* idio_debug ("ivre ce -> %s\n", IDIO_THREAD_ENV (thr)); */
 
     IDIO_THREAD_FRAME (thr) = IDIO_THREAD_STACK_POP ();
     if (idio_S_nil != IDIO_THREAD_FRAME (thr)) {
@@ -2333,6 +2361,7 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
     case IDIO_TYPE_CHARACTER_MARK:
     case IDIO_TYPE_CONSTANT_MARK:
 	{
+	    IDIO_C_ASSERT (0);
 	    idio_vm_error_function_invoke ("cannot invoke constant type", IDIO_LIST1 (func), IDIO_C_LOCATION ("idio_vm_invoke"));
 	    return;
 	}
@@ -2642,7 +2671,7 @@ IDIO idio_vm_dynamic_ref (idio_ai_t mci, idio_ai_t gvi, IDIO thr)
 	    IDIO v = idio_vm_values_ref (gvi);
 
 	    if (idio_S_undef == v) {
-		idio_error_dynamic_unbound (mci, IDIO_C_LOCATION ("idio_vm_dynamic_ref"));
+		idio_error_dynamic_unbound (mci, gvi, IDIO_C_LOCATION ("idio_vm_dynamic_ref"));
 	    }
 
 	    return v;
@@ -2725,7 +2754,7 @@ IDIO idio_vm_environ_ref (idio_ai_t mci, idio_ai_t gvi, IDIO thr)
 	    IDIO v = idio_vm_values_ref (gvi);
 
 	    if (idio_S_undef == v) {
-		idio_error_environ_unbound (mci, IDIO_C_LOCATION ("idio_vm_environ_ref"));
+		idio_error_environ_unbound (mci, gvi, IDIO_C_LOCATION ("idio_vm_environ_ref"));
 	    }
 
 	    return v;
@@ -2775,10 +2804,10 @@ IDIO idio_vm_computed_ref (idio_ai_t mci, idio_ai_t gvi, IDIO thr)
 	    idio_isa_closure (get)) {
 	    return idio_vm_invoke_C (thr, IDIO_LIST1 (get));
 	} else {
-	    idio_vm_error_computed_no_accessor ("get", mci, IDIO_C_LOCATION ("idio_vm_computed_ref"));
+	    idio_vm_error_computed_no_accessor ("get", mci, gvi, IDIO_C_LOCATION ("idio_vm_computed_ref"));
 	}
     } else {
-	idio_vm_error_computed ("no get/set accessors", mci, IDIO_C_LOCATION ("idio_vm_computed_ref"));
+	idio_vm_error_computed ("no get/set accessors", mci, gvi, IDIO_C_LOCATION ("idio_vm_computed_ref"));
     }
 
     /* notreached */
@@ -2799,10 +2828,10 @@ IDIO idio_vm_computed_set (idio_ai_t mci, idio_ai_t gvi, IDIO v, IDIO thr)
 	    idio_isa_closure (set)) {
 	    return idio_vm_invoke_C (thr, IDIO_LIST2 (set, v));
 	} else {
-	    idio_vm_error_computed_no_accessor ("set", mci, IDIO_C_LOCATION ("idio_vm_computed_set"));
+	    idio_vm_error_computed_no_accessor ("set", mci, gvi, IDIO_C_LOCATION ("idio_vm_computed_set"));
 	}
     } else {
-	idio_vm_error_computed ("no accessors", mci, IDIO_C_LOCATION ("idio_vm_computed_set"));
+	idio_vm_error_computed ("no accessors", mci, gvi, IDIO_C_LOCATION ("idio_vm_computed_set"));
     }
 
     /* notreached */
@@ -3335,19 +3364,39 @@ static idio_ai_t idio_vm_vvi (idio_ai_t mci)
 	if (idio_S_unspec == sk_ce) {
 	    /*
 	     * 2. Look in the imports of the current environment.
-	     *
-	     * NB. idio_toplevel_extend() has polluted the Idio module
-	     * with possibly fake instances of variables (from all
-	     * modules).
-	     *
-	     * We will pick them up because Idio is an implied module
-	     * in the imports list.
 	     */
 	    IDIO sk_im = idio_module_symbol_recurse (sym, ce, 2);
 
 	    if (idio_S_unspec == sk_im) {
 		idio_debug (" sk_im %s", sk_im);
-		idio_vm_panic (idio_thread_current_thread (), "symbol really not found!");
+		idio_debug (" mci %s", fmci);
+		idio_debug (" gci %s", fgci);
+
+		IDIO dr = idio_module_direct_reference (sym);
+		if (idio_S_unspec != dr) {
+		    idio_debug (" imdr %s", dr);
+		    IDIO sk_dr = IDIO_PAIR_HTT (dr);
+		    idio_module_set_symbol (sym, sk_dr, ce);
+		    fgvi = IDIO_PAIR_HTT (sk_dr);
+		    idio_module_vvi_set (ce, fmci, fgvi);
+		    return IDIO_FIXNUM_VAL (fgvi);
+		} else {
+		    fprintf (stderr, " not found => 0\n");
+		    return 0;
+		}
+		/*
+		 * Not found so forge this mci to have a value of
+		 * itself, the symbol sym.
+		 */
+		gvi = idio_vm_extend_values ();
+		fgvi = idio_fixnum (gvi);
+		sk_im = IDIO_LIST3 (idio_S_toplevel, fmci, fgvi);
+		idio_module_set_symbol (sym, sk_im, ce);
+		idio_module_set_symbol_value (sym, sym, ce);
+
+		idio_debug (" not found => %s\n", sk_im);
+		return gvi;
+		/* idio_vm_panic (idio_thread_current_thread (), "symbol really not found!"); */
 	    }
 
 	    idio_debug (" sk_im %s", sk_im);
@@ -3552,6 +3601,7 @@ int idio_vm_run1 (IDIO thr)
 		    IDIO_THREAD_VAL (thr) = val;
 		}
 	    } else {
+		idio_debug ("CGR: symbol not found -> %s\n", sym);
 		IDIO_THREAD_VAL (thr) = sym;
 	    }
 	}
@@ -3598,6 +3648,7 @@ int idio_vm_run1 (IDIO thr)
 		    IDIO_THREAD_VAL (thr) = val;
 		}
 	    } else {
+		idio_debug ("CGFR: symbol not found -> %s\n", sym);
 		IDIO_THREAD_VAL (thr) = sym;
 	    }
 	}
@@ -3698,10 +3749,13 @@ int idio_vm_run1 (IDIO thr)
     case IDIO_A_GLOBAL_DEF:
 	{
 	    uint64_t mci = IDIO_VM_FETCH_REF (thr);
+	    uint64_t mkci = idio_vm_fetch_varuint (thr);
 	    IDIO fmci = idio_fixnum (mci);
 	    IDIO ce = idio_thread_current_env ();
 	    IDIO fgci = idio_module_vci_get_or_set (ce, fmci);
+	    IDIO fgkci = idio_module_vci_get_or_set (ce, idio_fixnum (mkci));
 	    IDIO sym = idio_vm_constants_ref (IDIO_FIXNUM_VAL (fgci));
+	    IDIO kind = idio_vm_constants_ref (IDIO_FIXNUM_VAL (fgkci));
 	    IDIO_TYPE_ASSERT (symbol, sym);
 
 	    IDIO_VM_RUN_DIS ("GLOBAL-DEF %" PRId64 " %s", mci, IDIO_SYMBOL_S (sym));
@@ -3715,7 +3769,7 @@ int idio_vm_run1 (IDIO thr)
 	    IDIO sk_ce = idio_module_symbol (sym, ce);
 
 	    if (idio_S_unspec == sk_ce) {
-		sk_ce = IDIO_LIST3 (idio_S_toplevel, fmci, fgvi);
+		sk_ce = IDIO_LIST3 (kind, fmci, fgvi);
 		idio_module_set_symbol (sym, sk_ce, ce);
 		fprintf (stderr, " setting");
 	    } else {
@@ -4776,6 +4830,7 @@ int idio_vm_run1 (IDIO thr)
 	    idio_debug ("EXPANDER: sym %-20s", sym);
 	    idio_debug (" mci %s", fmci);
 	    idio_debug (" gci %s", fgci);
+
 	    idio_ai_t gvi = idio_vm_extend_values ();
 	    IDIO fgvi = idio_fixnum (gvi);
 	    idio_debug (" gvi %s", fgvi);
@@ -4812,13 +4867,11 @@ int idio_vm_run1 (IDIO thr)
 		sym = idio_vm_constants_ref (IDIO_FIXNUM_VAL (fgci));
 	    }
 
-	    IDIO fgvi = idio_module_vvi_get (idio_operator_module, fmci);
-	    if (idio_S_unspec == fgvi) {
-		idio_ai_t gvi = idio_vm_extend_values ();
-		fgvi = idio_fixnum (gvi);
-	    }
 	    idio_debug ("INFIX-OPERATOR: sym %-20s", sym);
 	    fprintf (stderr, " mci %td", mci);
+
+	    idio_ai_t gvi = idio_vm_extend_values ();
+	    IDIO fgvi = idio_fixnum (gvi);
 	    idio_debug (" gvi %s", fgvi);
 	    idio_module_vvi_set (idio_operator_module, idio_fixnum (mci), fgvi);
 
@@ -4834,6 +4887,7 @@ int idio_vm_run1 (IDIO thr)
 	    } else {
 		IDIO_PAIR_HTT (sk_ce) = fgvi;
 	    }
+	    idio_debug (" in %s", idio_operator_module);
 	    fprintf (stderr, "\n");
 
 	    idio_install_infix_operator (sym, IDIO_THREAD_VAL (thr), pri);
@@ -4853,13 +4907,11 @@ int idio_vm_run1 (IDIO thr)
 		sym = idio_vm_constants_ref (IDIO_FIXNUM_VAL (fgci));
 	    }
 
-	    IDIO fgvi = idio_module_vvi_get (idio_operator_module, fmci);
-	    if (idio_S_unspec == fgvi) {
-		idio_ai_t gvi = idio_vm_extend_values ();
-		fgvi = idio_fixnum (gvi);
-	    }
 	    idio_debug ("POSTFIX-OPERATOR: sym %-20s", sym);
 	    fprintf (stderr, " mci %td", mci);
+
+	    idio_ai_t gvi = idio_vm_extend_values ();
+	    IDIO fgvi = idio_fixnum (gvi);
 	    idio_debug (" gvi %s", fgvi);
 	    idio_module_vvi_set (idio_operator_module, idio_fixnum (mci), fgvi);
 
@@ -5266,8 +5318,6 @@ idio_ai_t idio_vm_constants_lookup_or_extend (IDIO name)
     idio_ai_t gci = idio_vm_constants_lookup (name);
     if (-1 == gci) {
 	gci = idio_vm_extend_constants (name);
-	idio_debug ("ivcloe: extending constants for %-20s", name);
-	fprintf (stderr, " gci %td\n", gci);
     }
     
     return gci;

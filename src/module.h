@@ -41,6 +41,7 @@ IDIO idio_module_symbols (IDIO module);
 IDIO idio_module_current_symbols ();
 IDIO idio_module_primitive_symbols ();
 IDIO idio_module_visible_symbols (IDIO module, IDIO type);
+IDIO idio_module_direct_reference (IDIO name);
 IDIO idio_module_symbol_recurse (IDIO symbol, IDIO module, int recurse);
 IDIO idio_module_primitive_symbol_recurse (IDIO symbol);
 IDIO idio_module_current_symbol_recurse (IDIO symbol);

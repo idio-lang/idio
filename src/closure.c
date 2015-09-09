@@ -55,6 +55,14 @@ int idio_isa_closure (IDIO o)
     return idio_isa (o, IDIO_TYPE_CLOSURE);
 }
 
+int idio_isa_procedure (IDIO o)
+{
+    IDIO_ASSERT (o);
+
+    return (idio_isa_closure (o) ||
+	    idio_isa_primitive (o));
+}
+
 void idio_free_closure (IDIO c)
 {
     IDIO_ASSERT (c);
@@ -65,13 +73,13 @@ void idio_free_closure (IDIO c)
     free (c->u.closure); 
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("procedure?", closurep, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1 ("procedure?", procedurep, (IDIO o))
 {
     IDIO_ASSERT (o);
 
     IDIO r = idio_S_false;
 
-    if (idio_isa_closure (o)) {
+    if (idio_isa_procedure (o)) {
 	r = idio_S_true;
     }
 
@@ -159,7 +167,7 @@ void idio_init_closure ()
 
 void idio_closure_add_primitives ()
 {
-    IDIO_ADD_PRIMITIVE (closurep);
+    IDIO_ADD_PRIMITIVE (procedurep);
     IDIO_ADD_PRIMITIVE (setter);
     IDIO_ADD_PRIMITIVE (procedure_properties);
     IDIO_ADD_PRIMITIVE (set_procedure_properties);

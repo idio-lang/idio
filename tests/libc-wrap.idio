@@ -19,7 +19,7 @@
 ;; libc.idio
 ;;
 module tests/libc-wrap
-import libc C
+import libc
 
 libc-wrap0 := Tests
 
@@ -44,21 +44,21 @@ define (number-cmp low high) {
 ;; numbers
 
 ;; quick type tests of the primitively-definied INTMAX_MAX and the
-;; locally defined INTMAX_MAX
-test (int? INTMAX_MAX) #t
-INTMAX_MAX := INTMAX_MAX
-test (int? INTMAX_MAX) #t
+;; locally defined intmax-max
+test (C/int? INTMAX_MAX) #t
+intmax-max := INTMAX_MAX
+test (C/int? intmax-max) #t
 
 ;; comparison tests vs. 0
 number-cmp (C/integer-> 0) INTMAX_MAX
 number-cmp INTMAX_MIN (C/integer-> 0)
 
 ;; comparison tests vs lim-1
-INTMAX_MAX-1 := C/integer-> ((->integer INTMAX_MAX) - 1)
+INTMAX_MAX-1 := C/integer-> ((C/->integer INTMAX_MAX) - 1)
 number-cmp INTMAX_MAX-1 INTMAX_MAX
 
 ;; comparison tests vs lim+1
-INTMAX_MIN+1 := C/integer-> ((->integer INTMAX_MIN) + 1)
+INTMAX_MIN+1 := C/integer-> ((C/->integer INTMAX_MIN) + 1)
 number-cmp INTMAX_MIN INTMAX_MIN+1
 
 ;; overflow conversion tests -- one beyond the C MAX/MIN
@@ -67,7 +67,7 @@ monitor (function (cont cond) {
   test (rt-bignum-conversion-error? cond) #t
   #f
 }) {
-  INTMAX_MAX+1 := (C/integer-> ((->integer INTMAX_MAX) + 1))
+  INTMAX_MAX+1 := (C/integer-> ((C/->integer INTMAX_MAX) + 1))
   test INTMAX_MAX+1 #f
   ;; display* "INTMAX_MAX+1" INTMAX_MAX INTMAX_MAX+1
 }
@@ -77,7 +77,7 @@ monitor (function (cont cond) {
   test (rt-bignum-conversion-error? cond) #t
   #f
 }) {
-  INTMAX_MIN-1 := (C/integer-> ((->integer INTMAX_MIN) - 1))
+  INTMAX_MIN-1 := (C/integer-> ((C/->integer INTMAX_MIN) - 1))
   test INTMAX_MIN-1 #f
   ;; display* "INTMAX_MIN-1" INTMAX_MIN INTMAX_MIN-1
 }
@@ -88,7 +88,7 @@ monitor (function (cont cond) {
   test (rt-bignum-conversion-error? cond) #t
   #f
 }) {
-  INTMAX_MAX+1 := (C/integer-> ((->integer INTMAX_MAX) * 100000))
+  INTMAX_MAX+1 := (C/integer-> ((C/->integer INTMAX_MAX) * 100000))
   test INTMAX_MAX+1 #f
   ;; display* "INTMAX_MAX+1" INTMAX_MAX INTMAX_MAX+1
 }
@@ -98,7 +98,7 @@ monitor (function (cont cond) {
   test (rt-bignum-conversion-error? cond) #t
   #f
 }) {
-  INTMAX_MIN-1 := (C/integer-> ((->integer INTMAX_MIN) * 100000))
+  INTMAX_MIN-1 := (C/integer-> ((C/->integer INTMAX_MIN) * 100000))
   test INTMAX_MIN-1 #f
   ;; display* "INTMAX_MIN-1" INTMAX_MIN INTMAX_MIN-1
 }

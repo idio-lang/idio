@@ -36,6 +36,7 @@ IDIO idio_thread_current_output_handle ();
 void idio_thread_set_current_output_handle (IDIO h);
 IDIO idio_thread_current_error_handle ();
 void idio_thread_set_current_error_handle (IDIO h);
+IDIO idio_thread_env_module ();
 IDIO idio_thread_current_module ();
 void idio_thread_set_current_module (IDIO h);
 void idio_thread_save_state (IDIO thr);

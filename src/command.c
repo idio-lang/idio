@@ -133,7 +133,7 @@ static void idio_command_error_exec (char **argv, char **envp, IDIO loc)
 
 static char **idio_command_get_envp ()
 {
-    IDIO symbols = idio_module_visible_symbols (idio_thread_current_module (), idio_S_environ);
+    IDIO symbols = idio_module_visible_symbols (idio_thread_env_module (), idio_S_environ);
     size_t n = idio_list_length (symbols);
 
     char **envp = idio_alloc ((n + 1) * sizeof (char *));
@@ -142,7 +142,7 @@ static char **idio_command_get_envp ()
     while (idio_S_nil != symbols) {
 	IDIO symbol = IDIO_PAIR_H (symbols);
 	size_t slen = strlen (IDIO_SYMBOL_S (symbol));
-	IDIO val = idio_module_current_symbol_value_recurse (symbol);
+	IDIO val = idio_module_env_symbol_value_recurse (symbol);
 
 	size_t vlen = 0;
 	if (idio_S_unset != val &&

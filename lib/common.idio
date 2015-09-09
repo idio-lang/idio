@@ -24,6 +24,12 @@ define (atom? x) {
   not (pair? x)
 }
 
+define-macro (defined? s) {
+  %T{
+    %defined? '$s
+  }
+}
+
 ;; http://stackoverflow.com/questions/15552057/is-it-possible-to-implement-define-macro-in-mit-scheme
 define-syntax define-syntax-rule (syntax-rules ()
     ((define-syntax-rule (name & pattern) template)

@@ -19,6 +19,31 @@
 ;; operator.idio
 ;;
 
+;; TIP
+;;
+;; Operators cannot be *used* in the same file they are defined in.
+;; That is because operators are used by the reader and the ones in
+;; this file cannot exist before the reader has completely read the
+;; file and only then sends the results to the evaluator.
+;;
+;; As a side-effect, you can use the operator name in the same file it
+;; is defined in without it having its expected re-write effect,
+;; hence:
+;;
+;;   define-infix-operator + 700 { ... }
+;;   define-infix-operator - 700 +
+;;
+;; You might expect the "+" at the end of the second line to cause the
+;; reader to consume the following (unseen) expression and be
+;; transformed into an addition expression but as this file is yet to
+;; be evaluated "+" has no meaning as an operator.
+;;
+;; 
+;; Note that the same is not true of an interactive session where each
+;; complete "line" is run through the reader, evaluator, compiler and
+;; is run.  Immediately thereafter, the "+" would be an operator and
+;; make the second line above rather more tricky to express.
+
 define (operator-precedence-table) {
   og := symbol-value '*operator-group* (find-module '*operator*)
   loop :+ function (groups r) {

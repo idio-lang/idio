@@ -311,7 +311,7 @@ IDIO_DEFINE_PRIMITIVE1 ("%find-or-create-module", find_or_create_module, (IDIO n
      * NB a vi of 0 indicates an unresolved value index to be resolved
      * (based on the current set of imports) during runtime
      */
-    idio_module_set_symbol (name, IDIO_LIST3 (idio_S_toplevel, fgci, idio_fixnum (0)), idio_Idio_module_instance ()); 
+    idio_module_set_symbol (name, IDIO_LIST3 (idio_S_toplevel, fgci, idio_fixnum (0)), idio_Idio_module); 
 
     return m;
 }
@@ -326,6 +326,7 @@ IDIO_DEFINE_PRIMITIVE1 ("%set-current-module!", set_current_module, (IDIO module
     IDIO_ASSERT (module);
     IDIO_VERIFY_PARAM_TYPE (module, module);
 
+    idio_debug ("%%set-current-module! %s\n", module);
     idio_thread_set_current_module (module);
 
     return idio_S_unspec;
@@ -472,14 +473,20 @@ IDIO idio_module_visible_imported_symbols (IDIO module, IDIO type)
     IDIO r = idio_S_nil;
 
     IDIO symbols = IDIO_MODULE_EXPORTS (module);
+    if (idio_Idio_module == module ||
+	idio_primitive_module == module) {
+	symbols = idio_hash_keys_to_list (IDIO_MODULE_SYMBOLS (module));
+    }
 
     r = idio_module_symbols_match_type (module, symbols, type);
 
+    /*
     IDIO imports = IDIO_MODULE_IMPORTS (module);
     for (; idio_S_nil != imports; imports = IDIO_PAIR_T (imports)) {
 	r = idio_list_append2 (r, idio_module_visible_imported_symbols (IDIO_PAIR_H (imports), type));
     }
-
+    */
+    
     return r;
 }
 
@@ -494,15 +501,29 @@ IDIO idio_module_visible_symbols (IDIO module, IDIO type)
 	return idio_S_unspec;
     }
 
+    int seen_Idio = 0;
+    
     IDIO r = idio_S_nil;
 
     IDIO symbols = idio_hash_keys_to_list (IDIO_MODULE_SYMBOLS (module));
-
+    if (idio_eqp (module, idio_Idio_module)) {
+	seen_Idio = 1;
+    }
+    
     r = idio_module_symbols_match_type (module, symbols, type);
 
     IDIO imports = IDIO_MODULE_IMPORTS (module);
     for (; idio_S_nil != imports; imports = IDIO_PAIR_T (imports)) {
-	r = idio_list_append2 (r, idio_module_visible_imported_symbols (IDIO_PAIR_H (imports), type));
+	IDIO import = IDIO_PAIR_H (imports);
+	r = idio_list_append2 (r, idio_module_visible_imported_symbols (import, type));
+	if (0 == seen_Idio &&
+	    idio_eqp (import, idio_Idio_module)) {
+	    seen_Idio = 1;
+	}
+    }
+
+    if (0 == seen_Idio) {
+	r = idio_list_append2 (r, idio_module_visible_imported_symbols (idio_Idio_module, type));
     }
 
     return r;
@@ -511,6 +532,80 @@ IDIO idio_module_visible_symbols (IDIO module, IDIO type)
 IDIO_DEFINE_PRIMITIVE0 ("all-modules", all_modules, ())
 {
     return idio_hash_keys_to_list (idio_modules_hash);
+}
+
+/*
+ * if name is like M/S and M is a module and S is exported by that
+ * module then it's good.
+ *
+ * Avoid /S and S/, ie. a symbol beginning or ending in /
+ */
+IDIO idio_module_direct_reference (IDIO name)
+{
+    IDIO_ASSERT (name);
+    IDIO_TYPE_ASSERT (symbol, name);
+
+    IDIO r = idio_S_unspec;
+    
+    char *name_C = IDIO_SYMBOL_S (name);
+    char *slash = strrchr (name_C, '/');
+    if (NULL != slash &&
+	'\0' != slash[1] &&
+	slash != name_C) {
+	/*
+	 * Interning a symbol requires a NUL-terminated C string.
+	 * {name}, being a symbol, already is NUL-terminated however
+	 * we need symbols for both {M} and {S} which requires
+	 * over-writing the / with a NUL.
+	 *
+	 * Just to be safe we'll use a copy of name.
+	 */
+	char *copy_C = idio_alloc (strlen (name_C) + 1);
+	strcpy (copy_C, name_C);
+	slash = strrchr (copy_C, '/');
+
+	if (NULL == slash) {
+	    idio_error_C ("failed to strcpy a string", IDIO_LIST1 (name), IDIO_C_LOCATION ("idio_module_direct_reference"));
+	}
+	*slash = '\0';
+		
+
+	IDIO m_sym = idio_symbols_C_intern (copy_C);
+	IDIO s_sym = idio_symbols_C_intern (slash + 1);
+
+	free (copy_C);
+		
+	IDIO mod = idio_module_find_module (m_sym);
+
+	if (idio_S_unspec != mod) {
+	    IDIO f = idio_list_memq (s_sym, IDIO_MODULE_EXPORTS (mod));
+
+	    if (idio_S_false != f) {
+		IDIO sk = idio_module_symbol (s_sym, mod);
+
+		if (idio_S_unspec != sk) {
+		    idio_debug ("imdr: sym %-20s", name);
+		    idio_debug (" aka %10s", m_sym);
+		    idio_debug (" %s", s_sym);
+		    idio_debug (" found as %s", sk);
+		    idio_debug (" in %s\n", mod);
+
+		    /*
+		     * Our result sk should look similar to the result
+		     * we've just found except that the mci cannot be
+		     * the same: the symbols M/S is not the same as
+		     * the symbol S.
+		     */
+		    idio_ai_t mci = idio_vm_constants_lookup_or_extend (name);
+		    r = IDIO_LIST3 (m_sym,
+				    s_sym,
+				    IDIO_LIST3 (IDIO_PAIR_H (sk), idio_fixnum (mci), IDIO_PAIR_HTT (sk)));
+		}
+	    }
+	}
+    }
+			    
+    return r;
 }
 
 /*
@@ -710,28 +805,30 @@ IDIO idio_module_symbol_value (IDIO symbol, IDIO m_or_n)
     }
 
     IDIO sk = idio_hash_get (IDIO_MODULE_SYMBOLS (module), symbol);
-
+    
+    IDIO r = idio_S_unspec;
+    
     if (idio_S_unspec != sk) {
 	IDIO kind = IDIO_PAIR_H (sk);
 	IDIO fmci = IDIO_PAIR_HT (sk);
 	IDIO fgvi = IDIO_PAIR_HTT (sk);
 
 	if (idio_S_toplevel == kind) {
-	    sk = idio_vm_values_ref (IDIO_FIXNUM_VAL (fgvi));
+	    r = idio_vm_values_ref (IDIO_FIXNUM_VAL (fgvi));
 	} else if (idio_S_predef == kind) {
-	    sk = idio_vm_values_ref (IDIO_FIXNUM_VAL (fgvi));
+	    r = idio_vm_values_ref (IDIO_FIXNUM_VAL (fgvi));
 	} else if (idio_S_dynamic == kind) {
-	    sk = idio_vm_dynamic_ref (IDIO_FIXNUM_VAL (fmci), IDIO_FIXNUM_VAL (fgvi), idio_thread_current_thread ());
+	    r = idio_vm_dynamic_ref (IDIO_FIXNUM_VAL (fmci), IDIO_FIXNUM_VAL (fgvi), idio_thread_current_thread ());
 	} else if (idio_S_environ == kind) {
-	    sk = idio_vm_environ_ref (IDIO_FIXNUM_VAL (fmci), IDIO_FIXNUM_VAL (fgvi), idio_thread_current_thread ());
+	    r = idio_vm_environ_ref (IDIO_FIXNUM_VAL (fmci), IDIO_FIXNUM_VAL (fgvi), idio_thread_current_thread ());
 	} else if (idio_S_computed == kind) {
-	    sk = idio_vm_computed_ref (IDIO_FIXNUM_VAL (fmci), IDIO_FIXNUM_VAL (fgvi), idio_thread_current_thread ());
+	    r = idio_vm_computed_ref (IDIO_FIXNUM_VAL (fmci), IDIO_FIXNUM_VAL (fgvi), idio_thread_current_thread ());
 	} else {
-	    idio_error_C ("unexpected symbol kind", IDIO_LIST1 (sk), IDIO_C_LOCATION ("idio_module_symbol_value"));
+	    idio_error_C ("unexpected symbol kind", IDIO_LIST3 (symbol, module, sk), IDIO_C_LOCATION ("idio_module_symbol_value"));
 	}
     }
 
-    return sk;
+    return r;
 }
 
 IDIO idio_module_primitive_symbol_value (IDIO symbol)
@@ -763,7 +860,7 @@ IDIO idio_module_toplevel_symbol_value (IDIO symbol)
     IDIO_ASSERT (symbol);
     IDIO_TYPE_ASSERT (symbol, symbol);
 
-    return idio_module_symbol_value (symbol, idio_Idio_module_instance ());    
+    return idio_module_symbol_value (symbol, idio_Idio_module);    
 }
 
 /*
@@ -810,6 +907,8 @@ IDIO idio_module_symbol_value_recurse (IDIO symbol, IDIO m_or_n)
 
     IDIO sk = idio_module_symbol_recurse (symbol, module, 1);
 
+    IDIO r = idio_S_unspec;
+    
     if (idio_S_unspec != sk) {
 	idio_debug ("imsvr: sym %-20s", symbol);
 	idio_debug (" in %s", module);
@@ -819,21 +918,21 @@ IDIO idio_module_symbol_value_recurse (IDIO symbol, IDIO m_or_n)
 	IDIO fgvi = IDIO_PAIR_HTT (sk);
 
 	if (idio_S_toplevel == kind) {
-	    sk = idio_vm_values_ref (IDIO_FIXNUM_VAL (fgvi));
+	    r = idio_vm_values_ref (IDIO_FIXNUM_VAL (fgvi));
 	} else if (idio_S_predef == kind) {
-	    sk = idio_vm_values_ref (IDIO_FIXNUM_VAL (fgvi));
+	    r = idio_vm_values_ref (IDIO_FIXNUM_VAL (fgvi));
 	} else if (idio_S_dynamic == kind) {
-	    sk = idio_vm_dynamic_ref (IDIO_FIXNUM_VAL (fmci), IDIO_FIXNUM_VAL (fgvi), idio_thread_current_thread ());
+	    r = idio_vm_dynamic_ref (IDIO_FIXNUM_VAL (fmci), IDIO_FIXNUM_VAL (fgvi), idio_thread_current_thread ());
 	} else if (idio_S_environ == kind) {
-	    sk = idio_vm_environ_ref (IDIO_FIXNUM_VAL (fmci), IDIO_FIXNUM_VAL (fgvi), idio_thread_current_thread ());
+	    r = idio_vm_environ_ref (IDIO_FIXNUM_VAL (fmci), IDIO_FIXNUM_VAL (fgvi), idio_thread_current_thread ());
 	} else if (idio_S_computed == kind) {
-	    idio_error_C ("cannot get a computed variable from C", IDIO_LIST1 (sk), IDIO_C_LOCATION ("idio_module_symbol_value_recurse"));
+	    idio_error_C ("cannot get a computed variable from C", IDIO_LIST3 (symbol, module, sk), IDIO_C_LOCATION ("idio_module_symbol_value_recurse"));
 	} else {
-	    idio_error_C ("unexpected symbol kind", IDIO_LIST1 (sk), IDIO_C_LOCATION ("idio_module_symbol_value_recurse"));
+	    idio_error_C ("unexpected symbol kind", IDIO_LIST3 (symbol, module, sk), IDIO_C_LOCATION ("idio_module_symbol_value_recurse"));
 	}
     }
 
-    return sk;
+    return r;
 }
 
 IDIO idio_module_primitive_symbol_value_recurse (IDIO symbol)
@@ -865,7 +964,7 @@ IDIO idio_module_toplevel_symbol_value_recurse (IDIO symbol)
     IDIO_ASSERT (symbol);
     IDIO_TYPE_ASSERT (symbol, symbol);
 
-    return idio_module_symbol_value_recurse (symbol, idio_Idio_module_instance ());    
+    return idio_module_symbol_value_recurse (symbol, idio_Idio_module);    
 }
 
 /*
@@ -933,7 +1032,7 @@ IDIO idio_module_toplevel_set_symbol (IDIO symbol, IDIO value)
     IDIO_ASSERT (value);
     IDIO_TYPE_ASSERT (symbol, symbol);
 
-    return idio_module_set_symbol (symbol, value, idio_Idio_module_instance ());
+    return idio_module_set_symbol (symbol, value, idio_Idio_module);
 }
 
 IDIO idio_module_set_symbol_value (IDIO symbol, IDIO value, IDIO module)
@@ -955,17 +1054,19 @@ IDIO idio_module_set_symbol_value (IDIO symbol, IDIO value, IDIO module)
 	 * the evaluator.  These will be implicitly idio_S_toplevel
 	 * symbols in this module.
 	 */
+	kind = idio_S_toplevel;
+
 	idio_ai_t mci = idio_vm_constants_lookup_or_extend (symbol);
 	fmci = idio_fixnum (mci);
 
-	kind = idio_S_toplevel;
 	idio_ai_t gvi = idio_vm_extend_values ();
 	fgvi = idio_fixnum (gvi);
 	
 	idio_debug ("imssv: C init? %12s", IDIO_MODULE_NAME (module));
 	idio_debug ("/%-20s", symbol);
 	idio_debug (" = %-20s;", value);
-	fprintf (stderr, " mci %td -> gvi %td\n", mci, gvi);
+	fprintf (stderr, " mci %td -> gvi %td", mci, gvi);
+	idio_debug (" in ce %s\n", module);
 	idio_hash_put (IDIO_MODULE_SYMBOLS (module), symbol, IDIO_LIST3 (kind, fmci, fgvi));
     } else {
 	kind = IDIO_PAIR_H (sv);
@@ -983,12 +1084,13 @@ IDIO idio_module_set_symbol_value (IDIO symbol, IDIO value, IDIO module)
 	 */
 	idio_debug ("imssv: C init? %-20s gvi 0", symbol);
 	gvi = idio_vm_extend_values ();
+	fgvi = idio_fixnum (gvi);
 	fprintf (stderr, " mci %td -> gvi %td\n", mci, gvi);
 	IDIO_PAIR_HTT (sv) = idio_fixnum (gvi);
     }
 
     idio_module_vci_set (module, fmci, fmci);
-    idio_module_vvi_set (module, fmci, idio_fixnum (gvi));
+    idio_module_vvi_set (module, fmci, fgvi);
 	
     if (idio_S_toplevel == kind) {
 	idio_vm_values_set (gvi, value);
@@ -999,9 +1101,13 @@ IDIO idio_module_set_symbol_value (IDIO symbol, IDIO value, IDIO module)
     } else if (idio_S_computed == kind) {
 	idio_vm_computed_set (mci, gvi, value, idio_thread_current_thread ());
     } else if (idio_S_predef == kind) {
-	idio_error_C ("cannot set a primitive", IDIO_LIST1 (symbol), IDIO_C_LOCATION ("idio_module_set_symbol_value"));
+	if (module == idio_primitive_module) {
+	    idio_error_C ("cannot set a primitive", IDIO_LIST2 (symbol, module), IDIO_C_LOCATION ("idio_module_set_symbol_value"));
+	} else {
+	    idio_vm_values_set (gvi, value);
+	}
     } else {
-	idio_error_C ("unexpected symbol kind", IDIO_LIST1 (sv), IDIO_C_LOCATION ("idio_module_set_symbol_value"));
+	idio_error_C ("unexpected symbol kind", IDIO_LIST3 (symbol, module, sv), IDIO_C_LOCATION ("idio_module_set_symbol_value"));
     }
 
     return value;
@@ -1049,7 +1155,7 @@ IDIO idio_module_toplevel_set_symbol_value (IDIO symbol, IDIO value)
     IDIO_ASSERT (value);
     IDIO_TYPE_ASSERT (symbol, symbol);
 
-    return idio_module_set_symbol_value (symbol, value, idio_Idio_module_instance ());
+    return idio_module_set_symbol_value (symbol, value, idio_Idio_module);
 }
 
 IDIO_DEFINE_PRIMITIVE3 ("set-symbol-value!", set_symbol_value, (IDIO symbol, IDIO value, IDIO module))

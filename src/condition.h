@@ -26,9 +26,14 @@
 /*
  * Indexes into structures for direct references
  */
-#define IDIO_ERROR_TYPE_MESSAGE		0
-#define IDIO_ERROR_TYPE_LOCATION	1
-#define IDIO_ERROR_TYPE_DETAIL		2
+/* ^idio-error */
+#define IDIO_IDIO_ERROR_TYPE_MESSAGE	0
+#define IDIO_IDIO_ERROR_TYPE_LOCATION	1
+#define IDIO_IDIO_ERROR_TYPE_DETAIL	2
+	
+/* ^read-error = ^idio_error plus */
+#define IDIO_READ_ERROR_TYPE_LINE	3
+#define IDIO_READ_ERROR_TYPE_POSITION	4
 	
 extern IDIO idio_condition_condition_type;
 extern IDIO idio_condition_message_type;

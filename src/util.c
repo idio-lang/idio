@@ -153,7 +153,7 @@ IDIO_DEFINE_PRIMITIVE1 ("unset?", unsetp, (IDIO o))
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("undefined?", undefinedp, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1 ("undef?", undefp, (IDIO o))
 {
     IDIO_ASSERT (o);
 
@@ -166,13 +166,46 @@ IDIO_DEFINE_PRIMITIVE1 ("undefined?", undefinedp, (IDIO o))
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("unspecified?", unspecifiedp, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1 ("unspec?", unspecp, (IDIO o))
 {
     IDIO_ASSERT (o);
 
     IDIO r = idio_S_false;
 
     if (idio_S_unspec == o) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("void?", voidp, (IDIO o))
+{
+    IDIO_ASSERT (o);
+
+    IDIO r = idio_S_false;
+
+    if (idio_S_void == o) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
+/*
+ * Unrelated to undef?, %undefined? tests whether a non-local symbol
+ * is defined in this environment.
+ */
+IDIO_DEFINE_PRIMITIVE1 ("%defined?", definedp, (IDIO s))
+{
+    IDIO_ASSERT (s);
+    IDIO_TYPE_ASSERT (symbol, s);
+
+    IDIO r = idio_S_false;
+
+    IDIO sk = idio_module_env_symbol_recurse (s);
+    
+    if (idio_S_unspec != sk) {
 	r = idio_S_true;
     }
 
@@ -401,6 +434,14 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		return (o1 == o2);
 		/* return (o1->u.primitive == o2->u.primitive); */
 	    case IDIO_TYPE_BIGNUM:
+		if (IDIO_EQUAL_EQP == eqp) {
+		    /*
+		     * u.bignum is part of the idio_s union so check
+		     * the malloc'd sig
+		     */
+		    return (IDIO_BIGNUM_SIG (o1) == IDIO_BIGNUM_SIG (o2));
+		}
+		
 		return idio_bignum_real_equal_p (o1, o2);
 	    case IDIO_TYPE_MODULE:
 		return (o1 == o2);
@@ -1742,8 +1783,10 @@ void idio_util_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (nullp);
     IDIO_ADD_PRIMITIVE (unsetp);
-    IDIO_ADD_PRIMITIVE (undefinedp);
-    IDIO_ADD_PRIMITIVE (unspecifiedp);
+    IDIO_ADD_PRIMITIVE (undefp);
+    IDIO_ADD_PRIMITIVE (unspecp);
+    IDIO_ADD_PRIMITIVE (voidp);
+    IDIO_ADD_PRIMITIVE (definedp);
     IDIO_ADD_PRIMITIVE (booleanp);
     IDIO_ADD_PRIMITIVE (not);
     IDIO_ADD_PRIMITIVE (eqp);

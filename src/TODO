@@ -1,8 +1,20 @@
+as_string
+	- quasiquoted -> %T{ $expr }
+
+primcalls
+	- *_CONS -> *_PAIR
+	- CAR/CDR and anything else
+
 Tower of Expansion
 	- every module has an *expansion* module (to be used in expander thread)
 
 unbind
 	- delete IDIO_MODULE_VVI(mci) -- must be inline to actually see the mci!
+
+source file re-work
+	- split evaluate.c -> expander.c
+	- split vm.c -> compile.c
+	- specialform.[ch] ??
 
 Qualifiers
 	- expr ; expr ; expr

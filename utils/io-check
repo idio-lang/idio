@@ -34,7 +34,8 @@ usage ()
 	echo
 	echo "s/D can be:"
 	echo "  null		/dev/null"
-	echo "  NUM		fd NUM"
+	echo "  pipe		a pipe descriptor"
+	echo "  NUM		file descriptor NUM"
     ) >&2
 }
 
