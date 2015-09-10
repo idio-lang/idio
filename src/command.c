@@ -320,22 +320,38 @@ static char *idio_command_glob_charp (char *src)
 static size_t idio_command_possible_filename_glob (IDIO arg, glob_t *gp)
 {
     IDIO_ASSERT (arg);
-    IDIO_TYPE_ASSERT (symbol, arg);
 
-    char *match = idio_command_glob_charp (IDIO_SYMBOL_S (arg));
-
-    if (NULL == match) {
-	return 0;
+    int free_me = 0;
+    char *glob_C;
+    
+    if (idio_isa_symbol (arg)) {
+	glob_C = IDIO_SYMBOL_S (arg);
+    } else if (idio_isa_string (arg)) {
+	glob_C = idio_string_as_C (arg);
+	free_me = 1;
     } else {
-	if (glob (IDIO_SYMBOL_S (arg), GLOB_NOCHECK, NULL, gp) == 0) {
-	    return gp->gl_pathc;
+	idio_error_param_type ("symbol|string", arg, IDIO_C_LOCATION ("idio_command_possible_filename_glob"));
+    }
+
+    char *match = idio_command_glob_charp (glob_C);
+
+    size_t r = -1;
+    
+    if (NULL == match) {
+	r = 0;
+    } else {
+	if (glob (glob_C, GLOB_NOCHECK, NULL, gp) == 0) {
+	    r = gp->gl_pathc;
 	} else {
 	    idio_command_error_glob (arg, IDIO_C_LOCATION ("idio_command_possible_filename_glob"));
 	}
     }
     
-    idio_error_C ("dropped out", IDIO_LIST1 (arg), IDIO_C_LOCATION ("idio_command_possible_filename_glob"));
-    return -1;
+    if (free_me) {
+	free (glob_C);
+    }
+    
+    return r;
 }
 
 char **idio_command_argv (IDIO args)    
@@ -426,13 +442,53 @@ char **idio_command_argv (IDIO args)
 			argv[i++] = idio_as_string (arg, 1);
 		    }
 		    break;
+		case IDIO_TYPE_STRUCT_INSTANCE:
+		    {
+			IDIO st = IDIO_STRUCT_INSTANCE_TYPE (arg);
+			if (idio_struct_type_isa (st, idio_path_type)) {
+			    IDIO pattern = idio_struct_instance_ref_direct (arg, IDIO_PATH_PATTERN);
+
+			    glob_t g;
+			    size_t n = idio_command_possible_filename_glob (pattern, &g);
+
+			    if (0 == n) {
+				argv[i++] = idio_as_string (pattern, 1);
+			    } else {
+				/*
+				 * NB "gl_pathc - 1" as we reserved a slot
+				 * for the original pattern so the
+				 * increment is one less
+				 */
+				argc += g.gl_pathc - 1;
+
+				argv = idio_realloc (argv, argc * sizeof (char *));
+			    
+				size_t n;
+				for (n = 0; n < g.gl_pathc; n++) {
+				    size_t plen = strlen (g.gl_pathv[n]);
+				    argv[i] = idio_alloc (plen + 1);
+				    strcpy (argv[i++], g.gl_pathv[n]);
+				}
+
+				globfree (&g);
+			    }
+			} else {
+			    idio_debug ("WARNING: idio_command_argv: unexpected struct instance: type: %s\n", st);
+			    idio_debug ("arg = %s\n", arg);
+			}
+		    }
+		    break;
+
+		    /*
+		     * No useful representation of the following types
+		     * for a command we are about to exec().
+		     */
 		case IDIO_TYPE_CLOSURE:
 		case IDIO_TYPE_PRIMITIVE:
 		case IDIO_TYPE_MODULE:
 		case IDIO_TYPE_FRAME:
 		case IDIO_TYPE_HANDLE:
 		case IDIO_TYPE_STRUCT_TYPE:
-		case IDIO_TYPE_STRUCT_INSTANCE:
 		case IDIO_TYPE_THREAD:
 		case IDIO_TYPE_C_TYPEDEF:
 		case IDIO_TYPE_C_STRUCT:
@@ -1544,7 +1600,6 @@ static IDIO idio_command_launch_1proc_job (IDIO job, int foreground, char **argv
 	     * As we simply return the result of idio_vm_invoke_C(),
 	     * no need to protect anything here.
 	     */
-	    idio_debug ("icl1pj: cmd %s\n", cmd);
 	    return idio_vm_invoke_C (idio_thread_current_thread (), cmd);
 	}
     } else {

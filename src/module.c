@@ -326,7 +326,6 @@ IDIO_DEFINE_PRIMITIVE1 ("%set-current-module!", set_current_module, (IDIO module
     IDIO_ASSERT (module);
     IDIO_VERIFY_PARAM_TYPE (module, module);
 
-    idio_debug ("%%set-current-module! %s\n", module);
     idio_thread_set_current_module (module);
 
     return idio_S_unspec;
@@ -584,12 +583,6 @@ IDIO idio_module_direct_reference (IDIO name)
 		IDIO sk = idio_module_symbol (s_sym, mod);
 
 		if (idio_S_unspec != sk) {
-		    idio_debug ("imdr: sym %-20s", name);
-		    idio_debug (" aka %10s", m_sym);
-		    idio_debug (" %s", s_sym);
-		    idio_debug (" found as %s", sk);
-		    idio_debug (" in %s\n", mod);
-
 		    /*
 		     * Our result sk should look similar to the result
 		     * we've just found except that the mci cannot be
@@ -619,8 +612,6 @@ IDIO idio_module_symbol_recurse_imports (IDIO symbol, IDIO imported_module, IDIO
     IDIO_TYPE_ASSERT (symbol, symbol);
     IDIO_TYPE_ASSERT (module, imported_module);
 
-    /* idio_debug ("imsri %s", symbol);  */
-    /* idio_debug (" in %s?\n", imported_module);  */
     IDIO sv = idio_hash_get (IDIO_MODULE_SYMBOLS (imported_module), symbol);
 
     /*
@@ -634,29 +625,6 @@ IDIO idio_module_symbol_recurse_imports (IDIO symbol, IDIO imported_module, IDIO
 	    idio_primitive_module == imported_module || 
 	    idio_S_false != idio_list_memq (symbol, IDIO_MODULE_EXPORTS (imported_module))) {
 	    return sv;
-	}
-    }
-
-    /*
-     * Transitive imports:
-     *
-     * Otherwise try each of this module's imports.
-     *
-     * Note this search is depth first.
-     */
-    if (0) {
-	IDIO imports = IDIO_MODULE_IMPORTS (imported_module);
-	for (; idio_S_nil != imports; imports = IDIO_PAIR_T (imports)) {
-	    IDIO transitively_im = IDIO_PAIR_H (imports);
-
-	    if (idio_equalp (transitively_im, break_module)) {
-		continue;
-	    }
-	
-	    sv = idio_module_symbol_recurse (symbol, transitively_im, 0);
-	    if (idio_S_unspec != sv) {
-		return sv;
-	    }
 	}
     }
 
@@ -693,9 +661,6 @@ IDIO idio_module_symbol_recurse (IDIO symbol, IDIO m_or_n, int recurse)
     if (idio_S_unspec == sv &&
 	recurse) {
 	IDIO imports = IDIO_MODULE_IMPORTS (module);
-	/* idio_debug ("imsr %s", symbol); */
-	/* idio_debug (" in %s not found: trying", module); */
-	/* idio_debug (" %s\n", imports); */
 	for (; idio_S_nil != imports; imports = IDIO_PAIR_T (imports)) {
 	    sv = idio_module_symbol_recurse_imports (symbol, IDIO_PAIR_H (imports), module);
 
@@ -809,6 +774,9 @@ IDIO idio_module_symbol_value (IDIO symbol, IDIO m_or_n, IDIO args)
     IDIO sk = idio_hash_get (IDIO_MODULE_SYMBOLS (module), symbol);
     
     IDIO r = idio_S_unspec;
+    if (idio_S_nil != args) {
+	r = IDIO_PAIR_H (args);
+    }
     
     if (idio_S_unspec != sk) {
 	IDIO kind = IDIO_PAIR_H (sk);
@@ -917,9 +885,6 @@ IDIO idio_module_symbol_value_recurse (IDIO symbol, IDIO m_or_n, IDIO args)
     IDIO r = idio_S_unspec;
     
     if (idio_S_unspec != sk) {
-	idio_debug ("imsvr: sym %-20s", symbol);
-	idio_debug (" in %s", module);
-	idio_debug (" sk %s\n", sk);
 	IDIO kind = IDIO_PAIR_H (sk);
 	IDIO fmci = IDIO_PAIR_HT (sk);
 	IDIO fgvi = IDIO_PAIR_HTT (sk);
@@ -1071,11 +1036,6 @@ IDIO idio_module_set_symbol_value (IDIO symbol, IDIO value, IDIO module)
 	idio_ai_t gvi = idio_vm_extend_values ();
 	fgvi = idio_fixnum (gvi);
 	
-	idio_debug ("imssv: C init? %12s", IDIO_MODULE_NAME (module));
-	idio_debug ("/%-20s", symbol);
-	idio_debug (" = %-20s;", value);
-	fprintf (stderr, " mci %td -> gvi %td", mci, gvi);
-	idio_debug (" in ce %s\n", module);
 	idio_hash_put (IDIO_MODULE_SYMBOLS (module), symbol, IDIO_LIST3 (kind, fmci, fgvi));
     } else {
 	kind = IDIO_PAIR_H (sv);
@@ -1091,10 +1051,8 @@ IDIO idio_module_set_symbol_value (IDIO symbol, IDIO value, IDIO module)
 	 * and then immediately set_symbol_value() which means the gvi
 	 * remains 0.
 	 */
-	idio_debug ("imssv: C init? %-20s gvi 0", symbol);
 	gvi = idio_vm_extend_values ();
 	fgvi = idio_fixnum (gvi);
-	fprintf (stderr, " mci %td -> gvi %td\n", mci, gvi);
 	IDIO_PAIR_HTT (sv) = idio_fixnum (gvi);
     }
 

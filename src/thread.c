@@ -172,9 +172,6 @@ void idio_thread_set_current_module (IDIO m)
     IDIO_TYPE_ASSERT (module, m);
 
     IDIO thr = idio_thread_current_thread ();
-    idio_debug ("itscm: cm %s", IDIO_THREAD_MODULE (thr));
-    idio_debug (" ce %s", IDIO_THREAD_ENV (thr));
-    idio_debug (" -> %s\n", m);
     IDIO_THREAD_MODULE (thr) = m;
     IDIO_THREAD_ENV (thr) = m;
 }

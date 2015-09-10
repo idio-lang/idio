@@ -1255,9 +1255,11 @@ IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (
 	us += 1000000;
 	s -= 1;
     }
-	
+
+#if IDIO_DEBUG
     fprintf (stderr, "load-file-handle: %s: elapsed time %ld.%03ld\n", IDIO_HANDLE_NAME (fh), s, (long) us / 1000);
     idio_debug (" => %s\n", r);
+#endif
     
     idio_ai_t ss = idio_array_size (IDIO_THREAD_STACK (thr));
 

@@ -93,7 +93,7 @@ load = {
       })
     }
 
-    edisplay* "load/module: restoring module" cmod
+    ;; edisplay* "load/module: restoring module" cmod
     %set-current-module! cmod
   }
 }

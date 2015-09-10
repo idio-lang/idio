@@ -28,6 +28,9 @@ export (%%last-job
 	background-job
 	foreground-job
 	wait-for-job
+
+	do-job-notification		; default SIGCHLD handler in
+					; vm.c
 	bg-job
 	wait
 	with-input-from

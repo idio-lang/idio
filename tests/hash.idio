@@ -245,7 +245,6 @@ ht-integer-hash := {
   bound := (expt 2 29) - 3
 
   function (v) {
-    edisplay* "ht-integer-hash" v (integer? v)
     if (not (integer? v)) {
       c := make-condition ^rt-parameter-type-error "not an integer" 'ht-integer-hash v
 
