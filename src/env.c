@@ -37,8 +37,8 @@ static int idio_env_set_default (IDIO name, char *val)
     IDIO_C_ASSERT (val);
     IDIO_TYPE_ASSERT (symbol, name);
 
-    IDIO ENV = idio_module_env_symbol_value (name);
-    if (idio_S_unspec == ENV) {
+    IDIO ENV = idio_module_env_symbol_value (name, IDIO_LIST1 (idio_S_false));
+    if (idio_S_false == ENV) {
 	idio_environ_extend (name, idio_string_C (val));
 	return 1;
     }

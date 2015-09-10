@@ -1292,7 +1292,7 @@ char *idio_libfile_find_C (char *file)
     
     size_t filelen = strlen (file);
     
-    IDIO IDIOLIB = idio_module_current_symbol_value_recurse (idio_env_IDIOLIB_sym);
+    IDIO IDIOLIB = idio_module_current_symbol_value_recurse (idio_env_IDIOLIB_sym, idio_S_nil);
 
     /*
      * idiolib is the start of the current IDIOLIB pathname element --

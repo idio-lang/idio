@@ -38,7 +38,8 @@ format
 reader formatted strings
 	- %S...
 
-getopt
+getopts
+	- short, long, multiple values
 
 named arguments
 	- cf. keyword arguments & SRFI 89??

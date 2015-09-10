@@ -142,11 +142,29 @@ static char **idio_command_get_envp ()
     while (idio_S_nil != symbols) {
 	IDIO symbol = IDIO_PAIR_H (symbols);
 	size_t slen = strlen (IDIO_SYMBOL_S (symbol));
-	IDIO val = idio_module_env_symbol_value_recurse (symbol);
+
+	/*
+	 * NOTE
+	 *
+	 * We are recursing so that we pick up all environment
+	 * variables including those defined by default in the Idio
+	 * module (not just those in the current module).
+	 *
+	 * However, every environ variable will exist at the toplevel
+	 * even if it was defined transiently inside a block (all
+	 * environ variables have a unique gvi so we can distinguish
+	 * them on the stack).
+	 *
+	 * That means we must ensure that, ultimately,
+	 * idio_vm_environ_ref() doesn't invoke an error by passing a
+	 * default value to the C function.  All environ variables
+	 * must be a string so a boolean is a safe (and traditional)
+	 * marker.
+	 */
+	IDIO val = idio_module_env_symbol_value_recurse (symbol, IDIO_LIST1 (idio_S_false));
 
 	size_t vlen = 0;
-	if (idio_S_unset != val &&
-	    idio_S_undef != val) {
+	if (idio_S_false != val) {
 	    IDIO_TYPE_ASSERT (string, val);
 	    vlen = idio_string_blen (val);
 
@@ -158,8 +176,6 @@ static char **idio_command_get_envp ()
 	    }
 	    envp[n][slen + 1 + vlen] = '\0';
 	    n++;
-	} else {
-	    /* idio_debug ("!E: %s\n", symbol);  */
 	}
 
 	symbols = IDIO_PAIR_T (symbols);
@@ -175,7 +191,7 @@ char *idio_command_find_exe_C (char *command)
     
     size_t cmdlen = strlen (command);
     
-    IDIO PATH = idio_module_current_symbol_value_recurse (idio_env_PATH_sym);
+    IDIO PATH = idio_module_current_symbol_value_recurse (idio_env_PATH_sym, idio_S_nil);
 
     char *path;
     char *pathe;
@@ -661,7 +677,7 @@ static int idio_command_mark_process_status (pid_t pid, int status)
 	 * Some arbitrary process has a status update so we need to
 	 * dig it out.
 	 */
-	IDIO jobs = idio_module_symbol_value (idio_command_jobs, idio_Idio_module_instance ());
+	IDIO jobs = idio_module_symbol_value (idio_command_jobs, idio_Idio_module_instance (), idio_S_nil);
 	while (idio_S_nil != jobs) {
 	    IDIO job = IDIO_PAIR_H (jobs);
 
@@ -838,7 +854,7 @@ void idio_command_do_job_notification (void)
      */
     idio_command_update_status ();
 
-    IDIO jobs = idio_module_symbol_value (idio_command_jobs, idio_Idio_module_instance ());
+    IDIO jobs = idio_module_symbol_value (idio_command_jobs, idio_Idio_module_instance (), idio_S_nil);
     IDIO njobs = idio_S_nil;
     IDIO failed_jobs = idio_S_nil;
     
@@ -1425,7 +1441,7 @@ static IDIO idio_command_launch_1proc_job (IDIO job, int foreground, char **argv
      * original Idio's pid.
      */
     if (getpid () == idio_command_pid) {
-	IDIO jobs = idio_module_symbol_value (idio_command_jobs, idio_Idio_module_instance ());
+	IDIO jobs = idio_module_symbol_value (idio_command_jobs, idio_Idio_module_instance (), idio_S_nil);
 	idio_module_set_symbol_value (idio_command_jobs, idio_pair (job, jobs), idio_Idio_module_instance ());
 
 	idio_module_set_symbol_value (idio_command_last_job, job, idio_command_module);
@@ -1514,13 +1530,13 @@ static IDIO idio_command_launch_1proc_job (IDIO job, int foreground, char **argv
 	     */
 	    IDIO cmd = idio_S_nil;
 	    if (! idio_command_interactive) {
-		IDIO wfj = idio_module_symbol_value (idio_S_wait_for_job, idio_command_module);
+		IDIO wfj = idio_module_symbol_value (idio_S_wait_for_job, idio_command_module, idio_S_nil);
 		cmd = IDIO_LIST2 (wfj, job);
 	    } else if (foreground) {
-		IDIO fj = idio_module_symbol_value (idio_S_foreground_job, idio_command_module);
+		IDIO fj = idio_module_symbol_value (idio_S_foreground_job, idio_command_module, idio_S_nil);
 		cmd = IDIO_LIST3 (fj, job, idio_S_false);
 	    } else {
-		IDIO bj = idio_module_symbol_value (idio_S_background_job, idio_command_module);
+		IDIO bj = idio_module_symbol_value (idio_S_background_job, idio_command_module, idio_S_nil);
 		cmd = IDIO_LIST3 (bj, job, idio_S_false);
 	    }
 
@@ -1663,7 +1679,7 @@ IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
     idio_array_push (protected, proc);
 
     IDIO cmd_sym;
-    cmd_sym = idio_module_symbol_value (idio_S_stdin_fileno, idio_libc_wrap_module);
+    cmd_sym = idio_module_symbol_value (idio_S_stdin_fileno, idio_libc_wrap_module, idio_S_nil);
     IDIO job_stdin = idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST1 (cmd_sym));
     IDIO close_stdin = idio_S_false;
     if (idio_isa_pair (job_stdin)) {
@@ -1673,7 +1689,7 @@ IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
     idio_array_push (protected, job_stdin);
     idio_array_push (protected, close_stdin);
 
-    cmd_sym = idio_module_symbol_value (idio_S_stdout_fileno, idio_libc_wrap_module);
+    cmd_sym = idio_module_symbol_value (idio_S_stdout_fileno, idio_libc_wrap_module, idio_S_nil);
     IDIO job_stdout = idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST1 (cmd_sym));
     IDIO recover_stdout = idio_S_false;
     if (idio_isa_pair (job_stdout)) {
@@ -1683,7 +1699,7 @@ IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
     idio_array_push (protected, job_stdout);
     idio_array_push (protected, recover_stdout);
     
-    cmd_sym = idio_module_symbol_value (idio_S_stderr_fileno, idio_libc_wrap_module);
+    cmd_sym = idio_module_symbol_value (idio_S_stderr_fileno, idio_libc_wrap_module, idio_S_nil);
     IDIO job_stderr = idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST1 (cmd_sym));
     IDIO recover_stderr = idio_S_false;
     if (idio_isa_pair (job_stderr)) {
@@ -2011,7 +2027,7 @@ void idio_final_command ()
      */
     idio_command_do_job_notification ();
 
-    IDIO jobs = idio_module_symbol_value (idio_command_jobs, idio_Idio_module_instance ());
+    IDIO jobs = idio_module_symbol_value (idio_command_jobs, idio_Idio_module_instance (), idio_S_nil);
     if (idio_S_nil != jobs) {
 	fprintf (stderr, "There are outstanding jobs\n");
 	while (idio_S_nil != jobs) {

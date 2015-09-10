@@ -782,11 +782,13 @@ IDIO idio_module_env_symbol (IDIO symbol)
 /*
  * idio_module_symbol_value will only look in the current module
  */
-IDIO idio_module_symbol_value (IDIO symbol, IDIO m_or_n)
+IDIO idio_module_symbol_value (IDIO symbol, IDIO m_or_n, IDIO args)
 {
     IDIO_ASSERT (symbol);
     IDIO_ASSERT (m_or_n);
+    IDIO_ASSERT (args);
     IDIO_TYPE_ASSERT (symbol, symbol);
+    IDIO_TYPE_ASSERT (list, args);
 
     IDIO module = idio_S_unspec;
     
@@ -818,9 +820,9 @@ IDIO idio_module_symbol_value (IDIO symbol, IDIO m_or_n)
 	} else if (idio_S_predef == kind) {
 	    r = idio_vm_values_ref (IDIO_FIXNUM_VAL (fgvi));
 	} else if (idio_S_dynamic == kind) {
-	    r = idio_vm_dynamic_ref (IDIO_FIXNUM_VAL (fmci), IDIO_FIXNUM_VAL (fgvi), idio_thread_current_thread ());
+	    r = idio_vm_dynamic_ref (IDIO_FIXNUM_VAL (fmci), IDIO_FIXNUM_VAL (fgvi), idio_thread_current_thread (), args);
 	} else if (idio_S_environ == kind) {
-	    r = idio_vm_environ_ref (IDIO_FIXNUM_VAL (fmci), IDIO_FIXNUM_VAL (fgvi), idio_thread_current_thread ());
+	    r = idio_vm_environ_ref (IDIO_FIXNUM_VAL (fmci), IDIO_FIXNUM_VAL (fgvi), idio_thread_current_thread (), args);
 	} else if (idio_S_computed == kind) {
 	    r = idio_vm_computed_ref (IDIO_FIXNUM_VAL (fmci), IDIO_FIXNUM_VAL (fgvi), idio_thread_current_thread ());
 	} else {
@@ -831,63 +833,68 @@ IDIO idio_module_symbol_value (IDIO symbol, IDIO m_or_n)
     return r;
 }
 
-IDIO idio_module_primitive_symbol_value (IDIO symbol)
-{
-    IDIO_ASSERT (symbol);
-    IDIO_TYPE_ASSERT (symbol, symbol);
-
-    return idio_module_symbol_value (symbol, idio_primitive_module);    
-}
-
-IDIO idio_module_current_symbol_value (IDIO symbol)
-{
-    IDIO_ASSERT (symbol);
-    IDIO_TYPE_ASSERT (symbol, symbol);
-
-    return idio_module_symbol_value (symbol, idio_thread_current_module ());    
-}
-
-IDIO idio_module_env_symbol_value (IDIO symbol)
-{
-    IDIO_ASSERT (symbol);
-    IDIO_TYPE_ASSERT (symbol, symbol);
-
-    return idio_module_symbol_value (symbol, idio_thread_current_env ());    
-}
-
-IDIO idio_module_toplevel_symbol_value (IDIO symbol)
-{
-    IDIO_ASSERT (symbol);
-    IDIO_TYPE_ASSERT (symbol, symbol);
-
-    return idio_module_symbol_value (symbol, idio_Idio_module);    
-}
-
-/*
- * Only look in the given module (or the current if none given)
- */
-IDIO_DEFINE_PRIMITIVE1V ("symbol-value", symbol_value, (IDIO symbol, IDIO args))
+IDIO idio_module_primitive_symbol_value (IDIO symbol, IDIO args)
 {
     IDIO_ASSERT (symbol);
     IDIO_ASSERT (args);
-    IDIO_VERIFY_PARAM_TYPE (symbol, symbol);
+    IDIO_TYPE_ASSERT (symbol, symbol);
+    IDIO_TYPE_ASSERT (list, args);
 
-    IDIO module;
-    if (idio_S_nil == args) {
-	module = idio_thread_current_module ();
-    } else {
-	module = IDIO_PAIR_H (args);
-	IDIO_VERIFY_PARAM_TYPE (module, module);
-    }
-
-    return idio_module_symbol_value (symbol, module);
+    return idio_module_symbol_value (symbol, idio_primitive_module, args);
 }
 
-IDIO idio_module_symbol_value_recurse (IDIO symbol, IDIO m_or_n)
+IDIO idio_module_current_symbol_value (IDIO symbol, IDIO args)
+{
+    IDIO_ASSERT (symbol);
+    IDIO_ASSERT (args);
+    IDIO_TYPE_ASSERT (symbol, symbol);
+    IDIO_TYPE_ASSERT (list, args);
+
+    return idio_module_symbol_value (symbol, idio_thread_current_module (), args);
+}
+
+IDIO idio_module_env_symbol_value (IDIO symbol, IDIO args)
+{
+    IDIO_ASSERT (symbol);
+    IDIO_ASSERT (args);
+    IDIO_TYPE_ASSERT (symbol, symbol);
+    IDIO_TYPE_ASSERT (list, args);
+
+    return idio_module_symbol_value (symbol, idio_thread_current_env (), args);
+}
+
+IDIO idio_module_toplevel_symbol_value (IDIO symbol, IDIO args)
+{
+    IDIO_ASSERT (symbol);
+    IDIO_ASSERT (args);
+    IDIO_TYPE_ASSERT (symbol, symbol);
+    IDIO_TYPE_ASSERT (list, args);
+
+    return idio_module_symbol_value (symbol, idio_Idio_module, args);
+}
+
+/*
+ * Only look in the given module.  If not present return the optional
+ * default or error.
+ */
+IDIO_DEFINE_PRIMITIVE2V ("symbol-value", symbol_value, (IDIO symbol, IDIO m_or_n, IDIO args))
 {
     IDIO_ASSERT (symbol);
     IDIO_ASSERT (m_or_n);
+    IDIO_ASSERT (args);
+    IDIO_VERIFY_PARAM_TYPE (symbol, symbol);
+    IDIO_TYPE_ASSERT (list, args);
+
+    return idio_module_symbol_value (symbol, m_or_n, args);
+}
+
+IDIO idio_module_symbol_value_recurse (IDIO symbol, IDIO m_or_n, IDIO args)
+{
+    IDIO_ASSERT (symbol);
+    IDIO_ASSERT (m_or_n);
+    IDIO_ASSERT (args);
     IDIO_TYPE_ASSERT (symbol, symbol);
+    IDIO_TYPE_ASSERT (list, args);
 
     IDIO module = idio_S_unspec;
     
@@ -922,9 +929,9 @@ IDIO idio_module_symbol_value_recurse (IDIO symbol, IDIO m_or_n)
 	} else if (idio_S_predef == kind) {
 	    r = idio_vm_values_ref (IDIO_FIXNUM_VAL (fgvi));
 	} else if (idio_S_dynamic == kind) {
-	    r = idio_vm_dynamic_ref (IDIO_FIXNUM_VAL (fmci), IDIO_FIXNUM_VAL (fgvi), idio_thread_current_thread ());
+	    r = idio_vm_dynamic_ref (IDIO_FIXNUM_VAL (fmci), IDIO_FIXNUM_VAL (fgvi), idio_thread_current_thread (), args);
 	} else if (idio_S_environ == kind) {
-	    r = idio_vm_environ_ref (IDIO_FIXNUM_VAL (fmci), IDIO_FIXNUM_VAL (fgvi), idio_thread_current_thread ());
+	    r = idio_vm_environ_ref (IDIO_FIXNUM_VAL (fmci), IDIO_FIXNUM_VAL (fgvi), idio_thread_current_thread (), args);
 	} else if (idio_S_computed == kind) {
 	    idio_error_C ("cannot get a computed variable from C", IDIO_LIST3 (symbol, module, sk), IDIO_C_LOCATION ("idio_module_symbol_value_recurse"));
 	} else {
@@ -935,57 +942,59 @@ IDIO idio_module_symbol_value_recurse (IDIO symbol, IDIO m_or_n)
     return r;
 }
 
-IDIO idio_module_primitive_symbol_value_recurse (IDIO symbol)
+IDIO idio_module_primitive_symbol_value_recurse (IDIO symbol, IDIO args)
 {
     IDIO_ASSERT (symbol);
+    IDIO_ASSERT (args);
     IDIO_TYPE_ASSERT (symbol, symbol);
+    IDIO_TYPE_ASSERT (list, args);
 
-    return idio_module_symbol_value_recurse (symbol, idio_primitive_module);    
+    return idio_module_symbol_value_recurse (symbol, idio_primitive_module, args);
 }
 
-IDIO idio_module_current_symbol_value_recurse (IDIO symbol)
+IDIO idio_module_current_symbol_value_recurse (IDIO symbol, IDIO args)
 {
     IDIO_ASSERT (symbol);
+    IDIO_ASSERT (args);
     IDIO_TYPE_ASSERT (symbol, symbol);
+    IDIO_TYPE_ASSERT (list, args);
 
-    return idio_module_symbol_value_recurse (symbol, idio_thread_current_module ());    
+    return idio_module_symbol_value_recurse (symbol, idio_thread_current_module (), args);
 }
 
-IDIO idio_module_env_symbol_value_recurse (IDIO symbol)
+IDIO idio_module_env_symbol_value_recurse (IDIO symbol, IDIO args)
 {
     IDIO_ASSERT (symbol);
+    IDIO_ASSERT (args);
     IDIO_TYPE_ASSERT (symbol, symbol);
+    IDIO_TYPE_ASSERT (list, args);
 
-    return idio_module_symbol_value_recurse (symbol, idio_thread_current_env ());    
+    return idio_module_symbol_value_recurse (symbol, idio_thread_current_env (), args);
 }
 
-IDIO idio_module_toplevel_symbol_value_recurse (IDIO symbol)
+IDIO idio_module_toplevel_symbol_value_recurse (IDIO symbol, IDIO args)
 {
     IDIO_ASSERT (symbol);
+    IDIO_ASSERT (args);
     IDIO_TYPE_ASSERT (symbol, symbol);
+    IDIO_TYPE_ASSERT (list, args);
 
-    return idio_module_symbol_value_recurse (symbol, idio_Idio_module);    
+    return idio_module_symbol_value_recurse (symbol, idio_Idio_module, args);
 }
 
 /*
  * Recursively find starting at the given module (or the current
  * module if none given)
  */
-IDIO_DEFINE_PRIMITIVE1V ("symbol-value-recurse", symbol_value_recurse, (IDIO symbol, IDIO args))
+IDIO_DEFINE_PRIMITIVE2V ("symbol-value-recurse", symbol_value_recurse, (IDIO symbol, IDIO m_or_n, IDIO args))
 {
     IDIO_ASSERT (symbol);
+    IDIO_ASSERT (m_or_n);
     IDIO_ASSERT (args);
     IDIO_VERIFY_PARAM_TYPE (symbol, symbol);
+    IDIO_TYPE_ASSERT (list, args);
 
-    IDIO module;
-    if (idio_S_nil == args) {
-	module = idio_thread_current_module ();
-    } else {
-	module = IDIO_PAIR_H (args);
-	IDIO_VERIFY_PARAM_TYPE (module, module);
-    }
-
-    return idio_module_symbol_value_recurse (symbol, module);
+    return idio_module_symbol_value_recurse (symbol, m_or_n, args);
 }
 
 IDIO idio_module_set_symbol (IDIO symbol, IDIO value, IDIO module)
