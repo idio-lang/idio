@@ -331,6 +331,9 @@ static size_t idio_command_possible_filename_glob (IDIO arg, glob_t *gp)
 	free_me = 1;
     } else {
 	idio_error_param_type ("symbol|string", arg, IDIO_C_LOCATION ("idio_command_possible_filename_glob"));
+
+	/* notreached */
+	return -1;
     }
 
     char *match = idio_command_glob_charp (glob_C);

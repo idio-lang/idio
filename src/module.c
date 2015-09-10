@@ -286,33 +286,6 @@ IDIO_DEFINE_PRIMITIVE1 ("%find-or-create-module", find_or_create_module, (IDIO n
 	m = idio_module (name);
     }
 
-    /*
-     * There is a feature here in that the names of modules have
-     * appeared magically in the narrative without having been defined
-     * as anything.  The first occurrence of the module's name is here
-     * when someone has said "%find-or-create-module M" and {M} is
-     * just being used as though it exists as a known symbol.
-     *
-     * This is a problem later on as when someone tries to use a
-     * module's name, eg. "module M", no other module has any
-     * knowledge of it.
-     *
-     * We need to patch over this by setting up a mapping for the
-     * symbol in the Idio module.
-     *
-     * In effect "module M" becomes a define for module names even
-     * though {M} will never have a value associated with it.
-     */
-    idio_debug ("%%find-or-create-module %s\n", name);
-    idio_ai_t gci = idio_vm_constants_lookup_or_extend (name);
-    IDIO fgci = idio_fixnum (gci);
-
-    /*
-     * NB a vi of 0 indicates an unresolved value index to be resolved
-     * (based on the current set of imports) during runtime
-     */
-    idio_module_set_symbol (name, IDIO_LIST3 (idio_S_toplevel, fgci, idio_fixnum (0)), idio_Idio_module); 
-
     return m;
 }
 
