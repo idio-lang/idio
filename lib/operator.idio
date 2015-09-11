@@ -125,7 +125,7 @@ define-infix-operator + 900 {
     result = append result suffix
   }
 
-  %T{ $result }
+  #T{ $result }
 }
 
 define-infix-operator - 900 +
@@ -194,7 +194,7 @@ define-infix-operator and 1000 {
     result = prefix
   }
 
-  op+args := %T{ $op $@op-args }
+  op+args := #T{ $op $@op-args }
   if (not (null? after)) {
     op+args = append op+args after
   }
@@ -213,17 +213,17 @@ define-infix-operator and 1000 {
     result = append result suffix
   }
 
-  %T{ $result }
+  #T{ $result }
   ;; if (null? rest) \
-  ;;   %T{ $op $@op-args } \
-  ;;   %T{ $op $@op-args ($@rest) }
+  ;;   #T{ $op $@op-args } \
+  ;;   #T{ $op $@op-args ($@rest) }
 }
 
 define-infix-operator or 1000 and
 
 ;; Shell logical lists
 define-macro (&& & e*) {
-  %T{ 
+  #T{ 
   {
     monitor (function (cont cond) {
       if (and cont
@@ -241,7 +241,7 @@ define-macro (&& & e*) {
 }
 
 define-macro (|| & e*) {
-  %T{ 
+  #T{ 
   {
     monitor (function (cont cond) {
       if (and cont
@@ -282,7 +282,7 @@ define-infix-operator && 200 {
   }
   op-args = map reduce op-args
 
-  %T{ $op $@op-args }
+  #T{ $op $@op-args }
 }
 
 define-infix-operator || 200 &&
@@ -350,7 +350,7 @@ define-infix-operator =+ 700 {
     result = append result suffix
   }
 
-  %T{ $result }
+  #T{ $result }
 }
 
 ;; Arrays: unshift
@@ -408,7 +408,7 @@ define-postfix-operator =- 700 {
     result = append result after
   }
 
-  %T{ $result }
+  #T{ $result }
 }
 
 ;; Arrays: shift
@@ -481,5 +481,5 @@ define-infix-operator . 800 {
     result = append result after
   }
 
-  %T{ $result }
+  #T{ $result }
 }

@@ -48,7 +48,7 @@
 ;; bar-y foo			=> 10
 
 define-macro (define-struct name & fields) {
-  %T{
+  #T{
       ;; define bar (make-struct-type 'bar #n '(x y))
       define $name (make-struct-type '$name #n '$fields)
 
@@ -57,7 +57,7 @@ define-macro (define-struct name & fields) {
 }
 
 define-macro (export-struct name & fields) {
-  %T{
+  #T{
       define-struct $name $@fields
       export $name
 
@@ -83,7 +83,7 @@ define-macro (define-struct-accessors-only name & fields) {
   make-fname := string->symbol (string-append "make-" (symbol->string name))
   pred-fname := string->symbol (string-append (symbol->string name) "?")
 
-  %T{
+  #T{
       ;; define (make-bar & g/7) {
       ;;   apply make-struct-instance bar g/7
       ;; }
@@ -110,7 +110,7 @@ define-macro (define-struct-accessors-only name & fields) {
 					     "-"
 					     (symbol->string field))
 
-                %T{
+                #T{
 		  define ($get-fname $arg) {
                     %struct-instance-ref-direct $arg $name '$get-fname $(field-index field fields)
                   } 
@@ -132,7 +132,7 @@ define-macro (define-struct-accessors-only name & fields) {
 					     (symbol->string field)
 					     "!")
 					  
-                %T{
+                #T{
 		  define ($set-fname $arg $val) {
                     %struct-instance-set-direct! $arg $name '$set-fname $(field-index field fields) $val
                   }
@@ -154,7 +154,7 @@ define-macro (export-struct-accessors-only name & fields) {
   make-fname := string->symbol (string-append "make-" (symbol->string name))
   pred-fname := string->symbol (string-append (symbol->string name) "?")
 
-  %T{
+  #T{
     define-struct-accessors-only $name $@fields
     export $make-fname $pred-fname
     $@(map (function (field) {
@@ -169,7 +169,7 @@ define-macro (export-struct-accessors-only name & fields) {
 					   (symbol->string field)
 					   "!")
 
-	      %T{
+	      #T{
 		 export $get-fname $set-fname
 	      }
 	    })

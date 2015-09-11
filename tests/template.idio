@@ -34,48 +34,48 @@ test `(,@x-list) '(1 2)
 test `',x-list ''(1 2)
 
 ;; Idio template, dereference
-test %T{ x-sym } 'x-sym
-test %T{ $x-sym } 'x
+test #T{ x-sym } 'x-sym
+test #T{ $x-sym } 'x
 
 ;; vary the delimiters
-test %T{ (list $x-sym) } '(list x)
-test %T( (list $x-sym) ) '(list x)
+test #T{ (list $x-sym) } '(list x)
+test #T( (list $x-sym) ) '(list x)
 
 ;; dereference-splicing
-test %T{ $x-list } '(1 2)
-test %T{ ($x-list) } '((1 2))
-test %T{ ($@x-list) } '(1 2)
+test #T{ $x-list } '(1 2)
+test #T{ ($x-list) } '((1 2))
+test #T{ ($@x-list) } '(1 2)
 
 ;; vary the interpolation sigils: dereference sigil
-test %T%{ %x-sym } 'x
-test %T%{ (%@x-list) } '(1 2)
+test #T%{ %x-sym } 'x
+test #T%{ (%@x-list) } '(1 2)
 
 ;; vary the interpolation sigils: dereference-splicing sigil
-test %T.%{ $x-sym } 'x
-test %T.%{ %x-sym } '%x-sym
-test %T.%{ ($@x-list) } '(@x-list)
-test %T.%{ ($%x-list) } '(1 2)
+test #T.%{ $x-sym } 'x
+test #T.%{ %x-sym } '%x-sym
+test #T.%{ ($@x-list) } '(@x-list)
+test #T.%{ ($%x-list) } '(1 2)
 
 ;; vary the interpolation sigils: dereference and dereference-splicing sigil
 
 ;; This test should be to '$x-sym but the "$" is read as the default
 ;; "," (ie. unquote)
-test %T%^{ $x-sym } (string->symbol "$x-sym")
-test %T%^{ %x-sym } 'x
-test %T%^{ (%@x-list) } '(@x-list)
-test %T%^{ (%^x-list) } '(1 2)
+test #T%^{ $x-sym } (string->symbol "$x-sym")
+test #T%^{ %x-sym } 'x
+test #T%^{ (%@x-list) } '(@x-list)
+test #T%^{ (%^x-list) } '(1 2)
 
 ;; vary the interpolation sigils: quoting sigil
-test %T..%{ $x-sym } 'x
-test %T..%{ %x-sym } ''x-sym
-test %T..%{ %$x-list } ''(1 2)
-test %T..%{ %($@x-list) } ''(1 2)
+test #T..%{ $x-sym } 'x
+test #T..%{ %x-sym } ''x-sym
+test #T..%{ %$x-list } ''(1 2)
+test #T..%{ %($@x-list) } ''(1 2)
 
 ;; vary the interpolation sigils: escape sigil
-test %T...%{ $x-sym } 'x
-test %T...%{ ($@x-list) } '(1 2)
-test %T...%{ (1 + 2) } '(+ 1 2)
-test %T...%{ (1 %+ 2) } '(1 \+ 2)
+test #T...%{ $x-sym } 'x
+test #T...%{ ($@x-list) } '(1 2)
+test #T...%{ (1 + 2) } '(+ 1 2)
+test #T...%{ (1 %+ 2) } '(1 \+ 2)
 
 ;; all done?
 test (template0 + 32) Tests

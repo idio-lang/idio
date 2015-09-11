@@ -136,7 +136,7 @@ define-syntax unwind-protect (syntax-rules ()
 
 define-macro (with-handler handler & body) {
   ;; edisplay* "with-handler" handler body
-  %T{
+  #T{
     load-k := #n
 
     monitor (function (cont cond) {

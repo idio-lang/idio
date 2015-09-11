@@ -143,6 +143,8 @@ screen
 
 Readline
 	- ^P !!
+	- libedit (non GPL alternative)
+	- readline and libedit have different init config statements
 
 setuid
 
@@ -172,3 +174,13 @@ rewrite idio_meaning
 
 reader
 	- table-driven
+
+SSL
+	- OpenSSL (non-GPL compatible)
+	- GnuTLS (better/more consistent)
+	- NSS
+	- (OpenSSL, NSS are FIPS 140-2 certified)
+
+SQLite
+
+YAML

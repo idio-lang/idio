@@ -45,7 +45,7 @@ define (%module-handler cont cond) {
 }
 
 define-macro (define-module name & body) {
-  %T{
+  #T{
     with-handler %module-handler {
       %set-current-module! (%module-push $name)
       $@body
@@ -61,7 +61,7 @@ define-macro (define-module name & body) {
 ;; module-aware and restore the original value at the end of file or
 ;; on an error
 define-macro (module name) {
-  %T{
+  #T{
     %set-current-module! (%find-or-create-module '$name)
   }
 }
@@ -122,7 +122,7 @@ define (%module-import importer modules) {
 }
 
 define-macro (import & modules) {
-  if (null? modules) #n %T{
+  if (null? modules) #n #T{
     %module-import (current-module) '$modules
   }
 }
@@ -151,12 +151,12 @@ define (%module-export exporter symbols) {
 define-macro (export & symbols) {
   cond ((null? symbols) #n) \
        ((pair? (ph symbols)) {
-	 %T{
+	 #T{
 	   %module-export (current-module) '$(ph symbols)
 	 }
        }) \
        (else {
-	 %T{
+	 #T{
 	   %module-export (current-module) '$symbols
 	 }
        })

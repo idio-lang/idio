@@ -953,17 +953,17 @@ test {
 ; --- quasiquotation ---
 
 define x 'foo
-test %T{ x } 'x
-test %T{ $x } 'foo
-test %T{ (1 2 3) } '(1 2 3)
-test %T{ (y $x z) } '(y foo z)
-test %T{ (1 2 3 $(list 4 5)) } '(1 2 3 (4 5))
-test %T{ (1 2 3 $@(list 4 5)) } '(1 2 3 4 5)
-test %T{ #[y $x z] } '#[y foo z]
-test %T{ #[1 2 3 $(list 4 5)] } '#[1 2 3 (4 5)]
-test %T{ #[1 2 3 $@(list 4 5)] } '#[1 2 3 4 5]
-test %T{ (a b c ($x y z)) } '(a b c (foo y z))
-test %T{ (a b c ($x $@(list 'y 'z))) } '(a b c (foo y z))
+test #T{ x } 'x
+test #T{ $x } 'foo
+test #T{ (1 2 3) } '(1 2 3)
+test #T{ (y $x z) } '(y foo z)
+test #T{ (1 2 3 $(list 4 5)) } '(1 2 3 (4 5))
+test #T{ (1 2 3 $@(list 4 5)) } '(1 2 3 4 5)
+test #T{ #[y $x z] } '#[y foo z]
+test #T{ #[1 2 3 $(list 4 5)] } '#[1 2 3 (4 5)]
+test #T{ #[1 2 3 $@(list 4 5)] } '#[1 2 3 4 5]
+test #T{ (a b c ($x y z)) } '(a b c (foo y z))
+test #T{ (a b c ($x $@(list 'y 'z))) } '(a b c (foo y z))
 
 ; --- lists ---
 

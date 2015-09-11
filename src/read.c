@@ -1301,6 +1301,10 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int nl)
 
 			    return bn;
 			}
+		    case 'T':
+			return idio_read_template (handle, depth);
+		    case 'P':
+			return idio_read_pathname (handle, depth);
 		    case '<':
 			{
 			    char em[BUFSIZ];
@@ -1316,20 +1320,6 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int nl)
 			    return idio_S_unspec;
 			}
 		    
-		    }
-		}
-		break;
-	    case IDIO_CHAR_PERCENT:
-		{
-		    int c = idio_handle_getc (handle);
-		    switch (c) {
-		    case 'T':
-			return idio_read_template (handle, depth);
-		    case 'P':
-			return idio_read_pathname (handle, depth);
-		    default:
-			idio_handle_ungetc (handle, c);
-			return idio_read_word (handle, IDIO_CHAR_PERCENT);
 		    }
 		}
 		break;

@@ -25,7 +25,7 @@ define (atom? x) {
 }
 
 define-macro (defined? s) {
-  %T{
+  #T{
     %defined? '$s
   }
 }
@@ -74,7 +74,7 @@ load = {
 }
 
 define-macro (suppress-errors & cmd) {
-  %T{
+  #T{
     monitor (function (cont cond) {
       if cont {
 	;; What should we return?  Something hard to mistake for a

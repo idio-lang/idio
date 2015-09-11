@@ -23,8 +23,8 @@
 ;; define-condition-type/accessors name super pred & fields
 ;; field == (field accessor)
 define-macro (define-condition-type/accessors name parent pred-fname & fields) {
-  %T{
-    define $name (make-condition-type '$name $parent $@(map (function (field) { %T{ '$(ph field) } }) fields))
+  #T{
+    define $name (make-condition-type '$name $parent $@(map (function (field) { #T{ '$(ph field) } }) fields))
 
     define-condition-type-accessors-only $name $parent $pred-fname $@fields
   }
@@ -44,14 +44,14 @@ define-macro (define-condition-type/accessors name parent pred-fname & fields) {
 define-macro (define-condition-type-accessors-only name parent pred-fname & fields) {
   arg := (gensym)
 
-  %T{
+  #T{
     define ($pred-fname $arg) {
       and (condition? $arg) \
 	  (condition-isa? $arg $name)
     }
 
     $@(map (function (field) {
-	      %T{
+	      #T{
 		define ($(pht field) $arg) {
                   if ($pred-fname $arg) {
                     condition-ref $arg '$(ph field)
@@ -78,7 +78,7 @@ define-macro (define-condition-type name parent & fields) {
 				(symbol->string field)))
   }) fields
 
-  %T{
+  #T{
     define-condition-type/accessors $name $parent $pred-fname $@fa
   }
 }
@@ -90,11 +90,11 @@ define-macro (define-condition-type name parent & fields) {
 define-macro (condition type & field-bindings) {
   c := (gensym)
 
-  %T{
+  #T{
     $c := allocate-condition $type 
 
     $@(map (function (field-binding) {
-              %T{
+              #T{
 	        condition-set! $c '$(ph field-binding) $(pht field-binding)
 	      }
             })

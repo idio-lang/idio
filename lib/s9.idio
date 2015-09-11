@@ -167,7 +167,7 @@ define-macro (if+ & clauses) {
   }
 
   ;;idio-debug "if+ %s\n" (loop clauses)
-  %T{ cond $@(loop clauses) }
+  #T{ cond $@(loop clauses) }
 }
 
 define (display* & x*) {
@@ -1174,13 +1174,13 @@ define-macro %ext-let {
        
     if (symbol? a1) {
       if (null? a3) {
-        error "named let: missing body" %T{ let $a1 $a2 $@a3 }
+        error "named let: missing body" #T{ let $a1 $a2 $@a3 }
       } {
 	 check-bindings a2 "let"
          va := split a2 '#n '#n
 	 v := reverse (ph va)
 	 a := reverse (pt va)
-	 %T{ 
+	 #T{ 
 	     {
 	       $a1 :+ function $v $@a3
 	       $a1 $@a
@@ -1192,7 +1192,7 @@ define-macro %ext-let {
       va := split a1 '#n '#n
       v := ph va
       a := pt va
-      %T{ (function $v $a2 $@a3) $@a }
+      #T{ (function $v $a2 $@a3) $@a }
     }
   }
 }
@@ -1213,7 +1213,7 @@ define-macro %clean-letrec {
     undefineds := map (function (v) (list v #f)) vars
     tmp-bindings := map (function (t a) (list t a)) tmps args
     updates := map (function (v t) (list 'set! v t)) vars tmps
-    %T{ let $undefineds (let $tmp-bindings
+    #T{ let $undefineds (let $tmp-bindings
     	    		     $@updates
 			     $expr
 			     $@exprs) }
@@ -1228,13 +1228,13 @@ define-macro let* {
   function (bindings expr & exprs) {
     nest-let :+ function (b) {
       if+ (null? b) (pair expr exprs) \
-	  (null? (pt b)) %T{ 
+	  (null? (pt b)) #T{ 
 			     {
 			       $(phh b) := $(phth b)
 			       $@(nest-let (pt b))
 			     }
 			 } \
-          else %T{ 
+          else #T{ 
 		   {
 		     $(phh b) := $(phth b)
 		     $(nest-let (pt b))
@@ -1244,7 +1244,7 @@ define-macro let* {
 
     check-bindings bindings "let*"
     if (null? bindings) {
-      %T{ 
+      #T{ 
 	  {
 	    $expr
 	    $@exprs
@@ -1264,19 +1264,19 @@ define-macro (case key & clauses) {
 	    (not (pair? (pth c*)))) (error "case: invalid syntax" c*) \
 	(null? (pt c*)) {
           if (eq? 'else (phh c*)) {
-	    %T{ ((else $@(pth c*))) }
+	    #T{ ((else $@(pth c*))) }
 	  } {
-	    %T{ (((memv $k '$(phh c*)) $@(pth c*))) }
+	    #T{ (((memv $k '$(phh c*)) $@(pth c*))) }
 	  }          
         } \
 	else {
-	  %T{ (((memv $k '$(phh c*)) $@(pth c*)) $@(gen-clauses k (pt c*))) }
+	  #T{ (((memv $k '$(phh c*)) $@(pth c*)) $@(gen-clauses k (pt c*))) }
 	}
 	
   }
 
   k := (gensym)
-  %T{ 
+  #T{ 
       {
         $k := $key
 	cond $@(gen-clauses k clauses)
@@ -1309,7 +1309,7 @@ define-macro (do var-clauses test & body) {
     i := pht var+init+step
     s := phtt var+init+step
 
-    %T{ 
+    #T{ 
         {
 	  $loop :+ function $v {
             if $(ph test) { 
@@ -1326,7 +1326,7 @@ define-macro (do var-clauses test & body) {
 }
 
 define-macro (delay expr) {
-  %T{ 
+  #T{ 
       {
         value := #f
 	function () {
@@ -1449,7 +1449,7 @@ define (alpha-conv form bound) {
 			    (pht form) \
 			    '#n
 
-	  %T{ (function $@(conv (pt form)
+	  #T{ (function $@(conv (pt form)
 				(append (remove-bound e bound)
 					env))) }
         } \
@@ -1467,7 +1467,7 @@ define (alpha-conv form bound) {
 			       (pht form)) \
 			  '#n
 
-        %T{ ($(ph form) $@(conv (pt form)
+        #T{ ($(ph form) $@(conv (pt form)
 				(append (remove-bound e bound)
 					env))) }
         } \
@@ -1546,7 +1546,7 @@ define-macro define-syntax {
       rewrite-rules app \
 		    keywords \
 		    (pt rules-in) \
-		    (pair %T{ ((syntax-match $app
+		    (pair #T{ ((syntax-match $app
 					     '$(pattern rules-in)
 					     '$keywords
 					     '#n)
@@ -1568,9 +1568,9 @@ define-macro define-syntax {
         (not (rules-ok? (ptt rules))) (error "syntax-rules: invalid clause in rules" (ptt rules)) \
         else {
           app := (gensym)
-	  default := %T{ ((else (error "invalid syntax" $app))) }
+	  default := #T{ ((else (error "invalid syntax" $app))) }
 
-	  %T{ 
+	  #T{ 
 	     define-macro $(pair name app) {
                $app := pair '$name $app
 	       syntax-match := $syntax-match

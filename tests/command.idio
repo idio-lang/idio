@@ -70,21 +70,21 @@ monitor (function (cont cond) {
   exit1 := function (cond) {
     ;; edisplay* "command tests:" PID "exit1" cond
     job := idio-error-location cond
-    test (job-detail job) %T{ (exit $(C/integer-> 1)) }
+    test (job-detail job) #T{ (exit $(C/integer-> 1)) }
     rt-command-status-error-status cond
   }
 
   killed1 := function (cond) {
     ;; edisplay* "command tests:" PID "killed1" cond
     job := idio-error-location cond
-    test (job-detail job) %T{ (killed $(C/integer-> 1)) }
+    test (job-detail job) #T{ (killed $(C/integer-> 1)) }
     rt-command-status-error-status cond
   }
 
   killed13 := function (cond) {
     ;; edisplay* "command tests:" PID "killed13" cond
     job := idio-error-location cond
-    test (job-detail job) %T{ (killed $(C/integer-> 13)) }
+    test (job-detail job) #T{ (killed $(C/integer-> 13)) }
     rt-command-status-error-status cond
   }
 
