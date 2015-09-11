@@ -66,7 +66,7 @@ static int idio_vm_dis = 0;
  *   idio_vm_IHR_pc	interrupt handler return
  *   idio_vm_AR_pc	apply return
  */
-idio_i_array_t *idio_all_code;
+IDIO_IA_T idio_all_code;
 idio_ai_t idio_vm_FINISH_pc;
 idio_ai_t idio_vm_NCE_pc;
 idio_ai_t idio_vm_CR_pc;
@@ -229,7 +229,7 @@ static IDIO idio_S_sigchld;
 
 static time_t idio_vm_t0;
 
-#define IDIO_THREAD_FETCH_NEXT()	(idio_all_code->ae[IDIO_THREAD_PC(thr)++])
+#define IDIO_THREAD_FETCH_NEXT()	(IDIO_IA_AE (idio_all_code, IDIO_THREAD_PC(thr)++))
 #define IDIO_THREAD_STACK_PUSH(v)	(idio_array_push (IDIO_THREAD_STACK(thr), v))
 #define IDIO_THREAD_STACK_POP()		(idio_array_pop (IDIO_THREAD_STACK(thr)))
 
@@ -1447,7 +1447,7 @@ static void idio_vm_restore_continuation (IDIO k, IDIO val)
     IDIO_THREAD_STACK (thr) = idio_array_copy (IDIO_CONTINUATION_STACK (k), 0);
 
     IDIO_THREAD_PC (thr) = IDIO_FIXNUM_VAL (IDIO_THREAD_STACK_POP ());
-    IDIO_C_ASSERT (IDIO_THREAD_PC (thr) < idio_all_code->i);
+    IDIO_C_ASSERT (IDIO_THREAD_PC (thr) < IDIO_IA_USIZE (idio_all_code));
 
     idio_vm_restore_state (thr);
 
@@ -1780,8 +1780,8 @@ int idio_vm_run1 (IDIO thr)
     IDIO_ASSERT (thr);
     IDIO_TYPE_ASSERT (thread, thr);
 
-    if (IDIO_THREAD_PC(thr) > idio_all_code->i) {
-	fprintf (stderr, "\n\nPC %" PRIdPTR " > max code PC %" PRIdPTR"\n", IDIO_THREAD_PC (thr), idio_all_code->i);
+    if (IDIO_THREAD_PC(thr) > IDIO_IA_USIZE (idio_all_code)) {
+	fprintf (stderr, "\n\nPC %" PRIdPTR " > max code PC %" PRIdPTR"\n", IDIO_THREAD_PC (thr), IDIO_IA_USIZE (idio_all_code));
 	idio_debug ("THR %s\n", thr);
 	idio_debug ("STK %.1000s\n", IDIO_THREAD_STACK (thr));
 	idio_vm_panic (thr, "bad PC!");
@@ -2237,7 +2237,7 @@ int idio_vm_run1 (IDIO thr)
 		idio_error_C ("RETURN: not a number", IDIO_LIST1 (ipc), IDIO_C_LOCATION ("idio_vm_run1/RETURN"));
 	    }
 	    idio_ai_t pc = IDIO_FIXNUM_VAL (ipc);
-	    if (pc > idio_all_code->i ||
+	    if (pc > IDIO_IA_USIZE (idio_all_code) ||
 		pc < 0) {
 		fprintf (stderr, "\n\nPC= %td?\n", pc);
 		idio_dump (thr, 1);
@@ -3135,7 +3135,7 @@ int idio_vm_run1 (IDIO thr)
 		if (0 == (pc % 10)) {
 		    fprintf (stderr, "\n  %5td ", pc);
 		}
-		fprintf (stderr, "%3d ", idio_all_code->ae[pc]);
+		fprintf (stderr, "%3d ", IDIO_IA_AE (idio_all_code, pc));
 	    }
 	    fprintf (stderr, "\n");
 	    idio_error_printf (IDIO_C_LOCATION ("idio_vm_run1"), "unexpected instruction: %3d @%" PRId64 "\n", ins, IDIO_THREAD_PC (thr) - 1);
@@ -3192,7 +3192,7 @@ void idio_vm_default_pc (IDIO thr)
      * If we put on real code the idio_vm_invoke will set PC after
      * this.
      */
-    IDIO_THREAD_PC (thr) = idio_all_code->i;
+    IDIO_THREAD_PC (thr) = IDIO_IA_USIZE (idio_all_code);
 }
 
 static uintptr_t idio_vm_run_loops = 0;
@@ -3207,12 +3207,12 @@ IDIO idio_vm_run (IDIO thr)
     /*
      * make sure this segment returns to idio_vm_FINISH_pc
      *
-     * XXX should this be in idio_vm_compile?
+     * XXX should this be in idio_codegen_compile?
      */
     IDIO_THREAD_STACK_PUSH (idio_fixnum (idio_vm_FINISH_pc));
-    /* idio_i_array_push (idio_all_code, IDIO_A_NOP); */
-    idio_i_array_push (idio_all_code, IDIO_A_NOP);
-    idio_i_array_push (idio_all_code, IDIO_A_RETURN);
+    /* idio_ia_push (idio_all_code, IDIO_A_NOP); */
+    idio_ia_push (idio_all_code, IDIO_A_NOP);
+    idio_ia_push (idio_all_code, IDIO_A_RETURN);
 
     struct timeval t0;
     gettimeofday (&t0, NULL);
@@ -3656,10 +3656,10 @@ void idio_init_vm ()
 {
     idio_vm_t0 = time ((time_t *) NULL);
     
-    idio_all_code = idio_i_array (200000);
+    idio_all_code = idio_ia (200000);
     
-    idio_vm_code_prologue (idio_all_code);
-    idio_prologue_len = idio_all_code->i;
+    idio_codegen_code_prologue (idio_all_code);
+    idio_prologue_len = IDIO_IA_USIZE (idio_all_code);
 
     /*
      * XXX we need idio_vm_base_error_handler_primdata before anyone
@@ -3700,8 +3700,8 @@ void idio_vm_add_primitives ()
 
 void idio_final_vm ()
 {
-    fprintf (stderr, "final-vm: created %zu instruction bytes\n", idio_all_code->i);
-    idio_i_array_free (idio_all_code);
+    fprintf (stderr, "final-vm: created %zu instruction bytes\n", IDIO_IA_USIZE (idio_all_code));
+    idio_ia_free (idio_all_code);
     fprintf (stderr, "final-vm: created %td constants\n", idio_array_size (idio_vm_constants));
     idio_gc_expose (idio_vm_constants);
     fprintf (stderr, "final-vm: created %td values\n", idio_array_size (idio_vm_values));

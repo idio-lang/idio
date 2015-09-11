@@ -182,7 +182,7 @@
 #define IDIO_A_POP_ESCAPER                 245
 #define IDIO_A_PUSH_ESCAPER                246
 
-extern idio_i_array_t *idio_all_code;
+extern IDIO_IA_T idio_all_code;
 extern idio_ai_t idio_vm_FINISH_pc;
 extern idio_ai_t idio_vm_NCE_pc;
 extern idio_ai_t idio_vm_CR_pc;

@@ -145,11 +145,11 @@
 
 #define idio_I_NOP                         ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_NOP))
 
-idio_i_array_t *idio_i_array (size_t n);
-void idio_i_array_free (idio_i_array_t *ia);
-void idio_i_array_push (idio_i_array_t *ia, IDIO_I ins);
-void idio_vm_code_prologue (idio_i_array_t *ia);
-void idio_vm_codegen (IDIO thr, IDIO m);
+IDIO_IA_T idio_ia (size_t n);
+void idio_ia_free (IDIO_IA_T ia);
+void idio_ia_push (IDIO_IA_T ia, IDIO_I ins);
+void idio_codegen_code_prologue (IDIO_IA_T ia);
+void idio_codegen (IDIO thr, IDIO m);
 
 void idio_init_codegen ();
 void idio_codegen_add_primitives ();

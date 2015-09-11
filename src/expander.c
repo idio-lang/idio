@@ -541,7 +541,7 @@ IDIO idio_evaluate_expander_code (IDIO m)
     idio_thread_save_state (ethr);
     idio_vm_default_pc (ethr);
 
-    idio_vm_codegen (ethr, m);
+    idio_codegen (ethr, m);
     IDIO r = idio_vm_run (ethr);
     
     idio_thread_restore_state (ethr);
@@ -708,7 +708,7 @@ IDIO idio_evaluate_infix_operator_code (IDIO m)
     idio_thread_save_state (ethr);
     idio_vm_default_pc (ethr);
 
-    idio_vm_codegen (ethr, m);
+    idio_codegen (ethr, m);
     IDIO r = idio_vm_run (ethr);
     
     idio_thread_restore_state (ethr);
@@ -877,7 +877,7 @@ IDIO idio_evaluate_postfix_operator_code (IDIO m)
     idio_thread_save_state (ethr);
     idio_vm_default_pc (ethr);
 
-    idio_vm_codegen (ethr, m);
+    idio_codegen (ethr, m);
     IDIO r = idio_vm_run (ethr);
     
     idio_thread_restore_state (ethr);

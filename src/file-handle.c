@@ -1095,7 +1095,7 @@ IDIO idio_load_filehandle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*
 	}
 
 	IDIO m = (*evaluator) (e);
-	idio_vm_codegen (thr, m);
+	idio_codegen (thr, m);
 	IDIO r = idio_vm_run (thr);
 	idio_debug (" => %s\n", r);
     }
@@ -1220,7 +1220,7 @@ IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (
     idio_ai_t lfh_pc = -1;
     IDIO r;
     while (idio_S_nil != ms) {
-	idio_vm_codegen (thr, IDIO_PAIR_H (ms));
+	idio_codegen (thr, IDIO_PAIR_H (ms));
 	if (-1 == lfh_pc) {
 	    lfh_pc = IDIO_THREAD_PC (thr);
 	    /* fprintf (stderr, "\n\n%s lfh_pc == %jd\n", IDIO_HANDLE_NAME (fh), lfh_pc); */

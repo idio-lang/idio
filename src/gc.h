@@ -867,13 +867,30 @@ typedef struct idio_gc_s {
 #define IDIO_CHARACTER(x)	((const IDIO) (((intptr_t) x) << 2 | IDIO_TYPE_CHARACTER_MARK))
 
 /*
- * VM instruction arrays.  Used in both codegen.c and vm.c.
+ * Idio instruction arrays.
+ *
+ * We generate our byte compiled code into these.  There's often
+ * several floating around at once as, in order to determine how far
+ * to jump over some not-immediately-relevant code to move onto the
+ * next (source code) statement, we need to have already byte compiled
+ * the not-immediately-relevant code.  Which we can then copy.
+ *
+ * XXX These are reference counted for reasons to do with an
+ * undiscovered bug^W^Wundocumented feature.
+ *
+ * Used in both codegen.c and vm.c.
  */
-typedef struct idio_i_array_s {
-    size_t n;
-    size_t i;
+typedef struct idio_ia_s {
+    size_t asize;		/* alloc()'d */
+    size_t usize;		/* used */
     IDIO_I *ae;
-} idio_i_array_t;
+} idio_ia_t;
+
+typedef idio_ia_t* IDIO_IA_T;
+
+#define IDIO_IA_ASIZE(A)	((A)->asize)
+#define IDIO_IA_USIZE(A)	((A)->usize)
+#define IDIO_IA_AE(A,i)		((A)->ae[i])
     
 void idio_gc_register_finalizer (IDIO o, void (*func) (IDIO o));
 void idio_gc_deregister_finalizer (IDIO o);

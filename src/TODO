@@ -11,11 +11,6 @@ Tower of Expansion
 unbind
 	- delete IDIO_MODULE_VVI(mci) -- must be inline to actually see the mci!
 
-source file re-work
-	- split evaluate.c -> expander.c
-	- split vm.c -> compile.c
-	- specialform.[ch] ??
-
 Qualifiers
 	- expr ; expr ; expr
 
@@ -44,11 +39,6 @@ getopts
 
 named arguments
 	- cf. keyword arguments & SRFI 89??
-
-Modules
-	- import/export
-	- name resolution
-	- direct binding: (c/exit 0) vs. (import c) (exit 0)
 
 Disassembler
 	- standalone command
