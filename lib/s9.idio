@@ -1559,16 +1559,16 @@ define-macro define-syntax {
   }
 
   function (name rules) {
-    if+ (not (symbol? name)) (error "define-syntax: expected symbol, got" name) \
+    if+ (not (symbol? name)) (error 'define-syntax "expected symbol" name) \
         (or (not (pair? rules)) \
-	    (not (eq? 'syntax-rules (ph rules)))) (error "define-syntax: expected syntax-rules, got" rules) \
+	    (not (eq? 'syntax-rules (ph rules)))) (error 'define-syntax "expected syntax-rules, got" rules) \
 	(or (not (pair? (pt rules))) \
-	    (not (pair? (ptt rules)))) (error "syntax-rules: too few arguments" rules) \
-	(not (keywords-ok? (pht rules))) (error "syntax-rules: malformed keyword list" (pht rules)) \
-        (not (rules-ok? (ptt rules))) (error "syntax-rules: invalid clause in rules" (ptt rules)) \
+	    (not (pair? (ptt rules)))) (error 'define-syntax "syntax-rules: too few arguments" rules) \
+	(not (keywords-ok? (pht rules))) (error 'define-syntax "syntax-rules: malformed keyword list" (pht rules)) \
+        (not (rules-ok? (ptt rules))) (error 'define-syntax "syntax-rules: invalid clause in rules" (ptt rules)) \
         else {
           app := (gensym)
-	  default := #T{ ((else (error "invalid syntax" $app))) }
+	  default := #T{ ((else (error 'define-syntax "invalid syntax" $app))) }
 
 	  #T{ 
 	     define-macro $(pair name app) {

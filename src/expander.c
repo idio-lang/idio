@@ -81,6 +81,7 @@ static IDIO idio_evaluator_extend (IDIO name, IDIO primdata, IDIO module)
 
 IDIO idio_add_evaluation_primitive (idio_primitive_desc_t *d, IDIO module)
 {
+    IDIO_C_ASSERT (d);
     IDIO_ASSERT (module);
     IDIO_TYPE_ASSERT (module, module);
 
@@ -89,9 +90,13 @@ IDIO idio_add_evaluation_primitive (idio_primitive_desc_t *d, IDIO module)
     return idio_evaluator_extend (sym, primdata, module);
 }
 
-void idio_add_expander_primitive (idio_primitive_desc_t *d)
+void idio_add_expander_primitive (idio_primitive_desc_t *d, IDIO cs)
 {
-    idio_add_primitive (d); 
+    IDIO_C_ASSERT (d);
+    IDIO_ASSERT (cs);
+    IDIO_TYPE_ASSERT (array, cs);
+
+    idio_add_primitive (d, cs); 
     IDIO primdata = idio_primitive_data (d);
     idio_install_expander_source (idio_symbols_C_intern (d->name), primdata, primdata);
 }
@@ -528,9 +533,11 @@ void idio_install_expander_source (IDIO id, IDIO proc, IDIO code)
     }
 }
 
-IDIO idio_evaluate_expander_code (IDIO m)
+IDIO idio_evaluate_expander_code (IDIO m, IDIO cs)
 {
     IDIO_ASSERT (m);
+    IDIO_ASSERT (cs);
+    IDIO_TYPE_ASSERT (array, cs);
 
     /* idio_debug ("evaluate-expander-code: %s\n", m); */
 
@@ -541,7 +548,7 @@ IDIO idio_evaluate_expander_code (IDIO m)
     idio_thread_save_state (ethr);
     idio_vm_default_pc (ethr);
 
-    idio_codegen (ethr, m);
+    idio_codegen (ethr, m, cs);
     IDIO r = idio_vm_run (ethr);
     
     idio_thread_restore_state (ethr);
@@ -695,9 +702,11 @@ void idio_install_infix_operator (IDIO id, IDIO proc, int pri)
     }
 }
 
-IDIO idio_evaluate_infix_operator_code (IDIO m)
+IDIO idio_evaluate_infix_operator_code (IDIO m, IDIO cs)
 {
     IDIO_ASSERT (m);
+    IDIO_ASSERT (cs);
+    IDIO_TYPE_ASSERT (array, cs);
 
     /* idio_debug ("evaluate-infix-operator-code: %s\n", m);   */
 
@@ -708,7 +717,7 @@ IDIO idio_evaluate_infix_operator_code (IDIO m)
     idio_thread_save_state (ethr);
     idio_vm_default_pc (ethr);
 
-    idio_codegen (ethr, m);
+    idio_codegen (ethr, m, cs);
     IDIO r = idio_vm_run (ethr);
     
     idio_thread_restore_state (ethr);
@@ -863,9 +872,11 @@ void idio_install_postfix_operator (IDIO id, IDIO proc, int pri)
     }
 }
 
-IDIO idio_evaluate_postfix_operator_code (IDIO m)
+IDIO idio_evaluate_postfix_operator_code (IDIO m, IDIO cs)
 {
     IDIO_ASSERT (m);
+    IDIO_ASSERT (cs);
+    IDIO_TYPE_ASSERT (array, cs);
 
     /* idio_debug ("evaluate-postfix-operator-code: %s\n", m);   */
 
@@ -877,7 +888,7 @@ IDIO idio_evaluate_postfix_operator_code (IDIO m)
     idio_thread_save_state (ethr);
     idio_vm_default_pc (ethr);
 
-    idio_codegen (ethr, m);
+    idio_codegen (ethr, m, cs);
     IDIO r = idio_vm_run (ethr);
     
     idio_thread_restore_state (ethr);

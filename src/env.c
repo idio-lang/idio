@@ -39,7 +39,7 @@ static int idio_env_set_default (IDIO name, char *val)
 
     IDIO ENV = idio_module_env_symbol_value (name, IDIO_LIST1 (idio_S_false));
     if (idio_S_false == ENV) {
-	idio_environ_extend (name, idio_string_C (val));
+	idio_environ_extend (name, idio_string_C (val), idio_vm_constants);
 	return 1;
     }
 
@@ -67,7 +67,7 @@ static void idio_env_add_environ ()
 	    var = idio_string_C (*env);
 	}
 
-	idio_environ_extend (var, val);
+	idio_environ_extend (var, val, idio_vm_constants);
     }
 
     /*

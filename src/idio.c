@@ -193,16 +193,16 @@ int main (int argc, char **argv, char **envp)
 
     idio_env_init_idiolib (argv[0]);
     
-    idio_load_file (idio_string_C ("bootstrap"));
+    idio_load_file (idio_string_C ("bootstrap"), idio_vm_constants);
 
     if (argc > 1) {
 	int i;
 	for (i = 1 ; i < argc; i++) {
-	    idio_load_file (idio_string_C (argv[i]));
+	    idio_load_file (idio_string_C (argv[i]), idio_vm_constants);
 	}
     } else {
 	/* repl */
-	idio_load_filehandle (idio_thread_current_input_handle (), idio_read, idio_evaluate);
+	idio_load_filehandle (idio_thread_current_input_handle (), idio_read, idio_evaluate, idio_vm_constants);
     }
 
     idio_final ();

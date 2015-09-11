@@ -25,12 +25,12 @@
 
 IDIO idio_evaluate_expander_source (IDIO x, IDIO e);
 void idio_install_expander_source (IDIO id, IDIO proc, IDIO code);
-IDIO idio_evaluate_expander_code (IDIO m);
+IDIO idio_evaluate_expander_code (IDIO m, IDIO cs);
 IDIO idio_expanderp (IDIO name);
 IDIO idio_macro_expand (IDIO e);
 IDIO idio_macro_expands (IDIO e);
-IDIO idio_evaluate_infix_operator_code (IDIO m);
-IDIO idio_evaluate_postfix_operator_code (IDIO m);
+IDIO idio_evaluate_infix_operator_code (IDIO m, IDIO cs);
+IDIO idio_evaluate_postfix_operator_code (IDIO m, IDIO cs);
 void idio_add_infix_operator_primitive (idio_primitive_desc_t *d, int pri);
 void idio_add_postfix_operator_primitive (idio_primitive_desc_t *d, int pri);
 

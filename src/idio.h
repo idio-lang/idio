@@ -229,13 +229,13 @@
 #define IDIO_DEFINE_PRIMITIVE5(iname,cname,params)			\
     IDIO_DEFINE_PRIMITIVE_DESC(iname,cname,params,5,0)
 
-#define IDIO_ADD_MODULE_PRIMITIVE(m,cname)	idio_add_module_primitive (m, &idio_primitive_data_ ## cname);
+#define IDIO_ADD_MODULE_PRIMITIVE(m,cname)	idio_add_module_primitive (m, &idio_primitive_data_ ## cname, idio_vm_constants);
 
-#define IDIO_EXPORT_MODULE_PRIMITIVE(m,cname)	idio_export_module_primitive (m, &idio_primitive_data_ ## cname);
+#define IDIO_EXPORT_MODULE_PRIMITIVE(m,cname)	idio_export_module_primitive (m, &idio_primitive_data_ ## cname, idio_vm_constants);
 
-#define IDIO_ADD_PRIMITIVE(cname)		idio_add_primitive (&idio_primitive_data_ ## cname);
+#define IDIO_ADD_PRIMITIVE(cname)		idio_add_primitive (&idio_primitive_data_ ## cname, idio_vm_constants);
 
-#define IDIO_ADD_EXPANDER(cname)		idio_add_expander_primitive (&idio_primitive_data_ ## cname);
+#define IDIO_ADD_EXPANDER(cname)		idio_add_expander_primitive (&idio_primitive_data_ ## cname, idio_vm_constants);
 
 #define IDIO_DEFINE_INFIX_OPERATOR_DESC(iname,cname,params,arity,varargs) \
     IDIO idio_defoperator_ ## cname params;				\

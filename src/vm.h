@@ -182,6 +182,7 @@
 #define IDIO_A_POP_ESCAPER                 245
 #define IDIO_A_PUSH_ESCAPER                246
 
+extern IDIO idio_vm_constants;
 extern IDIO_IA_T idio_all_code;
 extern idio_ai_t idio_vm_FINISH_pc;
 extern idio_ai_t idio_vm_NCE_pc;
@@ -208,6 +209,7 @@ void idio_vm_environ_set (idio_ai_t msi, idio_ai_t gvi, IDIO v, IDIO thr);
 IDIO idio_vm_computed_ref (idio_ai_t msi, idio_ai_t gvi, IDIO thr);
 IDIO idio_vm_computed_set (idio_ai_t msi, idio_ai_t gvi, IDIO v, IDIO thr);
 void idio_vm_computed_define (idio_ai_t msi, idio_ai_t gvi, IDIO v, IDIO thr);
+void idio_vm_add_module_constants (IDIO module, IDIO constants);
 
 void idio_raise_condition (IDIO continuablep, IDIO e);
 IDIO idio_apply (IDIO fn, IDIO args);

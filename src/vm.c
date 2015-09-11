@@ -218,7 +218,7 @@ size_t idio_prologue_len;
  *   (as the details will be indexes to constants and embedded in the
  *   code).
  */
-static IDIO idio_vm_constants;
+IDIO idio_vm_constants;
 static IDIO idio_vm_values;
 static IDIO idio_vm_closure_name;
 
@@ -595,7 +595,7 @@ static uint64_t idio_vm_fetch_64uint (IDIO thr)
 }
 
 /*
- * Check this aligns with IDIO_IA_PUSH_REF
+ * Check this aligns with IDIO_IA_PUSH_REF in codegen.c
  */
 #define IDIO_VM_FETCH_REF(t)	(idio_vm_fetch_16uint (t))
 
@@ -1635,19 +1635,16 @@ void idio_vm_add_module_constants (IDIO module, IDIO constants)
 	return;
     }
     
-    IDIO_TYPE_ASSERT (hash, constants);
+    IDIO_TYPE_ASSERT (array, constants);
 
-    idio_hi_t i;
-    for (i = 0; i < IDIO_HASH_SIZE (constants); i++) {
-	IDIO mci = IDIO_HASH_HE_KEY (constants, i);
-	if (! mci) {
-	    char em[BUFSIZ];
-	    sprintf (em, "key #%zd is NULL", i);
-	    idio_error_C (em, constants, IDIO_C_LOCATION ("idio_vm_add_module_constants"));
-	}
-	if (idio_S_nil != mci) {
-	    idio_ai_t gci = idio_vm_constants_lookup_or_extend (mci);
-	    idio_module_vci_set (module, mci, idio_fixnum (gci));
+    idio_ai_t i;
+    idio_ai_t al = idio_array_size (constants);
+    
+    for (i = 0; i < al; i++) {
+	IDIO c = idio_array_get_index (constants, i);
+	if (idio_S_nil != c) {
+	    idio_ai_t gci = idio_vm_constants_lookup_or_extend (c);
+	    idio_module_vci_set (module, idio_fixnum (i), idio_fixnum (gci));
 	}
     }
 }

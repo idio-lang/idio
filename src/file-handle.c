@@ -1071,12 +1071,14 @@ IDIO_DEFINE_PRIMITIVE1 ("close-file-handle-on-exec", close_file_handle_on_exec, 
     return idio_C_int (r);
 }
 
-IDIO idio_load_filehandle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO h))
+IDIO idio_load_filehandle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO e, IDIO cs), IDIO cs)
 {
     IDIO_ASSERT (fh);
     IDIO_C_ASSERT (reader);
     IDIO_C_ASSERT (evaluator);
+    IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (file_handle, fh);
+    IDIO_TYPE_ASSERT (array, cs);
 
     IDIO thr = idio_thread_current_thread ();
     idio_ai_t sp0 = idio_array_size (IDIO_THREAD_STACK (thr));
@@ -1094,8 +1096,8 @@ IDIO idio_load_filehandle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*
 	    break;
 	}
 
-	IDIO m = (*evaluator) (e);
-	idio_codegen (thr, m);
+	IDIO m = (*evaluator) (e, cs);
+	idio_codegen (thr, m, cs);
 	IDIO r = idio_vm_run (thr);
 	idio_debug (" => %s\n", r);
     }
@@ -1115,15 +1117,17 @@ IDIO idio_load_filehandle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*
     return idio_S_unspec;
 }
 
-IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO h))
+IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO e, IDIO cs), IDIO cs)
 {
     IDIO_ASSERT (fh);
     IDIO_C_ASSERT (reader);
     IDIO_C_ASSERT (evaluator);
+    IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (file_handle, fh);
+    IDIO_TYPE_ASSERT (array, cs);
 
     if (IDIO_FILE_HANDLE_FLAGS (fh) & IDIO_FILE_HANDLE_FLAG_INTERACTIVE) {
-	return idio_load_filehandle_interactive (fh, reader, evaluator);
+	return idio_load_filehandle_interactive (fh, reader, evaluator, cs);
     }
 
     int timing = 0;
@@ -1174,7 +1178,7 @@ IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (
     
     IDIO ms = idio_S_nil;
     while (es != idio_S_nil) {
-	ms = idio_pair ((*evaluator) (IDIO_PAIR_H (es)), ms);
+	ms = idio_pair ((*evaluator) (IDIO_PAIR_H (es), cs), ms);
 	es = IDIO_PAIR_T (es);
     }
     ms = idio_list_reverse (ms);
@@ -1220,7 +1224,7 @@ IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (
     idio_ai_t lfh_pc = -1;
     IDIO r;
     while (idio_S_nil != ms) {
-	idio_codegen (thr, IDIO_PAIR_H (ms));
+	idio_codegen (thr, IDIO_PAIR_H (ms), cs);
 	if (-1 == lfh_pc) {
 	    lfh_pc = IDIO_THREAD_PC (thr);
 	    /* fprintf (stderr, "\n\n%s lfh_pc == %jd\n", IDIO_HANDLE_NAME (fh), lfh_pc); */
@@ -1277,7 +1281,7 @@ IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (
 typedef struct idio_file_extension_s {
     char *ext;
     IDIO (*reader) (IDIO h);
-    IDIO (*evaluator) (IDIO h);
+    IDIO (*evaluator) (IDIO e, IDIO cs);
     IDIO (*modulep) (void);
 } idio_file_extension_t;
 
@@ -1500,14 +1504,16 @@ IDIO_DEFINE_PRIMITIVE1 ("find-lib", find_lib, (IDIO file))
     return  r;
 }
 
-IDIO idio_load_file (IDIO filename)
+IDIO idio_load_file (IDIO filename, IDIO cs)
 {
     IDIO_ASSERT (filename);
+    IDIO_ASSERT (cs);
 
     if (! idio_isa_string (filename)) {
 	idio_error_param_type ("string", filename, IDIO_C_LOCATION ("idio_load_file"));
 	return idio_S_unspec;
     }
+    IDIO_TYPE_ASSERT (array, cs);
 
     char *filename_C = idio_string_as_C (filename);
     char lfn[PATH_MAX];
@@ -1555,7 +1561,7 @@ IDIO idio_load_file (IDIO filename)
 		free (filename_C);
 
 		idio_thread_set_current_module ((*fe->modulep) ());
-		return idio_load_filehandle (fh, fe->reader, fe->evaluator);
+		return idio_load_filehandle (fh, fe->reader, fe->evaluator, cs);
 	    }
 
 	    /* reset lfn without ext */
@@ -1563,7 +1569,7 @@ IDIO idio_load_file (IDIO filename)
 	}
     } else {
 	IDIO (*reader) (IDIO h) = idio_read;
-	IDIO (*evaluator) (IDIO h) = idio_evaluate;
+	IDIO (*evaluator) (IDIO e, IDIO cs) = idio_evaluate;
 	
 	idio_file_extension_t *fe = idio_file_extensions;
     
@@ -1583,7 +1589,7 @@ IDIO idio_load_file (IDIO filename)
 	    free (filename_C);
 
 	    idio_thread_set_current_module ((*fe->modulep) ());
-	    return idio_load_filehandle (fh, reader, evaluator);
+	    return idio_load_filehandle (fh, reader, evaluator, cs);
 	}	
     }
 
@@ -1598,7 +1604,7 @@ IDIO_DEFINE_PRIMITIVE1 ("load", load, (IDIO filename))
     IDIO_VERIFY_PARAM_TYPE (string, filename);
 
     idio_thread_save_state (idio_thread_current_thread ());
-    IDIO r = idio_load_file (filename);
+    IDIO r = idio_load_file (filename, idio_vm_constants);
     idio_thread_restore_state (idio_thread_current_thread ());
     
     return r;

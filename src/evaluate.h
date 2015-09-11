@@ -58,12 +58,12 @@ void idio_meaning_error_static_arity (char *msg, IDIO args, IDIO loc);
 
 void idio_add_description (IDIO sym, IDIO desc);
 IDIO idio_get_description (IDIO sym);
-IDIO idio_add_module_primitive (IDIO module, idio_primitive_desc_t *d);
-IDIO idio_export_module_primitive (IDIO module, idio_primitive_desc_t *d);
-IDIO idio_add_primitive (idio_primitive_desc_t *d);
+IDIO idio_add_module_primitive (IDIO module, idio_primitive_desc_t *d, IDIO cs);
+IDIO idio_export_module_primitive (IDIO module, idio_primitive_desc_t *d, IDIO cs);
+IDIO idio_add_primitive (idio_primitive_desc_t *d, IDIO cs);
 
-IDIO idio_toplevel_extend (IDIO name, int variant);
-IDIO idio_environ_extend (IDIO name, IDIO val);
+IDIO idio_toplevel_extend (IDIO name, int variant, IDIO cs);
+IDIO idio_environ_extend (IDIO name, IDIO val, IDIO cs);
 
 void idio_install_expander (IDIO id, IDIO proc);
 
@@ -77,7 +77,7 @@ IDIO idio_postfix_operator_expand (IDIO e, int depth);
 
 IDIO idio_operator_expand (IDIO e, int depth);
 
-IDIO idio_evaluate (IDIO e);
+IDIO idio_evaluate (IDIO e, IDIO cs);
 void idio_init_evaluate ();
 void idio_evaluate_add_primitives ();
 void idio_final_evaluate ();

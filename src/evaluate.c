@@ -224,14 +224,16 @@ static void idio_meaning_error_static_primitive_arity (char *msg, IDIO f, IDIO a
     idio_raise_condition (idio_S_true, c);
 }
 
-static IDIO idio_predef_extend (IDIO name, IDIO primdata, IDIO module)
+static IDIO idio_predef_extend (IDIO name, IDIO primdata, IDIO module, IDIO cs)
 {
     IDIO_ASSERT (name);
     IDIO_ASSERT (primdata);
     IDIO_ASSERT (module);
+    IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (symbol, name);
     IDIO_TYPE_ASSERT (primitive, primdata);
     IDIO_TYPE_ASSERT (module, module);
+    IDIO_TYPE_ASSERT (array, cs);
 
     IDIO cv = idio_module_symbol (name, module);
     if (idio_S_unspec != cv) {
@@ -247,7 +249,7 @@ static IDIO idio_predef_extend (IDIO name, IDIO primdata, IDIO module)
 	}
     }
 
-    idio_ai_t mci = idio_vm_constants_lookup_or_extend (name);
+    idio_ai_t mci = idio_codegen_constants_lookup_or_extend (cs, name);
     IDIO fmci = idio_fixnum (mci);
 
     idio_ai_t gvi = idio_vm_extend_values ();
@@ -265,46 +267,58 @@ static IDIO idio_predef_extend (IDIO name, IDIO primdata, IDIO module)
     return fgvi;
 }
 
-IDIO idio_add_module_primitive (IDIO module, idio_primitive_desc_t *d)
+IDIO idio_add_module_primitive (IDIO module, idio_primitive_desc_t *d, IDIO cs)
 {
     IDIO_ASSERT (module);
+    IDIO_C_ASSERT (d);
+    IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (module, module);
+    IDIO_TYPE_ASSERT (array, cs);
 
     IDIO primdata = idio_primitive_data (d);
     IDIO sym = idio_symbols_C_intern (d->name);
 
-    idio_ai_t mci = idio_vm_constants_lookup_or_extend (sym);
+    idio_ai_t mci = idio_codegen_constants_lookup_or_extend (cs, sym);
     IDIO fmci = idio_fixnum (mci);
     idio_module_vci_set (module, fmci, fmci);
 
-    return idio_predef_extend (sym, primdata, module);
+    return idio_predef_extend (sym, primdata, module, cs);
 }
 
-IDIO idio_export_module_primitive (IDIO module, idio_primitive_desc_t *d)
+IDIO idio_export_module_primitive (IDIO module, idio_primitive_desc_t *d, IDIO cs)
 {
     IDIO_ASSERT (module);
+    IDIO_C_ASSERT (d);
+    IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (module, module);
+    IDIO_TYPE_ASSERT (array, cs);
 
     IDIO primdata = idio_primitive_data (d);
     IDIO sym = idio_symbols_C_intern (d->name);
 
-    idio_ai_t mci = idio_vm_constants_lookup_or_extend (sym);
+    idio_ai_t mci = idio_codegen_constants_lookup_or_extend (cs, sym);
     IDIO fmci = idio_fixnum (mci);
     idio_module_vci_set (module, fmci, fmci);
 
     IDIO_MODULE_EXPORTS (module) = idio_pair (sym, IDIO_MODULE_EXPORTS (module));
-    return idio_predef_extend (sym, primdata, module);
+    return idio_predef_extend (sym, primdata, module, cs);
 }
 
-IDIO idio_add_primitive (idio_primitive_desc_t *d)
+IDIO idio_add_primitive (idio_primitive_desc_t *d, IDIO cs)
 {
-    return idio_add_module_primitive (idio_primitive_module_instance (), d);
+    IDIO_C_ASSERT (d);
+    IDIO_ASSERT (cs);
+    IDIO_TYPE_ASSERT (array, cs);
+
+    return idio_add_module_primitive (idio_primitive_module_instance (), d, cs);
 }
 
-IDIO idio_toplevel_extend (IDIO name, int flags)
+IDIO idio_toplevel_extend (IDIO name, int flags, IDIO cs)
 {
     IDIO_ASSERT (name);
+    IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (symbol, name);
+    IDIO_TYPE_ASSERT (array, cs);
 
     IDIO kind;
     switch (IDIO_MEANING_SCOPE (flags)) {
@@ -337,7 +351,7 @@ IDIO idio_toplevel_extend (IDIO name, int flags)
 	}
     }
 
-    idio_ai_t mci = idio_vm_constants_lookup_or_extend (name);
+    idio_ai_t mci = idio_codegen_constants_lookup_or_extend (cs, name);
     IDIO fmci = idio_fixnum (mci);
 
     /*
@@ -349,10 +363,13 @@ IDIO idio_toplevel_extend (IDIO name, int flags)
     return fmci;
 }
 
-IDIO idio_environ_extend (IDIO name, IDIO val)
+IDIO idio_environ_extend (IDIO name, IDIO val, IDIO cs)
 {
     IDIO_ASSERT (name);
+    IDIO_ASSERT (val);
+    IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (symbol, name);
+    IDIO_TYPE_ASSERT (array, cs);
 
     IDIO im = idio_Idio_module_instance ();
     
@@ -369,7 +386,7 @@ IDIO idio_environ_extend (IDIO name, IDIO val)
 	}
     }
 
-    idio_ai_t mci = idio_vm_constants_lookup_or_extend (name);
+    idio_ai_t mci = idio_codegen_constants_lookup_or_extend (cs, name);
     IDIO fmci = idio_fixnum (mci);
 
     idio_ai_t gvi = idio_vm_extend_values ();
@@ -468,12 +485,14 @@ static IDIO idio_nametree_dynamic_extend (IDIO nametree, IDIO name, IDIO index, 
     return idio_pair (IDIO_LIST1 (IDIO_LIST3 (name, kind, index)), nametree);
 }
 
-static IDIO idio_variable_kind (IDIO nametree, IDIO name, int flags)
+static IDIO idio_variable_kind (IDIO nametree, IDIO name, int flags, IDIO cs)
 {
     IDIO_ASSERT (nametree);
     IDIO_ASSERT (name);
+    IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (list, nametree);
     IDIO_TYPE_ASSERT (symbol, name);
+    IDIO_TYPE_ASSERT (array, cs);
 
     IDIO r = idio_variable_localp (nametree, 0, name);
     
@@ -495,7 +514,7 @@ static IDIO idio_variable_kind (IDIO nametree, IDIO name, int flags)
 		 * auto-extend the toplevel with this unknown variable
 		 * -- we should (eventually) see a definition for it
 		 */
-		idio_toplevel_extend (name, flags);
+		idio_toplevel_extend (name, flags, cs);
 		r = idio_module_symbol (name, idio_evaluation_module);
 	    }
 	}
@@ -504,16 +523,18 @@ static IDIO idio_variable_kind (IDIO nametree, IDIO name, int flags)
     return r;
 }
 
-static IDIO idio_meaning (IDIO e, IDIO nametree, int flags);
+static IDIO idio_meaning (IDIO e, IDIO nametree, int flags, IDIO cs);
 
-static IDIO idio_meaning_reference (IDIO name, IDIO nametree, int flags)
+static IDIO idio_meaning_reference (IDIO name, IDIO nametree, int flags, IDIO cs)
 {
     IDIO_ASSERT (name);
     IDIO_ASSERT (nametree);
+    IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (symbol, name);
     IDIO_TYPE_ASSERT (list, nametree);
+    IDIO_TYPE_ASSERT (array, cs);
 
-    IDIO sk = idio_variable_kind (nametree, name, flags);
+    IDIO sk = idio_variable_kind (nametree, name, flags, cs);
 
     if (idio_S_unspec == sk) {
 	/*
@@ -555,14 +576,16 @@ static IDIO idio_meaning_reference (IDIO name, IDIO nametree, int flags)
     }
 }
 
-static IDIO idio_meaning_function_reference (IDIO name, IDIO nametree, int flags)
+static IDIO idio_meaning_function_reference (IDIO name, IDIO nametree, int flags, IDIO cs)
 {
     IDIO_ASSERT (name);
     IDIO_ASSERT (nametree);
+    IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (symbol, name);
     IDIO_TYPE_ASSERT (list, nametree);
+    IDIO_TYPE_ASSERT (array, cs);
 
-    IDIO sk = idio_variable_kind (nametree, name, IDIO_MEANING_LEXICAL_SCOPE (flags));
+    IDIO sk = idio_variable_kind (nametree, name, IDIO_MEANING_LEXICAL_SCOPE (flags), cs);
 
     if (idio_S_unspec == sk) {
 	/*
@@ -604,16 +627,23 @@ static IDIO idio_meaning_function_reference (IDIO name, IDIO nametree, int flags
     }
 }
 
-static IDIO idio_meaning_escape (IDIO e, IDIO nametree, int flags)
+static IDIO idio_meaning_escape (IDIO e, IDIO nametree, int flags, IDIO cs)
 {
     IDIO_ASSERT (e);
+    IDIO_ASSERT (nametree);
+    IDIO_ASSERT (cs);
+    IDIO_TYPE_ASSERT (list, nametree);
+    IDIO_TYPE_ASSERT (array, cs);
 
-    return idio_meaning (e, nametree, flags);
+
+    return idio_meaning (e, nametree, flags, cs);
 }
 
 static IDIO idio_meaning_quotation (IDIO v, IDIO nametree, int flags)
 {
     IDIO_ASSERT (v);
+    IDIO_ASSERT (nametree);
+    IDIO_TYPE_ASSERT (list, nametree);
 
     return IDIO_LIST2 (idio_I_CONSTANT, v);
 }
@@ -681,26 +711,32 @@ static IDIO idio_meaning_dequasiquote (IDIO e, int level)
     return idio_S_unspec;
 }
 
-static IDIO idio_meaning_quasiquotation (IDIO e, IDIO nametree, int flags)
+static IDIO idio_meaning_quasiquotation (IDIO e, IDIO nametree, int flags, IDIO cs)
 {
     IDIO_ASSERT (e);
+    IDIO_ASSERT (nametree);
+    IDIO_ASSERT (cs);
+    IDIO_TYPE_ASSERT (list, nametree);
+    IDIO_TYPE_ASSERT (array, cs);
 
     IDIO dq = idio_meaning_dequasiquote (e, 0);
 
-    return idio_meaning (dq, nametree, flags);
+    return idio_meaning (dq, nametree, flags, cs);
 }
 
-static IDIO idio_meaning_alternative (IDIO e1, IDIO e2, IDIO e3, IDIO nametree, int flags)
+static IDIO idio_meaning_alternative (IDIO e1, IDIO e2, IDIO e3, IDIO nametree, int flags, IDIO cs)
 {
     IDIO_ASSERT (e1);
     IDIO_ASSERT (e2);
     IDIO_ASSERT (e3);
     IDIO_ASSERT (nametree);
+    IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (list, nametree);
+    IDIO_TYPE_ASSERT (array, cs);
 
-    IDIO m1 = idio_meaning (e1, nametree, IDIO_MEANING_NOT_TAILP (flags));
-    IDIO m2 = idio_meaning (e2, nametree, flags);
-    IDIO m3 = idio_meaning (e3, nametree, flags);
+    IDIO m1 = idio_meaning (e1, nametree, IDIO_MEANING_NOT_TAILP (flags), cs);
+    IDIO m2 = idio_meaning (e2, nametree, flags, cs);
+    IDIO m3 = idio_meaning (e3, nametree, flags, cs);
     
     return IDIO_LIST4 (idio_I_ALTERNATIVE, m1, m2, m3);
 }
@@ -782,12 +818,14 @@ static IDIO idio_rewrite_cond (IDIO c)
     }
 }
 
-static IDIO idio_meaning_assignment (IDIO name, IDIO e, IDIO nametree, int flags)
+static IDIO idio_meaning_assignment (IDIO name, IDIO e, IDIO nametree, int flags, IDIO cs)
 {
     IDIO_ASSERT (name);
     IDIO_ASSERT (e);
     IDIO_ASSERT (nametree);
+    IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (list, nametree);
+    IDIO_TYPE_ASSERT (array, cs);
 
     if (idio_isa_pair (name)) {
 	/*
@@ -801,7 +839,8 @@ static IDIO idio_meaning_assignment (IDIO name, IDIO e, IDIO nametree, int flags
 	se = idio_list_append2 (se, IDIO_LIST1 (e));
 	return idio_meaning (se,
 			     nametree,
-			     IDIO_MEANING_NO_DEFINE (flags));
+			     IDIO_MEANING_NO_DEFINE (flags),
+			     cs);
     } else if (! idio_isa_symbol (name)) {
 	idio_error_C ("cannot assign to", name, IDIO_C_LOCATION ("idio_meaning_assignment"));
     }
@@ -809,9 +848,9 @@ static IDIO idio_meaning_assignment (IDIO name, IDIO e, IDIO nametree, int flags
     /*
      * Normal assignment to a symbol
      */
-    IDIO m = idio_meaning (e, nametree, IDIO_MEANING_NO_DEFINE (IDIO_MEANING_NOT_TAILP (flags)));
+    IDIO m = idio_meaning (e, nametree, IDIO_MEANING_NO_DEFINE (IDIO_MEANING_NOT_TAILP (flags)), cs);
 
-    IDIO sk = idio_variable_kind (nametree, name, flags);
+    IDIO sk = idio_variable_kind (nametree, name, flags, cs);
 
     if (idio_S_unspec == sk) {
 	idio_error_C ("unknown variable:", name, IDIO_C_LOCATION ("idio_meaning_assignment"));
@@ -854,7 +893,7 @@ static IDIO idio_meaning_assignment (IDIO name, IDIO e, IDIO nametree, int flags
 	 * We need a new mci as the existing one is tagged as a predef.
 	 * This new one will be tagged as a lexical.
 	 */
-	IDIO new_mci = idio_toplevel_extend (name, IDIO_MEANING_LEXICAL_SCOPE (flags));
+	IDIO new_mci = idio_toplevel_extend (name, IDIO_MEANING_LEXICAL_SCOPE (flags), cs);
 
 	/*
 	 * But now we have a problem.
@@ -895,12 +934,14 @@ static IDIO idio_meaning_assignment (IDIO name, IDIO e, IDIO nametree, int flags
     }
 }
 
-static IDIO idio_meaning_define (IDIO name, IDIO e, IDIO nametree, int flags)
+static IDIO idio_meaning_define (IDIO name, IDIO e, IDIO nametree, int flags, IDIO cs)
 {
     IDIO_ASSERT (name);
     IDIO_ASSERT (e);
     IDIO_ASSERT (nametree);
+    IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (list, nametree);
+    IDIO_TYPE_ASSERT (array, cs);
 
     /* idio_debug ("meaning-define: (define %s", name);   */
     /* idio_debug (" %s)\n", e);   */
@@ -921,15 +962,17 @@ static IDIO idio_meaning_define (IDIO name, IDIO e, IDIO nametree, int flags)
 	}
     }
 
-    return idio_meaning_assignment (name, e, nametree, IDIO_MEANING_DEFINE (IDIO_MEANING_LEXICAL_SCOPE (flags)));
+    return idio_meaning_assignment (name, e, nametree, IDIO_MEANING_DEFINE (IDIO_MEANING_LEXICAL_SCOPE (flags)), cs);
 }
 
-static IDIO idio_meaning_define_macro (IDIO name, IDIO e, IDIO nametree, int flags)
+static IDIO idio_meaning_define_macro (IDIO name, IDIO e, IDIO nametree, int flags, IDIO cs)
 {
     IDIO_ASSERT (name);
     IDIO_ASSERT (e);
     IDIO_ASSERT (nametree);
+    IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (list, nametree);
+    IDIO_TYPE_ASSERT (array, cs);
 
     /* idio_debug ("meaning-define-macro:\nname=%s\n", name);  */
     /* idio_debug ("e=%s\n", e);  */
@@ -1062,7 +1105,7 @@ static IDIO idio_meaning_define_macro (IDIO name, IDIO e, IDIO nametree, int fla
 	     * "hard" to debug.
 	     */
 	    idio_install_expander_source (name, exp, expander);
-	    return idio_meaning_assignment (name, IDIO_PAIR_T (exp), nametree, IDIO_MEANING_LEXICAL_SCOPE (flags));
+	    return idio_meaning_assignment (name, IDIO_PAIR_T (exp), nametree, IDIO_MEANING_LEXICAL_SCOPE (flags), cs);
 	}
     }
 
@@ -1096,11 +1139,11 @@ static IDIO idio_meaning_define_macro (IDIO name, IDIO e, IDIO nametree, int fla
      * users.
      */
 
-    IDIO m_a = idio_meaning_assignment (name, expander, nametree, IDIO_MEANING_NOT_TAILP (IDIO_MEANING_LEXICAL_SCOPE (flags)));
+    IDIO m_a = idio_meaning_assignment (name, expander, nametree, IDIO_MEANING_NOT_TAILP (IDIO_MEANING_LEXICAL_SCOPE (flags)), cs);
 
     idio_install_expander_source (name, expander, expander);
 
-    idio_ai_t mci = idio_vm_constants_lookup_or_extend (name);
+    idio_ai_t mci = idio_codegen_constants_lookup_or_extend (cs, name);
     IDIO fmci = idio_fixnum (mci);
     
     idio_ai_t gvi = idio_vm_extend_values ();
@@ -1117,7 +1160,7 @@ static IDIO idio_meaning_define_macro (IDIO name, IDIO e, IDIO nametree, int fla
      * idio_module_set_symbol() for the symbol.  For normal code this
      * wouldn't matter but macros are evaluated during compilation.
      */
-    idio_evaluate_expander_code (m_a);
+    idio_evaluate_expander_code (m_a, cs);
 
     /*
      * NB.  This effectively creates/stores the macro body code a
@@ -1132,14 +1175,16 @@ static IDIO idio_meaning_define_macro (IDIO name, IDIO e, IDIO nametree, int fla
     return r;
 }
 
-static IDIO idio_meaning_define_infix_operator (IDIO name, IDIO pri, IDIO e, IDIO nametree, int flags)
+static IDIO idio_meaning_define_infix_operator (IDIO name, IDIO pri, IDIO e, IDIO nametree, int flags, IDIO cs)
 {
     IDIO_ASSERT (name);
     IDIO_ASSERT (pri);
     IDIO_ASSERT (e);
     IDIO_ASSERT (nametree);
+    IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (fixnum, pri);
     IDIO_TYPE_ASSERT (list, nametree);
+    IDIO_TYPE_ASSERT (array, cs);
 
     /* idio_debug ("define-infix-operator: %s", name); */
     /* idio_debug (" %s\n", e); */
@@ -1151,7 +1196,7 @@ static IDIO idio_meaning_define_infix_operator (IDIO name, IDIO pri, IDIO e, IDI
     /*
      * Step 1: find the existing symbol for {name} or create a new one
      */
-    idio_ai_t mci = idio_vm_constants_lookup_or_extend (name);
+    idio_ai_t mci = idio_codegen_constants_lookup_or_extend (cs, name);
     IDIO fmci = idio_fixnum (mci);
 
     idio_ai_t gvi = idio_vm_extend_values ();
@@ -1185,7 +1230,7 @@ static IDIO idio_meaning_define_infix_operator (IDIO name, IDIO pri, IDIO e, IDI
 			       IDIO_LIST2 (idio_symbols_C_intern ("find-module"),
 					   IDIO_LIST2 (idio_S_quote, IDIO_MODULE_NAME (idio_operator_module))));
 
-	m = idio_meaning (sve, nametree, flags);
+	m = idio_meaning (sve, nametree, flags, cs);
     } else {
 	/*
 	 * define-infix-operator X pri { ... }
@@ -1201,7 +1246,7 @@ static IDIO idio_meaning_define_infix_operator (IDIO name, IDIO pri, IDIO e, IDI
 			      def_args,
 			      e);
     
-	m = idio_meaning (fe, nametree, flags);
+	m = idio_meaning (fe, nametree, flags, cs);
     }
     IDIO r = IDIO_LIST4 (idio_I_INFIX_OPERATOR, fmci, pri, m);
 
@@ -1209,7 +1254,7 @@ static IDIO idio_meaning_define_infix_operator (IDIO name, IDIO pri, IDIO e, IDI
      * NB.  idio_evaluate_infix_operator_code will invoke
      * idio_install_infix_operator (see IDIO_A_INFIX_OPERATOR in vm.c).
      */
-    IDIO cl = idio_evaluate_infix_operator_code (r);
+    IDIO cl = idio_evaluate_infix_operator_code (r, cs);
 
     /*
      * Step 3: insert the value "live"
@@ -1219,14 +1264,16 @@ static IDIO idio_meaning_define_infix_operator (IDIO name, IDIO pri, IDIO e, IDI
     return r;
 }
 
-static IDIO idio_meaning_define_postfix_operator (IDIO name, IDIO pri, IDIO e, IDIO nametree, int flags)
+static IDIO idio_meaning_define_postfix_operator (IDIO name, IDIO pri, IDIO e, IDIO nametree, int flags, IDIO cs)
 {
     IDIO_ASSERT (name);
     IDIO_ASSERT (pri);
     IDIO_ASSERT (e);
     IDIO_ASSERT (nametree);
+    IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (fixnum, pri);
     IDIO_TYPE_ASSERT (list, nametree);
+    IDIO_TYPE_ASSERT (array, cs);
 
     if (IDIO_FIXNUM_VAL (pri) < 0) {
 	idio_error_param_type ("positive fixnum", pri, IDIO_C_LOCATION ("idio_meaning_define_postfix_operator"));
@@ -1235,7 +1282,7 @@ static IDIO idio_meaning_define_postfix_operator (IDIO name, IDIO pri, IDIO e, I
     /*
      * Step 1: find the existing symbol for {name} or create a new one
      */
-    idio_ai_t mci = idio_vm_constants_lookup_or_extend (name);
+    idio_ai_t mci = idio_codegen_constants_lookup_or_extend (cs, name);
     IDIO fmci = idio_fixnum (mci);
 
     idio_ai_t gvi = idio_vm_extend_values ();
@@ -1268,7 +1315,8 @@ static IDIO idio_meaning_define_postfix_operator (IDIO name, IDIO pri, IDIO e, I
 			       IDIO_LIST2 (idio_S_quote, e),
 			       IDIO_LIST2 (idio_symbols_C_intern ("find-module"),
 					   IDIO_LIST2 (idio_S_quote, IDIO_MODULE_NAME (idio_operator_module))));
-	m = idio_meaning (sve, nametree, flags);
+
+	m = idio_meaning (sve, nametree, flags, cs);
     } else {
 	/*
 	 * define-postfix-operator X pri { ... }
@@ -1284,7 +1332,7 @@ static IDIO idio_meaning_define_postfix_operator (IDIO name, IDIO pri, IDIO e, I
 			      def_args,
 			      e);
     
-	m = idio_meaning (fe, nametree, flags);
+	m = idio_meaning (fe, nametree, flags, cs);
     }
     IDIO r = IDIO_LIST4 (idio_I_POSTFIX_OPERATOR, fmci, pri, m);
 
@@ -1292,7 +1340,7 @@ static IDIO idio_meaning_define_postfix_operator (IDIO name, IDIO pri, IDIO e, I
      * NB.  idio_evaluate_postfix_operator_code will invoke
      * idio_install_postfix_operator (see IDIO_A_POSTFIX_OPERATOR in vm.c).
      */
-    IDIO cl = idio_evaluate_postfix_operator_code (r);
+    IDIO cl = idio_evaluate_postfix_operator_code (r, cs);
 
     /*
      * Step 3: insert the value "live"
@@ -1302,34 +1350,38 @@ static IDIO idio_meaning_define_postfix_operator (IDIO name, IDIO pri, IDIO e, I
     return r;
 }
 
-static IDIO idio_meaning_define_dynamic (IDIO name, IDIO e, IDIO nametree, int flags)
+static IDIO idio_meaning_define_dynamic (IDIO name, IDIO e, IDIO nametree, int flags, IDIO cs)
 {
     IDIO_ASSERT (name);
     IDIO_ASSERT (e);
     IDIO_ASSERT (nametree);
+    IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (symbol, name);
     IDIO_TYPE_ASSERT (list, nametree);
+    IDIO_TYPE_ASSERT (array, cs);
 
     if (idio_isa_pair (e)) {
 	e = IDIO_PAIR_H (e);
     }
 
-    return idio_meaning_assignment (name, e, nametree, IDIO_MEANING_DEFINE (IDIO_MEANING_DYNAMIC_SCOPE (flags)));
+    return idio_meaning_assignment (name, e, nametree, IDIO_MEANING_DEFINE (IDIO_MEANING_DYNAMIC_SCOPE (flags)), cs);
 }
 
-static IDIO idio_meaning_define_environ (IDIO name, IDIO e, IDIO nametree, int flags)
+static IDIO idio_meaning_define_environ (IDIO name, IDIO e, IDIO nametree, int flags, IDIO cs)
 {
     IDIO_ASSERT (name);
     IDIO_ASSERT (e);
     IDIO_ASSERT (nametree);
+    IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (symbol, name);
     IDIO_TYPE_ASSERT (list, nametree);
+    IDIO_TYPE_ASSERT (array, cs);
 
     if (idio_isa_pair (e)) {
 	e = IDIO_PAIR_H (e);
     }
 
-    return idio_meaning_assignment (name, e, nametree, IDIO_MEANING_DEFINE (IDIO_MEANING_ENVIRON_SCOPE (flags)));
+    return idio_meaning_assignment (name, e, nametree, IDIO_MEANING_DEFINE (IDIO_MEANING_ENVIRON_SCOPE (flags)), cs);
 }
 
 /*
@@ -1338,13 +1390,15 @@ static IDIO idio_meaning_define_environ (IDIO name, IDIO e, IDIO nametree, int f
  *
  * We shouldn't have both #n as it wouldn't be much use.
  */
-static IDIO idio_meaning_define_computed (IDIO name, IDIO e, IDIO nametree, int flags)
+static IDIO idio_meaning_define_computed (IDIO name, IDIO e, IDIO nametree, int flags, IDIO cs)
 {
     IDIO_ASSERT (name);
     IDIO_ASSERT (e);
     IDIO_ASSERT (nametree);
+    IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (symbol, name);
     IDIO_TYPE_ASSERT (list, nametree);
+    IDIO_TYPE_ASSERT (array, cs);
 
     IDIO getter = idio_S_nil;
     IDIO setter = idio_S_nil;
@@ -1378,31 +1432,38 @@ static IDIO idio_meaning_define_computed (IDIO name, IDIO e, IDIO nametree, int 
      * IDIO_MEANING_FLAG_DEFINE.  Here, then, this is a re-definition
      * rather than an assignment per se.
      */
-    return idio_meaning_assignment (name, IDIO_LIST3 (idio_S_pair, getter, setter), nametree,
-				    IDIO_MEANING_DEFINE (IDIO_MEANING_COMPUTED_SCOPE (flags)));
+    return idio_meaning_assignment (name,
+				    IDIO_LIST3 (idio_S_pair, getter, setter),
+				    nametree,
+				    IDIO_MEANING_DEFINE (IDIO_MEANING_COMPUTED_SCOPE (flags)),
+				    cs);
 }
 
-static IDIO idio_meaning_sequence (IDIO ep, IDIO nametree, int flags, IDIO keyword);
+static IDIO idio_meaning_sequence (IDIO ep, IDIO nametree, int flags, IDIO keyword, IDIO cs);
 
-static IDIO idio_meanings_single_sequence (IDIO e, IDIO nametree, int flags)
+static IDIO idio_meanings_single_sequence (IDIO e, IDIO nametree, int flags, IDIO cs)
 {
     IDIO_ASSERT (e);
     IDIO_ASSERT (nametree);
+    IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (list, nametree);
+    IDIO_TYPE_ASSERT (array, cs);
 
-    return idio_meaning (e, nametree, flags);
+    return idio_meaning (e, nametree, flags, cs);
 }
 
-static IDIO idio_meanings_multiple_sequence (IDIO e, IDIO ep, IDIO nametree, int flags, IDIO keyword)
+static IDIO idio_meanings_multiple_sequence (IDIO e, IDIO ep, IDIO nametree, int flags, IDIO keyword, IDIO cs)
 {
     IDIO_ASSERT (e);
     IDIO_ASSERT (ep);
-    IDIO_ASSERT (keyword);
     IDIO_ASSERT (nametree);
+    IDIO_ASSERT (keyword);
+    IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (list, nametree);
+    IDIO_TYPE_ASSERT (array, cs);
 
-    IDIO m = idio_meaning (e, nametree, IDIO_MEANING_NOT_TAILP (flags));
-    IDIO mp = idio_meaning_sequence (ep, nametree, flags, keyword);
+    IDIO m = idio_meaning (e, nametree, IDIO_MEANING_NOT_TAILP (flags), cs);
+    IDIO mp = idio_meaning_sequence (ep, nametree, flags, keyword, cs);
 
     if (idio_S_and == keyword) {
 	return IDIO_LIST3 (idio_I_AND, m, mp);
@@ -1418,12 +1479,14 @@ static IDIO idio_meanings_multiple_sequence (IDIO e, IDIO ep, IDIO nametree, int
     }
 }
 
-static IDIO idio_meaning_sequence (IDIO ep, IDIO nametree, int flags, IDIO keyword)
+static IDIO idio_meaning_sequence (IDIO ep, IDIO nametree, int flags, IDIO keyword, IDIO cs)
 {
     IDIO_ASSERT (ep);
     IDIO_ASSERT (nametree);
     IDIO_ASSERT (keyword);
+    IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (list, nametree);
+    IDIO_TYPE_ASSERT (array, cs);
 
     /* idio_debug ("meaning-sequence: %s\n", ep);    */
     
@@ -1469,7 +1532,7 @@ static IDIO idio_meaning_sequence (IDIO ep, IDIO nametree, int flags, IDIO keywo
 		    seq_flags = flags;
 		}
 		
-		IDIO m = idio_meaning (e, nametree, seq_flags);
+		IDIO m = idio_meaning (e, nametree, seq_flags, cs);
 		mp = idio_pair (m, mp);
 
 		if (idio_S_nil == ep) {
@@ -1492,7 +1555,7 @@ static IDIO idio_meaning_sequence (IDIO ep, IDIO nametree, int flags, IDIO keywo
 
 	    return idio_pair (c, r);
 	} else {
-	    return idio_meanings_single_sequence (eph, nametree, flags);
+	    return idio_meanings_single_sequence (eph, nametree, flags, cs);
 	}
     }
 
@@ -1501,35 +1564,39 @@ static IDIO idio_meaning_sequence (IDIO ep, IDIO nametree, int flags, IDIO keywo
 
      * (define (list . x) x)
      */
-    return idio_meaning (ep, nametree, flags);
+    return idio_meaning (ep, nametree, flags, cs);
 }
 
-static IDIO idio_meaning_fix_abstraction (IDIO ns, IDIO ep, IDIO nametree, int flags)
+static IDIO idio_meaning_fix_abstraction (IDIO ns, IDIO ep, IDIO nametree, int flags, IDIO cs)
 {
     IDIO_ASSERT (ns);
     IDIO_ASSERT (ep);
     IDIO_ASSERT (nametree);
+    IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (list, nametree);
+    IDIO_TYPE_ASSERT (array, cs);
 
     size_t arity = idio_list_length (ns);
     IDIO nt2 = idio_nametree_extend (nametree, ns);
 
-    IDIO mp = idio_meaning_sequence (ep, nt2, IDIO_MEANING_SET_TAILP (flags), idio_S_begin);
+    IDIO mp = idio_meaning_sequence (ep, nt2, IDIO_MEANING_SET_TAILP (flags), idio_S_begin, cs);
 
     return IDIO_LIST3 (idio_I_FIX_CLOSURE, mp, idio_fixnum (arity));
 }
 
-static IDIO idio_meaning_dotted_abstraction (IDIO ns, IDIO n, IDIO ep, IDIO nametree, int flags)
+static IDIO idio_meaning_dotted_abstraction (IDIO ns, IDIO n, IDIO ep, IDIO nametree, int flags, IDIO cs)
 {
     IDIO_ASSERT (ns);
     IDIO_ASSERT (n);
     IDIO_ASSERT (ep);
     IDIO_ASSERT (nametree);
+    IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (list, nametree);
+    IDIO_TYPE_ASSERT (array, cs);
 
     size_t arity = idio_list_length (ns);
     IDIO nt2 = idio_nametree_extend (nametree, idio_list_append2 (ns, IDIO_LIST1 (n)));
-    IDIO mp = idio_meaning_sequence (ep, nt2, IDIO_MEANING_SET_TAILP (flags), idio_S_begin);
+    IDIO mp = idio_meaning_sequence (ep, nt2, IDIO_MEANING_SET_TAILP (flags), idio_S_begin, cs);
 
     return IDIO_LIST3 (idio_I_NARY_CLOSURE, mp, idio_fixnum (arity));
 }
@@ -1790,12 +1857,14 @@ static IDIO idio_rewrite_body_letrec (IDIO e)
     }
 }
 
-static IDIO idio_meaning_abstraction (IDIO nns, IDIO ep, IDIO nametree, int flags)
+static IDIO idio_meaning_abstraction (IDIO nns, IDIO ep, IDIO nametree, int flags, IDIO cs)
 {
     IDIO_ASSERT (nns);
     IDIO_ASSERT (ep);
     IDIO_ASSERT (nametree);
+    IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (list, nametree);
+    IDIO_TYPE_ASSERT (array, cs);
 
     ep = idio_rewrite_body (ep); 
 
@@ -1807,9 +1876,9 @@ static IDIO idio_meaning_abstraction (IDIO nns, IDIO ep, IDIO nametree, int flag
 	    regular = idio_pair (IDIO_PAIR_H (ns), regular);
 	    ns = IDIO_PAIR_T (ns);
 	} else if (idio_S_nil == ns) {
-	    return idio_meaning_fix_abstraction (nns, ep, nametree, flags);
+	    return idio_meaning_fix_abstraction (nns, ep, nametree, flags, cs);
 	} else {
-	    return idio_meaning_dotted_abstraction (idio_list_reverse (regular), ns, ep, nametree, flags);
+	    return idio_meaning_dotted_abstraction (idio_list_reverse (regular), ns, ep, nametree, flags, cs);
 	}
     }
 
@@ -1819,28 +1888,32 @@ static IDIO idio_meaning_abstraction (IDIO nns, IDIO ep, IDIO nametree, int flag
     return idio_S_unspec;
 }
 
-static IDIO idio_meaning_block (IDIO es, IDIO nametree, int flags)
+static IDIO idio_meaning_block (IDIO es, IDIO nametree, int flags, IDIO cs)
 {
     IDIO_ASSERT (es);
     IDIO_ASSERT (nametree);
+    IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (list, nametree);
+    IDIO_TYPE_ASSERT (array, cs);
 
     es = idio_rewrite_body (es);
 
-    return idio_meaning_sequence (es, nametree, flags, idio_S_begin);
+    return idio_meaning_sequence (es, nametree, flags, idio_S_begin, cs);
 }
 
-static IDIO idio_meanings (IDIO es, IDIO nametree, size_t size, int flags);
+static IDIO idio_meanings (IDIO es, IDIO nametree, size_t size, int flags, IDIO cs);
 
-static IDIO idio_meaning_some_arguments (IDIO e, IDIO es, IDIO nametree, size_t size, int flags)
+static IDIO idio_meaning_some_arguments (IDIO e, IDIO es, IDIO nametree, size_t size, int flags, IDIO cs)
 {
     IDIO_ASSERT (e);
     IDIO_ASSERT (es);
     IDIO_ASSERT (nametree);
+    IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (list, nametree);
+    IDIO_TYPE_ASSERT (array, cs);
 
-    IDIO m = idio_meaning (e, nametree, IDIO_MEANING_NOT_TAILP (flags));
-    IDIO ms = idio_meanings (es, nametree, size, flags);
+    IDIO m = idio_meaning (e, nametree, IDIO_MEANING_NOT_TAILP (flags), cs);
+    IDIO ms = idio_meanings (es, nametree, size, flags, cs);
     size_t rank = size - (idio_list_length (es) + 1);
 
     return IDIO_LIST4 (idio_I_STORE_ARGUMENT, m, ms, idio_fixnum (rank));
@@ -1854,32 +1927,36 @@ static IDIO idio_meaning_no_argument (IDIO nametree, size_t size, int flags)
     return IDIO_LIST2 (idio_I_ALLOCATE_FRAME, idio_fixnum (size));
 }
 
-static IDIO idio_meanings (IDIO es, IDIO nametree, size_t size, int flags)
+static IDIO idio_meanings (IDIO es, IDIO nametree, size_t size, int flags, IDIO cs)
 {
     IDIO_ASSERT (es);
     IDIO_ASSERT (nametree);
+    IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (list, nametree);
+    IDIO_TYPE_ASSERT (array, cs);
 
     if (idio_isa_pair (es)) {
-	return idio_meaning_some_arguments (IDIO_PAIR_H (es), IDIO_PAIR_T (es), nametree, size, flags);
+	return idio_meaning_some_arguments (IDIO_PAIR_H (es), IDIO_PAIR_T (es), nametree, size, flags, cs);
     } else {
 	return idio_meaning_no_argument (nametree, size, flags);
     }
 }
 
-static IDIO idio_meaning_fix_closed_application (IDIO ns, IDIO body, IDIO es, IDIO nametree, int flags)
+static IDIO idio_meaning_fix_closed_application (IDIO ns, IDIO body, IDIO es, IDIO nametree, int flags, IDIO cs)
 {
     IDIO_ASSERT (ns);
     IDIO_ASSERT (body);
     IDIO_ASSERT (es);
     IDIO_ASSERT (nametree);
+    IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (list, nametree);
+    IDIO_TYPE_ASSERT (array, cs);
 
     body = idio_rewrite_body (body);
     
-    IDIO ms = idio_meanings (es, nametree, idio_list_length (es), IDIO_MEANING_NOT_TAILP (flags));
+    IDIO ms = idio_meanings (es, nametree, idio_list_length (es), IDIO_MEANING_NOT_TAILP (flags), cs);
     IDIO nt2 = idio_nametree_extend (nametree, ns);
-    IDIO mbody = idio_meaning_sequence (body, nt2, flags, idio_S_begin);
+    IDIO mbody = idio_meaning_sequence (body, nt2, flags, idio_S_begin, cs);
 
     if (IDIO_MEANING_IS_TAILP (flags)) {
 	return IDIO_LIST3 (idio_I_TR_FIX_LET, ms, mbody);
@@ -1888,17 +1965,19 @@ static IDIO idio_meaning_fix_closed_application (IDIO ns, IDIO body, IDIO es, ID
     }
 }
 
-static IDIO idio_meaning_dotteds (IDIO es, IDIO nametree, size_t size, size_t arity, int flags);
+static IDIO idio_meaning_dotteds (IDIO es, IDIO nametree, size_t size, size_t arity, int flags, IDIO cs);
 
-static IDIO idio_meaning_some_dotted_arguments (IDIO e, IDIO es, IDIO nametree, size_t size, size_t arity, int flags)
+static IDIO idio_meaning_some_dotted_arguments (IDIO e, IDIO es, IDIO nametree, size_t size, size_t arity, int flags, IDIO cs)
 {
     IDIO_ASSERT (e);
     IDIO_ASSERT (es);
     IDIO_ASSERT (nametree);
+    IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (list, nametree);
+    IDIO_TYPE_ASSERT (array, cs);
 
-    IDIO m = idio_meaning (e, nametree, IDIO_MEANING_NOT_TAILP (flags));
-    IDIO ms = idio_meaning_dotteds (es, nametree, size, arity, flags);
+    IDIO m = idio_meaning (e, nametree, IDIO_MEANING_NOT_TAILP (flags), cs);
+    IDIO ms = idio_meaning_dotteds (es, nametree, size, arity, flags, cs);
     size_t rank = size - (idio_list_length (es) + 1);
 
     if (rank < arity) {
@@ -1916,31 +1995,35 @@ static IDIO idio_meaning_no_dotted_argument (IDIO nametree, size_t size, size_t 
     return IDIO_LIST2 (idio_I_ALLOCATE_FRAME, idio_fixnum (arity));
 }
 
-static IDIO idio_meaning_dotteds (IDIO es, IDIO nametree, size_t size, size_t arity, int flags)
+static IDIO idio_meaning_dotteds (IDIO es, IDIO nametree, size_t size, size_t arity, int flags, IDIO cs)
 {
     IDIO_ASSERT (es);
     IDIO_ASSERT (nametree);
+    IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (list, nametree);
+    IDIO_TYPE_ASSERT (array, cs);
 
     if (idio_isa_pair (es)) {
-	return idio_meaning_some_dotted_arguments (IDIO_PAIR_H (es), IDIO_PAIR_T (es), nametree, size, arity, flags);
+	return idio_meaning_some_dotted_arguments (IDIO_PAIR_H (es), IDIO_PAIR_T (es), nametree, size, arity, flags, cs);
     } else {
 	return idio_meaning_no_dotted_argument (nametree, size, arity, flags);
     }
 }
 
-static IDIO idio_meaning_dotted_closed_application (IDIO ns, IDIO n, IDIO body, IDIO es, IDIO nametree, int flags)
+static IDIO idio_meaning_dotted_closed_application (IDIO ns, IDIO n, IDIO body, IDIO es, IDIO nametree, int flags, IDIO cs)
 {
     IDIO_ASSERT (ns);
     IDIO_ASSERT (n);
     IDIO_ASSERT (body);
     IDIO_ASSERT (es);
     IDIO_ASSERT (nametree);
+    IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (list, nametree);
+    IDIO_TYPE_ASSERT (array, cs);
 
-    IDIO ms = idio_meaning_dotteds (es, nametree, idio_list_length (es), idio_list_length (ns), IDIO_MEANING_NOT_TAILP (flags));
+    IDIO ms = idio_meaning_dotteds (es, nametree, idio_list_length (es), idio_list_length (ns), IDIO_MEANING_NOT_TAILP (flags), cs);
     IDIO nt2 = idio_nametree_extend (nametree, idio_list_append2 (ns, IDIO_LIST1 (n)));
-    IDIO mbody = idio_meaning_sequence (body, nt2, flags, idio_S_begin);
+    IDIO mbody = idio_meaning_sequence (body, nt2, flags, idio_S_begin, cs);
 
     if (IDIO_MEANING_IS_TAILP (flags)) {
 	return IDIO_LIST3 (idio_I_TR_FIX_LET, ms, mbody);
@@ -1949,12 +2032,14 @@ static IDIO idio_meaning_dotted_closed_application (IDIO ns, IDIO n, IDIO body, 
     }
 }
 
-static IDIO idio_meaning_closed_application (IDIO e, IDIO ees, IDIO nametree, int flags)
+static IDIO idio_meaning_closed_application (IDIO e, IDIO ees, IDIO nametree, int flags, IDIO cs)
 {
     IDIO_ASSERT (e);
     IDIO_ASSERT (ees);
     IDIO_ASSERT (nametree);
+    IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (list, nametree);
+    IDIO_TYPE_ASSERT (array, cs);
 
     /* idio_debug ("meaning-closed-application: %s\n", e); */
 
@@ -1982,13 +2067,13 @@ static IDIO idio_meaning_closed_application (IDIO e, IDIO ees, IDIO nametree, in
 	    }
 	} else if (idio_S_nil == ns) {
 	    if (idio_S_nil == es) {
-		return idio_meaning_fix_closed_application (nns, IDIO_PAIR_T (et), ees, nametree, flags);
+		return idio_meaning_fix_closed_application (nns, IDIO_PAIR_T (et), ees, nametree, flags, cs);
 	    } else {
 		idio_meaning_error_static_arity ("too many arguments", IDIO_LIST2 (e, ees), IDIO_C_LOCATION ("idio_meaning_closed_application"));
 		return idio_S_unspec;
 	    }
 	} else {
-	    return idio_meaning_dotted_closed_application (idio_list_reverse (regular), ns, IDIO_PAIR_T (et), ees, nametree, flags);
+	    return idio_meaning_dotted_closed_application (idio_list_reverse (regular), ns, IDIO_PAIR_T (et), ees, nametree, flags, cs);
 	}
     }
 
@@ -1998,16 +2083,20 @@ static IDIO idio_meaning_closed_application (IDIO e, IDIO ees, IDIO nametree, in
     return idio_S_unspec;
 }
 
-static IDIO idio_meaning_regular_application (IDIO e, IDIO es, IDIO nametree, int flags);
+static IDIO idio_meaning_regular_application (IDIO e, IDIO es, IDIO nametree, int flags, IDIO cs);
 
-static IDIO idio_meaning_primitive_application (IDIO e, IDIO es, IDIO nametree, int flags, size_t arity, IDIO index)
+static IDIO idio_meaning_primitive_application (IDIO e, IDIO es, IDIO nametree, int flags, size_t arity, IDIO index, IDIO cs)
 {
     IDIO_ASSERT (e);
     IDIO_ASSERT (es);
     IDIO_ASSERT (nametree);
+    IDIO_ASSERT (index);
+    IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (symbol, e);
     IDIO_TYPE_ASSERT (list, es);
     IDIO_TYPE_ASSERT (list, nametree);
+    IDIO_TYPE_ASSERT (fixnum, index);
+    IDIO_TYPE_ASSERT (array, cs);
 
     /*
      * Of these IDIO_A_PRIMCALL1_SET_CUR_MOD *must* be a specialized
@@ -2062,7 +2151,7 @@ static IDIO idio_meaning_primitive_application (IDIO e, IDIO es, IDIO nametree, 
 	/*
 	 * only a full function call protocol can cope with varargs!
 	 */
-	return idio_meaning_regular_application (e, es, nametree, flags);
+	return idio_meaning_regular_application (e, es, nametree, flags, cs);
     } else {
 	char *name = IDIO_PRIMITIVE_NAME (primdata);
 	    
@@ -2080,7 +2169,7 @@ static IDIO idio_meaning_primitive_application (IDIO e, IDIO es, IDIO nametree, 
 	    break;
 	case 1:
 	    {
-		IDIO m1 = idio_meaning (IDIO_PAIR_H (es), nametree, IDIO_MEANING_NOT_TAILP (flags));
+		IDIO m1 = idio_meaning (IDIO_PAIR_H (es), nametree, IDIO_MEANING_NOT_TAILP (flags), cs);
 	    
 		if (IDIO_STREQP (name, "car") ||
 		    IDIO_STREQP (name, "ph")) {
@@ -2111,8 +2200,8 @@ static IDIO idio_meaning_primitive_application (IDIO e, IDIO es, IDIO nametree, 
 	    break;
 	case 2:
 	    {
-		IDIO m1 = idio_meaning (IDIO_PAIR_H (es), nametree, IDIO_MEANING_NOT_TAILP (flags));
-		IDIO m2 = idio_meaning (IDIO_PAIR_HT (es), nametree, IDIO_MEANING_NOT_TAILP (flags));
+		IDIO m1 = idio_meaning (IDIO_PAIR_H (es), nametree, IDIO_MEANING_NOT_TAILP (flags), cs);
+		IDIO m2 = idio_meaning (IDIO_PAIR_HT (es), nametree, IDIO_MEANING_NOT_TAILP (flags), cs);
 
 		if (IDIO_STREQP (name, "cons") ||
 		    IDIO_STREQP (name, "pair")) {
@@ -2161,23 +2250,25 @@ static IDIO idio_meaning_primitive_application (IDIO e, IDIO es, IDIO nametree, 
     /*
      * Anything else goes through the full function call protocol
      */
-    return idio_meaning_regular_application (e, es, nametree, flags);
+    return idio_meaning_regular_application (e, es, nametree, flags, cs);
 }
 
-static IDIO idio_meaning_regular_application (IDIO e, IDIO es, IDIO nametree, int flags)
+static IDIO idio_meaning_regular_application (IDIO e, IDIO es, IDIO nametree, int flags, IDIO cs)
 {
     IDIO_ASSERT (e);
     IDIO_ASSERT (es);
     IDIO_ASSERT (nametree);
+    IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (list, nametree);
+    IDIO_TYPE_ASSERT (array, cs);
 
     IDIO m;
     if (idio_isa_symbol (e)) {
-	m = idio_meaning_function_reference (e, nametree, flags);
+	m = idio_meaning_function_reference (e, nametree, flags, cs);
     } else {
-	m = idio_meaning (e, nametree, IDIO_MEANING_NOT_TAILP (flags));
+	m = idio_meaning (e, nametree, IDIO_MEANING_NOT_TAILP (flags), cs);
     }
-    IDIO ms = idio_meanings (es, nametree, idio_list_length (es), IDIO_MEANING_NOT_TAILP (flags));
+    IDIO ms = idio_meanings (es, nametree, idio_list_length (es), IDIO_MEANING_NOT_TAILP (flags), cs);
 
     if (IDIO_MEANING_IS_TAILP (flags)) {
 	return IDIO_LIST3 (idio_I_TR_REGULAR_CALL, m, ms);
@@ -2186,15 +2277,17 @@ static IDIO idio_meaning_regular_application (IDIO e, IDIO es, IDIO nametree, in
     }
 }
 
-static IDIO idio_meaning_application (IDIO e, IDIO es, IDIO nametree, int flags)
+static IDIO idio_meaning_application (IDIO e, IDIO es, IDIO nametree, int flags, IDIO cs)
 {
     IDIO_ASSERT (e);
     IDIO_ASSERT (es);
     IDIO_ASSERT (nametree);
+    IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (list, nametree);
+    IDIO_TYPE_ASSERT (array, cs);
 
     if (idio_isa_symbol (e)) {
-	IDIO sk = idio_variable_kind (nametree, e, IDIO_MEANING_LEXICAL_SCOPE (flags));
+	IDIO sk = idio_variable_kind (nametree, e, IDIO_MEANING_LEXICAL_SCOPE (flags), cs);
 
 	if (idio_isa_pair (sk)) {
 	    IDIO kind = IDIO_PAIR_H (sk);
@@ -2218,7 +2311,7 @@ static IDIO idio_meaning_application (IDIO e, IDIO es, IDIO nametree, int flags)
 		    if ((IDIO_PRIMITIVE_VARARGS (primdata) &&
 			 nargs >= arity) ||
 			arity == nargs) {
-			return idio_meaning_primitive_application (e, es, nametree, flags, arity, fvi);
+			return idio_meaning_primitive_application (e, es, nametree, flags, arity, fvi, cs);
 		    } else {
 			idio_meaning_error_static_primitive_arity ("wrong arity for primitive", e, es, primdata, IDIO_C_LOCATION ("idio_meaning_application"));
 		    }
@@ -2229,9 +2322,9 @@ static IDIO idio_meaning_application (IDIO e, IDIO es, IDIO nametree, int flags)
 
     if (idio_isa_pair (e) &&
 	idio_eqp (idio_S_function, IDIO_PAIR_H (e))) {
-	return idio_meaning_closed_application (e, es, nametree, flags);
+	return idio_meaning_closed_application (e, es, nametree, flags, cs);
     } else {
-	return idio_meaning_regular_application (e, es, nametree, flags);
+	return idio_meaning_regular_application (e, es, nametree, flags, cs);
     }
 
     idio_error_C ("meaning-application", IDIO_LIST2 (e, es), IDIO_C_LOCATION ("idio_meaning_application"));
@@ -2240,24 +2333,28 @@ static IDIO idio_meaning_application (IDIO e, IDIO es, IDIO nametree, int flags)
     return idio_S_unspec;
 }
 
-static IDIO idio_meaning_dynamic_reference (IDIO name, IDIO nametree, int flags)
+static IDIO idio_meaning_dynamic_reference (IDIO name, IDIO nametree, int flags, IDIO cs)
 {
     IDIO_ASSERT (name);
     IDIO_ASSERT (nametree);
+    IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (list, nametree);
+    IDIO_TYPE_ASSERT (array, cs);
 
-    return idio_meaning_reference (name, nametree, IDIO_MEANING_DYNAMIC_SCOPE (flags));
+    return idio_meaning_reference (name, nametree, IDIO_MEANING_DYNAMIC_SCOPE (flags), cs);
 }
 
-static IDIO idio_meaning_dynamic_let (IDIO name, IDIO e, IDIO ep, IDIO nametree, int flags)
+static IDIO idio_meaning_dynamic_let (IDIO name, IDIO e, IDIO ep, IDIO nametree, int flags, IDIO cs)
 {
     IDIO_ASSERT (name);
     IDIO_ASSERT (e);
     IDIO_ASSERT (ep);
     IDIO_ASSERT (nametree);
+    IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (list, nametree);
+    IDIO_TYPE_ASSERT (array, cs);
 
-    IDIO m = idio_meaning (e, nametree, IDIO_MEANING_NOT_TAILP (flags));
+    IDIO m = idio_meaning (e, nametree, IDIO_MEANING_NOT_TAILP (flags), cs);
 
     IDIO fmci;
     IDIO sk = idio_module_symbol (name, idio_evaluation_module);
@@ -2269,7 +2366,7 @@ static IDIO idio_meaning_dynamic_let (IDIO name, IDIO e, IDIO ep, IDIO nametree,
 	/*
 	 * Get a new toplevel for this dynamic variable
 	 */
-	fmci = idio_toplevel_extend (name, IDIO_MEANING_DYNAMIC_SCOPE (flags));
+	fmci = idio_toplevel_extend (name, IDIO_MEANING_DYNAMIC_SCOPE (flags), cs);
 	defining = 1;
     }
 
@@ -2279,7 +2376,7 @@ static IDIO idio_meaning_dynamic_let (IDIO name, IDIO e, IDIO ep, IDIO nametree,
      */
     IDIO nt2 = idio_nametree_dynamic_extend (nametree, name, fmci, idio_S_dynamic);
 
-    IDIO mp = idio_meaning_sequence (ep, nt2, IDIO_MEANING_NOT_TAILP (flags), idio_S_begin);
+    IDIO mp = idio_meaning_sequence (ep, nt2, IDIO_MEANING_NOT_TAILP (flags), idio_S_begin, cs);
 
     IDIO dynamic_wrap = IDIO_LIST3 (IDIO_LIST3 (idio_I_PUSH_DYNAMIC, fmci, m),
 				    mp,
@@ -2295,33 +2392,39 @@ static IDIO idio_meaning_dynamic_let (IDIO name, IDIO e, IDIO ep, IDIO nametree,
     }
 }
 
-static IDIO idio_meaning_dynamic_unset (IDIO name, IDIO ep, IDIO nametree, int flags)
+static IDIO idio_meaning_dynamic_unset (IDIO name, IDIO ep, IDIO nametree, int flags, IDIO cs)
 {
     IDIO_ASSERT (name);
     IDIO_ASSERT (nametree);
+    IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (list, nametree);
+    IDIO_TYPE_ASSERT (array, cs);
 
-    return idio_meaning_dynamic_let (name, idio_S_undef, ep, nametree, flags);
+    return idio_meaning_dynamic_let (name, idio_S_undef, ep, nametree, flags, cs);
 }
 
-static IDIO idio_meaning_environ_reference (IDIO name, IDIO nametree, int flags)
+static IDIO idio_meaning_environ_reference (IDIO name, IDIO nametree, int flags, IDIO cs)
 {
     IDIO_ASSERT (name);
     IDIO_ASSERT (nametree);
+    IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (list, nametree);
+    IDIO_TYPE_ASSERT (array, cs);
 
-    return idio_meaning_reference (name, nametree, IDIO_MEANING_ENVIRON_SCOPE (flags));
+    return idio_meaning_reference (name, nametree, IDIO_MEANING_ENVIRON_SCOPE (flags), cs);
 }
 
-static IDIO idio_meaning_environ_let (IDIO name, IDIO e, IDIO ep, IDIO nametree, int flags)
+static IDIO idio_meaning_environ_let (IDIO name, IDIO e, IDIO ep, IDIO nametree, int flags, IDIO cs)
 {
     IDIO_ASSERT (name);
     IDIO_ASSERT (e);
     IDIO_ASSERT (ep);
     IDIO_ASSERT (nametree);
+    IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (list, nametree);
+    IDIO_TYPE_ASSERT (array, cs);
 
-    IDIO m = idio_meaning (e, nametree, IDIO_MEANING_NOT_TAILP (flags));
+    IDIO m = idio_meaning (e, nametree, IDIO_MEANING_NOT_TAILP (flags), cs);
 
     IDIO fmci;
     IDIO sk = idio_module_symbol (name, idio_evaluation_module);
@@ -2333,7 +2436,7 @@ static IDIO idio_meaning_environ_let (IDIO name, IDIO e, IDIO ep, IDIO nametree,
 	/*
 	 * Get a new toplevel for this environ variable
 	 */
-	fmci = idio_toplevel_extend (name, IDIO_MEANING_ENVIRON_SCOPE (flags));
+	fmci = idio_toplevel_extend (name, IDIO_MEANING_ENVIRON_SCOPE (flags), cs);
 	defining = 1;
     }
 
@@ -2343,7 +2446,7 @@ static IDIO idio_meaning_environ_let (IDIO name, IDIO e, IDIO ep, IDIO nametree,
      */
     IDIO nt2 = idio_nametree_dynamic_extend (nametree, name, fmci, idio_S_environ);
 
-    IDIO mp = idio_meaning_sequence (ep, nt2, IDIO_MEANING_NOT_TAILP (flags), idio_S_begin);
+    IDIO mp = idio_meaning_sequence (ep, nt2, IDIO_MEANING_NOT_TAILP (flags), idio_S_begin, cs);
 
     IDIO environ_wrap = IDIO_LIST3 (IDIO_LIST3 (idio_I_PUSH_ENVIRON, fmci, m),
 				    mp,
@@ -2359,66 +2462,78 @@ static IDIO idio_meaning_environ_let (IDIO name, IDIO e, IDIO ep, IDIO nametree,
     }
 }
 
-static IDIO idio_meaning_environ_unset (IDIO name, IDIO ep, IDIO nametree, int flags)
+static IDIO idio_meaning_environ_unset (IDIO name, IDIO ep, IDIO nametree, int flags, IDIO cs)
 {
     IDIO_ASSERT (name);
     IDIO_ASSERT (nametree);
+    IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (list, nametree);
+    IDIO_TYPE_ASSERT (array, cs);
 
-    return idio_meaning_environ_let (name, idio_S_undef, ep, nametree, flags);
+    return idio_meaning_environ_let (name, idio_S_undef, ep, nametree, flags, cs);
 }
 
-static IDIO idio_meaning_computed_reference (IDIO name, IDIO nametree, int flags)
+static IDIO idio_meaning_computed_reference (IDIO name, IDIO nametree, int flags, IDIO cs)
 {
     IDIO_ASSERT (name);
     IDIO_ASSERT (nametree);
+    IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (list, nametree);
+    IDIO_TYPE_ASSERT (array, cs);
 
-    return idio_meaning_reference (name, nametree, IDIO_MEANING_COMPUTED_SCOPE (flags));
+    return idio_meaning_reference (name, nametree, IDIO_MEANING_COMPUTED_SCOPE (flags), cs);
 }
 
-static IDIO idio_meaning_monitor (IDIO e, IDIO ep, IDIO nametree, int flags)
+static IDIO idio_meaning_monitor (IDIO e, IDIO ep, IDIO nametree, int flags, IDIO cs)
 {
     IDIO_ASSERT (e);
     IDIO_ASSERT (ep);
     IDIO_ASSERT (nametree);
+    IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (list, nametree);
+    IDIO_TYPE_ASSERT (array, cs);
 
-    IDIO m = idio_meaning (e, nametree, IDIO_MEANING_NOT_TAILP (flags));
-    IDIO mp = idio_meaning_sequence (ep, nametree, IDIO_MEANING_NOT_TAILP (flags), idio_S_begin);
+    IDIO m = idio_meaning (e, nametree, IDIO_MEANING_NOT_TAILP (flags), cs);
+    IDIO mp = idio_meaning_sequence (ep, nametree, IDIO_MEANING_NOT_TAILP (flags), idio_S_begin, cs);
 
     return IDIO_LIST4 (m, IDIO_LIST1 (idio_I_PUSH_HANDLER), mp, IDIO_LIST1 (idio_I_POP_HANDLER));
 }
 
-static IDIO idio_meaning_include (IDIO e, IDIO nametree, int flags)
+static IDIO idio_meaning_include (IDIO e, IDIO nametree, int flags, IDIO cs)
 {
     IDIO_ASSERT (e);
     IDIO_ASSERT (nametree);
+    IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (list, nametree);
+    IDIO_TYPE_ASSERT (array, cs);
 
     idio_thread_save_state (idio_thread_current_thread ());
-    idio_load_file (e);
+    idio_load_file (e, cs);
     idio_thread_restore_state (idio_thread_current_thread ());
 
     return IDIO_LIST1 (idio_I_NOP);
 }
 
-static IDIO idio_meaning_expander (IDIO e, IDIO nametree, int flags)
+static IDIO idio_meaning_expander (IDIO e, IDIO nametree, int flags, IDIO cs)
 {
     IDIO_ASSERT (e);
     IDIO_ASSERT (nametree);
+    IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (list, nametree);
+    IDIO_TYPE_ASSERT (array, cs);
 
     IDIO me = idio_macro_expand (e);
     
-    return idio_meaning (me, nametree, flags);
+    return idio_meaning (me, nametree, flags, cs);
 }
 
-static IDIO idio_meaning (IDIO e, IDIO nametree, int flags)
+static IDIO idio_meaning (IDIO e, IDIO nametree, int flags, IDIO cs)
 {
     IDIO_ASSERT (e);
     IDIO_ASSERT (nametree);
+    IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (list, nametree);
+    IDIO_TYPE_ASSERT (array, cs);
 
     /* idio_debug ("meaning: e  in %s ", e);  */
     /* fprintf (stderr, "tail=%d\n", flags);  */
@@ -2431,20 +2546,20 @@ static IDIO idio_meaning (IDIO e, IDIO nametree, int flags)
 	    idio_S_and == eh ||
 	    idio_S_or == eh) {
 	    if (idio_isa_pair (et)) {
-		return idio_meaning_sequence (et, nametree, flags, eh);
+		return idio_meaning_sequence (et, nametree, flags, eh, cs);
 	    } else if (idio_S_begin == eh) {
-		return idio_meaning (idio_S_void, nametree, flags);
+		return idio_meaning (idio_S_void, nametree, flags, cs);
 	    } else if (idio_S_and == eh) {
-		return idio_meaning (idio_S_true, nametree, flags);
+		return idio_meaning (idio_S_true, nametree, flags, cs);
 	    } else if (idio_S_or == eh) {
-		return idio_meaning (idio_S_false, nametree, flags);
+		return idio_meaning (idio_S_false, nametree, flags, cs);
 	    } else {
 		idio_error_C ("unexpected sequence keyword", eh, IDIO_C_LOCATION ("idio_meaning"));
 	    }
 	} else if (idio_S_escape == eh) {
 	    /* (escape x) */
 	    if (idio_isa_pair (et)) {
-		return idio_meaning_escape (IDIO_PAIR_H (et), nametree, flags);
+		return idio_meaning_escape (IDIO_PAIR_H (et), nametree, flags, cs);
 	    } else {
 		idio_error_param_nil ("(escape)", IDIO_C_LOCATION ("idio_meaning"));
 		return idio_S_unspec;
@@ -2460,7 +2575,7 @@ static IDIO idio_meaning (IDIO e, IDIO nametree, int flags)
 	} else if (idio_S_quasiquote == eh) {
 	    /* (quasiquote x) */
 	    if (idio_isa_pair (et)) {
-		return idio_meaning_quasiquotation (IDIO_PAIR_H (et), nametree, flags);
+		return idio_meaning_quasiquotation (IDIO_PAIR_H (et), nametree, flags, cs);
 	    } else {
 		idio_error_param_nil ("(quasiquote)", IDIO_C_LOCATION ("idio_meaning"));
 		return idio_S_unspec;
@@ -2469,7 +2584,7 @@ static IDIO idio_meaning (IDIO e, IDIO nametree, int flags)
 		   idio_S_lambda == eh) {
 	    /* (function bindings body ...) */
 	    if (idio_isa_pair (et)) {
-		return idio_meaning_abstraction (IDIO_PAIR_H (et), IDIO_PAIR_T (et), nametree, flags);
+		return idio_meaning_abstraction (IDIO_PAIR_H (et), IDIO_PAIR_T (et), nametree, flags, cs);
 	    } else {
 		idio_error_param_nil ("(function)", IDIO_C_LOCATION ("idio_meaning"));
 		return idio_S_unspec;
@@ -2484,7 +2599,7 @@ static IDIO idio_meaning (IDIO e, IDIO nametree, int flags)
 		    if (idio_isa_pair (ettt)) {
 			ettth = IDIO_PAIR_H (ettt);
 		    }
-		    return idio_meaning_alternative (IDIO_PAIR_H (et), IDIO_PAIR_H (ett), ettth, nametree, flags);
+		    return idio_meaning_alternative (IDIO_PAIR_H (et), IDIO_PAIR_H (ett), ettth, nametree, flags, cs);
 		} else {
 		    idio_error_param_nil ("(if cond)", IDIO_C_LOCATION ("idio_meaning"));
 		    return idio_S_unspec;
@@ -2506,7 +2621,7 @@ static IDIO idio_meaning (IDIO e, IDIO nametree, int flags)
 
 		IDIO etc = idio_rewrite_cond (et);
 
-		IDIO c = idio_meaning (etc, nametree, flags);
+		IDIO c = idio_meaning (etc, nametree, flags, cs);
 
 		return c;
 	    } else {
@@ -2519,7 +2634,7 @@ static IDIO idio_meaning (IDIO e, IDIO nametree, int flags)
 	    if (idio_isa_pair (et)) {
 		IDIO ett = IDIO_PAIR_T (et);
 		if (idio_isa_pair (ett)) {
-		    return idio_meaning_assignment (IDIO_PAIR_H (et), IDIO_PAIR_H (ett), nametree, IDIO_MEANING_LEXICAL_SCOPE (flags));
+		    return idio_meaning_assignment (IDIO_PAIR_H (et), IDIO_PAIR_H (ett), nametree, IDIO_MEANING_LEXICAL_SCOPE (flags), cs);
 		} else {
 		    idio_error_param_nil ("(set! symbol)", IDIO_C_LOCATION ("idio_meaning"));
 		    return idio_S_unspec;
@@ -2533,7 +2648,7 @@ static IDIO idio_meaning (IDIO e, IDIO nametree, int flags)
 	    if (idio_isa_pair (et)) {
 		IDIO ett = IDIO_PAIR_T (et);
 		if (idio_isa_pair (ett)) {
-		    return idio_meaning_define_macro (IDIO_PAIR_H (et), IDIO_PAIR_H (ett), nametree, flags);
+		    return idio_meaning_define_macro (IDIO_PAIR_H (et), IDIO_PAIR_H (ett), nametree, flags, cs);
 		} else {
 		    idio_error_param_nil ("(define-macro symbol)", IDIO_C_LOCATION ("idio_meaning"));
 		    return idio_S_unspec;
@@ -2549,7 +2664,7 @@ static IDIO idio_meaning (IDIO e, IDIO nametree, int flags)
 		if (idio_isa_pair (ett)) {
 		    IDIO ettt = IDIO_PAIR_T (ett);
 		    if (idio_isa_pair (ettt)) {
-			return idio_meaning_define_infix_operator (IDIO_PAIR_H (et), IDIO_PAIR_H (ett), IDIO_PAIR_H (ettt), nametree, flags);
+			return idio_meaning_define_infix_operator (IDIO_PAIR_H (et), IDIO_PAIR_H (ett), IDIO_PAIR_H (ettt), nametree, flags, cs);
 		    } else {
 			idio_error_param_nil ("(define-infix-operator symbol pri)", IDIO_C_LOCATION ("idio_meaning"));
 			return idio_S_unspec;
@@ -2569,7 +2684,7 @@ static IDIO idio_meaning (IDIO e, IDIO nametree, int flags)
 		if (idio_isa_pair (ett)) {
 		    IDIO ettt = IDIO_PAIR_T (ett);
 		    if (idio_isa_pair (ettt)) {
-			return idio_meaning_define_postfix_operator (IDIO_PAIR_H (et), IDIO_PAIR_H (ett), IDIO_PAIR_H (ettt), nametree, flags);
+			return idio_meaning_define_postfix_operator (IDIO_PAIR_H (et), IDIO_PAIR_H (ett), IDIO_PAIR_H (ettt), nametree, flags, cs);
 		    } else {
 			idio_error_param_nil ("(define-postfix-operator symbol pri)", IDIO_C_LOCATION ("idio_meaning"));
 			return idio_S_unspec;
@@ -2590,7 +2705,7 @@ static IDIO idio_meaning (IDIO e, IDIO nametree, int flags)
 	    if (idio_isa_pair (et)) {
 		IDIO ett = IDIO_PAIR_T (et);
 		if (idio_isa_pair (ett)) {
-		    return idio_meaning_define (IDIO_PAIR_H (et), ett, nametree, flags);
+		    return idio_meaning_define (IDIO_PAIR_H (et), ett, nametree, flags, cs);
 		} else {
 		    idio_error_param_nil ("(define symbol)", IDIO_C_LOCATION ("idio_meaning"));
 		    return idio_S_unspec;
@@ -2609,7 +2724,7 @@ static IDIO idio_meaning (IDIO e, IDIO nametree, int flags)
 	    if (idio_isa_pair (et)) {
 		IDIO ett = IDIO_PAIR_T (et);
 		if (idio_isa_pair (ett)) {
-		    return idio_meaning_define (IDIO_PAIR_H (et), ett, nametree, flags);
+		    return idio_meaning_define (IDIO_PAIR_H (et), ett, nametree, flags, cs);
 		} else {
 		    idio_error_param_nil ("(:= symbol)", IDIO_C_LOCATION ("idio_meaning"));
 		    return idio_S_unspec;
@@ -2627,7 +2742,7 @@ static IDIO idio_meaning (IDIO e, IDIO nametree, int flags)
 	    if (idio_isa_pair (et)) {
 		IDIO ett = IDIO_PAIR_T (et);
 		if (idio_isa_pair (ett)) {
-		    return idio_meaning_define_environ (IDIO_PAIR_H (et), ett, nametree, flags);
+		    return idio_meaning_define_environ (IDIO_PAIR_H (et), ett, nametree, flags, cs);
 		} else {
 		    idio_error_param_nil ("(:* symbol)", IDIO_C_LOCATION ("idio_meaning"));
 		    return idio_S_unspec;
@@ -2645,7 +2760,7 @@ static IDIO idio_meaning (IDIO e, IDIO nametree, int flags)
 	    if (idio_isa_pair (et)) {
 		IDIO ett = IDIO_PAIR_T (et);
 		if (idio_isa_pair (ett)) {
-		    return idio_meaning_define_dynamic (IDIO_PAIR_H (et), ett, nametree, flags);
+		    return idio_meaning_define_dynamic (IDIO_PAIR_H (et), ett, nametree, flags, cs);
 		} else {
 		    idio_error_param_nil ("(:~ symbol)", IDIO_C_LOCATION ("idio_meaning"));
 		    return idio_S_unspec;
@@ -2663,7 +2778,7 @@ static IDIO idio_meaning (IDIO e, IDIO nametree, int flags)
 	    if (idio_isa_pair (et)) {
 		IDIO ett = IDIO_PAIR_T (et);
 		if (idio_isa_pair (ett)) {
-		    return idio_meaning_define_computed (IDIO_PAIR_H (et), ett, nametree, flags);
+		    return idio_meaning_define_computed (IDIO_PAIR_H (et), ett, nametree, flags, cs);
 		} else {
 		    idio_error_param_nil ("(:$ symbol)", IDIO_C_LOCATION ("idio_meaning"));
 		    return idio_S_unspec;
@@ -2677,14 +2792,14 @@ static IDIO idio_meaning (IDIO e, IDIO nametree, int flags)
 	     * { ...}
 	     */
 	    if (idio_isa_pair (et)) {
-		return idio_meaning_block (et, nametree, flags);
+		return idio_meaning_block (et, nametree, flags, cs);
 	    } else {
-		return idio_meaning (idio_S_void, nametree, flags);
+		return idio_meaning (idio_S_void, nametree, flags, cs);
 	    }
 	} else if (idio_S_dynamic == eh) {
 	    /* (dynamic var) */
 	    if (idio_isa_pair (et)) {
-		return idio_meaning_dynamic_reference (IDIO_PAIR_H (et), nametree, flags);
+		return idio_meaning_dynamic_reference (IDIO_PAIR_H (et), nametree, flags, cs);
 	    } else {
 		idio_error_param_nil ("(dynamic)", IDIO_C_LOCATION ("idio_meaning"));
 		return idio_S_unspec;
@@ -2696,7 +2811,7 @@ static IDIO idio_meaning (IDIO e, IDIO nametree, int flags)
 		if (idio_isa_pair (eth)) {
 		    IDIO etht = IDIO_PAIR_T (eth);
 		    if (idio_isa_pair (etht)) {
-			return idio_meaning_dynamic_let (IDIO_PAIR_H (eth), IDIO_PAIR_H (etht), IDIO_PAIR_T (et), nametree, flags);
+			return idio_meaning_dynamic_let (IDIO_PAIR_H (eth), IDIO_PAIR_H (etht), IDIO_PAIR_T (et), nametree, flags, cs);
 		    } else {
 			idio_error_param_type ("pair", etht, IDIO_C_LOCATION ("idio_meaning"));
 		    }
@@ -2712,7 +2827,7 @@ static IDIO idio_meaning (IDIO e, IDIO nametree, int flags)
 	    if (idio_isa_pair (et)) {
 		IDIO eth = IDIO_PAIR_H (et);
 		if (idio_isa_symbol (eth)) {
-		    return idio_meaning_dynamic_unset (eth, IDIO_PAIR_T (et), nametree, flags);
+		    return idio_meaning_dynamic_unset (eth, IDIO_PAIR_T (et), nametree, flags, cs);
 		} else {
 		    idio_error_param_type ("symbol", eth, IDIO_C_LOCATION ("idio_meaning"));
 		}
@@ -2727,7 +2842,7 @@ static IDIO idio_meaning (IDIO e, IDIO nametree, int flags)
 		if (idio_isa_pair (eth)) {
 		    IDIO etht = IDIO_PAIR_T (eth);
 		    if (idio_isa_pair (etht)) {
-			return idio_meaning_environ_let (IDIO_PAIR_H (eth), IDIO_PAIR_H (etht), IDIO_PAIR_T (et), nametree, flags);
+			return idio_meaning_environ_let (IDIO_PAIR_H (eth), IDIO_PAIR_H (etht), IDIO_PAIR_T (et), nametree, flags, cs);
 		    } else {
 			idio_error_param_type ("pair", etht, IDIO_C_LOCATION ("idio_meaning"));
 		    }
@@ -2743,7 +2858,7 @@ static IDIO idio_meaning (IDIO e, IDIO nametree, int flags)
 	    if (idio_isa_pair (et)) {
 		IDIO eth = IDIO_PAIR_H (et);
 		if (idio_isa_symbol (eth)) {
-		    return idio_meaning_environ_unset (eth, IDIO_PAIR_T (et), nametree, flags);
+		    return idio_meaning_environ_unset (eth, IDIO_PAIR_T (et), nametree, flags, cs);
 		} else {
 		    idio_error_param_type ("symbol", eth, IDIO_C_LOCATION ("idio_meaning"));
 		}
@@ -2754,7 +2869,7 @@ static IDIO idio_meaning (IDIO e, IDIO nametree, int flags)
 	} else if (idio_S_monitor == eh) {
 	    /* (monitor handler body ...) */
 	    if (idio_isa_pair (et)) {
-		return idio_meaning_monitor (IDIO_PAIR_H (et), IDIO_PAIR_T (et), nametree, flags);
+		return idio_meaning_monitor (IDIO_PAIR_H (et), IDIO_PAIR_T (et), nametree, flags, cs);
 	    } else {
 		idio_error_param_nil ("(monitor)", IDIO_C_LOCATION ("idio_meaning"));
 		return idio_S_unspec;
@@ -2762,27 +2877,27 @@ static IDIO idio_meaning (IDIO e, IDIO nametree, int flags)
 	} else if (idio_S_include == eh) {
 	    /* (include filename) */
 	    if (idio_isa_pair (et)) {
-		return idio_meaning_include (IDIO_PAIR_H (et), nametree, flags);
+		return idio_meaning_include (IDIO_PAIR_H (et), nametree, flags, cs);
 	    } else {
 		idio_error_param_nil ("(include)", IDIO_C_LOCATION ("idio_meaning"));
 		return idio_S_unspec;
 	    }
 	} else {
 	    if (idio_isa_symbol (eh)) {
-		IDIO k = idio_variable_kind (nametree, eh, IDIO_MEANING_LEXICAL_SCOPE (flags));
+		IDIO k = idio_variable_kind (nametree, eh, IDIO_MEANING_LEXICAL_SCOPE (flags), cs);
 
 		if (idio_S_unspec != k) {
 		    if (idio_S_false != idio_expanderp (eh)) {
-			return idio_meaning_expander (e, nametree, flags);
+			return idio_meaning_expander (e, nametree, flags, cs);
 		    }
 		}
 	    }
 	    
-	    return idio_meaning_application (eh, et, nametree, flags);
+	    return idio_meaning_application (eh, et, nametree, flags, cs);
 	}
     } else {
 	if (idio_isa_symbol (e)) {
-	    return idio_meaning_reference (e, nametree, IDIO_MEANING_LEXICAL_SCOPE (flags));
+	    return idio_meaning_reference (e, nametree, IDIO_MEANING_LEXICAL_SCOPE (flags), cs);
 	} else {
 	    return idio_meaning_quotation (e, nametree, flags);
 	}
@@ -2794,7 +2909,7 @@ static IDIO idio_meaning (IDIO e, IDIO nametree, int flags)
     return idio_S_unspec;
 }
 
-IDIO idio_evaluate (IDIO e)
+IDIO idio_evaluate (IDIO e, IDIO cs)
 {
     /* idio_debug ("evaluate: e %s\n", e);  */
 
@@ -2836,7 +2951,7 @@ IDIO idio_evaluate (IDIO e)
      * we think is the current environment because {e} was in TAILP.
      *
      */
-    IDIO m = idio_meaning (e, idio_S_nil, IDIO_MEANING_FLAG_NONE);
+    IDIO m = idio_meaning (e, idio_S_nil, IDIO_MEANING_FLAG_NONE, cs);
     idio_gc_resume ();
 
     /* idio_debug ("evaluate: m %s\n", m); */
