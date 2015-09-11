@@ -2844,40 +2844,6 @@ IDIO idio_evaluate (IDIO e)
     return m;
 }
 
-#define IDIO_DEFINE_ASSIGNMENT_INFIX_OPERATOR(iname,cname) \
-    IDIO_DEFINE_INFIX_OPERATOR (iname, cname, (IDIO op, IDIO before, IDIO args)) \
-    {									\
-	IDIO_ASSERT (op);						\
-	IDIO_ASSERT (before);						\
-	IDIO_ASSERT (args);						\
-									\
-	if (idio_S_nil != IDIO_PAIR_T (before)) {			\
-	    idio_error_C ("too many args before " #iname, IDIO_LIST2 (before, args), idio_string_C (#iname)); \
-	}								\
-    									\
-	if (idio_S_nil != args) {					\
-	    IDIO after = IDIO_PAIR_H (args);				\
-	    if (idio_S_nil == after) {					\
-		idio_error_C ("too few args after " #iname, IDIO_LIST1 (before), idio_string_C (#iname)); \
-	    }								\
-	    if (idio_S_nil == IDIO_PAIR_T (after)) {			\
-		after = IDIO_PAIR_H (after);				\
-	    } else {							\
-		after = idio_operator_expand (after, 0);		\
-	    }								\
-	    return IDIO_LIST3 (op, IDIO_PAIR_H (before), after);	\
-	}								\
-									\
-	return idio_S_unspec;						\
-    }
-
-IDIO_DEFINE_ASSIGNMENT_INFIX_OPERATOR ("=", set);
-IDIO_DEFINE_ASSIGNMENT_INFIX_OPERATOR (":=", colon_eq);
-IDIO_DEFINE_ASSIGNMENT_INFIX_OPERATOR (":+", colon_plus);
-IDIO_DEFINE_ASSIGNMENT_INFIX_OPERATOR (":*", colon_star);
-IDIO_DEFINE_ASSIGNMENT_INFIX_OPERATOR (":~", colon_tilde);
-IDIO_DEFINE_ASSIGNMENT_INFIX_OPERATOR (":$", colon_dollar);
-
 IDIO_DEFINE_PRIMITIVE1 ("environ?", environp, (IDIO name))
 {
     IDIO_ASSERT (name);
@@ -2937,13 +2903,6 @@ void idio_init_evaluate ()
 
 void idio_evaluate_add_primitives ()
 {
-    IDIO_ADD_INFIX_OPERATOR (set, 1000); 
-    IDIO_ADD_INFIX_OPERATOR (colon_eq, 1000);  
-    IDIO_ADD_INFIX_OPERATOR (colon_plus, 1000);  
-    IDIO_ADD_INFIX_OPERATOR (colon_star, 1000);  
-    IDIO_ADD_INFIX_OPERATOR (colon_tilde, 1000);  
-    IDIO_ADD_INFIX_OPERATOR (colon_dollar, 1000);  
-
     IDIO_ADD_PRIMITIVE (environp);
     IDIO_ADD_PRIMITIVE (dynamicp);
     IDIO_ADD_PRIMITIVE (computedp);
