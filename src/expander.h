@@ -16,20 +16,31 @@
  */
 
 /*
- * specialform.h
+ * expander.h
  * 
  */
 
-#ifndef SPECIALFORM_H
-#define SPECIALFORM_H
+#ifndef EXPANDER_H
+#define EXPANDER_H
 
-void idio_init_specialform ();
-void idio_specialform_add_primitives ();
-void idio_final_specialform ();
+IDIO idio_evaluate_expander_source (IDIO x, IDIO e);
+void idio_install_expander_source (IDIO id, IDIO proc, IDIO code);
+IDIO idio_evaluate_expander_code (IDIO m);
+IDIO idio_expanderp (IDIO name);
+IDIO idio_macro_expand (IDIO e);
+IDIO idio_macro_expands (IDIO e);
+IDIO idio_evaluate_infix_operator_code (IDIO m);
+IDIO idio_evaluate_postfix_operator_code (IDIO m);
+void idio_add_infix_operator_primitive (idio_primitive_desc_t *d, int pri);
+void idio_add_postfix_operator_primitive (idio_primitive_desc_t *d, int pri);
+
+void idio_init_expander ();
+void idio_expander_add_primitives ();
+void idio_final_expander ();
 
 #endif
 
 /* Local Variables: */
-/* mode: C */
+/* mode: C/l */
 /* coding: utf-8-unix */
 /* End: */

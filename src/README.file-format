@@ -1,0 +1,55 @@
+
+ Idio Bytecode File Format v1
+
+1:	"Idio"
+
+	Four characters: Idio, starting at position 0.  The magic number.
+
+2:	<checksum> NL
+
+	<word> SPACE <value>
+
+		"MD5SUM " <hex number>
+		"SHA256 " <hex number>
+		"sum " <dec number> ; SysV sum - Perl: unpack("%32C*",<>) %32767 -- or %65535??
+		"bytes " <dec number>
+
+	A checksum of everything following the NL.
+
+3:	<dec number> SPACE
+
+	decimal time_t of when the file was created
+
+4:	<file format> SPACE
+
+	decimal file format version: 1 (one).
+
+5:	<bytecode version> NL
+
+	decimal bytecode version ; TBD
+
+6:	<publisher> NL
+
+	<word> SPACE <value>
+
+		"GPG " <GPG URI>   ; <GPG URI> is a string
+		"name " <username> ; <username> is a string
+		"uid " <userid>	   ; <userid> is a C_int
+
+7:	<encryption> NL
+
+	<word>
+
+		"rot26"		; proprietary?
+
+	Everything after the NL is encrypted with encryption
+
+7:	<constants> NL
+
+	A hash table format of the file's constants
+
+8:	<bytecode>
+
+	A bytecode vector #B
+
+	(should encode the length.)

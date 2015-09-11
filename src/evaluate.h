@@ -53,6 +53,9 @@
 IDIO idio_expander_module;
 IDIO idio_operator_module;
 
+void idio_meaning_error_static_redefine (char *msg, IDIO name, IDIO cv, IDIO new, IDIO loc);
+void idio_meaning_error_static_arity (char *msg, IDIO args, IDIO loc);
+
 void idio_add_description (IDIO sym, IDIO desc);
 IDIO idio_get_description (IDIO sym);
 IDIO idio_add_module_primitive (IDIO module, idio_primitive_desc_t *d);

@@ -35,6 +35,7 @@ void idio_init (int argc, char **argv)
     idio_init_struct ();
     idio_init_condition ();
     idio_init_evaluate ();
+    idio_init_expander ();
     /* idio_init_scm_evaluate (); */
     idio_init_pair ();
     idio_init_handle ();
@@ -45,7 +46,6 @@ void idio_init (int argc, char **argv)
     idio_init_frame ();
     idio_init_util ();
     idio_init_primitive ();
-    idio_init_specialform ();
     idio_init_character ();
     idio_init_string ();
     idio_init_array ();
@@ -61,6 +61,7 @@ void idio_init (int argc, char **argv)
     idio_init_path ();
     idio_init_command ();
     idio_init_vm ();
+    idio_init_codegen ();
 
     idio_init_libc_wrap ();
 
@@ -102,6 +103,7 @@ void idio_add_primitives ()
     idio_struct_add_primitives ();
     idio_condition_add_primitives ();
     idio_evaluate_add_primitives ();
+    idio_expander_add_primitives ();
     /* idio_scm_evaluate_add_primitives (); */
     idio_pair_add_primitives ();
     idio_handle_add_primitives ();
@@ -112,7 +114,6 @@ void idio_add_primitives ()
     idio_frame_add_primitives ();
     idio_util_add_primitives ();
     idio_primitive_add_primitives ();
-    idio_specialform_add_primitives ();
     idio_character_add_primitives ();
     idio_string_add_primitives ();
     idio_array_add_primitives ();
@@ -128,6 +129,7 @@ void idio_add_primitives ()
     idio_path_add_primitives ();
     idio_command_add_primitives ();
     idio_vm_add_primitives ();
+    idio_codegen_add_primitives ();
 
     idio_libc_wrap_add_primitives ();
     
@@ -146,6 +148,7 @@ void idio_final ()
      */
     idio_final_libc_wrap ();
     
+    idio_final_codegen ();
     idio_final_vm ();
     idio_final_command ();
     idio_final_path ();
@@ -161,7 +164,6 @@ void idio_final ()
     idio_final_array ();
     idio_final_string ();
     idio_final_character ();
-    idio_final_specialform ();
     idio_final_primitive ();
     idio_final_util ();
     idio_final_frame ();
@@ -172,6 +174,7 @@ void idio_final ()
     idio_final_handle ();
     idio_final_pair ();
     /* idio_final_scm_evaluate (); */
+    idio_final_expander ();
     idio_final_evaluate ();
     idio_final_condition ();
     idio_final_struct ();

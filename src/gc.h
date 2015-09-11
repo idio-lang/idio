@@ -866,6 +866,15 @@ typedef struct idio_gc_s {
 #define IDIO_CHARACTER_IVAL(x)	(tolower (IDIO_CHARACTER_VAL (x)))
 #define IDIO_CHARACTER(x)	((const IDIO) (((intptr_t) x) << 2 | IDIO_TYPE_CHARACTER_MARK))
 
+/*
+ * VM instruction arrays.  Used in both codegen.c and vm.c.
+ */
+typedef struct idio_i_array_s {
+    size_t n;
+    size_t i;
+    IDIO_I *ae;
+} idio_i_array_t;
+    
 void idio_gc_register_finalizer (IDIO o, void (*func) (IDIO o));
 void idio_gc_deregister_finalizer (IDIO o);
 void idio_run_finalizer (IDIO o);
