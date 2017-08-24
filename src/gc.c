@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -392,6 +392,7 @@ void idio_process_grey (unsigned colour)
 	break;
     case IDIO_TYPE_ARRAY:
 	idio_gc->grey = IDIO_ARRAY_GREY (o);
+	idio_mark (IDIO_ARRAY_DV (o), colour);
 	for (i = 0; i < IDIO_ARRAY_ASIZE (o); i++) {
 	    if (NULL != IDIO_ARRAY_AE (o, i)) {
 		idio_mark (IDIO_ARRAY_AE (o, i), colour);
