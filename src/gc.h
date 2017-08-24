@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -190,12 +190,14 @@ typedef struct idio_array_s {
     struct idio_s *grey;
     idio_ai_t asize;	/* allocated size */
     idio_ai_t usize;	/* used size */
+    struct idio_s *dv;	/* default value */
     struct idio_s* *ae;		/* IDIO *a */
 } idio_array_t;
 
 #define IDIO_ARRAY_GREY(A)	((A)->u.array->grey)
 #define IDIO_ARRAY_ASIZE(A)	((A)->u.array->asize)
 #define IDIO_ARRAY_USIZE(A)	((A)->u.array->usize)
+#define IDIO_ARRAY_DV(A)	((A)->u.array->dv)
 #define IDIO_ARRAY_AE(A,i)	((A)->u.array->ae[i])
 
 /*

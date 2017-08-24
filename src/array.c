@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -64,6 +64,7 @@ void idio_assign_array (IDIO a, idio_ai_t asize, IDIO dv)
     IDIO_ARRAY_GREY (a) = NULL;
     IDIO_ARRAY_ASIZE (a) = asize;
     IDIO_ARRAY_USIZE (a) = 0;
+    IDIO_ARRAY_DV (a) = dv;
 
     idio_ai_t i;
     for (i = 0; i < asize; i++) {
@@ -71,7 +72,7 @@ void idio_assign_array (IDIO a, idio_ai_t asize, IDIO dv)
     }
 }
 
-IDIO idio_array_default (idio_ai_t size, IDIO dv)
+IDIO idio_array_dv (idio_ai_t size, IDIO dv)
 {
     if (0 == size) {
 	size = 1;
@@ -85,7 +86,7 @@ IDIO idio_array_default (idio_ai_t size, IDIO dv)
 
 IDIO idio_array (idio_ai_t size)
 {
-    return idio_array_default (size, idio_S_nil);
+    return idio_array_dv (size, idio_S_nil);
 }
 
 int idio_isa_array (IDIO a)
@@ -117,16 +118,16 @@ void idio_array_resize (IDIO a)
     idio_ai_t nsize = oasize << 1;
 
     IDIO_FPRINTF (stderr, "idio_array_resize: %10p = {%d} -> {%d}\n", a, oasize, nsize);
-    idio_assign_array (a, nsize, idio_S_nil);
+    idio_assign_array (a, nsize, IDIO_ARRAY_DV (a));
 
     idio_ai_t i;
     for (i = 0 ; i < oarray->usize; i++) {
 	idio_array_insert_index (a, oarray->ae[i], i);
     }
 
-    /* pad with idio_S_nil */
+    /* pad with default value */
     for (;i < IDIO_ARRAY_ASIZE (a); i++) {
-	idio_array_insert_index (a, idio_S_nil, i);
+	idio_array_insert_index (a, IDIO_ARRAY_DV (a), i);
     }
 
     /* all the inserts above will have mucked usize up */
@@ -318,7 +319,7 @@ idio_ai_t idio_array_find_free_index (IDIO a, idio_ai_t index)
     }
 
     for (; index < IDIO_ARRAY_USIZE (a); index++) {
-	if (idio_S_nil == IDIO_ARRAY_AE (a, index)) {
+	if (IDIO_ARRAY_DV (a) == IDIO_ARRAY_AE (a, index)) {
 	    return index;
 	}
     }
@@ -424,7 +425,7 @@ int idio_array_delete_index (IDIO a, idio_ai_t index)
 	idio_array_error_bounds (index, IDIO_ARRAY_USIZE (a), IDIO_C_LOCATION ("idio_array_delete_index"));
     }
 
-    IDIO_ARRAY_AE (a, index) = idio_S_nil;
+    IDIO_ARRAY_AE (a, index) = IDIO_ARRAY_DV (a);
 
     return 1;
 }
@@ -478,7 +479,7 @@ IDIO_DEFINE_PRIMITIVE1V ("make-array", make_array, (IDIO size, IDIO args))
 	idio_error_printf (IDIO_C_LOCATION ("make-array"), "invalid length: %zd", alen);
     }
     
-    IDIO a = idio_array_default (alen, dv);
+    IDIO a = idio_array_dv (alen, dv);
     IDIO_ARRAY_USIZE (a) = alen;
 
     return a;
