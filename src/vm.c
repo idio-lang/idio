@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -228,6 +228,10 @@ static IDIO idio_vm_sigchld_handler;
 static IDIO idio_S_sigchld;
 
 static time_t idio_vm_t0;
+
+#ifdef IDIO_DEBUG
+static uint64_t idio_vm_ins_counters[IDIO_I_MAX];
+#endif
 
 #define IDIO_THREAD_FETCH_NEXT()	(IDIO_IA_AE (idio_all_code, IDIO_THREAD_PC(thr)++))
 #define IDIO_THREAD_STACK_PUSH(v)	(idio_array_push (IDIO_THREAD_STACK(thr), v))
@@ -1785,6 +1789,10 @@ int idio_vm_run1 (IDIO thr)
     }
     IDIO_I ins = IDIO_THREAD_FETCH_NEXT ();
 
+#ifdef IDIO_DEBUG
+    idio_vm_ins_counters[ins]++;
+#endif
+
     IDIO_VM_RUN_DIS ("idio_vm_run1: %p %3d: ", thr, ins);
     
     switch (ins) {
@@ -2367,7 +2375,7 @@ int idio_vm_run1 (IDIO thr)
 	    idio_frame_update (IDIO_THREAD_VAL (thr), 0, rank, IDIO_THREAD_STACK_POP ());
 	}
 	break;
-    case IDIO_A_ARITYP1:
+    case IDIO_A_ARITY1P:
 	{
 	    IDIO_VM_RUN_DIS ("ARITY=1?");
 	    idio_ai_t nargs = -1;
@@ -2375,12 +2383,12 @@ int idio_vm_run1 (IDIO thr)
 		nargs = IDIO_FRAME_NARGS (IDIO_THREAD_VAL (thr));
 	    }
 	    if (1 != nargs) {
-		idio_vm_error_arity (ins, thr, nargs - 1, 0, IDIO_C_LOCATION ("idio_vm_run1/ARITYP1"));
+		idio_vm_error_arity (ins, thr, nargs - 1, 0, IDIO_C_LOCATION ("idio_vm_run1/ARITY1P"));
 		return 0;
 	    }
 	}
 	break;
-    case IDIO_A_ARITYP2:
+    case IDIO_A_ARITY2P:
 	{
 	    IDIO_VM_RUN_DIS ("ARITY=2?");
 	    idio_ai_t nargs = -1;
@@ -2388,12 +2396,12 @@ int idio_vm_run1 (IDIO thr)
 		nargs = IDIO_FRAME_NARGS (IDIO_THREAD_VAL (thr));
 	    }
 	    if (2 != nargs) {
-		idio_vm_error_arity (ins, thr, nargs - 1, 1, IDIO_C_LOCATION ("idio_vm_run1/ARITYP2"));
+		idio_vm_error_arity (ins, thr, nargs - 1, 1, IDIO_C_LOCATION ("idio_vm_run1/ARITY2P"));
 		return 0;
 	    }
 	}
 	break;
-    case IDIO_A_ARITYP3:
+    case IDIO_A_ARITY3P:
 	{
 	    IDIO_VM_RUN_DIS ("ARITY=3?");
 	    idio_ai_t nargs = -1;
@@ -2401,12 +2409,12 @@ int idio_vm_run1 (IDIO thr)
 		nargs = IDIO_FRAME_NARGS (IDIO_THREAD_VAL (thr));
 	    }
 	    if (3 != nargs) {
-		idio_vm_error_arity (ins, thr, nargs - 1, 2, IDIO_C_LOCATION ("idio_vm_run1/ARITYP3"));
+		idio_vm_error_arity (ins, thr, nargs - 1, 2, IDIO_C_LOCATION ("idio_vm_run1/ARITY3P"));
 		return 0;
 	    }
 	}
 	break;
-    case IDIO_A_ARITYP4:
+    case IDIO_A_ARITY4P:
 	{
 	    IDIO_VM_RUN_DIS ("ARITY=4?");
 	    idio_ai_t nargs = -1;
@@ -2414,7 +2422,7 @@ int idio_vm_run1 (IDIO thr)
 		nargs = IDIO_FRAME_NARGS (IDIO_THREAD_VAL (thr));
 	    }
 	    if (4 != nargs) {
-		idio_vm_error_arity (ins, thr, nargs - 1, 3, IDIO_C_LOCATION ("idio_vm_run1/ARITYP4"));
+		idio_vm_error_arity (ins, thr, nargs - 1, 3, IDIO_C_LOCATION ("idio_vm_run1/ARITY4P"));
 		return 0;
 	    }
 	}
@@ -3702,6 +3710,16 @@ void idio_final_vm ()
     fprintf (stderr, "final-vm: created %td constants\n", idio_array_size (idio_vm_constants));
     idio_gc_expose (idio_vm_constants);
     fprintf (stderr, "final-vm: created %td values\n", idio_array_size (idio_vm_values));
+
+#ifdef IDIO_DEBUG
+    for (IDIO_I i = 1; i < IDIO_I_MAX; i++) {
+      if (idio_vm_ins_counters[i]) {
+	fprintf (stderr, "vm-ins: %-8" PRIdPTR " %d\n", idio_vm_ins_counters[i], i);
+      }
+    }
+    
+#endif
+
     idio_gc_expose (idio_vm_values);
     idio_gc_expose (idio_vm_closure_name);
     idio_gc_expose (idio_vm_sigchld_handler_name);
