@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -85,6 +85,25 @@ static void idio_command_error_glob (IDIO pattern, IDIO loc)
     idio_raise_condition (idio_S_true, c);
 }
 
+static void idio_command_error_env_type (IDIO name, IDIO loc)
+{
+    IDIO_ASSERT (name);
+    IDIO_TYPE_ASSERT (symbol, name);
+    IDIO_ASSERT (loc);
+    IDIO_TYPE_ASSERT (string, loc);
+
+    IDIO sh = idio_open_output_string_handle_C ();
+    idio_display_C ("environment variable is not a string", sh);
+
+    IDIO c = idio_struct_instance (idio_condition_rt_command_env_type_error_type,
+				   IDIO_LIST4 (idio_get_output_string (sh),
+					       loc,
+					       idio_S_nil,
+					       name));
+
+    idio_raise_condition (idio_S_true, c);
+}
+
 static void idio_command_error_exec (char **argv, char **envp, IDIO loc)
 {
     IDIO_ASSERT (loc);
@@ -165,17 +184,20 @@ static char **idio_command_get_envp ()
 
 	size_t vlen = 0;
 	if (idio_S_false != val) {
-	    IDIO_TYPE_ASSERT (string, val);
-	    vlen = idio_string_blen (val);
+	    if (idio_isa_string (val)) {
+		vlen = idio_string_blen (val);
 
-	    envp[n] = idio_alloc (slen + 1 + vlen + 1);
-	    strcpy (envp[n], IDIO_SYMBOL_S (symbol));
-	    strcat (envp[n], "=");
-	    if (idio_S_undef != val) {
-		strncat (envp[n], idio_string_s (val), vlen);
+		envp[n] = idio_alloc (slen + 1 + vlen + 1);
+		strcpy (envp[n], IDIO_SYMBOL_S (symbol));
+		strcat (envp[n], "=");
+		if (idio_S_undef != val) {
+		    strncat (envp[n], idio_string_s (val), vlen);
+		}
+		envp[n][slen + 1 + vlen] = '\0';
+		n++;
+	    } else {
+		idio_command_error_env_type (symbol, IDIO_C_LOCATION ("idio_command_get_envp"));
 	    }
-	    envp[n][slen + 1 + vlen] = '\0';
-	    n++;
 	}
 
 	symbols = IDIO_PAIR_T (symbols);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -73,6 +73,7 @@ IDIO idio_condition_rt_hash_key_not_found_error_type;
 IDIO idio_condition_rt_bignum_conversion_error_type;
 IDIO idio_condition_rt_fixnum_conversion_error_type;
 
+IDIO idio_condition_rt_command_env_type_error_type;
 IDIO idio_condition_rt_command_exec_error_type;
 IDIO idio_condition_rt_command_status_error_type;
 
@@ -371,6 +372,7 @@ void idio_init_condition ()
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_module_symbol_unbound_error_type, "^rt-module-symbol-unbound-error", idio_condition_rt_module_error_type, "symbol");
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_glob_error_type, "^rt-glob-error", idio_condition_runtime_error_type, "pattern");
 
+    IDIO_DEFINE_CONDITION1 (idio_condition_rt_command_env_type_error_type, "^rt-command-env-type-error", idio_condition_runtime_error_type, "name");
     IDIO_DEFINE_CONDITION0 (idio_condition_rt_command_exec_error_type, "^rt-command-exec-error", idio_condition_system_error_type);
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_command_status_error_type, "^rt-command-status-error", idio_condition_runtime_error_type, "status");
 
@@ -444,6 +446,7 @@ void idio_final_condition ()
     idio_gc_expose (idio_condition_rt_module_unbound_error_type);
     idio_gc_expose (idio_condition_rt_module_symbol_unbound_error_type);
     idio_gc_expose (idio_condition_rt_glob_error_type);
+    idio_gc_expose (idio_condition_rt_command_env_type_error_type);
     idio_gc_expose (idio_condition_rt_command_exec_error_type);
     idio_gc_expose (idio_condition_rt_command_status_error_type);
     idio_gc_expose (idio_condition_rt_array_bounds_error_type);
