@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -104,10 +104,11 @@
 #define IDIO_A_PACK_FRAME                  132
 #define IDIO_A_POP_CONS_FRAME              133
 
-#define IDIO_A_ARITYP1                     140
-#define IDIO_A_ARITYP2                     141
-#define IDIO_A_ARITYP3                     142
-#define IDIO_A_ARITYP4                     143
+/* NB. No ARITY0P as there is always an implied varargs */
+#define IDIO_A_ARITY1P                     140
+#define IDIO_A_ARITY2P                     141
+#define IDIO_A_ARITY3P                     142
+#define IDIO_A_ARITY4P                     143
 #define IDIO_A_ARITYEQP                    144
 #define IDIO_A_ARITYGEP                    145
 

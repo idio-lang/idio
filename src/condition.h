@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -77,6 +77,7 @@ extern IDIO idio_condition_rt_module_error_type;
 extern IDIO idio_condition_rt_module_unbound_error_type;
 extern IDIO idio_condition_rt_module_symbol_unbound_error_type;
 extern IDIO idio_condition_rt_glob_error_type;
+extern IDIO idio_condition_rt_command_env_type_error_type;
 extern IDIO idio_condition_rt_command_exec_error_type;
 extern IDIO idio_condition_rt_command_status_error_type;
 extern IDIO idio_condition_rt_array_bounds_error_type;

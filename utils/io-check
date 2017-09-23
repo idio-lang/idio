@@ -70,6 +70,45 @@ error ()
     exit 1
 }
 
+inode ()
+{
+    case "${OS}" in
+	FreeBSD)
+	    stat -f %i $1
+	    ;;
+	*)
+	    stat -c %i $1
+	    ;;
+    esac
+}
+
+stat_file ()
+{
+    stat_ino=
+    var_file=
+    case "${fd}" in
+    0)
+	var_file="${opt_input}"
+	;;
+    1)
+	var_file="${opt_output}"
+	;;
+    2)
+	var_file="${opt_error}"
+	;;
+    esac
+
+    case "${var_file}" in
+    /*)
+	stat_ino=$(inode $PWD${var_file})
+
+	if [[ ${stat_ino} = ${inode[fd]} ]] ; then
+	    file=$PWD${var_file}
+	fi
+	;;
+    esac
+}
+
 _uname=( $(uname -mrps) )
 OS=${_uname[0]}
 
@@ -129,6 +168,16 @@ lsof_data ()
 	    # /dev/null: On FreeBSD /dev/null is just a regular
 	    # /dev/fd/n.  However, the device should match the output
 	    # from stat(1).
+	    #
+	    # "something (something else)"
+	    #
+	    # On FreeBSD for a not-old-enough file (one we've just
+	    # created) we might get this format: "mountpoint
+	    # (filesystem)".
+	    #
+	    # An NFS filesystem might also return "/path/to/file
+	    # (host:mountpoint)"
+
 	    case "${OS}" in
 	    FreeBSD|Darwin)
 		case "${file}" in
@@ -171,29 +220,14 @@ lsof_data ()
 		    # We ought to derive the directory from the lsof
 		    # reported device but there's a limit...
 
-		    stat_ino=
-		    var_file=
-		    case "${fd}" in
-		    0)
-			var_file="${opt_input}"
-			;;
-		    1)
-			var_file="${opt_output}"
-			;;
-		    2)
-			var_file="${opt_error}"
-			;;
-		    esac
-
-		    case "${var_file}" in
-		    /*)
-			stat_ino=$(stat -f %i $PWD${var_file})
-
-			if [[ ${stat_ino} = ${inode[fd]} ]] ; then
-			    file=$PWD${var_file}
-			fi
-			;;
-		    esac
+		    stat_file
+		    ;;
+		esac
+		;;
+	    *)
+		case "${file}" in
+		*" ("*")")
+		    stat_file
 		    ;;
 		esac
 		;;

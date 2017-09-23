@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -1243,10 +1243,10 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    /* the-function */
 	    IDIO_IA_T iap = idio_ia (100);
 	    switch (IDIO_FIXNUM_VAL (arity) + 1) {
-	    case 1: idio_ia_push (iap, IDIO_A_ARITYP1); break;
-	    case 2: idio_ia_push (iap, IDIO_A_ARITYP2); break;
-	    case 3: idio_ia_push (iap, IDIO_A_ARITYP3); break;
-	    case 4: idio_ia_push (iap, IDIO_A_ARITYP4); break;
+	    case 1: idio_ia_push (iap, IDIO_A_ARITY1P); break;
+	    case 2: idio_ia_push (iap, IDIO_A_ARITY2P); break;
+	    case 3: idio_ia_push (iap, IDIO_A_ARITY3P); break;
+	    case 4: idio_ia_push (iap, IDIO_A_ARITY4P); break;
 	    default:
 		{
 		    idio_ia_push (iap, IDIO_A_ARITYEQP);
