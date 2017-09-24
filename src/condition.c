@@ -73,6 +73,8 @@ IDIO idio_condition_rt_hash_key_not_found_error_type;
 IDIO idio_condition_rt_bignum_conversion_error_type;
 IDIO idio_condition_rt_fixnum_conversion_error_type;
 
+IDIO idio_condition_rt_command_argv_type_error_type;
+IDIO idio_condition_rt_command_forked_error_type;
 IDIO idio_condition_rt_command_env_type_error_type;
 IDIO idio_condition_rt_command_exec_error_type;
 IDIO idio_condition_rt_command_status_error_type;
@@ -217,6 +219,20 @@ IDIO_DEFINE_PRIMITIVE1 ("condition?", conditionp, (IDIO o))
     return r;
 }
 
+int idio_condition_isap (IDIO c, IDIO ct)
+{
+    IDIO_ASSERT (c);
+    IDIO_ASSERT (ct);
+    IDIO_VERIFY_PARAM_TYPE (condition, c);
+    IDIO_VERIFY_PARAM_TYPE (condition_type, ct);
+    
+    if (idio_struct_instance_isa (c, ct)) {
+	return 1;
+    }
+
+    return 0;
+}
+
 IDIO_DEFINE_PRIMITIVE2 ("condition-isa?", condition_isap, (IDIO c, IDIO ct))
 {
     IDIO_ASSERT (c);
@@ -226,7 +242,7 @@ IDIO_DEFINE_PRIMITIVE2 ("condition-isa?", condition_isap, (IDIO c, IDIO ct))
     
     IDIO r = idio_S_false;
 
-    if (idio_struct_instance_isa (c, ct)) {
+    if (idio_condition_isap (c, ct)) {
 	r = idio_S_true;
     }
 
@@ -372,8 +388,10 @@ void idio_init_condition ()
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_module_symbol_unbound_error_type, "^rt-module-symbol-unbound-error", idio_condition_rt_module_error_type, "symbol");
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_glob_error_type, "^rt-glob-error", idio_condition_runtime_error_type, "pattern");
 
-    IDIO_DEFINE_CONDITION1 (idio_condition_rt_command_env_type_error_type, "^rt-command-env-type-error", idio_condition_runtime_error_type, "name");
-    IDIO_DEFINE_CONDITION0 (idio_condition_rt_command_exec_error_type, "^rt-command-exec-error", idio_condition_system_error_type);
+    IDIO_DEFINE_CONDITION1 (idio_condition_rt_command_argv_type_error_type, "^rt-command-argv-type-error", idio_condition_runtime_error_type, "arg");
+    IDIO_DEFINE_CONDITION0 (idio_condition_rt_command_forked_error_type, "^rt-command-forked-error", idio_condition_runtime_error_type);
+    IDIO_DEFINE_CONDITION1 (idio_condition_rt_command_env_type_error_type, "^rt-command-env-type-error", idio_condition_rt_command_forked_error_type, "name");
+    IDIO_DEFINE_CONDITION1 (idio_condition_rt_command_exec_error_type, "^rt-command-exec-error", idio_condition_rt_command_forked_error_type, "errno");
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_command_status_error_type, "^rt-command-status-error", idio_condition_runtime_error_type, "status");
 
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_array_bounds_error_type, "^rt-array-bounds-error", idio_condition_runtime_error_type, "index");
@@ -446,6 +464,8 @@ void idio_final_condition ()
     idio_gc_expose (idio_condition_rt_module_unbound_error_type);
     idio_gc_expose (idio_condition_rt_module_symbol_unbound_error_type);
     idio_gc_expose (idio_condition_rt_glob_error_type);
+    idio_gc_expose (idio_condition_rt_command_argv_type_error_type);
+    idio_gc_expose (idio_condition_rt_command_forked_error_type);
     idio_gc_expose (idio_condition_rt_command_env_type_error_type);
     idio_gc_expose (idio_condition_rt_command_exec_error_type);
     idio_gc_expose (idio_condition_rt_command_status_error_type);

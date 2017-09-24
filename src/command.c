@@ -85,6 +85,29 @@ static void idio_command_error_glob (IDIO pattern, IDIO loc)
     idio_raise_condition (idio_S_true, c);
 }
 
+static void idio_command_error_argv_type (IDIO arg, char *reason_C, IDIO loc)
+{
+    IDIO_ASSERT (arg);
+    IDIO_ASSERT (loc);
+    IDIO_TYPE_ASSERT (string, loc);
+
+    IDIO sh = idio_open_output_string_handle_C ();
+    idio_display_C ("argument '", sh);
+    idio_display (arg, sh);
+    idio_display_C ("': can't convert a ", sh);
+    idio_display_C ((char *) idio_type2string (arg), sh);
+    idio_display_C (" to an execve argument: ", sh);
+    idio_display_C (reason_C, sh);
+
+    IDIO c = idio_struct_instance (idio_condition_rt_command_argv_type_error_type,
+				   IDIO_LIST4 (idio_get_output_string (sh),
+					       loc,
+					       idio_S_nil,
+					       arg));
+
+    idio_raise_condition (idio_S_true, c);
+}
+
 static void idio_command_error_env_type (IDIO name, IDIO loc)
 {
     IDIO_ASSERT (name);
@@ -93,7 +116,9 @@ static void idio_command_error_env_type (IDIO name, IDIO loc)
     IDIO_TYPE_ASSERT (string, loc);
 
     IDIO sh = idio_open_output_string_handle_C ();
-    idio_display_C ("environment variable is not a string", sh);
+    idio_display_C ("environment variable '", sh);
+    idio_display (name, sh);
+    idio_display_C ("' is not a string", sh);
 
     IDIO c = idio_struct_instance (idio_condition_rt_command_env_type_error_type,
 				   IDIO_LIST4 (idio_get_output_string (sh),
@@ -405,10 +430,16 @@ char **idio_command_argv (IDIO args)
 	
 	switch ((intptr_t) arg & 3) {
 	case IDIO_TYPE_FIXNUM_MARK:
+	    {
+		argv[i++] = idio_display_string (arg);
+	    }
+	    break;
 	case IDIO_TYPE_CONSTANT_MARK:
+	    idio_command_error_argv_type (arg, "unconvertible value", IDIO_C_LOCATION ("idio_command_argv"));
+	    break;
 	case IDIO_TYPE_CHARACTER_MARK:
 	    {
-		argv[i++] = idio_as_string (arg, 1);
+		argv[i++] = idio_display_string (arg);
 	    }
 	    break;
 	case IDIO_TYPE_POINTER_MARK:
@@ -464,7 +495,7 @@ char **idio_command_argv (IDIO args)
 		case IDIO_TYPE_C_DOUBLE:
 		case IDIO_TYPE_C_POINTER:
 		    {
-			argv[i++] = idio_as_string (arg, 1);
+			argv[i++] = idio_display_string (arg);
 		    }
 		    break;
 		case IDIO_TYPE_STRUCT_INSTANCE:
@@ -477,7 +508,7 @@ char **idio_command_argv (IDIO args)
 			    size_t n = idio_command_possible_filename_glob (pattern, &g);
 
 			    if (0 == n) {
-				argv[i++] = idio_as_string (pattern, 1);
+				argv[i++] = idio_display_string (pattern);
 			    } else {
 				/*
 				 * NB "gl_pathc - 1" as we reserved a slot
@@ -500,6 +531,7 @@ char **idio_command_argv (IDIO args)
 			} else {
 			    idio_debug ("WARNING: idio_command_argv: unexpected struct instance: type: %s\n", st);
 			    idio_debug ("arg = %s\n", arg);
+			    idio_command_error_argv_type (arg, "only path_type structs", IDIO_C_LOCATION ("idio_command_argv"));
 			}
 		    }
 		    break;
@@ -523,6 +555,7 @@ char **idio_command_argv (IDIO args)
 		default:
 		    idio_error_warning_message ("idio_command_argv: unexpected object type: %s", idio_type2string (arg));
 		    idio_debug ("arg = %s\n", arg);
+		    idio_command_error_argv_type (arg, "unconvertible value", IDIO_C_LOCATION ("idio_command_argv"));
 		    break;
 		}
 	    }

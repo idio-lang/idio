@@ -513,6 +513,11 @@ IDIO_DEFINE_PRIMITIVE2 ("base-error-handler", base_error_handler, (IDIO cont, ID
     idio_debug ("STK %.1000s\n", IDIO_THREAD_STACK (thr));
 #endif
 
+    if (idio_condition_isap (cond, idio_condition_rt_command_forked_error_type)) {
+	fprintf (stderr, "this is a forked condition, tidy up with: exit (0)\n");
+	exit (0);
+    }
+
     if (idio_S_true == cont) {
 	/* fprintf (stderr, "should continue but won't!\n"); */
 	/* idio_debug ("THREAD:\t%s\n", thr); */
