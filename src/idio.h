@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -271,7 +271,6 @@
     {									\
 	if (! idio_isa_ ## type (param)) {				\
 	    idio_error_param_type_C (#type, param, __FILE__, __func__, __LINE__); \
-	    return idio_S_unspec;					\
 	}								\
     }
 

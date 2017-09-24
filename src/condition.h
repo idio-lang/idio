@@ -77,6 +77,8 @@ extern IDIO idio_condition_rt_module_error_type;
 extern IDIO idio_condition_rt_module_unbound_error_type;
 extern IDIO idio_condition_rt_module_symbol_unbound_error_type;
 extern IDIO idio_condition_rt_glob_error_type;
+extern IDIO idio_condition_rt_command_argv_type_error_type;
+extern IDIO idio_condition_rt_command_forked_error_type;
 extern IDIO idio_condition_rt_command_env_type_error_type;
 extern IDIO idio_condition_rt_command_exec_error_type;
 extern IDIO idio_condition_rt_command_status_error_type;
@@ -91,6 +93,7 @@ int idio_isa_condition_type (IDIO o);
 int idio_isa_condition (IDIO o);
 
 IDIO idio_condition_idio_error (IDIO message, IDIO location, IDIO detail);
+int idio_condition_isap (IDIO c, IDIO ct);
 
 void idio_init_condition ();
 void idio_condition_add_primitives ();
