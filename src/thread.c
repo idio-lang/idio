@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -16,7 +16,7 @@
  */
 
 /*
- * thr.c
+ * thread.c
  * 
  */
 
@@ -212,6 +212,17 @@ void idio_thread_add_primitives ()
 void idio_init_first_thread ()
 {
     idio_array_push (idio_running_threads, idio_running_thread);
+
+    /*
+     * Default condition handlers ordered by increasing importance.
+     *
+     * Notably Unix signal handlers in the first thread.
+     */
+    idio_vm_push_handler (idio_running_thread, idio_condition_handler_default);
+    
+    idio_vm_push_handler (idio_running_thread, idio_condition_signal_handler_SIGHUP);
+    idio_vm_push_handler (idio_running_thread, idio_condition_handler_rt_command_status);
+    idio_vm_push_handler (idio_running_thread, idio_condition_signal_handler_SIGCHLD);
 }
 
 void idio_final_thread ()
