@@ -557,6 +557,7 @@ idio_gc_t *idio_gc_new ()
     idio_gc_t *c = idio_alloc (sizeof (idio_gc_t));
     c->next = NULL;
     c->roots = NULL;
+    c->dynamic_roots = NULL;
     c->free = NULL;
     c->used = NULL;
     c->grey = NULL;
@@ -710,6 +711,34 @@ void idio_gc_protect (IDIO o)
     r->object = o;
 }
 
+/*
+ * idio_gc_protect_auto - protect C auto objects
+ * @o: object to protect
+ *
+ * Many C-created IDIO objects have global names for which an explicit
+ * idio_gc_expose() can be called.
+ *
+ * C auto objects (eg. signal condition types) can be protected here
+ * and will be exposed during GC shutdown.
+ *
+ * Return:
+ * void
+ */
+void idio_gc_protect_auto (IDIO o)
+{
+    IDIO_ASSERT (o);
+
+    if (idio_S_nil == o) {
+	idio_error_param_nil ("protect", IDIO_C_LOCATION ("idio_gc_protect_auto"));
+    }
+    
+    IDIO_FPRINTF (stderr, "idio_gc_protect_auto: %10p\n", o);
+
+    idio_gc_protect (o);
+
+    IDIO_PAIR_H (idio_gc->dynamic_roots) = idio_pair (o, IDIO_PAIR_H (idio_gc->dynamic_roots));
+}
+
 void idio_gc_expose (IDIO o)
 {
     IDIO_ASSERT (o);
@@ -738,9 +767,11 @@ void idio_gc_expose (IDIO o)
     if (0 == seen) {
 	fprintf (stderr, "idio_gc_expose: o %10p not previously protected\n", o);
 	idio_debug ("o = %s\n", o);
+
+	fprintf (stderr, "idio_gc_expose: currently protected:\n");
 	r = idio_gc->roots;
 	while (r) {
-	    fprintf (stderr, "idio_gc_expose: currently protected: %10p %s\n", r->object, idio_type2string (r->object));
+	    fprintf (stderr, "  %10p %s\n", r->object, idio_type2string (r->object));
 	    r = r->next;
 	}
 	IDIO_C_ASSERT (seen);
@@ -770,6 +801,24 @@ void idio_gc_expose_all ()
     if (n) {
 	fprintf (stderr, "idio_gc_expose_all for %zd objects\n", n);
     }
+}
+
+void idio_gc_expose_autos ()
+{
+
+    IDIO_FPRINTF (stderr, "idio_gc_expose_autos\n");
+
+    IDIO dr = idio_gc->dynamic_roots;
+    IDIO d = IDIO_PAIR_H (dr);
+    while (idio_S_nil != d) {
+	idio_gc_expose (IDIO_PAIR_H (d));
+	d = IDIO_PAIR_T (d);
+    }
+
+    idio_gc_expose (dr);
+    
+    /* just for completeness */
+    idio_gc->dynamic_roots = idio_S_nil;
 }
 
 void idio_gc_mark ()
@@ -833,9 +882,41 @@ void idio_gc_sweep_free_value (IDIO vo)
 	idio_free_hash (vo);
 	break;
     case IDIO_TYPE_CLOSURE:
+#ifdef IDIO_VM_PERF
+	if (IDIO_CLOSURE_CALLED (vo) > 10) {
+	fprintf (idio_vm_perf_FILE, "%+5lds gc_sweep_free Clos %10p %6" PRIu64, idio_vm_elapsed (), vo, IDIO_CLOSURE_CALLED (vo));
+	    IDIO name = idio_vm_closure_name (vo);
+	    if (idio_S_unspec != name) {
+		idio_debug_FILE (idio_vm_perf_FILE, " %-40s", name);
+	    }
+	    fprintf (idio_vm_perf_FILE, "\n");
+        }
+#endif
 	idio_free_closure (vo);
 	break;
     case IDIO_TYPE_PRIMITIVE:
+#ifdef IDIO_VM_PERF
+	if (IDIO_PRIMITIVE_CALLED (vo)) {
+	    fprintf (idio_vm_perf_FILE, "%+5lds gc_sweep_free Prim %10p %6" PRIu64 " %-40s %5ld.%09ld", idio_vm_elapsed (), vo, IDIO_PRIMITIVE_CALLED (vo), IDIO_PRIMITIVE_NAME (vo), IDIO_PRIMITIVE_CALL_TIME (vo).tv_sec, IDIO_PRIMITIVE_CALL_TIME (vo).tv_nsec);
+	    double call_time = (IDIO_PRIMITIVE_CALL_TIME (vo).tv_sec * 1000000000 + IDIO_PRIMITIVE_CALL_TIME (vo).tv_nsec) / IDIO_PRIMITIVE_CALLED (vo);
+	    fprintf (idio_vm_perf_FILE, " %11.f", call_time);
+	    char *units = "ns";
+	    if (call_time > 10000) {
+		units = "us";
+		call_time /= 1000;
+		if (call_time > 10000) {
+		    units = "ms";
+		    call_time /= 1000;
+		    if (call_time > 10000) {
+			units = "s";
+			call_time /= 1000;
+		    }
+	        }
+	    }
+	    fprintf (idio_vm_perf_FILE, " %6.f %s", call_time, units);
+	    fprintf (idio_vm_perf_FILE, "\n");
+        }
+#endif
 	idio_free_primitive (vo);
 	break;
     case IDIO_TYPE_BIGNUM:
@@ -1038,18 +1119,23 @@ void idio_gc_stats_inc (idio_type_e type)
 
 void idio_gc_stats ()
 {
+    FILE *fh = stderr;
+
+#ifdef IDIO_VM_PERF
+    fh = idio_vm_perf_FILE;
+#endif
 
     char scales[] = " KMGT";
     unsigned long long count;
     int scale;
     
-    fprintf (stderr, "idio_gc_stats: %4lld   collections\n", idio_gc->stats.collections);
+    fprintf (fh, "idio_gc_stats: %4lld   collections\n", idio_gc->stats.collections);
 
     count = idio_gc->stats.bounces;
     scale = 0;
     idio_hcount (&count, &scale);
     
-    fprintf (stderr, "idio_gc_stats: %4lld%c  bounces\n", count, scales[scale]);
+    fprintf (fh, "idio_gc_stats: %4lld%c  bounces\n", count, scales[scale]);
 
     int i;
     int tgets = 0;
@@ -1061,12 +1147,12 @@ void idio_gc_stats ()
     count = tgets;
     scale = 0;
     idio_hcount (&count, &scale);
-    fprintf (stderr, "idio_gc_stats: %4lld%c total GC requests\n", count, scales[scale]);
+    fprintf (fh, "idio_gc_stats: %4lld%c total GC requests\n", count, scales[scale]);
     count = nused;
     scale = 0;
     idio_hcount (&count, &scale);
-    fprintf (stderr, "idio_gc_stats: %4lld%c current GC requests\n", count, scales[scale]);
-    fprintf (stderr, "idio_gc_stats: %-10.10s %5.5s %4.4s %5.5s %4.4s\n", "type", "total", "%age", "used", "%age");
+    fprintf (fh, "idio_gc_stats: %4lld%c current GC requests\n", count, scales[scale]);
+    fprintf (fh, "idio_gc_stats: %-10.10s %5.5s %4.4s %5.5s %4.4s\n", "type", "total", "%age", "used", "%age");
     int types_unused = 0;
     for (i = 1; i < IDIO_TYPE_MAX; i++) {
 	unsigned long long tgets_count = idio_gc->stats.tgets[i];
@@ -1078,7 +1164,7 @@ void idio_gc_stats ()
 	    int nused_scale = 0;
 	    idio_hcount (&nused_count, &nused_scale);
     
-	    fprintf (stderr, "idio_gc_stats: %-10.10s %4lld%c %3lld %4lld%c %3lld\n",
+	    fprintf (fh, "idio_gc_stats: %-10.10s %4lld%c %3lld %4lld%c %3lld\n",
 		     idio_type_enum2string (i),
 		     tgets_count, scales[tgets_scale],
 		     tgets ? idio_gc->stats.tgets[i] * 100 / tgets : -1,
@@ -1090,38 +1176,38 @@ void idio_gc_stats ()
 	}
     }
     if (types_unused) {
-	fprintf (stderr, "idio_gc_stats: %d types unused\n", types_unused);
+	fprintf (fh, "idio_gc_stats: %d types unused\n", types_unused);
     }
 
     count = idio_gc->stats.mgets;
     scale = 0;
     idio_hcount (&count, &scale);
     
-    fprintf (stderr, "idio_gc_stats: %4lld%c  max requests between GC\n", count, scales[scale]);
+    fprintf (fh, "idio_gc_stats: %4lld%c  max requests between GC\n", count, scales[scale]);
 
     count = idio_gc->stats.reuse;
     scale = 0;
     idio_hcount (&count, &scale);
     
-    fprintf (stderr, "idio_gc_stats: %4lld%c  GC objects reused\n", count, scales[scale]);
+    fprintf (fh, "idio_gc_stats: %4lld%c  GC objects reused\n", count, scales[scale]);
 
     count = idio_gc->stats.allocs;
     scale = 0;
     idio_hcount (&count, &scale);
     
-    fprintf (stderr, "idio_gc_stats: %4lld%c  system allocs\n", count, scales[scale]);
+    fprintf (fh, "idio_gc_stats: %4lld%c  system allocs\n", count, scales[scale]);
 
     count = idio_gc->stats.tbytes;
     scale = 0;
     idio_hcount (&count, &scale);
     
-    fprintf (stderr, "idio_gc_stats: %4lld%cB total bytes referenced\n", count, scales[scale]);
+    fprintf (fh, "idio_gc_stats: %4lld%cB total bytes referenced\n", count, scales[scale]);
 
     count = idio_gc->stats.nbytes;
     scale = 0;
     idio_hcount (&count, &scale);
     
-    fprintf (stderr, "idio_gc_stats: %4lld%cB current bytes referenced\n", count, scales[scale]);
+    fprintf (fh, "idio_gc_stats: %4lld%cB current bytes referenced\n", count, scales[scale]);
 
     int rc = 0;
     idio_root_t *root = idio_gc->roots;
@@ -1129,7 +1215,7 @@ void idio_gc_stats ()
     while (root) {
 	switch (root->object->type) {
 	default:
-	    fprintf (stderr, "%p ", root->object);
+	    fprintf (fh, "%p ", root->object);
 	    idio_debug ("root object: %s\n", root->object);
 	    rc++;
 	    break;
@@ -1142,7 +1228,7 @@ void idio_gc_stats ()
     scale = 0;
     idio_hcount (&count, &scale);
     
-    fprintf (stderr, "idio_gc_stats: %4lld%c  protected objects\n", count, scales[scale]);
+    fprintf (fh, "idio_gc_stats: %4lld%c  protected objects\n", count, scales[scale]);
 
     int fc = 0;
     IDIO o = idio_gc->free;
@@ -1155,7 +1241,7 @@ void idio_gc_stats ()
     scale = 0;
     idio_hcount (&count, &scale);
     
-    fprintf (stderr, "idio_gc_stats: %4lld%c  on free list\n", count, scales[scale]);
+    fprintf (fh, "idio_gc_stats: %4lld%c  on free list\n", count, scales[scale]);
 
     int uc = 0;
     o = idio_gc->used;
@@ -1166,7 +1252,7 @@ void idio_gc_stats ()
 	if (o->next &&
 	    o->next->type == 0) {
 	    /* IDIO_ASSERT (o->next); */
-	    fprintf (stderr, "bad type %10p\n", o->next);
+	    fprintf (fh, "bad type %10p\n", o->next);
 	    o->next = o->next->next;
 	}
 	/* idio_dump (o, 160); */
@@ -1178,9 +1264,9 @@ void idio_gc_stats ()
     scale = 0;
     idio_hcount (&count, &scale);
     
-    fprintf (stderr, "idio_gc_stats: %4lld%c  on used list\n", count, scales[scale]);
+    fprintf (fh, "idio_gc_stats: %4lld%c  on used list\n", count, scales[scale]);
 
-    fprintf (stderr, "idio-gc-stats: GC time %ld.%03ld\n", idio_gc->stats.dur.tv_sec, (long) idio_gc->stats.dur.tv_usec / 1000);
+    fprintf (fh, "idio-gc-stats: GC time %ld.%03ld\n", idio_gc->stats.dur.tv_sec, (long) idio_gc->stats.dur.tv_usec / 1000);
 
 }
 
@@ -1219,6 +1305,11 @@ void idio_gc_free ()
 	}
 	free (root);
     }    
+
+    if (idio_gc->pause) {
+	IDIO_FPRINTF (stderr, "idio_gc_free: pause is non-zero: %" PRIdPTR ", zeroing\n", idio_gc->pause);
+	idio_gc->pause = 0;
+    }
 
     /*
      * Having exposed everything running a collection should free
@@ -1331,6 +1422,10 @@ void idio_init_gc ()
 
     idio_gc->verbose = 0;
 
+    IDIO dr = idio_pair (idio_S_nil, idio_S_nil);
+    idio_gc_protect (dr);
+    idio_gc->dynamic_roots = dr;
+
     if (0) {
 	size_t n = 0;
 	size_t sum = 0;
@@ -1422,6 +1517,8 @@ void idio_final_gc ()
     idio_gc_expose (idio_gc_finalizer_hash);
     /*  prevent it being used */
     idio_gc_finalizer_hash = idio_S_nil;
+
+    idio_gc_expose_autos ();
 
     fprintf (stderr, "\n\n\nFINAL GC\n\n\n");
     idio_gc_stats ();
