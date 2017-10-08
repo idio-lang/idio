@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -29,7 +29,7 @@ char *idio_command_find_exe_C (char *command);
 char *idio_command_find_exe (IDIO func);
 IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname);
 
-extern sig_atomic_t idio_command_sigchld_flag;
+extern volatile sig_atomic_t idio_command_signal_record[IDIO_LIBC_NSIG];
 void idio_init_command ();
 void idio_command_add_primitives ();
 void idio_final_command ();

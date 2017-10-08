@@ -62,11 +62,20 @@ static IDIO idio_S_stderr_fileno;
 #define IDIO_PROCESS_TYPE_STOPPED	3
 #define IDIO_PROCESS_TYPE_STATUS	4
 	
-sig_atomic_t idio_command_sigchld_flag = 0;
+/*
+ * Don't overplay our hand in a signal handler.  What's the barest
+ * minimum?  Setting (technically, not even reading) a sig_atomic_t.
+ *
+ * What this document doesn't say is if we can access an array of
+ * sig_atomic_t.
+ *
+ * https://www.securecoding.cert.org/confluence/display/c/SIG31-C.+Do+not+access+shared+objects+in+signal+handlers
+ */
+volatile sig_atomic_t idio_command_signal_record[IDIO_LIBC_NSIG];
 
-void idio_command_sa_sigchld (int signum)
+void idio_command_sa_signal (int signum)
 {
-    idio_command_sigchld_flag++;
+    idio_command_signal_record[signum] = 1;
 }
 
 static void idio_command_error_glob (IDIO pattern, IDIO loc)
@@ -500,8 +509,8 @@ char **idio_command_argv (IDIO args)
 		    break;
 		case IDIO_TYPE_STRUCT_INSTANCE:
 		    {
-			IDIO st = IDIO_STRUCT_INSTANCE_TYPE (arg);
-			if (idio_struct_type_isa (st, idio_path_type)) {
+			IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (arg);
+			if (idio_struct_type_isa (sit, idio_path_type)) {
 			    IDIO pattern = idio_struct_instance_ref_direct (arg, IDIO_PATH_PATTERN);
 
 			    glob_t g;
@@ -529,7 +538,7 @@ char **idio_command_argv (IDIO args)
 				globfree (&g);
 			    }
 			} else {
-			    idio_debug ("WARNING: idio_command_argv: unexpected struct instance: type: %s\n", st);
+			    idio_debug ("WARNING: idio_command_argv: unexpected struct instance: type: %s\n", sit);
 			    idio_debug ("arg = %s\n", arg);
 			    idio_command_error_argv_type (arg, "only path_type structs", IDIO_C_LOCATION ("idio_command_argv"));
 			}
@@ -936,7 +945,6 @@ static void idio_command_format_job_info (IDIO job, char *msg)
 	idio_error_param_type ("job", job, IDIO_C_LOCATION ("idio_command_format_job_info"));
     }
 
-    
     pid_t job_pgid = IDIO_C_TYPE_INT (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PGID));
 
     fprintf (stderr, "%ld (%s): ", (long) job_pgid, msg);
@@ -1181,14 +1189,22 @@ static void idio_command_hangup_job (IDIO job)
 	idio_error_param_type ("job", job, IDIO_C_LOCATION ("idio_command_hangup_job"));
     }
 
-    int job_pgid = IDIO_C_TYPE_INT (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PGID));
+    IDIO ipgid = idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PGID);
+    pid_t job_pgid = -1;
+    if (idio_isa_fixnum (ipgid)) {
+	job_pgid = IDIO_FIXNUM_VAL (ipgid);
+    } else if (idio_isa_C_int (ipgid)) {
+	job_pgid = IDIO_C_TYPE_INT (ipgid);
+    } else {
+	idio_error_param_type ("fixnum|C_int", ipgid, IDIO_C_LOCATION ("idio_command_hangup_job"));
+    }
 
     if (kill (-job_pgid, SIGCONT) < 0) {
 	if (ESRCH != errno) {
 	    idio_error_system_errno ("kill SIGCONT", IDIO_LIST1 (idio_C_int (-job_pgid)), IDIO_C_LOCATION ("idio_command_hangup_job"));
 	}
     }
-
+	
     if (kill (-job_pgid, SIGHUP) < 0) {
 	if (ESRCH != errno) {
 	    idio_error_system_errno ("kill SIGHUP", IDIO_LIST1 (idio_C_int (-job_pgid)), IDIO_C_LOCATION ("idio_command_hangup_job"));
@@ -1208,6 +1224,163 @@ IDIO_DEFINE_PRIMITIVE1 ("hangup-job", hangup_job, (IDIO job))
     idio_command_hangup_job (job);
     
     return idio_S_unspec;
+}
+
+static void idio_command_signal_handler_SIGHUP (IDIO signum)
+{
+    IDIO_ASSERT (signum);
+    IDIO_TYPE_ASSERT (fixnum, signum);
+
+    IDIO jobs = idio_module_symbol_value (idio_command_jobs, idio_Idio_module_instance (), idio_S_nil);
+    if (idio_S_nil != jobs) {
+	/* fprintf (stderr, "There are outstanding jobs\n"); */
+	while (idio_S_nil != jobs) {
+	    IDIO job = IDIO_PAIR_H (jobs);
+	    idio_command_hangup_job (job);
+	    jobs = IDIO_PAIR_T (jobs);
+	}
+    }
+}
+
+IDIO_DEFINE_PRIMITIVE2 ("condition-handler-SIGHUP", condition_handler_SIGHUP, (IDIO cont, IDIO cond))
+{
+    IDIO_ASSERT (cont);
+    IDIO_ASSERT (cond);
+    IDIO_TYPE_ASSERT (boolean, cont);
+    IDIO_TYPE_ASSERT (condition, cond); 
+
+    IDIO thr = idio_thread_current_thread ();
+
+    if (idio_isa_condition (cond)) {
+	IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (cond);
+	IDIO sif = IDIO_STRUCT_INSTANCE_FIELDS (cond);
+
+	if (idio_struct_type_isa (sit, idio_condition_rt_signal_type)) {
+	    IDIO isignum = idio_array_get_index (sif, IDIO_SI_RT_SIGNAL_TYPE_SIGNUM);
+	    int signum = IDIO_FIXNUM_VAL (isignum);
+
+	    if (SIGHUP == signum) {
+		idio_command_signal_handler_SIGHUP (isignum);
+
+		return idio_S_unspec;
+	    }
+	}
+    } else {
+	fprintf (stderr, "condition-handler-SIGHUP: expected a condition, not a %s\n", idio_type2string (cond));
+	idio_debug ("%s\n", cond);
+
+	IDIO sh = idio_open_output_string_handle_C ();
+	idio_display_C ("condition-handler-SIGHUP: expected a condition not a '", sh);
+	idio_display (cond, sh);
+	idio_display_C ("'", sh);
+	IDIO c = idio_struct_instance (idio_condition_rt_parameter_type_error_type,
+				       IDIO_LIST3 (idio_get_output_string (sh),
+						   IDIO_C_LOCATION ("condition-handler-SIGHUP"),
+						   idio_S_nil));
+
+	idio_raise_condition (idio_S_true, c);
+    }
+
+    idio_raise_condition (cont, cond);
+
+    /* notreached */
+    IDIO_C_ASSERT (0);
+}
+
+static void idio_command_signal_handler_SIGCHLD (IDIO signum)
+{
+    IDIO_ASSERT (signum);
+    IDIO_TYPE_ASSERT (fixnum, signum);
+
+    /*
+     * do-job-notification is a thunk so we can call it direct
+     */
+    idio_vm_invoke_C (idio_thread_current_thread (),
+		      idio_module_symbol_value (idio_symbols_C_intern ("do-job-notification"),
+						idio_command_module,
+						idio_S_nil));
+}
+
+IDIO_DEFINE_PRIMITIVE2 ("condition-handler-rt-command-status", condition_handler_rt_command_status, (IDIO cont, IDIO cond))
+{
+    IDIO_ASSERT (cont);
+    IDIO_ASSERT (cond);
+    IDIO_TYPE_ASSERT (boolean, cont);
+    IDIO_TYPE_ASSERT (condition, cond); 
+
+    IDIO thr = idio_thread_current_thread ();
+
+    if (idio_isa_condition (cond)) {
+	IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (cond);
+	IDIO sif = IDIO_STRUCT_INSTANCE_FIELDS (cond);
+
+	if (idio_struct_type_isa (sit, idio_condition_rt_command_status_error_type)) {
+	    return idio_S_unspec;
+	}
+    } else {
+	fprintf (stderr, "condition-handler-rt-command-status: expected a condition, not a %s\n", idio_type2string (cond));
+	idio_debug ("%s\n", cond);
+
+	IDIO sh = idio_open_output_string_handle_C ();
+	idio_display_C ("condition-handler-rt-command-status: expected a condition not a '", sh);
+	idio_display (cond, sh);
+	idio_display_C ("'", sh);
+	IDIO c = idio_struct_instance (idio_condition_rt_parameter_type_error_type,
+				       IDIO_LIST3 (idio_get_output_string (sh),
+						   IDIO_C_LOCATION ("condition-handler-rt-command-status"),
+						   idio_S_nil));
+
+	idio_raise_condition (idio_S_true, c);
+    }
+
+    idio_raise_condition (cont, cond);
+
+    /* notreached */
+    IDIO_C_ASSERT (0);
+}
+
+IDIO_DEFINE_PRIMITIVE2 ("condition-handler-SIGCHLD", condition_handler_SIGCHLD, (IDIO cont, IDIO cond))
+{
+    IDIO_ASSERT (cont);
+    IDIO_ASSERT (cond);
+    IDIO_TYPE_ASSERT (boolean, cont);
+    IDIO_TYPE_ASSERT (condition, cond); 
+
+    IDIO thr = idio_thread_current_thread ();
+
+    if (idio_isa_condition (cond)) {
+	IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (cond);
+	IDIO sif = IDIO_STRUCT_INSTANCE_FIELDS (cond);
+
+	if (idio_struct_type_isa (sit, idio_condition_rt_signal_type)) {
+	    IDIO isignum = idio_array_get_index (sif, IDIO_SI_RT_SIGNAL_TYPE_SIGNUM);
+	    int signum = IDIO_FIXNUM_VAL (isignum);
+
+	    if (SIGCHLD == signum) {
+		idio_command_signal_handler_SIGCHLD (isignum);
+		return idio_S_unspec;
+	    }
+	}
+    } else {
+	fprintf (stderr, "condition-handler-SIGCHLD: expected a condition, not a %s\n", idio_type2string (cond));
+	idio_debug ("%s\n", cond);
+
+	IDIO sh = idio_open_output_string_handle_C ();
+	idio_display_C ("condition-handler-SIGCHLD: expected a condition not a '", sh);
+	idio_display (cond, sh);
+	idio_display_C ("'", sh);
+	IDIO c = idio_struct_instance (idio_condition_rt_parameter_type_error_type,
+				       IDIO_LIST3 (idio_get_output_string (sh),
+						   IDIO_C_LOCATION ("condition-handler-SIGCHLD"),
+						   idio_S_nil));
+
+	idio_raise_condition (idio_S_true, c);
+    }
+
+    idio_raise_condition (cont, cond);
+
+    /* notreached */
+    IDIO_C_ASSERT (0);
 }
 
 static void idio_command_mark_job_as_running (IDIO job)
@@ -1438,7 +1611,7 @@ static void idio_command_launch_job (IDIO job, int foreground)
     }
 
     IDIO procs = idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PROCS);
-    int job_pgid = IDIO_C_TYPE_INT (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PGID));
+    pid_t job_pgid = IDIO_C_TYPE_INT (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PGID));
     int job_stdin = IDIO_C_TYPE_INT (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_STDIN));
     int job_stdout = IDIO_C_TYPE_INT (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_STDOUT));
     int job_stderr = IDIO_C_TYPE_INT (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_STDERR));
@@ -1540,7 +1713,7 @@ static IDIO idio_command_launch_1proc_job (IDIO job, int foreground, char **argv
 
     IDIO procs = idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PROCS);
     IDIO proc = IDIO_PAIR_H (procs);
-    int job_pgid = IDIO_C_TYPE_INT (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PGID));
+    pid_t job_pgid = IDIO_C_TYPE_INT (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PGID));
     int job_stdin = IDIO_C_TYPE_INT (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_STDIN));
     int job_stdout = IDIO_C_TYPE_INT (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_STDOUT));
     int job_stderr = IDIO_C_TYPE_INT (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_STDERR));
@@ -1973,14 +2146,19 @@ void idio_init_command ()
     idio_module_set_symbol_value (idio_symbols_C_intern ("%idio-tcattrs"),
 				  idio_command_tcattrs,
 				  idio_command_module);
-    
+
+    int signum;
+    for (signum = IDIO_LIBC_FSIG; signum <= IDIO_LIBC_NSIG; signum++) {
+	idio_command_signal_record[signum] = 0;
+    }
+
     struct sigaction nsa, osa;
-    nsa.sa_handler = idio_command_sa_sigchld;
+    nsa.sa_handler = idio_command_sa_signal;
     sigemptyset (& nsa.sa_mask);
     nsa.sa_flags = SA_RESTART;
 
     if (sigaction (SIGCHLD, &nsa, &osa) < 0) {
-	idio_error_system_errno ("sigaction", idio_S_nil, IDIO_C_LOCATION ("idio_init_command"));
+	idio_error_system_errno ("sigaction/SIGCHLD", idio_S_nil, IDIO_C_LOCATION ("idio_init_command"));
     }
 
     if (osa.sa_handler == SIG_IGN) {
@@ -2113,10 +2291,18 @@ void idio_command_add_primitives ()
     IDIO_ADD_MODULE_PRIMITIVE (idio_command_module, foreground_job);
     IDIO_ADD_MODULE_PRIMITIVE (idio_command_module, background_job);
     IDIO_ADD_MODULE_PRIMITIVE (idio_command_module, hangup_job);
+
+    IDIO fvi;
+    fvi = IDIO_ADD_MODULE_PRIMITIVE (idio_Idio_module, condition_handler_rt_command_status);
+    idio_condition_handler_rt_command_status = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+    fvi = IDIO_ADD_MODULE_PRIMITIVE (idio_Idio_module, condition_handler_SIGHUP);
+    idio_condition_signal_handler_SIGHUP = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+    fvi = IDIO_ADD_MODULE_PRIMITIVE (idio_Idio_module, condition_handler_SIGCHLD);
+    idio_condition_signal_handler_SIGCHLD = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+
     IDIO_ADD_MODULE_PRIMITIVE (idio_command_module, mark_job_as_running);
     IDIO_ADD_MODULE_PRIMITIVE (idio_command_module, continue_job);
     IDIO_ADD_MODULE_PRIMITIVE (idio_command_module, prep_process);
-    IDIO_ADD_MODULE_PRIMITIVE (idio_command_module, background_job);
     IDIO_ADD_MODULE_PRIMITIVE (idio_command_module, launch_job);
     IDIO_ADD_MODULE_PRIMITIVE (idio_command_module, launch_pipeline);
     IDIO_ADD_MODULE_PRIMITIVE (idio_command_module, exec);
@@ -2140,18 +2326,6 @@ void idio_final_command ()
      */
     idio_command_do_job_notification ();
 
-    IDIO jobs = idio_module_symbol_value (idio_command_jobs, idio_Idio_module_instance (), idio_S_nil);
-    if (idio_S_nil != jobs) {
-	fprintf (stderr, "There are outstanding jobs\n");
-	while (idio_S_nil != jobs) {
-	    IDIO job = IDIO_PAIR_H (jobs);
-	    IDIO pgid = idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PGID);
-	    IDIO pipeline = idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PIPELINE);
-	    idio_debug ("  hangup-job %s: ", pgid);
-	    idio_debug ("%s\n", pipeline);
-	    idio_command_hangup_job (job);
-	    jobs = IDIO_PAIR_T (jobs);
-	}
-    }
+    idio_command_signal_handler_SIGHUP (idio_fixnum (SIGHUP));
 }
 
