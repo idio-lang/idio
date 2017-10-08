@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -1084,10 +1084,10 @@ char *idio_as_string (IDIO o, int depth)
 			idio_error_alloc ("asprintf");
 		    }
 
-		    IDIO st = IDIO_STRUCT_INSTANCE_TYPE (o);
-		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_STRUCT_TYPE_NAME (st), 1));
+		    IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (o);
+		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_STRUCT_TYPE_NAME (sit), 1));
 		    
-		    IDIO stf = IDIO_STRUCT_TYPE_FIELDS (st);
+		    IDIO stf = IDIO_STRUCT_TYPE_FIELDS (sit);
 		    IDIO sif = IDIO_STRUCT_INSTANCE_FIELDS (o);
 
 		    idio_ai_t al = idio_array_size (stf);
@@ -1359,6 +1359,171 @@ char *idio_display_string (IDIO o)
 	break;
     }
     
+    return r;
+}
+
+const char *idio_vm_bytecode2string (int code)
+{
+    char *r;
+
+    switch (code) {
+    case 1: r = "SHALLOW_ARGUMENT_REF0"; break;
+    case 2: r = "SHALLOW_ARGUMENT_REF1"; break;
+    case 3: r = "SHALLOW_ARGUMENT_REF2"; break;
+    case 4: r = "SHALLOW_ARGUMENT_REF3"; break;
+    case 5: r = "SHALLOW_ARGUMENT_REF"; break;
+    case 6: r = "DEEP_ARGUMENT_REF"; break;
+    case 7: r = "GLOBAL_REF"; break;
+    case 8: r = "CHECKED_GLOBAL_REF"; break;
+    case 9: r = "CHECKED_GLOBAL_FUNCTION_REF"; break;
+    case 10: r = "CONSTANT_REF"; break;
+    case 11: r = "PREDEFINED0"; break;
+
+    case 20: r = "COMPUTED_REF"; break;
+    case 21: r = "PREDEFINED1"; break;
+    case 22: r = "PREDEFINED2"; break;
+    case 23: r = "PREDEFINED3"; break;
+    case 24: r = "PREDEFINED4"; break;
+    case 25: r = "PREDEFINED5"; break;
+    case 26: r = "PREDEFINED6"; break;
+    case 27: r = "PREDEFINED7"; break;
+    case 28: r = "PREDEFINED8"; break;
+    case 29: r = "PREDEFINED"; break;
+
+    case 60: r = "SHALLOW_ARGUMENT_SET0"; break;
+    case 61: r = "SHALLOW_ARGUMENT_SET1"; break;
+    case 62: r = "SHALLOW_ARGUMENT_SET2"; break;
+    case 63: r = "SHALLOW_ARGUMENT_SET3"; break;
+    case 64: r = "SHALLOW_ARGUMENT_SET"; break;
+    case 65: r = "DEEP_ARGUMENT_SET"; break;
+    case 66: r = "GLOBAL_DEF"; break;
+    case 67: r = "GLOBAL_SET"; break;
+    case 68: r = "COMPUTED_SET"; break;
+    case 69: r = "COMPUTED_DEFINE"; break;
+
+    case 80: r = "LONG_GOTO"; break;
+    case 81: r = "LONG_JUMP_FALSE"; break;
+    case 82: r = "SHORT_GOTO"; break;
+    case 83: r = "SHORT_JUMP_FALSE"; break;
+
+    case 90: r = "PUSH_VALUE"; break;
+    case 91: r = "POP_VALUE"; break;
+    case 92: r = "POP_REG1"; break;
+    case 93: r = "POP_REG2"; break;
+    case 94: r = "POP_FUNCTION"; break;
+    case 95: r = "PRESERVE_STATE"; break;
+    case 96: r = "RESTORE_STATE"; break;
+    case 97: r = "CREATE_CLOSURE"; break;
+
+    case 100: r = "RESTORE_ALL_STATE"; break;
+    case 101: r = "FUNCTION_INVOKE"; break;
+    case 102: r = "FUNCTION_GOTO"; break;
+    case 103: r = "RETURN"; break;
+    case 104: r = "FINISH"; break;
+
+    case 110: r = "ALLOCATE_FRAME1"; break;
+    case 111: r = "ALLOCATE_FRAME2"; break;
+    case 112: r = "ALLOCATE_FRAME3"; break;
+    case 113: r = "ALLOCATE_FRAME4"; break;
+    case 114: r = "ALLOCATE_FRAME5"; break;
+    case 115: r = "ALLOCATE_FRAME"; break;
+    case 116: r = "POP_FRAME0"; break;
+
+    case 120: r = "ALLOCATE_DOTTED_FRAME"; break;
+    case 121: r = "POP_FRAME1"; break;
+    case 122: r = "POP_FRAME2"; break;
+    case 123: r = "POP_FRAME3"; break;
+    case 124: r = "EXTEND_FRAME"; break;
+
+    case 130: r = "POP_FRAME"; break;
+    case 131: r = "UNLINK_FRAME"; break;
+    case 132: r = "PACK_FRAME"; break;
+    case 133: r = "POP_CONS_FRAME"; break;
+
+    case 140: r = "ARITY1P"; break;
+    case 141: r = "ARITY2P"; break;
+    case 142: r = "ARITY3P"; break;
+    case 143: r = "ARITY4P"; break;
+    case 144: r = "ARITYEQP"; break;
+    case 145: r = "ARITYGEP"; break;
+
+    case 150: r = "SHORT_NUMBER"; break;
+    case 151: r = "SHORT_NEG_NUMBER"; break;
+    case 152: r = "CONSTANT_0"; break;
+    case 153: r = "CONSTANT_1"; break;
+    case 154: r = "CONSTANT_2"; break;
+    case 155: r = "CONSTANT_3"; break;
+    case 156: r = "CONSTANT_4"; break;
+
+    case 160: r = "PRIMCALL0_NEWLINE"; break;
+    case 161: r = "PRIMCALL0_READ"; break;
+    case 162: r = "PRIMCALL1_CAR"; break;
+    case 163: r = "PRIMCALL1_CDR"; break;
+    case 164: r = "PRIMCALL1_PAIRP"; break;
+    case 165: r = "PRIMCALL1_SYMBOLP"; break;
+    case 166: r = "PRIMCALL1_DISPLAY"; break;
+    case 167: r = "PRIMCALL1_PRIMITIVEP"; break;
+    case 168: r = "PRIMCALL1_NULLP"; break;
+    case 169: r = "PRIMCALL1_CONTINUATIONP"; break;
+    case 170: r = "PRIMCALL1_EOFP"; break;
+    case 171: r = "PRIMCALL1_SET_CUR_MOD"; break;
+    case 172: r = "PRIMCALL2_CONS"; break;
+    case 173: r = "PRIMCALL2_EQP"; break;
+    case 174: r = "PRIMCALL2_SET_CAR"; break;
+    case 175: r = "PRIMCALL2_SET_CDR"; break;
+    case 176: r = "PRIMCALL2_ADD"; break;
+    case 177: r = "PRIMCALL2_SUBTRACT"; break;
+    case 178: r = "PRIMCALL2_EQ"; break;
+    case 179: r = "PRIMCALL2_LT"; break;
+    case 180: r = "PRIMCALL2_GT"; break;
+    case 181: r = "PRIMCALL2_MULTIPLY"; break;
+    case 182: r = "PRIMCALL2_LE"; break;
+    case 183: r = "PRIMCALL2_GE"; break;
+    case 184: r = "PRIMCALL2_REMAINDER"; break;
+
+    case 190: r = "NOP"; break;
+    case 191: r = "PRIMCALL0"; break;
+    case 192: r = "PRIMCALL1"; break;
+    case 193: r = "PRIMCALL2"; break;
+    case 194: r = "PRIMCALL3"; break;
+    case 195: r = "PRIMCALL"; break;
+
+    case 200: r = "LONG_JUMP_TRUE"; break;
+    case 201: r = "SHORT_JUMP_TRUE"; break;
+    case 202: r = "FIXNUM"; break;
+    case 203: r = "NEG_FIXNUM"; break;
+    case 204: r = "CHARACTER"; break;
+    case 205: r = "NEG_CHARACTER"; break;
+    case 206: r = "CONSTANT"; break;
+    case 207: r = "NEG_CONSTANT"; break;
+
+    case 210: r = "EXPANDER"; break;
+    case 211: r = "INFIX_OPERATOR"; break;
+    case 212: r = "POSTFIX_OPERATOR"; break;
+
+    case 230: r = "DYNAMIC_REF"; break;
+    case 231: r = "DYNAMIC_FUNCTION_REF"; break;
+    case 232: r = "POP_DYNAMIC"; break;
+    case 233: r = "PUSH_DYNAMIC"; break;
+
+    case 235: r = "ENVIRON_REF"; break;
+    case 236: r = "POP_ENVIRON"; break;
+    case 237: r = "PUSH_ENVIRON"; break;
+
+    case 240: r = "NON_CONT_ERR"; break;
+    case 241: r = "PUSH_HANDLER"; break;
+    case 242: r = "POP_HANDLER"; break;
+    case 243: r = "RESTORE_HANDLER"; break;
+
+    case 245: r = "POP_ESCAPER"; break;
+    case 246: r = "PUSH_ESCAPER"; break;
+
+    default:
+	fprintf (stderr, "idio_vm_bytecode2string: unexpected bytecode %d\n", code);
+	r = "Unknown bytecode";
+	break;
+    }
+
     return r;
 }
 
@@ -1738,14 +1903,22 @@ void idio_dump (IDIO o, int detail)
     fprintf (stderr, "\n");
 }
 
-void idio_debug (const char *fmt, IDIO o)
+void idio_debug_FILE (FILE *file, const char *fmt, IDIO o)
 {
     IDIO_C_ASSERT (fmt);
     IDIO_ASSERT (o);
 
     char *os = idio_as_string (o, 40);
-    fprintf (stderr, fmt, os);
+    fprintf (file, fmt, os);
     free (os);
+}
+
+void idio_debug (const char *fmt, IDIO o)
+{
+    IDIO_C_ASSERT (fmt);
+    IDIO_ASSERT (o);
+
+    idio_debug_FILE (stderr, fmt, o);
 }
 
 IDIO_DEFINE_PRIMITIVE2 ("idio-debug", idio_debug, (IDIO fmt, IDIO o))
