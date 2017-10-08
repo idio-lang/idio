@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -23,6 +23,7 @@
 #include "idio.h"
 
 IDIO idio_libc_wrap_module = idio_S_nil;
+IDIO idio_vm_signal_handler_conditions;
 char **idio_libc_signal_names = NULL;
 char **idio_libc_errno_names = NULL;
 static IDIO idio_libc_struct_sigaction = NULL;
@@ -607,7 +608,7 @@ IDIO_DEFINE_PRIMITIVE2 ("signal", libc_signal, (IDIO isig, IDIO ifunc))
  * to aid spotting if a parent process has kindly sigignored()d
  * SIGPIPE for us:
  *
- * == (s/signal-handler SIGPIPE) SIG_IGN
+ * == (c/signal-handler SIGPIPE) SIG_IGN
  *
  * Hopefully we'll find other uses for it.
  */
@@ -990,22 +991,6 @@ IDIO_DEFINE_PRIMITIVE2 ("write", libc_write, (IDIO ifd, IDIO istr))
  * Bash's support/signames.c leads the way
  */
 
-/* 
- * How many signals are there?
- *
- * Linux, OpenSolaris and Mac OS X all seem to define NSIG as the
- * highest signal number.  On FreeBSD, NSIG is the "number of old
- * signals".  SIGRT* are in a range of their own.
- */
-
-#define IDIO_LIBC_FSIG 1
-
-#if defined (BSD)
-#define IDIO_LIBC_NSIG (SIGRTMAX + 1)
-#else
-#define IDIO_LIBC_NSIG NSIG
-#endif
-
 /*
  * How many chars in SIGRTMIN+n ?
  *
@@ -1029,7 +1014,7 @@ static void idio_libc_set_signal_names ()
 
     /*
      * Linux and SIGRTMIN are a slippery pair.  To be fair, the header
-     * file, asm-generisignal.h, says "These should not be
+     * file, asm-generic/signal.h, says "These should not be
      * considered constants from userland." [ie. userland, us, should
      * not consider these values as constants] but immediately defines
      * SIGRTMIN as 32.
@@ -1072,261 +1057,180 @@ static void idio_libc_set_signal_names ()
 #endif
 
     IDIO sig_sym;
+    IDIO sig_cond;
     
 #if defined(SIGHUP)
-    sig_sym = idio_symbols_C_intern ("SIGHUP");
-    idio_libc_export_symbol_value (sig_sym, idio_C_int (SIGHUP));
-    sprintf (idio_libc_signal_names[SIGHUP], "%s", IDIO_SYMBOL_S (sig_sym) + 3);
+    IDIO_LIBC_SIGNAL (SIGHUP)
 #endif
 
 #if defined(SIGINT)
-    sig_sym = idio_symbols_C_intern ("SIGINT");
-    idio_libc_export_symbol_value (sig_sym, idio_C_int (SIGINT));
-    sprintf (idio_libc_signal_names[SIGINT], "%s", IDIO_SYMBOL_S (sig_sym) + 3);
+    IDIO_LIBC_SIGNAL (SIGINT)
 #endif
 
 #if defined(SIGQUIT)
-    sig_sym = idio_symbols_C_intern ("SIGQUIT");
-    idio_libc_export_symbol_value (sig_sym, idio_C_int (SIGQUIT));
-    sprintf (idio_libc_signal_names[SIGQUIT], "%s", IDIO_SYMBOL_S (sig_sym) + 3);
+    IDIO_LIBC_SIGNAL (SIGQUIT)
 #endif
 
 #if defined(SIGILL)
-    sig_sym = idio_symbols_C_intern ("SIGILL");
-    idio_libc_export_symbol_value (sig_sym, idio_C_int (SIGILL));
-    sprintf (idio_libc_signal_names[SIGILL], "%s", IDIO_SYMBOL_S (sig_sym) + 3);
+    IDIO_LIBC_SIGNAL (SIGILL)
 #endif
 
 #if defined(SIGTRAP)
-    sig_sym = idio_symbols_C_intern ("SIGTRAP");
-    idio_libc_export_symbol_value (sig_sym, idio_C_int (SIGTRAP));
-    sprintf (idio_libc_signal_names[SIGTRAP], "%s", IDIO_SYMBOL_S (sig_sym) + 3);
+    IDIO_LIBC_SIGNAL (SIGTRAP)
 #endif
 
 #if defined(SIGIOT)
-    sig_sym = idio_symbols_C_intern ("SIGIOT");
-    idio_libc_export_symbol_value (sig_sym, idio_C_int (SIGIOT));
-    sprintf (idio_libc_signal_names[SIGIOT], "%s", IDIO_SYMBOL_S (sig_sym) + 3);
+    IDIO_LIBC_SIGNAL (SIGIOT)
 #endif
 
 #if defined(SIGEMT)
-    sig_sym = idio_symbols_C_intern ("SIGEMT");
-    idio_libc_export_symbol_value (sig_sym, idio_C_int (SIGEMT));
-    sprintf (idio_libc_signal_names[SIGEMT], "%s", IDIO_SYMBOL_S (sig_sym) + 3);
+    IDIO_LIBC_SIGNAL (SIGEMT)
 #endif
 
 #if defined(SIGFPE)
-    sig_sym = idio_symbols_C_intern ("SIGFPE");
-    idio_libc_export_symbol_value (sig_sym, idio_C_int (SIGFPE));
-    sprintf (idio_libc_signal_names[SIGFPE], "%s", IDIO_SYMBOL_S (sig_sym) + 3);
+    IDIO_LIBC_SIGNAL (SIGFPE)
 #endif
 
 #if defined(SIGKILL)
-    sig_sym = idio_symbols_C_intern ("SIGKILL");
-    idio_libc_export_symbol_value (sig_sym, idio_C_int (SIGKILL));
-    sprintf (idio_libc_signal_names[SIGKILL], "%s", IDIO_SYMBOL_S (sig_sym) + 3);
+    IDIO_LIBC_SIGNAL (SIGKILL)
 #endif
 
 #if defined(SIGBUS)
-    sig_sym = idio_symbols_C_intern ("SIGBUS");
-    idio_libc_export_symbol_value (sig_sym, idio_C_int (SIGBUS));
-    sprintf (idio_libc_signal_names[SIGBUS], "%s", IDIO_SYMBOL_S (sig_sym) + 3);
+    IDIO_LIBC_SIGNAL (SIGBUS)
 #endif
 
 #if defined(SIGSEGV)
-    sig_sym = idio_symbols_C_intern ("SIGSEGV");
-    idio_libc_export_symbol_value (sig_sym, idio_C_int (SIGSEGV));
-    sprintf (idio_libc_signal_names[SIGSEGV], "%s", IDIO_SYMBOL_S (sig_sym) + 3);
+    IDIO_LIBC_SIGNAL (SIGSEGV)
 #endif
 
 #if defined(SIGSYS)
-    sig_sym = idio_symbols_C_intern ("SIGSYS");
-    idio_libc_export_symbol_value (sig_sym, idio_C_int (SIGSYS));
-    sprintf (idio_libc_signal_names[SIGSYS], "%s", IDIO_SYMBOL_S (sig_sym) + 3);
+    IDIO_LIBC_SIGNAL (SIGSYS)
 #endif
 
 #if defined(SIGPIPE)
-    sig_sym = idio_symbols_C_intern ("SIGPIPE");
-    idio_libc_export_symbol_value (sig_sym, idio_C_int (SIGPIPE));
-    sprintf (idio_libc_signal_names[SIGPIPE], "%s", IDIO_SYMBOL_S (sig_sym) + 3);
+    IDIO_LIBC_SIGNAL (SIGPIPE)
 #endif
 
 #if defined(SIGALRM)
-    sig_sym = idio_symbols_C_intern ("SIGALRM");
-    idio_libc_export_symbol_value (sig_sym, idio_C_int (SIGALRM));
-    sprintf (idio_libc_signal_names[SIGALRM], "%s", IDIO_SYMBOL_S (sig_sym) + 3);
+    IDIO_LIBC_SIGNAL (SIGALRM)
 #endif
 
 #if defined(SIGTERM)
-    sig_sym = idio_symbols_C_intern ("SIGTERM");
-    idio_libc_export_symbol_value (sig_sym, idio_C_int (SIGTERM));
-    sprintf (idio_libc_signal_names[SIGTERM], "%s", IDIO_SYMBOL_S (sig_sym) + 3);
+    IDIO_LIBC_SIGNAL (SIGTERM)
 #endif
 
 #if defined(SIGUSR1)
-    sig_sym = idio_symbols_C_intern ("SIGUSR1");
-    idio_libc_export_symbol_value (sig_sym, idio_C_int (SIGUSR1));
-    sprintf (idio_libc_signal_names[SIGUSR1], "%s", IDIO_SYMBOL_S (sig_sym) + 3);
+    IDIO_LIBC_SIGNAL (SIGUSR1)
 #endif
 
 #if defined(SIGUSR2)
-    sig_sym = idio_symbols_C_intern ("SIGUSR2");
-    idio_libc_export_symbol_value (sig_sym, idio_C_int (SIGUSR2));
-    sprintf (idio_libc_signal_names[SIGUSR2], "%s", IDIO_SYMBOL_S (sig_sym) + 3);
+    IDIO_LIBC_SIGNAL (SIGUSR2)
 #endif
 
 #if defined(SIGCHLD)
-    sig_sym = idio_symbols_C_intern ("SIGCHLD");
-    idio_libc_export_symbol_value (sig_sym, idio_C_int (SIGCHLD));
-    sprintf (idio_libc_signal_names[SIGCHLD], "%s", IDIO_SYMBOL_S (sig_sym) + 3);
+    IDIO_LIBC_SIGNAL (SIGCHLD)
 #endif
 
 #if defined(SIGPWR)
-    sig_sym = idio_symbols_C_intern ("SIGPWR");
-    idio_libc_export_symbol_value (sig_sym, idio_C_int (SIGPWR));
-    sprintf (idio_libc_signal_names[SIGPWR], "%s", IDIO_SYMBOL_S (sig_sym) + 3);
+    IDIO_LIBC_SIGNAL (SIGPWR)
 #endif
 
 #if defined(SIGWINCH)
-    sig_sym = idio_symbols_C_intern ("SIGWINCH");
-    idio_libc_export_symbol_value (sig_sym, idio_C_int (SIGWINCH));
-    sprintf (idio_libc_signal_names[SIGWINCH], "%s", IDIO_SYMBOL_S (sig_sym) + 3);
+    IDIO_LIBC_SIGNAL (SIGWINCH)
 #endif
 
 #if defined(SIGURG)
-    sig_sym = idio_symbols_C_intern ("SIGURG");
-    idio_libc_export_symbol_value (sig_sym, idio_C_int (SIGURG));
-    sprintf (idio_libc_signal_names[SIGURG], "%s", IDIO_SYMBOL_S (sig_sym) + 3);
+    IDIO_LIBC_SIGNAL (SIGURG)
 #endif
 
 #if defined(SIGPOLL)
-    sig_sym = idio_symbols_C_intern ("SIGPOLL");
-    idio_libc_export_symbol_value (sig_sym, idio_C_int (SIGPOLL));
-    sprintf (idio_libc_signal_names[SIGPOLL], "%s", IDIO_SYMBOL_S (sig_sym) + 3);
+    IDIO_LIBC_SIGNAL (SIGPOLL)
 #endif
 
 #if defined(SIGSTOP)
-    sig_sym = idio_symbols_C_intern ("SIGSTOP");
-    idio_libc_export_symbol_value (sig_sym, idio_C_int (SIGSTOP));
-    sprintf (idio_libc_signal_names[SIGSTOP], "%s", IDIO_SYMBOL_S (sig_sym) + 3);
+    IDIO_LIBC_SIGNAL (SIGSTOP)
 #endif
 
 #if defined(SIGTSTP)
-    sig_sym = idio_symbols_C_intern ("SIGTSTP");
-    idio_libc_export_symbol_value (sig_sym, idio_C_int (SIGTSTP));
-    sprintf (idio_libc_signal_names[SIGTSTP], "%s", IDIO_SYMBOL_S (sig_sym) + 3);
+    IDIO_LIBC_SIGNAL (SIGTSTP)
 #endif
 
 #if defined(SIGCONT)
-    sig_sym = idio_symbols_C_intern ("SIGCONT");
-    idio_libc_export_symbol_value (sig_sym, idio_C_int (SIGCONT));
-    sprintf (idio_libc_signal_names[SIGCONT], "%s", IDIO_SYMBOL_S (sig_sym) + 3);
+    IDIO_LIBC_SIGNAL (SIGCONT)
 #endif
 
 #if defined(SIGTTIN)
-    sig_sym = idio_symbols_C_intern ("SIGTTIN");
-    idio_libc_export_symbol_value (sig_sym, idio_C_int (SIGTTIN));
-    sprintf (idio_libc_signal_names[SIGTTIN], "%s", IDIO_SYMBOL_S (sig_sym) + 3);
+    IDIO_LIBC_SIGNAL (SIGTTIN)
 #endif
 
 #if defined(SIGTTOU)
-    sig_sym = idio_symbols_C_intern ("SIGTTOU");
-    idio_libc_export_symbol_value (sig_sym, idio_C_int (SIGTTOU));
-    sprintf (idio_libc_signal_names[SIGTTOU], "%s", IDIO_SYMBOL_S (sig_sym) + 3);
+    IDIO_LIBC_SIGNAL (SIGTTOU)
 #endif
 
 #if defined(SIGVTALRM)
-    sig_sym = idio_symbols_C_intern ("SIGVTALRM");
-    idio_libc_export_symbol_value (sig_sym, idio_C_int (SIGVTALRM));
-    sprintf (idio_libc_signal_names[SIGVTALRM], "%s", IDIO_SYMBOL_S (sig_sym) + 3);
+    IDIO_LIBC_SIGNAL (SIGVTALRM)
 #endif
 
 #if defined(SIGPROF)
-    sig_sym = idio_symbols_C_intern ("SIGPROF");
-    idio_libc_export_symbol_value (sig_sym, idio_C_int (SIGPROF));
-    sprintf (idio_libc_signal_names[SIGPROF], "%s", IDIO_SYMBOL_S (sig_sym) + 3);
+    IDIO_LIBC_SIGNAL (SIGPROF)
 #endif
 
 #if defined(SIGXCPU)
-    sig_sym = idio_symbols_C_intern ("SIGXCPU");
-    idio_libc_export_symbol_value (sig_sym, idio_C_int (SIGXCPU));
-    sprintf (idio_libc_signal_names[SIGXCPU], "%s", IDIO_SYMBOL_S (sig_sym) + 3);
+    IDIO_LIBC_SIGNAL (SIGXCPU)
 #endif
 
 #if defined(SIGXFSZ)
-    sig_sym = idio_symbols_C_intern ("SIGXFSZ");
-    idio_libc_export_symbol_value (sig_sym, idio_C_int (SIGXFSZ));
-    sprintf (idio_libc_signal_names[SIGXFSZ], "%s", IDIO_SYMBOL_S (sig_sym) + 3);
+    IDIO_LIBC_SIGNAL (SIGXFSZ)
 #endif
 
     /* SunOS */
 #if defined(SIGWAITING)
-    sig_sym = idio_symbols_C_intern ("SIGWAITING");
-    idio_libc_export_symbol_value (sig_sym, idio_C_int (SIGWAITING));
-    sprintf (idio_libc_signal_names[SIGWAITING], "%s", IDIO_SYMBOL_S (sig_sym) + 3);
+    IDIO_LIBC_SIGNAL (SIGWAITING)
 #endif
 
     /* SunOS */
 #if defined(SIGLWP)
-    sig_sym = idio_symbols_C_intern ("SIGLWP");
-    idio_libc_export_symbol_value (sig_sym, idio_C_int (SIGLWP));
-    sprintf (idio_libc_signal_names[SIGLWP], "%s", IDIO_SYMBOL_S (sig_sym) + 3);
+    IDIO_LIBC_SIGNAL (SIGLWP)
 #endif
 
     /* SunOS */
 #if defined(SIGFREEZE)
-    sig_sym = idio_symbols_C_intern ("SIGFREEZE");
-    idio_libc_export_symbol_value (sig_sym, idio_C_int (SIGFREEZE));
-    sprintf (idio_libc_signal_names[SIGFREEZE], "%s", IDIO_SYMBOL_S (sig_sym) + 3);
+    IDIO_LIBC_SIGNAL (SIGFREEZE)
 #endif
 
     /* SunOS */
 #if defined(SIGTHAW)
-    sig_sym = idio_symbols_C_intern ("SIGTHAW");
-    idio_libc_export_symbol_value (sig_sym, idio_C_int (SIGTHAW));
-    sprintf (idio_libc_signal_names[SIGTHAW], "%s", IDIO_SYMBOL_S (sig_sym) + 3);
+    IDIO_LIBC_SIGNAL (SIGTHAW)
 #endif
 
     /* SunOS */
 #if defined(SIGCANCEL)
-    sig_sym = idio_symbols_C_intern ("SIGCANCEL");
-    idio_libc_export_symbol_value (sig_sym, idio_C_int (SIGCANCEL));
-    sprintf (idio_libc_signal_names[SIGCANCEL], "%s", IDIO_SYMBOL_S (sig_sym) + 3);
+    IDIO_LIBC_SIGNAL (SIGCANCEL)
 #endif
 
     /* SunOS */
 #if defined(SIGLOST)
-    sig_sym = idio_symbols_C_intern ("SIGLOST");
-    idio_libc_export_symbol_value (sig_sym, idio_C_int (SIGLOST));
-    sprintf (idio_libc_signal_names[SIGLOST], "%s", IDIO_SYMBOL_S (sig_sym) + 3);
+    IDIO_LIBC_SIGNAL (SIGLOST)
 #endif
 
     /* SunOS */
 #if defined(SIGXRES)
-    sig_sym = idio_symbols_C_intern ("SIGXRES");
-    idio_libc_export_symbol_value (sig_sym, idio_C_int (SIGXRES));
-    sprintf (idio_libc_signal_names[SIGXRES], "%s", IDIO_SYMBOL_S (sig_sym) + 3);
+    IDIO_LIBC_SIGNAL (SIGXRES)
 #endif
 
     /* SunOS */
 #if defined(SIGJVM1)
-    sig_sym = idio_symbols_C_intern ("SIGJVM1");
-    idio_libc_export_symbol_value (sig_sym, idio_C_int (SIGJVM1));
-    sprintf (idio_libc_signal_names[SIGJVM1], "%s", IDIO_SYMBOL_S (sig_sym) + 3);
+    IDIO_LIBC_SIGNAL (SIGJVM1)
 #endif
 
     /* SunOS */
 #if defined(SIGJVM2)
-    sig_sym = idio_symbols_C_intern ("SIGJVM2");
-    idio_libc_export_symbol_value (sig_sym, idio_C_int (SIGJVM2));
-    sprintf (idio_libc_signal_names[SIGJVM2], "%s", IDIO_SYMBOL_S (sig_sym) + 3);
+    IDIO_LIBC_SIGNAL (SIGJVM2)
 #endif
 
     /* Linux */
 #if defined(SIGSTKFLT)
-    sig_sym = idio_symbols_C_intern ("SIGSTKFLT");
-    idio_libc_export_symbol_value (sig_sym, idio_C_int (SIGSTKFLT));
-    sprintf (idio_libc_signal_names[SIGSTKFLT], "%s", IDIO_SYMBOL_S (sig_sym) + 3);
+    IDIO_LIBC_SIGNAL (SIGSTKFLT)
 #endif
 
 #if IDIO_DEBUG
@@ -1335,12 +1239,10 @@ static void idio_libc_set_signal_names ()
 	if ('\0' == *(idio_libc_signal_names[i])) {
 	    char sig_name[IDIO_LIBC_SIGNAMELEN + 3];
 	    sprintf (sig_name, "SIGJUNK%d", i);
-	    sig_sym = idio_symbols_C_intern (sig_name);
-	    idio_libc_export_symbol_value (sig_sym, idio_C_int (i));
-	    sprintf (idio_libc_signal_names[i], "%s", sig_name + 3);
+	    IDIO_LIBC_SIGNAL_NAME_ONLY (sig_name, i)
 	    if (first) {
 		first = 0;
-		fprintf (stderr, "Undefined signals:");
+		fprintf (stderr, "WARNING: Unnamed signal numbers:");
 	    }
 	    fprintf (stderr, " %d", i);
 	}
@@ -1357,9 +1259,10 @@ static void idio_libc_set_signal_names ()
  * POSIX.2 says the signal names are displayed without the `SIG'
  * prefix.
  *
- * We'll support both.  ~signal~ says the full signal name and ~sig~
- * says the POSIX.2 format (arguably it should be ~nal~ as we've
- * stripped off the "sig" part...can't be witty in the API!)
+ * We'll support both.  Functions like ~signal~ says the full signal
+ * name and ~sig~ says the POSIX.2 format (arguably it should be ~nal~
+ * as we've stripped off the "sig" part...can't be witty in the API,
+ * though!)
  */
 char *idio_libc_sig_name (int signum)
 {
@@ -2891,6 +2794,9 @@ void idio_init_libc_wrap ()
     name = idio_symbols_C_intern ("Idio/uname");
     idio_module_export_symbol_value (name, idio_libc_uname (), idio_libc_wrap_module);
 
+    idio_vm_signal_handler_conditions = idio_array (IDIO_LIBC_NSIG + 1);
+    idio_gc_protect (idio_vm_signal_handler_conditions);
+
     idio_libc_set_signal_names ();
     idio_libc_set_errno_names ();
 
@@ -3060,6 +2966,7 @@ void idio_libc_wrap_add_primitives ()
 void idio_final_libc_wrap ()
 {
     int i;
+    idio_gc_expose (idio_vm_signal_handler_conditions);
     for (i = IDIO_LIBC_FSIG; NULL != idio_libc_signal_names[i]; i++) {
         free (idio_libc_signal_names[i]);
     }
