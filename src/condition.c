@@ -81,6 +81,11 @@ IDIO idio_condition_rt_command_status_error_type;
 
 IDIO idio_condition_rt_signal_type;
 
+IDIO idio_condition_handler_default;
+IDIO idio_condition_handler_rt_command_status;
+IDIO idio_condition_signal_handler_SIGHUP;
+IDIO idio_condition_signal_handler_SIGCHLD;
+
 IDIO_DEFINE_PRIMITIVE2V ("make-condition-type", make_condition_type, (IDIO name, IDIO parent, IDIO fields))
 {
     IDIO_ASSERT (name);
@@ -284,45 +289,41 @@ IDIO_DEFINE_PRIMITIVE3 ("condition-set!", condition_set, (IDIO c, IDIO field, ID
     return idio_struct_instance_set (c, field, value);
 }
 
-#define IDIO_DEFINE_CONDITION0(v,n,p) {					\
-	IDIO sym = idio_symbols_C_intern (n);				\
-	v = idio_struct_type (sym, p, idio_S_nil);			\
-	idio_gc_protect (v);						\
-	idio_ai_t gci = idio_vm_constants_lookup_or_extend (sym);	\
-	idio_ai_t gvi = idio_vm_extend_values ();			\
-	idio_module_toplevel_set_symbol (sym, IDIO_LIST3 (idio_S_toplevel, idio_fixnum (gci), idio_fixnum (gvi))); \
-	idio_module_toplevel_set_symbol_value (sym, v);			\
+IDIO_DEFINE_PRIMITIVE2 ("condition-handler-default", condition_handler_default, (IDIO cont, IDIO cond))
+{
+    IDIO_ASSERT (cont);
+    IDIO_ASSERT (cond);
+    IDIO_TYPE_ASSERT (boolean, cont);
+    IDIO_TYPE_ASSERT (condition, cond); 
+
+    IDIO thr = idio_thread_current_thread ();
+
+    if (idio_isa_condition (cond)) {
+	IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (cond);
+	IDIO sif = IDIO_STRUCT_INSTANCE_FIELDS (cond);
+
+	return idio_S_unspec;
+    } else {
+	fprintf (stderr, "condition-handler-default: expected a condition, not a %s\n", idio_type2string (cond));
+	idio_debug ("%s\n", cond);
+
+	IDIO sh = idio_open_output_string_handle_C ();
+	idio_display_C ("condition-handler-rt-command-status: expected a condition not a '", sh);
+	idio_display (cond, sh);
+	idio_display_C ("'", sh);
+	IDIO c = idio_struct_instance (idio_condition_rt_parameter_type_error_type,
+				       IDIO_LIST3 (idio_get_output_string (sh),
+						   IDIO_C_LOCATION ("condition-handler-rt-command-status"),
+						   idio_S_nil));
+
+	idio_raise_condition (idio_S_true, c);
     }
 
-#define IDIO_DEFINE_CONDITION1(v,n,p,f1) {				\
-	IDIO sym = idio_symbols_C_intern (n);				\
-	v = idio_struct_type (sym, p, IDIO_LIST1 (idio_symbols_C_intern (f1))); \
-	idio_gc_protect (v);						\
-	idio_ai_t gci = idio_vm_constants_lookup_or_extend (sym);	\
-	idio_ai_t gvi = idio_vm_extend_values ();			\
-	idio_module_toplevel_set_symbol (sym, IDIO_LIST3 (idio_S_toplevel, idio_fixnum (gci), idio_fixnum (gvi))); \
-	idio_module_toplevel_set_symbol_value (sym, v);			\
-    }
+    idio_raise_condition (cont, cond);
 
-#define IDIO_DEFINE_CONDITION2(v,n,p,f1,f2) {				\
-	IDIO sym = idio_symbols_C_intern (n);				\
-	v = idio_struct_type (sym, p, IDIO_LIST2 (idio_symbols_C_intern (f1), idio_symbols_C_intern (f2))); \
-	idio_gc_protect (v);						\
-	idio_ai_t gci = idio_vm_constants_lookup_or_extend (sym);	\
-	idio_ai_t gvi = idio_vm_extend_values ();			\
-	idio_module_toplevel_set_symbol (sym, IDIO_LIST3 (idio_S_toplevel, idio_fixnum (gci), idio_fixnum (gvi))); \
-	idio_module_toplevel_set_symbol_value (sym, v);			\
-    }
-
-#define IDIO_DEFINE_CONDITION3(v,n,p,f1,f2,f3) {			\
-	IDIO sym = idio_symbols_C_intern (n);				\
-	v = idio_struct_type (sym, p, IDIO_LIST3 (idio_symbols_C_intern (f1), idio_symbols_C_intern (f2), idio_symbols_C_intern (f3))); \
-	idio_gc_protect (v);						\
-	idio_ai_t gci = idio_vm_constants_lookup_or_extend (sym);	\
-	idio_ai_t gvi = idio_vm_extend_values ();			\
-	idio_module_toplevel_set_symbol (sym, IDIO_LIST3 (idio_S_toplevel, idio_fixnum (gci), idio_fixnum (gvi))); \
-	idio_module_toplevel_set_symbol_value (sym, v);			\
-    }
+    /* notreached */
+    IDIO_C_ASSERT (0);
+}
 
 void idio_init_condition ()
 {
@@ -400,7 +401,7 @@ void idio_init_condition ()
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_bignum_conversion_error_type, "^rt-bignum-conversion-error", idio_condition_runtime_error_type, "bignum");
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_fixnum_conversion_error_type, "^rt-fixnum-conversion-error", idio_condition_runtime_error_type, "fixnum");
 
-    IDIO_DEFINE_CONDITION1 (idio_condition_rt_signal_type, "^rt-signal", idio_condition_error_type, "signal");
+    IDIO_DEFINE_CONDITION1 (idio_condition_rt_signal_type, "^rt-signal", idio_condition_error_type, "signum");
 }
 
 void idio_condition_add_primitives ()
@@ -418,6 +419,10 @@ void idio_condition_add_primitives ()
     IDIO_ADD_PRIMITIVE (condition_ref);
     IDIO_ADD_PRIMITIVE (condition_message);
     IDIO_ADD_PRIMITIVE (condition_set);
+
+    IDIO fvi;
+    fvi = IDIO_ADD_MODULE_PRIMITIVE (idio_Idio_module, condition_handler_default);
+    idio_condition_handler_default = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
 }
 
 void idio_final_condition ()
