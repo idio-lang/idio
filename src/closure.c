@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -44,6 +44,11 @@ IDIO idio_closure (size_t code, IDIO frame, IDIO env)
     IDIO_CLOSURE_FRAME (c) = frame;
     IDIO_CLOSURE_ENV (c) = env;
     IDIO_CLOSURE_PROPERTIES (c) = idio_S_nil;
+#ifdef IDIO_VM_PERF
+    IDIO_CLOSURE_CALLED (c) = 0;
+    IDIO_CLOSURE_CALL_TIME (c).tv_sec = 0;
+    IDIO_CLOSURE_CALL_TIME (c).tv_nsec = 0;
+#endif
 
     return c;
 }
