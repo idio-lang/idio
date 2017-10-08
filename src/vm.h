@@ -192,6 +192,8 @@ extern idio_ai_t idio_vm_IHR_pc;
 extern idio_ai_t idio_vm_AR_pc;
 extern size_t idio_prologue_len;
 
+IDIO idio_vm_closure_name (IDIO c);
+
 IDIO idio_vm_run (IDIO thr);
 
 idio_ai_t idio_vm_extend_constants (IDIO v);
@@ -212,6 +214,7 @@ IDIO idio_vm_computed_set (idio_ai_t msi, idio_ai_t gvi, IDIO v, IDIO thr);
 void idio_vm_computed_define (idio_ai_t msi, idio_ai_t gvi, IDIO v, IDIO thr);
 void idio_vm_add_module_constants (IDIO module, IDIO constants);
 
+void idio_vm_push_handler (IDIO thr, IDIO val);
 void idio_raise_condition (IDIO continuablep, IDIO e);
 IDIO idio_apply (IDIO fn, IDIO args);
 IDIO idio_vm_invoke_C (IDIO thr, IDIO command);
@@ -219,6 +222,8 @@ IDIO idio_vm_invoke_C (IDIO thr, IDIO command);
 void idio_vm_thread_init (IDIO thr);
 void idio_vm_default_pc (IDIO thr);
 void idio_vm_thread_state ();
+
+time_t idio_vm_elapsed (void);
 
 void idio_init_vm_values ();
 void idio_init_vm ();
