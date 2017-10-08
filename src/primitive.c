@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -50,6 +50,12 @@ IDIO idio_primitive (IDIO (*func) (IDIO args), const char *name_C, size_t arity,
      */
     strcpy (IDIO_PRIMITIVE_NAME (o), name_C);
 
+#ifdef IDIO_VM_PERF
+    IDIO_PRIMITIVE_CALLED (o) = 0;
+    IDIO_PRIMITIVE_CALL_TIME (o).tv_sec = 0;
+    IDIO_PRIMITIVE_CALL_TIME (o).tv_nsec = 0;
+#endif
+    
     return o;
 }
 
@@ -74,6 +80,12 @@ IDIO idio_primitive_data (idio_primitive_desc_t *desc)
 
     strcpy (IDIO_PRIMITIVE_NAME (o), desc->name);
 
+#ifdef IDIO_VM_PERF
+    IDIO_PRIMITIVE_CALLED (o) = 0;
+    IDIO_PRIMITIVE_CALL_TIME (o).tv_sec = 0;
+    IDIO_PRIMITIVE_CALL_TIME (o).tv_nsec = 0;
+#endif
+    
     return o;
 }
 
