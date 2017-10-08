@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -22,8 +22,22 @@
 
 #include "idio.h"
 
+#ifdef IDIO_VM_PERF
+#define IDIO_VM_PERF_FILE_NAME "vm-perf.log"
+FILE *idio_vm_perf_FILE;
+#endif
+
 void idio_init (int argc, char **argv)
 {
+
+#ifdef IDIO_VM_PERF
+    idio_vm_perf_FILE = fopen (IDIO_VM_PERF_FILE_NAME, "w");
+    if (NULL == idio_vm_perf_FILE) {
+	perror ("fopen " IDIO_VM_PERF_FILE_NAME);
+	exit (1);
+    }
+#endif
+
     /* GC first then symbol for the symbol table then modules */
     idio_init_gc ();
     idio_init_vm_values ();
@@ -82,6 +96,7 @@ void idio_init (int argc, char **argv)
     idio_module_set_symbol_value (idio_symbols_C_intern ("ARGC"), idio_integer (argc - 1), idio_Idio_module_instance ());
     idio_module_set_symbol_value (idio_symbols_C_intern ("ARGV"), args, idio_Idio_module_instance ());
 
+    idio_add_primitives ();
 }
 
 void idio_add_primitives ()
@@ -184,12 +199,18 @@ void idio_final ()
     idio_final_symbol ();
 
     idio_final_gc ();
+
+#ifdef IDIO_VM_PERF
+    if (fclose (idio_vm_perf_FILE)) {
+	perror ("fclose " IDIO_VM_PERF_FILE_NAME);
+    }
+    idio_vm_perf_FILE = stderr;
+#endif
 }
 
 int main (int argc, char **argv, char **envp)
 {
     idio_init (argc, argv);
-    idio_add_primitives ();
 
     idio_env_init_idiolib (argv[0]);
     
