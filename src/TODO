@@ -112,6 +112,13 @@ Objects
 
 UTF8
 	- be aware of UTF8
+	- branchless UTF-8 decoding:
+	  https://news.ycombinator.com/item?id=15423674
+	    http://nullprogram.com/blog/2017/10/06/
+
+	    which leads to Bjoern Hoehrmann’s DFA-based decoder:
+
+	    http://bjoern.hoehrmann.de/utf-8/decoder/dfa/
 
 I18N
 	- gettext
