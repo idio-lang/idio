@@ -64,7 +64,7 @@ endif
 
 PROFLAGS	:=
 COVFLAGS	:=
-CFLAGS	       := ${CFLAGS} ${PROFLAGS} ${COVFLAGS} ${CDEBUG} -std=c99 -Wall -fPIC ${LIBFFI_INC}
+CFLAGS	       := ${CFLAGS} ${PROFLAGS} ${COVFLAGS} ${CDEBUG} -std=c99 -Wall -fPIC ${LIBFFI_INC} -DIDIO_VM_PERF
 LDFLAGS        := ${PROFLAGS} ${COVFLAGS} ${LDFLAGS}
 LIBS	       := ${LIBS} -lffi
 
