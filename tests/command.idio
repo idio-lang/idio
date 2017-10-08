@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -39,7 +39,16 @@ monitor (function (cont cond) {
     ;; We are deliberately trying to provoke command status errors so
     ;; we should check that the condition is a command status error
     ;; and complain loudly otherwise
-    if (rt-command-status-error? cond) {
+    if+ (rt-signal? cond) {
+      ;; Of course the command exiting raises a SIGCHLD
+      if (eq (rt-signal-signum cond) 17) {
+	raise cont cond
+      } {
+        edisplay* "command tests:" PID "unexpected signal" cond
+        raise cont cond
+
+      rcseh cond
+    } (rt-command-status-error? cond) {
       ;; Finally we can run our error-specific handler
       rcseh cond
     } {

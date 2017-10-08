@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -214,14 +214,22 @@ monitor (function (cont cond) {
 ;; only file-handles generate this
 monitor (function (cont cond) {
   ;; display* "closed handle monitor condition:" (struct-type-name cond)
-  test (i/o-closed-error? cond) #t
-  if cont {
-    if (i/o-closed-error? cond) {
-      handle := i/o-error-handle cond
+  if (rt-signal? cond) {
+    ;; Any command exiting raises a SIGCHLD -- we call touch and chmod
+    ;; below
+    if (eq (rt-signal-signum cond) 17) {
+      raise cont cond
+    } (error "closed handle: unexpected signal condition" cond)
+  } {
+    test (i/o-closed-error? cond) #t
+    if cont {
+      if (i/o-closed-error? cond) {
+        handle := i/o-error-handle cond
 
-      #t
-    } (error "closed handle: unexpected condition" cond)
-  } (error "closed handle: unexpected non-continuable error" cond)
+        #t
+      } (error "closed handle: unexpected condition" cond)
+    } (error "closed handle: unexpected non-continuable error" cond)
+  }
 }) {
   ;; display* "closed handle condition"
   touch test_filename
@@ -266,20 +274,28 @@ monitor (function (cont cond) {
 ;; directory component as ./test_filename/test_filename
 monitor (function (cont cond) {
   ;; display* "generic filename monitor condition:" (struct-type-name cond)
-  test (i/o-filename-error? cond) #t
-  if cont {
-    if (i/o-filename-error? cond) {
-      filename := i/o-filename-error-filename cond
+  if (rt-signal? cond) {
+    ;; Any command exiting raises a SIGCHLD -- we call touch and chmod
+    ;; below
+    if (eq (rt-signal-signum cond) 17) {
+      raise cont cond
+    } (error "closed handle: unexpected signal condition" cond)
+  } {
+    test (i/o-filename-error? cond) #t
+    if cont {
+      if (i/o-filename-error? cond) {
+	filename := i/o-filename-error-filename cond
 
-      ;; use a safe file instead of {filename} (which is
-      ;; ./test_filename/test_filename and just had an error!)
-      ;;
-      ;; test_filename on its own *is* safe but make sure it's
-      ;; writable
-      chmod +w test_filename
-      open-output-file test_filename
-    } (error "generic filename: unexpected condition" cond)
-  } (error "generic filename: unexpected non-continuable error" cond)
+	;; use a safe file instead of {filename} (which is
+	;; ./test_filename/test_filename and just had an error!)
+	;;
+	;; test_filename on its own *is* safe but make sure it's
+	;; writable
+	chmod +w test_filename
+	open-output-file test_filename
+      } (error "generic filename: unexpected condition" cond)
+    } (error "generic filename: unexpected non-continuable error" cond)
+  }
 }) {
   ;; display* "generic filename condition"
 
@@ -334,14 +350,22 @@ monitor (function (cont cond) {
 ;; (EACCES)
 monitor (function (cont cond) {
   ;; display* "0-perms monitor condition:" (struct-type-name cond)
-  test (i/o-file-protection-error? cond) #t
-  if cont {
-    if (i/o-file-protection-error? cond) {
-      filename := condition-ref cond 'filename
-      chmod +r filename
-      open-input-file filename
-    } (error "0-perms: unexpected condition" cond)
-  } (error "0-perms: unexpected non-continuable error" cond)
+  if (rt-signal? cond) {
+    ;; Any command exiting raises a SIGCHLD -- we call touch and chmod
+    ;; below
+    if (eq (rt-signal-signum cond) 17) {
+      raise cont cond
+    } (error "closed handle: unexpected signal condition" cond)
+  } {
+    test (i/o-file-protection-error? cond) #t
+    if cont {
+      if (i/o-file-protection-error? cond) {
+	filename := condition-ref cond 'filename
+	chmod +r filename
+	open-input-file filename
+      } (error "0-perms: unexpected condition" cond)
+    } (error "0-perms: unexpected non-continuable error" cond)
+  }
 }) {
   ;; display* "opening 0-perms file"
   touch test_filename
@@ -367,15 +391,23 @@ if (equal? (struct-utsname-sysname Idio/uname) "SunOS") {
 } {
   monitor (function (cont cond) {
     ;; display* "already exists monitor condition:" (struct-type-name cond)
-    test (i/o-file-already-exists-error? cond) #t
-    if cont {
-      if (i/o-file-already-exists-error? cond) {
-	filename := condition-ref cond 'filename
+    if (rt-signal? cond) {
+      ;; Any command exiting raises a SIGCHLD -- we call touch and chmod
+      ;; below
+      if (eq (rt-signal-signum cond) 17) {
+	raise cont cond
+      } (error "closed handle: unexpected signal condition" cond)
+    } {
+      test (i/o-file-already-exists-error? cond) #t
+      if cont {
+	if (i/o-file-already-exists-error? cond) {
+	  filename := condition-ref cond 'filename
 
-	;; our "repair" is simply to open the file anyway
-	open-output-file filename
-      } (error "already exists: unexpected condition" cond)
-    } (error "already exists: unexpected non-continuable error" cond)
+	  ;; our "repair" is simply to open the file anyway
+	  open-output-file filename
+	} (error "already exists: unexpected condition" cond)
+      } (error "already exists: unexpected non-continuable error" cond)
+    }
   }) {
     ;; display* "opening existing file"
     touch test_filename
@@ -413,10 +445,10 @@ monitor (function (cont cond) {
 
 if (file-exists? test_filename) (delete-file test_filename)
 
-;; a continuable error, if it reaches base-error-handler then
-;; base-error-handler will return #void.  If something else returned
-;; #void then we're none the wiser.
-display* "raising a continuable condition"
+;; a continuable error, if it reaches fallback-condition-handler then
+;; fallback-condition-handler will return #void.  If something else
+;; returned #void then we're none the wiser.
+display* "NOTICE: raising a continuable condition"
 test (raise #t (make-condition ^error)) (void)
 
 ;; all done?
@@ -428,7 +460,7 @@ test (condition0 + 101) Tests
 ;; which will be the idio_vm_run() in idio_load_filehandle, ie. the
 ;; sequence of expressions in this file -- so we can't test anything
 ;; in this file after this
-display* "raising NON-CONT condition"
+display* "NOTICE: raising NON-CONT condition; this will be picked up by load/module"
 raise #f (make-condition ^error)
 
 ;; WARNING
