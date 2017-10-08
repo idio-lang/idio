@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -62,7 +62,7 @@ define (ptt x) (pt (pt x))
 
 define (list & x) x
 
-define (null? x) (eq? #n x)
+define (s9/null? x) (eq? #n x)
 
 define (void) (if #f #f)
 
@@ -82,7 +82,7 @@ append = {
 
 ; There is no LET or LETREC yet, so
 
-define-macro (let-s9 bindings expr & exprs) {
+define-macro (s9/let bindings expr & exprs) {
   ((function (split)
     ((function (tmp-split) {
        set! split tmp-split
@@ -282,7 +282,7 @@ define (member x a) {
       else (member x (pt a))
 }
 
-define (memq x a) {
+define (s9/memq x a) {
   if+ (null? a) #f \
       (eq? (ph a) x) a \
       else (memq x (pt a))
@@ -294,7 +294,7 @@ define (memv x a) {
       else (memv x (pt a))
 }
 
-define (reverse a) {
+define (s9/reverse a) {
   reverse2 :+ function (a b) {
     if (null? a) b {
       reverse2 (pt a) (pair (ph a) b)
@@ -403,7 +403,7 @@ append := {
   }
 }
 
-define (length x) {
+define (s9/length x) {
   length2 :+ function (x r) {
     if (null? x) r {
       length2 (pt x) (+ r 1)
@@ -1110,7 +1110,7 @@ with-output-to-file := {
 
 ;;----- Quasi-quote-expander -----
 
-define-macro (quasiquote-s9) \
+define-macro (s9/quasiquote) \
   function (form) {
     qq-pair :+ function (a b) {
       if+ (and (pair? a)
