@@ -501,6 +501,12 @@ typedef struct idio_thread_s {
     struct idio_s *handler_sp;
 
     /*
+     * trap_sp is the SP of the current trap with SP-2 containing the
+     * SP of the next trap
+     */
+    struct idio_s *trap_sp;
+
+    /*
      * jmp_buf is used to clear the C-stack
      *
      * NB it is a pointer to a C stack variable
@@ -539,6 +545,7 @@ typedef struct idio_thread_s {
 #define IDIO_THREAD_FRAME(T)          ((T)->u.thread->frame)
 #define IDIO_THREAD_ENV(T)            ((T)->u.thread->env)
 #define IDIO_THREAD_HANDLER_SP(T)     ((T)->u.thread->handler_sp)
+#define IDIO_THREAD_TRAP_SP(T)        ((T)->u.thread->trap_sp)
 #define IDIO_THREAD_JMP_BUF(T)        ((T)->u.thread->jmp_buf)
 #define IDIO_THREAD_DYNAMIC_SP(T)     ((T)->u.thread->dynamic_sp)
 #define IDIO_THREAD_ENVIRON_SP(T)     ((T)->u.thread->environ_sp)

@@ -28,6 +28,8 @@ extern IDIO idio_command_module;
 char *idio_command_find_exe_C (char *command);
 char *idio_command_find_exe (IDIO func);
 IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname);
+void idio_command_signal_handler_SIGHUP (IDIO signum);
+void idio_command_signal_handler_SIGCHLD (IDIO signum);
 
 extern volatile sig_atomic_t idio_command_signal_record[IDIO_LIBC_NSIG];
 void idio_init_command ();

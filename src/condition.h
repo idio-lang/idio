@@ -88,6 +88,7 @@
 	idio_module_toplevel_set_symbol_value (sym, v);										       \
     }
 
+extern IDIO idio_condition_condition_type_mci;
 extern IDIO idio_condition_condition_type;
 extern IDIO idio_condition_message_type;
 extern IDIO idio_condition_error_type;
@@ -146,6 +147,7 @@ extern IDIO idio_condition_handler_default;
 extern IDIO idio_condition_handler_rt_command_status;
 extern IDIO idio_condition_signal_handler_SIGHUP;
 extern IDIO idio_condition_signal_handler_SIGCHLD;
+extern IDIO idio_condition_base_trap_handler;
 
 int idio_isa_condition_type (IDIO o);
 int idio_isa_condition (IDIO o);

@@ -24,6 +24,8 @@
 
 #include "idio.h"
 
+IDIO idio_condition_condition_type_mci;
+
 /* SRFI-36 */
 IDIO idio_condition_condition_type;
 IDIO idio_condition_message_type;
@@ -85,6 +87,7 @@ IDIO idio_condition_handler_default;
 IDIO idio_condition_handler_rt_command_status;
 IDIO idio_condition_signal_handler_SIGHUP;
 IDIO idio_condition_signal_handler_SIGCHLD;
+IDIO idio_condition_base_trap_handler;
 
 IDIO_DEFINE_PRIMITIVE2V ("make-condition-type", make_condition_type, (IDIO name, IDIO parent, IDIO fields))
 {
@@ -300,7 +303,57 @@ IDIO_DEFINE_PRIMITIVE2 ("condition-handler-default", condition_handler_default, 
 
     if (idio_isa_condition (cond)) {
 	IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (cond);
+	IDIO stf = IDIO_STRUCT_TYPE_FIELDS (sit);
 	IDIO sif = IDIO_STRUCT_INSTANCE_FIELDS (cond);
+
+	if (idio_S_false == cont) {
+	    /*
+	     * This should go to the fallback-condition-handler
+	     */
+	    idio_debug ("condition-handler-default: non-cont-err %s\n", cond);
+
+	    idio_raise_condition (cont, cond);
+
+	    /* notreached */
+	    return idio_S_unspec;
+	}
+	
+	if (idio_struct_type_isa (sit, idio_condition_idio_error_type)) {
+	    IDIO eh = idio_thread_current_error_handle ();
+	    int printed = 0;
+
+	    idio_display_C ("\n default-condition-handler: ", eh);
+	    IDIO m = idio_array_get_index (sif, IDIO_SI_IDIO_ERROR_TYPE_MESSAGE);
+	    if (idio_S_nil != m) {
+		idio_display (m, eh);
+		printed = 1;
+	    }
+	    IDIO l = idio_array_get_index (sif, IDIO_SI_IDIO_ERROR_TYPE_LOCATION);
+	    if (idio_S_nil != l) {
+		if (printed) {
+		    idio_display_C (": ", eh);
+		}
+		idio_display (l, eh);
+		printed = 1;
+
+		if (idio_struct_type_isa (sit, idio_condition_read_error_type)) {
+		    idio_display_C (":", eh);
+		    idio_display (idio_array_get_index (sif, IDIO_SI_READ_ERROR_TYPE_LINE), eh);
+		    idio_display_C (":", eh);
+		    idio_display (idio_array_get_index (sif, IDIO_SI_READ_ERROR_TYPE_POSITION), eh);
+		}
+	    }
+	    IDIO d = idio_array_get_index (sif, IDIO_SI_IDIO_ERROR_TYPE_DETAIL);
+	    if (idio_S_nil != d) {
+		if (printed) {
+		    idio_display_C (": ", eh);
+		}
+		idio_display (d, eh);
+	    }
+	    idio_display_C ("\n", eh);
+	} else {
+	    idio_debug ("default-condition-handler: %s\n", cond);
+	}
 
 	return idio_S_unspec;
     } else {
@@ -325,12 +378,104 @@ IDIO_DEFINE_PRIMITIVE2 ("condition-handler-default", condition_handler_default, 
     IDIO_C_ASSERT (0);
 }
 
+IDIO_DEFINE_PRIMITIVE2 ("base-trap-handler", base_trap_handler, (IDIO cont, IDIO cond))
+{
+    IDIO_ASSERT (cont);
+    IDIO_ASSERT (cond);
+    IDIO_TYPE_ASSERT (boolean, cont);
+    IDIO_TYPE_ASSERT (condition, cond); 
+
+    if (idio_S_false == cont) {
+	/*
+	 * This should go to the fallback-condition-handler
+	 */
+	idio_debug ("base-trap-handler: non-cont-err %s\n", cond);
+
+	idio_raise_condition (cont, cond);
+
+	/* notreached */
+	return idio_S_unspec;
+    }
+	
+    IDIO thr = idio_thread_current_thread ();
+
+    IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (cond);
+    IDIO sif = IDIO_STRUCT_INSTANCE_FIELDS (cond);
+
+    if (idio_struct_type_isa (sit, idio_condition_rt_signal_type)) {
+	IDIO isignum = idio_array_get_index (sif, IDIO_SI_RT_SIGNAL_TYPE_SIGNUM);
+	int signum = IDIO_FIXNUM_VAL (isignum);
+
+	switch (signum) {
+	case SIGCHLD:
+	    idio_command_signal_handler_SIGCHLD (isignum);
+	    return idio_S_unspec;
+	case SIGHUP:
+	    idio_command_signal_handler_SIGHUP (isignum);
+	    return idio_S_unspec;
+	default:
+	    break;
+	}
+    } else if (idio_struct_type_isa (sit, idio_condition_rt_command_status_error_type)) {
+	return idio_S_unspec;
+    } else if (idio_struct_type_isa (sit, idio_condition_idio_error_type)) {
+	IDIO eh = idio_thread_current_error_handle ();
+	int printed = 0;
+
+	idio_display_C ("\n base-trap-handler: ", eh);
+	IDIO m = idio_array_get_index (sif, IDIO_SI_IDIO_ERROR_TYPE_MESSAGE);
+	if (idio_S_nil != m) {
+	    idio_display (m, eh);
+	    printed = 1;
+	}
+	IDIO l = idio_array_get_index (sif, IDIO_SI_IDIO_ERROR_TYPE_LOCATION);
+	if (idio_S_nil != l) {
+	    if (printed) {
+		idio_display_C (": ", eh);
+	    }
+	    idio_display (l, eh);
+	    printed = 1;
+
+	    if (idio_struct_type_isa (sit, idio_condition_read_error_type)) {
+		idio_display_C (":", eh);
+		idio_display (idio_array_get_index (sif, IDIO_SI_READ_ERROR_TYPE_LINE), eh);
+		idio_display_C (":", eh);
+		idio_display (idio_array_get_index (sif, IDIO_SI_READ_ERROR_TYPE_POSITION), eh);
+	    }
+	}
+	IDIO d = idio_array_get_index (sif, IDIO_SI_IDIO_ERROR_TYPE_DETAIL);
+	if (idio_S_nil != d) {
+	    if (printed) {
+		idio_display_C (": ", eh);
+	    }
+	    idio_display (d, eh);
+	}
+	idio_display_C ("\n", eh);
+    } else {
+	idio_debug ("base-trap-handler: no clause for %s\n", cond);
+    }
+
+    return idio_S_unspec;
+}
+
 void idio_init_condition ()
 {
+
+#define IDIO_CONDITION_BASE_CONDITION_NAME "^condition"
+    
     /* SRFI-35-ish */
-    IDIO_DEFINE_CONDITION0 (idio_condition_condition_type, "^condition", idio_S_nil);
+    IDIO_DEFINE_CONDITION0 (idio_condition_condition_type, IDIO_CONDITION_BASE_CONDITION_NAME, idio_S_nil);
     IDIO_DEFINE_CONDITION1 (idio_condition_message_type, "^message", idio_condition_condition_type, "message");
     IDIO_DEFINE_CONDITION0 (idio_condition_error_type, "^error", idio_condition_condition_type);
+
+    /*
+     * We want the fmci of ^condition for the
+     * fallback-condition-handler which means we have to repeat a
+     * couple of the actions of the IDIO_DEFINE_CONDITION0 macro.
+     */
+    IDIO sym = idio_symbols_C_intern (IDIO_CONDITION_BASE_CONDITION_NAME);
+    idio_ai_t gci = idio_vm_constants_lookup_or_extend (sym);
+    idio_condition_condition_type_mci = idio_fixnum (gci);
 
     /* Idio */
     IDIO_DEFINE_CONDITION3 (idio_condition_idio_error_type, "^idio-error", idio_condition_error_type, "message", "location", "detail");
@@ -423,6 +568,8 @@ void idio_condition_add_primitives ()
     IDIO fvi;
     fvi = IDIO_ADD_MODULE_PRIMITIVE (idio_Idio_module, condition_handler_default);
     idio_condition_handler_default = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+    fvi = IDIO_ADD_MODULE_PRIMITIVE (idio_Idio_module, base_trap_handler);
+    idio_condition_base_trap_handler = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
 }
 
 void idio_final_condition ()

@@ -168,15 +168,12 @@ test (i/o-filename-error-filename c10) test_filename
 
 ;; ^i/o-read-error
 ;;
-monitor (function (cont cond) {
-  ;; display* "read handle monitor condition:" (struct-type-name cond)
+trap ^i/o-read-error (function (cont cond) {
   test (i/o-read-error? cond) #t
   if cont {
-    if (i/o-read-error? cond) {
-      handle := i/o-error-handle cond
+    handle := i/o-error-handle cond
 
-      'caught-a-read-error
-    } (error "read handle: unexpected condition" cond)
+    'caught-a-read-error
   } (error "read handle: unexpected non-continuable error" cond)
 }) {
   ;; display* "read handle condition"
@@ -189,15 +186,12 @@ monitor (function (cont cond) {
 
 ;; ^i/o-write-error
 ;;
-monitor (function (cont cond) {
-  ;; display* "write handle monitor condition:" (struct-type-name cond)
+trap ^i/o-write-error (function (cont cond) {
   test (i/o-write-error? cond) #t
   if cont {
-    if (i/o-write-error? cond) {
-      handle := i/o-error-handle cond
+    handle := i/o-error-handle cond
 
-      'caught-a-write-error
-    } (error "write handle: unexpected condition" cond)
+    'caught-a-write-error
   } (error "write handle: unexpected non-continuable error" cond)
 }) {
   ;; display* "write handle condition"
@@ -212,24 +206,13 @@ monitor (function (cont cond) {
 ;; ^i/o-closed-error
 ;;
 ;; only file-handles generate this
-monitor (function (cont cond) {
-  ;; display* "closed handle monitor condition:" (struct-type-name cond)
-  if (rt-signal? cond) {
-    ;; Any command exiting raises a SIGCHLD -- we call touch and chmod
-    ;; below
-    if (eq (rt-signal-signum cond) 17) {
-      raise cont cond
-    } (error "closed handle: unexpected signal condition" cond)
-  } {
-    test (i/o-closed-error? cond) #t
-    if cont {
-      if (i/o-closed-error? cond) {
-        handle := i/o-error-handle cond
+trap ^i/o-closed-error (function (cont cond) {
+  test (i/o-closed-error? cond) #t
+  if cont {
+    handle := i/o-error-handle cond
 
-        #t
-      } (error "closed handle: unexpected condition" cond)
-    } (error "closed handle: unexpected non-continuable error" cond)
-  }
+    #t
+  } (error "closed handle: unexpected non-continuable error" cond)
 }) {
   ;; display* "closed handle condition"
   touch test_filename
@@ -241,12 +224,9 @@ monitor (function (cont cond) {
 }
 
 ;; discovered in s9-test.idio after adding the SRFI-36 conditions:
-monitor (function (cont cond) {
-  ;; display* "closed handle monitor condition:" (struct-type-name cond)
+trap ^i/o-closed-error (function (cont cond) {
   test (i/o-closed-error? cond) #t
-  if cont {
-    if (i/o-closed-error? cond) #t (error "closed handle: unexpected condition" cond)
-  } (error "closed handle: unexpected non-continuable error" cond)
+  if cont #t (error "closed handle: unexpected non-continuable error" cond)
 }) {
   ;; display* "closed handle condition"
   test {
@@ -272,30 +252,18 @@ monitor (function (cont cond) {
 ;; non-dir file in the position of a directory (actually, much like
 ;; the man page says...).  Here, we'll use test_filename in a
 ;; directory component as ./test_filename/test_filename
-monitor (function (cont cond) {
-  ;; display* "generic filename monitor condition:" (struct-type-name cond)
-  if (rt-signal? cond) {
-    ;; Any command exiting raises a SIGCHLD -- we call touch and chmod
-    ;; below
-    if (eq (rt-signal-signum cond) 17) {
-      raise cont cond
-    } (error "closed handle: unexpected signal condition" cond)
-  } {
-    test (i/o-filename-error? cond) #t
-    if cont {
-      if (i/o-filename-error? cond) {
-	filename := i/o-filename-error-filename cond
+trap ^i/o-filename-error (function (cont cond) {
+  test (i/o-filename-error? cond) #t
+  if cont {
+    filename := i/o-filename-error-filename cond
 
-	;; use a safe file instead of {filename} (which is
-	;; ./test_filename/test_filename and just had an error!)
-	;;
-	;; test_filename on its own *is* safe but make sure it's
-	;; writable
-	chmod +w test_filename
-	open-output-file test_filename
-      } (error "generic filename: unexpected condition" cond)
-    } (error "generic filename: unexpected non-continuable error" cond)
-  }
+    ;; use a safe file instead of {filename} (which is
+    ;; ./test_filename/test_filename and just had an error!)
+    ;;
+    ;; test_filename on its own *is* safe but make sure it's writable
+    chmod +w test_filename
+    open-output-file test_filename
+  } (error "generic filename: unexpected non-continuable error" cond)
 }) {
   ;; display* "generic filename condition"
 
@@ -322,16 +290,13 @@ monitor (function (cont cond) {
 ;;
 ;; PATH_MAX?  POSIX says 256, Solaris & MacOS say 1024, Linux says 4096
 ;;
-monitor (function (cont cond) {
-  ;; display* "malformed filename monitor condition:" (struct-type-name cond)
+trap ^i/o-malformed-filename-error (function (cont cond) {
   test (i/o-malformed-filename-error? cond) #t
   if cont {
-    if (i/o-malformed-filename-error? cond) {
-      filename := condition-ref cond 'filename
+    filename := condition-ref cond 'filename
 
-      ;; use a safe file instead of filename
-      open-output-file test_filename
-    } (error "malformed filename: unexpected condition" cond)
+    ;; use a safe file instead of filename
+    open-output-file test_filename
   } (error "malformed filename: unexpected non-continuable error" cond)
 }) {
   ;; display* "opening malformed filename"
@@ -348,24 +313,13 @@ monitor (function (cont cond) {
 ;; NB. Nothing internally generates a ^i/o-file-is-read-only-error and
 ;; read-only issues are collected under the guise of protection errors
 ;; (EACCES)
-monitor (function (cont cond) {
-  ;; display* "0-perms monitor condition:" (struct-type-name cond)
-  if (rt-signal? cond) {
-    ;; Any command exiting raises a SIGCHLD -- we call touch and chmod
-    ;; below
-    if (eq (rt-signal-signum cond) 17) {
-      raise cont cond
-    } (error "closed handle: unexpected signal condition" cond)
-  } {
-    test (i/o-file-protection-error? cond) #t
-    if cont {
-      if (i/o-file-protection-error? cond) {
-	filename := condition-ref cond 'filename
-	chmod +r filename
-	open-input-file filename
-      } (error "0-perms: unexpected condition" cond)
-    } (error "0-perms: unexpected non-continuable error" cond)
-  }
+trap ^i/o-file-protection-error (function (cont cond) {
+  test (i/o-file-protection-error? cond) #t
+  if cont {
+    filename := condition-ref cond 'filename
+    chmod +r filename
+    open-input-file filename
+  } (error "0-perms: unexpected non-continuable error" cond)
 }) {
   ;; display* "opening 0-perms file"
   touch test_filename
@@ -389,25 +343,14 @@ if (equal? (struct-utsname-sysname Idio/uname) "SunOS") {
   ;; edisplay* "Solaris: no fopen (\"x\") flag: skipping"
   Tests = Tests + 1
 } {
-  monitor (function (cont cond) {
-    ;; display* "already exists monitor condition:" (struct-type-name cond)
-    if (rt-signal? cond) {
-      ;; Any command exiting raises a SIGCHLD -- we call touch and chmod
-      ;; below
-      if (eq (rt-signal-signum cond) 17) {
-	raise cont cond
-      } (error "closed handle: unexpected signal condition" cond)
-    } {
-      test (i/o-file-already-exists-error? cond) #t
-      if cont {
-	if (i/o-file-already-exists-error? cond) {
-	  filename := condition-ref cond 'filename
+  trap ^i/o-file-already-exists-error (function (cont cond) {
+    test (i/o-file-already-exists-error? cond) #t
+    if cont {
+      filename := condition-ref cond 'filename
 
-	  ;; our "repair" is simply to open the file anyway
-	  open-output-file filename
-	} (error "already exists: unexpected condition" cond)
-      } (error "already exists: unexpected non-continuable error" cond)
-    }
+      ;; our "repair" is simply to open the file anyway
+      open-output-file filename
+    } (error "already exists: unexpected non-continuable error" cond)
   }) {
     ;; display* "opening existing file"
     touch test_filename
@@ -421,19 +364,16 @@ if (equal? (struct-utsname-sysname Idio/uname) "SunOS") {
 }
 
 ;; ^i/o-no-such-file-error
-monitor (function (cont cond) {
-  ;; display* "non-existent monitor condition:" (struct-type-name cond)
+trap ^i/o-no-such-file-error (function (cont cond) {
   test (i/o-no-such-file-error? cond) #t
   if cont {
-    if (i/o-no-such-file-error? cond) {
-      filename := condition-ref cond 'filename
+    filename := condition-ref cond 'filename
 
-      ;; we could simply touch(1) the file...
-      ofh := open-output-file filename
-      close-handle ofh
+    ;; we could simply touch(1) the file...
+    ofh := open-output-file filename
+    close-handle ofh
 
-      open-input-file filename
-    } (error "non-existent: unexpected condition" cond)
+    open-input-file filename
   } (error "non-existent: unexpected non-continuable error" cond)
 }) {
   ;; display* "opening non-existent file"

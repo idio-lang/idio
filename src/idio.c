@@ -213,15 +213,59 @@ int main (int argc, char **argv, char **envp)
     idio_init (argc, argv);
 
     idio_env_init_idiolib (argv[0]);
+
+    IDIO thr = idio_thread_current_thread ();
     
+    jmp_buf jb;
+    IDIO_THREAD_JMP_BUF (thr) = &jb;
+
+    int sjv = setjmp (*(IDIO_THREAD_JMP_BUF (thr)));
+
+    switch (sjv) {
+    case 0:
+	break;
+    default:
+	fprintf (stderr, "setjmp: bootstrap failed with sjv %d\n", sjv);
+	exit (1);
+	break;
+    }
+
     idio_load_file (idio_string_C ("bootstrap"), idio_vm_constants);
 
     if (argc > 1) {
 	int i;
+	IDIO load = idio_module_symbol_value (idio_S_load, idio_Idio_module_instance (), IDIO_LIST1 (idio_S_false));
+	if (idio_S_false == load) {
+	    idio_error_C ("cannot lookup 'load'", idio_S_nil, IDIO_C_LOCATION ("main"));
+	}
 	for (i = 1 ; i < argc; i++) {
-	    idio_load_file (idio_string_C (argv[i]), idio_vm_constants);
+	    fprintf (stderr, "load %s\n", argv[i]);
+	    jmp_buf jb;
+	    IDIO_THREAD_JMP_BUF (thr) = &jb;
+	    sjv = setjmp (*(IDIO_THREAD_JMP_BUF (thr)));
+
+	    switch (sjv) {
+	    case 0:
+		idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST2 (load, idio_string_C (argv[i])));
+		/* idio_load_file (idio_string_C (argv[i]), idio_vm_constants); */
+		break;
+	    default:
+		fprintf (stderr, "setjmp: load %s: failed with sjv %d\n", argv[i], sjv);
+		exit (1);
+		break;
+	    }
 	}
     } else {
+	sjv = setjmp (*(IDIO_THREAD_JMP_BUF (thr)));
+
+	switch (sjv) {
+	case 0:
+	    break;
+	default:
+	    fprintf (stderr, "setjmp: repl failed with sjv %d\n", sjv);
+	    exit (1);
+	    break;
+	}
 	/* repl */
 	idio_load_filehandle (idio_thread_current_input_handle (), idio_read, idio_evaluate, idio_vm_constants);
     }

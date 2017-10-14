@@ -227,6 +227,8 @@ static IDIO idio_vm_signal_handler_name;
 
 static time_t idio_vm_t0;
 
+static idio_ai_t idio_vm_vvi (idio_ai_t mci);
+
 #ifdef IDIO_VM_PERF
 static uint64_t idio_vm_ins_counters[IDIO_I_MAX];
 static struct timespec idio_vm_ins_call_time[IDIO_I_MAX];
@@ -252,7 +254,7 @@ static void idio_vm_panic (IDIO thr, char *m)
      */
     
     fprintf (stderr, "\n\nPANIC: %s\n\n", m);
-    idio_dump (thr, 10);
+    idio_vm_debug (thr, "PANIC", 0);
     
     IDIO_C_ASSERT (0);
 }
@@ -440,19 +442,25 @@ void idio_vm_debug (IDIO thr, char *prefix, idio_ai_t stack_start)
 {
     IDIO_ASSERT (thr);
     IDIO_C_ASSERT (prefix);
-
-    fprintf (stderr, "%s THR\n", prefix);
-    fprintf (stderr, "   pc=%6zd\n", IDIO_THREAD_PC (thr));
-    idio_debug ("  val=%s\n", IDIO_THREAD_VAL (thr));
-    idio_debug (" reg1=%s\n", IDIO_THREAD_REG1 (thr));
-    idio_debug (" reg2=%s\n", IDIO_THREAD_REG2 (thr));
-    idio_debug (" func=%s\n", IDIO_THREAD_FUNC (thr));
-    idio_debug ("  env=%s\n", IDIO_THREAD_ENV (thr));
-    idio_debug ("   fr=%s\n", IDIO_THREAD_FRAME (thr));
-    idio_debug ("   in=%s\n", IDIO_THREAD_INPUT_HANDLE (thr));
-    idio_debug ("  out=%s\n", IDIO_THREAD_OUTPUT_HANDLE (thr));
-    idio_debug ("  err=%s\n", IDIO_THREAD_ERROR_HANDLE (thr));
-    idio_debug ("  mod=%s\n", IDIO_THREAD_MODULE (thr));
+    IDIO_TYPE_ASSERT (thread, thr);
+    
+    fprintf (stderr, "%s THR %10p\n", prefix, thr);
+    fprintf (stderr, "     pc=%6zd\n", IDIO_THREAD_PC (thr));
+    idio_debug ("    val=%s\n", IDIO_THREAD_VAL (thr));
+    idio_debug ("   reg1=%s\n", IDIO_THREAD_REG1 (thr));
+    idio_debug ("   reg2=%s\n", IDIO_THREAD_REG2 (thr));
+    idio_debug ("   func=%s\n", IDIO_THREAD_FUNC (thr));
+    idio_debug ("    env=%s\n", IDIO_THREAD_ENV (thr));
+    idio_debug ("  frame=%s\n", IDIO_THREAD_FRAME (thr));
+    idio_debug ("   t/sp=% 3s\n", IDIO_THREAD_TRAP_SP (thr));
+    idio_debug ("   h/sp=% 3s\n", IDIO_THREAD_HANDLER_SP (thr));
+    idio_debug ("   d/sp=% 3s\n", IDIO_THREAD_DYNAMIC_SP (thr));
+    idio_debug ("   e/sp=% 3s\n", IDIO_THREAD_ENVIRON_SP (thr));
+    idio_debug ("     in=%s\n", IDIO_THREAD_INPUT_HANDLE (thr));
+    idio_debug ("    out=%s\n", IDIO_THREAD_OUTPUT_HANDLE (thr));
+    idio_debug ("    err=%s\n", IDIO_THREAD_ERROR_HANDLE (thr));
+    idio_debug ("    mod=%s\n", IDIO_THREAD_MODULE (thr));
+    fprintf (stderr, "jmp_buf=%p\n", IDIO_THREAD_JMP_BUF (thr));
     fprintf (stderr, "\n");
 
     IDIO stack = IDIO_THREAD_STACK (thr);
@@ -461,6 +469,8 @@ void idio_vm_debug (IDIO thr, char *prefix, idio_ai_t stack_start)
     if (stack_start < 0) {
 	stack_start += stack_size;
     }
+    
+    IDIO_C_ASSERT (stack_start < stack_size);
     
     idio_ai_t i;
     fprintf (stderr, "%s STK %zd:%zd\n", prefix, stack_start, stack_size);
@@ -545,7 +555,7 @@ IDIO_DEFINE_PRIMITIVE2 ("fallback-condition-handler", fallback_condition_handler
     }
 
 #ifdef IDIO_DEBUG
-    idio_vm_debug (thr, "THR %s\n", 0);
+    /* idio_vm_debug (thr, "fallback-condition-handler", 0); */
 #endif
 
     if (idio_condition_isap (cond, idio_condition_rt_command_forked_error_type)) {
@@ -681,6 +691,7 @@ static void idio_vm_preserve_state (IDIO thr)
     IDIO_THREAD_STACK_PUSH (IDIO_THREAD_ENVIRON_SP (thr));
     IDIO_THREAD_STACK_PUSH (IDIO_THREAD_DYNAMIC_SP (thr));
     IDIO_THREAD_STACK_PUSH (IDIO_THREAD_HANDLER_SP (thr));
+    IDIO_THREAD_STACK_PUSH (IDIO_THREAD_TRAP_SP (thr));
     IDIO_THREAD_STACK_PUSH (IDIO_THREAD_FRAME (thr));
     IDIO_THREAD_STACK_PUSH (IDIO_THREAD_ENV (thr));
 }
@@ -702,7 +713,8 @@ static void idio_vm_restore_state (IDIO thr)
     IDIO_ASSERT (thr);
     IDIO_TYPE_ASSERT (thread, thr);
 
-    /* idio_debug ("ivre %s\n", IDIO_THREAD_STACK (thr)); */
+    /* idio_vm_debug (thr, "ivrs", -5); */
+
     IDIO_THREAD_ENV (thr) = IDIO_THREAD_STACK_POP ();
     if (idio_S_nil != IDIO_THREAD_ENV (thr)) {
 	if (! idio_isa_module (IDIO_THREAD_ENV (thr))) {
@@ -719,11 +731,25 @@ static void idio_vm_restore_state (IDIO thr)
 	IDIO_TYPE_ASSERT (frame, IDIO_THREAD_FRAME (thr));
     }
 
+    IDIO_THREAD_TRAP_SP (thr) = IDIO_THREAD_STACK_POP ();
+    idio_ai_t tsp = IDIO_FIXNUM_VAL (IDIO_THREAD_TRAP_SP (thr));
+    if (tsp < 2) {
+	/*
+	 * As we've just ascertained we don't have a trap handler this
+	 * will end in even more tears...
+	 */
+	idio_error_C ("bad TRAP SP: < 2", IDIO_LIST2 (thr, IDIO_THREAD_STACK (thr)), IDIO_C_LOCATION ("idio_vm_restore_state"));
+    }
+
+    if (tsp >= idio_array_size (IDIO_THREAD_STACK (thr))) {
+	idio_error_C ("bad TRAP SP: > stack", IDIO_LIST2 (thr, IDIO_THREAD_STACK (thr)), IDIO_C_LOCATION ("idio_vm_restore_state"));
+    }
+
     IDIO_THREAD_HANDLER_SP (thr) = IDIO_THREAD_STACK_POP ();
     idio_ai_t hsp = IDIO_FIXNUM_VAL (IDIO_THREAD_HANDLER_SP (thr));
     if (hsp < 1) {
 	/*
-	 * As we've just ascertained we don't have an error handler
+	 * As we've just ascertained we don't have a condition handler
 	 * this will end in even more tears...
 	 */
 	idio_error_C ("bad HANDLER SP: < 1", IDIO_LIST2 (thr, IDIO_THREAD_STACK (thr)), IDIO_C_LOCATION ("idio_vm_restore_state"));
@@ -1033,7 +1059,7 @@ IDIO idio_vm_invoke_C (IDIO thr, IDIO command)
     IDIO_THREAD_STACK_PUSH (idio_fixnum (IDIO_THREAD_PC (thr)));
     idio_vm_preserve_all_state (thr);
 
-    /* idio_debug ("invoke-C pre: %s\n", command); */
+    /* idio_debug ("invoke-C pre: %s\n", command);  */
 
     switch (command->type) {
     case IDIO_TYPE_PAIR:
@@ -1369,26 +1395,118 @@ static void idio_vm_restore_handler (IDIO thr)
     IDIO_THREAD_HANDLER_SP (thr) = idio_array_pop (stack);
 }
 
+void idio_vm_push_trap (IDIO thr, IDIO handler, IDIO fmci)
+{
+    IDIO_ASSERT (thr);
+    IDIO_ASSERT (handler);
+    IDIO_ASSERT (fmci);
+    IDIO_TYPE_ASSERT (thread, thr);
+    IDIO_TYPE_ASSERT (fixnum, fmci);
+
+    if (! (idio_isa_closure (handler) ||
+	   idio_isa_primitive (handler))) {
+	idio_error_param_type ("closure|primitive", handler, IDIO_C_LOCATION ("idio_vm_push_trap"));
+    }
+
+    IDIO stack = IDIO_THREAD_STACK (thr);
+
+    idio_array_push (stack, IDIO_THREAD_TRAP_SP (thr));
+    idio_array_push (stack, handler);
+    IDIO_THREAD_TRAP_SP (thr) = idio_fixnum (idio_array_size (stack));
+    idio_array_push (stack, fmci);
+}
+
+static void idio_vm_pop_trap (IDIO thr)
+{
+    IDIO_ASSERT (thr);
+    IDIO_TYPE_ASSERT (thread, thr);
+
+    IDIO stack = IDIO_THREAD_STACK (thr);
+    
+    idio_array_pop (stack);
+    idio_array_pop (stack);
+    IDIO_THREAD_TRAP_SP (thr) = idio_array_pop (stack);
+}
+
+static void idio_vm_restore_trap (IDIO thr)
+{
+    IDIO_ASSERT (thr);
+    IDIO_TYPE_ASSERT (thread, thr);
+
+    IDIO stack = IDIO_THREAD_STACK (thr);
+    IDIO_THREAD_TRAP_SP (thr) = idio_array_pop (stack);
+}
+
 void idio_vm_raise_condition (IDIO continuablep, IDIO condition, int IHR)
 {
     IDIO_ASSERT (continuablep);
     IDIO_ASSERT (condition);
     IDIO_TYPE_ASSERT (boolean, continuablep);
 
-    /* idio_debug ("\n\nraise-condition: %s", continuablep);   */
-    /* idio_debug (" %s\n", condition);   */
+    /* idio_debug ("\n\nraise-condition: %s", continuablep);    */
+    /* idio_debug (" %s\n", condition);    */
 
     IDIO thr = idio_thread_current_thread ();
 
     IDIO stack = IDIO_THREAD_STACK (thr);
     
-    idio_ai_t handler_sp = IDIO_FIXNUM_VAL (IDIO_THREAD_HANDLER_SP (thr));
+    idio_ai_t trap_sp = IDIO_FIXNUM_VAL (IDIO_THREAD_TRAP_SP (thr));
 
-    if (handler_sp >= idio_array_size (stack)) {
-	idio_vm_panic (thr, "handler SP >= sizeof (stack)");
+    if (trap_sp >= idio_array_size (stack)) {
+	idio_vm_panic (thr, "trap SP >= sizeof (stack)");
     }
-    IDIO handler = idio_array_get_index (stack, handler_sp);
+    if (trap_sp < 2) {
+	idio_vm_panic (thr, "trap SP < 2");
+    }
 
+    /*
+     * This feels mildy expensive: The trap call will say:
+     *
+     * trap COND-TYPE-NAME handler body 
+     *
+     * So what we have in our hands is an index, mci, into the
+     * constants table which we can lookup, idio_vm_constants_ref, to
+     * get a symbol, COND-TYPE-NAME.  We now need to look that up,
+     * idio_module_symbol_value_recurse, to get a value, trap_ct.
+     *
+     * We now need to determine if the actual condition isa trap_ct.
+     */
+    IDIO trap_ct_mci;
+    IDIO handler;
+    int use_traps = 1;
+    idio_ai_t handler_sp;
+    if (use_traps) {
+	while (1) {
+	    trap_ct_mci = idio_array_get_index (stack, trap_sp);
+	    IDIO trap_ct_sym = idio_vm_constants_ref ((idio_ai_t) IDIO_FIXNUM_VAL (trap_ct_mci));
+	    IDIO trap_ct = idio_module_symbol_value_recurse (trap_ct_sym, IDIO_THREAD_ENV (thr), idio_S_nil);
+	
+	    handler = idio_array_get_index (stack, trap_sp - 1);
+	    IDIO ftrap_sp_next = idio_array_get_index (stack, trap_sp - 2);
+	    idio_ai_t trap_sp_next = IDIO_FIXNUM_VAL (ftrap_sp_next);
+
+	    if (idio_struct_instance_isa (condition, trap_ct)) {
+		break;
+	    }
+	    
+	    if (trap_sp == trap_sp_next) {
+		idio_debug ("Yikes!  Failed to match TRAP on %s\n", condition);
+		idio_vm_panic (thr, "no more TRAP handlers\n");
+	    }
+	    trap_sp = trap_sp_next;
+	}
+    } else {
+	handler_sp = IDIO_FIXNUM_VAL (IDIO_THREAD_HANDLER_SP (thr));
+
+	if (handler_sp >= idio_array_size (stack)) {
+	    idio_vm_panic (thr, "handler SP >= sizeof (stack)");
+	}
+	if (handler_sp < 1) {
+	    idio_vm_panic (thr, "handler SP < 1");
+	}
+	handler = idio_array_get_index (stack, handler_sp);
+    }
+    
     idio_array_push (stack, idio_fixnum (IDIO_THREAD_PC (thr)));
 
     int tailp = IDIO_VM_INVOKE_TAIL_CALL;
@@ -1398,7 +1516,11 @@ void idio_vm_raise_condition (IDIO continuablep, IDIO condition, int IHR)
 	tailp = IDIO_VM_INVOKE_REGULAR_CALL;
     } else {
 	idio_vm_preserve_state (thr);
-	idio_array_push (stack, IDIO_THREAD_HANDLER_SP (thr));
+	if (use_traps) {
+	    idio_array_push (stack, IDIO_THREAD_TRAP_SP (thr));
+	} else {
+	    idio_array_push (stack, IDIO_THREAD_HANDLER_SP (thr));
+	}
     }
 
     IDIO vs = idio_frame (idio_S_nil, IDIO_LIST2 (continuablep, condition));
@@ -1413,7 +1535,11 @@ void idio_vm_raise_condition (IDIO continuablep, IDIO condition, int IHR)
      * but if that handler RETURNs then we must restore the current
      * handler.
      */
-    IDIO_THREAD_HANDLER_SP (thr) = idio_array_get_index (stack, handler_sp - 1);
+    if (use_traps) {
+	IDIO_THREAD_TRAP_SP (thr) = idio_array_get_index (stack, trap_sp - 2);
+    } else {
+	IDIO_THREAD_HANDLER_SP (thr) = idio_array_get_index (stack, handler_sp - 1);
+    }
     
     /*
      * Whether we are continuable or not determines where in the
@@ -1464,6 +1590,8 @@ void idio_vm_raise_condition (IDIO continuablep, IDIO condition, int IHR)
 	longjmp (*(IDIO_THREAD_JMP_BUF (thr)), IDIO_VM_LONGJMP_CONDITION);
     } else {
 	fprintf (stderr, "WARNING: raise-condition: unable to use jmp_buf\n");
+	idio_vm_debug (thr, "irc unable to use jmp_buf", 0);
+	idio_vm_panic (thr, "unable to use jumpbuf");
 	return;
     }
 
@@ -1923,7 +2051,6 @@ int idio_vm_run1 (IDIO thr)
 
     if (IDIO_THREAD_PC(thr) > IDIO_IA_USIZE (idio_all_code)) {
 	fprintf (stderr, "\n\nPC %" PRIdPTR " > max code PC %" PRIdPTR"\n", IDIO_THREAD_PC (thr), IDIO_IA_USIZE (idio_all_code));
-	idio_vm_debug (thr, "idio_vm_run1", 0);
 	idio_vm_panic (thr, "bad PC!");
     }
     IDIO_I ins = IDIO_THREAD_FETCH_NEXT ();
@@ -1936,7 +2063,7 @@ int idio_vm_run1 (IDIO thr)
     }
 #endif
 
-    IDIO_VM_RUN_DIS ("idio_vm_run1: %p %3d: ", thr, ins);
+    IDIO_VM_RUN_DIS ("idio_vm_run1: %10p %5zd %3d: ", thr, IDIO_THREAD_PC (thr), ins);
     
     switch (ins) {
     case IDIO_A_SHALLOW_ARGUMENT_REF0:
@@ -2055,8 +2182,13 @@ int idio_vm_run1 (IDIO thr)
 	    IDIO fgci = idio_module_vci_get_or_set (idio_thread_current_env (), fmci);
 	    idio_ai_t gci = IDIO_FIXNUM_VAL (fgci);
 
-    	    IDIO_VM_RUN_DIS ("CONSTANT %td", gci); 
-    	    IDIO_THREAD_VAL (thr) = idio_vm_constants_ref (gci); 
+	    IDIO c = idio_vm_constants_ref (gci);
+	    
+    	    IDIO_VM_RUN_DIS ("CONSTANT %td", gci);
+	    if (idio_vm_dis) {
+		idio_debug (" %s", c);
+	    }
+    	    IDIO_THREAD_VAL (thr) = c; 
     	} 
     	break; 
     case IDIO_A_COMPUTED_REF:
@@ -3160,6 +3292,26 @@ int idio_vm_run1 (IDIO thr)
 	    idio_vm_restore_handler (thr);
 	}
 	break;
+    case IDIO_A_PUSH_TRAP:
+	{
+	    uint64_t mci = IDIO_VM_FETCH_REF (thr);
+
+	    IDIO_VM_RUN_DIS ("PUSH-TRAP %" PRId64 "", mci);
+	    idio_vm_push_trap (thr, IDIO_THREAD_VAL (thr), idio_fixnum (mci));
+	}
+	break;
+    case IDIO_A_POP_TRAP:
+	{
+	    IDIO_VM_RUN_DIS ("POP-TRAP");
+	    idio_vm_pop_trap (thr);
+	}
+	break;
+    case IDIO_A_RESTORE_TRAP:
+	{
+	    IDIO_VM_RUN_DIS ("RESTORE-TRAP");
+	    idio_vm_restore_trap (thr);
+	}
+	break;
     case IDIO_A_NON_CONT_ERR:
 	{
 	    IDIO_VM_RUN_DIS ("NON-CONT-ERROR\n");
@@ -3332,13 +3484,58 @@ void idio_vm_thread_init (IDIO thr)
     if (0 == hsp) {
 	/*
 	 * Special case.  We can't call the generic
-	 * idio_vm_push_handler as that assumes a sensible SP to be
-	 * pushed on the stack first.  We don't have that yet.
+	 * idio_vm_push_handler as that assumes a sensible HANDLER_SP
+	 * to be pushed on the stack first.  We don't have that yet.
+	 *
+	 * In the meanwhile, the manual result of the stack will be [
+	 * ... (sp)NEXT-SP HANDLER ] where, as the fallback NEXT-SP
+	 * points at HANDLER, ie sp+1
+	 *
+	 * Not forgetting to set the actual HANDLER_SP to sp+1 as
+	 * well!
 	 */
 	IDIO_THREAD_STACK_PUSH (idio_fixnum (sp + 1));
 	IDIO_THREAD_STACK_PUSH (idio_vm_fallback_condition_handler_primdata);
 	IDIO_THREAD_HANDLER_SP (thr) = idio_fixnum (sp + 1);
     }
+
+    /*
+     * Default condition handlers ordered by increasing importance.
+     *
+     * Notably Unix signal handlers in the first thread.
+     */
+    idio_vm_push_handler (thr, idio_condition_handler_default);
+    
+    idio_vm_push_handler (thr, idio_condition_signal_handler_SIGHUP);
+    idio_vm_push_handler (thr, idio_condition_handler_rt_command_status);
+    idio_vm_push_handler (thr, idio_condition_signal_handler_SIGCHLD);
+
+    sp = idio_array_size (IDIO_THREAD_STACK (thr));
+    idio_ai_t tsp = IDIO_FIXNUM_VAL (IDIO_THREAD_TRAP_SP (thr));
+    IDIO_C_ASSERT (tsp <= sp);
+
+    if (0 == tsp) {
+	/*
+	 * Special case.  We can't call the generic idio_vm_push_trap
+	 * as that assumes a sensible TRAP_SP to be pushed on the
+	 * stack first.  We don't have that yet.
+	 *
+	 * In the meanwhile, the manual result of the stack will be [
+	 * ... (sp)NEXT-SP CONDITION-TYPE HANDLER ] where, as this is
+	 * the fallback handler, NEXT-SP points at HANDLER, ie sp+2.
+	 *
+	 * The CONDITION-TYPE for the fallback handler is ^condition
+	 * (the base type for all other conditions).
+	 *
+	 * Not forgetting to set the actual TRAP_SP to sp+2 as well!
+	 */
+	IDIO_THREAD_STACK_PUSH (idio_fixnum (sp + 2));
+	IDIO_THREAD_STACK_PUSH (idio_condition_base_trap_handler);
+	IDIO_THREAD_STACK_PUSH (idio_condition_condition_type_mci);
+	IDIO_THREAD_TRAP_SP (thr) = idio_fixnum (sp + 2);
+    }
+
+    /* idio_vm_push_trap (thr, idio_condition_base_trap_handler, idio_condition_condition_type_mci); */
 }
 
 void idio_vm_default_pc (IDIO thr)
@@ -3474,7 +3671,6 @@ IDIO idio_vm_run (IDIO thr)
 
 		    IDIO signal_condition = idio_array_ref (idio_vm_signal_handler_conditions, idio_fixnum (signum));
 		    if (idio_S_nil != signal_condition) {
-			/* idio_debug ("\nraising signal condition %s\n", signal_condition); */
 			idio_vm_raise_condition (idio_S_true, signal_condition, 1);
 		    }
 
@@ -3532,7 +3728,8 @@ IDIO idio_vm_run (IDIO thr)
 			if (NULL != IDIO_THREAD_JMP_BUF (thr)) {
 			    longjmp (*(IDIO_THREAD_JMP_BUF (thr)), IDIO_VM_LONGJMP_EVENT);
 			} else {
-			    fprintf (stderr, "WARNING: SIGCHLD: unable to use jmp_buf\n");
+			    fprintf (stderr, "WARNING: SIGCHLD: unable to use jmp_buf in thr %10p\n", thr);
+			    idio_vm_debug (thr, "unable to use jmp_buf", 0);
 			}
 		    } else {
 			idio_debug ("signal_handler_name=%s\n", signal_handler_name);
@@ -3723,6 +3920,13 @@ void idio_vm_thread_state ()
     while (idio_S_nil != frame) {
 	idio_debug ("thread-state: frame: %s\n", IDIO_FRAME_ARGS (frame));
 	frame = IDIO_FRAME_NEXT (frame);
+    }
+
+    idio_ai_t tsp = IDIO_FIXNUM_VAL (IDIO_THREAD_TRAP_SP (thr));
+    while (tsp != 1) {
+	fprintf (stderr, "thread-state: trap: SP %3td ", tsp);
+	idio_debug ("%s\n", idio_array_get_index (stack, tsp));
+	tsp = IDIO_FIXNUM_VAL (idio_array_get_index (stack, tsp - 1));
     }
 
     idio_ai_t hsp = IDIO_FIXNUM_VAL (IDIO_THREAD_HANDLER_SP (thr));

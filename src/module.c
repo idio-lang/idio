@@ -644,7 +644,7 @@ IDIO idio_module_symbol_recurse (IDIO symbol, IDIO m_or_n, int recurse)
 	}
     }
 
-    if (idio_S_unspec ==sv &&
+    if (idio_S_unspec == sv &&
 	recurse) {
 	/*
 	 * A final couple of checks in Idio and *primitives*

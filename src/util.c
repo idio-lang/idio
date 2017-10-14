@@ -674,6 +674,8 @@ char *idio_as_string (IDIO o, int depth)
 	    case IDIO_VM_CODE_ENVIRON_REF:                 t = "ENVIRON-REF";                 break;
 	    case IDIO_VM_CODE_PUSH_HANDLER:                t = "PUSH-HANDLER";                break;
 	    case IDIO_VM_CODE_POP_HANDLER:                 t = "POP-HANDLER";                 break;
+	    case IDIO_VM_CODE_PUSH_TRAP:                   t = "PUSH-TRAP";                break;
+	    case IDIO_VM_CODE_POP_TRAP:                    t = "POP-TRAP";                 break;
 	    case IDIO_VM_CODE_AND:                         t = "AND";                         break;
 	    case IDIO_VM_CODE_OR:                          t = "OR";                          break;
 	    case IDIO_VM_CODE_BEGIN:                       t = "BEGIN";                       break;
@@ -1132,6 +1134,8 @@ char *idio_as_string (IDIO o, int depth)
 		    }
 		    IDIO_STRCAT (r, " env=");
 		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_ENV (o), 1));
+		    IDIO_STRCAT (r, " t/sp=");
+		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_TRAP_SP (o), 1));
 		    IDIO_STRCAT (r, " h/sp=");
 		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_HANDLER_SP (o), 1));
 		    IDIO_STRCAT (r, " d/sp=");
@@ -1514,9 +1518,12 @@ const char *idio_vm_bytecode2string (int code)
     case 241: r = "PUSH_HANDLER"; break;
     case 242: r = "POP_HANDLER"; break;
     case 243: r = "RESTORE_HANDLER"; break;
+    case 244: r = "PUSH_TRAP"; break;
+    case 245: r = "POP_TRAP"; break;
+    case 246: r = "RESTORE_TRAP"; break;
 
-    case 245: r = "POP_ESCAPER"; break;
-    case 246: r = "PUSH_ESCAPER"; break;
+    case 247: r = "POP_ESCAPER"; break;
+    case 248: r = "PUSH_ESCAPER"; break;
 
     default:
 	fprintf (stderr, "idio_vm_bytecode2string: unexpected bytecode %d\n", code);

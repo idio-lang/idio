@@ -1641,6 +1641,35 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO_IA_PUSH1 (IDIO_A_POP_HANDLER);
 	}
 	break;
+    case IDIO_VM_CODE_PUSH_TRAP:
+	{
+	    if (! idio_isa_pair (mt) ||
+		idio_list_length (mt) != 1) {
+		idio_codegen_error_param_args ("PUSH-TRAP mci", mt, IDIO_C_LOCATION ("idio_codegen_compile/PUSH-TRAP"));
+		return;
+	    }
+
+	    IDIO mci = IDIO_PAIR_H (mt);
+
+	    if (! idio_isa_fixnum (mci)) {
+		idio_codegen_error_param_type ("fixnum", mci, IDIO_C_LOCATION ("idio_codegen_compile/PUSH-TRAP"));
+		return;
+	    }
+
+	    IDIO_IA_PUSH1 (IDIO_A_PUSH_TRAP);
+	    IDIO_IA_PUSH_REF (IDIO_FIXNUM_VAL (mci));
+	}
+	break;
+    case IDIO_VM_CODE_POP_TRAP:
+	{
+	    if (idio_S_nil != mt) {
+		idio_codegen_error_param_args ("POP-TRAP", mt, IDIO_C_LOCATION ("idio_codegen_compile/POP-TRAP"));
+		return;
+	    }
+
+	    IDIO_IA_PUSH1 (IDIO_A_POP_TRAP);
+	}
+	break;
     case IDIO_VM_CODE_EXPANDER:
 	{
 	    if (! idio_isa_pair (mt) ||

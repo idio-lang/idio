@@ -179,9 +179,12 @@
 #define IDIO_A_PUSH_HANDLER                241
 #define IDIO_A_POP_HANDLER                 242
 #define IDIO_A_RESTORE_HANDLER             243
+#define IDIO_A_PUSH_TRAP                   244
+#define IDIO_A_POP_TRAP                    245
+#define IDIO_A_RESTORE_TRAP                246
 
-#define IDIO_A_POP_ESCAPER                 245
-#define IDIO_A_PUSH_ESCAPER                246
+#define IDIO_A_POP_ESCAPER                 247
+#define IDIO_A_PUSH_ESCAPER                248
 
 extern IDIO idio_vm_constants;
 extern IDIO_IA_T idio_all_code;
@@ -217,6 +220,7 @@ void idio_vm_add_module_constants (IDIO module, IDIO constants);
 void idio_vm_push_handler (IDIO thr, IDIO val);
 void idio_raise_condition (IDIO continuablep, IDIO e);
 IDIO idio_apply (IDIO fn, IDIO args);
+void idio_vm_debug (IDIO thr, char *prefix, idio_ai_t stack_start);
 IDIO idio_vm_invoke_C (IDIO thr, IDIO command);
 
 void idio_vm_thread_init (IDIO thr);
