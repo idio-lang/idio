@@ -79,6 +79,7 @@ extern IDIO_SYMBOL_DECL (let);
 extern IDIO_SYMBOL_DECL (letrec);
 extern IDIO_SYMBOL_DECL (list);
 extern IDIO_SYMBOL_DECL (load);
+extern IDIO_SYMBOL_DECL (load_handle);
 extern IDIO_SYMBOL_DECL (lt);
 extern IDIO_SYMBOL_DECL (monitor);
 extern IDIO_SYMBOL_DECL (namespace);

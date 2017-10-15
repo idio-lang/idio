@@ -45,6 +45,34 @@ define-syntax-rule (unless test body ...) (
   if (not test) (begin body ...)
 )
 
+load-handle = {
+  orig-load-handle := load-handle
+
+  function (handle) {
+    if (not (handle? handle)) (error 'load-handle "not a string" handle)
+
+    load-handle-k := #n
+
+    trap ^condition (function (cont cond) {
+      if (not cont) {
+        edisplay "load-handle "
+        ewrite handle
+        edisplay* ": non-cont-error caught: " cond
+        edisplay* "load-handle: invoking safe continuation"
+	(idio-thread-state)
+        load-handle-k cond
+      } {
+	raise cont cond
+      }
+    }) {
+      call/cc (function (k) {
+	load-handle-k = k
+	orig-load-handle handle
+      })
+    }
+  }
+}
+
 load = {
   orig-load := load
 
@@ -57,9 +85,9 @@ load = {
       if (not cont) {
 	edisplay "load "
 	ewrite filename
-	edisplay* ": non-cont-error caught"
-	edisplay* cond
+	edisplay* ": non-cont-error caught: " cond
 	edisplay* "load: invoking safe continuation"
+	(idio-thread-state)
 	load-k cond
       } {
 	raise cont cond

@@ -654,7 +654,7 @@ static IDIO idio_open_std_file_handle (FILE *filep)
 	return idio_S_unspec;
     }
 
-    return idio_open_file_handle (name, filep, mflag, IDIO_FILE_HANDLE_FLAG_STDIO | IDIO_FILE_HANDLE_FLAG_INTERACTIVE);
+    return idio_open_file_handle (name, filep, mflag, IDIO_FILE_HANDLE_FLAG_STDIO);
 }
 
 IDIO idio_stdin_file_handle ()
@@ -1278,18 +1278,6 @@ IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("load-handle", load_handle, (IDIO h))
-{
-    IDIO_ASSERT (h);
-    IDIO_VERIFY_PARAM_TYPE (handle, h);
-
-    idio_thread_save_state (idio_thread_current_thread ());
-    IDIO r = idio_load_filehandle (IDIO_FILE_HANDLE_FILEP (h), idio_read, idio_evaluate, idio_vm_constants);
-    idio_thread_restore_state (idio_thread_current_thread ());
-    
-    return r;
-}
-
 typedef struct idio_file_extension_s {
     char *ext;
     IDIO (*reader) (IDIO h);
@@ -1687,7 +1675,6 @@ void idio_file_handle_add_primitives ()
     IDIO_ADD_PRIMITIVE (output_file_handlep);
     IDIO_ADD_PRIMITIVE (file_handle_fflush);
     IDIO_ADD_PRIMITIVE (file_handle_fd);
-    IDIO_ADD_PRIMITIVE (load_handle);
     IDIO_ADD_PRIMITIVE (find_lib);
     IDIO_ADD_PRIMITIVE (load);
     IDIO_ADD_PRIMITIVE (file_exists_p);

@@ -28,7 +28,7 @@ static pid_t idio_command_pid;
 static pid_t idio_command_pgid;
 static IDIO idio_command_tcattrs;
 static int idio_command_terminal;
-static int idio_command_interactive;
+int idio_command_interactive;
 
 static IDIO idio_command_process_type;
 static IDIO idio_command_job_type;
@@ -70,8 +70,11 @@ static IDIO idio_S_stderr_fileno;
  * sig_atomic_t.
  *
  * https://www.securecoding.cert.org/confluence/display/c/SIG31-C.+Do+not+access+shared+objects+in+signal+handlers
+ *
+ * NB Make the array IDIO_LIBC_NSIG + 1 as idio_vm_run1() will be
+ * trying to access [IDIO_LIBC_NSIG] itself, not up to IDIO_LIBC_NSIG.
  */
-volatile sig_atomic_t idio_command_signal_record[IDIO_LIBC_NSIG];
+volatile sig_atomic_t idio_command_signal_record[IDIO_LIBC_NSIG+1];
 
 void idio_command_sa_signal (int signum)
 {
@@ -940,6 +943,10 @@ static void idio_command_format_job_info (IDIO job, char *msg)
     IDIO_ASSERT (job);
     IDIO_C_ASSERT (msg);
     IDIO_TYPE_ASSERT (struct_instance, job);
+
+    if (0 == idio_command_interactive) {
+	return;
+    }
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("job", job, IDIO_C_LOCATION ("idio_command_format_job_info"));
@@ -2319,7 +2326,10 @@ void idio_final_command ()
     /*
      * Be a good citizen and tidy up.  This will reported completed
      * jobs, though.  Maybe we should suppress the reports.
-     *
+     */
+    idio_command_interactive = 0;
+    
+    /*
      * This deliberately uses the C versions as other modules have
      * been shutting down -- we don't want to be running any more Idio
      * code here!

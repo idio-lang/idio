@@ -400,7 +400,7 @@ test (condition0 + 101) Tests
 ;; which will be the idio_vm_run() in idio_load_filehandle, ie. the
 ;; sequence of expressions in this file -- so we can't test anything
 ;; in this file after this
-display* "NOTICE: raising NON-CONT condition; this will be picked up by load/module"
+display* "NOTICE: raising NON-CONT condition; this will be picked up by module/load"
 raise #f (make-condition ^error)
 
 ;; WARNING

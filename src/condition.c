@@ -390,6 +390,7 @@ IDIO_DEFINE_PRIMITIVE2 ("base-trap-handler", base_trap_handler, (IDIO cont, IDIO
 	 * This should go to the fallback-condition-handler
 	 */
 	idio_debug ("base-trap-handler: non-cont-err %s\n", cond);
+	idio_vm_thread_state ();
 
 	idio_raise_condition (cont, cond);
 
@@ -455,7 +456,12 @@ IDIO_DEFINE_PRIMITIVE2 ("base-trap-handler", base_trap_handler, (IDIO cont, IDIO
 	idio_debug ("base-trap-handler: no clause for %s\n", cond);
     }
 
-    return idio_S_unspec;
+
+    /*
+     * For a continuable continuation, if it gets here, we'll
+     * return void because...
+     */
+    return idio_S_void;
 }
 
 void idio_init_condition ()

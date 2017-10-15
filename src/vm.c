@@ -573,6 +573,11 @@ IDIO_DEFINE_PRIMITIVE2 ("fallback-condition-handler", fallback_condition_handler
 	 * on the top of the stack...
 	 */
 	IDIO_THREAD_PC (thr) = IDIO_FIXNUM_VAL (IDIO_THREAD_STACK_POP ());
+
+	/*
+	 * For a continuable continuation, if it gets here, we'll
+	 * return void because...
+	 */
 	return idio_S_void;
     }
 
@@ -3669,12 +3674,20 @@ IDIO idio_vm_run (IDIO thr)
 		if (idio_command_signal_record[signum]) {
 		    idio_command_signal_record[signum] = 0;
 
-		    IDIO signal_condition = idio_array_ref (idio_vm_signal_handler_conditions, idio_fixnum (signum));
+		    IDIO signal_condition = idio_array_get_index (idio_vm_signal_handler_conditions, (idio_ai_t) signum);
 		    if (idio_S_nil != signal_condition) {
 			idio_vm_raise_condition (idio_S_true, signal_condition, 1);
+		    } else {
+			fprintf (stderr, "idio_vm_run1(): signal %d has no condition?\n", signum);
+			idio_error_C ("signal without a condition to raise", IDIO_LIST1 (idio_fixnum (signum)), IDIO_C_LOCATION ("idio_vm_run1"));
 		    }
 
 		    IDIO signal_handler_name = idio_array_ref (idio_vm_signal_handler_name, idio_fixnum (signum));
+		    if (idio_S_nil == signal_handler_name) {
+			fprintf (stderr, "raising signal %d: no handler name\n", signum);
+			idio_debug ("ivshn %s\n", idio_vm_signal_handler_name);
+			IDIO_C_ASSERT (0);
+		    }
 		    IDIO signal_handler_exists = idio_module_symbol_recurse (signal_handler_name, idio_Idio_module, 1);
 		    IDIO idio_vm_signal_handler = idio_S_nil;
 		    if (idio_S_unspec != signal_handler_exists) {
@@ -3923,17 +3936,37 @@ void idio_vm_thread_state ()
     }
 
     idio_ai_t tsp = IDIO_FIXNUM_VAL (IDIO_THREAD_TRAP_SP (thr));
-    while (tsp != 1) {
-	fprintf (stderr, "thread-state: trap: SP %3td ", tsp);
-	idio_debug ("%s\n", idio_array_get_index (stack, tsp));
-	tsp = IDIO_FIXNUM_VAL (idio_array_get_index (stack, tsp - 1));
+    while (1) {
+	fprintf (stderr, "thread-state: trap: SP %3td: ", tsp);
+	idio_debug (" %s", idio_array_get_index (stack, tsp));
+	IDIO handler = idio_array_get_index (stack, tsp - 1);
+
+	if (idio_isa_closure (handler)) {
+	    IDIO name = idio_hash_get (idio_vm_closure_names_hash, idio_fixnum (IDIO_CLOSURE_CODE (handler)));
+	    if (idio_S_unspec != name) {
+		idio_debug (" %s", name);
+	    } else {
+		idio_debug (" -anon-", handler);
+	    }
+	}
+	idio_debug (" %s\n", handler);
+
+	idio_ai_t ntsp = IDIO_FIXNUM_VAL (idio_array_get_index (stack, tsp - 2));
+	if (ntsp == tsp) {
+	    break;
+	}
+	tsp = ntsp;
     }
 
     idio_ai_t hsp = IDIO_FIXNUM_VAL (IDIO_THREAD_HANDLER_SP (thr));
-    while (hsp != 1) {
+    while (1) {
 	fprintf (stderr, "thread-state: handler: SP %3td ", hsp);
 	idio_debug ("%s\n", idio_array_get_index (stack, hsp));
-	hsp = IDIO_FIXNUM_VAL (idio_array_get_index (stack, hsp - 1));
+	idio_ai_t nhsp = IDIO_FIXNUM_VAL (idio_array_get_index (stack, hsp - 1));
+	if (nhsp == hsp) {
+	    break;
+	}
+	hsp = nhsp;
     }
 
     idio_ai_t dsp = IDIO_FIXNUM_VAL (IDIO_THREAD_DYNAMIC_SP (thr));
@@ -4052,7 +4085,7 @@ void idio_init_vm ()
 {
     idio_vm_t0 = time ((time_t *) NULL);
     
-    idio_all_code = idio_ia (200000);
+    idio_all_code = idio_ia (500000);
     
     idio_codegen_code_prologue (idio_all_code);
     idio_prologue_len = IDIO_IA_USIZE (idio_all_code);
@@ -4066,6 +4099,11 @@ void idio_init_vm ()
 
     idio_vm_signal_handler_name = idio_array (IDIO_LIBC_NSIG + 1);
     idio_gc_protect (idio_vm_signal_handler_name);
+    /*
+     * idio_vm_run1() will be indexing anywhere into this array when
+     * it gets a signal so make sure that the "used" size is up there.
+     */
+    idio_array_insert_index (idio_vm_signal_handler_name, idio_S_nil, (idio_ai_t) IDIO_LIBC_NSIG);
     
     idio_array_insert_index (idio_vm_signal_handler_name, idio_symbols_C_intern ("%%signal-handler-SIGCHLD"), SIGCHLD);
 

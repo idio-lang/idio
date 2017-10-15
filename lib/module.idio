@@ -58,8 +58,8 @@ define-macro (define-module name & body) {
 ;; module and load are concomitant
 ;;
 ;; {module} simply sets the current module but {load} now needs to be
-;; module-aware and restore the original value at the end of file or
-;; on an error
+;; module-aware and restore the original module value at the end of
+;; file or on an error
 define-macro (module name) {
   #T{
     %set-current-module! (%find-or-create-module '$name)
@@ -77,11 +77,11 @@ load = {
 
     trap ^condition (function (cont cond) {
       if (not cont) {
-	edisplay "load/module "
+	edisplay "module/load "
 	ewrite filename
-	edisplay* ": non-cont-error caught"
-	edisplay* cond
-	edisplay* "load/module: invoking safe continuation"
+	edisplay* ": non-cont-error caught: " cond
+	edisplay* "module/load: invoking safe continuation"
+	;(idio-thread-state)
 	load-k cond
       } {
 	raise cont cond

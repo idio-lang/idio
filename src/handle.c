@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -971,6 +971,175 @@ IDIO_DEFINE_PRIMITIVE0V ("handle-current-pos", handle_current_pos, (IDIO args))
     return r;
 }
 
+IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO e, IDIO cs), IDIO cs)
+{
+    IDIO_ASSERT (h);
+    IDIO_C_ASSERT (reader);
+    IDIO_C_ASSERT (evaluator);
+    IDIO_ASSERT (cs);
+    IDIO_TYPE_ASSERT (handle, h);
+    IDIO_TYPE_ASSERT (array, cs);
+
+    int timing = 0;
+    
+    IDIO thr = idio_thread_current_thread ();
+    idio_ai_t ss0 = idio_array_size (IDIO_THREAD_STACK (thr));
+    /* fprintf (stderr, "load-handle: %s\n", IDIO_HANDLE_NAME (h)); */
+    /* idio_debug ("THR %s\n", thr); */
+    /* idio_debug ("STK %s\n", IDIO_THREAD_STACK (thr)); */
+
+    time_t s;
+    suseconds_t us;
+    struct timeval t0;
+    gettimeofday (&t0, NULL);
+
+    IDIO es = idio_S_nil;
+    
+    for (;;) {
+	IDIO en = (*reader) (h);
+	
+	if (idio_S_eof == en) {
+	    break;
+	} else {
+	    es = idio_pair (en, es);
+	}
+    }
+    /* e = idio_list_append2 (IDIO_LIST1 (idio_S_begin), idio_list_reverse (e)); */
+    /* es = idio_list_reverse (es); */
+    es = IDIO_LIST1 (idio_pair (idio_S_begin, idio_list_reverse (es)));
+    /* idio_debug ("load-handle: es %s\n", es);    */
+    
+    IDIO_HANDLE_M_CLOSE (h) (h);
+
+    struct timeval t_read;
+    if (timing) {
+	gettimeofday (&t_read, NULL);
+
+	s = t_read.tv_sec - t0.tv_sec;
+	us = t_read.tv_usec - t0.tv_usec;
+
+	if (us < 0) {
+	    us += 1000000;
+	    s -= 1;
+	}
+	
+	fprintf (stderr, "load-handle: %s: read time %ld.%03ld\n", IDIO_HANDLE_NAME (h), s, (long) us / 1000);
+    }
+    
+    IDIO ms = idio_S_nil;
+    while (es != idio_S_nil) {
+	ms = idio_pair ((*evaluator) (IDIO_PAIR_H (es), cs), ms);
+	es = IDIO_PAIR_T (es);
+    }
+    ms = idio_list_reverse (ms);
+    /* idio_debug ("load-handle: ms %s\n", ms);    */
+    
+    struct timeval te;
+    if (timing) {
+	gettimeofday (&te, NULL);
+
+	s = te.tv_sec - t_read.tv_sec;
+	us = te.tv_usec - t_read.tv_usec;
+
+	if (us < 0) {
+	    us += 1000000;
+	    s -= 1;
+	}
+	
+	fprintf (stderr, "load-handle: %s: evaluation time %ld.%03ld\n", IDIO_HANDLE_NAME (h), s, (long) us / 1000);
+    }
+    
+    /*
+     * When we call idio_vm_run() we are at risk of the garbage
+     * collector being called so we need to save the current file
+     * handle and any lists we're walking over
+     */
+    idio_remember_file_handle (h); 
+    /*
+     * We might have called idio_gc_protect (and later idio_gc_expose)
+     * to safeguard {ms} however we know (because we wrote the code)
+     * that "load" might call a continuation (to a state before we
+     * were called) which will unwind the stack and call longjmp(3).
+     * That means we'll never reach the idio_gc_expose() call and
+     * stuff starts to accumulate in the GC never to be released.
+     *
+     * However, invoking that continuation will clear the stack
+     * including anything we stick on it here.  Very convenient.
+     *
+     * If you dump the stack you will find an enormous list, {ms},
+     * representing the loaded file.  Which is annoying.
+     */
+    idio_array_push (IDIO_THREAD_STACK (thr), ms);
+    
+    idio_ai_t lh_pc = -1;
+    IDIO r;
+    while (idio_S_nil != ms) {
+	idio_codegen (thr, IDIO_PAIR_H (ms), cs);
+	if (-1 == lh_pc) {
+	    lh_pc = IDIO_THREAD_PC (thr);
+	    /* fprintf (stderr, "\n\n%s lh_pc == %jd\n", IDIO_HANDLE_NAME (h), lh_pc); */
+	}
+	/* r = idio_vm_run (thr); */
+	ms = IDIO_PAIR_T (ms);
+    }
+    IDIO_THREAD_PC (thr) = lh_pc;
+    r = idio_vm_run (thr); 
+
+    idio_array_pop (IDIO_THREAD_STACK (thr));
+    
+    struct timeval tr;
+    gettimeofday (&tr, NULL);
+	
+    if (timing) {
+	s = tr.tv_sec - te.tv_sec;
+	us = tr.tv_usec - te.tv_usec;
+
+	if (us < 0) {
+	    us += 1000000;
+	    s -= 1;
+	}
+	
+	fprintf (stderr, "load-handle: %s: compile/run time %ld.%03ld\n", IDIO_HANDLE_NAME (h), s, (long) us / 1000);
+    }
+    
+    s = tr.tv_sec - t0.tv_sec;
+    us = tr.tv_usec - t0.tv_usec;
+
+    if (us < 0) {
+	us += 1000000;
+	s -= 1;
+    }
+
+#if IDIO_DEBUG
+    /* fprintf (stderr, "load-handle: %s: elapsed time %ld.%03ld\n", IDIO_HANDLE_NAME (h), s, (long) us / 1000); */
+    /* idio_debug (" => %s\n", r); */
+#endif
+    
+    idio_ai_t ss = idio_array_size (IDIO_THREAD_STACK (thr));
+
+    if (ss != ss0) {
+	fprintf (stderr, "load-handle: %s: SS %td != %td\n", IDIO_HANDLE_NAME (h), ss, ss0);
+	idio_debug ("THR %s\n", thr);
+	idio_debug ("STK %s\n", IDIO_THREAD_STACK (thr));
+    }
+    
+    idio_forget_file_handle (h);
+    
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("load-handle", load_handle, (IDIO h))
+{
+    IDIO_ASSERT (h);
+    IDIO_VERIFY_PARAM_TYPE (handle, h);
+
+    idio_thread_save_state (idio_thread_current_thread ());
+    IDIO r = idio_load_handle (h, idio_read, idio_evaluate, idio_vm_constants);
+    idio_thread_restore_state (idio_thread_current_thread ());
+    
+    return r;
+}
+
 void idio_init_handle ()
 {
 }
@@ -1009,6 +1178,7 @@ void idio_handle_add_primitives ()
     IDIO_ADD_PRIMITIVE (handle_flush);
     IDIO_ADD_PRIMITIVE (handle_seek);
     IDIO_ADD_PRIMITIVE (handle_rewind);
+    IDIO_ADD_PRIMITIVE (load_handle);
 }
 
 void idio_final_handle ()

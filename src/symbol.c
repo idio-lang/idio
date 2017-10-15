@@ -77,6 +77,7 @@ IDIO_SYMBOL_DECL (let);
 IDIO_SYMBOL_DECL (letrec);
 IDIO_SYMBOL_DECL (list);
 IDIO_SYMBOL_DECL (load);
+IDIO_SYMBOL_DECL (load_handle);
 IDIO_SYMBOL_DECL (lt);
 IDIO_SYMBOL_DECL (monitor);
 IDIO_SYMBOL_DECL (namespace);
@@ -362,6 +363,7 @@ void idio_init_symbol ()
     IDIO_SYMBOL_DEF ("letrec", letrec);
     IDIO_SYMBOL_DEF ("list", list);
     IDIO_SYMBOL_DEF ("load", load);
+    IDIO_SYMBOL_DEF ("load-handle", load_handle);
     IDIO_SYMBOL_DEF ("<", lt);
     IDIO_SYMBOL_DEF ("monitor", monitor);
     IDIO_SYMBOL_DEF ("namespace", namespace);

@@ -2796,6 +2796,11 @@ void idio_init_libc_wrap ()
 
     idio_vm_signal_handler_conditions = idio_array (IDIO_LIBC_NSIG + 1);
     idio_gc_protect (idio_vm_signal_handler_conditions);
+    /*
+     * idio_vm_run1() will be indexing anywhere into this array when
+     * it gets a signal so make sure that the "used" size is up there.
+     */
+    idio_array_insert_index (idio_vm_signal_handler_conditions, idio_S_nil, (idio_ai_t) IDIO_LIBC_NSIG);
 
     idio_libc_set_signal_names ();
     idio_libc_set_errno_names ();
