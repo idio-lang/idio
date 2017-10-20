@@ -382,24 +382,28 @@ IDIO_DEFINE_PRIMITIVE2 ("base-trap-handler", base_trap_handler, (IDIO cont, IDIO
 {
     IDIO_ASSERT (cont);
     IDIO_ASSERT (cond);
+
+    /*
+     * XXX IDIO_TYPE_ASSERT() will raise a condition if it fails!
+     */
     IDIO_TYPE_ASSERT (boolean, cont);
     IDIO_TYPE_ASSERT (condition, cond); 
+
+    IDIO thr = idio_thread_current_thread ();
 
     if (idio_S_false == cont) {
 	/*
 	 * This should go to the fallback-condition-handler
 	 */
 	idio_debug ("base-trap-handler: non-cont-err %s\n", cond);
-	idio_vm_thread_state ();
 
-	idio_raise_condition (cont, cond);
+	fprintf (stderr, "resetting VM\n");
+	idio_vm_reset_thread (thr, 1);
 
 	/* notreached */
 	return idio_S_unspec;
     }
 	
-    IDIO thr = idio_thread_current_thread ();
-
     IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (cond);
     IDIO sif = IDIO_STRUCT_INSTANCE_FIELDS (cond);
 

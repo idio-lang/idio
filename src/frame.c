@@ -191,6 +191,29 @@ IDIO idio_frame_extend (IDIO f1, IDIO f2)
     return f2;
 }
 
+IDIO idio_frame_args_as_list (IDIO frame)
+{
+    IDIO_ASSERT (frame);
+    IDIO_TYPE_ASSERT (frame, frame);
+
+    IDIO r = idio_S_nil;
+    
+    IDIO args = IDIO_FRAME_ARGS (frame);
+    idio_ai_t al = idio_array_size (args);
+    if (al > 0) {
+	idio_ai_t i;
+	for (i = 0; i < al - 1; i++) {
+	    r = idio_pair (idio_array_get_index (args, i), r);
+	}
+
+	r = idio_improper_list_reverse (r, idio_array_get_index (args, i));
+    } else {
+	fprintf (stderr, "idio_frame_args_as_list: al == %zd\n", al);
+    }
+
+    return r;
+}
+
 void idio_init_frame ()
 {
 }

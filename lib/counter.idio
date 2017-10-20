@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -28,7 +28,11 @@ cter := function (n c) {
 
 ;; each loop is ~ 50 instructions
 
+;; Aug 2015
 ;; normal compilation => ~ 6000 i/ms
 ;; lean compilation   => ~ 10-15k i/ms
+;; Oct 2017
+;; normal compilation => ~ 145k i/ms
+;; lean compilation   => ~ 250k i/ms
 cter 40000 0
 

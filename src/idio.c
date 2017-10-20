@@ -318,6 +318,18 @@ int main (int argc, char **argv, char **envp)
 	switch (sjv) {
 	case 0:
 	    break;
+	case IDIO_VM_LONGJMP_CONDITION:
+	    fprintf (stderr, "REPL: longjmp from condition\n");  
+	    break;
+	case IDIO_VM_LONGJMP_CONTINUATION:
+	    fprintf (stderr, "REPL: longjmp from continuation\n");  
+	    break;
+	case IDIO_VM_LONGJMP_CALLCC:
+	    fprintf (stderr, "REPL: longjmp from callcc\n");  
+	    break;
+	case IDIO_VM_LONGJMP_EVENT:
+	    fprintf (stderr, "REPL: longjmp from event\n");  
+	    break;
 	default:
 	    fprintf (stderr, "setjmp: repl failed with sjv %d\n", sjv);
 	    exit (1);

@@ -2190,9 +2190,11 @@ int idio_vm_run1 (IDIO thr)
 	    IDIO c = idio_vm_constants_ref (gci);
 	    
     	    IDIO_VM_RUN_DIS ("CONSTANT %td", gci);
+#ifdef IDIO_DEBUG
 	    if (idio_vm_dis) {
 		idio_debug (" %s", c);
 	    }
+#endif
     	    IDIO_THREAD_VAL (thr) = c; 
     	} 
     	break; 
@@ -3931,7 +3933,7 @@ void idio_vm_thread_state ()
     
     IDIO frame = IDIO_THREAD_FRAME (thr);
     while (idio_S_nil != frame) {
-	idio_debug ("thread-state: frame: %s\n", IDIO_FRAME_ARGS (frame));
+	idio_debug ("thread-state: frame: %s\n", idio_frame_args_as_list (frame));
 	frame = IDIO_FRAME_NEXT (frame);
     }
 
