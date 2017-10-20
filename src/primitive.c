@@ -22,7 +22,7 @@
 
 #include "idio.h"
 
-IDIO idio_primitive (IDIO (*func) (IDIO args), const char *name_C, size_t arity, char varargs)
+IDIO idio_primitive (IDIO (*func) (IDIO args), const char *name_C, size_t arity, char varargs, const char *sigstr_C, const char *docstr_C)
 {
     IDIO_C_ASSERT (func);
     IDIO_C_ASSERT (name_C);
@@ -35,7 +35,7 @@ IDIO idio_primitive (IDIO (*func) (IDIO args), const char *name_C, size_t arity,
     
     IDIO_PRIMITIVE_GREY (o) = NULL;
     IDIO_PRIMITIVE_F (o) = func;
-    IDIO_PRIMITIVE_PROPERTIES (o) = idio_S_nil;
+    IDIO_PRIMITIVE_PROPERTIES (o) = idio_hash_make_keyword_table (IDIO_LIST1 (idio_fixnum (4)));
     IDIO_PRIMITIVE_ARITY (o) = arity;
     IDIO_PRIMITIVE_VARARGS (o) = varargs;
 
@@ -56,6 +56,10 @@ IDIO idio_primitive (IDIO (*func) (IDIO args), const char *name_C, size_t arity,
     IDIO_PRIMITIVE_CALL_TIME (o).tv_nsec = 0;
 #endif
     
+    idio_keyword_set (IDIO_PRIMITIVE_PROPERTIES (o), idio_KW_docstr, idio_S_nil);
+    idio_primitive_property_set_C (o, idio_KW_sigstr, sigstr_C);
+    idio_primitive_property_set_C (o, idio_KW_docstr_raw, docstr_C);
+
     return o;
 }
 
@@ -69,7 +73,7 @@ IDIO idio_primitive_data (idio_primitive_desc_t *desc)
     
     IDIO_PRIMITIVE_GREY (o) = NULL;
     IDIO_PRIMITIVE_F (o) = desc->f;
-    IDIO_PRIMITIVE_PROPERTIES (o) = idio_S_nil;
+    IDIO_PRIMITIVE_PROPERTIES (o) = idio_hash_make_keyword_table (IDIO_LIST1 (idio_fixnum (4)));
     IDIO_PRIMITIVE_ARITY (o) = desc->arity;
     IDIO_PRIMITIVE_VARARGS (o) = desc->varargs;
 
@@ -86,7 +90,32 @@ IDIO idio_primitive_data (idio_primitive_desc_t *desc)
     IDIO_PRIMITIVE_CALL_TIME (o).tv_nsec = 0;
 #endif
     
+    idio_keyword_set (IDIO_PRIMITIVE_PROPERTIES (o), idio_KW_docstr, idio_S_nil);
+    idio_primitive_property_set_C (o, idio_KW_sigstr, desc->sigstr);
+    idio_primitive_property_set_C (o, idio_KW_docstr_raw, desc->docstr);
+
     return o;
+}
+
+void idio_primitive_property_set_C (IDIO p, IDIO kw, const char *str_C)
+{
+    IDIO_ASSERT (p);
+    IDIO_TYPE_ASSERT (primitive, p);
+	
+    IDIO str = idio_S_nil;
+    
+    if (NULL == str_C) {
+	str = idio_S_nil;
+    } else {
+	size_t l = strlen (str_C);
+	if (0 == l) {
+	    str = idio_S_nil;
+	} else {
+	    str = idio_string_C (str_C);
+	}
+    }
+
+    idio_keyword_set (IDIO_PRIMITIVE_PROPERTIES (p), kw, str);
 }
 
 int idio_isa_primitive (IDIO o)

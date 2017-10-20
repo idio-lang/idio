@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -20,8 +20,37 @@
  * 
  */
 
+/** 
+ * DOC: Idio ``character`` type
+ *
+ * An Idio ``character`` represents a Unicode code point.  Or should
+ * do, in practice, it represents an ASCII code point.
+ *
+ * We can extend ease of use by making the nominal names of the
+ * characters available for the reader to consume.
+ *
+ * There are the ASCII C0 control names:
+ *
+ *  ``nul``, ``soh``, ``stx``, ``etx``, etc.
+ *
+ * and ANSI C names:
+ *
+ *  ``alarm``, ``backspace``, ``tab``, ``linefeed``, etc.
+ *
+ * Example:
+ *
+ * .. code-block:: scheme
+ *
+ *     display #\lf
+ *     display #\newline
+ */
+
 #include "idio.h"
 
+/**
+ * static idio_characters_hash - table of known character names to values
+ *
+ */
 static IDIO idio_characters_hash = idio_S_nil;
 
 int idio_character_C_eqp (void *s1, void *s2)
@@ -65,6 +94,13 @@ IDIO idio_characters_C_intern (char *s, IDIO v)
     return v;
 }
 
+/**
+ * idio_character_lookup - return the code point of a named character
+ * @s: character name (a C string)
+ *
+ * Return:
+ * The Idio value of the code point or %idio_S_nil.
+ */
 IDIO idio_character_lookup (char *s)
 {
     IDIO_C_ASSERT (s);
@@ -83,6 +119,8 @@ int idio_isa_character (IDIO o)
 	 * https://www.gnu.org/software/guile/manual/html_node/Characters.html
 	 *
 	 * Scheme says a character is a valid Unicode code point.
+	 *
+	 * This covers the current implementation of ASCII-only code points.
 	 */
 	if ((cv >= 0 &&
 	     cv <= 0xd7ff) ||
@@ -95,7 +133,13 @@ int idio_isa_character (IDIO o)
     return 0;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("char?",  char_p, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1_DS ("char?",  char_p, (IDIO o), "o", "\
+test if `o` is an character				\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is an character, #f otherwise	\n\
+")
 {
     IDIO_ASSERT (o);
 
@@ -108,7 +152,13 @@ IDIO_DEFINE_PRIMITIVE1 ("char?",  char_p, (IDIO o))
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("char->integer",  char2integer, (IDIO c))
+IDIO_DEFINE_PRIMITIVE1_DS ("char->integer",  char2integer, (IDIO c), "c", "\
+convert `c` to an integer				\n\
+						\n\
+:param c: character to convert			\n\
+						\n\
+:return: integer (fixnum) conversion of `c`	\n\
+")
 {
     IDIO_ASSERT (c);
 
@@ -117,7 +167,15 @@ IDIO_DEFINE_PRIMITIVE1 ("char->integer",  char2integer, (IDIO c))
     return idio_fixnum (IDIO_CHARACTER_VAL (c));
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("char-alphabetic?",  char_alphabetic_p, (IDIO c))
+IDIO_DEFINE_PRIMITIVE1_DS ("char-alphabetic?",  char_alphabetic_p, (IDIO c), "c", "\
+test if `c` is alphabetic			\n\
+						\n\
+:param c: character to test			\n\
+						\n\
+This implementation uses libc isalpha()		\n\
+						\n\
+:return: #t if `c` is an alphabetic character, #f otherwise	\n\
+")
 {
     IDIO_ASSERT (c);
 
@@ -132,7 +190,15 @@ IDIO_DEFINE_PRIMITIVE1 ("char-alphabetic?",  char_alphabetic_p, (IDIO c))
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("char-numeric?",  char_numeric_p, (IDIO c))
+IDIO_DEFINE_PRIMITIVE1_DS ("char-numeric?",  char_numeric_p, (IDIO c), "c", "\
+test if `c` is numeric			\n\
+						\n\
+:param c: character to test			\n\
+						\n\
+This implementation uses libc isdigit()		\n\
+						\n\
+:return: #t if `c` is an numeric character, #f otherwise	\n\
+")
 {
     IDIO_ASSERT (c);
 
@@ -147,7 +213,15 @@ IDIO_DEFINE_PRIMITIVE1 ("char-numeric?",  char_numeric_p, (IDIO c))
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("char-whitespace?",  char_whitespace_p, (IDIO c))
+IDIO_DEFINE_PRIMITIVE1_DS ("char-whitespace?",  char_whitespace_p, (IDIO c), "c", "\
+test if `c` is whitespace			\n\
+						\n\
+:param c: character to test			\n\
+						\n\
+This implementation uses libc isblank() and isspace()		\n\
+						\n\
+:return: #t if `c` is a whitespace character, #f otherwise	\n\
+")
 {
     IDIO_ASSERT (c);
 
@@ -163,7 +237,15 @@ IDIO_DEFINE_PRIMITIVE1 ("char-whitespace?",  char_whitespace_p, (IDIO c))
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("char-downcase",  char_downcase, (IDIO c))
+IDIO_DEFINE_PRIMITIVE1_DS ("char-downcase",  char_downcase, (IDIO c), "c", "\
+return lowercase variant of `c`			\n\
+						\n\
+:param c: character to convert			\n\
+						\n\
+This implementation uses libc tolower()		\n\
+						\n\
+:return: lowercase variant of `c`	\n\
+")
 {
     IDIO_ASSERT (c);
 
@@ -172,7 +254,15 @@ IDIO_DEFINE_PRIMITIVE1 ("char-downcase",  char_downcase, (IDIO c))
     return IDIO_CHARACTER (IDIO_CHARACTER_IVAL (c));
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("char-lower-case?",  char_lower_case_p, (IDIO c))
+IDIO_DEFINE_PRIMITIVE1_DS ("char-lower-case?",  char_lower_case_p, (IDIO c), "c", "\
+test if `c` is lower case			\n\
+						\n\
+:param c: character to test			\n\
+						\n\
+This implementation uses libc islower()		\n\
+						\n\
+:return: #t if `c` is a lower case character, #f otherwise	\n\
+")
 {
     IDIO_ASSERT (c);
 
@@ -187,7 +277,15 @@ IDIO_DEFINE_PRIMITIVE1 ("char-lower-case?",  char_lower_case_p, (IDIO c))
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("char-upcase",  char_upcase, (IDIO c))
+IDIO_DEFINE_PRIMITIVE1_DS ("char-upcase",  char_upcase, (IDIO c), "c", "\
+return uppercase variant of `c`			\n\
+						\n\
+:param c: character to convert			\n\
+						\n\
+This implementation uses libc toupper()		\n\
+						\n\
+:return: uppercase variant of `c`	\n\
+")
 {
     IDIO_ASSERT (c);
 
@@ -196,7 +294,15 @@ IDIO_DEFINE_PRIMITIVE1 ("char-upcase",  char_upcase, (IDIO c))
     return IDIO_CHARACTER (toupper (IDIO_CHARACTER_VAL (c)));
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("char-upper-case?",  char_upper_case_p, (IDIO c))
+IDIO_DEFINE_PRIMITIVE1_DS ("char-upper-case?",  char_upper_case_p, (IDIO c), "c", "\
+test if `c` is upper case			\n\
+						\n\
+:param c: character to test			\n\
+						\n\
+This implementation uses libc isupper()		\n\
+						\n\
+:return: #t if `c` is a upper case character, #f otherwise	\n\
+")
 {
     IDIO_ASSERT (c);
 
@@ -335,16 +441,150 @@ void idio_character_add_primitives ()
     IDIO_ADD_PRIMITIVE (char_upcase);
     IDIO_ADD_PRIMITIVE (char_upper_case_p);
     IDIO_ADD_PRIMITIVE (char_whitespace_p);
-    IDIO_ADD_PRIMITIVE (char_le_p);
-    IDIO_ADD_PRIMITIVE (char_lt_p);
-    IDIO_ADD_PRIMITIVE (char_eq_p);
-    IDIO_ADD_PRIMITIVE (char_ge_p);
-    IDIO_ADD_PRIMITIVE (char_gt_p);
-    IDIO_ADD_PRIMITIVE (char_ci_le_p);
-    IDIO_ADD_PRIMITIVE (char_ci_lt_p);
-    IDIO_ADD_PRIMITIVE (char_ci_eq_p);
-    IDIO_ADD_PRIMITIVE (char_ci_ge_p);
-    IDIO_ADD_PRIMITIVE (char_ci_gt_p);
+
+    /*
+     * The char_* functions were autogenerated but we still need to
+     * add the sigstr and docstr
+     */
+    IDIO fvi = IDIO_ADD_PRIMITIVE (char_le_p);
+    IDIO p = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+    idio_primitive_property_set_C (p, idio_KW_sigstr, "c1 c2 [...]");
+    idio_primitive_property_set_C (p, idio_KW_docstr_raw, "\
+test if character arguments are sorted non-decreasing			\n\
+									\n\
+:param c1: char								\n\
+:param c2: char								\n\
+:param ...: chars							\n\
+									\n\
+:return: #t if arguments are sorted non-decreasing, #f otherwise	\n\
+");
+
+    fvi = IDIO_ADD_PRIMITIVE (char_lt_p);
+    p = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+    idio_primitive_property_set_C (p, idio_KW_sigstr, "c1 c2 [...]");
+    idio_primitive_property_set_C (p, idio_KW_docstr_raw, "\
+test if character arguments are sorted increasing		\n\
+								\n\
+:param c1: char							\n\
+:param c2: char							\n\
+:param ...: chars						\n\
+								\n\
+:return: #t if arguments are sorted increasing, #f otherwise	\n\
+");
+
+    fvi = IDIO_ADD_PRIMITIVE (char_eq_p);
+    p = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+    idio_primitive_property_set_C (p, idio_KW_sigstr, "c1 c2 [...]");
+    idio_primitive_property_set_C (p, idio_KW_docstr_raw, "\
+test if character arguments are equal			\n\
+							\n\
+:param c1: char						\n\
+:param c2: char						\n\
+:param ...: chars					\n\
+							\n\
+:return: #t if arguments are equal, #f otherwise	\n\
+");
+
+    fvi = IDIO_ADD_PRIMITIVE (char_ge_p);
+    p = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+    idio_primitive_property_set_C (p, idio_KW_sigstr, "c1 c2 [...]");
+    idio_primitive_property_set_C (p, idio_KW_docstr_raw, "\
+test if character arguments are sorted non-increasing			\n\
+									\n\
+:param c1: char								\n\
+:param c2: char								\n\
+:param ...: chars							\n\
+									\n\
+:return: #t if arguments are sorted non-increasing, #f otherwise	\n\
+");
+
+    fvi = IDIO_ADD_PRIMITIVE (char_gt_p);
+    p = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+    idio_primitive_property_set_C (p, idio_KW_sigstr, "c1 c2 [...]");
+    idio_primitive_property_set_C (p, idio_KW_docstr_raw, "\
+test if character arguments are sorted decreasing		\n\
+								\n\
+:param c1: char							\n\
+:param c2: char							\n\
+:param ...: chars						\n\
+								\n\
+:return: #t if arguments are sorted decreasing, #f otherwise	\n\
+");
+
+    fvi = IDIO_ADD_PRIMITIVE (char_ci_le_p);
+    p = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+    idio_primitive_property_set_C (p, idio_KW_sigstr, "c1 c2 [...]");
+    idio_primitive_property_set_C (p, idio_KW_docstr_raw, "\
+test if character arguments are sorted non-decreasing case-insensitively		\n\
+											\n\
+:param c1: char										\n\
+:param c2: char										\n\
+:param ...: chars									\n\
+											\n\
+This implementation uses libc tolower()							\n\
+											\n\
+:return: #t if arguments are sorted non-decreasing case-insensitively, #f otherwise	\n\
+");
+
+    fvi = IDIO_ADD_PRIMITIVE (char_ci_lt_p);
+    p = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+    idio_primitive_property_set_C (p, idio_KW_sigstr, "c1 c2 [...]");
+    idio_primitive_property_set_C (p, idio_KW_docstr_raw, "\
+test if character arguments are sorted increasing case-insensitively		\n\
+										\n\
+:param c1: char									\n\
+:param c2: char									\n\
+:param ...: chars								\n\
+										\n\
+This implementation uses libc tolower()						\n\
+										\n\
+:return: #t if arguments are sorted increasing case-insensitively, #f otherwise	\n\
+");
+
+    fvi = IDIO_ADD_PRIMITIVE (char_ci_eq_p);
+    p = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+    idio_primitive_property_set_C (p, idio_KW_sigstr, "c1 c2 [...]");
+    idio_primitive_property_set_C (p, idio_KW_docstr_raw, "\
+test if character arguments are equal case-insensitively		\n\
+									\n\
+:param c1: char								\n\
+:param c2: char								\n\
+:param ...: chars							\n\
+									\n\
+This implementation uses libc tolower()					\n\
+									\n\
+:return: #t if arguments are equal case-insensitively, #f otherwise	\n\
+");
+
+    fvi = IDIO_ADD_PRIMITIVE (char_ci_ge_p);
+    p = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+    idio_primitive_property_set_C (p, idio_KW_sigstr, "c1 c2 [...]");
+    idio_primitive_property_set_C (p, idio_KW_docstr_raw, "\
+test if character arguments are sorted non-increasing case-insensitively		\n\
+											\n\
+:param c1: char										\n\
+:param c2: char										\n\
+:param ...: chars									\n\
+											\n\
+This implementation uses libc tolower()							\n\
+											\n\
+:return: #t if arguments are sorted non-increasing case-insensitively, #f otherwise	\n\
+");
+
+    fvi = IDIO_ADD_PRIMITIVE (char_ci_gt_p);
+    p = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+    idio_primitive_property_set_C (p, idio_KW_sigstr, "c1 c2 [...]");
+    idio_primitive_property_set_C (p, idio_KW_docstr_raw, "\
+test if character arguments are sorted decreasing case-insensitively		\n\
+										\n\
+:param c1: char									\n\
+:param c2: char									\n\
+:param ...: chars								\n\
+										\n\
+This implementation uses libc tolower()						\n\
+										\n\
+:return: #t if arguments are sorted decreasing case-insensitively, #f otherwise	\n\
+");
 }
 
 void idio_final_character ()

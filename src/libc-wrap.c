@@ -1242,9 +1242,9 @@ static void idio_libc_set_signal_names ()
 	    IDIO_LIBC_SIGNAL_NAME_ONLY (sig_name, i)
 	    if (first) {
 		first = 0;
-		fprintf (stderr, "WARNING: Unnamed signal numbers:");
+		fprintf (stderr, "Unmapped signal numbers:");
 	    }
-	    fprintf (stderr, " %d", i);
+	    fprintf (stderr, " %d (%s) -> %s;", i, strsignal (i), sig_name);
 	}
     }
     if (0 == first) {
@@ -2506,15 +2506,15 @@ static void idio_libc_set_errno_names ()
     for (i = IDIO_LIBC_FERRNO ; i < IDIO_LIBC_NERRNO ; i++) {
 	if ('\0' == *(idio_libc_errno_names[i])) {
 	    char err_name[IDIO_LIBC_ERRNAMELEN + 2];
-	    sprintf (err_name, "ERRNO%d", i);
+	    sprintf (err_name, "ERRUNKNOWN%d", i);
 	    err_sym = idio_symbols_C_intern (err_name);
 	    idio_libc_export_symbol_value (err_sym, idio_C_int (i));
 	    sprintf (idio_libc_errno_names[i], "%s", err_name);
 	    if (first) {
 		first = 0;
-		fprintf (stderr, "Undefined errno:");
+		fprintf (stderr, "Unmapped errno numbers:");
 	    }
-	    fprintf (stderr, " %d", i);
+	    fprintf (stderr, " %d (%s) -> %s;", i, strerror (i), err_name);
 	}
     }
     if (0 == first) {

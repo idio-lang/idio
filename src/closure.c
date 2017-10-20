@@ -22,11 +22,24 @@
 
 #include "idio.h"
 
-IDIO idio_closure (size_t code, IDIO frame, IDIO env)
+/**
+ * idio_array() - closure constructor
+ * @code: byte code
+ * @frame: ??
+ * @env: closure's environment
+ * @code: signature string
+ * @code: unprocessed doc string
+ *
+ * Return:
+ * Returns the closure.
+ */
+IDIO idio_closure (size_t code, IDIO frame, IDIO env, IDIO sigstr, IDIO docstr)
 {
     IDIO_C_ASSERT (code);
     IDIO_ASSERT (frame);
     IDIO_ASSERT (env);
+    IDIO_ASSERT (sigstr);
+    IDIO_ASSERT (docstr);
 
     if (idio_S_nil != frame) {
 	IDIO_TYPE_ASSERT (frame, frame);
@@ -43,12 +56,16 @@ IDIO idio_closure (size_t code, IDIO frame, IDIO env)
     IDIO_CLOSURE_CODE (c) = code;
     IDIO_CLOSURE_FRAME (c) = frame;
     IDIO_CLOSURE_ENV (c) = env;
-    IDIO_CLOSURE_PROPERTIES (c) = idio_S_nil;
+    IDIO_CLOSURE_PROPERTIES (c) = idio_hash_make_keyword_table (IDIO_LIST1 (idio_fixnum (4)));
 #ifdef IDIO_VM_PERF
     IDIO_CLOSURE_CALLED (c) = 0;
     IDIO_CLOSURE_CALL_TIME (c).tv_sec = 0;
     IDIO_CLOSURE_CALL_TIME (c).tv_nsec = 0;
 #endif
+
+    idio_keyword_set (IDIO_CLOSURE_PROPERTIES (c), idio_KW_sigstr, sigstr);
+    idio_keyword_set (IDIO_CLOSURE_PROPERTIES (c), idio_KW_docstr, idio_S_nil);
+    idio_keyword_set (IDIO_CLOSURE_PROPERTIES (c), idio_KW_docstr_raw, docstr);
 
     return c;
 }
@@ -78,7 +95,15 @@ void idio_free_closure (IDIO c)
     free (c->u.closure); 
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("procedure?", procedurep, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1_DS ("procedure?", procedurep, (IDIO o), "o", "\
+test if `o` is a procedure			\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is a procedure, #f otherwise	\n\
+						\n\
+A procedure can be either an Idio (closure) or C (primitive) defined function\n\
+")
 {
     IDIO_ASSERT (o);
 
@@ -91,7 +116,13 @@ IDIO_DEFINE_PRIMITIVE1 ("procedure?", procedurep, (IDIO o))
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("setter", setter, (IDIO p))
+IDIO_DEFINE_PRIMITIVE1_DS ("setter", setter, (IDIO p), "p", "\
+return the setter of `p`			\n\
+						\n\
+:param p: procedure				\n\
+						\n\
+:return: the setter of `p`			\n\
+")
 {
     IDIO_ASSERT (p);
 
@@ -130,7 +161,13 @@ IDIO idio_closure_procedure_properties (IDIO p)
     return idio_S_unspec;
 }    
 
-IDIO_DEFINE_PRIMITIVE1 ("%procedure-properties", procedure_properties, (IDIO p))
+IDIO_DEFINE_PRIMITIVE1_DS ("%procedure-properties", procedure_properties, (IDIO p), "p", "\
+return the properties table of `p`		\n\
+						\n\
+:param p: procedure				\n\
+						\n\
+:return: the properties table of `p`		\n\
+")
 {
     IDIO_ASSERT (p);
 
@@ -158,7 +195,14 @@ IDIO idio_closure_set_procedure_properties (IDIO p, IDIO v)
     return idio_S_unspec;
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("%set-procedure-properties!", set_procedure_properties, (IDIO p, IDIO v))
+IDIO_DEFINE_PRIMITIVE2_DS ("%set-procedure-properties!", set_procedure_properties, (IDIO p, IDIO v), "p v", "\
+set the properties table of `p` to `v`		\n\
+						\n\
+:param p: procedure				\n\
+:param v: properties table			\n\
+						\n\
+:return: #<unspec>				\n\
+")
 {
     IDIO_ASSERT (p);
     IDIO_ASSERT (v);

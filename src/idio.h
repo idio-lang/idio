@@ -184,7 +184,7 @@ extern FILE *idio_vm_perf_FILE;
  *
  * We are looking for the following for foo_C, ie. Idio's "foo-idio"
 
-   IDIO_DEFINE_PRIMITIVE2 ("foo-idio", foo_C, (T1 a1, T2, a2))
+   IDIO_DEFINE_PRIMITIVE2 ("foo-idio", foo_C, (T1 a1, T2, a2), sigstr, docstr)
    {
      ...
    }
@@ -197,7 +197,9 @@ extern FILE *idio_vm_perf_FILE;
       "foo-idio",
       idio_S_nil,
       2,
-      0
+      0,
+      sigstr,
+      docstr
    };
    IDIO idio_defprimitive_foo_C (T1 a1, T2 a2)
    {
@@ -210,45 +212,77 @@ extern FILE *idio_vm_perf_FILE;
  * it to the code to actually add a primitive.
  */
 
-#define IDIO_DEFINE_PRIMITIVE_DESC(iname,cname,params,arity,varargs)	\
+#define IDIO_DEFINE_PRIMITIVE_DESC(iname,cname,params,arity,varargs,sigstr,docstr) \
     IDIO idio_defprimitive_ ## cname params;				\
     static struct idio_primitive_desc_s idio_primitive_data_ ## cname = { \
 	idio_defprimitive_ ## cname,					\
 	iname,								\
 	arity,								\
-	varargs								\
+	varargs,							\
+	sigstr,								\
+	docstr								\
     };									\
     IDIO idio_defprimitive_ ## cname params
 
+#define IDIO_DEFINE_PRIMITIVE0_DS(iname,cname,params,sigstr,docstr)	\
+    IDIO_DEFINE_PRIMITIVE_DESC(iname,cname,params,0,0,sigstr,docstr)
+
 #define IDIO_DEFINE_PRIMITIVE0(iname,cname,params)			\
-    IDIO_DEFINE_PRIMITIVE_DESC(iname,cname,params,0,0)
+    IDIO_DEFINE_PRIMITIVE_DESC(iname,cname,params,0,0,"","")
+
+#define IDIO_DEFINE_PRIMITIVE0V_DS(iname,cname,params,sigstr,docstr)	\
+    IDIO_DEFINE_PRIMITIVE_DESC(iname,cname,params,0,1,sigstr,docstr)
 
 #define IDIO_DEFINE_PRIMITIVE0V(iname,cname,params)			\
-    IDIO_DEFINE_PRIMITIVE_DESC(iname,cname,params,0,1)
+    IDIO_DEFINE_PRIMITIVE_DESC(iname,cname,params,0,1,"","")
+
+#define IDIO_DEFINE_PRIMITIVE1_DS(iname,cname,params,sigstr,docstr)	\
+    IDIO_DEFINE_PRIMITIVE_DESC(iname,cname,params,1,0,sigstr,docstr)
 
 #define IDIO_DEFINE_PRIMITIVE1(iname,cname,params)			\
-    IDIO_DEFINE_PRIMITIVE_DESC(iname,cname,params,1,0)
+    IDIO_DEFINE_PRIMITIVE_DESC(iname,cname,params,1,0,"","")
+
+#define IDIO_DEFINE_PRIMITIVE1V_DS(iname,cname,params,sigstr,docstr)	\
+    IDIO_DEFINE_PRIMITIVE_DESC(iname,cname,params,1,1,sigstr,docstr)
 
 #define IDIO_DEFINE_PRIMITIVE1V(iname,cname,params)			\
-    IDIO_DEFINE_PRIMITIVE_DESC(iname,cname,params,1,1)
+    IDIO_DEFINE_PRIMITIVE_DESC(iname,cname,params,1,1,"","")
+
+#define IDIO_DEFINE_PRIMITIVE2_DS(iname,cname,params,sigstr,docstr)	\
+    IDIO_DEFINE_PRIMITIVE_DESC(iname,cname,params,2,0,sigstr,docstr)
 
 #define IDIO_DEFINE_PRIMITIVE2(iname,cname,params)			\
-    IDIO_DEFINE_PRIMITIVE_DESC(iname,cname,params,2,0)
+    IDIO_DEFINE_PRIMITIVE_DESC(iname,cname,params,2,0,"","")
+
+#define IDIO_DEFINE_PRIMITIVE2V_DS(iname,cname,params,sigstr,docstr)	\
+    IDIO_DEFINE_PRIMITIVE_DESC(iname,cname,params,2,1,sigstr,docstr)
 
 #define IDIO_DEFINE_PRIMITIVE2V(iname,cname,params)			\
-    IDIO_DEFINE_PRIMITIVE_DESC(iname,cname,params,2,1)
+    IDIO_DEFINE_PRIMITIVE_DESC(iname,cname,params,2,1,"","")
+
+#define IDIO_DEFINE_PRIMITIVE3_DS(iname,cname,params,sigstr,docstr)	\
+    IDIO_DEFINE_PRIMITIVE_DESC(iname,cname,params,3,0,sigstr,docstr)
 
 #define IDIO_DEFINE_PRIMITIVE3(iname,cname,params)			\
-    IDIO_DEFINE_PRIMITIVE_DESC(iname,cname,params,3,0)
+    IDIO_DEFINE_PRIMITIVE_DESC(iname,cname,params,3,0,"","")
+
+#define IDIO_DEFINE_PRIMITIVE3V_DS(iname,cname,params,sigstr,docstr)	\
+    IDIO_DEFINE_PRIMITIVE_DESC(iname,cname,params,3,1,sigstr,docstr)
 
 #define IDIO_DEFINE_PRIMITIVE3V(iname,cname,params)			\
-    IDIO_DEFINE_PRIMITIVE_DESC(iname,cname,params,3,1)
+    IDIO_DEFINE_PRIMITIVE_DESC(iname,cname,params,3,1,"","")
+
+#define IDIO_DEFINE_PRIMITIVE4_DS(iname,cname,params,sigstr,docstr)	\
+    IDIO_DEFINE_PRIMITIVE_DESC(iname,cname,params,4,0,sigstr,docstr)
 
 #define IDIO_DEFINE_PRIMITIVE4(iname,cname,params)			\
-    IDIO_DEFINE_PRIMITIVE_DESC(iname,cname,params,4,0)
+    IDIO_DEFINE_PRIMITIVE_DESC(iname,cname,params,4,0,"","")
+
+#define IDIO_DEFINE_PRIMITIVE5_DS(iname,cname,params,sigstr,docstr)	\
+    IDIO_DEFINE_PRIMITIVE_DESC(iname,cname,params,5,0,sigstr,docstr)
 
 #define IDIO_DEFINE_PRIMITIVE5(iname,cname,params)			\
-    IDIO_DEFINE_PRIMITIVE_DESC(iname,cname,params,5,0)
+    IDIO_DEFINE_PRIMITIVE_DESC(iname,cname,params,5,0,"","")
 
 #define IDIO_ADD_MODULE_PRIMITIVE(m,cname)	idio_add_module_primitive (m, &idio_primitive_data_ ## cname, idio_vm_constants);
 
@@ -264,7 +298,9 @@ extern FILE *idio_vm_perf_FILE;
 	idio_defoperator_ ## cname,					\
 	iname,								\
 	arity,								\
-	varargs								\
+	varargs,							\
+	(char *) 0,							\
+	(char *) 0							\
     };									\
     IDIO idio_defoperator_ ## cname params
 
@@ -279,7 +315,9 @@ extern FILE *idio_vm_perf_FILE;
 	idio_defoperator_ ## cname,					\
 	iname,								\
 	arity,								\
-	varargs								\
+	varargs,							\
+	(char *) 0,							\
+	(char *) 0							\
     };									\
     IDIO idio_defoperator_ ## cname params
 
@@ -296,6 +334,9 @@ extern FILE *idio_vm_perf_FILE;
     }
 
 #define IDIO_STREQP(s,cs)	(strlen (s) == strlen (cs) && strncmp (s, cs, strlen (cs)) == 0)
+
+#define IDIO_KEYWORD_DECL(n)		IDIO idio_KW_ ## n
+#define IDIO_KEYWORD_DEF(iname,cname)	idio_KW_ ## cname = idio_keywords_C_intern (iname);
 
 #include "gc.h"
 

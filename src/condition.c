@@ -18,6 +18,11 @@
 /*
  * condition.c
  *
+ */
+
+/**
+ * DOC: Idio conditions
+ *
  * A thin shim around structs presenting an interpretation of Scheme's
  * SRFI 35/36
  */
@@ -89,7 +94,17 @@ IDIO idio_condition_signal_handler_SIGHUP;
 IDIO idio_condition_signal_handler_SIGCHLD;
 IDIO idio_condition_base_trap_handler;
 
-IDIO_DEFINE_PRIMITIVE2V ("make-condition-type", make_condition_type, (IDIO name, IDIO parent, IDIO fields))
+IDIO_DEFINE_PRIMITIVE2V_DS ("make-condition-type", make_condition_type, (IDIO name, IDIO parent, IDIO fields), "name parent fields", "\
+make a new condition type			\n\
+						\n\
+:param name: condition type name		\n\
+:param parent: parent condition type		\n\
+:param fields: condition type fields		\n\
+						\n\
+:return: new condition type			\n\
+						\n\
+make a new condition type based on existing condition `parent` with fields `fields`\n\
+")
 {
     IDIO_ASSERT (name);
     IDIO_ASSERT (parent);
@@ -116,7 +131,13 @@ int idio_isa_condition_type (IDIO o)
     return 0;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("condition-type?", condition_typep, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1_DS ("condition-type?", condition_typep, (IDIO o), "o", "\
+test if `o` is a condition type			\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is a condition type #f otherwise\n\
+")
 {
     IDIO_ASSERT (o);
 
@@ -130,7 +151,13 @@ IDIO_DEFINE_PRIMITIVE1 ("condition-type?", condition_typep, (IDIO o))
 }
 
 /* message-condition-type? */
-IDIO_DEFINE_PRIMITIVE1 ("message-condition?", message_conditionp, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1_DS ("message-condition?", message_conditionp, (IDIO o), "o", "\
+test if `o` is a message condition type		\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is a message condition type #f otherwise\n\
+")
 {
     IDIO_ASSERT (o);
 
@@ -145,7 +172,13 @@ IDIO_DEFINE_PRIMITIVE1 ("message-condition?", message_conditionp, (IDIO o))
 }
 
 /* error-condition-type? */
-IDIO_DEFINE_PRIMITIVE1 ("error?", errorp, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1_DS ("error?", errorp, (IDIO o), "o", "\
+test if `o` is an error condition type		\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is an error condition type #f otherwise\n\
+")
 {
     IDIO_ASSERT (o);
 
@@ -159,7 +192,15 @@ IDIO_DEFINE_PRIMITIVE1 ("error?", errorp, (IDIO o))
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("allocate-condition", allocate_condition, (IDIO ct))
+IDIO_DEFINE_PRIMITIVE1_DS ("allocate-condition", allocate_condition, (IDIO ct), "ct", "\
+allocate a condition of condition type `ct`	\n\
+						\n\
+:param ct: condition type to allocate		\n\
+						\n\
+:return: allocated condition			\n\
+						\n\
+The allocated condition will have fields set to #n\n\
+")
 {
     IDIO_ASSERT (ct);
     IDIO_VERIFY_PARAM_TYPE (condition_type, ct);
@@ -167,7 +208,14 @@ IDIO_DEFINE_PRIMITIVE1 ("allocate-condition", allocate_condition, (IDIO ct))
     return idio_allocate_struct_instance (ct, 1);
 }
 
-IDIO_DEFINE_PRIMITIVE1V ("make-condition", make_condition, (IDIO ct, IDIO values))
+IDIO_DEFINE_PRIMITIVE1V_DS ("make-condition", make_condition, (IDIO ct, IDIO values), "ct values", "\
+initialize a condition of condition type `ct` with values `values`\n\
+						\n\
+:param ct: condition type to allocate		\n\
+:param values: initial values for condition fields\n\
+						\n\
+:return: allocated condition			\n\
+")
 {
     IDIO_ASSERT (ct);
     IDIO_ASSERT (values);
@@ -192,7 +240,14 @@ IDIO idio_condition_idio_error (IDIO message, IDIO location, IDIO detail)
     return idio_struct_instance (idio_condition_idio_error_type, IDIO_LIST3 (message, location, detail));
 }
 
-IDIO_DEFINE_PRIMITIVE1V ("%idio-error-condition", idio_error_condition, (IDIO message, IDIO args))
+IDIO_DEFINE_PRIMITIVE1V_DS ("%idio-error-condition", idio_error_condition, (IDIO message, IDIO args), "message args", "\
+create an ^idio-error condition values `message` and any `args`\n\
+						\n\
+:param message: ^idio-error message		\n\
+:param args: ^idio-error localtion and details	\n\
+						\n\
+:return: allocated condition			\n\
+")
 {
     IDIO_ASSERT (message);
     IDIO_ASSERT (args);
@@ -214,7 +269,13 @@ int idio_isa_condition (IDIO o)
     return 0;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("condition?", conditionp, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1_DS ("condition?", conditionp, (IDIO o), "o", "\
+test if `o` is a condition			\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is a condition #f otherwise	\n\
+")
 {
     IDIO_ASSERT (o);
 
@@ -257,7 +318,14 @@ IDIO_DEFINE_PRIMITIVE2 ("condition-isa?", condition_isap, (IDIO c, IDIO ct))
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("condition-ref", condition_ref, (IDIO c, IDIO field))
+IDIO_DEFINE_PRIMITIVE2_DS ("condition-ref", condition_ref, (IDIO c, IDIO field), "c field", "\
+return field `field` of condition `c`		\n\
+						\n\
+:param c: condition				\n\
+:param field: field to return			\n\
+						\n\
+:return: field `field` of `c`			\n\
+")
 {
     IDIO_ASSERT (c);
     IDIO_ASSERT (field);
@@ -268,7 +336,15 @@ IDIO_DEFINE_PRIMITIVE2 ("condition-ref", condition_ref, (IDIO c, IDIO field))
 }
 
 /* condition-ref <condition-message> message */
-IDIO_DEFINE_PRIMITIVE1 ("condition-message", condition_message, (IDIO c))
+IDIO_DEFINE_PRIMITIVE1_DS ("condition-message", condition_message, (IDIO c), "c", "\
+return field `message` of condition `c`		\n\
+						\n\
+:param c: condition				\n\
+						\n\
+:return: field `message` of `c`			\n\
+						\n\
+`c` must be a condition-message type		\n\
+")
 {
     IDIO_ASSERT (c);
     IDIO_VERIFY_PARAM_TYPE (condition, c);
@@ -281,7 +357,15 @@ IDIO_DEFINE_PRIMITIVE1 ("condition-message", condition_message, (IDIO c))
     return idio_struct_instance_ref_direct (c, 0);
 }
 
-IDIO_DEFINE_PRIMITIVE3 ("condition-set!", condition_set, (IDIO c, IDIO field, IDIO value))
+IDIO_DEFINE_PRIMITIVE3_DS ("condition-set!", condition_set, (IDIO c, IDIO field, IDIO value), "c field value", "\
+set field `field` of condition `c` to value `value`\n\
+						\n\
+:param c: condition				\n\
+:param field: field to set			\n\
+:param value: value to set			\n\
+						\n\
+:return: #<unspec>				\n\
+")
 {
     IDIO_ASSERT (c);
     IDIO_ASSERT (field);

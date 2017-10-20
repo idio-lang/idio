@@ -1196,19 +1196,24 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
     case IDIO_VM_CODE_FIX_CLOSURE:
 	{
 	    if (! idio_isa_pair (mt) ||
-		idio_list_length (mt) != 2) {
-		idio_codegen_error_param_args ("FIX-CLOSURE m+ arity", mt, IDIO_C_LOCATION ("idio_codegen_compile/FIX-CLOSURE"));
+		idio_list_length (mt) != 4) {
+		idio_codegen_error_param_args ("FIX-CLOSURE m+ arity sigstr docstr", mt, IDIO_C_LOCATION ("idio_codegen_compile/FIX-CLOSURE"));
 		return;
 	    }
 	    
 	    IDIO mp = IDIO_PAIR_H (mt);
 	    IDIO arity = IDIO_PAIR_HT (mt);
+	    IDIO sigstr = IDIO_PAIR_HTT (mt);
+	    IDIO docstr = IDIO_PAIR_HTTT (mt);
 
 	    if (! idio_isa_fixnum (arity)) {
 		idio_codegen_error_param_type ("fixnum", arity, IDIO_C_LOCATION ("idio_codegen_compile/FIX-CLOSURE"));
 		return;
 	    }
 
+	    idio_ai_t ssci = idio_codegen_constants_lookup_or_extend (cs, sigstr);
+	    idio_ai_t dsci = idio_codegen_constants_lookup_or_extend (cs, docstr);
+		    
 	    /*
 	     * Think about the code to be generated where we can only
 	     * calculate the length-of #3 when we have added the code
@@ -1264,6 +1269,8 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    if (IDIO_IA_USIZE (iap) < IDIO_I_MAX) {
 		/* 2: */
 		IDIO_IA_PUSH2 (IDIO_A_CREATE_CLOSURE, 2);
+		IDIO_IA_PUSH_VARUINT (ssci);
+		IDIO_IA_PUSH_VARUINT (dsci);
 
 		/* 3: */
 		IDIO_IA_PUSH1 (IDIO_A_SHORT_GOTO);
@@ -1272,6 +1279,8 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 		/* 2: */
 		IDIO_IA_T g5 = idio_ia_compute_varuint (IDIO_IA_USIZE (iap));
 		IDIO_IA_PUSH2 (IDIO_A_CREATE_CLOSURE, (1 + IDIO_IA_USIZE (g5)));
+		IDIO_IA_PUSH_VARUINT (ssci);
+		IDIO_IA_PUSH_VARUINT (dsci);
 
 		/* 3: */
 		IDIO_IA_PUSH1 (IDIO_A_LONG_GOTO);
@@ -1288,19 +1297,24 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
     case IDIO_VM_CODE_NARY_CLOSURE:
 	{
 	    if (! idio_isa_pair (mt) ||
-		idio_list_length (mt) != 2) {
-		idio_codegen_error_param_args ("NARY-CLOSURE m+ arity", mt, IDIO_C_LOCATION ("idio_codegen_compile/NARY-CLOSURE"));
+		idio_list_length (mt) != 4) {
+		idio_codegen_error_param_args ("NARY-CLOSURE m+ arity sigstr docstr", mt, IDIO_C_LOCATION ("idio_codegen_compile/NARY-CLOSURE"));
 		return;
 	    }
 	    
 	    IDIO mp = IDIO_PAIR_H (mt);
 	    IDIO arity = IDIO_PAIR_HT (mt);
+	    IDIO sigstr = IDIO_PAIR_HTT (mt);
+	    IDIO docstr = IDIO_PAIR_HTTT (mt);
 
 	    if (! idio_isa_fixnum (arity)) {
 		idio_codegen_error_param_type ("fixnum", arity, IDIO_C_LOCATION ("idio_codegen_compile/NARY-CLOSURE"));
 		return;
 	    }
 
+	    idio_ai_t ssci = idio_codegen_constants_lookup_or_extend (cs, sigstr);
+	    idio_ai_t dsci = idio_codegen_constants_lookup_or_extend (cs, docstr);
+		    
 	    /*
 	     * Think about the code to be generated where we can only
 	     * calculate the length-of #3 when we have added the code
@@ -1334,6 +1348,8 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    if (IDIO_IA_USIZE (iap) < IDIO_I_MAX) {
 		/* 2: */
 		IDIO_IA_PUSH2 (IDIO_A_CREATE_CLOSURE, 2);
+		IDIO_IA_PUSH_VARUINT (ssci);
+		IDIO_IA_PUSH_VARUINT (dsci);
 
 		/* 3: */
 		IDIO_IA_PUSH1 (IDIO_A_SHORT_GOTO);
@@ -1342,6 +1358,8 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 		/* 2: */
 		IDIO_IA_T g5 = idio_ia_compute_varuint (IDIO_IA_USIZE (iap));
 		IDIO_IA_PUSH2 (IDIO_A_CREATE_CLOSURE, (1 + IDIO_IA_USIZE (g5)));
+		IDIO_IA_PUSH_VARUINT (ssci);
+		IDIO_IA_PUSH_VARUINT (dsci);
 
 		/* 3: */
 		IDIO_IA_PUSH1 (IDIO_A_LONG_GOTO);

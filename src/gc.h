@@ -23,6 +23,116 @@
 #ifndef GC_H
 #define GC_H
 
+/**
+ * DOC: Idio Types and Values
+ *
+ * IDIO
+ * ----
+ *
+ * ``IDIO`` entities are the (references to) Idio *values* that are
+ * passed everywhere.
+ *
+ * They are typedef'd to be pointers to &struct idio_s.
+ *
+ * struct idio_s
+ * -------------
+ *
+ * This structure essentially contains a ``type`` indicator, some
+ * flags then a union of the individual type structures.
+ *
+ * Idio Types
+ * ----------
+ *
+ * The construction of types is formulaic, so for some new type
+ * ``foo``:
+ *
+ * In ``gc.h``:
+ *
+ * .. code-block:: c
+ * 
+ *     #define IDIO_TYPE_FOO	99
+ *
+ *     struct idio_foo_s {
+ *       int i;
+ *     };
+ *
+ *     typedef struct idio_foo_s idio_foo_t;
+ *
+ *     #define IDIO_FOO_I(S)	((S)->u.foo.i)
+ *
+ *     struct idio_s {
+ *       ...
+ *       union idio_s_u {
+ *         ...
+ *         idio_foo_t          foo;
+ *         ...
+ *       } u;
+ *     };
+ *
+ * If your value can refer to or "contain" other Idio values then you
+ * must have a ``grey`` pointer for the garbage collector to use:
+ *
+ * .. code-block:: c
+ * 
+ *     #define IDIO_TYPE_BAR	100
+ *
+ *     struct idio_bar_s {
+ *       struct idio_s *grey;
+ *       struct idio_s *ref;
+ *       int j;
+ *     };
+ *
+ *     typedef struct idio_bar_s idio_bar_t;
+ *
+ *     #define IDIO_BAR_GREY(S)	((S)->u.bar.grey)
+ *     #define IDIO_BAR_REF(S)	((S)->u.bar.ref)
+ *     #define IDIO_BAR_J(S)	((S)->u.bar.j)
+ *
+ * If your value structure is "large" (probably more than three
+ * pointers worth but see the commentary in ``struct idio_s`` for
+ * specifics) then your entry in the &struct idio_s union should be a
+ * pointer and your accessor macros must reflect that:
+ *
+ * .. code-block:: c
+ * 
+ *     #define IDIO_TYPE_BAZ	101
+ *
+ *     struct idio_baz_s {
+ *       struct idio_s *grey;
+ *       struct idio_s *ref;
+ *       ...
+ *       int k;
+ *     };
+ *
+ *     typedef struct idio_baz_s idio_baz_t;
+ *
+ *     #define IDIO_BAZ_GREY(S)	((S)->u.baz->grey)
+ *     #define IDIO_BAZ_REF(S)	((S)->u.baz->ref)
+ *     #define IDIO_BAZ_K(S)	((S)->u.baz->k)
+ *
+ *     struct idio_s {
+ *       ...
+ *       union idio_s_u {
+ *         ...
+ *         idio_baz_t          *baz;
+ *         ...
+ *       } u;
+ *     };
+ *
+ * In ``foo.[ch]``:
+ *
+ * .. code-block:: c
+ * 
+ *     IDIO idio_foo (args ...);
+ *     int idio_isa_foo (IDIO o);
+ *     void idio_free_foo (IDIO f);
+ *
+ *     void idio_init_foo ();
+ *     void idio_foo_add_primitives ();
+ *     void idio_final_foo ();
+ *
+ */
+
 #define IDIO_TYPE_NONE            0
 #define IDIO_TYPE_FIXNUM          1
 #define IDIO_TYPE_CONSTANT        2
@@ -79,11 +189,17 @@
 #define IDIO_TYPE_OPAQUE          55
 #define IDIO_TYPE_MAX             56
 
+/**
+ * typedef idio_type_e - Idio type discriminator
+ *
+ * It is an ``unsigned char`` as it consumes space in every Idio value
+ * -- rather than an ``enum`` (which might be an ``unsigned int`` thus
+ * wasting 3 or 7 bytes per value).
+ *
+ * Example:
+ * #define IDIO_TYPE_STRING	4
+ */
 typedef unsigned char idio_type_e;
-
-/* byte compiler instruction */
-typedef uint8_t IDIO_I;
-#define IDIO_I_MAX	UINT8_MAX
 
 #define IDIO_FLAG_NONE			0
 #define IDIO_FLAG_GCC_SHIFT		0	/* GC colours -- four bits */
@@ -113,12 +229,36 @@ typedef uint8_t IDIO_I;
 #define IDIO_FLAG_NOFINALIZER		(0 << IDIO_FLAG_FINALIZER_SHIFT)
 #define IDIO_FLAG_FINALIZER		(1 << IDIO_FLAG_FINALIZER_SHIFT)
 
-typedef struct idio_string_s {
+/**
+ * struct idio_string_s - Idio ``string`` structure
+ */
+struct idio_string_s {
+    /**
+     * @blen: length in bytes
+     *
+     * The string is not expected to be NUL-terminated.
+     */
     size_t blen;		/* bytes */
+    /**
+     * @s: the string
+     */
     char *s;
-} idio_string_t;
+};
 
+/**
+ * typedef idio_string_t - Idio ``string`` type
+ */
+typedef struct idio_string_s idio_string_t;
+
+/**
+ * IDIO_STRING_BLEN - accessor to @blen in &struct idio_string_s
+ * @S: the &struct idio_string_s
+ */
 #define IDIO_STRING_BLEN(S)	((S)->u.string.blen)
+/**
+ * IDIO_STRING_S - accessor to @s in &struct idio_string_s
+ * @S: the &struct idio_string_s
+ */
 #define IDIO_STRING_S(S)	((S)->u.string.s)
 
 typedef struct idio_substring_s {
@@ -184,15 +324,54 @@ typedef struct idio_pair_s {
  */
 #define IDIO_PAIR_SEPARATOR	'&'
 
+/**
+ * typedef idio_ai_t - Idio ``array`` index
+ */
 typedef ptrdiff_t idio_ai_t;
 
-typedef struct idio_array_s {
+/**
+ * struct idio_array_s - Idio ``array`` structure
+ */
+struct idio_array_s {
+    /**
+     * @grey: grey list pointer (garbage collector)
+     */
     struct idio_s *grey;
-    idio_ai_t asize;	/* allocated size */
-    idio_ai_t usize;	/* used size */
-    struct idio_s *dv;	/* default value */
-    struct idio_s* *ae;		/* IDIO *a */
-} idio_array_t;
+    /**
+     * @asize: allocated size
+     */
+    idio_ai_t asize;
+    /**
+     * @usize: used size/user-visible size
+     *
+     * In practice it is the index of the lowest unused index.  An
+     * empty array will have @usize of 0 -- there are zero elements
+     * used in the array. 
+     *
+     * Push an element on (therefore at index 0 itself) will have
+     * @usize be 1 -- there is one element in the array.
+     *
+     * Then insert into directly into index 5 then @usize will be 6.
+     * Even though you've only inserted two elements, elements at
+     * indexes 1 through 4 will have the default value and appear to
+     * have sprung into life.  There are now six elements in the
+     * array.
+     */
+    idio_ai_t usize;
+    /**
+     * @dv: default value
+     */
+    struct idio_s *dv;	
+    /**
+     * @ae: array elements
+     */
+    struct idio_s* *ae;
+};
+
+/**
+ * typedef idio_array_t - Idio ``array`` type
+ */
+typedef struct idio_array_s idio_array_t;
 
 #define IDIO_ARRAY_GREY(A)	((A)->u.array->grey)
 #define IDIO_ARRAY_ASIZE(A)	((A)->u.array->asize)
@@ -292,6 +471,8 @@ typedef struct idio_primitive_desc_s {
     char *name;
     uint8_t arity;
     char varargs;
+    char *sigstr;
+    char *docstr;
 } idio_primitive_desc_t;
 
 /*
@@ -720,7 +901,15 @@ typedef struct idio_opaque_s {
 
 typedef unsigned char FLAGS_T;
 
-typedef struct idio_s {
+/**
+ * struct idio_s - Idio type structure
+ * @next: use by the garbage collector
+ * @type: the type of this value (&typedef idio_type_e)
+ * @flags: generic flags
+ * @tflags: type-specific flags
+ * @u: union of the type structures
+ */
+struct idio_s {
     struct idio_s *next;
 
     /*
@@ -780,8 +969,16 @@ typedef struct idio_s {
 	idio_opaque_t          *opaque;
 	idio_continuation_t    *continuation;
     } u;
-} idio_t;
+};
+
+typedef struct idio_s idio_t;
 					 
+/**
+ * typedef IDIO - Idio *value*
+ *
+ * ``IDIO`` entities are the (references to) Idio values that are used
+ * everywhere.  They are typedef'd to be pointers to &struct idio_s.
+ */
 typedef idio_t* IDIO;
 
 typedef struct idio_root_s {
@@ -892,6 +1089,12 @@ typedef struct idio_gc_s {
 #define IDIO_CHARACTER_IVAL(x)	(tolower (IDIO_CHARACTER_VAL (x)))
 #define IDIO_CHARACTER(x)	((const IDIO) (((intptr_t) x) << 2 | IDIO_TYPE_CHARACTER_MARK))
 
+/**
+ * typedef IDIO_I - byte compiler instruction
+ */
+typedef uint8_t IDIO_I;
+#define IDIO_I_MAX	UINT8_MAX
+
 /*
  * Idio instruction arrays.
  *
@@ -925,6 +1128,15 @@ void *idio_alloc (size_t s);
 void *idio_realloc (void *p, size_t s);
 IDIO idio_gc_get (idio_type_e type);
 void idio_gc_alloc (void **p, size_t size);
+/**
+ * IDIO_GC_ALLOC() - normalised call to allocate ``IDIO`` value data
+ * @p: pointer to be set
+ * @s: size in bytes
+ *
+ * Normally used to allocate the internal parts of an ``IDIO`` value,
+ * eg. the array of bytes for the string inside an ``IDIO`` string
+ * value.
+ */
 #define IDIO_GC_ALLOC(p,s)	(idio_gc_alloc ((void **)&(p), s))
 IDIO idio_clone_base (IDIO o);
 int idio_isa (IDIO o, idio_type_e type);

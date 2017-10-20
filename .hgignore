@@ -23,3 +23,5 @@ main
 scm1-c-structs
 scm1-c-structs.scm1
 auto-c-type.[ch]
+doc/src/_build
+doc/src/kernel-autodoc-out

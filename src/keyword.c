@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -25,6 +25,9 @@
 static IDIO idio_keywords_hash = idio_S_nil;
 
 IDIO_KEYWORD_DECL (setter);
+IDIO_KEYWORD_DECL (sigstr);
+IDIO_KEYWORD_DECL (docstr);
+IDIO_KEYWORD_DECL (docstr_raw);
 
 void idio_keyword_error_key_not_found (IDIO key, IDIO loc)
 {
@@ -272,6 +275,9 @@ void idio_init_keyword ()
     IDIO_HASH_FLAGS (idio_keywords_hash) |= IDIO_HASH_FLAG_STRING_KEYS;
 
     IDIO_KEYWORD_DEF ("setter", setter);
+    IDIO_KEYWORD_DEF ("sigstr", sigstr);
+    IDIO_KEYWORD_DEF ("docstr", docstr);
+    IDIO_KEYWORD_DEF ("docstr-raw", docstr_raw);
 }
 
 void idio_keyword_add_primitives ()

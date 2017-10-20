@@ -18,7 +18,15 @@
 /*
  * command.c
  *
- * Job Control algorithms are taken from the GNU Lib C info pages
+ */
+
+/**
+ * DOC: Idio job control
+ *
+ * Job Control data structures and algorithms are a straight-forward
+ * port from the GNU Lib C info pages: "info libc" then menu items
+ * "Job Control" then "Implementing a Shell".
+ * 
  */
 
 #include "idio.h"
@@ -607,7 +615,13 @@ static int idio_command_job_is_stopped (IDIO job)
     return 1;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("job-is-stopped", job_is_stopped, (IDIO job))
+IDIO_DEFINE_PRIMITIVE1_DS ("job-is-stopped", job_is_stopped, (IDIO job), "job", "\
+test if job `job` is stopped			\n\
+						\n\
+:param job: job to test				\n\
+						\n\
+:return: #t if job `job` is stopped, #f otherwise\n\
+")
 {
     IDIO_ASSERT (job);
     IDIO_VERIFY_PARAM_TYPE (struct_instance, job);
@@ -647,7 +661,13 @@ static int idio_command_job_is_completed (IDIO job)
     return 1;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("job-is-completed", job_is_completed, (IDIO job))
+IDIO_DEFINE_PRIMITIVE1_DS ("job-is-completed", job_is_completed, (IDIO job), "job", "\
+test if job `job` has completed			\n\
+						\n\
+:param job: job to test				\n\
+						\n\
+:return: #t if job `job` has completed, #f otherwise\n\
+")
 {
     IDIO_ASSERT (job);
     IDIO_VERIFY_PARAM_TYPE (struct_instance, job);
@@ -696,7 +716,13 @@ static int idio_command_job_failed (IDIO job)
     return 0;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("job-failed", job_failed, (IDIO job))
+IDIO_DEFINE_PRIMITIVE1_DS ("job-failed", job_failed, (IDIO job), "job", "\
+test if job `job` has failed			\n\
+						\n\
+:param job: job to test				\n\
+						\n\
+:return: #t if job `job` has failed, #f otherwise\n\
+")
 {
     IDIO_ASSERT (job);
     IDIO_VERIFY_PARAM_TYPE (struct_instance, job);
@@ -743,7 +769,15 @@ static IDIO idio_command_job_status (IDIO job)
     return idio_S_true;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("job-status", job_status, (IDIO job))
+IDIO_DEFINE_PRIMITIVE1_DS ("job-status", job_status, (IDIO job), "job", "\
+test if job `job` has a process status		\n\
+						\n\
+:param job: job to test				\n\
+						\n\
+:return: #f if job `job` has a process status, #t otherwise\n\
+						\n\
+Note that this is the inverse behaviour you might expect.\n\
+")
 {
     IDIO_ASSERT (job);
     IDIO_VERIFY_PARAM_TYPE (struct_instance, job);
@@ -784,7 +818,16 @@ static IDIO idio_command_job_detail (IDIO job)
     return IDIO_LIST2 (idio_S_exit, idio_fixnum (0));
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("job-detail", job_detail, (IDIO job))
+IDIO_DEFINE_PRIMITIVE1_DS ("job-detail", job_detail, (IDIO job), "job", "\
+return the process status of job `job`		\n\
+						\n\
+:param job: job					\n\
+						\n\
+:return: a (kind value) list			\n\
+						\n\
+kind can be: 'exit or 'killed			\n\
+value can be: exit status for 'exit or signal number for 'killed\n\
+")
 {
     IDIO_ASSERT (job);
     IDIO_VERIFY_PARAM_TYPE (struct_instance, job);
@@ -858,7 +901,14 @@ static int idio_command_mark_process_status (pid_t pid, int status)
     return -1;
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("mark-process-status", mark_process_status, (IDIO ipid, IDIO istatus))
+IDIO_DEFINE_PRIMITIVE2_DS ("mark-process-status", mark_process_status, (IDIO ipid, IDIO istatus), "pid status", "\
+update the process status of pid `pid` with `status`\n\
+						\n\
+:param pid: process id				\n\
+:param status: Unix process status		\n\
+						\n\
+:return: #t if the update was successfull, #f otherwise\n\
+")
 {
     IDIO_ASSERT (ipid);
     IDIO_ASSERT (istatus);
@@ -888,7 +938,11 @@ static void idio_command_update_status (void)
 
 }
 
-IDIO_DEFINE_PRIMITIVE0 ("update-status", update_status, ())
+IDIO_DEFINE_PRIMITIVE0_DS ("update-status", update_status, (), "", "\
+update the process status of any outstanding pids\n\
+						\n\
+:return: #<unspec>				\n\
+")
 {
     idio_command_update_status ();
 
@@ -926,7 +980,13 @@ static IDIO idio_command_wait_for_job (IDIO job)
     return idio_command_job_status (job);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("wait-for-job", wait_for_job, (IDIO job))
+IDIO_DEFINE_PRIMITIVE1_DS ("wait-for-job", wait_for_job, (IDIO job), "job", "\
+wait for job `job` to be stopped or completed	\n\
+						\n\
+:param job: job					\n\
+						\n\
+:return: job status				\n\
+")
 {
     IDIO_ASSERT (job);
     IDIO_VERIFY_PARAM_TYPE (struct_instance, job);
@@ -958,7 +1018,14 @@ static void idio_command_format_job_info (IDIO job, char *msg)
     idio_debug ("%s\n", idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PIPELINE));
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("format-job-info", format_job_info, (IDIO job, IDIO msg))
+IDIO_DEFINE_PRIMITIVE2_DS ("format-job-info", format_job_info, (IDIO job, IDIO msg), "job msg", "\
+display to stderr `msg` alongside job `job` details\n\
+						\n\
+:param job: job					\n\
+:param msg: string				\n\
+						\n\
+:return: #<unspec>				\n\
+")
 {
     IDIO_ASSERT (job);
     IDIO_ASSERT (msg);
@@ -1040,7 +1107,10 @@ void idio_command_do_job_notification (void)
     }
 }
 
-IDIO_DEFINE_PRIMITIVE0 ("do-job-notification", do_job_notification, ())
+IDIO_DEFINE_PRIMITIVE0_DS ("do-job-notification", do_job_notification, (), "", "\
+notify of any job status changes		\n\
+						\n\
+")
 {
     idio_command_do_job_notification ();
 
@@ -1124,7 +1194,16 @@ static IDIO idio_command_foreground_job (IDIO job, int cont)
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("foreground-job", foreground_job, (IDIO job, IDIO icont))
+IDIO_DEFINE_PRIMITIVE2_DS ("foreground-job", foreground_job, (IDIO job, IDIO icont), "job cont", "\
+place job `job` in the foreground\n\
+						\n\
+:param job: job					\n\
+:param cont: boolean				\n\
+						\n\
+:return: job status				\n\
+						\n\
+If `cont` is set a SIGCONT is sent to the process group\n\
+")
 {
     IDIO_ASSERT (job);
     IDIO_ASSERT (icont);
@@ -1167,7 +1246,18 @@ static IDIO idio_command_background_job (IDIO job, int cont)
     return idio_fixnum (0);
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("background-job", background_job, (IDIO job, IDIO icont))
+IDIO_DEFINE_PRIMITIVE2_DS ("background-job", background_job, (IDIO job, IDIO icont), "job cont", "\
+place job `job` in the background\n\
+						\n\
+:param job: job					\n\
+:param cont: boolean				\n\
+						\n\
+:return: 0					\n\
+						\n\
+If `cont` is set a SIGCONT is sent to the process group\n\
+						\n\
+Backgrounding a job is always successful hence returns 0.\n\
+")
 {
     IDIO_ASSERT (job);
     IDIO_ASSERT (icont);
@@ -1219,7 +1309,15 @@ static void idio_command_hangup_job (IDIO job)
     }
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("hangup-job", hangup_job, (IDIO job))
+IDIO_DEFINE_PRIMITIVE1_DS ("hangup-job", hangup_job, (IDIO job), "job", "\
+hangup job `job`				\n\
+						\n\
+:param job: job					\n\
+						\n\
+:return: #<unspec>				\n\
+						\n\
+Send the process group of `job` a SIGCONT then a SIGHUP\n\
+")
 {
     IDIO_ASSERT (job);
     IDIO_VERIFY_PARAM_TYPE (struct_instance, job);
@@ -1410,7 +1508,15 @@ static void idio_command_mark_job_as_running (IDIO job)
     idio_struct_instance_set_direct (job, IDIO_JOB_TYPE_NOTIFIED, idio_S_false);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("mark-job-as-running", mark_job_as_running, (IDIO job))
+IDIO_DEFINE_PRIMITIVE1_DS ("mark-job-as-running", mark_job_as_running, (IDIO job), "job", "\
+mark job `job` as running			\n\
+						\n\
+:param job: job					\n\
+						\n\
+:return: #<unspec>				\n\
+						\n\
+In particular, mark job `job` as not stopped\n\
+")
 {
     IDIO_ASSERT (job);
     IDIO_VERIFY_PARAM_TYPE (struct_instance, job);
@@ -1442,7 +1548,14 @@ static void idio_command_continue_job (IDIO job, int foreground)
     }
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("continue-job", continue_job, (IDIO job, IDIO iforeground))
+IDIO_DEFINE_PRIMITIVE2_DS ("continue-job", continue_job, (IDIO job, IDIO iforeground), "job foreground", "\
+mark job `job` as running and foreground it if required\n\
+						\n\
+:param job: job					\n\
+:param foreground: boolean			\n\
+						\n\
+:return: #<unspec>				\n\
+")
 {
     IDIO_ASSERT (job);
     IDIO_ASSERT (iforeground);
@@ -1571,7 +1684,22 @@ static void idio_command_prep_process (pid_t job_pgid, int infile, int outfile, 
     idio_command_prep_io (infile, outfile, errfile);
 }
 
-IDIO_DEFINE_PRIMITIVE4 ("%prep-process", prep_process, (IDIO ipgid, IDIO iinfile, IDIO ioutfile, IDIO ierrfile, IDIO iforeground))
+IDIO_DEFINE_PRIMITIVE4_DS ("%prep-process", prep_process, (IDIO ipgid, IDIO iinfile, IDIO ioutfile, IDIO ierrfile, IDIO iforeground), "pgid infile outfile errfile foreground", "\
+prepare the current process			\n\
+						\n\
+:param pgid: process group id			\n\
+:param infile: file descriptor for stdin	\n\
+:param outfile: file descriptor for stdout	\n\
+:param errfile: file descriptor for stderr	\n\
+:param foreground: boolean			\n\
+						\n\
+:return: #<unspec>				\n\
+						\n\
+Place the current process in `pgid` and dup() stdin, stdout and stderr.\n\
+Place the current process in the foreground if requested.\n\
+						\n\
+File descriptors are C integers.		\n\
+")
 {
     IDIO_ASSERT (ipgid);
     IDIO_ASSERT (iinfile);
@@ -1865,7 +1993,13 @@ static IDIO idio_command_launch_1proc_job (IDIO job, int foreground, char **argv
     return idio_S_unspec;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("%launch-job", launch_job, (IDIO job))
+IDIO_DEFINE_PRIMITIVE1_DS ("%launch-job", launch_job, (IDIO job), "job", "\
+launch job `job`				\n\
+						\n\
+:param job: job					\n\
+						\n\
+:return: #<unspec>				\n\
+")
 {
     IDIO_ASSERT (job);
     IDIO_VERIFY_PARAM_TYPE (struct_instance, job);
@@ -1879,7 +2013,13 @@ IDIO_DEFINE_PRIMITIVE1 ("%launch-job", launch_job, (IDIO job))
     return idio_S_unspec;
 }
 
-IDIO_DEFINE_PRIMITIVE0V ("%launch-pipeline", launch_pipeline, (IDIO commands))
+IDIO_DEFINE_PRIMITIVE0V_DS ("%launch-pipeline", launch_pipeline, (IDIO commands), "commands", "\
+launch a pipeline of `commands`			\n\
+						\n\
+:param commands: list of commands		\n\
+						\n\
+:return: #<unspec>				\n\
+")
 {
     IDIO_ASSERT (commands);
     IDIO_VERIFY_PARAM_TYPE (list, commands);
@@ -2109,7 +2249,14 @@ IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1V ("%exec", exec, (IDIO command, IDIO args))
+IDIO_DEFINE_PRIMITIVE1V_DS ("%exec", exec, (IDIO command, IDIO args), "command [", "\
+exec `command` `args`				\n\
+						\n\
+:param command: command name			\n\
+:param args: (optional) arguments		\n\
+						\n\
+:return: #<unspec>				\n\
+")
 {
     IDIO_ASSERT (command);
     IDIO_ASSERT (args);

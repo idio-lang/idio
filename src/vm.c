@@ -22,8 +22,8 @@
 
 #include "idio.h"
 
-/*
- * Some debugging aids.
+/**
+ * DOC: Some debugging aids.
  *
  * idio_vm_tracing reports the nominal function call and arguments and
  * return value.  You can enable/disable it in code with
@@ -48,7 +48,9 @@ static int idio_vm_tracing = 0;
 #ifdef IDIO_DEBUG
 static int idio_vm_dis = 0;
 #endif
-/*
+/**
+ * DOC:
+ *
  * We don't know if some arbitrary code is going to set a global value
  * to be a closure.  If it does, we need to retain the code for the
  * closure.  Hence a global list of all known code.
@@ -74,8 +76,8 @@ idio_ai_t idio_vm_IHR_pc;
 idio_ai_t idio_vm_AR_pc;
 size_t idio_prologue_len;
 
-/*
- * Some VM tables:
+/**
+ * DOC: Some VM tables:
  *
  * constants - all known constants
  *
@@ -106,9 +108,9 @@ size_t idio_prologue_len;
  *   values as soon as it sees them because the macros will be run
  *   during evaluation and need primitives (and other macros) to be
  *   available.
-
+ *
  *   Note: MODULES
-
+ *
  *   Modules blur the easy view of the world as described above for
  *   two reasons.  Firstly, if two modules both define a variable
  *   using the same *symbol* then we must have two distinct *values*
@@ -135,9 +137,9 @@ size_t idio_prologue_len;
  *   *symbol* should we be using for lookup in any imported modules?
  *
  *   So we need a plan for those two circumstances:
-
+ *
  *     constants/symbols
-
+ *
  *     When a module is compiled it will (can only!) use the next
  *     available (global) constant/symbol index of the currently
  *     running Idio instance and encode that into the compiled output.
@@ -203,7 +205,7 @@ size_t idio_prologue_len;
  *     global versions of constant/value indexes.
  *
  *     There'll be f... variants: fgci == idio_fixnum (gci).
-
+ *
  * closure_name -
  *
  *   if we see GLOBAL-SET {name} {CLOS} we can maintain a map from
@@ -272,10 +274,12 @@ static void idio_vm_error_function_invoke (char *msg, IDIO args, IDIO loc)
     idio_display_C (": '", sh);
     idio_display (args, sh);
     idio_display_C ("'", sh);
+
     IDIO c = idio_struct_instance (idio_condition_rt_function_error_type,
 				   IDIO_LIST3 (idio_get_output_string (sh),
 					       loc,
 					       idio_S_nil));
+
     idio_raise_condition (idio_S_true, c);
 }
 
@@ -290,14 +294,47 @@ static void idio_vm_error_arity (IDIO_I ins, IDIO thr, size_t given, size_t arit
     fprintf (stderr, "\n\nARITY != %zd\n", arity);
     idio_vm_function_trace (ins, thr);
 
-    IDIO sh = idio_open_output_string_handle_C ();
+    IDIO msh = idio_open_output_string_handle_C ();
     char em[BUFSIZ];
     sprintf (em, "incorrect arity: %zd args for an arity-%zd function", given, arity);
-    idio_display_C (em, sh);
+    idio_display_C (em, msh);
+
+    IDIO dsh = idio_open_output_string_handle_C ();
+    IDIO func = IDIO_THREAD_FUNC (thr);
+
+    IDIO val = IDIO_THREAD_VAL (thr);
+    if (idio_isa_closure (func)) {
+	IDIO name = idio_hash_get (idio_vm_closure_name, idio_fixnum (IDIO_CLOSURE_CODE (func)));
+	IDIO props = IDIO_CLOSURE_PROPERTIES (func);
+	IDIO sigstr = idio_keyword_get (props, idio_KW_sigstr, IDIO_LIST1 (idio_S_nil));
+
+	sprintf (em, "ARITY != %" PRId8 "%s; closure (", arity, "");
+	idio_display_C (em, dsh);
+	idio_display (name, dsh);
+	idio_display_C (" ", dsh);
+	idio_display (sigstr, dsh);
+	idio_display_C (") was called as (", dsh);
+	idio_display (func, dsh);
+	IDIO args = idio_S_nil;
+	if (IDIO_FRAME_NARGS (val) > 1) {
+	    IDIO fargs = idio_array_copy (IDIO_FRAME_ARGS (val), 0);
+	    idio_array_pop (fargs);
+	    args = idio_array_to_list (fargs);
+	}
+	if (idio_S_nil != args) {
+	    idio_display_C (" ", dsh);
+	    char *s = idio_display_string (args);
+	    idio_display_C_len (s + 1, strlen (s) - 2, dsh);
+	    free (s);
+	}
+	idio_display_C (")", dsh);
+    }
+    
     IDIO c = idio_struct_instance (idio_condition_rt_function_arity_error_type,
-				   IDIO_LIST3 (idio_get_output_string (sh),
+				   IDIO_LIST3 (idio_get_output_string (msh),
 					       loc,
-					       idio_S_nil));
+					       idio_get_output_string (dsh)));
+
     idio_raise_condition (idio_S_true, c);
 }
 
@@ -315,10 +352,12 @@ static void idio_vm_error_arity_varargs (IDIO_I ins, IDIO thr, size_t given, siz
     char em[BUFSIZ];
     sprintf (em, "incorrect arity: %zd args for an arity-%zd+ function", given, arity);
     idio_display_C (em, sh);
+
     IDIO c = idio_struct_instance (idio_condition_rt_function_arity_error_type,
 				   IDIO_LIST3 (idio_get_output_string (sh),
 					       loc,
 					       idio_S_nil));
+
     idio_raise_condition (idio_S_true, c);
 }
 
@@ -347,6 +386,7 @@ static void idio_error_dynamic_unbound (idio_ai_t mci, idio_ai_t gvi, IDIO loc)
 					       loc,
 					       idio_S_nil,
 					       sym));
+
     idio_raise_condition (idio_S_true, c);
 }
 
@@ -375,6 +415,7 @@ static void idio_error_environ_unbound (idio_ai_t mci, idio_ai_t gvi, IDIO loc)
 					       loc,
 					       idio_S_nil,
 					       sym));
+
     idio_raise_condition (idio_S_true, c);
 }
 
@@ -405,6 +446,7 @@ static void idio_vm_error_computed (char *msg, idio_ai_t mci, idio_ai_t gvi, IDI
 					       loc,
 					       idio_S_nil,
 					       sym));
+
     idio_raise_condition (idio_S_true, c);
 }
 
@@ -435,6 +477,7 @@ static void idio_vm_error_computed_no_accessor (char *msg, idio_ai_t mci, idio_a
 					       loc,
 					       idio_S_nil,
 					       sym));
+
     idio_raise_condition (idio_S_true, c);
 }
 
@@ -973,9 +1016,10 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
 	    }
 	    
 	    if (idio_vm_tracing) {
-		fprintf (stderr, "                               %*.s", idio_vm_tracing, "");
+		fprintf (stderr, "%7.s ", "");
+		fprintf (stderr, "%*.s", idio_vm_tracing + 1, "");
 		/* XXX - why is idio_vm_tracing one less hence an extra space? */
-		idio_debug (" => %s\n", IDIO_THREAD_VAL (thr));
+		idio_debug ("=> %s\n", IDIO_THREAD_VAL (thr));
 	    }
 
 	    return;
@@ -1830,15 +1874,30 @@ static void idio_vm_function_trace (IDIO_I ins, IDIO thr)
      */
     fprintf (stderr, "%7zd ", IDIO_THREAD_PC (thr) - 1);
 
-    if (idio_isa_closure (func)) {
-	IDIO name = idio_hash_get (idio_vm_closure_names_hash, idio_fixnum (IDIO_CLOSURE_CODE (func)));
+    fprintf (stderr, "%*.s", idio_vm_tracing, "");
+
+    int isa_closure = idio_isa_closure (func);
+    
+    if (isa_closure) {
+	IDIO name = idio_hash_get (idio_vm_closure_name, idio_fixnum (IDIO_CLOSURE_CODE (func)));
+	IDIO props = IDIO_CLOSURE_PROPERTIES (func);
+	IDIO sigstr = idio_keyword_get (props, idio_KW_sigstr, IDIO_LIST1 (idio_S_nil));
+
 	if (idio_S_unspec != name) {
-	    idio_debug ("%20s ", name);
+	    char *s = idio_display_string (name);
+	    fprintf (stderr, "(%s", s);
+	    free (s);
 	} else {
-	    fprintf (stderr, "              -anon- ");
+	    fprintf (stderr, "(-anon-");
 	}
+	if (idio_S_nil != sigstr) {
+	    char *s = idio_display_string (sigstr);
+	    fprintf (stderr, " %s", s);
+	    free (s);
+	}
+	fprintf (stderr, ") was called as ");
     } else {
-	fprintf (stderr, "                     ");
+	/* fprintf (stderr, "                     "); */
     }
 
     switch (ins) {
@@ -1846,10 +1905,12 @@ static void idio_vm_function_trace (IDIO_I ins, IDIO thr)
 	fprintf (stderr, "TC ");
 	break;
     case IDIO_A_FUNCTION_INVOKE:
-	fprintf (stderr, "   ");
+	if (isa_closure) {
+	    fprintf (stderr, "   ");
+	}
 	break;
     }
-    fprintf (stderr, "%*.s", idio_vm_tracing, "");
+
     idio_debug ("%s", expr);
     fprintf (stderr, "\n");
 }
@@ -1867,9 +1928,9 @@ static void idio_vm_primitive_call_trace (char *name, IDIO thr, int nargs)
      */
     fprintf (stderr, "%7zd ", IDIO_THREAD_PC (thr) - 1);
 
-    fprintf (stderr, "        __primcall__    ");
+    /* fprintf (stderr, "        __primcall__    "); */
 
-    fprintf (stderr, "%*.s", idio_vm_tracing, "");
+    fprintf (stderr, "%*.s", idio_vm_tracing + 1, "");
     fprintf (stderr, "(%s", name);
     if (nargs > 1) {
 	idio_debug (" %s", IDIO_THREAD_REG1 (thr));
@@ -1891,9 +1952,10 @@ static void idio_vm_primitive_result_trace (IDIO thr)
      * %*s	- trace-depth indent (>= 1)
      * %s	- expression
      */
-    fprintf (stderr, "                                ");
+    /* fprintf (stderr, "                                "); */
 
-    fprintf (stderr, "%*.s", idio_vm_tracing, "");
+    fprintf (stderr, "%7.s ", "");
+    fprintf (stderr, "%*.s", idio_vm_tracing + 1, "");
     idio_debug ("=> %s\n", val);
 }
 
@@ -2504,13 +2566,33 @@ int idio_vm_run1 (IDIO thr)
 	{
 	    uint64_t i = idio_vm_fetch_varuint (thr);
 	    IDIO_VM_RUN_DIS ("CREATE-CLOSURE @ +%" PRId64 "", i);
+	    uint64_t ssci = idio_vm_fetch_varuint (thr);
+	    uint64_t dsci = idio_vm_fetch_varuint (thr);
 
+	    IDIO ce = idio_thread_current_env ();
+	    IDIO fci = idio_fixnum (ssci);
+	    IDIO fgci = idio_module_vci_get_or_set (ce, fci);
+	    IDIO sigstr = idio_S_nil;
+	    if (idio_S_unspec != fgci) {
+		sigstr = idio_vm_constants_ref (IDIO_FIXNUM_VAL (fgci));
+	    } else {
+		fprintf (stderr, "vm cc sig: failed to find %d (%d)\n", fci, ssci);
+	    }
+	    fci = idio_fixnum (dsci);
+	    fgci = idio_module_vci_get_or_set (ce, fci);
+	    IDIO docstr = idio_S_nil;
+	    if (idio_S_unspec != fgci) {
+		docstr = idio_vm_constants_ref (IDIO_FIXNUM_VAL (fgci));
+	    } else {
+		fprintf (stderr, "vm cc doc: failed to find %d (%d)\n", fci, ssci);
+	    }
+	    
 	    /*
 	     * NB create the closure in the environment of the current
 	     * module -- irrespective of whatever IDIO_THREAD_ENV(thr)
 	     * we are currently working in
 	     */
-	    IDIO_THREAD_VAL (thr) = idio_closure (IDIO_THREAD_PC (thr) + i, IDIO_THREAD_FRAME (thr), IDIO_THREAD_ENV (thr));
+	    IDIO_THREAD_VAL (thr) = idio_closure (IDIO_THREAD_PC (thr) + i, IDIO_THREAD_FRAME (thr), IDIO_THREAD_ENV (thr), sigstr, docstr);
 	}
 	break;
     case IDIO_A_RETURN:
@@ -2532,7 +2614,8 @@ int idio_vm_run1 (IDIO thr)
 	    }
 	    IDIO_THREAD_PC (thr) = pc;
 	    if (idio_vm_tracing) {
-		fprintf (stderr, "                               %*.s", idio_vm_tracing, "");
+		fprintf (stderr, "%7.s ", "");
+		fprintf (stderr, "%*.s", idio_vm_tracing, "");
 		idio_debug ("=> %s\n", IDIO_THREAD_VAL (thr));
 		if (idio_vm_tracing <= 1) {
 		    /* fprintf (stderr, "XXX RETURN to %td: tracing depth <= 1!\n", pc); */

@@ -105,6 +105,7 @@ Docstrings
 	- python-docstring
 	- Yasnippets -- http://tiborsimko.org/emacs-epydoc-snippets.html
 	- sphinx-doc -- http://www.avilpage.com/2014/12/generate-sphinx-friendly-docstrings-for.html
+	- http://www.sphinx-doc.org/en/stable/domains.html#signatures
 
 Objects
 	- simple
@@ -194,3 +195,31 @@ HTTP Digest Auth
 	- shared secret for comms
 	- vulnerable to two MITM attacks: 
 		http://mark-kirby.co.uk/2013/how-to-authenticate-apis-http-basic-vs-http-digest/
+
+building a programming language resources
+	- https://news.ycombinator.com/item?id=15171238
+
+flonums
+	- fixed width floating point numbers
+	- https://en.wikipedia.org/wiki/IEEE_754
+	- would they be used vs. c/float or c/double?
+
+Racket Bytecode Compiler
+        - https://www.youtube.com/watch?v=rqXk7sqZEIk
+	- this part 2 is 2 hours!
+
+Scheme Compiler Techniques
+        - http://library.readscheme.org/page8.html
+
+Tiny C Compiler
+        - https://bellard.org/tcc/
+	- https://github.com/TinyCC/tinycc
+	- https://news.ycombinator.com/item?id=15272894
+
+Secure C Coding
+	- https://www.securecoding.cert.org/confluence/display/c/SEI+CERT+C+Coding+Standard
+
+x86 compilation
+	- https://www3.nd.edu/~dthain/courses/cse40243/fall2015/intel-intro.html
+	- https://github.com/namin/inc
+

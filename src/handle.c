@@ -924,15 +924,24 @@ IDIO idio_display (IDIO o, IDIO h)
     return idio_S_unspec;
 }
 
+IDIO idio_display_C_len (char *s, size_t blen, IDIO h)
+{
+    IDIO_C_ASSERT (s);
+    IDIO_ASSERT (h);
+    IDIO_TYPE_ASSERT (handle, h);
+
+    idio_handle_puts (h, s, blen);
+
+    return idio_S_unspec;
+}
+
 IDIO idio_display_C (char *s, IDIO h)
 {
     IDIO_C_ASSERT (s);
     IDIO_ASSERT (h);
     IDIO_TYPE_ASSERT (handle, h);
 
-    idio_handle_puts (h, s, strlen (s));
-
-    return idio_S_unspec;
+    return idio_display_C_len (s, strlen (s), h);
 }
 
 IDIO_DEFINE_PRIMITIVE1V ("display", display, (IDIO o, IDIO args))

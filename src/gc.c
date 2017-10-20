@@ -25,8 +25,24 @@
 static idio_gc_t *idio_gc;
 static IDIO idio_gc_finalizer_hash = idio_S_nil;
 
-/*
- * idio_alloc actually calls malloc(3)!
+/**
+ * idio_alloc() - Idio wrapper to allocate memory
+ * @s: size in bytes
+ *
+ * You would normally call idio_gc_get() when allocating memory for an
+ * ``IDIO`` value as it handles garbage collection housekeeping.
+ *
+ * idio_alloc() would be called for other memory allocations, eg. C
+ * strings.
+ *
+ * If the C macro directive ``IDIO_DEBUG`` is enabled the allocated
+ * memory will be initialised to ``0x5e`` -- an arbitrary not-all-ones
+ * and not-all-zeroes value.
+ *
+ * Note that idio_alloc() actually calls malloc(3)!
+ * 
+ * Return:
+ * The allocated blob.
  */
 void *idio_alloc (size_t s)
 {
@@ -57,9 +73,12 @@ void *idio_realloc (void *p, size_t s)
     return p;
 }
 
-/*
- * idio_gc_get_alloc allocates another IDIO -- or pool thereof
- * -- and returns it
+/**
+ * idio_gc_get_alloc() - get or allocate another ``IDIO`` value
+ *
+ * idio_gc_get_alloc() allocates another IDIO -- or pool thereof --
+ * and returns it performing garbage collection housekeeping as it
+ * goes.
  */
 
 #define IDIO_GC_ALLOC_POOL	1024
@@ -89,9 +108,19 @@ IDIO idio_gc_get_alloc ()
     return o;
 }
 
-/*
- * idio_gc_get finds the next available IDIO from the free list
- * or calls idio_gc_get_alloc to get one
+/**
+ * idio_gc_get() - allocate memory for an Idio value
+ * @type: the &typedef idio_type_e type
+ *
+ * idio_gc_get() finds the next available ``IDIO`` value from the free
+ * list or calls idio_gc_get_alloc() to get one performing garbage
+ * collection housekeeping.
+ *
+ * Return:
+ * The ``IDIO`` value.
+ *
+ * Note that you must allocate memory for any data your ``IDIO`` value
+ * references.
  */
 IDIO idio_gc_get (idio_type_e type)
 {
@@ -131,6 +160,13 @@ IDIO idio_gc_get (idio_type_e type)
     return o;
 }
 
+/**
+ * idio_gc_alloc() - wrappered by IDIO_GC_ALLOC()
+ * @p: pointer to be set
+ * @size: size in bytes
+ *
+ */
+
 void idio_gc_alloc (void **p, size_t size)
 {
     
@@ -144,6 +180,14 @@ IDIO idio_clone_base (IDIO o)
     return idio_gc_get (idio_type (o));
 }
 
+/**
+ * idio_isa() - base function behind idio_isa_X functions
+ * @o: the IDIO object
+ * @type: the &typedef idio_type_e type
+ *
+ * Return:
+ * boolean
+ */
 int idio_isa (IDIO o, idio_type_e type)
 {
     IDIO_ASSERT (o);
@@ -688,6 +732,27 @@ void idio_gc_dump ()
     IDIO_FPRINTF (stderr, "idio_gc_dump: %" PRIdPTR " on used list\n", n);
 }
 
+/**
+ * idio_gc_protect() - protect an ``IDIO`` value from the garbage collector
+ * @o: the ``IDIO`` value
+ *
+ * If you've allocated an ``IDIO`` value and are returning it back to
+ * Idio then you must not use this function.  Idio will or will not
+ * preserve the value depending on how the value is used in Idio.
+ *
+ * However, if you've allocated an ``IDIO`` value and intend to pass
+ * control back to Idio with the intention that it return control to
+ * you then you **must** call idio_gc_protect() otherwise the garbage
+ * collector may have de-allocated your value before you try to use
+ * it.  These tend to be in idio_init_X functions in X.c.
+ *
+ * This is normally used to protect (hidden) lists of ``IDIO`` values,
+ * eg. the symbol table.  The ``IDIO`` value that is the symbol table,
+ * a *hash*, probably, isn't accessible from Idio itself but is
+ * otherwise a regular value.
+ *
+ * See also idio_gc_expose().
+ */
 void idio_gc_protect (IDIO o)
 {
     IDIO_ASSERT (o);
@@ -739,6 +804,16 @@ void idio_gc_protect_auto (IDIO o)
     IDIO_PAIR_H (idio_gc->dynamic_roots) = idio_pair (o, IDIO_PAIR_H (idio_gc->dynamic_roots));
 }
 
+/**
+ * idio_gc_expose() - expose an ``IDIO`` value that was previously protected
+ * @o: the ``IDIO`` value
+ *
+ * This is normally used to expose the ``IDIO`` values protected
+ * during startup and called from the corresponding idio_final_X
+ * functions in X.c
+ *
+ * See also idio_gc_protect().
+ */
 void idio_gc_expose (IDIO o)
 {
     IDIO_ASSERT (o);
@@ -1270,12 +1345,29 @@ void idio_gc_stats ()
 
 }
 
+/**
+ * idio_gc_pause() - pause the garbage collector
+ *
+ * Use this function sparingly as it's hard to predict how much you
+ * will allocate inside your critical block.
+ *
+ * Calls to idio_gc_pause() will nest.
+ *
+ * See also idio_gc_resume().
+ */
 void idio_gc_pause ()
 {
 
     idio_gc->pause++; 
 }
 
+/**
+ * idio_gc_resume() - resume the garbage collector
+ *
+ * Calls to idio_gc_resume() will de-nest.
+ *
+ * See also idio_gc_pause().
+ */
 void idio_gc_resume ()
 {
 
@@ -1369,6 +1461,18 @@ void idio_gc_free ()
 /* } */
 /* #endif */
 
+/**
+ * idio_strcat() - concatenate two (non-static) C strings
+ * @s1: first string
+ * @s2: second string
+ *
+ * If @s2 is non-NULL then @s1 is resized to have @s2 concatenated.
+ *
+ * Return:
+ * Returns @s1 (original or new)
+ *
+ * See also idio_strcat_free().
+ */
 char *idio_strcat (char *s1, const char *s2)
 {
     IDIO_C_ASSERT (s1);
@@ -1385,6 +1489,16 @@ char *idio_strcat (char *s1, const char *s2)
     return r;
 }
 
+/**
+ * idio_strcat_free() - cancatenate two (non-static) C strings
+ * @s1: first string
+ * @s2: second string
+ *
+ * Calls idio_strcat() then free()s @s2.
+ *
+ * Return:
+ * Returns @s1 (original or new)
+ */
 char *idio_strcat_free (char *s1, char *s2)
 {
     IDIO_C_ASSERT (s1);

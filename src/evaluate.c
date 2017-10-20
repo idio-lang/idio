@@ -211,12 +211,24 @@ static void idio_meaning_error_static_primitive_arity (char *msg, IDIO f, IDIO a
     idio_display_C (msg, msh);
 
     IDIO dsh = idio_open_output_string_handle_C ();
-    idio_display_C ("primitive '", dsh);
-    idio_display (f, dsh);
     char em[BUFSIZ];
-    sprintf (em, "' has arity %" PRId8 "%s; passed: ", IDIO_PRIMITIVE_ARITY (primdata), IDIO_PRIMITIVE_VARARGS (primdata) ? "+" : "");
+    sprintf (em, "ARITY != %" PRId8 "%s; primitive (", IDIO_PRIMITIVE_ARITY (primdata), IDIO_PRIMITIVE_VARARGS (primdata) ? "+" : "");
     idio_display_C (em, dsh);
-    idio_display (args, dsh);
+    idio_display (f, dsh);
+    idio_display_C (" ", dsh);
+    IDIO props = IDIO_PRIMITIVE_PROPERTIES (primdata);
+    IDIO sigstr = idio_keyword_get (props, idio_KW_sigstr, IDIO_LIST1 (idio_S_nil));
+    idio_display (sigstr, dsh);
+    idio_display_C (") was called as (", dsh);
+    idio_display (f, dsh);
+    if (idio_S_nil != args) {
+	idio_display_C (" ", dsh);
+	char *s = idio_display_string (args);
+	idio_display_C_len (s + 1, strlen (s) - 2, dsh);
+	free (s);
+    }
+    idio_display_C (")", dsh);
+
     IDIO c = idio_struct_instance (idio_condition_st_function_arity_error_type,
 				   IDIO_LIST3 (idio_get_output_string (msh),
 					       loc,
@@ -1567,9 +1579,11 @@ static IDIO idio_meaning_sequence (IDIO ep, IDIO nametree, int flags, IDIO keywo
     return idio_meaning (ep, nametree, flags, cs);
 }
 
-static IDIO idio_meaning_fix_abstraction (IDIO ns, IDIO ep, IDIO nametree, int flags, IDIO cs)
+static IDIO idio_meaning_fix_abstraction (IDIO ns, IDIO sigstr, IDIO docstr, IDIO ep, IDIO nametree, int flags, IDIO cs)
 {
     IDIO_ASSERT (ns);
+    IDIO_ASSERT (sigstr);
+    IDIO_ASSERT (docstr);
     IDIO_ASSERT (ep);
     IDIO_ASSERT (nametree);
     IDIO_ASSERT (cs);
@@ -1581,13 +1595,15 @@ static IDIO idio_meaning_fix_abstraction (IDIO ns, IDIO ep, IDIO nametree, int f
 
     IDIO mp = idio_meaning_sequence (ep, nt2, IDIO_MEANING_SET_TAILP (flags), idio_S_begin, cs);
 
-    return IDIO_LIST3 (idio_I_FIX_CLOSURE, mp, idio_fixnum (arity));
+    return IDIO_LIST5 (idio_I_FIX_CLOSURE, mp, idio_fixnum (arity), sigstr, docstr);
 }
 
-static IDIO idio_meaning_dotted_abstraction (IDIO ns, IDIO n, IDIO ep, IDIO nametree, int flags, IDIO cs)
+static IDIO idio_meaning_dotted_abstraction (IDIO ns, IDIO n, IDIO sigstr, IDIO docstr, IDIO ep, IDIO nametree, int flags, IDIO cs)
 {
     IDIO_ASSERT (ns);
     IDIO_ASSERT (n);
+    IDIO_ASSERT (sigstr);
+    IDIO_ASSERT (docstr);
     IDIO_ASSERT (ep);
     IDIO_ASSERT (nametree);
     IDIO_ASSERT (cs);
@@ -1598,7 +1614,7 @@ static IDIO idio_meaning_dotted_abstraction (IDIO ns, IDIO n, IDIO ep, IDIO name
     IDIO nt2 = idio_nametree_extend (nametree, idio_list_append2 (ns, IDIO_LIST1 (n)));
     IDIO mp = idio_meaning_sequence (ep, nt2, IDIO_MEANING_SET_TAILP (flags), idio_S_begin, cs);
 
-    return IDIO_LIST3 (idio_I_NARY_CLOSURE, mp, idio_fixnum (arity));
+    return IDIO_LIST5 (idio_I_NARY_CLOSURE, mp, idio_fixnum (arity), sigstr, docstr);
 }
 
 
@@ -1857,28 +1873,44 @@ static IDIO idio_rewrite_body_letrec (IDIO e)
     }
 }
 
-static IDIO idio_meaning_abstraction (IDIO nns, IDIO ep, IDIO nametree, int flags, IDIO cs)
+static IDIO idio_meaning_abstraction (IDIO nns, IDIO docstr, IDIO ep, IDIO nametree, int flags, IDIO cs)
 {
     IDIO_ASSERT (nns);
+    IDIO_ASSERT (docstr);
     IDIO_ASSERT (ep);
     IDIO_ASSERT (nametree);
     IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (list, nametree);
     IDIO_TYPE_ASSERT (array, cs);
 
-    ep = idio_rewrite_body (ep); 
+    ep = idio_rewrite_body (ep);
 
     IDIO ns = nns;
     IDIO regular = idio_S_nil;
 
+    /*
+     * signature string: (a b) -> "(a b)" and we don't want the parens
+     */
+    char *sigstr_C = idio_display_string (nns);
+    IDIO sigstr = idio_S_nil;
+    if ('(' == *sigstr_C) {
+	size_t blen = strlen (sigstr_C);
+
+	if (blen < 2) {
+	    idio_error_C ("meaning-abstraction sigstr", IDIO_LIST2 (nns, ep), IDIO_C_LOCATION ("idio_meaning_abstraction"));
+	}
+	sigstr = idio_string_C_len (sigstr_C + 1, blen -2);
+    }
+    free (sigstr_C);
+    
     for (;;) {
 	if (idio_isa_pair (ns))  {
 	    regular = idio_pair (IDIO_PAIR_H (ns), regular);
 	    ns = IDIO_PAIR_T (ns);
 	} else if (idio_S_nil == ns) {
-	    return idio_meaning_fix_abstraction (nns, ep, nametree, flags, cs);
+	    return idio_meaning_fix_abstraction (nns, sigstr, docstr, ep, nametree, flags, cs);
 	} else {
-	    return idio_meaning_dotted_abstraction (idio_list_reverse (regular), ns, ep, nametree, flags, cs);
+	    return idio_meaning_dotted_abstraction (idio_list_reverse (regular), ns, sigstr, docstr, ep, nametree, flags, cs);
 	}
     }
 
@@ -2659,9 +2691,29 @@ static IDIO idio_meaning (IDIO e, IDIO nametree, int flags, IDIO cs)
 	    }
 	} else if (idio_S_function == eh ||
 		   idio_S_lambda == eh) {
-	    /* (function bindings body ...) */
+	    /* (function bindings [docstr] body ...) */
 	    if (idio_isa_pair (et)) {
-		return idio_meaning_abstraction (IDIO_PAIR_H (et), IDIO_PAIR_T (et), nametree, flags, cs);
+		IDIO ett = IDIO_PAIR_T (et);
+		if (idio_isa_pair (ett)) {
+		    IDIO etth = IDIO_PAIR_H (ett);
+		    IDIO ettt = IDIO_PAIR_T (ett);
+		    if (idio_isa_string (etth) &&
+			idio_S_nil != ettt) {
+			/*
+			 * (function bindings "docstr" body ...)
+			 */
+			return idio_meaning_abstraction (IDIO_PAIR_H (et), etth, ettt, nametree, flags, cs);
+		    } else {
+			/*
+			 * (function bindings body ...)
+			 * (function bindings "...")
+			 */
+			return idio_meaning_abstraction (IDIO_PAIR_H (et), idio_S_nil, IDIO_PAIR_T (et), nametree, flags, cs);
+		    }
+		} else {
+		    /* (function bindings body ...) */
+		    return idio_meaning_abstraction (IDIO_PAIR_H (et), idio_S_nil, IDIO_PAIR_T (et), nametree, flags, cs);
+		}
 	    } else {
 		idio_error_param_nil ("(function)", IDIO_C_LOCATION ("idio_meaning"));
 		return idio_S_unspec;
@@ -2672,7 +2724,7 @@ static IDIO idio_meaning (IDIO e, IDIO nametree, int flags, IDIO cs)
 		IDIO ett = IDIO_PAIR_T (et);
 		if (idio_isa_pair (ett)) {
 		    IDIO ettt = IDIO_PAIR_T (ett);
-		    IDIO ettth = idio_S_void;
+		    IDIO ettth = idio_S_void; /* default: (if #f e) -> #void */
 		    if (idio_isa_pair (ettt)) {
 			ettth = IDIO_PAIR_H (ettt);
 		    }
