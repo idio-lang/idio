@@ -149,13 +149,28 @@ int idio_isa (IDIO o, idio_type_e type)
     IDIO_ASSERT (o);
     IDIO_C_ASSERT (type);
     
-    switch ((intptr_t) o & 3) {
+    switch ((intptr_t) o & IDIO_TYPE_MASK) {
     case IDIO_TYPE_FIXNUM_MARK:
 	return (IDIO_TYPE_FIXNUM == type);
     case IDIO_TYPE_CONSTANT_MARK:
-	return (IDIO_TYPE_CONSTANT == type);
-    case IDIO_TYPE_CHARACTER_MARK:
-	return (IDIO_TYPE_CHARACTER == type);
+	{
+	    switch ((intptr_t) o & IDIO_TYPE_CONSTANT_MASK) {
+	    case IDIO_TYPE_CONSTANT_IDIO_MARK:
+		return (IDIO_TYPE_CONSTANT_IDIO == type);
+	    case IDIO_TYPE_CONSTANT_TOKEN_MARK:
+		return (IDIO_TYPE_CONSTANT_TOKEN == type);
+	    case IDIO_TYPE_CONSTANT_I_CODE_MARK:
+		return (IDIO_TYPE_CONSTANT_I_CODE == type);
+	    case IDIO_TYPE_CONSTANT_CHARACTER_MARK:
+		return (IDIO_TYPE_CONSTANT_CHARACTER == type);
+	    default:
+		/* inconceivable! */
+		idio_error_printf (IDIO_C_LOCATION ("idio_isa/CONSTANT"), "unexpected object mark type %#x", o);
+		return 0;
+	    }
+	}
+    case IDIO_TYPE_PLACEHOLDER_MARK:
+	return (IDIO_TYPE_PLACEHOLDER == type);
     case IDIO_TYPE_POINTER_MARK:
 	return (o->type == type);
     default:
@@ -217,10 +232,10 @@ void idio_mark (IDIO o, unsigned colour)
 {
     IDIO_ASSERT (o);
     
-    switch ((uintptr_t) o & 3) {
+    switch ((uintptr_t) o & IDIO_TYPE_MASK) {
     case IDIO_TYPE_FIXNUM_MARK:
     case IDIO_TYPE_CONSTANT_MARK:
-    case IDIO_TYPE_CHARACTER_MARK:
+    case IDIO_TYPE_PLACEHOLDER_MARK:
 	return;
     case IDIO_TYPE_POINTER_MARK:
 	break;
@@ -527,12 +542,12 @@ void idio_root_dump (idio_root_t *root)
     IDIO_C_ASSERT (root);
 
     IDIO_FPRINTF (stderr, "idio_root_dump: self @%10p ->%10p o=%10p ", root, root->next, root->object);
-    switch (((intptr_t) root->object) & 3) {
+    switch (((intptr_t) root->object) & IDIO_TYPE_MASK) {
     case IDIO_TYPE_FIXNUM_MARK:
-	IDIO_FPRINTF (stderr, "FIXNUM %d", ((intptr_t) root->object >> 2));
+	IDIO_FPRINTF (stderr, "FIXNUM %d", ((intptr_t) root->object >> IDIO_TYPE_BITS_SHIFT));
 	break;
     case IDIO_TYPE_CONSTANT_MARK:
-	IDIO_FPRINTF (stderr, "SCONSTANT %d", ((intptr_t) root->object >> 2));
+	IDIO_FPRINTF (stderr, "SCONSTANT %d", ((intptr_t) root->object >> IDIO_TYPE_BITS_SHIFT));
 	break;
     case IDIO_TYPE_POINTER_MARK:
 	IDIO_FPRINTF (stderr, "IDIO %s", idio_type2string (root->object));
@@ -1520,7 +1535,6 @@ void idio_final_gc ()
 
     idio_gc_expose_autos ();
 
-    fprintf (stderr, "\n\n\nFINAL GC\n\n\n");
     idio_gc_stats ();
     idio_gc_expose_all ();
     idio_gc_collect ();

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -516,8 +516,11 @@ idio_hi_t idio_hash_hashval (IDIO h, void *kv)
     
     switch (type) {
     case IDIO_TYPE_FIXNUM:
-    case IDIO_TYPE_CONSTANT:
-    case IDIO_TYPE_CHARACTER:
+    case IDIO_TYPE_CONSTANT_IDIO:
+    case IDIO_TYPE_CONSTANT_TOKEN:
+    case IDIO_TYPE_CONSTANT_I_CODE:
+    case IDIO_TYPE_CONSTANT_CHARACTER:
+    case IDIO_TYPE_PLACEHOLDER:
 	hv = idio_hash_hashval_uintmax_t ((uintptr_t) k);
 	break;
     case IDIO_TYPE_STRING:

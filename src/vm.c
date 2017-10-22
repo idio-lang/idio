@@ -799,10 +799,10 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
     IDIO_ASSERT (func);
     IDIO_TYPE_ASSERT (thread, thr);
 
-    switch ((intptr_t) func & 3) {
+    switch ((intptr_t) func & IDIO_TYPE_MASK) {
     case IDIO_TYPE_FIXNUM_MARK:
-    case IDIO_TYPE_CHARACTER_MARK:
     case IDIO_TYPE_CONSTANT_MARK:
+    case IDIO_TYPE_PLACEHOLDER_MARK:
 	{
 	    IDIO_C_ASSERT (0);
 	    idio_vm_error_function_invoke ("cannot invoke constant type", IDIO_LIST1 (func), IDIO_C_LOCATION ("idio_vm_invoke"));
@@ -2785,7 +2785,7 @@ int idio_vm_run1 (IDIO thr)
 	    if (IDIO_FIXNUM_MAX < v) {
 		idio_error_printf (IDIO_C_LOCATION ("idio_vm_run1/CONSTANT"), "CONSTANT OOB: %" PRIu64 " > %" PRIu64, v, IDIO_FIXNUM_MAX);
 	    }
-	    IDIO_THREAD_VAL (thr) = IDIO_CONSTANT ((intptr_t) v);
+	    IDIO_THREAD_VAL (thr) = IDIO_CONSTANT_IDIO ((intptr_t) v);
 	}
 	break;
     case IDIO_A_NEG_CONSTANT:
@@ -2796,7 +2796,7 @@ int idio_vm_run1 (IDIO thr)
 	    if (IDIO_FIXNUM_MIN > v) {
 		idio_error_printf (IDIO_C_LOCATION ("idio_vm_run1/NEG-CONSTANT"), "CONSTANT OOB: %" PRIu64 " < %" PRIu64, v, IDIO_FIXNUM_MIN);
 	    }
-	    IDIO_THREAD_VAL (thr) = IDIO_CONSTANT ((intptr_t) v);
+	    IDIO_THREAD_VAL (thr) = IDIO_CONSTANT_IDIO ((intptr_t) v);
 	}
 	break;
     case IDIO_A_CONSTANT_0:

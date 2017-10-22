@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -30,32 +30,31 @@
  * Of course, they shouldn't leak out of here but idio_as_string
  * prints the unhelpful C=1005 otherwise
  */
-#define IDIO_TOKEN_BASE		  1000
-#define IDIO_TOKEN_DOT            (IDIO_TOKEN_BASE+0)
-#define IDIO_TOKEN_LPAREN         (IDIO_TOKEN_BASE+1)
-#define IDIO_TOKEN_RPAREN         (IDIO_TOKEN_BASE+2)
-#define IDIO_TOKEN_LBRACE         (IDIO_TOKEN_BASE+3)
-#define IDIO_TOKEN_RBRACE         (IDIO_TOKEN_BASE+4)
-#define IDIO_TOKEN_LBRACKET       (IDIO_TOKEN_BASE+5)
-#define IDIO_TOKEN_RBRACKET       (IDIO_TOKEN_BASE+6)
-#define IDIO_TOKEN_LANGLE         (IDIO_TOKEN_BASE+7)
-#define IDIO_TOKEN_RANGLE         (IDIO_TOKEN_BASE+8)
-#define IDIO_TOKEN_EOL            (IDIO_TOKEN_BASE+9)
-#define IDIO_TOKEN_PAIR_SEPARATOR (IDIO_TOKEN_BASE+10)
-#define IDIO_TOKEN_SEMICOLON      (IDIO_TOKEN_BASE+11)
+#define IDIO_TOKEN_DOT            0
+#define IDIO_TOKEN_LPAREN         1
+#define IDIO_TOKEN_RPAREN         2
+#define IDIO_TOKEN_LBRACE         3
+#define IDIO_TOKEN_RBRACE         4
+#define IDIO_TOKEN_LBRACKET       5
+#define IDIO_TOKEN_RBRACKET       6
+#define IDIO_TOKEN_LANGLE         7
+#define IDIO_TOKEN_RANGLE         8
+#define IDIO_TOKEN_EOL            9
+#define IDIO_TOKEN_PAIR_SEPARATOR 10
+#define IDIO_TOKEN_SEMICOLON      11
 
-#define idio_T_dot		((const IDIO) IDIO_CONSTANT (IDIO_TOKEN_DOT))
-#define idio_T_lparen		((const IDIO) IDIO_CONSTANT (IDIO_TOKEN_LPAREN))
-#define idio_T_rparen		((const IDIO) IDIO_CONSTANT (IDIO_TOKEN_RPAREN))
-#define idio_T_lbrace		((const IDIO) IDIO_CONSTANT (IDIO_TOKEN_LBRACE))
-#define idio_T_rbrace		((const IDIO) IDIO_CONSTANT (IDIO_TOKEN_RBRACE))
-#define idio_T_lbracket		((const IDIO) IDIO_CONSTANT (IDIO_TOKEN_LBRACKET))
-#define idio_T_rbracket		((const IDIO) IDIO_CONSTANT (IDIO_TOKEN_RBRACKET))
-#define idio_T_langle		((const IDIO) IDIO_CONSTANT (IDIO_TOKEN_LANGLE))
-#define idio_T_rangle		((const IDIO) IDIO_CONSTANT (IDIO_TOKEN_RANGLE))
-#define idio_T_eol		((const IDIO) IDIO_CONSTANT (IDIO_TOKEN_EOL))
-#define idio_T_pair_separator	((const IDIO) IDIO_CONSTANT (IDIO_TOKEN_PAIR_SEPARATOR))
-#define idio_T_semicolon	((const IDIO) IDIO_CONSTANT (IDIO_TOKEN_SEMICOLON))
+#define idio_T_dot		((const IDIO) IDIO_CONSTANT_TOKEN (IDIO_TOKEN_DOT))
+#define idio_T_lparen		((const IDIO) IDIO_CONSTANT_TOKEN (IDIO_TOKEN_LPAREN))
+#define idio_T_rparen		((const IDIO) IDIO_CONSTANT_TOKEN (IDIO_TOKEN_RPAREN))
+#define idio_T_lbrace		((const IDIO) IDIO_CONSTANT_TOKEN (IDIO_TOKEN_LBRACE))
+#define idio_T_rbrace		((const IDIO) IDIO_CONSTANT_TOKEN (IDIO_TOKEN_RBRACE))
+#define idio_T_lbracket		((const IDIO) IDIO_CONSTANT_TOKEN (IDIO_TOKEN_LBRACKET))
+#define idio_T_rbracket		((const IDIO) IDIO_CONSTANT_TOKEN (IDIO_TOKEN_RBRACKET))
+#define idio_T_langle		((const IDIO) IDIO_CONSTANT_TOKEN (IDIO_TOKEN_LANGLE))
+#define idio_T_rangle		((const IDIO) IDIO_CONSTANT_TOKEN (IDIO_TOKEN_RANGLE))
+#define idio_T_eol		((const IDIO) IDIO_CONSTANT_TOKEN (IDIO_TOKEN_EOL))
+#define idio_T_pair_separator	((const IDIO) IDIO_CONSTANT_TOKEN (IDIO_TOKEN_PAIR_SEPARATOR))
+#define idio_T_semicolon	((const IDIO) IDIO_CONSTANT_TOKEN (IDIO_TOKEN_SEMICOLON))
 
 IDIO idio_read (IDIO handle);
 IDIO idio_read_expr (IDIO handle);
