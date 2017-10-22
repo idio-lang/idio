@@ -166,6 +166,6 @@ void idio_final_codegen ();
 #endif
 
 /* Local Variables: */
-/* mode: C/l */
+/* mode: C */
 /* coding: utf-8-unix */
 /* End: */
