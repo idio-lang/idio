@@ -356,20 +356,20 @@ extern FILE *idio_vm_perf_FILE;
 #define IDIO_CONSTANT_COMPUTED         34
 
 
-#define idio_S_nil		((const IDIO) IDIO_CONSTANT (IDIO_CONSTANT_NIL))
-#define idio_S_undef		((const IDIO) IDIO_CONSTANT (IDIO_CONSTANT_UNDEF))
-#define idio_S_unspec		((const IDIO) IDIO_CONSTANT (IDIO_CONSTANT_UNSPEC))
-#define idio_S_eof		((const IDIO) IDIO_CONSTANT (IDIO_CONSTANT_EOF))
-#define idio_S_true		((const IDIO) IDIO_CONSTANT (IDIO_CONSTANT_TRUE))
-#define idio_S_false		((const IDIO) IDIO_CONSTANT (IDIO_CONSTANT_FALSE))
-#define idio_S_void		((const IDIO) IDIO_CONSTANT (IDIO_CONSTANT_VOID))
-#define idio_S_NaN		((const IDIO) IDIO_CONSTANT (IDIO_CONSTANT_NAN))
+#define idio_S_nil		((const IDIO) IDIO_CONSTANT_IDIO (IDIO_CONSTANT_NIL))
+#define idio_S_undef		((const IDIO) IDIO_CONSTANT_IDIO (IDIO_CONSTANT_UNDEF))
+#define idio_S_unspec		((const IDIO) IDIO_CONSTANT_IDIO (IDIO_CONSTANT_UNSPEC))
+#define idio_S_eof		((const IDIO) IDIO_CONSTANT_IDIO (IDIO_CONSTANT_EOF))
+#define idio_S_true		((const IDIO) IDIO_CONSTANT_IDIO (IDIO_CONSTANT_TRUE))
+#define idio_S_false		((const IDIO) IDIO_CONSTANT_IDIO (IDIO_CONSTANT_FALSE))
+#define idio_S_void		((const IDIO) IDIO_CONSTANT_IDIO (IDIO_CONSTANT_VOID))
+#define idio_S_NaN		((const IDIO) IDIO_CONSTANT_IDIO (IDIO_CONSTANT_NAN))
 
-#define idio_S_toplevel		((const IDIO) IDIO_CONSTANT (IDIO_CONSTANT_TOPLEVEL))
-#define idio_S_predef		((const IDIO) IDIO_CONSTANT (IDIO_CONSTANT_PREDEF))
-#define idio_S_local		((const IDIO) IDIO_CONSTANT (IDIO_CONSTANT_LOCAL))
-#define idio_S_environ		((const IDIO) IDIO_CONSTANT (IDIO_CONSTANT_ENVIRON))
-#define idio_S_computed		((const IDIO) IDIO_CONSTANT (IDIO_CONSTANT_COMPUTED))
+#define idio_S_toplevel		((const IDIO) IDIO_CONSTANT_IDIO (IDIO_CONSTANT_TOPLEVEL))
+#define idio_S_predef		((const IDIO) IDIO_CONSTANT_IDIO (IDIO_CONSTANT_PREDEF))
+#define idio_S_local		((const IDIO) IDIO_CONSTANT_IDIO (IDIO_CONSTANT_LOCAL))
+#define idio_S_environ		((const IDIO) IDIO_CONSTANT_IDIO (IDIO_CONSTANT_ENVIRON))
+#define idio_S_computed		((const IDIO) IDIO_CONSTANT_IDIO (IDIO_CONSTANT_COMPUTED))
 
 #endif
 

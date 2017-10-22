@@ -24,13 +24,30 @@
 
 int idio_type (IDIO o)
 {
-    switch ((intptr_t) o & 3) {
+    switch ((intptr_t) o & IDIO_TYPE_MASK) {
     case IDIO_TYPE_FIXNUM_MARK:
 	return IDIO_TYPE_FIXNUM;
     case IDIO_TYPE_CONSTANT_MARK:
-	return IDIO_TYPE_CONSTANT;
-    case IDIO_TYPE_CHARACTER_MARK:
-	return IDIO_TYPE_CHARACTER;
+	{
+	    switch ((intptr_t) o & IDIO_TYPE_CONSTANT_MASK) {
+	    case IDIO_TYPE_CONSTANT_IDIO_MARK:
+		return IDIO_TYPE_CONSTANT_IDIO;
+	    case IDIO_TYPE_CONSTANT_TOKEN_MARK:
+		return IDIO_TYPE_CONSTANT_TOKEN;
+	    case IDIO_TYPE_CONSTANT_I_CODE_MARK:
+		return IDIO_TYPE_CONSTANT_I_CODE;
+	    case IDIO_TYPE_CONSTANT_CHARACTER_MARK:
+		return IDIO_TYPE_CONSTANT_CHARACTER;
+	    default:
+		/* inconceivable! */
+		idio_error_printf (IDIO_C_LOCATION ("idio_type/CONSTANT"), "type: unexpected object type %#x", o);
+
+		/* notreached */
+		return IDIO_TYPE_NONE;
+	    }
+	}
+    case IDIO_TYPE_PLACEHOLDER_MARK:
+	return IDIO_TYPE_PLACEHOLDER;
     case IDIO_TYPE_POINTER_MARK:
 	return o->type;
     default:
@@ -47,8 +64,11 @@ const char *idio_type_enum2string (idio_type_e type)
     switch (type) {
     case IDIO_TYPE_NONE: return "NONE";
     case IDIO_TYPE_FIXNUM: return "FIXNUM";
-    case IDIO_TYPE_CONSTANT: return "CONSTANT";
-    case IDIO_TYPE_CHARACTER: return "CHARACTER";
+    case IDIO_TYPE_CONSTANT_IDIO: return "CONSTANT_IDIO";
+    case IDIO_TYPE_CONSTANT_TOKEN: return "CONSTANT_TOKEN";
+    case IDIO_TYPE_CONSTANT_I_CODE: return "CONSTANT_I_CODE";
+    case IDIO_TYPE_CONSTANT_CHARACTER: return "CONSTANT_CHARACTER";
+    case IDIO_TYPE_PLACEHOLDER: return "PLACEHOLDER";
     case IDIO_TYPE_STRING: return "STRING";
     case IDIO_TYPE_SUBSTRING: return "SUBSTRING";
     case IDIO_TYPE_SYMBOL: return "SYMBOL";
@@ -87,13 +107,25 @@ const char *idio_type_enum2string (idio_type_e type)
 
 const char *idio_type2string (IDIO o)
 {
-    switch ((intptr_t) o & 3) {
+    switch ((intptr_t) o & IDIO_TYPE_MASK) {
     case IDIO_TYPE_FIXNUM_MARK:
 	return "FIXNUM";
     case IDIO_TYPE_CONSTANT_MARK:
-	return "SCONSTANT";
-    case IDIO_TYPE_CHARACTER_MARK:
-	return "CHARACTER";
+	{
+	    switch ((intptr_t) o & IDIO_TYPE_CONSTANT_MASK) {
+	    case IDIO_TYPE_CONSTANT_IDIO_MARK: return "CONSTANT_IDIO";
+	    case IDIO_TYPE_CONSTANT_TOKEN_MARK: return "CONSTANT_TOKEN";
+	    case IDIO_TYPE_CONSTANT_I_CODE_MARK: return "CONSTANT_I_CODE";
+	    case IDIO_TYPE_CONSTANT_CHARACTER_MARK: return "CONSTANT_CHARACTER";
+	    default:
+		idio_error_C ("idio_type2string: unexpected type", o, IDIO_C_LOCATION ("idio_type2string/CONSTANT"));
+
+		/* notreached */
+		return "NOT KNOWN";
+	    }
+	}
+    case IDIO_TYPE_PLACEHOLDER_MARK:
+	return "PLACEHOLDER";
     case IDIO_TYPE_POINTER_MARK:
 	return idio_type_enum2string (o->type);
     default:
@@ -322,24 +354,24 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 	return 1;
     }
     
-    int m1 = (intptr_t) o1 & 3;
+    int m1 = (intptr_t) o1 & IDIO_TYPE_MASK;
     
     switch (m1) {
     case IDIO_TYPE_FIXNUM_MARK:
     case IDIO_TYPE_CONSTANT_MARK:
-    case IDIO_TYPE_CHARACTER_MARK:
+    case IDIO_TYPE_PLACEHOLDER_MARK:
 	/*
 	  We already tested for equality above!
 	 */
 	return 0;
     case IDIO_TYPE_POINTER_MARK:
 	{
-	    int m2 = (intptr_t) o2 & 3;
+	    int m2 = (intptr_t) o2 & IDIO_TYPE_MASK;
     
 	    switch (m2) {
 	    case IDIO_TYPE_FIXNUM_MARK:
 	    case IDIO_TYPE_CONSTANT_MARK:
-	    case IDIO_TYPE_CHARACTER_MARK:
+	    case IDIO_TYPE_PLACEHOLDER_MARK:
 		/* we would have matched at the top */
 		return 0;
 	    default:
@@ -580,7 +612,7 @@ char *idio_escape_string (size_t blen, char *s)
  */
 char *idio_as_string (IDIO o, int depth)
 {
-    char *r;
+    char *r = NULL;
     size_t i;
     
     IDIO_C_ASSERT (depth >= -10000);
@@ -589,7 +621,7 @@ char *idio_as_string (IDIO o, int depth)
 	return NULL;
     }
     
-    switch ((intptr_t) o & 3) {
+    switch ((intptr_t) o & IDIO_TYPE_MASK) {
     case IDIO_TYPE_FIXNUM_MARK:
 	{
 	    if (asprintf (&r, "%" PRIdPTR, IDIO_FIXNUM_VAL (o)) == -1) {
@@ -599,133 +631,206 @@ char *idio_as_string (IDIO o, int depth)
 	}
     case IDIO_TYPE_CONSTANT_MARK:
 	{
+	    /*
+	     * character will set r directly but constants will point
+	     * t to a fixed string (which gets copied)
+	     */
 	    char *t = NULL;
 	    
-	    intptr_t v = IDIO_CONSTANT_VAL (o);
+	    switch ((intptr_t) o & IDIO_TYPE_CONSTANT_MASK) {
+	    case IDIO_TYPE_CONSTANT_IDIO_MARK:
+		{
+		    intptr_t v = IDIO_CONSTANT_TOKEN_VAL (o);
 	    
-	    switch (v) {
-	    case IDIO_CONSTANT_NIL:                        t = "#n";                          break;
-	    case IDIO_CONSTANT_UNDEF:                      t = "#<undef>";                    break;
-	    case IDIO_CONSTANT_UNSPEC:                     t = "#<unspec>";                   break;
-	    case IDIO_CONSTANT_EOF:                        t = "#<eof>";                      break;
-	    case IDIO_CONSTANT_TRUE:                       t = "#t";                          break;
-	    case IDIO_CONSTANT_FALSE:                      t = "#f";                          break;
-	    case IDIO_CONSTANT_VOID:                       t = "#<void>";                     break;
-	    case IDIO_CONSTANT_NAN:                        t = "#<NaN>";                      break;
+		    switch (v) {
+		    case IDIO_CONSTANT_NIL:                        t = "#n";                          break;
+		    case IDIO_CONSTANT_UNDEF:                      t = "#<undef>";                    break;
+		    case IDIO_CONSTANT_UNSPEC:                     t = "#<unspec>";                   break;
+		    case IDIO_CONSTANT_EOF:                        t = "#<eof>";                      break;
+		    case IDIO_CONSTANT_TRUE:                       t = "#t";                          break;
+		    case IDIO_CONSTANT_FALSE:                      t = "#f";                          break;
+		    case IDIO_CONSTANT_VOID:                       t = "#<void>";                     break;
+		    case IDIO_CONSTANT_NAN:                        t = "#<NaN>";                      break;
 
-		/*
-		 * We shouldn't really see any of the following
-		 * constants but they leak out especially when the
-		 * code errors.
-		 *
-		 * It's then easier to debug if we can read
-		 * "PREDEFINED" rather than "C=2001"
-		 */
-	    case IDIO_CONSTANT_TOPLEVEL:                   t = "toplevel/c";                  break;
-	    case IDIO_CONSTANT_PREDEF:                     t = "predef/c";                    break;
-	    case IDIO_CONSTANT_LOCAL:                      t = "local/c";                     break;
-	    case IDIO_CONSTANT_ENVIRON:                    t = "environ/c";                   break;
-	    case IDIO_CONSTANT_COMPUTED:                   t = "computed/c";                  break;
+			/*
+			 * We shouldn't really see any of the
+			 * following constants but they leak out
+			 * especially when the code errors.
+			 *
+			 * It's then easier to debug if we can read
+			 * "PREDEFINED" rather than "C=2001"
+			 */
+		    case IDIO_CONSTANT_TOPLEVEL:                   t = "toplevel/c";                  break;
+		    case IDIO_CONSTANT_PREDEF:                     t = "predef/c";                    break;
+		    case IDIO_CONSTANT_LOCAL:                      t = "local/c";                     break;
+		    case IDIO_CONSTANT_ENVIRON:                    t = "environ/c";                   break;
+		    case IDIO_CONSTANT_COMPUTED:                   t = "computed/c";                  break;
+			
+		    default:
+			if (asprintf (&r, "#<type/constant/idio?? %10p>", o) == -1) {
+			    idio_error_alloc ("asprintf");
+			}
+			break;
+		    }
 
-	    case IDIO_TOKEN_DOT:                           t = "T/.";                         break;
-	    case IDIO_TOKEN_LPAREN:                        t = "T/(";                         break;
-	    case IDIO_TOKEN_RPAREN:                        t = "T/)";                         break;
-	    case IDIO_TOKEN_LBRACE:                        t = "T/{";                         break;
-	    case IDIO_TOKEN_RBRACE:                        t = "T/}";                         break;
-	    case IDIO_TOKEN_LBRACKET:                      t = "T/[";                         break;
-	    case IDIO_TOKEN_RBRACKET:                      t = "T/]";                         break;
-	    case IDIO_TOKEN_LANGLE:                        t = "T/<";                         break;
-	    case IDIO_TOKEN_RANGLE:                        t = "T/>";                         break;
-	    case IDIO_TOKEN_EOL:                           t = "T/EOL";                       break;
-	    case IDIO_TOKEN_PAIR_SEPARATOR:                t = "T/p-s";                       break;
-
-
-	    case IDIO_VM_CODE_SHALLOW_ARGUMENT_REF:        t = "SHALLOW-ARGUMENT-REF";        break;
-	    case IDIO_VM_CODE_PREDEFINED:                  t = "PREDEFINED";                  break;
-	    case IDIO_VM_CODE_DEEP_ARGUMENT_REF:           t = "DEEP-ARGUMENT-REF";           break;
-	    case IDIO_VM_CODE_SHALLOW_ARGUMENT_SET:        t = "SHALLOW-ARGUMENT-SET";        break;
-	    case IDIO_VM_CODE_DEEP_ARGUMENT_SET:           t = "DEEP-ARGUMENT-SET";           break;
-	    case IDIO_VM_CODE_GLOBAL_REF:                  t = "GLOBAL-REF";                  break;
-	    case IDIO_VM_CODE_CHECKED_GLOBAL_REF:          t = "CHECKED-GLOBAL-REF";          break;
-	    case IDIO_VM_CODE_CHECKED_GLOBAL_FUNCTION_REF: t = "CHECKED-GLOBAL-FUNCTION-REF"; break;
-	    case IDIO_VM_CODE_GLOBAL_SET:                  t = "GLOBAL-SET";                  break;
-	    case IDIO_VM_CODE_CONSTANT:                    t = "CONSTANT";                    break;
-	    case IDIO_VM_CODE_ALTERNATIVE:                 t = "ALTERNATIVE";                 break;
-	    case IDIO_VM_CODE_SEQUENCE:                    t = "SEQUENCE";                    break;
-	    case IDIO_VM_CODE_TR_FIX_LET:                  t = "TR-FIX-LET";                  break;
-	    case IDIO_VM_CODE_FIX_LET:                     t = "FIX-LET";                     break;
-	    case IDIO_VM_CODE_PRIMCALL0:                   t = "PRIMCALL0";                   break;
-	    case IDIO_VM_CODE_PRIMCALL1:                   t = "PRIMCALL1";                   break;
-	    case IDIO_VM_CODE_PRIMCALL2:                   t = "PRIMCALL2";                   break;
-	    case IDIO_VM_CODE_PRIMCALL3:                   t = "PRIMCALL3";                   break;
-	    case IDIO_VM_CODE_FIX_CLOSURE:                 t = "FIX-CLOSURE";                 break;
-	    case IDIO_VM_CODE_NARY_CLOSURE:                t = "NARY-CLOSURE";                break;
-	    case IDIO_VM_CODE_TR_REGULAR_CALL:             t = "TR-REGULAR-CALL";             break;
-	    case IDIO_VM_CODE_REGULAR_CALL:                t = "REGULAR-CALL";                break;
-	    case IDIO_VM_CODE_STORE_ARGUMENT:              t = "STORE-ARGUMENT";              break;
-	    case IDIO_VM_CODE_CONS_ARGUMENT:               t = "CONS-ARGUMENT";               break;
-	    case IDIO_VM_CODE_ALLOCATE_FRAME:              t = "ALLOCATE-FRAME";              break;
-	    case IDIO_VM_CODE_ALLOCATE_DOTTED_FRAME:       t = "ALLOCATE-DOTTED-FRAME";       break;
-	    case IDIO_VM_CODE_FINISH:                      t = "FINISH";                      break;
-	    case IDIO_VM_CODE_PUSH_DYNAMIC:                t = "PUSH-DYNAMIC";                break;
-	    case IDIO_VM_CODE_POP_DYNAMIC:                 t = "POP-DYNAMIC";                 break;
-	    case IDIO_VM_CODE_DYNAMIC_REF:                 t = "DYNAMIC-REF";                 break;
-	    case IDIO_VM_CODE_DYNAMIC_FUNCTION_REF:        t = "DYNAMIC-FUNCTION-REF";        break;
-	    case IDIO_VM_CODE_ENVIRON_REF:                 t = "ENVIRON-REF";                 break;
-	    case IDIO_VM_CODE_PUSH_HANDLER:                t = "PUSH-HANDLER";                break;
-	    case IDIO_VM_CODE_POP_HANDLER:                 t = "POP-HANDLER";                 break;
-	    case IDIO_VM_CODE_PUSH_TRAP:                   t = "PUSH-TRAP";                break;
-	    case IDIO_VM_CODE_POP_TRAP:                    t = "POP-TRAP";                 break;
-	    case IDIO_VM_CODE_AND:                         t = "AND";                         break;
-	    case IDIO_VM_CODE_OR:                          t = "OR";                          break;
-	    case IDIO_VM_CODE_BEGIN:                       t = "BEGIN";                       break;
-	    case IDIO_VM_CODE_EXPANDER:                    t = "EXPANDER";                    break;
-	    case IDIO_VM_CODE_INFIX_OPERATOR:              t = "INFIX-OPERATOR";              break;
-	    case IDIO_VM_CODE_POSTFIX_OPERATOR:            t = "POSTFIX-OPERATOR";            break;
-	    case IDIO_VM_CODE_NOP:                         t = "NOP";                         break;
-	    default:
+		    if (NULL == t) {
+			if (asprintf (&r, "#<C=%" PRIdPTR ">", v) == -1) {
+			    idio_error_alloc ("asprintf");
+			}
+		    } else {
+			if (asprintf (&r, "%s", t) == -1) {
+			    idio_error_alloc ("asprintf");
+			}
+		    }
+		}
 		break;
-	    }
+	    case IDIO_TYPE_CONSTANT_TOKEN_MARK:
+		{
+		    intptr_t v = IDIO_CONSTANT_IDIO_VAL (o);
+	    
+		    switch (v) {
+			
+		    case IDIO_TOKEN_DOT:                           t = "T/.";                         break;
+		    case IDIO_TOKEN_LPAREN:                        t = "T/(";                         break;
+		    case IDIO_TOKEN_RPAREN:                        t = "T/)";                         break;
+		    case IDIO_TOKEN_LBRACE:                        t = "T/{";                         break;
+		    case IDIO_TOKEN_RBRACE:                        t = "T/}";                         break;
+		    case IDIO_TOKEN_LBRACKET:                      t = "T/[";                         break;
+		    case IDIO_TOKEN_RBRACKET:                      t = "T/]";                         break;
+		    case IDIO_TOKEN_LANGLE:                        t = "T/<";                         break;
+		    case IDIO_TOKEN_RANGLE:                        t = "T/>";                         break;
+		    case IDIO_TOKEN_EOL:                           t = "T/EOL";                       break;
+		    case IDIO_TOKEN_PAIR_SEPARATOR:                t = "T/p-s";                       break;
+			
+		    default:
+			if (asprintf (&r, "#<type/constant/token?? %10p>", o) == -1) {
+			    idio_error_alloc ("asprintf");
+			}
+			break;
+		    }
 
-	    if (NULL == t) {
-		if (asprintf (&r, "#<C=%" PRIdPTR ">", v) == -1) {
+		    if (NULL == t) {
+			if (asprintf (&r, "#<C=%" PRIdPTR ">", v) == -1) {
+			    idio_error_alloc ("asprintf");
+			}
+		    } else {
+			if (asprintf (&r, "%s", t) == -1) {
+			    idio_error_alloc ("asprintf");
+			}
+		    }
+		}
+		break;
+
+	    case IDIO_TYPE_CONSTANT_I_CODE_MARK:
+		{
+		    intptr_t v = IDIO_CONSTANT_I_CODE_VAL (o);
+	    
+		    switch (v) {
+			
+		    case IDIO_I_CODE_SHALLOW_ARGUMENT_REF:        t = "SHALLOW-ARGUMENT-REF";        break;
+		    case IDIO_I_CODE_PREDEFINED:                  t = "PREDEFINED";                  break;
+		    case IDIO_I_CODE_DEEP_ARGUMENT_REF:           t = "DEEP-ARGUMENT-REF";           break;
+		    case IDIO_I_CODE_SHALLOW_ARGUMENT_SET:        t = "SHALLOW-ARGUMENT-SET";        break;
+		    case IDIO_I_CODE_DEEP_ARGUMENT_SET:           t = "DEEP-ARGUMENT-SET";           break;
+		    case IDIO_I_CODE_GLOBAL_REF:                  t = "GLOBAL-REF";                  break;
+		    case IDIO_I_CODE_CHECKED_GLOBAL_REF:          t = "CHECKED-GLOBAL-REF";          break;
+		    case IDIO_I_CODE_CHECKED_GLOBAL_FUNCTION_REF: t = "CHECKED-GLOBAL-FUNCTION-REF"; break;
+		    case IDIO_I_CODE_GLOBAL_SET:                  t = "GLOBAL-SET";                  break;
+		    case IDIO_I_CODE_CONSTANT:                    t = "CONSTANT";                    break;
+		    case IDIO_I_CODE_ALTERNATIVE:                 t = "ALTERNATIVE";                 break;
+		    case IDIO_I_CODE_SEQUENCE:                    t = "SEQUENCE";                    break;
+		    case IDIO_I_CODE_TR_FIX_LET:                  t = "TR-FIX-LET";                  break;
+		    case IDIO_I_CODE_FIX_LET:                     t = "FIX-LET";                     break;
+		    case IDIO_I_CODE_PRIMCALL0:                   t = "PRIMCALL0";                   break;
+		    case IDIO_I_CODE_PRIMCALL1:                   t = "PRIMCALL1";                   break;
+		    case IDIO_I_CODE_PRIMCALL2:                   t = "PRIMCALL2";                   break;
+		    case IDIO_I_CODE_PRIMCALL3:                   t = "PRIMCALL3";                   break;
+		    case IDIO_I_CODE_FIX_CLOSURE:                 t = "FIX-CLOSURE";                 break;
+		    case IDIO_I_CODE_NARY_CLOSURE:                t = "NARY-CLOSURE";                break;
+		    case IDIO_I_CODE_TR_REGULAR_CALL:             t = "TR-REGULAR-CALL";             break;
+		    case IDIO_I_CODE_REGULAR_CALL:                t = "REGULAR-CALL";                break;
+		    case IDIO_I_CODE_STORE_ARGUMENT:              t = "STORE-ARGUMENT";              break;
+		    case IDIO_I_CODE_CONS_ARGUMENT:               t = "CONS-ARGUMENT";               break;
+		    case IDIO_I_CODE_ALLOCATE_FRAME:              t = "ALLOCATE-FRAME";              break;
+		    case IDIO_I_CODE_ALLOCATE_DOTTED_FRAME:       t = "ALLOCATE-DOTTED-FRAME";       break;
+		    case IDIO_I_CODE_FINISH:                      t = "FINISH";                      break;
+		    case IDIO_I_CODE_PUSH_DYNAMIC:                t = "PUSH-DYNAMIC";                break;
+		    case IDIO_I_CODE_POP_DYNAMIC:                 t = "POP-DYNAMIC";                 break;
+		    case IDIO_I_CODE_DYNAMIC_REF:                 t = "DYNAMIC-REF";                 break;
+		    case IDIO_I_CODE_DYNAMIC_FUNCTION_REF:        t = "DYNAMIC-FUNCTION-REF";        break;
+		    case IDIO_I_CODE_ENVIRON_REF:                 t = "ENVIRON-REF";                 break;
+		    case IDIO_I_CODE_PUSH_HANDLER:                t = "PUSH-HANDLER";                break;
+		    case IDIO_I_CODE_POP_HANDLER:                 t = "POP-HANDLER";                 break;
+		    case IDIO_I_CODE_PUSH_TRAP:                   t = "PUSH-TRAP";                break;
+		    case IDIO_I_CODE_POP_TRAP:                    t = "POP-TRAP";                 break;
+		    case IDIO_I_CODE_AND:                         t = "AND";                         break;
+		    case IDIO_I_CODE_OR:                          t = "OR";                          break;
+		    case IDIO_I_CODE_BEGIN:                       t = "BEGIN";                       break;
+		    case IDIO_I_CODE_EXPANDER:                    t = "EXPANDER";                    break;
+		    case IDIO_I_CODE_INFIX_OPERATOR:              t = "INFIX-OPERATOR";              break;
+		    case IDIO_I_CODE_POSTFIX_OPERATOR:            t = "POSTFIX-OPERATOR";            break;
+		    case IDIO_I_CODE_NOP:                         t = "NOP";                         break;
+
+		    default:
+			if (asprintf (&r, "#<type/constant/vm_code?? %10p>", o) == -1) {
+			    idio_error_alloc ("asprintf");
+			}
+			break;
+		    }
+
+		    if (NULL == t) {
+			if (asprintf (&r, "#<C=%" PRIdPTR ">", v) == -1) {
+			    idio_error_alloc ("asprintf");
+			}
+		    } else {
+			if (asprintf (&r, "%s", t) == -1) {
+			    idio_error_alloc ("asprintf");
+			}
+		    }
+		}
+		break;
+
+	    case IDIO_TYPE_CONSTANT_CHARACTER_MARK:
+		{
+		    intptr_t c = IDIO_CHARACTER_VAL (o);
+		    switch (c) {
+		    case ' ':
+			if (asprintf (&r, "#\\space") == -1) {
+			    idio_error_alloc ("asprintf");
+			}
+			break;
+		    case '\n':
+			if (asprintf (&r, "#\\newline") == -1) {
+			    idio_error_alloc ("asprintf");
+			}
+			break;
+		    default:
+			if (isprint (c)) {
+			    if (asprintf (&r, "#\\%c", (char) c) == -1) {
+				idio_error_alloc ("asprintf");
+			    }
+			} else {
+			    if (asprintf (&r, "#\\%#" PRIxPTR, c) == -1) {
+				idio_error_alloc ("asprintf");
+			    }
+			}
+			break;
+		    }
+		    break;
+		}
+	    default:
+		if (asprintf (&r, "#<type/constant?? %10p>", o) == -1) {
 		    idio_error_alloc ("asprintf");
 		}
-	    } else {
-		if (asprintf (&r, "%s", t) == -1) {
-		    idio_error_alloc ("asprintf");
-		}
+		break;
 	    }
 	}
 	break;
-    case IDIO_TYPE_CHARACTER_MARK:
-	{
-	    intptr_t c = IDIO_CHARACTER_VAL (o);
-	    switch (c) {
-	    case ' ':
-		if (asprintf (&r, "#\\space") == -1) {
-		    idio_error_alloc ("asprintf");
-		}
-		break;
-	    case '\n':
-		if (asprintf (&r, "#\\newline") == -1) {
-		    idio_error_alloc ("asprintf");
-		}
-		break;
-	    default:
-		if (isprint (c)) {
-		    if (asprintf (&r, "#\\%c", (char) c) == -1) {
-			idio_error_alloc ("asprintf");
-		    }
-		} else {
-		    if (asprintf (&r, "#\\%#" PRIxPTR, c) == -1) {
-			idio_error_alloc ("asprintf");
-		    }
-		}
-		break;
-	    }
-	    break;
+    case IDIO_TYPE_PLACEHOLDER_MARK:
+	if (asprintf (&r, "#<type/placecholder?? %10p>", o) == -1) {
+	    idio_error_alloc ("asprintf");
 	}
+	break;
     case IDIO_TYPE_POINTER_MARK:
 	{
 	    idio_type_e type = idio_type (o);
@@ -1314,27 +1419,37 @@ char *idio_display_string (IDIO o)
 {
     char *r;
     
-    switch ((intptr_t) o & 3) {
+    switch ((intptr_t) o & IDIO_TYPE_MASK) {
     case IDIO_TYPE_FIXNUM_MARK:
-    case IDIO_TYPE_CONSTANT_MARK:
+    case IDIO_TYPE_PLACEHOLDER_MARK:
 	r = idio_as_string (o, 4);
 	break;
-    case IDIO_TYPE_CHARACTER_MARK:
+    case IDIO_TYPE_CONSTANT_MARK:
 	{
-	    intptr_t c = IDIO_CHARACTER_VAL (o);
-	    if (asprintf (&r, "%c", (char) c) == -1) {
-		idio_error_alloc ("asprintf");
+	    switch ((intptr_t) o & IDIO_TYPE_CONSTANT_MASK) {
+	    case IDIO_TYPE_CONSTANT_IDIO_MARK:
+	    case IDIO_TYPE_CONSTANT_TOKEN_MARK:
+	    case IDIO_TYPE_CONSTANT_I_CODE_MARK:
+		r = idio_as_string (o, 4);
+		break;
+	    case IDIO_TYPE_CONSTANT_CHARACTER_MARK:
+		{
+		    intptr_t c = IDIO_CHARACTER_VAL (o);
+		    if (asprintf (&r, "%c", (char) c) == -1) {
+			idio_error_alloc ("asprintf");
+		    }
+		    /*
+		     * If we check for isprint(c) then (newline) fails as
+		     * it'll be printed as \\0xa
+		     */
+		    /* if (isprint (c)) { */
+		    /* } else { */
+		    /* 	if (asprintf (&r, "x%" PRIxPTR, IDIO_CHARACTER_VAL (o)) == -1) { */
+		    /* 	    idio_error_alloc ("asprintf"); */
+		    /* 	} */
+		    /* } */
+		}
 	    }
-	    /*
-	     * If we check for isprint(c) then (newline) fails as
-	     * it'll be printed as \\0xa
-	     */
-	    /* if (isprint (c)) { */
-	    /* } else { */
-	    /* 	if (asprintf (&r, "x%" PRIxPTR, IDIO_CHARACTER_VAL (o)) == -1) { */
-	    /* 	    idio_error_alloc ("asprintf"); */
-	    /* 	} */
-	    /* } */
 	}
 	break;
     case IDIO_TYPE_POINTER_MARK:
@@ -1694,10 +1809,10 @@ IDIO_DEFINE_PRIMITIVE2 ("value-index", value_index, (IDIO o, IDIO i))
     IDIO_ASSERT (o);
     IDIO_ASSERT (i);
 
-    switch ((intptr_t) o & 3) {
+    switch ((intptr_t) o & IDIO_TYPE_MASK) {
     case IDIO_TYPE_FIXNUM_MARK:
     case IDIO_TYPE_CONSTANT_MARK:
-    case IDIO_TYPE_CHARACTER_MARK:
+    case IDIO_TYPE_PLACEHOLDER_MARK:
 	break;
     case IDIO_TYPE_POINTER_MARK:
 	{
@@ -1731,10 +1846,10 @@ IDIO_DEFINE_PRIMITIVE3 ("set-value-index!", set_value_index, (IDIO o, IDIO i, ID
     IDIO_ASSERT (i);
     IDIO_ASSERT (v);
 
-    switch ((intptr_t) o & 3) {
+    switch ((intptr_t) o & IDIO_TYPE_MASK) {
     case IDIO_TYPE_FIXNUM_MARK:
     case IDIO_TYPE_CONSTANT_MARK:
-    case IDIO_TYPE_CHARACTER_MARK:
+    case IDIO_TYPE_PLACEHOLDER_MARK:
 	break;
     case IDIO_TYPE_POINTER_MARK:
 	{
@@ -1773,10 +1888,10 @@ void idio_dump (IDIO o, int detail)
 {
     IDIO_ASSERT (o);
 
-    switch ((intptr_t) o & 3) {
+    switch ((intptr_t) o & IDIO_TYPE_MASK) {
     case IDIO_TYPE_FIXNUM_MARK:
     case IDIO_TYPE_CONSTANT_MARK:
-    case IDIO_TYPE_CHARACTER_MARK:
+    case IDIO_TYPE_PLACEHOLDER_MARK:
 	break;
     case IDIO_TYPE_POINTER_MARK:
 	{
@@ -1897,7 +2012,7 @@ void idio_dump (IDIO o, int detail)
 	break;
     default:
 	/* inconceivable! */
-	idio_error_printf (IDIO_C_LOCATION ("idio_dump"), "v=n/k o=%#p o&3=%x F=%x C=%x P=%x", o, (intptr_t) o & 3, IDIO_TYPE_FIXNUM_MARK, IDIO_TYPE_CONSTANT_MARK, IDIO_TYPE_POINTER_MARK);
+	idio_error_printf (IDIO_C_LOCATION ("idio_dump"), "v=n/k o=%#p o&3=%x F=%x C=%x P=%x", o, (intptr_t) o & IDIO_TYPE_MASK, IDIO_TYPE_FIXNUM_MARK, IDIO_TYPE_CONSTANT_MARK, IDIO_TYPE_POINTER_MARK);
 
 	break;
     }	

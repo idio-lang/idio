@@ -458,8 +458,8 @@ static IDIO idio_read_list (IDIO handle, IDIO opendel, char *ic, int depth)
 	    /*
 	     * A few tokens can slip through the net...
 	     */
-	    if (IDIO_TYPE_CONSTANTP (e)) {
-		uintptr_t ev = IDIO_CONSTANT_VAL (e);
+	    if (IDIO_TYPE_CONSTANT_IDIOP (e)) {
+		uintptr_t ev = IDIO_CONSTANT_IDIO_VAL (e);
 		switch (ev) {
 		case IDIO_CONSTANT_NIL:
 		case IDIO_CONSTANT_UNDEF:
@@ -470,6 +470,14 @@ static IDIO idio_read_list (IDIO handle, IDIO opendel, char *ic, int depth)
 		case IDIO_CONSTANT_VOID:
 		case IDIO_CONSTANT_NAN:
 		    break;
+		default:
+		    idio_error_C ("unexpected token in list", IDIO_LIST2 (handle, e), IDIO_C_LOCATION ("idio_read_list"));
+		}
+	    }
+
+	    if (IDIO_TYPE_CONSTANT_TOKENP (e)) {
+		uintptr_t ev = IDIO_CONSTANT_TOKEN_VAL (e);
+		switch (ev) {
 		case IDIO_TOKEN_LANGLE:
 		    e = idio_S_lt;
 		    break;
@@ -709,7 +717,7 @@ static IDIO idio_read_character (IDIO handle)
 	}
     }
 
-    idio_gc_stats_inc (IDIO_TYPE_CHARACTER);
+    idio_gc_stats_inc (IDIO_TYPE_CONSTANT_CHARACTER);
     return r;
 }
 
@@ -1450,8 +1458,8 @@ static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, char *ic, int depth
 	    /*
 	     * A few tokens can slip through the net...
 	     */
-	    if (IDIO_TYPE_CONSTANTP (expr)) {
-		uintptr_t ev = IDIO_CONSTANT_VAL (expr);
+	    if (IDIO_TYPE_CONSTANT_IDIOP (expr)) {
+		uintptr_t ev = IDIO_CONSTANT_IDIO_VAL (expr);
 		switch (ev) {
 		case IDIO_CONSTANT_NIL:
 		case IDIO_CONSTANT_UNDEF:
@@ -1462,6 +1470,14 @@ static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, char *ic, int depth
 		case IDIO_CONSTANT_VOID:
 		case IDIO_CONSTANT_NAN:
 		    break;
+		default:
+		    idio_error_C ("unexpected token in line", IDIO_LIST2 (handle, expr), IDIO_C_LOCATION ("idio_read_expr_line"));
+		}
+	    }
+
+ 	    if (IDIO_TYPE_CONSTANT_TOKENP (expr)) {
+		uintptr_t ev = IDIO_CONSTANT_TOKEN_VAL (expr);
+		switch (ev) {
 		case IDIO_TOKEN_LANGLE:
 		    expr = idio_S_lt;
 		    break;
@@ -1478,6 +1494,7 @@ static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, char *ic, int depth
 		    idio_error_C ("unexpected token in line", IDIO_LIST2 (handle, expr), IDIO_C_LOCATION ("idio_read_expr_line"));
 		}
 	    }
+
 	    r = idio_pair (expr, r);
 	}
 	count++;

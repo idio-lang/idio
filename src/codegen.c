@@ -312,7 +312,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
     IDIO mh = IDIO_PAIR_H (m);
     IDIO mt = IDIO_PAIR_T (m);
 
-    if (! IDIO_TYPE_CONSTANTP (mh)) {
+    if (! IDIO_TYPE_CONSTANT_I_CODEP (mh)) {
 	/*
 	 * A sequence of idio_I_* code segments will appear here as a
 	 * list so we simply recurse for each one.
@@ -333,8 +333,8 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	}
     }
     
-    switch (IDIO_CONSTANT_VAL (mh)) {
-    case IDIO_VM_CODE_SHALLOW_ARGUMENT_REF:
+    switch (IDIO_CONSTANT_I_CODE_VAL (mh)) {
+    case IDIO_I_CODE_SHALLOW_ARGUMENT_REF:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 1) {
@@ -361,7 +361,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    }
 	}
 	break;
-    case IDIO_VM_CODE_PREDEFINED:
+    case IDIO_I_CODE_PREDEFINED:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 1) {
@@ -411,7 +411,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    }
 	}
 	break;
-    case IDIO_VM_CODE_DEEP_ARGUMENT_REF:
+    case IDIO_I_CODE_DEEP_ARGUMENT_REF:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 2) {
@@ -438,7 +438,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (j));
 	}
 	break;
-    case IDIO_VM_CODE_SHALLOW_ARGUMENT_SET:
+    case IDIO_I_CODE_SHALLOW_ARGUMENT_SET:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 2) {
@@ -469,7 +469,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    }
 	}
 	break;
-    case IDIO_VM_CODE_DEEP_ARGUMENT_SET:
+    case IDIO_I_CODE_DEEP_ARGUMENT_SET:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 3) {
@@ -500,7 +500,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (j));
 	}
 	break;
-    case IDIO_VM_CODE_GLOBAL_REF:
+    case IDIO_I_CODE_GLOBAL_REF:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 1) {
@@ -519,7 +519,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO_IA_PUSH_REF (IDIO_FIXNUM_VAL (mci));
 	}
 	break;
-    case IDIO_VM_CODE_CHECKED_GLOBAL_REF:
+    case IDIO_I_CODE_CHECKED_GLOBAL_REF:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 1) {
@@ -538,7 +538,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO_IA_PUSH_REF (IDIO_FIXNUM_VAL (mci));
 	}
 	break;
-    case IDIO_VM_CODE_CHECKED_GLOBAL_FUNCTION_REF:
+    case IDIO_I_CODE_CHECKED_GLOBAL_FUNCTION_REF:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 1) {
@@ -557,7 +557,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO_IA_PUSH_REF (IDIO_FIXNUM_VAL (mci));
 	}
 	break;
-    case IDIO_VM_CODE_COMPUTED_REF:
+    case IDIO_I_CODE_COMPUTED_REF:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 1) {
@@ -576,7 +576,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO_IA_PUSH_REF (IDIO_FIXNUM_VAL (mci));
 	}
 	break;
-    case IDIO_VM_CODE_GLOBAL_DEF:
+    case IDIO_I_CODE_GLOBAL_DEF:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 2) {
@@ -608,7 +608,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO_IA_PUSH_VARUINT (mci);
 	}
 	break;
-    case IDIO_VM_CODE_GLOBAL_SET:
+    case IDIO_I_CODE_GLOBAL_SET:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 2) {
@@ -631,7 +631,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO_IA_PUSH_REF (IDIO_FIXNUM_VAL (mci));
 	}
 	break;
-    case IDIO_VM_CODE_COMPUTED_SET:
+    case IDIO_I_CODE_COMPUTED_SET:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 2) {
@@ -654,7 +654,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO_IA_PUSH_REF (IDIO_FIXNUM_VAL (mci));
 	}
 	break;
-    case IDIO_VM_CODE_COMPUTED_DEFINE:
+    case IDIO_I_CODE_COMPUTED_DEFINE:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 2) {
@@ -677,7 +677,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO_IA_PUSH_REF (IDIO_FIXNUM_VAL (mci));
 	}
 	break;
-    case IDIO_VM_CODE_CONSTANT:
+    case IDIO_I_CODE_CONSTANT:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 1) {
@@ -692,7 +692,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	     * atom.
 	     */
 
-	    switch ((intptr_t) c & 3) {
+	    switch ((intptr_t) c & IDIO_TYPE_MASK) {
 	    case IDIO_TYPE_FIXNUM_MARK:
 		{
 		    intptr_t v = IDIO_FIXNUM_VAL (c);
@@ -727,46 +727,59 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 		    }
 		}
 		break;	    
-	    case IDIO_TYPE_CHARACTER_MARK:
-		{
-		    intptr_t v = IDIO_CHARACTER_VAL (c);
-
-		    if (v >= 0) {
-			IDIO_IA_PUSH1 (IDIO_A_CHARACTER);
-			IDIO_IA_PUSH_VARUINT (v);
-		    } else {
-			/*
-			 * Can we even have negative characters?  Some
-			 * casual cut'n'paste says yes!
-			 */
-			IDIO_IA_PUSH1 (IDIO_A_NEG_CHARACTER);
-			IDIO_IA_PUSH_VARUINT (-v);
-		    }
-		    return;
-		}
-		break;
 	    case IDIO_TYPE_CONSTANT_MARK:
-		if (idio_S_true == c) {
-		    IDIO_IA_PUSH1 (IDIO_A_PREDEFINED0);
-		    return;
-		} else if (idio_S_false == c) {
-		    IDIO_IA_PUSH1 (IDIO_A_PREDEFINED1);
-		    return;
-		} else if (idio_S_nil == c) {
-		    IDIO_IA_PUSH1 (IDIO_A_PREDEFINED2);
-		    return;
-		} else {
-		    intptr_t cv = IDIO_CONSTANT_VAL (c);
+		{
+		    switch ((intptr_t) c & IDIO_TYPE_CONSTANT_MASK) {
+		    case IDIO_TYPE_CONSTANT_IDIO_MARK:
+			{
+			    if (idio_S_true == c) {
+				IDIO_IA_PUSH1 (IDIO_A_PREDEFINED0);
+				return;
+			    } else if (idio_S_false == c) {
+				IDIO_IA_PUSH1 (IDIO_A_PREDEFINED1);
+				return;
+			    } else if (idio_S_nil == c) {
+				IDIO_IA_PUSH1 (IDIO_A_PREDEFINED2);
+				return;
+			    } else {
+				intptr_t cv = IDIO_CONSTANT_IDIO_VAL (c);
 
-		    if (cv >= 0) {
-			IDIO_IA_PUSH1 (IDIO_A_CONSTANT);
-			IDIO_IA_PUSH_VARUINT (cv);
-		    } else {
-			IDIO_IA_PUSH1 (IDIO_A_NEG_CONSTANT);
-			IDIO_IA_PUSH_VARUINT (-cv);
+				if (cv >= 0) {
+				    IDIO_IA_PUSH1 (IDIO_A_CONSTANT);
+				    IDIO_IA_PUSH_VARUINT (cv);
+				} else {
+				    IDIO_IA_PUSH1 (IDIO_A_NEG_CONSTANT);
+				    IDIO_IA_PUSH_VARUINT (-cv);
+				}
+				return;
+			    }
+			    break;
+			}
+		    case IDIO_TYPE_CONSTANT_CHARACTER_MARK:
+			{
+			    intptr_t v = IDIO_CHARACTER_VAL (c);
+
+			    if (v >= 0) {
+				IDIO_IA_PUSH1 (IDIO_A_CHARACTER);
+				IDIO_IA_PUSH_VARUINT (v);
+			    } else {
+				/*
+				 * Can we even have negative characters?  Some
+				 * casual cut'n'paste says yes!
+				 */
+				IDIO_IA_PUSH1 (IDIO_A_NEG_CHARACTER);
+				IDIO_IA_PUSH_VARUINT (-v);
+			    }
+			    return;
+			}
+			break;
+		    default:
+			idio_error_C ("unexpected constant/CONSTANT/??", IDIO_LIST1 (c), IDIO_C_LOCATION ("idio_codegen_compile/CONSTANT/CONSTANT"));
+			break;
 		    }
-		    return;
 		}
+	    case IDIO_TYPE_PLACEHOLDER_MARK:
+		idio_error_C ("unexpected constant/PLACEHOLDER", IDIO_LIST1 (c), IDIO_C_LOCATION ("idio_codegen_compile/CONSTANT"));
 		break;
 	    default:
 		{
@@ -785,7 +798,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 
 	}
 	break;
-    case IDIO_VM_CODE_ALTERNATIVE:
+    case IDIO_I_CODE_ALTERNATIVE:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 3) {
@@ -873,7 +886,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    idio_ia_free (ia3);
 	}
 	break;
-    case IDIO_VM_CODE_SEQUENCE:
+    case IDIO_I_CODE_SEQUENCE:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 2) {
@@ -888,7 +901,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    idio_codegen_compile (thr, ia, cs, mp, depth + 1);
 	}
 	break;
-    case IDIO_VM_CODE_AND:
+    case IDIO_I_CODE_AND:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) < 1) {
@@ -996,7 +1009,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    idio_ia_free (iat);
 	}
 	break;
-    case IDIO_VM_CODE_OR:
+    case IDIO_I_CODE_OR:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) < 1) {
@@ -1009,7 +1022,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	     * sequence until we have generated the code for the
 	     * remaining clauses *and* the inter-clause jumps
 	     *
-	     * See commentary for IDIO_VM_CODE_AND, above
+	     * See commentary for IDIO_I_CODE_AND, above
 	     */
 	    IDIO m1 = IDIO_PAIR_H (mt);
 	    mt = IDIO_PAIR_T (mt);
@@ -1075,7 +1088,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    idio_ia_free (iat);
 	}
 	break;
-    case IDIO_VM_CODE_BEGIN:
+    case IDIO_I_CODE_BEGIN:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) < 1) {
@@ -1089,7 +1102,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    }
 	}
 	break;
-    case IDIO_VM_CODE_TR_FIX_LET:
+    case IDIO_I_CODE_TR_FIX_LET:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 2) {
@@ -1105,7 +1118,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    idio_codegen_compile (thr, ia, cs, mp, depth + 1);
 	}
 	break;
-    case IDIO_VM_CODE_FIX_LET:
+    case IDIO_I_CODE_FIX_LET:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 2) {
@@ -1122,7 +1135,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO_IA_PUSH1 (IDIO_A_UNLINK_FRAME);
 	}
 	break;
-    case IDIO_VM_CODE_PRIMCALL0:
+    case IDIO_I_CODE_PRIMCALL0:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 1) {
@@ -1135,7 +1148,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (ins));
 	}
 	break;
-    case IDIO_VM_CODE_PRIMCALL1:
+    case IDIO_I_CODE_PRIMCALL1:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 2) {
@@ -1150,7 +1163,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (ins));
 	}
 	break;
-    case IDIO_VM_CODE_PRIMCALL2:
+    case IDIO_I_CODE_PRIMCALL2:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 3) {
@@ -1170,7 +1183,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (ins));
 	}
 	break;
-    case IDIO_VM_CODE_PRIMCALL3:
+    case IDIO_I_CODE_PRIMCALL3:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 4) {
@@ -1193,7 +1206,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (ins));
 	}
 	break;
-    case IDIO_VM_CODE_FIX_CLOSURE:
+    case IDIO_I_CODE_FIX_CLOSURE:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 2) {
@@ -1285,7 +1298,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    idio_ia_free (iap);
 	}
 	break;
-    case IDIO_VM_CODE_NARY_CLOSURE:
+    case IDIO_I_CODE_NARY_CLOSURE:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 2) {
@@ -1355,7 +1368,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    idio_ia_free (iap);
 	}
 	break;
-    case IDIO_VM_CODE_TR_REGULAR_CALL:
+    case IDIO_I_CODE_TR_REGULAR_CALL:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 2) {
@@ -1372,7 +1385,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO_IA_PUSH2 (IDIO_A_POP_FUNCTION, IDIO_A_FUNCTION_GOTO);
 	}
 	break;
-    case IDIO_VM_CODE_REGULAR_CALL:
+    case IDIO_I_CODE_REGULAR_CALL:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 2) {
@@ -1389,7 +1402,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO_IA_PUSH4 (IDIO_A_POP_FUNCTION, IDIO_A_PRESERVE_STATE, IDIO_A_FUNCTION_INVOKE, IDIO_A_RESTORE_STATE);
 	}
 	break;
-    case IDIO_VM_CODE_STORE_ARGUMENT:
+    case IDIO_I_CODE_STORE_ARGUMENT:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 3) {
@@ -1421,7 +1434,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    }
 	}
 	break;
-    case IDIO_VM_CODE_CONS_ARGUMENT:
+    case IDIO_I_CODE_CONS_ARGUMENT:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 3) {
@@ -1440,7 +1453,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (arity));
 	}
 	break;
-    case IDIO_VM_CODE_ALLOCATE_FRAME:
+    case IDIO_I_CODE_ALLOCATE_FRAME:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 1) {
@@ -1468,7 +1481,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    }
 	}
 	break;
-    case IDIO_VM_CODE_ALLOCATE_DOTTED_FRAME:
+    case IDIO_I_CODE_ALLOCATE_DOTTED_FRAME:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 1) {
@@ -1487,7 +1500,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (size) + 1);
 	}
 	break;
-    case IDIO_VM_CODE_FINISH:
+    case IDIO_I_CODE_FINISH:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 0) {
@@ -1498,7 +1511,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO_IA_PUSH1 (IDIO_A_FINISH);
 	}
 	break;
-    case IDIO_VM_CODE_PUSH_DYNAMIC:
+    case IDIO_I_CODE_PUSH_DYNAMIC:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 2) {
@@ -1521,7 +1534,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO_IA_PUSH_REF (IDIO_FIXNUM_VAL (mci));
 	}
 	break;
-    case IDIO_VM_CODE_POP_DYNAMIC:
+    case IDIO_I_CODE_POP_DYNAMIC:
 	{
 	    if (idio_S_nil != mt) {
 		idio_codegen_error_param_args ("POP-DYNAMIC", mt, IDIO_C_LOCATION ("idio_codegen_compile/POP-DYNAMIC"));
@@ -1531,7 +1544,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO_IA_PUSH1 (IDIO_A_POP_DYNAMIC);
 	}
 	break;
-    case IDIO_VM_CODE_DYNAMIC_REF:
+    case IDIO_I_CODE_DYNAMIC_REF:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 1) {
@@ -1550,7 +1563,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO_IA_PUSH_REF (IDIO_FIXNUM_VAL (mci));
 	}
 	break;
-    case IDIO_VM_CODE_DYNAMIC_FUNCTION_REF:
+    case IDIO_I_CODE_DYNAMIC_FUNCTION_REF:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 1) {
@@ -1569,7 +1582,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO_IA_PUSH_REF (IDIO_FIXNUM_VAL (mci));
 	}
 	break;
-    case IDIO_VM_CODE_PUSH_ENVIRON:
+    case IDIO_I_CODE_PUSH_ENVIRON:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 2) {
@@ -1592,7 +1605,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO_IA_PUSH_REF (IDIO_FIXNUM_VAL (mci));
 	}
 	break;
-    case IDIO_VM_CODE_POP_ENVIRON:
+    case IDIO_I_CODE_POP_ENVIRON:
 	{
 	    if (idio_S_nil != mt) {
 		idio_codegen_error_param_args ("POP-ENVIRON", mt, IDIO_C_LOCATION ("idio_codegen_compile/POP-ENVIRON"));
@@ -1602,7 +1615,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO_IA_PUSH1 (IDIO_A_POP_ENVIRON);
 	}
 	break;
-    case IDIO_VM_CODE_ENVIRON_REF:
+    case IDIO_I_CODE_ENVIRON_REF:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 1) {
@@ -1621,7 +1634,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO_IA_PUSH_REF (IDIO_FIXNUM_VAL (mci));
 	}
 	break;
-    case IDIO_VM_CODE_PUSH_HANDLER:
+    case IDIO_I_CODE_PUSH_HANDLER:
 	{
 	    if (idio_S_nil != mt) {
 		idio_codegen_error_param_args ("PUSH-HANDLER", mt, IDIO_C_LOCATION ("idio_codegen_compile/PUSH-HANDLER"));
@@ -1631,7 +1644,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO_IA_PUSH1 (IDIO_A_PUSH_HANDLER);
 	}
 	break;
-    case IDIO_VM_CODE_POP_HANDLER:
+    case IDIO_I_CODE_POP_HANDLER:
 	{
 	    if (idio_S_nil != mt) {
 		idio_codegen_error_param_args ("POP-HANDLER", mt, IDIO_C_LOCATION ("idio_codegen_compile/POP-HANDLER"));
@@ -1641,7 +1654,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO_IA_PUSH1 (IDIO_A_POP_HANDLER);
 	}
 	break;
-    case IDIO_VM_CODE_PUSH_TRAP:
+    case IDIO_I_CODE_PUSH_TRAP:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 1) {
@@ -1660,7 +1673,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO_IA_PUSH_REF (IDIO_FIXNUM_VAL (mci));
 	}
 	break;
-    case IDIO_VM_CODE_POP_TRAP:
+    case IDIO_I_CODE_POP_TRAP:
 	{
 	    if (idio_S_nil != mt) {
 		idio_codegen_error_param_args ("POP-TRAP", mt, IDIO_C_LOCATION ("idio_codegen_compile/POP-TRAP"));
@@ -1670,7 +1683,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO_IA_PUSH1 (IDIO_A_POP_TRAP);
 	}
 	break;
-    case IDIO_VM_CODE_EXPANDER:
+    case IDIO_I_CODE_EXPANDER:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 2) {
@@ -1692,7 +1705,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO_IA_PUSH_REF (IDIO_FIXNUM_VAL (mci));
 	}
 	break;
-    case IDIO_VM_CODE_INFIX_OPERATOR:
+    case IDIO_I_CODE_INFIX_OPERATOR:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 3) {
@@ -1722,7 +1735,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (pri));
 	}
 	break;
-    case IDIO_VM_CODE_POSTFIX_OPERATOR:
+    case IDIO_I_CODE_POSTFIX_OPERATOR:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 3) {
@@ -1751,7 +1764,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (pri));
 	}
 	break;
-    case IDIO_VM_CODE_NOP:
+    case IDIO_I_CODE_NOP:
 	break;
     default:
 	idio_error_C ("bad instruction", IDIO_LIST1 (mh), IDIO_C_LOCATION ("idio_codegen_compile"));
