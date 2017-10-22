@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -32,20 +32,10 @@ command0 := Tests
 ;; rcseh:
 rcseh := #n
 
-monitor (function (cont cond) {
-  ;; edisplay* "command tests:" PID "monitor" cont cond
+trap ^rt-command-status-error (function (cont cond) {
   test (rt-command-status-error? cond) #t
   if cont {
-    ;; We are deliberately trying to provoke command status errors so
-    ;; we should check that the condition is a command status error
-    ;; and complain loudly otherwise
-    if (rt-command-status-error? cond) {
-      ;; Finally we can run our error-specific handler
-      rcseh cond
-    } {
-      edisplay* "command tests:" PID "unexpected condition" cond
-      raise cont cond
-    }
+    rcseh cond
   } {
     edisplay* "command tests:" PID "unexpected non-continuable condition" cond
     raise cont cond
@@ -93,7 +83,7 @@ monitor (function (cont cond) {
   ;; We need to be sure that the OOB handlers are successfully kicked
   ;; off (or not kicked off) so we'll have a couple of functions to
   ;; store and check the Tests number has been incremented OOB (in the
-  ;; main monitor handler and the rcseh functions above) as we expect.
+  ;; main trap handler and the rcseh functions above) as we expect.
 
   ;; Remember, though, the test itself, as written in the rest of this
   ;; block, will increment Tests as well as any potential OOB handler.

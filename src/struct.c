@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -337,8 +337,8 @@ IDIO idio_struct_instance_ref (IDIO si, IDIO field)
     IDIO_TYPE_ASSERT (struct_instance, si);
     IDIO_TYPE_ASSERT (symbol, field);
 
-    IDIO st = IDIO_STRUCT_INSTANCE_TYPE (si);
-    idio_ai_t i = idio_array_find_eqp (IDIO_STRUCT_TYPE_FIELDS (st), field, 0);
+    IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (si);
+    idio_ai_t i = idio_array_find_eqp (IDIO_STRUCT_TYPE_FIELDS (sit), field, 0);
 
     if (-1 == i) {
 	idio_struct_error_field_not_found (field, IDIO_C_LOCATION ("idio_struct_instance_ref"));
@@ -395,13 +395,13 @@ IDIO idio_struct_instance_set (IDIO si, IDIO field, IDIO v)
     IDIO_TYPE_ASSERT (struct_instance, si);
     IDIO_TYPE_ASSERT (symbol, field);
 
-    IDIO st = IDIO_STRUCT_INSTANCE_TYPE (si);
-    idio_ai_t i = idio_array_find_eqp (IDIO_STRUCT_TYPE_FIELDS (st), field, 0);
+    IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (si);
+    idio_ai_t i = idio_array_find_eqp (IDIO_STRUCT_TYPE_FIELDS (sit), field, 0);
 
     if (-1 == i) {
-	idio_debug ("sis!: %s\n", st);
-	idio_debug ("%s\n", si);
-	idio_debug ("%s\n", field);
+	idio_debug ("struct-instance-set!: sit=%s\n", sit);
+	idio_debug ("si=%s\n", si);
+	idio_debug ("field=%s\n", field);
 	idio_error_printf (IDIO_C_LOCATION ("struct-instance-set!"), "field not found");
     }
 

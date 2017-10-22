@@ -46,14 +46,9 @@ array-set! a 1 4
 test (array-ref a 1) 4
 
 ;; generate some OOB errors
-monitor (function (cont cond) {
-  ;; display* "array OOB monitor condition:" (struct-type-name cond)
+trap ^rt-array-bounds-error (function (cont cond) {
   test (rt-array-bounds-error? cond) #t
-  if cont {
-    if (rt-array-bounds-error? cond) {
-      #f
-    } (error "array OOB: unexpected condition" cond)
-  } (error "array OOB: unexpected non-continuable error" cond)
+  if cont #f (error "array OOB: unexpected non-continuable error" cond)
 }) {
   array-ref a 4
   array-ref a -4

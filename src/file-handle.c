@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -654,7 +654,7 @@ static IDIO idio_open_std_file_handle (FILE *filep)
 	return idio_S_unspec;
     }
 
-    return idio_open_file_handle (name, filep, mflag, IDIO_FILE_HANDLE_FLAG_STDIO | IDIO_FILE_HANDLE_FLAG_INTERACTIVE);
+    return idio_open_file_handle (name, filep, mflag, IDIO_FILE_HANDLE_FLAG_STDIO);
 }
 
 IDIO idio_stdin_file_handle ()
@@ -1261,8 +1261,8 @@ IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (
     }
 
 #if IDIO_DEBUG
-    fprintf (stderr, "load-file-handle: %s: elapsed time %ld.%03ld\n", IDIO_HANDLE_NAME (fh), s, (long) us / 1000);
-    idio_debug (" => %s\n", r);
+    /* fprintf (stderr, "load-file-handle: %s: elapsed time %ld.%03ld\n", IDIO_HANDLE_NAME (fh), s, (long) us / 1000); */
+    /* idio_debug (" => %s\n", r); */
 #endif
     
     idio_ai_t ss = idio_array_size (IDIO_THREAD_STACK (thr));

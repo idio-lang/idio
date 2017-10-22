@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -33,7 +33,7 @@ void idio_frame_error_range (IDIO fo, size_t d, size_t i, IDIO loc)
 
     char em[BUFSIZ];
     sprintf (em, "frame #%zd index #%zd is out of range", d, i);
-    idio_error_C (em, fo, loc);
+    idio_error_C (em, IDIO_LIST1 (fo), loc);
 }
 
 IDIO idio_frame_allocate (idio_ai_t arityp1)
@@ -115,6 +115,8 @@ IDIO idio_frame_fetch (IDIO fo, size_t d, size_t i)
     IDIO_ASSERT (fo);
     IDIO_TYPE_ASSERT (frame, fo);
 
+    IDIO ofo = fo;
+    
     for (; d; d--) {
 	fo = IDIO_FRAME_NEXT (fo);
 	IDIO_ASSERT (fo);
@@ -122,7 +124,10 @@ IDIO idio_frame_fetch (IDIO fo, size_t d, size_t i)
     }
 
     if (i >= idio_array_size (IDIO_FRAME_ARGS (fo))) {
-	fprintf (stderr, "\n\nARGS = ");
+	fprintf (stderr, "\n\nidio_frame_fetch (");
+	idio_debug ("%s", ofo);
+	fprintf (stderr, ", %zd, %zd)\n", d, i);
+	fprintf (stderr, "ARGS = ");
 	idio_gc_verboseness (3);
 	idio_dump (IDIO_FRAME_ARGS (fo), 10);
 	idio_gc_verboseness (0);
@@ -184,6 +189,29 @@ IDIO idio_frame_extend (IDIO f1, IDIO f2)
     IDIO_FRAME_NEXT (f2) = f1;
 
     return f2;
+}
+
+IDIO idio_frame_args_as_list (IDIO frame)
+{
+    IDIO_ASSERT (frame);
+    IDIO_TYPE_ASSERT (frame, frame);
+
+    IDIO r = idio_S_nil;
+    
+    IDIO args = IDIO_FRAME_ARGS (frame);
+    idio_ai_t al = idio_array_size (args);
+    if (al > 0) {
+	idio_ai_t i;
+	for (i = 0; i < al - 1; i++) {
+	    r = idio_pair (idio_array_get_index (args, i), r);
+	}
+
+	r = idio_improper_list_reverse (r, idio_array_get_index (args, i));
+    } else {
+	fprintf (stderr, "idio_frame_args_as_list: al == %zd\n", al);
+    }
+
+    return r;
 }
 
 void idio_init_frame ()

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -56,6 +56,8 @@ IDIO idio_write (IDIO o, IDIO args);
 IDIO idio_write_char (IDIO c, IDIO args);
 IDIO idio_display (IDIO o, IDIO args);
 IDIO idio_display_C (char *s, IDIO h);
+
+IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO e, IDIO cs), IDIO cs);
 
 void idio_init_handle ();
 void idio_handle_add_primitives ();

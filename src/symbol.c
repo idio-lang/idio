@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -76,6 +76,8 @@ IDIO_SYMBOL_DECL (lambda);
 IDIO_SYMBOL_DECL (let);
 IDIO_SYMBOL_DECL (letrec);
 IDIO_SYMBOL_DECL (list);
+IDIO_SYMBOL_DECL (load);
+IDIO_SYMBOL_DECL (load_handle);
 IDIO_SYMBOL_DECL (lt);
 IDIO_SYMBOL_DECL (monitor);
 IDIO_SYMBOL_DECL (namespace);
@@ -95,6 +97,7 @@ IDIO_SYMBOL_DECL (setter);
 IDIO_SYMBOL_DECL (super);
 IDIO_SYMBOL_DECL (template);
 IDIO_SYMBOL_DECL (this);
+IDIO_SYMBOL_DECL (trap);
 IDIO_SYMBOL_DECL (unquote);
 IDIO_SYMBOL_DECL (unquotesplicing);
 IDIO_SYMBOL_DECL (unset);
@@ -168,14 +171,14 @@ void idio_free_symbol (IDIO s)
     /* free (s->u.symbol); */
 }
 
-IDIO idio_symbols_C_intern (char *s)
+IDIO idio_symbols_C_intern (char *sym_C)
 {
-    IDIO_C_ASSERT (s);
+    IDIO_C_ASSERT (sym_C);
 
-    IDIO sym = idio_hash_get (idio_symbols_hash, s);
+    IDIO sym = idio_hash_get (idio_symbols_hash, sym_C);
 
     if (idio_S_unspec == sym) {
-	sym = idio_symbol_C (s);
+	sym = idio_symbol_C (sym_C);
 	idio_hash_put (idio_symbols_hash, IDIO_SYMBOL_S (sym), sym);
     }
 
@@ -288,7 +291,17 @@ IDIO_DEFINE_PRIMITIVE1 ("symbol->string", symbol2string, (IDIO s))
 
 IDIO_DEFINE_PRIMITIVE0 ("symbols", symbols, ())
 {
-    return idio_hash_keys_to_list (idio_symbols_hash);
+    /* the hash keys are strings */
+    IDIO strings = idio_hash_keys_to_list (idio_symbols_hash);
+
+    IDIO r = idio_S_nil;
+
+    while (idio_S_nil != strings) {
+	r = idio_pair (idio_symbols_string_intern (IDIO_PAIR_H (strings)), r);
+	strings = IDIO_PAIR_T (strings);
+    }
+
+    return r;
 }
 
 void idio_init_symbol ()
@@ -349,6 +362,8 @@ void idio_init_symbol ()
     IDIO_SYMBOL_DEF ("let", let);
     IDIO_SYMBOL_DEF ("letrec", letrec);
     IDIO_SYMBOL_DEF ("list", list);
+    IDIO_SYMBOL_DEF ("load", load);
+    IDIO_SYMBOL_DEF ("load-handle", load_handle);
     IDIO_SYMBOL_DEF ("<", lt);
     IDIO_SYMBOL_DEF ("monitor", monitor);
     IDIO_SYMBOL_DEF ("namespace", namespace);
@@ -371,6 +386,7 @@ void idio_init_symbol ()
     IDIO_SYMBOL_DEF ("super", super);
     IDIO_SYMBOL_DEF ("template", template);
     IDIO_SYMBOL_DEF ("this", this);
+    IDIO_SYMBOL_DEF ("trap", trap);
     IDIO_SYMBOL_DEF ("unquote", unquote);
     IDIO_SYMBOL_DEF ("unquotesplicing", unquotesplicing);
     IDIO_SYMBOL_DEF ("unset", unset);

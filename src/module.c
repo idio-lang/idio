@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -38,8 +38,8 @@ static IDIO idio_modules_hash = idio_S_nil;
  * idio_vm_values_(ref|set).
  */
 
-static IDIO idio_primitive_module = idio_S_nil;
-static IDIO idio_Idio_module = idio_S_nil;
+IDIO idio_primitive_module = idio_S_nil;
+IDIO idio_Idio_module = idio_S_nil;
 
 void idio_module_error_duplicate_name (IDIO name, IDIO loc)
 {
@@ -644,7 +644,7 @@ IDIO idio_module_symbol_recurse (IDIO symbol, IDIO m_or_n, int recurse)
 	}
     }
 
-    if (idio_S_unspec ==sv &&
+    if (idio_S_unspec == sv &&
 	recurse) {
 	/*
 	 * A final couple of checks in Idio and *primitives*

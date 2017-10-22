@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -139,7 +139,7 @@ define-macro (with-handler handler & body) {
   #T{
     load-k := #n
 
-    monitor (function (cont cond) {
+    trap ^condition (function (cont cond) {
       load-k ($handler cont cond)
     }) {
       call/cc (function (k) {

@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -3125,15 +3125,15 @@ if (file-exists? testfile) (delete-file testfile)
 ;; the semantics of the original test is moot.
 
 ;; Sticking to the original semantics means we do get to play with a
-;; monitor other than in the condition.idio tests.  In this case the
-;; monitor needs only return something (anything, so #t will do) if we
-;; have seen the condition we were expecting under these
+;; trap handler other than in the condition.idio tests.  In this case
+;; the trap handler needs only return something (anything, so #t will
+;; do) if we have seen the condition we were expecting under these
 ;; circumstances.  Any other condition should blow up as you would
 ;; expect.
 
-monitor (function (cont cond) {
+trap ^i/o-closed-error (function (cont cond) {
   if cont {
-    if (i/o-closed-error? cond) #t (error "expecting ^i/o-closed-error" cond)
+    #t
   } (error "expecting a continuable error" cond)
 }) {
   test {

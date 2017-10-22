@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -56,16 +56,13 @@ dynamic-let (dvar-x1 x) {
 
 ;; ^rt-dynamic-variable-unbound-error is raised when calling a
 ;; function where no such variable is in scope
-monitor (function (cont cond) {
-  ;; display* "unbound dynamic monitor condition:" (struct-type-name cond)
+trap ^rt-dynamic-variable-unbound-error (function (cont cond) {
   test (rt-dynamic-variable-unbound-error? cond) #t
   if cont {
-    if (rt-dynamic-variable-unbound-error? cond) {
-      name := condition-ref cond 'name
+    name := condition-ref cond 'name
 
-      ;; we know that test-dvar-x1 in our body was passed x
-      x
-    } (error "unbound dynamic: unexpected condition" cond)
+    ;; we know that test-dvar-x1 in our body was passed x
+    x
   } (error "unbound dynamic: unexpected non-continuable error" cond)
 }) {
   ;; display* "using unbound dynamic variable"

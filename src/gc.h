@@ -263,6 +263,10 @@ typedef struct idio_closure_s {
     struct idio_s *frame;
     struct idio_s *env;
     struct idio_s *properties;
+#ifdef IDIO_VM_PERF
+    uint64_t called;
+    struct timespec call_time;
+#endif
 } idio_closure_t;
 
 #define IDIO_CLOSURE_GREY(C)       ((C)->u.closure->grey)
@@ -270,6 +274,10 @@ typedef struct idio_closure_s {
 #define IDIO_CLOSURE_FRAME(C)      ((C)->u.closure->frame)
 #define IDIO_CLOSURE_ENV(C)        ((C)->u.closure->env)
 #define IDIO_CLOSURE_PROPERTIES(C) ((C)->u.closure->properties)
+#ifdef IDIO_VM_PERF
+#define IDIO_CLOSURE_CALLED(C)     ((C)->u.closure->called)
+#define IDIO_CLOSURE_CALL_TIME(C)  ((C)->u.closure->call_time)
+#endif
 
 /*
  * idio_prinitimve_desc_t is for the static allocation in C of the
@@ -300,6 +308,10 @@ typedef struct idio_primitive_s {
     struct idio_s *properties;
     uint8_t arity;
     char varargs;
+#ifdef IDIO_VM_PERF
+    uint64_t called;
+    struct timespec call_time;
+#endif
 } idio_primitive_t;
 
 #define IDIO_PRIMITIVE_GREY(P)       ((P)->u.primitive->grey)
@@ -308,6 +320,10 @@ typedef struct idio_primitive_s {
 #define IDIO_PRIMITIVE_PROPERTIES(P) ((P)->u.primitive->properties)
 #define IDIO_PRIMITIVE_ARITY(P)      ((P)->u.primitive->arity)
 #define IDIO_PRIMITIVE_VARARGS(P)    ((P)->u.primitive->varargs)
+#ifdef IDIO_VM_PERF
+#define IDIO_PRIMITIVE_CALLED(P)     ((P)->u.primitive->called)
+#define IDIO_PRIMITIVE_CALL_TIME(P)  ((P)->u.primitive->call_time)
+#endif
 
 typedef struct idio_module_s {
     struct idio_s *grey;
@@ -485,6 +501,12 @@ typedef struct idio_thread_s {
     struct idio_s *handler_sp;
 
     /*
+     * trap_sp is the SP of the current trap with SP-2 containing the
+     * SP of the next trap
+     */
+    struct idio_s *trap_sp;
+
+    /*
      * jmp_buf is used to clear the C-stack
      *
      * NB it is a pointer to a C stack variable
@@ -523,6 +545,7 @@ typedef struct idio_thread_s {
 #define IDIO_THREAD_FRAME(T)          ((T)->u.thread->frame)
 #define IDIO_THREAD_ENV(T)            ((T)->u.thread->env)
 #define IDIO_THREAD_HANDLER_SP(T)     ((T)->u.thread->handler_sp)
+#define IDIO_THREAD_TRAP_SP(T)        ((T)->u.thread->trap_sp)
 #define IDIO_THREAD_JMP_BUF(T)        ((T)->u.thread->jmp_buf)
 #define IDIO_THREAD_DYNAMIC_SP(T)     ((T)->u.thread->dynamic_sp)
 #define IDIO_THREAD_ENVIRON_SP(T)     ((T)->u.thread->environ_sp)
@@ -563,10 +586,10 @@ typedef struct idio_continuation_s {
 /*
  * Who called longjmp?  
  */
-#define IDIO_VM_LONGJMP_SIGNAL_EXCEPTION 1
-#define IDIO_VM_LONGJMP_CONTINUATION     2
-#define IDIO_VM_LONGJMP_CALLCC		 3
-#define IDIO_VM_LONGJMP_EVENT		 4
+#define IDIO_VM_LONGJMP_CONDITION	1
+#define IDIO_VM_LONGJMP_CONTINUATION    2
+#define IDIO_VM_LONGJMP_CALLCC		3
+#define IDIO_VM_LONGJMP_EVENT		4
 
 typedef struct idio_C_pointer_s {
     void *p;
@@ -769,6 +792,7 @@ typedef struct idio_root_s {
 typedef struct idio_gc_s {
     struct idio_gc_s *next;
     idio_root_t *roots;
+    IDIO dynamic_roots;
     IDIO free;
     IDIO used;
     IDIO grey;
@@ -921,6 +945,7 @@ void IDIO_FPRINTF (FILE *stream, const char *format, ...);
 void idio_gc_dump ();
 void idio_gc_stats_inc (idio_type_e type);
 void idio_gc_protect (IDIO o);
+void idio_gc_protect_auto (IDIO o);
 void idio_gc_expose (IDIO o);
 void idio_gc_expose_all ();
 void idio_gc_mark ();

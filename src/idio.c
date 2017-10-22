@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -22,8 +22,22 @@
 
 #include "idio.h"
 
+#ifdef IDIO_VM_PERF
+#define IDIO_VM_PERF_FILE_NAME "vm-perf.log"
+FILE *idio_vm_perf_FILE;
+#endif
+
 void idio_init (int argc, char **argv)
 {
+
+#ifdef IDIO_VM_PERF
+    idio_vm_perf_FILE = fopen (IDIO_VM_PERF_FILE_NAME, "w");
+    if (NULL == idio_vm_perf_FILE) {
+	perror ("fopen " IDIO_VM_PERF_FILE_NAME);
+	exit (1);
+    }
+#endif
+
     /* GC first then symbol for the symbol table then modules */
     idio_init_gc ();
     idio_init_vm_values ();
@@ -82,6 +96,7 @@ void idio_init (int argc, char **argv)
     idio_module_set_symbol_value (idio_symbols_C_intern ("ARGC"), idio_integer (argc - 1), idio_Idio_module_instance ());
     idio_module_set_symbol_value (idio_symbols_C_intern ("ARGV"), args, idio_Idio_module_instance ());
 
+    idio_add_primitives ();
 }
 
 void idio_add_primitives ()
@@ -184,23 +199,142 @@ void idio_final ()
     idio_final_symbol ();
 
     idio_final_gc ();
+
+#ifdef IDIO_VM_PERF
+    if (fclose (idio_vm_perf_FILE)) {
+	perror ("fclose " IDIO_VM_PERF_FILE_NAME);
+    }
+    idio_vm_perf_FILE = stderr;
+#endif
 }
 
 int main (int argc, char **argv, char **envp)
 {
     idio_init (argc, argv);
-    idio_add_primitives ();
 
     idio_env_init_idiolib (argv[0]);
-    
+
+    IDIO thr = idio_thread_current_thread ();
+
+    /*
+     * Conditions raised during the bootstrap will need a setjmp in
+     * place.  As the only place we can longjmp back to is here then
+     * any kind of condition raised during bootstrap is a precursor to
+     * bailing out.  Probably a good thing.
+     *
+     * Of course we don't want to come back here (immediately prior to
+     * looping over argc/argv) if the condition was raised whilst
+     * processing argc/argv so there are separate setjmp statements
+     * for each "load" alternative.
+     *
+     * That said, so long as we can get as far as the code in
+     * idio_vm_run() then we'll get a per-run setjmp which will
+     * override this.
+     */
+    jmp_buf jb;
+    IDIO_THREAD_JMP_BUF (thr) = &jb;
+
+    int sjv = setjmp (*(IDIO_THREAD_JMP_BUF (thr)));
+
+    switch (sjv) {
+    case 0:
+	break;
+    default:
+	fprintf (stderr, "setjmp: bootstrap failed with sjv %d\n", sjv);
+	exit (1);
+	break;
+    }
+
     idio_load_file (idio_string_C ("bootstrap"), idio_vm_constants);
 
     if (argc > 1) {
+	/*
+	 * idio_command_interactive is set to 1 if isatty (0) is true
+	 * however we are about to loop over files in a
+	 * non-interactive way.  So turn it off.
+	 */	
+	idio_command_interactive = 0;
+
+	/*
+	 * Dig out the (post-bootstrap) definition of "load" which
+	 * will now have continuation and module support
+	 */
+	IDIO load = idio_module_symbol_value (idio_S_load, idio_Idio_module_instance (), IDIO_LIST1 (idio_S_false));
+	if (idio_S_false == load) {
+	    idio_error_C ("cannot lookup 'load'", idio_S_nil, IDIO_C_LOCATION ("main"));
+	}
+
 	int i;
 	for (i = 1 ; i < argc; i++) {
-	    idio_load_file (idio_string_C (argv[i]), idio_vm_constants);
+	    fprintf (stderr, "load %s\n", argv[i]);
+
+	    /*
+	     * If we're given a sequence of files to load then any
+	     * conditions raised (prior to the idio_vm_run() setjmp
+	     * being invoked) should bring us back here and we can
+	     * bail.
+	     *
+	     * What might that be?  Well, we try to invoke the Idio
+	     * function "load" which has several variants: a primitive
+	     * (file-handle.c); a basic continuation error catcher
+	     * (common.idio); a module/load variant (module.idio).
+	     *
+	     * It's entirely possible a condition can be raised in
+	     * that code for which we need a suitable setjmp for the
+	     * condition to longjmp to.
+	     *
+	     * Given that all we do is bail we could have just left it
+	     * with the "bootstrap" setjmp outside of this
+	     * condition/loop but at least here we can print the
+	     * offending filename in case no-one else did.
+	     */
+	    jmp_buf jb;
+	    IDIO_THREAD_JMP_BUF (thr) = &jb;
+	    sjv = setjmp (*(IDIO_THREAD_JMP_BUF (thr)));
+
+	    switch (sjv) {
+	    case 0:
+		idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST2 (load, idio_string_C (argv[i])));
+		/* idio_load_file (idio_string_C (argv[i]), idio_vm_constants); */
+		break;
+	    default:
+		fprintf (stderr, "setjmp: load %s: failed with sjv %d\n", argv[i], sjv);
+		exit (1);
+		break;
+	    }
 	}
     } else {
+	/*
+	 * idio_command_interactive is set to 1 if isatty (0) is true
+	 * and so will be 0 if stdin is a file (or other non-tty
+	 * entity).
+	 */
+	
+	/*
+	 * See commentary above re: setjmp.
+	 */
+	sjv = setjmp (*(IDIO_THREAD_JMP_BUF (thr)));
+
+	switch (sjv) {
+	case 0:
+	    break;
+	case IDIO_VM_LONGJMP_CONDITION:
+	    fprintf (stderr, "REPL: longjmp from condition\n");  
+	    break;
+	case IDIO_VM_LONGJMP_CONTINUATION:
+	    fprintf (stderr, "REPL: longjmp from continuation\n");  
+	    break;
+	case IDIO_VM_LONGJMP_CALLCC:
+	    fprintf (stderr, "REPL: longjmp from callcc\n");  
+	    break;
+	case IDIO_VM_LONGJMP_EVENT:
+	    fprintf (stderr, "REPL: longjmp from event\n");  
+	    break;
+	default:
+	    fprintf (stderr, "setjmp: repl failed with sjv %d\n", sjv);
+	    exit (1);
+	    break;
+	}
 	/* repl */
 	idio_load_filehandle (idio_thread_current_input_handle (), idio_read, idio_evaluate, idio_vm_constants);
     }

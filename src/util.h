@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -36,6 +36,7 @@ int idio_equal (IDIO o1, IDIO o2, int eqp);
 IDIO idio_value (IDIO o);
 char *idio_as_string (IDIO o, int depth);
 char *idio_display_string (IDIO o);
+const char *idio_vm_bytecode2string (int code);
 void idio_as_flat_string (IDIO o, char **argv, int *i);
 IDIO idio_list_mapcar (IDIO l);
 IDIO idio_list_mapcdr (IDIO l);
@@ -43,6 +44,7 @@ IDIO idio_list_memq (IDIO k, IDIO l);
 IDIO idio_list_assq (IDIO k, IDIO l);
 IDIO idio_list_set_difference (IDIO set1, IDIO set2);
 void idio_dump (IDIO o, int detail);
+void idio_debug_FILE (FILE *file, const char *fmt, IDIO o);
 void idio_debug (const char *fmt, IDIO o);
 
 #if ! defined (strnlen)

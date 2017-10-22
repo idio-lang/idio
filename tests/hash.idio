@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -31,13 +31,10 @@ test (hash-size ht) 1
 test (hash-exists? ht 'a) #t
 test (hash-ref ht 'a) 3
 
-monitor (function (cont cond) {
-  ;; display* "hash key not found monitor condition:" (struct-type-name cond)
+trap ^rt-hash-key-not-found (function (cont cond) {
   test (rt-hash-key-not-found? cond) #t
   if cont {
-    if (rt-hash-key-not-found? cond) {
-      #f
-    } (error "hash key not found: unexpected condition" cond)
+    #f
   } (error "hash key not found: unexpected non-continuable error" cond)
 }) {
   test (hash-ref ht 'b) #f
@@ -187,21 +184,18 @@ test (hash-ref ht 2) "banana"
 ;; we have to loop over a few until one collides -- once we've
 ;; "collided" with all the default #n keys that exist in a new hash.
 done := #f
-monitor (function (cont cond) {
-  ;; display* "hash equivalence function fail monitor condition:" (struct-type-name cond)
+trap ^rt-parameter-type-error (function (cont cond) {
   if cont {
-    if (rt-parameter-type-error? cond) {
-      ;; NB only increment the test count once as ht-integer-eq? might
-      ;; be called several times when a key collides in which case
-      ;; we'll get an error riased several times.
-      if (not done) (test #t #t)
+    ;; NB only increment the test count once as ht-integer-eq? might
+    ;; be called several times when a key collides in which case we'll
+    ;; get an error riased several times.
+    if (not done) (test #t #t)
 
-      ;; set done
-      done = #t
+    ;; set done
+    done = #t
 
-      ;; return #f (to ht-integer-eq?, hopefully)
-      #f
-    } (error "hash equivalence function fail: unexpected condition" cond)
+    ;; return #f (to ht-integer-eq?, hopefully)
+    #f
   } (error "hash equivalence function fail: unexpected non-continuable error" cond) 
 }) {
   ;; need plenty of values to provoke a key collision
@@ -248,8 +242,8 @@ ht-integer-hash := {
     if (not (integer? v)) {
       c := make-condition ^rt-parameter-type-error "not an integer" 'ht-integer-hash v
 
-      ;; WARNING: our monitor (below) will return 0 as the result of
-      ;; this {raise}.  Hence we cannot fall through to the call to
+      ;; WARNING: our trap handler (below) will return 0 as the result
+      ;; of this {raise}.  Hence we cannot fall through to the call to
       ;; {remainder} as it will still generate a non-cont
       ;; ^rt-parameter-type-error as {v} is unchanged.
       ;;
@@ -257,9 +251,9 @@ ht-integer-hash := {
       ;; that it, in turn, returns the 0.
       ;;
       ;;   Or we could assign to {v} or something but at this point we
-      ;;   know we've failed (and set {done} in the monitor) so
+      ;;   know we've failed (and set {done} in the trap handler) so
       ;;   there's no point in any further calculation.  Return
-      ;;   whatever the monitor gave us and be done with it.
+      ;;   whatever the trap handler gave us and be done with it.
       raise #t c
     } {
       remainder v bound
@@ -290,22 +284,19 @@ test (hash-ref ht 2) "banana"
 ;; we have to loop over a few until one collides -- once we've
 ;; "collided" with all the #n keys that exist in a new hash.
 done := #f
-monitor (function (cont cond) {
-  ;; display* "hash hash function fail monitor condition:" (struct-type-name cond)
+trap ^rt-parameter-type-error (function (cont cond) {
   if cont {
-    if (rt-parameter-type-error? cond) {
-      ;; NB only increment the test count once as ht-integer-hash
-      ;; might be called several times when a key collides in which
-      ;; case we'll get an error riased several times.
-      if (not done) (test #t #t)
+    ;; NB only increment the test count once as ht-integer-hash might
+    ;; be called several times when a key collides in which case we'll
+    ;; get an error riased several times.
+    if (not done) (test #t #t)
 
-      ;; set done
-      done = #t
+    ;; set done
+    done = #t
 
-      ;; return 0 (to ht-integer-hash, which returns it to the
-      ;; internals of hash-set!)
-      0
-    } (error "hash hash function fail: unexpected condition" cond)
+    ;; return 0 (to ht-integer-hash, which returns it to the internals
+    ;; of hash-set!)
+    0
   } (error "hash hash function fail: unexpected non-continuable error" cond)
 }) {
   ;; need plenty of values to provoke a key collision

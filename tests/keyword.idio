@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -42,13 +42,10 @@ kw-table := (make-keyword-table)
 
 test (keyword-get kw-table :a #f) #f
 
-monitor (function (cont cond) {
-  ;; display* "hash key not found monitor condition:" (struct-type-name cond)
+trap ^rt-hash-key-not-found (function (cont cond) {
   test (rt-hash-key-not-found? cond) #t
   if cont {
-    if (rt-hash-key-not-found? cond) {
-      #f
-    } (error "hash key not found: unexpected condition" cond)
+    #f
   } (error "hash key not found: unexpected non-continuable error" cond)
 }) {
   test (keyword-get kw-table :a) #f

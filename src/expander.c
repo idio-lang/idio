@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -29,7 +29,7 @@
 IDIO idio_expander_module = idio_S_nil;
 static IDIO idio_expander_list = idio_S_nil;
 static IDIO idio_expander_list_src = idio_S_nil;
-static IDIO idio_expander_thread = idio_S_nil;
+IDIO idio_expander_thread = idio_S_nil;
 
 IDIO idio_operator_module = idio_S_nil;
 static IDIO idio_infix_operator_list = idio_S_nil;
@@ -1171,12 +1171,6 @@ void idio_init_expander ()
 
 void idio_expander_add_primitives ()
 {
-    idio_expander_thread = idio_thread (40);
-    idio_gc_protect (idio_expander_thread);
-
-    /* IDIO_THREAD_MODULE (idio_expander_thread) = idio_expander_module; */
-    IDIO_THREAD_PC (idio_expander_thread) = 1;
-
     IDIO_ADD_PRIMITIVE (expanderp);
     IDIO_ADD_EXPANDER (let);
     IDIO_ADD_EXPANDER (lets);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -16,7 +16,7 @@
  */
 
 /*
- * thr.c
+ * thread.c
  * 
  */
 
@@ -26,7 +26,7 @@ static IDIO idio_running_threads;
 
 static IDIO idio_running_thread = idio_S_nil;
 
-IDIO idio_thread (idio_ai_t stack_size)
+IDIO idio_thread_base (idio_ai_t stack_size)
 {
     IDIO t = idio_gc_get (IDIO_TYPE_THREAD);
 
@@ -42,7 +42,15 @@ IDIO idio_thread (idio_ai_t stack_size)
     IDIO_THREAD_VAL (t) = idio_S_unspec;
     IDIO_THREAD_FRAME (t) = idio_S_nil;
     IDIO_THREAD_ENV (t) = main_module;
+
+    /*
+     * 0 is used as a marker for bootstrapping the first thread when
+     * there are no previous monitor/trap handlers -- see
+     * idio_vm_thread_init
+     */
     IDIO_THREAD_HANDLER_SP (t) = idio_fixnum (0);
+    IDIO_THREAD_TRAP_SP (t) = idio_fixnum (0);
+    
     IDIO_THREAD_DYNAMIC_SP (t) = idio_fixnum (-1);
     IDIO_THREAD_ENVIRON_SP (t) = idio_fixnum (-1);
     IDIO_THREAD_JMP_BUF (t) = NULL;
@@ -54,6 +62,13 @@ IDIO idio_thread (idio_ai_t stack_size)
     IDIO_THREAD_ERROR_HANDLE (t) = idio_stderr_file_handle ();
     IDIO_THREAD_MODULE (t) = main_module;
 
+    return t;
+}
+
+IDIO idio_thread (idio_ai_t stack_size)
+{
+    IDIO t = idio_thread_base (stack_size);
+    
     idio_vm_thread_init (t);
 
     return t;
@@ -206,12 +221,23 @@ void idio_init_thread ()
 
 void idio_thread_add_primitives ()
 {
-    idio_running_thread = idio_thread (40);
+    /*
+     * Required by environ stuff during add_primitives...
+     */
+    idio_running_thread = idio_thread_base (40);
 }
 
 void idio_init_first_thread ()
 {
+    idio_vm_thread_init (idio_running_thread);
     idio_array_push (idio_running_threads, idio_running_thread);
+
+    idio_expander_thread = idio_thread (40);
+    idio_gc_protect (idio_expander_thread);
+
+    /* IDIO_THREAD_MODULE (idio_expander_thread) = idio_expander_module; */
+    IDIO_THREAD_PC (idio_expander_thread) = 1;
+
 }
 
 void idio_final_thread ()

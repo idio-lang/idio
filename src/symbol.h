@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -78,6 +78,8 @@ extern IDIO_SYMBOL_DECL (lambda);
 extern IDIO_SYMBOL_DECL (let);
 extern IDIO_SYMBOL_DECL (letrec);
 extern IDIO_SYMBOL_DECL (list);
+extern IDIO_SYMBOL_DECL (load);
+extern IDIO_SYMBOL_DECL (load_handle);
 extern IDIO_SYMBOL_DECL (lt);
 extern IDIO_SYMBOL_DECL (monitor);
 extern IDIO_SYMBOL_DECL (namespace);
@@ -97,6 +99,7 @@ extern IDIO_SYMBOL_DECL (setter);
 extern IDIO_SYMBOL_DECL (super);
 extern IDIO_SYMBOL_DECL (template);
 extern IDIO_SYMBOL_DECL (this);
+extern IDIO_SYMBOL_DECL (trap);
 extern IDIO_SYMBOL_DECL (unquote);
 extern IDIO_SYMBOL_DECL (unquotesplicing);
 extern IDIO_SYMBOL_DECL (unset);

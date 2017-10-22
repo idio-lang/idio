@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -2484,19 +2484,96 @@ static IDIO idio_meaning_computed_reference (IDIO name, IDIO nametree, int flags
     return idio_meaning_reference (name, nametree, IDIO_MEANING_COMPUTED_SCOPE (flags), cs);
 }
 
-static IDIO idio_meaning_monitor (IDIO e, IDIO ep, IDIO nametree, int flags, IDIO cs)
+static IDIO idio_meaning_monitor (IDIO he, IDIO be, IDIO nametree, int flags, IDIO cs)
 {
-    IDIO_ASSERT (e);
-    IDIO_ASSERT (ep);
+    IDIO_ASSERT (he);
+    IDIO_ASSERT (be);
     IDIO_ASSERT (nametree);
     IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (list, nametree);
     IDIO_TYPE_ASSERT (array, cs);
 
-    IDIO m = idio_meaning (e, nametree, IDIO_MEANING_NOT_TAILP (flags), cs);
-    IDIO mp = idio_meaning_sequence (ep, nametree, IDIO_MEANING_NOT_TAILP (flags), idio_S_begin, cs);
+    he = idio_rewrite_body (he);
+    be = idio_rewrite_body (be);
+        
+    IDIO mh = idio_meaning (he, nametree, IDIO_MEANING_NOT_TAILP (flags), cs);
+    IDIO mb = idio_meaning_sequence (be, nametree, IDIO_MEANING_NOT_TAILP (flags), idio_S_begin, cs);
+    
+    return IDIO_LIST4 (mh, IDIO_LIST1 (idio_I_PUSH_HANDLER), mb, IDIO_LIST1 (idio_I_POP_HANDLER));
+}
 
-    return IDIO_LIST4 (m, IDIO_LIST1 (idio_I_PUSH_HANDLER), mp, IDIO_LIST1 (idio_I_POP_HANDLER));
+/*
+ * (trap condition       handler body ...)
+ * (trap (condition ...) handler body ...)
+ *
+ * This is a bit complicated as condition can be a list.  For each
+ * condition in the list we want to use *the same* handler code.  So
+ * our intermediate code wants to leave the closure for the handler in
+ * *val* then have a sequence of "PUSH_TRAP n" statements all re-using
+ * the handler in *val* then the body code then a matching sequence of
+ * POP_TRAP statements.
+ */
+static IDIO idio_meaning_trap (IDIO ce, IDIO he, IDIO be, IDIO nametree, int flags, IDIO cs)
+{
+    IDIO_ASSERT (ce);
+    IDIO_ASSERT (he);
+    IDIO_ASSERT (be);
+    IDIO_ASSERT (nametree);
+    IDIO_ASSERT (cs);
+    IDIO_TYPE_ASSERT (list, nametree);
+    IDIO_TYPE_ASSERT (array, cs);
+
+    /*
+     * We need the meaning of handler now as it'll be used by all the
+     * traps.
+     */
+    he = idio_rewrite_body (he);
+    
+    IDIO mh = idio_meaning (he, nametree, IDIO_MEANING_NOT_TAILP (flags), cs);
+
+    /*
+     * if the condition expression is not a list then make it one
+     */
+    if (! idio_isa_pair (ce)) {
+	ce = IDIO_LIST1 (ce);
+    }
+
+    /*
+     * For each condition, resolve/discover the condition's name then
+     * build pushs with the fmci.
+     *
+     * pushs is now the the reverse order of ce
+     */
+    IDIO pushs = idio_S_nil;
+    IDIO pops = idio_S_nil;
+
+    while (idio_S_nil != ce) {
+	IDIO cname = IDIO_PAIR_H (ce);
+
+	IDIO fmci;
+	IDIO sk = idio_module_symbol (cname, idio_evaluation_module);
+
+	if (idio_S_unspec != sk) {
+	    fmci = IDIO_PAIR_HT (sk);
+	} else {
+	    fmci = idio_toplevel_extend (cname, IDIO_MEANING_LEXICAL_SCOPE (flags), cs);
+	}
+
+	pushs = idio_pair (IDIO_LIST2 (idio_I_PUSH_TRAP, fmci), pushs);
+	pops = idio_pair (IDIO_LIST1 (idio_I_POP_TRAP), pops);
+	
+	ce = IDIO_PAIR_T (ce);
+    }
+    
+    be = idio_rewrite_body (be);
+    
+    IDIO mb = idio_meaning_sequence (be, nametree, IDIO_MEANING_NOT_TAILP (flags), idio_S_begin, cs);
+
+    IDIO r = idio_list_append2 (IDIO_LIST1 (mh), pushs);
+    r = idio_list_append2 (r, IDIO_LIST1 (mb));
+    r = idio_list_append2 (r, pops);
+
+    return r;
 }
 
 static IDIO idio_meaning_include (IDIO e, IDIO nametree, int flags, IDIO cs)
@@ -2872,6 +2949,27 @@ static IDIO idio_meaning (IDIO e, IDIO nametree, int flags, IDIO cs)
 		return idio_meaning_monitor (IDIO_PAIR_H (et), IDIO_PAIR_T (et), nametree, flags, cs);
 	    } else {
 		idio_error_param_nil ("(monitor)", IDIO_C_LOCATION ("idio_meaning"));
+		return idio_S_unspec;
+	    }
+	} else if (idio_S_trap == eh) {
+	    /*
+	     * (trap condition       handler body ...)
+	     * (trap (condition ...) handler body ...)
+	     */
+	    if (idio_isa_pair (et)) {
+		IDIO ett = IDIO_PAIR_T (et);
+		if (idio_isa_pair (ett)) {
+		    IDIO ettt = IDIO_PAIR_T (ett);
+		    if (idio_isa_pair (ettt)) {
+			return idio_meaning_trap (IDIO_PAIR_H (et), IDIO_PAIR_H (ett), IDIO_PAIR_H (ettt), nametree, flags, cs);
+		    } else {
+			idio_error_param_type ("pair", ettt, IDIO_C_LOCATION ("idio_meaning"));
+		    }
+		} else {
+		    idio_error_param_type ("pair", ett, IDIO_C_LOCATION ("idio_meaning"));
+		}
+	    } else {
+		idio_error_param_nil ("(trap)", IDIO_C_LOCATION ("idio_meaning"));
 		return idio_S_unspec;
 	    }
 	} else if (idio_S_include == eh) {

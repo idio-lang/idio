@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -33,6 +33,8 @@ void idio_free_frame (IDIO fo);
 IDIO idio_frame_fetch (IDIO fo, size_t d, size_t i);
 void idio_frame_update (IDIO fo, size_t d, size_t i, IDIO v);
 IDIO idio_frame_extend (IDIO f1, IDIO f2);
+
+IDIO idio_frame_args_as_list (IDIO frame);
 
 void idio_init_frame (void);
 void idio_frame_add_primitives (void);

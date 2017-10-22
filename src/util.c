@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -674,6 +674,8 @@ char *idio_as_string (IDIO o, int depth)
 	    case IDIO_VM_CODE_ENVIRON_REF:                 t = "ENVIRON-REF";                 break;
 	    case IDIO_VM_CODE_PUSH_HANDLER:                t = "PUSH-HANDLER";                break;
 	    case IDIO_VM_CODE_POP_HANDLER:                 t = "POP-HANDLER";                 break;
+	    case IDIO_VM_CODE_PUSH_TRAP:                   t = "PUSH-TRAP";                break;
+	    case IDIO_VM_CODE_POP_TRAP:                    t = "POP-TRAP";                 break;
 	    case IDIO_VM_CODE_AND:                         t = "AND";                         break;
 	    case IDIO_VM_CODE_OR:                          t = "OR";                          break;
 	    case IDIO_VM_CODE_BEGIN:                       t = "BEGIN";                       break;
@@ -1084,10 +1086,10 @@ char *idio_as_string (IDIO o, int depth)
 			idio_error_alloc ("asprintf");
 		    }
 
-		    IDIO st = IDIO_STRUCT_INSTANCE_TYPE (o);
-		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_STRUCT_TYPE_NAME (st), 1));
+		    IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (o);
+		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_STRUCT_TYPE_NAME (sit), 1));
 		    
-		    IDIO stf = IDIO_STRUCT_TYPE_FIELDS (st);
+		    IDIO stf = IDIO_STRUCT_TYPE_FIELDS (sit);
 		    IDIO sif = IDIO_STRUCT_INSTANCE_FIELDS (o);
 
 		    idio_ai_t al = idio_array_size (stf);
@@ -1132,6 +1134,8 @@ char *idio_as_string (IDIO o, int depth)
 		    }
 		    IDIO_STRCAT (r, " env=");
 		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_ENV (o), 1));
+		    IDIO_STRCAT (r, " t/sp=");
+		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_TRAP_SP (o), 1));
 		    IDIO_STRCAT (r, " h/sp=");
 		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_HANDLER_SP (o), 1));
 		    IDIO_STRCAT (r, " d/sp=");
@@ -1359,6 +1363,174 @@ char *idio_display_string (IDIO o)
 	break;
     }
     
+    return r;
+}
+
+const char *idio_vm_bytecode2string (int code)
+{
+    char *r;
+
+    switch (code) {
+    case IDIO_A_SHALLOW_ARGUMENT_REF0: r = "SHALLOW_ARGUMENT_REF0"; break;
+    case IDIO_A_SHALLOW_ARGUMENT_REF1: r = "SHALLOW_ARGUMENT_REF1"; break;
+    case IDIO_A_SHALLOW_ARGUMENT_REF2: r = "SHALLOW_ARGUMENT_REF2"; break;
+    case IDIO_A_SHALLOW_ARGUMENT_REF3: r = "SHALLOW_ARGUMENT_REF3"; break;
+    case IDIO_A_SHALLOW_ARGUMENT_REF: r = "SHALLOW_ARGUMENT_REF"; break;
+    case IDIO_A_DEEP_ARGUMENT_REF: r = "DEEP_ARGUMENT_REF"; break;
+    case IDIO_A_GLOBAL_REF: r = "GLOBAL_REF"; break;
+    case IDIO_A_CHECKED_GLOBAL_REF: r = "CHECKED_GLOBAL_REF"; break;
+    case IDIO_A_CHECKED_GLOBAL_FUNCTION_REF: r = "CHECKED_GLOBAL_FUNCTION_REF"; break;
+    case IDIO_A_CONSTANT_REF: r = "CONSTANT_REF"; break;
+    case IDIO_A_PREDEFINED0: r = "PREDEFINED0"; break;
+
+    case IDIO_A_COMPUTED_REF: r = "COMPUTED_REF"; break;
+    case IDIO_A_PREDEFINED1: r = "PREDEFINED1"; break;
+    case IDIO_A_PREDEFINED2: r = "PREDEFINED2"; break;
+    case IDIO_A_PREDEFINED3: r = "PREDEFINED3"; break;
+    case IDIO_A_PREDEFINED4: r = "PREDEFINED4"; break;
+    case IDIO_A_PREDEFINED5: r = "PREDEFINED5"; break;
+    case IDIO_A_PREDEFINED6: r = "PREDEFINED6"; break;
+    case IDIO_A_PREDEFINED7: r = "PREDEFINED7"; break;
+    case IDIO_A_PREDEFINED8: r = "PREDEFINED8"; break;
+    case IDIO_A_PREDEFINED: r = "PREDEFINED"; break;
+
+    case IDIO_A_SHALLOW_ARGUMENT_SET0: r = "SHALLOW_ARGUMENT_SET0"; break;
+    case IDIO_A_SHALLOW_ARGUMENT_SET1: r = "SHALLOW_ARGUMENT_SET1"; break;
+    case IDIO_A_SHALLOW_ARGUMENT_SET2: r = "SHALLOW_ARGUMENT_SET2"; break;
+    case IDIO_A_SHALLOW_ARGUMENT_SET3: r = "SHALLOW_ARGUMENT_SET3"; break;
+    case IDIO_A_SHALLOW_ARGUMENT_SET: r = "SHALLOW_ARGUMENT_SET"; break;
+    case IDIO_A_DEEP_ARGUMENT_SET: r = "DEEP_ARGUMENT_SET"; break;
+    case IDIO_A_GLOBAL_DEF: r = "GLOBAL_DEF"; break;
+    case IDIO_A_GLOBAL_SET: r = "GLOBAL_SET"; break;
+    case IDIO_A_COMPUTED_SET: r = "COMPUTED_SET"; break;
+    case IDIO_A_COMPUTED_DEFINE: r = "COMPUTED_DEFINE"; break;
+
+    case IDIO_A_LONG_GOTO: r = "LONG_GOTO"; break;
+    case IDIO_A_LONG_JUMP_FALSE: r = "LONG_JUMP_FALSE"; break;
+    case IDIO_A_SHORT_GOTO: r = "SHORT_GOTO"; break;
+    case IDIO_A_SHORT_JUMP_FALSE: r = "SHORT_JUMP_FALSE"; break;
+
+    case IDIO_A_PUSH_VALUE: r = "PUSH_VALUE"; break;
+    case IDIO_A_POP_VALUE: r = "POP_VALUE"; break;
+    case IDIO_A_POP_REG1: r = "POP_REG1"; break;
+    case IDIO_A_POP_REG2: r = "POP_REG2"; break;
+    case IDIO_A_POP_FUNCTION: r = "POP_FUNCTION"; break;
+    case IDIO_A_PRESERVE_STATE: r = "PRESERVE_STATE"; break;
+    case IDIO_A_RESTORE_STATE: r = "RESTORE_STATE"; break;
+    case IDIO_A_CREATE_CLOSURE: r = "CREATE_CLOSURE"; break;
+
+    case IDIO_A_RESTORE_ALL_STATE: r = "RESTORE_ALL_STATE"; break;
+    case IDIO_A_FUNCTION_INVOKE: r = "FUNCTION_INVOKE"; break;
+    case IDIO_A_FUNCTION_GOTO: r = "FUNCTION_GOTO"; break;
+    case IDIO_A_RETURN: r = "RETURN"; break;
+    case IDIO_A_FINISH: r = "FINISH"; break;
+
+    case IDIO_A_ALLOCATE_FRAME1: r = "ALLOCATE_FRAME1"; break;
+    case IDIO_A_ALLOCATE_FRAME2: r = "ALLOCATE_FRAME2"; break;
+    case IDIO_A_ALLOCATE_FRAME3: r = "ALLOCATE_FRAME3"; break;
+    case IDIO_A_ALLOCATE_FRAME4: r = "ALLOCATE_FRAME4"; break;
+    case IDIO_A_ALLOCATE_FRAME5: r = "ALLOCATE_FRAME5"; break;
+    case IDIO_A_ALLOCATE_FRAME: r = "ALLOCATE_FRAME"; break;
+    case IDIO_A_POP_FRAME0: r = "POP_FRAME0"; break;
+
+    case IDIO_A_ALLOCATE_DOTTED_FRAME: r = "ALLOCATE_DOTTED_FRAME"; break;
+    case IDIO_A_POP_FRAME1: r = "POP_FRAME1"; break;
+    case IDIO_A_POP_FRAME2: r = "POP_FRAME2"; break;
+    case IDIO_A_POP_FRAME3: r = "POP_FRAME3"; break;
+    case IDIO_A_EXTEND_FRAME: r = "EXTEND_FRAME"; break;
+
+    case IDIO_A_POP_FRAME: r = "POP_FRAME"; break;
+    case IDIO_A_UNLINK_FRAME: r = "UNLINK_FRAME"; break;
+    case IDIO_A_PACK_FRAME: r = "PACK_FRAME"; break;
+    case IDIO_A_POP_CONS_FRAME: r = "POP_CONS_FRAME"; break;
+
+    case IDIO_A_ARITY1P: r = "ARITY1P"; break;
+    case IDIO_A_ARITY2P: r = "ARITY2P"; break;
+    case IDIO_A_ARITY3P: r = "ARITY3P"; break;
+    case IDIO_A_ARITY4P: r = "ARITY4P"; break;
+    case IDIO_A_ARITYEQP: r = "ARITYEQP"; break;
+    case IDIO_A_ARITYGEP: r = "ARITYGEP"; break;
+
+    case IDIO_A_SHORT_NUMBER: r = "SHORT_NUMBER"; break;
+    case IDIO_A_SHORT_NEG_NUMBER: r = "SHORT_NEG_NUMBER"; break;
+    case IDIO_A_CONSTANT_0: r = "CONSTANT_0"; break;
+    case IDIO_A_CONSTANT_1: r = "CONSTANT_1"; break;
+    case IDIO_A_CONSTANT_2: r = "CONSTANT_2"; break;
+    case IDIO_A_CONSTANT_3: r = "CONSTANT_3"; break;
+    case IDIO_A_CONSTANT_4: r = "CONSTANT_4"; break;
+
+    case IDIO_A_PRIMCALL0_NEWLINE: r = "PRIMCALL0_NEWLINE"; break;
+    case IDIO_A_PRIMCALL0_READ: r = "PRIMCALL0_READ"; break;
+    case IDIO_A_PRIMCALL1_CAR: r = "PRIMCALL1_CAR"; break;
+    case IDIO_A_PRIMCALL1_CDR: r = "PRIMCALL1_CDR"; break;
+    case IDIO_A_PRIMCALL1_PAIRP: r = "PRIMCALL1_PAIRP"; break;
+    case IDIO_A_PRIMCALL1_SYMBOLP: r = "PRIMCALL1_SYMBOLP"; break;
+    case IDIO_A_PRIMCALL1_DISPLAY: r = "PRIMCALL1_DISPLAY"; break;
+    case IDIO_A_PRIMCALL1_PRIMITIVEP: r = "PRIMCALL1_PRIMITIVEP"; break;
+    case IDIO_A_PRIMCALL1_NULLP: r = "PRIMCALL1_NULLP"; break;
+    case IDIO_A_PRIMCALL1_CONTINUATIONP: r = "PRIMCALL1_CONTINUATIONP"; break;
+    case IDIO_A_PRIMCALL1_EOFP: r = "PRIMCALL1_EOFP"; break;
+    case IDIO_A_PRIMCALL1_SET_CUR_MOD: r = "PRIMCALL1_SET_CUR_MOD"; break;
+    case IDIO_A_PRIMCALL2_CONS: r = "PRIMCALL2_CONS"; break;
+    case IDIO_A_PRIMCALL2_EQP: r = "PRIMCALL2_EQP"; break;
+    case IDIO_A_PRIMCALL2_SET_CAR: r = "PRIMCALL2_SET_CAR"; break;
+    case IDIO_A_PRIMCALL2_SET_CDR: r = "PRIMCALL2_SET_CDR"; break;
+    case IDIO_A_PRIMCALL2_ADD: r = "PRIMCALL2_ADD"; break;
+    case IDIO_A_PRIMCALL2_SUBTRACT: r = "PRIMCALL2_SUBTRACT"; break;
+    case IDIO_A_PRIMCALL2_EQ: r = "PRIMCALL2_EQ"; break;
+    case IDIO_A_PRIMCALL2_LT: r = "PRIMCALL2_LT"; break;
+    case IDIO_A_PRIMCALL2_GT: r = "PRIMCALL2_GT"; break;
+    case IDIO_A_PRIMCALL2_MULTIPLY: r = "PRIMCALL2_MULTIPLY"; break;
+    case IDIO_A_PRIMCALL2_LE: r = "PRIMCALL2_LE"; break;
+    case IDIO_A_PRIMCALL2_GE: r = "PRIMCALL2_GE"; break;
+    case IDIO_A_PRIMCALL2_REMAINDER: r = "PRIMCALL2_REMAINDER"; break;
+
+    case IDIO_A_NOP: r = "NOP"; break;
+    case IDIO_A_PRIMCALL0: r = "PRIMCALL0"; break;
+    case IDIO_A_PRIMCALL1: r = "PRIMCALL1"; break;
+    case IDIO_A_PRIMCALL2: r = "PRIMCALL2"; break;
+    case IDIO_A_PRIMCALL3: r = "PRIMCALL3"; break;
+    case IDIO_A_PRIMCALL: r = "PRIMCALL"; break;
+
+    case IDIO_A_LONG_JUMP_TRUE: r = "LONG_JUMP_TRUE"; break;
+    case IDIO_A_SHORT_JUMP_TRUE: r = "SHORT_JUMP_TRUE"; break;
+    case IDIO_A_FIXNUM: r = "FIXNUM"; break;
+    case IDIO_A_NEG_FIXNUM: r = "NEG_FIXNUM"; break;
+    case IDIO_A_CHARACTER: r = "CHARACTER"; break;
+    case IDIO_A_NEG_CHARACTER: r = "NEG_CHARACTER"; break;
+    case IDIO_A_CONSTANT: r = "CONSTANT"; break;
+    case IDIO_A_NEG_CONSTANT: r = "NEG_CONSTANT"; break;
+
+    case IDIO_A_EXPANDER: r = "EXPANDER"; break;
+    case IDIO_A_INFIX_OPERATOR: r = "INFIX_OPERATOR"; break;
+    case IDIO_A_POSTFIX_OPERATOR: r = "POSTFIX_OPERATOR"; break;
+
+    case IDIO_A_DYNAMIC_REF: r = "DYNAMIC_REF"; break;
+    case IDIO_A_DYNAMIC_FUNCTION_REF: r = "DYNAMIC_FUNCTION_REF"; break;
+    case IDIO_A_POP_DYNAMIC: r = "POP_DYNAMIC"; break;
+    case IDIO_A_PUSH_DYNAMIC: r = "PUSH_DYNAMIC"; break;
+
+    case IDIO_A_ENVIRON_REF: r = "ENVIRON_REF"; break;
+    case IDIO_A_POP_ENVIRON: r = "POP_ENVIRON"; break;
+    case IDIO_A_PUSH_ENVIRON: r = "PUSH_ENVIRON"; break;
+
+    case IDIO_A_NON_CONT_ERR: r = "NON_CONT_ERR"; break;
+    case IDIO_A_PUSH_HANDLER: r = "PUSH_HANDLER"; break;
+    case IDIO_A_POP_HANDLER: r = "POP_HANDLER"; break;
+    case IDIO_A_RESTORE_HANDLER: r = "RESTORE_HANDLER"; break;
+    case IDIO_A_PUSH_TRAP: r = "PUSH_TRAP"; break;
+    case IDIO_A_POP_TRAP: r = "POP_TRAP"; break;
+    case IDIO_A_RESTORE_TRAP: r = "RESTORE_TRAP"; break;
+
+    case IDIO_A_POP_ESCAPER: r = "POP_ESCAPER"; break;
+    case IDIO_A_PUSH_ESCAPER: r = "PUSH_ESCAPER"; break;
+
+    default:
+	fprintf (stderr, "idio_vm_bytecode2string: unexpected bytecode %d\n", code);
+	r = "Unknown bytecode";
+	break;
+    }
+
     return r;
 }
 
@@ -1738,14 +1910,22 @@ void idio_dump (IDIO o, int detail)
     fprintf (stderr, "\n");
 }
 
-void idio_debug (const char *fmt, IDIO o)
+void idio_debug_FILE (FILE *file, const char *fmt, IDIO o)
 {
     IDIO_C_ASSERT (fmt);
     IDIO_ASSERT (o);
 
     char *os = idio_as_string (o, 40);
-    fprintf (stderr, fmt, os);
+    fprintf (file, fmt, os);
     free (os);
+}
+
+void idio_debug (const char *fmt, IDIO o)
+{
+    IDIO_C_ASSERT (fmt);
+    IDIO_ASSERT (o);
+
+    idio_debug_FILE (stderr, fmt, o);
 }
 
 IDIO_DEFINE_PRIMITIVE2 ("idio-debug", idio_debug, (IDIO fmt, IDIO o))

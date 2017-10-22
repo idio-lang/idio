@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -80,9 +80,12 @@
     
 #define IDIO_VM_CODE_PUSH_HANDLER                (IDIO_VM_CODE_BASE+70)
 #define IDIO_VM_CODE_POP_HANDLER                 (IDIO_VM_CODE_BASE+71)
-#define IDIO_VM_CODE_AND                         (IDIO_VM_CODE_BASE+72)
-#define IDIO_VM_CODE_OR                          (IDIO_VM_CODE_BASE+73)
-#define IDIO_VM_CODE_BEGIN                       (IDIO_VM_CODE_BASE+74)
+#define IDIO_VM_CODE_PUSH_TRAP                   (IDIO_VM_CODE_BASE+72)
+#define IDIO_VM_CODE_POP_TRAP                    (IDIO_VM_CODE_BASE+73)
+
+#define IDIO_VM_CODE_AND                         (IDIO_VM_CODE_BASE+75)
+#define IDIO_VM_CODE_OR                          (IDIO_VM_CODE_BASE+76)
+#define IDIO_VM_CODE_BEGIN                       (IDIO_VM_CODE_BASE+77)
 
 #define IDIO_VM_CODE_EXPANDER                    (IDIO_VM_CODE_BASE+80)
 #define IDIO_VM_CODE_INFIX_OPERATOR              (IDIO_VM_CODE_BASE+81)
@@ -136,6 +139,8 @@
 #define idio_I_ENVIRON_REF                 ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_ENVIRON_REF))
 #define idio_I_PUSH_HANDLER                ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_PUSH_HANDLER))
 #define idio_I_POP_HANDLER                 ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_POP_HANDLER))
+#define idio_I_PUSH_TRAP                   ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_PUSH_TRAP))
+#define idio_I_POP_TRAP                    ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_POP_TRAP))
 #define idio_I_AND                         ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_AND))
 #define idio_I_OR                          ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_OR))
 #define idio_I_BEGIN                       ((const IDIO) IDIO_CONSTANT (IDIO_VM_CODE_BEGIN))
@@ -161,6 +166,6 @@ void idio_final_codegen ();
 #endif
 
 /* Local Variables: */
-/* mode: C/l */
+/* mode: C */
 /* coding: utf-8-unix */
 /* End: */

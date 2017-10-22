@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -45,6 +45,34 @@ define-syntax-rule (unless test body ...) (
   if (not test) (begin body ...)
 )
 
+load-handle = {
+  orig-load-handle := load-handle
+
+  function (handle) {
+    if (not (handle? handle)) (error 'load-handle "not a string" handle)
+
+    load-handle-k := #n
+
+    trap ^condition (function (cont cond) {
+      if (not cont) {
+        edisplay "load-handle "
+        ewrite handle
+        edisplay* ": non-cont-error caught: " cond
+        edisplay* "load-handle: invoking safe continuation"
+	(idio-thread-state)
+        load-handle-k cond
+      } {
+	raise cont cond
+      }
+    }) {
+      call/cc (function (k) {
+	load-handle-k = k
+	orig-load-handle handle
+      })
+    }
+  }
+}
+
 load = {
   orig-load := load
 
@@ -53,13 +81,13 @@ load = {
 
     load-k := #n
 
-    monitor (function (cont cond) {
+    trap ^condition (function (cont cond) {
       if (not cont) {
 	edisplay "load "
 	ewrite filename
-	edisplay* ": non-cont-error caught"
-	edisplay* cond
+	edisplay* ": non-cont-error caught: " cond
 	edisplay* "load: invoking safe continuation"
+	(idio-thread-state)
 	load-k cond
       } {
 	raise cont cond
@@ -75,7 +103,7 @@ load = {
 
 define-macro (suppress-errors & cmd) {
   #T{
-    monitor (function (cont cond) {
+    trap ^condition (function (cont cond) {
       if cont {
 	;; What should we return?  Something hard to mistake for a
 	;; possible normal value.  Probably.

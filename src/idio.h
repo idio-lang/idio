@@ -89,6 +89,26 @@
 
 #include <termios.h>
 
+/* 
+ * How many signals are there?
+ *
+ * Linux, OpenSolaris and Mac OS X all seem to define NSIG as the
+ * highest signal number.  On FreeBSD, NSIG is the "number of old
+ * signals".  SIGRT* are in a range of their own.
+ */
+
+#define IDIO_LIBC_FSIG 1
+
+#if defined (BSD)
+#define IDIO_LIBC_NSIG (SIGRTMAX + 1)
+#else
+#define IDIO_LIBC_NSIG NSIG
+#endif
+
+#ifdef IDIO_VM_PERF
+extern FILE *idio_vm_perf_FILE;
+#endif
+
 #ifdef IDIO_DEBUG
 
 #define IDIO_C_ASSERT(x)	(assert (x))
@@ -129,6 +149,7 @@
 #define IDIO_ASSERT_NOT_FREED(x) ((void) 0)
 #define IDIO_EXIT(x)		{exit(x);}
 #define IDIO_C_EXIT(x)		{exit(x);}
+#define IDIO__LINE__		__LINE__
 #define IDIO_C_LOCATION(s)	(idio_string_C (s))
 
 #endif
