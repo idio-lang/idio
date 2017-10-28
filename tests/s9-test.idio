@@ -77,7 +77,7 @@ test '#[] '#[]
 test '#[a b c] '#[a b c]
 test '#[a (b) c] '#[a (b) c]
 test '#[((((x))))] '#[((((x))))]
-test '#[(phh cadar) (caadr  cadadr)] '#[(phh cadar) (caadr  cadadr)]
+test '#[(phh phth) (phht  phtht)] '#[(phh phth) (phht  phtht)]
 test '#[#[a b c] #[d e f]] '#[#[a b c] #[d e f]]
 test '#[#[#[#[#[x]]]]] '#[#[#[#[#[x]]]]]
 

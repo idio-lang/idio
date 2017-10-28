@@ -392,11 +392,11 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 		IDIO_IA_PUSH1 (IDIO_A_PREDEFINED1);
 	    } else if (idio_S_nil == vi) {
 		IDIO_IA_PUSH1 (IDIO_A_PREDEFINED2);
-	    } else if (idio_S_nil == vi) { /* cons */
+	    } else if (idio_S_nil == vi) { /* pair */
 		IDIO_IA_PUSH1 (IDIO_A_PREDEFINED3);
-	    } else if (idio_S_nil == vi) { /* car */
+	    } else if (idio_S_nil == vi) { /* head */
 		IDIO_IA_PUSH1 (IDIO_A_PREDEFINED4);
-	    } else if (idio_S_nil == vi) { /* cdr */
+	    } else if (idio_S_nil == vi) { /* tail */
 		IDIO_IA_PUSH1 (IDIO_A_PREDEFINED5);
 	    } else if (idio_S_nil == vi) { /* pair? */
 		IDIO_IA_PUSH1 (IDIO_A_PREDEFINED6);

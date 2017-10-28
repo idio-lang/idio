@@ -2865,11 +2865,11 @@ int idio_vm_run1 (IDIO thr)
 	    }
 	}
 	break;
-    case IDIO_A_PRIMCALL1_CAR:
+    case IDIO_A_PRIMCALL1_HEAD:
 	{
-	    IDIO_VM_RUN_DIS ("PRIMITIVE1 car");
+	    IDIO_VM_RUN_DIS ("PRIMITIVE1 head");
 	    if (idio_vm_tracing) {
-		idio_vm_primitive_call_trace ("car", thr, 1);
+		idio_vm_primitive_call_trace ("head", thr, 1);
 	    }
 	    IDIO_THREAD_VAL (thr) = idio_list_head (IDIO_THREAD_VAL (thr));
 	    if (idio_vm_tracing) {
@@ -2877,11 +2877,11 @@ int idio_vm_run1 (IDIO thr)
 	    }
 	}
 	break;
-    case IDIO_A_PRIMCALL1_CDR:
+    case IDIO_A_PRIMCALL1_TAIL:
 	{
-	    IDIO_VM_RUN_DIS ("PRIMITIVE1 cdr");
+	    IDIO_VM_RUN_DIS ("PRIMITIVE1 tail");
 	    if (idio_vm_tracing) {
-		idio_vm_primitive_call_trace ("cdr", thr, 1);
+		idio_vm_primitive_call_trace ("tail", thr, 1);
 	    }
 	    IDIO_THREAD_VAL (thr) = idio_list_tail (IDIO_THREAD_VAL (thr));
 	    if (idio_vm_tracing) {
@@ -3015,11 +3015,11 @@ int idio_vm_run1 (IDIO thr)
 	    }
 	}
 	break;
-    case IDIO_A_PRIMCALL2_CONS:
+    case IDIO_A_PRIMCALL2_PAIR:
 	{
-	    IDIO_VM_RUN_DIS ("PRIMITIVE2 cons");
+	    IDIO_VM_RUN_DIS ("PRIMITIVE2 pair");
 	    if (idio_vm_tracing) {
-		idio_vm_primitive_call_trace ("cons", thr, 2);
+		idio_vm_primitive_call_trace ("pair", thr, 2);
 	    }
 	    IDIO_THREAD_VAL (thr) = idio_pair (IDIO_THREAD_REG1 (thr), IDIO_THREAD_VAL (thr));
 	    if (idio_vm_tracing) {
@@ -3043,11 +3043,11 @@ int idio_vm_run1 (IDIO thr)
 	    }
 	}
 	break;
-    case IDIO_A_PRIMCALL2_SET_CAR:
+    case IDIO_A_PRIMCALL2_SET_HEAD:
 	{
-	    IDIO_VM_RUN_DIS ("PRIMITIVE2 set-car!");
+	    IDIO_VM_RUN_DIS ("PRIMITIVE2 set-head!");
 	    if (idio_vm_tracing) {
-		idio_vm_primitive_call_trace ("set-car!", thr, 2);
+		idio_vm_primitive_call_trace ("set-head!", thr, 2);
 	    }
 	    IDIO_THREAD_VAL (thr) = idio_pair_set_head (IDIO_THREAD_REG1 (thr), IDIO_THREAD_VAL (thr));
 	    if (idio_vm_tracing) {
@@ -3055,11 +3055,11 @@ int idio_vm_run1 (IDIO thr)
 	    }
 	}
 	break;
-    case IDIO_A_PRIMCALL2_SET_CDR:
+    case IDIO_A_PRIMCALL2_SET_TAIL:
 	{
-	    IDIO_VM_RUN_DIS ("PRIMITIVE2 set-cdr!");
+	    IDIO_VM_RUN_DIS ("PRIMITIVE2 set-tail!");
 	    if (idio_vm_tracing) {
-		idio_vm_primitive_call_trace ("set-cdr!", thr, 2);
+		idio_vm_primitive_call_trace ("set-tail!", thr, 2);
 	    }
 	    IDIO_THREAD_VAL (thr) = idio_pair_set_tail (IDIO_THREAD_REG1 (thr), IDIO_THREAD_VAL (thr));
 	    if (idio_vm_tracing) {

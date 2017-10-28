@@ -1576,8 +1576,8 @@ const char *idio_vm_bytecode2string (int code)
 
     case IDIO_A_PRIMCALL0_NEWLINE: r = "PRIMCALL0_NEWLINE"; break;
     case IDIO_A_PRIMCALL0_READ: r = "PRIMCALL0_READ"; break;
-    case IDIO_A_PRIMCALL1_CAR: r = "PRIMCALL1_CAR"; break;
-    case IDIO_A_PRIMCALL1_CDR: r = "PRIMCALL1_CDR"; break;
+    case IDIO_A_PRIMCALL1_HEAD: r = "PRIMCALL1_HEAD"; break;
+    case IDIO_A_PRIMCALL1_TAIL: r = "PRIMCALL1_TAIL"; break;
     case IDIO_A_PRIMCALL1_PAIRP: r = "PRIMCALL1_PAIRP"; break;
     case IDIO_A_PRIMCALL1_SYMBOLP: r = "PRIMCALL1_SYMBOLP"; break;
     case IDIO_A_PRIMCALL1_DISPLAY: r = "PRIMCALL1_DISPLAY"; break;
@@ -1586,10 +1586,10 @@ const char *idio_vm_bytecode2string (int code)
     case IDIO_A_PRIMCALL1_CONTINUATIONP: r = "PRIMCALL1_CONTINUATIONP"; break;
     case IDIO_A_PRIMCALL1_EOFP: r = "PRIMCALL1_EOFP"; break;
     case IDIO_A_PRIMCALL1_SET_CUR_MOD: r = "PRIMCALL1_SET_CUR_MOD"; break;
-    case IDIO_A_PRIMCALL2_CONS: r = "PRIMCALL2_CONS"; break;
+    case IDIO_A_PRIMCALL2_PAIR: r = "PRIMCALL2_PAIR"; break;
     case IDIO_A_PRIMCALL2_EQP: r = "PRIMCALL2_EQP"; break;
-    case IDIO_A_PRIMCALL2_SET_CAR: r = "PRIMCALL2_SET_CAR"; break;
-    case IDIO_A_PRIMCALL2_SET_CDR: r = "PRIMCALL2_SET_CDR"; break;
+    case IDIO_A_PRIMCALL2_SET_HEAD: r = "PRIMCALL2_SET_HEAD"; break;
+    case IDIO_A_PRIMCALL2_SET_TAIL: r = "PRIMCALL2_SET_TAIL"; break;
     case IDIO_A_PRIMCALL2_ADD: r = "PRIMCALL2_ADD"; break;
     case IDIO_A_PRIMCALL2_SUBTRACT: r = "PRIMCALL2_SUBTRACT"; break;
     case IDIO_A_PRIMCALL2_EQ: r = "PRIMCALL2_EQ"; break;
@@ -1678,7 +1678,7 @@ IDIO_DEFINE_PRIMITIVE2 ("%map1", map1, (IDIO fn, IDIO list))
     return r;
 }
 
-IDIO idio_list_mapcar (IDIO l)
+IDIO idio_list_map_ph (IDIO l)
 {
     IDIO_ASSERT (l);
     IDIO_TYPE_ASSERT (list, l);
@@ -1699,7 +1699,7 @@ IDIO idio_list_mapcar (IDIO l)
     return idio_list_reverse (r);
 }
 
-IDIO idio_list_mapcdr (IDIO l)
+IDIO idio_list_map_pt (IDIO l)
 {
     IDIO_ASSERT (l);
     IDIO_TYPE_ASSERT (list, l);
@@ -1752,7 +1752,7 @@ IDIO idio_list_assq (IDIO k, IDIO l)
     IDIO_ASSERT (l);
     IDIO_TYPE_ASSERT (list, l);
 
-    /* fprintf (stderr, "assq: k=%s in l=%s\n", idio_as_string (k, 1), idio_as_string (idio_list_mapcar (l), 4)); */
+    /* fprintf (stderr, "assq: k=%s in l=%s\n", idio_as_string (k, 1), idio_as_string (idio_list_map_ph (l), 4)); */
     
     while (idio_S_nil != l) {
 	IDIO p = IDIO_PAIR_H (l);

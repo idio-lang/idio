@@ -122,8 +122,8 @@
 
 #define IDIO_A_PRIMCALL0_NEWLINE           160
 #define IDIO_A_PRIMCALL0_READ              161
-#define IDIO_A_PRIMCALL1_CAR               162
-#define IDIO_A_PRIMCALL1_CDR               163
+#define IDIO_A_PRIMCALL1_HEAD              162
+#define IDIO_A_PRIMCALL1_TAIL              163
 #define IDIO_A_PRIMCALL1_PAIRP             164
 #define IDIO_A_PRIMCALL1_SYMBOLP           165
 #define IDIO_A_PRIMCALL1_DISPLAY           166
@@ -132,10 +132,10 @@
 #define IDIO_A_PRIMCALL1_CONTINUATIONP     169
 #define IDIO_A_PRIMCALL1_EOFP              170
 #define IDIO_A_PRIMCALL1_SET_CUR_MOD	   171
-#define IDIO_A_PRIMCALL2_CONS              172
+#define IDIO_A_PRIMCALL2_PAIR              172
 #define IDIO_A_PRIMCALL2_EQP               173
-#define IDIO_A_PRIMCALL2_SET_CAR           174
-#define IDIO_A_PRIMCALL2_SET_CDR           175
+#define IDIO_A_PRIMCALL2_SET_HEAD          174
+#define IDIO_A_PRIMCALL2_SET_TAIL          175
 #define IDIO_A_PRIMCALL2_ADD               176
 #define IDIO_A_PRIMCALL2_SUBTRACT          177
 #define IDIO_A_PRIMCALL2_EQ                178

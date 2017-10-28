@@ -1,10 +1,6 @@
 as_string
 	- quasiquoted -> %T{ $expr }
 
-primcalls
-	- *_CONS -> *_PAIR
-	- CAR/CDR and anything else
-
 Tower of Expansion
 	- every module has an *expansion* module (to be used in expander thread)
 
