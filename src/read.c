@@ -392,15 +392,15 @@ static IDIO idio_read_list (IDIO handle, IDIO opendel, char *ic, int depth)
 	     * XXX should only expect a single expr after
 	     * IDIO_PAIR_SEPARATOR, ie. not a list: (a . b c)
 	     */
-	    IDIO cdr = idio_read_1_expr (handle, ic, depth);
-	    while (idio_T_eol == cdr) {
-		cdr = idio_read_1_expr (handle, ic, depth);
+	    IDIO pt = idio_read_1_expr (handle, ic, depth);
+	    while (idio_T_eol == pt) {
+		pt = idio_read_1_expr (handle, ic, depth);
 	    }
 
 	    if (idio_handle_eofp (handle)) {
 		idio_read_error_list_eof (handle, IDIO_C_LOCATION ("idio_read_list"));
 		return idio_S_unspec;
-	    } else if (closedel == cdr) {
+	    } else if (closedel == pt) {
 		/* (a &) */
 		char em[BUFSIZ];
 		sprintf (em, "nothing after %c in list", IDIO_PAIR_SEPARATOR);
@@ -420,7 +420,7 @@ static IDIO idio_read_list (IDIO handle, IDIO opendel, char *ic, int depth)
 		idio_read_error_list_eof (handle, IDIO_C_LOCATION ("idio_read_list"));
 		return idio_S_unspec;
 	    } else if (closedel == del) {
-		return idio_improper_list_reverse (r, cdr);
+		return idio_improper_list_reverse (r, pt);
 	    } else {
 		/* (a & b c) */
 		idio_debug ("extra=%s\n", del);
