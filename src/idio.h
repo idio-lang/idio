@@ -160,6 +160,7 @@ extern FILE *idio_vm_perf_FILE;
 */
 #define IDIO_IS_SET(x)        (idio_S_nil != (x) && (IDIO_FLAG_FREE_SET (x) == 0))
 
+
 #define IDIO_WORD_MAX_LEN	BUFSIZ
 
 /*
@@ -330,6 +331,7 @@ extern FILE *idio_vm_perf_FILE;
 #include "struct.h"
 #include "symbol.h"
 #include "thread.h"
+#include "unicode.h"
 #include "util.h"
 #include "vm.h"
 

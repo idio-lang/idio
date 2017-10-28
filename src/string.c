@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -338,8 +338,8 @@ IDIO_DEFINE_PRIMITIVE1V ("make-string", make_string, (IDIO size, IDIO args))
     if (idio_S_nil != args) {
 	IDIO fill = IDIO_PAIR_H (args);
 	IDIO_VERIFY_PARAM_TYPE (character, fill);
-	if (IDIO_CHARACTER_VAL (fill) > INT8_MAX ||
-	    IDIO_CHARACTER_VAL (fill) < INT8_MIN) {
+	if (IDIO_CHARACTER_VAL (fill) >= 0x80 ||
+	    IDIO_CHARACTER_VAL (fill) < 0) {
 	    idio_error_C ("fill character too large", fill, IDIO_C_LOCATION ("make-string"));
 	}
 
@@ -452,8 +452,8 @@ IDIO_DEFINE_PRIMITIVE2 ("string-fill!", string_fill, (IDIO s, IDIO fill))
 
     size_t i;
     for (i = 0; i < l; i++) {
-	if (IDIO_CHARACTER_VAL (fill) > INT8_MAX ||
-	    IDIO_CHARACTER_VAL (fill) < INT8_MIN) {
+	if (IDIO_CHARACTER_VAL (fill) >= 0x80 ||
+	    IDIO_CHARACTER_VAL (fill) < 0) {
 	    idio_error_C ("fill character too large", fill, IDIO_C_LOCATION ("string-fill!"));
 	}
 
@@ -558,8 +558,8 @@ IDIO idio_string_set (IDIO s, IDIO index, IDIO c)
 	return idio_S_unspec;
     }
 
-    if (IDIO_CHARACTER_VAL (c) > INT8_MAX ||
-	IDIO_CHARACTER_VAL (c) < INT8_MIN) {
+    if (IDIO_CHARACTER_VAL (c) >= 0x80 ||
+	IDIO_CHARACTER_VAL (c) < 0) {
 	idio_error_C ("character too large for C string", c, IDIO_C_LOCATION ("string-set!"));
     }
 

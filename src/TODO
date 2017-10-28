@@ -80,6 +80,7 @@ eval
 
 Type Inference
 	- particularly for multi-layer struct de-references
+	- Hindley-Milner type inference
 
 REPL
 
@@ -109,6 +110,7 @@ Docstrings
 Objects
 	- simple
 	- TinyCLOS
+	- MOP
 
 UTF8
 	- be aware of UTF8
@@ -120,9 +122,13 @@ UTF8
 
 	    http://bjoern.hoehrmann.de/utf-8/decoder/dfa/
 
+	- http://www.unicode.org/versions/Unicode5.2.0/ch03.pdf
+	- http://utf8everywhere.org/
+
 I18N
 	- gettext
 	- .po
+	- localeconv, locale(7), decimal_point, thousands_sep
 
 Networking
 	- more!
