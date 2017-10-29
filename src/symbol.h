@@ -101,12 +101,19 @@ extern IDIO_SYMBOL_DECL (unquote);
 extern IDIO_SYMBOL_DECL (unquotesplicing);
 extern IDIO_SYMBOL_DECL (unset);
 
+extern IDIO idio_properties_hash;
+
 void idio_free_symbol (IDIO s);
 int idio_isa_symbol (IDIO s);
 IDIO idio_symbols_C_intern (char *s);
 IDIO idio_symbols_string_intern (IDIO str);
 
 IDIO idio_gensym (char *pref_prefix);
+
+IDIO idio_properties_get (IDIO o, IDIO args);
+void idio_properties_set (IDIO o, IDIO properties);
+IDIO idio_property_get (IDIO o, IDIO property);
+void idio_property_set (IDIO o, IDIO property, IDIO value);
 
 void idio_init_symbol (void);
 void idio_symbol_add_primitives (void);

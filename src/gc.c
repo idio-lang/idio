@@ -430,13 +430,11 @@ void idio_process_grey (unsigned colour)
 	break;
     case IDIO_TYPE_CLOSURE:
 	idio_gc->grey = IDIO_CLOSURE_GREY (o);
-	idio_mark (IDIO_CLOSURE_PROPERTIES (o), colour);
 	idio_mark (IDIO_CLOSURE_FRAME (o), colour);
 	idio_mark (IDIO_CLOSURE_ENV (o), colour);
 	break;
     case IDIO_TYPE_PRIMITIVE:
 	idio_gc->grey = IDIO_PRIMITIVE_GREY (o);
-	idio_mark (IDIO_PRIMITIVE_PROPERTIES (o), colour);
 	break;
     case IDIO_TYPE_MODULE:
 	IDIO_C_ASSERT (idio_gc->grey != IDIO_MODULE_GREY (o));

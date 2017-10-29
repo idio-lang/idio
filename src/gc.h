@@ -276,7 +276,6 @@ typedef struct idio_closure_s {
     size_t code;
     struct idio_s *frame;
     struct idio_s *env;
-    struct idio_s *properties;
 #ifdef IDIO_VM_PERF
     uint64_t called;
     struct timespec call_time;
@@ -287,7 +286,6 @@ typedef struct idio_closure_s {
 #define IDIO_CLOSURE_CODE(C)       ((C)->u.closure->code)
 #define IDIO_CLOSURE_FRAME(C)      ((C)->u.closure->frame)
 #define IDIO_CLOSURE_ENV(C)        ((C)->u.closure->env)
-#define IDIO_CLOSURE_PROPERTIES(C) ((C)->u.closure->properties)
 #ifdef IDIO_VM_PERF
 #define IDIO_CLOSURE_CALLED(C)     ((C)->u.closure->called)
 #define IDIO_CLOSURE_CALL_TIME(C)  ((C)->u.closure->call_time)
@@ -319,7 +317,6 @@ typedef struct idio_primitive_s {
     struct idio_s *grey;
     struct idio_s *(*f) ();	/* don't declare args */
     char *name;
-    struct idio_s *properties;
     uint8_t arity;
     char varargs;
 #ifdef IDIO_VM_PERF
@@ -331,7 +328,6 @@ typedef struct idio_primitive_s {
 #define IDIO_PRIMITIVE_GREY(P)       ((P)->u.primitive->grey)
 #define IDIO_PRIMITIVE_F(P)          ((P)->u.primitive->f)
 #define IDIO_PRIMITIVE_NAME(P)       ((P)->u.primitive->name)
-#define IDIO_PRIMITIVE_PROPERTIES(P) ((P)->u.primitive->properties)
 #define IDIO_PRIMITIVE_ARITY(P)      ((P)->u.primitive->arity)
 #define IDIO_PRIMITIVE_VARARGS(P)    ((P)->u.primitive->varargs)
 #ifdef IDIO_VM_PERF

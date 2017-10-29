@@ -35,7 +35,6 @@ IDIO idio_primitive (IDIO (*func) (IDIO args), const char *name_C, size_t arity,
     
     IDIO_PRIMITIVE_GREY (o) = NULL;
     IDIO_PRIMITIVE_F (o) = func;
-    IDIO_PRIMITIVE_PROPERTIES (o) = idio_S_nil;
     IDIO_PRIMITIVE_ARITY (o) = arity;
     IDIO_PRIMITIVE_VARARGS (o) = varargs;
 
@@ -69,7 +68,6 @@ IDIO idio_primitive_data (idio_primitive_desc_t *desc)
     
     IDIO_PRIMITIVE_GREY (o) = NULL;
     IDIO_PRIMITIVE_F (o) = desc->f;
-    IDIO_PRIMITIVE_PROPERTIES (o) = idio_S_nil;
     IDIO_PRIMITIVE_ARITY (o) = desc->arity;
     IDIO_PRIMITIVE_VARARGS (o) = desc->varargs;
 

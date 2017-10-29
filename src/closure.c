@@ -43,7 +43,6 @@ IDIO idio_closure (size_t code, IDIO frame, IDIO env)
     IDIO_CLOSURE_CODE (c) = code;
     IDIO_CLOSURE_FRAME (c) = frame;
     IDIO_CLOSURE_ENV (c) = env;
-    IDIO_CLOSURE_PROPERTIES (c) = idio_S_nil;
 #ifdef IDIO_VM_PERF
     IDIO_CLOSURE_CALLED (c) = 0;
     IDIO_CLOSURE_CALL_TIME (c).tv_sec = 0;
@@ -97,10 +96,9 @@ IDIO_DEFINE_PRIMITIVE1 ("setter", setter, (IDIO p))
 
     IDIO kwt = idio_S_nil;
     
-    if (idio_isa_primitive (p)) {
-	kwt = IDIO_PRIMITIVE_PROPERTIES (p);
-    } else if (idio_isa_closure (p)) {
-	kwt = IDIO_CLOSURE_PROPERTIES (p);
+    if (idio_isa_primitive (p) ||
+	idio_isa_closure (p)) {
+	kwt = idio_properties_get (p, idio_S_void);
     } else {
 	idio_error_param_type ("primitive|closure", p, IDIO_C_LOCATION ("setter"));
     }
@@ -118,10 +116,9 @@ IDIO idio_closure_procedure_properties (IDIO p)
 {
     IDIO_ASSERT (p);
 
-    if (idio_isa_primitive (p)) {
-	return IDIO_PRIMITIVE_PROPERTIES (p);
-    } else if (idio_isa_closure (p)) {
-	return IDIO_CLOSURE_PROPERTIES (p);
+    if (idio_isa_primitive (p) ||
+	idio_isa_closure (p)) {
+	return idio_properties_get (p, IDIO_LIST1 (idio_S_nil));
     } else {
 	idio_error_param_type ("primitive|closure", p, IDIO_C_LOCATION ("%procedure-properties"));
     }
@@ -147,10 +144,9 @@ IDIO idio_closure_set_procedure_properties (IDIO p, IDIO v)
 	idio_error_param_type ("hash", v, IDIO_C_LOCATION ("%set-procedure-properties"));
     }
 
-    if (idio_isa_primitive (p)) {
-	IDIO_PRIMITIVE_PROPERTIES (p) = v;
-    } else if (idio_isa_closure (p)) {
-	IDIO_CLOSURE_PROPERTIES (p) = v;
+    if (idio_isa_primitive (p) ||
+	idio_isa_closure (p)) {
+	idio_properties_set (p, v);
     } else {
 	idio_error_param_type ("primitive|closure", p, IDIO_C_LOCATION ("%set-procedure-properties!"));
     }
