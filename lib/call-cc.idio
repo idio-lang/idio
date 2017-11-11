@@ -150,3 +150,19 @@ define-macro (with-handler handler & body) {
   }
 }
 
+define-macro (with-condition-handler condition handler & body) {
+  ;; edisplay* "with-condition-handler" handler body
+  #T{
+    load-k := #n
+
+    trap $condition (function (cont cond) {
+      load-k ($handler cont cond)
+    }) {
+      call/cc (function (k) {
+        load-k = k
+        $@body
+      })
+    }
+  }
+}
+
