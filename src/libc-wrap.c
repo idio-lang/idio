@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2018 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -1392,13 +1392,13 @@ static void idio_libc_set_errno_names ()
     idio_libc_errno_names = idio_alloc ((IDIO_LIBC_NERRNO + 1) * sizeof (char *));
 
     int i;
-    for (i = 0; i < IDIO_LIBC_NERRNO; i++) {
+    for (i = IDIO_LIBC_FERRNO; i < IDIO_LIBC_NERRNO; i++) {
 	idio_libc_errno_names[i] = idio_alloc (IDIO_LIBC_ERRNAMELEN);
 	*(idio_libc_errno_names[i]) = '\0';
     }
     idio_libc_errno_names[i] = NULL;
 
-    sprintf (idio_libc_errno_names[0], "E0");
+    idio_libc_errno_names[0] = "E0";
 
     IDIO err_sym;
     
@@ -2976,7 +2976,7 @@ void idio_final_libc_wrap ()
         free (idio_libc_signal_names[i]);
     }
     free (idio_libc_signal_names);
-    for (i = IDIO_LIBC_FERRNO; NULL != idio_libc_errno_names[i]; i++) {
+    for (i = IDIO_LIBC_FERRNO; i < IDIO_LIBC_NERRNO; i++) {
         free (idio_libc_errno_names[i]);
     }
     free (idio_libc_errno_names);

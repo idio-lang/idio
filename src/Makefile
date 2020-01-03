@@ -18,8 +18,8 @@ LIBFFI_INCDIR	= $(wildcard /usr/lib*/libffi-*/include)
 LDFLAGS		:= -rdynamic
 LIBS		:= -ldl
 ifeq ($(ARCH),x86_64)
-CFLAGS		:= $(CFLAGS) -m64
-LDFLAGS		:= $(LDFLAGS) -m64
+CFLAGS		:= $(CFLAGS) -m64 # -fsanitize=undefined
+LDFLAGS		:= $(LDFLAGS) -m64 -Wl,-Map=map
 endif
 
 else ifeq ($(OS),SunOS)
@@ -127,4 +127,8 @@ TAGS : *.[ch] $(LIBDIR)/*.idio $(TESTSDIR)/*.idio
 $(BINDIR):
 	@mkdir -p $(BINDIR)
 
-# valgrind --leak-check=full --show-leak-kinds=all --child-silent-after-fork=yes ../bin/idio 2>&1 | less +/^==
+valgrind: $(BINDIR)/idio
+	valgrind --leak-check=full --show-leak-kinds=all --child-silent-after-fork=yes $(BINDIR)/idio 2>&1 | less +/^==
+
+cppcheck:
+	cppcheck --force --enable=all .

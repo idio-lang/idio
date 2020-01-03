@@ -1,3 +1,17 @@
+legal	- https://news.ycombinator.com/item?id=21786111
+
+	From that time on, whenever I'm negotiating a new employment
+	contract, I make sure that any such clause is omitted from
+	it. I've never had an employer completely balk at that,
+	although some have negotiated a middle ground where they get
+	first rights to a time-limited exclusive license to any side
+	project I do that does overlap with their activities.  
+
+	This sort of thing is why I advise people to actually read and
+	understand employment (and all other) contracts before
+	signing, and to not be shy about requesting changes to them if
+	the terms aren't acceptable.
+
 as_string
 	- quasiquoted -> %T{ $expr }
 
@@ -10,6 +24,9 @@ unbind
 Qualifiers
 	- expr ; expr ; expr
 
+function composition - foo || bar 
+	- currying? (actually schonefinkeling!)
+
 regexps
 	- POSIX extended RE
 	- pattern matching
@@ -21,11 +38,33 @@ C structs
 	- sb-grovel for typedef/struct/union
 	- SWIG
 
+	- also alignment
+	  - http://www.catb.org/esr/structure-packing/
+	  - https://stackoverflow.com/questions/4306186/structure-padding-and-packing
+	  - https://news.ycombinator.com/item?id=17585357
+
+	  - http://scattered-thoughts.net/blog/2018/08/28/zero-copy-deserialization-in-julia/
+
+	    - also demonstrates Julia pkg usage, eg.:
+	      Pkg.add(PackageSpec(url="git@github.com:jamii/Blobs.jl.git", rev="c1c906"))
+
+String Concatenation
+        - cf. substring, a super-string with a list of references to (sub)strings
+
+sub-array
+	- cf. substring?
+	- you don't want pointers into existing ae[] as those can be re-allocated under your feet
+
+Strings [in Lisp] - https://news.ycombinator.com/item?id=21730973
+	    	  - http://lisp-univ-etc.blogspot.com/2019/11/programming-algorithms-strings.html
+
 CFFI
 	- revisit
 
 format
 	- ~S etc.
+	- vaguely related: https://news.ycombinator.com/item?id=17066739
+	  a thought: should the format strings be extensible?
 
 reader formatted strings
 	- %S...
@@ -41,6 +80,30 @@ Disassembler
 
 Compiler
 	- standalone command
+
+	- Compiler/Implementation techniques https://github.com/scheme-live/library.readscheme.org/blob/master/page8.md
+	  - from https://news.ycombinator.com/item?id=19653902
+
+JIT
+	- https://news.ycombinator.com/item?id=15624388 and then
+	- http://chrisseaton.com/rubytruffle/jokerconf17/
+	- https://news.ycombinator.com/item?id=17408942 
+	  - search poison pills amongst others
+	- https://news.ycombinator.com/item?id=17760649 (Emacs Lisp JIT Compiler)
+
+	- https://news.ycombinator.com/item?id=18005734 (Pycket: A Tracing JIT For a Functional Language)
+
+	- nanopass compiler from Kent Dybvig's P523 course
+	  - https://blog.sigplan.org/2019/07/09/my-first-fifteen-compilers/
+	  - https://news.ycombinator.com/item?id=20408011
+
+	  - also An Incremental Approach to Compiler Writing
+	  - http://scheme2006.cs.uchicago.edu/11-ghuloum.pdf 
+
+	- Eli Bendersky
+	  - https://eli.thegreenplace.net/tag/compilation
+	  - https://eli.thegreenplace.net/2017/adventures-in-jit-compilation-part-4-in-python/
+	    - python ctypes
 
 PIC
 	- GOT -- Global Offset Table
@@ -77,14 +140,21 @@ eval
 Type Inference
 	- particularly for multi-layer struct de-references
 	- Hindley-Milner type inference
+	- see http://www.cis.upenn.edu/~cis194/spring13/lectures.html from https://news.ycombinator.com/item?id=17015661
 
 REPL
 
 Debugger
 	- interactive
 	- backtrace
+	- "Portable Scheme Debugger" -- cf. Edebug 
+	  - "Debugging standard ML without reverse engineering" (pay to view?)
 
 Profiler
+	- consider elp.el and its use of nadvice.el
+	- Emacs 24.3 has a new profiler: "In early 2011, Tomohiro
+          Matsuyama started implementing in Emacs’s C code a sampling-
+          based profiler for Elisp"
 
 Escape Handlers
 	- bind-exit
@@ -95,6 +165,10 @@ Escape Handlers
 
 conditions/restart
 	- mostly restarts
+	- condition data (already incorporated?)
+	- unwrap_or -- quietly handle with a default value
+	  - https://blog.jonstodle.com/things-i-enjoy-in-rust-error-handling/
+	  - from https://news.ycombinator.com/item?id=19721998
 
 Docstrings
 	- sphinx
@@ -103,9 +177,17 @@ Docstrings
 	- Yasnippets -- http://tiborsimko.org/emacs-epydoc-snippets.html
 	- sphinx-doc -- http://www.avilpage.com/2014/12/generate-sphinx-friendly-docstrings-for.html
 
+Docs/Blog
+	- NetlifyCMS Hugo theme?
+	- a git/gitlab backed website
+	- https://news.ycombinator.com/item?id=19947068
+
 Objects
 	- simple
 	- TinyCLOS
+	  - coop http://wiki.call-cc.org/eggref/4/coops#coops
+	    - ScmObj http://www.ccs.neu.edu/home/dorai/scmobj/scmobj.html
+	    - http://barzilay.org/Swindle/
 	- MOP
 
 UTF8
@@ -120,6 +202,30 @@ UTF8
 
 	- http://www.unicode.org/versions/Unicode5.2.0/ch03.pdf
 	- http://utf8everywhere.org/
+	- Python2/3 and UTF-8 https://news.ycombinator.com/item?id=18154667
+	  - again, "What is a string" and "what is a character" - grapheme clusters less likely to be wrong than sequence of code points
+	  - what operations are valid on a string -- possibly only concatenation
+	    - string.size() might be string.byte_count(), string.code_point_count(), string.grapheme_cluster_count()
+	  - Unix pathnames are defintively not anything encoded, just a sequence of bytes
+	- Unicode surrogate pairs?
+	- string issues (handy charts at https://www.unicode.org/charts/)
+	- "¨" diaeresis (00A8) and " ̈" combining diaeresis (0308) with space -- note emacs doesn't combine; ditto / solidus
+	- string comparison/size of "ä" (latin small letter a with diaeresis) and "ä" (latin small letter a; combining diaeresis)
+	- numeric pre-composed vs. combining: "⅒" vulgar fraction one tenth (2152) "1⁄10" 1 fractional slash 10 (2044)
+	- "a" (0061) and "ａ" (FF41 - fullwidth form)
+	- "​" zerowidth space (200b) (NB. Emacs cut'n'paste -> SPACE)
+	  (NB In Emacs use C-x 8 RET Unicode-name-of-character )
+
+	- Arabic letterforms for transistion to from non-Unicode
+          systems, cf. cursive i chnages depending on being at the
+          start or end of a word.  Different Unicode characters allow
+          you to go back and forth between non-Unicode systems.
+          Unicode preferred style would be just i and let the
+          character display mechanism do the right thing.
+
+	- https://begriffs.com/posts/2019-05-23-unicode-icu.html
+	  - via https://news.ycombinator.com/item?id=20145250
+
 
 I18N
 	- gettext
@@ -135,6 +241,10 @@ Threading
 	- pthreads
 	  * mutex locks etc.
 
+	- Pthon and subinterpreters: https://news.ycombinator.com/item?id=19939573
+	- consider multiple GC pools, one per thread
+	  - could you have a shared mem pool for IPC?
+
 send/expect
 	- pty
 
@@ -149,6 +259,7 @@ Readline
 setuid
 
 tainted values
+	- rings?
 
 const values
 
@@ -196,3 +307,245 @@ HTTP Digest Auth
 	- shared secret for comms
 	- vulnerable to two MITM attacks: 
 		http://mark-kirby.co.uk/2013/how-to-authenticate-apis-http-basic-vs-http-digest/
+
+FP Jargon
+	- https://github.com/hemanth/functional-programming-jargon
+	- http://wiki.c2.com/?ThereAreExactlyThreeParadigms
+	  - https://www.info.ucl.ac.be/~pvr/paradigms.html
+
+stack overflow
+	- call-arguments-limit (from SBCL mailing list)
+	- ditto apply final args list
+	- how do we get affected by this
+	- SBCL puts args on stack
+	- stack might have (in the limit) one slot free
+
+null (maybe/option)
+	- https://news.ycombinator.com/item?id=17028878
+	- https://news.ycombinator.com/item?id=17058183
+
+memory models (description)
+       - via https://news.ycombinator.com/item?id=17099608
+
+macro-expand-1
+
+auto-vivication table
+	- "string".fields.index
+	- fields is a looked up function in AVT
+
+dynamic table
+	- make whole table dynamic or some table.index ~= dynamic var trick?
+
+strncpy
+	- snprintf or strlcpy
+	- https://news.ycombinator.com/item?id=17248031
+
+JVM Internals
+	- http://blog.jamesdbloom.com/JVMInternals.html
+	- from https://news.ycombinator.com/item?id=17271913
+
+We have Assumed Arithmetic Shift
+	- https://en.wikipedia.org/wiki/Arithmetic_shift
+
+Python GIL (in Python)
+       - https://rushter.com/blog/python-gil-thread-scheduling/
+       - from https://news.ycombinator.com/item?id=17308601
+
+elvish
+	- https://news.ycombinator.com/item?id=8090534
+
+128 bit? 512 bit! - Arm8A-SVE (Scalable Vector Extension) 512-bit architecture
+	- up to 2048 bits? https://alastairreid.github.io/papers/sve-ieee-micro-2017.pdf
+	- these could be specialist instructions rather than generic pointers/ints
+	- actually none mainstream processors: https://en.wikipedia.org/wiki/128-bit
+
+Build Your Own Lisp
+	- https://news.ycombinator.com/item?id=17478489
+
+iflet/whenlet anaphoric
+	- https://news.ycombinator.com/item?id=17491228
+
+Walter Bright (D language)
+        - https://www.digitalmars.com/articles/b90.html
+
+GC: copy: (via JIT)
+	- https://news.ycombinator.com/item?id=17695012
+	- https://dinfuehr.github.io/blog/dora-implementing-a-jit-compiler-with-rust/
+
+	- Cheney's algorithm: https://en.wikipedia.org/wiki/Cheney%27s_algorithm
+
+	- ShenandoahGC ZGC
+	  - 	- fields is a looked up function in AVT
+
+dynamic table
+	- make whole table dynamic or some table.index ~= dynamic var trick?
+
+strncpy
+	- snprintf or strlcpy
+	- https://news.ycombinator.com/item?id=17248031
+
+JVM Internals
+	- http://blog.jamesdbloom.com/JVMInternals.html
+	- from https://news.ycombinator.com/item?id=17271913
+
+We have Assumed Arithmetic Shift
+	- https://en.wikipedia.org/wiki/Arithmetic_shift
+
+Python GIL (in Python)
+       - https://rushter.com/blog/python-gil-thread-scheduling/
+       - from https://news.ycombinator.com/item?id=17308601
+
+elvish
+	- https://news.ycombinator.com/item?id=8090534
+
+128 bit? 512 bit! - Arm8A-SVE (Scalable Vector Extension) 512-bit architecture
+	- up to 2048 bits? https://alastairreid.github.io/papers/sve-ieee-micro-2017.pdf
+	- these could be specialist instructions rather than generic pointers/ints
+	- actually none mainstream processors: https://en.wikipedia.org/wiki/128-bit
+
+Build Your Own Lisp
+	- https://news.ycombinator.com/item?id=17478489
+
+iflet/whenlet anaphoric
+	- https://news.ycombinator.com/item?id=17491228
+
+Walter Bright (D language)
+        - https://www.digitalmars.com/articles/b90.html
+
+GC: copy: (via JIT)
+	- https://news.ycombinator.com/item?id=17695012
+	- https://dinfuehr.github.io/blog/dora-implementing-a-jit-compiler-with-rust/
+
+	- Cheney's algorithm: https://en.wikipedia.org/wiki/Cheney%27s_algorithm
+
+	- ShenandoahGC ZGC
+	  - 	- fields is a looked up function in AVT
+
+dynamic table
+	- make whole table dynamic or some table.index ~= dynamic var trick?
+
+strncpy
+	- snprintf or strlcpy
+	- https://news.ycombinator.com/item?id=17248031
+
+JVM Internals
+	- http://blog.jamesdbloom.com/JVMInternals.html
+	- from https://news.ycombinator.com/item?id=17271913
+
+We have Assumed Arithmetic Shift
+	- https://en.wikipedia.org/wiki/Arithmetic_shift
+
+Python GIL (in Python)
+       - https://rushter.com/blog/python-gil-thread-scheduling/
+       - from https://news.ycombinator.com/item?id=17308601
+
+elvish
+	- https://news.ycombinator.com/item?id=8090534
+
+128 bit? 512 bit! - Arm8A-SVE (Scalable Vector Extension) 512-bit architecture
+	- up to 2048 bits? https://alastairreid.github.io/papers/sve-ieee-micro-2017.pdf
+	- these could be specialist instructions rather than generic pointers/ints
+	- actually none mainstream processors: https://en.wikipedia.org/wiki/128-bit
+
+Build Your Own Lisp
+	- https://news.ycombinator.com/item?id=17478489
+
+iflet/whenlet anaphoric
+	- https://news.ycombinator.com/item?id=17491228
+
+Walter Bright (D language)
+        - https://www.digitalmars.com/articles/b90.html
+
+GC: copy: (via JIT)
+	- https://news.ycombinator.com/item?id=17695012
+	- https://dinfuehr.github.io/blog/dora-implementing-a-jit-compiler-with-rust/
+
+	- Cheney's algorithm: https://en.wikipedia.org/wiki/Cheney%27s_algorithm
+
+	- ShenandoahGC ZGC
+	  - https://blog.plan99.net/modern-garbage-collection-part-2-1c88847abcfd
+	  - from https://news.ycombinator.com/item?id=21770530
+	  - Brooks forwarding pointer
+	    - read/write barriers
+	  - coloured pointers
+
+Benchmarks: (from Dora, above)
+	- https://github.com/dinfuehr/dora/blob/master/bench/binarytrees/binarytrees.pl
+
+call/cc for C programmers
+	- https://news.ycombinator.com/item?id=17763534
+
+go-style import of remote resources
+	- import (
+	    "fmt"
+	    "gonerics.io/d/set/string.git"
+	  )
+
+Greenspun's tenth rule - https://en.wikipedia.org/wiki/Greenspun%27s_tenth_rule
+
+Evolution of Emacs Lisp - https://news.ycombinator.com/item?id=18267285
+	  - https://www.iro.umontreal.ca/~monnier/hopl-4-emacs-lisp.pdf
+
+	  - Edebug - a non-invasive Elisp debugger
+	  - [Ref14] Portable Scheme Debugger http://citeseerx.ist.psu.edu/viewdoc/download;jsessionid=7BC4B6B35FC6E09FF731862E7238BE3F?doi=10.1.1.53.7311&rep=rep1&type=pdf
+	  - [Ref31] Improved Portable Scheme debugging http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.43.5048&rep=rep1&type=pdf
+
+Emacs bignums - mini-gmp library
+
+bignums-ish   - http://mpmath.org for Python (BSD licence)
+	      - from https://news.ycombinator.com/item?id=20182564 (Common Lisp Numbers)
+
+	      - https://xkcd.com/2170/ 17 significant figures for lat/long of individual atoms
+
+generators - generator.el
+
+S9fES re-imagined - https://news.ycombinator.com/item?id=18282324
+	- benchmarks https://t3x.org/s9fes-reimagined/benchmarks.html
+	- scmbench.tgz now in ~/src/scmbench
+
+Ideal Hash Trees - http://lampwww.epfl.ch/papers/idealhashtrees.pdf
+      - from discussion on Clojure https://news.ycombinator.com/item?id=18834945
+      - including persistent data
+
+      - http://lisp-univ-etc.blogspot.com/2019/09/programming-algorithms-hash-tables.html
+
+Lark	- https://github.com/munificent/lark
+	- from https://news.ycombinator.com/item?id=14506108
+
+Schorr-Waite graph marking algorithm
+	- https://www.cs.cornell.edu/courses/cs312/2007fa/lectures/lec21-schorr-waite.pdf
+	- from https://news.ycombinator.com/item?id=19415735
+
+Delayed Evaluation -> Evolution of Smalltalk
+	- https://news.ycombinator.com/item?id=19430840
+
+janetsh / janet-lang
+	- https://github.com/andrewchambers/janetsh
+	- https://janet-lang.org/
+	- https://news.ycombinator.com/item?id=19896925
+
+Turing tar pit (DSLs) - https://news.ycombinator.com/item?id=20357995
+
+Concise Binary Object Notation - https://news.ycombinator.com/item?id=20603378
+
+syntax-rules primer - http://www.willdonnelly.net/blog/scheme-syntax-rules/
+	- from https://news.ycombinator.com/item?id=20605603
+
+Elixir elixir-lang.org
+       - runs on Erlang VM
+       - https://news.ycombinator.com/item?id=21227430
+       	 - with references to concurrency models in Elixir, Crystal, Python GIL, ...
+	 - lisps and Steele's acceptance tests: https://www.dreamsongs.com/Files/HOPL2-Uncut.pdf
+
+File Formats - https://www.fadden.com/tech/file-formats.html
+     	     - https://news.ycombinator.com/item?id=21238306
+
+Lisp Flavoured Prgramming Languages
+     - https://github.com/dundalek/awesome-lisp-languages
+     - from https://news.ycombinator.com/item?id=21625848
+
+OilShell    - http://www.oilshell.org
+	    - from https://news.ycombinator.com/item?id=21665681
+
+WASM	    - 
+
