@@ -133,61 +133,75 @@
  *
  */
 
-#define IDIO_TYPE_NONE            0
-#define IDIO_TYPE_FIXNUM          1
-#define IDIO_TYPE_CONSTANT        2
-#define IDIO_TYPE_CHARACTER       3
-#define IDIO_TYPE_STRING          4
-#define IDIO_TYPE_SUBSTRING       5
-#define IDIO_TYPE_SYMBOL          6
-#define IDIO_TYPE_KEYWORD         7
-#define IDIO_TYPE_PAIR            8
-#define IDIO_TYPE_ARRAY           9
-#define IDIO_TYPE_HASH            10
-#define IDIO_TYPE_CLOSURE         11
-#define IDIO_TYPE_PRIMITIVE       12
-#define IDIO_TYPE_BIGNUM          13
-
-#define IDIO_TYPE_MODULE          20
-#define IDIO_TYPE_FRAME           21
-#define IDIO_TYPE_HANDLE          22
-#define IDIO_TYPE_STRUCT_TYPE     23
-#define IDIO_TYPE_STRUCT_INSTANCE 24
-#define IDIO_TYPE_THREAD	  25
-#define IDIO_TYPE_CONTINUATION	  26
-
-#define IDIO_TYPE_C_INT           30
-#define IDIO_TYPE_C_UINT          31
-#define IDIO_TYPE_C_FLOAT         32
-#define IDIO_TYPE_C_DOUBLE        33
-#define IDIO_TYPE_C_POINTER       34
-#define IDIO_TYPE_C_VOID          35
-
-#define IDIO_TYPE_C_INT8_T        36
-#define IDIO_TYPE_C_UINT8_T       37
-#define IDIO_TYPE_C_INT16_T       38
-#define IDIO_TYPE_C_UINT16_T      39
-#define IDIO_TYPE_C_INT32_T       40
-#define IDIO_TYPE_C_UINT32_T      41
-#define IDIO_TYPE_C_INT64_T       42
-#define IDIO_TYPE_C_UINT64_T      43
 /*
-#define IDIO_TYPE_C_CHAR          28
-#define IDIO_TYPE_C_UCHAR         29
-#define IDIO_TYPE_C_SHORT         30
-#define IDIO_TYPE_C_USHORT        31
-#define IDIO_TYPE_C_INT           32
-#define IDIO_TYPE_C_UINT          33
-#define IDIO_TYPE_C_LONG          34
-#define IDIO_TYPE_C_ULONG         35
+ * Distinct Idio types
+ *
+ * This is regardless of implementation, eg. multiple constant types
+ */
+#define IDIO_TYPE_NONE			0
+#define IDIO_TYPE_FIXNUM		1
+#define IDIO_TYPE_CONSTANT_IDIO		2
+#define IDIO_TYPE_CONSTANT_TOKEN	3
+#define IDIO_TYPE_CONSTANT_I_CODE	4
+#define IDIO_TYPE_CONSTANT_CHARACTER	5
+/*
+#define IDIO_TYPE_CONSTANT_5		6
+#define IDIO_TYPE_CONSTANT_6		7
+#define IDIO_TYPE_CONSTANT_7		8
+#define IDIO_TYPE_CONSTANT_8		9
 */
-#define IDIO_TYPE_CTD             50
-#define IDIO_TYPE_C_TYPEDEF       51
-#define IDIO_TYPE_C_STRUCT        52
-#define IDIO_TYPE_C_INSTANCE      53
-#define IDIO_TYPE_C_FFI           54
-#define IDIO_TYPE_OPAQUE          55
-#define IDIO_TYPE_MAX             56
+#define IDIO_TYPE_PLACEHOLDER		10
+#define IDIO_TYPE_STRING		11
+#define IDIO_TYPE_SUBSTRING		12
+#define IDIO_TYPE_SYMBOL		13
+#define IDIO_TYPE_KEYWORD		14
+#define IDIO_TYPE_PAIR			15
+#define IDIO_TYPE_ARRAY			16
+#define IDIO_TYPE_HASH			17
+#define IDIO_TYPE_CLOSURE		18
+#define IDIO_TYPE_PRIMITIVE		19
+#define IDIO_TYPE_BIGNUM		20
+
+#define IDIO_TYPE_MODULE		21
+#define IDIO_TYPE_FRAME			22
+#define IDIO_TYPE_HANDLE		23
+#define IDIO_TYPE_STRUCT_TYPE		24
+#define IDIO_TYPE_STRUCT_INSTANCE	25
+#define IDIO_TYPE_THREAD		26
+#define IDIO_TYPE_CONTINUATION		27
+
+#define IDIO_TYPE_C_INT         	30
+#define IDIO_TYPE_C_UINT        	31
+#define IDIO_TYPE_C_FLOAT       	32
+#define IDIO_TYPE_C_DOUBLE      	33
+#define IDIO_TYPE_C_POINTER     	34
+#define IDIO_TYPE_C_VOID        	35
+
+#define IDIO_TYPE_C_INT8_T      	36
+#define IDIO_TYPE_C_UINT8_T     	37
+#define IDIO_TYPE_C_INT16_T     	38
+#define IDIO_TYPE_C_UINT16_T    	39
+#define IDIO_TYPE_C_INT32_T     	40
+#define IDIO_TYPE_C_UINT32_T    	41
+#define IDIO_TYPE_C_INT64_T     	42
+#define IDIO_TYPE_C_UINT64_T    	43
+/*
+#define IDIO_TYPE_C_CHAR        	28
+#define IDIO_TYPE_C_UCHAR       	29
+#define IDIO_TYPE_C_SHORT       	30
+#define IDIO_TYPE_C_USHORT      	31
+#define IDIO_TYPE_C_INT         	32
+#define IDIO_TYPE_C_UINT        	33
+#define IDIO_TYPE_C_LONG        	34
+#define IDIO_TYPE_C_ULONG       	35
+*/
+#define IDIO_TYPE_CTD           	50
+#define IDIO_TYPE_C_TYPEDEF     	51
+#define IDIO_TYPE_C_STRUCT      	52
+#define IDIO_TYPE_C_INSTANCE    	53
+#define IDIO_TYPE_C_FFI         	54
+#define IDIO_TYPE_OPAQUE        	55
+#define IDIO_TYPE_MAX           	56
 
 /**
  * typedef idio_type_e - Idio type discriminator
@@ -200,6 +214,10 @@
  * #define IDIO_TYPE_STRING	4
  */
 typedef unsigned char idio_type_e;
+
+/* byte compiler instruction */
+typedef uint8_t IDIO_I;
+#define IDIO_I_MAX	UINT8_MAX
 
 #define IDIO_FLAG_NONE			0
 #define IDIO_FLAG_GCC_SHIFT		0	/* GC colours -- four bits */
@@ -1040,60 +1058,105 @@ typedef struct idio_gc_s {
      While we ponder the nuances, compiled files are
      architecture-oriented.
 
- * - small constants the user can see and use: #t, #f, #eof etc.. as
+ * - (small) constants the user can see and use: #t, #f, #eof etc.. as
      well as various internal well-known values (reader tokens,
      idio_T_*, intermediate code idio_I_*, VM instructions idio_A_*
      etc.).
 
-     This is a fixed set -- fixed in the sense that we know it isn't
+     These are fixed sets -- fixed in the sense that we know it isn't
      going to be troubling a 32-bit boundary as we, in C-land, are in
      control of it.
 
- * - characters: as a distinct type from fixnums to avoid the
-     awkwardness of trying to assign a meaning to: 1 + #\®.
+     Let's reserve three bits to cover distinguishing between constant
+     types although we only have four at the moment.
+
+     Another subset (although much much larger) is characters: as a
+     distinct type from fixnums to avoid the awkwardness of trying to
+     assign a meaning to: 1 + #\®.
 
      Unicode, is a popular choice and is also a fixed set, not
      troubling a 32-bit boundary.
 
- * All three will then have a minimum of 30 bits of useful space.
+     Although *how* we store Unicode is an interesting point.  With
+     the various different constants chewing up a few bits of
+     identification we should have ~27 bits on a 32bit platform to
+     play with.  We can obviously store Unicode internally as UTF-16.
+     However, we are much more likely to interact with the world in
+     UTF-8.
+
+     UTF-8 itself isn't perfect as the original Unicode spec, ISO
+     10646, called for up to 6 octets although UTF-8 only encodes up
+     to four.  Of those four, the worst case, from
+     https://tools.ietf.org/html/rfc3629, is: 11110xxx 10xxxxxx
+     10xxxxxx 10xxxxxx; which is 21 bits of data.  The leading 11110
+     to indicate this is the fourth of the four multi-octet encodings,
+     ie, two bits of alternatives, isn't strictly neceesary as it can
+     be derived from the (binary) value.
+
+ * - not yet determined but something that will use the whole address
+     space usefully.  Probably, flonums based on IEEE 794.  Do shells
+     need flonums?  Who cares, they sound interesting to implement.
+
+ * All three will then have a minimum of 30 bits of useful space to
+ * work with on a 32bit machine.
 
  * Of course, we could subdivide any of these into further types each
  * using proportionally less space.  The constants (there's maybe a
- * few hundred) are an obvious candidate.  Characters could be handled
- * similarly as even Unicode is only using some 10% of its 1,114,112
- * possible characters.  Even if it used the lot that's less than
- * 10**8 -- there's a bit of space left over!
+ * few hundred) are the obvious candidate.
  */
 
-#define IDIO_TYPE_MASK           0x3
-
-#define IDIO_TYPE_POINTER_MARK   0x00
-#define IDIO_TYPE_FIXNUM_MARK    0x01
-#define IDIO_TYPE_CONSTANT_MARK  0x02
-#define IDIO_TYPE_CHARACTER_MARK 0x03
-
-#define IDIO_TYPE_POINTERP(x)	((((intptr_t) x) & IDIO_TYPE_MASK) == IDIO_TYPE_POINTER_MARK)
-#define IDIO_TYPE_FIXNUMP(x)	((((intptr_t) x) & IDIO_TYPE_MASK) == IDIO_TYPE_FIXNUM_MARK)
-#define IDIO_TYPE_CONSTANTP(x)	((((intptr_t) x) & IDIO_TYPE_MASK) == IDIO_TYPE_CONSTANT_MARK)
-#define IDIO_TYPE_CHARACTERP(x)	((((intptr_t) x) & IDIO_TYPE_MASK) == IDIO_TYPE_CHARACTER_MARK)
-
-#define IDIO_FIXNUM_VAL(x)	(((intptr_t) x) >> 2)
-#define IDIO_FIXNUM(x)		((IDIO) ((x) << 2 | IDIO_TYPE_FIXNUM_MARK))
-#define IDIO_FIXNUM_MIN		(INTPTR_MIN >> 2)
-#define IDIO_FIXNUM_MAX		(INTPTR_MAX >> 2)
-
-#define IDIO_CONSTANT_VAL(x)	(((intptr_t) x) >> 2)
-#define IDIO_CONSTANT(x)	((const IDIO) ((x) << 2 | IDIO_TYPE_CONSTANT_MARK))
-
-#define IDIO_CHARACTER_VAL(x)	(((intptr_t) x) >> 2)
-#define IDIO_CHARACTER_IVAL(x)	(tolower (IDIO_CHARACTER_VAL (x)))
-#define IDIO_CHARACTER(x)	((const IDIO) (((intptr_t) x) << 2 | IDIO_TYPE_CHARACTER_MARK))
-
-/**
- * typedef IDIO_I - byte compiler instruction
+/*
+ * two bits to distinguish the four broad types
  */
-typedef uint8_t IDIO_I;
-#define IDIO_I_MAX	UINT8_MAX
+#define IDIO_TYPE_BITS			2
+#define IDIO_TYPE_BITS_SHIFT		IDIO_TYPE_BITS
+#define IDIO_TYPE_MASK			0x3
+
+#define IDIO_TYPE_POINTER_MARK		0x00
+#define IDIO_TYPE_FIXNUM_MARK		0x01
+#define IDIO_TYPE_CONSTANT_MARK		0x02
+#define IDIO_TYPE_PLACEHOLDER_MARK	0x03
+
+/*
+ * three bits to distinguish between the constant types, shifted by
+ * the two bits above
+ *
+ * The _MARKs include the _CONSTANT_MARK so the _MASK is the first
+ * five bits
+ */
+#define IDIO_TYPE_CONSTANT_BITS			3
+#define IDIO_TYPE_CONSTANT_BITS_SHIFT		(IDIO_TYPE_BITS + IDIO_TYPE_CONSTANT_BITS)
+#define IDIO_TYPE_CONSTANT_MASK			0x1f
+#define IDIO_TYPE_CONSTANT_IDIO_MARK		((0x00 << IDIO_TYPE_BITS_SHIFT) | IDIO_TYPE_CONSTANT_MARK)
+#define IDIO_TYPE_CONSTANT_TOKEN_MARK		((0x01 << IDIO_TYPE_BITS_SHIFT) | IDIO_TYPE_CONSTANT_MARK)
+#define IDIO_TYPE_CONSTANT_I_CODE_MARK		((0x02 << IDIO_TYPE_BITS_SHIFT) | IDIO_TYPE_CONSTANT_MARK)
+#define IDIO_TYPE_CONSTANT_CHARACTER_MARK	((0x03 << IDIO_TYPE_BITS_SHIFT) | IDIO_TYPE_CONSTANT_MARK)
+
+#define IDIO_TYPE_POINTERP(x)		((((intptr_t) x) & IDIO_TYPE_MASK) == IDIO_TYPE_POINTER_MARK)
+#define IDIO_TYPE_FIXNUMP(x)		((((intptr_t) x) & IDIO_TYPE_MASK) == IDIO_TYPE_FIXNUM_MARK)
+#define IDIO_TYPE_CONSTANTP(x)		((((intptr_t) x) & IDIO_TYPE_MASK) == IDIO_TYPE_CONSTANT_MARK)
+#define IDIO_TYPE_PLACEHOLDERP(x)	((((intptr_t) x) & IDIO_TYPE_MASK) == IDIO_TYPE_PLACEHOLDER_MARK)
+
+#define IDIO_TYPE_CONSTANT_IDIOP(x)		((((intptr_t) x) & IDIO_TYPE_CONSTANT_MASK) == IDIO_TYPE_CONSTANT_IDIO_MARK)
+#define IDIO_TYPE_CONSTANT_TOKENP(x)		((((intptr_t) x) & IDIO_TYPE_CONSTANT_MASK) == IDIO_TYPE_CONSTANT_TOKEN_MARK)
+#define IDIO_TYPE_CONSTANT_I_CODEP(x)		((((intptr_t) x) & IDIO_TYPE_CONSTANT_MASK) == IDIO_TYPE_CONSTANT_I_CODE_MARK)
+#define IDIO_TYPE_CONSTANT_CHARACTERP(x)	((((intptr_t) x) & IDIO_TYPE_CONSTANT_MASK) == IDIO_TYPE_CONSTANT_CHARACTER_MARK)
+
+#define IDIO_FIXNUM_VAL(x)	(((intptr_t) x) >> IDIO_TYPE_BITS_SHIFT)
+#define IDIO_FIXNUM(x)		((IDIO) ((x) << IDIO_TYPE_BITS_SHIFT | IDIO_TYPE_FIXNUM_MARK))
+#define IDIO_FIXNUM_MIN		(INTPTR_MIN >> IDIO_TYPE_BITS_SHIFT)
+#define IDIO_FIXNUM_MAX		(INTPTR_MAX >> IDIO_TYPE_BITS_SHIFT)
+
+#define IDIO_CONSTANT_IDIO_VAL(x)	(((intptr_t) x) >> IDIO_TYPE_CONSTANT_BITS_SHIFT)
+#define IDIO_CONSTANT_IDIO(x)		((const IDIO) ((x) << IDIO_TYPE_CONSTANT_BITS_SHIFT | IDIO_TYPE_CONSTANT_IDIO_MARK))
+#define IDIO_CONSTANT_TOKEN_VAL(x)	(((intptr_t) x) >> IDIO_TYPE_CONSTANT_BITS_SHIFT)
+#define IDIO_CONSTANT_TOKEN(x)		((const IDIO) ((x) << IDIO_TYPE_CONSTANT_BITS_SHIFT | IDIO_TYPE_CONSTANT_TOKEN_MARK))
+#define IDIO_CONSTANT_I_CODE_VAL(x)	(((intptr_t) x) >> IDIO_TYPE_CONSTANT_BITS_SHIFT)
+#define IDIO_CONSTANT_I_CODE(x)	((const IDIO) ((x) << IDIO_TYPE_CONSTANT_BITS_SHIFT | IDIO_TYPE_CONSTANT_I_CODE_MARK))
+
+#define IDIO_CHARACTER_VAL(x)	(((intptr_t) x) >> IDIO_TYPE_CONSTANT_BITS_SHIFT)
+/* #define IDIO_CHARACTER_IVAL(x)	(tolower (IDIO_CHARACTER_VAL (x))) */
+#define IDIO_CHARACTER(x)	((const IDIO) (((intptr_t) x) << IDIO_TYPE_CONSTANT_BITS_SHIFT | IDIO_TYPE_CONSTANT_CHARACTER_MARK))
 
 /*
  * Idio instruction arrays.

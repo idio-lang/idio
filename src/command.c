@@ -448,19 +448,27 @@ char **idio_command_argv (IDIO args)
     while (idio_S_nil != args) {
 	IDIO arg = IDIO_PAIR_H (args);
 	
-	switch ((intptr_t) arg & 3) {
+	switch ((intptr_t) arg & IDIO_TYPE_MASK) {
 	case IDIO_TYPE_FIXNUM_MARK:
 	    {
 		argv[i++] = idio_display_string (arg);
 	    }
 	    break;
 	case IDIO_TYPE_CONSTANT_MARK:
-	    idio_command_error_argv_type (arg, "unconvertible value", IDIO_C_LOCATION ("idio_command_argv"));
-	    break;
-	case IDIO_TYPE_CHARACTER_MARK:
 	    {
-		argv[i++] = idio_display_string (arg);
+		switch ((intptr_t) arg & IDIO_TYPE_CONSTANT_MASK) {
+		case IDIO_TYPE_CONSTANT_CHARACTER_MARK:
+		    {
+			argv[i++] = idio_display_string (arg);
+		    }
+		    break;
+		default:
+		    idio_command_error_argv_type (arg, "unconvertible value", IDIO_C_LOCATION ("idio_command_argv"));
+		    break;
+		}
 	    }
+	case IDIO_TYPE_PLACEHOLDER_MARK:
+	    idio_command_error_argv_type (arg, "unconvertible value", IDIO_C_LOCATION ("idio_command_argv"));
 	    break;
 	case IDIO_TYPE_POINTER_MARK:
 	    {

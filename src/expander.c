@@ -153,8 +153,8 @@ IDIO idio_evaluate_expander_source (IDIO x, IDIO e)
  *
  * =>
  *
- * 1. (apply (lambda (map car bindings) body) (map cadr bindings))
- * 2. (apply (letrec ((name (lambda (map car bindings) body))) (map cadr bindings)))
+ * 1. (apply (lambda (map ph bindings) body) (map pht bindings))
+ * 2. (apply (letrec ((name (lambda (map ph bindings) body))) (map pht bindings)))
  */
 
 IDIO_DEFINE_PRIMITIVE1 ("let", let, (IDIO e))
@@ -233,7 +233,7 @@ IDIO_DEFINE_PRIMITIVE1 ("let", let, (IDIO e))
  *
  * =>
  *
- * (apply (lambda (map car bindings) body) (map cdr bindings))
+ * (apply (lambda (map ph bindings) body) (map pt bindings))
  */
 
 IDIO_DEFINE_PRIMITIVE1 ("let*", lets, (IDIO e))
@@ -293,7 +293,7 @@ IDIO_DEFINE_PRIMITIVE1 ("let*", lets, (IDIO e))
  *
  * =>
  *
- * (apply (lambda (map car bindings) body) (map cdr bindings))
+ * (apply (lambda (map ph bindings) body) (map pt bindings))
  */
 
 IDIO_DEFINE_PRIMITIVE1 ("letrec", letrec, (IDIO e))
@@ -442,15 +442,15 @@ static IDIO idio_application_expander (IDIO x, IDIO e)
     if (idio_S_nil == xh) {
 	return idio_S_nil;
     } else if (idio_isa_pair (xh)) {
-	IDIO mcar = idio_list_mapcar (x);
-	IDIO mcdr = idio_list_mapcdr (x);
+	IDIO mph = idio_list_map_ph (x);
+	IDIO mpt = idio_list_map_pt (x);
 
 	if (idio_S_false == e) {
-	    r = idio_pair (mcar,
-			   idio_application_expander (mcdr, e));
+	    r = idio_pair (mph,
+			   idio_application_expander (mpt, e));
 	} else {
-	    r = idio_pair (idio_initial_expander (mcar, e),
-			   idio_application_expander (mcdr, e));
+	    r = idio_pair (idio_initial_expander (mph, e),
+			   idio_application_expander (mpt, e));
 	}
     } else {
 	if (idio_S_false == e) {
@@ -487,7 +487,7 @@ static IDIO idio_initial_expander (IDIO x, IDIO e)
 	    /*
 	     * apply the macro!
 	     *
-	     * ((cdr (assq functor *expander-list*)) x e)
+	     * ((pt (assq functor *expander-list*)) x e)
 	     */
 	    return idio_apply (IDIO_PAIR_T (expander), IDIO_LIST3 (x, e, idio_S_nil));
 	} else {

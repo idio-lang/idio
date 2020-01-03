@@ -272,7 +272,7 @@ static void idio_read_error_string (IDIO handle, IDIO detail, char *msg)
     idio_read_error (handle, idio_get_output_string (sh), detail);
 }
 
-static void idio_read_error_character (IDIO handle, IDIO detail, char *msg)
+static void idio_read_error_named_character (IDIO handle, IDIO detail, char *msg)
 {
     IDIO_ASSERT (handle);
     IDIO_ASSERT (detail);
@@ -286,7 +286,7 @@ static void idio_read_error_character (IDIO handle, IDIO detail, char *msg)
     idio_read_error (handle, idio_get_output_string (sh), detail);
 }
 
-static void idio_read_error_character_unknown_name (IDIO handle, IDIO detail, char *name)
+static void idio_read_error_named_character_unknown_name (IDIO handle, IDIO detail, char *name)
 {
     IDIO_ASSERT (handle);
     IDIO_ASSERT (detail);
@@ -296,6 +296,20 @@ static void idio_read_error_character_unknown_name (IDIO handle, IDIO detail, ch
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C ("unknown character name: ", sh);
     idio_display_C (name, sh);
+
+    idio_read_error (handle, idio_get_output_string (sh), detail);
+}
+
+static void idio_read_error_utf8_decode (IDIO handle, IDIO detail, char *msg)
+{
+    IDIO_ASSERT (handle);
+    IDIO_ASSERT (detail);
+    IDIO_C_ASSERT (msg);
+    IDIO_TYPE_ASSERT (handle, handle);
+    
+    IDIO sh = idio_open_output_string_handle_C ();
+    idio_display_C ("UTF-8 decode: ", sh);
+    idio_display_C (msg, sh);
 
     idio_read_error (handle, idio_get_output_string (sh), detail);
 }
@@ -378,15 +392,15 @@ static IDIO idio_read_list (IDIO handle, IDIO opendel, char *ic, int depth)
 	     * XXX should only expect a single expr after
 	     * IDIO_PAIR_SEPARATOR, ie. not a list: (a . b c)
 	     */
-	    IDIO cdr = idio_read_1_expr (handle, ic, depth);
-	    while (idio_T_eol == cdr) {
-		cdr = idio_read_1_expr (handle, ic, depth);
+	    IDIO pt = idio_read_1_expr (handle, ic, depth);
+	    while (idio_T_eol == pt) {
+		pt = idio_read_1_expr (handle, ic, depth);
 	    }
 
 	    if (idio_handle_eofp (handle)) {
 		idio_read_error_list_eof (handle, IDIO_C_LOCATION ("idio_read_list"));
 		return idio_S_unspec;
-	    } else if (closedel == cdr) {
+	    } else if (closedel == pt) {
 		/* (a &) */
 		char em[BUFSIZ];
 		sprintf (em, "nothing after %c in list", IDIO_PAIR_SEPARATOR);
@@ -406,7 +420,7 @@ static IDIO idio_read_list (IDIO handle, IDIO opendel, char *ic, int depth)
 		idio_read_error_list_eof (handle, IDIO_C_LOCATION ("idio_read_list"));
 		return idio_S_unspec;
 	    } else if (closedel == del) {
-		return idio_improper_list_reverse (r, cdr);
+		return idio_improper_list_reverse (r, pt);
 	    } else {
 		/* (a & b c) */
 		idio_debug ("extra=%s\n", del);
@@ -458,8 +472,8 @@ static IDIO idio_read_list (IDIO handle, IDIO opendel, char *ic, int depth)
 	    /*
 	     * A few tokens can slip through the net...
 	     */
-	    if (IDIO_TYPE_CONSTANTP (e)) {
-		uintptr_t ev = IDIO_CONSTANT_VAL (e);
+	    if (IDIO_TYPE_CONSTANT_IDIOP (e)) {
+		uintptr_t ev = IDIO_CONSTANT_IDIO_VAL (e);
 		switch (ev) {
 		case IDIO_CONSTANT_NIL:
 		case IDIO_CONSTANT_UNDEF:
@@ -470,6 +484,14 @@ static IDIO idio_read_list (IDIO handle, IDIO opendel, char *ic, int depth)
 		case IDIO_CONSTANT_VOID:
 		case IDIO_CONSTANT_NAN:
 		    break;
+		default:
+		    idio_error_C ("unexpected token in list", IDIO_LIST2 (handle, e), IDIO_C_LOCATION ("idio_read_list"));
+		}
+	    }
+
+	    if (IDIO_TYPE_CONSTANT_TOKENP (e)) {
+		uintptr_t ev = IDIO_CONSTANT_TOKEN_VAL (e);
+		switch (ev) {
 		case IDIO_TOKEN_LANGLE:
 		    e = idio_S_lt;
 		    break;
@@ -660,7 +682,7 @@ static IDIO idio_read_string (IDIO handle)
     return r;
 }
 
-static IDIO idio_read_character (IDIO handle)
+static IDIO idio_read_named_character (IDIO handle)
 {
     IDIO_ASSERT (handle);
 
@@ -672,7 +694,7 @@ static IDIO idio_read_character (IDIO handle)
 	c = idio_handle_getc (handle);
 
 	if (EOF == c) {
-	    idio_read_error_character (handle, IDIO_C_LOCATION ("idio_read_character"), "EOF");
+	    idio_read_error_named_character (handle, IDIO_C_LOCATION ("idio_read_named_character"), "EOF");
 	    return idio_S_unspec;
 	}
 
@@ -696,7 +718,7 @@ static IDIO idio_read_character (IDIO handle)
     
     /* can i==0 happen? EOF? */
     if (0 == i) {
-	idio_read_error_character (handle, IDIO_C_LOCATION ("idio_read_character"), "no letters in character name?");
+	idio_read_error_named_character (handle, IDIO_C_LOCATION ("idio_read_named_character"), "no letters in character name?");
 	return idio_S_unspec;
     } else if (1 == i) {
 	r = IDIO_CHARACTER (buf[0]);
@@ -704,12 +726,12 @@ static IDIO idio_read_character (IDIO handle)
 	r = idio_character_lookup (buf);
 
 	if (r == idio_S_unspec) {
-	    idio_read_error_character_unknown_name (handle, IDIO_C_LOCATION ("idio_read_character"), buf);
+	    idio_read_error_named_character_unknown_name (handle, IDIO_C_LOCATION ("idio_read_named_character"), buf);
 	    return idio_S_unspec;
 	}
     }
 
-    idio_gc_stats_inc (IDIO_TYPE_CHARACTER);
+    idio_gc_stats_inc (IDIO_TYPE_CONSTANT_CHARACTER);
     return r;
 }
 
@@ -735,9 +757,9 @@ static IDIO idio_read_template (IDIO handle, int depth)
     IDIO_ASSERT (handle);
 
     int i;
-    char ic[IDIO_INTERPOLATION_CHARS];
+    char interpc[IDIO_INTERPOLATION_CHARS];
     for (i = 0; i < IDIO_INTERPOLATION_CHARS; i++) {
-	ic[i] = idio_default_interpolation_chars[i];
+	interpc[i] = idio_default_interpolation_chars[i];
     }
     i = 0;
     
@@ -751,11 +773,11 @@ static IDIO idio_read_template (IDIO handle, int depth)
 
 	switch (c) {
 	case EOF:
-	    idio_read_error_character (handle, IDIO_C_LOCATION ("idio_read_template"), "EOF");
+	    idio_read_error_named_character (handle, IDIO_C_LOCATION ("idio_read_template"), "EOF");
 	    return idio_S_unspec;
 	default:
 	    if (IDIO_CHAR_DOT != c) {
-		ic[i] = c;
+		interpc[i] = c;
 	    }
 	}
 
@@ -786,7 +808,7 @@ static IDIO idio_read_template (IDIO handle, int depth)
 	return idio_S_unspec;
     }
 
-    IDIO e = idio_read_block (handle, closedel, ic, depth);
+    IDIO e = idio_read_block (handle, closedel, interpc, depth);
     /*
      * idio_read_block has returned (block expr) and we only want expr
      *
@@ -807,9 +829,9 @@ static IDIO idio_read_pathname (IDIO handle, int depth)
     IDIO_ASSERT (handle);
 
     int i;
-    char ic[IDIO_INTERPOLATION_CHARS];
+    char interpc[IDIO_INTERPOLATION_CHARS];
     for (i = 0; i < IDIO_INTERPOLATION_CHARS; i++) {
-	ic[i] = idio_default_interpolation_chars[i];
+	interpc[i] = idio_default_interpolation_chars[i];
     }
     i = 0;
     
@@ -823,11 +845,11 @@ static IDIO idio_read_pathname (IDIO handle, int depth)
 
 	switch (c) {
 	case EOF:
-	    idio_read_error_character (handle, IDIO_C_LOCATION ("idio_read_pathname"), "EOF");
+	    idio_read_error_named_character (handle, IDIO_C_LOCATION ("idio_read_pathname"), "EOF");
 	    return idio_S_unspec;
 	default:
 	    if (IDIO_CHAR_DOT != c) {
-		ic[i] = c;
+		interpc[i] = c;
 	    }
 	}
 
@@ -1244,7 +1266,7 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int nl)
 		    case 'n':
 			return idio_S_nil;
 		    case '\\':
-			return idio_read_character (handle);
+			return idio_read_named_character (handle);
 		    case '[':
 			return idio_read_array (handle, ic, IDIO_LIST_BRACKET (depth + 1));
 		    case '{':
@@ -1450,8 +1472,8 @@ static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, char *ic, int depth
 	    /*
 	     * A few tokens can slip through the net...
 	     */
-	    if (IDIO_TYPE_CONSTANTP (expr)) {
-		uintptr_t ev = IDIO_CONSTANT_VAL (expr);
+	    if (IDIO_TYPE_CONSTANT_IDIOP (expr)) {
+		uintptr_t ev = IDIO_CONSTANT_IDIO_VAL (expr);
 		switch (ev) {
 		case IDIO_CONSTANT_NIL:
 		case IDIO_CONSTANT_UNDEF:
@@ -1462,6 +1484,14 @@ static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, char *ic, int depth
 		case IDIO_CONSTANT_VOID:
 		case IDIO_CONSTANT_NAN:
 		    break;
+		default:
+		    idio_error_C ("unexpected token in line", IDIO_LIST2 (handle, expr), IDIO_C_LOCATION ("idio_read_expr_line"));
+		}
+	    }
+
+ 	    if (IDIO_TYPE_CONSTANT_TOKENP (expr)) {
+		uintptr_t ev = IDIO_CONSTANT_TOKEN_VAL (expr);
+		switch (ev) {
 		case IDIO_TOKEN_LANGLE:
 		    expr = idio_S_lt;
 		    break;
@@ -1478,6 +1508,7 @@ static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, char *ic, int depth
 		    idio_error_C ("unexpected token in line", IDIO_LIST2 (handle, expr), IDIO_C_LOCATION ("idio_read_expr_line"));
 		}
 	    }
+
 	    r = idio_pair (expr, r);
 	}
 	count++;
@@ -1571,8 +1602,56 @@ IDIO idio_read_char (IDIO handle)
     if (EOF == c) {
 	return idio_S_eof;
     } else {
+	/*
+	 * Technically more of an IDIO_OCTET than a true (UTF-8)
+	 * character but you didn't read this, right?
+	 */
 	return IDIO_CHARACTER (c);
     }
+}
+
+IDIO idio_read_character (IDIO handle)
+{
+    IDIO_ASSERT (handle);
+    IDIO_TYPE_ASSERT (handle, handle);
+
+    idio_utf8_t codepoint;
+    idio_utf8_t state = 0;
+
+    int i;
+    for (i = 0; ; i++) {
+	int c = idio_handle_getc (handle);
+
+	if (EOF == c) {
+	    if (i) {
+		fprintf (stderr, "EOF w/ i=%d\n", i);
+		idio_read_error_utf8_decode (handle, IDIO_C_LOCATION ("idio_read_character"), "EOF");
+	    } else {
+		return idio_S_eof;
+	    }
+	}
+
+	/*
+	 * if this is a non-ASCII value then it should be the result
+	 * of an idio_handle_ungetc
+	 */
+	if (c > 0x7f) {
+	    codepoint = c;
+	    break;
+	}
+
+	if (0 == idio_utf8_decode (&state, &codepoint, c)) {
+	    /* fprintf (stderr, "idio_read_character: U+%04X\n", codepoint); */
+	    break;
+	}
+
+	if (state != IDIO_UTF8_ACCEPT) {
+	    fprintf (stderr, "The (UTF-8) string is not well-formed\n");
+	    idio_read_error_utf8_decode (handle, IDIO_C_LOCATION ("idio_read_character"), "not well-formed");
+	}
+    }
+
+    return IDIO_CHARACTER (codepoint);
 }
 
 void idio_init_read ()

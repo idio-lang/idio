@@ -112,7 +112,7 @@ int idio_isa_character (IDIO o)
 {
     IDIO_ASSERT (o);
 
-    if (((intptr_t) o & 3) == IDIO_TYPE_CHARACTER_MARK) {
+    if (((intptr_t) o & IDIO_TYPE_CONSTANT_MASK) == IDIO_TYPE_CONSTANT_CHARACTER_MARK) {
 	intptr_t cv = IDIO_CHARACTER_VAL (o);
 
 	/*
@@ -237,6 +237,26 @@ This implementation uses libc isblank() and isspace()		\n\
     return r;
 }
 
+intptr_t idio_character_ival (IDIO ic)
+{
+    IDIO_ASSERT (ic);
+
+    IDIO_VERIFY_PARAM_TYPE (character, ic);
+
+    intptr_t c = IDIO_CHARACTER_VAL (ic);
+    
+    intptr_t r = c;
+
+    /*
+     * ASCII only
+     */
+    if (c < 0x80) {
+	r = tolower (c);
+    }
+
+    return r;
+}
+
 IDIO_DEFINE_PRIMITIVE1_DS ("char-downcase",  char_downcase, (IDIO c), "c", "\
 return lowercase variant of `c`			\n\
 						\n\
@@ -251,7 +271,7 @@ This implementation uses libc tolower()		\n\
 
     IDIO_VERIFY_PARAM_TYPE (character, c);
 
-    return IDIO_CHARACTER (IDIO_CHARACTER_IVAL (c));
+    return IDIO_CHARACTER (idio_character_ival (c));
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("char-lower-case?",  char_lower_case_p, (IDIO c), "c", "\
@@ -353,7 +373,7 @@ This implementation uses libc isupper()		\n\
     IDIO_DEFINE_CHARACTER_PRIMITIVE2V (name, char_ci_ ## cname ## _p, cmp, IDIO_CHARACTER_VAL)
 
 #define IDIO_DEFINE_CHARACTER_CI_PRIMITIVE2V(name,cname,cmp)		\
-    IDIO_DEFINE_CHARACTER_PRIMITIVE2V (name, char_ ## cname ## _p, cmp, IDIO_CHARACTER_IVAL)
+    IDIO_DEFINE_CHARACTER_PRIMITIVE2V (name, char_ ## cname ## _p, cmp, idio_character_ival)
 
 IDIO_DEFINE_CHARACTER_CI_PRIMITIVE2V ("char-ci<=?", le, <=)
 IDIO_DEFINE_CHARACTER_CI_PRIMITIVE2V ("char-ci<?", lt, <)

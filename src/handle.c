@@ -294,7 +294,9 @@ int idio_handle_ungetc (IDIO h, int c)
 	IDIO_HANDLE_LINE (h) -= 1;
     }
 
-    IDIO_HANDLE_POS (h) -= 1;
+    if (IDIO_HANDLE_POS (h)) {
+	IDIO_HANDLE_POS (h) -= 1;
+    }
 
     return c;
 }

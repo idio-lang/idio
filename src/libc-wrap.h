@@ -79,6 +79,6 @@ void idio_final_libc_wrap ();
 #endif
 
 /* Local Variables: */
-/* mode: C/l */
+/* mode: C */
 /* coding: utf-8-unix */
 /* End: */

@@ -667,7 +667,7 @@ static IDIO idio_meaning_dequasiquote (IDIO e, int level)
     if (idio_isa_pair (e)) {
 	IDIO eh = IDIO_PAIR_H (e);
 	if (idio_S_quasiquote == eh) {
-	    /* ('list ''quasiquote (deqq (cadr e) (+ level 1))) */
+	    /* ('list ''quasiquote (de-qq (pht e) (+ level 1))) */
 	    return IDIO_LIST3 (idio_S_list,
 			       IDIO_LIST2 (idio_S_quote, idio_S_quasiquote),
 			       idio_meaning_dequasiquote (IDIO_PAIR_HT (e),
@@ -676,7 +676,7 @@ static IDIO idio_meaning_dequasiquote (IDIO e, int level)
 	    if (level <= 0) {
 		return IDIO_PAIR_HT (e);
 	    } else {
-		/* ('list ''unquote (deqq (cadr e) (- level 1))) */
+		/* ('list ''unquote (de-qq (pht e) (- level 1))) */
 		return IDIO_LIST3 (idio_S_list,
 				   IDIO_LIST2 (idio_S_quote, idio_S_unquote),
 				   idio_meaning_dequasiquote (IDIO_PAIR_HT (e),
@@ -688,7 +688,7 @@ static IDIO idio_meaning_dequasiquote (IDIO e, int level)
 				   idio_meaning_dequasiquote (IDIO_PAIR_H (e), level),
 				   idio_meaning_dequasiquote (IDIO_PAIR_T (e), level));
 	    } else {
-		/* ('list ''unquotesplicing (deqq (cadr e) (- level 1))) */
+		/* ('list ''unquotesplicing (de-qq (pht e) (- level 1))) */
 		return IDIO_LIST3 (idio_S_list,
 				   IDIO_LIST2 (idio_S_quote, idio_S_unquotesplicing),
 				   idio_meaning_dequasiquote (IDIO_PAIR_HT (e),
@@ -700,7 +700,7 @@ static IDIO idio_meaning_dequasiquote (IDIO e, int level)
 	    if (idio_S_nil == IDIO_PAIR_T (e)) {
 		return IDIO_PAIR_HTH (e);
 	    } else {
-		/* ('append (cadar e) (deqq (cdr e) level)) */
+		/* ('append (phth e) (de-qq (pt e) level)) */
 		return IDIO_LIST3 (idio_S_append,
 				   IDIO_PAIR_HTH (e),
 				   idio_meaning_dequasiquote (IDIO_PAIR_T (e),
@@ -790,10 +790,10 @@ static IDIO idio_rewrite_cond (IDIO c)
 	    idio_list_length (IDIO_PAIR_H (c)) == 3) {
 	    IDIO gs = idio_gensym (NULL);
 	    /*
-	      `(let ((gs ,(caar c)))
+	      `(let ((gs ,(phh c)))
 	         (if gs
-	             (,(caddar c) gs)
-	             ,(rewrite-cond-clauses (cdr c))))
+	             (,(phtth c) gs)
+	             ,(rewrite-cond-clauses (pt c))))
 	     */
 	    return IDIO_LIST3 (idio_S_let,
 			       IDIO_LIST1 (IDIO_LIST2 (gs, IDIO_PAIR_HH (c))),
@@ -809,12 +809,12 @@ static IDIO idio_rewrite_cond (IDIO c)
 	    return idio_S_unspec;
 	}
     } else if (idio_S_nil == IDIO_PAIR_TH (c)) {
-	/* fprintf (stderr, "cond-rewrite: null? cdar clause\n");  */
+	/* fprintf (stderr, "cond-rewrite: null? pth clause\n");  */
 	IDIO gs = idio_gensym (NULL);
 	/*
-	  `(let ((gs ,(caar c)))
+	  `(let ((gs ,(phh c)))
 	     (or gs
-	         ,(rewrite-cond-clauses (cdr c))))
+	         ,(rewrite-cond-clauses (pt c))))
 	*/
 	return IDIO_LIST3 (idio_S_let,
 			   IDIO_LIST1 (IDIO_LIST2 (gs, IDIO_PAIR_HH (c))),
@@ -843,7 +843,7 @@ static IDIO idio_meaning_assignment (IDIO name, IDIO e, IDIO nametree, int flags
 	/*
 	 * set! (foo x y z) v
 	 *
-	 * `((setter ,(car name)) ,@(cdr name) ,e)
+	 * `((setter ,(ph name)) ,@(pt name) ,e)
 	 */
 	IDIO se = idio_list_append2 (IDIO_LIST1 (IDIO_LIST2 (idio_S_setter,
 							     IDIO_PAIR_H (name))),
@@ -1000,7 +1000,7 @@ static IDIO idio_meaning_define_macro (IDIO name, IDIO e, IDIO nametree, int fla
     }
 
     /*
-     * create an expander: (function (x e) (apply proc (cdr x)))
+     * create an expander: (function (x e) (apply proc (pt x)))
      *
      * where proc is (function (arg) ...) from above, ie. e
      */
@@ -1014,7 +1014,7 @@ static IDIO idio_meaning_define_macro (IDIO name, IDIO e, IDIO nametree, int fla
 
     /*
      * In general (define-macro a ...) means that "a" is associated
-     * with an expander and that expander takes the cdr of the
+     * with an expander and that expander takes the pt of the
      * expression it is passed, "(a ...)" (ie. it skips over its own
      * name).
      *
@@ -1032,10 +1032,10 @@ static IDIO idio_meaning_define_macro (IDIO name, IDIO e, IDIO nametree, int fla
      * (define-macro b %b) as this macro-expander association means we
      * are replacing the nominal definition of a macro with an
      * expander which takes two arguments and the body of which will
-     * take the cdr of its first argument.  Left alone, expander "b"
-     * will take the cdr then expander "%b" will take the cdr....  "A
-     * Cdr Too Far", one would say, in hindsight and thinking of the
-     * big budget movie potential.
+     * take the pt of its first argument.  Left alone, expander "b"
+     * will take the pt then expander "%b" will take the pt....  "A PT
+     * Too Far", one would say, in hindsight and thinking of the big
+     * budget movie potential.
      *
      * So catch the case where the value is already an expander.
      */
@@ -1854,7 +1854,7 @@ static IDIO idio_rewrite_body_letrec (IDIO e)
 		 * bindings/assignments will implicitly re-order them
 		 */
 		IDIO bindings = idio_S_nil;
-		IDIO ns = idio_list_mapcar (defs);
+		IDIO ns = idio_list_map_ph (defs);
 		while (idio_S_nil != ns) {
 		    bindings = idio_pair (IDIO_LIST2 (IDIO_PAIR_H (ns), idio_S_false), bindings);
 		    ns = IDIO_PAIR_T (ns);
@@ -2078,7 +2078,7 @@ static IDIO idio_meaning_closed_application (IDIO e, IDIO ees, IDIO nametree, in
     /*
      * ((function ...) args)
      *
-     * therefore (car e) == 'function
+     * therefore (ph e) == 'function
      */
     IDIO et = IDIO_PAIR_T (e);
     
@@ -2203,12 +2203,10 @@ static IDIO idio_meaning_primitive_application (IDIO e, IDIO es, IDIO nametree, 
 	    {
 		IDIO m1 = idio_meaning (IDIO_PAIR_H (es), nametree, IDIO_MEANING_NOT_TAILP (flags), cs);
 	    
-		if (IDIO_STREQP (name, "car") ||
-		    IDIO_STREQP (name, "ph")) {
-		    return IDIO_LIST3 (idio_I_PRIMCALL1, idio_fixnum (IDIO_A_PRIMCALL1_CAR), m1);
-		} else if (IDIO_STREQP (name, "cdr") ||
-			   IDIO_STREQP (name, "pt")) {
-		    return IDIO_LIST3 (idio_I_PRIMCALL1, idio_fixnum (IDIO_A_PRIMCALL1_CDR), m1);
+		if (IDIO_STREQP (name, "ph")) {
+		    return IDIO_LIST3 (idio_I_PRIMCALL1, idio_fixnum (IDIO_A_PRIMCALL1_HEAD), m1);
+		} else if (IDIO_STREQP (name, "pt")) {
+		    return IDIO_LIST3 (idio_I_PRIMCALL1, idio_fixnum (IDIO_A_PRIMCALL1_TAIL), m1);
 		} else if (IDIO_STREQP (name, "pair?")) {
 		    return IDIO_LIST3 (idio_I_PRIMCALL1, idio_fixnum (IDIO_A_PRIMCALL1_PAIRP), m1);
 		} else if (IDIO_STREQP (name, "symbol?")) {
@@ -2235,17 +2233,14 @@ static IDIO idio_meaning_primitive_application (IDIO e, IDIO es, IDIO nametree, 
 		IDIO m1 = idio_meaning (IDIO_PAIR_H (es), nametree, IDIO_MEANING_NOT_TAILP (flags), cs);
 		IDIO m2 = idio_meaning (IDIO_PAIR_HT (es), nametree, IDIO_MEANING_NOT_TAILP (flags), cs);
 
-		if (IDIO_STREQP (name, "cons") ||
-		    IDIO_STREQP (name, "pair")) {
-		    return IDIO_LIST4 (idio_I_PRIMCALL2, idio_fixnum (IDIO_A_PRIMCALL2_CONS), m1, m2);
+		if (IDIO_STREQP (name, "pair")) {
+		    return IDIO_LIST4 (idio_I_PRIMCALL2, idio_fixnum (IDIO_A_PRIMCALL2_PAIR), m1, m2);
 		} else if (IDIO_STREQP (name, "eq?")) {
 		    return IDIO_LIST4 (idio_I_PRIMCALL2, idio_fixnum (IDIO_A_PRIMCALL2_EQP), m1, m2);
-		} else if (IDIO_STREQP (name, "set-car!") ||
-			   IDIO_STREQP (name, "set-ph!")) {
-		    return IDIO_LIST4 (idio_I_PRIMCALL2, idio_fixnum (IDIO_A_PRIMCALL2_SET_CAR), m1, m2);
-		} else if (IDIO_STREQP (name, "set-cdr!") ||
-			   IDIO_STREQP (name, "set-pt!")) {
-		    return IDIO_LIST4 (idio_I_PRIMCALL2, idio_fixnum (IDIO_A_PRIMCALL2_SET_CDR), m1, m2);
+		} else if (IDIO_STREQP (name, "set-ph!")) {
+		    return IDIO_LIST4 (idio_I_PRIMCALL2, idio_fixnum (IDIO_A_PRIMCALL2_SET_HEAD), m1, m2);
+		} else if (IDIO_STREQP (name, "set-pt!")) {
+		    return IDIO_LIST4 (idio_I_PRIMCALL2, idio_fixnum (IDIO_A_PRIMCALL2_SET_TAIL), m1, m2);
 		} else if (IDIO_STREQP (name, "+")) {
 		    return IDIO_LIST4 (idio_I_PRIMCALL2, idio_fixnum (IDIO_A_PRIMCALL2_ADD), m1, m2);
 		} else if (IDIO_STREQP (name, "-")) {
@@ -2719,7 +2714,7 @@ static IDIO idio_meaning (IDIO e, IDIO nametree, int flags, IDIO cs)
 		return idio_S_unspec;
 	    }
 	} else if (idio_S_if == eh) {
-	    /* (if cond cons alt) */
+	    /* (if condition consequent alternative) */
 	    if (idio_isa_pair (et)) {
 		IDIO ett = IDIO_PAIR_T (et);
 		if (idio_isa_pair (ett)) {

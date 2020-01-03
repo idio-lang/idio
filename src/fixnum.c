@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -131,7 +131,7 @@ int idio_isa_fixnum (IDIO o)
 {
     IDIO_ASSERT (o);
 
-    return (((intptr_t) o & 3) == IDIO_TYPE_FIXNUM_MARK);
+    return (((intptr_t) o & IDIO_TYPE_MASK) == IDIO_TYPE_FIXNUM_MARK);
 }
 
 IDIO_DEFINE_PRIMITIVE1 ("fixnum?", fixnump, (IDIO o))

@@ -61,6 +61,7 @@ void idio_init (int argc, char **argv)
     idio_init_util ();
     idio_init_primitive ();
     idio_init_character ();
+    idio_init_unicode ();
     idio_init_string ();
     idio_init_array ();
     idio_init_hash ();
@@ -130,6 +131,7 @@ void idio_add_primitives ()
     idio_util_add_primitives ();
     idio_primitive_add_primitives ();
     idio_character_add_primitives ();
+    idio_unicode_add_primitives ();
     idio_string_add_primitives ();
     idio_array_add_primitives ();
     idio_hash_add_primitives ();
@@ -178,6 +180,7 @@ void idio_final ()
     idio_final_hash ();
     idio_final_array ();
     idio_final_string ();
+    idio_final_unicode ();
     idio_final_character ();
     idio_final_primitive ();
     idio_final_util ();
