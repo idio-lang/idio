@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2018 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -896,21 +896,51 @@ void idio_gc_sweep_free_value (IDIO vo)
 	break;
     case IDIO_TYPE_CLOSURE:
 #ifdef IDIO_VM_PERF
-	if (IDIO_CLOSURE_CALLED (vo) > 10) {
-	fprintf (idio_vm_perf_FILE, "%+5lds gc_sweep_free Clos %10p %6" PRIu64, idio_vm_elapsed (), vo, IDIO_CLOSURE_CALLED (vo));
+	if (IDIO_CLOSURE_CALLED (vo) > 1) {
 	    IDIO name = idio_vm_closure_name (vo);
-	    if (idio_S_unspec != name) {
-		idio_debug_FILE (idio_vm_perf_FILE, " %-40s", name);
+	    if (IDIO_CLOSURE_CALL_TIME (vo).tv_sec ||
+		IDIO_CLOSURE_CALL_TIME (vo).tv_nsec ||
+		idio_S_unspec != name) {
+		fprintf (idio_vm_perf_FILE, "%+5lds gc_sweep_free Clos %10p %8" PRIu64, idio_vm_elapsed (), vo, IDIO_CLOSURE_CALLED (vo));
+
+		/*
+		 * A little more complicated to get the closure's name
+		 */
+		if (idio_S_unspec != name) {
+		    idio_debug_FILE (idio_vm_perf_FILE, " %-40s", name);
+		} else {
+		    fprintf (idio_vm_perf_FILE, " %-40s", "--");
+		}
+
+		fprintf (idio_vm_perf_FILE, " %5ld.%09ld", IDIO_CLOSURE_CALL_TIME (vo).tv_sec, IDIO_CLOSURE_CALL_TIME (vo).tv_nsec);
+
+		double call_time = (IDIO_PRIMITIVE_CALL_TIME (vo).tv_sec * 1000000000 + IDIO_PRIMITIVE_CALL_TIME (vo).tv_nsec) / IDIO_PRIMITIVE_CALLED (vo);
+		fprintf (idio_vm_perf_FILE, " %11.f", call_time);
+		char *units = "ns";
+		if (call_time > 10000) {
+		    units = "us";
+		    call_time /= 1000;
+		    if (call_time > 10000) {
+			units = "ms";
+			call_time /= 1000;
+			if (call_time > 10000) {
+			    units = "s";
+			    call_time /= 1000;
+			}
+		    }
+		}
+		fprintf (idio_vm_perf_FILE, " %6.f %s", call_time, units);
+		fprintf (idio_vm_perf_FILE, "\n");
 	    }
-	    fprintf (idio_vm_perf_FILE, "\n");
-        }
+	}
 #endif
 	idio_free_closure (vo);
 	break;
     case IDIO_TYPE_PRIMITIVE:
 #ifdef IDIO_VM_PERF
 	if (IDIO_PRIMITIVE_CALLED (vo)) {
-	    fprintf (idio_vm_perf_FILE, "%+5lds gc_sweep_free Prim %10p %6" PRIu64 " %-40s %5ld.%09ld", idio_vm_elapsed (), vo, IDIO_PRIMITIVE_CALLED (vo), IDIO_PRIMITIVE_NAME (vo), IDIO_PRIMITIVE_CALL_TIME (vo).tv_sec, IDIO_PRIMITIVE_CALL_TIME (vo).tv_nsec);
+	    fprintf (idio_vm_perf_FILE, "%+5lds gc_sweep_free Prim %10p %8" PRIu64 " %-40s %5ld.%09ld", idio_vm_elapsed (), vo, IDIO_PRIMITIVE_CALLED (vo), IDIO_PRIMITIVE_NAME (vo), IDIO_PRIMITIVE_CALL_TIME (vo).tv_sec, IDIO_PRIMITIVE_CALL_TIME (vo).tv_nsec);
+
 	    double call_time = (IDIO_PRIMITIVE_CALL_TIME (vo).tv_sec * 1000000000 + IDIO_PRIMITIVE_CALL_TIME (vo).tv_nsec) / IDIO_PRIMITIVE_CALLED (vo);
 	    fprintf (idio_vm_perf_FILE, " %11.f", call_time);
 	    char *units = "ns";

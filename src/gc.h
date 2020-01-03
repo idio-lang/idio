@@ -150,11 +150,15 @@ typedef struct idio_substring_s {
 #define IDIO_SUBSTRING_S(S)	((S)->u.substring.s)
 #define IDIO_SUBSTRING_PARENT(S) ((S)->u.substring.parent)
 
+#define IDIO_SYMBOL_FLAG_NONE		0
+#define IDIO_SYMBOL_FLAG_GENSYM		(1<<0)
+
 typedef struct idio_symbol_s {
     char *s;			/* C string */
 } idio_symbol_t;
 
 #define IDIO_SYMBOL_S(S)	((S)->u.symbol.s)
+#define IDIO_SYMBOL_FLAGS(S)	((S)->tflags)
 
 typedef struct idio_keyword_s {
     char *s;			/* C string */

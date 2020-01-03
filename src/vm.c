@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2018 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -793,6 +793,183 @@ static void idio_vm_restore_all_state (IDIO thr)
     idio_vm_restore_state (thr);
 }
 
+#ifdef IDIO_VM_PERF
+static struct timespec idio_vm_clos_t0;
+static IDIO idio_vm_clos;
+
+void idio_vm_func_start (IDIO func, struct timespec *tsp)
+{
+    IDIO_ASSERT (func);
+
+    switch ((intptr_t) func & IDIO_TYPE_MASK) {
+    case IDIO_TYPE_FIXNUM_MARK:
+    case IDIO_TYPE_CONSTANT_MARK:
+    case IDIO_TYPE_PLACEHOLDER_MARK:
+	{
+	    IDIO_C_ASSERT (0);
+	    idio_vm_error_function_invoke ("cannot invoke constant type", IDIO_LIST1 (func), IDIO_C_LOCATION ("idio_vm_func_start"));
+	    return;
+	}
+    default:
+	break;
+    }
+
+    switch (func->type) {
+    case IDIO_TYPE_CLOSURE:
+	{
+	    idio_vm_clos = func;
+	    IDIO_CLOSURE_CALLED (idio_vm_clos)++;
+	    if (0 != clock_gettime (CLOCK_MONOTONIC, &idio_vm_clos_t0)) {
+		perror ("clock_gettime (CLOCK_MONOTONIC, idio_vm_clos_t0)");
+	    }
+	}
+	break;
+    case IDIO_TYPE_PRIMITIVE:
+	{
+	    IDIO_C_ASSERT (tsp);
+	    IDIO_PRIMITIVE_CALLED (func)++;
+	    if (0 != clock_gettime (CLOCK_MONOTONIC, tsp)) {
+		perror ("clock_gettime (CLOCK_MONOTONIC, tsp)");
+	    }
+	}
+	break;
+    default:
+	{
+	    idio_vm_error_function_invoke ("cannot invoke",
+					   IDIO_LIST1 (func),
+					   IDIO_C_LOCATION ("idio_vm_func_start"));
+	}
+	break;
+    }
+}
+
+void idio_vm_func_stop (IDIO func, struct timespec *tsp)
+{
+    IDIO_ASSERT (func);
+
+    switch ((intptr_t) func & IDIO_TYPE_MASK) {
+    case IDIO_TYPE_FIXNUM_MARK:
+    case IDIO_TYPE_CONSTANT_MARK:
+    case IDIO_TYPE_PLACEHOLDER_MARK:
+	{
+	    IDIO_C_ASSERT (0);
+	    idio_vm_error_function_invoke ("cannot invoke constant type", IDIO_LIST1 (func), IDIO_C_LOCATION ("idio_vm_func_stop"));
+	    return;
+	}
+    default:
+	break;
+    }
+
+    switch (func->type) {
+    case IDIO_TYPE_CLOSURE:
+	{
+	}
+	break;
+    case IDIO_TYPE_PRIMITIVE:
+	{
+	    IDIO_C_ASSERT (tsp);
+	    IDIO_PRIMITIVE_CALLED (func)++;
+	    if (0 != clock_gettime (CLOCK_MONOTONIC, tsp)) {
+		perror ("clock_gettime (CLOCK_MONOTONIC, tsp)");
+	    }
+	}
+	break;
+    default:
+	{
+	    idio_vm_error_function_invoke ("cannot invoke",
+					   IDIO_LIST1 (func),
+					   IDIO_C_LOCATION ("idio_vm_func_stop"));
+	}
+	break;
+    }
+}
+
+static void idio_vm_clos_time (IDIO thr, const char *context)
+{
+    IDIO_ASSERT (thr);
+    IDIO_TYPE_ASSERT (thread, thr);
+    
+    struct timespec clos_te;
+    if (0 != clock_gettime (CLOCK_MONOTONIC, &clos_te)) {
+	perror ("clock_gettime (CLOCK_MONOTONIC, clos_te)");
+    }
+
+    struct timespec clos_td;
+    clos_td.tv_sec = clos_te.tv_sec - idio_vm_clos_t0.tv_sec;
+    clos_td.tv_nsec = clos_te.tv_nsec - idio_vm_clos_t0.tv_nsec;
+    if (clos_td.tv_nsec < 0) {
+	clos_td.tv_nsec += 1000000000;
+	clos_td.tv_sec -= 1;
+    }
+
+    if (idio_vm_clos) {
+	IDIO_CLOSURE_CALL_TIME (idio_vm_clos).tv_sec += clos_td.tv_sec;
+	IDIO_CLOSURE_CALL_TIME (idio_vm_clos).tv_nsec += clos_td.tv_nsec;
+	if (IDIO_CLOSURE_CALL_TIME (idio_vm_clos).tv_nsec > 1000000000) {
+	    IDIO_CLOSURE_CALL_TIME (idio_vm_clos).tv_nsec -= 1000000000;
+	    IDIO_CLOSURE_CALL_TIME (idio_vm_clos).tv_sec += 1;
+	}
+    } else {
+	fprintf (stderr, "idio_vm_clos undefined from %s pc=%7zd\n", context, IDIO_THREAD_PC (thr));
+	idio_dump (thr, 2);
+	
+    }
+}
+
+void idio_vm_prim_time (IDIO func, struct timespec *ts0p, struct timespec *tsep)
+{
+    IDIO_ASSERT (func);
+
+    switch ((intptr_t) func & IDIO_TYPE_MASK) {
+    case IDIO_TYPE_FIXNUM_MARK:
+    case IDIO_TYPE_CONSTANT_MARK:
+    case IDIO_TYPE_PLACEHOLDER_MARK:
+	{
+	    IDIO_C_ASSERT (0);
+	    idio_vm_error_function_invoke ("cannot invoke constant type", IDIO_LIST1 (func), IDIO_C_LOCATION ("idio_vm_prim_time"));
+	    return;
+	}
+    default:
+	break;
+    }
+
+    switch (func->type) {
+    case IDIO_TYPE_CLOSURE:
+	{
+	}
+	break;
+    case IDIO_TYPE_PRIMITIVE:
+	{
+	    IDIO_C_ASSERT (ts0p);
+	    IDIO_C_ASSERT (tsep);
+	    struct timespec prim_td;
+	    prim_td.tv_sec = tsep->tv_sec - ts0p->tv_sec;
+	    prim_td.tv_nsec = tsep->tv_nsec - ts0p->tv_nsec;
+	    if (prim_td.tv_nsec < 0) {
+		prim_td.tv_nsec += 1000000000;
+		prim_td.tv_sec -= 1;
+	    }
+
+	    IDIO_PRIMITIVE_CALL_TIME (func).tv_sec += prim_td.tv_sec;
+	    IDIO_PRIMITIVE_CALL_TIME (func).tv_nsec += prim_td.tv_nsec;
+	    if (IDIO_PRIMITIVE_CALL_TIME (func).tv_nsec > 1000000000) {
+		IDIO_PRIMITIVE_CALL_TIME (func).tv_nsec -= 1000000000;
+		IDIO_PRIMITIVE_CALL_TIME (func).tv_sec += 1;
+	    }
+	}
+	break;
+    default:
+	{
+	    idio_vm_error_function_invoke ("cannot invoke",
+					   IDIO_LIST1 (func),
+					   IDIO_C_LOCATION ("idio_vm_prim_time"));
+	}
+	break;
+    }
+}
+
+#endif
+
 static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
 {
     IDIO_ASSERT (thr);
@@ -804,7 +981,7 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
     case IDIO_TYPE_CONSTANT_MARK:
     case IDIO_TYPE_PLACEHOLDER_MARK:
 	{
-	    IDIO_C_ASSERT (0);
+	    /* IDIO_C_ASSERT (0); */
 	    idio_vm_error_function_invoke ("cannot invoke constant type", IDIO_LIST1 (func), IDIO_C_LOCATION ("idio_vm_invoke"));
 	    return;
 	}
@@ -828,7 +1005,7 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
 		idio_vm_tracing++;
 	    }
 #ifdef IDIO_VM_PERF
-	    IDIO_CLOSURE_CALLED (func)++;
+	    idio_vm_func_start (func, NULL);
 #endif
 	}
 	break;
@@ -880,11 +1057,8 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
 	    }
 
 #ifdef IDIO_VM_PERF
-	    IDIO_PRIMITIVE_CALLED (func)++;
 	    struct timespec prim_t0;
-	    if (0 != clock_gettime (CLOCK_MONOTONIC, &prim_t0)) {
-		perror ("clock_gettime (CLOCK_MONOTONIC, prim_t0)");
-	    }
+	    idio_vm_func_start (func, &prim_t0);
 #endif
 
 	    switch (IDIO_PRIMITIVE_ARITY (func)) {
@@ -946,24 +1120,8 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
 
 #ifdef IDIO_VM_PERF
 	    struct timespec prim_te;
-	    if (0 != clock_gettime (CLOCK_MONOTONIC, &prim_te)) {
-		perror ("clock_gettime (CLOCK_MONOTONIC, prim_te)");
-	    }
-
-	    struct timespec prim_td;
-	    prim_td.tv_sec = prim_te.tv_sec - prim_t0.tv_sec;
-	    prim_td.tv_nsec = prim_te.tv_nsec - prim_t0.tv_nsec;
-	    if (prim_td.tv_nsec < 0) {
-		prim_td.tv_nsec += 1000000000;
-		prim_td.tv_sec -= 1;
-	    }
-
-	    IDIO_PRIMITIVE_CALL_TIME (func).tv_sec += prim_td.tv_sec;
-	    IDIO_PRIMITIVE_CALL_TIME (func).tv_nsec += prim_td.tv_nsec;
-	    if (IDIO_PRIMITIVE_CALL_TIME (func).tv_nsec > 1000000000) {
-		IDIO_PRIMITIVE_CALL_TIME (func).tv_nsec -= 1000000000;
-		IDIO_PRIMITIVE_CALL_TIME (func).tv_sec += 1;
-	    }
+	    idio_vm_func_stop (func, &prim_te);
+	    idio_vm_prim_time (func, &prim_t0, &prim_te);
 #endif
 	    size_t pc = IDIO_THREAD_PC (thr); 
 
@@ -1063,7 +1221,6 @@ IDIO idio_vm_invoke_C (IDIO thr, IDIO command)
 
     IDIO_THREAD_STACK_PUSH (idio_fixnum (IDIO_THREAD_PC (thr)));
     idio_vm_preserve_all_state (thr);
-
     /* idio_debug ("invoke-C pre: %s\n", command);  */
 
     switch (command->type) {
@@ -1819,7 +1976,14 @@ static void idio_vm_function_trace (IDIO_I ins, IDIO thr)
     }
     IDIO expr = idio_list_append2 (IDIO_LIST1 (func), args);
 
+    struct timespec ts;
+    if (0 != clock_gettime (CLOCK_MONOTONIC, &ts)) {
+	perror ("clock_gettime (CLOCK_MONOTONIC, ts)");
+    }
+
     /*
+     * %9d	- clock ns
+     * SPACE
      * %7zd	- PC of ins
      * SPACE
      * %20s	- closure name (if available)
@@ -1828,6 +1992,8 @@ static void idio_vm_function_trace (IDIO_I ins, IDIO thr)
      * %*s	- trace-depth indent
      * %s	- expression
      */
+
+    fprintf (stderr, "%09ld ", ts.tv_nsec);
     fprintf (stderr, "%7zd ", IDIO_THREAD_PC (thr) - 1);
 
     if (idio_isa_closure (func)) {
@@ -2540,6 +2706,9 @@ int idio_vm_run1 (IDIO thr)
 		    idio_vm_tracing--;
 		}
 	    }
+#ifdef IDIO_VM_PERF
+	    idio_vm_clos_time (thr, "RETURN");
+#endif
 	}
 	break;
     case IDIO_A_PACK_FRAME:
@@ -2555,6 +2724,9 @@ int idio_vm_run1 (IDIO thr)
 	    if (idio_vm_tracing) {
 		idio_vm_function_trace (ins, thr);
 	    }
+#ifdef IDIO_VM_PERF
+	    idio_vm_clos_time (thr, "FUNCTION-INVOKE");
+#endif
 	    idio_vm_invoke (thr, IDIO_THREAD_FUNC (thr), IDIO_VM_INVOKE_REGULAR_CALL);
 	}
 	break;
@@ -2564,6 +2736,9 @@ int idio_vm_run1 (IDIO thr)
 	    if (idio_vm_tracing) {
 		idio_vm_function_trace (ins, thr);
 	    }
+#ifdef IDIO_VM_PERF
+	    idio_vm_clos_time (thr, "FUNCTION-GOTO");
+#endif
 	    idio_vm_invoke (thr, IDIO_THREAD_FUNC (thr), IDIO_VM_INVOKE_TAIL_CALL);
 	}
 	break;
@@ -4154,15 +4329,23 @@ void idio_final_vm ()
 #endif
 
 #ifdef IDIO_VM_PERF
+    uint64_t c = 0;
+    struct timespec t;
+    t.tv_sec = 0;
+    t.tv_nsec = 0;
     fprintf (idio_vm_perf_FILE, "        %8.8s %6.6s %-30.30s %15.15s %6.6s\n", "count", "code", "instruction", "time (sec.nsec)", "ns/call");
     for (IDIO_I i = 1; i < IDIO_I_MAX; i++) {
-      if (idio_vm_ins_counters[i]) {
-	  fprintf (idio_vm_perf_FILE, "vm-ins: %8" PRIdPTR " %6d %-30s %5ld.%09ld", idio_vm_ins_counters[i], i, idio_vm_bytecode2string (i), idio_vm_ins_call_time[i].tv_sec, idio_vm_ins_call_time[i].tv_nsec);
-	  double call_time = (idio_vm_ins_call_time[i].tv_sec * 1000000000 + idio_vm_ins_call_time[i].tv_nsec) / idio_vm_ins_counters[i];
-	  fprintf (idio_vm_perf_FILE, " %6.f", call_time);
-	  fprintf (idio_vm_perf_FILE, "\n");
-      }
+	c += idio_vm_ins_counters[i];
+	t.tv_sec += idio_vm_ins_call_time[i].tv_sec;
+	t.tv_nsec += idio_vm_ins_call_time[i].tv_nsec;
+	if (idio_vm_ins_counters[i]) {
+	    fprintf (idio_vm_perf_FILE, "vm-ins: %8" PRIdPTR " %6d %-30s %5ld.%09ld", idio_vm_ins_counters[i], i, idio_vm_bytecode2string (i), idio_vm_ins_call_time[i].tv_sec, idio_vm_ins_call_time[i].tv_nsec);
+	    double call_time = (idio_vm_ins_call_time[i].tv_sec * 1000000000 + idio_vm_ins_call_time[i].tv_nsec) / idio_vm_ins_counters[i];
+	    fprintf (idio_vm_perf_FILE, " %6.f", call_time);
+	    fprintf (idio_vm_perf_FILE, "\n");
+	}
     }
+    fprintf (idio_vm_perf_FILE, "vm-ins: %8" PRIu64 " %6s %-30s %5ld.%09ld\n", c, "", "total", t.tv_sec, t.tv_nsec);
 #endif
 
     idio_gc_expose (idio_vm_values);

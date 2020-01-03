@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2018 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -221,6 +221,11 @@ void idio_vm_push_handler (IDIO thr, IDIO val);
 void idio_raise_condition (IDIO continuablep, IDIO e);
 IDIO idio_apply (IDIO fn, IDIO args);
 void idio_vm_debug (IDIO thr, char *prefix, idio_ai_t stack_start);
+#ifdef IDIO_VM_PERF
+void idio_vm_func_start (IDIO clos, struct timespec *tsp);
+void idio_vm_func_stop (IDIO clos, struct timespec *tsp);
+void idio_vm_prim_time (IDIO clos, struct timespec *ts0p, struct timespec *tsep);
+#endif
 IDIO idio_vm_invoke_C (IDIO thr, IDIO command);
 
 void idio_vm_thread_init (IDIO thr);

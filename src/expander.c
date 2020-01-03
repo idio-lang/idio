@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2018 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -120,7 +120,7 @@ IDIO idio_evaluate_expander_source (IDIO x, IDIO e)
     IDIO_ASSERT (x);
     IDIO_ASSERT (e);
 
-    /* idio_debug ("evaluate-expander: in: %s\n", x);  */
+    /* idio_debug ("evaluate-expander: in: %s\n", x);   */
 
     IDIO cthr = idio_thread_current_thread ();
     IDIO ethr = idio_expander_thread;
@@ -136,7 +136,7 @@ IDIO idio_evaluate_expander_source (IDIO x, IDIO e)
     idio_thread_restore_state (ethr);
     idio_thread_set_current_thread (cthr);
 
-    /* idio_debug ("evaluate-expander: out: %s\n", r);     */
+    /* idio_debug ("evaluate-expander: out: %s\n", r);      */
 
     /* if (idio_S_nil == r) { */
     /* 	fprintf (stderr, "evaluate-expander: bad expansion?\n"); */
@@ -539,7 +539,7 @@ IDIO idio_evaluate_expander_code (IDIO m, IDIO cs)
     IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (array, cs);
 
-    /* idio_debug ("evaluate-expander-code: %s\n", m); */
+    /* idio_debug ("evaluate-expander-code: %s\n", m);  */
 
     IDIO cthr = idio_thread_current_thread ();
     IDIO ethr = idio_expander_thread;
@@ -554,7 +554,7 @@ IDIO idio_evaluate_expander_code (IDIO m, IDIO cs)
     idio_thread_restore_state (ethr);
     idio_thread_set_current_thread (cthr);
 
-    /* idio_debug ("evaluate-expander-code: out: %s\n", r);     */
+    /* idio_debug ("evaluate-expander-code: out: %s\n", r);      */
 
     return r;
 }
@@ -708,7 +708,7 @@ IDIO idio_evaluate_infix_operator_code (IDIO m, IDIO cs)
     IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (array, cs);
 
-    /* idio_debug ("evaluate-infix-operator-code: %s\n", m);   */
+    /* idio_debug ("evaluate-infix-operator-code: %s\n", m);    */
 
     IDIO cthr = idio_thread_current_thread ();
     IDIO ethr = idio_expander_thread;
@@ -723,7 +723,7 @@ IDIO idio_evaluate_infix_operator_code (IDIO m, IDIO cs)
     idio_thread_restore_state (ethr);
     idio_thread_set_current_thread (cthr);
 
-    /* idio_debug ("evaluate-infix-operator-code: out: %s\n", r);     */
+    /* idio_debug ("evaluate-infix-operator-code: out: %s\n", r);      */
 
     return r;
 }
@@ -753,8 +753,17 @@ static IDIO idio_evaluate_infix_operator (IDIO n, IDIO e, IDIO b, IDIO a)
     idio_thread_save_state (ethr);
     idio_vm_default_pc (ethr);
 
-    idio_apply (IDIO_PAIR_T (e), IDIO_LIST3 (n, b, IDIO_LIST1 (a)));
+    idio_apply (func, IDIO_LIST3 (n, b, IDIO_LIST1 (a)));
+#ifdef IDIO_VM_PERF
+    struct timespec prim_t0;
+    idio_vm_func_start (func, &prim_t0);
+#endif
     IDIO r = idio_vm_run (ethr);
+#ifdef IDIO_VM_PERF
+    struct timespec prim_te;
+    idio_vm_func_stop (func, &prim_te);
+    idio_vm_prim_time (func, &prim_t0, &prim_te);
+#endif
     
     idio_thread_restore_state (ethr);
     idio_thread_set_current_thread (cthr);
@@ -878,7 +887,7 @@ IDIO idio_evaluate_postfix_operator_code (IDIO m, IDIO cs)
     IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (array, cs);
 
-    /* idio_debug ("evaluate-postfix-operator-code: %s\n", m);   */
+    /* idio_debug ("evaluate-postfix-operator-code: %s\n", m);    */
 
     IDIO cthr = idio_thread_current_thread ();
     IDIO ethr = idio_expander_thread;
@@ -894,7 +903,7 @@ IDIO idio_evaluate_postfix_operator_code (IDIO m, IDIO cs)
     idio_thread_restore_state (ethr);
     idio_thread_set_current_thread (cthr);
 
-    /* idio_debug ("evaluate-postfix-operator-code: out: %s\n", r);     */
+    /* idio_debug ("evaluate-postfix-operator-code: out: %s\n", r);      */
 
     return r;
 }
@@ -923,8 +932,17 @@ static IDIO idio_evaluate_postfix_operator (IDIO n, IDIO e, IDIO b, IDIO a)
     idio_thread_save_state (ethr);
     idio_vm_default_pc (ethr);
 
-    idio_apply (IDIO_PAIR_T (e), IDIO_LIST3 (n, b, IDIO_LIST1 (a)));
+    idio_apply (func, IDIO_LIST3 (n, b, IDIO_LIST1 (a)));
+#ifdef IDIO_VM_PERF
+    struct timespec prim_t0;
+    idio_vm_func_start (func, &prim_t0);
+#endif
     IDIO r = idio_vm_run (ethr);
+#ifdef IDIO_VM_PERF
+    struct timespec prim_te;
+    idio_vm_func_stop (func, &prim_te);
+    idio_vm_prim_time (func, &prim_t0, &prim_te);
+#endif
     
     idio_thread_restore_state (ethr);
     idio_thread_set_current_thread (cthr);
