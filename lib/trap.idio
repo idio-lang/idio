@@ -1,0 +1,32 @@
+
+display* "This is trap.idio"
+
+;%%vm-dis 1
+
+trap ^rt-signal-SIGCHLD (function (cont cond) {
+  display* "trapping ^rt-signal-SIGCHLD" cont cond
+  }) {
+  trap ^rt-signal-SIGHUP (function (cont cond) {
+    display* "trapping ^rt-signal-SIGHUP" cont cond
+    }) {
+    echo Hello World
+  }
+}
+
+;; test out the base-condition-handler
+
+; ^error is normally not continuable
+raise #t (make-condition ^error)
+
+; non-continuable conditions will be caught by module/load (or load)
+raise #f (make-condition ^error)
+
+{
+  f := (function (s) {
+    edisplay* "s =" s
+    echo s
+    raise #f (make-condition ^error)
+  })
+
+  f "b-c-h test"
+}
