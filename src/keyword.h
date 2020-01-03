@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -26,7 +26,11 @@
 #define IDIO_KEYWORD_DECL(n)		IDIO idio_KW_ ## n
 #define IDIO_KEYWORD_DEF(iname,cname)	idio_KW_ ## cname = idio_keywords_C_intern (iname);
 
+extern IDIO_KEYWORD_DECL (procedure);
 extern IDIO_KEYWORD_DECL (setter);
+extern IDIO_KEYWORD_DECL (source);
+extern IDIO_KEYWORD_DECL (handle);
+extern IDIO_KEYWORD_DECL (line);
 
 IDIO idio_keyword_C (const char *s_C);
 IDIO idio_tag_C (const char *s_C);

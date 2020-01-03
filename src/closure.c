@@ -94,16 +94,18 @@ IDIO_DEFINE_PRIMITIVE1 ("setter", setter, (IDIO p))
 {
     IDIO_ASSERT (p);
 
-    IDIO kwt = idio_S_nil;
-    
-    if (idio_isa_primitive (p) ||
-	idio_isa_closure (p)) {
-	kwt = idio_properties_get (p, idio_S_void);
-    } else {
+    if (!(idio_isa_primitive (p) ||
+	  idio_isa_closure (p))) {
 	idio_error_param_type ("primitive|closure", p, IDIO_C_LOCATION ("setter"));
     }
 
-    IDIO setter = idio_keyword_get (kwt, idio_KW_setter, IDIO_LIST1 (idio_S_false));
+    IDIO pp = idio_property_get (p, idio_KW_procedure, IDIO_LIST1 (idio_S_false));
+
+    if (idio_S_false == pp) {
+	return idio_S_nil;
+    }
+
+    IDIO setter = idio_keyword_get (pp, idio_KW_setter, IDIO_LIST1 (idio_S_false));
 
     if (idio_S_false == setter) {
 	idio_error_C ("no setter defined", IDIO_LIST1 (p), IDIO_C_LOCATION ("setter"));
@@ -116,15 +118,12 @@ IDIO idio_closure_procedure_properties (IDIO p)
 {
     IDIO_ASSERT (p);
 
-    if (idio_isa_primitive (p) ||
-	idio_isa_closure (p)) {
-	return idio_properties_get (p, IDIO_LIST1 (idio_S_nil));
-    } else {
+    if (!(idio_isa_primitive (p) ||
+	  idio_isa_closure (p))) {
 	idio_error_param_type ("primitive|closure", p, IDIO_C_LOCATION ("%procedure-properties"));
     }
 
-    /* notreached */
-    return idio_S_unspec;
+    return idio_property_get (p, idio_KW_procedure, IDIO_LIST1 (idio_S_nil));
 }    
 
 IDIO_DEFINE_PRIMITIVE1 ("%procedure-properties", procedure_properties, (IDIO p))
@@ -144,12 +143,12 @@ IDIO idio_closure_set_procedure_properties (IDIO p, IDIO v)
 	idio_error_param_type ("hash", v, IDIO_C_LOCATION ("%set-procedure-properties"));
     }
 
-    if (idio_isa_primitive (p) ||
-	idio_isa_closure (p)) {
-	idio_properties_set (p, v);
-    } else {
+    if (!(idio_isa_primitive (p) ||
+	  idio_isa_closure (p))) {
 	idio_error_param_type ("primitive|closure", p, IDIO_C_LOCATION ("%set-procedure-properties!"));
     }
+
+    idio_property_set (p, idio_KW_procedure, v);
 
     return idio_S_unspec;
 }

@@ -217,6 +217,8 @@ static IDIO idio_symbol_C (const char *s_C)
     IDIO_GC_ALLOC (IDIO_SYMBOL_S (o), blen + 1);
     strcpy (IDIO_SYMBOL_S (o), s_C);
     
+    IDIO_SYMBOL_FLAGS (o) = IDIO_SYMBOL_FLAG_NONE;
+
     return o;
 }
 
@@ -289,6 +291,7 @@ IDIO idio_gensym (char *pref_prefix)
 
 	if (idio_S_unspec == sym) {
 	    sym = idio_symbols_C_intern (buf);
+	    IDIO_SYMBOL_FLAGS (sym) |= IDIO_SYMBOL_FLAG_GENSYM;
 	    return sym;
 	}
     }
@@ -430,14 +433,15 @@ IDIO_DEFINE_PRIMITIVE2 ("%set-properties!", properties_set, (IDIO o, IDIO proper
     return idio_S_unspec;
 }
 
-IDIO idio_property_get (IDIO o, IDIO property)
+IDIO idio_property_get (IDIO o, IDIO property, IDIO args)
 {
     IDIO_ASSERT (o);
     IDIO_ASSERT (property);
-    IDIO_TYPE_ASSERT (symbol, property);
+    IDIO_ASSERT (args);
+    IDIO_TYPE_ASSERT (keyword, property);
 
     if (idio_S_nil == o) {
-	idio_property_error_nil_object ("object is #n", IDIO_C_LOCATION ("idio_properties_get"));
+	idio_property_error_nil_object ("object is #n", IDIO_C_LOCATION ("idio_property_get"));
 
 	/* notreached */
 	return idio_S_unspec;
@@ -446,38 +450,51 @@ IDIO idio_property_get (IDIO o, IDIO property)
     IDIO properties = idio_hash_get (idio_properties_hash, o);
 
     if (idio_S_unspec == properties) {
-	idio_properties_error_not_found ("no properties ever existed", o, IDIO_C_LOCATION ("idio_properties_get"));
+	if (idio_isa_pair (args)) {
+	    return IDIO_PAIR_H (args);
+	} else {
+	    idio_properties_error_not_found ("no properties ever existed", o, IDIO_C_LOCATION ("idio_property_get"));
 
-	/* notreached */
-	return idio_S_unspec;	
+	    /* notreached */
+	    return idio_S_unspec;
+	}
     }
 
     if (idio_S_nil == properties) {
-	idio_property_error_no_properties ("properties is #n", IDIO_C_LOCATION ("idio_properties_get"));
-
-	/* notreached */
-	return idio_S_unspec;
+	if (idio_isa_pair (args)) {
+	    return IDIO_PAIR_H (args);
+	} else {
+	    idio_property_error_no_properties ("properties is #n", IDIO_C_LOCATION ("idio_property_get"));
+	    
+	    /* notreached */
+	    return idio_S_unspec;
+	}
     }
 
     IDIO value = idio_hash_get (properties, property);
 
     if (idio_S_unspec == value) {
-	idio_property_error_key_not_found (property, IDIO_C_LOCATION ("idio_property_get"));
+	if (idio_isa_pair (args)) {
+	    return IDIO_PAIR_H (args);
+	} else {
+	    idio_property_error_key_not_found (property, IDIO_C_LOCATION ("idio_property_get"));
 
-	/* notreached */
-	return idio_S_unspec;	
+	    /* notreached */
+	    return idio_S_unspec;
+	}
     }
 
     return value;
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("%property", property_get, (IDIO o, IDIO property))
+IDIO_DEFINE_PRIMITIVE2V ("%property", property_get, (IDIO o, IDIO property, IDIO args))
 {
     IDIO_ASSERT (o);
     IDIO_ASSERT (property);
-    IDIO_TYPE_ASSERT (symbol, property);
+    IDIO_ASSERT (args);
+    IDIO_TYPE_ASSERT (keyword, property);
 
-    return idio_property_get (o, property);
+    return idio_property_get (o, property, args);
 }
 
 void idio_property_set (IDIO o, IDIO property, IDIO value)
@@ -485,16 +502,16 @@ void idio_property_set (IDIO o, IDIO property, IDIO value)
     IDIO_ASSERT (o);
     IDIO_ASSERT (property);
     IDIO_ASSERT (value);
-    IDIO_TYPE_ASSERT (symbol, property);
+    IDIO_TYPE_ASSERT (keyword, property);
 
     if (idio_S_nil == o) {
-	idio_property_error_nil_object ("object is #n", IDIO_C_LOCATION ("idio_properties_set"));
+	idio_property_error_nil_object ("object is #n", IDIO_C_LOCATION ("idio_property_set"));
     }
 
     IDIO properties = idio_hash_get (idio_properties_hash, o);
 
     if (idio_S_nil == properties) {
-	idio_property_error_no_properties ("properties is #n", IDIO_C_LOCATION ("idio_properties_get"));
+	idio_property_error_no_properties ("properties is #n", IDIO_C_LOCATION ("idio_property_set"));
     }
 
     if (idio_S_unspec == properties) {
@@ -510,7 +527,7 @@ IDIO_DEFINE_PRIMITIVE3 ("%set-property!", property_set, (IDIO o, IDIO property, 
     IDIO_ASSERT (o);
     IDIO_ASSERT (property);
     IDIO_ASSERT (value);
-    IDIO_TYPE_ASSERT (symbol, property);
+    IDIO_TYPE_ASSERT (keyword, property);
 
     idio_property_set (o, property, value);
 
@@ -605,8 +622,12 @@ void idio_init_symbol ()
      * idio_properties_hash doesn't really live in symbol.c but we
      * need it up and running before primitives and closures get a
      * look in.
+     *
+     * weak keys otherwise the existence in this hash prevents it
+     * being freed!
      */
     idio_properties_hash = IDIO_HASH_EQP (256);
+    /* IDIO_HASH_FLAGS (idio_properties_hash) |= IDIO_HASH_FLAG_WEAK_KEYS;  */
     idio_gc_protect (idio_properties_hash);
 }
 

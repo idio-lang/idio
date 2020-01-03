@@ -1400,6 +1400,7 @@ static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, char *ic, int depth
     int count = 0;
     
     for (;;) {
+	off_t line = IDIO_HANDLE_LINE(handle);
 	IDIO expr = idio_read_1_expr_nl (handle, ic, depth, 1);
 
 	if (idio_S_eof == expr) {
@@ -1485,11 +1486,9 @@ static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, char *ic, int depth
 		case IDIO_CONSTANT_NAN:
 		    break;
 		default:
-		    idio_error_C ("unexpected token in line", IDIO_LIST2 (handle, expr), IDIO_C_LOCATION ("idio_read_expr_line"));
+		    idio_error_C ("unexpected constant in line", IDIO_LIST2 (handle, expr), IDIO_C_LOCATION ("idio_read_expr_line"));
 		}
-	    }
-
- 	    if (IDIO_TYPE_CONSTANT_TOKENP (expr)) {
+	    } else if (IDIO_TYPE_CONSTANT_TOKENP (expr)) {
 		uintptr_t ev = IDIO_CONSTANT_TOKEN_VAL (expr);
 		switch (ev) {
 		case IDIO_TOKEN_LANGLE:
@@ -1507,6 +1506,10 @@ static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, char *ic, int depth
 		default:
 		    idio_error_C ("unexpected token in line", IDIO_LIST2 (handle, expr), IDIO_C_LOCATION ("idio_read_expr_line"));
 		}
+	    } else {
+		/* idio_read_set_source_property (expr, idio_KW_handle, handle); */
+		/* idio_read_set_source_property (expr, idio_KW_line, idio_fixnum (line)); */
+		/* IDIO sp = idio_read_source_properties (expr); */
 	    }
 
 	    r = idio_pair (expr, r);
@@ -1550,6 +1553,9 @@ static IDIO idio_read_block (IDIO handle, IDIO closedel, char *ic, int depth)
     }
 }
 
+/*
+ * idio_read is file-handle.c's and load-handle's reader
+ */
 IDIO idio_read (IDIO handle)
 {
     IDIO_ASSERT (handle);
@@ -1566,6 +1572,9 @@ IDIO idio_read (IDIO handle)
     return IDIO_PAIR_H (line);
 }
 
+/*
+ * Called by read-expr in handle.c
+ */
 IDIO idio_read_expr (IDIO handle)
 {
     IDIO_ASSERT (handle);
@@ -1654,8 +1663,175 @@ IDIO idio_read_character (IDIO handle)
     return IDIO_CHARACTER (codepoint);
 }
 
+IDIO idio_read_source_properties (IDIO p)
+{
+    IDIO_ASSERT (p);
+
+    return idio_property_get (p, idio_KW_source, IDIO_LIST1 (idio_S_nil));
+}    
+
+IDIO_DEFINE_PRIMITIVE1 ("%source-properties", read_source_properties, (IDIO p))
+{
+    IDIO_ASSERT (p);
+
+    return idio_read_source_properties (p);
+}
+
+IDIO idio_read_set_source_properties (IDIO p, IDIO v)
+{
+    IDIO_ASSERT (p);
+    IDIO_ASSERT (v);
+
+    if (! (idio_S_nil == v ||
+	   idio_isa_hash (v))) {
+	idio_error_param_type ("hash", v, IDIO_C_LOCATION ("%set-source-properties"));
+    }
+
+    idio_property_set (p, idio_KW_source, v);
+
+    return idio_S_unspec;
+}
+
+IDIO_DEFINE_PRIMITIVE2 ("%set-source-properties!", read_set_source_properties, (IDIO p, IDIO v))
+{
+    IDIO_ASSERT (p);
+    IDIO_ASSERT (v);
+
+    return idio_read_set_source_properties (p, v);
+}
+
+IDIO idio_read_source_property_get (IDIO o, IDIO property, IDIO args)
+{
+    IDIO_ASSERT (o);
+    IDIO_ASSERT (property);
+    IDIO_ASSERT (args);
+    IDIO_TYPE_ASSERT (keyword, property);
+
+    if (idio_S_nil == o) {
+	idio_property_error_nil_object ("object is #n", IDIO_C_LOCATION ("idio_read_source_property_get"));
+
+	/* notreached */
+	return idio_S_unspec;
+    }
+
+    IDIO properties = idio_hash_get (idio_properties_hash, o);
+
+    if (idio_S_unspec == properties) {
+	if (idio_isa_pair (args)) {
+	    return IDIO_PAIR_H (args);
+	} else {
+	    idio_properties_error_not_found ("no properties ever existed", o, IDIO_C_LOCATION ("idio_read_source_property_get"));
+
+	    /* notreached */
+	    return idio_S_unspec;
+	}
+    }
+
+    if (idio_S_nil == properties) {
+	if (idio_isa_pair (args)) {
+	    return IDIO_PAIR_H (args);
+	} else {
+	    idio_property_error_no_properties ("properties is #n", IDIO_C_LOCATION ("idio_read_source_property_get"));
+	    
+	    /* notreached */
+	    return idio_S_unspec;
+	}
+    }
+
+    IDIO sp = idio_hash_get (properties, idio_KW_source);
+
+    if (idio_S_unspec == sp) {
+	if (idio_isa_pair (args)) {
+	    return IDIO_PAIR_H (args);
+	} else {
+	    idio_property_error_key_not_found (idio_KW_source, IDIO_C_LOCATION ("idio_read_source_property_get"));
+
+	    /* notreached */
+	    return idio_S_unspec;
+	}
+    }
+
+    IDIO value = idio_hash_get (sp, property);
+
+    if (idio_S_unspec == value) {
+	if (idio_isa_pair (args)) {
+	    return IDIO_PAIR_H (args);
+	} else {
+	    idio_property_error_key_not_found (property, IDIO_C_LOCATION ("idio_read_source_property_get"));
+
+	    /* notreached */
+	    return idio_S_unspec;
+	}
+    }
+
+    return value;
+}
+
+IDIO_DEFINE_PRIMITIVE2V ("%source-property", read_source_property_get, (IDIO o, IDIO property, IDIO args))
+{
+    IDIO_ASSERT (o);
+    IDIO_ASSERT (property);
+    IDIO_ASSERT (args);
+    IDIO_TYPE_ASSERT (keyword, property);
+
+    return idio_read_source_property_get (o, property, args);
+}
+
+void idio_read_set_source_property (IDIO o, IDIO property, IDIO value)
+{
+    IDIO_ASSERT (o);
+    IDIO_ASSERT (property);
+    IDIO_ASSERT (value);
+    IDIO_TYPE_ASSERT (keyword, property);
+
+    if (idio_S_nil == o) {
+	idio_property_error_nil_object ("object is #n", IDIO_C_LOCATION ("idio_read_source_property_set"));
+    }
+
+    IDIO properties = idio_hash_get (idio_properties_hash, o);
+
+    if (idio_S_nil == properties) {
+	idio_property_error_no_properties ("properties is #n", IDIO_C_LOCATION ("idio_read_source_property_set"));
+    }
+
+    if (idio_S_unspec == properties) {
+	properties = idio_hash_make_keyword_table (IDIO_LIST1 (idio_fixnum (4)));
+	idio_hash_put (idio_properties_hash, o, properties);
+
+	IDIO sp = idio_hash_make_keyword_table (IDIO_LIST1 (idio_fixnum (4)));
+	idio_hash_put (properties, idio_KW_source, sp);
+    }
+
+    IDIO sp = idio_hash_get (properties, idio_KW_source);
+
+    if (idio_S_unspec == sp) {
+	idio_property_error_key_not_found (idio_KW_source, IDIO_C_LOCATION ("idio_read_source_property_get"));
+	
+	/* notreached */
+	return idio_S_unspec;
+    }
+
+    idio_hash_set (sp, property, value);
+}
+
+IDIO_DEFINE_PRIMITIVE3 ("%set-source-property!", read_set_source_property, (IDIO o, IDIO property, IDIO value))
+{
+    IDIO_ASSERT (o);
+    IDIO_ASSERT (property);
+    IDIO_ASSERT (value);
+    IDIO_TYPE_ASSERT (keyword, property);
+
+    idio_read_set_source_property (o, property, value);
+
+    return idio_S_unspec;
+}
+
 void idio_init_read ()
 {
+    IDIO_ADD_PRIMITIVE (read_source_properties);
+    IDIO_ADD_PRIMITIVE (read_set_source_properties);
+    IDIO_ADD_PRIMITIVE (read_source_property_get);
+    IDIO_ADD_PRIMITIVE (read_set_source_properties);
 }
 
 void idio_read_add_primitives ()

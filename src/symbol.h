@@ -103,6 +103,11 @@ extern IDIO_SYMBOL_DECL (unset);
 
 extern IDIO idio_properties_hash;
 
+void idio_property_error_nil_object (char *msg, IDIO loc);
+void idio_properties_error_not_found (char *msg, IDIO o, IDIO loc);
+void idio_property_error_no_properties (char *msg, IDIO loc);
+void idio_property_error_key_not_found (IDIO key, IDIO loc);
+
 void idio_free_symbol (IDIO s);
 int idio_isa_symbol (IDIO s);
 IDIO idio_symbols_C_intern (char *s);
@@ -112,7 +117,7 @@ IDIO idio_gensym (char *pref_prefix);
 
 IDIO idio_properties_get (IDIO o, IDIO args);
 void idio_properties_set (IDIO o, IDIO properties);
-IDIO idio_property_get (IDIO o, IDIO property);
+IDIO idio_property_get (IDIO o, IDIO property, IDIO args);
 void idio_property_set (IDIO o, IDIO property, IDIO value);
 
 void idio_init_symbol (void);
