@@ -1,0 +1,23 @@
+
+ The C sources of Idio are documented suitable for kernel-doc.
+
+ kernel-doc is in the LinuxDoc suite.
+
+https://return42.github.io/linuxdoc/linuxdoc-howto/index.html
+
+Install
+=======
+
+pip
+---
+
+ wget https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+ rpm -i epel-release-latest-7.noarch.rpm
+ yum install python2-pip
+ pip install --upgrade pip
+
+LinuxDoc
+--------
+
+ pip install git+http://github.com/return42/linuxdoc.git
+
