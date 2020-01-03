@@ -49,6 +49,11 @@
 
 #include "idio.h"
 
+void idio_hash_verify_chain (IDIO h, void *k, int reqd);
+void idio_hash_verify_all_keys (IDIO h);
+size_t idio_hash_find_free_slot (IDIO h);
+size_t idio_hash_hv_follow_chain (IDIO h, void *k);
+
 void idio_hash_error (char *m, IDIO loc)
 {
     IDIO_C_ASSERT (m);
@@ -331,6 +336,8 @@ void idio_hash_resize (IDIO h)
     idio_gc_stats_free (osize * sizeof (idio_hash_entry_t));
 
     free (ohe);
+
+    idio_hash_verify_all_keys (h);
 }
 
 idio_hi_t idio_hash_hashval_void (void *p)
@@ -645,26 +652,43 @@ int idio_hash_equal (IDIO ht, void *kv1, void *kv2)
     }
 }
 
-void idio_hash_verify_chain (IDIO h, void *kv)
+void idio_hash_verify_chain (IDIO h, void *kv, int reqd)
 {
     IDIO_ASSERT (h);
     IDIO_TYPE_ASSERT (hash, h);
 
     if (idio_gc_verboseness (2)) {
+	/* fprintf (stderr, "idio_hash_verify_chain: h=%10p size=%zu\n", h, IDIO_HASH_SIZE (h)); */
 	idio_hi_t ohv = idio_hash_value (h, kv);
 	idio_hi_t nhv = ohv;
-	fprintf (stderr, "idio_hash_verify_chain: %10p %" PRIuPTR "\n", kv, nhv);
+	/* fprintf (stderr, "idio_hash_verify_chain: kv=%10p ohv=%" PRIuPTR "\n", kv, ohv); */
+	size_t i = 0;
+	int seen = 0;
 	while (nhv < IDIO_HASH_SIZE (h)) {
 	    void *nkv = IDIO_HASH_HE_KEY (h, nhv);
 	    if (idio_S_nil != nkv) {
 		idio_hi_t hv = idio_hash_value (h, nkv);
 		if (hv != ohv) {
-		    fprintf (stderr, "idio_hash_verify_chain: %10p %10p@%" PRIuPTR " hv %" PRIuPTR " != ohv %" PRIuPTR "\n", kv, nkv, nhv, hv, ohv);
+		    fprintf (stderr, "idio_hash_verify_chain: kv=%10p nkv=%10p nhv=%" PRIuPTR " hv %" PRIuPTR " != ohv %" PRIuPTR "\n", kv, nkv, nhv, hv, ohv); 
+		    fprintf (stderr, "risky recurse for %10p!\n", nkv); 
+		    idio_hash_verify_chain (h, nkv, 1);
+		    fprintf (stderr, "risky recurse for %10p done!\n", nkv);
+		    idio_error_printf (IDIO_C_LOCATION ("idio_hash_verify_chain"), "in-chain hv mismatch");
 		    abort ();
 		}
 	    }
-	    fprintf (stderr, "idio_hash_verify_chain: %10p %10p %" PRIuPTR " -> %" PRIuPTR "\n", kv, nkv, nhv, IDIO_HASH_HE_NEXT (h, nhv));
+	    if (nkv == kv) {
+		seen = 1;
+	    }
+	    /* fprintf (stderr, "idio_hash_verify_chain: kv=%10p nkv=%10p nhv=%" PRIuPTR " -> nnhv=%" PRIuPTR "\n", kv, nkv, nhv, IDIO_HASH_HE_NEXT (h, nhv)); */
 	    nhv = IDIO_HASH_HE_NEXT (h, nhv);
+	    i++;
+	}
+	/* fprintf (stderr, "idio_hash_verify_chain: kv=%10p %sseen in %zu\n", kv, seen ? "" : "NOT ", i); */
+	if (reqd &&
+	    ! seen) {
+	    idio_error_printf (IDIO_C_LOCATION ("idio_hash_verify_chain"), "kv not in chain!");
+	    abort ();
 	}
     }
 }
@@ -675,7 +699,7 @@ void idio_hash_verify_all_keys (IDIO h)
     IDIO_TYPE_ASSERT (hash, h);
 
     IDIO_FPRINTF (stderr, "idio_hash_verify_all_keys:\n");
-    idio_dump (h, 1);
+    /* idio_dump (h, 1); */
     idio_hi_t hv = 0;
     for (hv = 0; hv < IDIO_HASH_SIZE (h); hv++) {
 	void *kv = IDIO_HASH_HE_KEY (h, hv);
@@ -686,7 +710,7 @@ void idio_hash_verify_all_keys (IDIO h)
 	    }
 	    IDIO_FPRINTF (stderr, "\n");
 	
-	    idio_hash_verify_chain (h, kv);
+	    idio_hash_verify_chain (h, kv, 1);
 	}
     }
     IDIO_FPRINTF (stderr, "idio_hash_verify_all_keys: done\n");
@@ -739,102 +763,118 @@ IDIO idio_hash_put (IDIO h, void *kv, IDIO v)
 	return idio_S_nil;
     }
 
-    idio_hi_t hv = idio_hash_hv_follow_chain (h, kv);
+    idio_hi_t hi = idio_hash_hv_follow_chain (h, kv);
 
-    if (hv > IDIO_HASH_SIZE (h)) {
+    if (hi > IDIO_HASH_SIZE (h)) {
 	/* XXX this was just done in idio_hash_hv_follow_chain !!! */
-	hv = idio_hash_value (h, kv);
+	hi = idio_hash_value (h, kv);
     }
 
-    IDIO_FPRINTF (stderr, "idio_hash_put: %10p starting @%" PRIuPTR " -> %" PRIuPTR "\n", kv, hv, IDIO_HASH_HE_NEXT (h, hv));
+    idio_gc_set_verboseness (3);
+    IDIO_FPRINTF (stderr, "idio_hash_put: kv=%10p hi=%" PRIuPTR " nhi=%" PRIuPTR "\n", kv, hi, IDIO_HASH_HE_NEXT (h, hi));
 
-    /* current object @hv */
-    IDIO ck = IDIO_HASH_HE_KEY (h, hv);
+    /* current object @hi */
+    IDIO ck = IDIO_HASH_HE_KEY (h, hi);
 
     if (idio_S_nil == ck) {
-	IDIO_HASH_HE_KEY (h, hv) = kv;
-	IDIO_HASH_HE_VALUE (h, hv) = v;
-	IDIO_HASH_HE_NEXT (h, hv) = IDIO_HASH_SIZE (h) + 1;
-	idio_hash_verify_chain (h, kv);
+	IDIO_HASH_HE_KEY (h, hi) = kv;
+	IDIO_HASH_HE_VALUE (h, hi) = v;
+	IDIO_HASH_HE_NEXT (h, hi) = IDIO_HASH_SIZE (h) + 1;
+	idio_hash_verify_chain (h, kv, 1);
 	return kv;
     }
 
     if (idio_hash_equal (h, ck, kv)) {
-	IDIO_HASH_HE_VALUE (h, hv) = v;
-	idio_hash_verify_chain (h, kv);
+	IDIO_HASH_HE_VALUE (h, hi) = v;
+	idio_hash_verify_chain (h, kv, 1);
 	return kv;
     }
 
-    idio_hi_t fhv = idio_hash_find_free_slot (h);
-    if (fhv > IDIO_HASH_SIZE (h)) {
+    idio_hi_t fhi = idio_hash_find_free_slot (h);
+    if (fhi > IDIO_HASH_SIZE (h)) {
 	IDIO_FPRINTF (stderr, "idio_hash_put: no free slot -> resize\n");
 	idio_hash_resize (h);
 	idio_hash_put (h, kv, v);
 	return kv;
     }
-    IDIO_FPRINTF (stderr, "idio_hash_put: fhv %" PRIuPTR "\n", fhv);
+    IDIO_FPRINTF (stderr, "idio_hash_put: fhi %" PRIuPTR "\n", fhi);
 
+    idio_hash_verify_chain (h, ck, 1);
     idio_hi_t ckhv = idio_hash_value (h, ck);
 
     /* either me or him is going to go to the end of the chain */
-    if (ckhv != hv) {
+    if (ckhv != hi) {
 	/* he's in the wrong place */
-	IDIO_FPRINTF (stderr, "idio_hash_put: %10p hv(k@%" PRIuPTR " ck=%10p)=%" PRIuPTR "; mv -> %" PRIuPTR "\n", kv, hv, ck, ckhv, fhv);
+	IDIO_FPRINTF (stderr, "idio_hash_put: kv=%10p insert hv(k@%" PRIuPTR " ck=%10p)=%" PRIuPTR "; mv -> %" PRIuPTR "\n", kv, hi, ck, ckhv, fhi);
 
 	/* who points to him? */
-	idio_hi_t phv = ckhv;
-	idio_hi_t nhv = IDIO_HASH_HE_NEXT (h, phv);
-	while (nhv != hv) {
-	    phv = nhv;
-	    nhv = IDIO_HASH_HE_NEXT (h, phv);
-	    IDIO_FPRINTF (stderr, "idio_hash_put: %10p step %" PRIuPTR " -> %" PRIuPTR "\n", kv, phv, nhv);
+	idio_hi_t phi = ckhv;
+	idio_hi_t nhi = IDIO_HASH_HE_NEXT (h, phi);
+	IDIO_FPRINTF (stderr, "idio_hash_put: kv=%10p start phi=%" PRIuPTR " -> nhi=%" PRIuPTR "\n", kv, phi, nhi);
+	while (nhi != hi) {
+	    phi = nhi;
+	    nhi = IDIO_HASH_HE_NEXT (h, phi);
+	    IDIO_FPRINTF (stderr, "idio_hash_put: kv=%10p step phi=%" PRIuPTR " -> nhi=%" PRIuPTR "\n", kv, phi, nhi);
 
-	    if (nhv > IDIO_HASH_SIZE (h)) {
-		fprintf (stderr, "idio_hash_put: nhv %" PRIuPTR " > size %" PRIuPTR " k=%10p\n", nhv, IDIO_HASH_SIZE (h), kv);
-		fprintf (stderr, "idio_hash_put: hv %" PRIuPTR " ckhv %" PRIuPTR " phv %" PRIuPTR "\n", hv, ckhv, phv);
-		idio_hash_verify_chain (h, ck);
-		idio_hash_verify_chain (h, kv);
+	    if (nhi > IDIO_HASH_SIZE (h)) {
+		fprintf (stderr, "idio_hash_put: kv=%10p  ck=%10p\n", kv, ck);
+		fprintf (stderr, "idio_hash_put: hi=%" PRIuPTR " ckhv=%" PRIuPTR " phi=%" PRIuPTR "\n", hi, ckhv, phi);
+		fprintf (stderr, "idio_hash_put: nhi=%" PRIuPTR " > size %" PRIuPTR "\n", nhi, IDIO_HASH_SIZE (h));
+		idio_gc_set_verboseness (3);
+		idio_hash_verify_chain (h, kv, 1);
+		idio_hash_verify_chain (h, ck, 1);
 		idio_error_printf (IDIO_C_LOCATION ("idio_hash_put"), "oh dear");
 	    }
 	}
 
-	/* point them at fhv */
-	IDIO_HASH_HE_NEXT (h, phv) = fhv;
+	IDIO_FPRINTF (stderr, "idio_hash_put: kv=%10p insert phi=%" PRIuPTR " -> fhi=%" PRIuPTR "\n", kv, phi, fhi);
+
+	/* point them at fhi */
+	IDIO_HASH_HE_NEXT (h, phi) = fhi;
+
+	IDIO_FPRINTF (stderr, "idio_hash_put: kv=%10p insert fhi=%" PRIuPTR " = HE (hi=%" PRIuPTR ")\n", kv, fhi, hi);
 
 	/* shift ck */
-	IDIO_HASH_HE_KEY (h, fhv) = IDIO_HASH_HE_KEY (h, hv);
-	IDIO_HASH_HE_VALUE (h, fhv) = IDIO_HASH_HE_VALUE (h, hv);
-	IDIO_HASH_HE_NEXT (h, fhv) = IDIO_HASH_HE_NEXT (h, hv);
+	IDIO_HASH_HE_KEY (h, fhi) = IDIO_HASH_HE_KEY (h, hi);
+	IDIO_HASH_HE_VALUE (h, fhi) = IDIO_HASH_HE_VALUE (h, hi);
+	IDIO_HASH_HE_NEXT (h, fhi) = IDIO_HASH_HE_NEXT (h, hi);
+
+	IDIO_FPRINTF (stderr, "idio_hash_put: kv=%10p insert hi=%" PRIuPTR " = kv + -> nhv=%" PRIuPTR "\n", kv, hi, IDIO_HASH_SIZE (h) + 1);
 
 	/* insert k */
-	IDIO_HASH_HE_KEY (h, hv) = kv;
-	IDIO_HASH_HE_VALUE (h, hv) = v;
-	IDIO_HASH_HE_NEXT (h, hv) = IDIO_HASH_SIZE (h) + 1;
+	IDIO_HASH_HE_KEY (h, hi) = kv;
+	IDIO_HASH_HE_VALUE (h, hi) = v;
+	IDIO_HASH_HE_NEXT (h, hi) = IDIO_HASH_SIZE (h) + 1;
 
-	idio_hash_verify_chain (h, ck);
-	idio_hash_verify_chain (h, kv);
+	idio_hash_verify_chain (h, ck, 1);
+	idio_hash_verify_chain (h, kv, 1);
     } else {
 	/* I go to the end of the chain */
 
+	IDIO_FPRINTF (stderr, "idio_hash_put: kv=%10p append\n", kv);
+
 	/* find the end of the chain */
-	idio_hi_t phv = hv;
-	idio_hi_t nhv = IDIO_HASH_HE_NEXT (h, phv);
-	while (nhv < IDIO_HASH_SIZE (h)) {
-	    phv = nhv;
-	    nhv = IDIO_HASH_HE_NEXT (h, phv);
-	    IDIO_FPRINTF (stderr, "idio_hash_put: %10p step %" PRIuPTR " -> %" PRIuPTR "\n", kv, phv, nhv);
+	idio_hi_t phi = hi;
+	idio_hi_t nhi = IDIO_HASH_HE_NEXT (h, phi);
+	IDIO_FPRINTF (stderr, "idio_hash_put: kv=%10p start phi=%" PRIuPTR " -> nhi=%" PRIuPTR "\n", kv, phi, nhi);
+	while (nhi < IDIO_HASH_SIZE (h)) {
+	    phi = nhi;
+	    nhi = IDIO_HASH_HE_NEXT (h, phi);
+	    IDIO_FPRINTF (stderr, "idio_hash_put: kv=%10p step phi=%" PRIuPTR " -> nhi=%" PRIuPTR "\n", kv, phi, nhi);
 	}
 
-	IDIO_FPRINTF (stderr, "idio_hash_put: %10p append chain @%" PRIuPTR " -> %" PRIuPTR "\n", kv, phv, fhv);
+	IDIO_FPRINTF (stderr, "idio_hash_put: kv=%10p append phi=%" PRIuPTR " -> fhi=%" PRIuPTR "\n", kv, phi, fhi);
 
-	/* point them at fhv */
-	IDIO_HASH_HE_NEXT (h, phv) = fhv;
+	/* point them at fhi */
+	IDIO_HASH_HE_NEXT (h, phi) = fhi;
 
-	IDIO_HASH_HE_KEY (h, fhv) = kv;
-	IDIO_HASH_HE_VALUE (h, fhv) = v;
-	IDIO_HASH_HE_NEXT (h, fhv) = IDIO_HASH_SIZE (h) + 1;
+	IDIO_FPRINTF (stderr, "idio_hash_put: kv=%10p append fhi=%" PRIuPTR " = kv=%10p -> nhv=%" PRIuPTR "\n", kv, fhi, kv, IDIO_HASH_SIZE (h) + 1);
 
-	idio_hash_verify_chain (h, kv);
+	IDIO_HASH_HE_KEY (h, fhi) = kv;
+	IDIO_HASH_HE_VALUE (h, fhi) = v;
+	IDIO_HASH_HE_NEXT (h, fhi) = IDIO_HASH_SIZE (h) + 1;
+
+	idio_hash_verify_chain (h, kv, 1);
     }
 
     return kv;
@@ -858,15 +898,15 @@ idio_hi_t idio_hash_hv_follow_chain (IDIO h, void *kv)
 	idio_error_printf (IDIO_C_LOCATION ("idio_hash_hv_follow_chain"), "hv %" PRIuPTR " > size %" PRIuPTR " kv=%10p", hv, IDIO_HASH_SIZE (h), kv);
     }
 
-    IDIO_FPRINTF (stderr, "idio_hash_hv_follow_chain: %10p starting @%" PRIuPTR "\n", kv, hv);
+    IDIO_FPRINTF (stderr, "idio_hash_hv_follow_chain: kv=%10p hv=%" PRIuPTR "\n", kv, hv);
     if (IDIO_HASH_FLAGS (h) & IDIO_HASH_FLAG_STRING_KEYS) {
-	IDIO_FPRINTF (stderr, "SK kv=%s\n", (char *) kv);
+	IDIO_FPRINTF (stderr, "idio_hash_hv_follow_chain: SK kv=%s\n", (char *) kv);
     }
 
-    idio_hi_t chv = hv;
-    IDIO ck = IDIO_HASH_HE_KEY (h, chv);
+    idio_hi_t chi = hv;
+    IDIO ck = IDIO_HASH_HE_KEY (h, chi);
     
-    IDIO_FPRINTF (stderr, "%10p: @%zd %10p -> %zd\n", kv, chv, ck, IDIO_HASH_HE_NEXT (h, chv));
+    IDIO_FPRINTF (stderr, "idio_hash_hv_follow_chain: kv=%10p chi=%" PRIuPTR " ck=%10p nhi=%" PRIuPTR "\n", kv, chi, ck, IDIO_HASH_HE_NEXT (h, chi));
     if (idio_S_nil != ck) {
 	if (IDIO_HASH_FLAGS (h) & IDIO_HASH_FLAG_STRING_KEYS) {
 	    IDIO_FPRINTF (stderr, "SK ck=%s\n", (char *) ck);
@@ -876,24 +916,24 @@ idio_hi_t idio_hash_hv_follow_chain (IDIO h, void *kv)
     }
 
     while (! idio_hash_equal (h, ck, kv) &&
-	   IDIO_HASH_HE_NEXT (h, chv) < IDIO_HASH_SIZE (h)) {
-	chv = IDIO_HASH_HE_NEXT (h, chv);
-	ck = IDIO_HASH_HE_KEY (h, chv);
-	IDIO_FPRINTF (stderr, "%10p: @%zd %10p -> %zd\n", kv, chv, ck, IDIO_HASH_HE_NEXT (h, chv));
+	   IDIO_HASH_HE_NEXT (h, chi) < IDIO_HASH_SIZE (h)) {
+	chi = IDIO_HASH_HE_NEXT (h, chi);
+	ck = IDIO_HASH_HE_KEY (h, chi);
+	IDIO_FPRINTF (stderr, "idio_hash_hv_follow_chain: kv=%10p chi=%" PRIuPTR " ck=%10p nhi=%" PRIuPTR "\n", kv, chi, ck, IDIO_HASH_HE_NEXT (h, chi));
 	if (idio_S_nil != ck &&
 	    IDIO_HASH_FLAGS (h) & IDIO_HASH_FLAG_STRING_KEYS) {
-	    IDIO_FPRINTF (stderr, "SK ck=%s\n", (char *) ck);
+	    IDIO_FPRINTF (stderr, "idio_hash_hv_follow_chain: SK ck=%s\n", (char *) ck);
 	}
     }
 
     if (! idio_hash_equal (h, ck, kv)) {
-	IDIO_FPRINTF (stderr, "idio_hash_hv_follow_chain: %10p not found\n", kv);
+	IDIO_FPRINTF (stderr, "idio_hash_hv_follow_chain: kv=%10p not found\n", kv);
 	return (IDIO_HASH_SIZE (h) + 1);
     }
 
-    IDIO_FPRINTF (stderr, "idio_hash_hv_follow_chain: %10p found @%" PRIuPTR "\n", kv, chv);
+    IDIO_FPRINTF (stderr, "idio_hash_hv_follow_chain: kv=%10p found @ chi=%" PRIuPTR "\n", kv, chi);
 
-    return chv;
+    return chi;
 }
 
 int idio_hash_exists_key (IDIO h, void *kv)
@@ -1010,37 +1050,37 @@ int idio_hash_delete (IDIO h, void *kv)
     }
 
     idio_hi_t nhv = IDIO_HASH_HE_NEXT (h, chv);
-    IDIO_FPRINTF (stderr, "idio_hash_delete: %10p deleting from %" PRIuPTR " -> @%" PRIuPTR " -> %" PRIuPTR "\n", ck, phv, chv, nhv);
+    IDIO_FPRINTF (stderr, "idio_hash_delete: %10p deleting from phv=%" PRIuPTR " -> chv=%" PRIuPTR " -> nhv=%" PRIuPTR "\n", ck, phv, chv, nhv);
 
     if (0 == phv) {
 	/* head of chain */
 	if (nhv < IDIO_HASH_SIZE (h)) {
-	    IDIO_FPRINTF (stderr, "idio_hash_delete: %10p head of chain: @%" PRIuPTR " <- %" PRIuPTR "\n", ck, chv, nhv);
+	    IDIO_FPRINTF (stderr, "idio_hash_delete: %10p head of chain: chv=%" PRIuPTR " <- nhv=%" PRIuPTR "\n", ck, chv, nhv);
 	    IDIO_HASH_HE_KEY (h, chv) = IDIO_HASH_HE_KEY (h, nhv);
 	    IDIO_HASH_HE_VALUE (h, chv) = IDIO_HASH_HE_VALUE (h, nhv);
 	    IDIO_HASH_HE_NEXT (h, chv) = IDIO_HASH_HE_NEXT (h, nhv);
 	
-	    IDIO_FPRINTF (stderr, "idio_hash_delete: %10p head of chain: nullify %" PRIuPTR "\n", ck, nhv);
+	    IDIO_FPRINTF (stderr, "idio_hash_delete: %10p head of chain: nullify nhv=%" PRIuPTR "\n", ck, nhv);
 	    IDIO_HASH_HE_KEY (h, nhv) = idio_S_nil;
 	    IDIO_HASH_HE_VALUE (h, nhv) = idio_S_nil;
 	    IDIO_HASH_HE_NEXT (h, nhv) = IDIO_HASH_SIZE (h) + 1;
 	} else {
-	    IDIO_FPRINTF (stderr, "idio_hash_delete: %10p head of chain: nullify %" PRIuPTR "\n", ck, chv);
+	    IDIO_FPRINTF (stderr, "idio_hash_delete: %10p head of chain: nullify chv=%" PRIuPTR "\n", ck, chv);
 	    IDIO_HASH_HE_KEY (h, chv) = idio_S_nil;
 	    IDIO_HASH_HE_VALUE (h, chv) = idio_S_nil;
 	    IDIO_HASH_HE_NEXT (h, chv) = IDIO_HASH_SIZE (h) + 1;
 	}
     } else {
-	IDIO_FPRINTF (stderr, "idio_hash_delete: %10p link %" PRIuPTR " -> %" PRIuPTR "\n", ck, phv, nhv);
+	IDIO_FPRINTF (stderr, "idio_hash_delete: %10p link phv=%" PRIuPTR " -> nhv=%" PRIuPTR "\n", ck, phv, nhv);
 	IDIO_HASH_HE_NEXT (h, phv) = nhv;
     
-	IDIO_FPRINTF (stderr, "idio_hash_delete: %10p nullify %" PRIuPTR "\n", ck, chv);
+	IDIO_FPRINTF (stderr, "idio_hash_delete: %10p nullify chv=%" PRIuPTR "\n", ck, chv);
 	IDIO_HASH_HE_KEY (h, chv) = idio_S_nil;
 	IDIO_HASH_HE_VALUE (h, chv) = idio_S_nil;
 	IDIO_HASH_HE_NEXT (h, chv) = IDIO_HASH_SIZE (h) + 1;
     }
 
-    idio_hash_verify_chain (h, kv);
+    idio_hash_verify_chain (h, kv, 0);
 
     return 1;
 }
@@ -1494,6 +1534,7 @@ IDIO_DEFINE_PRIMITIVE2 ("hash-merge!", hash_merge, (IDIO ht1, IDIO ht2))
 
 void idio_init_hash ()
 {
+    idio_gc_set_verboseness (3);
 }
 
 void idio_hash_add_primitives ()

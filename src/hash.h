@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -43,10 +43,8 @@ size_t idio_hash_hashval_pair (IDIO h);
 size_t idio_hash_hashval_array (IDIO h);
 size_t idio_hash_hashval_hash (IDIO h);
 size_t idio_hash_hashval (IDIO h, void *k);
-void idio_hash_verify_chain (IDIO h, void *k);
-size_t idio_hash_find_free_slot (IDIO h);
 IDIO idio_hash_put (IDIO h, void *k, IDIO v);
-size_t idio_hash_hv_follow_chain (IDIO h, void *k);
+int idio_hash_exists_key (IDIO h, void *kv);
 IDIO idio_hash_exists (IDIO h, void *k);
 IDIO idio_hash_get (IDIO h, void *k);
 int idio_hash_delete (IDIO h, void *k);
