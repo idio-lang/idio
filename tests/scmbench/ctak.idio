@@ -1,0 +1,46 @@
+;;; CTAK -- A version of the TAK procedure that uses continuations.
+
+;; (define (ctak x y z)
+;;   (call-with-current-continuation
+;;    (lambda (k) (ctak-aux k x y z))))
+
+;; (define (ctak-aux k x y z)
+;;   (if (not (< y x))
+;;       (k z)
+;;       (call-with-current-continuation
+;;        (lambda (k)
+;;          (ctak-aux
+;;           k
+;;           (call-with-current-continuation
+;;            (lambda (k) (ctak-aux k (- x 1) y z)))
+;;           (call-with-current-continuation
+;;            (lambda (k) (ctak-aux k (- y 1) z x)))
+;;           (call-with-current-continuation
+;;            (lambda (k) (ctak-aux k (- z 1) x y))))))))
+
+;; (ctak 18 12 6)
+
+ctak := function (x y z) {
+  call/cc (function (k) {
+    ctak-aux k x y z
+  })
+}
+
+ctak-aux := function (k x y z) {
+  if (not (lt y x)) (k z) {
+    call/cc (function (k) {
+      ctak-aux k \
+	       (call/cc (function (k) {
+		 ctak-aux k (x - 1) y z
+	       })) \
+	       (call/cc (function (k) {
+		 ctak-aux k (y - 1) z x
+	       })) \
+	       (call/cc (function (k) {
+		 ctak-aux k (z - 1) x y
+	       }))
+    })
+  }
+}
+
+ctak 18 12 6
