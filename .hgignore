@@ -17,9 +17,14 @@ TAGS
 core.*
 vgcore.*
 *.so
+*.orig
+vm-perf.log
 
-bin/idio
+bin
 main
 scm1-c-structs
 scm1-c-structs.scm1
 auto-c-type.[ch]
+
+doc/src/kernel-autodoc-out
+tests/*.class
