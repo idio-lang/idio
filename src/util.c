@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -1212,56 +1212,56 @@ char *idio_as_string (IDIO o, int depth)
 	    case IDIO_TYPE_THREAD:
 		{
 		    idio_ai_t sp = idio_array_size (IDIO_THREAD_STACK (o));
-		    if (asprintf (&r, "#<THREAD %p pc=%6zd sp/top=%2zd/",
+		    if (asprintf (&r, "#<THREAD %p\n  pc=%6zd\n  sp/top=%2zd/",
 				  o,
 				  IDIO_THREAD_PC (o),
 				  sp - 1) == -1) {
 			idio_error_alloc ("asprintf");
 		    }
 		    IDIO_STRCAT_FREE (r, idio_as_string (idio_array_top (IDIO_THREAD_STACK (o)), 1));
-		    IDIO_STRCAT (r, " val=");
+		    IDIO_STRCAT (r, "\n  val=");
 		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_VAL (o), 2));
-		    IDIO_STRCAT (r, " func=");
+		    IDIO_STRCAT (r, "\n  func=");
 		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_FUNC (o), 1));
 		    if (1 == depth) {
 			IDIO frame = IDIO_THREAD_FRAME (o);
 
 			if (idio_S_nil == frame) {
-			    IDIO_STRCAT (r, " fr=nil");
+			    IDIO_STRCAT (r, "\n  fr=nil");
 			} else {
 			    char *es;
-			    if (asprintf (&es, " fr=%p ", frame) == -1) {
+			    if (asprintf (&es, "\n  fr=%p ", frame) == -1) {
 				idio_error_alloc ("asprintf");
 			    }
 			    IDIO_STRCAT_FREE (r, es);
 			    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_FRAME_ARGS (frame), 1));
 			}
 		    }
-		    IDIO_STRCAT (r, " env=");
+		    IDIO_STRCAT (r, "\n  env=");
 		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_ENV (o), 1));
-		    IDIO_STRCAT (r, " t/sp=");
+		    IDIO_STRCAT (r, "\n  t/sp=");
 		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_TRAP_SP (o), 1));
-		    IDIO_STRCAT (r, " h/sp=");
+		    IDIO_STRCAT (r, "\n  h/sp=");
 		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_HANDLER_SP (o), 1));
-		    IDIO_STRCAT (r, " d/sp=");
+		    IDIO_STRCAT (r, "\n  d/sp=");
 		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_DYNAMIC_SP (o), 1));
-		    IDIO_STRCAT (r, " e/sp=");
+		    IDIO_STRCAT (r, "\n  e/sp=");
 		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_ENVIRON_SP (o), 1));
 		    if (depth > 1) {
-			IDIO_STRCAT (r, " fr=");
+			IDIO_STRCAT (r, "\n  fr=");
 			IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_FRAME (o), 1));
 			if (depth > 2) {
-			    IDIO_STRCAT (r, " reg1=");
+			    IDIO_STRCAT (r, "\n  reg1=");
 			    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_REG1 (o), 1));
-			    IDIO_STRCAT (r, " reg2=");
+			    IDIO_STRCAT (r, "\n  reg2=");
 			    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_REG2 (o), 1));
-			    IDIO_STRCAT (r, " input_handle=");
+			    IDIO_STRCAT (r, "\n  input_handle=");
 			    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_INPUT_HANDLE (o), 1));
-			    IDIO_STRCAT (r, " output_handle=");
+			    IDIO_STRCAT (r, "\n  output_handle=");
 			    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_OUTPUT_HANDLE (o), 1));
-			    IDIO_STRCAT (r, " error_handle=");
+			    IDIO_STRCAT (r, "\n  error_handle=");
 			    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_ERROR_HANDLE (o), 1));
-			    IDIO_STRCAT (r, " module=");
+			    IDIO_STRCAT (r, "\n  module=");
 			    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_MODULE (o), 1));
 			}
 		    }
