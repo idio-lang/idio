@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -2608,7 +2608,7 @@ static IDIO idio_meaning (IDIO e, IDIO nametree, int flags, IDIO cs)
     IDIO_TYPE_ASSERT (array, cs);
 
     /* idio_debug ("meaning: e  in %s ", e);  */
-    /* fprintf (stderr, "tail=%d\n", flags);  */
+    /* fprintf (stderr, "flags=%x\n", flags);  */
     
     if (idio_isa_pair (e)) {
 	IDIO eh = IDIO_PAIR_H (e);

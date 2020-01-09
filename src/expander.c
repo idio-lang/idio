@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2018 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2018, 2020 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -120,7 +120,7 @@ IDIO idio_evaluate_expander_source (IDIO x, IDIO e)
     IDIO_ASSERT (x);
     IDIO_ASSERT (e);
 
-    /* idio_debug ("evaluate-expander: in: %s\n", x);   */
+    /* idio_debug ("evaluate-expander-source: in: %s\n", x);   */
 
     IDIO cthr = idio_thread_current_thread ();
     IDIO ethr = idio_expander_thread;
@@ -136,7 +136,7 @@ IDIO idio_evaluate_expander_source (IDIO x, IDIO e)
     idio_thread_restore_state (ethr);
     idio_thread_set_current_thread (cthr);
 
-    /* idio_debug ("evaluate-expander: out: %s\n", r);      */
+    /* idio_debug ("evaluate-expander-source: out: %s\n", r);      */
 
     /* if (idio_S_nil == r) { */
     /* 	fprintf (stderr, "evaluate-expander: bad expansion?\n"); */

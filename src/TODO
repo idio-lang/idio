@@ -84,6 +84,10 @@ Compiler
 	- Compiler/Implementation techniques https://github.com/scheme-live/library.readscheme.org/blob/master/page8.md
 	  - from https://news.ycombinator.com/item?id=19653902
 
+	- C Compiler from scratch: https://github.com/DoctorWkt/acwj
+	  - from https://news.ycombinator.com/item?id=21968420
+	  - which also mentions https://lagunita.stanford.edu/courses/Engineering/Compilers/Fall2014/about
+
 JIT
 	- https://news.ycombinator.com/item?id=15624388 and then
 	- http://chrisseaton.com/rubytruffle/jokerconf17/

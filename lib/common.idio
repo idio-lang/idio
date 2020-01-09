@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -49,7 +49,7 @@ load-handle = {
   orig-load-handle := load-handle
 
   function (handle) {
-    if (not (handle? handle)) (error 'load-handle "not a string" handle)
+    if (not (handle? handle)) (error 'load-handle "not a handle" handle)
 
     load-handle-k := #n
 
