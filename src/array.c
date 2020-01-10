@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -17,10 +17,10 @@
 
 /*
  * array.c
- * 
+ *
  */
 
-/** 
+/**
  * DOC: Idio ``array`` type
  *
  * An Idio ``array`` is an array of ``IDIO`` values.  It will
@@ -54,7 +54,7 @@ void idio_array_error_length (char *m, idio_ai_t i, IDIO loc)
     IDIO_C_ASSERT (m);
     IDIO_ASSERT (loc);
     IDIO_TYPE_ASSERT (string, loc);
-    
+
     idio_error_printf (loc, "%s: %zd", m, i);
 }
 
@@ -66,7 +66,7 @@ static void idio_array_error_bounds (idio_ai_t index, idio_ai_t size, IDIO loc)
     char em[BUFSIZ];
 
     sprintf (em, "array bounds error: abs (%td) > %td", index, size);
-    
+
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C (em, sh);
 
@@ -81,7 +81,7 @@ static void idio_array_error_bounds (idio_ai_t index, idio_ai_t size, IDIO loc)
 
 /**
  * idio_assign_array() - base function for initialising arrays
- * @a: pre-allocated ``IDIO`` value 
+ * @a: pre-allocated ``IDIO`` value
  * @asize: array size
  * @dv: default ``IDIO`` value for each element
  *
@@ -104,7 +104,7 @@ void idio_assign_array (IDIO a, idio_ai_t asize, IDIO dv)
 
     IDIO_GC_ALLOC (a->u.array, sizeof (idio_array_t));
     IDIO_GC_ALLOC (a->u.array->ae, asize * sizeof (idio_t));
-    
+
     IDIO_ARRAY_GREY (a) = NULL;
     IDIO_ARRAY_ASIZE (a) = asize;
     IDIO_ARRAY_USIZE (a) = 0;
@@ -131,10 +131,10 @@ IDIO idio_array_dv (idio_ai_t size, IDIO dv)
     if (0 == size) {
 	size = 1;
     }
-    
+
     IDIO a = idio_gc_get (IDIO_TYPE_ARRAY);
     idio_assign_array (a, size, dv);
-    
+
     return a;
 }
 
@@ -195,7 +195,7 @@ void idio_array_resize (IDIO a)
 
     /* all the inserts above will have mucked usize up */
     IDIO_ARRAY_USIZE (a) = ousize;
-    
+
     idio_gc_stats_free (sizeof (idio_array_t) + oasize * sizeof (idio_t));
     idio_gc_stats_free (sizeof (idio_array_t) + oasize * sizeof (idio_t));
 
@@ -256,7 +256,7 @@ void idio_array_insert_index (IDIO a, IDIO o, idio_ai_t index)
 	*/
 	if (index < (IDIO_ARRAY_ASIZE (a) * 2)) {
 	    idio_array_resize (a);
-	} else {	
+	} else {
 	    idio_array_error_bounds (index, IDIO_ARRAY_ASIZE (a), IDIO_C_LOCATION ("idio_array_insert_index"));
 	}
     }
@@ -313,7 +313,7 @@ IDIO idio_array_pop (IDIO a)
 
     IDIO_ASSERT (e);
     IDIO_ASSERT_NOT_FREED (e);
-    
+
     return e;
 }
 
@@ -339,7 +339,7 @@ IDIO idio_array_shift (IDIO a)
     for (i = 0 ; i < IDIO_ARRAY_USIZE (a) - 1; i++) {
 	IDIO e = idio_array_get_index (a, i + 1);
 	IDIO_ASSERT (e);
-	
+
 	idio_array_insert_index (a, e, i);
     }
 
@@ -369,7 +369,7 @@ void idio_array_unshift (IDIO a, IDIO o)
 	for (i = IDIO_ARRAY_USIZE (a); i > 0; i--) {
 	    IDIO e = idio_array_get_index (a, i - 1);
 	    IDIO_ASSERT (e);
-	    
+
 	    idio_array_insert_index (a, e, i);
 	}
     }
@@ -394,7 +394,7 @@ IDIO idio_array_head (IDIO a)
 	IDIO_ARRAY_USIZE (a) = 0;
 	return idio_S_nil;
     }
-    
+
     return idio_array_get_index (a, 0);
 }
 
@@ -414,7 +414,7 @@ IDIO idio_array_top (IDIO a)
 	IDIO_ARRAY_USIZE (a) = 0;
 	return idio_S_nil;
     }
-    
+
     return idio_array_get_index (a, IDIO_ARRAY_USIZE (a) - 1);
 }
 
@@ -447,7 +447,7 @@ IDIO idio_array_get_index (IDIO a, idio_ai_t index)
 }
 
 /**
- * idio_array_find_free_index() - return the index of the first default value element 
+ * idio_array_find_free_index() - return the index of the first default value element
  * @a: array
  * @index: starting index
  *
@@ -458,7 +458,7 @@ idio_ai_t idio_array_find_free_index (IDIO a, idio_ai_t index)
 {
     IDIO_ASSERT (a);
     IDIO_TYPE_ASSERT (array, a);
-    
+
     if (index < 0) {
 	idio_array_error_bounds (index, IDIO_ARRAY_USIZE (a), IDIO_C_LOCATION ("idio_array_find_free_index"));
     }
@@ -489,7 +489,7 @@ idio_ai_t idio_array_find_eqp (IDIO a, IDIO e, idio_ai_t index)
 {
     IDIO_ASSERT (a);
     IDIO_TYPE_ASSERT (array, a);
-    
+
     if (index < 0) {
 	idio_array_error_bounds (index, IDIO_ARRAY_USIZE (a), IDIO_C_LOCATION ("idio_array_find_eqp"));
     }
@@ -534,7 +534,7 @@ void idio_array_bind (IDIO a, idio_ai_t nargs, ...)
 	*arg = idio_array_get_index (a, i);
 	IDIO_ASSERT (*arg);
     }
-    
+
     va_end (ap);
 }
 
@@ -579,7 +579,7 @@ IDIO idio_array_to_list (IDIO a)
 
     idio_ai_t al = IDIO_ARRAY_USIZE (a);
     idio_ai_t ai;
-    
+
     IDIO r = idio_S_nil;
 
     for (ai = al -1; ai >= 0; ai--) {
@@ -638,7 +638,7 @@ test if `o` is an array				\n\
     if (idio_isa_array (o)) {
 	r = idio_S_true;
     }
-    
+
     return r;
 }
 
@@ -658,7 +658,7 @@ If no default value is supplied #f is used.	\n\
     IDIO_ASSERT (args);
 
     ptrdiff_t alen = -1;
-    
+
     if (idio_isa_fixnum (size)) {
 	alen = IDIO_FIXNUM_VAL (size);
     } else if (idio_isa_bignum (size)) {
@@ -687,7 +687,7 @@ If no default value is supplied #f is used.	\n\
     if (alen < 0) {
 	idio_error_printf (IDIO_C_LOCATION ("make-array"), "invalid length: %zd", alen);
     }
-    
+
     IDIO a = idio_array_dv (alen, dv);
     IDIO_ARRAY_USIZE (a) = alen;
 
@@ -741,7 +741,7 @@ IDIO idio_array_ref (IDIO a, IDIO index)
     IDIO_TYPE_ASSERT (array, a);
 
     ptrdiff_t i = -1;
-    
+
     if (idio_isa_fixnum (index)) {
 	i = IDIO_FIXNUM_VAL (index);
     } else if (idio_isa_bignum (index)) {
@@ -803,7 +803,7 @@ IDIO idio_array_set (IDIO a, IDIO index, IDIO v)
     IDIO_TYPE_ASSERT (array, a);
 
     ptrdiff_t i = -1;
-    
+
     if (idio_isa_fixnum (index)) {
 	i = IDIO_FIXNUM_VAL (index);
     } else if (idio_isa_bignum (index)) {

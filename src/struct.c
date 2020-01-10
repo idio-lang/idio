@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -17,7 +17,7 @@
 
 /*
  * struct.c
- * 
+ *
  */
 
 #include "idio.h"
@@ -27,7 +27,7 @@ static void idio_struct_error_field_not_found (IDIO field, IDIO loc)
     IDIO_ASSERT (field);
     IDIO_ASSERT (loc);
     IDIO_TYPE_ASSERT (string, loc);
-    
+
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C ("field '", sh);
     idio_display (field, sh);
@@ -50,7 +50,7 @@ IDIO idio_struct_type (IDIO name, IDIO parent, IDIO fields)
 	IDIO_TYPE_ASSERT (struct_type, parent);
     }
     IDIO_TYPE_ASSERT (list, fields);
-    
+
     IDIO st = idio_gc_get (IDIO_TYPE_STRUCT_TYPE);
 
     IDIO_GC_ALLOC (st->u.struct_type, sizeof (idio_struct_type_t));
@@ -74,7 +74,7 @@ IDIO idio_struct_type (IDIO name, IDIO parent, IDIO fields)
     if (idio_S_nil != parent) {
 	pfields = idio_array_size (IDIO_STRUCT_TYPE_FIELDS (parent));
 	IDIO_STRUCT_TYPE_FIELDS (st) = idio_array_copy (IDIO_STRUCT_TYPE_FIELDS (parent), nfields);
-    } else {    
+    } else {
 	IDIO_STRUCT_TYPE_FIELDS (st) = idio_array (nfields);
     }
 
@@ -82,7 +82,7 @@ IDIO idio_struct_type (IDIO name, IDIO parent, IDIO fields)
     idio_ai_t i;
     for (i = 0; i < nfields; i++) {
 	idio_array_insert_index (IDIO_STRUCT_TYPE_FIELDS (st), IDIO_PAIR_H (fs), pfields + i);
-	fs = IDIO_PAIR_T (fs);	
+	fs = IDIO_PAIR_T (fs);
     }
 
     return st;
@@ -125,7 +125,7 @@ IDIO_DEFINE_PRIMITIVE1 ("struct-type?", struct_typep, (IDIO o))
 void idio_free_struct_type (IDIO p)
 {
     IDIO_ASSERT (p);
-    
+
     IDIO_TYPE_ASSERT (struct_type, p);
 
     idio_gc_stats_free (sizeof (idio_struct_type_t));
@@ -181,7 +181,7 @@ int idio_struct_type_isa (IDIO st, IDIO type)
 	    return idio_struct_type_isa (IDIO_STRUCT_TYPE_PARENT (st), type);
 	}
     }
-    
+
     return 0;
 }
 
@@ -198,7 +198,7 @@ IDIO_DEFINE_PRIMITIVE2 ("struct-type-isa", struct_type_isa, (IDIO st, IDIO type)
     if (idio_struct_type_isa (st, type)) {
 	r = idio_S_true;
     }
-    
+
     return r;
 }
 
@@ -224,7 +224,7 @@ IDIO idio_allocate_struct_instance (IDIO st, int fill)
 	    idio_array_insert_index (IDIO_STRUCT_INSTANCE_FIELDS (si), idio_S_nil, i);
 	}
     }
-    
+
     return si;
 }
 
@@ -303,7 +303,7 @@ IDIO_DEFINE_PRIMITIVE1 ("struct-instance?", struct_instancep, (IDIO o))
 void idio_free_struct_instance (IDIO p)
 {
     IDIO_ASSERT (p);
-    
+
     IDIO_TYPE_ASSERT (struct_instance, p);
 
     idio_gc_stats_free (sizeof (idio_struct_instance_t));
@@ -382,7 +382,7 @@ IDIO_DEFINE_PRIMITIVE4 ("%struct-instance-ref-direct", struct_instance_ref_direc
     if (st != IDIO_STRUCT_INSTANCE_TYPE (si)) {
 	idio_error_printf (IDIO_C_LOCATION ("%struct-instance-ref-direct"), "bad structure ref");
     }
-    
+
     return idio_struct_instance_ref_direct (si, IDIO_FIXNUM_VAL (index));
 }
 
@@ -450,7 +450,7 @@ IDIO_DEFINE_PRIMITIVE5 ("%struct-instance-set-direct!", struct_instance_set_dire
     if (st != IDIO_STRUCT_INSTANCE_TYPE (si)) {
 	idio_error_printf (IDIO_C_LOCATION ("%struct-instance-set-direct!"), "bad structure set");
     }
-    
+
     return idio_struct_instance_set_direct (si, IDIO_FIXNUM_VAL (index), v);
 }
 
@@ -477,7 +477,7 @@ IDIO_DEFINE_PRIMITIVE2 ("struct-instance-isa", struct_instance_isa, (IDIO si, ID
     if (idio_struct_instance_isa (si, st)) {
 	r = idio_S_true;
     }
-    
+
     return r;
 }
 

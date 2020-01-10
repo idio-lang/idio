@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2020 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -17,7 +17,7 @@
 
 /*
  * c-struct.c
- * 
+ *
  */
 
 #include "idio.h"
@@ -51,7 +51,7 @@ IDIO idio_C_typedef (IDIO sym)
     IDIO_ASSERT (sym);
 
     IDIO_TYPE_ASSERT (symbol, sym);
-    
+
     IDIO o = idio_gc_get (IDIO_TYPE_C_TYPEDEF);
 
     IDIO_GC_ALLOC (o->u.C_typedef, sizeof (idio_C_typedef_t));
@@ -82,9 +82,9 @@ void idio_free_C_typedef (IDIO o)
 int idio_C_typedef_type_cmp (IDIO C_typedef, IDIO val)
 {
     IDIO_ASSERT (C_typedef);
-    
+
     int type = idio_type (val);
-    
+
     switch (type) {
     case IDIO_TYPE_C_INT8_T: return (C_typedef == idio_CTD_int8);
     case IDIO_TYPE_C_UINT8_T: return (C_typedef == idio_CTD_uint8);
@@ -167,7 +167,7 @@ IDIO idio_resolve_C_typedef (IDIO ctd)
 IDIO idio_C_fields_array (IDIO C_typedefs)
 {
     IDIO_ASSERT (C_typedefs);
-    
+
     IDIO_TYPE_ASSERT (pair, C_typedefs);
 
     int sc = 0;
@@ -200,7 +200,7 @@ IDIO idio_C_fields_array (IDIO C_typedefs)
 	}
 
 	IDIO base_C_typedef = idio_resolve_C_typedef (C_typedef);
-	
+
 	if (base_C_typedef == idio_CTD_int8) {
 	    alignment = IDIO_C_STRUCT_ALIGNMENT (int8_t);
 	    size = nelem * sizeof (int8_t);
@@ -272,7 +272,7 @@ IDIO idio_C_fields_array (IDIO C_typedefs)
 	idio_array_push (fields_array, field_data);
 
 	offset += size;
-	
+
 	C_typedefs = idio_list_tail (C_typedefs);
     }
 
@@ -375,7 +375,7 @@ void idio_free_C_instance (IDIO ci)
 IDIO idio_opaque (void *p)
 {
     IDIO_C_ASSERT (p);
-    
+
     return idio_opaque_final (p, NULL, idio_S_nil);
 }
 
@@ -383,7 +383,7 @@ IDIO idio_opaque_args (void *p, IDIO args)
 {
     IDIO_C_ASSERT (p);
     IDIO_ASSERT (args);
-    
+
     return idio_opaque_final (p, NULL, args);
 }
 
@@ -455,7 +455,7 @@ void idio_init_C_struct ()
     IDIO_C_TYPEDEF_ADD_VALUE (long, int32);
     IDIO_C_TYPEDEF_ADD_VALUE (ulong, uint32);
 #endif
-    
+
 }
 
 void idio_C_struct_add_primitives ()

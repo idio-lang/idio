@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -17,7 +17,7 @@
 
 /*
  * idio.h
- * 
+ *
  */
 
 #ifndef IDIO_H
@@ -66,13 +66,13 @@
 #include <sys/utsname.h>
 #include <sys/wait.h>
 
-/* 
+/*
  * BSD markers
  */
 #if defined (__unix__)
 #include <sys/param.h>
-/* 
- * Now test for 
+/*
+ * Now test for
  *
  * #if defined(BSD)
  * ...
@@ -89,7 +89,7 @@
 
 #include <termios.h>
 
-/* 
+/*
  * How many signals are there?
  *
  * Linux, OpenSolaris and Mac OS X all seem to define NSIG as the
@@ -191,7 +191,7 @@ extern FILE *idio_vm_perf_FILE;
    }
 
  * should become
-   
+
    IDIO idio_defprimitive_foo_C (T1 a1, T2 a2);
    static struct idio_primitive_desc_s idio_primitive_data_foo_C = {
       idio_defprimitive_foo_C,

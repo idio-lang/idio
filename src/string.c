@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -17,7 +17,7 @@
 
 /*
  * string.c
- * 
+ *
  */
 
 #include "idio.h"
@@ -53,13 +53,13 @@ IDIO idio_string_C (const char *s_C)
     IDIO_C_ASSERT (s_C);
 
     IDIO so = idio_gc_get (IDIO_TYPE_STRING);
-    
+
     IDIO_FPRINTF (stderr, "idio_string_C: %10p = '%s'\n", so, s_C);
 
     size_t blen = strlen (s_C);
 
     IDIO_GC_ALLOC (IDIO_STRING_S (so), blen + 1);
-    
+
     memcpy (IDIO_STRING_S (so), s_C, blen);
     IDIO_STRING_S (so)[blen] = '\0';
     IDIO_STRING_BLEN (so) = blen;
@@ -72,11 +72,11 @@ IDIO idio_string_C_len (const char *s_C, size_t blen)
     IDIO_C_ASSERT (s_C);
 
     IDIO so = idio_gc_get (IDIO_TYPE_STRING);
-    
+
     IDIO_FPRINTF (stderr, "idio_string_C: %10p = '%s'\n", so, s_C);
 
     IDIO_GC_ALLOC (IDIO_STRING_S (so), blen + 1);
-    
+
     memcpy (IDIO_STRING_S (so), s_C, blen);
     IDIO_STRING_S (so)[blen] = '\0';
     IDIO_STRING_BLEN (so) = blen;
@@ -91,7 +91,7 @@ IDIO idio_string_C_array (size_t ns, char *a_C[])
     IDIO so;
 
     so = idio_gc_get (IDIO_TYPE_STRING);
-    
+
     size_t blen = 0;
     size_t ai;
 
@@ -100,14 +100,14 @@ IDIO idio_string_C_array (size_t ns, char *a_C[])
     }
 
     IDIO_GC_ALLOC (IDIO_STRING_S (so), blen + 1);
-    
+
     size_t ao = 0;
     for (ai = 0; ai < ns; ai++) {
 	size_t sl = strlen (a_C[ai]);
 	memcpy (IDIO_STRING_S (so) + ao, a_C[ai], sl);
 	ao += sl;
     }
-    
+
     IDIO_STRING_S (so)[blen] = '\0';
     IDIO_STRING_BLEN (so) = blen;
 
@@ -165,7 +165,7 @@ IDIO idio_substring_offset (IDIO p, size_t offset, size_t blen)
 {
     IDIO_ASSERT (p);
     IDIO_C_ASSERT (blen);
-            
+
     IDIO so = idio_gc_get (IDIO_TYPE_SUBSTRING);
 
     IDIO_FPRINTF (stderr, "idio_substring_offset: %10p = '%.*s'\n", so, blen, IDIO_STRING_S (p) + offset);
@@ -206,11 +206,11 @@ int idio_string_cmp_C (IDIO so, char *s_C)
 
     int blen = strlen (s_C);
     IDIO_C_ASSERT (blen);
-    
+
     if (IDIO_STRING_BLEN (so) < blen) {
 	blen = IDIO_STRING_BLEN (so);
     }
-    
+
     return strncmp (IDIO_STRING_S (so), s_C, blen);
 }
 
@@ -314,7 +314,7 @@ IDIO_DEFINE_PRIMITIVE1V ("make-string", make_string, (IDIO size, IDIO args))
     IDIO_ASSERT (args);
 
     ptrdiff_t blen = -1;
-    
+
     if (idio_isa_fixnum (size)) {
 	blen = IDIO_FIXNUM_VAL (size);
     } else if (idio_isa_bignum (size)) {
@@ -349,7 +349,7 @@ IDIO_DEFINE_PRIMITIVE1V ("make-string", make_string, (IDIO size, IDIO args))
     if (blen < 0) {
 	idio_error_printf (IDIO_C_LOCATION ("make-string"), "invalid length: %zd", blen);
     }
-    
+
     char *sC = idio_alloc (blen + 1);
 
     size_t i;
@@ -361,7 +361,7 @@ IDIO_DEFINE_PRIMITIVE1V ("make-string", make_string, (IDIO size, IDIO args))
     IDIO s = idio_string_C (sC);
 
     free (sC);
-    
+
     return s;
 }
 
@@ -369,12 +369,12 @@ IDIO_DEFINE_PRIMITIVE1 ("string->list", string2list, (IDIO s))
 {
     IDIO_ASSERT (s);
     IDIO_VERIFY_PARAM_TYPE (string, s);
-    
+
     char *sC = idio_string_s (s);
     size_t sl = idio_string_blen (s);
 
     ptrdiff_t si;
-    
+
     IDIO r = idio_S_nil;
 
     for (si = sl - 1; si >=0; si--) {
@@ -388,7 +388,7 @@ IDIO_DEFINE_PRIMITIVE1 ("string->symbol", string2symbol, (IDIO s))
 {
     IDIO_ASSERT (s);
     IDIO_VERIFY_PARAM_TYPE (string, s);
-    
+
     char *sC = idio_string_as_C (s);
 
     IDIO r = idio_symbols_C_intern (sC);
@@ -413,12 +413,12 @@ IDIO_DEFINE_PRIMITIVE1V ("string-append", string_append, (IDIO s, IDIO args))
 
     for (i++; idio_S_nil != args; i++) {
 	IDIO_VERIFY_PARAM_TYPE (string, IDIO_PAIR_H (args));
-	
+
 	copies[i] = idio_string_as_C (IDIO_PAIR_H (args));
 
 	args = IDIO_PAIR_T (args);
     }
-    
+
     IDIO r = idio_string_C_array (n, copies);
 
     for (i = 0; i < n; i++) {
@@ -478,7 +478,7 @@ IDIO idio_string_ref (IDIO s, IDIO index)
     IDIO_TYPE_ASSERT (string, s);
 
     ptrdiff_t i = -1;
-    
+
     if (idio_isa_fixnum (index)) {
 	i = IDIO_FIXNUM_VAL (index);
     } else if (idio_isa_bignum (index)) {
@@ -527,7 +527,7 @@ IDIO idio_string_set (IDIO s, IDIO index, IDIO c)
     IDIO_TYPE_ASSERT (character, c);
 
     ptrdiff_t i = -1;
-    
+
     if (idio_isa_fixnum (index)) {
 	i = IDIO_FIXNUM_VAL (index);
     } else if (idio_isa_bignum (index)) {
@@ -772,7 +772,7 @@ IDIO_DEFINE_STRING_CS_PRIMITIVE2V ("string>?", gt, >)
 char *idio_string_token (char *in, char *delim, int flags, char **saved, size_t *blen)
 {
     char prev_delim = '\0';
-    
+
     if (NULL == in) {
 	in = *saved;
 	if (NULL == in) {
@@ -821,7 +821,7 @@ IDIO idio_string_split (IDIO iin, IDIO idelim)
     IDIO_ASSERT (idelim);
     IDIO_TYPE_ASSERT (string, iin);
     IDIO_TYPE_ASSERT (string, idelim);
-    
+
     IDIO r = idio_S_nil;
 
     char *in = idio_string_s (iin);
@@ -865,7 +865,7 @@ IDIO idio_string_join (IDIO delim, IDIO args)
     IDIO_ASSERT (args);
     IDIO_TYPE_ASSERT (string, delim);
     IDIO_TYPE_ASSERT (list, args);
-    
+
     if (idio_S_nil == args) {
 	return idio_string_C_len ("", 0);
     }
@@ -876,13 +876,13 @@ IDIO idio_string_join (IDIO delim, IDIO args)
     ptrdiff_t i;
     for (i = 0; idio_S_nil != args; i += 2) {
 	IDIO_VERIFY_PARAM_TYPE (string, IDIO_PAIR_H (args));
-	
+
 	copies[i] = idio_string_as_C (IDIO_PAIR_H (args));
 	copies[i+1] = idio_string_as_C (delim);
 
 	args = IDIO_PAIR_T (args);
     }
-    
+
     IDIO r = idio_string_C_array (n, copies);
 
     for (i = 0; i < n; i++) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -17,7 +17,7 @@
 
 /*
  * closure.c
- * 
+ *
  */
 
 #include "idio.h"
@@ -50,7 +50,7 @@ IDIO idio_closure (size_t code, IDIO frame, IDIO env, IDIO sigstr, IDIO docstr)
 
     IDIO_FPRINTF (stderr, "idio_closure: %10p = (%10p %10p)\n", c, code, env);
 
-    IDIO_GC_ALLOC (c->u.closure, sizeof (idio_closure_t)); 
+    IDIO_GC_ALLOC (c->u.closure, sizeof (idio_closure_t));
 
     IDIO_CLOSURE_GREY (c) = NULL;
     IDIO_CLOSURE_CODE (c) = code;
@@ -90,9 +90,9 @@ void idio_free_closure (IDIO c)
     IDIO_ASSERT (c);
     IDIO_TYPE_ASSERT (closure, c);
 
-    idio_gc_stats_free (sizeof (idio_closure_t)); 
+    idio_gc_stats_free (sizeof (idio_closure_t));
 
-    free (c->u.closure); 
+    free (c->u.closure);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("procedure?", procedurep, (IDIO o), "o", "\
@@ -127,7 +127,7 @@ return the setter of `p`			\n\
     IDIO_ASSERT (p);
 
     IDIO kwt = idio_S_nil;
-    
+
     if (idio_isa_primitive (p)) {
 	kwt = IDIO_PRIMITIVE_PROPERTIES (p);
     } else if (idio_isa_closure (p)) {
@@ -159,7 +159,7 @@ IDIO idio_closure_procedure_properties (IDIO p)
 
     /* notreached */
     return idio_S_unspec;
-}    
+}
 
 IDIO_DEFINE_PRIMITIVE1_DS ("%procedure-properties", procedure_properties, (IDIO p), "p", "\
 return the properties table of `p`		\n\
@@ -226,7 +226,7 @@ void idio_closure_add_primitives ()
      * primitive
      */
     IDIO setter = idio_module_symbol_value_recurse (idio_S_setter, idio_Idio_module_instance (), idio_S_nil);
-    
+
     IDIO kwt = idio_closure_procedure_properties (setter);
 
     if (idio_S_nil == kwt) {

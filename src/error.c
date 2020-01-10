@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2020 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -17,7 +17,7 @@
 
 /*
  * error.c
- * 
+ *
  */
 
 #include "idio.h"
@@ -125,7 +125,7 @@ void idio_error_param_nil (char *name, IDIO loc)
     IDIO_C_ASSERT (name);
     IDIO_ASSERT (loc);
     IDIO_TYPE_ASSERT (string, loc);
-    
+
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C (name, sh);
     idio_display_C (" is nil", sh);
@@ -175,7 +175,7 @@ void idio_error (IDIO who, IDIO msg, IDIO args, IDIO loc)
 {
     IDIO_ASSERT (who);
     IDIO_ASSERT (msg);
-    IDIO_ASSERT (args); 
+    IDIO_ASSERT (args);
     IDIO_ASSERT (loc);
     IDIO_TYPE_ASSERT (list, args);
 
@@ -199,7 +199,7 @@ void idio_error (IDIO who, IDIO msg, IDIO args, IDIO loc)
 void idio_error_C (char *msg, IDIO args, IDIO loc)
 {
     IDIO_C_ASSERT (msg);
-    IDIO_ASSERT (args); 
+    IDIO_ASSERT (args);
     IDIO_ASSERT (loc);
     IDIO_TYPE_ASSERT (list, args);
     IDIO_TYPE_ASSERT (string, loc);
@@ -210,11 +210,11 @@ void idio_error_C (char *msg, IDIO args, IDIO loc)
 IDIO_DEFINE_PRIMITIVE1V ("error", error, (IDIO msg, IDIO args))
 {
     IDIO_ASSERT (msg);
-    IDIO_ASSERT (args); 
+    IDIO_ASSERT (args);
     IDIO_VERIFY_PARAM_TYPE (list, args);
 
     IDIO who = idio_S_user;
-    
+
     if (idio_isa_symbol (msg)) {
 	who = msg;
 	msg = idio_list_head (args);
@@ -258,7 +258,7 @@ void idio_error_system_errno (char *msg, IDIO args, IDIO loc)
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (args);
     IDIO_ASSERT (loc);
-    IDIO_TYPE_ASSERT (list, args);    
+    IDIO_TYPE_ASSERT (list, args);
     IDIO_TYPE_ASSERT (string, loc);
 
     idio_error_system (msg, args, errno, loc);

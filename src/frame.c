@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -17,7 +17,7 @@
 
 /*
  * frame.c
- * 
+ *
  */
 
 #include "idio.h"
@@ -39,11 +39,11 @@ void idio_frame_error_range (IDIO fo, size_t d, size_t i, IDIO loc)
 IDIO idio_frame_allocate (idio_ai_t arityp1)
 {
     IDIO_C_ASSERT (arityp1);
-    
+
     IDIO fo = idio_gc_get (IDIO_TYPE_FRAME);
 
     IDIO_GC_ALLOC (fo->u.frame, sizeof (idio_frame_t));
-    
+
     IDIO_FRAME_GREY (fo) = NULL;
     IDIO_FRAME_FLAGS (fo) = IDIO_FRAME_FLAG_NONE;
     IDIO_FRAME_NEXT (fo) = idio_S_nil;
@@ -68,7 +68,7 @@ IDIO idio_frame_allocate (idio_ai_t arityp1)
 	idio_array_insert_index (IDIO_FRAME_ARGS (fo), idio_S_undef, i);
     }
     idio_array_insert_index (IDIO_FRAME_ARGS (fo), idio_S_nil, i);
-    
+
     return fo;
 }
 
@@ -76,9 +76,9 @@ IDIO idio_frame (IDIO next, IDIO args)
 {
     IDIO_ASSERT (next);
     IDIO_ASSERT (args);
-    
+
     idio_ai_t nargs = idio_list_length (args);
-    
+
     IDIO fo = idio_frame_allocate (nargs + 1);
 
     IDIO_FRAME_NEXT (fo) = next;
@@ -116,7 +116,7 @@ IDIO idio_frame_fetch (IDIO fo, size_t d, size_t i)
     IDIO_TYPE_ASSERT (frame, fo);
 
     IDIO ofo = fo;
-    
+
     for (; d; d--) {
 	fo = IDIO_FRAME_NEXT (fo);
 	IDIO_ASSERT (fo);
@@ -136,7 +136,7 @@ IDIO idio_frame_fetch (IDIO fo, size_t d, size_t i)
 	idio_frame_error_range (fo, d, i, IDIO_C_LOCATION ("idio_frame_fetch"));
 	return idio_S_unspec;
     }
-    
+
     return idio_array_get_index (IDIO_FRAME_ARGS (fo), i);
 }
 
@@ -156,7 +156,7 @@ void idio_frame_update (IDIO fo, size_t d, size_t i, IDIO v)
 	idio_frame_error_range (fo, d, i, IDIO_C_LOCATION ("idio_frame_update"));
 	return;
     }
-    
+
     idio_array_insert_index (IDIO_FRAME_ARGS (fo), v, i);
 }
 
@@ -197,7 +197,7 @@ IDIO idio_frame_args_as_list (IDIO frame)
     IDIO_TYPE_ASSERT (frame, frame);
 
     IDIO r = idio_S_nil;
-    
+
     IDIO args = IDIO_FRAME_ARGS (frame);
     idio_ai_t al = idio_array_size (args);
     if (al > 0) {

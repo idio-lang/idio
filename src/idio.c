@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -17,7 +17,7 @@
 
 /*
  * idio.c
- * 
+ *
  */
 
 #include "idio.h"
@@ -149,7 +149,7 @@ void idio_add_primitives ()
     idio_codegen_add_primitives ();
 
     idio_libc_wrap_add_primitives ();
-    
+
     /*
      * We can't patch up the first thread's IO handles until modules
      * are available which required that threads were available to
@@ -164,7 +164,7 @@ void idio_final ()
      * reverse order of idio_init () ??
      */
     idio_final_libc_wrap ();
-    
+
     idio_final_codegen ();
     idio_final_vm ();
     idio_final_command ();
@@ -255,7 +255,7 @@ int main (int argc, char **argv, char **envp)
 	 * idio_command_interactive is set to 1 if isatty (0) is true
 	 * however we are about to loop over files in a
 	 * non-interactive way.  So turn it off.
-	 */	
+	 */
 	idio_command_interactive = 0;
 
 	/*
@@ -312,7 +312,7 @@ int main (int argc, char **argv, char **envp)
 	 * and so will be 0 if stdin is a file (or other non-tty
 	 * entity).
 	 */
-	
+
 	/*
 	 * See commentary above re: setjmp.
 	 */
@@ -322,16 +322,16 @@ int main (int argc, char **argv, char **envp)
 	case 0:
 	    break;
 	case IDIO_VM_LONGJMP_CONDITION:
-	    fprintf (stderr, "REPL: longjmp from condition\n");  
+	    fprintf (stderr, "REPL: longjmp from condition\n");
 	    break;
 	case IDIO_VM_LONGJMP_CONTINUATION:
-	    fprintf (stderr, "REPL: longjmp from continuation\n");  
+	    fprintf (stderr, "REPL: longjmp from continuation\n");
 	    break;
 	case IDIO_VM_LONGJMP_CALLCC:
-	    fprintf (stderr, "REPL: longjmp from callcc\n");  
+	    fprintf (stderr, "REPL: longjmp from callcc\n");
 	    break;
 	case IDIO_VM_LONGJMP_EVENT:
-	    fprintf (stderr, "REPL: longjmp from event\n");  
+	    fprintf (stderr, "REPL: longjmp from event\n");
 	    break;
 	default:
 	    fprintf (stderr, "setjmp: repl failed with sjv %d\n", sjv);

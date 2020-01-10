@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2020 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -191,7 +191,7 @@ IDIO idio_C_pointer (void * v)
     IDIO co = idio_gc_get (IDIO_TYPE_C_POINTER);
 
     IDIO_GC_ALLOC (co->u.C_type.u.C_pointer, sizeof (idio_C_pointer_t));
-    
+
     IDIO_C_TYPE_POINTER_P (co) = v;
     IDIO_C_TYPE_POINTER_FREEP (co) = 0;
 
@@ -204,7 +204,7 @@ IDIO idio_C_pointer_free_me (void * v)
      * NB We must IDIO_C_ASSERT (v) as we will be trying to free v
      */
     IDIO_C_ASSERT (v);
-    
+
     IDIO co = idio_C_pointer (v);
 
     IDIO_C_TYPE_POINTER_FREEP (co) = 1;
@@ -265,7 +265,7 @@ IDIO idio_C_number_cast (IDIO co, idio_type_e type)
 
     IDIO r = idio_S_nil;
     int fail = 0;
-    
+
     switch (type) {
     case IDIO_TYPE_C_UINT:
 	{

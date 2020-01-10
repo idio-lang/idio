@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -17,7 +17,7 @@
 
 /*
  * codegen.h
- * 
+ *
  */
 
 #ifndef CODEGEN_H
@@ -42,7 +42,7 @@
 #define IDIO_I_CODE_COMPUTED_REF                16
 #define IDIO_I_CODE_COMPUTED_SET                17
 #define IDIO_I_CODE_COMPUTED_DEFINE             18
-    
+
 #define IDIO_I_CODE_ALTERNATIVE			20
 #define IDIO_I_CODE_SEQUENCE			21
 #define IDIO_I_CODE_TR_FIX_LET			22
@@ -54,7 +54,7 @@
 #define IDIO_I_CODE_PRIMCALL3                   32
 #define IDIO_I_CODE_FIX_CLOSURE                 33
 #define IDIO_I_CODE_NARY_CLOSURE                34
-    
+
 #define IDIO_I_CODE_TR_REGULAR_CALL             40
 #define IDIO_I_CODE_REGULAR_CALL                41
 #define IDIO_I_CODE_STORE_ARGUMENT              42
@@ -67,19 +67,17 @@
 #define IDIO_I_CODE_POP_DYNAMIC                 53
 #define IDIO_I_CODE_DYNAMIC_REF                 54
 #define IDIO_I_CODE_DYNAMIC_FUNCTION_REF	55
-    
+
 #define IDIO_I_CODE_PUSH_ENVIRON                60
 #define IDIO_I_CODE_POP_ENVIRON                 61
 #define IDIO_I_CODE_ENVIRON_REF                 62
-    
-#define IDIO_I_CODE_PUSH_HANDLER                70
-#define IDIO_I_CODE_POP_HANDLER                 71
-#define IDIO_I_CODE_PUSH_TRAP                   72
-#define IDIO_I_CODE_POP_TRAP                    73
 
-#define IDIO_I_CODE_AND                         75
-#define IDIO_I_CODE_OR                          76
-#define IDIO_I_CODE_BEGIN                       77
+#define IDIO_I_CODE_PUSH_TRAP                   70
+#define IDIO_I_CODE_POP_TRAP                    71
+
+#define IDIO_I_CODE_AND                         72
+#define IDIO_I_CODE_OR                          73
+#define IDIO_I_CODE_BEGIN                       74
 
 #define IDIO_I_CODE_EXPANDER                    80
 #define IDIO_I_CODE_INFIX_OPERATOR              81
@@ -131,8 +129,6 @@
 #define idio_I_PUSH_ENVIRON                ((const IDIO) IDIO_CONSTANT_I_CODE (IDIO_I_CODE_PUSH_ENVIRON))
 #define idio_I_POP_ENVIRON                 ((const IDIO) IDIO_CONSTANT_I_CODE (IDIO_I_CODE_POP_ENVIRON))
 #define idio_I_ENVIRON_REF                 ((const IDIO) IDIO_CONSTANT_I_CODE (IDIO_I_CODE_ENVIRON_REF))
-#define idio_I_PUSH_HANDLER                ((const IDIO) IDIO_CONSTANT_I_CODE (IDIO_I_CODE_PUSH_HANDLER))
-#define idio_I_POP_HANDLER                 ((const IDIO) IDIO_CONSTANT_I_CODE (IDIO_I_CODE_POP_HANDLER))
 #define idio_I_PUSH_TRAP                   ((const IDIO) IDIO_CONSTANT_I_CODE (IDIO_I_CODE_PUSH_TRAP))
 #define idio_I_POP_TRAP                    ((const IDIO) IDIO_CONSTANT_I_CODE (IDIO_I_CODE_POP_TRAP))
 #define idio_I_AND                         ((const IDIO) IDIO_CONSTANT_I_CODE (IDIO_I_CODE_AND))

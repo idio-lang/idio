@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -17,7 +17,7 @@
 
 /*
  * symbol.c
- * 
+ *
  */
 
 #include "idio.h"
@@ -76,7 +76,6 @@ IDIO_SYMBOL_DECL (list);
 IDIO_SYMBOL_DECL (load);
 IDIO_SYMBOL_DECL (load_handle);
 IDIO_SYMBOL_DECL (lt);
-IDIO_SYMBOL_DECL (monitor);
 IDIO_SYMBOL_DECL (namespace);
 IDIO_SYMBOL_DECL (op);
 IDIO_SYMBOL_DECL (or);
@@ -120,7 +119,7 @@ idio_hi_t idio_symbol_C_hash (IDIO h, void *s)
     if (idio_S_nil != s) {
 	hvalue = idio_hash_hashval_string_C (strlen ((char *) s), s);
     }
-    
+
     return (hvalue & IDIO_HASH_MASK (h));
 }
 
@@ -149,7 +148,7 @@ static IDIO idio_symbol_C (const char *s_C)
     size_t blen = strlen (s_C);
     IDIO_GC_ALLOC (IDIO_SYMBOL_S (o), blen + 1);
     strcpy (IDIO_SYMBOL_S (o), s_C);
-    
+
     return o;
 }
 
@@ -186,13 +185,13 @@ IDIO idio_symbols_string_intern (IDIO str)
 {
     IDIO_ASSERT (str);
     IDIO_TYPE_ASSERT (string, str);
-    
+
     char *s_C = idio_string_as_C (str);
-    
+
     IDIO r = idio_symbols_C_intern (s_C);
 
     free (s_C);
-	
+
     return r;
 }
 
@@ -214,7 +213,7 @@ IDIO idio_gensym (char *pref_prefix)
     char buf[strlen (prefix) + 1 + 20 + 1];
 
     IDIO sym;
-    
+
     for (;idio_gensym_id;idio_gensym_id++) {
 	sprintf (buf, "%s/%" PRIuMAX, prefix, idio_gensym_id);
 
@@ -238,7 +237,7 @@ IDIO_DEFINE_PRIMITIVE0V ("gensym", gensym, (IDIO args))
 
     char *prefix = NULL;
     int free_me = 0;
-    
+
     if (idio_isa_pair (args)) {
 	IDIO iprefix = IDIO_PAIR_H (args);
 
@@ -254,7 +253,7 @@ IDIO_DEFINE_PRIMITIVE0V ("gensym", gensym, (IDIO args))
 	    return idio_S_unspec;
 	}
     }
-    
+
     IDIO sym = idio_gensym (prefix);
 
     if (free_me) {
@@ -273,7 +272,7 @@ IDIO_DEFINE_PRIMITIVE1 ("symbol?", symbol_p, (IDIO o))
     if (idio_isa_symbol (o)) {
 	r = idio_S_true;
     }
-    
+
     return r;
 }
 
@@ -359,7 +358,6 @@ void idio_init_symbol ()
     IDIO_SYMBOL_DEF ("load", load);
     IDIO_SYMBOL_DEF ("load-handle", load_handle);
     IDIO_SYMBOL_DEF ("<", lt);
-    IDIO_SYMBOL_DEF ("monitor", monitor);
     IDIO_SYMBOL_DEF ("namespace", namespace);
     IDIO_SYMBOL_DEF ("op", op);
     IDIO_SYMBOL_DEF ("or", or);

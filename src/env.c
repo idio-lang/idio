@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2020 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -17,7 +17,7 @@
 
 /*
  * env.c
- * 
+ *
  */
 
 #include "idio.h"
@@ -54,14 +54,14 @@ static void idio_env_add_environ ()
 
 	IDIO var;
 	IDIO val = idio_S_undef;
-	
+
 	if (NULL != e) {
 	    char *name = idio_alloc (e - *env + 1);
 	    strncpy (name, *env, e - *env);
 	    name[e - *env] = '\0';
 	    var = idio_symbols_C_intern (name);
 	    free (name);
-	    
+
 	    val = idio_string_C (e + 1);
 	} else {
 	    var = idio_string_C (*env);

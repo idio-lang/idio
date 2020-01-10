@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -25,13 +25,13 @@ define-macro (help x) {
       props := %procedure-properties $x
       sigstr := hash-ref props :sigstr
       docstr := hash-ref props :docstr-raw
-      display* "procedure:" '$x $sigstr "\n" 
+      display* "procedure:" '$x $sigstr "\n"
       display docstr
       #t
     }) ((symbol? $x) {
       module := find-module $x #f
       if module {
-        display* "module:" '$x "\n" 
+        display* "module:" '$x "\n"
         display* "imports" (module-imports module)
         exports := (module-exports module)
         display* "exports" exports
@@ -39,7 +39,7 @@ define-macro (help x) {
           if (null? exports) #t \
 	     {
 	       export := ph exports
-	       display* " " export 
+	       display* " " export
 	       exports_loop (pt exports)
 	     }
         }
@@ -81,9 +81,9 @@ define (autodoc) {
     }) ((symbol? val) {
       module := find-module val #f
       if module {
-        display* "module:" sym "\n" 
+        display* "module:" sym "\n"
       } {
-        display* "symbol:" sym "\n" 
+        display* "symbol:" sym "\n"
       }
     }) (else {
       edisplay* "help: " mod sym ": not a function"
@@ -103,7 +103,7 @@ define (autodoc) {
        module := ph modules
        symbol_loop module (module-symbols (find-module module))
        module_loop (pt modules)
-    }   
+    }
   }
 
   module_loop (all-modules)
@@ -205,7 +205,7 @@ define-macro (suppress-errors & cmd) {
       }
     }) {
       if (pair? (ph '$cmd)) {
-	$@cmd 
+	$@cmd
       } $cmd
     }
   }

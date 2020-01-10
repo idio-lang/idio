@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -17,7 +17,7 @@
 
 /*
  * vm.h
- * 
+ *
  */
 
 #ifndef VM_H
@@ -176,15 +176,12 @@
 #define IDIO_A_PUSH_ENVIRON                237
 
 #define IDIO_A_NON_CONT_ERR                240
-#define IDIO_A_PUSH_HANDLER                241
-#define IDIO_A_POP_HANDLER                 242
-#define IDIO_A_RESTORE_HANDLER             243
-#define IDIO_A_PUSH_TRAP                   244
-#define IDIO_A_POP_TRAP                    245
-#define IDIO_A_RESTORE_TRAP                246
+#define IDIO_A_PUSH_TRAP                   241
+#define IDIO_A_POP_TRAP                    242
+#define IDIO_A_RESTORE_TRAP                243
 
-#define IDIO_A_POP_ESCAPER                 247
-#define IDIO_A_PUSH_ESCAPER                248
+#define IDIO_A_POP_ESCAPER                 244
+#define IDIO_A_PUSH_ESCAPER                245
 
 extern IDIO idio_vm_constants;
 extern IDIO_IA_T idio_all_code;
@@ -217,7 +214,6 @@ IDIO idio_vm_computed_set (idio_ai_t msi, idio_ai_t gvi, IDIO v, IDIO thr);
 void idio_vm_computed_define (idio_ai_t msi, idio_ai_t gvi, IDIO v, IDIO thr);
 void idio_vm_add_module_constants (IDIO module, IDIO constants);
 
-void idio_vm_push_handler (IDIO thr, IDIO val);
 void idio_raise_condition (IDIO continuablep, IDIO e);
 IDIO idio_apply (IDIO fn, IDIO args);
 void idio_vm_debug (IDIO thr, char *prefix, idio_ai_t stack_start);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2020 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -17,7 +17,7 @@
 
 /*
  * pair.c
- * 
+ *
  */
 
 #include "idio.h"
@@ -64,7 +64,7 @@ IDIO_DEFINE_PRIMITIVE1 ("pair?", pair_p, (IDIO o))
     if (idio_isa_pair (o)) {
 	r = idio_S_true;
     }
-    
+
     return r;
 }
 
@@ -113,7 +113,7 @@ IDIO idio_list_head (IDIO p)
     if (idio_S_nil == p) {
 	return idio_S_nil;
     }
-    
+
     IDIO_TYPE_ASSERT (pair, p);
 
     return IDIO_PAIR_H (p);
@@ -198,7 +198,7 @@ void idio_list_bind (IDIO *list, size_t nargs, ...)
 	*list = idio_list_tail (*list);
 	IDIO_ASSERT (*arg);
     }
-    
+
     va_end (ap);
 }
 
@@ -206,7 +206,7 @@ IDIO idio_improper_list_reverse (IDIO l, IDIO last)
 {
     IDIO_ASSERT (l);
     IDIO_ASSERT (last);
-    
+
     if (idio_S_nil == l) {
 	/*
 	 * An empty improper list, ie. "( . last)" is invalid and we
@@ -220,11 +220,11 @@ IDIO idio_improper_list_reverse (IDIO l, IDIO last)
     IDIO_TYPE_ASSERT (pair, l);
 
     IDIO r = last;
-    
+
     while (idio_S_nil != l) {
 	IDIO h = idio_list_head (l);
 	r = idio_pair (h, r);
-	
+
 	l = idio_list_tail (l);
     }
 
@@ -234,7 +234,7 @@ IDIO idio_improper_list_reverse (IDIO l, IDIO last)
 IDIO idio_list_reverse (IDIO l)
 {
     IDIO_ASSERT (l);
-    
+
     return idio_improper_list_reverse (l, idio_S_nil);
 }
 
@@ -249,11 +249,11 @@ IDIO_DEFINE_PRIMITIVE1 ("reverse", list_reverse, (IDIO l))
 IDIO idio_list_to_array (IDIO l)
 {
     IDIO_ASSERT (l);
-    
+
     IDIO_TYPE_ASSERT (list, l);
-    
+
     size_t ll = idio_list_length (l);
-    
+
     IDIO r = idio_array (ll);
 
     size_t li = 0;
@@ -269,7 +269,7 @@ IDIO idio_list_to_array (IDIO l)
 size_t idio_list_length (IDIO l)
 {
     IDIO_ASSERT (l);
-    
+
     if (idio_S_nil == l) {
 	return 0;
     }
@@ -277,12 +277,12 @@ size_t idio_list_length (IDIO l)
     IDIO_TYPE_ASSERT (pair, l);
 
     size_t len = 0;
-    
+
     while (idio_S_nil != l) {
 	len++;
 	l = idio_list_tail (l);
     }
-    
+
     return len;
 }
 
@@ -299,7 +299,7 @@ IDIO_DEFINE_PRIMITIVE1 ("length", list_length, (IDIO o))
 IDIO idio_list_copy (IDIO l)
 {
     IDIO_ASSERT (l);
-    
+
     if (idio_S_nil == l) {
 	return idio_S_nil;
     }
@@ -307,7 +307,7 @@ IDIO idio_list_copy (IDIO l)
     IDIO_TYPE_ASSERT (pair, l);
 
     IDIO r = idio_S_nil;
-    
+
     while (idio_S_nil != l) {
 	IDIO h = idio_list_head (l);
 	IDIO t = idio_list_tail (l);
@@ -322,7 +322,7 @@ IDIO idio_list_copy (IDIO l)
 
 	l = t;
     }
-    
+
     r = idio_list_reverse (r);
 
     return r;
@@ -332,7 +332,7 @@ IDIO idio_list_append2 (IDIO l1, IDIO l2)
 {
     IDIO_ASSERT (l1);
     IDIO_ASSERT (l2);
-    
+
     if (idio_S_nil == l1) {
 	return l2;
     }
@@ -361,7 +361,7 @@ IDIO idio_list_append2 (IDIO l1, IDIO l2)
     }
 
     IDIO_PAIR_T (p) = l2;
-    
+
     return r;
 }
 
@@ -409,7 +409,7 @@ IDIO idio_list_list2string (IDIO l)
 		c < INT8_MIN) {
 		idio_error_C ("character too large for C string", h, IDIO_C_LOCATION ("idio_list_list2string"));
 	    }
-	    
+
 	    s[i] = c;
 	} else {
 	    idio_error_param_type ("character", h, IDIO_C_LOCATION ("idio_list_list2string"));
@@ -421,7 +421,7 @@ IDIO idio_list_list2string (IDIO l)
     }
 
     s[i] = '\0';
-    
+
     return idio_string_C (s);
 }
 

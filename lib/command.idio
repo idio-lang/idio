@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -301,7 +301,7 @@ define (wait-for-job job) "wait for job `job` to be stopped or completed
 
   do () ((not (and (not (call-with-values waitany mark-process-status))
 	           (not (job-is-stopped job))
-	           (not (job-is-completed job)))) 
+	           (not (job-is-completed job))))
          #n) #n
 
   ;;edisplay* "wfj" (%idio-job-pgid job) "completed?" (job-is-completed job) "stopped?" (job-is-stopped job) (if (job-failed job) "failed" "succeeded") (pipeline-detail job)
@@ -327,7 +327,7 @@ define (format-job-info job msg) "display to stderr `msg` alongside job `job` de
 }
 
 define (do-job-notification) "notify of any job status changes" {
-  ;; edisplay* "djn:" (map (function (job) { 
+  ;; edisplay* "djn:" (map (function (job) {
   ;; 			   %idio-job-pipeline job
   ;; 			 }) %idio-jobs)
   ;; get the latest data
@@ -805,7 +805,7 @@ define-infix-operator | 300 {
 			close (pipe-reader $pgrp-pipe)
 			close (pipe-writer $pgrp-pipe)
 		      }
-		      
+
 		      ;; edisplay* "child" (getpid) "cmd" '$cmd
 		      if+ (pair? (ph '$cmd)) {
 			    $@cmd
@@ -999,7 +999,7 @@ define (wait & jobs) {
     jobs = %idio-jobs
   }
 
-  ;; edisplay* "wait jobs:" (map (function (job) { 
+  ;; edisplay* "wait jobs:" (map (function (job) {
   ;; 				%idio-job-pipeline job
   ;; 			      }) jobs)
   loop jobs
@@ -1018,10 +1018,10 @@ define (wait & jobs) {
 ;; 'output, 'error
 ;;
 ;; {s/d} (source/destination) can be:
-;; 1. a handle (file or string) 
+;; 1. a handle (file or string)
 ;; 2. a literal string which will be interpreted as the name of the
-;;    file to open as per: 
-;;      open-output-file {s/d} or 
+;;    file to open as per:
+;;      open-output-file {s/d} or
 ;;      open-input-file {s/d}
 ;; 3. #n as shorthand for the string "/dev/null"
 ;;
@@ -1133,7 +1133,7 @@ define (with-error-to dst thunk) {
 ;; 'output, 'error
 ;;
 ;; {new} can be:
-;; 1. a handle (file or string) 
+;; 1. a handle (file or string)
 ;; 2. a C int or fixnum which will be interpreted as the name of the
 ;;    file descriptor to call dup2(2) with
 ;;
@@ -1147,7 +1147,7 @@ with-handle-dup := {
   set-error-handle!     := set-error-handle!
 
   function (type new thunk) {
-    ;; edisplay* 'with-handle-dup type new 
+    ;; edisplay* 'with-handle-dup type new
     ;; handle-oriented indirection function/variables
     get-current-h := #f
     set-h!        := #f

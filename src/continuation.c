@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -17,7 +17,7 @@
 
 /*
  * continuation.c
- * 
+ *
  */
 
 #include "idio.h"
@@ -26,7 +26,7 @@ IDIO idio_continuation (IDIO thr)
 {
     IDIO_ASSERT (thr);
     IDIO_TYPE_ASSERT (thread, thr);
-    
+
     IDIO k = idio_gc_get (IDIO_TYPE_CONTINUATION);
 
     IDIO_GC_ALLOC (k->u.continuation, sizeof (idio_continuation_t));
@@ -40,7 +40,6 @@ IDIO idio_continuation (IDIO thr)
      */
     idio_array_push (IDIO_CONTINUATION_STACK (k), IDIO_THREAD_ENVIRON_SP (thr));
     idio_array_push (IDIO_CONTINUATION_STACK (k), IDIO_THREAD_DYNAMIC_SP (thr));
-    idio_array_push (IDIO_CONTINUATION_STACK (k), IDIO_THREAD_HANDLER_SP (thr));
     idio_array_push (IDIO_CONTINUATION_STACK (k), IDIO_THREAD_TRAP_SP (thr));
     idio_array_push (IDIO_CONTINUATION_STACK (k), IDIO_THREAD_FRAME (thr));
     idio_array_push (IDIO_CONTINUATION_STACK (k), IDIO_THREAD_ENV (thr));

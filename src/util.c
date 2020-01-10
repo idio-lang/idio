@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -17,7 +17,7 @@
 
 /*
  * util.c
- * 
+ *
  */
 
 #include "idio.h"
@@ -86,14 +86,14 @@ const char *idio_type_enum2string (idio_type_e type)
     case IDIO_TYPE_STRUCT_INSTANCE: return "STRUCT_INSTANCE";
     case IDIO_TYPE_THREAD: return "THREAD";
     case IDIO_TYPE_CONTINUATION: return "CONTINUATION";
-	
+
     case IDIO_TYPE_C_INT: return "C INT";
     case IDIO_TYPE_C_UINT: return "C UINT";
     case IDIO_TYPE_C_FLOAT: return "C FLOAT";
     case IDIO_TYPE_C_DOUBLE: return "C DOUBLE";
     case IDIO_TYPE_C_POINTER: return "C POINTER";
     case IDIO_TYPE_C_VOID: return "C VOID";
-	
+
     case IDIO_TYPE_C_TYPEDEF: return "TAG";
     case IDIO_TYPE_C_STRUCT: return "C_STRUCT";
     case IDIO_TYPE_C_INSTANCE: return "C_INSTANCE";
@@ -236,7 +236,7 @@ IDIO_DEFINE_PRIMITIVE1 ("%defined?", definedp, (IDIO s))
     IDIO r = idio_S_false;
 
     IDIO sk = idio_module_env_symbol_recurse (s);
-    
+
     if (idio_S_unspec != sk) {
 	r = idio_S_true;
     }
@@ -353,9 +353,9 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
     if (o1 == o2) {
 	return 1;
     }
-    
+
     int m1 = (intptr_t) o1 & IDIO_TYPE_MASK;
-    
+
     switch (m1) {
     case IDIO_TYPE_FIXNUM_MARK:
     case IDIO_TYPE_CONSTANT_MARK:
@@ -367,7 +367,7 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
     case IDIO_TYPE_POINTER_MARK:
 	{
 	    int m2 = (intptr_t) o2 & IDIO_TYPE_MASK;
-    
+
 	    switch (m2) {
 	    case IDIO_TYPE_FIXNUM_MARK:
 	    case IDIO_TYPE_CONSTANT_MARK:
@@ -377,11 +377,11 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 	    default:
 		break;
 	    }
-	    
+
 	    if (o1->type != o2->type) {
 		return 0;
 	    }
-    
+
 	    if (IDIO_FLAG_FREE_SET (o1) ||
 		IDIO_FLAG_FREE_SET (o2)) {
 		return 0;
@@ -395,44 +395,44 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		    return (o1 == o2);
 		    /* return (o1->u.string == o2->u.string); */
 		}
-		
+
 		if (IDIO_STRING_BLEN (o1) != IDIO_STRING_BLEN (o2)) {
 		    return 0;
 		}
-		    
+
 		return (strncmp (IDIO_STRING_S (o1), IDIO_STRING_S (o2), IDIO_STRING_BLEN (o1)) == 0);
 	    case IDIO_TYPE_SUBSTRING:
 		if (IDIO_EQUAL_EQP == eqp) {
 		    return (o1 == o2);
 		    /* return (o1->u.substring == o2->u.substring); */
 		}
-		    
+
 		if (IDIO_SUBSTRING_BLEN (o1) != IDIO_SUBSTRING_BLEN (o2)) {
 		    return 0;
 		}
-		    
+
 		return (strncmp (IDIO_SUBSTRING_S (o1), IDIO_SUBSTRING_S (o2), IDIO_SUBSTRING_BLEN (o1)) == 0);
 	    case IDIO_TYPE_SYMBOL:
 		return (o1 == o2);
-		
+
 		break;
 	    case IDIO_TYPE_KEYWORD:
 		return (o1 == o2);
-		
+
 		break;
 	    case IDIO_TYPE_PAIR:
 		if (IDIO_EQUAL_EQP == eqp) {
 		    return (o1 == o2);
 		    /* return (o1->u.pair == o2->u.pair); */
 		}
-		
+
 		return (idio_equalp (IDIO_PAIR_H (o1), IDIO_PAIR_H (o2)) &&
 			idio_equalp (IDIO_PAIR_T (o1), IDIO_PAIR_T (o2)));
 	    case IDIO_TYPE_ARRAY:
 		if (IDIO_EQUAL_EQP == eqp) {
 		    return (o1->u.array == o2->u.array);
 		}
-		
+
 		if (IDIO_ARRAY_USIZE (o1) != IDIO_ARRAY_USIZE (o2)) {
 		    return 0;
 		}
@@ -447,11 +447,11 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		if (IDIO_EQUAL_EQP == eqp) {
 		    return (o1->u.hash == o2->u.hash);
 		}
-		
+
 		if (IDIO_HASH_SIZE (o1) != IDIO_HASH_SIZE (o2)) {
 		    return 0;
 		}
-		
+
 		for (i = 0; i < IDIO_HASH_SIZE (o1); i++) {
 		    if (! idio_equalp (IDIO_HASH_HE_KEY (o1, i), IDIO_HASH_HE_KEY (o2, i)) ||
 			! idio_equalp (IDIO_HASH_HE_VALUE (o1, i), IDIO_HASH_HE_VALUE (o2, i))) {
@@ -473,7 +473,7 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		     */
 		    return (IDIO_BIGNUM_SIG (o1) == IDIO_BIGNUM_SIG (o2));
 		}
-		
+
 		return idio_bignum_real_equal_p (o1, o2);
 	    case IDIO_TYPE_MODULE:
 		return (o1 == o2);
@@ -483,7 +483,7 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		if (IDIO_EQUAL_EQP == eqp) {
 		    return (o1->u.handle == o2->u.handle);
 		}
-		
+
 		if (! idio_equalp (IDIO_HANDLE_NAME (o1), IDIO_HANDLE_NAME (o2))) {
 		    return 0;
 		}
@@ -502,7 +502,7 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		if (IDIO_EQUAL_EQP == eqp) {
 		    return (o1->u.struct_type == o2->u.struct_type);
 		}
-		
+
 		if (! idio_equalp (IDIO_STRUCT_TYPE_NAME (o1), IDIO_STRUCT_TYPE_NAME (o2)) ||
 		    ! idio_equalp (IDIO_STRUCT_TYPE_PARENT (o1), IDIO_STRUCT_TYPE_PARENT (o2)) ||
 		    ! idio_equalp (IDIO_STRUCT_TYPE_FIELDS (o1), IDIO_STRUCT_TYPE_FIELDS (o2))) {
@@ -513,7 +513,7 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		if (IDIO_EQUAL_EQP == eqp) {
 		    return (o1->u.struct_instance == o2->u.struct_instance);
 		}
-		
+
 		if (! idio_equalp (IDIO_STRUCT_INSTANCE_TYPE (o1), IDIO_STRUCT_INSTANCE_TYPE (o2)) ||
 		    ! idio_equalp (IDIO_STRUCT_INSTANCE_FIELDS (o1), IDIO_STRUCT_INSTANCE_FIELDS (o2))) {
 		    return 0;
@@ -599,7 +599,7 @@ char *idio_escape_string (size_t blen, char *s)
 
     r[n++] = '"';
     r[n] = '\0';
-    
+
     return r;
 }
 
@@ -614,13 +614,13 @@ char *idio_as_string (IDIO o, int depth)
 {
     char *r = NULL;
     size_t i;
-    
+
     IDIO_C_ASSERT (depth >= -10000);
 
     if (depth < 0) {
 	return NULL;
     }
-    
+
     switch ((intptr_t) o & IDIO_TYPE_MASK) {
     case IDIO_TYPE_FIXNUM_MARK:
 	{
@@ -636,12 +636,12 @@ char *idio_as_string (IDIO o, int depth)
 	     * t to a fixed string (which gets copied)
 	     */
 	    char *t = NULL;
-	    
+
 	    switch ((intptr_t) o & IDIO_TYPE_CONSTANT_MASK) {
 	    case IDIO_TYPE_CONSTANT_IDIO_MARK:
 		{
 		    intptr_t v = IDIO_CONSTANT_TOKEN_VAL (o);
-	    
+
 		    switch (v) {
 		    case IDIO_CONSTANT_NIL:                        t = "#n";                          break;
 		    case IDIO_CONSTANT_UNDEF:                      t = "#<undef>";                    break;
@@ -665,7 +665,7 @@ char *idio_as_string (IDIO o, int depth)
 		    case IDIO_CONSTANT_LOCAL:                      t = "local/c";                     break;
 		    case IDIO_CONSTANT_ENVIRON:                    t = "environ/c";                   break;
 		    case IDIO_CONSTANT_COMPUTED:                   t = "computed/c";                  break;
-			
+
 		    default:
 			if (asprintf (&r, "#<type/constant/idio?? %10p>", o) == -1) {
 			    idio_error_alloc ("asprintf");
@@ -687,9 +687,9 @@ char *idio_as_string (IDIO o, int depth)
 	    case IDIO_TYPE_CONSTANT_TOKEN_MARK:
 		{
 		    intptr_t v = IDIO_CONSTANT_IDIO_VAL (o);
-	    
+
 		    switch (v) {
-			
+
 		    case IDIO_TOKEN_DOT:                           t = "T/.";                         break;
 		    case IDIO_TOKEN_LPAREN:                        t = "T/(";                         break;
 		    case IDIO_TOKEN_RPAREN:                        t = "T/)";                         break;
@@ -701,7 +701,7 @@ char *idio_as_string (IDIO o, int depth)
 		    case IDIO_TOKEN_RANGLE:                        t = "T/>";                         break;
 		    case IDIO_TOKEN_EOL:                           t = "T/EOL";                       break;
 		    case IDIO_TOKEN_PAIR_SEPARATOR:                t = "T/p-s";                       break;
-			
+
 		    default:
 			if (asprintf (&r, "#<type/constant/token?? %10p>", o) == -1) {
 			    idio_error_alloc ("asprintf");
@@ -724,9 +724,9 @@ char *idio_as_string (IDIO o, int depth)
 	    case IDIO_TYPE_CONSTANT_I_CODE_MARK:
 		{
 		    intptr_t v = IDIO_CONSTANT_I_CODE_VAL (o);
-	    
+
 		    switch (v) {
-			
+
 		    case IDIO_I_CODE_SHALLOW_ARGUMENT_REF:        t = "SHALLOW-ARGUMENT-REF";        break;
 		    case IDIO_I_CODE_PREDEFINED:                  t = "PREDEFINED";                  break;
 		    case IDIO_I_CODE_DEEP_ARGUMENT_REF:           t = "DEEP-ARGUMENT-REF";           break;
@@ -759,10 +759,8 @@ char *idio_as_string (IDIO o, int depth)
 		    case IDIO_I_CODE_DYNAMIC_REF:                 t = "DYNAMIC-REF";                 break;
 		    case IDIO_I_CODE_DYNAMIC_FUNCTION_REF:        t = "DYNAMIC-FUNCTION-REF";        break;
 		    case IDIO_I_CODE_ENVIRON_REF:                 t = "ENVIRON-REF";                 break;
-		    case IDIO_I_CODE_PUSH_HANDLER:                t = "PUSH-HANDLER";                break;
-		    case IDIO_I_CODE_POP_HANDLER:                 t = "POP-HANDLER";                 break;
-		    case IDIO_I_CODE_PUSH_TRAP:                   t = "PUSH-TRAP";                break;
-		    case IDIO_I_CODE_POP_TRAP:                    t = "POP-TRAP";                 break;
+		    case IDIO_I_CODE_PUSH_TRAP:                   t = "PUSH-TRAP";		     break;
+		    case IDIO_I_CODE_POP_TRAP:                    t = "POP-TRAP";		     break;
 		    case IDIO_I_CODE_AND:                         t = "AND";                         break;
 		    case IDIO_I_CODE_OR:                          t = "OR";                          break;
 		    case IDIO_I_CODE_BEGIN:                       t = "BEGIN";                       break;
@@ -834,7 +832,7 @@ char *idio_as_string (IDIO o, int depth)
     case IDIO_TYPE_POINTER_MARK:
 	{
 	    idio_type_e type = idio_type (o);
-	    
+
 	    switch (type) {
 	    case IDIO_TYPE_STRING:
 		r = idio_escape_string (IDIO_STRING_BLEN (o), IDIO_STRING_S (o));
@@ -869,7 +867,7 @@ char *idio_as_string (IDIO o, int depth)
 		{
 		    if (idio_isa_symbol (IDIO_PAIR_H (o))) {
 			int special = 0;
-		
+
 			if (idio_S_quote == IDIO_PAIR_H (o)) {
 			    special = 1;
 			    if (asprintf (&r, "'") == -1) {
@@ -901,7 +899,7 @@ char *idio_as_string (IDIO o, int depth)
 			    break;
 			}
 		    }
-	    
+
 		    if (asprintf (&r, "(") == -1) {
 			idio_error_alloc ("asprintf");
 		    }
@@ -1172,7 +1170,7 @@ char *idio_as_string (IDIO o, int depth)
 		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_STRUCT_TYPE_NAME (o), 1));
 		    IDIO_STRCAT (r, " ");
 		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_STRUCT_TYPE_PARENT (o), 1));
-		    
+
 		    IDIO stf = IDIO_STRUCT_TYPE_FIELDS (o);
 
 		    idio_ai_t al = idio_array_size (stf);
@@ -1193,7 +1191,7 @@ char *idio_as_string (IDIO o, int depth)
 
 		    IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (o);
 		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_STRUCT_TYPE_NAME (sit), 1));
-		    
+
 		    IDIO stf = IDIO_STRUCT_TYPE_FIELDS (sit);
 		    IDIO sif = IDIO_STRUCT_INSTANCE_FIELDS (o);
 
@@ -1241,8 +1239,6 @@ char *idio_as_string (IDIO o, int depth)
 		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_ENV (o), 1));
 		    IDIO_STRCAT (r, " t/sp=");
 		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_TRAP_SP (o), 1));
-		    IDIO_STRCAT (r, " h/sp=");
-		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_HANDLER_SP (o), 1));
 		    IDIO_STRCAT (r, " d/sp=");
 		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_DYNAMIC_SP (o), 1));
 		    IDIO_STRCAT (r, " e/sp=");
@@ -1294,7 +1290,7 @@ char *idio_as_string (IDIO o, int depth)
 		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_C_STRUCT_FIELDS (o), depth - 1));
 
 		    IDIO mh = IDIO_C_STRUCT_METHODS (o);
-	    
+
 		    IDIO_STRCAT (r, "\n\tmethods: ");
 		    if (idio_S_nil != mh) {
 			for (i = 0; i < IDIO_HASH_SIZE (mh); i++) {
@@ -1418,7 +1414,7 @@ char *idio_as_string (IDIO o, int depth)
 char *idio_display_string (IDIO o)
 {
     char *r;
-    
+
     switch ((intptr_t) o & IDIO_TYPE_MASK) {
     case IDIO_TYPE_FIXNUM_MARK:
     case IDIO_TYPE_PLACEHOLDER_MARK:
@@ -1477,7 +1473,7 @@ char *idio_display_string (IDIO o)
 	}
 	break;
     }
-    
+
     return r;
 }
 
@@ -1630,9 +1626,6 @@ const char *idio_vm_bytecode2string (int code)
     case IDIO_A_PUSH_ENVIRON: r = "PUSH_ENVIRON"; break;
 
     case IDIO_A_NON_CONT_ERR: r = "NON_CONT_ERR"; break;
-    case IDIO_A_PUSH_HANDLER: r = "PUSH_HANDLER"; break;
-    case IDIO_A_POP_HANDLER: r = "POP_HANDLER"; break;
-    case IDIO_A_RESTORE_HANDLER: r = "RESTORE_HANDLER"; break;
     case IDIO_A_PUSH_TRAP: r = "PUSH_TRAP"; break;
     case IDIO_A_POP_TRAP: r = "POP_TRAP"; break;
     case IDIO_A_RESTORE_TRAP: r = "RESTORE_TRAP"; break;
@@ -1649,7 +1642,7 @@ const char *idio_vm_bytecode2string (int code)
     return r;
 }
 
-/* 
+/*
  * Basic map -- only one list and the function must be a primitive so
  * we can call it directly.  We can't apply a closure as apply only
  * changes the PC, it doesn't actually do anything!
@@ -1753,7 +1746,7 @@ IDIO idio_list_assq (IDIO k, IDIO l)
     IDIO_TYPE_ASSERT (list, l);
 
     /* fprintf (stderr, "assq: k=%s in l=%s\n", idio_as_string (k, 1), idio_as_string (idio_list_map_ph (l), 4)); */
-    
+
     while (idio_S_nil != l) {
 	IDIO p = IDIO_PAIR_H (l);
 
@@ -1902,7 +1895,7 @@ void idio_dump (IDIO o, int detail)
 		}
 		IDIO_FPRINTF (stderr, "t=%2d/%4.4s f=%2x ", o->type, idio_type2string (o), o->flags);
 	    }
-    
+
 	    switch (o->type) {
 	    case IDIO_TYPE_STRING:
 		if (detail) {
@@ -2015,7 +2008,7 @@ void idio_dump (IDIO o, int detail)
 	idio_error_printf (IDIO_C_LOCATION ("idio_dump"), "v=n/k o=%#p o&3=%x F=%x C=%x P=%x", o, (intptr_t) o & IDIO_TYPE_MASK, IDIO_TYPE_FIXNUM_MARK, IDIO_TYPE_CONSTANT_MARK, IDIO_TYPE_POINTER_MARK);
 
 	break;
-    }	
+    }
 
     if (detail &&
 	!(detail & 0x4)) {

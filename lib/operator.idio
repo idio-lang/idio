@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -38,7 +38,7 @@
 ;; transformed into an addition expression but as this file is yet to
 ;; be evaluated "+" has no meaning as an operator.
 ;;
-;; 
+;;
 ;; Note that the same is not true of an interactive session where each
 ;; complete "line" is run through the reader, evaluator, compiler and
 ;; is run.  Immediately thereafter, the "+" would be an operator and
@@ -223,7 +223,7 @@ define-infix-operator or 1000 and
 
 ;; Shell logical lists
 define-macro (&& & e*) {
-  #T{ 
+  #T{
   {
     trap ^rt-command-status-error (function (cont cond) {
       if cont {
@@ -233,14 +233,14 @@ define-macro (&& & e*) {
         } (raise cont cond)
       } (raise cont cond)
     }) {
-      and $@e* 
+      and $@e*
     }
   }
   }
 }
 
 define-macro (|| & e*) {
-  #T{ 
+  #T{
   {
     trap ^rt-command-status-error (function (cont cond) {
       if cont {
@@ -250,7 +250,7 @@ define-macro (|| & e*) {
         } (raise cont cond)
       } (raise cont cond)
     }) {
-      or $@e* 
+      or $@e*
     }
   }
   }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -17,7 +17,7 @@
 
 /*
  * read.c
- * 
+ *
  */
 
 #include "idio.h"
@@ -162,7 +162,7 @@ static void idio_read_error (IDIO handle, IDIO msg, IDIO detail)
     IDIO_ASSERT (msg);
     IDIO_ASSERT (detail);
     IDIO_TYPE_ASSERT (handle, handle);
-    
+
     IDIO line;
     line = idio_integer (IDIO_HANDLE_LINE (handle));
     IDIO pos;
@@ -183,7 +183,7 @@ static void idio_read_error_parse (IDIO handle, IDIO detail, char *msg)
     IDIO_ASSERT (detail);
     IDIO_C_ASSERT (msg);
     IDIO_TYPE_ASSERT (handle, handle);
-    
+
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C (msg, sh);
 
@@ -196,7 +196,7 @@ static void idio_read_error_parse_args (IDIO handle, char *msg, IDIO args)
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (args);
     IDIO_TYPE_ASSERT (handle, handle);
-    
+
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C (msg, sh);
 
@@ -209,7 +209,7 @@ static void idio_read_error_parse_printf (IDIO handle, IDIO detail, char *fmt, .
     IDIO_ASSERT (detail);
     IDIO_C_ASSERT (fmt);
     IDIO_TYPE_ASSERT (handle, handle);
-    
+
     va_list fmt_args;
     va_start (fmt_args, fmt);
     IDIO msg = idio_error_string (fmt, fmt_args);
@@ -224,7 +224,7 @@ static void idio_read_error_parse_word_too_long (IDIO handle, IDIO detail, char 
     IDIO_ASSERT (detail);
     IDIO_C_ASSERT (word);
     IDIO_TYPE_ASSERT (handle, handle);
-    
+
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C ("word is too long: '", sh);
     idio_display_C (word, sh);
@@ -238,7 +238,7 @@ static void idio_read_error_list_eof (IDIO handle, IDIO detail)
     IDIO_ASSERT (handle);
     IDIO_ASSERT (detail);
     IDIO_TYPE_ASSERT (handle, handle);
-    
+
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C ("EOF in list", sh);
 
@@ -251,7 +251,7 @@ static void idio_read_error_pair_separator (IDIO handle, IDIO detail, char *msg)
     IDIO_ASSERT (detail);
     IDIO_C_ASSERT (msg);
     IDIO_TYPE_ASSERT (handle, handle);
-    
+
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C (msg, sh);
 
@@ -264,7 +264,7 @@ static void idio_read_error_string (IDIO handle, IDIO detail, char *msg)
     IDIO_ASSERT (detail);
     IDIO_C_ASSERT (msg);
     IDIO_TYPE_ASSERT (handle, handle);
-    
+
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C ("string: ", sh);
     idio_display_C (msg, sh);
@@ -278,7 +278,7 @@ static void idio_read_error_named_character (IDIO handle, IDIO detail, char *msg
     IDIO_ASSERT (detail);
     IDIO_C_ASSERT (msg);
     IDIO_TYPE_ASSERT (handle, handle);
-    
+
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C ("character: ", sh);
     idio_display_C (msg, sh);
@@ -292,7 +292,7 @@ static void idio_read_error_named_character_unknown_name (IDIO handle, IDIO deta
     IDIO_ASSERT (detail);
     IDIO_C_ASSERT (name);
     IDIO_TYPE_ASSERT (handle, handle);
-    
+
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C ("unknown character name: ", sh);
     idio_display_C (name, sh);
@@ -306,7 +306,7 @@ static void idio_read_error_utf8_decode (IDIO handle, IDIO detail, char *msg)
     IDIO_ASSERT (detail);
     IDIO_C_ASSERT (msg);
     IDIO_TYPE_ASSERT (handle, handle);
-    
+
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C ("UTF-8 decode: ", sh);
     idio_display_C (msg, sh);
@@ -370,7 +370,7 @@ static IDIO idio_read_list (IDIO handle, IDIO opendel, char *ic, int depth)
     }
 
     IDIO r = idio_S_nil;
-    
+
     for (;;) {
 	IDIO e = idio_read_1_expr (handle, ic, depth);
 
@@ -550,7 +550,7 @@ static IDIO idio_read_unquote (IDIO handle, char *ic, int depth)
 
     IDIO e = idio_read_1_expr (handle, ic, depth);
     e = IDIO_LIST2 (idio_S_unquote, e);
-    
+
     return e;
 }
 
@@ -560,7 +560,7 @@ static IDIO idio_read_escape (IDIO handle, char *ic, int depth)
 
     IDIO e = idio_read_1_expr (handle, ic, depth);
     e = IDIO_LIST2 (idio_S_escape, e);
-    
+
     return e;
 }
 
@@ -595,16 +595,16 @@ static IDIO idio_read_string (IDIO handle)
      * pointers so any individual allocation length (alen) should be
      * docked that amount
      */
-    
+
 #define IDIO_STRING_CHUNK_LEN	1<<1
     int nchunks = 1;
     size_t alen = (nchunks * IDIO_STRING_CHUNK_LEN); /* - 2 * sizeof (void *); */
     char *buf = idio_alloc (alen);
     size_t slen = 0;
-    
+
     int done = 0;
     int esc = 0;
-    
+
     while (! done) {
 	int c = idio_handle_getc (handle);
 
@@ -646,14 +646,14 @@ static IDIO idio_read_string (IDIO handle)
 		    /* \? handled by default */
 		    /* \0 NUL or start of octal ?? - ignored => 0 (zero) */
 		    /* \NL (line continuation) - ignored => NL (newline) */
-			
+
 		case 'x':
 		    /* idio_read_hex2 */
 		    break;
 
 		    /* \u hhhh UTF-16 */
 		    /* \e ESC (\x1B) GCC extension */
-			
+
 		default:
 		    /* leave alone */
 		    break;
@@ -662,7 +662,7 @@ static IDIO idio_read_string (IDIO handle)
 	    buf[slen++] = c;
 	    break;
 	}
-	
+
 	if (esc) {
 	    esc = 0;
 	}
@@ -689,7 +689,7 @@ static IDIO idio_read_named_character (IDIO handle)
     char buf[IDIO_CHARACTER_MAX_NAME_LEN+1];
     int i;
     intptr_t c;
-    
+
     for (i = 0 ; i < IDIO_CHARACTER_MAX_NAME_LEN; i++) {
 	c = idio_handle_getc (handle);
 
@@ -710,12 +710,12 @@ static IDIO idio_read_named_character (IDIO handle)
 
 	buf[i] = c;
     }
-    
+
     idio_handle_ungetc (handle, c);
     buf[i] = '\0';
 
     IDIO r;
-    
+
     /* can i==0 happen? EOF? */
     if (0 == i) {
 	idio_read_error_named_character (handle, IDIO_C_LOCATION ("idio_read_named_character"), "no letters in character name?");
@@ -748,7 +748,7 @@ static IDIO idio_read_hash (IDIO handle, char *ic, int depth)
     IDIO_ASSERT (handle);
 
     IDIO e = idio_read_list (handle, idio_T_lbrace, ic, IDIO_LIST_BRACE (depth + 1));
-    
+
     return idio_hash_alist_to_hash (e, idio_S_nil);
 }
 
@@ -762,7 +762,7 @@ static IDIO idio_read_template (IDIO handle, int depth)
 	interpc[i] = idio_default_interpolation_chars[i];
     }
     i = 0;
-    
+
     int c = idio_handle_getc (handle);
 
     while (! IDIO_OPEN_DELIMITER (c)) {
@@ -834,7 +834,7 @@ static IDIO idio_read_pathname (IDIO handle, int depth)
 	interpc[i] = idio_default_interpolation_chars[i];
     }
     i = 0;
-    
+
     int c = idio_handle_getc (handle);
 
     while (IDIO_CHAR_DQUOTE != c) {
@@ -867,7 +867,7 @@ static IDIO idio_read_bignum (IDIO handle, char basec, int radix)
     IDIO_ASSERT (handle);
 
     int c = idio_handle_getc (handle);
-    
+
     int neg = 0;
 
     switch (c) {
@@ -892,7 +892,7 @@ static IDIO idio_read_bignum (IDIO handle, char basec, int radix)
 
     IDIO base = idio_bignum_integer_intmax_t (radix);
     IDIO bn = idio_bignum_integer_intmax_t (0);
-    
+
     int ndigits = 0;
     int i;
     while (! IDIO_SEPARATOR (c)) {
@@ -914,11 +914,11 @@ static IDIO idio_read_bignum (IDIO handle, char basec, int radix)
 	}
 
 	IDIO bn_i = idio_bignum_integer_intmax_t (i);
-	
+
 	bn = idio_bignum_multiply (bn, base);
 	bn = idio_bignum_add (bn, bn_i);
 	ndigits++;
-	
+
 	c = idio_handle_getc (handle);
     }
 
@@ -946,11 +946,11 @@ static IDIO idio_read_bignum (IDIO handle, char basec, int radix)
 
 /*
   Numbers in Scheme: http://docs.racket-lang.org/reference/reader.html#%28part._parse-number%29
-  
+
   [+-]?[0-9]+
   [+-]?[0-9]*.[0-9]*
   [+-]?[0-9]*E[+-]?[0-9]+
-  
+
  */
 
 /* this is a port of string_numeric_p from S9fES */
@@ -965,7 +965,7 @@ static IDIO idio_read_number_C (IDIO handle, char *str)
 {
     char *s = str;
     int i = 0;
-    
+
     /*
      * algorithm from Nils M Holm's Scheme 9 from Empty Space
      */
@@ -991,7 +991,7 @@ static IDIO idio_read_number_C (IDIO handle, char *str)
 	if ('#' == s[i]) {
 	    inexact = 1;
 	}
-	
+
 	if (EXPONENT (s[i]) &&
 	    has_digit &&
 	    ! has_exp) {
@@ -1026,7 +1026,7 @@ static IDIO idio_read_number_C (IDIO handle, char *str)
     }
 
     IDIO num = idio_S_nil;
-    
+
     if (has_period ||
 	has_exp ||
 	inexact) {
@@ -1181,7 +1181,7 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int nl)
 		idio_read_newline (handle);
 		break;
 	    default:
-		idio_handle_ungetc (handle, c); 
+		idio_handle_ungetc (handle, c);
 		return idio_read_escape (handle, ic, depth);
 	    }
 	} else {
@@ -1309,14 +1309,14 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int nl)
 				if (idio_bignum_negative_p (bn)) {
 				    flags |= IDIO_BIGNUM_FLAG_REAL_NEGATIVE;
 				}
-			    
+
 				bn = idio_bignum_abs (bn);
 
 				bn = idio_bignum_real (flags, 0, IDIO_BIGNUM_SIG (bn));
 
 				bn = idio_bignum_normalize (bn);
 			    }
-			
+
 			    if (inexact) {
 				IDIO_BIGNUM_FLAGS (bn) |= IDIO_BIGNUM_FLAG_REAL_INEXACT;
 			    }
@@ -1341,7 +1341,7 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int nl)
 			    idio_read_error_parse (handle, IDIO_C_LOCATION ("idio_read_1_expr_nl"), em);
 			    return idio_S_unspec;
 			}
-		    
+
 		    }
 		}
 		break;
@@ -1398,7 +1398,7 @@ static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, char *ic, int depth
 {
     IDIO r = idio_S_nil;
     int count = 0;
-    
+
     for (;;) {
 	IDIO expr = idio_read_1_expr_nl (handle, ic, depth, 1);
 
@@ -1518,7 +1518,7 @@ static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, char *ic, int depth
 static IDIO idio_read_block (IDIO handle, IDIO closedel, char *ic, int depth)
 {
     IDIO r = idio_S_nil;
-    
+
     for (;;) {
 	IDIO line = idio_read_expr_line (handle, closedel, ic, depth);
 	IDIO expr = IDIO_PAIR_H (line);
@@ -1527,7 +1527,7 @@ static IDIO idio_read_block (IDIO handle, IDIO closedel, char *ic, int depth)
 	if (idio_S_nil != expr) {
 	    r = idio_pair (expr, r);
 	}
-	
+
 	if (idio_S_eof == expr) {
 	    if (idio_S_nil != r) {
 		r = idio_list_reverse (r);
@@ -1562,7 +1562,7 @@ IDIO idio_read (IDIO handle)
      */
     IDIO line = idio_read_expr_line (handle, idio_T_eol, idio_default_interpolation_chars, 0);
     idio_gc_resume ();
-    
+
     return IDIO_PAIR_H (line);
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -17,7 +17,7 @@
 
 /*
  * gc.h
- * 
+ *
  */
 
 #ifndef GC_H
@@ -49,7 +49,7 @@
  * In ``gc.h``:
  *
  * .. code-block:: c
- * 
+ *
  *     #define IDIO_TYPE_FOO	99
  *
  *     struct idio_foo_s {
@@ -73,7 +73,7 @@
  * must have a ``grey`` pointer for the garbage collector to use:
  *
  * .. code-block:: c
- * 
+ *
  *     #define IDIO_TYPE_BAR	100
  *
  *     struct idio_bar_s {
@@ -94,7 +94,7 @@
  * pointer and your accessor macros must reflect that:
  *
  * .. code-block:: c
- * 
+ *
  *     #define IDIO_TYPE_BAZ	101
  *
  *     struct idio_baz_s {
@@ -122,7 +122,7 @@
  * In ``foo.[ch]``:
  *
  * .. code-block:: c
- * 
+ *
  *     IDIO idio_foo (args ...);
  *     int idio_isa_foo (IDIO o);
  *     void idio_free_foo (IDIO f);
@@ -364,7 +364,7 @@ struct idio_array_s {
      *
      * In practice it is the index of the lowest unused index.  An
      * empty array will have @usize of 0 -- there are zero elements
-     * used in the array. 
+     * used in the array.
      *
      * Push an element on (therefore at index 0 itself) will have
      * @usize be 1 -- there is one element in the array.
@@ -379,7 +379,7 @@ struct idio_array_s {
     /**
      * @dv: default value
      */
-    struct idio_s *dv;	
+    struct idio_s *dv;
     /**
      * @ae: array elements
      */
@@ -692,12 +692,6 @@ typedef struct idio_thread_s {
      * env is the operating module for the currently executing closure
      */
     struct idio_s *env;
-    
-    /*
-     * handler_sp is the SP of the current handler with SP-1
-     * containing the SP of the next handler
-     */
-    struct idio_s *handler_sp;
 
     /*
      * trap_sp is the SP of the current trap with SP-2 containing the
@@ -743,7 +737,6 @@ typedef struct idio_thread_s {
 #define IDIO_THREAD_VAL(T)            ((T)->u.thread->val)
 #define IDIO_THREAD_FRAME(T)          ((T)->u.thread->frame)
 #define IDIO_THREAD_ENV(T)            ((T)->u.thread->env)
-#define IDIO_THREAD_HANDLER_SP(T)     ((T)->u.thread->handler_sp)
 #define IDIO_THREAD_TRAP_SP(T)        ((T)->u.thread->trap_sp)
 #define IDIO_THREAD_JMP_BUF(T)        ((T)->u.thread->jmp_buf)
 #define IDIO_THREAD_DYNAMIC_SP(T)     ((T)->u.thread->dynamic_sp)
@@ -783,7 +776,7 @@ typedef struct idio_continuation_s {
 #define IDIO_CONTINUATION_STACK(T)	((T)->u.continuation->stack)
 
 /*
- * Who called longjmp?  
+ * Who called longjmp?
  */
 #define IDIO_VM_LONGJMP_CONDITION	1
 #define IDIO_VM_LONGJMP_CONTINUATION    2
@@ -977,9 +970,9 @@ struct idio_s {
 	idio_struct_type_t     *struct_type;
 	idio_struct_instance_t *struct_instance;
 	idio_thread_t	       *thread;
-                               
+
 	idio_C_type_t          C_type;
-                               
+
 	idio_C_typedef_t       *C_typedef;
 	idio_C_struct_t        *C_struct;
 	idio_C_instance_t      *C_instance;
@@ -990,7 +983,7 @@ struct idio_s {
 };
 
 typedef struct idio_s idio_t;
-					 
+
 /**
  * typedef IDIO - Idio *value*
  *
@@ -1183,7 +1176,7 @@ typedef idio_ia_t* IDIO_IA_T;
 #define IDIO_IA_ASIZE(A)	((A)->asize)
 #define IDIO_IA_USIZE(A)	((A)->usize)
 #define IDIO_IA_AE(A,i)		((A)->ae[i])
-    
+
 void idio_gc_register_finalizer (IDIO o, void (*func) (IDIO o));
 void idio_gc_deregister_finalizer (IDIO o);
 void idio_run_finalizer (IDIO o);

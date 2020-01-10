@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2020 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -17,7 +17,7 @@
 
 /*
  * c-ffi.c
- * 
+ *
  */
 
 #include "idio.h"
@@ -25,11 +25,11 @@
 ffi_type *idio_C_FFI_type (IDIO field_data)
 {
     IDIO type = idio_array_get_index (field_data, IDIO_C_FIELD_DATA_TYPE);
-    
+
     if (idio_S_nil == type) {
 	return &ffi_type_void;
     }
-    
+
     switch (IDIO_C_TYPE_UINT (type)) {
     case IDIO_TYPE_C_INT8_T:
 	return &ffi_type_sint8;
@@ -96,19 +96,19 @@ IDIO idio_C_FFI (IDIO symbol, IDIO arg_types, IDIO result_type)
     IDIO_TYPE_ASSERT (list, arg_types);
 
     IDIO_GC_ALLOC (o->u.C_FFI, sizeof (idio_C_FFI_t));
-    
+
     size_t nargs = 0;
     IDIO a = arg_types;
     while (idio_S_nil != a) {
 	nargs++;
 	a = idio_list_tail (a);
     }
-    
+
     IDIO args = idio_array (nargs);
     a = arg_types;
     while (idio_S_nil != a) {
 	idio_array_push (args, idio_list_head (a));
-	a = idio_list_tail (a);	
+	a = idio_list_tail (a);
     }
 
     IDIO_C_FFI_SYMBOL (o) = symbol;
@@ -131,7 +131,7 @@ IDIO idio_C_FFI (IDIO symbol, IDIO arg_types, IDIO result_type)
 	idio_error_printf (IDIO_C_LOCATION ("idio_C_FFI"), em);
 	return idio_S_nil;
     }
-    
+
     return o;
 }
 

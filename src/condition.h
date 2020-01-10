@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -17,7 +17,7 @@
 
 /*
  * condition.h
- * 
+ *
  */
 
 #ifndef CONDITION_H
@@ -30,11 +30,11 @@
 #define IDIO_SI_IDIO_ERROR_TYPE_MESSAGE		0
 #define IDIO_SI_IDIO_ERROR_TYPE_LOCATION	1
 #define IDIO_SI_IDIO_ERROR_TYPE_DETAIL		2
-	
+
 /* ^read-error = ^idio_error plus */
 #define IDIO_SI_READ_ERROR_TYPE_LINE		3
 #define IDIO_SI_READ_ERROR_TYPE_POSITION	4
-	
+
 /* ^rt-signal */
 #define IDIO_SI_RT_SIGNAL_TYPE_SIGNUM		0
 
@@ -143,11 +143,12 @@ extern IDIO idio_condition_rt_fixnum_conversion_error_type;
 
 extern IDIO idio_condition_rt_signal_type;
 
-extern IDIO idio_condition_handler_default;
+extern IDIO idio_condition_reset_condition_handler;
+extern IDIO idio_condition_restart_condition_handler;
+extern IDIO idio_condition_default_condition_handler;
 extern IDIO idio_condition_handler_rt_command_status;
 extern IDIO idio_condition_signal_handler_SIGHUP;
 extern IDIO idio_condition_signal_handler_SIGCHLD;
-extern IDIO idio_condition_base_trap_handler;
 
 int idio_isa_condition_type (IDIO o);
 int idio_isa_condition (IDIO o);

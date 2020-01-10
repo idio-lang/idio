@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2020 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -17,7 +17,7 @@
 
 /*
  * bignum.h
- * 
+ *
  */
 
 #ifndef BIGNUM_H
@@ -54,7 +54,7 @@
   would be 63.12 bits which means we'd not be able to store the sign
   of the value (which only applies to the MSS of an integer).  So 18
   decimal digits in 64 bits.  Ditto, 9 in 32.
-  
+
   IDIO_BIGNUM_INT_SEG_LIMIT is the decimal representation of one more
   than IDIO_BIGNUM_DPW (digits per word), ie. if DPW was 3 then
   INT_SEG_LIMIT would be 1000 (one more than 999, the largest three
@@ -97,11 +97,11 @@
  */
 
 #ifdef __LP64__
-#define IDIO_BIGNUM_MDPW          18 
+#define IDIO_BIGNUM_MDPW          18
 /*
-#define IDIO_BIGNUM_DPW           18 
-#define IDIO_BIGNUM_INT_SEG_LIMIT 1000000000000000000LL 
-#define IDIO_BIGNUM_SIG_SEGMENTS  5 
+#define IDIO_BIGNUM_DPW           18
+#define IDIO_BIGNUM_INT_SEG_LIMIT 1000000000000000000LL
+#define IDIO_BIGNUM_SIG_SEGMENTS  5
 */
 
 #define IDIO_BIGNUM_DPW           18

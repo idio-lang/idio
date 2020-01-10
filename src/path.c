@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2020 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -17,7 +17,7 @@
 
 /*
  * path.c
- * 
+ *
  */
 
 #include "idio.h"
@@ -76,7 +76,7 @@ char **idio_path_env_split (const char *path_env)
     r[ndirs][len] = '\0';
     ndirs++;
     r[ndirs] = NULL;
-    
+
     return r;
 }
 
@@ -122,11 +122,11 @@ char *idio_find_file (const char *file)
 	    strcpy (filename, *idio_path);
 	    strcpy (filename + strlen (*idio_path), "/");
 	    strcpy (filename + strlen (*idio_path) + 1, file_with_ext);
-	    
+
 	    if (access (filename, R_OK) == 0) {
 		break;
 	    }
-	    
+
 	    free (filename);
 	    filename = NULL;
 	    idio_path++;
@@ -147,16 +147,16 @@ char *idio_find_file (const char *file)
 
 	ext++;
     }
-    
+
     idio_path = idio_paths;
     while (*idio_path) {
 	free (*idio_path);
 	idio_path++;
     }
-	
+
     free (*idio_path);
     free (idio_paths);
-    
+
     return filename;
 }
 
@@ -173,12 +173,12 @@ IDIO idio_path_expand (IDIO p)
 
     IDIO_TYPE_ASSERT (string, pat);
     char *pat_C = idio_string_as_C (pat);
-    
+
     glob_t g;
     IDIO r = idio_S_nil;
-    
+
     int ret = glob (pat_C, 0, NULL, &g);
-    
+
     switch (ret) {
     case GLOB_NOMATCH:
 	break;

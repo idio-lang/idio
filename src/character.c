@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -17,10 +17,10 @@
 
 /*
  * character.c
- * 
+ *
  */
 
-/** 
+/**
  * DOC: Idio ``character`` type
  *
  * An Idio ``character`` represents a Unicode code point.  Or should
@@ -74,7 +74,7 @@ idio_hi_t idio_character_C_hash (IDIO h, void *s)
     if (idio_S_nil != s) {
 	hvalue = idio_hash_hashval_string_C (strlen ((char *) s), s);
     }
-    
+
     return (hvalue & IDIO_HASH_MASK (h));
 }
 
@@ -244,7 +244,7 @@ intptr_t idio_character_ival (IDIO ic)
     IDIO_VERIFY_PARAM_TYPE (character, ic);
 
     intptr_t c = IDIO_CHARACTER_VAL (ic);
-    
+
     intptr_t r = c;
 
     /*

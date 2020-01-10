@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -17,7 +17,7 @@
 
 /*
  * thread.c
- * 
+ *
  */
 
 #include "idio.h"
@@ -45,12 +45,11 @@ IDIO idio_thread_base (idio_ai_t stack_size)
 
     /*
      * 0 is used as a marker for bootstrapping the first thread when
-     * there are no previous monitor/trap handlers -- see
+     * there are no previous trap handlers -- see
      * idio_vm_thread_init
      */
-    IDIO_THREAD_HANDLER_SP (t) = idio_fixnum (0);
     IDIO_THREAD_TRAP_SP (t) = idio_fixnum (0);
-    
+
     IDIO_THREAD_DYNAMIC_SP (t) = idio_fixnum (-1);
     IDIO_THREAD_ENVIRON_SP (t) = idio_fixnum (-1);
     IDIO_THREAD_JMP_BUF (t) = NULL;
@@ -68,7 +67,7 @@ IDIO idio_thread_base (idio_ai_t stack_size)
 IDIO idio_thread (idio_ai_t stack_size)
 {
     IDIO t = idio_thread_base (stack_size);
-    
+
     idio_vm_thread_init (t);
 
     return t;
@@ -97,7 +96,7 @@ IDIO idio_thread_current_thread ()
 	idio_error_error_message ("current_module unset");
 	IDIO_C_ASSERT (0);
     }
-    
+
     return idio_running_thread;
 }
 
@@ -105,7 +104,7 @@ void idio_thread_set_current_thread (IDIO thr)
 {
     IDIO_ASSERT (thr);
     IDIO_TYPE_ASSERT (thread, thr);
-    
+
     idio_running_thread = thr;
 }
 
