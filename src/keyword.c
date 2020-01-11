@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -17,7 +17,7 @@
 
 /*
  * keyword.c
- * 
+ *
  */
 
 #include "idio.h"
@@ -29,22 +29,25 @@ IDIO_KEYWORD_DECL (setter);
 IDIO_KEYWORD_DECL (source);
 IDIO_KEYWORD_DECL (handle);
 IDIO_KEYWORD_DECL (line);
+IDIO_KEYWORD_DECL (sigstr);
+IDIO_KEYWORD_DECL (docstr);
+IDIO_KEYWORD_DECL (docstr_raw);
 
 void idio_keyword_error_key_not_found (IDIO key, IDIO loc)
 {
     IDIO_ASSERT (key);
     IDIO_ASSERT (loc);
     IDIO_TYPE_ASSERT (string, loc);
-    
+
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C ("key not found", msh);
-    
+
     IDIO c = idio_struct_instance (idio_condition_rt_hash_key_not_found_error_type,
 				   IDIO_LIST4 (idio_get_output_string (msh),
 					       loc,
 					       idio_S_nil,
 					       key));
-    
+
     idio_raise_condition (idio_S_true, c);
 }
 
@@ -69,7 +72,7 @@ idio_hi_t idio_keyword_C_hash (IDIO h, void *s)
     if (idio_S_nil != s) {
 	hvalue = idio_hash_hashval_string_C (strlen ((char *) s), s);
     }
-    
+
     return (hvalue & IDIO_HASH_MASK (h));
 }
 
@@ -85,7 +88,7 @@ IDIO idio_keyword_C_len (const char *s_C, size_t blen)
 
     strncpy (IDIO_KEYWORD_S (o), s_C, blen);
     *(IDIO_KEYWORD_S (o) + blen) = '\0';
-    
+
     return o;
 }
 
@@ -143,13 +146,13 @@ IDIO idio_keywords_string_intern (IDIO str)
 {
     IDIO_ASSERT (str);
     IDIO_TYPE_ASSERT (string, str);
-    
+
     char *s_C = idio_string_as_C (str);
-    
+
     IDIO r = idio_keywords_C_intern (s_C);
 
     free (s_C);
-	
+
     return r;
 }
 
@@ -162,7 +165,7 @@ IDIO_DEFINE_PRIMITIVE1 ("keyword?", keyword_p, (IDIO o))
     if (idio_isa_keyword (o)) {
 	r = idio_S_true;
     }
-    
+
     return r;
 }
 
@@ -183,7 +186,7 @@ IDIO idio_hash_make_keyword_table (IDIO args)
 {
     IDIO_ASSERT (args);
     IDIO_VERIFY_PARAM_TYPE (list, args);
-    
+
     return idio_hash_make_hash (idio_list_append2 (IDIO_LIST2 (idio_S_eqp, idio_S_nil), args));
 }
 
@@ -191,7 +194,7 @@ IDIO_DEFINE_PRIMITIVE0V ("make-keyword-table", make_keyword_table, (IDIO args))
 {
     IDIO_ASSERT (args);
     IDIO_VERIFY_PARAM_TYPE (list, args);
-    
+
     return idio_hash_make_keyword_table (args);
 }
 
@@ -280,6 +283,9 @@ void idio_init_keyword ()
     IDIO_KEYWORD_DEF ("source", source);
     IDIO_KEYWORD_DEF ("handle", handle);
     IDIO_KEYWORD_DEF ("line", line);
+    IDIO_KEYWORD_DEF ("sigstr", sigstr);
+    IDIO_KEYWORD_DEF ("docstr", docstr);
+    IDIO_KEYWORD_DEF ("docstr-raw", docstr_raw);
 }
 
 void idio_keyword_add_primitives ()

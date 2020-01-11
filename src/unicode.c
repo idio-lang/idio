@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -47,7 +47,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 /*
  * unicode.c
- * 
+ *
  */
 
 #include "idio.h"
@@ -63,14 +63,14 @@ static const uint8_t idio_utf8d[] = {
     7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,  7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,7,
     8,8,2,2,2,2,2,2,2,2,2,2,2,2,2,2,  2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,
     10,3,3,3,3,3,3,3,3,3,3,3,3,4,3,3, 11,6,6,6,5,8,8,8,8,8,8,8,8,8,8,8,
-    
+
     // The second part is a transition table that maps a combination
     // of a state of the automaton and a character class to a state.
      0,12,24,36,60,96,84,12,12,12,48,72, 12,12,12,12,12,12,12,12,12,12,12,12,
     12, 0,12,12,12,12,12, 0,12, 0,12,12, 12,24,12,12,12,12,12,24,12,24,12,12,
     12,12,12,12,12,12,12,24,12,12,12,12, 12,24,12,12,12,12,12,12,12,24,12,12,
     12,12,12,12,12,12,12,36,12,36,12,12, 12,36,12,12,12,12,12,36,12,36,12,12,
-    12,36,12,12,12,12,12,12,12,12,12,12, 
+    12,36,12,12,12,12,12,12,12,12,12,12,
 };
 
 idio_utf8_t inline idio_utf8_decode (idio_utf8_t* state, idio_utf8_t* codep, idio_utf8_t byte)
@@ -80,14 +80,14 @@ idio_utf8_t inline idio_utf8_decode (idio_utf8_t* state, idio_utf8_t* codep, idi
     *codep = (*state != IDIO_UTF8_ACCEPT) ?
 	(byte & 0x3fu) | (*codep << 6) :
 	(0xff >> type) & (byte);
-    
+
     *state = idio_utf8d[256 + *state + type];
     return *state;
 }
 
 /*
  *
- 
+
 if (countCodePoints(s, &count)) {
   printf("The string is malformed\n");
 } else {
@@ -118,7 +118,7 @@ void idio_utf8_printCodePoints (uint8_t* s)
 	    printf("U+%04X\n", codepoint);
 
     if (state != IDIO_UTF8_ACCEPT)
-	printf("The string is not well-formed\n");   
+	printf("The string is not well-formed\n");
 }
 
 /*

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -17,7 +17,7 @@
 
 /*
  * keyword.h
- * 
+ *
  */
 
 #ifndef KEYWORD_H
@@ -31,6 +31,9 @@ extern IDIO_KEYWORD_DECL (setter);
 extern IDIO_KEYWORD_DECL (source);
 extern IDIO_KEYWORD_DECL (handle);
 extern IDIO_KEYWORD_DECL (line);
+extern IDIO_KEYWORD_DECL (sigstr);
+extern IDIO_KEYWORD_DECL (docstr);
+extern IDIO_KEYWORD_DECL (docstr_raw);
 
 IDIO idio_keyword_C (const char *s_C);
 IDIO idio_tag_C (const char *s_C);

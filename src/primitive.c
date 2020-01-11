@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -17,12 +17,12 @@
 
 /*
  * primitive.c
- * 
+ *
  */
 
 #include "idio.h"
 
-IDIO idio_primitive (IDIO (*func) (IDIO args), const char *name_C, size_t arity, char varargs)
+IDIO idio_primitive (IDIO (*func) (IDIO args), const char *name_C, size_t arity, char varargs, const char *sigstr_C, const char *docstr_C)
 {
     IDIO_C_ASSERT (func);
     IDIO_C_ASSERT (name_C);
@@ -31,8 +31,8 @@ IDIO idio_primitive (IDIO (*func) (IDIO args), const char *name_C, size_t arity,
 
     IDIO_FPRINTF (stderr, "idio_primitive: %10p = (%10p)\n", o, func);
 
-    IDIO_GC_ALLOC (o->u.primitive, sizeof (idio_primitive_t)); 
-    
+    IDIO_GC_ALLOC (o->u.primitive, sizeof (idio_primitive_t));
+
     IDIO_PRIMITIVE_GREY (o) = NULL;
     IDIO_PRIMITIVE_F (o) = func;
     IDIO_PRIMITIVE_ARITY (o) = arity;
@@ -64,8 +64,8 @@ IDIO idio_primitive_data (idio_primitive_desc_t *desc)
 
     IDIO o = idio_gc_get (IDIO_TYPE_PRIMITIVE);
 
-    IDIO_GC_ALLOC (o->u.primitive, sizeof (idio_primitive_t)); 
-    
+    IDIO_GC_ALLOC (o->u.primitive, sizeof (idio_primitive_t));
+
     IDIO_PRIMITIVE_GREY (o) = NULL;
     IDIO_PRIMITIVE_F (o) = desc->f;
     IDIO_PRIMITIVE_ARITY (o) = desc->arity;
@@ -87,6 +87,27 @@ IDIO idio_primitive_data (idio_primitive_desc_t *desc)
     return o;
 }
 
+void idio_primitive_property_set_C (IDIO p, IDIO kw, const char *str_C)
+{
+    IDIO_ASSERT (p);
+    IDIO_TYPE_ASSERT (primitive, p);
+
+    IDIO str = idio_S_nil;
+
+    if (NULL == str_C) {
+	str = idio_S_nil;
+    } else {
+	size_t l = strlen (str_C);
+	if (0 == l) {
+	    str = idio_S_nil;
+	} else {
+	    str = idio_string_C (str_C);
+	}
+    }
+
+    idio_property_set (p, kw, str);
+}
+
 int idio_isa_primitive (IDIO o)
 {
     IDIO_ASSERT (o);
@@ -99,10 +120,10 @@ void idio_free_primitive (IDIO o)
     IDIO_ASSERT (o);
     IDIO_TYPE_ASSERT (primitive, o);
 
-    idio_gc_stats_free (sizeof (idio_primitive_t)); 
+    idio_gc_stats_free (sizeof (idio_primitive_t));
 
     free (IDIO_PRIMITIVE_NAME (o));
-    free (o->u.primitive); 
+    free (o->u.primitive);
 }
 
 void idio_init_primitive ()

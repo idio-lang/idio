@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2018 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2018, 2020 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -17,7 +17,7 @@
 
 /*
  * libc-wrap.c
- * 
+ *
  */
 
 #include "idio.h"
@@ -37,7 +37,7 @@ IDIO idio_libc_struct_stat = NULL;
 #define IDIO_STRUCT_SIGACTION_SA_SIGACTION	1
 #define IDIO_STRUCT_SIGACTION_SA_MASK		2
 #define IDIO_STRUCT_SIGACTION_SA_FLAGS		3
-	
+
 #define IDIO_STRUCT_UTSNAME_SYSNAME		0
 #define IDIO_STRUCT_UTSNAME_NODENAME		1
 #define IDIO_STRUCT_UTSNAME_RELEASE		2
@@ -49,7 +49,7 @@ IDIO idio_libc_export_symbol_value (IDIO symbol, IDIO value)
     IDIO_ASSERT (symbol);
     IDIO_ASSERT (value);
     IDIO_TYPE_ASSERT (symbol, symbol);
-    
+
     return idio_module_export_symbol_value (symbol, value, idio_libc_wrap_module);
 }
 
@@ -59,7 +59,7 @@ IDIO_DEFINE_PRIMITIVE0V ("system-error", libc_system_error, (IDIO args))
     IDIO_VERIFY_PARAM_TYPE (list, args);
 
     char *name = "n/k";
-    
+
     if (idio_S_nil != args) {
 	IDIO h = IDIO_PAIR_H (args);
 	if (idio_isa_string (h)) {
@@ -88,13 +88,13 @@ IDIO_DEFINE_PRIMITIVE2 ("access", libc_access, (IDIO ipath, IDIO imode))
     int mode = IDIO_C_TYPE_INT (imode);
 
     IDIO r = idio_S_false;
-    
+
     if (0 == access (path, mode)) {
 	r = idio_S_true;
     }
 
     free (path);
-    
+
     return r;
 }
 
@@ -209,7 +209,7 @@ IDIO_DEFINE_PRIMITIVE2V ("fcntl", libc_fcntl, (IDIO ifd, IDIO icmd, IDIO args))
     }
 
     IDIO iarg = idio_list_head (args);
-    
+
     int r;
 
     switch (cmd) {
@@ -404,12 +404,12 @@ IDIO_DEFINE_PRIMITIVE2 ("kill", libc_kill, (IDIO ipid, IDIO isig))
     IDIO_ASSERT (isig);
     IDIO_VERIFY_PARAM_TYPE (C_int, ipid);
     IDIO_VERIFY_PARAM_TYPE (C_int, isig);
-    
+
     pid_t pid = IDIO_C_TYPE_INT (ipid);
     int sig = IDIO_C_TYPE_INT (isig);
 
     int r = kill (pid, sig);
-    
+
     if (-1 == r) {
 	idio_error_system_errno ("kill", IDIO_LIST2 (ipid, isig), IDIO_C_LOCATION ("kill"));
     }
@@ -421,7 +421,7 @@ IDIO_DEFINE_PRIMITIVE1 ("mkdtemp", libc_mkdtemp, (IDIO idirname))
 {
     IDIO_ASSERT (idirname);
     IDIO_VERIFY_PARAM_TYPE (string, idirname);
-    
+
     /*
      * XXX mkdtemp() requires a NUL-terminated C string and it will
      * modify the template part.
@@ -455,7 +455,7 @@ IDIO_DEFINE_PRIMITIVE1 ("mkstemp", libc_mkstemp, (IDIO ifilename))
 {
     IDIO_ASSERT (ifilename);
     IDIO_VERIFY_PARAM_TYPE (string, ifilename);
-    
+
     /*
      * XXX mkstemp() requires a NUL-terminated C string and it will
      * modify the template part.
@@ -488,7 +488,7 @@ IDIO_DEFINE_PRIMITIVE1 ("mkstemp", libc_mkstemp, (IDIO ifilename))
 IDIO_DEFINE_PRIMITIVE0 ("pipe", libc_pipe, ())
 {
     int *pipefd = idio_alloc (2 * sizeof (int));
-    
+
     int r = pipe (pipefd);
 
     if (-1 == r) {
@@ -502,9 +502,9 @@ IDIO_DEFINE_PRIMITIVE1 ("pipe-reader", libc_pipe_reader, (IDIO ipipefd))
 {
     IDIO_ASSERT (ipipefd);
     IDIO_VERIFY_PARAM_TYPE (C_pointer, ipipefd);
-    
+
     int *pipefd = IDIO_C_TYPE_POINTER_P (ipipefd);
-    
+
     return idio_C_int (pipefd[0]);
 }
 
@@ -512,9 +512,9 @@ IDIO_DEFINE_PRIMITIVE1 ("pipe-writer", libc_pipe_writer, (IDIO ipipefd))
 {
     IDIO_ASSERT (ipipefd);
     IDIO_VERIFY_PARAM_TYPE (C_pointer, ipipefd);
-    
+
     int *pipefd = IDIO_C_TYPE_POINTER_P (ipipefd);
-    
+
     return idio_C_int (pipefd[1]);
 }
 
@@ -529,7 +529,7 @@ IDIO_DEFINE_PRIMITIVE1V ("read", libc_read, (IDIO ifd, IDIO icount))
 
     if (idio_S_nil != icount) {
 	icount = IDIO_PAIR_H (icount);
-	
+
 	if (idio_isa_fixnum (icount)) {
 	    count = IDIO_FIXNUM_VAL (icount);
 	} else if (idio_isa_C_int (icount)) {
@@ -544,13 +544,13 @@ IDIO_DEFINE_PRIMITIVE1V ("read", libc_read, (IDIO ifd, IDIO icount))
     ssize_t n = read (fd, buf, count);
 
     IDIO r;
-    
+
     if (n) {
 	r = idio_string_C_len (buf, n);
     } else {
 	r = idio_S_eof;
     }
-    
+
     return r;
 }
 
@@ -560,15 +560,15 @@ IDIO_DEFINE_PRIMITIVE2 ("setpgid", libc_setpgid, (IDIO ipid, IDIO ipgid))
     IDIO_ASSERT (ipgid);
     IDIO_VERIFY_PARAM_TYPE (C_int, ipid);
     IDIO_VERIFY_PARAM_TYPE (C_int, ipgid);
-    
+
     pid_t pid = IDIO_C_TYPE_INT (ipid);
     pid_t pgid = IDIO_C_TYPE_INT (ipgid);
 
     int r = setpgid (pid, pgid);
-    
+
     if (-1 == r) {
 	if (EACCES == errno) {
-	    /* 
+	    /*
 	     * The child has already successfully executed exec() =>
 	     * EACCES for us.
 	     *
@@ -580,7 +580,7 @@ IDIO_DEFINE_PRIMITIVE2 ("setpgid", libc_setpgid, (IDIO ipid, IDIO ipgid))
 	    idio_error_system_errno ("setpgid", IDIO_LIST2 (ipid, ipgid), IDIO_C_LOCATION ("setpgid"));
 	}
     }
-    
+
     return idio_C_int (r);
 }
 
@@ -590,12 +590,12 @@ IDIO_DEFINE_PRIMITIVE2 ("signal", libc_signal, (IDIO isig, IDIO ifunc))
     IDIO_ASSERT (ifunc);
     IDIO_VERIFY_PARAM_TYPE (C_int, isig);
     IDIO_VERIFY_PARAM_TYPE (C_pointer, ifunc);
-    
+
     int sig = IDIO_C_TYPE_INT (isig);
     void (*func) (int) = IDIO_C_TYPE_POINTER_P (ifunc);
 
     void (*r) (int) = signal (sig, func);
-    
+
     if (SIG_ERR == r) {
 	idio_error_system_errno ("signal", IDIO_LIST2 (isig, ifunc), IDIO_C_LOCATION ("signal"));
     }
@@ -616,7 +616,7 @@ IDIO_DEFINE_PRIMITIVE1 ("signal-handler", libc_signal_handler, (IDIO isig))
 {
     IDIO_ASSERT (isig);
     IDIO_VERIFY_PARAM_TYPE (C_int, isig);
-    
+
     int sig = IDIO_C_TYPE_INT (isig);
 
     struct sigaction osa;
@@ -634,20 +634,20 @@ IDIO_DEFINE_PRIMITIVE1 ("signal-handler", libc_signal_handler, (IDIO isig))
      * so, uh, prototype with no args!
      */
     void (*r) ();
-    
+
     if (osa.sa_flags & SA_SIGINFO) {
 	r = osa.sa_sigaction;
     } else {
 	r = osa.sa_handler;
     }
-    
+
     return idio_C_pointer (r);
 }
 
 IDIO_DEFINE_PRIMITIVE1 ("sleep", libc_sleep, (IDIO iseconds))
 {
     IDIO_ASSERT (iseconds);
-    
+
     unsigned int seconds = 0;
     if (idio_isa_fixnum (iseconds) &&
 	IDIO_FIXNUM_VAL (iseconds) >= 0) {
@@ -659,7 +659,7 @@ IDIO_DEFINE_PRIMITIVE1 ("sleep", libc_sleep, (IDIO iseconds))
     }
 
     unsigned int r = sleep (seconds);
-    
+
     return idio_C_uint (r);
 }
 
@@ -669,7 +669,7 @@ IDIO idio_libc_stat (IDIO p)
     IDIO_TYPE_ASSERT (string, p);
 
     char *p_C = idio_string_as_C (p);
-    
+
     struct stat sb;
 
     if (stat (p_C, &sb) == -1) {
@@ -695,7 +695,7 @@ IDIO idio_libc_stat (IDIO p)
 				   idio_pair (idio_C_uint (sb.st_ctime),
 				   idio_S_nil))))))))))))));
     free (p_C);
-    
+
     return r;
 }
 
@@ -721,7 +721,7 @@ IDIO_DEFINE_PRIMITIVE1 ("strerror", libc_strerror, (IDIO ierrnum))
     }
 
     char *r = strerror (errnum);
-    
+
     return idio_string_C (r);
 }
 
@@ -739,7 +739,7 @@ IDIO_DEFINE_PRIMITIVE1 ("strsignal", libc_strsignal, (IDIO isignum))
     }
 
     char *r = strsignal (signum);
-    
+
     return idio_string_C (r);
 }
 
@@ -788,7 +788,7 @@ IDIO_DEFINE_PRIMITIVE3 ("tcsetattr", libc_tcsetattr, (IDIO ifd, IDIO ioptions, I
     int fd = IDIO_C_TYPE_INT (ifd);
     int options = IDIO_C_TYPE_INT (ioptions);
     struct termios *tcattrs = IDIO_C_TYPE_POINTER_P (itcattrs);
-    
+
     int r = tcsetattr (fd, options, tcattrs);
 
     if (-1 == r) {
@@ -807,7 +807,7 @@ IDIO_DEFINE_PRIMITIVE2 ("tcsetpgrp", libc_tcsetpgrp, (IDIO ifd, IDIO ipgrp))
 
     int fd = IDIO_C_TYPE_INT (ifd);
     pid_t pgrp = IDIO_C_TYPE_INT (ipgrp);
-    
+
 
     int r = tcsetpgrp (fd, pgrp);
 
@@ -841,7 +841,7 @@ IDIO_DEFINE_PRIMITIVE0 ("uname", libc_uname, ())
     if (uname (up) == -1) {
 	idio_error_system_errno ("uname", idio_S_nil, IDIO_C_LOCATION ("uname"));
     }
-    
+
     return idio_C_pointer_free_me (up);
 }
 
@@ -855,7 +855,7 @@ IDIO_DEFINE_PRIMITIVE1 ("unlink", libc_unlink, (IDIO ipath))
     int r = unlink (path);
 
     free (path);
-    
+
     if (-1 == r) {
 	idio_error_system_errno ("unlink", IDIO_LIST1 (ipath), IDIO_C_LOCATION ("unlink"));
     }
@@ -1026,7 +1026,7 @@ static void idio_libc_set_signal_names ()
      * Which is neither clear nor portable (assuming bits/signum.h
      * speaks the truth).
      */
-#if defined(SIGRTMIN) && defined(SIGRTMAX)    
+#if defined(SIGRTMIN) && defined(SIGRTMAX)
     int rtmin = SIGRTMIN;
     int rtmax = SIGRTMAX;
     if (rtmax > rtmin &&
@@ -1039,12 +1039,12 @@ static void idio_libc_set_signal_names ()
 	if (rtdiff) {
 	    rtmid++;
 	}
-	
+
 	for (i = 1; i < rtmid ; i++) {
 	    sprintf (idio_libc_signal_names[rtmin + i], "SIGRTMIN+%d", i);
 	    sprintf (idio_libc_signal_names[rtmax - i], "SIGRTMAX-%d", i);
 	}
-	
+
 	/*
 	 * Can have an extra SIGRTMIN+n if there's an odd number --
 	 * don't forget it is SIGRTMIN -> SIGRTMAX *inclusive* so
@@ -1058,7 +1058,7 @@ static void idio_libc_set_signal_names ()
 
     IDIO sig_sym;
     IDIO sig_cond;
-    
+
 #if defined(SIGHUP)
     IDIO_LIBC_SIGNAL (SIGHUP)
 #endif
@@ -1242,9 +1242,9 @@ static void idio_libc_set_signal_names ()
 	    IDIO_LIBC_SIGNAL_NAME_ONLY (sig_name, i)
 	    if (first) {
 		first = 0;
-		fprintf (stderr, "WARNING: Unnamed signal numbers:");
+		fprintf (stderr, "Unmapped signal numbers:");
 	    }
-	    fprintf (stderr, " %d", i);
+	    fprintf (stderr, " %d (%s) -> %s;", i, strsignal (i), sig_name);
 	}
     }
     if (0 == first) {
@@ -1341,7 +1341,7 @@ IDIO_DEFINE_PRIMITIVE0 ("signal-names", libc_signal_names, ())
  * We must follow the path blazed above for signals
  */
 
-/* 
+/*
  * How many errnos are there?
  *
  * FreeBSD and OS X define ELAST but many others do not.
@@ -1360,8 +1360,8 @@ IDIO_DEFINE_PRIMITIVE0 ("signal-names", libc_signal_names, ())
  * OS X 9.8.0	ENOPOLICY	103	aka ELAST
  * OS X 14.4.0	EQFULL		106	aka ELAST
  * FreeBSD 10	EOWNERDEAD	96	aka ELAST
- * Ubuntu 14	EHWPOISON	133	
- * Debian 8	EHWPOISON	133	
+ * Ubuntu 14	EHWPOISON	133
+ * Debian 8	EHWPOISON	133
  *
  */
 
@@ -1401,7 +1401,7 @@ static void idio_libc_set_errno_names ()
     idio_libc_errno_names[0] = "E0";
 
     IDIO err_sym;
-    
+
     /* FreeBSD, Linux, OSX, Solaris */
 #if defined (E2BIG)
     err_sym = idio_symbols_C_intern ("E2BIG");
@@ -2506,15 +2506,15 @@ static void idio_libc_set_errno_names ()
     for (i = IDIO_LIBC_FERRNO ; i < IDIO_LIBC_NERRNO ; i++) {
 	if ('\0' == *(idio_libc_errno_names[i])) {
 	    char err_name[IDIO_LIBC_ERRNAMELEN + 2];
-	    sprintf (err_name, "ERRNO%d", i);
+	    sprintf (err_name, "ERRUNKNOWN%d", i);
 	    err_sym = idio_symbols_C_intern (err_name);
 	    idio_libc_export_symbol_value (err_sym, idio_C_int (i));
 	    sprintf (idio_libc_errno_names[i], "%s", err_name);
 	    if (first) {
 		first = 0;
-		fprintf (stderr, "Undefined errno:");
+		fprintf (stderr, "Unmapped errno numbers:");
 	    }
-	    fprintf (stderr, " %d", i);
+	    fprintf (stderr, " %d (%s) -> %s;", i, strerror (i), err_name);
 	}
     }
     if (0 == first) {
@@ -2579,7 +2579,7 @@ IDIO_DEFINE_PRIMITIVE1 ("EGID/set", EGID_set, (IDIO iegid))
     IDIO_ASSERT (iegid);
 
     gid_t egid = -1;
-    
+
     if (idio_isa_fixnum (iegid)) {
 	egid = IDIO_FIXNUM_VAL (iegid);
     } else if (idio_isa_bignum (iegid)) {
@@ -2595,7 +2595,7 @@ IDIO_DEFINE_PRIMITIVE1 ("EGID/set", EGID_set, (IDIO iegid))
     if (-1 == r) {
 	idio_error_system_errno ("setegid", iegid, IDIO_C_LOCATION ("EGID/set"));
     }
-    
+
     return idio_fixnum (r);
 }
 
@@ -2609,7 +2609,7 @@ IDIO_DEFINE_PRIMITIVE1 ("EUID/set", EUID_set, (IDIO ieuid))
     IDIO_ASSERT (ieuid);
 
     uid_t euid = -1;
-    
+
     if (idio_isa_fixnum (ieuid)) {
 	euid = IDIO_FIXNUM_VAL (ieuid);
     } else if (idio_isa_bignum (ieuid)) {
@@ -2625,7 +2625,7 @@ IDIO_DEFINE_PRIMITIVE1 ("EUID/set", EUID_set, (IDIO ieuid))
     if (-1 == r) {
 	idio_error_system_errno ("seteuid", ieuid, IDIO_C_LOCATION ("EUID/set"));
     }
-    
+
     return idio_fixnum (r);
 }
 
@@ -2639,7 +2639,7 @@ IDIO_DEFINE_PRIMITIVE1 ("GID/set", GID_set, (IDIO igid))
     IDIO_ASSERT (igid);
 
     gid_t gid = -1;
-    
+
     if (idio_isa_fixnum (igid)) {
 	gid = IDIO_FIXNUM_VAL (igid);
     } else if (idio_isa_bignum (igid)) {
@@ -2655,7 +2655,7 @@ IDIO_DEFINE_PRIMITIVE1 ("GID/set", GID_set, (IDIO igid))
     if (-1 == r) {
 	idio_error_system_errno ("setgid", igid, IDIO_C_LOCATION ("GID/set"));
     }
-    
+
     return idio_fixnum (r);
 }
 
@@ -2669,7 +2669,7 @@ IDIO_DEFINE_PRIMITIVE1 ("UID/set", UID_set, (IDIO iuid))
     IDIO_ASSERT (iuid);
 
     uid_t uid = -1;
-    
+
     if (idio_isa_fixnum (iuid)) {
 	uid = IDIO_FIXNUM_VAL (iuid);
     } else if (idio_isa_bignum (iuid)) {
@@ -2685,7 +2685,7 @@ IDIO_DEFINE_PRIMITIVE1 ("UID/set", UID_set, (IDIO iuid))
     if (-1 == r) {
 	idio_error_system_errno ("setuid", iuid, IDIO_C_LOCATION ("UID/set"));
     }
-    
+
     return idio_fixnum (r);
 }
 
@@ -2707,7 +2707,7 @@ IDIO_DEFINE_PRIMITIVE0 ("STDERR/get", libc_STDERR_get, (void))
 void idio_init_libc_wrap ()
 {
     idio_libc_wrap_module = idio_module (idio_symbols_C_intern ("libc"));
-    
+
     idio_module_export_symbol_value (idio_symbols_C_intern ("0U"), idio_C_uint (0U), idio_libc_wrap_module);
 
     /* fcntl.h */
@@ -2722,7 +2722,7 @@ void idio_init_libc_wrap ()
     /* signal.h */
     idio_module_export_symbol_value (idio_symbols_C_intern ("SIG_DFL"), idio_C_pointer (SIG_DFL), idio_libc_wrap_module);
     idio_module_export_symbol_value (idio_symbols_C_intern ("SIG_IGN"), idio_C_pointer (SIG_IGN), idio_libc_wrap_module);
-    
+
     /* stdio.h */
     idio_module_export_symbol_value (idio_symbols_C_intern ("NULL"), idio_C_pointer (NULL), idio_libc_wrap_module);
 
@@ -2739,7 +2739,7 @@ void idio_init_libc_wrap ()
     /* termios.h */
     idio_module_export_symbol_value (idio_symbols_C_intern ("TCSADRAIN"), idio_C_int (TCSADRAIN), idio_libc_wrap_module);
     idio_module_export_symbol_value (idio_symbols_C_intern ("TCSAFLUSH"), idio_C_int (TCSAFLUSH), idio_libc_wrap_module);
-    
+
     /* unistd.h */
     idio_module_export_symbol_value (idio_symbols_C_intern ("PATH_MAX"), idio_C_int (PATH_MAX), idio_libc_wrap_module);
     idio_module_export_symbol_value (idio_symbols_C_intern ("STDIN_FILENO"), idio_C_int (STDIN_FILENO), idio_libc_wrap_module);
@@ -2798,7 +2798,8 @@ void idio_init_libc_wrap ()
     idio_gc_protect (idio_vm_signal_handler_conditions);
     /*
      * idio_vm_run1() will be indexing anywhere into this array when
-     * it gets a signal so make sure that the "used" size is up there.
+     * it gets a signal so make sure that the "used" size is up there
+     * by poking something at at NSIG.
      */
     idio_array_insert_index (idio_vm_signal_handler_conditions, idio_S_nil, (idio_ai_t) IDIO_LIBC_NSIG);
 
@@ -2809,7 +2810,7 @@ void idio_init_libc_wrap ()
      * Define some host/user/process variables
      */
     IDIO main_module = idio_Idio_module_instance ();
-    
+
     if (getenv ("HOSTNAME") == NULL) {
 	struct utsname u;
 	if (uname (&u) == -1) {
@@ -2864,10 +2865,10 @@ void idio_init_libc_wrap ()
 	idio_toplevel_extend (name, IDIO_MEANING_ENVIRON_SCOPE (0));
 	idio_module_export_symbol_value (name, SHELL, idio_libc_wrap_module);
     }
-    
+
     free (pwd_buf);
     */
-    
+
     geti = IDIO_ADD_MODULE_PRIMITIVE (idio_libc_wrap_module, UID_get);
     seti = IDIO_ADD_MODULE_PRIMITIVE (idio_libc_wrap_module, UID_set);
     idio_module_add_computed_symbol (idio_symbols_C_intern ("UID"), idio_vm_values_ref (IDIO_FIXNUM_VAL (geti)), idio_vm_values_ref (IDIO_FIXNUM_VAL (seti)), main_module);
@@ -2889,7 +2890,7 @@ void idio_init_libc_wrap ()
     if (-1 == ngroups) {
 	idio_error_system_errno ("getgroups", idio_S_nil, IDIO_C_LOCATION ("idio_init_libc_wrap"));
     }
-    
+
     gid_t grp_list[ngroups];
 
     int ng = getgroups (ngroups, grp_list);
@@ -2903,7 +2904,7 @@ void idio_init_libc_wrap ()
     if (ngroups != ng) {
 	idio_error_C ("getgroups", idio_S_nil, IDIO_C_LOCATION ("idio_init_libc_wrap"));
     }
-    
+
     IDIO GROUPS = idio_array (ngroups);
 
     for (ng = 0; ng < ngroups ; ng++) {

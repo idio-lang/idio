@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -17,7 +17,7 @@
 
 /*
  * handle.h
- * 
+ *
  */
 
 #ifndef HANDLE_H
@@ -55,6 +55,7 @@ IDIO idio_open_handle (IDIO pathname, char *mode);
 IDIO idio_write (IDIO o, IDIO args);
 IDIO idio_write_char (IDIO c, IDIO args);
 IDIO idio_display (IDIO o, IDIO args);
+IDIO idio_display_C_len (char *s, size_t blen, IDIO h);
 IDIO idio_display_C (char *s, IDIO h);
 
 IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO e, IDIO cs), IDIO cs);

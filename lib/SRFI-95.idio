@@ -1,4 +1,4 @@
-;; Copyright (C) Aubrey Jaffer 2006. All Rights Reserved.
+;; Copyright (C) Aubrey Jaffer 2006, 2020. All Rights Reserved.
 
 ;; Permission is hereby granted, free of charge, to any person
 ;; obtaining a copy of this software and associated documentation
@@ -89,7 +89,7 @@ define (sorted? seq less? & opt-key) {
 	   (null? next) or {
 	      nxt := key (ph next)
 
-	      (not (less? nxt last)) and 
+	      (not (less? nxt last)) and
 	        (loop nxt (pt next))
 	   }
 	 }

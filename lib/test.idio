@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -53,8 +53,8 @@ define (fail expr result expected) {
   set! Errors (1 + Errors)
   display* "Error #" Errors
   display* "test #" Tests " failed: " expr
-  display* "got result:  " result 
-  display* "expected:    " expected 
+  display* "got result:  " result
+  display* "expected:    " expected
 }
 
 define (test3 expr result expected) {
@@ -73,7 +73,7 @@ display* "This is test.idio"
 
 ;; put the testing utilities on the PATH
 OPATH := PATH
-PATH = string-append PATH ":" (string-append PWD "/../utils") 
+PATH = string-append PATH ":" (string-append PWD "/../utils")
 
 ;; at least one test creates a local file then tries to "load" it --
 ;; so we need PWD on IDIOLIB

@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015, 2017, 2018 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2017, 2018, 2020 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -143,7 +143,7 @@ define-macro (letrec bindings expr & exprs) {
   updates := map (function (v t) (list 'set! v t)) vars tmps
   list 'let \
        undefineds \
-       (append3 '(let) 
+       (append3 '(let)
                 (list tmp-bindings)
 		(append3 updates
 			 (list expr)
@@ -353,7 +353,7 @@ fold-left := {
         fold (pt-of a*) (apply f r (ph-of a*))
       }
     }
- 
+
     if (null? a*) {
       error "fold-left: too few arguments"
     } {
@@ -398,7 +398,7 @@ append := {
         append2 (reverse a) b
       }
     }
-     
+
     fold-left append-wrapper '#n a
   }
 }
@@ -468,7 +468,7 @@ define (expt x y) {
 	(even? y) (square (expt2 x (quotient y 2))) \
 	else      (x * (square (expt2 x (quotient y 2))))
   }
-  
+
   if+ (negative? y) {
         / (expt2 (0.0 + x) y)
       } (integer? y) {
@@ -497,11 +497,11 @@ lcm := {
   function a {
     lcm2 :+ function (a b) {
       cd := (gcd a b)
-      
+
       * cd (* (quotient a cd)
                         (quotient b cd))
     }
-    
+
     fold-left lcm2 1 (map abs a)
   }
 }
@@ -586,16 +586,16 @@ exp := {
     }
 
     if (ge x 2.0) {
-      e^x/2 := 1 + (x / 2) + (e-series (x / 2) 
-				       2 
-				       0.0 
+      e^x/2 := 1 + (x / 2) + (e-series (x / 2)
+				       2
+				       0.0
 				       1.0)
 
       e^x/2 * e^x/2
     } {
-      1 + x + (e-series x 
-			2 
-			0.0 
+      1 + x + (e-series x
+			2
+			0.0
 			1.0)
     }
   }
@@ -616,10 +616,10 @@ define (log x) {
     }
 
     if+ (negative? x) (1.0 / 0) \
-        (lt 0.1 x 5) (l-series x 
-			      1 
-			      0.0 
-			      1.0 
+        (lt 0.1 x 5) (l-series x
+			      1
+			      0.0
+			      1.0
 			      #f) \
         else {
           approx := l-series x 1 0.0 1.0 5
@@ -944,7 +944,7 @@ string->number := {
             r := conv (pt lst) rdx
 	    if (ok? r) {
               result (- (value r)) (rest r)
-            } FAIL 
+            } FAIL
           } \
 	  else (conv lst rdx)
     }
@@ -1171,7 +1171,7 @@ define-macro %ext-let {
 	      (pair (phth bind*) args)
       }
     }
-       
+
     if (symbol? a1) {
       if (null? a3) {
         error "named let: missing body" #T{ let $a1 $a2 $@a3 }
@@ -1180,7 +1180,7 @@ define-macro %ext-let {
          va := split a2 '#n '#n
 	 v := reverse (ph va)
 	 a := reverse (pt va)
-	 #T{ 
+	 #T{
 	     {
 	       $a1 :+ function $v $@a3
 	       $a1 $@a
@@ -1228,13 +1228,13 @@ define-macro let* {
   function (bindings expr & exprs) {
     nest-let :+ function (b) {
       if+ (null? b) (pair expr exprs) \
-	  (null? (pt b)) #T{ 
+	  (null? (pt b)) #T{
 			     {
 			       $(phh b) := $(phth b)
 			       $@(nest-let (pt b))
 			     }
 			 } \
-          else #T{ 
+          else #T{
 		   {
 		     $(phh b) := $(phth b)
 		     $(nest-let (pt b))
@@ -1244,7 +1244,7 @@ define-macro let* {
 
     check-bindings bindings "let*"
     if (null? bindings) {
-      #T{ 
+      #T{
 	  {
 	    $expr
 	    $@exprs
@@ -1267,16 +1267,16 @@ define-macro (case key & clauses) {
 	    #T{ ((else $@(pth c*))) }
 	  } {
 	    #T{ (((memv $k '$(phh c*)) $@(pth c*))) }
-	  }          
+	  }
         } \
 	else {
 	  #T{ (((memv $k '$(phh c*)) $@(pth c*)) $@(gen-clauses k (pt c*))) }
 	}
-	
+
   }
 
   k := (gensym)
-  #T{ 
+  #T{
       {
         $k := $key
 	cond $@(gen-clauses k clauses)
@@ -1309,12 +1309,12 @@ define-macro (do var-clauses test & body) {
     i := pht var+init+step
     s := phtt var+init+step
 
-    #T{ 
+    #T{
         {
 	  $loop :+ function $v {
-            if $(ph test) { 
+            if $(ph test) {
               $@(pt test)
-	    } { 
+	    } {
 	      $@body
 	      ($loop $@s)
 	    }
@@ -1326,7 +1326,7 @@ define-macro (do var-clauses test & body) {
 }
 
 define-macro (delay expr) {
-  #T{ 
+  #T{
       {
         value := #f
 	function () {
@@ -1444,7 +1444,7 @@ define (alpha-conv form bound) {
 	(and (eq? 'function (ph form)) \
 	     (pair? (pt form)) \
 	     (pair? (ptt form))) {
-	  e := map-improper (function (x) 
+	  e := map-improper (function (x)
 			      (pair x (gensym))) \
 			    (pht form) \
 			    '#n
@@ -1570,7 +1570,7 @@ define-macro define-syntax {
           app := (gensym)
 	  default := #T{ ((else (error 'define-syntax "invalid syntax" $app))) }
 
-	  #T{ 
+	  #T{
 	     define-macro $(pair name app) {
                $app := pair '$name $app
 	       syntax-match := $syntax-match

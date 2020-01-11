@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2020 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -105,15 +105,15 @@ define-macro (define-struct-accessors-only name & fields) {
       ;;   %struct-instance-ref-direct g/7 bar 'bar-y 1
       ;; }
       $@(map (function (field) {
-                get-fname := string->symbol (string-append 
-					     (symbol->string name) 
+                get-fname := string->symbol (string-append
+					     (symbol->string name)
 					     "-"
 					     (symbol->string field))
 
                 #T{
 		  define ($get-fname $arg) {
                     %struct-instance-ref-direct $arg $name '$get-fname $(field-index field fields)
-                  } 
+                  }
                 }
               })
 	     fields)
@@ -131,7 +131,7 @@ define-macro (define-struct-accessors-only name & fields) {
 					     "-"
 					     (symbol->string field)
 					     "!")
-					  
+
                 #T{
 		  define ($set-fname $arg $val) {
                     %struct-instance-set-direct! $arg $name '$set-fname $(field-index field fields) $val
@@ -158,8 +158,8 @@ define-macro (export-struct-accessors-only name & fields) {
     define-struct-accessors-only $name $@fields
     export $make-fname $pred-fname
     $@(map (function (field) {
-	      get-fname := string->symbol (string-append 
-					   (symbol->string name) 
+	      get-fname := string->symbol (string-append
+					   (symbol->string name)
 					   "-"
 					   (symbol->string field))
 	      set-fname := string->symbol (string-append

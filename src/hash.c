@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -34,7 +34,7 @@
  * index of the next same-hash value in the chain.
  *
  * We use hsize+1, ie. beyond the allocated size, as a marker that
- * there is no next in chain.  
+ * there is no next in chain.
  *
  * With a coalesced hash the internal API (which leaks out -- grr!!)
  * is slightly different.  Having determing the hash value of a key
@@ -59,7 +59,7 @@ void idio_hash_error (char *m, IDIO loc)
     IDIO_C_ASSERT (m);
     IDIO_ASSERT (loc);
     IDIO_TYPE_ASSERT (string, loc);
-    
+
     idio_error_printf (loc, "%s", m);
 }
 
@@ -68,10 +68,10 @@ void idio_hash_error_key_not_found (IDIO key, IDIO loc)
     IDIO_ASSERT (key);
     IDIO_ASSERT (loc);
     IDIO_TYPE_ASSERT (string, loc);
-    
+
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C ("key not found", msh);
-    
+
     IDIO c = idio_struct_instance (idio_condition_rt_hash_key_not_found_error_type,
 				   IDIO_LIST4 (idio_get_output_string (msh),
 					       loc,
@@ -95,7 +95,7 @@ static int idio_assign_hash_he (IDIO h, idio_hi_t size)
     idio_hi_t s = size;
     idio_hi_t m = 0;
     idio_hi_t mask;
-    
+
     while (s) {
 	s >>= 1;
 	m = (m << 1) | 1;
@@ -117,7 +117,7 @@ static int idio_assign_hash_he (IDIO h, idio_hi_t size)
      * shift the mask down and AND it with the size.  If the answer
      * is zero then it was a power of two.
     */
-    
+
     if (size & (m >> 1)) {
 	mask = m;
     } else {
@@ -221,7 +221,7 @@ IDIO idio_hash_copy (IDIO orig)
 	    idio_hash_put (new, k, v);
 	}
     }
-    
+
     return new;
 }
 
@@ -267,7 +267,7 @@ void idio_free_hash (IDIO h)
 	for (i = 0; i < IDIO_HASH_SIZE (h); i++) {
 	    void *kv = IDIO_HASH_HE_KEY (h, i);
 	    if (idio_S_nil != kv) {
-		free (kv); 
+		free (kv);
 	    }
 	}
     }
@@ -343,7 +343,7 @@ void idio_hash_resize (IDIO h)
 idio_hi_t idio_hash_hashval_void (void *p)
 {
     IDIO_C_ASSERT (p);
-    
+
     unsigned long ul = (unsigned long) p;
 
     /*
@@ -365,14 +365,14 @@ idio_hi_t idio_hash_hashval_uintmax_t (uintmax_t i)
 idio_hi_t idio_hash_hashval_character (IDIO c)
 {
     IDIO_ASSERT (c);
-    
+
     return idio_hash_hashval_uintmax_t (IDIO_CHARACTER_VAL (c));
 }
 
 idio_hi_t idio_hash_hashval_string_C (idio_hi_t blen, const char *s_C)
 {
     IDIO_C_ASSERT (s_C);
-    
+
     idio_hi_t hv = idio_hash_hashval_uintmax_t (blen);
 
     /*
@@ -407,7 +407,7 @@ idio_hi_t idio_hash_hashval_string_C (idio_hi_t blen, const char *s_C)
 idio_hi_t idio_hash_hashval_string (IDIO s)
 {
     IDIO_ASSERT (s);
-    
+
     return idio_hash_hashval_string_C (IDIO_STRING_BLEN (s), IDIO_STRING_S (s));
 }
 
@@ -415,34 +415,34 @@ idio_hi_t idio_hash_hashval_symbol (IDIO h)
 {
     IDIO_ASSERT (h);
 
-    return idio_hash_hashval_void (IDIO_SYMBOL_S (h)); 
+    return idio_hash_hashval_void (IDIO_SYMBOL_S (h));
 }
 
 idio_hi_t idio_hash_hashval_keyword (IDIO h)
 {
     IDIO_ASSERT (h);
 
-    return idio_hash_hashval_void (IDIO_KEYWORD_S (h)); 
+    return idio_hash_hashval_void (IDIO_KEYWORD_S (h));
 }
 
 idio_hi_t idio_hash_hashval_pair (IDIO h)
 {
     IDIO_ASSERT (h);
-    
+
     return idio_hash_hashval_uintmax_t ((unsigned long) IDIO_PAIR_H (h) ^ (unsigned long) IDIO_PAIR_T (h));
 }
 
 idio_hi_t idio_hash_hashval_array (IDIO h)
 {
     IDIO_ASSERT (h);
-    
+
     return idio_hash_hashval_void (h->u.array);
 }
 
 idio_hi_t idio_hash_hashval_hash (IDIO h)
 {
     IDIO_ASSERT (h);
-    
+
     return idio_hash_hashval_void (h->u.hash);
 }
 
@@ -458,56 +458,56 @@ idio_hi_t idio_idio_hash_hashval_closure (IDIO h)
 idio_hi_t idio_idio_hash_hashval_primitive (IDIO h)
 {
     IDIO_ASSERT (h);
-    
+
     return idio_hash_hashval_void (IDIO_PRIMITIVE_F (h));
 }
 
 idio_hi_t idio_idio_hash_hashval_module (IDIO h)
 {
     IDIO_ASSERT (h);
-    
+
     return idio_hash_hashval_void (IDIO_MODULE_NAME (h));
 }
 
 idio_hi_t idio_idio_hash_hashval_frame (IDIO h)
 {
     IDIO_ASSERT (h);
-    
+
     return idio_hash_hashval_void (h->u.frame);
 }
 
 idio_hi_t idio_idio_hash_hashval_bignum (IDIO h)
 {
     IDIO_ASSERT (h);
-    
+
     return idio_hash_hashval_void (IDIO_BIGNUM_SIG (h));
 }
 
 idio_hi_t idio_idio_hash_hashval_handle (IDIO h)
 {
     IDIO_ASSERT (h);
-    
+
     return idio_hash_hashval_void (IDIO_HANDLE_STREAM (h));
 }
 
 idio_hi_t idio_hash_hashval_C_struct (IDIO h)
 {
     IDIO_ASSERT (h);
-    
+
     return idio_hash_hashval_void (IDIO_C_STRUCT_METHODS (h));
 }
 
 idio_hi_t idio_hash_hashval_C_instance (IDIO h)
 {
     IDIO_ASSERT (h);
-    
+
     return idio_hash_hashval_void (IDIO_C_INSTANCE_P (h));
 }
 
 idio_hi_t idio_hash_hashval_C_FFI (IDIO h)
 {
     IDIO_ASSERT (h);
-    
+
     return idio_hash_hashval_void (IDIO_C_FFI_CIFP (h));
 }
 
@@ -520,7 +520,7 @@ idio_hi_t idio_hash_hashval (IDIO h, void *kv)
 
     idio_hi_t hv = IDIO_HASH_SIZE (h) + 1;
     idio_type_e type = idio_type (k);
-    
+
     switch (type) {
     case IDIO_TYPE_FIXNUM:
     case IDIO_TYPE_CONSTANT_IDIO:
@@ -531,16 +531,16 @@ idio_hi_t idio_hash_hashval (IDIO h, void *kv)
 	hv = idio_hash_hashval_uintmax_t ((uintptr_t) k);
 	break;
     case IDIO_TYPE_STRING:
-	hv = idio_hash_hashval_string_C (IDIO_STRING_BLEN (k), IDIO_STRING_S (k)); 
+	hv = idio_hash_hashval_string_C (IDIO_STRING_BLEN (k), IDIO_STRING_S (k));
 	break;
     case IDIO_TYPE_SUBSTRING:
 	hv = idio_hash_hashval_string_C (IDIO_SUBSTRING_BLEN (k), IDIO_SUBSTRING_S (k));
 	break;
     case IDIO_TYPE_SYMBOL:
-	hv = idio_hash_hashval_symbol (k);  
+	hv = idio_hash_hashval_symbol (k);
 	break;
     case IDIO_TYPE_KEYWORD:
-	hv = idio_hash_hashval_keyword (k);  
+	hv = idio_hash_hashval_keyword (k);
 	break;
     case IDIO_TYPE_PAIR:
 	hv = idio_hash_hashval_pair (k);
@@ -979,7 +979,7 @@ IDIO idio_hash_exists (IDIO h, void *kv)
 
     /*
     IDIO_C_ASSERT (k == IDIO_HASH_HE_KEY (h, hv));
-    
+
     return IDIO_HASH_HE_KEY (h, hv);
     */
 }
@@ -1145,7 +1145,7 @@ IDIO_DEFINE_PRIMITIVE1 ("hash?", hash_p, (IDIO o))
     if (idio_isa_hash (o)) {
 	r = idio_S_true;
     }
-    
+
     return r;
 }
 
@@ -1205,7 +1205,7 @@ IDIO idio_hash_make_hash (IDIO args)
 	if (idio_S_nil != hash) {
 	    hashf = NULL;
 	}
-	
+
 	args = IDIO_PAIR_T (args);
     }
 
@@ -1220,13 +1220,13 @@ IDIO idio_hash_make_hash (IDIO args)
 	} else {
 	    idio_error_param_type ("fixnum", isize, IDIO_C_LOCATION ("make-hash"));
 	}
-	
+
 	args = IDIO_PAIR_T (args);
     }
 
 
     IDIO ht = idio_hash (size, equal, hashf, comp, hash);
-    
+
     return ht;
 }
 
@@ -1246,7 +1246,7 @@ IDIO idio_hash_alist_to_hash (IDIO alist, IDIO args)
     IDIO_VERIFY_PARAM_TYPE (list, args);
 
     IDIO ht = idio_hash_make_hash (args);
-    
+
     while (idio_S_nil != alist) {
 	IDIO p = IDIO_PAIR_H (alist);
 
@@ -1401,7 +1401,7 @@ IDIO_DEFINE_PRIMITIVE2 ("hash-delete!", hash_delete, (IDIO ht, IDIO key))
     IDIO_VERIFY_PARAM_TYPE (hash, ht);
 
     idio_hash_delete (ht, key);
-    
+
     return idio_S_unspec;
 }
 
@@ -1412,11 +1412,11 @@ IDIO_DEFINE_PRIMITIVE2 ("hash-exists?", hash_existsp, (IDIO ht, IDIO key))
     IDIO_VERIFY_PARAM_TYPE (hash, ht);
 
     IDIO r = idio_S_false;
-    
+
     if (idio_hash_exists_key (ht, key)) {
 	r = idio_S_true;
     }
-    
+
     return r;
 }
 
@@ -1445,9 +1445,9 @@ IDIO_DEFINE_PRIMITIVE3V ("hash-update!", hash_update, (IDIO ht, IDIO key, IDIO f
     IDIO cv = idio_hash_ref (ht, key, args);
 
     IDIO nv = idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST2 (func, cv));
-    
+
     idio_hash_put (ht, key, nv);
-    
+
     return idio_S_unspec;
 }
 

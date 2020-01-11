@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -17,7 +17,7 @@
 
 /*
  * fixnum.c
- * 
+ *
  */
 
 #include "idio.h"
@@ -58,7 +58,7 @@ IDIO idio_integer (intmax_t i)
     } else {
 	return idio_bignum_integer_intmax_t (i);
     }
-}    
+}
 
 IDIO idio_uinteger (uintmax_t ui)
 {
@@ -68,7 +68,7 @@ IDIO idio_uinteger (uintmax_t ui)
     } else {
 	return idio_bignum_integer_uintmax_t (ui);
     }
-}    
+}
 
 IDIO idio_fixnum (intptr_t i)
 {
@@ -85,7 +85,7 @@ IDIO idio_fixnum (intptr_t i)
 
     /* notreached */
     return idio_S_unspec;
-}    
+}
 
 IDIO idio_fixnum_C (char *str, int base)
 {
@@ -114,7 +114,7 @@ IDIO idio_fixnum_C (char *str, int base)
 	/* notreached */
 	return idio_S_nil;
     }
-	
+
     if ('\0' == *end) {
 	return idio_fixnum ((intptr_t) val);
     } else {
@@ -125,7 +125,7 @@ IDIO idio_fixnum_C (char *str, int base)
 	/* notreached */
 	return idio_S_nil;
     }
-}    
+}
 
 int idio_isa_fixnum (IDIO o)
 {
@@ -163,7 +163,7 @@ int idio_isa_integer (IDIO o)
 	    }
 	}
     }
-    
+
     return 0;
 }
 
@@ -201,11 +201,11 @@ IDIO idio_fixnum_primitive_add (IDIO args)
     IDIO_TYPE_ASSERT (list, args);
 
     intptr_t ir = 0;
-    
+
     while (idio_S_nil != args) {
 	IDIO h = IDIO_PAIR_H (args);
 	IDIO_TYPE_ASSERT (fixnum, h);
-	
+
 	intptr_t ih = IDIO_FIXNUM_VAL (h);
 
 	ir = ir + ih;
@@ -220,11 +220,11 @@ IDIO idio_fixnum_primitive_add (IDIO args)
 	    while (idio_S_nil != args) {
 		IDIO h = IDIO_PAIR_H (args);
 		IDIO_TYPE_ASSERT (fixnum, h);
-	
+
 		bn_args = idio_pair (idio_bignum_integer_intmax_t (IDIO_FIXNUM_VAL (h)), bn_args);
 		args = IDIO_PAIR_T (args);
 	    }
-	    
+
 	    return idio_bignum_primitive_add (idio_list_reverse (bn_args));
 	}
 
@@ -245,7 +245,7 @@ IDIO idio_fixnum_primitive_subtract (IDIO args)
     while (idio_S_nil != args) {
 	IDIO h = IDIO_PAIR_H (args);
 	IDIO_TYPE_ASSERT (fixnum, h);
-	
+
 	intptr_t ih = IDIO_FIXNUM_VAL (h);
 
 	if (first) {
@@ -268,7 +268,7 @@ IDIO idio_fixnum_primitive_subtract (IDIO args)
 		continue;
 	    }
 	}
-	
+
 	ir = ir - ih;
 	if (ir > IDIO_FIXNUM_MAX ||
 	    ir < IDIO_FIXNUM_MIN) {
@@ -281,11 +281,11 @@ IDIO idio_fixnum_primitive_subtract (IDIO args)
 	    while (idio_S_nil != args) {
 		IDIO h = IDIO_PAIR_H (args);
 		IDIO_TYPE_ASSERT (fixnum, h);
-	
+
 		bn_args = idio_pair (idio_bignum_integer_intmax_t (IDIO_FIXNUM_VAL (h)), bn_args);
 		args = IDIO_PAIR_T (args);
 	    }
-	    
+
 	    return idio_bignum_primitive_add (idio_list_reverse (bn_args));
 	}
 
@@ -312,7 +312,7 @@ IDIO idio_fixnum_primitive_multiply (IDIO args)
     while (idio_S_nil != args) {
 	IDIO h = IDIO_PAIR_H (args);
 	IDIO_TYPE_ASSERT (fixnum, h);
-	
+
 	intptr_t ih = IDIO_FIXNUM_VAL (h);
 
 	if (first) {
@@ -388,7 +388,7 @@ IDIO idio_fixnum_primitive_multiply (IDIO args)
 		while (idio_S_nil != args) {
 		    IDIO h = IDIO_PAIR_H (args);
 		    IDIO_TYPE_ASSERT (fixnum, h);
-	
+
 		    bn_args = idio_pair (idio_bignum_integer_intmax_t (IDIO_FIXNUM_VAL (h)), bn_args);
 		    args = IDIO_PAIR_T (args);
 		}
@@ -413,7 +413,7 @@ IDIO idio_fixnum_primitive_multiply (IDIO args)
 	    while (idio_S_nil != args) {
 		IDIO h = IDIO_PAIR_H (args);
 		IDIO_TYPE_ASSERT (fixnum, h);
-	
+
 		bn_args = idio_pair (idio_bignum_integer_intmax_t (IDIO_FIXNUM_VAL (h)), bn_args);
 		args = IDIO_PAIR_T (args);
 	    }
@@ -436,11 +436,11 @@ IDIO idio_fixnum_primitive_divide (IDIO args)
     intptr_t ir = 1;
 
     int first = 1;
-    
+
     while (idio_S_nil != args) {
 	IDIO h = IDIO_PAIR_H (args);
 	IDIO_TYPE_ASSERT (fixnum, h);
-	
+
 	intptr_t ih = IDIO_FIXNUM_VAL (h);
 
 	if (first) {
@@ -460,7 +460,7 @@ IDIO idio_fixnum_primitive_divide (IDIO args)
 		continue;
 	    }
 	}
-    
+
 	if (0 == ih) {
 	    idio_fixnum_error_divide_by_zero (IDIO_C_LOCATION ("idio_fixnum_primitive_divide"));
 	    return idio_S_unspec;
@@ -485,7 +485,7 @@ IDIO idio_fixnum_primitive_floor (IDIO a)
 IDIO_DEFINE_PRIMITIVE1 ("floor", floor, (IDIO a))
 {
     IDIO_ASSERT (a);
-    
+
     if (idio_isa_fixnum (a)) {
 	return idio_fixnum_primitive_floor (a);
     } else if (idio_isa_bignum (a)) {
@@ -515,7 +515,7 @@ IDIO idio_fixnum_primitive_remainder (IDIO a, IDIO b)
     intptr_t ib = IDIO_FIXNUM_VAL (b);
 
     intptr_t r_mod = ia % ib;
-    
+
     return idio_fixnum (r_mod);
 }
 
@@ -525,7 +525,7 @@ IDIO_DEFINE_PRIMITIVE2 ("remainder", remainder, (IDIO a, IDIO b))
     IDIO_ASSERT (b);
 
     IDIO num = idio_S_unspec;
-    
+
     if (idio_isa_fixnum (a)) {
 	if (idio_isa_fixnum (b)) {
 	    return idio_fixnum_primitive_remainder (a, b);
@@ -579,12 +579,12 @@ IDIO_DEFINE_PRIMITIVE2 ("quotient", quotient, (IDIO a, IDIO b))
 {
     IDIO_ASSERT (a);
     IDIO_ASSERT (b);
-    
+
     /* idio_debug ("primitive: quotient: %s", a); */
     /* idio_debug (" / %s\n", b); */
 
     IDIO num = idio_S_unspec;
-    
+
     if (idio_isa_fixnum (a)) {
 	if (idio_isa_fixnum (b)) {
 	    return idio_fixnum_primitive_quotient (a, b);
@@ -899,7 +899,7 @@ IDIO_DEFINE_PRIMITIVE1 ("integer->char", integer2char, (IDIO i))
     IDIO_ASSERT (i);
 
     IDIO c = idio_S_unspec;
-    
+
     if (idio_isa_fixnum (i)) {
 	c = IDIO_CHARACTER (IDIO_FIXNUM_VAL (i));
     } else if (idio_isa_bignum (i)) {

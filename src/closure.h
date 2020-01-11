@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -17,13 +17,13 @@
 
 /*
  * closure.h
- * 
+ *
  */
 
 #ifndef CLOSURE_H
 #define CLOSURE_H
 
-IDIO idio_closure (size_t code, IDIO frame, IDIO env);
+IDIO idio_closure (size_t code, IDIO frame, IDIO env, IDIO sigstr, IDIO docstr);
 int idio_isa_closure (IDIO o);
 void idio_free_closure (IDIO c);
 

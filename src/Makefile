@@ -1,10 +1,14 @@
 OS		:= $(shell uname -s)
 ARCH		:= $(shell uname -m)
+SHELL		:= bash
 
 TOPDIR		:= $(abspath $(PWD)/..)
 BINDIR		:= $(abspath $(PWD)/../bin)
 LIBDIR		:= $(abspath $(PWD)/../lib)
 TESTSDIR	:= $(abspath $(PWD)/../tests)
+DOCDIR		:= $(abspath $(PWD)/../doc)
+SRCDOCDIR	:= $(DOCDIR)/src
+SRCKDOUTDIR	:= $(SRCDOCDIR)/kernel-autodoc-out
 
 ifeq ($(OS),Darwin)
 
@@ -92,6 +96,13 @@ debug :
 
 test : $(BINDIR)/idio
 	IDIOLIB=$(TOPDIR) $(BINDIR)/idio test
+
+doc : 
+	rm -rf $(SRCKDOUTDIR)
+	(cd .. ; kernel-autodoc src $(SRCKDOUTDIR))
+	#cp $(SRCKDOUTDIR)/*_[ch].rst $(SRCDOCDIR)
+	diff -w <(grep _[ch] $(SRCKDOUTDIR)/index.rst) <(grep _[ch] $(SRCDOCDIR)/index.rst | sed -e 's!.*/!!')
+	make -C $(SRCDOCDIR) html text
 
 include $(subst .c,.d,$(sources))
 

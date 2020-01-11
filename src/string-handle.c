@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2020 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -17,7 +17,7 @@
 
 /*
  * string-handle.c
- * 
+ *
  */
 
 #include "idio.h"
@@ -64,7 +64,7 @@ static IDIO idio_open_string_handle (char *str, size_t blen, int sflags)
     /*
      * We could open an input-string-handle from "" so blen can be 0
      */
-    
+
     idio_string_handle_stream_t *shsp = idio_alloc (sizeof (idio_string_handle_stream_t));
 
     IDIO_STRING_HANDLE_STREAM_BUF (shsp) = str;
@@ -78,7 +78,7 @@ static IDIO idio_open_string_handle (char *str, size_t blen, int sflags)
     }
 
     IDIO_STRING_HANDLE_STREAM_EOF (shsp) = 0;
-    
+
     IDIO sh = idio_handle ();
 
     IDIO_HANDLE_FLAGS (sh) |= sflags | IDIO_HANDLE_FLAG_STRING;
@@ -141,7 +141,7 @@ IDIO_DEFINE_PRIMITIVE1 ("open-input-string", open_input_string_handle, (IDIO str
 	idio_error_param_type ("string", str, IDIO_C_LOCATION ("open-input-string"));
 	break;
     }
-    
+
     IDIO r = idio_open_string_handle (str_C, strlen (str_C), IDIO_HANDLE_FLAG_READ);
 
     return r;
@@ -150,7 +150,7 @@ IDIO_DEFINE_PRIMITIVE1 ("open-input-string", open_input_string_handle, (IDIO str
 IDIO_DEFINE_PRIMITIVE0 ("open-output-string", open_output_string_handle, (void))
 {
     char *str_C = idio_alloc (IDIO_STRING_HANDLE_DEFAULT_OUTPUT_SIZE);
-    
+
     return idio_open_string_handle (str_C, IDIO_STRING_HANDLE_DEFAULT_OUTPUT_SIZE, IDIO_HANDLE_FLAG_WRITE);
 }
 
@@ -276,7 +276,7 @@ int idio_string_handle_putc (IDIO sh, int c)
     if (! idio_output_string_handlep (sh)) {
 	idio_handle_error_write (sh, IDIO_C_LOCATION ("idio_string_handle_putc"));
     }
-    
+
     if (IDIO_STRING_HANDLE_PTR (sh) >= IDIO_STRING_HANDLE_END (sh)) {
 	if (IDIO_STRING_HANDLE_END (sh) == (IDIO_STRING_HANDLE_BUF (sh) + IDIO_STRING_HANDLE_BLEN (sh))) {
 	    size_t blen = IDIO_STRING_HANDLE_BLEN (sh);
@@ -293,7 +293,7 @@ int idio_string_handle_putc (IDIO sh, int c)
 
 	IDIO_STRING_HANDLE_END (sh) = IDIO_STRING_HANDLE_PTR (sh) + 1;
     }
-    
+
     *(IDIO_STRING_HANDLE_PTR (sh)) = (char) c;
     IDIO_STRING_HANDLE_PTR (sh) += 1;
 
@@ -307,7 +307,7 @@ size_t idio_string_handle_puts (IDIO sh, char *s, size_t slen)
     if (! idio_output_string_handlep (sh)) {
 	idio_handle_error_write (sh, IDIO_C_LOCATION ("idio_string_handle_puts"));
     }
-    
+
     if ((IDIO_STRING_HANDLE_PTR (sh) + slen) >= (IDIO_STRING_HANDLE_BUF (sh) + IDIO_STRING_HANDLE_BLEN (sh))) {
 	size_t blen = IDIO_STRING_HANDLE_BLEN (sh);
 	char *buf = IDIO_STRING_HANDLE_BUF (sh);

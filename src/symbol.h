@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -17,7 +17,7 @@
 
 /*
  * symbol.h
- * 
+ *
  */
 
 #ifndef SYMBOL_H
@@ -78,7 +78,6 @@ extern IDIO_SYMBOL_DECL (list);
 extern IDIO_SYMBOL_DECL (load);
 extern IDIO_SYMBOL_DECL (load_handle);
 extern IDIO_SYMBOL_DECL (lt);
-extern IDIO_SYMBOL_DECL (monitor);
 extern IDIO_SYMBOL_DECL (namespace);
 extern IDIO_SYMBOL_DECL (op);
 extern IDIO_SYMBOL_DECL (or);

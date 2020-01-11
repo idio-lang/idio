@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2020 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -36,7 +36,7 @@ define-macro (define-condition-type/accessors name parent pred-fname & fields) {
 ;; We have this two-step shimmy as the basic conditions (eg. ^error)
 ;; are defined in C-land for internal use yet the predicate/accessors
 ;; are defined here, in Idio-land, as it is much easier (and C never
-;; uses them anyway).  
+;; uses them anyway).
 ;;
 ;; If we (re-)defined those conditions here as well then we'd have two
 ;; distinct objects with the same name.  Which is generally considered
@@ -58,7 +58,7 @@ define-macro (define-condition-type-accessors-only name parent pred-fname & fiel
 		  } {
 		    error '$(pht field) '$pred-fname "not a condition:" $arg
 		  }
-                } 
+                }
 	     }
 	   })
 	   fields)
@@ -66,14 +66,14 @@ define-macro (define-condition-type-accessors-only name parent pred-fname & fiel
 }
 
 ;; define-condition-type
-;; 
+;;
 ;; generate default pred/accessor names for
 ;; define-condition-type/accessors
 define-macro (define-condition-type name parent & fields) {
   pred-fname := string->symbol (string-append (symbol->string name) "?")
   fa := map (function (field) {
-    list field (string->symbol (string-append 
-				(symbol->string name) 
+    list field (string->symbol (string-append
+				(symbol->string name)
 				"-"
 				(symbol->string field)))
   }) fields
@@ -91,7 +91,7 @@ define-macro (condition type & field-bindings) {
   c := (gensym)
 
   #T{
-    $c := allocate-condition $type 
+    $c := allocate-condition $type
 
     $@(map (function (field-binding) {
               #T{

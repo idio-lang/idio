@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015, 2020 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -48,10 +48,15 @@ export-struct-accessors-only %idio-status	pid state reason
 %%idio-job-notify-interactive := #f
 ;;
 ;; These algorithms are directly from the libc info pages on Job
-;; Control
+;; Control: "info libc" then "Job Control" then "Implementing a Shell"
 ;;
 
-define (job-is-stopped job) {
+define (job-is-stopped job) "test if job `job` is stopped
+
+:param job: job to test
+
+:return: #t if job `job` is stopped, #f otherwise
+" {
   if (null? job) (error 'job-is-stopped "null job" job)
 
   loop :+ function (procs) {
@@ -64,7 +69,12 @@ define (job-is-stopped job) {
   loop (%idio-job-procs job)
 }
 
-define (job-is-completed job) {
+define (job-is-completed job) "test if job `job` has completed
+
+:param job: job to test
+
+:return: #t if job `job` has completed, #f otherwise
+" {
   if (null? job) (error 'job-is-completed "null job" job)
 
   loop :+ function (procs) {
@@ -78,7 +88,12 @@ define (job-is-completed job) {
   loop (%idio-job-procs job)
 }
 
-define (job-failed job) {
+define (job-failed job) "test if job `job` has failed
+
+:param job: job to test
+
+:return: #t if job `job` has failed, #f otherwise
+" {
   if (null? job) (error 'job-failed "null job" job)
 
   loop :+ function (procs) {
@@ -103,7 +118,14 @@ define (job-failed job) {
 }
 
 ;; job-status => #t/#f
-define (job-status job) {
+define (job-status job) "test if job `job` has a process status
+
+:param job: job to test
+
+:return: #f if job `job` has a process status, #t otherwise
+
+Note that this is the inverse behaviour you might expect.
+" {
   if (null? job) (error 'job-status "null job" job)
 
   loop :+ function (procs) {
@@ -132,7 +154,15 @@ define (job-status job) {
 }
 
 ;; job-detail => '(exit X) or '(killed Y)
-define (job-detail job) {
+define (job-detail job) "return the process status of job `job`
+
+:param job: job
+
+:return: a (kind value) list
+
+kind can be: 'exit or 'killed
+value can be: exit status for 'exit or signal number for 'killed
+" {
   if (null? job) (error 'job-detail "null job" job)
 
   loop :+ function (procs) {
@@ -161,7 +191,15 @@ define (job-detail job) {
      (list 'exit (WEXITSTATUS (%idio-process-status (ph procs))))
 }
 
-define (pipeline-detail job) {
+define (pipeline-detail job) "return the process status of each process in the pieline `job`
+
+:param job: job
+
+:return: a list of (kind value) lists
+
+kind can be: 'exit or 'killed
+value can be: exit status for 'exit or signal number for 'killed
+" {
   if (null? job) (error 'pipeline-detail "null job" job)
 
   loop :+ function (procs st) {
@@ -183,14 +221,19 @@ define (pipeline-detail job) {
   loop (%idio-job-procs job) #n
 }
 
-;; mark-process-status -- store the {status} of the process {pid} that
-;; was returned by waitpid.  Return #f if all went well, some true
-;; value otherwise.
+define (mark-process-status pid status) "update the process status of pid `pid` with `status`
 
-;; This (inverted) convention follows the Libc texinfo algorithm and
-;; is for the benefit of the do loops in update-status and
-;; wait-for-job
-define (mark-process-status pid status) {
+:param pid: process id
+:param status: Unix process status
+
+:return: #t if the update was successfull, #f otherwise
+
+Store the `status` of the process `pid` that was returned by
+waitpid(2).  Return #f if all went well, some true value otherwise.
+
+This (inverted) convention follows the Libc texinfo algorithm and is
+for the benefit of the do loops in update-status_ and wait-for-job_.
+" {
   if+ (C/> pid 0) {
     jobs-loop :+ function (jobs) {
       if+ (null? jobs) {
@@ -234,7 +277,10 @@ define (mark-process-status pid status) {
   }
 }
 
-define (update-status) {
+define (update-status) "update the process status of any outstanding pids
+
+:return: #<unspec>
+" {
   waitany := function () {
     apply values (waitpid WAIT_ANY (WUNTRACED C/| WNOHANG))
   }
@@ -242,14 +288,19 @@ define (update-status) {
   do () ((call-with-values waitany mark-process-status) #n) #n
 }
 
-define (wait-for-job job) {
+define (wait-for-job job) "wait for job `job` to be stopped or completed
+
+:param job: job
+
+:return: job status
+" {
   waitany := function () {
     apply values (waitpid WAIT_ANY WUNTRACED)
   }
 
   do () ((not (and (not (call-with-values waitany mark-process-status))
 	           (not (job-is-stopped job))
-	           (not (job-is-completed job)))) 
+	           (not (job-is-completed job))))
          #n) #n
 
   ;;edisplay* "wfj" (%idio-job-pgid job) "completed?" (job-is-completed job) "stopped?" (job-is-stopped job) (if (job-failed job) "failed" "succeeded") (pipeline-detail job)
@@ -262,14 +313,20 @@ define (wait-for-job job) {
   job-status job
 }
 
-define (format-job-info job msg) {
+define (format-job-info job msg) "display to stderr `msg` alongside job `job` details
+
+:param job: job
+:param msg: string
+
+:return: #<unspec>
+" {
   if %%idio-job-notify-interactive {
     edisplay* "job" (%idio-job-pgid job) ":" (%idio-job-pipeline job) "(" msg ")"
   }
 }
 
-define (do-job-notification) {
-  ;; edisplay* "djn:" (map (function (job) { 
+define (do-job-notification) "notify of any job status changes" {
+  ;; edisplay* "djn:" (map (function (job) {
   ;; 			   %idio-job-pipeline job
   ;; 			 }) %idio-jobs)
   ;; get the latest data
@@ -348,7 +405,15 @@ define (do-job-notification) {
   #n
 }
 
-define (foreground-job job cont) {
+define (foreground-job job cont) "place job `job` in the foreground
+
+:param job: job
+:param cont: boolean
+
+:return: job status
+
+If `cont` is set a SIGCONT is sent to the process group
+" {
 
   ;; put the job in the foreground
   job-pgid := %idio-job-pgid job
@@ -372,7 +437,17 @@ define (foreground-job job cont) {
   r
 }
 
-define (background-job job cont) {
+define (background-job job cont) "place job `job` in the background
+
+:param job: job
+:param cont: boolean
+
+:return: #t
+
+If `cont` is set a SIGCONT is sent to the process group
+
+Backgrounding a job is always successful hence returns #t
+" {
   job-pgid := %idio-job-pgid job
   if cont {
     kill (- job-pgid) SIGCONT
@@ -382,7 +457,14 @@ define (background-job job cont) {
   #t
 }
 
-define (hangup-job job) {
+define (hangup-job job) "hangup job `job`
+
+:param job: job
+
+:return: #<unspec>
+
+Send the process group of `job` a SIGCONT then a SIGHUP
+" {
   job-pgid := %idio-job-pgid job
   kill (- job-pgid) SIGCONT
   kill (- job-pgid) SIGHUP
@@ -399,7 +481,14 @@ define (stop-job job) {
   #t
 }
 
-define (mark-job-as-running job) {
+define (mark-job-as-running job) "mark job `job` as running
+
+:param job: job
+
+:return: #<unspec>
+
+In particular, mark job `job` as not stopped.
+" {
   loop := function (procs) {
     if+ (null? procs) #n \
 	else {
@@ -412,7 +501,13 @@ define (mark-job-as-running job) {
   set-%idio-job-notified! job #f
 }
 
-define (continue-job job foreground) {
+define (continue-job job foreground) "mark job `job` as running and foreground it if required
+
+:param job: job
+:param foreground: boolean
+
+:return: #<unspec>
+" {
   mark-job-as-running job
   if foreground {
     foreground-job job #t
@@ -421,7 +516,14 @@ define (continue-job job foreground) {
   }
 }
 
-define (prep-io infile outfile errfile) {
+define (prep-io infile outfile errfile) "prepare the IO for the current process
+
+:param infile: to be used for stdin
+:param outfile: to be used for stdout
+:param errfile: to be used for stderr
+
+:return: #<unspec>
+" {
   ;; edisplay* "prep-io" infile outfile errfile
 
   ;; The nominal libc texinfo algorithm is:
@@ -446,7 +548,7 @@ define (prep-io infile outfile errfile) {
   ;; later IO redirections, (> >& etc.) reference the Idio
   ;; thread-specific IO handles and *not* simply the STD*_FILENO file
   ;; descriptors.  They do that because we can (seamlessly) use
-  ;; file-handles, string-handles, file desriptor numbers and
+  ;; file-handles, string-handles, file descriptor numbers and
   ;; ... instead of straight file names.  The use of string-handles
   ;; means we have to create temporary files etc..
 
@@ -488,7 +590,16 @@ define (prep-io infile outfile errfile) {
   }
 }
 
-define (%prep-process pgid infile outfile errfile foreground) {
+define (%prep-process pgid infile outfile errfile foreground) "prepare the current process
+
+:param pgid: process group to be joined
+:param infile: to be used for stdin
+:param outfile: to be used for stdout
+:param errfile: to be used for stderr
+:param foreground: place job in foreground
+
+:return: #<unspec>
+" {
   ;; edisplay* "pp:" (getpid) infile outfile errfile
   if %idio-interactive {
     pid := (getpid)
@@ -693,7 +804,7 @@ define-infix-operator | 300 {
 			close (pipe-reader $pgrp-pipe)
 			close (pipe-writer $pgrp-pipe)
 		      }
-		      
+
 		      ;; edisplay* "child" (getpid) "cmd" '$cmd
 		      if+ (pair? (ph '$cmd)) {
 			    $@cmd
@@ -887,7 +998,7 @@ define (wait & jobs) {
     jobs = %idio-jobs
   }
 
-  ;; edisplay* "wait jobs:" (map (function (job) { 
+  ;; edisplay* "wait jobs:" (map (function (job) {
   ;; 				%idio-job-pipeline job
   ;; 			      }) jobs)
   loop jobs
@@ -906,10 +1017,10 @@ define (wait & jobs) {
 ;; 'output, 'error
 ;;
 ;; {s/d} (source/destination) can be:
-;; 1. a handle (file or string) 
+;; 1. a handle (file or string)
 ;; 2. a literal string which will be interpreted as the name of the
-;;    file to open as per: 
-;;      open-output-file {s/d} or 
+;;    file to open as per:
+;;      open-output-file {s/d} or
 ;;      open-input-file {s/d}
 ;; 3. #n as shorthand for the string "/dev/null"
 ;;
@@ -1021,7 +1132,7 @@ define (with-error-to dst thunk) {
 ;; 'output, 'error
 ;;
 ;; {new} can be:
-;; 1. a handle (file or string) 
+;; 1. a handle (file or string)
 ;; 2. a C int or fixnum which will be interpreted as the name of the
 ;;    file descriptor to call dup2(2) with
 ;;
@@ -1035,7 +1146,7 @@ with-handle-dup := {
   set-error-handle!     := set-error-handle!
 
   function (type new thunk) {
-    ;; edisplay* 'with-handle-dup type new 
+    ;; edisplay* 'with-handle-dup type new
     ;; handle-oriented indirection function/variables
     get-current-h := #f
     set-h!        := #f

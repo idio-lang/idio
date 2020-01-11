@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2020 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -17,7 +17,7 @@
 
 /*
  * c-struct.h
- * 
+ *
  */
 
 #ifndef C_STRUCT_H
@@ -33,7 +33,7 @@
 	IDIO sym = idio_symbols_C_intern ((#t));			\
 	idio_CTD_##t = idio_C_typedefs_add_value (sym, idio_S_nil);	\
     }
-    
+
 #define IDIO_C_FIELD_DATA_TAG       0
 #define IDIO_C_FIELD_DATA_ALIGNMENT 1
 #define IDIO_C_FIELD_DATA_TYPE      2
