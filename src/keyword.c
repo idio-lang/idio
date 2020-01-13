@@ -24,14 +24,14 @@
 
 static IDIO idio_keywords_hash = idio_S_nil;
 
-IDIO_KEYWORD_DECL (procedure);
-IDIO_KEYWORD_DECL (setter);
-IDIO_KEYWORD_DECL (source);
-IDIO_KEYWORD_DECL (handle);
-IDIO_KEYWORD_DECL (line);
-IDIO_KEYWORD_DECL (sigstr);
 IDIO_KEYWORD_DECL (docstr);
 IDIO_KEYWORD_DECL (docstr_raw);
+IDIO_KEYWORD_DECL (handle);
+IDIO_KEYWORD_DECL (line);
+IDIO_KEYWORD_DECL (name);
+IDIO_KEYWORD_DECL (setter);
+IDIO_KEYWORD_DECL (sigstr);
+IDIO_KEYWORD_DECL (source);
 
 void idio_keyword_error_key_not_found (IDIO key, IDIO loc)
 {
@@ -278,14 +278,14 @@ void idio_init_keyword ()
     idio_gc_protect (idio_keywords_hash);
     IDIO_HASH_FLAGS (idio_keywords_hash) |= IDIO_HASH_FLAG_STRING_KEYS;
 
-    IDIO_KEYWORD_DEF ("procedure", procedure);
-    IDIO_KEYWORD_DEF ("setter", setter);
-    IDIO_KEYWORD_DEF ("source", source);
-    IDIO_KEYWORD_DEF ("handle", handle);
-    IDIO_KEYWORD_DEF ("line", line);
-    IDIO_KEYWORD_DEF ("sigstr", sigstr);
     IDIO_KEYWORD_DEF ("docstr", docstr);
     IDIO_KEYWORD_DEF ("docstr-raw", docstr_raw);
+    IDIO_KEYWORD_DEF ("handle", handle);
+    IDIO_KEYWORD_DEF ("line", line);
+    IDIO_KEYWORD_DEF ("name", name);
+    IDIO_KEYWORD_DEF ("setter", setter);
+    IDIO_KEYWORD_DEF ("sigstr", sigstr);
+    IDIO_KEYWORD_DEF ("source", source);
 }
 
 void idio_keyword_add_primitives ()

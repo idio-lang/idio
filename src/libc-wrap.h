@@ -62,7 +62,7 @@ extern IDIO idio_libc_struct_stat;
     sprintf (idio_libc_signal_names[n], "%s", IDIO_SYMBOL_S (sig_sym) + 3);				\
     IDIO sig_ct;											\
     IDIO_DEFINE_CONDITION0_DYNAMIC (sig_ct, "^rt-signal-" #n, idio_condition_rt_signal_type);		\
-    sig_cond = idio_struct_instance (sig_ct, IDIO_LIST1 (IDIO_FIXNUM (n)));				\
+    sig_cond = idio_struct_instance (sig_ct, IDIO_LIST1 (idio_C_int (n)));				\
     idio_array_insert_index (idio_vm_signal_handler_conditions, sig_cond, n);				\
     }
 

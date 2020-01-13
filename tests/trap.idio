@@ -4,12 +4,12 @@ display* "This is trap.idio"
 ;%%vm-dis 1
 
 trap ^rt-signal-SIGCHLD (function (cont cond) {
-  display* "trapping ^rt-signal-SIGCHLD" cont cond
+  ;display* "trapped ^rt-signal-SIGCHLD" cont cond
   }) {
   trap ^rt-signal-SIGHUP (function (cont cond) {
-    display* "trapping ^rt-signal-SIGHUP" cont cond
+    display* "trapped ^rt-signal-SIGHUP" cont cond
     }) {
-    echo Hello World
+      echo Hello World
   }
 }
 
@@ -28,5 +28,5 @@ raise #f (make-condition ^error)
     raise #f (make-condition ^error)
   })
 
-  f "b-c-h test"
+  f "default-condition-handler test"
 }

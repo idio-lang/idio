@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2020 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -70,10 +70,10 @@
 ;; list...?
 {
   ;; bootstrap {setter}'s own properties
-  setter-kwt := %procedure-properties setter
+  setter-kwt := %properties setter
   if (null? setter-kwt) {
     setter-kwt = make-keyword-table 4
-    %set-procedure-properties! setter setter-kwt
+    %set-properties! setter setter-kwt
   }
 
   ;; The magic: set {setter}'s setter to a function that takes a proc
@@ -88,10 +88,10 @@
   ;; done by hand for {setter} itself.
   keyword-set! setter-kwt :setter (function (proc setter) {
     ;; bootstrap proc's properties
-    proc-kwt := %procedure-properties proc
+    proc-kwt := %properties proc
     if (null? proc-kwt) {
       proc-kwt = make-keyword-table 4
-      %set-procedure-properties! proc proc-kwt
+      %set-properties! proc proc-kwt
     }
 
     ;; actually set proc's setter

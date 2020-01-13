@@ -87,7 +87,7 @@ IDIO idio_gc_get_alloc ()
 {
     IDIO o;
     int n;
-    idio_gc->request = 1;
+    IDIO_GC_FLAGS (idio_gc) |= IDIO_GC_FLAG_REQUEST;
     IDIO p = NULL;
     for (n = 0 ; n < IDIO_GC_ALLOC_POOL; n++) {
 	o = idio_alloc (sizeof (idio_t));
@@ -620,7 +620,7 @@ idio_gc_t *idio_gc_new ()
     c->grey = NULL;
     c->pause = 0;
     c->verbose = 0;
-    c->request = 0;
+    IDIO_GC_FLAGS (c) = IDIO_GC_FLAG_NONE;
 
     c->stats.nfree = 0;
     int i;
@@ -972,7 +972,10 @@ void idio_gc_sweep_free_value (IDIO vo)
     case IDIO_TYPE_CLOSURE:
 #ifdef IDIO_VM_PERF
 	if (IDIO_CLOSURE_CALLED (vo) > 1) {
-	    IDIO name = idio_vm_closure_name (vo);
+	    IDIO name = idio_S_unspec;
+	    if (0 == (IDIO_GC_FLAGS (idio_gc) & IDIO_GC_FLAG_FINISH)) {
+		name = idio_vm_closure_name (vo);
+	    }
 	    if (IDIO_CLOSURE_CALL_TIME (vo).tv_sec ||
 		IDIO_CLOSURE_CALL_TIME (vo).tv_nsec ||
 		idio_S_unspec != name) {
@@ -1158,7 +1161,7 @@ void idio_gc_stats ();
 void idio_gc_possibly_collect ()
 {
     if (idio_gc->pause == 0 &&
-	(idio_gc->request ||
+	((IDIO_GC_FLAGS (idio_gc) & IDIO_GC_FLAG_REQUEST) ||
 	 idio_gc->stats.igets > 0x1ffff)) {
 	idio_gc_collect ();
     }
@@ -1174,7 +1177,7 @@ void idio_gc_collect ()
 	return;
     }
 
-    idio_gc->request = 0;
+    IDIO_GC_FLAGS (idio_gc) &= ~ IDIO_GC_FLAG_REQUEST;
 
     struct timeval t0;
     gettimeofday (&t0, NULL);
@@ -1668,6 +1671,8 @@ static void idio_gc_run_all_finalizers ()
 
 void idio_final_gc ()
 {
+    IDIO_GC_FLAGS (idio_gc) |= IDIO_GC_FLAG_FINISH;
+    
     idio_gc_run_all_finalizers ();
 
     /* unprotect the finalizer hash itself */

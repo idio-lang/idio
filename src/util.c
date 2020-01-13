@@ -1098,7 +1098,7 @@ char *idio_as_string (IDIO o, int depth)
 		    }
 		    if (idio_isa_file_handle (o)) {
 			char *fds;
-			if (asprintf (&fds, "%d:", idio_file_handle_fd (o)) == -1) {
+			if (asprintf (&fds, "%d", idio_file_handle_fd (o)) == -1) {
 			    free (r);
 			    idio_error_alloc ("asprintf");
 			}
@@ -1106,6 +1106,7 @@ char *idio_as_string (IDIO o, int depth)
 		    } else {
 			IDIO_STRCAT (r, "-");
 		    }
+		    IDIO_STRCAT (r, ":");
 
 		    FLAGS_T h_flags = IDIO_HANDLE_FLAGS (o);
 		    if (h_flags & IDIO_HANDLE_FLAG_STRING) {
@@ -1363,6 +1364,7 @@ char *idio_as_string (IDIO o, int depth)
 		}
 	    default:
 		{
+		    fprintf (stderr, "idio_as_string: unexpected type %d\n", type);
 		    /*
 		     * Oh dear, bad data.  Can we dump any clues?
 		     *

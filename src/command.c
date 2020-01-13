@@ -1339,7 +1339,7 @@ Send the process group of `job` a SIGCONT then a SIGHUP\n\
     return idio_S_unspec;
 }
 
-void idio_command_signal_handler_SIGHUP (IDIO signum)
+void idio_command_SIGHUP_signal_handler (IDIO signum)
 {
     IDIO_ASSERT (signum);
     IDIO_TYPE_ASSERT (fixnum, signum);
@@ -1355,7 +1355,7 @@ void idio_command_signal_handler_SIGHUP (IDIO signum)
     }
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("condition-handler-SIGHUP", condition_handler_SIGHUP, (IDIO cont, IDIO cond))
+IDIO_DEFINE_PRIMITIVE2 ("SIGHUP-condition-handler", SIGHUP_condition_handler, (IDIO cont, IDIO cond))
 {
     IDIO_ASSERT (cont);
     IDIO_ASSERT (cond);
@@ -1373,22 +1373,22 @@ IDIO_DEFINE_PRIMITIVE2 ("condition-handler-SIGHUP", condition_handler_SIGHUP, (I
 	    int signum = IDIO_FIXNUM_VAL (isignum);
 
 	    if (SIGHUP == signum) {
-		idio_command_signal_handler_SIGHUP (isignum);
+		idio_command_SIGHUP_signal_handler (isignum);
 
 		return idio_S_unspec;
 	    }
 	}
     } else {
-	fprintf (stderr, "condition-handler-SIGHUP: expected a condition, not a %s\n", idio_type2string (cond));
+	fprintf (stderr, "SIGHUP-condition-handler: expected a condition, not a %s\n", idio_type2string (cond));
 	idio_debug ("%s\n", cond);
 
 	IDIO sh = idio_open_output_string_handle_C ();
-	idio_display_C ("condition-handler-SIGHUP: expected a condition not a '", sh);
+	idio_display_C ("SIGHUP-condition-handler: expected a condition not a '", sh);
 	idio_display (cond, sh);
 	idio_display_C ("'", sh);
 	IDIO c = idio_struct_instance (idio_condition_rt_parameter_type_error_type,
 				       IDIO_LIST3 (idio_get_output_string (sh),
-						   IDIO_C_LOCATION ("condition-handler-SIGHUP"),
+						   IDIO_C_LOCATION ("SIGHUP-condition-handler"),
 						   idio_S_nil));
 
 	idio_raise_condition (idio_S_true, c);
@@ -1400,7 +1400,7 @@ IDIO_DEFINE_PRIMITIVE2 ("condition-handler-SIGHUP", condition_handler_SIGHUP, (I
     IDIO_C_ASSERT (0);
 }
 
-void idio_command_signal_handler_SIGCHLD (IDIO signum)
+void idio_command_SIGCHLD_signal_handler (IDIO signum)
 {
     IDIO_ASSERT (signum);
     IDIO_TYPE_ASSERT (fixnum, signum);
@@ -1414,7 +1414,7 @@ void idio_command_signal_handler_SIGCHLD (IDIO signum)
 						idio_S_nil));
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("condition-handler-SIGCHLD", condition_handler_SIGCHLD, (IDIO cont, IDIO cond))
+IDIO_DEFINE_PRIMITIVE2 ("SIGCHLD-condition-handler", SIGCHLD_condition_handler, (IDIO cont, IDIO cond))
 {
     IDIO_ASSERT (cont);
     IDIO_ASSERT (cond);
@@ -1432,21 +1432,21 @@ IDIO_DEFINE_PRIMITIVE2 ("condition-handler-SIGCHLD", condition_handler_SIGCHLD, 
 	    int signum = IDIO_FIXNUM_VAL (isignum);
 
 	    if (SIGCHLD == signum) {
-		idio_command_signal_handler_SIGCHLD (isignum);
+		idio_command_SIGCHLD_signal_handler (isignum);
 		return idio_S_unspec;
 	    }
 	}
     } else {
-	fprintf (stderr, "condition-handler-SIGCHLD: expected a condition, not a %s\n", idio_type2string (cond));
+	fprintf (stderr, "SIGCHLD-condition-handler: expected a condition, not a %s\n", idio_type2string (cond));
 	idio_debug ("%s\n", cond);
 
 	IDIO sh = idio_open_output_string_handle_C ();
-	idio_display_C ("condition-handler-SIGCHLD: expected a condition not a '", sh);
+	idio_display_C ("SIGCHLD-condition-handler: expected a condition not a '", sh);
 	idio_display (cond, sh);
 	idio_display_C ("'", sh);
 	IDIO c = idio_struct_instance (idio_condition_rt_parameter_type_error_type,
 				       IDIO_LIST3 (idio_get_output_string (sh),
-						   IDIO_C_LOCATION ("condition-handler-SIGCHLD"),
+						   IDIO_C_LOCATION ("SIGCHLD-condition-handler"),
 						   idio_S_nil));
 
 	idio_raise_condition (idio_S_true, c);
@@ -2457,10 +2457,10 @@ void idio_command_add_primitives ()
     IDIO fvi;
     fvi = IDIO_ADD_MODULE_PRIMITIVE (idio_Idio_module, condition_handler_rt_command_status);
     idio_condition_handler_rt_command_status = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
-    fvi = IDIO_ADD_MODULE_PRIMITIVE (idio_Idio_module, condition_handler_SIGHUP);
-    idio_condition_signal_handler_SIGHUP = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
-    fvi = IDIO_ADD_MODULE_PRIMITIVE (idio_Idio_module, condition_handler_SIGCHLD);
-    idio_condition_signal_handler_SIGCHLD = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+    fvi = IDIO_ADD_MODULE_PRIMITIVE (idio_Idio_module, SIGHUP_condition_handler);
+    idio_condition_SIGHUP_signal_handler = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+    fvi = IDIO_ADD_MODULE_PRIMITIVE (idio_Idio_module, SIGCHLD_condition_handler);
+    idio_condition_SIGCHLD_signal_handler = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
 
     IDIO_ADD_MODULE_PRIMITIVE (idio_command_module, mark_job_as_running);
     IDIO_ADD_MODULE_PRIMITIVE (idio_command_module, continue_job);
@@ -2491,6 +2491,6 @@ void idio_final_command ()
      */
     idio_command_do_job_notification ();
 
-    idio_command_signal_handler_SIGHUP (idio_fixnum (SIGHUP));
+    idio_command_SIGHUP_signal_handler (idio_fixnum (SIGHUP));
 }
 

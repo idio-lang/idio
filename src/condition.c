@@ -29,6 +29,10 @@
 
 #include "idio.h"
 
+/*
+ * We use these *_condition_type_mci in idio_vm_init_thread() to
+ * bootstrap the base trap handlers
+ */
 IDIO idio_condition_condition_type_mci;
 
 /* SRFI-36 */
@@ -92,8 +96,8 @@ IDIO idio_condition_reset_condition_handler;
 IDIO idio_condition_restart_condition_handler;
 IDIO idio_condition_default_condition_handler;
 IDIO idio_condition_handler_rt_command_status;
-IDIO idio_condition_signal_handler_SIGHUP;
-IDIO idio_condition_signal_handler_SIGCHLD;
+IDIO idio_condition_SIGHUP_signal_handler;
+IDIO idio_condition_SIGCHLD_signal_handler;
 
 IDIO_DEFINE_PRIMITIVE2V_DS ("make-condition-type", make_condition_type, (IDIO name, IDIO parent, IDIO fields), "name parent fields", "\
 make a new condition type			\n\
@@ -392,12 +396,12 @@ IDIO_DEFINE_PRIMITIVE2 ("default-condition-handler", default_condition_handler, 
 
     if (idio_S_false == cont) {
 	/*
-	 * This should go to the reset-condition-handler
+	 * This should go to the restart-condition-handler (which will
+	 * go to the reset-condition-handler) which will reset the VM
 	 */
 	idio_debug ("default-condition-handler: non-cont-err %s\n", cond);
 
-	fprintf (stderr, "resetting VM\n");
-	idio_vm_reset_thread (thr, 1);
+	idio_raise_condition (cont, cond);
 
 	/* notreached */
 	return idio_S_unspec;
@@ -412,10 +416,10 @@ IDIO_DEFINE_PRIMITIVE2 ("default-condition-handler", default_condition_handler, 
 
 	switch (signum) {
 	case SIGCHLD:
-	    idio_command_signal_handler_SIGCHLD (isignum);
+	    idio_command_SIGCHLD_signal_handler (isignum);
 	    return idio_S_unspec;
 	case SIGHUP:
-	    idio_command_signal_handler_SIGHUP (isignum);
+	    idio_command_SIGHUP_signal_handler (isignum);
 	    return idio_S_unspec;
 	default:
 	    break;
@@ -483,7 +487,8 @@ IDIO_DEFINE_PRIMITIVE2 ("restart-condition-handler", restart_condition_handler, 
 
 	if (idio_S_false == cont) {
 	    /*
-	     * This should go to the restart-condition-handler
+	     * This should go to the reset-condition-handler which
+	     * will reset the VM
 	     */
 	    idio_debug ("restart-condition-handler: non-cont-err %s\n", cond);
 
@@ -493,11 +498,29 @@ IDIO_DEFINE_PRIMITIVE2 ("restart-condition-handler", restart_condition_handler, 
 	    return idio_S_unspec;
 	}
 
-	if (idio_struct_type_isa (sit, idio_condition_idio_error_type)) {
+	/*
+	 * Hmm, a timing issue with SIGCHLD?  Should have been caught
+	 * in default-condition-handler.
+	 */
+	if (idio_struct_type_isa (sit, idio_condition_rt_signal_type)) {
+	    IDIO isignum = idio_array_get_index (sif, IDIO_SI_RT_SIGNAL_TYPE_SIGNUM);
+	    int signum = IDIO_FIXNUM_VAL (isignum);
+
+	    switch (signum) {
+	    case SIGCHLD:
+		idio_command_SIGCHLD_signal_handler (isignum);
+		return idio_S_unspec;
+	    case SIGHUP:
+		idio_command_SIGHUP_signal_handler (isignum);
+		return idio_S_unspec;
+	    default:
+		break;
+	    }
+	} else if (idio_struct_type_isa (sit, idio_condition_idio_error_type)) {
 	    IDIO eh = idio_thread_current_error_handle ();
 	    int printed = 0;
 
-	    idio_display_C ("\n restart-condition-handler: ", eh);
+	    idio_display_C ("\nrestart-condition-handler:\n^error: ", eh);
 	    IDIO m = idio_array_get_index (sif, IDIO_SI_IDIO_ERROR_TYPE_MESSAGE);
 	    if (idio_S_nil != m) {
 		idio_display (m, eh);
@@ -573,10 +596,10 @@ IDIO_DEFINE_PRIMITIVE2 ("reset-condition-handler", reset_condition_handler, (IDI
 void idio_init_condition ()
 {
 
-#define IDIO_CONDITION_BASE_CONDITION_NAME "^condition"
+#define IDIO_CONDITION_CONDITION_TYPE_NAME "^condition"
 
     /* SRFI-35-ish */
-    IDIO_DEFINE_CONDITION0 (idio_condition_condition_type, IDIO_CONDITION_BASE_CONDITION_NAME, idio_S_nil);
+    IDIO_DEFINE_CONDITION0 (idio_condition_condition_type, IDIO_CONDITION_CONDITION_TYPE_NAME, idio_S_nil);
     IDIO_DEFINE_CONDITION1 (idio_condition_message_type, "^message", idio_condition_condition_type, "message");
     IDIO_DEFINE_CONDITION0 (idio_condition_error_type, "^error", idio_condition_condition_type);
 
@@ -585,7 +608,7 @@ void idio_init_condition ()
      * which means we have to repeat a couple of the actions of the
      * IDIO_DEFINE_CONDITION0 macro.
      */
-    IDIO sym = idio_symbols_C_intern (IDIO_CONDITION_BASE_CONDITION_NAME);
+    IDIO sym = idio_symbols_C_intern (IDIO_CONDITION_CONDITION_TYPE_NAME);
     idio_ai_t gci = idio_vm_constants_lookup_or_extend (sym);
     idio_condition_condition_type_mci = idio_fixnum (gci);
 
@@ -658,7 +681,9 @@ void idio_init_condition ()
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_bignum_conversion_error_type, "^rt-bignum-conversion-error", idio_condition_runtime_error_type, "bignum");
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_fixnum_conversion_error_type, "^rt-fixnum-conversion-error", idio_condition_runtime_error_type, "fixnum");
 
-    IDIO_DEFINE_CONDITION1 (idio_condition_rt_signal_type, "^rt-signal", idio_condition_error_type, "signum");
+#define IDIO_CONDITION_RT_SIGNAL_TYPE_NAME "^rt-signal"
+
+    IDIO_DEFINE_CONDITION1 (idio_condition_rt_signal_type, IDIO_CONDITION_RT_SIGNAL_TYPE_NAME, idio_condition_error_type, "signum");
 }
 
 void idio_condition_add_primitives ()

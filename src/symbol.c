@@ -421,6 +421,19 @@ void idio_properties_set (IDIO o, IDIO properties)
     idio_hash_set (idio_properties_hash, o, properties);
 }
 
+void idio_properties_create (IDIO o)
+{
+    IDIO_ASSERT (o);
+
+    if (idio_S_nil == o) {
+	idio_property_error_nil_object ("object is #n", IDIO_C_LOCATION ("idio_properties_create"));
+
+	/* notreached */
+    }
+
+    idio_hash_set (idio_properties_hash, o, idio_hash_make_keyword_table (IDIO_LIST1 (idio_fixnum (4))));
+}
+
 IDIO_DEFINE_PRIMITIVE2 ("%set-properties!", properties_set, (IDIO o, IDIO properties))
 {
     IDIO_ASSERT (o);

@@ -68,7 +68,7 @@ endif
 
 PROFLAGS	:=
 COVFLAGS	:=
-CFLAGS	       := ${CFLAGS} ${PROFLAGS} ${COVFLAGS} ${CDEBUG} -std=c99 -Wall -fPIC ${LIBFFI_INC} -DIDIO_VM_PERF
+CFLAGS	       := ${CFLAGS} ${PROFLAGS} ${COVFLAGS} ${CDEBUG} -std=c99 -Wall -Wno-unused-function -fPIC ${LIBFFI_INC} -DIDIO_VM_PERF
 LDFLAGS        := ${PROFLAGS} ${COVFLAGS} ${LDFLAGS}
 LIBS	       := ${LIBS} -lffi
 
@@ -116,7 +116,7 @@ scm1-c-structs.scm1 : scm1-c-structs
 	./scm1-c-structs > $@
 
 clean : tidy
-	rm -f *.o *.d ${BINDIR}/idio scm1-c-structs *.so scm1-c-structs.scm1 o e TAGS
+	rm -f *.o *.d ${BINDIR}/idio scm1-c-structs *.so scm1-c-structs.scm1 o e TAGS src/map
 
 tidy :
 	rm -f vgcore.* core.* core *~ $(LIBDIR)/*~ $(TESTSDIR)/*~ *.gcda *.gcno *.gcov gmon.out

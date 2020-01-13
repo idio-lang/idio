@@ -134,32 +134,16 @@ define-syntax unwind-protect (syntax-rules ()
        (function () body)
        (function () cleanup ...))))
 
-define-macro (with-handler handler & body) {
-  ;; edisplay* "with-handler" handler body
-  #T{
-    load-k := #n
-
-    trap ^condition (function (cont cond) {
-      load-k ($handler cont cond)
-    }) {
-      call/cc (function (k) {
-        load-k = k
-        $@body
-      })
-    }
-  }
-}
-
 define-macro (with-condition-handler condition handler & body) {
   ;; edisplay* "with-condition-handler" handler body
   #T{
-    load-k := #n
+    saved-k := #n
 
     trap $condition (function (cont cond) {
-      load-k ($handler cont cond)
+      saved-k ($handler cont cond)
     }) {
       call/cc (function (k) {
-        load-k = k
+        saved-k = k
         $@body
       })
     }

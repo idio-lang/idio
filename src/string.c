@@ -815,7 +815,7 @@ char *idio_string_token (char *in, char *delim, int flags, char **saved, size_t 
     return in;
 }
 
-IDIO idio_string_split (IDIO iin, IDIO idelim)
+IDIO idio_split_string (IDIO iin, IDIO idelim)
 {
     IDIO_ASSERT (iin);
     IDIO_ASSERT (idelim);
@@ -849,17 +849,17 @@ IDIO idio_string_split (IDIO iin, IDIO idelim)
     return idio_list_reverse (r);
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("split", split, (IDIO in, IDIO delim))
+IDIO_DEFINE_PRIMITIVE2 ("split-string", split_string, (IDIO in, IDIO delim))
 {
     IDIO_ASSERT (in);
     IDIO_ASSERT (delim);
     IDIO_VERIFY_PARAM_TYPE (string, in);
     IDIO_VERIFY_PARAM_TYPE (string, delim);
 
-    return idio_string_split (in, delim);
+    return idio_split_string (in, delim);
 }
 
-IDIO idio_string_join (IDIO delim, IDIO args)
+IDIO idio_join_string (IDIO delim, IDIO args)
 {
     IDIO_ASSERT (delim);
     IDIO_ASSERT (args);
@@ -893,14 +893,14 @@ IDIO idio_string_join (IDIO delim, IDIO args)
 }
 
 
-IDIO_DEFINE_PRIMITIVE2 ("join", join, (IDIO delim, IDIO args))
+IDIO_DEFINE_PRIMITIVE2 ("join-string", join_string, (IDIO delim, IDIO args))
 {
     IDIO_ASSERT (delim);
     IDIO_ASSERT (args);
     IDIO_VERIFY_PARAM_TYPE (string, delim);
     IDIO_VERIFY_PARAM_TYPE (list, args);
 
-    return idio_string_join (delim, args);
+    return idio_join_string (delim, args);
 }
 
 void idio_init_string ()
@@ -932,8 +932,8 @@ void idio_string_add_primitives ()
     IDIO_ADD_PRIMITIVE (string_ge_p);
     IDIO_ADD_PRIMITIVE (string_gt_p);
 
-    IDIO_ADD_PRIMITIVE (split);
-    IDIO_ADD_PRIMITIVE (join);
+    IDIO_ADD_PRIMITIVE (split_string);
+    IDIO_ADD_PRIMITIVE (join_string);
 }
 
 void idio_final_string ()

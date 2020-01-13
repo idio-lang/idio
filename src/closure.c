@@ -62,6 +62,10 @@ IDIO idio_closure (size_t code, IDIO frame, IDIO env, IDIO sigstr, IDIO docstr)
     IDIO_CLOSURE_CALL_TIME (c).tv_nsec = 0;
 #endif
 
+    idio_properties_create (c);
+    idio_property_set (c, idio_KW_sigstr, sigstr);
+    idio_property_set (c, idio_KW_docstr_raw, docstr);
+
     return c;
 }
 
@@ -126,79 +130,13 @@ return the setter of `p`			\n\
 	idio_error_param_type ("primitive|closure", p, IDIO_C_LOCATION ("setter"));
     }
 
-    IDIO pp = idio_property_get (p, idio_KW_procedure, IDIO_LIST1 (idio_S_false));
-
-    if (idio_S_false == pp) {
-	return idio_S_nil;
-    }
-
-    IDIO setter = idio_keyword_get (pp, idio_KW_setter, IDIO_LIST1 (idio_S_false));
+    IDIO setter = idio_property_get (p, idio_KW_setter, IDIO_LIST1 (idio_S_false));
 
     if (idio_S_false == setter) {
 	idio_error_C ("no setter defined", IDIO_LIST1 (p), IDIO_C_LOCATION ("setter"));
     }
 
     return setter;
-}
-
-IDIO idio_closure_procedure_properties (IDIO p)
-{
-    IDIO_ASSERT (p);
-
-    if (!(idio_isa_primitive (p) ||
-	  idio_isa_closure (p))) {
-	idio_error_param_type ("primitive|closure", p, IDIO_C_LOCATION ("%procedure-properties"));
-    }
-
-    return idio_property_get (p, idio_KW_procedure, IDIO_LIST1 (idio_S_nil));
-}    
-
-IDIO_DEFINE_PRIMITIVE1_DS ("%procedure-properties", procedure_properties, (IDIO p), "p", "\
-return the properties table of `p`		\n\
-						\n\
-:param p: procedure				\n\
-						\n\
-:return: the properties table of `p`		\n\
-")
-{
-    IDIO_ASSERT (p);
-
-    return idio_closure_procedure_properties (p);
-}
-
-IDIO idio_closure_set_procedure_properties (IDIO p, IDIO v)
-{
-    IDIO_ASSERT (p);
-    IDIO_ASSERT (v);
-
-    if (! (idio_S_nil == v ||
-	   idio_isa_hash (v))) {
-	idio_error_param_type ("hash", v, IDIO_C_LOCATION ("%set-procedure-properties"));
-    }
-
-    if (!(idio_isa_primitive (p) ||
-	  idio_isa_closure (p))) {
-	idio_error_param_type ("primitive|closure", p, IDIO_C_LOCATION ("%set-procedure-properties!"));
-    }
-
-    idio_property_set (p, idio_KW_procedure, v);
-
-    return idio_S_unspec;
-}
-
-IDIO_DEFINE_PRIMITIVE2_DS ("%set-procedure-properties!", set_procedure_properties, (IDIO p, IDIO v), "p v", "\
-set the properties table of `p` to `v`		\n\
-						\n\
-:param p: procedure				\n\
-:param v: properties table			\n\
-						\n\
-:return: #<unspec>				\n\
-")
-{
-    IDIO_ASSERT (p);
-    IDIO_ASSERT (v);
-
-    return idio_closure_set_procedure_properties (p, v);
 }
 
 void idio_init_closure ()
@@ -209,25 +147,13 @@ void idio_closure_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (procedurep);
     IDIO_ADD_PRIMITIVE (setter);
-    IDIO_ADD_PRIMITIVE (procedure_properties);
-    IDIO_ADD_PRIMITIVE (set_procedure_properties);
 
     /*
      * NB Can't set setter's setter until it's been added as a
      * primitive
      */
     IDIO setter = idio_module_symbol_value_recurse (idio_S_setter, idio_Idio_module_instance (), idio_S_nil);
-
-    IDIO kwt = idio_closure_procedure_properties (setter);
-
-    if (idio_S_nil == kwt) {
-	/*
-	 * See closure.idio for why  a keyword-table of size 4.
-	 */
-	kwt = idio_hash_make_keyword_table (IDIO_LIST1 (idio_fixnum (4)));
-    }
-
-    idio_closure_set_procedure_properties (setter, kwt);
+    idio_properties_create (setter);
 }
 
 void idio_final_closure ()

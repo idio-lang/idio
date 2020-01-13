@@ -26,14 +26,14 @@
 #define IDIO_KEYWORD_DECL(n)		IDIO idio_KW_ ## n
 #define IDIO_KEYWORD_DEF(iname,cname)	idio_KW_ ## cname = idio_keywords_C_intern (iname);
 
-extern IDIO_KEYWORD_DECL (procedure);
-extern IDIO_KEYWORD_DECL (setter);
-extern IDIO_KEYWORD_DECL (source);
-extern IDIO_KEYWORD_DECL (handle);
-extern IDIO_KEYWORD_DECL (line);
-extern IDIO_KEYWORD_DECL (sigstr);
 extern IDIO_KEYWORD_DECL (docstr);
 extern IDIO_KEYWORD_DECL (docstr_raw);
+extern IDIO_KEYWORD_DECL (handle);
+extern IDIO_KEYWORD_DECL (line);
+extern IDIO_KEYWORD_DECL (name);
+extern IDIO_KEYWORD_DECL (setter);
+extern IDIO_KEYWORD_DECL (sigstr);
+extern IDIO_KEYWORD_DECL (source);
 
 IDIO idio_keyword_C (const char *s_C);
 IDIO idio_tag_C (const char *s_C);

@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -3441,13 +3441,13 @@ test (ell ((1 2)) 3) '(((2 1)) 3)
 test (ell ((1 2) (3 4) (5 6)) 7) '(((2 1) (4 3) (6 5)) 7)
 test (ell ((1 2)) 3 4 5) '(((2 1)) 3 4 5)
 
-define-syntax false \
+define-syntax s9/false \
   (syntax-rules ()
     ((_ x y ...)
        (if x (list y ...) (if #f #f))))
 
-test (false #t 1 2 3) '(1 2 3)
-test (false #f 1 2 3) (void)
+test (s9/false #t 1 2 3) '(1 2 3)
+test (s9/false #f 1 2 3) (void)
 
 define-syntax fluid-let \
   (syntax-rules ()

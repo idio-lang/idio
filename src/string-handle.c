@@ -84,12 +84,12 @@ static IDIO idio_open_string_handle (char *str, size_t blen, int sflags)
     IDIO_HANDLE_FLAGS (sh) |= sflags | IDIO_HANDLE_FLAG_STRING;
 
     /*
-     * max name is "string read/write handle" or 24 chars
+     * max name is "input/output string handle" or 26 chars
      */
-    char *name = idio_alloc (25);
-    sprintf (name, "string ");
+    char *name = idio_alloc (27);
+    name[0] = '\0';
     if (sflags & IDIO_HANDLE_FLAG_READ) {
-	strcat (name, "read");
+	strcat (name, "input");
 	if (sflags & IDIO_HANDLE_FLAG_WRITE) {
 	    strcat (name, "/");
 	} else {
@@ -97,9 +97,9 @@ static IDIO idio_open_string_handle (char *str, size_t blen, int sflags)
 	}
     }
     if (sflags & IDIO_HANDLE_FLAG_WRITE) {
-	strcat (name, "write ");
+	strcat (name, "output ");
     }
-    strcat (name, "handle");
+    strcat (name, "string handle");
 
     IDIO_HANDLE_NAME (sh) = name;
     IDIO_HANDLE_STREAM (sh) = shsp;

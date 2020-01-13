@@ -55,6 +55,10 @@ IDIO idio_primitive (IDIO (*func) (IDIO args), const char *name_C, size_t arity,
     IDIO_PRIMITIVE_CALL_TIME (o).tv_nsec = 0;
 #endif
     
+    idio_properties_create (o);
+    idio_property_set (o, idio_KW_sigstr, idio_string_C (sigstr_C));
+    idio_property_set (o, idio_KW_docstr_raw, idio_string_C (docstr_C));
+
     return o;
 }
 
@@ -84,6 +88,8 @@ IDIO idio_primitive_data (idio_primitive_desc_t *desc)
     IDIO_PRIMITIVE_CALL_TIME (o).tv_nsec = 0;
 #endif
     
+    idio_properties_create (o);
+
     return o;
 }
 

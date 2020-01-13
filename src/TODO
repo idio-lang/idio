@@ -151,6 +151,7 @@ REPL
 Debugger
 	- interactive
 	- backtrace
+	  - also shadow stack for TCO: https://news.ycombinator.com/vote?id=22024805&how=up&goto=item%3Fid%3D22023266
 	- "Portable Scheme Debugger" -- cf. Edebug 
 	  - "Debugging standard ML without reverse engineering" (pay to view?)
 
@@ -582,3 +583,13 @@ x86 compilation
 	- https://www3.nd.edu/~dthain/courses/cse40243/fall2015/intel-intro.html
 	- https://github.com/namin/inc
 
+Scheme Features - closures
+       		- first class functions
+		- lexical scope
+		- TCO
+		- hygenic macros
+		- continuations
+		- from https://news.ycombinator.com/vote?id=22023889&how=up&goto=item%3Fid%3D22023266
+
+eBook sales - https://news.ycombinator.com/item?id=22026089
+	    - https://gameprogrammingpatterns.com/

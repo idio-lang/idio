@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2020 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -23,22 +23,22 @@ string0 := Tests
 ;; most regular string tests are in s9-tests.idio
 
 ;; split
-test (split "abc" "b") '("a" "c")
-test (split "abc" "a") '("bc")
-test (split "abc" "c") '("ab")
+test (split-string "abc" "b") '("a" "c")
+test (split-string "abc" "a") '("bc")
+test (split-string "abc" "c") '("ab")
 
-test (split "abbc" "b") '("a" "c")
-test (split "aabc" "a") '("bc")
-test (split "abcc" "c") '("ab")
+test (split-string "abbc" "b") '("a" "c")
+test (split-string "aabc" "a") '("bc")
+test (split-string "abcc" "c") '("ab")
 
-test (split "abc" "z") '("abc")
-test (split "" "z") '("")
+test (split-string "abc" "z") '("abc")
+test (split-string "" "z") '("")
 
 ;; join
-test (join "b" '("a" "c")) "abc"
-test (join "b" '("a")) "a"
-test (join "" '("a" "c")) "ac"
-test (join "b" #n) ""
+test (join-string "b" '("a" "c")) "abc"
+test (join-string "b" '("a")) "a"
+test (join-string "" '("a" "c")) "ac"
+test (join-string "b" #n) ""
 
 ;; operators
 s := "abc"

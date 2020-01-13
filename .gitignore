@@ -19,6 +19,7 @@ vgcore.*
 *.so
 *.orig
 vm-perf.log
+src/map
 
 bin
 main

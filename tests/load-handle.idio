@@ -1,0 +1,29 @@
+
+expr := "display* \"This is an expr for load-handle\""
+
+ish := open-input-string expr
+
+load-handle ish
+
+bad-expr := "display* \"This is a bad-expr for load-handle: (unterminated string)"
+
+ish := open-input-string bad-expr
+
+display* "NOTICE: raising NON-CONT condition; this will be picked up by load-handle"
+load-handle ish
+
+cont-expr := "(false)"
+
+ish := open-input-string cont-expr
+
+; running the command false will do two things: 1. generate a SIGCHLD
+; 2. generate a ^rt-command-status-error (as "false" returned a
+; non-zero exit status)
+trap ^rt-signal-SIGCHLD (function (cont cond) {
+}) {
+  trap ^rt-command-status-error (function (cont cond) {
+    edisplay* "test load-handle:" cond.message "with" cond.status
+  }) {
+  load-handle ish
+  }
+}

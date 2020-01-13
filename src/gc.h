@@ -997,6 +997,10 @@ typedef struct idio_root_s {
     struct idio_s *object;
 } idio_root_t;
 
+#define IDIO_GC_FLAG_NONE	 0
+#define IDIO_GC_FLAG_REQUEST   (1<<0)
+#define IDIO_GC_FLAG_FINISH    (1<<1)
+
 typedef struct idio_gc_s {
     struct idio_gc_s *next;
     idio_root_t *roots;
@@ -1006,7 +1010,7 @@ typedef struct idio_gc_s {
     IDIO grey;
     unsigned int pause;
     unsigned char verbose;
-    unsigned char request;
+    FLAGS_T flags;		/* generic GC flags */
     struct stats {
 	unsigned long long nfree; /* # on free list */
 	unsigned long long tgets[IDIO_TYPE_MAX];
@@ -1022,6 +1026,8 @@ typedef struct idio_gc_s {
 	struct timeval dur;
     }  stats;
 } idio_gc_t;
+
+#define IDIO_GC_FLAGS(F)	((F)->flags)
 
 /*
   the alignment of a structure field of type TYPE can be determined by

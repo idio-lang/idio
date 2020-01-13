@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -46,7 +46,7 @@ define (%module-handler cont cond) {
 
 define-macro (define-module name & body) {
   #T{
-    with-handler %module-handler {
+    with-condition-handler ^condition %module-handler {
       %set-current-module! (%module-push $name)
       $@body
       %set-current-module! (%module-pop)
@@ -79,7 +79,7 @@ load = {
       if (not cont) {
 	edisplay "module/load "
 	ewrite filename
-	edisplay* ": non-cont-error caught: " cond
+	edisplay* ": non-cont-error caught: " (struct-type-name (struct-instance-type cond)) (and (message-condition? cond) cond.message)
 	edisplay* "module/load: invoking safe continuation"
 	;(idio-thread-state)
 	load-k cond

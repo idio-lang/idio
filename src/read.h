@@ -60,11 +60,6 @@ IDIO idio_read (IDIO handle);
 IDIO idio_read_expr (IDIO handle);
 IDIO idio_read_char (IDIO handle);
 
-IDIO idio_read_source_properties (IDIO p);
-IDIO idio_read_set_source_properties (IDIO p, IDIO v);
-IDIO idio_read_source_property_get (IDIO o, IDIO property, IDIO args);
-void idio_read_set_source_property (IDIO o, IDIO property, IDIO value);
-
 void idio_init_read ();
 void idio_read_add_primitives ();
 void idio_final_read ();

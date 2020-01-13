@@ -147,11 +147,11 @@ load-handle = {
 
     trap ^condition (function (cont cond) {
       if (not cont) {
-        edisplay "load-handle "
+        edisplay "load-handle: trap ^condition: "
         ewrite handle
-        edisplay* ": non-cont-error caught: " cond
+        edisplay* ": non-cont-error caught: " (struct-type-name (struct-instance-type cond)) (and (message-condition? cond) cond.message)
         edisplay* "load-handle: invoking safe continuation"
-	(idio-thread-state)
+	;(idio-thread-state)
         load-handle-k cond
       } {
 	raise cont cond
@@ -175,11 +175,11 @@ load = {
 
     trap ^condition (function (cont cond) {
       if (not cont) {
-	edisplay "load "
+	edisplay "load: trap ^condition: "
 	ewrite filename
-	edisplay* ": non-cont-error caught: " cond
+	edisplay* ": non-cont-error caught: " (struct-type-name (struct-instance-type cond)) (and (message-condition? cond) cond.message)
 	edisplay* "load: invoking safe continuation"
-	(idio-thread-state)
+	;(idio-thread-state)
 	load-k cond
       } {
 	raise cont cond
