@@ -1090,7 +1090,12 @@ IDIO idio_load_filehandle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*
      */
     idio_remember_file_handle (fh);
 
+    IDIO eh = idio_thread_current_error_handle ();
     for (;;) {
+	IDIO cm = idio_thread_current_module ();
+	idio_display (IDIO_MODULE_NAME (cm), eh);
+	idio_display_C ("> ", eh);
+	
 	IDIO e = (*reader) (fh);
 	if (idio_S_eof == e) {
 	    break;
@@ -1099,7 +1104,7 @@ IDIO idio_load_filehandle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*
 	IDIO m = (*evaluator) (e, cs);
 	idio_codegen (thr, m, cs);
 	IDIO r = idio_vm_run (thr);
-	idio_debug (" => %s\n", r);
+	idio_debug ("%s\n", r);
     }
 
     IDIO_HANDLE_M_CLOSE (fh) (fh);

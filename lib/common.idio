@@ -19,96 +19,6 @@
 ;; common.idio
 ;;
 
-define-macro (help x) {
-  #T{
-    cond ((procedure? $x) {
-      props := %procedure-properties $x
-      sigstr := hash-ref props :sigstr
-      docstr := hash-ref props :docstr-raw
-      display* "procedure:" '$x $sigstr "\n"
-      display docstr
-      #t
-    }) ((symbol? $x) {
-      module := find-module $x #f
-      if module {
-        display* "module:" '$x "\n"
-        display* "imports" (module-imports module)
-        exports := (module-exports module)
-        display* "exports" exports
-        exports_loop :+ function (exports) {
-          if (null? exports) #t \
-	     {
-	       export := ph exports
-	       display* " " export
-	       exports_loop (pt exports)
-	     }
-        }
-	;exports_loop exports
-      }
-      #t
-    }) (else {
-      edisplay* "help: " '$x ": not a function"
-      #f
-    })
-  }
-}
-
-define (autodoc) {
-  define (display_indented str prefix) {
-    loop :+ function (lines prefix) {
-      if (null? lines) #t {
-        display prefix
-        display (ph lines)
-	display "\n"
-	loop (pt lines) prefix
-      }
-    }
-
-    if (string? str) {
-      loop (split str "\n") prefix
-    }
-  }
-
-  define (print_docstr mod sym) {
-    val := symbol-value sym mod
-    cond ((procedure? val) {
-      props := %procedure-properties val
-      sigstr := hash-ref props :sigstr
-      docstr := hash-ref props :docstr-raw
-      display* ".. idio:function::" sym sigstr "\n"
-      display_indented docstr "   "
-      display "\n"
-    }) ((symbol? val) {
-      module := find-module val #f
-      if module {
-        display* "module:" sym "\n"
-      } {
-        display* "symbol:" sym "\n"
-      }
-    }) (else {
-      edisplay* "help: " mod sym ": not a function"
-      #f
-    })
-  }
-
-  symbol_loop :+ function (module symbols) {
-    if (null? symbols) #t {
-       print_docstr module (ph symbols)
-       symbol_loop module (pt symbols)
-    }
-  }
-
-  module_loop :+ function (modules) {
-    if (null? modules) #t {
-       module := ph modules
-       symbol_loop module (module-symbols (find-module module))
-       module_loop (pt modules)
-    }
-  }
-
-  module_loop (all-modules)
-}
-
 define (atom? x) "predicate to test if object is an atom
 
 :param x: object to test
@@ -147,10 +57,7 @@ load-handle = {
 
     trap ^condition (function (cont cond) {
       if (not cont) {
-        edisplay "load-handle: trap ^condition: "
-        ewrite handle
-        edisplay* ": non-cont-error caught: " (struct-type-name (struct-instance-type cond)) (and (message-condition? cond) cond.message)
-        edisplay* "load-handle: invoking safe continuation"
+	condition-report "load-handle" cont cond (current-error-handle)
 	;(idio-thread-state)
         load-handle-k cond
       } {
@@ -175,10 +82,7 @@ load = {
 
     trap ^condition (function (cont cond) {
       if (not cont) {
-	edisplay "load: trap ^condition: "
-	ewrite filename
-	edisplay* ": non-cont-error caught: " (struct-type-name (struct-instance-type cond)) (and (message-condition? cond) cond.message)
-	edisplay* "load: invoking safe continuation"
+	condition-report "load" cont cond (current-error-handle)
 	;(idio-thread-state)
 	load-k cond
       } {

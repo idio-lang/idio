@@ -430,10 +430,21 @@ IDIO_DEFINE_PRIMITIVE2 ("default-condition-handler", default_condition_handler, 
 	IDIO eh = idio_thread_current_error_handle ();
 	int printed = 0;
 
-	idio_display_C ("\n default-condition-handler: ", eh);
+	idio_display_C ("\ndefault-condition-handler: ", eh);
+	idio_display (IDIO_STRUCT_TYPE_NAME (sit), eh);
+	idio_display_C (": ", eh);
+
 	IDIO m = idio_array_get_index (sif, IDIO_SI_IDIO_ERROR_TYPE_MESSAGE);
 	if (idio_S_nil != m) {
 	    idio_display (m, eh);
+	    printed = 1;
+	}
+	IDIO d = idio_array_get_index (sif, IDIO_SI_IDIO_ERROR_TYPE_DETAIL);
+	if (idio_S_nil != d) {
+	    if (printed) {
+		idio_display_C (": ", eh);
+	    }
+	    idio_display (d, eh);
 	    printed = 1;
 	}
 	IDIO l = idio_array_get_index (sif, IDIO_SI_IDIO_ERROR_TYPE_LOCATION);
@@ -450,13 +461,6 @@ IDIO_DEFINE_PRIMITIVE2 ("default-condition-handler", default_condition_handler, 
 		idio_display_C (":", eh);
 		idio_display (idio_array_get_index (sif, IDIO_SI_READ_ERROR_TYPE_POSITION), eh);
 	    }
-	}
-	IDIO d = idio_array_get_index (sif, IDIO_SI_IDIO_ERROR_TYPE_DETAIL);
-	if (idio_S_nil != d) {
-	    if (printed) {
-		idio_display_C (": ", eh);
-	    }
-	    idio_display (d, eh);
 	}
 	idio_display_C ("\n", eh);
     } else {
@@ -520,7 +524,10 @@ IDIO_DEFINE_PRIMITIVE2 ("restart-condition-handler", restart_condition_handler, 
 	    IDIO eh = idio_thread_current_error_handle ();
 	    int printed = 0;
 
-	    idio_display_C ("\nrestart-condition-handler:\n^error: ", eh);
+	    idio_display_C ("\nrestart-condition-handler: ", eh);
+	    idio_display (IDIO_STRUCT_TYPE_NAME (sit), eh);
+	    idio_display_C (": ", eh);
+
 	    IDIO m = idio_array_get_index (sif, IDIO_SI_IDIO_ERROR_TYPE_MESSAGE);
 	    if (idio_S_nil != m) {
 		idio_display (m, eh);
@@ -581,9 +588,19 @@ IDIO_DEFINE_PRIMITIVE2 ("reset-condition-handler", reset_condition_handler, (IDI
     IDIO_ASSERT (cont);
     IDIO_ASSERT (cond);
 
+    IDIO eh = idio_thread_current_error_handle ();
+    idio_display_C ("\nreset-condition-handler: ", eh);
+
+    IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (cond);
+    idio_display (IDIO_STRUCT_TYPE_NAME (sit), eh);
+    idio_display_C (": ", eh);
+    idio_display (cont, eh);
+    idio_display_C (" ", eh);
+    idio_display (cond, eh);
+    idio_display_C ("\n", eh);
+
     IDIO thr = idio_thread_current_thread ();
 
-    idio_vm_debug (thr, "reset-condition-handler", 0);
     idio_vm_reset_thread (thr, 1);
     
     /*

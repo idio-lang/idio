@@ -660,10 +660,10 @@ static void idio_vm_restore_state (IDIO thr)
     IDIO_THREAD_ENV (thr) = IDIO_THREAD_STACK_POP ();
     if (idio_S_nil != IDIO_THREAD_ENV (thr)) {
 	if (! idio_isa_module (IDIO_THREAD_ENV (thr))) {
-	    idio_debug ("\n\n****\nyikes: env = %s ?? -- not a module\n", IDIO_THREAD_ENV (thr));
-	    IDIO_THREAD_STACK_PUSH (IDIO_THREAD_ENV (thr));
+	    idio_debug ("\n\n****\nvm-restore-state: env = %s ?? -- not a module\n", IDIO_THREAD_ENV (thr));
+	    idio_vm_debug (thr, "vm-restore-state", 0);
 	    idio_vm_reset_thread (thr, 1);
-	    /* IDIO_C_ASSERT (0); */
+	    return;
 	}
 	IDIO_TYPE_ASSERT (module, IDIO_THREAD_ENV (thr));
     }
@@ -3606,6 +3606,13 @@ IDIO idio_vm_run (IDIO thr)
     IDIO_ASSERT (thr);
     IDIO_TYPE_ASSERT (thread, thr);
 
+    /*
+     * Save a continuation in case things get ropey and we have to
+     * bail out.
+     */
+    IDIO k0 = idio_continuation (thr);
+    idio_gc_protect (k0);
+    
     idio_ai_t ss0 = idio_array_size (IDIO_THREAD_STACK (thr));
 
     /*
@@ -3847,44 +3854,20 @@ IDIO idio_vm_run (IDIO thr)
 
     if (ss != ss0) {
 	fprintf (stderr, "vm-run: THREAD FAIL: SP %td != SP0 %td\n", ss - 1, ss0 - 1);
-	    idio_vm_thread_state ();
 	if (ss < ss0) {
 	    fprintf (stderr, "\n\nNOTICE: current stack smaller than when we started\n");
-	    idio_vm_thread_state ();
 	}
-	else {
-	    while (ss > ss0) {
-		IDIO v = IDIO_THREAD_STACK_POP ();
-#ifdef IDIO_DEBUG
-		fprintf (stderr, "popping %3td: ", ss - 1);
-		if (idio_isa_frame (v)) {
-		    fprintf (stderr, "%20s ", "frame");
-		    idio_debug ("%s\n", IDIO_FRAME_ARGS (v));
-		} else if (idio_isa_closure (v)) {
-		    IDIO name = idio_property_get (v, idio_KW_name, IDIO_LIST1 (idio_S_nil));
-		    if (idio_S_unspec != name) {
-			idio_debug ("%20s ", name);
-		    } else {
-			fprintf (stderr, "              -anon- ");
-		    }
-		    idio_debug ("%s\n", v);
-		} else {
-		    fprintf (stderr, "%20s ", "");
-		    idio_debug ("%s\n", v);
-		}
-#endif
-		ss--;
-	    }
-	    /* bail = 1; */
-	}
+	bail = 1; 
     }
 
     if (bail) {
-	fprintf (stderr, "vm-run: thread bailed out\n");
-
-	idio_vm_debug (thr, "idio_vm_run", 0);
-	sleep (0);
+	fprintf (stderr, "vm-run/bail: restoring k0\n");
+	idio_vm_restore_continuation (k0, idio_S_unspec);
+	idio_vm_debug (thr, "vm-run/bail", 1);
+	idio_gc_collect ();
     }
+
+    idio_gc_expose (k0);
 
     return r;
 }
@@ -4051,8 +4034,8 @@ void idio_vm_reset_thread (IDIO thr, int verbose)
     IDIO_ASSERT (thr);
     IDIO_TYPE_ASSERT (thread, thr);
 
-    if (verbose) {
-	fprintf (stderr, "\nTHREAD UNWIND\n");
+    if (0 && verbose) {
+	fprintf (stderr, "\nvm-reset-thread\n");
 
 	IDIO stack = IDIO_THREAD_STACK (thr);
 	IDIO frame = IDIO_THREAD_FRAME (thr);
@@ -4086,7 +4069,6 @@ void idio_vm_reset_thread (IDIO thr, int verbose)
      * good value, the value it had when it started.
      */
     IDIO_THREAD_PC (thr) = idio_vm_FINISH_pc;
-    IDIO_C_ASSERT (0);
 }
 
 void idio_init_vm_values ()

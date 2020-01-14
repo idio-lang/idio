@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -174,7 +174,7 @@ trap ^i/o-read-error (function (cont cond) {
     handle := i/o-error-handle cond
 
     'caught-a-read-error
-  } (error "read handle: unexpected non-continuable error" cond)
+  } (error 'condition-test "read handle: unexpected non-continuable error" cond)
 }) {
   ;; display* "read handle condition"
 
@@ -192,7 +192,7 @@ trap ^i/o-write-error (function (cont cond) {
     handle := i/o-error-handle cond
 
     'caught-a-write-error
-  } (error "write handle: unexpected non-continuable error" cond)
+  } (error 'condition-test "write handle: unexpected non-continuable error" cond)
 }) {
   ;; display* "write handle condition"
 
@@ -212,7 +212,7 @@ trap ^i/o-closed-error (function (cont cond) {
     handle := i/o-error-handle cond
 
     #t
-  } (error "closed handle: unexpected non-continuable error" cond)
+  } (error 'condition-test "closed handle: unexpected non-continuable error" cond)
 }) {
   ;; display* "closed handle condition"
   touch test_filename
@@ -226,7 +226,7 @@ trap ^i/o-closed-error (function (cont cond) {
 ;; discovered in s9-test.idio after adding the SRFI-36 conditions:
 trap ^i/o-closed-error (function (cont cond) {
   test (i/o-closed-error? cond) #t
-  if cont #t (error "closed handle: unexpected non-continuable error" cond)
+  if cont #t (error 'condition-test "closed handle: unexpected non-continuable error" cond)
 }) {
   ;; display* "closed handle condition"
   test {
@@ -263,7 +263,7 @@ trap ^i/o-filename-error (function (cont cond) {
     ;; test_filename on its own *is* safe but make sure it's writable
     chmod +w test_filename
     open-output-file test_filename
-  } (error "generic filename: unexpected non-continuable error" cond)
+  } (error 'condition-test "generic filename: unexpected non-continuable error" cond)
 }) {
   ;; display* "generic filename condition"
 
@@ -297,7 +297,7 @@ trap ^i/o-malformed-filename-error (function (cont cond) {
 
     ;; use a safe file instead of filename
     open-output-file test_filename
-  } (error "malformed filename: unexpected non-continuable error" cond)
+  } (error 'condition-test "malformed filename: unexpected non-continuable error" cond)
 }) {
   ;; display* "opening malformed filename"
   bad_filename := make-string ((C/->integer PATH_MAX) + 100) #\a
@@ -319,7 +319,7 @@ trap ^i/o-file-protection-error (function (cont cond) {
     filename := condition-ref cond 'filename
     chmod +r filename
     open-input-file filename
-  } (error "0-perms: unexpected non-continuable error" cond)
+  } (error 'condition-test "0-perms: unexpected non-continuable error" cond)
 }) {
   ;; display* "opening 0-perms file"
   touch test_filename
@@ -350,7 +350,7 @@ if (equal? (struct-utsname-sysname Idio/uname) "SunOS") {
 
       ;; our "repair" is simply to open the file anyway
       open-output-file filename
-    } (error "already exists: unexpected non-continuable error" cond)
+    } (error 'condition-test "already exists: unexpected non-continuable error" cond)
   }) {
     ;; display* "opening existing file"
     touch test_filename
@@ -374,7 +374,7 @@ trap ^i/o-no-such-file-error (function (cont cond) {
     close-handle ofh
 
     open-input-file filename
-  } (error "non-existent: unexpected non-continuable error" cond)
+  } (error 'condition-test "non-existent: unexpected non-continuable error" cond)
 }) {
   ;; display* "opening non-existent file"
   if (file-exists? test_filename) (delete-file test_filename)

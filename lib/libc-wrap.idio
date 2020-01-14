@@ -30,6 +30,7 @@ export (make-tmp-file-handle
 ;; define structure accessors
 export-struct-accessors-only struct-sigaction		sa-handler sa-sigaction sa-mask sa-flags
 export-struct-accessors-only struct-utsname		sysname nodename release version machine
+export-struct-accessors-only struct-rlimit		rlim_cur rlim_max
 
 ;; stdin/stdout
 ;;
@@ -225,3 +226,47 @@ define (stderr-fileno) {
 }
 
 
+;; define a more convenient getrlimit which can use a :nickname
+;; keyword, eg. :NOFILE for libc/RLIMIT_NOFILE
+
+getrlimit2 := {
+  orig-getrlimit := getrlimit
+
+  ;; each OS has a different set of (valid) RLIMIT_* macros so our set
+  ;; of :nickname tests has to be dynamic
+  cond-clauses := map (function (np) {
+    ln := pt np
+    n := pht (split-string ln "_")
+    k := make-keyword n ;(string-append ":" n)
+    s := string->symbol (string-append "libc/RLIMIT_" n)
+
+    #T{ ((eq? resk $k) {
+      res = $s
+      edisplay "inline res" $s
+    }) }
+  }) (libc/rlimit-names)
+
+  ;; for-each (function (c) {
+  ;;   edisplay* c
+  ;; }) cond-clauses
+
+  #T{  #T{
+
+    resk := :STATE
+    cond $@cond-clauses (else (error 'getrlimit "unknown resource" resk))
+  } }
+
+  function (resk) {
+    res := #n
+    #T{
+      cond $@cond-clauses (else (error 'getrlimit "unknown resource" resk))
+    }
+
+    if (null? res) (error 'getrlimit "bad resource" res "from" resk)
+
+    edisplay* "res" res
+
+    rlim := orig-getrlimit res
+    rlim.rlim_cur
+  }
+}

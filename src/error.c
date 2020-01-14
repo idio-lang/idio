@@ -207,21 +207,16 @@ void idio_error_C (char *msg, IDIO args, IDIO loc)
     idio_error (idio_S_internal, idio_string_C (msg), args, loc);
 }
 
-IDIO_DEFINE_PRIMITIVE1V ("error", error, (IDIO msg, IDIO args))
+IDIO_DEFINE_PRIMITIVE2V ("error", error, (IDIO loc, IDIO msg, IDIO args))
 {
+    IDIO_ASSERT (loc);
     IDIO_ASSERT (msg);
     IDIO_ASSERT (args);
+    IDIO_VERIFY_PARAM_TYPE (symbol, loc);
+    IDIO_VERIFY_PARAM_TYPE (string, loc);
     IDIO_VERIFY_PARAM_TYPE (list, args);
 
-    IDIO who = idio_S_user;
-
-    if (idio_isa_symbol (msg)) {
-	who = msg;
-	msg = idio_list_head (args);
-	args = idio_list_tail (args);
-    }
-
-    idio_error (idio_S_user_code, msg, args, who);
+    idio_error (idio_S_user_code, msg, args, loc);
 
     /* not reached */
     return idio_S_unspec;

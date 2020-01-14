@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -41,7 +41,7 @@ trap ^rt-computed-variable-no-accessor-error (function (cont cond) {
     name := condition-ref cond 'name
 
     'no-set-accessor
-  } (error "no computed set accessor: unexpected non-continuable error" cond)
+  } (error 'computed-test "no computed set accessor: unexpected non-continuable error" cond)
 }) {
   ;; display* "using set-less computed variable"
   test (cvar-g = 3) 'no-set-accessor
@@ -64,7 +64,7 @@ trap ^rt-computed-variable-no-accessor-error (function (cont cond) {
     name := condition-ref cond 'name
 
     'no-get-accessor
-  } (error "no computed get accessor: unexpected non-continuable error" cond)
+  } (error 'computed-test "no computed get accessor: unexpected non-continuable error" cond)
 }) {
   ;; display* "using get-less computed variable"
   test cvar-s 'no-get-accessor

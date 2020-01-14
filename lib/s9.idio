@@ -158,7 +158,7 @@ define-macro (letrec bindings expr & exprs) {
 define-macro (if+ & clauses) {
   loop :+ function (c) {
     cond ((null? c) '#n) \
-	 ((not (pair? c)) (error "bad syntax")) \
+	 ((not (pair? c)) (error 'if+ "bad syntax")) \
 	 ((null? (pt c)) {
 	   list 'else (ph c)
 	 }) (else {
@@ -355,7 +355,7 @@ fold-left := {
     }
 
     if (null? a*) {
-      error "fold-left: too few arguments"
+      error 'fold-left "too few arguments"
     } {
       fold a* b
     }
@@ -377,7 +377,7 @@ fold-right := {
     }
 
     if (null? a*) {
-      error "fold-right: too few arguments"
+      error 'fold-right "too few arguments"
     } {
       foldr (map-ph reverse a*) b
     }
@@ -415,7 +415,7 @@ define (s9/length x) {
 
 define (list-tail x n) {
   if+ (zero? n) x \
-      (null? x) (error "list-tail: index out of range" n) \
+      (null? x) (error 'list-tail "index out of range" n) \
       else (list-tail (pt x) (- n 1))
 }
 
@@ -439,7 +439,7 @@ map := {
     }
 
     if (null? a*) {
-      error "map: too few arguments"
+      error 'map "too few arguments"
     } {
       map2 a* '#n
     }
@@ -448,7 +448,7 @@ map := {
 
 define (for-each f & a*) {
   if (null? a*) {
-    error "for-each: too few arguments"
+    error 'for-each "too few arguments"
   } {
     apply map f a*
   }
@@ -782,7 +782,7 @@ define (sqrt square) {
   }
 
   if (negative? square) {
-    error "sqrt: negative argument" square
+    error 'sqrt "negative argument" square
   } {
     rt := sqrt2 square 0
     if (== square (* rt rt)) {
@@ -883,13 +883,13 @@ define number->string {
     get-radix :+ function () {
       if+ (null? radix) 10 \
 	  (le 2 (ph radix) 36) (ph radix) \
-	  else (error "number->string: invalid radix"
+	  else (error 'number->string "invalid radix"
                                 (ph radix))
     }
 
     r := (get-radix)
     if+ (not (or (integer? n) (== 10 r))) \
-          (error "number->string: real number needs a radix of 10" n) \
+          (error 'number->string "real number needs a radix of 10" n) \
 	(integer? n) (conv-int (inexact->exact n) r) \
 	else (conv-real n)
   }
@@ -978,7 +978,7 @@ string->number := {
     }
     radix-ten? :+ function (rdx) {
       if (not (== 10 rdx)) {
-        if (null? radix) #f (error "string->number: real number needs a radix of 10")
+        if (null? radix) #f (error 'string->number "real number needs a radix of 10")
       } #t
     }
     mantissa-digits? :+ function (x) {
@@ -1019,7 +1019,7 @@ string->number := {
     get-radix :+ function () {
       if+ (null? radix) 10 \
 	  (le 2 (ph radix) 36) (ph radix) \
-	  else (error "string->number: invalid radix" (ph radix))
+	  else (error 'string->number "invalid radix" (ph radix))
     }
 
     set! inexact #f
@@ -1133,7 +1133,7 @@ define-macro (s9/quasiquote) \
 	  (and (eq? 'unquote-splicing (ph x))
 	       (pair? (pt x))) (list 'unquote-splicing (pht x)) \
 	  (and (eq? 'quasiquote (ph x))
-	       (pair? (pt x))) (error "quasiquote: may not be nested") \
+	       (pair? (pt x))) (error 'quasiquote "may not be nested") \
 	  else (qq-pair (qq-expand (ph x))
 			(qq-expand (pt x)))
     }
@@ -1151,7 +1151,7 @@ define (check-bindings b who) {
 	  (not (pair? (ph b)))
 	  (not (symbol? (phh b)))
 	  (not (pair? (pth b)))
-	  (not (null? (ptth b)))) (error (string-append who ": invalid syntax") b) \
+	  (not (null? (ptth b)))) (error 'check-bindings (string-append who ": invalid syntax") b) \
       else (check-bindings (pt b) who)
 }
 
@@ -1174,7 +1174,7 @@ define-macro %ext-let {
 
     if (symbol? a1) {
       if (null? a3) {
-        error "named let: missing body" #T{ let $a1 $a2 $@a3 }
+        error 'named-let "missing body" #T{ let $a1 $a2 $@a3 }
       } {
 	 check-bindings a2 "let"
          va := split a2 '#n '#n
@@ -1261,7 +1261,7 @@ define-macro (case key & clauses) {
     if+ (null? c*) '#n \
 	(or (not (pair? c*))
 	    (not (pair? (ph c*)))
-	    (not (pair? (pth c*)))) (error "case: invalid syntax" c*) \
+	    (not (pair? (pth c*)))) (error 'case "invalid syntax" c*) \
 	(null? (pt c*)) {
           if (eq? 'else (phh c*)) {
 	    #T{ ((else $@(pth c*))) }
@@ -1290,7 +1290,7 @@ define-macro (do var-clauses test & body) {
 	(or (not (pair? clauses))
 	    (not (pair? (ph clauses)))
 	    (not (symbol? (phh clauses)))
-	    (not (pair? (pth clauses)))) (error "do: invalid syntax" clauses) \
+	    (not (pair? (pth clauses)))) (error 'do "invalid syntax" clauses) \
 	else (split (pt clauses)
 		    (pair (phh clauses) vars)
 		    (pair (phth clauses) inits)
@@ -1301,7 +1301,7 @@ define-macro (do var-clauses test & body) {
 
   if (or (not (pair? test))
 	 (not (list? (pt test)))) {
-    error "do: invalid syntax" test
+    error 'do "invalid syntax" test
   } {
     loop := (gensym)
     var+init+step := split var-clauses '#n '#n '#n
@@ -1494,7 +1494,7 @@ define (syntax-expand bound tmpl env) {
 	  eenv := assq '... env
 
 	  if (not eenv) {
-	    error "syntax-rules: template without matching ... in pattern" tmpl
+	    error 'syntax-rules "template without matching ... in pattern" tmpl
           } {
 	    set-ph! eenv '(#f)
             map (function (x)
@@ -1659,7 +1659,7 @@ define (load-from-library file) {
     if full-path {
       do-load full-path
     } {
-      error "cannot locate file" file
+      error 'load-from-library "cannot locate file" file
     }
   }
 }

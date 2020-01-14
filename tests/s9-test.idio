@@ -3134,7 +3134,7 @@ if (file-exists? testfile) (delete-file testfile)
 trap ^i/o-closed-error (function (cont cond) {
   if cont {
     #t
-  } (error "expecting a continuable error" cond)
+  } (error 's9-test "expecting a continuable error" cond)
 }) {
   test {
     call-with-output-file testfile (function (out) {
@@ -3403,9 +3403,9 @@ test (iff #t then 'foo) 'foo
 test (iff #f then 'foo) #f
 test (iff #t then 'foo else 'bar) 'foo
 test (iff #f then 'foo else 'bar) 'bar
-test (iff #f then (error "error")) #f
-test (iff #t then 'foo else (error "error")) 'foo
-test (iff #f then (error "error") else 'bar) 'bar
+test (iff #f then (error 's9-error "error")) #f
+test (iff #t then 'foo else (error 's9-error "error")) 'foo
+test (iff #f then (error 's9-error "error") else 'bar) 'bar
 
 define-syntax foo-syntax \
   (syntax-rules ()

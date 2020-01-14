@@ -1,0 +1,131 @@
+;;
+;; Copyright (c) 2020 Ian Fitchet <idf(at)idio-lang.org>
+;;
+;; Licensed under the Apache License, Version 2.0 (the "License"); you
+;; may not use this file except in compliance with the License.  You
+;; may obtain a copy of the License at
+;;
+;;     http://www.apache.org/licenses/LICENSE-2.0
+;;
+;; Unless required by applicable law or agreed to in writing, software
+;; distributed under the License is distributed on an "AS IS" BASIS,
+;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+;; See the License for the specific language governing permissions and
+;; limitations under the License.
+;;
+;;
+
+;;
+;; doc.idio
+;;
+
+;; after SRFI-95, please
+
+define-macro (help x) {
+  #T{
+    cond ((procedure? $x) {
+      sigstr := %property $x :sigstr #n
+      docstr := %property $x :docstr-raw #n
+      display* "procedure:" '$x $sigstr "\n"
+      display docstr
+      #t
+    }) ((symbol? $x) {
+      module := find-module $x #f
+      if module {
+        display* "module:" '$x "\n"
+        display* "imports" (module-imports module)
+        exports := (module-exports module)
+        display* "exports" exports
+        exports_loop :+ function (exports) {
+          if (null? exports) #t \
+	     {
+	       export := ph exports
+	       display* " " export
+	       exports_loop (pt exports)
+	     }
+        }
+	;exports_loop exports
+      }
+      #t
+    }) (else {
+      edisplay* "help: " '$x ": not a procedure/symbol"
+      #f
+    })
+  }
+}
+
+define (autodoc) {
+  define (display_indented str prefix) {
+    loop :+ function (lines prefix) {
+      if (null? lines) #t {
+        display prefix
+        display (ph lines)
+	display "\n"
+	loop (pt lines) prefix
+      }
+    }
+
+    if (string? str) {
+      loop (split-string str "\n") prefix
+    }
+  }
+
+  define (print-docstr mod sym) {
+    val := symbol-value sym mod
+    cond ((procedure? val) {
+      sigstr := %property val :sigstr #n
+      docstr := %property val :docstr-raw #n
+      display* ".. idio:function::" sym (if (not (null? sigstr)) sigstr "") "\n"
+      if (not (null? docstr)) {
+        display_indented docstr "   "
+      }
+      display "\n"
+    }) ((symbol? val) {
+      module := find-module val #f
+      if module {
+        display* "module:" sym
+      } {
+        display* "symbol:" sym
+      }
+    }) (else {
+      ;edisplay* "autodoc/print-docstr: " mod sym ": not a procedure/symbol"
+      #f
+    })
+  }
+
+  symbol_loop :+ function (module symbols) {
+    if (null? symbols) #t {
+       print-docstr module (ph symbols)
+       symbol_loop module (pt symbols)
+    }
+  }
+
+  module_loop :+ function (modules) {
+    if (null? modules) #t {
+      module := ph modules
+
+      ms := module-symbols (find-module module)
+      ss := make-hash #n #n ((length ms) * 2)
+      map (function (sym) {
+        ss.sym = symbol->string sym
+      }) ms
+      key-ss := function (sym) {
+        ss.sym
+      }
+      symbol_loop module (sort ms string<? key-ss)
+      module_loop (pt modules)
+    }
+  }
+
+  mn := (all-modules)
+  ms := make-hash #n #n ((length mn) * 2)
+  map (function (sym) {
+    ms.sym = symbol->string sym
+  }) mn
+  key-ms := function (sym){
+    ms.sym
+  }
+
+  module_loop (sort mn string<? key-ms)
+}
+

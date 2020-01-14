@@ -198,3 +198,89 @@ define-condition-type-accessors-only ^rt-fixnum-conversion-error	^runtime-error	
 
 define-condition-type-accessors-only ^rt-signal				^error				rt-signal? \
 	(signal rt-signal-signal)
+
+;; have a common method for reporting on a condition
+define (condition-report prefix cont cond & args) "print a report on `condition`
+
+:param prefix: a distinguishing string
+:param cont: is the condition continuable
+:param cond: the condition
+:param args: print to optional handle
+
+:return: unspecified
+" {
+  oh := current-output-handle
+  if (and (not (null? args))
+	  (pair? args)) {
+    oh = ph args
+  }
+
+  define (dh* h & x*) {
+    p :+ function (x* first) {
+      if+ (not (null? x*)) {
+        if (not first) (write-char #\space h)
+        display (ph x*) h
+        p (pt x*) #f
+      }
+    }
+
+    p x* #t
+  }
+
+  dh* oh prefix ": "
+  if (not cont) {
+    display "non-cont " oh
+  }
+  dh* oh (struct-type-name (struct-instance-type cond)) ": "
+
+  if (struct-type-isa (struct-instance-type cond) ^idio-error) {
+    dh* oh cond.message ";" cond.detail ";" cond.location
+  }
+
+  cond ((struct-type-isa (struct-instance-type cond) ^i/o-handle-error) {
+          dh* oh "handle" cond.handle
+        }) \
+       ((struct-type-isa (struct-instance-type cond) ^i/o-filename-error) {
+          dh* oh "filename" cond.filename
+        }) \
+       ((struct-type-isa (struct-instance-type cond) ^read-error) {
+          dh* oh "line" cond.line "pos" cond.position
+        }) \
+       ((struct-type-isa (struct-instance-type cond) ^system-error) {
+          dh* oh "errno" cond.errno
+        }) \
+       ((struct-type-isa (struct-instance-type cond) ^st-variable-error) {
+          dh* oh "variable" cond.variable
+        }) \
+       ((struct-type-isa (struct-instance-type cond) ^rt-variable-error) {
+          dh* oh "variable" cond.variable
+        }) \
+       ((struct-type-isa (struct-instance-type cond) ^rt-module-error) {
+          dh* oh "module" cond.module
+        }) \
+       ((struct-type-isa (struct-instance-type cond) ^rt-module-symbol-unbound-error) {
+          dh* oh "symbol" cond.symbol
+        }) \
+       ((struct-type-isa (struct-instance-type cond) ^rt-glob-error) {
+          dh* oh "pattern" cond.pattern
+        }) \
+       ((struct-type-isa (struct-instance-type cond) ^rt-command-status-error) {
+          dh* oh "status" cond.status
+        }) \
+       ((struct-type-isa (struct-instance-type cond) ^rt-array-bounds-error) {
+          dh* oh "index" cond.index
+        }) \
+       ((struct-type-isa (struct-instance-type cond) ^rt-hash-key-not-found) {
+          dh* oh "key" cond.key
+        }) \
+       ((struct-type-isa (struct-instance-type cond) ^rt-bignum-conversion-error) {
+          dh* oh "bignum" cond.bignum
+        }) \
+       ((struct-type-isa (struct-instance-type cond) ^rt-fixnum-conversion-error) {
+          dh* oh "fixnum" cond.fixnum
+        }) \
+       ((struct-type-isa (struct-instance-type cond) ^rt-signal) {
+          dh* oh "signal" (signal-name cond.signum)
+        })
+  display "\n" oh
+}

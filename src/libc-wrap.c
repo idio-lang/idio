@@ -26,8 +26,10 @@ IDIO idio_libc_wrap_module = idio_S_nil;
 IDIO idio_vm_signal_handler_conditions;
 char **idio_libc_signal_names = NULL;
 char **idio_libc_errno_names = NULL;
+char **idio_libc_rlimit_names = NULL;
 static IDIO idio_libc_struct_sigaction = NULL;
 static IDIO idio_libc_struct_utsname = NULL;
+static IDIO idio_libc_struct_rlimit = NULL;
 IDIO idio_libc_struct_stat = NULL;
 
 /*
@@ -43,6 +45,9 @@ IDIO idio_libc_struct_stat = NULL;
 #define IDIO_STRUCT_UTSNAME_RELEASE		2
 #define IDIO_STRUCT_UTSNAME_VERSION		3
 #define IDIO_STRUCT_UTSNAME_MACHINE		4
+
+#define IDIO_STRUCT_RLIMIT_RLIM_CUR		0
+#define IDIO_STRUCT_RLIMIT_RLIM_MAX		1
 
 IDIO idio_libc_export_symbol_value (IDIO symbol, IDIO value)
 {
@@ -2569,6 +2574,248 @@ IDIO_DEFINE_PRIMITIVE0 ("errno/get", libc_errno_get, (void))
     return idio_C_int (errno);
 }
 
+/*
+ * How many rlimits are there?
+ *
+ * RLIMIT_NLIMITS
+ */
+
+#define IDIO_LIBC_FRLIMIT 0
+#define IDIO_LIBC_NRLIMIT RLIMIT_NLIMITS
+
+/*
+ * How many chars in RLIMIT_-somename- ?
+ *
+ * Empirical study suggests RLIMIT_SIGPENDING is the longest
+ * RLIMIT_-name at 17 chars.
+ */
+#define IDIO_LIBC_RLIMITNAMELEN 20
+
+static void idio_libc_set_rlimit_names ()
+{
+    idio_libc_rlimit_names = idio_alloc ((IDIO_LIBC_NRLIMIT + 1) * sizeof (char *));
+
+    int i;
+    for (i = IDIO_LIBC_FRLIMIT; i < IDIO_LIBC_NRLIMIT; i++) {
+	idio_libc_rlimit_names[i] = idio_alloc (IDIO_LIBC_RLIMITNAMELEN);
+	*(idio_libc_rlimit_names[i]) = '\0';
+    }
+    idio_libc_rlimit_names[i] = NULL;
+
+    IDIO rlimit_sym;
+
+    /* Linux, Solaris */
+#if defined (RLIMIT_CPU)
+    rlimit_sym = idio_symbols_C_intern ("RLIMIT_CPU");
+    idio_libc_export_symbol_value (rlimit_sym, idio_C_int (RLIMIT_CPU));
+    sprintf (idio_libc_rlimit_names[RLIMIT_CPU], "%s", IDIO_SYMBOL_S (rlimit_sym));
+#endif
+
+    /* Linux, Solaris */
+#if defined (RLIMIT_FSIZE)
+    rlimit_sym = idio_symbols_C_intern ("RLIMIT_FSIZE");
+    idio_libc_export_symbol_value (rlimit_sym, idio_C_int (RLIMIT_FSIZE));
+    sprintf (idio_libc_rlimit_names[RLIMIT_FSIZE], "%s", IDIO_SYMBOL_S (rlimit_sym));
+#endif
+
+    /* Linux, Solaris */
+#if defined (RLIMIT_DATA)
+    rlimit_sym = idio_symbols_C_intern ("RLIMIT_DATA");
+    idio_libc_export_symbol_value (rlimit_sym, idio_C_int (RLIMIT_DATA));
+    sprintf (idio_libc_rlimit_names[RLIMIT_DATA], "%s", IDIO_SYMBOL_S (rlimit_sym));
+#endif
+
+    /* Linux, Solaris */
+#if defined (RLIMIT_STACK)
+    rlimit_sym = idio_symbols_C_intern ("RLIMIT_STACK");
+    idio_libc_export_symbol_value (rlimit_sym, idio_C_int (RLIMIT_STACK));
+    sprintf (idio_libc_rlimit_names[RLIMIT_STACK], "%s", IDIO_SYMBOL_S (rlimit_sym));
+#endif
+
+    /* Linux, Solaris */
+#if defined (RLIMIT_CORE)
+    rlimit_sym = idio_symbols_C_intern ("RLIMIT_CORE");
+    idio_libc_export_symbol_value (rlimit_sym, idio_C_int (RLIMIT_CORE));
+    sprintf (idio_libc_rlimit_names[RLIMIT_CORE], "%s", IDIO_SYMBOL_S (rlimit_sym));
+#endif
+
+    /* Linux */
+#if defined (RLIMIT_RSS)
+    rlimit_sym = idio_symbols_C_intern ("RLIMIT_RSS");
+    idio_libc_export_symbol_value (rlimit_sym, idio_C_int (RLIMIT_RSS));
+    sprintf (idio_libc_rlimit_names[RLIMIT_RSS], "%s", IDIO_SYMBOL_S (rlimit_sym));
+#endif
+
+    /* Linux, Solaris */
+#if defined (RLIMIT_NOFILE)
+    rlimit_sym = idio_symbols_C_intern ("RLIMIT_NOFILE");
+    idio_libc_export_symbol_value (rlimit_sym, idio_C_int (RLIMIT_NOFILE));
+    sprintf (idio_libc_rlimit_names[RLIMIT_NOFILE], "%s", IDIO_SYMBOL_S (rlimit_sym));
+#endif
+
+    /* Solaris */
+#if defined (RLIMIT_VMEM)
+    rlimit_sym = idio_symbols_C_intern ("RLIMIT_VMEM");
+    idio_libc_export_symbol_value (rlimit_sym, idio_C_int (RLIMIT_VMEM));
+    sprintf (idio_libc_rlimit_names[RLIMIT_VMEM], "%s", IDIO_SYMBOL_S (rlimit_sym));
+#endif
+
+    /* Linux, Solaris */
+#if defined (RLIMIT_AS)
+    rlimit_sym = idio_symbols_C_intern ("RLIMIT_AS");
+    idio_libc_export_symbol_value (rlimit_sym, idio_C_int (RLIMIT_AS));
+    sprintf (idio_libc_rlimit_names[RLIMIT_AS], "%s", IDIO_SYMBOL_S (rlimit_sym));
+#endif
+
+    /* Linux */
+#if defined (RLIMIT_NPROC)
+    rlimit_sym = idio_symbols_C_intern ("RLIMIT_NPROC");
+    idio_libc_export_symbol_value (rlimit_sym, idio_C_int (RLIMIT_NPROC));
+    sprintf (idio_libc_rlimit_names[RLIMIT_NPROC], "%s", IDIO_SYMBOL_S (rlimit_sym));
+#endif
+
+    /* Linux */
+#if defined (RLIMIT_MEMLOCK)
+    rlimit_sym = idio_symbols_C_intern ("RLIMIT_MEMLOCK");
+    idio_libc_export_symbol_value (rlimit_sym, idio_C_int (RLIMIT_MEMLOCK));
+    sprintf (idio_libc_rlimit_names[RLIMIT_MEMLOCK], "%s", IDIO_SYMBOL_S (rlimit_sym));
+#endif
+
+    /* Linux */
+#if defined (RLIMIT_LOCKS)
+    rlimit_sym = idio_symbols_C_intern ("RLIMIT_LOCKS");
+    idio_libc_export_symbol_value (rlimit_sym, idio_C_int (RLIMIT_LOCKS));
+    sprintf (idio_libc_rlimit_names[RLIMIT_LOCKS], "%s", IDIO_SYMBOL_S (rlimit_sym));
+#endif
+
+    /* Linux */
+#if defined (RLIMIT_SIGPENDING)
+    rlimit_sym = idio_symbols_C_intern ("RLIMIT_SIGPENDING");
+    idio_libc_export_symbol_value (rlimit_sym, idio_C_int (RLIMIT_SIGPENDING));
+    sprintf (idio_libc_rlimit_names[RLIMIT_SIGPENDING], "%s", IDIO_SYMBOL_S (rlimit_sym));
+#endif
+
+    /* Linux */
+#if defined (RLIMIT_MSGQUEUE)
+    rlimit_sym = idio_symbols_C_intern ("RLIMIT_MSGQUEUE");
+    idio_libc_export_symbol_value (rlimit_sym, idio_C_int (RLIMIT_MSGQUEUE));
+    sprintf (idio_libc_rlimit_names[RLIMIT_MSGQUEUE], "%s", IDIO_SYMBOL_S (rlimit_sym));
+#endif
+
+    /* Linux */
+#if defined (RLIMIT_NICE)
+    rlimit_sym = idio_symbols_C_intern ("RLIMIT_NICE");
+    idio_libc_export_symbol_value (rlimit_sym, idio_C_int (RLIMIT_NICE));
+    sprintf (idio_libc_rlimit_names[RLIMIT_NICE], "%s", IDIO_SYMBOL_S (rlimit_sym));
+#endif
+
+    /* Linux */
+#if defined (RLIMIT_RTPRIO)
+    rlimit_sym = idio_symbols_C_intern ("RLIMIT_RTPRIO");
+    idio_libc_export_symbol_value (rlimit_sym, idio_C_int (RLIMIT_RTPRIO));
+    sprintf (idio_libc_rlimit_names[RLIMIT_RTPRIO], "%s", IDIO_SYMBOL_S (rlimit_sym));
+#endif
+
+    /* Linux */
+#if defined (RLIMIT_RTTIME)
+    rlimit_sym = idio_symbols_C_intern ("RLIMIT_RTTIME");
+    idio_libc_export_symbol_value (rlimit_sym, idio_C_int (RLIMIT_RTTIME));
+    sprintf (idio_libc_rlimit_names[RLIMIT_RTTIME], "%s", IDIO_SYMBOL_S (rlimit_sym));
+#endif
+
+#if IDIO_DEBUG
+    int first = 1;
+    for (i = IDIO_LIBC_FRLIMIT ; i < IDIO_LIBC_NRLIMIT ; i++) {
+	if ('\0' == *(idio_libc_rlimit_names[i])) {
+	    char err_name[IDIO_LIBC_RLIMITNAMELEN + 2];
+	    sprintf (err_name, "RLIMIT_UNKNOWN%d", i);
+	    rlimit_sym = idio_symbols_C_intern (err_name);
+	    idio_libc_export_symbol_value (rlimit_sym, idio_C_int (i));
+	    sprintf (idio_libc_rlimit_names[i], "%s", err_name);
+	    if (first) {
+		first = 0;
+		fprintf (stderr, "Unmapped rlimit numbers:");
+	    }
+	    fprintf (stderr, " %d (%s) -> %s;", i, strerror (i), err_name);
+	}
+    }
+    if (0 == first) {
+	fprintf (stderr, "\n");
+    }
+#endif
+}
+
+char *idio_libc_rlimit_name (int rlim)
+{
+    if (rlim < 0 ||
+	rlim > IDIO_LIBC_NRLIMIT) {
+	idio_error_param_type ("int < 0 (or > NRLIMIT)", idio_C_int (rlim), IDIO_C_LOCATION ("idio_libc_rlimit_name"));
+    }
+
+    return idio_libc_rlimit_names[rlim];
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("rlimit-name", libc_rlimit_name, (IDIO irlim))
+{
+    IDIO_ASSERT (irlim);
+    IDIO_VERIFY_PARAM_TYPE (C_int, irlim);
+
+    return idio_string_C (idio_libc_rlimit_name (IDIO_C_TYPE_INT (irlim)));
+}
+
+IDIO_DEFINE_PRIMITIVE0 ("rlimit-names", libc_rlimit_names, ())
+{
+    IDIO r = idio_S_nil;
+
+    int i;
+    for (i = IDIO_LIBC_FRLIMIT; i < IDIO_LIBC_NRLIMIT ; i++) {
+	r = idio_pair (idio_pair (idio_C_int (i), idio_string_C (idio_libc_rlimit_name (i))), r);
+    }
+
+    return idio_list_reverse (r);
+}
+
+IDIO idio_libc_getrlimit (int resource)
+{
+    struct rlimit rlim;
+
+    if (getrlimit (resource, &rlim) == -1) {
+	idio_error_system_errno ("getrlimit", idio_S_nil, IDIO_C_LOCATION ("idio_libc_rlimit"));
+    }
+
+    return idio_struct_instance (idio_libc_struct_rlimit, IDIO_LIST2 (idio_C_int (rlim.rlim_cur),
+								      idio_C_int (rlim.rlim_max)));
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("getrlimit", libc_getrlimit, (IDIO iresource))
+{
+    IDIO_ASSERT (iresource);
+    IDIO_VERIFY_PARAM_TYPE (C_int, iresource);
+    
+    return idio_libc_getrlimit (IDIO_C_TYPE_INT (iresource));
+}
+
+void idio_libc_setrlimit (int resource, struct rlimit *rlimp)
+{
+    if (setrlimit (resource, rlimp) == -1) {
+	idio_error_system_errno ("setrlimit", idio_S_nil, IDIO_C_LOCATION ("idio_libc_rlimit"));
+    }
+}
+
+IDIO_DEFINE_PRIMITIVE2 ("setrlimit", libc_setrlimit, (IDIO iresource, IDIO irlim))
+{
+    IDIO_ASSERT (iresource);
+    IDIO_ASSERT (irlim);
+    IDIO_VERIFY_PARAM_TYPE (C_int, iresource);
+    IDIO_VERIFY_PARAM_TYPE (struct_instance, irlim);
+    
+    struct rlimit rlim;
+    rlim.rlim_cur = idio_struct_instance_ref_direct (irlim, IDIO_STRUCT_RLIMIT_RLIM_CUR);
+    rlim.rlim_max = idio_struct_instance_ref_direct (irlim, IDIO_STRUCT_RLIMIT_RLIM_MAX);
+
+    idio_libc_setrlimit (IDIO_C_TYPE_INT (iresource), &rlim);
+}
+
 IDIO_DEFINE_PRIMITIVE0 ("EGID/get", EGID_get, (void))
 {
     return idio_integer (getegid ());
@@ -2731,6 +2978,11 @@ void idio_init_libc_wrap ()
     idio_module_export_symbol_value (idio_symbols_C_intern ("INTMAX_MIN"), idio_C_int (INTMAX_MIN), idio_libc_wrap_module);
     idio_module_export_symbol_value (idio_symbols_C_intern ("UINTMAX_MAX"), idio_C_uint (UINTMAX_MAX), idio_libc_wrap_module);
 
+    /* sys/resource.h */
+    idio_module_export_symbol_value (idio_symbols_C_intern ("RLIM_SAVED_MAX"), idio_C_int (RLIM_SAVED_MAX), idio_libc_wrap_module);
+    idio_module_export_symbol_value (idio_symbols_C_intern ("RLIM_SAVED_CUR"), idio_C_int (RLIM_SAVED_CUR), idio_libc_wrap_module);
+    idio_module_export_symbol_value (idio_symbols_C_intern ("RLIM_INFINITY"), idio_C_int (RLIM_INFINITY), idio_libc_wrap_module);
+
     /* sys/wait.h */
     idio_module_export_symbol_value (idio_symbols_C_intern ("WAIT_ANY"), idio_C_int (WAIT_ANY), idio_libc_wrap_module);
     idio_module_export_symbol_value (idio_symbols_C_intern ("WNOHANG"), idio_C_int (WNOHANG), idio_libc_wrap_module);
@@ -2794,6 +3046,14 @@ void idio_init_libc_wrap ()
     name = idio_symbols_C_intern ("Idio/uname");
     idio_module_export_symbol_value (name, idio_libc_uname (), idio_libc_wrap_module);
 
+    name = idio_symbols_C_intern ("struct-rlimit");
+    idio_libc_struct_rlimit = idio_struct_type (name,
+						idio_S_nil,
+						idio_pair (idio_symbols_C_intern ("rlim_cur"),
+						idio_pair (idio_symbols_C_intern ("rlim_max"),
+						idio_S_nil)));
+    idio_module_export_symbol_value (name, idio_libc_struct_rlimit, idio_libc_wrap_module);
+
     idio_vm_signal_handler_conditions = idio_array (IDIO_LIBC_NSIG + 1);
     idio_gc_protect (idio_vm_signal_handler_conditions);
     /*
@@ -2805,6 +3065,7 @@ void idio_init_libc_wrap ()
 
     idio_libc_set_signal_names ();
     idio_libc_set_errno_names ();
+    idio_libc_set_rlimit_names ();
 
     /*
      * Define some host/user/process variables
@@ -2967,6 +3228,10 @@ void idio_libc_wrap_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_errno_name);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_errno_names);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_strerrno);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_rlimit_name);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_rlimit_names);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_getrlimit);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_setrlimit);
 }
 
 void idio_final_libc_wrap ()
