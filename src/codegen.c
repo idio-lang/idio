@@ -128,16 +128,21 @@ void idio_ia_push (IDIO_IA_T ia, IDIO_I ins)
  * This encoding supports positive numbers only hence extra
  * instructions to reference negative values.
  */
+
+#define IDIO_IA_VARUINT_1BYTE	240
+#define IDIO_IA_VARUINT_2BYTES	2287
+#define IDIO_IA_VARUINT_3BYTES	67823
+
 IDIO_IA_T idio_ia_compute_varuint (uint64_t offset)
 {
     IDIO_IA_T ia = idio_ia (10);
 
-    if (offset <= 240) {
+    if (offset <= IDIO_IA_VARUINT_1BYTE) {
 	IDIO_IA_PUSH1 (offset);
-    } else if (offset <= 2287) {
+    } else if (offset <= IDIO_IA_VARUINT_2BYTES) {
 	IDIO_IA_PUSH1 (((offset - 240) / 256) + 241);
 	IDIO_IA_PUSH1 ((offset - 240) % 256);
-    } else if (offset <= 67823) {
+    } else if (offset <= IDIO_IA_VARUINT_3BYTES) {
 	IDIO_IA_PUSH1 (249);
 	IDIO_IA_PUSH1 ((offset - 2288) / 256);
 	IDIO_IA_PUSH1 ((offset - 2288) % 256);
@@ -846,7 +851,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	     *
 	     * g7_len == size(ins) + size(off)
 	     */
-	    if (IDIO_IA_USIZE (ia3) < IDIO_I_MAX) {
+	    if (IDIO_IA_USIZE (ia3) <= IDIO_IA_VARUINT_1BYTE) {
 		g7_len = 1 + 1;
 	    } else {
 		g7 = idio_ia_compute_varuint (IDIO_IA_USIZE (ia3));
@@ -856,7 +861,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    size_t jf6_off = IDIO_IA_USIZE (ia2) + g7_len;
 
 	    /* 3: */
-	    if (jf6_off < IDIO_I_MAX) {
+	    if (jf6_off <= IDIO_IA_VARUINT_1BYTE) {
 		IDIO_IA_PUSH1 (IDIO_A_SHORT_JUMP_FALSE);
 		IDIO_IA_PUSH1 (jf6_off);
 	    } else {
@@ -870,7 +875,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    idio_ia_append (ia, ia2);
 
 	    /* 5: */
-	    if (IDIO_IA_USIZE (ia3) < IDIO_I_MAX) {
+	    if (IDIO_IA_USIZE (ia3) <= IDIO_IA_VARUINT_1BYTE) {
 		IDIO_IA_PUSH1 (IDIO_A_SHORT_GOTO);
 		IDIO_IA_PUSH1 (IDIO_IA_USIZE (ia3));
 	    } else {
@@ -984,7 +989,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    l = 0;
 	    for (i = n - 1; i >= 0 ; i--) {
 		l += IDIO_IA_USIZE (iac[i]);
-		if (l < IDIO_I_MAX) {
+		if (l <= IDIO_IA_VARUINT_1BYTE) {
 		    idio_ia_push (iat, IDIO_A_SHORT_JUMP_FALSE);
 		    idio_ia_push (iat, l);
 		} else {
@@ -1064,7 +1069,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    l = 0;
 	    for (i = n - 1; i >= 0 ; i--) {
 		l += IDIO_IA_USIZE (iac[i]);
-		if (l < IDIO_I_MAX) {
+		if (l <= IDIO_IA_VARUINT_1BYTE) {
 		    idio_ia_push (iat, IDIO_A_SHORT_JUMP_TRUE);
 		    idio_ia_push (iat, l);
 		} else {
@@ -1228,29 +1233,64 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    idio_ai_t dsci = idio_codegen_constants_lookup_or_extend (cs, docstr);
 
 	    /*
+	     * Remember this is the act of creating a closure *value*
+	     * not running the (body of the) closure.
+
+	     * {the-function}, the body of the function will be
+	     * prefaced with an arity check then whatever m+ consists
+	     * of.
+
+	     * Obviously {the-function} is some arbitrary length and
+	     * we don't want to run it now, we are only creating the
+	     * closure value and that creation is essentially a call
+	     * to idio_closure() with a "pointer" to the start of
+	     * {the-function}.  Not really a pointer, of course, but
+	     * rather where {the-function} starts relative to where we
+	     * are now.
+
+	     * Thinking ahead, having created the closure value we now
+	     * want to jump over {the-function} -- we don't want to
+	     * run it -- which will be a SHORT- or a LONG- GOTO.  A
+	     * SHORT-GOTO is fixed at two bytes but a LONG-GOTO could
+	     * be 9 bytes which means that the "pointer" to
+	     * {the-function} in the CREATE-CLOSURE instruction will
+	     * vary depending on how many bytes are required to
+	     * instruct us to jump over {the-function}.
+
 	     * Think about the code to be generated where we can only
 	     * calculate the length-of #3 when we have added the code
 	     * for goto #5 and the code for goto #5 depends on the
 	     * code for the-function (which depends on m+).
 
 	      1: ...
-	      2: create-closure (length-of #3)
+	      2: create-closure (length-of #3) [features]
 	      3: goto #5
 	      4: the-function (from m+)
 	      5: ...
 
-	     * XXX if we want the closure object to know about its own
-	     * arity (and varargs) then we would need to pass them to
-	     * CREATE_CLOSURE:
+	     * [features] are things we always add and therefore
+	     * always read off when implementing the CREATE-CLOSURE
+	     * instruction.
 
-	      1: ...
-	      2: create-closure arity varargs (length-of #3)
-	      3: goto #5
-	      4: the-function (from m+)
-	      5: ...
+	     * Here there are obvious features like the constants
+	     * indexes for signature-string and documentation-string.
 
-	     * and have IDIO_A_CREATE_CLOSURE read two more varuints
-	     * and then pass them onto idio_closure.  Not a huge change.
+	     * A less obvious feature is the length of {the-function}.
+	     * Actually it will get emitted twice, once as a feature
+	     * and then as the GOTO.  We want it as a feature in order
+	     * that we can add it to the closure value.  That means we
+	     * can disassemble just this function.  If we don't pass
+	     * it as a feature then, when we are about to diassemble
+	     * the closure, it is impossible for us to reverse
+	     * engineer the GOTO immediately before {the-function} as
+	     * some LONG-GOTO can look like a combination of
+	     * CREATE-CLOSURE len [features].
+
+	     * XXX if we want the closure *value* to know about its
+	     * own arity (and varargs) -- don't forget the closure
+	     * value doesn't know about its arity/varargs,
+	     * {the-function} does but not the value -- then we would
+	     * need to pass them to CREATE_CLOSURE as more [features].
 
 	     * Why would we do that?  The only current reason is to
 	     * test if a closure is a thunk, ie. arity 0 and no
@@ -1279,19 +1319,22 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    idio_codegen_compile (thr, iap, cs, mp, depth + 1);
 	    idio_ia_push (iap, IDIO_A_RETURN);
 
-	    if (IDIO_IA_USIZE (iap) < IDIO_I_MAX) {
+	    idio_ai_t code_len = IDIO_IA_USIZE (iap);
+	    if (code_len <= IDIO_IA_VARUINT_1BYTE) {
 		/* 2: */
 		IDIO_IA_PUSH2 (IDIO_A_CREATE_CLOSURE, 2);
+		IDIO_IA_PUSH_VARUINT (code_len);
 		IDIO_IA_PUSH_VARUINT (ssci);
 		IDIO_IA_PUSH_VARUINT (dsci);
 
 		/* 3: */
 		IDIO_IA_PUSH1 (IDIO_A_SHORT_GOTO);
-		IDIO_IA_PUSH1 (IDIO_IA_USIZE (iap));
+		IDIO_IA_PUSH1 (code_len);
 	    } else {
 		/* 2: */
-		IDIO_IA_T g5 = idio_ia_compute_varuint (IDIO_IA_USIZE (iap));
+		IDIO_IA_T g5 = idio_ia_compute_varuint (code_len);
 		IDIO_IA_PUSH2 (IDIO_A_CREATE_CLOSURE, (1 + IDIO_IA_USIZE (g5)));
+		IDIO_IA_PUSH_VARUINT (code_len);
 		IDIO_IA_PUSH_VARUINT (ssci);
 		IDIO_IA_PUSH_VARUINT (dsci);
 
@@ -1329,17 +1372,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    idio_ai_t dsci = idio_codegen_constants_lookup_or_extend (cs, docstr);
 
 	    /*
-	     * Think about the code to be generated where we can only
-	     * calculate the length-of #3 when we have added the code
-	     * for goto #5 and the code for goto #5 depends on the
-	     * code for the-function (which depends on m+).
-
-	      1: ...
-	      2: create-closure (length-of #3)
-	      3: goto #5
-	      4: the-function
-	      5: ...
-
+	     * See IDIO_I_CODE_FIX_CLOSURE for commentary.
 	     */
 
 	    /* the-function */
@@ -1358,19 +1391,22 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    idio_codegen_compile (thr, iap, cs, mp, depth + 1);
 	    idio_ia_push (iap, IDIO_A_RETURN);
 
-	    if (IDIO_IA_USIZE (iap) < IDIO_I_MAX) {
+	    idio_ai_t code_len = IDIO_IA_USIZE (iap);
+	    if (code_len <= IDIO_IA_VARUINT_1BYTE) {
 		/* 2: */
 		IDIO_IA_PUSH2 (IDIO_A_CREATE_CLOSURE, 2);
+		IDIO_IA_PUSH_VARUINT (code_len);
 		IDIO_IA_PUSH_VARUINT (ssci);
 		IDIO_IA_PUSH_VARUINT (dsci);
 
 		/* 3: */
 		IDIO_IA_PUSH1 (IDIO_A_SHORT_GOTO);
-		IDIO_IA_PUSH1 (IDIO_IA_USIZE (iap));
+		IDIO_IA_PUSH1 (code_len);
 	    } else {
 		/* 2: */
-		IDIO_IA_T g5 = idio_ia_compute_varuint (IDIO_IA_USIZE (iap));
+		IDIO_IA_T g5 = idio_ia_compute_varuint (code_len);
 		IDIO_IA_PUSH2 (IDIO_A_CREATE_CLOSURE, (1 + IDIO_IA_USIZE (g5)));
+		IDIO_IA_PUSH_VARUINT (code_len);
 		IDIO_IA_PUSH_VARUINT (ssci);
 		IDIO_IA_PUSH_VARUINT (dsci);
 

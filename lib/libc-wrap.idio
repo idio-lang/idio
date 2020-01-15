@@ -226,47 +226,81 @@ define (stderr-fileno) {
 }
 
 
-;; define a more convenient getrlimit which can use a :nickname
-;; keyword, eg. :NOFILE for libc/RLIMIT_NOFILE
+;; define more convenient getrlimit/setrlimit which can use any of the
+;; libc/RLIMIT_* symbols, the C/int values or a :nickname keyword,
+;; eg. :NOFILE for libc/RLIMIT_NOFILE
 
-getrlimit2 := {
+getrlimit = {
   orig-getrlimit := getrlimit
 
-  ;; each OS has a different set of (valid) RLIMIT_* macros so our set
-  ;; of :nickname tests has to be dynamic
-  cond-clauses := map (function (np) {
-    ln := pt np
-    n := pht (split-string ln "_")
-    k := make-keyword n ;(string-append ":" n)
-    s := string->symbol (string-append "libc/RLIMIT_" n)
+  function (res) "define a more convenient `getrlimit` which can use a :nickname
+keyword, eg. ``:NOFILE`` for ``libc/RLIMIT_NOFILE``
 
-    #T{ ((eq? resk $k) {
-      res = $s
-      edisplay "inline res" $s
-    }) }
-  }) (libc/rlimit-names)
+:param res: either the ``libc/RLIMIT_*`` symbol or C/int or :* keyword
+:rtype: struct-rlimit
 
-  ;; for-each (function (c) {
-  ;;   edisplay* c
-  ;; }) cond-clauses
+:return: 
+" {
+    resource := #n
+    cond ((C/int? res) (resource = res)) \
+         ((symbol? res) (resource = res)) \
+	 ((keyword? res) {
 
-  #T{  #T{
+      ;; each OS has a different set of (valid) RLIMIT_* macros so our
+      ;; set of :nickname tests has to be dynamic
 
-    resk := :STATE
-    cond $@cond-clauses (else (error 'getrlimit "unknown resource" resk))
-  } }
+      map (function (np) "map over `libc/rlimit-names`" {
+        ln := pt np
+	n := pht (split-string ln "_")
+	k := make-keyword n
+	s := string->symbol ln
 
-  function (resk) {
-    res := #n
-    #T{
-      cond $@cond-clauses (else (error 'getrlimit "unknown resource" resk))
-    }
+	if (eq? res k) {
+          resource = symbol-value s 'libc
+        }
+      }) (libc/rlimit-names)
 
-    if (null? res) (error 'getrlimit "bad resource" res "from" resk)
+      if (null? resource) (error 'getrlimit "bad resource" resource "from" res)
+    })
 
-    edisplay* "res" res
+    orig-getrlimit resource
+  }
+}
 
-    rlim := orig-getrlimit res
-    rlim.rlim_cur
+setrlimit = {
+  orig-setrlimit := setrlimit
+
+  function (res rlim) "define a more convenient `setrlimit` which can use a :nickname
+keyword, eg. ``:NOFILE`` for ``libc/RLIMIT_NOFILE``
+
+:param res: either the ``libc/RLIMIT_*`` symbol or C/int or :* keyword
+:param rlim: struct-rlimit
+:rtype: #unspec
+
+:return: #unspec
+" {
+    resource := #n
+    cond ((C/int? res) (resource = res)) \
+         ((symbol? res) (resource = res)) \
+	 ((keyword? res) {
+
+      ;; each OS has a different set of (valid) RLIMIT_* macros so our
+      ;; set of :nickname tests has to be dynamic
+
+      map (function (np) "map over `libc/rlimit-names`" {
+        ln := pt np
+	n := pht (split-string ln "_")
+	k := make-keyword n
+	s := string->symbol ln
+
+	if (eq? res k) {
+          resource = symbol-value s 'libc
+        }
+      }) (libc/rlimit-names)
+
+      if (null? resource) (error 'setrlimit "bad resource" resource "from" res)
+    })
+
+    orig-setrlimit resource rlim
   }
 }

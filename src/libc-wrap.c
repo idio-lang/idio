@@ -2747,15 +2747,24 @@ static void idio_libc_set_rlimit_names ()
 
 char *idio_libc_rlimit_name (int rlim)
 {
-    if (rlim < 0 ||
+    if (rlim < IDIO_LIBC_FRLIMIT ||
 	rlim > IDIO_LIBC_NRLIMIT) {
-	idio_error_param_type ("int < 0 (or > NRLIMIT)", idio_C_int (rlim), IDIO_C_LOCATION ("idio_libc_rlimit_name"));
+	idio_error_param_type ("int < FRLIMIT (or > NRLIMIT)", idio_C_int (rlim), IDIO_C_LOCATION ("idio_libc_rlimit_name"));
     }
 
     return idio_libc_rlimit_names[rlim];
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("rlimit-name", libc_rlimit_name, (IDIO irlim))
+IDIO_DEFINE_PRIMITIVE1_DS ("rlimit-name", libc_rlimit_name, (IDIO irlim), "irlim", "\
+return the string name of the getrlimit(2)      \n\
+C macro						\n\
+						\n\
+:param irlim: the C-int value of the macro	\n\
+						\n\
+:return: a string				\n\
+						\n\
+:raises: ^rt-parameter-type-error		\n\
+")
 {
     IDIO_ASSERT (irlim);
     IDIO_VERIFY_PARAM_TYPE (C_int, irlim);
@@ -2763,7 +2772,15 @@ IDIO_DEFINE_PRIMITIVE1 ("rlimit-name", libc_rlimit_name, (IDIO irlim))
     return idio_string_C (idio_libc_rlimit_name (IDIO_C_TYPE_INT (irlim)));
 }
 
-IDIO_DEFINE_PRIMITIVE0 ("rlimit-names", libc_rlimit_names, ())
+IDIO_DEFINE_PRIMITIVE0_DS ("rlimit-names", libc_rlimit_names, (), "", "\
+return a list of pairs of the getrlimit(2)      \n\
+C macros					\n\
+						\n\
+each pair is the C value and string name	\n\
+of the macro					\n\
+						\n\
+:return: a list of pairs			\n\
+")
 {
     IDIO r = idio_S_nil;
 
@@ -2814,6 +2831,8 @@ IDIO_DEFINE_PRIMITIVE2 ("setrlimit", libc_setrlimit, (IDIO iresource, IDIO irlim
     rlim.rlim_max = idio_struct_instance_ref_direct (irlim, IDIO_STRUCT_RLIMIT_RLIM_MAX);
 
     idio_libc_setrlimit (IDIO_C_TYPE_INT (iresource), &rlim);
+
+    return idio_S_unspec;
 }
 
 IDIO_DEFINE_PRIMITIVE0 ("EGID/get", EGID_get, (void))

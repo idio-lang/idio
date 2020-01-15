@@ -450,7 +450,7 @@ idio_hi_t idio_idio_hash_hashval_closure (IDIO h)
 {
     IDIO_ASSERT (h);
 
-    idio_hi_t hv = idio_hash_hashval_uintmax_t (IDIO_CLOSURE_CODE (h));
+    idio_hi_t hv = idio_hash_hashval_uintmax_t (IDIO_CLOSURE_CODE_PC (h));
     hv ^= idio_hash_hashval_void (IDIO_CLOSURE_ENV (h));
     return hv;
 }

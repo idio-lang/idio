@@ -1080,6 +1080,14 @@ IDIO idio_load_filehandle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*
     IDIO_TYPE_ASSERT (file_handle, fh);
     IDIO_TYPE_ASSERT (array, cs);
 
+    if (IDIO_HANDLE_FLAGS (fh) & IDIO_HANDLE_FLAG_CLOSED) {
+	IDIO eh = idio_thread_current_error_handle ();
+	idio_display_C ("ERROR: load-filehandle-interactive: ", eh);
+	idio_display (fh, eh);
+	idio_display_C (": handle already closed?\n", eh);
+	return idio_S_false;
+    }
+
     IDIO thr = idio_thread_current_thread ();
     idio_ai_t sp0 = idio_array_size (IDIO_THREAD_STACK (thr));
 

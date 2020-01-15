@@ -460,7 +460,8 @@ typedef struct idio_hash_s {
  */
 typedef struct idio_closure_s {
     struct idio_s *grey;
-    size_t code;
+    size_t code_pc;
+    size_t code_len;
     struct idio_s *frame;
     struct idio_s *env;
 #ifdef IDIO_VM_PERF
@@ -470,7 +471,8 @@ typedef struct idio_closure_s {
 } idio_closure_t;
 
 #define IDIO_CLOSURE_GREY(C)       ((C)->u.closure->grey)
-#define IDIO_CLOSURE_CODE(C)       ((C)->u.closure->code)
+#define IDIO_CLOSURE_CODE_PC(C)    ((C)->u.closure->code_pc)
+#define IDIO_CLOSURE_CODE_LEN(C)   ((C)->u.closure->code_len)
 #define IDIO_CLOSURE_FRAME(C)      ((C)->u.closure->frame)
 #define IDIO_CLOSURE_ENV(C)        ((C)->u.closure->env)
 #ifdef IDIO_VM_PERF

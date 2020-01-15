@@ -2320,26 +2320,27 @@ static IDIO idio_meaning_application (IDIO e, IDIO es, IDIO nametree, int flags,
 
 	    if (idio_S_predef == kind) {
 		IDIO fvi = IDIO_PAIR_HTT (sk);
-		IDIO primdata = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+		IDIO p = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
 
-		if (idio_S_unspec != primdata) {
-		    if (! idio_isa_primitive (primdata)) {
-			idio_debug ("BAD! pd %s\n", primdata);
+		if (idio_S_unspec != p) {
+		    if (idio_isa_primitive (p)) {
+			size_t arity = IDIO_PRIMITIVE_ARITY (p);
+			size_t nargs = idio_list_length (es);
+
+			if ((IDIO_PRIMITIVE_VARARGS (p) &&
+			     nargs >= arity) ||
+			    arity == nargs) {
+			    return idio_meaning_primitive_application (e, es, nametree, flags, arity, fvi, cs);
+			} else {
+			    idio_meaning_error_static_primitive_arity ("wrong arity for primitive", e, es, p, IDIO_C_LOCATION ("idio_meaning_application"));
+			}
+		    } else if (idio_isa_closure (p)) {
+			return idio_meaning_regular_application (e, es, nametree, flags, cs);
+		    } else {
+			idio_debug ("BAD application: ! primitive|closure\npd %s\n", p);
 			idio_debug ("sk %s\n", sk);
 			idio_debug ("e %s\n", e);
 			idio_debug ("ivvr %s\n", idio_vm_values_ref (IDIO_FIXNUM_VAL (IDIO_PAIR_HTT (sk))));
-		    }
-		    IDIO_TYPE_ASSERT (primitive, primdata);
-
-		    size_t arity = IDIO_PRIMITIVE_ARITY (primdata);
-		    size_t nargs = idio_list_length (es);
-
-		    if ((IDIO_PRIMITIVE_VARARGS (primdata) &&
-			 nargs >= arity) ||
-			arity == nargs) {
-			return idio_meaning_primitive_application (e, es, nametree, flags, arity, fvi, cs);
-		    } else {
-			idio_meaning_error_static_primitive_arity ("wrong arity for primitive", e, es, primdata, IDIO_C_LOCATION ("idio_meaning_application"));
 		    }
 		}
 	    }

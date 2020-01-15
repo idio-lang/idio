@@ -29,7 +29,7 @@ define-macro (help x) {
       display* "procedure:" '$x $sigstr "\n"
       display docstr
       #t
-    }) ((symbol? $x) {
+    })   ((symbol? $x) {
       module := find-module $x #f
       if module {
         display* "module:" '$x "\n"
@@ -47,6 +47,14 @@ define-macro (help x) {
 	;exports_loop exports
       }
       #t
+    })   ((struct-type? $x) {
+      display* "struct-type:" (struct-type-name $x) "\n"
+      display* "fields" (struct-type-fields $x)
+    })   ((struct-instance? $x) {
+      display* "struct-instance:" '$x "\n"
+      t := (struct-instance-type $x)
+      display* "struct-type:" (struct-type-name t) "\n"
+      display* "fields" (struct-type-fields t)
     }) (else {
       edisplay* "help: " '$x ": not a procedure/symbol"
       #f

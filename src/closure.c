@@ -33,9 +33,10 @@
  * Return:
  * Returns the closure.
  */
-IDIO idio_closure (size_t code, IDIO frame, IDIO env, IDIO sigstr, IDIO docstr)
+IDIO idio_closure (size_t code_pc, size_t code_len, IDIO frame, IDIO env, IDIO sigstr, IDIO docstr)
 {
-    IDIO_C_ASSERT (code);
+    IDIO_C_ASSERT (code_pc);
+    IDIO_C_ASSERT (code_len);
     IDIO_ASSERT (frame);
     IDIO_ASSERT (env);
     IDIO_ASSERT (sigstr);
@@ -53,7 +54,8 @@ IDIO idio_closure (size_t code, IDIO frame, IDIO env, IDIO sigstr, IDIO docstr)
     IDIO_GC_ALLOC (c->u.closure, sizeof (idio_closure_t));
 
     IDIO_CLOSURE_GREY (c) = NULL;
-    IDIO_CLOSURE_CODE (c) = code;
+    IDIO_CLOSURE_CODE_PC (c) = code_pc;
+    IDIO_CLOSURE_CODE_LEN (c) = code_len;
     IDIO_CLOSURE_FRAME (c) = frame;
     IDIO_CLOSURE_ENV (c) = env;
 #ifdef IDIO_VM_PERF

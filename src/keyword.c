@@ -102,7 +102,7 @@ IDIO idio_keyword_C (const char *s_C)
 IDIO_DEFINE_PRIMITIVE1 ("make-keyword", make_keyword, (IDIO s))
 {
     if (idio_isa_string (s)) {
-	return idio_keyword_C_len (idio_string_s (s), idio_string_blen (s));
+	return idio_keywords_C_intern (idio_string_s (s));
     } else if (idio_isa_symbol (s)) {
 	return idio_keyword_C (IDIO_SYMBOL_S (s));
     } else {

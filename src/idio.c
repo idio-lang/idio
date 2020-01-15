@@ -338,6 +338,7 @@ int main (int argc, char **argv, char **envp)
 	    exit (1);
 	    break;
 	}
+
 	/* repl */
 	idio_load_filehandle (idio_thread_current_input_handle (), idio_read, idio_evaluate, idio_vm_constants);
     }
