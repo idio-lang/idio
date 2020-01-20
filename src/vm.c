@@ -1656,7 +1656,7 @@ void idio_vm_raise_condition (IDIO continuablep, IDIO condition, int IHR)
      * stack (not the current handler).  Unless the next handler is
      * the base handler in which case it gets reused (ad infinitum).
      *
-     * We can do that easily by just changing IDIO_THREAD_HANDLER_SP
+     * We can do that easily by just changing IDIO_THREAD_TRAP_SP
      * but if that handler RETURNs then we must restore the current
      * handler.
      */
@@ -1890,7 +1890,6 @@ IDIO_DEFINE_PRIMITIVE1 ("%%call/cc", call_cc, (IDIO proc))
 IDIO_DEFINE_PRIMITIVE1 ("%%vm-trace", vm_trace, (IDIO trace))
 {
     IDIO_ASSERT (trace);
-
     IDIO_VERIFY_PARAM_TYPE (fixnum, trace);
 
     idio_vm_tracing = IDIO_FIXNUM_VAL (trace);
@@ -1902,7 +1901,6 @@ IDIO_DEFINE_PRIMITIVE1 ("%%vm-trace", vm_trace, (IDIO trace))
 IDIO_DEFINE_PRIMITIVE1 ("%%vm-dis", vm_dis, (IDIO dis))
 {
     IDIO_ASSERT (dis);
-
     IDIO_VERIFY_PARAM_TYPE (fixnum, dis);
 
     idio_vm_dis = IDIO_FIXNUM_VAL (dis);
@@ -2536,14 +2534,14 @@ int idio_vm_run1 (IDIO thr)
     case IDIO_A_LONG_GOTO:
 	{
 	    uint64_t i = idio_vm_fetch_varuint (thr);
-	    IDIO_VM_RUN_DIS ("LONG-GOTO %" PRId64 "", i);
+	    IDIO_VM_RUN_DIS ("LONG-GOTO +%" PRId64 "", i);
 	    IDIO_THREAD_PC (thr) += i;
 	}
 	break;
     case IDIO_A_LONG_JUMP_FALSE:
 	{
 	    uint64_t i = idio_vm_fetch_varuint (thr);
-	    IDIO_VM_RUN_DIS ("LONG-JUMP-FALSE %" PRId64 "", i);
+	    IDIO_VM_RUN_DIS ("LONG-JUMP-FALSE +%" PRId64 "", i);
 	    if (idio_S_false == IDIO_THREAD_VAL (thr)) {
 		IDIO_THREAD_PC (thr) += i;
 	    }
@@ -2552,7 +2550,7 @@ int idio_vm_run1 (IDIO thr)
     case IDIO_A_LONG_JUMP_TRUE:
 	{
 	    uint64_t i = idio_vm_fetch_varuint (thr);
-	    IDIO_VM_RUN_DIS ("LONG-JUMP-TRUE %" PRId64 "", i);
+	    IDIO_VM_RUN_DIS ("LONG-JUMP-TRUE +%" PRId64 "", i);
 	    if (idio_S_false != IDIO_THREAD_VAL (thr)) {
 		IDIO_THREAD_PC (thr) += i;
 	    }
@@ -2561,14 +2559,14 @@ int idio_vm_run1 (IDIO thr)
     case IDIO_A_SHORT_GOTO:
 	{
 	    int i = IDIO_THREAD_FETCH_NEXT ();
-	    IDIO_VM_RUN_DIS ("SHORT-GOTO %d", i);
+	    IDIO_VM_RUN_DIS ("SHORT-GOTO +%d", i);
 	    IDIO_THREAD_PC (thr) += i;
 	}
 	break;
     case IDIO_A_SHORT_JUMP_FALSE:
 	{
 	    int i = IDIO_THREAD_FETCH_NEXT ();
-	    IDIO_VM_RUN_DIS ("SHORT-JUMP-FALSE %d", i);
+	    IDIO_VM_RUN_DIS ("SHORT-JUMP-FALSE +%d", i);
 	    if (idio_S_false == IDIO_THREAD_VAL (thr)) {
 		IDIO_THREAD_PC (thr) += i;
 	    }
@@ -2577,7 +2575,7 @@ int idio_vm_run1 (IDIO thr)
     case IDIO_A_SHORT_JUMP_TRUE:
 	{
 	    int i = IDIO_THREAD_FETCH_NEXT ();
-	    IDIO_VM_RUN_DIS ("SHORT-JUMP-TRUE %d", i);
+	    IDIO_VM_RUN_DIS ("SHORT-JUMP-TRUE +%d", i);
 	    if (idio_S_false != IDIO_THREAD_VAL (thr)) {
 		IDIO_THREAD_PC (thr) += i;
 	    }
@@ -2682,8 +2680,12 @@ int idio_vm_run1 (IDIO thr)
 	    IDIO_VM_RUN_DIS ("RETURN");
 	    IDIO ipc = IDIO_THREAD_STACK_POP ();
 	    if (! IDIO_TYPE_FIXNUMP (ipc)) {
-		idio_debug ("RETURN {fixnum}: not %s\n", ipc);
+		idio_debug ("\n\nRETURN {fixnum}: not %s\n", ipc);
 		idio_vm_debug (thr, "IDIO_A_RETURN", 0);
+
+		fprintf (stderr, "\nreplacing popped element for stack decode:");
+		IDIO_THREAD_STACK_PUSH (ipc);
+		idio_vm_decode_stack (thr);
 		idio_error_C ("RETURN: not a number", IDIO_LIST1 (ipc), IDIO_C_LOCATION ("idio_vm_run1/RETURN"));
 	    }
 	    idio_ai_t pc = IDIO_FIXNUM_VAL (ipc);
@@ -2692,6 +2694,7 @@ int idio_vm_run1 (IDIO thr)
 		fprintf (stderr, "\n\nPC= %td?\n", pc);
 		idio_dump (thr, 1);
 		idio_dump (IDIO_THREAD_STACK (thr), 1);
+		idio_vm_decode_stack (thr);
 		idio_vm_panic (thr, "RETURN: impossible PC on stack top");
 	    }
 	    IDIO_THREAD_PC (thr) = pc;
@@ -2834,8 +2837,10 @@ int idio_vm_run1 (IDIO thr)
 	{
 	    IDIO_VM_RUN_DIS ("ARITY=1?");
 	    idio_ai_t nargs = -1;
-	    if (idio_S_nil != IDIO_THREAD_VAL (thr)) {
-		nargs = IDIO_FRAME_NARGS (IDIO_THREAD_VAL (thr));
+	    IDIO val = IDIO_THREAD_VAL (thr);
+	    if (idio_S_nil != val) {
+		IDIO_TYPE_ASSERT (frame, val);
+		nargs = IDIO_FRAME_NARGS (val);
 	    }
 	    if (1 != nargs) {
 		idio_vm_error_arity (ins, thr, nargs - 1, 0, IDIO_C_LOCATION ("idio_vm_run1/ARITY1P"));
@@ -2847,8 +2852,10 @@ int idio_vm_run1 (IDIO thr)
 	{
 	    IDIO_VM_RUN_DIS ("ARITY=2?");
 	    idio_ai_t nargs = -1;
-	    if (idio_S_nil != IDIO_THREAD_VAL (thr)) {
-		nargs = IDIO_FRAME_NARGS (IDIO_THREAD_VAL (thr));
+	    IDIO val = IDIO_THREAD_VAL (thr);
+	    if (idio_S_nil != val) {
+		IDIO_TYPE_ASSERT (frame, val);
+		nargs = IDIO_FRAME_NARGS (val);
 	    }
 	    if (2 != nargs) {
 		idio_vm_error_arity (ins, thr, nargs - 1, 1, IDIO_C_LOCATION ("idio_vm_run1/ARITY2P"));
@@ -2860,8 +2867,10 @@ int idio_vm_run1 (IDIO thr)
 	{
 	    IDIO_VM_RUN_DIS ("ARITY=3?");
 	    idio_ai_t nargs = -1;
-	    if (idio_S_nil != IDIO_THREAD_VAL (thr)) {
-		nargs = IDIO_FRAME_NARGS (IDIO_THREAD_VAL (thr));
+	    IDIO val = IDIO_THREAD_VAL (thr);
+	    if (idio_S_nil != val) {
+		IDIO_TYPE_ASSERT (frame, val);
+		nargs = IDIO_FRAME_NARGS (val);
 	    }
 	    if (3 != nargs) {
 		idio_vm_error_arity (ins, thr, nargs - 1, 2, IDIO_C_LOCATION ("idio_vm_run1/ARITY3P"));
@@ -2873,8 +2882,10 @@ int idio_vm_run1 (IDIO thr)
 	{
 	    IDIO_VM_RUN_DIS ("ARITY=4?");
 	    idio_ai_t nargs = -1;
-	    if (idio_S_nil != IDIO_THREAD_VAL (thr)) {
-		nargs = IDIO_FRAME_NARGS (IDIO_THREAD_VAL (thr));
+	    IDIO val = IDIO_THREAD_VAL (thr);
+	    if (idio_S_nil != val) {
+		IDIO_TYPE_ASSERT (frame, val);
+		nargs = IDIO_FRAME_NARGS (val);
 	    }
 	    if (4 != nargs) {
 		idio_vm_error_arity (ins, thr, nargs - 1, 3, IDIO_C_LOCATION ("idio_vm_run1/ARITY4P"));
@@ -2887,8 +2898,10 @@ int idio_vm_run1 (IDIO thr)
 	    uint64_t arityp1 = idio_vm_fetch_varuint (thr);
 	    IDIO_VM_RUN_DIS ("ARITY=? %" PRId64 "", arityp1);
 	    idio_ai_t nargs = -1;
-	    if (idio_S_nil != IDIO_THREAD_VAL (thr)) {
-		nargs = IDIO_FRAME_NARGS (IDIO_THREAD_VAL (thr));
+	    IDIO val = IDIO_THREAD_VAL (thr);
+	    if (idio_S_nil != val) {
+		IDIO_TYPE_ASSERT (frame, val);
+		nargs = IDIO_FRAME_NARGS (val);
 	    }
 	    if (arityp1 != nargs) {
 		idio_vm_error_arity (ins, thr, nargs - 1, arityp1 - 1, IDIO_C_LOCATION ("idio_vm_run1/ARITYEQP"));
@@ -2901,8 +2914,10 @@ int idio_vm_run1 (IDIO thr)
 	    uint64_t arityp1 = idio_vm_fetch_varuint (thr);
 	    IDIO_VM_RUN_DIS ("ARITY>=? %" PRId64 "", arityp1);
 	    idio_ai_t nargs = -1;
-	    if (idio_S_nil != IDIO_THREAD_VAL (thr)) {
-		nargs = IDIO_FRAME_NARGS (IDIO_THREAD_VAL (thr));
+	    IDIO val = IDIO_THREAD_VAL (thr);
+	    if (idio_S_nil != val) {
+		IDIO_TYPE_ASSERT (frame, val);
+		nargs = IDIO_FRAME_NARGS (val);
 	    }
 	    if (nargs < arityp1) {
 		idio_vm_error_arity_varargs (ins, thr, nargs - 1, arityp1 - 1, IDIO_C_LOCATION ("idio_vm_run1/ARITYGEP"));
@@ -4485,6 +4500,7 @@ void idio_vm_thread_init (IDIO thr)
     IDIO_TYPE_ASSERT (thread, thr);
 
     idio_ai_t sp = idio_array_size (IDIO_THREAD_STACK (thr));
+
     idio_ai_t tsp = IDIO_FIXNUM_VAL (IDIO_THREAD_TRAP_SP (thr));
     IDIO_C_ASSERT (tsp <= sp);
 
@@ -4730,6 +4746,8 @@ IDIO idio_vm_run (IDIO thr)
 			idio_debug ("idio_vm_signal_handler_name[17]=%s\n", idio_array_ref (idio_vm_signal_handler_name, idio_fixnum (SIGCHLD)));
 			fprintf (stderr, "VM: no sighandler for signal #%d\n", signum);
 		    }
+		} else {
+		    /* fprintf (stderr, "VM: no sighandler for signal #%d\n", signum); */
 		}
 
 		if ((idio_vm_run_loops++ & 0xff) == 0) {
@@ -4786,14 +4804,15 @@ IDIO idio_vm_run (IDIO thr)
      */
     int bail = 0;
     if (IDIO_THREAD_PC (thr) != (idio_vm_FINISH_pc + 1)) {
-	fprintf (stderr, "vm-run: THREAD FAIL: PC %zu != %td\n", IDIO_THREAD_PC (thr), (idio_vm_FINISH_pc + 1));
+	fprintf (stderr, "vm-run: THREAD failed to run FINISH: PC %zu != %td\n", IDIO_THREAD_PC (thr), (idio_vm_FINISH_pc + 1));
 	bail = 1;
     }
 
     idio_ai_t ss = idio_array_size (IDIO_THREAD_STACK (thr));
 
     if (ss != ss0) {
-	fprintf (stderr, "vm-run: THREAD FAIL: SP %td != SP0 %td\n", ss - 1, ss0 - 1);
+	fprintf (stderr, "vm-run: THREAD failed to consume stack: SP0 %td -> %td\n", ss0 - 1, ss - 1);
+	idio_vm_decode_stack (thr);
 	if (ss < ss0) {
 	    fprintf (stderr, "\n\nNOTICE: current stack smaller than when we started\n");
 	}
@@ -4856,6 +4875,28 @@ idio_ai_t idio_vm_constants_lookup_or_extend (IDIO name)
     return gci;
 }
 
+void idio_vm_dump_constants ()
+{
+    FILE *fp = fopen ("vm-constants", "w");
+    if (NULL == fp) {
+	perror ("fopen");
+	return;
+    }
+
+    idio_ai_t al = idio_array_size (idio_vm_constants);
+    fprintf (fp, "idio_vm_constants: %" PRId64 "\n", al);
+    idio_ai_t i;
+    for (i = 0 ; i < al; i++) {
+	IDIO c = idio_array_get_index (idio_vm_constants, i);
+	fprintf (fp, "%6" PRId64": ", i);
+	char *cs = idio_as_string (c, 40);
+	fprintf (fp, "%-20s %s\n", idio_type2string (c), cs);
+	free (cs);
+    }
+
+    fclose (fp);
+}
+
 idio_ai_t idio_vm_extend_values ()
 {
     idio_ai_t i = idio_array_size (idio_vm_values);
@@ -4879,6 +4920,28 @@ IDIO idio_vm_values_ref (idio_ai_t gvi)
 void idio_vm_values_set (idio_ai_t gvi, IDIO v)
 {
     idio_array_insert_index (idio_vm_values, v, gvi);
+}
+
+void idio_vm_dump_values ()
+{
+    FILE *fp = fopen ("vm-values", "w");
+    if (NULL == fp) {
+	perror ("fopen");
+	return;
+    }
+
+    idio_ai_t al = idio_array_size (idio_vm_values);
+    fprintf (fp, "idio_vm_values: %" PRId64 "\n", al);
+    idio_ai_t i;
+    for (i = 0 ; i < al; i++) {
+	IDIO v = idio_array_get_index (idio_vm_values, i);
+	fprintf (fp, "%6" PRId64": ", i);
+	char *vs = idio_as_string (v, 40);
+	fprintf (fp, "%-20s %s\n", idio_type2string (v), vs);
+	free (vs);
+    }
+
+    fclose (fp);
 }
 
 void idio_vm_thread_state ()
@@ -5165,7 +5228,6 @@ void idio_vm_reset_thread (IDIO thr, int verbose)
 	idio_vm_thread_state ();
 
 	size_t i = 0;
-	IDIO closure_name = idio_S_nil;
 	while (idio_S_nil != frame) {
 	    fprintf (stderr, "call frame %4zd: ", i++);
 	    idio_debug ("%s\n", IDIO_FRAME_ARGS (frame));
@@ -5225,7 +5287,8 @@ void idio_init_vm ()
     idio_gc_protect (idio_vm_signal_handler_name);
     /*
      * idio_vm_run1() will be indexing anywhere into this array when
-     * it gets a signal so make sure that the "used" size is up there.
+     * it gets a signal so make sure that the "used" size is up there
+     * by putting a value in index NSIG.
      */
     idio_array_insert_index (idio_vm_signal_handler_name, idio_S_nil, (idio_ai_t) IDIO_LIBC_NSIG);
 
@@ -5279,10 +5342,15 @@ void idio_final_vm ()
 #ifdef IDIO_VM_PERF
     fprintf (idio_vm_perf_FILE, "final-vm: created %td constants\n", idio_array_size (idio_vm_constants));
 #endif
+    idio_vm_dump_constants ();
     idio_gc_expose (idio_vm_constants);
+
 #ifdef IDIO_VM_PERF
     fprintf (idio_vm_perf_FILE, "final-vm: created %td values\n", idio_array_size (idio_vm_values));
 #endif
+    idio_vm_dump_values ();
+    idio_gc_expose (idio_vm_values);
+    idio_gc_expose (idio_vm_signal_handler_name);
 
 #ifdef IDIO_VM_PERF
     uint64_t c = 0;
@@ -5303,7 +5371,4 @@ void idio_final_vm ()
     }
     fprintf (idio_vm_perf_FILE, "vm-ins: %8" PRIu64 " %6s %-30s %5ld.%09ld\n", c, "", "total", t.tv_sec, t.tv_nsec);
 #endif
-
-    idio_gc_expose (idio_vm_values);
-    idio_gc_expose (idio_vm_signal_handler_name);
 }

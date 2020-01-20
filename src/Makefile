@@ -2,11 +2,11 @@ OS		:= $(shell uname -s)
 ARCH		:= $(shell uname -m)
 SHELL		:= bash
 
-TOPDIR		:= $(abspath $(PWD)/..)
-BINDIR		:= $(abspath $(PWD)/../bin)
-LIBDIR		:= $(abspath $(PWD)/../lib)
-TESTSDIR	:= $(abspath $(PWD)/../tests)
-DOCDIR		:= $(abspath $(PWD)/../doc)
+TOPDIR		?= $(abspath $(PWD)/..)
+BINDIR		?= $(TOPDIR)/bin
+LIBDIR		?= $(TOPDIR)/lib
+TESTSDIR	?= $(TOPDIR)/tests
+DOCDIR		?= $(TOPDIR)/doc
 SRCDOCDIR	:= $(DOCDIR)/src
 SRCKDOUTDIR	:= $(SRCDOCDIR)/kernel-autodoc-out
 
@@ -116,7 +116,7 @@ scm1-c-structs.scm1 : scm1-c-structs
 	./scm1-c-structs > $@
 
 clean : tidy
-	rm -f *.o *.d ${BINDIR}/idio scm1-c-structs *.so scm1-c-structs.scm1 o e TAGS src/map
+	rm -f *.o *.d ${BINDIR}/idio scm1-c-structs *.so scm1-c-structs.scm1 o e TAGS map vm-*
 
 tidy :
 	rm -f vgcore.* core.* core *~ $(LIBDIR)/*~ $(TESTSDIR)/*~ *.gcda *.gcno *.gcov gmon.out
