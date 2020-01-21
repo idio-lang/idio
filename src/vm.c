@@ -1239,7 +1239,7 @@ IDIO idio_vm_invoke_C (IDIO thr, IDIO command)
 
     IDIO_THREAD_STACK_PUSH (idio_fixnum (IDIO_THREAD_PC (thr)));
     idio_vm_preserve_all_state (thr);
-    /* idio_debug ("invoke-C pre: %s\n", command);  */
+    /* idio_debug ("invoke-C pre: %s\n", command); */
 
     switch (command->type) {
     case IDIO_TYPE_PAIR:
@@ -3166,7 +3166,7 @@ int idio_vm_run1 (IDIO thr)
 	    if (idio_vm_tracing) {
 		idio_vm_primitive_call_trace ("eof?", thr, 1);
 	    }
-	    if (idio_handle_eofp (IDIO_THREAD_VAL (thr))) {
+	    if (idio_eofp_handle (IDIO_THREAD_VAL (thr))) {
 		IDIO_THREAD_VAL (thr) = idio_S_true;
 	    } else {
 		IDIO_THREAD_VAL (thr) = idio_S_false;
@@ -5016,8 +5016,8 @@ IDIO_DEFINE_PRIMITIVE1 ("exit", exit, (IDIO istatus))
 	idio_error_param_type ("fixnum|C_int istatus", istatus, IDIO_C_LOCATION ("exit"));
     }
 
-    idio_handle_flush (idio_thread_current_output_handle ());
-    idio_handle_flush (idio_thread_current_error_handle ());
+    idio_flush_handle (idio_thread_current_output_handle ());
+    idio_flush_handle (idio_thread_current_error_handle ());
 
     exit (status);
 }

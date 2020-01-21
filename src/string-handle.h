@@ -25,16 +25,16 @@
 
 IDIO idio_open_input_string_handle_C (char *str);
 IDIO idio_open_output_string_handle_C ();
-void idio_string_handle_free (IDIO sh);
-int idio_string_handle_readyp (IDIO sh);
-int idio_string_handle_getc (IDIO sh);
-int idio_string_handle_eofp (IDIO sh);
-int idio_string_handle_close (IDIO sh);
-int idio_string_handle_putc (IDIO sh, int c);
-size_t idio_string_handle_puts (IDIO sh, char *s, size_t slen);
-int idio_string_handle_flush (IDIO sh);
-off_t idio_string_handle_seek (IDIO sh, off_t offset, int whence);
-void idio_string_handle_print (IDIO sh, IDIO o);
+void idio_free_string_handle (IDIO sh);
+int idio_readyp_string_handle (IDIO sh);
+int idio_getc_string_handle (IDIO sh);
+int idio_eofp_string_handle (IDIO sh);
+int idio_close_string_handle (IDIO sh);
+int idio_putc_string_handle (IDIO sh, int c);
+size_t idio_puts_string_handle (IDIO sh, char *s, size_t slen);
+int idio_flush_string_handle (IDIO sh);
+off_t idio_seek_string_handle (IDIO sh, off_t offset, int whence);
+void idio_print_string_handle (IDIO sh, IDIO o);
 
 IDIO idio_get_output_string (IDIO sh);
 

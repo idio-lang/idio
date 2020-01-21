@@ -2594,7 +2594,7 @@ static IDIO idio_meaning_include (IDIO e, IDIO nametree, int flags, IDIO cs)
     IDIO_TYPE_ASSERT (array, cs);
 
     idio_thread_save_state (idio_thread_current_thread ());
-    idio_load_file (e, cs);
+    idio_load_file_name (e, cs);
     idio_thread_restore_state (idio_thread_current_thread ());
 
     return IDIO_LIST1 (idio_I_NOP);

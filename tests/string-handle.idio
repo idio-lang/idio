@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2020 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -68,7 +68,7 @@ test (input-string-handle? ish) #t
 test (output-string-handle? ish) #f
 
 ;; seek to the third character of "Hello" , #\e
-isn := handle-seek ish 2
+isn := seek-handle ish 2
 test isn 2
 
 shi := read-char ish
@@ -77,23 +77,23 @@ test shi #\e
 test (peek-char ish) #\l
 
 ; default is SEEK_SET
-handle-seek ish 2
+seek-handle ish 2
 test (peek-char ish) #\e
 
-handle-seek ish -2 'cur
+seek-handle ish -2 'cur
 test (peek-char ish) #\"
 
-handle-seek ish 2 'set
+seek-handle ish 2 'set
 test (peek-char ish) #\e
 
-handle-seek ish -2 'end
+seek-handle ish -2 'end
 test (peek-char ish) #\o
 
 handle-rewind ish
 test (peek-char ish) #\"
 
 test (handle-current-pos ish) 0
-handle-seek ish 2
+seek-handle ish 2
 test (handle-current-pos ish) 2
 
 ;; all done?

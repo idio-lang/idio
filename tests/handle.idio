@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2020 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -61,12 +61,12 @@ define (multi-line-read-handle ih) {
   r-ih := read ih
   test (handle-current-line ih) 2
 
-  handle-seek ih 2
+  seek-handle ih 2
   test (handle-current-line ih) 0
   r-ih = read ih
   test (handle-current-line ih) 0
 
-  handle-seek ih 0
+  seek-handle ih 0
   test (handle-current-line ih) 1
   r-ih = read ih
   test (handle-current-line ih) 2

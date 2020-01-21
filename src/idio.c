@@ -248,7 +248,7 @@ int main (int argc, char **argv, char **envp)
 	break;
     }
 
-    idio_load_file (idio_string_C ("bootstrap"), idio_vm_constants);
+    idio_load_file_name (idio_string_C ("bootstrap"), idio_vm_constants);
 
     if (argc > 1) {
 	/*
@@ -298,7 +298,7 @@ int main (int argc, char **argv, char **envp)
 	    switch (sjv) {
 	    case 0:
 		idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST2 (load, idio_string_C (argv[i])));
-		/* idio_load_file (idio_string_C (argv[i]), idio_vm_constants); */
+		/* idio_load_file_name (idio_string_C (argv[i]), idio_vm_constants); */
 		break;
 	    default:
 		fprintf (stderr, "setjmp: load %s: failed with sjv %d\n", argv[i], sjv);

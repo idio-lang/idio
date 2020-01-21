@@ -2207,7 +2207,7 @@ IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
 		done = 1;
 		break;
 	    default:
-		idio_string_handle_putc (recover_stdout, c);
+		idio_putc_string_handle (recover_stdout, c);
 		break;
 	    }
 	}
@@ -2239,7 +2239,7 @@ IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
 		done = 1;
 		break;
 	    default:
-		idio_string_handle_putc (recover_stderr, c);
+		idio_putc_string_handle (recover_stderr, c);
 		break;
 	    }
 	}

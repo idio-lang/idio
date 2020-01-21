@@ -865,7 +865,7 @@ define-infix-operator | 300 {
       if $recover-stdout {
 	;; if the job was backgrounded then this won't do much!
         ih := open-input-file-from-fd $stdout
-	handle-seek ih 0 'set
+	seek-handle ih 0 'set
         display (read-lines ih) $recover-stdout
 	close-handle ih
       }
@@ -954,7 +954,7 @@ define-macro (fork-command foreground & cmd) {
 	;; NB the temporary file has just been written to so the file
 	;; pointer is currently at the end, we need to set it back to
 	;; the start to be able to read anything!
-	handle-seek ih 0 'set
+	seek-handle ih 0 'set
         display (read-lines ih) $recover-stdout
 	close-handle ih
       }
@@ -965,7 +965,7 @@ define-macro (fork-command foreground & cmd) {
 	;; NB the temporary file has just been written to so the file
 	;; pointer is currently at the end, we need to set it back to
 	;; the start to be able to read anything!
-	handle-seek ih 0 'set
+	seek-handle ih 0 'set
         display (read-lines ih) $recover-stderr
 	close-handle ih
       }

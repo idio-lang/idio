@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2020 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -59,7 +59,7 @@ test (input-file-handle? ifh) #t
 test (output-file-handle? ifh) #f
 
 ;; seek to the third character of "Hello" , #\e
-ifn := handle-seek ifh 2
+ifn := seek-handle ifh 2
 test ifn 2
 
 fhi := read-char ifh
@@ -68,23 +68,23 @@ test fhi #\e
 test (peek-char ifh) #\l
 
 ; default is SEEK_SET
-handle-seek ifh 2
+seek-handle ifh 2
 test (peek-char ifh) #\e
 
-handle-seek ifh -2 'cur
+seek-handle ifh -2 'cur
 test (peek-char ifh) #\"
 
-handle-seek ifh 2 'set
+seek-handle ifh 2 'set
 test (peek-char ifh) #\e
 
-handle-seek ifh -2 'end
+seek-handle ifh -2 'end
 test (peek-char ifh) #\o
 
 handle-rewind ifh
 test (peek-char ifh) #\"
 
 test (handle-current-pos ifh) 0
-handle-seek ifh 2
+seek-handle ifh 2
 test (handle-current-pos ifh) 2
 
 ;; all done?

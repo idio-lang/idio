@@ -1,10 +1,15 @@
 export
 
 TOPDIR		:= $(abspath $(PWD))
-BINDIR		:= $(TOPDIR)/bin
-LIBDIR		:= $(TOPDIR)/lib
-TESTSDIR	:= $(TOPDIR)/tests
-DOCDIR		:= $(TOPDIR)/doc
+BINDIR		= $(TOPDIR)/bin
+LIBDIR		= $(TOPDIR)/lib
+TESTSDIR	= $(TOPDIR)/tests
+DOCDIR		= $(TOPDIR)/doc
 
-all clean lean debug test tags:
+all clean lean debug tags:
 	$(MAKE) -C src $@
+
+test : $(BINDIR)/idio
+	@PATH=${PATH}:${BINDIR} IDIOLIB=${LIBDIR} idio test
+
+$(BINDIR)/idio : all

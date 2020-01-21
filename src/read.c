@@ -320,7 +320,7 @@ static IDIO idio_read_block (IDIO handle, IDIO closedel, char *ic, int depth);
 static void idio_read_whitespace (IDIO handle)
 {
     for (;;) {
-	int c = idio_handle_getc (handle);
+	int c = idio_getc_handle (handle);
 
 	switch (c) {
 	case EOF:
@@ -329,7 +329,7 @@ static void idio_read_whitespace (IDIO handle)
 	case IDIO_CHAR_TAB:
 	    break;
 	default:
-	    idio_handle_ungetc (handle, c);
+	    idio_ungetc_handle (handle, c);
 	    return;
 	}
     }
@@ -338,7 +338,7 @@ static void idio_read_whitespace (IDIO handle)
 static void idio_read_newline (IDIO handle)
 {
     for (;;) {
-	int c = idio_handle_getc (handle);
+	int c = idio_getc_handle (handle);
 
 	switch (c) {
 	case EOF:
@@ -347,7 +347,7 @@ static void idio_read_newline (IDIO handle)
 	case IDIO_CHAR_NL:
 	    break;
 	default:
-	    idio_handle_ungetc (handle, c);
+	    idio_ungetc_handle (handle, c);
 	    return;
 	}
     }
@@ -374,7 +374,7 @@ static IDIO idio_read_list (IDIO handle, IDIO opendel, char *ic, int depth)
     for (;;) {
 	IDIO e = idio_read_1_expr (handle, ic, depth);
 
-	if (idio_handle_eofp (handle)) {
+	if (idio_eofp_handle (handle)) {
 	    idio_read_error_list_eof (handle, IDIO_C_LOCATION ("idio_read_list"));
 	    return idio_S_unspec;
 	} else if (idio_T_eol == e) {
@@ -397,7 +397,7 @@ static IDIO idio_read_list (IDIO handle, IDIO opendel, char *ic, int depth)
 		pt = idio_read_1_expr (handle, ic, depth);
 	    }
 
-	    if (idio_handle_eofp (handle)) {
+	    if (idio_eofp_handle (handle)) {
 		idio_read_error_list_eof (handle, IDIO_C_LOCATION ("idio_read_list"));
 		return idio_S_unspec;
 	    } else if (closedel == pt) {
@@ -416,7 +416,7 @@ static IDIO idio_read_list (IDIO handle, IDIO opendel, char *ic, int depth)
 		del = idio_read_1_expr (handle, ic, depth);
 	    }
 
-	    if (idio_handle_eofp (handle)) {
+	    if (idio_eofp_handle (handle)) {
 		idio_read_error_list_eof (handle, IDIO_C_LOCATION ("idio_read_list"));
 		return idio_S_unspec;
 	    } else if (closedel == del) {
@@ -449,7 +449,7 @@ static IDIO idio_read_list (IDIO handle, IDIO opendel, char *ic, int depth)
 		    ne = idio_read_1_expr (handle, ic, depth);
 		}
 
-		if (idio_handle_eofp (handle)) {
+		if (idio_eofp_handle (handle)) {
 		    idio_read_error_list_eof (handle, IDIO_C_LOCATION ("idio_read_list"));
 		    return idio_S_unspec;
 		}
@@ -569,16 +569,16 @@ static void idio_read_comment (IDIO handle, int depth)
     IDIO_ASSERT (handle);
 
     for (;;) {
-	int c = idio_handle_getc (handle);
+	int c = idio_getc_handle (handle);
 
-	if (idio_handle_eofp (handle)) {
+	if (idio_eofp_handle (handle)) {
 	    return;
 	}
 
 	switch (c) {
 	case IDIO_CHAR_CR:
 	case IDIO_CHAR_NL:
-	    idio_handle_ungetc (handle, c);
+	    idio_ungetc_handle (handle, c);
 	    return;
 	}
     }
@@ -606,7 +606,7 @@ static IDIO idio_read_string (IDIO handle)
     int esc = 0;
 
     while (! done) {
-	int c = idio_handle_getc (handle);
+	int c = idio_getc_handle (handle);
 
 	if (EOF == c) {
 	    idio_read_error_string (handle, IDIO_C_LOCATION ("idio_read_string"), "unterminated");
@@ -691,7 +691,7 @@ static IDIO idio_read_named_character (IDIO handle)
     intptr_t c;
 
     for (i = 0 ; i < IDIO_CHARACTER_MAX_NAME_LEN; i++) {
-	c = idio_handle_getc (handle);
+	c = idio_getc_handle (handle);
 
 	if (EOF == c) {
 	    idio_read_error_named_character (handle, IDIO_C_LOCATION ("idio_read_named_character"), "EOF");
@@ -711,7 +711,7 @@ static IDIO idio_read_named_character (IDIO handle)
 	buf[i] = c;
     }
 
-    idio_handle_ungetc (handle, c);
+    idio_ungetc_handle (handle, c);
     buf[i] = '\0';
 
     IDIO r;
@@ -763,7 +763,7 @@ static IDIO idio_read_template (IDIO handle, int depth)
     }
     i = 0;
 
-    int c = idio_handle_getc (handle);
+    int c = idio_getc_handle (handle);
 
     while (! IDIO_OPEN_DELIMITER (c)) {
 	if (i > (IDIO_INTERPOLATION_CHARS + 1)) {
@@ -782,7 +782,7 @@ static IDIO idio_read_template (IDIO handle, int depth)
 	}
 
 	i++;
-	c = idio_handle_getc (handle);
+	c = idio_getc_handle (handle);
     }
 
     IDIO closedel = idio_S_nil;
@@ -835,7 +835,7 @@ static IDIO idio_read_pathname (IDIO handle, int depth)
     }
     i = 0;
 
-    int c = idio_handle_getc (handle);
+    int c = idio_getc_handle (handle);
 
     while (IDIO_CHAR_DQUOTE != c) {
 	if (i > (IDIO_INTERPOLATION_CHARS + 1)) {
@@ -854,7 +854,7 @@ static IDIO idio_read_pathname (IDIO handle, int depth)
 	}
 
 	i++;
-	c = idio_handle_getc (handle);
+	c = idio_getc_handle (handle);
     }
 
     IDIO e = idio_read_string (handle);
@@ -866,17 +866,17 @@ static IDIO idio_read_bignum (IDIO handle, char basec, int radix)
 {
     IDIO_ASSERT (handle);
 
-    int c = idio_handle_getc (handle);
+    int c = idio_getc_handle (handle);
 
     int neg = 0;
 
     switch (c) {
     case '-':
 	neg = 1;
-	c = idio_handle_getc (handle);
+	c = idio_getc_handle (handle);
 	break;
     case '+':
-	c = idio_handle_getc (handle);
+	c = idio_getc_handle (handle);
 	break;
     }
 
@@ -896,7 +896,7 @@ static IDIO idio_read_bignum (IDIO handle, char basec, int radix)
     int ndigits = 0;
     int i;
     while (! IDIO_SEPARATOR (c)) {
-	if (idio_handle_eofp (handle)) {
+	if (idio_eofp_handle (handle)) {
 	    break;
 	}
 
@@ -919,7 +919,7 @@ static IDIO idio_read_bignum (IDIO handle, char basec, int radix)
 	bn = idio_bignum_add (bn, bn_i);
 	ndigits++;
 
-	c = idio_handle_getc (handle);
+	c = idio_getc_handle (handle);
     }
 
     if (0 == ndigits) {
@@ -929,7 +929,7 @@ static IDIO idio_read_bignum (IDIO handle, char basec, int radix)
 	return idio_S_unspec;
     }
 
-    idio_handle_ungetc (handle, c);
+    idio_ungetc_handle (handle, c);
 
     if (neg) {
 	bn = idio_bignum_negate (bn);
@@ -1069,7 +1069,7 @@ static IDIO idio_read_word (IDIO handle, int c)
 	    idio_read_error_parse_word_too_long (handle, IDIO_C_LOCATION ("idio_read_word"), buf);
 	}
 
-	c = idio_handle_getc (handle);
+	c = idio_getc_handle (handle);
 
 	if (EOF == c) {
 	    break;
@@ -1120,7 +1120,7 @@ static IDIO idio_read_word (IDIO handle, int c)
 	}
 
 	if (IDIO_SEPARATOR (c)) {
-	    idio_handle_ungetc (handle, c);
+	    idio_ungetc_handle (handle, c);
 	    break;
 	}
     }
@@ -1151,7 +1151,7 @@ static IDIO idio_read_word (IDIO handle, int c)
 
 static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int nl)
 {
-    int c = idio_handle_getc (handle);
+    int c = idio_getc_handle (handle);
 
     for (;;) {
 
@@ -1165,23 +1165,23 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int nl)
 	 * ic[3] - escape operator handling: map \+ '(1 2 3) =!=> + map '(1 2 3)
 	 */
 	if (c == ic[0]) {
-	    c = idio_handle_getc (handle);
+	    c = idio_getc_handle (handle);
 	    if (c == ic[1]) {
 		return idio_read_unquote_splicing (handle, ic, depth);
 	    }
-	    idio_handle_ungetc (handle, c);
+	    idio_ungetc_handle (handle, c);
 	    return idio_read_unquote (handle, ic, depth);
 	} else if (c == ic[2]) {
 	    return idio_read_quote (handle, ic, depth);
 	} else if (c == ic[3]) {
-	    c = idio_handle_getc (handle);
+	    c = idio_getc_handle (handle);
 	    switch (c) {
 	    case IDIO_CHAR_CR:
 	    case IDIO_CHAR_NL:
 		idio_read_newline (handle);
 		break;
 	    default:
-		idio_handle_ungetc (handle, c);
+		idio_ungetc_handle (handle, c);
 		return idio_read_escape (handle, ic, depth);
 	    }
 	} else {
@@ -1236,16 +1236,16 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int nl)
 		     * syntax-rules.  certainly, multiple consecutive
 		     * DOTs are not an indexing operation
 		     */
-		    int c = idio_handle_getc (handle);
+		    int c = idio_getc_handle (handle);
 		    switch (c) {
 		    case '.':
 			{
-			    idio_handle_ungetc (handle, c);
+			    idio_ungetc_handle (handle, c);
 			    return idio_read_word (handle, IDIO_CHAR_DOT);
 			}
 			break;
 		    default:
-			idio_handle_ungetc (handle, c);
+			idio_ungetc_handle (handle, c);
 			return idio_T_dot;
 		    }
 		}
@@ -1257,7 +1257,7 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int nl)
 		}
 	    case IDIO_CHAR_HASH:
 		{
-		    int c = idio_handle_getc (handle);
+		    int c = idio_getc_handle (handle);
 		    switch (c) {
 		    case 'f':
 			return idio_S_false;
@@ -1347,7 +1347,7 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int nl)
 		break;
 	    case IDIO_PAIR_SEPARATOR:
 		{
-		    int cp = idio_handle_peek (handle);
+		    int cp = idio_peek_handle (handle);
 
 		    if (IDIO_SEPARATOR (cp)) {
 			if (depth) {
@@ -1373,7 +1373,7 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int nl)
 	    }
 	}
 
-	c = idio_handle_getc (handle);
+	c = idio_getc_handle (handle);
     }
 }
 
@@ -1459,7 +1459,7 @@ static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, char *ic, int depth
 			ne = idio_read_1_expr (handle, ic, depth);
 		    }
 
-		    if (idio_handle_eofp (handle)) {
+		    if (idio_eofp_handle (handle)) {
 			idio_read_error_list_eof (handle, IDIO_C_LOCATION ("idio_read_expr_line"));
 			return idio_S_unspec;
 		    }
@@ -1606,7 +1606,7 @@ IDIO idio_read_char (IDIO handle)
     IDIO_ASSERT (handle);
     IDIO_TYPE_ASSERT (handle, handle);
 
-    int c = idio_handle_getc (handle);
+    int c = idio_getc_handle (handle);
 
     if (EOF == c) {
 	return idio_S_eof;
@@ -1629,7 +1629,7 @@ IDIO idio_read_character (IDIO handle)
 
     int i;
     for (i = 0; ; i++) {
-	int c = idio_handle_getc (handle);
+	int c = idio_getc_handle (handle);
 
 	if (EOF == c) {
 	    if (i) {
@@ -1642,7 +1642,7 @@ IDIO idio_read_character (IDIO handle)
 
 	/*
 	 * if this is a non-ASCII value then it should be the result
-	 * of an idio_handle_ungetc
+	 * of an idio_ungetc_handle
 	 */
 	if (c > 0x7f) {
 	    codepoint = c;
