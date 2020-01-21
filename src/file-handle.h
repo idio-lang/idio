@@ -75,7 +75,7 @@ int idio_flush_file_handle (IDIO fh);
 off_t idio_seek_file_handle (IDIO fh, off_t offset, int whence);
 void idio_print_file_handle (IDIO fh, IDIO o);
 IDIO idio_defprimitive_open_file_handle (IDIO name, IDIO mode);
-IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO fh), IDIO (*evaluator) (IDIO e, IDIO cs), IDIO cs);
+IDIO idio_load_file_handle (IDIO fh, IDIO (*reader) (IDIO fh), IDIO (*evaluator) (IDIO e, IDIO cs), IDIO cs);
 IDIO idio_load_file_name (IDIO filename, IDIO cs);
 IDIO idio_defprimitive_load_file (IDIO filename);
 

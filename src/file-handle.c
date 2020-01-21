@@ -40,7 +40,7 @@ static idio_handle_methods_t idio_file_handle_methods = {
     idio_print_file_handle
 };
 
-static void idio_filehandle_error_filename (IDIO filename, IDIO loc)
+static void idio_file_handle_error_filename (IDIO filename, IDIO loc)
 {
     IDIO_ASSERT (filename);
     IDIO_ASSERT (loc);
@@ -63,16 +63,16 @@ static void idio_filehandle_error_filename (IDIO filename, IDIO loc)
     idio_raise_condition (idio_S_true, c);
 }
 
-static void idio_filehandle_error_filename_C (char *name, IDIO loc)
+static void idio_file_handle_error_filename_C (char *name, IDIO loc)
 {
     IDIO_C_ASSERT (name);
     IDIO_ASSERT (loc);
     IDIO_TYPE_ASSERT (string, loc);
 
-    idio_filehandle_error_filename (idio_string_C (name), loc);
+    idio_file_handle_error_filename (idio_string_C (name), loc);
 }
 
-static void idio_filehandle_error_filename_delete (IDIO filename, IDIO loc)
+static void idio_file_handle_error_filename_delete (IDIO filename, IDIO loc)
 {
     IDIO_ASSERT (filename);
     IDIO_ASSERT (loc);
@@ -95,16 +95,16 @@ static void idio_filehandle_error_filename_delete (IDIO filename, IDIO loc)
     idio_raise_condition (idio_S_true, c);
 }
 
-static void idio_filehandle_error_filename_delete_C (char *name, IDIO loc)
+static void idio_file_handle_error_filename_delete_C (char *name, IDIO loc)
 {
     IDIO_C_ASSERT (name);
     IDIO_ASSERT (loc);
     IDIO_TYPE_ASSERT (string, loc);
 
-    idio_filehandle_error_filename_delete (idio_string_C (name), loc);
+    idio_file_handle_error_filename_delete (idio_string_C (name), loc);
 }
 
-static void idio_filehandle_error_malformed_filename (IDIO filename, IDIO loc)
+static void idio_file_handle_error_malformed_filename (IDIO filename, IDIO loc)
 {
     IDIO_ASSERT (filename);
     IDIO_ASSERT (loc);
@@ -127,16 +127,16 @@ static void idio_filehandle_error_malformed_filename (IDIO filename, IDIO loc)
     idio_raise_condition (idio_S_true, c);
 }
 
-static void idio_filehandle_error_malformed_filename_C (char *name, IDIO loc)
+static void idio_file_handle_error_malformed_filename_C (char *name, IDIO loc)
 {
     IDIO_C_ASSERT (name);
     IDIO_ASSERT (loc);
     IDIO_TYPE_ASSERT (string, loc);
 
-    idio_filehandle_error_malformed_filename (idio_string_C (name), loc);
+    idio_file_handle_error_malformed_filename (idio_string_C (name), loc);
 }
 
-static void idio_filehandle_error_file_protection (IDIO filename, IDIO loc)
+static void idio_file_handle_error_file_protection (IDIO filename, IDIO loc)
 {
     IDIO_ASSERT (filename);
     IDIO_ASSERT (loc);
@@ -159,16 +159,16 @@ static void idio_filehandle_error_file_protection (IDIO filename, IDIO loc)
     idio_raise_condition (idio_S_true, c);
 }
 
-static void idio_filehandle_error_file_protection_C (char *name, IDIO loc)
+static void idio_file_handle_error_file_protection_C (char *name, IDIO loc)
 {
     IDIO_C_ASSERT (name);
     IDIO_ASSERT (loc);
     IDIO_TYPE_ASSERT (string, loc);
 
-    idio_filehandle_error_file_protection (idio_string_C (name), loc);
+    idio_file_handle_error_file_protection (idio_string_C (name), loc);
 }
 
-static void idio_filehandle_error_filename_already_exists (IDIO filename, IDIO loc)
+static void idio_file_handle_error_filename_already_exists (IDIO filename, IDIO loc)
 {
     IDIO_ASSERT (filename);
     IDIO_ASSERT (loc);
@@ -191,16 +191,16 @@ static void idio_filehandle_error_filename_already_exists (IDIO filename, IDIO l
     idio_raise_condition (idio_S_true, c);
 }
 
-static void idio_filehandle_error_filename_already_exists_C (char *name, IDIO loc)
+static void idio_file_handle_error_filename_already_exists_C (char *name, IDIO loc)
 {
     IDIO_C_ASSERT (name);
     IDIO_ASSERT (loc);
     IDIO_TYPE_ASSERT (string, loc);
 
-    idio_filehandle_error_filename_already_exists (idio_string_C (name), loc);
+    idio_file_handle_error_filename_already_exists (idio_string_C (name), loc);
 }
 
-static void idio_filehandle_error_filename_not_found (IDIO filename, IDIO loc)
+static void idio_file_handle_error_filename_not_found (IDIO filename, IDIO loc)
 {
     IDIO_ASSERT (filename);
     IDIO_ASSERT (loc);
@@ -220,13 +220,13 @@ static void idio_filehandle_error_filename_not_found (IDIO filename, IDIO loc)
     idio_raise_condition (idio_S_true, c);
 }
 
-static void idio_filehandle_error_filename_not_found_C (char *name, IDIO loc)
+static void idio_file_handle_error_filename_not_found_C (char *name, IDIO loc)
 {
     IDIO_C_ASSERT (name);
     IDIO_ASSERT (loc);
     IDIO_TYPE_ASSERT (string, loc);
 
-    idio_filehandle_error_filename_not_found (idio_string_C (name), loc);
+    idio_file_handle_error_filename_not_found (idio_string_C (name), loc);
 }
 
 static IDIO idio_open_file_handle (char *name, FILE *filep, int h_flags, int s_flags)
@@ -506,15 +506,15 @@ IDIO idio_open_file_handle_C (char *name, char *mode)
 		idio_gc_collect ();
 		break;
 	    case EACCES:
-		idio_filehandle_error_file_protection_C (name, IDIO_C_LOCATION ("idio_open_file_handle_C"));
+		idio_file_handle_error_file_protection_C (name, IDIO_C_LOCATION ("idio_open_file_handle_C"));
 	    case EEXIST:
-		idio_filehandle_error_filename_already_exists_C (name, IDIO_C_LOCATION ("idio_open_file_handle_C"));
+		idio_file_handle_error_filename_already_exists_C (name, IDIO_C_LOCATION ("idio_open_file_handle_C"));
 	    case ENAMETOOLONG:
-		idio_filehandle_error_malformed_filename_C (name, IDIO_C_LOCATION ("idio_open_file_handle_C"));
+		idio_file_handle_error_malformed_filename_C (name, IDIO_C_LOCATION ("idio_open_file_handle_C"));
 	    case ENOENT:
-		idio_filehandle_error_filename_not_found_C (name, IDIO_C_LOCATION ("idio_open_file_handle_C"));
+		idio_file_handle_error_filename_not_found_C (name, IDIO_C_LOCATION ("idio_open_file_handle_C"));
 	    case ENOTDIR:
-		idio_filehandle_error_filename_C (name, IDIO_C_LOCATION ("idio_open_file_handle_C"));
+		idio_file_handle_error_filename_C (name, IDIO_C_LOCATION ("idio_open_file_handle_C"));
 	    default:
 		idio_error_system_errno ("fopen", IDIO_LIST1 (idio_string_C (name)), IDIO_C_LOCATION ("idio_open_file_handle_C"));
 	    }
@@ -1071,7 +1071,7 @@ IDIO_DEFINE_PRIMITIVE1 ("close-file-handle-on-exec", close_file_handle_on_exec, 
     return idio_C_int (r);
 }
 
-IDIO idio_load_filehandle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO e, IDIO cs), IDIO cs)
+IDIO idio_load_file_handle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO e, IDIO cs), IDIO cs)
 {
     IDIO_ASSERT (fh);
     IDIO_C_ASSERT (reader);
@@ -1082,7 +1082,7 @@ IDIO idio_load_filehandle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*
 
     if (IDIO_HANDLE_FLAGS (fh) & IDIO_HANDLE_FLAG_CLOSED) {
 	IDIO eh = idio_thread_current_error_handle ();
-	idio_display_C ("ERROR: load-filehandle-interactive: ", eh);
+	idio_display_C ("ERROR: load-file-handle-interactive: ", eh);
 	idio_display (fh, eh);
 	idio_display_C (": handle already closed?\n", eh);
 	return idio_S_false;
@@ -1130,7 +1130,7 @@ IDIO idio_load_filehandle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*
     return idio_S_unspec;
 }
 
-IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO e, IDIO cs), IDIO cs)
+IDIO idio_load_file_handle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO e, IDIO cs), IDIO cs)
 {
     IDIO_ASSERT (fh);
     IDIO_C_ASSERT (reader);
@@ -1140,7 +1140,7 @@ IDIO idio_load_filehandle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (
     IDIO_TYPE_ASSERT (array, cs);
 
     if (IDIO_FILE_HANDLE_FLAGS (fh) & IDIO_FILE_HANDLE_FLAG_INTERACTIVE) {
-	return idio_load_filehandle_interactive (fh, reader, evaluator, cs);
+	return idio_load_file_handle_interactive (fh, reader, evaluator, cs);
     }
 
     int timing = 0;
@@ -1419,7 +1419,7 @@ char *idio_libfile_find_C (char *file)
 	    if (NULL != fe->ext) {
 
 		if ((lnlen + strlen (fe->ext)) >= PATH_MAX) {
-		    idio_filehandle_error_malformed_filename (idio_string_C (libname), IDIO_C_LOCATION ("idio_libfile_find_C"));
+		    idio_file_handle_error_malformed_filename (idio_string_C (libname), IDIO_C_LOCATION ("idio_libfile_find_C"));
 
 		    /* notreached */
 		    return NULL;
@@ -1535,7 +1535,7 @@ IDIO idio_load_file_name (IDIO filename, IDIO cs)
     char *libfile = idio_libfile_find_C (filename_C);
 
     if (NULL == libfile) {
-	idio_filehandle_error_filename_not_found (filename, IDIO_C_LOCATION ("idio_load_file_name"));
+	idio_file_handle_error_filename_not_found (filename, IDIO_C_LOCATION ("idio_load_file_name"));
 
 	/* notreached */
 	return idio_S_unspec;
@@ -1561,7 +1561,7 @@ IDIO idio_load_file_name (IDIO filename, IDIO cs)
 	    if (NULL != fe->ext) {
 
 		if ((l + strlen (fe->ext)) >= PATH_MAX) {
-		    idio_filehandle_error_malformed_filename (filename, IDIO_C_LOCATION ("idio_load_file_name"));
+		    idio_file_handle_error_malformed_filename (filename, IDIO_C_LOCATION ("idio_load_file_name"));
 		    return idio_S_unspec;
 		}
 
@@ -1574,7 +1574,7 @@ IDIO idio_load_file_name (IDIO filename, IDIO cs)
 		free (filename_C);
 
 		idio_thread_set_current_module ((*fe->modulep) ());
-		return idio_load_filehandle (fh, fe->reader, fe->evaluator, cs);
+		return idio_load_file_handle (fh, fe->reader, fe->evaluator, cs);
 	    }
 
 	    /* reset lfn without ext */
@@ -1602,11 +1602,11 @@ IDIO idio_load_file_name (IDIO filename, IDIO cs)
 	    free (filename_C);
 
 	    idio_thread_set_current_module ((*fe->modulep) ());
-	    return idio_load_filehandle (fh, reader, evaluator, cs);
+	    return idio_load_file_handle (fh, reader, evaluator, cs);
 	}
     }
 
-    idio_filehandle_error_filename_not_found (filename, IDIO_C_LOCATION ("idio_load_file_name"));
+    idio_file_handle_error_filename_not_found (filename, IDIO_C_LOCATION ("idio_load_file_name"));
     return idio_S_unspec;
 }
 
@@ -1654,7 +1654,7 @@ IDIO_DEFINE_PRIMITIVE1 ("delete-file", delete_file, (IDIO filename))
 
     if (remove (Cfn)) {
 	free (Cfn);
-	idio_filehandle_error_filename_delete (filename, IDIO_C_LOCATION ("delete-file"));
+	idio_file_handle_error_filename_delete (filename, IDIO_C_LOCATION ("delete-file"));
 	return idio_S_unspec;
     } else {
 	r = idio_S_true;
