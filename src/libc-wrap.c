@@ -2827,8 +2827,8 @@ IDIO_DEFINE_PRIMITIVE2 ("setrlimit", libc_setrlimit, (IDIO iresource, IDIO irlim
     IDIO_VERIFY_PARAM_TYPE (struct_instance, irlim);
     
     struct rlimit rlim;
-    rlim.rlim_cur = (int) idio_struct_instance_ref_direct (irlim, IDIO_STRUCT_RLIMIT_RLIM_CUR);
-    rlim.rlim_max = (int) idio_struct_instance_ref_direct (irlim, IDIO_STRUCT_RLIMIT_RLIM_MAX);
+    rlim.rlim_cur = (rlim_t) idio_struct_instance_ref_direct (irlim, IDIO_STRUCT_RLIMIT_RLIM_CUR);
+    rlim.rlim_max = (rlim_t) idio_struct_instance_ref_direct (irlim, IDIO_STRUCT_RLIMIT_RLIM_MAX);
 
     idio_libc_setrlimit (IDIO_C_TYPE_INT (iresource), &rlim);
 
@@ -2998,8 +2998,15 @@ void idio_init_libc_wrap ()
     idio_module_export_symbol_value (idio_symbols_C_intern ("UINTMAX_MAX"), idio_C_uint (UINTMAX_MAX), idio_libc_wrap_module);
 
     /* sys/resource.h */
+    /* 
+     * NB RLIM_SAVED_* not defined in FreeBSD (10)
+     */
+#ifdef RLIM_SAVED_MAX
     idio_module_export_symbol_value (idio_symbols_C_intern ("RLIM_SAVED_MAX"), idio_C_int (RLIM_SAVED_MAX), idio_libc_wrap_module);
+#endif
+#ifdef RLIM_SAVED_CUR
     idio_module_export_symbol_value (idio_symbols_C_intern ("RLIM_SAVED_CUR"), idio_C_int (RLIM_SAVED_CUR), idio_libc_wrap_module);
+#endif
     idio_module_export_symbol_value (idio_symbols_C_intern ("RLIM_INFINITY"), idio_C_int (RLIM_INFINITY), idio_libc_wrap_module);
 
     /* sys/wait.h */
