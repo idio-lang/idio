@@ -289,7 +289,7 @@ IDIO_DEFINE_PRIMITIVE1V ("open-file-from-fd", open_file_handle_from_fd, (IDIO if
 		idio_error_C ("name too long", IDIO_LIST1 (iname), IDIO_C_LOCATION ("open-file-from-fd"));
 
 		/* notreached */
-		return idio_S_unspec;
+		return idio_S_notreached;
 	    }
 
 	    sprintf (name, "%.*s", (int) blen, idio_string_s (iname));
@@ -352,7 +352,7 @@ IDIO_DEFINE_PRIMITIVE1V ("open-input-file-from-fd", open_input_file_handle_from_
 		idio_error_C ("name too long", IDIO_LIST1 (iname), IDIO_C_LOCATION ("open-input-file-from-fd"));
 
 		/* notreached */
-		return idio_S_unspec;
+		return idio_S_notreached;
 	    }
 
 	    sprintf (name, "%.*s", (int) blen, idio_string_s (iname));
@@ -415,7 +415,7 @@ IDIO_DEFINE_PRIMITIVE1V ("open-output-file-from-fd", open_output_file_handle_fro
 		idio_error_C ("name too long", IDIO_LIST1 (iname), IDIO_C_LOCATION ("open-output-file-from-fd"));
 
 		/* notreached */
-		return idio_S_unspec;
+		return idio_S_notreached;
 	    }
 
 	    sprintf (name, "%.*s", (int) blen, idio_string_s (iname));
@@ -1538,7 +1538,7 @@ IDIO idio_load_file_name (IDIO filename, IDIO cs)
 	idio_file_handle_error_filename_not_found (filename, IDIO_C_LOCATION ("idio_load_file_name"));
 
 	/* notreached */
-	return idio_S_unspec;
+	return idio_S_notreached;
     }
 
     strncpy (lfn, libfile, PATH_MAX - 1);

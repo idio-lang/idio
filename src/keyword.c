@@ -110,7 +110,7 @@ IDIO_DEFINE_PRIMITIVE1 ("make-keyword", make_keyword, (IDIO s))
     }
 
     /* notreached */
-    return idio_S_unspec;
+    return idio_S_notreached;
 }
 
 int idio_isa_keyword (IDIO s)
@@ -210,7 +210,7 @@ IDIO idio_keyword_get (IDIO ht, IDIO kw, IDIO args)
 	idio_error_param_nil ("keyword table", IDIO_C_LOCATION ("keyword-get"));
 
 	/* notreached */
-	return idio_S_unspec;
+	return idio_S_notreached;
     }
 
     IDIO_TYPE_ASSERT (hash, ht);
@@ -225,7 +225,7 @@ IDIO idio_keyword_get (IDIO ht, IDIO kw, IDIO args)
 	idio_keyword_error_key_not_found (kw, IDIO_C_LOCATION ("keyword-get"));
 
 	/* notreached */
-	return idio_S_unspec;
+	return idio_S_notreached;
     } else {
 	return IDIO_PAIR_H (args);
     }
@@ -253,7 +253,7 @@ IDIO idio_keyword_set (IDIO ht, IDIO kw, IDIO v)
 	idio_error_param_nil ("keyword table", IDIO_C_LOCATION ("keyword-set!"));
 
 	/* notreached */
-	return idio_S_unspec;
+	return idio_S_notreached;
     }
 
     IDIO_TYPE_ASSERT (hash, ht);

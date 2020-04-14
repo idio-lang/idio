@@ -260,7 +260,7 @@ IDIO idio_C_number_cast (IDIO co, idio_type_e type)
 	idio_error_printf (IDIO_C_LOCATION ("idio_C_number_cast"), "conversion not possible from %s %d to %d", idio_type2string (co), idio_type (co), type);
 
 	/* notreached */
-	return idio_S_nil;
+	return idio_S_notreached;
     }
 
     IDIO r = idio_S_nil;
@@ -328,7 +328,7 @@ IDIO idio_C_number_cast (IDIO co, idio_type_e type)
 		    idio_error_C ("n2->type unexpected", n2, idio_string_C (#name)); \
 									\
 		    /* notreached */					\
-		    return 0;						\
+		    return idio_S_notreached;						\
 		}							\
 	    }								\
 	} else if (idio_isa_fixnum (n2)) {				\
@@ -344,13 +344,13 @@ IDIO idio_C_number_cast (IDIO co, idio_type_e type)
 		idio_error_C ("n1->type unexpected", n1, idio_string_C (#name)); \
 									\
 		/* notreached */					\
-		return 0;						\
+		return idio_S_notreached;						\
 	    }								\
 	} else if (idio_type (n1) != idio_type (n2)) {			\
 	    idio_error_C ("n1->type != n2->type", IDIO_LIST2 (n1, n2), idio_string_C (#name)); \
 									\
 	    /* notreached */						\
-	    return 0;							\
+	    return idio_S_notreached;							\
 	} else {							\
 	    switch (idio_type (n1)) {					\
 	    case IDIO_TYPE_C_INT:					\
@@ -372,7 +372,7 @@ IDIO idio_C_number_cast (IDIO co, idio_type_e type)
 		idio_error_C ("n1->type unexpected", n1, idio_string_C (#name)); \
 									\
 		/* notreached */					\
-		return 0;						\
+		return idio_S_notreached;				\
 	    }								\
 	}								\
 									\
@@ -405,7 +405,7 @@ IDIO_DEFINE_PRIMITIVE1 ("->integer", C_to_integer, (IDIO inum))
     }
 
     /* notreached */
-    return idio_S_unspec;
+    return idio_S_notreached;
 }
 
 IDIO_DEFINE_PRIMITIVE1 ("integer->", C_integer_to, (IDIO inum))
@@ -421,7 +421,7 @@ IDIO_DEFINE_PRIMITIVE1 ("integer->", C_integer_to, (IDIO inum))
     }
 
     /* notreached */
-    return idio_S_unspec;
+    return idio_S_notreached;
 }
 
 IDIO_DEFINE_PRIMITIVE1V ("|", C_bw_or, (IDIO v1, IDIO args))

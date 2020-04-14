@@ -22,6 +22,8 @@
 
 #include "idio.h"
 
+void idio_add_primitives ();
+
 #ifdef IDIO_VM_PERF
 #define IDIO_VM_PERF_FILE_NAME "vm-perf.log"
 FILE *idio_vm_perf_FILE;

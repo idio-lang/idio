@@ -1500,7 +1500,7 @@ IDIO idio_vm_computed_ref (idio_ai_t mci, idio_ai_t gvi, IDIO thr)
     }
 
     /* notreached */
-    return idio_S_unspec;
+    return idio_S_notreached;
 }
 
 IDIO idio_vm_computed_set (idio_ai_t mci, idio_ai_t gvi, IDIO v, IDIO thr)
@@ -1524,7 +1524,7 @@ IDIO idio_vm_computed_set (idio_ai_t mci, idio_ai_t gvi, IDIO v, IDIO thr)
     }
 
     /* notreached */
-    return idio_S_unspec;
+    return idio_S_notreached;
 }
 
 void idio_vm_computed_define (idio_ai_t mci, idio_ai_t gvi, IDIO v, IDIO thr)
@@ -1739,7 +1739,7 @@ IDIO_DEFINE_PRIMITIVE2 ("raise", raise, (IDIO cont, IDIO cond))
     idio_raise_condition (cont, cond);
 
     /* notreached */
-    return idio_S_unspec;
+    return idio_S_notreached;
 }
 
 IDIO idio_apply (IDIO fn, IDIO args)
@@ -1857,7 +1857,8 @@ IDIO_DEFINE_PRIMITIVE2 ("%%restore-continuation", restore_continuation, (IDIO k,
 
     /* not reached */
     IDIO_C_ASSERT (0);
-    return idio_S_unspec;
+
+    return idio_S_notreached;
 }
 
 IDIO_DEFINE_PRIMITIVE1 ("%%call/cc", call_cc, (IDIO proc))
@@ -1884,7 +1885,8 @@ IDIO_DEFINE_PRIMITIVE1 ("%%call/cc", call_cc, (IDIO proc))
 
     /* not reached */
     IDIO_C_ASSERT (0);
-    return idio_S_unspec;
+
+    return idio_S_notreached;
 }
 
 IDIO_DEFINE_PRIMITIVE1 ("%%vm-trace", vm_trace, (IDIO trace))

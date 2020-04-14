@@ -298,7 +298,7 @@ IDIO idio_gensym (char *pref_prefix)
     idio_error_printf (IDIO_C_LOCATION ("gensym"), "looped!");
 
     /* notreached */
-    return idio_S_unspec;
+    return idio_S_notreached;
 }
 
 IDIO_DEFINE_PRIMITIVE0V ("gensym", gensym, (IDIO args))
@@ -320,7 +320,7 @@ IDIO_DEFINE_PRIMITIVE0V ("gensym", gensym, (IDIO args))
 	    idio_error_param_type ("string|symbol", iprefix, IDIO_C_LOCATION ("gensym"));
 
 	    /* notreached */
-	    return idio_S_unspec;
+	    return idio_S_notreached;
 	}
     }
 
@@ -379,7 +379,7 @@ IDIO idio_properties_get (IDIO o, IDIO args)
 	idio_property_error_nil_object ("object is #n", IDIO_C_LOCATION ("idio_properties_get"));
 
 	/* notreached */
-	return idio_S_unspec;
+	return idio_S_notreached;
     }
 
     IDIO properties = idio_hash_get (idio_properties_hash, o);
@@ -391,7 +391,7 @@ IDIO idio_properties_get (IDIO o, IDIO args)
 	    idio_properties_error_not_found ("no properties ever existed", o, IDIO_C_LOCATION ("idio_properties_get"));
 
 	    /* notreached */
-	    return idio_S_unspec;
+	    return idio_S_notreached;
 	}
     }
 
@@ -456,7 +456,7 @@ IDIO idio_property_get (IDIO o, IDIO property, IDIO args)
 	idio_property_error_nil_object ("object is #n", IDIO_C_LOCATION ("idio_property_get"));
 
 	/* notreached */
-	return idio_S_unspec;
+	return idio_S_notreached;
     }
 
     IDIO properties = idio_hash_get (idio_properties_hash, o);
@@ -468,7 +468,7 @@ IDIO idio_property_get (IDIO o, IDIO property, IDIO args)
 	    idio_properties_error_not_found ("no properties ever existed", o, IDIO_C_LOCATION ("idio_property_get"));
 
 	    /* notreached */
-	    return idio_S_unspec;
+	    return idio_S_notreached;
 	}
     }
 
@@ -479,7 +479,7 @@ IDIO idio_property_get (IDIO o, IDIO property, IDIO args)
 	    idio_property_error_no_properties ("properties is #n", IDIO_C_LOCATION ("idio_property_get"));
 	    
 	    /* notreached */
-	    return idio_S_unspec;
+	    return idio_S_notreached;
 	}
     }
 
@@ -492,7 +492,7 @@ IDIO idio_property_get (IDIO o, IDIO property, IDIO args)
 	    idio_property_error_key_not_found (property, IDIO_C_LOCATION ("idio_property_get"));
 
 	    /* notreached */
-	    return idio_S_unspec;
+	    return idio_S_notreached;
 	}
     }
 

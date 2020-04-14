@@ -402,7 +402,7 @@ IDIO_DEFINE_PRIMITIVE2 ("default-condition-handler", default_condition_handler, 
 	idio_raise_condition (cont, cond);
 
 	/* notreached */
-	return idio_S_unspec;
+	return idio_S_notreached;
     }
 
     IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (cond);
@@ -495,7 +495,7 @@ IDIO_DEFINE_PRIMITIVE2 ("restart-condition-handler", restart_condition_handler, 
 	    idio_raise_condition (cont, cond);
 
 	    /* notreached */
-	    return idio_S_unspec;
+	    return idio_S_notreached;
 	}
 
 	/*
@@ -578,7 +578,7 @@ IDIO_DEFINE_PRIMITIVE2 ("restart-condition-handler", restart_condition_handler, 
     /* notreached */
     IDIO_C_ASSERT (0);
 
-    return idio_S_unspec;
+    return idio_S_notreached;
 }
 
 IDIO_DEFINE_PRIMITIVE2 ("reset-condition-handler", reset_condition_handler, (IDIO cont, IDIO cond))

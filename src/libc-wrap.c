@@ -79,7 +79,7 @@ IDIO_DEFINE_PRIMITIVE0V ("system-error", libc_system_error, (IDIO args))
     idio_error_system_errno (name, args, IDIO_C_LOCATION ("system-error"));
 
     /* notreached */
-    return idio_S_unspec;
+    return idio_S_notreached;
 }
 
 IDIO_DEFINE_PRIMITIVE2 ("access", libc_access, (IDIO ipath, IDIO imode))
@@ -188,7 +188,7 @@ IDIO_DEFINE_PRIMITIVE1 ("exit", libc_exit, (IDIO istatus))
     exit (status);
 
     /* notreached */
-    return idio_S_unspec;
+    return idio_S_notreached;
 }
 
 IDIO_DEFINE_PRIMITIVE2V ("fcntl", libc_fcntl, (IDIO ifd, IDIO icmd, IDIO args))
@@ -233,7 +233,7 @@ IDIO_DEFINE_PRIMITIVE2V ("fcntl", libc_fcntl, (IDIO ifd, IDIO icmd, IDIO args))
 		idio_error_param_type ("fixnum|C_int", iarg, IDIO_C_LOCATION ("fcntl"));
 
 		/* notreached */
-		return idio_S_unspec;
+		return idio_S_notreached;
 	    }
 	    r = fcntl (fd, cmd, arg);
 	}
@@ -254,7 +254,7 @@ IDIO_DEFINE_PRIMITIVE2V ("fcntl", libc_fcntl, (IDIO ifd, IDIO icmd, IDIO args))
 		idio_error_param_type ("fixnum|C_int", iarg, IDIO_C_LOCATION ("fcntl"));
 
 		/* notreached */
-		return idio_S_unspec;
+		return idio_S_notreached;
 	    }
 	    r = fcntl (fd, cmd, arg);
 	}
@@ -274,7 +274,7 @@ IDIO_DEFINE_PRIMITIVE2V ("fcntl", libc_fcntl, (IDIO ifd, IDIO icmd, IDIO args))
 		idio_error_param_type ("C_int", iarg, IDIO_C_LOCATION ("fcntl"));
 
 		/* notreached */
-		return idio_S_unspec;
+		return idio_S_notreached;
 	    }
 	    r = fcntl (fd, cmd, arg);
 	}
@@ -283,7 +283,7 @@ IDIO_DEFINE_PRIMITIVE2V ("fcntl", libc_fcntl, (IDIO ifd, IDIO icmd, IDIO args))
 	idio_error_C ("unexpected cmd", IDIO_LIST2 (ifd, icmd), IDIO_C_LOCATION ("fcntl"));
 
 	/* notreached */
-	return idio_S_unspec;
+	return idio_S_notreached;
     }
 
     return idio_C_int (r);
@@ -300,7 +300,7 @@ IDIO_DEFINE_PRIMITIVE1 ("fileno", libc_fileno, (IDIO ifilep))
 	idio_error_param_type ("file-handle", ifilep, IDIO_C_LOCATION ("fileno"));
 
 	/* notreached */
-	return idio_S_unspec;
+	return idio_S_notreached;
     }
 
     return idio_C_int (fd);
@@ -2827,8 +2827,8 @@ IDIO_DEFINE_PRIMITIVE2 ("setrlimit", libc_setrlimit, (IDIO iresource, IDIO irlim
     IDIO_VERIFY_PARAM_TYPE (struct_instance, irlim);
     
     struct rlimit rlim;
-    rlim.rlim_cur = idio_struct_instance_ref_direct (irlim, IDIO_STRUCT_RLIMIT_RLIM_CUR);
-    rlim.rlim_max = idio_struct_instance_ref_direct (irlim, IDIO_STRUCT_RLIMIT_RLIM_MAX);
+    rlim.rlim_cur = (int) idio_struct_instance_ref_direct (irlim, IDIO_STRUCT_RLIMIT_RLIM_CUR);
+    rlim.rlim_max = (int) idio_struct_instance_ref_direct (irlim, IDIO_STRUCT_RLIMIT_RLIM_MAX);
 
     idio_libc_setrlimit (IDIO_C_TYPE_INT (iresource), &rlim);
 

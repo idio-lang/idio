@@ -555,7 +555,7 @@ static IDIO idio_meaning_reference (IDIO name, IDIO nametree, int flags, IDIO cs
 	idio_meaning_error_static_unbound (name, IDIO_C_LOCATION ("idio_meaning_reference"));
 
 	/* notreached */
-	return idio_S_unspec;
+	return idio_S_notreached;
     }
 
     IDIO kind = IDIO_PAIR_H (sk);
@@ -583,7 +583,7 @@ static IDIO idio_meaning_reference (IDIO name, IDIO nametree, int flags, IDIO cs
 	idio_meaning_error_static_unbound (name, IDIO_C_LOCATION ("idio_meaning_reference"));
 
 	/* notreached */
-	return idio_S_unspec;
+	return idio_S_notreached;
     }
 }
 
@@ -606,7 +606,7 @@ static IDIO idio_meaning_function_reference (IDIO name, IDIO nametree, int flags
 	idio_meaning_error_static_unbound (name, IDIO_C_LOCATION ("idio_meaning_function_reference"));
 
 	/* notreached */
-	return idio_S_unspec;
+	return idio_S_notreached;
     }
 
     IDIO kind = IDIO_PAIR_H (sk);
@@ -634,7 +634,7 @@ static IDIO idio_meaning_function_reference (IDIO name, IDIO nametree, int flags
 	idio_meaning_error_static_unbound (name, IDIO_C_LOCATION ("idio_meaning_function_reference"));
 
 	/* notreached */
-	return idio_S_unspec;
+	return idio_S_notreached;
     }
 }
 
@@ -719,7 +719,7 @@ static IDIO idio_meaning_dequasiquote (IDIO e, int level)
     }
 
     /* not reached */
-    return idio_S_unspec;
+    return idio_S_notreached;
 }
 
 static IDIO idio_meaning_quasiquotation (IDIO e, IDIO nametree, int flags, IDIO cs)
@@ -763,13 +763,13 @@ static IDIO idio_rewrite_cond (IDIO c)
 	idio_error_param_type ("pair", c, IDIO_C_LOCATION ("idio_rewrite_cond"));
 
 	/* notreached */
-	return idio_S_unspec;
+	return idio_S_notreached;
     } else if (! idio_isa_pair (IDIO_PAIR_H (c))) {
 	/* idio_debug ("pair/pair: c %s\n", c); */
 	idio_error_param_type ("pair/pair", c, IDIO_C_LOCATION ("idio_rewrite_cond"));
 
 	/* notreached */
-	return idio_S_unspec;
+	return idio_S_notreached;
     } else if (idio_S_else == IDIO_PAIR_HH (c)) {
 	/* fprintf (stderr, "cond-rewrite: else clause\n");  */
 	if (idio_S_nil == IDIO_PAIR_T (c)) {
@@ -778,7 +778,7 @@ static IDIO idio_rewrite_cond (IDIO c)
 	    idio_error_C ("cond: else not in last clause", c, IDIO_C_LOCATION ("idio_rewrite_cond"));
 
 	    /* notreached */
-	    return idio_S_unspec;
+	    return idio_S_notreached;
 	}
     }
 
@@ -805,7 +805,7 @@ static IDIO idio_rewrite_cond (IDIO c)
 	    idio_error_param_type ("=>", c, IDIO_C_LOCATION ("idio_rewrite_cond"));
 
 	    /* notreached */
-	    return idio_S_unspec;
+	    return idio_S_notreached;
 	}
     } else if (idio_S_nil == IDIO_PAIR_TH (c)) {
 	/* fprintf (stderr, "cond-rewrite: null? pth clause\n");  */
@@ -1486,7 +1486,7 @@ static IDIO idio_meanings_multiple_sequence (IDIO e, IDIO ep, IDIO nametree, int
 	idio_error_C ("unexpected sequence keyword", keyword, IDIO_C_LOCATION ("idio_meanings_multiple_sequence"));
 
 	/* notreached */
-	return idio_S_unspec;
+	return idio_S_notreached;
     }
 }
 
@@ -1525,7 +1525,7 @@ static IDIO idio_meaning_sequence (IDIO ep, IDIO nametree, int flags, IDIO keywo
 		idio_error_C ("unexpected sequence keyword", keyword, IDIO_C_LOCATION ("idio_meaning_sequence"));
 
 		/* notreached */
-		return idio_S_unspec;
+		return idio_S_notreached;
 	    }
 
 	    IDIO e = IDIO_PAIR_H (ep);
@@ -1916,7 +1916,7 @@ static IDIO idio_meaning_abstraction (IDIO nns, IDIO docstr, IDIO ep, IDIO namet
     idio_error_C ("meaning-abstraction", IDIO_LIST2 (nns, ep), IDIO_C_LOCATION ("idio_meaning_abstraction"));
 
     /* notreached */
-    return idio_S_unspec;
+    return idio_S_notreached;
 }
 
 static IDIO idio_meaning_block (IDIO es, IDIO nametree, int flags, IDIO cs)
@@ -2111,7 +2111,7 @@ static IDIO idio_meaning_closed_application (IDIO e, IDIO ees, IDIO nametree, in
     idio_error_C ("meaning-closed-application", IDIO_LIST2 (e, ees), IDIO_C_LOCATION ("idio_meaning_closed_application"));
 
     /* notreached */
-    return idio_S_unspec;
+    return idio_S_notreached;
 }
 
 static IDIO idio_meaning_regular_application (IDIO e, IDIO es, IDIO nametree, int flags, IDIO cs);
@@ -2357,7 +2357,7 @@ static IDIO idio_meaning_application (IDIO e, IDIO es, IDIO nametree, int flags,
     idio_error_C ("meaning-application", IDIO_LIST2 (e, es), IDIO_C_LOCATION ("idio_meaning_application"));
 
     /* notreached */
-    return idio_S_unspec;
+    return idio_S_notreached;
 }
 
 static IDIO idio_meaning_dynamic_reference (IDIO name, IDIO nametree, int flags, IDIO cs)
@@ -3025,7 +3025,7 @@ static IDIO idio_meaning (IDIO e, IDIO nametree, int flags, IDIO cs)
     idio_error_C ("meaning", e, IDIO_C_LOCATION ("idio_meaning"));
 
     /* notreached */
-    return idio_S_unspec;
+    return idio_S_notreached;
 }
 
 IDIO idio_evaluate (IDIO e, IDIO cs)

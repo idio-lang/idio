@@ -219,7 +219,7 @@ IDIO_DEFINE_PRIMITIVE2V ("error", error, (IDIO loc, IDIO msg, IDIO args))
     idio_error (idio_S_user_code, msg, args, loc);
 
     /* not reached */
-    return idio_S_unspec;
+    return idio_S_notreached;
 }
 
 void idio_error_system (char *msg, IDIO args, int err, IDIO loc)

@@ -523,7 +523,7 @@ IDIO_DEFINE_PRIMITIVE2V ("seek-handle", seek_handle, (IDIO h, IDIO pos, IDIO arg
 	idio_error_printf (IDIO_C_LOCATION ("seek-handle"), "cannot seek (%" PRId64 ", %s)", offset, ws);
 
 	/* notreached */
-	return idio_S_unspec;
+	return idio_S_notreached;
     }
 
     IDIO_HANDLE_POS (h) = n;
@@ -753,7 +753,7 @@ IDIO idio_handle_or_current (IDIO h, unsigned mode)
     }
 
     /* notreached */
-    return idio_S_unspec;
+    return idio_S_notreached;
 }
 
 IDIO_DEFINE_PRIMITIVE0V ("read", read, (IDIO args))

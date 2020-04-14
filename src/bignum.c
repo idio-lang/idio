@@ -2280,7 +2280,7 @@ IDIO idio_bignum_integer_C (char *nums, int req_exact)
 	    idio_error_system_errno (em, idio_S_nil, IDIO_C_LOCATION ("idio_bignum_integer_C"));
 
 	    /* notreached */
-	    return idio_S_nil;
+	    return idio_S_notreached;
 	}
 
 	if (end == nums) {
@@ -2290,7 +2290,7 @@ IDIO idio_bignum_integer_C (char *nums, int req_exact)
 	    idio_error_system_errno (em, idio_S_nil, IDIO_C_LOCATION ("idio_bignum_integer_C"));
 
 	    /* notreached */
-	    return idio_S_nil;
+	    return idio_S_notreached;
 	}
 
 	if ('\0' != *end) {
@@ -2298,7 +2298,7 @@ IDIO idio_bignum_integer_C (char *nums, int req_exact)
 	    idio_error_printf (IDIO_C_LOCATION ("idio_bignum_integer_C"), "strtoll (%s) = %ld", nums, i);
 
 	    /* notreached */
-	    return idio_S_nil;
+	    return idio_S_notreached;
 	}
 
 	s[nl-eos] = '\0';

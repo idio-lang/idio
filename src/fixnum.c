@@ -84,7 +84,7 @@ IDIO idio_fixnum (intptr_t i)
     }
 
     /* notreached */
-    return idio_S_unspec;
+    return idio_S_notreached;
 }
 
 IDIO idio_fixnum_C (char *str, int base)
@@ -103,7 +103,7 @@ IDIO idio_fixnum_C (char *str, int base)
 	idio_fixnum_error_conversion (em, idio_S_nil, IDIO_C_LOCATION ("idio_fixnum_C"));
 
 	/* notreached */
-	return idio_S_nil;
+	return idio_S_notreached;
     }
 
     if (end == str) {
@@ -112,7 +112,7 @@ IDIO idio_fixnum_C (char *str, int base)
 	idio_fixnum_error_conversion (em, idio_S_nil, IDIO_C_LOCATION ("idio_fixnum_C"));
 
 	/* notreached */
-	return idio_S_nil;
+	return idio_S_notreached;
     }
 
     if ('\0' == *end) {
@@ -123,7 +123,7 @@ IDIO idio_fixnum_C (char *str, int base)
 	idio_fixnum_error_conversion (em, idio_S_nil, IDIO_C_LOCATION ("idio_fixnum_C"));
 
 	/* notreached */
-	return idio_S_nil;
+	return idio_S_notreached;
     }
 }
 

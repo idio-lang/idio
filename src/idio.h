@@ -87,7 +87,11 @@
 
 /* Solaris doesn't define RLIMIT_NLIMITS */
 #ifndef RLIMIT_NLIMITS
+#ifdef RLIM_NLIMITS
 #define RLIMIT_NLIMITS RLIM_NLIMITS
+#else
+wither RLIMIT_NLIMITS?
+#endif
 #endif
 
 #include <setjmp.h>
@@ -397,6 +401,13 @@ extern FILE *idio_vm_perf_FILE;
 #define IDIO_CONSTANT_VOID            -6
 #define IDIO_CONSTANT_NAN             -7
 
+/*
+ * A distinguished value to a) shut the compiler up when we know we'll
+ * have setjmp'd out of a function and b) we can potentially catch and
+ * warn.
+ */
+#define IDIO_CONSTANT_NOTREACHED      -100
+
 #define IDIO_CONSTANT_TOPLEVEL         30
 #define IDIO_CONSTANT_PREDEF           31
 #define IDIO_CONSTANT_LOCAL            32
@@ -412,6 +423,7 @@ extern FILE *idio_vm_perf_FILE;
 #define idio_S_false		((const IDIO) IDIO_CONSTANT_IDIO (IDIO_CONSTANT_FALSE))
 #define idio_S_void		((const IDIO) IDIO_CONSTANT_IDIO (IDIO_CONSTANT_VOID))
 #define idio_S_NaN		((const IDIO) IDIO_CONSTANT_IDIO (IDIO_CONSTANT_NAN))
+#define idio_S_notreached	((const IDIO) IDIO_CONSTANT_IDIO (IDIO_CONSTANT_NOTREACHED))
 
 #define idio_S_toplevel		((const IDIO) IDIO_CONSTANT_IDIO (IDIO_CONSTANT_TOPLEVEL))
 #define idio_S_predef		((const IDIO) IDIO_CONSTANT_IDIO (IDIO_CONSTANT_PREDEF))

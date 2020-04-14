@@ -1793,7 +1793,7 @@ IDIO idio_list_set_difference (IDIO set1, IDIO set2)
 	    idio_error_C ("set1", set1, IDIO_C_LOCATION ("idio_list_set_difference"));
 
 	    /* notreached */
-	    return idio_S_unspec;
+	    return idio_S_notreached;
 	}
 	return idio_S_nil;
     }
@@ -1832,7 +1832,7 @@ IDIO_DEFINE_PRIMITIVE2 ("value-index", value_index, (IDIO o, IDIO i))
     idio_error_C ("non-indexable object", IDIO_LIST2 (o, i), IDIO_C_LOCATION ("value-index"));
 
     /* notreached */
-    return idio_S_unspec;
+    return idio_S_notreached;
 }
 
 IDIO_DEFINE_PRIMITIVE3 ("set-value-index!", set_value_index, (IDIO o, IDIO i, IDIO v))
@@ -1869,7 +1869,7 @@ IDIO_DEFINE_PRIMITIVE3 ("set-value-index!", set_value_index, (IDIO o, IDIO i, ID
     idio_error_C ("non-indexable object", IDIO_LIST2 (o, i), IDIO_C_LOCATION ("set-value-index!"));
 
     /* notreached */
-    return idio_S_unspec;
+    return idio_S_notreached;
 }
 
 IDIO_DEFINE_PRIMITIVE1 ("identity", identity, (IDIO o))

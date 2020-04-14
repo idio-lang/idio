@@ -1362,8 +1362,6 @@ IDIO_DEFINE_PRIMITIVE2 ("SIGHUP-condition-handler", SIGHUP_condition_handler, (I
     IDIO_TYPE_ASSERT (boolean, cont);
     IDIO_TYPE_ASSERT (condition, cond);
 
-    IDIO thr = idio_thread_current_thread ();
-
     if (idio_isa_condition (cond)) {
 	IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (cond);
 	IDIO sif = IDIO_STRUCT_INSTANCE_FIELDS (cond);
@@ -1398,6 +1396,8 @@ IDIO_DEFINE_PRIMITIVE2 ("SIGHUP-condition-handler", SIGHUP_condition_handler, (I
 
     /* notreached */
     IDIO_C_ASSERT (0);
+
+    return idio_S_notreached;
 }
 
 void idio_command_SIGCHLD_signal_handler (IDIO signum)
@@ -1420,8 +1420,6 @@ IDIO_DEFINE_PRIMITIVE2 ("SIGCHLD-condition-handler", SIGCHLD_condition_handler, 
     IDIO_ASSERT (cond);
     IDIO_TYPE_ASSERT (boolean, cont);
     IDIO_TYPE_ASSERT (condition, cond);
-
-    IDIO thr = idio_thread_current_thread ();
 
     if (idio_isa_condition (cond)) {
 	IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (cond);
@@ -1456,6 +1454,8 @@ IDIO_DEFINE_PRIMITIVE2 ("SIGCHLD-condition-handler", SIGCHLD_condition_handler, 
 
     /* notreached */
     IDIO_C_ASSERT (0);
+
+    return idio_S_notreached;
 }
 
 IDIO_DEFINE_PRIMITIVE2 ("condition-handler-rt-command-status", condition_handler_rt_command_status, (IDIO cont, IDIO cond))
@@ -1465,11 +1465,9 @@ IDIO_DEFINE_PRIMITIVE2 ("condition-handler-rt-command-status", condition_handler
     IDIO_TYPE_ASSERT (boolean, cont);
     IDIO_TYPE_ASSERT (condition, cond);
 
-    IDIO thr = idio_thread_current_thread ();
-
     if (idio_isa_condition (cond)) {
 	IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (cond);
-	IDIO sif = IDIO_STRUCT_INSTANCE_FIELDS (cond);
+	/* IDIO sif = IDIO_STRUCT_INSTANCE_FIELDS (cond); */
 
 	if (idio_struct_type_isa (sit, idio_condition_rt_command_status_error_type)) {
 	    return idio_S_unspec;
@@ -1494,6 +1492,8 @@ IDIO_DEFINE_PRIMITIVE2 ("condition-handler-rt-command-status", condition_handler
 
     /* notreached */
     IDIO_C_ASSERT (0);
+
+    return idio_S_notreached;
 }
 
 static void idio_command_mark_job_as_running (IDIO job)
@@ -1998,7 +1998,7 @@ static IDIO idio_command_launch_1proc_job (IDIO job, int foreground, char **argv
      *
      * notreached
      */
-    return idio_S_unspec;
+    return idio_S_notreached;
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("%launch-job", launch_job, (IDIO job), "job", "\
