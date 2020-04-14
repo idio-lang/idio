@@ -85,6 +85,11 @@
 #define WAIT_ANY (-1)
 #endif
 
+/* Solaris doesn't define RLIMIT_NLIMITS */
+#ifndef RLIMIT_NLIMITS
+#define RLIMIT_NLIMITS RLIM_NLIMITS
+#endif
+
 #include <setjmp.h>
 
 #include <termios.h>

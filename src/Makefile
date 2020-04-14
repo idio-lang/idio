@@ -29,7 +29,7 @@ endif
 else ifeq ($(OS),SunOS)
 
 CC		:= gcc
-LIBFFI_INCDIR	= $(wildcard /usr/local/lib/libffi-*/include)
+LIBFFI_INCDIR	= $(wildcard /usr/lib/$(shell isainfo -k)/libffi-*/include)
 LDFLAGS		:= -L/usr/local/lib -R/usr/local/lib
 LIBS		:= -ldl
 CFLAGS		:= -D__EXTENSIONS__

@@ -392,8 +392,6 @@ IDIO_DEFINE_PRIMITIVE2 ("default-condition-handler", default_condition_handler, 
     IDIO_TYPE_ASSERT (boolean, cont);
     IDIO_TYPE_ASSERT (condition, cond);
 
-    IDIO thr = idio_thread_current_thread ();
-
     if (idio_S_false == cont) {
 	/*
 	 * This should go to the restart-condition-handler (which will
@@ -482,11 +480,9 @@ IDIO_DEFINE_PRIMITIVE2 ("restart-condition-handler", restart_condition_handler, 
     IDIO_TYPE_ASSERT (boolean, cont);
     IDIO_TYPE_ASSERT (condition, cond);
 
-    IDIO thr = idio_thread_current_thread ();
-
     if (idio_isa_condition (cond)) {
 	IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (cond);
-	IDIO stf = IDIO_STRUCT_TYPE_FIELDS (sit);
+	/* IDIO stf = IDIO_STRUCT_TYPE_FIELDS (sit); */
 	IDIO sif = IDIO_STRUCT_INSTANCE_FIELDS (cond);
 
 	if (idio_S_false == cont) {
@@ -581,6 +577,8 @@ IDIO_DEFINE_PRIMITIVE2 ("restart-condition-handler", restart_condition_handler, 
 
     /* notreached */
     IDIO_C_ASSERT (0);
+
+    return idio_S_unspec;
 }
 
 IDIO_DEFINE_PRIMITIVE2 ("reset-condition-handler", reset_condition_handler, (IDIO cont, IDIO cond))

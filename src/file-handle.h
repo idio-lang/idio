@@ -60,6 +60,8 @@ int idio_file_handle_fd (IDIO fh);
 void idio_file_handle_finalizer (IDIO fh);
 void idio_gc_register_file_handle (IDIO fh);
 void idio_gc_deregister_file_handle (IDIO fh);
+void idio_remember_file_handle (IDIO fh);
+void idio_forget_file_handle (IDIO fh);
 void idio_free_file_handle (IDIO fh);
 IDIO idio_open_file_handle_C (char *name, char *mode);
 IDIO idio_stdin_file_handle ();
