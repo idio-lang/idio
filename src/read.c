@@ -1400,7 +1400,7 @@ static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, char *ic, int depth
     int count = 0;
 
     for (;;) {
-	off_t line = IDIO_HANDLE_LINE(handle);
+	/* off_t line = IDIO_HANDLE_LINE(handle); */
 	IDIO expr = idio_read_1_expr_nl (handle, ic, depth, 1);
 
 	if (idio_S_eof == expr) {

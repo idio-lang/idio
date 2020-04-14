@@ -2658,7 +2658,7 @@ int idio_vm_run1 (IDIO thr)
 	    if (idio_S_unspec != fgci) {
 		sigstr = idio_vm_constants_ref (IDIO_FIXNUM_VAL (fgci));
 	    } else {
-		fprintf (stderr, "vm cc sig: failed to find %" PRId64 " (%" PRId64 ")\n", IDIO_FIXNUM_VAL (fci), ssci);
+		fprintf (stderr, "vm cc sig: failed to find %" PRId64 " (%" PRId64 ")\n", (int64_t) IDIO_FIXNUM_VAL (fci), ssci);
 	    }
 	    fci = idio_fixnum (dsci);
 	    fgci = idio_module_vci_get_or_set (ce, fci);
@@ -2666,7 +2666,7 @@ int idio_vm_run1 (IDIO thr)
 	    if (idio_S_unspec != fgci) {
 		docstr = idio_vm_constants_ref (IDIO_FIXNUM_VAL (fgci));
 	    } else {
-		fprintf (stderr, "vm cc doc: failed to find %" PRId64 " (%" PRId64 ")\n", IDIO_FIXNUM_VAL (fci), ssci);
+		fprintf (stderr, "vm cc doc: failed to find %" PRId64 " (%" PRId64 ")\n", (int64_t) IDIO_FIXNUM_VAL (fci), ssci);
 	    }
 
 	    /*
@@ -3757,7 +3757,7 @@ void idio_vm_dasm (IDIO thr, idio_ai_t pc0, idio_ai_t pce)
 
 		IDIO c = idio_vm_constants_ref (gci);
 
-		IDIO_VM_DASM ("CONSTANT %" PRId64 "", mci);
+		IDIO_VM_DASM ("CONSTANT %td", mci);
 		idio_debug_FILE (idio_dasm_FILE, " %s", c);
 	    }
 	    break;
@@ -3831,10 +3831,10 @@ void idio_vm_dasm (IDIO thr, idio_ai_t pc0, idio_ai_t pce)
 
 		IDIO ce = idio_thread_current_env ();
 		IDIO fgci = idio_module_vci_get_or_set (ce, idio_fixnum (mci));
-		IDIO fgkci = idio_module_vci_get_or_set (ce, idio_fixnum (mkci));
+		/* IDIO fgkci = idio_module_vci_get_or_set (ce, idio_fixnum (mkci)); */
 
 		IDIO sym = idio_vm_constants_ref (IDIO_FIXNUM_VAL (fgci));
-		IDIO kind = idio_vm_constants_ref (IDIO_FIXNUM_VAL (fgkci));
+		/* IDIO kind = idio_vm_constants_ref (IDIO_FIXNUM_VAL (fgkci)); */
 
 		if (idio_isa_symbol (sym)) {
 		    IDIO_VM_DASM ("GLOBAL-DEF %" PRId64 " %s", mci, IDIO_SYMBOL_S (sym));
@@ -3904,27 +3904,27 @@ void idio_vm_dasm (IDIO thr, idio_ai_t pc0, idio_ai_t pce)
 	    {
 		int i = IDIO_IA_GET_NEXT (pcp);
 		char h[BUFSIZ];
-		sprintf (h, "SG@%" PRId64 "", pc + i);
+		sprintf (h, "SG@%td", pc + i);
 		idio_hash_put (hints, idio_fixnum (pc + i), idio_symbols_C_intern (h));
-		IDIO_VM_DASM ("SHORT-GOTO +%d %" PRId64 "", i, pc + i);
+		IDIO_VM_DASM ("SHORT-GOTO +%d %td", i, pc + i);
 	    }
 	    break;
 	case IDIO_A_SHORT_JUMP_FALSE:
 	    {
 		int i = IDIO_IA_GET_NEXT (pcp);
 		char h[BUFSIZ];
-		sprintf (h, "SJF@%" PRId64 "", pc + i);
+		sprintf (h, "SJF@%td", pc + i);
 		idio_hash_put (hints, idio_fixnum (pc + i), idio_symbols_C_intern (h));
-		IDIO_VM_DASM ("SHORT-JUMP-FALSE +%d %" PRId64 "", i, pc + i);
+		IDIO_VM_DASM ("SHORT-JUMP-FALSE +%d %td", i, pc + i);
 	    }
 	    break;
 	case IDIO_A_SHORT_JUMP_TRUE:
 	    {
 		int i = IDIO_IA_GET_NEXT (pcp);
 		char h[BUFSIZ];
-		sprintf (h, "SJT@%" PRId64 "", pc + i);
+		sprintf (h, "SJT@%td", pc + i);
 		idio_hash_put (hints, idio_fixnum (pc + i), idio_symbols_C_intern (h));
-		IDIO_VM_DASM ("SHORT-JUMP-TRUE %d %" PRId64 "", i, pc + i);
+		IDIO_VM_DASM ("SHORT-JUMP-TRUE %d %td", i, pc + i);
 	    }
 	    break;
 	case IDIO_A_EXTEND_FRAME:
@@ -3996,7 +3996,7 @@ void idio_vm_dasm (IDIO thr, idio_ai_t pc0, idio_ai_t pce)
 		if (idio_S_unspec != fgssci) {
 		    ss = idio_vm_constants_ref (IDIO_FIXNUM_VAL (fgssci));
 		} else {
-		    fprintf (stderr, "vm cc sig: failed to find %ld\n", ssci);
+		    fprintf (stderr, "vm cc sig: failed to find %" PRIu64 "\n", ssci);
 		}
 		IDIO_VM_DASM (" (%s)", idio_display_string (ss));
 
@@ -4006,7 +4006,7 @@ void idio_vm_dasm (IDIO thr, idio_ai_t pc0, idio_ai_t pce)
 		if (idio_S_unspec != fgdsci) {
 		    ds = idio_vm_constants_ref (IDIO_FIXNUM_VAL (fgdsci));
 		} else {
-		    fprintf (stderr, "vm cc doc: failed to find %ld\n", dsci);
+		    fprintf (stderr, "vm cc doc: failed to find %" PRIu64 "\n", dsci);
 		}
 		if (idio_S_nil != ds) {
 		    IDIO_VM_DASM ("\n%s", idio_display_string (ds));
@@ -4393,14 +4393,14 @@ void idio_vm_dasm (IDIO thr, idio_ai_t pc0, idio_ai_t pce)
 	    {
 		uint64_t mci = IDIO_VM_GET_REF (pcp);
 
-		IDIO_VM_DASM ("ENVIRON-REF %td", mci);
+		IDIO_VM_DASM ("ENVIRON-REF %" PRIu64, mci);
 	    }
 	    break;
 	case IDIO_A_PUSH_TRAP:
 	    {
 		uint64_t mci = IDIO_VM_GET_REF (pcp);
 
-		IDIO_VM_DASM ("PUSH-TRAP %td", mci);
+		IDIO_VM_DASM ("PUSH-TRAP %" PRIu64, mci);
 	    }
 	    break;
 	case IDIO_A_POP_TRAP:
@@ -4449,8 +4449,8 @@ void idio_vm_dasm (IDIO thr, idio_ai_t pc0, idio_ai_t pce)
 		if (pc < 0) {
 		    pc = 0;
 		}
-		fprintf (stderr, "idio-vm-dasm: unexpected ins %3d @%" PRId64 "\n", ins, pci);
-		fprintf (stderr, "dumping from %" PRId64 " to %" PRId64 "\n", pc, pcm - 1);
+		fprintf (stderr, "idio-vm-dasm: unexpected ins %3d @%td\n", ins, pci);
+		fprintf (stderr, "dumping from %td to %td\n", pc, pcm - 1);
 		if (pc % 10) {
 		    idio_ai_t pc1 = pc - (pc % 10);
 		    fprintf (stderr, "\n  %5td ", pc1);
@@ -4886,11 +4886,11 @@ void idio_vm_dump_constants ()
     }
 
     idio_ai_t al = idio_array_size (idio_vm_constants);
-    fprintf (fp, "idio_vm_constants: %" PRId64 "\n", al);
+    fprintf (fp, "idio_vm_constants: %td\n", al);
     idio_ai_t i;
     for (i = 0 ; i < al; i++) {
 	IDIO c = idio_array_get_index (idio_vm_constants, i);
-	fprintf (fp, "%6" PRId64": ", i);
+	fprintf (fp, "%6td: ", i);
 	char *cs = idio_as_string (c, 40);
 	fprintf (fp, "%-20s %s\n", idio_type2string (c), cs);
 	free (cs);
@@ -4933,11 +4933,11 @@ void idio_vm_dump_values ()
     }
 
     idio_ai_t al = idio_array_size (idio_vm_values);
-    fprintf (fp, "idio_vm_values: %" PRId64 "\n", al);
+    fprintf (fp, "idio_vm_values: %td\n", al);
     idio_ai_t i;
     for (i = 0 ; i < al; i++) {
 	IDIO v = idio_array_get_index (idio_vm_values, i);
-	fprintf (fp, "%6" PRId64": ", i);
+	fprintf (fp, "%6td: ", i);
 	char *vs = idio_as_string (v, 40);
 	fprintf (fp, "%-20s %s\n", idio_type2string (v), vs);
 	free (vs);
@@ -5046,8 +5046,8 @@ void idio_vm_decode_stack (IDIO thr)
     idio_ai_t dsp = IDIO_FIXNUM_VAL (IDIO_THREAD_DYNAMIC_SP (thr));
     idio_ai_t esp = IDIO_FIXNUM_VAL (IDIO_THREAD_ENVIRON_SP (thr));
 
-    IDIO f_NCE_pc = idio_fixnum (idio_vm_NCE_pc);
-    IDIO f_FINISH_pc = idio_fixnum (idio_vm_FINISH_pc);
+    /* IDIO f_NCE_pc = idio_fixnum (idio_vm_NCE_pc); */
+    /* IDIO f_FINISH_pc = idio_fixnum (idio_vm_FINISH_pc); */
     IDIO f_CR_pc = idio_fixnum (idio_vm_CR_pc);
     IDIO f_IHR_pc = idio_fixnum (idio_vm_IHR_pc);
 
@@ -5224,7 +5224,7 @@ void idio_vm_reset_thread (IDIO thr, int verbose)
     if (0 && verbose) {
 	fprintf (stderr, "\nvm-reset-thread\n");
 
-	IDIO stack = IDIO_THREAD_STACK (thr);
+	/* IDIO stack = IDIO_THREAD_STACK (thr); */
 	IDIO frame = IDIO_THREAD_FRAME (thr);
 
 	idio_vm_thread_state ();
@@ -5365,7 +5365,7 @@ void idio_final_vm ()
 	t.tv_sec += idio_vm_ins_call_time[i].tv_sec;
 	t.tv_nsec += idio_vm_ins_call_time[i].tv_nsec;
 	if (idio_vm_ins_counters[i]) {
-	    fprintf (idio_vm_perf_FILE, "vm-ins: %8" PRIdPTR " %6d %-30s %5ld.%09ld", idio_vm_ins_counters[i], i, idio_vm_bytecode2string (i), idio_vm_ins_call_time[i].tv_sec, idio_vm_ins_call_time[i].tv_nsec);
+	    fprintf (idio_vm_perf_FILE, "vm-ins: %8" PRIu64 " %6" PRIu8 " %-30s %5ld.%09ld", idio_vm_ins_counters[i], i, idio_vm_bytecode2string (i), idio_vm_ins_call_time[i].tv_sec, idio_vm_ins_call_time[i].tv_nsec);
 	    double call_time = (idio_vm_ins_call_time[i].tv_sec * 1000000000 + idio_vm_ins_call_time[i].tv_nsec) / idio_vm_ins_counters[i];
 	    fprintf (idio_vm_perf_FILE, " %6.f", call_time);
 	    fprintf (idio_vm_perf_FILE, "\n");

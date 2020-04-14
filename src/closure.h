@@ -25,6 +25,7 @@
 
 IDIO idio_closure (size_t code_pc, size_t code_len, IDIO frame, IDIO env, IDIO sigstr, IDIO docstr);
 int idio_isa_closure (IDIO o);
+int idio_isa_procedure (IDIO o);
 void idio_free_closure (IDIO c);
 
 void idio_init_closure ();
