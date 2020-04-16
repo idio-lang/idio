@@ -402,17 +402,29 @@ extern FILE *idio_vm_perf_FILE;
 #define IDIO_CONSTANT_NAN             -7
 
 /*
- * A distinguished value to a) shut the compiler up when we know we'll
- * have setjmp'd out of a function and b) we can potentially catch and
- * warn.
+ * Stack markers
  */
-#define IDIO_CONSTANT_NOTREACHED      -100
+#define IDIO_STACK_MARKER_PRESERVE_STATE		 20
+#define IDIO_STACK_MARKER_PRESERVE_ALL_STATE		 21
+#define IDIO_STACK_MARKER_PUSH_TRAP			 22
+#define IDIO_STACK_MARKER_PRESERVE_CONTINUATION		 23
+#define IDIO_STACK_MARKER_RETURN			 24
+#define IDIO_STACK_MARKER_DYNAMIC			 25
+#define IDIO_STACK_MARKER_ENVIRON			 26
 
 #define IDIO_CONSTANT_TOPLEVEL         30
 #define IDIO_CONSTANT_PREDEF           31
 #define IDIO_CONSTANT_LOCAL            32
 #define IDIO_CONSTANT_ENVIRON          33
 #define IDIO_CONSTANT_COMPUTED         34
+
+/*
+ * A distinguished value to a) shut the compiler up when we know we'll
+ * have setjmp'd out of a function and b) we can potentially catch and
+ * warn.
+ */
+#define IDIO_CONSTANT_NOTREACHED      -100
+
 
 
 #define idio_S_nil		((const IDIO) IDIO_CONSTANT_IDIO (IDIO_CONSTANT_NIL))
@@ -423,13 +435,22 @@ extern FILE *idio_vm_perf_FILE;
 #define idio_S_false		((const IDIO) IDIO_CONSTANT_IDIO (IDIO_CONSTANT_FALSE))
 #define idio_S_void		((const IDIO) IDIO_CONSTANT_IDIO (IDIO_CONSTANT_VOID))
 #define idio_S_NaN		((const IDIO) IDIO_CONSTANT_IDIO (IDIO_CONSTANT_NAN))
-#define idio_S_notreached	((const IDIO) IDIO_CONSTANT_IDIO (IDIO_CONSTANT_NOTREACHED))
+
+#define idio_SM_preserve_state		((const IDIO) IDIO_CONSTANT_IDIO (IDIO_STACK_MARKER_PRESERVE_STATE))
+#define idio_SM_preserve_all_state	((const IDIO) IDIO_CONSTANT_IDIO (IDIO_STACK_MARKER_PRESERVE_ALL_STATE))
+#define idio_SM_push_trap		((const IDIO) IDIO_CONSTANT_IDIO (IDIO_STACK_MARKER_PUSH_TRAP))
+#define idio_SM_preserve_continuation	((const IDIO) IDIO_CONSTANT_IDIO (IDIO_STACK_MARKER_PRESERVE_CONTINUATION))
+#define idio_SM_return			((const IDIO) IDIO_CONSTANT_IDIO (IDIO_STACK_MARKER_RETURN))
+#define idio_SM_dynamic			((const IDIO) IDIO_CONSTANT_IDIO (IDIO_STACK_MARKER_DYNAMIC))
+#define idio_SM_environ			((const IDIO) IDIO_CONSTANT_IDIO (IDIO_STACK_MARKER_ENVIRON))
 
 #define idio_S_toplevel		((const IDIO) IDIO_CONSTANT_IDIO (IDIO_CONSTANT_TOPLEVEL))
 #define idio_S_predef		((const IDIO) IDIO_CONSTANT_IDIO (IDIO_CONSTANT_PREDEF))
 #define idio_S_local		((const IDIO) IDIO_CONSTANT_IDIO (IDIO_CONSTANT_LOCAL))
 #define idio_S_environ		((const IDIO) IDIO_CONSTANT_IDIO (IDIO_CONSTANT_ENVIRON))
 #define idio_S_computed		((const IDIO) IDIO_CONSTANT_IDIO (IDIO_CONSTANT_COMPUTED))
+
+#define idio_S_notreached	((const IDIO) IDIO_CONSTANT_IDIO (IDIO_CONSTANT_NOTREACHED))
 
 #endif
 

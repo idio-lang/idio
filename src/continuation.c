@@ -43,8 +43,11 @@ IDIO idio_continuation (IDIO thr)
     idio_array_push (IDIO_CONTINUATION_STACK (k), IDIO_THREAD_TRAP_SP (thr));
     idio_array_push (IDIO_CONTINUATION_STACK (k), IDIO_THREAD_FRAME (thr));
     idio_array_push (IDIO_CONTINUATION_STACK (k), IDIO_THREAD_ENV (thr));
+    idio_array_push (IDIO_CONTINUATION_STACK (k), idio_SM_preserve_state);
 
     idio_array_push (IDIO_CONTINUATION_STACK (k), idio_fixnum (IDIO_THREAD_PC (thr)));
+
+    idio_array_push (IDIO_CONTINUATION_STACK (k), idio_SM_preserve_continuation);
 
     return k;
 }

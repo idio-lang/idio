@@ -1096,6 +1096,7 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
     IDIO_THREAD_PC (thr) = lh_pc;
     r = idio_vm_run (thr);
 
+    /* ms */
     idio_array_pop (IDIO_THREAD_STACK (thr));
 
     struct timeval tr;

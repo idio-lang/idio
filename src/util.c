@@ -660,11 +660,35 @@ char *idio_as_string (IDIO o, int depth)
 			 * It's then easier to debug if we can read
 			 * "PREDEFINED" rather than "C=2001"
 			 */
-		    case IDIO_CONSTANT_TOPLEVEL:                   t = "toplevel/c";                  break;
-		    case IDIO_CONSTANT_PREDEF:                     t = "predef/c";                    break;
-		    case IDIO_CONSTANT_LOCAL:                      t = "local/c";                     break;
-		    case IDIO_CONSTANT_ENVIRON:                    t = "environ/c";                   break;
-		    case IDIO_CONSTANT_COMPUTED:                   t = "computed/c";                  break;
+		    case IDIO_STACK_MARKER_PRESERVE_STATE:		t = "#<MARK preserve-state>";		break;
+		    case IDIO_STACK_MARKER_PRESERVE_ALL_STATE:		t = "#<MARK preserve-all-state>";	break;
+		    case IDIO_STACK_MARKER_PUSH_TRAP:			t = "#<MARK push-trap>";		break;
+		    case IDIO_STACK_MARKER_PRESERVE_CONTINUATION:	t = "#<MARK preserve-continuation>";	break;
+		    case IDIO_STACK_MARKER_RETURN:			t = "#<MARK return>";			break;
+		    case IDIO_STACK_MARKER_DYNAMIC:			t = "#<MARK dynamic>";			break;
+		    case IDIO_STACK_MARKER_ENVIRON:			t = "#<MARK environ>";			break;
+
+		    case IDIO_CONSTANT_TOPLEVEL:                   t = "#<CONST toplevel>";             break;
+		    case IDIO_CONSTANT_PREDEF:                     t = "#<CONST predef>";               break;
+		    case IDIO_CONSTANT_LOCAL:                      t = "#<CONST local>";                break;
+		    case IDIO_CONSTANT_ENVIRON:                    t = "#<CONST environ>";              break;
+		    case IDIO_CONSTANT_COMPUTED:                   t = "#<CONST computed>";             break;
+
+			/*
+			 * There's a pretty strong argument that if
+			 * idio_S_notreached is in *anything* then
+			 * something has gone very badly wrong.
+			 *
+			 * It should only be used to shut the compiler
+			 * up after where an error function will have
+			 * invoked a non-local exit.
+			 */
+		    case IDIO_CONSTANT_NOTREACHED:
+			{
+			    idio_vm_panic (idio_thread_current_thread (), "idio_S_notreached has appeared in userspace!");
+			    /* notreached :) */
+			    break;
+			}
 
 		    default:
 			if (asprintf (&r, "#<type/constant/idio?? %10p>", o) == -1) {

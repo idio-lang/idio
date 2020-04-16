@@ -192,6 +192,7 @@ extern idio_ai_t idio_vm_IHR_pc;
 extern idio_ai_t idio_vm_AR_pc;
 extern size_t idio_prologue_len;
 
+void idio_vm_panic (IDIO thr, char *m);
 IDIO idio_vm_closure_name (IDIO c);
 
 IDIO idio_vm_run (IDIO thr);

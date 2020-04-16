@@ -1248,6 +1248,7 @@ IDIO idio_load_file_handle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) 
     IDIO_THREAD_PC (thr) = lfh_pc;
     r = idio_vm_run (thr);
 
+    /* ms */
     idio_array_pop (IDIO_THREAD_STACK (thr));
 
     struct timeval tr;
@@ -1281,7 +1282,7 @@ IDIO idio_load_file_handle (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) 
     idio_ai_t ss = idio_array_size (IDIO_THREAD_STACK (thr));
 
     if (ss != ss0) {
-	fprintf (stderr, "load-file-handle: %s: SS %td != %td\n", IDIO_HANDLE_NAME (fh), ss, ss0);
+	fprintf (stderr, "load-file-handle: %s: stack size %td != initial ss %td\n", IDIO_HANDLE_NAME (fh), ss, ss0);
 	idio_debug ("THR %s\n", thr);
 	idio_debug ("STK %s\n", IDIO_THREAD_STACK (thr));
     }

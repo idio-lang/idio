@@ -244,7 +244,7 @@ static struct timespec idio_vm_ins_call_time[IDIO_I_MAX];
 #define IDIO_VM_INVOKE_REGULAR_CALL	0
 #define IDIO_VM_INVOKE_TAIL_CALL	1
 
-static void idio_vm_panic (IDIO thr, char *m)
+void idio_vm_panic (IDIO thr, char *m)
 {
     IDIO_ASSERT (thr);
     IDIO_TYPE_ASSERT (thread, thr);
@@ -726,6 +726,7 @@ static void idio_vm_preserve_state (IDIO thr)
     IDIO_THREAD_STACK_PUSH (IDIO_THREAD_TRAP_SP (thr));
     IDIO_THREAD_STACK_PUSH (IDIO_THREAD_FRAME (thr));
     IDIO_THREAD_STACK_PUSH (IDIO_THREAD_ENV (thr));
+    IDIO_THREAD_STACK_PUSH (idio_SM_preserve_state);
 }
 
 static void idio_vm_preserve_all_state (IDIO thr)
@@ -738,6 +739,7 @@ static void idio_vm_preserve_all_state (IDIO thr)
     IDIO_THREAD_STACK_PUSH (IDIO_THREAD_REG2 (thr));
     IDIO_THREAD_STACK_PUSH (IDIO_THREAD_FUNC (thr));
     IDIO_THREAD_STACK_PUSH (IDIO_THREAD_VAL (thr));
+    IDIO_THREAD_STACK_PUSH (idio_SM_preserve_all_state);
 }
 
 static void idio_vm_restore_state (IDIO thr)
@@ -747,10 +749,16 @@ static void idio_vm_restore_state (IDIO thr)
 
     /* idio_vm_debug (thr, "ivrs", -5); */
 
+    IDIO marker = IDIO_THREAD_STACK_POP ();
+    if (idio_SM_preserve_state != marker) {
+	idio_debug ("ivrs: marker: expected idio_SM_preserve_state not %s\n", marker);
+	idio_vm_panic (thr, "ivrs: unexpected stack marker");
+    }
     IDIO_THREAD_ENV (thr) = IDIO_THREAD_STACK_POP ();
     if (idio_S_nil != IDIO_THREAD_ENV (thr)) {
 	if (! idio_isa_module (IDIO_THREAD_ENV (thr))) {
 	    idio_debug ("\n\n****\nvm-restore-state: env = %s ?? -- not a module\n", IDIO_THREAD_ENV (thr));
+	    idio_vm_decode_stack (thr);
 	    idio_vm_debug (thr, "vm-restore-state", 0);
 	    idio_vm_reset_thread (thr, 1);
 	    return;
@@ -799,6 +807,11 @@ static void idio_vm_restore_all_state (IDIO thr)
 
     /* idio_debug ("ivras: THR %s\n", thr); */
     /* idio_debug ("ivras: STK %s\n", IDIO_THREAD_STACK (thr)); */
+    IDIO marker = IDIO_THREAD_STACK_POP ();
+    if (idio_SM_preserve_all_state != marker) {
+	idio_debug ("ivras: marker: expected idio_SM_preserve_all_state not %s\n", marker);
+	idio_vm_panic (thr, "ivras: unexpected stack marker");
+    }
     IDIO_THREAD_VAL (thr) = IDIO_THREAD_STACK_POP ();
     IDIO_THREAD_FUNC (thr) = IDIO_THREAD_STACK_POP ();
     IDIO_THREAD_REG2 (thr) = IDIO_THREAD_STACK_POP ();
@@ -1011,6 +1024,7 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
 	{
 	    if (0 == tailp) {
 		IDIO_THREAD_STACK_PUSH (idio_fixnum (IDIO_THREAD_PC (thr)));
+		IDIO_THREAD_STACK_PUSH (idio_SM_return);
 	    }
 
 	    IDIO_THREAD_FRAME (thr) = IDIO_CLOSURE_FRAME (func);
@@ -1145,6 +1159,7 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
 	    if (0 == tailp &&
 		pc != pc0) {
 		IDIO_THREAD_STACK_PUSH (idio_fixnum (pc0));
+		IDIO_THREAD_STACK_PUSH (idio_SM_return);
 	    }
 
 	    if (idio_vm_tracing) {
@@ -1238,7 +1253,9 @@ IDIO idio_vm_invoke_C (IDIO thr, IDIO command)
     IDIO_TYPE_ASSERT (thread, thr);
 
     IDIO_THREAD_STACK_PUSH (idio_fixnum (IDIO_THREAD_PC (thr)));
+    IDIO_THREAD_STACK_PUSH (idio_SM_return);
     idio_vm_preserve_all_state (thr);
+
     /* idio_debug ("invoke-C pre: %s\n", command); */
 
     switch (command->type) {
@@ -1289,7 +1306,12 @@ IDIO idio_vm_invoke_C (IDIO thr, IDIO command)
     IDIO r = IDIO_THREAD_VAL (thr);
 
     idio_vm_restore_all_state (thr);
-    IDIO_THREAD_PC (thr) = IDIO_FIXNUM_VAL (IDIO_THREAD_STACK_POP ());
+    IDIO marker = IDIO_THREAD_STACK_POP ();
+    if (idio_SM_return != marker) {
+	idio_debug ("iviC: marker: expected idio_SM_return not %s\n", marker);
+	idio_vm_panic (thr, "iviC: unexpected stack marker");
+    }
+   IDIO_THREAD_PC (thr) = IDIO_FIXNUM_VAL (IDIO_THREAD_STACK_POP ());
 
     return r;
 }
@@ -1306,6 +1328,7 @@ static void idio_vm_push_dynamic (idio_ai_t gvi, IDIO thr, IDIO val)
     idio_array_push (stack, val);
     IDIO_THREAD_DYNAMIC_SP (thr) = idio_fixnum (idio_array_size (stack));
     idio_array_push (stack, idio_fixnum (gvi));
+    idio_array_push (stack, idio_SM_dynamic);
 }
 
 static void idio_vm_pop_dynamic (IDIO thr)
@@ -1315,6 +1338,11 @@ static void idio_vm_pop_dynamic (IDIO thr)
 
     IDIO stack = IDIO_THREAD_STACK (thr);
 
+    IDIO marker = idio_array_pop (stack);
+    if (idio_SM_dynamic != marker) {
+	idio_debug ("ivpd: marker: expected idio_SM_dynamic not %s\n", marker);
+	idio_vm_panic (thr, "ivpd: unexpected stack marker");
+    }
     idio_array_pop (stack);
     idio_array_pop (stack);
     IDIO_THREAD_DYNAMIC_SP (thr) = idio_array_pop (stack);
@@ -1399,6 +1427,7 @@ static void idio_vm_push_environ (idio_ai_t mci, idio_ai_t gvi, IDIO thr, IDIO v
     idio_array_push (stack, val);
     IDIO_THREAD_ENVIRON_SP (thr) = idio_fixnum (idio_array_size (stack));
     idio_array_push (stack, idio_fixnum (gvi));
+    idio_array_push (stack, idio_SM_environ);
 }
 
 static void idio_vm_pop_environ (IDIO thr)
@@ -1408,6 +1437,11 @@ static void idio_vm_pop_environ (IDIO thr)
 
     IDIO stack = IDIO_THREAD_STACK (thr);
 
+    IDIO marker = idio_array_pop (stack);
+    if (idio_SM_environ != marker) {
+	idio_debug ("ivpe: marker: expected idio_SM_environ not %s\n", marker);
+	idio_vm_panic (thr, "ivpe: unexpected stack marker");
+    }
     idio_array_pop (stack);
     idio_array_pop (stack);
     IDIO_THREAD_ENVIRON_SP (thr) = idio_array_pop (stack);
@@ -1556,6 +1590,7 @@ void idio_vm_push_trap (IDIO thr, IDIO handler, IDIO fmci)
     idio_array_push (stack, fmci);
     IDIO_THREAD_TRAP_SP (thr) = idio_fixnum (idio_array_size (stack));
     idio_array_push (stack, handler);
+    idio_array_push (stack, idio_SM_push_trap);
 }
 
 static void idio_vm_pop_trap (IDIO thr)
@@ -1565,6 +1600,11 @@ static void idio_vm_pop_trap (IDIO thr)
 
     IDIO stack = IDIO_THREAD_STACK (thr);
 
+    IDIO marker = idio_array_pop (stack);
+    if (idio_SM_push_trap != marker) {
+	idio_debug ("ivpt: marker: expected idio_SM_push_trap not %s\n", marker);
+	idio_vm_panic (thr, "ivpt: unexpected stack marker");
+    }
     idio_array_pop (stack);
     idio_array_pop (stack);
     IDIO_THREAD_TRAP_SP (thr) = idio_array_pop (stack);
@@ -1630,13 +1670,14 @@ void idio_vm_raise_condition (IDIO continuablep, IDIO condition, int IHR)
 	}
 
 	if (trap_sp == trap_sp_next) {
-	    idio_debug ("Yikes!  Failed to match TRAP on %s\n", condition);
-	    idio_vm_panic (thr, "no more TRAP handlers\n");
+	    idio_debug ("ivrc: Yikes!  Failed to match TRAP on %s\n", condition);
+	    idio_vm_panic (thr, "ivrc: no more TRAP handlers\n");
 	}
 	trap_sp = trap_sp_next;
     }
 
     idio_array_push (stack, idio_fixnum (IDIO_THREAD_PC (thr)));
+    idio_array_push (stack, idio_SM_return);
 
     int tailp = IDIO_VM_INVOKE_TAIL_CALL;
 
@@ -1671,8 +1712,10 @@ void idio_vm_raise_condition (IDIO continuablep, IDIO condition, int IHR)
     } else {
 	if (idio_S_true == continuablep) {
 	    idio_array_push (stack, idio_fixnum (idio_vm_CR_pc)); /* => RESTORE-TRAP, RESTORE-STATE, RETURN */
+	    idio_array_push (stack, idio_SM_return);
 	} else {
 	    idio_array_push (stack, idio_fixnum (idio_vm_NCE_pc)); /* => NON-CONT-ERR */
+	    idio_array_push (stack, idio_SM_return);
 	}
     }
 
@@ -1830,6 +1873,12 @@ static void idio_vm_restore_continuation (IDIO k, IDIO val)
      */
 
     IDIO_THREAD_STACK (thr) = idio_array_copy (IDIO_CONTINUATION_STACK (k), 0);
+    
+    IDIO marker = IDIO_THREAD_STACK_POP ();
+    if (idio_SM_preserve_continuation != marker) {
+	idio_debug ("ivrc: marker: expected idio_SM_preserve_continuation not %s\n", marker);
+	idio_vm_panic (thr, "ivrc: unexpected stack marker");
+    }
 
     IDIO_THREAD_PC (thr) = IDIO_FIXNUM_VAL (IDIO_THREAD_STACK_POP ());
     IDIO_C_ASSERT (IDIO_THREAD_PC (thr) < IDIO_IA_USIZE (idio_all_code));
@@ -2680,6 +2729,15 @@ int idio_vm_run1 (IDIO thr)
     case IDIO_A_RETURN:
 	{
 	    IDIO_VM_RUN_DIS ("RETURN");
+	    IDIO marker = IDIO_THREAD_STACK_POP ();
+	    if (idio_SM_return != marker) {
+		idio_debug ("RETURN: marker: expected idio_SM_return not %s\n", marker);
+
+		fprintf (stderr, "\nreplacing popped element for stack decode:");
+		IDIO_THREAD_STACK_PUSH (marker);
+		idio_vm_decode_stack (thr);
+		idio_vm_panic (thr, "RETURN: unexpected stack marker");
+	    }
 	    IDIO ipc = IDIO_THREAD_STACK_POP ();
 	    if (! IDIO_TYPE_FIXNUMP (ipc)) {
 		idio_debug ("\n\nRETURN {fixnum}: not %s\n", ipc);
@@ -4527,6 +4585,7 @@ void idio_vm_thread_init (IDIO thr)
 	IDIO_THREAD_STACK_PUSH (idio_fixnum (sp + 2));
 	IDIO_THREAD_STACK_PUSH (idio_condition_condition_type_mci);
 	IDIO_THREAD_STACK_PUSH (idio_condition_reset_condition_handler);
+	IDIO_THREAD_STACK_PUSH (idio_SM_push_trap);
 	IDIO_THREAD_TRAP_SP (thr) = idio_fixnum (sp + 2);
     }
 
@@ -4579,6 +4638,7 @@ IDIO idio_vm_run (IDIO thr)
      * XXX should this be in idio_codegen_compile?
      */
     IDIO_THREAD_STACK_PUSH (idio_fixnum (idio_vm_FINISH_pc));
+    IDIO_THREAD_STACK_PUSH (idio_SM_return);
     /* idio_ia_push (idio_all_code, IDIO_A_NOP); */
     idio_ia_push (idio_all_code, IDIO_A_NOP);
     idio_ia_push (idio_all_code, IDIO_A_RETURN);
@@ -4725,6 +4785,7 @@ IDIO idio_vm_run (IDIO thr)
 			 */
 
 			IDIO_THREAD_STACK_PUSH (idio_fixnum (IDIO_THREAD_PC (thr)));
+			IDIO_THREAD_STACK_PUSH (idio_SM_return);
 			idio_vm_preserve_all_state (thr);
 			/* IDIO_THREAD_STACK_PUSH (idio_fixnum (idio_vm_IHR_pc));  */
 			IDIO_THREAD_PC (thr) = idio_vm_IHR_pc;
@@ -5055,7 +5116,7 @@ void idio_vm_decode_stack (IDIO thr)
 
     int seen_tsp = 0;
     int warn_tsp = 0;
-    for (;sp >= 0; sp--) {
+    for (;sp >= 0; ) {
 
 	if (sp < tsp &&
 	    0 == seen_tsp &&
@@ -5113,13 +5174,26 @@ void idio_vm_decode_stack (IDIO thr)
 	    idio_isa_procedure (sv0) &&
 	    idio_isa_fixnum (sv1) &&
 	    idio_isa_fixnum (sv2)) {
-	    fprintf (stderr, "%-20s ", "T/H");
+	    fprintf (stderr, "%-20s ", "T/H (tsp)");
 	    idio_debug ("%-35s ", sv0);
 	    IDIO fgci = idio_module_vci_get_or_set (idio_thread_current_env (), sv1);
 	    idio_debug ("%-20s ", idio_vm_constants_ref (IDIO_FIXNUM_VAL (fgci)));
 	    tsp = IDIO_FIXNUM_VAL (sv2);
 	    fprintf (stderr, "next t/h @%td", tsp);
-	    sp -= 2;
+	    sp -= 3;
+	    seen_tsp = 1;
+	} else if (sv0 == idio_SM_push_trap &&
+		   sp >= 3 &&
+		   idio_isa_procedure (sv1) &&
+		   idio_isa_fixnum (sv2) &&
+		   idio_isa_fixnum (sv3)) {
+	    fprintf (stderr, "%-20s ", "POP-TRAP");
+	    idio_debug ("%-35s ", sv1);
+	    IDIO fgci = idio_module_vci_get_or_set (idio_thread_current_env (), sv2);
+	    idio_debug ("%-20s ", idio_vm_constants_ref (IDIO_FIXNUM_VAL (fgci)));
+	    tsp = IDIO_FIXNUM_VAL (sv3);
+	    fprintf (stderr, "next t/h @%td", tsp);
+	    sp -= 4;
 	    seen_tsp = 1;
 	} else if (sp == dsp &&
 		   sp >= 1 &&
@@ -5151,8 +5225,9 @@ void idio_vm_decode_stack (IDIO thr)
 		   idio_isa_fixnum (sv8) &&
 		   idio_isa_fixnum (sv9)) {
 	    fprintf (stderr, "%-20s ", "IHR");
+	    sp -= 10;
 	} else if (sv0 == f_CR_pc &&
-		   sp >= 7 &&
+		   sp >= 6 &&
 		   idio_isa_fixnum (sv1) &&
 		   idio_isa_procedure (sv2) &&
 		   idio_isa_module (sv3) &&
@@ -5181,11 +5256,26 @@ void idio_vm_decode_stack (IDIO thr)
 	    fprintf (stderr, "%-20s ", "RS R");
 	    idio_debug ("esp %s ", sv4);
 	    idio_debug ("dsp %s ", sv3);
-	    idio_debug ("hsp %s ", sv2);
+	    idio_debug ("tsp %s ", sv2);
 	    idio_debug ("%s ", sv1);
 	    idio_debug ("%s ", sv0);
 	    idio_debug ("; PC => %s", sv5);
-	    sp -= 5;
+	    sp -= 6;
+	} else if (sp >= 5 &&
+		   idio_SM_preserve_state == sv0 &&
+		   idio_isa_module (sv1) &&
+		   (idio_S_nil == sv2 ||
+		    idio_isa_frame (sv2)) &&
+		   idio_isa_fixnum (sv3) &&
+		   idio_isa_fixnum (sv4) &&
+		   idio_isa_fixnum (sv5)) {
+	    fprintf (stderr, "%-20s ", "RESTORE-STATE");
+	    idio_debug ("esp %s ", sv5);
+	    idio_debug ("dsp %s ", sv4);
+	    idio_debug ("tsp %s ", sv3);
+	    idio_debug ("%s ", sv2);
+	    idio_debug ("%s ", sv1);
+	    sp -= 6;
 	} else if (sp >= 4 &&
 		   idio_isa_module (sv0) &&
 		   (idio_S_nil == sv1 ||
@@ -5199,7 +5289,13 @@ void idio_vm_decode_stack (IDIO thr)
 	    idio_debug ("tsp %s ", sv2);
 	    idio_debug ("%s ", sv1);
 	    idio_debug ("%s ", sv0);
-	    sp -= 4;
+	    sp -= 5;
+	} else if (sp >= 1 &&
+		   idio_SM_return == sv0 &&
+		   idio_isa_fixnum (sv1)) {
+	    fprintf (stderr, "%-20s ", "RETURN");
+	    idio_debug ("%s ", sv1);
+	    sp -= 2;
 	} else {
 	    if (1 == sp) {
 		/*
@@ -5210,6 +5306,7 @@ void idio_vm_decode_stack (IDIO thr)
 	    }
 	    fprintf (stderr, "%-20s ", idio_type2string (sv0));
 	    idio_debug ("%.100s", sv0);
+	    sp -= 1;
 	}
 
 	fprintf (stderr, "\n");
