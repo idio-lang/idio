@@ -2825,10 +2825,13 @@ IDIO_DEFINE_PRIMITIVE2 ("setrlimit", libc_setrlimit, (IDIO iresource, IDIO irlim
     IDIO_ASSERT (irlim);
     IDIO_VERIFY_PARAM_TYPE (C_int, iresource);
     IDIO_VERIFY_PARAM_TYPE (struct_instance, irlim);
+
+    IDIO cur = idio_struct_instance_ref_direct (irlim, IDIO_STRUCT_RLIMIT_RLIM_CUR);
+    IDIO max = idio_struct_instance_ref_direct (irlim, IDIO_STRUCT_RLIMIT_RLIM_MAX);
     
     struct rlimit rlim;
-    rlim.rlim_cur = (rlim_t) idio_struct_instance_ref_direct (irlim, IDIO_STRUCT_RLIMIT_RLIM_CUR);
-    rlim.rlim_max = (rlim_t) idio_struct_instance_ref_direct (irlim, IDIO_STRUCT_RLIMIT_RLIM_MAX);
+    rlim.rlim_cur = (rlim_t) idio_C_int_get (cur);
+    rlim.rlim_max = (rlim_t) idio_C_int_get (max);
 
     idio_libc_setrlimit (IDIO_C_TYPE_INT (iresource), &rlim);
 

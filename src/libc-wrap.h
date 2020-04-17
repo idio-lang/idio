@@ -71,6 +71,10 @@ extern IDIO idio_libc_struct_stat;
 extern IDIO idio_vm_signal_handler_conditions;
 extern char **idio_libc_signal_names;
 char *idio_libc_signal_name (int signum);
+extern char **idio_libc_errno_names;
+char *idio_libc_errno_name (int errnum);
+extern char **idio_libc_rlimit_names;
+char *idio_libc_rlimit_name (int errnum);
 
 void idio_init_libc_wrap ();
 void idio_libc_wrap_add_primitives ();

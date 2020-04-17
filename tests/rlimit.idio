@@ -1,7 +1,7 @@
 
 rl := libc/getrlimit libc/RLIMIT_NOFILE
 rl.rlim_cur = C/integer-> ( ( C/->integer rl.rlim_max ) - 1 )
-;libc/setrlimit libc/RLIMIT_NOFILE rl
+libc/setrlimit libc/RLIMIT_NOFILE rl
 
 module libc
 display* "libc/getrlimit :NOFILE" (getrlimit2 :NOFILE)
