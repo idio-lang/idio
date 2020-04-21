@@ -74,7 +74,7 @@ display* "This is test.idio"
 ;; put the testing utilities on the PATH
 OPATH := PATH
 PWD-last := ph (reverse (split-string PWD "/"))
-PATH = string-append PATH ":" (string-append PWD "/" (if (equal? PWD-last "src") ".." ".") "/utils")
+PATH = string-append PATH ":" (string-append PWD "/" (if (equal? PWD-last "src") ".." ".") "/utils/bin")
 
 ;; at least one test creates a local file then tries to "load" it --
 ;; so we need PWD on IDIOLIB
