@@ -180,35 +180,6 @@
     st)
   "Syntax table for idio-mode")
 
-(defun lisp-indent-line (&optional indent)
-  "Indent current line as Lisp code."
-  (interactive)
-  (let ((pos (- (point-max) (point)))
-        (indent (progn (beginning-of-line)
-                       (or indent (calculate-lisp-indent (lisp-ppss)))))
-	(shift-amt nil)
-	(beg (progn (beginning-of-line) (point))))
-    (skip-chars-forward " \t")
-    (if (or (null indent) (looking-at "\\s<\\s<\\s<"))
-	;; Don't alter indentation of a ;;; comment line
-	;; or a line that starts in a string.
-        ;; FIXME: inconsistency: comment-indent moves ;;; to column 0.
-	(goto-char (- (point-max) pos))
-      (if (and (looking-at "\\s<") (not (looking-at "\\s<\\s<")))
-	  ;; Single-semicolon comment lines should be indented
-	  ;; as comment lines, not as code.
-	  (progn (indent-for-comment) (forward-char -1))
-	(if (listp indent) (setq indent (car indent)))
-	(setq shift-amt (- indent (current-column)))
-	(if (zerop shift-amt)
-	    nil
-	  (delete-region beg (point))
-	  (indent-to indent)))
-      ;; If initial point was within line's indentation,
-      ;; position after the indentation.  Else stay at same point in text.
-      (if (> (- (point-max) pos) (point))
-	  (goto-char (- (point-max) pos))))))
-
 (defvar calculate-lisp-indent-last-sexp)
 
 (defun idio-indent-function (indent-point state)
@@ -303,54 +274,84 @@ indentation."
   (interactive)
   ;(beginning-of-line)
   (let* ((ppss (syntax-ppss))
+	 (sexp-count (elt ppss 0))
+	 (point-limit (elt ppss 1))
 	 (current-indent (save-excursion
 			   (beginning-of-line)
 			   (current-indentation)))
 	 (target-indent current-indent))
-    (if (> (elt ppss 0) 0)
-	(let (backslash-indent
-	      brace-dedent
-	      brace-indent
-	      paren-dedent
-	      paren-indent)
-	  (progn
-	    (save-excursion (forward-line -1)
-			    (goto-char (line-end-position))
-			    (if (eq (char-before) ?\\)
-				(progn
-				  ;; the backslash is one sexp and we
-				  ;; want to go back another
-				  (backward-sexp 2)
-				  (setq backslash-indent (current-column)))))
-	    (if (not (null (elt ppss 1)))
-		(save-excursion (goto-char (elt ppss 1))
-				(setq brace-indent (looking-at "{"))
-				(setq paren-indent (and (looking-at "(")
-							(1+ (current-column))))))
-	    (beginning-of-line)
-	    (setq brace-dedent (looking-at "\\s-*}"))
-	    (setq paren-dedent (looking-at "\\s-*)"))
-	    
-	    (cond (backslash-indent
-		   (progn
-		     (setq target-indent backslash-indent)
-		     (message "\\I: %s %s" current-indent target-indent)))
-		  (brace-dedent
-		   (progn
-		     (setq target-indent (* idio-mode-indent (- (elt ppss 0) 1)))
-		     (message "}: %s %s" current-indent target-indent)))
-		  (brace-indent
-		   (progn
-		     (setq target-indent (* idio-mode-indent (elt ppss 0)))
-		     (message "{: %s %s" current-indent target-indent)))
-		  (paren-dedent
-		   (progn
-		     (setq target-indent (* idio-mode-indent (- (elt ppss 0) 1)))
-		     (message "): %s %s" current-indent target-indent)))
-		  (paren-indent
-		   (progn
-		     (setq target-indent paren-indent)
-		     (message "(: %s %s" current-indent target-indent)))))))
+    (let (backslash-indent
+	  brace-dedent
+	  brace-indent
+	  paren-dedent
+	  paren-indent)
+      (progn
+	(let ((looking t)
+	      last-line-with-backslash)
+	  (save-excursion
+	    (while looking
+	      (forward-line -1)
+	      (goto-char (line-end-position))
+	      (if (eq (char-before) ?\\)
+		  (setq last-line-with-backslash (line-number-at-pos))
+		(setq looking nil)))
+	    (if last-line-with-backslash
+		(progn
+		  (forward-line)
+		  (goto-char (line-end-position))
+		  ;; the backslash is one sexp and we
+		  ;; want to go back another
+		  (backward-sexp 2)
+		  (setq backslash-indent (current-column))
+		  ;; is this an if+ statement?
+		  (backward-sexp)
+		  (if (eq last-line-with-backslash (line-number-at-pos))
+		      (let ((possible-indent (current-column)))
+			(progn
+			  (backward-sexp)
+			  (if (and (eq last-line-with-backslash (line-number-at-pos))
+				   (or (and point-limit
+					    (> (point) point-limit))
+				       t))
+			      (if (looking-at "if\+")
+				  (setq backslash-indent possible-indent))))))))))
+	(if point-limit
+	    (save-excursion (goto-char point-limit)
+			    (setq brace-indent (looking-at "{"))
+			    (setq paren-indent (and (looking-at "(")
+						    (1+ (current-column))))))
+	(beginning-of-line)
+	(setq brace-dedent (looking-at "\\s-*}"))
+	(setq paren-dedent (looking-at "\\s-*)"))
+	
+	(cond (backslash-indent
+	       (progn
+		 (setq target-indent backslash-indent)
+		 (message "\\: %s %s" current-indent target-indent)))
+	      (brace-dedent
+	       (progn
+		 (setq target-indent (if (eq 0 sexp-count)
+					 sexp-count
+				       (* idio-mode-indent (- sexp-count 1))))
+		 (message "}: %s %s" current-indent target-indent)))
+	      (brace-indent
+	       (progn
+		 (setq target-indent (* idio-mode-indent sexp-count))
+		 (message "{: %s %s" current-indent target-indent)))
+	      (paren-dedent
+	       (progn
+		 (setq target-indent (if (eq 0 sexp-count)
+					 sexp-count
+				       (* idio-mode-indent (- sexp-count 1))))
+		 (message "): %s %s" current-indent target-indent)))
+	      (paren-indent
+	       (progn
+		 (setq target-indent paren-indent)
+		 (message "(: %s %s" current-indent target-indent)))
+	      (t
+	       (progn
+		 (setq target-indent (* idio-mode-indent sexp-count))
+		 (message "-: %s %s" current-indent target-indent))))))
     (if (> current-indent target-indent)
 	(save-excursion
 	  (beginning-of-line)
@@ -365,7 +366,7 @@ indentation."
 (defvar idio-mode-default-indent 2)
 
 (defun idio-mode ()
-  "Major mode for editing Workflow Process Description Language files"
+  "Major mode for editing Idio source files"
   (interactive)
   (kill-all-local-variables)
   (set-syntax-table idio-mode-syntax-table)
