@@ -1,6 +1,6 @@
 ;; https://www.emacswiki.org/emacs/ModeTutorial
 
-(require 'scheme)
+;; and hints/clues from scheme-mode (implying lisp-mode) and ...
 
 (defvar idio-mode-hook nil)
 
@@ -15,95 +15,109 @@
 
 (defconst idio-font-lock-keywords-1
   (list
-     ;;
-     ;; Declarations.  Hannes Haug <hannes.haug@student.uni-tuebingen.de> says
-     ;; this works for SOS, STklos, SCOOPS, Meroon and Tiny CLOS.
-     (list (concat "\\<\\(define\\)\\>"
-                   ;; Any whitespace and declared object.
-                   ;; The "(*" is for curried definitions, e.g.,
-                   ;;  (define ((sum a) b) (+ a b))
-                   "[ \t]*(*"
-                   "\\(\\sw+\\)?")
-           '(1 font-lock-keyword-face)
-           '(2 (cond ((match-beginning 1) font-lock-function-name-face)
-                     ((match-beginning 2) font-lock-variable-name-face)
-                     (t font-lock-type-face))
-               nil t))
-     ;;
-     ;; Declarations.  Hannes Haug <hannes.haug@student.uni-tuebingen.de> says
-     ;; this works for SOS, STklos, SCOOPS, Meroon and Tiny CLOS.
-     (list (concat "\\<define\\*?\\("
-                   ;; Function names.
-                   "\\(\\|-public\\|-method\\|-generic\\(-procedure\\)?\\)\\|"
-                   ;; Macro names, as variable names.  A bit dubious, this.
-                   "\\(-syntax\\|-macro\\)\\|"
-                   ;; Class names.
-                   "-class"
-                   ;; Guile modules.
-                   "\\|-module"
-                   "\\)\\)\\>"
-                   ;; Any whitespace and declared object.
-                   ;; The "(*" is for curried definitions, e.g.,
-                   ;;  (define ((sum a) b) (+ a b))
-                   "[ \t]*(*"
-                   "\\(\\sw+\\)?")
-           '(1 font-lock-keyword-face)
-           '(6 (cond ((match-beginning 3) font-lock-function-name-face)
-                     ((match-beginning 5) font-lock-variable-name-face)
-                     (t font-lock-type-face))
-               nil t))
-     )
+   (list (concat "\\<\\(define-\\(infix\\|postfix\\)-operator\\)\\>"
+		 "[ \t]+\\([^[:space:]]+\\)[ \t]+\\([[:digit:]]+\\)"
+		 )
+	 '(1 font-lock-keyword-face)
+	 '(4 (cond ((match-beginning 1) font-lock-function-name-face)
+		   ((match-beginning 3) font-lock-keyword-face)
+		   ((match-beginning 4) font-lock-constant-face)
+		   (t font-lock-type-face))
+	     nil t))
+   (list (concat "\\<\\(define\\(\\|-macro\\)\\)\\>"
+		 "[ \t]*"
+		 "\\(\"[^\"]*\"\\)?"
+		 "("
+		 "\\([^[:space:])]+\\)?")
+	 '(1 font-lock-keyword-face)
+	 '(4 (cond ((match-beginning 1) font-lock-function-name-face)
+		   ((match-beginning 3) font-lock-doc-face)
+		   ((match-beginning 4) font-lock-variable-name-face)
+		   (t font-lock-type-face))
+	     nil t))
+   (list (concat "\\(?:[^-]\\)\\<\\(function\\)\\>\\(?:[^-]\\)"
+		 "[ \t]*(")
+	 '(1 font-lock-keyword-face)
+	 '(3 font-lock-keyword-face))
+   )
   "Subdued expressions to highlight in Idio modes.")
 
 (defconst idio-font-lock-keywords-2
   (append idio-font-lock-keywords-1
-   (list
-      ;;
-      ;; Control structures.
-      (cons
-       (concat
-        "(" (regexp-opt
-             '("begin" "call-with-current-continuation" "call/cc"
-               "call-with-input-file" "call-with-output-file" "case" "cond"
-               "do" "else" "for-each" "if" "lambda" "λ"
-               "let" "let*" "let-syntax" "letrec" "letrec-syntax"
-               ;; R6RS library subforms.
-               "export" "import"
-               ;; SRFI 11 usage comes up often enough.
-               "let-values" "let*-values"
-               ;; Hannes Haug <hannes.haug@student.uni-tuebingen.de> wants:
-               "and" "or" "delay" "force"
-               ;; Stefan Monnier <stefan.monnier@epfl.ch> says don't bother:
-               ;;"quasiquote" "quote" "unquote" "unquote-splicing"
-	       "map" "syntax" "syntax-rules"
-	       ;; For R7RS
-	       "when" "unless" "letrec*" "include" "include-ci" "cond-expand"
-	       "delay-force" "parameterize" "guard" "case-lambda"
-	       "syntax-error" "only" "except" "prefix" "rename" "define-values"
-	       "define-record-type" "define-library"
-	       "include-library-declarations"
-	       ;; SRFI-8
-	       "receive"
-	       ) t)
-        "\\>") 1)
-      ;;
-      ;; It wouldn't be Idio w/o named-let.
-      '("(let\\s-+\\(\\sw+\\)"
-        (1 font-lock-function-name-face))
-      ;;
-      ;; David Fox <fox@graphics.cs.nyu.edu> for SOS/STklos class specifiers.
-      '("\\<<\\sw+>\\>" . font-lock-type-face)
-      ;;
-      ;; Idio `:' and `#:' keywords as builtins.
-      '("\\<#?:\\sw+\\>" . font-lock-builtin-face)
-      ;; R6RS library declarations.
-      '("(\\(\\<library\\>\\)\\s-*(?\\(\\sw+\\)?"
-        (1 font-lock-keyword-face)
-        (2 font-lock-type-face))
-      ))
+	  (list
+	   ;;
+	   ;; Control structures.
+	   (cons
+	    (concat
+	     "\\<" (regexp-opt
+		    '(
+		      ;; these should be the specials in idio_meaning
+		      ;; in evaluate.c and other "important" functions
+		      ;; in the bootstrap rather than general
+		      ;; functions
+		      "begin" "and" "or" "not"
+		      "escape"
+		      "quote" "quasiquote"
+		      "function" "lambda"
+		      "if" "cond"
+		      "set" "eq"
+		      "define-macro" "define-infix-operator" "define-postfix-operator" "define"
+		      ":=" ":*" ":~" ":$"
+		      "block"
+		      "dynamic" "dynamic-let" "dynamic-unset"
+		      "environ-let" "environ-unset"
+		      "trap"
+		      "include"
+
+		      ;; call-cc.idio
+		      "call/cc" "values" "call-with-values" "call-with-current-continuation" "dynamic-wind" "unwind-protect" "with-condition-handler"
+		      ;; closure.idio
+		      "setter"
+		      ;; command.idio
+		      "|" "fg-job" "bg-job" "wait" "<" ">" "2>" ">&"
+		      ;; common.idio
+		      "load" "with-values-from"
+		      ;; condition.idio
+		      "define-condition-type-accessors-only" "define-condition-type" "condition"
+		      "condition-report"
+		      ;; doc.idio
+		      "help"
+		      ;; libc-wrap.idio
+		      "make-tmp-file-handle" "make-tmp-dir"
+		      "getrlimit" "setrlimit"
+		      ;; module.idio
+		      "define-module" "module" "import" "export"
+		      ;; path.idio
+		      "sort_size" "sort_atime" "sort_mtime" "sort_ctime"
+		      ;; SRFI-95.idio
+		      "merge" "merge!" "sort!" "sort"
+		      ;; struct.idio
+		      "define-struct" "export-struct" "define-struct-accessors-only" "export-struct-accessors-only"
+
+
+		      ;; s9.idio
+		      "append" "if+" "display*" "edisplay*"
+		      "case" "do" "delay" "define-syntax"
+		      "call-with-input-file" "call-with-output-file"
+		      "do" "else" "for-each"
+		      "let-values" "let*-values"
+		      ) t)
+	     "\\>") 1)
+
+	   ;; #<THING ...> shouldn't be in code!
+	   '("#<[^>]+>" . font-lock-warning-face)
+	   ;; #t #n etc.
+	   '("#\\sw+\\>" . font-lock-builtin-face)
+	   ;; #\a #\newline
+	   '("#\\\\[^[:space:]]+\\>" . font-lock-constant-face)
+	   ;; :some-keyword-name
+	   '(":[^[:space:]]+\\>" . font-lock-keyword-face)
+	   ;; ^some-condition-name
+	   '("\\^[^[:space:]]+\\>" . font-lock-type-face)
+	   ))
   "Gaudy expressions to highlight in Idio modes.")
 
-(defvar idio-font-lock-keywords idio-font-lock-keywords-1
+(defvar idio-font-lock-keywords idio-font-lock-keywords-2
   "Default expressions to highlight in Idio modes.")
 
 (defvar idio-mode-syntax-table
@@ -289,11 +303,15 @@ indentation."
   (interactive)
   ;(beginning-of-line)
   (let* ((ppss (syntax-ppss))
-	 (target-indent )
-	 (current-indent (current-indentation)))
-    (if (elt ppss 0)
+	 (current-indent (save-excursion
+			   (beginning-of-line)
+			   (current-indentation)))
+	 (target-indent current-indent))
+    (if (> (elt ppss 0) 0)
 	(let (backslash-indent
+	      brace-dedent
 	      brace-indent
+	      paren-dedent
 	      paren-indent)
 	  (progn
 	    (save-excursion (forward-line -1)
@@ -304,25 +322,45 @@ indentation."
 				  ;; want to go back another
 				  (backward-sexp 2)
 				  (setq backslash-indent (current-column)))))
-	    (save-excursion (goto-char (elt ppss 1))
-			    (setq brace-indent (looking-at "{"))
-			    (setq paren-indent (and (looking-at "(")
-						    (1+ (current-column)))))
+	    (if (not (null (elt ppss 1)))
+		(save-excursion (goto-char (elt ppss 1))
+				(setq brace-indent (looking-at "{"))
+				(setq paren-indent (and (looking-at "(")
+							(1+ (current-column))))))
+	    (beginning-of-line)
+	    (setq brace-dedent (looking-at "\\s-*}"))
+	    (setq paren-dedent (looking-at "\\s-*)"))
 	    
 	    (cond (backslash-indent
 		   (progn
-		     ;(message "\\I: %s" backslash-indent)
-		     (setq target-indent backslash-indent)))
+		     (setq target-indent backslash-indent)
+		     (message "\\I: %s %s" current-indent target-indent)))
+		  (brace-dedent
+		   (progn
+		     (setq target-indent (* idio-mode-indent (- (elt ppss 0) 1)))
+		     (message "}: %s %s" current-indent target-indent)))
 		  (brace-indent
 		   (progn
-		     ;(message "{: %s" (elt ppss 0))
-		     (setq target-indent (* idio-mode-indent (elt ppss 0)))))
+		     (setq target-indent (* idio-mode-indent (elt ppss 0)))
+		     (message "{: %s %s" current-indent target-indent)))
+		  (paren-dedent
+		   (progn
+		     (setq target-indent (* idio-mode-indent (- (elt ppss 0) 1)))
+		     (message "): %s %s" current-indent target-indent)))
 		  (paren-indent
 		   (progn
-		     ;(message "(: %s" paren-indent)
-		     (setq target-indent paren-indent)))))))
-    (if (not (eq current-indent target-indent))
-	(indent-to target-indent))))
+		     (setq target-indent paren-indent)
+		     (message "(: %s %s" current-indent target-indent)))))))
+    (if (> current-indent target-indent)
+	(save-excursion
+	  (beginning-of-line)
+	  (delete-horizontal-space)
+	  (indent-to target-indent))
+	(if (not (eq current-indent target-indent))
+	    (progn
+	      (save-excursion
+		(beginning-of-line)
+		(indent-to (- target-indent current-indent))))))))
 
 (defvar idio-mode-default-indent 2)
 
