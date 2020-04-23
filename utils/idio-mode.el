@@ -60,9 +60,7 @@
 		      "quote" "quasiquote"
 		      "function" "lambda"
 		      "if" "cond"
-		      "set" "eq"
-		      "define-macro" "define-infix-operator" "define-postfix-operator" "define"
-		      ":=" ":*" ":~" ":$"
+		      "eq"
 		      "block"
 		      "dynamic" "dynamic-let" "dynamic-unset"
 		      "environ-let" "environ-unset"
@@ -74,7 +72,7 @@
 		      ;; closure.idio
 		      "setter"
 		      ;; command.idio
-		      "|" "fg-job" "bg-job" "wait" "<" ">" "2>" ">&"
+		      "fg-job" "bg-job" "wait"
 		      ;; common.idio
 		      "load" "with-values-from"
 		      ;; condition.idio
@@ -96,7 +94,7 @@
 
 
 		      ;; s9.idio
-		      "append" "if+" "display*" "edisplay*"
+		      "append" "if\+" "display\*" "edisplay\*"
 		      "case" "do" "delay" "define-syntax"
 		      "call-with-input-file" "call-with-output-file"
 		      "do" "else" "for-each"
@@ -114,6 +112,8 @@
 	   '(":[^[:space:]]+\\>" . font-lock-keyword-face)
 	   ;; ^some-condition-name
 	   '("\\^[^[:space:]]+\\>" . font-lock-type-face)
+	   ;; some-function-name!
+	   '("[^[:space:]]+!" . font-lock-warning-face)
 	   ))
   "Gaudy expressions to highlight in Idio modes.")
 
@@ -156,12 +156,8 @@
     (modify-syntax-entry ?\] ")[  " st)
     (modify-syntax-entry ?{ "(}  " st)
     (modify-syntax-entry ?} "){  " st)
-    (modify-syntax-entry ?\| "\" 23bn" st)
-    ;; Guile allows #! ... !# comments.
-    ;; But SRFI-22 defines the comment as #!...\n instead.
-    ;; Also Guile says that the !# should be on a line of its own.
-    ;; It's too difficult to get it right, for too little benefit.
-    ;; (modify-syntax-entry ?! "_ 2" st)
+    (modify-syntax-entry ?\| "_   " st)
+    (modify-syntax-entry ?\! "_   " st)
 
     ;; Other atom delimiters
     (modify-syntax-entry ?\( "()  " st)
@@ -317,9 +313,39 @@ indentation."
 				  (setq backslash-indent possible-indent))))))))))
 	(if point-limit
 	    (save-excursion (goto-char point-limit)
-			    (setq brace-indent (looking-at "{"))
-			    (setq paren-indent (and (looking-at "(")
-						    (1+ (current-column))))))
+			    (cond ((looking-at "{") (setq brace-indent t))
+				  ((looking-at "(")
+				   (progn
+				     ;; nominal indent 1 forward from
+				     ;; ?\( -- the forward-char is
+				     ;; important otherwise the
+				     ;; upcoming forward-sexp will
+				     ;; (try to) jump over the entire
+				     ;; sexp rather than step over
+				     ;; sexps inside the (s
+				     (forward-char)
+				     (setq paren-indent (current-column))
+				     ;; what if there are more args on
+				     ;; the ?\( line? we would want to
+				     ;; line up with the last of them
+				     ;; that is on the same line at
+				     ;; the ?\(
+				     (let ((paren-line (line-number-at-pos))
+					   (not-done t))
+				       (condition-case nil
+					   (while not-done
+					     (progn
+					       (forward-sexp)
+					       (if (eq paren-line (line-number-at-pos))
+						   (setq paren-indent (save-excursion
+									  (backward-sexp)
+									  (current-column)))
+						 (setq not-done nil))))
+					 ((scan-error)
+					  ;; this should be
+					  ;; forward-sexp hitting the
+					  ;; ?\) or eof or ...
+					  nil))))))))
 	(beginning-of-line)
 	(setq brace-dedent (looking-at "\\s-*}"))
 	(setq paren-dedent (looking-at "\\s-*)"))
