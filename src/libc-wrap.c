@@ -2994,6 +2994,7 @@ void idio_init_libc_wrap ()
 
     /* stdio.h */
     idio_module_export_symbol_value (idio_symbols_C_intern ("NULL"), idio_C_pointer (NULL), idio_libc_wrap_module);
+    idio_module_export_symbol_value (idio_symbols_C_intern ("EOF"), idio_C_int (EOF), idio_libc_wrap_module);
 
     /* stdint.h */
     idio_module_export_symbol_value (idio_symbols_C_intern ("INTMAX_MAX"), idio_C_int (INTMAX_MAX), idio_libc_wrap_module);
