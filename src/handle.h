@@ -57,6 +57,7 @@ IDIO idio_write_char (IDIO c, IDIO args);
 IDIO idio_display (IDIO o, IDIO args);
 IDIO idio_display_C_len (char *s, size_t blen, IDIO h);
 IDIO idio_display_C (char *s, IDIO h);
+IDIO idio_handle_location (IDIO h);
 
 IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO e, IDIO cs), IDIO cs);
 

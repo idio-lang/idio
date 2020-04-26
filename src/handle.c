@@ -956,7 +956,7 @@ IDIO_DEFINE_PRIMITIVE1V ("display", display, (IDIO o, IDIO args))
     return idio_display (o, h);
 }
 
-IDIO_DEFINE_PRIMITIVE0V ("handle-current-line", handle_current_line, (IDIO args))
+IDIO_DEFINE_PRIMITIVE0V ("handle-line", handle_line, (IDIO args))
 {
     IDIO_ASSERT (args);
 
@@ -969,7 +969,7 @@ IDIO_DEFINE_PRIMITIVE0V ("handle-current-line", handle_current_line, (IDIO args)
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE0V ("handle-current-pos", handle_current_pos, (IDIO args))
+IDIO_DEFINE_PRIMITIVE0V ("handle-pos", handle_pos, (IDIO args))
 {
     IDIO_ASSERT (args);
 
@@ -980,6 +980,25 @@ IDIO_DEFINE_PRIMITIVE0V ("handle-current-pos", handle_current_pos, (IDIO args))
     r = idio_integer (pos);
 
     return r;
+}
+
+IDIO idio_handle_location (IDIO h)
+{
+    IDIO_ASSERT (h);
+    IDIO_TYPE_ASSERT (handle, h);
+
+    char buf[BUFSIZ];
+    sprintf (buf, "%s:line %" PRId64, IDIO_HANDLE_NAME (h), IDIO_HANDLE_LINE (h));
+
+    return idio_string_C (buf);
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("handle-location", handle_location, (IDIO h))
+{
+    IDIO_ASSERT (h);
+    IDIO_TYPE_ASSERT (handle, h);
+
+    return idio_handle_location (h);
 }
 
 IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO e, IDIO cs), IDIO cs)
@@ -1185,8 +1204,9 @@ void idio_handle_add_primitives ()
     IDIO_ADD_PRIMITIVE (write_char);
     IDIO_ADD_PRIMITIVE (newline);
     IDIO_ADD_PRIMITIVE (display);
-    IDIO_ADD_PRIMITIVE (handle_current_line);
-    IDIO_ADD_PRIMITIVE (handle_current_pos);
+    IDIO_ADD_PRIMITIVE (handle_line);
+    IDIO_ADD_PRIMITIVE (handle_pos);
+    IDIO_ADD_PRIMITIVE (handle_location);
     IDIO_ADD_PRIMITIVE (flush_handle);
     IDIO_ADD_PRIMITIVE (seek_handle);
     IDIO_ADD_PRIMITIVE (handle_rewind);
