@@ -219,33 +219,33 @@ typedef unsigned char idio_type_e;
 typedef uint8_t IDIO_I;
 #define IDIO_I_MAX	UINT8_MAX
 
-#define IDIO_FLAG_NONE			0
-#define IDIO_FLAG_GCC_SHIFT		0	/* GC colours -- four bits */
-#define IDIO_FLAG_FREE_SHIFT		4	/* debug */
-#define IDIO_FLAG_STICKY_SHIFT		5	/* memory pinning */
-#define IDIO_FLAG_FINALIZER_SHIFT	6
+#define IDIO_GC_FLAG_NONE			0
+#define IDIO_GC_FLAG_GCC_SHIFT		0	/* GC colours -- four bits */
+#define IDIO_GC_FLAG_FREE_SHIFT		4	/* debug */
+#define IDIO_GC_FLAG_STICKY_SHIFT		5	/* memory pinning */
+#define IDIO_GC_FLAG_FINALIZER_SHIFT	6
 
-#define IDIO_FLAG_GCC_MASK		(0xf << IDIO_FLAG_GCC_SHIFT)
-#define IDIO_FLAG_GCC_UMASK		(~ IDIO_FLAG_GCC_MASK)
-#define IDIO_FLAG_GCC_BLACK		(1 << (IDIO_FLAG_GCC_SHIFT+0))
-#define IDIO_FLAG_GCC_DGREY		(1 << (IDIO_FLAG_GCC_SHIFT+1))
-#define IDIO_FLAG_GCC_LGREY		(1 << (IDIO_FLAG_GCC_SHIFT+2))
-#define IDIO_FLAG_GCC_WHITE		(1 << (IDIO_FLAG_GCC_SHIFT+3))
+#define IDIO_GC_FLAG_GCC_MASK		(0xf << IDIO_GC_FLAG_GCC_SHIFT)
+#define IDIO_GC_FLAG_GCC_UMASK		(~ IDIO_GC_FLAG_GCC_MASK)
+#define IDIO_GC_FLAG_GCC_BLACK		(1 << (IDIO_GC_FLAG_GCC_SHIFT+0))
+#define IDIO_GC_FLAG_GCC_DGREY		(1 << (IDIO_GC_FLAG_GCC_SHIFT+1))
+#define IDIO_GC_FLAG_GCC_LGREY		(1 << (IDIO_GC_FLAG_GCC_SHIFT+2))
+#define IDIO_GC_FLAG_GCC_WHITE		(1 << (IDIO_GC_FLAG_GCC_SHIFT+3))
 
-#define IDIO_FLAG_FREE_MASK		(1 << IDIO_FLAG_FREE_SHIFT)
-#define IDIO_FLAG_FREE_UMASK		(~ IDIO_FLAG_FREE_MASK)
-#define IDIO_FLAG_NOTFREE		(0 << IDIO_FLAG_FREE_SHIFT)
-#define IDIO_FLAG_FREE			(1 << IDIO_FLAG_FREE_SHIFT)
+#define IDIO_GC_FLAG_FREE_MASK		(1 << IDIO_GC_FLAG_FREE_SHIFT)
+#define IDIO_GC_FLAG_FREE_UMASK		(~ IDIO_GC_FLAG_FREE_MASK)
+#define IDIO_GC_FLAG_NOTFREE		(0 << IDIO_GC_FLAG_FREE_SHIFT)
+#define IDIO_GC_FLAG_FREE			(1 << IDIO_GC_FLAG_FREE_SHIFT)
 
-#define IDIO_FLAG_STICKY_MASK		(1 << IDIO_FLAG_STICKY_SHIFT)
-#define IDIO_FLAG_STICKY_UMASK		(~ IDIO_FLAG_STICKY_MASK)
-#define IDIO_FLAG_NOTSTICKY		(0 << IDIO_FLAG_STICKY_SHIFT)
-#define IDIO_FLAG_STICKY		(1 << IDIO_FLAG_STICKY_SHIFT)
+#define IDIO_GC_FLAG_STICKY_MASK		(1 << IDIO_GC_FLAG_STICKY_SHIFT)
+#define IDIO_GC_FLAG_STICKY_UMASK		(~ IDIO_GC_FLAG_STICKY_MASK)
+#define IDIO_GC_FLAG_NOTSTICKY		(0 << IDIO_GC_FLAG_STICKY_SHIFT)
+#define IDIO_GC_FLAG_STICKY		(1 << IDIO_GC_FLAG_STICKY_SHIFT)
 
-#define IDIO_FLAG_FINALIZER_MASK	(1 << IDIO_FLAG_FINALIZER_SHIFT)
-#define IDIO_FLAG_FINALIZER_UMASK	(~ IDIO_FLAG_FINALIZER_MASK)
-#define IDIO_FLAG_NOFINALIZER		(0 << IDIO_FLAG_FINALIZER_SHIFT)
-#define IDIO_FLAG_FINALIZER		(1 << IDIO_FLAG_FINALIZER_SHIFT)
+#define IDIO_GC_FLAG_FINALIZER_MASK	(1 << IDIO_GC_FLAG_FINALIZER_SHIFT)
+#define IDIO_GC_FLAG_FINALIZER_UMASK	(~ IDIO_GC_FLAG_FINALIZER_MASK)
+#define IDIO_GC_FLAG_NOFINALIZER		(0 << IDIO_GC_FLAG_FINALIZER_SHIFT)
+#define IDIO_GC_FLAG_FINALIZER		(1 << IDIO_GC_FLAG_FINALIZER_SHIFT)
 
 /**
  * struct idio_string_s - Idio ``string`` structure
@@ -914,6 +914,10 @@ typedef struct idio_opaque_s {
 
 typedef unsigned char FLAGS_T;
 
+#define IDIO_FLAG_NONE		0
+#define IDIO_FLAG_CONST		(1<<0)
+#define IDIO_FLAG_TAINTED	(1<<1)
+
 /**
  * struct idio_s - Idio type structure
  * @next: use by the garbage collector
@@ -930,6 +934,7 @@ struct idio_s {
      * of room for "info"
      */
     idio_type_e type;
+    FLAGS_T gc_flags;
     FLAGS_T flags;		/* generic type flags */
     FLAGS_T tflags;		/* type-specific flags (since we have
 				   room here) */
@@ -985,6 +990,8 @@ struct idio_s {
 };
 
 typedef struct idio_s idio_t;
+
+#define IDIO_FLAGS(I) ((I)->flags)
 
 /**
  * typedef IDIO - Idio *value*
