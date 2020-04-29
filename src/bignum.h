@@ -183,12 +183,14 @@
 					 ! idio_bignum_real_zero_p ((bn)))
 #define IDIO_BIGNUM_REAL_POSITIVE_P(bn)	(!IDIO_BIGNUM_REAL_NEGATIVE_P (bn))
 #define IDIO_BIGNUM_REAL_INEXACT_P(bn)	(IDIO_BIGNUM_FLAGS (bn) & IDIO_BIGNUM_FLAG_REAL_INEXACT)
+#define IDIO_BIGNUM_NAN_P(bn)		(IDIO_BIGNUM_FLAGS (bn) & IDIO_BIGNUM_FLAG_NAN)
 
 #define IDIO_BIGNUM_NAN			"NaN"
 
 IDIO idio_bignum (int flags, IDIO_BS_T exp, IDIO_BSA sig_a);
 int idio_isa_bignum (IDIO bn);
 void idio_free_bignum (IDIO bn);
+IDIO idio_bignum_copy (IDIO bn);
 IDIO idio_bignum_integer_intmax_t (intmax_t i);
 IDIO idio_bignum_integer_uintmax_t (uintmax_t ui);
 IDIO idio_bignum_integer (IDIO_BSA sig_a);

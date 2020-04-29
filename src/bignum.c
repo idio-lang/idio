@@ -192,9 +192,12 @@ void idio_bignum_dump (IDIO bn)
     } else {
 	fprintf (stderr, "e");
     }
+    if (IDIO_BIGNUM_NAN_P (bn)) {
+	fprintf (stderr, "!");
+    }
 
     int segs = al - 1;
-    fprintf (stderr, " a[%2zd%s]: ", al, (segs > IDIO_BIGNUM_SIG_SEGMENTS) ? "!" : "");
+    fprintf (stderr, " segs[%2zd%s]: ", al, (segs > IDIO_BIGNUM_SIG_SEGMENTS) ? "!" : "");
     int first = 1;
 
     /*
@@ -1082,7 +1085,7 @@ IDIO idio_bignum_shift_left (IDIO a, int fill)
 	    carry = c;
 	} else {
 	    r = i * 10 + carry;
-	    IDIO_C_ASSERT (r >= 0);
+	    /* IDIO_C_ASSERT (r >= 0); */
 	    carry = 0;
 	}
 
@@ -1246,7 +1249,8 @@ IDIO idio_bignum_divide (IDIO a, IDIO b)
 
     if (idio_bignum_zero_p (b)) {
 	idio_error_C ("divide by zero", idio_S_nil, IDIO_C_LOCATION ("idio_bignum_divide"));
-	return idio_S_nil;
+
+	return idio_S_notreached;
     }
 
     int na = idio_bignum_negative_p (a);
@@ -1544,10 +1548,12 @@ IDIO idio_bignum_to_real (IDIO bn)
 	size_t nshift = (nseg - IDIO_BIGNUM_SIG_SEGMENTS);
 	size_t i;
 	for (i = 0; i < nshift; i++) {
+	    if (sig_a->ae[0]) {
+		inexact = IDIO_BIGNUM_FLAG_REAL_INEXACT;
+	    }
 	    idio_bsa_shift (sig_a);
 	}
 	exp = nshift * IDIO_BIGNUM_DPW;
-	inexact = IDIO_BIGNUM_FLAG_REAL_INEXACT;
     }
 
     int flags = inexact;
@@ -1602,6 +1608,10 @@ int idio_bignum_real_equal_p (IDIO a, IDIO b)
 
     if (IDIO_BIGNUM_INTEGER_P (b)) {
 	rb = idio_bignum_to_real (b);
+    }
+
+    if (IDIO_BIGNUM_REAL_INEXACT_P (ra) != IDIO_BIGNUM_REAL_INEXACT_P (rb)) {
+	return 0;
     }
 
     if (IDIO_BIGNUM_EXP (ra) != IDIO_BIGNUM_EXP (rb)) {
@@ -1894,10 +1904,18 @@ IDIO idio_bignum_real_multiply (IDIO a, IDIO b)
 	ra = idio_bignum_to_real (a);
     }
 
+    if (idio_bignum_real_zero_p (ra)) {
+	return ra;
+    }
+    
     IDIO rb = b;
 
     if (IDIO_BIGNUM_INTEGER_P (b)) {
 	rb = idio_bignum_to_real (b);
+    }
+
+    if (idio_bignum_real_zero_p (rb)) {
+	return rb;
     }
 
     int inexact = IDIO_BIGNUM_REAL_INEXACT_P (ra) | IDIO_BIGNUM_REAL_INEXACT_P (rb);
@@ -1933,13 +1951,14 @@ IDIO idio_bignum_real_divide (IDIO a, IDIO b)
 
     if (IDIO_BIGNUM_INTEGER_P (a)) {
 	ra = idio_bignum_to_real (a);
-	if (idio_bignum_real_zero_p (ra)) {
-	    IDIO i0 = idio_bignum_integer_intmax_t (0);
+    }
 
-	    IDIO r = idio_bignum_real (0, 0, IDIO_BIGNUM_SIG (i0));
+    if (idio_bignum_real_zero_p (ra)) {
+	IDIO i0 = idio_bignum_integer_intmax_t (0);
 
-	    return r;
-	}
+	IDIO r = idio_bignum_real (0, 0, IDIO_BIGNUM_SIG (i0));
+
+	return r;
     }
 
     IDIO rb = b;
@@ -2003,7 +2022,7 @@ IDIO idio_bignum_real_divide (IDIO a, IDIO b)
     IDIO ibd = idio_bignum_divide (ra_i, rb_i);
     IDIO r_i = IDIO_PAIR_H (ibd);
 
-    if (! idio_bignum_zero_p (r_i)) {
+    if (! idio_bignum_zero_p (IDIO_PAIR_T (ibd))) {
 	inexact = IDIO_BIGNUM_FLAG_REAL_INEXACT;
     }
 
@@ -2548,7 +2567,8 @@ IDIO idio_bignum_primitive_divide (IDIO args)
 
         if (! idio_isa_bignum (h)) {
 	    idio_error_param_type ("bignum", h, IDIO_C_LOCATION ("idio_bignum_primitive_divide"));
-	    break;
+
+	    return idio_S_notreached;
 	}
 
 	if (first) {
@@ -2572,7 +2592,8 @@ IDIO idio_bignum_primitive_divide (IDIO args)
 
 	if (idio_bignum_zero_p (h)) {
 	    idio_error_printf (IDIO_C_LOCATION ("idio_bignum_primitive_divide"), "divide by zero");
-	    break;
+
+	    return idio_S_notreached;
 	}
 
 	r = idio_bignum_real_divide (r, h);
@@ -2973,6 +2994,17 @@ IDIO_DEFINE_PRIMITIVE1 ("exponent", exponent, (IDIO n))
     return r;
 }
 
+IDIO_DEFINE_PRIMITIVE1 ("bignum-dump", bignum_dump, (IDIO n))
+{
+    IDIO_ASSERT (n);
+
+    IDIO_BIGNUM_FIXNUM_TYPE (n);
+
+    idio_bignum_dump (n);
+
+    return idio_S_unspec;
+}
+
 void idio_init_bignum ()
 {
 }
@@ -2987,6 +3019,7 @@ void idio_bignum_add_primitives ()
     IDIO_ADD_PRIMITIVE (inexact2exact);
     IDIO_ADD_PRIMITIVE (mantissa);
     IDIO_ADD_PRIMITIVE (exponent);
+    IDIO_ADD_PRIMITIVE (bignum_dump);
 }
 
 void idio_final_bignum ()
