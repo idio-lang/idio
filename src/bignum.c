@@ -1907,7 +1907,7 @@ IDIO idio_bignum_real_multiply (IDIO a, IDIO b)
     if (idio_bignum_real_zero_p (ra)) {
 	return ra;
     }
-    
+
     IDIO rb = b;
 
     if (IDIO_BIGNUM_INTEGER_P (b)) {

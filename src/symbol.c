@@ -47,6 +47,7 @@ IDIO_SYMBOL_DECL (define);
 IDIO_SYMBOL_DECL (define_macro);
 IDIO_SYMBOL_DECL (define_infix_operator);
 IDIO_SYMBOL_DECL (define_postfix_operator);
+IDIO_SYMBOL_DECL (deep);
 IDIO_SYMBOL_DECL (dloads);
 IDIO_SYMBOL_DECL (dot);
 IDIO_SYMBOL_DECL (dynamic);
@@ -91,6 +92,7 @@ IDIO_SYMBOL_DECL (quote);
 IDIO_SYMBOL_DECL (root);
 IDIO_SYMBOL_DECL (set);
 IDIO_SYMBOL_DECL (setter);
+IDIO_SYMBOL_DECL (shallow);
 IDIO_SYMBOL_DECL (super);
 IDIO_SYMBOL_DECL (template);
 IDIO_SYMBOL_DECL (this);
@@ -103,7 +105,7 @@ void idio_property_error_nil_object (char *msg, IDIO loc)
 {
     IDIO_ASSERT (loc);
     IDIO_TYPE_ASSERT (string, loc);
-    
+
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C (msg, msh);
 
@@ -119,7 +121,7 @@ void idio_properties_error_not_found (char *msg, IDIO o, IDIO loc)
 {
     IDIO_ASSERT (loc);
     IDIO_TYPE_ASSERT (string, loc);
-    
+
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C (msg, msh);
 
@@ -135,7 +137,7 @@ void idio_property_error_no_properties (char *msg, IDIO loc)
 {
     IDIO_ASSERT (loc);
     IDIO_TYPE_ASSERT (string, loc);
-    
+
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C (msg, msh);
 
@@ -152,16 +154,16 @@ void idio_property_error_key_not_found (IDIO key, IDIO loc)
     IDIO_ASSERT (key);
     IDIO_ASSERT (loc);
     IDIO_TYPE_ASSERT (string, loc);
-    
+
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C ("key not found", msh);
-    
+
     IDIO c = idio_struct_instance (idio_condition_rt_hash_key_not_found_error_type,
 				   IDIO_LIST4 (idio_get_output_string (msh),
 					       loc,
 					       idio_S_nil,
 					       key));
-    
+
     idio_raise_condition (idio_S_true, c);
 }
 
@@ -215,7 +217,7 @@ static IDIO idio_symbol_C (const char *s_C)
     size_t blen = strlen (s_C);
     IDIO_GC_ALLOC (IDIO_SYMBOL_S (o), blen + 1);
     strcpy (IDIO_SYMBOL_S (o), s_C);
-    
+
     IDIO_SYMBOL_FLAGS (o) = IDIO_SYMBOL_FLAG_NONE;
 
     return o;
@@ -477,7 +479,7 @@ IDIO idio_property_get (IDIO o, IDIO property, IDIO args)
 	    return IDIO_PAIR_H (args);
 	} else {
 	    idio_property_error_no_properties ("properties is #n", IDIO_C_LOCATION ("idio_property_get"));
-	    
+
 	    /* notreached */
 	    return idio_S_notreached;
 	}
@@ -574,6 +576,7 @@ void idio_init_symbol ()
     IDIO_SYMBOL_DEF ("define-macro", define_macro);
     IDIO_SYMBOL_DEF ("define-infix-operator", define_infix_operator);
     IDIO_SYMBOL_DEF ("define-postfix-operator", define_postfix_operator);
+    IDIO_SYMBOL_DEF ("deep", deep);
     IDIO_SYMBOL_DEF ("dloads", dloads);
     IDIO_SYMBOL_DEF (".", dot);
     IDIO_SYMBOL_DEF ("dynamic", dynamic);
@@ -621,6 +624,7 @@ void idio_init_symbol ()
     IDIO_SYMBOL_DEF ("root", root);
     IDIO_SYMBOL_DEF ("set!", set);
     IDIO_SYMBOL_DEF ("setter", setter);
+    IDIO_SYMBOL_DEF ("shallow", shallow);
     IDIO_SYMBOL_DEF ("super", super);
     IDIO_SYMBOL_DEF ("template", template);
     IDIO_SYMBOL_DEF ("this", this);

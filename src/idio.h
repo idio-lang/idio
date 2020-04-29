@@ -122,10 +122,15 @@ extern FILE *idio_vm_perf_FILE;
 
 #define IDIO_C_ASSERT(x)	(assert (x))
 
-/* IDIO_TYPE_ASSERT assumes a local variable f */
 #define IDIO_TYPE_ASSERT(t,x) {						\
 	if (! idio_isa_ ## t (x)) {					\
 	    idio_error_param_type_C (#t, x, __FILE__, __func__, __LINE__); \
+	}								\
+    }
+
+#define IDIO_ASSERT_NOT_CONST(t,x) {					\
+	if (IDIO_FLAGS (x) & IDIO_FLAG_CONST) {				\
+	    idio_error_const_param_C (#t " " #x, x, __FILE__, __func__, __LINE__); \
 	}								\
     }
 
@@ -139,8 +144,8 @@ extern FILE *idio_vm_perf_FILE;
  * obviously some random C pointer might pass but that's *always* true
  */
 #define IDIO_ASSERT(x)		(assert(x),(((intptr_t) x)&3)?1:(assert((x)->type),assert((x)->type < IDIO_TYPE_MAX)))
-#define IDIO_ASSERT_FREE(x)	((((intptr_t) x)&3)?1:(assert(((x)->flags & IDIO_FLAG_FREE_MASK) == IDIO_FLAG_FREE)))
-#define IDIO_ASSERT_NOT_FREED(x) ((((intptr_t) x)&3)?1:(assert(((x)->flags & IDIO_FLAG_FREE_MASK) != IDIO_FLAG_FREE)))
+#define IDIO_ASSERT_FREE(x)	((((intptr_t) x)&3)?1:(assert(((x)->gc_flags & IDIO_GC_FLAG_FREE_MASK) == IDIO_GC_FLAG_FREE)))
+#define IDIO_ASSERT_NOT_FREED(x) ((((intptr_t) x)&3)?1:(assert(((x)->gc_flags & IDIO_GC_FLAG_FREE_MASK) != IDIO_GC_FLAG_FREE)))
 #define IDIO_EXIT(x)		{IDIO_C_ASSERT(0);exit(x);}
 #define IDIO_C_EXIT(x)		{IDIO_C_ASSERT(0);exit(x);}
 
@@ -153,6 +158,7 @@ extern FILE *idio_vm_perf_FILE;
 
 #define IDIO_C_ASSERT(x)	((void) 0)
 #define IDIO_TYPE_ASSERT(t,x)	((void) 0)
+#define IDIO_ASSERT_NOT_CONST(t,x) ((void) 0)
 #define IDIO_ASSERT(x)		((void) 0)
 #define IDIO_ASSERT_FREE(x)	((void) 0)
 #define IDIO_ASSERT_NOT_FREED(x) ((void) 0)
@@ -163,11 +169,11 @@ extern FILE *idio_vm_perf_FILE;
 
 #endif
 
-#define IDIO_FLAG_FREE_SET(x) ((((x)->flags & IDIO_FLAG_FREE_MASK) == IDIO_FLAG_FREE))
+#define IDIO_GC_FLAG_FREE_SET(x) ((((x)->gc_flags & IDIO_GC_FLAG_FREE_MASK) == IDIO_GC_FLAG_FREE))
 /*
-#define IDIO_IS_FREE(x)       (idio_S_nil == (x) || IDIO_FLAG_FREE_SET (x))
+#define IDIO_IS_FREE(x)       (idio_S_nil == (x) || IDIO_GC_FLAG_FREE_SET (x))
 */
-#define IDIO_IS_SET(x)        (idio_S_nil != (x) && (IDIO_FLAG_FREE_SET (x) == 0))
+#define IDIO_IS_SET(x)        (idio_S_nil != (x) && (IDIO_GC_FLAG_FREE_SET (x) == 0))
 
 
 #define IDIO_WORD_MAX_LEN	BUFSIZ

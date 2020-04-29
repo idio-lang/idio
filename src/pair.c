@@ -40,7 +40,9 @@ IDIO idio_pair (IDIO h, IDIO t)
     return p;
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("pair", pair, (IDIO h, IDIO t))
+IDIO_DEFINE_PRIMITIVE2_DS ("pair", pair, (IDIO h, IDIO t), "h t", "\
+create a `pair` from `h` and `t`	\n\
+")
 {
     IDIO_ASSERT (h);
     IDIO_ASSERT (t);
@@ -114,6 +116,11 @@ IDIO idio_list_head (IDIO p)
 	return idio_S_nil;
     }
 
+    if (! idio_isa_pair (p)) {
+	idio_debug ("p=%s\n", p);
+	idio_vm_thread_state ();
+	IDIO_C_ASSERT (0);
+    }
     IDIO_TYPE_ASSERT (pair, p);
 
     return IDIO_PAIR_H (p);
@@ -296,6 +303,24 @@ IDIO_DEFINE_PRIMITIVE1 ("length", list_length, (IDIO o))
     return idio_integer (len);
 }
 
+IDIO idio_copy_pair (IDIO p, int depth)
+{
+    IDIO_ASSERT (p);
+    IDIO_C_ASSERT (depth);
+
+    if (idio_S_nil == p) {
+	return idio_S_nil;
+    }
+
+    IDIO_TYPE_ASSERT (pair, p);
+
+    if (IDIO_COPY_SHALLOW == depth) {
+	return idio_pair (IDIO_PAIR_H (p), IDIO_PAIR_T (p));
+    } else {
+	return idio_pair (idio_copy (IDIO_PAIR_H (p), depth), idio_copy (IDIO_PAIR_T (p), depth));
+    }
+}
+
 IDIO idio_list_copy (IDIO l)
 {
     IDIO_ASSERT (l);
@@ -306,24 +331,42 @@ IDIO idio_list_copy (IDIO l)
 
     IDIO_TYPE_ASSERT (pair, l);
 
-    IDIO r = idio_S_nil;
+    /*
+     * Building a copy as you walk it then reversing gets too messy
+     * for the reverse function if the list is improper.
+     *
+     * Let's do the modify-in-place variant
+     */
+
+    IDIO p = idio_pair (idio_S_nil, idio_S_nil);
+    IDIO r = p;
 
     while (idio_S_nil != l) {
-	IDIO h = idio_list_head (l);
-	IDIO t = idio_list_tail (l);
+	IDIO h = IDIO_PAIR_H (l);
+	IDIO t = IDIO_PAIR_T (l);
 
-	if (idio_S_nil == h &&
+	if (0 && idio_S_nil == h &&
 	    idio_S_nil == t) {
 	    /* (1 2 3 #nil) */
 	    break;
 	}
 
-	r = idio_pair (h, r);
+	IDIO_PAIR_H (p) = h;
 
-	l = t;
+	if (idio_S_nil == t) {
+	    break;
+	}
+
+	if (idio_isa_pair (t)) {
+	    IDIO np = idio_pair (idio_S_nil, idio_S_nil);
+	    IDIO_PAIR_T (p) = np;
+	    p = np;
+	    l = t;
+	} else {
+	    IDIO_PAIR_T (p) = t;
+	    break;
+	}
     }
-
-    r = idio_list_reverse (r);
 
     return r;
 }

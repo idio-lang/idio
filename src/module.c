@@ -424,7 +424,7 @@ IDIO idio_module_symbols_match_type (IDIO module, IDIO symbols, IDIO type)
 	    if (idio_S_unspec == sv) {
 		idio_module_error_unbound_name (module, IDIO_PAIR_H (symbols), IDIO_C_LOCATION ("idio_module_symbols_match_type"));
 	    } else if (! idio_isa_pair (sv)) {
-		idio_error_C ("symbol not a pair", IDIO_LIST1 (sv), IDIO_C_LOCATION ("idio_module_symbols_match_type"));
+		idio_error_C ("symbol not a pair", sv, IDIO_C_LOCATION ("idio_module_symbols_match_type"));
 	    } else if (type == IDIO_PAIR_H (sv)) {
 		r = idio_pair (IDIO_PAIR_H (symbols), r);
 	    }
@@ -537,7 +537,7 @@ IDIO idio_module_direct_reference (IDIO name)
 	slash = strrchr (copy_C, '/');
 
 	if (NULL == slash) {
-	    idio_error_C ("failed to strcpy a string", IDIO_LIST1 (name), IDIO_C_LOCATION ("idio_module_direct_reference"));
+	    idio_error_C ("failed to strcpy a string", name, IDIO_C_LOCATION ("idio_module_direct_reference"));
 	}
 	*slash = '\0';
 

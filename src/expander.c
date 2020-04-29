@@ -539,7 +539,7 @@ IDIO idio_evaluate_expander_code (IDIO m, IDIO cs)
     IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (array, cs);
 
-    /* idio_debug ("evaluate-expander-code: %s\n", m);  */
+    /* idio_debug ("evaluate-expander-code: %s\n", m); */
 
     IDIO cthr = idio_thread_current_thread ();
     IDIO ethr = idio_expander_thread;
@@ -554,7 +554,7 @@ IDIO idio_evaluate_expander_code (IDIO m, IDIO cs)
     idio_thread_restore_state (ethr);
     idio_thread_set_current_thread (cthr);
 
-    /* idio_debug ("evaluate-expander-code: out: %s\n", r);      */
+    /* idio_debug ("evaluate-expander-code: out: %s\n", r); */
 
     return r;
 }
@@ -764,7 +764,7 @@ static IDIO idio_evaluate_infix_operator (IDIO n, IDIO e, IDIO b, IDIO a)
     idio_vm_func_stop (func, &prim_te);
     idio_vm_prim_time (func, &prim_t0, &prim_te);
 #endif
-    
+
     idio_thread_restore_state (ethr);
     idio_thread_set_current_thread (cthr);
 
@@ -943,7 +943,7 @@ static IDIO idio_evaluate_postfix_operator (IDIO n, IDIO e, IDIO b, IDIO a)
     idio_vm_func_stop (func, &prim_te);
     idio_vm_prim_time (func, &prim_t0, &prim_te);
 #endif
-    
+
     idio_thread_restore_state (ethr);
     idio_thread_set_current_thread (cthr);
 
@@ -1142,7 +1142,7 @@ IDIO_DEFINE_PRIMITIVE1 ("operator-expand", operator_expand, (IDIO l))
 	if (idio_S_nil != args) {					\
 	    IDIO after = IDIO_PAIR_H (args);				\
 	    if (idio_S_nil == after) {					\
-		idio_error_C ("too few args after " #iname, IDIO_LIST1 (before), idio_string_C (#iname)); \
+		idio_error_C ("too few args after " #iname, before, idio_string_C (#iname)); \
 	    }								\
 	    if (idio_S_nil == IDIO_PAIR_T (after)) {			\
 		after = IDIO_PAIR_H (after);				\

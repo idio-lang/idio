@@ -23,6 +23,9 @@
 #ifndef UTIL_H
 #define UTIL_H
 
+#define IDIO_COPY_DEEP		1
+#define IDIO_COPY_SHALLOW	2
+
 int idio_type (IDIO o);
 const char *idio_type2string (IDIO o);
 const char *idio_type_enum2string (idio_type_e type);
@@ -43,6 +46,7 @@ IDIO idio_list_map_pt (IDIO l);
 IDIO idio_list_memq (IDIO k, IDIO l);
 IDIO idio_list_assq (IDIO k, IDIO l);
 IDIO idio_list_set_difference (IDIO set1, IDIO set2);
+IDIO idio_copy (IDIO o, int depth);
 void idio_dump (IDIO o, int detail);
 void idio_debug_FILE (FILE *file, const char *fmt, IDIO o);
 void idio_debug (const char *fmt, IDIO o);

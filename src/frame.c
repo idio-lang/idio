@@ -33,7 +33,7 @@ void idio_frame_error_range (IDIO fo, size_t d, size_t i, IDIO loc)
 
     char em[BUFSIZ];
     sprintf (em, "frame #%zd index #%zd is out of range", d, i);
-    idio_error_C (em, IDIO_LIST1 (fo), loc);
+    idio_error_C (em, fo, loc);
 }
 
 IDIO idio_frame_allocate (idio_ai_t arityp1)

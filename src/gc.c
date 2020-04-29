@@ -149,6 +149,8 @@ IDIO idio_gc_get (idio_type_e type)
     /* assign type late in case we've re-used a previous object */
     o->type = type;
     o->gc_flags = IDIO_GC_FLAG_NONE;
+    o->flags = IDIO_FLAG_NONE;
+    o->tflags = 0;
 
     IDIO_ASSERT (o);
     if (NULL != idio_gc->used) {
@@ -1672,7 +1674,7 @@ static void idio_gc_run_all_finalizers ()
 void idio_final_gc ()
 {
     IDIO_GC_FLAGS (idio_gc) |= IDIO_GC_FLAG_FINISH;
-    
+
     idio_gc_run_all_finalizers ();
 
     /* unprotect the finalizer hash itself */

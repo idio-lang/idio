@@ -73,7 +73,7 @@ IDIO idio_struct_type (IDIO name, IDIO parent, IDIO fields)
     idio_ai_t pfields = 0;
     if (idio_S_nil != parent) {
 	pfields = idio_array_size (IDIO_STRUCT_TYPE_FIELDS (parent));
-	IDIO_STRUCT_TYPE_FIELDS (st) = idio_array_copy (IDIO_STRUCT_TYPE_FIELDS (parent), nfields);
+	IDIO_STRUCT_TYPE_FIELDS (st) = idio_array_copy (IDIO_STRUCT_TYPE_FIELDS (parent), IDIO_COPY_SHALLOW, nfields);
     } else {
 	IDIO_STRUCT_TYPE_FIELDS (st) = idio_array (nfields);
     }

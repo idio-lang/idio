@@ -1116,7 +1116,7 @@ IDIO idio_load_file_handle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (
 	IDIO eh = idio_thread_current_error_handle ();
 	idio_display (IDIO_MODULE_NAME (cm), eh);
 	idio_display_C ("> ", eh);
-	
+
 	IDIO e = (*reader) (fh);
 	if (idio_S_eof == e) {
 	    break;
@@ -1156,18 +1156,11 @@ IDIO idio_load_file_handle_lbl (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluat
 	return idio_load_file_handle_interactive (fh, reader, evaluator, cs);
     }
 
-    int timing = 0;
-
     IDIO thr = idio_thread_current_thread ();
     idio_ai_t ss0 = idio_array_size (IDIO_THREAD_STACK (thr));
     /* fprintf (stderr, "load-file-handle: %s\n", IDIO_HANDLE_NAME (fh)); */
     /* idio_debug ("THR %s\n", thr); */
     /* idio_debug ("STK %s\n", IDIO_THREAD_STACK (thr)); */
-
-    time_t s;
-    suseconds_t us;
-    struct timeval t0;
-    gettimeofday (&t0, NULL);
 
     /*
      * When we call idio_vm_run() we are at risk of the garbage
@@ -1176,8 +1169,7 @@ IDIO idio_load_file_handle_lbl (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluat
      */
     idio_remember_file_handle (fh);
 
-    IDIO es = idio_S_nil;
-    IDIO r;
+    IDIO r = idio_S_unspec;
 
     for (;;) {
 	IDIO e = (*reader) (fh);

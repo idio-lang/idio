@@ -36,6 +36,7 @@ IDIO idio_improper_list_reverse (IDIO l, IDIO last);
 IDIO idio_list_reverse (IDIO l);
 IDIO idio_list_to_array (IDIO l);
 size_t idio_list_length (IDIO l);
+IDIO idio_copy_pair (IDIO p, int depth);
 IDIO idio_list_copy (IDIO l);
 IDIO idio_list_append2 (IDIO l1, IDIO l2);
 

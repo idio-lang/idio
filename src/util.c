@@ -278,6 +278,59 @@ IDIO_DEFINE_PRIMITIVE1 ("not", not, (IDIO e))
     return r;
 }
 
+/*
+ * Equality -- what does that mean?  RnRS defines the equivalence
+ * predicates -- albeit allowing for implementation dependent
+ * variances,
+ * eg. https://www.cs.cmu.edu/Groups/AI/html/r4rs/r4rs_8.html#SEC47
+ *
+ * Naturally, we'll vary a little:
+ *
+ * In all cases, if the two objects are C/== then they are equal.  Did
+ * I need to spell that out?
+ *
+ * For most object types (that is, largely non-user-visible) the
+ * *only* equality is C/==.  An example is creating two closures from
+ * the same source code.  They will always be different.  Two
+ * references to the same closure will always be the same.
+ *
+ * eq?
+ *
+ * For non-pointer types (fixnum & characters) then return true if the
+ * values are C/== (the default case, above) and for pointers the
+ * malloc()'d object is C/==
+ *
+ * In other words, the two objects are indistinguishable for any
+ * practical purpose.
+ *
+ * eqv?
+ *
+ * For non-pointer types (fixnum & characters) then return true if the
+ * values are C/== (the default case, above).
+ *
+ * For strings, if the contents are the same.
+ *
+ * For bignums, if the values are the same -- including exactness.
+ *
+ * Generally, for non-compound objects, if the values are the same.
+ *
+ * equal?
+ *
+ * A recursive descent through objects verifying that each element is
+ * equal?  RnRS suggests: "A rule of thumb is that objects are
+ * generally equal? if they print the same."
+ *
+ * For non-pointer types (fixnum & characters) then return true if the
+ * values are C/== (the default case, above).
+ *
+ * equal? for a string is the same as eqv?
+ *
+ * equal? for a bignum is the same as eqv?
+ *
+ * For compound objects (arrays, hashes) then the array/hash sizes are
+ * compared and then each element is compared with equal?.
+ * 
+ */
 #define IDIO_EQUAL_EQP		1
 #define IDIO_EQUAL_EQVP		2
 #define IDIO_EQUAL_EQUALP	3
@@ -285,6 +338,16 @@ IDIO_DEFINE_PRIMITIVE1 ("not", not, (IDIO e))
 int idio_eqp (void *o1, void *o2)
 {
     return idio_equal ((IDIO) o1, (IDIO) o2, IDIO_EQUAL_EQP);
+}
+
+int idio_eqvp (void *o1, void *o2)
+{
+    return idio_equal ((IDIO) o1, (IDIO) o2, IDIO_EQUAL_EQVP);
+}
+
+int idio_equalp (void *o1, void *o2)
+{
+    return idio_equal ((IDIO) o1, (IDIO) o2, IDIO_EQUAL_EQUALP);
 }
 
 IDIO_DEFINE_PRIMITIVE2 ("eq?", eqp, (IDIO o1, IDIO o2))
@@ -319,8 +382,9 @@ IDIO_DEFINE_PRIMITIVE2 ("eqv?", eqvp, (IDIO o1, IDIO o2))
  * s9.scm redefines equal? from eq? and eqv? and recurses on itself --
  * or it will if we do not define a primitive equal? which would be
  * used in its definition
+ */
 
-IDIO_DEFINE_PRIMITIVE2 ("equal?", equalp, (IDIO o1, IDIO o2))
+IDIO_DEFINE_PRIMITIVE2 ("idio-equal?", equalp, (IDIO o1, IDIO o2))
 {
     IDIO_ASSERT (o1);
     IDIO_ASSERT (o2);
@@ -332,17 +396,6 @@ IDIO_DEFINE_PRIMITIVE2 ("equal?", equalp, (IDIO o1, IDIO o2))
     }
 
     return r;
-}
-*/
-
-int idio_eqvp (void *o1, void *o2)
-{
-    return idio_equal ((IDIO) o1, (IDIO) o2, IDIO_EQUAL_EQVP);
-}
-
-int idio_equalp (void *o1, void *o2)
-{
-    return idio_equal ((IDIO) o1, (IDIO) o2, IDIO_EQUAL_EQUALP);
 }
 
 int idio_equal (IDIO o1, IDIO o2, int eqp)
@@ -378,12 +431,46 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		break;
 	    }
 
+	    /*
+	     * Just before we fail if the two objects are not of the
+	     * same type, handle sibling object types.  Notably,
+	     * strings and substrings.
+	     */
+	    if (IDIO_EQUAL_EQP != eqp) {
+		switch (o1->type) {
+		case IDIO_TYPE_STRING:
+		    {
+			switch (o2->type) {
+			case IDIO_TYPE_SUBSTRING:
+			    if (IDIO_STRING_BLEN (o1) != IDIO_SUBSTRING_BLEN (o2)) {
+				return 0;
+			    }
+
+			    return (strncmp (IDIO_STRING_S (o1), IDIO_SUBSTRING_S (o2), IDIO_STRING_BLEN (o1)) == 0);
+			}
+		    }
+		    break;
+		case IDIO_TYPE_SUBSTRING:
+		    {
+			switch (o2->type) {
+			case IDIO_TYPE_STRING:
+			    if (IDIO_SUBSTRING_BLEN (o1) != IDIO_STRING_BLEN (o2)) {
+				return 0;
+			    }
+
+			    return (strncmp (IDIO_SUBSTRING_S (o1), IDIO_STRING_S (o2), IDIO_SUBSTRING_BLEN (o1)) == 0);
+			}
+		    }
+		    break;
+		}
+	    }
+
 	    if (o1->type != o2->type) {
 		return 0;
 	    }
 
-	    if (IDIO_FLAG_FREE_SET (o1) ||
-		IDIO_FLAG_FREE_SET (o2)) {
+	    if (IDIO_GC_FLAG_FREE_SET (o1) ||
+		IDIO_GC_FLAG_FREE_SET (o2)) {
 		return 0;
 	    }
 
@@ -393,7 +480,6 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 	    case IDIO_TYPE_STRING:
 		if (IDIO_EQUAL_EQP == eqp) {
 		    return (o1 == o2);
-		    /* return (o1->u.string == o2->u.string); */
 		}
 
 		if (IDIO_STRING_BLEN (o1) != IDIO_STRING_BLEN (o2)) {
@@ -404,7 +490,6 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 	    case IDIO_TYPE_SUBSTRING:
 		if (IDIO_EQUAL_EQP == eqp) {
 		    return (o1 == o2);
-		    /* return (o1->u.substring == o2->u.substring); */
 		}
 
 		if (IDIO_SUBSTRING_BLEN (o1) != IDIO_SUBSTRING_BLEN (o2)) {
@@ -421,15 +506,16 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 
 		break;
 	    case IDIO_TYPE_PAIR:
-		if (IDIO_EQUAL_EQP == eqp) {
+		if (IDIO_EQUAL_EQP == eqp ||
+		    IDIO_EQUAL_EQVP == eqp) {
 		    return (o1 == o2);
-		    /* return (o1->u.pair == o2->u.pair); */
 		}
 
 		return (idio_equalp (IDIO_PAIR_H (o1), IDIO_PAIR_H (o2)) &&
 			idio_equalp (IDIO_PAIR_T (o1), IDIO_PAIR_T (o2)));
 	    case IDIO_TYPE_ARRAY:
-		if (IDIO_EQUAL_EQP == eqp) {
+		if (IDIO_EQUAL_EQP == eqp ||
+		    IDIO_EQUAL_EQVP == eqp) {
 		    return (o1->u.array == o2->u.array);
 		}
 
@@ -442,9 +528,15 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 			return 0;
 		    }
 		}
+
+		/*
+		 * Compare default values?
+		 */
+
 		return 1;
 	    case IDIO_TYPE_HASH:
-		if (IDIO_EQUAL_EQP == eqp) {
+		if (IDIO_EQUAL_EQP == eqp ||
+		    IDIO_EQUAL_EQVP == eqp) {
 		    return (o1->u.hash == o2->u.hash);
 		}
 
@@ -461,10 +553,8 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		return 1;
 	    case IDIO_TYPE_CLOSURE:
 		return (o1 == o2);
-		/* return (o1->u.closure == o2->u.closure); */
 	    case IDIO_TYPE_PRIMITIVE:
 		return (o1 == o2);
-		/* return (o1->u.primitive == o2->u.primitive); */
 	    case IDIO_TYPE_BIGNUM:
 		if (IDIO_EQUAL_EQP == eqp) {
 		    /*
@@ -480,14 +570,7 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 	    case IDIO_TYPE_FRAME:
 		return (o1 == o2);
 	    case IDIO_TYPE_HANDLE:
-		if (IDIO_EQUAL_EQP == eqp) {
-		    return (o1->u.handle == o2->u.handle);
-		}
-
-		if (! idio_equalp (IDIO_HANDLE_NAME (o1), IDIO_HANDLE_NAME (o2))) {
-		    return 0;
-		}
-		break;
+		return (o1->u.handle == o2->u.handle);
 	    case IDIO_TYPE_C_INT:
 		return (IDIO_C_TYPE_INT (o1) == IDIO_C_TYPE_INT (o2));
 	    case IDIO_TYPE_C_UINT:
@@ -499,7 +582,8 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 	    case IDIO_TYPE_C_POINTER:
 		return (IDIO_C_TYPE_POINTER_P (o1) == IDIO_C_TYPE_POINTER_P (o2));
 	    case IDIO_TYPE_STRUCT_TYPE:
-		if (IDIO_EQUAL_EQP == eqp) {
+		if (IDIO_EQUAL_EQP == eqp ||
+		    IDIO_EQUAL_EQVP == eqp) {
 		    return (o1->u.struct_type == o2->u.struct_type);
 		}
 
@@ -510,7 +594,8 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		}
 		break;
 	    case IDIO_TYPE_STRUCT_INSTANCE:
-		if (IDIO_EQUAL_EQP == eqp) {
+		if (IDIO_EQUAL_EQP == eqp ||
+		    IDIO_EQUAL_EQVP == eqp) {
 		    return (o1->u.struct_instance == o2->u.struct_instance);
 		}
 
@@ -534,7 +619,7 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 	    case IDIO_TYPE_OPAQUE:
 		return (o1->u.opaque == o2->u.opaque);
 	    default:
-		idio_error_C ("IDIO_TYPE_POINTER_MARK: o1->type unexpected", IDIO_LIST1 (o1), IDIO_C_LOCATION ("idio_equal"));
+		idio_error_C ("IDIO_TYPE_POINTER_MARK: o1->type unexpected", o1, IDIO_C_LOCATION ("idio_equal"));
 
 		/* notreached */
 		return 0;
@@ -1488,7 +1573,7 @@ char *idio_display_string (IDIO o)
 		}
 		break;
 	    default:
-		r = idio_as_string (o, 4);
+		r = idio_as_string (o, 40);
 		break;
 	    }
 	}
@@ -1660,7 +1745,7 @@ const char *idio_vm_bytecode2string (int code)
     case IDIO_A_PUSH_ESCAPER: r = "PUSH-ESCAPER"; break;
 
     default:
-	fprintf (stderr, "idio_vm_bytecode2string: unexpected bytecode %d\n", code);
+	/* fprintf (stderr, "idio_vm_bytecode2string: unexpected bytecode %d\n", code); */
 	r = "Unknown bytecode";
 	break;
     }
@@ -1903,6 +1988,77 @@ IDIO_DEFINE_PRIMITIVE1 ("identity", identity, (IDIO o))
     return o;
 }
 
+IDIO idio_copy (IDIO o, int depth)
+{
+    IDIO_ASSERT (o);
+
+    switch ((intptr_t) o & IDIO_TYPE_MASK) {
+    case IDIO_TYPE_FIXNUM_MARK:
+    case IDIO_TYPE_CONSTANT_MARK:
+	return o;
+    case IDIO_TYPE_PLACEHOLDER_MARK:
+	idio_error_C ("invalid type", o, IDIO_C_LOCATION ("idio_copy/placeholder"));
+
+	return idio_S_notreached;
+    case IDIO_TYPE_POINTER_MARK:
+	{
+	    switch (o->type) {
+	    case IDIO_TYPE_STRING:
+	    case IDIO_TYPE_SUBSTRING:
+		return idio_string_copy (o);
+	    case IDIO_TYPE_SYMBOL:
+	    case IDIO_TYPE_KEYWORD:
+		return o;
+	    case IDIO_TYPE_PAIR:
+		return idio_copy_pair (o, depth);
+	    case IDIO_TYPE_ARRAY:
+		return idio_array_copy (o, depth, 0);
+	    case IDIO_TYPE_HASH:
+		return idio_hash_copy (o, depth);
+	    case IDIO_TYPE_BIGNUM:
+		return idio_bignum_copy (o);
+
+	    case IDIO_TYPE_CLOSURE:
+	    case IDIO_TYPE_PRIMITIVE:
+	    case IDIO_TYPE_MODULE:
+	    case IDIO_TYPE_FRAME:
+	    case IDIO_TYPE_HANDLE:
+	    case IDIO_TYPE_STRUCT_TYPE:
+	    case IDIO_TYPE_STRUCT_INSTANCE:
+	    case IDIO_TYPE_THREAD:
+	    case IDIO_TYPE_CONTINUATION:
+	    case IDIO_TYPE_C_INT:
+	    case IDIO_TYPE_C_UINT:
+	    case IDIO_TYPE_C_FLOAT:
+	    case IDIO_TYPE_C_DOUBLE:
+	    case IDIO_TYPE_C_POINTER:
+	    case IDIO_TYPE_C_TYPEDEF:
+	    case IDIO_TYPE_C_STRUCT:
+	    case IDIO_TYPE_C_INSTANCE:
+	    case IDIO_TYPE_C_FFI:
+	    case IDIO_TYPE_OPAQUE:
+		idio_error_C ("invalid type", o, IDIO_C_LOCATION ("idio_copy"));
+
+		return idio_S_notreached;
+	    default:
+		idio_error_C ("unimplemented type", o, IDIO_C_LOCATION ("idio_copy"));
+		break;
+	    }
+	}
+	break;
+    default:
+	/* inconceivable! */
+	idio_error_printf (IDIO_C_LOCATION ("idio_copy"), "v=n/k o=%#p o&3=%x F=%x C=%x P=%x", o, (intptr_t) o & IDIO_TYPE_MASK, IDIO_TYPE_FIXNUM_MARK, IDIO_TYPE_CONSTANT_MARK, IDIO_TYPE_POINTER_MARK);
+
+	break;
+    }
+
+    idio_error_C ("failed to copy", o, IDIO_C_LOCATION ("idio_copy"));
+
+    return idio_S_notreached;
+}
+
+
 void idio_dump (IDIO o, int detail)
 {
     IDIO_ASSERT (o);
@@ -1919,7 +2075,7 @@ void idio_dump (IDIO o, int detail)
 		if (detail > 1) {
 		    IDIO_FPRINTF (stderr, "-> %10p ", o->next);
 		}
-		IDIO_FPRINTF (stderr, "t=%2d/%4.4s f=%2x ", o->type, idio_type2string (o), o->flags);
+		IDIO_FPRINTF (stderr, "t=%2d/%4.4s f=%2x gcf=%2x ", o->type, idio_type2string (o), o->flags, o->gc_flags);
 	    }
 
 	    switch (o->type) {
@@ -2105,7 +2261,7 @@ void idio_util_add_primitives ()
     IDIO_ADD_PRIMITIVE (not);
     IDIO_ADD_PRIMITIVE (eqp);
     IDIO_ADD_PRIMITIVE (eqvp);
-    /* IDIO_ADD_PRIMITIVE (equalp); */
+    IDIO_ADD_PRIMITIVE (equalp);
     IDIO_ADD_PRIMITIVE (zerop);
     IDIO_ADD_PRIMITIVE (map1);
     IDIO_ADD_PRIMITIVE (memq);

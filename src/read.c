@@ -862,7 +862,7 @@ static IDIO idio_read_pathname (IDIO handle, int depth)
     return idio_struct_instance (idio_path_type, IDIO_LIST1 (e));
 }
 
-static IDIO idio_read_bignum (IDIO handle, char basec, int radix)
+static IDIO idio_read_bignum_radix (IDIO handle, char basec, int radix)
 {
     IDIO_ASSERT (handle);
 
@@ -886,7 +886,7 @@ static IDIO idio_read_bignum (IDIO handle, char basec, int radix)
     if (radix > max_base) {
 	char em[BUFSIZ];
 	sprintf (em, "bignum base #%c (%d) > max base %d", basec, radix, max_base);
-	idio_read_error_parse (handle, IDIO_C_LOCATION ("idio_read_bignum"), em);
+	idio_read_error_parse (handle, IDIO_C_LOCATION ("idio_read_bignum_radix"), em);
 	return idio_S_unspec;
     }
 
@@ -909,7 +909,7 @@ static IDIO idio_read_bignum (IDIO handle, char basec, int radix)
 	if (i >= radix) {
 	    char em[BUFSIZ];
 	    sprintf (em, "invalid digit %c in bignum base #%c", c, basec);
-	    idio_read_error_parse (handle, IDIO_C_LOCATION ("idio_read_bignum"), em);
+	    idio_read_error_parse (handle, IDIO_C_LOCATION ("idio_read_bignum_radix"), em);
 	    return idio_S_unspec;
 	}
 
@@ -925,7 +925,7 @@ static IDIO idio_read_bignum (IDIO handle, char basec, int radix)
     if (0 == ndigits) {
 	char em[BUFSIZ];
 	sprintf (em, "no digits after bignum base #%c", basec);
-	idio_read_error_parse (handle, IDIO_C_LOCATION ("idio_read_bignum"), em);
+	idio_read_error_parse (handle, IDIO_C_LOCATION ("idio_read_bignum_radix"), em);
 	return idio_S_unspec;
     }
 
@@ -1272,19 +1272,24 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int nl)
 		    case '{':
 			return idio_read_hash (handle, ic, IDIO_LIST_BRACE (depth + 1));
 		    case 'b':
-			return idio_read_bignum (handle, c, 2);
+			return idio_read_bignum_radix (handle, c, 2);
 		    case 'd':
-			return idio_read_bignum (handle, c, 10);
+			return idio_read_bignum_radix (handle, c, 10);
 		    case 'o':
-			return idio_read_bignum (handle, c, 8);
+			return idio_read_bignum_radix (handle, c, 8);
 		    case 'x':
-			return idio_read_bignum (handle, c, 16);
+			return idio_read_bignum_radix (handle, c, 16);
 		    case 'e':
 		    case 'i':
 			{
 			    int inexact = ('i' == c);
 			    IDIO bn = idio_read_1_expr (handle, ic, depth);
 
+			    /*
+			     * If the input was #e0 or #i0 then
+			     * idio_read_1_expr will return a fixnum
+			     * for the 0
+			     */
 			    if (IDIO_TYPE_FIXNUMP (bn)) {
 				if (0 == inexact) {
 				    return bn;

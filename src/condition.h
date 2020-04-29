@@ -24,7 +24,8 @@
 #define CONDITION_H
 
 /*
- * Indexes into structures for direct references
+ * Indexes into structures for direct references -- not all are
+ * created here, only those used in C
  */
 /* ^idio-error */
 #define IDIO_SI_IDIO_ERROR_TYPE_MESSAGE		0
@@ -34,6 +35,12 @@
 /* ^read-error = ^idio_error plus */
 #define IDIO_SI_READ_ERROR_TYPE_LINE		3
 #define IDIO_SI_READ_ERROR_TYPE_POSITION	4
+
+/* ^system-error = ^idio_error plus */
+#define IDIO_SI_SYSTEM_ERROR_TYPE_ERRNO		3
+
+/* ^rt-variable-error = ^idio_error plus */
+#define IDIO_SI_RT_VARIABLE_ERROR_TYPE_NAME	3
 
 /* ^rt-signal */
 #define IDIO_SI_RT_SIGNAL_TYPE_SIGNUM		0
@@ -117,6 +124,7 @@ extern IDIO idio_condition_st_function_arity_error_type;
 
 extern IDIO idio_condition_runtime_error_type;
 extern IDIO idio_condition_rt_parameter_type_error_type;
+extern IDIO idio_condition_rt_const_parameter_error_type;
 extern IDIO idio_condition_rt_parameter_nil_error_type;
 extern IDIO idio_condition_rt_variable_error_type;
 extern IDIO idio_condition_rt_variable_unbound_error_type;

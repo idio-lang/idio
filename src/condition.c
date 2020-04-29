@@ -64,6 +64,7 @@ IDIO idio_condition_st_function_arity_error_type;
 
 IDIO idio_condition_runtime_error_type;
 IDIO idio_condition_rt_parameter_type_error_type;
+IDIO idio_condition_rt_const_parameter_error_type;
 IDIO idio_condition_rt_parameter_nil_error_type;
 IDIO idio_condition_rt_variable_error_type;
 IDIO idio_condition_rt_variable_unbound_error_type;
@@ -432,6 +433,15 @@ IDIO_DEFINE_PRIMITIVE2 ("default-condition-handler", default_condition_handler, 
 	idio_display (IDIO_STRUCT_TYPE_NAME (sit), eh);
 	idio_display_C (": ", eh);
 
+	if (idio_struct_type_isa (sit, idio_condition_rt_variable_error_type)) {
+	    IDIO name = idio_array_get_index (sif, IDIO_SI_RT_VARIABLE_ERROR_TYPE_NAME);
+	    if (idio_S_nil != name) {
+		idio_display (name, eh);
+		idio_display_C (": ", eh);
+		printed = 1;
+	    }
+	}
+
 	IDIO m = idio_array_get_index (sif, IDIO_SI_IDIO_ERROR_TYPE_MESSAGE);
 	if (idio_S_nil != m) {
 	    idio_display (m, eh);
@@ -460,6 +470,13 @@ IDIO_DEFINE_PRIMITIVE2 ("default-condition-handler", default_condition_handler, 
 		idio_display (idio_array_get_index (sif, IDIO_SI_READ_ERROR_TYPE_POSITION), eh);
 	    }
 	}
+	idio_display_C ("\n", eh);
+    } else if (idio_struct_type_isa (sit, idio_condition_error_type)) {
+	IDIO eh = idio_thread_current_error_handle ();
+	int printed = 0;
+
+	idio_display_C ("\ndefault-condition-handler: ", eh);
+	idio_display (IDIO_STRUCT_TYPE_NAME (sit), eh);
 	idio_display_C ("\n", eh);
     } else {
 	idio_debug ("default-condition-handler: no clause for %s\n", cond);
@@ -600,7 +617,7 @@ IDIO_DEFINE_PRIMITIVE2 ("reset-condition-handler", reset_condition_handler, (IDI
     IDIO thr = idio_thread_current_thread ();
 
     idio_vm_reset_thread (thr, 1);
-    
+
     /*
      * For a continuable continuation, if it gets here, we'll
      * return void because...
@@ -663,6 +680,7 @@ void idio_init_condition ()
     IDIO_DEFINE_CONDITION0 (idio_condition_runtime_error_type, "^runtime-error", idio_condition_idio_error_type);
 
     IDIO_DEFINE_CONDITION0 (idio_condition_rt_parameter_type_error_type, "^rt-parameter-type-error", idio_condition_runtime_error_type);
+    IDIO_DEFINE_CONDITION0 (idio_condition_rt_const_parameter_error_type, "^rt-const-parameter-error", idio_condition_runtime_error_type);
     IDIO_DEFINE_CONDITION0 (idio_condition_rt_parameter_nil_error_type, "^rt-parameter-nil-error", idio_condition_runtime_error_type);
 
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_variable_error_type, "^rt-variable-error", idio_condition_runtime_error_type, "name");
