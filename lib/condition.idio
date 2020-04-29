@@ -72,10 +72,10 @@ define-macro (define-condition-type-accessors-only name parent pred-fname & fiel
 define-macro (define-condition-type name parent & fields) {
   pred-fname := string->symbol (string-append (symbol->string name) "?")
   fa := map (function (field) {
-    list field (string->symbol (string-append
-				(symbol->string name)
-				"-"
-				(symbol->string field)))
+	       list field (string->symbol (string-append
+					   (symbol->string name)
+					   "-"
+					   (symbol->string field)))
   }) fields
 
   #T{
@@ -97,8 +97,8 @@ define-macro (condition type & field-bindings) {
               #T{
 	        condition-set! $c '$(ph field-binding) $(pht field-binding)
 	      }
-            })
-	   field-bindings)
+    })
+       field-bindings)
 
     $c
   }
@@ -212,16 +212,16 @@ define (condition-report prefix cont cond & args) "print a report on `condition`
   oh := current-output-handle
   if (and (not (null? args))
 	  (pair? args)) {
-    oh = ph args
-  }
+	    oh = ph args
+	  }
 
   define (dh* h & x*) {
     p :+ function (x* first) {
-      if+ (not (null? x*)) {
-        if (not first) (write-char #\space h)
-        display (ph x*) h
-        p (pt x*) #f
-      }
+	   if (not (null? x*)) {
+	     if (not first) (write-char #\space h)
+	     display (ph x*) h
+	     p (pt x*) #f
+	   }
     }
 
     p x* #t
@@ -238,49 +238,49 @@ define (condition-report prefix cont cond & args) "print a report on `condition`
   }
 
   cond ((struct-type-isa (struct-instance-type cond) ^i/o-handle-error) {
-          dh* oh "handle" cond.handle
-        }) \
+    dh* oh ": handle" cond.handle " "
+  }) \
        ((struct-type-isa (struct-instance-type cond) ^i/o-filename-error) {
-          dh* oh "filename" cond.filename
-        }) \
+	 dh* oh ": filename" cond.filename
+       }) \
        ((struct-type-isa (struct-instance-type cond) ^read-error) {
-          dh* oh "line" cond.line "pos" cond.position
-        }) \
+	 dh* oh ": line" cond.line "pos" cond.position
+       }) \
        ((struct-type-isa (struct-instance-type cond) ^system-error) {
-          dh* oh "errno" cond.errno
-        }) \
+	 dh* oh ": errno" cond.errno
+       }) \
        ((struct-type-isa (struct-instance-type cond) ^st-variable-error) {
-          dh* oh "variable" cond.variable
-        }) \
+	 dh* oh ": variable" cond.variable
+       }) \
        ((struct-type-isa (struct-instance-type cond) ^rt-variable-error) {
-          dh* oh "variable" cond.variable
-        }) \
+	 dh* oh ": variable" cond.variable
+       }) \
        ((struct-type-isa (struct-instance-type cond) ^rt-module-error) {
-          dh* oh "module" cond.module
-        }) \
+	 dh* oh ": module" cond.module
+       }) \
        ((struct-type-isa (struct-instance-type cond) ^rt-module-symbol-unbound-error) {
-          dh* oh "symbol" cond.symbol
-        }) \
+	 dh* oh ": symbol" cond.symbol
+       }) \
        ((struct-type-isa (struct-instance-type cond) ^rt-glob-error) {
-          dh* oh "pattern" cond.pattern
-        }) \
+	 dh* oh ": pattern" cond.pattern
+       }) \
        ((struct-type-isa (struct-instance-type cond) ^rt-command-status-error) {
-          dh* oh "status" cond.status
-        }) \
+	 dh* oh ": status" cond.status
+       }) \
        ((struct-type-isa (struct-instance-type cond) ^rt-array-bounds-error) {
-          dh* oh "index" cond.index
-        }) \
+	 dh* oh ": index" cond.index
+       }) \
        ((struct-type-isa (struct-instance-type cond) ^rt-hash-key-not-found) {
-          dh* oh "key" cond.key
-        }) \
+	 dh* oh ": key" cond.key
+       }) \
        ((struct-type-isa (struct-instance-type cond) ^rt-bignum-conversion-error) {
-          dh* oh "bignum" cond.bignum
-        }) \
+	 dh* oh ": bignum" cond.bignum
+       }) \
        ((struct-type-isa (struct-instance-type cond) ^rt-fixnum-conversion-error) {
-          dh* oh "fixnum" cond.fixnum
-        }) \
+	 dh* oh ": fixnum" cond.fixnum
+       }) \
        ((struct-type-isa (struct-instance-type cond) ^rt-signal) {
-          dh* oh "signal" (signal-name cond.signum)
-        })
+	 dh* oh ": signal" (signal-name cond.signum)
+       })
   display "\n" oh
 }

@@ -328,8 +328,8 @@ define-infix-operator =+ 700 {
   }
 
   op-func := #f
-  cond ((eq? op '=+) (op-func = array-push!)) \
-       ((eq? op '+=) (op-func = array-unshift!)) \
+  cond ((eq? op '=+) (op-func = 'array-push!)) \
+       ((eq? op '+=) (op-func = 'array-unshift!)) \
        (else (error op "unexpected array extend operator" op))
 
   op+args := list op-func (ph before) (ph after)
@@ -386,8 +386,8 @@ define-postfix-operator =- 700 {
   }
 
   op-func := #f
-  cond ((eq? op '=-) (op-func = array-pop!)) \
-       ((eq? op '-=) (op-func = array-shift!)) \
+  cond ((eq? op '=-) (op-func = 'array-pop!)) \
+       ((eq? op '-=) (op-func = 'array-shift!)) \
        (else (error op "unexpected array reduce operator" op))
 
   op+args := list op-func (ph before)

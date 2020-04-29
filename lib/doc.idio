@@ -23,28 +23,27 @@
 
 define-macro (help x) {
   #T{
-    cond ((procedure? $x) {
+    cond ((function? $x) {
       sigstr := %property $x :sigstr #n
       docstr := %property $x :docstr-raw #n
-      display* "procedure:" '$x $sigstr "\n"
+      display* "function:" '$x $sigstr "\n"
       display docstr
       #t
     })   ((symbol? $x) {
       module := find-module $x #f
       if module {
-        display* "module:" '$x "\n"
-        display* "imports" (module-imports module)
-        exports := (module-exports module)
-        display* "exports" exports
-        exports_loop :+ function (exports) {
-          if (null? exports) #t \
-	     {
-	       export := ph exports
-	       display* " " export
-	       exports_loop (pt exports)
-	     }
-        }
-	;exports_loop exports
+	display* "module:" '$x "\n"
+	display* "imports" (module-imports module)
+	exports := (module-exports module)
+	display* "exports" exports
+	exports_loop :+ function (exports) {
+			  if (null? exports) #t {
+			    export := ph exports
+			    display* " " export
+			    exports_loop (pt exports)
+			  }
+	}
+	exports_loop exports
       }
       #t
     })   ((struct-type? $x) {
@@ -56,7 +55,7 @@ define-macro (help x) {
       display* "struct-type:" (struct-type-name t) "\n"
       display* "fields" (struct-type-fields t)
     }) (else {
-      edisplay* "help: " '$x ": not a procedure/symbol"
+      edisplay* "help: " '$x ": not a function/symbol"
       #f
     })
   }
@@ -65,12 +64,12 @@ define-macro (help x) {
 define (autodoc) {
   define (display_indented str prefix) {
     loop :+ function (lines prefix) {
-      if (null? lines) #t {
-        display prefix
-        display (ph lines)
-	display "\n"
-	loop (pt lines) prefix
-      }
+	      if (null? lines) #t {
+		display prefix
+		display (ph lines)
+		display "\n"
+		loop (pt lines) prefix
+	      }
     }
 
     if (string? str) {
@@ -80,58 +79,58 @@ define (autodoc) {
 
   define (print-docstr mod sym) {
     val := symbol-value sym mod
-    cond ((procedure? val) {
+    cond ((function? val) {
       sigstr := %property val :sigstr #n
       docstr := %property val :docstr-raw #n
       display* ".. idio:function::" sym (if (not (null? sigstr)) sigstr "") "\n"
       if (not (null? docstr)) {
-        display_indented docstr "   "
+	display_indented docstr "   "
       }
       display "\n"
     }) ((symbol? val) {
       module := find-module val #f
       if module {
-        display* "module:" sym
+	display* "module:" sym
       } {
-        display* "symbol:" sym
+	display* "symbol:" sym
       }
     }) (else {
-      ;edisplay* "autodoc/print-docstr: " mod sym ": not a procedure/symbol"
+      ;edisplay* "autodoc/print-docstr: " mod sym ": not a function/symbol"
       #f
     })
   }
 
   symbol_loop :+ function (module symbols) {
-    if (null? symbols) #t {
-       print-docstr module (ph symbols)
-       symbol_loop module (pt symbols)
-    }
+		   if (null? symbols) #t {
+		     print-docstr module (ph symbols)
+		     symbol_loop module (pt symbols)
+		   }
   }
 
   module_loop :+ function (modules) {
-    if (null? modules) #t {
-      module := ph modules
+		   if (null? modules) #t {
+		     module := ph modules
 
-      ms := module-symbols (find-module module)
-      ss := make-hash #n #n ((length ms) * 2)
-      map (function (sym) {
-        ss.sym = symbol->string sym
-      }) ms
-      key-ss := function (sym) {
-        ss.sym
-      }
-      symbol_loop module (sort ms string<? key-ss)
-      module_loop (pt modules)
-    }
+		     ms := module-symbols (find-module module)
+		     ss := make-hash #n #n ((length ms) * 2)
+		     map (function (sym) {
+			    ss.sym = symbol->string sym
+		     }) ms
+		     key-ss := function (sym) {
+				 ss.sym
+		     }
+		     symbol_loop module (sort ms string<? key-ss)
+		     module_loop (pt modules)
+		   }
   }
 
   mn := (all-modules)
   ms := make-hash #n #n ((length mn) * 2)
   map (function (sym) {
-    ms.sym = symbol->string sym
+         ms.sym = symbol->string sym
   }) mn
-  key-ms := function (sym){
-    ms.sym
+  key-ms := function (sym) {
+	      ms.sym
   }
 
   module_loop (sort mn string<? key-ms)

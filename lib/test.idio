@@ -59,8 +59,8 @@ define (fail expr result expected) {
 
 define (test3 expr result expected) {
   set! Tests (1 + Tests)
-  ;edisplay* "test #" Tests ":" expr "=>" result
   if (not (equal? result expected)) {
+    ;edisplay* "test #" Tests ":" expr "=>" result
     fail expr result expected
   }
 }
@@ -110,21 +110,23 @@ load "tests/utf-8.idio"
 ;; that?  Erm, they've not been counted and are dynamic in number so
 ;; test we've seen at least as many as the largest number we've
 ;; seen.  Wait, some tests are OS-specific.  Drat!
-test (eq? Tests 3123) #t
+test (eq? Tests 3122) #t
 ;test (ge Tests 3124) #t
 
-if+ (zero? Errors) (display* "All" Tests "tests passed!") \
-    else {
-      display Errors
-      if (gt Errors 1) {
-        display " errors "
-      } {
-	display " error "
-      }
-      display* "in" Tests "tests."
-    }
+if (zero? Errors) (display* "All" Tests "tests passed!") \
+   {
+     display Errors
+     if (gt Errors 1) {
+       display " errors "
+     } {
+       display " error "
+     }
+     display* "in" Tests "tests."
+   }
 
 if (file-exists? testfile) (delete-file testfile)
 
 IDIOLIB = OIDIOLIB
 PATH = OPATH
+
+display* "test.idio completed after " SECONDS "seconds"

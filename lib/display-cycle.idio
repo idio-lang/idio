@@ -1,18 +1,18 @@
 define (display-cyclic-spine list) {
   define (scan l1 l2 flip) {
-    if+ (atom? l1) {
-	  unless (null? l1) {
-	    display " . "
-	    display (pt l1)
-	  }
-	  display ")"
-	} \
-	(eq? l1 l2) (display "...)") \
-	else {
-	  display (ph l1)
-	  when (pair? (pt l1)) (display " ")
-	  scan (pt l1) (if (and flip (pair? l2)) (pt l2) l2) (not flip)
-        }
+    cond ((atom? l1) {
+      unless (null? l1) {
+	display " . "
+	display (pt l1)
+      }
+      display ")"
+    }) \
+	 ((eq? l1 l2) (display "...)")) \
+	 (else {
+	   display (ph l1)
+	   when (pair? (pt l1)) (display " ")
+	   scan (pt l1) (if (and flip (pair? l2)) (pt l2) l2) (not flip)
+	 })
   }
 
   display "cyclic spine: ("
@@ -21,15 +21,15 @@ define (display-cyclic-spine list) {
 }
 
 define (has-cycle-helper s f) {
-  if+ (null? f) #f \
-      (null? (pt f)) #f \
-      (eq? f s) #t \
-      else (has-cycle-helper (pt s) (ptt f))
+  cond ((null? f) #f) \
+       ((null? (pt f)) #f) \
+       ((eq? f s) #t) \
+       (else (has-cycle-helper (pt s) (ptt f)))
 }
 
 define (has-cycle? l) {
-  if+ (null? l) #f \
-      else (has-cycle-helper l (pt l))
+  cond ((null? l) #f) \
+       (else (has-cycle-helper l (pt l)))
 }
 
 ;; has-cycle? {
