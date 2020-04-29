@@ -1566,13 +1566,14 @@ IDIO idio_read (IDIO handle)
     IDIO_ASSERT (handle);
     IDIO_TYPE_ASSERT (handle, handle);
 
-    idio_gc_pause ();
+    idio_gc_pause ("idio_read");
 
     /*
      * dummy value for closedel
      */
     IDIO line = idio_read_expr_line (handle, idio_T_eol, idio_default_interpolation_chars, 0);
-    idio_gc_resume ();
+
+    idio_gc_resume ("idio_read");
 
     return IDIO_PAIR_H (line);
 }
@@ -1585,7 +1586,7 @@ IDIO idio_read_expr (IDIO handle)
     IDIO_ASSERT (handle);
     IDIO_TYPE_ASSERT (handle, handle);
 
-    idio_gc_pause ();
+    idio_gc_pause ("idio_read_expr");
 
     /*
      * There's an Idio/Scheme semantic cross-over here.  Should
@@ -1601,7 +1602,8 @@ IDIO idio_read_expr (IDIO handle)
 	    break;
 	}
     }
-    idio_gc_resume ();
+
+    idio_gc_resume ("idio_read_expr");
 
     return expr;
 }

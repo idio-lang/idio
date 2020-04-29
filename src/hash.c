@@ -165,17 +165,25 @@ IDIO idio_hash (idio_hi_t size, int (*equal) (void *k1, void *k2), idio_hi_t (*h
     if (NULL == equal) {
 	if (idio_S_nil == comp) {
 	    idio_hash_error ("no comparator supplied", IDIO_C_LOCATION ("idio_hash"));
+
+	    return idio_S_notreached;
 	}
     } else if (idio_S_nil != comp) {
 	idio_hash_error ("two comparators supplied", IDIO_C_LOCATION ("idio_hash"));
+
+	return idio_S_notreached;
     }
 
     if (NULL == hashf) {
 	if (idio_S_nil == hash) {
 	    idio_hash_error ("no hashing function supplied", IDIO_C_LOCATION ("idio_hash"));
+
+	    return idio_S_notreached;
 	}
     } else if (idio_S_nil != hash) {
 	idio_hash_error ("two hashing functions supplied", IDIO_C_LOCATION ("idio_hash"));
+
+	return idio_S_notreached;
     }
 
     IDIO h = idio_gc_get (IDIO_TYPE_HASH);
@@ -215,6 +223,8 @@ IDIO idio_hash_copy (IDIO orig, int depth)
 	    char em[BUFSIZ];
 	    sprintf (em, "hash-copy: key #%zd is NULL", i);
 	    idio_error_C (em, orig, IDIO_C_LOCATION ("idio_hash_copy"));
+
+	    return idio_S_notreached;
 	}
 	if (idio_S_nil != k) {
 	    IDIO v = IDIO_HASH_HE_VALUE (orig, i);
@@ -247,6 +257,8 @@ IDIO idio_hash_merge (IDIO ht1, IDIO ht2)
 	    char em[BUFSIZ];
 	    sprintf (em, "hash-merge: key #%zd is NULL", i);
 	    idio_error_C (em, ht2, IDIO_C_LOCATION ("idio_hash_merge"));
+
+	    return idio_S_notreached;
 	}
 	if (idio_S_nil != k) {
 	    IDIO v = IDIO_HASH_HE_VALUE (ht2, i);
@@ -606,7 +618,11 @@ idio_hi_t idio_hash_hashval (IDIO h, void *kv)
 	hv = idio_hash_hashval_C_FFI (k);
 	break;
     default:
+	fprintf (stderr, "idio_hash_hashval default type = %d==%s\n", type, idio_type_enum2string (type));
 	idio_error_C ("idio_hash_hashval: unexpected type", k, IDIO_C_LOCATION ("idio_hash_hashval"));
+
+	/* notreached */
+	return -1;
     }
 
     return (hv & IDIO_HASH_MASK (h));
@@ -638,6 +654,9 @@ idio_hi_t idio_hash_value (IDIO ht, void *kv)
 	    hv = idio_bignum_ptrdiff_value (ihv);
 	} else {
 	    idio_error_param_type ("fixnum|bignum", ihv, IDIO_C_LOCATION ("idio_hash_value"));
+
+	    /* notreached */
+	    return -1;
 	}
 
 	return (hv & IDIO_HASH_MASK (ht));
@@ -686,6 +705,8 @@ void idio_hash_verify_chain (IDIO h, void *kv, int reqd)
 		    idio_hash_verify_chain (h, nkv, 1);
 		    fprintf (stderr, "risky recurse for %10p done!\n", nkv);
 		    idio_error_printf (IDIO_C_LOCATION ("idio_hash_verify_chain"), "in-chain hv mismatch");
+
+		    /* notreached */
 		    abort ();
 		}
 	    }
@@ -700,6 +721,8 @@ void idio_hash_verify_chain (IDIO h, void *kv, int reqd)
 	if (reqd &&
 	    ! seen) {
 	    idio_error_printf (IDIO_C_LOCATION ("idio_hash_verify_chain"), "kv not in chain!");
+
+	    /* notreached */
 	    abort ();
 	}
     }
@@ -774,7 +797,8 @@ IDIO idio_hash_put (IDIO h, void *kv, IDIO v)
 
     if (idio_S_nil == kv) {
 	idio_error_param_nil ("key", IDIO_C_LOCATION ("idio_hash_put"));
-	return idio_S_nil;
+
+	return idio_S_notreached;
     }
 
     idio_hi_t hi = idio_hash_hv_follow_chain (h, kv);
@@ -838,6 +862,8 @@ IDIO idio_hash_put (IDIO h, void *kv, IDIO v)
 		idio_hash_verify_chain (h, kv, 1);
 		idio_hash_verify_chain (h, ck, 1);
 		idio_error_printf (IDIO_C_LOCATION ("idio_hash_put"), "oh dear");
+
+		return idio_S_notreached;
 	    }
 	}
 
@@ -910,6 +936,9 @@ idio_hi_t idio_hash_hv_follow_chain (IDIO h, void *kv)
 
     if (hv > IDIO_HASH_SIZE (h)) {
 	idio_error_printf (IDIO_C_LOCATION ("idio_hash_hv_follow_chain"), "hv %" PRIuPTR " > size %" PRIuPTR " kv=%10p", hv, IDIO_HASH_SIZE (h), kv);
+
+	/* notreached */
+	return IDIO_HASH_SIZE (h) + 1;
     }
 
     IDIO_FPRINTF (stderr, "idio_hash_hv_follow_chain: kv=%10p hv=%" PRIuPTR "\n", kv, hv);
@@ -962,6 +991,8 @@ int idio_hash_exists_key (IDIO h, void *kv)
 
     if (idio_S_nil == kv) {
 	idio_error_param_nil ("key", IDIO_C_LOCATION ("idio_hash_exists_key"));
+
+	/* notreached */
 	return IDIO_HASH_SIZE (h) + 1;
     }
 
@@ -980,7 +1011,8 @@ IDIO idio_hash_exists (IDIO h, void *kv)
 
     if (idio_S_nil == kv) {
 	idio_error_param_nil ("key", IDIO_C_LOCATION ("idio_hash_exists"));
-	return idio_S_nil;
+
+	return idio_S_notreached;
     }
 
     IDIO_TYPE_ASSERT (hash, h);
@@ -1006,7 +1038,8 @@ IDIO idio_hash_get (IDIO h, void *kv)
 
     if (idio_S_nil == kv) {
 	idio_error_param_nil ("key", IDIO_C_LOCATION ("idio_hash_get"));
-	return idio_S_nil;
+
+	return idio_S_notreached;
     }
 
     IDIO_TYPE_ASSERT (hash, h);
@@ -1035,6 +1068,8 @@ int idio_hash_delete (IDIO h, void *kv)
 
     if (idio_S_nil == kv) {
 	idio_error_param_nil ("key", IDIO_C_LOCATION ("idio_hash_delete"));
+
+	/* notreached */
 	return 0;
     }
 
@@ -1042,6 +1077,9 @@ int idio_hash_delete (IDIO h, void *kv)
 
     if (hv > IDIO_HASH_SIZE (h)) {
 	idio_error_printf (IDIO_C_LOCATION ("idio_hash_delete"), "hv %" PRIuPTR " > size %" PRIuPTR, hv, IDIO_HASH_SIZE (h));
+
+	/* notreached */
+	return 0;
     }
 
     IDIO_FPRINTF (stderr, "idio_hash_delete: %10p starting @%" PRIuPTR "\n", kv, hv);
@@ -1117,6 +1155,8 @@ IDIO idio_hash_keys_to_list (IDIO h)
 	    char em[BUFSIZ];
 	    sprintf (em, "key #%zd is NULL", i);
 	    idio_error_C (em, h, IDIO_C_LOCATION ("idio_hash_keys_to_list"));
+
+	    return idio_S_notreached;
 	}
 	if (idio_S_nil != k) {
 	    if (IDIO_HASH_FLAGS (h) & IDIO_HASH_FLAG_STRING_KEYS) {
@@ -1145,6 +1185,8 @@ IDIO idio_hash_values_to_list (IDIO h)
 	    char em[BUFSIZ];
 	    sprintf (em, "hash-values-to-list: key #%zd is NULL", i);
 	    idio_error_C (em, h, IDIO_C_LOCATION ("idio_hash_values_to_list"));
+
+	    return idio_S_notreached;
 	}
 	if (idio_S_nil != k) {
 	    r = idio_pair (IDIO_HASH_HE_VALUE (h, i), r);
@@ -1237,6 +1279,8 @@ IDIO idio_hash_make_hash (IDIO args)
 	    size = IDIO_FIXNUM_VAL (isize);
 	} else {
 	    idio_error_param_type ("fixnum", isize, IDIO_C_LOCATION ("make-hash"));
+
+	    return idio_S_notreached;
 	}
 
 	args = IDIO_PAIR_T (args);
@@ -1281,6 +1325,8 @@ IDIO idio_hash_alist_to_hash (IDIO alist, IDIO args)
 	    }
 	} else {
 	    idio_error_param_type ("not a pair in alist", p, IDIO_C_LOCATION ("alist->hash"));
+
+	    return idio_S_notreached;
 	}
 
 	alist = IDIO_PAIR_T (alist);
@@ -1370,6 +1416,8 @@ IDIO idio_hash_ref (IDIO ht, IDIO key, IDIO args)
 	    r = idio_vm_invoke_C (idio_thread_current_thread (), dv);
 	} else {
 	    idio_hash_error_key_not_found (key, IDIO_C_LOCATION ("hash-ref"));
+
+	    return idio_S_notreached;
 	}
     }
 
@@ -1502,6 +1550,8 @@ IDIO_DEFINE_PRIMITIVE2 ("hash-walk", hash_walk, (IDIO ht, IDIO func))
 	    char em[BUFSIZ];
 	    sprintf (em, "hash-walk: key #%zd is NULL", i);
 	    idio_error_C (em, ht, IDIO_C_LOCATION ("hash-walk"));
+
+	    return idio_S_notreached;
 	}
 	if (idio_S_nil != k) {
 	    IDIO v = IDIO_HASH_HE_VALUE (ht, i);
@@ -1526,6 +1576,8 @@ IDIO_DEFINE_PRIMITIVE3 ("hash-fold", hash_fold, (IDIO ht, IDIO func, IDIO val))
 	    char em[BUFSIZ];
 	    sprintf (em, "hash-fold: key #%zd is NULL", i);
 	    idio_error_C (em, ht, IDIO_C_LOCATION ("hash-fold"));
+
+	    return idio_S_notreached;
 	}
 	if (idio_S_nil != k) {
 	    IDIO v = IDIO_HASH_HE_VALUE (ht, i);

@@ -351,6 +351,8 @@ typedef struct idio_pair_s {
  */
 typedef ptrdiff_t idio_ai_t;
 
+#define IDIO_ARRAY_FLAG_NONE		0
+
 /**
  * struct idio_array_s - Idio ``array`` structure
  */
@@ -400,6 +402,7 @@ typedef struct idio_array_s idio_array_t;
 #define IDIO_ARRAY_USIZE(A)	((A)->u.array->usize)
 #define IDIO_ARRAY_DV(A)	((A)->u.array->dv)
 #define IDIO_ARRAY_AE(A,i)	((A)->u.array->ae[i])
+#define IDIO_ARRAY_FLAGS(A)	((A)->tflags)
 
 /*
  * idio_hi_t must be a size_t as, though we may only create an
@@ -1231,12 +1234,16 @@ void idio_gc_protect (IDIO o);
 void idio_gc_protect_auto (IDIO o);
 void idio_gc_expose (IDIO o);
 void idio_gc_expose_all ();
+void idio_gc_find_frame_capture (IDIO frame);
+void idio_gc_find_frame ();
 void idio_gc_mark ();
 void idio_gc_sweep ();
 void idio_gc_possibly_collect ();
-void idio_gc_collect ();
-void idio_gc_pause ();
-void idio_gc_resume ();
+void idio_gc_collect (char *caller);
+int idio_gc_get_pause (char *caller);
+void idio_gc_pause (char *caller);
+void idio_gc_resume (char *caller);
+void idio_gc_reset (char *caller, int pause);
 void idio_gc_free ();
 
 char *idio_strcat (char *s1, const char *s2);

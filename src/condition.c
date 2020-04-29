@@ -402,7 +402,6 @@ IDIO_DEFINE_PRIMITIVE2 ("default-condition-handler", default_condition_handler, 
 
 	idio_raise_condition (cont, cond);
 
-	/* notreached */
 	return idio_S_notreached;
     }
 
@@ -425,6 +424,50 @@ IDIO_DEFINE_PRIMITIVE2 ("default-condition-handler", default_condition_handler, 
 	}
     } else if (idio_struct_type_isa (sit, idio_condition_rt_command_status_error_type)) {
 	return idio_S_unspec;
+    } else if (idio_struct_type_isa (sit, idio_condition_system_error_type)) {
+	IDIO eh = idio_thread_current_error_handle ();
+	int printed = 0;
+
+	idio_display_C ("\ndefault-condition-handler: ", eh);
+	idio_display (IDIO_STRUCT_TYPE_NAME (sit), eh);
+	idio_display_C (": ", eh);
+
+	IDIO m = idio_array_get_index (sif, IDIO_SI_IDIO_ERROR_TYPE_MESSAGE);
+	if (idio_S_nil != m) {
+	    idio_display (m, eh);
+	    printed = 1;
+	}
+	IDIO e = idio_array_get_index (sif, IDIO_SI_SYSTEM_ERROR_TYPE_ERRNO);
+	if (idio_S_nil != e) {
+	    idio_display_C (" => ", eh);
+	    int er = IDIO_C_TYPE_INT (e);
+	    idio_display_C (idio_libc_errno_name (er), eh);
+	    printed = 1;
+	}
+	IDIO d = idio_array_get_index (sif, IDIO_SI_IDIO_ERROR_TYPE_DETAIL);
+	if (idio_S_nil != d) {
+	    if (printed) {
+		idio_display_C (": ", eh);
+	    }
+	    idio_display (d, eh);
+	    printed = 1;
+	}
+	IDIO l = idio_array_get_index (sif, IDIO_SI_IDIO_ERROR_TYPE_LOCATION);
+	if (idio_S_nil != l) {
+	    if (printed) {
+		idio_display_C (": ", eh);
+	    }
+	    idio_display (l, eh);
+	    printed = 1;
+
+	    if (idio_struct_type_isa (sit, idio_condition_read_error_type)) {
+		idio_display_C (":", eh);
+		idio_display (idio_array_get_index (sif, IDIO_SI_READ_ERROR_TYPE_LINE), eh);
+		idio_display_C (":", eh);
+		idio_display (idio_array_get_index (sif, IDIO_SI_READ_ERROR_TYPE_POSITION), eh);
+	    }
+	}
+	idio_display_C ("\n", eh);
     } else if (idio_struct_type_isa (sit, idio_condition_idio_error_type)) {
 	IDIO eh = idio_thread_current_error_handle ();
 	int printed = 0;
@@ -511,7 +554,6 @@ IDIO_DEFINE_PRIMITIVE2 ("restart-condition-handler", restart_condition_handler, 
 
 	    idio_raise_condition (cont, cond);
 
-	    /* notreached */
 	    return idio_S_notreached;
 	}
 

@@ -315,6 +315,8 @@ int main (int argc, char **argv, char **envp)
 	 * entity).
 	 */
 
+	int gc_pause = idio_gc_get_pause ("REPL");
+
 	/*
 	 * See commentary above re: setjmp.
 	 */
@@ -324,16 +326,16 @@ int main (int argc, char **argv, char **envp)
 	case 0:
 	    break;
 	case IDIO_VM_LONGJMP_CONDITION:
-	    fprintf (stderr, "REPL: longjmp from condition\n");
+	    idio_gc_reset ("REPL/condition", gc_pause);
 	    break;
 	case IDIO_VM_LONGJMP_CONTINUATION:
-	    fprintf (stderr, "REPL: longjmp from continuation\n");
+	    idio_gc_reset ("REPL/continuation", gc_pause);
 	    break;
 	case IDIO_VM_LONGJMP_CALLCC:
-	    fprintf (stderr, "REPL: longjmp from callcc\n");
+	    idio_gc_reset ("REPL/callcc", gc_pause);
 	    break;
 	case IDIO_VM_LONGJMP_EVENT:
-	    fprintf (stderr, "REPL: longjmp from event\n");
+	    idio_gc_reset ("REPL/event", gc_pause);
 	    break;
 	default:
 	    fprintf (stderr, "setjmp: repl failed with sjv %d\n", sjv);

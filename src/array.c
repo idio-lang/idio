@@ -65,7 +65,7 @@ static void idio_array_error_bounds (idio_ai_t index, idio_ai_t size, IDIO loc)
 
     char em[BUFSIZ];
 
-    sprintf (em, "array bounds error: abs (%td) > %td", index, size);
+    sprintf (em, "array bounds error: abs (%td) > #elem %td", index, size);
 
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C (em, sh);
@@ -109,6 +109,7 @@ void idio_assign_array (IDIO a, idio_ai_t asize, IDIO dv)
     IDIO_ARRAY_ASIZE (a) = asize;
     IDIO_ARRAY_USIZE (a) = 0;
     IDIO_ARRAY_DV (a) = dv;
+    IDIO_ARRAY_FLAGS (a) = IDIO_ARRAY_FLAG_NONE;
 
     idio_ai_t i;
     for (i = 0; i < asize; i++) {
@@ -253,6 +254,9 @@ void idio_array_insert_index (IDIO a, IDIO o, idio_ai_t index)
 	if (index < 0) {
 	    index -= IDIO_ARRAY_USIZE (a);
 	    idio_array_error_bounds (index, IDIO_ARRAY_USIZE (a), IDIO_C_LOCATION ("idio_array_insert_index"));
+
+	    /* notreached */
+	    return;
 	}
     } else if (index >= IDIO_ARRAY_ASIZE (a)) {
 	/*
@@ -262,6 +266,9 @@ void idio_array_insert_index (IDIO a, IDIO o, idio_ai_t index)
 	    idio_array_resize (a);
 	} else {
 	    idio_array_error_bounds (index, IDIO_ARRAY_ASIZE (a), IDIO_C_LOCATION ("idio_array_insert_index"));
+
+	    /* notreached */
+	    return;
 	}
     }
 
@@ -446,11 +453,15 @@ IDIO idio_array_get_index (IDIO a, idio_ai_t index)
 	if (index < 0) {
 	    index -= IDIO_ARRAY_USIZE (a);
 	    idio_array_error_bounds (index, IDIO_ARRAY_USIZE (a), IDIO_C_LOCATION ("idio_array_get_index"));
+
+	    return idio_S_notreached;
 	}
     }
 
     if (index >= IDIO_ARRAY_USIZE (a)) {
 	idio_array_error_bounds (index, IDIO_ARRAY_USIZE (a), IDIO_C_LOCATION ("idio_array_get_index"));
+
+	return idio_S_notreached;
     }
 
     return IDIO_ARRAY_AE (a, index);
@@ -471,10 +482,16 @@ idio_ai_t idio_array_find_free_index (IDIO a, idio_ai_t index)
 
     if (index < 0) {
 	idio_array_error_bounds (index, IDIO_ARRAY_USIZE (a), IDIO_C_LOCATION ("idio_array_find_free_index"));
+
+	/* notreached */
+	return -1;
     }
 
     if (index >= IDIO_ARRAY_USIZE (a)) {
 	idio_array_error_bounds (index, IDIO_ARRAY_USIZE (a), IDIO_C_LOCATION ("idio_array_find_free_index"));
+
+	/* notreached */
+	return -1;
     }
 
     for (; index < IDIO_ARRAY_USIZE (a); index++) {
@@ -502,10 +519,16 @@ idio_ai_t idio_array_find_eqp (IDIO a, IDIO e, idio_ai_t index)
 
     if (index < 0) {
 	idio_array_error_bounds (index, IDIO_ARRAY_USIZE (a), IDIO_C_LOCATION ("idio_array_find_eqp"));
+
+	/* notreached */
+	return -1;
     }
 
     if (index >= IDIO_ARRAY_USIZE (a)) {
 	idio_array_error_bounds (index, IDIO_ARRAY_USIZE (a), IDIO_C_LOCATION ("idio_array_find_eqp"));
+
+	/* notreached */
+	return -1;
     }
 
     for (; index < IDIO_ARRAY_USIZE (a); index++) {
@@ -533,6 +556,9 @@ void idio_array_bind (IDIO a, idio_ai_t nargs, ...)
 
     if (IDIO_ARRAY_USIZE (a) < nargs) {
 	idio_error_C ("too many args", a, IDIO_C_LOCATION ("idio_array_bind"));
+
+	/* notreached */
+	return;
     }
 
     va_list ap;
@@ -629,11 +655,17 @@ int idio_array_delete_index (IDIO a, idio_ai_t index)
 	if (index < 0) {
 	    index -= IDIO_ARRAY_USIZE (a);
 	    idio_array_error_bounds (index, IDIO_ARRAY_USIZE (a), IDIO_C_LOCATION ("idio_array_delete_index"));
+
+	    /* notreached */
+	    return 0;
 	}
     }
 
     if (index >= IDIO_ARRAY_USIZE (a)) {
 	idio_array_error_bounds (index, IDIO_ARRAY_USIZE (a), IDIO_C_LOCATION ("idio_array_delete_index"));
+
+	/* notreached */
+	return 0;
     }
 
     IDIO_ARRAY_AE (a, index) = IDIO_ARRAY_DV (a);
@@ -686,12 +718,16 @@ If no default value is supplied #f is used.	\n\
 	    IDIO size_i = idio_bignum_real_to_integer (size);
 	    if (idio_S_nil == size_i) {
 		idio_error_param_type ("integer", size, IDIO_C_LOCATION ("make-array"));
+
+		return idio_S_notreached;
 	    } else {
 		alen = idio_bignum_ptrdiff_value (size_i);
 	    }
 	}
     } else {
 	idio_error_param_type ("integer", size, IDIO_C_LOCATION ("make-array"));
+
+	return idio_S_notreached;
     }
 
     IDIO_VERIFY_PARAM_TYPE (list, args);
@@ -704,6 +740,8 @@ If no default value is supplied #f is used.	\n\
 
     if (alen < 0) {
 	idio_error_printf (IDIO_C_LOCATION ("make-array"), "invalid length: %zd", alen);
+
+	return idio_S_notreached;
     }
 
     IDIO a = idio_array_dv (alen, dv);
@@ -848,12 +886,16 @@ IDIO idio_array_ref (IDIO a, IDIO index)
 	    IDIO index_i = idio_bignum_real_to_integer (index);
 	    if (idio_S_nil == index_i) {
 		idio_error_param_type ("integer", index, IDIO_C_LOCATION ("array-ref"));
+
+		return idio_S_notreached;
 	    } else {
 		i = idio_bignum_ptrdiff_value (index_i);
 	    }
 	}
     } else {
 	idio_error_param_type ("integer", index, IDIO_C_LOCATION ("array-ref"));
+
+	return idio_S_notreached;
     }
 
     idio_ai_t al = idio_array_size (a);
@@ -863,11 +905,13 @@ IDIO idio_array_ref (IDIO a, IDIO index)
 	if (i < 0) {
 	    i -= al;
 	    idio_array_error_bounds (i, IDIO_ARRAY_USIZE (a), IDIO_C_LOCATION ("array-ref"));
-	    return idio_S_unspec;
+
+	    return idio_S_notreached;
 	}
     } else if (i >= al) {
 	idio_array_error_bounds (i, IDIO_ARRAY_USIZE (a), IDIO_C_LOCATION ("array-ref"));
-	return idio_S_unspec;
+
+	return idio_S_notreached;
     }
 
     return idio_array_get_index (a, i);
@@ -912,12 +956,16 @@ IDIO idio_array_set (IDIO a, IDIO index, IDIO v)
 	    IDIO index_i = idio_bignum_real_to_integer (index);
 	    if (idio_S_nil == index_i) {
 		idio_error_param_type ("integer", index, IDIO_C_LOCATION ("array-set!"));
+
+		return idio_S_notreached;
 	    } else {
 		i = idio_bignum_ptrdiff_value (index_i);
 	    }
 	}
     } else {
 	idio_error_param_type ("integer", index, IDIO_C_LOCATION ("array-set!"));
+
+	return idio_S_notreached;
     }
 
     idio_ai_t al = idio_array_size (a);
@@ -927,11 +975,13 @@ IDIO idio_array_set (IDIO a, IDIO index, IDIO v)
 	if (i < 0) {
 	    i -= al;
 	    idio_array_error_bounds (i, IDIO_ARRAY_USIZE (a), IDIO_C_LOCATION ("array-set!"));
-	    return idio_S_unspec;
+
+	    return idio_S_notreached;
 	}
     } else if (i >= al) {
 	idio_array_error_bounds (i, IDIO_ARRAY_USIZE (a), IDIO_C_LOCATION ("array-set!"));
-	return idio_S_unspec;
+
+	return idio_S_notreached;
     }
 
     idio_array_insert_index (a, v, i);

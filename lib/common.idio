@@ -57,7 +57,7 @@ load-handle = {
 
     trap ^condition (function (cont cond) {
       if (not cont) {
-	condition-report "load-handle" cont cond (current-error-handle)
+	condition-report (string-append "load-handle: " (handle-location handle)) cont cond (current-error-handle)
 	;(idio-thread-state)
         load-handle-k cond
       } {
@@ -82,7 +82,7 @@ load = {
 
     trap ^condition (function (cont cond) {
       if (not cont) {
-	condition-report "load" cont cond (current-error-handle)
+	condition-report (string-append "load: " filename) cont cond (current-error-handle)
 	;(idio-thread-state)
 	load-k cond
       } {

@@ -87,5 +87,40 @@ test (handle-pos ifh) 0
 seek-handle ifh 2
 test (handle-pos ifh) 2
 
+;; GC and file handles
+;;
+;; keep opening a file until we've used up all (per-process) file
+;; descriptors -- we can retain the handles in an array.  Then call
+;; the GC and then open the file again.
+{
+  fds := #[ ]
+  loop-k := #n
+  trap ^system-error (function (cont cond) {
+			test (C/== cond.errno (C/integer-> 24)) #t
+			if (C/== cond.errno (C/integer-> 24)) {
+			  ;display* "test file-handle trap: created" (array-length fds) "fds"
+			} {
+			  condition-report "test file-handle trap" cont cond (current-error-handle)
+			}
+			loop-k cond
+  }) {
+    call/cc (function (k) {
+	       loop-k = k
+	       loop :+ function () {
+			 ish := open-input-file testfile
+			 fds =+ ish
+			 (loop)
+	       }
+
+	       (loop)
+    })
+  }
+}
+
+;; fds is now out of scope and should be collectable thus freeing up
+;; all those file descriptors
+ifh := open-input-file testfile
+test (input-file-handle? ifh) #t
+
 ;; all done?
-test (file-handle0 + 29) Tests
+test (file-handle0 + 31) Tests

@@ -255,7 +255,6 @@ IDIO_DEFINE_PRIMITIVE2V ("error", error, (IDIO loc, IDIO msg, IDIO args))
 
     idio_error (idio_S_user_code, msg, args, loc);
 
-    /* not reached */
     return idio_S_notreached;
 }
 
@@ -281,7 +280,7 @@ void idio_error_system (char *msg, IDIO args, int err, IDIO loc)
 				   IDIO_LIST4 (idio_get_output_string (msh),
 					       loc,
 					       idio_get_output_string (dsh),
-					       idio_fixnum ((intptr_t) err)));
+					       idio_C_int (err)));
     idio_raise_condition (idio_S_true, c);
 }
 

@@ -247,8 +247,8 @@ define (condition-report prefix cont cond & args) "print a report on `condition`
 	 dh* oh ": line" cond.line "pos" cond.position
        }) \
        ((struct-type-isa (struct-instance-type cond) ^system-error) {
-	 dh* oh ": errno" cond.errno
-       }) \
+          dh* oh "errno" cond.errno "(" (libc/errno-name cond.errno) ")"
+        }) \
        ((struct-type-isa (struct-instance-type cond) ^st-variable-error) {
 	 dh* oh ": variable" cond.variable
        }) \
@@ -280,7 +280,7 @@ define (condition-report prefix cont cond & args) "print a report on `condition`
 	 dh* oh ": fixnum" cond.fixnum
        }) \
        ((struct-type-isa (struct-instance-type cond) ^rt-signal) {
-	 dh* oh ": signal" (signal-name cond.signum)
-       })
+          dh* oh "signal" cond.signum "(" (libc/signal-name cond.signum) ")"
+        })
   display "\n" oh
 }

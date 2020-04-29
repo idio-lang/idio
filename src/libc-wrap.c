@@ -78,7 +78,6 @@ IDIO_DEFINE_PRIMITIVE0V ("system-error", libc_system_error, (IDIO args))
 
     idio_error_system_errno (name, args, IDIO_C_LOCATION ("system-error"));
 
-    /* notreached */
     return idio_S_notreached;
 }
 
@@ -187,7 +186,6 @@ IDIO_DEFINE_PRIMITIVE1 ("exit", libc_exit, (IDIO istatus))
 
     exit (status);
 
-    /* notreached */
     return idio_S_notreached;
 }
 
@@ -232,7 +230,6 @@ IDIO_DEFINE_PRIMITIVE2V ("fcntl", libc_fcntl, (IDIO ifd, IDIO icmd, IDIO args))
 	    } else {
 		idio_error_param_type ("fixnum|C_int", iarg, IDIO_C_LOCATION ("fcntl"));
 
-		/* notreached */
 		return idio_S_notreached;
 	    }
 	    r = fcntl (fd, cmd, arg);
@@ -253,7 +250,6 @@ IDIO_DEFINE_PRIMITIVE2V ("fcntl", libc_fcntl, (IDIO ifd, IDIO icmd, IDIO args))
 	    } else {
 		idio_error_param_type ("fixnum|C_int", iarg, IDIO_C_LOCATION ("fcntl"));
 
-		/* notreached */
 		return idio_S_notreached;
 	    }
 	    r = fcntl (fd, cmd, arg);
@@ -273,7 +269,6 @@ IDIO_DEFINE_PRIMITIVE2V ("fcntl", libc_fcntl, (IDIO ifd, IDIO icmd, IDIO args))
 	    } else {
 		idio_error_param_type ("C_int", iarg, IDIO_C_LOCATION ("fcntl"));
 
-		/* notreached */
 		return idio_S_notreached;
 	    }
 	    r = fcntl (fd, cmd, arg);
@@ -282,7 +277,6 @@ IDIO_DEFINE_PRIMITIVE2V ("fcntl", libc_fcntl, (IDIO ifd, IDIO icmd, IDIO args))
     default:
 	idio_error_C ("unexpected cmd", IDIO_LIST2 (ifd, icmd), IDIO_C_LOCATION ("fcntl"));
 
-	/* notreached */
 	return idio_S_notreached;
     }
 
@@ -299,7 +293,6 @@ IDIO_DEFINE_PRIMITIVE1 ("fileno", libc_fileno, (IDIO ifilep))
     } else {
 	idio_error_param_type ("file-handle", ifilep, IDIO_C_LOCATION ("fileno"));
 
-	/* notreached */
 	return idio_S_notreached;
     }
 

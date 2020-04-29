@@ -49,6 +49,9 @@ void *idio_alloc (size_t s)
     void *blob = malloc (s);
     if (NULL == blob) {
 	idio_error_alloc ("malloc");
+
+	/* notreached */
+	return NULL;
     }
 
 #if IDIO_DEBUG
@@ -68,6 +71,9 @@ void *idio_realloc (void *p, size_t s)
 
     if (NULL == p) {
 	idio_error_alloc ("realloc");
+
+	/* notreached */
+	return NULL;
     }
 
     return p;
@@ -212,6 +218,8 @@ int idio_isa (IDIO o, idio_type_e type)
 	    default:
 		/* inconceivable! */
 		idio_error_printf (IDIO_C_LOCATION ("idio_isa/CONSTANT"), "unexpected object mark type %#x", o);
+
+		/* notreached */
 		return 0;
 	    }
 	}
@@ -222,6 +230,8 @@ int idio_isa (IDIO o, idio_type_e type)
     default:
 	/* inconceivable! */
 	idio_error_printf (IDIO_C_LOCATION ("idio_isa"), "unexpected object mark type %#x", o);
+
+	/* notreached */
 	return 0;
     }
 }
@@ -274,7 +284,7 @@ static void idio_gc_finalizer_run (IDIO o)
     }
 }
 
-void idio_mark (IDIO o, unsigned colour)
+void idio_gcc_mark (IDIO o, unsigned colour)
 {
     IDIO_ASSERT (o);
 
@@ -287,13 +297,16 @@ void idio_mark (IDIO o, unsigned colour)
 	break;
     default:
 	/* inconceivable! */
-	idio_error_printf (IDIO_C_LOCATION ("idio_mark"), "unexpected object mark type %#x", o);
+	idio_error_printf (IDIO_C_LOCATION ("idio_gcc_mark"), "unexpected object mark type %#x", o);
+
+	/* notreached */
+	return;
     }
 
-    IDIO_FPRINTF (stderr, "idio_mark: mark %10p -> %10p t=%2d/%.5s f=%2x colour=%d\n", o, o->next, o->type, idio_type2string (o), o->gc_flags, colour);
+    IDIO_FPRINTF (stderr, "idio_gcc_mark: mark %10p -> %10p t=%2d/%.5s f=%2x colour=%d\n", o, o->next, o->type, idio_type2string (o), o->gc_flags, colour);
 
     if ((o->gc_flags & IDIO_GC_FLAG_FREE_UMASK) & IDIO_GC_FLAG_FREE) {
-	fprintf (stderr, "idio_mark: already free?: ");
+	fprintf (stderr, "idio_gcc_mark: already free?: ");
 	idio_gc->verbose++;
 	idio_dump (o, 1);
 	idio_gc->verbose--;
@@ -309,14 +322,21 @@ void idio_mark (IDIO o, unsigned colour)
 	    break;
 	}
 	if (o->gc_flags & IDIO_GC_FLAG_GCC_LGREY) {
-	    IDIO_FPRINTF (stderr, "idio_mark: object is already grey: %10p t=%2d %s f=%x\n", o, o->type, idio_type2string (o), o->gc_flags);
+	    IDIO_FPRINTF (stderr, "idio_gcc_mark: object is already grey: %10p t=%2d %s f=%x\n", o, o->type, idio_type2string (o), o->gc_flags);
 	    break;
 	}
 
 	switch (o->type) {
+	case IDIO_TYPE_NONE:
+	    IDIO_C_ASSERT (0);
+	    idio_error_C ("idio_gcc_mark cannot process an IDIO_TYPE_NONE", IDIO_LIST1 (o), IDIO_C_LOCATION ("idio_gcc_mark"));
+
+	    /* notreached */
+	    return;
+	    break;
 	case IDIO_TYPE_SUBSTRING:
 	    o->gc_flags = (o->gc_flags & IDIO_GC_FLAG_GCC_UMASK) | colour;
-	    idio_mark (IDIO_SUBSTRING_PARENT (o), colour);
+	    idio_gcc_mark (IDIO_SUBSTRING_PARENT (o), colour);
 	    break;
 	case IDIO_TYPE_PAIR:
 	    o->gc_flags |= IDIO_GC_FLAG_GCC_LGREY;
@@ -426,12 +446,15 @@ void idio_mark (IDIO o, unsigned colour)
 	}
 	break;
     default:
-	idio_error_printf (IDIO_C_LOCATION ("idio_mark"), "unexpected colour %d", colour);
+	idio_error_printf (IDIO_C_LOCATION ("idio_gcc_mark"), "unexpected colour %d", colour);
+
+	/* notreached */
+	return;
 	break;
     }
 }
 
-void idio_process_grey (unsigned colour)
+void idio_gc_process_grey (unsigned colour)
 {
 
     IDIO o = idio_gc->grey;
@@ -448,15 +471,15 @@ void idio_process_grey (unsigned colour)
     switch (o->type) {
     case IDIO_TYPE_PAIR:
 	idio_gc->grey = IDIO_PAIR_GREY (o);
-	idio_mark (IDIO_PAIR_H (o), colour);
-	idio_mark (IDIO_PAIR_T (o), colour);
+	idio_gcc_mark (IDIO_PAIR_H (o), colour);
+	idio_gcc_mark (IDIO_PAIR_T (o), colour);
 	break;
     case IDIO_TYPE_ARRAY:
 	idio_gc->grey = IDIO_ARRAY_GREY (o);
-	idio_mark (IDIO_ARRAY_DV (o), colour);
+	idio_gcc_mark (IDIO_ARRAY_DV (o), colour);
 	for (i = 0; i < IDIO_ARRAY_ASIZE (o); i++) {
 	    if (NULL != IDIO_ARRAY_AE (o, i)) {
-		idio_mark (IDIO_ARRAY_AE (o, i), colour);
+		idio_gcc_mark (IDIO_ARRAY_AE (o, i), colour);
 	    }
 	}
 	break;
@@ -466,18 +489,18 @@ void idio_process_grey (unsigned colour)
 	    if (!((IDIO_HASH_FLAGS (o) & IDIO_HASH_FLAG_STRING_KEYS) ||
 		  (IDIO_HASH_FLAGS (o) & IDIO_HASH_FLAG_WEAK_KEYS))) {
 		if (idio_S_nil != IDIO_HASH_HE_KEY (o, i)) {
-		    idio_mark (IDIO_HASH_HE_KEY (o, i), colour);
+		    idio_gcc_mark (IDIO_HASH_HE_KEY (o, i), colour);
 		}
 	    }
 	    if (idio_S_nil != IDIO_HASH_HE_VALUE (o, i)) {
-		idio_mark (IDIO_HASH_HE_VALUE (o, i), colour);
+		idio_gcc_mark (IDIO_HASH_HE_VALUE (o, i), colour);
 	    }
 	}
 	break;
     case IDIO_TYPE_CLOSURE:
 	idio_gc->grey = IDIO_CLOSURE_GREY (o);
-	idio_mark (IDIO_CLOSURE_FRAME (o), colour);
-	idio_mark (IDIO_CLOSURE_ENV (o), colour);
+	idio_gcc_mark (IDIO_CLOSURE_FRAME (o), colour);
+	idio_gcc_mark (IDIO_CLOSURE_ENV (o), colour);
 	break;
     case IDIO_TYPE_PRIMITIVE:
 	idio_gc->grey = IDIO_PRIMITIVE_GREY (o);
@@ -485,93 +508,96 @@ void idio_process_grey (unsigned colour)
     case IDIO_TYPE_MODULE:
 	IDIO_C_ASSERT (idio_gc->grey != IDIO_MODULE_GREY (o));
 	idio_gc->grey = IDIO_MODULE_GREY (o);
-	idio_mark (IDIO_MODULE_NAME (o), colour);
-	idio_mark (IDIO_MODULE_EXPORTS (o), colour);
-	idio_mark (IDIO_MODULE_IMPORTS (o), colour);
-	idio_mark (IDIO_MODULE_SYMBOLS (o), colour);
-	idio_mark (IDIO_MODULE_VCI (o), colour);
-	idio_mark (IDIO_MODULE_VVI (o), colour);
+	idio_gcc_mark (IDIO_MODULE_NAME (o), colour);
+	idio_gcc_mark (IDIO_MODULE_EXPORTS (o), colour);
+	idio_gcc_mark (IDIO_MODULE_IMPORTS (o), colour);
+	idio_gcc_mark (IDIO_MODULE_SYMBOLS (o), colour);
+	idio_gcc_mark (IDIO_MODULE_VCI (o), colour);
+	idio_gcc_mark (IDIO_MODULE_VVI (o), colour);
 	break;
     case IDIO_TYPE_FRAME:
 	IDIO_C_ASSERT (idio_gc->grey != IDIO_FRAME_GREY (o));
 	idio_gc->grey = IDIO_FRAME_GREY (o);
-	idio_mark (IDIO_FRAME_NEXT (o), colour);
-	idio_mark (IDIO_FRAME_ARGS (o), colour);
+	idio_gcc_mark (IDIO_FRAME_NEXT (o), colour);
+	idio_gcc_mark (IDIO_FRAME_ARGS (o), colour);
 	break;
     case IDIO_TYPE_STRUCT_TYPE:
 	IDIO_C_ASSERT (idio_gc->grey != IDIO_STRUCT_TYPE_GREY (o));
 	idio_gc->grey = IDIO_STRUCT_TYPE_GREY (o);
-	idio_mark (IDIO_STRUCT_TYPE_NAME (o), colour);
-	idio_mark (IDIO_STRUCT_TYPE_PARENT (o), colour);
-	idio_mark (IDIO_STRUCT_TYPE_FIELDS (o), colour);
+	idio_gcc_mark (IDIO_STRUCT_TYPE_NAME (o), colour);
+	idio_gcc_mark (IDIO_STRUCT_TYPE_PARENT (o), colour);
+	idio_gcc_mark (IDIO_STRUCT_TYPE_FIELDS (o), colour);
 	break;
     case IDIO_TYPE_STRUCT_INSTANCE:
 	IDIO_C_ASSERT (idio_gc->grey != IDIO_STRUCT_INSTANCE_GREY (o));
 	idio_gc->grey = IDIO_STRUCT_INSTANCE_GREY (o);
-	idio_mark (IDIO_STRUCT_INSTANCE_TYPE (o), colour);
-	idio_mark (IDIO_STRUCT_INSTANCE_FIELDS (o), colour);
+	idio_gcc_mark (IDIO_STRUCT_INSTANCE_TYPE (o), colour);
+	idio_gcc_mark (IDIO_STRUCT_INSTANCE_FIELDS (o), colour);
 	break;
     case IDIO_TYPE_THREAD:
 	IDIO_C_ASSERT (idio_gc->grey != IDIO_THREAD_GREY (o));
 	idio_gc->grey = IDIO_THREAD_GREY (o);
-	idio_mark (IDIO_THREAD_STACK (o), colour);
-	idio_mark (IDIO_THREAD_VAL (o), colour);
-	idio_mark (IDIO_THREAD_FRAME (o), colour);
-	idio_mark (IDIO_THREAD_ENV (o), colour);
-	idio_mark (IDIO_THREAD_TRAP_SP (o), colour);
-	idio_mark (IDIO_THREAD_DYNAMIC_SP (o), colour);
-	idio_mark (IDIO_THREAD_ENVIRON_SP (o), colour);
-	idio_mark (IDIO_THREAD_FUNC (o), colour);
-	idio_mark (IDIO_THREAD_REG1 (o), colour);
-	idio_mark (IDIO_THREAD_REG2 (o), colour);
-	idio_mark (IDIO_THREAD_INPUT_HANDLE (o), colour);
-	idio_mark (IDIO_THREAD_OUTPUT_HANDLE (o), colour);
-	idio_mark (IDIO_THREAD_ERROR_HANDLE (o), colour);
-	idio_mark (IDIO_THREAD_MODULE (o), colour);
+	idio_gcc_mark (IDIO_THREAD_STACK (o), colour);
+	idio_gcc_mark (IDIO_THREAD_VAL (o), colour);
+	idio_gcc_mark (IDIO_THREAD_FRAME (o), colour);
+	idio_gcc_mark (IDIO_THREAD_ENV (o), colour);
+	idio_gcc_mark (IDIO_THREAD_TRAP_SP (o), colour);
+	idio_gcc_mark (IDIO_THREAD_DYNAMIC_SP (o), colour);
+	idio_gcc_mark (IDIO_THREAD_ENVIRON_SP (o), colour);
+	idio_gcc_mark (IDIO_THREAD_FUNC (o), colour);
+	idio_gcc_mark (IDIO_THREAD_REG1 (o), colour);
+	idio_gcc_mark (IDIO_THREAD_REG2 (o), colour);
+	idio_gcc_mark (IDIO_THREAD_INPUT_HANDLE (o), colour);
+	idio_gcc_mark (IDIO_THREAD_OUTPUT_HANDLE (o), colour);
+	idio_gcc_mark (IDIO_THREAD_ERROR_HANDLE (o), colour);
+	idio_gcc_mark (IDIO_THREAD_MODULE (o), colour);
 	break;
     case IDIO_TYPE_CONTINUATION:
 	IDIO_C_ASSERT (idio_gc->grey != IDIO_CONTINUATION_GREY (o));
 	idio_gc->grey = IDIO_CONTINUATION_GREY (o);
-	idio_mark (IDIO_CONTINUATION_STACK (o), colour);
+	idio_gcc_mark (IDIO_CONTINUATION_STACK (o), colour);
 	break;
     case IDIO_TYPE_C_TYPEDEF:
 	IDIO_C_ASSERT (idio_gc->grey != IDIO_C_TYPEDEF_GREY (o));
 	idio_gc->grey = IDIO_C_TYPEDEF_GREY (o);
-	idio_mark (IDIO_C_TYPEDEF_SYM (o), colour);
+	idio_gcc_mark (IDIO_C_TYPEDEF_SYM (o), colour);
 	break;
     case IDIO_TYPE_C_STRUCT:
 	IDIO_C_ASSERT (idio_gc->grey != IDIO_C_STRUCT_GREY (o));
 	idio_gc->grey = IDIO_C_STRUCT_GREY (o);
-	idio_mark (IDIO_C_STRUCT_FIELDS (o), colour);
-	idio_mark (IDIO_C_STRUCT_METHODS (o), colour);
-	idio_mark (IDIO_C_STRUCT_FRAME (o), colour);
+	idio_gcc_mark (IDIO_C_STRUCT_FIELDS (o), colour);
+	idio_gcc_mark (IDIO_C_STRUCT_METHODS (o), colour);
+	idio_gcc_mark (IDIO_C_STRUCT_FRAME (o), colour);
 	break;
     case IDIO_TYPE_C_INSTANCE:
 	IDIO_C_ASSERT (idio_gc->grey != IDIO_C_INSTANCE_GREY (o));
 	idio_gc->grey = IDIO_C_INSTANCE_GREY (o);
-	idio_mark (IDIO_C_INSTANCE_C_STRUCT (o), colour);
-	idio_mark (IDIO_C_INSTANCE_FRAME (o), colour);
+	idio_gcc_mark (IDIO_C_INSTANCE_C_STRUCT (o), colour);
+	idio_gcc_mark (IDIO_C_INSTANCE_FRAME (o), colour);
 	break;
     case IDIO_TYPE_C_FFI:
 	IDIO_C_ASSERT (idio_gc->grey != IDIO_C_FFI_GREY (o));
 	idio_gc->grey = IDIO_C_FFI_GREY (o);
-	idio_mark (IDIO_C_FFI_SYMBOL (o), colour);
-	idio_mark (IDIO_C_FFI_RESULT (o), colour);
-	idio_mark (IDIO_C_FFI_ARGS (o), colour);
-	idio_mark (IDIO_C_FFI_NAME (o), colour);
+	idio_gcc_mark (IDIO_C_FFI_SYMBOL (o), colour);
+	idio_gcc_mark (IDIO_C_FFI_RESULT (o), colour);
+	idio_gcc_mark (IDIO_C_FFI_ARGS (o), colour);
+	idio_gcc_mark (IDIO_C_FFI_NAME (o), colour);
 	break;
     case IDIO_TYPE_OPAQUE:
 	IDIO_C_ASSERT (idio_gc->grey != IDIO_OPAQUE_GREY (o));
 	idio_gc->grey = IDIO_OPAQUE_GREY (o);
-	idio_mark (IDIO_OPAQUE_ARGS (o), colour);
+	idio_gcc_mark (IDIO_OPAQUE_ARGS (o), colour);
 	break;
     default:
-	idio_error_C ("unexpected type", o, IDIO_C_LOCATION ("idio_process_grey"));
+	idio_error_C ("unexpected type", o, IDIO_C_LOCATION ("idio_gc_process_grey"));
+
+	/* notreached */
+	return;
 	break;
     }
 }
 
-idio_root_t *idio_root_new ()
+idio_root_t *idio_gc_new_root ()
 {
 
     idio_root_t *r = idio_alloc (sizeof (idio_root_t));
@@ -581,11 +607,11 @@ idio_root_t *idio_root_new ()
     return r;
 }
 
-void idio_root_dump (idio_root_t *root)
+void idio_gc_dump_root (idio_root_t *root)
 {
     IDIO_C_ASSERT (root);
 
-    IDIO_FPRINTF (stderr, "idio_root_dump: self @%10p ->%10p o=%10p ", root, root->next, root->object);
+    IDIO_FPRINTF (stderr, "idio_gc_dump_root: self @%10p ->%10p o=%10p ", root, root->next, root->object);
     switch (((intptr_t) root->object) & IDIO_TYPE_MASK) {
     case IDIO_TYPE_FIXNUM_MARK:
 	IDIO_FPRINTF (stderr, "FIXNUM %d", ((intptr_t) root->object >> IDIO_TYPE_BITS_SHIFT));
@@ -603,12 +629,12 @@ void idio_root_dump (idio_root_t *root)
     IDIO_FPRINTF (stderr, "\n");
 }
 
-void idio_root_mark (idio_root_t *root, unsigned colour)
+void idio_gcc_mark_root (idio_root_t *root, unsigned colour)
 {
     IDIO_C_ASSERT (root);
 
-    IDIO_FPRINTF (stderr, "idio_root_mark: mark as %d\n", colour);
-    idio_mark (root->object, colour);
+    IDIO_FPRINTF (stderr, "idio_gcc_mark_root: mark as %d\n", colour);
+    idio_gcc_mark (root->object, colour);
 }
 
 idio_gc_t *idio_gc_new ()
@@ -706,7 +732,7 @@ void idio_gc_dump ()
     idio_root_t *root = idio_gc->roots;
     while (root) {
 	n++;
-	idio_root_dump (root);
+	idio_gc_dump_root (root);
 	root = root->next;
     }
     if (n) {
@@ -774,6 +800,9 @@ void idio_gc_protect (IDIO o)
 
     if (idio_S_nil == o) {
 	idio_error_param_nil ("protect", IDIO_C_LOCATION ("idio_gc_protect"));
+
+	/* notreached */
+	return;
     }
 
     IDIO_FPRINTF (stderr, "idio_gc_protect: %10p\n", o);
@@ -787,7 +816,7 @@ void idio_gc_protect (IDIO o)
 	r = r->next;
     }
 
-    r = idio_root_new ();
+    r = idio_gc_new_root ();
     r->object = o;
 }
 
@@ -810,6 +839,9 @@ void idio_gc_protect_auto (IDIO o)
 
     if (idio_S_nil == o) {
 	idio_error_param_nil ("protect", IDIO_C_LOCATION ("idio_gc_protect_auto"));
+
+	/* notreached */
+	return;
     }
 
     IDIO_FPRINTF (stderr, "idio_gc_protect_auto: %10p\n", o);
@@ -871,7 +903,7 @@ void idio_gc_expose (IDIO o)
     IDIO_FPRINTF (stderr, "idio_gc_expose: %10p no longer protected\n", o);
     r = idio_gc->roots;
     while (r) {
-	idio_root_dump (r);
+	idio_gc_dump_root (r);
 	r = r->next;
     }
 }
@@ -911,13 +943,265 @@ void idio_gc_expose_autos ()
     idio_gc->dynamic_roots = idio_S_nil;
 }
 
+static IDIO idio_gc_find_frame_id = idio_S_nil;
+
+void idio_gc_find_frame_capture (IDIO frame)
+{
+    idio_gc_find_frame_id = frame;
+}
+
+void idio_gc_find_frame_print_id (IDIO id, int depth)
+{
+    for (int i = 0; i < depth; i++) {
+	fprintf (stderr, "  ");
+    }
+
+    fprintf (stderr, "idio_gc_find_frame_r: %10p %-12s in ", id, idio_type2string (id));
+}
+
+void idio_gc_find_frame_r (IDIO id, int depth)
+{
+    if (depth > 20) {
+	fprintf (stderr, "depth!\n");
+	return;
+    }
+
+    int ri = 0;
+    idio_root_t *root = idio_gc->roots;
+    while (root) {
+	if (root->object == id) {
+	    idio_gc_find_frame_print_id (id, depth);
+	    fprintf (stderr, "root #%d: ", ri);
+	    idio_gc_dump_root (root);
+	    fprintf (stderr, "\n");
+	    return;
+	}
+	root = root->next;
+	ri++;
+    }
+
+    IDIO o = idio_gc->used;
+    IDIO no = NULL;
+    int nobj = 0;
+    size_t i;
+    IDIO ro = idio_S_nil;
+    int found = 0;
+    while (o) {
+	IDIO_ASSERT (o);
+	nobj++;
+
+	no = o->next;
+
+	switch (o->type) {
+	case IDIO_TYPE_PAIR:
+	    if (IDIO_PAIR_H (o) == id) {
+		idio_gc_find_frame_print_id (id, depth);
+		idio_debug ("pair h %.100s\n", o);
+		idio_gc_find_frame_r (o, depth + 1);
+		fprintf (stderr, "\n");
+		found = 1;
+	    } else if (IDIO_PAIR_T (o) == id) {
+		idio_gc_find_frame_print_id (id, depth);
+		idio_debug ("pair t %.100s\n", o);
+		idio_gc_find_frame_r (o, depth + 1);
+		fprintf (stderr, "\n");
+		found = 1;
+	    }
+	    break;
+	case IDIO_TYPE_ARRAY:
+	    for (i = 0; i < IDIO_ARRAY_ASIZE (o); i++) {
+		if (NULL != IDIO_ARRAY_AE (o, i)) {
+		    if (IDIO_ARRAY_AE (o, i) == id) {
+			idio_gc_find_frame_print_id (id, depth);
+			fprintf (stderr, "array #%zu ", i);
+			idio_debug ("%.100s\n", o);
+			idio_gc_find_frame_r (o, depth + 1);
+			fprintf (stderr, "\n");
+			found = 1;
+		    }
+		}
+	    }
+	    break;
+	case IDIO_TYPE_HASH:
+	    for (i = 0; i < IDIO_HASH_SIZE (o); i++) {
+		if (!((IDIO_HASH_FLAGS (o) & IDIO_HASH_FLAG_STRING_KEYS) ||
+		      (IDIO_HASH_FLAGS (o) & IDIO_HASH_FLAG_WEAK_KEYS))) {
+		    if (idio_S_nil != IDIO_HASH_HE_KEY (o, i)) {
+			if (IDIO_HASH_HE_KEY (o, i) == id) {
+			    idio_gc_find_frame_print_id (id, depth);
+			    fprintf (stderr, "hash key #%zu\n", i);
+			    idio_gc_find_frame_r (o, depth + 1);
+			    fprintf (stderr, "\n");
+			    found = 1;
+			}
+		    }
+		} else {
+		    if (idio_S_nil != IDIO_HASH_HE_KEY (o, i)) {
+			if (IDIO_HASH_HE_KEY (o, i) == id) {
+			    idio_gc_find_frame_print_id (id, depth);
+			    fprintf (stderr, "hash W/S key #%zu\n", i);
+			    idio_gc_find_frame_r (o, depth + 1);
+			    fprintf (stderr, "\n");
+			    found = 1;
+			}
+		    }
+		}
+		if (idio_S_nil != IDIO_HASH_HE_VALUE (o, i)) {
+		    if (IDIO_HASH_HE_VALUE (o, i) == id) {
+			idio_gc_find_frame_print_id (id, depth);
+			fprintf (stderr, "hash value #%zu\n", i);
+			idio_gc_find_frame_r (o, depth + 1);
+			fprintf (stderr, "\n");
+			found = 1;
+		    }
+		}
+	    }
+	    break;
+	case IDIO_TYPE_CLOSURE:
+	    if (IDIO_CLOSURE_FRAME (o) == id) {
+		idio_gc_find_frame_print_id (id, depth);
+		idio_debug ("clos frame %s\n", o);
+		id = o;
+		idio_gc_find_frame_r (o, depth + 1);
+		fprintf (stderr, "\n");
+		found = 1;
+	    }
+	    if (IDIO_CLOSURE_ENV (o) == id) {
+		idio_gc_find_frame_print_id (id, depth);
+		idio_debug ("clos env? %s\n", o);
+		id = o;
+		idio_gc_find_frame_r (o, depth + 1);
+		fprintf (stderr, "\n");
+		found = 1;
+	    }
+	    break;
+	case IDIO_TYPE_FRAME:
+	    if (o == id) {
+		idio_gc_find_frame_print_id (id, depth);
+		idio_debug ("frame itself %s\n", o);
+		if (idio_S_nil != IDIO_FRAME_NEXT (o)) {
+		    id = IDIO_FRAME_NEXT (o);
+		    /* idio_gc_find_frame_r (o, depth + 1); */
+		    fprintf (stderr, "\n");
+		    found = 1;
+		} else {
+		    fprintf (stderr, "dead end?");
+		    break;
+		}
+	    } else if (IDIO_FRAME_NEXT (o) == id) {
+		idio_gc_find_frame_print_id (id, depth);
+		idio_debug ("frame next %s\n", o);
+		id = o;
+		idio_gc_find_frame_r (o, depth + 1);
+		fprintf (stderr, "\n");
+		found = 1;
+	    }
+	    if (IDIO_FRAME_ARGS (o) == id) {
+		idio_gc_find_frame_print_id (id, depth);
+		idio_debug ("frame args %s\n", o);
+		id = o;
+		idio_gc_find_frame_r (o, depth + 1);
+		fprintf (stderr, "\n");
+		found = 1;
+	    }
+	    break;
+	case IDIO_TYPE_THREAD:
+	    if (IDIO_THREAD_STACK (o) == id) {
+		idio_gc_find_frame_print_id (id, depth);
+		idio_debug ("thr stack %s\n", o);
+		id = o;
+		idio_gc_find_frame_r (o, depth + 1);
+		fprintf (stderr, "\n");
+		found = 1;
+	    } else if (IDIO_THREAD_VAL (o) == id) {
+		idio_gc_find_frame_print_id (id, depth);
+		idio_debug ("thr val %s\n", o);
+		id = o;
+		idio_gc_find_frame_r (o, depth + 1);
+		fprintf (stderr, "\n");
+		found = 1;
+	    } else if (IDIO_THREAD_FRAME (o) == id) {
+		idio_gc_find_frame_print_id (id, depth);
+		idio_debug ("thr frame %s\n", o);
+		id = o;
+		idio_gc_find_frame_r (o, depth + 1);
+		fprintf (stderr, "\n");
+		found = 1;
+	    } else if (IDIO_THREAD_ENV (o) == id) {
+		idio_gc_find_frame_print_id (id, depth);
+		idio_debug ("thr env %s\n", o);
+		id = o;
+		idio_gc_find_frame_r (o, depth + 1);
+		fprintf (stderr, "\n");
+		found = 1;
+	    } else if (IDIO_THREAD_FUNC (o) == id) {
+		idio_gc_find_frame_print_id (id, depth);
+		idio_debug ("thr func %s\n", o);
+		id = o;
+		idio_gc_find_frame_r (o, depth + 1);
+		fprintf (stderr, "\n");
+		found = 1;
+	    } else if (IDIO_THREAD_REG1 (o) == id) {
+		idio_gc_find_frame_print_id (id, depth);
+		idio_debug ("thr reg1 %s\n", o);
+		id = o;
+		idio_gc_find_frame_r (o, depth + 1);
+		fprintf (stderr, "\n");
+		found = 1;
+	    } else if (IDIO_THREAD_REG2 (o) == id) {
+		idio_gc_find_frame_print_id (id, depth);
+		idio_debug ("thr reg2 %s\n", o);
+		id = o;
+		idio_gc_find_frame_r (o, depth + 1);
+		fprintf (stderr, "\n");
+		found = 1;
+	    }
+	    break;
+	case IDIO_TYPE_CONTINUATION:
+	    if (IDIO_CONTINUATION_STACK (o) == id) {
+		idio_gc_find_frame_print_id (id, depth);
+		idio_debug ("k stack %s\n", o);
+		id = o;
+		idio_gc_find_frame_r (o, depth + 1);
+		fprintf (stderr, "\n");
+		found = 1;
+	    }
+	    break;
+	}
+
+	o = no;
+    }
+
+    if (0 == found) {
+	idio_gc_find_frame_print_id (id, depth);
+	fprintf (stderr, "??: %d objs: done\n", nobj);
+    }
+}
+
+void idio_gc_find_frame ()
+{
+    if (idio_S_nil == idio_gc_find_frame_id) {
+	return;
+    }
+
+    if (IDIO_TYPE_NONE == idio_gc_find_frame_id->type) {
+	fprintf (stderr, "igff: frame freed\n");
+	idio_gc_find_frame_id = idio_S_nil;
+	return;
+    }
+
+    idio_gc_find_frame_print_id (idio_gc_find_frame_id, 0);
+    idio_debug ("%s\n", idio_gc_find_frame_id);
+    idio_gc_find_frame_r (idio_gc_find_frame_id, 0);
+}
+
 void idio_gc_mark ()
 {
 
     IDIO_FPRINTF (stderr, "idio_gc_mark: all used -> WHITE %ux\n", IDIO_GC_FLAG_GCC_WHITE);
     IDIO o = idio_gc->used;
     while (o) {
-	idio_mark (o, IDIO_GC_FLAG_GCC_WHITE);
+	idio_gcc_mark (o, IDIO_GC_FLAG_GCC_WHITE);
 	o = o->next;
     }
     idio_gc->grey = NULL;
@@ -925,13 +1209,13 @@ void idio_gc_mark ()
     IDIO_FPRINTF (stderr, "idio_gc_mark: roots -> BLACK %x\n", IDIO_GC_FLAG_GCC_BLACK);
     idio_root_t *root = idio_gc->roots;
     while (root) {
-	idio_root_mark (root, IDIO_GC_FLAG_GCC_BLACK);
+	idio_gcc_mark_root (root, IDIO_GC_FLAG_GCC_BLACK);
 	root = root->next;
     }
 
     IDIO_FPRINTF (stderr, "idio_gc_mark: process grey list\n");
     while (idio_gc->grey) {
-	idio_process_grey (IDIO_GC_FLAG_GCC_BLACK);
+	idio_gc_process_grey (IDIO_GC_FLAG_GCC_BLACK);
     }
 
 }
@@ -942,6 +1226,8 @@ void idio_gc_sweep_free_value (IDIO vo)
 
     if (idio_S_nil == vo) {
 	idio_error_param_nil ("vo", IDIO_C_LOCATION ("idio_gc_sweep_free_value"));
+
+	/* notreached */
 	return;
     }
 
@@ -950,6 +1236,13 @@ void idio_gc_sweep_free_value (IDIO vo)
     }
 
     switch (vo->type) {
+    case IDIO_TYPE_NONE:
+	IDIO_C_ASSERT (0);
+	idio_error_C ("idio_gc_sweep_free_value cannot process an IDIO_TYPE_NONE", IDIO_LIST1 (vo), IDIO_C_LOCATION ("idio_gc_sweep_free_value"));
+
+	/* notreached */
+	return;
+	break;
     case IDIO_TYPE_STRING:
 	idio_free_string (vo);
 	break;
@@ -1014,6 +1307,7 @@ void idio_gc_sweep_free_value (IDIO vo)
 	    }
 	}
 #endif
+	idio_properties_delete (vo);
 	idio_free_closure (vo);
 	break;
     case IDIO_TYPE_PRIMITIVE:
@@ -1040,6 +1334,7 @@ void idio_gc_sweep_free_value (IDIO vo)
 	    fprintf (idio_vm_perf_FILE, "\n");
         }
 #endif
+	idio_properties_delete (vo);
 	idio_free_primitive (vo);
 	break;
     case IDIO_TYPE_BIGNUM:
@@ -1091,6 +1386,9 @@ void idio_gc_sweep_free_value (IDIO vo)
 	break;
     default:
 	idio_error_C ("unexpected type", vo, IDIO_C_LOCATION ("idio_gc_sweep_free_value"));
+
+	/* notreached */
+	return;
 	break;
     }
 }
@@ -1134,8 +1432,10 @@ void idio_gc_sweep ()
 		idio_gc->used = co->next;
 	    }
 
+	    IDIO_C_ASSERT (IDIO_TYPE_NONE != co->type);
 	    idio_gc_sweep_free_value (co);
 
+	    co->type = IDIO_TYPE_NONE;
 	    co->gc_flags = (co->gc_flags & IDIO_GC_FLAG_FREE_UMASK) | IDIO_GC_FLAG_FREE;
 	    co->next = idio_gc->free;
 	    idio_gc->free = co;
@@ -1165,19 +1465,20 @@ void idio_gc_possibly_collect ()
     if (idio_gc->pause == 0 &&
 	((IDIO_GC_FLAGS (idio_gc) & IDIO_GC_FLAG_REQUEST) ||
 	 idio_gc->stats.igets > 0x1ffff)) {
-	idio_gc_collect ();
+	idio_gc_collect ("idio_gc_possibly_collect");
     }
 }
 
-void idio_gc_collect ()
+void idio_gc_collect (char *caller)
 {
     /* idio_gc_walk_tree (); */
     /* idio_gc_stats ();   */
 
     if (idio_gc->pause) {
-	/* fprintf (stderr, "GC paused\n"); */
 	return;
     }
+
+    idio_gc_find_frame ();
 
     IDIO_GC_FLAGS (idio_gc) &= ~ IDIO_GC_FLAG_REQUEST;
 
@@ -1189,16 +1490,8 @@ void idio_gc_collect ()
 	idio_gc->stats.mgets = idio_gc->stats.igets;
     }
     idio_gc->stats.igets = 0;
-    /* IDIO_FPRINTF (stderr, "\nidio_gc_collect: %2d: pre-mark dump\n", idio_gc->stats.collections); */
-    /* idio_gc_dump (f); */
-    /* IDIO_FPRINTF (stderr, "\nidio_gc_collect: %2d: mark\n", idio_gc->stats.collections); */
     idio_gc_mark ();
-    /* IDIO_FPRINTF (stderr, "\nidio_gc_collect: %2d: post-mark dump\n", idio_gc->stats.collections); */
-    /* idio_gc_dump (f); */
-    /* IDIO_FPRINTF (stderr, "\nidio_gc_collect: %2d: sweep\n", idio_gc->stats.collections); */
     idio_gc_sweep ();
-    /* IDIO_FPRINTF (stderr, "\nidio_gc_collect: %2d: post-sweep dump\n", idio_gc->stats.collections); */
-    /* idio_gc_dump (f); */
 
     struct timeval t1;
     gettimeofday (&t1, NULL);
@@ -1235,6 +1528,9 @@ void idio_gc_stats_inc (idio_type_e type)
 {
     if (type > IDIO_TYPE_MAX) {
 	idio_error_printf (IDIO_C_LOCATION ("idio_gc_stats_inc"), "bad type %hhu", type);
+
+	/* notreached */
+	return;
     } else {
 	idio_gc->stats.tgets[type]++;
     }
@@ -1275,7 +1571,7 @@ void idio_gc_stats ()
     scale = 0;
     idio_hcount (&count, &scale);
     fprintf (fh, "idio_gc_stats: %4lld%c current GC requests\n", count, scales[scale]);
-    fprintf (fh, "idio_gc_stats: %-10.10s %5.5s %4.4s %5.5s %4.4s\n", "type", "total", "%age", "used", "%age");
+    fprintf (fh, "idio_gc_stats: %-15.15s %5.5s %4.4s %5.5s %4.4s\n", "type", "total", "%age", "used", "%age");
     int types_unused = 0;
     for (i = 1; i < IDIO_TYPE_MAX; i++) {
 	unsigned long long tgets_count = idio_gc->stats.tgets[i];
@@ -1287,7 +1583,7 @@ void idio_gc_stats ()
 	    int nused_scale = 0;
 	    idio_hcount (&nused_count, &nused_scale);
 
-	    fprintf (fh, "idio_gc_stats: %-10.10s %4lld%c %3lld %4lld%c %3lld\n",
+	    fprintf (fh, "idio_gc_stats: %-15.15s %4lld%c %3lld %4lld%c %3lld\n",
 		     idio_type_enum2string (i),
 		     tgets_count, scales[tgets_scale],
 		     tgets ? idio_gc->stats.tgets[i] * 100 / tgets : -1,
@@ -1394,6 +1690,15 @@ void idio_gc_stats ()
 }
 
 /**
+ * idio_gc_get_pause() - get the "pause" state of the garbage collector
+ *
+ */
+int idio_gc_get_pause (char *caller)
+{
+    return idio_gc->pause;
+}
+
+/**
  * idio_gc_pause() - pause the garbage collector
  *
  * Use this function sparingly as it's hard to predict how much you
@@ -1403,9 +1708,8 @@ void idio_gc_stats ()
  *
  * See also idio_gc_resume().
  */
-void idio_gc_pause ()
+void idio_gc_pause (char *caller)
 {
-
     idio_gc->pause++;
 }
 
@@ -1416,10 +1720,18 @@ void idio_gc_pause ()
  *
  * See also idio_gc_pause().
  */
-void idio_gc_resume ()
+void idio_gc_resume (char *caller)
 {
-
     idio_gc->pause--;
+}
+
+/**
+ * idio_gc_reset() - unpause the garbage collector
+ *
+ */
+void idio_gc_reset (char *caller, int pause)
+{
+    idio_gc->pause = pause;
 }
 
 void idio_gc_ports_free ()
@@ -1441,7 +1753,10 @@ void idio_gc_free ()
 	idio_root_t *root = idio_gc->roots;
 	idio_gc->roots = root->next;
 	if (idio_S_nil == root->object) {
-	    idio_error_error_message ("root->object is #n at %s:%d", __FILE__, IDIO__LINE__);
+	    idio_error_error_message ("root->object is #n at %s:%d", __FILE__, __LINE__);
+
+	    /* notreached */
+	    return;
 	}
 	free (root);
     }
@@ -1455,7 +1770,7 @@ void idio_gc_free ()
      * Having exposed everything running a collection should free
      * everything...
      */
-    idio_gc_collect ();
+    idio_gc_collect ("idio_gc_free");
 
     size_t n = 0;
     while (idio_gc->free) {
@@ -1573,7 +1888,7 @@ void idio_gc_set_verboseness (int n)
 
 IDIO_DEFINE_PRIMITIVE0 ("gc/collect", gc_collect, (void))
 {
-    idio_gc_collect ();
+    idio_gc_collect ("gc/collect");
 
     return idio_S_unspec;
 }
@@ -1655,11 +1970,14 @@ static void idio_gc_run_all_finalizers ()
 	return;
     }
 
+    int n = 0;
     idio_ai_t hi;
     for (hi = 0; hi < IDIO_HASH_SIZE (idio_gc_finalizer_hash); hi++) {
 	IDIO k = IDIO_HASH_HE_KEY (idio_gc_finalizer_hash, hi);
 	IDIO_ASSERT (k);
 	if (idio_S_nil != k) {
+	    n++;
+
 	    /* apply the finalizer */
 	    IDIO C_p = IDIO_HASH_HE_VALUE (idio_gc_finalizer_hash, hi);
 	    void (*func) (IDIO o) = IDIO_C_TYPE_POINTER_P (C_p);
@@ -1686,7 +2004,7 @@ void idio_final_gc ()
 
     idio_gc_stats ();
     idio_gc_expose_all ();
-    idio_gc_collect ();
+    idio_gc_collect ("idio_final_gc");
     idio_gc_dump ();
     idio_gc_free ();
 }
@@ -1702,7 +2020,3 @@ void idio_expr_dump_ (IDIO e, const char *en, int detail)
     idio_dump (e, detail);
     idio_gc->verbose--;
 }
-
-
-
-

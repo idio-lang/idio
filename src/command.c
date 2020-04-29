@@ -242,6 +242,9 @@ static char **idio_command_get_envp ()
 		n++;
 	    } else {
 		idio_command_error_env_type (symbol, IDIO_C_LOCATION ("idio_command_get_envp"));
+
+		/* notreached */
+		return NULL;
 	    }
 	}
 
@@ -278,6 +281,9 @@ char *idio_command_find_exe_C (char *command)
     char cwd[PATH_MAX];
     if (getcwd (cwd, PATH_MAX) == NULL) {
 	idio_error_system_errno ("getcwd", idio_S_nil, IDIO_C_LOCATION ("idio_command_find_exe_C"));
+
+	/* notreached */
+	return NULL;
     }
     size_t cwdlen = strlen (cwd);
 
@@ -289,6 +295,9 @@ char *idio_command_find_exe_C (char *command)
 	if (0 == pathlen) {
 	    if ((cwdlen + 1 + cmdlen + 1) >= PATH_MAX) {
 		idio_error_system ("cwd+command exename length", IDIO_LIST2 (PATH, idio_string_C (command)), ENAMETOOLONG, IDIO_C_LOCATION ("idio_command_find_exe_C"));
+
+		/* notreached */
+		return NULL;
 	    }
 
 	    strcpy (exename, cwd);
@@ -298,6 +307,9 @@ char *idio_command_find_exe_C (char *command)
 	    if (NULL == colon) {
 		if ((pathlen + 1 + cmdlen + 1) >= PATH_MAX) {
 		    idio_error_system ("dir+command exename length", IDIO_LIST2 (PATH, idio_string_C (command)), ENAMETOOLONG, IDIO_C_LOCATION ("idio_command_find_exe_C"));
+
+		    /* notreached */
+		    return NULL;
 		}
 
 		memcpy (exename, path, pathlen);
@@ -308,12 +320,18 @@ char *idio_command_find_exe_C (char *command)
 		if (0 == dirlen) {
 		    if ((cwdlen + 1 + cmdlen + 1) >= PATH_MAX) {
 			idio_error_system ("cwd+command exename length", IDIO_LIST2 (PATH, idio_string_C (command)), ENAMETOOLONG, IDIO_C_LOCATION ("idio_command_find_exe_C"));
+
+			/* notreached */
+			return NULL;
 		    }
 
 		    strcpy (exename, cwd);
 		} else {
 		    if ((dirlen + 1 + cmdlen + 1) >= PATH_MAX) {
 			idio_error_system ("dir+command exename length", IDIO_LIST2 (PATH, idio_string_C (command)), ENAMETOOLONG, IDIO_C_LOCATION ("idio_command_find_exe_C"));
+
+			/* notreached */
+			return NULL;
 		    }
 
 		    memcpy (exename, path, dirlen);
@@ -330,6 +348,9 @@ char *idio_command_find_exe_C (char *command)
 
 	    if (stat (exename, &sb) == -1) {
 		idio_error_system_errno ("stat", IDIO_LIST1 (idio_string_C (exename)), IDIO_C_LOCATION ("idio_command_find_exe_C"));
+
+		/* notreached */
+		return NULL;
 	    }
 
 	    if (S_ISREG (sb.st_mode)) {
@@ -414,6 +435,9 @@ static size_t idio_command_possible_filename_glob (IDIO arg, glob_t *gp)
 	    r = gp->gl_pathc;
 	} else {
 	    idio_command_error_glob (arg, IDIO_C_LOCATION ("idio_command_possible_filename_glob"));
+
+	    /* notreached */
+	    return -1;
 	}
     }
 
@@ -464,11 +488,17 @@ char **idio_command_argv (IDIO args)
 		    break;
 		default:
 		    idio_command_error_argv_type (arg, "unconvertible value", IDIO_C_LOCATION ("idio_command_argv"));
+
+		    /* notreached */
+		    return NULL;
 		    break;
 		}
 	    }
 	case IDIO_TYPE_PLACEHOLDER_MARK:
 	    idio_command_error_argv_type (arg, "unconvertible value", IDIO_C_LOCATION ("idio_command_argv"));
+
+	    /* notreached */
+	    return NULL;
 	    break;
 	case IDIO_TYPE_POINTER_MARK:
 	    {
@@ -476,11 +506,17 @@ char **idio_command_argv (IDIO args)
 		case IDIO_TYPE_STRING:
 		    if (asprintf (&argv[i++], "%.*s", (int) IDIO_STRING_BLEN (arg), IDIO_STRING_S (arg)) == -1) {
 			idio_error_alloc ("asprintf");
+
+			/* notreached */
+			return NULL;
 		    }
 		    break;
 		case IDIO_TYPE_SUBSTRING:
 		    if (asprintf (&argv[i++], "%.*s", (int) IDIO_SUBSTRING_BLEN (arg), IDIO_SUBSTRING_S (arg)) == -1) {
 			idio_error_alloc ("asprintf");
+
+			/* notreached */
+			return NULL;
 		    }
 		    break;
 		case IDIO_TYPE_SYMBOL:
@@ -491,6 +527,9 @@ char **idio_command_argv (IDIO args)
 			if (0 == n) {
 			    if (asprintf (&argv[i++], "%s", IDIO_SYMBOL_S (arg)) == -1) {
 				idio_error_alloc ("asprintf");
+
+				/* notreached */
+				return NULL;
 			    }
 			} else {
 			    /*
@@ -560,6 +599,9 @@ char **idio_command_argv (IDIO args)
 			    idio_debug ("WARNING: idio_command_argv: unexpected struct instance: type: %s\n", sit);
 			    idio_debug ("arg = %s\n", arg);
 			    idio_command_error_argv_type (arg, "only path_type structs", IDIO_C_LOCATION ("idio_command_argv"));
+
+			    /* notreached */
+			    return NULL;
 			}
 		    }
 		    break;
@@ -584,12 +626,18 @@ char **idio_command_argv (IDIO args)
 		    idio_error_warning_message ("idio_command_argv: unexpected object type: %s", idio_type2string (arg));
 		    idio_debug ("arg = %s\n", arg);
 		    idio_command_error_argv_type (arg, "unconvertible value", IDIO_C_LOCATION ("idio_command_argv"));
+
+		    /* notreached */
+		    return NULL;
 		    break;
 		}
 	    }
 	    break;
 	default:
 	    idio_error_printf (IDIO_C_LOCATION ("idio_command_argv"), "unexpected object type: %s", idio_type2string (arg));
+
+	    /* notreached */
+	    return NULL;
 	    break;
 	}
 
@@ -607,6 +655,9 @@ static int idio_command_job_is_stopped (IDIO job)
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("%idio-job", job, IDIO_C_LOCATION ("idio_command_job_is_stopped"));
+
+	/* notreached */
+	return -1;
     }
 
     IDIO procs = idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PROCS);
@@ -636,6 +687,8 @@ test if job `job` is stopped			\n\
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("%idio-job", job, IDIO_C_LOCATION ("job-is-stopped"));
+
+	return idio_S_notreached;
     }
 
     IDIO r = idio_S_false;
@@ -654,6 +707,9 @@ static int idio_command_job_is_completed (IDIO job)
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("job", job, IDIO_C_LOCATION ("idio_command_job_is_completed"));
+
+	/* notreached */
+	return -1;
     }
 
     IDIO procs = idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PROCS);
@@ -682,6 +738,8 @@ test if job `job` has completed			\n\
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("%idio-job", job, IDIO_C_LOCATION ("job-is-completed"));
+
+	return idio_S_notreached;
     }
 
     IDIO r = idio_S_false;
@@ -700,6 +758,9 @@ static int idio_command_job_failed (IDIO job)
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("job", job, IDIO_C_LOCATION ("idio_command_job_failed"));
+
+	/* notreached */
+	return -1;
     }
 
     if (idio_command_job_is_completed (job)) {
@@ -737,6 +798,8 @@ test if job `job` has failed			\n\
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("%idio-job", job, IDIO_C_LOCATION ("job-failed"));
+
+	return idio_S_notreached;
     }
 
     IDIO r = idio_S_false;
@@ -755,6 +818,8 @@ static IDIO idio_command_job_status (IDIO job)
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("job", job, IDIO_C_LOCATION ("idio_command_job_status"));
+
+	return idio_S_notreached;
     }
 
     IDIO procs = idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PROCS);
@@ -792,6 +857,8 @@ Note that this is the inverse behaviour you might expect.\n\
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("%idio-job", job, IDIO_C_LOCATION ("job-status"));
+
+	return idio_S_notreached;
     }
 
     return idio_command_job_status (job);
@@ -804,6 +871,8 @@ static IDIO idio_command_job_detail (IDIO job)
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("job", job, IDIO_C_LOCATION ("idio_command_job_detail"));
+
+	return idio_S_notreached;
     }
 
     IDIO procs = idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PROCS);
@@ -842,6 +911,8 @@ value can be: exit status for 'exit or signal number for 'killed\n\
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("%idio-job", job, IDIO_C_LOCATION ("job-detail"));
+
+	return idio_S_notreached;
     }
 
     return idio_command_job_detail (job);
@@ -904,6 +975,9 @@ static int idio_command_mark_process_status (pid_t pid, int status)
 	return -1;
     } else {
 	idio_error_system_errno ("waitpid failed", idio_S_nil, IDIO_C_LOCATION ("idio_command_mark_process_status"));
+
+	/* notreached */
+	return -2;
     }
 
     return -1;
@@ -964,6 +1038,8 @@ static IDIO idio_command_wait_for_job (IDIO job)
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("job", job, IDIO_C_LOCATION ("idio_command_wait_for_job"));
+
+	return idio_S_notreached;
     }
 
     int status;
@@ -983,6 +1059,8 @@ static IDIO idio_command_wait_for_job (IDIO job)
 						   idio_command_job_status (job)));
 
 	idio_raise_condition (idio_S_true, c);
+
+	return idio_S_notreached;
     }
 
     return idio_command_job_status (job);
@@ -1001,6 +1079,8 @@ wait for job `job` to be stopped or completed	\n\
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("%idio-job", job, IDIO_C_LOCATION ("wait-for-job"));
+
+	return idio_S_notreached;
     }
 
     return idio_command_wait_for_job (job);
@@ -1018,6 +1098,9 @@ static void idio_command_format_job_info (IDIO job, char *msg)
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("job", job, IDIO_C_LOCATION ("idio_command_format_job_info"));
+
+	/* notreached */
+	return;
     }
 
     pid_t job_pgid = IDIO_C_TYPE_INT (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PGID));
@@ -1042,6 +1125,8 @@ display to stderr `msg` alongside job `job` details\n\
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("%idio-job", job, IDIO_C_LOCATION ("format-job-info"));
+
+	return idio_S_notreached;
     }
 
     char *msgs = idio_string_as_C (msg);
@@ -1103,6 +1188,9 @@ void idio_command_do_job_notification (void)
 
 	idio_raise_condition (idio_S_true, c);
 
+	/* notreached */
+	return;
+
 	/*
 	 * Unlike an Idio-variant of this function, we won't return
 	 * here with our C hats on because of the longjmp(3) in
@@ -1132,6 +1220,8 @@ static IDIO idio_command_foreground_job (IDIO job, int cont)
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("job", job, IDIO_C_LOCATION ("idio_command_foreground_job"));
+
+	return idio_S_notreached;
     }
 
     /*
@@ -1145,6 +1235,8 @@ static IDIO idio_command_foreground_job (IDIO job, int cont)
 				       job),
 			   errno,
 			   IDIO_C_LOCATION ("idio_command_foreground_job"));
+
+	return idio_S_notreached;
     }
 
     if (cont) {
@@ -1154,10 +1246,14 @@ static IDIO idio_command_foreground_job (IDIO job, int cont)
 
 	if (tcsetattr (idio_command_terminal, TCSADRAIN, tcattrsp) < 0) {
 	    idio_error_system_errno ("tcsetattr", IDIO_LIST1 (idio_C_int (idio_command_terminal)), IDIO_C_LOCATION ("idio_command_foreground_job"));
+
+	    return idio_S_notreached;
 	}
 
 	if (kill (-job_pgid, SIGCONT) < 0) {
 	    idio_error_system_errno ("kill SIGCONT", IDIO_LIST1 (idio_C_int (-job_pgid)), IDIO_C_LOCATION ("idio_command_foreground_job"));
+
+	    return idio_S_notreached;
 	}
     }
 
@@ -1173,6 +1269,8 @@ static IDIO idio_command_foreground_job (IDIO job, int cont)
 				       job),
 			   errno,
 			   IDIO_C_LOCATION ("idio_command_foreground_job"));
+
+	return idio_S_notreached;
     }
 
     /*
@@ -1189,6 +1287,8 @@ static IDIO idio_command_foreground_job (IDIO job, int cont)
 
     if (tcgetattr (idio_command_terminal, tcattrsp) < 0) {
 	idio_error_system_errno ("tcgetattr", IDIO_LIST1 (idio_C_int (idio_command_terminal)), IDIO_C_LOCATION ("idio_command_foreground_job"));
+
+	return idio_S_notreached;
     }
 
     /*
@@ -1197,6 +1297,8 @@ static IDIO idio_command_foreground_job (IDIO job, int cont)
     tcattrsp = IDIO_C_TYPE_POINTER_P (idio_command_tcattrs);
     if (tcsetattr (idio_command_terminal, TCSADRAIN, tcattrsp) < 0) {
 	idio_error_system_errno ("tcgetattr", IDIO_LIST1 (idio_C_int (idio_command_terminal)), IDIO_C_LOCATION ("idio_command_foreground_job"));
+
+	return idio_S_notreached;
     }
 
     return r;
@@ -1220,6 +1322,8 @@ If `cont` is set a SIGCONT is sent to the process group\n\
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("%idio-job", job, IDIO_C_LOCATION ("foreground-job"));
+
+	return idio_S_notreached;
     }
 
     int cont = 0;
@@ -1238,6 +1342,8 @@ static IDIO idio_command_background_job (IDIO job, int cont)
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("job", job, IDIO_C_LOCATION ("idio_command_background_job"));
+
+	return idio_S_notreached;
     }
 
     if (cont) {
@@ -1245,6 +1351,8 @@ static IDIO idio_command_background_job (IDIO job, int cont)
 
 	if (kill (-job_pgid, SIGCONT) < 0) {
 	    idio_error_system_errno ("kill SIGCONT", IDIO_LIST1 (idio_C_int (-job_pgid)), IDIO_C_LOCATION ("idio_command_background_job"));
+
+	    return idio_S_notreached;
 	}
     }
 
@@ -1274,6 +1382,8 @@ Backgrounding a job is always successful hence returns 0.\n\
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("%idio-job", job, IDIO_C_LOCATION ("background-job"));
+
+	return idio_S_notreached;
     }
 
     int cont = 0;
@@ -1292,6 +1402,9 @@ static void idio_command_hangup_job (IDIO job)
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("job", job, IDIO_C_LOCATION ("idio_command_hangup_job"));
+
+	/* notreached */
+	return;
     }
 
     IDIO ipgid = idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PGID);
@@ -1302,17 +1415,26 @@ static void idio_command_hangup_job (IDIO job)
 	job_pgid = IDIO_C_TYPE_INT (ipgid);
     } else {
 	idio_error_param_type ("fixnum|C_int", ipgid, IDIO_C_LOCATION ("idio_command_hangup_job"));
+
+	/* notreached */
+	return;
     }
 
     if (kill (-job_pgid, SIGCONT) < 0) {
 	if (ESRCH != errno) {
 	    idio_error_system_errno ("kill SIGCONT", IDIO_LIST1 (idio_C_int (-job_pgid)), IDIO_C_LOCATION ("idio_command_hangup_job"));
+
+	    /* notreached */
+	    return;
 	}
     }
 
     if (kill (-job_pgid, SIGHUP) < 0) {
 	if (ESRCH != errno) {
 	    idio_error_system_errno ("kill SIGHUP", IDIO_LIST1 (idio_C_int (-job_pgid)), IDIO_C_LOCATION ("idio_command_hangup_job"));
+
+	    /* notreached */
+	    return;
 	}
     }
 }
@@ -1332,6 +1454,8 @@ Send the process group of `job` a SIGCONT then a SIGHUP\n\
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("%idio-job", job, IDIO_C_LOCATION ("hangup-job"));
+
+	return idio_S_notreached;
     }
 
     idio_command_hangup_job (job);
@@ -1390,6 +1514,8 @@ IDIO_DEFINE_PRIMITIVE2 ("SIGHUP-condition-handler", SIGHUP_condition_handler, (I
 						   idio_S_nil));
 
 	idio_raise_condition (idio_S_true, c);
+
+	return idio_S_notreached;
     }
 
     idio_raise_condition (cont, cond);
@@ -1448,6 +1574,8 @@ IDIO_DEFINE_PRIMITIVE2 ("SIGCHLD-condition-handler", SIGCHLD_condition_handler, 
 						   idio_S_nil));
 
 	idio_raise_condition (idio_S_true, c);
+
+	return idio_S_notreached;
     }
 
     idio_raise_condition (cont, cond);
@@ -1486,6 +1614,8 @@ IDIO_DEFINE_PRIMITIVE2 ("condition-handler-rt-command-status", condition_handler
 						   idio_S_nil));
 
 	idio_raise_condition (idio_S_true, c);
+
+	return idio_S_notreached;
     }
 
     idio_raise_condition (cont, cond);
@@ -1503,6 +1633,9 @@ static void idio_command_mark_job_as_running (IDIO job)
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("job", job, IDIO_C_LOCATION ("idio_command_mark_job_as_running"));
+
+	/* notreached */
+	return;
     }
 
     IDIO procs = idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PROCS);
@@ -1531,6 +1664,8 @@ In particular, mark job `job` as not stopped\n\
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("%idio-job", job, IDIO_C_LOCATION ("mark-job-as-running"));
+
+	return idio_S_notreached;
     }
 
     idio_command_mark_job_as_running (job);
@@ -1545,6 +1680,9 @@ static void idio_command_continue_job (IDIO job, int foreground)
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("job", job, IDIO_C_LOCATION ("idio_command_continue_job"));
+
+	/* notreached */
+	return;
     }
 
     idio_command_mark_job_as_running (job);
@@ -1572,6 +1710,8 @@ mark job `job` as running and foreground it if required\n\
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("%idio-job", job, IDIO_C_LOCATION ("continue-job"));
+
+	return idio_S_notreached;
     }
 
     int foreground = 0;
@@ -1603,6 +1743,9 @@ static void idio_command_prep_io (int infile, int outfile, int errfile)
 						   idio_C_int (STDIN_FILENO)),
 			       errno,
 			       IDIO_C_LOCATION ("idio_command_prep_process"));
+
+	    /* notreached */
+	    return;
 	}
 
 	/* if (infile > STDERR_FILENO  && */
@@ -1620,6 +1763,9 @@ static void idio_command_prep_io (int infile, int outfile, int errfile)
 						   idio_C_int (STDOUT_FILENO)),
 			       errno,
 			       IDIO_C_LOCATION ("idio_command_prep_process"));
+
+	    /* notreached */
+	    return;
 	}
 
 	/* if (outfile > STDERR_FILENO && */
@@ -1636,6 +1782,10 @@ static void idio_command_prep_io (int infile, int outfile, int errfile)
 						   idio_C_int (STDERR_FILENO)),
 			       errno,
 			       IDIO_C_LOCATION ("idio_command_prep_process"));
+
+
+	    /* notreached */
+	    return;
 	}
 
 	/* if (errfile > STDERR_FILENO) { */
@@ -1662,6 +1812,9 @@ static void idio_command_prep_process (pid_t job_pgid, int infile, int outfile, 
 	 */
 	if (setpgid (pid, job_pgid) < 0) {
 	    idio_error_system_errno ("setpgid", IDIO_LIST2 (idio_C_int (pid), idio_C_int (job_pgid)), IDIO_C_LOCATION ("idio_command_prep_process"));
+
+	    /* notreached */
+	    return;
 	}
 
 	if (foreground) {
@@ -1675,6 +1828,9 @@ static void idio_command_prep_process (pid_t job_pgid, int infile, int outfile, 
 					       idio_C_int (job_pgid)),
 				   errno,
 				   IDIO_C_LOCATION ("idio_command_prep_process"));
+
+		/* notreached */
+		return;
 	    }
 	}
 
@@ -1727,6 +1883,8 @@ File descriptors are C integers.		\n\
 	pgid = IDIO_C_TYPE_INT (ipgid);
     } else {
 	idio_error_param_type ("fixnum|C_int", ipgid, IDIO_C_LOCATION ("%prep-process"));
+
+	return idio_S_notreached;
     }
 
     int infile = IDIO_C_TYPE_INT (iinfile);
@@ -1751,6 +1909,9 @@ static void idio_command_launch_job (IDIO job, int foreground)
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("job", job, IDIO_C_LOCATION ("idio_command_launch_job"));
+
+	/* notreached */
+	return;
     }
 
     IDIO procs = idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PROCS);
@@ -1769,6 +1930,9 @@ static void idio_command_launch_job (IDIO job, int foreground)
 	if (idio_S_nil != procs) {
 	    if (pipe (proc_pipe) < 0) {
 		idio_error_system_errno ("pipe", IDIO_LIST2 (proc, job), IDIO_C_LOCATION ("idio_command_launch_job"));
+
+		/* notreached */
+		return;
 	    }
 	    outfile = proc_pipe[1];
 	} else {
@@ -1778,6 +1942,9 @@ static void idio_command_launch_job (IDIO job, int foreground)
 	pid_t pid = fork ();
 	if (pid < 0) {
 	    idio_error_system_errno ("fork", IDIO_LIST2 (proc, job), IDIO_C_LOCATION ("idio_command_launch_job"));
+
+	    /* notreached */
+	    return;
 	} else if (0 == pid) {
 	    idio_command_prep_process (job_pgid,
 				       infile,
@@ -1812,6 +1979,9 @@ static void idio_command_launch_job (IDIO job, int foreground)
 						   job),
 				       errno,
 				       IDIO_C_LOCATION ("idio_command_launch_job"));
+
+		    /* notreached */
+		    return;
 		}
 	    }
 	}
@@ -1822,11 +1992,17 @@ static void idio_command_launch_job (IDIO job, int foreground)
 	if (infile != job_stdin) {
 	    if (close (infile) < 0) {
 		idio_error_system_errno ("close", IDIO_LIST3 (idio_C_int (infile), proc, job), IDIO_C_LOCATION ("idio_command_launch_job"));
+
+		/* notreached */
+		return;
 	    }
 	}
 	if (outfile != job_stdout) {
 	    if (close (outfile) < 0) {
 		idio_error_system_errno ("close", IDIO_LIST3 (idio_C_int (outfile), proc, job), IDIO_C_LOCATION ("idio_command_launch_job"));
+
+		/* notreached */
+		return;
 	    }
 	}
 
@@ -1852,6 +2028,8 @@ static IDIO idio_command_launch_1proc_job (IDIO job, int foreground, char **argv
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("job", job, IDIO_C_LOCATION ("idio_command_launch_1proc_job"));
+
+	return idio_S_notreached;
     }
 
     IDIO procs = idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PROCS);
@@ -1886,11 +2064,15 @@ static IDIO idio_command_launch_1proc_job (IDIO job, int foreground, char **argv
 	int pgrp_pipe[2];
 	if (pipe (pgrp_pipe) < 0) {
 	    idio_error_system_errno ("pipe", idio_S_nil, IDIO_C_LOCATION ("idio_command_launch_1proc_job"));
+
+	    return idio_S_notreached;
 	}
 
 	pid_t pid = fork ();
 	if (pid < 0) {
 	    idio_error_system_errno ("fork", IDIO_LIST2 (proc, job), IDIO_C_LOCATION ("idio_command_launch_1proc_job"));
+
+	    return idio_S_notreached;
 	} else if (0 == pid) {
 	    idio_command_prep_process (job_pgid,
 				       job_stdin,
@@ -1902,6 +2084,8 @@ static IDIO idio_command_launch_1proc_job (IDIO job, int foreground, char **argv
 
 	    if (close (pgrp_pipe[1]) < 0) {
 		idio_error_system_errno ("close", IDIO_LIST1 (idio_fixnum (pgrp_pipe[1])), IDIO_C_LOCATION ("idio_command_launch_1proc_job"));
+
+		return idio_S_notreached;
 	    }
 
 	    /*
@@ -1911,12 +2095,16 @@ static IDIO idio_command_launch_1proc_job (IDIO job, int foreground, char **argv
 	    read (pgrp_pipe[0], buf, 1);
 	    if (close (pgrp_pipe[0]) < 0) {
 		idio_error_system_errno ("close", IDIO_LIST1 (idio_fixnum (pgrp_pipe[0])), IDIO_C_LOCATION ("idio_command_launch_1proc_job"));
+
+		return idio_S_notreached;
 	    }
 
 	    execve (argv[0], argv, envp);
 	    perror ("execv");
 	    idio_command_error_exec (argv, envp, IDIO_C_LOCATION ("idio_command_launch_1proc_job"));
-	    exit (1);
+
+	    exit (33);
+	    return idio_S_notreached;
 	} else {
 	    idio_struct_instance_set_direct (proc, IDIO_PROCESS_TYPE_PID, idio_C_int (pid));
 	    if (idio_command_interactive) {
@@ -1936,6 +2124,8 @@ static IDIO idio_command_launch_1proc_job (IDIO job, int foreground, char **argv
 						       job),
 					   errno,
 					   IDIO_C_LOCATION ("idio_command_launch_1proc_job"));
+
+			return idio_S_notreached;
 		    }
 		}
 	    }
@@ -1945,9 +2135,13 @@ static IDIO idio_command_launch_1proc_job (IDIO job, int foreground, char **argv
 	     */
 	    if (close (pgrp_pipe[0]) < 0) {
 		idio_error_system_errno ("close", IDIO_LIST1 (idio_fixnum (pgrp_pipe[0])), IDIO_C_LOCATION ("idio_command_launch_1proc_job"));
+
+		return idio_S_notreached;
 	    }
 	    if (close (pgrp_pipe[1]) < 0) {
 		idio_error_system_errno ("close", IDIO_LIST1 (idio_fixnum (pgrp_pipe[1])), IDIO_C_LOCATION ("idio_command_launch_1proc_job"));
+
+		return idio_S_notreached;
 	    }
 
 	    /*
@@ -1989,7 +2183,9 @@ static IDIO idio_command_launch_1proc_job (IDIO job, int foreground, char **argv
 	execve (argv[0], argv, envp);
 	perror ("execv");
 	idio_command_error_exec (argv, envp, IDIO_C_LOCATION ("idio_command_launch_1proc_job"));
+
 	exit (1);
+	return idio_S_notreached;
     }
 
     /*
@@ -1998,6 +2194,8 @@ static IDIO idio_command_launch_1proc_job (IDIO job, int foreground, char **argv
      *
      * notreached
      */
+    idio_error_C ("post-launch: cannot be here", idio_S_nil, IDIO_C_LOCATION ("idio_command_launch_1proc_job"));
+
     return idio_S_notreached;
 }
 
@@ -2014,6 +2212,8 @@ launch job `job`				\n\
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("job", job, IDIO_C_LOCATION ("%launch-job"));
+
+	return idio_S_notreached;
     }
 
     idio_debug ("%launch-job: %s\n", job);
@@ -2089,6 +2289,8 @@ IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
 
     if (idio_S_nil != last) {
 	idio_error_C ("last arg != nil", last, IDIO_C_LOCATION ("idio_command_invoke"));
+
+	return idio_S_notreached;
     }
 
     IDIO args = idio_array_to_list (IDIO_FRAME_ARGS (val));
@@ -2178,6 +2380,8 @@ IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
     if (idio_S_false != close_stdin) {
 	if (close (IDIO_C_TYPE_INT (close_stdin)) < 0) {
 	    idio_error_system_errno ("close", IDIO_LIST1 (close_stdin), IDIO_C_LOCATION ("idio_command_invoke"));
+
+	    return idio_S_notreached;
 	}
     }
 
@@ -2186,6 +2390,8 @@ IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
 
 	if (NULL == filep) {
 	    idio_error_system_errno ("fdopen", IDIO_LIST1 (job_stdout), IDIO_C_LOCATION ("idio_command_invoke"));
+
+	    return idio_S_notreached;
 	}
 
 	/*
@@ -2195,6 +2401,8 @@ IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
 	 */
 	if (fseek (filep, 0, SEEK_SET) < 0) {
 	    idio_error_system_errno ("fseek 0 SEEK_SET", IDIO_LIST1 (job_stdout), IDIO_C_LOCATION ("idio_command_invoke"));
+
+	    return idio_S_notreached;
 	}
 
 	int done = 0;
@@ -2218,6 +2426,8 @@ IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
 
 	if (NULL == filep) {
 	    idio_error_system_errno ("fdopen", IDIO_LIST1 (job_stderr), IDIO_C_LOCATION ("idio_command_invoke"));
+
+	    return idio_S_notreached;
 	}
 
 	/*
@@ -2227,6 +2437,8 @@ IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
 	 */
 	if (fseek (filep, 0, SEEK_SET) < 0) {
 	    idio_error_system_errno ("fseek 0 SEEK_SET", IDIO_LIST1 (job_stderr), IDIO_C_LOCATION ("idio_command_invoke"));
+
+	    return idio_S_notreached;
 	}
 
 	int done = 0;
@@ -2273,6 +2485,8 @@ exec `command` `args`				\n\
     char *pathname = idio_command_find_exe (command);
     if (NULL == pathname) {
 	idio_error_C ("command not found", IDIO_LIST2 (command, args), IDIO_C_LOCATION ("%exec"));
+
+	return idio_S_notreached;
     }
 
     char **argv = idio_command_argv (args);
@@ -2284,9 +2498,9 @@ exec `command` `args`				\n\
     execve (argv[0], argv, envp);
     perror ("execv");
     idio_command_error_exec (argv, envp, IDIO_C_LOCATION ("%exec"));
-    exit (1);
 
-    return idio_S_unspec;
+    exit (1);
+    return idio_S_notreached;
 }
 
 void idio_init_command ()
@@ -2321,6 +2535,9 @@ void idio_init_command ()
 
     if (sigaction (SIGCHLD, &nsa, &osa) < 0) {
 	idio_error_system_errno ("sigaction/SIGCHLD", idio_S_nil, IDIO_C_LOCATION ("idio_init_command"));
+
+	/* notreached */
+	return;
     }
 
     if (osa.sa_handler == SIG_IGN) {
@@ -2333,6 +2550,9 @@ void idio_init_command ()
 
     if (idio_command_interactive < 0) {
 	idio_error_system_errno ("isatty", IDIO_LIST1 (idio_C_int (idio_command_terminal)), IDIO_C_LOCATION ("idio_init_command"));
+
+	/* notreached */
+	return;
     }
 
     idio_module_set_symbol_value (idio_symbols_C_intern ("%idio-terminal"),
@@ -2354,6 +2574,9 @@ void idio_init_command ()
 	while (tcgetpgrp (idio_command_terminal) != (idio_command_pgid = getpgrp ())) {
 	    if (kill (-idio_command_pgid, SIGTTIN) < 0) {
 		idio_error_system_errno ("kill SIGTTIN", IDIO_LIST1 (idio_C_int (-idio_command_pgid)), IDIO_C_LOCATION ("idio_init_command"));
+
+		/* notreached */
+		return;
 	    }
 	}
 
@@ -2378,6 +2601,9 @@ void idio_init_command ()
 	idio_command_pgid = idio_command_pid;
 	if (setpgid (idio_command_pgid, idio_command_pgid) < 0) {
 	    idio_error_system_errno ("setpgid", IDIO_LIST1 (idio_C_int (idio_command_pgid)), IDIO_C_LOCATION ("idio_init_command"));
+
+	    /* notreached */
+	    return;
 	}
 
 	idio_module_set_symbol_value (idio_symbols_C_intern ("%idio-pgid"),
@@ -2393,6 +2619,9 @@ void idio_init_command ()
 					   idio_C_int (idio_command_pgid)),
 			       errno,
 			       IDIO_C_LOCATION ("idio_init_command"));
+
+	    /* notreached */
+	    return;
 	}
 
 	/*
@@ -2401,6 +2630,9 @@ void idio_init_command ()
 	struct termios *tcattrsp = IDIO_C_TYPE_POINTER_P (idio_command_tcattrs);
 	if (tcgetattr (idio_command_terminal, tcattrsp) < 0) {
 	    idio_error_system_errno ("tcgetattr", IDIO_LIST1 (idio_C_int (idio_command_terminal)), IDIO_C_LOCATION ("idio_init_command"));
+
+	    /* notreached */
+	    return;
 	}
     }
 

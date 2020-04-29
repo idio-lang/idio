@@ -299,7 +299,6 @@ IDIO idio_gensym (char *pref_prefix)
 
     idio_error_printf (IDIO_C_LOCATION ("gensym"), "looped!");
 
-    /* notreached */
     return idio_S_notreached;
 }
 
@@ -321,7 +320,6 @@ IDIO_DEFINE_PRIMITIVE0V ("gensym", gensym, (IDIO args))
 	} else {
 	    idio_error_param_type ("string|symbol", iprefix, IDIO_C_LOCATION ("gensym"));
 
-	    /* notreached */
 	    return idio_S_notreached;
 	}
     }
@@ -380,7 +378,6 @@ IDIO idio_properties_get (IDIO o, IDIO args)
     if (idio_S_nil == o) {
 	idio_property_error_nil_object ("object is #n", IDIO_C_LOCATION ("idio_properties_get"));
 
-	/* notreached */
 	return idio_S_notreached;
     }
 
@@ -392,7 +389,6 @@ IDIO idio_properties_get (IDIO o, IDIO args)
 	} else {
 	    idio_properties_error_not_found ("no properties ever existed", o, IDIO_C_LOCATION ("idio_properties_get"));
 
-	    /* notreached */
 	    return idio_S_notreached;
 	}
     }
@@ -418,6 +414,7 @@ void idio_properties_set (IDIO o, IDIO properties)
 	idio_property_error_nil_object ("object is #n", IDIO_C_LOCATION ("idio_properties_set"));
 
 	/* notreached */
+	return;
     }
 
     idio_hash_set (idio_properties_hash, o, properties);
@@ -431,9 +428,26 @@ void idio_properties_create (IDIO o)
 	idio_property_error_nil_object ("object is #n", IDIO_C_LOCATION ("idio_properties_create"));
 
 	/* notreached */
+	return;
     }
 
     idio_hash_set (idio_properties_hash, o, idio_hash_make_keyword_table (IDIO_LIST1 (idio_fixnum (4))));
+}
+
+void idio_properties_delete (IDIO o)
+{
+    IDIO_ASSERT (o);
+
+    if (idio_S_nil == o) {
+	idio_property_error_nil_object ("object is #n", IDIO_C_LOCATION ("idio_properties_delete"));
+
+	/* notreached */
+	return;
+    }
+
+    /* idio_debug ("ipd: deleting %s\n", o); */
+    /* idio_debug ("with p=%s\n", idio_properties_get (o, IDIO_LIST1 (idio_S_false))); */
+    idio_hash_delete (idio_properties_hash, o);
 }
 
 IDIO_DEFINE_PRIMITIVE2 ("%set-properties!", properties_set, (IDIO o, IDIO properties))
@@ -457,7 +471,6 @@ IDIO idio_property_get (IDIO o, IDIO property, IDIO args)
     if (idio_S_nil == o) {
 	idio_property_error_nil_object ("object is #n", IDIO_C_LOCATION ("idio_property_get"));
 
-	/* notreached */
 	return idio_S_notreached;
     }
 
@@ -469,7 +482,6 @@ IDIO idio_property_get (IDIO o, IDIO property, IDIO args)
 	} else {
 	    idio_properties_error_not_found ("no properties ever existed", o, IDIO_C_LOCATION ("idio_property_get"));
 
-	    /* notreached */
 	    return idio_S_notreached;
 	}
     }
@@ -480,7 +492,6 @@ IDIO idio_property_get (IDIO o, IDIO property, IDIO args)
 	} else {
 	    idio_property_error_no_properties ("properties is #n", IDIO_C_LOCATION ("idio_property_get"));
 
-	    /* notreached */
 	    return idio_S_notreached;
 	}
     }
@@ -493,7 +504,6 @@ IDIO idio_property_get (IDIO o, IDIO property, IDIO args)
 	} else {
 	    idio_property_error_key_not_found (property, IDIO_C_LOCATION ("idio_property_get"));
 
-	    /* notreached */
 	    return idio_S_notreached;
 	}
     }
@@ -638,11 +648,11 @@ void idio_init_symbol ()
      * need it up and running before primitives and closures get a
      * look in.
      *
-     * weak keys otherwise the existence in this hash prevents it
-     * being freed!
+     * weak keys otherwise the existence of any object in this hash
+     * prevents it being freed!
      */
     idio_properties_hash = IDIO_HASH_EQP (256);
-    /* IDIO_HASH_FLAGS (idio_properties_hash) |= IDIO_HASH_FLAG_WEAK_KEYS;  */
+    IDIO_HASH_FLAGS (idio_properties_hash) |= IDIO_HASH_FLAG_WEAK_KEYS;
     idio_gc_protect (idio_properties_hash);
 }
 

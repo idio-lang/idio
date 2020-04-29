@@ -130,6 +130,8 @@ return the setter of `p`			\n\
     if (!(idio_isa_primitive (p) ||
 	  idio_isa_closure (p))) {
 	idio_error_param_type ("primitive|closure", p, IDIO_C_LOCATION ("setter"));
+
+	return idio_S_notreached;
     }
 
     IDIO setter = idio_property_get (p, idio_KW_setter, IDIO_LIST1 (idio_S_false));

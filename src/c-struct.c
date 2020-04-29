@@ -256,7 +256,6 @@ IDIO idio_C_fields_array (IDIO C_typedefs)
 	} else {
 	    idio_error_C ("unexpected C typedef", IDIO_LIST2 (C_typedef, base_C_typedef), IDIO_C_LOCATION ("idio_C_fields_array"));
 
-	    /* notreached */
 	    return idio_S_notreached;
 	}
 

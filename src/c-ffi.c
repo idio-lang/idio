@@ -60,6 +60,9 @@ ffi_type *idio_C_FFI_type (IDIO field_data)
 	    char em[BUFSIZ];
 	    sprintf (em, "unexpected C_FFI type %ju: %s", IDIO_C_TYPE_UINT (type), idio_type2string (type));
 	    idio_error_printf (IDIO_C_LOCATION ("idio_C_FFI_type"), em);
+
+	    /* notreached */
+	    return NULL;
 	}
 	break;
     }
@@ -129,7 +132,8 @@ IDIO idio_C_FFI (IDIO symbol, IDIO arg_types, IDIO result_type)
 	char em[BUFSIZ];
 	sprintf (em, "ffi_prep_cif failed");
 	idio_error_printf (IDIO_C_LOCATION ("idio_C_FFI"), em);
-	return idio_S_nil;
+
+	return idio_S_notreached;
     }
 
     return o;

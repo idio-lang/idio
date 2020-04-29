@@ -288,7 +288,6 @@ IDIO_DEFINE_PRIMITIVE1V ("open-file-from-fd", open_file_handle_from_fd, (IDIO if
 	    if (blen >= PATH_MAX) {
 		idio_error_C ("name too long", iname, IDIO_C_LOCATION ("open-file-from-fd"));
 
-		/* notreached */
 		return idio_S_notreached;
 	    }
 
@@ -297,6 +296,8 @@ IDIO_DEFINE_PRIMITIVE1V ("open-file-from-fd", open_file_handle_from_fd, (IDIO if
 	    args = IDIO_PAIR_T (args);
 	} else {
 	    idio_error_param_type ("string", iname, IDIO_C_LOCATION ("open-file-from-fd"));
+
+	    return idio_S_notreached;
 	}
     }
 
@@ -311,12 +312,16 @@ IDIO_DEFINE_PRIMITIVE1V ("open-file-from-fd", open_file_handle_from_fd, (IDIO if
 	    args = IDIO_PAIR_T (args);
 	} else {
 	    idio_error_param_type ("string", imode, IDIO_C_LOCATION ("open-file-from-fd"));
+
+	    return idio_S_notreached;
 	}
     }
 
     FILE *filep = fdopen (fd, mode);
     if (NULL == filep) {
 	idio_error_system_errno ("fdopen", IDIO_LIST2 (idio_string_C (name), idio_string_C (mode)), IDIO_C_LOCATION ("open-file-from-fd"));
+
+	return idio_S_notreached;
     }
 
     int mflag = IDIO_HANDLE_FLAG_READ;
@@ -351,7 +356,6 @@ IDIO_DEFINE_PRIMITIVE1V ("open-input-file-from-fd", open_input_file_handle_from_
 	    if (blen >= PATH_MAX) {
 		idio_error_C ("name too long", iname, IDIO_C_LOCATION ("open-input-file-from-fd"));
 
-		/* notreached */
 		return idio_S_notreached;
 	    }
 
@@ -360,6 +364,8 @@ IDIO_DEFINE_PRIMITIVE1V ("open-input-file-from-fd", open_input_file_handle_from_
 	    args = IDIO_PAIR_T (args);
 	} else {
 	    idio_error_param_type ("string", iname, IDIO_C_LOCATION ("open-input-file-from-fd"));
+
+	    return idio_S_notreached;
 	}
     }
 
@@ -374,12 +380,16 @@ IDIO_DEFINE_PRIMITIVE1V ("open-input-file-from-fd", open_input_file_handle_from_
 	    args = IDIO_PAIR_T (args);
 	} else {
 	    idio_error_param_type ("string", imode, IDIO_C_LOCATION ("open-input-file-from-fd"));
+
+	    return idio_S_notreached;
 	}
     }
 
     FILE *filep = fdopen (fd, mode);
     if (NULL == filep) {
 	idio_error_system_errno ("fdopen", IDIO_LIST2 (idio_string_C (name), idio_string_C (mode)), IDIO_C_LOCATION ("open-input-file-from-fd"));
+
+	return idio_S_notreached;
     }
 
     int mflag = IDIO_HANDLE_FLAG_READ;
@@ -414,7 +424,6 @@ IDIO_DEFINE_PRIMITIVE1V ("open-output-file-from-fd", open_output_file_handle_fro
 	    if (blen >= PATH_MAX) {
 		idio_error_C ("name too long", iname, IDIO_C_LOCATION ("open-output-file-from-fd"));
 
-		/* notreached */
 		return idio_S_notreached;
 	    }
 
@@ -423,6 +432,8 @@ IDIO_DEFINE_PRIMITIVE1V ("open-output-file-from-fd", open_output_file_handle_fro
 	    args = IDIO_PAIR_T (args);
 	} else {
 	    idio_error_param_type ("string", iname, IDIO_C_LOCATION ("open-output-file-from-fd"));
+
+	    return idio_S_notreached;
 	}
     }
 
@@ -437,12 +448,16 @@ IDIO_DEFINE_PRIMITIVE1V ("open-output-file-from-fd", open_output_file_handle_fro
 	    args = IDIO_PAIR_T (args);
 	} else {
 	    idio_error_param_type ("string", imode, IDIO_C_LOCATION ("open-output-file-from-fd"));
+
+	    return idio_S_notreached;
 	}
     }
 
     FILE *filep = fdopen (fd, mode);
     if (NULL == filep) {
 	idio_error_system_errno ("fdopen", IDIO_LIST2 (idio_string_C (name), idio_string_C (mode)), IDIO_C_LOCATION ("open-output-file-from-fd"));
+
+	return idio_S_notreached;
     }
 
     int mflag = IDIO_HANDLE_FLAG_WRITE;
@@ -480,6 +495,8 @@ IDIO idio_open_file_handle_C (char *name, char *mode)
 	break;
     default:
 	idio_error_printf (IDIO_C_LOCATION ("idio_open_file_handle_C"), "unexpected mode", mode);
+
+	return idio_S_notreached;
 	break;
     }
 
@@ -503,20 +520,32 @@ IDIO idio_open_file_handle_C (char *name, char *mode)
 	    switch (errno) {
 	    case EMFILE:	/* process max */
 	    case ENFILE:	/* system max */
-		idio_gc_collect ();
+		idio_gc_collect ("idio_open_file_handle_C");
 		break;
 	    case EACCES:
 		idio_file_handle_error_file_protection_C (name, IDIO_C_LOCATION ("idio_open_file_handle_C"));
+
+		return idio_S_notreached;
 	    case EEXIST:
 		idio_file_handle_error_filename_already_exists_C (name, IDIO_C_LOCATION ("idio_open_file_handle_C"));
+
+		return idio_S_notreached;
 	    case ENAMETOOLONG:
 		idio_file_handle_error_malformed_filename_C (name, IDIO_C_LOCATION ("idio_open_file_handle_C"));
+
+		return idio_S_notreached;
 	    case ENOENT:
 		idio_file_handle_error_filename_not_found_C (name, IDIO_C_LOCATION ("idio_open_file_handle_C"));
+
+		return idio_S_notreached;
 	    case ENOTDIR:
 		idio_file_handle_error_filename_C (name, IDIO_C_LOCATION ("idio_open_file_handle_C"));
+
+		return idio_S_notreached;
 	    default:
 		idio_error_system_errno ("fopen", IDIO_LIST1 (idio_string_C (name)), IDIO_C_LOCATION ("idio_open_file_handle_C"));
+
+		return idio_S_notreached;
 	    }
 	} else {
 	    break;
@@ -525,6 +554,8 @@ IDIO idio_open_file_handle_C (char *name, char *mode)
 
     if (NULL == filep) {
 	idio_error_system_errno ("fopen (final)", IDIO_LIST2 (idio_string_C (name), idio_string_C (mode)), IDIO_C_LOCATION ("idio_open_file_handle_C"));
+
+	return idio_S_notreached;
     }
 
     int s_flags = IDIO_FILE_HANDLE_FLAG_NONE;
@@ -543,6 +574,8 @@ IDIO idio_open_file_handle_C (char *name, char *mode)
 	int fd = fileno (filep);
 	if (fcntl (fd, F_SETFD, FD_CLOEXEC) == -1) {
 	    idio_error_system_errno ("fcntl F_SETFD FD_CLOEXEC", IDIO_LIST3 (idio_string_C (name), idio_string_C (mode), idio_C_int (fd)), IDIO_C_LOCATION ("idio_open_file_handle_C"));
+
+	    return idio_S_notreached;
 	}
 #endif
     }
@@ -564,6 +597,8 @@ IDIO_DEFINE_PRIMITIVE2 ("open-file", open_file_handle, (IDIO name, IDIO mode))
 	break;
     default:
 	idio_error_param_type ("string", name, IDIO_C_LOCATION ("open-file"));
+
+	return idio_S_notreached;
 	break;
     }
 
@@ -576,6 +611,8 @@ IDIO_DEFINE_PRIMITIVE2 ("open-file", open_file_handle, (IDIO name, IDIO mode))
 	break;
     default:
 	idio_error_param_type ("string", mode, IDIO_C_LOCATION ("open-file"));
+
+	return idio_S_notreached;
 	break;
     }
 
@@ -600,6 +637,8 @@ IDIO_DEFINE_PRIMITIVE1 ("open-input-file", open_input_file_handle, (IDIO name))
 	break;
     default:
 	idio_error_param_type ("string", name, IDIO_C_LOCATION ("open-input-file"));
+
+	return idio_S_notreached;
 	break;
     }
 
@@ -623,6 +662,8 @@ IDIO_DEFINE_PRIMITIVE1 ("open-output-file", open_output_file_handle, (IDIO name)
 	break;
     default:
 	idio_error_param_type ("string", name, IDIO_C_LOCATION ("open-output-file"));
+
+	return idio_S_notreached;
 	break;
     }
 
@@ -651,7 +692,8 @@ static IDIO idio_open_std_file_handle (FILE *filep)
 	name = "*stderr*";
     } else {
 	idio_error_printf (IDIO_C_LOCATION ("idio_open_std_file_handle"), "unexpected standard IO stream");
-	return idio_S_unspec;
+
+	return idio_S_notreached;
     }
 
     return idio_open_file_handle (name, filep, mflag, IDIO_FILE_HANDLE_FLAG_STDIO);
@@ -844,6 +886,9 @@ int idio_getc_file_handle (IDIO fh)
 
     if (! idio_input_file_handlep (fh)) {
 	idio_handle_error_read (fh, IDIO_C_LOCATION ("idio_getc_file_handle"));
+
+	/* notreached */
+	return EOF;
     }
 
     for (;;) {
@@ -884,6 +929,8 @@ int idio_close_file_handle (IDIO fh)
 
     if (IDIO_HANDLE_FLAGS (fh) & IDIO_HANDLE_FLAG_CLOSED) {
 	idio_handle_error_closed (fh, IDIO_C_LOCATION ("idio_close_file_handle"));
+
+	/* notreached */
 	errno = EBADF;
 	return EOF;
     } else {
@@ -903,6 +950,9 @@ int idio_putc_file_handle (IDIO fh, int c)
 
     if (! idio_output_file_handlep (fh)) {
 	idio_handle_error_write (fh, IDIO_C_LOCATION ("idio_putc_file_handle"));
+
+	/* notreached */
+	return EOF;
     }
 
     for (;;) {
@@ -934,6 +984,9 @@ size_t idio_puts_file_handle (IDIO fh, char *s, size_t slen)
 
     if (! idio_output_file_handlep (fh)) {
 	idio_handle_error_write (fh, IDIO_C_LOCATION ("idio_puts_file_handle"));
+
+	/* notreached */
+	return EOF;
     }
 
     size_t r;
@@ -950,6 +1003,9 @@ size_t idio_puts_file_handle (IDIO fh, char *s, size_t slen)
 	r = fwrite (s, 1, slen, IDIO_FILE_HANDLE_FILEP (fh));
 	if (r < slen) {
 	    idio_error_printf (IDIO_C_LOCATION ("idio_puts_file_handle"), "fwrite (%s) => %zd / %zd", IDIO_HANDLE_NAME (fh), r, slen);
+
+	    /* notreached */
+	    return EOF;
 	}
 
 	IDIO_FILE_HANDLE_PTR (fh) = IDIO_FILE_HANDLE_BUF (fh);
@@ -1044,6 +1100,8 @@ void idio_print_file_handle (IDIO fh, IDIO o)
 
     if (! idio_output_file_handlep (fh)) {
 	idio_handle_error_write (fh, IDIO_C_LOCATION ("idio_print_file_handle"));
+
+	/* notreached */
     }
 
     char *os = idio_display_string (o);
@@ -1064,6 +1122,8 @@ IDIO_DEFINE_PRIMITIVE1 ("close-file-handle-on-exec", close_file_handle_on_exec, 
 
     if (-1 == r) {
 	idio_error_system_errno ("fcntl F_SETFD FD_CLOEXEC", IDIO_LIST1 (fh), IDIO_C_LOCATION ("close-file-handle-on-exec"));
+
+	return idio_S_notreached;
     }
 
     IDIO_FILE_HANDLE_FLAGS (fh) |= IDIO_FILE_HANDLE_FLAG_CLOEXEC;
@@ -1431,6 +1491,9 @@ char *idio_libfile_find_C (char *file)
     char cwd[PATH_MAX];
     if (getcwd (cwd, PATH_MAX) == NULL) {
 	idio_error_system_errno ("getcwd", idio_S_nil, IDIO_C_LOCATION ("idio_command_find_exe_C"));
+
+	/* notreached */
+	return NULL;
     }
     size_t cwdlen = strlen (cwd);
 
@@ -1448,6 +1511,9 @@ char *idio_libfile_find_C (char *file)
 	if (NULL == colon) {
 	    if ((idioliblen + 1 + filelen + max_ext_len + 1) >= PATH_MAX) {
 		idio_error_system ("dir+file.idio libname length", IDIO_LIST2 (IDIOLIB, idio_string_C (file)), ENAMETOOLONG, IDIO_C_LOCATION ("idio_libfile_find_C"));
+
+		/* notreached */
+		return NULL;
 	    }
 
 	    memcpy (libname, idiolib, idioliblen);
@@ -1464,12 +1530,18 @@ char *idio_libfile_find_C (char *file)
 		 */
 		if ((cwdlen + 1 + filelen + max_ext_len + 1) >= PATH_MAX) {
 		    idio_error_system ("cwd+file.idio libname length", IDIO_LIST2 (IDIOLIB, idio_string_C (file)), ENAMETOOLONG, IDIO_C_LOCATION ("idio_libfile_find_C"));
+
+		    /* notreached */
+		    return NULL;
 		}
 
 		strcpy (libname, cwd);
 	    } else {
 		if ((dirlen + 1 + filelen + max_ext_len + 1) >= PATH_MAX) {
 		    idio_error_system ("dir+file.idio libname length", IDIO_LIST2 (IDIOLIB, idio_string_C (file)), ENAMETOOLONG, IDIO_C_LOCATION ("idio_libfile_find_C"));
+
+		    /* notreached */
+		    return NULL;
 		}
 
 		memcpy (libname, idiolib, dirlen);
@@ -1694,7 +1766,8 @@ IDIO idio_load_file_name_aio (IDIO filename, IDIO cs)
 
     if (! idio_isa_string (filename)) {
 	idio_error_param_type ("string", filename, IDIO_C_LOCATION ("idio_load_file_name"));
-	return idio_S_unspec;
+
+	return idio_S_notreached;
     }
     IDIO_TYPE_ASSERT (array, cs);
 
@@ -1707,7 +1780,6 @@ IDIO idio_load_file_name_aio (IDIO filename, IDIO cs)
     if (NULL == libfile) {
 	idio_file_handle_error_filename_not_found (filename, IDIO_C_LOCATION ("idio_load_file_name"));
 
-	/* notreached */
 	return idio_S_notreached;
     }
 
@@ -1732,7 +1804,8 @@ IDIO idio_load_file_name_aio (IDIO filename, IDIO cs)
 
 		if ((l + strlen (fe->ext)) >= PATH_MAX) {
 		    idio_file_handle_error_malformed_filename (filename, IDIO_C_LOCATION ("idio_load_file_name"));
-		    return idio_S_unspec;
+
+		    return idio_S_notreached;
 		}
 
 		strncpy (dot, fe->ext, PATH_MAX - l - 1);
@@ -1777,7 +1850,8 @@ IDIO idio_load_file_name_aio (IDIO filename, IDIO cs)
     }
 
     idio_file_handle_error_filename_not_found (filename, IDIO_C_LOCATION ("idio_load_file_name"));
-    return idio_S_unspec;
+
+    return idio_S_notreached;
 }
 
 IDIO_DEFINE_PRIMITIVE1 ("load", load, (IDIO filename))
@@ -1838,7 +1912,8 @@ IDIO_DEFINE_PRIMITIVE1 ("delete-file", delete_file, (IDIO filename))
     if (remove (Cfn)) {
 	free (Cfn);
 	idio_file_handle_error_filename_delete (filename, IDIO_C_LOCATION ("delete-file"));
-	return idio_S_unspec;
+
+	return idio_S_notreached;
     } else {
 	r = idio_S_true;
     }

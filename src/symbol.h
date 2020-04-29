@@ -119,6 +119,7 @@ IDIO idio_gensym (char *pref_prefix);
 IDIO idio_properties_get (IDIO o, IDIO args);
 void idio_properties_set (IDIO o, IDIO properties);
 void idio_properties_create (IDIO o);
+void idio_properties_delete (IDIO o);
 IDIO idio_property_get (IDIO o, IDIO property, IDIO args);
 void idio_property_set (IDIO o, IDIO property, IDIO value);
 

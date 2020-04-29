@@ -83,7 +83,6 @@ IDIO idio_fixnum (intptr_t i)
 	idio_fixnum_error_conversion (em, idio_S_nil, IDIO_C_LOCATION ("idio_fixnum"));
     }
 
-    /* notreached */
     return idio_S_notreached;
 }
 
@@ -102,7 +101,6 @@ IDIO idio_fixnum_C (char *str, int base)
 	sprintf (em, "idio_fixnum_C: strtoll (%s) = %lld", str, val);
 	idio_fixnum_error_conversion (em, idio_S_nil, IDIO_C_LOCATION ("idio_fixnum_C"));
 
-	/* notreached */
 	return idio_S_notreached;
     }
 
@@ -111,7 +109,6 @@ IDIO idio_fixnum_C (char *str, int base)
 	sprintf (em, "idio_fixnum_C: strtoll (%s): No digits?", str);
 	idio_fixnum_error_conversion (em, idio_S_nil, IDIO_C_LOCATION ("idio_fixnum_C"));
 
-	/* notreached */
 	return idio_S_notreached;
     }
 
@@ -122,7 +119,6 @@ IDIO idio_fixnum_C (char *str, int base)
 	sprintf (em, "idio_fixnum_C: strtoll (%s) = %lld", str, val);
 	idio_fixnum_error_conversion (em, idio_S_nil, IDIO_C_LOCATION ("idio_fixnum_C"));
 
-	/* notreached */
 	return idio_S_notreached;
     }
 }

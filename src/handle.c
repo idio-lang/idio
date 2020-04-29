@@ -213,6 +213,9 @@ int idio_readyp_handle (IDIO h)
 
     if (! idio_isa_handle (h)) {
 	idio_handle_error_bad (h, IDIO_C_LOCATION ("idio_readyp_handle"));
+
+	/* notreached */
+	return 0;
     }
 
     if (EOF != IDIO_HANDLE_LC (h)) {
@@ -243,6 +246,9 @@ int idio_getc_handle (IDIO h)
 
     if (! idio_isa_handle (h)) {
 	idio_handle_error_bad (h, IDIO_C_LOCATION ("idio_getc_handle"));
+
+	/* notreached */
+	return EOF;
     }
 
     int r = IDIO_HANDLE_LC (h);
@@ -274,6 +280,9 @@ int idio_ungetc_handle (IDIO h, int c)
 
     if (! idio_isa_handle (h)) {
 	idio_handle_error_bad (h, IDIO_C_LOCATION ("idio_ungetc_handle"));
+
+	/* notreached */
+	return EOF;
     }
 
     int r = IDIO_HANDLE_LC (h);
@@ -307,6 +316,9 @@ int idio_peek_handle (IDIO h)
 
     if (! idio_isa_handle (h)) {
 	idio_handle_error_bad (h, IDIO_C_LOCATION ("idio_peek_handle"));
+
+	/* notreached */
+	return EOF;
     }
 
     int c = idio_getc_handle (h);
@@ -332,6 +344,9 @@ int idio_eofp_handle (IDIO h)
 
     if (! idio_isa_handle (h)) {
 	idio_handle_error_bad (h, IDIO_C_LOCATION ("idio_eofp_handle"));
+
+	/* notreached */
+	return EOF;
     }
 
     return IDIO_HANDLE_M_EOFP (h) (h);
@@ -358,6 +373,9 @@ int idio_close_handle (IDIO h)
 
     if (! idio_isa_handle (h)) {
 	idio_handle_error_bad (h, IDIO_C_LOCATION ("idio_close_handle"));
+
+	/* notreached */
+	return 0;
     }
 
     int r = IDIO_HANDLE_M_CLOSE (h) (h);
@@ -372,6 +390,9 @@ int idio_putc_handle (IDIO h, int c)
 
     if (! idio_isa_handle (h)) {
 	idio_handle_error_bad (h, IDIO_C_LOCATION ("idio_putc_handle"));
+
+	/* notreached */
+	return EOF;
     }
 
     int n = IDIO_HANDLE_M_PUTC (h) (h, c);
@@ -394,6 +415,9 @@ size_t idio_puts_handle (IDIO h, char *s, size_t slen)
 
     if (! idio_isa_handle (h)) {
 	idio_handle_error_bad (h, IDIO_C_LOCATION ("idio_puts_handle"));
+
+	/* notreached */
+	return 0;
     }
 
     size_t n = IDIO_HANDLE_M_PUTS (h) (h, s, slen);
@@ -411,6 +435,9 @@ int idio_flush_handle (IDIO h)
 
     if (! idio_isa_handle (h)) {
 	idio_handle_error_bad (h, IDIO_C_LOCATION ("idio_flush_handle"));
+
+	/* notreached */
+	return -1;
     }
 
     return IDIO_HANDLE_M_FLUSH (h) (h);
@@ -433,6 +460,9 @@ off_t idio_seek_handle (IDIO h, off_t offset, int whence)
 
     if (! idio_isa_handle (h)) {
 	idio_handle_error_bad (h, IDIO_C_LOCATION ("idio_seek_handle"));
+
+	/* notreached */
+	return -1;
     }
 
     /* line number is invalidated unless we go to pos 0 */
@@ -477,7 +507,8 @@ IDIO_DEFINE_PRIMITIVE2V ("seek-handle", seek_handle, (IDIO h, IDIO pos, IDIO arg
 	    whence = SEEK_CUR;
 	} else {
 	    idio_error_printf (IDIO_C_LOCATION ("seek-handle"), "bad seek request: %s", IDIO_SYMBOL_S (w));
-	    return idio_S_unspec;
+
+	    return idio_S_notreached;
 	}
     } else {
 	whence = SEEK_SET;
@@ -522,7 +553,6 @@ IDIO_DEFINE_PRIMITIVE2V ("seek-handle", seek_handle, (IDIO h, IDIO pos, IDIO arg
 	}
 	idio_error_printf (IDIO_C_LOCATION ("seek-handle"), "cannot seek (%" PRId64 ", %s)", offset, ws);
 
-	/* notreached */
 	return idio_S_notreached;
     }
 
@@ -539,6 +569,9 @@ void idio_handle_rewind (IDIO h)
 
     if (! idio_isa_handle (h)) {
 	idio_handle_error_bad (h, IDIO_C_LOCATION ("idio_handle_rewind"));
+
+	/* notreached */
+	return;
     }
 
     idio_seek_handle (h, 0, SEEK_SET);
@@ -561,6 +594,9 @@ off_t idio_handle_tell (IDIO h)
 
     if (! idio_isa_handle (h)) {
 	idio_handle_error_bad (h, IDIO_C_LOCATION ("idio_handle_tell"));
+
+	/* notreached */
+	return -1;
     }
 
     return IDIO_HANDLE_POS (h);
@@ -573,6 +609,9 @@ void idio_print_handle (IDIO h, IDIO o)
 
     if (! idio_isa_handle (h)) {
 	idio_handle_error_bad (h, IDIO_C_LOCATION ("idio_print_handle"));
+
+	/* notreached */
+	return;
     }
 
     return IDIO_HANDLE_M_PRINT (h) (h, o);
@@ -589,6 +628,9 @@ int idio_print_handlef (IDIO h, char *format, ...)
     va_start (fmt_args, format);
     if (-1 == vasprintf (&buf, format, fmt_args)) {
 	idio_error_alloc ("vasprintf");
+
+	/* notreached */
+	return 0;
     }
     va_end (fmt_args);
 
@@ -685,6 +727,8 @@ IDIO_DEFINE_PRIMITIVE1 ("close-output-handle", close_output_handle, (IDIO h))
     if (! (idio_isa_handle (h) &&
 	   IDIO_OUTPUTP_HANDLE (h))) {
 	idio_handle_error_bad (h, IDIO_C_LOCATION ("close-output-handle"));
+
+	return idio_S_notreached;
     }
 
     IDIO_HANDLE_M_CLOSE (h) (h);
@@ -698,6 +742,8 @@ IDIO_DEFINE_PRIMITIVE1 ("closed-handle?", closedp_handle, (IDIO h))
 
     if (! idio_isa_handle (h)) {
 	idio_handle_error_bad (h, IDIO_C_LOCATION ("closed-handle?"));
+
+	return idio_S_notreached;
     }
 
     IDIO r = idio_S_false;
@@ -731,6 +777,8 @@ IDIO idio_handle_or_current (IDIO h, unsigned mode)
 	} else {
 	    if (! IDIO_INPUTP_HANDLE (h)) {
 		idio_handle_error_read (h, IDIO_C_LOCATION ("idio_handle_or_current"));
+
+		return idio_S_notreached;
 	    } else {
 		return h;
 	    }
@@ -742,6 +790,8 @@ IDIO idio_handle_or_current (IDIO h, unsigned mode)
 	} else {
 	    if (! IDIO_OUTPUTP_HANDLE (h)) {
 		idio_handle_error_write (h, IDIO_C_LOCATION ("idio_handle_or_current"));
+
+		return idio_S_notreached;
 	    } else {
 		return h;
 	    }
@@ -749,10 +799,11 @@ IDIO idio_handle_or_current (IDIO h, unsigned mode)
 	break;
     default:
 	idio_error_printf (IDIO_C_LOCATION ("idio_handle_or_current"), "unexpected mode %d", mode);
+
+	return idio_S_notreached;
 	break;
     }
 
-    /* notreached */
     return idio_S_notreached;
 }
 
