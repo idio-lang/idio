@@ -9,7 +9,7 @@ bad-expr := "display* \"This is a bad-expr for load-handle: (unterminated string
 
 ish := open-input-string bad-expr
 
-display* "NOTICE: raising NON-CONT condition; this will be picked up by load-handle"
+display* "NOTICE: load-handle.idio: raising NON-CONT condition; this will be picked up by load-handle"
 load-handle ish
 
 cont-expr := "(false)"

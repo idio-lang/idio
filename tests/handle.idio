@@ -57,19 +57,19 @@ define (read-handle ih) {
 }
 
 define (multi-line-read-handle ih) {
-  test (handle-current-line ih) 1
+  test (handle-line ih) 1
   r-ih := read ih
-  test (handle-current-line ih) 2
+  test (handle-line ih) 2
 
   seek-handle ih 2
-  test (handle-current-line ih) 0
+  test (handle-line ih) 0
   r-ih = read ih
-  test (handle-current-line ih) 0
+  test (handle-line ih) 0
 
   seek-handle ih 0
-  test (handle-current-line ih) 1
+  test (handle-line ih) 1
   r-ih = read ih
-  test (handle-current-line ih) 2
+  test (handle-line ih) 2
 }
 
 ;; generic write to a string

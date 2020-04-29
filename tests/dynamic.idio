@@ -27,7 +27,7 @@ dynamic0 := Tests
 ;; have functions ready to test future dynamic variables
 define (test-dvar-x1 exp) {
   ;; test a regular local
-  test exp x
+  test exp lex-x
 
   ;; test the dynamic variable
   test (dynamic dvar-x1) exp
@@ -35,23 +35,24 @@ define (test-dvar-x1 exp) {
 
 define (test-dvar-x2 exp) {
   ;; test a regular local
-  test exp x
+  test exp lex-x
 
   ;; test the dynamic variable
   test (dynamic dvar-x2) exp
 }
 
-x = 10
+;; a top-level lexical x
+lex-x := 10
 
 ;; create a local dynamic variable
-dynamic-let (dvar-x1 x) {
+dynamic-let (dvar-x1 lex-x) {
   test (dynamic? 'dvar-x1) #t
 
   ;; test it here
-  test (dynamic dvar-x1) x
+  test (dynamic dvar-x1) lex-x
 
   ;; test it in our prepared function
-  test-dvar-x1 x
+  test-dvar-x1 lex-x
 }
 
 ;; ^rt-dynamic-variable-unbound-error is raised when calling a
@@ -61,12 +62,12 @@ trap ^rt-dynamic-variable-unbound-error (function (cont cond) {
   if cont {
     name := condition-ref cond 'name
 
-    ;; we know that test-dvar-x1 in our body was passed x
-    x
+    ;; we know that test-dvar-x1 in our body was passed lex-x
+    lex-x
   } (error 'dynamic-test "unbound dynamic: unexpected non-continuable error" cond)
 }) {
   ;; display* "using unbound dynamic variable"
-  test-dvar-x1 x
+  test-dvar-x1 lex-x
 }
 
 ;; create a toplevel dynamic variable

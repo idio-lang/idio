@@ -83,9 +83,9 @@ test (peek-char ifh) #\o
 handle-rewind ifh
 test (peek-char ifh) #\"
 
-test (handle-current-pos ifh) 0
+test (handle-pos ifh) 0
 seek-handle ifh 2
-test (handle-current-pos ifh) 2
+test (handle-pos ifh) 2
 
 ;; all done?
 test (file-handle0 + 29) Tests
