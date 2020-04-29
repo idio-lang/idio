@@ -50,9 +50,6 @@
 #define IDIO_MEANING_DEFINE(f)			((f) | IDIO_MEANING_FLAG_DEFINE)
 #define IDIO_MEANING_NO_DEFINE(f)		((f) & (~ IDIO_MEANING_FLAG_DEFINE))
 
-IDIO idio_expander_module;
-IDIO idio_operator_module;
-
 void idio_meaning_error_static_redefine (char *msg, IDIO name, IDIO cv, IDIO new, IDIO loc);
 void idio_meaning_error_static_arity (char *msg, IDIO args, IDIO loc);
 

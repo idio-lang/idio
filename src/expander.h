@@ -23,6 +23,8 @@
 #ifndef EXPANDER_H
 #define EXPANDER_H
 
+extern IDIO idio_expander_module;
+extern IDIO idio_operator_module;
 extern IDIO idio_expander_thread;
 
 IDIO idio_evaluate_expander_source (IDIO x, IDIO e);

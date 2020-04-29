@@ -27,11 +27,12 @@
  */
 
 IDIO idio_expander_module = idio_S_nil;
+IDIO idio_operator_module = idio_S_nil;
+
 static IDIO idio_expander_list = idio_S_nil;
 static IDIO idio_expander_list_src = idio_S_nil;
 IDIO idio_expander_thread = idio_S_nil;
 
-IDIO idio_operator_module = idio_S_nil;
 static IDIO idio_infix_operator_list = idio_S_nil;
 static IDIO idio_infix_operator_group = idio_S_nil;
 static IDIO idio_postfix_operator_list = idio_S_nil;
