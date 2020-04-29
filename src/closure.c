@@ -49,7 +49,7 @@ IDIO idio_closure (size_t code_pc, size_t code_len, IDIO frame, IDIO env, IDIO s
 
     IDIO c = idio_gc_get (IDIO_TYPE_CLOSURE);
 
-    IDIO_FPRINTF (stderr, "idio_closure: %10p = (%10p %10p)\n", c, code, env);
+    IDIO_FPRINTF (stderr, "idio_closure: %10p = (%10p %10p)\n", c, code_pc, env);
 
     IDIO_GC_ALLOC (c->u.closure, sizeof (idio_closure_t));
 
@@ -96,7 +96,7 @@ void idio_free_closure (IDIO c)
     free (c->u.closure);
 }
 
-IDIO_DEFINE_PRIMITIVE1_DS ("procedure?", procedurep, (IDIO o), "o", "\
+IDIO_DEFINE_PRIMITIVE1_DS ("function?", functionp, (IDIO o), "o", "\
 test if `o` is a procedure			\n\
 						\n\
 :param o: object to test			\n\
@@ -135,7 +135,7 @@ return the setter of `p`			\n\
     IDIO setter = idio_property_get (p, idio_KW_setter, IDIO_LIST1 (idio_S_false));
 
     if (idio_S_false == setter) {
-	idio_error_C ("no setter defined", IDIO_LIST1 (p), IDIO_C_LOCATION ("setter"));
+	idio_error_C ("no setter defined", p, IDIO_C_LOCATION ("setter"));
     }
 
     return setter;
@@ -147,7 +147,7 @@ void idio_init_closure ()
 
 void idio_closure_add_primitives ()
 {
-    IDIO_ADD_PRIMITIVE (procedurep);
+    IDIO_ADD_PRIMITIVE (functionp);
     IDIO_ADD_PRIMITIVE (setter);
 
     /*
