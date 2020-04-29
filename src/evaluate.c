@@ -859,6 +859,7 @@ static IDIO idio_meaning_assignment (IDIO name, IDIO e, IDIO nametree, int flags
     /*
      * Normal assignment to a symbol
      */
+
     IDIO m = idio_meaning (e, nametree, IDIO_MEANING_NO_DEFINE (IDIO_MEANING_NOT_TAILP (flags)), cs);
 
     IDIO sk = idio_variable_kind (nametree, name, flags, cs);
@@ -985,8 +986,8 @@ static IDIO idio_meaning_define_macro (IDIO name, IDIO e, IDIO nametree, int fla
     IDIO_TYPE_ASSERT (list, nametree);
     IDIO_TYPE_ASSERT (array, cs);
 
-    /* idio_debug ("meaning-define-macro:\nname=%s\n", name);  */
-    /* idio_debug ("e=%s\n", e);  */
+    /* idio_debug ("meaning-define-macro:\nname=%s\n", name); */
+    /* idio_debug ("e=%s\n", e); */
 
     /*
      * (define-macro (func arg) ...) => (define-macro func (function (arg) ...))
@@ -1116,7 +1117,7 @@ static IDIO idio_meaning_define_macro (IDIO name, IDIO e, IDIO nametree, int fla
 	     * "hard" to debug.
 	     */
 	    idio_install_expander_source (name, exp, expander);
-	    return idio_meaning_assignment (name, IDIO_PAIR_T (exp), nametree, IDIO_MEANING_LEXICAL_SCOPE (flags), cs);
+	    return idio_meaning_assignment (name, IDIO_PAIR_H (exp), nametree, IDIO_MEANING_LEXICAL_SCOPE (flags), cs);
 	}
     }
 
@@ -1150,7 +1151,11 @@ static IDIO idio_meaning_define_macro (IDIO name, IDIO e, IDIO nametree, int fla
      * users.
      */
 
+    /* idio_debug ("meaning-define-macro: expander=%s\n", expander); */
+
     IDIO m_a = idio_meaning_assignment (name, expander, nametree, IDIO_MEANING_NOT_TAILP (IDIO_MEANING_LEXICAL_SCOPE (flags)), cs);
+
+    /* idio_debug ("meaning-define-macro: meaning=%s\n", m_a); */
 
     idio_install_expander_source (name, expander, expander);
 
@@ -1181,8 +1186,8 @@ static IDIO idio_meaning_define_macro (IDIO name, IDIO e, IDIO nametree, int fla
      */
 
     IDIO r = IDIO_LIST3 (idio_I_EXPANDER, idio_fixnum (mci), m_a);
-    /* idio_debug ("idio-meaning-define-macro %s", name);  */
-    /* idio_debug (" r=%s\n", r);  */
+    /* idio_debug ("idio-meaning-define-macro %s", name); */
+    /* idio_debug (" r=%s\n", r); */
     return r;
 }
 
@@ -1787,7 +1792,8 @@ static IDIO idio_rewrite_body_letrec (IDIO e)
     for (;;) {
 	IDIO cur = idio_S_unspec;
 	if (idio_S_nil == l) {
-	    idio_error_warning_message ("empty body");
+	    idio_debug ("e=%s\n", e);
+	    idio_error_warning_message ("rewrite-body-letrec: empty body");
 	    return idio_S_nil;
 	} else if (idio_isa_pair (l) &&
 		   idio_isa_pair (IDIO_PAIR_H (l)) &&
@@ -2594,7 +2600,7 @@ static IDIO idio_meaning_include (IDIO e, IDIO nametree, int flags, IDIO cs)
     IDIO_TYPE_ASSERT (array, cs);
 
     idio_thread_save_state (idio_thread_current_thread ());
-    idio_load_file_name (e, cs);
+    idio_load_file_name_aio (e, cs);
     idio_thread_restore_state (idio_thread_current_thread ());
 
     return IDIO_LIST1 (idio_I_NOP);
@@ -2623,7 +2629,7 @@ static IDIO idio_meaning (IDIO e, IDIO nametree, int flags, IDIO cs)
 
     /* idio_debug ("meaning: e  in %s ", e);  */
     /* fprintf (stderr, "flags=%x\n", flags);  */
-    
+
     if (idio_isa_pair (e)) {
 	IDIO eh = IDIO_PAIR_H (e);
 	IDIO et = IDIO_PAIR_T (e);
@@ -3015,10 +3021,62 @@ static IDIO idio_meaning (IDIO e, IDIO nametree, int flags, IDIO cs)
 	    return idio_meaning_application (eh, et, nametree, flags, cs);
 	}
     } else {
-	if (idio_isa_symbol (e)) {
-	    return idio_meaning_reference (e, nametree, IDIO_MEANING_LEXICAL_SCOPE (flags), cs);
-	} else {
+	switch ((intptr_t) e & IDIO_TYPE_MASK) {
+	case IDIO_TYPE_FIXNUM_MARK:
+	case IDIO_TYPE_CONSTANT_MARK:
 	    return idio_meaning_quotation (e, nametree, flags);
+	case IDIO_TYPE_PLACEHOLDER_MARK:
+	    idio_error_C ("invalid constant type", e, IDIO_C_LOCATION ("idio_meaning/quotation/placeholder"));
+
+	    return idio_S_notreached;
+	case IDIO_TYPE_POINTER_MARK:
+	    {
+		switch (e->type) {
+		case IDIO_TYPE_SYMBOL:
+		    return idio_meaning_reference (e, nametree, IDIO_MEANING_LEXICAL_SCOPE (flags), cs);
+		case IDIO_TYPE_STRING:
+		case IDIO_TYPE_KEYWORD:
+		case IDIO_TYPE_PAIR:
+		case IDIO_TYPE_ARRAY:
+		case IDIO_TYPE_HASH:
+		case IDIO_TYPE_BIGNUM:
+		    return idio_meaning_quotation (e, nametree, flags);
+		case IDIO_TYPE_CLOSURE:
+		case IDIO_TYPE_PRIMITIVE:
+		    idio_error_C ("invalid constant type", e, IDIO_C_LOCATION ("idio_meaning/quotation/function"));
+
+		    return idio_S_notreached;
+		case IDIO_TYPE_MODULE:
+		case IDIO_TYPE_FRAME:
+		case IDIO_TYPE_HANDLE:
+		case IDIO_TYPE_STRUCT_TYPE:
+		case IDIO_TYPE_STRUCT_INSTANCE:
+		case IDIO_TYPE_THREAD:
+		case IDIO_TYPE_CONTINUATION:
+		case IDIO_TYPE_C_INT:
+		case IDIO_TYPE_C_UINT:
+		case IDIO_TYPE_C_FLOAT:
+		case IDIO_TYPE_C_DOUBLE:
+		case IDIO_TYPE_C_POINTER:
+		case IDIO_TYPE_C_TYPEDEF:
+		case IDIO_TYPE_C_STRUCT:
+		case IDIO_TYPE_C_INSTANCE:
+		case IDIO_TYPE_C_FFI:
+		case IDIO_TYPE_OPAQUE:
+		    idio_error_C ("invalid constant type", e, IDIO_C_LOCATION ("idio_meaning/quotation/various"));
+
+		    return idio_S_notreached;
+		default:
+		    idio_error_C ("unimplemented type", e, IDIO_C_LOCATION ("idio_meaning/quotation"));
+		    break;
+		}
+	    }
+	    break;
+	default:
+	    /* inconceivable! */
+	    idio_error_printf (IDIO_C_LOCATION ("idio_meaning/quotation"), "v=n/k o=%#p o&3=%x F=%x C=%x P=%x", e, (intptr_t) e & IDIO_TYPE_MASK, IDIO_TYPE_FIXNUM_MARK, IDIO_TYPE_CONSTANT_MARK, IDIO_TYPE_POINTER_MARK);
+
+	    return idio_S_notreached;
 	}
     }
 
@@ -3076,6 +3134,14 @@ IDIO idio_evaluate (IDIO e, IDIO cs)
     /* idio_debug ("evaluate: m %s\n", m); */
 
     return m;
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("evaluate/meaning", evaluate_meaning, (IDIO e))
+{
+    IDIO_ASSERT (e);
+    IDIO_VERIFY_PARAM_TYPE (list, e);
+
+    return idio_evaluate (e, idio_vm_constants);
 }
 
 IDIO_DEFINE_PRIMITIVE1 ("environ?", environp, (IDIO name))
@@ -3137,6 +3203,7 @@ void idio_init_evaluate ()
 
 void idio_evaluate_add_primitives ()
 {
+    IDIO_ADD_PRIMITIVE (evaluate_meaning);
     IDIO_ADD_PRIMITIVE (environp);
     IDIO_ADD_PRIMITIVE (dynamicp);
     IDIO_ADD_PRIMITIVE (computedp);

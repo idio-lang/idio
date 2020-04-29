@@ -317,7 +317,7 @@ static void idio_vm_error_arity (IDIO_I ins, IDIO thr, size_t given, size_t arit
 	idio_display (func, dsh);
 	IDIO args = idio_S_nil;
 	if (IDIO_FRAME_NARGS (val) > 1) {
-	    IDIO fargs = idio_array_copy (IDIO_FRAME_ARGS (val), 0);
+	    IDIO fargs = idio_array_copy (IDIO_FRAME_ARGS (val), IDIO_COPY_SHALLOW, 0);
 	    idio_array_pop (fargs);
 	    args = idio_array_to_list (fargs);
 	}
@@ -357,6 +357,26 @@ static void idio_vm_error_arity_varargs (IDIO_I ins, IDIO thr, size_t given, siz
 				   IDIO_LIST3 (idio_get_output_string (sh),
 					       loc,
 					       idio_S_nil));
+
+    idio_raise_condition (idio_S_true, c);
+}
+
+static void idio_error_runtime_unbound (IDIO fmci, IDIO fgci, IDIO sym, IDIO loc)
+{
+    IDIO_ASSERT (loc);
+    IDIO_TYPE_ASSERT (string, loc);
+
+    IDIO sh = idio_open_output_string_handle_C ();
+    idio_display_C ("no such binding: mci ", sh);
+    idio_display (fmci, sh);
+    idio_display_C (" -> gci ", sh);
+    idio_display (fgci, sh);
+
+    IDIO c = idio_struct_instance (idio_condition_rt_variable_unbound_error_type,
+				   IDIO_LIST4 (idio_get_output_string (sh),
+					       loc,
+					       idio_S_nil,
+					       sym));
 
     idio_raise_condition (idio_S_true, c);
 }
@@ -914,7 +934,7 @@ static void idio_vm_clos_time (IDIO thr, const char *context)
 {
     IDIO_ASSERT (thr);
     IDIO_TYPE_ASSERT (thread, thr);
-    
+
     struct timespec clos_te;
     if (0 != clock_gettime (CLOCK_MONOTONIC, &clos_te)) {
 	perror ("clock_gettime (CLOCK_MONOTONIC, clos_te)");
@@ -1084,7 +1104,7 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
 	    IDIO_FRAME_NARGS (val) -= 1;
 
 	    if (idio_S_nil != last) {
-		idio_error_C ("primitive: varargs?", IDIO_LIST1 (last), IDIO_C_LOCATION ("idio_vm_invoke"));
+		idio_error_C ("primitive: varargs?", last, IDIO_C_LOCATION ("idio_vm_invoke"));
 	    }
 
 #ifdef IDIO_VM_PERF
@@ -1181,7 +1201,7 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
 	    IDIO_FRAME_NARGS (val) -= 1;
 
 	    if (idio_S_nil != last) {
-		idio_error_C ("continuation: varargs?", IDIO_LIST1 (last), IDIO_C_LOCATION ("idio_vm_invoke"));
+		idio_error_C ("continuation: varargs?", last, IDIO_C_LOCATION ("idio_vm_invoke"));
 	    }
 
 	    if (IDIO_FRAME_NARGS (val) != 1) {
@@ -1872,8 +1892,8 @@ static void idio_vm_restore_continuation (IDIO k, IDIO val)
      * continuation is used again.
      */
 
-    IDIO_THREAD_STACK (thr) = idio_array_copy (IDIO_CONTINUATION_STACK (k), 0);
-    
+    IDIO_THREAD_STACK (thr) = idio_array_copy (IDIO_CONTINUATION_STACK (k), IDIO_COPY_SHALLOW, 0);
+
     IDIO marker = IDIO_THREAD_STACK_POP ();
     if (idio_SM_preserve_continuation != marker) {
 	idio_debug ("ivrc: marker: expected idio_SM_preserve_continuation not %s\n", marker);
@@ -1979,7 +1999,7 @@ static void idio_vm_function_trace (IDIO_I ins, IDIO thr)
     IDIO val = IDIO_THREAD_VAL (thr);
     IDIO args = idio_S_nil;
     if (IDIO_FRAME_NARGS (val) > 1) {
-	IDIO fargs = idio_array_copy (IDIO_FRAME_ARGS (val), 0);
+	IDIO fargs = idio_array_copy (IDIO_FRAME_ARGS (val), IDIO_COPY_SHALLOW, 0);
 	idio_array_pop (fargs);
 	args = idio_array_to_list (fargs);
     }
@@ -2387,7 +2407,51 @@ int idio_vm_run1 (IDIO thr)
 		idio_debug (" %s", c);
 	    }
 #endif
-    	    IDIO_THREAD_VAL (thr) = c;
+	    switch ((intptr_t) c & IDIO_TYPE_MASK) {
+	    case IDIO_TYPE_FIXNUM_MARK:
+	    case IDIO_TYPE_CONSTANT_MARK:
+		IDIO_THREAD_VAL (thr) = c;
+		break;
+	    case IDIO_TYPE_PLACEHOLDER_MARK:
+		idio_error_C ("invalid constant type", c, IDIO_C_LOCATION ("idio_vm_run1/CONSTANT-REF"));
+
+		/* notreached */
+		break;
+	    case IDIO_TYPE_POINTER_MARK:
+		{
+		    switch (c->type) {
+		    case IDIO_TYPE_STRING:
+		    case IDIO_TYPE_SYMBOL:
+		    case IDIO_TYPE_KEYWORD:
+		    case IDIO_TYPE_PAIR:
+		    case IDIO_TYPE_ARRAY:
+		    case IDIO_TYPE_HASH:
+		    case IDIO_TYPE_BIGNUM:
+			IDIO_THREAD_VAL (thr) = idio_copy (c, IDIO_COPY_DEEP);
+			break;
+		    case IDIO_TYPE_PRIMITIVE:
+		    case IDIO_TYPE_CLOSURE:
+			idio_debug ("idio_vm_run1/CONSTANT-REF: you should NOT be reifying %s", c);
+			IDIO name = idio_property_get (c, idio_KW_name, idio_S_unspec);
+			if (idio_S_unspec != name) {
+			    idio_debug (" %s", name);
+			}
+			fprintf (stderr, "\n");
+			IDIO_THREAD_VAL (thr) = c;
+			break;
+		    default:
+			idio_error_C ("invalid constant type", c, IDIO_C_LOCATION ("idio_vm_run1/CONSTANT-REF"));
+			break;
+		    }
+		}
+		break;
+	    default:
+		/* inconceivable! */
+		idio_error_printf (IDIO_C_LOCATION ("idio_vm_run1/CONSTANT-REF"), "v=n/k o=%#p o&3=%x F=%x C=%x P=%x", c, (intptr_t) c & IDIO_TYPE_MASK, IDIO_TYPE_FIXNUM_MARK, IDIO_TYPE_CONSTANT_MARK, IDIO_TYPE_POINTER_MARK);
+
+		return 0;
+		break;
+	    }
     	}
     	break;
     case IDIO_A_COMPUTED_REF:
@@ -2523,6 +2587,7 @@ int idio_vm_run1 (IDIO thr)
 		idio_debug ("GLOBAL-SET: mci %s", fmci);
 		idio_debug (" gci %s", fgci);
 		idio_debug (" sym %s\n", sym);
+		idio_error_runtime_unbound (fmci, fgci, sym, IDIO_C_LOCATION ("idio_vm_run1/GLOBAL-SET"));
 		idio_vm_panic (thr, "GLOBAL-SET: no gvi!");
 	    }
 	}
@@ -2746,7 +2811,7 @@ int idio_vm_run1 (IDIO thr)
 		fprintf (stderr, "\nreplacing popped element for stack decode:");
 		IDIO_THREAD_STACK_PUSH (ipc);
 		idio_vm_decode_stack (thr);
-		idio_error_C ("RETURN: not a number", IDIO_LIST1 (ipc), IDIO_C_LOCATION ("idio_vm_run1/RETURN"));
+		idio_error_C ("RETURN: not a number", ipc, IDIO_C_LOCATION ("idio_vm_run1/RETURN"));
 	    }
 	    idio_ai_t pc = IDIO_FIXNUM_VAL (ipc);
 	    if (pc > IDIO_IA_USIZE (idio_all_code) ||
@@ -3718,7 +3783,7 @@ void idio_vm_dasm (IDIO thr, idio_ai_t pc0, idio_ai_t pce)
     if (0 == pce) {
 	pce = IDIO_IA_USIZE (idio_all_code);
     }
-    
+
     if (pc0 > pce) {
 	fprintf (stderr, "\n\nPC %" PRIdPTR " > max code PC %" PRIdPTR"\n", pc0, pce);
 	idio_debug ("THR %s\n", thr);
@@ -4589,8 +4654,8 @@ void idio_vm_thread_init (IDIO thr)
 	IDIO_THREAD_TRAP_SP (thr) = idio_fixnum (sp + 2);
     }
 
-    idio_vm_push_trap (thr, idio_condition_restart_condition_handler, idio_condition_condition_type_mci); 
-    idio_vm_push_trap (thr, idio_condition_default_condition_handler, idio_condition_condition_type_mci); 
+    idio_vm_push_trap (thr, idio_condition_restart_condition_handler, idio_condition_condition_type_mci);
+    idio_vm_push_trap (thr, idio_condition_default_condition_handler, idio_condition_condition_type_mci);
 }
 
 void idio_vm_default_pc (IDIO thr)
@@ -4629,7 +4694,7 @@ IDIO idio_vm_run (IDIO thr)
      */
     IDIO krun = idio_continuation (thr);
     idio_gc_protect (krun);
-    
+
     idio_ai_t ss0 = idio_array_size (IDIO_THREAD_STACK (thr));
 
     /*
@@ -4737,7 +4802,7 @@ IDIO idio_vm_run (IDIO thr)
 			idio_vm_raise_condition (idio_S_true, signal_condition, 1);
 		    } else {
 			fprintf (stderr, "idio_vm_run1(): signal %d has no condition?\n", signum);
-			idio_error_C ("signal without a condition to raise", IDIO_LIST1 (idio_fixnum (signum)), IDIO_C_LOCATION ("idio_vm_run1"));
+			idio_error_C ("signal without a condition to raise", idio_fixnum (signum), IDIO_C_LOCATION ("idio_vm_run1"));
 		    }
 
 		    IDIO signal_handler_name = idio_array_ref (idio_vm_signal_handler_name, idio_fixnum (signum));
@@ -4879,7 +4944,7 @@ IDIO idio_vm_run (IDIO thr)
 	if (ss < ss0) {
 	    fprintf (stderr, "\n\nNOTICE: current stack smaller than when we started\n");
 	}
-	bail = 1; 
+	bail = 1;
     }
 
     if (bail) {
@@ -5461,11 +5526,18 @@ void idio_final_vm ()
 	c += idio_vm_ins_counters[i];
 	t.tv_sec += idio_vm_ins_call_time[i].tv_sec;
 	t.tv_nsec += idio_vm_ins_call_time[i].tv_nsec;
-	if (idio_vm_ins_counters[i]) {
-	    fprintf (idio_vm_perf_FILE, "vm-ins: %8" PRIu64 " %6" PRIu8 " %-30s %5ld.%09ld", idio_vm_ins_counters[i], i, idio_vm_bytecode2string (i), idio_vm_ins_call_time[i].tv_sec, idio_vm_ins_call_time[i].tv_nsec);
-	    double call_time = (idio_vm_ins_call_time[i].tv_sec * 1000000000 + idio_vm_ins_call_time[i].tv_nsec) / idio_vm_ins_counters[i];
-	    fprintf (idio_vm_perf_FILE, " %6.f", call_time);
-	    fprintf (idio_vm_perf_FILE, "\n");
+	if (1 || idio_vm_ins_counters[i]) {
+	    char *bc_name = idio_vm_bytecode2string (i);
+	    if (strcmp (bc_name, "Unknown bytecode") ||
+		idio_vm_ins_counters[i]) {
+		fprintf (idio_vm_perf_FILE, "vm-ins: %8" PRIu64 " %6" PRIu8 " %-30s %5ld.%09ld", idio_vm_ins_counters[i], i, bc_name, idio_vm_ins_call_time[i].tv_sec, idio_vm_ins_call_time[i].tv_nsec);
+		double call_time = 0;
+		if (idio_vm_ins_counters[i]) {
+		    call_time = (idio_vm_ins_call_time[i].tv_sec * 1000000000 + idio_vm_ins_call_time[i].tv_nsec) / idio_vm_ins_counters[i];
+		}
+		fprintf (idio_vm_perf_FILE, " %6.f", call_time);
+		fprintf (idio_vm_perf_FILE, "\n");
+	    }
 	}
     }
     fprintf (idio_vm_perf_FILE, "vm-ins: %8" PRIu64 " %6s %-30s %5ld.%09ld\n", c, "", "total", t.tv_sec, t.tv_nsec);

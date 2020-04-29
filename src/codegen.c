@@ -78,6 +78,10 @@ void idio_ia_resize (IDIO_IA_T ia)
 
 void idio_ia_append (IDIO_IA_T ia1, IDIO_IA_T ia2)
 {
+    if (NULL == ia2) {
+	return;
+    }
+
     if ((IDIO_IA_ASIZE (ia1) - IDIO_IA_USIZE (ia1)) < IDIO_IA_USIZE (ia2)) {
 	idio_ia_resize_by (ia1, IDIO_IA_USIZE (ia2));
     }
@@ -262,7 +266,7 @@ idio_ai_t idio_codegen_constants_lookup (IDIO cs, IDIO v)
     idio_ai_t al = idio_array_size (cs);
     idio_ai_t i;
     for (i = 0 ; i < al; i++) {
-	if (idio_eqp (v, idio_array_get_index (cs, i))) {
+	if (idio_equalp (v, idio_array_get_index (cs, i))) {
 	    return i;
 	}
     }
@@ -277,6 +281,7 @@ idio_ai_t idio_codegen_constants_lookup_or_extend (IDIO cs, IDIO v)
     IDIO_TYPE_ASSERT (array, cs);
 
     idio_ai_t gci = idio_codegen_constants_lookup (cs, v);
+
     if (-1 == gci) {
 	gci = idio_codegen_extend_constants (cs, v);
     }
@@ -779,18 +784,21 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 			}
 			break;
 		    default:
-			idio_error_C ("unexpected constant/CONSTANT/??", IDIO_LIST1 (c), IDIO_C_LOCATION ("idio_codegen_compile/CONSTANT/CONSTANT"));
+			idio_error_C ("unexpected constant/CONSTANT/??", c, IDIO_C_LOCATION ("idio_codegen_compile/CONSTANT/CONSTANT"));
 			break;
 		    }
 		}
 	    case IDIO_TYPE_PLACEHOLDER_MARK:
-		idio_error_C ("unexpected constant/PLACEHOLDER", IDIO_LIST1 (c), IDIO_C_LOCATION ("idio_codegen_compile/CONSTANT"));
+		idio_error_C ("unexpected constant/PLACEHOLDER", c, IDIO_C_LOCATION ("idio_codegen_compile/CONSTANT"));
 		break;
 	    default:
 		{
 		    /*
 		     * A quoted value...probably.
 		     */
+
+		    IDIO_FLAGS (c) |= IDIO_FLAG_CONST;
+
 		    idio_ai_t mci = idio_codegen_constants_lookup_or_extend (cs, c);
 		    IDIO fmci = idio_fixnum (mci);
 		    idio_module_vci_set (idio_thread_current_env (), fmci, fmci);
@@ -843,7 +851,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO_IA_T ia3 = idio_ia (100);
 	    idio_codegen_compile (thr, ia3, cs, m3, depth + 1);
 
-	    IDIO_IA_T g7;
+	    IDIO_IA_T g7 = NULL;
 	    size_t g7_len = 0;
 
 	    /*
@@ -1801,7 +1809,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
     case IDIO_I_CODE_NOP:
 	break;
     default:
-	idio_error_C ("bad instruction", IDIO_LIST1 (mh), IDIO_C_LOCATION ("idio_codegen_compile"));
+	idio_error_C ("bad instruction", mh, IDIO_C_LOCATION ("idio_codegen_compile"));
 	break;
     }
 }

@@ -145,7 +145,9 @@ void idio_error_param_type (char *etype, IDIO who, IDIO loc)
     IDIO_TYPE_ASSERT (string, loc);
 
     IDIO sh = idio_open_output_string_handle_C ();
-    idio_display_C ("bad parameter type: a ", sh);
+    idio_display_C ("bad parameter type: ", sh);
+    idio_display (who, sh);
+    idio_display_C (" a ", sh);
     idio_display_C ((char *) idio_type2string (who), sh);
     idio_display_C (" is not a ", sh);
     idio_display_C (etype, sh);
@@ -171,13 +173,49 @@ void idio_error_param_type_C (char *etype, IDIO who, char *file, const char *fun
     idio_error_param_type (etype, who, idio_string_C (loc));
 }
 
+void idio_error_const_param (char *type_name, IDIO who, IDIO loc)
+{
+    IDIO_C_ASSERT (type_name);
+    IDIO_ASSERT (who);
+    IDIO_ASSERT (loc);
+    IDIO_TYPE_ASSERT (string, loc);
+
+    IDIO sh = idio_open_output_string_handle_C ();
+    idio_display_C ("bad parameter: ", sh);
+    idio_display_C (type_name, sh);
+    idio_display_C (" (", sh);
+    idio_write (who, sh);
+    idio_display_C (") is constant", sh);
+
+    IDIO c = idio_struct_instance (idio_condition_rt_const_parameter_error_type,
+				   IDIO_LIST3 (idio_get_output_string (sh),
+					       loc,
+					       who));
+    idio_raise_condition (idio_S_false, c);
+}
+
+/*
+ * Used by IDIO_CONST_ASSERT
+ */
+void idio_error_const_param_C (char *type_name, IDIO who, char *file, const char *func, int line)
+{
+    IDIO_C_ASSERT (type_name);
+    IDIO_ASSERT (who);
+
+    char loc[BUFSIZ];
+    sprintf (loc, "%s:%s:%d", func, file, line);
+
+    idio_debug ("const: %s\n", who);
+
+    idio_error_const_param (type_name, who, idio_string_C (loc));
+}
+
 void idio_error (IDIO who, IDIO msg, IDIO args, IDIO loc)
 {
     IDIO_ASSERT (who);
     IDIO_ASSERT (msg);
     IDIO_ASSERT (args);
     IDIO_ASSERT (loc);
-    IDIO_TYPE_ASSERT (list, args);
 
     if (! (idio_isa_string (loc) ||
 	   idio_isa_symbol (loc))) {
@@ -201,7 +239,6 @@ void idio_error_C (char *msg, IDIO args, IDIO loc)
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (args);
     IDIO_ASSERT (loc);
-    IDIO_TYPE_ASSERT (list, args);
     IDIO_TYPE_ASSERT (string, loc);
 
     idio_error (idio_S_internal, idio_string_C (msg), args, loc);
@@ -213,7 +250,7 @@ IDIO_DEFINE_PRIMITIVE2V ("error", error, (IDIO loc, IDIO msg, IDIO args))
     IDIO_ASSERT (msg);
     IDIO_ASSERT (args);
     IDIO_VERIFY_PARAM_TYPE (symbol, loc);
-    IDIO_VERIFY_PARAM_TYPE (string, loc);
+    IDIO_VERIFY_PARAM_TYPE (string, msg);
     IDIO_VERIFY_PARAM_TYPE (list, args);
 
     idio_error (idio_S_user_code, msg, args, loc);
