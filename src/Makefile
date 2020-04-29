@@ -31,6 +31,14 @@ ifneq (,$(findstring centos-6,${HOSTNAME}))
 LIBS		:= ${LIBS} -lrt
 endif
 
+ifneq (,$(findstring debian-,${HOSTNAME}))
+CC		:= gcc-8
+endif
+
+ifneq (,$(findstring ubuntu-,${HOSTNAME}))
+CC		:= gcc-8
+endif
+
 else ifeq ($(OS),SunOS)
 
 CC		:= gcc

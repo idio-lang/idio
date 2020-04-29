@@ -1226,6 +1226,11 @@ static void idio_libc_set_signal_names ()
     IDIO_LIBC_SIGNAL (SIGJVM2)
 #endif
 
+    /* OpenIndiana */
+#if defined(SIGINFO)
+    IDIO_LIBC_SIGNAL (SIGINFO)
+#endif
+
     /* Linux */
 #if defined(SIGSTKFLT)
     IDIO_LIBC_SIGNAL (SIGSTKFLT)
@@ -2498,6 +2503,20 @@ static void idio_libc_set_errno_names ()
     idio_libc_export_symbol_value (err_sym, idio_C_int (EXFULL));
     sprintf (idio_libc_errno_names[EXFULL], "%s", IDIO_SYMBOL_S (err_sym));
 #endif
+
+    /*
+     * OpenIndiana anomalies -- strerror returns a non "Error X"
+     * string
+     *
+     * num	errno?		strerror
+     *
+     * 135	EUCLEAN		Structure needs cleaning
+     * 137	ENOTNAM		Not a name file
+     * 138	?		Not available
+     * 139	EISNAM		Is a name file
+     * 140	EREMOTEIO	Remote I/O error
+     * 141	?		Reserved for future use
+     */
 
 #if IDIO_DEBUG
     int first = 1;
