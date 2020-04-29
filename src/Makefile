@@ -1,3 +1,4 @@
+HOSTNAME	:= $(shell uname -n)
 OS		:= $(shell uname -s)
 ARCH		:= $(shell uname -m)
 SHELL		:= bash
@@ -24,6 +25,10 @@ LIBS		:= -ldl
 ifeq ($(ARCH),x86_64)
 CFLAGS		:= $(CFLAGS) -m64 # -fsanitize=undefined
 LDFLAGS		:= $(LDFLAGS) -m64 -Wl,-Map=map
+endif
+
+ifneq (,$(findstring centos-6,${HOSTNAME}))
+LIBS		:= ${LIBS} -lrt
 endif
 
 else ifeq ($(OS),SunOS)
