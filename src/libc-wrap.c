@@ -2508,12 +2508,14 @@ static void idio_libc_set_errno_names ()
      * OpenIndiana anomalies -- strerror returns a non "Error X"
      * string
      *
-     * 135	Structure needs cleaning
-     * 137	Not a name file
-     * 138	Not available
-     * 139	Is a name file
-     * 140	Remote I/O error
-     * 141	Reserved for future use
+     * num	errno?		strerror
+     *
+     * 135	EUCLEAN		Structure needs cleaning
+     * 137	ENOTNAM		Not a name file
+     * 138	?		Not available
+     * 139	EISNAM		Is a name file
+     * 140	EREMOTEIO	Remote I/O error
+     * 141	?		Reserved for future use
      */
 
 #if IDIO_DEBUG
