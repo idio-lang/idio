@@ -35,6 +35,10 @@ ifneq (,$(findstring debian-,${HOSTNAME}))
 CC		:= gcc-8
 endif
 
+ifneq (,$(findstring ubuntu-,${HOSTNAME}))
+CC		:= gcc-8
+endif
+
 else ifeq ($(OS),SunOS)
 
 CC		:= gcc
