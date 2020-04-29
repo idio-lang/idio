@@ -192,7 +192,7 @@ IDIO idio_hash (idio_hi_t size, int (*equal) (void *k1, void *k2), idio_hi_t (*h
     return h;
 }
 
-IDIO idio_hash_copy (IDIO orig)
+IDIO idio_hash_copy (IDIO orig, int depth)
 {
     IDIO_ASSERT (orig);
     IDIO_TYPE_ASSERT (hash, orig);
@@ -218,6 +218,9 @@ IDIO idio_hash_copy (IDIO orig)
 	}
 	if (idio_S_nil != k) {
 	    IDIO v = IDIO_HASH_HE_VALUE (orig, i);
+	    if (IDIO_COPY_DEEP == depth) {
+		v = idio_copy (v, depth);
+	    }
 	    idio_hash_put (new, k, v);
 	}
     }
@@ -230,6 +233,13 @@ IDIO idio_hash_copy (IDIO orig)
  */
 IDIO idio_hash_merge (IDIO ht1, IDIO ht2)
 {
+    IDIO_ASSERT (ht1);
+    IDIO_ASSERT (ht2);
+    IDIO_TYPE_ASSERT (hash, ht1);
+    IDIO_TYPE_ASSERT (hash, ht2);
+
+    IDIO_ASSERT_NOT_CONST (hash, ht1);
+
     idio_hi_t i;
     for (i = 0; i < IDIO_HASH_SIZE (ht2); i++) {
 	IDIO k = IDIO_HASH_HE_KEY (ht2, i);
@@ -297,6 +307,8 @@ void idio_hash_resize (IDIO h)
 {
     IDIO_ASSERT (h);
     IDIO_TYPE_ASSERT (hash, h);
+
+    IDIO_ASSERT_NOT_CONST (hash, h);
 
     idio_hi_t ohsize = h->u.hash->size;
     idio_hash_entry_t *ohe = h->u.hash->he;
@@ -669,8 +681,8 @@ void idio_hash_verify_chain (IDIO h, void *kv, int reqd)
 	    if (idio_S_nil != nkv) {
 		idio_hi_t hv = idio_hash_value (h, nkv);
 		if (hv != ohv) {
-		    fprintf (stderr, "idio_hash_verify_chain: kv=%10p nkv=%10p nhv=%" PRIuPTR " hv %" PRIuPTR " != ohv %" PRIuPTR "\n", kv, nkv, nhv, hv, ohv); 
-		    fprintf (stderr, "risky recurse for %10p!\n", nkv); 
+		    fprintf (stderr, "idio_hash_verify_chain: kv=%10p nkv=%10p nhv=%" PRIuPTR " hv %" PRIuPTR " != ohv %" PRIuPTR "\n", kv, nkv, nhv, hv, ohv);
+		    fprintf (stderr, "risky recurse for %10p!\n", nkv);
 		    idio_hash_verify_chain (h, nkv, 1);
 		    fprintf (stderr, "risky recurse for %10p done!\n", nkv);
 		    idio_error_printf (IDIO_C_LOCATION ("idio_hash_verify_chain"), "in-chain hv mismatch");
@@ -709,7 +721,7 @@ void idio_hash_verify_all_keys (IDIO h)
 		IDIO_FPRINTF (stderr, "\"%s\"", (char *) kv);
 	    }
 	    IDIO_FPRINTF (stderr, "\n");
-	
+
 	    idio_hash_verify_chain (h, kv, 1);
 	}
     }
@@ -757,6 +769,8 @@ IDIO idio_hash_put (IDIO h, void *kv, IDIO v)
 {
     IDIO_ASSERT (h);
     IDIO_TYPE_ASSERT (hash, h);
+
+    IDIO_ASSERT_NOT_CONST (hash, h);
 
     if (idio_S_nil == kv) {
 	idio_error_param_nil ("key", IDIO_C_LOCATION ("idio_hash_put"));
@@ -905,7 +919,7 @@ idio_hi_t idio_hash_hv_follow_chain (IDIO h, void *kv)
 
     idio_hi_t chi = hv;
     IDIO ck = IDIO_HASH_HE_KEY (h, chi);
-    
+
     IDIO_FPRINTF (stderr, "idio_hash_hv_follow_chain: kv=%10p chi=%" PRIuPTR " ck=%10p nhi=%" PRIuPTR "\n", kv, chi, ck, IDIO_HASH_HE_NEXT (h, chi));
     if (idio_S_nil != ck) {
 	if (IDIO_HASH_FLAGS (h) & IDIO_HASH_FLAG_STRING_KEYS) {
@@ -943,6 +957,8 @@ int idio_hash_exists_key (IDIO h, void *kv)
     if (idio_S_nil == h) {
 	return 0;
     }
+
+    IDIO_TYPE_ASSERT (hash, h);
 
     if (idio_S_nil == kv) {
 	idio_error_param_nil ("key", IDIO_C_LOCATION ("idio_hash_exists_key"));
@@ -1015,6 +1031,8 @@ int idio_hash_delete (IDIO h, void *kv)
 
     IDIO_TYPE_ASSERT (hash, h);
 
+    IDIO_ASSERT_NOT_CONST (hash, h);
+
     if (idio_S_nil == kv) {
 	idio_error_param_nil ("key", IDIO_C_LOCATION ("idio_hash_delete"));
 	return 0;
@@ -1059,7 +1077,7 @@ int idio_hash_delete (IDIO h, void *kv)
 	    IDIO_HASH_HE_KEY (h, chv) = IDIO_HASH_HE_KEY (h, nhv);
 	    IDIO_HASH_HE_VALUE (h, chv) = IDIO_HASH_HE_VALUE (h, nhv);
 	    IDIO_HASH_HE_NEXT (h, chv) = IDIO_HASH_HE_NEXT (h, nhv);
-	
+
 	    IDIO_FPRINTF (stderr, "idio_hash_delete: %10p head of chain: nullify nhv=%" PRIuPTR "\n", ck, nhv);
 	    IDIO_HASH_HE_KEY (h, nhv) = idio_S_nil;
 	    IDIO_HASH_HE_VALUE (h, nhv) = idio_S_nil;
@@ -1073,7 +1091,7 @@ int idio_hash_delete (IDIO h, void *kv)
     } else {
 	IDIO_FPRINTF (stderr, "idio_hash_delete: %10p link phv=%" PRIuPTR " -> nhv=%" PRIuPTR "\n", ck, phv, nhv);
 	IDIO_HASH_HE_NEXT (h, phv) = nhv;
-    
+
 	IDIO_FPRINTF (stderr, "idio_hash_delete: %10p nullify chv=%" PRIuPTR "\n", ck, chv);
 	IDIO_HASH_HE_KEY (h, chv) = idio_S_nil;
 	IDIO_HASH_HE_VALUE (h, chv) = idio_S_nil;
@@ -1376,6 +1394,8 @@ IDIO idio_hash_set (IDIO ht, IDIO key, IDIO v)
     IDIO_ASSERT (v);
     IDIO_TYPE_ASSERT (hash, ht);
 
+    IDIO_ASSERT_NOT_CONST (hash, ht);
+
     idio_hash_put (ht, key, v);
 
     return idio_S_unspec;
@@ -1441,6 +1461,8 @@ IDIO_DEFINE_PRIMITIVE3V ("hash-update!", hash_update, (IDIO ht, IDIO key, IDIO f
     IDIO_ASSERT (args);
     IDIO_VERIFY_PARAM_TYPE (hash, ht);
     IDIO_VERIFY_PARAM_TYPE (list, args);
+
+    IDIO_ASSERT_NOT_CONST (hash, ht);
 
     IDIO cv = idio_hash_ref (ht, key, args);
 
@@ -1514,12 +1536,42 @@ IDIO_DEFINE_PRIMITIVE3 ("hash-fold", hash_fold, (IDIO ht, IDIO func, IDIO val))
     return val;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("hash-copy", hash_copy, (IDIO ht))
+IDIO_DEFINE_PRIMITIVE1V_DS ("hash-copy", hash_copy, (IDIO ht, IDIO args), "orig [depth]", "\
+copy hash table `orig`					\n\
+							\n\
+:param orig: initial hash table				\n\
+:type orig: hash table					\n\
+:param depth: (optional) 'shallow or 'deep (default)	\n\
+:return: the new hash table				\n\
+:rtype: hash table					\n\
+")
 {
     IDIO_ASSERT (ht);
     IDIO_VERIFY_PARAM_TYPE (hash, ht);
 
-    return idio_hash_copy (ht);
+    int depth = IDIO_COPY_DEEP;
+
+    if (idio_S_nil != args) {
+	IDIO idepth = IDIO_PAIR_H (args);
+
+	if (idio_isa_symbol (idepth)) {
+	    if (idio_S_deep == idepth) {
+		depth = IDIO_COPY_DEEP;
+	    } else if (idio_S_shallow == idepth) {
+		depth = IDIO_COPY_SHALLOW;
+	    } else {
+		idio_error_param_type ("'deep or 'shallow", idepth, IDIO_C_LOCATION ("hash-copy"));
+
+		return idio_S_notreached;
+	    }
+	} else {
+	    idio_error_param_type ("symbol", idepth, IDIO_C_LOCATION ("hash-copy"));
+
+	    return idio_S_notreached;
+	}
+    }
+
+    return idio_hash_copy (ht, depth);
 }
 
 IDIO_DEFINE_PRIMITIVE2 ("hash-merge!", hash_merge, (IDIO ht1, IDIO ht2))

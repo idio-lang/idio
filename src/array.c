@@ -175,6 +175,8 @@ void idio_array_resize (IDIO a)
     IDIO_ASSERT (a);
     IDIO_TYPE_ASSERT (array, a);
 
+    IDIO_ASSERT_NOT_CONST (array, a);
+
     idio_array_t *oarray = a->u.array;
     idio_ai_t oasize = IDIO_ARRAY_ASIZE (a);
     idio_ai_t ousize = IDIO_ARRAY_USIZE (a);
@@ -240,6 +242,8 @@ void idio_array_insert_index (IDIO a, IDIO o, idio_ai_t index)
     IDIO_ASSERT (o);
     IDIO_TYPE_ASSERT (array, a);
 
+    IDIO_ASSERT_NOT_CONST (array, a);
+
     if (index < 0) {
 	/*
 	  negative indexes cannot be larger than the size of the
@@ -302,6 +306,8 @@ IDIO idio_array_pop (IDIO a)
     IDIO_ASSERT (a);
     IDIO_TYPE_ASSERT (array, a);
 
+    IDIO_ASSERT_NOT_CONST (array, a);
+
     if (IDIO_ARRAY_USIZE (a) < 1) {
 	IDIO_ARRAY_USIZE (a) = 0;
 	return idio_S_nil;
@@ -328,6 +334,8 @@ IDIO idio_array_shift (IDIO a)
 {
     IDIO_ASSERT (a);
     IDIO_TYPE_ASSERT (array, a);
+
+    IDIO_ASSERT_NOT_CONST (array, a);
 
     if (IDIO_ARRAY_USIZE (a) < 1) {
 	IDIO_ARRAY_USIZE (a) = 0;
@@ -363,6 +371,8 @@ void idio_array_unshift (IDIO a, IDIO o)
     IDIO_ASSERT (a);
     IDIO_ASSERT (o);
     IDIO_TYPE_ASSERT (array, a);
+
+    IDIO_ASSERT_NOT_CONST (array, a);
 
     idio_ai_t i;
     if (IDIO_ARRAY_USIZE (a) > 0) {
@@ -541,14 +551,16 @@ void idio_array_bind (IDIO a, idio_ai_t nargs, ...)
 /**
  * idio_array_copy() - copy an array
  * @a: array
+ * @depth: shallow or deep
  * @extra: size of the new array beyond the original
  *
  * Return:
  * The new array.
  */
-IDIO idio_array_copy (IDIO a, idio_ai_t extra)
+IDIO idio_array_copy (IDIO a, int depth, idio_ai_t extra)
 {
     IDIO_ASSERT (a);
+    IDIO_C_ASSERT (depth);
     IDIO_TYPE_ASSERT (array, a);
 
     idio_ai_t osz = IDIO_ARRAY_USIZE (a);
@@ -557,8 +569,12 @@ IDIO idio_array_copy (IDIO a, idio_ai_t extra)
 
     idio_ai_t i;
     for (i = 0; i < osz; i++) {
+	IDIO e = idio_array_get_index (a, i);
+	if (IDIO_COPY_DEEP == depth) {
+	    e = idio_copy (e, depth);
+	}
 	idio_array_insert_index (na,
-				 idio_array_get_index (a, i),
+				 e,
 				 i);
     }
 
@@ -605,6 +621,8 @@ int idio_array_delete_index (IDIO a, idio_ai_t index)
 {
     IDIO_ASSERT (a);
     IDIO_TYPE_ASSERT (array, a);
+
+    IDIO_ASSERT_NOT_CONST (array, a);
 
     if (index < 0) {
 	index += IDIO_ARRAY_USIZE (a);
@@ -694,6 +712,83 @@ If no default value is supplied #f is used.	\n\
     return a;
 }
 
+IDIO_DEFINE_PRIMITIVE1V_DS ("copy-array", copy_array, (IDIO orig, IDIO args), "orig [depth [extra]]", "\
+copy array `orig` and add an optional `extra` elements	\n\
+							\n\
+:param orig: initial array				\n\
+:type orig: array					\n\
+:param depth: (optional) 'shallow or 'deep (default)	\n\
+:param extra: (optional) extra elements			\n\
+:return: the new array					\n\
+:rtype: array						\n\
+")
+{
+    IDIO_ASSERT (orig);
+    IDIO_ASSERT (args);
+
+    IDIO_TYPE_ASSERT (array, orig);
+
+    IDIO_VERIFY_PARAM_TYPE (list, args);
+
+    idio_ai_t extra = 0;
+    int depth = IDIO_COPY_DEEP;
+
+    if (idio_S_nil != args) {
+	IDIO idepth = IDIO_PAIR_H (args);
+	IDIO iextra = idio_S_nil;
+	if (idio_isa_pair (IDIO_PAIR_T (args))) {
+	    iextra = IDIO_PAIR_HT (args);
+	}
+
+	if (idio_isa_symbol (idepth)) {
+	    if (idio_S_deep == idepth) {
+		depth = IDIO_COPY_DEEP;
+	    } else if (idio_S_shallow == idepth) {
+		depth = IDIO_COPY_SHALLOW;
+	    } else {
+		idio_error_param_type ("'deep or 'shallow", idepth, IDIO_C_LOCATION ("copy-array"));
+
+		return idio_S_notreached;
+	    }
+	} else {
+	    idio_error_param_type ("symbol", idepth, IDIO_C_LOCATION ("copy-array"));
+
+	    return idio_S_notreached;
+	}
+
+	if (idio_isa_fixnum (iextra)) {
+	    extra = IDIO_FIXNUM_VAL (iextra);
+	} else if (idio_isa_bignum (iextra)) {
+	    if (IDIO_BIGNUM_INTEGER_P (iextra)) {
+		extra = idio_bignum_ptrdiff_value (iextra);
+	    } else {
+		IDIO iextra_i = idio_bignum_real_to_integer (iextra);
+		if (idio_S_nil == iextra_i) {
+		    idio_error_param_type ("integer", iextra, IDIO_C_LOCATION ("copy-array"));
+
+		    return idio_S_notreached;
+		} else {
+		    extra = idio_bignum_ptrdiff_value (iextra_i);
+		}
+	    }
+	} else {
+	    idio_error_param_type ("integer", iextra, IDIO_C_LOCATION ("copy-array"));
+
+	    return idio_S_notreached;
+	}
+    }
+
+    if (extra < 0) {
+	idio_error_printf (IDIO_C_LOCATION ("copy-array"), "invalid length: %zd", extra);
+
+	return idio_S_notreached;
+    }
+
+    IDIO a = idio_array_copy (orig, depth, extra);
+
+    return a;
+}
+
 IDIO_DEFINE_PRIMITIVE2_DS ("array-fill!", array_fill, (IDIO a, IDIO fill), "a fill", "\
 set all the elements of `a` to `fill`		\n\
 						\n\
@@ -706,6 +801,8 @@ set all the elements of `a` to `fill`		\n\
     IDIO_ASSERT (a);
     IDIO_ASSERT (fill);
     IDIO_VERIFY_PARAM_TYPE (array, a);
+
+    IDIO_ASSERT_NOT_CONST (array, a);
 
     idio_ai_t al = idio_array_size (a);
     idio_ai_t ai;
@@ -801,6 +898,8 @@ IDIO idio_array_set (IDIO a, IDIO index, IDIO v)
     IDIO_ASSERT (index);
     IDIO_ASSERT (v);
     IDIO_TYPE_ASSERT (array, a);
+
+    IDIO_ASSERT_NOT_CONST (array, a);
 
     ptrdiff_t i = -1;
 
@@ -960,6 +1059,7 @@ void idio_array_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (array_p);
     IDIO_ADD_PRIMITIVE (make_array);
+    IDIO_ADD_PRIMITIVE (copy_array);
     IDIO_ADD_PRIMITIVE (array_fill);
     IDIO_ADD_PRIMITIVE (array_length);
     IDIO_ADD_PRIMITIVE (array_ref);

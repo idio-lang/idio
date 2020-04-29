@@ -32,7 +32,7 @@ void idio_string_error_length (char *m, IDIO s, ptrdiff_t i, IDIO loc)
 
     char em[BUFSIZ];
     sprintf (em, "%s: %td", m, i);
-    idio_error_C (em, IDIO_LIST1 (s), loc);
+    idio_error_C (em, s, loc);
 }
 
 void idio_substring_error_index (char *m, IDIO s, ptrdiff_t ip0, ptrdiff_t ipn, IDIO loc)
@@ -45,7 +45,7 @@ void idio_substring_error_index (char *m, IDIO s, ptrdiff_t ip0, ptrdiff_t ipn, 
 
     char em[BUFSIZ];
     sprintf (em, "%s: %td %td", m, ip0, ipn);
-    idio_error_C (em, IDIO_LIST1 (s), loc);
+    idio_error_C (em, s, loc);
 }
 
 IDIO idio_string_C (const char *s_C)
@@ -120,7 +120,7 @@ IDIO idio_string_copy (IDIO string)
 
     IDIO_TYPE_ASSERT (string, string);
 
-    IDIO copy;
+    IDIO copy = idio_S_unspec;
 
     char *s = idio_string_s (string);
 
@@ -443,6 +443,8 @@ IDIO_DEFINE_PRIMITIVE2 ("string-fill!", string_fill, (IDIO s, IDIO fill))
     IDIO_VERIFY_PARAM_TYPE (string, s);
     IDIO_VERIFY_PARAM_TYPE (character, fill);
 
+    IDIO_ASSERT_NOT_CONST (string, s);
+
     if (idio_isa_substring (s)) {
 	s = idio_string_copy (s);
     }
@@ -525,6 +527,8 @@ IDIO idio_string_set (IDIO s, IDIO index, IDIO c)
     IDIO_ASSERT (c);
     IDIO_TYPE_ASSERT (string, s);
     IDIO_TYPE_ASSERT (character, c);
+
+    IDIO_ASSERT_NOT_CONST (string, s);
 
     ptrdiff_t i = -1;
 
