@@ -1039,7 +1039,7 @@ IDIO idio_handle_location (IDIO h)
     IDIO_TYPE_ASSERT (handle, h);
 
     char buf[BUFSIZ];
-    sprintf (buf, "%s:line %" PRId64, IDIO_HANDLE_NAME (h), IDIO_HANDLE_LINE (h));
+    sprintf (buf, "%s:line %jd", IDIO_HANDLE_NAME (h), (intmax_t) IDIO_HANDLE_LINE (h));
 
     return idio_string_C (buf);
 }

@@ -1365,7 +1365,7 @@ char *idio_as_string (IDIO o, int depth)
 		    }
 
 		    char *info;
-		    if (asprintf (&info, ":\"%s\":%lld:%lld>", IDIO_HANDLE_NAME (o), (unsigned long long) IDIO_HANDLE_LINE (o), (unsigned long long) IDIO_HANDLE_POS (o)) == -1) {
+		    if (asprintf (&info, ":\"%s\":%jd:%jd>", IDIO_HANDLE_NAME (o), (intmax_t) IDIO_HANDLE_LINE (o), (intmax_t) IDIO_HANDLE_POS (o)) == -1) {
 			free (r);
 			idio_error_alloc ("asprintf");
 
