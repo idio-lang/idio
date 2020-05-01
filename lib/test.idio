@@ -81,6 +81,17 @@ PATH = string-append PATH ":" (string-append PWD "/" (if (equal? PWD-last "src")
 OIDIOLIB := IDIOLIB
 IDIOLIB = string-append IDIOLIB ":" PWD
 
+;; running tests under Jenkins means we inherit the agent's max open
+;; files (eg. 1048576) which means our file descriptor reaping tests
+;; blow up.
+nofiles_lim := C/integer-> 256
+rl := libc/getrlimit libc/RLIMIT_NOFILE
+if (C/> rl.rlim_cur nofiles_lim) {
+  rl.rlim_cur = nofiles_lim
+  libc/setrlimit libc/RLIMIT_NOFILE rl
+}
+
+
 load "tests/s9-test.idio"
 load "tests/operator.idio"
 load "tests/closure.idio"
