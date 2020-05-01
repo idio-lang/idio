@@ -110,8 +110,9 @@ load "tests/utf-8.idio"
 ;; that?  Erm, they've not been counted and are dynamic in number so
 ;; test we've seen at least as many as the largest number we've
 ;; seen.  Wait, some tests are OS-specific.  Drat!
-;test (eq? Tests 3122) #t
-test (ge Tests 3124) #t
+test (eq? Tests 3124) #t
+
+display* "test.idio completed after " SECONDS "seconds"
 
 if (zero? Errors) (display* "All" Tests "tests passed!") \
    {
@@ -122,6 +123,7 @@ if (zero? Errors) (display* "All" Tests "tests passed!") \
        display " error "
      }
      display* "in" Tests "tests."
+     libc/exit 1
    }
 
 if (file-exists? testfile) (delete-file testfile)
@@ -129,4 +131,3 @@ if (file-exists? testfile) (delete-file testfile)
 IDIOLIB = OIDIOLIB
 PATH = OPATH
 
-display* "test.idio completed after " SECONDS "seconds"
