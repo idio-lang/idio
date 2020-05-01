@@ -1245,9 +1245,9 @@ static void idio_libc_set_signal_names ()
 	    IDIO_LIBC_SIGNAL_NAME_ONLY (sig_name, i)
 	    if (first) {
 		first = 0;
-		fprintf (stderr, "Unmapped signal numbers:");
+		fprintf (stderr, "Unmapped signal numbers:\n");
 	    }
-	    fprintf (stderr, " %d (%s) -> %s;", i, strsignal (i), sig_name);
+	    fprintf (stderr, " %3d %-*s %s\n", i, IDIO_LIBC_SIGNAMELEN, sig_name, strsignal (i));
 	}
     }
     if (0 == first) {
@@ -2529,9 +2529,9 @@ static void idio_libc_set_errno_names ()
 	    sprintf (idio_libc_errno_names[i], "%s", err_name);
 	    if (first) {
 		first = 0;
-		fprintf (stderr, "Unmapped errno numbers:");
+		fprintf (stderr, "Unmapped errno numbers:\n");
 	    }
-	    fprintf (stderr, " %d (%s) -> %s;", i, strerror (i), err_name);
+	    fprintf (stderr, " %3d %-*s %s\n", i, IDIO_LIBC_ERRNAMELEN, err_name, strerror (i));
 	}
     }
     if (0 == first) {
@@ -2746,9 +2746,9 @@ static void idio_libc_set_rlimit_names ()
 	    sprintf (idio_libc_rlimit_names[i], "%s", err_name);
 	    if (first) {
 		first = 0;
-		fprintf (stderr, "Unmapped rlimit numbers:");
+		fprintf (stderr, "Unmapped rlimit numbers:\n");
 	    }
-	    fprintf (stderr, " %d (%s) -> %s;", i, strerror (i), err_name);
+	    fprintf (stderr, " %3d %-*s %s\n", i, IDIO_LIBC_RLIMITNAMELEN, err_name, strerror (i));
 	}
     }
     if (0 == first) {
