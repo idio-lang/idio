@@ -95,12 +95,12 @@ define (%file-access file mode) {
 
 define (%get-sys-tmpdir) {
   loop :+ function (dirs) {
-    if (null? dirs) (error '%get-sys-tmpdir "no remaining %sys-tmpdirs" %sys-tmpdirs) {
-      dir := ph dirs
-      if (access dir W_OK) dir {
-	loop (pt dirs)
-      }
-    }
+	    if (null? dirs) (error '%get-sys-tmpdir "no remaining %sys-tmpdirs" %sys-tmpdirs) {
+	      dir := ph dirs
+	      if (access dir W_OK) dir {
+		loop (pt dirs)
+	      }
+	    }
   }
 
   if %sys-tmpdir %sys-tmpdir {
@@ -113,10 +113,10 @@ define (%get-tmpdir) {
 
   if ((environ? 'TMPDIR) and
       (access TMPDIR W_OK)) {
-    tmpdir = TMPDIR
-  } {
-    tmpdir = (%get-sys-tmpdir)
-  }
+	tmpdir = TMPDIR
+      } {
+	tmpdir = (%get-sys-tmpdir)
+      }
 }
 
 define (%make-tmp-fd & args) {
@@ -240,28 +240,28 @@ keyword, eg. ``:NOFILE`` for ``libc/RLIMIT_NOFILE``
 :rtype: struct-rlimit
 
 :return: 
-" {
+  " {
     resource := #n
     cond ((C/int? res) (resource = res)) \
          ((symbol? res) (resource = res)) \
 	 ((keyword? res) {
 
-      ;; each OS has a different set of (valid) RLIMIT_* macros so our
-      ;; set of :nickname tests has to be dynamic
+	   ;; each OS has a different set of (valid) RLIMIT_* macros so our
+	   ;; set of :nickname tests has to be dynamic
 
-      map (function (np) "map over `libc/rlimit-names`" {
-        ln := pt np
-	n := pht (split-string ln "_")
-	k := make-keyword n
-	s := string->symbol ln
+	   map (function (np) "map over `libc/rlimit-names`" {
+	     ln := pt np
+	     n := pht (split-string ln "_")
+	     k := make-keyword n
+	     s := string->symbol ln
 
-	if (eq? res k) {
-          resource = symbol-value s 'libc
-        }
-      }) (libc/rlimit-names)
+	     if (eq? res k) {
+	       resource = symbol-value s 'libc
+	     }
+	   }) (libc/rlimit-names)
 
-      if (null? resource) (error 'getrlimit "bad resource" resource "from" res)
-    })
+	   if (null? resource) (error 'getrlimit "bad resource" resource "from" res)
+	 })
 
     orig-getrlimit resource
   }
@@ -278,28 +278,28 @@ keyword, eg. ``:NOFILE`` for ``libc/RLIMIT_NOFILE``
 :rtype: #unspec
 
 :return: #unspec
-" {
+  " {
     resource := #n
     cond ((C/int? res) (resource = res)) \
          ((symbol? res) (resource = res)) \
 	 ((keyword? res) {
 
-      ;; each OS has a different set of (valid) RLIMIT_* macros so our
-      ;; set of :nickname tests has to be dynamic
+	   ;; each OS has a different set of (valid) RLIMIT_* macros so our
+	   ;; set of :nickname tests has to be dynamic
 
-      map (function (np) "map over `libc/rlimit-names`" {
-        ln := pt np
-	n := pht (split-string ln "_")
-	k := make-keyword n
-	s := string->symbol ln
+	   map (function (np) "map over `libc/rlimit-names`" {
+	     ln := pt np
+	     n := pht (split-string ln "_")
+	     k := make-keyword n
+	     s := string->symbol ln
 
-	if (eq? res k) {
-          resource = symbol-value s 'libc
-        }
-      }) (libc/rlimit-names)
+	     if (eq? res k) {
+	       resource = symbol-value s 'libc
+	     }
+	   }) (libc/rlimit-names)
 
-      if (null? resource) (error 'setrlimit "bad resource" resource "from" res)
-    })
+	   if (null? resource) (error 'setrlimit "bad resource" resource "from" res)
+	 })
 
     orig-setrlimit resource rlim
   }
