@@ -47,7 +47,12 @@ define-macro (help x) {
       }
       #t
     })   ((struct-type? $x) {
-      display* "struct-type:" (struct-type-name $x) "\n"
+      loop-isa :+ function (type) {
+		    if (null? type) "" {
+		      string-append " > " (symbol->string (struct-type-name type)) (loop-isa (struct-type-parent type))
+		    }
+      }
+      display* "struct-type:" (struct-type-name $x) (loop-isa (struct-type-parent $x))"\n"
       display* "fields" (struct-type-fields $x)
     })   ((struct-instance? $x) {
       display* "struct-instance:" '$x "\n"
