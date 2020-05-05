@@ -5354,6 +5354,7 @@ IDIO_DEFINE_PRIMITIVE1 ("exit", exit, (IDIO istatus))
     idio_flush_handle (idio_thread_current_error_handle ());
 
     idio_exit_status = status;
+    exit (status);
     fprintf (stderr, "idio/exit (%d)\n", idio_exit_status);
 
     /*
