@@ -209,7 +209,7 @@ define (condition-report prefix cont cond & args) "print a report on `condition`
 
 :return: unspecified
 " {
-  oh := current-output-handle
+  oh := (current-output-handle)
   if (and (not (null? args))
 	  (pair? args)) {
 	    oh = ph args
@@ -233,7 +233,8 @@ define (condition-report prefix cont cond & args) "print a report on `condition`
   }
   dh* oh (struct-type-name (struct-instance-type cond)) ": "
 
-  if (struct-type-isa (struct-instance-type cond) ^idio-error) {
+  if (and (struct-type-isa (struct-instance-type cond) ^idio-error)
+	  (not (struct-type-isa (struct-instance-type cond) ^rt-command-status-error))) {
     dh* oh cond.message ";" cond.detail ";" cond.location
   }
 
@@ -265,7 +266,19 @@ define (condition-report prefix cont cond & args) "print a report on `condition`
 	 dh* oh ": pattern" cond.pattern
        }) \
        ((struct-type-isa (struct-instance-type cond) ^rt-command-status-error) {
-	 dh* oh ": status" cond.status
+	 job := idio-error-location cond
+	 loop :+ function (procs details) {
+		   cond ((null? procs) #t) \
+			(else {
+			  proc := ph procs
+			  dh* oh "::" proc.argv "\t" proc.pid "\t" (if proc.completed " C" "!C") (if proc.stopped "S" " ") "\t" (ph details) "\n"
+			  loop (pt procs) (pt details)
+			})
+	 }
+
+	 dh* oh "\n"
+	 loop (reverse (%idio-job-procs job)) (reverse (pipeline-detail job))
+	 dh* oh "pipeline:" (%idio-job-pipeline job) "=>" cond.status
        }) \
        ((struct-type-isa (struct-instance-type cond) ^rt-array-bounds-error) {
 	 dh* oh ": index" cond.index

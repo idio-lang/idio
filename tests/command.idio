@@ -50,10 +50,8 @@ trap ^rt-command-status-error (function (cont cond) {
   ;; complaining loudly and testing for something that isn't generated
   ;; (spotting an error in the summary is easier to spot)
   exit0 := function (cond) {
-	     edisplay* "command tests:" PID "exit0: unexpected status error" cond
-	     job := idio-error-location cond
-	     edisplay* "pipeline:" (%idio-job-pipeline job)
-	     edisplay* "detail:" (pipeline-detail job)
+	     edisplay* "command tests:" PID "exit0: unexpected status error"
+	     condition-report "command tests: exit0" #t cond
 	     test (rt-command-status-error-status cond) 'job-failed
   }
 
