@@ -429,24 +429,30 @@ define (foreground-job job cont) "place job `job` in the foreground
 If `cont` is set a SIGCONT is sent to the process group
 " {
 
-  ;; put the job in the foreground
-  job-pgid := %idio-job-pgid job
-  suppress-errors ^idio-error tcsetpgrp %idio-terminal job-pgid
+  if %idio-interactive {
+    ;; put the job in the foreground
+    job-pgid := %idio-job-pgid job
+    suppress-errors ^idio-error tcsetpgrp %idio-terminal job-pgid
+  }
   if cont {
-    tcsetattr %idio-terminal TCSADRAIN (%idio-job-tcattrs job)
+    if %idio-interactive {
+      tcsetattr %idio-terminal TCSADRAIN (%idio-job-tcattrs job)
+    }
     kill (- job-pgid) SIGCONT
   }
 
   r := wait-for-job job
 
-  ;; put the shell back in the foreground
-  tcsetpgrp %idio-terminal %idio-pgid
+  if %idio-interactive {
+    ;; put the shell back in the foreground
+    tcsetpgrp %idio-terminal %idio-pgid
 
-  ;; save the job's current terminal state
-  set-%idio-job-tcattrs! job (tcgetattr %idio-terminal)
+    ;; save the job's current terminal state
+    set-%idio-job-tcattrs! job (tcgetattr %idio-terminal)
 
-  ;; restore the shell's terminal state
-  tcsetattr %idio-terminal TCSADRAIN %idio-tcattrs
+    ;; restore the shell's terminal state
+    tcsetattr %idio-terminal TCSADRAIN %idio-tcattrs
+  }
 
   r
 }
@@ -628,7 +634,9 @@ define (%prep-process pgid infile outfile errfile foreground) "prepare the curre
     if foreground {
       ;; give the terminal to the process group -- dupe of parent to
       ;; avoid race conditions
-      suppress-errors ^idio-error tcsetpgrp %idio-terminal pgid
+      if %idio-interactive {
+	suppress-errors ^idio-error tcsetpgrp %idio-terminal pgid
+      }
     }
 
     ;; set job control signals back to default
