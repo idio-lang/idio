@@ -1714,7 +1714,7 @@ char *idio_as_string (IDIO o, int depth)
  */
 char *idio_display_string (IDIO o)
 {
-    char *r;
+    char *r = NULL;
 
     switch ((intptr_t) o & IDIO_TYPE_MASK) {
     case IDIO_TYPE_FIXNUM_MARK:

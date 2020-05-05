@@ -113,8 +113,14 @@ IDIO idio_open_input_string_handle_C (char *str)
     IDIO_C_ASSERT (str);
 
     size_t blen = strlen (str);
-    char *str_copy = idio_alloc (blen);
-    strncpy (str_copy, str, blen);
+    char *str_copy = idio_alloc (blen + 1);
+    /*
+     * gcc warns "output truncated before terminating nul copying as
+     * many bytes from a string as its length [-Wstringop-truncation]"
+     * for just strncpy(..., blen)
+     */
+    strncpy (str_copy, str, blen + 1);
+    str_copy[blen] = '\0';
 
     return idio_open_string_handle (str_copy, blen, IDIO_HANDLE_FLAG_READ);
 }

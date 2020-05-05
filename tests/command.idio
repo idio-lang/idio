@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015, 2017 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -33,13 +33,13 @@ command0 := Tests
 rcseh := #n
 
 trap ^rt-command-status-error (function (cont cond) {
-  test (rt-command-status-error? cond) #t
-  if cont {
-    rcseh cond
-  } {
-    edisplay* "command tests:" PID "unexpected non-continuable condition" cond
-    raise cont cond
-  }
+				 test (rt-command-status-error? cond) #t
+				 if cont {
+				   rcseh cond
+				 } {
+				   edisplay* "command tests:" PID "unexpected non-continuable condition" cond
+				   raise cont cond
+				 }
 }) {
 
   ;; define some rt-command-status-error-handlers for the conditions
@@ -50,32 +50,32 @@ trap ^rt-command-status-error (function (cont cond) {
   ;; complaining loudly and testing for something that isn't generated
   ;; (spotting an error in the summary is easier to spot)
   exit0 := function (cond) {
-    edisplay* "command tests:" PID "exit0: unexpected status error" cond
-    job := idio-error-location cond
-    edisplay* "pipeline:" (%idio-job-pipeline job)
-    edisplay* "detail:" (pipeline-detail job)
-    test (rt-command-status-error-status cond) 'job-failed
+	     edisplay* "command tests:" PID "exit0: unexpected status error" cond
+	     job := idio-error-location cond
+	     edisplay* "pipeline:" (%idio-job-pipeline job)
+	     edisplay* "detail:" (pipeline-detail job)
+	     test (rt-command-status-error-status cond) 'job-failed
   }
 
   exit1 := function (cond) {
-    ;; edisplay* "command tests:" PID "exit1" cond
-    job := idio-error-location cond
-    test (job-detail job) #T{ (exit $(C/integer-> 1)) }
-    rt-command-status-error-status cond
+	     ;; edisplay* "command tests:" PID "exit1" cond
+	     job := idio-error-location cond
+	     test (job-detail job) #T{ (exit $(C/integer-> 1)) }
+	     rt-command-status-error-status cond
   }
 
   killed1 := function (cond) {
-    ;; edisplay* "command tests:" PID "killed1" cond
-    job := idio-error-location cond
-    test (job-detail job) #T{ (killed $(C/integer-> 1)) }
-    rt-command-status-error-status cond
+	       ;; edisplay* "command tests:" PID "killed1" cond
+	       job := idio-error-location cond
+	       test (job-detail job) #T{ (killed $(C/integer-> 1)) }
+	       rt-command-status-error-status cond
   }
 
   killed13 := function (cond) {
-    ;; edisplay* "command tests:" PID "killed13" cond
-    job := idio-error-location cond
-    test (job-detail job) #T{ (killed $(C/integer-> 13)) }
-    rt-command-status-error-status cond
+		;; edisplay* "command tests:" PID "killed13" cond
+		job := idio-error-location cond
+		test (job-detail job) #T{ (killed $(C/integer-> 13)) }
+		rt-command-status-error-status cond
   }
 
   ;; Testing the tests! 

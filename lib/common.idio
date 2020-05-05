@@ -56,17 +56,17 @@ load-handle = {
     load-handle-k := #n
 
     trap ^condition (function (cont cond) {
-      if (not cont) {
-	condition-report (string-append "load-handle: " (handle-location handle)) cont cond (current-error-handle)
-	;(idio-thread-state)
-        load-handle-k cond
-      } {
-	raise cont cond
-      }
+		       if (not cont) {
+			 condition-report (string-append "load-handle: " (handle-location handle)) cont cond (current-error-handle)
+			 ;(idio-thread-state)
+			 load-handle-k cond
+		       } {
+			 raise cont cond
+		       }
     }) {
       call/cc (function (k) {
-	load-handle-k = k
-	orig-load-handle handle
+		 load-handle-k = k
+		 orig-load-handle handle
       })
     }
   }
@@ -97,9 +97,9 @@ load = {
   }
 }
 
-define-macro (suppress-errors & cmd) {
+define-macro (suppress-errors conds & cmd) {
   #T{
-    trap ^condition (function (cont cond) {
+    trap $conds (function (cont cond) {
       if cont {
 	;; What should we return?  Something hard to mistake for a
 	;; possible normal value.  Probably.

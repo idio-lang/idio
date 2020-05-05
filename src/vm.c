@@ -78,6 +78,8 @@ idio_ai_t idio_vm_IHR_pc;
 idio_ai_t idio_vm_AR_pc;
 size_t idio_prologue_len;
 
+int idio_vm_exit = 0;
+
 /**
  * DOC: Some VM tables:
  *
@@ -550,7 +552,6 @@ void idio_vm_debug (IDIO thr, char *prefix, idio_ai_t stack_start)
 }
 
 static void idio_vm_invoke (IDIO thr, IDIO func, int tailp);
-static void idio_vm_restore_continuation (IDIO k, IDIO val);
 
 static uint64_t idio_vm_fetch_varuint (IDIO thr)
 {
@@ -961,6 +962,26 @@ static void idio_vm_clos_time (IDIO thr, const char *context)
     IDIO_ASSERT (thr);
     IDIO_TYPE_ASSERT (thread, thr);
 
+    if (NULL == idio_vm_clos) {
+	return;
+    }
+
+    if (0 == idio_vm_clos->type) {
+	/*
+	 * closure stashed in idio_vm_clos has been recycled before we
+	 * got round to updating its timings
+	 */
+	return;
+    }
+
+    if (! idio_isa_closure (idio_vm_clos)) {
+	/*
+	 * closure stashed in idio_vm_clos has been recycled before we
+	 * got round to updating its timings
+	 */
+	return;
+    }
+
     struct timespec clos_te;
     if (0 != clock_gettime (CLOCK_MONOTONIC, &clos_te)) {
 	perror ("clock_gettime (CLOCK_MONOTONIC, clos_te)");
@@ -974,21 +995,11 @@ static void idio_vm_clos_time (IDIO thr, const char *context)
 	clos_td.tv_sec -= 1;
     }
 
-    if (idio_vm_clos) {
-	IDIO_CLOSURE_CALL_TIME (idio_vm_clos).tv_sec += clos_td.tv_sec;
-	IDIO_CLOSURE_CALL_TIME (idio_vm_clos).tv_nsec += clos_td.tv_nsec;
-	if (IDIO_CLOSURE_CALL_TIME (idio_vm_clos).tv_nsec > 1000000000) {
-	    IDIO_CLOSURE_CALL_TIME (idio_vm_clos).tv_nsec -= 1000000000;
-	    IDIO_CLOSURE_CALL_TIME (idio_vm_clos).tv_sec += 1;
-	}
-    } else {
-	if (0) {
-	    size_t pc = IDIO_THREAD_PC (thr);
-	    fprintf (stderr, "idio_vm_clos_time: idio_vm_clos undefined from %s pc=%7zd\n", context, pc);
-	    if (pc > 1) {
-		idio_dump (thr, 2);
-	    }
-	}
+    IDIO_CLOSURE_CALL_TIME (idio_vm_clos).tv_sec += clos_td.tv_sec;
+    IDIO_CLOSURE_CALL_TIME (idio_vm_clos).tv_nsec += clos_td.tv_nsec;
+    if (IDIO_CLOSURE_CALL_TIME (idio_vm_clos).tv_nsec > 1000000000) {
+	IDIO_CLOSURE_CALL_TIME (idio_vm_clos).tv_nsec -= 1000000000;
+	IDIO_CLOSURE_CALL_TIME (idio_vm_clos).tv_sec += 1;
     }
 }
 
@@ -1940,7 +1951,7 @@ IDIO_DEFINE_PRIMITIVE0 ("%%make-continuation", make_continuation, ())
     return k;
 }
 
-static void idio_vm_restore_continuation (IDIO k, IDIO val)
+void idio_vm_restore_continuation_data (IDIO k, IDIO val)
 {
     IDIO_ASSERT (k);
     IDIO_ASSERT (val);
@@ -1972,11 +1983,40 @@ static void idio_vm_restore_continuation (IDIO k, IDIO val)
 
     IDIO_THREAD_VAL (thr) = val;
     IDIO_THREAD_JMP_BUF (thr) = IDIO_CONTINUATION_JMP_BUF (k);
+}
+
+void idio_vm_restore_continuation (IDIO k, IDIO val)
+{
+    IDIO_ASSERT (k);
+    IDIO_ASSERT (val);
+    IDIO_TYPE_ASSERT (continuation, k);
+
+    idio_vm_restore_continuation_data (k, val);
+
+    IDIO thr = idio_thread_current_thread ();
 
     if (NULL != IDIO_THREAD_JMP_BUF (thr)) {
 	longjmp (*(IDIO_THREAD_JMP_BUF (thr)), IDIO_VM_LONGJMP_CONTINUATION);
     } else {
 	fprintf (stderr, "WARNING: restore-continuation: unable to use jmp_buf\n");
+	return;
+    }
+}
+
+void idio_vm_restore_exit (IDIO k, IDIO val)
+{
+    IDIO_ASSERT (k);
+    IDIO_ASSERT (val);
+    IDIO_TYPE_ASSERT (continuation, k);
+
+    idio_vm_restore_continuation_data (k, val);
+
+    IDIO thr = idio_thread_current_thread ();
+
+    if (NULL != IDIO_THREAD_JMP_BUF (thr)) {
+	longjmp (*(IDIO_THREAD_JMP_BUF (thr)), IDIO_VM_LONGJMP_EXIT);
+    } else {
+	fprintf (stderr, "WARNING: restore-exit: unable to use jmp_buf\n");
 	return;
     }
 }
@@ -4234,7 +4274,9 @@ void idio_vm_dasm (IDIO thr, idio_ai_t pc0, idio_ai_t pce)
 		} else {
 		    fprintf (stderr, "vm cc sig: failed to find %" PRIu64 "\n", ssci);
 		}
-		IDIO_VM_DASM (" (%s)", idio_display_string (ss));
+		char *ids = idio_display_string (ss);
+		IDIO_VM_DASM (" (%s)", ids);
+		free (ids);
 
 		IDIO fdsci = idio_fixnum (dsci);
 		IDIO fgdsci = idio_module_vci_get_or_set (ce, fdsci);
@@ -4245,7 +4287,9 @@ void idio_vm_dasm (IDIO thr, idio_ai_t pc0, idio_ai_t pce)
 		    fprintf (stderr, "vm cc doc: failed to find %" PRIu64 "\n", dsci);
 		}
 		if (idio_S_nil != ds) {
-		    IDIO_VM_DASM ("\n%s", idio_display_string (ds));
+		    ids = idio_display_string (ds);
+		    IDIO_VM_DASM ("\n%s", ids);
+		    free (ids);
 		}
 	    }
 	    break;
@@ -4867,6 +4911,11 @@ IDIO idio_vm_run (IDIO thr)
     case IDIO_VM_LONGJMP_EVENT:
 	idio_gc_reset ("idio_vm_run/event", gc_pause);
 	break;
+    case IDIO_VM_LONGJMP_EXIT:
+	idio_gc_reset ("idio_vm_run/exit", gc_pause);
+	idio_final ();
+	exit (idio_exit_status);
+	break;
     default:
 	fprintf (stderr, "setjmp: unexpected value: %d\n", sjv);
 	break;
@@ -5043,6 +5092,19 @@ IDIO idio_vm_run (IDIO thr)
     IDIO r = IDIO_THREAD_VAL (thr);
 
     /*
+     * Expose krun before any possible non-local return
+     * (idio_vm_restore_{exit,continuation}
+     */
+    idio_gc_expose (krun);
+
+    if (idio_vm_exit) {
+	fprintf (stderr, "vm-run/exit (%d)\n", idio_exit_status);
+	idio_vm_restore_exit (idio_k_exit, idio_S_unspec);
+
+	return idio_S_notreached;
+    }
+
+    /*
      * Check we are where we think we should be...wherever that is!
      *
      * There's an element of having fallen down the rabbit hole here
@@ -5072,11 +5134,9 @@ IDIO idio_vm_run (IDIO thr)
     if (bail) {
 	fprintf (stderr, "vm-run/bail: restoring krun\n");
 	idio_vm_restore_continuation (krun, idio_S_unspec);
-	idio_vm_debug (thr, "vm-run/bail", 1);
-	idio_gc_collect ("vm-run/bail");
-    }
 
-    idio_gc_expose (krun);
+	return idio_S_notreached;
+    }
 
     return r;
 }
@@ -5293,7 +5353,29 @@ IDIO_DEFINE_PRIMITIVE1 ("exit", exit, (IDIO istatus))
     idio_flush_handle (idio_thread_current_output_handle ());
     idio_flush_handle (idio_thread_current_error_handle ());
 
-    exit (status);
+    idio_exit_status = status;
+    fprintf (stderr, "idio/exit (%d)\n", idio_exit_status);
+
+    /*
+     * So, we've called "exit", now what?  What we want to happen is
+     * for everything to unwind cleanly and main can exit with
+     * idio_exit_status.
+     *
+     * If we're non-interactive
+     */
+
+    /*
+     * flag the VM to exit
+     */
+    idio_vm_exit = 1;
+    
+    /*
+     * Force the thread to FINISH
+     */
+    IDIO thr = idio_thread_current_thread ();
+    IDIO_THREAD_PC (thr) = idio_vm_FINISH_pc;
+
+    return idio_S_unspec;
 }
 
 time_t idio_vm_elapsed (void)

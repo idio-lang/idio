@@ -191,12 +191,14 @@ extern idio_ai_t idio_vm_CR_pc;
 extern idio_ai_t idio_vm_IHR_pc;
 extern idio_ai_t idio_vm_AR_pc;
 extern size_t idio_prologue_len;
+extern int idio_vm_exit;
 
 void idio_vm_panic (IDIO thr, char *m);
 IDIO idio_vm_closure_name (IDIO c);
 
 IDIO idio_vm_run (IDIO thr);
 
+void idio_vm_restore_continuation (IDIO k, IDIO val);
 idio_ai_t idio_vm_extend_constants (IDIO v);
 IDIO idio_vm_constants_ref (idio_ai_t gci);
 idio_ai_t idio_vm_constants_lookup (IDIO v);

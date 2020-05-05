@@ -22,6 +22,9 @@
 
 #include "idio.h"
 
+int idio_exit_status = 0;
+IDIO idio_k_exit = NULL;
+
 void idio_add_primitives ();
 
 #ifdef IDIO_VM_PERF
@@ -244,13 +247,25 @@ int main (int argc, char **argv, char **envp)
     switch (sjv) {
     case 0:
 	break;
+    case IDIO_VM_LONGJMP_EXIT:
+	fprintf (stderr, "bootstrap/exit (%d)\n", idio_exit_status);
+	idio_final ();
+	exit (idio_exit_status);
+	break;
     default:
-	fprintf (stderr, "setjmp: bootstrap failed with sjv %d\n", sjv);
-	exit (1);
+	fprintf (stderr, "setjmp: bootstrap failed with sjv %d: exit (%d)\n", sjv, idio_exit_status);
+	idio_final ();
+	exit (idio_exit_status);
 	break;
     }
 
     idio_load_file_name_aio (idio_string_C ("bootstrap"), idio_vm_constants);
+
+    /*
+     * Save a continuation for exit.
+     */
+    idio_k_exit = idio_continuation (thr);
+    idio_gc_protect (idio_k_exit);
 
     if (argc > 1) {
 	/*
@@ -302,6 +317,11 @@ int main (int argc, char **argv, char **envp)
 		idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST2 (load, idio_string_C (argv[i])));
 		/* idio_load_file_name (idio_string_C (argv[i]), idio_vm_constants); */
 		break;
+	    case IDIO_VM_LONGJMP_EXIT:
+		fprintf (stderr, "load/exit (%d)\n", idio_exit_status);
+		idio_final ();
+		exit (idio_exit_status);
+		break;
 	    default:
 		fprintf (stderr, "setjmp: load %s: failed with sjv %d\n", argv[i], sjv);
 		exit (1);
@@ -320,6 +340,8 @@ int main (int argc, char **argv, char **envp)
 	/*
 	 * See commentary above re: setjmp.
 	 */
+	jmp_buf jb;
+	IDIO_THREAD_JMP_BUF (thr) = &jb;
 	sjv = setjmp (*(IDIO_THREAD_JMP_BUF (thr)));
 
 	switch (sjv) {
@@ -337,6 +359,10 @@ int main (int argc, char **argv, char **envp)
 	case IDIO_VM_LONGJMP_EVENT:
 	    idio_gc_reset ("REPL/event", gc_pause);
 	    break;
+	case IDIO_VM_LONGJMP_EXIT:
+	    idio_gc_reset ("REPL/exit", gc_pause);
+	    idio_final ();
+	    exit (idio_exit_status);
 	default:
 	    fprintf (stderr, "setjmp: repl failed with sjv %d\n", sjv);
 	    exit (1);
@@ -349,5 +375,5 @@ int main (int argc, char **argv, char **envp)
 
     idio_final ();
 
-    return 0;
+    return idio_exit_status;
 }

@@ -815,6 +815,7 @@ void idio_final_condition ()
 
     idio_gc_expose (idio_condition_runtime_error_type);
     idio_gc_expose (idio_condition_rt_parameter_type_error_type);
+    idio_gc_expose (idio_condition_rt_const_parameter_error_type);
     idio_gc_expose (idio_condition_rt_parameter_nil_error_type);
     idio_gc_expose (idio_condition_rt_variable_error_type);
     idio_gc_expose (idio_condition_rt_variable_unbound_error_type);

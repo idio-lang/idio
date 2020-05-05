@@ -1190,6 +1190,13 @@ IDIO idio_load_file_handle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (
 
     IDIO_HANDLE_M_CLOSE (fh) (fh);
 
+    if (idio_vm_exit) {
+	fprintf (stderr, "load-filehandle-interactive/exit (%d)\n", idio_exit_status);
+	idio_vm_restore_exit (idio_k_exit, idio_S_unspec);
+
+	return idio_S_notreached;
+    }
+
     idio_ai_t sp = idio_array_size (IDIO_THREAD_STACK (thr));
 
     if (sp != sp0) {

@@ -72,7 +72,12 @@ char **idio_path_env_split (const char *path_env)
     }
     len = strlen (pe);
     r[ndirs] = idio_alloc (len + 1);
-    strncpy (r[ndirs], pe, len);
+    /*
+     * gcc warns "output truncated before terminating nul copying as
+     * many bytes from a string as its length [-Wstringop-truncation]"
+     * for just strncpy(..., len)
+     */
+    strncpy (r[ndirs], pe, len + 1);
     r[ndirs][len] = '\0';
     ndirs++;
     r[ndirs] = NULL;

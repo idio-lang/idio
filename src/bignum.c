@@ -2521,7 +2521,7 @@ IDIO idio_bignum_primitive_subtract (IDIO args)
     IDIO_ASSERT (args);
     IDIO_TYPE_ASSERT (list, args);
 
-    IDIO r;
+    IDIO r = idio_S_unspec;
 
     int first = 1;
     while (idio_S_nil != args) {

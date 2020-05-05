@@ -3291,6 +3291,10 @@ void idio_final_libc_wrap ()
         free (idio_libc_errno_names[i]);
     }
     free (idio_libc_errno_names);
+    for (i = IDIO_LIBC_FRLIMIT; i < IDIO_LIBC_NRLIMIT; i++) {
+        free (idio_libc_rlimit_names[i]);
+    }
+    free (idio_libc_rlimit_names);
     idio_gc_expose (idio_libc_struct_stat);
 }
 

@@ -156,12 +156,43 @@ void idio_env_init_idiolib (char *argv0)
 	if (pdir >= path) {
 	    if (strncmp (pdir, "/bin", 4) == 0) {
 		/* ... + /lib */
-		idio_env_IDIOLIB_default = idio_alloc (pdir - path + 4 + 1);
+		size_t ieId_len = pdir - path + 4;
+		idio_env_IDIOLIB_default = idio_alloc (ieId_len + 1);
 		strncpy (idio_env_IDIOLIB_default, path, pdir - path);
 		idio_env_IDIOLIB_default[pdir - path] = '\0';
 		strcat (idio_env_IDIOLIB_default, "/lib");
 
-		idio_env_set_default (idio_env_IDIOLIB_sym, idio_env_IDIOLIB_default);
+		if (! idio_env_set_default (idio_env_IDIOLIB_sym, idio_env_IDIOLIB_default)) {
+		    IDIO idiolib = idio_module_env_symbol_value (idio_env_IDIOLIB_sym, IDIO_LIST1 (idio_S_false));
+		    char *index = strstr (IDIO_STRING_S (idiolib), idio_env_IDIOLIB_default);
+		    int append = 0;
+		    if (index) {
+			if (! ('\0' == index[ieId_len + 1] ||
+			       ':' == index[ieId_len + 1])) {
+			    append = 1;
+			}
+		    } else {
+			append = 1;
+		    }
+
+		    if (append) {
+			size_t idiolib_len = strlen (IDIO_STRING_S (idiolib));
+			size_t ni_len = idiolib_len + 1 + ieId_len + 1;
+			if (0 == idiolib_len) {
+			    ni_len = ieId_len + 1;
+			}
+			char *ni = idio_alloc (ni_len + 1);
+			ni[0] = '\0';
+			if (idiolib_len) {
+			    strcpy (ni, IDIO_STRING_S (idiolib));
+			    strcat (ni, ":");
+			}
+			strcat (ni, idio_env_IDIOLIB_default);
+			ni[ni_len] = '\0';
+			idio_module_env_set_symbol_value (idio_env_IDIOLIB_sym, idio_string_C (ni));
+			free (ni);
+		    }
+		}
 	    }
 	}
     }

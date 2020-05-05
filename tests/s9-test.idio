@@ -3138,11 +3138,11 @@ trap ^i/o-closed-error (function (cont cond) {
 }) {
   test {
     call-with-output-file testfile (function (out) {
-      write '(this is a test) out
+      write '(this is a call-with-output-file test) out
       close-output-handle out
       call-with-input-file testfile read
     })
-  } '(this is a test)
+  } '(this is a call-with-output-file test)
 }
 
 delete-file testfile
@@ -3157,7 +3157,7 @@ delete-file testfile
 ;;       '(this is a test))
 test {
   out := open-output-file testfile
-  write '(this is a test) out
+  write '(this is an output-file test) out
   close-output-handle out
   {
     in := open-input-file testfile
@@ -3167,7 +3167,7 @@ test {
       x
     } 
   }
-} '(this is a test)
+} '(this is an output-file test)
 
 delete-file testfile
 
@@ -3202,11 +3202,11 @@ delete-file testfile
 ;;       '(this is a test))
 test {
   with-output-to-file testfile (function () {
-    write '(this is a test)
+    write '(this is a with-output-to-file test)
   })
 
   with-input-from-file testfile read
-} '(this is a test)
+} '(this is a with-output-to-file test)
 
 define (visibility-check x) {
   delete-file testfile

@@ -425,9 +425,9 @@ extern FILE *idio_vm_perf_FILE;
 #define IDIO_CONSTANT_COMPUTED         34
 
 /*
- * A distinguished value to a) shut the compiler up when we know we'll
- * have setjmp'd out of a function and b) we can potentially catch and
- * warn.
+ * A distinguished value to a) shut the C compiler up when we know
+ * we'll have setjmp'd out of a function and b) we can potentially
+ * catch and warn.
  */
 #define IDIO_CONSTANT_NOTREACHED      -100
 
@@ -457,6 +457,9 @@ extern FILE *idio_vm_perf_FILE;
 #define idio_S_computed		((const IDIO) IDIO_CONSTANT_IDIO (IDIO_CONSTANT_COMPUTED))
 
 #define idio_S_notreached	((const IDIO) IDIO_CONSTANT_IDIO (IDIO_CONSTANT_NOTREACHED))
+
+extern int idio_exit_status;
+extern IDIO idio_k_exit;
 
 #endif
 
