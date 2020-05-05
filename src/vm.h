@@ -199,6 +199,7 @@ IDIO idio_vm_closure_name (IDIO c);
 IDIO idio_vm_run (IDIO thr);
 
 void idio_vm_restore_continuation (IDIO k, IDIO val);
+void idio_vm_restore_exit (IDIO k, IDIO val);
 idio_ai_t idio_vm_extend_constants (IDIO v);
 IDIO idio_vm_constants_ref (idio_ai_t gci);
 idio_ai_t idio_vm_constants_lookup (IDIO v);

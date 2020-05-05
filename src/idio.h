@@ -460,6 +460,7 @@ extern FILE *idio_vm_perf_FILE;
 
 extern int idio_exit_status;
 extern IDIO idio_k_exit;
+void idio_final ();
 
 #endif
 

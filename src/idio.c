@@ -265,7 +265,7 @@ int main (int argc, char **argv, char **envp)
      * Save a continuation for exit.
      */
     idio_k_exit = idio_continuation (thr);
-    idio_gc_protect (idio_k_exit);
+    idio_gc_protect_auto (idio_k_exit);
 
     if (argc > 1) {
 	/*

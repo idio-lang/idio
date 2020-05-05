@@ -4855,7 +4855,7 @@ IDIO idio_vm_run (IDIO thr)
      * bail out.
      */
     IDIO krun = idio_continuation (thr);
-    idio_gc_protect (krun);
+    idio_gc_protect_auto (krun);
 
     idio_ai_t ss0 = idio_array_size (IDIO_THREAD_STACK (thr));
 
@@ -5095,7 +5095,7 @@ IDIO idio_vm_run (IDIO thr)
      * Expose krun before any possible non-local return
      * (idio_vm_restore_{exit,continuation}
      */
-    idio_gc_expose (krun);
+    /* idio_gc_expose (krun); */
 
     if (idio_vm_exit) {
 	fprintf (stderr, "vm-run/exit (%d)\n", idio_exit_status);
