@@ -120,7 +120,10 @@ void idio_thread_codegen (IDIO code)
 IDIO idio_thread_current_env ()
 {
     IDIO thr = idio_thread_current_thread ();
-    return IDIO_THREAD_ENV (thr);
+    IDIO_TYPE_ASSERT (thread, thr);
+    IDIO env = IDIO_THREAD_ENV (thr);
+    IDIO_TYPE_ASSERT (module, env);
+    return env;
 }
 
 IDIO idio_thread_current_input_handle ()

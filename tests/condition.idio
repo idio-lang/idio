@@ -402,6 +402,8 @@ test (condition0 + 101) Tests
 ;; in this file after this
 display* "NOTICE: condition.idio: raising NON-CONT condition; this will be picked up by module/load"
 raise #f (make-condition ^error)
+;; notreached
+display* "NOTICE: raising NON-CONT condition; this will be picked up by module/load (with no post): post"
 
 ;; WARNING
 ;;

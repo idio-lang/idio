@@ -16,10 +16,14 @@ trap ^rt-signal-SIGCHLD (function (cont cond) {
 ;; test out the base-condition-handler
 
 ; ^error is normally not continuable
+display* "trap: raise CONT ^error: pre"
 raise #t (make-condition ^error)
+display* "trap: raise CONT ^error: post"
 
 ; non-continuable conditions will be caught by module/load (or load)
+display* "trap: raise NON-CONT ^error: pre"
 raise #f (make-condition ^error)
+display* "trap: raise NON-CONT ^error: post"
 
 {
   f := (function (s) {

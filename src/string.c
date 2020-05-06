@@ -48,25 +48,6 @@ void idio_substring_error_index (char *m, IDIO s, ptrdiff_t ip0, ptrdiff_t ipn, 
     idio_error_C (em, s, loc);
 }
 
-IDIO idio_string_C (const char *s_C)
-{
-    IDIO_C_ASSERT (s_C);
-
-    IDIO so = idio_gc_get (IDIO_TYPE_STRING);
-
-    IDIO_FPRINTF (stderr, "idio_string_C: %10p = '%s'\n", so, s_C);
-
-    size_t blen = strlen (s_C);
-
-    IDIO_GC_ALLOC (IDIO_STRING_S (so), blen + 1);
-
-    memcpy (IDIO_STRING_S (so), s_C, blen);
-    IDIO_STRING_S (so)[blen] = '\0';
-    IDIO_STRING_BLEN (so) = blen;
-
-    return so;
-}
-
 IDIO idio_string_C_len (const char *s_C, size_t blen)
 {
     IDIO_C_ASSERT (s_C);
@@ -82,6 +63,13 @@ IDIO idio_string_C_len (const char *s_C, size_t blen)
     IDIO_STRING_BLEN (so) = blen;
 
     return so;
+}
+
+IDIO idio_string_C (const char *s_C)
+{
+    IDIO_C_ASSERT (s_C);
+
+    return idio_string_C_len (s_C, strlen (s_C));
 }
 
 IDIO idio_string_C_array (size_t ns, char *a_C[])
@@ -242,6 +230,10 @@ char *idio_string_s (IDIO so)
 {
     IDIO_ASSERT (so);
 
+    if (! idio_isa_string (so)) {
+	idio_debug ("so=%s\n", so);
+	IDIO_C_ASSERT (0);
+    }
     IDIO_TYPE_ASSERT (string, so);
 
     char *s = NULL;

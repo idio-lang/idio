@@ -32,10 +32,10 @@
 #define IDIO_STRING_TOKEN_INEXACT(f)		(IDIO_STRING_TOKEN_EXACT (f) == 0)
 
 int idio_assign_string_C (IDIO so, const char *s_C);
-IDIO idio_string_C (const char *s_C);
 IDIO idio_string_C_len (const char *s_C, size_t blen);
-IDIO idio_string_copy (IDIO s);
+IDIO idio_string_C (const char *s_C);
 IDIO idio_string_C_array (size_t ns, char *a_C[]);
+IDIO idio_string_copy (IDIO s);
 void idio_free_string (IDIO so);
 int idio_isa_string (IDIO so);
 IDIO idio_substring_offset (IDIO so, size_t offset, size_t blen);

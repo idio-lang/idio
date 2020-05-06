@@ -407,6 +407,17 @@ extern FILE *idio_vm_perf_FILE;
 #define IDIO_CONSTANT_VOID            -6
 #define IDIO_CONSTANT_NAN             -7
 
+#define IDIO_CONSTANT_PRESERVE_STATE		 20
+#define IDIO_CONSTANT_PRESERVE_ALL_STATE	 21
+#define IDIO_CONSTANT_PUSH_TRAP			 22
+#define IDIO_CONSTANT_PRESERVE_CONTINUATION	 23
+
+#define IDIO_CONSTANT_TOPLEVEL         30
+#define IDIO_CONSTANT_PREDEF           31
+#define IDIO_CONSTANT_LOCAL            32
+#define IDIO_CONSTANT_ENVIRON          33
+#define IDIO_CONSTANT_COMPUTED         34
+
 /*
  * Stack markers
  */
@@ -418,11 +429,6 @@ extern FILE *idio_vm_perf_FILE;
 #define IDIO_STACK_MARKER_DYNAMIC			 25
 #define IDIO_STACK_MARKER_ENVIRON			 26
 
-#define IDIO_CONSTANT_TOPLEVEL         30
-#define IDIO_CONSTANT_PREDEF           31
-#define IDIO_CONSTANT_LOCAL            32
-#define IDIO_CONSTANT_ENVIRON          33
-#define IDIO_CONSTANT_COMPUTED         34
 
 /*
  * A distinguished value to a) shut the C compiler up when we know
