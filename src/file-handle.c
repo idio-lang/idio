@@ -1680,7 +1680,8 @@ IDIO idio_load_file_name_lbl (IDIO filename, IDIO cs)
 
     if (! idio_isa_string (filename)) {
 	idio_error_param_type ("string", filename, IDIO_C_LOCATION ("idio_load_file_name"));
-	return idio_S_unspec;
+
+	return idio_S_notreached;
     }
     IDIO_TYPE_ASSERT (array, cs);
 
@@ -1693,7 +1694,6 @@ IDIO idio_load_file_name_lbl (IDIO filename, IDIO cs)
     if (NULL == libfile) {
 	idio_file_handle_error_filename_not_found (filename, IDIO_C_LOCATION ("idio_load_file_name"));
 
-	/* notreached */
 	return idio_S_notreached;
     }
 
@@ -1718,7 +1718,8 @@ IDIO idio_load_file_name_lbl (IDIO filename, IDIO cs)
 
 		if ((l + strlen (fe->ext)) >= PATH_MAX) {
 		    idio_file_handle_error_malformed_filename (filename, IDIO_C_LOCATION ("idio_load_file_name"));
-		    return idio_S_unspec;
+
+		    return idio_S_notreached;
 		}
 
 		strncpy (dot, fe->ext, PATH_MAX - l - 1);
@@ -1763,7 +1764,8 @@ IDIO idio_load_file_name_lbl (IDIO filename, IDIO cs)
     }
 
     idio_file_handle_error_filename_not_found (filename, IDIO_C_LOCATION ("idio_load_file_name"));
-    return idio_S_unspec;
+
+    return idio_S_notreached;
 }
 
 IDIO idio_load_file_name_aio (IDIO filename, IDIO cs)

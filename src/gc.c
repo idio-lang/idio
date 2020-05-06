@@ -265,7 +265,6 @@ static void idio_gc_finalizer_run (IDIO o)
     IDIO_ASSERT (o);
 
     if (idio_S_nil == o) {
-	fprintf (stderr, "idio_gc_finalizer_run: nil?\n");
 	return;
     }
 
@@ -1344,6 +1343,7 @@ void idio_gc_sweep_free_value (IDIO vo)
 	idio_free_module (vo);
 	break;
     case IDIO_TYPE_FRAME:
+	/* fprintf (stderr, "igsfv: frame %p\n", vo); */
 	idio_free_frame (vo);
 	break;
     case IDIO_TYPE_HANDLE:
@@ -1723,6 +1723,9 @@ void idio_gc_pause (char *caller)
 void idio_gc_resume (char *caller)
 {
     idio_gc->pause--;
+    if (idio_gc->pause < 0) {
+	idio_gc->pause = 0;
+    }
 }
 
 /**
@@ -1987,6 +1990,7 @@ static void idio_gc_run_all_finalizers ()
 	    idio_hash_delete (idio_gc_finalizer_hash, k);
 	}
     }
+    fprintf (stderr, "igraf ran %d finalizers\n", n);
 }
 
 void idio_final_gc ()
