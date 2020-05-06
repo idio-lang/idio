@@ -22,6 +22,8 @@
 
 #include "idio.h"
 
+static size_t idio_string_handle_instance = 1;
+
 typedef struct idio_string_handle_stream_s {
     char *buf;			/* buffer */
     size_t blen;
@@ -83,10 +85,7 @@ static IDIO idio_open_string_handle (char *str, size_t blen, int sflags)
 
     IDIO_HANDLE_FLAGS (sh) |= sflags | IDIO_HANDLE_FLAG_STRING;
 
-    /*
-     * max name is "input/output string handle" or 26 chars
-     */
-    char *name = idio_alloc (27);
+    char name[BUFSIZ];
     name[0] = '\0';
     if (sflags & IDIO_HANDLE_FLAG_READ) {
 	strcat (name, "input");
@@ -99,9 +98,12 @@ static IDIO idio_open_string_handle (char *str, size_t blen, int sflags)
     if (sflags & IDIO_HANDLE_FLAG_WRITE) {
 	strcat (name, "output ");
     }
-    strcat (name, "string handle");
+    strcat (name, "string-handle #");
+    char inst[BUFSIZ];
+    sprintf (inst, "%zu", idio_string_handle_instance++);
+    strcat (name, inst);
 
-    IDIO_HANDLE_NAME (sh) = name;
+    IDIO_HANDLE_NAME (sh) = idio_string_C (name);
     IDIO_HANDLE_STREAM (sh) = shsp;
     IDIO_HANDLE_METHODS (sh) = &idio_string_handle_methods;
 
@@ -229,7 +231,6 @@ void idio_free_string_handle (IDIO sh)
 
     free (IDIO_STRING_HANDLE_BUF (sh));
     free (IDIO_HANDLE_STREAM (sh));
-    free (IDIO_HANDLE_NAME (sh));
 }
 
 int idio_readyp_string_handle (IDIO sh)
@@ -271,6 +272,8 @@ int idio_close_string_handle (IDIO sh)
     IDIO_ASSERT (sh);
 
     IDIO_TYPE_ASSERT (string_handle, sh);
+
+    IDIO_HANDLE_FLAGS (sh) |= IDIO_HANDLE_FLAG_CLOSED;
 
     return 0;
 }

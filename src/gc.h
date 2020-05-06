@@ -626,14 +626,16 @@ typedef struct idio_handle_methods_s {
 #define IDIO_HANDLE_FLAG_STRING		(1<<4)
 
 typedef struct idio_handle_s {
+    struct idio_s *grey;
     void *stream;		/* file/string specific stream data */
     idio_handle_methods_t *methods; /* file/string specific methods */
     int lc;			/* lookahead char */
     off_t line;			/* 1+ */
     off_t pos;			/* position in file: 0+ */
-    char *name;			/* filename or some other identifying data */
+    struct idio_s *name;	/* filename or some other identifying data */
 } idio_handle_t;
 
+#define IDIO_HANDLE_GREY(H)	((H)->u.handle->grey)
 #define IDIO_HANDLE_STREAM(H)	((H)->u.handle->stream)
 #define IDIO_HANDLE_METHODS(H)	((H)->u.handle->methods)
 #define IDIO_HANDLE_LC(H)	((H)->u.handle->lc)

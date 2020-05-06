@@ -376,6 +376,13 @@ void idio_gcc_mark (IDIO o, unsigned colour)
 	    IDIO_FRAME_GREY (o) = idio_gc->grey;
 	    idio_gc->grey = o;
 	    break;
+	case IDIO_TYPE_HANDLE:
+	    IDIO_C_ASSERT (IDIO_HANDLE_GREY (o) != o);
+	    IDIO_C_ASSERT (idio_gc->grey != o);
+	    o->gc_flags |= IDIO_GC_FLAG_GCC_LGREY;
+	    IDIO_HANDLE_GREY (o) = idio_gc->grey;
+	    idio_gc->grey = o;
+	    break;
 	case IDIO_TYPE_STRUCT_TYPE:
 	    IDIO_C_ASSERT (IDIO_STRUCT_TYPE_GREY (o) != o);
 	    IDIO_C_ASSERT (idio_gc->grey != o);
@@ -495,6 +502,8 @@ void idio_gc_process_grey (unsigned colour)
 		idio_gcc_mark (IDIO_HASH_HE_VALUE (o, i), colour);
 	    }
 	}
+	idio_gcc_mark (IDIO_HASH_COMP (o), colour);
+	idio_gcc_mark (IDIO_HASH_HASH (o), colour);
 	break;
     case IDIO_TYPE_CLOSURE:
 	idio_gc->grey = IDIO_CLOSURE_GREY (o);
@@ -519,6 +528,11 @@ void idio_gc_process_grey (unsigned colour)
 	idio_gc->grey = IDIO_FRAME_GREY (o);
 	idio_gcc_mark (IDIO_FRAME_NEXT (o), colour);
 	idio_gcc_mark (IDIO_FRAME_ARGS (o), colour);
+	break;
+    case IDIO_TYPE_HANDLE:
+	IDIO_C_ASSERT (idio_gc->grey != IDIO_HANDLE_GREY (o));
+	idio_gc->grey = IDIO_HANDLE_GREY (o);
+	idio_gcc_mark (IDIO_HANDLE_NAME (o), colour);
 	break;
     case IDIO_TYPE_STRUCT_TYPE:
 	IDIO_C_ASSERT (idio_gc->grey != IDIO_STRUCT_TYPE_GREY (o));
