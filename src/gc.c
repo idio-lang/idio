@@ -1990,7 +1990,6 @@ static void idio_gc_run_all_finalizers ()
 	    idio_hash_delete (idio_gc_finalizer_hash, k);
 	}
     }
-    fprintf (stderr, "igraf ran %d finalizers\n", n);
 }
 
 void idio_final_gc ()
