@@ -1327,7 +1327,34 @@ char *idio_as_string (IDIO o, int depth)
 			/* notreached */
 			return NULL;
 		    }
-		    if (idio_isa_file_handle (o)) {
+
+		    FLAGS_T h_flags = IDIO_HANDLE_FLAGS (o);
+		    if (h_flags & IDIO_HANDLE_FLAG_CLOSED) {
+			IDIO_STRCAT (r, "c");
+		    } else {
+			IDIO_STRCAT (r, "o");
+		    }
+		    if (h_flags & IDIO_HANDLE_FLAG_STRING) {
+			IDIO_STRCAT (r, "s");
+		    } else if (h_flags & IDIO_HANDLE_FLAG_FILE) {
+			IDIO_STRCAT (r, "f");
+		    }
+
+		    if (h_flags & IDIO_HANDLE_FLAG_READ) {
+			IDIO_STRCAT (r, "r");
+		    }
+		    if (h_flags & IDIO_HANDLE_FLAG_WRITE) {
+			IDIO_STRCAT (r, "w");
+		    }
+		    if (h_flags & IDIO_HANDLE_FLAG_FILE) {
+
+			FLAGS_T s_flags = IDIO_FILE_HANDLE_FLAGS (o);
+			if (s_flags & IDIO_FILE_HANDLE_FLAG_CLOEXEC) {
+			    IDIO_STRCAT (r, "E");
+			} else {
+			    IDIO_STRCAT (r, "!");
+			}
+
 			char *fds;
 			if (asprintf (&fds, "%4d", idio_file_handle_fd (o)) == -1) {
 			    free (r);
@@ -1337,35 +1364,10 @@ char *idio_as_string (IDIO o, int depth)
 			    return NULL;
 			}
 			IDIO_STRCAT_FREE (r, fds);
-		    } else {
-			IDIO_STRCAT (r, "-");
-		    }
-		    IDIO_STRCAT (r, ":");
-
-		    FLAGS_T h_flags = IDIO_HANDLE_FLAGS (o);
-		    if (h_flags & IDIO_HANDLE_FLAG_STRING) {
-			IDIO_STRCAT (r, "s");
-		    }
-		    if (h_flags & IDIO_HANDLE_FLAG_FILE) {
-			IDIO_STRCAT (r, "f");
-
-			FLAGS_T s_flags = IDIO_FILE_HANDLE_FLAGS (o);
-			if (s_flags & IDIO_FILE_HANDLE_FLAG_CLOEXEC) {
-			    IDIO_STRCAT (r, "E");
-			}
-		    }
-		    if (h_flags & IDIO_HANDLE_FLAG_CLOSED) {
-			IDIO_STRCAT (r, "C");
-		    }
-		    if (h_flags & IDIO_HANDLE_FLAG_READ) {
-			IDIO_STRCAT (r, "r");
-		    }
-		    if (h_flags & IDIO_HANDLE_FLAG_WRITE) {
-			IDIO_STRCAT (r, "w");
 		    }
 
 		    char *info;
-		    if (asprintf (&info, ":\"%s\":%jd:%jd>", IDIO_HANDLE_NAME (o), (intmax_t) IDIO_HANDLE_LINE (o), (intmax_t) IDIO_HANDLE_POS (o)) == -1) {
+		    if (asprintf (&info, ":\"%s\":%jd:%jd>", idio_handle_name (o), (intmax_t) IDIO_HANDLE_LINE (o), (intmax_t) IDIO_HANDLE_POS (o)) == -1) {
 			free (r);
 			idio_error_alloc ("asprintf");
 
@@ -1373,6 +1375,7 @@ char *idio_as_string (IDIO o, int depth)
 			return NULL;
 		    }
 		    IDIO_STRCAT_FREE (r, info);
+		    IDIO_STRCAT (r, ">");
 		}
 		break;
 	    case IDIO_TYPE_C_INT:

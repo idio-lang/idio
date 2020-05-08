@@ -31,13 +31,13 @@ void idio_handle_error_read (IDIO h, IDIO loc)
 
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C ("handle name '", sh);
-    idio_display_C (IDIO_HANDLE_NAME (h), sh);
+    idio_display (IDIO_HANDLE_NAME (h), sh);
     idio_display_C ("' read error", sh);
     IDIO c = idio_struct_instance (idio_condition_io_read_error_type,
 				   IDIO_LIST4 (idio_get_output_string (sh),
 					       loc,
 					       idio_S_nil,
-					       idio_string_C (IDIO_HANDLE_NAME (h))));
+					       IDIO_HANDLE_NAME (h)));
     idio_raise_condition (idio_S_true, c);
 }
 
@@ -50,13 +50,13 @@ void idio_handle_error_write (IDIO h, IDIO loc)
 
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C ("handle name '", sh);
-    idio_display_C (IDIO_HANDLE_NAME (h), sh);
+    idio_display (IDIO_HANDLE_NAME (h), sh);
     idio_display_C ("' write error", sh);
     IDIO c = idio_struct_instance (idio_condition_io_write_error_type,
 				   IDIO_LIST4 (idio_get_output_string (sh),
 					       loc,
 					       idio_S_nil,
-					       idio_string_C (IDIO_HANDLE_NAME (h))));
+					       IDIO_HANDLE_NAME (h)));
     idio_raise_condition (idio_S_true, c);
 }
 
@@ -69,13 +69,13 @@ void idio_handle_error_closed (IDIO h, IDIO loc)
 
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C ("handle name '", sh);
-    idio_display_C (IDIO_HANDLE_NAME (h), sh);
+    idio_display (IDIO_HANDLE_NAME (h), sh);
     idio_display_C ("' already closed", sh);
     IDIO c = idio_struct_instance (idio_condition_io_closed_error_type,
 				   IDIO_LIST4 (idio_get_output_string (sh),
 					       loc,
 					       idio_S_nil,
-					       idio_string_C (IDIO_HANDLE_NAME (h))));
+					       IDIO_HANDLE_NAME (h)));
     idio_raise_condition (idio_S_true, c);
 }
 
@@ -96,7 +96,7 @@ IDIO idio_handle ()
     IDIO_HANDLE_LC (h) = EOF;
     IDIO_HANDLE_LINE (h) = 1;
     IDIO_HANDLE_POS (h) = 0;
-    IDIO_HANDLE_NAME (h) = NULL;
+    IDIO_HANDLE_NAME (h) = idio_S_nil;
 
     return h;
 }
@@ -106,6 +106,30 @@ int idio_isa_handle (IDIO h)
     IDIO_ASSERT (h);
 
     return idio_isa (h, IDIO_TYPE_HANDLE);
+}
+
+char *idio_handle_name (IDIO h)
+{
+    IDIO_ASSERT (h);
+    IDIO_TYPE_ASSERT (handle, h);
+
+    IDIO hname = IDIO_HANDLE_NAME (h);
+    char *name = "n/a";
+    if (hname->type) {
+	if (idio_isa_string (hname)) {
+	    name = idio_string_s (hname);
+	} else if (idio_isa_symbol (hname)) {
+	    name = IDIO_SYMBOL_S (hname);
+	}
+    } else {
+	/*
+	 * I need to stop myself printing things out
+	 * during shutdown...
+	 */
+	name = "n/r";
+    }
+
+    return name;
 }
 
 IDIO_DEFINE_PRIMITIVE1 ("handle?", handlep, (IDIO h))
@@ -164,7 +188,7 @@ void idio_free_handle (IDIO h)
 
 void idio_handle_lookahead_error (IDIO h, int c)
 {
-    idio_error_printf (IDIO_C_LOCATION ("idio_handle_lookahead_error"), "%s->unget => %#x (!= EOF)", IDIO_HANDLE_NAME (h), c);
+    idio_error_printf (IDIO_C_LOCATION ("idio_handle_lookahead_error"), "%s->unget => %#x (!= EOF)", idio_handle_name (h), c);
 }
 
 void idio_handle_finalizer (IDIO handle)
@@ -1039,7 +1063,7 @@ IDIO idio_handle_location (IDIO h)
     IDIO_TYPE_ASSERT (handle, h);
 
     char buf[BUFSIZ];
-    sprintf (buf, "%s:line %jd", IDIO_HANDLE_NAME (h), (intmax_t) IDIO_HANDLE_LINE (h));
+    sprintf (buf, "%s:line %jd", idio_handle_name (h), (intmax_t) IDIO_HANDLE_LINE (h));
 
     return idio_string_C (buf);
 }
@@ -1065,9 +1089,6 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
 
     IDIO thr = idio_thread_current_thread ();
     idio_ai_t ss0 = idio_array_size (IDIO_THREAD_STACK (thr));
-    /* fprintf (stderr, "load-handle: %s\n", IDIO_HANDLE_NAME (h)); */
-    /* idio_debug ("THR %s\n", thr); */
-    /* idio_debug ("STK %s\n", IDIO_THREAD_STACK (thr)); */
 
     time_t s;
     suseconds_t us;
@@ -1104,7 +1125,7 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
 	    s -= 1;
 	}
 
-	fprintf (stderr, "load-handle: %s: read time %ld.%03ld\n", IDIO_HANDLE_NAME (h), s, (long) us / 1000);
+	fprintf (stderr, "load-handle: %s: read time %ld.%03ld\n", idio_handle_name (h), s, (long) us / 1000);
     }
 
     IDIO ms = idio_S_nil;
@@ -1127,7 +1148,7 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
 	    s -= 1;
 	}
 
-	fprintf (stderr, "load-handle: %s: evaluation time %ld.%03ld\n", IDIO_HANDLE_NAME (h), s, (long) us / 1000);
+	fprintf (stderr, "load-handle: %s: evaluation time %ld.%03ld\n", idio_handle_name (h), s, (long) us / 1000);
     }
 
     /*
@@ -1158,7 +1179,7 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
 	idio_codegen (thr, IDIO_PAIR_H (ms), cs);
 	if (-1 == lh_pc) {
 	    lh_pc = IDIO_THREAD_PC (thr);
-	    /* fprintf (stderr, "\n\n%s lh_pc == %jd\n", IDIO_HANDLE_NAME (h), lh_pc); */
+	    /* fprintf (stderr, "\n\n%s lh_pc == %jd\n", idio_handle_name (h), lh_pc); */
 	}
 	/* r = idio_vm_run (thr); */
 	ms = IDIO_PAIR_T (ms);
@@ -1181,7 +1202,7 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
 	    s -= 1;
 	}
 
-	fprintf (stderr, "load-handle: %s: compile/run time %ld.%03ld\n", IDIO_HANDLE_NAME (h), s, (long) us / 1000);
+	fprintf (stderr, "load-handle: %s: compile/run time %ld.%03ld\n", idio_handle_name (h), s, (long) us / 1000);
     }
 
     s = tr.tv_sec - t0.tv_sec;
@@ -1193,14 +1214,14 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
     }
 
 #if IDIO_DEBUG
-    /* fprintf (stderr, "load-handle: %s: elapsed time %ld.%03ld\n", IDIO_HANDLE_NAME (h), s, (long) us / 1000); */
+    /* fprintf (stderr, "load-handle: %s: elapsed time %ld.%03ld\n", idio_handle_name (h), s, (long) us / 1000); */
     /* idio_debug (" => %s\n", r); */
 #endif
 
     idio_ai_t ss = idio_array_size (IDIO_THREAD_STACK (thr));
 
     if (ss != ss0) {
-	fprintf (stderr, "load-handle: %s: SS %td != %td\n", IDIO_HANDLE_NAME (h), ss, ss0);
+	fprintf (stderr, "load-handle: %s: SS %td != %td\n", idio_handle_name (h), ss, ss0);
 	idio_debug ("THR %s\n", thr);
 	idio_debug ("STK %s\n", IDIO_THREAD_STACK (thr));
     }

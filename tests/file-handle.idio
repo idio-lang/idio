@@ -98,10 +98,10 @@ test (handle-pos ifh) 2
   trap ^system-error (function (cont cond) {
 			test (C/== cond.errno (C/integer-> 24)) #t
 			if (C/== cond.errno (C/integer-> 24)) {
-			  ;display* "test file-handle trap: created" (array-length fds) "fds"
-			} {
-			  condition-report "test file-handle trap" cont cond (current-error-handle)
-			}
+                          ;display* "test file-handle trap: created" (array-length fds) "fds"
+                        } {
+                          condition-report "test file-handle trap" cont cond (current-error-handle)
+                        }
 			loop-k cond
   }) {
     call/cc (function (k) {

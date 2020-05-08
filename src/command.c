@@ -1224,30 +1224,35 @@ static IDIO idio_command_foreground_job (IDIO job, int cont)
 	return idio_S_notreached;
     }
 
-    /*
-     * Put the job in the foreground
-     */
     pid_t job_pgid = IDIO_C_TYPE_INT (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PGID));
-    if (tcsetpgrp (idio_command_terminal, job_pgid) < 0) {
-	idio_error_system ("icfg tcsetpgrp",
-			   IDIO_LIST3 (idio_C_int (idio_command_terminal),
-				       idio_C_int (job_pgid),
-				       job),
-			   errno,
-			   IDIO_C_LOCATION ("idio_command_foreground_job"));
 
-	return idio_S_notreached;
+    if (idio_command_interactive) {
+	/*
+	 * Put the job in the foreground
+	 */
+	if (tcsetpgrp (idio_command_terminal, job_pgid) < 0) {
+	    idio_error_system ("icfg tcsetpgrp",
+			       IDIO_LIST3 (idio_C_int (idio_command_terminal),
+					   idio_C_int (job_pgid),
+					   job),
+			       errno,
+			       IDIO_C_LOCATION ("idio_command_foreground_job"));
+
+	    return idio_S_notreached;
+	}
     }
 
     if (cont) {
-	IDIO job_tcattrs = idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_TCATTRS);
-	IDIO_TYPE_ASSERT (C_pointer, job_tcattrs);
-	struct termios *tcattrsp = IDIO_C_TYPE_POINTER_P (job_tcattrs);
+	if (idio_command_interactive) {
+	    IDIO job_tcattrs = idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_TCATTRS);
+	    IDIO_TYPE_ASSERT (C_pointer, job_tcattrs);
+	    struct termios *tcattrsp = IDIO_C_TYPE_POINTER_P (job_tcattrs);
 
-	if (tcsetattr (idio_command_terminal, TCSADRAIN, tcattrsp) < 0) {
-	    idio_error_system_errno ("tcsetattr", IDIO_LIST1 (idio_C_int (idio_command_terminal)), IDIO_C_LOCATION ("idio_command_foreground_job"));
+	    if (tcsetattr (idio_command_terminal, TCSADRAIN, tcattrsp) < 0) {
+		idio_error_system_errno ("tcsetattr", IDIO_LIST1 (idio_C_int (idio_command_terminal)), IDIO_C_LOCATION ("idio_command_foreground_job"));
 
-	    return idio_S_notreached;
+		return idio_S_notreached;
+	    }
 	}
 
 	if (kill (-job_pgid, SIGCONT) < 0) {
@@ -1259,46 +1264,48 @@ static IDIO idio_command_foreground_job (IDIO job, int cont)
 
     IDIO r = idio_command_wait_for_job (job);
 
-    /*
-     * Put the shell back in the foreground.
-     */
-    if (tcsetpgrp (idio_command_terminal, idio_command_pgid) < 0) {
-	idio_error_system ("tcsetpgrp",
-			   IDIO_LIST3 (idio_C_int (idio_command_terminal),
-				       idio_C_int (idio_command_pgid),
-				       job),
-			   errno,
-			   IDIO_C_LOCATION ("idio_command_foreground_job"));
+    if (idio_command_interactive) {
+	/*
+	 * Put the shell back in the foreground.
+	 */
+	if (tcsetpgrp (idio_command_terminal, idio_command_pgid) < 0) {
+	    idio_error_system ("tcsetpgrp",
+			       IDIO_LIST3 (idio_C_int (idio_command_terminal),
+					   idio_C_int (idio_command_pgid),
+					   job),
+			       errno,
+			       IDIO_C_LOCATION ("idio_command_foreground_job"));
 
-	return idio_S_notreached;
-    }
+	    return idio_S_notreached;
+	}
 
-    /*
-     * Save the job's current terminal state -- creating a struct
-     * termios if necessary
-     */
-    IDIO job_tcattrs = idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_TCATTRS);
-    struct termios *tcattrsp = NULL;
-    if (idio_S_nil == job_tcattrs) {
-	tcattrsp = idio_alloc (sizeof (struct termios));
-	job_tcattrs = idio_C_pointer_free_me (tcattrsp);
-	idio_struct_instance_set_direct (job, IDIO_JOB_TYPE_TCATTRS, job_tcattrs);
-    }
+	/*
+	 * Save the job's current terminal state -- creating a struct
+	 * termios if necessary
+	 */
+	IDIO job_tcattrs = idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_TCATTRS);
+	struct termios *tcattrsp = NULL;
+	if (idio_S_nil == job_tcattrs) {
+	    tcattrsp = idio_alloc (sizeof (struct termios));
+	    job_tcattrs = idio_C_pointer_free_me (tcattrsp);
+	    idio_struct_instance_set_direct (job, IDIO_JOB_TYPE_TCATTRS, job_tcattrs);
+	}
 
-    if (tcgetattr (idio_command_terminal, tcattrsp) < 0) {
-	idio_error_system_errno ("tcgetattr", IDIO_LIST1 (idio_C_int (idio_command_terminal)), IDIO_C_LOCATION ("idio_command_foreground_job"));
+	if (tcgetattr (idio_command_terminal, tcattrsp) < 0) {
+	    idio_error_system_errno ("tcgetattr", IDIO_LIST1 (idio_C_int (idio_command_terminal)), IDIO_C_LOCATION ("idio_command_foreground_job"));
 
-	return idio_S_notreached;
-    }
+	    return idio_S_notreached;
+	}
 
-    /*
-     * Restore the shell's terminal state
-     */
-    tcattrsp = IDIO_C_TYPE_POINTER_P (idio_command_tcattrs);
-    if (tcsetattr (idio_command_terminal, TCSADRAIN, tcattrsp) < 0) {
-	idio_error_system_errno ("tcgetattr", IDIO_LIST1 (idio_C_int (idio_command_terminal)), IDIO_C_LOCATION ("idio_command_foreground_job"));
+	/*
+	 * Restore the shell's terminal state
+	 */
+	tcattrsp = IDIO_C_TYPE_POINTER_P (idio_command_tcattrs);
+	if (tcsetattr (idio_command_terminal, TCSADRAIN, tcattrsp) < 0) {
+	    idio_error_system_errno ("tcgetattr", IDIO_LIST1 (idio_C_int (idio_command_terminal)), IDIO_C_LOCATION ("idio_command_foreground_job"));
 
-	return idio_S_notreached;
+	    return idio_S_notreached;
+	}
     }
 
     return r;
@@ -2561,6 +2568,22 @@ void idio_init_command ()
 
     idio_module_set_symbol_value (idio_symbols_C_intern ("%idio-interactive"),
 				  idio_command_interactive ? idio_S_true : idio_S_false,
+				  idio_command_module);
+
+    /*
+     * Not noted in the Job Control docs is that if we are launched
+     * non-interactively then we never set
+     * idio_command_pgid/%idio-pgid with a later complaint about a
+     * symbol not being a C_int when the variable is accessed in
+     * foreground-job in command.idio.
+     *
+     * Arguably foreground-job shouldn't be changing pgid if the shell
+     * is not interactive -- but there's still a sense of using unset
+     * variables which we should avoid.
+     */
+    idio_command_pgid = getpgrp ();
+    idio_module_set_symbol_value (idio_symbols_C_intern ("%idio-pgid"),
+				  idio_C_int (idio_command_pgid),
 				  idio_command_module);
 
     if (idio_command_interactive) {

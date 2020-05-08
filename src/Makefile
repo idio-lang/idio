@@ -14,6 +14,7 @@ SRCKDOUTDIR	:= $(SRCDOCDIR)/kernel-autodoc-out
 ifeq ($(OS),Darwin)
 
 LIBFFI_INCDIR	:= /usr/include/ffi
+LIBFFI_INCDIR	:= /Library/Developer/CommandLineTools/SDKs/MacOSX10.15.sdk/usr/include/ffi
 LDFLAGS		:= -rdynamic
 LIBS		:= -ldl
 

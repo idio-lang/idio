@@ -170,7 +170,7 @@ static void idio_read_error (IDIO handle, IDIO msg, IDIO detail)
 
     IDIO c = idio_struct_instance (idio_condition_read_error_type,
 				   IDIO_LIST5 (msg,
-					       idio_string_C (IDIO_HANDLE_NAME (handle)),
+					       IDIO_HANDLE_NAME (handle),
 					       detail,
 					       line,
 					       pos));
