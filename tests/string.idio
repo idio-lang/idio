@@ -34,6 +34,22 @@ test (split-string "abcc" "c") '("ab")
 test (split-string "abc" "z") '("abc")
 test (split-string "" "z") '("")
 
+;; split-string will produce substrings so can we split those?
+;; strtok(3) man page:
+
+STR := "a/bbb///cc;xxx:yyy:"
+DE1 := ":;"
+DE2 := "/"
+
+display* "\n"
+RES := map (function (substr) {
+	      SUBRES := map (function (subsubstr) {
+			       subsubstr
+	      }) (split-string substr DE2)
+	      pair substr SUBRES
+}) (split-string STR DE1)
+test RES '(("a/bbb///cc" "a" "bbb" "cc") ("xxx" "xxx") ("yyy" "yyy"))
+
 ;; join
 test (join-string "b" '("a" "c")) "abc"
 test (join-string "b" '("a")) "a"
@@ -59,4 +75,4 @@ test (s.2) #\z
 test s "xyz"
 
 ;; all done?
-test (string0 + 19) Tests
+test (string0 + 20) Tests
