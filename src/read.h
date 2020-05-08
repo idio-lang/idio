@@ -23,6 +23,8 @@
 #ifndef READ_H
 #define READ_H
 
+extern IDIO idio_lexobj_type;
+
 /*
  * These read specific constants don't have to be different to
  * idio_S_* but there's plenty of room so why not?
