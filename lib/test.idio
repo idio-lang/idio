@@ -121,7 +121,7 @@ load "tests/utf-8.idio"
 ;; that?  Erm, they've not been counted and are dynamic in number so
 ;; test we've seen at least as many as the largest number we've
 ;; seen.  Wait, some tests are OS-specific.  Drat!
-test (eq? Tests 3124) #t
+test (eq? Tests 3125) #t
 
 if (file-exists? testfile) (delete-file testfile)
 

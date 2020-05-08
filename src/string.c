@@ -164,7 +164,25 @@ void idio_free_string (IDIO so)
 IDIO idio_substring_offset (IDIO p, size_t offset, size_t blen)
 {
     IDIO_ASSERT (p);
-    IDIO_C_ASSERT (blen);
+    IDIO_C_ASSERT (offset >= 0);
+    IDIO_C_ASSERT (blen >= 0);
+
+    if (idio_isa (p, IDIO_TYPE_SUBSTRING)) {
+	IDIO sp = IDIO_SUBSTRING_PARENT (p);
+	size_t len = (IDIO_SUBSTRING_S (p) - IDIO_STRING_S (sp)) + offset + blen;
+	if (IDIO_STRING_BLEN (sp) < len) {
+	    idio_string_error_length ("substring extends beyong parent string length", sp, len, IDIO_C_LOCATION ("idio_substring_offset"));
+
+	    return idio_S_notreached;
+	}
+    } else {
+	size_t len = offset + blen;
+	if (IDIO_STRING_BLEN (p) < len) {
+	    idio_string_error_length ("substring extends beyong parent string length", p, len, IDIO_C_LOCATION ("idio_substring_offset"));
+
+	    return idio_S_notreached;
+	}
+    }
 
     IDIO so = idio_gc_get (IDIO_TYPE_SUBSTRING);
 
@@ -173,7 +191,11 @@ IDIO idio_substring_offset (IDIO p, size_t offset, size_t blen)
     IDIO_FPRINTF (stderr, "idio_substring_offset: %d@%d in '%.*s' -> '%.*s'\n", blen, offset, IDIO_STRING_BLEN (p), IDIO_STRING_S (p), blen, IDIO_STRING_S (p) + offset);
 
     IDIO_SUBSTRING_BLEN (so) = blen;
-    IDIO_SUBSTRING_S (so) = IDIO_STRING_S (p) + offset;
+    if (idio_isa (p, IDIO_TYPE_SUBSTRING)) {
+	IDIO_SUBSTRING_S (so) = IDIO_SUBSTRING_S (p) + offset;
+    } else {
+	IDIO_SUBSTRING_S (so) = IDIO_STRING_S (p) + offset;
+    }
     IDIO_SUBSTRING_PARENT (so) = p;
 
     return so;
@@ -766,14 +788,23 @@ IDIO_DEFINE_STRING_CS_PRIMITIVE2V ("string>?", gt, >)
  * We can pass a flag to indicate how aggressive we should be in
  * tokenizing -- primarily whether adjacent delimiters generate
  * multiple tokens (strtok() vs. strsep()).  That is, does "a::b" with
- * a ":" delimter become 2 tokens: "a" and "b" or three tokens: "a",
+ * a ":" delimiter become 2 tokens: "a" and "b" or three tokens: "a",
  * "" and "b"?
  *
  * As we should have the previous token-causing delimiter available to
  * us we can then be just plain weird and generate tokens only if the
  * adjacent delimiters differ.  (Must find a use-case for that.)
+ *
+ *
+ * This code started out much like the code in GCC's libc strtok_r()
+ * implementation then modifed for a length limit, creating a sort of
+ * strntok_r().
+ *
+ * NB We use char *lim rather than a maxlen as the mechanics of this
+ * code (strspn()) shift the start without decrementing a maxlen.
  */
-char *idio_string_token (char *in, char *delim, int flags, char **saved, size_t *blen)
+
+static char *idio_string_token (char *in, char *delim, int flags, char **saved, size_t *blen, char *lim)
 {
     char prev_delim = '\0';
 
@@ -788,8 +819,7 @@ char *idio_string_token (char *in, char *delim, int flags, char **saved, size_t 
 
     if (IDIO_STRING_TOKEN_INEXACT (flags)) {
 	in += strspn (in, delim);
-    } else if (0 &&
-	       '\0' != prev_delim) {
+    } else if ('\0' != prev_delim) {
 	char *start = in;
 	char *end = in + strspn (in, delim);
 	for (; in < end; in++) {
@@ -800,6 +830,14 @@ char *idio_string_token (char *in, char *delim, int flags, char **saved, size_t 
 	}
     }
 
+    size_t maxlen = lim - in;
+
+    if (in >= lim) {
+	*saved = NULL;
+	*blen = lim - in;
+	return in;
+    }
+    
     char *start = strpbrk (in, delim);
 
     if ('\0' == *in) {
@@ -810,10 +848,14 @@ char *idio_string_token (char *in, char *delim, int flags, char **saved, size_t 
 
     if (NULL == start) {
 	*saved = NULL;
-	*blen = strlen (in);
+	*blen = strnlen (in, maxlen);
     } else {
-	*saved = start + 1;
-	*blen = start - in;
+	if (start < lim) {
+	    *saved = start + 1;
+	    *blen = start - in;
+	} else {
+	    *blen = start - lim;
+	}
     }
 
     return in;
@@ -835,11 +877,17 @@ IDIO idio_split_string (IDIO iin, IDIO idelim)
     char *saved;
     size_t blen = idio_string_blen (iin);
 
+    char *lim = in + blen;
+    
     if (blen > 0) {
 	for (; ; in = NULL) {
-	    char *start = idio_string_token (in, delim, IDIO_STRING_TOKEN_FLAG_NONE, &saved, &blen);
+	    char *start = idio_string_token (in, delim, IDIO_STRING_TOKEN_FLAG_NONE, &saved, &blen, lim);
 
 	    if (NULL == start) {
+		break;
+	    }
+
+	    if (0 == blen) {
 		break;
 	    }
 
