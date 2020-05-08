@@ -1866,6 +1866,19 @@ IDIO_DEFINE_PRIMITIVE1 ("load", load, (IDIO filename))
     return r;
 }
 
+IDIO_DEFINE_PRIMITIVE1 ("%load", prim_load, (IDIO filename))
+{
+    IDIO_ASSERT (filename);
+
+    IDIO_VERIFY_PARAM_TYPE (string, filename);
+
+    idio_thread_save_state (idio_thread_current_thread ());
+    IDIO r = idio_load_file_name_aio (filename, idio_vm_constants);
+    idio_thread_restore_state (idio_thread_current_thread ());
+
+    return r;
+}
+
 IDIO_DEFINE_PRIMITIVE1 ("load-lbl", load_lbl, (IDIO filename))
 {
     IDIO_ASSERT (filename);
@@ -1947,6 +1960,7 @@ void idio_file_handle_add_primitives ()
     IDIO_ADD_PRIMITIVE (file_handle_fd);
     IDIO_ADD_PRIMITIVE (find_lib);
     IDIO_ADD_PRIMITIVE (load);
+    IDIO_ADD_PRIMITIVE (prim_load);
     IDIO_ADD_PRIMITIVE (load_lbl);
     IDIO_ADD_PRIMITIVE (file_exists_p);
     IDIO_ADD_PRIMITIVE (delete_file);

@@ -1,0 +1,73 @@
+
+read-error0 := Tests
+
+;; We have a bunch of test cases which should provoke a ^read-error of
+;; some kind.  So we can write a load function which will wrapper the
+;; actual load with a trap for ^read-error and compare the message
+;; strings.
+
+read-error-load := {
+  n := 0
+
+  function (filename msg) {
+    if (not (string? filename)) (error 'load "not a string" filename)
+
+    load-k := #n
+
+    n = n + 1
+    ; edisplay* "loading #" n filename
+    trap ^read-error (function (cont cond) {
+			; edisplay* n msg
+			test cond.message msg
+			if (not (string=? cond.message msg)) {
+			  condition-report (string-append "read-error-load: " filename) cont cond (current-error-handle)
+			}
+			load-k cond
+    }) {
+      call/cc (function (k) {
+		 load-k = k
+		 %load filename
+      })
+    }
+  }
+}
+
+
+read-error-load "read-errors/list-eof.idio" "EOF in list"
+read-error-load "read-errors/imp-list-before.idio" "nothing before & in list"
+read-error-load "read-errors/imp-list-after.idio" "nothing after & in list"
+read-error-load "read-errors/imp-list-many-after.idio" "more than one expression after & in list"
+read-error-load "read-errors/string-unterminated.idio" "string: unterminated"
+read-error-load "read-errors/named-character-eof.idio" "named character: EOF"
+read-error-load "read-errors/named-character-unknown.idio" "unknown named character: caveat"
+read-error-load "read-errors/template-too-many-ic.idio" "template: too many interpolation characters: #5: $ (0x24)"
+read-error-load "read-errors/template-eof.idio" "template: EOF"
+
+;; Can only test template delimiters if IDIO_OPEN_DELIMITER () doesn't
+;; match the case entries in idio_read_template()
+
+;read-error-load "read-errors/template-delimiter.idio" "template: unexpected delimiter: ) (0xdd)"
+
+read-error-load "read-errors/pathname-too-many-ic.idio" "pathname: too many interpolation characters: #5: $ (0x24)"
+read-error-load "read-errors/pathname-eof.idio" "pathname: EOF"
+
+;; Can't test bignum radix without changing the parser to allow
+;; non-canonical radices, #A1, say
+
+;read-error-load "read-errors/bignum-radix.idio" "bignum: base #%c (%d) > max base %d"
+
+read-error-load "read-errors/bignum-invalid-digit.idio" "bignum: invalid digit a in bignum base #d"
+read-error-load "read-errors/bignum-no-digits.idio" "bignum: no digits after bignum base #d"
+read-error-load "read-errors/word-too-long.idio" "word is too long: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaFAI'"
+read-error-load "read-errors/unexpected-rparen.idio" "unexpected ')'"
+read-error-load "read-errors/unexpected-rbrace.idio" "unexpected '}'"
+read-error-load "read-errors/unexpected-rbracket.idio" "unexpected ']'"
+read-error-load "read-errors/exact-expected-number.idio" "number expected after #e: got SYMBOL"
+read-error-load "read-errors/inexact-expected-number.idio" "number expected after #i: got SYMBOL"
+read-error-load "read-errors/not-ready-for-hash-format.idio" "not ready for # format: < (3c)"
+read-error-load "read-errors/unexpected-hash-format.idio" "unexpected # format: '^' (0x5e)"
+read-error-load "read-errors/unexpected-pair-separator.idio" "unexpected & outside of list"
+read-error-load "read-errors/op-eof.idio" "EOF in list"
+
+;; all done?
+test Tests (read-error0 + 23)

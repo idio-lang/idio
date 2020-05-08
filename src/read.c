@@ -168,166 +168,289 @@ char idio_default_interpolation_chars[] = { IDIO_CHAR_DOLLARS, IDIO_CHAR_AT, IDI
 /*
  * SRFI-36: all parse errors are decendents of ^read-error
  */
-static void idio_read_error (IDIO handle, IDIO msg, IDIO detail)
+static void idio_read_error (IDIO handle, IDIO lo, IDIO c_location, IDIO msg)
 {
     IDIO_ASSERT (handle);
+    IDIO_ASSERT (lo);
+    IDIO_ASSERT (c_location);
     IDIO_ASSERT (msg);
-    IDIO_ASSERT (detail);
-    IDIO_TYPE_ASSERT (handle, handle);
 
-    IDIO line;
-    line = idio_integer (IDIO_HANDLE_LINE (handle));
-    IDIO pos;
-    pos = idio_integer (IDIO_HANDLE_POS (handle));
+    IDIO_TYPE_ASSERT (handle, handle);
+    IDIO_TYPE_ASSERT (struct_instance, lo);
+    IDIO_TYPE_ASSERT (string, c_location);
+    IDIO_TYPE_ASSERT (string, msg);
+
+    /*
+     * How do we describe our error?
+     *
+     * We have two things useful to the user:
+     *
+     *  * ``msg`` describing the error.
+     *
+     *  * ``lo`` where the lexical object began.
+     *
+     * and a couple of things more useful to the developer:
+     *
+     *  * ``handle`` which tells us where we've gotten to -- which
+     * could be the end of the file for an unterminated string.
+     *
+     *  * ``c_location`` which is an IDIO_C_LOCATION() and probably
+     * only useful for debug -- the user won't care where in the C
+     * code the error in their user code was spotted.
+     */
+
+    IDIO detail = idio_S_nil;
+
+#ifdef IDIO_DEBUG
+    IDIO sh = idio_open_output_string_handle_C ();
+    idio_display (c_location, sh);
+    idio_display_C (": reached line ", sh);
+    idio_display (idio_integer (IDIO_HANDLE_LINE (handle)), sh);
+    idio_display_C (": pos ", sh);
+    idio_display (idio_integer (IDIO_HANDLE_POS (handle)), sh);
+
+    detail = idio_get_output_string (sh);
+#endif
 
     IDIO c = idio_struct_instance (idio_condition_read_error_type,
 				   IDIO_LIST5 (msg,
-					       IDIO_HANDLE_NAME (handle),
+					       idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_NAME),
 					       detail,
-					       line,
-					       pos));
+					       idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_LINE),
+					       idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_POS)));
     idio_raise_condition (idio_S_false, c);
 }
 
-static void idio_read_error_parse (IDIO handle, IDIO detail, char *msg)
+static void idio_read_error_parse (IDIO handle, IDIO lo, IDIO c_location, char *msg)
 {
     IDIO_ASSERT (handle);
-    IDIO_ASSERT (detail);
+    IDIO_ASSERT (lo);
+    IDIO_ASSERT (c_location);
     IDIO_C_ASSERT (msg);
+
     IDIO_TYPE_ASSERT (handle, handle);
+    IDIO_TYPE_ASSERT (struct_instance, lo);
+    IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C (msg, sh);
 
-    idio_read_error (handle, idio_get_output_string (sh), detail);
+    idio_read_error (handle, lo, c_location, idio_get_output_string (sh));
 }
 
-static void idio_read_error_parse_args (IDIO handle, char *msg, IDIO args)
+static void idio_read_error_parse_args (IDIO handle, IDIO lo, IDIO c_location, char *msg, IDIO args)
 {
     IDIO_ASSERT (handle);
+    IDIO_ASSERT (lo);
+    IDIO_ASSERT (c_location);
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (args);
+
     IDIO_TYPE_ASSERT (handle, handle);
+    IDIO_TYPE_ASSERT (struct_instance, lo);
+    IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C (msg, sh);
+    idio_display (args, sh);
 
-    idio_read_error (handle, idio_get_output_string (sh), args);
+    idio_read_error (handle, lo, c_location, idio_get_output_string (sh));
 }
 
-static void idio_read_error_parse_printf (IDIO handle, IDIO detail, char *fmt, ...)
+static void idio_read_error_parse_printf (IDIO handle, IDIO lo, IDIO c_location, char *fmt, ...)
 {
     IDIO_ASSERT (handle);
-    IDIO_ASSERT (detail);
+    IDIO_ASSERT (lo);
+    IDIO_ASSERT (c_location);
     IDIO_C_ASSERT (fmt);
+
     IDIO_TYPE_ASSERT (handle, handle);
+    IDIO_TYPE_ASSERT (struct_instance, lo);
+    IDIO_TYPE_ASSERT (string, c_location);
 
     va_list fmt_args;
     va_start (fmt_args, fmt);
     IDIO msg = idio_error_string (fmt, fmt_args);
     va_end (fmt_args);
 
-    idio_read_error (handle, msg, detail);
+    idio_read_error (handle, lo, c_location, msg);
 }
 
-static void idio_read_error_parse_word_too_long (IDIO handle, IDIO detail, char *word)
+static void idio_read_error_parse_word_too_long (IDIO handle, IDIO lo, IDIO c_location, char *word)
 {
     IDIO_ASSERT (handle);
-    IDIO_ASSERT (detail);
+    IDIO_ASSERT (lo);
+    IDIO_ASSERT (c_location);
     IDIO_C_ASSERT (word);
+
     IDIO_TYPE_ASSERT (handle, handle);
+    IDIO_TYPE_ASSERT (struct_instance, lo);
+    IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C ("word is too long: '", sh);
     idio_display_C (word, sh);
     idio_display_C ("'", sh);
 
-    idio_read_error (handle, idio_get_output_string (sh), detail);
+    idio_read_error (handle, lo, c_location, idio_get_output_string (sh));
 }
 
-static void idio_read_error_list_eof (IDIO handle, IDIO detail)
+static void idio_read_error_list_eof (IDIO handle, IDIO lo, IDIO c_location)
 {
     IDIO_ASSERT (handle);
-    IDIO_ASSERT (detail);
+    IDIO_ASSERT (lo);
+    IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (handle, handle);
 
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C ("EOF in list", sh);
 
-    idio_read_error (handle, idio_get_output_string (sh), detail);
+    idio_read_error (handle, lo, c_location, idio_get_output_string (sh));
 }
 
-static void idio_read_error_pair_separator (IDIO handle, IDIO detail, char *msg)
+static void idio_read_error_pair_separator (IDIO handle, IDIO lo, IDIO c_location, char *msg)
 {
     IDIO_ASSERT (handle);
-    IDIO_ASSERT (detail);
+    IDIO_ASSERT (lo);
+    IDIO_ASSERT (c_location);
     IDIO_C_ASSERT (msg);
     IDIO_TYPE_ASSERT (handle, handle);
 
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C (msg, sh);
 
-    idio_read_error (handle, idio_get_output_string (sh), detail);
+    idio_read_error (handle, lo, c_location, idio_get_output_string (sh));
 }
 
-static void idio_read_error_string (IDIO handle, IDIO detail, char *msg)
+static void idio_read_error_string (IDIO handle, IDIO lo, IDIO c_location, char *e_msg)
 {
     IDIO_ASSERT (handle);
-    IDIO_ASSERT (detail);
-    IDIO_C_ASSERT (msg);
+    IDIO_ASSERT (lo);
+    IDIO_ASSERT (c_location);
+    IDIO_C_ASSERT (e_msg);
+
     IDIO_TYPE_ASSERT (handle, handle);
+    IDIO_TYPE_ASSERT (struct_instance, lo);
+    IDIO_TYPE_ASSERT (struct_instance, lo);
+    IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C ("string: ", sh);
-    idio_display_C (msg, sh);
+    idio_display_C (e_msg, sh);
 
-    idio_read_error (handle, idio_get_output_string (sh), detail);
+    idio_read_error (handle, lo, c_location, idio_get_output_string (sh));
 }
 
-static void idio_read_error_named_character (IDIO handle, IDIO detail, char *msg)
+static void idio_read_error_named_character (IDIO handle, IDIO lo, IDIO c_location, char *msg)
 {
     IDIO_ASSERT (handle);
-    IDIO_ASSERT (detail);
+    IDIO_ASSERT (lo);
+    IDIO_ASSERT (c_location);
     IDIO_C_ASSERT (msg);
+
     IDIO_TYPE_ASSERT (handle, handle);
+    IDIO_TYPE_ASSERT (struct_instance, lo);
+    IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO sh = idio_open_output_string_handle_C ();
-    idio_display_C ("character: ", sh);
+    idio_display_C ("named character: ", sh);
     idio_display_C (msg, sh);
 
-    idio_read_error (handle, idio_get_output_string (sh), detail);
+    idio_read_error (handle, lo, c_location, idio_get_output_string (sh));
 }
 
-static void idio_read_error_named_character_unknown_name (IDIO handle, IDIO detail, char *name)
+static void idio_read_error_named_character_unknown_name (IDIO handle, IDIO lo, IDIO c_location, char *name)
 {
     IDIO_ASSERT (handle);
-    IDIO_ASSERT (detail);
+    IDIO_ASSERT (lo);
+    IDIO_ASSERT (c_location);
     IDIO_C_ASSERT (name);
+
     IDIO_TYPE_ASSERT (handle, handle);
+    IDIO_TYPE_ASSERT (struct_instance, lo);
+    IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO sh = idio_open_output_string_handle_C ();
-    idio_display_C ("unknown character name: ", sh);
+    idio_display_C ("unknown named character: ", sh);
     idio_display_C (name, sh);
 
-    idio_read_error (handle, idio_get_output_string (sh), detail);
+    idio_read_error (handle, lo, c_location, idio_get_output_string (sh));
 }
 
-static void idio_read_error_utf8_decode (IDIO handle, IDIO detail, char *msg)
+static void idio_read_error_template (IDIO handle, IDIO lo, IDIO c_location, char *msg)
 {
     IDIO_ASSERT (handle);
-    IDIO_ASSERT (detail);
+    IDIO_ASSERT (lo);
+    IDIO_ASSERT (c_location);
     IDIO_C_ASSERT (msg);
+
     IDIO_TYPE_ASSERT (handle, handle);
+    IDIO_TYPE_ASSERT (struct_instance, lo);
+    IDIO_TYPE_ASSERT (string, c_location);
+
+    IDIO sh = idio_open_output_string_handle_C ();
+    idio_display_C ("template: ", sh);
+    idio_display_C (msg, sh);
+
+    idio_read_error (handle, lo, c_location, idio_get_output_string (sh));
+}
+
+static void idio_read_error_pathname (IDIO handle, IDIO lo, IDIO c_location, char *msg)
+{
+    IDIO_ASSERT (handle);
+    IDIO_ASSERT (lo);
+    IDIO_ASSERT (c_location);
+    IDIO_C_ASSERT (msg);
+
+    IDIO_TYPE_ASSERT (handle, handle);
+    IDIO_TYPE_ASSERT (struct_instance, lo);
+    IDIO_TYPE_ASSERT (string, c_location);
+
+    IDIO sh = idio_open_output_string_handle_C ();
+    idio_display_C ("pathname: ", sh);
+    idio_display_C (msg, sh);
+
+    idio_read_error (handle, lo, c_location, idio_get_output_string (sh));
+}
+
+static void idio_read_error_bignum (IDIO handle, IDIO lo, IDIO c_location, char *msg)
+{
+    IDIO_ASSERT (handle);
+    IDIO_ASSERT (lo);
+    IDIO_ASSERT (c_location);
+    IDIO_C_ASSERT (msg);
+
+    IDIO_TYPE_ASSERT (handle, handle);
+    IDIO_TYPE_ASSERT (struct_instance, lo);
+    IDIO_TYPE_ASSERT (string, c_location);
+
+    IDIO sh = idio_open_output_string_handle_C ();
+    idio_display_C ("bignum: ", sh);
+    idio_display_C (msg, sh);
+
+    idio_read_error (handle, lo, c_location, idio_get_output_string (sh));
+}
+
+static void idio_read_error_utf8_decode (IDIO handle, IDIO lo, IDIO c_location, char *msg)
+{
+    IDIO_ASSERT (handle);
+    IDIO_ASSERT (lo);
+    IDIO_ASSERT (c_location);
+    IDIO_C_ASSERT (msg);
+
+    IDIO_TYPE_ASSERT (handle, handle);
+    IDIO_TYPE_ASSERT (struct_instance, lo);
+    IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C ("UTF-8 decode: ", sh);
     idio_display_C (msg, sh);
 
-    idio_read_error (handle, idio_get_output_string (sh), detail);
+    idio_read_error (handle, lo, c_location, idio_get_output_string (sh));
 }
 
 static IDIO idio_read_1_expr (IDIO handle, char *ic, int depth);
-static IDIO idio_read_block (IDIO handle, IDIO closedel, char *ic, int depth);
+static IDIO idio_read_block (IDIO handle, IDIO lo, IDIO closedel, char *ic, int depth);
 
 static void idio_read_whitespace (IDIO handle)
 {
@@ -365,7 +488,7 @@ static void idio_read_newline (IDIO handle)
     }
 }
 
-static IDIO idio_read_list (IDIO handle, IDIO opendel, char *ic, int depth)
+static IDIO idio_read_list (IDIO handle, IDIO lo, IDIO opendel, char *ic, int depth)
 {
     int count = 0;		/* # of elements in list */
 
@@ -377,7 +500,7 @@ static IDIO idio_read_list (IDIO handle, IDIO opendel, char *ic, int depth)
     } else if (opendel == idio_T_lbracket) {
 	closedel = idio_T_rbracket;
     } else {
-	idio_read_error_parse_args (handle, "unexpected list open delimiter '%s'", opendel);
+	idio_read_error_parse_args (handle, lo, IDIO_C_LOCATION ("idio_read_list"), "unexpected list open delimiter ", opendel);
 
 	return idio_S_notreached;
     }
@@ -389,7 +512,7 @@ static IDIO idio_read_list (IDIO handle, IDIO opendel, char *ic, int depth)
 	IDIO e = idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_EXPR);
 
 	if (idio_eofp_handle (handle)) {
-	    idio_read_error_list_eof (handle, IDIO_C_LOCATION ("idio_read_list"));
+	    idio_read_error_list_eof (handle, lo, IDIO_C_LOCATION ("idio_read_list"));
 
 	    return idio_S_notreached;
 	} else if (idio_T_eol == e) {
@@ -399,7 +522,7 @@ static IDIO idio_read_list (IDIO handle, IDIO opendel, char *ic, int depth)
 	    if (count < 1) {
 		char em[BUFSIZ];
 		sprintf (em, "nothing before %c in list", IDIO_PAIR_SEPARATOR);
-		idio_read_error_pair_separator (handle, IDIO_C_LOCATION ("idio_read_list"), em);
+		idio_read_error_pair_separator (handle, lo, IDIO_C_LOCATION ("idio_read_list"), em);
 
 		return idio_S_notreached;
 	    }
@@ -416,14 +539,14 @@ static IDIO idio_read_list (IDIO handle, IDIO opendel, char *ic, int depth)
 	    }
 
 	    if (idio_eofp_handle (handle)) {
-		idio_read_error_list_eof (handle, IDIO_C_LOCATION ("idio_read_list"));
+		idio_read_error_list_eof (handle, lo, IDIO_C_LOCATION ("idio_read_list"));
 
 		return idio_S_notreached;
 	    } else if (closedel == pt) {
 		/* (a &) */
 		char em[BUFSIZ];
 		sprintf (em, "nothing after %c in list", IDIO_PAIR_SEPARATOR);
-		idio_read_error_pair_separator (handle, IDIO_C_LOCATION ("idio_read_list"), em);
+		idio_read_error_pair_separator (handle, lo, IDIO_C_LOCATION ("idio_read_list"), em);
 
 		return idio_S_notreached;
 	    }
@@ -438,17 +561,16 @@ static IDIO idio_read_list (IDIO handle, IDIO opendel, char *ic, int depth)
 	    }
 
 	    if (idio_eofp_handle (handle)) {
-		idio_read_error_list_eof (handle, IDIO_C_LOCATION ("idio_read_list"));
+		idio_read_error_list_eof (handle, lo, IDIO_C_LOCATION ("idio_read_list"));
 
 		return idio_S_notreached;
 	    } else if (closedel == del) {
 		return idio_improper_list_reverse (r, pt);
 	    } else {
 		/* (a & b c) */
-		idio_debug ("extra=%s\n", del);
 		char em[BUFSIZ];
 		sprintf (em, "more than one expression after %c in list", IDIO_PAIR_SEPARATOR);
-		idio_read_error_pair_separator (handle, IDIO_C_LOCATION ("idio_read_list"), em);
+		idio_read_error_pair_separator (handle, lo, IDIO_C_LOCATION ("idio_read_list"), em);
 
 		return idio_S_notreached;
 	    }
@@ -475,7 +597,7 @@ static IDIO idio_read_list (IDIO handle, IDIO opendel, char *ic, int depth)
 		}
 
 		if (idio_eofp_handle (handle)) {
-		    idio_read_error_list_eof (handle, IDIO_C_LOCATION ("idio_read_list"));
+		    idio_read_error_list_eof (handle, lo, IDIO_C_LOCATION ("idio_read_list"));
 
 		    return idio_S_notreached;
 		}
@@ -536,61 +658,65 @@ static IDIO idio_read_list (IDIO handle, IDIO opendel, char *ic, int depth)
 	}
     }
 
-    idio_read_error_parse_printf (handle, IDIO_C_LOCATION ("idio_read_list"), "impossible!");
+    idio_read_error_parse_printf (handle, lo, IDIO_C_LOCATION ("idio_read_list"), "impossible!");
 
     return idio_S_notreached;
 }
 
-static IDIO idio_read_quote (IDIO handle, char *ic, int depth)
+static IDIO idio_read_quote (IDIO handle, IDIO lo, char *ic, int depth)
 {
     IDIO_ASSERT (handle);
+    IDIO_ASSERT (lo);
 
-    IDIO lo = idio_read_1_expr (handle, ic, depth);
-    IDIO e = idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_EXPR);
+    IDIO qlo = idio_read_1_expr (handle, ic, depth);
+    IDIO e = idio_struct_instance_ref_direct (qlo, IDIO_LEXOBJ_EXPR);
     e = IDIO_LIST2 (idio_S_quote, e);
 
     return e;
 }
 
-static IDIO idio_read_quasiquote (IDIO handle, char *ic, int depth)
+static IDIO idio_read_quasiquote (IDIO handle, IDIO lo, char *ic, int depth)
 {
     IDIO_ASSERT (handle);
+    IDIO_ASSERT (lo);
 
-    IDIO lo = idio_read_1_expr (handle, ic, depth);
-    IDIO e = idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_EXPR);
+    IDIO qqlo = idio_read_1_expr (handle, ic, depth);
+    IDIO e = idio_struct_instance_ref_direct (qqlo, IDIO_LEXOBJ_EXPR);
     e = IDIO_LIST2 (idio_S_quasiquote, e);
 
     return e;
 }
 
-static IDIO idio_read_unquote_splicing (IDIO handle, char *ic, int depth)
+static IDIO idio_read_unquote_splicing (IDIO handle, IDIO lo, char *ic, int depth)
 {
     IDIO_ASSERT (handle);
+    IDIO_ASSERT (lo);
 
-    IDIO lo = idio_read_1_expr (handle, ic, depth);
-    IDIO e = idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_EXPR);
+    IDIO uslo = idio_read_1_expr (handle, ic, depth);
+    IDIO e = idio_struct_instance_ref_direct (uslo, IDIO_LEXOBJ_EXPR);
     e = IDIO_LIST2 (idio_S_unquotesplicing, e);
 
     return e;
 }
 
-static IDIO idio_read_unquote (IDIO handle, char *ic, int depth)
+static IDIO idio_read_unquote (IDIO handle, IDIO lo, char *ic, int depth)
 {
     IDIO_ASSERT (handle);
+    IDIO_ASSERT (lo);
 
-    IDIO lo = idio_read_1_expr (handle, ic, depth);
-    IDIO e = idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_EXPR);
+    IDIO uqlo = idio_read_1_expr (handle, ic, depth);
+    IDIO e = idio_struct_instance_ref_direct (uqlo, IDIO_LEXOBJ_EXPR);
     e = IDIO_LIST2 (idio_S_unquote, e);
 
     return e;
 }
 
-static IDIO idio_read_escape (IDIO handle, char *ic, int depth)
+static IDIO idio_read_escape (IDIO handle, IDIO lo, char *ic, int depth)
 {
     IDIO_ASSERT (handle);
 
-    IDIO lo = idio_read_1_expr (handle, ic, depth);
-    IDIO e = idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_EXPR);
+    IDIO elo = idio_read_1_expr (handle, ic, depth);
+    IDIO e = idio_struct_instance_ref_direct (elo, IDIO_LEXOBJ_EXPR);
     e = IDIO_LIST2 (idio_S_escape, e);
 
     return e;
@@ -616,7 +742,7 @@ static void idio_read_comment (IDIO handle, int depth)
     }
 }
 
-static IDIO idio_read_string (IDIO handle)
+static IDIO idio_read_string (IDIO handle, IDIO lo)
 {
     IDIO_ASSERT (handle);
 
@@ -641,7 +767,7 @@ static IDIO idio_read_string (IDIO handle)
 	int c = idio_getc_handle (handle);
 
 	if (EOF == c) {
-	    idio_read_error_string (handle, IDIO_C_LOCATION ("idio_read_string"), "unterminated");
+	    idio_read_error_string (handle, lo, IDIO_C_LOCATION ("idio_read_string"), "unterminated");
 
 	    return idio_S_notreached;
 	}
@@ -715,7 +841,7 @@ static IDIO idio_read_string (IDIO handle)
     return r;
 }
 
-static IDIO idio_read_named_character (IDIO handle)
+static IDIO idio_read_named_character (IDIO handle, IDIO lo)
 {
     IDIO_ASSERT (handle);
 
@@ -727,7 +853,7 @@ static IDIO idio_read_named_character (IDIO handle)
 	c = idio_getc_handle (handle);
 
 	if (EOF == c) {
-	    idio_read_error_named_character (handle, IDIO_C_LOCATION ("idio_read_named_character"), "EOF");
+	    idio_read_error_named_character (handle, lo, IDIO_C_LOCATION ("idio_read_named_character"), "EOF");
 
 	    return idio_S_notreached;
 	}
@@ -752,7 +878,7 @@ static IDIO idio_read_named_character (IDIO handle)
 
     /* can i==0 happen? EOF? */
     if (0 == i) {
-	idio_read_error_named_character (handle, IDIO_C_LOCATION ("idio_read_named_character"), "no letters in character name?");
+	idio_read_error_named_character (handle, lo, IDIO_C_LOCATION ("idio_read_named_character"), "no letters in character name?");
 
 	return idio_S_notreached;
     } else if (1 == i) {
@@ -761,7 +887,7 @@ static IDIO idio_read_named_character (IDIO handle)
 	r = idio_character_lookup (buf);
 
 	if (r == idio_S_unspec) {
-	    idio_read_error_named_character_unknown_name (handle, IDIO_C_LOCATION ("idio_read_named_character"), buf);
+	    idio_read_error_named_character_unknown_name (handle, lo, IDIO_C_LOCATION ("idio_read_named_character"), buf);
 
 	    return idio_S_notreached;
 	}
@@ -771,24 +897,24 @@ static IDIO idio_read_named_character (IDIO handle)
     return r;
 }
 
-static IDIO idio_read_array (IDIO handle, char *ic, int depth)
+static IDIO idio_read_array (IDIO handle, IDIO lo, char *ic, int depth)
 {
     IDIO_ASSERT (handle);
 
-    IDIO e = idio_read_list (handle, idio_T_lbracket, ic, IDIO_LIST_BRACKET (depth + 1));
+    IDIO e = idio_read_list (handle, lo, idio_T_lbracket, ic, IDIO_LIST_BRACKET (depth + 1));
     return idio_list_to_array (e);
 }
 
-static IDIO idio_read_hash (IDIO handle, char *ic, int depth)
+static IDIO idio_read_hash (IDIO handle, IDIO lo, char *ic, int depth)
 {
     IDIO_ASSERT (handle);
 
-    IDIO e = idio_read_list (handle, idio_T_lbrace, ic, IDIO_LIST_BRACE (depth + 1));
+    IDIO e = idio_read_list (handle, lo, idio_T_lbrace, ic, IDIO_LIST_BRACE (depth + 1));
 
     return idio_hash_alist_to_hash (e, idio_S_nil);
 }
 
-static IDIO idio_read_template (IDIO handle, int depth)
+static IDIO idio_read_template (IDIO handle, IDIO lo, int depth)
 {
     IDIO_ASSERT (handle);
 
@@ -802,15 +928,17 @@ static IDIO idio_read_template (IDIO handle, int depth)
     int c = idio_getc_handle (handle);
 
     while (! IDIO_OPEN_DELIMITER (c)) {
-	if (i > (IDIO_INTERPOLATION_CHARS + 1)) {
-	    idio_read_error_parse_printf (handle, IDIO_C_LOCATION ("idio_read_template"), "too many interpolation characters: #%d: %c (%#x)", i, c, c);
+	if (i >= IDIO_INTERPOLATION_CHARS) {
+	    char em[BUFSIZ];
+	    sprintf (em, "too many interpolation characters: #%d: %c (%#x)", i + 1, c, c);
+	    idio_read_error_template (handle, lo, IDIO_C_LOCATION ("idio_read_template"), em);
 
 	    return idio_S_notreached;
 	}
 
 	switch (c) {
 	case EOF:
-	    idio_read_error_named_character (handle, IDIO_C_LOCATION ("idio_read_template"), "EOF");
+	    idio_read_error_template (handle, lo, IDIO_C_LOCATION ("idio_read_template"), "EOF");
 
 	    return idio_S_notreached;
 	default:
@@ -842,12 +970,20 @@ static IDIO idio_read_template (IDIO handle, int depth)
 	depth = IDIO_LIST_ANGLE (depth + 1);
 	break;
     default:
-	idio_read_error_parse_printf (handle, IDIO_C_LOCATION ("idio_read_template"), "unexpected template delimiter: %c (%#x)", c, c);
+	{
+	    /*
+	     * Can only get here if IDIO_OPEN_DELIMITER () doesn't
+	     * match the case entries above
+	     */
+	    char em[BUFSIZ];
+	    sprintf (em, "unexpected delimiter: %c (%#x)", c, c);
+	    idio_read_error_template (handle, lo, IDIO_C_LOCATION ("idio_read_template"), em);
 
-	return idio_S_notreached;
+	    return idio_S_notreached;
+	}
     }
 
-    IDIO e = idio_read_block (handle, closedel, interpc, depth);
+    IDIO e = idio_read_block (handle, lo, closedel, interpc, depth);
     /*
      * idio_read_block has returned (block expr) and we only want expr
      *
@@ -863,7 +999,7 @@ static IDIO idio_read_template (IDIO handle, int depth)
     }
 }
 
-static IDIO idio_read_pathname (IDIO handle, int depth)
+static IDIO idio_read_pathname (IDIO handle, IDIO lo, int depth)
 {
     IDIO_ASSERT (handle);
 
@@ -877,15 +1013,17 @@ static IDIO idio_read_pathname (IDIO handle, int depth)
     int c = idio_getc_handle (handle);
 
     while (IDIO_CHAR_DQUOTE != c) {
-	if (i > (IDIO_INTERPOLATION_CHARS + 1)) {
-	    idio_read_error_parse_printf (handle, IDIO_C_LOCATION ("idio_read_pathname"), "too many interpolation characters: #%d: %c (%#x)", i, c, c);
+	if (i >= IDIO_INTERPOLATION_CHARS) {
+	    char em[BUFSIZ];
+	    sprintf (em, "too many interpolation characters: #%d: %c (%#x)", i + 1, c, c);
+	    idio_read_error_pathname (handle, lo, IDIO_C_LOCATION ("idio_read_pathname"), em);
 
 	    return idio_S_notreached;
 	}
 
 	switch (c) {
 	case EOF:
-	    idio_read_error_named_character (handle, IDIO_C_LOCATION ("idio_read_pathname"), "EOF");
+	    idio_read_error_pathname (handle, lo, IDIO_C_LOCATION ("idio_read_pathname"), "EOF");
 
 	    return idio_S_notreached;
 	default:
@@ -898,12 +1036,12 @@ static IDIO idio_read_pathname (IDIO handle, int depth)
 	c = idio_getc_handle (handle);
     }
 
-    IDIO e = idio_read_string (handle);
+    IDIO e = idio_read_string (handle, lo);
 
     return idio_struct_instance (idio_path_type, IDIO_LIST1 (e));
 }
 
-static IDIO idio_read_bignum_radix (IDIO handle, char basec, int radix)
+static IDIO idio_read_bignum_radix (IDIO handle, IDIO lo, char basec, int radix)
 {
     IDIO_ASSERT (handle);
 
@@ -925,9 +1063,13 @@ static IDIO idio_read_bignum_radix (IDIO handle, char basec, int radix)
     int max_base = strlen (digits);
 
     if (radix > max_base) {
+	/*
+	 * Shouldn't get here unless someone changes the parser to
+	 * allow non-canonical radices, #A1, say.
+	 */
 	char em[BUFSIZ];
-	sprintf (em, "bignum base #%c (%d) > max base %d", basec, radix, max_base);
-	idio_read_error_parse (handle, IDIO_C_LOCATION ("idio_read_bignum_radix"), em);
+	sprintf (em, "base #%c (%d) > max base %d", basec, radix, max_base);
+	idio_read_error_bignum (handle, lo, IDIO_C_LOCATION ("idio_read_bignum_radix"), em);
 
 	return idio_S_notreached;
     }
@@ -951,7 +1093,7 @@ static IDIO idio_read_bignum_radix (IDIO handle, char basec, int radix)
 	if (i >= radix) {
 	    char em[BUFSIZ];
 	    sprintf (em, "invalid digit %c in bignum base #%c", c, basec);
-	    idio_read_error_parse (handle, IDIO_C_LOCATION ("idio_read_bignum_radix"), em);
+	    idio_read_error_bignum (handle, lo, IDIO_C_LOCATION ("idio_read_bignum_radix"), em);
 
 	    return idio_S_notreached;
 	}
@@ -968,7 +1110,7 @@ static IDIO idio_read_bignum_radix (IDIO handle, char basec, int radix)
     if (0 == ndigits) {
 	char em[BUFSIZ];
 	sprintf (em, "no digits after bignum base #%c", basec);
-	idio_read_error_parse (handle, IDIO_C_LOCATION ("idio_read_bignum_radix"), em);
+	idio_read_error_bignum (handle, lo, IDIO_C_LOCATION ("idio_read_bignum_radix"), em);
 
 	return idio_S_notreached;
     }
@@ -1100,17 +1242,17 @@ static IDIO idio_read_number_C (IDIO handle, char *str)
     return num;
 }
 
-static IDIO idio_read_word (IDIO handle, int c)
+static IDIO idio_read_word (IDIO handle, IDIO lo, int c)
 {
-    char buf[IDIO_WORD_MAX_LEN];
+    char buf[IDIO_WORD_MAX_LEN + 1];
     int i = 0;
 
     for (;;) {
 	buf[i++] = c;
 
-	if (i >= IDIO_WORD_MAX_LEN) {
-	    buf[IDIO_WORD_MAX_LEN-1] = '\0';
-	    idio_read_error_parse_word_too_long (handle, IDIO_C_LOCATION ("idio_read_word"), buf);
+	if (i > IDIO_WORD_MAX_LEN) {
+	    buf[IDIO_WORD_MAX_LEN] = '\0';
+	    idio_read_error_parse_word_too_long (handle, lo, IDIO_C_LOCATION ("idio_read_word"), buf);
 
 	    return idio_S_notreached;
 	}
@@ -1225,14 +1367,14 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int nl)
 	if (c == ic[0]) {
 	    c = idio_getc_handle (handle);
 	    if (c == ic[1]) {
-		idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_unquote_splicing (handle, ic, depth));
+		idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_unquote_splicing (handle, lo, ic, depth));
 		return lo;
 	    }
 	    idio_ungetc_handle (handle, c);
-	    idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_unquote (handle, ic, depth));
+	    idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_unquote (handle, lo, ic, depth));
 	    return lo;
 	} else if (c == ic[2]) {
-	    idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_quote (handle, ic, depth));
+	    idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_quote (handle, lo, ic, depth));
 	    return lo;
 	} else if (c == ic[3]) {
 	    c = idio_getc_handle (handle);
@@ -1244,7 +1386,7 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int nl)
 		break;
 	    default:
 		idio_ungetc_handle (handle, c);
-		idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_escape (handle, ic, depth));
+		idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_escape (handle, lo, ic, depth));
 		return lo;
 	    }
 	} else {
@@ -1266,40 +1408,40 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int nl)
 		idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_T_eol);
 		return lo;
 	    case IDIO_CHAR_LPAREN:
-		idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_list (handle, idio_T_lparen, ic, IDIO_LIST_PAREN (depth) + 1));
+		idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_list (handle, lo, idio_T_lparen, ic, IDIO_LIST_PAREN (depth) + 1));
 		return lo;
 	    case IDIO_CHAR_RPAREN:
 		if (IDIO_LIST_PAREN_P (depth)) {
 		    idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_T_rparen);
 		    return lo;
 		} else {
-		    idio_read_error_parse (handle, IDIO_C_LOCATION ("idio_read_1_expr_nl"), "unexpected ')'");
+		    idio_read_error_parse (handle, lo, IDIO_C_LOCATION ("idio_read_1_expr_nl"), "unexpected ')'");
 
 		    return idio_S_notreached;
 		}
 		break;
 	    case IDIO_CHAR_LBRACE:
-		idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_block (handle, idio_T_rbrace, ic, IDIO_LIST_BRACE (depth + 1)));
+		idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_block (handle, lo, idio_T_rbrace, ic, IDIO_LIST_BRACE (depth + 1)));
 		return lo;
 	    case IDIO_CHAR_RBRACE:
 		if (IDIO_LIST_BRACE_P (depth)) {
 		    idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_T_rbrace);
 		    return lo;
 		} else {
-		    idio_read_error_parse (handle, IDIO_C_LOCATION ("idio_read_1_expr_nl"), "unexpected '}'");
+		    idio_read_error_parse (handle, lo, IDIO_C_LOCATION ("idio_read_1_expr_nl"), "unexpected '}'");
 
 		    return idio_S_notreached;
 		}
 		break;
 	    case IDIO_CHAR_LBRACKET:
-		idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_block (handle, idio_T_rbracket, ic, IDIO_LIST_BRACKET (depth + 1)));
+		idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_block (handle, lo, idio_T_rbracket, ic, IDIO_LIST_BRACKET (depth + 1)));
 		return lo;
 	    case IDIO_CHAR_RBRACKET:
 		if (IDIO_LIST_BRACKET_P (depth)) {
 		    idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_T_rbracket);
 		    return lo;
 		} else {
-		    idio_read_error_parse (handle, IDIO_C_LOCATION ("idio_read_1_expr_nl"), "unexpected ']'");
+		    idio_read_error_parse (handle, lo, IDIO_C_LOCATION ("idio_read_1_expr_nl"), "unexpected ']'");
 
 		    return idio_S_notreached;
 		}
@@ -1316,7 +1458,7 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int nl)
 		    case '.':
 			{
 			    idio_ungetc_handle (handle, c);
-			    idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_word (handle, IDIO_CHAR_DOT));
+			    idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_word (handle, lo, IDIO_CHAR_DOT));
 			    return lo;
 			}
 			break;
@@ -1330,7 +1472,7 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int nl)
 	    case IDIO_CHAR_BACKQUOTE:
 		{
 		    char qq_ic[] = { IDIO_CHAR_COMMA, IDIO_CHAR_AT, IDIO_CHAR_SQUOTE, IDIO_CHAR_BACKSLASH };
-		    idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_quasiquote (handle, qq_ic, depth));
+		    idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_quasiquote (handle, lo, qq_ic, depth));
 		    return lo;
 		}
 	    case IDIO_CHAR_HASH:
@@ -1347,25 +1489,25 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int nl)
 			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_S_nil);
 			return lo;
 		    case '\\':
-			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_named_character (handle));
+			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_named_character (handle, lo));
 			return lo;
 		    case '[':
-			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_array (handle, ic, IDIO_LIST_BRACKET (depth + 1)));
+			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_array (handle, lo, ic, IDIO_LIST_BRACKET (depth + 1)));
 			return lo;
 		    case '{':
-			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_hash (handle, ic, IDIO_LIST_BRACE (depth + 1)));
+			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_hash (handle, lo, ic, IDIO_LIST_BRACE (depth + 1)));
 			return lo;
 		    case 'b':
-			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_bignum_radix (handle, c, 2));
+			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_bignum_radix (handle, lo, c, 2));
 			return lo;
 		    case 'd':
-			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_bignum_radix (handle, c, 10));
+			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_bignum_radix (handle, lo, c, 10));
 			return lo;
 		    case 'o':
-			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_bignum_radix (handle, c, 8));
+			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_bignum_radix (handle, lo, c, 8));
 			return lo;
 		    case 'x':
-			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_bignum_radix (handle, c, 16));
+			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_bignum_radix (handle, lo, c, 16));
 			return lo;
 		    case 'e':
 		    case 'i':
@@ -1391,7 +1533,7 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int nl)
 			    if (! idio_isa_bignum (bn)) {
 				char em[BUFSIZ];
 				sprintf (em, "number expected after #%c: got %s", inexact ? 'i' : 'e', idio_type2string (bn));
-				idio_read_error_parse (handle, IDIO_C_LOCATION ("idio_read_1_expr_nl"), em);
+				idio_read_error_parse (handle, lo, IDIO_C_LOCATION ("idio_read_1_expr_nl"), em);
 
 				return idio_S_notreached;
 			    }
@@ -1422,16 +1564,16 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int nl)
 			    return lo;
 			}
 		    case 'T':
-			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_template (handle, depth));
+			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_template (handle, lo, depth));
 			return lo;
 		    case 'P':
-			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_pathname (handle, depth));
+			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_pathname (handle, lo, depth));
 			return lo;
 		    case '<':
 			{
 			    char em[BUFSIZ];
 			    sprintf (em, "not ready for # format: %c (%02x)", c, c);
-			    idio_read_error_parse (handle, IDIO_C_LOCATION ("idio_read_1_expr_nl"), em);
+			    idio_read_error_parse (handle, lo, IDIO_C_LOCATION ("idio_read_1_expr_nl"), em);
 
 			    return idio_S_notreached;
 			}
@@ -1439,7 +1581,7 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int nl)
 			{
 			    char em[BUFSIZ];
 			    sprintf (em, "unexpected # format: '%c' (%#02x)", c, c);
-			    idio_read_error_parse (handle, IDIO_C_LOCATION ("idio_read_1_expr_nl"), em);
+			    idio_read_error_parse (handle, lo, IDIO_C_LOCATION ("idio_read_1_expr_nl"), em);
 
 			    return idio_S_notreached;
 			}
@@ -1458,13 +1600,13 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int nl)
 			} else {
 			    char em[BUFSIZ];
 			    sprintf (em, "unexpected %c outside of list", IDIO_PAIR_SEPARATOR);
-			    idio_read_error_parse (handle, IDIO_C_LOCATION ("idio_read_1_expr_nl"), em);
+			    idio_read_error_parse (handle, lo, IDIO_C_LOCATION ("idio_read_1_expr_nl"), em);
 
 			    return idio_S_notreached;
 			}
 		    }
 
-		    idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_word (handle, c));
+		    idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_word (handle, lo, c));
 		    return lo;
 		}
 	    case IDIO_CHAR_SEMICOLON:
@@ -1472,10 +1614,10 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int nl)
 		moved = 1;
 		break;
 	    case IDIO_CHAR_DQUOTE:
-		idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_string (handle));
+		idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_string (handle, lo));
 		return lo;
 	    default:
-		idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_word (handle, c));
+		idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_word (handle, lo, c));
 		return lo;
 	    }
 	}
@@ -1509,7 +1651,6 @@ static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, char *ic, int depth
 
     for (;;) {
 	IDIO lo = idio_read_1_expr_nl (handle, ic, depth, 1);
-	/* idio_debug ("irel: %s\n", lo); */
 	IDIO expr = idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_EXPR);
 
 	if (idio_S_eof == expr) {
@@ -1566,12 +1707,12 @@ static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, char *ic, int depth
 		    IDIO lo = idio_read_1_expr (handle, ic, depth);
 		    IDIO ne = idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_EXPR);
 		    while (idio_T_eol == ne) {
-			IDIO lo = idio_read_1_expr (handle, ic, depth);
+			lo = idio_read_1_expr (handle, ic, depth);
 			ne = idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_EXPR);
 		    }
 
 		    if (idio_eofp_handle (handle)) {
-			idio_read_error_list_eof (handle, IDIO_C_LOCATION ("idio_read_expr_line"));
+			idio_read_error_list_eof (handle, lo, IDIO_C_LOCATION ("idio_read_expr_line"));
 
 			return idio_S_notreached;
 		    }
@@ -1630,7 +1771,7 @@ static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, char *ic, int depth
     }
 }
 
-static IDIO idio_read_block (IDIO handle, IDIO closedel, char *ic, int depth)
+static IDIO idio_read_block (IDIO handle, IDIO lo, IDIO closedel, char *ic, int depth)
 {
     IDIO r = idio_S_nil;
 
@@ -1734,7 +1875,7 @@ IDIO idio_read_char (IDIO handle)
     }
 }
 
-IDIO idio_read_character (IDIO handle)
+IDIO idio_read_character (IDIO handle, IDIO lo)
 {
     IDIO_ASSERT (handle);
     IDIO_TYPE_ASSERT (handle, handle);
@@ -1749,7 +1890,7 @@ IDIO idio_read_character (IDIO handle)
 	if (EOF == c) {
 	    if (i) {
 		fprintf (stderr, "EOF w/ i=%d\n", i);
-		idio_read_error_utf8_decode (handle, IDIO_C_LOCATION ("idio_read_character"), "EOF");
+		idio_read_error_utf8_decode (handle, lo, IDIO_C_LOCATION ("idio_read_character"), "EOF");
 
 		return idio_S_notreached;
 
@@ -1774,7 +1915,7 @@ IDIO idio_read_character (IDIO handle)
 
 	if (state != IDIO_UTF8_ACCEPT) {
 	    fprintf (stderr, "The (UTF-8) string is not well-formed\n");
-	    idio_read_error_utf8_decode (handle, IDIO_C_LOCATION ("idio_read_character"), "not well-formed");
+	    idio_read_error_utf8_decode (handle, lo, IDIO_C_LOCATION ("idio_read_character"), "not well-formed");
 
 	    return idio_S_notreached;
 	}

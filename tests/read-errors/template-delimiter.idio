@@ -1,0 +1,5 @@
+;; Can only test this if IDIO_OPEN_DELIMITER () doesn't match the case
+;; entries in idio_read_template()
+
+#T{ 1 }
+

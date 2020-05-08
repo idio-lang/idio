@@ -227,14 +227,17 @@ define (condition-report prefix cont cond & args) "print a report on `condition`
     p x* #t
   }
 
-  dh* oh prefix ": "
+  if (not (null? prefix)) {
+    dh* oh prefix ": "
+  }
   if (not cont) {
     display "non-cont " oh
   }
   dh* oh (struct-type-name (struct-instance-type cond)) ": "
 
   if (and (struct-type-isa (struct-instance-type cond) ^idio-error)
-	  (not (struct-type-isa (struct-instance-type cond) ^rt-command-status-error))) {
+	  (not (or (struct-type-isa (struct-instance-type cond) ^read-error)
+		   (struct-type-isa (struct-instance-type cond) ^rt-command-status-error)))) {
     dh* oh cond.message ";" cond.detail ";" cond.location
   }
 
@@ -245,7 +248,7 @@ define (condition-report prefix cont cond & args) "print a report on `condition`
 	 dh* oh ": filename" cond.filename
        }) \
        ((struct-type-isa (struct-instance-type cond) ^read-error) {
-	 dh* oh ": line" cond.line "pos" cond.position
+	 dh* oh cond.message ";" cond.location ": line" cond.line "pos" cond.position
        }) \
        ((struct-type-isa (struct-instance-type cond) ^system-error) {
           dh* oh "errno" cond.errno "(" (libc/errno-name cond.errno) ")"

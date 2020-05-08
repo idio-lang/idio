@@ -3107,6 +3107,7 @@ static IDIO idio_meaning (IDIO e, IDIO nametree, int flags, IDIO cs)
 		switch (e->type) {
 		case IDIO_TYPE_SYMBOL:
 		    return idio_meaning_reference (e, nametree, IDIO_MEANING_LEXICAL_SCOPE (flags), cs);
+
 		case IDIO_TYPE_STRING:
 		case IDIO_TYPE_KEYWORD:
 		case IDIO_TYPE_PAIR:
@@ -3114,16 +3115,19 @@ static IDIO idio_meaning (IDIO e, IDIO nametree, int flags, IDIO cs)
 		case IDIO_TYPE_HASH:
 		case IDIO_TYPE_BIGNUM:
 		    return idio_meaning_quotation (e, nametree, flags);
+
 		case IDIO_TYPE_CLOSURE:
 		case IDIO_TYPE_PRIMITIVE:
 		    idio_error_C ("invalid constant type", e, IDIO_C_LOCATION ("idio_meaning/quotation/function"));
 
 		    return idio_S_notreached;
+		case IDIO_TYPE_STRUCT_INSTANCE:
+		    return idio_meaning_quotation (e, nametree, flags);
+
 		case IDIO_TYPE_MODULE:
 		case IDIO_TYPE_FRAME:
 		case IDIO_TYPE_HANDLE:
 		case IDIO_TYPE_STRUCT_TYPE:
-		case IDIO_TYPE_STRUCT_INSTANCE:
 		case IDIO_TYPE_THREAD:
 		case IDIO_TYPE_CONTINUATION:
 		case IDIO_TYPE_C_INT:

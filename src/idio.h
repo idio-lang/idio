@@ -175,8 +175,25 @@ extern FILE *idio_vm_perf_FILE;
 */
 #define IDIO_IS_SET(x)        (idio_S_nil != (x) && (IDIO_GC_FLAG_FREE_SET (x) == 0))
 
-
-#define IDIO_WORD_MAX_LEN	BUFSIZ
+/*
+ * IDIO_WORD_MAX_LEN was originally BUFSIZ but that is not a fixed
+ * value across systems -- it is meant to be an efficient buffer size
+ * for that system after all, albeit at least 256 bytes.
+ *
+ * It also makes it a bit hard to test when it varies across systems.
+ *
+ * It's also hard to image a useful word longer than a certain size.
+ * But what's the lower bound of that size?  How big do you like your
+ * symbolic names, sir?  Few people are going to be typing in long
+ * symbolic names but it is plausible that some (errant?)
+ * code-generator might pony up a big'un.
+ *
+ * In the meanwhile, we need some sort of definition as we must
+ * allocate a char buf[n] to put the collected chars in (and to check
+ * we've not overrun said buffer).  We could be truly dynamic...but
+ * I'm really busy right now.
+ */
+#define IDIO_WORD_MAX_LEN	1023
 
 /*
  * A few helper macros for defining the C function that implements a

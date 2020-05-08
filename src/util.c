@@ -2223,13 +2223,21 @@ IDIO idio_copy (IDIO o, int depth)
 	    case IDIO_TYPE_BIGNUM:
 		return idio_bignum_copy (o);
 
+	    case IDIO_TYPE_STRUCT_INSTANCE:
+		if (idio_struct_instance_isa (o, idio_path_type)) {
+		    return o;
+		} else {
+		    idio_error_C ("invalid struct type", o, IDIO_C_LOCATION ("idio_copy"));
+
+		    return idio_S_notreached;
+		}
+
 	    case IDIO_TYPE_CLOSURE:
 	    case IDIO_TYPE_PRIMITIVE:
 	    case IDIO_TYPE_MODULE:
 	    case IDIO_TYPE_FRAME:
 	    case IDIO_TYPE_HANDLE:
 	    case IDIO_TYPE_STRUCT_TYPE:
-	    case IDIO_TYPE_STRUCT_INSTANCE:
 	    case IDIO_TYPE_THREAD:
 	    case IDIO_TYPE_CONTINUATION:
 	    case IDIO_TYPE_C_INT:

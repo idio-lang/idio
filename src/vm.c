@@ -1848,9 +1848,9 @@ void idio_vm_raise_condition (IDIO continuablep, IDIO condition, int IHR)
     if (NULL != IDIO_THREAD_JMP_BUF (thr)) {
 	longjmp (*(IDIO_THREAD_JMP_BUF (thr)), IDIO_VM_LONGJMP_CONDITION);
     } else {
-	fprintf (stderr, "WARNING: raise-condition: unable to use jmp_buf\n");
-	idio_vm_debug (thr, "irc unable to use jmp_buf", 0);
-	idio_vm_panic (thr, "unable to use jumpbuf");
+	fprintf (stderr, "WARNING: raise-condition: unable to use jmp_buf==NULL\n");
+	idio_vm_debug (thr, "raise-condition unable to use jmp_buf==NULL", 0);
+	idio_vm_panic (thr, "raise-condition unable to use jmp_buf==NULL");
 	return;
     }
 
@@ -1998,7 +1998,9 @@ void idio_vm_restore_continuation (IDIO k, IDIO val)
     if (NULL != IDIO_THREAD_JMP_BUF (thr)) {
 	longjmp (*(IDIO_THREAD_JMP_BUF (thr)), IDIO_VM_LONGJMP_CONTINUATION);
     } else {
-	fprintf (stderr, "WARNING: restore-continuation: unable to use jmp_buf\n");
+	fprintf (stderr, "WARNING: restore-continuation: unable to use jmp_buf==NULL\n");
+	idio_vm_debug (thr, "ivrc unable to use jmp_buf==NULL", 0);
+	idio_vm_panic (thr, "ivrc unable to use jmp_buf==NULL");
 	return;
     }
 }
@@ -2016,7 +2018,9 @@ void idio_vm_restore_exit (IDIO k, IDIO val)
     if (NULL != IDIO_THREAD_JMP_BUF (thr)) {
 	longjmp (*(IDIO_THREAD_JMP_BUF (thr)), IDIO_VM_LONGJMP_EXIT);
     } else {
-	fprintf (stderr, "WARNING: restore-exit: unable to use jmp_buf\n");
+	fprintf (stderr, "WARNING: restore-exit: unable to use jmp_buf==NULL\n");
+	idio_vm_debug (thr, "ivre unable to use jmp_buf==NULL", 0);
+	idio_vm_panic (thr, "ivre unable to use jmp_buf==NULL");
 	return;
     }
 }
@@ -2053,7 +2057,9 @@ IDIO_DEFINE_PRIMITIVE1 ("%%call/cc", call_cc, (IDIO proc))
     if (NULL != IDIO_THREAD_JMP_BUF (thr)) {
 	longjmp (*(IDIO_THREAD_JMP_BUF (thr)), IDIO_VM_LONGJMP_CALLCC);
     } else {
-	fprintf (stderr, "WARNING: %%call/cc: unable to use jmp_buf\n");
+	fprintf (stderr, "WARNING: %%call/cc: unable to use jmp_buf==NULL\n");
+	idio_vm_debug (thr, "%%call/cc unable to use jmp_buf==NULL", 0);
+	idio_vm_panic (thr, "%%call/cc unable to use jmp_buf==NULL");
 	return idio_S_unspec;
     }
 
@@ -2538,6 +2544,9 @@ int idio_vm_run1 (IDIO thr)
 		    case IDIO_TYPE_ARRAY:
 		    case IDIO_TYPE_HASH:
 		    case IDIO_TYPE_BIGNUM:
+			IDIO_THREAD_VAL (thr) = idio_copy (c, IDIO_COPY_DEEP);
+			break;
+		    case IDIO_TYPE_STRUCT_INSTANCE:
 			IDIO_THREAD_VAL (thr) = idio_copy (c, IDIO_COPY_DEEP);
 			break;
 		    case IDIO_TYPE_PRIMITIVE:
@@ -5036,8 +5045,9 @@ IDIO idio_vm_run (IDIO thr)
 			if (NULL != IDIO_THREAD_JMP_BUF (thr)) {
 			    longjmp (*(IDIO_THREAD_JMP_BUF (thr)), IDIO_VM_LONGJMP_EVENT);
 			} else {
-			    fprintf (stderr, "WARNING: SIGCHLD: unable to use jmp_buf in thr %10p\n", thr);
-			    idio_vm_debug (thr, "unable to use jmp_buf", 0);
+			    fprintf (stderr, "WARNING: SIGCHLD: unable to use jmp_buf==NULL in thr %10p\n", thr);
+			    idio_vm_debug (thr, "SIGCHLD unable to use jmp_buf==NULL", 0);
+			    idio_vm_panic (thr, "SIGCHLD unable to use jmp_buf==NULL");
 			}
 		    } else {
 			idio_debug ("signal_handler_name=%s\n", signal_handler_name);

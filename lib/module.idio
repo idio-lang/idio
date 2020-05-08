@@ -78,8 +78,8 @@ load = {
     trap ^condition (function (cont cond) {
       if (not cont) {
 	condition-report (string-append "module/load: " filename) cont cond (current-error-handle)
-	edisplay* "module/load: invoking safe continuation"
 	;(idio-thread-state)
+	;edisplay* "module/load: invoking safe continuation"
 	load-k cond
       } {
 	raise cont cond
