@@ -41,7 +41,6 @@ STR := "a/bbb///cc;xxx:yyy:"
 DE1 := ":;"
 DE2 := "/"
 
-display* "\n"
 RES := map (function (substr) {
 	      SUBRES := map (function (subsubstr) {
 			       subsubstr
