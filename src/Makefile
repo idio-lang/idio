@@ -109,7 +109,7 @@ debug :
 	$(MAKE) MAKE_DEBUG=1
 
 test : $(BINDIR)/idio
-	IDIOLIB=$(TOPDIR) $(BINDIR)/idio test
+	$(BINDIR)/idio test
 
 doc : 
 	rm -rf $(SRCKDOUTDIR)
