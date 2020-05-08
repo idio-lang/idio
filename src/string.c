@@ -822,14 +822,14 @@ static char *idio_string_token (char *in, char *delim, int flags, char **saved, 
 	}
     }
 
-    size_t maxlen = lim - in;
-
     if (in >= lim) {
 	*saved = NULL;
-	*blen = lim - in;
-	return in;
+	*blen = 0;
+	return NULL;
     }
     
+    size_t maxlen = lim - in;
+
     char *start = strpbrk (in, delim);
 
     if ('\0' == *in) {
@@ -846,7 +846,8 @@ static char *idio_string_token (char *in, char *delim, int flags, char **saved, 
 	    *saved = start + 1;
 	    *blen = start - in;
 	} else {
-	    *blen = start - lim;
+	    *saved = NULL;
+	    *blen = lim - in;
 	}
     }
 
