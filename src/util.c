@@ -1462,7 +1462,7 @@ char *idio_as_string (IDIO o, int depth)
 			IDIO_STRCAT (r, " ");
 			IDIO_STRCAT_FREE (r, idio_as_string (idio_array_get_index (stf, ai), 1));
 			IDIO_STRCAT (r, ":");
-			IDIO_STRCAT_FREE (r, idio_as_string (idio_array_get_index (sif, ai), 1));
+			IDIO_STRCAT_FREE (r, idio_as_string (idio_array_get_index (sif, ai), depth - 1));
 		    }
 
 		    IDIO_STRCAT (r, ">");

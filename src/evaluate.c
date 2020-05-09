@@ -3162,7 +3162,7 @@ static IDIO idio_meaning (IDIO e, IDIO nametree, int flags, IDIO cs)
     return idio_S_notreached;
 }
 
-IDIO idio_evaluate (IDIO e, IDIO cs)
+IDIO idio_evaluate (IDIO lo, IDIO cs)
 {
     /* idio_debug ("evaluate: e %s\n", e);  */
 
@@ -3204,6 +3204,7 @@ IDIO idio_evaluate (IDIO e, IDIO cs)
      * we think is the current environment because {e} was in TAILP.
      *
      */
+    IDIO e = idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_EXPR);
     IDIO m = idio_meaning (e, idio_S_nil, IDIO_MEANING_FLAG_NONE, cs);
     idio_gc_resume ("idio_evaluate");
 

@@ -24,6 +24,16 @@
 #define READ_H
 
 extern IDIO idio_lexobj_type;
+/*
+ * Indexes into structures for direct references
+ *
+ * Lexical Objects that contain information about the source
+ */
+#define IDIO_LEXOBJ_NAME		0
+#define IDIO_LEXOBJ_LINE		1
+#define IDIO_LEXOBJ_POS			2
+#define IDIO_LEXOBJ_EXPR		3
+
 
 /*
  * These read specific constants don't have to be different to

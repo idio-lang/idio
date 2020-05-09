@@ -3,7 +3,7 @@
 
 str := "‘stack’"
 
-display* "str =" str
+display* "str[" (string-length str) "] =" str
 
 display* "str.0 =" str.0
 display* "str.1 =" str.1

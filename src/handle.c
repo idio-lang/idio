@@ -837,7 +837,9 @@ IDIO_DEFINE_PRIMITIVE0V ("read", read, (IDIO args))
 
     IDIO h = idio_handle_or_current (idio_list_head (args), IDIO_HANDLE_FLAG_READ);
 
-    return idio_read (h);
+    IDIO lo = idio_read (h);
+    IDIO expr = idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_EXPR);
+    return expr;
 }
 
 IDIO_DEFINE_PRIMITIVE0V ("read-expr", read_expr, (IDIO args))
@@ -1095,21 +1097,20 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
     struct timeval t0;
     gettimeofday (&t0, NULL);
 
-    IDIO es = idio_S_nil;
+    IDIO los = idio_S_nil;
 
     for (;;) {
-	IDIO en = (*reader) (h);
-
-	if (idio_S_eof == en) {
+	IDIO lo = (*reader) (h);
+	IDIO expr = idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_EXPR);
+	
+	if (idio_S_eof == expr) {
 	    break;
 	} else {
-	    es = idio_pair (en, es);
+	    los = idio_pair (lo, los);
 	}
     }
-    /* e = idio_list_append2 (IDIO_LIST1 (idio_S_begin), idio_list_reverse (e)); */
-    /* es = idio_list_reverse (es); */
-    es = IDIO_LIST1 (idio_pair (idio_S_begin, idio_list_reverse (es)));
-    /* idio_debug ("load-handle: es %s\n", es);    */
+
+    los = idio_list_reverse (los);
 
     IDIO_HANDLE_M_CLOSE (h) (h);
 
@@ -1129,9 +1130,9 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
     }
 
     IDIO ms = idio_S_nil;
-    while (es != idio_S_nil) {
-	ms = idio_pair ((*evaluator) (IDIO_PAIR_H (es), cs), ms);
-	es = IDIO_PAIR_T (es);
+    while (los != idio_S_nil) {
+	ms = idio_pair ((*evaluator) (IDIO_PAIR_H (los), cs), ms);
+	los = IDIO_PAIR_T (los);
     }
     ms = idio_list_reverse (ms);
     /* idio_debug ("load-handle: ms %s\n", ms);    */
