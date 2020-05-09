@@ -31,6 +31,8 @@ IDIO idio_env_IDIOLIB_sym;
 IDIO idio_env_PATH_sym;
 IDIO idio_env_PWD_sym;
 
+static IDIO idio_env_default_lo;
+
 static int idio_env_set_default (IDIO name, char *val)
 {
     IDIO_ASSERT (name);
@@ -39,7 +41,7 @@ static int idio_env_set_default (IDIO name, char *val)
 
     IDIO ENV = idio_module_env_symbol_value (name, IDIO_LIST1 (idio_S_false));
     if (idio_S_false == ENV) {
-	idio_environ_extend (name, idio_string_C (val), idio_vm_constants);
+	idio_environ_extend (idio_env_default_lo, name, idio_string_C (val), idio_vm_constants);
 	return 1;
     }
 
@@ -67,7 +69,7 @@ static void idio_env_add_environ ()
 	    var = idio_string_C (*env);
 	}
 
-	idio_environ_extend (var, val, idio_vm_constants);
+	idio_environ_extend (idio_env_default_lo, var, val, idio_vm_constants);
     }
 
     /*
@@ -200,6 +202,14 @@ void idio_env_init_idiolib (char *argv0)
 
 void idio_init_env ()
 {
+    idio_env_default_lo = idio_struct_instance (idio_lexobj_type,
+						idio_pair (idio_string_C ("*env default*"),
+						idio_pair (idio_integer (0),
+						idio_pair (idio_integer (0),
+						idio_pair (idio_S_unspec,
+						idio_S_nil)))));
+    idio_gc_protect (idio_env_default_lo);
+
     idio_env_IDIOLIB_sym = idio_symbols_C_intern ("IDIOLIB");
     idio_env_PATH_sym = idio_symbols_C_intern ("PATH");
     idio_env_PWD_sym = idio_symbols_C_intern ("PWD");
@@ -212,5 +222,6 @@ void idio_env_add_primitives ()
 
 void idio_final_env ()
 {
+    idio_gc_expose (idio_env_default_lo);
     free (idio_env_IDIOLIB_default);
 }

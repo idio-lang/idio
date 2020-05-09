@@ -50,17 +50,17 @@
 #define IDIO_MEANING_DEFINE(f)			((f) | IDIO_MEANING_FLAG_DEFINE)
 #define IDIO_MEANING_NO_DEFINE(f)		((f) & (~ IDIO_MEANING_FLAG_DEFINE))
 
-void idio_meaning_error_static_redefine (char *msg, IDIO name, IDIO cv, IDIO new, IDIO loc);
-void idio_meaning_error_static_arity (char *msg, IDIO args, IDIO loc);
+void idio_meaning_error_static_redefine (IDIO lo, IDIO c_location, char *msg, IDIO name, IDIO cv, IDIO new);
+void idio_meaning_error_static_arity (IDIO lo, IDIO c_location, char *msg, IDIO args);
 
-void idio_add_description (IDIO sym, IDIO desc);
-IDIO idio_get_description (IDIO sym);
+void idio_meaning_add_description (IDIO sym, IDIO desc);
+IDIO idio_meaning_get_description (IDIO sym);
 IDIO idio_add_module_primitive (IDIO module, idio_primitive_desc_t *d, IDIO cs);
 IDIO idio_export_module_primitive (IDIO module, idio_primitive_desc_t *d, IDIO cs);
 IDIO idio_add_primitive (idio_primitive_desc_t *d, IDIO cs);
 
-IDIO idio_toplevel_extend (IDIO name, int variant, IDIO cs);
-IDIO idio_environ_extend (IDIO name, IDIO val, IDIO cs);
+IDIO idio_toplevel_extend (IDIO lo, IDIO name, int variant, IDIO cs);
+IDIO idio_environ_extend (IDIO lo, IDIO name, IDIO val, IDIO cs);
 
 void idio_install_expander (IDIO id, IDIO proc);
 

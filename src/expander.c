@@ -55,7 +55,7 @@ static IDIO idio_evaluator_extend (IDIO name, IDIO primdata, IDIO module)
 	IDIO pd = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
 
 	if (IDIO_PRIMITIVE_F (primdata) != IDIO_PRIMITIVE_F (pd)) {
-	    idio_meaning_error_static_redefine ("evaluator value change", name, pd, primdata, IDIO_C_LOCATION ("idio_evaluator_extend"));
+	    idio_meaning_error_static_redefine (idio_S_nil, IDIO_C_LOCATION ("idio_evaluator_extend"), "evaluator value change", name, pd, primdata);
 	}
 
 	return fvi;
@@ -166,7 +166,7 @@ IDIO_DEFINE_PRIMITIVE1 ("let", let, (IDIO e))
     size_t nargs = idio_list_length (e);
 
     if (nargs < 3) {
-	idio_meaning_error_static_arity ("let: wrong arguments", e, IDIO_C_LOCATION ("let"));
+	idio_meaning_error_static_arity (idio_S_nil, IDIO_C_LOCATION ("let"), "let: wrong arguments", e);
 	return idio_S_unspec;
     }
 
@@ -245,7 +245,7 @@ IDIO_DEFINE_PRIMITIVE1 ("let*", lets, (IDIO e))
     size_t nargs = idio_list_length (e);
 
     if (nargs < 3) {
-	idio_meaning_error_static_arity ("let*: wrong arguments", e, IDIO_C_LOCATION ("let*"));
+	idio_meaning_error_static_arity (idio_S_nil, IDIO_C_LOCATION ("let*"), "let*: wrong arguments", e);
     }
 
     /* idio_debug ("let*: in %s\n", e); */
@@ -305,7 +305,7 @@ IDIO_DEFINE_PRIMITIVE1 ("letrec", letrec, (IDIO e))
     size_t nargs = idio_list_length (e);
 
     if (nargs < 3) {
-	idio_meaning_error_static_arity ("letrec: wrong arguments", e, IDIO_C_LOCATION ("letrec"));
+	idio_meaning_error_static_arity (idio_S_nil, IDIO_C_LOCATION ("letrec"), "letrec: wrong arguments", e);
 	return idio_S_unspec;
     }
 
