@@ -78,7 +78,7 @@ IDIO_SYMBOL_DECL (list);
 IDIO_SYMBOL_DECL (load);
 IDIO_SYMBOL_DECL (load_handle);
 IDIO_SYMBOL_DECL (lt);
-IDIO_SYMBOL_DECL (namespace);
+IDIO_SYMBOL_DECL (module);
 IDIO_SYMBOL_DECL (op);
 IDIO_SYMBOL_DECL (or);
 IDIO_SYMBOL_DECL (pair);
@@ -617,7 +617,7 @@ void idio_init_symbol ()
     IDIO_SYMBOL_DEF ("load", load);
     IDIO_SYMBOL_DEF ("load-handle", load_handle);
     IDIO_SYMBOL_DEF ("<", lt);
-    IDIO_SYMBOL_DEF ("namespace", namespace);
+    IDIO_SYMBOL_DEF ("module", module);
     IDIO_SYMBOL_DEF ("op", op);
     IDIO_SYMBOL_DEF ("or", or);
     IDIO_SYMBOL_DEF ("pair", pair);

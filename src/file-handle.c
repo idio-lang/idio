@@ -1180,7 +1180,7 @@ IDIO idio_load_file_handle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (
 	    break;
 	}
 
-	IDIO m = (*evaluator) (e, cs);
+	IDIO m = (*evaluator) (lo, cs);
 	idio_codegen (thr, m, cs);
 	IDIO r = idio_vm_run (thr);
 	idio_debug ("%s\n", r);

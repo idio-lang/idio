@@ -51,7 +51,7 @@
 	idio_gc_protect (v);												\
 	idio_ai_t gci = idio_vm_constants_lookup_or_extend (sym);							\
 	idio_ai_t gvi = idio_vm_extend_values ();									\
-	idio_module_toplevel_set_symbol (sym, IDIO_LIST3 (idio_S_toplevel, idio_fixnum (gci), idio_fixnum (gvi)));	\
+	idio_module_toplevel_set_symbol (sym, IDIO_LIST5 (idio_S_toplevel, idio_fixnum (gci), idio_fixnum (gvi), idio_Idio_module, idio_string_C ("IDIO_DEFINE_CONDITION0"))); \
 	idio_module_toplevel_set_symbol_value (sym, v);									\
     }
 
@@ -61,7 +61,7 @@
 	idio_gc_protect_auto (v);											\
 	idio_ai_t gci = idio_vm_constants_lookup_or_extend (sym);							\
 	idio_ai_t gvi = idio_vm_extend_values ();									\
-	idio_module_toplevel_set_symbol (sym, IDIO_LIST3 (idio_S_toplevel, idio_fixnum (gci), idio_fixnum (gvi)));	\
+	idio_module_toplevel_set_symbol (sym, IDIO_LIST5 (idio_S_toplevel, idio_fixnum (gci), idio_fixnum (gvi), idio_Idio_module, idio_string_C ("IDIO_DEFINE_CONDITION0_DYNAMIC")));	\
 	idio_module_toplevel_set_symbol_value (sym, v);									\
     }
 
@@ -71,7 +71,7 @@
 	idio_gc_protect (v);												\
 	idio_ai_t gci = idio_vm_constants_lookup_or_extend (sym);							\
 	idio_ai_t gvi = idio_vm_extend_values ();									\
-	idio_module_toplevel_set_symbol (sym, IDIO_LIST3 (idio_S_toplevel, idio_fixnum (gci), idio_fixnum (gvi)));	\
+	idio_module_toplevel_set_symbol (sym, IDIO_LIST5 (idio_S_toplevel, idio_fixnum (gci), idio_fixnum (gvi), idio_Idio_module, idio_string_C ("IDIO_DEFINE_CONDITION1"))); \
 	idio_module_toplevel_set_symbol_value (sym, v);									\
     }
 
@@ -81,7 +81,7 @@
 	idio_gc_protect (v);												\
 	idio_ai_t gci = idio_vm_constants_lookup_or_extend (sym);							\
 	idio_ai_t gvi = idio_vm_extend_values ();									\
-	idio_module_toplevel_set_symbol (sym, IDIO_LIST3 (idio_S_toplevel, idio_fixnum (gci), idio_fixnum (gvi)));	\
+	idio_module_toplevel_set_symbol (sym, IDIO_LIST5 (idio_S_toplevel, idio_fixnum (gci), idio_fixnum (gvi), idio_Idio_module, idio_string_C ("IDIO_DEFINE_CONDITION2")));	\
 	idio_module_toplevel_set_symbol_value (sym, v);									\
     }
 
@@ -91,7 +91,7 @@
 	idio_gc_protect (v);													       \
 	idio_ai_t gci = idio_vm_constants_lookup_or_extend (sym);								       \
 	idio_ai_t gvi = idio_vm_extend_values ();										       \
-	idio_module_toplevel_set_symbol (sym, IDIO_LIST3 (idio_S_toplevel, idio_fixnum (gci), idio_fixnum (gvi)));		       \
+	idio_module_toplevel_set_symbol (sym, IDIO_LIST5 (idio_S_toplevel, idio_fixnum (gci), idio_fixnum (gvi), idio_Idio_module, idio_string_C ("IDIO_DEFINE_CONDITION3")));		       \
 	idio_module_toplevel_set_symbol_value (sym, v);										       \
     }
 

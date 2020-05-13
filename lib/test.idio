@@ -24,7 +24,6 @@
 ;; Scheme 9 from Empty Space
 ;; By Nils M Holm <nmh@t3x.org>, 2007,2008,2009
 
-
 testfile := "__testfile__"
 
 if (file-exists? testfile) {
@@ -111,6 +110,7 @@ if (C/> rl.rlim_cur nofiles_lim) {
 
 
 load "test-read-error.idio"
+
 load "test-s9-test.idio"
 load "test-operator.idio"
 load "test-closure.idio"

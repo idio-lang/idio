@@ -35,13 +35,14 @@
 
 #define IDIO_I_CODE_GLOBAL_REF                  10
 #define IDIO_I_CODE_CHECKED_GLOBAL_REF          11
-#define IDIO_I_CODE_CHECKED_GLOBAL_FUNCTION_REF 12
-#define IDIO_I_CODE_GLOBAL_DEF                  13
-#define IDIO_I_CODE_GLOBAL_SET                  14
-#define IDIO_I_CODE_CONSTANT                    15
-#define IDIO_I_CODE_COMPUTED_REF                16
-#define IDIO_I_CODE_COMPUTED_SET                17
-#define IDIO_I_CODE_COMPUTED_DEFINE             18
+#define IDIO_I_CODE_GLOBAL_FUNCTION_REF		12
+#define IDIO_I_CODE_CHECKED_GLOBAL_FUNCTION_REF 13
+#define IDIO_I_CODE_GLOBAL_DEF                  14
+#define IDIO_I_CODE_GLOBAL_SET                  15
+#define IDIO_I_CODE_CONSTANT                    16
+#define IDIO_I_CODE_COMPUTED_REF                17
+#define IDIO_I_CODE_COMPUTED_SET                18
+#define IDIO_I_CODE_COMPUTED_DEFINE             19
 
 #define IDIO_I_CODE_ALTERNATIVE			20
 #define IDIO_I_CODE_SEQUENCE			21
@@ -98,6 +99,7 @@
 #define idio_I_DEEP_ARGUMENT_SET           ((const IDIO) IDIO_CONSTANT_I_CODE (IDIO_I_CODE_DEEP_ARGUMENT_SET))
 #define idio_I_GLOBAL_REF                  ((const IDIO) IDIO_CONSTANT_I_CODE (IDIO_I_CODE_GLOBAL_REF))
 #define idio_I_CHECKED_GLOBAL_REF          ((const IDIO) IDIO_CONSTANT_I_CODE (IDIO_I_CODE_CHECKED_GLOBAL_REF))
+#define idio_I_GLOBAL_FUNCTION_REF	   ((const IDIO) IDIO_CONSTANT_I_CODE (IDIO_I_CODE_GLOBAL_FUNCTION_REF))
 #define idio_I_CHECKED_GLOBAL_FUNCTION_REF ((const IDIO) IDIO_CONSTANT_I_CODE (IDIO_I_CODE_CHECKED_GLOBAL_FUNCTION_REF))
 #define idio_I_GLOBAL_DEF                  ((const IDIO) IDIO_CONSTANT_I_CODE (IDIO_I_CODE_GLOBAL_DEF))
 #define idio_I_GLOBAL_SET                  ((const IDIO) IDIO_CONSTANT_I_CODE (IDIO_I_CODE_GLOBAL_SET))

@@ -685,7 +685,7 @@ typedef struct idio_struct_instance_s {
 
 typedef struct idio_thread_s {
     struct idio_s *grey;
-    size_t pc;
+    idio_ai_t pc;
     struct idio_s *stack;
     struct idio_s *val;
 

@@ -943,7 +943,14 @@ IDIO idio_write (IDIO o, IDIO h)
     return idio_S_unspec;
 }
 
-IDIO_DEFINE_PRIMITIVE1V ("write", write, (IDIO o, IDIO args))
+IDIO_DEFINE_PRIMITIVE1V_DS ("write", write, (IDIO o, IDIO args), "o [handle]", "\
+write ``o`` to ``handle`` or the current output handle	\n\
+							\n\
+:param o: object					\n\
+:param handle: handle to write to			\n\
+:type handle: handle					\n\
+:return: <unspec>					\n\
+")
 {
     IDIO_ASSERT (o);
     IDIO_ASSERT (args);

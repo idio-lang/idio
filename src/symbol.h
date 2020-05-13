@@ -79,7 +79,7 @@ extern IDIO_SYMBOL_DECL (list);
 extern IDIO_SYMBOL_DECL (load);
 extern IDIO_SYMBOL_DECL (load_handle);
 extern IDIO_SYMBOL_DECL (lt);
-extern IDIO_SYMBOL_DECL (namespace);
+extern IDIO_SYMBOL_DECL (module);
 extern IDIO_SYMBOL_DECL (op);
 extern IDIO_SYMBOL_DECL (or);
 extern IDIO_SYMBOL_DECL (pair);

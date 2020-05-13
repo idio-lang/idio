@@ -39,9 +39,10 @@
 #define IDIO_A_DEEP_ARGUMENT_REF           6
 #define IDIO_A_GLOBAL_REF                  7
 #define IDIO_A_CHECKED_GLOBAL_REF          8
-#define IDIO_A_CHECKED_GLOBAL_FUNCTION_REF 9
-#define IDIO_A_CONSTANT_REF                10
-#define IDIO_A_COMPUTED_REF                11
+#define IDIO_A_GLOBAL_FUNCTION_REF	   9
+#define IDIO_A_CHECKED_GLOBAL_FUNCTION_REF 10
+#define IDIO_A_CONSTANT_REF                11
+#define IDIO_A_COMPUTED_REF                12
 
 #define IDIO_A_PREDEFINED0                 20
 #define IDIO_A_PREDEFINED1                 21

@@ -956,7 +956,17 @@ IDIO_DEFINE_PRIMITIVE1 ("WTERMSIG", libc_WTERMSIG, (IDIO istatus))
     return idio_C_int (WTERMSIG (*statusp));
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("write", libc_write, (IDIO ifd, IDIO istr))
+IDIO_DEFINE_PRIMITIVE2_DS ("write", libc_write, (IDIO ifd, IDIO istr), "fd str", "\
+write (fd, str)							\n\
+a wrapper to libc write (2)					\n\
+								\n\
+:param fd: file descriptor					\n\
+:type fd: C_int							\n\
+:param str: string						\n\
+:type str: string						\n\
+:return: number of bytes written				\n\
+:rtype: integer							\n\
+")
 {
     IDIO_ASSERT (ifd);
     IDIO_ASSERT (istr);

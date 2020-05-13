@@ -582,6 +582,29 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO_IA_PUSH_REF (IDIO_FIXNUM_VAL (mci));
 	}
 	break;
+    case IDIO_I_CODE_GLOBAL_FUNCTION_REF:
+	{
+	    if (! idio_isa_pair (mt) ||
+		idio_list_length (mt) != 1) {
+		idio_codegen_error_param_args ("GLOBAL-FUNCTION-REF mci", mt, IDIO_C_LOCATION ("idio_codegen_compile/GLOBAL-FUNCTION-REF"));
+
+		/* notreached */
+		return;
+	    }
+
+	    IDIO mci = IDIO_PAIR_H (mt);
+
+	    if (! idio_isa_fixnum (mci)) {
+		idio_codegen_error_param_type ("fixnum", mci, IDIO_C_LOCATION ("idio_codegen_compile/GLOBAL-FUNCTION-REF"));
+
+		/* notreached */
+		return;
+	    }
+
+	    IDIO_IA_PUSH1 (IDIO_A_GLOBAL_FUNCTION_REF);
+	    IDIO_IA_PUSH_REF (IDIO_FIXNUM_VAL (mci));
+	}
+	break;
     case IDIO_I_CODE_CHECKED_GLOBAL_FUNCTION_REF:
 	{
 	    if (! idio_isa_pair (mt) ||
@@ -631,8 +654,8 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
     case IDIO_I_CODE_GLOBAL_DEF:
 	{
 	    if (! idio_isa_pair (mt) ||
-		idio_list_length (mt) != 2) {
-		idio_codegen_error_param_args ("GLOBAL-DEF name kind", mt, IDIO_C_LOCATION ("idio_codegen_compile/GLOBAL-DEF"));
+		idio_list_length (mt) != 3) {
+		idio_codegen_error_param_args ("GLOBAL-DEF name kind mci", mt, IDIO_C_LOCATION ("idio_codegen_compile/GLOBAL-DEF"));
 
 		/* notreached */
 		return;
@@ -640,6 +663,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 
 	    IDIO name = IDIO_PAIR_H (mt);
 	    IDIO kind = IDIO_PAIR_HT (mt);
+	    IDIO fmci = IDIO_PAIR_HTT (mt);
 
 	    if (! idio_isa_symbol (name)) {
 		idio_codegen_error_param_type ("symbol", name, IDIO_C_LOCATION ("idio_codegen_compile/GLOBAL-DEF"));
@@ -659,8 +683,15 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 		return;
 	    }
 
+	    if (! idio_isa_fixnum (fmci)) {
+		idio_codegen_error_param_type ("fixnum", fmci, IDIO_C_LOCATION ("idio_codegen_compile/GLOBAL-DEF"));
+
+		/* notreached */
+		return;
+	    }
+
 	    IDIO_IA_PUSH1 (IDIO_A_GLOBAL_DEF);
-	    idio_ai_t mci = idio_codegen_constants_lookup_or_extend (cs, name);
+	    idio_ai_t mci = IDIO_FIXNUM_VAL (fmci);
 	    IDIO_IA_PUSH_REF (mci);
 	    mci = idio_codegen_constants_lookup_or_extend (cs, kind);
 	    IDIO_IA_PUSH_VARUINT (mci);
@@ -863,7 +894,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 
 		    idio_ai_t mci = idio_codegen_constants_lookup_or_extend (cs, c);
 		    IDIO fmci = idio_fixnum (mci);
-		    idio_module_vci_set (idio_thread_current_env (), fmci, fmci);
+		    idio_module_set_vci (idio_thread_current_env (), fmci, fmci);
 
 		    IDIO_IA_PUSH1 (IDIO_A_CONSTANT_REF);
 		    IDIO_IA_PUSH_VARUINT (mci);

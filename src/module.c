@@ -177,7 +177,7 @@ void idio_free_module (IDIO mo)
     free (mo->u.module);
 }
 
-IDIO idio_module_vci_get (IDIO module, IDIO mci)
+IDIO idio_module_get_vci (IDIO module, IDIO mci)
 {
     IDIO_ASSERT (module);
     IDIO_ASSERT (mci);
@@ -187,7 +187,7 @@ IDIO idio_module_vci_get (IDIO module, IDIO mci)
     return idio_hash_get (IDIO_MODULE_VCI (module), mci);
 }
 
-IDIO idio_module_vci_set (IDIO module, IDIO mci, IDIO gci)
+IDIO idio_module_set_vci (IDIO module, IDIO mci, IDIO gci)
 {
     IDIO_ASSERT (module);
     IDIO_ASSERT (mci);
@@ -199,23 +199,23 @@ IDIO idio_module_vci_set (IDIO module, IDIO mci, IDIO gci)
     return idio_hash_put (IDIO_MODULE_VCI (module), mci, gci);
 }
 
-IDIO idio_module_vci_get_or_set (IDIO module, IDIO mci)
+IDIO idio_module_get_or_set_vci (IDIO module, IDIO mci)
 {
     IDIO_ASSERT (module);
     IDIO_ASSERT (mci);
     IDIO_TYPE_ASSERT (module, module);
     IDIO_TYPE_ASSERT (fixnum, mci);
 
-    IDIO r = idio_module_vci_get (module, mci);
+    IDIO r = idio_module_get_vci (module, mci);
 
     if (idio_S_unspec == r) {
-	r = idio_module_vci_set (module, mci, mci);
+	r = idio_module_set_vci (module, mci, mci);
     }
 
     return r;
 }
 
-IDIO idio_module_vvi_get (IDIO module, IDIO msi)
+IDIO idio_module_get_vvi (IDIO module, IDIO msi)
 {
     IDIO_ASSERT (module);
     IDIO_ASSERT (msi);
@@ -225,7 +225,7 @@ IDIO idio_module_vvi_get (IDIO module, IDIO msi)
     return idio_hash_get (IDIO_MODULE_VVI (module), msi);
 }
 
-IDIO idio_module_vvi_set (IDIO module, IDIO msi, IDIO gvi)
+IDIO idio_module_set_vvi (IDIO module, IDIO msi, IDIO gvi)
 {
     IDIO_ASSERT (module);
     IDIO_ASSERT (msi);
@@ -275,7 +275,7 @@ IDIO idio_primitive_module_instance ()
     return idio_primitive_module;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("%find-or-create-module", find_or_create_module, (IDIO name))
+IDIO idio_module_find_or_create_module (IDIO name)
 {
     IDIO_ASSERT (name);
     IDIO_VERIFY_PARAM_TYPE (symbol, name);
@@ -287,6 +287,14 @@ IDIO_DEFINE_PRIMITIVE1 ("%find-or-create-module", find_or_create_module, (IDIO n
     }
 
     return m;
+}
+
+IDIO_DEFINE_PRIMITIVE1 ("%find-or-create-module", find_or_create_module, (IDIO name))
+{
+    IDIO_ASSERT (name);
+    IDIO_VERIFY_PARAM_TYPE (symbol, name);
+
+    return idio_module_find_or_create_module (name);
 }
 
 IDIO_DEFINE_PRIMITIVE0 ("current-module", current_module, ())
@@ -356,18 +364,52 @@ IDIO_DEFINE_PRIMITIVE1 ("module-name", module_name, (IDIO module))
     return IDIO_MODULE_NAME (module);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("module-imports", module_imports, (IDIO module))
+IDIO_DEFINE_PRIMITIVE1 ("module-imports", module_imports, (IDIO m_or_n))
 {
-    IDIO_ASSERT (module);
-    IDIO_VERIFY_PARAM_TYPE (module, module);
+    IDIO_ASSERT (m_or_n);
+
+    IDIO module = idio_S_unspec;
+
+    if (idio_isa_module (m_or_n)) {
+	module = m_or_n;
+    } else if (idio_isa_symbol (m_or_n)) {
+	module = idio_hash_get (idio_modules_hash, m_or_n);
+
+	if (idio_S_unspec == module) {
+	    idio_module_error_unbound (m_or_n, IDIO_C_LOCATION ("module-imports"));
+
+	    return idio_S_notreached;
+	}
+    } else {
+	idio_error_param_type ("module|symbol", m_or_n, IDIO_C_LOCATION ("module-imports"));
+
+	return idio_S_notreached;
+    }
 
     return IDIO_MODULE_IMPORTS (module);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("module-exports", module_exports, (IDIO module))
+IDIO_DEFINE_PRIMITIVE1 ("module-exports", module_exports, (IDIO m_or_n))
 {
-    IDIO_ASSERT (module);
-    IDIO_VERIFY_PARAM_TYPE (module, module);
+    IDIO_ASSERT (m_or_n);
+
+    IDIO module = idio_S_unspec;
+
+    if (idio_isa_module (m_or_n)) {
+	module = m_or_n;
+    } else if (idio_isa_symbol (m_or_n)) {
+	module = idio_hash_get (idio_modules_hash, m_or_n);
+
+	if (idio_S_unspec == module) {
+	    idio_module_error_unbound (m_or_n, IDIO_C_LOCATION ("module-exports"));
+
+	    return idio_S_notreached;
+	}
+    } else {
+	idio_error_param_type ("module|symbol", m_or_n, IDIO_C_LOCATION ("module-exports"));
+
+	return idio_S_notreached;
+    }
 
     if (idio_Idio_module == module) {
 	return idio_hash_keys_to_list (IDIO_MODULE_SYMBOLS (module));
@@ -376,13 +418,26 @@ IDIO_DEFINE_PRIMITIVE1 ("module-exports", module_exports, (IDIO module))
     }
 }
 
-IDIO idio_module_symbols (IDIO module)
+IDIO idio_module_symbols (IDIO m_or_n)
 {
-    IDIO_ASSERT (module);
+    IDIO_ASSERT (m_or_n);
 
-    if (! idio_isa_module (module)) {
-	idio_error_param_type ("module", module, IDIO_C_LOCATION ("idio_module_symbols"));
-	return idio_S_unspec;
+    IDIO module = idio_S_unspec;
+
+    if (idio_isa_module (m_or_n)) {
+	module = m_or_n;
+    } else if (idio_isa_symbol (m_or_n)) {
+	module = idio_hash_get (idio_modules_hash, m_or_n);
+
+	if (idio_S_unspec == module) {
+	    idio_module_error_unbound (m_or_n, IDIO_C_LOCATION ("module-symbols"));
+
+	    return idio_S_notreached;
+	}
+    } else {
+	idio_error_param_type ("module|symbol", m_or_n, IDIO_C_LOCATION ("module-symbols"));
+
+	return idio_S_notreached;
     }
 
     return idio_hash_keys_to_list (IDIO_MODULE_SYMBOLS (module));
@@ -398,10 +453,16 @@ IDIO idio_module_primitive_symbols ()
     return idio_module_symbols (idio_primitive_module);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("module-symbols", module_symbols, (IDIO module))
+IDIO_DEFINE_PRIMITIVE0V ("module-symbols", module_symbols, (IDIO args))
 {
-    IDIO_ASSERT (module);
-    IDIO_VERIFY_PARAM_TYPE (module, module);
+    IDIO_ASSERT (args);
+
+    IDIO module = idio_thread_current_module ();
+
+    if (idio_S_nil != args &&
+	idio_isa_module (IDIO_PAIR_H (args))) {
+	module = IDIO_PAIR_H (args);
+    }
 
     return idio_module_symbols (module);
 }
@@ -507,8 +568,8 @@ IDIO_DEFINE_PRIMITIVE0 ("all-modules", all_modules, ())
 }
 
 /*
- * if name is like M/S and M is a module and S is exported by that
- * module then it's good.
+ * if name is like M/S -- where S does not contain a / -- and M is a
+ * module and S is exported by that module then it's good.
  *
  * Avoid /S and S/, ie. a symbol beginning or ending in /
  */
@@ -553,7 +614,7 @@ IDIO idio_module_direct_reference (IDIO name)
 	    IDIO f = idio_list_memq (s_sym, IDIO_MODULE_EXPORTS (mod));
 
 	    if (idio_S_false != f) {
-		IDIO sk = idio_module_symbol (s_sym, mod);
+		IDIO sk = idio_module_find_symbol (s_sym, mod);
 
 		if (idio_S_unspec != sk) {
 		    /*
@@ -565,7 +626,7 @@ IDIO idio_module_direct_reference (IDIO name)
 		    idio_ai_t mci = idio_vm_constants_lookup_or_extend (name);
 		    r = IDIO_LIST3 (m_sym,
 				    s_sym,
-				    IDIO_LIST3 (IDIO_PAIR_H (sk), idio_fixnum (mci), IDIO_PAIR_HTT (sk)));
+				    IDIO_LIST5 (IDIO_PAIR_H (sk), idio_fixnum (mci), IDIO_PAIR_HTT (sk), mod, idio_string_C ("idio_module_direct_reference")));
 		}
 	    }
 	}
@@ -575,10 +636,10 @@ IDIO idio_module_direct_reference (IDIO name)
 }
 
 /*
- * idio_module_symbol_recurse will chase down the exports of imported
+ * idio_module_find_symbol_recurse will chase down the exports of imported
  * modules
  */
-IDIO idio_module_symbol_recurse_imports (IDIO symbol, IDIO imported_module, IDIO break_module)
+IDIO idio_module_find_symbol_recurse_imports (IDIO symbol, IDIO imported_module, IDIO break_module)
 {
     IDIO_ASSERT (symbol);
     IDIO_ASSERT (imported_module);
@@ -604,7 +665,7 @@ IDIO idio_module_symbol_recurse_imports (IDIO symbol, IDIO imported_module, IDIO
     return idio_S_unspec;
 }
 
-IDIO idio_module_symbol_recurse (IDIO symbol, IDIO m_or_n, int recurse)
+IDIO idio_module_find_symbol_recurse (IDIO symbol, IDIO m_or_n, int recurse)
 {
     IDIO_ASSERT (symbol);
     IDIO_ASSERT (m_or_n);
@@ -618,11 +679,11 @@ IDIO idio_module_symbol_recurse (IDIO symbol, IDIO m_or_n, int recurse)
 	module = idio_hash_get (idio_modules_hash, m_or_n);
 
 	if (idio_S_unspec == module) {
-	    idio_module_error_unbound (m_or_n, IDIO_C_LOCATION ("idio_module_symbol_recurse"));
+	    idio_module_error_unbound (m_or_n, IDIO_C_LOCATION ("idio_module_find_symbol_recurse"));
 	    return idio_S_unspec;
 	}
     } else {
-	idio_error_param_type ("module|symbol", m_or_n, IDIO_C_LOCATION ("idio_module_symbol_recurse"));
+	idio_error_param_type ("module|symbol", m_or_n, IDIO_C_LOCATION ("idio_module_find_symbol_recurse"));
 	return idio_S_unspec;
     }
 
@@ -631,11 +692,23 @@ IDIO idio_module_symbol_recurse (IDIO symbol, IDIO m_or_n, int recurse)
 	sv = idio_hash_get (IDIO_MODULE_SYMBOLS (module), symbol);
     }
 
+    if (idio_S_unspec != sv) {
+	IDIO kind = IDIO_PAIR_H (sv);
+	IDIO fgvi = IDIO_PAIR_HTT (sv);
+	idio_ai_t gvi = IDIO_FIXNUM_VAL (fgvi);
+	if (0 == gvi &&
+	    idio_S_toplevel == kind) {
+	    if (recurse) {
+		sv = idio_S_unspec;
+	    }
+	}
+    }
+
     if (idio_S_unspec == sv &&
 	recurse) {
 	IDIO imports = IDIO_MODULE_IMPORTS (module);
 	for (; idio_S_nil != imports; imports = IDIO_PAIR_T (imports)) {
-	    sv = idio_module_symbol_recurse_imports (symbol, IDIO_PAIR_H (imports), module);
+	    sv = idio_module_find_symbol_recurse_imports (symbol, IDIO_PAIR_H (imports), module);
 
 	    if (idio_S_unspec != sv) {
 		break;
@@ -649,9 +722,11 @@ IDIO idio_module_symbol_recurse (IDIO symbol, IDIO m_or_n, int recurse)
 	/*
 	 * A final couple of checks in Idio and *primitives*
 	 */
-	sv = idio_hash_get (IDIO_MODULE_SYMBOLS (idio_Idio_module), symbol);
-	if (idio_S_unspec != sv) {
-	    return sv;
+	if (idio_Idio_module != module) {
+	    sv = idio_hash_get (IDIO_MODULE_SYMBOLS (idio_Idio_module), symbol);
+	    if (idio_S_unspec != sv) {
+		return sv;
+	    }
 	}
 
 	sv = idio_hash_get (IDIO_MODULE_SYMBOLS (idio_primitive_module), symbol);
@@ -665,7 +740,7 @@ IDIO idio_module_primitive_symbol_recurse (IDIO symbol)
     IDIO_ASSERT (symbol);
     IDIO_TYPE_ASSERT (symbol, symbol);
 
-    return idio_module_symbol_recurse (symbol, idio_primitive_module, 1);
+    return idio_module_find_symbol_recurse (symbol, idio_primitive_module, 1);
 }
 
 IDIO idio_module_current_symbol_recurse (IDIO symbol)
@@ -673,7 +748,7 @@ IDIO idio_module_current_symbol_recurse (IDIO symbol)
     IDIO_ASSERT (symbol);
     IDIO_TYPE_ASSERT (symbol, symbol);
 
-    return idio_module_symbol_recurse (symbol, idio_thread_current_module (), 1);
+    return idio_module_find_symbol_recurse (symbol, idio_thread_current_module (), 1);
 }
 
 IDIO idio_module_env_symbol_recurse (IDIO symbol)
@@ -681,16 +756,16 @@ IDIO idio_module_env_symbol_recurse (IDIO symbol)
     IDIO_ASSERT (symbol);
     IDIO_TYPE_ASSERT (symbol, symbol);
 
-    return idio_module_symbol_recurse (symbol, idio_thread_current_env (), 1);
+    return idio_module_find_symbol_recurse (symbol, idio_thread_current_env (), 1);
 }
 
-IDIO idio_module_symbol (IDIO symbol, IDIO m_or_n)
+IDIO idio_module_find_symbol (IDIO symbol, IDIO m_or_n)
 {
     IDIO_ASSERT (symbol);
     IDIO_ASSERT (m_or_n);
     IDIO_TYPE_ASSERT (symbol, symbol);
 
-    return idio_module_symbol_recurse (symbol, m_or_n, 0);
+    return idio_module_find_symbol_recurse (symbol, m_or_n, 0);
 }
 
 IDIO idio_module_primitive_symbol (IDIO symbol)
@@ -698,7 +773,7 @@ IDIO idio_module_primitive_symbol (IDIO symbol)
     IDIO_ASSERT (symbol);
     IDIO_TYPE_ASSERT (symbol, symbol);
 
-    return idio_module_symbol (symbol, idio_primitive_module);
+    return idio_module_find_symbol (symbol, idio_primitive_module);
 }
 
 IDIO idio_module_current_symbol (IDIO symbol)
@@ -706,7 +781,7 @@ IDIO idio_module_current_symbol (IDIO symbol)
     IDIO_ASSERT (symbol);
     IDIO_TYPE_ASSERT (symbol, symbol);
 
-    return idio_module_symbol (symbol, idio_thread_current_module ());
+    return idio_module_find_symbol (symbol, idio_thread_current_module ());
 }
 
 IDIO idio_module_env_symbol (IDIO symbol)
@@ -714,7 +789,26 @@ IDIO idio_module_env_symbol (IDIO symbol)
     IDIO_ASSERT (symbol);
     IDIO_TYPE_ASSERT (symbol, symbol);
 
-    return idio_module_symbol (symbol, idio_thread_current_env ());
+    return idio_module_find_symbol (symbol, idio_thread_current_env ());
+}
+
+IDIO_DEFINE_PRIMITIVE1V ("find-symbol", find_symbol, (IDIO symbol, IDIO args))
+{
+    IDIO_ASSERT (symbol);
+    IDIO_ASSERT (args);
+    IDIO_VERIFY_PARAM_TYPE (symbol, symbol);
+
+    IDIO m_or_n = idio_thread_current_env ();
+
+    if (idio_isa_pair (args)) {
+	IDIO m = IDIO_PAIR_H (args);
+	if (idio_isa_module (m) ||
+	    idio_isa_symbol (m)) {
+	    m_or_n = m;
+	}
+    }
+
+    return idio_module_find_symbol_recurse (symbol, m_or_n, 1);
 }
 
 /*
@@ -834,6 +928,7 @@ IDIO idio_module_symbol_value_recurse (IDIO symbol, IDIO m_or_n, IDIO args)
     IDIO_ASSERT (symbol);
     IDIO_ASSERT (m_or_n);
     IDIO_ASSERT (args);
+
     IDIO_TYPE_ASSERT (symbol, symbol);
     IDIO_TYPE_ASSERT (list, args);
 
@@ -846,34 +941,43 @@ IDIO idio_module_symbol_value_recurse (IDIO symbol, IDIO m_or_n, IDIO args)
 
 	if (idio_S_unspec == module) {
 	    idio_module_error_unbound (m_or_n, IDIO_C_LOCATION ("idio_module_symbol_value_recurse"));
-	    return idio_S_unspec;
+
+	    return idio_S_notreached;
 	}
     } else {
 	idio_error_param_type ("module|symbol", m_or_n, IDIO_C_LOCATION ("idio_module_symbol_value_recurse"));
-	return idio_S_unspec;
+
+	return idio_S_notreached;
     }
 
-    IDIO sk = idio_module_symbol_recurse (symbol, module, 1);
+    IDIO sk = idio_module_find_symbol_recurse (symbol, module, 1);
 
     IDIO r = idio_S_unspec;
+
+    if (idio_isa_pair (args)) {
+	r = IDIO_PAIR_H (args);
+    }
 
     if (idio_S_unspec != sk) {
 	IDIO kind = IDIO_PAIR_H (sk);
 	IDIO fmci = IDIO_PAIR_HT (sk);
 	IDIO fgvi = IDIO_PAIR_HTT (sk);
+	idio_ai_t gvi = IDIO_FIXNUM_VAL (fgvi);
 
-	if (idio_S_toplevel == kind) {
-	    r = idio_vm_values_ref (IDIO_FIXNUM_VAL (fgvi));
-	} else if (idio_S_predef == kind) {
-	    r = idio_vm_values_ref (IDIO_FIXNUM_VAL (fgvi));
-	} else if (idio_S_dynamic == kind) {
-	    r = idio_vm_dynamic_ref (IDIO_FIXNUM_VAL (fmci), IDIO_FIXNUM_VAL (fgvi), idio_thread_current_thread (), args);
-	} else if (idio_S_environ == kind) {
-	    r = idio_vm_environ_ref (IDIO_FIXNUM_VAL (fmci), IDIO_FIXNUM_VAL (fgvi), idio_thread_current_thread (), args);
-	} else if (idio_S_computed == kind) {
-	    idio_error_C ("cannot get a computed variable from C", IDIO_LIST3 (symbol, module, sk), IDIO_C_LOCATION ("idio_module_symbol_value_recurse"));
-	} else {
-	    idio_error_C ("unexpected symbol kind", IDIO_LIST3 (symbol, module, sk), IDIO_C_LOCATION ("idio_module_symbol_value_recurse"));
+	if (gvi) {
+	    if (idio_S_toplevel == kind) {
+		r = idio_vm_values_ref (gvi);
+	    } else if (idio_S_predef == kind) {
+		r = idio_vm_values_ref (gvi);
+	    } else if (idio_S_dynamic == kind) {
+		r = idio_vm_dynamic_ref (IDIO_FIXNUM_VAL (fmci), gvi, idio_thread_current_thread (), args);
+	    } else if (idio_S_environ == kind) {
+		r = idio_vm_environ_ref (IDIO_FIXNUM_VAL (fmci), gvi, idio_thread_current_thread (), args);
+	    } else if (idio_S_computed == kind) {
+		idio_error_C ("cannot get a computed variable from C", IDIO_LIST3 (symbol, module, sk), IDIO_C_LOCATION ("idio_module_symbol_value_recurse"));
+	    } else {
+		idio_error_C ("unexpected symbol kind", IDIO_LIST3 (symbol, module, sk), IDIO_C_LOCATION ("idio_module_symbol_value_recurse"));
+	    }
 	}
     }
 
@@ -904,6 +1008,7 @@ IDIO idio_module_env_symbol_value_recurse (IDIO symbol, IDIO args)
 {
     IDIO_ASSERT (symbol);
     IDIO_ASSERT (args);
+
     IDIO_TYPE_ASSERT (symbol, symbol);
     IDIO_TYPE_ASSERT (list, args);
 
@@ -924,13 +1029,29 @@ IDIO idio_module_toplevel_symbol_value_recurse (IDIO symbol, IDIO args)
  * Recursively find starting at the given module (or the current
  * module if none given)
  */
-IDIO_DEFINE_PRIMITIVE2V ("symbol-value-recurse", symbol_value_recurse, (IDIO symbol, IDIO m_or_n, IDIO args))
+IDIO_DEFINE_PRIMITIVE1V_DS ("symbol-value-recurse", symbol_value_recurse, (IDIO symbol, IDIO args), "symbol [mod [default]]", "\
+recursively find ``symbol`` starting in ``mod`` and return its		\n\
+value or ``default`` if no value found					\n\
+									\n\
+:param symbol: symbol to find						\n\
+:type symbol: symbol							\n\
+:param mod: module to search from					\n\
+:type mod: module or module name					\n\
+:param default: value to return if ``symbol`` is not found		\n\
+:return: value of ``symbol``						\n\
+")
 {
     IDIO_ASSERT (symbol);
-    IDIO_ASSERT (m_or_n);
     IDIO_ASSERT (args);
     IDIO_VERIFY_PARAM_TYPE (symbol, symbol);
     IDIO_TYPE_ASSERT (list, args);
+
+    IDIO m_or_n = idio_thread_current_env ();
+
+    if (idio_isa_pair (args)) {
+	m_or_n = IDIO_PAIR_H (args);
+	args = IDIO_PAIR_T (args);
+    }
 
     return idio_module_symbol_value_recurse (symbol, m_or_n, args);
 }
@@ -1009,7 +1130,7 @@ IDIO idio_module_set_symbol_value (IDIO symbol, IDIO value, IDIO module)
 	idio_ai_t gvi = idio_vm_extend_values ();
 	fgvi = idio_fixnum (gvi);
 
-	idio_hash_put (IDIO_MODULE_SYMBOLS (module), symbol, IDIO_LIST3 (kind, fmci, fgvi));
+	idio_hash_put (IDIO_MODULE_SYMBOLS (module), symbol, IDIO_LIST5 (kind, fmci, fgvi, module, idio_string_C ("idio_module_set_symbol_value")));
     } else {
 	kind = IDIO_PAIR_H (sv);
 	fmci = IDIO_PAIR_HT (sv);
@@ -1029,8 +1150,8 @@ IDIO idio_module_set_symbol_value (IDIO symbol, IDIO value, IDIO module)
 	IDIO_PAIR_HTT (sv) = idio_fixnum (gvi);
     }
 
-    idio_module_vci_set (module, fmci, fmci);
-    idio_module_vvi_set (module, fmci, fgvi);
+    idio_module_set_vci (module, fmci, fmci);
+    idio_module_set_vvi (module, fmci, fgvi);
 
     if (idio_S_toplevel == kind) {
 	idio_vm_values_set (gvi, value);
@@ -1128,7 +1249,7 @@ IDIO idio_module_add_computed_symbol (IDIO symbol, IDIO get, IDIO set, IDIO modu
 	idio_ai_t gvi = idio_vm_extend_values ();
 	fgvi = idio_fixnum (gvi);
 
-	idio_hash_put (IDIO_MODULE_SYMBOLS (module), symbol, IDIO_LIST3 (kind, idio_fixnum (mci), fgvi));
+	idio_hash_put (IDIO_MODULE_SYMBOLS (module), symbol, IDIO_LIST5 (kind, idio_fixnum (mci), fgvi, module, idio_string_C ("idio_module_add_computed_symbol")));
     } else {
 	kind = IDIO_PAIR_H (sv);
 	if (idio_S_computed != kind) {
@@ -1161,13 +1282,13 @@ void idio_init_module ()
     idio_Idio_module = idio_module (name);
     idio_ai_t gci = idio_vm_constants_lookup_or_extend (name);
     idio_ai_t gvi = idio_vm_extend_values ();
-    idio_module_set_symbol (name, IDIO_LIST3 (idio_S_toplevel, idio_fixnum (gci), idio_fixnum (gvi)), idio_Idio_module);
+    idio_module_set_symbol (name, IDIO_LIST5 (idio_S_toplevel, idio_fixnum (gci), idio_fixnum (gvi), idio_Idio_module, idio_string_C ("idio_init_module")), idio_Idio_module);
 
     name = idio_symbols_C_intern ("*primitives*");
     idio_primitive_module = idio_module (name);
     gci = idio_vm_constants_lookup_or_extend (name);
     gvi = idio_vm_extend_values ();
-    idio_module_set_symbol (name, IDIO_LIST3 (idio_S_toplevel, idio_fixnum (gci), idio_fixnum (gvi)), idio_Idio_module);
+    idio_module_set_symbol (name, IDIO_LIST5 (idio_S_toplevel, idio_fixnum (gci), idio_fixnum (gvi), idio_Idio_module, idio_string_C ("idio_init_module")), idio_Idio_module);
 }
 
 void idio_module_add_primitives ()
@@ -1184,6 +1305,7 @@ void idio_module_add_primitives ()
     IDIO_ADD_PRIMITIVE (module_exports);
     IDIO_ADD_PRIMITIVE (module_symbols);
     IDIO_ADD_PRIMITIVE (all_modules);
+    IDIO_ADD_PRIMITIVE (find_symbol);
     IDIO_ADD_PRIMITIVE (symbol_value);
     IDIO_ADD_PRIMITIVE (symbol_value_recurse);
     IDIO_ADD_PRIMITIVE (set_symbol_value);

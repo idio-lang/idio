@@ -29,23 +29,6 @@ define-macro (help x) {
       display* "function:" '$x $sigstr "\n"
       display docstr
       #t
-    })   ((symbol? $x) {
-      module := find-module $x #f
-      if module {
-	display* "module:" '$x "\n"
-	display* "imports" (module-imports module)
-	exports := (module-exports module)
-	display* "exports" exports
-	exports_loop :+ function (exports) {
-			  if (null? exports) #t {
-			    export := ph exports
-			    display* " " export
-			    exports_loop (pt exports)
-			  }
-	}
-	exports_loop exports
-      }
-      #t
     })   ((struct-type? $x) {
       loop-isa :+ function (type) {
 		    if (null? type) "" {
@@ -59,8 +42,43 @@ define-macro (help x) {
       t := (struct-instance-type $x)
       display* "struct-type:" (struct-type-name t) "\n"
       display* "fields" (struct-type-fields t)
-    }) (else {
-      edisplay* "help: " '$x ": not a function/symbol"
+    })   ((dynamic? '$x) {
+      display* "dynamic:" '$x
+    })   ((environ? '$x) {
+      display* "environ:" '$x
+    })   ((computed? '$x) {
+      display* "computed:" '$x
+    })   ((operator? '$x) {
+      display* "operator:" '$x
+    })   ((symbol? '$x) {
+
+      ;; make symbol? one of the last as it (fore-)shadows dynamic?,
+      ;; expander? etc.
+
+      module := find-module $x #f
+      if module {
+	display* "module:" '$x "\n"
+	display* "imports" (module-imports module)
+	exports := (module-exports module)
+	display* "exports:" ;exports
+	exports_loop :+ function (exports) {
+			  if (null? exports) #t {
+			    export := ph exports
+			    display* " " export
+			    exports_loop (pt exports)
+			  }
+	}
+	exports_loop exports
+      } {
+	cond ((expander? '$x) {
+	  display* "expander:" '$x
+	})   (else {
+	  display* "symbol:" '$x
+	})
+      }
+      #t
+    })  (else {
+      edisplay* "help: " '$x ": not helped" $x
       #f
     })
   }

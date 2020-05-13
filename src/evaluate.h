@@ -59,7 +59,7 @@ IDIO idio_add_module_primitive (IDIO module, idio_primitive_desc_t *d, IDIO cs);
 IDIO idio_export_module_primitive (IDIO module, idio_primitive_desc_t *d, IDIO cs);
 IDIO idio_add_primitive (idio_primitive_desc_t *d, IDIO cs);
 
-IDIO idio_toplevel_extend (IDIO lo, IDIO name, int variant, IDIO cs);
+IDIO idio_toplevel_extend (IDIO lo, IDIO name, int variant, IDIO cs, IDIO cm);
 IDIO idio_environ_extend (IDIO lo, IDIO name, IDIO val, IDIO cs);
 
 void idio_install_expander (IDIO id, IDIO proc);

@@ -241,10 +241,16 @@ static char **idio_command_get_envp ()
 		envp[n][slen + 1 + vlen] = '\0';
 		n++;
 	    } else {
-		idio_command_error_env_type (symbol, IDIO_C_LOCATION ("idio_command_get_envp"));
+		if (0) {
+		    idio_command_error_env_type (symbol, IDIO_C_LOCATION ("idio_command_get_envp"));
 
-		/* notreached */
-		return NULL;
+		    /* notreached */
+		    return NULL;
+		} else {
+		    idio_debug ("icge: WARNING: env %s is not a string: ", symbol);
+		    fprintf (stderr, "%s: ", idio_type2string (symbol));
+		    idio_debug ("%s\n", val);
+		}
 	    }
 	}
 
