@@ -35,8 +35,11 @@ read-error-load := {
 
 read-error-load "read-errors/list-eof.idio" "EOF in list"
 read-error-load "read-errors/imp-list-before.idio" "nothing before & in list"
-read-error-load "read-errors/imp-list-after.idio" "nothing after & in list"
+read-error-load "read-errors/imp-list-eof-after-sep.idio" "EOF in list"
+read-error-load "read-errors/imp-list-nothing-after-sep.idio" "nothing after & in list"
+read-error-load "read-errors/imp-list-eof-before-delim.idio" "EOF in list"
 read-error-load "read-errors/imp-list-many-after.idio" "more than one expression after & in list"
+read-error-load "read-errors/list-op-eof.idio" "EOF in list"
 read-error-load "read-errors/string-unterminated.idio" "string: unterminated"
 read-error-load "read-errors/named-character-eof.idio" "named character: EOF"
 read-error-load "read-errors/named-character-unknown.idio" "unknown named character: caveat"
@@ -70,4 +73,4 @@ read-error-load "read-errors/unexpected-pair-separator.idio" "unexpected & outsi
 read-error-load "read-errors/op-eof.idio" "EOF in list"
 
 ;; all done?
-test Tests (read-error0 + 23)
+test Tests (read-error0 + 26)

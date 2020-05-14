@@ -55,9 +55,9 @@ void idio_meaning_error_static_arity (IDIO lo, IDIO c_location, char *msg, IDIO 
 
 void idio_meaning_add_description (IDIO sym, IDIO desc);
 IDIO idio_meaning_get_description (IDIO sym);
-IDIO idio_add_module_primitive (IDIO module, idio_primitive_desc_t *d, IDIO cs);
-IDIO idio_export_module_primitive (IDIO module, idio_primitive_desc_t *d, IDIO cs);
-IDIO idio_add_primitive (idio_primitive_desc_t *d, IDIO cs);
+IDIO idio_add_module_primitive (IDIO module, idio_primitive_desc_t *d, IDIO cs, const char *cpp__FILE__, int cpp__LINE__);
+IDIO idio_export_module_primitive (IDIO module, idio_primitive_desc_t *d, IDIO cs, const char *cpp__FILE__, int cpp__LINE__);
+IDIO idio_add_primitive (idio_primitive_desc_t *d, IDIO cs, const char *cpp__FILE__, int cpp__LINE__);
 
 IDIO idio_toplevel_extend (IDIO lo, IDIO name, int variant, IDIO cs, IDIO cm);
 IDIO idio_environ_extend (IDIO lo, IDIO name, IDIO val, IDIO cs);

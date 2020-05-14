@@ -153,6 +153,7 @@ extern FILE *idio_vm_perf_FILE;
 #define IDIO_S2(x)		IDIO_S1(x)
 #define IDIO__LINE__		IDIO_S2(__LINE__)
 #define IDIO_C_LOCATION(s)	(idio_string_C (s ":" __FILE__ ":" IDIO__LINE__))
+#define IDIO_C_FUNC_LOCATION()	(idio_string_C_array (2, (char *[]) { (char *) __func__, ":" __FILE__ ":" IDIO__LINE__ }))
 
 #else
 
@@ -166,6 +167,7 @@ extern FILE *idio_vm_perf_FILE;
 #define IDIO_C_EXIT(x)		{exit(x);}
 #define IDIO__LINE__		__LINE__
 #define IDIO_C_LOCATION(s)	(idio_string_C (s))
+#define IDIO_C_FUNC_LOCATION()	IDIO_C_LOCATION(__func__)
 
 #endif
 
@@ -317,13 +319,13 @@ extern FILE *idio_vm_perf_FILE;
 #define IDIO_DEFINE_PRIMITIVE5(iname,cname,params)			\
     IDIO_DEFINE_PRIMITIVE_DESC(iname,cname,params,5,0,"","")
 
-#define IDIO_ADD_MODULE_PRIMITIVE(m,cname)	idio_add_module_primitive (m, &idio_primitive_data_ ## cname, idio_vm_constants);
+#define IDIO_ADD_MODULE_PRIMITIVE(m,cname)	idio_add_module_primitive (m, &idio_primitive_data_ ## cname, idio_vm_constants, __FILE__, __LINE__);
 
-#define IDIO_EXPORT_MODULE_PRIMITIVE(m,cname)	idio_export_module_primitive (m, &idio_primitive_data_ ## cname, idio_vm_constants);
+#define IDIO_EXPORT_MODULE_PRIMITIVE(m,cname)	idio_export_module_primitive (m, &idio_primitive_data_ ## cname, idio_vm_constants, __FILE__, __LINE__);
 
-#define IDIO_ADD_PRIMITIVE(cname)		idio_add_primitive (&idio_primitive_data_ ## cname, idio_vm_constants);
+#define IDIO_ADD_PRIMITIVE(cname)		idio_add_primitive (&idio_primitive_data_ ## cname, idio_vm_constants, __FILE__, __LINE__);
 
-#define IDIO_ADD_EXPANDER(cname)		idio_add_expander_primitive (&idio_primitive_data_ ## cname, idio_vm_constants);
+#define IDIO_ADD_EXPANDER(cname)		idio_add_expander_primitive (&idio_primitive_data_ ## cname, idio_vm_constants, __FILE__, __LINE__);
 
 #define IDIO_DEFINE_INFIX_OPERATOR_DESC(iname,cname,params,arity,varargs) \
     IDIO idio_defoperator_ ## cname params;				\
@@ -340,7 +342,7 @@ extern FILE *idio_vm_perf_FILE;
 #define IDIO_DEFINE_INFIX_OPERATOR(iname,cname,params)			\
     IDIO_DEFINE_INFIX_OPERATOR_DESC(iname,cname,params,2,1)
 
-#define IDIO_ADD_INFIX_OPERATOR(cname,pri)	  idio_add_infix_operator_primitive (&idio_infix_operator_data_ ## cname, pri);
+#define IDIO_ADD_INFIX_OPERATOR(cname,pri)	  idio_add_infix_operator_primitive (&idio_infix_operator_data_ ## cname, pri, __FILE__, __LINE__);
 
 #define IDIO_DEFINE_POSTFIX_OPERATOR_DESC(iname,cname,params,arity,varargs) \
     IDIO idio_defoperator_ ## cname params;				\

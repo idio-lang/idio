@@ -1,0 +1,6 @@
+
+module tests/evaluate-error/toplevel-extend-kind
+
+X := 1
+
+X :* "foo"

@@ -305,7 +305,7 @@ static void idio_meaning_error_static_primitive_arity (IDIO lo, IDIO c_location,
     idio_raise_condition (idio_S_true, c);
 }
 
-static IDIO idio_meaning_predef_extend (IDIO name, IDIO primdata, IDIO module, IDIO cs)
+static IDIO idio_meaning_predef_extend (IDIO name, IDIO primdata, IDIO module, IDIO cs, const char *cpp__FILE__, int cpp__LINE__)
 {
     IDIO_ASSERT (name);
     IDIO_ASSERT (primdata);
@@ -325,7 +325,15 @@ static IDIO idio_meaning_predef_extend (IDIO name, IDIO primdata, IDIO module, I
 	if (IDIO_PRIMITIVE_F (primdata) != IDIO_PRIMITIVE_F (pd)) {
 	    idio_debug ("WARNING: predef-extend: %s: ", name);
 	    fprintf (stderr, "%p -> %p\n", IDIO_PRIMITIVE_F (pd), IDIO_PRIMITIVE_F (primdata));
-	    /* idio_meaning_error_static_redefine ("primitive value change", name, pd, primdata); */
+
+	    IDIO lo = idio_struct_instance (idio_lexobj_type,
+					    idio_pair (idio_string_C (cpp__FILE__),
+					    idio_pair (idio_integer (cpp__LINE__),
+					    idio_pair (idio_integer (0),
+					    idio_pair (name,
+					    idio_S_nil)))));
+
+	    idio_meaning_error_static_redefine (lo, IDIO_C_FUNC_LOCATION(), "primitive value change", name, pd, primdata);
 	} else {
 	    return fgvi;
 	}
@@ -349,7 +357,7 @@ static IDIO idio_meaning_predef_extend (IDIO name, IDIO primdata, IDIO module, I
     return fgvi;
 }
 
-IDIO idio_add_module_primitive (IDIO module, idio_primitive_desc_t *d, IDIO cs)
+IDIO idio_add_module_primitive (IDIO module, idio_primitive_desc_t *d, IDIO cs, const char *cpp__FILE__, int cpp__LINE__)
 {
     IDIO_ASSERT (module);
     IDIO_C_ASSERT (d);
@@ -365,10 +373,10 @@ IDIO idio_add_module_primitive (IDIO module, idio_primitive_desc_t *d, IDIO cs)
     IDIO fmci = idio_fixnum (mci);
     idio_module_set_vci (module, fmci, fmci);
 
-    return idio_meaning_predef_extend (sym, primdata, module, cs);
+    return idio_meaning_predef_extend (sym, primdata, module, cs, cpp__FILE__, cpp__LINE__);
 }
 
-IDIO idio_export_module_primitive (IDIO module, idio_primitive_desc_t *d, IDIO cs)
+IDIO idio_export_module_primitive (IDIO module, idio_primitive_desc_t *d, IDIO cs, const char *cpp__FILE__, int cpp__LINE__)
 {
     IDIO_ASSERT (module);
     IDIO_C_ASSERT (d);
@@ -384,16 +392,16 @@ IDIO idio_export_module_primitive (IDIO module, idio_primitive_desc_t *d, IDIO c
     idio_module_set_vci (module, fmci, fmci);
 
     IDIO_MODULE_EXPORTS (module) = idio_pair (sym, IDIO_MODULE_EXPORTS (module));
-    return idio_meaning_predef_extend (sym, primdata, module, cs);
+    return idio_meaning_predef_extend (sym, primdata, module, cs, cpp__FILE__, cpp__LINE__);
 }
 
-IDIO idio_add_primitive (idio_primitive_desc_t *d, IDIO cs)
+IDIO idio_add_primitive (idio_primitive_desc_t *d, IDIO cs, const char *cpp__FILE__, int cpp__LINE__)
 {
     IDIO_C_ASSERT (d);
     IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (array, cs);
 
-    return idio_add_module_primitive (idio_primitive_module_instance (), d, cs);
+    return idio_add_module_primitive (idio_primitive_module_instance (), d, cs, cpp__FILE__, cpp__LINE__);
 }
 
 IDIO idio_toplevel_extend (IDIO lo, IDIO name, int flags, IDIO cs, IDIO cm)
@@ -433,7 +441,6 @@ IDIO idio_toplevel_extend (IDIO lo, IDIO name, int flags, IDIO cs, IDIO cm)
 	IDIO curkind = IDIO_PAIR_H (cv);
 	if (kind != curkind) {
 	    if (idio_S_predef != curkind) {
-		IDIO_C_ASSERT (0);
 		idio_meaning_error_static_redefine (lo, IDIO_C_LOCATION ("idio_toplevel_extend"), "toplevel-extend: type change", name, cv, kind);
 
 		return idio_S_notreached;
@@ -498,10 +505,13 @@ IDIO idio_environ_extend (IDIO lo, IDIO name, IDIO val, IDIO cs)
     return fmci;
 }
 
-static IDIO idio_variable_localp (IDIO nametree, size_t i, IDIO name)
+static IDIO idio_meaning_variable_localp (IDIO lo, IDIO nametree, size_t i, IDIO name)
 {
+    IDIO_ASSERT (lo);
     IDIO_ASSERT (nametree);
     IDIO_ASSERT (name);
+
+    IDIO_TYPE_ASSERT (struct_instance, lo);
     IDIO_TYPE_ASSERT (list, nametree);
     IDIO_TYPE_ASSERT (symbol, name);
 
@@ -518,7 +528,7 @@ static IDIO idio_variable_localp (IDIO nametree, size_t i, IDIO name)
 			       idio_S_environ == kind) {
 			return IDIO_PAIR_T (assq);
 		    } else {
-			idio_error_C ("unexpected local variant", IDIO_LIST2 (name, nametree), IDIO_C_LOCATION ("idio_variable_localp"));
+			idio_meaning_error_static_variable (lo, IDIO_C_LOCATION ("idio_meaning_variable_localp"), "unexpected local variant", name);
 
 			return idio_S_notreached;
 		    }
@@ -537,7 +547,7 @@ static IDIO idio_variable_localp (IDIO nametree, size_t i, IDIO name)
 		names = IDIO_PAIR_H (nametree);
 		i++;
 	    } else {
-		idio_error_C ("unexpected localp", IDIO_LIST2 (name, nametree), IDIO_C_LOCATION ("idio_variable_localp"));
+		idio_error_C ("unexpected localp", IDIO_LIST2 (name, nametree), IDIO_C_LOCATION ("idio_meaning_variable_localp"));
 
 		return idio_S_notreached;
 
@@ -600,7 +610,7 @@ static IDIO idio_meaning_variable_kind (IDIO lo, IDIO nametree, IDIO name, int f
     IDIO_TYPE_ASSERT (array, cs);
     IDIO_TYPE_ASSERT (module, cm);
 
-    IDIO r = idio_variable_localp (nametree, 0, name);
+    IDIO r = idio_meaning_variable_localp (lo, nametree, 0, name);
 
     if (idio_S_nil == r) {
 	/*
@@ -3638,5 +3648,5 @@ void idio_final_evaluate ()
 
 /* Local Variables: */
 /* mode: C */
-/* buffer-file-coding-system: undecided-unix */
+/* coding: utf-8-unix */
 /* End: */

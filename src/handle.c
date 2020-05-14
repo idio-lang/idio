@@ -1299,5 +1299,5 @@ void idio_final_handle ()
 
 /* Local Variables: */
 /* mode: C */
-/* buffer-file-coding-system: undecided-unix */
+/* coding: utf-8-unix */
 /* End: */

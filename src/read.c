@@ -493,6 +493,13 @@ static IDIO idio_read_list (IDIO handle, IDIO list_lo, IDIO opendel, char *ic, i
     } else if (opendel == idio_T_lbracket) {
 	closedel = idio_T_rbracket;
     } else {
+	/*
+	 * Not possible to write a check for this error condition
+	 * without making this or the calling code use an unexpected
+	 * delimiter.
+	 *
+	 * However it catches a development corner case.
+	 */
 	idio_read_error_parse_args (handle, list_lo, IDIO_C_LOCATION ("idio_read_list"), "unexpected list open delimiter ", opendel);
 
 	return idio_S_notreached;
@@ -505,14 +512,23 @@ static IDIO idio_read_list (IDIO handle, IDIO list_lo, IDIO opendel, char *ic, i
 	IDIO e = idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_EXPR);
 
 	if (idio_eofp_handle (handle)) {
+	    /*
+	     * Test Case: read-errors/list-eof.idio
+	     *
+	     * ( 1
+	     */
 	    idio_read_error_list_eof (handle, lo, IDIO_C_LOCATION ("idio_read_list"));
 
 	    return idio_S_notreached;
 	} else if (idio_T_eol == e) {
 	    /* continue */
 	} else if (idio_T_pair_separator == e) {
-	    /* ( & a) */
 	    if (count < 1) {
+		/*
+		 * Test Case: read-errors/imp-list-before.idio
+		 *
+		 * ( & 2 )
+		 */
 		char em[BUFSIZ];
 		sprintf (em, "nothing before %c in list", IDIO_PAIR_SEPARATOR);
 		idio_read_error_pair_separator (handle, lo, IDIO_C_LOCATION ("idio_read_list"), em);
@@ -532,11 +548,20 @@ static IDIO idio_read_list (IDIO handle, IDIO list_lo, IDIO opendel, char *ic, i
 	    }
 
 	    if (idio_eofp_handle (handle)) {
+		/*
+		 * Test Case: read-errors/imp-list-eof-after-sep.idio
+		 *
+		 * ( 1 &
+		 */
 		idio_read_error_list_eof (handle, lo, IDIO_C_LOCATION ("idio_read_list"));
 
 		return idio_S_notreached;
 	    } else if (closedel == pt) {
-		/* (a &) */
+		/*
+		 * Test Case: read-errors/imp-list-nothing-after-sep.idio
+		 *
+		 * ( 1 & )
+		 */
 		char em[BUFSIZ];
 		sprintf (em, "nothing after %c in list", IDIO_PAIR_SEPARATOR);
 		idio_read_error_pair_separator (handle, lo, IDIO_C_LOCATION ("idio_read_list"), em);
@@ -554,13 +579,22 @@ static IDIO idio_read_list (IDIO handle, IDIO list_lo, IDIO opendel, char *ic, i
 	    }
 
 	    if (idio_eofp_handle (handle)) {
+		/*
+		 * Test Case: read-errors/imp-list-eof-before-delim.idio
+		 *
+		 * ( 1 & 2
+		 */
 		idio_read_error_list_eof (handle, lo, IDIO_C_LOCATION ("idio_read_list"));
 
 		return idio_S_notreached;
 	    } else if (closedel == del) {
 		return idio_improper_list_reverse (r, pt);
 	    } else {
-		/* (a & b c) */
+		/*
+		 * Test case: read-errors/imp-list-many-after.idio
+		 *
+		 * ( 1 & 2 3 )
+		 */
 		char em[BUFSIZ];
 		sprintf (em, "more than one expression after %c in list", IDIO_PAIR_SEPARATOR);
 		idio_read_error_pair_separator (handle, lo, IDIO_C_LOCATION ("idio_read_list"), em);
@@ -590,6 +624,14 @@ static IDIO idio_read_list (IDIO handle, IDIO list_lo, IDIO opendel, char *ic, i
 		}
 
 		if (idio_eofp_handle (handle)) {
+		    /*
+		     * Test Case: read-errors/op-eof.idio
+		     *
+		     * 1 +
+		     *
+		     * Nominally this is a dupe of the one in
+		     * idio_read_expr_line()
+		     */
 		    idio_read_error_list_eof (handle, lo, IDIO_C_LOCATION ("idio_read_list"));
 
 		    return idio_S_notreached;
@@ -625,6 +667,9 @@ static IDIO idio_read_list (IDIO handle, IDIO list_lo, IDIO opendel, char *ic, i
 		case IDIO_CONSTANT_NAN:
 		    break;
 		default:
+		    /*
+		     * Test case: ??
+		     */
 		    idio_error_C ("unexpected token in list", IDIO_LIST2 (handle, e), IDIO_C_LOCATION ("idio_read_list"));
 		}
 	    }
@@ -642,6 +687,9 @@ static IDIO idio_read_list (IDIO handle, IDIO list_lo, IDIO opendel, char *ic, i
 		    e = idio_S_dot;
 		    break;
 		default:
+		    /*
+		     * Test case: ??
+		     */
 		    idio_error_C ("unexpected token in list", IDIO_LIST2 (handle, e), IDIO_C_LOCATION ("idio_read_list"));
 		}
 	    }
@@ -650,6 +698,9 @@ static IDIO idio_read_list (IDIO handle, IDIO list_lo, IDIO opendel, char *ic, i
 	}
     }
 
+    /*
+     * Test Case: ??
+     */
     idio_read_error_parse_printf (handle, list_lo, IDIO_C_LOCATION ("idio_read_list"), "impossible!");
 
     return idio_S_notreached;
@@ -762,6 +813,11 @@ static IDIO idio_read_string (IDIO handle, IDIO lo)
 	int c = idio_getc_handle (handle);
 
 	if (EOF == c) {
+	    /*
+	     * Test Case: read-errors/string-unterminated.idio
+	     *
+	     * "
+	     */
 	    idio_read_error_string (handle, lo, IDIO_C_LOCATION ("idio_read_string"), "unterminated");
 
 	    return idio_S_notreached;
@@ -852,6 +908,11 @@ static IDIO idio_read_named_character (IDIO handle, IDIO lo)
 	c = idio_getc_handle (handle);
 
 	if (EOF == c) {
+	    /*
+	     * Test Case: read-errors/named-character-eof.idio
+	     *
+	     * #\
+	     */
 	    idio_read_error_named_character (handle, lo, IDIO_C_LOCATION ("idio_read_named_character"), "EOF");
 
 	    return idio_S_notreached;
@@ -875,8 +936,14 @@ static IDIO idio_read_named_character (IDIO handle, IDIO lo)
 
     IDIO r;
 
-    /* can i==0 happen? EOF? */
     if (0 == i) {
+	/*
+	 * Can i==0 happen? Can't be EOF as that's picked up by
+	 * read-errors/named-character-eof.idio
+	 *
+	 * Test Case: ??
+	 *
+	 */
 	idio_read_error_named_character (handle, lo, IDIO_C_LOCATION ("idio_read_named_character"), "no letters in character name?");
 
 	return idio_S_notreached;
@@ -886,6 +953,17 @@ static IDIO idio_read_named_character (IDIO handle, IDIO lo)
 	r = idio_character_lookup (buf);
 
 	if (r == idio_S_unspec) {
+	    /*
+	     * Test Case: read-errors/named-character-unknown.idio
+	     *
+	     * #\caveat
+	     *
+	     * XXX This is a bit tricky as (at the time of writing)
+	     * we're limited to isalpha() chars so no underscores or
+	     * colons or things that (gensym) might create which would
+	     * prevent someone from accidentally introducing #\caveat
+	     * as a real named character.
+	     */
 	    idio_read_error_named_character_unknown_name (handle, lo, IDIO_C_LOCATION ("idio_read_named_character"), buf);
 
 	    return idio_S_notreached;
@@ -933,6 +1011,11 @@ static IDIO idio_read_template (IDIO handle, IDIO lo, int depth)
 
     while (! IDIO_OPEN_DELIMITER (c)) {
 	if (i >= IDIO_INTERPOLATION_CHARS) {
+	    /*
+	     * Test Case: read-errors/template-too-many-ic.idio
+	     *
+	     * #T*&^%${ 1 }
+	     */
 	    char em[BUFSIZ];
 	    sprintf (em, "too many interpolation characters: #%d: %c (%#x)", i + 1, c, c);
 	    idio_read_error_template (handle, lo, IDIO_C_LOCATION ("idio_read_template"), em);
@@ -942,6 +1025,11 @@ static IDIO idio_read_template (IDIO handle, IDIO lo, int depth)
 
 	switch (c) {
 	case EOF:
+	    /*
+	     * Test Case: read-errors/template-eof.idio
+	     *
+	     * #T
+	     */
 	    idio_read_error_template (handle, lo, IDIO_C_LOCATION ("idio_read_template"), "EOF");
 
 	    return idio_S_notreached;
@@ -976,7 +1064,7 @@ static IDIO idio_read_template (IDIO handle, IDIO lo, int depth)
     default:
 	{
 	    /*
-	     * Can only get here if IDIO_OPEN_DELIMITER () doesn't
+	     * Can only get here if IDIO_OPEN_DELIMITER() doesn't
 	     * match the case entries above
 	     */
 	    char em[BUFSIZ];
@@ -1018,6 +1106,11 @@ static IDIO idio_read_pathname (IDIO handle, IDIO lo, int depth)
 
     while (IDIO_CHAR_DQUOTE != c) {
 	if (i >= IDIO_INTERPOLATION_CHARS) {
+	    /*
+	     * Test Case: read-errors/pathname-too-many-ic.idio
+	     *
+	     * #P*&^%$" * "
+	     */
 	    char em[BUFSIZ];
 	    sprintf (em, "too many interpolation characters: #%d: %c (%#x)", i + 1, c, c);
 	    idio_read_error_pathname (handle, lo, IDIO_C_LOCATION ("idio_read_pathname"), em);
@@ -1027,6 +1120,11 @@ static IDIO idio_read_pathname (IDIO handle, IDIO lo, int depth)
 
 	switch (c) {
 	case EOF:
+	    /*
+	     * Test Case: read-errors/pathname-eof.idio
+	     *
+	     * #P
+	     */
 	    idio_read_error_pathname (handle, lo, IDIO_C_LOCATION ("idio_read_pathname"), "EOF");
 
 	    return idio_S_notreached;
@@ -1095,6 +1193,16 @@ static IDIO idio_read_bignum_radix (IDIO handle, IDIO lo, char basec, int radix)
 	}
 
 	if (i >= radix) {
+	    /*
+	     * Test Case: read-errors/bignum-invalid-digit.idio
+	     *
+	     * #d1a
+	     *
+	     * #d means a decimal number but 'a' is from a base-11 (or
+	     * higher) format.  The above cannot mean #d1 (ie. 1)
+	     * followed by the symbol 'a'.  Use whitespace if that's
+	     * what you want.
+	     */
 	    char em[BUFSIZ];
 	    sprintf (em, "invalid digit %c in bignum base #%c", c, basec);
 	    idio_read_error_bignum (handle, lo, IDIO_C_LOCATION ("idio_read_bignum_radix"), em);
@@ -1112,6 +1220,11 @@ static IDIO idio_read_bignum_radix (IDIO handle, IDIO lo, char basec, int radix)
     }
 
     if (0 == ndigits) {
+	/*
+	 * Test Case: read-errors/bignum-no-digits.idio
+	 *
+	 * #d
+	 */
 	char em[BUFSIZ];
 	sprintf (em, "no digits after bignum base #%c", basec);
 	idio_read_error_bignum (handle, lo, IDIO_C_LOCATION ("idio_read_bignum_radix"), em);
@@ -1255,6 +1368,18 @@ static IDIO idio_read_word (IDIO handle, IDIO lo, int c)
 	buf[i++] = c;
 
 	if (i > IDIO_WORD_MAX_LEN) {
+	    /*
+	     * Test Case: read-errors/word-too-long.idio
+	     *
+	     * aaaa...aaaa
+	     *
+	     * (a very long word consisting of 'a's, you get the picture)
+	     *
+	     * Actually the test case has two words, one is
+	     * IDIO_WORD_MAX_LEN chars long and the other os
+	     * IDIO_WORD_MAX_LEN+1 chars long.  The first should not
+	     * cause an error.
+	     */
 	    buf[IDIO_WORD_MAX_LEN] = '\0';
 	    idio_read_error_parse_word_too_long (handle, lo, IDIO_C_LOCATION ("idio_read_word"), buf);
 
@@ -1430,6 +1555,11 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl
 		    idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_T_rparen);
 		    return lo;
 		} else {
+		    /*
+		     * Test Case: read-errors/unexpected-rparen.idio
+		     *
+		     * )
+		     */
 		    idio_read_error_parse (handle, lo, IDIO_C_LOCATION ("idio_read_1_expr_nl"), "unexpected ')'");
 
 		    return idio_S_notreached;
@@ -1443,6 +1573,11 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl
 		    idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_T_rbrace);
 		    return lo;
 		} else {
+		    /*
+		     * Test Case: read-errors/unexpected-rbrace.idio
+		     *
+		     * }
+		     */
 		    idio_read_error_parse (handle, lo, IDIO_C_LOCATION ("idio_read_1_expr_nl"), "unexpected '}'");
 
 		    return idio_S_notreached;
@@ -1456,6 +1591,11 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl
 		    idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_T_rbracket);
 		    return lo;
 		} else {
+		    /*
+		     * Test Case: read-errors/unexpected-rbracket.idio
+		     *
+		     * ]
+		     */
 		    idio_read_error_parse (handle, lo, IDIO_C_LOCATION ("idio_read_1_expr_nl"), "unexpected ']'");
 
 		    return idio_S_notreached;
@@ -1546,6 +1686,17 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl
 			    }
 
 			    if (! idio_isa_bignum (bn)) {
+				/*
+				 * Test Cases:
+				 * read-errors/exact-expected-number.idio
+				 * read-errors/inexact-expected-number.idio
+				 *
+				 * #eq
+				 * #iq
+				 *
+				 * 'q' is not a character expected in
+				 * an exact or inexact number.
+				 */
 				char em[BUFSIZ];
 				sprintf (em, "number expected after #%c: got %s", inexact ? 'i' : 'e', idio_type2string (bn));
 				idio_read_error_parse (handle, lo, IDIO_C_LOCATION ("idio_read_1_expr_nl"), em);
@@ -1586,6 +1737,11 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl
 			return lo;
 		    case '<':
 			{
+			    /*
+			     * Test Case: read-errors/not-ready-for-hash-format.idio
+			     *
+			     * #<foo>
+			     */
 			    char em[BUFSIZ];
 			    sprintf (em, "not ready for # format: %c (%02x)", c, c);
 			    idio_read_error_parse (handle, lo, IDIO_C_LOCATION ("idio_read_1_expr_nl"), em);
@@ -1594,6 +1750,15 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl
 			}
 		    default:
 			{
+			    /*
+			     * Test Case: read-errors/unexpected-hash-format.idio
+			     *
+			     * #^foo
+			     *
+			     * XXX Of course we run the risk of
+			     * someone introducing the #^ format for
+			     * vital purposes...
+			     */
 			    char em[BUFSIZ];
 			    sprintf (em, "unexpected # format: '%c' (%#02x)", c, c);
 			    idio_read_error_parse (handle, lo, IDIO_C_LOCATION ("idio_read_1_expr_nl"), em);
@@ -1613,6 +1778,11 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl
 			    idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_T_pair_separator);
 			    return lo;
 			} else {
+			    /*
+			     * Test Case: read-errors/unexpected-pair-separator.idio
+			     *
+			     * &
+			     */
 			    char em[BUFSIZ];
 			    sprintf (em, "unexpected %c outside of list", IDIO_PAIR_SEPARATOR);
 			    idio_read_error_parse (handle, lo, IDIO_C_LOCATION ("idio_read_1_expr_nl"), em);
@@ -1750,6 +1920,14 @@ static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, char *ic, int depth
 		    }
 
 		    if (idio_eofp_handle (handle)) {
+			/*
+			 * Test Case: read-errors/op-eof.idio
+			 *
+			 * 1 +
+			 *
+			 * Nominally this is a dup od the one in
+			 * idio_read_list()
+			 */
 			idio_read_error_list_eof (handle, lo, IDIO_C_LOCATION ("idio_read_expr_line"));
 
 			return idio_S_notreached;

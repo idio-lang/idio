@@ -35,8 +35,8 @@ IDIO idio_macro_expand (IDIO e);
 IDIO idio_macro_expands (IDIO e);
 IDIO idio_evaluate_infix_operator_code (IDIO m, IDIO cs);
 IDIO idio_evaluate_postfix_operator_code (IDIO m, IDIO cs);
-void idio_add_infix_operator_primitive (idio_primitive_desc_t *d, int pri);
-void idio_add_postfix_operator_primitive (idio_primitive_desc_t *d, int pri);
+void idio_add_infix_operator_primitive (idio_primitive_desc_t *d, int pri, const char *cpp__FILE__, int cpp__LINE__);
+void idio_add_postfix_operator_primitive (idio_primitive_desc_t *d, int pri, const char *cpp__FILE__, int cpp__LINE__);
 
 void idio_init_expander ();
 void idio_expander_add_primitives ();
