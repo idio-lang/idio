@@ -159,14 +159,14 @@ IDIO idio_substring_offset (IDIO p, size_t offset, size_t blen)
 	IDIO sp = IDIO_SUBSTRING_PARENT (p);
 	size_t len = (IDIO_SUBSTRING_S (p) - IDIO_STRING_S (sp)) + offset + blen;
 	if (IDIO_STRING_BLEN (sp) < len) {
-	    idio_string_error_length ("substring extends beyong parent string length", sp, len, IDIO_C_LOCATION ("idio_substring_offset"));
+	    idio_string_error_length ("substring extends beyong parent string length", sp, len, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
     } else {
 	size_t len = offset + blen;
 	if (IDIO_STRING_BLEN (p) < len) {
-	    idio_string_error_length ("substring extends beyong parent string length", p, len, IDIO_C_LOCATION ("idio_substring_offset"));
+	    idio_string_error_length ("substring extends beyong parent string length", p, len, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -241,7 +241,7 @@ size_t idio_string_blen (IDIO so)
 	break;
     default:
 	{
-	    idio_error_C ("unexpected string type", so, IDIO_C_LOCATION ("idio_string_blen"));
+	    idio_error_C ("unexpected string type", so, IDIO_C_FUNC_LOCATION ());
 	}
     }
 
@@ -269,7 +269,7 @@ char *idio_string_s (IDIO so)
 	break;
     default:
 	{
-	    idio_error_C ("unexpected string type", so, IDIO_C_LOCATION ("idio_string_s"));
+	    idio_error_C ("unexpected string type", so, IDIO_C_FUNC_LOCATION ());
 	}
     }
 
@@ -296,7 +296,7 @@ char *idio_string_as_C (IDIO so)
 	break;
     default:
 	{
-	    idio_error_C ("unexpected string type", so, IDIO_C_LOCATION ("idio_string_as_C"));
+	    idio_error_C ("unexpected string type", so, IDIO_C_FUNC_LOCATION ());
 	}
     }
 
@@ -337,13 +337,13 @@ IDIO_DEFINE_PRIMITIVE1V ("make-string", make_string, (IDIO size, IDIO args))
 	} else {
 	    IDIO size_i = idio_bignum_real_to_integer (size);
 	    if (idio_S_nil == size_i) {
-		idio_error_param_type ("number", size, IDIO_C_LOCATION ("make-string"));
+		idio_error_param_type ("number", size, IDIO_C_FUNC_LOCATION ());
 	    } else {
 		blen = idio_bignum_ptrdiff_value (size_i);
 	    }
 	}
     } else {
-	idio_error_param_type ("number", size, IDIO_C_LOCATION ("make-string"));
+	idio_error_param_type ("number", size, IDIO_C_FUNC_LOCATION ());
     }
 
     IDIO_VERIFY_PARAM_TYPE (list, args);
@@ -354,14 +354,14 @@ IDIO_DEFINE_PRIMITIVE1V ("make-string", make_string, (IDIO size, IDIO args))
 	IDIO_VERIFY_PARAM_TYPE (character, fill);
 	if (IDIO_CHARACTER_VAL (fill) >= 0x80 ||
 	    IDIO_CHARACTER_VAL (fill) < 0) {
-	    idio_error_C ("fill character too large", fill, IDIO_C_LOCATION ("make-string"));
+	    idio_error_C ("fill character too large", fill, IDIO_C_FUNC_LOCATION ());
 	}
 
 	fillc = IDIO_CHARACTER_VAL (fill);
     }
 
     if (blen < 0) {
-	idio_error_printf (IDIO_C_LOCATION ("make-string"), "invalid length: %zd", blen);
+	idio_error_printf (IDIO_C_FUNC_LOCATION (), "invalid length: %zd", blen);
     }
 
     char *sC = idio_alloc (blen + 1);
@@ -470,7 +470,7 @@ IDIO_DEFINE_PRIMITIVE2 ("string-fill!", string_fill, (IDIO s, IDIO fill))
     for (i = 0; i < l; i++) {
 	if (IDIO_CHARACTER_VAL (fill) >= 0x80 ||
 	    IDIO_CHARACTER_VAL (fill) < 0) {
-	    idio_error_C ("fill character too large", fill, IDIO_C_LOCATION ("string-fill!"));
+	    idio_error_C ("fill character too large", fill, IDIO_C_FUNC_LOCATION ());
 	}
 
 	Cs[i] = IDIO_CHARACTER_VAL (fill);
@@ -503,13 +503,13 @@ IDIO idio_string_ref (IDIO s, IDIO index)
 	} else {
 	    IDIO index_i = idio_bignum_real_to_integer (index);
 	    if (idio_S_nil == index_i) {
-		idio_error_param_type ("number", index, IDIO_C_LOCATION ("string-ref"));
+		idio_error_param_type ("number", index, IDIO_C_FUNC_LOCATION ());
 	    } else {
 		i = idio_bignum_ptrdiff_value (index_i);
 	    }
 	}
     } else {
-	idio_error_param_type ("number", index, IDIO_C_LOCATION ("string-ref"));
+	idio_error_param_type ("number", index, IDIO_C_FUNC_LOCATION ());
     }
 
 
@@ -518,7 +518,7 @@ IDIO idio_string_ref (IDIO s, IDIO index)
 
     if (i < 0 ||
 	i > l) {
-	idio_string_error_length ("out of bounds", s, i, IDIO_C_LOCATION ("string-ref"));
+	idio_string_error_length ("out of bounds", s, i, IDIO_C_FUNC_LOCATION ());
 	return idio_S_unspec;
     }
 
@@ -554,13 +554,13 @@ IDIO idio_string_set (IDIO s, IDIO index, IDIO c)
 	} else {
 	    IDIO index_i = idio_bignum_real_to_integer (index);
 	    if (idio_S_nil == index_i) {
-		idio_error_param_type ("number", index, IDIO_C_LOCATION ("string-set!"));
+		idio_error_param_type ("number", index, IDIO_C_FUNC_LOCATION ());
 	    } else {
 		i = idio_bignum_ptrdiff_value (index_i);
 	    }
 	}
     } else {
-	idio_error_param_type ("number", index, IDIO_C_LOCATION ("string-set!"));
+	idio_error_param_type ("number", index, IDIO_C_FUNC_LOCATION ());
     }
 
     if (idio_isa_substring (s)) {
@@ -572,13 +572,13 @@ IDIO idio_string_set (IDIO s, IDIO index, IDIO c)
 
     if (i < 0 ||
 	i > l) {
-	idio_string_error_length ("out of bounds", s, i, IDIO_C_LOCATION ("string-set!"));
+	idio_string_error_length ("out of bounds", s, i, IDIO_C_FUNC_LOCATION ());
 	return idio_S_unspec;
     }
 
     if (IDIO_CHARACTER_VAL (c) >= 0x80 ||
 	IDIO_CHARACTER_VAL (c) < 0) {
-	idio_error_C ("character too large for C string", c, IDIO_C_LOCATION ("string-set!"));
+	idio_error_C ("character too large for C string", c, IDIO_C_FUNC_LOCATION ());
     }
 
     Cs[i] = IDIO_CHARACTER_VAL (c);
@@ -624,13 +624,13 @@ IDIO_DEFINE_PRIMITIVE3 ("substring", substring, (IDIO s, IDIO p0, IDIO pn))
 	} else {
 	    IDIO p0_i = idio_bignum_real_to_integer (p0);
 	    if (idio_S_nil == p0_i) {
-		idio_error_param_type ("number", p0, IDIO_C_LOCATION ("substring"));
+		idio_error_param_type ("number", p0, IDIO_C_FUNC_LOCATION ());
 	    } else {
 		ip0 = idio_bignum_ptrdiff_value (p0_i);
 	    }
 	}
     } else {
-	idio_error_param_type ("number", p0, IDIO_C_LOCATION ("substring"));
+	idio_error_param_type ("number", p0, IDIO_C_FUNC_LOCATION ());
     }
 
     if (idio_isa_fixnum (pn)) {
@@ -641,13 +641,13 @@ IDIO_DEFINE_PRIMITIVE3 ("substring", substring, (IDIO s, IDIO p0, IDIO pn))
 	} else {
 	    IDIO pn_i = idio_bignum_real_to_integer (pn);
 	    if (idio_S_nil == pn_i) {
-		idio_error_param_type ("number", pn, IDIO_C_LOCATION ("substring"));
+		idio_error_param_type ("number", pn, IDIO_C_FUNC_LOCATION ());
 	    } else {
 		ipn = idio_bignum_ptrdiff_value (pn_i);
 	    }
 	}
     } else {
-	idio_error_param_type ("number", pn, IDIO_C_LOCATION ("substring"));
+	idio_error_param_type ("number", pn, IDIO_C_FUNC_LOCATION ());
     }
 
     size_t l = idio_string_blen (s);
@@ -657,7 +657,7 @@ IDIO_DEFINE_PRIMITIVE3 ("substring", substring, (IDIO s, IDIO p0, IDIO pn))
 	ipn < 0 ||
 	ipn > l ||
 	ipn < ip0) {
-	idio_substring_error_index ("out of bounds", s, ip0, ipn, IDIO_C_LOCATION ("substring"));
+	idio_substring_error_index ("out of bounds", s, ip0, ipn, IDIO_C_FUNC_LOCATION ());
 	return idio_S_unspec;
     }
 
@@ -675,7 +675,7 @@ IDIO_DEFINE_PRIMITIVE3 ("substring", substring, (IDIO s, IDIO p0, IDIO pn))
 	    IDIO_SUBSTRING_S (r) = IDIO_SUBSTRING_S (s);
 	    break;
 	default:
-	    idio_error_C ("unexpected string type", s, IDIO_C_LOCATION ("substring"));
+	    idio_error_C ("unexpected string type", s, IDIO_C_FUNC_LOCATION ());
 	}
     } else {
 	r = idio_string_C ("");

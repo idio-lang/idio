@@ -390,7 +390,7 @@ IDIO idio_list_append2 (IDIO l1, IDIO l2)
 	    break;
 	}
 	if (! idio_isa_pair (l1)) {
-	    idio_error_C ("not a list:", l1, IDIO_C_LOCATION ("idio_list_append2"));
+	    idio_error_C ("not a list:", l1, IDIO_C_FUNC_LOCATION ());
 	}
 
 	IDIO t = idio_pair (IDIO_PAIR_H (l1), idio_S_nil);
@@ -450,12 +450,12 @@ IDIO idio_list_list2string (IDIO l)
 
 	    if (c > INT8_MAX ||
 		c < INT8_MIN) {
-		idio_error_C ("character too large for C string", h, IDIO_C_LOCATION ("idio_list_list2string"));
+		idio_error_C ("character too large for C string", h, IDIO_C_FUNC_LOCATION ());
 	    }
 
 	    s[i] = c;
 	} else {
-	    idio_error_param_type ("character", h, IDIO_C_LOCATION ("idio_list_list2string"));
+	    idio_error_param_type ("character", h, IDIO_C_FUNC_LOCATION ());
 	    return idio_S_unspec;
 	}
 

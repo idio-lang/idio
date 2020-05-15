@@ -55,7 +55,7 @@ static IDIO idio_evaluator_extend (IDIO name, IDIO primdata, IDIO module, const 
 	IDIO pd = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
 
 	if (IDIO_PRIMITIVE_F (primdata) != IDIO_PRIMITIVE_F (pd)) {
-	    idio_meaning_error_static_redefine (idio_S_nil, IDIO_C_LOCATION ("idio_evaluator_extend"), "evaluator value change", name, pd, primdata);
+	    idio_meaning_error_static_redefine (idio_S_nil, IDIO_C_FUNC_LOCATION (), "evaluator value change", name, pd, primdata);
 	}
 
 	return fvi;
@@ -166,7 +166,7 @@ IDIO_DEFINE_PRIMITIVE1 ("let", let, (IDIO e))
     size_t nargs = idio_list_length (e);
 
     if (nargs < 3) {
-	idio_meaning_error_static_arity (idio_S_nil, IDIO_C_LOCATION ("let"), "let: wrong arguments", e);
+	idio_meaning_error_static_arity (idio_S_nil, IDIO_C_FUNC_LOCATION (), "let: wrong arguments", e);
 	return idio_S_unspec;
     }
 
@@ -245,7 +245,7 @@ IDIO_DEFINE_PRIMITIVE1 ("let*", lets, (IDIO e))
     size_t nargs = idio_list_length (e);
 
     if (nargs < 3) {
-	idio_meaning_error_static_arity (idio_S_nil, IDIO_C_LOCATION ("let*"), "let*: wrong arguments", e);
+	idio_meaning_error_static_arity (idio_S_nil, IDIO_C_FUNC_LOCATION (), "let*: wrong arguments", e);
     }
 
     /* idio_debug ("let*: in %s\n", e); */
@@ -305,7 +305,7 @@ IDIO_DEFINE_PRIMITIVE1 ("letrec", letrec, (IDIO e))
     size_t nargs = idio_list_length (e);
 
     if (nargs < 3) {
-	idio_meaning_error_static_arity (idio_S_nil, IDIO_C_LOCATION ("letrec"), "letrec: wrong arguments", e);
+	idio_meaning_error_static_arity (idio_S_nil, IDIO_C_FUNC_LOCATION (), "letrec: wrong arguments", e);
 	return idio_S_unspec;
     }
 
@@ -744,7 +744,7 @@ static IDIO idio_evaluate_infix_operator (IDIO n, IDIO e, IDIO b, IDIO a)
     IDIO func = IDIO_PAIR_T (e);
     if (! (idio_isa_closure (func) ||
 	   idio_isa_primitive (func))) {
-	idio_error_C ("operator: invalid code", IDIO_LIST2 (n, e), IDIO_C_LOCATION ("idio_evaluate_infix_operator"));
+	idio_error_C ("operator: invalid code", IDIO_LIST2 (n, e), IDIO_C_FUNC_LOCATION ());
     }
     IDIO cthr = idio_thread_current_thread ();
     IDIO ethr = idio_expander_thread;
@@ -924,7 +924,7 @@ static IDIO idio_evaluate_postfix_operator (IDIO n, IDIO e, IDIO b, IDIO a)
     IDIO func = IDIO_PAIR_T (e);
     if (! (idio_isa_closure (func) ||
 	   idio_isa_primitive (func))) {
-	idio_error_C ("operator: invalid code", IDIO_LIST2 (n, e), IDIO_C_LOCATION ("idio_evaluate_postfix_operator"));
+	idio_error_C ("operator: invalid code", IDIO_LIST2 (n, e), IDIO_C_FUNC_LOCATION ());
     }
     IDIO cthr = idio_thread_current_thread ();
     IDIO ethr = idio_expander_thread;

@@ -217,7 +217,7 @@ int idio_isa (IDIO o, idio_type_e type)
 		return (IDIO_TYPE_CONSTANT_CHARACTER == type);
 	    default:
 		/* inconceivable! */
-		idio_error_printf (IDIO_C_LOCATION ("idio_isa/CONSTANT"), "unexpected object mark type %#x", o);
+		idio_error_printf (IDIO_C_FUNC_LOCATION_S ("CONSTANT"), "unexpected object mark type %#x", o);
 
 		/* notreached */
 		return 0;
@@ -229,7 +229,7 @@ int idio_isa (IDIO o, idio_type_e type)
 	return (o->type == type);
     default:
 	/* inconceivable! */
-	idio_error_printf (IDIO_C_LOCATION ("idio_isa"), "unexpected object mark type %#x", o);
+	idio_error_printf (IDIO_C_FUNC_LOCATION (), "unexpected object mark type %#x", o);
 
 	/* notreached */
 	return 0;
@@ -296,7 +296,7 @@ void idio_gcc_mark (IDIO o, unsigned colour)
 	break;
     default:
 	/* inconceivable! */
-	idio_error_printf (IDIO_C_LOCATION ("idio_gcc_mark"), "unexpected object mark type %#x", o);
+	idio_error_printf (IDIO_C_FUNC_LOCATION (), "unexpected object mark type %#x", o);
 
 	/* notreached */
 	return;
@@ -328,7 +328,7 @@ void idio_gcc_mark (IDIO o, unsigned colour)
 	switch (o->type) {
 	case IDIO_TYPE_NONE:
 	    IDIO_C_ASSERT (0);
-	    idio_error_C ("idio_gcc_mark cannot process an IDIO_TYPE_NONE", IDIO_LIST1 (o), IDIO_C_LOCATION ("idio_gcc_mark"));
+	    idio_error_C ("idio_gcc_mark cannot process an IDIO_TYPE_NONE", IDIO_LIST1 (o), IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
 	    return;
@@ -452,7 +452,7 @@ void idio_gcc_mark (IDIO o, unsigned colour)
 	}
 	break;
     default:
-	idio_error_printf (IDIO_C_LOCATION ("idio_gcc_mark"), "unexpected colour %d", colour);
+	idio_error_printf (IDIO_C_FUNC_LOCATION (), "unexpected colour %d", colour);
 
 	/* notreached */
 	return;
@@ -602,7 +602,7 @@ void idio_gc_process_grey (unsigned colour)
 	idio_gcc_mark (IDIO_OPAQUE_ARGS (o), colour);
 	break;
     default:
-	idio_error_C ("unexpected type", o, IDIO_C_LOCATION ("idio_gc_process_grey"));
+	idio_error_C ("unexpected type", o, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return;
@@ -812,7 +812,7 @@ void idio_gc_protect (IDIO o)
     IDIO_ASSERT (o);
 
     if (idio_S_nil == o) {
-	idio_error_param_nil ("protect", IDIO_C_LOCATION ("idio_gc_protect"));
+	idio_error_param_nil ("protect", IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return;
@@ -851,7 +851,7 @@ void idio_gc_protect_auto (IDIO o)
     IDIO_ASSERT (o);
 
     if (idio_S_nil == o) {
-	idio_error_param_nil ("protect", IDIO_C_LOCATION ("idio_gc_protect_auto"));
+	idio_error_param_nil ("protect", IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return;
@@ -1238,7 +1238,7 @@ void idio_gc_sweep_free_value (IDIO vo)
     IDIO_ASSERT (vo);
 
     if (idio_S_nil == vo) {
-	idio_error_param_nil ("vo", IDIO_C_LOCATION ("idio_gc_sweep_free_value"));
+	idio_error_param_nil ("vo", IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return;
@@ -1251,7 +1251,7 @@ void idio_gc_sweep_free_value (IDIO vo)
     switch (vo->type) {
     case IDIO_TYPE_NONE:
 	IDIO_C_ASSERT (0);
-	idio_error_C ("idio_gc_sweep_free_value cannot process an IDIO_TYPE_NONE", IDIO_LIST1 (vo), IDIO_C_LOCATION ("idio_gc_sweep_free_value"));
+	idio_error_C ("idio_gc_sweep_free_value cannot process an IDIO_TYPE_NONE", IDIO_LIST1 (vo), IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return;
@@ -1399,7 +1399,7 @@ void idio_gc_sweep_free_value (IDIO vo)
 	idio_free_opaque (vo);
 	break;
     default:
-	idio_error_C ("unexpected type", vo, IDIO_C_LOCATION ("idio_gc_sweep_free_value"));
+	idio_error_C ("unexpected type", vo, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return;
@@ -1541,7 +1541,7 @@ void idio_hcount (unsigned long long *bytes, int *scale)
 void idio_gc_stats_inc (idio_type_e type)
 {
     if (type > IDIO_TYPE_MAX) {
-	idio_error_printf (IDIO_C_LOCATION ("idio_gc_stats_inc"), "bad type %hhu", type);
+	idio_error_printf (IDIO_C_FUNC_LOCATION (), "bad type %hhu", type);
 
 	/* notreached */
 	return;

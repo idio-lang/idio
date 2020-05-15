@@ -133,7 +133,7 @@ IDIO idio_frame_fetch (IDIO fo, size_t d, size_t i)
 	idio_gc_verboseness (0);
 	fprintf (stderr, "\n\nFRAME = ");
 	idio_dump (fo, 10);
-	idio_frame_error_range (fo, d, i, IDIO_C_LOCATION ("idio_frame_fetch"));
+	idio_frame_error_range (fo, d, i, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -154,7 +154,7 @@ void idio_frame_update (IDIO fo, size_t d, size_t i, IDIO v)
     }
 
     if (i > idio_array_size (IDIO_FRAME_ARGS (fo))) {
-	idio_frame_error_range (fo, d, i, IDIO_C_LOCATION ("idio_frame_update"));
+	idio_frame_error_range (fo, d, i, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return;
@@ -186,7 +186,7 @@ IDIO idio_frame_extend (IDIO f1, IDIO f2)
 	 * there's no handlers to do anything with it.
 	 */
 	idio_vm_reset_thread (idio_thread_current_thread (), 1);
-	idio_error_C ("not a frame", IDIO_LIST1 (f2), IDIO_C_LOCATION ("idio_frame_extend"));
+	idio_error_C ("not a frame", IDIO_LIST1 (f2), IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }

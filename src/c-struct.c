@@ -131,7 +131,7 @@ IDIO idio_C_typedefs_add_value (IDIO s, IDIO v)
 	if (idio_S_nil != v) {
 	    r = idio_C_typedefs_get (v);
 	    if (idio_S_unspec == r) {
-		idio_error_C ("target C_typedef does not exist", v, IDIO_C_LOCATION ("idio_C_typedefs_add_value"));
+		idio_error_C ("target C_typedef does not exist", v, IDIO_C_FUNC_LOCATION ());
 	    }
 	}
 	r = idio_hash_put (idio_C_typedefs_hash, s, v);
@@ -254,7 +254,7 @@ IDIO idio_C_fields_array (IDIO C_typedefs)
 	    size = nelem * sizeof (char*);
 	    type = IDIO_TYPE_STRING;
 	} else {
-	    idio_error_C ("unexpected C typedef", IDIO_LIST2 (C_typedef, base_C_typedef), IDIO_C_LOCATION ("idio_C_fields_array"));
+	    idio_error_C ("unexpected C typedef", IDIO_LIST2 (C_typedef, base_C_typedef), IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}

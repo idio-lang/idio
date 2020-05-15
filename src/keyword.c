@@ -106,7 +106,7 @@ IDIO_DEFINE_PRIMITIVE1 ("make-keyword", make_keyword, (IDIO s))
     } else if (idio_isa_symbol (s)) {
 	return idio_keyword_C (IDIO_SYMBOL_S (s));
     } else {
-	idio_error_param_type ("string|symbol", s, IDIO_C_LOCATION ("make-keyword"));
+	idio_error_param_type ("string|symbol", s, IDIO_C_FUNC_LOCATION ());
     }
 
     return idio_S_notreached;
@@ -206,7 +206,7 @@ IDIO idio_keyword_get (IDIO ht, IDIO kw, IDIO args)
     IDIO_TYPE_ASSERT (list, args);
 
     if (idio_S_nil == ht) {
-	idio_error_param_nil ("keyword table", IDIO_C_LOCATION ("keyword-get"));
+	idio_error_param_nil ("keyword table", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -220,7 +220,7 @@ IDIO idio_keyword_get (IDIO ht, IDIO kw, IDIO args)
     }
 
     if (idio_S_nil == args) {
-	idio_keyword_error_key_not_found (kw, IDIO_C_LOCATION ("keyword-get"));
+	idio_keyword_error_key_not_found (kw, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     } else {
@@ -247,7 +247,7 @@ IDIO idio_keyword_set (IDIO ht, IDIO kw, IDIO v)
     IDIO_TYPE_ASSERT (keyword, kw);
 
     if (idio_S_nil == ht) {
-	idio_error_param_nil ("keyword table", IDIO_C_LOCATION ("keyword-set!"));
+	idio_error_param_nil ("keyword table", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }

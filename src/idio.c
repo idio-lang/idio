@@ -281,7 +281,7 @@ int main (int argc, char **argv, char **envp)
 	 */
 	IDIO load = idio_module_symbol_value (idio_S_load, idio_Idio_module_instance (), IDIO_LIST1 (idio_S_false));
 	if (idio_S_false == load) {
-	    idio_error_C ("cannot lookup 'load'", idio_S_nil, IDIO_C_LOCATION ("main"));
+	    idio_error_C ("cannot lookup 'load'", idio_S_nil, IDIO_C_FUNC_LOCATION ());
 	}
 
 	int i;

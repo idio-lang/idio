@@ -219,7 +219,7 @@ void idio_error (IDIO who, IDIO msg, IDIO args, IDIO loc)
 
     if (! (idio_isa_string (loc) ||
 	   idio_isa_symbol (loc))) {
-	idio_error_param_type ("string|symbol", loc, IDIO_C_LOCATION ("idio_error"));
+	idio_error_param_type ("string|symbol", loc, IDIO_C_FUNC_LOCATION ());
     }
 
     IDIO sh = idio_open_output_string_handle_C ();

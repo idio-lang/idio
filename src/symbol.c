@@ -297,7 +297,7 @@ IDIO idio_gensym (char *pref_prefix)
 	}
     }
 
-    idio_error_printf (IDIO_C_LOCATION ("gensym"), "looped!");
+    idio_error_printf (IDIO_C_FUNC_LOCATION (), "looped!");
 
     return idio_S_notreached;
 }
@@ -318,7 +318,7 @@ IDIO_DEFINE_PRIMITIVE0V ("gensym", gensym, (IDIO args))
 	} else if (idio_isa_symbol (iprefix)) {
 	    prefix = IDIO_SYMBOL_S (iprefix);
 	} else {
-	    idio_error_param_type ("string|symbol", iprefix, IDIO_C_LOCATION ("gensym"));
+	    idio_error_param_type ("string|symbol", iprefix, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -376,7 +376,7 @@ IDIO idio_properties_get (IDIO o, IDIO args)
     IDIO_ASSERT (args);
 
     if (idio_S_nil == o) {
-	idio_property_error_nil_object ("object is #n", IDIO_C_LOCATION ("idio_properties_get"));
+	idio_property_error_nil_object ("object is #n", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -387,7 +387,7 @@ IDIO idio_properties_get (IDIO o, IDIO args)
 	if (idio_isa_pair (args)) {
 	    return IDIO_PAIR_H (args);
 	} else {
-	    idio_properties_error_not_found ("no properties ever existed", o, IDIO_C_LOCATION ("idio_properties_get"));
+	    idio_properties_error_not_found ("no properties ever existed", o, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -411,7 +411,7 @@ void idio_properties_set (IDIO o, IDIO properties)
     IDIO_TYPE_ASSERT (hash, properties);
 
     if (idio_S_nil == o) {
-	idio_property_error_nil_object ("object is #n", IDIO_C_LOCATION ("idio_properties_set"));
+	idio_property_error_nil_object ("object is #n", IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return;
@@ -425,7 +425,7 @@ void idio_properties_create (IDIO o)
     IDIO_ASSERT (o);
 
     if (idio_S_nil == o) {
-	idio_property_error_nil_object ("object is #n", IDIO_C_LOCATION ("idio_properties_create"));
+	idio_property_error_nil_object ("object is #n", IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return;
@@ -439,7 +439,7 @@ void idio_properties_delete (IDIO o)
     IDIO_ASSERT (o);
 
     if (idio_S_nil == o) {
-	idio_property_error_nil_object ("object is #n", IDIO_C_LOCATION ("idio_properties_delete"));
+	idio_property_error_nil_object ("object is #n", IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return;
@@ -469,7 +469,7 @@ IDIO idio_property_get (IDIO o, IDIO property, IDIO args)
     IDIO_TYPE_ASSERT (keyword, property);
 
     if (idio_S_nil == o) {
-	idio_property_error_nil_object ("object is #n", IDIO_C_LOCATION ("idio_property_get"));
+	idio_property_error_nil_object ("object is #n", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -480,7 +480,7 @@ IDIO idio_property_get (IDIO o, IDIO property, IDIO args)
 	if (idio_isa_pair (args)) {
 	    return IDIO_PAIR_H (args);
 	} else {
-	    idio_properties_error_not_found ("no properties ever existed", o, IDIO_C_LOCATION ("idio_property_get"));
+	    idio_properties_error_not_found ("no properties ever existed", o, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -490,7 +490,7 @@ IDIO idio_property_get (IDIO o, IDIO property, IDIO args)
 	if (idio_isa_pair (args)) {
 	    return IDIO_PAIR_H (args);
 	} else {
-	    idio_property_error_no_properties ("properties is #n", IDIO_C_LOCATION ("idio_property_get"));
+	    idio_property_error_no_properties ("properties is #n", IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -502,7 +502,7 @@ IDIO idio_property_get (IDIO o, IDIO property, IDIO args)
 	if (idio_isa_pair (args)) {
 	    return IDIO_PAIR_H (args);
 	} else {
-	    idio_property_error_key_not_found (property, IDIO_C_LOCATION ("idio_property_get"));
+	    idio_property_error_key_not_found (property, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -529,13 +529,13 @@ void idio_property_set (IDIO o, IDIO property, IDIO value)
     IDIO_TYPE_ASSERT (keyword, property);
 
     if (idio_S_nil == o) {
-	idio_property_error_nil_object ("object is #n", IDIO_C_LOCATION ("idio_property_set"));
+	idio_property_error_nil_object ("object is #n", IDIO_C_FUNC_LOCATION ());
     }
 
     IDIO properties = idio_hash_get (idio_properties_hash, o);
 
     if (idio_S_nil == properties) {
-	idio_property_error_no_properties ("properties is #n", IDIO_C_LOCATION ("idio_property_set"));
+	idio_property_error_no_properties ("properties is #n", IDIO_C_FUNC_LOCATION ());
     }
 
     if (idio_S_unspec == properties) {

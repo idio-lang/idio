@@ -129,7 +129,7 @@ return the setter of `p`			\n\
 
     if (!(idio_isa_primitive (p) ||
 	  idio_isa_closure (p))) {
-	idio_error_param_type ("primitive|closure", p, IDIO_C_LOCATION ("setter"));
+	idio_error_param_type ("primitive|closure", p, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -137,7 +137,7 @@ return the setter of `p`			\n\
     IDIO setter = idio_property_get (p, idio_KW_setter, IDIO_LIST1 (idio_S_false));
 
     if (idio_S_false == setter) {
-	idio_error_C ("no setter defined", p, IDIO_C_LOCATION ("setter"));
+	idio_error_C ("no setter defined", p, IDIO_C_FUNC_LOCATION ());
     }
 
     return setter;

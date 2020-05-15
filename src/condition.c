@@ -241,7 +241,7 @@ IDIO idio_condition_idio_error (IDIO message, IDIO location, IDIO detail)
 
     if (! (idio_isa_string (location) ||
 	   idio_isa_symbol (location))) {
-	idio_error_param_type ("string|symbol", location, IDIO_C_LOCATION ("idio_condition_idio_error"));
+	idio_error_param_type ("string|symbol", location, IDIO_C_FUNC_LOCATION ());
     }
 
     return idio_struct_instance (idio_condition_idio_error_type, IDIO_LIST3 (message, location, detail));
@@ -357,7 +357,7 @@ return field `message` of condition `c`		\n\
     IDIO_VERIFY_PARAM_TYPE (condition, c);
 
     if (! idio_struct_instance_isa (c, idio_condition_message_type)) {
-	idio_error_printf (IDIO_C_LOCATION ("condition-message"), "not a message condition", c);
+	idio_error_printf (IDIO_C_FUNC_LOCATION (), "not a message condition", c);
 	return idio_S_unspec;
     }
 
@@ -636,7 +636,7 @@ IDIO_DEFINE_PRIMITIVE2 ("restart-condition-handler", restart_condition_handler, 
 	idio_display_C ("'", sh);
 	IDIO c = idio_struct_instance (idio_condition_rt_parameter_type_error_type,
 				       IDIO_LIST3 (idio_get_output_string (sh),
-						   IDIO_C_LOCATION ("condition-handler-rt-command-status"),
+						   IDIO_C_FUNC_LOCATION (),
 						   idio_S_nil));
 
 	idio_raise_condition (idio_S_true, c);

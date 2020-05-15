@@ -146,7 +146,7 @@ IDIO_DEFINE_PRIMITIVE1 ("open-input-string", open_input_string_handle, (IDIO str
 	str_C = idio_string_as_C (str);
 	break;
     default:
-	idio_error_param_type ("string", str, IDIO_C_LOCATION ("open-input-string"));
+	idio_error_param_type ("string", str, IDIO_C_FUNC_LOCATION ());
 	break;
     }
 
@@ -245,7 +245,7 @@ int idio_getc_string_handle (IDIO sh)
     IDIO_ASSERT (sh);
 
     if (! idio_input_string_handlep (sh)) {
-	idio_handle_error_read (sh, IDIO_C_LOCATION ("idio_getc_string_handle"));
+	idio_handle_error_read (sh, IDIO_C_FUNC_LOCATION ());
     }
 
     if (IDIO_STRING_HANDLE_PTR (sh) < IDIO_STRING_HANDLE_END (sh)) {
@@ -283,7 +283,7 @@ int idio_putc_string_handle (IDIO sh, int c)
     IDIO_ASSERT (sh);
 
     if (! idio_output_string_handlep (sh)) {
-	idio_handle_error_write (sh, IDIO_C_LOCATION ("idio_putc_string_handle"));
+	idio_handle_error_write (sh, IDIO_C_FUNC_LOCATION ());
     }
 
     if (IDIO_STRING_HANDLE_PTR (sh) >= IDIO_STRING_HANDLE_END (sh)) {
@@ -314,7 +314,7 @@ size_t idio_puts_string_handle (IDIO sh, char *s, size_t slen)
     IDIO_ASSERT (sh);
 
     if (! idio_output_string_handlep (sh)) {
-	idio_handle_error_write (sh, IDIO_C_LOCATION ("idio_puts_string_handle"));
+	idio_handle_error_write (sh, IDIO_C_FUNC_LOCATION ());
     }
 
     if ((IDIO_STRING_HANDLE_PTR (sh) + slen) >= (IDIO_STRING_HANDLE_BUF (sh) + IDIO_STRING_HANDLE_BLEN (sh))) {
@@ -371,7 +371,7 @@ off_t idio_seek_string_handle (IDIO sh, off_t offset, int whence)
 	ptr = IDIO_STRING_HANDLE_END (sh) + offset;
 	break;
     default:
-	idio_error_printf (IDIO_C_LOCATION ("idio_seek_string_handle"), "idio_seek_string_handle: unexpected whence %d", whence);
+	idio_error_printf (IDIO_C_FUNC_LOCATION (), "idio_seek_string_handle: unexpected whence %d", whence);
 	return -1;
     }
 
@@ -393,7 +393,7 @@ void idio_print_string_handle (IDIO sh, IDIO o)
     IDIO_ASSERT (sh);
 
     if (! idio_output_string_handlep (sh)) {
-	idio_handle_error_write (sh, IDIO_C_LOCATION ("idio_print_string_handle"));
+	idio_handle_error_write (sh, IDIO_C_FUNC_LOCATION ());
     }
 
     char *os = idio_display_string (o);

@@ -40,7 +40,7 @@ int idio_type (IDIO o)
 		return IDIO_TYPE_CONSTANT_CHARACTER;
 	    default:
 		/* inconceivable! */
-		idio_error_printf (IDIO_C_LOCATION ("idio_type/CONSTANT"), "type: unexpected object type %#x", o);
+		idio_error_printf (IDIO_C_FUNC_LOCATION_S ("CONSTANT"), "type: unexpected object type %#x", o);
 
 		/* notreached */
 		return IDIO_TYPE_NONE;
@@ -52,7 +52,7 @@ int idio_type (IDIO o)
 	return o->type;
     default:
 	/* inconceivable! */
-	idio_error_printf (IDIO_C_LOCATION ("idio_type"), "type: unexpected object type %#x", o);
+	idio_error_printf (IDIO_C_FUNC_LOCATION (), "type: unexpected object type %#x", o);
 
 	/* notreached */
 	return IDIO_TYPE_NONE;
@@ -118,7 +118,7 @@ const char *idio_type2string (IDIO o)
 	    case IDIO_TYPE_CONSTANT_I_CODE_MARK: return "CONSTANT_I_CODE";
 	    case IDIO_TYPE_CONSTANT_CHARACTER_MARK: return "CONSTANT_CHARACTER";
 	    default:
-		idio_error_C ("idio_type2string: unexpected type", o, IDIO_C_LOCATION ("idio_type2string/CONSTANT"));
+		idio_error_C ("idio_type2string: unexpected type", o, IDIO_C_FUNC_LOCATION_S ("CONSTANT"));
 
 		/* notreached */
 		return "!!NOT-REACHED!!";
@@ -129,7 +129,7 @@ const char *idio_type2string (IDIO o)
     case IDIO_TYPE_POINTER_MARK:
 	return idio_type_enum2string (o->type);
     default:
-	idio_error_C ("idio_type2string: unexpected type", o, IDIO_C_LOCATION ("idio_type2string"));
+	idio_error_C ("idio_type2string: unexpected type", o, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return "!!NOT-REACHED!!";
@@ -619,14 +619,14 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 	    case IDIO_TYPE_OPAQUE:
 		return (o1->u.opaque == o2->u.opaque);
 	    default:
-		idio_error_C ("IDIO_TYPE_POINTER_MARK: o1->type unexpected", o1, IDIO_C_LOCATION ("idio_equal"));
+		idio_error_C ("IDIO_TYPE_POINTER_MARK: o1->type unexpected", o1, IDIO_C_FUNC_LOCATION ());
 
 		/* notreached */
 		return 0;
 	    }
 	}
     default:
-	idio_error_C ("o1->type unexpected", o1, IDIO_C_LOCATION ("idio_equal"));
+	idio_error_C ("o1->type unexpected", o1, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return 0;
@@ -995,7 +995,7 @@ char *idio_as_string (IDIO o, int depth)
 	    switch (type) {
 	    case IDIO_TYPE_NONE:
 		IDIO_C_ASSERT (0);
-		idio_error_C ("idio_as_string cannot process an IDIO_TYPE_NONE", IDIO_LIST1 (o), IDIO_C_LOCATION ("idio_as_string"));
+		idio_error_C ("idio_as_string cannot process an IDIO_TYPE_NONE", IDIO_LIST1 (o), IDIO_C_FUNC_LOCATION ());
 		/* notreached */
 		return NULL;
 		break;
@@ -2071,7 +2071,7 @@ IDIO idio_list_assq (IDIO k, IDIO l)
 	}
 
 	if (! idio_isa_pair (p)) {
-	    idio_error_C ("not a pair in list", IDIO_LIST2 (p, l), IDIO_C_LOCATION ("idio_list_assq"));
+	    idio_error_C ("not a pair in list", IDIO_LIST2 (p, l), IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
 	    return NULL;
@@ -2107,7 +2107,7 @@ IDIO idio_list_set_difference (IDIO set1, IDIO set2)
 	}
     } else {
 	if (idio_S_nil != set1) {
-	    idio_error_C ("set1", set1, IDIO_C_LOCATION ("idio_list_set_difference"));
+	    idio_error_C ("set1", set1, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -2145,7 +2145,7 @@ IDIO_DEFINE_PRIMITIVE2 ("value-index", value_index, (IDIO o, IDIO i))
 	break;
     }
 
-    idio_error_C ("non-indexable object", IDIO_LIST2 (o, i), IDIO_C_LOCATION ("value-index"));
+    idio_error_C ("non-indexable object", IDIO_LIST2 (o, i), IDIO_C_FUNC_LOCATION ());
 
     return idio_S_notreached;
 }
@@ -2181,7 +2181,7 @@ IDIO_DEFINE_PRIMITIVE3 ("set-value-index!", set_value_index, (IDIO o, IDIO i, ID
 	break;
     }
 
-    idio_error_C ("non-indexable object", IDIO_LIST2 (o, i), IDIO_C_LOCATION ("set-value-index!"));
+    idio_error_C ("non-indexable object", IDIO_LIST2 (o, i), IDIO_C_FUNC_LOCATION ());
 
     return idio_S_notreached;
 }
@@ -2202,7 +2202,7 @@ IDIO idio_copy (IDIO o, int depth)
     case IDIO_TYPE_CONSTANT_MARK:
 	return o;
     case IDIO_TYPE_PLACEHOLDER_MARK:
-	idio_error_C ("invalid type", o, IDIO_C_LOCATION ("idio_copy/placeholder"));
+	idio_error_C ("invalid type", o, IDIO_C_FUNC_LOCATION_S ("placeholder"));
 
 	return idio_S_notreached;
     case IDIO_TYPE_POINTER_MARK:
@@ -2228,7 +2228,7 @@ IDIO idio_copy (IDIO o, int depth)
 		    idio_struct_instance_isa (o, idio_lexobj_type)) {
 		    return o;
 		} else {
-		    idio_error_C ("invalid struct type", o, IDIO_C_LOCATION ("idio_copy"));
+		    idio_error_C ("invalid struct type", o, IDIO_C_FUNC_LOCATION ());
 
 		    return idio_S_notreached;
 		}
@@ -2251,23 +2251,23 @@ IDIO idio_copy (IDIO o, int depth)
 	    case IDIO_TYPE_C_INSTANCE:
 	    case IDIO_TYPE_C_FFI:
 	    case IDIO_TYPE_OPAQUE:
-		idio_error_C ("invalid type", o, IDIO_C_LOCATION ("idio_copy"));
+		idio_error_C ("invalid type", o, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    default:
-		idio_error_C ("unimplemented type", o, IDIO_C_LOCATION ("idio_copy"));
+		idio_error_C ("unimplemented type", o, IDIO_C_FUNC_LOCATION ());
 		break;
 	    }
 	}
 	break;
     default:
 	/* inconceivable! */
-	idio_error_printf (IDIO_C_LOCATION ("idio_copy"), "v=n/k o=%#p o&3=%x F=%x C=%x P=%x", o, (intptr_t) o & IDIO_TYPE_MASK, IDIO_TYPE_FIXNUM_MARK, IDIO_TYPE_CONSTANT_MARK, IDIO_TYPE_POINTER_MARK);
+	idio_error_printf (IDIO_C_FUNC_LOCATION (), "v=n/k o=%#p o&3=%x F=%x C=%x P=%x", o, (intptr_t) o & IDIO_TYPE_MASK, IDIO_TYPE_FIXNUM_MARK, IDIO_TYPE_CONSTANT_MARK, IDIO_TYPE_POINTER_MARK);
 
 	break;
     }
 
-    idio_error_C ("failed to copy", o, IDIO_C_LOCATION ("idio_copy"));
+    idio_error_C ("failed to copy", o, IDIO_C_FUNC_LOCATION ());
 
     return idio_S_notreached;
 }
@@ -2397,7 +2397,7 @@ void idio_dump (IDIO o, int detail)
 	    case IDIO_TYPE_OPAQUE:
 		break;
 	    default:
-		idio_error_C ("unimplemented type", o, IDIO_C_LOCATION ("idio_dump"));
+		idio_error_C ("unimplemented type", o, IDIO_C_FUNC_LOCATION ());
 
 		/* notreached */
 		return;
@@ -2407,7 +2407,7 @@ void idio_dump (IDIO o, int detail)
 	break;
     default:
 	/* inconceivable! */
-	idio_error_printf (IDIO_C_LOCATION ("idio_dump"), "v=n/k o=%#p o&3=%x F=%x C=%x P=%x", o, (intptr_t) o & IDIO_TYPE_MASK, IDIO_TYPE_FIXNUM_MARK, IDIO_TYPE_CONSTANT_MARK, IDIO_TYPE_POINTER_MARK);
+	idio_error_printf (IDIO_C_FUNC_LOCATION (), "v=n/k o=%#p o&3=%x F=%x C=%x P=%x", o, (intptr_t) o & IDIO_TYPE_MASK, IDIO_TYPE_FIXNUM_MARK, IDIO_TYPE_CONSTANT_MARK, IDIO_TYPE_POINTER_MARK);
 
 	/* notreached */
 	return;

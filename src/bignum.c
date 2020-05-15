@@ -104,7 +104,7 @@ static void idio_bsa_resize_by (IDIO_BSA bsa, size_t n)
 IDIO_BS_T idio_bsa_get (IDIO_BSA bsa, size_t i)
 {
     if (i >= bsa->size) {
-	idio_error_printf (IDIO_C_LOCATION ("idio_bsa_get"), "bignum significand array access OOB: get %zd/%zd", i, bsa->size);
+	idio_error_printf (IDIO_C_FUNC_LOCATION (), "bignum significand array access OOB: get %zd/%zd", i, bsa->size);
 
 	/* notreached */
 	return -1;
@@ -124,7 +124,7 @@ void idio_bsa_set (IDIO_BSA bsa, IDIO_BS_T v, size_t i)
 	    /* fprintf (stderr, "idio_bsa_set: %p bsa->size == i\n", bsa);   */
 	    idio_bsa_resize_by (bsa, 1);
 	} else {
-	    idio_error_printf (IDIO_C_LOCATION ("idio_bsa_set"), "bignum significand array access OOB: set %zd/%zd", i, bsa->size);
+	    idio_error_printf (IDIO_C_FUNC_LOCATION (), "bignum significand array access OOB: set %zd/%zd", i, bsa->size);
 
 	    /* notreached */
 	    return;
@@ -144,7 +144,7 @@ void idio_bsa_shift (IDIO_BSA bsa)
 	}
 	bsa->size--;
     } else {
-	idio_error_printf (IDIO_C_LOCATION ("idio_bsa_shift"), "bignum significand shift: zero length already");
+	idio_error_printf (IDIO_C_FUNC_LOCATION (), "bignum significand shift: zero length already");
 
 	/* notreached */
 	return;
@@ -157,7 +157,7 @@ void idio_bsa_pop (IDIO_BSA bsa)
     if (bsa->size) {
 	bsa->size--;
     } else {
-	idio_error_printf (IDIO_C_LOCATION ("idio_bsa_pop"), "bignum significand pop: zero length already");
+	idio_error_printf (IDIO_C_FUNC_LOCATION (), "bignum significand pop: zero length already");
 
 	/* notreached */
 	return;
@@ -426,7 +426,7 @@ int64_t idio_bignum_int64_value (IDIO bn)
 	    }
 	    char em[BUFSIZ];
 	    sprintf (em, "too large for int64_t (%" PRId64 ")", INT64_MAX);
-	    idio_bignum_error_conversion (em, bn, IDIO_C_LOCATION ("idio_bignum_int64_value"));
+	    idio_bignum_error_conversion (em, bn, IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
 	    return -1;
@@ -483,7 +483,7 @@ uint64_t idio_bignum_uint64_value (IDIO bn)
 	    }
 	    char em[BUFSIZ];
 	    sprintf (em, "too large for uint64_t (%" PRIu64 ")", UINT64_MAX);
-	    idio_bignum_error_conversion (em, bn, IDIO_C_LOCATION ("idio_bignum_uint64_value"));
+	    idio_bignum_error_conversion (em, bn, IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
 	    return -1;
@@ -549,7 +549,7 @@ ptrdiff_t idio_bignum_ptrdiff_value (IDIO bn)
 	    }
 	    char em[BUFSIZ];
 	    sprintf (em, "too large for ptrdiff_t (%td)", (ptrdiff_t) PTRDIFF_MAX);
-	    idio_bignum_error_conversion (em, bn, IDIO_C_LOCATION ("idio_bignum_ptrdiff_value"));
+	    idio_bignum_error_conversion (em, bn, IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
 	    return -1;
@@ -615,7 +615,7 @@ intptr_t idio_bignum_intptr_value (IDIO bn)
 	    }
 	    char em[BUFSIZ];
 	    sprintf (em, "too large for intptr_t (%" PRIdPTR ")", (intptr_t) INTPTR_MAX);
-	    idio_bignum_error_conversion (em, bn, IDIO_C_LOCATION ("idio_bignum_intptr_value"));
+	    idio_bignum_error_conversion (em, bn, IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
 	    return -1;
@@ -685,7 +685,7 @@ intmax_t idio_bignum_intmax_value (IDIO bn)
 	    }
 	    char em[BUFSIZ];
 	    sprintf (em, "too large for intmax_t (%jd)", (intmax_t) INTMAX_MAX);
-	    idio_bignum_error_conversion (em, bn, IDIO_C_LOCATION ("idio_bignum_intmax_value"));
+	    idio_bignum_error_conversion (em, bn, IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
 	    return -1;
@@ -1102,7 +1102,7 @@ IDIO idio_bignum_shift_left (IDIO a, int fill)
 
 	if (ai < (al - 1) &&
 	    i < 0) {
-	    idio_error_C ("non-last bignum segment < 0", idio_S_nil, IDIO_C_LOCATION ("idio_bignum_shift_left"));
+	    idio_error_C ("non-last bignum segment < 0", idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -1277,7 +1277,7 @@ IDIO idio_bignum_divide (IDIO a, IDIO b)
     IDIO_TYPE_ASSERT (bignum, b);
 
     if (idio_bignum_zero_p (b)) {
-	idio_error_C ("divide by zero", idio_S_nil, IDIO_C_LOCATION ("idio_bignum_divide"));
+	idio_error_C ("divide by zero", idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -2334,7 +2334,7 @@ IDIO idio_bignum_integer_C (char *nums, int req_exact)
 	    free (buf);
 	    char em[BUFSIZ];
 	    sprintf (em, "strtoll (%s) = %lld", nums, i);
-	    idio_error_system_errno (em, idio_S_nil, IDIO_C_LOCATION ("idio_bignum_integer_C"));
+	    idio_error_system_errno (em, idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -2343,14 +2343,14 @@ IDIO idio_bignum_integer_C (char *nums, int req_exact)
 	    free (buf);
 	    char em[BUFSIZ];
 	    sprintf (em, "strtoll (%s): No digits?", nums);
-	    idio_error_system_errno (em, idio_S_nil, IDIO_C_LOCATION ("idio_bignum_integer_C"));
+	    idio_error_system_errno (em, idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
 
 	if ('\0' != *end) {
 	    free (buf);
-	    idio_error_printf (IDIO_C_LOCATION ("idio_bignum_integer_C"), "strtoll (%s) = %ld", nums, i);
+	    idio_error_printf (IDIO_C_FUNC_LOCATION (), "strtoll (%s) = %ld", nums, i);
 
 	    return idio_S_notreached;
 	}
@@ -2503,7 +2503,7 @@ IDIO idio_bignum_primitive_add (IDIO args)
 	IDIO h = IDIO_PAIR_H (args);
 
         if (! idio_isa_bignum (h)) {
-	    idio_error_param_type ("bignum", h, IDIO_C_LOCATION ("idio_bignum_primitive_add"));
+	    idio_error_param_type ("bignum", h, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -2528,7 +2528,7 @@ IDIO idio_bignum_primitive_subtract (IDIO args)
 	IDIO h = IDIO_PAIR_H (args);
 
         if (! idio_isa_bignum (h)) {
-	    idio_error_param_type ("bignum", h, IDIO_C_LOCATION ("idio_bignum_primitive_subtract"));
+	    idio_error_param_type ("bignum", h, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -2578,7 +2578,7 @@ IDIO idio_bignum_primitive_multiply (IDIO args)
 	IDIO h = IDIO_PAIR_H (args);
 
         if (! idio_isa_bignum (h)) {
-	    idio_error_param_type ("bignum", h, IDIO_C_LOCATION ("idio_bignum_primitive_multiply"));
+	    idio_error_param_type ("bignum", h, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -2604,7 +2604,7 @@ IDIO idio_bignum_primitive_divide (IDIO args)
 	IDIO h = IDIO_PAIR_H (args);
 
         if (! idio_isa_bignum (h)) {
-	    idio_error_param_type ("bignum", h, IDIO_C_LOCATION ("idio_bignum_primitive_divide"));
+	    idio_error_param_type ("bignum", h, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -2629,7 +2629,7 @@ IDIO idio_bignum_primitive_divide (IDIO args)
 	}
 
 	if (idio_bignum_zero_p (h)) {
-	    idio_error_printf (IDIO_C_LOCATION ("idio_bignum_primitive_divide"), "divide by zero");
+	    idio_error_printf (IDIO_C_FUNC_LOCATION (), "divide by zero");
 
 	    return idio_S_notreached;
 	}
@@ -2722,7 +2722,7 @@ IDIO idio_bignum_primitive_lt (IDIO args)
 	IDIO h = idio_list_head (args);
 
         if (! idio_isa_bignum (h)) {
-	    idio_error_param_type ("bignum", h, IDIO_C_LOCATION ("idio_bignum_primitive_lt"));
+	    idio_error_param_type ("bignum", h, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -2751,7 +2751,7 @@ IDIO idio_bignum_primitive_le (IDIO args)
 	IDIO h = idio_list_head (args);
 
         if (! idio_isa_bignum (h)) {
-	    idio_error_param_type ("bignum", h, IDIO_C_LOCATION ("idio_bignum_primitive_le"));
+	    idio_error_param_type ("bignum", h, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -2780,7 +2780,7 @@ IDIO idio_bignum_primitive_gt (IDIO args)
 	IDIO h = idio_list_head (args);
 
         if (! idio_isa_bignum (h)) {
-	    idio_error_param_type ("bignum", h, IDIO_C_LOCATION ("idio_bignum_primitive_gt"));
+	    idio_error_param_type ("bignum", h, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -2809,7 +2809,7 @@ IDIO idio_bignum_primitive_ge (IDIO args)
 	IDIO h = idio_list_head (args);
 
         if (! idio_isa_bignum (h)) {
-	    idio_error_param_type ("bignum", h, IDIO_C_LOCATION ("idio_bignum_primitive_ge"));
+	    idio_error_param_type ("bignum", h, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -2838,7 +2838,7 @@ IDIO idio_bignum_primitive_eq (IDIO args)
 	IDIO h = idio_list_head (args);
 
         if (! idio_isa_bignum (h)) {
-	    idio_error_param_type ("bignum", h, IDIO_C_LOCATION ("idio_bignum_primitive_eq"));
+	    idio_error_param_type ("bignum", h, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}

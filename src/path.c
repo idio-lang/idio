@@ -171,7 +171,7 @@ IDIO idio_path_expand (IDIO p)
     IDIO_TYPE_ASSERT (struct_instance, p);
 
     if (! idio_struct_type_isa (IDIO_STRUCT_INSTANCE_TYPE (p), idio_path_type)) {
-	idio_error_param_type ("~path", p, IDIO_C_LOCATION ("idio_path_expand"));
+	idio_error_param_type ("~path", p, IDIO_C_FUNC_LOCATION ());
     }
 
     IDIO pat = idio_array_get_index (IDIO_STRUCT_INSTANCE_FIELDS (p), IDIO_PATH_PATTERN);
@@ -196,7 +196,7 @@ IDIO idio_path_expand (IDIO p)
 	}
 	break;
     default:
-	idio_path_error_glob (pat, IDIO_C_LOCATION ("idio_path_error_glob"));
+	idio_path_error_glob (pat, IDIO_C_FUNC_LOCATION ());
 	break;
     }
 

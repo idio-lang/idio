@@ -257,7 +257,7 @@ IDIO idio_C_number_cast (IDIO co, idio_type_e type)
     IDIO_C_ASSERT (type);
 
     if (! IDIO_TYPE_POINTERP (co)) {
-	idio_error_printf (IDIO_C_LOCATION ("idio_C_number_cast"), "conversion not possible from %s %d to %d", idio_type2string (co), idio_type (co), type);
+	idio_error_printf (IDIO_C_FUNC_LOCATION (), "conversion not possible from %s %d to %d", idio_type2string (co), idio_type (co), type);
 
 	return idio_S_notreached;
     }
@@ -297,7 +297,7 @@ IDIO idio_C_number_cast (IDIO co, idio_type_e type)
     }
 
     if (fail) {
-	idio_error_printf (IDIO_C_LOCATION ("idio_C_number_cast"), "conversion not possible from %s %d to %d", idio_type2string (co), idio_type (co), type);
+	idio_error_printf (IDIO_C_FUNC_LOCATION (), "conversion not possible from %s %d to %d", idio_type2string (co), idio_type (co), type);
     }
 
     return r;
@@ -396,7 +396,7 @@ IDIO_DEFINE_PRIMITIVE1 ("->integer", C_to_integer, (IDIO inum))
     } else if (idio_isa_C_int (inum)) {
 	return idio_integer (IDIO_C_TYPE_INT (inum));
     } else {
-	idio_error_param_type ("C_int|C_uint", inum, IDIO_C_LOCATION ("->integer"));
+	idio_error_param_type ("C_int|C_uint", inum, IDIO_C_FUNC_LOCATION ());
     }
 
     return idio_S_notreached;
@@ -411,7 +411,7 @@ IDIO_DEFINE_PRIMITIVE1 ("integer->", C_integer_to, (IDIO inum))
     } else if (idio_isa_bignum (inum)) {
 	return idio_C_int (idio_bignum_intmax_value (inum));
     } else {
-	idio_error_param_type ("fixnum|bignum", inum, IDIO_C_LOCATION ("integer->"));
+	idio_error_param_type ("fixnum|bignum", inum, IDIO_C_FUNC_LOCATION ());
     }
 
     return idio_S_notreached;
