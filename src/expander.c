@@ -55,7 +55,21 @@ static IDIO idio_evaluator_extend (IDIO name, IDIO primdata, IDIO module, const 
 	IDIO pd = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
 
 	if (IDIO_PRIMITIVE_F (primdata) != IDIO_PRIMITIVE_F (pd)) {
-	    idio_meaning_error_static_redefine (idio_S_nil, IDIO_C_FUNC_LOCATION (), "evaluator value change", name, pd, primdata);
+	    /*
+	     * Tricky to generate a test case for this as it requires
+	     * that we really do redefine a primitive.
+	     *
+	     * It should catch any developer foobars, though.
+	     */
+
+	    IDIO lo = idio_struct_instance (idio_lexobj_type,
+					    idio_pair (idio_string_C (cpp__FILE__),
+					    idio_pair (idio_integer (cpp__LINE__),
+					    idio_pair (idio_integer (0),
+					    idio_pair (name,
+					    idio_S_nil)))));
+
+	    idio_meaning_error_static_redefine (lo, IDIO_C_FUNC_LOCATION (), "evaluator value change", name, pd, primdata);
 	}
 
 	return fvi;
