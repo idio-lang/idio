@@ -269,6 +269,25 @@ IDIO idio_struct_instance (IDIO st, IDIO values)
     return si;
 }
 
+IDIO idio_struct_instance_copy (IDIO si)
+{
+    IDIO_ASSERT (si);
+
+    IDIO_TYPE_ASSERT (struct_instance, si);
+
+    IDIO sic = idio_allocate_struct_instance (IDIO_STRUCT_INSTANCE_TYPE (si), 0);
+
+    idio_ai_t size = idio_array_size (IDIO_STRUCT_TYPE_FIELDS (IDIO_STRUCT_INSTANCE_TYPE (si)));
+    idio_ai_t i = 0;
+    while (i < size) {
+	IDIO v = idio_array_get_index (IDIO_STRUCT_INSTANCE_FIELDS (si), i);;
+	idio_array_insert_index (IDIO_STRUCT_INSTANCE_FIELDS (sic), v, i);
+	i++;
+    }
+
+    return sic;
+}
+
 IDIO_DEFINE_PRIMITIVE1V ("make-struct-instance", make_struct_instance, (IDIO st, IDIO values))
 {
     IDIO_ASSERT (st);

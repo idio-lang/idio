@@ -2226,7 +2226,7 @@ IDIO idio_copy (IDIO o, int depth)
 	    case IDIO_TYPE_STRUCT_INSTANCE:
 		if (idio_struct_instance_isa (o, idio_path_type) ||
 		    idio_struct_instance_isa (o, idio_lexobj_type)) {
-		    return o;
+		    return idio_struct_instance_copy (o);
 		} else {
 		    idio_error_C ("invalid struct type", o, IDIO_C_FUNC_LOCATION ());
 
