@@ -500,7 +500,7 @@ static IDIO idio_read_list (IDIO handle, IDIO list_lo, IDIO opendel, char *ic, i
 	 *
 	 * However it catches a development corner case.
 	 */
-	idio_read_error_parse_args (handle, list_lo, IDIO_C_LOCATION ("idio_read_list"), "unexpected list open delimiter ", opendel);
+	idio_read_error_parse_args (handle, list_lo, IDIO_C_FUNC_LOCATION (), "unexpected list open delimiter ", opendel);
 
 	return idio_S_notreached;
     }
@@ -517,7 +517,7 @@ static IDIO idio_read_list (IDIO handle, IDIO list_lo, IDIO opendel, char *ic, i
 	     *
 	     * ( 1
 	     */
-	    idio_read_error_list_eof (handle, lo, IDIO_C_LOCATION ("idio_read_list"));
+	    idio_read_error_list_eof (handle, lo, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	} else if (idio_T_eol == e) {
@@ -531,7 +531,7 @@ static IDIO idio_read_list (IDIO handle, IDIO list_lo, IDIO opendel, char *ic, i
 		 */
 		char em[BUFSIZ];
 		sprintf (em, "nothing before %c in list", IDIO_PAIR_SEPARATOR);
-		idio_read_error_pair_separator (handle, lo, IDIO_C_LOCATION ("idio_read_list"), em);
+		idio_read_error_pair_separator (handle, lo, IDIO_C_FUNC_LOCATION (), em);
 
 		return idio_S_notreached;
 	    }
@@ -553,7 +553,7 @@ static IDIO idio_read_list (IDIO handle, IDIO list_lo, IDIO opendel, char *ic, i
 		 *
 		 * ( 1 &
 		 */
-		idio_read_error_list_eof (handle, lo, IDIO_C_LOCATION ("idio_read_list"));
+		idio_read_error_list_eof (handle, lo, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    } else if (closedel == pt) {
@@ -564,7 +564,7 @@ static IDIO idio_read_list (IDIO handle, IDIO list_lo, IDIO opendel, char *ic, i
 		 */
 		char em[BUFSIZ];
 		sprintf (em, "nothing after %c in list", IDIO_PAIR_SEPARATOR);
-		idio_read_error_pair_separator (handle, lo, IDIO_C_LOCATION ("idio_read_list"), em);
+		idio_read_error_pair_separator (handle, lo, IDIO_C_FUNC_LOCATION (), em);
 
 		return idio_S_notreached;
 	    }
@@ -584,7 +584,7 @@ static IDIO idio_read_list (IDIO handle, IDIO list_lo, IDIO opendel, char *ic, i
 		 *
 		 * ( 1 & 2
 		 */
-		idio_read_error_list_eof (handle, lo, IDIO_C_LOCATION ("idio_read_list"));
+		idio_read_error_list_eof (handle, lo, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    } else if (closedel == del) {
@@ -597,7 +597,7 @@ static IDIO idio_read_list (IDIO handle, IDIO list_lo, IDIO opendel, char *ic, i
 		 */
 		char em[BUFSIZ];
 		sprintf (em, "more than one expression after %c in list", IDIO_PAIR_SEPARATOR);
-		idio_read_error_pair_separator (handle, lo, IDIO_C_LOCATION ("idio_read_list"), em);
+		idio_read_error_pair_separator (handle, lo, IDIO_C_FUNC_LOCATION (), em);
 
 		return idio_S_notreached;
 	    }
@@ -632,7 +632,7 @@ static IDIO idio_read_list (IDIO handle, IDIO list_lo, IDIO opendel, char *ic, i
 		     * Nominally this is a dupe of the one in
 		     * idio_read_expr_line()
 		     */
-		    idio_read_error_list_eof (handle, lo, IDIO_C_LOCATION ("idio_read_list"));
+		    idio_read_error_list_eof (handle, lo, IDIO_C_FUNC_LOCATION ());
 
 		    return idio_S_notreached;
 		}
@@ -670,7 +670,9 @@ static IDIO idio_read_list (IDIO handle, IDIO list_lo, IDIO opendel, char *ic, i
 		    /*
 		     * Test case: ??
 		     */
-		    idio_error_C ("unexpected token in list", IDIO_LIST2 (handle, e), IDIO_C_LOCATION ("idio_read_list"));
+		    idio_error_C ("unexpected token in list", IDIO_LIST2 (handle, e), IDIO_C_FUNC_LOCATION ());
+
+		    return idio_S_notreached;
 		}
 	    }
 
@@ -690,7 +692,9 @@ static IDIO idio_read_list (IDIO handle, IDIO list_lo, IDIO opendel, char *ic, i
 		    /*
 		     * Test case: ??
 		     */
-		    idio_error_C ("unexpected token in list", IDIO_LIST2 (handle, e), IDIO_C_LOCATION ("idio_read_list"));
+		    idio_error_C ("unexpected token in list", IDIO_LIST2 (handle, e), IDIO_C_FUNC_LOCATION ());
+
+		    return idio_S_notreached;
 		}
 	    }
 
@@ -701,7 +705,7 @@ static IDIO idio_read_list (IDIO handle, IDIO list_lo, IDIO opendel, char *ic, i
     /*
      * Test Case: ??
      */
-    idio_read_error_parse_printf (handle, list_lo, IDIO_C_LOCATION ("idio_read_list"), "impossible!");
+    idio_read_error_parse_printf (handle, list_lo, IDIO_C_FUNC_LOCATION (), "impossible!");
 
     return idio_S_notreached;
 }
@@ -818,7 +822,7 @@ static IDIO idio_read_string (IDIO handle, IDIO lo)
 	     *
 	     * "
 	     */
-	    idio_read_error_string (handle, lo, IDIO_C_LOCATION ("idio_read_string"), "unterminated");
+	    idio_read_error_string (handle, lo, IDIO_C_FUNC_LOCATION (), "unterminated");
 
 	    return idio_S_notreached;
 	}
@@ -913,7 +917,7 @@ static IDIO idio_read_named_character (IDIO handle, IDIO lo)
 	     *
 	     * #\
 	     */
-	    idio_read_error_named_character (handle, lo, IDIO_C_LOCATION ("idio_read_named_character"), "EOF");
+	    idio_read_error_named_character (handle, lo, IDIO_C_FUNC_LOCATION (), "EOF");
 
 	    return idio_S_notreached;
 	}
@@ -944,7 +948,7 @@ static IDIO idio_read_named_character (IDIO handle, IDIO lo)
 	 * Test Case: ??
 	 *
 	 */
-	idio_read_error_named_character (handle, lo, IDIO_C_LOCATION ("idio_read_named_character"), "no letters in character name?");
+	idio_read_error_named_character (handle, lo, IDIO_C_FUNC_LOCATION (), "no letters in character name?");
 
 	return idio_S_notreached;
     } else if (1 == i) {
@@ -964,7 +968,7 @@ static IDIO idio_read_named_character (IDIO handle, IDIO lo)
 	     * prevent someone from accidentally introducing #\caveat
 	     * as a real named character.
 	     */
-	    idio_read_error_named_character_unknown_name (handle, lo, IDIO_C_LOCATION ("idio_read_named_character"), buf);
+	    idio_read_error_named_character_unknown_name (handle, lo, IDIO_C_FUNC_LOCATION (), buf);
 
 	    return idio_S_notreached;
 	}
@@ -1018,7 +1022,7 @@ static IDIO idio_read_template (IDIO handle, IDIO lo, int depth)
 	     */
 	    char em[BUFSIZ];
 	    sprintf (em, "too many interpolation characters: #%d: %c (%#x)", i + 1, c, c);
-	    idio_read_error_template (handle, lo, IDIO_C_LOCATION ("idio_read_template"), em);
+	    idio_read_error_template (handle, lo, IDIO_C_FUNC_LOCATION (), em);
 
 	    return idio_S_notreached;
 	}
@@ -1030,7 +1034,7 @@ static IDIO idio_read_template (IDIO handle, IDIO lo, int depth)
 	     *
 	     * #T
 	     */
-	    idio_read_error_template (handle, lo, IDIO_C_LOCATION ("idio_read_template"), "EOF");
+	    idio_read_error_template (handle, lo, IDIO_C_FUNC_LOCATION (), "EOF");
 
 	    return idio_S_notreached;
 	default:
@@ -1069,7 +1073,7 @@ static IDIO idio_read_template (IDIO handle, IDIO lo, int depth)
 	     */
 	    char em[BUFSIZ];
 	    sprintf (em, "unexpected delimiter: %c (%#x)", c, c);
-	    idio_read_error_template (handle, lo, IDIO_C_LOCATION ("idio_read_template"), em);
+	    idio_read_error_template (handle, lo, IDIO_C_FUNC_LOCATION (), em);
 
 	    return idio_S_notreached;
 	}
@@ -1113,7 +1117,7 @@ static IDIO idio_read_pathname (IDIO handle, IDIO lo, int depth)
 	     */
 	    char em[BUFSIZ];
 	    sprintf (em, "too many interpolation characters: #%d: %c (%#x)", i + 1, c, c);
-	    idio_read_error_pathname (handle, lo, IDIO_C_LOCATION ("idio_read_pathname"), em);
+	    idio_read_error_pathname (handle, lo, IDIO_C_FUNC_LOCATION (), em);
 
 	    return idio_S_notreached;
 	}
@@ -1125,7 +1129,7 @@ static IDIO idio_read_pathname (IDIO handle, IDIO lo, int depth)
 	     *
 	     * #P
 	     */
-	    idio_read_error_pathname (handle, lo, IDIO_C_LOCATION ("idio_read_pathname"), "EOF");
+	    idio_read_error_pathname (handle, lo, IDIO_C_FUNC_LOCATION (), "EOF");
 
 	    return idio_S_notreached;
 	default:
@@ -1171,7 +1175,7 @@ static IDIO idio_read_bignum_radix (IDIO handle, IDIO lo, char basec, int radix)
 	 */
 	char em[BUFSIZ];
 	sprintf (em, "base #%c (%d) > max base %d", basec, radix, max_base);
-	idio_read_error_bignum (handle, lo, IDIO_C_LOCATION ("idio_read_bignum_radix"), em);
+	idio_read_error_bignum (handle, lo, IDIO_C_FUNC_LOCATION (), em);
 
 	return idio_S_notreached;
     }
@@ -1205,7 +1209,7 @@ static IDIO idio_read_bignum_radix (IDIO handle, IDIO lo, char basec, int radix)
 	     */
 	    char em[BUFSIZ];
 	    sprintf (em, "invalid digit %c in bignum base #%c", c, basec);
-	    idio_read_error_bignum (handle, lo, IDIO_C_LOCATION ("idio_read_bignum_radix"), em);
+	    idio_read_error_bignum (handle, lo, IDIO_C_FUNC_LOCATION (), em);
 
 	    return idio_S_notreached;
 	}
@@ -1227,7 +1231,7 @@ static IDIO idio_read_bignum_radix (IDIO handle, IDIO lo, char basec, int radix)
 	 */
 	char em[BUFSIZ];
 	sprintf (em, "no digits after bignum base #%c", basec);
-	idio_read_error_bignum (handle, lo, IDIO_C_LOCATION ("idio_read_bignum_radix"), em);
+	idio_read_error_bignum (handle, lo, IDIO_C_FUNC_LOCATION (), em);
 
 	return idio_S_notreached;
     }
@@ -1381,7 +1385,7 @@ static IDIO idio_read_word (IDIO handle, IDIO lo, int c)
 	     * cause an error.
 	     */
 	    buf[IDIO_WORD_MAX_LEN] = '\0';
-	    idio_read_error_parse_word_too_long (handle, lo, IDIO_C_LOCATION ("idio_read_word"), buf);
+	    idio_read_error_parse_word_too_long (handle, lo, IDIO_C_FUNC_LOCATION (), buf);
 
 	    return idio_S_notreached;
 	}
@@ -1560,7 +1564,7 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl
 		     *
 		     * )
 		     */
-		    idio_read_error_parse (handle, lo, IDIO_C_LOCATION ("idio_read_1_expr_nl"), "unexpected ')'");
+		    idio_read_error_parse (handle, lo, IDIO_C_FUNC_LOCATION (), "unexpected ')'");
 
 		    return idio_S_notreached;
 		}
@@ -1578,7 +1582,7 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl
 		     *
 		     * }
 		     */
-		    idio_read_error_parse (handle, lo, IDIO_C_LOCATION ("idio_read_1_expr_nl"), "unexpected '}'");
+		    idio_read_error_parse (handle, lo, IDIO_C_FUNC_LOCATION (), "unexpected '}'");
 
 		    return idio_S_notreached;
 		}
@@ -1596,7 +1600,7 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl
 		     *
 		     * ]
 		     */
-		    idio_read_error_parse (handle, lo, IDIO_C_LOCATION ("idio_read_1_expr_nl"), "unexpected ']'");
+		    idio_read_error_parse (handle, lo, IDIO_C_FUNC_LOCATION (), "unexpected ']'");
 
 		    return idio_S_notreached;
 		}
@@ -1699,7 +1703,7 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl
 				 */
 				char em[BUFSIZ];
 				sprintf (em, "number expected after #%c: got %s", inexact ? 'i' : 'e', idio_type2string (bn));
-				idio_read_error_parse (handle, lo, IDIO_C_LOCATION ("idio_read_1_expr_nl"), em);
+				idio_read_error_parse (handle, lo, IDIO_C_FUNC_LOCATION (), em);
 
 				return idio_S_notreached;
 			    }
@@ -1744,7 +1748,7 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl
 			     */
 			    char em[BUFSIZ];
 			    sprintf (em, "not ready for # format: %c (%02x)", c, c);
-			    idio_read_error_parse (handle, lo, IDIO_C_LOCATION ("idio_read_1_expr_nl"), em);
+			    idio_read_error_parse (handle, lo, IDIO_C_FUNC_LOCATION (), em);
 
 			    return idio_S_notreached;
 			}
@@ -1761,7 +1765,7 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl
 			     */
 			    char em[BUFSIZ];
 			    sprintf (em, "unexpected # format: '%c' (%#02x)", c, c);
-			    idio_read_error_parse (handle, lo, IDIO_C_LOCATION ("idio_read_1_expr_nl"), em);
+			    idio_read_error_parse (handle, lo, IDIO_C_FUNC_LOCATION (), em);
 
 			    return idio_S_notreached;
 			}
@@ -1785,7 +1789,7 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl
 			     */
 			    char em[BUFSIZ];
 			    sprintf (em, "unexpected %c outside of list", IDIO_PAIR_SEPARATOR);
-			    idio_read_error_parse (handle, lo, IDIO_C_LOCATION ("idio_read_1_expr_nl"), em);
+			    idio_read_error_parse (handle, lo, IDIO_C_FUNC_LOCATION (), em);
 
 			    return idio_S_notreached;
 			}
@@ -1928,7 +1932,7 @@ static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, char *ic, int depth
 			 * Nominally this is a dup od the one in
 			 * idio_read_list()
 			 */
-			idio_read_error_list_eof (handle, lo, IDIO_C_LOCATION ("idio_read_expr_line"));
+			idio_read_error_list_eof (handle, lo, IDIO_C_FUNC_LOCATION ());
 
 			return idio_S_notreached;
 		    }
@@ -1955,7 +1959,7 @@ static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, char *ic, int depth
 		case IDIO_CONSTANT_NAN:
 		    break;
 		default:
-		    idio_error_C ("unexpected constant in line", IDIO_LIST2 (handle, expr), IDIO_C_LOCATION ("idio_read_expr_line"));
+		    idio_error_C ("unexpected constant in line", IDIO_LIST2 (handle, expr), IDIO_C_FUNC_LOCATION ());
 
 		    return idio_S_notreached;
 		}
@@ -1975,7 +1979,7 @@ static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, char *ic, int depth
 		    expr = idio_S_pair_separator;
 		    break;
 		default:
-		    idio_error_C ("unexpected token in line", IDIO_LIST2 (handle, expr), IDIO_C_LOCATION ("idio_read_expr_line"));
+		    idio_error_C ("unexpected token in line", IDIO_LIST2 (handle, expr), IDIO_C_FUNC_LOCATION ());
 
 		    return idio_S_notreached;
 		}
@@ -2115,7 +2119,7 @@ IDIO idio_read_character (IDIO handle, IDIO lo)
 	if (EOF == c) {
 	    if (i) {
 		fprintf (stderr, "EOF w/ i=%d\n", i);
-		idio_read_error_utf8_decode (handle, lo, IDIO_C_LOCATION ("idio_read_character"), "EOF");
+		idio_read_error_utf8_decode (handle, lo, IDIO_C_FUNC_LOCATION (), "EOF");
 
 		return idio_S_notreached;
 
@@ -2140,7 +2144,7 @@ IDIO idio_read_character (IDIO handle, IDIO lo)
 
 	if (state != IDIO_UTF8_ACCEPT) {
 	    fprintf (stderr, "The (UTF-8) string is not well-formed\n");
-	    idio_read_error_utf8_decode (handle, lo, IDIO_C_LOCATION ("idio_read_character"), "not well-formed");
+	    idio_read_error_utf8_decode (handle, lo, IDIO_C_FUNC_LOCATION (), "not well-formed");
 
 	    return idio_S_notreached;
 	}

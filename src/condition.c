@@ -51,6 +51,7 @@ IDIO idio_condition_io_file_is_read_only_error_type;
 IDIO idio_condition_io_file_already_exists_error_type;
 IDIO idio_condition_io_no_such_file_error_type;
 IDIO idio_condition_read_error_type;
+IDIO idio_condition_evaluation_error_type;
 
 /* Idio */
 IDIO idio_condition_idio_error_type;
@@ -465,6 +466,9 @@ IDIO_DEFINE_PRIMITIVE2 ("default-condition-handler", default_condition_handler, 
 		idio_display (idio_array_get_index (sif, IDIO_SI_READ_ERROR_TYPE_LINE), eh);
 		idio_display_C (":", eh);
 		idio_display (idio_array_get_index (sif, IDIO_SI_READ_ERROR_TYPE_POSITION), eh);
+	    } else if (idio_struct_type_isa (sit, idio_condition_evaluation_error_type)) {
+		idio_display_C (":", eh);
+		idio_display (idio_array_get_index (sif, IDIO_SI_EVALUATION_ERROR_TYPE_EXPR), eh);
 	    }
 	}
 	idio_display_C ("\n", eh);
@@ -511,6 +515,9 @@ IDIO_DEFINE_PRIMITIVE2 ("default-condition-handler", default_condition_handler, 
 		idio_display (idio_array_get_index (sif, IDIO_SI_READ_ERROR_TYPE_LINE), eh);
 		idio_display_C (":", eh);
 		idio_display (idio_array_get_index (sif, IDIO_SI_READ_ERROR_TYPE_POSITION), eh);
+	    } else if (idio_struct_type_isa (sit, idio_condition_evaluation_error_type)) {
+		idio_display_C (":", eh);
+		idio_display (idio_array_get_index (sif, IDIO_SI_EVALUATION_ERROR_TYPE_EXPR), eh);
 	    }
 	}
 	idio_display_C ("\n", eh);
@@ -601,6 +608,9 @@ IDIO_DEFINE_PRIMITIVE2 ("restart-condition-handler", restart_condition_handler, 
 		    idio_display (idio_array_get_index (sif, IDIO_SI_READ_ERROR_TYPE_LINE), eh);
 		    idio_display_C (":", eh);
 		    idio_display (idio_array_get_index (sif, IDIO_SI_READ_ERROR_TYPE_POSITION), eh);
+		} else if (idio_struct_type_isa (sit, idio_condition_evaluation_error_type)) {
+		    idio_display_C (":", eh);
+		    idio_display (idio_array_get_index (sif, IDIO_SI_EVALUATION_ERROR_TYPE_EXPR), eh);
 		}
 	    }
 	    IDIO d = idio_array_get_index (sif, IDIO_SI_IDIO_ERROR_TYPE_DETAIL);
@@ -708,6 +718,7 @@ void idio_init_condition ()
 
     /* NB. no column or span! */
     IDIO_DEFINE_CONDITION2 (idio_condition_read_error_type, "^read-error", idio_condition_idio_error_type, "line", "position");
+    IDIO_DEFINE_CONDITION1 (idio_condition_evaluation_error_type, "^evaluation-error", idio_condition_idio_error_type, "expr");
 
     /* Idio */
     IDIO_DEFINE_CONDITION1 (idio_condition_system_error_type, "^system-error", idio_condition_idio_error_type, "errno");
@@ -804,6 +815,7 @@ void idio_final_condition ()
     idio_gc_expose (idio_condition_io_file_already_exists_error_type);
     idio_gc_expose (idio_condition_io_no_such_file_error_type);
     idio_gc_expose (idio_condition_read_error_type);
+    idio_gc_expose (idio_condition_evaluation_error_type);
 
     idio_gc_expose (idio_condition_system_error_type);
 

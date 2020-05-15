@@ -138,6 +138,9 @@ define-condition-type-accessors-only ^read-error			^idio-error			read-error? \
 	(line read-error-line) \
 	(position read-error-position)
 
+define-condition-type-accessors-only ^evaluation-error			^idio-error			evaluation-error? \
+	(expr evaluation-error-expr)
+
 ;; Idio generated conditions
 define-condition-type-accessors-only ^system-error			^idio-error			system-error? \
 	(errno system-error-errno)
@@ -237,6 +240,7 @@ define (condition-report prefix cont cond & args) "print a report on `condition`
 
   if (and (struct-type-isa (struct-instance-type cond) ^idio-error)
 	  (not (or (struct-type-isa (struct-instance-type cond) ^read-error)
+		   (struct-type-isa (struct-instance-type cond) ^evaluation-error)
 		   (struct-type-isa (struct-instance-type cond) ^rt-command-status-error)))) {
     dh* oh cond.message ";" cond.detail ";" cond.location
   }
@@ -248,7 +252,10 @@ define (condition-report prefix cont cond & args) "print a report on `condition`
 	 dh* oh ": filename" cond.filename
        }) \
        ((struct-type-isa (struct-instance-type cond) ^read-error) {
-	 dh* oh cond.message ";" cond.location ": line" cond.line "pos" cond.position
+	 dh* oh cond.location ": line" cond.line "pos" cond.position ":" cond.message
+       }) \
+       ((struct-type-isa (struct-instance-type cond) ^evaluation-error) {
+	 dh* oh cond.location ":" cond.expr ":" cond.message
        }) \
        ((struct-type-isa (struct-instance-type cond) ^system-error) {
           dh* oh "errno" cond.errno "(" (libc/errno-name cond.errno) ")"

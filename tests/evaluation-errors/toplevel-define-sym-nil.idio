@@ -1,0 +1,3 @@
+module tests/evaluation/toplevel-define
+
+:= qqq

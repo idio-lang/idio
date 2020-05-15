@@ -36,6 +36,9 @@
 #define IDIO_SI_READ_ERROR_TYPE_LINE		3
 #define IDIO_SI_READ_ERROR_TYPE_POSITION	4
 
+/* ^evaluation-error = ^idio_error plus */
+#define IDIO_SI_EVALUATION_ERROR_TYPE_EXPR	3
+
 /* ^system-error = ^idio_error plus */
 #define IDIO_SI_SYSTEM_ERROR_TYPE_ERRNO		3
 
@@ -112,6 +115,7 @@ extern IDIO idio_condition_io_file_is_read_only_error_type;
 extern IDIO idio_condition_io_file_already_exists_error_type;
 extern IDIO idio_condition_io_no_such_file_error_type;
 extern IDIO idio_condition_read_error_type;
+extern IDIO idio_condition_evaluation_error_type;
 
 extern IDIO idio_condition_idio_error_type;
 extern IDIO idio_condition_system_error_type;

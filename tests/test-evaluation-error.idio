@@ -1,0 +1,106 @@
+
+evaluation-error0 := Tests
+
+;; We have a bunch of test cases which should provoke a ^evaluation-error of
+;; some kind.  So we can write a load function which will wrapper the
+;; actual load with a trap for ^evaluation-error and compare the message
+;; strings.
+
+evaluation-error-load := {
+  n := 0
+
+  function (filename msg) {
+    if (not (string? filename)) (error 'load "not a string" filename)
+
+    load-k := #n
+
+    n = n + 1
+    ;edisplay* "loading #" n filename
+    trap ^evaluation-error (function (cont cond) {
+			      ;edisplay* n msg cond
+			      test cond.message msg
+			      if (not (string=? cond.message msg)) {
+				condition-report (string-append "evaluation-error-load: " filename) cont cond (current-error-handle)
+			      }
+			      load-k cond
+    }) {
+      call/cc (function (k) {
+		 load-k = k
+		 %load filename
+      })
+    }
+  }
+}
+
+
+;evaluation-error-load "evaluation-errors/toplevel-extend-kind.idio" "EOF in list"
+
+evaluation-error-load "evaluation-errors/rewrite-cond-isa-pair-first.idio" "cond: clause is not a pair"
+evaluation-error-load "evaluation-errors/rewrite-cond-isa-pair-after.idio" "cond: clause is not a pair"
+evaluation-error-load "evaluation-errors/rewrite-cond-else-not-last.idio" "cond: else not in last clause"
+evaluation-error-load "evaluation-errors/rewrite-cond-apply-two-args.idio" "cond: invalid => clause"
+evaluation-error-load "evaluation-errors/rewrite-cond-apply-four-args.idio" "cond: invalid => clause"
+evaluation-error-load "evaluation-errors/assign-non-symbol.idio" "cannot assign to"
+evaluation-error-load "evaluation-errors/infix-op-negative-priority.idio" "positive priority"
+evaluation-error-load "evaluation-errors/infix-op-not-an-operator.idio" "not an operator"
+evaluation-error-load "evaluation-errors/postfix-op-negative-priority.idio" "positive priority"
+evaluation-error-load "evaluation-errors/postfix-op-not-an-operator.idio" "not an operator"
+evaluation-error-load "evaluation-errors/define-computed-no-args.idio" "define-computed: no getter/setter"
+evaluation-error-load "evaluation-errors/internal-define-macro.idio" "internal define-macro"
+evaluation-error-load "evaluation-errors/letrec-empty-body.idio" "letrec: empty body"
+
+;; I can't trigger the error
+;evaluation-error-load "evaluation-errors/letrec-internal-define-macro.idio" "letrec: internal define-macro"
+
+evaluation-error-load "evaluation-errors/closed-function-not-enough-args-0.idio" "closed function: not enough arguments"
+evaluation-error-load "evaluation-errors/closed-function-not-enough-args-1.idio" "closed function: not enough arguments"
+evaluation-error-load "evaluation-errors/closed-function-too-many-args-0.idio" "closed function: too many arguments"
+evaluation-error-load "evaluation-errors/closed-function-too-many-args-1.idio" "closed function: too many arguments"
+evaluation-error-load "evaluation-errors/primitive-arity.idio" "wrong arity for primitive"
+
+evaluation-error-load "evaluation-errors/escape-nil.idio" "escape: no argument"
+evaluation-error-load "evaluation-errors/quote-nil.idio" "quote: no argument"
+evaluation-error-load "evaluation-errors/quasiquote-nil.idio" "quasiquote: no argument"
+evaluation-error-load "evaluation-errors/function-nil.idio" "function: no arguments"
+evaluation-error-load "evaluation-errors/if-cond-nil.idio" "(if 1): no consequent/alternative"
+evaluation-error-load "evaluation-errors/if-nil.idio" "if: no arguments"
+evaluation-error-load "evaluation-errors/cond-nil.idio" "cond: no clauses"
+evaluation-error-load "evaluation-errors/set-symbol-nil.idio" "(set! x): no value"
+evaluation-error-load "evaluation-errors/set-nil.idio" "set!: no arguments"
+evaluation-error-load "evaluation-errors/define-macro-bindings-nil.idio" "(define-macro (m)): no body"
+evaluation-error-load "evaluation-errors/define-macro-nil.idio" "define-macro: no arguments"
+evaluation-error-load "evaluation-errors/define-infix-op-sym-pri-nil.idio" "(define-infix-operator qqq 10): no body"
+evaluation-error-load "evaluation-errors/define-infix-op-sym-nil.idio" "(define-infix-operator qqq): no pri body"
+evaluation-error-load "evaluation-errors/define-infix-op-nil.idio" "define-infix-operator: no arguments"
+evaluation-error-load "evaluation-errors/define-postfix-op-sym-pri-nil.idio" "(define-postfix-operator qqq 10): no body"
+evaluation-error-load "evaluation-errors/define-postfix-op-sym-nil.idio" "(define-postfix-operator qqq): no pri body"
+evaluation-error-load "evaluation-errors/define-postfix-op-nil.idio" "define-postfix-operator: no arguments"
+evaluation-error-load "evaluation-errors/define-sym-nil.idio" "(define qqq): no value"
+evaluation-error-load "evaluation-errors/define-nil.idio" "define: no arguments"
+evaluation-error-load "evaluation-errors/toplevel-define-sym-nil.idio" "(:= qqq): no value"
+evaluation-error-load "evaluation-errors/toplevel-define-nil.idio" ":=: no arguments"
+evaluation-error-load "evaluation-errors/environ-define-sym-nil.idio" "(:* qqq): no value"
+evaluation-error-load "evaluation-errors/environ-define-nil.idio" ":*: no arguments"
+evaluation-error-load "evaluation-errors/dynamic-define-sym-nil.idio" "(:~ qqq): no value"
+evaluation-error-load "evaluation-errors/dynamic-define-nil.idio" ":~: no arguments"
+evaluation-error-load "evaluation-errors/computed-define-sym-nil.idio" "(:$ qqq): no getter [setter]"
+evaluation-error-load "evaluation-errors/computed-define-nil.idio" ":$: no arguments"
+evaluation-error-load "evaluation-errors/dynamic-nil.idio" "dynamic: no argument"
+evaluation-error-load "evaluation-errors/dynamic-let-bindings-not-tuple.idio" "(dynamic-let (d)): bindings not a tuple"
+evaluation-error-load "evaluation-errors/dynamic-let-bindings-not-pair.idio" "(dynamic-let #n): bindings not a pair"
+evaluation-error-load "evaluation-errors/dynamic-let-nil.idio" "dynamic-let: no arguments"
+evaluation-error-load "evaluation-errors/dynamic-unset-non-sym.idio" "(dynamic-unset 1): not a symbol"
+evaluation-error-load "evaluation-errors/dynamic-unset-nil.idio" "dynamic-unset: no argument"
+evaluation-error-load "evaluation-errors/environ-let-bindings-not-tuple.idio" "(environ-let (e)): bindings not a tuple"
+evaluation-error-load "evaluation-errors/environ-let-bindings-not-pair.idio" "(environ-let #n): bindings not a pair"
+evaluation-error-load "evaluation-errors/environ-let-nil.idio" "environ-let: no arguments"
+evaluation-error-load "evaluation-errors/environ-unset-non-sym.idio" "(environ-unset 1): not a symbol"
+evaluation-error-load "evaluation-errors/environ-unset-nil.idio" "environ-unset: no argument"
+evaluation-error-load "evaluation-errors/trap-condition-handler-nil.idio" "(trap condition handler): no body"
+evaluation-error-load "evaluation-errors/trap-condition-nil.idio" "(trap condition): no handler"
+evaluation-error-load "evaluation-errors/trap-nil.idio" "trap: no arguments"
+evaluation-error-load "evaluation-errors/include-nil.idio" "include: no argument"
+evaluation-error-load "evaluation-errors/module-nil.idio" "module: no argument"
+
+;; all done?
+test Tests (evaluation-error0 + 61)

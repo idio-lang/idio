@@ -1,0 +1,3 @@
+module tests/evaluation/define-infix-operator
+
+define-infix-operator qqq 10

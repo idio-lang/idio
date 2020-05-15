@@ -1,0 +1,6 @@
+
+{
+  define-macro (bar) {
+    #T{ 1 }
+  }
+}
