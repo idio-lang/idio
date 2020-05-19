@@ -200,6 +200,57 @@ IDIO idio_hash (idio_hi_t size, int (*equal) (void *k1, void *k2), idio_hi_t (*h
     return h;
 }
 
+/*
+ * Naive use of IDIO_HASH_HE_KEY (h, hv) is getting us burnt.  There
+ * are a few special cases we need to handle and put them all
+ * centrally.
+ *
+ * In particular, IDIO_HASH_FLAG_WEAK_KEYS where the key can be GC'd
+ * from under our feet.
+ */
+static IDIO idio_hash_he_key (IDIO h, idio_hi_t hv)
+{
+    IDIO ck = IDIO_HASH_HE_KEY (h, hv);
+
+    if (idio_S_nil != ck) {
+	if (IDIO_HASH_FLAGS (h) & IDIO_HASH_FLAG_STRING_KEYS) {
+	} else if (IDIO_HASH_FLAGS (h) & IDIO_HASH_FLAG_WEAK_KEYS) {
+	    switch ((intptr_t) ck & IDIO_TYPE_MASK) {
+	    case IDIO_TYPE_FIXNUM_MARK:
+	    case IDIO_TYPE_CONSTANT_MARK:
+	    case IDIO_TYPE_PLACEHOLDER_MARK:
+		break;
+	    case IDIO_TYPE_POINTER_MARK:
+		if (0 == ck->type) {
+		    /*
+		     * null out the key (and value) as a form of lazy
+		     * deletion (without any actual deletion as we
+		     * leave the next index in situ)
+		     */
+		    IDIO_HASH_HE_KEY (h, hv) = idio_S_nil;
+		    IDIO_HASH_HE_VALUE (h, hv) = idio_S_nil;
+		    /* IDIO_HASH_HE_NEXT (h, hv) = IDIO_HASH_SIZE (h) + 1; */
+		    ck = idio_S_nil;
+		} else {
+		    IDIO_ASSERT (ck);
+		}
+		break;
+	    default:
+		/* inconceivable! */
+		idio_error_printf (IDIO_C_FUNC_LOCATION (), "type: unexpected object type %#x", ck);
+
+		/* notreached */
+		return idio_S_notreached;
+	    }
+
+	} else {
+	    IDIO_ASSERT (ck);
+	}
+    }
+
+    return ck;
+}
+
 IDIO idio_hash_copy (IDIO orig, int depth)
 {
     IDIO_ASSERT (orig);
@@ -218,7 +269,7 @@ IDIO idio_hash_copy (IDIO orig, int depth)
 
     idio_hi_t i;
     for (i = 0; i < IDIO_HASH_SIZE (orig); i++) {
-	IDIO k = IDIO_HASH_HE_KEY (orig, i);
+	IDIO k = idio_hash_he_key (orig, i);
 	if (! k) {
 	    char em[BUFSIZ];
 	    sprintf (em, "hash-copy: key #%zd is NULL", i);
@@ -252,7 +303,7 @@ IDIO idio_hash_merge (IDIO ht1, IDIO ht2)
 
     idio_hi_t i;
     for (i = 0; i < IDIO_HASH_SIZE (ht2); i++) {
-	IDIO k = IDIO_HASH_HE_KEY (ht2, i);
+	IDIO k = idio_hash_he_key (ht2, i);
 	if (! k) {
 	    char em[BUFSIZ];
 	    sprintf (em, "hash-merge: key #%zd is NULL", i);
@@ -287,7 +338,7 @@ void idio_free_hash (IDIO h)
     if (IDIO_HASH_FLAGS (h) & IDIO_HASH_FLAG_STRING_KEYS) {
 	idio_hi_t i;
 	for (i = 0; i < IDIO_HASH_SIZE (h); i++) {
-	    void *kv = IDIO_HASH_HE_KEY (h, i);
+	    void *kv = idio_hash_he_key (h, i);
 	    if (idio_S_nil != kv) {
 		free (kv);
 	    }
@@ -307,7 +358,7 @@ idio_hi_t idio_hash_hcount (IDIO h)
 
     idio_hi_t i;
     for (i = 0 ; i < IDIO_HASH_SIZE (h); i++) {
-	if (idio_S_nil != IDIO_HASH_HE_KEY (h, i)) {
+	if (idio_S_nil != idio_hash_he_key (h, i)) {
 	    count++;
 	}
     }
@@ -696,7 +747,7 @@ void idio_hash_verify_chain (IDIO h, void *kv, int reqd)
 	size_t i = 0;
 	int seen = 0;
 	while (nhv < IDIO_HASH_SIZE (h)) {
-	    void *nkv = IDIO_HASH_HE_KEY (h, nhv);
+	    void *nkv = idio_hash_he_key (h, nhv);
 	    if (idio_S_nil != nkv) {
 		idio_hi_t hv = idio_hash_value (h, nkv);
 		if (hv != ohv) {
@@ -737,7 +788,7 @@ void idio_hash_verify_all_keys (IDIO h)
     /* idio_dump (h, 1); */
     idio_hi_t hv = 0;
     for (hv = 0; hv < IDIO_HASH_SIZE (h); hv++) {
-	void *kv = IDIO_HASH_HE_KEY (h, hv);
+	void *kv = idio_hash_he_key (h, hv);
 	if (idio_S_nil != kv) {
 	    IDIO_FPRINTF (stderr, "idio_hash_verify_all_keys: hv=%zd %p ", hv, kv);
 	    if (IDIO_HASH_FLAGS (h) & IDIO_HASH_FLAG_STRING_KEYS) {
@@ -775,13 +826,13 @@ idio_hi_t idio_hash_find_free_slot (IDIO h)
      */
     idio_hi_t i;
     for (i = IDIO_HASH_SIZE (h) - 1; i > 0 ; i--) {
-	if (idio_S_nil == IDIO_HASH_HE_KEY (h, i)) {
+	if (idio_S_nil == idio_hash_he_key (h, i)) {
 	    return i;
 	}
     }
 
     /* i == 0 */
-    if (idio_S_nil == IDIO_HASH_HE_KEY (h, i)) {
+    if (idio_S_nil == idio_hash_he_key (h, i)) {
 	return i;
     }
 
@@ -812,7 +863,7 @@ IDIO idio_hash_put (IDIO h, void *kv, IDIO v)
     IDIO_FPRINTF (stderr, "idio_hash_put: kv=%10p hi=%" PRIuPTR " nhi=%" PRIuPTR "\n", kv, hi, IDIO_HASH_HE_NEXT (h, hi));
 
     /* current object @hi */
-    IDIO ck = IDIO_HASH_HE_KEY (h, hi);
+    IDIO ck = idio_hash_he_key (h, hi);
 
     if (idio_S_nil == ck) {
 	IDIO_HASH_HE_KEY (h, hi) = kv;
@@ -875,7 +926,7 @@ IDIO idio_hash_put (IDIO h, void *kv, IDIO v)
 	IDIO_FPRINTF (stderr, "idio_hash_put: kv=%10p insert fhi=%" PRIuPTR " = HE (hi=%" PRIuPTR ")\n", kv, fhi, hi);
 
 	/* shift ck */
-	IDIO_HASH_HE_KEY (h, fhi) = IDIO_HASH_HE_KEY (h, hi);
+	IDIO_HASH_HE_KEY (h, fhi) = idio_hash_he_key (h, hi);
 	IDIO_HASH_HE_VALUE (h, fhi) = IDIO_HASH_HE_VALUE (h, hi);
 	IDIO_HASH_HE_NEXT (h, fhi) = IDIO_HASH_HE_NEXT (h, hi);
 
@@ -947,26 +998,15 @@ idio_hi_t idio_hash_hv_follow_chain (IDIO h, void *kv)
     }
 
     idio_hi_t chi = hv;
-    IDIO ck = IDIO_HASH_HE_KEY (h, chi);
+    IDIO ck = idio_hash_he_key (h, chi);
 
     IDIO_FPRINTF (stderr, "idio_hash_hv_follow_chain: kv=%10p chi=%" PRIuPTR " ck=%10p nhi=%" PRIuPTR "\n", kv, chi, ck, IDIO_HASH_HE_NEXT (h, chi));
-    if (idio_S_nil != ck) {
-	if (IDIO_HASH_FLAGS (h) & IDIO_HASH_FLAG_STRING_KEYS) {
-	    IDIO_FPRINTF (stderr, "SK ck=%s\n", (char *) ck);
-	} else {
-	    IDIO_ASSERT (ck);
-	}
-    }
 
     while (! idio_hash_equal (h, ck, kv) &&
 	   IDIO_HASH_HE_NEXT (h, chi) < IDIO_HASH_SIZE (h)) {
 	chi = IDIO_HASH_HE_NEXT (h, chi);
-	ck = IDIO_HASH_HE_KEY (h, chi);
+	ck = idio_hash_he_key (h, chi);
 	IDIO_FPRINTF (stderr, "idio_hash_hv_follow_chain: kv=%10p chi=%" PRIuPTR " ck=%10p nhi=%" PRIuPTR "\n", kv, chi, ck, IDIO_HASH_HE_NEXT (h, chi));
-	if (idio_S_nil != ck &&
-	    IDIO_HASH_FLAGS (h) & IDIO_HASH_FLAG_STRING_KEYS) {
-	    IDIO_FPRINTF (stderr, "idio_hash_hv_follow_chain: SK ck=%s\n", (char *) ck);
-	}
     }
 
     if (! idio_hash_equal (h, ck, kv)) {
@@ -1026,9 +1066,9 @@ IDIO idio_hash_exists (IDIO h, void *kv)
     return kv;
 
     /*
-    IDIO_C_ASSERT (k == IDIO_HASH_HE_KEY (h, hv));
+    IDIO_C_ASSERT (k == idio_hash_he_key (h, hv));
 
-    return IDIO_HASH_HE_KEY (h, hv);
+    return idio_hash_he_key (h, hv);
     */
 }
 
@@ -1084,14 +1124,14 @@ int idio_hash_delete (IDIO h, void *kv)
 
     IDIO_FPRINTF (stderr, "idio_hash_delete: %10p starting @%" PRIuPTR "\n", kv, hv);
 
-    idio_hi_t phv = 0;
+    idio_hi_t phv = IDIO_HASH_SIZE (h) + 1;
     idio_hi_t chv = hv;
-    IDIO ck = IDIO_HASH_HE_KEY (h, chv);
+    IDIO ck = idio_hash_he_key (h, chv);
     while (! idio_hash_equal (h, ck, kv) &&
 	   IDIO_HASH_HE_NEXT (h, chv) < IDIO_HASH_SIZE (h)) {
 	phv = chv;
 	chv = IDIO_HASH_HE_NEXT (h, chv);
-	ck = IDIO_HASH_HE_KEY (h, chv);
+	ck = idio_hash_he_key (h, chv);
 	IDIO_FPRINTF (stderr, "idio_hash_delete: %10p stepped to %" PRIuPTR " -> @%" PRIuPTR " -> %" PRIuPTR "\n", ck, phv, chv, IDIO_HASH_HE_NEXT (h, chv));
     }
 
@@ -1108,11 +1148,11 @@ int idio_hash_delete (IDIO h, void *kv)
     idio_hi_t nhv = IDIO_HASH_HE_NEXT (h, chv);
     IDIO_FPRINTF (stderr, "idio_hash_delete: %10p deleting from phv=%" PRIuPTR " -> chv=%" PRIuPTR " -> nhv=%" PRIuPTR "\n", ck, phv, chv, nhv);
 
-    if (0 == phv) {
+    if ((IDIO_HASH_SIZE (h) + 1) == phv) {
 	/* head of chain */
 	if (nhv < IDIO_HASH_SIZE (h)) {
 	    IDIO_FPRINTF (stderr, "idio_hash_delete: %10p head of chain: chv=%" PRIuPTR " <- nhv=%" PRIuPTR "\n", ck, chv, nhv);
-	    IDIO_HASH_HE_KEY (h, chv) = IDIO_HASH_HE_KEY (h, nhv);
+	    IDIO_HASH_HE_KEY (h, chv) = idio_hash_he_key (h, nhv);
 	    IDIO_HASH_HE_VALUE (h, chv) = IDIO_HASH_HE_VALUE (h, nhv);
 	    IDIO_HASH_HE_NEXT (h, chv) = IDIO_HASH_HE_NEXT (h, nhv);
 
@@ -1150,7 +1190,7 @@ IDIO idio_hash_keys_to_list (IDIO h)
 
     idio_hi_t i;
     for (i = 0; i < IDIO_HASH_SIZE (h); i++) {
-	IDIO k = IDIO_HASH_HE_KEY (h, i);
+	IDIO k = idio_hash_he_key (h, i);
 	if (! k) {
 	    char em[BUFSIZ];
 	    sprintf (em, "key #%zd is NULL", i);
@@ -1180,7 +1220,7 @@ IDIO idio_hash_values_to_list (IDIO h)
 
     idio_hi_t i;
     for (i = 0; i < IDIO_HASH_SIZE (h); i++) {
-	IDIO k = IDIO_HASH_HE_KEY (h, i);
+	IDIO k = idio_hash_he_key (h, i);
 	if (! k) {
 	    char em[BUFSIZ];
 	    sprintf (em, "hash-values-to-list: key #%zd is NULL", i);
@@ -1545,7 +1585,7 @@ IDIO_DEFINE_PRIMITIVE2 ("hash-walk", hash_walk, (IDIO ht, IDIO func))
 
     idio_hi_t i;
     for (i = 0; i < IDIO_HASH_SIZE (ht); i++) {
-	IDIO k = IDIO_HASH_HE_KEY (ht, i);
+	IDIO k = idio_hash_he_key (ht, i);
 	if (! k) {
 	    char em[BUFSIZ];
 	    sprintf (em, "hash-walk: key #%zd is NULL", i);
@@ -1571,7 +1611,7 @@ IDIO_DEFINE_PRIMITIVE3 ("hash-fold", hash_fold, (IDIO ht, IDIO func, IDIO val))
 
     idio_hi_t i;
     for (i = 0; i < IDIO_HASH_SIZE (ht); i++) {
-	IDIO k = IDIO_HASH_HE_KEY (ht, i);
+	IDIO k = idio_hash_he_key (ht, i);
 	if (! k) {
 	    char em[BUFSIZ];
 	    sprintf (em, "hash-fold: key #%zd is NULL", i);
