@@ -62,14 +62,7 @@ static IDIO idio_evaluator_extend (IDIO name, IDIO primdata, IDIO module, const 
 	     * It should catch any developer foobars, though.
 	     */
 
-	    IDIO lo = idio_struct_instance (idio_lexobj_type,
-					    idio_pair (idio_string_C (cpp__FILE__),
-					    idio_pair (idio_integer (cpp__LINE__),
-					    idio_pair (idio_integer (0),
-					    idio_pair (name,
-					    idio_S_nil)))));
-
-	    idio_meaning_error_static_redefine (lo, IDIO_C_FUNC_LOCATION (), "evaluator value change", name, pd, primdata);
+	    idio_meaning_error_static_redefine (name, IDIO_C_FUNC_LOCATION (), "evaluator value change", name, pd, primdata);
 	}
 
 	return fvi;
@@ -180,7 +173,7 @@ IDIO_DEFINE_PRIMITIVE1 ("let", let, (IDIO e))
     size_t nargs = idio_list_length (e);
 
     if (nargs < 3) {
-	idio_meaning_error_static_arity (idio_S_nil, IDIO_C_FUNC_LOCATION (), "let: wrong arguments", e);
+	idio_meaning_error_static_arity (e, IDIO_C_FUNC_LOCATION (), "let: wrong arguments", e);
 	return idio_S_unspec;
     }
 
@@ -259,7 +252,7 @@ IDIO_DEFINE_PRIMITIVE1 ("let*", lets, (IDIO e))
     size_t nargs = idio_list_length (e);
 
     if (nargs < 3) {
-	idio_meaning_error_static_arity (idio_S_nil, IDIO_C_FUNC_LOCATION (), "let*: wrong arguments", e);
+	idio_meaning_error_static_arity (e, IDIO_C_FUNC_LOCATION (), "let*: wrong arguments", e);
     }
 
     /* idio_debug ("let*: in %s\n", e); */
@@ -319,7 +312,7 @@ IDIO_DEFINE_PRIMITIVE1 ("letrec", letrec, (IDIO e))
     size_t nargs = idio_list_length (e);
 
     if (nargs < 3) {
-	idio_meaning_error_static_arity (idio_S_nil, IDIO_C_FUNC_LOCATION (), "letrec: wrong arguments", e);
+	idio_meaning_error_static_arity (e, IDIO_C_FUNC_LOCATION (), "letrec: wrong arguments", e);
 	return idio_S_unspec;
     }
 

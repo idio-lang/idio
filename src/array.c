@@ -216,6 +216,7 @@ void idio_array_resize (IDIO a)
 idio_ai_t idio_array_size (IDIO a)
 {
     IDIO_ASSERT (a);
+
     IDIO_TYPE_ASSERT (array, a);
 
     return IDIO_ARRAY_USIZE (a);

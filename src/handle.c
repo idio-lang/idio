@@ -837,8 +837,8 @@ IDIO_DEFINE_PRIMITIVE0V ("read", read, (IDIO args))
 
     IDIO h = idio_handle_or_current (idio_list_head (args), IDIO_HANDLE_FLAG_READ);
 
-    IDIO lo = idio_read (h);
-    IDIO expr = idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_EXPR);
+    IDIO expr = idio_read (h);
+
     return expr;
 }
 
@@ -1104,20 +1104,19 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
     struct timeval t0;
     gettimeofday (&t0, NULL);
 
-    IDIO los = idio_S_nil;
+    IDIO es = idio_S_nil;
 
     for (;;) {
-	IDIO lo = (*reader) (h);
-	IDIO expr = idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_EXPR);
+	IDIO expr = (*reader) (h);
 	
 	if (idio_S_eof == expr) {
 	    break;
 	} else {
-	    los = idio_pair (lo, los);
+	    es = idio_pair (expr, es);
 	}
     }
 
-    los = idio_list_reverse (los);
+    es = idio_list_reverse (es);
 
     IDIO_HANDLE_M_CLOSE (h) (h);
 
@@ -1137,9 +1136,9 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
     }
 
     IDIO ms = idio_S_nil;
-    while (los != idio_S_nil) {
-	ms = idio_pair ((*evaluator) (IDIO_PAIR_H (los), cs), ms);
-	los = IDIO_PAIR_T (los);
+    while (es != idio_S_nil) {
+	ms = idio_pair ((*evaluator) (IDIO_PAIR_H (es), cs), ms);
+	es = IDIO_PAIR_T (es);
     }
     ms = idio_list_reverse (ms);
     /* idio_debug ("load-handle: ms %s\n", ms);    */

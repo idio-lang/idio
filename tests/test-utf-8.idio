@@ -9,3 +9,14 @@ display* "str.0 =" str.0
 display* "str.1 =" str.1
 display* "str.2 =" str.2
 display* "str.3 =" str.3
+
+;; https://support.google.com/youtube/thread/19190975?hl=en
+;; youtube automatically delete "communist bandits" 共匪 in all comments now?
+str = "共匪"
+
+display* "str[" (string-length str) "] =" str
+
+display* "str.0 =" str.0
+display* "str.1 =" str.1
+display* "str.2 =" str.2
+display* "str.3 =" str.3

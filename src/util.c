@@ -2289,7 +2289,7 @@ void idio_dump (IDIO o, int detail)
 		if (detail > 1) {
 		    IDIO_FPRINTF (stderr, "-> %10p ", o->next);
 		}
-		IDIO_FPRINTF (stderr, "t=%2d/%4.4s f=%2x gcf=%2x ", o->type, idio_type2string (o), o->flags, o->gc_flags);
+		IDIO_FPRINTF (stderr, "t=%2d/%4.4s f=%#02x gcf=%#02x ", o->type, idio_type2string (o), o->flags, o->gc_flags);
 	    }
 
 	    switch (o->type) {

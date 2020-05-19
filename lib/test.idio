@@ -83,7 +83,7 @@ map (function (d) {
 if (null? testdir) {
   edisplay* "Cannot find 'tests' subdir on IDIOLIB" IDIOLIB
 } {
-  IDIOLIB = string-append IDIOLIB ":" testdir ":" (string-append testdir "/read-errors")
+  IDIOLIB = string-append IDIOLIB ":" testdir
 }
 
 display* "This is test.idio using IDIOLIB" IDIOLIB

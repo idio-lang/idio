@@ -310,7 +310,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
     IDIO_TYPE_ASSERT (array, cs);
     IDIO_TYPE_ASSERT (pair, m);
 
-    /* idio_debug ("compile: %s\n", m);  */
+    /* idio_debug ("compile: %s\n", m); */
 
     if (! idio_isa_pair (m)) {
 	idio_error_param_type ("pair", IDIO_LIST1 (m), IDIO_C_FUNC_LOCATION ());

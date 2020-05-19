@@ -24,6 +24,8 @@
 #define READ_H
 
 extern IDIO idio_lexobj_type;
+extern IDIO idio_src_properties;
+
 /*
  * Indexes into structures for direct references
  *

@@ -23,6 +23,7 @@
 #include "idio.h"
 
 IDIO idio_lexobj_type;
+IDIO idio_src_properties;
 
 #define IDIO_CHAR_SPACE		' '
 #define IDIO_CHAR_TAB		'\t'
@@ -588,7 +589,8 @@ static IDIO idio_read_list (IDIO handle, IDIO list_lo, IDIO opendel, char *ic, i
 
 		return idio_S_notreached;
 	    } else if (closedel == del) {
-		return idio_improper_list_reverse (r, pt);
+		r = idio_improper_list_reverse (r, pt);
+		return r;
 	    } else {
 		/*
 		 * Test case: read-errors/imp-list-many-after.idio
@@ -648,7 +650,8 @@ static IDIO idio_read_list (IDIO handle, IDIO list_lo, IDIO opendel, char *ic, i
 
 	    if (closedel == e) {
 		r = idio_list_reverse (r);
-		return idio_operator_expand (r, 0);
+		r = idio_operator_expand (r, 0);
+		return r;
 	    }
 
 	    /*
@@ -1552,6 +1555,9 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl
 		{
 		    IDIO l = idio_read_list (handle, lo, idio_T_lparen, ic, IDIO_LIST_PAREN (depth) + 1);
 		    idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, l);
+		    if (idio_S_nil != l) {
+			idio_hash_put (idio_src_properties, l, lo);
+		    }
 		    return lo;
 		}
 	    case IDIO_CHAR_RPAREN:
@@ -2049,10 +2055,14 @@ IDIO idio_read (IDIO handle)
      */
     IDIO line_p = idio_read_expr_line (handle, idio_T_eol, idio_default_interpolation_chars, 0);
     IDIO line_lo = IDIO_PAIR_H (line_p);
-    
+    IDIO expr = idio_struct_instance_ref_direct (line_lo, IDIO_LEXOBJ_EXPR);
+    if (idio_S_nil != expr) {
+	idio_hash_put (idio_src_properties, expr, line_lo);
+    }
+
     idio_gc_resume ("idio_read");
 
-    return line_lo;
+    return expr;
 }
 
 /*
@@ -2164,6 +2174,11 @@ void idio_init_read ()
 					 idio_pair (idio_symbols_C_intern ("expr"),
 					 idio_S_nil)))));
     idio_module_set_symbol_value (name, idio_lexobj_type, idio_Idio_module);
+
+    idio_src_properties = IDIO_HASH_EQP (8192);
+    IDIO_HASH_FLAGS (idio_src_properties) |= IDIO_HASH_FLAG_WEAK_KEYS;
+    name = idio_symbols_C_intern ("%idio-src-properties");
+    idio_module_set_symbol_value (name, idio_src_properties, idio_Idio_module);
 }
 
 void idio_read_add_primitives ()
