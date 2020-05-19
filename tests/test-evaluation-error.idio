@@ -35,8 +35,9 @@ evaluation-error-load := {
 
 ;evaluation-error-load "evaluation-errors/toplevel-extend-kind.idio" "EOF in list"
 
-evaluation-error-load "evaluation-errors/rewrite-cond-isa-pair-first.idio" "cond: clause is not a pair"
-evaluation-error-load "evaluation-errors/rewrite-cond-isa-pair-after.idio" "cond: clause is not a pair"
+evaluation-error-load "evaluation-errors/rewrite-cond-isa-pair-only.idio" "cond: clause is not a pair (in/after)"
+evaluation-error-load "evaluation-errors/rewrite-cond-isa-pair-before.idio" "cond: clause is not a pair (before)"
+evaluation-error-load "evaluation-errors/rewrite-cond-isa-pair-after.idio" "cond: clause is not a pair (in/after)"
 evaluation-error-load "evaluation-errors/rewrite-cond-else-not-last.idio" "cond: else not in last clause"
 evaluation-error-load "evaluation-errors/rewrite-cond-apply-two-args.idio" "cond: invalid => clause"
 evaluation-error-load "evaluation-errors/rewrite-cond-apply-four-args.idio" "cond: invalid => clause"
@@ -103,4 +104,4 @@ evaluation-error-load "evaluation-errors/include-nil.idio" "include: no argument
 evaluation-error-load "evaluation-errors/module-nil.idio" "module: no argument"
 
 ;; all done?
-test Tests (evaluation-error0 + 61)
+test Tests (evaluation-error0 + 62)

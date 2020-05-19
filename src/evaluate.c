@@ -1030,8 +1030,9 @@ static IDIO idio_meaning_alternative (IDIO src, IDIO e1, IDIO e2, IDIO e3, IDIO 
  * validate & rewrite the cond clauses, ``clauses``, noting the
  * special cases of ``=>``, ``else``
  */
-static IDIO idio_meaning_rewrite_cond (IDIO src, IDIO clauses)
+static IDIO idio_meaning_rewrite_cond (IDIO prev, IDIO src, IDIO clauses)
 {
+    IDIO_ASSERT (prev);
     IDIO_ASSERT (src);
     IDIO_ASSERT (clauses);
 
@@ -1050,13 +1051,20 @@ static IDIO idio_meaning_rewrite_cond (IDIO src, IDIO clauses)
     } else if (! idio_isa_pair (IDIO_PAIR_H (clauses))) {
 	/*
 	 * Test Cases:
-	 * evaluation-errors/rewrite-cond-isa-pair-first.idio
+	 * evaluation-errors/rewrite-cond-isa-pair-only.idio
+	 * evaluation-errors/rewrite-cond-isa-pair-before.idio
 	 * evaluation-errors/rewrite-cond-isa-pair-after.idio
 	 *
 	 * cond #t
+	 * cond #t (#f 1)
 	 * cond (#f 1) #t
 	 */
-	idio_meaning_evaluation_error_param_type (src, IDIO_C_FUNC_LOCATION (), "cond: clause is not a pair", clauses);
+	if (idio_isa_pair (IDIO_PAIR_T (clauses)) &&
+	    idio_isa_pair (IDIO_PAIR_HT (clauses))) {
+	    idio_meaning_evaluation_error_param_type (IDIO_PAIR_HT (clauses), IDIO_C_FUNC_LOCATION (), "cond: clause is not a pair (before)", clauses);
+	} else {
+	    idio_meaning_evaluation_error_param_type (prev, IDIO_C_FUNC_LOCATION (), "cond: clause is not a pair (in/after)", clauses);
+	}
 
 	return idio_S_notreached;
     } else if (idio_S_else == IDIO_PAIR_HH (clauses)) {
@@ -1068,7 +1076,7 @@ static IDIO idio_meaning_rewrite_cond (IDIO src, IDIO clauses)
 	     *
 	     * cond (else 1) (#t 2)
 	     */
-	    idio_meaning_evaluation_error (src, IDIO_C_FUNC_LOCATION (), "cond: else not in last clause", clauses);
+	    idio_meaning_evaluation_error (IDIO_PAIR_H (clauses), IDIO_C_FUNC_LOCATION (), "cond: else not in last clause", clauses);
 
 	    return idio_S_notreached;
 	}
@@ -1115,7 +1123,7 @@ static IDIO idio_meaning_rewrite_cond (IDIO src, IDIO clauses)
 					   gs,
 					   IDIO_LIST2 (IDIO_PAIR_HTTH (clauses),
 						       gs),
-					   idio_meaning_rewrite_cond (IDIO_PAIR_T (clauses), IDIO_PAIR_T (clauses))));
+					   idio_meaning_rewrite_cond (IDIO_PAIR_H (clauses), IDIO_PAIR_T (clauses), IDIO_PAIR_T (clauses))));
 	} else {
 	    /*
 	     * Test Case: evaluation-errors/rewrite-cond-apply-two-args.idio evaluation-errors/rewrite-cond-apply-four-args.idio
@@ -1123,7 +1131,11 @@ static IDIO idio_meaning_rewrite_cond (IDIO src, IDIO clauses)
 	     * cond (1 =>)
 	     * cond (1 => a b)
 	     */
-	    idio_meaning_evaluation_error (src, IDIO_C_FUNC_LOCATION (), "cond: invalid => clause", clauses);
+	    if (idio_isa_pair (src)) {
+		idio_meaning_evaluation_error (IDIO_PAIR_H (src), IDIO_C_FUNC_LOCATION (), "cond: invalid => clause", clauses);
+	    } else {
+		idio_meaning_evaluation_error (src, IDIO_C_FUNC_LOCATION (), "cond: invalid => clause", clauses);
+	    }
 
 	    return idio_S_notreached;
 	}
@@ -1138,12 +1150,12 @@ static IDIO idio_meaning_rewrite_cond (IDIO src, IDIO clauses)
 			   IDIO_LIST1 (IDIO_LIST2 (gs, IDIO_PAIR_HH (clauses))),
 			   IDIO_LIST3 (idio_S_or,
 				       gs,
-				       idio_meaning_rewrite_cond (IDIO_PAIR_T (clauses), IDIO_PAIR_T (clauses))));
+				       idio_meaning_rewrite_cond (IDIO_PAIR_H (clauses), IDIO_PAIR_T (clauses), IDIO_PAIR_T (clauses))));
     } else {
 	return IDIO_LIST4 (idio_S_if,
 			   IDIO_PAIR_HH (clauses),
 			   idio_list_append2 (IDIO_LIST1 (idio_S_begin), IDIO_PAIR_TH (clauses)),
-			   idio_meaning_rewrite_cond (IDIO_PAIR_T (clauses), IDIO_PAIR_T (clauses)));
+			   idio_meaning_rewrite_cond (IDIO_PAIR_H (clauses), IDIO_PAIR_T (clauses), IDIO_PAIR_T (clauses)));
     }
 }
 
@@ -1339,6 +1351,7 @@ static IDIO idio_meaning_define_macro (IDIO src, IDIO name, IDIO e, IDIO nametre
 
     /* idio_debug ("meaning-define-macro:\nname=%s\n", name); */
     /* idio_debug ("e=%s\n", e); */
+    /* idio_debug ("src=%s\n", src); */
 
     /*
      * (define-macro (func arg) ...) => (define-macro func (function (arg) ...))
@@ -2143,7 +2156,7 @@ static IDIO idio_meaning_rewrite_body (IDIO src, IDIO e)
 	    /* :+ or define -> letrec */
 
 	    IDIO body = idio_list_append2 (IDIO_LIST1 (cur), IDIO_PAIR_T (l));
-	    r = idio_pair (idio_meaning_rewrite_body_letrec (body, body), r);
+	    r = idio_pair (idio_meaning_rewrite_body_letrec (l, body), r);
 	    break;
 	} else if (idio_isa_pair (cur) &&
 		   idio_S_colon_eq == IDIO_PAIR_H (cur)) {
@@ -2223,7 +2236,7 @@ static IDIO idio_meaning_rewrite_body (IDIO src, IDIO e)
 	     *   }
 	     * }
 	     */
-	    idio_meaning_evaluation_error (src, IDIO_C_FUNC_LOCATION (), "internal define-macro", cur);
+	    idio_meaning_evaluation_error (cur, IDIO_C_FUNC_LOCATION (), "internal define-macro", cur);
 
 	    return idio_S_notreached;
 	} else {
@@ -2247,6 +2260,7 @@ static IDIO idio_meaning_rewrite_body_letrec (IDIO src, IDIO e)
     IDIO defs = idio_S_nil;
 
     /* idio_debug ("rewrite-body-letrec: %s\n", l); */
+    /* idio_debug ("rewrite-body-letrec: src=%s\n", src); */
 
     for (;;) {
 	IDIO cur = idio_S_unspec;
@@ -2260,7 +2274,11 @@ static IDIO idio_meaning_rewrite_body_letrec (IDIO src, IDIO e)
 	     *   }
 	     * }
 	     */
-	    idio_meaning_evaluation_error (src, IDIO_C_FUNC_LOCATION (), "letrec: empty body", l);
+	    if (idio_isa_pair (src)) {
+		idio_meaning_evaluation_error (IDIO_PAIR_H (src), IDIO_C_FUNC_LOCATION (), "letrec: empty body", l);
+	    } else {
+		idio_meaning_evaluation_error (src, IDIO_C_FUNC_LOCATION (), "letrec: empty body", l);
+	    }
 
 	    return idio_S_notreached;
 	} else if (idio_isa_pair (l) &&
@@ -2303,7 +2321,7 @@ static IDIO idio_meaning_rewrite_body_letrec (IDIO src, IDIO e)
 	     *
 	     * XXX I can't get this to trigger the error
 	     */
-	    idio_meaning_evaluation_error (src, IDIO_C_FUNC_LOCATION (), "letrec: internal define-macro", cur);
+	    idio_meaning_evaluation_error (cur, IDIO_C_FUNC_LOCATION (), "letrec: internal define-macro", cur);
 
 	    return idio_S_notreached;
 	} else {
@@ -3404,7 +3422,7 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO cs, I
 		    }
 		}
 
-		IDIO etc = idio_meaning_rewrite_cond (et, et);
+		IDIO etc = idio_meaning_rewrite_cond (e, et, et);
 
 		IDIO c = idio_meaning (etc, etc, nametree, flags, cs, cm);
 
@@ -3716,7 +3734,7 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO cs, I
 	     * { ... }
 	     */
 	    if (idio_isa_pair (et)) {
-		return idio_meaning_block (et, et, nametree, flags, cs, cm);
+		return idio_meaning_block (src, et, nametree, flags, cs, cm);
 	    } else {
 		return idio_meaning (idio_S_void, idio_S_void, nametree, flags, cs, cm);
 	    }
@@ -3957,7 +3975,7 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO cs, I
 		}
 	    }
 
-	    return idio_meaning_application (eh, eh, et, nametree, flags, cs, cm);
+	    return idio_meaning_application (e, eh, et, nametree, flags, cs, cm);
 	}
     } else {
 	switch ((intptr_t) e & IDIO_TYPE_MASK) {
