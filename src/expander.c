@@ -161,8 +161,8 @@ IDIO idio_evaluate_expander_source (IDIO x, IDIO e)
  *
  * =>
  *
- * 1. (apply (lambda (map ph bindings) body) (map pht bindings))
- * 2. (apply (letrec ((name (lambda (map ph bindings) body))) (map pht bindings)))
+ * 1. (apply (function (map ph bindings) body) (map pht bindings))
+ * 2. (apply (letrec ((name (function (map ph bindings) body))) (map pht bindings)))
  */
 
 IDIO_DEFINE_PRIMITIVE1 ("let", let, (IDIO e))
@@ -170,14 +170,22 @@ IDIO_DEFINE_PRIMITIVE1 ("let", let, (IDIO e))
     IDIO_ASSERT (e);
     IDIO_TYPE_ASSERT (list, e);
 
+    /*
+     * e should be (let bindings body)
+     */
     size_t nargs = idio_list_length (e);
 
     if (nargs < 3) {
-	idio_meaning_error_static_arity (e, IDIO_C_FUNC_LOCATION (), "let: wrong arguments", e);
-	return idio_S_unspec;
+	idio_meaning_error_static_arity (e, IDIO_C_FUNC_LOCATION (), "(let bindings body)", e);
+
+	return idio_S_notreached;
     }
 
+    IDIO src = e;
     e = IDIO_PAIR_T (e);
+    /*
+     * e is now (bindings body)
+     */
 
     IDIO bindings = IDIO_PAIR_H (e);
     IDIO vars = idio_S_nil;
@@ -191,46 +199,106 @@ IDIO_DEFINE_PRIMITIVE1 ("let", let, (IDIO e))
 
     while (idio_S_nil != bindings) {
 	IDIO binding = IDIO_PAIR_H (bindings);
-	IDIO_TYPE_ASSERT (pair, bindings);
-	vars = idio_pair (IDIO_PAIR_H (binding), vars);
-	vals = idio_pair (IDIO_PAIR_HT (binding), vals);
+
+	IDIO value_expr = idio_S_undef;
+
+	if (idio_isa_pair (binding)) {
+	    vars = idio_pair (IDIO_PAIR_H (binding), vars);
+	    if (idio_isa_pair (IDIO_PAIR_T (binding))) {
+		value_expr = IDIO_PAIR_HT (binding);
+		idio_meaning_copy_src_properties (src, value_expr);
+	    }
+	    vals = idio_pair (value_expr, vals);
+	} else if (idio_isa_symbol (binding)) {
+	    vars = idio_pair (binding, vars);
+	    vals = idio_pair (value_expr, vals);
+	} else {
+	    idio_meaning_evaluation_error_param_type (src, IDIO_C_FUNC_LOCATION (), "let: binding pair/symbol", binding);
+	}
 
 	bindings = IDIO_PAIR_T (bindings);
     }
 
+    e = IDIO_PAIR_T (e);
     /*
      * e is currently a list, either (body) or (body ...)
      *
-     * body could be a single expression in which case we want the
-     * head of e (otherwise we will attempt to apply the result of
-     * body) or multiple expressions in which case we want to prefix e
-     * with begin
+     * body could be a single expression in which case we want the ph
+     * of e (otherwise we will attempt to apply the result of body) or
+     * multiple expressions in which case we want to prefix e with
+     * begin
      *
      * it could be nil too...
      */
 
-    if (idio_S_nil != e) {
-	e = IDIO_PAIR_T (e);
-	if (idio_S_nil == IDIO_PAIR_T (e)) {
-	    e = IDIO_PAIR_H (e);
-	} else {
-	    e = idio_list_append2 (IDIO_LIST1 (idio_S_begin), e);
-	}
+    if (idio_S_nil == IDIO_PAIR_T (e)) {
+	e = IDIO_PAIR_H (e);
+    } else {
+	IDIO e2 = idio_list_append2 (IDIO_LIST1 (idio_S_begin), e);
+	idio_meaning_copy_src_properties (e, e2);
+	e = e2;
     }
 
     IDIO fn;
 
     if (idio_S_nil == name) {
-	fn = IDIO_LIST3 (idio_S_lambda, idio_list_reverse (vars), e);
+	/*
+	 * (let bindings body)
+	 *
+	 * This expression can be transformed into the implied
+	 * execution of an anonymous function.  Which means we only
+	 * need to supposrt the execution of functions to create local
+	 * variables.
+	 *
+	 * The function is {body} with arguments that are the ph's of
+	 * bindings and then the application of that function passes
+	 * the pt's of bindings.
+	 *
+	 * (let ((a1 v1) (a2 v2)) ...)
+	 *
+	 * becomes
+	 *
+	 * ((function (a1 a2) ...) v1 v2)
+	 */
+	fn = IDIO_LIST3 (idio_S_function, idio_list_reverse (vars), e);
+	idio_meaning_copy_src_properties (src, fn);
 
-	return idio_list_append2 (IDIO_LIST1 (fn), idio_list_reverse (vals));
+	IDIO appl = idio_list_append2 (IDIO_LIST1 (fn), idio_list_reverse (vals));
+	idio_meaning_copy_src_properties (src, appl);
+
+	return appl;
     } else {
-	fn = IDIO_LIST3 (idio_S_letrec,
-			 IDIO_LIST1 (IDIO_LIST2 (name,
-						 IDIO_LIST3 (idio_S_lambda, idio_list_reverse (vars), e))),
-			 idio_list_append2 (IDIO_LIST1 (name), idio_list_reverse (vals)));
+	/*
+	 * (let name bindings body)
+	 *
+	 * where {body} is massaged into a function called {name}
+	 * whose arguments are the ph's of {bindings} and the function
+	 * is initially called with the pt's of {bindings}
+	 *
+	 * The {body} can call {name}.  It is clearly(?) a {letrec}
+	 * construct and is used to quickly define and invoke loops.
+	 *
+	 * (let loop ((a1 v1) (a2 v2)) ...)
+	 *
+	 * becomes
+	 *
+	 * (letrec ((loop (function (a1 a2) ...)))
+	 *   (loop v1 v2))
+	 *
+	 * Those Schemers, eh?
+	 */
+	fn = IDIO_LIST3 (idio_S_function, idio_list_reverse (vars), e);
+	idio_meaning_copy_src_properties (src, fn);
 
-	return fn;
+	IDIO appl = idio_list_append2 (IDIO_LIST1 (name), idio_list_reverse (vals));
+	idio_meaning_copy_src_properties (src, appl);
+
+	IDIO letrec = IDIO_LIST3 (idio_S_letrec,
+				  IDIO_LIST1 (IDIO_LIST2 (name, fn)),
+				  appl);
+	idio_meaning_copy_src_properties (src, letrec);
+
+	return letrec;
     }
 }
 
@@ -241,7 +309,7 @@ IDIO_DEFINE_PRIMITIVE1 ("let", let, (IDIO e))
  *
  * =>
  *
- * (apply (lambda (map ph bindings) body) (map pt bindings))
+ * (apply (function (map ph bindings) body) (map pt bindings))
  */
 
 IDIO_DEFINE_PRIMITIVE1 ("let*", lets, (IDIO e))
@@ -249,6 +317,9 @@ IDIO_DEFINE_PRIMITIVE1 ("let*", lets, (IDIO e))
     IDIO_ASSERT (e);
     IDIO_TYPE_ASSERT (list, e);
 
+    /*
+     * e should be (let* bindings body)
+     */
     size_t nargs = idio_list_length (e);
 
     if (nargs < 3) {
@@ -257,10 +328,19 @@ IDIO_DEFINE_PRIMITIVE1 ("let*", lets, (IDIO e))
 
     /* idio_debug ("let*: in %s\n", e); */
 
+    IDIO src = e;
     e = IDIO_PAIR_T (e);
+    /*
+     * e is now (bindings body)
+     */
 
+    /*
+     * NB reverse {bindings} so that when we walk over it below we
+     * will create a nested set of {let}s in the right order
+     */
     IDIO bindings = idio_list_reverse (IDIO_PAIR_H (e));
 
+    e = IDIO_PAIR_T (e);
     /*
      * e is currently a list, either (body) or (body ...)
      *
@@ -272,20 +352,23 @@ IDIO_DEFINE_PRIMITIVE1 ("let*", lets, (IDIO e))
      * it could be nil too...
      */
 
-    if (idio_S_nil != e) {
-	e = IDIO_PAIR_T (e);
-	if (idio_S_nil == IDIO_PAIR_T (e)) {
-	    e = IDIO_PAIR_H (e);
-	} else {
-	    e = idio_list_append2 (IDIO_LIST1 (idio_S_begin), e);
-	}
+    if (idio_S_nil == IDIO_PAIR_T (e)) {
+	e = IDIO_PAIR_H (e);
+    } else {
+	IDIO e2 = idio_list_append2 (IDIO_LIST1 (idio_S_begin), e);
+	idio_meaning_copy_src_properties (e, e2);
+	e = e2;
     }
 
     IDIO lets = e;
     while (idio_S_nil != bindings) {
+	IDIO binding = IDIO_PAIR_H (bindings);
+
 	lets = IDIO_LIST3 (idio_S_let,
-			   IDIO_LIST1 (IDIO_PAIR_H (bindings)),
+			   IDIO_LIST1 (binding),
 			   lets);
+	idio_meaning_copy_src_properties (binding, lets);
+
 	bindings = IDIO_PAIR_T (bindings);
     }
 
@@ -301,7 +384,7 @@ IDIO_DEFINE_PRIMITIVE1 ("let*", lets, (IDIO e))
  *
  * =>
  *
- * (apply (lambda (map ph bindings) body) (map pt bindings))
+ * (apply (function (map ph bindings) body) (map pt bindings))
  */
 
 IDIO_DEFINE_PRIMITIVE1 ("letrec", letrec, (IDIO e))
@@ -309,6 +392,9 @@ IDIO_DEFINE_PRIMITIVE1 ("letrec", letrec, (IDIO e))
     IDIO_ASSERT (e);
     IDIO_TYPE_ASSERT (list, e);
 
+    /*
+     * e should be (letrec bindings body)
+     */
     size_t nargs = idio_list_length (e);
 
     if (nargs < 3) {
@@ -316,41 +402,45 @@ IDIO_DEFINE_PRIMITIVE1 ("letrec", letrec, (IDIO e))
 	return idio_S_unspec;
     }
 
+    IDIO src = e;
     e = IDIO_PAIR_T (e);
+    /*
+     * e is now (bindings body)
+     */
 
     IDIO bindings = IDIO_PAIR_H (e);
     IDIO vars = idio_S_nil;
     IDIO tmps = idio_S_nil;
     IDIO vals = idio_S_nil;
+
     while (idio_S_nil != bindings) {
 	IDIO binding = IDIO_PAIR_H (bindings);
-	IDIO_TYPE_ASSERT (pair, bindings);
-	vars = idio_pair (IDIO_PAIR_H (binding), vars);
-	tmps = idio_pair (idio_gensym (NULL), tmps);
-	vals = idio_pair (IDIO_PAIR_HT (binding), vals);
+
+	IDIO value_expr = idio_S_undef;
+
+	if (idio_isa_pair (binding)) {
+	    vars = idio_pair (IDIO_PAIR_H (binding), vars);
+	    tmps = idio_pair (idio_gensym (NULL), tmps);
+	    if (idio_isa_pair (IDIO_PAIR_T (binding))) {
+		value_expr = IDIO_PAIR_HT (binding);
+		idio_meaning_copy_src_properties (src, value_expr);
+	    }
+	    vals = idio_pair (value_expr, vals);
+	} else if (idio_isa_symbol (binding)) {
+	    vars = idio_pair (binding, vars);
+	    tmps = idio_pair (idio_gensym (NULL), tmps);
+	    vals = idio_pair (value_expr, vals);
+	} else {
+	    idio_meaning_evaluation_error_param_type (src, IDIO_C_FUNC_LOCATION (), "letrec: binding pair/symbol", binding);
+	}
 
 	bindings = IDIO_PAIR_T (bindings);
     }
 
+    e = IDIO_PAIR_T (e);
     /*
-     * e is currently a list, either (body) or (body ...)
-     *
-     * body could be a single expression in which case we want the
-     * head of e (otherwise we will attempt to apply the result of
-     * body) or multiple expressions in which case we want to prefix e
-     * with begin
-     *
-     * it could be nil too...
+     * e is now (body)
      */
-
-    if (idio_S_nil != e) {
-	e = IDIO_PAIR_T (e);
-	/* if (idio_S_nil == IDIO_PAIR_T (e)) { */
-	/*     e = IDIO_PAIR_H (e); */
-	/* } else { */
-	/*     e = idio_list_append2 (IDIO_LIST1 (idio_S_begin), e); */
-	/* } */
-    }
 
     vars = idio_list_reverse (vars);
     tmps = idio_list_reverse (tmps);
@@ -363,9 +453,10 @@ IDIO_DEFINE_PRIMITIVE1 ("letrec", letrec, (IDIO e))
     IDIO ts = tmps;
     IDIO vs = vals;
     while (idio_S_nil != ns) {
-	ri = idio_pair (IDIO_LIST2 (IDIO_PAIR_H (ns), idio_S_false), ri);
+	ri = idio_pair (IDIO_LIST2 (IDIO_PAIR_H (ns), idio_S_undef), ri);
 	rt = idio_pair (IDIO_LIST2 (IDIO_PAIR_H (ts), IDIO_PAIR_H (vs)), rt);
 	rs = idio_pair (IDIO_LIST3 (idio_S_set, IDIO_PAIR_H (ns), IDIO_PAIR_H (ts)), rs);
+
 	ns = IDIO_PAIR_T (ns);
 	ts = IDIO_PAIR_T (ts);
 	vs = IDIO_PAIR_T (vs);
@@ -374,12 +465,20 @@ IDIO_DEFINE_PRIMITIVE1 ("letrec", letrec, (IDIO e))
     rt = idio_list_reverse (rt);
     rs = idio_list_reverse (rs);
     IDIO r = idio_list_append2 (idio_list_reverse (rs), e);
+
+    IDIO rs_body = idio_list_append2 (IDIO_LIST1 (idio_S_begin),
+				      idio_list_append2 (rs, e));
+    idio_meaning_copy_src_properties (src, rs_body);
+
+    IDIO let_rt= IDIO_LIST3 (idio_S_let,
+			     rt,
+			     rs_body);
+    idio_meaning_copy_src_properties (src, let_rt);
+
     r = IDIO_LIST3 (idio_S_let,
 		    ri,
-		    IDIO_LIST3 (idio_S_let,
-				rt,
-				idio_list_append2 (IDIO_LIST1 (idio_S_begin),
-						   idio_list_append2 (rs, e))));
+		    let_rt);
+    idio_meaning_copy_src_properties (src, r);
 
     return r;
 }

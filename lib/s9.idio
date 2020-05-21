@@ -130,7 +130,7 @@ define (map f a b) {
   map2 a b
 }
 
-define-macro (letrec bindings expr & exprs) {
+define-macro (s9/letrec bindings expr & exprs) {
   append3 := function (a b c) {
 	       append a (append b c)
   }
@@ -1199,7 +1199,7 @@ define-macro %ext-let {
   }
 }
 
-define-macro let %ext-let
+define-macro s9/let %ext-let
 
 ; Also define a clean version of LETREC.
 
@@ -1222,9 +1222,9 @@ define-macro %clean-letrec {
   }
 }
 
-define-macro letrec %clean-letrec
+define-macro s9/letrec %clean-letrec
 
-define-macro let* {
+define-macro s9/let* {
   check-bindings := check-bindings
 
   function (bindings expr & exprs) {

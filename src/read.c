@@ -1576,8 +1576,12 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl
 		}
 		break;
 	    case IDIO_CHAR_LBRACE:
-		idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_block (handle, lo, idio_T_rbrace, ic, IDIO_LIST_BRACE (depth + 1)));
+	    {
+		IDIO block = idio_read_block (handle, lo, idio_T_rbrace, ic, IDIO_LIST_BRACE (depth + 1));
+		idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, block);
+		idio_hash_put (idio_src_properties, block, lo);
 		return lo;
+	    }
 	    case IDIO_CHAR_RBRACE:
 		if (IDIO_LIST_BRACE_P (depth)) {
 		    idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_T_rbrace);
@@ -1594,8 +1598,12 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl
 		}
 		break;
 	    case IDIO_CHAR_LBRACKET:
-		idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_block (handle, lo, idio_T_rbracket, ic, IDIO_LIST_BRACKET (depth + 1)));
+	    {
+		IDIO block = idio_read_block (handle, lo, idio_T_rbracket, ic, IDIO_LIST_BRACKET (depth + 1));
+		idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, block);
+		idio_hash_put (idio_src_properties, block, lo);
 		return lo;
+	    }
 	    case IDIO_CHAR_RBRACKET:
 		if (IDIO_LIST_BRACKET_P (depth)) {
 		    idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_T_rbracket);
@@ -2013,6 +2021,10 @@ static IDIO idio_read_block (IDIO handle, IDIO lo, IDIO closedel, char *ic, int 
 	IDIO line_lo = IDIO_PAIR_H (line_p);
 	IDIO expr = idio_struct_instance_ref_direct (line_lo, IDIO_LEXOBJ_EXPR);
 	IDIO reason = IDIO_PAIR_T (line_p);
+
+	if (idio_isa_pair (expr)) {
+	    idio_hash_put (idio_src_properties, expr, line_lo);
+	}
 
 	if (idio_S_nil != expr) {
 	    r = idio_pair (expr, r);

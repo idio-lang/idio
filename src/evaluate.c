@@ -103,6 +103,26 @@
 
 static IDIO idio_evaluation_module = idio_S_nil;
 
+void idio_meaning_dump_src_properties (const char *prefix, const char*name, IDIO e)
+{
+    IDIO_ASSERT (e);
+
+    if (idio_isa_pair (e)) {
+	fprintf (stderr, "%-10s %-14s=", prefix, name);
+	idio_debug ("%s\n", e);
+	IDIO lo = idio_hash_get (idio_src_properties, e);
+	if (idio_S_unspec == lo){
+	    idio_debug ("                          %s\n", lo);
+	} else {
+	    idio_debug ("                          %s", idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_NAME));
+	    idio_debug (": line % 3s\n", idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_LINE));
+	}
+    } else {
+	fprintf (stderr, "%-10s %-14s=", prefix, name);
+	idio_debug ("%s\n", e);
+    }
+}
+
 static IDIO idio_meaning_error_location (IDIO src)
 {
     IDIO_ASSERT (src);
@@ -177,7 +197,7 @@ static void idio_meaning_error (IDIO src, IDIO c_location, IDIO msg, IDIO expr)
     idio_raise_condition (idio_S_false, c);
 }
 
-static void idio_meaning_evaluation_error_param_type (IDIO src, IDIO c_location, char *msg, IDIO expr)
+void idio_meaning_evaluation_error_param_type (IDIO src, IDIO c_location, char *msg, IDIO expr)
 {
     IDIO_ASSERT (src);
     IDIO_ASSERT (c_location);
@@ -187,6 +207,7 @@ static void idio_meaning_evaluation_error_param_type (IDIO src, IDIO c_location,
     IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO sh = idio_open_output_string_handle_C ();
+    idio_display_C ("parameter type: ", sh);
     idio_display_C (msg, sh);
 
     idio_meaning_error (src, c_location, idio_get_output_string (sh), expr);
@@ -768,6 +789,27 @@ static IDIO idio_meaning_variable_kind (IDIO src, IDIO nametree, IDIO name, int 
     return r;
 }
 
+void idio_meaning_copy_src_properties (IDIO src, IDIO dst)
+{
+    IDIO_ASSERT (src);
+    IDIO_ASSERT (dst);
+
+    if (idio_isa_pair (dst)) {
+	IDIO dlo = idio_hash_get (idio_src_properties, dst);
+	if (idio_S_unspec == dlo) {
+	    IDIO slo = idio_hash_get (idio_src_properties, src);
+	    if (idio_S_unspec == slo) {
+		/* idio_debug ("im_isp !!!! no lo for src=%s", src); */
+		/* idio_debug (" dst=%s\n", dst); */
+	    } else {
+		dlo = idio_copy (slo, IDIO_COPY_SHALLOW);
+		idio_struct_instance_set_direct (dlo, IDIO_LEXOBJ_EXPR, dst);
+		idio_hash_put (idio_src_properties, dst, dlo);
+	    }
+	}
+    }
+}
+
 static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO cs, IDIO cm);
 
 static IDIO idio_meaning_reference (IDIO src, IDIO name, IDIO nametree, int flags, IDIO cs, IDIO cm)
@@ -1178,10 +1220,16 @@ static IDIO idio_meaning_assignment (IDIO src, IDIO name, IDIO e, IDIO nametree,
 	 *
 	 * `((setter ,(ph name)) ,@(pt name) ,e)
 	 */
+	IDIO value_expr = IDIO_PAIR_T (name);
+	idio_meaning_copy_src_properties (src, value_expr);
+
 	IDIO se = idio_list_append2 (IDIO_LIST1 (IDIO_LIST2 (idio_S_setter,
 							     IDIO_PAIR_H (name))),
-				     IDIO_PAIR_T (name));
+				     value_expr);
 	se = idio_list_append2 (se, IDIO_LIST1 (e));
+
+	idio_meaning_copy_src_properties (src, se);
+
 	return idio_meaning (se,
 			     se,
 			     nametree,
@@ -1202,6 +1250,8 @@ static IDIO idio_meaning_assignment (IDIO src, IDIO name, IDIO e, IDIO nametree,
     /*
      * Normal assignment to a symbol
      */
+
+    idio_meaning_copy_src_properties (src, e);
 
     IDIO m = idio_meaning (e, e, nametree, IDIO_MEANING_NO_DEFINE (IDIO_MEANING_NOT_TAILP (flags)), cs, cm);
 
@@ -1327,9 +1377,12 @@ static IDIO idio_meaning_define (IDIO src, IDIO name, IDIO e, IDIO nametree, int
 					   IDIO_PAIR_T (name)),
 			       e);
 	name = IDIO_PAIR_H (name);
+
+	idio_meaning_copy_src_properties (src, e);
     } else {
 	if (idio_isa_pair (e)) {
 	    e = IDIO_PAIR_H (e);
+	    idio_meaning_copy_src_properties (src, e);
 	}
     }
 
@@ -1361,6 +1414,8 @@ static IDIO idio_meaning_define_macro (IDIO src, IDIO name, IDIO e, IDIO nametre
 			IDIO_PAIR_T (name),
 			e);
 	name = IDIO_PAIR_H (name);
+
+	idio_meaning_copy_src_properties (src, e);
     }
 
     /*
@@ -1375,6 +1430,8 @@ static IDIO idio_meaning_define_macro (IDIO src, IDIO name, IDIO e, IDIO nametre
 				IDIO_LIST3 (idio_S_apply,
 					    e,
 					    IDIO_LIST2 (idio_S_pt, x_sym)));
+
+    idio_meaning_copy_src_properties (src, expander);
 
     /*
      * In general (define-macro a ...) means that "a" is associated
@@ -1630,6 +1687,8 @@ static IDIO idio_meaning_define_infix_operator (IDIO src, IDIO name, IDIO pri, I
 			       IDIO_LIST2 (idio_symbols_C_intern ("find-module"),
 					   IDIO_LIST2 (idio_S_quote, IDIO_MODULE_NAME (idio_operator_module))));
 
+	idio_meaning_copy_src_properties (src, sve);
+
 	m = idio_meaning (sve, sve, nametree, flags, cs, cm);
     } else {
 	/*
@@ -1645,6 +1704,8 @@ static IDIO idio_meaning_define_infix_operator (IDIO src, IDIO name, IDIO pri, I
 	IDIO fe = IDIO_LIST3 (idio_S_function,
 			      def_args,
 			      e);
+
+	idio_meaning_copy_src_properties (src, fe);
 
 	m = idio_meaning (fe, fe, nametree, flags, cs, cm);
     }
@@ -1734,6 +1795,8 @@ static IDIO idio_meaning_define_postfix_operator (IDIO src, IDIO name, IDIO pri,
 			       IDIO_LIST2 (idio_symbols_C_intern ("find-module"),
 					   IDIO_LIST2 (idio_S_quote, IDIO_MODULE_NAME (idio_operator_module))));
 
+	idio_meaning_copy_src_properties (src, sve);
+
 	m = idio_meaning (sve, sve, nametree, flags, cs, cm);
     } else {
 	/*
@@ -1749,6 +1812,8 @@ static IDIO idio_meaning_define_postfix_operator (IDIO src, IDIO name, IDIO pri,
 	IDIO fe = IDIO_LIST3 (idio_S_function,
 			      def_args,
 			      e);
+
+	idio_meaning_copy_src_properties (src, fe);
 
 	m = idio_meaning (fe, fe, nametree, flags, cs, cm);
     }
@@ -2118,6 +2183,14 @@ static IDIO idio_meaning_dotted_abstraction (IDIO src, IDIO ns, IDIO n, IDIO sig
  *       Essentially the same as introducing environment/dynamic
  *       variables we can unset them which requires the same
  *       technique.
+ *
+ * 3. source properties
+ *
+ *    If we're inventing code snippets then we should make some small
+ *    effort to ensure that the source properties of the original code
+ *    are propagated to our snippet.  This is especially important
+ *    when several of these snippets invoke expanders -- which need to
+ *    do much the same themselves!
  */
 static IDIO idio_meaning_rewrite_body_letrec (IDIO src, IDIO e);
 
@@ -2155,73 +2228,201 @@ static IDIO idio_meaning_rewrite_body (IDIO src, IDIO e)
 		    idio_S_colon_plus == IDIO_PAIR_H (cur))) {
 	    /* :+ or define -> letrec */
 
-	    IDIO body = idio_list_append2 (IDIO_LIST1 (cur), IDIO_PAIR_T (l));
-	    r = idio_pair (idio_meaning_rewrite_body_letrec (l, body), r);
+	    r = idio_pair (idio_meaning_rewrite_body_letrec (l, l), r);
 	    break;
 	} else if (idio_isa_pair (cur) &&
 		   idio_S_colon_eq == IDIO_PAIR_H (cur)) {
 	    /* := -> let* */
 
-	    IDIO body = idio_meaning_rewrite_body (IDIO_PAIR_T (l), IDIO_PAIR_T (l));
+	    /*
+	     * At this point we have:
+	     *
+	     * l	~ ((:= name value-expr) ...)
+	     * cur	~ (:= name value-expr)
+	     * (pt cur)	~ (name value-expr)
+	     * (pt l)	~ ... representing subsequent expressions
+	     *
+	     * we can rewrite as:
+	     *
+	     * (let ((name value-expr))
+	     *      (begin
+	     *        ...
+	     *        ))
+	     *
+	     * where we can recurse on ..., which is now the body of
+	     * our (let)
+	     */
+
+	    IDIO body = idio_meaning_rewrite_body (cur, IDIO_PAIR_T (l));
 	    if (idio_S_nil != r) {
 		r = idio_list_reverse (r);
 	    }
-	    r = idio_list_append2 (r,
-				   IDIO_LIST1 (IDIO_LIST3 (idio_S_let,
-							   IDIO_LIST1 (IDIO_PAIR_T (cur)),
-							   idio_list_append2 (IDIO_LIST1 (idio_S_begin), body))));
+
+	    if (idio_S_nil == body) {
+		/*
+		 * What if {value-expr} has side-effects?
+		 */
+		fprintf (stderr, "imrb :=	OPT: empty body for let => no eval of {value-expr}\n");
+		return r;
+	    }
+
+	    IDIO body_sequence = idio_list_append2 (IDIO_LIST1 (idio_S_begin), body);
+	    idio_meaning_copy_src_properties (IDIO_PAIR_H (body), body_sequence);
+
+	    /*
+	     * binding == (pt cur) ~ (name value-expr)
+	     *
+	     * we should have gotten an evaluation error in
+	     * idio_meaning() if value-expr was not supplied so I think we
+	     * can just dive in
+	     */
+	    IDIO binding = IDIO_PAIR_T (cur);
+	    IDIO value_expr = IDIO_PAIR_HT (binding);
+	    if (idio_isa_pair (value_expr)) {
+		/*
+		 * name := value-expr
+		 *
+		 * where {value-expr} might be some complex
+		 * expression, eg.
+		 *
+		 * a := pair 1 2
+		 *
+		 * at this point (pair 1 2) does not have any source
+		 * properties -- because it was read as part of the
+		 * larger declaration statement -- which will make it
+		 * hard to diagnose any issues when the {value-expr}
+		 * is evaluated later, so let's add some.
+		 */
+		idio_meaning_copy_src_properties (cur, value_expr);
+	    }
+
+	    IDIO r_cur = IDIO_LIST3 (idio_S_let,
+				     IDIO_LIST1 (binding),
+				     body_sequence);
+
+	    idio_meaning_copy_src_properties (cur, r_cur);
+
+	    r = idio_list_append2 (r, IDIO_LIST1 (r_cur));
 	    return r;
 	} else if (idio_isa_pair (cur) &&
 		   idio_S_colon_star == IDIO_PAIR_H (cur)) {
 	    /* :* -> environ-let */
 
-	    IDIO body = idio_meaning_rewrite_body (IDIO_PAIR_T (l), IDIO_PAIR_T (l));
+	    /*
+	     * See commentary in := above
+	     */
+	    IDIO body = idio_meaning_rewrite_body (cur, IDIO_PAIR_T (l));
 	    if (idio_S_nil != r) {
 		r = idio_list_reverse (r);
 	    }
-	    r = idio_list_append2 (r,
-				   IDIO_LIST1 (IDIO_LIST3 (idio_S_environ_let,
-							   IDIO_PAIR_T (cur),
-							   idio_list_append2 (IDIO_LIST1 (idio_S_begin), body))));
+
+	    if (idio_S_nil == body) {
+		fprintf (stderr, "imrb :*	OPT: empty body for environ-let => no eval of {value-expr}\n");
+		return r;
+	    }
+
+	    IDIO body_sequence = idio_list_append2 (IDIO_LIST1 (idio_S_begin), body);
+	    idio_meaning_copy_src_properties (IDIO_PAIR_H (body), body_sequence);
+
+	    IDIO binding = IDIO_PAIR_T (cur);
+	    IDIO value_expr = IDIO_PAIR_HT (binding);
+	    if (idio_isa_pair (value_expr)) {
+		idio_meaning_copy_src_properties (cur, value_expr);
+	    }
+
+	    IDIO r_cur = IDIO_LIST3 (idio_S_environ_let,
+				     binding,
+				     body_sequence);
+	    idio_meaning_copy_src_properties (cur, r_cur);
+
+	    r = idio_list_append2 (r, IDIO_LIST1 (r_cur));
 	    return r;
 	} else if (idio_isa_pair (cur) &&
 		   idio_S_excl_star == IDIO_PAIR_H (cur)) {
 	    /* !* -> environ-unset */
 
+	    /*
+	     * See commentary in := above
+	     */
 	    IDIO body = idio_meaning_rewrite_body (IDIO_PAIR_T (l), IDIO_PAIR_T (l));
 	    if (idio_S_nil != r) {
 		r = idio_list_reverse (r);
 	    }
-	    r = idio_list_append2 (r,
-				   IDIO_LIST1 (IDIO_LIST3 (idio_S_environ_unset,
-							   IDIO_PAIR_HT (cur),
-							   idio_list_append2 (IDIO_LIST1 (idio_S_begin), body))));
+
+	    if (idio_S_nil == body) {
+		fprintf (stderr, "imrb !*	OPT: empty body for environ-unset\n");
+		return r;
+	    }
+
+	    IDIO body_sequence = idio_list_append2 (IDIO_LIST1 (idio_S_begin), body);
+	    idio_meaning_copy_src_properties (IDIO_PAIR_H (body), body_sequence);
+
+	    IDIO r_cur = IDIO_LIST3 (idio_S_environ_unset,
+				     IDIO_PAIR_HT (cur),
+				     body_sequence);
+	    idio_meaning_copy_src_properties (cur, r_cur);
+
+	    r = idio_list_append2 (r, IDIO_LIST1 (r_cur));
 	    return r;
 	} else if (idio_isa_pair (cur) &&
 		   idio_S_colon_tilde == IDIO_PAIR_H (cur)) {
 	    /* :~ -> dynamic-let */
 
+	    /*
+	     * See commentary in := above
+	     */
 	    IDIO body = idio_meaning_rewrite_body (IDIO_PAIR_T (l), IDIO_PAIR_T (l));
 	    if (idio_S_nil != r) {
 		r = idio_list_reverse (r);
 	    }
-	    r = idio_list_append2 (r,
-				   IDIO_LIST1 (IDIO_LIST3 (idio_S_dynamic_let,
-							   IDIO_PAIR_T (cur),
-							   idio_list_append2 (IDIO_LIST1 (idio_S_begin), body))));
+
+	    if (idio_S_nil == body) {
+		fprintf (stderr, "imrb :~	OPT: empty body for dynamic-let => no eval of {value-expr}\n");
+		return r;
+	    }
+
+	    IDIO body_sequence = idio_list_append2 (IDIO_LIST1 (idio_S_begin), body);
+	    idio_meaning_copy_src_properties (IDIO_PAIR_H (body), body_sequence);
+
+	    IDIO binding = IDIO_PAIR_T (cur);
+	    IDIO value_expr = IDIO_PAIR_HT (binding);
+	    if (idio_isa_pair (value_expr)) {
+		idio_meaning_copy_src_properties (cur, value_expr);
+	    }
+
+	    IDIO r_cur = IDIO_LIST3 (idio_S_dynamic_let,
+				     binding,
+				     body_sequence);
+	    idio_meaning_copy_src_properties (cur, r_cur);
+
+	    r = idio_list_append2 (r, IDIO_LIST1 (r_cur));
 	    return r;
 	} else if (idio_isa_pair (cur) &&
 		   idio_S_excl_tilde == IDIO_PAIR_H (cur)) {
 	    /* !~ -> dynamic-unset */
 
+	    /*
+	     * See commentary in := above
+	     */
 	    IDIO body = idio_meaning_rewrite_body (IDIO_PAIR_T (l), IDIO_PAIR_T (l));
 	    if (idio_S_nil != r) {
 		r = idio_list_reverse (r);
 	    }
-	    r = idio_list_append2 (r,
-				   IDIO_LIST1 (IDIO_LIST3 (idio_S_dynamic_unset,
-							   IDIO_PAIR_HT (cur),
-							   idio_list_append2 (IDIO_LIST1 (idio_S_begin), body))));
+
+	    if (idio_S_nil == body) {
+		fprintf (stderr, "imrb !~	OPT: empty body for dynamic-unset => no eval of {value-expr}\n");
+		return r;
+	    }
+
+	    IDIO body_sequence = idio_list_append2 (IDIO_LIST1 (idio_S_begin), body);
+	    idio_meaning_copy_src_properties (IDIO_PAIR_H (body), body_sequence);
+
+	    IDIO r_cur = IDIO_LIST3 (idio_S_dynamic_unset,
+				     IDIO_PAIR_HT (cur),
+				     body_sequence);
+	    idio_meaning_copy_src_properties (cur, r_cur);
+
+	    r = idio_list_append2 (r, IDIO_LIST1 (r_cur));
 	    return r;
 	} else if (idio_isa_pair (cur) &&
 		   idio_S_define_macro == IDIO_PAIR_H (cur)) {
@@ -2250,6 +2451,16 @@ static IDIO idio_meaning_rewrite_body (IDIO src, IDIO e)
     return idio_list_reverse (r);
 }
 
+/*
+ * In idio_meaning_rewrite_body_letrec() we're looking to accumulate a
+ * sequence of :+ (ie. letrec) statements into {defs} and when we find
+ * the first "anything else" statement we'll unbundle {defs} into a
+ * {letrec} with "anything else" and subsequent expressions as the
+ * body of the {letrec}.
+ *
+ * Each element of {defs] is the (name value-expr) tuple we would
+ * expect.
+ */
 static IDIO idio_meaning_rewrite_body_letrec (IDIO src, IDIO e)
 {
     IDIO_ASSERT (src);
@@ -2270,9 +2481,20 @@ static IDIO idio_meaning_rewrite_body_letrec (IDIO src, IDIO e)
 	     * Test Case: evaluation-errors/letrec-empty-body.idio
 	     *
 	     * {
-	     *   bar :+ {
-	     *   }
+	     *   bar :+ "foo"
+	     *
 	     * }
+	     *
+	     *
+	     * NB The point is that there is nothing else in the block
+	     * after the creation of {bar}, so there is no "body" for
+	     * the (generated) letrec of {bar}.
+	     *
+	     * Regardless of whether {bar} is a (faintly) pointless
+	     * sort of letrec, notably not involving a function.
+	     *
+	     * There's an argument that it could be optimised away (if
+	     * the value-expression has no side-effects, etc.).
 	     */
 	    if (idio_isa_pair (src)) {
 		idio_meaning_evaluation_error (IDIO_PAIR_H (src), IDIO_C_FUNC_LOCATION (), "letrec: empty body", l);
@@ -2285,6 +2507,7 @@ static IDIO idio_meaning_rewrite_body_letrec (IDIO src, IDIO e)
 		   idio_isa_pair (IDIO_PAIR_H (l)) &&
 		   idio_S_false != idio_expanderp (IDIO_PAIR_HH (l))) {
 	    cur = idio_macro_expands (IDIO_PAIR_H (l));
+	    idio_meaning_copy_src_properties (IDIO_PAIR_H (l), cur);
 	} else {
 	    cur = IDIO_PAIR_H (l);
 	}
@@ -2298,15 +2521,37 @@ static IDIO idio_meaning_rewrite_body_letrec (IDIO src, IDIO e)
 		   (idio_S_define == IDIO_PAIR_H (cur) ||
 		    idio_S_colon_plus == IDIO_PAIR_H (cur))) {
 
+	    /*
+	     * cur	~ (define (name arg) ...)
+	     * cur	~ (:+ name value-expr)
+	     */
 	    IDIO bindings = IDIO_PAIR_HT (cur);
 	    IDIO form = idio_S_unspec;
+
 	    if (idio_isa_pair (bindings)) {
-		form = IDIO_LIST2 (IDIO_PAIR_H (bindings),
-				   idio_list_append2 (IDIO_LIST2 (idio_S_function,
-								  IDIO_PAIR_T (bindings)),
-						      IDIO_PAIR_TT (cur)));
+		/*
+		 * (define (name args) ...)
+		 *
+		 * (name (function (args) ...))
+		 */
+		IDIO fn = idio_list_append2 (IDIO_LIST2 (idio_S_function,
+							 IDIO_PAIR_T (bindings)),
+					     IDIO_PAIR_TT (cur));
+		idio_meaning_copy_src_properties (cur, fn);
+
+		form = IDIO_LIST2 (IDIO_PAIR_H (bindings), fn);
 	    } else {
+		/*
+		 * (:+ name value-expr)
+		 *
+		 * (name value-expr)
+		 */
 		form = IDIO_PAIR_T (cur);
+
+		/*
+		 * Copy the source properties to {value-expr}
+		 */
+		idio_meaning_copy_src_properties (cur, IDIO_PAIR_HT (form));
 	    }
 	    defs = idio_pair (form, defs);
 	    l = IDIO_PAIR_T (l);
@@ -2327,6 +2572,7 @@ static IDIO idio_meaning_rewrite_body_letrec (IDIO src, IDIO e)
 	} else {
 	    /* body proper */
 	    l = idio_meaning_rewrite_body (l, l);
+	    idio_meaning_copy_src_properties (IDIO_PAIR_H (src), l);
 
 	    /* idio_debug ("irb-letrec: body: l %s\n", l);  */
 
@@ -2337,6 +2583,14 @@ static IDIO idio_meaning_rewrite_body_letrec (IDIO src, IDIO e)
 		 * poor man's letrec*
 		 *
 		 * We are aiming for:
+		 *
+		 * {
+		 *   v1 :+ a1
+		 *   v2 :+ a2
+		 *   body
+		 * }
+		 *
+		 * to become
 		 *
 		 * (let ((v1 #f)
 		 *	 (v2 #f))
@@ -2361,12 +2615,36 @@ static IDIO idio_meaning_rewrite_body_letrec (IDIO src, IDIO e)
 		IDIO body = idio_S_nil;
 		IDIO vs = defs;
 		while (idio_S_nil != vs) {
+		    /*
+		     * Remember {vs} (ie. {defs}) is the list of
+		     * tuples
+		     *
+		     * ((v1 a1) (v2 a2))
+		     *
+		     * so that (ph vs) is (v1 a1) and therefore
+		     *
+		     * (append (set!) (v1 a1))
+		     *
+		     * gives us the desired
+		     *
+		     * (set! v1 a1)
+		     *
+		     * and that as we walk down {vs} we'll get a
+		     * (reversed) list of assignments in {body}
+		     *
+		     * ((set! v2 a2)
+		     *  (set! v1 a1))
+		     */
 		    IDIO assign = idio_list_append2 (IDIO_LIST1 (idio_S_set), IDIO_PAIR_H (vs));
 		    body = idio_list_append2 (IDIO_LIST1 (assign), body);
 		    vs = IDIO_PAIR_T (vs);
 		}
 		body = idio_list_append2 (body, l);
-		return IDIO_LIST2 (idio_S_begin, idio_list_append2 (IDIO_LIST2 (idio_S_let, bindings), body));
+
+		IDIO let = idio_list_append2 (IDIO_LIST2 (idio_S_let, bindings), body);
+		idio_meaning_copy_src_properties (IDIO_PAIR_H (src), let);
+
+		return let;
 	    }
 	}
     }
@@ -2387,6 +2665,7 @@ static IDIO idio_meaning_abstraction (IDIO src, IDIO nns, IDIO docstr, IDIO ep, 
     IDIO_TYPE_ASSERT (module, cm);
 
     ep = idio_meaning_rewrite_body (ep, ep);
+    idio_meaning_copy_src_properties (src, ep);
 
     IDIO ns = nns;
     IDIO regular = idio_S_nil;
@@ -2448,6 +2727,7 @@ static IDIO idio_meaning_block (IDIO src, IDIO es, IDIO nametree, int flags, IDI
     IDIO_TYPE_ASSERT (module, cm);
 
     es = idio_meaning_rewrite_body (es, es);
+    idio_meaning_copy_src_properties (src, es);
 
     return idio_meaning_sequence (es, es, nametree, flags, idio_S_begin, cs, cm);
 }
@@ -2518,6 +2798,7 @@ static IDIO idio_meaning_fix_closed_application (IDIO src, IDIO ns, IDIO body, I
     IDIO_TYPE_ASSERT (module, cm);
 
     body = idio_meaning_rewrite_body (body, body);
+    idio_meaning_copy_src_properties (src, body);
 
     IDIO ms = idio_meanings (es, es, nametree, idio_list_length (es), IDIO_MEANING_NOT_TAILP (flags), cs, cm);
     IDIO nt2 = idio_meaning_nametree_extend (nametree, ns);
@@ -2722,7 +3003,7 @@ static IDIO idio_meaning_primitive_application (IDIO src, IDIO e, IDIO es, IDIO 
      */
 
     /*
-     * Yuk!
+     * Yuk!  Data in two places problem.
 
      * For regular function calls the duty cycle is to evaluate all
      * the arguments, pushing them onto the stack, create a frame, pop
@@ -2900,6 +3181,8 @@ static IDIO idio_meaning_application (IDIO src, IDIO e, IDIO es, IDIO nametree, 
     IDIO_TYPE_ASSERT (array, cs);
     IDIO_TYPE_ASSERT (module, cm);
 
+    /* idio_meaning_dump_src_properties ("im_appl", "src", src); */
+
     if (idio_isa_symbol (e)) {
 	IDIO sk = idio_meaning_variable_kind (src, nametree, e, IDIO_MEANING_LEXICAL_SCOPE (flags), cs, cm);
 
@@ -2999,7 +3282,6 @@ static IDIO idio_meaning_dynamic_let (IDIO src, IDIO name, IDIO e, IDIO ep, IDIO
     IDIO fmci;
     IDIO sk = idio_module_find_symbol (name, cm);
 
-    int defining = 0;
     if (idio_S_unspec != sk) {
 	fmci = IDIO_PAIR_HT (sk);
     } else {
@@ -3007,7 +3289,6 @@ static IDIO idio_meaning_dynamic_let (IDIO src, IDIO name, IDIO e, IDIO ep, IDIO
 	 * Get a new toplevel for this dynamic variable
 	 */
 	fmci = idio_toplevel_extend (src, name, IDIO_MEANING_DYNAMIC_SCOPE (flags), cs, cm);
-	defining = 1;
     }
 
     /*
@@ -3024,12 +3305,6 @@ static IDIO idio_meaning_dynamic_let (IDIO src, IDIO name, IDIO e, IDIO ep, IDIO
 
     return IDIO_LIST2 (IDIO_LIST4 (idio_I_GLOBAL_DEF, name, idio_S_dynamic, fmci),
 		       dynamic_wrap);
-    if (defining) {
-	return IDIO_LIST2 (IDIO_LIST4 (idio_I_GLOBAL_DEF, name, idio_S_dynamic, fmci),
-			   dynamic_wrap);
-    } else {
-	return dynamic_wrap;
-    }
 }
 
 static IDIO idio_meaning_dynamic_unset (IDIO src, IDIO name, IDIO ep, IDIO nametree, int flags, IDIO cs, IDIO cm)
@@ -3081,7 +3356,6 @@ static IDIO idio_meaning_environ_let (IDIO src, IDIO name, IDIO e, IDIO ep, IDIO
     IDIO fmci;
     IDIO sk = idio_module_find_symbol (name, cm);
 
-    int defining = 0;
     if (idio_S_unspec != sk) {
 	fmci = IDIO_PAIR_HT (sk);
     } else {
@@ -3089,7 +3363,6 @@ static IDIO idio_meaning_environ_let (IDIO src, IDIO name, IDIO e, IDIO ep, IDIO
 	 * Get a new toplevel for this environ variable
 	 */
 	fmci = idio_toplevel_extend (src, name, IDIO_MEANING_ENVIRON_SCOPE (flags), cs, cm);
-	defining = 1;
     }
 
     /*
@@ -3106,12 +3379,6 @@ static IDIO idio_meaning_environ_let (IDIO src, IDIO name, IDIO e, IDIO ep, IDIO
 
     return IDIO_LIST2 (IDIO_LIST4 (idio_I_GLOBAL_DEF, name, idio_S_environ, fmci),
 		       environ_wrap);
-    if (defining) {
-	return IDIO_LIST2 (IDIO_LIST4 (idio_I_GLOBAL_DEF, name, idio_S_environ, fmci),
-			   environ_wrap);
-    } else {
-	return environ_wrap;
-    }
 }
 
 static IDIO idio_meaning_environ_unset (IDIO src, IDIO name, IDIO ep, IDIO nametree, int flags, IDIO cs, IDIO cm)
@@ -3174,6 +3441,7 @@ static IDIO idio_meaning_trap (IDIO src, IDIO ce, IDIO he, IDIO be, IDIO nametre
      * traps.
      */
     he = idio_meaning_rewrite_body (he, he);
+    idio_meaning_copy_src_properties (src, he);
 
     IDIO mh = idio_meaning (he, he, nametree, IDIO_MEANING_NOT_TAILP (flags), cs, cm);
 
@@ -3212,6 +3480,7 @@ static IDIO idio_meaning_trap (IDIO src, IDIO ce, IDIO he, IDIO be, IDIO nametre
     }
 
     be = idio_meaning_rewrite_body (be, be);
+    idio_meaning_copy_src_properties (src, be);
 
     IDIO mb = idio_meaning_sequence (be, be, nametree, IDIO_MEANING_NOT_TAILP (flags), idio_S_begin, cs, cm);
 
@@ -3254,6 +3523,7 @@ static IDIO idio_meaning_expander (IDIO src, IDIO e, IDIO nametree, int flags, I
     IDIO_TYPE_ASSERT (module, cm);
 
     IDIO me = idio_macro_expand (e);
+    idio_meaning_copy_src_properties (src, me);
 
     return idio_meaning (me, me, nametree, flags, cs, cm);
 }
@@ -3423,6 +3693,7 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO cs, I
 		}
 
 		IDIO etc = idio_meaning_rewrite_cond (e, et, et);
+		idio_meaning_copy_src_properties (src, etc);
 
 		IDIO c = idio_meaning (etc, etc, nametree, flags, cs, cm);
 

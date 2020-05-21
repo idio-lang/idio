@@ -50,6 +50,8 @@
 #define IDIO_MEANING_DEFINE(f)			((f) | IDIO_MEANING_FLAG_DEFINE)
 #define IDIO_MEANING_NO_DEFINE(f)		((f) & (~ IDIO_MEANING_FLAG_DEFINE))
 
+void idio_meaning_dump_src_properties (const char *prefix, const char*name, IDIO e);
+void idio_meaning_evaluation_error_param_type (IDIO src, IDIO c_location, char *msg, IDIO expr);
 void idio_meaning_error_static_redefine (IDIO lo, IDIO c_location, char *msg, IDIO name, IDIO cv, IDIO new);
 void idio_meaning_error_static_arity (IDIO lo, IDIO c_location, char *msg, IDIO args);
 
@@ -61,6 +63,8 @@ IDIO idio_add_primitive (idio_primitive_desc_t *d, IDIO cs, const char *cpp__FIL
 
 IDIO idio_toplevel_extend (IDIO lo, IDIO name, int variant, IDIO cs, IDIO cm);
 IDIO idio_environ_extend (IDIO lo, IDIO name, IDIO val, IDIO cs);
+
+void idio_meaning_copy_src_properties (IDIO src, IDIO dst);
 
 void idio_install_expander (IDIO id, IDIO proc);
 
