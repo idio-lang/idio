@@ -146,7 +146,7 @@ test (eq? Tests 3289) #t
 if (file-exists? testfile) (delete-file testfile)
 
 display* "test.idio completed after " SECONDS "seconds"
-
+display* "# src-props" (length (hash-keys %idio-src-properties))
 if (zero? Errors) (display* "All" Tests "tests passed!") \
    {
      display Errors

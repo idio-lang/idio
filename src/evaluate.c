@@ -108,17 +108,17 @@ void idio_meaning_dump_src_properties (const char *prefix, const char*name, IDIO
     IDIO_ASSERT (e);
 
     if (idio_isa_pair (e)) {
-	fprintf (stderr, "%-10s %-14s=", prefix, name);
+	fprintf (stderr, "SRC %-10s %-14s=", prefix, name);
 	idio_debug ("%s\n", e);
 	IDIO lo = idio_hash_get (idio_src_properties, e);
 	if (idio_S_unspec == lo){
-	    idio_debug ("                          %s\n", lo);
+	    idio_debug ("                              %s\n", lo);
 	} else {
-	    idio_debug ("                          %s", idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_NAME));
+	    idio_debug ("                              %s", idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_NAME));
 	    idio_debug (": line % 3s\n", idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_LINE));
 	}
     } else {
-	fprintf (stderr, "%-10s %-14s=", prefix, name);
+	fprintf (stderr, "SRC %-10s %-14s=", prefix, name);
 	idio_debug ("%s\n", e);
     }
 }
@@ -797,16 +797,80 @@ void idio_meaning_copy_src_properties (IDIO src, IDIO dst)
     if (idio_isa_pair (dst)) {
 	IDIO dlo = idio_hash_get (idio_src_properties, dst);
 	if (idio_S_unspec == dlo) {
+	    if (idio_S_nil != src) {
+		IDIO slo = idio_hash_get (idio_src_properties, src);
+		if (idio_S_unspec == slo) {
+		    /* idio_debug ("im_isp !!!! no lo for src=%s", src); */
+		    /* idio_debug (" dst=%s\n", dst); */
+		} else {
+		    dlo = idio_copy (slo, IDIO_COPY_SHALLOW);
+		    idio_struct_instance_set_direct (dlo, IDIO_LEXOBJ_EXPR, dst);
+		    idio_hash_put (idio_src_properties, dst, dlo);
+		}
+	    }
+	}
+    }
+}
+
+/*
+ * For an expander expansion, we require to pass the source properties
+ * on to all elements (well, pairs) in the result.  This requires that
+ * we recurse over all parts of {p}.
+ *
+ * We should only have been called from idio_meaning_expander() so we
+ * know we can blindly slap (new) source properties on anything we
+ * find.
+ *
+ * We also know that all source properties we hand out are derivative
+ * of the original {src} so we can have a wrapper function to dig
+ * those out once and then pass them on direct to the actual recursor.
+ */
+void idio_meaning_copy_src_properties_r2 (IDIO slo, IDIO p)
+{
+    IDIO_ASSERT (slo);
+    IDIO_ASSERT (p);
+
+    if (idio_isa_pair (p)) {
+	IDIO plo = idio_copy (slo, IDIO_COPY_SHALLOW);
+	idio_struct_instance_set_direct (plo, IDIO_LEXOBJ_EXPR, p);
+	idio_hash_put (idio_src_properties, p, plo);
+	idio_meaning_copy_src_properties_r2 (plo, IDIO_PAIR_H (p));
+	idio_meaning_copy_src_properties_r2 (plo, IDIO_PAIR_T (p));
+    }
+}
+
+void idio_meaning_copy_src_properties_r (IDIO src, IDIO p)
+{
+    IDIO_ASSERT (src);
+    IDIO_ASSERT (p);
+
+    if (idio_isa_pair (p)) {
+	if (idio_S_nil != src) {
 	    IDIO slo = idio_hash_get (idio_src_properties, src);
 	    if (idio_S_unspec == slo) {
 		/* idio_debug ("im_isp !!!! no lo for src=%s", src); */
 		/* idio_debug (" dst=%s\n", dst); */
 	    } else {
-		dlo = idio_copy (slo, IDIO_COPY_SHALLOW);
-		idio_struct_instance_set_direct (dlo, IDIO_LEXOBJ_EXPR, dst);
-		idio_hash_put (idio_src_properties, dst, dlo);
+		idio_meaning_copy_src_properties_r2 (slo, p);
 	    }
 	}
+    }
+}
+
+/*
+ * For an operator expansion, we require to pass the source properties
+ * on to all elements (well, pairs) in the result.  This requires that
+ * we recurse over all parts of {e}.
+ */
+void idio_meaning_copy_src_properties_f (IDIO src, IDIO e)
+{
+    IDIO_ASSERT (src);
+    IDIO_ASSERT (e);
+
+    if (idio_isa_pair (e)) {
+	idio_meaning_copy_src_properties (src, e);
+	idio_meaning_copy_src_properties_f (src, IDIO_PAIR_H (e));
+	idio_meaning_copy_src_properties_f (src, IDIO_PAIR_T (e));
     }
 }
 
@@ -966,68 +1030,200 @@ static IDIO idio_meaning_quotation (IDIO src, IDIO v, IDIO nametree, int flags)
     return IDIO_LIST2 (idio_I_CONSTANT, v);
 }
 
-static IDIO idio_meaning_dequasiquote (IDIO src, IDIO e, int level)
+static IDIO idio_meaning_dequasiquote (IDIO src, IDIO e, int level, int indent)
 {
     IDIO_ASSERT (src);
     IDIO_ASSERT (e);
 
+    /*
+     * {src} is a problem for us, here.  We enter with {src} being the
+     * whole template (the quasi-quoted form), pretty much as we would
+     * expect.
+     *
+     * Of course the template is multiple lines long and the reader
+     * should have given each of those lines (and sub-expressions)
+     * some source properties.
+     *
+     * However, our problem here in de-quasiquote is that we will
+     * decend down inside all expressions until we find individual
+     * symbols, say, at which point we will generate a mini-form,
+     * (quote symbol), say, which we intend to be re-evaluated.
+     *
+     * Well, that mini-form needs some source properties but in the
+     * case of our symbol, a symbol cannot have any source properties
+     * itself so the {src} for source properties needs to have been
+     * left behind at something that did have some source properties.
+     *
+     * In other words, we need to check carefully that what we pass in
+     * as {src} does have some source properties worth passing.
+     *
+     * XXX
+     *
+     * Careful, whilst we can create source properties for all of the
+     * activities of the template -- which are going to be a lot of
+     * calls to {pair}, most of the time -- those calls to {pair}, the
+     * expansion of the template are encoded as an expander and become
+     * intermediate code and the *result* of them, the code to be
+     * implemented, is a runtime thing.
+     *
+     * That is, all this effort fiddling with {src} here in
+     * idio_meaning_dequasiquote() will get us some static evaluation
+     * error handling of the template.
+     *
+     * In the future, the *application* of the template (ie. the call
+     * to the macro) will itself have a source property and that is
+     * the only thing that can get passed to the expansion of the
+     * template (at runtime).  So all of the expanded lines of code
+     * will bear the source property of the single line where the
+     * template was applied.  (We do *that* in a loop in
+     * idio_meaning_expander().)
+     *
+     * That's sort of what you expect, the application, the use of the
+     * template was at whatever line but it won't help us much if the
+     * template has ballooned out to hundreds of lines of code and we
+     * have a runtime error in its midst.
+     *
+     * Given that templates can begat templates can begat ... any hope
+     * of reporting the line of the template (within the line of the
+     * template (within the line of the template (...))) becomes a bit
+     * onerous.  I suspect that's why in Scheme-ly languages you
+     * simply get a complaint about the line where the template was
+     * applied and then you're left running (macro-expand) with your
+     * arguments to figure out what went wrong.
+     */
+
+    IDIO r = idio_S_undef;
+
     if (idio_isa_pair (e)) {
 	IDIO eh = IDIO_PAIR_H (e);
 	if (idio_S_quasiquote == eh) {
-	    /* ('list ''quasiquote (de-qq (pht e) (+ level 1))) */
-	    return IDIO_LIST3 (idio_S_list,
-			       IDIO_LIST2 (idio_S_quote, idio_S_quasiquote),
-			       idio_meaning_dequasiquote (IDIO_PAIR_HT (e), IDIO_PAIR_HT (e), level + 1));
+	    /*
+	     * e	~ (` v)
+	     *
+	     * (list 'quasiquote (de-qq (pht e) (level + 1)))
+	     */
+
+	    IDIO pht = IDIO_PAIR_HT (e);
+
+	    if (idio_S_nil != pht &&
+		idio_hash_exists_key (idio_src_properties, pht)) {
+		src = IDIO_PAIR_HT (e);
+	    }
+
+	    r = IDIO_LIST3 (idio_S_list,
+			    IDIO_LIST2 (idio_S_quote, idio_S_quasiquote),
+			    idio_meaning_dequasiquote (src, pht, level + 1, indent + 1));
+	    idio_meaning_copy_src_properties (src, r);
 	} else if (idio_S_unquote == eh) {
 	    if (level <= 0) {
-		return IDIO_PAIR_HT (e);
+		r = IDIO_PAIR_HT (e);
 	    } else {
 		/* ('list ''unquote (de-qq (pht e) (- level 1))) */
-		return IDIO_LIST3 (idio_S_list,
-				   IDIO_LIST2 (idio_S_quote, idio_S_unquote),
-				   idio_meaning_dequasiquote (IDIO_PAIR_HT (e), IDIO_PAIR_HT (e), level - 1));
+
+		IDIO pht = IDIO_PAIR_HT (e);
+
+		if (idio_S_nil != pht &&
+		    idio_hash_exists_key (idio_src_properties, pht)) {
+		    src = IDIO_PAIR_HT (e);
+		}
+
+		r = IDIO_LIST3 (idio_S_list,
+				IDIO_LIST2 (idio_S_quote, idio_S_unquote),
+				idio_meaning_dequasiquote (src, pht, level - 1, indent + 1));
+		idio_meaning_copy_src_properties (src, r);
 	    }
 	} else if (idio_S_unquotesplicing == eh) {
 	    if (level <= 0) {
-		return IDIO_LIST3 (idio_S_pair,
-				   idio_meaning_dequasiquote (IDIO_PAIR_H (e), IDIO_PAIR_H (e),level),
-				   idio_meaning_dequasiquote (IDIO_PAIR_T (e), IDIO_PAIR_T (e), level));
+
+		IDIO src_h = src;
+		IDIO src_t = src;
+
+		IDIO ph = IDIO_PAIR_H (e);
+		IDIO pt = IDIO_PAIR_T (e);
+
+		if (idio_S_nil != ph &&
+		    idio_hash_exists_key (idio_src_properties, ph)) {
+		    src_h = ph;
+		}
+		if (idio_S_nil != pt &&
+		    idio_hash_exists_key (idio_src_properties, pt)) {
+		    src_t = pt;
+		}
+
+		r = IDIO_LIST3 (idio_S_pair,
+				idio_meaning_dequasiquote (src_h, ph,level, indent + 1),
+				idio_meaning_dequasiquote (src_t, pt, level, indent + 1));
+		idio_meaning_copy_src_properties (src, r);
 	    } else {
 		/* ('list ''unquotesplicing (de-qq (pht e) (- level 1))) */
-		return IDIO_LIST3 (idio_S_list,
-				   IDIO_LIST2 (idio_S_quote, idio_S_unquotesplicing),
-				   idio_meaning_dequasiquote (IDIO_PAIR_HT (e), IDIO_PAIR_HT (e), level - 1));
+
+		IDIO pht = IDIO_PAIR_HT (e);
+
+		if (idio_S_nil != pht &&
+		    idio_hash_exists_key (idio_src_properties, pht)) {
+		    src = pht;
+		}
+
+		r = IDIO_LIST3 (idio_S_list,
+				IDIO_LIST2 (idio_S_quote, idio_S_unquotesplicing),
+				idio_meaning_dequasiquote (src, pht, level - 1, indent + 1));
+		idio_meaning_copy_src_properties (src, r);
 	    }
 	} else if (level <= 0 &&
 		   idio_isa_pair (IDIO_PAIR_H (e)) &&
 		   idio_S_unquotesplicing == IDIO_PAIR_HH (e)) {
 	    if (idio_S_nil == IDIO_PAIR_T (e)) {
-		return IDIO_PAIR_HTH (e);
+		r = IDIO_PAIR_HTH (e);
 	    } else {
 		/* ('append (phth e) (de-qq (pt e) level)) */
-		return IDIO_LIST3 (idio_S_append,
-				   IDIO_PAIR_HTH (e),
-				   idio_meaning_dequasiquote (IDIO_PAIR_T (e), IDIO_PAIR_T (e), level));
+
+		IDIO pt = IDIO_PAIR_T (e);
+
+		if (idio_S_nil != pt &&
+		    idio_hash_exists_key (idio_src_properties, pt)) {
+		    src = pt;
+		}
+
+		r = IDIO_LIST3 (idio_S_append,
+				IDIO_PAIR_HTH (e),
+				idio_meaning_dequasiquote (src, pt, level, indent + 1));
+		idio_meaning_copy_src_properties (src, r);
 	    }
 	} else {
-	    return IDIO_LIST3 (idio_S_pair,
-			       idio_meaning_dequasiquote (IDIO_PAIR_H (e), IDIO_PAIR_H (e), level),
-			       idio_meaning_dequasiquote (IDIO_PAIR_T (e), IDIO_PAIR_T (e), level));
+	    IDIO src_h = src;
+	    IDIO src_t = src;
+
+	    IDIO ph = IDIO_PAIR_H (e);
+	    IDIO pt = IDIO_PAIR_T (e);
+
+	    if (idio_S_nil != ph &&
+		idio_hash_exists_key (idio_src_properties, ph)) {
+		src_h = ph;
+	    }
+	    if (idio_S_nil != pt &&
+		idio_hash_exists_key (idio_src_properties, pt)) {
+		src_t = pt;
+	    }
+
+	    r = IDIO_LIST3 (idio_S_pair,
+			    idio_meaning_dequasiquote (src_h, ph, level, indent + 1),
+			    idio_meaning_dequasiquote (src_t, pt, level, indent + 1));
+	    idio_meaning_copy_src_properties (src, r);
 	}
     } else if (idio_isa_array (e)) {
-	return IDIO_LIST2 (idio_symbols_C_intern ("list->array"), idio_meaning_dequasiquote (idio_array_to_list (e), idio_array_to_list (e), level));
+	IDIO iatl = idio_array_to_list (e);
+	idio_meaning_copy_src_properties (src, iatl);
+
+	r = IDIO_LIST2 (idio_symbols_C_intern ("list->array"), idio_meaning_dequasiquote (iatl, iatl, level, indent + 1));
+	idio_meaning_copy_src_properties (src, r);
     } else if (idio_isa_symbol (e)) {
-	return IDIO_LIST2 (idio_S_quote, e);
+	r = IDIO_LIST2 (idio_S_quote, e);
+	idio_meaning_copy_src_properties (src, r);
     } else {
-	return e;
+	r = e;
     }
 
-    /*
-     * Shouldn't get here...
-     */
-    idio_error_C ("", IDIO_LIST1 (e), IDIO_C_FUNC_LOCATION ());
-
-    return idio_S_notreached;
+    return r;
 }
 
 static IDIO idio_meaning_quasiquotation (IDIO src, IDIO e, IDIO nametree, int flags, IDIO cs, IDIO cm)
@@ -1042,7 +1238,7 @@ static IDIO idio_meaning_quasiquotation (IDIO src, IDIO e, IDIO nametree, int fl
     IDIO_TYPE_ASSERT (array, cs);
     IDIO_TYPE_ASSERT (module, cm);
 
-    IDIO dq = idio_meaning_dequasiquote (e, e, 0);
+    IDIO dq = idio_meaning_dequasiquote (src, e, 0, 0);
 
     return idio_meaning (dq, dq, nametree, flags, cs, cm);
 }
@@ -1131,8 +1327,11 @@ static IDIO idio_meaning_rewrite_cond (IDIO prev, IDIO src, IDIO clauses)
 	 * course* it's a list...the only useful thing we're doing
 	 * here is checking there's explicitly three elements.
 	 */
-	if (idio_isa_list (IDIO_PAIR_H (clauses)) &&
-	    idio_list_length (IDIO_PAIR_H (clauses)) == 3) {
+
+	IDIO ph_clauses = IDIO_PAIR_H (clauses);
+
+	if (idio_isa_list (ph_clauses) &&
+	    idio_list_length (ph_clauses) == 3) {
 	    /*
 	     * The ``=>`` operator is a bit of a Scheme-ism in that
 	     * the clause says ``(c => f)`` and means that if ``c`` is
@@ -1159,13 +1358,22 @@ static IDIO idio_meaning_rewrite_cond (IDIO prev, IDIO src, IDIO clauses)
 	             (,(phtth clauses) gs)
 	             ,(rewrite-cond-clauses (pt clauses))))
 	     */
-	    return IDIO_LIST3 (idio_S_let,
-			       IDIO_LIST1 (IDIO_LIST2 (gs, IDIO_PAIR_HH (clauses))),
+	    IDIO phh_clauses = IDIO_PAIR_HH (clauses);
+	    idio_meaning_copy_src_properties (ph_clauses, phh_clauses);
+
+	    IDIO appl = IDIO_LIST2 (IDIO_PAIR_HTTH (clauses),
+				    gs);
+	    idio_meaning_copy_src_properties (ph_clauses, appl);
+
+	    IDIO let = IDIO_LIST3 (idio_S_let,
+			       IDIO_LIST1 (IDIO_LIST2 (gs, phh_clauses)),
 			       IDIO_LIST4 (idio_S_if,
 					   gs,
-					   IDIO_LIST2 (IDIO_PAIR_HTTH (clauses),
-						       gs),
-					   idio_meaning_rewrite_cond (IDIO_PAIR_H (clauses), IDIO_PAIR_T (clauses), IDIO_PAIR_T (clauses))));
+					   appl,
+					   idio_meaning_rewrite_cond (ph_clauses, IDIO_PAIR_T (clauses), IDIO_PAIR_T (clauses))));
+	    idio_meaning_copy_src_properties (ph_clauses, let);
+
+	    return let;
 	} else {
 	    /*
 	     * Test Case: evaluation-errors/rewrite-cond-apply-two-args.idio evaluation-errors/rewrite-cond-apply-four-args.idio
@@ -1216,26 +1424,37 @@ static IDIO idio_meaning_assignment (IDIO src, IDIO name, IDIO e, IDIO nametree,
 
     if (idio_isa_pair (name)) {
 	/*
-	 * set! (foo x y z) v
+	 * Notionally, we are invoked as
 	 *
-	 * `((setter ,(ph name)) ,@(pt name) ,e)
+	 * set! name expr
+	 *
+	 * but here {name} is itself an expression:
+	 *
+	 * set! (foo x y z) e
+	 *
+	 * which we want to transform into
+	 *
+	 * ((setter foo) x y z e)
+	 *
+	 * ie. get the "setter" of {foo} and apply it to all of the
+	 * arguments both of the "name-expression" and the original
+	 * expr being passed to {set!}
 	 */
-	IDIO value_expr = IDIO_PAIR_T (name);
-	idio_meaning_copy_src_properties (src, value_expr);
+	IDIO args = IDIO_PAIR_T (name);
+	idio_meaning_copy_src_properties (src, args);
 
-	IDIO se = idio_list_append2 (IDIO_LIST1 (IDIO_LIST2 (idio_S_setter,
-							     IDIO_PAIR_H (name))),
-				     value_expr);
+	IDIO setter = IDIO_LIST2 (idio_S_setter, IDIO_PAIR_H (name));
+	idio_meaning_copy_src_properties (src, setter);
+
+	/*
+	 * Nominally we could do with an append3() function here but
+	 * two calls to append2() will have to do...
+	 */
+	IDIO se = idio_list_append2 (IDIO_LIST1 (setter), args);
 	se = idio_list_append2 (se, IDIO_LIST1 (e));
-
 	idio_meaning_copy_src_properties (src, se);
 
-	return idio_meaning (se,
-			     se,
-			     nametree,
-			     IDIO_MEANING_NO_DEFINE (flags),
-			     cs,
-			     cm);
+	return idio_meaning (se, se, nametree, IDIO_MEANING_NO_DEFINE (flags), cs, cm);
     } else if (! idio_isa_symbol (name)) {
 	/*
 	 * Test Case: evaluation-errors/assign-non-symbol.idio
@@ -1413,9 +1632,9 @@ static IDIO idio_meaning_define_macro (IDIO src, IDIO name, IDIO e, IDIO nametre
 	e = IDIO_LIST3 (idio_S_function,
 			IDIO_PAIR_T (name),
 			e);
-	name = IDIO_PAIR_H (name);
-
 	idio_meaning_copy_src_properties (src, e);
+
+	name = IDIO_PAIR_H (name);
     }
 
     /*
@@ -1425,12 +1644,16 @@ static IDIO idio_meaning_define_macro (IDIO src, IDIO name, IDIO e, IDIO nametre
      */
     IDIO x_sym = idio_symbols_C_intern ("xx");
     IDIO e_sym = idio_symbols_C_intern ("ee");
+
+    IDIO pt_xx = IDIO_LIST2 (idio_S_pt, x_sym);
+    idio_meaning_copy_src_properties (src, pt_xx);
+
+    IDIO appl = IDIO_LIST3 (idio_S_apply, e, pt_xx);
+    idio_meaning_copy_src_properties (src, appl);
+
     IDIO expander = IDIO_LIST3 (idio_S_function,
 				IDIO_LIST2 (x_sym, e_sym),
-				IDIO_LIST3 (idio_S_apply,
-					    e,
-					    IDIO_LIST2 (idio_S_pt, x_sym)));
-
+				appl);
     idio_meaning_copy_src_properties (src, expander);
 
     /*
@@ -1682,11 +1905,13 @@ static IDIO idio_meaning_define_infix_operator (IDIO src, IDIO name, IDIO pri, I
 	    return idio_S_notreached;
 	}
 
+	IDIO find_module = IDIO_LIST2 (idio_symbols_C_intern ("find-module"),
+				       IDIO_LIST2 (idio_S_quote, IDIO_MODULE_NAME (idio_operator_module)));
+	idio_meaning_copy_src_properties (src, find_module);
+
 	IDIO sve = IDIO_LIST3 (idio_symbols_C_intern ("symbol-value"),
 			       IDIO_LIST2 (idio_S_quote, e),
-			       IDIO_LIST2 (idio_symbols_C_intern ("find-module"),
-					   IDIO_LIST2 (idio_S_quote, IDIO_MODULE_NAME (idio_operator_module))));
-
+			       find_module);
 	idio_meaning_copy_src_properties (src, sve);
 
 	m = idio_meaning (sve, sve, nametree, flags, cs, cm);
@@ -1790,11 +2015,13 @@ static IDIO idio_meaning_define_postfix_operator (IDIO src, IDIO name, IDIO pri,
 	    return idio_S_notreached;
 	}
 
+	IDIO find_module = IDIO_LIST2 (idio_symbols_C_intern ("find-module"),
+				       IDIO_LIST2 (idio_S_quote, IDIO_MODULE_NAME (idio_operator_module)));
+	idio_meaning_copy_src_properties (src, find_module);
+
 	IDIO sve = IDIO_LIST3 (idio_symbols_C_intern ("symbol-value"),
 			       IDIO_LIST2 (idio_S_quote, e),
-			       IDIO_LIST2 (idio_symbols_C_intern ("find-module"),
-					   IDIO_LIST2 (idio_S_quote, IDIO_MODULE_NAME (idio_operator_module))));
-
+			       find_module);
 	idio_meaning_copy_src_properties (src, sve);
 
 	m = idio_meaning (sve, sve, nametree, flags, cs, cm);
@@ -2214,6 +2441,7 @@ static IDIO idio_meaning_rewrite_body (IDIO src, IDIO e)
 		   idio_isa_pair (IDIO_PAIR_H (l)) &&
 		   idio_S_false != idio_expanderp (IDIO_PAIR_HH (l))) {
 	    cur = idio_macro_expands (IDIO_PAIR_H (l));
+	    idio_meaning_copy_src_properties (IDIO_PAIR_H (l), cur);
 	} else {
 	    cur = IDIO_PAIR_H (l);
 	}
@@ -3525,6 +3753,19 @@ static IDIO idio_meaning_expander (IDIO src, IDIO e, IDIO nametree, int flags, I
     IDIO me = idio_macro_expand (e);
     idio_meaning_copy_src_properties (src, me);
 
+    /*
+     * As noted in idio_meaning_dequasiquote() *someone* has to pass
+     * on some source properties to the result of applying the
+     * expander.  Well, we just did that so I guess it's up to us to
+     * pass on the source properties.
+     *
+    * This really should be a recursive loop over ph and pt...
+     */
+    if (idio_isa_pair (me) &&
+	idio_S_begin == IDIO_PAIR_H (me)) {
+	idio_meaning_copy_src_properties_r (src, IDIO_PAIR_T (me));
+    }
+
     return idio_meaning (me, me, nametree, flags, cs, cm);
 }
 
@@ -3601,7 +3842,7 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO cs, I
 	} else if (idio_S_quasiquote == eh) {
 	    /* (quasiquote x) */
 	    if (idio_isa_pair (et)) {
-		return idio_meaning_quasiquotation (IDIO_PAIR_H (et), IDIO_PAIR_H (et), nametree, flags, cs, cm);
+		return idio_meaning_quasiquotation (e, IDIO_PAIR_H (et), nametree, flags, cs, cm);
 	    } else {
 		/*
 		 * Test Case: evaluation-errors/quasiquote-nil.idio

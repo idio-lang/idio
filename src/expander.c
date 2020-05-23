@@ -714,7 +714,15 @@ IDIO_DEFINE_PRIMITIVE0V ("macro-expand", macro_expand, (IDIO x))
 {
     IDIO_ASSERT (x);
 
-    return idio_macro_expand (x);
+    IDIO me = idio_macro_expand (x);
+    idio_meaning_copy_src_properties (x, me);
+
+    if (idio_isa_pair (me) &&
+	idio_S_begin == IDIO_PAIR_H (me)) {
+	idio_meaning_copy_src_properties_r (x, IDIO_PAIR_T (me));
+    }
+
+    return me;
 }
 
 IDIO idio_macro_expands (IDIO e)
@@ -1221,10 +1229,12 @@ IDIO idio_operator_expand (IDIO e, int depth)
 
     /* idio_debug ("operator-expand:   %s\n", e); */
 
-    e = idio_infix_operator_expand (e, depth);
-    e = idio_postfix_operator_expand (e, depth);
+    IDIO r = idio_infix_operator_expand (e, depth);
+    r = idio_postfix_operator_expand (r, depth);
 
-    return e;
+    idio_meaning_copy_src_properties_f (e, r);
+
+    return r;
 }
 
 IDIO_DEFINE_PRIMITIVE1 ("operator-expand", operator_expand, (IDIO l))
@@ -1232,10 +1242,16 @@ IDIO_DEFINE_PRIMITIVE1 ("operator-expand", operator_expand, (IDIO l))
     IDIO_ASSERT (l);
     IDIO_TYPE_ASSERT (list, l);
 
-    return idio_operator_expand (l, 0);
+    IDIO r = idio_operator_expand (l, 0);
+
+    if (idio_isa_pair (r)) {
+	idio_meaning_copy_src_properties (l, r);
+    }
+
+    return r;
 }
 
-#define IDIO_DEFINE_ASSIGNMENT_INFIX_OPERATOR(iname,cname) \
+#define IDIO_DEFINE_ASSIGNMENT_INFIX_OPERATOR(iname,cname)		\
     IDIO_DEFINE_INFIX_OPERATOR (iname, cname, (IDIO op, IDIO before, IDIO args)) \
     {									\
 	IDIO_ASSERT (op);						\
@@ -1254,7 +1270,14 @@ IDIO_DEFINE_PRIMITIVE1 ("operator-expand", operator_expand, (IDIO l))
 	    if (idio_S_nil == IDIO_PAIR_T (after)) {			\
 		after = IDIO_PAIR_H (after);				\
 	    } else {							\
-		after = idio_operator_expand (after, 0);		\
+		if (idio_isa_pair (after)) {				\
+		    idio_meaning_copy_src_properties (before, after);	\
+		}							\
+		IDIO r_a = idio_operator_expand (after, 0);		\
+		if (idio_isa_pair (r_a)) {				\
+		    idio_meaning_copy_src_properties (after, r_a);	\
+		}							\
+		after = r_a;						\
 	    }								\
 	    return IDIO_LIST3 (op, IDIO_PAIR_H (before), after);	\
 	}								\

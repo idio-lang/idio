@@ -65,6 +65,8 @@ IDIO idio_toplevel_extend (IDIO lo, IDIO name, int variant, IDIO cs, IDIO cm);
 IDIO idio_environ_extend (IDIO lo, IDIO name, IDIO val, IDIO cs);
 
 void idio_meaning_copy_src_properties (IDIO src, IDIO dst);
+void idio_meaning_copy_src_properties_r (IDIO src, IDIO dst);
+void idio_meaning_copy_src_properties_f (IDIO src, IDIO dst);
 
 void idio_install_expander (IDIO id, IDIO proc);
 
