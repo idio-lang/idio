@@ -355,7 +355,12 @@ IDIO_DEFINE_PRIMITIVE1 ("symbol->string", symbol2string, (IDIO s))
     return idio_string_C (IDIO_SYMBOL_S (s));
 }
 
-IDIO_DEFINE_PRIMITIVE0 ("symbols", symbols, ())
+IDIO_DEFINE_PRIMITIVE0_DS ("symbols", symbols, (), "", "\
+return all known symbols			\n\
+						\n\
+:return: all known symbols			\n\
+:rtype: list					\n\
+")
 {
     /* the hash keys are strings */
     IDIO strings = idio_hash_keys_to_list (idio_symbols_hash);
@@ -445,7 +450,6 @@ void idio_properties_delete (IDIO o)
 	return;
     }
 
-    /* idio_debug ("ipd: deleting %s\n", o); */
     /* idio_debug ("with p=%s\n", idio_properties_get (o, IDIO_LIST1 (idio_S_false))); */
     idio_hash_delete (idio_properties_hash, o);
 }
