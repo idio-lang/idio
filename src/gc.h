@@ -434,6 +434,7 @@ typedef struct idio_hash_s {
     struct idio_s *grey;
     idio_hi_t size;	      /* nominal hash size */
     idio_hi_t mask;	      /* bitmask for easy modulo arithmetic */
+    idio_hi_t count;	      /* (key) count */
     int (*equal) (void *k1, void *k2);		    /* C equivalence function */
     idio_hi_t (*hashf) (struct idio_s *h, void *k); /* C hashing function */
     struct idio_s *comp;	/* user-supplied comparator */
@@ -444,6 +445,7 @@ typedef struct idio_hash_s {
 #define IDIO_HASH_GREY(H)	((H)->u.hash->grey)
 #define IDIO_HASH_SIZE(H)	((H)->u.hash->size)
 #define IDIO_HASH_MASK(H)	((H)->u.hash->mask)
+#define IDIO_HASH_COUNT(H)	((H)->u.hash->count)
 #define IDIO_HASH_EQUAL(H)	((H)->u.hash->equal)
 #define IDIO_HASH_HASHF(H)	((H)->u.hash->hashf)
 #define IDIO_HASH_COMP(H)	((H)->u.hash->comp)

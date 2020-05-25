@@ -297,7 +297,9 @@ IDIO_DEFINE_PRIMITIVE1 ("let*", lets, (IDIO e))
  * (apply (lambda (map ph bindings) body) (map pt bindings))
  */
 
-IDIO_DEFINE_PRIMITIVE1 ("letrec", letrec, (IDIO e))
+IDIO_DEFINE_PRIMITIVE1_DS ("letrec", letrec, (IDIO e), "e", "\
+poor man's letrec				\n\
+")
 {
     IDIO_ASSERT (e);
     IDIO_TYPE_ASSERT (list, e);
