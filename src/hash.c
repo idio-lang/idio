@@ -189,6 +189,7 @@ IDIO idio_hash (idio_hi_t size, int (*equal) (void *k1, void *k2), idio_hi_t (*h
     IDIO h = idio_gc_get (IDIO_TYPE_HASH);
     IDIO_GC_ALLOC (h->u.hash, sizeof (idio_hash_t));
     IDIO_HASH_GREY (h) = NULL;
+    IDIO_HASH_COUNT (h) = 0;
     IDIO_HASH_EQUAL (h) = equal;
     IDIO_HASH_HASHF (h) = hashf;
     IDIO_HASH_COMP (h) = comp;
@@ -230,6 +231,7 @@ static IDIO idio_hash_he_key (IDIO h, idio_hi_t hv)
 		    IDIO_HASH_HE_KEY (h, hv) = idio_S_nil;
 		    IDIO_HASH_HE_VALUE (h, hv) = idio_S_nil;
 		    /* IDIO_HASH_HE_NEXT (h, hv) = IDIO_HASH_SIZE (h) + 1; */
+		    IDIO_HASH_COUNT (h) -= 1;
 		    ck = idio_S_nil;
 		} else {
 		    IDIO_ASSERT (ck);
@@ -259,13 +261,14 @@ IDIO idio_hash_copy (IDIO orig, int depth)
     IDIO new = idio_gc_get (IDIO_TYPE_HASH);
     IDIO_GC_ALLOC (new->u.hash, sizeof (idio_hash_t));
     IDIO_HASH_GREY (new) = NULL;
+    IDIO_HASH_COUNT (new) = 0;
     IDIO_HASH_EQUAL (new) = IDIO_HASH_EQUAL (orig);
     IDIO_HASH_HASHF (new) = IDIO_HASH_HASHF (orig);
     IDIO_HASH_COMP (new) = IDIO_HASH_COMP (orig);
     IDIO_HASH_HASH (new) = IDIO_HASH_HASH (orig);
     IDIO_HASH_FLAGS (new) = IDIO_HASH_FLAGS (orig);
 
-    idio_assign_hash_he (new, idio_hash_hcount (orig));
+    idio_assign_hash_he (new, IDIO_HASH_COUNT (orig));
 
     idio_hi_t i;
     for (i = 0; i < IDIO_HASH_SIZE (orig); i++) {
@@ -349,23 +352,6 @@ void idio_free_hash (IDIO h)
     free (h->u.hash);
 }
 
-idio_hi_t idio_hash_hcount (IDIO h)
-{
-    IDIO_ASSERT (h);
-    IDIO_TYPE_ASSERT (hash, h);
-
-    idio_hi_t count = 0;
-
-    idio_hi_t i;
-    for (i = 0 ; i < IDIO_HASH_SIZE (h); i++) {
-	if (idio_S_nil != idio_hash_he_key (h, i)) {
-	    count++;
-	}
-    }
-
-    return count;
-}
-
 void idio_hash_resize (IDIO h)
 {
     IDIO_ASSERT (h);
@@ -383,26 +369,51 @@ void idio_hash_resize (IDIO h)
      */
     idio_hi_t osize = IDIO_HASH_MASK (h) + 1;
 
-    idio_hi_t hcount = idio_hash_hcount (h);
+    idio_hi_t hcount = IDIO_HASH_COUNT (h);
 
     idio_hi_t nsize = osize;
-    if (nsize <= hcount) {
+
+    idio_hi_t load_high = (osize / 2);
+    if (hcount > load_high) {
 	while (nsize <= hcount) {
-	    nsize <<= 1;
+	    nsize *= 2;
 	}
+	nsize *= 2;
     } else {
-	while (nsize > hcount) {
-	    nsize >>= 1;
+	idio_hi_t load_low = (osize / 8);
+	if (load_low < 8) {
+	    load_low = 8;
 	}
-	nsize <<= 1;
+	if (hcount < load_low) {
+	    while (nsize > hcount) {
+		nsize /= 2;
+	    }
+	    /*
+	     * nsize is now one halving less than hcount.  We know
+	     * we'll trigger a resize if hcount > size/2 so nsize
+	     * needs to be bigger than that
+	     */
+	    nsize *= 4;
+	}
+    }
+
+    if (nsize == osize) {
+	return;
     }
 
     IDIO_FPRINTF (stderr, "idio_hash_resize: %10p = %zd/%zd/%zd -> %zd\n", h, hcount, osize, IDIO_HASH_SIZE (h), nsize);
     idio_assign_hash_he (h, nsize);
 
+    /*
+     * The re-insertion by each idio_hash_put is going to increment
+     * IDIO_HASH_COUNT(h) -- we don't want to double count.
+     */
+    IDIO_HASH_COUNT (h) = 0;
     idio_hi_t i;
+    idio_hi_t c = 0;
     for (i = 0 ; i < ohsize; i++) {
 	if (idio_S_nil != ohe[i].k) {
+	    c++;
 	    idio_hash_put (h, ohe[i].k, ohe[i].v);
 	}
     }
@@ -870,12 +881,27 @@ IDIO idio_hash_put (IDIO h, void *kv, IDIO v)
 	IDIO_HASH_HE_VALUE (h, hi) = v;
 	IDIO_HASH_HE_NEXT (h, hi) = IDIO_HASH_SIZE (h) + 1;
 	idio_hash_verify_chain (h, kv, 1);
+	IDIO_HASH_COUNT (h) += 1;
 	return kv;
     }
 
     if (idio_hash_equal (h, ck, kv)) {
 	IDIO_HASH_HE_VALUE (h, hi) = v;
 	idio_hash_verify_chain (h, kv, 1);
+	return kv;
+    }
+
+    /*
+     * if we said osize = ohash->size it would be including the
+     * existing +16%, as we are growing this then we only want to
+     * double not 2*116%
+     */
+    idio_hi_t hsize = IDIO_HASH_MASK (h) + 1;
+
+    idio_hi_t load_high = (hsize / 2);
+    if (IDIO_HASH_COUNT (h) > load_high) {
+	idio_hash_resize (h);
+	idio_hash_put (h, kv, v);
 	return kv;
     }
 
@@ -968,6 +994,7 @@ IDIO idio_hash_put (IDIO h, void *kv, IDIO v)
 	idio_hash_verify_chain (h, kv, 1);
     }
 
+    IDIO_HASH_COUNT (h) += 1;
     return kv;
 }
 
@@ -1177,6 +1204,19 @@ int idio_hash_delete (IDIO h, void *kv)
     }
 
     idio_hash_verify_chain (h, kv, 0);
+    IDIO_HASH_COUNT (h) -= 1;
+
+    /*
+     * if we said osize = ohash->size it would be including the
+     * existing +16%, as we are growing this then we only want to
+     * double not 2*116%
+     */
+    idio_hi_t hsize = IDIO_HASH_MASK (h) + 1;
+
+    idio_hi_t load_low = (hsize / 8);
+    if (IDIO_HASH_COUNT (h) < load_low) {
+	idio_hash_resize (h);
+    }
 
     return 1;
 }
@@ -1236,7 +1276,13 @@ IDIO idio_hash_values_to_list (IDIO h)
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("hash?", hash_p, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1_DS ("hash?", hash_p, (IDIO o), "o", "\
+test if `o` is an hash				\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is an hash, #f otherwise	\n\
+")
 {
     IDIO_ASSERT (o);
 
@@ -1332,7 +1378,25 @@ IDIO idio_hash_make_hash (IDIO args)
     return ht;
 }
 
-IDIO_DEFINE_PRIMITIVE0V ("make-hash", make_hash, (IDIO args))
+IDIO_DEFINE_PRIMITIVE0V_DS ("make-hash", make_hash, (IDIO args), "[ equiv-func [ hash-func [size]]]", "\
+create a hash table					\n\
+							\n\
+:param hash-func: defaults to ``hash-table-hash``	\n\
+:type hash-func: function				\n\
+:param equiv-func: defaults to ``equal?``		\n\
+:type equiv-func: function or symbol			\n\
+:param size: default to 32				\n\
+:type size: fixnum					\n\
+							\n\
+If either of ``hash-func`` or ``equiv-func`` is ``#n``	\n\
+use the default.					\n\
+							\n\
+As an accelerator if ``equiv-comp`` is one of the	\n\
+*symbol* ``eq?``, ``eqv?`` or ``equal?`` then use the	\n\
+underlying C function.					\n\
+							\n\
+:return: hash table					\n\
+")
 {
     IDIO_ASSERT (args);
     IDIO_VERIFY_PARAM_TYPE (list, args);
@@ -1375,7 +1439,16 @@ IDIO idio_hash_alist_to_hash (IDIO alist, IDIO args)
     return ht;
 }
 
-IDIO_DEFINE_PRIMITIVE1V ("alist->hash", alist2hash, (IDIO alist, IDIO args))
+IDIO_DEFINE_PRIMITIVE1V_DS ("alist->hash", alist2hash, (IDIO alist, IDIO args), "al [args]", "\
+convert association list ``al`` into a hash table	\n\
+							\n\
+:param al: association list				\n\
+:type al: association list				\n\
+:param args: argument for ``make-hash``			\n\
+:type args: (see ``make-hash``)				\n\
+							\n\
+:return: hash table					\n\
+")
 {
     IDIO_ASSERT (alist);
     IDIO_ASSERT (args);
@@ -1385,7 +1458,14 @@ IDIO_DEFINE_PRIMITIVE1V ("alist->hash", alist2hash, (IDIO alist, IDIO args))
     return idio_hash_alist_to_hash (alist, args);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("hash-equivalence-function", hash_equivalence_function, (IDIO ht))
+IDIO_DEFINE_PRIMITIVE1_DS ("hash-equivalence-function", hash_equivalence_function, (IDIO ht), "h", "\
+return the ``equiv-func`` of ``h``			\n\
+							\n\
+:param h: hash table					\n\
+:type h: hash table					\n\
+							\n\
+:return: equivalent function				\n\
+")
 {
     IDIO_ASSERT (ht);
     IDIO_VERIFY_PARAM_TYPE (hash, ht);
@@ -1407,7 +1487,14 @@ IDIO_DEFINE_PRIMITIVE1 ("hash-equivalence-function", hash_equivalence_function, 
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("hash-hash-function", hash_hash_function, (IDIO ht))
+IDIO_DEFINE_PRIMITIVE1_DS ("hash-hash-function", hash_hash_function, (IDIO ht), "h", "\
+return the ``hash-func`` of ``h``			\n\
+							\n\
+:param h: hash table					\n\
+:type h: hash table					\n\
+							\n\
+:return: hash function					\n\
+")
 {
     IDIO_ASSERT (ht);
     IDIO_VERIFY_PARAM_TYPE (hash, ht);
@@ -1425,7 +1512,14 @@ IDIO_DEFINE_PRIMITIVE1 ("hash-hash-function", hash_hash_function, (IDIO ht))
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("hash-size", hash_size, (IDIO ht))
+IDIO_DEFINE_PRIMITIVE1_DS ("hash-size", hash_size, (IDIO ht), "h", "\
+return the key count of ``h``				\n\
+							\n\
+:param h: hash table					\n\
+:type h: hash table					\n\
+							\n\
+:return: key count					\n\
+")
 {
     IDIO_ASSERT (ht);
     IDIO_VERIFY_PARAM_TYPE (hash, ht);
@@ -1437,7 +1531,7 @@ IDIO_DEFINE_PRIMITIVE1 ("hash-size", hash_size, (IDIO ht))
      * Better safe than sorry, though.  Call idio_integer() rather
      * than idio_fixnum().
      */
-    return idio_integer (idio_hash_hcount (ht));
+    return idio_integer (IDIO_HASH_COUNT (ht));
 }
 
 IDIO idio_hash_ref (IDIO ht, IDIO key, IDIO args)
@@ -1464,7 +1558,20 @@ IDIO idio_hash_ref (IDIO ht, IDIO key, IDIO args)
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE2V ("hash-ref", hash_ref, (IDIO ht, IDIO key, IDIO args))
+IDIO_DEFINE_PRIMITIVE2V_DS ("hash-ref", hash_ref, (IDIO ht, IDIO key, IDIO args), "ht key [default]", "\
+return the value indexed by ``key` in hash table ``ht``	\n\
+							\n\
+:param ht: hash table					\n\
+:type ht: hash table					\n\
+:param key: non-#n value				\n\
+:type key: any non-#n					\n\
+:param default: a thunk to supply a default value if	\n\
+		``key`` not found			\n\
+:type default: a thunk					\n\
+							\n\
+:return: value (#unspec if ``key`` not found and no	\n\
+	 ``default`` supplied)				\n\
+")
 {
     IDIO_ASSERT (ht);
     IDIO_ASSERT (key);
@@ -1541,7 +1648,30 @@ IDIO_DEFINE_PRIMITIVE2 ("hash-exists?", hash_existsp, (IDIO ht, IDIO key))
  * That is, call {func} on the existing value and set the key to the
  * returned value
  */
-IDIO_DEFINE_PRIMITIVE3V ("hash-update!", hash_update, (IDIO ht, IDIO key, IDIO func, IDIO args))
+IDIO_DEFINE_PRIMITIVE3V_DS ("hash-update!", hash_update, (IDIO ht, IDIO key, IDIO func, IDIO args), "ht key func [default]", "\
+update the value indexed by ``key` in hash table ``ht``		\n\
+								\n\
+SRFI-69:							\n\
+								\n\
+Semantically equivalent to, but may be implemented more		\n\
+efficiently than, the following code:				\n\
+								\n\
+   hash-set! ht key (func (hash-ref ht key [default])))		\n\
+								\n\
+That is, call ``func`` on the existing value and set the	\n\
+key to the returned value					\n\
+								\n\
+:param ht: hash table						\n\
+:type ht: hash table						\n\
+:param key: non-#n value					\n\
+:type key: any non-#n						\n\
+:param func: func to generate replacement value			\n\
+:type func: 1-ary function					\n\
+:param default: see ``hash-ref``				\n\
+:type default: see ``hash-ref``					\n\
+								\n\
+:return: #unspec						\n\
+")
 {
     IDIO_ASSERT (ht);
     IDIO_ASSERT (key);
@@ -1577,7 +1707,16 @@ IDIO_DEFINE_PRIMITIVE1 ("hash-values", hash_values, (IDIO ht))
     return idio_hash_values_to_list (ht);
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("hash-walk", hash_walk, (IDIO ht, IDIO func))
+IDIO_DEFINE_PRIMITIVE2_DS ("hash-walk", hash_walk, (IDIO ht, IDIO func), "ht func", "\
+call ``func`` for each ``key` in hash table ``ht``		\n\
+								\n\
+:param ht: hash table						\n\
+:type ht: hash table						\n\
+:param func: func to be called with each key, value pair	\n\
+:type func: 2-ary function					\n\
+								\n\
+:return: #unspec						\n\
+")
 {
     IDIO_ASSERT (ht);
     IDIO_ASSERT (func);
