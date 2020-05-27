@@ -24,9 +24,9 @@
 #define HASH_H
 
 #define IDIO_HASH(s,e,hf,c,h)	(idio_hash ((s), (e), (hf), (c), (h)))
-#define IDIO_HASH_EQP(s)	(IDIO_HASH ((s), idio_eqp, idio_hash_hashval, idio_S_nil, idio_S_nil))
-#define IDIO_HASH_EQVP(s)	(IDIO_HASH ((s), idio_eqvp, idio_hash_hashval, idio_S_nil, idio_S_nil))
-#define IDIO_HASH_EQUALP(s)	(IDIO_HASH ((s), idio_equalp, idio_hash_hashval, idio_S_nil, idio_S_nil))
+#define IDIO_HASH_EQP(s)	(IDIO_HASH ((s), idio_eqp, idio_hash_default_hashf, idio_S_nil, idio_S_nil))
+#define IDIO_HASH_EQVP(s)	(IDIO_HASH ((s), idio_eqvp, idio_hash_default_hashf, idio_S_nil, idio_S_nil))
+#define IDIO_HASH_EQUALP(s)	(IDIO_HASH ((s), idio_equalp, idio_hash_default_hashf, idio_S_nil, idio_S_nil))
 
 IDIO idio_hash (size_t size, int (*equal) (void *k1, void *k2), size_t (*hashf) (IDIO h, void *k), IDIO comp, IDIO hash);
 IDIO idio_hash_copy (IDIO orig, int depth);
@@ -35,15 +35,15 @@ int idio_isa_hash (IDIO h);
 void idio_free_hash (IDIO h);
 size_t idio_hash_hcount (IDIO h);
 void idio_hash_resize (IDIO h);
-size_t idio_hash_hashval_uintmax_t (uintmax_t i);
-size_t idio_hash_hashval_string_C (size_t blen, const char *s_C);
-size_t idio_hash_hashval_string (IDIO s);
-size_t idio_hash_hashval_symbol (IDIO s);
-size_t idio_hash_hashval_void (void *p);
-size_t idio_hash_hashval_pair (IDIO h);
-size_t idio_hash_hashval_array (IDIO h);
-size_t idio_hash_hashval_hash (IDIO h);
-size_t idio_hash_hashval (IDIO h, void *k);
+size_t idio_hash_default_hashf_uintmax_t (uintmax_t i);
+size_t idio_hash_default_hashf_string_C (size_t blen, const char *s_C);
+size_t idio_hash_default_hashf_string (IDIO s);
+size_t idio_hash_default_hashf_symbol (IDIO s);
+size_t idio_hash_default_hashf_void (void *p);
+size_t idio_hash_default_hashf_pair (IDIO h);
+size_t idio_hash_default_hashf_array (IDIO h);
+size_t idio_hash_default_hashf_hash (IDIO h);
+size_t idio_hash_default_hashf (IDIO h, void *k);
 IDIO idio_hash_put (IDIO h, void *k, IDIO v);
 int idio_hash_exists_key (IDIO h, void *kv);
 IDIO idio_hash_exists (IDIO h, void *k);
