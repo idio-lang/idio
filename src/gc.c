@@ -158,6 +158,13 @@ IDIO idio_gc_get (idio_type_e type)
     o->flags = IDIO_FLAG_NONE;
     o->tflags = 0;
 
+    /*
+     * 0 is the sentinel value for a hashval.  Of course a hash value
+     * could be 0 in which case for a small number of objects we
+     * re-compute the hash.
+     */
+    IDIO_HASHVAL (o) = 0;
+
     IDIO_ASSERT (o);
     if (NULL != idio_gc->used) {
 	IDIO_ASSERT (idio_gc->used);
@@ -1450,6 +1457,7 @@ void idio_gc_sweep ()
 	    idio_gc_sweep_free_value (co);
 
 	    co->type = IDIO_TYPE_NONE;
+	    IDIO_HASHVAL (co) = 0;
 	    co->gc_flags = (co->gc_flags & IDIO_GC_FLAG_FREE_UMASK) | IDIO_GC_FLAG_FREE;
 	    co->next = idio_gc->free;
 	    idio_gc->free = co;

@@ -70,7 +70,7 @@ idio_hi_t idio_keyword_C_hash (IDIO h, void *s)
     size_t hvalue = (uintptr_t) s;
 
     if (idio_S_nil != s) {
-	hvalue = idio_hash_hashval_string_C (strlen ((char *) s), s);
+	hvalue = idio_hash_default_hashf_string_C (strlen ((char *) s), s);
     }
 
     return (hvalue & IDIO_HASH_MASK (h));
