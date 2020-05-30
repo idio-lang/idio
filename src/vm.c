@@ -2844,6 +2844,15 @@ int idio_vm_run1 (IDIO thr)
 
 		if (idio_isa_closure (val)) {
 		    idio_property_set (val, idio_KW_name, sym);
+		    idio_property_set (val, idio_KW_source, idio_string_C ("GLOBAL-SET"));
+		    IDIO str = idio_property_get (val, idio_KW_sigstr, IDIO_LIST1 (idio_S_nil));
+		    if (idio_S_nil != str) {
+			idio_property_set (val, idio_KW_sigstr, str);
+		    }
+		    str = idio_property_get (val, idio_KW_docstr, IDIO_LIST1 (idio_S_nil));
+		    if (idio_S_nil != str) {
+			idio_property_set (val, idio_KW_docstr, str);
+		    }
 		}
 	    } else {
 		IDIO ce = idio_thread_current_env ();

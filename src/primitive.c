@@ -56,8 +56,12 @@ IDIO idio_primitive (IDIO (*func) (IDIO args), const char *name_C, size_t arity,
 #endif
 
     idio_properties_create (o);
-    idio_property_set (o, idio_KW_sigstr, idio_string_C (sigstr_C));
-    idio_property_set (o, idio_KW_docstr_raw, idio_string_C (docstr_C));
+    if (NULL != sigstr_C) {
+	idio_property_set (o, idio_KW_sigstr, idio_string_C (sigstr_C));
+    }
+    if (NULL != docstr_C) {
+	idio_property_set (o, idio_KW_docstr_raw, idio_string_C (docstr_C));
+    }
 
     return o;
 }
@@ -89,6 +93,9 @@ IDIO idio_primitive_data (idio_primitive_desc_t *desc)
 #endif
 
     idio_properties_create (o);
+    if (NULL != desc->name) {
+	idio_property_set (o, idio_KW_name, idio_symbols_C_intern (desc->name));
+    }
     if (NULL != desc->sigstr) {
 	idio_property_set (o, idio_KW_sigstr, idio_string_C (desc->sigstr));
     }
@@ -107,7 +114,7 @@ void idio_primitive_property_set_C (IDIO p, IDIO kw, const char *str_C)
     IDIO str = idio_S_nil;
 
     if (NULL == str_C) {
-	str = idio_S_nil;
+	return;
     } else {
 	size_t l = strlen (str_C);
 	if (0 == l) {
