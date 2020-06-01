@@ -654,7 +654,7 @@ void idio_init_symbol ()
      * weak keys otherwise the existence of any object in this hash
      * prevents it being freed!
      */
-    idio_properties_hash = IDIO_HASH_EQP (256);
+    idio_properties_hash = IDIO_HASH_EQP (4 * 1024);
     IDIO_HASH_FLAGS (idio_properties_hash) |= IDIO_HASH_FLAG_WEAK_KEYS;
     idio_gc_protect (idio_properties_hash);
 }

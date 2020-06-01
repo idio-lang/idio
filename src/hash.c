@@ -395,7 +395,7 @@ void idio_hash_resize (IDIO h, int larger)
     idio_hi_t nsize = osize;
 
     if (larger) {
-	idio_hi_t load_high = (osize / 2);
+	idio_hi_t load_high = (osize / 2) + (osize / 4);
 	if (hcount > load_high) {
 	    while (nsize <= hcount) {
 		nsize *= 2;
@@ -403,7 +403,7 @@ void idio_hash_resize (IDIO h, int larger)
 	    nsize *= 2;
 	}
     } else {
-	idio_hi_t load_low = (osize / 8);
+	idio_hi_t load_low = (osize / 16);
 	if (load_low < 8) {
 	    load_low = 8;
 	}
@@ -431,7 +431,7 @@ void idio_hash_resize (IDIO h, int larger)
 	return;
     }
 
-    /* fprintf (stderr, "idio_hash_resize: %10p %s = %zd/%zd/%zd -> %zd\n", h, larger ? "L" : "S", hcount, osize, IDIO_HASH_SIZE (h), nsize); */
+    fprintf (stderr, "idio_hash_resize: %10p %s = %zd/%zd/%zd -> %zd\n", h, larger ? "L" : "S", hcount, osize, IDIO_HASH_SIZE (h), nsize);
     IDIO_FPRINTF (stderr, "idio_hash_resize: %10p = %zd/%zd/%zd -> %zd\n", h, hcount, osize, IDIO_HASH_SIZE (h), nsize);
     idio_assign_hash_he (h, nsize);
 
@@ -1077,7 +1077,7 @@ IDIO idio_hash_put (IDIO h, void *kv, IDIO v)
      */
     idio_hi_t hsize = IDIO_HASH_MASK (h) + 1;
 
-    idio_hi_t load_high = (hsize / 2);
+    idio_hi_t load_high = (hsize / 2) + (hsize / 4);
     if (IDIO_HASH_COUNT (h) > load_high) {
 	idio_hash_resize (h, 1);
 	idio_hash_put (h, kv, v);
@@ -1392,7 +1392,7 @@ int idio_hash_delete (IDIO h, void *kv)
      */
     idio_hi_t hsize = IDIO_HASH_MASK (h) + 1;
 
-    idio_hi_t load_low = (hsize / 8);
+    idio_hi_t load_low = (hsize / 16);
     if (IDIO_HASH_COUNT (h) < load_low) {
 	idio_hash_resize (h, 0);
     }
