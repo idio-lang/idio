@@ -32,10 +32,10 @@ test (hash-exists? ht 'a) #t
 test (hash-ref ht 'a) 3
 
 trap ^rt-hash-key-not-found (function (cont cond) {
-  test (rt-hash-key-not-found? cond) #t
-  if cont {
-    #f
-  } (error 'hash-test "hash key not found: unexpected non-continuable error" cond)
+			       test (rt-hash-key-not-found? cond) #t
+			       if cont {
+				 #f
+			       } (error 'hash-test "hash key not found: unexpected non-continuable error" cond)
 }) {
   test (hash-ref ht 'b) #f
 }
@@ -72,7 +72,7 @@ test (length (hash-values ht)) 2
 ;; hash-walk
 sum := 0
 addv := function (k v) {
-  sum = sum + v
+	  sum = sum + v
 }
 
 ;; we should have b and c in the hash with values 5 and 109
@@ -81,7 +81,7 @@ test sum 114
 
 ;; hash-fold
 accv := function (k v i) {
-  i + v
+	  i + v
 }
 
 test (hash-fold ht accv 0) 114
@@ -148,17 +148,17 @@ test (hash-equivalence-function ht) 'eq?
 ;; ^rt-parameter-type-error -- as the C code for {==} generates
 ;; non-continuable conditions
 ht-integer-eq? := function (k1 k2) {
-  cond (((null? k1) or
-	 (null? k2)) #f) \
-       ((not (integer? k1)) {
-	 c := make-condition ^rt-parameter-type-error "not an integer" 'ht-integer-eq? k1
-	 raise #t c
-       }) \
-       ((not (integer? k2)) {
-	 c := make-condition ^rt-parameter-type-error "not an integer" 'ht-integer-eq? k2
-	 raise #t c
-       }) \
-       (else (== k1 k2))
+		    cond (((null? k1) or
+			  (null? k2)) #f) \
+			 ((not (integer? k1)) {
+			   c := make-condition ^rt-parameter-type-error "k1 is not an integer" 'ht-integer-eq? k1
+			   raise #t c
+			 }) \
+			 ((not (integer? k2)) {
+			   c := make-condition ^rt-parameter-type-error "k2 is not an integer" 'ht-integer-eq? k2
+			   raise #t c
+			 }) \
+			 (else (== k1 k2))
 }
 
 ht = make-hash ht-integer-eq?
@@ -173,39 +173,59 @@ test (hash-exists? ht 3) #f
 test (hash-ref ht 2) "banana"
 
 ;; Make sure it fails!  That is to say, check we are actually using
-;; it.
+;; our hash equivalence function.
 
-;; Here we want to provoke ht-integer-eq? into producing an error, an
-;; ^rt-parameter-type-error in particular, because we're trying to
-;; insert a character as a key when ht-integer-eq? only works with
-;; integers (and #n).
+;; Note that this is *not* the hashing function.  We are using the
+;; default hashing function which doesn't care if keys are integers or
+;; not.  In other words we can insert, say, *characters* as keys quite
+;; happily.  The hash equivalence function will come into play when a
+;; clash between keys at an index needs to be checked.
 
-;; We can't guarantee that a given key will collide with any other so
-;; we have to loop over a few until one collides -- once we've
-;; "collided" with all the default #n keys that exist in a new hash.
-done := #f
-trap ^rt-parameter-type-error (function (cont cond) {
-  if cont {
-    ;; NB only increment the test count once as ht-integer-eq? might
-    ;; be called several times when a key collides in which case we'll
-    ;; get an error riased several times.
-    if (not done) (test #t #t)
+;; That was true until I fixed the idio_verify_chain code to actually
+;; use the equivalence function whereon we *immediately* fail during
+;; verification of a non-integer key, albeit after insertion of said
+;; key.  The verification error raises a generic ^idio-error.
 
-    ;; set done
-    done = #t
+;; NB key collisions can occur several times so check to only
+;; increment the test count once
+done_verify := #f
+done_param := #f
 
-    ;; return #f (to ht-integer-eq?, hopefully)
-    #f
-  } (error 'hash-test "hash equivalence function fail: unexpected non-continuable error" cond) 
-}) {
-  ;; need plenty of values to provoke a key collision
-  loop :+ function (i) {
-    c := integer->char i
-    hash-set! ht c "carrot"
-    if (not done) (loop (i + 1))
-  }
+trap (^rt-parameter-type-error ^idio-error) \
+     (function (cont cond) {
+	if (idio-error? cond) {
+	  if (not done_verify) {
+	    test #t #t
+	    done_verify = #t
+	  }
 
-  loop 16
+	  ;; return #t (as though from ht-integer-eq?) so that
+	  ;; idio_hash_verify_chain doesn't re-raise an error
+	  #t
+	} {
+	  if cont {
+	    if (not done_param) {
+	      test #t #t
+	      done_param = #t
+	    }
+
+	    ;; return #f (as though from ht-integer-eq?)
+	    #f
+	  } (error 'hash-test "hash equivalence function fail: unexpected non-continuable error" cond)
+	}
+     }) {
+  i := 65
+
+  hash-set! ht i "integer"
+  test ht.i "integer"
+
+  c := integer->char i
+
+  hash-set! ht c "character"
+
+  ;; a test was incremented in the trap but we can test again for good
+  ;; measure
+  test ht.c "character"
 }
 
 ;; if we copy the hash we should copy the equivalence function
@@ -280,33 +300,45 @@ test (hash-ref ht 2) "banana"
 ;; trying to insert a character as a key when ht-integer-hash only
 ;; works with integers.
 
-;; We can't guarantee that a given key will collide with any other so
-;; we have to loop over a few until one collides -- once we've
-;; "collided" with all the #n keys that exist in a new hash.
+;; Note that this trap handler returns 0 (zero) to the {raise} in
+;; {ht-integer-hash} which, in turn returns it to the internals of
+;; {hash-set!}.  So even though {ht-integer-hash} only works with
+;; integers and correctly raised an error we have told it to shut up
+;; and use 0 regardless.
+
+;; If you judiciously add debug statements to this you might realise
+;; that more than one trap gets raised (probably).  This is because
+;; when we calculate our index in the hash we potentially need to
+;; follow a chain.  So we call the hashing function once to determine
+;; which chain to follow.  Is it is a non-zero chain you *should* end
+;; up with an out-of-hash-index.  That means that we have to call the
+;; hashing function again in the parent (dumb, I know) to decide how
+;; to insert this key within the chain.  We then call at least two
+;; verify_chain functions, each of which calls the hashing function on
+;; our key in the chain.
+
 done := #f
 trap ^rt-parameter-type-error (function (cont cond) {
-  if cont {
-    ;; NB only increment the test count once as ht-integer-hash might
-    ;; be called several times when a key collides in which case we'll
-    ;; get an error riased several times.
-    if (not done) (test #t #t)
+				 if cont {
+				   ;; be called several times when a key collides in which case we'll
+				   ;; get an error riased several times.
+				   if (not done) {
+				     test #t #t
+				     ;; set done
+				     done = #t
+				   }
 
-    ;; set done
-    done = #t
-
-    ;; return 0 (to ht-integer-hash, which returns it to the internals
-    ;; of hash-set!)
-    0
-  } (error 'hash-test "hash function fail: unexpected non-continuable error" cond)
+				   ;; return 0 (to ht-integer-hash, which returns it to the internals
+				   ;; of hash-set!)
+				   0
+				 } (error 'hash-test "hash function fail: unexpected non-continuable error" cond)
 }) {
-  ;; need plenty of values to provoke a key collision
-  loop :+ function (i) {
-    c := integer->char i
-    hash-set! ht c "carrot"
-    if (not done) (loop (i + 1))
-  }
+  i := 65
+  c := integer->char i
+  hash-set! ht c "carrot"
 
-  loop 16
+  test (hash-exists? ht i) #f
+  test (hash-exists? ht c) #t
 }
 
 ;; if we copy the hash we should copy the hash function
@@ -345,7 +377,13 @@ ht = #{ (1 & "apple") (2 & #{ ("cow" "beef") ("sheep" "lamb")}) }
 ht.2 ."pig" = "pork"
 test (ht.2 ."pig") "pork"
 
+;; dumb equality bug in idio_hash_verify_chain -- the second use of
+;; the (non-integer) key would trigger a key not found error.
+ht."one" = 1
+ht."one" = 2
+
+test ht."one" 2
 
 ;; all done?
-test (hash0 + 65) Tests
+test (hash0 + 70) Tests
 

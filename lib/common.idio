@@ -127,3 +127,29 @@ define-syntax with-values-from \
     ((with-values-from formals expression body ...)
      (call-with-values (function () expression) (function formals body ...))))
 
+define (hprintf handle fmt & args) {
+  with-output-to handle (function () {
+			   if (null? args) {
+			     printf fmt
+			   } {
+			     apply printf fmt (map display-string args)
+			   }
+  })
+}
+
+define (oprintf fmt & args) {
+  if (null? args) {
+    hprintf (current-output-handle) fmt
+  } {
+    apply hprintf (current-output-handle) fmt args
+  }
+}
+
+define (eprintf fmt & args) {
+  if (null? args) {
+    hprintf (current-error-handle) fmt
+  } {
+    apply hprintf (current-error-handle) fmt args
+  }
+}
+

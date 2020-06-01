@@ -34,7 +34,7 @@ IDIO idio_hash_alist_to_hash (IDIO alist, IDIO args);
 int idio_isa_hash (IDIO h);
 void idio_free_hash (IDIO h);
 size_t idio_hash_hcount (IDIO h);
-void idio_hash_resize (IDIO h);
+void idio_hash_resize (IDIO h, int larger);
 size_t idio_hash_default_hashf_uintmax_t (uintmax_t i);
 size_t idio_hash_default_hashf_string_C (size_t blen, const char *s_C);
 size_t idio_hash_default_hashf_string (IDIO s);

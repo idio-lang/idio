@@ -65,8 +65,12 @@ IDIO idio_closure (size_t code_pc, size_t code_len, IDIO frame, IDIO env, IDIO s
 #endif
 
     idio_properties_create (c);
-    idio_property_set (c, idio_KW_sigstr, sigstr);
-    idio_property_set (c, idio_KW_docstr_raw, docstr);
+    if (idio_S_nil != sigstr) {
+	idio_property_set (c, idio_KW_sigstr, sigstr);
+    }
+    if (idio_S_nil != docstr) {
+	idio_property_set (c, idio_KW_docstr_raw, docstr);
+    }
 
     return c;
 }
