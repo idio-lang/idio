@@ -1651,8 +1651,9 @@ static IDIO idio_meaning_define_macro (IDIO src, IDIO name, IDIO e, IDIO nametre
     IDIO appl = IDIO_LIST3 (idio_S_apply, e, pt_xx);
     idio_meaning_copy_src_properties (src, appl);
 
-    IDIO expander = IDIO_LIST3 (idio_S_function,
+    IDIO expander = IDIO_LIST4 (idio_S_function,
 				IDIO_LIST2 (x_sym, e_sym),
+				idio_string_C ("im_dm"),
 				appl);
     idio_meaning_copy_src_properties (src, expander);
 
@@ -1926,8 +1927,9 @@ static IDIO idio_meaning_define_infix_operator (IDIO src, IDIO name, IDIO pri, I
 	 */
 	IDIO def_args = IDIO_LIST3 (idio_S_op, idio_S_before, idio_S_after);
 
-	IDIO fe = IDIO_LIST3 (idio_S_function,
+	IDIO fe = IDIO_LIST4 (idio_S_function,
 			      def_args,
+			      idio_string_C ("im_dio"),
 			      e);
 
 	idio_meaning_copy_src_properties (src, fe);
@@ -2036,8 +2038,9 @@ static IDIO idio_meaning_define_postfix_operator (IDIO src, IDIO name, IDIO pri,
 	 */
 	IDIO def_args = IDIO_LIST3 (idio_S_op, idio_S_before, idio_S_after);
 
-	IDIO fe = IDIO_LIST3 (idio_S_function,
+	IDIO fe = IDIO_LIST4 (idio_S_function,
 			      def_args,
+			      idio_string_C ("im_dpo"),
 			      e);
 
 	idio_meaning_copy_src_properties (src, fe);
@@ -2762,8 +2765,9 @@ static IDIO idio_meaning_rewrite_body_letrec (IDIO src, IDIO e)
 		 *
 		 * (name (function (args) ...))
 		 */
-		IDIO fn = idio_list_append2 (IDIO_LIST2 (idio_S_function,
-							 IDIO_PAIR_T (bindings)),
+		IDIO fn = idio_list_append2 (IDIO_LIST3 (idio_S_function,
+							 IDIO_PAIR_T (bindings),
+							 idio_string_C ("im_rbl :+")),
 					     IDIO_PAIR_TT (cur));
 		idio_meaning_copy_src_properties (cur, fn);
 
@@ -3462,6 +3466,13 @@ static IDIO idio_meaning_application (IDIO src, IDIO e, IDIO es, IDIO nametree, 
 
     if (idio_isa_pair (e) &&
 	idio_eqp (idio_S_function, IDIO_PAIR_H (e))) {
+	if (0 == idio_isa_string (IDIO_PAIR_HTT (e))) {
+	    e = idio_list_append2 (IDIO_LIST3 (IDIO_PAIR_H (e),
+					       IDIO_PAIR_HT (e),
+					       idio_string_C ("im_appl closed")),
+				   IDIO_PAIR_TT (e));
+	    /* idio_debug ("im_appl closed %s\n", e); */
+	}
 	return idio_meaning_closed_application (e, e, es, nametree, flags, cs, cm);
     } else {
 	return idio_meaning_regular_application (e, e, es, nametree, flags, cs, cm);

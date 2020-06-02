@@ -26,8 +26,25 @@ define-macro (help x) {
     cond ((function? $x) {
       sigstr := %property $x :sigstr #n
       docstr := %property $x :docstr-raw #n
-      display* "function:" '$x sigstr "\n"
-      display docstr
+      details := find-symbol '$x
+
+      display '$x
+      display " is a function"
+      if (list? details) {
+	display " from module "
+	display (module-name (phttt details))
+      }
+      display "\n"
+      display "SYNOPSIS: "
+      if (null? sigstr) {
+	display* '$x
+      } {
+	display* '$x sigstr
+      }
+      if (not (null? docstr)) {
+	display* "DESCRIPTION:"
+	display docstr
+      }
       #t
     })   ((struct-type? $x) {
       loop-isa :+ function (type) {
@@ -35,6 +52,7 @@ define-macro (help x) {
 		      string-append " > " (symbol->string (struct-type-name type)) (loop-isa (struct-type-parent type))
 		    }
       }
+
       display* "struct-type:" (struct-type-name $x) (loop-isa (struct-type-parent $x))"\n"
       display* "fields" (struct-type-fields $x)
     })   ((struct-instance? $x) {
@@ -73,8 +91,25 @@ define-macro (help x) {
 	cond ((expander? '$x) {
 	  sigstr := %property $x :sigstr #n
 	  docstr := %property $x :docstr-raw #n
-	  display* "expander:" '$x sigstr "\n"
-	  display docstr
+	  details := find-symbol '$x
+
+	  display '$x
+	  display " is an expander"
+	  if (list? details) {
+	    display " from module "
+	    display (module-name (phttt details))
+	  }
+	  display "\n"
+	  display "SYNOPSIS: "
+	  if (null? sigstr) {
+	    display* '$x
+	  } {
+	    display* '$x sigstr
+	  }
+	  if (not (null? docstr)) {
+	    display* "DESCRIPTION:"
+	    display docstr
+	  }
 	})   (else {
 	  display* "symbol:" '$x
 	})

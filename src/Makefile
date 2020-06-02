@@ -93,7 +93,7 @@ ifneq ($(OS),Darwin)
 DLIBS := libos.so libposix-regex.so
 endif
 
-all : tags $(BINDIR) $(BINDIR)/idio
+all : tags $(BINDIR)/idio
 #all : idio scm1-c-structs.scm1 ${DLIBS} tags
 
 profiled :
@@ -120,7 +120,7 @@ doc :
 
 include $(subst .c,.d,$(sources))
 
-$(BINDIR)/idio : $(objects)
+$(BINDIR)/idio : $(objects) | $(BINDIR)
 	${CC} ${LDFLAGS} -o $@ $^ ${LIBS}
 
 lib%.so : %.o
@@ -145,6 +145,8 @@ tags : TAGS
 TAGS : *.[ch] $(LIBDIR)/*.idio $(TESTSDIR)/*.idio
 	@echo TAGS: $?
 	@etags *.[ch] --language=none --regex=@idio.tags $(LIBDIR)/*.idio $(TESTSDIR)/*.idio
+
+%.o : %.d
 
 %.d: %.c
 	$(CC) -MM -MP -MF $@ $(CFLAGS) $< -MT $*.o -MT $@

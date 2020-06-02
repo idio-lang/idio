@@ -373,7 +373,7 @@ void idio_free_hash (IDIO h)
     free (h->u.hash);
 }
 
-void idio_hash_resize (IDIO h)
+void idio_hash_resize (IDIO h, int larger)
 {
     IDIO_ASSERT (h);
     IDIO_TYPE_ASSERT (hash, h);
@@ -394,14 +394,16 @@ void idio_hash_resize (IDIO h)
 
     idio_hi_t nsize = osize;
 
-    idio_hi_t load_high = (osize / 2);
-    if (hcount > load_high) {
-	while (nsize <= hcount) {
+    if (larger) {
+	idio_hi_t load_high = (osize / 2) + (osize / 4);
+	if (hcount > load_high) {
+	    while (nsize <= hcount) {
+		nsize *= 2;
+	    }
 	    nsize *= 2;
 	}
-	nsize *= 2;
     } else {
-	idio_hi_t load_low = (osize / 8);
+	idio_hi_t load_low = (osize / 16);
 	if (load_low < 8) {
 	    load_low = 8;
 	}
@@ -415,6 +417,13 @@ void idio_hash_resize (IDIO h)
 	     * needs to be bigger than that
 	     */
 	    nsize *= 4;
+
+	    /*
+	     * Of course, if hcount was 0, say, then nsize is now zero.
+	     */
+	    if (nsize < load_low) {
+		nsize = load_low;
+	    }
 	}
     }
 
@@ -422,6 +431,7 @@ void idio_hash_resize (IDIO h)
 	return;
     }
 
+    fprintf (stderr, "idio_hash_resize: %10p %s = %zd/%zd/%zd -> %zd\n", h, larger ? "L" : "S", hcount, osize, IDIO_HASH_SIZE (h), nsize);
     IDIO_FPRINTF (stderr, "idio_hash_resize: %10p = %zd/%zd/%zd -> %zd\n", h, hcount, osize, IDIO_HASH_SIZE (h), nsize);
     idio_assign_hash_he (h, nsize);
 
@@ -762,6 +772,8 @@ idio_hi_t idio_hash_default_hashf (IDIO h, void *kv)
  * It will call the C hashing function, if set, otherwise the Idio
  * hashing function.
  *
+ * ``kv`` is a generic "key value" as we can have C strings as keys.
+ *
  * Note that a pre-computed IDIO_HASHVAL(k) is the untempered
  * idio_hi_t result of the hashing function and is suitable to be used
  * module IDIO_HASH_MASK (ht).
@@ -784,13 +796,13 @@ idio_hi_t idio_hash_value_index (IDIO ht, void *kv)
 	    break;
 	}
 
-	idio_hi_t hv = IDIO_HASH_SIZE (ht) + 1;
+	idio_hi_t hvi = IDIO_HASH_SIZE (ht) + 1;
 
-	IDIO ihv = idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST2 (IDIO_HASH_HASH (ht), k));
+	IDIO ihvi = idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST2 (IDIO_HASH_HASH (ht), k));
 
-	if (idio_isa_fixnum (ihv)) {
-	    hv = IDIO_FIXNUM_VAL (ihv);
-	} else if (idio_isa_bignum (ihv)) {
+	if (idio_isa_fixnum (ihvi)) {
+	    hvi = IDIO_FIXNUM_VAL (ihvi);
+	} else if (idio_isa_bignum (ihvi)) {
 	    /*
 	     * idio_ht_t is a size_t so the fact that ptrdiff_t &
 	     * size_t on non-segmented architectures are *the same
@@ -799,9 +811,9 @@ idio_hi_t idio_hash_value_index (IDIO ht, void *kv)
 	     *
 	     * Technically wrong is the worst kind of wrong.
 	     */
-	    hv = idio_bignum_ptrdiff_value (ihv);
+	    hvi = idio_bignum_ptrdiff_value (ihvi);
 	} else {
-	    idio_error_param_type ("fixnum|bignum", ihv, IDIO_C_FUNC_LOCATION ());
+	    idio_error_param_type ("fixnum|bignum", ihvi, IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
 	    return -1;
@@ -809,11 +821,11 @@ idio_hi_t idio_hash_value_index (IDIO ht, void *kv)
 
 	switch ((intptr_t) kv & IDIO_TYPE_MASK) {
 	case IDIO_TYPE_POINTER_MARK:
-	    IDIO_HASHVAL (k) = hv;
+	    IDIO_HASHVAL (k) = hvi;
 	    break;
 	}
 
-	return (hv & IDIO_HASH_MASK (ht));
+	return (hvi & IDIO_HASH_MASK (ht));
     }
 
     /* notreached */
@@ -854,37 +866,60 @@ void idio_hash_verify_chain (IDIO h, void *kv, int reqd)
 
     if (idio_gc_verboseness (2)) {
 	/* fprintf (stderr, "idio_hash_verify_chain: h=%10p size=%zu\n", h, IDIO_HASH_SIZE (h)); */
-	idio_hi_t ohv = idio_hash_value_index (h, kv);
-	idio_hi_t nhv = ohv;
-	/* fprintf (stderr, "idio_hash_verify_chain: kv=%10p ohv=%" PRIuPTR "\n", kv, ohv); */
+	idio_hi_t ohvi = idio_hash_value_index (h, kv);
+	idio_hi_t nhvi = ohvi;
+	/*
+	  fprintf (stderr, "idio_hash_verify_chain: kv=%10p ohvi=%zu k=", kv, ohvi);
+	  if (IDIO_HASH_FLAGS (h) & IDIO_HASH_FLAG_STRING_KEYS) {
+	  fprintf (stderr, "%s\n", (char *) kv);
+	  } else {
+	  idio_debug ("%s\n", (IDIO) kv);
+	  }
+	*/
+
 	size_t i = 0;
 	int seen = 0;
-	while (nhv < IDIO_HASH_SIZE (h)) {
-	    void *nkv = idio_hash_he_key (h, nhv);
+	while (nhvi < IDIO_HASH_SIZE (h)) {
+	    void *nkv = idio_hash_he_key (h, nhvi);
 	    if (idio_S_nil != nkv) {
-		idio_hi_t hv = idio_hash_value_index (h, nkv);
-		if (hv != ohv) {
-		    fprintf (stderr, "idio_hash_verify_chain: kv=%10p nkv=%10p nhv=%" PRIuPTR " hv %" PRIuPTR " != ohv %" PRIuPTR "\n", kv, nkv, nhv, hv, ohv);
+		idio_hi_t hvi = idio_hash_value_index (h, nkv);
+		if (hvi != ohvi) {
+		    /* fprintf (stderr, "idio_hash_verify_chain: kv=%10p nkv=%10p nhvi=%zu hvi %zu != ohvi %zu\n", kv, nkv, nhvi, hvi, ohvi); */
 		    fprintf (stderr, "risky recurse for %10p!\n", nkv);
 		    idio_hash_verify_chain (h, nkv, 1);
 		    fprintf (stderr, "risky recurse for %10p done!\n", nkv);
-		    idio_error_printf (IDIO_C_FUNC_LOCATION (), "in-chain hv mismatch");
+		    idio_error_printf (IDIO_C_FUNC_LOCATION (), "in-chain hvi mismatch");
 
 		    /* notreached */
 		    abort ();
 		}
 	    }
-	    if (nkv == kv) {
-		seen = 1;
+	    if (reqd) {
+		if (IDIO_HASH_FLAGS (h) & IDIO_HASH_FLAG_STRING_KEYS) {
+		    if (0 == strcmp (nkv, kv)) {
+			seen = 1;
+		    }
+		} else {
+		    if (idio_hash_equal (h, kv, nkv)) {
+			seen = 1;
+		    }
+		}
 	    }
-	    /* fprintf (stderr, "idio_hash_verify_chain: kv=%10p nkv=%10p nhv=%" PRIuPTR " -> nnhv=%" PRIuPTR "\n", kv, nkv, nhv, IDIO_HASH_HE_NEXT (h, nhv)); */
-	    nhv = IDIO_HASH_HE_NEXT (h, nhv);
+	    /* fprintf (stderr, "idio_hash_verify_chain: kv=%10p nkv=%10p nhvi=%zu -> nnhvi=%zu\n", kv, nkv, nhvi, IDIO_HASH_HE_NEXT (h, nhvi));  */
+	    nhvi = IDIO_HASH_HE_NEXT (h, nhvi);
 	    i++;
 	}
 	/* fprintf (stderr, "idio_hash_verify_chain: kv=%10p %sseen in %zu\n", kv, seen ? "" : "NOT ", i); */
 	if (reqd &&
 	    ! seen) {
-	    idio_error_printf (IDIO_C_FUNC_LOCATION (), "kv not in chain!");
+	    fprintf (stderr, "ih_vc: ERROR %p kv=%p ohvi=%td ", h, kv, ohvi);
+	    if (IDIO_HASH_FLAGS (h) & IDIO_HASH_FLAG_STRING_KEYS) {
+		fprintf (stderr, "k=%s\n", (char *) kv);
+	    } else {
+		idio_debug ("k=%s\n", (IDIO) kv);
+	    }
+	    idio_dump (h, 16);
+	    idio_error_printf (IDIO_C_FUNC_LOCATION (), "kv=%p not in chain!", kv);
 
 	    /* notreached */
 	    abort ();
@@ -942,9 +977,7 @@ idio_hi_t idio_hash_find_free_slot (IDIO h)
      */
 
     idio_hi_t s;
-    idio_hi_t c = 0;
     for (s = IDIO_HASH_START (h); s > 0 ; s--) {
-	c++;
 	if (idio_S_nil == idio_hash_he_key (h, s)) {
 	    /*
 	     * We've found a free slot @s so we need to patch up
@@ -1044,9 +1077,9 @@ IDIO idio_hash_put (IDIO h, void *kv, IDIO v)
      */
     idio_hi_t hsize = IDIO_HASH_MASK (h) + 1;
 
-    idio_hi_t load_high = (hsize / 2);
+    idio_hi_t load_high = (hsize / 2) + (hsize / 4);
     if (IDIO_HASH_COUNT (h) > load_high) {
-	idio_hash_resize (h);
+	idio_hash_resize (h, 1);
 	idio_hash_put (h, kv, v);
 	return kv;
     }
@@ -1054,22 +1087,22 @@ IDIO idio_hash_put (IDIO h, void *kv, IDIO v)
     idio_hi_t fhi = idio_hash_find_free_slot (h);
     if (fhi > IDIO_HASH_SIZE (h)) {
 	IDIO_FPRINTF (stderr, "idio_hash_put: no free slot -> resize\n");
-	idio_hash_resize (h);
+	idio_hash_resize (h, 1);
 	idio_hash_put (h, kv, v);
 	return kv;
     }
     IDIO_FPRINTF (stderr, "idio_hash_put: fhi %" PRIuPTR "\n", fhi);
 
     idio_hash_verify_chain (h, ck, 1);
-    idio_hi_t ckhv = idio_hash_value_index (h, ck);
+    idio_hi_t ckhi = idio_hash_value_index (h, ck);
 
     /* either me or him is going to go to the end of the chain */
-    if (ckhv != hi) {
+    if (ckhi != hi) {
 	/* he's in the wrong place */
-	IDIO_FPRINTF (stderr, "idio_hash_put: kv=%10p insert hv(k@%" PRIuPTR " ck=%10p)=%" PRIuPTR "; mv -> %" PRIuPTR "\n", kv, hi, ck, ckhv, fhi);
+	IDIO_FPRINTF (stderr, "idio_hash_put: kv=%10p insert hv(k@%" PRIuPTR " ck=%10p)=%" PRIuPTR "; mv -> %" PRIuPTR "\n", kv, hi, ck, ckhi, fhi);
 
 	/* who points to him? */
-	idio_hi_t phi = ckhv;
+	idio_hi_t phi = ckhi;
 	idio_hi_t nhi = IDIO_HASH_HE_NEXT (h, phi);
 	IDIO_FPRINTF (stderr, "idio_hash_put: kv=%10p start phi=%" PRIuPTR " -> nhi=%" PRIuPTR "\n", kv, phi, nhi);
 	while (nhi != hi) {
@@ -1079,7 +1112,7 @@ IDIO idio_hash_put (IDIO h, void *kv, IDIO v)
 
 	    if (nhi > IDIO_HASH_SIZE (h)) {
 		fprintf (stderr, "idio_hash_put: kv=%10p  ck=%10p\n", kv, ck);
-		fprintf (stderr, "idio_hash_put: hi=%" PRIuPTR " ckhv=%" PRIuPTR " phi=%" PRIuPTR "\n", hi, ckhv, phi);
+		fprintf (stderr, "idio_hash_put: hi=%" PRIuPTR " ckhi=%" PRIuPTR " phi=%" PRIuPTR "\n", hi, ckhi, phi);
 		fprintf (stderr, "idio_hash_put: nhi=%" PRIuPTR " > size %" PRIuPTR "\n", nhi, IDIO_HASH_SIZE (h));
 		idio_gc_set_verboseness (3);
 		idio_hash_verify_chain (h, kv, 1);
@@ -1156,21 +1189,21 @@ idio_hi_t idio_hash_hv_follow_chain (IDIO h, void *kv)
 	return IDIO_HASH_SIZE (h) + 1;
     }
 
-    idio_hi_t hv = idio_hash_value_index (h, kv);
+    idio_hi_t hi = idio_hash_value_index (h, kv);
 
-    if (hv > IDIO_HASH_SIZE (h)) {
-	idio_error_printf (IDIO_C_FUNC_LOCATION (), "hv %" PRIuPTR " > size %" PRIuPTR " kv=%10p", hv, IDIO_HASH_SIZE (h), kv);
+    if (hi > IDIO_HASH_SIZE (h)) {
+	idio_error_printf (IDIO_C_FUNC_LOCATION (), "hi %" PRIuPTR " > size %" PRIuPTR " kv=%10p", hi, IDIO_HASH_SIZE (h), kv);
 
 	/* notreached */
 	return IDIO_HASH_SIZE (h) + 1;
     }
 
-    IDIO_FPRINTF (stderr, "idio_hash_hv_follow_chain: kv=%10p hv=%" PRIuPTR "\n", kv, hv);
+    IDIO_FPRINTF (stderr, "idio_hash_hv_follow_chain: kv=%10p hi=%" PRIuPTR "\n", kv, hi);
     if (IDIO_HASH_FLAGS (h) & IDIO_HASH_FLAG_STRING_KEYS) {
 	IDIO_FPRINTF (stderr, "idio_hash_hv_follow_chain: SK kv=%s\n", (char *) kv);
     }
 
-    idio_hi_t chi = hv;
+    idio_hi_t chi = hi;
     IDIO ck = idio_hash_he_key (h, chi);
 
     IDIO_FPRINTF (stderr, "idio_hash_hv_follow_chain: kv=%10p chi=%" PRIuPTR " ck=%10p nhi=%" PRIuPTR "\n", kv, chi, ck, IDIO_HASH_HE_NEXT (h, chi));
@@ -1209,9 +1242,9 @@ int idio_hash_exists_key (IDIO h, void *kv)
 	return IDIO_HASH_SIZE (h) + 1;
     }
 
-    idio_hi_t hv = idio_hash_hv_follow_chain (h, kv);
+    idio_hi_t hi = idio_hash_hv_follow_chain (h, kv);
 
-    if (hv > IDIO_HASH_SIZE (h)) {
+    if (hi > IDIO_HASH_SIZE (h)) {
 	return 0;
     } else {
 	return 1;
@@ -1230,18 +1263,18 @@ IDIO idio_hash_exists (IDIO h, void *kv)
 
     IDIO_TYPE_ASSERT (hash, h);
 
-    idio_hi_t hv = idio_hash_hv_follow_chain (h, kv);
+    idio_hi_t hi = idio_hash_hv_follow_chain (h, kv);
 
-    if (hv > IDIO_HASH_SIZE (h)) {
+    if (hi > IDIO_HASH_SIZE (h)) {
 	return idio_S_nil;
     }
 
     return kv;
 
     /*
-    IDIO_C_ASSERT (k == idio_hash_he_key (h, hv));
+    IDIO_C_ASSERT (k == idio_hash_he_key (h, hi));
 
-    return idio_hash_he_key (h, hv);
+    return idio_hash_he_key (h, hi);
     */
 }
 
@@ -1258,13 +1291,13 @@ IDIO idio_hash_get (IDIO h, void *kv)
     IDIO_TYPE_ASSERT (hash, h);
 
     IDIO_FPRINTF (stderr, "idio_hash_get: %10p\n", kv);
-    idio_hi_t hv = idio_hash_hv_follow_chain (h, kv);
+    idio_hi_t hi = idio_hash_hv_follow_chain (h, kv);
 
-    if (hv > IDIO_HASH_SIZE (h)) {
+    if (hi > IDIO_HASH_SIZE (h)) {
 	return idio_S_unspec;
     }
 
-    return IDIO_HASH_HE_VALUE (h, hv);
+    return IDIO_HASH_HE_VALUE (h, hi);
 }
 
 int idio_hash_delete (IDIO h, void *kv)
@@ -1286,30 +1319,30 @@ int idio_hash_delete (IDIO h, void *kv)
 	return 0;
     }
 
-    idio_hi_t hv = idio_hash_value_index (h, kv);
+    idio_hi_t hi = idio_hash_value_index (h, kv);
 
-    if (hv > IDIO_HASH_SIZE (h)) {
-	idio_error_printf (IDIO_C_FUNC_LOCATION (), "hv %" PRIuPTR " > size %" PRIuPTR, hv, IDIO_HASH_SIZE (h));
+    if (hi > IDIO_HASH_SIZE (h)) {
+	idio_error_printf (IDIO_C_FUNC_LOCATION (), "hi %" PRIuPTR " > size %" PRIuPTR, hi, IDIO_HASH_SIZE (h));
 
 	/* notreached */
 	return 0;
     }
 
-    IDIO_FPRINTF (stderr, "idio_hash_delete: %10p starting @%" PRIuPTR "\n", kv, hv);
+    IDIO_FPRINTF (stderr, "idio_hash_delete: %10p starting @%" PRIuPTR "\n", kv, hi);
 
-    idio_hi_t phv = IDIO_HASH_SIZE (h) + 1;
-    idio_hi_t chv = hv;
-    IDIO ck = idio_hash_he_key (h, chv);
+    idio_hi_t phi = IDIO_HASH_SIZE (h) + 1;
+    idio_hi_t chi = hi;
+    IDIO ck = idio_hash_he_key (h, chi);
     while (! idio_hash_equal (h, ck, kv) &&
-	   IDIO_HASH_HE_NEXT (h, chv) < IDIO_HASH_SIZE (h)) {
-	phv = chv;
-	chv = IDIO_HASH_HE_NEXT (h, chv);
-	ck = idio_hash_he_key (h, chv);
-	IDIO_FPRINTF (stderr, "idio_hash_delete: %10p stepped to %" PRIuPTR " -> @%" PRIuPTR " -> %" PRIuPTR "\n", ck, phv, chv, IDIO_HASH_HE_NEXT (h, chv));
+	   IDIO_HASH_HE_NEXT (h, chi) < IDIO_HASH_SIZE (h)) {
+	phi = chi;
+	chi = IDIO_HASH_HE_NEXT (h, chi);
+	ck = idio_hash_he_key (h, chi);
+	IDIO_FPRINTF (stderr, "idio_hash_delete: %10p stepped to %" PRIuPTR " -> @%" PRIuPTR " -> %" PRIuPTR "\n", ck, phi, chi, IDIO_HASH_HE_NEXT (h, chi));
     }
 
     if (idio_S_nil == ck) {
-	IDIO_FPRINTF (stderr, "idio_hash_delete: %10p nil found @%" PRIuPTR "?\n", kv, chv);
+	IDIO_FPRINTF (stderr, "idio_hash_delete: %10p nil found @%" PRIuPTR "?\n", kv, chi);
 	return 0;
     }
 
@@ -1318,35 +1351,35 @@ int idio_hash_delete (IDIO h, void *kv)
 	return 0;
     }
 
-    idio_hi_t nhv = IDIO_HASH_HE_NEXT (h, chv);
-    IDIO_FPRINTF (stderr, "idio_hash_delete: %10p deleting from phv=%" PRIuPTR " -> chv=%" PRIuPTR " -> nhv=%" PRIuPTR "\n", ck, phv, chv, nhv);
+    idio_hi_t nhi = IDIO_HASH_HE_NEXT (h, chi);
+    IDIO_FPRINTF (stderr, "idio_hash_delete: %10p deleting from phi=%" PRIuPTR " -> chi=%" PRIuPTR " -> nhi=%" PRIuPTR "\n", ck, phi, chi, nhi);
 
-    if ((IDIO_HASH_SIZE (h) + 1) == phv) {
+    if ((IDIO_HASH_SIZE (h) + 1) == phi) {
 	/* head of chain */
-	if (nhv < IDIO_HASH_SIZE (h)) {
-	    IDIO_FPRINTF (stderr, "idio_hash_delete: %10p head of chain: chv=%" PRIuPTR " <- nhv=%" PRIuPTR "\n", ck, chv, nhv);
-	    IDIO_HASH_HE_KEY (h, chv) = idio_hash_he_key (h, nhv);
-	    IDIO_HASH_HE_VALUE (h, chv) = IDIO_HASH_HE_VALUE (h, nhv);
-	    IDIO_HASH_HE_NEXT (h, chv) = IDIO_HASH_HE_NEXT (h, nhv);
+	if (nhi < IDIO_HASH_SIZE (h)) {
+	    IDIO_FPRINTF (stderr, "idio_hash_delete: %10p head of chain: chi=%" PRIuPTR " <- nhi=%" PRIuPTR "\n", ck, chi, nhi);
+	    IDIO_HASH_HE_KEY (h, chi) = idio_hash_he_key (h, nhi);
+	    IDIO_HASH_HE_VALUE (h, chi) = IDIO_HASH_HE_VALUE (h, nhi);
+	    IDIO_HASH_HE_NEXT (h, chi) = IDIO_HASH_HE_NEXT (h, nhi);
 
-	    IDIO_FPRINTF (stderr, "idio_hash_delete: %10p head of chain: nullify nhv=%" PRIuPTR "\n", ck, nhv);
-	    IDIO_HASH_HE_KEY (h, nhv) = idio_S_nil;
-	    IDIO_HASH_HE_VALUE (h, nhv) = idio_S_nil;
-	    IDIO_HASH_HE_NEXT (h, nhv) = IDIO_HASH_SIZE (h) + 1;
+	    IDIO_FPRINTF (stderr, "idio_hash_delete: %10p head of chain: nullify nhi=%" PRIuPTR "\n", ck, nhi);
+	    IDIO_HASH_HE_KEY (h, nhi) = idio_S_nil;
+	    IDIO_HASH_HE_VALUE (h, nhi) = idio_S_nil;
+	    IDIO_HASH_HE_NEXT (h, nhi) = IDIO_HASH_SIZE (h) + 1;
 	} else {
-	    IDIO_FPRINTF (stderr, "idio_hash_delete: %10p head of chain: nullify chv=%" PRIuPTR "\n", ck, chv);
-	    IDIO_HASH_HE_KEY (h, chv) = idio_S_nil;
-	    IDIO_HASH_HE_VALUE (h, chv) = idio_S_nil;
-	    IDIO_HASH_HE_NEXT (h, chv) = IDIO_HASH_SIZE (h) + 1;
+	    IDIO_FPRINTF (stderr, "idio_hash_delete: %10p head of chain: nullify chi=%" PRIuPTR "\n", ck, chi);
+	    IDIO_HASH_HE_KEY (h, chi) = idio_S_nil;
+	    IDIO_HASH_HE_VALUE (h, chi) = idio_S_nil;
+	    IDIO_HASH_HE_NEXT (h, chi) = IDIO_HASH_SIZE (h) + 1;
 	}
     } else {
-	IDIO_FPRINTF (stderr, "idio_hash_delete: %10p link phv=%" PRIuPTR " -> nhv=%" PRIuPTR "\n", ck, phv, nhv);
-	IDIO_HASH_HE_NEXT (h, phv) = nhv;
+	IDIO_FPRINTF (stderr, "idio_hash_delete: %10p link phi=%" PRIuPTR " -> nhi=%" PRIuPTR "\n", ck, phi, nhi);
+	IDIO_HASH_HE_NEXT (h, phi) = nhi;
 
-	IDIO_FPRINTF (stderr, "idio_hash_delete: %10p nullify chv=%" PRIuPTR "\n", ck, chv);
-	IDIO_HASH_HE_KEY (h, chv) = idio_S_nil;
-	IDIO_HASH_HE_VALUE (h, chv) = idio_S_nil;
-	IDIO_HASH_HE_NEXT (h, chv) = IDIO_HASH_SIZE (h) + 1;
+	IDIO_FPRINTF (stderr, "idio_hash_delete: %10p nullify chi=%" PRIuPTR "\n", ck, chi);
+	IDIO_HASH_HE_KEY (h, chi) = idio_S_nil;
+	IDIO_HASH_HE_VALUE (h, chi) = idio_S_nil;
+	IDIO_HASH_HE_NEXT (h, chi) = IDIO_HASH_SIZE (h) + 1;
     }
 
     idio_hash_verify_chain (h, kv, 0);
@@ -1359,9 +1392,9 @@ int idio_hash_delete (IDIO h, void *kv)
      */
     idio_hi_t hsize = IDIO_HASH_MASK (h) + 1;
 
-    idio_hi_t load_low = (hsize / 8);
+    idio_hi_t load_low = (hsize / 16);
     if (IDIO_HASH_COUNT (h) < load_low) {
-	idio_hash_resize (h);
+	idio_hash_resize (h, 0);
     }
 
     return 1;

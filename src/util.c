@@ -136,6 +136,19 @@ const char *idio_type2string (IDIO o)
     }
 }
 
+IDIO_DEFINE_PRIMITIVE1_DS ("type-string", type_string, (IDIO o), "o", "\
+return the type of `o` as a string		\n\
+						\n\
+:param o: object				\n\
+						\n\
+:return: a string representation of the type of `o`	\n\
+")
+{
+    IDIO_ASSERT (o);
+
+    return idio_string_C (idio_type2string (o));
+}
+
 IDIO_DEFINE_PRIMITIVE1 ("zero?", zerop, (IDIO o))
 {
     IDIO_ASSERT (o);
@@ -1251,6 +1264,18 @@ char *idio_as_string (IDIO o, int depth)
 			return NULL;
 		    }
 		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_CLOSURE_ENV (o), depth - 1));
+		    IDIO name = idio_property_get (o, idio_KW_name, IDIO_LIST1 (idio_S_nil));
+		    if (idio_S_nil != name) {
+			char *name_C;
+			if (asprintf (&name_C, "/\"%s\"", IDIO_SYMBOL_S (name)) == -1) {
+			    free (r);
+			    idio_error_alloc ("asprintf");
+
+			    /* notreached */
+			    return NULL;
+			}
+			IDIO_STRCAT_FREE (r, name_C);
+		    }
 		    IDIO_STRCAT (r, ">");
 		    break;
 		}
@@ -1793,6 +1818,32 @@ char *idio_display_string (IDIO o)
     return r;
 }
 
+IDIO_DEFINE_PRIMITIVE1_DS ("string", string, (IDIO o), "o", "\
+convert `o` to a string				\n\
+						\n\
+:param o: object to convert			\n\
+						\n\
+:return: a string representation of `o`	\n\
+")
+{
+    IDIO_ASSERT (o);
+
+    return idio_string_C (idio_as_string (o, 40));
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("display-string", display_string, (IDIO o), "o", "\
+convert `o` to a display string			\n\
+						\n\
+:param o: object to convert			\n\
+						\n\
+:return: a string representation of `o`	\n\
+")
+{
+    IDIO_ASSERT (o);
+
+    return idio_string_C (idio_display_string (o));
+}
+
 const char *idio_vm_bytecode2string (int code)
 {
     char *r;
@@ -2285,45 +2336,45 @@ void idio_dump (IDIO o, int detail)
     case IDIO_TYPE_POINTER_MARK:
 	{
 	    if (detail > 0) {
-		IDIO_FPRINTF (stderr, "%10p ", o);
-		if (detail > 1) {
-		    IDIO_FPRINTF (stderr, "-> %10p ", o->next);
+		fprintf (stderr, "%10p ", o);
+		if (detail > 4) {
+		    fprintf (stderr, "-> %10p ", o->next);
 		}
-		IDIO_FPRINTF (stderr, "t=%2d/%4.4s f=%#02x gcf=%#02x ", o->type, idio_type2string (o), o->flags, o->gc_flags);
+		fprintf (stderr, "t=%2d/%4.4s f=%2x gcf=%2x ", o->type, idio_type2string (o), o->flags, o->gc_flags);
 	    }
 
 	    switch (o->type) {
 	    case IDIO_TYPE_STRING:
 		if (detail) {
-		    IDIO_FPRINTF (stderr, "blen=%d s=", IDIO_STRING_BLEN (o));
+		    fprintf (stderr, "blen=%zu s=", IDIO_STRING_BLEN (o));
 		}
 		break;
 	    case IDIO_TYPE_SUBSTRING:
 		if (detail) {
-		    IDIO_FPRINTF (stderr, "blen=%d parent=%10p subs=", IDIO_SUBSTRING_BLEN (o), IDIO_SUBSTRING_PARENT (o));
+		    fprintf (stderr, "blen=%zu parent=%10p subs=", IDIO_SUBSTRING_BLEN (o), IDIO_SUBSTRING_PARENT (o));
 		}
 		break;
 	    case IDIO_TYPE_SYMBOL:
-		IDIO_FPRINTF (stderr, "sym=");
+		fprintf (stderr, "sym=");
 		break;
 	    case IDIO_TYPE_KEYWORD:
-		IDIO_FPRINTF (stderr, "key=");
+		fprintf (stderr, "key=");
 		break;
 	    case IDIO_TYPE_PAIR:
 		if (detail > 1) {
-		    IDIO_FPRINTF (stderr, "head=%10p tail=%10p p=", IDIO_PAIR_H (o), IDIO_PAIR_T (o));
+		    fprintf (stderr, "head=%10p tail=%10p p=", IDIO_PAIR_H (o), IDIO_PAIR_T (o));
 		}
 		break;
 	    case IDIO_TYPE_ARRAY:
 		if (detail) {
-		    IDIO_FPRINTF (stderr, "size=%d/%d \n", IDIO_ARRAY_USIZE (o), IDIO_ARRAY_ASIZE (o));
+		    fprintf (stderr, "size=%td/%td \n", IDIO_ARRAY_USIZE (o), IDIO_ARRAY_ASIZE (o));
 		    if (detail > 1) {
 			size_t i;
 			for (i = 0; i < IDIO_ARRAY_USIZE (o); i++) {
 			    if (idio_S_nil != IDIO_ARRAY_AE (o, i) ||
 				detail > 3) {
 				char *s = idio_as_string (IDIO_ARRAY_AE (o, i), 4);
-				IDIO_FPRINTF (stderr, "\t%3d: %10p %10s\n", i, IDIO_ARRAY_AE (o, i), s);
+				fprintf (stderr, "\t%3zu: %10p %10s\n", i, IDIO_ARRAY_AE (o, i), s);
 				free (s);
 			    }
 			}
@@ -2332,7 +2383,26 @@ void idio_dump (IDIO o, int detail)
 		break;
 	    case IDIO_TYPE_HASH:
 		if (detail) {
-		    IDIO_FPRINTF (stderr, "hsize=%d hmask=%x\n", IDIO_HASH_SIZE (o), IDIO_HASH_MASK (o));
+		    fprintf (stderr, "hsz=%zu hm=%zx hc=%zu hst=%zu\n", IDIO_HASH_SIZE (o), IDIO_HASH_MASK (o), IDIO_HASH_COUNT (o), IDIO_HASH_START (o));
+		    if (IDIO_HASH_EQUAL (o) != NULL) {
+			if (IDIO_HASH_EQUAL (o) == idio_eqp) {
+			    fprintf (stderr, "eq=idio_S_eqp");;
+			} else if (IDIO_HASH_EQUAL (o) == idio_eqvp) {
+			    fprintf (stderr, "eq=idio_S_eqvp");
+			} else if (IDIO_HASH_EQUAL (o) == idio_equalp) {
+			    fprintf (stderr, "eq=idio_S_equalp");
+			}
+		    } else {
+			idio_debug ("eq=%s", IDIO_HASH_COMP (o));
+		    }
+		    if (IDIO_HASH_HASHF (o) != NULL) {
+			if (IDIO_HASH_HASHF (o) == idio_hash_default_hashf) {
+			    fprintf (stderr, " hf=<default>");
+			}
+		    } else {
+			idio_debug (" hf=%s", IDIO_HASH_HASH (o));
+		    }
+		    fprintf (stderr, "\n");
 		    if (detail > 1) {
 			size_t i;
 			for (i = 0; i < IDIO_HASH_SIZE (o); i++) {
@@ -2346,9 +2416,9 @@ void idio_dump (IDIO o, int detail)
 				    s = idio_as_string (IDIO_HASH_HE_KEY (o, i), 4);
 				}
 				if (detail & 0x4) {
-				    IDIO_FPRINTF (stderr, "\t%30s : ", s);
+				    fprintf (stderr, "\t%30s : ", s);
 				} else {
-				    IDIO_FPRINTF (stderr, "\t%3d: k=%10p v=%10p n=%3d %10s : ",
+				    fprintf (stderr, "\t%3zu: k=%10p v=%10p n=%3zu %10s : ",
 							i,
 							IDIO_HASH_HE_KEY (o, i),
 							IDIO_HASH_HE_VALUE (o, i),
@@ -2368,7 +2438,7 @@ void idio_dump (IDIO o, int detail)
 					return;
 				    }
 				}
-				IDIO_FPRINTF (stderr, "%-10s\n", s);
+				fprintf (stderr, "%-10s\n", s);
 				free (s);
 			    }
 			}
@@ -2422,6 +2492,15 @@ void idio_dump (IDIO o, int detail)
     fprintf (stderr, "\n");
 }
 
+IDIO_DEFINE_PRIMITIVE1 ("idio-dump", idio_dump, (IDIO o))
+{
+    IDIO_ASSERT (o);
+
+    idio_dump (o, 16);
+
+    return idio_S_unspec;
+}
+
 void idio_debug_FILE (FILE *file, const char *fmt, IDIO o)
 {
     IDIO_C_ASSERT (fmt);
@@ -2473,6 +2552,8 @@ void idio_init_util ()
 
 void idio_util_add_primitives ()
 {
+    IDIO_ADD_PRIMITIVE (type_string);
+    IDIO_ADD_PRIMITIVE (zerop);
     IDIO_ADD_PRIMITIVE (nullp);
     IDIO_ADD_PRIMITIVE (unsetp);
     IDIO_ADD_PRIMITIVE (undefp);
@@ -2484,13 +2565,15 @@ void idio_util_add_primitives ()
     IDIO_ADD_PRIMITIVE (eqp);
     IDIO_ADD_PRIMITIVE (eqvp);
     IDIO_ADD_PRIMITIVE (equalp);
-    IDIO_ADD_PRIMITIVE (zerop);
+    IDIO_ADD_PRIMITIVE (string);
+    IDIO_ADD_PRIMITIVE (display_string);
     IDIO_ADD_PRIMITIVE (map1);
     IDIO_ADD_PRIMITIVE (memq);
     IDIO_ADD_PRIMITIVE (assq);
     IDIO_ADD_PRIMITIVE (value_index);
     IDIO_ADD_PRIMITIVE (set_value_index);
     IDIO_ADD_PRIMITIVE (identity);
+    IDIO_ADD_PRIMITIVE (idio_dump);
     IDIO_ADD_PRIMITIVE (idio_debug);
 }
 

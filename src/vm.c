@@ -2844,6 +2844,15 @@ int idio_vm_run1 (IDIO thr)
 
 		if (idio_isa_closure (val)) {
 		    idio_property_set (val, idio_KW_name, sym);
+		    idio_property_set (val, idio_KW_source, idio_string_C ("GLOBAL-SET"));
+		    IDIO str = idio_property_get (val, idio_KW_sigstr, IDIO_LIST1 (idio_S_nil));
+		    if (idio_S_nil != str) {
+			idio_property_set (val, idio_KW_sigstr, str);
+		    }
+		    str = idio_property_get (val, idio_KW_docstr, IDIO_LIST1 (idio_S_nil));
+		    if (idio_S_nil != str) {
+			idio_property_set (val, idio_KW_docstr, str);
+		    }
 		}
 	    } else {
 		IDIO ce = idio_thread_current_env ();
@@ -5408,7 +5417,20 @@ void idio_vm_dump_values ()
     for (i = 0 ; i < al; i++) {
 	IDIO v = idio_array_get_index (idio_vm_values, i);
 	fprintf (fp, "%6td: ", i);
-	char *vs = idio_as_string (v, 40);
+	char *vs = NULL;
+	if (idio_src_properties == v) {
+	    /*
+	     * This is tens of thousands of
+	     *
+	     * e -> struct {file, line, e}
+	     *
+	     * entries.  It takes millions of calls to implement and
+	     * seconds to print!
+	     */
+	    vs = idio_as_string (v, 0);
+	} else {
+	    vs = idio_as_string (v, 40);
+	}
 	fprintf (fp, "%-20s %s\n", idio_type2string (v), vs);
 	free (vs);
     }

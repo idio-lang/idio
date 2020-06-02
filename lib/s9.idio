@@ -108,7 +108,7 @@ define-macro (s9/let bindings expr & exprs) {
     #f)
 }
 
-define (map-ph f a) {
+define (map-ph f a) "map-ph: %mapph a" {
   %mapph :+ function (a) {
 	      if (null? a) {
 		'#n
@@ -309,7 +309,7 @@ define (s9/reverse a) {
 
 ; Auxiliary functions for FOLD-LEFT, FOLD-RIGHT, MAP
 
-define (map-ph f a) {
+define (map-ph f a) "map-ph: mapph1 a r" {
   mapph1 :+ function (a r) {
 	      if (null? a) {
 		reverse r
@@ -324,7 +324,7 @@ define (map-ph f a) {
 ph-of := {
   map-ph := map-ph
 
-  function (a*) {
+  function (a*) "ph-of: map-ph ph a*" {
     map-ph ph a*
   }
 }

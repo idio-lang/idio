@@ -436,7 +436,7 @@ void idio_properties_create (IDIO o)
 	return;
     }
 
-    idio_hash_set (idio_properties_hash, o, idio_hash_make_keyword_table (IDIO_LIST1 (idio_fixnum (4))));
+    idio_hash_set (idio_properties_hash, o, idio_hash_make_keyword_table (IDIO_LIST1 (idio_fixnum (8))));
 }
 
 void idio_properties_delete (IDIO o)
@@ -450,7 +450,6 @@ void idio_properties_delete (IDIO o)
 	return;
     }
 
-    /* idio_debug ("with p=%s\n", idio_properties_get (o, IDIO_LIST1 (idio_S_false))); */
     idio_hash_delete (idio_properties_hash, o);
 }
 
@@ -655,7 +654,7 @@ void idio_init_symbol ()
      * weak keys otherwise the existence of any object in this hash
      * prevents it being freed!
      */
-    idio_properties_hash = IDIO_HASH_EQP (256);
+    idio_properties_hash = IDIO_HASH_EQP (4 * 1024);
     IDIO_HASH_FLAGS (idio_properties_hash) |= IDIO_HASH_FLAG_WEAK_KEYS;
     idio_gc_protect (idio_properties_hash);
 }
