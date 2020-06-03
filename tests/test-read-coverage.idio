@@ -1,0 +1,27 @@
+
+;; Technically we're not doing any tests but should improve the code
+;; coverage by running these examples.
+
+read-coverage-load := {
+  n := 0
+
+  function (filename) {
+    if (not (string? filename)) (coverage 'load "not a string" filename)
+
+    %load filename
+  }
+}
+
+;; test the various possible coverages in read.c including an embedded
+;; variant to check we pick up the correct line number
+
+read-coverage-load "read-coverage/imp-list-eol-before-delim.idio"
+read-coverage-load "read-coverage/comment-eof.idio"
+read-coverage-load "read-coverage/string-escaped-chars.idio"
+read-coverage-load "read-coverage/template-bracketing.idio"
+read-coverage-load "read-coverage/pathname.idio"
+read-coverage-load "read-coverage/bignum-radix-sep-eof.idio"
+read-coverage-load "read-coverage/numbers.idio"
+read-coverage-load "read-coverage/bracket-block.idio"
+read-coverage-load "read-coverage/bignum-integer.idio"
+

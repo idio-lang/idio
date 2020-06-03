@@ -110,6 +110,7 @@ if (C/> rl.rlim_cur nofiles_lim) {
 
 
 load "test-read-error.idio"
+load "test-read-coverage.idio"
 load "test-evaluation-error.idio"
 
 load "test-s9-test.idio"

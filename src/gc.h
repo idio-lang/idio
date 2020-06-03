@@ -1079,44 +1079,107 @@ typedef struct idio_gc_s {
      While we ponder the nuances, compiled files are
      architecture-oriented.
 
- * - (small) constants the user can see and use: #t, #f, #eof etc.. as
-     well as various internal well-known values (reader tokens,
-     idio_T_*, intermediate code idio_I_*, VM instructions idio_A_*
-     etc.).
+ * - (small) constants.
+
+     Actually we have several sets of constants:
+
+      - the kind the user can see and use: #t, #f, #eof etc..
+
+      as well as various internal well-known values used internally:
+
+       - reader tokens, idio_T_*
+       - intermediate code identifiers, idio_I_*
+       - VM instructions idio_A_*
 
      These are fixed sets -- fixed in the sense that we know it isn't
      going to be troubling a 32-bit boundary as we, in C-land, are in
-     control of it.
+     control of defining them and we're not going to remember what
+     they are if we define more than a couple of dozen.  Even the
+     intermediate code and VM instructions are broadly limited to 256
+     as we are a byte compiler.
 
      Let's reserve three bits to cover distinguishing between constant
      types although we only have four at the moment.
 
-     Another subset (although much much larger) is characters: as a
-     distinct type from fixnums to avoid the awkwardness of trying to
-     assign a meaning to: 1 + #\®.
+     Another subset of constants (although much much larger) is
+     characters.  Characters as a distinct type from fixnums to avoid
+     the awkwardness of trying to assign a semantic meaning to:
 
-     Unicode, is a popular choice and is also a fixed set, not
-     troubling a 32-bit boundary.
+     1 + #\®
+
+     (Hmm, dunno.)
+
+     We have the slight headache when we talk about characters in
+     dancing the line between a Unix/C character (nominally a byte but
+     in practice an int to include the sentinel value, EOF) and more
+     flavoursome variants of character where a character is not just
+     more than one byte but might be more than one entity within the
+     coding system -- look up grapheme clusters and think that e-acute
+     might be composed by an e glyph and an acute accent glyph rather
+     than being a single e-acute glyph.
+
+     Unicode, is a popular choice and is also a fixed set of 21 bits,
+     not troubling a 32-bit boundary -- there's a little over a
+     million code points possible (17 planes times 65k code points per
+     plane -- a UTF-16 restriction) although in practice less than
+     150k code points have been assigned (in Unicode 13.0).  That's
+     still approximately 150k more characters than many of us in the
+     English-speaking western world are used to.
+
+     https://unicode.org/faq/utf_bom.html
 
      Although *how* we store Unicode is an interesting point.  With
      the various different constants chewing up a few bits of
      identification we should have ~27 bits on a 32bit platform to
-     play with.  We can obviously store Unicode internally as UTF-16.
-     However, we are much more likely to interact with the world in
-     UTF-8.
+     play with.  We can obviously, therefore, store Unicode internally
+     as UTF-16.  However, we are much more likely to interact with the
+     world in UTF-8.
 
      UTF-8 itself isn't perfect as the original Unicode spec, ISO
      10646, called for up to 6 octets although UTF-8 only encodes up
      to four.  Of those four, the worst case, from
      https://tools.ietf.org/html/rfc3629, is: 11110xxx 10xxxxxx
-     10xxxxxx 10xxxxxx; which is 21 bits of data.  The leading 11110
-     to indicate this is the fourth of the four multi-octet encodings,
-     ie, two bits of alternatives, isn't strictly neceesary as it can
-     be derived from the (binary) value.
+     10xxxxxx 10xxxxxx; demonstrating the 21 bits of data.  The
+     leading 11110 to indicate this is the fourth of the four
+     multi-octet encodings, ie, two bits of alternatives, isn't
+     strictly necessary as it can be derived from the (binary) value.
 
- * - not yet determined but something that will use the whole address
-     space usefully.  Probably, flonums based on IEEE 794.  Do shells
-     need flonums?  Who cares, they sound interesting to implement.
+     As an aside, if Unicode is only using 21 of our 27 bits then I
+     suppose we could have 2^6 alternate Unicodes...
+
+     Of course we don't want to store four bytes when we're only using
+     21 bits.  And we don't want to store four bytes when we're trying
+     to be obtuse and squeeze everything inside a "pointer."  If we
+     did store just the 21 bits then our problem comes in decoding
+     those 21 bits back into UTF-8 (or other).  Without careful byte
+     by byte checking of parts of bytes could we use the remaining 3
+     bits of a 24-bit format to encode the number of bytes we expect
+     UTF-8 to use at which point we can probably get away with some
+     bit-shuffling.
+
+     To take the example above a four byte code point would have the
+     UTF-8 byte count bits as 100 (ie. four) followed by the 21 bits,
+     ie 100xxx...  When we come to decode it we would see the byte
+     code count as four then pull off the right number of bits per
+     byte, so 100aaabbbbbbccccccdddddd can be bit-shuffled directly
+     into 11110aaa 10bbbbbb 10cccccc 10dddddd.
+
+     If I read Section D92, Table 3.6 in
+     http://www.unicode.org/versions/Unicode13.0.0/ch03.pdf correctly
+     the four (byte length) options prepended to the full 21 code
+     point bits are:
+
+     001 00000 00000000 0xxxxxxx => 0xxxxxxx
+     010 00000 00000yyy yyxxxxxx => 110yyyyy 10xxxxxx
+     011 00000 zzzzyyyy yyxxxxxx => 1110zzzz 10yyyyyy 10xxxxxx
+     100 uuuuu zzzzyyyy yyxxxxxx => 11110uuu 10uuzzzz 10yyyyyy 10xxxxxx
+
+     I think there's some mileage there.
+
+ * - another type not yet determined (hence, PLACEHOLDER) but
+     something that will use the whole address space usefully.
+     Probably "flonums" based on IEEE 794.  Do shells need flonums?
+     Who cares, they sound interesting to implement.
 
  * All three will then have a minimum of 30 bits of useful space to
  * work with on a 32bit machine.
@@ -1152,6 +1215,9 @@ typedef struct idio_gc_s {
 #define IDIO_TYPE_CONSTANT_TOKEN_MARK		((0x01 << IDIO_TYPE_BITS_SHIFT) | IDIO_TYPE_CONSTANT_MARK)
 #define IDIO_TYPE_CONSTANT_I_CODE_MARK		((0x02 << IDIO_TYPE_BITS_SHIFT) | IDIO_TYPE_CONSTANT_MARK)
 #define IDIO_TYPE_CONSTANT_CHARACTER_MARK	((0x03 << IDIO_TYPE_BITS_SHIFT) | IDIO_TYPE_CONSTANT_MARK)
+  /*
+   * 0x04 - 0x07 to be defined (or even thought of)
+   */
 
 #define IDIO_TYPE_POINTERP(x)		((((intptr_t) x) & IDIO_TYPE_MASK) == IDIO_TYPE_POINTER_MARK)
 #define IDIO_TYPE_FIXNUMP(x)		((((intptr_t) x) & IDIO_TYPE_MASK) == IDIO_TYPE_FIXNUM_MARK)

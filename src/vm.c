@@ -5943,7 +5943,7 @@ void idio_final_vm ()
     struct timespec t;
     t.tv_sec = 0;
     t.tv_nsec = 0;
-    fprintf (idio_vm_perf_FILE, "        %8.8s %6.6s %-30.30s %15.15s %6.6s\n", "count", "code", "instruction", "time (sec.nsec)", "ns/call");
+    fprintf (idio_vm_perf_FILE, "vm-ins:  %4.4s %-30.30s %8.8s %15.15s %6.6s\n", "code", "instruction", "count", "time (sec.nsec)", "ns/call");
     for (IDIO_I i = 1; i < IDIO_I_MAX; i++) {
 	c += idio_vm_ins_counters[i];
 	t.tv_sec += idio_vm_ins_call_time[i].tv_sec;
@@ -5952,7 +5952,7 @@ void idio_final_vm ()
 	    const char *bc_name = idio_vm_bytecode2string (i);
 	    if (strcmp (bc_name, "Unknown bytecode") ||
 		idio_vm_ins_counters[i]) {
-		fprintf (idio_vm_perf_FILE, "vm-ins: %8" PRIu64 " %6" PRIu8 " %-30s %5ld.%09ld", idio_vm_ins_counters[i], i, bc_name, idio_vm_ins_call_time[i].tv_sec, idio_vm_ins_call_time[i].tv_nsec);
+		fprintf (idio_vm_perf_FILE, "vm-ins:  %4" PRIu8 " %-30s %8" PRIu64 " %5ld.%09ld", i, bc_name, idio_vm_ins_counters[i], idio_vm_ins_call_time[i].tv_sec, idio_vm_ins_call_time[i].tv_nsec);
 		double call_time = 0;
 		if (idio_vm_ins_counters[i]) {
 		    call_time = (idio_vm_ins_call_time[i].tv_sec * 1000000000 + idio_vm_ins_call_time[i].tv_nsec) / idio_vm_ins_counters[i];
@@ -5962,6 +5962,6 @@ void idio_final_vm ()
 	    }
 	}
     }
-    fprintf (idio_vm_perf_FILE, "vm-ins: %8" PRIu64 " %6s %-30s %5ld.%09ld\n", c, "", "total", t.tv_sec, t.tv_nsec);
+    fprintf (idio_vm_perf_FILE, "vm-ins:  %4s %-30s %8" PRIu64 " %5ld.%09ld\n", "", "total", c, t.tv_sec, t.tv_nsec);
 #endif
 }

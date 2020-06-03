@@ -210,6 +210,8 @@ static void idio_read_error (IDIO handle, IDIO lo, IDIO c_location, IDIO msg)
 					       idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_LINE),
 					       idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_POS)));
     idio_raise_condition (idio_S_false, c);
+
+    /* notreached */
 }
 
 static void idio_read_error_parse (IDIO handle, IDIO lo, IDIO c_location, char *msg)
@@ -246,6 +248,8 @@ static void idio_read_error_parse_args (IDIO handle, IDIO lo, IDIO c_location, c
     idio_display (args, sh);
 
     idio_read_error (handle, lo, c_location, idio_get_output_string (sh));
+
+    /* notreached */
 }
 
 static void idio_read_error_parse_printf (IDIO handle, IDIO lo, IDIO c_location, char *fmt, ...)
@@ -265,6 +269,8 @@ static void idio_read_error_parse_printf (IDIO handle, IDIO lo, IDIO c_location,
     va_end (fmt_args);
 
     idio_read_error (handle, lo, c_location, msg);
+
+    /* notreached */
 }
 
 static void idio_read_error_parse_word_too_long (IDIO handle, IDIO lo, IDIO c_location, char *word)
@@ -297,6 +303,8 @@ static void idio_read_error_list_eof (IDIO handle, IDIO lo, IDIO c_location)
     idio_display_C ("EOF in list", sh);
 
     idio_read_error (handle, lo, c_location, idio_get_output_string (sh));
+
+    /* notreached */
 }
 
 static void idio_read_error_pair_separator (IDIO handle, IDIO lo, IDIO c_location, char *msg)
@@ -311,6 +319,8 @@ static void idio_read_error_pair_separator (IDIO handle, IDIO lo, IDIO c_locatio
     idio_display_C (msg, sh);
 
     idio_read_error (handle, lo, c_location, idio_get_output_string (sh));
+
+    /* notreached */
 }
 
 static void idio_read_error_string (IDIO handle, IDIO lo, IDIO c_location, char *e_msg)
@@ -330,6 +340,8 @@ static void idio_read_error_string (IDIO handle, IDIO lo, IDIO c_location, char 
     idio_display_C (e_msg, sh);
 
     idio_read_error (handle, lo, c_location, idio_get_output_string (sh));
+
+    /* notreached */
 }
 
 static void idio_read_error_named_character (IDIO handle, IDIO lo, IDIO c_location, char *msg)
@@ -348,6 +360,8 @@ static void idio_read_error_named_character (IDIO handle, IDIO lo, IDIO c_locati
     idio_display_C (msg, sh);
 
     idio_read_error (handle, lo, c_location, idio_get_output_string (sh));
+
+    /* notreached */
 }
 
 static void idio_read_error_named_character_unknown_name (IDIO handle, IDIO lo, IDIO c_location, char *name)
@@ -366,6 +380,8 @@ static void idio_read_error_named_character_unknown_name (IDIO handle, IDIO lo, 
     idio_display_C (name, sh);
 
     idio_read_error (handle, lo, c_location, idio_get_output_string (sh));
+
+    /* notreached */
 }
 
 static void idio_read_error_template (IDIO handle, IDIO lo, IDIO c_location, char *msg)
@@ -384,6 +400,8 @@ static void idio_read_error_template (IDIO handle, IDIO lo, IDIO c_location, cha
     idio_display_C (msg, sh);
 
     idio_read_error (handle, lo, c_location, idio_get_output_string (sh));
+
+    /* notreached */
 }
 
 static void idio_read_error_pathname (IDIO handle, IDIO lo, IDIO c_location, char *msg)
@@ -402,6 +420,8 @@ static void idio_read_error_pathname (IDIO handle, IDIO lo, IDIO c_location, cha
     idio_display_C (msg, sh);
 
     idio_read_error (handle, lo, c_location, idio_get_output_string (sh));
+
+    /* notreached */
 }
 
 static void idio_read_error_bignum (IDIO handle, IDIO lo, IDIO c_location, char *msg)
@@ -420,6 +440,8 @@ static void idio_read_error_bignum (IDIO handle, IDIO lo, IDIO c_location, char 
     idio_display_C (msg, sh);
 
     idio_read_error (handle, lo, c_location, idio_get_output_string (sh));
+
+    /* notreached */
 }
 
 static void idio_read_error_utf8_decode (IDIO handle, IDIO lo, IDIO c_location, char *msg)
@@ -438,6 +460,8 @@ static void idio_read_error_utf8_decode (IDIO handle, IDIO lo, IDIO c_location, 
     idio_display_C (msg, sh);
 
     idio_read_error (handle, lo, c_location, idio_get_output_string (sh));
+
+    /* notreached */
 }
 
 static IDIO idio_read_1_expr (IDIO handle, char *ic, int depth);
@@ -576,7 +600,15 @@ static IDIO idio_read_list (IDIO handle, IDIO list_lo, IDIO opendel, char *ic, i
 	    lo = idio_read_1_expr (handle, ic, depth);
 	    IDIO del = idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_EXPR);
 	    while (idio_T_eol == del) {
-		del = idio_read_1_expr (handle, ic, depth);
+		/*
+		 * Test Case: read-coverage/imp-list-eol-before-delim.idio
+		 *
+		 * '( 1 & 2
+		 *
+		 * )
+		 */
+		lo = idio_read_1_expr (handle, ic, depth);
+		del = idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_EXPR);
 	    }
 
 	    if (idio_eofp_handle (handle)) {
@@ -584,6 +616,13 @@ static IDIO idio_read_list (IDIO handle, IDIO list_lo, IDIO opendel, char *ic, i
 		 * Test Case: read-errors/imp-list-eof-before-delim.idio
 		 *
 		 * ( 1 & 2
+		 *
+		 * XXX Actually, this EOF gets picked up by the first
+		 * {if} in this sequence...  Does it make any
+		 * difference?  I suppose there's a
+		 * position-in-parsing difference in which case we'll
+		 * (redundantly) leave the test case in even if code
+		 * coverage says it's not picked up here (today).
 		 */
 		idio_read_error_list_eof (handle, lo, IDIO_C_FUNC_LOCATION ());
 
@@ -692,12 +731,6 @@ static IDIO idio_read_list (IDIO handle, IDIO list_lo, IDIO opendel, char *ic, i
 	    if (IDIO_TYPE_CONSTANT_TOKENP (e)) {
 		uintptr_t ev = IDIO_CONSTANT_TOKEN_VAL (e);
 		switch (ev) {
-		case IDIO_TOKEN_LANGLE:
-		    e = idio_S_lt;
-		    break;
-		case IDIO_TOKEN_RANGLE:
-		    e = idio_S_gt;
-		    break;
 		case IDIO_TOKEN_DOT:
 		    e = idio_S_dot;
 		    break;
@@ -795,6 +828,11 @@ static void idio_read_comment (IDIO handle, int depth)
 	int c = idio_getc_handle (handle);
 
 	if (idio_eofp_handle (handle)) {
+	    /*
+	     * Test Case: read-coverage/comment-eof.idio
+	     *
+	     * ;; no newline!
+	     */
 	    return;
 	}
 
@@ -864,6 +902,11 @@ static IDIO idio_read_string (IDIO handle, IDIO lo)
 	default:
 	    if (esc) {
 		switch (c) {
+		    /*
+		     * Test Case: read-coverage/string-escaped-characters.idio
+		     *
+		     * "\a\b..."
+		     */
 		case 'a': c = '\a'; break; /* alarm (bell) */
 		case 'b': c = '\b'; break; /* backspace */
 		case 'f': c = '\f'; break; /* formfeed */
@@ -1076,10 +1119,23 @@ static IDIO idio_read_template (IDIO handle, IDIO lo, int depth)
 	depth = IDIO_LIST_BRACE (depth + 1);
 	break;
     case IDIO_CHAR_LBRACKET:
+	/*
+	 * Test Case: read-coverage/template-bracketing.idio
+	 *
+	 * #T[ 1 ]
+	 */
 	closedel = idio_T_rbracket;
 	depth = IDIO_LIST_BRACKET (depth + 1);
 	break;
     case IDIO_CHAR_LANGLE:
+	/*
+	 * Test Case: read-coverage/template-bracketing.idio
+	 *
+	 * #T< 1 >
+	 *
+	 * XXX This case has been removed as the > is interpreted as
+	 * an operator and we get an EOF error
+	 */
 	closedel = idio_T_rangle;
 	depth = IDIO_LIST_ANGLE (depth + 1);
 	break;
@@ -1169,6 +1225,11 @@ static IDIO idio_read_pathname (IDIO handle, IDIO lo, int depth)
 	c = idio_getc_handle (handle);
     }
 
+    /*
+     * Test Case: read-coverage/pathname.idio
+     *
+     * struct-instance? #P" *.c "
+     */
     IDIO e = idio_read_string (handle, lo);
 
     return idio_struct_instance (idio_path_type, IDIO_LIST1 (e));
@@ -1214,6 +1275,13 @@ static IDIO idio_read_bignum_radix (IDIO handle, IDIO lo, char basec, int radix)
     int i;
     while (! IDIO_SEPARATOR (c)) {
 	if (idio_eofp_handle (handle)) {
+	    /*
+	     * Test Case: read-coverage/bignum-radix-sep-eof.idio
+	     *
+	     * #d1
+	     *
+	     * XXX no newline
+	     */
 	    break;
 	}
 
@@ -1342,6 +1410,11 @@ static IDIO idio_read_number_C (IDIO handle, char *str)
 		   loop */
 		i++;
 	    } else {
+		/*
+		 * Test Case: read-coverage/numbers.idio
+		 *
+		 * 1eq
+		 */
 		return idio_S_nil;
 	    }
 	} else if ('.' == s[i] &&
@@ -1377,11 +1450,23 @@ static IDIO idio_read_number_C (IDIO handle, char *str)
 	    num = idio_fixnum_C (str, 10);
 	    idio_gc_stats_inc (IDIO_TYPE_FIXNUM);
 	} else {
+	    /*
+	     * Test Case: read-coverage/numbers.idio
+	     *
+	     * 12345678901234567890
+	     */
 	    num = idio_bignum_C (str);
 
 	    /* convert to a fixnum if possible */
 	    IDIO fn = idio_bignum_to_fixnum (num);
 	    if (idio_S_nil != fn) {
+		/*
+		 * Test Case: read-coverage/numbers.idio
+		 *
+		 * 64 / 32 bit bignum segment max digits
+		 *
+		 * 100000000000000000 / 100000000
+		 */
 		num = fn;
 	    }
 	}
@@ -1623,6 +1708,11 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl
 		break;
 	    case IDIO_CHAR_LBRACKET:
 	    {
+		/*
+		 * Test Case: read-coverage/bracket-block.idio
+		 *
+		 * '[ 1 2 ]
+		 */
 		IDIO block = idio_read_block (handle, lo, idio_T_rbracket, ic, IDIO_LIST_BRACKET (depth + 1));
 		idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, block);
 		idio_hash_put (idio_src_properties, block, lo);
@@ -1748,10 +1838,20 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl
 
 			    if (IDIO_BIGNUM_INTEGER_P (bn)) {
 				if (! inexact) {
+				    /*
+				     * Test Case: read-coverage/bignum-integer.idio
+				     *
+				     * #e1000000000000000000 / #e1000000000
+				     */
 				    idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, bn);
 				    return lo;
 				}
 
+				/*
+				 * Test Case: read-coverage/bignum-integer.idio
+				 *
+				 * #i-1000000000000000000 / #i-1000000000
+				 */
 				int flags = 0;
 				if (idio_bignum_negative_p (bn)) {
 				    flags |= IDIO_BIGNUM_FLAG_REAL_NEGATIVE;
@@ -1997,7 +2097,7 @@ static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, char *ic, int depth
 			 *
 			 * 1 +
 			 *
-			 * Nominally this is a dup od the one in
+			 * Nominally this is a dup of the one in
 			 * idio_read_list()
 			 */
 			idio_read_error_list_eof (handle, lo, IDIO_C_FUNC_LOCATION ());
@@ -2034,12 +2134,6 @@ static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, char *ic, int depth
 	    } else if (IDIO_TYPE_CONSTANT_TOKENP (expr)) {
 		uintptr_t ev = IDIO_CONSTANT_TOKEN_VAL (expr);
 		switch (ev) {
-		case IDIO_TOKEN_LANGLE:
-		    expr = idio_S_lt;
-		    break;
-		case IDIO_TOKEN_RANGLE:
-		    expr = idio_S_gt;
-		    break;
 		case IDIO_TOKEN_DOT:
 		    expr = idio_S_dot;
 		    break;
@@ -2051,10 +2145,6 @@ static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, char *ic, int depth
 
 		    return idio_S_notreached;
 		}
-	    } else {
-		/* idio_read_set_source_property (expr, idio_KW_handle, handle); */
-		/* idio_read_set_source_property (expr, idio_KW_line, idio_fixnum (line)); */
-		/* IDIO sp = idio_read_source_properties (expr); */
 	    }
 
 	    re = idio_pair (expr, re);
@@ -2084,22 +2174,18 @@ static IDIO idio_read_block (IDIO handle, IDIO lo, IDIO closedel, char *ic, int 
 	    r = idio_pair (expr, r);
 	}
 
-	if (idio_S_eof == expr) {
-	    if (idio_S_nil != r) {
-		r = idio_list_reverse (r);
-		if (depth) {
-		    return idio_list_append2 (IDIO_LIST1 (idio_S_block), r);
-		} else {
-		    return idio_list_append2 (IDIO_LIST1 (idio_S_block), r);
-		}
-	    } else {
-		return idio_S_eof;
-	    }
-	} else if (closedel == reason) {
+	if (closedel == reason) {
 	    r = idio_list_reverse (r);
 	    if (depth) {
 		return idio_list_append2 (IDIO_LIST1 (idio_S_block), r);
 	    } else {
+		/*
+		 * At the time of writing idio_read_block is always
+		 * called with a >0 value for depth.
+		 *
+		 * Given that both clauses do the same thing...what
+		 * was I thinking?
+		 */
 		return idio_list_append2 (IDIO_LIST1 (idio_S_block), r);
 	    }
 	}
