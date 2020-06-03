@@ -5417,7 +5417,8 @@ void idio_vm_dump_values ()
     for (i = 0 ; i < al; i++) {
 	IDIO v = idio_array_get_index (idio_vm_values, i);
 	fprintf (fp, "%6td: ", i);
-	char *vs = idio_as_string (v, 40);
+	char *vs = NULL;
+	vs = idio_as_string (v, 40);
 	fprintf (fp, "%-20s %s\n", idio_type2string (v), vs);
 	free (vs);
     }
