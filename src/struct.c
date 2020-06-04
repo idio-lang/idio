@@ -361,6 +361,8 @@ IDIO idio_struct_instance_ref (IDIO si, IDIO field)
 
     if (-1 == i) {
 	idio_struct_error_field_not_found (field, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
     }
 
     return idio_array_get_index (IDIO_STRUCT_INSTANCE_FIELDS (si), i);

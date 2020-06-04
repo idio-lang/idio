@@ -246,6 +246,8 @@ void idio_init_first_thread ()
     /* IDIO_THREAD_MODULE (idio_expander_thread) = idio_expander_module; */
     IDIO_THREAD_PC (idio_expander_thread) = 1;
 
+    IDIO ethr = idio_symbols_C_intern ("*expander-thread*");
+    idio_module_set_symbol_value (ethr, idio_expander_thread, idio_expander_module);
 }
 
 void idio_final_thread ()
