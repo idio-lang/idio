@@ -154,8 +154,8 @@ IDIO idio_evaluate_expander_source (IDIO x, IDIO e)
  *
  * =>
  *
- * 1. (apply (lambda (map ph bindings) body) (map pht bindings))
- * 2. (apply (letrec ((name (lambda (map ph bindings) body))) (map pht bindings)))
+ * 1. (apply (function (map ph bindings) body) (map pht bindings))
+ * 2. (apply (letrec ((name (function (map ph bindings) body))) (map pht bindings)))
  */
 
 IDIO_DEFINE_PRIMITIVE1 ("let", let, (IDIO e))
@@ -163,14 +163,28 @@ IDIO_DEFINE_PRIMITIVE1 ("let", let, (IDIO e))
     IDIO_ASSERT (e);
     IDIO_TYPE_ASSERT (list, e);
 
+    /*
+     * e should be (let bindings body)
+     */
     size_t nargs = idio_list_length (e);
 
     if (nargs < 3) {
-	idio_meaning_error_static_arity (idio_S_nil, IDIO_C_FUNC_LOCATION (), "let: wrong arguments", e);
-	return idio_S_unspec;
+	IDIO lo = idio_struct_instance (idio_lexobj_type,
+					idio_pair (idio_S_nil,
+					idio_pair (idio_S_nil,
+					idio_pair (idio_S_nil,
+					idio_pair (idio_S_nil,
+						   idio_S_nil)))));
+
+	idio_meaning_error_static_arity (lo, IDIO_C_FUNC_LOCATION (), "(let bindings body)", e);
+
+	return idio_S_notreached;
     }
 
     e = IDIO_PAIR_T (e);
+    /*
+     * e is now (bindings body)
+     */
 
     IDIO bindings = IDIO_PAIR_H (e);
     IDIO vars = idio_S_nil;
@@ -194,10 +208,10 @@ IDIO_DEFINE_PRIMITIVE1 ("let", let, (IDIO e))
     /*
      * e is currently a list, either (body) or (body ...)
      *
-     * body could be a single expression in which case we want the
-     * head of e (otherwise we will attempt to apply the result of
-     * body) or multiple expressions in which case we want to prefix e
-     * with begin
+     * body could be a single expression in which case we want the ph
+     * of e (otherwise we will attempt to apply the result of body) or
+     * multiple expressions in which case we want to prefix e with
+     * begin
      *
      * it could be nil too...
      */
@@ -214,7 +228,25 @@ IDIO_DEFINE_PRIMITIVE1 ("let", let, (IDIO e))
     IDIO fn;
 
     if (idio_S_nil == name) {
-	fn = IDIO_LIST3 (idio_S_lambda, idio_list_reverse (vars), e);
+	/*
+	 * (let bindings body)
+	 *
+	 * This expression can be transformed into the implied
+	 * execution of an anonymous function.  Which means we only
+	 * need to supposrt the execution of functions to create local
+	 * variables.
+	 *
+	 * The function is {body} with arguments that are the ph's of
+	 * bindings and then the application of that function passes
+	 * the pt's of bindings.
+	 *
+	 * (let ((a1 v1) (a2 v2)) ...)
+	 *
+	 * becomes
+	 *
+	 * ((function (a1 a2) ...) v1 v2)
+	 */
+	fn = IDIO_LIST3 (idio_S_function, idio_list_reverse (vars), e);
 
 	return idio_list_append2 (IDIO_LIST1 (fn), idio_list_reverse (vals));
     } else {
@@ -234,7 +266,7 @@ IDIO_DEFINE_PRIMITIVE1 ("let", let, (IDIO e))
  *
  * =>
  *
- * (apply (lambda (map ph bindings) body) (map pt bindings))
+ * (apply (function (map ph bindings) body) (map pt bindings))
  */
 
 IDIO_DEFINE_PRIMITIVE1 ("let*", lets, (IDIO e))
@@ -242,16 +274,33 @@ IDIO_DEFINE_PRIMITIVE1 ("let*", lets, (IDIO e))
     IDIO_ASSERT (e);
     IDIO_TYPE_ASSERT (list, e);
 
+    /*
+     * e should be (let* bindings body)
+     */
     size_t nargs = idio_list_length (e);
 
     if (nargs < 3) {
-	idio_meaning_error_static_arity (idio_S_nil, IDIO_C_FUNC_LOCATION (), "let*: wrong arguments", e);
+	IDIO lo = idio_struct_instance (idio_lexobj_type,
+					idio_pair (idio_S_nil,
+					idio_pair (idio_S_nil,
+					idio_pair (idio_S_nil,
+					idio_pair (idio_S_nil,
+						   idio_S_nil)))));
+
+	idio_meaning_error_static_arity (lo, IDIO_C_FUNC_LOCATION (), "let*: wrong arguments", e);
     }
 
     /* idio_debug ("let*: in %s\n", e); */
 
     e = IDIO_PAIR_T (e);
+    /*
+     * e is now (bindings body)
+     */
 
+    /*
+     * NB reverse {bindings} so that when we walk over it below we
+     * will create a nested set of {let}s in the right order
+     */
     IDIO bindings = idio_list_reverse (IDIO_PAIR_H (e));
 
     /*
@@ -294,7 +343,7 @@ IDIO_DEFINE_PRIMITIVE1 ("let*", lets, (IDIO e))
  *
  * =>
  *
- * (apply (lambda (map ph bindings) body) (map pt bindings))
+ * (apply (function (map ph bindings) body) (map pt bindings))
  */
 
 IDIO_DEFINE_PRIMITIVE1_DS ("letrec", letrec, (IDIO e), "e", "\
@@ -304,19 +353,33 @@ poor man's letrec				\n\
     IDIO_ASSERT (e);
     IDIO_TYPE_ASSERT (list, e);
 
+    /*
+     * e should be (letrec bindings body)
+     */
     size_t nargs = idio_list_length (e);
 
     if (nargs < 3) {
-	idio_meaning_error_static_arity (idio_S_nil, IDIO_C_FUNC_LOCATION (), "letrec: wrong arguments", e);
+	IDIO lo = idio_struct_instance (idio_lexobj_type,
+					idio_pair (idio_S_nil,
+					idio_pair (idio_S_nil,
+					idio_pair (idio_S_nil,
+					idio_pair (idio_S_nil,
+						   idio_S_nil)))));
+
+	idio_meaning_error_static_arity (lo, IDIO_C_FUNC_LOCATION (), "letrec: wrong arguments", e);
 	return idio_S_unspec;
     }
 
     e = IDIO_PAIR_T (e);
+    /*
+     * e is now (bindings body)
+     */
 
     IDIO bindings = IDIO_PAIR_H (e);
     IDIO vars = idio_S_nil;
     IDIO tmps = idio_S_nil;
     IDIO vals = idio_S_nil;
+
     while (idio_S_nil != bindings) {
 	IDIO binding = IDIO_PAIR_H (bindings);
 	IDIO_TYPE_ASSERT (pair, bindings);
@@ -358,9 +421,10 @@ poor man's letrec				\n\
     IDIO ts = tmps;
     IDIO vs = vals;
     while (idio_S_nil != ns) {
-	ri = idio_pair (IDIO_LIST2 (IDIO_PAIR_H (ns), idio_S_false), ri);
+	ri = idio_pair (IDIO_LIST2 (IDIO_PAIR_H (ns), idio_S_undef), ri);
 	rt = idio_pair (IDIO_LIST2 (IDIO_PAIR_H (ts), IDIO_PAIR_H (vs)), rt);
 	rs = idio_pair (IDIO_LIST3 (idio_S_set, IDIO_PAIR_H (ns), IDIO_PAIR_H (ts)), rs);
+
 	ns = IDIO_PAIR_T (ns);
 	ts = IDIO_PAIR_T (ts);
 	vs = IDIO_PAIR_T (vs);

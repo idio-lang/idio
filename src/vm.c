@@ -1720,8 +1720,8 @@ void idio_vm_raise_condition (IDIO continuablep, IDIO condition, int IHR)
     IDIO_ASSERT (condition);
     IDIO_TYPE_ASSERT (boolean, continuablep);
 
-    /* idio_debug ("\n\nraise-condition: %s", continuablep);    */
-    /* idio_debug (" %s\n", condition);    */
+    /* idio_debug ("\n\nraise-condition: %s", continuablep); */
+    /* idio_debug (" %s\n", condition); */
 
     IDIO thr = idio_thread_current_thread ();
 
@@ -5444,18 +5444,29 @@ void idio_vm_thread_state ()
     idio_ai_t tsp = IDIO_FIXNUM_VAL (IDIO_THREAD_TRAP_SP (thr));
     while (1) {
 	fprintf (stderr, "vm-thread-state: trap: SP %3td: ", tsp);
-	idio_debug (" %s", idio_array_get_index (stack, tsp));
-	IDIO handler = idio_array_get_index (stack, tsp - 1);
+	IDIO handler = idio_array_get_index (stack, tsp);
 
 	if (idio_isa_closure (handler)) {
 	    IDIO name = idio_property_get (handler, idio_KW_name, IDIO_LIST1 (idio_S_nil));
-	    if (idio_S_unspec != name) {
-		idio_debug (" %s", name);
+	    if (idio_S_nil != name) {
+		idio_debug (" %-45s", name);
 	    } else {
-		idio_debug (" -anon-", handler);
+		idio_debug (" %-45s", handler);
 	    }
+	} else {
+	    idio_debug (" %-45s", handler);
 	}
-	idio_debug (" %s\n", handler);
+
+	IDIO ct_mci = idio_array_get_index (stack, tsp - 1);
+
+	IDIO ct_sym = idio_vm_constants_ref ((idio_ai_t) IDIO_FIXNUM_VAL (ct_mci));
+	IDIO ct = idio_module_symbol_value_recurse (ct_sym, IDIO_THREAD_ENV (thr), idio_S_nil);
+
+	if (idio_isa_struct_type (ct)) {
+	    idio_debug (" %s\n", IDIO_STRUCT_TYPE_NAME (ct));
+	} else {
+	    idio_debug (" %s\n", ct);
+	}
 
 	idio_ai_t ntsp = IDIO_FIXNUM_VAL (idio_array_get_index (stack, tsp - 2));
 	if (ntsp == tsp) {
@@ -5559,6 +5570,31 @@ time_t idio_vm_elapsed (void)
 IDIO_DEFINE_PRIMITIVE0 ("SECONDS/get", SECONDS_get, (void))
 {
     return idio_integer (idio_vm_elapsed ());
+}
+
+IDIO_DEFINE_PRIMITIVE2_DS ("run-in-thread", run_in_thread, (IDIO thr, IDIO func, IDIO args), "thr func [args]", "\
+")
+{
+    IDIO_ASSERT (thr);
+    IDIO_ASSERT (func);
+    IDIO_ASSERT (args);
+
+    IDIO_TYPE_ASSERT (thread, thr);
+    IDIO_TYPE_ASSERT (procedure, func);
+
+    IDIO cthr = idio_thread_current_thread ();
+
+    idio_thread_set_current_thread (thr);
+    idio_thread_save_state (thr);
+    idio_vm_default_pc (thr);
+
+    idio_apply (func, args);
+    IDIO r = idio_vm_run (thr);
+
+    idio_thread_restore_state (thr);
+    idio_thread_set_current_thread (cthr);
+
+    return r;
 }
 
 void idio_vm_decode_stack (IDIO thr)
@@ -5895,6 +5931,7 @@ void idio_vm_add_primitives ()
     IDIO_ADD_PRIMITIVE (idio_find_frame);
     IDIO_ADD_PRIMITIVE (idio_find_object);
     IDIO_ADD_PRIMITIVE (exit);
+    IDIO_ADD_PRIMITIVE (run_in_thread);
 }
 
 void idio_final_vm ()
@@ -5931,7 +5968,7 @@ void idio_final_vm ()
     struct timespec t;
     t.tv_sec = 0;
     t.tv_nsec = 0;
-    fprintf (idio_vm_perf_FILE, "        %8.8s %6.6s %-30.30s %15.15s %6.6s\n", "count", "code", "instruction", "time (sec.nsec)", "ns/call");
+    fprintf (idio_vm_perf_FILE, "vm-ins:  %4.4s %-30.30s %8.8s %15.15s %6.6s\n", "code", "instruction", "count", "time (sec.nsec)", "ns/call");
     for (IDIO_I i = 1; i < IDIO_I_MAX; i++) {
 	c += idio_vm_ins_counters[i];
 	t.tv_sec += idio_vm_ins_call_time[i].tv_sec;
@@ -5940,7 +5977,7 @@ void idio_final_vm ()
 	    const char *bc_name = idio_vm_bytecode2string (i);
 	    if (strcmp (bc_name, "Unknown bytecode") ||
 		idio_vm_ins_counters[i]) {
-		fprintf (idio_vm_perf_FILE, "vm-ins: %8" PRIu64 " %6" PRIu8 " %-30s %5ld.%09ld", idio_vm_ins_counters[i], i, bc_name, idio_vm_ins_call_time[i].tv_sec, idio_vm_ins_call_time[i].tv_nsec);
+		fprintf (idio_vm_perf_FILE, "vm-ins:  %4" PRIu8 " %-30s %8" PRIu64 " %5ld.%09ld", i, bc_name, idio_vm_ins_counters[i], idio_vm_ins_call_time[i].tv_sec, idio_vm_ins_call_time[i].tv_nsec);
 		double call_time = 0;
 		if (idio_vm_ins_counters[i]) {
 		    call_time = (idio_vm_ins_call_time[i].tv_sec * 1000000000 + idio_vm_ins_call_time[i].tv_nsec) / idio_vm_ins_counters[i];
@@ -5950,6 +5987,6 @@ void idio_final_vm ()
 	    }
 	}
     }
-    fprintf (idio_vm_perf_FILE, "vm-ins: %8" PRIu64 " %6s %-30s %5ld.%09ld\n", c, "", "total", t.tv_sec, t.tv_nsec);
+    fprintf (idio_vm_perf_FILE, "vm-ins:  %4s %-30s %8" PRIu64 " %5ld.%09ld\n", "", "total", c, t.tv_sec, t.tv_nsec);
 #endif
 }
