@@ -2507,6 +2507,8 @@ void idio_debug_FILE (FILE *file, const char *fmt, IDIO o)
     IDIO_C_ASSERT (fmt);
     IDIO_ASSERT (o);
 
+    /* fprintf (file, "[%d]", getpid()); */
+
     char *os = idio_as_string (o, 40);
     fprintf (file, fmt, os);
     free (os);

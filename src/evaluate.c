@@ -4601,7 +4601,8 @@ IDIO idio_evaluate (IDIO src, IDIO cs)
     IDIO_ASSERT (cs);
 
 
-    /* idio_debug ("evaluate: e %s\n", e);  */
+    /* idio_debug ("evaluate: e %s", idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_EXPR)); */
+    /* idio_debug (" in %s\n", IDIO_MODULE_NAME (idio_thread_current_module ())); */
 
     /*
      * In the course of evaluating expressions we create a lot of

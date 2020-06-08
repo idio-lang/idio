@@ -58,8 +58,8 @@ define (fail expr result expected) {
 
 define (test3 expr result expected) {
   set! Tests (1 + Tests)
+  ;edisplay* "test #" Tests ":" expr "=>" result "==?" expected
   if (not (equal? result expected)) {
-    ;edisplay* "test #" Tests ":" expr "=>" result
     fail expr result expected
   }
 }

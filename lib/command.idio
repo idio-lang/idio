@@ -20,7 +20,8 @@
 ;;
 module *command*
 import libc
-export (%%last-job
+export (%idio-jobs
+	%%last-job
 	job-failed
 	job-detail
 	pipeline-detail
@@ -29,8 +30,13 @@ export (%%last-job
 	foreground-job
 	wait-for-job
 
-	do-job-notification		; default SIGCHLD handler in
-					; vm.c
+	; default SIGCHLD handler via SIGCHLD clause in
+	; default-condition-handler (condition.c) and
+	; idio_command_SIGCHLD_signal_handler (command.c) which has
+	; idio_vm_invoke_C() call "do-job-notification"
+
+	do-job-notification		
+
 	bg-job
 	wait
 	with-input-from
@@ -197,7 +203,7 @@ value can be: exit status for 'exit or signal number for 'killed
      (list 'exit (WEXITSTATUS (%idio-process-status (ph procs))))
 }
 
-define (pipeline-detail job) "return the process status of each process in the pieline `job`
+define (pipeline-detail job) "return the process status of each process in the pipeline `job`
 
 :param job: job
 
@@ -404,7 +410,7 @@ define (do-job-notification) "notify of any job status changes" {
 		     (else {
 		       job := ph jobs
 		       c := make-condition ^rt-command-status-error "job failed" job (pipeline-detail job) (job-detail job)
-		       ;edisplay* "raising for job" job
+		       ;edisplay* "djn: raising for job" job
 		       ;raise #t c
 
 		       ;; if someone handled that error and returned (anything)
@@ -753,8 +759,6 @@ define-infix-operator | 300 {
       $stderr := (stderr-fileno) ; STDERR_FILENO
       $pgid := 0
       $job := make-%idio-job '$pipeline #n $pgid #f #n $stdin $stdout $stderr
-      %idio-jobs = pair $job %idio-jobs
-      %%last-job = $job
 
       $proc-id := 1
       $pipe := #n
@@ -870,6 +874,9 @@ define-infix-operator | 300 {
       ;; finally let the first process go
       close (pipe-reader $pgrp-pipe)
       close (pipe-writer $pgrp-pipe)
+
+      %idio-jobs = pair $job %idio-jobs
+      %%last-job = $job
 
       $status := #f
       cond ((not %idio-interactive) {

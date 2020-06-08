@@ -306,6 +306,8 @@ IDIO_DEFINE_PRIMITIVE0 ("fork", libc_fork, ())
 
     if (-1 == pid) {
 	idio_error_system_errno ("fork", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
     }
 
     return idio_C_int (pid);
@@ -817,6 +819,14 @@ IDIO_DEFINE_PRIMITIVE2 ("tcsetpgrp", libc_tcsetpgrp, (IDIO ifd, IDIO ipgrp))
     return idio_C_int (r);
 }
 
+/*
+ * This function is only used to create a struct utsname instance
+ * called libc/idio-uname so that you can invoke
+ * libc/idio-uname.nodename in code.
+ *
+ * Should probably be migrated there and not confuse matters by being
+ * a distinct function.
+ */
 IDIO idio_libc_uname ()
 {
     struct utsname u;
@@ -2744,7 +2754,11 @@ void idio_init_libc_wrap ()
 	IDIO_DEFINE_MODULE_STRUCTn (idio_libc_wrap_module, idio_libc_struct_stat, "struct-stat", idio_S_nil);
     }
 
-    name = idio_symbols_C_intern ("Idio/uname");
+    name = idio_symbols_C_intern ("idio-uname");
+    /*
+     * XXX Here we actually invoke idio_libc_uname() to return a
+     * struct instance of a struct type utsname
+     */
     idio_module_export_symbol_value (name, idio_libc_uname (), idio_libc_wrap_module);
 
     name = idio_symbols_C_intern ("struct-rlimit");

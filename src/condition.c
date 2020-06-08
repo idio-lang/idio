@@ -410,15 +410,15 @@ IDIO_DEFINE_PRIMITIVE2 ("default-condition-handler", default_condition_handler, 
     IDIO sif = IDIO_STRUCT_INSTANCE_FIELDS (cond);
 
     if (idio_struct_type_isa (sit, idio_condition_rt_signal_type)) {
-	IDIO isignum = idio_array_get_index (sif, IDIO_SI_RT_SIGNAL_TYPE_SIGNUM);
-	int signum = IDIO_FIXNUM_VAL (isignum);
+	IDIO signum_I = idio_array_get_index (sif, IDIO_SI_RT_SIGNAL_TYPE_SIGNUM);
+	int signum_C = IDIO_C_TYPE_INT (signum_I);
 
-	switch (signum) {
+	switch (signum_C) {
 	case SIGCHLD:
-	    idio_command_SIGCHLD_signal_handler (isignum);
+	    idio_command_SIGCHLD_signal_handler (signum_I);
 	    return idio_S_unspec;
 	case SIGHUP:
-	    idio_command_SIGHUP_signal_handler (isignum);
+	    idio_command_SIGHUP_signal_handler (signum_I);
 	    return idio_S_unspec;
 	default:
 	    break;
@@ -569,15 +569,16 @@ IDIO_DEFINE_PRIMITIVE2 ("restart-condition-handler", restart_condition_handler, 
 	 * in default-condition-handler.
 	 */
 	if (idio_struct_type_isa (sit, idio_condition_rt_signal_type)) {
-	    IDIO isignum = idio_array_get_index (sif, IDIO_SI_RT_SIGNAL_TYPE_SIGNUM);
-	    int signum = IDIO_FIXNUM_VAL (isignum);
+	    IDIO signum_I = idio_array_get_index (sif, IDIO_SI_RT_SIGNAL_TYPE_SIGNUM);
+	    int signum_C = IDIO_C_TYPE_INT (signum_I);
 
-	    switch (signum) {
+	    switch (signum_C) {
 	    case SIGCHLD:
-		idio_command_SIGCHLD_signal_handler (isignum);
+		fprintf (stderr, "restart-c-h: SIGCHLD -> idio_command_SIGCHLD_signal_handler\n");
+		idio_command_SIGCHLD_signal_handler (signum_I);
 		return idio_S_unspec;
 	    case SIGHUP:
-		idio_command_SIGHUP_signal_handler (isignum);
+		idio_command_SIGHUP_signal_handler (signum_I);
 		return idio_S_unspec;
 	    default:
 		break;
