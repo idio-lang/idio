@@ -112,6 +112,7 @@ if (C/> rl.rlim_cur nofiles_lim) {
 load "test-read-error.idio"
 load "test-read-coverage.idio"
 load "test-evaluation-error.idio"
+load "test-expander-error.idio"
 
 load "test-s9-test.idio"
 load "test-operator.idio"
@@ -142,7 +143,7 @@ load "test-utf-8.idio"
 ;; that?  Erm, they've not been counted and are dynamic in number so
 ;; test we've seen at least as many as the largest number we've
 ;; seen.  Wait, some tests are OS-specific.  Drat!
-test (eq? Tests 3294) #t
+test (eq? Tests 3305) #t
 
 if (file-exists? testfile) (delete-file testfile)
 

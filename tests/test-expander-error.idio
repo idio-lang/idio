@@ -1,0 +1,73 @@
+
+expander-error0 := Tests
+
+;; We have a bunch of test cases which should provoke an error of some
+;; kind.  So we can write a load function which will wrapper the
+;; actual load with a trap for whatever error and compare the message
+;; strings.
+
+;; One slight inconvenience is that {trap} only takes literal symbols,
+;; not values that evaluate to a symbol.  So we need a number of
+;; trap-thunks all of which do much of a muchness.  Cue the macro.
+
+;c := make-condition ^idio-error "msg" "loc" "det"
+;edisplay* c.location
+
+module *expander*
+
+define-macro (expander-trap type) {
+  loader-name := string->symbol (string-append "expander-trap-" (symbol->string type))
+  condition-name := string->symbol (string-append "^" (symbol->string type))
+  #T{
+
+    $loader-name := {
+      function (filename msg) {
+	if (not (string? filename)) (error 'load "not a string" filename)
+
+	load-k := #n
+
+	;edisplay* "loading #" filename "looking for" msg
+	thunk := function () {
+		   trap $condition-name (function (cont cond) {
+					   ;edisplay* "caught" msg cond.location
+					   test cond.message msg
+					   if (not (string=? cond.message msg)) {
+					     condition-report (string-append "expander-error-load: " filename) cont cond (current-error-handle)
+					   }
+					   load-k cond
+		   }) {
+		     call/cc (function (k) {
+				load-k = k
+				%load filename
+		     })
+		   }
+	}
+
+	run-in-thread *expander-thread* thunk
+      }
+    }
+  }
+}
+
+expander-trap st-function-arity-error
+expander-trap evaluation-error
+
+;; test the various possible errors in expander.c including an embedded
+;; variant to check we pick up the correct line number
+
+expander-trap-st-function-arity-error "expander-errors/let-1-arg.idio" "(let bindings body)"
+expander-trap-evaluation-error "expander-errors/let-invalid-bindings.idio" "parameter type: bindings: pair"
+expander-trap-evaluation-error "expander-errors/let-invalid-binding.idio" "parameter type: binding: pair/symbol"
+
+expander-trap-st-function-arity-error "expander-errors/let*-1-arg.idio" "(let* bindings body)"
+expander-trap-evaluation-error "expander-errors/let*-invalid-bindings.idio" "parameter type: bindings: pair"
+
+expander-trap-st-function-arity-error "expander-errors/letrec-1-arg.idio" "(letrec bindings body)"
+expander-trap-evaluation-error "expander-errors/letrec-invalid-bindings.idio" "parameter type: bindings: pair"
+expander-trap-evaluation-error "expander-errors/letrec-invalid-binding.idio" "parameter type: binding: pair/symbol"
+
+expander-trap-st-function-arity-error "expander-errors/infix-too-many-before.idio" "too many args before \":=\""
+expander-trap-st-function-arity-error "expander-errors/infix-too-few-after.idio" "too few args after \":=\""
+
+;; all done?
+test Tests (expander-error0 + 10)

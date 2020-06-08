@@ -360,6 +360,9 @@ IDIO idio_struct_instance_ref (IDIO si, IDIO field)
     idio_ai_t i = idio_array_find_eqp (IDIO_STRUCT_TYPE_FIELDS (sit), field, 0);
 
     if (-1 == i) {
+	idio_debug ("si=%s\n", si);
+	idio_debug ("fi=%s\n", field);
+	idio_debug ("sit=%s\n", sit);
 	idio_struct_error_field_not_found (field, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;

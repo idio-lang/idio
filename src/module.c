@@ -736,6 +736,11 @@ IDIO idio_module_find_symbol_recurse (IDIO symbol, IDIO m_or_n, int recurse)
 	recurse) {
 	IDIO imports = IDIO_MODULE_IMPORTS (module);
 	for (; idio_S_nil != imports; imports = IDIO_PAIR_T (imports)) {
+	    if (! idio_isa_module (IDIO_PAIR_H (imports))) {
+		idio_debug ("module import error: %s imports", module);
+		idio_debug (" %s\n", IDIO_MODULE_IMPORTS (module));
+		continue;
+	    }
 	    IDIO mi_sk = idio_module_find_symbol_recurse_imports (symbol, IDIO_PAIR_H (imports), module);
 
 	    if (idio_S_unspec != mi_sk) {

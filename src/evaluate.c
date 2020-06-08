@@ -195,6 +195,8 @@ static void idio_meaning_error (IDIO src, IDIO c_location, IDIO msg, IDIO expr)
 					       detail,
 					       expr));
     idio_raise_condition (idio_S_false, c);
+
+    /* notreached */
 }
 
 void idio_meaning_evaluation_error_param_type (IDIO src, IDIO c_location, char *msg, IDIO expr)
@@ -211,6 +213,8 @@ void idio_meaning_evaluation_error_param_type (IDIO src, IDIO c_location, char *
     idio_display_C (msg, sh);
 
     idio_meaning_error (src, c_location, idio_get_output_string (sh), expr);
+
+    /* notreached */
 }
 
 static void idio_meaning_evaluation_error_param_nil (IDIO src, IDIO c_location, char *msg, IDIO expr)
@@ -228,6 +232,8 @@ static void idio_meaning_evaluation_error_param_nil (IDIO src, IDIO c_location, 
     idio_display_C (msg, sh);
 
     idio_meaning_error (src, c_location, idio_get_output_string (sh), expr);
+
+    /* notreached */
 }
 
 static void idio_meaning_evaluation_error (IDIO src, IDIO c_location, char *msg, IDIO expr)
@@ -243,16 +249,15 @@ static void idio_meaning_evaluation_error (IDIO src, IDIO c_location, char *msg,
     idio_display_C (msg, sh);
 
     idio_meaning_error (src, c_location, idio_get_output_string (sh), expr);
+
+    /* notreached */
 }
 
-static void idio_warning_static_undefineds (IDIO diff)
-{
-    IDIO_ASSERT (diff);
-    IDIO_TYPE_ASSERT (pair, diff);
-
-    idio_debug ("WARNING: undefined variables: %s\n", diff);
-}
-
+/*
+ * There are half a dozen calls to
+ * idio_meaning_error_static_redefine() in places where it requires we
+ * have broken the code to raise it.
+ */
 void idio_meaning_error_static_redefine (IDIO src, IDIO c_location, char *msg, IDIO name, IDIO cv, IDIO new)
 {
     IDIO_ASSERT (src);
@@ -290,8 +295,14 @@ void idio_meaning_error_static_redefine (IDIO src, IDIO c_location, char *msg, I
 					       idio_get_output_string (dsh),
 					       name));
     idio_raise_condition (idio_S_true, c);
+
+    /* notreached */
 }
 
+/*
+ * The calls to idio_meaning_error_static_variable() requires we have
+ * broken the code to raise it.
+ */
 static void idio_meaning_error_static_variable (IDIO src, IDIO c_location, char *msg, IDIO name)
 {
     IDIO_ASSERT (src);
@@ -322,8 +333,14 @@ static void idio_meaning_error_static_variable (IDIO src, IDIO c_location, char 
 					       detail,
 					       name));
     idio_raise_condition (idio_S_true, c);
+
+    /* notreached */
 }
 
+/*
+ * The calls to idio_meaning_error_static_unbound() requires we have
+ * broken the code to raise it.
+ */
 static void idio_meaning_error_static_unbound (IDIO src, IDIO c_location, IDIO name)
 {
     IDIO_ASSERT (src);
@@ -334,8 +351,14 @@ static void idio_meaning_error_static_unbound (IDIO src, IDIO c_location, IDIO n
     IDIO_TYPE_ASSERT (symbol, name);
 
     idio_meaning_error_static_variable (src, c_location, "unbound", name);
+
+    /* notreached */
 }
 
+/*
+ * The calls to idio_meaning_error_static_immutable() requires we have
+ * broken the code to raise it.
+ */
 static void idio_meaning_error_static_immutable (IDIO src, IDIO c_location, IDIO name)
 {
     IDIO_ASSERT (src);
@@ -346,6 +369,8 @@ static void idio_meaning_error_static_immutable (IDIO src, IDIO c_location, IDIO
     IDIO_TYPE_ASSERT (symbol, name);
 
     idio_meaning_error_static_variable (src, c_location, "immutable", name);
+
+    /* notreached */
 }
 
 void idio_meaning_error_static_arity (IDIO src, IDIO c_location, char *msg, IDIO args)
@@ -377,6 +402,8 @@ void idio_meaning_error_static_arity (IDIO src, IDIO c_location, char *msg, IDIO
 					       location,
 					       idio_get_output_string (dsh)));
     idio_raise_condition (idio_S_true, c);
+
+    /* notreached */
 }
 
 static void idio_meaning_error_static_primitive_arity (IDIO src, IDIO c_location, char *msg, IDIO f, IDIO args, IDIO primdata)
@@ -426,6 +453,8 @@ static void idio_meaning_error_static_primitive_arity (IDIO src, IDIO c_location
 					       location,
 					       idio_get_output_string (dsh)));
     idio_raise_condition (idio_S_true, c);
+
+    /* notreached */
 }
 
 static IDIO idio_meaning_predef_extend (IDIO name, IDIO primdata, IDIO module, IDIO cs, const char *cpp__FILE__, int cpp__LINE__)
@@ -3709,6 +3738,7 @@ static IDIO idio_meaning_trap (IDIO src, IDIO ce, IDIO he, IDIO be, IDIO nametre
 	if (idio_S_unspec != sk) {
 	    fmci = IDIO_PAIR_HT (sk);
 	} else {
+	    idio_debug ("im_trap: condition name unknown: %s\n", cname);
 	    fmci = idio_toplevel_extend (src, cname, IDIO_MEANING_LEXICAL_SCOPE (flags), cs, cm);
 	}
 

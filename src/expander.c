@@ -176,6 +176,11 @@ IDIO_DEFINE_PRIMITIVE1 ("let", let, (IDIO e))
     size_t nargs = idio_list_length (e);
 
     if (nargs < 3) {
+	/*
+	 * Test Case: expander-errors/let-1-arg.idio
+	 *
+	 * let 1
+	 */	
 	idio_meaning_error_static_arity (e, IDIO_C_FUNC_LOCATION (), "(let bindings body)", e);
 
 	return idio_S_notreached;
@@ -197,6 +202,17 @@ IDIO_DEFINE_PRIMITIVE1 ("let", let, (IDIO e))
 	bindings = IDIO_PAIR_H (e);
     }
 
+    if (! idio_isa_pair (bindings)) {
+	/*
+	 * Test Case: expander-errors/let-invalid-bindings.idio
+	 *
+	 * let 1 2
+	 */	
+	idio_meaning_evaluation_error_param_type (src, IDIO_C_FUNC_LOCATION (), "bindings: pair", bindings);
+
+	return idio_S_notreached;
+    }
+
     while (idio_S_nil != bindings) {
 	IDIO binding = IDIO_PAIR_H (bindings);
 
@@ -213,7 +229,14 @@ IDIO_DEFINE_PRIMITIVE1 ("let", let, (IDIO e))
 	    vars = idio_pair (binding, vars);
 	    vals = idio_pair (value_expr, vals);
 	} else {
-	    idio_meaning_evaluation_error_param_type (src, IDIO_C_FUNC_LOCATION (), "let: binding pair/symbol", binding);
+	    /*
+	     * Test Case: expander-errors/let-invalid-binding.idio
+	     *
+	     * let (1) 2
+	     */	
+	    idio_meaning_evaluation_error_param_type (src, IDIO_C_FUNC_LOCATION (), "binding: pair/symbol", binding);
+
+	    return idio_S_notreached;
 	}
 
 	bindings = IDIO_PAIR_T (bindings);
@@ -323,7 +346,14 @@ IDIO_DEFINE_PRIMITIVE1 ("let*", lets, (IDIO e))
     size_t nargs = idio_list_length (e);
 
     if (nargs < 3) {
-	idio_meaning_error_static_arity (e, IDIO_C_FUNC_LOCATION (), "let*: wrong arguments", e);
+	/*
+	 * Test Case: expander-errors/let*-1-arg.idio
+	 *
+	 * let* 1
+	 */	
+	idio_meaning_error_static_arity (e, IDIO_C_FUNC_LOCATION (), "(let* bindings body)", e);
+
+	return idio_S_notreached;
     }
 
     /* idio_debug ("let*: in %s\n", e); */
@@ -334,11 +364,26 @@ IDIO_DEFINE_PRIMITIVE1 ("let*", lets, (IDIO e))
      * e is now (bindings body)
      */
 
+    IDIO bindings = IDIO_PAIR_H (e);
+
+    if (! idio_isa_pair (bindings)) {
+	/*
+	 * Test Case: expander-errors/let*-invalid-bindings.idio
+	 *
+	 * let 1 2
+	 */	
+	idio_meaning_evaluation_error_param_type (src, IDIO_C_FUNC_LOCATION (), "bindings: pair", bindings);
+
+	return idio_S_notreached;
+    }
+
     /*
      * NB reverse {bindings} so that when we walk over it below we
      * will create a nested set of {let}s in the right order
+     *
+     * Therefore {let} will do the validation of each {binding}.
      */
-    IDIO bindings = idio_list_reverse (IDIO_PAIR_H (e));
+    bindings = idio_list_reverse (bindings);
 
     e = IDIO_PAIR_T (e);
     /*
@@ -400,8 +445,14 @@ poor man's letrec				\n\
     size_t nargs = idio_list_length (e);
 
     if (nargs < 3) {
-	idio_meaning_error_static_arity (e, IDIO_C_FUNC_LOCATION (), "letrec: wrong arguments", e);
-	return idio_S_unspec;
+	/*
+	 * Test Case: expander-errors/letrec-1-arg.idio
+	 *
+	 * letrec 1
+	 */	
+	idio_meaning_error_static_arity (e, IDIO_C_FUNC_LOCATION (), "(letrec bindings body)", e);
+	
+	return idio_S_notreached;
     }
 
     IDIO src = e;
@@ -414,6 +465,17 @@ poor man's letrec				\n\
     IDIO vars = idio_S_nil;
     IDIO tmps = idio_S_nil;
     IDIO vals = idio_S_nil;
+
+    if (! idio_isa_pair (bindings)) {
+	/*
+	 * Test Case: expander-errors/letrec-invalid-bindings.idio
+	 *
+	 * letrec 1 2
+	 */	
+	idio_meaning_evaluation_error_param_type (src, IDIO_C_FUNC_LOCATION (), "bindings: pair", bindings);
+
+	return idio_S_notreached;
+    }
 
     while (idio_S_nil != bindings) {
 	IDIO binding = IDIO_PAIR_H (bindings);
@@ -433,7 +495,14 @@ poor man's letrec				\n\
 	    tmps = idio_pair (idio_gensym (NULL), tmps);
 	    vals = idio_pair (value_expr, vals);
 	} else {
-	    idio_meaning_evaluation_error_param_type (src, IDIO_C_FUNC_LOCATION (), "letrec: binding pair/symbol", binding);
+	    /*
+	     * Test Case: expander-errors/letrec-invalid-binding.idio
+	     *
+	     * let (1) 2
+	     */	
+	    idio_meaning_evaluation_error_param_type (src, IDIO_C_FUNC_LOCATION (), "binding: pair/symbol", binding);
+
+	    return idio_S_notreached;
 	}
 
 	bindings = IDIO_PAIR_T (bindings);
@@ -507,7 +576,14 @@ IDIO idio_expanderp (IDIO name)
 		idio_isa_closure (lv)) {
 		IDIO_PAIR_T (assq) = lv;
 	    } else {
-		idio_debug ("expander?: %s not an expander?\n", name);
+		if (idio_S_undef == lv &&
+		    idio_isa_symbol (name)) {
+		    idio_debug ("WARNING: using %s in the same file it is defined in may not have the desired effects\n", name);
+		} else {
+		    idio_debug ("expander?: %s not an expander?\n", name);
+		    fprintf (stderr, "name ISA %s\n", idio_type2string (name));
+		    idio_debug ("lv=%s\n", lv);
+		}
 	    }
 	} else {
 	    /* fprintf (stderr, "expander?: isa %s\n", idio_type2string (v));  */
@@ -860,7 +936,16 @@ static IDIO idio_evaluate_infix_operator (IDIO n, IDIO e, IDIO b, IDIO a)
     IDIO func = IDIO_PAIR_T (e);
     if (! (idio_isa_closure (func) ||
 	   idio_isa_primitive (func))) {
+	/*
+	 * Can we write a test case for this?  Is it possible to have
+	 * created an operator whose functional part is not a
+	 * function?
+	 *
+	 * Probably just a developer catch.
+	 */
 	idio_error_C ("operator: invalid code", IDIO_LIST2 (n, e), IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
     }
     IDIO cthr = idio_thread_current_thread ();
     IDIO ethr = idio_expander_thread;
@@ -1040,7 +1125,16 @@ static IDIO idio_evaluate_postfix_operator (IDIO n, IDIO e, IDIO b, IDIO a)
     IDIO func = IDIO_PAIR_T (e);
     if (! (idio_isa_closure (func) ||
 	   idio_isa_primitive (func))) {
+	/*
+	 * Can we write a test case for this?  Is it possible to have
+	 * created an operator whose functional part is not a
+	 * function?
+	 *
+	 * Probably just a developer catch.
+	 */
 	idio_error_C ("operator: invalid code", IDIO_LIST2 (n, e), IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
     }
     IDIO cthr = idio_thread_current_thread ();
     IDIO ethr = idio_expander_thread;
@@ -1253,6 +1347,24 @@ IDIO_DEFINE_PRIMITIVE1 ("operator-expand", operator_expand, (IDIO l))
     return r;
 }
 
+/*
+ * Test Case: expander-errors/infix-too-many-before.idio
+ *
+ * a b := 1
+ *
+ * Note that we won't have a lexical object to use.
+ */	
+
+/*
+ * Test Case: expander-errors/infix-too-few-after.idio
+ *
+ * (a := )
+ *
+ * NB Need to apply it to force the end of list otherwise you'll get
+ * EOF
+ *
+ * Note that we won't have a lexical object to use.
+ */	
 #define IDIO_DEFINE_ASSIGNMENT_INFIX_OPERATOR(iname,cname)		\
     IDIO_DEFINE_INFIX_OPERATOR (iname, cname, (IDIO op, IDIO before, IDIO args)) \
     {									\
@@ -1261,13 +1373,15 @@ IDIO_DEFINE_PRIMITIVE1 ("operator-expand", operator_expand, (IDIO l))
 	IDIO_ASSERT (args);						\
 									\
 	if (idio_S_nil != IDIO_PAIR_T (before)) {			\
-	    idio_error_C ("too many args before " #iname, IDIO_LIST2 (before, args), idio_string_C (#iname)); \
+	    idio_meaning_error_static_arity (before, IDIO_C_FUNC_LOCATION (), "too many args before " #iname, args); \
+	    return idio_S_notreached;					\
 	}								\
     									\
 	if (idio_S_nil != args) {					\
 	    IDIO after = IDIO_PAIR_H (args);				\
 	    if (idio_S_nil == after) {					\
-		idio_error_C ("too few args after " #iname, before, idio_string_C (#iname)); \
+		idio_meaning_error_static_arity (before, IDIO_C_FUNC_LOCATION (), "too few args after " #iname, args); \
+		return idio_S_notreached;				\
 	    }								\
 	    if (idio_S_nil == IDIO_PAIR_T (after)) {			\
 		after = IDIO_PAIR_H (after);				\
@@ -1297,6 +1411,7 @@ IDIO_DEFINE_ASSIGNMENT_INFIX_OPERATOR (":$", colon_dollar);
 void idio_init_expander ()
 {
     idio_expander_module = idio_module (idio_symbols_C_intern ("*expander*"));
+    IDIO_MODULE_IMPORTS (idio_expander_module) = IDIO_LIST2 (idio_Idio_module, idio_primitive_module);
 
     idio_expander_list = idio_symbols_C_intern ("*expander-list*");
     idio_module_set_symbol_value (idio_expander_list, idio_S_nil, idio_expander_module);
@@ -1305,6 +1420,7 @@ void idio_init_expander ()
     idio_module_set_symbol_value (idio_expander_list_src, idio_S_nil, idio_expander_module);
 
     idio_operator_module = idio_module (idio_symbols_C_intern ("*operator*"));
+    IDIO_MODULE_IMPORTS (idio_operator_module) = IDIO_LIST2 (idio_Idio_module, idio_primitive_module);
 
     idio_infix_operator_list = idio_symbols_C_intern ("*infix-operator-list*");
     idio_module_set_symbol_value (idio_infix_operator_list, idio_S_nil, idio_operator_module);
