@@ -55,6 +55,19 @@ define-macro (define-module name & body) {
   }
 }
 
+define-macro (in-module name & body) "Run `body` in module `name`
+
+Control will revert to the current module on exit or any ^condition" {
+  #T{
+    with-condition-handler ^condition %module-handler {
+      %set-current-module! (%module-push $name)
+      $@body
+      %set-current-module! (%module-pop)
+      (void)
+    }
+  }
+}
+
 ;; module and load are concomitant
 ;;
 ;; {module} simply sets the current module but {load} now needs to be
@@ -100,21 +113,21 @@ load = {
 ;; module-import
 define (%module-import importer modules) {
   loop :+ function (mods result) {
-    cond ((null? mods) {
-	    %set-module-imports! importer (reverse result)
-	 }) \
-	 (else {
-	   mod := find-module (ph mods) #f
-	   if mod {
-	     loop (pt mods) (if ((eq? mod importer) or
-				 (memq mod result))
-				result
-				(pair mod result))
-	   } {
-	     error 'import "module does not exist" (ph mods)
-	   }
-	 })
-    }
+	    cond ((null? mods) {
+	      %set-module-imports! importer (reverse result)
+	    }) \
+		 (else {
+		   mod := find-module (ph mods) #f
+		   if mod {
+		     loop (pt mods) (if ((eq? mod importer) or
+							    (memq mod result))
+				     result
+				     (pair mod result))
+		   } {
+		     error 'import "module does not exist" (ph mods)
+		   }
+		 })
+  }
 
   loop modules (reverse (module-imports importer))
 }

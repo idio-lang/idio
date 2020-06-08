@@ -117,7 +117,7 @@ IDIO idio_list_head (IDIO p)
     }
 
     if (! idio_isa_pair (p)) {
-	idio_debug ("p=%s\n", p);
+	idio_debug ("ilh p=%s\n", p);
 	idio_vm_thread_state ();
 	IDIO_C_ASSERT (0);
     }

@@ -931,7 +931,7 @@ static int idio_command_mark_process_status (pid_t pid, int status)
 	 * Some arbitrary process has a status update so we need to
 	 * dig it out.
 	 */
-	IDIO jobs = idio_module_symbol_value (idio_command_jobs_sym, idio_Idio_module_instance (), idio_S_nil);
+	IDIO jobs = idio_module_symbol_value (idio_command_jobs_sym, idio_command_module, idio_S_nil);
 	while (idio_S_nil != jobs) {
 	    IDIO job = IDIO_PAIR_H (jobs);
 
@@ -1149,7 +1149,7 @@ void idio_command_do_job_notification (void)
      */
     idio_command_update_status ();
 
-    IDIO jobs = idio_module_symbol_value (idio_command_jobs_sym, idio_Idio_module_instance (), idio_S_nil);
+    IDIO jobs = idio_module_symbol_value (idio_command_jobs_sym, idio_command_module, idio_S_nil);
     IDIO njobs = idio_S_nil;
     IDIO failed_jobs = idio_S_nil;
 
@@ -1180,7 +1180,7 @@ void idio_command_do_job_notification (void)
 	jobs = IDIO_PAIR_T (jobs);
     }
 
-    idio_module_set_symbol_value (idio_command_jobs_sym, njobs, idio_Idio_module_instance ());
+    idio_module_set_symbol_value (idio_command_jobs_sym, njobs, idio_command_module);
 
     if (0) {
     while (idio_S_nil != failed_jobs) {
@@ -1479,9 +1479,9 @@ Send the process group of `job` a SIGCONT then a SIGHUP\n\
 void idio_command_SIGHUP_signal_handler (IDIO signum)
 {
     IDIO_ASSERT (signum);
-    IDIO_TYPE_ASSERT (fixnum, signum);
+    IDIO_TYPE_ASSERT (C_int, signum);
 
-    IDIO jobs = idio_module_symbol_value (idio_command_jobs_sym, idio_Idio_module_instance (), idio_S_nil);
+    IDIO jobs = idio_module_symbol_value (idio_command_jobs_sym, idio_command_module, idio_S_nil);
     if (idio_S_nil != jobs) {
 	/* fprintf (stderr, "There are outstanding jobs\n"); */
 	while (idio_S_nil != jobs) {
@@ -1542,7 +1542,7 @@ IDIO_DEFINE_PRIMITIVE2 ("SIGHUP-condition-handler", SIGHUP_condition_handler, (I
 void idio_command_SIGCHLD_signal_handler (IDIO signum)
 {
     IDIO_ASSERT (signum);
-    IDIO_TYPE_ASSERT (fixnum, signum);
+    IDIO_TYPE_ASSERT (C_int, signum);
 
     /*
      * do-job-notification is a thunk so we can call it direct
@@ -1964,7 +1964,6 @@ static void idio_command_launch_job (IDIO job, int foreground)
 				       outfile,
 				       job_stderr,
 				       foreground);
-
 	    /*
 	     * In the info example, we would have execv'd a command in
 	     * prep_process whereas we have merely gotten everything
@@ -2062,8 +2061,8 @@ static IDIO idio_command_launch_1proc_job (IDIO job, int foreground, char **argv
      * original Idio's pid.
      */
     if (getpid () == idio_command_pid) {
-	IDIO jobs = idio_module_symbol_value (idio_command_jobs_sym, idio_Idio_module_instance (), idio_S_nil);
-	idio_module_set_symbol_value (idio_command_jobs_sym, idio_pair (job, jobs), idio_Idio_module_instance ());
+	IDIO jobs = idio_module_symbol_value (idio_command_jobs_sym, idio_command_module, idio_S_nil);
+	idio_module_set_symbol_value (idio_command_jobs_sym, idio_pair (job, jobs), idio_command_module);
 
 	idio_module_set_symbol_value (idio_command_last_job, job, idio_command_module);
 
@@ -2519,6 +2518,7 @@ exec `command` `args`				\n\
 void idio_init_command ()
 {
     idio_command_module = idio_module (idio_symbols_C_intern ("*command*"));
+    IDIO_MODULE_IMPORTS (idio_command_module) = IDIO_LIST2 (idio_Idio_module, idio_primitive_module);
 
     idio_S_background_job = idio_symbols_C_intern ("background-job");
     idio_S_exit = idio_symbols_C_intern ("exit");
@@ -2665,11 +2665,10 @@ void idio_init_command ()
 	}
     }
 
-    IDIO im = idio_Idio_module_instance ();
     idio_command_jobs_sym = idio_symbols_C_intern ("%idio-jobs");
-    idio_module_set_symbol_value (idio_command_jobs_sym, idio_S_nil, im);
+    idio_module_set_symbol_value (idio_command_jobs_sym, idio_S_nil, idio_command_module);
     idio_command_last_job = idio_symbols_C_intern ("%%last-job");
-    idio_module_set_symbol_value (idio_command_last_job, idio_S_nil, im);
+    idio_module_set_symbol_value (idio_command_last_job, idio_S_nil, idio_command_module);
 
     IDIO name;
 
@@ -2746,12 +2745,12 @@ void idio_final_command ()
     idio_command_interactive = 0;
 
     /*
-     * This deliberately uses the C versions as other modules have
-     * been shutting down -- we don't want to be running any more Idio
-     * code here!
+     * This deliberately uses the C versions of these functions as
+     * other modules have been shutting down -- we don't want to be
+     * running any more Idio code here!
      */
     idio_command_do_job_notification ();
 
-    idio_command_SIGHUP_signal_handler (idio_fixnum (SIGHUP));
+    idio_command_SIGHUP_signal_handler (idio_C_int (SIGHUP));
 }
 

@@ -1233,6 +1233,7 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
 	    }
 
 	    if (idio_vm_tracing) {
+		fprintf (stderr, "%9.s ", "");
 		fprintf (stderr, "%7.s ", "");
 		fprintf (stderr, "%*.s", idio_vm_tracing + 1, "");
 		/* XXX - why is idio_vm_tracing one less hence an extra space? */
@@ -2192,6 +2193,7 @@ static void idio_vm_primitive_call_trace (char *name, IDIO thr, int nargs)
      * %*s	- trace-depth indent (>= 1)
      * %s	- expression
      */
+    fprintf (stderr, "%9.s ", "");
     fprintf (stderr, "%7zd ", IDIO_THREAD_PC (thr) - 1);
 
     /* fprintf (stderr, "        __primcall__    "); */
@@ -2220,6 +2222,7 @@ static void idio_vm_primitive_result_trace (IDIO thr)
      */
     /* fprintf (stderr, "                                "); */
 
+    fprintf (stderr, "%9.s ", "");
     fprintf (stderr, "%7.s ", "");
     fprintf (stderr, "%*.s", idio_vm_tracing + 1, "");
     idio_debug ("=> %s\n", val);
@@ -2261,13 +2264,14 @@ static idio_ai_t idio_vm_get_or_create_vvi (idio_ai_t mci)
     IDIO ce = idio_thread_current_env ();
 
     IDIO fgvi = idio_module_get_vvi (ce, fmci);
-
+    /* idio_debug ("fgvi=%s\n", fgvi); */
     /*
      * NB 0 is the placeholder value index (see idio_init_vm_values())
      */
     idio_ai_t gvi = 0;
 
-    if (idio_S_unspec == fgvi) {
+    if (idio_S_unspec == fgvi ||
+	0 == IDIO_FIXNUM_VAL (fgvi)) {
 	/*
 	 * This is the first time we have looked for mci in this module
 	 * and we have failed to find a vvi, ie. fast-lookup, mapping
@@ -2473,6 +2477,8 @@ int idio_vm_run1 (IDIO thr)
 		    IDIO sk_fgvi = IDIO_PAIR_HTT (sk_ce);
 		    idio_ai_t sk_gvi = IDIO_FIXNUM_VAL (sk_fgvi);
 		    if (0 == sk_gvi) {
+			idio_debug ("G-R ce=%s\n", ce);
+			idio_debug ("G-R sk_ce=%s\n", sk_ce);
 			idio_error_runtime_unbound (fmci, fgci, sym, IDIO_C_FUNC_LOCATION_S ("GLOBAL-REF"));
 
 			/* notreached */
@@ -2534,6 +2540,8 @@ int idio_vm_run1 (IDIO thr)
 		}
 	    } else {
 		idio_debug ("CHECKED-GLOBAL-REF: %s gvi==0 => sym\n", sym);
+		idio_debug (" ce=%s\n", idio_thread_current_env ());
+		fprintf (stderr, " mci #%" PRId64 "\n", mci);
 		idio_vm_panic (thr, "CHECKED-GLOBAL-REF: gvi==0");
 		IDIO_THREAD_VAL (thr) = sym;
 	    }
@@ -2857,10 +2865,20 @@ int idio_vm_run1 (IDIO thr)
 	    } else {
 		IDIO ce = idio_thread_current_env ();
 		IDIO sk_ce = idio_module_find_symbol (sym, ce);
-		idio_debug ("GLOBAL-SET: ce=%s\n", IDIO_MODULE_NAME (ce));
-		idio_debug ("GLOBAL-SET: sk_ce=%s\n", sk_ce);
+		idio_debug ("GLOBAL-SET: UNBOUND sym=%s", sym);
+		idio_debug (" fmci=%s", fmci);
+		idio_debug (" fgci=%s\n", fgci);
+		idio_debug (" ce=%s\n", IDIO_MODULE_NAME (ce));
+		idio_debug (" sk_ce=%s\n", sk_ce);
+		idio_debug (" MI=%s\n", IDIO_MODULE_IMPORTS (ce));
+
+		IDIO sk = idio_module_find_symbol_recurse (sym, ce, 1);
+		idio_debug (" sk=%s\n", sk);
+
 		idio_error_runtime_unbound (fmci, fgci, sym, IDIO_C_FUNC_LOCATION_S ("GLOBAL-SET"));
 		idio_vm_panic (thr, "GLOBAL-SET: no gvi!");
+
+		/* notreached */
 	    }
 	}
 	break;
@@ -3099,6 +3117,7 @@ int idio_vm_run1 (IDIO thr)
 	    IDIO_VM_RUN_DIS ("RETURN to %" PRIdPTR, pc);
 	    IDIO_THREAD_PC (thr) = pc;
 	    if (idio_vm_tracing) {
+		fprintf (stderr, "%9.s ", "");
 		fprintf (stderr, "%7.s ", "");
 		fprintf (stderr, "%*.s", idio_vm_tracing, "");
 		idio_debug ("=> %s\n", IDIO_THREAD_VAL (thr));
@@ -5135,7 +5154,7 @@ IDIO idio_vm_run (IDIO thr)
 		    if (idio_S_nil != signal_condition) {
 			idio_vm_raise_condition (idio_S_true, signal_condition, 1);
 		    } else {
-			fprintf (stderr, "idio_vm_run1(): signal %d has no condition?\n", signum);
+			fprintf (stderr, "ivm_r signal %d has no condition?\n", signum);
 			idio_error_C ("signal without a condition to raise", idio_fixnum (signum), IDIO_C_FUNC_LOCATION ());
 
 			return idio_S_notreached;
@@ -5143,8 +5162,8 @@ IDIO idio_vm_run (IDIO thr)
 
 		    IDIO signal_handler_name = idio_array_ref (idio_vm_signal_handler_name, idio_fixnum (signum));
 		    if (idio_S_nil == signal_handler_name) {
-			fprintf (stderr, "raising signal %d: no handler name\n", signum);
-			idio_debug ("ivshn %s\n", idio_vm_signal_handler_name);
+			fprintf (stderr, "iv_r raising signal %d: no handler name\n", signum);
+			idio_debug ("iv_r ivshn %s\n", idio_vm_signal_handler_name);
 			IDIO_C_ASSERT (0);
 		    }
 		    IDIO signal_handler_exists = idio_module_find_symbol_recurse (signal_handler_name, idio_Idio_module, 1);
@@ -5201,15 +5220,15 @@ IDIO idio_vm_run (IDIO thr)
 			if (NULL != IDIO_THREAD_JMP_BUF (thr)) {
 			    longjmp (*(IDIO_THREAD_JMP_BUF (thr)), IDIO_VM_LONGJMP_EVENT);
 			} else {
-			    fprintf (stderr, "WARNING: SIGCHLD: unable to use jmp_buf==NULL in thr %10p\n", thr);
+			    fprintf (stderr, "iv_r WARNING: SIGCHLD: unable to use jmp_buf==NULL in thr %10p\n", thr);
 			    idio_vm_debug (thr, "SIGCHLD unable to use jmp_buf==NULL", 0);
 			    idio_vm_panic (thr, "SIGCHLD unable to use jmp_buf==NULL");
 			}
 		    } else {
-			idio_debug ("signal_handler_name=%s\n", signal_handler_name);
-			idio_debug ("idio_vm_signal_handler_name=%s\n", idio_vm_signal_handler_name);
-			idio_debug ("idio_vm_signal_handler_name[17]=%s\n", idio_array_ref (idio_vm_signal_handler_name, idio_fixnum (SIGCHLD)));
-			fprintf (stderr, "VM: no sighandler for signal #%d\n", signum);
+			idio_debug ("iv_r signal_handler_name=%s\n", signal_handler_name);
+			idio_debug ("iv_r idio_vm_signal_handler_name=%s\n", idio_vm_signal_handler_name);
+			idio_debug ("iv_r idio_vm_signal_handler_name[17]=%s\n", idio_array_ref (idio_vm_signal_handler_name, idio_fixnum (SIGCHLD)));
+			fprintf (stderr, "iv_r no sighandler for signal #%d\n", signum);
 		    }
 		} else {
 		    /* fprintf (stderr, "VM: no sighandler for signal #%d\n", signum); */

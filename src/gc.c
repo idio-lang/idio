@@ -167,6 +167,14 @@ IDIO idio_gc_get (idio_type_e type)
 
     IDIO_ASSERT (o);
     if (NULL != idio_gc->used) {
+	/*
+	 * XXX have seen:
+	 *
+	 * idio: gc.c:170: idio_gc_get: Assertion `(idio_gc->used)->type' failed.
+	 * Aborted
+	 *
+	 * here.  This might be a bogus assert with type==0 floating about.
+	 */
 	IDIO_ASSERT (idio_gc->used);
     }
     o->next = idio_gc->used;

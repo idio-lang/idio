@@ -339,7 +339,7 @@ trap ^i/o-file-protection-error (function (cont cond) {
 ;;
 ;; This is supported on Linux, MacOS.  Not supported on Solaris
 ;; (OpenIndiana).
-if (equal? (struct-utsname-sysname Idio/uname) "SunOS") {
+if (equal? (struct-utsname-sysname libc/idio-uname) "SunOS") {
   ;; edisplay* "Solaris: no fopen (\"x\") flag: skipping"
   Tests = Tests + 1
 } {

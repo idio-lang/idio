@@ -4127,7 +4127,8 @@ IDIO idio_evaluate (IDIO lo, IDIO cs)
 
     IDIO_TYPE_ASSERT (struct_instance, lo);
 
-    /* idio_debug ("evaluate: e %s\n", e);  */
+    /* idio_debug ("evaluate: e %s", idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_EXPR)); */
+    /* idio_debug (" in %s\n", IDIO_MODULE_NAME (idio_thread_current_module ())); */
 
     /*
      * In the course of evaluating expressions we create a lot of

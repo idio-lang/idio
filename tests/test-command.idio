@@ -33,6 +33,7 @@ command0 := Tests
 rcseh := #n
 
 trap ^rt-command-status-error (function (cont cond) {
+				 ;condition-report "^rt-command-status-error" #t cond (current-error-handle)
 				 test (rt-command-status-error? cond) #t
 				 if cont {
 				   rcseh cond
@@ -50,27 +51,30 @@ trap ^rt-command-status-error (function (cont cond) {
   ;; complaining loudly and testing for something that isn't generated
   ;; (spotting an error in the summary is easier to spot)
   exit0 := function (cond) {
-	     edisplay* "command tests:" PID "exit0: unexpected status error"
-	     condition-report "command tests: exit0" #t cond
+	     edisplay* "command tests: exit0: unexpected status error" PID 
+	     condition-report "command tests: exit0" #t cond (current-error-handle)
 	     test (rt-command-status-error-status cond) 'job-failed
   }
 
   exit1 := function (cond) {
-	     ;; edisplay* "command tests:" PID "exit1" cond
+	     ;edisplay* "command tests: exit1:" PID
+	     ;condition-report "command tests: exit1" #t cond (current-error-handle)
 	     job := idio-error-location cond
 	     test (job-detail job) #T{ (exit $(C/integer-> 1)) }
 	     rt-command-status-error-status cond
   }
 
   killed1 := function (cond) {
-	       ;; edisplay* "command tests:" PID "killed1" cond
+	       ;edisplay* "command tests: killed1:" PID
+	       ;condition-report "command tests: killed1" #t cond (current-error-handle)
 	       job := idio-error-location cond
 	       test (job-detail job) #T{ (killed $(C/integer-> 1)) }
 	       rt-command-status-error-status cond
   }
 
   killed13 := function (cond) {
-		;; edisplay* "command tests:" PID "killed13" cond
+		;edisplay* "command tests: killed13:" PID
+		;condition-report "command tests: killed13" #t cond (current-error-handle)
 		job := idio-error-location cond
 		test (job-detail job) #T{ (killed $(C/integer-> 13)) }
 		rt-command-status-error-status cond

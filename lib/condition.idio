@@ -151,7 +151,7 @@ define-condition-type-accessors-only ^st-variable-error			^static-error			st-var
 define-condition-type-accessors-only ^st-variable-type-error		^st-variable-error		st-variable-type-error?
 
 define-condition-type-accessors-only ^st-function-error			^static-error			st-function-error?
-define-condition-type-accessors-only ^st-function-type-error		^st-function-error		st-function-type-error?
+define-condition-type-accessors-only ^st-function-arity-error		^st-function-error		st-function-arity-error?
 
 define-condition-type-accessors-only ^runtime-error			^idio-error			runtime-error?
 
@@ -274,11 +274,17 @@ define (condition-report prefix cont cond & args) "print a report on `condition`
        }) \
        ((struct-type-isa (struct-instance-type cond) ^rt-command-status-error) {
 	 job := idio-error-location cond
+	 header := #t
 	 loop :+ function (procs details) {
 		   cond ((null? procs) #t) \
 			(else {
+			  if header {
+			    header = #f
+			    cr-printf "  flags: C - completed; !C - not completed; S - stopped\n"
+			    cr-printf "  proc: %-6s %-3s %-10s %s\n" "pid" "fl" "status" "cmd"
+			  }
 			  proc := ph procs
-			  cr-printf "::%s\t%s\t%s%s\t%s\n" proc.argv proc.pid (if proc.completed " C" "!C") (if proc.stopped "S" " ") (ph details)
+			  cr-printf "  proc: %6s %2s%s %10s %s\n" proc.pid (if proc.completed " C" "!C") (if proc.stopped "S" " ") (ph details) proc.argv
 			  loop (pt procs) (pt details)
 			})
 	 }

@@ -324,7 +324,7 @@ IDIO idio_C_number_cast (IDIO co, idio_type_e type)
 		    result = (v1 cmp IDIO_C_TYPE_UINT (n2));		\
 		    break;						\
 		default:						\
-		    idio_error_C ("n2->type unexpected", n2, idio_string_C (#name)); \
+		    idio_error_C ("C/" name ": n2->type unexpected", IDIO_LIST2 (n1, n2), idio_string_C (#name)); \
 									\
 		    return idio_S_notreached;				\
 		}							\
@@ -339,12 +339,12 @@ IDIO idio_C_number_cast (IDIO co, idio_type_e type)
 		result = (IDIO_C_TYPE_UINT (n1) cmp v2);		\
 		break;							\
 	    default:							\
-		idio_error_C ("n1->type unexpected", n1, idio_string_C (#name)); \
+		idio_error_C ("C/" name ": n1->type unexpected (n2:fixnum)", IDIO_LIST2 (n1, n2), idio_string_C (#name)); \
 									\
 		return idio_S_notreached;				\
 	    }								\
 	} else if (idio_type (n1) != idio_type (n2)) {			\
-	    idio_error_C ("n1->type != n2->type", IDIO_LIST2 (n1, n2), idio_string_C (#name)); \
+	    idio_error_C ("C/" name ": n1->type != n2->type", IDIO_LIST2 (n1, n2), idio_string_C (#name)); \
 									\
 	    return idio_S_notreached;					\
 	} else {							\
@@ -365,7 +365,7 @@ IDIO idio_C_number_cast (IDIO co, idio_type_e type)
 		result = (IDIO_C_TYPE_POINTER_P (n1) cmp IDIO_C_TYPE_POINTER_P (n2)); \
 		break;							\
 	    default:							\
-		idio_error_C ("n1->type unexpected", n1, idio_string_C (#name)); \
+		idio_error_C ("C/" name ": n1->type unexpected", IDIO_LIST2 (n1, n2), idio_string_C (#name)); \
 									\
 		return idio_S_notreached;				\
 	    }								\
