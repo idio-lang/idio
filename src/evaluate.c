@@ -511,7 +511,7 @@ IDIO idio_add_primitive (idio_primitive_desc_t *d, IDIO cs, const char *cpp__FIL
     IDIO_ASSERT (cs);
     IDIO_TYPE_ASSERT (array, cs);
 
-    return idio_add_module_primitive (idio_primitive_module_instance (), d, cs, cpp__FILE__, cpp__LINE__);
+    return idio_add_module_primitive (idio_primitives_module_instance (), d, cs, cpp__FILE__, cpp__LINE__);
 }
 
 IDIO idio_toplevel_extend (IDIO lo, IDIO name, int flags, IDIO cs, IDIO cm)

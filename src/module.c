@@ -25,20 +25,20 @@
 static IDIO idio_modules_hash = idio_S_nil;
 
 /*
- * idio_primitive_module is the set of built-ins -- not modifiable!
+ * idio_primitives_module is the set of built-ins -- not modifiable!
  *
  * idio_Idio_module is the default toplevel module which imports from
- * idio_primitive_module
+ * idio_primitives_module
  *
  * All new modules implicitly import from idio_Idio_module then
- * idio_primitive_module.
+ * idio_primitives_module.
  *
  * There is a little bit of artiface as getting and setting the
  * symbols referred to here is really an indirection to
  * idio_vm_values_(ref|set).
  */
 
-IDIO idio_primitive_module = idio_S_nil;
+IDIO idio_primitives_module = idio_S_nil;
 IDIO idio_Idio_module = idio_S_nil;
 
 void idio_module_error_duplicate_name (IDIO name, IDIO loc)
@@ -150,10 +150,10 @@ IDIO idio_module (IDIO name)
     IDIO_MODULE_EXPORTS (mo) = idio_S_nil;
     /*
      * IDIO_MODULE_IMPORTS (module) will result in semi-gibberish for
-     * idio_primitive_module, idio_command_module and idio_Idio_module
+     * idio_primitives_module, idio_command_module and idio_Idio_module
      * which we patch up immediately after this call returns
      */
-    IDIO_MODULE_IMPORTS (mo) = IDIO_LIST3 (idio_command_module, idio_Idio_module, idio_primitive_module);
+    IDIO_MODULE_IMPORTS (mo) = IDIO_LIST3 (idio_command_module, idio_Idio_module, idio_primitives_module);
     IDIO_MODULE_SYMBOLS (mo) = IDIO_HASH_EQP (1<<7);
     IDIO_MODULE_VCI (mo) = IDIO_HASH_EQP (1<<10);
     IDIO_MODULE_VVI (mo) = IDIO_HASH_EQP (1<<10);
@@ -274,9 +274,9 @@ IDIO idio_Idio_module_instance ()
     return idio_Idio_module;
 }
 
-IDIO idio_primitive_module_instance ()
+IDIO idio_primitives_module_instance ()
 {
-    return idio_primitive_module;
+    return idio_primitives_module;
 }
 
 IDIO idio_module_find_or_create_module (IDIO name)
@@ -454,7 +454,7 @@ IDIO idio_module_current_symbols ()
 
 IDIO idio_module_primitive_symbols ()
 {
-    return idio_module_symbols (idio_primitive_module);
+    return idio_module_symbols (idio_primitives_module);
 }
 
 IDIO_DEFINE_PRIMITIVE0V ("module-symbols", module_symbols, (IDIO args))
@@ -511,7 +511,7 @@ IDIO idio_module_visible_imported_symbols (IDIO module, IDIO type)
 
     IDIO symbols = IDIO_MODULE_EXPORTS (module);
     if (idio_Idio_module == module ||
-	idio_primitive_module == module) {
+	idio_primitives_module == module) {
 	symbols = idio_hash_keys_to_list (IDIO_MODULE_SYMBOLS (module));
     }
 
@@ -660,7 +660,7 @@ IDIO idio_module_find_symbol_recurse_imports (IDIO symbol, IDIO imported_module,
      */
     if (idio_S_unspec != sv) {
 	if (idio_Idio_module == imported_module ||
-	    idio_primitive_module == imported_module ||
+	    idio_primitives_module == imported_module ||
 	    idio_S_false != idio_list_memq (symbol, IDIO_MODULE_EXPORTS (imported_module))) {
 	    return sv;
 	}
@@ -736,6 +736,11 @@ IDIO idio_module_find_symbol_recurse (IDIO symbol, IDIO m_or_n, int recurse)
 	recurse) {
 	IDIO imports = IDIO_MODULE_IMPORTS (module);
 	for (; idio_S_nil != imports; imports = IDIO_PAIR_T (imports)) {
+	    if (! idio_isa_module (IDIO_PAIR_H (imports))) {
+		idio_debug ("module import error: %s imports", module);
+		idio_debug (" %s\n", IDIO_MODULE_IMPORTS (module));
+		continue;
+	    }
 	    IDIO mi_sk = idio_module_find_symbol_recurse_imports (symbol, IDIO_PAIR_H (imports), module);
 
 	    if (idio_S_unspec != mi_sk) {
@@ -769,7 +774,7 @@ IDIO idio_module_primitive_symbol_recurse (IDIO symbol)
     IDIO_ASSERT (symbol);
     IDIO_TYPE_ASSERT (symbol, symbol);
 
-    return idio_module_find_symbol_recurse (symbol, idio_primitive_module, 1);
+    return idio_module_find_symbol_recurse (symbol, idio_primitives_module, 1);
 }
 
 IDIO idio_module_current_symbol_recurse (IDIO symbol)
@@ -802,7 +807,7 @@ IDIO idio_module_primitive_symbol (IDIO symbol)
     IDIO_ASSERT (symbol);
     IDIO_TYPE_ASSERT (symbol, symbol);
 
-    return idio_module_find_symbol (symbol, idio_primitive_module);
+    return idio_module_find_symbol (symbol, idio_primitives_module);
 }
 
 IDIO idio_module_current_symbol (IDIO symbol)
@@ -904,7 +909,7 @@ IDIO idio_module_primitive_symbol_value (IDIO symbol, IDIO args)
     IDIO_TYPE_ASSERT (symbol, symbol);
     IDIO_TYPE_ASSERT (list, args);
 
-    return idio_module_symbol_value (symbol, idio_primitive_module, args);
+    return idio_module_symbol_value (symbol, idio_primitives_module, args);
 }
 
 IDIO idio_module_current_symbol_value (IDIO symbol, IDIO args)
@@ -1020,7 +1025,7 @@ IDIO idio_module_primitive_symbol_value_recurse (IDIO symbol, IDIO args)
     IDIO_TYPE_ASSERT (symbol, symbol);
     IDIO_TYPE_ASSERT (list, args);
 
-    return idio_module_symbol_value_recurse (symbol, idio_primitive_module, args);
+    return idio_module_symbol_value_recurse (symbol, idio_primitives_module, args);
 }
 
 IDIO idio_module_current_symbol_value_recurse (IDIO symbol, IDIO args)
@@ -1102,7 +1107,7 @@ IDIO idio_module_primitive_set_symbol (IDIO symbol, IDIO value)
     IDIO_ASSERT (value);
     IDIO_TYPE_ASSERT (symbol, symbol);
 
-    return idio_module_set_symbol (symbol, value, idio_primitive_module);
+    return idio_module_set_symbol (symbol, value, idio_primitives_module);
 }
 
 IDIO idio_module_current_set_symbol (IDIO symbol, IDIO value)
@@ -1191,7 +1196,7 @@ IDIO idio_module_set_symbol_value (IDIO symbol, IDIO value, IDIO module)
     } else if (idio_S_computed == kind) {
 	idio_vm_computed_set (mci, gvi, value, idio_thread_current_thread ());
     } else if (idio_S_predef == kind) {
-	if (module == idio_primitive_module) {
+	if (module == idio_primitives_module) {
 	    idio_error_C ("cannot set a primitive", IDIO_LIST2 (symbol, module), IDIO_C_FUNC_LOCATION ());
 	} else {
 	    idio_vm_values_set (gvi, value);
@@ -1218,7 +1223,7 @@ IDIO idio_module_primitive_set_symbol_value (IDIO symbol, IDIO value)
     IDIO_ASSERT (value);
     IDIO_TYPE_ASSERT (symbol, symbol);
 
-    return idio_module_set_symbol_value (symbol, value, idio_primitive_module);
+    return idio_module_set_symbol_value (symbol, value, idio_primitives_module);
 }
 
 IDIO idio_module_current_set_symbol_value (IDIO symbol, IDIO value)
@@ -1316,14 +1321,14 @@ void idio_init_module ()
     IDIO name;
     
     name = idio_symbols_C_intern ("*primitives*");
-    idio_primitive_module = idio_module (name);
-    IDIO_MODULE_IMPORTS (idio_primitive_module) = idio_S_nil;
+    idio_primitives_module = idio_module (name);
+    IDIO_MODULE_IMPORTS (idio_primitives_module) = idio_S_nil;
     idio_ai_t pm_gci = idio_vm_constants_lookup_or_extend (name);
     idio_ai_t pm_gvi = idio_vm_extend_values ();
 
     name = idio_symbols_C_intern ("Idio");
     idio_Idio_module = idio_module (name);
-    IDIO_MODULE_IMPORTS (idio_Idio_module) = IDIO_LIST1 (idio_primitive_module);
+    IDIO_MODULE_IMPORTS (idio_Idio_module) = IDIO_LIST1 (idio_primitives_module);
     idio_ai_t Im_gci = idio_vm_constants_lookup_or_extend (name);
     idio_ai_t Im_gvi = idio_vm_extend_values ();
 
