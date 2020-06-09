@@ -2518,7 +2518,7 @@ exec `command` `args`				\n\
 void idio_init_command ()
 {
     idio_command_module = idio_module (idio_symbols_C_intern ("*command*"));
-    IDIO_MODULE_IMPORTS (idio_command_module) = IDIO_LIST2 (idio_Idio_module, idio_primitive_module);
+    IDIO_MODULE_IMPORTS (idio_command_module) = IDIO_LIST2 (idio_Idio_module, idio_primitives_module);
 
     idio_S_background_job = idio_symbols_C_intern ("background-job");
     idio_S_exit = idio_symbols_C_intern ("exit");
