@@ -431,7 +431,7 @@ void idio_hash_resize (IDIO h, int larger)
 	return;
     }
 
-    fprintf (stderr, "idio_hash_resize: %10p %s = %zd/%zd/%zd -> %zd\n", h, larger ? "L" : "S", hcount, osize, IDIO_HASH_SIZE (h), nsize);
+    /* fprintf (stderr, "idio_hash_resize: %10p %s = %zd/%zd/%zd -> %zd\n", h, larger ? "L" : "S", hcount, osize, IDIO_HASH_SIZE (h), nsize); */
     IDIO_FPRINTF (stderr, "idio_hash_resize: %10p = %zd/%zd/%zd -> %zd\n", h, hcount, osize, IDIO_HASH_SIZE (h), nsize);
     idio_assign_hash_he (h, nsize);
 

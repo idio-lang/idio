@@ -3171,8 +3171,10 @@ static IDIO idio_meaning_closed_application (IDIO src, IDIO e, IDIO ees, IDIO na
     /*
      * ((function ...) args)
      *
-     * therefore (ph e) == 'function
+     * e	~ (function ...)
+     * (ph e)	~ 'function
      */
+
     IDIO et = IDIO_PAIR_T (e);
 
     IDIO nns = IDIO_PAIR_H (et);
@@ -3206,7 +3208,7 @@ static IDIO idio_meaning_closed_application (IDIO src, IDIO e, IDIO ees, IDIO na
 	    }
 	} else if (idio_S_nil == ns) {
 	    if (idio_S_nil == es) {
-		return idio_meaning_fix_closed_application (src, nns, IDIO_PAIR_T (et), ees, nametree, flags, cs, cm);
+		return idio_meaning_fix_closed_application (e, nns, IDIO_PAIR_T (et), ees, nametree, flags, cs, cm);
 	    } else {
 		/*
 		 * Test Case: evaluation-errors/closed-function-too-many-args-{0,1}.idio
@@ -3219,7 +3221,7 @@ static IDIO idio_meaning_closed_application (IDIO src, IDIO e, IDIO ees, IDIO na
 		return idio_S_notreached;
 	    }
 	} else {
-	    return idio_meaning_dotted_closed_application (src, idio_list_reverse (regular), ns, IDIO_PAIR_T (et), ees, nametree, flags, cs, cm);
+	    return idio_meaning_dotted_closed_application (e, idio_list_reverse (regular), ns, IDIO_PAIR_T (et), ees, nametree, flags, cs, cm);
 	}
     }
 
@@ -3304,7 +3306,7 @@ static IDIO idio_meaning_primitive_application (IDIO src, IDIO e, IDIO es, IDIO 
 	/*
 	 * only a full function call protocol can cope with varargs!
 	 */
-	return idio_meaning_regular_application (e, e, es, nametree, flags, cs, cm);
+	return idio_meaning_regular_application (src, e, es, nametree, flags, cs, cm);
     } else {
 	char *name = IDIO_PRIMITIVE_NAME (primdata);
 
@@ -3398,7 +3400,7 @@ static IDIO idio_meaning_primitive_application (IDIO src, IDIO e, IDIO es, IDIO 
     /*
      * Anything else goes through the full function call protocol
      */
-    return idio_meaning_regular_application (e, e, es, nametree, flags, cs, cm);
+    return idio_meaning_regular_application (src, e, es, nametree, flags, cs, cm);
 }
 
 static IDIO idio_meaning_regular_application (IDIO src, IDIO e, IDIO es, IDIO nametree, int flags, IDIO cs, IDIO cm)
@@ -3423,9 +3425,9 @@ static IDIO idio_meaning_regular_application (IDIO src, IDIO e, IDIO es, IDIO na
     IDIO ms = idio_meanings (es, es, nametree, idio_list_length (es), IDIO_MEANING_NOT_TAILP (flags), cs, cm);
 
     if (IDIO_MEANING_IS_TAILP (flags)) {
-	return IDIO_LIST3 (idio_I_TR_REGULAR_CALL, m, ms);
+	return IDIO_LIST4 (idio_I_TR_REGULAR_CALL, src, m, ms);
     } else {
-	return IDIO_LIST3 (idio_I_REGULAR_CALL, m, ms);
+	return IDIO_LIST4 (idio_I_REGULAR_CALL, src, m, ms);
     }
 }
 
@@ -3462,7 +3464,7 @@ static IDIO idio_meaning_application (IDIO src, IDIO e, IDIO es, IDIO nametree, 
 			if ((IDIO_PRIMITIVE_VARARGS (p) &&
 			     nargs >= arity) ||
 			    arity == nargs) {
-			    return idio_meaning_primitive_application (e, e, es, nametree, flags, arity, fvi, cs, cm);
+			    return idio_meaning_primitive_application (src, e, es, nametree, flags, arity, fvi, cs, cm);
 			} else {
 			    /*
 			     * Test Case: evaluation-errors/primitive-arity.idio
@@ -3474,7 +3476,7 @@ static IDIO idio_meaning_application (IDIO src, IDIO e, IDIO es, IDIO nametree, 
 			    return idio_S_notreached;
 			}
 		    } else if (idio_isa_closure (p)) {
-			return idio_meaning_regular_application (e, e, es, nametree, flags, cs, cm);
+			return idio_meaning_regular_application (src, e, es, nametree, flags, cs, cm);
 		    } else {
 			/*
 			 * Can we get here?  We'd need to be a predef
@@ -3502,9 +3504,31 @@ static IDIO idio_meaning_application (IDIO src, IDIO e, IDIO es, IDIO nametree, 
 				   IDIO_PAIR_TT (e));
 	    /* idio_debug ("im_appl closed %s\n", e); */
 	}
-	return idio_meaning_closed_application (e, e, es, nametree, flags, cs, cm);
+
+	/*
+	 * NB As this is a closed application (ie. not a regular
+	 * function call) then the nominal form for {src} is the
+	 * application of an anonymous function to some {args}
+	 *
+	 * ((function (params) ...) args)
+	 *
+	 * However, if our anonymous function had had a name and had
+	 * been called in the regular way then {src} would have been
+	 *
+	 * (anon args)
+	 *
+	 * where the symbol 'anon has to substitute for the anonymous
+	 * closure.  Unfortunately, that doesn't have any source
+	 * properties (as we've just made it up) but {src} does have
+	 * source properties.
+	 *
+	 * So we have the opportunity to use a potentially more
+	 * palatable source form.
+	 */
+
+	return idio_meaning_closed_application (src, e, es, nametree, flags, cs, cm);
     } else {
-	return idio_meaning_regular_application (e, e, es, nametree, flags, cs, cm);
+	return idio_meaning_regular_application (src, e, es, nametree, flags, cs, cm);
     }
 
     /*
@@ -4528,7 +4552,7 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO cs, I
 		}
 	    }
 
-	    return idio_meaning_application (e, eh, et, nametree, flags, cs, cm);
+	    return idio_meaning_application (src, eh, et, nametree, flags, cs, cm);
 	}
     } else {
 	switch ((intptr_t) e & IDIO_TYPE_MASK) {

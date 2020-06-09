@@ -1543,6 +1543,8 @@ char *idio_as_string (IDIO o, int depth)
 			    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_REG1 (o), 1));
 			    IDIO_STRCAT (r, "\n  reg2=");
 			    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_REG2 (o), 1));
+			    IDIO_STRCAT (r, "\n  expr=");
+			    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_EXPR (o), 1));
 			    IDIO_STRCAT (r, "\n  input_handle=");
 			    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_INPUT_HANDLE (o), 1));
 			    IDIO_STRCAT (r, "\n  output_handle=");
@@ -1893,6 +1895,7 @@ const char *idio_vm_bytecode2string (int code)
     case IDIO_A_POP_VALUE:			r = "POP-VALUE"; break;
     case IDIO_A_POP_REG1:			r = "POP-REG1"; break;
     case IDIO_A_POP_REG2:			r = "POP-REG2"; break;
+    case IDIO_A_POP_EXPR:			r = "POP-EXPR"; break;
     case IDIO_A_POP_FUNCTION:			r = "POP-FUNCTION"; break;
     case IDIO_A_PRESERVE_STATE:			r = "PRESERVE-STATE"; break;
     case IDIO_A_RESTORE_STATE:			r = "RESTORE-STATE"; break;

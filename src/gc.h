@@ -732,6 +732,12 @@ typedef struct idio_thread_s {
     struct idio_s *reg1;
     struct idio_s *reg2;
 
+    /*
+     * expr is the original source expression from which we might
+     * derive some lexical information (file and line number)
+     */
+    struct idio_s *expr;
+
     struct idio_s *input_handle;
     struct idio_s *output_handle;
     struct idio_s *error_handle;
@@ -755,6 +761,7 @@ typedef struct idio_thread_s {
 #define IDIO_THREAD_FUNC(T)           ((T)->u.thread->func)
 #define IDIO_THREAD_REG1(T)           ((T)->u.thread->reg1)
 #define IDIO_THREAD_REG2(T)           ((T)->u.thread->reg2)
+#define IDIO_THREAD_EXPR(T)           ((T)->u.thread->expr)
 #define IDIO_THREAD_INPUT_HANDLE(T)   ((T)->u.thread->input_handle)
 #define IDIO_THREAD_OUTPUT_HANDLE(T)  ((T)->u.thread->output_handle)
 #define IDIO_THREAD_ERROR_HANDLE(T)   ((T)->u.thread->error_handle)

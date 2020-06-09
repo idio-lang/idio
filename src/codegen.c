@@ -1556,38 +1556,76 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
     case IDIO_I_CODE_TR_REGULAR_CALL:
 	{
 	    if (! idio_isa_pair (mt) ||
-		idio_list_length (mt) != 2) {
-		idio_codegen_error_param_args ("TR-REGULAR-CALL m1 m*", mt, IDIO_C_FUNC_LOCATION_S ("TR-REGULAR-CALL"));
+		idio_list_length (mt) != 3) {
+		idio_codegen_error_param_args ("TR-REGULAR-CALL e m1 m*", mt, IDIO_C_FUNC_LOCATION_S ("TR-REGULAR-CALL"));
 
 		/* notreached */
 		return;
 	    }
 
-	    IDIO m1 = IDIO_PAIR_H (mt);
-	    IDIO ms = IDIO_PAIR_HT (mt);
+	    IDIO e = IDIO_PAIR_H (mt);
+	    IDIO m1 = IDIO_PAIR_HT (mt);
+	    IDIO ms = IDIO_PAIR_HTT (mt);
 
 	    idio_codegen_compile (thr, ia, cs, m1, depth + 1);
 	    IDIO_IA_PUSH1 (IDIO_A_PUSH_VALUE);
 	    idio_codegen_compile (thr, ia, cs, ms, depth + 1);
+
+	    /*
+	     * NB generate the source code expr describing *this*
+	     * function call after the code describing the argument
+	     * function calls (if any).  Otherwise (+ 1 (length foo))
+	     * means that the source code EXPR for the argument
+	     * expression (length foo) will be the outstanding
+	     * declaration when we come to make *this* function call.
+	     */
+	    IDIO_FLAGS (e) |= IDIO_FLAG_CONST;
+
+	    idio_ai_t mci = idio_codegen_constants_lookup_or_extend (cs, e);
+	    IDIO fmci = idio_fixnum (mci);
+	    idio_module_set_vci (idio_thread_current_env (), fmci, fmci);
+
+	    IDIO_IA_PUSH1 (IDIO_A_POP_EXPR);
+	    IDIO_IA_PUSH_VARUINT (mci);
+
 	    IDIO_IA_PUSH2 (IDIO_A_POP_FUNCTION, IDIO_A_FUNCTION_GOTO);
 	}
 	break;
     case IDIO_I_CODE_REGULAR_CALL:
 	{
 	    if (! idio_isa_pair (mt) ||
-		idio_list_length (mt) != 2) {
-		idio_codegen_error_param_args ("REGULAR-CALL m1 m*", mt, IDIO_C_FUNC_LOCATION_S ("REGULAR-CALL"));
+		idio_list_length (mt) != 3) {
+		idio_codegen_error_param_args ("REGULAR-CALL e m1 m*", mt, IDIO_C_FUNC_LOCATION_S ("REGULAR-CALL"));
 
 		/* notreached */
 		return;
 	    }
 
-	    IDIO m1 = IDIO_PAIR_H (mt);
-	    IDIO ms = IDIO_PAIR_HT (mt);
+	    IDIO e = IDIO_PAIR_H (mt);
+	    IDIO m1 = IDIO_PAIR_HT (mt);
+	    IDIO ms = IDIO_PAIR_HTT (mt);
 
 	    idio_codegen_compile (thr, ia, cs, m1, depth + 1);
 	    IDIO_IA_PUSH1 (IDIO_A_PUSH_VALUE);
 	    idio_codegen_compile (thr, ia, cs, ms, depth + 1);
+
+	    /*
+	     * NB generate the source code expr describing *this*
+	     * function call after the code describing the argument
+	     * function calls (if any).  Otherwise (+ 1 (length foo))
+	     * means that the source code EXPR for the argument
+	     * expression (length foo) will be the outstanding
+	     * declaration when we come to make *this* function call.
+	     */
+	    IDIO_FLAGS (e) |= IDIO_FLAG_CONST;
+
+	    idio_ai_t mci = idio_codegen_constants_lookup_or_extend (cs, e);
+	    IDIO fmci = idio_fixnum (mci);
+	    idio_module_set_vci (idio_thread_current_env (), fmci, fmci);
+
+	    IDIO_IA_PUSH1 (IDIO_A_POP_EXPR);
+	    IDIO_IA_PUSH_VARUINT (mci);
+
 	    IDIO_IA_PUSH4 (IDIO_A_POP_FUNCTION, IDIO_A_PRESERVE_STATE, IDIO_A_FUNCTION_INVOKE, IDIO_A_RESTORE_STATE);
 	}
 	break;

@@ -514,6 +514,7 @@ void idio_vm_debug (IDIO thr, char *prefix, idio_ai_t stack_start)
     idio_debug ("    val=%s\n", IDIO_THREAD_VAL (thr));
     idio_debug ("   reg1=%s\n", IDIO_THREAD_REG1 (thr));
     idio_debug ("   reg2=%s\n", IDIO_THREAD_REG2 (thr));
+    idio_debug ("   expr=%s\n", IDIO_THREAD_EXPR (thr));
     idio_debug ("   func=%s\n", IDIO_THREAD_FUNC (thr));
     idio_debug ("    env=%s\n", IDIO_THREAD_ENV (thr));
     idio_debug ("  frame=%s\n", IDIO_THREAD_FRAME (thr));
@@ -762,6 +763,7 @@ static void idio_vm_preserve_all_state (IDIO thr)
     idio_vm_preserve_state (thr);
     IDIO_THREAD_STACK_PUSH (IDIO_THREAD_REG1 (thr));
     IDIO_THREAD_STACK_PUSH (IDIO_THREAD_REG2 (thr));
+    IDIO_THREAD_STACK_PUSH (IDIO_THREAD_EXPR (thr));
     IDIO_THREAD_STACK_PUSH (IDIO_THREAD_FUNC (thr));
     IDIO_THREAD_STACK_PUSH (IDIO_THREAD_VAL (thr));
     IDIO_THREAD_STACK_PUSH (idio_SM_preserve_all_state);
@@ -851,6 +853,7 @@ static void idio_vm_restore_all_state (IDIO thr)
     }
     IDIO_THREAD_VAL (thr) = IDIO_THREAD_STACK_POP ();
     IDIO_THREAD_FUNC (thr) = IDIO_THREAD_STACK_POP ();
+    IDIO_THREAD_EXPR (thr) = IDIO_THREAD_STACK_POP ();
     IDIO_THREAD_REG2 (thr) = IDIO_THREAD_STACK_POP ();
     IDIO_THREAD_REG1 (thr) = IDIO_THREAD_STACK_POP ();
     idio_vm_restore_state (thr);
@@ -2132,15 +2135,34 @@ static void idio_vm_function_trace (IDIO_I ins, IDIO thr)
      * SPACE
      * %7zd	- PC of ins
      * SPACE
+     * %70s	- lexical information
+     * %*s	- trace-depth indent
      * %20s	- closure name (if available)
      * SPACE
      * %3s	- tail call indicator
-     * %*s	- trace-depth indent
      * %s	- expression
      */
 
     fprintf (stderr, "%09ld ", ts.tv_nsec);
     fprintf (stderr, "%7zd ", IDIO_THREAD_PC (thr) - 1);
+
+    IDIO src = IDIO_THREAD_EXPR (thr);
+    IDIO lo_sh = idio_open_output_string_handle_C ();
+
+    if (idio_isa_pair (src)) {
+	IDIO lo = idio_hash_get (idio_src_properties, src);
+	if (idio_S_unspec == lo){
+	    idio_display (lo, lo_sh);
+	} else {
+	    idio_display (idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_NAME), lo_sh);
+	    idio_display_C (": line ", lo_sh);
+	    idio_display (idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_LINE), lo_sh);
+	}
+    } else {
+	idio_display (src, lo_sh);
+	idio_display_C (" !pair", lo_sh);
+    }
+    idio_debug ("%-70s", idio_get_output_string (lo_sh));
 
     fprintf (stderr, "%*.s", idio_vm_tracing, "");
 
@@ -3023,6 +3045,25 @@ int idio_vm_run1 (IDIO thr)
 	    IDIO_THREAD_REG2 (thr) = IDIO_THREAD_STACK_POP ();
 	}
 	break;
+    case IDIO_A_POP_EXPR:
+	{
+    	    idio_ai_t mci = idio_vm_fetch_varuint (thr);
+	    IDIO fmci = idio_fixnum (mci);
+	    IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), fmci);
+	    idio_ai_t gci = IDIO_FIXNUM_VAL (fgci);
+
+	    IDIO e = idio_vm_constants_ref (gci);
+
+    	    IDIO_VM_RUN_DIS ("POP-EXPR %td", gci);
+#ifdef IDIO_DEBUG
+	    if (idio_vm_dis) {
+		idio_debug (" %s", e);
+	    }
+#endif
+
+	    IDIO_THREAD_EXPR (thr) = e;
+	}
+	break;
     case IDIO_A_PRESERVE_STATE:
 	{
 	    IDIO_VM_RUN_DIS ("PRESERVE-STATE");
@@ -3151,6 +3192,7 @@ int idio_vm_run1 (IDIO thr)
 #ifdef IDIO_VM_PERF
 	    idio_vm_clos_time (thr, "FUNCTION-INVOKE");
 #endif
+
 	    idio_vm_invoke (thr, IDIO_THREAD_FUNC (thr), IDIO_VM_INVOKE_REGULAR_CALL);
 	}
 	break;
@@ -3166,6 +3208,7 @@ int idio_vm_run1 (IDIO thr)
 #ifdef IDIO_VM_PERF
 	    idio_vm_clos_time (thr, "FUNCTION-GOTO");
 #endif
+
 	    idio_vm_invoke (thr, IDIO_THREAD_FUNC (thr), IDIO_VM_INVOKE_TAIL_CALL);
 	}
 	break;
@@ -4415,6 +4458,20 @@ void idio_vm_dasm (IDIO thr, idio_ai_t pc0, idio_ai_t pce)
 	case IDIO_A_POP_REG2:
 	    {
 		IDIO_VM_DASM ("POP-REG2");
+	    }
+	    break;
+	case IDIO_A_POP_EXPR:
+	    {
+		idio_ai_t mci = idio_vm_get_varuint (pcp);
+
+		IDIO fmci = idio_fixnum (mci);
+		IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), fmci);
+		idio_ai_t gci = IDIO_FIXNUM_VAL (fgci);
+
+		IDIO c = idio_vm_constants_ref (gci);
+
+		IDIO_VM_DASM ("POP-EXPR %td", mci);
+		idio_debug_FILE (idio_dasm_FILE, " %s", c);
 	    }
 	    break;
 	case IDIO_A_PRESERVE_STATE:

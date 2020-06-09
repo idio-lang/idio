@@ -75,10 +75,11 @@
 #define IDIO_A_POP_VALUE                   91
 #define IDIO_A_POP_REG1                    92
 #define IDIO_A_POP_REG2                    93
-#define IDIO_A_POP_FUNCTION                94
-#define IDIO_A_PRESERVE_STATE              95
-#define IDIO_A_RESTORE_STATE               96
-#define IDIO_A_RESTORE_ALL_STATE           97
+#define IDIO_A_POP_EXPR                    94
+#define IDIO_A_POP_FUNCTION                95
+#define IDIO_A_PRESERVE_STATE              96
+#define IDIO_A_RESTORE_STATE               97
+#define IDIO_A_RESTORE_ALL_STATE           98
 
 #define IDIO_A_CREATE_CLOSURE              100
 #define IDIO_A_FUNCTION_INVOKE             101

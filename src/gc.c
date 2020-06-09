@@ -575,6 +575,10 @@ void idio_gc_process_grey (unsigned colour)
 	idio_gcc_mark (IDIO_THREAD_FUNC (o), colour);
 	idio_gcc_mark (IDIO_THREAD_REG1 (o), colour);
 	idio_gcc_mark (IDIO_THREAD_REG2 (o), colour);
+	/*
+	 * Don't mark the expr as it is in a weak keyed hash
+	 */
+	/* idio_gcc_mark (IDIO_THREAD_EXPR (o), colour); */
 	idio_gcc_mark (IDIO_THREAD_INPUT_HANDLE (o), colour);
 	idio_gcc_mark (IDIO_THREAD_OUTPUT_HANDLE (o), colour);
 	idio_gcc_mark (IDIO_THREAD_ERROR_HANDLE (o), colour);
@@ -1179,6 +1183,13 @@ void idio_gc_find_frame_r (IDIO id, int depth)
 	    } else if (IDIO_THREAD_REG2 (o) == id) {
 		idio_gc_find_frame_print_id (id, depth);
 		idio_debug ("thr reg2 %s\n", o);
+		id = o;
+		idio_gc_find_frame_r (o, depth + 1);
+		fprintf (stderr, "\n");
+		found = 1;
+	    } else if (IDIO_THREAD_EXPR (o) == id) {
+		idio_gc_find_frame_print_id (id, depth);
+		idio_debug ("thr expr %s\n", o);
 		id = o;
 		idio_gc_find_frame_r (o, depth + 1);
 		fprintf (stderr, "\n");
