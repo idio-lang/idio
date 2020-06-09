@@ -2209,7 +2209,7 @@ static void idio_libc_set_errno_names ()
 
     /*
      * OpenIndiana anomalies -- strerror returns a non "Error X"
-     * string
+     * string - sys/errno.h says "XENIX has 135 - 142"
      *
      * num	errno?		strerror
      *
@@ -2318,57 +2318,57 @@ static void idio_libc_set_rlimit_names ()
     }
     idio_libc_rlimit_names[i] = NULL;
 
-    /* Linux, Solaris */
+    /* Linux, Solaris, FreeBSD */
 #if defined (RLIMIT_CPU)
     IDIO_LIBC_RLIMIT (RLIMIT_CPU);
 #endif
 
-    /* Linux, Solaris */
+    /* Linux, Solaris, FreeBSD */
 #if defined (RLIMIT_FSIZE)
     IDIO_LIBC_RLIMIT (RLIMIT_FSIZE);
 #endif
 
-    /* Linux, Solaris */
+    /* Linux, Solaris, FreeBSD */
 #if defined (RLIMIT_DATA)
     IDIO_LIBC_RLIMIT (RLIMIT_DATA);
 #endif
 
-    /* Linux, Solaris */
+    /* Linux, Solaris, FreeBSD */
 #if defined (RLIMIT_STACK)
     IDIO_LIBC_RLIMIT (RLIMIT_STACK);
 #endif
 
-    /* Linux, Solaris */
+    /* Linux, Solaris, FreeBSD */
 #if defined (RLIMIT_CORE)
     IDIO_LIBC_RLIMIT (RLIMIT_CORE);
 #endif
 
-    /* Linux */
+    /* Linux, FreeBSD */
 #if defined (RLIMIT_RSS)
     IDIO_LIBC_RLIMIT (RLIMIT_RSS);
 #endif
 
-    /* Linux, Solaris */
+    /* Linux, Solaris, FreeBSD */
 #if defined (RLIMIT_NOFILE)
     IDIO_LIBC_RLIMIT (RLIMIT_NOFILE);
 #endif
 
-    /* Solaris */
+    /* Solaris, FreeBSD */
 #if defined (RLIMIT_VMEM)
     IDIO_LIBC_RLIMIT (RLIMIT_VMEM);
 #endif
 
-    /* Linux, Solaris */
+    /* Linux, Solaris, FreeBSD */
 #if defined (RLIMIT_AS)
     IDIO_LIBC_RLIMIT (RLIMIT_AS);
 #endif
 
-    /* Linux */
+    /* Linux, FreeBSD */
 #if defined (RLIMIT_NPROC)
     IDIO_LIBC_RLIMIT (RLIMIT_NPROC);
 #endif
 
-    /* Linux */
+    /* Linux, FreeBSD */
 #if defined (RLIMIT_MEMLOCK)
     IDIO_LIBC_RLIMIT (RLIMIT_MEMLOCK);
 #endif
@@ -2401,6 +2401,21 @@ static void idio_libc_set_rlimit_names ()
     /* Linux */
 #if defined (RLIMIT_RTTIME)
     IDIO_LIBC_RLIMIT (RLIMIT_RTTIME);
+#endif
+
+    /* FreeBSD */
+#if defined (RLIMIT_SBSIZE)
+    IDIO_LIBC_RLIMIT (RLIMIT_SBSIZE);
+#endif
+
+    /* FreeBSD */
+#if defined (RLIMIT_NPTS)
+    IDIO_LIBC_RLIMIT (RLIMIT_NPTS);
+#endif
+
+    /* FreeBSD */
+#if defined (RLIMIT_SWAP)
+    IDIO_LIBC_RLIMIT (RLIMIT_SWAP);
 #endif
 
 #if IDIO_DEBUG
