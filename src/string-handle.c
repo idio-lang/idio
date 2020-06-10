@@ -103,7 +103,8 @@ static IDIO idio_open_string_handle (char *str, size_t blen, int sflags)
     sprintf (inst, "%zu", idio_string_handle_instance++);
     strcat (name, inst);
 
-    IDIO_HANDLE_NAME (sh) = idio_string_C (name);
+    IDIO_HANDLE_FILENAME (sh) = idio_string_C (name);
+    IDIO_HANDLE_PATHNAME (sh) = IDIO_HANDLE_FILENAME (sh);
     IDIO_HANDLE_STREAM (sh) = shsp;
     IDIO_HANDLE_METHODS (sh) = &idio_string_handle_methods;
 

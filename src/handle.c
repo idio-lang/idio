@@ -31,13 +31,13 @@ void idio_handle_error_read (IDIO h, IDIO loc)
 
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C ("handle name '", sh);
-    idio_display (IDIO_HANDLE_NAME (h), sh);
+    idio_display (IDIO_HANDLE_PATHNAME (h), sh);
     idio_display_C ("' read error", sh);
     IDIO c = idio_struct_instance (idio_condition_io_read_error_type,
 				   IDIO_LIST4 (idio_get_output_string (sh),
 					       loc,
 					       idio_S_nil,
-					       IDIO_HANDLE_NAME (h)));
+					       IDIO_HANDLE_PATHNAME (h)));
     idio_raise_condition (idio_S_true, c);
 }
 
@@ -50,13 +50,13 @@ void idio_handle_error_write (IDIO h, IDIO loc)
 
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C ("handle name '", sh);
-    idio_display (IDIO_HANDLE_NAME (h), sh);
+    idio_display (IDIO_HANDLE_PATHNAME (h), sh);
     idio_display_C ("' write error", sh);
     IDIO c = idio_struct_instance (idio_condition_io_write_error_type,
 				   IDIO_LIST4 (idio_get_output_string (sh),
 					       loc,
 					       idio_S_nil,
-					       IDIO_HANDLE_NAME (h)));
+					       IDIO_HANDLE_PATHNAME (h)));
     idio_raise_condition (idio_S_true, c);
 }
 
@@ -69,13 +69,13 @@ void idio_handle_error_closed (IDIO h, IDIO loc)
 
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C ("handle name '", sh);
-    idio_display (IDIO_HANDLE_NAME (h), sh);
+    idio_display (IDIO_HANDLE_PATHNAME (h), sh);
     idio_display_C ("' already closed", sh);
     IDIO c = idio_struct_instance (idio_condition_io_closed_error_type,
 				   IDIO_LIST4 (idio_get_output_string (sh),
 					       loc,
 					       idio_S_nil,
-					       IDIO_HANDLE_NAME (h)));
+					       IDIO_HANDLE_PATHNAME (h)));
     idio_raise_condition (idio_S_true, c);
 }
 
@@ -96,7 +96,8 @@ IDIO idio_handle ()
     IDIO_HANDLE_LC (h) = EOF;
     IDIO_HANDLE_LINE (h) = 1;
     IDIO_HANDLE_POS (h) = 0;
-    IDIO_HANDLE_NAME (h) = idio_S_nil;
+    IDIO_HANDLE_FILENAME (h) = idio_S_nil;
+    IDIO_HANDLE_PATHNAME (h) = idio_S_nil;
 
     return h;
 }
@@ -113,7 +114,10 @@ char *idio_handle_name (IDIO h)
     IDIO_ASSERT (h);
     IDIO_TYPE_ASSERT (handle, h);
 
-    IDIO hname = IDIO_HANDLE_NAME (h);
+    IDIO hname = IDIO_HANDLE_FILENAME (h);
+    if (idio_S_nil == hname) {
+	hname = IDIO_HANDLE_PATHNAME (h);
+    }
     char *name = "n/a";
     if (hname->type) {
 	if (idio_isa_string (hname)) {

@@ -229,10 +229,14 @@ static void idio_file_handle_error_filename_not_found_C (char *name, IDIO loc)
     idio_file_handle_error_filename_not_found (idio_string_C (name), loc);
 }
 
-static IDIO idio_open_file_handle (char *name, FILE *filep, int h_flags, int s_flags)
+static IDIO idio_open_file_handle (IDIO filename, char *pathname, FILE *filep, int h_flags, int s_flags)
 {
+    IDIO_ASSERT (filename);
+    IDIO_C_ASSERT (pathname);
     IDIO_C_ASSERT (filep);
 
+    IDIO_TYPE_ASSERT (string, filename);
+    
     idio_file_handle_stream_t *fhsp = idio_alloc (sizeof (idio_file_handle_stream_t));
     int bufsiz = BUFSIZ;
 
@@ -253,7 +257,8 @@ static IDIO idio_open_file_handle (char *name, FILE *filep, int h_flags, int s_f
     IDIO fh = idio_handle ();
 
     IDIO_HANDLE_FLAGS (fh) |= h_flags | IDIO_HANDLE_FLAG_FILE;
-    IDIO_HANDLE_NAME (fh) = idio_string_C (name);
+    IDIO_HANDLE_FILENAME (fh) = filename;
+    IDIO_HANDLE_PATHNAME (fh) = idio_string_C (pathname);
     IDIO_HANDLE_STREAM (fh) = fhsp;
     IDIO_HANDLE_METHODS (fh) = &idio_file_handle_methods;
 
@@ -330,7 +335,7 @@ IDIO_DEFINE_PRIMITIVE1V ("open-file-from-fd", open_file_handle_from_fd, (IDIO if
 	free (mode);
     }
 
-    return idio_open_file_handle (name, filep, mflag, IDIO_FILE_HANDLE_FLAG_NONE);
+    return idio_open_file_handle (idio_string_C (name), name, filep, mflag, IDIO_FILE_HANDLE_FLAG_NONE);
 }
 
 IDIO_DEFINE_PRIMITIVE1V ("open-input-file-from-fd", open_input_file_handle_from_fd, (IDIO ifd, IDIO args))
@@ -398,7 +403,7 @@ IDIO_DEFINE_PRIMITIVE1V ("open-input-file-from-fd", open_input_file_handle_from_
 	free (mode);
     }
 
-    return idio_open_file_handle (name, filep, mflag, IDIO_FILE_HANDLE_FLAG_NONE);
+    return idio_open_file_handle (idio_string_C (name), name, filep, mflag, IDIO_FILE_HANDLE_FLAG_NONE);
 }
 
 IDIO_DEFINE_PRIMITIVE1V ("open-output-file-from-fd", open_output_file_handle_from_fd, (IDIO ifd, IDIO args))
@@ -466,13 +471,16 @@ IDIO_DEFINE_PRIMITIVE1V ("open-output-file-from-fd", open_output_file_handle_fro
 	free (mode);
     }
 
-    return idio_open_file_handle (name, filep, mflag, IDIO_FILE_HANDLE_FLAG_NONE);
+    return idio_open_file_handle (idio_string_C (name), name, filep, mflag, IDIO_FILE_HANDLE_FLAG_NONE);
 }
 
-IDIO idio_open_file_handle_C (char *name, char *mode)
+IDIO idio_open_file_handle_C (IDIO filename, char *pathname, char *mode)
 {
-    IDIO_C_ASSERT (name);
+    IDIO_ASSERT (filename);	/* the user supplied name */
+    IDIO_C_ASSERT (pathname);
     IDIO_C_ASSERT (mode);
+
+    IDIO_TYPE_ASSERT (string, filename);
 
     int h_flags = 0;
 
@@ -512,7 +520,7 @@ IDIO idio_open_file_handle_C (char *name, char *mode)
     FILE *filep;
     int tries;
     for (tries = 2; tries > 0 ; tries--) {
-	filep = fopen (name, mode);
+	filep = fopen (pathname, mode);
 	if (NULL == filep) {
 	    switch (errno) {
 	    case EMFILE:	/* process max */
@@ -520,27 +528,27 @@ IDIO idio_open_file_handle_C (char *name, char *mode)
 		idio_gc_collect ("idio_open_file_handle_C");
 		break;
 	    case EACCES:
-		idio_file_handle_error_file_protection_C (name, IDIO_C_FUNC_LOCATION ());
+		idio_file_handle_error_file_protection_C (pathname, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    case EEXIST:
-		idio_file_handle_error_filename_already_exists_C (name, IDIO_C_FUNC_LOCATION ());
+		idio_file_handle_error_filename_already_exists_C (pathname, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    case ENAMETOOLONG:
-		idio_file_handle_error_malformed_filename_C (name, IDIO_C_FUNC_LOCATION ());
+		idio_file_handle_error_malformed_filename_C (pathname, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    case ENOENT:
-		idio_file_handle_error_filename_not_found_C (name, IDIO_C_FUNC_LOCATION ());
+		idio_file_handle_error_filename_not_found_C (pathname, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    case ENOTDIR:
-		idio_file_handle_error_filename_C (name, IDIO_C_FUNC_LOCATION ());
+		idio_file_handle_error_filename_C (pathname, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    default:
-		idio_error_system_errno ("fopen", IDIO_LIST1 (idio_string_C (name)), IDIO_C_FUNC_LOCATION ());
+		idio_error_system_errno ("fopen", IDIO_LIST1 (idio_string_C (pathname)), IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    }
@@ -550,7 +558,7 @@ IDIO idio_open_file_handle_C (char *name, char *mode)
     }
 
     if (NULL == filep) {
-	idio_error_system_errno ("fopen (final)", IDIO_LIST2 (idio_string_C (name), idio_string_C (mode)), IDIO_C_FUNC_LOCATION ());
+	idio_error_system_errno ("fopen (final)", IDIO_LIST2 (idio_string_C (pathname), idio_string_C (mode)), IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -570,14 +578,14 @@ IDIO idio_open_file_handle_C (char *name, char *mode)
 #if (defined (__APPLE__) && defined (__MACH__))
 	int fd = fileno (filep);
 	if (fcntl (fd, F_SETFD, FD_CLOEXEC) == -1) {
-	    idio_error_system_errno ("fcntl F_SETFD FD_CLOEXEC", IDIO_LIST3 (idio_string_C (name), idio_string_C (mode), idio_C_int (fd)), IDIO_C_FUNC_LOCATION ());
+	    idio_error_system_errno ("fcntl F_SETFD FD_CLOEXEC", IDIO_LIST3 (idio_string_C (pathname), idio_string_C (mode), idio_C_int (fd)), IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
 #endif
     }
 
-    return idio_open_file_handle (name, filep, h_flags, s_flags);
+    return idio_open_file_handle (filename, pathname, filep, h_flags, s_flags);
 }
 
 IDIO_DEFINE_PRIMITIVE2 ("open-file", open_file_handle, (IDIO name, IDIO mode))
@@ -613,7 +621,7 @@ IDIO_DEFINE_PRIMITIVE2 ("open-file", open_file_handle, (IDIO name, IDIO mode))
 	break;
     }
 
-    IDIO r = idio_open_file_handle_C (name_C, mode_C);
+    IDIO r = idio_open_file_handle_C (name, name_C, mode_C);
 
     free (mode_C);
     free (name_C);
@@ -639,7 +647,7 @@ IDIO_DEFINE_PRIMITIVE1 ("open-input-file", open_input_file_handle, (IDIO name))
 	break;
     }
 
-    IDIO r = idio_open_file_handle_C (name_C, "re");
+    IDIO r = idio_open_file_handle_C (name, name_C, "re");
 
     free (name_C);
 
@@ -664,7 +672,7 @@ IDIO_DEFINE_PRIMITIVE1 ("open-output-file", open_output_file_handle, (IDIO name)
 	break;
     }
 
-    IDIO r = idio_open_file_handle_C (name_C, "we");
+    IDIO r = idio_open_file_handle_C (name, name_C, "we");
 
     free (name_C);
 
@@ -693,7 +701,7 @@ static IDIO idio_open_std_file_handle (FILE *filep)
 	return idio_S_notreached;
     }
 
-    return idio_open_file_handle (name, filep, mflag, IDIO_FILE_HANDLE_FLAG_STDIO);
+    return idio_open_file_handle (idio_string_C (name), name, filep, mflag, IDIO_FILE_HANDLE_FLAG_STDIO);
 }
 
 IDIO idio_stdin_file_handle ()
@@ -1174,7 +1182,7 @@ IDIO idio_load_file_handle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (
 	idio_display_C ("> ", eh);
 
 	IDIO e = (*reader) (fh);
-	
+
 	if (idio_S_eof == e) {
 	    break;
 	}
@@ -1294,7 +1302,7 @@ IDIO idio_load_file_handle_aio (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluat
 
     for (;;) {
 	IDIO expr = (*reader) (fh);
-	
+
 	if (idio_S_eof == expr) {
 	    break;
 	} else {
@@ -1690,19 +1698,28 @@ IDIO idio_load_file_name_lbl (IDIO filename, IDIO cs)
     l = strlen (lfn);
     free (libfile);
 
-    char *slash = strrchr (lfn, '/');
-    if (NULL == slash) {
-	slash = lfn;
+    char *filename_slash = strrchr (filename_C, '/');
+    if (NULL == filename_slash) {
+	filename_slash = filename_C;
     }
 
-    char *dot = strrchr (slash, '.');
+    char *filename_dot = strrchr (filename_slash, '.');
 
-    if (NULL == dot) {
-	dot = strrchr (slash, '\0'); /* end of string */
+    char *lfn_slash = strrchr (lfn, '/');
+    if (NULL == lfn_slash) {
+	lfn_slash = lfn;
+    }
+
+    char *lfn_dot = strrchr (lfn_slash, '.');
+
+    if (NULL == lfn_dot) {
+	lfn_dot = strrchr (lfn_slash, '\0'); /* end of string */
 
 	idio_file_extension_t *fe = idio_file_extensions;
 
 	for (;NULL != fe->reader;fe++) {
+	    IDIO filename_ext = filename;
+
 	    if (NULL != fe->ext) {
 
 		if ((l + strlen (fe->ext)) >= PATH_MAX) {
@@ -1711,11 +1728,14 @@ IDIO idio_load_file_name_lbl (IDIO filename, IDIO cs)
 		    return idio_S_notreached;
 		}
 
-		strncpy (dot, fe->ext, PATH_MAX - l - 1);
+		strncpy (lfn_dot, fe->ext, PATH_MAX - l - 1);
+
+		char *ss[] = { idio_string_s (filename), fe->ext };
+		filename_ext = idio_string_C_array (2, ss);
 	    }
 
 	    if (access (lfn, R_OK) == 0) {
-		IDIO fh = idio_open_file_handle_C (lfn, "r");
+		IDIO fh = idio_open_file_handle_C (filename_ext, lfn, "r");
 
 		free (filename_C);
 
@@ -1724,26 +1744,37 @@ IDIO idio_load_file_name_lbl (IDIO filename, IDIO cs)
 	    }
 
 	    /* reset lfn without ext */
-	    *dot = '\0';
+	    *lfn_dot = '\0';
 	}
     } else {
 	IDIO (*reader) (IDIO h) = idio_read;
 	IDIO (*evaluator) (IDIO e, IDIO cs) = idio_evaluate;
 
 	idio_file_extension_t *fe = idio_file_extensions;
+	IDIO filename_ext = filename;
 
 	for (;NULL != fe->reader;fe++) {
 	    if (NULL != fe->ext) {
-		if (strncmp (dot, fe->ext, strlen (fe->ext)) == 0) {
+		if (strncmp (lfn_dot, fe->ext, strlen (fe->ext)) == 0) {
 		    reader = fe->reader;
 		    evaluator = fe->evaluator;
+
+		    /*
+		     * If it's not the same extension as the user gave
+		     * us then tack it on the end
+		     */
+		    if (NULL == filename_dot ||
+			strncmp (filename_dot, fe->ext, strlen (fe->ext))) {
+			char *ss[] = { idio_string_s (filename), fe->ext };
+			filename_ext = idio_string_C_array (2, ss);
+		    }
 		    break;
 		}
 	    }
 	}
 
 	if (access (lfn, R_OK) == 0) {
-	    IDIO fh = idio_open_file_handle_C (lfn, "r");
+	    IDIO fh = idio_open_file_handle_C (filename_ext, lfn, "r");
 
 	    free (filename_C);
 
@@ -1785,19 +1816,28 @@ IDIO idio_load_file_name_aio (IDIO filename, IDIO cs)
     l = strlen (lfn);
     free (libfile);
 
-    char *slash = strrchr (lfn, '/');
-    if (NULL == slash) {
-	slash = lfn;
+    char *filename_slash = strrchr (filename_C, '/');
+    if (NULL == filename_slash) {
+	filename_slash = filename_C;
     }
 
-    char *dot = strrchr (slash, '.');
+    char *filename_dot = strrchr (filename_slash, '.');
 
-    if (NULL == dot) {
-	dot = strrchr (slash, '\0'); /* end of string */
+    char *lfn_slash = strrchr (lfn, '/');
+    if (NULL == lfn_slash) {
+	lfn_slash = lfn;
+    }
+
+    char *lfn_dot = strrchr (lfn_slash, '.');
+
+    if (NULL == lfn_dot) {
+	lfn_dot = strrchr (lfn_slash, '\0'); /* end of string */
 
 	idio_file_extension_t *fe = idio_file_extensions;
 
 	for (;NULL != fe->reader;fe++) {
+	    IDIO filename_ext = filename;
+
 	    if (NULL != fe->ext) {
 
 		if ((l + strlen (fe->ext)) >= PATH_MAX) {
@@ -1806,11 +1846,14 @@ IDIO idio_load_file_name_aio (IDIO filename, IDIO cs)
 		    return idio_S_notreached;
 		}
 
-		strncpy (dot, fe->ext, PATH_MAX - l - 1);
+		strncpy (lfn_dot, fe->ext, PATH_MAX - l - 1);
+
+		char *ss[] = { idio_string_s (filename), fe->ext };
+		filename_ext = idio_string_C_array (2, ss);
 	    }
 
 	    if (access (lfn, R_OK) == 0) {
-		IDIO fh = idio_open_file_handle_C (lfn, "r");
+		IDIO fh = idio_open_file_handle_C (filename_ext, lfn, "r");
 
 		free (filename_C);
 
@@ -1819,26 +1862,37 @@ IDIO idio_load_file_name_aio (IDIO filename, IDIO cs)
 	    }
 
 	    /* reset lfn without ext */
-	    *dot = '\0';
+	    *lfn_dot = '\0';
 	}
     } else {
 	IDIO (*reader) (IDIO h) = idio_read;
 	IDIO (*evaluator) (IDIO e, IDIO cs) = idio_evaluate;
 
 	idio_file_extension_t *fe = idio_file_extensions;
+	IDIO filename_ext = filename;
 
 	for (;NULL != fe->reader;fe++) {
 	    if (NULL != fe->ext) {
-		if (strncmp (dot, fe->ext, strlen (fe->ext)) == 0) {
+		if (strncmp (lfn_dot, fe->ext, strlen (fe->ext)) == 0) {
 		    reader = fe->reader;
 		    evaluator = fe->evaluator;
+
+		    /*
+		     * If it's not the same extension as the user gave
+		     * us then tack it on the end
+		     */
+		    if (NULL == filename_dot ||
+			strncmp (filename_dot, fe->ext, strlen (fe->ext))) {
+			char *ss[] = { idio_string_s (filename), fe->ext };
+			filename_ext = idio_string_C_array (2, ss);
+		    }
 		    break;
 		}
 	    }
 	}
 
 	if (access (lfn, R_OK) == 0) {
-	    IDIO fh = idio_open_file_handle_C (lfn, "r");
+	    IDIO fh = idio_open_file_handle_C (filename_ext, lfn, "r");
 
 	    free (filename_C);
 

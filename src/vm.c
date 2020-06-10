@@ -2135,7 +2135,7 @@ static void idio_vm_function_trace (IDIO_I ins, IDIO thr)
      * SPACE
      * %7zd	- PC of ins
      * SPACE
-     * %70s	- lexical information
+     * %30s	- lexical information
      * %*s	- trace-depth indent
      * %20s	- closure name (if available)
      * SPACE
@@ -2162,7 +2162,7 @@ static void idio_vm_function_trace (IDIO_I ins, IDIO thr)
 	idio_display (src, lo_sh);
 	idio_display_C (" !pair", lo_sh);
     }
-    idio_debug ("%-70s", idio_get_output_string (lo_sh));
+    idio_debug ("%-30s", idio_get_output_string (lo_sh));
 
     fprintf (stderr, "%*.s", idio_vm_tracing, "");
 

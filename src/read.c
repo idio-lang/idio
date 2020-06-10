@@ -1588,7 +1588,7 @@ static IDIO idio_read_word (IDIO handle, IDIO lo, int c)
 static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl)
 {
     IDIO lo = idio_struct_instance (idio_lexobj_type,
-				    idio_pair (IDIO_HANDLE_NAME (handle),
+				    idio_pair (IDIO_HANDLE_FILENAME (handle),
 				    idio_pair (idio_integer (IDIO_HANDLE_LINE (handle)),
 				    idio_pair (idio_integer (IDIO_HANDLE_POS (handle)),
 				    idio_pair (idio_S_unspec,
@@ -1974,7 +1974,7 @@ static IDIO idio_read_1_expr (IDIO handle, char *ic, int depth)
 static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, char *ic, int depth)
 {
     IDIO line_lo = idio_struct_instance (idio_lexobj_type,
-					 idio_pair (IDIO_HANDLE_NAME (handle),
+					 idio_pair (IDIO_HANDLE_FILENAME (handle),
 					 idio_pair (idio_integer (IDIO_HANDLE_LINE (handle)),
 					 idio_pair (idio_integer (IDIO_HANDLE_POS (handle)),
 					 idio_pair (idio_S_unspec,

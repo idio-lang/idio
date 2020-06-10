@@ -636,7 +636,8 @@ typedef struct idio_handle_s {
     int lc;			/* lookahead char */
     off_t line;			/* 1+ */
     off_t pos;			/* position in file: 0+ */
-    struct idio_s *name;	/* filename or some other identifying data */
+    struct idio_s *filename;	/* filename the user used */
+    struct idio_s *pathname;	/* pathname or some other identifying data */
 } idio_handle_t;
 
 #define IDIO_HANDLE_GREY(H)	((H)->u.handle->grey)
@@ -645,7 +646,8 @@ typedef struct idio_handle_s {
 #define IDIO_HANDLE_LC(H)	((H)->u.handle->lc)
 #define IDIO_HANDLE_LINE(H)	((H)->u.handle->line)
 #define IDIO_HANDLE_POS(H)	((H)->u.handle->pos)
-#define IDIO_HANDLE_NAME(H)	((H)->u.handle->name)
+#define IDIO_HANDLE_FILENAME(H)	((H)->u.handle->filename)
+#define IDIO_HANDLE_PATHNAME(H)	((H)->u.handle->pathname)
 #define IDIO_HANDLE_FLAGS(H)	((H)->tflags)
 
 #define IDIO_INPUTP_HANDLE(H)	(IDIO_HANDLE_FLAGS(H) & IDIO_HANDLE_FLAG_READ)

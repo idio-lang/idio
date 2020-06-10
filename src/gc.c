@@ -547,7 +547,8 @@ void idio_gc_process_grey (unsigned colour)
     case IDIO_TYPE_HANDLE:
 	IDIO_C_ASSERT (idio_gc->grey != IDIO_HANDLE_GREY (o));
 	idio_gc->grey = IDIO_HANDLE_GREY (o);
-	idio_gcc_mark (IDIO_HANDLE_NAME (o), colour);
+	idio_gcc_mark (IDIO_HANDLE_FILENAME (o), colour);
+	idio_gcc_mark (IDIO_HANDLE_PATHNAME (o), colour);
 	break;
     case IDIO_TYPE_STRUCT_TYPE:
 	IDIO_C_ASSERT (idio_gc->grey != IDIO_STRUCT_TYPE_GREY (o));
