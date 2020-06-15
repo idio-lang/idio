@@ -225,35 +225,35 @@ int main (int argc, char **argv, char **envp)
     IDIO thr = idio_thread_current_thread ();
 
     /*
-     * Conditions raised during the bootstrap will need a setjmp in
-     * place.  As the only place we can longjmp back to is here then
-     * any kind of condition raised during bootstrap is a precursor to
-     * bailing out.  Probably a good thing.
+     * Conditions raised during the bootstrap will need a sigsetjmp in
+     * place.  As the only place we can siglongjmp back to is here
+     * then any kind of condition raised during bootstrap is a
+     * precursor to bailing out.  Probably a good thing.
      *
      * Of course we don't want to come back here (immediately prior to
      * looping over argc/argv) if the condition was raised whilst
-     * processing argc/argv so there are separate setjmp statements
+     * processing argc/argv so there are separate sigsetjmp statements
      * for each "load" alternative.
      *
      * That said, so long as we can get as far as the code in
-     * idio_vm_run() then we'll get a per-run setjmp which will
+     * idio_vm_run() then we'll get a per-run sigsetjmp which will
      * override this.
      */
-    jmp_buf jb;
-    IDIO_THREAD_JMP_BUF (thr) = &jb;
+    sigjmp_buf sjb;
+    IDIO_THREAD_JMP_BUF (thr) = &sjb;
 
-    int sjv = setjmp (*(IDIO_THREAD_JMP_BUF (thr)));
+    int sjv = sigsetjmp (*(IDIO_THREAD_JMP_BUF (thr)), 1);
 
     switch (sjv) {
     case 0:
 	break;
-    case IDIO_VM_LONGJMP_EXIT:
+    case IDIO_VM_SIGLONGJMP_EXIT:
 	fprintf (stderr, "bootstrap/exit (%d)\n", idio_exit_status);
 	idio_final ();
 	exit (idio_exit_status);
 	break;
     default:
-	fprintf (stderr, "setjmp: bootstrap failed with sjv %d: exit (%d)\n", sjv, idio_exit_status);
+	fprintf (stderr, "sigsetjmp: bootstrap failed with sjv %d: exit (%d)\n", sjv, idio_exit_status);
 	idio_final ();
 	exit (idio_exit_status);
 	break;
@@ -290,7 +290,7 @@ int main (int argc, char **argv, char **envp)
 
 	    /*
 	     * If we're given a sequence of files to load then any
-	     * conditions raised (prior to the idio_vm_run() setjmp
+	     * conditions raised (prior to the idio_vm_run() sigsetjmp
 	     * being invoked) should bring us back here and we can
 	     * bail.
 	     *
@@ -300,30 +300,30 @@ int main (int argc, char **argv, char **envp)
 	     * (common.idio); a module/load variant (module.idio).
 	     *
 	     * It's entirely possible a condition can be raised in
-	     * that code for which we need a suitable setjmp for the
-	     * condition to longjmp to.
+	     * that code for which we need a suitable sigsetjmp for
+	     * the condition to siglongjmp to.
 	     *
 	     * Given that all we do is bail we could have just left it
-	     * with the "bootstrap" setjmp outside of this
+	     * with the "bootstrap" sigsetjmp outside of this
 	     * condition/loop but at least here we can print the
 	     * offending filename in case no-one else did.
 	     */
-	    jmp_buf jb;
-	    IDIO_THREAD_JMP_BUF (thr) = &jb;
-	    sjv = setjmp (*(IDIO_THREAD_JMP_BUF (thr)));
+	    sigjmp_buf sjb;
+	    IDIO_THREAD_JMP_BUF (thr) = &sjb;
+	    sjv = sigsetjmp (*(IDIO_THREAD_JMP_BUF (thr)), 1);
 
 	    switch (sjv) {
 	    case 0:
 		idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST2 (load, idio_string_C (argv[i])));
 		/* idio_load_file_name (idio_string_C (argv[i]), idio_vm_constants); */
 		break;
-	    case IDIO_VM_LONGJMP_EXIT:
+	    case IDIO_VM_SIGLONGJMP_EXIT:
 		fprintf (stderr, "load/exit (%d)\n", idio_exit_status);
 		idio_final ();
 		exit (idio_exit_status);
 		break;
 	    default:
-		fprintf (stderr, "setjmp: load %s: failed with sjv %d\n", argv[i], sjv);
+		fprintf (stderr, "sigsetjmp: load %s: failed with sjv %d\n", argv[i], sjv);
 		exit (1);
 		break;
 	    }
@@ -338,33 +338,33 @@ int main (int argc, char **argv, char **envp)
 	int gc_pause = idio_gc_get_pause ("REPL");
 
 	/*
-	 * See commentary above re: setjmp.
+	 * See commentary above re: sigsetjmp.
 	 */
-	jmp_buf jb;
-	IDIO_THREAD_JMP_BUF (thr) = &jb;
-	sjv = setjmp (*(IDIO_THREAD_JMP_BUF (thr)));
+	sigjmp_buf sjb;
+	IDIO_THREAD_JMP_BUF (thr) = &sjb;
+	sjv = sigsetjmp (*(IDIO_THREAD_JMP_BUF (thr)), 1);
 
 	switch (sjv) {
 	case 0:
 	    break;
-	case IDIO_VM_LONGJMP_CONDITION:
+	case IDIO_VM_SIGLONGJMP_CONDITION:
 	    idio_gc_reset ("REPL/condition", gc_pause);
 	    break;
-	case IDIO_VM_LONGJMP_CONTINUATION:
+	case IDIO_VM_SIGLONGJMP_CONTINUATION:
 	    idio_gc_reset ("REPL/continuation", gc_pause);
 	    break;
-	case IDIO_VM_LONGJMP_CALLCC:
+	case IDIO_VM_SIGLONGJMP_CALLCC:
 	    idio_gc_reset ("REPL/callcc", gc_pause);
 	    break;
-	case IDIO_VM_LONGJMP_EVENT:
+	case IDIO_VM_SIGLONGJMP_EVENT:
 	    idio_gc_reset ("REPL/event", gc_pause);
 	    break;
-	case IDIO_VM_LONGJMP_EXIT:
+	case IDIO_VM_SIGLONGJMP_EXIT:
 	    idio_gc_reset ("REPL/exit", gc_pause);
 	    idio_final ();
 	    exit (idio_exit_status);
 	default:
-	    fprintf (stderr, "setjmp: repl failed with sjv %d\n", sjv);
+	    fprintf (stderr, "sigsetjmp: repl failed with sjv %d\n", sjv);
 	    exit (1);
 	    break;
 	}

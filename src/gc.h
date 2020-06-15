@@ -717,7 +717,7 @@ typedef struct idio_thread_s {
      *
      * NB it is a pointer to a C stack variable
      */
-    jmp_buf *jmp_buf;
+    sigjmp_buf *jmp_buf;
 
     /*
      * dynamic_sp, environ_sp are the SP of the topmost
@@ -796,13 +796,13 @@ typedef struct idio_continuation_s {
 #define IDIO_CONTINUATION_STACK(T)	((T)->u.continuation->stack)
 
 /*
- * Who called longjmp?
+ * Who called siglongjmp?
  */
-#define IDIO_VM_LONGJMP_CONDITION	1
-#define IDIO_VM_LONGJMP_CONTINUATION    2
-#define IDIO_VM_LONGJMP_CALLCC		3
-#define IDIO_VM_LONGJMP_EVENT		4
-#define IDIO_VM_LONGJMP_EXIT		5
+#define IDIO_VM_SIGLONGJMP_CONDITION	1
+#define IDIO_VM_SIGLONGJMP_CONTINUATION    2
+#define IDIO_VM_SIGLONGJMP_CALLCC		3
+#define IDIO_VM_SIGLONGJMP_EVENT		4
+#define IDIO_VM_SIGLONGJMP_EXIT		5
 
 typedef struct idio_C_pointer_s {
     void *p;

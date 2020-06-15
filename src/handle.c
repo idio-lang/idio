@@ -1172,9 +1172,10 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
      * We might have called idio_gc_protect (and later idio_gc_expose)
      * to safeguard {ms} however we know (because we wrote the code)
      * that "load" might call a continuation (to a state before we
-     * were called) which will unwind the stack and call longjmp(3).
-     * That means we'll never reach the idio_gc_expose() call and
-     * stuff starts to accumulate in the GC never to be released.
+     * were called) which will unwind the stack and call
+     * siglongjmp(3).  That means we'll never reach the
+     * idio_gc_expose() call and stuff starts to accumulate in the GC
+     * never to be released.
      *
      * However, invoking that continuation will clear the stack
      * including anything we stick on it here.  Very convenient.

@@ -453,7 +453,7 @@ extern FILE *idio_vm_perf_FILE;
 
 /*
  * A distinguished value to a) shut the C compiler up when we know
- * we'll have setjmp'd out of a function and b) we can potentially
+ * we'll have sigsetjmp'd out of a function and b) we can potentially
  * catch and warn.
  */
 #define IDIO_CONSTANT_NOTREACHED      -100

@@ -1848,14 +1848,14 @@ void idio_vm_raise_condition (IDIO continuablep, IDIO condition, int IHR)
      * that C stack (erroneously) or, after enough
      * idio_vm_raise_condition()s, we'll blow up the C stack.
      *
-     * That means longjmp(3).
+     * That means siglongjmp(3).
      *
-     * XXX longjmp means that we won't be free()ing any memory
+     * XXX siglongjmp means that we won't be free()ing any memory
      * allocated during the life of that C stack.  Unless we think of
      * something clever...well?...er, still waiting...
      */
     if (NULL != IDIO_THREAD_JMP_BUF (thr)) {
-	longjmp (*(IDIO_THREAD_JMP_BUF (thr)), IDIO_VM_LONGJMP_CONDITION);
+	siglongjmp (*(IDIO_THREAD_JMP_BUF (thr)), IDIO_VM_SIGLONGJMP_CONDITION);
     } else {
 	fprintf (stderr, "WARNING: raise-condition: unable to use jmp_buf==NULL\n");
 	idio_vm_debug (thr, "raise-condition unable to use jmp_buf==NULL", 0);
@@ -2005,7 +2005,7 @@ void idio_vm_restore_continuation (IDIO k, IDIO val)
     IDIO thr = idio_thread_current_thread ();
 
     if (NULL != IDIO_THREAD_JMP_BUF (thr)) {
-	longjmp (*(IDIO_THREAD_JMP_BUF (thr)), IDIO_VM_LONGJMP_CONTINUATION);
+	siglongjmp (*(IDIO_THREAD_JMP_BUF (thr)), IDIO_VM_SIGLONGJMP_CONTINUATION);
     } else {
 	fprintf (stderr, "WARNING: restore-continuation: unable to use jmp_buf==NULL\n");
 	idio_vm_debug (thr, "ivrc unable to use jmp_buf==NULL", 0);
@@ -2025,7 +2025,7 @@ void idio_vm_restore_exit (IDIO k, IDIO val)
     IDIO thr = idio_thread_current_thread ();
 
     if (NULL != IDIO_THREAD_JMP_BUF (thr)) {
-	longjmp (*(IDIO_THREAD_JMP_BUF (thr)), IDIO_VM_LONGJMP_EXIT);
+	siglongjmp (*(IDIO_THREAD_JMP_BUF (thr)), IDIO_VM_SIGLONGJMP_EXIT);
     } else {
 	fprintf (stderr, "WARNING: restore-exit: unable to use jmp_buf==NULL\n");
 	idio_vm_debug (thr, "ivre unable to use jmp_buf==NULL", 0);
@@ -2064,7 +2064,7 @@ IDIO_DEFINE_PRIMITIVE1 ("%%call/cc", call_cc, (IDIO proc))
     idio_vm_invoke (thr, proc, IDIO_VM_INVOKE_REGULAR_CALL);
 
     if (NULL != IDIO_THREAD_JMP_BUF (thr)) {
-	longjmp (*(IDIO_THREAD_JMP_BUF (thr)), IDIO_VM_LONGJMP_CALLCC);
+	siglongjmp (*(IDIO_THREAD_JMP_BUF (thr)), IDIO_VM_SIGLONGJMP_CALLCC);
     } else {
 	fprintf (stderr, "WARNING: %%call/cc: unable to use jmp_buf==NULL\n");
 	idio_vm_debug (thr, "%%call/cc unable to use jmp_buf==NULL", 0);
@@ -5118,41 +5118,41 @@ IDIO idio_vm_run (IDIO thr)
 
     int gc_pause = idio_gc_get_pause ("idio_vm_run");
 
-    jmp_buf jb;
-    jmp_buf *ojb = IDIO_THREAD_JMP_BUF (thr);
-    IDIO_THREAD_JMP_BUF (thr) = &jb;
+    sigjmp_buf sjb;
+    sigjmp_buf *osjb = IDIO_THREAD_JMP_BUF (thr);
+    IDIO_THREAD_JMP_BUF (thr) = &sjb;
 
     /*
      * Ready ourselves for idio_raise_condition/continuations to
      * clear the decks.
      *
-     * NB Keep counters/timers above this setjmp (otherwise they get
-     * reset -- duh)
+     * NB Keep counters/timers above this sigsetjmp (otherwise they
+     * get reset -- duh)
      */
-    int sjv = setjmp (*(IDIO_THREAD_JMP_BUF (thr)));
+    int sjv = sigsetjmp (*(IDIO_THREAD_JMP_BUF (thr)), 1);
 
     /*
      * Hmm, we really should consider caring whether we got here from
-     * a longjmp...shouldn't we?
+     * a siglongjmp...shouldn't we?
      *
      * I'm not sure we do care.
      */
     switch (sjv) {
     case 0:
 	break;
-    case IDIO_VM_LONGJMP_CONDITION:
+    case IDIO_VM_SIGLONGJMP_CONDITION:
 	idio_gc_reset ("idio_vm_run/condition", gc_pause);
 	break;
-    case IDIO_VM_LONGJMP_CONTINUATION:
+    case IDIO_VM_SIGLONGJMP_CONTINUATION:
 	idio_gc_reset ("idio_vm_run/continuation", gc_pause);
 	break;
-    case IDIO_VM_LONGJMP_CALLCC:
+    case IDIO_VM_SIGLONGJMP_CALLCC:
 	idio_gc_reset ("idio_vm_run/callcc", gc_pause);
 	break;
-    case IDIO_VM_LONGJMP_EVENT:
+    case IDIO_VM_SIGLONGJMP_EVENT:
 	idio_gc_reset ("idio_vm_run/event", gc_pause);
 	break;
-    case IDIO_VM_LONGJMP_EXIT:
+    case IDIO_VM_SIGLONGJMP_EXIT:
 	idio_gc_reset ("idio_vm_run/exit", gc_pause);
 	idio_final ();
 	exit (idio_exit_status);
@@ -5275,7 +5275,7 @@ IDIO idio_vm_run (IDIO thr)
 			idio_vm_invoke (thr, idio_vm_signal_handler, IDIO_VM_INVOKE_REGULAR_CALL);
 
 			if (NULL != IDIO_THREAD_JMP_BUF (thr)) {
-			    longjmp (*(IDIO_THREAD_JMP_BUF (thr)), IDIO_VM_LONGJMP_EVENT);
+			    siglongjmp (*(IDIO_THREAD_JMP_BUF (thr)), IDIO_VM_SIGLONGJMP_EVENT);
 			} else {
 			    fprintf (stderr, "iv_r WARNING: SIGCHLD: unable to use jmp_buf==NULL in thr %10p\n", thr);
 			    idio_vm_debug (thr, "SIGCHLD unable to use jmp_buf==NULL", 0);
@@ -5300,7 +5300,7 @@ IDIO idio_vm_run (IDIO thr)
 	}
     }
 
-    IDIO_THREAD_JMP_BUF (thr) = ojb;
+    IDIO_THREAD_JMP_BUF (thr) = osjb;
 
     struct timeval tr;
     gettimeofday (&tr, NULL);

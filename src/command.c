@@ -1199,7 +1199,7 @@ void idio_command_do_job_notification (void)
 
 	/*
 	 * Unlike an Idio-variant of this function, we won't return
-	 * here with our C hats on because of the longjmp(3) in
+	 * here with our C hats on because of the siglongjmp(3) in
 	 * idio_raise_condition() that jumps back into idio_vm_run().
 	 *
 	 * If we (somehow) did, then we'd loop around again.
