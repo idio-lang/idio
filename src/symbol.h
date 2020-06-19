@@ -120,8 +120,8 @@ IDIO idio_properties_get (IDIO o, IDIO args);
 void idio_properties_set (IDIO o, IDIO properties);
 void idio_properties_create (IDIO o);
 void idio_properties_delete (IDIO o);
-IDIO idio_property_get (IDIO o, IDIO property, IDIO args);
-void idio_property_set (IDIO o, IDIO property, IDIO value);
+IDIO idio_get_property (IDIO o, IDIO property, IDIO args);
+void idio_set_property (IDIO o, IDIO property, IDIO value);
 
 void idio_init_symbol (void);
 void idio_symbol_add_primitives (void);

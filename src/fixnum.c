@@ -176,15 +176,26 @@ IDIO_DEFINE_PRIMITIVE1 ("integer?", integerp, (IDIO o))
     return r;
 }
 
+int idio_isa_number (IDIO o)
+{
+    IDIO_ASSERT (o);
+
+    if (idio_isa_fixnum (o)) {
+	return 1;
+    } else if (idio_isa_bignum (o)) {
+	return 1;
+    }
+
+    return 0;
+}
+
 IDIO_DEFINE_PRIMITIVE1 ("number?", numberp, (IDIO o))
 {
     IDIO_ASSERT (o);
 
     IDIO r = idio_S_false;
 
-    if (idio_isa_fixnum (o)) {
-	r = idio_S_true;
-    } else if (idio_isa_bignum (o)) {
+    if (idio_isa_number (o)) {
 	r = idio_S_true;
     }
 

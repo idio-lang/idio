@@ -172,40 +172,6 @@ define-macro (s9/letrec bindings expr & exprs) {
 ;;   #T{ cond $@(loop clauses) }
 ;; }
 
-define (display* & x*) {
-  p :+ function (x* first) {
-	 if (not (null? x*)) {
-	   if (not first) (write-char #\space)
-	   display (ph x*)
-	   p (pt x*) #f
-	 }
-  }
-
-  p x* #t
-  (newline)
-}
-
-define (ewrite x) {
-  write x (current-error-handle)
-}
-
-define (edisplay x) {
-  display x (current-error-handle)
-}
-
-define (edisplay* & x*) {
-  p :+ function (x* first) {
-	 if (not (null? x*)) {
-	   if (not first) (write-char #\space (current-error-handle))
-	   edisplay (ph x*)
-	   p (pt x*) #f
-	 }
-  }
-
-  p x* #t
-  newline (current-error-handle)
-}
-
 ;; Booleans
 
 ;define (not x) (eq? #f x)
@@ -222,7 +188,7 @@ define (port? x) {
 
 ;; Equivalence predicates
 
-define (eqv? a b) {
+define (s9/eqv? a b) {
   cond ((number? a) (and (number? b)
 			 (== a b))) \
        ((char? a)   (and (char? b)
@@ -240,10 +206,10 @@ define (s9/equal? a b) {
        ((array? a) (and (array? b)
 			(equal? (array->list a)
 				(array->list b)))) \
-       (else	  (eqv? a b))
+       (else	  (s9/eqv? a b))
 }
 
-define equal? s9/equal?
+;define equal? s9/equal?
 
 ;; List procedures
 

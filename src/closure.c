@@ -66,10 +66,10 @@ IDIO idio_closure (size_t code_pc, size_t code_len, IDIO frame, IDIO env, IDIO s
 
     idio_properties_create (c);
     if (idio_S_nil != sigstr) {
-	idio_property_set (c, idio_KW_sigstr, sigstr);
+	idio_set_property (c, idio_KW_sigstr, sigstr);
     }
     if (idio_S_nil != docstr) {
-	idio_property_set (c, idio_KW_docstr_raw, docstr);
+	idio_set_property (c, idio_KW_docstr_raw, docstr);
     }
 
     return c;
@@ -138,7 +138,7 @@ return the setter of `p`			\n\
 	return idio_S_notreached;
     }
 
-    IDIO setter = idio_property_get (p, idio_KW_setter, IDIO_LIST1 (idio_S_false));
+    IDIO setter = idio_get_property (p, idio_KW_setter, IDIO_LIST1 (idio_S_false));
 
     if (idio_S_false == setter) {
 	idio_error_C ("no setter defined", p, IDIO_C_FUNC_LOCATION ());

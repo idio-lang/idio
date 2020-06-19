@@ -992,7 +992,7 @@ test (assv 'b '((a & a) (b & b))) '(b & b)
 test (assv 'a '((a & a) (b & b))) '(a & a)
 test (assv 'x '()) #f
 test (assv '(x) '(((x) & x))) #f
-test (assv "x" '(("x" & x))) #f
+test (assv "x" '(("x" & x))) '("x" & x)
 test (assv 1 '((1 & x))) '(1 & x)
 test (assv #\x '((#\x & x))) '(#\x & x)
 
@@ -1101,7 +1101,7 @@ test (memv 'b '(a b)) '(b)
 test (memv 'a '(a b)) '(a b)
 test (memv 'x '()) #f
 test (memv '(x) '((x))) #f
-test (memv "x" '("x")) #f
+test (memv "x" '("x")) '("x")
 test (memv 1 '(1)) '(1)
 test (memv #\x '(#\x)) '(#\x)
 
@@ -2345,7 +2345,7 @@ test (eqv? #\c #\c) #t
 test (eqv? 1 1) #t
 test (eqv? (list 'pair) (list 'pair)) #f
 test (eqv? (function () #f) (function () #f)) #f
-test (eqv? "string" "string") #f
+test (eqv? "string" "string") #t
 test (eqv? 'symbol 'symbol) #t
 test (eqv? (array 'array) (array 'array)) #f
 

@@ -49,6 +49,8 @@
 
 #include "idio.h"
 
+static IDIO idio_array_default_value = idio_S_false;
+
 void idio_array_error_length (char *m, idio_ai_t i, IDIO loc)
 {
     IDIO_C_ASSERT (m);
@@ -143,14 +145,14 @@ IDIO idio_array_dv (idio_ai_t size, IDIO dv)
  * idio_array() - array constructor
  * @size: array size
  *
- * The default value is %idio_S_nil I(#n).
+ * The default value is %idio_S_false I(#f).
  *
  * Return:
  * The initialised array.
  */
 IDIO idio_array (idio_ai_t size)
 {
-    return idio_array_dv (size, idio_S_nil);
+    return idio_array_dv (size, idio_array_default_value);
 }
 
 int idio_isa_array (IDIO a)
@@ -733,7 +735,10 @@ If no default value is supplied #f is used.	\n\
 
     IDIO_VERIFY_PARAM_TYPE (list, args);
 
-    IDIO dv = idio_S_false; /* S9fES -- Scheme specs say unspecified */
+    /*
+     * S9fES -- Scheme specs say unspecified
+     */
+    IDIO dv = idio_array_default_value; 
 
     if (idio_S_nil != args) {
 	dv = IDIO_PAIR_H (args);

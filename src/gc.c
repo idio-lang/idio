@@ -498,7 +498,7 @@ void idio_gc_process_grey (unsigned colour)
     case IDIO_TYPE_ARRAY:
 	idio_gc->grey = IDIO_ARRAY_GREY (o);
 	idio_gcc_mark (IDIO_ARRAY_DV (o), colour);
-	for (i = 0; i < IDIO_ARRAY_ASIZE (o); i++) {
+	for (i = 0; i < IDIO_ARRAY_USIZE (o); i++) {
 	    if (NULL != IDIO_ARRAY_AE (o, i)) {
 		idio_gcc_mark (IDIO_ARRAY_AE (o, i), colour);
 	    }
@@ -1042,7 +1042,7 @@ void idio_gc_find_frame_r (IDIO id, int depth)
 	    }
 	    break;
 	case IDIO_TYPE_ARRAY:
-	    for (i = 0; i < IDIO_ARRAY_ASIZE (o); i++) {
+	    for (i = 0; i < IDIO_ARRAY_USIZE (o); i++) {
 		if (NULL != IDIO_ARRAY_AE (o, i)) {
 		    if (IDIO_ARRAY_AE (o, i) == id) {
 			idio_gc_find_frame_print_id (id, depth);

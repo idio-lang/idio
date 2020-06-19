@@ -304,7 +304,7 @@ IDIO_DEFINE_PRIMITIVE1 ("not", not, (IDIO e))
  *
  * For most object types (that is, largely non-user-visible) the
  * *only* equality is C/==.  An example is creating two closures from
- * the same source code.  They will always be different.  Two
+ * the same source code -- they will always be different.  Two
  * references to the same closure will always be the same.
  *
  * eq?
@@ -397,7 +397,7 @@ IDIO_DEFINE_PRIMITIVE2 ("eqv?", eqvp, (IDIO o1, IDIO o2))
  * used in its definition
  */
 
-IDIO_DEFINE_PRIMITIVE2 ("idio-equal?", equalp, (IDIO o1, IDIO o2))
+IDIO_DEFINE_PRIMITIVE2 ("equal?", equalp, (IDIO o1, IDIO o2))
 {
     IDIO_ASSERT (o1);
     IDIO_ASSERT (o2);
@@ -416,26 +416,79 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
     IDIO_ASSERT (o1);
     IDIO_ASSERT (o2);
 
+    /*
+     * eq?
+     *
+     * NB For FIXNUM/CONSTANT/PLACEHOLDER types then this (integer
+     * equality test) implicitly tests their type as well.
+     */
     if (o1 == o2) {
 	return 1;
     }
 
     int m1 = (intptr_t) o1 & IDIO_TYPE_MASK;
+    int m2 = (intptr_t) o2 & IDIO_TYPE_MASK;
+
+    /*
+     * Careful!  Before we fail if the two objects are not of the same
+     * type, handle sibling object types.  Notably:
+     *
+     * strings and substrings
+     *
+     * fixnums and bignums
+     *
+     * NB This was originally a test here but there are so many
+     * comparisons and so many of them should be very quick that the
+     * code has been interspersed below.
+     */
 
     switch (m1) {
     case IDIO_TYPE_FIXNUM_MARK:
+	if (IDIO_EQUAL_EQP != eqp) {
+	    IDIO r = idio_S_false;
+
+	    if (idio_isa_number (o2)) {
+		r = idio_vm_invoke_C (idio_thread_current_thread (),
+				      IDIO_LIST3 (idio_module_symbol_value (idio_symbols_C_intern ("=="),
+									    idio_Idio_module,
+									    idio_S_nil),
+						  o1,
+						  o2));
+	    }
+
+	    return (idio_S_true == r);
+	} else {
+	    return 0;
+	}
+	break;
     case IDIO_TYPE_CONSTANT_MARK:
     case IDIO_TYPE_PLACEHOLDER_MARK:
 	/*
-	  We already tested for equality above!
+	 * If they were the same type then we've already tested for
+	 * equality above!
 	 */
 	return 0;
     case IDIO_TYPE_POINTER_MARK:
 	{
-	    int m2 = (intptr_t) o2 & IDIO_TYPE_MASK;
-
 	    switch (m2) {
 	    case IDIO_TYPE_FIXNUM_MARK:
+		if (IDIO_EQUAL_EQP != eqp) {
+		    IDIO r = idio_S_false;
+
+		    if (idio_isa_number (o1)) {
+			r = idio_vm_invoke_C (idio_thread_current_thread (),
+					      IDIO_LIST3 (idio_module_symbol_value (idio_symbols_C_intern ("=="),
+										    idio_Idio_module,
+										    idio_S_nil),
+							  o1,
+							  o2));
+		    }
+
+		    return (idio_S_true == r);
+		} else {
+		    return 0;
+		}
+		break;
 	    case IDIO_TYPE_CONSTANT_MARK:
 	    case IDIO_TYPE_PLACEHOLDER_MARK:
 		/* we would have matched at the top */
@@ -445,10 +498,14 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 	    }
 
 	    /*
-	     * Just before we fail if the two objects are not of the
-	     * same type, handle sibling object types.  Notably,
-	     * strings and substrings.
+	     * Do the non-number siblings test before the type
+	     * equality test (next).
+	     *
+	     * As a hint we've figured out by now that both o1 and o2
+	     * are POINTER_MARK types, ie. we can safely access ->type
+	     * etc.
 	     */
+
 	    if (IDIO_EQUAL_EQP != eqp) {
 		switch (o1->type) {
 		case IDIO_TYPE_STRING:
@@ -478,17 +535,37 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		}
 	    }
 
+	    /*
+	     * Type equality (having done siblings, above).  If
+	     * they're not the same type then they can't be any form
+	     * of equal.
+	     */
 	    if (o1->type != o2->type) {
 		return 0;
 	    }
 
-	    if (IDIO_GC_FLAG_FREE_SET (o1) ||
+	    /*
+	     * Goofs.  Should raise an error!
+	     */
+	    if (0 == o1->type ||
+		IDIO_GC_FLAG_FREE_SET (o1) ||
 		IDIO_GC_FLAG_FREE_SET (o2)) {
+		fprintf (stderr, "equal?: GC issue\n");
+		idio_dump (o1, 1);
+		idio_dump (o2, 1);
 		return 0;
 	    }
 
 	    size_t i;
 
+	    /*
+	     * Now the nitty gritty of type equality comparisons.
+	     *
+	     * Note that many EQP tests are (o1 == o2) which we could
+	     * replace with return 0 as we already did this test at
+	     * the top of the function.  It failed then so it should
+	     * fail now!
+	     */
 	    switch (o1->type) {
 	    case IDIO_TYPE_STRING:
 		if (IDIO_EQUAL_EQP == eqp) {
@@ -536,7 +613,7 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		    return 0;
 		}
 
-		for (i = 0; i < IDIO_ARRAY_ASIZE (o1); i++) {
+		for (i = 0; i < IDIO_ARRAY_USIZE (o1); i++) {
 		    if (! idio_equalp (IDIO_ARRAY_AE (o1, i), IDIO_ARRAY_AE (o2, i))) {
 			return 0;
 		    }
@@ -823,6 +900,7 @@ char *idio_as_string (IDIO o, int depth)
 	    case IDIO_TYPE_CONSTANT_TOKEN_MARK:
 		{
 		    intptr_t v = IDIO_CONSTANT_IDIO_VAL (o);
+		    char m[BUFSIZ];
 
 		    switch (v) {
 
@@ -839,12 +917,13 @@ char *idio_as_string (IDIO o, int depth)
 		    case IDIO_TOKEN_PAIR_SEPARATOR:                t = "T/p-s";                       break;
 
 		    default:
-			if (asprintf (&r, "#<type/constant/token?? %10p>", o) == -1) {
+			if (sprintf (m, "#<type/constant/token?? %10p>", o) == -1) {
 			    idio_error_alloc ("asprintf");
 
 			    /* notreached */
 			    return NULL;
 			}
+			t = m;
 			break;
 		    }
 
@@ -869,6 +948,7 @@ char *idio_as_string (IDIO o, int depth)
 	    case IDIO_TYPE_CONSTANT_I_CODE_MARK:
 		{
 		    intptr_t v = IDIO_CONSTANT_I_CODE_VAL (o);
+		    char m[BUFSIZ];
 
 		    switch (v) {
 
@@ -877,50 +957,68 @@ char *idio_as_string (IDIO o, int depth)
 		    case IDIO_I_CODE_DEEP_ARGUMENT_REF:           t = "DEEP-ARGUMENT-REF";           break;
 		    case IDIO_I_CODE_SHALLOW_ARGUMENT_SET:        t = "SHALLOW-ARGUMENT-SET";        break;
 		    case IDIO_I_CODE_DEEP_ARGUMENT_SET:           t = "DEEP-ARGUMENT-SET";           break;
+
 		    case IDIO_I_CODE_GLOBAL_REF:                  t = "GLOBAL-REF";                  break;
 		    case IDIO_I_CODE_CHECKED_GLOBAL_REF:          t = "CHECKED-GLOBAL-REF";          break;
+		    case IDIO_I_CODE_GLOBAL_FUNCTION_REF:	  t = "GLOBAL-FUNCTION-REF";	     break;
 		    case IDIO_I_CODE_CHECKED_GLOBAL_FUNCTION_REF: t = "CHECKED-GLOBAL-FUNCTION-REF"; break;
+		    case IDIO_I_CODE_GLOBAL_DEF:                  t = "GLOBAL-DEF";                  break;
 		    case IDIO_I_CODE_GLOBAL_SET:                  t = "GLOBAL-SET";                  break;
 		    case IDIO_I_CODE_CONSTANT:                    t = "CONSTANT";                    break;
+		    case IDIO_I_CODE_COMPUTED_REF:                t = "COMPUTED-REF";                break;
+		    case IDIO_I_CODE_COMPUTED_SET:                t = "COMPUTED-SET";                break;
+		    case IDIO_I_CODE_COMPUTED_DEFINE:             t = "COMPUTED-DEFINE";             break;
+
 		    case IDIO_I_CODE_ALTERNATIVE:                 t = "ALTERNATIVE";                 break;
 		    case IDIO_I_CODE_SEQUENCE:                    t = "SEQUENCE";                    break;
 		    case IDIO_I_CODE_TR_FIX_LET:                  t = "TR-FIX-LET";                  break;
 		    case IDIO_I_CODE_FIX_LET:                     t = "FIX-LET";                     break;
 		    case IDIO_I_CODE_PRIMCALL0:                   t = "PRIMCALL0";                   break;
+
 		    case IDIO_I_CODE_PRIMCALL1:                   t = "PRIMCALL1";                   break;
 		    case IDIO_I_CODE_PRIMCALL2:                   t = "PRIMCALL2";                   break;
 		    case IDIO_I_CODE_PRIMCALL3:                   t = "PRIMCALL3";                   break;
 		    case IDIO_I_CODE_FIX_CLOSURE:                 t = "FIX-CLOSURE";                 break;
 		    case IDIO_I_CODE_NARY_CLOSURE:                t = "NARY-CLOSURE";                break;
+
 		    case IDIO_I_CODE_TR_REGULAR_CALL:             t = "TR-REGULAR-CALL";             break;
 		    case IDIO_I_CODE_REGULAR_CALL:                t = "REGULAR-CALL";                break;
 		    case IDIO_I_CODE_STORE_ARGUMENT:              t = "STORE-ARGUMENT";              break;
 		    case IDIO_I_CODE_CONS_ARGUMENT:               t = "CONS-ARGUMENT";               break;
 		    case IDIO_I_CODE_ALLOCATE_FRAME:              t = "ALLOCATE-FRAME";              break;
+
 		    case IDIO_I_CODE_ALLOCATE_DOTTED_FRAME:       t = "ALLOCATE-DOTTED-FRAME";       break;
 		    case IDIO_I_CODE_FINISH:                      t = "FINISH";                      break;
 		    case IDIO_I_CODE_PUSH_DYNAMIC:                t = "PUSH-DYNAMIC";                break;
 		    case IDIO_I_CODE_POP_DYNAMIC:                 t = "POP-DYNAMIC";                 break;
 		    case IDIO_I_CODE_DYNAMIC_REF:                 t = "DYNAMIC-REF";                 break;
 		    case IDIO_I_CODE_DYNAMIC_FUNCTION_REF:        t = "DYNAMIC-FUNCTION-REF";        break;
+
+		    case IDIO_I_CODE_PUSH_ENVIRON:                t = "PUSH-ENVIRON";                break;
+		    case IDIO_I_CODE_POP_ENVIRON:                 t = "POP-ENVIRON";                 break;
 		    case IDIO_I_CODE_ENVIRON_REF:                 t = "ENVIRON-REF";                 break;
+
 		    case IDIO_I_CODE_PUSH_TRAP:                   t = "PUSH-TRAP";		     break;
 		    case IDIO_I_CODE_POP_TRAP:                    t = "POP-TRAP";		     break;
+
 		    case IDIO_I_CODE_AND:                         t = "AND";                         break;
 		    case IDIO_I_CODE_OR:                          t = "OR";                          break;
 		    case IDIO_I_CODE_BEGIN:                       t = "BEGIN";                       break;
+
 		    case IDIO_I_CODE_EXPANDER:                    t = "EXPANDER";                    break;
 		    case IDIO_I_CODE_INFIX_OPERATOR:              t = "INFIX-OPERATOR";              break;
 		    case IDIO_I_CODE_POSTFIX_OPERATOR:            t = "POSTFIX-OPERATOR";            break;
+
 		    case IDIO_I_CODE_NOP:                         t = "NOP";                         break;
 
 		    default:
-			if (asprintf (&r, "#<type/constant/vm_code?? %10p>", o) == -1) {
+			if (sprintf (m, "#<type/constant/vm_code?? o=%10p v=%lx>", o, v) == -1) {
 			    idio_error_alloc ("asprintf");
 
 			    /* notreached */
 			    return NULL;
 			}
+			t = m;
 			break;
 		    }
 
@@ -1007,6 +1105,13 @@ char *idio_as_string (IDIO o, int depth)
 
 	    switch (type) {
 	    case IDIO_TYPE_NONE:
+		if (asprintf (&r, "#<!! -none- %p>", o) == -1) {
+		    idio_error_alloc ("asprintf");
+
+		    /* notreached */
+		    return NULL;
+		}
+		break;
 		IDIO_C_ASSERT (0);
 		idio_error_C ("idio_as_string cannot process an IDIO_TYPE_NONE", IDIO_LIST1 (o), IDIO_C_FUNC_LOCATION ());
 		/* notreached */
@@ -1257,17 +1362,16 @@ char *idio_as_string (IDIO o, int depth)
 		break;
 	    case IDIO_TYPE_CLOSURE:
 		{
-		    if (asprintf (&r, "#<CLOS @%zd/%p/", IDIO_CLOSURE_CODE_PC (o), IDIO_CLOSURE_FRAME (o)) == -1) {
+		    if (asprintf (&r, "#<CLOS ") == -1) {
 			idio_error_alloc ("asprintf");
 
 			/* notreached */
 			return NULL;
 		    }
-		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_CLOSURE_ENV (o), depth - 1));
-		    IDIO name = idio_property_get (o, idio_KW_name, IDIO_LIST1 (idio_S_nil));
+		    IDIO name = idio_get_property (o, idio_KW_name, IDIO_LIST1 (idio_S_nil));
 		    if (idio_S_nil != name) {
 			char *name_C;
-			if (asprintf (&name_C, "/\"%s\"", IDIO_SYMBOL_S (name)) == -1) {
+			if (asprintf (&name_C, "%s ", IDIO_SYMBOL_S (name)) == -1) {
 			    free (r);
 			    idio_error_alloc ("asprintf");
 
@@ -1275,7 +1379,18 @@ char *idio_as_string (IDIO o, int depth)
 			    return NULL;
 			}
 			IDIO_STRCAT_FREE (r, name_C);
+		    } else {
+			IDIO_STRCAT (r, "- ");
 		    }
+		    char *t;
+		    if (asprintf (&t, "@%zd/%p/", IDIO_CLOSURE_CODE_PC (o), IDIO_CLOSURE_FRAME (o)) == -1) {
+			idio_error_alloc ("asprintf");
+
+			/* notreached */
+			return NULL;
+		    }
+		    IDIO_STRCAT_FREE (r, t);
+		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_MODULE_NAME (IDIO_CLOSURE_ENV (o)), depth - 1));
 		    IDIO_STRCAT (r, ">");
 		    break;
 		}
@@ -1560,15 +1675,12 @@ char *idio_as_string (IDIO o, int depth)
 		break;
 	    case IDIO_TYPE_CONTINUATION:
 		{
-		    idio_ai_t sp = idio_array_size (IDIO_CONTINUATION_STACK (o));
-		    if (asprintf (&r, "#<K %p sp/top=%2zd/", o, sp) == -1) {
+		    if (asprintf (&r, "#<K %p>", o) == -1) {
 			idio_error_alloc ("asprintf");
 
 			/* notreached */
 			return NULL;
 		    }
-		    IDIO_STRCAT_FREE (r, idio_as_string (idio_array_top (IDIO_CONTINUATION_STACK (o)), 1));
-		    IDIO_STRCAT (r, ">");
 		}
 		break;
 	    case IDIO_TYPE_C_TYPEDEF:

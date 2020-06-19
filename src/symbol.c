@@ -464,7 +464,7 @@ IDIO_DEFINE_PRIMITIVE2 ("%set-properties!", properties_set, (IDIO o, IDIO proper
     return idio_S_unspec;
 }
 
-IDIO idio_property_get (IDIO o, IDIO property, IDIO args)
+IDIO idio_get_property (IDIO o, IDIO property, IDIO args)
 {
     IDIO_ASSERT (o);
     IDIO_ASSERT (property);
@@ -521,10 +521,10 @@ IDIO_DEFINE_PRIMITIVE2V ("%property", property_get, (IDIO o, IDIO property, IDIO
     IDIO_ASSERT (args);
     IDIO_TYPE_ASSERT (keyword, property);
 
-    return idio_property_get (o, property, args);
+    return idio_get_property (o, property, args);
 }
 
-void idio_property_set (IDIO o, IDIO property, IDIO value)
+void idio_set_property (IDIO o, IDIO property, IDIO value)
 {
     IDIO_ASSERT (o);
     IDIO_ASSERT (property);
@@ -556,7 +556,7 @@ IDIO_DEFINE_PRIMITIVE3 ("%set-property!", property_set, (IDIO o, IDIO property, 
     IDIO_ASSERT (value);
     IDIO_TYPE_ASSERT (keyword, property);
 
-    idio_property_set (o, property, value);
+    idio_set_property (o, property, value);
 
     return idio_S_unspec;
 }

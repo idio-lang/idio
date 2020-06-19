@@ -835,7 +835,13 @@ IDIO idio_handle_or_current (IDIO h, unsigned mode)
     return idio_S_notreached;
 }
 
-IDIO_DEFINE_PRIMITIVE0V ("read", read, (IDIO args))
+IDIO_DEFINE_PRIMITIVE0V_DS ("read", read, (IDIO args), "[handle]", "\
+read an Idio expression from ``handle`` or the current intput handle	\n\
+							\n\
+:param handle: handle to readfrom			\n\
+:type handle: handle					\n\
+:return: object						\n\
+")
 {
     IDIO_ASSERT (args);
 
@@ -876,7 +882,14 @@ IDIO idio_read_line (IDIO h)
 
 }
 
-IDIO_DEFINE_PRIMITIVE0V ("read-line", read_line, (IDIO args))
+IDIO_DEFINE_PRIMITIVE0V_DS ("read-line", read_line, (IDIO args), "[handle]", "\
+read a string from ``handle`` or the current intput handle	\n\
+up to a #\newline character				\n\
+							\n\
+:param handle: handle to read from			\n\
+:type handle: handle					\n\
+:return: object						\n\
+")
 {
     IDIO_ASSERT (args);
 
@@ -905,7 +918,14 @@ IDIO idio_read_lines (IDIO h)
 
 }
 
-IDIO_DEFINE_PRIMITIVE0V ("read-lines", read_lines, (IDIO args))
+IDIO_DEFINE_PRIMITIVE0V_DS ("read-lines", read_lines, (IDIO args), "[handle]", "\
+read from ``handle`` or the current intput handle	\n\
+up to the end of file					\n\
+							\n\
+:param handle: handle to read from			\n\
+:type handle: handle					\n\
+:return: object						\n\
+")
 {
     IDIO_ASSERT (args);
 
@@ -1034,7 +1054,14 @@ IDIO idio_display_C (char *s, IDIO h)
     return idio_display_C_len (s, strlen (s), h);
 }
 
-IDIO_DEFINE_PRIMITIVE1V ("display", display, (IDIO o, IDIO args))
+IDIO_DEFINE_PRIMITIVE1V_DS ("display", display, (IDIO o, IDIO args), "o [handle]", "\
+display ``o`` to ``handle`` or the current output handle	\n\
+							\n\
+:param o: object					\n\
+:param handle: handle to write to			\n\
+:type handle: handle					\n\
+:return: <unspec>					\n\
+")
 {
     IDIO_ASSERT (o);
     IDIO_ASSERT (args);
@@ -1042,6 +1069,83 @@ IDIO_DEFINE_PRIMITIVE1V ("display", display, (IDIO o, IDIO args))
     IDIO h = idio_handle_or_current (idio_list_head (args), IDIO_HANDLE_FLAG_WRITE);
 
     return idio_display (o, h);
+}
+
+IDIO_DEFINE_PRIMITIVE2V_DS ("%printf", printf, (IDIO h, IDIO fmt, IDIO args), "handle format [args]", "\
+printf ``format`` to ``handle`` using ``args`` as required	\n\
+							\n\
+All Idio objects will become strings so the only useful	\n\
+printf conversion is %s					\n\
+							\n\
+%% is also functional					\n\
+							\n\
+:param handle: handle to write to			\n\
+:type handle: handle					\n\
+:param format: format string				\n\
+:type format: string					\n\
+:param args: optional arguments to printf		\n\
+:return: <unspec>					\n\
+")
+{
+    IDIO_ASSERT (h);
+    IDIO_ASSERT (fmt);
+    IDIO_ASSERT (args);
+
+    IDIO_TYPE_ASSERT (handle, h);
+    IDIO_TYPE_ASSERT (string, fmt);
+
+    if (! (idio_S_nil == args ||
+	   idio_isa_pair (args))) {
+	idio_error_param_type ("list", args, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    char *fmt_C = IDIO_STRING_S (fmt);
+    size_t blen = IDIO_STRING_BLEN (fmt);
+
+    char *s = fmt_C;
+    size_t i = 0;
+    while (i < blen &&
+	   *s) {
+	switch (*s) {
+	case '%':
+	    {
+		if ((i + 1) < blen) {
+		    char *c = s + 1;
+		    switch (*c) {
+		    case 's':
+			if (idio_S_nil != args) {
+			    IDIO arg = IDIO_PAIR_H (args);
+			    args = IDIO_PAIR_T (args);
+			    c = idio_display_string (arg);
+			    idio_puts_handle (h, c, strlen (c));
+			    free (c);
+			} else {
+			    c = "<no-arg>";
+			    idio_puts_handle (h, c, strlen (c));
+			}
+			break;
+		    default:
+			idio_putc_handle (h, *s);
+			break;
+		    }
+		    s++;
+		    i++;
+		} else {
+		    idio_putc_handle (h, *s);
+		}
+	    }
+	    break;
+	default:
+	    idio_putc_handle (h, *s);
+	    break;
+	}
+	s++;
+	i++;
+    }
+
+    return idio_S_unspec;
 }
 
 IDIO_DEFINE_PRIMITIVE0V ("handle-line", handle_line, (IDIO args))
@@ -1288,6 +1392,7 @@ void idio_handle_add_primitives ()
     IDIO_ADD_PRIMITIVE (write_char);
     IDIO_ADD_PRIMITIVE (newline);
     IDIO_ADD_PRIMITIVE (display);
+    IDIO_ADD_PRIMITIVE (printf);
     IDIO_ADD_PRIMITIVE (handle_line);
     IDIO_ADD_PRIMITIVE (handle_pos);
     IDIO_ADD_PRIMITIVE (handle_location);

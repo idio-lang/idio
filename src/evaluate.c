@@ -431,7 +431,7 @@ static void idio_meaning_error_static_primitive_arity (IDIO src, IDIO c_location
     idio_display_C (em, dsh);
     idio_display (f, dsh);
     idio_display_C (" ", dsh);
-    IDIO sigstr = idio_property_get (primdata, idio_KW_sigstr, IDIO_LIST1 (idio_S_nil));
+    IDIO sigstr = idio_get_property (primdata, idio_KW_sigstr, IDIO_LIST1 (idio_S_nil));
     idio_display (sigstr, dsh);
     idio_display_C (") was called as (", dsh);
     idio_display (f, dsh);

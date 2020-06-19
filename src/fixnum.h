@@ -28,6 +28,7 @@ IDIO idio_uinteger (uintmax_t ui);
 IDIO idio_fixnum (intptr_t i);
 IDIO idio_fixnum_C (char *str, int base);
 int idio_isa_integer (IDIO o);
+int idio_isa_number (IDIO o);
 IDIO idio_fixnum_primitive_add (IDIO args);
 IDIO idio_fixnum_primitive_subtract (IDIO args);
 IDIO idio_fixnum_primitive_multiply (IDIO args);

@@ -50,7 +50,16 @@ define-syntax-rule (unless test body ...) (
 load-handle = {
   orig-load-handle := load-handle
 
-  function (handle) {
+  function (handle) "
+load Idio code from ``handle``
+
+``load-handle`` works much like ``load`` except uses a handle
+as the source of code
+
+:param handle: the handle to load from
+:type filename: string
+
+" {
     if (not (handle? handle)) (error 'load-handle "not a handle" handle)
 
     load-handle-k := #n
@@ -72,29 +81,39 @@ load-handle = {
   }
 }
 
-load = {
+common-load := {
   orig-load := load
 
-  function (filename) {
+  function (filename) "
+load Idio code from ``filename``
+
+:param filename: the filename to load from
+:type filename: string
+
+This is the common variant which traps ^idio-error and calls:
+
+" {
     if (not (string? filename)) (error 'load "not a string" filename)
 
     load-k := #n
 
-    trap ^condition (function (cont cond) {
-      if (not cont) {
-	condition-report (string-append "load: " filename) cont cond (current-error-handle)
-	;(idio-thread-state)
-	load-k cond
-      } {
-	raise cont cond
-      }
+    trap ^idio-error (function (cont cond) {
+			if (not cont) {
+			  condition-report (string-append "load(common): " filename) cont cond (current-error-handle)
+			  ;(idio-thread-state)
+			  load-k cond
+			} {
+			  raise cont cond
+			}
     }) {
       call/cc (function (k) {
-	load-k = k
-	orig-load filename
+		 load-k = k
+		 orig-load filename
       })
     }
   }
+
+  ;%set-property! common-load :docstr-raw (string-append (%property common-load :docstr-raw) (%property orig-load :docstr-raw))
 }
 
 define-macro (suppress-errors conds & cmd) {
@@ -127,17 +146,49 @@ define-syntax with-values-from \
     ((with-values-from formals expression body ...)
      (call-with-values (function () expression) (function formals body ...))))
 
-define (hprintf handle fmt & args) {
-  with-output-to handle (function () {
-			   if (null? args) {
-			     printf fmt
-			   } {
-			     apply printf fmt (map display-string args)
-			   }
-  })
+define (display* & x*) {
+  p :+ function (x* first) {
+	 if (not (null? x*)) {
+	   if (not first) (write-char #\space)
+	   display (ph x*)
+	   p (pt x*) #f
+	 }
+  }
+
+  p x* #t
+  (newline)
 }
 
-define (oprintf fmt & args) {
+define (ewrite x) {
+  write x (current-error-handle)
+}
+
+define (edisplay x) {
+  display x (current-error-handle)
+}
+
+define (edisplay* & x*) {
+  p :+ function (x* first) {
+	 if (not (null? x*)) {
+	   if (not first) (write-char #\space (current-error-handle))
+	   edisplay (ph x*)
+	   p (pt x*) #f
+	 }
+  }
+
+  p x* #t
+  newline (current-error-handle)
+}
+
+define (hprintf handle fmt & args) {
+  if (null? args) {
+    %printf handle fmt
+  } {
+    apply %printf handle fmt (map display-string args)
+  }
+}
+
+define (printf fmt & args) {
   if (null? args) {
     hprintf (current-output-handle) fmt
   } {
@@ -151,5 +202,16 @@ define (eprintf fmt & args) {
   } {
     apply hprintf (current-error-handle) fmt args
   }
+}
+
+define (sprintf fmt & args) {
+  osh := (open-output-string)
+  if (null? args) {
+    hprintf osh fmt
+  } {
+    apply hprintf osh fmt args
+  }
+
+  get-output-string osh
 }
 
