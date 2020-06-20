@@ -514,7 +514,7 @@ IDIO idio_get_property (IDIO o, IDIO property, IDIO args)
     return value;
 }
 
-IDIO_DEFINE_PRIMITIVE2V ("%property", property_get, (IDIO o, IDIO property, IDIO args))
+IDIO_DEFINE_PRIMITIVE2V ("%property", get_property, (IDIO o, IDIO property, IDIO args))
 {
     IDIO_ASSERT (o);
     IDIO_ASSERT (property);
@@ -549,7 +549,7 @@ void idio_set_property (IDIO o, IDIO property, IDIO value)
     idio_hash_set (properties, property, value);
 }
 
-IDIO_DEFINE_PRIMITIVE3 ("%set-property!", property_set, (IDIO o, IDIO property, IDIO value))
+IDIO_DEFINE_PRIMITIVE3 ("%set-property!", set_property, (IDIO o, IDIO property, IDIO value))
 {
     IDIO_ASSERT (o);
     IDIO_ASSERT (property);
@@ -667,8 +667,8 @@ void idio_symbol_add_primitives ()
     IDIO_ADD_PRIMITIVE (symbols);
     IDIO_ADD_PRIMITIVE (properties_get);
     IDIO_ADD_PRIMITIVE (properties_set);
-    IDIO_ADD_PRIMITIVE (property_get);
-    IDIO_ADD_PRIMITIVE (property_set);
+    IDIO_ADD_PRIMITIVE (get_property);
+    IDIO_ADD_PRIMITIVE (set_property);
 }
 
 void idio_final_symbol ()

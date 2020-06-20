@@ -106,7 +106,7 @@ IDIO idio_primitive_data (idio_primitive_desc_t *desc)
     return o;
 }
 
-void idio_primitive_property_set_C (IDIO p, IDIO kw, const char *str_C)
+void idio_primitive_set_property_C (IDIO p, IDIO kw, const char *str_C)
 {
     IDIO_ASSERT (p);
     IDIO_TYPE_ASSERT (primitive, p);
