@@ -295,6 +295,25 @@ void idio_error_system_errno (char *msg, IDIO args, IDIO loc)
     idio_error_system (msg, args, errno, loc);
 }
 
+void idio_error_divide_by_zero (char *msg, IDIO c_location)
+{
+    IDIO_C_ASSERT (msg);
+    IDIO_ASSERT (c_location);
+    IDIO_TYPE_ASSERT (string, c_location);
+
+    IDIO msh = idio_open_output_string_handle_C ();
+    idio_display_C (msg, msh);
+
+    IDIO c = idio_struct_instance (idio_condition_rt_divide_by_zero_error_type,
+				   IDIO_LIST3 (idio_get_output_string (msh),
+					       c_location,
+					       idio_S_nil));
+
+    idio_raise_condition (idio_S_true, c);
+
+    /* notreached */
+}
+
 void idio_init_error ()
 {
     idio_S_internal = idio_symbols_C_intern ("internal");

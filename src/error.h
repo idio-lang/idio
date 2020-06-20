@@ -43,6 +43,7 @@ void idio_error (IDIO who, IDIO msg, IDIO args, IDIO loc);
 void idio_error_C (char *msg, IDIO args, IDIO loc);
 void idio_error_system (char *msg, IDIO args, int err, IDIO loc);
 void idio_error_system_errno (char *msg, IDIO args, IDIO loc);
+void idio_error_divide_by_zero (char *msg, IDIO c_location);
 
 void idio_init_error ();
 void idio_error_add_primitives ();

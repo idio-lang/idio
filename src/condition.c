@@ -85,6 +85,7 @@ IDIO idio_condition_rt_array_bounds_error_type;
 IDIO idio_condition_rt_hash_key_not_found_error_type;
 IDIO idio_condition_rt_bignum_conversion_error_type;
 IDIO idio_condition_rt_fixnum_conversion_error_type;
+IDIO idio_condition_rt_divide_by_zero_error_type;
 
 IDIO idio_condition_rt_command_argv_type_error_type;
 IDIO idio_condition_rt_command_forked_error_type;
@@ -768,6 +769,8 @@ void idio_init_condition ()
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_bignum_conversion_error_type, "^rt-bignum-conversion-error", idio_condition_runtime_error_type, "bignum");
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_fixnum_conversion_error_type, "^rt-fixnum-conversion-error", idio_condition_runtime_error_type, "fixnum");
 
+    IDIO_DEFINE_CONDITION0 (idio_condition_rt_divide_by_zero_error_type, "^rt-divide-by-zero-error", idio_condition_runtime_error_type);
+
 #define IDIO_CONDITION_RT_SIGNAL_TYPE_NAME "^rt-signal"
 
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_signal_type, IDIO_CONDITION_RT_SIGNAL_TYPE_NAME, idio_condition_error_type, "signum");
@@ -853,6 +856,7 @@ void idio_final_condition ()
     idio_gc_expose (idio_condition_rt_hash_key_not_found_error_type);
     idio_gc_expose (idio_condition_rt_bignum_conversion_error_type);
     idio_gc_expose (idio_condition_rt_fixnum_conversion_error_type);
+    idio_gc_expose (idio_condition_rt_divide_by_zero_error_type);
     idio_gc_expose (idio_condition_rt_signal_type);
 }
 

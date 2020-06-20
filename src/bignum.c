@@ -45,6 +45,14 @@ static void idio_bignum_error_conversion (char *msg, IDIO bn, IDIO loc)
     idio_raise_condition (idio_S_true, c);
 }
 
+static void idio_bignum_error_divide_by_zero (IDIO c_location)
+{
+    IDIO_ASSERT (c_location);
+    IDIO_TYPE_ASSERT (string, c_location);
+
+    idio_error_divide_by_zero ("bignum divide by zero", c_location);
+}
+
 IDIO_BSA idio_bsa (size_t n)
 {
     if (n <= 0) {
@@ -1277,7 +1285,7 @@ IDIO idio_bignum_divide (IDIO a, IDIO b)
     IDIO_TYPE_ASSERT (bignum, b);
 
     if (idio_bignum_zero_p (b)) {
-	idio_error_C ("divide by zero", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+	idio_bignum_error_divide_by_zero (IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -2629,7 +2637,7 @@ IDIO idio_bignum_primitive_divide (IDIO args)
 	}
 
 	if (idio_bignum_zero_p (h)) {
-	    idio_error_printf (IDIO_C_FUNC_LOCATION (), "divide by zero");
+	    idio_bignum_error_divide_by_zero (IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}

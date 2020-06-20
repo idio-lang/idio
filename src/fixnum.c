@@ -22,12 +22,12 @@
 
 #include "idio.h"
 
-static void idio_fixnum_error_divide_by_zero (IDIO loc)
+static void idio_fixnum_error_divide_by_zero (IDIO c_location)
 {
-    IDIO_ASSERT (loc);
-    IDIO_TYPE_ASSERT (string, loc);
+    IDIO_ASSERT (c_location);
+    IDIO_TYPE_ASSERT (string, c_location);
 
-    idio_error_C ("divide by zero", idio_S_nil, loc);
+    idio_error_divide_by_zero ("fixnum divide by zero", c_location);
 }
 
 static void idio_fixnum_error_conversion (char *msg, IDIO fn, IDIO loc)
