@@ -3377,7 +3377,24 @@ test {
 ;;           (open NFILES))
 ;;         #t))
 { 
-  NFILES := 1030			; ie. gt ulimit -n
+
+  ; NFILES wants to be large enough that we use all available file
+  ; descriptors therefore idio_open_file_handle_C() will trigger a GC
+  ; -- thus freeing those file descriptors up -- and then we keep
+  ; going, creating a few more files thus proving that the GC worked.
+
+  ; Given that there are a few files already open (stdin/out/err for
+  ; three at least!) then setting NFILES to nofiles_lim (which
+  ; test.idio uses to set a reasonable but not stupid limit to open
+  ; files) should be enough to trigger one GC.  Here we set it to be
+  ; twice that because...because we can!
+
+  ; Note that there is a similar but distinct test in
+  ; test-file-handle.idio which *remembers* the (file) handles as it
+  ; runs round the loop thus forcing a different error (EMFILE - too
+  ; many open files) which it is looking out for.
+
+  NFILES := nofiles_lim * 2
   test {
     open :+ function (n) {
       open-input-file testfile

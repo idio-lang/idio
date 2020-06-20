@@ -101,10 +101,16 @@ IDIOLIB = string-append IDIOLIB ":" PWD
 ;; running tests under Jenkins means we inherit the agent's max open
 ;; files (eg. 1048576) which means our file descriptor reaping tests
 ;; blow up.
-nofiles_lim := C/integer-> 256
+
+;; we'll also use a variable, nofiles_lim, that other people --
+;; notably the NOFILES test in test-s9.idio -- can use to provoke some
+;; effects
+
+nofiles_lim := 256
+C_nofiles_lim := C/integer-> nofiles_lim
 rl := libc/getrlimit libc/RLIMIT_NOFILE
-if (C/> rl.rlim_cur nofiles_lim) {
-  rl.rlim_cur = nofiles_lim
+if (C/> rl.rlim_cur C_nofiles_lim) {
+  rl.rlim_cur = C_nofiles_lim
   libc/setrlimit libc/RLIMIT_NOFILE rl
 }
 
@@ -143,7 +149,7 @@ load "test-utf-8.idio"
 ;; that?  Erm, they've not been counted and are dynamic in number so
 ;; test we've seen at least as many as the largest number we've
 ;; seen.  Wait, some tests are OS-specific.  Drat!
-test (eq? Tests 3305) #t
+test (eq? Tests 3311) #t
 
 if (file-exists? testfile) (delete-file testfile)
 

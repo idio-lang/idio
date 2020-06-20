@@ -1216,7 +1216,7 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
 
     for (;;) {
 	IDIO expr = (*reader) (h);
-	
+
 	if (idio_S_eof == expr) {
 	    break;
 	} else {
@@ -1300,8 +1300,13 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
 	/* r = idio_vm_run (thr); */
 	ms = IDIO_PAIR_T (ms);
     }
+
+    IDIO dosh = idio_open_output_string_handle_C ();
+    idio_display_C ("load-handle-aio: ", dosh);
+    idio_display_C ("n/k", dosh);
+
     IDIO_THREAD_PC (thr) = lh_pc;
-    r = idio_vm_run (thr);
+    r = idio_vm_run (thr, idio_get_output_string (dosh));
 
     /* ms */
     idio_array_pop (IDIO_THREAD_STACK (thr));

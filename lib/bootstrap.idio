@@ -32,6 +32,7 @@ include "condition.idio"
 include "libc-wrap.idio"
 include "path.idio"
 include "command.idio"
+include "debug.idio"
 
 ; SRFI-8 is in common.idio
 ; SRFI-17 is in closure.idio

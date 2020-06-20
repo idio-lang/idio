@@ -88,21 +88,24 @@ seek-handle ifh 2
 test (handle-pos ifh) 2
 
 ;; GC and file handles
-;;
-;; keep opening a file until we've used up all (per-process) file
-;; descriptors -- we can retain the handles in an array.  Then call
-;; the GC and then open the file again.
+
+;; Keep opening a file until we've used up all (per-process) file
+;; descriptors -- we retain the handles in an array.
+
+;; Outside of this block the array is no longer in scope and the
+;; attempt to open another file should trigger a GC and we're good to
+;; go again.
 {
   fds := #[ ]
   loop-k := #n
   trap ^system-error (function (cont cond) {
 			test (C/== cond.errno (C/integer-> 24)) #t
 			if (C/== cond.errno (C/integer-> 24)) {
-                          ;display* "test file-handle trap: created" (array-length fds) "fds"
+                          display* "test file-handle trap: created" (array-length fds) "fds"
                         } {
                           condition-report "test file-handle trap" cont cond (current-error-handle)
                         }
-			loop-k cond
+			loop-k 'too-many-open-files
   }) {
     call/cc (function (k) {
 	       loop-k = k

@@ -186,6 +186,7 @@
 #define IDIO_A_PUSH_ESCAPER                245
 
 extern IDIO idio_vm_constants;
+extern IDIO idio_vm_krun;
 extern IDIO_IA_T idio_all_code;
 extern idio_ai_t idio_vm_FINISH_pc;
 extern idio_ai_t idio_vm_NCE_pc;
@@ -198,7 +199,7 @@ extern int idio_vm_exit;
 void idio_vm_panic (IDIO thr, char *m);
 IDIO idio_vm_closure_name (IDIO c);
 
-IDIO idio_vm_run (IDIO thr);
+IDIO idio_vm_run (IDIO thr, IDIO desc);
 
 void idio_vm_restore_continuation (IDIO k, IDIO val);
 void idio_vm_restore_exit (IDIO k, IDIO val);

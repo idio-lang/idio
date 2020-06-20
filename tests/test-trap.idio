@@ -15,22 +15,27 @@ trap ^rt-signal-SIGCHLD (function (cont cond) {
 
 ;; test out the base-condition-handler
 
-; ^error is normally not continuable
-display* "trap: raise CONT ^error: pre"
-raise #t (make-condition ^error)
-display* "trap: raise CONT ^error: post"
+set-default-handler! ^idio-error (function (cont cond) {
+				    'default-idio-error
+})
+
+display* "trap: raise CONT ^idio-error: pre"
+raise #t (make-condition ^idio-error "CONT ^idio-error" "loc" "det")
+display* "trap: raise CONT ^idio-error: post"
 
 ; non-continuable conditions will be caught by module/load (or load)
-display* "trap: raise NON-CONT ^error: pre"
-raise #f (make-condition ^error)
-display* "trap: raise NON-CONT ^error: post"
+display* "trap: raise NON-CONT ^idio-error: pre"
+raise #f (make-condition ^idio-error "NON-CONT ^idio-error" "loc" "det")
+display* "trap: raise NON-CONT ^idio-error: post"
 
 {
   f := (function (s) {
     edisplay* "s =" s
     echo s
-    raise #f (make-condition ^error)
+    raise #f (make-condition ^idio-error s  "loc" "det")
   })
 
   f "default-condition-handler test"
 }
+
+clear-default-handler! ^idio-error

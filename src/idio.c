@@ -288,6 +288,9 @@ int main (int argc, char **argv, char **envp)
 	for (i = 1 ; i < argc; i++) {
 	    fprintf (stderr, "load %s\n", argv[i]);
 
+	    IDIO filename = idio_string_C (argv[i]);
+	    idio_gc_protect (filename);
+
 	    /*
 	     * If we're given a sequence of files to load then any
 	     * conditions raised (prior to the idio_vm_run() sigsetjmp
@@ -314,11 +317,16 @@ int main (int argc, char **argv, char **envp)
 
 	    switch (sjv) {
 	    case 0:
-		idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST2 (load, idio_string_C (argv[i])));
+		idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST2 (load, filename));
 		/* idio_load_file_name (idio_string_C (argv[i]), idio_vm_constants); */
+		break;
+	    case IDIO_VM_SIGLONGJMP_CONTINUATION:
+		fprintf (stderr, "load %s: continuation was invoked => pending exit (1)\n", argv[i]);
+		idio_exit_status = 1;
 		break;
 	    case IDIO_VM_SIGLONGJMP_EXIT:
 		fprintf (stderr, "load/exit (%d)\n", idio_exit_status);
+		idio_gc_expose (filename);
 		idio_final ();
 		exit (idio_exit_status);
 		break;
@@ -327,6 +335,8 @@ int main (int argc, char **argv, char **envp)
 		exit (1);
 		break;
 	    }
+
+	    idio_gc_expose (filename);
 	}
     } else {
 	/*

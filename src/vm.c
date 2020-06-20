@@ -225,9 +225,16 @@ int idio_vm_exit = 0;
  *   When a reflective evaluator is implemented this table should go
  *   (as the details will be indexes to constants and embedded in the
  *   code).
+ *
+ * continuations -
+ *
+ *   each call to idio_vm_run() adds a new {krun} to this stack which
+ *   gives the restart/reset condition handlers something to go back
+ *   to.
  */
 IDIO idio_vm_constants;
 static IDIO idio_vm_values;
+IDIO idio_vm_krun;
 
 static IDIO idio_vm_signal_handler_name;
 
@@ -1417,7 +1424,11 @@ IDIO idio_vm_invoke_C (IDIO thr, IDIO command)
 	     * properly (or at least consistently).
 	     */
 	    if (! idio_isa_primitive (IDIO_PAIR_H (command))) {
-		idio_vm_run (thr);
+		IDIO dosh = idio_open_output_string_handle_C ();
+		idio_display_C ("vm-invoke-C: ", dosh);
+		idio_display (command, dosh);
+
+		idio_vm_run (thr, idio_get_output_string (dosh));
 	    }
 	}
 	break;
@@ -1426,10 +1437,25 @@ IDIO idio_vm_invoke_C (IDIO thr, IDIO command)
 	    /*
 	     * Must be a thunk
 	     */
+	    IDIO dosh = idio_open_output_string_handle_C ();
+	    idio_display_C ("vm-invoke-C: ", dosh);
+
+	    IDIO name = idio_get_property (command, idio_KW_name, IDIO_LIST1 (idio_S_nil));
+	    IDIO sigstr = idio_get_property (command, idio_KW_sigstr, IDIO_LIST1 (idio_S_nil));
+
+	    if (idio_S_unspec != name) {
+		idio_display (name, dosh);
+	    }
+	    if (idio_S_nil != sigstr) {
+		idio_display_C (" ", dosh);
+		idio_display (sigstr, dosh);
+	    }
+	    idio_display_C (" {CLOS}", dosh);
+
 	    IDIO vs = idio_frame_allocate (1);
 	    IDIO_THREAD_VAL (thr) = vs;
 	    idio_vm_invoke (thr, command, IDIO_VM_INVOKE_TAIL_CALL);
-	    idio_vm_run (thr);
+	    idio_vm_run (thr, idio_get_output_string (dosh));
 	}
     }
 
@@ -1773,6 +1799,14 @@ void idio_vm_raise_condition (IDIO continuablep, IDIO condition, int IHR)
 
     IDIO thr = idio_thread_current_thread ();
 
+    IDIO pdosh = idio_open_output_string_handle_C ();
+    idio_display_C ("raise-condition: ", pdosh);
+    idio_display (idio_vm_source_location (), pdosh);
+    idio_display_C (": ", pdosh);
+    idio_display (IDIO_THREAD_EXPR (thr), pdosh);
+
+    /* idio_array_push (idio_vm_krun, IDIO_LIST2 (idio_continuation (thr), idio_get_output_string (pdosh))); */
+
     IDIO stack = IDIO_THREAD_STACK (thr);
 
     idio_ai_t trap_sp = IDIO_FIXNUM_VAL (IDIO_THREAD_TRAP_SP (thr));
@@ -2047,6 +2081,9 @@ void idio_vm_restore_continuation (IDIO k, IDIO val)
     idio_vm_restore_continuation_data (k, val);
     IDIO thr = idio_thread_current_thread ();
 
+    /* fprintf (stderr, "iv_rest_cont: about to longjmp to PC=%td\n", IDIO_THREAD_PC (thr)); */
+    /* idio_vm_thread_state (); */
+
     if (NULL != IDIO_THREAD_JMP_BUF (thr)) {
 	siglongjmp (*(IDIO_THREAD_JMP_BUF (thr)), IDIO_VM_SIGLONGJMP_CONTINUATION);
     } else {
@@ -2124,6 +2161,88 @@ This is the ``call/cc`` primitive.				\n\
 
     /* not reached */
     IDIO_C_ASSERT (0);
+
+    return idio_S_notreached;
+}
+
+IDIO_DEFINE_PRIMITIVE0_DS ("%%vm-continuations", vm_continuations, (), "", "\
+return the current VM continuations			\n\
+							\n\
+the format is undefined and subject to arbitrary change	\n\
+")
+{
+    return idio_vm_krun;
+}
+
+IDIO_DEFINE_PRIMITIVE2_DS ("%%vm-apply-continuation", vm_apply_continuation, (IDIO n, IDIO val), "n v", "\
+invoke the ``n``th VM continuation with value ``v``		\n\
+								\n\
+:param n: the continuation to invoke				\n\
+:type n: (non-negative) integer					\n\
+:param v: the value to pass to the continuation			\n\
+								\n\
+``n`` is subject to a range check on the array of stored	\n\
+continuations in the VM.					\n\
+								\n\
+The function does not return.					\n\
+")
+{
+    IDIO_ASSERT (n);
+    IDIO_ASSERT (val);
+
+    idio_ai_t n_C = 0;
+
+    if (idio_isa_fixnum (n)) {
+	n_C = IDIO_FIXNUM_VAL (n);
+    } else if (idio_isa_bignum (n)) {
+	if (IDIO_BIGNUM_INTEGER_P (n)) {
+	    n_C = idio_bignum_ptrdiff_value (n);
+	} else {
+	    IDIO n_i = idio_bignum_real_to_integer (n);
+	    if (idio_S_nil == n_i) {
+		idio_error_param_type ("integer", n, IDIO_C_FUNC_LOCATION ());
+
+		return idio_S_notreached;
+	    } else {
+		n_C = idio_bignum_ptrdiff_value (n_i);
+	    }
+	}
+    } else {
+	idio_error_param_type ("integer", n, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    if (n_C < 0) {
+	idio_error_param_type ("positive integer", n, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    idio_ai_t krun_p = idio_array_size (idio_vm_krun);
+
+    if (n_C >= krun_p) {
+	idio_error_param_type ("out of range", n, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    IDIO krun = idio_S_nil;
+
+    while (krun_p > n_C) {
+	krun = idio_array_pop (idio_vm_krun);
+	krun_p--;
+    }
+
+    if (idio_isa_pair (krun)) {
+	fprintf (stderr, "%%vm-apply-continuation: restoring krun #%td: ", krun_p);
+	idio_debug ("%s\n", IDIO_PAIR_HT (krun));
+	idio_vm_restore_continuation (IDIO_PAIR_H (krun), val);
+
+	return idio_S_notreached;
+    }
+
+    idio_error_C ("failed to invoke contunation", IDIO_LIST2 (n, val), IDIO_C_FUNC_LOCATION ());
 
     return idio_S_notreached;
 }
@@ -5144,17 +5263,19 @@ void idio_vm_default_pc (IDIO thr)
 
 static uintptr_t idio_vm_run_loops = 0;
 
-IDIO idio_vm_run (IDIO thr)
+IDIO idio_vm_run (IDIO thr, IDIO desc)
 {
     IDIO_ASSERT (thr);
+    IDIO_ASSERT (desc);
     IDIO_TYPE_ASSERT (thread, thr);
+    IDIO_TYPE_ASSERT (string, desc);
 
     /*
      * Save a continuation in case things get ropey and we have to
      * bail out.
      */
-    IDIO krun = idio_continuation (thr);
-    idio_gc_protect_auto (krun);
+    idio_ai_t krun_p0 = idio_array_size (idio_vm_krun);
+    idio_array_push (idio_vm_krun, IDIO_LIST2 (idio_continuation (thr), desc));
 
     idio_ai_t ss0 = idio_array_size (IDIO_THREAD_STACK (thr));
 
@@ -5425,11 +5546,38 @@ IDIO idio_vm_run (IDIO thr)
 	bail = 1;
     }
 
-    if (bail) {
-	fprintf (stderr, "vm-run/bail: restoring krun\n");
-	idio_vm_restore_continuation (krun, idio_S_unspec);
+    /*
+     * idio_vm_raise_condition() will have added to idio_vm_krun with
+     * some abandon but is in no position to repair the stack
+     */
+    idio_ai_t krun_p = idio_array_size (idio_vm_krun);
+    idio_ai_t krun_pd = krun_p - krun_p0;
+    IDIO krun = idio_S_nil;
+    if (krun_pd > 1) {
+	fprintf (stderr, "vm-run: krun: popping %td to #%td\n", krun_pd, krun_p0);
+    }
+    while (krun_p > krun_p0) {
+	krun = idio_array_pop (idio_vm_krun);
+	krun_p--;
+    }
+    if (krun_pd > 1) {
+	idio_gc_collect ("vm-run: pop krun");
+    }
 
-	return idio_S_notreached;
+    if (bail) {
+	if (idio_isa_pair (krun)) {
+	    fprintf (stderr, "vm-run/bail: restoring krun #%td: ", krun_p - 1);
+	    idio_debug ("%s\n", IDIO_PAIR_HT (krun));
+	    idio_vm_restore_continuation (IDIO_PAIR_H (krun), idio_S_unspec);
+
+	    return idio_S_notreached;
+	} else {
+	    fprintf (stderr, "vm-run/bail: nothing to restore => exit (1)\n");
+	    idio_exit_status = 1;
+	    idio_vm_restore_exit (idio_k_exit, idio_S_unspec);
+
+	    return idio_S_notreached;
+	}
     }
 
     return r;
@@ -5628,6 +5776,14 @@ void idio_vm_thread_state ()
 	idio_debug ("= %s\n", idio_array_get_index (stack, esp - 1));
 	esp = IDIO_FIXNUM_VAL (idio_array_get_index (stack, esp - 2));
     }
+
+    idio_ai_t krun_p = idio_array_size (idio_vm_krun) - 1;
+    while (krun_p >= 0) {
+	IDIO krun = idio_array_get_index (idio_vm_krun, krun_p);
+	fprintf (stderr, "vm-thread-state: krun: % 3td", krun_p);
+	idio_debug (" %s\n", IDIO_PAIR_HT (krun));
+	krun_p--;
+    }
 }
 
 IDIO_DEFINE_PRIMITIVE0 ("idio-thread-state", idio_thread_state, ())
@@ -5728,8 +5884,12 @@ IDIO_DEFINE_PRIMITIVE2_DS ("run-in-thread", run_in_thread, (IDIO thr, IDIO func,
     idio_thread_save_state (thr);
     idio_vm_default_pc (thr);
 
+    IDIO dosh = idio_open_output_string_handle_C ();
+    idio_display_C ("run-in-thread: ", dosh);
+    idio_display (func, dosh);
+
     idio_apply (func, args);
-    IDIO r = idio_vm_run (thr);
+    IDIO r = idio_vm_run (thr, idio_get_output_string (dosh));
 
     idio_thread_restore_state (thr);
     idio_thread_set_current_thread (cthr);
@@ -6041,6 +6201,9 @@ void idio_init_vm_values ()
     idio_vm_values = idio_array (8000);
     idio_gc_protect (idio_vm_values);
 
+    idio_vm_krun = idio_array (4);
+    idio_gc_protect (idio_vm_krun);
+
     /*
      * Push a dummy value onto idio_vm_values so that slot 0 is
      * unavailable.  We can then use 0 as a marker to say the value
@@ -6093,6 +6256,8 @@ void idio_vm_add_primitives ()
     IDIO_ADD_PRIMITIVE (make_continuation);
     IDIO_ADD_PRIMITIVE (restore_continuation);
     IDIO_ADD_PRIMITIVE (call_cc);
+    IDIO_ADD_PRIMITIVE (vm_continuations);
+    IDIO_ADD_PRIMITIVE (vm_apply_continuation);
     IDIO_ADD_PRIMITIVE (vm_trace);
 #ifdef IDIO_DEBUG
     IDIO_ADD_PRIMITIVE (vm_dis);
@@ -6138,6 +6303,7 @@ void idio_final_vm ()
 #endif
     idio_vm_dump_values ();
     idio_gc_expose (idio_vm_values);
+    idio_gc_expose (idio_vm_krun);
     idio_gc_expose (idio_vm_signal_handler_name);
 
 #ifdef IDIO_VM_PERF

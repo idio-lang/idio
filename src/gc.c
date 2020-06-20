@@ -300,7 +300,7 @@ static void idio_gc_finalizer_run (IDIO o)
 
 void idio_gc_gcc_mark (IDIO o, unsigned colour)
 {
-    IDIO_ASSERT (o);
+    /* IDIO_ASSERT (o); */
 
     switch ((uintptr_t) o & IDIO_TYPE_MASK) {
     case IDIO_TYPE_FIXNUM_MARK:
@@ -308,6 +308,13 @@ void idio_gc_gcc_mark (IDIO o, unsigned colour)
     case IDIO_TYPE_PLACEHOLDER_MARK:
 	return;
     case IDIO_TYPE_POINTER_MARK:
+	if (IDIO_TYPE_NONE == o->type) {
+	    fprintf (stderr, "ig_mark: bad type %p\n", o);
+	    o->type = IDIO_TYPE_STRING;
+	    idio_debug ("(string) o = %s\n", o);
+	    o->type = IDIO_TYPE_NONE;
+	    return;
+	}
 	break;
     default:
 	/* inconceivable! */
@@ -462,6 +469,9 @@ void idio_gc_gcc_mark (IDIO o, unsigned colour)
 	    idio_gc->grey = o;
 	    break;
 	default:
+	    /*
+	     * All other (non-compound) types just have the colour set
+	     */
 	    o->gc_flags = (o->gc_flags & IDIO_GC_FLAG_GCC_UMASK) | colour;
 	    break;
 	}
@@ -506,15 +516,93 @@ void idio_gc_process_grey (unsigned colour)
 	break;
     case IDIO_TYPE_HASH:
 	idio_gc->grey = IDIO_HASH_GREY (o);
-	for (i = 0; i < IDIO_HASH_SIZE (o); i++) {
-	    if (!((IDIO_HASH_FLAGS (o) & IDIO_HASH_FLAG_STRING_KEYS) ||
-		  (IDIO_HASH_FLAGS (o) & IDIO_HASH_FLAG_WEAK_KEYS))) {
-		if (idio_S_nil != IDIO_HASH_HE_KEY (o, i)) {
-		    idio_gc_gcc_mark (IDIO_HASH_HE_KEY (o, i), colour);
+	if (IDIO_HASH_FLAGS (o) & IDIO_HASH_FLAG_WEAK_KEYS) {
+	    for (i = 0; i < IDIO_HASH_SIZE (o); i++) {
+		int k_freed = 0;
+
+		/*
+		 * Don't mark the key
+		 */
+		IDIO k = IDIO_HASH_HE_KEY (o, i);
+		switch ((uintptr_t) k & IDIO_TYPE_MASK) {
+		case IDIO_TYPE_FIXNUM_MARK:
+		case IDIO_TYPE_CONSTANT_MARK:
+		case IDIO_TYPE_PLACEHOLDER_MARK:
+		    break;
+		case IDIO_TYPE_POINTER_MARK:
+		    if (k->type) {
+			IDIO v = IDIO_HASH_HE_VALUE (o, i);
+			switch ((uintptr_t) v & IDIO_TYPE_MASK) {
+			case IDIO_TYPE_FIXNUM_MARK:
+			case IDIO_TYPE_CONSTANT_MARK:
+			case IDIO_TYPE_PLACEHOLDER_MARK:
+			    break;
+			case IDIO_TYPE_POINTER_MARK:
+			    if (v->type) {
+				if (idio_S_nil != v) {
+				    idio_gc_gcc_mark (v, colour);
+				}
+			    } else {
+				fprintf (stderr, "ig_pg k OK, v freed %p?\n", v);
+			    }
+			    break;
+			default:
+			    /* inconceivable! */
+			    idio_error_printf (IDIO_C_FUNC_LOCATION (), "unexpected object mark type %#x", v);
+
+			    /* notreached */
+			    return;
+			}
+		    } else {
+			k_freed = 1;
+			IDIO_HASH_HE_VALUE (o, i) = idio_S_nil;
+		    }
+		    break;
+		default:
+		    /* inconceivable! */
+		    idio_error_printf (IDIO_C_FUNC_LOCATION (), "unexpected object mark type %#x", k);
+
+		    /* notreached */
+		    return;
+		}
+
+		if (! k_freed) {
+		    IDIO v = IDIO_HASH_HE_VALUE (o, i);
+		    switch ((uintptr_t) v & IDIO_TYPE_MASK) {
+		    case IDIO_TYPE_FIXNUM_MARK:
+		    case IDIO_TYPE_CONSTANT_MARK:
+		    case IDIO_TYPE_PLACEHOLDER_MARK:
+			break;
+		    case IDIO_TYPE_POINTER_MARK:
+			if (v->type) {
+			    if (idio_S_nil != v) {
+				idio_gc_gcc_mark (v, colour);
+			    }
+			} else {
+			    fprintf (stderr, "ig_pg v freed %p?\n", v);
+			}
+			break;
+		    default:
+			/* inconceivable! */
+			idio_error_printf (IDIO_C_FUNC_LOCATION (), "unexpected object mark type %#x", v);
+
+			/* notreached */
+			return;
+		    }
 		}
 	    }
-	    if (idio_S_nil != IDIO_HASH_HE_VALUE (o, i)) {
-		idio_gc_gcc_mark (IDIO_HASH_HE_VALUE (o, i), colour);
+	} else {
+	    for (i = 0; i < IDIO_HASH_SIZE (o); i++) {
+		if (!(IDIO_HASH_FLAGS (o) & IDIO_HASH_FLAG_STRING_KEYS)) {
+		    IDIO k = IDIO_HASH_HE_KEY (o, i);
+		    if (idio_S_nil != k) {
+			idio_gc_gcc_mark (k, colour);
+		    }
+		}
+		IDIO v = IDIO_HASH_HE_VALUE (o, i);
+		if (idio_S_nil != v) {
+		    idio_gc_gcc_mark (v, colour);
+		}
 	    }
 	}
 	idio_gc_gcc_mark (IDIO_HASH_COMP (o), colour);
@@ -1262,7 +1350,6 @@ void idio_gc_mark ()
     while (idio_gc->grey) {
 	idio_gc_process_grey (IDIO_GC_FLAG_GCC_BLACK);
     }
-
 }
 
 void idio_gc_sweep_free_value (IDIO vo)
@@ -1441,7 +1528,7 @@ void idio_gc_sweep_free_value (IDIO vo)
 
 void idio_gc_sweep ()
 {
-    while (idio_gc->stats.nfree > 0x1000) {
+    while (idio_gc->stats.nfree > 0x10) {
     	IDIO fo = idio_gc->free;
 	idio_gc->free = fo->next;
 	free (fo);
@@ -1471,7 +1558,7 @@ void idio_gc_sweep ()
 	if (((co->gc_flags & IDIO_GC_FLAG_STICKY_MASK) == IDIO_GC_FLAG_NOTSTICKY) &&
 	    ((co->gc_flags & IDIO_GC_FLAG_GCC_MASK) == IDIO_GC_FLAG_GCC_WHITE)) {
 	    idio_gc->stats.nused[co->type]--;
-	    IDIO_FPRINTF (stderr, "idio_gc_sweep: freeing %10p %2d %s\n", co, co->type, idio_type2string (co));
+	    /* fprintf (stderr, "idio_gc_sweep: freeing %10p %2d %s\n", co, co->type, idio_type2string (co)); */
 	    if (po) {
 		po->next = co->next;
 	    } else {
@@ -1539,6 +1626,8 @@ void idio_gc_collect (char *caller)
     idio_gc->stats.igets = 0;
     idio_gc_mark ();
     idio_gc_sweep ();
+
+    idio_hash_tidy_weak_references ();
 
     struct timeval t1;
     gettimeofday (&t1, NULL);
@@ -2006,7 +2095,7 @@ void idio_init_gc ()
 
     idio_gc_finalizer_hash = IDIO_HASH_EQP (64);
     idio_gc_protect (idio_gc_finalizer_hash);
-    IDIO_HASH_FLAGS (idio_gc_finalizer_hash) |= IDIO_HASH_FLAG_WEAK_KEYS;
+    idio_hash_add_weak_table (idio_gc_finalizer_hash);
 }
 
 void idio_gc_add_primitives ()
@@ -2037,6 +2126,7 @@ static void idio_gc_run_all_finalizers ()
 	    idio_hash_delete (idio_gc_finalizer_hash, k);
 	}
     }
+    idio_hash_remove_weak_table (idio_gc_finalizer_hash);
 }
 
 void idio_final_gc ()

@@ -664,7 +664,7 @@ void idio_init_symbol ()
      * prevents it being freed!
      */
     idio_properties_hash = IDIO_HASH_EQP (4 * 1024);
-    IDIO_HASH_FLAGS (idio_properties_hash) |= IDIO_HASH_FLAG_WEAK_KEYS;
+    idio_hash_add_weak_table (idio_properties_hash);
     idio_gc_protect (idio_properties_hash);
 }
 
@@ -682,6 +682,7 @@ void idio_symbol_add_primitives ()
 
 void idio_final_symbol ()
 {
+    idio_hash_remove_weak_table (idio_properties_hash);
     idio_gc_expose (idio_properties_hash);
     idio_gc_expose (idio_symbols_hash);
 }

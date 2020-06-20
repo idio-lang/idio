@@ -33,7 +33,7 @@ IDIO idio_continuation (IDIO thr)
 
     IDIO_CONTINUATION_GREY (k) = NULL;
     IDIO_CONTINUATION_JMP_BUF (k) = IDIO_THREAD_JMP_BUF (thr);
-    IDIO_CONTINUATION_STACK (k) = idio_array_copy (IDIO_THREAD_STACK (thr), IDIO_COPY_SHALLOW, 5);
+    IDIO_CONTINUATION_STACK (k) = idio_array_copy (IDIO_THREAD_STACK (thr), IDIO_COPY_SHALLOW, 8);
 
     /*
      * XXX same order as idio_vm_preserve_state() !!!
@@ -45,7 +45,28 @@ IDIO idio_continuation (IDIO thr)
     idio_array_push (IDIO_CONTINUATION_STACK (k), IDIO_THREAD_ENV (thr));
     idio_array_push (IDIO_CONTINUATION_STACK (k), idio_SM_preserve_state);
 
-    idio_array_push (IDIO_CONTINUATION_STACK (k), idio_fixnum (IDIO_THREAD_PC (thr)));
+    idio_ai_t pc = IDIO_THREAD_PC (thr);
+
+    /*
+     * Yuk!
+     *
+     * A FUNCTION_INVOKE (as opposed to a FUNCTION_GOTO) will preserve
+     * the thread state before calling the function.  Quite right.
+     *
+     * However, that means the PC is pointing at a RESTORE_STATE
+     * instruction which isn't quite what we want when we restore this continuation.
+     *
+     * If we nudge the PC for the continuation along one instruction
+     * then we're just about in the right position for someone to
+     * invoke this continuation with a value and the right thing
+     * happens.
+     */
+    if (pc > 1 &&
+	IDIO_A_FUNCTION_INVOKE == idio_all_code->ae[pc - 1]) {
+	fprintf (stderr, "make-continuation: frigged with PC=%td\n", pc);
+	/* pc++; */
+    }
+    idio_array_push (IDIO_CONTINUATION_STACK (k), idio_fixnum (pc));
 
     idio_array_push (IDIO_CONTINUATION_STACK (k), idio_SM_preserve_continuation);
 

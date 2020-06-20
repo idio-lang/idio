@@ -9,9 +9,9 @@ bad-expr := "display* \"This is a bad-expr for load-handle: (unterminated string
 
 ish := open-input-string bad-expr
 
-display* "NOTICE: load-handle.idio: raising NON-CONT condition; this will be picked up by load-handle: pre"
+display* "NOTICE: test-load-handle.idio: raising NON-CONT condition; this will be picked up by load-handle: pre"
 load-handle ish
-display* "NOTICE: load-handle.idio: raising NON-CONT condition; this will be picked up by load-handle: post"
+display* "NOTICE: test-load-handle.idio: raising NON-CONT condition; this will be picked up by load-handle: post"
 
 cont-expr := "(false)"
 
@@ -25,8 +25,8 @@ trap ^rt-signal-SIGCHLD (function (cont cond) {
   trap ^rt-command-status-error (function (cont cond) {
 				   edisplay* "test load-handle trap:" cond.message "with" cond.status
   }) {
-    display* "NOTICE: exec false; this will be picked up by test load-handle trap: pre"
+    display* "NOTICE: test-load-handle.idio: exec false; this will be picked up by test load-handle trap: pre"
     load-handle ish
-    display* "NOTICE: exec false; this will be picked up by test load-handle trap: post"
+    display* "NOTICE: test-load-handle.idio: exec false; this will be picked up by test load-handle trap: post"
   }
 }

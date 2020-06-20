@@ -53,6 +53,7 @@ void idio_hash_verify_chain (IDIO h, void *kv, int reqd);
 void idio_hash_verify_all_keys (IDIO h);
 size_t idio_hash_find_free_slot (IDIO h);
 size_t idio_hash_hv_follow_chain (IDIO h, void *k);
+IDIO idio_hash_weak_tables = idio_S_nil;
 
 void idio_hash_error (char *m, IDIO c_location)
 {
@@ -1424,6 +1425,104 @@ int idio_hash_delete (IDIO h, void *kv)
     return 1;
 }
 
+void idio_hash_tidy_weak_references (void)
+{
+    IDIO hwts = IDIO_PAIR_H (idio_hash_weak_tables);
+
+    while (idio_S_nil != hwts) {
+	IDIO h = IDIO_PAIR_H (hwts);
+
+	if (IDIO_HASH_FLAGS (h) & IDIO_HASH_FLAG_WEAK_KEYS) {
+	    idio_hi_t i;
+	    for (i = 0; i < IDIO_HASH_SIZE (h); i++) {
+		int k_freed = 0;
+		IDIO k = IDIO_HASH_HE_KEY (h, i);
+		switch ((uintptr_t) k & IDIO_TYPE_MASK) {
+		case IDIO_TYPE_FIXNUM_MARK:
+		case IDIO_TYPE_CONSTANT_MARK:
+		case IDIO_TYPE_PLACEHOLDER_MARK:
+		    break;
+		case IDIO_TYPE_POINTER_MARK:
+		    if (IDIO_TYPE_NONE == k->type) {
+			k_freed = 1;
+			fprintf (stderr, "ih_twr %p @%zu\n", h, i);
+			IDIO_HASH_HE_KEY (h, i) = idio_S_nil;
+			IDIO_HASH_HE_VALUE (h, i) = idio_S_nil;
+			/*
+			 * XXX left IDIO_HASH_HE_NEXT() alone
+			 *
+			 * Hopefully, anyone will will shift this #n
+			 * out of the chain next time round
+			 */
+		    }
+		    break;
+		default:
+		    /* inconceivable! */
+		    idio_error_printf (IDIO_C_FUNC_LOCATION (), "unexpected object mark type %#x", k);
+
+		    /* notreached */
+		    return;
+		}
+	    }
+	} else {
+	    fprintf (stderr, "how is %p on the weak table list?\n", h);
+	    idio_dump (h, 4);
+	}
+
+	hwts = IDIO_PAIR_T (hwts);
+    }
+}
+
+void idio_hash_add_weak_table (IDIO h)
+{
+    IDIO_ASSERT (h);
+
+    IDIO_TYPE_ASSERT (hash, h);
+
+    IDIO_HASH_FLAGS (h) |= IDIO_HASH_FLAG_WEAK_KEYS;
+
+    /*
+     * Annoyingly, initialising the GC requires a weak-keyed table for
+     * the finalizers
+     */
+    if (idio_S_nil == idio_hash_weak_tables) {
+	idio_hash_weak_tables = idio_pair (idio_S_nil, idio_S_nil);
+	idio_gc_protect (idio_hash_weak_tables);
+    }
+
+    IDIO_PAIR_H (idio_hash_weak_tables) = idio_pair (h, IDIO_PAIR_H (idio_hash_weak_tables));
+}
+
+void idio_hash_remove_weak_table (IDIO h)
+{
+    IDIO_ASSERT (h);
+
+    IDIO_TYPE_ASSERT (hash, h);
+
+    IDIO hwts = IDIO_PAIR_H (idio_hash_weak_tables);
+
+    if (IDIO_PAIR_H (hwts) == h) {
+	IDIO_PAIR_H (idio_hash_weak_tables) = IDIO_PAIR_T (hwts);
+    } else {
+	int removed = 0;
+	IDIO p = hwts;
+	hwts = IDIO_PAIR_T (hwts);
+	while (idio_S_nil != hwts) {
+	    if (IDIO_PAIR_H (hwts) == h) {
+		removed = 1;
+		IDIO_PAIR_T (p) = IDIO_PAIR_T (hwts);
+		break;
+	    }
+	    p = hwts;
+	    hwts = IDIO_PAIR_T (hwts);
+	}
+
+	if (! removed) {
+	    fprintf (stderr, "ih_rwt: failed to remove weak table %p\n", h);
+	}
+    }
+}
+
 IDIO idio_hash_keys_to_list (IDIO h)
 {
     IDIO_ASSERT (h);
@@ -2046,5 +2145,6 @@ void idio_hash_add_primitives ()
 
 void idio_final_hash ()
 {
+    idio_gc_expose (idio_hash_weak_tables);
 }
 

@@ -24,11 +24,11 @@ read-error-load := {
 			       (not (eq? cond.line linenum))) {
 			  condition-report (string-append "read-error-load: " filename) cont cond (current-error-handle)
 			}
-			load-k cond
+			load-k 'read-error
     }) {
       call/cc (function (k) {
 		 load-k = k
-		 %load filename
+		 (symbol-value 'load *primitives*) filename
       })
     }
   }

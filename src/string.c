@@ -894,7 +894,16 @@ IDIO idio_split_string (IDIO iin, IDIO idelim)
     return idio_list_reverse (r);
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("split-string", split_string, (IDIO in, IDIO delim))
+IDIO_DEFINE_PRIMITIVE2_DS ("split-string", split_string, (IDIO in, IDIO delim), "in delim", "\
+split string ``in`` using characters from ``delim``	\n\
+into a list	 of strings				\n\
+							\n\
+:param in: string to split				\n\
+:type in: string					\n\
+:param delim: string containing delimiter characters	\n\
+:type delim: string					\n\
+:return: list (of strings)				\n\
+")
 {
     IDIO_ASSERT (in);
     IDIO_ASSERT (delim);

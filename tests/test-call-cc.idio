@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2020 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -27,7 +27,7 @@ member := function (x ls) {
   call/cc (function (break) {
     do ((ls ls (pt ls))) \
        ((null? ls) #f) \
-       (if (equal? x (ph ls)) 
+       (if (equal? x (ph ls))
 	   (break ls))
   })
 }
@@ -44,5 +44,62 @@ test ((call/cc {
   }
 })) 'b
 
+;; RnRS examples
+
+test (call/cc
+      (function (exit)
+	 (for-each (function (x)
+		      (if (negative? x)
+			  (exit x)))
+	  '(54 0 37 -3 245 19))
+	 #t)) -3
+
+define (list-length obj) {
+  call/cc (function (return) {
+	     r :+ (function (obj)
+		     (cond ((null? obj) 0)
+			   ((pair? obj)
+			    (+ (r (pt obj)) 1))
+			   (else (return #f))))
+	     r obj
+  })
+}
+
+test (list-length '(1 2 3 4)) 4
+test (list-length '(a b & c)) #f
+
+test (call-with-values (function () (values 4 5))
+		       (function (a b) b)) 5
+
+mul := \*
+min := \-
+test (call-with-values mul min) -1
+
+test {
+  path := #n
+  saved-k := #n
+
+  add := function (s) {
+	   path = pair s path
+  }
+
+  dynamic-wind (function () {
+		  add 'connect
+  }) \
+	       (function () {
+		  add (call/cc (function (k) {
+				  saved-k = k
+				  'talk1
+		  }))
+	       }) \
+	       (function () {
+		  add 'disconnect
+	       })
+
+  if (lt (length path) 4) {
+    saved-k 'talk2
+  } (reverse path)
+} '(connect talk1 disconnect connect talk2 disconnect)
+
 ;; all done?
-test (call-cc0 + 3) Tests
+test (call-cc0 + 9) Tests

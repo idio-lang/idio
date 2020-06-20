@@ -236,7 +236,7 @@ static IDIO idio_open_file_handle (IDIO filename, char *pathname, FILE *filep, i
     IDIO_C_ASSERT (filep);
 
     IDIO_TYPE_ASSERT (string, filename);
-    
+
     idio_file_handle_stream_t *fhsp = idio_alloc (sizeof (idio_file_handle_stream_t));
     int bufsiz = BUFSIZ;
 
@@ -1062,7 +1062,6 @@ int idio_flush_file_handle (IDIO fh)
      */
     if (IDIO_INPUTP_HANDLE (fh) &&
 	! IDIO_OUTPUTP_HANDLE (fh)) {
-	/* fprintf (stderr, "WARNING: flush (%s) open for reading\n", idio_handle_name (fh)); */
     }
 
     int r = fwrite (IDIO_FILE_HANDLE_BUF (fh), 1, IDIO_FILE_HANDLE_COUNT (fh), IDIO_FILE_HANDLE_FILEP (fh));
@@ -1187,9 +1186,13 @@ IDIO idio_load_file_handle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (
 	    break;
 	}
 
+	IDIO dosh = idio_open_output_string_handle_C ();
+	idio_display_C ("load-filehandle-interactive: ", dosh);
+	idio_display (IDIO_HANDLE_FILENAME (fh), dosh);
+
 	IDIO m = (*evaluator) (e, cs);
 	idio_codegen (thr, m, cs);
-	IDIO r = idio_vm_run (thr);
+	IDIO r = idio_vm_run (thr, idio_get_output_string (dosh));
 	idio_debug ("%s\n", r);
     }
 
@@ -1254,11 +1257,14 @@ IDIO idio_load_file_handle_lbl (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluat
 
 	    if (-1 == lfh_pc) {
 		lfh_pc = IDIO_THREAD_PC (thr);
-		/* fprintf (stderr, "\n\n%s lfh_pc == %jd\n", idio_handle_name (fh), lfh_pc); */
 	    }
 
+	    IDIO dosh = idio_open_output_string_handle_C ();
+	    idio_display_C ("load-file-handle-lbl: ", dosh);
+	    idio_display (IDIO_HANDLE_FILENAME (fh), dosh);
+
 	    IDIO_THREAD_PC (thr) = lfh_pc;
-	    r = idio_vm_run (thr);
+	    r = idio_vm_run (thr, idio_get_output_string (dosh));
 	}
     }
 
@@ -1291,6 +1297,18 @@ IDIO idio_load_file_handle_aio (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluat
     int timing = 0;
 
     IDIO thr = idio_thread_current_thread ();
+
+    /*
+     * Save a continuation in case things get ropey and we have to
+     * bail out.
+     */
+    IDIO pdosh = idio_open_output_string_handle_C ();
+    idio_display_C ("load-file-handle-aio: pre: ", pdosh);
+    idio_display (IDIO_HANDLE_FILENAME (fh), pdosh);
+
+    idio_ai_t krun_p0 = idio_array_size (idio_vm_krun);
+    /* idio_array_push (idio_vm_krun, IDIO_LIST2 (idio_continuation (thr), idio_get_output_string (pdosh))); */
+
     idio_ai_t ss0 = idio_array_size (IDIO_THREAD_STACK (thr));
 
     time_t s;
@@ -1381,16 +1399,38 @@ IDIO idio_load_file_handle_aio (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluat
 	idio_codegen (thr, IDIO_PAIR_H (ms), cs);
 	if (-1 == lfh_pc) {
 	    lfh_pc = IDIO_THREAD_PC (thr);
-	    /* fprintf (stderr, "\n\n%s lfh_pc == %jd\n", idio_handle_name (fh), lfh_pc); */
 	}
 	/* r = idio_vm_run (thr); */
 	ms = IDIO_PAIR_T (ms);
     }
+
+    IDIO dosh = idio_open_output_string_handle_C ();
+    idio_display_C ("load-file-handle-aio: ", dosh);
+    idio_display (IDIO_HANDLE_FILENAME (fh), dosh);
+
     IDIO_THREAD_PC (thr) = lfh_pc;
-    r = idio_vm_run (thr);
+    r = idio_vm_run (thr, idio_get_output_string (dosh));
 
     /* ms */
     idio_array_pop (IDIO_THREAD_STACK (thr));
+
+    /*
+     * idio_vm_raise_condition() will have added to idio_vm_krun with
+     * some abandon but is in no position to repair the stack
+     */
+    idio_ai_t krun_p = idio_array_size (idio_vm_krun);
+    idio_ai_t krun_pd = krun_p - krun_p0;
+    IDIO krun = idio_S_nil;
+    if (krun_pd > 1) {
+	fprintf (stderr, "load-aio: krun: popping %td to #%td\n", krun_pd, krun_p0);
+    }
+    while (krun_p > krun_p0) {
+	krun = idio_array_pop (idio_vm_krun);
+	krun_p--;
+    }
+    if (krun_pd > 1) {
+	idio_gc_collect ("load-aio: pop krun");
+    }
 
     struct timeval tr;
     gettimeofday (&tr, NULL);
@@ -1733,6 +1773,7 @@ IDIO idio_load_file_name_lbl (IDIO filename, IDIO cs)
 
 		char *ss[] = { idio_string_s (filename), fe->ext };
 		filename_ext = idio_string_C_array (2, ss);
+		idio_gc_protect (filename_ext);
 	    }
 
 	    if (access (lfn, R_OK) == 0) {
@@ -1740,8 +1781,16 @@ IDIO idio_load_file_name_lbl (IDIO filename, IDIO cs)
 
 		free (filename_C);
 
+		if (filename_ext != filename) {
+		    idio_gc_expose (filename_ext);
+		}
+
 		idio_thread_set_current_module ((*fe->modulep) ());
 		return idio_load_file_handle_lbl (fh, fe->reader, fe->evaluator, cs);
+	    }
+
+	    if (filename_ext != filename) {
+		idio_gc_expose (filename_ext);
 	    }
 
 	    /* reset lfn without ext */
@@ -1768,6 +1817,7 @@ IDIO idio_load_file_name_lbl (IDIO filename, IDIO cs)
 			strncmp (filename_dot, fe->ext, strlen (fe->ext))) {
 			char *ss[] = { idio_string_s (filename), fe->ext };
 			filename_ext = idio_string_C_array (2, ss);
+			idio_gc_protect (filename_ext);
 		    }
 		    break;
 		}
@@ -1779,8 +1829,16 @@ IDIO idio_load_file_name_lbl (IDIO filename, IDIO cs)
 
 	    free (filename_C);
 
+	    if (filename_ext != filename) {
+		idio_gc_expose (filename_ext);
+	    }
+
 	    idio_thread_set_current_module ((*fe->modulep) ());
 	    return idio_load_file_handle_lbl (fh, reader, evaluator, cs);
+	}
+
+	if (filename_ext != filename) {
+	    idio_gc_expose (filename_ext);
 	}
     }
 
@@ -1851,6 +1909,7 @@ IDIO idio_load_file_name_aio (IDIO filename, IDIO cs)
 
 		char *ss[] = { idio_string_s (filename), fe->ext };
 		filename_ext = idio_string_C_array (2, ss);
+		idio_gc_protect (filename_ext);
 	    }
 
 	    if (access (lfn, R_OK) == 0) {
@@ -1858,8 +1917,16 @@ IDIO idio_load_file_name_aio (IDIO filename, IDIO cs)
 
 		free (filename_C);
 
+		if (filename_ext != filename) {
+		    idio_gc_expose (filename_ext);
+		}
+
 		idio_thread_set_current_module ((*fe->modulep) ());
 		return idio_load_file_handle_aio (fh, fe->reader, fe->evaluator, cs);
+	    }
+
+	    if (filename_ext != filename) {
+		idio_gc_expose (filename_ext);
 	    }
 
 	    /* reset lfn without ext */
@@ -1886,6 +1953,7 @@ IDIO idio_load_file_name_aio (IDIO filename, IDIO cs)
 			strncmp (filename_dot, fe->ext, strlen (fe->ext))) {
 			char *ss[] = { idio_string_s (filename), fe->ext };
 			filename_ext = idio_string_C_array (2, ss);
+			idio_gc_protect (filename_ext);
 		    }
 		    break;
 		}
@@ -1897,8 +1965,16 @@ IDIO idio_load_file_name_aio (IDIO filename, IDIO cs)
 
 	    free (filename_C);
 
+	    if (filename_ext != filename) {
+		idio_gc_expose (filename_ext);
+	    }
+
 	    idio_thread_set_current_module ((*fe->modulep) ());
 	    return idio_load_file_handle_aio (fh, reader, evaluator, cs);
+	}
+
+	if (filename_ext != filename) {
+	    idio_gc_expose (filename_ext);
 	}
     }
 
@@ -1907,20 +1983,17 @@ IDIO idio_load_file_name_aio (IDIO filename, IDIO cs)
     return idio_S_notreached;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("load", load, (IDIO filename))
-{
-    IDIO_ASSERT (filename);
-
-    IDIO_VERIFY_PARAM_TYPE (string, filename);
-
-    idio_thread_save_state (idio_thread_current_thread ());
-    IDIO r = idio_load_file_name_aio (filename, idio_vm_constants);
-    idio_thread_restore_state (idio_thread_current_thread ());
-
-    return r;
-}
-
-IDIO_DEFINE_PRIMITIVE1 ("%load", prim_load, (IDIO filename))
+IDIO_DEFINE_PRIMITIVE1_DS ("load", load, (IDIO filename), "filename", "\
+load ``filename``						\n\
+								\n\
+:param filename: the file to load				\n\
+:type filename: string						\n\
+								\n\
+The system will use the environment variable ``IDIOLIB`` to	\n\
+find ``filename``.						\n\
+								\n\
+This is the ``load`` primitive.					\n\
+")
 {
     IDIO_ASSERT (filename);
 
@@ -2014,7 +2087,6 @@ void idio_file_handle_add_primitives ()
     IDIO_ADD_PRIMITIVE (file_handle_fd);
     IDIO_ADD_PRIMITIVE (find_lib);
     IDIO_ADD_PRIMITIVE (load);
-    IDIO_ADD_PRIMITIVE (prim_load);
     IDIO_ADD_PRIMITIVE (load_lbl);
     IDIO_ADD_PRIMITIVE (file_exists_p);
     IDIO_ADD_PRIMITIVE (delete_file);

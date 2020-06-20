@@ -388,8 +388,14 @@ if (file-exists? test_filename) (delete-file test_filename)
 ;; a continuable error, if it reaches fallback-condition-handler then
 ;; fallback-condition-handler will return #void.  If something else
 ;; returned #void then we're none the wiser.
-display* "NOTICE: condition.idio: raising a continuable condition"
-test (raise #t (make-condition ^error)) (void)
+set-default-handler! ^idio-error (function (cont cond) {
+				    'default-idio-error
+})
+
+display* "NOTICE: test-condition.idio: raising a continuable condition"
+test (raise #t (make-condition ^idio-error "continuable condition" "loc" "det")) 'default-idio-error
+
+clear-default-handler! ^idio-error
 
 ;; all done?
 test (condition0 + 101) Tests
@@ -400,10 +406,11 @@ test (condition0 + 101) Tests
 ;; which will be the idio_vm_run() in idio_load_file_handle, ie. the
 ;; sequence of expressions in this file -- so we can't test anything
 ;; in this file after this
-display* "NOTICE: condition.idio: raising NON-CONT condition; this will be picked up by module/load"
-raise #f (make-condition ^error)
+display* "NOTICE: test-condition.idio: raising NON-CONT condition; this will be picked up by module/load"
+raise #f (make-condition ^idio-error "NON-CONT condition" "loc" "det")
+
 ;; notreached
-display* "NOTICE: raising NON-CONT condition; this will be picked up by module/load (with no post): post"
+display* "NOTICE: test-condition.idio: raising NON-CONT condition; this will be picked up by module/load (with no post): post"
 
 ;; WARNING
 ;;

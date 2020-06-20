@@ -82,8 +82,8 @@ endif
 
 PROFLAGS	:=
 COVFLAGS	:=
-CFLAGS	       := ${CFLAGS} ${PROFLAGS} ${COVFLAGS} ${CDEBUG} -std=c99 -Wall -Wno-unused-function -fPIC ${LIBFFI_INC} -DIDIO_VM_PERF
-LDFLAGS        := ${PROFLAGS} ${COVFLAGS} ${LDFLAGS}
+CFLAGS	       := ${CFLAGS} ${PROFLAGS} ${COVFLAGS} ${SAN_CFLAGS} ${CDEBUG} -std=c99 -Wall -Wno-unused-function -fPIC ${LIBFFI_INC} -DIDIO_VM_PERF
+LDFLAGS        := ${PROFLAGS} ${COVFLAGS} ${SAN_LDFLAGS} ${LDFLAGS}
 LIBS	       := ${LIBS} -lffi
 
 sources	       := $(wildcard *.c)
@@ -101,6 +101,9 @@ profiled :
 
 coverage :
 	$(MAKE) COVFLAGS="-fprofile-arcs -ftest-coverage"
+
+sanitize-address :
+	$(MAKE) SAN_CFLAGS="-fsanitize=address" SAN_LDFLAGS=-lasan
 
 lean :
 	$(MAKE) MAKE_LEAN=1
@@ -155,7 +158,7 @@ $(BINDIR):
 	@mkdir -p $(BINDIR)
 
 valgrind: $(BINDIR)/idio
-	valgrind --leak-check=full --show-leak-kinds=all --child-silent-after-fork=yes $(BINDIR)/idio 2>&1 | less +/^==
+	valgrind --leak-check=full --show-leak-kinds=all --child-silent-after-fork=yes $(BINDIR)/idio # 2>&1 | less +/^==
 
 cppcheck:
 	cppcheck --force --enable=all .

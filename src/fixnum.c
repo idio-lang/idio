@@ -677,7 +677,7 @@ IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(gt, >)
 		break;							\
 	    } else {							\
 		if (! idio_isa_fixnum (h)) {				\
-		    idio_error_param_type ("number", h, idio_string_C (#name));	\
+		    idio_error_param_type ("number", h, idio_string_C ("arithmetic " name));	\
 		    return idio_S_unspec;				\
 		}							\
 	    }								\
@@ -729,7 +729,7 @@ IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(gt, >)
 	    ibn = idio_isa_bignum (n1);				\
 								\
 	    if (0 == ibn) {					\
-		idio_error_param_type ("number", n1, idio_string_C (#name)); \
+		idio_error_param_type ("number", n1, idio_string_C ("arithmetic " name)); \
 		return idio_S_unspec;				\
 	    }							\
 	}							\
@@ -745,7 +745,7 @@ IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(gt, >)
 		    break;					\
 		} else {					\
 		    if (! idio_isa_fixnum (h)) {		\
-			idio_error_param_type ("number", h, idio_string_C (#name)); \
+			idio_error_param_type ("number", h, idio_string_C ("arithmetic " name)); \
 			return idio_S_unspec;			\
 		    }						\
 		}						\
@@ -811,7 +811,7 @@ IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(gt, >)
 	    } else if (idio_isa_bignum (h)) {				\
 		bn_args = idio_pair (h, bn_args);			\
 	    } else {							\
-		idio_error_param_type ("number", h, idio_string_C (#name)); \
+		idio_error_param_type ("number", h, idio_string_C ("arithmetic bignum " name)); \
 		return idio_S_unspec;					\
 	    }								\
 	    								\
@@ -842,7 +842,7 @@ IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(gt, >)
 	    ibn = idio_isa_bignum (n1);				\
 								\
 	    if (0 == ibn) {					\
-		idio_error_param_type ("number", n1, idio_string_C (#name)); \
+		idio_error_param_type ("number", n1, idio_string_C ("arithmetic cmp " name)); \
 		return idio_S_unspec;				\
 	    }							\
 	}							\
@@ -858,7 +858,7 @@ IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(gt, >)
 		    break;					\
 		} else {					\
 		    if (! idio_isa_fixnum (h)) {		\
-			idio_error_param_type ("number", h, idio_string_C (#name)); \
+			idio_error_param_type ("number", h, idio_string_C ("arithmetic cmp " name)); \
 			return idio_S_unspec;			\
 		    }						\
 		}						\

@@ -138,8 +138,12 @@ IDIO idio_evaluate_expander_source (IDIO x, IDIO e)
     idio_thread_save_state (ethr);
     idio_vm_default_pc (ethr);
 
+    IDIO dosh = idio_open_output_string_handle_C ();
+    idio_display_C ("evaluate-expander-source: ", dosh);
+    idio_display (x, dosh);
+
     idio_initial_expander (x, e);
-    IDIO r = idio_vm_run (ethr);
+    IDIO r = idio_vm_run (ethr, idio_get_output_string (dosh));
 
     idio_thread_restore_state (ethr);
     idio_thread_set_current_thread (cthr);
@@ -180,7 +184,7 @@ IDIO_DEFINE_PRIMITIVE1 ("let", let, (IDIO e))
 	 * Test Case: expander-errors/let-1-arg.idio
 	 *
 	 * let 1
-	 */	
+	 */
 	idio_meaning_error_static_arity (e, IDIO_C_FUNC_LOCATION (), "(let bindings body)", e);
 
 	return idio_S_notreached;
@@ -207,7 +211,7 @@ IDIO_DEFINE_PRIMITIVE1 ("let", let, (IDIO e))
 	 * Test Case: expander-errors/let-invalid-bindings.idio
 	 *
 	 * let 1 2
-	 */	
+	 */
 	idio_meaning_evaluation_error_param_type (src, IDIO_C_FUNC_LOCATION (), "bindings: pair", bindings);
 
 	return idio_S_notreached;
@@ -233,7 +237,7 @@ IDIO_DEFINE_PRIMITIVE1 ("let", let, (IDIO e))
 	     * Test Case: expander-errors/let-invalid-binding.idio
 	     *
 	     * let (1) 2
-	     */	
+	     */
 	    idio_meaning_evaluation_error_param_type (src, IDIO_C_FUNC_LOCATION (), "binding: pair/symbol", binding);
 
 	    return idio_S_notreached;
@@ -350,7 +354,7 @@ IDIO_DEFINE_PRIMITIVE1 ("let*", lets, (IDIO e))
 	 * Test Case: expander-errors/let*-1-arg.idio
 	 *
 	 * let* 1
-	 */	
+	 */
 	idio_meaning_error_static_arity (e, IDIO_C_FUNC_LOCATION (), "(let* bindings body)", e);
 
 	return idio_S_notreached;
@@ -371,7 +375,7 @@ IDIO_DEFINE_PRIMITIVE1 ("let*", lets, (IDIO e))
 	 * Test Case: expander-errors/let*-invalid-bindings.idio
 	 *
 	 * let 1 2
-	 */	
+	 */
 	idio_meaning_evaluation_error_param_type (src, IDIO_C_FUNC_LOCATION (), "bindings: pair", bindings);
 
 	return idio_S_notreached;
@@ -449,9 +453,9 @@ poor man's letrec				\n\
 	 * Test Case: expander-errors/letrec-1-arg.idio
 	 *
 	 * letrec 1
-	 */	
+	 */
 	idio_meaning_error_static_arity (e, IDIO_C_FUNC_LOCATION (), "(letrec bindings body)", e);
-	
+
 	return idio_S_notreached;
     }
 
@@ -471,7 +475,7 @@ poor man's letrec				\n\
 	 * Test Case: expander-errors/letrec-invalid-bindings.idio
 	 *
 	 * letrec 1 2
-	 */	
+	 */
 	idio_meaning_evaluation_error_param_type (src, IDIO_C_FUNC_LOCATION (), "bindings: pair", bindings);
 
 	return idio_S_notreached;
@@ -499,7 +503,7 @@ poor man's letrec				\n\
 	     * Test Case: expander-errors/letrec-invalid-binding.idio
 	     *
 	     * let (1) 2
-	     */	
+	     */
 	    idio_meaning_evaluation_error_param_type (src, IDIO_C_FUNC_LOCATION (), "binding: pair/symbol", binding);
 
 	    return idio_S_notreached;
@@ -733,8 +737,12 @@ IDIO idio_evaluate_expander_code (IDIO m, IDIO cs)
     idio_thread_save_state (ethr);
     idio_vm_default_pc (ethr);
 
+    IDIO dosh = idio_open_output_string_handle_C ();
+    idio_display_C ("evaluate-expander-code: ", dosh);
+    idio_display (m, dosh);
+
     idio_codegen (ethr, m, cs);
-    IDIO r = idio_vm_run (ethr);
+    IDIO r = idio_vm_run (ethr, idio_get_output_string (dosh));
 
     idio_thread_restore_state (ethr);
     idio_thread_set_current_thread (cthr);
@@ -910,8 +918,12 @@ IDIO idio_evaluate_infix_operator_code (IDIO m, IDIO cs)
     idio_thread_save_state (ethr);
     idio_vm_default_pc (ethr);
 
+    IDIO dosh = idio_open_output_string_handle_C ();
+    idio_display_C ("evaluate-infix-operator-code: ", dosh);
+    idio_display (m, dosh);
+
     idio_codegen (ethr, m, cs);
-    IDIO r = idio_vm_run (ethr);
+    IDIO r = idio_vm_run (ethr, idio_get_output_string (dosh));
 
     idio_thread_restore_state (ethr);
     idio_thread_set_current_thread (cthr);
@@ -955,12 +967,16 @@ static IDIO idio_evaluate_infix_operator (IDIO n, IDIO e, IDIO b, IDIO a)
     idio_thread_save_state (ethr);
     idio_vm_default_pc (ethr);
 
+    IDIO dosh = idio_open_output_string_handle_C ();
+    idio_display_C ("evaluate-infix-operator: ", dosh);
+    idio_display (e, dosh);
+
     idio_apply (func, IDIO_LIST3 (n, b, IDIO_LIST1 (a)));
 #ifdef IDIO_VM_PERF
     struct timespec prim_t0;
     idio_vm_func_start (func, &prim_t0);
 #endif
-    IDIO r = idio_vm_run (ethr);
+    IDIO r = idio_vm_run (ethr, idio_get_output_string (dosh));
 #ifdef IDIO_VM_PERF
     struct timespec prim_te;
     idio_vm_func_stop (func, &prim_te);
@@ -1099,8 +1115,12 @@ IDIO idio_evaluate_postfix_operator_code (IDIO m, IDIO cs)
     idio_thread_save_state (ethr);
     idio_vm_default_pc (ethr);
 
+    IDIO dosh = idio_open_output_string_handle_C ();
+    idio_display_C ("evaluate-postfix-operator-code: ", dosh);
+    idio_display (m, dosh);
+
     idio_codegen (ethr, m, cs);
-    IDIO r = idio_vm_run (ethr);
+    IDIO r = idio_vm_run (ethr, idio_get_output_string (dosh));
 
     idio_thread_restore_state (ethr);
     idio_thread_set_current_thread (cthr);
@@ -1143,12 +1163,16 @@ static IDIO idio_evaluate_postfix_operator (IDIO n, IDIO e, IDIO b, IDIO a)
     idio_thread_save_state (ethr);
     idio_vm_default_pc (ethr);
 
+    IDIO dosh = idio_open_output_string_handle_C ();
+    idio_display_C ("evaluate-postfix-operator: ", dosh);
+    idio_display (e, dosh);
+
     idio_apply (func, IDIO_LIST3 (n, b, IDIO_LIST1 (a)));
 #ifdef IDIO_VM_PERF
     struct timespec prim_t0;
     idio_vm_func_start (func, &prim_t0);
 #endif
-    IDIO r = idio_vm_run (ethr);
+    IDIO r = idio_vm_run (ethr, idio_get_output_string (dosh));
 #ifdef IDIO_VM_PERF
     struct timespec prim_te;
     idio_vm_func_stop (func, &prim_te);
@@ -1353,7 +1377,7 @@ IDIO_DEFINE_PRIMITIVE1 ("operator-expand", operator_expand, (IDIO l))
  * a b := 1
  *
  * Note that we won't have a lexical object to use.
- */	
+ */
 
 /*
  * Test Case: expander-errors/infix-too-few-after.idio
@@ -1364,7 +1388,7 @@ IDIO_DEFINE_PRIMITIVE1 ("operator-expand", operator_expand, (IDIO l))
  * EOF
  *
  * Note that we won't have a lexical object to use.
- */	
+ */
 #define IDIO_DEFINE_ASSIGNMENT_INFIX_OPERATOR(iname,cname)		\
     IDIO_DEFINE_INFIX_OPERATOR (iname, cname, (IDIO op, IDIO before, IDIO args)) \
     {									\
