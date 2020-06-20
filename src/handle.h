@@ -23,9 +23,9 @@
 #ifndef HANDLE_H
 #define HANDLE_H
 
-void idio_handle_error_read (IDIO h, IDIO loc);
-void idio_handle_error_write (IDIO h, IDIO loc);
-void idio_handle_error_closed (IDIO h, IDIO loc);
+void idio_handle_error_read (IDIO h, IDIO c_location);
+void idio_handle_error_write (IDIO h, IDIO c_location);
+void idio_handle_error_closed (IDIO h, IDIO c_location);
 
 IDIO idio_handle ();
 int idio_isa_handle (IDIO d);

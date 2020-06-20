@@ -22,12 +22,12 @@
 
 #include "idio.h"
 
-void idio_handle_error_read (IDIO h, IDIO loc)
+void idio_handle_error_read (IDIO h, IDIO c_location)
 {
     IDIO_ASSERT (h);
-    IDIO_ASSERT (loc);
+    IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (handle, h);
-    IDIO_TYPE_ASSERT (string, loc);
+    IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C ("handle name '", sh);
@@ -35,18 +35,18 @@ void idio_handle_error_read (IDIO h, IDIO loc)
     idio_display_C ("' read error", sh);
     IDIO c = idio_struct_instance (idio_condition_io_read_error_type,
 				   IDIO_LIST4 (idio_get_output_string (sh),
-					       loc,
+					       c_location,
 					       idio_S_nil,
 					       IDIO_HANDLE_PATHNAME (h)));
     idio_raise_condition (idio_S_true, c);
 }
 
-void idio_handle_error_write (IDIO h, IDIO loc)
+void idio_handle_error_write (IDIO h, IDIO c_location)
 {
     IDIO_ASSERT (h);
-    IDIO_ASSERT (loc);
+    IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (handle, h);
-    IDIO_TYPE_ASSERT (string, loc);
+    IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C ("handle name '", sh);
@@ -54,18 +54,18 @@ void idio_handle_error_write (IDIO h, IDIO loc)
     idio_display_C ("' write error", sh);
     IDIO c = idio_struct_instance (idio_condition_io_write_error_type,
 				   IDIO_LIST4 (idio_get_output_string (sh),
-					       loc,
+					       c_location,
 					       idio_S_nil,
 					       IDIO_HANDLE_PATHNAME (h)));
     idio_raise_condition (idio_S_true, c);
 }
 
-void idio_handle_error_closed (IDIO h, IDIO loc)
+void idio_handle_error_closed (IDIO h, IDIO c_location)
 {
     IDIO_ASSERT (h);
-    IDIO_ASSERT (loc);
+    IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (handle, h);
-    IDIO_TYPE_ASSERT (string, loc);
+    IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C ("handle name '", sh);
@@ -73,10 +73,37 @@ void idio_handle_error_closed (IDIO h, IDIO loc)
     idio_display_C ("' already closed", sh);
     IDIO c = idio_struct_instance (idio_condition_io_closed_error_type,
 				   IDIO_LIST4 (idio_get_output_string (sh),
-					       loc,
+					       c_location,
 					       idio_S_nil,
 					       IDIO_HANDLE_PATHNAME (h)));
     idio_raise_condition (idio_S_true, c);
+}
+
+static void idio_handle_error_bad (IDIO h, IDIO c_location)
+{
+    IDIO_ASSERT (h);
+    IDIO_ASSERT (c_location);
+    IDIO_TYPE_ASSERT (string, c_location);
+
+    idio_error_param_type ("handle", h, c_location);
+}
+
+static void idio_handle_error_bad_input (IDIO h, IDIO c_location)
+{
+    IDIO_ASSERT (h);
+    IDIO_ASSERT (c_location);
+    IDIO_TYPE_ASSERT (string, c_location);
+
+    idio_error_param_type ("input handle", h, c_location);
+}
+
+static void idio_handle_error_bad_output (IDIO h, IDIO c_location)
+{
+    IDIO_ASSERT (h);
+    IDIO_ASSERT (c_location);
+    IDIO_TYPE_ASSERT (string, c_location);
+
+    idio_error_param_type ("output handle", h, c_location);
 }
 
 /*
@@ -202,33 +229,6 @@ void idio_handle_finalizer (IDIO handle)
     if (! idio_isa_handle (handle)) {
 	idio_error_param_type ("handle", handle, IDIO_C_FUNC_LOCATION ());
     }
-}
-
-static void idio_handle_error_bad (IDIO h, IDIO loc)
-{
-    IDIO_ASSERT (h);
-    IDIO_ASSERT (loc);
-    IDIO_TYPE_ASSERT (string, loc);
-
-    idio_error_param_type ("handle", h, loc);
-}
-
-static void idio_handle_error_bad_input (IDIO h, IDIO loc)
-{
-    IDIO_ASSERT (h);
-    IDIO_ASSERT (loc);
-    IDIO_TYPE_ASSERT (string, loc);
-
-    idio_error_param_type ("input handle", h, loc);
-}
-
-static void idio_handle_error_bad_output (IDIO h, IDIO loc)
-{
-    IDIO_ASSERT (h);
-    IDIO_ASSERT (loc);
-    IDIO_TYPE_ASSERT (string, loc);
-
-    idio_error_param_type ("output handle", h, loc);
 }
 
 /*

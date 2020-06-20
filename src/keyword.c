@@ -33,18 +33,18 @@ IDIO_KEYWORD_DECL (setter);
 IDIO_KEYWORD_DECL (sigstr);
 IDIO_KEYWORD_DECL (source);
 
-void idio_keyword_error_key_not_found (IDIO key, IDIO loc)
+void idio_keyword_error_key_not_found (IDIO key, IDIO c_location)
 {
     IDIO_ASSERT (key);
-    IDIO_ASSERT (loc);
-    IDIO_TYPE_ASSERT (string, loc);
+    IDIO_ASSERT (c_location);
+    IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C ("key not found", msh);
 
     IDIO c = idio_struct_instance (idio_condition_rt_hash_key_not_found_error_type,
 				   IDIO_LIST4 (idio_get_output_string (msh),
-					       loc,
+					       c_location,
 					       idio_S_nil,
 					       key));
 

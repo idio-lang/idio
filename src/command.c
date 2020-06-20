@@ -89,27 +89,27 @@ void idio_command_sa_signal (int signum)
     idio_command_signal_record[signum] = 1;
 }
 
-static void idio_command_error_glob (IDIO pattern, IDIO loc)
+static void idio_command_error_glob (IDIO pattern, IDIO c_location)
 {
     IDIO_ASSERT (pattern);
-    IDIO_ASSERT (loc);
-    IDIO_TYPE_ASSERT (string, loc);
+    IDIO_ASSERT (c_location);
+    IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C ("pattern glob failed", sh);
     IDIO c = idio_struct_instance (idio_condition_rt_glob_error_type,
 				   IDIO_LIST4 (idio_get_output_string (sh),
-					       loc,
+					       c_location,
 					       idio_S_nil,
 					       pattern));
     idio_raise_condition (idio_S_true, c);
 }
 
-static void idio_command_error_argv_type (IDIO arg, char *reason_C, IDIO loc)
+static void idio_command_error_argv_type (IDIO arg, char *reason_C, IDIO c_location)
 {
     IDIO_ASSERT (arg);
-    IDIO_ASSERT (loc);
-    IDIO_TYPE_ASSERT (string, loc);
+    IDIO_ASSERT (c_location);
+    IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C ("argument '", sh);
@@ -121,19 +121,19 @@ static void idio_command_error_argv_type (IDIO arg, char *reason_C, IDIO loc)
 
     IDIO c = idio_struct_instance (idio_condition_rt_command_argv_type_error_type,
 				   IDIO_LIST4 (idio_get_output_string (sh),
-					       loc,
+					       c_location,
 					       idio_S_nil,
 					       arg));
 
     idio_raise_condition (idio_S_true, c);
 }
 
-static void idio_command_error_env_type (IDIO name, IDIO loc)
+static void idio_command_error_env_type (IDIO name, IDIO c_location)
 {
     IDIO_ASSERT (name);
     IDIO_TYPE_ASSERT (symbol, name);
-    IDIO_ASSERT (loc);
-    IDIO_TYPE_ASSERT (string, loc);
+    IDIO_ASSERT (c_location);
+    IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C ("environment variable '", sh);
@@ -142,17 +142,17 @@ static void idio_command_error_env_type (IDIO name, IDIO loc)
 
     IDIO c = idio_struct_instance (idio_condition_rt_command_env_type_error_type,
 				   IDIO_LIST4 (idio_get_output_string (sh),
-					       loc,
+					       c_location,
 					       idio_S_nil,
 					       name));
 
     idio_raise_condition (idio_S_true, c);
 }
 
-static void idio_command_error_exec (char **argv, char **envp, IDIO loc)
+static void idio_command_error_exec (char **argv, char **envp, IDIO c_location)
 {
-    IDIO_ASSERT (loc);
-    IDIO_TYPE_ASSERT (string, loc);
+    IDIO_ASSERT (c_location);
+    IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C ("exec:", sh);
@@ -189,7 +189,7 @@ static void idio_command_error_exec (char **argv, char **envp, IDIO loc)
     }
     IDIO c = idio_struct_instance (idio_condition_rt_command_exec_error_type,
 				   IDIO_LIST4 (idio_get_output_string (sh),
-					       loc,
+					       c_location,
 					       idio_S_nil,
 					       idio_fixnum ((intptr_t) errno)));
     idio_raise_condition (idio_S_true, c);

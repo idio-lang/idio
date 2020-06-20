@@ -41,88 +41,88 @@ static IDIO idio_modules_hash = idio_S_nil;
 IDIO idio_primitives_module = idio_S_nil;
 IDIO idio_Idio_module = idio_S_nil;
 
-void idio_module_error_duplicate_name (IDIO name, IDIO loc)
+void idio_module_error_duplicate_name (IDIO name, IDIO c_location)
 {
     IDIO_ASSERT (name);
-    IDIO_ASSERT (loc);
+    IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (symbol, name);
-    IDIO_TYPE_ASSERT (string, loc);
+    IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C ("module already exists", sh);
     IDIO c = idio_struct_instance (idio_condition_rt_module_error_type,
 				   IDIO_LIST4 (idio_get_output_string (sh),
-					       loc,
+					       c_location,
 					       idio_S_nil,
 					       name));
     idio_raise_condition (idio_S_true, c);
 }
 
-void idio_module_error_set_imports (IDIO module, IDIO loc)
+void idio_module_error_set_imports (IDIO module, IDIO c_location)
 {
     IDIO_ASSERT (module);
-    IDIO_ASSERT (loc);
+    IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (module, module);
-    IDIO_TYPE_ASSERT (string, loc);
+    IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C ("cannot set imports", sh);
     IDIO c = idio_struct_instance (idio_condition_rt_module_error_type,
 				   IDIO_LIST4 (idio_get_output_string (sh),
-					       loc,
+					       c_location,
 					       idio_S_nil,
 					       IDIO_MODULE_NAME (module)));
     idio_raise_condition (idio_S_true, c);
 }
 
-void idio_module_error_set_exports (IDIO module, IDIO loc)
+void idio_module_error_set_exports (IDIO module, IDIO c_location)
 {
     IDIO_ASSERT (module);
-    IDIO_ASSERT (loc);
+    IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (module, module);
-    IDIO_TYPE_ASSERT (string, loc);
+    IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C ("cannot set exports", sh);
     IDIO c = idio_struct_instance (idio_condition_rt_module_error_type,
 				   IDIO_LIST4 (idio_get_output_string (sh),
-					       loc,
+					       c_location,
 					       idio_S_nil,
 					       IDIO_MODULE_NAME (module)));
     idio_raise_condition (idio_S_true, c);
 }
 
-void idio_module_error_unbound (IDIO name, IDIO loc)
+void idio_module_error_unbound (IDIO name, IDIO c_location)
 {
     IDIO_ASSERT (name);
-    IDIO_ASSERT (loc);
+    IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (symbol, name);
-    IDIO_TYPE_ASSERT (string, loc);
+    IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C ("module name unbound", sh);
     IDIO c = idio_struct_instance (idio_condition_rt_module_unbound_error_type,
 				   IDIO_LIST4 (idio_get_output_string (sh),
-					       loc,
+					       c_location,
 					       idio_S_nil,
 					       name));
     idio_raise_condition (idio_S_true, c);
 }
 
-void idio_module_error_unbound_name (IDIO symbol, IDIO module, IDIO loc)
+void idio_module_error_unbound_name (IDIO symbol, IDIO module, IDIO c_location)
 {
     IDIO_ASSERT (symbol);
     IDIO_ASSERT (module);
-    IDIO_ASSERT (loc);
+    IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (symbol, symbol);
     IDIO_TYPE_ASSERT (module, module);
-    IDIO_TYPE_ASSERT (string, loc);
+    IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C ("symbol unbound in module", sh);
     IDIO c = idio_struct_instance (idio_condition_rt_module_symbol_unbound_error_type,
 				   IDIO_LIST5 (idio_get_output_string (sh),
-					       loc,
+					       c_location,
 					       idio_S_nil,
 					       IDIO_MODULE_NAME (module),
 					       symbol));

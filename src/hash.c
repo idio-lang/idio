@@ -54,27 +54,27 @@ void idio_hash_verify_all_keys (IDIO h);
 size_t idio_hash_find_free_slot (IDIO h);
 size_t idio_hash_hv_follow_chain (IDIO h, void *k);
 
-void idio_hash_error (char *m, IDIO loc)
+void idio_hash_error (char *m, IDIO c_location)
 {
     IDIO_C_ASSERT (m);
-    IDIO_ASSERT (loc);
-    IDIO_TYPE_ASSERT (string, loc);
+    IDIO_ASSERT (c_location);
+    IDIO_TYPE_ASSERT (string, c_location);
 
-    idio_error_printf (loc, "%s", m);
+    idio_error_printf (c_location, "%s", m);
 }
 
-void idio_hash_error_key_not_found (IDIO key, IDIO loc)
+void idio_hash_error_key_not_found (IDIO key, IDIO c_location)
 {
     IDIO_ASSERT (key);
-    IDIO_ASSERT (loc);
-    IDIO_TYPE_ASSERT (string, loc);
+    IDIO_ASSERT (c_location);
+    IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C ("key not found", msh);
 
     IDIO c = idio_struct_instance (idio_condition_rt_hash_key_not_found_error_type,
 				   IDIO_LIST4 (idio_get_output_string (msh),
-					       loc,
+					       c_location,
 					       idio_S_nil,
 					       key));
     idio_raise_condition (idio_S_true, c);

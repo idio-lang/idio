@@ -51,19 +51,19 @@
 
 static IDIO idio_array_default_value = idio_S_false;
 
-void idio_array_error_length (char *m, idio_ai_t i, IDIO loc)
+void idio_array_error_length (char *m, idio_ai_t i, IDIO c_location)
 {
     IDIO_C_ASSERT (m);
-    IDIO_ASSERT (loc);
-    IDIO_TYPE_ASSERT (string, loc);
+    IDIO_ASSERT (c_location);
+    IDIO_TYPE_ASSERT (string, c_location);
 
-    idio_error_printf (loc, "%s: %zd", m, i);
+    idio_error_printf (c_location, "%s: %zd", m, i);
 }
 
-static void idio_array_error_bounds (idio_ai_t index, idio_ai_t size, IDIO loc)
+static void idio_array_error_bounds (idio_ai_t index, idio_ai_t size, IDIO c_location)
 {
-    IDIO_ASSERT (loc);
-    IDIO_TYPE_ASSERT (string, loc);
+    IDIO_ASSERT (c_location);
+    IDIO_TYPE_ASSERT (string, c_location);
 
     char em[BUFSIZ];
 
@@ -74,7 +74,7 @@ static void idio_array_error_bounds (idio_ai_t index, idio_ai_t size, IDIO loc)
 
     IDIO c = idio_struct_instance (idio_condition_rt_array_bounds_error_type,
 				   IDIO_LIST4 (idio_get_output_string (sh),
-					       loc,
+					       c_location,
 					       idio_S_nil,
 					       idio_integer (index)));
 

@@ -104,10 +104,10 @@ extern IDIO_SYMBOL_DECL (unset);
 
 extern IDIO idio_properties_hash;
 
-void idio_property_error_nil_object (char *msg, IDIO loc);
-void idio_properties_error_not_found (char *msg, IDIO o, IDIO loc);
-void idio_property_error_no_properties (char *msg, IDIO loc);
-void idio_property_error_key_not_found (IDIO key, IDIO loc);
+void idio_property_error_nil_object (char *msg, IDIO c_location);
+void idio_properties_error_not_found (char *msg, IDIO o, IDIO c_location);
+void idio_property_error_no_properties (char *msg, IDIO c_location);
+void idio_property_error_key_not_found (IDIO key, IDIO c_location);
 
 void idio_free_symbol (IDIO s);
 int idio_isa_symbol (IDIO s);

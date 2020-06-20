@@ -22,30 +22,30 @@
 
 #include "idio.h"
 
-void idio_string_error_length (char *m, IDIO s, ptrdiff_t i, IDIO loc)
+void idio_string_error_length (char *m, IDIO s, ptrdiff_t i, IDIO c_location)
 {
     IDIO_C_ASSERT (m);
     IDIO_ASSERT (s);
-    IDIO_ASSERT (loc);
+    IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (string, s);
-    IDIO_TYPE_ASSERT (string, loc);
+    IDIO_TYPE_ASSERT (string, c_location);
 
     char em[BUFSIZ];
     sprintf (em, "%s: %td", m, i);
-    idio_error_C (em, s, loc);
+    idio_error_C (em, s, c_location);
 }
 
-void idio_substring_error_index (char *m, IDIO s, ptrdiff_t ip0, ptrdiff_t ipn, IDIO loc)
+void idio_substring_error_index (char *m, IDIO s, ptrdiff_t ip0, ptrdiff_t ipn, IDIO c_location)
 {
     IDIO_C_ASSERT (m);
     IDIO_ASSERT (s);
-    IDIO_ASSERT (loc);
+    IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (string, s);
-    IDIO_TYPE_ASSERT (string, loc);
+    IDIO_TYPE_ASSERT (string, c_location);
 
     char em[BUFSIZ];
     sprintf (em, "%s: %td %td", m, ip0, ipn);
-    idio_error_C (em, s, loc);
+    idio_error_C (em, s, c_location);
 }
 
 IDIO idio_string_C_len (const char *s_C, size_t blen)

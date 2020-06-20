@@ -264,13 +264,13 @@ void idio_vm_panic (IDIO thr, char *m)
     IDIO_C_ASSERT (0);
 }
 
-static void idio_vm_error_function_invoke (char *msg, IDIO args, IDIO loc)
+static void idio_vm_error_function_invoke (char *msg, IDIO args, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (args);
-    IDIO_ASSERT (loc);
+    IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (list, args);
-    IDIO_TYPE_ASSERT (string, loc);
+    IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C (msg, sh);
@@ -280,19 +280,19 @@ static void idio_vm_error_function_invoke (char *msg, IDIO args, IDIO loc)
 
     IDIO c = idio_struct_instance (idio_condition_rt_function_error_type,
 				   IDIO_LIST3 (idio_get_output_string (sh),
-					       loc,
+					       c_location,
 					       idio_S_nil));
 
     idio_raise_condition (idio_S_true, c);
 }
 
 static void idio_vm_function_trace (IDIO_I ins, IDIO thr);
-static void idio_vm_error_arity (IDIO_I ins, IDIO thr, size_t given, size_t arity, IDIO loc)
+static void idio_vm_error_arity (IDIO_I ins, IDIO thr, size_t given, size_t arity, IDIO c_location)
 {
     IDIO_ASSERT (thr);
-    IDIO_ASSERT (loc);
+    IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (thread, thr);
-    IDIO_TYPE_ASSERT (string, loc);
+    IDIO_TYPE_ASSERT (string, c_location);
 
     fprintf (stderr, "\n\nARITY != %zd\n", arity);
     idio_vm_function_trace (ins, thr);
@@ -334,18 +334,18 @@ static void idio_vm_error_arity (IDIO_I ins, IDIO thr, size_t given, size_t arit
 
     IDIO c = idio_struct_instance (idio_condition_rt_function_arity_error_type,
 				   IDIO_LIST3 (idio_get_output_string (msh),
-					       loc,
+					       c_location,
 					       idio_get_output_string (dsh)));
 
     idio_raise_condition (idio_S_true, c);
 }
 
-static void idio_vm_error_arity_varargs (IDIO_I ins, IDIO thr, size_t given, size_t arity, IDIO loc)
+static void idio_vm_error_arity_varargs (IDIO_I ins, IDIO thr, size_t given, size_t arity, IDIO c_location)
 {
     IDIO_ASSERT (thr);
-    IDIO_ASSERT (loc);
+    IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (thread, thr);
-    IDIO_TYPE_ASSERT (string, loc);
+    IDIO_TYPE_ASSERT (string, c_location);
 
     fprintf (stderr, "\n\nARITY < %zd\n", arity);
     idio_vm_function_trace (ins, thr);
@@ -357,16 +357,16 @@ static void idio_vm_error_arity_varargs (IDIO_I ins, IDIO thr, size_t given, siz
 
     IDIO c = idio_struct_instance (idio_condition_rt_function_arity_error_type,
 				   IDIO_LIST3 (idio_get_output_string (sh),
-					       loc,
+					       c_location,
 					       idio_S_nil));
 
     idio_raise_condition (idio_S_true, c);
 }
 
-static void idio_error_runtime_unbound (IDIO fmci, IDIO fgci, IDIO sym, IDIO loc)
+static void idio_error_runtime_unbound (IDIO fmci, IDIO fgci, IDIO sym, IDIO c_location)
 {
-    IDIO_ASSERT (loc);
-    IDIO_TYPE_ASSERT (string, loc);
+    IDIO_ASSERT (c_location);
+    IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C ("no such binding: mci ", sh);
@@ -376,17 +376,17 @@ static void idio_error_runtime_unbound (IDIO fmci, IDIO fgci, IDIO sym, IDIO loc
 
     IDIO c = idio_struct_instance (idio_condition_rt_variable_unbound_error_type,
 				   IDIO_LIST4 (idio_get_output_string (sh),
-					       loc,
+					       c_location,
 					       idio_S_nil,
 					       sym));
 
     idio_raise_condition (idio_S_true, c);
 }
 
-static void idio_error_dynamic_unbound (idio_ai_t mci, idio_ai_t gvi, IDIO loc)
+static void idio_error_dynamic_unbound (idio_ai_t mci, idio_ai_t gvi, IDIO c_location)
 {
-    IDIO_ASSERT (loc);
-    IDIO_TYPE_ASSERT (string, loc);
+    IDIO_ASSERT (c_location);
+    IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C ("no such dynamic binding: mci ", sh);
@@ -405,17 +405,17 @@ static void idio_error_dynamic_unbound (idio_ai_t mci, idio_ai_t gvi, IDIO loc)
 
     IDIO c = idio_struct_instance (idio_condition_rt_dynamic_variable_unbound_error_type,
 				   IDIO_LIST4 (idio_get_output_string (sh),
-					       loc,
+					       c_location,
 					       idio_S_nil,
 					       sym));
 
     idio_raise_condition (idio_S_true, c);
 }
 
-static void idio_error_environ_unbound (idio_ai_t mci, idio_ai_t gvi, IDIO loc)
+static void idio_error_environ_unbound (idio_ai_t mci, idio_ai_t gvi, IDIO c_location)
 {
-    IDIO_ASSERT (loc);
-    IDIO_TYPE_ASSERT (string, loc);
+    IDIO_ASSERT (c_location);
+    IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C ("no such environ binding: mci ", sh);
@@ -434,18 +434,18 @@ static void idio_error_environ_unbound (idio_ai_t mci, idio_ai_t gvi, IDIO loc)
 
     IDIO c = idio_struct_instance (idio_condition_rt_environ_variable_unbound_error_type,
 				   IDIO_LIST4 (idio_get_output_string (sh),
-					       loc,
+					       c_location,
 					       idio_S_nil,
 					       sym));
 
     idio_raise_condition (idio_S_true, c);
 }
 
-static void idio_vm_error_computed (char *msg, idio_ai_t mci, idio_ai_t gvi, IDIO loc)
+static void idio_vm_error_computed (char *msg, idio_ai_t mci, idio_ai_t gvi, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
-    IDIO_ASSERT (loc);
-    IDIO_TYPE_ASSERT (string, loc);
+    IDIO_ASSERT (c_location);
+    IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C (msg, sh);
@@ -465,17 +465,17 @@ static void idio_vm_error_computed (char *msg, idio_ai_t mci, idio_ai_t gvi, IDI
 
     IDIO c = idio_struct_instance (idio_condition_rt_computed_variable_error_type,
 				   IDIO_LIST4 (idio_get_output_string (sh),
-					       loc,
+					       c_location,
 					       idio_S_nil,
 					       sym));
 
     idio_raise_condition (idio_S_true, c);
 }
 
-static void idio_vm_error_computed_no_accessor (char *msg, idio_ai_t mci, idio_ai_t gvi, IDIO loc)
+static void idio_vm_error_computed_no_accessor (char *msg, idio_ai_t mci, idio_ai_t gvi, IDIO c_location)
 {
-    IDIO_ASSERT (loc);
-    IDIO_TYPE_ASSERT (string, loc);
+    IDIO_ASSERT (c_location);
+    IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C ("no ", sh);
@@ -496,7 +496,7 @@ static void idio_vm_error_computed_no_accessor (char *msg, idio_ai_t mci, idio_a
 
     IDIO c = idio_struct_instance (idio_condition_rt_computed_variable_no_accessor_error_type,
 				   IDIO_LIST4 (idio_get_output_string (sh),
-					       loc,
+					       c_location,
 					       idio_S_nil,
 					       sym));
 

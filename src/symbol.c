@@ -101,66 +101,66 @@ IDIO_SYMBOL_DECL (unquote);
 IDIO_SYMBOL_DECL (unquotesplicing);
 IDIO_SYMBOL_DECL (unset);
 
-void idio_property_error_nil_object (char *msg, IDIO loc)
+void idio_property_error_nil_object (char *msg, IDIO c_location)
 {
-    IDIO_ASSERT (loc);
-    IDIO_TYPE_ASSERT (string, loc);
+    IDIO_ASSERT (c_location);
+    IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C (msg, msh);
 
     IDIO c = idio_struct_instance (idio_condition_rt_parameter_nil_error_type,
 				   IDIO_LIST3 (idio_get_output_string (msh),
-					       loc,
+					       c_location,
 					       idio_S_nil));
 
     idio_raise_condition (idio_S_true, c);
 }
 
-void idio_properties_error_not_found (char *msg, IDIO o, IDIO loc)
+void idio_properties_error_not_found (char *msg, IDIO o, IDIO c_location)
 {
-    IDIO_ASSERT (loc);
-    IDIO_TYPE_ASSERT (string, loc);
+    IDIO_ASSERT (c_location);
+    IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C (msg, msh);
 
     IDIO c = idio_struct_instance (idio_condition_rt_hash_key_not_found_error_type,
 				   IDIO_LIST3 (idio_get_output_string (msh),
-					       loc,
+					       c_location,
 					       o));
 
     idio_raise_condition (idio_S_true, c);
 }
 
-void idio_property_error_no_properties (char *msg, IDIO loc)
+void idio_property_error_no_properties (char *msg, IDIO c_location)
 {
-    IDIO_ASSERT (loc);
-    IDIO_TYPE_ASSERT (string, loc);
+    IDIO_ASSERT (c_location);
+    IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C (msg, msh);
 
     IDIO c = idio_struct_instance (idio_condition_rt_hash_key_not_found_error_type,
 				   IDIO_LIST3 (idio_get_output_string (msh),
-					       loc,
+					       c_location,
 					       idio_S_nil));
 
     idio_raise_condition (idio_S_true, c);
 }
 
-void idio_property_error_key_not_found (IDIO key, IDIO loc)
+void idio_property_error_key_not_found (IDIO key, IDIO c_location)
 {
     IDIO_ASSERT (key);
-    IDIO_ASSERT (loc);
-    IDIO_TYPE_ASSERT (string, loc);
+    IDIO_ASSERT (c_location);
+    IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C ("key not found", msh);
 
     IDIO c = idio_struct_instance (idio_condition_rt_hash_key_not_found_error_type,
 				   IDIO_LIST4 (idio_get_output_string (msh),
-					       loc,
+					       c_location,
 					       idio_S_nil,
 					       key));
 

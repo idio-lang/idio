@@ -22,11 +22,11 @@
 
 #include "idio.h"
 
-static void idio_struct_error_field_not_found (IDIO field, IDIO loc)
+static void idio_struct_error_field_not_found (IDIO field, IDIO c_location)
 {
     IDIO_ASSERT (field);
-    IDIO_ASSERT (loc);
-    IDIO_TYPE_ASSERT (string, loc);
+    IDIO_ASSERT (c_location);
+    IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C ("field '", sh);
@@ -34,7 +34,7 @@ static void idio_struct_error_field_not_found (IDIO field, IDIO loc)
     idio_display_C ("' not found", sh);
     IDIO c = idio_struct_instance (idio_condition_runtime_error_type,
 				   IDIO_LIST3 (idio_get_output_string (sh),
-					       loc,
+					       c_location,
 					       idio_S_nil));
     idio_raise_condition (idio_S_true, c);
 }

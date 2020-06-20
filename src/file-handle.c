@@ -40,12 +40,12 @@ static idio_handle_methods_t idio_file_handle_methods = {
     idio_print_file_handle
 };
 
-static void idio_file_handle_error_filename (IDIO filename, IDIO loc)
+static void idio_file_handle_error_filename (IDIO filename, IDIO c_location)
 {
     IDIO_ASSERT (filename);
-    IDIO_ASSERT (loc);
+    IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (string, filename);
-    IDIO_TYPE_ASSERT (string, loc);
+    IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C ("generic filename '", msh);
@@ -57,27 +57,27 @@ static void idio_file_handle_error_filename (IDIO filename, IDIO loc)
 
     IDIO c = idio_struct_instance (idio_condition_io_filename_error_type,
 				   IDIO_LIST4 (idio_get_output_string (msh),
-					       loc,
+					       c_location,
 					       idio_get_output_string (dsh),
 					       filename));
     idio_raise_condition (idio_S_true, c);
 }
 
-static void idio_file_handle_error_filename_C (char *name, IDIO loc)
+static void idio_file_handle_error_filename_C (char *name, IDIO c_location)
 {
     IDIO_C_ASSERT (name);
-    IDIO_ASSERT (loc);
-    IDIO_TYPE_ASSERT (string, loc);
+    IDIO_ASSERT (c_location);
+    IDIO_TYPE_ASSERT (string, c_location);
 
-    idio_file_handle_error_filename (idio_string_C (name), loc);
+    idio_file_handle_error_filename (idio_string_C (name), c_location);
 }
 
-static void idio_file_handle_error_filename_delete (IDIO filename, IDIO loc)
+static void idio_file_handle_error_filename_delete (IDIO filename, IDIO c_location)
 {
     IDIO_ASSERT (filename);
-    IDIO_ASSERT (loc);
+    IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (string, filename);
-    IDIO_TYPE_ASSERT (string, loc);
+    IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C ("remove '", msh);
@@ -89,27 +89,27 @@ static void idio_file_handle_error_filename_delete (IDIO filename, IDIO loc)
 
     IDIO c = idio_struct_instance (idio_condition_io_filename_error_type,
 				   IDIO_LIST4 (idio_get_output_string (msh),
-					       loc,
+					       c_location,
 					       idio_get_output_string (dsh),
 					       filename));
     idio_raise_condition (idio_S_true, c);
 }
 
-static void idio_file_handle_error_filename_delete_C (char *name, IDIO loc)
+static void idio_file_handle_error_filename_delete_C (char *name, IDIO c_location)
 {
     IDIO_C_ASSERT (name);
-    IDIO_ASSERT (loc);
-    IDIO_TYPE_ASSERT (string, loc);
+    IDIO_ASSERT (c_location);
+    IDIO_TYPE_ASSERT (string, c_location);
 
-    idio_file_handle_error_filename_delete (idio_string_C (name), loc);
+    idio_file_handle_error_filename_delete (idio_string_C (name), c_location);
 }
 
-static void idio_file_handle_error_malformed_filename (IDIO filename, IDIO loc)
+static void idio_file_handle_error_malformed_filename (IDIO filename, IDIO c_location)
 {
     IDIO_ASSERT (filename);
-    IDIO_ASSERT (loc);
+    IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (string, filename);
-    IDIO_TYPE_ASSERT (string, loc);
+    IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C ("bad filename '", msh);
@@ -121,27 +121,27 @@ static void idio_file_handle_error_malformed_filename (IDIO filename, IDIO loc)
 
     IDIO c = idio_struct_instance (idio_condition_io_malformed_filename_error_type,
 				   IDIO_LIST4 (idio_get_output_string (msh),
-					       loc,
+					       c_location,
 					       idio_get_output_string (dsh),
 					       filename));
     idio_raise_condition (idio_S_true, c);
 }
 
-static void idio_file_handle_error_malformed_filename_C (char *name, IDIO loc)
+static void idio_file_handle_error_malformed_filename_C (char *name, IDIO c_location)
 {
     IDIO_C_ASSERT (name);
-    IDIO_ASSERT (loc);
-    IDIO_TYPE_ASSERT (string, loc);
+    IDIO_ASSERT (c_location);
+    IDIO_TYPE_ASSERT (string, c_location);
 
-    idio_file_handle_error_malformed_filename (idio_string_C (name), loc);
+    idio_file_handle_error_malformed_filename (idio_string_C (name), c_location);
 }
 
-static void idio_file_handle_error_file_protection (IDIO filename, IDIO loc)
+static void idio_file_handle_error_file_protection (IDIO filename, IDIO c_location)
 {
     IDIO_ASSERT (filename);
-    IDIO_ASSERT (loc);
+    IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (string, filename);
-    IDIO_TYPE_ASSERT (string, loc);
+    IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C ("filename '", msh);
@@ -153,27 +153,27 @@ static void idio_file_handle_error_file_protection (IDIO filename, IDIO loc)
 
     IDIO c = idio_struct_instance (idio_condition_io_file_protection_error_type,
 				   IDIO_LIST4 (idio_get_output_string (msh),
-					       loc,
+					       c_location,
 					       idio_get_output_string (dsh),
 					       filename));
     idio_raise_condition (idio_S_true, c);
 }
 
-static void idio_file_handle_error_file_protection_C (char *name, IDIO loc)
+static void idio_file_handle_error_file_protection_C (char *name, IDIO c_location)
 {
     IDIO_C_ASSERT (name);
-    IDIO_ASSERT (loc);
-    IDIO_TYPE_ASSERT (string, loc);
+    IDIO_ASSERT (c_location);
+    IDIO_TYPE_ASSERT (string, c_location);
 
-    idio_file_handle_error_file_protection (idio_string_C (name), loc);
+    idio_file_handle_error_file_protection (idio_string_C (name), c_location);
 }
 
-static void idio_file_handle_error_filename_already_exists (IDIO filename, IDIO loc)
+static void idio_file_handle_error_filename_already_exists (IDIO filename, IDIO c_location)
 {
     IDIO_ASSERT (filename);
-    IDIO_ASSERT (loc);
+    IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (string, filename);
-    IDIO_TYPE_ASSERT (string, loc);
+    IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C ("filename '", msh);
@@ -185,27 +185,27 @@ static void idio_file_handle_error_filename_already_exists (IDIO filename, IDIO 
 
     IDIO c = idio_struct_instance (idio_condition_io_file_already_exists_error_type,
 				   IDIO_LIST4 (idio_get_output_string (msh),
-					       loc,
+					       c_location,
 					       idio_get_output_string (dsh),
 					       filename));
     idio_raise_condition (idio_S_true, c);
 }
 
-static void idio_file_handle_error_filename_already_exists_C (char *name, IDIO loc)
+static void idio_file_handle_error_filename_already_exists_C (char *name, IDIO c_location)
 {
     IDIO_C_ASSERT (name);
-    IDIO_ASSERT (loc);
-    IDIO_TYPE_ASSERT (string, loc);
+    IDIO_ASSERT (c_location);
+    IDIO_TYPE_ASSERT (string, c_location);
 
-    idio_file_handle_error_filename_already_exists (idio_string_C (name), loc);
+    idio_file_handle_error_filename_already_exists (idio_string_C (name), c_location);
 }
 
-static void idio_file_handle_error_filename_not_found (IDIO filename, IDIO loc)
+static void idio_file_handle_error_filename_not_found (IDIO filename, IDIO c_location)
 {
     IDIO_ASSERT (filename);
-    IDIO_ASSERT (loc);
+    IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (string, filename);
-    IDIO_TYPE_ASSERT (string, loc);
+    IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C ("filename '", msh);
@@ -214,19 +214,19 @@ static void idio_file_handle_error_filename_not_found (IDIO filename, IDIO loc)
 
     IDIO c = idio_struct_instance (idio_condition_io_no_such_file_error_type,
 				   IDIO_LIST4 (idio_get_output_string (msh),
-					       loc,
+					       c_location,
 					       idio_S_nil,
 					       filename));
     idio_raise_condition (idio_S_true, c);
 }
 
-static void idio_file_handle_error_filename_not_found_C (char *name, IDIO loc)
+static void idio_file_handle_error_filename_not_found_C (char *name, IDIO c_location)
 {
     IDIO_C_ASSERT (name);
-    IDIO_ASSERT (loc);
-    IDIO_TYPE_ASSERT (string, loc);
+    IDIO_ASSERT (c_location);
+    IDIO_TYPE_ASSERT (string, c_location);
 
-    idio_file_handle_error_filename_not_found (idio_string_C (name), loc);
+    idio_file_handle_error_filename_not_found (idio_string_C (name), c_location);
 }
 
 static IDIO idio_open_file_handle (IDIO filename, char *pathname, FILE *filep, int h_flags, int s_flags)

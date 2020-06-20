@@ -24,16 +24,16 @@
 
 IDIO idio_G_frame;
 
-void idio_frame_error_range (IDIO fo, size_t d, size_t i, IDIO loc)
+void idio_frame_error_range (IDIO fo, size_t d, size_t i, IDIO c_location)
 {
     IDIO_ASSERT (fo);
-    IDIO_ASSERT (loc);
+    IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (frame, fo);
-    IDIO_TYPE_ASSERT (string, loc);
+    IDIO_TYPE_ASSERT (string, c_location);
 
     char em[BUFSIZ];
     sprintf (em, "frame #%zd index #%zd is out of range", d, i);
-    idio_error_C (em, fo, loc);
+    idio_error_C (em, fo, c_location);
 }
 
 IDIO idio_frame_allocate (idio_ai_t arityp1)

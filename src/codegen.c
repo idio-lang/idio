@@ -22,24 +22,24 @@
 
 #include "idio.h"
 
-static void idio_codegen_error_param_args (char *m, IDIO mt, IDIO loc)
+static void idio_codegen_error_param_args (char *m, IDIO mt, IDIO c_location)
 {
     IDIO_C_ASSERT (m);
     IDIO_ASSERT (mt);
-    IDIO_ASSERT (loc);
-    IDIO_TYPE_ASSERT (string, loc);
+    IDIO_ASSERT (c_location);
+    IDIO_TYPE_ASSERT (string, c_location);
 
-    idio_error_C (m, mt, loc);
+    idio_error_C (m, mt, c_location);
 }
 
-static void idio_codegen_error_param_type (char *m, IDIO t, IDIO loc)
+static void idio_codegen_error_param_type (char *m, IDIO t, IDIO c_location)
 {
     IDIO_C_ASSERT (m);
     IDIO_ASSERT (t);
-    IDIO_ASSERT (loc);
-    IDIO_TYPE_ASSERT (string, loc);
+    IDIO_ASSERT (c_location);
+    IDIO_TYPE_ASSERT (string, c_location);
 
-    idio_error_param_type (m, t, loc);
+    idio_error_param_type (m, t, c_location);
 }
 
 IDIO_IA_T idio_ia (size_t asize)
