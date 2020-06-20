@@ -298,7 +298,7 @@ static void idio_gc_finalizer_run (IDIO o)
     }
 }
 
-void idio_gcc_mark (IDIO o, unsigned colour)
+void idio_gc_gcc_mark (IDIO o, unsigned colour)
 {
     IDIO_ASSERT (o);
 
@@ -317,10 +317,10 @@ void idio_gcc_mark (IDIO o, unsigned colour)
 	return;
     }
 
-    IDIO_FPRINTF (stderr, "idio_gcc_mark: mark %10p -> %10p t=%2d/%.5s f=%2x colour=%d\n", o, o->next, o->type, idio_type2string (o), o->gc_flags, colour);
+    IDIO_FPRINTF (stderr, "idio_gc_gcc_mark: mark %10p -> %10p t=%2d/%.5s f=%2x colour=%d\n", o, o->next, o->type, idio_type2string (o), o->gc_flags, colour);
 
     if ((o->gc_flags & IDIO_GC_FLAG_FREE_UMASK) & IDIO_GC_FLAG_FREE) {
-	fprintf (stderr, "idio_gcc_mark: already free?: ");
+	fprintf (stderr, "idio_gc_gcc_mark: already free?: ");
 	idio_gc->verbose++;
 	idio_dump (o, 1);
 	idio_gc->verbose--;
@@ -336,21 +336,21 @@ void idio_gcc_mark (IDIO o, unsigned colour)
 	    break;
 	}
 	if (o->gc_flags & IDIO_GC_FLAG_GCC_LGREY) {
-	    IDIO_FPRINTF (stderr, "idio_gcc_mark: object is already grey: %10p t=%2d %s f=%x\n", o, o->type, idio_type2string (o), o->gc_flags);
+	    IDIO_FPRINTF (stderr, "idio_gc_gcc_mark: object is already grey: %10p t=%2d %s f=%x\n", o, o->type, idio_type2string (o), o->gc_flags);
 	    break;
 	}
 
 	switch (o->type) {
 	case IDIO_TYPE_NONE:
 	    IDIO_C_ASSERT (0);
-	    idio_error_C ("idio_gcc_mark cannot process an IDIO_TYPE_NONE", IDIO_LIST1 (o), IDIO_C_FUNC_LOCATION ());
+	    idio_error_C ("idio_gc_gcc_mark cannot process an IDIO_TYPE_NONE", IDIO_LIST1 (o), IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
 	    return;
 	    break;
 	case IDIO_TYPE_SUBSTRING:
 	    o->gc_flags = (o->gc_flags & IDIO_GC_FLAG_GCC_UMASK) | colour;
-	    idio_gcc_mark (IDIO_SUBSTRING_PARENT (o), colour);
+	    idio_gc_gcc_mark (IDIO_SUBSTRING_PARENT (o), colour);
 	    break;
 	case IDIO_TYPE_PAIR:
 	    o->gc_flags |= IDIO_GC_FLAG_GCC_LGREY;
@@ -492,15 +492,15 @@ void idio_gc_process_grey (unsigned colour)
     switch (o->type) {
     case IDIO_TYPE_PAIR:
 	idio_gc->grey = IDIO_PAIR_GREY (o);
-	idio_gcc_mark (IDIO_PAIR_H (o), colour);
-	idio_gcc_mark (IDIO_PAIR_T (o), colour);
+	idio_gc_gcc_mark (IDIO_PAIR_H (o), colour);
+	idio_gc_gcc_mark (IDIO_PAIR_T (o), colour);
 	break;
     case IDIO_TYPE_ARRAY:
 	idio_gc->grey = IDIO_ARRAY_GREY (o);
-	idio_gcc_mark (IDIO_ARRAY_DV (o), colour);
+	idio_gc_gcc_mark (IDIO_ARRAY_DV (o), colour);
 	for (i = 0; i < IDIO_ARRAY_USIZE (o); i++) {
 	    if (NULL != IDIO_ARRAY_AE (o, i)) {
-		idio_gcc_mark (IDIO_ARRAY_AE (o, i), colour);
+		idio_gc_gcc_mark (IDIO_ARRAY_AE (o, i), colour);
 	    }
 	}
 	break;
@@ -510,20 +510,20 @@ void idio_gc_process_grey (unsigned colour)
 	    if (!((IDIO_HASH_FLAGS (o) & IDIO_HASH_FLAG_STRING_KEYS) ||
 		  (IDIO_HASH_FLAGS (o) & IDIO_HASH_FLAG_WEAK_KEYS))) {
 		if (idio_S_nil != IDIO_HASH_HE_KEY (o, i)) {
-		    idio_gcc_mark (IDIO_HASH_HE_KEY (o, i), colour);
+		    idio_gc_gcc_mark (IDIO_HASH_HE_KEY (o, i), colour);
 		}
 	    }
 	    if (idio_S_nil != IDIO_HASH_HE_VALUE (o, i)) {
-		idio_gcc_mark (IDIO_HASH_HE_VALUE (o, i), colour);
+		idio_gc_gcc_mark (IDIO_HASH_HE_VALUE (o, i), colour);
 	    }
 	}
-	idio_gcc_mark (IDIO_HASH_COMP (o), colour);
-	idio_gcc_mark (IDIO_HASH_HASH (o), colour);
+	idio_gc_gcc_mark (IDIO_HASH_COMP (o), colour);
+	idio_gc_gcc_mark (IDIO_HASH_HASH (o), colour);
 	break;
     case IDIO_TYPE_CLOSURE:
 	idio_gc->grey = IDIO_CLOSURE_GREY (o);
-	idio_gcc_mark (IDIO_CLOSURE_FRAME (o), colour);
-	idio_gcc_mark (IDIO_CLOSURE_ENV (o), colour);
+	idio_gc_gcc_mark (IDIO_CLOSURE_FRAME (o), colour);
+	idio_gc_gcc_mark (IDIO_CLOSURE_ENV (o), colour);
 	break;
     case IDIO_TYPE_PRIMITIVE:
 	idio_gc->grey = IDIO_PRIMITIVE_GREY (o);
@@ -531,95 +531,95 @@ void idio_gc_process_grey (unsigned colour)
     case IDIO_TYPE_MODULE:
 	IDIO_C_ASSERT (idio_gc->grey != IDIO_MODULE_GREY (o));
 	idio_gc->grey = IDIO_MODULE_GREY (o);
-	idio_gcc_mark (IDIO_MODULE_NAME (o), colour);
-	idio_gcc_mark (IDIO_MODULE_EXPORTS (o), colour);
-	idio_gcc_mark (IDIO_MODULE_IMPORTS (o), colour);
-	idio_gcc_mark (IDIO_MODULE_SYMBOLS (o), colour);
-	idio_gcc_mark (IDIO_MODULE_VCI (o), colour);
-	idio_gcc_mark (IDIO_MODULE_VVI (o), colour);
+	idio_gc_gcc_mark (IDIO_MODULE_NAME (o), colour);
+	idio_gc_gcc_mark (IDIO_MODULE_EXPORTS (o), colour);
+	idio_gc_gcc_mark (IDIO_MODULE_IMPORTS (o), colour);
+	idio_gc_gcc_mark (IDIO_MODULE_SYMBOLS (o), colour);
+	idio_gc_gcc_mark (IDIO_MODULE_VCI (o), colour);
+	idio_gc_gcc_mark (IDIO_MODULE_VVI (o), colour);
 	break;
     case IDIO_TYPE_FRAME:
 	IDIO_C_ASSERT (idio_gc->grey != IDIO_FRAME_GREY (o));
 	idio_gc->grey = IDIO_FRAME_GREY (o);
-	idio_gcc_mark (IDIO_FRAME_NEXT (o), colour);
-	idio_gcc_mark (IDIO_FRAME_ARGS (o), colour);
+	idio_gc_gcc_mark (IDIO_FRAME_NEXT (o), colour);
+	idio_gc_gcc_mark (IDIO_FRAME_ARGS (o), colour);
 	break;
     case IDIO_TYPE_HANDLE:
 	IDIO_C_ASSERT (idio_gc->grey != IDIO_HANDLE_GREY (o));
 	idio_gc->grey = IDIO_HANDLE_GREY (o);
-	idio_gcc_mark (IDIO_HANDLE_FILENAME (o), colour);
-	idio_gcc_mark (IDIO_HANDLE_PATHNAME (o), colour);
+	idio_gc_gcc_mark (IDIO_HANDLE_FILENAME (o), colour);
+	idio_gc_gcc_mark (IDIO_HANDLE_PATHNAME (o), colour);
 	break;
     case IDIO_TYPE_STRUCT_TYPE:
 	IDIO_C_ASSERT (idio_gc->grey != IDIO_STRUCT_TYPE_GREY (o));
 	idio_gc->grey = IDIO_STRUCT_TYPE_GREY (o);
-	idio_gcc_mark (IDIO_STRUCT_TYPE_NAME (o), colour);
-	idio_gcc_mark (IDIO_STRUCT_TYPE_PARENT (o), colour);
-	idio_gcc_mark (IDIO_STRUCT_TYPE_FIELDS (o), colour);
+	idio_gc_gcc_mark (IDIO_STRUCT_TYPE_NAME (o), colour);
+	idio_gc_gcc_mark (IDIO_STRUCT_TYPE_PARENT (o), colour);
+	idio_gc_gcc_mark (IDIO_STRUCT_TYPE_FIELDS (o), colour);
 	break;
     case IDIO_TYPE_STRUCT_INSTANCE:
 	IDIO_C_ASSERT (idio_gc->grey != IDIO_STRUCT_INSTANCE_GREY (o));
 	idio_gc->grey = IDIO_STRUCT_INSTANCE_GREY (o);
-	idio_gcc_mark (IDIO_STRUCT_INSTANCE_TYPE (o), colour);
-	idio_gcc_mark (IDIO_STRUCT_INSTANCE_FIELDS (o), colour);
+	idio_gc_gcc_mark (IDIO_STRUCT_INSTANCE_TYPE (o), colour);
+	idio_gc_gcc_mark (IDIO_STRUCT_INSTANCE_FIELDS (o), colour);
 	break;
     case IDIO_TYPE_THREAD:
 	IDIO_C_ASSERT (idio_gc->grey != IDIO_THREAD_GREY (o));
 	idio_gc->grey = IDIO_THREAD_GREY (o);
-	idio_gcc_mark (IDIO_THREAD_STACK (o), colour);
-	idio_gcc_mark (IDIO_THREAD_VAL (o), colour);
-	idio_gcc_mark (IDIO_THREAD_FRAME (o), colour);
-	idio_gcc_mark (IDIO_THREAD_ENV (o), colour);
-	idio_gcc_mark (IDIO_THREAD_TRAP_SP (o), colour);
-	idio_gcc_mark (IDIO_THREAD_DYNAMIC_SP (o), colour);
-	idio_gcc_mark (IDIO_THREAD_ENVIRON_SP (o), colour);
-	idio_gcc_mark (IDIO_THREAD_FUNC (o), colour);
-	idio_gcc_mark (IDIO_THREAD_REG1 (o), colour);
-	idio_gcc_mark (IDIO_THREAD_REG2 (o), colour);
+	idio_gc_gcc_mark (IDIO_THREAD_STACK (o), colour);
+	idio_gc_gcc_mark (IDIO_THREAD_VAL (o), colour);
+	idio_gc_gcc_mark (IDIO_THREAD_FRAME (o), colour);
+	idio_gc_gcc_mark (IDIO_THREAD_ENV (o), colour);
+	idio_gc_gcc_mark (IDIO_THREAD_TRAP_SP (o), colour);
+	idio_gc_gcc_mark (IDIO_THREAD_DYNAMIC_SP (o), colour);
+	idio_gc_gcc_mark (IDIO_THREAD_ENVIRON_SP (o), colour);
+	idio_gc_gcc_mark (IDIO_THREAD_FUNC (o), colour);
+	idio_gc_gcc_mark (IDIO_THREAD_REG1 (o), colour);
+	idio_gc_gcc_mark (IDIO_THREAD_REG2 (o), colour);
 	/*
 	 * Don't mark the expr as it is in a weak keyed hash
 	 */
-	/* idio_gcc_mark (IDIO_THREAD_EXPR (o), colour); */
-	idio_gcc_mark (IDIO_THREAD_INPUT_HANDLE (o), colour);
-	idio_gcc_mark (IDIO_THREAD_OUTPUT_HANDLE (o), colour);
-	idio_gcc_mark (IDIO_THREAD_ERROR_HANDLE (o), colour);
-	idio_gcc_mark (IDIO_THREAD_MODULE (o), colour);
+	/* idio_gc_gcc_mark (IDIO_THREAD_EXPR (o), colour); */
+	idio_gc_gcc_mark (IDIO_THREAD_INPUT_HANDLE (o), colour);
+	idio_gc_gcc_mark (IDIO_THREAD_OUTPUT_HANDLE (o), colour);
+	idio_gc_gcc_mark (IDIO_THREAD_ERROR_HANDLE (o), colour);
+	idio_gc_gcc_mark (IDIO_THREAD_MODULE (o), colour);
 	break;
     case IDIO_TYPE_CONTINUATION:
 	IDIO_C_ASSERT (idio_gc->grey != IDIO_CONTINUATION_GREY (o));
 	idio_gc->grey = IDIO_CONTINUATION_GREY (o);
-	idio_gcc_mark (IDIO_CONTINUATION_STACK (o), colour);
+	idio_gc_gcc_mark (IDIO_CONTINUATION_STACK (o), colour);
 	break;
     case IDIO_TYPE_C_TYPEDEF:
 	IDIO_C_ASSERT (idio_gc->grey != IDIO_C_TYPEDEF_GREY (o));
 	idio_gc->grey = IDIO_C_TYPEDEF_GREY (o);
-	idio_gcc_mark (IDIO_C_TYPEDEF_SYM (o), colour);
+	idio_gc_gcc_mark (IDIO_C_TYPEDEF_SYM (o), colour);
 	break;
     case IDIO_TYPE_C_STRUCT:
 	IDIO_C_ASSERT (idio_gc->grey != IDIO_C_STRUCT_GREY (o));
 	idio_gc->grey = IDIO_C_STRUCT_GREY (o);
-	idio_gcc_mark (IDIO_C_STRUCT_FIELDS (o), colour);
-	idio_gcc_mark (IDIO_C_STRUCT_METHODS (o), colour);
-	idio_gcc_mark (IDIO_C_STRUCT_FRAME (o), colour);
+	idio_gc_gcc_mark (IDIO_C_STRUCT_FIELDS (o), colour);
+	idio_gc_gcc_mark (IDIO_C_STRUCT_METHODS (o), colour);
+	idio_gc_gcc_mark (IDIO_C_STRUCT_FRAME (o), colour);
 	break;
     case IDIO_TYPE_C_INSTANCE:
 	IDIO_C_ASSERT (idio_gc->grey != IDIO_C_INSTANCE_GREY (o));
 	idio_gc->grey = IDIO_C_INSTANCE_GREY (o);
-	idio_gcc_mark (IDIO_C_INSTANCE_C_STRUCT (o), colour);
-	idio_gcc_mark (IDIO_C_INSTANCE_FRAME (o), colour);
+	idio_gc_gcc_mark (IDIO_C_INSTANCE_C_STRUCT (o), colour);
+	idio_gc_gcc_mark (IDIO_C_INSTANCE_FRAME (o), colour);
 	break;
     case IDIO_TYPE_C_FFI:
 	IDIO_C_ASSERT (idio_gc->grey != IDIO_C_FFI_GREY (o));
 	idio_gc->grey = IDIO_C_FFI_GREY (o);
-	idio_gcc_mark (IDIO_C_FFI_SYMBOL (o), colour);
-	idio_gcc_mark (IDIO_C_FFI_RESULT (o), colour);
-	idio_gcc_mark (IDIO_C_FFI_ARGS (o), colour);
-	idio_gcc_mark (IDIO_C_FFI_NAME (o), colour);
+	idio_gc_gcc_mark (IDIO_C_FFI_SYMBOL (o), colour);
+	idio_gc_gcc_mark (IDIO_C_FFI_RESULT (o), colour);
+	idio_gc_gcc_mark (IDIO_C_FFI_ARGS (o), colour);
+	idio_gc_gcc_mark (IDIO_C_FFI_NAME (o), colour);
 	break;
     case IDIO_TYPE_OPAQUE:
 	IDIO_C_ASSERT (idio_gc->grey != IDIO_OPAQUE_GREY (o));
 	idio_gc->grey = IDIO_OPAQUE_GREY (o);
-	idio_gcc_mark (IDIO_OPAQUE_ARGS (o), colour);
+	idio_gc_gcc_mark (IDIO_OPAQUE_ARGS (o), colour);
 	break;
     default:
 	idio_error_C ("unexpected type", o, IDIO_C_FUNC_LOCATION ());
@@ -662,12 +662,12 @@ void idio_gc_dump_root (idio_root_t *root)
     IDIO_FPRINTF (stderr, "\n");
 }
 
-void idio_gcc_mark_root (idio_root_t *root, unsigned colour)
+void idio_gc_gcc_mark_root (idio_root_t *root, unsigned colour)
 {
     IDIO_C_ASSERT (root);
 
-    IDIO_FPRINTF (stderr, "idio_gcc_mark_root: mark as %d\n", colour);
-    idio_gcc_mark (root->object, colour);
+    IDIO_FPRINTF (stderr, "idio_gc_gcc_mark_root: mark as %d\n", colour);
+    idio_gc_gcc_mark (root->object, colour);
 }
 
 idio_gc_t *idio_gc_new ()
@@ -811,14 +811,15 @@ void idio_gc_dump ()
  * @o: the ``IDIO`` value
  *
  * If you've allocated an ``IDIO`` value and are returning it back to
- * Idio then you must not use this function.  Idio will or will not
- * preserve the value depending on how the value is used in Idio.
+ * Idio then you **MUST NOT** use this function.  Idio will or will
+ * not preserve the value depending on how the value is used in Idio.
  *
  * However, if you've allocated an ``IDIO`` value and intend to pass
  * control back to Idio with the intention that it return control to
  * you then you **must** call idio_gc_protect() otherwise the garbage
  * collector may have de-allocated your value before you try to use
- * it.  These tend to be in idio_init_X functions in X.c.
+ * it.  These tend to be in idio_init_X functions in X.c and before
+ * calls to idio_vm_run().
  *
  * This is normally used to protect (hidden) lists of ``IDIO`` values,
  * eg. the symbol table.  The ``IDIO`` value that is the symbol table,
@@ -862,6 +863,9 @@ void idio_gc_protect (IDIO o)
  *
  * C auto objects (eg. signal condition types) can be protected here
  * and will be exposed during GC shutdown.
+ *
+ * You should only be calling this for objects which are expected to
+ * live for the lifetime of the process.
  *
  * Return:
  * void
@@ -948,7 +952,8 @@ void idio_gc_expose_all ()
     idio_root_t *r = idio_gc->roots;
     size_t n = 0;
     while (r) {
-	r->object = idio_S_nil;
+	idio_dump (r->object, 1);
+	/* r->object = idio_S_nil; */
 	r = r->next;
 	n++;
     }
@@ -1241,7 +1246,7 @@ void idio_gc_mark ()
     IDIO_FPRINTF (stderr, "idio_gc_mark: all used -> WHITE %ux\n", IDIO_GC_FLAG_GCC_WHITE);
     IDIO o = idio_gc->used;
     while (o) {
-	idio_gcc_mark (o, IDIO_GC_FLAG_GCC_WHITE);
+	idio_gc_gcc_mark (o, IDIO_GC_FLAG_GCC_WHITE);
 	o = o->next;
     }
     idio_gc->grey = NULL;
@@ -1249,7 +1254,7 @@ void idio_gc_mark ()
     IDIO_FPRINTF (stderr, "idio_gc_mark: roots -> BLACK %x\n", IDIO_GC_FLAG_GCC_BLACK);
     idio_root_t *root = idio_gc->roots;
     while (root) {
-	idio_gcc_mark_root (root, IDIO_GC_FLAG_GCC_BLACK);
+	idio_gc_gcc_mark_root (root, IDIO_GC_FLAG_GCC_BLACK);
 	root = root->next;
     }
 
