@@ -45,6 +45,8 @@
  * You need the compile flag -DIDIO_DEBUG to use it.
  */
 static int idio_vm_tracing = 0;
+static char *idio_vm_tracing_in = ">>>>>>>>>>>>>>>>>>>>>>>>>";
+static char *idio_vm_tracing_out = "<<<<<<<<<<<<<<<<<<<<<<<<<";
 #ifdef IDIO_DEBUG
 static int idio_vm_dis = 0;
 #endif
@@ -278,10 +280,12 @@ static void idio_vm_error_function_invoke (char *msg, IDIO args, IDIO c_location
     idio_display (args, sh);
     idio_display_C ("'", sh);
 
+    IDIO location = idio_vm_source_location ();
+
     IDIO c = idio_struct_instance (idio_condition_rt_function_error_type,
 				   IDIO_LIST3 (idio_get_output_string (sh),
-					       c_location,
-					       idio_S_nil));
+					       location,
+					       c_location));
 
     idio_raise_condition (idio_S_true, c);
 }
@@ -332,9 +336,16 @@ static void idio_vm_error_arity (IDIO_I ins, IDIO thr, size_t given, size_t arit
 	idio_display_C (")", dsh);
     }
 
+#ifdef IDIO_DEBUG
+    idio_display_C (" ", dsh);
+    idio_display (c_location, dsh);
+#endif
+
+    IDIO location = idio_vm_source_location ();
+
     IDIO c = idio_struct_instance (idio_condition_rt_function_arity_error_type,
 				   IDIO_LIST3 (idio_get_output_string (msh),
-					       c_location,
+					       location,
 					       idio_get_output_string (dsh)));
 
     idio_raise_condition (idio_S_true, c);
@@ -355,10 +366,12 @@ static void idio_vm_error_arity_varargs (IDIO_I ins, IDIO thr, size_t given, siz
     sprintf (em, "incorrect arity: %zd args for an arity-%zd+ function", given, arity);
     idio_display_C (em, sh);
 
+    IDIO location = idio_vm_source_location ();
+
     IDIO c = idio_struct_instance (idio_condition_rt_function_arity_error_type,
 				   IDIO_LIST3 (idio_get_output_string (sh),
-					       c_location,
-					       idio_S_nil));
+					       location,
+					       c_location));
 
     idio_raise_condition (idio_S_true, c);
 }
@@ -374,10 +387,12 @@ static void idio_error_runtime_unbound (IDIO fmci, IDIO fgci, IDIO sym, IDIO c_l
     idio_display_C (" -> gci ", sh);
     idio_display (fgci, sh);
 
+    IDIO location = idio_vm_source_location ();
+
     IDIO c = idio_struct_instance (idio_condition_rt_variable_unbound_error_type,
 				   IDIO_LIST4 (idio_get_output_string (sh),
+					       location,
 					       c_location,
-					       idio_S_nil,
 					       sym));
 
     idio_raise_condition (idio_S_true, c);
@@ -403,10 +418,12 @@ static void idio_error_dynamic_unbound (idio_ai_t mci, idio_ai_t gvi, IDIO c_loc
 	sym = idio_vm_constants_ref (IDIO_FIXNUM_VAL (fgci));
     }
 
+    IDIO location = idio_vm_source_location ();
+
     IDIO c = idio_struct_instance (idio_condition_rt_dynamic_variable_unbound_error_type,
 				   IDIO_LIST4 (idio_get_output_string (sh),
+					       location,
 					       c_location,
-					       idio_S_nil,
 					       sym));
 
     idio_raise_condition (idio_S_true, c);
@@ -432,10 +449,12 @@ static void idio_error_environ_unbound (idio_ai_t mci, idio_ai_t gvi, IDIO c_loc
 	sym = idio_vm_constants_ref (IDIO_FIXNUM_VAL (fgci));
     }
 
+    IDIO location = idio_vm_source_location ();
+
     IDIO c = idio_struct_instance (idio_condition_rt_environ_variable_unbound_error_type,
 				   IDIO_LIST4 (idio_get_output_string (sh),
+					       location,
 					       c_location,
-					       idio_S_nil,
 					       sym));
 
     idio_raise_condition (idio_S_true, c);
@@ -463,10 +482,12 @@ static void idio_vm_error_computed (char *msg, idio_ai_t mci, idio_ai_t gvi, IDI
 	sym = idio_vm_constants_ref (IDIO_FIXNUM_VAL (fgci));
     }
 
+    IDIO location = idio_vm_source_location ();
+
     IDIO c = idio_struct_instance (idio_condition_rt_computed_variable_error_type,
 				   IDIO_LIST4 (idio_get_output_string (sh),
+					       location,
 					       c_location,
-					       idio_S_nil,
 					       sym));
 
     idio_raise_condition (idio_S_true, c);
@@ -494,10 +515,12 @@ static void idio_vm_error_computed_no_accessor (char *msg, idio_ai_t mci, idio_a
 	sym = idio_vm_constants_ref (IDIO_FIXNUM_VAL (fgci));
     }
 
+    IDIO location = idio_vm_source_location ();
+
     IDIO c = idio_struct_instance (idio_condition_rt_computed_variable_no_accessor_error_type,
 				   IDIO_LIST4 (idio_get_output_string (sh),
+					       location,
 					       c_location,
-					       idio_S_nil,
 					       sym));
 
     idio_raise_condition (idio_S_true, c);
@@ -778,8 +801,8 @@ static void idio_vm_restore_state (IDIO thr)
 
     IDIO marker = IDIO_THREAD_STACK_POP ();
     if (idio_SM_preserve_state != marker) {
-	idio_debug ("ivrs: marker: expected idio_SM_preserve_state not %s\n", marker);
-	idio_vm_panic (thr, "ivrs: unexpected stack marker");
+	idio_debug ("iv_rs: marker: expected idio_SM_preserve_state not %s\n", marker);
+	idio_vm_panic (thr, "iv_rs: unexpected stack marker");
     }
     IDIO_THREAD_ENV (thr) = IDIO_THREAD_STACK_POP ();
     if (idio_S_nil != IDIO_THREAD_ENV (thr)) {
@@ -799,6 +822,7 @@ static void idio_vm_restore_state (IDIO thr)
     }
 
     IDIO_THREAD_TRAP_SP (thr) = IDIO_THREAD_STACK_POP ();
+    IDIO_TYPE_ASSERT (fixnum, IDIO_THREAD_TRAP_SP (thr));
     idio_ai_t tsp = IDIO_FIXNUM_VAL (IDIO_THREAD_TRAP_SP (thr));
     if (tsp < 2) {
 	/*
@@ -819,6 +843,7 @@ static void idio_vm_restore_state (IDIO thr)
     }
 
     IDIO_THREAD_DYNAMIC_SP (thr) = IDIO_THREAD_STACK_POP ();
+    IDIO_TYPE_ASSERT (fixnum, IDIO_THREAD_DYNAMIC_SP (thr));
     idio_ai_t dsp = IDIO_FIXNUM_VAL (IDIO_THREAD_DYNAMIC_SP (thr));
     if (dsp >= idio_array_size (IDIO_THREAD_STACK (thr))) {
 	idio_error_C ("bad DYNAMIC SP: > stack", IDIO_LIST2 (thr, IDIO_THREAD_STACK (thr)), IDIO_C_FUNC_LOCATION ());
@@ -830,13 +855,13 @@ static void idio_vm_restore_state (IDIO thr)
     IDIO_THREAD_ENVIRON_SP (thr) = IDIO_THREAD_STACK_POP ();
 
     idio_ai_t esp = IDIO_FIXNUM_VAL (IDIO_THREAD_ENVIRON_SP (thr));
+    IDIO_TYPE_ASSERT (fixnum, IDIO_THREAD_ENVIRON_SP (thr));
     if (esp >= idio_array_size (IDIO_THREAD_STACK (thr))) {
 	idio_error_C ("bad ENVIRON SP: > stack", IDIO_LIST2 (thr, IDIO_THREAD_STACK (thr)), IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return;
     }
-
 }
 
 static void idio_vm_restore_all_state (IDIO thr)
@@ -853,7 +878,19 @@ static void idio_vm_restore_all_state (IDIO thr)
     }
     IDIO_THREAD_VAL (thr) = IDIO_THREAD_STACK_POP ();
     IDIO_THREAD_FUNC (thr) = IDIO_THREAD_STACK_POP ();
+
+    /*
+     * This verification of _FUNC() needs to be in sync with what
+     * idio_vm_invoke() allows
+     */
+    if (! (idio_isa_procedure (IDIO_THREAD_FUNC (thr)) ||
+	   idio_isa_symbol (IDIO_THREAD_FUNC (thr)) ||
+	   idio_isa_continuation (IDIO_THREAD_FUNC (thr)))) {
+	idio_error_param_type ("not an invokable type", IDIO_THREAD_FUNC (thr), IDIO_C_FUNC_LOCATION ());
+    }
+
     IDIO_THREAD_EXPR (thr) = IDIO_THREAD_STACK_POP ();
+    IDIO_TYPE_ASSERT (pair, IDIO_THREAD_EXPR (thr));
     IDIO_THREAD_REG2 (thr) = IDIO_THREAD_STACK_POP ();
     IDIO_THREAD_REG1 (thr) = IDIO_THREAD_STACK_POP ();
     idio_vm_restore_state (thr);
@@ -1065,6 +1102,9 @@ void idio_vm_prim_time (IDIO func, struct timespec *ts0p, struct timespec *tsep)
 
 #endif
 
+static void idio_vm_primitive_call_trace (char *name, IDIO thr, int nargs);
+static void idio_vm_primitive_result_trace (IDIO thr);
+
 static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
 {
     IDIO_ASSERT (thr);
@@ -1157,6 +1197,14 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
 		return;
 	    }
 
+	    /*
+	     * Unlike the other invocations of a primitive (see
+	     * PRIMCALL*, below) we haven't preset _VAL, _REG1 with
+	     * our arguments so idio_vm_primitive_call_trace() can't
+	     * do the right thing.
+	     *
+	     * idio_vm_start_func() bumbles through well enough.
+	     */
 #ifdef IDIO_VM_PERF
 	    struct timespec prim_t0;
 	    idio_vm_func_start (func, &prim_t0);
@@ -1236,11 +1284,7 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
 	    }
 
 	    if (idio_vm_tracing) {
-		fprintf (stderr, "%9.s ", "");
-		fprintf (stderr, "%7.s ", "");
-		fprintf (stderr, "%*.s", idio_vm_tracing + 1, "");
-		/* XXX - why is idio_vm_tracing one less hence an extra space? */
-		idio_debug ("=> %s\n", IDIO_THREAD_VAL (thr));
+		idio_vm_primitive_result_trace (thr);
 	    }
 
 	    return;
@@ -1790,7 +1834,7 @@ void idio_vm_raise_condition (IDIO continuablep, IDIO condition, int IHR)
 	tailp = IDIO_VM_INVOKE_REGULAR_CALL;
     } else {
 	idio_vm_preserve_state (thr);
-	idio_array_push (stack, IDIO_THREAD_TRAP_SP (thr));
+	idio_array_push (stack, IDIO_THREAD_TRAP_SP (thr)); /* for RESTORE-TRAP */
     }
 
     IDIO vs = idio_frame (idio_S_nil, IDIO_LIST2 (continuablep, condition));
@@ -1979,8 +2023,8 @@ void idio_vm_restore_continuation_data (IDIO k, IDIO val)
 
     IDIO marker = IDIO_THREAD_STACK_POP ();
     if (idio_SM_preserve_continuation != marker) {
-	idio_debug ("ivrc: marker: expected idio_SM_preserve_continuation not %s\n", marker);
-	idio_vm_panic (thr, "ivrc: unexpected stack marker");
+	idio_debug ("iv_rest_cont_data: marker: expected idio_SM_preserve_continuation not %s\n", marker);
+	idio_vm_panic (thr, "iv_rest_cont_data: unexpected stack marker");
 
 	/* notreached */
     }
@@ -2001,15 +2045,14 @@ void idio_vm_restore_continuation (IDIO k, IDIO val)
     IDIO_TYPE_ASSERT (continuation, k);
 
     idio_vm_restore_continuation_data (k, val);
-
     IDIO thr = idio_thread_current_thread ();
 
     if (NULL != IDIO_THREAD_JMP_BUF (thr)) {
 	siglongjmp (*(IDIO_THREAD_JMP_BUF (thr)), IDIO_VM_SIGLONGJMP_CONTINUATION);
     } else {
 	fprintf (stderr, "WARNING: restore-continuation: unable to use jmp_buf==NULL\n");
-	idio_vm_debug (thr, "ivrc unable to use jmp_buf==NULL", 0);
-	idio_vm_panic (thr, "ivrc unable to use jmp_buf==NULL");
+	idio_vm_debug (thr, "iv_rest_cont unable to use jmp_buf==NULL", 0);
+	idio_vm_panic (thr, "iv_rest_cont unable to use jmp_buf==NULL");
 	return;
     }
 }
@@ -2028,8 +2071,8 @@ void idio_vm_restore_exit (IDIO k, IDIO val)
 	siglongjmp (*(IDIO_THREAD_JMP_BUF (thr)), IDIO_VM_SIGLONGJMP_EXIT);
     } else {
 	fprintf (stderr, "WARNING: restore-exit: unable to use jmp_buf==NULL\n");
-	idio_vm_debug (thr, "ivre unable to use jmp_buf==NULL", 0);
-	idio_vm_panic (thr, "ivre unable to use jmp_buf==NULL");
+	idio_vm_debug (thr, "iv_rest_exit unable to use jmp_buf==NULL", 0);
+	idio_vm_panic (thr, "iv_rest_exit unable to use jmp_buf==NULL");
 	return;
     }
 }
@@ -2048,7 +2091,14 @@ IDIO_DEFINE_PRIMITIVE2 ("%%restore-continuation", restore_continuation, (IDIO k,
     return idio_S_notreached;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("%%call/cc", call_cc, (IDIO proc))
+IDIO_DEFINE_PRIMITIVE1_DS ("%%call/cc", call_cc, (IDIO proc), "proc", "\
+call ``proc`` with the current continuation			\n\
+								\n\
+:param proc:							\n\
+:type proc: a procedure of 1 argument				\n\
+								\n\
+This is the ``call/cc`` primitive.				\n\
+")
 {
     IDIO_ASSERT (proc);
     IDIO_TYPE_ASSERT (closure, proc);
@@ -2135,7 +2185,7 @@ static void idio_vm_function_trace (IDIO_I ins, IDIO thr)
      * SPACE
      * %7zd	- PC of ins
      * SPACE
-     * %30s	- lexical information
+     * %40s	- lexical information
      * %*s	- trace-depth indent
      * %20s	- closure name (if available)
      * SPACE
@@ -2155,16 +2205,16 @@ static void idio_vm_function_trace (IDIO_I ins, IDIO thr)
 	    idio_display (lo, lo_sh);
 	} else {
 	    idio_display (idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_NAME), lo_sh);
-	    idio_display_C (": line ", lo_sh);
+	    idio_display_C (":line ", lo_sh);
 	    idio_display (idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_LINE), lo_sh);
 	}
     } else {
 	idio_display (src, lo_sh);
 	idio_display_C (" !pair", lo_sh);
     }
-    idio_debug ("%-30s", idio_get_output_string (lo_sh));
+    idio_debug ("%-40s", idio_get_output_string (lo_sh));
 
-    fprintf (stderr, "%*.s", idio_vm_tracing, "");
+    fprintf (stderr, "%.*s  ", idio_vm_tracing, idio_vm_tracing_in);
 
     int isa_closure = idio_isa_closure (func);
 
@@ -2172,7 +2222,7 @@ static void idio_vm_function_trace (IDIO_I ins, IDIO thr)
 	IDIO name = idio_get_property (func, idio_KW_name, IDIO_LIST1 (idio_S_nil));
 	IDIO sigstr = idio_get_property (func, idio_KW_sigstr, IDIO_LIST1 (idio_S_nil));
 
-	if (idio_S_unspec != name) {
+	if (idio_S_nil != name) {
 	    char *s = idio_display_string (name);
 	    fprintf (stderr, "(%s", s);
 	    free (s);
@@ -2184,20 +2234,25 @@ static void idio_vm_function_trace (IDIO_I ins, IDIO thr)
 	    fprintf (stderr, " %s", s);
 	    free (s);
 	}
-	fprintf (stderr, ") was called as ");
-    } else {
-	/* fprintf (stderr, "                     "); */
+	fprintf (stderr, ") was ");
+    } else if (idio_isa_primitive (func)) {
     }
 
-    switch (ins) {
-    case IDIO_A_FUNCTION_GOTO:
-	fprintf (stderr, "TC ");
-	break;
-    case IDIO_A_FUNCTION_INVOKE:
-	if (isa_closure) {
-	    fprintf (stderr, "   ");
+    if (isa_closure) {
+	switch (ins) {
+	case IDIO_A_FUNCTION_GOTO:
+	    fprintf (stderr, "tail-called as\n");
+	    break;
+	case IDIO_A_FUNCTION_INVOKE:
+	    fprintf (stderr, "called as\n");
+	    break;
 	}
-	break;
+
+	fprintf (stderr, "%9s ", "");
+	fprintf (stderr, "%7s ", "");
+	fprintf (stderr, "%40s", "");
+
+	fprintf (stderr, "%*s  ", idio_vm_tracing, "");
     }
 
     idio_debug ("%s", expr);
@@ -2215,12 +2270,13 @@ static void idio_vm_primitive_call_trace (char *name, IDIO thr, int nargs)
      * %*s	- trace-depth indent (>= 1)
      * %s	- expression
      */
-    fprintf (stderr, "%9.s ", "");
+    fprintf (stderr, "%9s ", "");
     fprintf (stderr, "%7zd ", IDIO_THREAD_PC (thr) - 1);
+    fprintf (stderr, "%40s", "");
 
     /* fprintf (stderr, "        __primcall__    "); */
 
-    fprintf (stderr, "%*.s", idio_vm_tracing + 1, "");
+    fprintf (stderr, "%.*s  ", idio_vm_tracing, idio_vm_tracing_in);
     fprintf (stderr, "(%s", name);
     if (nargs > 1) {
 	idio_debug (" %s", IDIO_THREAD_REG1 (thr));
@@ -2244,10 +2300,11 @@ static void idio_vm_primitive_result_trace (IDIO thr)
      */
     /* fprintf (stderr, "                                "); */
 
-    fprintf (stderr, "%9.s ", "");
-    fprintf (stderr, "%7.s ", "");
-    fprintf (stderr, "%*.s", idio_vm_tracing + 1, "");
-    idio_debug ("=> %s\n", val);
+    fprintf (stderr, "%9s ", "");
+    fprintf (stderr, "%7zd ", IDIO_THREAD_PC (thr));
+    fprintf (stderr, "%40s", "");
+    fprintf (stderr, "%.*s  ", idio_vm_tracing, idio_vm_tracing_out);
+    idio_debug ("%s\n", val);
 }
 
 /*
@@ -3158,10 +3215,11 @@ int idio_vm_run1 (IDIO thr)
 	    IDIO_VM_RUN_DIS ("RETURN to %" PRIdPTR, pc);
 	    IDIO_THREAD_PC (thr) = pc;
 	    if (idio_vm_tracing) {
-		fprintf (stderr, "%9.s ", "");
-		fprintf (stderr, "%7.s ", "");
-		fprintf (stderr, "%*.s", idio_vm_tracing, "");
-		idio_debug ("=> %s\n", IDIO_THREAD_VAL (thr));
+		fprintf (stderr, "%9s ", "");
+		fprintf (stderr, "%7zd ", IDIO_THREAD_PC (thr));
+		fprintf (stderr, "%40s", "");
+		fprintf (stderr, "%.*s  ", idio_vm_tracing, idio_vm_tracing_out);
+		idio_debug ("%s\n", IDIO_THREAD_VAL (thr));
 		if (idio_vm_tracing <= 1) {
 		    /* fprintf (stderr, "XXX RETURN to %td: tracing depth <= 1!\n", pc); */
 		} else {
@@ -5333,12 +5391,6 @@ IDIO idio_vm_run (IDIO thr)
 
     IDIO r = IDIO_THREAD_VAL (thr);
 
-    /*
-     * Expose krun before any possible non-local return
-     * (idio_vm_restore_{exit,continuation}
-     */
-    /* idio_gc_expose (krun); */
-
     if (idio_vm_exit) {
 	fprintf (stderr, "vm-run/exit (%d)\n", idio_exit_status);
 	idio_vm_restore_exit (idio_k_exit, idio_S_unspec);
@@ -5685,6 +5737,37 @@ IDIO_DEFINE_PRIMITIVE2_DS ("run-in-thread", run_in_thread, (IDIO thr, IDIO func,
     return r;
 }
 
+/*
+ * NB There is no point in exposing idio_vm_source_location() as a
+ * primitive as wherever you call it it returns that place -- in other
+ * words it is of no use in any kind of handler as it merely tells you
+ * you are in the handler.
+ */
+IDIO idio_vm_source_location ()
+{
+    IDIO cthr = idio_thread_current_thread ();
+    IDIO expr = IDIO_THREAD_EXPR (cthr);
+
+    IDIO lo = idio_S_nil;
+    if (idio_S_nil != expr) {
+	lo = idio_hash_get (idio_src_properties, expr);
+	if (idio_S_unspec == lo) {
+	    lo = idio_S_nil;
+	}
+    }
+
+    IDIO lsh = idio_open_output_string_handle_C ();
+    if (idio_S_nil == lo) {
+	idio_display_C ("<no lexobj> ", lsh);
+    } else {
+	idio_display (idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_NAME), lsh);
+	idio_display_C (":line ", lsh);
+	idio_display (idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_LINE), lsh);
+    }
+
+    return idio_get_output_string (lsh);
+}
+
 void idio_vm_decode_stack (IDIO thr)
 {
     IDIO_ASSERT (thr);
@@ -5843,7 +5926,7 @@ void idio_vm_decode_stack (IDIO thr)
 		   idio_isa_fixnum (sv3) &&
 		   idio_isa_fixnum (sv4) &&
 		   idio_isa_fixnum (sv5)) {
-	    fprintf (stderr, "%-20s ", "RS R");
+	    fprintf (stderr, "%-20s ", "RS R ?");
 	    idio_debug ("esp %s ", sv4);
 	    idio_debug ("dsp %s ", sv3);
 	    idio_debug ("tsp %s ", sv2);
@@ -5873,7 +5956,7 @@ void idio_vm_decode_stack (IDIO thr)
 		   idio_isa_fixnum (sv2) &&
 		   idio_isa_fixnum (sv3) &&
 		   idio_isa_fixnum (sv4)) {
-	    fprintf (stderr, "%-20s ", "RS");
+	    fprintf (stderr, "%-20s ", "RS ?");
 	    idio_debug ("esp %s ", sv4);
 	    idio_debug ("dsp %s ", sv3);
 	    idio_debug ("tsp %s ", sv2);
@@ -5900,7 +5983,7 @@ void idio_vm_decode_stack (IDIO thr)
 		IDIO_C_ASSERT (0);
 		*/
 	    }
-	    fprintf (stderr, "%-20s ", idio_type2string (sv0));
+	    fprintf (stderr, "val %-16s ", idio_type2string (sv0));
 	    idio_debug ("%.100s", sv0);
 	    sp -= 1;
 	}
@@ -6025,6 +6108,12 @@ void idio_vm_add_primitives ()
 void idio_final_vm ()
 {
     fprintf (stderr, "final-vm:\n");
+
+    /*
+     * Run a GC in case someone is hogging all the file descriptors,
+     * say, as we want to use one, at least.
+     */
+    idio_gc_collect ("idio_final_vm");
     IDIO thr = idio_thread_current_thread ();
     idio_dasm_FILE = fopen ("vm-dasm", "w");
     if (idio_dasm_FILE) {
@@ -6032,7 +6121,7 @@ void idio_final_vm ()
 	fclose (idio_dasm_FILE);
     }
 
-    idio_vm_decode_stack (thr);
+    idio_vm_thread_state ();
 
 #ifdef IDIO_VM_PERF
     fprintf (idio_vm_perf_FILE, "final-vm: created %zu instruction bytes\n", IDIO_IA_USIZE (idio_all_code));

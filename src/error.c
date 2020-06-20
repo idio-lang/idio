@@ -130,10 +130,12 @@ void idio_error_param_nil (char *name, IDIO c_location)
     idio_display_C (name, sh);
     idio_display_C (" is nil", sh);
 
+    IDIO location = idio_vm_source_location ();
+
     IDIO c = idio_struct_instance (idio_condition_rt_parameter_nil_error_type,
 				   IDIO_LIST3 (idio_get_output_string (sh),
-					       c_location,
-					       idio_S_nil));
+					       location,
+					       c_location));
     idio_raise_condition (idio_S_false, c);
 }
 
@@ -152,10 +154,12 @@ void idio_error_param_type (char *etype, IDIO who, IDIO c_location)
     idio_display_C (" is not a ", sh);
     idio_display_C (etype, sh);
 
+    IDIO location = idio_vm_source_location ();
+
     IDIO c = idio_struct_instance (idio_condition_rt_parameter_type_error_type,
 				   IDIO_LIST3 (idio_get_output_string (sh),
-					       c_location,
-					       who));
+					       location,
+					       c_location));
     idio_raise_condition (idio_S_false, c);
 }
 
@@ -187,10 +191,12 @@ void idio_error_const_param (char *type_name, IDIO who, IDIO c_location)
     idio_write (who, sh);
     idio_display_C (") is constant", sh);
 
+    IDIO location = idio_vm_source_location ();
+
     IDIO c = idio_struct_instance (idio_condition_rt_const_parameter_error_type,
 				   IDIO_LIST3 (idio_get_output_string (sh),
-					       c_location,
-					       who));
+					       location,
+					       c_location));
     idio_raise_condition (idio_S_false, c);
 }
 
@@ -304,10 +310,12 @@ void idio_error_divide_by_zero (char *msg, IDIO c_location)
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C (msg, msh);
 
+    IDIO location = idio_vm_source_location ();
+
     IDIO c = idio_struct_instance (idio_condition_rt_divide_by_zero_error_type,
 				   IDIO_LIST3 (idio_get_output_string (msh),
-					       c_location,
-					       idio_S_nil));
+					       location,
+					       c_location));
 
     idio_raise_condition (idio_S_true, c);
 

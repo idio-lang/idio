@@ -42,10 +42,12 @@ void idio_keyword_error_key_not_found (IDIO key, IDIO c_location)
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C ("key not found", msh);
 
+    IDIO location = idio_vm_source_location ();
+
     IDIO c = idio_struct_instance (idio_condition_rt_hash_key_not_found_error_type,
 				   IDIO_LIST4 (idio_get_output_string (msh),
+					       location,
 					       c_location,
-					       idio_S_nil,
 					       key));
 
     idio_raise_condition (idio_S_true, c);

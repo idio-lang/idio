@@ -97,10 +97,13 @@ static void idio_command_error_glob (IDIO pattern, IDIO c_location)
 
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C ("pattern glob failed", sh);
+
+    IDIO location = idio_vm_source_location ();
+
     IDIO c = idio_struct_instance (idio_condition_rt_glob_error_type,
 				   IDIO_LIST4 (idio_get_output_string (sh),
+					       location,
 					       c_location,
-					       idio_S_nil,
 					       pattern));
     idio_raise_condition (idio_S_true, c);
 }
@@ -119,10 +122,12 @@ static void idio_command_error_argv_type (IDIO arg, char *reason_C, IDIO c_locat
     idio_display_C (" to an execve argument: ", sh);
     idio_display_C (reason_C, sh);
 
+    IDIO location = idio_vm_source_location ();
+
     IDIO c = idio_struct_instance (idio_condition_rt_command_argv_type_error_type,
 				   IDIO_LIST4 (idio_get_output_string (sh),
+					       location,
 					       c_location,
-					       idio_S_nil,
 					       arg));
 
     idio_raise_condition (idio_S_true, c);
@@ -140,10 +145,12 @@ static void idio_command_error_env_type (IDIO name, IDIO c_location)
     idio_display (name, sh);
     idio_display_C ("' is not a string", sh);
 
+    IDIO location = idio_vm_source_location ();
+
     IDIO c = idio_struct_instance (idio_condition_rt_command_env_type_error_type,
 				   IDIO_LIST4 (idio_get_output_string (sh),
+					       location,
 					       c_location,
-					       idio_S_nil,
 					       name));
 
     idio_raise_condition (idio_S_true, c);
@@ -187,10 +194,12 @@ static void idio_command_error_exec (char **argv, char **envp, IDIO c_location)
 	    idio_display_C ("\"", sh);
 	}
     }
+    IDIO location = idio_vm_source_location ();
+
     IDIO c = idio_struct_instance (idio_condition_rt_command_exec_error_type,
 				   IDIO_LIST4 (idio_get_output_string (sh),
+					       location,
 					       c_location,
-					       idio_S_nil,
 					       idio_fixnum ((intptr_t) errno)));
     idio_raise_condition (idio_S_true, c);
 }

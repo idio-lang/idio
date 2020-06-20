@@ -32,10 +32,13 @@ static void idio_path_error_glob (IDIO pattern, IDIO c_location)
 
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C ("pattern glob failed", sh);
+
+    IDIO location = idio_vm_source_location ();
+
     IDIO c = idio_struct_instance (idio_condition_rt_glob_error_type,
 				   IDIO_LIST4 (idio_get_output_string (sh),
+					       location,
 					       c_location,
-					       idio_S_nil,
 					       pattern));
     idio_raise_condition (idio_S_true, c);
 }

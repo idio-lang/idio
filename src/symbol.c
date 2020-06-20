@@ -109,10 +109,12 @@ void idio_property_error_nil_object (char *msg, IDIO c_location)
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C (msg, msh);
 
+    IDIO location = idio_vm_source_location ();
+
     IDIO c = idio_struct_instance (idio_condition_rt_parameter_nil_error_type,
 				   IDIO_LIST3 (idio_get_output_string (msh),
-					       c_location,
-					       idio_S_nil));
+					       location,
+					       c_location));
 
     idio_raise_condition (idio_S_true, c);
 }
@@ -125,8 +127,11 @@ void idio_properties_error_not_found (char *msg, IDIO o, IDIO c_location)
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C (msg, msh);
 
+    IDIO location = idio_vm_source_location ();
+
     IDIO c = idio_struct_instance (idio_condition_rt_hash_key_not_found_error_type,
-				   IDIO_LIST3 (idio_get_output_string (msh),
+				   IDIO_LIST4 (idio_get_output_string (msh),
+					       location,
 					       c_location,
 					       o));
 
@@ -141,10 +146,12 @@ void idio_property_error_no_properties (char *msg, IDIO c_location)
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C (msg, msh);
 
+    IDIO location = idio_vm_source_location ();
+
     IDIO c = idio_struct_instance (idio_condition_rt_hash_key_not_found_error_type,
 				   IDIO_LIST3 (idio_get_output_string (msh),
-					       c_location,
-					       idio_S_nil));
+					       location,
+					       c_location));
 
     idio_raise_condition (idio_S_true, c);
 }
@@ -158,10 +165,12 @@ void idio_property_error_key_not_found (IDIO key, IDIO c_location)
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C ("key not found", msh);
 
+    IDIO location = idio_vm_source_location ();
+
     IDIO c = idio_struct_instance (idio_condition_rt_hash_key_not_found_error_type,
 				   IDIO_LIST4 (idio_get_output_string (msh),
+					       location,
 					       c_location,
-					       idio_S_nil,
 					       key));
 
     idio_raise_condition (idio_S_true, c);

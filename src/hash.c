@@ -72,12 +72,16 @@ void idio_hash_error_key_not_found (IDIO key, IDIO c_location)
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C ("key not found", msh);
 
+    IDIO location = idio_vm_source_location ();
+
     IDIO c = idio_struct_instance (idio_condition_rt_hash_key_not_found_error_type,
 				   IDIO_LIST4 (idio_get_output_string (msh),
+					       location,
 					       c_location,
-					       idio_S_nil,
 					       key));
     idio_raise_condition (idio_S_true, c);
+
+    /* notreached */
 }
 
 static int idio_assign_hash_he (IDIO h, idio_hi_t size)
@@ -612,6 +616,20 @@ idio_hi_t idio_idio_hash_default_hash_C_handle (IDIO h)
     return idio_hash_default_hash_C_void (IDIO_HANDLE_STREAM (h));
 }
 
+idio_hi_t idio_idio_hash_default_hash_C_struct_type (IDIO h)
+{
+    IDIO_ASSERT (h);
+
+    return idio_hash_default_hash_C_void (IDIO_STRUCT_TYPE_FIELDS (h));
+}
+
+idio_hi_t idio_idio_hash_default_hash_C_struct_instance (IDIO h)
+{
+    IDIO_ASSERT (h);
+
+    return idio_hash_default_hash_C_void (IDIO_STRUCT_INSTANCE_FIELDS (h));
+}
+
 idio_hi_t idio_hash_default_hash_C_C_struct (IDIO h)
 {
     IDIO_ASSERT (h);
@@ -724,6 +742,12 @@ idio_hi_t idio_hash_default_hash_C (IDIO h, void *kv)
 	break;
     case IDIO_TYPE_HANDLE:
 	hv = idio_idio_hash_default_hash_C_handle (k);
+	break;
+    case IDIO_TYPE_STRUCT_TYPE:
+	hv = idio_idio_hash_default_hash_C_struct_type (k);
+	break;
+    case IDIO_TYPE_STRUCT_INSTANCE:
+	hv = idio_idio_hash_default_hash_C_struct_instance (k);
 	break;
     case IDIO_TYPE_C_INT:
 	hv = idio_hash_default_hash_C_uintmax_t ((uintmax_t) IDIO_C_TYPE_INT (k));

@@ -230,6 +230,7 @@ void idio_vm_func_stop (IDIO clos, struct timespec *tsp);
 void idio_vm_prim_time (IDIO clos, struct timespec *ts0p, struct timespec *tsep);
 #endif
 IDIO idio_vm_invoke_C (IDIO thr, IDIO command);
+IDIO idio_vm_source_location ();
 
 void idio_vm_thread_init (IDIO thr);
 void idio_vm_default_pc (IDIO thr);

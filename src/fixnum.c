@@ -41,10 +41,12 @@ static void idio_fixnum_error_conversion (char *msg, IDIO fn, IDIO c_location)
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C (msg, msh);
 
+    IDIO location = idio_vm_source_location ();
+
     IDIO c = idio_struct_instance (idio_condition_rt_fixnum_conversion_error_type,
 				   IDIO_LIST4 (idio_get_output_string (msh),
+					       location,
 					       c_location,
-					       idio_S_nil,
 					       fn));
     idio_raise_condition (idio_S_true, c);
 }
