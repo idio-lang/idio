@@ -2500,19 +2500,19 @@ void idio_dump (IDIO o, int detail)
 	    case IDIO_TYPE_HASH:
 		if (detail) {
 		    fprintf (stderr, "hsz=%zu hm=%zx hc=%zu hst=%zu\n", IDIO_HASH_SIZE (o), IDIO_HASH_MASK (o), IDIO_HASH_COUNT (o), IDIO_HASH_START (o));
-		    if (IDIO_HASH_EQUAL (o) != NULL) {
-			if (IDIO_HASH_EQUAL (o) == idio_eqp) {
+		    if (IDIO_HASH_COMP_C (o) != NULL) {
+			if (IDIO_HASH_COMP_C (o) == idio_eqp) {
 			    fprintf (stderr, "eq=idio_S_eqp");;
-			} else if (IDIO_HASH_EQUAL (o) == idio_eqvp) {
+			} else if (IDIO_HASH_COMP_C (o) == idio_eqvp) {
 			    fprintf (stderr, "eq=idio_S_eqvp");
-			} else if (IDIO_HASH_EQUAL (o) == idio_equalp) {
+			} else if (IDIO_HASH_COMP_C (o) == idio_equalp) {
 			    fprintf (stderr, "eq=idio_S_equalp");
 			}
 		    } else {
 			idio_debug ("eq=%s", IDIO_HASH_COMP (o));
 		    }
-		    if (IDIO_HASH_HASHF (o) != NULL) {
-			if (IDIO_HASH_HASHF (o) == idio_hash_default_hashf) {
+		    if (IDIO_HASH_HASH_C (o) != NULL) {
+			if (IDIO_HASH_HASH_C (o) == idio_hash_default_hash_C) {
 			    fprintf (stderr, " hf=<default>");
 			}
 		    } else {

@@ -436,8 +436,8 @@ typedef struct idio_hash_s {
     idio_hi_t mask;	      /* bitmask for easy modulo arithmetic */
     idio_hi_t count;	      /* (key) count */
     idio_hi_t start;	      /* start free search */
-    int (*equal) (void *k1, void *k2);		    /* C equivalence function */
-    idio_hi_t (*hashf) (struct idio_s *h, void *k); /* C hashing function */
+    int (*comp_C) (void *k1, void *k2);	/* C equivalence function */
+    idio_hi_t (*hash_C) (struct idio_s *h, void *k); /* C hashing function */
     struct idio_s *comp;	/* user-supplied comparator */
     struct idio_s *hash;	/* user-supplied hashing function */
     idio_hash_entry_t *he;	/* a C array */
@@ -448,8 +448,8 @@ typedef struct idio_hash_s {
 #define IDIO_HASH_MASK(H)	((H)->u.hash->mask)
 #define IDIO_HASH_COUNT(H)	((H)->u.hash->count)
 #define IDIO_HASH_START(H)	((H)->u.hash->start)
-#define IDIO_HASH_EQUAL(H)	((H)->u.hash->equal)
-#define IDIO_HASH_HASHF(H)	((H)->u.hash->hashf)
+#define IDIO_HASH_COMP_C(H)	((H)->u.hash->comp_C)
+#define IDIO_HASH_HASH_C(H)	((H)->u.hash->hash_C)
 #define IDIO_HASH_COMP(H)	((H)->u.hash->comp)
 #define IDIO_HASH_HASH(H)	((H)->u.hash->hash)
 #define IDIO_HASH_HE_KEY(H,i)	((H)->u.hash->he[i].k)

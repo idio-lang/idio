@@ -38,7 +38,7 @@
  *
  * With a coalesced hash the internal API (which leaks out -- grr!!)
  * is slightly different.  Having determing the hash value of a key
- * (idio_hash_default_hashf ()) we need to walk the chain of
+ * (idio_hash_default_hash_C ()) we need to walk the chain of
  * same-hash-value keys until we find the one ``equal`` to us or walk
  * off the end of the chain (idio_hash_hv_follow_chain ()).
  *
@@ -161,21 +161,21 @@ static int idio_assign_hash_he (IDIO h, idio_hi_t size)
  *
  * Either a C or Idio function can be supplied for:
  *
- * a. equality: equalf and comp, respectively
+ * a. equality: comp_C and comp, respectively
  *
- * b. hashing: hashf and hash, respectively
+ * b. hashing: hash_C and hash, respectively
  *
  * You cannot supply both.  Use NULL for the C-variant to ignore it.
  */
-IDIO idio_hash (idio_hi_t size, int (*equalf) (void *k1, void *k2), idio_hi_t (*hashf) (IDIO h, void *k), IDIO comp, IDIO hash)
+IDIO idio_hash (idio_hi_t size, int (*comp_C) (void *k1, void *k2), idio_hi_t (*hash_C) (IDIO h, void *k), IDIO comp, IDIO hash)
 {
     IDIO_C_ASSERT (size);
-    /* IDIO_C_ASSERT (equalf); */
-    /* IDIO_C_ASSERT (hashf); */
+    /* IDIO_C_ASSERT (comp_C); */
+    /* IDIO_C_ASSERT (hash_C); */
     IDIO_ASSERT (comp);
     IDIO_ASSERT (hash);
 
-    if (NULL == equalf) {
+    if (NULL == comp_C) {
 	if (idio_S_nil == comp) {
 	    idio_hash_error ("no comparator supplied", IDIO_C_FUNC_LOCATION ());
 
@@ -187,7 +187,7 @@ IDIO idio_hash (idio_hi_t size, int (*equalf) (void *k1, void *k2), idio_hi_t (*
 	return idio_S_notreached;
     }
 
-    if (NULL == hashf) {
+    if (NULL == hash_C) {
 	if (idio_S_nil == hash) {
 	    idio_hash_error ("no hashing function supplied", IDIO_C_FUNC_LOCATION ());
 
@@ -203,8 +203,8 @@ IDIO idio_hash (idio_hi_t size, int (*equalf) (void *k1, void *k2), idio_hi_t (*
     IDIO_GC_ALLOC (h->u.hash, sizeof (idio_hash_t));
     IDIO_HASH_GREY (h) = NULL;
     IDIO_HASH_COUNT (h) = 0;
-    IDIO_HASH_EQUAL (h) = equalf;
-    IDIO_HASH_HASHF (h) = hashf;
+    IDIO_HASH_COMP_C (h) = comp_C;
+    IDIO_HASH_HASH_C (h) = hash_C;
     IDIO_HASH_COMP (h) = comp;
     IDIO_HASH_HASH (h) = hash;
     IDIO_HASH_FLAGS (h) = IDIO_HASH_FLAG_NONE;
@@ -277,8 +277,8 @@ IDIO idio_hash_copy (IDIO orig, int depth)
     IDIO new = idio_gc_get (IDIO_TYPE_HASH);
     IDIO_GC_ALLOC (new->u.hash, sizeof (idio_hash_t));
     IDIO_HASH_GREY (new) = NULL;
-    IDIO_HASH_EQUAL (new) = IDIO_HASH_EQUAL (orig);
-    IDIO_HASH_HASHF (new) = IDIO_HASH_HASHF (orig);
+    IDIO_HASH_COMP_C (new) = IDIO_HASH_COMP_C (orig);
+    IDIO_HASH_HASH_C (new) = IDIO_HASH_HASH_C (orig);
     IDIO_HASH_COMP (new) = IDIO_HASH_COMP (orig);
     IDIO_HASH_HASH (new) = IDIO_HASH_HASH (orig);
     IDIO_HASH_FLAGS (new) = IDIO_HASH_FLAGS (orig);
@@ -458,11 +458,11 @@ void idio_hash_resize (IDIO h, int larger)
 }
 
 /*
- * idio_hash_default_hashf_* are variations on a theme to caluclate a
+ * idio_hash_default_hash_C_* are variations on a theme to caluclate a
  * hash value for a given C type of thing -- where lots of Idio types
  * map onto similar C types.
  */
-idio_hi_t idio_hash_default_hashf_uintmax_t (uintmax_t i)
+idio_hi_t idio_hash_default_hash_C_uintmax_t (uintmax_t i)
 {
 
     idio_hi_t hv = i ^ (i << 8) ^ (i << 16) ^ (i << 24);
@@ -470,7 +470,7 @@ idio_hi_t idio_hash_default_hashf_uintmax_t (uintmax_t i)
     return hv;
 }
 
-idio_hi_t idio_hash_default_hashf_void (void *p)
+idio_hi_t idio_hash_default_hash_C_void (void *p)
 {
     IDIO_C_ASSERT (p);
 
@@ -480,22 +480,22 @@ idio_hi_t idio_hash_default_hashf_void (void *p)
      * all our objects are at least 16 bytes so pointer alignment
      * means the bottom 4-5 bits are always 0
     */
-    idio_hi_t hv = idio_hash_default_hashf_uintmax_t (ul ^ (ul >> 5));
+    idio_hi_t hv = idio_hash_default_hash_C_uintmax_t (ul ^ (ul >> 5));
     return hv;
 }
 
-idio_hi_t idio_hash_default_hashf_character (IDIO c)
+idio_hi_t idio_hash_default_hash_C_character (IDIO c)
 {
     IDIO_ASSERT (c);
 
-    return idio_hash_default_hashf_uintmax_t (IDIO_CHARACTER_VAL (c));
+    return idio_hash_default_hash_C_uintmax_t (IDIO_CHARACTER_VAL (c));
 }
 
-idio_hi_t idio_hash_default_hashf_string_C (idio_hi_t blen, const char *s_C)
+idio_hi_t idio_hash_default_hash_C_string_C (idio_hi_t blen, const char *s_C)
 {
     IDIO_C_ASSERT (s_C);
 
-    idio_hi_t hv = idio_hash_default_hashf_uintmax_t (blen);
+    idio_hi_t hv = idio_hash_default_hash_C_uintmax_t (blen);
 
     /*
      * We could hash every character in the string.  However, a
@@ -526,115 +526,115 @@ idio_hi_t idio_hash_default_hashf_string_C (idio_hi_t blen, const char *s_C)
     return hv;
 }
 
-idio_hi_t idio_hash_default_hashf_string (IDIO s)
+idio_hi_t idio_hash_default_hash_C_string (IDIO s)
 {
     IDIO_ASSERT (s);
 
-    return idio_hash_default_hashf_string_C (IDIO_STRING_BLEN (s), IDIO_STRING_S (s));
+    return idio_hash_default_hash_C_string_C (IDIO_STRING_BLEN (s), IDIO_STRING_S (s));
 }
 
-idio_hi_t idio_hash_default_hashf_symbol (IDIO h)
+idio_hi_t idio_hash_default_hash_C_symbol (IDIO h)
 {
     IDIO_ASSERT (h);
 
-    return idio_hash_default_hashf_void (IDIO_SYMBOL_S (h));
+    return idio_hash_default_hash_C_void (IDIO_SYMBOL_S (h));
 }
 
-idio_hi_t idio_hash_default_hashf_keyword (IDIO h)
+idio_hi_t idio_hash_default_hash_C_keyword (IDIO h)
 {
     IDIO_ASSERT (h);
 
-    return idio_hash_default_hashf_void (IDIO_KEYWORD_S (h));
+    return idio_hash_default_hash_C_void (IDIO_KEYWORD_S (h));
 }
 
-idio_hi_t idio_hash_default_hashf_pair (IDIO h)
+idio_hi_t idio_hash_default_hash_C_pair (IDIO h)
 {
     IDIO_ASSERT (h);
 
-    return idio_hash_default_hashf_uintmax_t ((unsigned long) IDIO_PAIR_H (h) ^ (unsigned long) IDIO_PAIR_T (h));
+    return idio_hash_default_hash_C_uintmax_t ((unsigned long) IDIO_PAIR_H (h) ^ (unsigned long) IDIO_PAIR_T (h));
 }
 
-idio_hi_t idio_hash_default_hashf_array (IDIO h)
+idio_hi_t idio_hash_default_hash_C_array (IDIO h)
 {
     IDIO_ASSERT (h);
 
-    return idio_hash_default_hashf_void (h->u.array);
+    return idio_hash_default_hash_C_void (h->u.array);
 }
 
-idio_hi_t idio_hash_default_hashf_hash (IDIO h)
+idio_hi_t idio_hash_default_hash_C_hash (IDIO h)
 {
     IDIO_ASSERT (h);
 
-    return idio_hash_default_hashf_void (h->u.hash);
+    return idio_hash_default_hash_C_void (h->u.hash);
 }
 
-idio_hi_t idio_idio_hash_default_hashf_closure (IDIO h)
+idio_hi_t idio_idio_hash_default_hash_C_closure (IDIO h)
 {
     IDIO_ASSERT (h);
 
-    idio_hi_t hv = idio_hash_default_hashf_uintmax_t (IDIO_CLOSURE_CODE_PC (h));
-    hv ^= idio_hash_default_hashf_void (IDIO_CLOSURE_ENV (h));
+    idio_hi_t hv = idio_hash_default_hash_C_uintmax_t (IDIO_CLOSURE_CODE_PC (h));
+    hv ^= idio_hash_default_hash_C_void (IDIO_CLOSURE_ENV (h));
     return hv;
 }
 
-idio_hi_t idio_idio_hash_default_hashf_primitive (IDIO h)
+idio_hi_t idio_idio_hash_default_hash_C_primitive (IDIO h)
 {
     IDIO_ASSERT (h);
 
-    return idio_hash_default_hashf_void (IDIO_PRIMITIVE_F (h));
+    return idio_hash_default_hash_C_void (IDIO_PRIMITIVE_F (h));
 }
 
-idio_hi_t idio_idio_hash_default_hashf_module (IDIO h)
+idio_hi_t idio_idio_hash_default_hash_C_module (IDIO h)
 {
     IDIO_ASSERT (h);
 
-    return idio_hash_default_hashf_void (IDIO_MODULE_NAME (h));
+    return idio_hash_default_hash_C_void (IDIO_MODULE_NAME (h));
 }
 
-idio_hi_t idio_idio_hash_default_hashf_frame (IDIO h)
+idio_hi_t idio_idio_hash_default_hash_C_frame (IDIO h)
 {
     IDIO_ASSERT (h);
 
-    return idio_hash_default_hashf_void (h->u.frame);
+    return idio_hash_default_hash_C_void (h->u.frame);
 }
 
-idio_hi_t idio_idio_hash_default_hashf_bignum (IDIO h)
+idio_hi_t idio_idio_hash_default_hash_C_bignum (IDIO h)
 {
     IDIO_ASSERT (h);
 
-    return idio_hash_default_hashf_void (IDIO_BIGNUM_SIG (h));
+    return idio_hash_default_hash_C_void (IDIO_BIGNUM_SIG (h));
 }
 
-idio_hi_t idio_idio_hash_default_hashf_handle (IDIO h)
+idio_hi_t idio_idio_hash_default_hash_C_handle (IDIO h)
 {
     IDIO_ASSERT (h);
 
-    return idio_hash_default_hashf_void (IDIO_HANDLE_STREAM (h));
+    return idio_hash_default_hash_C_void (IDIO_HANDLE_STREAM (h));
 }
 
-idio_hi_t idio_hash_default_hashf_C_struct (IDIO h)
+idio_hi_t idio_hash_default_hash_C_C_struct (IDIO h)
 {
     IDIO_ASSERT (h);
 
-    return idio_hash_default_hashf_void (IDIO_C_STRUCT_METHODS (h));
+    return idio_hash_default_hash_C_void (IDIO_C_STRUCT_METHODS (h));
 }
 
-idio_hi_t idio_hash_default_hashf_C_instance (IDIO h)
+idio_hi_t idio_hash_default_hash_C_C_instance (IDIO h)
 {
     IDIO_ASSERT (h);
 
-    return idio_hash_default_hashf_void (IDIO_C_INSTANCE_P (h));
+    return idio_hash_default_hash_C_void (IDIO_C_INSTANCE_P (h));
 }
 
-idio_hi_t idio_hash_default_hashf_C_FFI (IDIO h)
+idio_hi_t idio_hash_default_hash_C_C_FFI (IDIO h)
 {
     IDIO_ASSERT (h);
 
-    return idio_hash_default_hashf_void (IDIO_C_FFI_CIFP (h));
+    return idio_hash_default_hash_C_void (IDIO_C_FFI_CIFP (h));
 }
 
 /*
- * idio_hash_default_hashf() is the default hashing function and
+ * idio_hash_default_hash_C() is the default hashing function and
  * basically calls one of the above.  It will return an index into the
  * hash table ``ht`` for the key ``kv``.
  *
@@ -644,7 +644,7 @@ idio_hi_t idio_hash_default_hashf_C_FFI (IDIO h)
  * idio_hi_t result of the hashing function and is suitable to be used
  * module IDIO_HASH_MASK (ht).
  */
-idio_hi_t idio_hash_default_hashf (IDIO h, void *kv)
+idio_hi_t idio_hash_default_hash_C (IDIO h, void *kv)
 {
     IDIO_ASSERT (h);
 
@@ -671,7 +671,7 @@ idio_hi_t idio_hash_default_hashf (IDIO h, void *kv)
     case IDIO_TYPE_CONSTANT_TOKEN:
     case IDIO_TYPE_CONSTANT_I_CODE:
     case IDIO_TYPE_CONSTANT_CHARACTER:
-    return (idio_hash_default_hashf_uintmax_t ((uintptr_t) k) & IDIO_HASH_MASK (h));
+    return (idio_hash_default_hash_C_uintmax_t ((uintptr_t) k) & IDIO_HASH_MASK (h));
     }
 
     /*
@@ -687,71 +687,71 @@ idio_hi_t idio_hash_default_hashf (IDIO h, void *kv)
 
     switch (type) {
     case IDIO_TYPE_STRING:
-	hv = idio_hash_default_hashf_string_C (IDIO_STRING_BLEN (k), IDIO_STRING_S (k));
+	hv = idio_hash_default_hash_C_string_C (IDIO_STRING_BLEN (k), IDIO_STRING_S (k));
 	break;
     case IDIO_TYPE_SUBSTRING:
-	hv = idio_hash_default_hashf_string_C (IDIO_SUBSTRING_BLEN (k), IDIO_SUBSTRING_S (k));
+	hv = idio_hash_default_hash_C_string_C (IDIO_SUBSTRING_BLEN (k), IDIO_SUBSTRING_S (k));
 	break;
     case IDIO_TYPE_SYMBOL:
-	hv = idio_hash_default_hashf_symbol (k);
+	hv = idio_hash_default_hash_C_symbol (k);
 	break;
     case IDIO_TYPE_KEYWORD:
-	hv = idio_hash_default_hashf_keyword (k);
+	hv = idio_hash_default_hash_C_keyword (k);
 	break;
     case IDIO_TYPE_PAIR:
-	hv = idio_hash_default_hashf_pair (k);
+	hv = idio_hash_default_hash_C_pair (k);
 	break;
     case IDIO_TYPE_ARRAY:
-	hv = idio_hash_default_hashf_array (k);
+	hv = idio_hash_default_hash_C_array (k);
 	break;
     case IDIO_TYPE_HASH:
-	hv = idio_hash_default_hashf_hash (k);
+	hv = idio_hash_default_hash_C_hash (k);
 	break;
     case IDIO_TYPE_CLOSURE:
-	hv = idio_idio_hash_default_hashf_closure (k);
+	hv = idio_idio_hash_default_hash_C_closure (k);
 	break;
     case IDIO_TYPE_PRIMITIVE:
-	hv = idio_idio_hash_default_hashf_primitive (k);
+	hv = idio_idio_hash_default_hash_C_primitive (k);
 	break;
     case IDIO_TYPE_MODULE:
-	hv = idio_idio_hash_default_hashf_module (k);
+	hv = idio_idio_hash_default_hash_C_module (k);
 	break;
     case IDIO_TYPE_FRAME:
-	hv = idio_idio_hash_default_hashf_frame (k);
+	hv = idio_idio_hash_default_hash_C_frame (k);
 	break;
     case IDIO_TYPE_BIGNUM:
-	hv = idio_idio_hash_default_hashf_bignum (k);
+	hv = idio_idio_hash_default_hash_C_bignum (k);
 	break;
     case IDIO_TYPE_HANDLE:
-	hv = idio_idio_hash_default_hashf_handle (k);
+	hv = idio_idio_hash_default_hash_C_handle (k);
 	break;
     case IDIO_TYPE_C_INT:
-	hv = idio_hash_default_hashf_uintmax_t ((uintmax_t) IDIO_C_TYPE_INT (k));
+	hv = idio_hash_default_hash_C_uintmax_t ((uintmax_t) IDIO_C_TYPE_INT (k));
 	break;
     case IDIO_TYPE_C_UINT:
-	hv = idio_hash_default_hashf_uintmax_t ((uintmax_t) IDIO_C_TYPE_UINT (k));
+	hv = idio_hash_default_hash_C_uintmax_t ((uintmax_t) IDIO_C_TYPE_UINT (k));
 	break;
     case IDIO_TYPE_C_FLOAT:
-	hv = idio_hash_default_hashf_uintmax_t ((uintmax_t) IDIO_C_TYPE_FLOAT (k));
+	hv = idio_hash_default_hash_C_uintmax_t ((uintmax_t) IDIO_C_TYPE_FLOAT (k));
 	break;
     case IDIO_TYPE_C_DOUBLE:
-	hv = idio_hash_default_hashf_uintmax_t ((uintmax_t) IDIO_C_TYPE_DOUBLE (k));
+	hv = idio_hash_default_hash_C_uintmax_t ((uintmax_t) IDIO_C_TYPE_DOUBLE (k));
 	break;
     case IDIO_TYPE_C_POINTER:
-	hv = idio_hash_default_hashf_void (IDIO_C_TYPE_POINTER_P (k));
+	hv = idio_hash_default_hash_C_void (IDIO_C_TYPE_POINTER_P (k));
 	break;
     case IDIO_TYPE_C_STRUCT:
-	hv = idio_hash_default_hashf_C_struct (k);
+	hv = idio_hash_default_hash_C_C_struct (k);
 	break;
     case IDIO_TYPE_C_INSTANCE:
-	hv = idio_hash_default_hashf_C_instance (k);
+	hv = idio_hash_default_hash_C_C_instance (k);
 	break;
     case IDIO_TYPE_C_FFI:
-	hv = idio_hash_default_hashf_C_FFI (k);
+	hv = idio_hash_default_hash_C_C_FFI (k);
 	break;
     default:
-	fprintf (stderr, "idio_hash_default_hashf default type = %d==%s\n", type, idio_type_enum2string (type));
-	idio_error_C ("idio_hash_default_hashf: unexpected type", k, IDIO_C_FUNC_LOCATION ());
+	fprintf (stderr, "idio_hash_default_hash_C default type = %d==%s\n", type, idio_type_enum2string (type));
+	idio_error_C ("idio_hash_default_hash_C: unexpected type", k, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return -1;
@@ -783,8 +783,8 @@ idio_hi_t idio_hash_value_index (IDIO ht, void *kv)
     IDIO_ASSERT (ht);
     IDIO_TYPE_ASSERT (hash, ht);
 
-    if (IDIO_HASH_HASHF (ht) != NULL) {
-	return IDIO_HASH_HASHF (ht) (ht, kv);
+    if (IDIO_HASH_HASH_C (ht) != NULL) {
+	return IDIO_HASH_HASH_C (ht) (ht, kv);
     } else {
 	IDIO k = (IDIO) kv;
 
@@ -847,8 +847,8 @@ int idio_hash_equal (IDIO ht, void *kv1, void *kv2)
     IDIO_ASSERT (ht);
     IDIO_TYPE_ASSERT (hash, ht);
 
-    if (IDIO_HASH_EQUAL (ht) != NULL) {
-	return IDIO_HASH_EQUAL (ht) (kv1, kv2);
+    if (IDIO_HASH_COMP_C (ht) != NULL) {
+	return IDIO_HASH_COMP_C (ht) (kv1, kv2);
     } else {
 	IDIO r = idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST3 (IDIO_HASH_COMP (ht), (IDIO) kv1, (IDIO) kv2));
 	if (idio_S_false == r) {
@@ -1500,7 +1500,7 @@ IDIO idio_hash_make_hash (IDIO args)
 
     idio_hi_t size = 32;
     int (*equal) (void *k1, void *k2) = idio_equalp;
-    idio_hi_t (*hashf) (IDIO h, void *k) = idio_hash_default_hashf;
+    idio_hi_t (*hash_C) (IDIO h, void *k) = idio_hash_default_hash_C;
     IDIO comp = idio_S_nil;
     IDIO hash = idio_S_nil;
 
@@ -1528,7 +1528,7 @@ IDIO idio_hash_make_hash (IDIO args)
 	hash = IDIO_PAIR_H (args);
 
 	if (idio_S_nil != hash) {
-	    hashf = NULL;
+	    hash_C = NULL;
 	}
 
 	args = IDIO_PAIR_T (args);
@@ -1552,7 +1552,7 @@ IDIO idio_hash_make_hash (IDIO args)
     }
 
 
-    IDIO ht = idio_hash (size, equal, hashf, comp, hash);
+    IDIO ht = idio_hash (size, equal, hash_C, comp, hash);
 
     return ht;
 }
@@ -1651,12 +1651,12 @@ return the ``equiv-func`` of ``h``			\n\
 
     IDIO r = idio_S_unspec;
 
-    if (IDIO_HASH_EQUAL (ht) != NULL) {
-	if (IDIO_HASH_EQUAL (ht) == idio_eqp) {
+    if (IDIO_HASH_COMP_C (ht) != NULL) {
+	if (IDIO_HASH_COMP_C (ht) == idio_eqp) {
 	    r = idio_S_eqp;
-	} else if (IDIO_HASH_EQUAL (ht) == idio_eqvp) {
+	} else if (IDIO_HASH_COMP_C (ht) == idio_eqvp) {
 	    r = idio_S_eqvp;
-	} else if (IDIO_HASH_EQUAL (ht) == idio_equalp) {
+	} else if (IDIO_HASH_COMP_C (ht) == idio_equalp) {
 	    r = idio_S_equalp;
 	}
     } else {
@@ -1680,8 +1680,8 @@ return the ``hash-func`` of ``h``			\n\
 
     IDIO r = idio_S_unspec;
 
-    if (IDIO_HASH_HASHF (ht) != NULL) {
-	if (IDIO_HASH_HASHF (ht) == idio_hash_default_hashf) {
+    if (IDIO_HASH_HASH_C (ht) != NULL) {
+	if (IDIO_HASH_HASH_C (ht) == idio_hash_default_hash_C) {
 	    r = idio_S_nil;
 	}
     } else {
