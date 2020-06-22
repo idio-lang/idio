@@ -8,7 +8,7 @@ read-coverage-load := {
   function (filename) {
     if (not (string? filename)) (coverage 'load "not a string" filename)
 
-    %load filename
+    (symbol-value 'load *primitives*) filename
   }
 }
 

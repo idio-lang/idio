@@ -28,7 +28,7 @@ read-error-load := {
     }) {
       call/cc (function (k) {
 		 load-k = k
-		 %load filename
+		 (symbol-value 'load *primitives*) filename
       })
     }
   }

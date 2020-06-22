@@ -79,34 +79,49 @@ define-macro (module name) {
   }
 }
 
-load = {
+{
   orig-load := load
   cmod := (current-module)
 
-  function (filename) {
+  load = function (filename) "
+load Idio code from ``filename``
+
+:param filename: the filename to load from
+:type filename: string
+
+This is the module variant which traps ^idio-error, handles changes to
+the current module and calls:
+
+  " {
     if (not (string? filename)) (error 'load "not a string" filename)
 
     load-k := #n
+    load-r := #n
 
-    trap ^condition (function (cont cond) {
-      if (not cont) {
-	condition-report (string-append "module/load " filename) cont cond (current-error-handle)
-	;(idio-thread-state)
-	;edisplay* "module/load: invoking safe continuation"
-	load-k cond
-      } {
-	raise cont cond
-      }
+    trap ^idio-error (function (cont cond) {
+			if (not cont) {
+			  condition-report (string-append "load(module) #f " filename) cont cond (current-error-handle)
+			  ;(idio-thread-state)
+			  ;edisplay* "module/load: invoking safe continuation"
+			  load-k cond
+			} {
+			  raise cont cond
+			}
     }) {
       call/cc (function (k) {
-	load-k = k
-	orig-load filename
+		 load-k = k
+		 load-r = orig-load filename
       })
     }
 
-    ;; edisplay* "load/module: restoring module" cmod
     %set-current-module! cmod
+
+    ; I suspect the result of load is ignored by most but let's dot
+    ; the i's and cross the t's etc..
+    load-r
   }
+
+  %set-property! load :docstr-raw (string-append (%property load :docstr-raw) (%property orig-load :docstr-raw))
 }
 
 
