@@ -2172,6 +2172,9 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl
 		    case IDIO_CHAR_PIPE:
 			idio_read_block_comment (handle, lo, depth);
 			return lo;
+		    case IDIO_CHAR_SEMICOLON:
+			idio_read (handle);
+			return lo;
 		    default:
 			{
 			    /*
