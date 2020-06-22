@@ -167,11 +167,13 @@
     (modify-syntax-entry ?\" "\"   " st)
     (modify-syntax-entry ?' "'   " st)
     (modify-syntax-entry ?` "'   " st)
+    (modify-syntax-entry ?\$ "'   " st)
 
     ;; Special characters
     (modify-syntax-entry ?, "'   " st)
     (modify-syntax-entry ?@ "'   " st)
     (modify-syntax-entry ?# "' 14" st)
+    (modify-syntax-entry ?\| "_ 23bn" st)
     (modify-syntax-entry ?\\ "\\   " st)
     st)
   "Syntax table for idio-mode")
@@ -440,6 +442,16 @@ indentation."
 
 (defvar idio-mode-default-indent 2)
 
+;; Yuk - this appears to descend through scheme-syntax-propertize and
+;; scheme-syntax-propertize-comment and into syntax.el -- it is
+;; required for #; to work correctly
+(defconst idio-sexp-comment-syntax-table
+  (let ((st (make-syntax-table idio-mode-syntax-table)))
+    (modify-syntax-entry ?\; "." st)
+    (modify-syntax-entry ?\n " " st)
+    (modify-syntax-entry ?#  "'" st)
+    st))
+
 (defun idio-mode ()
   "Major mode for editing Idio source files"
   (interactive)
@@ -450,6 +462,23 @@ indentation."
   (set (make-local-variable 'indent-line-function) 'idio-indent-line)
   (set (make-local-variable 'lisp-indent-function) 'idio-indent-function)
   (set (make-local-variable 'idio-mode-indent) idio-mode-default-indent)
+
+  ;; borrowed from scheme.el
+  (setq-local paragraph-ignore-fill-prefix t)
+  (setq-local fill-paragraph-function 'lisp-fill-paragraph)
+  ;; Adaptive fill mode gets in the way of auto-fill,
+  ;; and should make no difference for explicit fill
+  ;; because lisp-fill-paragraph should do the job.
+  (setq-local adaptive-fill-mode nil)
+  (setq-local parse-sexp-ignore-comments t)
+  (setq-local outline-regexp ";;; \\|(....")
+  (setq-local add-log-current-defun-function #'lisp-current-defun-name)
+  (setq-local comment-start ";")
+  (setq-local comment-add 1)
+  (setq-local comment-start-skip ";+[ \t]*")
+  (setq-local comment-use-syntax t)
+  (setq-local comment-column 40)
+
   (setq major-mode 'idio-mode)
   (setq mode-name "Idio")
   (run-hooks 'idio-mode-hook))

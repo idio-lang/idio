@@ -30,9 +30,14 @@ display* "trap: raise NON-CONT ^idio-error: post"
 
 {
   f := (function (s) {
-    edisplay* "s =" s
-    echo s
-    raise #f (make-condition ^idio-error s  "loc" "det")
+	  edisplay* "s =" s
+	  echo s
+	  raise #f (make-condition ^idio-error
+				   (string-append "NON-CONT ^idio-error"
+						  ": "
+						  s)
+				   "loc"
+				   "det")
   })
 
   f "default-condition-handler test"

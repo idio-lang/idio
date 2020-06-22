@@ -25,6 +25,8 @@
 IDIO idio_lexobj_type;
 IDIO idio_src_properties;
 
+#define IDIO_CHAR_NUL		'\0'
+
 #define IDIO_CHAR_SPACE		' '
 #define IDIO_CHAR_TAB		'\t'
 #define IDIO_CHAR_NL		'\n'
@@ -42,6 +44,7 @@ IDIO idio_src_properties;
 #define IDIO_CHAR_COMMA		','
 #define IDIO_CHAR_BACKQUOTE	'`'
 #define IDIO_CHAR_DOT		'.'
+#define IDIO_CHAR_COLON		':'
 #define IDIO_CHAR_SEMICOLON	';'
 #define IDIO_CHAR_DQUOTE	'"'
 #define IDIO_CHAR_HASH		'#'
@@ -52,6 +55,7 @@ IDIO idio_src_properties;
 #define IDIO_CHAR_DOLLARS	'$'
 #define IDIO_CHAR_EXCLAMATION	'!'
 #define IDIO_CHAR_EQUALS	'='
+#define IDIO_CHAR_PIPE		'|'
 
 /*
  * What separates words from one another in Idio?
@@ -317,6 +321,27 @@ static void idio_read_error_pair_separator (IDIO handle, IDIO lo, IDIO c_locatio
 
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C (msg, sh);
+
+    idio_read_error (handle, lo, c_location, idio_get_output_string (sh));
+
+    /* notreached */
+}
+
+static void idio_read_error_comment (IDIO handle, IDIO lo, IDIO c_location, char *e_msg)
+{
+    IDIO_ASSERT (handle);
+    IDIO_ASSERT (lo);
+    IDIO_ASSERT (c_location);
+    IDIO_C_ASSERT (e_msg);
+
+    IDIO_TYPE_ASSERT (handle, handle);
+    IDIO_TYPE_ASSERT (struct_instance, lo);
+    IDIO_TYPE_ASSERT (struct_instance, lo);
+    IDIO_TYPE_ASSERT (string, c_location);
+
+    IDIO sh = idio_open_output_string_handle_C ();
+    idio_display_C ("comment: ", sh);
+    idio_display_C (e_msg, sh);
 
     idio_read_error (handle, lo, c_location, idio_get_output_string (sh));
 
@@ -820,18 +845,27 @@ static IDIO idio_read_escape (IDIO handle, IDIO lo, char *ic, int depth)
     return r;
 }
 
-static void idio_read_comment (IDIO handle, int depth)
+static void idio_read_line_comment (IDIO handle, IDIO lo, int depth)
 {
     IDIO_ASSERT (handle);
+    IDIO_ASSERT (lo);
+
+    IDIO_TYPE_ASSERT (handle, handle);
+    IDIO_TYPE_ASSERT (struct_instance, lo);
 
     for (;;) {
 	int c = idio_getc_handle (handle);
 
 	if (idio_eofp_handle (handle)) {
 	    /*
-	     * Test Case: read-coverage/comment-eof.idio
+	     * Test Case: read-coverage/line-comment-eof.idio
 	     *
 	     * ;; no newline!
+	     */
+
+	    /*
+	     * Not strictly an error -- just no newline at the end of
+	     * the file
 	     */
 	    return;
 	}
@@ -841,6 +875,251 @@ static void idio_read_comment (IDIO handle, int depth)
 	case IDIO_CHAR_NL:
 	    idio_ungetc_handle (handle, c);
 	    return;
+	}
+    }
+}
+
+/*
+ * Block comments #| ... |# can be nested!
+ *
+ * #|
+ * zero, one
+ * #|
+ * or more lines
+ * |#
+ * nested
+ * |#
+ *
+ * You can also change the default escape char, \, using the first
+ * char after #|
+ */
+static void idio_read_block_comment (IDIO handle, IDIO lo, int depth)
+{
+    IDIO_ASSERT (handle);
+    IDIO_ASSERT (lo);
+
+    IDIO_TYPE_ASSERT (handle, handle);
+    IDIO_TYPE_ASSERT (struct_instance, lo);
+
+    char esc_char = IDIO_CHAR_BACKSLASH;
+    int esc = 0;
+    int pipe_esc = 0;
+    int hash_esc = 0;
+    
+    int c = idio_getc_handle (handle);
+
+    if (idio_eofp_handle (handle)) {
+	/*
+	 * Test Case: read-error/block-comment-initial-eof.idio
+	 *
+	 * #|
+	 */
+	idio_read_error_comment (handle, lo, IDIO_C_FUNC_LOCATION (), "unterminated");
+	
+	/* notreached */
+    }
+
+    if (isgraph (c)) {
+	esc_char = c;
+    }    
+
+    for (;;) {
+	c = idio_getc_handle (handle);
+
+	if (idio_eofp_handle (handle)) {
+	    /*
+	     * Test Case: read-coverage/block-comment-eof.idio
+	     *
+	     * #| ...
+	     */
+	    idio_read_error_comment (handle, lo, IDIO_C_FUNC_LOCATION (), "unterminated");
+	
+	    /* notreached */
+	}
+
+	if (esc_char == c) {
+	    /*
+	     * If esc is set we quietly consume the character
+	     */
+	    if (0 == esc) {
+		esc = 1;
+		continue;
+	    }
+	} else {
+	    if (esc) {
+		/*
+		 * quietly consume c
+		 */
+		esc = 0;
+	    } else if (pipe_esc) {
+		switch (c) {
+		case IDIO_CHAR_HASH:
+		    return;
+		}
+	    } else if (hash_esc) {
+		switch (c) {
+		case IDIO_CHAR_PIPE:
+		    idio_read_block_comment (handle, lo, depth + 1);
+		}
+	    } else {
+		switch (c) {
+		    /*
+		     * Test Case: read-coverage/block-comment-escaped-pipe.idio
+		     *
+		     * #| | |#
+		     */
+		case IDIO_CHAR_PIPE:
+		    pipe_esc = 1;
+		    continue;
+		case IDIO_CHAR_HASH:
+		    hash_esc = 1;
+		    continue;
+		}
+	    }
+
+	    if (pipe_esc) {
+		pipe_esc = 0;
+	    }
+	    if (hash_esc) {
+		hash_esc = 0;
+	    }
+	}
+    }
+}
+
+/*
+ * Block comments #| ... |# can be nested!
+ *
+ * If the opening #| is followed by whitespace then an isgraph() word
+ * and the handle is a file-handle then that word is used as an
+ * extension into which the text of the comment is appended.  The
+ * remaining text on the line is ignored.
+ *
+ * #| .rst
+ * ..note this is ReStructuredText
+ * #|
+ *
+ */
+static void idio_read_sl_block_comment (IDIO handle, int depth)
+{
+    IDIO_ASSERT (handle);
+
+    char ext[BUFSIZ];
+    char *e = ext;
+    int ext_possible = 0;
+    int ext_leading_ws = 1;
+    char comment_file_name[BUFSIZ];
+    FILE *comment_file = NULL;
+    int write_comment = 0;
+    
+    if (idio_isa_file_handle (handle)) {
+	/*
+	 * Exclude ext for stdin/out/err
+	 */
+	idio_file_handle_stream_t *fhsp = (idio_file_handle_stream_t *) IDIO_HANDLE_STREAM (handle);
+	int s_flags = IDIO_FILE_HANDLE_STREAM_FLAGS (fhsp);
+
+	if ((s_flags & IDIO_FILE_HANDLE_FLAG_STDIO) == 0) {
+	    ext_possible = 1;
+	}
+    }
+
+    int pipe_char = 0;
+    
+    for (;;) {
+	int c = idio_getc_handle (handle);
+
+	if (idio_eofp_handle (handle)) {
+	    /*
+	     * Test Case: read-coverage/block-comment-eof.idio
+	     *
+	     * ;; no newline!
+	     */
+	    fprintf (stderr, "read-block-comment: EOF in comment\n");
+	    if (NULL != comment_file) {
+		if (fclose (comment_file)) {
+		    fprintf (stderr, "fclose (%s): %s\n", comment_file_name, strerror (errno));
+		}
+	    }
+	    return;
+	}
+
+	switch (c) {
+	case IDIO_CHAR_PIPE:
+	    pipe_char = 1;
+	    continue;
+	case IDIO_CHAR_HASH:
+	    if (pipe_char) {
+		if (NULL != comment_file) {
+		    if (fclose (comment_file)) {
+			fprintf (stderr, "fclose (%s): %s\n", comment_file_name, strerror (errno));
+		    }
+		}
+		return;
+	    }
+	    break;
+	case IDIO_CHAR_NL:
+	    if (NULL != comment_file) {
+		write_comment = 1;
+	    }
+	}
+
+	if (ext_possible) {
+	    if (isgraph (c)) {
+		ext_leading_ws = 0;
+		if (e == ext) {
+		    if (IDIO_CHAR_DOT != c)  {
+			fprintf (stderr, "(!^.) ext invalidated by %c\n", c);
+			ext_possible = 0;
+			ext_leading_ws = 0;
+			ext[0] = '\0';
+			continue;
+		    }
+		}
+
+		*e = c;
+		e++;
+	    } else if (isspace (c) ||
+		       IDIO_CHAR_NL == c) {
+		if (ext_leading_ws) {
+		} else {
+		    *e = '\0';
+		    ext_possible = 0;
+		    if (strlen (ext)) {
+			fprintf (stderr, "f-h ext is %s\n", ext);
+			IDIO filename_I = IDIO_HANDLE_PATHNAME (handle);
+
+			if (idio_S_nil != filename_I) {
+			    strcpy (comment_file_name, idio_string_s (filename_I));
+			    strcat (comment_file_name, ext);
+
+			    comment_file = fopen (comment_file_name, "a");
+			    if (NULL == comment_file) {
+				fprintf (stderr, "fopen (%s): %s\n", comment_file_name, strerror (errno));
+			    }
+
+			    if (IDIO_CHAR_NL == c) {
+				write_comment = 1;
+			    }
+	  		} else {    
+ 		 	    idio_debug ("empty PATHNAME for %s\n", handle);
+			}
+		    }
+		}
+	    } else {
+		fprintf (stderr, "(any) ext invalidated by %c\n", c);
+		ext_possible = 0;
+		ext_leading_ws = 0;
+		ext[0] = '\0';
+	    }
+	}
+
+	if (pipe_char) {
+	    pipe_char = 0;
+	}
+
+	if (write_comment) {
+	    fputc (c, comment_file);
 	}
     }
 }
@@ -1570,7 +1849,7 @@ static IDIO idio_read_word (IDIO handle, IDIO lo, int c)
 	 *
 	 * All keywords will be : followed by a non-punctutation char
 	 */
-	if (':' == buf[0] &&
+	if (IDIO_CHAR_COLON == buf[0] &&
 	     i > 1 &&
 	     ! ispunct (buf[1])) {
 	    r = idio_keywords_C_intern (buf + 1);
@@ -1742,7 +2021,7 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl
 		     */
 		    int c = idio_getc_handle (handle);
 		    switch (c) {
-		    case '.':
+		    case IDIO_CHAR_DOT:
 			{
 			    idio_ungetc_handle (handle, c);
 			    idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_word (handle, lo, IDIO_CHAR_DOT));
@@ -1775,13 +2054,13 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl
 		    case 'n':
 			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_S_nil);
 			return lo;
-		    case '\\':
+		    case IDIO_CHAR_BACKSLASH:
 			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_named_character (handle, lo));
 			return lo;
-		    case '[':
+		    case IDIO_CHAR_LBRACKET:
 			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_array (handle, lo, ic, IDIO_LIST_BRACKET (depth + 1)));
 			return lo;
-		    case '{':
+		    case IDIO_CHAR_LBRACE:
 			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_hash (handle, lo, ic, IDIO_LIST_BRACE (depth + 1)));
 			return lo;
 		    case 'b':
@@ -1877,7 +2156,7 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl
 		    case 'P':
 			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_pathname (handle, lo, depth));
 			return lo;
-		    case '<':
+		    case IDIO_CHAR_LANGLE:
 			{
 			    /*
 			     * Test Case: read-errors/not-ready-for-hash-format.idio
@@ -1890,6 +2169,12 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl
 
 			    return idio_S_notreached;
 			}
+		    case IDIO_CHAR_PIPE:
+			idio_read_block_comment (handle, lo, depth);
+			return lo;
+		    case IDIO_CHAR_SEMICOLON:
+			idio_read (handle);
+			return lo;
 		    default:
 			{
 			    /*
@@ -1937,7 +2222,7 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl
 		    return lo;
 		}
 	    case IDIO_CHAR_SEMICOLON:
-		idio_read_comment (handle, depth);
+		idio_read_line_comment (handle, lo, depth);
 		moved = 1;
 		break;
 	    case IDIO_CHAR_DQUOTE:
