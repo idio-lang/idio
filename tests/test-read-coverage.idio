@@ -16,7 +16,8 @@ read-coverage-load := {
 ;; variant to check we pick up the correct line number
 
 read-coverage-load "read-coverage/imp-list-eol-before-delim.idio"
-read-coverage-load "read-coverage/comment-eof.idio"
+read-coverage-load "read-coverage/line-comment-eof.idio"
+read-coverage-load "read-coverage/block-comment-esc.idio"
 read-coverage-load "read-coverage/string-escaped-chars.idio"
 read-coverage-load "read-coverage/template-bracketing.idio"
 read-coverage-load "read-coverage/pathname.idio"

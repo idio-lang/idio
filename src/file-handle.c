@@ -264,7 +264,6 @@ static IDIO idio_open_file_handle (IDIO filename, char *pathname, FILE *filep, i
 
     if ((s_flags & IDIO_FILE_HANDLE_FLAG_STDIO) == 0) {
 	idio_gc_register_finalizer (fh, idio_file_handle_finalizer);
-	/* idio_gc_register_file_handle (fh); */
     }
 
     return fh;
@@ -723,8 +722,12 @@ int idio_isa_file_handle (IDIO o)
 {
     IDIO_ASSERT (o);
 
-    return (idio_isa_handle (o) &&
-	    IDIO_HANDLE_FLAGS (o) & IDIO_HANDLE_FLAG_FILE);
+    if (idio_isa_handle (o) &&
+	IDIO_HANDLE_FLAGS (o) & IDIO_HANDLE_FLAG_FILE) {
+	return 1;
+    }
+
+    return 0;
 }
 
 IDIO_DEFINE_PRIMITIVE1 ("file-handle?", file_handlep, (IDIO o))
