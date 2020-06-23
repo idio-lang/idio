@@ -1071,18 +1071,28 @@ display ``o`` to ``handle`` or the current output handle	\n\
     return idio_display (o, h);
 }
 
-IDIO_DEFINE_PRIMITIVE2V_DS ("%printf", printf, (IDIO h, IDIO fmt, IDIO args), "handle format [args]", "\
-printf ``format`` to ``handle`` using ``args`` as required	\n\
+IDIO_DEFINE_PRIMITIVE2V_DS ("%printf", printf, (IDIO h, IDIO fmt, IDIO args), "handle fmt [args]", "\
+printf ``fmt`` to ``handle`` using ``args`` as required	\n\
 							\n\
 All Idio objects will become strings so the only useful	\n\
 printf conversion is %s					\n\
+							\n\
+There is rudimentary support for the following flags:	\n\
+%[flags][width][.precision]s:				\n\
+							\n\
+[flags]							\n\
+-	left-align the output				\n\
+[width]							\n\
+num	specifies a minimum number of characters to output\n\
+[precision]						\n\
+num	specifies a maximum limit on the output		\n\
 							\n\
 %% is also functional					\n\
 							\n\
 :param handle: handle to write to			\n\
 :type handle: handle					\n\
-:param format: format string				\n\
-:type format: string					\n\
+:param fmt: format string				\n\
+:type fmt: string					\n\
 :param args: optional arguments to printf		\n\
 :return: <unspec>					\n\
 ")
@@ -1111,29 +1121,90 @@ printf conversion is %s					\n\
 	switch (*s) {
 	case '%':
 	    {
-		if ((i + 1) < blen) {
-		    char *c = s + 1;
+		char *ss = s;
+		size_t si = i;
+
+		/*
+		 * flags
+		 *
+		 * only '-' is meaningful
+		 */
+		if ((si + 1) < blen) {
+		    char *c = ss + 1;
 		    switch (*c) {
-		    case 's':
-			if (idio_S_nil != args) {
-			    IDIO arg = IDIO_PAIR_H (args);
-			    args = IDIO_PAIR_T (args);
-			    c = idio_display_string (arg);
-			    idio_puts_handle (h, c, strlen (c));
-			    free (c);
-			} else {
-			    c = "<no-arg>";
-			    idio_puts_handle (h, c, strlen (c));
-			}
-			break;
-		    default:
-			idio_putc_handle (h, *s);
+		    case '-':
+			ss++;
+			si++;
 			break;
 		    }
-		    s++;
-		    i++;
-		} else {
-		    idio_putc_handle (h, *s);
+		}
+		/*
+		 * width
+		 */
+		while ((si + 1) < blen) {
+		    char *c = ss + 1;
+		    if (isdigit (*c)) {
+			ss++;
+			si++;
+		    } else {
+			break;
+		    }
+		}
+		/*
+		 * precision
+		 *
+		 * preceded by a dot
+		 */
+		if ((si + 1) < blen) {
+		    char *c = ss + 1;
+		    switch (*c) {
+		    case '.':
+			ss++;
+			si++;
+			while ((si + 1) < blen) {
+			    char *c = ss + 1;
+			    if (isdigit (*c)) {
+				ss++;
+				si++;
+			    } else {
+				break;
+			    }
+			}
+			break;
+		    }
+		}
+		if ((si + 1) < blen) {
+		    ss += 1;
+		    si += 1;
+		    char *c = ss;
+		    switch (*c) {
+		    case 's':
+			{
+			    char fmt[BUFSIZ];
+			    strncpy (fmt, s, ss - s + 1);
+			    fmt[ss - s + 1] = '\0';
+			    if (idio_S_nil != args) {
+				IDIO arg = IDIO_PAIR_H (args);
+				args = IDIO_PAIR_T (args);
+				c = idio_display_string (arg);
+				char str[BUFSIZ];
+				sprintf (str, fmt, c);
+				idio_puts_handle (h, str, strlen (str));
+				free (c);
+			    } else {
+				c = "<no-arg>";
+				idio_puts_handle (h, c, strlen (c));
+			    }
+			    s = ss;
+			    i = si;
+			}
+			break;
+		    case '%':
+			s = ss;
+			i = si;
+			idio_putc_handle (h, *ss);
+			break;
+		    }
 		}
 	    }
 	    break;

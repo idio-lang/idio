@@ -180,7 +180,20 @@ define (edisplay* & x*) {
   newline (current-error-handle)
 }
 
-define (hprintf handle fmt & args) {
+define (hprintf handle fmt & args) "
+
+Invoke the ``%printf`` function on ``handle`` with ``fmt`` and
+``args``
+
+:param handle: the handle to load from
+:type handle: handle
+:param fmt: the format string for printf
+:type fmt: string
+:param args: any args for the format string
+:type args: list
+
+:return: #unspec
+" {
   if (null? args) {
     %printf handle fmt
   } {
@@ -188,7 +201,18 @@ define (hprintf handle fmt & args) {
   }
 }
 
-define (printf fmt & args) {
+define (printf fmt & args) "
+
+Invoke the ``hprintf`` function on the current output handle with
+``fmt`` and ``args``
+
+:param fmt: the format string for printf
+:type fmt: string
+:param args: any args for the format string
+:type args: list
+
+:return: #unspec
+" {
   if (null? args) {
     hprintf (current-output-handle) fmt
   } {
@@ -196,7 +220,18 @@ define (printf fmt & args) {
   }
 }
 
-define (eprintf fmt & args) {
+define (eprintf fmt & args) "
+
+Invoke the ``hprintf`` function on the current error handle with
+``fmt`` and ``args``
+
+:param fmt: the format string for printf
+:type fmt: string
+:param args: any args for the format string
+:type args: list
+
+:return: #unspec
+" {
   if (null? args) {
     hprintf (current-error-handle) fmt
   } {
@@ -204,7 +239,18 @@ define (eprintf fmt & args) {
   }
 }
 
-define (sprintf fmt & args) {
+define (sprintf fmt & args) "
+
+Invoke the ``hprintf`` function on an output string handle with
+``fmt`` and ``args`` and return the resultant string
+
+:param fmt: the format string for printf
+:type fmt: string
+:param args: any args for the format string
+:type args: list
+
+:return: string
+" {
   osh := (open-output-string)
   if (null? args) {
     hprintf osh fmt
