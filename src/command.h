@@ -29,8 +29,9 @@ extern int idio_command_interactive;
 char *idio_command_find_exe_C (char *command);
 char *idio_command_find_exe (IDIO func);
 IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname);
-void idio_command_SIGHUP_signal_handler (IDIO signum);
-void idio_command_SIGCHLD_signal_handler (IDIO signum);
+IDIO idio_command_SIGHUP_signal_handler ();
+IDIO idio_command_SIGCHLD_signal_handler ();
+void idio_command_set_interactive (void);
 
 extern volatile sig_atomic_t idio_command_signal_record[IDIO_LIBC_NSIG+1];
 void idio_init_command ();

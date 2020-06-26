@@ -35,7 +35,7 @@ export (%idio-jobs
 	; idio_command_SIGCHLD_signal_handler (command.c) which has
 	; idio_vm_invoke_C() call "do-job-notification"
 
-	do-job-notification		
+	do-job-notification
 
 	bg-job
 	wait
@@ -43,7 +43,9 @@ export (%idio-jobs
 	with-output-to
 	with-error-to
 	with-handle-dup
-	with-handle-redir)
+	with-handle-redir
+
+	jobs)
 
 
 export-struct-accessors-only %idio-process	argv pid completed stopped status
@@ -51,7 +53,6 @@ export-struct-accessors-only %idio-job		pipeline procs pgid notified tcattrs std
 export-struct-accessors-only %idio-status	pid state reason
 
 %%last-job := #n
-%%idio-job-notify-interactive := #f
 ;;
 ;; These algorithms are directly from the libc info pages on Job
 ;; Control: "info libc" then "Job Control" then "Implementing a Shell"
@@ -338,8 +339,11 @@ define (format-job-info job msg) "display to stderr `msg` alongside job `job` de
 
 :return: #<unspec>
 " {
-  if %%idio-job-notify-interactive {
-    edisplay* "job" (%idio-job-pgid job) ":" (%idio-job-pipeline job) "(" msg ")"
+  if %idio-interactive {
+    jd := job-detail job
+    if (not (equal? (list 'exit (C/integer-> 0)) jd)) {
+      eprintf "job %5s: %s: %s: %s\n" (%idio-job-pgid job) (%idio-job-pipeline job) msg jd
+    }
   }
 }
 
@@ -626,7 +630,7 @@ define (%prep-process pgid infile outfile errfile foreground) "prepare the curre
 
 :return: #<unspec>
 " {
-  ;; edisplay* "pp:" (getpid) infile outfile errfile
+  ;edisplay* "%pp:" (getpid) infile outfile errfile
   if %idio-interactive {
     pid := (getpid)
     if (C/== pgid 0) {
@@ -1342,3 +1346,39 @@ define-infix-operator >& 400 {
 
 define-infix-operator <& 400 >&
 define-infix-operator 2>& 400 >&
+
+define (jobs) "display the state of outstanding jobs" {
+  first-j := #t
+  jobs-loop :+ function (jobs) {
+		 cond ((null? jobs) {
+		   #t
+		 }) \
+		      (else {
+			job := ph jobs
+			if first-j {
+			  first-j = #f
+			  printf "%5s %s\n" "pgid" "job-pipeline"
+			}
+			printf "%5s %s\n" job.pgid job.pipeline
+
+			first-p := #t
+
+			procs-loop :+ function (procs) {
+					proc := ph procs
+					if (null? proc) #t {
+					  if first-p {
+					    first-p = #f
+					    printf "  %5s %2s %2s %s\n" "pid" "C?" "S?" "argv"
+					  }
+					  printf "  %5s %s %s %s\n" proc.pid proc.completed proc.stopped proc.argv
+					  procs-loop (pt procs)
+					}
+			}
+
+			(and (procs-loop (reverse (%idio-job-procs job)))
+			     (jobs-loop (pt jobs)))
+		      })
+  }
+
+  jobs-loop %idio-jobs
+}

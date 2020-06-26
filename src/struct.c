@@ -22,6 +22,33 @@
 
 #include "idio.h"
 
+static void idio_struct_error (IDIO msg, IDIO c_location)
+{
+    IDIO_ASSERT (msg);
+    IDIO_ASSERT (c_location);
+
+    IDIO_TYPE_ASSERT (string, msg);
+    IDIO_TYPE_ASSERT (string, c_location);
+
+    IDIO location = idio_vm_source_location ();
+
+    IDIO dsh = idio_open_output_string_handle_C ();
+    idio_display (c_location, dsh);
+
+#ifdef IDIO_DEBUG
+    idio_display_C (": ", dsh);
+    idio_display (c_location, dsh);
+#endif
+
+    IDIO c = idio_struct_instance (idio_condition_idio_error_type,
+				   IDIO_LIST3 (msg,
+					       location,
+					       idio_get_output_string (dsh)));
+    idio_raise_condition (idio_S_false, c);
+
+    /* notreached */
+}
+
 static void idio_struct_error_field_not_found (IDIO field, IDIO c_location)
 {
     IDIO_ASSERT (field);
@@ -404,7 +431,15 @@ IDIO_DEFINE_PRIMITIVE4 ("%struct-instance-ref-direct", struct_instance_ref_direc
     IDIO_VERIFY_PARAM_TYPE (fixnum, index);
 
     if (st != IDIO_STRUCT_INSTANCE_TYPE (si)) {
-	idio_error_printf (IDIO_C_FUNC_LOCATION (), "bad structure ref");
+	IDIO msh = idio_open_output_string_handle_C ();
+	idio_display_C ("%struct-instance-ref-direct: a '", msh);
+	idio_display (IDIO_STRUCT_TYPE_NAME (IDIO_STRUCT_INSTANCE_TYPE (si)), msh);
+	idio_display_C ("' is not a '", msh);
+	idio_display (IDIO_STRUCT_TYPE_NAME (st), msh);
+	idio_display_C ("'", msh);
+	idio_struct_error (idio_get_output_string (msh), IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
     }
 
     return idio_struct_instance_ref_direct (si, IDIO_FIXNUM_VAL (index));

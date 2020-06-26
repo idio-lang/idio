@@ -277,11 +277,14 @@ int main (int argc, char **argv, char **envp)
 
 	/*
 	 * Dig out the (post-bootstrap) definition of "load" which
-	 * will now have continuation and module support
+	 * will now be continuation and module aware.
 	 */
 	IDIO load = idio_module_symbol_value (idio_S_load, idio_Idio_module_instance (), IDIO_LIST1 (idio_S_false));
 	if (idio_S_false == load) {
 	    idio_error_C ("cannot lookup 'load'", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+	    /* notreached */
+	    exit (3);
 	}
 
 	int i;
@@ -332,6 +335,7 @@ int main (int argc, char **argv, char **envp)
 		break;
 	    default:
 		fprintf (stderr, "sigsetjmp: load %s: failed with sjv %d\n", argv[i], sjv);
+		idio_final ();
 		exit (1);
 		break;
 	    }
