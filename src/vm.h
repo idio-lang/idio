@@ -189,7 +189,7 @@ extern IDIO idio_vm_constants;
 extern IDIO_IA_T idio_all_code;
 extern idio_ai_t idio_vm_FINISH_pc;
 extern idio_ai_t idio_vm_NCE_pc;
-extern idio_ai_t idio_vm_CR_pc;
+extern idio_ai_t idio_vm_CHR_pc;
 extern idio_ai_t idio_vm_IHR_pc;
 extern idio_ai_t idio_vm_AR_pc;
 extern size_t idio_prologue_len;

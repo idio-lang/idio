@@ -76,8 +76,8 @@ static IDIO idio_S_stderr_fileno;
  *
  * https://www.securecoding.cert.org/confluence/display/c/SIG31-C.+Do+not+access+shared+objects+in+signal+handlers
  *
- * What this document doesn't say is if we can access an array of
- * sig_atomic_t.
+ * What this document doesn't say is if we can set an index in an
+ * array of sig_atomic_t.
  *
  * NB Make the array IDIO_LIBC_NSIG + 1 as idio_vm_run1() will be
  * trying to access [IDIO_LIBC_NSIG] itself, not up to IDIO_LIBC_NSIG.
@@ -1485,11 +1485,8 @@ Send the process group of `job` a SIGCONT then a SIGHUP\n\
     return idio_S_unspec;
 }
 
-void idio_command_SIGHUP_signal_handler (IDIO signum)
+IDIO idio_command_SIGHUP_signal_handler ()
 {
-    IDIO_ASSERT (signum);
-    IDIO_TYPE_ASSERT (C_int, signum);
-
     IDIO jobs = idio_module_symbol_value (idio_command_jobs_sym, idio_command_module, idio_S_nil);
     if (idio_S_nil != jobs) {
 	/* fprintf (stderr, "There are outstanding jobs\n"); */
@@ -1499,6 +1496,8 @@ void idio_command_SIGHUP_signal_handler (IDIO signum)
 	    jobs = IDIO_PAIR_T (jobs);
 	}
     }
+
+    return idio_S_unspec;
 }
 
 IDIO_DEFINE_PRIMITIVE2 ("SIGHUP-condition-handler", SIGHUP_condition_handler, (IDIO cont, IDIO cond))
@@ -1548,18 +1547,15 @@ IDIO_DEFINE_PRIMITIVE2 ("SIGHUP-condition-handler", SIGHUP_condition_handler, (I
     return idio_S_notreached;
 }
 
-void idio_command_SIGCHLD_signal_handler (IDIO signum)
+IDIO idio_command_SIGCHLD_signal_handler ()
 {
-    IDIO_ASSERT (signum);
-    IDIO_TYPE_ASSERT (C_int, signum);
-
     /*
      * do-job-notification is a thunk so we can call it direct
      */
-    idio_vm_invoke_C (idio_thread_current_thread (),
-		      idio_module_symbol_value (idio_symbols_C_intern ("do-job-notification"),
-						idio_command_module,
-						idio_S_nil));
+    return idio_vm_invoke_C (idio_thread_current_thread (),
+			     idio_module_symbol_value (idio_symbols_C_intern ("do-job-notification"),
+						       idio_command_module,
+						       idio_S_nil));
 }
 
 IDIO_DEFINE_PRIMITIVE2 ("SIGCHLD-condition-handler", SIGCHLD_condition_handler, (IDIO cont, IDIO cond))
@@ -1578,7 +1574,7 @@ IDIO_DEFINE_PRIMITIVE2 ("SIGCHLD-condition-handler", SIGCHLD_condition_handler, 
 	    int signum = IDIO_FIXNUM_VAL (isignum);
 
 	    if (SIGCHLD == signum) {
-		idio_command_SIGCHLD_signal_handler (isignum);
+		idio_command_SIGCHLD_signal_handler ();
 		return idio_S_unspec;
 	    }
 	}
@@ -2524,6 +2520,33 @@ exec `command` `args`				\n\
     return idio_S_notreached;
 }
 
+IDIO_DEFINE_PRIMITIVE0_DS ("%idio-interactive/get", idio_interactive_get, (void), "", "\
+get the current interactiveness			\n\
+						\n\
+:return: #t or #f				\n\
+")
+{
+    IDIO r = idio_S_false;
+
+    if (idio_command_interactive) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
+void idio_command_set_interactive (void)
+{
+    idio_command_interactive = isatty (idio_command_terminal);
+
+    if (idio_command_interactive < 0) {
+	idio_error_system_errno ("isatty", IDIO_LIST1 (idio_C_int (idio_command_terminal)), IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
+	return;
+    }
+}
+
 void idio_init_command ()
 {
     idio_command_module = idio_module (idio_symbols_C_intern ("*command*"));
@@ -2566,24 +2589,29 @@ void idio_init_command ()
 	fprintf (stderr, "WARNING: SIGCHLD == SIG_IGN\n");
     }
 
+    /*
+     * The following is from the "info libc" pages, 28.5.2
+     * Initializing the Shell.
+     *
+     * WIth some patching of Idio values.
+     */
     idio_command_pid = getpid ();
     idio_command_terminal = STDIN_FILENO;
-    idio_command_interactive = isatty (idio_command_terminal);
-
-    if (idio_command_interactive < 0) {
-	idio_error_system_errno ("isatty", IDIO_LIST1 (idio_C_int (idio_command_terminal)), IDIO_C_FUNC_LOCATION ());
-
-	/* notreached */
-	return;
-    }
+    idio_command_set_interactive ();
 
     idio_module_set_symbol_value (idio_symbols_C_intern ("%idio-terminal"),
 				  idio_C_int (idio_command_terminal),
 				  idio_command_module);
 
-    idio_module_set_symbol_value (idio_symbols_C_intern ("%idio-interactive"),
-				  idio_command_interactive ? idio_S_true : idio_S_false,
-				  idio_command_module);
+    /*
+     * The Idio-visible %idio-interactive should be read-only.
+     * However, we actually play some tricks with it like disabling
+     * during {load} so we don't get plagued with job failure
+     * messages.  So it should be a (read-only) computed variable.
+     */
+    IDIO geti;
+    geti = IDIO_ADD_PRIMITIVE (idio_interactive_get);
+    idio_module_add_computed_symbol (idio_symbols_C_intern ("%idio-interactive"), idio_vm_values_ref (IDIO_FIXNUM_VAL (geti)), idio_S_nil, idio_command_module);
 
     /*
      * Not noted in the Job Control docs is that if we are launched
@@ -2628,8 +2656,8 @@ void idio_init_command ()
 	signal (SIGTTOU, SIG_IGN);
 
 	/*
-	 * XXX ignoring SIGCHLD means and explicit waitpid (<pid>)
-	 * will get ECHILD
+	 * XXX ignoring SIGCHLD means an explicit waitpid (<pid>) will
+	 * get ECHILD
 	 */
 	/* signal (SIGCHLD, SIG_IGN); */
 

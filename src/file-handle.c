@@ -1175,11 +1175,24 @@ IDIO idio_load_file_handle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (
  	 * buffer into what is probably a FILE* buffer.
 	 */
 	IDIO oh = idio_thread_current_output_handle ();
+
+	/*
+	 * idio_command_interactive will have been set to 0 by {load}
+	 * so we need to reset it, just in case.
+	 */
+	idio_command_set_interactive ();
+
+	/*
+	 * Throw out some messages about any recently failed jobs
+	 */
+	idio_command_SIGCHLD_signal_handler ();
+
 	if (idio_isa_file_handle (oh)) {
 	    fflush (IDIO_FILE_HANDLE_FILEP (oh));
 	} else {
 	    idio_flush_handle (oh);
 	}
+
 	IDIO eh = idio_thread_current_error_handle ();
 	idio_display (IDIO_MODULE_NAME (cm), eh);
 	idio_display_C ("> ", eh);
@@ -1963,6 +1976,13 @@ This is the ``load`` primitive.					\n\
     IDIO_VERIFY_PARAM_TYPE (string, filename);
 
     idio_thread_save_state (idio_thread_current_thread ());
+
+    /*
+     * Explicitly disable interactive for the duration of a load
+     *
+     * It will be reset just prior to the prompt.
+     */
+    idio_command_interactive = 0;
     IDIO r = idio_load_file_name_aio (filename, idio_vm_constants);
     idio_thread_restore_state (idio_thread_current_thread ());
 

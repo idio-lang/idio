@@ -416,10 +416,10 @@ IDIO_DEFINE_PRIMITIVE2 ("default-condition-handler", default_condition_handler, 
 
 	switch (signum_C) {
 	case SIGCHLD:
-	    idio_command_SIGCHLD_signal_handler (signum_I);
+	    idio_command_SIGCHLD_signal_handler ();
 	    return idio_S_unspec;
 	case SIGHUP:
-	    idio_command_SIGHUP_signal_handler (signum_I);
+	    idio_command_SIGHUP_signal_handler ();
 	    return idio_S_unspec;
 	default:
 	    break;
@@ -576,10 +576,10 @@ IDIO_DEFINE_PRIMITIVE2 ("restart-condition-handler", restart_condition_handler, 
 	    switch (signum_C) {
 	    case SIGCHLD:
 		fprintf (stderr, "restart-c-h: SIGCHLD -> idio_command_SIGCHLD_signal_handler\n");
-		idio_command_SIGCHLD_signal_handler (signum_I);
+		idio_command_SIGCHLD_signal_handler ();
 		return idio_S_unspec;
 	    case SIGHUP:
-		idio_command_SIGHUP_signal_handler (signum_I);
+		idio_command_SIGHUP_signal_handler ();
 		return idio_S_unspec;
 	    default:
 		break;

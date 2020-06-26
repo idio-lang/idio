@@ -2066,7 +2066,7 @@ void idio_codegen_code_prologue (IDIO_IA_T ia)
     idio_vm_FINISH_pc = IDIO_IA_USIZE (idio_all_code); /* PC == 1 */
     IDIO_IA_PUSH1 (IDIO_A_FINISH);
 
-    idio_vm_CR_pc = IDIO_IA_USIZE (idio_all_code); /* PC == 2 */
+    idio_vm_CHR_pc = IDIO_IA_USIZE (idio_all_code); /* PC == 2 */
     IDIO_IA_PUSH3 (IDIO_A_RESTORE_TRAP, IDIO_A_RESTORE_STATE, IDIO_A_RETURN);
 
     /*
