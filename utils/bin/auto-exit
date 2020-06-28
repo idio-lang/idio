@@ -1,6 +1,6 @@
 #! /usr/bin/env bash
 
-# Copyright (c) 2015 Ian Fitchet <idf@idio-lang.org>
+# Copyright (c) 2015, 2020 Ian Fitchet <idf@idio-lang.org>
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you
 # may not use this file except in compliance with the License.  You
@@ -23,18 +23,30 @@
 # -e should only apply to read (write?) and broken pipes
 set -ue
 
+note ()
+{
+    :
+}
+
 usage () 
 {
-    (
-	echo "usage: $0 [options]" 
-	echo "where options are:" 
-	echo "	-e STATUS	exit with STATUS" 
-	echo "	-k SIGNAL	kill self with SIGNAL" 
-	echo "	-r NUM		read NUM lines (-s N seconds apart)" 
-	echo "	-s NUM		sleep for NUM seconds" 
-	echo "	-t NUM		set read's timeout to NUM seconds, '' for default [${opt_timeout}]" 
-	echo "	-w NUM		write NUM lines (-s N seconds apart)" 
-    ) >&2
+    cat << EOF >&2
+
+${0##*/} is a utility script whose purpose is to interact with its
+environment (reading, writing, sleeping) before exiting in a
+deterministic way: a specific exit status or a simulated signal.
+
+usage: $0 [options]
+where options are:
+  -e STATUS	exit with STATUS
+  -k SIGNAL	kill self with SIGNAL
+  -r NUM	read NUM lines (-s N seconds apart)
+  -s NUM	sleep for NUM seconds
+  -t NUM	set read's timeout to NUM seconds, '' for default [${opt_timeout}]
+  -w NUM	write NUM lines (-s N seconds apart)
+
+  -v		verbose
+EOF
 }
 
 opt_exit=0
@@ -42,12 +54,17 @@ opt_kill=
 opt_read=
 opt_sleep=0
 opt_timeout=
+opt_verbose=
 opt_write=
 
-while getopts "e:k:r:s:t:w:" opt ; do
+while getopts "e:hk:r:s:t:w:v" opt ; do
     case "${opt}" in
     e)
 	opt_exit=${OPTARG}
+	;;
+    h)
+	usage
+	exit 0
 	;;
     k)
 	opt_kill=${OPTARG}
@@ -61,6 +78,9 @@ while getopts "e:k:r:s:t:w:" opt ; do
     t)
 	opt_timeout=${OPTARG}
 	;;
+    v)
+	opt_verbose=1
+	;;
     w)
 	opt_write=${OPTARG}
 	;;
@@ -70,6 +90,13 @@ while getopts "e:k:r:s:t:w:" opt ; do
 	;;
     esac
 done
+
+if [[ ${opt_verbose} ]] ; then
+    note ()
+    {
+	echo "$@"
+    }
+fi
 
 var_read=1
 var_write=1
@@ -89,7 +116,7 @@ if [[ ${opt_read} || $opt_write ]] ; then
 	if [[ ${opt_read} ]] ; then
 	    if [[ ${opt_read} -gt 0 ]] ; then
 		read ${opt_timeout:+-t ${opt_timeout}} line
-		echo "${0##*/}: $$: read #${var_read} '${line}'"
+		note "${0##*/}: $$: read #${var_read} '${line}'"
 		var_read=$(( var_read + 1 ))
 		opt_read=$(( opt_read - 1 ))
 	    else
@@ -99,14 +126,17 @@ if [[ ${opt_read} || $opt_write ]] ; then
     done
 else
     if [[ ${opt_sleep} -gt 0 ]] ; then
-	echo "${0##*/}: $$: sleep ${opt_sleep}"
+	note "${0##*/}: $$: sleep ${opt_sleep}"
     fi
     sleep $opt_sleep
 fi
 
 if [[ ${opt_kill} ]] ; then
-    echo "${0##*/}: $$: kill -${opt_kill} $$"
+    note "${0##*/}: $$: kill -${opt_kill} $$"
     kill -${opt_kill} $$
 fi
 
+if [[ ${opt_exit} -ne 0 ]] ; then
+    note "${0##*/}: $$: exit ${opt_exit}"
+fi
 exit ${opt_exit}

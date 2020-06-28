@@ -1273,6 +1273,10 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
     IDIO_TYPE_ASSERT (handle, h);
     IDIO_TYPE_ASSERT (array, cs);
 
+    if (IDIO_FILE_HANDLE_FLAGS (h) & IDIO_FILE_HANDLE_FLAG_INTERACTIVE) {
+	return idio_load_handle_interactive (h, reader, evaluator, cs);
+    }
+
     int timing = 0;
 
     IDIO thr = idio_thread_current_thread ();
@@ -1433,6 +1437,99 @@ IDIO_DEFINE_PRIMITIVE1 ("load-handle", load_handle, (IDIO h))
     idio_thread_restore_state (idio_thread_current_thread ());
 
     return r;
+}
+
+IDIO idio_load_handle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO e, IDIO cs), IDIO cs)
+{
+    IDIO_ASSERT (fh);
+    IDIO_C_ASSERT (reader);
+    IDIO_C_ASSERT (evaluator);
+    IDIO_ASSERT (cs);
+    IDIO_TYPE_ASSERT (file_handle, fh);
+    IDIO_TYPE_ASSERT (array, cs);
+
+    if (IDIO_HANDLE_FLAGS (fh) & IDIO_HANDLE_FLAG_CLOSED) {
+	IDIO eh = idio_thread_current_error_handle ();
+	idio_display_C ("ERROR: load-file-handle-interactive: ", eh);
+	idio_display (fh, eh);
+	idio_display_C (": handle already closed?\n", eh);
+	return idio_S_false;
+    }
+
+    IDIO thr = idio_thread_current_thread ();
+    idio_ai_t sp0 = idio_array_size (IDIO_THREAD_STACK (thr));
+
+    /*
+     * When we call idio_vm_run() we are at risk of the garbage
+     * collector being called so we need to save the current file
+     * handle and any lists we're walking over
+     */
+    idio_remember_file_handle (fh);
+
+    for (;;) {
+	IDIO cm = idio_thread_current_module ();
+
+	/*
+	 * As we're interactive, make an attempt to flush stdout --
+	 * noting that stdout might no longer be a file-handle and
+	 * that a regular flush-handle merely shuffles our handle's
+	 * buffer into what is probably a FILE* buffer.
+	 */
+	IDIO oh = idio_thread_current_output_handle ();
+
+	/*
+	 * idio_command_interactive will have been set to 0 by {load}
+	 * so we need to reset it, just in case.
+	 */
+	idio_command_set_interactive ();
+
+	/*
+	 * Throw out some messages about any recently failed jobs
+	 */
+	idio_command_SIGCHLD_signal_handler ();
+
+	if (idio_isa_file_handle (oh)) {
+	    fflush (IDIO_FILE_HANDLE_FILEP (oh));
+	} else {
+	    idio_flush_handle (oh);
+	}
+
+	IDIO eh = idio_thread_current_error_handle ();
+	idio_display (IDIO_MODULE_NAME (cm), eh);
+	idio_display_C ("> ", eh);
+
+	IDIO e = (*reader) (fh);
+
+	if (idio_S_eof == e) {
+	    break;
+	}
+
+	IDIO m = (*evaluator) (e, cs);
+	idio_codegen (thr, m, cs);
+	IDIO r = idio_vm_run (thr);
+	idio_debug ("%s\n", r);
+    }
+
+    IDIO_HANDLE_M_CLOSE (fh) (fh);
+
+    if (idio_vm_exit) {
+	fprintf (stderr, "load-filehandle-interactive/exit (%d)\n", idio_exit_status);
+	idio_vm_restore_exit (idio_k_exit, idio_S_unspec);
+
+	return idio_S_notreached;
+    }
+
+    idio_ai_t sp = idio_array_size (IDIO_THREAD_STACK (thr));
+
+    if (sp != sp0) {
+	fprintf (stderr, "load-file-handle-interactive: %s: SP %td != SP0 %td\n", idio_handle_name (fh), sp, sp0);
+	idio_debug ("THR %s\n", thr);
+	idio_debug ("STK %s\n", IDIO_THREAD_STACK (thr));
+    }
+
+    idio_forget_file_handle (fh);
+
+    return idio_S_unspec;
 }
 
 void idio_init_handle ()
