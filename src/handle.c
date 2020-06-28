@@ -1506,7 +1506,12 @@ IDIO idio_load_handle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*eval
 
 	IDIO m = (*evaluator) (e, cs);
 	idio_codegen (thr, m, cs);
-	IDIO r = idio_vm_run (thr);
+
+	IDIO dosh = idio_open_output_string_handle_C ();
+	idio_display_C ("load-handle-interactive: ", dosh);
+	idio_display_C ("n/k", dosh);
+
+	IDIO r = idio_vm_run (thr, idio_get_output_string (dosh));
 	idio_debug ("%s\n", r);
     }
 
