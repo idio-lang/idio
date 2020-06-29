@@ -5869,29 +5869,10 @@ IDIO_DEFINE_PRIMITIVE1 ("exit", exit, (IDIO istatus))
     idio_flush_handle (idio_thread_current_error_handle ());
 
     idio_exit_status = status;
-    exit (status);
-    fprintf (stderr, "idio/exit (%d)\n", idio_exit_status);
 
-    /*
-     * So, we've called "exit", now what?  What we want to happen is
-     * for everything to unwind cleanly and main can exit with
-     * idio_exit_status.
-     *
-     * If we're non-interactive
-     */
+    idio_vm_restore_exit (idio_k_exit, istatus);
 
-    /*
-     * flag the VM to exit
-     */
-    idio_vm_exit = 1;
-
-    /*
-     * Force the thread to FINISH
-     */
-    IDIO thr = idio_thread_current_thread ();
-    IDIO_THREAD_PC (thr) = idio_vm_FINISH_pc;
-
-    return idio_S_unspec;
+    return idio_S_notreached;
 }
 
 time_t idio_vm_elapsed (void)
