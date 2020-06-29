@@ -168,13 +168,11 @@ test (i/o-filename-error-filename c10) test_filename
 
 ;; ^i/o-read-error
 ;;
-trap ^i/o-read-error (function (cont cond) {
-  test (i/o-read-error? cond) #t
-  if cont {
-    handle := i/o-error-handle cond
+trap ^i/o-read-error (function (c) {
+			test (i/o-read-error? c) #t
+			handle := i/o-error-handle c
 
-    'caught-a-read-error
-  } (error 'condition-test "read handle: unexpected non-continuable error" cond)
+			'caught-a-read-error
 }) {
   ;; display* "read handle condition"
 
@@ -186,13 +184,11 @@ trap ^i/o-read-error (function (cont cond) {
 
 ;; ^i/o-write-error
 ;;
-trap ^i/o-write-error (function (cont cond) {
-  test (i/o-write-error? cond) #t
-  if cont {
-    handle := i/o-error-handle cond
+trap ^i/o-write-error (function (c) {
+			 test (i/o-write-error? c) #t
+			 handle := i/o-error-handle c
 
-    'caught-a-write-error
-  } (error 'condition-test "write handle: unexpected non-continuable error" cond)
+			 'caught-a-write-error
 }) {
   ;; display* "write handle condition"
 
@@ -206,15 +202,12 @@ trap ^i/o-write-error (function (cont cond) {
 ;; ^i/o-closed-error
 ;;
 ;; only file-handles generate this
-trap ^i/o-closed-error (function (cont cond) {
-  test (i/o-closed-error? cond) #t
-  if cont {
-    handle := i/o-error-handle cond
+trap ^i/o-closed-error (function (c) {
+			  test (i/o-closed-error? c) #t
+			  handle := i/o-error-handle c
 
-    #t
-  } (error 'condition-test "closed handle: unexpected non-continuable error" cond)
+			  #t
 }) {
-  ;; display* "closed handle condition"
   touch test_filename
   chmod +r test_filename
 
@@ -224,9 +217,9 @@ trap ^i/o-closed-error (function (cont cond) {
 }
 
 ;; discovered in s9-test.idio after adding the SRFI-36 conditions:
-trap ^i/o-closed-error (function (cont cond) {
-  test (i/o-closed-error? cond) #t
-  if cont #t (error 'condition-test "closed handle: unexpected non-continuable error" cond)
+trap ^i/o-closed-error (function (c) {
+			  test (i/o-closed-error? c) #t
+			  #t
 }) {
   ;; display* "closed handle condition"
   test {
@@ -252,18 +245,16 @@ trap ^i/o-closed-error (function (cont cond) {
 ;; non-dir file in the position of a directory (actually, much like
 ;; the man page says...).  Here, we'll use test_filename in a
 ;; directory component as ./test_filename/test_filename
-trap ^i/o-filename-error (function (cont cond) {
-  test (i/o-filename-error? cond) #t
-  if cont {
-    filename := i/o-filename-error-filename cond
+trap ^i/o-filename-error (function (c) {
+			    test (i/o-filename-error? c) #t
+			    filename := i/o-filename-error-filename c
 
-    ;; use a safe file instead of {filename} (which is
-    ;; ./test_filename/test_filename and just had an error!)
-    ;;
-    ;; test_filename on its own *is* safe but make sure it's writable
-    chmod +w test_filename
-    open-output-file test_filename
-  } (error 'condition-test "generic filename: unexpected non-continuable error" cond)
+			    ;; use a safe file instead of {filename} (which is
+			    ;; ./test_filename/test_filename and just had an error!)
+			    ;;
+			    ;; test_filename on its own *is* safe but make sure it's writable
+			    chmod +w test_filename
+			    open-output-file test_filename
 }) {
   ;; display* "generic filename condition"
 
@@ -290,14 +281,12 @@ trap ^i/o-filename-error (function (cont cond) {
 ;;
 ;; PATH_MAX?  POSIX says 256, Solaris & MacOS say 1024, Linux says 4096
 ;;
-trap ^i/o-malformed-filename-error (function (cont cond) {
-  test (i/o-malformed-filename-error? cond) #t
-  if cont {
-    filename := condition-ref cond 'filename
+trap ^i/o-malformed-filename-error (function (c) {
+				      test (i/o-malformed-filename-error? c) #t
+				      filename := condition-ref c 'filename
 
-    ;; use a safe file instead of filename
-    open-output-file test_filename
-  } (error 'condition-test "malformed filename: unexpected non-continuable error" cond)
+				      ;; use a safe file instead of filename
+				      open-output-file test_filename
 }) {
   ;; display* "opening malformed filename"
   bad_filename := make-string ((C/->integer PATH_MAX) + 100) #\a
@@ -313,13 +302,11 @@ trap ^i/o-malformed-filename-error (function (cont cond) {
 ;; NB. Nothing internally generates a ^i/o-file-is-read-only-error and
 ;; read-only issues are collected under the guise of protection errors
 ;; (EACCES)
-trap ^i/o-file-protection-error (function (cont cond) {
-  test (i/o-file-protection-error? cond) #t
-  if cont {
-    filename := condition-ref cond 'filename
-    chmod +r filename
-    open-input-file filename
-  } (error 'condition-test "0-perms: unexpected non-continuable error" cond)
+trap ^i/o-file-protection-error (function (c) {
+				   test (i/o-file-protection-error? c) #t
+				   filename := condition-ref c 'filename
+				   chmod +r filename
+				   open-input-file filename
 }) {
   ;; display* "opening 0-perms file"
   touch test_filename
@@ -343,14 +330,12 @@ if (equal? (struct-utsname-sysname libc/idio-uname) "SunOS") {
   ;; edisplay* "Solaris: no fopen (\"x\") flag: skipping"
   Tests = Tests + 1
 } {
-  trap ^i/o-file-already-exists-error (function (cont cond) {
-    test (i/o-file-already-exists-error? cond) #t
-    if cont {
-      filename := condition-ref cond 'filename
+  trap ^i/o-file-already-exists-error (function (c) {
+					 test (i/o-file-already-exists-error? c) #t
+					 filename := condition-ref c 'filename
 
-      ;; our "repair" is simply to open the file anyway
-      open-output-file filename
-    } (error 'condition-test "already exists: unexpected non-continuable error" cond)
+					 ;; our "repair" is simply to open the file anyway
+					 open-output-file filename
   }) {
     ;; display* "opening existing file"
     touch test_filename
@@ -364,17 +349,15 @@ if (equal? (struct-utsname-sysname libc/idio-uname) "SunOS") {
 }
 
 ;; ^i/o-no-such-file-error
-trap ^i/o-no-such-file-error (function (cont cond) {
-  test (i/o-no-such-file-error? cond) #t
-  if cont {
-    filename := condition-ref cond 'filename
+trap ^i/o-no-such-file-error (function (c) {
+				test (i/o-no-such-file-error? c) #t
+				filename := condition-ref c 'filename
 
-    ;; we could simply touch(1) the file...
-    ofh := open-output-file filename
-    close-handle ofh
+				;; we could simply touch(1) the file...
+				ofh := open-output-file filename
+				close-handle ofh
 
-    open-input-file filename
-  } (error 'condition-test "non-existent: unexpected non-continuable error" cond)
+				open-input-file filename
 }) {
   ;; display* "opening non-existent file"
   if (file-exists? test_filename) (delete-file test_filename)
@@ -385,36 +368,17 @@ trap ^i/o-no-such-file-error (function (cont cond) {
 
 if (file-exists? test_filename) (delete-file test_filename)
 
-;; a continuable error, if it reaches fallback-condition-handler then
-;; fallback-condition-handler will return #void.  If something else
-;; returned #void then we're none the wiser.
-set-default-handler! ^idio-error (function (cont cond) {
-				    'default-idio-error
+;; A continuable error, we set a default-condition-handler to
+;; specifically return a magic symbol, 'default-idio-error, something
+;; we can test for.
+set-default-handler! ^idio-error (function (c) {
+				    'test-condition-default-idio-error
 })
 
-display* "NOTICE: test-condition.idio: raising a continuable condition"
-test (raise #t (make-condition ^idio-error "continuable condition" "loc" "det")) 'default-idio-error
-
-clear-default-handler! ^idio-error
+test (raise (make-condition ^idio-error "continuable condition" "loc" "det")) 'test-condition-default-idio-error
 
 ;; all done?
 test (condition0 + 101) Tests
 
-;; NOTICE
-;;
-;; a non-continuable error should abort this thread's current "run" --
-;; which will be the idio_vm_run() in idio_load_file_handle, ie. the
-;; sequence of expressions in this file -- so we can't test anything
-;; in this file after this
-display* "NOTICE: test-condition.idio: raising NON-CONT condition; this will be picked up by module/load"
-raise #f (make-condition ^idio-error "NON-CONT condition" "loc" "det")
-
-;; notreached
-display* "NOTICE: test-condition.idio: raising NON-CONT condition; this will be picked up by module/load (with no post): post"
-
-;; WARNING
-;;
-;; Rest of file lost due to non-cont error above.
-;;
-;; So don't bother adding anything below here, it won't be seen.
+clear-default-handler! ^idio-error
 

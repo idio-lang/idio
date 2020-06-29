@@ -32,15 +32,10 @@ command0 := Tests
 ;; rcseh:
 rcseh := #n
 
-trap ^rt-command-status-error (function (cont cond) {
-				 ;condition-report "^rt-command-status-error" #t cond (current-error-handle)
-				 test (rt-command-status-error? cond) #t
-				 if cont {
-				   rcseh cond
-				 } {
-				   edisplay* "command tests:" PID "unexpected non-continuable condition" cond
-				   raise cont cond
-				 }
+trap ^rt-command-status-error (function (c) {
+				 ;condition-report "test-command: ^rt-command-status-error" c (current-error-handle)
+				 test (rt-command-status-error? c) #t
+				 rcseh c
 }) {
 
   ;; define some rt-command-status-error-handlers for the conditions
@@ -50,34 +45,34 @@ trap ^rt-command-status-error (function (cont cond) {
   ;; for exit0 we don't expect this code to be run at all -- hence
   ;; complaining loudly and testing for something that isn't generated
   ;; (spotting an error in the summary is easier to spot)
-  exit0 := function (cond) {
+  exit0 := function (c) {
 	     edisplay* "command tests: exit0: unexpected status error" PID 
-	     condition-report "command tests: exit0" #t cond (current-error-handle)
-	     test (rt-command-status-error-status cond) 'job-failed
+	     condition-report "command tests: exit0" c (current-error-handle)
+	     test (rt-command-status-error-status c) 'job-failed
   }
 
-  exit1 := function (cond) {
+  exit1 := function (c) {
 	     ;edisplay* "command tests: exit1:" PID
-	     ;condition-report "command tests: exit1" #t cond (current-error-handle)
-	     job := idio-error-location cond
+	     ;condition-report "command tests: exit1" c (current-error-handle)
+	     job := idio-error-location c
 	     test (job-detail job) #T{ (exit $(C/integer-> 1)) }
-	     rt-command-status-error-status cond
+	     rt-command-status-error-status c
   }
 
-  killed1 := function (cond) {
+  killed1 := function (c) {
 	       ;edisplay* "command tests: killed1:" PID
-	       ;condition-report "command tests: killed1" #t cond (current-error-handle)
-	       job := idio-error-location cond
+	       ;condition-report "command tests: killed1" c (current-error-handle)
+	       job := idio-error-location c
 	       test (job-detail job) #T{ (killed $(C/integer-> 1)) }
-	       rt-command-status-error-status cond
+	       rt-command-status-error-status c
   }
 
-  killed13 := function (cond) {
+  killed13 := function (c) {
 		;edisplay* "command tests: killed13:" PID
-		;condition-report "command tests: killed13" #t cond (current-error-handle)
-		job := idio-error-location cond
+		;condition-report "command tests: killed13" c (current-error-handle)
+		job := idio-error-location c
 		test (job-detail job) #T{ (killed $(C/integer-> 13)) }
-		rt-command-status-error-status cond
+		rt-command-status-error-status c
   }
 
   ;; Testing the tests! 

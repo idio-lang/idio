@@ -1528,7 +1528,7 @@ void idio_gc_sweep_free_value (IDIO vo)
 
 void idio_gc_sweep ()
 {
-    while (idio_gc->stats.nfree > 0x10) {
+    while (idio_gc->stats.nfree > 0x1000) {
     	IDIO fo = idio_gc->free;
 	idio_gc->free = fo->next;
 	free (fo);
@@ -1865,7 +1865,7 @@ void idio_gc_resume (char *caller)
 }
 
 /**
- * idio_gc_reset() - unpause the garbage collector
+ * idio_gc_reset() - re-pause the garbage collector
  *
  */
 void idio_gc_reset (char *caller, int pause)

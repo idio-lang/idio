@@ -512,7 +512,27 @@ off_t idio_seek_handle (IDIO h, off_t offset, int whence)
     return IDIO_HANDLE_POS (h);
 }
 
-IDIO_DEFINE_PRIMITIVE2V ("seek-handle", seek_handle, (IDIO h, IDIO pos, IDIO args))
+IDIO_DEFINE_PRIMITIVE2V_DS ("seek-handle", seek_handle, (IDIO h, IDIO pos, IDIO args), "handle pos [whence]", "\
+seek to the given ``pos`` in ``handle``			\n\
+							\n\
+if one of the optional 'set, 'end or 'cur symbols is	\n\
+supplied for ``whence`` use the appropriate *whence* flag	\n\
+							\n\
+:param handle: handle to seek in (file or string)	\n\
+:type handle: handle					\n\
+:param pos: position to seek to				\n\
+:type pos: integer					\n\
+:param whence: whence flag, defaults to 'set		\n\
+:type whence: symbol					\n\
+:return: position actually sought to			\n\
+:rtype: integer						\n\
+							\n\
+A successful seek will clear the end-of-file status	\n\
+of the handle.						\n\
+							\n\
+The handle's concept of a line number is invalidated	\n\
+unless ``whence`` is 'set and position is 0 (zero)	\n\
+")
 {
     IDIO_ASSERT (h);
     IDIO_ASSERT (pos);
@@ -1378,7 +1398,9 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
 
     IDIO dosh = idio_open_output_string_handle_C ();
     idio_display_C ("load-handle-aio: ", dosh);
-    idio_display_C ("n/k", dosh);
+    idio_display_C (idio_handle_name (h), dosh);
+    idio_display_C (": PC=", dosh);
+    idio_display (idio_fixnum (lh_pc), dosh);
 
     IDIO_THREAD_PC (thr) = lh_pc;
     r = idio_vm_run (thr, idio_get_output_string (dosh));
@@ -1427,14 +1449,27 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("load-handle", load_handle, (IDIO h))
+IDIO_DEFINE_PRIMITIVE1_DS ("load-handle", load_handle, (IDIO h), "handle", "\
+load expressions from ``handle``				\n\
+								\n\
+:param handle: the handle to load from				\n\
+:type handle: handle						\n\
+								\n\
+This is the ``load-handle`` primitive.				\n\
+")
 {
     IDIO_ASSERT (h);
     IDIO_VERIFY_PARAM_TYPE (handle, h);
 
-    idio_thread_save_state (idio_thread_current_thread ());
+    IDIO thr = idio_thread_current_thread ();
+    idio_ai_t pc0 = IDIO_THREAD_PC (thr);
+
     IDIO r = idio_load_handle (h, idio_read, idio_evaluate, idio_vm_constants);
-    idio_thread_restore_state (idio_thread_current_thread ());
+
+    idio_ai_t pc = IDIO_THREAD_PC (thr);
+    if (pc == (idio_vm_FINISH_pc + 1)) {
+	IDIO_THREAD_PC (thr) = pc0;
+    }
 
     return r;
 }
@@ -1509,7 +1544,7 @@ IDIO idio_load_handle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*eval
 
 	IDIO dosh = idio_open_output_string_handle_C ();
 	idio_display_C ("load-handle-interactive: ", dosh);
-	idio_display_C ("n/k", dosh);
+	idio_display_C (idio_handle_name (fh), dosh);
 
 	IDIO r = idio_vm_run (thr, idio_get_output_string (dosh));
 	idio_debug ("%s\n", r);

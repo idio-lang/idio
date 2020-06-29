@@ -135,7 +135,8 @@ IDIO idio_evaluate_expander_source (IDIO x, IDIO e)
     /* ethr = cthr; */
 
     idio_thread_set_current_thread (ethr);
-    idio_thread_save_state (ethr);
+
+    idio_ai_t pc0 = IDIO_THREAD_PC (ethr);
     idio_vm_default_pc (ethr);
 
     IDIO dosh = idio_open_output_string_handle_C ();
@@ -145,7 +146,10 @@ IDIO idio_evaluate_expander_source (IDIO x, IDIO e)
     idio_initial_expander (x, e);
     IDIO r = idio_vm_run (ethr, idio_get_output_string (dosh));
 
-    idio_thread_restore_state (ethr);
+    idio_ai_t pc = IDIO_THREAD_PC (ethr);
+    if (pc == (idio_vm_FINISH_pc + 1)) {
+	IDIO_THREAD_PC (ethr) = pc0;
+    }
     idio_thread_set_current_thread (cthr);
 
     /* idio_debug ("evaluate-expander-source: out: %s\n", r);      */
@@ -734,7 +738,8 @@ IDIO idio_evaluate_expander_code (IDIO m, IDIO cs)
     IDIO ethr = idio_expander_thread;
 
     idio_thread_set_current_thread (ethr);
-    idio_thread_save_state (ethr);
+
+    idio_ai_t pc0 = IDIO_THREAD_PC (ethr);
     idio_vm_default_pc (ethr);
 
     IDIO dosh = idio_open_output_string_handle_C ();
@@ -744,7 +749,10 @@ IDIO idio_evaluate_expander_code (IDIO m, IDIO cs)
     idio_codegen (ethr, m, cs);
     IDIO r = idio_vm_run (ethr, idio_get_output_string (dosh));
 
-    idio_thread_restore_state (ethr);
+    idio_ai_t pc = IDIO_THREAD_PC (ethr);
+    if (pc == (idio_vm_FINISH_pc + 1)) {
+	IDIO_THREAD_PC (ethr) = pc0;
+    }
     idio_thread_set_current_thread (cthr);
 
     /* idio_debug ("evaluate-expander-code: out: %s\n", r); */
@@ -915,7 +923,8 @@ IDIO idio_evaluate_infix_operator_code (IDIO m, IDIO cs)
     IDIO ethr = idio_expander_thread;
 
     idio_thread_set_current_thread (ethr);
-    idio_thread_save_state (ethr);
+
+    idio_ai_t pc0 = IDIO_THREAD_PC (ethr);
     idio_vm_default_pc (ethr);
 
     IDIO dosh = idio_open_output_string_handle_C ();
@@ -925,7 +934,10 @@ IDIO idio_evaluate_infix_operator_code (IDIO m, IDIO cs)
     idio_codegen (ethr, m, cs);
     IDIO r = idio_vm_run (ethr, idio_get_output_string (dosh));
 
-    idio_thread_restore_state (ethr);
+    idio_ai_t pc = IDIO_THREAD_PC (ethr);
+    if (pc == (idio_vm_FINISH_pc + 1)) {
+	IDIO_THREAD_PC (ethr) = pc0;
+    }
     idio_thread_set_current_thread (cthr);
 
     /* idio_debug ("evaluate-infix-operator-code: out: %s\n", r);      */
@@ -964,7 +976,8 @@ static IDIO idio_evaluate_infix_operator (IDIO n, IDIO e, IDIO b, IDIO a)
     /* ethr = cthr; */
 
     idio_thread_set_current_thread (ethr);
-    idio_thread_save_state (ethr);
+
+    idio_ai_t pc0 = IDIO_THREAD_PC (ethr);
     idio_vm_default_pc (ethr);
 
     IDIO dosh = idio_open_output_string_handle_C ();
@@ -983,7 +996,10 @@ static IDIO idio_evaluate_infix_operator (IDIO n, IDIO e, IDIO b, IDIO a)
     idio_vm_prim_time (func, &prim_t0, &prim_te);
 #endif
 
-    idio_thread_restore_state (ethr);
+    idio_ai_t pc = IDIO_THREAD_PC (ethr);
+    if (pc == (idio_vm_FINISH_pc + 1)) {
+	IDIO_THREAD_PC (ethr) = pc0;
+    }
     idio_thread_set_current_thread (cthr);
 
     /* idio_debug ("evaluate-infix-operator: out: %s\n", r);      */
@@ -1112,7 +1128,8 @@ IDIO idio_evaluate_postfix_operator_code (IDIO m, IDIO cs)
     /* ethr = cthr; */
 
     idio_thread_set_current_thread (ethr);
-    idio_thread_save_state (ethr);
+
+    idio_ai_t pc0 = IDIO_THREAD_PC (ethr);
     idio_vm_default_pc (ethr);
 
     IDIO dosh = idio_open_output_string_handle_C ();
@@ -1122,7 +1139,10 @@ IDIO idio_evaluate_postfix_operator_code (IDIO m, IDIO cs)
     idio_codegen (ethr, m, cs);
     IDIO r = idio_vm_run (ethr, idio_get_output_string (dosh));
 
-    idio_thread_restore_state (ethr);
+    idio_ai_t pc = IDIO_THREAD_PC (ethr);
+    if (pc == (idio_vm_FINISH_pc + 1)) {
+	IDIO_THREAD_PC (ethr) = pc0;
+    }
     idio_thread_set_current_thread (cthr);
 
     /* idio_debug ("evaluate-postfix-operator-code: out: %s\n", r);      */
@@ -1160,7 +1180,8 @@ static IDIO idio_evaluate_postfix_operator (IDIO n, IDIO e, IDIO b, IDIO a)
     IDIO ethr = idio_expander_thread;
 
     idio_thread_set_current_thread (ethr);
-    idio_thread_save_state (ethr);
+
+    idio_ai_t pc0 = IDIO_THREAD_PC (ethr);
     idio_vm_default_pc (ethr);
 
     IDIO dosh = idio_open_output_string_handle_C ();
@@ -1179,7 +1200,10 @@ static IDIO idio_evaluate_postfix_operator (IDIO n, IDIO e, IDIO b, IDIO a)
     idio_vm_prim_time (func, &prim_t0, &prim_te);
 #endif
 
-    idio_thread_restore_state (ethr);
+    idio_ai_t pc = IDIO_THREAD_PC (ethr);
+    if (pc == (idio_vm_FINISH_pc + 1)) {
+	IDIO_THREAD_PC (ethr) = pc0;
+    }
     idio_thread_set_current_thread (cthr);
 
     /* idio_debug ("evaluate-postfix-operator: out: %s\n", r);     */

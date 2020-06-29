@@ -98,12 +98,12 @@ test (handle-pos ifh) 2
 {
   fds := #[ ]
   loop-k := #n
-  trap ^system-error (function (cont cond) {
-			test (C/== cond.errno (C/integer-> 24)) #t
-			if (C/== cond.errno (C/integer-> 24)) {
+  trap ^system-error (function (c) {
+			test (C/== c.errno (C/integer-> 24)) #t
+			if (C/== c.errno (C/integer-> 24)) {
                           display* "test file-handle trap: created" (array-length fds) "fds"
                         } {
-                          condition-report "test file-handle trap" cont cond (current-error-handle)
+                          condition-report "test file-handle trap" c (current-error-handle)
                         }
 			loop-k 'too-many-open-files
   }) {

@@ -3796,9 +3796,15 @@ static IDIO idio_meaning_include (IDIO src, IDIO e, IDIO nametree, int flags, ID
     IDIO_TYPE_ASSERT (array, cs);
     IDIO_TYPE_ASSERT (module, cm);
 
-    idio_thread_save_state (idio_thread_current_thread ());
+    IDIO thr = idio_thread_current_thread ();
+    idio_ai_t pc0 = IDIO_THREAD_PC (thr);
+
     idio_load_file_name_aio (e, cs);
-    idio_thread_restore_state (idio_thread_current_thread ());
+
+    idio_ai_t pc = IDIO_THREAD_PC (thr);
+    if (pc == (idio_vm_FINISH_pc + 1)) {
+	IDIO_THREAD_PC (thr) = pc0;
+    }
 
     return IDIO_LIST1 (idio_I_NOP);
 }

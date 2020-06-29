@@ -38,10 +38,10 @@ define (%module-pop) {
   prev
 }
 
-define (%module-handler cont cond) {
+define (%module-handler c) {
   mod := (%module-pop)
   %set-current-module! mod
-  raise cont cond
+  raise c
 }
 
 define-macro (define-module name & body) {
@@ -81,7 +81,7 @@ define-macro (module name) {
 
 {
   orig-load := load
-  cmod := (current-module)
+  orig-load-handle := load-handle
 
   load = function (filename) "
 load Idio code from ``filename``
@@ -89,32 +89,22 @@ load Idio code from ``filename``
 :param filename: the filename to load from
 :type filename: string
 
-This is the module variant which traps ^idio-error, handles changes to
-the current module and calls:
+This is the module variant which handles changes to the current module
+and calls
 
+------------------------------
   " {
     if (not (string? filename)) (error 'load "not a string" filename)
 
-    load-k := #n
+    cmod := (current-module)
     load-r := #n
 
-    trap ^idio-error (function (cont cond) {
-			if (not cont) {
-			  condition-report (string-append "load(module) #f " filename) cont cond (current-error-handle)
-			  ;(idio-thread-state)
-			  ;edisplay* "module/load: invoking safe continuation"
-			  load-k cond
-			} {
-			  raise cont cond
-			}
-    }) {
-      call/cc (function (k) {
-		 load-k = k
-		 load-r = orig-load filename
-      })
+    unwind-protect {
+      load-r = orig-load filename
+    } {
+      %set-current-module! cmod
     }
 
-    %set-current-module! cmod
 
     ; I suspect the result of load is ignored by most but let's dot
     ; the i's and cross the t's etc..
@@ -122,6 +112,36 @@ the current module and calls:
   }
 
   %set-property! load :docstr-raw (string-append (%property load :docstr-raw) (%property orig-load :docstr-raw))
+
+  load-handle = function (handle) "
+load Idio code from ``handle``
+
+:param handle: the handle to load from
+:type handle: handle
+
+This is the module variant which handles changes to the current module
+and calls
+
+------------------------------
+" {
+    if (not (handle? handle)) (error 'load-handle "not a handle" handle)
+
+    cmod := (current-module)
+    load-handle-r := #n
+
+    unwind-protect {
+      load-handle-r = orig-load-handle handle
+    } {
+      %set-current-module! cmod
+    }
+
+    ; I suspect the result of load-handle is ignored by most but let's dot
+    ; the i's and cross the t's etc..
+    load-handle-r
+  }
+
+  %set-property! load-handle :docstr-raw (string-append (%property load-handle :docstr-raw) (%property orig-load-handle :docstr-raw))
+
 }
 
 

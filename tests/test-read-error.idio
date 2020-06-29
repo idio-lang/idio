@@ -16,13 +16,13 @@ read-error-load := {
 
     n = n + 1
     ;edisplay* "loading #" n filename "looking for" msg "at line" linenum
-    trap ^read-error (function (cont cond) {
-			;edisplay* n msg cond.location cond.line
-			test cond.message msg
-			test cond.line linenum
-			if (or (not (string=? cond.message msg))
-			       (not (eq? cond.line linenum))) {
-			  condition-report (string-append "read-error-load: " filename) cont cond (current-error-handle)
+    trap ^read-error (function (c) {
+			;edisplay* n msg c.location c.line
+			test c.message msg
+			test c.line linenum
+			if (or (not (string=? c.message msg))
+			       (not (eq? c.line linenum))) {
+			  condition-report (string-append "read-error-load: " filename) c (current-error-handle)
 			}
 			load-k 'read-error
     }) {
@@ -133,7 +133,6 @@ read-error-load "read-errors/unexpected-hash-format.idio" "unexpected # format: 
 read-error-load "read-errors/unexpected-hash-format-emb.idio" "unexpected # format: '^' (0x5e)" 2
 
 read-error-load "read-errors/unexpected-pair-separator.idio" "unexpected & outside of list" 1
-read-error-load "read-errors/unexpected-pair-separator-emb.idio" "unexpected & outside of list" 2
 
 ;; XXX in both of these the trailing newlines in the file affect the
 ;; line number!

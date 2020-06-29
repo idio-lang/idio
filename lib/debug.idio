@@ -42,9 +42,10 @@ debug := #n
 
   debug = function args {
 	    display* "This is the Idio debugger\n"
+	    display* "debugger input is from" (current-input-handle)
 
 	    if (not (null? args)) {
-	      debug-k = ph args
+	      display* debug-k \= ph args
 	    }
 
 	    continuations = (%%vm-continuations)
@@ -70,22 +71,25 @@ debug := #n
 
 			    cond ((and (eqv? "" line)
 				       (eof? (current-input-handle))) {
-					 debug-c 0 'eof
+					 debug-k 'debugger-eof
 				       }) \
 				 ((eq? 'c cmd) {
-			      n := read-expr lsh
-			      v := read-expr lsh
-			      debug-c n v
-			    }) \
+				   n := read-expr lsh
+				   v := read-expr lsh
+				   debug-c n v
+				 }) \
 				 ((eqv? 'v cmd) {
 				   v := read-expr lsh
-				   debug-v v
+				   debug-k v
 				 }) \
 				 (else (printf "unrecognised line %s\n" line))
 
 			    (debug-loop)
 	    }
 
-	    (debug-loop)
+	    call/cc (function (k) {
+		       debug-k = k
+		       (debug-loop)
+	    })
   }
 }

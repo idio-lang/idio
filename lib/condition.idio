@@ -205,11 +205,10 @@ define-condition-type-accessors-only ^rt-signal				^error				rt-signal? \
 	(signal rt-signal-signal)
 
 ;; have a common method for reporting on a condition
-define (condition-report prefix cont cond & args) "print a report on `condition`
+define (condition-report prefix c & args) "print a report on condition `c`
 
 :param prefix: a distinguishing string
-:param cont: is the condition continuable
-:param cond: the condition
+:param c: the condition
 :param args: print to optional handle
 
 :return: unspecified
@@ -232,89 +231,94 @@ define (condition-report prefix cont cond & args) "print a report on `condition`
     cr-printf (string-append prefix ":")
   }
 
-  if (and (struct-type-isa (struct-instance-type cond) ^idio-error)
-	  (not (or (struct-type-isa (struct-instance-type cond) ^read-error)
-		   (struct-type-isa (struct-instance-type cond) ^evaluation-error)
-		   (struct-type-isa (struct-instance-type cond) ^rt-command-status-error)))) {
-		     cr-printf "%s:" cond.location
-		     cr-printf "%s:" (struct-type-name (struct-instance-type cond))
-		     cr-printf "%s" cond.message
-		     if (not (null? cond.detail)) {
-		       cr-printf ": detail %s" cond.detail
+  if (and (struct-type-isa (struct-instance-type c) ^idio-error)
+	  (not (or (struct-type-isa (struct-instance-type c) ^read-error)
+		   (struct-type-isa (struct-instance-type c) ^evaluation-error)
+		   (struct-type-isa (struct-instance-type c) ^rt-command-status-error)))) {
+		     cr-printf "%s:" c.location
+		     cr-printf "%s:" (struct-type-name (struct-instance-type c))
+		     cr-printf "%s" c.message
+		     if (not (null? c.detail)) {
+		       cr-printf ": detail %s" c.detail
 		     }
   }
 
-  cond ((struct-type-isa (struct-instance-type cond) ^i/o-handle-error) {
-    cr-printf ": handle %s " cond.handle
+  cond ((struct-type-isa (struct-instance-type c) ^i/o-handle-error) {
+    cr-printf ": handle %s " c.handle
   }) \
-       ((struct-type-isa (struct-instance-type cond) ^i/o-filename-error) {
-	 cr-printf ": filename %s " cond.filename
+       ((struct-type-isa (struct-instance-type c) ^i/o-filename-error) {
+	 cr-printf ": filename %s " c.filename
        }) \
-       ((struct-type-isa (struct-instance-type cond) ^read-error) {
-	 cr-printf "%s:%s:%s" cond.location cond.line cond.message
+       ((struct-type-isa (struct-instance-type c) ^read-error) {
+	 cr-printf "%s:%s:%s" c.location c.line c.message
        }) \
-       ((struct-type-isa (struct-instance-type cond) ^evaluation-error) {
-	 cr-printf "%s:%s:%s" cond.location cond.expr cond.message
+       ((struct-type-isa (struct-instance-type c) ^evaluation-error) {
+	 cr-printf "%s:%s:%s" c.location c.expr c.message
        }) \
-       ((struct-type-isa (struct-instance-type cond) ^system-error) {
-          cr-printf "errno %s (%s)" cond.errno (libc/errno-name cond.errno)
+       ((struct-type-isa (struct-instance-type c) ^system-error) {
+          cr-printf "errno %s (%s)" c.errno (libc/errno-name c.errno)
         }) \
-       ((struct-type-isa (struct-instance-type cond) ^st-variable-error) {
-	 cr-printf ": variable %s" cond.variable
+       ((struct-type-isa (struct-instance-type c) ^st-variable-error) {
+	 cr-printf ": variable %s" c.variable
        }) \
-       ((struct-type-isa (struct-instance-type cond) ^rt-variable-error) {
-	 cr-printf ": variable %s" cond.variable
+       ((struct-type-isa (struct-instance-type c) ^rt-variable-error) {
+	 cr-printf ": variable %s" c.variable
        }) \
-       ((struct-type-isa (struct-instance-type cond) ^rt-module-error) {
-	 cr-printf ": module %s" cond.module
+       ((struct-type-isa (struct-instance-type c) ^rt-module-error) {
+	 cr-printf ": module %s" c.module
        }) \
-       ((struct-type-isa (struct-instance-type cond) ^rt-module-symbol-unbound-error) {
-	 cr-printf ": symbol %s" cond.symbol
+       ((struct-type-isa (struct-instance-type c) ^rt-module-symbol-unbound-error) {
+	 cr-printf ": symbol %s" c.symbol
        }) \
-       ((struct-type-isa (struct-instance-type cond) ^rt-glob-error) {
-	 cr-printf ": pattern %s" cond.pattern
+       ((struct-type-isa (struct-instance-type c) ^rt-glob-error) {
+	 cr-printf ": pattern %s" c.pattern
        }) \
-       ((struct-type-isa (struct-instance-type cond) ^rt-command-status-error) {
-	 job := idio-error-location cond
+       ((struct-type-isa (struct-instance-type c) ^rt-command-status-error) {
+	 cr-printf " %s" c.message
+	 job := idio-error-location c
 	 header := #t
+	 printed := #f
 	 loop :+ function (procs details) {
 		   cond ((null? procs) #t) \
 			(else {
 			  if header {
 			    header = #f
-			    cr-printf "  flags: C - completed; !C - not completed; S - stopped\n"
-			    cr-printf "  proc: %-6s %-3s %-10s %s\n" "pid" "fl" "status" "cmd"
+			    cr-printf "  proc: %6s %-3s %-12s %s\n" "PID" "fl" "status" "cmd"
 			  }
 			  proc := ph procs
-			  cr-printf "  proc: %6s %2s%s %10s %s\n" proc.pid (if proc.completed " C" "!C") (if proc.stopped "S" " ") (ph details) proc.argv
+			  cr-printf "  proc: %6s %2s%s %-12s %s\n" proc.pid (if proc.completed " C" "!C") (if proc.stopped "S" " ") (ph details) proc.argv
+			  printed = #t
 			  loop (pt procs) (pt details)
 			})
 	 }
 
 	 cr-printf "\n"
 	 loop (reverse (%idio-job-procs job)) (reverse (pipeline-detail job))
-	 cr-printf "pipeline: %s => %s" (%idio-job-pipeline job) cond.status
+	 if printed {
+	   cr-printf "  flags: C - completed; !C - not completed; S - stopped\n"
+	 }
+	 cr-printf "job: %s => %s" (%idio-job-pipeline job) c.status
        }) \
-       ((struct-type-isa (struct-instance-type cond) ^rt-array-bounds-error) {
-	 cr-printf ": index %s" cond.index
+       ((struct-type-isa (struct-instance-type c) ^rt-array-bounds-error) {
+	 cr-printf ": index %s" c.index
        }) \
-       ((struct-type-isa (struct-instance-type cond) ^rt-hash-key-not-found) {
-	 cr-printf ": key %s" cond.key
+       ((struct-type-isa (struct-instance-type c) ^rt-hash-key-not-found) {
+	 cr-printf ": key %s" c.key
        }) \
-       ((struct-type-isa (struct-instance-type cond) ^rt-bignum-conversion-error) {
-	 cr-printf ": bignum %s" cond.bignum
+       ((struct-type-isa (struct-instance-type c) ^rt-bignum-conversion-error) {
+	 cr-printf ": bignum %s" c.bignum
        }) \
-       ((struct-type-isa (struct-instance-type cond) ^rt-fixnum-conversion-error) {
-	 cr-printf ": fixnum %s" cond.fixnum
+       ((struct-type-isa (struct-instance-type c) ^rt-fixnum-conversion-error) {
+	 cr-printf ": fixnum %s" c.fixnum
        }) \
-       ((struct-type-isa (struct-instance-type cond) ^rt-signal) {
-          cr-printf "signal %s (%s)" cond.signum (libc/signal-name cond.signum)
+       ((struct-type-isa (struct-instance-type c) ^rt-signal) {
+          cr-printf "signal %s (%s)" c.signum (libc/signal-name c.signum)
        }) \
-       ((struct-type-isa (struct-instance-type cond) ^error) {
-          cr-printf " %s" (struct-type-name (struct-instance-type cond))
+       ((struct-type-isa (struct-instance-type c) ^error) {
+          cr-printf " %s" (struct-type-name (struct-instance-type c))
        }) \
        (else {
-          cr-printf " %s" cond
+          cr-printf " %s" c
         })
   display "\n" oh
 }

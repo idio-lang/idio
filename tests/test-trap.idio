@@ -3,11 +3,11 @@ display* "This is trap.idio"
 
 ;%%vm-dis 1
 
-trap ^rt-signal-SIGCHLD (function (cont cond) {
-  ;display* "trapped ^rt-signal-SIGCHLD" cont cond
+trap ^rt-signal-SIGCHLD (function (c) {
+			   ;display* "trapped ^rt-signal-SIGCHLD" c
   }) {
-  trap ^rt-signal-SIGHUP (function (cont cond) {
-    display* "trapped ^rt-signal-SIGHUP" cont cond
+  trap ^rt-signal-SIGHUP (function (c) {
+			    display* "trapped ^rt-signal-SIGHUP" c
     }) {
       echo Hello World
   }
@@ -15,29 +15,20 @@ trap ^rt-signal-SIGCHLD (function (cont cond) {
 
 ;; test out the base-condition-handler
 
-set-default-handler! ^idio-error (function (cont cond) {
+set-default-handler! ^idio-error (function (c) {
 				    'default-idio-error
 })
 
-display* "trap: raise CONT ^idio-error: pre"
-raise #t (make-condition ^idio-error "CONT ^idio-error" "loc" "det")
-display* "trap: raise CONT ^idio-error: post"
-
-; non-continuable conditions will be caught by module/load (or load)
-display* "trap: raise NON-CONT ^idio-error: pre"
-raise #f (make-condition ^idio-error "NON-CONT ^idio-error" "loc" "det")
-display* "trap: raise NON-CONT ^idio-error: post"
+test (raise (make-condition ^idio-error "CONT ^idio-error" "loc" "det")) 'default-idio-error
 
 {
   f := (function (s) {
 	  edisplay* "s =" s
 	  echo s
-	  raise #f (make-condition ^idio-error
-				   (string-append "NON-CONT ^idio-error"
-						  ": "
-						  s)
-				   "loc"
-				   "det")
+	  raise (make-condition ^idio-error
+				(string-append "^idio-error: " s)
+				"loc"
+				"det")
   })
 
   f "default-condition-handler test"

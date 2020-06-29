@@ -322,11 +322,11 @@ define (wait-for-job job) "wait for job `job` to be stopped or completed
 	           (not (job-is-completed job))))
          #n) #n
 
-  ;;edisplay* "wfj" (%idio-job-pgid job) "completed?" (job-is-completed job) "stopped?" (job-is-stopped job) (if (job-failed job) "failed" "succeeded") (pipeline-detail job)
+  ;eprintf "wfj: %5s C=%s S=%s %s %s\n" (%idio-job-pgid job) (job-is-completed job) (job-is-stopped job) (if (job-failed job) "failed" "succeeded") (pipeline-detail job)
 
   if (job-failed job) {
     c := make-condition ^rt-command-status-error "job failed" job (pipeline-detail job) (job-detail job)
-    raise #t c
+    raise c
   }
 
   job-status job
@@ -415,7 +415,7 @@ define (do-job-notification) "notify of any job status changes" {
 		       job := ph jobs
 		       c := make-condition ^rt-command-status-error "job failed" job (pipeline-detail job) (job-detail job)
 		       ;edisplay* "djn: raising for job" job
-		       ;raise #t c
+		       ;raise c
 
 		       ;; if someone handled that error and returned (anything)
 		       ;; then we can loop onto the next

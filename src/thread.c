@@ -194,34 +194,6 @@ void idio_thread_set_current_module (IDIO m)
     IDIO_THREAD_ENV (thr) = m;
 }
 
-void idio_thread_save_state (IDIO thr)
-{
-    IDIO_ASSERT (thr);
-    IDIO_TYPE_ASSERT (thread, thr);
-
-    /* idio_debug ("thread: %p save-state: ", thr); */
-
-    IDIO stack = IDIO_THREAD_STACK (thr);
-    idio_array_push (stack, idio_fixnum (IDIO_THREAD_PC (thr)));
-    idio_array_push (stack, idio_SM_return);
-}
-
-void idio_thread_restore_state (IDIO thr)
-{
-    IDIO_ASSERT (thr);
-    IDIO_TYPE_ASSERT (thread, thr);
-
-    /* idio_debug ("thread: %p restore-state: ", thr); */
-
-    IDIO stack = IDIO_THREAD_STACK (thr);
-    IDIO marker = idio_array_pop (stack);
-    if (idio_SM_return != marker) {
-	idio_debug ("itrs: marker: expected idio_SM_return not %s\n", marker);
-	idio_vm_panic (thr, "itrs: unexpected stack marker");
-    }
-    IDIO_THREAD_PC (thr) = IDIO_FIXNUM_VAL (idio_array_pop (stack));
-}
-
 void idio_init_thread ()
 {
     idio_running_threads = idio_array (8);

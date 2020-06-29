@@ -225,13 +225,11 @@ define-infix-operator or 1000 and
 define-macro (&& & e*) {
   #T{
     {
-      trap ^rt-command-status-error (function (cont cond) {
-				       if cont {
-					 job := idio-error-location cond
-					 if (job-is-completed job) {
-					   rt-command-status-error-status cond
-					 } (raise cont cond)
-				       } (raise cont cond)
+      trap ^rt-command-status-error (function (c) {
+				       job := idio-error-location c
+				       if (job-is-completed job) {
+					 rt-command-status-error-status c
+				       } (raise c)
       }) {
 	and $@e*
       }
@@ -242,13 +240,11 @@ define-macro (&& & e*) {
 define-macro (|| & e*) {
   #T{
     {
-      trap ^rt-command-status-error (function (cont cond) {
-				       if cont {
-					 job := idio-error-location cond
-					 if (job-is-completed job) {
-					   rt-command-status-error-status cond
-					 } (raise cont cond)
-				       } (raise cont cond)
+      trap ^rt-command-status-error (function (c) {
+				       job := idio-error-location c
+				       if (job-is-completed job) {
+					 rt-command-status-error-status c
+				       } (raise c)
       }) {
 	or $@e*
       }

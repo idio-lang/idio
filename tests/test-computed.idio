@@ -35,13 +35,11 @@ test (computed? 'cvar-g) #t
 test cvar-g "got"
 
 ;; set should fail
-trap ^rt-computed-variable-no-accessor-error (function (cont cond) {
-  test (rt-computed-variable-no-accessor-error? cond) #t
-  if cont {
-    name := condition-ref cond 'name
+trap ^rt-computed-variable-no-accessor-error (function (c) {
+						test (rt-computed-variable-no-accessor-error? c) #t
+						name := condition-ref c 'name
 
-    'no-set-accessor
-  } (error 'computed-test "no computed set accessor: unexpected non-continuable error" cond)
+						'no-set-accessor
 }) {
   ;; display* "using set-less computed variable"
   test (cvar-g = 3) 'no-set-accessor
@@ -58,13 +56,11 @@ test (computed? 'cvar-s) #t
 test (cvar-s = 55) 65
 
 ;; get should fail
-trap ^rt-computed-variable-no-accessor-error (function (cont cond) {
-  test (rt-computed-variable-no-accessor-error? cond) #t
-  if cont {
-    name := condition-ref cond 'name
+trap ^rt-computed-variable-no-accessor-error (function (c) {
+						test (rt-computed-variable-no-accessor-error? c) #t
+						name := condition-ref c 'name
 
-    'no-get-accessor
-  } (error 'computed-test "no computed get accessor: unexpected non-continuable error" cond)
+						'no-get-accessor
 }) {
   ;; display* "using get-less computed variable"
   test cvar-s 'no-get-accessor

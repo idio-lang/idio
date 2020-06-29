@@ -46,9 +46,9 @@ extern IDIO idio_libc_struct_stat;
 	sprintf (idio_libc_signal_names[i], "%s", IDIO_SYMBOL_S (sig_sym) + 3); \
     }
 
-#define IDIO_LIBC_SIGNAL_CONDITION_ONLY(n,i)										\
-    sig_cond = idio_struct_instance (idio_condition_rt_signal_type, IDIO_LIST1 (IDIO_FIXNUM (n)));	\
-    idio_array_insert_index (idio_vm_signal_handler_conditions, sig_cond, n);		\
+#define IDIO_LIBC_SIGNAL_CONDITION_ONLY(n,i)				\
+    sig_cond = idio_struct_instance (idio_condition_rt_signal_type, IDIO_LIST1 (IDIO_FIXNUM (n))); \
+    idio_array_insert_index (idio_vm_signal_handler_conditions, sig_cond, n); \
 
 /*
  * We create a signal-specific condition type, ^rt-signal-SIGxxx, for

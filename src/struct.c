@@ -201,6 +201,12 @@ int idio_struct_type_isa (IDIO st, IDIO type)
     IDIO_ASSERT (st);
     IDIO_ASSERT (type);
 
+    if (idio_S_nil == st) {
+	return 0;
+    }
+
+    IDIO_VERIFY_PARAM_TYPE (struct_type, st);
+
     if (st == type) {
 	return 1;
     } else {

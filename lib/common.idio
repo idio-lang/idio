@@ -47,85 +47,12 @@ define-syntax-rule (unless test body ...) (
   if (not test) (begin body ...)
 )
 
-load-handle = {
-  orig-load-handle := load-handle
-
-  function (handle) "
-load Idio code from ``handle``
-
-``load-handle`` works much like ``load`` except uses a handle
-as the source of code
-
-:param handle: the handle to load from
-:type filename: string
-
-" {
-    if (not (handle? handle)) (error 'load-handle "not a handle" handle)
-
-    load-handle-k := #n
-
-    trap ^condition (function (cont cond) {
-		       if (not cont) {
-			 condition-report (string-append "load-handle: " (handle-location handle)) cont cond (current-error-handle)
-			 ;(idio-thread-state)
-			 load-handle-k cond
-		       } {
-			 raise cont cond
-		       }
-    }) {
-      call/cc (function (k) {
-		 load-handle-k = k
-		 orig-load-handle handle
-      })
-    }
-  }
-}
-
-common-load := {
-  orig-load := load
-
-  function (filename) "
-load Idio code from ``filename``
-
-:param filename: the filename to load from
-:type filename: string
-
-This is the common variant which traps ^idio-error and calls:
-
-" {
-    if (not (string? filename)) (error 'load "not a string" filename)
-
-    load-k := #n
-
-    trap ^idio-error (function (cont cond) {
-			if (not cont) {
-			  condition-report (string-append "load(common): " filename) cont cond (current-error-handle)
-			  ;(idio-thread-state)
-			  load-k cond
-			} {
-			  raise cont cond
-			}
-    }) {
-      call/cc (function (k) {
-		 load-k = k
-		 orig-load filename
-      })
-    }
-  }
-
-  ;%set-property! common-load :docstr-raw (string-append (%property common-load :docstr-raw) (%property orig-load :docstr-raw))
-}
-
 define-macro (suppress-errors conds & cmd) {
   #T{
-    trap $conds (function (cont cond) {
-      if cont {
-	;; What should we return?  Something hard to mistake for a
-	;; possible normal value.  Probably.
-	(void)
-      } {
-	raise cont cond
-      }
+    trap $conds (function (c) {
+		   ;; What should we return?  Something hard to mistake for a
+		   ;; possible normal value.  Probably.
+		   (void)
     }) {
       if (pair? (ph '$cmd)) {
 	$@cmd

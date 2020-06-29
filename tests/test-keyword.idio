@@ -42,11 +42,9 @@ kw-table := (make-keyword-table)
 
 test (keyword-get kw-table :a #f) #f
 
-trap ^rt-hash-key-not-found (function (cont cond) {
-  test (rt-hash-key-not-found? cond) #t
-  if cont {
-    #f
-  } (error 'keyword-test "hash key not found: unexpected non-continuable error" cond)
+trap ^rt-hash-key-not-found (function (c) {
+			       test (rt-hash-key-not-found? c) #t
+			       #f
 }) {
   test (keyword-get kw-table :a) #f
 }

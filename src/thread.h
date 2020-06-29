@@ -39,8 +39,6 @@ void idio_thread_set_current_error_handle (IDIO h);
 IDIO idio_thread_env_module ();
 IDIO idio_thread_current_module ();
 void idio_thread_set_current_module (IDIO h);
-void idio_thread_save_state (IDIO thr);
-void idio_thread_restore_state (IDIO thr);
 
 void idio_init_thread ();
 void idio_thread_add_primitives ();

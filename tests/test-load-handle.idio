@@ -1,17 +1,20 @@
 
-expr := "display* \"This is an expr for load-handle\""
+expr := "printf \"test-load-handle: This is a safe expr for load-handle\\n\""
 
 ish := open-input-string expr
 
 load-handle ish
 
-bad-expr := "display* \"This is a bad-expr for load-handle: (unterminated string)"
+bad-expr := "printf \"test-load-handle: This is an invalid expr for load-handle: (an unterminated string)\n"
 
 ish := open-input-string bad-expr
 
-display* "NOTICE: test-load-handle.idio: raising NON-CONT condition; this will be picked up by load-handle: pre"
+set-default-handler! ^idio-error (function (c) {
+				    edisplay* "This is the load-handle default handler for ^idio-error"
+				    'test-load-handle-default-idio-error
+})
+
 load-handle ish
-display* "NOTICE: test-load-handle.idio: raising NON-CONT condition; this will be picked up by load-handle: post"
 
 cont-expr := "(false)"
 
@@ -20,10 +23,10 @@ ish := open-input-string cont-expr
 ; running the command false will do two things: 1. generate a SIGCHLD
 ; 2. generate a ^rt-command-status-error (as "false" returned a
 ; non-zero exit status)
-trap ^rt-signal-SIGCHLD (function (cont cond) {
+trap ^rt-signal-SIGCHLD (function (c) {
 }) {
-  trap ^rt-command-status-error (function (cont cond) {
-				   edisplay* "test load-handle trap:" cond.message "with" cond.status
+  trap ^rt-command-status-error (function (c) {
+				   edisplay* "test load-handle trap:" c.message "with" c.status
   }) {
     display* "NOTICE: test-load-handle.idio: exec false; this will be picked up by test load-handle trap: pre"
     load-handle ish

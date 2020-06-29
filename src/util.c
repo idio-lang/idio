@@ -1515,7 +1515,6 @@ char *idio_as_string (IDIO o, int depth)
 			return NULL;
 		    }
 		    IDIO_STRCAT_FREE (r, info);
-		    IDIO_STRCAT (r, ">");
 		}
 		break;
 	    case IDIO_TYPE_C_INT:
@@ -1675,7 +1674,17 @@ char *idio_as_string (IDIO o, int depth)
 		break;
 	    case IDIO_TYPE_CONTINUATION:
 		{
-		    if (asprintf (&r, "#<K %p>", o) == -1) {
+		    IDIO ks = IDIO_CONTINUATION_STACK (o);
+		    idio_ai_t kss = idio_array_size (ks);
+		    IDIO pc_I = idio_array_get_index (ks, kss - 2);
+
+		    /*
+		     * We preserved some of the continuation state on
+		     * the continuation stack so the actual
+		     * continuation stack size is kss minus eight.
+		     * Check idio_continuation().
+		     */
+		    if (asprintf (&r, "#<K %p ss=%zu PC=%td>", o, kss - 8, IDIO_FIXNUM_VAL (pc_I)) == -1) {
 			idio_error_alloc ("asprintf");
 
 			/* notreached */

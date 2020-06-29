@@ -16,13 +16,13 @@ evaluation-error-load := {
 
     n = n + 1
     ;edisplay* "loading #" n filename
-    trap ^evaluation-error (function (cont cond) {
-			      ;edisplay* n msg cond
-			      test cond.message msg
-			      if (not (string=? cond.message msg)) {
-				condition-report (string-append "evaluation-error-load: " filename) cont cond (current-error-handle)
+    trap ^evaluation-error (function (c) {
+			      ;edisplay* n msg c
+			      test c.message msg
+			      if (not (string=? c.message msg)) {
+				condition-report (string-append "evaluation-error-load: " filename) c (current-error-handle)
 			      }
-			      load-k cond
+			      load-k c
     }) {
       call/cc (function (k) {
 		 load-k = k

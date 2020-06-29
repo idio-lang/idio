@@ -3131,10 +3131,8 @@ if (file-exists? testfile) (delete-file testfile)
 ;; circumstances.  Any other condition should blow up as you would
 ;; expect.
 
-trap ^i/o-closed-error (function (cont cond) {
-  if cont {
-    #t
-  } (error 's9-test "expecting a continuable error" cond)
+trap ^i/o-closed-error (function (c) {
+			  #t
 }) {
   test {
     call-with-output-file testfile (function (out) {

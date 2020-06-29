@@ -98,9 +98,6 @@ IDIO idio_condition_rt_signal_type;
 IDIO idio_condition_reset_condition_handler;
 IDIO idio_condition_restart_condition_handler;
 IDIO idio_condition_default_condition_handler;
-IDIO idio_condition_handler_rt_command_status;
-IDIO idio_condition_SIGHUP_signal_handler;
-IDIO idio_condition_SIGCHLD_signal_handler;
 
 IDIO idio_condition_default_handler;
 
@@ -400,8 +397,7 @@ set the default handler for condition type ``ct`` to	\n\
 ``handler``						\n\
 							\n\
 If a condition of type ``ct`` is not otherwise handled	\n\
-then ``handler`` will be invoked with a continuable flag\n\
-and the continuation.					\n\
+then ``handler`` will be invoked with the continuation.	\n\
 							\n\
 :param ct: condition type				\n\
 :type ct: condition type				\n\
@@ -448,31 +444,54 @@ resume.							\n\
     return idio_S_unspec;
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("default-condition-handler", default_condition_handler, (IDIO cont, IDIO cond))
+IDIO_DEFINE_PRIMITIVE1_DS ("default-condition-handler", default_condition_handler, (IDIO c), "c", "\
+Invoke the default handler for condition `c`			\n\
+								\n\
+If there is no default handler: and the session is interactive	\n\
+- if the session is interactive then the debugger is invoked	\n\
+- otherwise the condition is re-raised				\n\
+								\n\
+:param c: the condition						\n\
+:type c: condition instance					\n\
+								\n\
+does not return per se						\n\
+")
 {
-    IDIO_ASSERT (cont);
-    IDIO_ASSERT (cond);
+    IDIO_ASSERT (c);
 
     /*
      * XXX IDIO_TYPE_ASSERT() will raise a condition if it fails!
      */
-    IDIO_TYPE_ASSERT (boolean, cont);
-    IDIO_TYPE_ASSERT (condition, cond);
+    IDIO_TYPE_ASSERT (condition, c);
 
-    if (idio_S_false == cont) {
-	/*
-	 * This should go to the restart-condition-handler (which will
-	 * go to the reset-condition-handler) which will reset the VM
-	 */
-	idio_debug ("default-condition-handler: non-cont-err %s\n", cond);
+    /*
+     * Technically we can allow the user to override the SIGCHLD and
+     * SIGHUP handlers -- though we'd advise against it.
+     */
+    IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (c);
+    while (idio_S_nil != sit) {
+	IDIO handler = idio_hash_get (idio_condition_default_handler, sit);
 
-	idio_raise_condition (cont, cond);
+	if (idio_S_unspec != handler) {
+	    IDIO thr = idio_thread_current_thread ();
 
-	return idio_S_notreached;
+	    /*
+	    idio_debug ("d-c-h user-defined handler %s", handler);
+	    idio_debug (" for %s", IDIO_STRUCT_TYPE_NAME (sit));
+	    idio_debug (" for condition type %s\n", IDIO_STRUCT_TYPE_NAME (IDIO_STRUCT_INSTANCE_TYPE (c)));
+	    */
+	    IDIO r = idio_vm_invoke_C (thr, IDIO_LIST2 (handler, c));
+
+	    /* idio_debug ("d-c-h user-defined handler r=%s\n", r); */
+
+	    return r;
+	}
+
+	sit = IDIO_STRUCT_TYPE_PARENT (sit);
     }
 
-    IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (cond);
-    IDIO sif = IDIO_STRUCT_INSTANCE_FIELDS (cond);
+    sit = IDIO_STRUCT_INSTANCE_TYPE (c);
+    IDIO sif = IDIO_STRUCT_INSTANCE_FIELDS (c);
 
     if (idio_struct_type_isa (sit, idio_condition_rt_signal_type)) {
 	IDIO signum_I = idio_array_get_index (sif, IDIO_SI_RT_SIGNAL_TYPE_SIGNUM);
@@ -480,30 +499,23 @@ IDIO_DEFINE_PRIMITIVE2 ("default-condition-handler", default_condition_handler, 
 
 	switch (signum_C) {
 	case SIGCHLD:
-	    fprintf (stderr, "default-c-h: SIGCHLD -> idio_command_SIGCHLD_signal_handler\n");
-	    idio_command_SIGCHLD_signal_handler ();
-	    return idio_S_unspec;
+	    /* fprintf (stderr, "default-c-h: SIGCHLD -> idio_command_SIGCHLD_signal_handler\n"); */
+	    return idio_command_SIGCHLD_signal_handler ();
 	case SIGHUP:
-	    fprintf (stderr, "default-c-h: SIGHUP -> idio_command_SIGHUP_signal_handler\n");
-	    idio_command_SIGHUP_signal_handler ();
-	    return idio_S_unspec;
+	    return idio_command_SIGHUP_signal_handler ();
 	default:
 	    break;
 	}
     } else if (idio_struct_type_isa (sit, idio_condition_rt_command_status_error_type)) {
-	fprintf (stderr, "default-c-h: SIG?? -> idio_command_SIG??_signal_handler\n");
+	/* return idio_command_rcse_handler (c); */
+	/* idio_debug ("default-c-h: rcse = %s\n", c); */
+	fprintf (stderr, "default-c-h: rcse?? =>> #unspec\n");
 	return idio_S_unspec;
     }
 
-    IDIO handler = idio_hash_get (idio_condition_default_handler, sit);
-
-    if (idio_S_unspec != handler) {
-	return idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST3 (handler, cont, cond));
-    }
-
     if (idio_command_interactive) {
-	IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (cond);
-	IDIO sif = IDIO_STRUCT_INSTANCE_FIELDS (cond);
+	IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (c);
+	IDIO sif = IDIO_STRUCT_INSTANCE_FIELDS (c);
 
 	if (idio_struct_type_isa (sit, idio_condition_system_error_type)) {
 	    IDIO eh = idio_thread_current_error_handle ();
@@ -618,33 +630,35 @@ IDIO_DEFINE_PRIMITIVE2 ("default-condition-handler", default_condition_handler, 
 	    idio_display (IDIO_STRUCT_TYPE_NAME (sit), eh);
 	    idio_display_C ("\n", eh);
 	} else {
-	    idio_debug ("default-condition-handler: no clause for %s\n", cond);
+	    idio_debug ("default-condition-handler: no clause for %s\n", c);
 	}
-
-	/*
-	 * Save a continuation in case things get ropey and we have to
-	 * bail out.
-	 */
-	IDIO pdosh = idio_open_output_string_handle_C ();
-	idio_display_C ("debugger: ", pdosh);
 
 	IDIO thr = idio_thread_current_thread ();
 
-	IDIO debug_k = idio_continuation (thr);
-	idio_array_push (idio_vm_krun, IDIO_LIST2 (debug_k, idio_get_output_string (pdosh)));
-
-	IDIO cmd = IDIO_LIST2 (idio_module_symbol_value (idio_symbols_C_intern ("debug"),
+	IDIO cmd = IDIO_LIST1 (idio_module_symbol_value (idio_symbols_C_intern ("debug"),
 							 idio_Idio_module,
-							 idio_S_nil),
-			       debug_k);
+							 idio_S_nil));
 
-	return idio_vm_invoke_C (thr, cmd);
+	IDIO r = idio_vm_invoke_C (thr, cmd);
+
+	/*
+	 * PC for RETURN
+	 *
+	 * If we were invoked as a condition handler then the stack is
+	 * prepared with a return to idio_vm_CHR_pc (which will
+	 * POP-TRAP, RESTORE-STATE and RETURN).
+	 *
+	 *
+	 */
+	/* IDIO_THREAD_PC (thr) = idio_vm_CHR_pc + 2; */
+
+	return r;
     }
 
 #ifdef IDIO_DEBUG
-    idio_debug ("default-condition-handler: no handler re-raising %s\n", cond);
+    idio_debug ("default-condition-handler: no handler re-raising %s\n", c);
 #endif
-    idio_raise_condition (cont, cond);
+    idio_raise_condition (idio_S_true, c);
 
     idio_debug ("default-condition-handler: returning %s\n", idio_S_void);
 
@@ -655,105 +669,93 @@ IDIO_DEFINE_PRIMITIVE2 ("default-condition-handler", default_condition_handler, 
     return idio_S_void;
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("restart-condition-handler", restart_condition_handler, (IDIO cont, IDIO cond))
+IDIO_DEFINE_PRIMITIVE1_DS ("restart-condition-handler", restart_condition_handler, (IDIO c), "c", "\
+Invoke a VMM restart handler for `c`				\n\
+								\n\
+:param c: the condition						\n\
+:type c: condition instance					\n\
+								\n\
+does not return per se						\n\
+")
 {
-    IDIO_ASSERT (cont);
-    IDIO_ASSERT (cond);
+    IDIO_ASSERT (c);
 
-    if (idio_S_true == cont) {
-	if (idio_isa_condition (cond)) {
-	    IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (cond);
-	    /* IDIO stf = IDIO_STRUCT_TYPE_FIELDS (sit); */
-	    IDIO sif = IDIO_STRUCT_INSTANCE_FIELDS (cond);
+    if (idio_isa_condition (c)) {
+	IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (c);
+	/* IDIO stf = IDIO_STRUCT_TYPE_FIELDS (sit); */
+	IDIO sif = IDIO_STRUCT_INSTANCE_FIELDS (c);
 
-	    /*
-	     * Hmm, a timing issue with SIGCHLD?  Should have been caught
-	     * in default-condition-handler.
-	     */
-	    if (idio_struct_type_isa (sit, idio_condition_rt_signal_type)) {
-		IDIO signum_I = idio_array_get_index (sif, IDIO_SI_RT_SIGNAL_TYPE_SIGNUM);
-		int signum_C = IDIO_C_TYPE_INT (signum_I);
+	/*
+	 * Hmm, a timing issue with SIGCHLD?  Should have been caught
+	 * in default-condition-handler.
+	 */
+	if (idio_struct_type_isa (sit, idio_condition_rt_signal_type)) {
+	    IDIO signum_I = idio_array_get_index (sif, IDIO_SI_RT_SIGNAL_TYPE_SIGNUM);
+	    int signum_C = IDIO_C_TYPE_INT (signum_I);
 
-		switch (signum_C) {
-		case SIGCHLD:
-		    fprintf (stderr, "restart-c-h: SIGCHLD -> idio_command_SIGCHLD_signal_handler\n");
-		    idio_command_SIGCHLD_signal_handler (signum_I);
-		    return idio_S_unspec;
-		case SIGHUP:
-		    fprintf (stderr, "restart-c-h: SIGHUP -> idio_command_SIGHUP_signal_handler\n");
-		    idio_command_SIGHUP_signal_handler (signum_I);
-		    return idio_S_unspec;
-		default:
-		    break;
-		}
-	    } else if (idio_struct_type_isa (sit, idio_condition_idio_error_type)) {
-		IDIO eh = idio_thread_current_error_handle ();
-		int printed = 0;
+	    switch (signum_C) {
+	    case SIGCHLD:
+		fprintf (stderr, "restart-c-h: SIGCHLD -> idio_command_SIGCHLD_signal_handler\n");
+		idio_command_SIGCHLD_signal_handler ();
+		return idio_S_unspec;
+	    case SIGHUP:
+		fprintf (stderr, "restart-c-h: SIGHUP -> idio_command_SIGHUP_signal_handler\n");
+		idio_command_SIGHUP_signal_handler ();
+		return idio_S_unspec;
+	    default:
+		break;
+	    }
+	} else if (idio_struct_type_isa (sit, idio_condition_rt_command_status_error_type)) {
+	    /* return idio_command_rcse_handler (c); */
+	    idio_debug ("restart-c-h: rcse = %s\n", c);
+	    fprintf (stderr, "restart-c-h: rcse?? =>> #unspec\n");
+	    return idio_S_unspec;
+	} else if (idio_struct_type_isa (sit, idio_condition_idio_error_type)) {
+	    IDIO eh = idio_thread_current_error_handle ();
+	    int printed = 0;
 
-		idio_display_C ("\nrestart-condition-handler: ", eh);
+	    idio_display_C ("\nrestart-condition-handler: ", eh);
 
-		IDIO l = idio_array_get_index (sif, IDIO_SI_IDIO_ERROR_TYPE_LOCATION);
-		if (idio_S_nil != l) {
-		    if (printed) {
-			idio_display_C (": ", eh);
-		    }
-		    idio_display (l, eh);
-		    printed = 1;
-
-		    if (idio_struct_type_isa (sit, idio_condition_read_error_type)) {
-			idio_display_C (":", eh);
-			idio_display (idio_array_get_index (sif, IDIO_SI_READ_ERROR_TYPE_LINE), eh);
-			idio_display_C (":", eh);
-			idio_display (idio_array_get_index (sif, IDIO_SI_READ_ERROR_TYPE_POSITION), eh);
-		    } else if (idio_struct_type_isa (sit, idio_condition_evaluation_error_type)) {
-			idio_display_C (":", eh);
-			idio_display (idio_array_get_index (sif, IDIO_SI_EVALUATION_ERROR_TYPE_EXPR), eh);
-		    }
-		}
-
+	    IDIO l = idio_array_get_index (sif, IDIO_SI_IDIO_ERROR_TYPE_LOCATION);
+	    if (idio_S_nil != l) {
 		if (printed) {
 		    idio_display_C (": ", eh);
 		}
-		idio_display (IDIO_STRUCT_TYPE_NAME (sit), eh);
-		idio_display_C (": ", eh);
+		idio_display (l, eh);
+		printed = 1;
 
-		IDIO m = idio_array_get_index (sif, IDIO_SI_IDIO_ERROR_TYPE_MESSAGE);
-		if (idio_S_nil != m) {
-		    idio_display (m, eh);
-		    printed = 1;
+		if (idio_struct_type_isa (sit, idio_condition_read_error_type)) {
+		    idio_display_C (":", eh);
+		    idio_display (idio_array_get_index (sif, IDIO_SI_READ_ERROR_TYPE_LINE), eh);
+		    idio_display_C (":", eh);
+		    idio_display (idio_array_get_index (sif, IDIO_SI_READ_ERROR_TYPE_POSITION), eh);
+		} else if (idio_struct_type_isa (sit, idio_condition_evaluation_error_type)) {
+		    idio_display_C (":", eh);
+		    idio_display (idio_array_get_index (sif, IDIO_SI_EVALUATION_ERROR_TYPE_EXPR), eh);
 		}
-		IDIO d = idio_array_get_index (sif, IDIO_SI_IDIO_ERROR_TYPE_DETAIL);
-		if (idio_S_nil != d) {
-		    if (printed) {
-			idio_display_C (": ", eh);
-		    }
-		    idio_display (d, eh);
-		}
-		idio_display_C ("\n", eh);
-	    } else {
-		idio_debug ("restart-condition-handler: %s\n", cond);
 	    }
+
+	    if (printed) {
+		idio_display_C (": ", eh);
+	    }
+	    idio_display (IDIO_STRUCT_TYPE_NAME (sit), eh);
+	    idio_display_C (": ", eh);
+
+	    IDIO m = idio_array_get_index (sif, IDIO_SI_IDIO_ERROR_TYPE_MESSAGE);
+	    if (idio_S_nil != m) {
+		idio_display (m, eh);
+		printed = 1;
+	    }
+	    IDIO d = idio_array_get_index (sif, IDIO_SI_IDIO_ERROR_TYPE_DETAIL);
+	    if (idio_S_nil != d) {
+		if (printed) {
+		    idio_display_C (": ", eh);
+		}
+		idio_display (d, eh);
+	    }
+	    idio_display_C ("\n", eh);
 	} else {
-	    /*
-	     * Something has gone badly wrong if we've been given a
-	     * non-condition as an argument.
-	     *
-	     * So throw up a message and revert to
-	     * reset-condition-handler.
-	     */
-	    fprintf (stderr, "restart-condition-handler: expected a condition, not a %s\n", idio_type2string (cond));
-	    idio_debug ("%s\n", cond);
-
-	    IDIO sh = idio_open_output_string_handle_C ();
-	    idio_display_C ("condition-handler-rt-command-status: expected a condition not a '", sh);
-	    idio_display (cond, sh);
-	    idio_display_C ("'", sh);
-	    IDIO c = idio_struct_instance (idio_condition_rt_parameter_type_error_type,
-					   IDIO_LIST3 (idio_get_output_string (sh),
-						       IDIO_C_FUNC_LOCATION (),
-						       idio_S_nil));
-
-	    idio_raise_condition (idio_S_true, c);
+	    idio_debug ("restart-condition-handler: other: %s\n", c);
 	}
     }
 
@@ -780,7 +782,7 @@ IDIO_DEFINE_PRIMITIVE2 ("restart-condition-handler", restart_condition_handler, 
     }
 
     fprintf (stderr, "restart-condition-handler: nothing to restore\n");
-    idio_raise_condition (cont, cond);
+    idio_raise_condition (idio_S_true, c);
 
     /* notreached */
     IDIO_C_ASSERT (0);
@@ -788,20 +790,24 @@ IDIO_DEFINE_PRIMITIVE2 ("restart-condition-handler", restart_condition_handler, 
     return idio_S_notreached;
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("reset-condition-handler", reset_condition_handler, (IDIO cont, IDIO cond))
+IDIO_DEFINE_PRIMITIVE1_DS ("reset-condition-handler", reset_condition_handler, (IDIO c), "c", "\
+Reset the VM!							\n\
+								\n\
+:param c: the condition						\n\
+:type c: condition instance					\n\
+								\n\
+Does not return.						\n\
+")
 {
-    IDIO_ASSERT (cont);
-    IDIO_ASSERT (cond);
+    IDIO_ASSERT (c);
 
     IDIO eh = idio_thread_current_error_handle ();
     idio_display_C ("\nreset-condition-handler: ", eh);
 
-    IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (cond);
+    IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (c);
     idio_display (IDIO_STRUCT_TYPE_NAME (sit), eh);
     idio_display_C (": ", eh);
-    idio_display (cont, eh);
-    idio_display_C (" ", eh);
-    idio_display (cond, eh);
+    idio_display (c, eh);
     idio_display_C ("\n", eh);
 
     /*

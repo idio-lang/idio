@@ -299,8 +299,8 @@ define-macro (with-condition-handler condition handler & body) {
   #T{
     saved-k := #n
 
-    trap $condition (function (cont cond) {
-		       saved-k ($handler cont cond)
+    trap $condition (function (c) {
+		       saved-k ($handler c)
     }) {
       call/cc (function (k) {
 		 saved-k = k

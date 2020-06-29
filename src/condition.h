@@ -160,9 +160,8 @@ extern IDIO idio_condition_rt_signal_type;
 extern IDIO idio_condition_reset_condition_handler;
 extern IDIO idio_condition_restart_condition_handler;
 extern IDIO idio_condition_default_condition_handler;
-extern IDIO idio_condition_handler_rt_command_status;
-extern IDIO idio_condition_SIGHUP_signal_handler;
-extern IDIO idio_condition_SIGCHLD_signal_handler;
+
+extern IDIO idio_condition_default_handler;
 
 int idio_isa_condition_type (IDIO o);
 int idio_isa_condition (IDIO o);

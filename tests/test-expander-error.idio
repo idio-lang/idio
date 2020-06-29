@@ -28,13 +28,13 @@ define-macro (expander-trap type) {
 
 	;edisplay* "loading #" filename "looking for" msg
 	thunk := function () {
-		   trap $condition-name (function (cont cond) {
-					   ;edisplay* "caught" msg cond.location
-					   test cond.message msg
-					   if (not (string=? cond.message msg)) {
-					     condition-report (string-append "expander-error-load: " filename) cont cond (current-error-handle)
+		   trap $condition-name (function (c) {
+					   ;edisplay* "caught" msg c.location
+					   test c.message msg
+					   if (not (string=? c.message msg)) {
+					     condition-report (string-append "expander-error-load: " filename) c (current-error-handle)
 					   }
-					   load-k cond
+					   load-k c
 		   }) {
 		     call/cc (function (k) {
 				load-k = k

@@ -57,14 +57,12 @@ dynamic-let (dvar-x1 lex-x) {
 
 ;; ^rt-dynamic-variable-unbound-error is raised when calling a
 ;; function where no such variable is in scope
-trap ^rt-dynamic-variable-unbound-error (function (cont cond) {
-  test (rt-dynamic-variable-unbound-error? cond) #t
-  if cont {
-    name := condition-ref cond 'name
+trap ^rt-dynamic-variable-unbound-error (function (c) {
+					   test (rt-dynamic-variable-unbound-error? c) #t
+					   name := condition-ref c 'name
 
-    ;; we know that test-dvar-x1 in our body was passed lex-x
-    lex-x
-  } (error 'dynamic-test "unbound dynamic: unexpected non-continuable error" cond)
+					   ;; we know that test-dvar-x1 in our body was passed lex-x
+					   lex-x
 }) {
   ;; display* "using unbound dynamic variable"
   test-dvar-x1 lex-x

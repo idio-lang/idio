@@ -1527,7 +1527,8 @@ This is the ``load`` primitive.					\n\
 
     IDIO_VERIFY_PARAM_TYPE (string, filename);
 
-    idio_thread_save_state (idio_thread_current_thread ());
+    IDIO thr = idio_thread_current_thread ();
+    idio_ai_t pc0 = IDIO_THREAD_PC (thr);
 
     /*
      * Explicitly disable interactive for the duration of a load
@@ -1536,7 +1537,11 @@ This is the ``load`` primitive.					\n\
      */
     idio_command_interactive = 0;
     IDIO r = idio_load_file_name_aio (filename, idio_vm_constants);
-    idio_thread_restore_state (idio_thread_current_thread ());
+
+    idio_ai_t pc = IDIO_THREAD_PC (thr);
+    if (pc == (idio_vm_FINISH_pc + 1)) {
+	IDIO_THREAD_PC (thr) = pc0;
+    }
 
     return r;
 }

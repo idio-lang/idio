@@ -31,11 +31,9 @@ test (hash-size ht) 1
 test (hash-exists? ht 'a) #t
 test (hash-ref ht 'a) 3
 
-trap ^rt-hash-key-not-found (function (cont cond) {
-			       test (rt-hash-key-not-found? cond) #t
-			       if cont {
-				 #f
-			       } (error 'hash-test "hash key not found: unexpected non-continuable error" cond)
+trap ^rt-hash-key-not-found (function (c) {
+			       test (rt-hash-key-not-found? c) #t
+			       #f
 }) {
   test (hash-ref ht 'b) #f
 }
@@ -152,11 +150,11 @@ ht-integer-eq? := function (k1 k2) {
 			  (null? k2)) #f) \
 			 ((not (integer? k1)) {
 			   c := make-condition ^rt-parameter-type-error "k1 is not an integer" 'ht-integer-eq? k1
-			   raise #t c
+			   raise c
 			 }) \
 			 ((not (integer? k2)) {
 			   c := make-condition ^rt-parameter-type-error "k2 is not an integer" 'ht-integer-eq? k2
-			   raise #t c
+			   raise c
 			 }) \
 			 (else (== k1 k2))
 }
@@ -192,8 +190,8 @@ done_verify := #f
 done_param := #f
 
 trap (^rt-parameter-type-error ^idio-error) \
-     (function (cont cond) {
-	if (idio-error? cond) {
+     (function (c) {
+	if (idio-error? c) {
 	  if (not done_verify) {
 	    test #t #t
 	    done_verify = #t
@@ -203,15 +201,13 @@ trap (^rt-parameter-type-error ^idio-error) \
 	  ;; idio_hash_verify_chain doesn't re-raise an error
 	  #t
 	} {
-	  if cont {
-	    if (not done_param) {
-	      test #t #t
-	      done_param = #t
-	    }
+	  if (not done_param) {
+	    test #t #t
+	    done_param = #t
+	  }
 
-	    ;; return #f (as though from ht-integer-eq?)
-	    #f
-	  } (error 'hash-test "hash equivalence function fail: unexpected non-continuable error" cond)
+	  ;; return #f (as though from ht-integer-eq?)
+	  #f
 	}
      }) {
   i := 65
@@ -252,9 +248,9 @@ test (hash-hash-function ht) #n
 
 ;; use our own: define a numeric hashing function
 ;;
-;; Explicitly catch non-integers and raise a continuable
-;; ^rt-parameter-type-error -- as the C code for {remainder} generates
-;; non-continuable ^rt-parameter-type-error conditions
+;; Explicitly catch non-integers and raise ^rt-parameter-type-error --
+;; as the C code for {remainder} generates non-continuable
+;; ^rt-parameter-type-error conditions
 ht-integer-hash := {
   bound := (expt 2 29) - 3
 
@@ -274,7 +270,7 @@ ht-integer-hash := {
       ;;   know we've failed (and set {done} in the trap handler) so
       ;;   there's no point in any further calculation.  Return
       ;;   whatever the trap handler gave us and be done with it.
-      raise #t c
+      raise c
     } {
       remainder v bound
     }
@@ -318,20 +314,18 @@ test (hash-ref ht 2) "banana"
 ;; our key in the chain.
 
 done := #f
-trap ^rt-parameter-type-error (function (cont cond) {
-				 if cont {
-				   ;; be called several times when a key collides in which case we'll
-				   ;; get an error riased several times.
-				   if (not done) {
-				     test #t #t
-				     ;; set done
-				     done = #t
-				   }
+trap ^rt-parameter-type-error (function (c) {
+				 ;; be called several times when a key collides in which case we'll
+				 ;; get an error riased several times.
+				 if (not done) {
+				   test #t #t
+				   ;; set done
+				   done = #t
+				 }
 
-				   ;; return 0 (to ht-integer-hash, which returns it to the internals
-				   ;; of hash-set!)
-				   0
-				 } (error 'hash-test "hash function fail: unexpected non-continuable error" cond)
+				 ;; return 0 (to ht-integer-hash, which returns it to the internals
+				 ;; of hash-set!)
+				 0
 }) {
   i := 65
   c := integer->char i

@@ -799,10 +799,11 @@ typedef struct idio_continuation_s {
  * Who called siglongjmp?
  */
 #define IDIO_VM_SIGLONGJMP_CONDITION	1
-#define IDIO_VM_SIGLONGJMP_CONTINUATION    2
-#define IDIO_VM_SIGLONGJMP_CALLCC		3
-#define IDIO_VM_SIGLONGJMP_EVENT		4
-#define IDIO_VM_SIGLONGJMP_EXIT		5
+#define IDIO_VM_SIGLONGJMP_CONTINUATION	2
+#define IDIO_VM_SIGLONGJMP_CALLCC	3
+#define IDIO_VM_SIGLONGJMP_SIGNAL	4
+#define IDIO_VM_SIGLONGJMP_EVENT	5
+#define IDIO_VM_SIGLONGJMP_EXIT		6
 
 typedef struct idio_C_pointer_s {
     void *p;
