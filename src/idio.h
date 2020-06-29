@@ -485,6 +485,7 @@ extern FILE *idio_vm_perf_FILE;
 
 #define idio_S_notreached	((const IDIO) IDIO_CONSTANT_IDIO (IDIO_CONSTANT_NOTREACHED))
 
+extern pid_t idio_pid;
 extern int idio_exit_status;
 extern IDIO idio_k_exit;
 void idio_final ();

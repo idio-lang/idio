@@ -22,6 +22,7 @@
 
 #include "idio.h"
 
+pid_t idio_pid = 0;
 int idio_exit_status = 0;
 IDIO idio_k_exit = NULL;
 
@@ -42,6 +43,8 @@ void idio_init (int argc, char **argv)
 	exit (1);
     }
 #endif
+
+    idio_pid = getpid ();
 
     /* GC first then symbol for the symbol table then modules */
     idio_init_gc ();
