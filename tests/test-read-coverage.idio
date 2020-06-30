@@ -17,7 +17,9 @@ read-coverage-load := {
 
 read-coverage-load "read-coverage/imp-list-eol-before-delim.idio"
 read-coverage-load "read-coverage/line-comment-eof.idio"
-read-coverage-load "read-coverage/block-comment-esc.idio"
+read-coverage-load "read-coverage/block-comment-asterisk-esc.idio"
+read-coverage-load "read-coverage/block-comment-pipe-esc.idio"
+read-coverage-load "read-coverage/block-comment-mixed.idio"
 read-coverage-load "read-coverage/string-escaped-chars.idio"
 read-coverage-load "read-coverage/template-bracketing.idio"
 read-coverage-load "read-coverage/pathname.idio"

@@ -1,0 +1,60 @@
+
+#|%
+
+% is now my Escape char which means that
+
+%|#
+
+has not ended this block comment.
+
+While we're here we can help out our coverage a bit more:
+
+| would have raised the "pipe_esc" flag but for the whitespace
+  immediately after it
+
+| # should check if we've forgotten to turn pipe_esc off at the
+    whitespace
+
+# should have raised a similar "hash_esc" flag
+
+# | ditto
+
+%#| should have escaped the hash and therefore ignored the potential
+for a nested block comment
+
+So we're still at level one!
+
+
+Something a bit more tricky.
+
+#|
+
+This is a nested block comment but the Escape character will have
+reverted to \
+
+That means that \|# has not ended this nested block comment.
+
+However, the outer block comment's Escape char of % is no longer
+relevant here so the following %-|-# triple does end this nested block
+comment
+
+%|#
+
+Back at level one again.
+
+Another nested block comment example:
+
+#|
+
+;; line comments consume to the EOL so you would think that you could
+;; safely have |-# here except that this line comment is inside a
+;; block comment which |is| looking for |-# and so the block comment
+;; ends |# <- there
+
+Luckily for us we're still in the outer block comment so the "<-
+there" text is just...comment.
+
+Finally, this block comment ends now...
+
+|#
+

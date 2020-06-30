@@ -58,12 +58,19 @@ read-error-load "read-errors/imp-list-many-after-emb.idio" "more than one expres
 read-error-load "read-errors/list-op-eof.idio" "EOF in list" 1
 ;; not sure we should have an embedded variant
 
-read-error-load "read-errors/block-comment-initial-eof.idio" "comment: unterminated" 4
-read-error-load "read-errors/block-comment-eof.idio" "comment: unterminated" 2
+read-error-load "read-errors/block-comment-asterisk-initial-eof.idio" "comment: unterminated" 4
+read-error-load "read-errors/block-comment-asterisk-eof.idio" "comment: unterminated" 2
 
-read-error-load "read-errors/nested-block-comment-initial-eof.idio" "comment: unterminated" 2
-read-error-load "read-errors/nested-block-comment-eof-1.idio" "comment: unterminated" 2
-read-error-load "read-errors/nested-block-comment-eof-2.idio" "comment: unterminated" 2
+read-error-load "read-errors/nested-block-comment-asterisk-initial-eof.idio" "comment: unterminated" 2
+read-error-load "read-errors/nested-block-comment-asterisk-eof-1.idio" "comment: unterminated" 2
+read-error-load "read-errors/nested-block-comment-asterisk-eof-2.idio" "comment: unterminated" 2
+
+read-error-load "read-errors/block-comment-pipe-initial-eof.idio" "comment: unterminated" 4
+read-error-load "read-errors/block-comment-pipe-eof.idio" "comment: unterminated" 2
+
+read-error-load "read-errors/nested-block-comment-pipe-initial-eof.idio" "comment: unterminated" 2
+read-error-load "read-errors/nested-block-comment-pipe-eof-1.idio" "comment: unterminated" 2
+read-error-load "read-errors/nested-block-comment-pipe-eof-2.idio" "comment: unterminated" 2
 
 read-error-load "read-errors/string-unterminated.idio" "string: unterminated" 1
 read-error-load "read-errors/string-unterminated-emb.idio" "string: unterminated" 2
@@ -140,4 +147,4 @@ read-error-load "read-errors/op-eof.idio" "EOF in list" 3
 read-error-load "read-errors/op-eof-emb.idio" "EOF in list" 4
 
 ;; all done?
-test Tests (read-error0 + 110)
+test Tests (read-error0 + 120)

@@ -174,6 +174,7 @@
     (modify-syntax-entry ?@ "'   " st)
     (modify-syntax-entry ?# "' 14" st)
     (modify-syntax-entry ?\| "_ 23bn" st)
+    (modify-syntax-entry ?\* "_ 23bn" st)
     (modify-syntax-entry ?\\ "\\   " st)
     st)
   "Syntax table for idio-mode")

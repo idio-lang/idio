@@ -6249,16 +6249,41 @@ void idio_final_vm ()
 	struct timespec t;
 	t.tv_sec = 0;
 	t.tv_nsec = 0;
-	fprintf (idio_vm_perf_FILE, "vm-ins:  %4.4s %-30.30s %8.8s %15.15s %6.6s\n", "code", "instruction", "count", "time (sec.nsec)", "ns/call");
+
 	for (IDIO_I i = 1; i < IDIO_I_MAX; i++) {
 	    c += idio_vm_ins_counters[i];
 	    t.tv_sec += idio_vm_ins_call_time[i].tv_sec;
 	    t.tv_nsec += idio_vm_ins_call_time[i].tv_nsec;
+	}
+
+	float c_pct = 0;
+	float t_pct = 0;
+	
+	fprintf (idio_vm_perf_FILE, "vm-ins:  %4.4s %-30.30s %8.8s %5.5s %15.15s %5.5s %6.6s\n", "code", "instruction", "count", "cnt%", "time (sec.nsec)", "time%", "ns/call");
+	for (IDIO_I i = 1; i < IDIO_I_MAX; i++) {
 	    if (1 || idio_vm_ins_counters[i]) {
 		const char *bc_name = idio_vm_bytecode2string (i);
 		if (strcmp (bc_name, "Unknown bytecode") ||
 		    idio_vm_ins_counters[i]) {
-		    fprintf (idio_vm_perf_FILE, "vm-ins:  %4" PRIu8 " %-30s %8" PRIu64 " %5ld.%09ld", i, bc_name, idio_vm_ins_counters[i], idio_vm_ins_call_time[i].tv_sec, idio_vm_ins_call_time[i].tv_nsec);
+		    float count_pct = 100.0 * idio_vm_ins_counters[i] / c;
+		    c_pct += count_pct;
+
+		    /*
+		     * convert to 100ths of a second
+		     */
+		    float t_time = t.tv_sec * 100 + t.tv_nsec / 10000000;
+		    float i_time = idio_vm_ins_call_time[i].tv_sec * 100 + idio_vm_ins_call_time[i].tv_nsec / 10000000;
+		    float time_pct = i_time * 100 / t_time;
+		    t_pct += time_pct;
+		    
+		    fprintf (idio_vm_perf_FILE, "vm-ins:  %4" PRIu8 " %-30s %8" PRIu64 " %5.1f %5ld.%09ld %5.1f",
+			     i,
+			     bc_name,
+			     idio_vm_ins_counters[i],
+			     count_pct,
+			     idio_vm_ins_call_time[i].tv_sec,
+			     idio_vm_ins_call_time[i].tv_nsec,
+			time_pct);
 		    double call_time = 0;
 		    if (idio_vm_ins_counters[i]) {
 			call_time = (idio_vm_ins_call_time[i].tv_sec * 1000000000 + idio_vm_ins_call_time[i].tv_nsec) / idio_vm_ins_counters[i];
@@ -6268,7 +6293,7 @@ void idio_final_vm ()
 		}
 	    }
 	}
-	fprintf (idio_vm_perf_FILE, "vm-ins:  %4s %-30s %8" PRIu64 " %5ld.%09ld\n", "", "total", c, t.tv_sec, t.tv_nsec);
+	fprintf (idio_vm_perf_FILE, "vm-ins:  %4s %-30s %8" PRIu64 " %5.1f %5ld.%09ld %5.1f\n", "", "total", c, c_pct, t.tv_sec, t.tv_nsec, t_pct);
 #endif
     }
 

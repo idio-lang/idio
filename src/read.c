@@ -56,6 +56,7 @@ IDIO idio_src_properties;
 #define IDIO_CHAR_EXCLAMATION	'!'
 #define IDIO_CHAR_EQUALS	'='
 #define IDIO_CHAR_PIPE		'|'
+#define IDIO_CHAR_ASTERISK	'*'
 
 /*
  * What separates words from one another in Idio?
@@ -879,21 +880,132 @@ static void idio_read_line_comment (IDIO handle, IDIO lo, int depth)
     }
 }
 
+static void idio_read_sl_block_comment (IDIO handle, IDIO lo, int depth);
+
 /*
- * Block comments #| ... |# can be nested!
+ * Block comments #* ... *# can be nested!
  *
- * #|
+ * #*
  * zero, one
- * #|
+ * #*
  * or more lines
- * |#
+ * *#
  * nested
- * |#
+ * *#
  *
  * You can also change the default escape char, \, using the first
- * char after #|
+ * char after #*
  */
 static void idio_read_block_comment (IDIO handle, IDIO lo, int depth)
+{
+    IDIO_ASSERT (handle);
+    IDIO_ASSERT (lo);
+
+    IDIO_TYPE_ASSERT (handle, handle);
+    IDIO_TYPE_ASSERT (struct_instance, lo);
+
+    char esc_char = IDIO_CHAR_BACKSLASH;
+    int esc = 0;
+    int asterisk_esc = 0;
+    int hash_esc = 0;
+    
+    int c = idio_getc_handle (handle);
+
+    if (idio_eofp_handle (handle)) {
+	/*
+	 * Test Case: read-error/block-comment-asterisk-initial-eof.idio
+	 *
+	 * #*
+	 */
+	idio_read_error_comment (handle, lo, IDIO_C_FUNC_LOCATION (), "unterminated");
+	
+	/* notreached */
+    }
+
+    if (isgraph (c)) {
+	esc_char = c;
+    }    
+
+    for (;;) {
+	c = idio_getc_handle (handle);
+
+	if (idio_eofp_handle (handle)) {
+	    /*
+	     * Test Case: read-coverage/block-comment-asterisk-eof.idio
+	     *
+	     * #* ...
+	     */
+	    idio_read_error_comment (handle, lo, IDIO_C_FUNC_LOCATION (), "unterminated");
+	
+	    /* notreached */
+	}
+
+	if (esc_char == c) {
+	    /*
+	     * If esc is set we quietly consume the character
+	     */
+	    if (0 == esc) {
+		esc = 1;
+		continue;
+	    }
+	} else {
+	    if (esc) {
+		/*
+		 * quietly consume c
+		 */
+		esc = 0;
+	    } else if (asterisk_esc) {
+		switch (c) {
+		case IDIO_CHAR_HASH:
+		    return;
+		}
+	    } else if (hash_esc) {
+		switch (c) {
+		case IDIO_CHAR_ASTERISK:
+		    idio_read_block_comment (handle, lo, depth + 1);
+		    break;
+		case IDIO_CHAR_PIPE:
+		    idio_read_sl_block_comment (handle, lo, depth + 1);
+		    break;
+		}
+	    } else {
+		switch (c) {
+		    /*
+		     * Test Case: read-coverage/block-comment-asterisk-escaped-asterisk.idio
+		     *
+		     * #* * *#
+		     */
+		case IDIO_CHAR_ASTERISK:
+		    asterisk_esc = 1;
+		    continue;
+		case IDIO_CHAR_HASH:
+		    hash_esc = 1;
+		    continue;
+		}
+	    }
+
+	    if (asterisk_esc) {
+		asterisk_esc = 0;
+	    }
+	    if (hash_esc) {
+		hash_esc = 0;
+	    }
+	}
+    }
+}
+
+/*
+ * Semi-literate block comments #| ... |# can be nested!
+ *
+ * The line of the opening #| should be the engine the comment text
+ * will be piped into.
+ *
+ * #| .rst
+ * ..note this is ReStructuredText
+ * #|
+ *
+ */
+static void idio_read_sl_block_comment (IDIO handle, IDIO lo, int depth)
 {
     IDIO_ASSERT (handle);
     IDIO_ASSERT (lo);
@@ -910,7 +1022,7 @@ static void idio_read_block_comment (IDIO handle, IDIO lo, int depth)
 
     if (idio_eofp_handle (handle)) {
 	/*
-	 * Test Case: read-error/block-comment-initial-eof.idio
+	 * Test Case: read-error/block-comment-pipe-initial-eof.idio
 	 *
 	 * #|
 	 */
@@ -928,7 +1040,7 @@ static void idio_read_block_comment (IDIO handle, IDIO lo, int depth)
 
 	if (idio_eofp_handle (handle)) {
 	    /*
-	     * Test Case: read-coverage/block-comment-eof.idio
+	     * Test Case: read-coverage/block-comment-pipe-eof.idio
 	     *
 	     * #| ...
 	     */
@@ -959,12 +1071,16 @@ static void idio_read_block_comment (IDIO handle, IDIO lo, int depth)
 	    } else if (hash_esc) {
 		switch (c) {
 		case IDIO_CHAR_PIPE:
+		    idio_read_sl_block_comment (handle, lo, depth + 1);
+		    break;
+		case IDIO_CHAR_ASTERISK:
 		    idio_read_block_comment (handle, lo, depth + 1);
+		    break;
 		}
 	    } else {
 		switch (c) {
 		    /*
-		     * Test Case: read-coverage/block-comment-escaped-pipe.idio
+		     * Test Case: read-coverage/block-comment-pipe-escaped-pipe.idio
 		     *
 		     * #| | |#
 		     */
@@ -983,143 +1099,6 @@ static void idio_read_block_comment (IDIO handle, IDIO lo, int depth)
 	    if (hash_esc) {
 		hash_esc = 0;
 	    }
-	}
-    }
-}
-
-/*
- * Block comments #| ... |# can be nested!
- *
- * If the opening #| is followed by whitespace then an isgraph() word
- * and the handle is a file-handle then that word is used as an
- * extension into which the text of the comment is appended.  The
- * remaining text on the line is ignored.
- *
- * #| .rst
- * ..note this is ReStructuredText
- * #|
- *
- */
-static void idio_read_sl_block_comment (IDIO handle, int depth)
-{
-    IDIO_ASSERT (handle);
-
-    char ext[BUFSIZ];
-    char *e = ext;
-    int ext_possible = 0;
-    int ext_leading_ws = 1;
-    char comment_file_name[BUFSIZ];
-    FILE *comment_file = NULL;
-    int write_comment = 0;
-    
-    if (idio_isa_file_handle (handle)) {
-	/*
-	 * Exclude ext for stdin/out/err
-	 */
-	idio_file_handle_stream_t *fhsp = (idio_file_handle_stream_t *) IDIO_HANDLE_STREAM (handle);
-	int s_flags = IDIO_FILE_HANDLE_STREAM_FLAGS (fhsp);
-
-	if ((s_flags & IDIO_FILE_HANDLE_FLAG_STDIO) == 0) {
-	    ext_possible = 1;
-	}
-    }
-
-    int pipe_char = 0;
-    
-    for (;;) {
-	int c = idio_getc_handle (handle);
-
-	if (idio_eofp_handle (handle)) {
-	    /*
-	     * Test Case: read-coverage/block-comment-eof.idio
-	     *
-	     * ;; no newline!
-	     */
-	    fprintf (stderr, "read-block-comment: EOF in comment\n");
-	    if (NULL != comment_file) {
-		if (fclose (comment_file)) {
-		    fprintf (stderr, "fclose (%s): %s\n", comment_file_name, strerror (errno));
-		}
-	    }
-	    return;
-	}
-
-	switch (c) {
-	case IDIO_CHAR_PIPE:
-	    pipe_char = 1;
-	    continue;
-	case IDIO_CHAR_HASH:
-	    if (pipe_char) {
-		if (NULL != comment_file) {
-		    if (fclose (comment_file)) {
-			fprintf (stderr, "fclose (%s): %s\n", comment_file_name, strerror (errno));
-		    }
-		}
-		return;
-	    }
-	    break;
-	case IDIO_CHAR_NL:
-	    if (NULL != comment_file) {
-		write_comment = 1;
-	    }
-	}
-
-	if (ext_possible) {
-	    if (isgraph (c)) {
-		ext_leading_ws = 0;
-		if (e == ext) {
-		    if (IDIO_CHAR_DOT != c)  {
-			fprintf (stderr, "(!^.) ext invalidated by %c\n", c);
-			ext_possible = 0;
-			ext_leading_ws = 0;
-			ext[0] = '\0';
-			continue;
-		    }
-		}
-
-		*e = c;
-		e++;
-	    } else if (isspace (c) ||
-		       IDIO_CHAR_NL == c) {
-		if (ext_leading_ws) {
-		} else {
-		    *e = '\0';
-		    ext_possible = 0;
-		    if (strlen (ext)) {
-			fprintf (stderr, "f-h ext is %s\n", ext);
-			IDIO filename_I = IDIO_HANDLE_PATHNAME (handle);
-
-			if (idio_S_nil != filename_I) {
-			    strcpy (comment_file_name, idio_string_s (filename_I));
-			    strcat (comment_file_name, ext);
-
-			    comment_file = fopen (comment_file_name, "a");
-			    if (NULL == comment_file) {
-				fprintf (stderr, "fopen (%s): %s\n", comment_file_name, strerror (errno));
-			    }
-
-			    if (IDIO_CHAR_NL == c) {
-				write_comment = 1;
-			    }
-	  		} else {    
- 		 	    idio_debug ("empty PATHNAME for %s\n", handle);
-			}
-		    }
-		}
-	    } else {
-		fprintf (stderr, "(any) ext invalidated by %c\n", c);
-		ext_possible = 0;
-		ext_leading_ws = 0;
-		ext[0] = '\0';
-	    }
-	}
-
-	if (pipe_char) {
-	    pipe_char = 0;
-	}
-
-	if (write_comment) {
-	    fputc (c, comment_file);
 	}
     }
 }
@@ -2169,8 +2148,11 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl
 
 			    return idio_S_notreached;
 			}
-		    case IDIO_CHAR_PIPE:
+		    case IDIO_CHAR_ASTERISK:
 			idio_read_block_comment (handle, lo, depth);
+			return lo;
+		    case IDIO_CHAR_PIPE:
+			idio_read_sl_block_comment (handle, lo, depth);
 			return lo;
 		    case IDIO_CHAR_SEMICOLON:
 			idio_read (handle);
