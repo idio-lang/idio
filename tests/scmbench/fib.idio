@@ -8,10 +8,25 @@
 
 ;; (fib 30)
 
+c := 0
+
 fib := function (n) {
-  if (lt n 2) n {
-    (fib (n - 1)) + (fib (n - 2))
-  }
+	 c = c + 1
+	 if (lt n 2) n {
+	   (fib (n - 1)) + (fib (n - 2))
+	 }
 }
 
 fib 30
+
+printf "%s\n" c
+
+#*
+
+Idio		54s
+s9fes-20090906	 8s
+s9fes-20181025	 2.5s
+Python 3.8.3	 0.2s
+bc		 0.8s
+
+*#
