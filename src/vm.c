@@ -547,7 +547,13 @@ void idio_vm_debug (IDIO thr, char *prefix, idio_ai_t stack_start)
     idio_debug ("    val=%s\n", IDIO_THREAD_VAL (thr));
     idio_debug ("   reg1=%s\n", IDIO_THREAD_REG1 (thr));
     idio_debug ("   reg2=%s\n", IDIO_THREAD_REG2 (thr));
-    idio_debug ("   expr=%s\n", IDIO_THREAD_EXPR (thr));
+
+    IDIO fmci = IDIO_THREAD_EXPR (thr);
+    IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), fmci);
+    idio_ai_t gci = IDIO_FIXNUM_VAL (fgci);
+
+    IDIO src = idio_vm_constants_ref (gci);
+    idio_debug ("   expr=%s\n", src);
     idio_debug ("   func=%s\n", IDIO_THREAD_FUNC (thr));
     idio_debug ("    env=%s\n", IDIO_THREAD_ENV (thr));
     idio_debug ("  frame=%s\n", IDIO_THREAD_FRAME (thr));
@@ -903,7 +909,7 @@ static void idio_vm_restore_all_state (IDIO thr)
     }
 
     IDIO_THREAD_EXPR (thr) = IDIO_THREAD_STACK_POP ();
-    IDIO_TYPE_ASSERT (pair, IDIO_THREAD_EXPR (thr));
+    IDIO_TYPE_ASSERT (fixnum, IDIO_THREAD_EXPR (thr));
     IDIO_THREAD_REG2 (thr) = IDIO_THREAD_STACK_POP ();
     IDIO_THREAD_REG1 (thr) = IDIO_THREAD_STACK_POP ();
     idio_vm_restore_state (thr);
@@ -2347,7 +2353,12 @@ static void idio_vm_function_trace (IDIO_I ins, IDIO thr)
     fprintf (stderr, "%09ld ", ts.tv_nsec);
     fprintf (stderr, "%7zd ", IDIO_THREAD_PC (thr) - 1);
 
-    IDIO src = IDIO_THREAD_EXPR (thr);
+    IDIO fmci = IDIO_THREAD_EXPR (thr);
+    IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), fmci);
+    idio_ai_t gci = IDIO_FIXNUM_VAL (fgci);
+
+    IDIO src = idio_vm_constants_ref (gci);
+
     IDIO lo_sh = idio_open_output_string_handle_C ();
 
     if (idio_isa_pair (src)) {
@@ -2639,25 +2650,25 @@ int idio_vm_run1 (IDIO thr)
     switch (ins) {
     case IDIO_A_SHALLOW_ARGUMENT_REF0:
 	IDIO_VM_RUN_DIS ("SHALLOW-ARGUMENT-REF 0");
-	IDIO_THREAD_VAL (thr) = idio_frame_fetch (IDIO_THREAD_FRAME (thr), 0, 0);
+	IDIO_THREAD_VAL (thr) = idio_array_get_index (IDIO_FRAME_ARGS (IDIO_THREAD_FRAME (thr)), 0);
 	break;
     case IDIO_A_SHALLOW_ARGUMENT_REF1:
 	IDIO_VM_RUN_DIS ("SHALLOW-ARGUMENT-REF 1");
-	IDIO_THREAD_VAL (thr) = idio_frame_fetch (IDIO_THREAD_FRAME (thr), 0, 1);
+	IDIO_THREAD_VAL (thr) = idio_array_get_index (IDIO_FRAME_ARGS (IDIO_THREAD_FRAME (thr)), 1);
 	break;
     case IDIO_A_SHALLOW_ARGUMENT_REF2:
 	IDIO_VM_RUN_DIS ("SHALLOW-ARGUMENT-REF 2");
-	IDIO_THREAD_VAL (thr) = idio_frame_fetch (IDIO_THREAD_FRAME (thr), 0, 2);
+	IDIO_THREAD_VAL (thr) = idio_array_get_index (IDIO_FRAME_ARGS (IDIO_THREAD_FRAME (thr)), 2);
 	break;
     case IDIO_A_SHALLOW_ARGUMENT_REF3:
 	IDIO_VM_RUN_DIS ("SHALLOW-ARGUMENT-REF 3");
-	IDIO_THREAD_VAL (thr) = idio_frame_fetch (IDIO_THREAD_FRAME (thr), 0, 3);
+	IDIO_THREAD_VAL (thr) = idio_array_get_index (IDIO_FRAME_ARGS (IDIO_THREAD_FRAME (thr)), 3);
 	break;
     case IDIO_A_SHALLOW_ARGUMENT_REF:
 	{
 	    uint64_t j = idio_vm_fetch_varuint (thr);
 	    IDIO_VM_RUN_DIS ("SHALLOW-ARGUMENT-REF %" PRId64 "", j);
-	    IDIO_THREAD_VAL (thr) = idio_frame_fetch (IDIO_THREAD_FRAME (thr), 0, j);
+	    IDIO_THREAD_VAL (thr) = idio_array_get_index (IDIO_FRAME_ARGS (IDIO_THREAD_FRAME (thr)), j);
 	}
 	break;
     case IDIO_A_DEEP_ARGUMENT_REF:
@@ -3257,6 +3268,8 @@ int idio_vm_run1 (IDIO thr)
 	{
     	    idio_ai_t mci = idio_vm_fetch_varuint (thr);
 	    IDIO fmci = idio_fixnum (mci);
+	    IDIO_THREAD_EXPR (thr) = fmci;
+	    break;
 	    IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), fmci);
 	    idio_ai_t gci = IDIO_FIXNUM_VAL (fgci);
 
@@ -5959,7 +5972,11 @@ IDIO_DEFINE_PRIMITIVE2_DS ("run-in-thread", run_in_thread, (IDIO thr, IDIO func,
 IDIO idio_vm_source_location ()
 {
     IDIO cthr = idio_thread_current_thread ();
-    IDIO expr = IDIO_THREAD_EXPR (cthr);
+    IDIO fmci = IDIO_THREAD_EXPR (cthr);
+    IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), fmci);
+    idio_ai_t gci = IDIO_FIXNUM_VAL (fgci);
+
+    IDIO expr = idio_vm_constants_ref (gci);
 
     IDIO lo = idio_S_nil;
     if (idio_S_nil != expr) {

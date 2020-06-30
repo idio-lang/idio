@@ -1658,7 +1658,14 @@ char *idio_as_string (IDIO o, int depth)
 			    IDIO_STRCAT (r, "\n  reg2=");
 			    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_REG2 (o), 1));
 			    IDIO_STRCAT (r, "\n  expr=");
-			    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_EXPR (o), 1));
+
+			    IDIO fmci = IDIO_THREAD_EXPR (o);
+			    IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), fmci);
+			    idio_ai_t gci = IDIO_FIXNUM_VAL (fgci);
+
+			    IDIO src = idio_vm_constants_ref (gci);
+
+			    IDIO_STRCAT_FREE (r, idio_as_string (src, 1));
 			    IDIO_STRCAT (r, "\n  input_handle=");
 			    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_THREAD_INPUT_HANDLE (o), 1));
 			    IDIO_STRCAT (r, "\n  output_handle=");
