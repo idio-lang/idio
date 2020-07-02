@@ -82,6 +82,7 @@
  */
 
 void idio_assign_array (IDIO a, idio_ai_t size, IDIO dv);
+IDIO idio_array_dv (idio_ai_t size, IDIO dv);
 IDIO idio_array (idio_ai_t size);
 int idio_isa_array (IDIO a);
 void idio_free_array (IDIO a);
@@ -99,6 +100,7 @@ idio_ai_t idio_array_find_free_index (IDIO a, idio_ai_t index);
 idio_ai_t idio_array_find_eqp (IDIO a, IDIO e, idio_ai_t index);
 void idio_array_bind (IDIO a, idio_ai_t nargs, ...);
 IDIO idio_array_copy (IDIO a, int depth, idio_ai_t extra);
+IDIO idio_array_to_list_from (IDIO a, idio_ai_t index);
 IDIO idio_array_to_list (IDIO a);
 int idio_array_delete_index (IDIO a, idio_ai_t index);
 IDIO idio_array_ref (IDIO a, IDIO index);

@@ -1352,6 +1352,94 @@ void idio_gc_mark ()
     }
 }
 
+#ifdef IDIO_VM_PERF
+static struct timespec idio_gc_all_closure_t;
+static struct timespec idio_gc_all_primitive_t;
+
+void idio_gc_closure_stats (IDIO c)
+{
+    if (IDIO_CLOSURE_CALLED (c) > 0) {
+	idio_gc_all_closure_t.tv_sec += IDIO_CLOSURE_CALL_TIME (c).tv_sec;
+	idio_gc_all_closure_t.tv_nsec += IDIO_CLOSURE_CALL_TIME (c).tv_nsec;
+	if (idio_gc_all_closure_t.tv_nsec > IDIO_VM_NS) {
+	    idio_gc_all_closure_t.tv_nsec -= IDIO_VM_NS;
+	    idio_gc_all_closure_t.tv_sec += 1;
+	}
+
+	IDIO name = idio_S_unspec;
+	if (0 == (IDIO_GC_FLAGS (idio_gc) & IDIO_GC_FLAG_FINISH)) {
+	    name = idio_vm_closure_name (c);
+	}
+	if (IDIO_CLOSURE_CALL_TIME (c).tv_sec ||
+	    IDIO_CLOSURE_CALL_TIME (c).tv_nsec ||
+	    idio_S_unspec != name) {
+	    fprintf (idio_vm_perf_FILE, "%+5lds gc_sweep_free Clos %6td %8" PRIu64, idio_vm_elapsed (), IDIO_CLOSURE_CODE_PC (c), IDIO_CLOSURE_CALLED (c));
+
+	    /*
+	     * A little more complicated to get the closure's name
+	     */
+	    if (idio_S_unspec != name) {
+		idio_debug_FILE (idio_vm_perf_FILE, " %-40s", name);
+	    } else {
+		fprintf (idio_vm_perf_FILE, " %-40s", "--");
+	    }
+
+	    fprintf (idio_vm_perf_FILE, " %5ld.%09ld", IDIO_CLOSURE_CALL_TIME (c).tv_sec, IDIO_CLOSURE_CALL_TIME (c).tv_nsec);
+
+	    double call_time = (IDIO_PRIMITIVE_CALL_TIME (c).tv_sec * IDIO_VM_NS + IDIO_PRIMITIVE_CALL_TIME (c).tv_nsec) / IDIO_PRIMITIVE_CALLED (c);
+	    fprintf (idio_vm_perf_FILE, " %11.f", call_time);
+	    char *units = "ns";
+	    if (call_time > 10000) {
+		units = "us";
+		call_time /= 1000;
+		if (call_time > 10000) {
+		    units = "ms";
+		    call_time /= 1000;
+		    if (call_time > 10000) {
+			units = "s";
+			call_time /= 1000;
+		    }
+		}
+	    }
+	    fprintf (idio_vm_perf_FILE, " %6.f %s", call_time, units);
+	    fprintf (idio_vm_perf_FILE, "\n");
+	}
+    }
+}
+
+void idio_gc_primitive_stats (IDIO p)
+{
+    if (IDIO_PRIMITIVE_CALLED (p)) {
+	idio_gc_all_primitive_t.tv_sec += IDIO_PRIMITIVE_CALL_TIME (p).tv_sec;
+	idio_gc_all_primitive_t.tv_nsec += IDIO_PRIMITIVE_CALL_TIME (p).tv_nsec;
+	if (idio_gc_all_primitive_t.tv_nsec > IDIO_VM_NS) {
+	    idio_gc_all_primitive_t.tv_nsec -= IDIO_VM_NS;
+	    idio_gc_all_primitive_t.tv_sec += 1;
+	}
+
+	fprintf (idio_vm_perf_FILE, "%+5lds gc_sweep_free Prim %10p %8" PRIu64 " %-40s %5ld.%09ld", idio_vm_elapsed (), p, IDIO_PRIMITIVE_CALLED (p), IDIO_PRIMITIVE_NAME (p), IDIO_PRIMITIVE_CALL_TIME (p).tv_sec, IDIO_PRIMITIVE_CALL_TIME (p).tv_nsec);
+
+	double call_time = (IDIO_PRIMITIVE_CALL_TIME (p).tv_sec * IDIO_VM_NS + IDIO_PRIMITIVE_CALL_TIME (p).tv_nsec) / IDIO_PRIMITIVE_CALLED (p);
+	fprintf (idio_vm_perf_FILE, " %11.f", call_time);
+	char *units = "ns";
+	if (call_time > 10000) {
+	    units = "us";
+	    call_time /= 1000;
+	    if (call_time > 10000) {
+		units = "ms";
+		call_time /= 1000;
+		if (call_time > 10000) {
+		    units = "s";
+		    call_time /= 1000;
+		}
+	    }
+	}
+	fprintf (idio_vm_perf_FILE, " %6.f %s", call_time, units);
+	fprintf (idio_vm_perf_FILE, "\n");
+    }
+}
+#endif
+
 void idio_gc_sweep_free_value (IDIO vo)
 {
     IDIO_ASSERT (vo);
@@ -1397,75 +1485,10 @@ void idio_gc_sweep_free_value (IDIO vo)
 	idio_free_hash (vo);
 	break;
     case IDIO_TYPE_CLOSURE:
-#ifdef IDIO_VM_PERF
-	if (IDIO_CLOSURE_CALLED (vo) > 1) {
-	    IDIO name = idio_S_unspec;
-	    if (0 == (IDIO_GC_FLAGS (idio_gc) & IDIO_GC_FLAG_FINISH)) {
-		name = idio_vm_closure_name (vo);
-	    }
-	    if (IDIO_CLOSURE_CALL_TIME (vo).tv_sec ||
-		IDIO_CLOSURE_CALL_TIME (vo).tv_nsec ||
-		idio_S_unspec != name) {
-		fprintf (idio_vm_perf_FILE, "%+5lds gc_sweep_free Clos %10p %8" PRIu64, idio_vm_elapsed (), vo, IDIO_CLOSURE_CALLED (vo));
-
-		/*
-		 * A little more complicated to get the closure's name
-		 */
-		if (idio_S_unspec != name) {
-		    idio_debug_FILE (idio_vm_perf_FILE, " %-40s", name);
-		} else {
-		    fprintf (idio_vm_perf_FILE, " %-40s", "--");
-		}
-
-		fprintf (idio_vm_perf_FILE, " %5ld.%09ld", IDIO_CLOSURE_CALL_TIME (vo).tv_sec, IDIO_CLOSURE_CALL_TIME (vo).tv_nsec);
-
-		double call_time = (IDIO_PRIMITIVE_CALL_TIME (vo).tv_sec * 1000000000 + IDIO_PRIMITIVE_CALL_TIME (vo).tv_nsec) / IDIO_PRIMITIVE_CALLED (vo);
-		fprintf (idio_vm_perf_FILE, " %11.f", call_time);
-		char *units = "ns";
-		if (call_time > 10000) {
-		    units = "us";
-		    call_time /= 1000;
-		    if (call_time > 10000) {
-			units = "ms";
-			call_time /= 1000;
-			if (call_time > 10000) {
-			    units = "s";
-			    call_time /= 1000;
-			}
-		    }
-		}
-		fprintf (idio_vm_perf_FILE, " %6.f %s", call_time, units);
-		fprintf (idio_vm_perf_FILE, "\n");
-	    }
-	}
-#endif
 	idio_properties_delete (vo);
 	idio_free_closure (vo);
 	break;
     case IDIO_TYPE_PRIMITIVE:
-#ifdef IDIO_VM_PERF
-	if (IDIO_PRIMITIVE_CALLED (vo)) {
-	    fprintf (idio_vm_perf_FILE, "%+5lds gc_sweep_free Prim %10p %8" PRIu64 " %-40s %5ld.%09ld", idio_vm_elapsed (), vo, IDIO_PRIMITIVE_CALLED (vo), IDIO_PRIMITIVE_NAME (vo), IDIO_PRIMITIVE_CALL_TIME (vo).tv_sec, IDIO_PRIMITIVE_CALL_TIME (vo).tv_nsec);
-
-	    double call_time = (IDIO_PRIMITIVE_CALL_TIME (vo).tv_sec * 1000000000 + IDIO_PRIMITIVE_CALL_TIME (vo).tv_nsec) / IDIO_PRIMITIVE_CALLED (vo);
-	    fprintf (idio_vm_perf_FILE, " %11.f", call_time);
-	    char *units = "ns";
-	    if (call_time > 10000) {
-		units = "us";
-		call_time /= 1000;
-		if (call_time > 10000) {
-		    units = "ms";
-		    call_time /= 1000;
-		    if (call_time > 10000) {
-			units = "s";
-			call_time /= 1000;
-		    }
-	        }
-	    }
-	    fprintf (idio_vm_perf_FILE, " %6.f %s", call_time, units);
-	    fprintf (idio_vm_perf_FILE, "\n");
-        }
-#endif
 	idio_properties_delete (vo);
 	idio_free_primitive (vo);
 	break;
@@ -1770,8 +1793,6 @@ void idio_gc_stats ()
     while (root) {
 	switch (root->object->type) {
 	default:
-	    fprintf (fh, "%p ", root->object);
-	    idio_debug ("root object: %s\n", root->object);
 	    rc++;
 	    break;
 	}
@@ -1811,9 +1832,22 @@ void idio_gc_stats ()
 	    o->next = o->next->next;
 	}
 	/* idio_dump (o, 160); */
+
+	switch (o->type) {
+	case IDIO_TYPE_CLOSURE:
+	    idio_gc_closure_stats (o);
+	    break;
+	case IDIO_TYPE_PRIMITIVE:
+	    idio_gc_primitive_stats (o);
+	    break;
+	}
+
 	o = o->next;
     }
     idio_gc->verbose--;
+
+    fprintf (fh, "idio_gc_stats: all closures   %4ld.%09ld\n", idio_gc_all_closure_t.tv_sec, idio_gc_all_closure_t.tv_nsec);
+    fprintf (fh, "idio_gc_stats: all primitives %4ld.%09ld\n", idio_gc_all_primitive_t.tv_sec, idio_gc_all_primitive_t.tv_nsec);
 
     count = uc;
     scale = 0;
@@ -2096,6 +2130,13 @@ void idio_init_gc ()
     idio_gc_finalizer_hash = IDIO_HASH_EQP (64);
     idio_gc_protect (idio_gc_finalizer_hash);
     idio_hash_add_weak_table (idio_gc_finalizer_hash);
+
+#ifdef IDIO_VM_PERF
+    idio_gc_all_closure_t.tv_sec = 0;
+    idio_gc_all_closure_t.tv_nsec = 0;
+    idio_gc_all_primitive_t.tv_sec = 0;
+    idio_gc_all_primitive_t.tv_nsec = 0;
+#endif
 }
 
 void idio_gc_add_primitives ()
@@ -2131,6 +2172,8 @@ static void idio_gc_run_all_finalizers ()
 
 void idio_final_gc ()
 {
+    idio_gc_stats ();
+
     IDIO_GC_FLAGS (idio_gc) |= IDIO_GC_FLAG_FINISH;
 
     idio_gc_run_all_finalizers ();
@@ -2142,7 +2185,6 @@ void idio_final_gc ()
 
     idio_gc_expose_autos ();
 
-    idio_gc_stats ();
     idio_gc_expose_all ();
     idio_gc_collect ("idio_final_gc");
     idio_gc_dump ();

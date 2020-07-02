@@ -69,7 +69,7 @@ static void idio_array_error_bounds (idio_ai_t index, idio_ai_t size, IDIO c_loc
 
     char em[BUFSIZ];
 
-    sprintf (em, "array bounds error: abs (%td) > #elem %td", index, size);
+    sprintf (em, "array bounds error: abs (%td) >= #elem %td", index, size);
 
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C (em, sh);
@@ -310,7 +310,7 @@ void idio_array_push (IDIO a, IDIO o)
  * idio_array_pop() - pop value off the end of an array
  * @a: array
  *
- * The popped element is replaced with %idio_S_nil.
+ * The popped element is replaced with the array's default value.
  *
  * Return:
  * ``IDIO`` value or %idio_S_nil if the array is empty.
@@ -322,13 +322,21 @@ IDIO idio_array_pop (IDIO a)
 
     IDIO_ASSERT_NOT_CONST (array, a);
 
-    if (IDIO_ARRAY_USIZE (a) < 1) {
+    idio_ai_t index = IDIO_ARRAY_USIZE (a);
+    if (index < 1) {
 	IDIO_ARRAY_USIZE (a) = 0;
 	return idio_S_nil;
     }
 
-    IDIO e = idio_array_get_index (a, IDIO_ARRAY_USIZE (a) - 1);
-    idio_array_delete_index (a, IDIO_ARRAY_USIZE (a) - 1);
+    /*
+     * The functions idio_array_get_index and idio_array_delete_index
+     * are defensive in the face of a negative index etc..  We know we
+     * have a positive index that is not beyond the end of the array.
+     * So we can dive right in.
+     */
+    index--;
+    IDIO e = IDIO_ARRAY_AE (a, index);
+    IDIO_ARRAY_AE (a, index) = IDIO_ARRAY_DV (a);
     IDIO_ARRAY_USIZE (a)--;
 
     IDIO_ASSERT (e);
@@ -615,6 +623,31 @@ IDIO idio_array_copy (IDIO a, int depth, idio_ai_t extra)
 }
 
 /**
+ * idio_array_to_list_from() - convert an array to a list from index
+ * @a: array
+ *
+ * Return:
+ * A list.
+ */
+IDIO idio_array_to_list_from (IDIO a, idio_ai_t index)
+{
+    IDIO_ASSERT (a);
+    IDIO_TYPE_ASSERT (array, a);
+
+    idio_ai_t al = IDIO_ARRAY_USIZE (a);
+    idio_ai_t ai;
+
+    IDIO r = idio_S_nil;
+
+    for (ai = al -1; ai >= index; ai--) {
+	r = idio_pair (idio_array_get_index (a, ai),
+		       r);
+    }
+
+    return r;
+}
+
+/**
  * idio_array_to_list() - convert an array to a list
  * @a: array
  *
@@ -626,17 +659,7 @@ IDIO idio_array_to_list (IDIO a)
     IDIO_ASSERT (a);
     IDIO_TYPE_ASSERT (array, a);
 
-    idio_ai_t al = IDIO_ARRAY_USIZE (a);
-    idio_ai_t ai;
-
-    IDIO r = idio_S_nil;
-
-    for (ai = al -1; ai >= 0; ai--) {
-	r = idio_pair (idio_array_get_index (a, ai),
-		       r);
-    }
-
-    return r;
+    return idio_array_to_list_from (a, 0);
 }
 
 /**

@@ -196,6 +196,8 @@ extern idio_ai_t idio_vm_AR_pc;
 extern size_t idio_prologue_len;
 extern int idio_vm_exit;
 
+#define IDIO_VM_NS	1000000000L
+
 void idio_vm_panic (IDIO thr, char *m);
 IDIO idio_vm_closure_name (IDIO c);
 

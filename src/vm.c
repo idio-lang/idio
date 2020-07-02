@@ -815,12 +815,16 @@ static void idio_vm_restore_state (IDIO thr)
 
     /* idio_vm_debug (thr, "ivrs", -5); */
 
+    idio_ai_t ss = idio_array_size (IDIO_THREAD_STACK (thr));
+
     IDIO marker = IDIO_THREAD_STACK_POP ();
     if (idio_SM_preserve_state != marker) {
 	idio_debug ("iv_restore_state: marker: expected idio_SM_preserve_state not %s\n", marker);
 	IDIO_THREAD_STACK_PUSH (marker);
 	idio_vm_panic (thr, "iv_restore_state: unexpected stack marker");
     }
+    ss--;
+
     IDIO_THREAD_ENV (thr) = IDIO_THREAD_STACK_POP ();
     if (idio_S_nil != IDIO_THREAD_ENV (thr)) {
 	if (! idio_isa_module (IDIO_THREAD_ENV (thr))) {
@@ -832,11 +836,13 @@ static void idio_vm_restore_state (IDIO thr)
 	}
 	IDIO_TYPE_ASSERT (module, IDIO_THREAD_ENV (thr));
     }
+    ss--;
 
     IDIO_THREAD_FRAME (thr) = IDIO_THREAD_STACK_POP ();
     if (idio_S_nil != IDIO_THREAD_FRAME (thr)) {
 	IDIO_TYPE_ASSERT (frame, IDIO_THREAD_FRAME (thr));
     }
+    ss--;
 
     IDIO_THREAD_TRAP_SP (thr) = IDIO_THREAD_STACK_POP ();
     IDIO_TYPE_ASSERT (fixnum, IDIO_THREAD_TRAP_SP (thr));
@@ -853,28 +859,30 @@ static void idio_vm_restore_state (IDIO thr)
 	return;
     }
 
-    if (tsp >= idio_array_size (IDIO_THREAD_STACK (thr))) {
+    if (tsp >= ss) {
 	idio_error_C ("bad TRAP SP: > stack", IDIO_LIST2 (thr, IDIO_THREAD_STACK (thr)), IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return;
     }
+    ss--;
 
     IDIO_THREAD_DYNAMIC_SP (thr) = IDIO_THREAD_STACK_POP ();
     IDIO_TYPE_ASSERT (fixnum, IDIO_THREAD_DYNAMIC_SP (thr));
     idio_ai_t dsp = IDIO_FIXNUM_VAL (IDIO_THREAD_DYNAMIC_SP (thr));
-    if (dsp >= idio_array_size (IDIO_THREAD_STACK (thr))) {
+    if (dsp >= ss) {
 	idio_error_C ("bad DYNAMIC SP: > stack", IDIO_LIST2 (thr, IDIO_THREAD_STACK (thr)), IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return;
     }
+    ss--;
 
     IDIO_THREAD_ENVIRON_SP (thr) = IDIO_THREAD_STACK_POP ();
 
     idio_ai_t esp = IDIO_FIXNUM_VAL (IDIO_THREAD_ENVIRON_SP (thr));
     IDIO_TYPE_ASSERT (fixnum, IDIO_THREAD_ENVIRON_SP (thr));
-    if (esp >= idio_array_size (IDIO_THREAD_STACK (thr))) {
+    if (esp >= ss) {
 	idio_error_C ("bad ENVIRON SP: > stack", IDIO_LIST2 (thr, IDIO_THREAD_STACK (thr)), IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
@@ -917,7 +925,7 @@ static void idio_vm_restore_all_state (IDIO thr)
 
 #ifdef IDIO_VM_PERF
 static struct timespec idio_vm_clos_t0;
-static IDIO idio_vm_clos;
+static IDIO idio_vm_clos = NULL;
 
 void idio_vm_func_start (IDIO func, struct timespec *tsp)
 {
@@ -1050,16 +1058,18 @@ static void idio_vm_clos_time (IDIO thr, const char *context)
     clos_td.tv_sec = clos_te.tv_sec - idio_vm_clos_t0.tv_sec;
     clos_td.tv_nsec = clos_te.tv_nsec - idio_vm_clos_t0.tv_nsec;
     if (clos_td.tv_nsec < 0) {
-	clos_td.tv_nsec += 1000000000;
+	clos_td.tv_nsec += IDIO_VM_NS;
 	clos_td.tv_sec -= 1;
     }
 
     IDIO_CLOSURE_CALL_TIME (idio_vm_clos).tv_sec += clos_td.tv_sec;
     IDIO_CLOSURE_CALL_TIME (idio_vm_clos).tv_nsec += clos_td.tv_nsec;
-    if (IDIO_CLOSURE_CALL_TIME (idio_vm_clos).tv_nsec > 1000000000) {
-	IDIO_CLOSURE_CALL_TIME (idio_vm_clos).tv_nsec -= 1000000000;
+    if (IDIO_CLOSURE_CALL_TIME (idio_vm_clos).tv_nsec > IDIO_VM_NS) {
+	IDIO_CLOSURE_CALL_TIME (idio_vm_clos).tv_nsec -= IDIO_VM_NS;
 	IDIO_CLOSURE_CALL_TIME (idio_vm_clos).tv_sec += 1;
     }
+
+    idio_vm_clos = NULL;
 }
 
 void idio_vm_prim_time (IDIO func, struct timespec *ts0p, struct timespec *tsep)
@@ -1094,14 +1104,14 @@ void idio_vm_prim_time (IDIO func, struct timespec *ts0p, struct timespec *tsep)
 	    prim_td.tv_sec = tsep->tv_sec - ts0p->tv_sec;
 	    prim_td.tv_nsec = tsep->tv_nsec - ts0p->tv_nsec;
 	    if (prim_td.tv_nsec < 0) {
-		prim_td.tv_nsec += 1000000000;
+		prim_td.tv_nsec += IDIO_VM_NS;
 		prim_td.tv_sec -= 1;
 	    }
 
 	    IDIO_PRIMITIVE_CALL_TIME (func).tv_sec += prim_td.tv_sec;
 	    IDIO_PRIMITIVE_CALL_TIME (func).tv_nsec += prim_td.tv_nsec;
-	    if (IDIO_PRIMITIVE_CALL_TIME (func).tv_nsec > 1000000000) {
-		IDIO_PRIMITIVE_CALL_TIME (func).tv_nsec -= 1000000000;
+	    if (IDIO_PRIMITIVE_CALL_TIME (func).tv_nsec > IDIO_VM_NS) {
+		IDIO_PRIMITIVE_CALL_TIME (func).tv_nsec -= IDIO_VM_NS;
 		IDIO_PRIMITIVE_CALL_TIME (func).tv_sec += 1;
 	    }
 	}
@@ -1238,46 +1248,46 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
 		break;
 	    case 1:
 		{
-		    IDIO arg1 = idio_array_shift (args_a);
-		    IDIO args = idio_array_to_list (args_a);
+		    IDIO arg1 = idio_array_get_index (args_a, 0);
+		    IDIO args = idio_array_to_list_from (args_a, 1);
 		    IDIO_THREAD_VAL (thr) = (IDIO_PRIMITIVE_F (func)) (arg1, args);
 		}
 		break;
 	    case 2:
 		{
-		    IDIO arg1 = idio_array_shift (args_a);
-		    IDIO arg2 = idio_array_shift (args_a);
-		    IDIO args = idio_array_to_list (args_a);
+		    IDIO arg1 = idio_array_get_index (args_a, 0);
+		    IDIO arg2 = idio_array_get_index (args_a, 1);
+		    IDIO args = idio_array_to_list_from (args_a, 2);
 		    IDIO_THREAD_VAL (thr) = (IDIO_PRIMITIVE_F (func)) (arg1, arg2, args);
 		}
 		break;
 	    case 3:
 		{
-		    IDIO arg1 = idio_array_shift (args_a);
-		    IDIO arg2 = idio_array_shift (args_a);
-		    IDIO arg3 = idio_array_shift (args_a);
-		    IDIO args = idio_array_to_list (args_a);
+		    IDIO arg1 = idio_array_get_index (args_a, 0);
+		    IDIO arg2 = idio_array_get_index (args_a, 1);
+		    IDIO arg3 = idio_array_get_index (args_a, 2);
+		    IDIO args = idio_array_to_list_from (args_a, 3);
 		    IDIO_THREAD_VAL (thr) = (IDIO_PRIMITIVE_F (func)) (arg1, arg2, arg3, args);
 		}
 		break;
 	    case 4:
 		{
-		    IDIO arg1 = idio_array_shift (args_a);
-		    IDIO arg2 = idio_array_shift (args_a);
-		    IDIO arg3 = idio_array_shift (args_a);
-		    IDIO arg4 = idio_array_shift (args_a);
-		    IDIO args = idio_array_to_list (args_a);
+		    IDIO arg1 = idio_array_get_index (args_a, 0);
+		    IDIO arg2 = idio_array_get_index (args_a, 1);
+		    IDIO arg3 = idio_array_get_index (args_a, 2);
+		    IDIO arg4 = idio_array_get_index (args_a, 3);
+		    IDIO args = idio_array_to_list_from (args_a, 4);
 		    IDIO_THREAD_VAL (thr) = (IDIO_PRIMITIVE_F (func)) (arg1, arg2, arg3, arg4, args);
 		}
 		break;
 	    case 5:
 		{
-		    IDIO arg1 = idio_array_shift (args_a);
-		    IDIO arg2 = idio_array_shift (args_a);
-		    IDIO arg3 = idio_array_shift (args_a);
-		    IDIO arg4 = idio_array_shift (args_a);
-		    IDIO arg5 = idio_array_shift (args_a);
-		    IDIO args = idio_array_to_list (args_a);
+		    IDIO arg1 = idio_array_get_index (args_a, 0);
+		    IDIO arg2 = idio_array_get_index (args_a, 1);
+		    IDIO arg3 = idio_array_get_index (args_a, 2);
+		    IDIO arg4 = idio_array_get_index (args_a, 3);
+		    IDIO arg5 = idio_array_get_index (args_a, 4);
+		    IDIO args = idio_array_to_list_from (args_a, 5);
 		    IDIO_THREAD_VAL (thr) = (IDIO_PRIMITIVE_F (func)) (arg1, arg2, arg3, arg4, arg5, args);
 		}
 		break;
@@ -2772,6 +2782,7 @@ int idio_vm_run1 (IDIO thr)
 		    fprintf (stderr, " #%" PRId64, mci);
 		    idio_dump (thr, 2);
 		    idio_debug ("c-m: %s\n", idio_thread_current_module ());
+		    IDIO_C_ASSERT (0);
 		    idio_error_printf (IDIO_C_FUNC_LOCATION_S ("CHECKED-GLOBAL-REF"), "unspecified toplevel: %" PRId64 "", mci);
 
 		    /* notreached */
@@ -4283,6 +4294,10 @@ int idio_vm_run1 (IDIO thr)
 		IDIO_PAIR_HTT (sk_ce) = fgvi;
 	    }
 
+	    /*
+	     * XXX overrides any existing name
+	     */
+	    idio_set_property (IDIO_THREAD_VAL (thr), idio_KW_name, sym);
 	    idio_install_infix_operator (sym, IDIO_THREAD_VAL (thr), pri);
 	}
 	break;
@@ -4312,6 +4327,10 @@ int idio_vm_run1 (IDIO thr)
 		IDIO_PAIR_HTT (sk_ce) = fgvi;
 	    }
 
+	    /*
+	     * XXX overrides any existing name
+	     */
+	    idio_set_property (IDIO_THREAD_VAL (thr), idio_KW_name, sym);
 	    idio_install_postfix_operator (sym, IDIO_THREAD_VAL (thr), pri);
 	}
 	break;
@@ -4355,14 +4374,14 @@ int idio_vm_run1 (IDIO thr)
     ins_td.tv_sec = ins_te.tv_sec - ins_t0.tv_sec;
     ins_td.tv_nsec = ins_te.tv_nsec - ins_t0.tv_nsec;
     if (ins_td.tv_nsec < 0) {
-	ins_td.tv_nsec += 1000000000;
+	ins_td.tv_nsec += IDIO_VM_NS;
 	ins_td.tv_sec -= 1;
     }
 
     idio_vm_ins_call_time[ins].tv_sec += ins_td.tv_sec;
     idio_vm_ins_call_time[ins].tv_nsec += ins_td.tv_nsec;
-    if (idio_vm_ins_call_time[ins].tv_nsec > 1000000000) {
-	idio_vm_ins_call_time[ins].tv_nsec -= 1000000000;
+    if (idio_vm_ins_call_time[ins].tv_nsec > IDIO_VM_NS) {
+	idio_vm_ins_call_time[ins].tv_nsec -= IDIO_VM_NS;
 	idio_vm_ins_call_time[ins].tv_sec += 1;
     }
 #endif
@@ -6271,11 +6290,15 @@ void idio_final_vm ()
 	    c += idio_vm_ins_counters[i];
 	    t.tv_sec += idio_vm_ins_call_time[i].tv_sec;
 	    t.tv_nsec += idio_vm_ins_call_time[i].tv_nsec;
+	    if (t.tv_nsec > IDIO_VM_NS) {
+		t.tv_nsec -= IDIO_VM_NS;
+		t.tv_sec += 1;
+	    }
 	}
 
 	float c_pct = 0;
 	float t_pct = 0;
-	
+
 	fprintf (idio_vm_perf_FILE, "vm-ins:  %4.4s %-30.30s %8.8s %5.5s %15.15s %5.5s %6.6s\n", "code", "instruction", "count", "cnt%", "time (sec.nsec)", "time%", "ns/call");
 	for (IDIO_I i = 1; i < IDIO_I_MAX; i++) {
 	    if (1 || idio_vm_ins_counters[i]) {
@@ -6292,7 +6315,7 @@ void idio_final_vm ()
 		    float i_time = idio_vm_ins_call_time[i].tv_sec * 100 + idio_vm_ins_call_time[i].tv_nsec / 10000000;
 		    float time_pct = i_time * 100 / t_time;
 		    t_pct += time_pct;
-		    
+
 		    fprintf (idio_vm_perf_FILE, "vm-ins:  %4" PRIu8 " %-30s %8" PRIu64 " %5.1f %5ld.%09ld %5.1f",
 			     i,
 			     bc_name,
@@ -6303,7 +6326,7 @@ void idio_final_vm ()
 			time_pct);
 		    double call_time = 0;
 		    if (idio_vm_ins_counters[i]) {
-			call_time = (idio_vm_ins_call_time[i].tv_sec * 1000000000 + idio_vm_ins_call_time[i].tv_nsec) / idio_vm_ins_counters[i];
+			call_time = (idio_vm_ins_call_time[i].tv_sec * IDIO_VM_NS + idio_vm_ins_call_time[i].tv_nsec) / idio_vm_ins_counters[i];
 		    }
 		    fprintf (idio_vm_perf_FILE, " %6.f", call_time);
 		    fprintf (idio_vm_perf_FILE, "\n");
