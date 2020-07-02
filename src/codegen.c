@@ -377,60 +377,6 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    }
 	}
 	break;
-    case IDIO_I_CODE_PREDEFINED:
-	{
-	    if (! idio_isa_pair (mt) ||
-		idio_list_length (mt) != 1) {
-		idio_codegen_error_param_args ("PREDEFINED vi", mt, IDIO_C_FUNC_LOCATION_S ("PREDEFINED"));
-
-		/* notreached */
-		return;
-	    }
-
-	    IDIO vi = IDIO_PAIR_H (mt);
-
-	    if (! idio_isa_fixnum (vi)) {
-		idio_codegen_error_param_type ("fixnum", vi, IDIO_C_FUNC_LOCATION_S ("PREDEFINED"));
-
-		/* notreached */
-		return;
-	    }
-
-	    switch (IDIO_FIXNUM_VAL (vi)) {
-	    default:
-		IDIO_IA_PUSH1 (IDIO_A_PREDEFINED);
-		IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (vi));
-		break;
-	    }
-
-	    /*
-	     * Specialization.  Or will be...
-	     */
-	    if (idio_S_true == vi) {
-		IDIO_IA_PUSH1 (IDIO_A_PREDEFINED0);
-	    } else if (idio_S_false == vi) {
-		IDIO_IA_PUSH1 (IDIO_A_PREDEFINED1);
-	    } else if (idio_S_nil == vi) {
-		IDIO_IA_PUSH1 (IDIO_A_PREDEFINED2);
-	    } else if (idio_S_nil == vi) { /* pair */
-		IDIO_IA_PUSH1 (IDIO_A_PREDEFINED3);
-	    } else if (idio_S_nil == vi) { /* head */
-		IDIO_IA_PUSH1 (IDIO_A_PREDEFINED4);
-	    } else if (idio_S_nil == vi) { /* tail */
-		IDIO_IA_PUSH1 (IDIO_A_PREDEFINED5);
-	    } else if (idio_S_nil == vi) { /* pair? */
-		IDIO_IA_PUSH1 (IDIO_A_PREDEFINED6);
-	    } else if (idio_S_nil == vi) { /* symbol? */
-		IDIO_IA_PUSH1 (IDIO_A_PREDEFINED7);
-	    } else if (idio_S_nil == vi) { /* eq? */
-		IDIO_IA_PUSH1 (IDIO_A_PREDEFINED8);
-	    } else {
-		/* see above */
-		/* IDIO_IA_PUSH1 (IDIO_A_PREDEFINED); */
-		/* IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (vi)); */
-	    }
-	}
-	break;
     case IDIO_I_CODE_DEEP_ARGUMENT_REF:
 	{
 	    if (! idio_isa_pair (mt) ||
@@ -536,11 +482,11 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (j));
 	}
 	break;
-    case IDIO_I_CODE_GLOBAL_REF:
+    case IDIO_I_CODE_GLOBAL_SYM_REF:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 1) {
-		idio_codegen_error_param_args ("GLOBAL-REF mci", mt, IDIO_C_FUNC_LOCATION_S ("GLOBAL-REF"));
+		idio_codegen_error_param_args ("GLOBAL-SYM-REF mci", mt, IDIO_C_FUNC_LOCATION_S ("GLOBAL-SYM-REF"));
 
 		/* notreached */
 		return;
@@ -549,21 +495,21 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO mci = IDIO_PAIR_H (mt);
 
 	    if (! idio_isa_fixnum (mci)) {
-		idio_codegen_error_param_type ("fixnum", mci, IDIO_C_FUNC_LOCATION_S ("GLOBAL-REF"));
+		idio_codegen_error_param_type ("fixnum", mci, IDIO_C_FUNC_LOCATION_S ("GLOBAL-SYM-REF"));
 
 		/* notreached */
 		return;
 	    }
 
-	    IDIO_IA_PUSH1 (IDIO_A_GLOBAL_REF);
+	    IDIO_IA_PUSH1 (IDIO_A_GLOBAL_SYM_REF);
 	    IDIO_IA_PUSH_REF (IDIO_FIXNUM_VAL (mci));
 	}
 	break;
-    case IDIO_I_CODE_CHECKED_GLOBAL_REF:
+    case IDIO_I_CODE_CHECKED_GLOBAL_SYM_REF:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 1) {
-		idio_codegen_error_param_args ("CHECKED-GLOBAL-REF mci", mt, IDIO_C_FUNC_LOCATION_S ("CHECKED-GLOBAL-REF"));
+		idio_codegen_error_param_args ("CHECKED-GLOBAL-SYM-REF mci", mt, IDIO_C_FUNC_LOCATION_S ("CHECKED-GLOBAL-SYM-REF"));
 
 		/* notreached */
 		return;
@@ -572,21 +518,21 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO mci = IDIO_PAIR_H (mt);
 
 	    if (! idio_isa_fixnum (mci)) {
-		idio_codegen_error_param_type ("fixnum", mci, IDIO_C_FUNC_LOCATION_S ("CHECKED-GLOBAL-REF"));
+		idio_codegen_error_param_type ("fixnum", mci, IDIO_C_FUNC_LOCATION_S ("CHECKED-GLOBAL-SYM-REF"));
 
 		/* notreached */
 		return;
 	    }
 
-	    IDIO_IA_PUSH1 (IDIO_A_CHECKED_GLOBAL_REF);
+	    IDIO_IA_PUSH1 (IDIO_A_CHECKED_GLOBAL_SYM_REF);
 	    IDIO_IA_PUSH_REF (IDIO_FIXNUM_VAL (mci));
 	}
 	break;
-    case IDIO_I_CODE_GLOBAL_FUNCTION_REF:
+    case IDIO_I_CODE_GLOBAL_FUNCTION_SYM_REF:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 1) {
-		idio_codegen_error_param_args ("GLOBAL-FUNCTION-REF mci", mt, IDIO_C_FUNC_LOCATION_S ("GLOBAL-FUNCTION-REF"));
+		idio_codegen_error_param_args ("GLOBAL-FUNCTION-SYM-REF mci", mt, IDIO_C_FUNC_LOCATION_S ("GLOBAL-FUNCTION-SYM-REF"));
 
 		/* notreached */
 		return;
@@ -595,21 +541,21 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO mci = IDIO_PAIR_H (mt);
 
 	    if (! idio_isa_fixnum (mci)) {
-		idio_codegen_error_param_type ("fixnum", mci, IDIO_C_FUNC_LOCATION_S ("GLOBAL-FUNCTION-REF"));
+		idio_codegen_error_param_type ("fixnum", mci, IDIO_C_FUNC_LOCATION_S ("GLOBAL-FUNCTION-SYM-REF"));
 
 		/* notreached */
 		return;
 	    }
 
-	    IDIO_IA_PUSH1 (IDIO_A_GLOBAL_FUNCTION_REF);
+	    IDIO_IA_PUSH1 (IDIO_A_GLOBAL_FUNCTION_SYM_REF);
 	    IDIO_IA_PUSH_REF (IDIO_FIXNUM_VAL (mci));
 	}
 	break;
-    case IDIO_I_CODE_CHECKED_GLOBAL_FUNCTION_REF:
+    case IDIO_I_CODE_CHECKED_GLOBAL_FUNCTION_SYM_REF:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 1) {
-		idio_codegen_error_param_args ("CHECKED-GLOBAL-FUNCTION-REF mci", mt, IDIO_C_FUNC_LOCATION_S ("CHECKED-GLOBAL-FUNCTION-REF"));
+		idio_codegen_error_param_args ("CHECKED-GLOBAL-FUNCTION-SYM-REF mci", mt, IDIO_C_FUNC_LOCATION_S ("CHECKED-GLOBAL-FUNCTION-SYM-REF"));
 
 		/* notreached */
 		return;
@@ -618,167 +564,17 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO mci = IDIO_PAIR_H (mt);
 
 	    if (! idio_isa_fixnum (mci)) {
-		idio_codegen_error_param_type ("fixnum", mci, IDIO_C_FUNC_LOCATION_S ("CHECKED-GLOBAL-FUNCTION-REF"));
+		idio_codegen_error_param_type ("fixnum", mci, IDIO_C_FUNC_LOCATION_S ("CHECKED-GLOBAL-FUNCTION-SYM-REF"));
 
 		/* notreached */
 		return;
 	    }
 
-	    IDIO_IA_PUSH1 (IDIO_A_CHECKED_GLOBAL_FUNCTION_REF);
+	    IDIO_IA_PUSH1 (IDIO_A_CHECKED_GLOBAL_FUNCTION_SYM_REF);
 	    IDIO_IA_PUSH_REF (IDIO_FIXNUM_VAL (mci));
 	}
 	break;
-    case IDIO_I_CODE_COMPUTED_REF:
-	{
-	    if (! idio_isa_pair (mt) ||
-		idio_list_length (mt) != 1) {
-		idio_codegen_error_param_args ("COMPUTED-REF mci", mt, IDIO_C_FUNC_LOCATION_S ("COMPUTED-REF"));
-
-		/* notreached */
-		return;
-	    }
-
-	    IDIO mci = IDIO_PAIR_H (mt);
-
-	    if (! idio_isa_fixnum (mci)) {
-		idio_codegen_error_param_type ("fixnum", mci, IDIO_C_FUNC_LOCATION_S ("COMPUTED-REF"));
-
-		/* notreached */
-		return;
-	    }
-
-	    IDIO_IA_PUSH1 (IDIO_A_COMPUTED_REF);
-	    IDIO_IA_PUSH_REF (IDIO_FIXNUM_VAL (mci));
-	}
-	break;
-    case IDIO_I_CODE_GLOBAL_DEF:
-	{
-	    if (! idio_isa_pair (mt) ||
-		idio_list_length (mt) != 3) {
-		idio_codegen_error_param_args ("GLOBAL-DEF name kind mci", mt, IDIO_C_FUNC_LOCATION_S ("GLOBAL-DEF"));
-
-		/* notreached */
-		return;
-	    }
-
-	    IDIO name = IDIO_PAIR_H (mt);
-	    IDIO kind = IDIO_PAIR_HT (mt);
-	    IDIO fmci = IDIO_PAIR_HTT (mt);
-
-	    if (! idio_isa_symbol (name)) {
-		idio_codegen_error_param_type ("symbol", name, IDIO_C_FUNC_LOCATION_S ("GLOBAL-DEF"));
-
-		/* notreached */
-		return;
-	    }
-
-	    if (! (idio_S_predef == kind ||
-		   idio_S_toplevel == kind ||
-		   idio_S_dynamic == kind ||
-		   idio_S_environ == kind ||
-		   idio_S_computed == kind)) {
-		idio_codegen_error_param_type ("symbol predef|toplevel|dynamic|environ|computed", kind, IDIO_C_FUNC_LOCATION_S ("GLOBAL-DEF"));
-
-		/* notreached */
-		return;
-	    }
-
-	    if (! idio_isa_fixnum (fmci)) {
-		idio_codegen_error_param_type ("fixnum", fmci, IDIO_C_FUNC_LOCATION_S ("GLOBAL-DEF"));
-
-		/* notreached */
-		return;
-	    }
-
-	    IDIO_IA_PUSH1 (IDIO_A_GLOBAL_DEF);
-	    idio_ai_t mci = IDIO_FIXNUM_VAL (fmci);
-	    IDIO_IA_PUSH_REF (mci);
-	    mci = idio_codegen_constants_lookup_or_extend (cs, kind);
-	    IDIO_IA_PUSH_VARUINT (mci);
-	}
-	break;
-    case IDIO_I_CODE_GLOBAL_SET:
-	{
-	    if (! idio_isa_pair (mt) ||
-		idio_list_length (mt) != 2) {
-		idio_codegen_error_param_args ("GLOBAL-SET mci m1", mt, IDIO_C_FUNC_LOCATION_S ("GLOBAL-SET"));
-
-		/* notreached */
-		return;
-	    }
-
-	    IDIO mci = IDIO_PAIR_H (mt);
-
-	    if (! idio_isa_fixnum (mci)) {
-		idio_codegen_error_param_type ("fixnum", mci, IDIO_C_FUNC_LOCATION_S ("GLOBAL-SET"));
-
-		/* notreached */
-		return;
-	    }
-
-	    IDIO m1 = IDIO_PAIR_HT (mt);
-
-	    idio_codegen_compile (thr, ia, cs, m1, depth + 1);
-
-	    IDIO_IA_PUSH1 (IDIO_A_GLOBAL_SET);
-	    IDIO_IA_PUSH_REF (IDIO_FIXNUM_VAL (mci));
-	}
-	break;
-    case IDIO_I_CODE_COMPUTED_SET:
-	{
-	    if (! idio_isa_pair (mt) ||
-		idio_list_length (mt) != 2) {
-		idio_codegen_error_param_args ("COMPUTED-SET mci m1", mt, IDIO_C_FUNC_LOCATION_S ("COMPUTED-SET"));
-
-		/* notreached */
-		return;
-	    }
-
-	    IDIO mci = IDIO_PAIR_H (mt);
-
-	    if (! idio_isa_fixnum (mci)) {
-		idio_codegen_error_param_type ("fixnum", mci, IDIO_C_FUNC_LOCATION_S ("COMPUTED-SET"));
-
-		/* notreached */
-		return;
-	    }
-
-	    IDIO m1 = IDIO_PAIR_HT (mt);
-
-	    idio_codegen_compile (thr, ia, cs, m1, depth + 1);
-
-	    IDIO_IA_PUSH1 (IDIO_A_COMPUTED_SET);
-	    IDIO_IA_PUSH_REF (IDIO_FIXNUM_VAL (mci));
-	}
-	break;
-    case IDIO_I_CODE_COMPUTED_DEFINE:
-	{
-	    if (! idio_isa_pair (mt) ||
-		idio_list_length (mt) != 2) {
-		idio_codegen_error_param_args ("COMPUTED-DEFINE mci m1", mt, IDIO_C_FUNC_LOCATION_S ("COMPUTED-DEFINE"));
-
-		/* notreached */
-		return;
-	    }
-
-	    IDIO mci = IDIO_PAIR_H (mt);
-
-	    if (! idio_isa_fixnum (mci)) {
-		idio_codegen_error_param_type ("fixnum", mci, IDIO_C_FUNC_LOCATION_S ("COMPUTED-DEFINE"));
-
-		/* notreached */
-		return;
-	    }
-
-	    IDIO m1 = IDIO_PAIR_HT (mt);
-
-	    idio_codegen_compile (thr, ia, cs, m1, depth + 1);
-
-	    IDIO_IA_PUSH1 (IDIO_A_COMPUTED_DEFINE);
-	    IDIO_IA_PUSH_REF (IDIO_FIXNUM_VAL (mci));
-	}
-	break;
-    case IDIO_I_CODE_CONSTANT:
+    case IDIO_I_CODE_CONSTANT_SYM_REF:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 1) {
@@ -896,12 +692,216 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 		    IDIO fmci = idio_fixnum (mci);
 		    idio_module_set_vci (idio_thread_current_env (), fmci, fmci);
 
-		    IDIO_IA_PUSH1 (IDIO_A_CONSTANT_REF);
+		    IDIO_IA_PUSH1 (IDIO_A_CONSTANT_SYM_REF);
 		    IDIO_IA_PUSH_VARUINT (mci);
 		    return;
 		}
 	    }
 
+	}
+	break;
+    case IDIO_I_CODE_COMPUTED_SYM_REF:
+	{
+	    if (! idio_isa_pair (mt) ||
+		idio_list_length (mt) != 1) {
+		idio_codegen_error_param_args ("COMPUTED-SYM-REF mci", mt, IDIO_C_FUNC_LOCATION_S ("COMPUTED-SYM-REF"));
+
+		/* notreached */
+		return;
+	    }
+
+	    IDIO mci = IDIO_PAIR_H (mt);
+
+	    if (! idio_isa_fixnum (mci)) {
+		idio_codegen_error_param_type ("fixnum", mci, IDIO_C_FUNC_LOCATION_S ("COMPUTED-SYM-REF"));
+
+		/* notreached */
+		return;
+	    }
+
+	    IDIO_IA_PUSH1 (IDIO_A_COMPUTED_SYM_REF);
+	    IDIO_IA_PUSH_REF (IDIO_FIXNUM_VAL (mci));
+	}
+	break;
+    case IDIO_I_CODE_GLOBAL_SYM_DEF:
+	{
+	    if (! idio_isa_pair (mt) ||
+		idio_list_length (mt) != 3) {
+		idio_codegen_error_param_args ("GLOBAL-SYM-DEF name kind mci", mt, IDIO_C_FUNC_LOCATION_S ("GLOBAL-SYM-DEF"));
+
+		/* notreached */
+		return;
+	    }
+
+	    IDIO name = IDIO_PAIR_H (mt);
+	    IDIO kind = IDIO_PAIR_HT (mt);
+	    IDIO fmci = IDIO_PAIR_HTT (mt);
+
+	    if (! idio_isa_symbol (name)) {
+		idio_codegen_error_param_type ("symbol", name, IDIO_C_FUNC_LOCATION_S ("GLOBAL-SYM-DEF"));
+
+		/* notreached */
+		return;
+	    }
+
+	    if (! (idio_S_predef == kind ||
+		   idio_S_toplevel == kind ||
+		   idio_S_dynamic == kind ||
+		   idio_S_environ == kind ||
+		   idio_S_computed == kind)) {
+		idio_codegen_error_param_type ("symbol predef|toplevel|dynamic|environ|computed", kind, IDIO_C_FUNC_LOCATION_S ("GLOBAL-SYM-DEF"));
+
+		/* notreached */
+		return;
+	    }
+
+	    if (! idio_isa_fixnum (fmci)) {
+		idio_codegen_error_param_type ("fixnum", fmci, IDIO_C_FUNC_LOCATION_S ("GLOBAL-SYM-DEF"));
+
+		/* notreached */
+		return;
+	    }
+
+	    IDIO_IA_PUSH1 (IDIO_A_GLOBAL_SYM_DEF);
+	    idio_ai_t mci = IDIO_FIXNUM_VAL (fmci);
+	    IDIO_IA_PUSH_REF (mci);
+	    mci = idio_codegen_constants_lookup_or_extend (cs, kind);
+	    IDIO_IA_PUSH_VARUINT (mci);
+	}
+	break;
+    case IDIO_I_CODE_GLOBAL_SYM_SET:
+	{
+	    if (! idio_isa_pair (mt) ||
+		idio_list_length (mt) != 2) {
+		idio_codegen_error_param_args ("GLOBAL-SYM-SET mci m1", mt, IDIO_C_FUNC_LOCATION_S ("GLOBAL-SYM-SET"));
+
+		/* notreached */
+		return;
+	    }
+
+	    IDIO mci = IDIO_PAIR_H (mt);
+
+	    if (! idio_isa_fixnum (mci)) {
+		idio_codegen_error_param_type ("fixnum", mci, IDIO_C_FUNC_LOCATION_S ("GLOBAL-SYM-SET"));
+
+		/* notreached */
+		return;
+	    }
+
+	    IDIO m1 = IDIO_PAIR_HT (mt);
+
+	    idio_codegen_compile (thr, ia, cs, m1, depth + 1);
+
+	    IDIO_IA_PUSH1 (IDIO_A_GLOBAL_SYM_SET);
+	    IDIO_IA_PUSH_REF (IDIO_FIXNUM_VAL (mci));
+	}
+	break;
+    case IDIO_I_CODE_COMPUTED_SYM_SET:
+	{
+	    if (! idio_isa_pair (mt) ||
+		idio_list_length (mt) != 2) {
+		idio_codegen_error_param_args ("COMPUTED-SYM-SET mci m1", mt, IDIO_C_FUNC_LOCATION_S ("COMPUTED-SYM-SET"));
+
+		/* notreached */
+		return;
+	    }
+
+	    IDIO mci = IDIO_PAIR_H (mt);
+
+	    if (! idio_isa_fixnum (mci)) {
+		idio_codegen_error_param_type ("fixnum", mci, IDIO_C_FUNC_LOCATION_S ("COMPUTED-SYM-SET"));
+
+		/* notreached */
+		return;
+	    }
+
+	    IDIO m1 = IDIO_PAIR_HT (mt);
+
+	    idio_codegen_compile (thr, ia, cs, m1, depth + 1);
+
+	    IDIO_IA_PUSH1 (IDIO_A_COMPUTED_SYM_SET);
+	    IDIO_IA_PUSH_REF (IDIO_FIXNUM_VAL (mci));
+	}
+	break;
+    case IDIO_I_CODE_COMPUTED_SYM_DEFINE:
+	{
+	    if (! idio_isa_pair (mt) ||
+		idio_list_length (mt) != 2) {
+		idio_codegen_error_param_args ("COMPUTED-SYM-DEFINE mci m1", mt, IDIO_C_FUNC_LOCATION_S ("COMPUTED-SYM-DEFINE"));
+
+		/* notreached */
+		return;
+	    }
+
+	    IDIO mci = IDIO_PAIR_H (mt);
+
+	    if (! idio_isa_fixnum (mci)) {
+		idio_codegen_error_param_type ("fixnum", mci, IDIO_C_FUNC_LOCATION_S ("COMPUTED-SYM-DEFINE"));
+
+		/* notreached */
+		return;
+	    }
+
+	    IDIO m1 = IDIO_PAIR_HT (mt);
+
+	    idio_codegen_compile (thr, ia, cs, m1, depth + 1);
+
+	    IDIO_IA_PUSH1 (IDIO_A_COMPUTED_SYM_DEFINE);
+	    IDIO_IA_PUSH_REF (IDIO_FIXNUM_VAL (mci));
+	}
+	break;
+    case IDIO_I_CODE_PREDEFINED:
+	{
+	    if (! idio_isa_pair (mt) ||
+		idio_list_length (mt) != 1) {
+		idio_codegen_error_param_args ("PREDEFINED vi", mt, IDIO_C_FUNC_LOCATION_S ("PREDEFINED"));
+
+		/* notreached */
+		return;
+	    }
+
+	    IDIO vi = IDIO_PAIR_H (mt);
+
+	    if (! idio_isa_fixnum (vi)) {
+		idio_codegen_error_param_type ("fixnum", vi, IDIO_C_FUNC_LOCATION_S ("PREDEFINED"));
+
+		/* notreached */
+		return;
+	    }
+
+	    switch (IDIO_FIXNUM_VAL (vi)) {
+	    default:
+		IDIO_IA_PUSH1 (IDIO_A_PREDEFINED);
+		IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (vi));
+		break;
+	    }
+
+	    /*
+	     * Specialization.  Or will be...
+	     */
+	    if (idio_S_true == vi) {
+		IDIO_IA_PUSH1 (IDIO_A_PREDEFINED0);
+	    } else if (idio_S_false == vi) {
+		IDIO_IA_PUSH1 (IDIO_A_PREDEFINED1);
+	    } else if (idio_S_nil == vi) {
+		IDIO_IA_PUSH1 (IDIO_A_PREDEFINED2);
+	    } else if (idio_S_nil == vi) { /* pair */
+		IDIO_IA_PUSH1 (IDIO_A_PREDEFINED3);
+	    } else if (idio_S_nil == vi) { /* head */
+		IDIO_IA_PUSH1 (IDIO_A_PREDEFINED4);
+	    } else if (idio_S_nil == vi) { /* tail */
+		IDIO_IA_PUSH1 (IDIO_A_PREDEFINED5);
+	    } else if (idio_S_nil == vi) { /* pair? */
+		IDIO_IA_PUSH1 (IDIO_A_PREDEFINED6);
+	    } else if (idio_S_nil == vi) { /* symbol? */
+		IDIO_IA_PUSH1 (IDIO_A_PREDEFINED7);
+	    } else if (idio_S_nil == vi) { /* eq? */
+		IDIO_IA_PUSH1 (IDIO_A_PREDEFINED8);
+	    } else {
+		/* see above */
+		/* IDIO_IA_PUSH1 (IDIO_A_PREDEFINED); */
+		/* IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (vi)); */
+	    }
 	}
 	break;
     case IDIO_I_CODE_ALTERNATIVE:
@@ -1009,213 +1009,6 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 
 	    idio_codegen_compile (thr, ia, cs, m1, depth + 1);
 	    idio_codegen_compile (thr, ia, cs, mp, depth + 1);
-	}
-	break;
-    case IDIO_I_CODE_AND:
-	{
-	    if (! idio_isa_pair (mt) ||
-		idio_list_length (mt) < 1) {
-		idio_codegen_error_param_args ("AND m+", mt, IDIO_C_FUNC_LOCATION_S ("AND"));
-
-		/* notreached */
-		return;
-	    }
-
-	    /*
-	     * We don't know how far to jump to the end of the AND
-	     * sequence until we have generated the code for the
-	     * remaining clauses *and* the inter-clause jumps
-	     *
-	     * 1: compile the first clause and append it to ia
-	     * (nothing special here)
-	     *
-	     * 2: We can compile the meaning of each remaining clause
-	     * into iac[].
-	     *
-	     * 3: create a couple of holding buffers: {iat} for the
-	     * per-clause calculations, and {iar} for the accumulated
-	     * result of all the per-clause shuffling
-	     *
-	     * 3: Working *backwards* from n to 1, on behalf of clause
-	     * m-1 we can:
-	     *
-	     *   a: calculate the "jump to the end" which is the
-	     *   accumulated "jump to the end" plus the size of iac[m]
-	     *
-	     *   b: generate the JUMP-FALSE "jump to the end" in a
-	     *   temp buffer, iat
-	     *
-	     *   c: append iac[m] to iat
-	     *
-	     *   d: append iar to iat
-	     *
-	     *   e: copy iat back over iar
-	     *
-	     *   f: set the accumulated "jump to the end" to be the
-	     *   size of iar
-	     *
-	     * 4: append iar to ia
-	     */
-	    IDIO m1 = IDIO_PAIR_H (mt);
-	    mt = IDIO_PAIR_T (mt);
-
-	    idio_codegen_compile (thr, ia, cs, m1, depth + 1);
-
-	    size_t n = idio_list_length (mt);
-
-	    IDIO_IA_T iac[n];
-	    intptr_t i;
-
-	    /*
-	     * 1st pass, l is only the accumulated code size for
-	     * allocating iar/iat
-	     */
-	    size_t l = 0;
-	    for (i = 0; i < n ; i++) {
-		iac[i] = idio_ia (100);
-		idio_codegen_compile (thr, iac[i], cs, IDIO_PAIR_H (mt), depth + 1);
-		l += IDIO_IA_USIZE (iac[i]);
-		mt = IDIO_PAIR_T (mt);
-	    }
-
-	    /*
-	     * How much temporary instruction space?
-	     *
-	     * largest varuint is 9 bytes, jump ins is one and there
-	     * will be n of them.
-	     *
-	     * To grow the result we need (jump+iac[i]) in iat then
-	     * append iar then copy iat back to iar
-	     */
-	    IDIO_IA_T iar = idio_ia (l + n * (1 + 9));
-	    IDIO_IA_T iat = idio_ia (l + n * (1 + 9));
-
-	    /*
-	     * 2nd pass, l now includes jump sizes
-	     */
-	    l = 0;
-	    for (i = n - 1; i >= 0 ; i--) {
-		l += IDIO_IA_USIZE (iac[i]);
-		if (l <= IDIO_IA_VARUINT_1BYTE) {
-		    idio_ia_push (iat, IDIO_A_SHORT_JUMP_FALSE);
-		    idio_ia_push (iat, l);
-		} else {
-		    IDIO_IA_T jf = idio_ia_compute_varuint (l);
-		    idio_ia_push (iat, IDIO_A_LONG_JUMP_FALSE);
-		    idio_ia_append (iat, jf);
-		    idio_ia_free (jf);
-		}
-
-		idio_ia_append (iat, iac[i]);
-		idio_ia_free (iac[i]);
-
-		idio_ia_append (iat, iar);
-		idio_ia_copy (iar, iat);
-		IDIO_IA_USIZE (iat) = 0;
-		l = IDIO_IA_USIZE (iar);
-	    }
-
-
-	    idio_ia_append (ia, iar);
-	    idio_ia_free (iar);
-	    idio_ia_free (iat);
-	}
-	break;
-    case IDIO_I_CODE_OR:
-	{
-	    if (! idio_isa_pair (mt) ||
-		idio_list_length (mt) < 1) {
-		idio_codegen_error_param_args ("OR m+", mt, IDIO_C_FUNC_LOCATION_S ("OR"));
-
-		/* notreached */
-		return;
-	    }
-
-	    /*
-	     * We don't know how far to jump to the end of the OR
-	     * sequence until we have generated the code for the
-	     * remaining clauses *and* the inter-clause jumps
-	     *
-	     * See commentary for IDIO_I_CODE_AND, above
-	     */
-	    IDIO m1 = IDIO_PAIR_H (mt);
-	    mt = IDIO_PAIR_T (mt);
-
-	    idio_codegen_compile (thr, ia, cs, m1, depth + 1);
-
-	    size_t n = idio_list_length (mt);
-
-	    IDIO_IA_T iac[n];
-	    intptr_t i;
-
-	    /*
-	     * 1st pass, l is only the accumulated code size for
-	     * allocating iar/iat
-	     */
-	    size_t l = 0;
-	    for (i = 0; i < n ; i++) {
-		iac[i] = idio_ia (100);
-		idio_codegen_compile (thr, iac[i], cs, IDIO_PAIR_H (mt), depth + 1);
-		l += IDIO_IA_USIZE (iac[i]);
-		mt = IDIO_PAIR_T (mt);
-	    }
-
-	    /*
-	     * How much temporary instruction space?
-	     *
-	     * largest varuint is 9 bytes, jump ins is one and there
-	     * will be n of them.
-	     *
-	     * To grow the result we need (jump+iac[i]) in iat then
-	     * append iar then copy iat backto iar
-	     */
-	    IDIO_IA_T iar = idio_ia (l + n * (1 + 9));
-	    IDIO_IA_T iat = idio_ia (l + n * (1 + 9));
-
-	    /*
-	     * 2nd pass, l now includes jump sizes
-	     */
-	    l = 0;
-	    for (i = n - 1; i >= 0 ; i--) {
-		l += IDIO_IA_USIZE (iac[i]);
-		if (l <= IDIO_IA_VARUINT_1BYTE) {
-		    idio_ia_push (iat, IDIO_A_SHORT_JUMP_TRUE);
-		    idio_ia_push (iat, l);
-		} else {
-		    IDIO_IA_T jf = idio_ia_compute_varuint (l);
-		    idio_ia_push (iat, IDIO_A_LONG_JUMP_TRUE);
-		    idio_ia_append (iat, jf);
-		    idio_ia_free (jf);
-		}
-
-		idio_ia_append (iat, iac[i]);
-		idio_ia_free (iac[i]);
-
-		idio_ia_append (iat, iar);
-		idio_ia_copy (iar, iat);
-		IDIO_IA_USIZE (iat) = 0;
-		l = IDIO_IA_USIZE (iar);
-	    }
-
-	    idio_ia_append (ia, iar);
-	    idio_ia_free (iar);
-	    idio_ia_free (iat);
-	}
-	break;
-    case IDIO_I_CODE_BEGIN:
-	{
-	    if (! idio_isa_pair (mt) ||
-		idio_list_length (mt) < 1) {
-		idio_codegen_error_param_args ("BEGIN m+", mt, IDIO_C_FUNC_LOCATION_S ("BEGIN"));
-
-		/* notreached */
-		return;
-	    }
-
-	    while (idio_S_nil != mt) {
-		idio_codegen_compile (thr, ia, cs, IDIO_PAIR_H (mt), depth + 1);
-		mt = IDIO_PAIR_T (mt);
-	    }
 	}
 	break;
     case IDIO_I_CODE_TR_FIX_LET:
@@ -1332,6 +1125,82 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    idio_codegen_compile (thr, ia, cs, m3, depth + 1);
 	    IDIO_IA_PUSH2 (IDIO_A_POP_REG2, IDIO_A_POP_REG1);
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (ins));
+	}
+	break;
+    case IDIO_I_CODE_TR_REGULAR_CALL:
+	{
+	    if (! idio_isa_pair (mt) ||
+		idio_list_length (mt) != 3) {
+		idio_codegen_error_param_args ("TR-REGULAR-CALL e m1 m*", mt, IDIO_C_FUNC_LOCATION_S ("TR-REGULAR-CALL"));
+
+		/* notreached */
+		return;
+	    }
+
+	    IDIO e = IDIO_PAIR_H (mt);
+	    IDIO m1 = IDIO_PAIR_HT (mt);
+	    IDIO ms = IDIO_PAIR_HTT (mt);
+
+	    idio_codegen_compile (thr, ia, cs, m1, depth + 1);
+	    IDIO_IA_PUSH1 (IDIO_A_PUSH_VALUE);
+	    idio_codegen_compile (thr, ia, cs, ms, depth + 1);
+
+	    /*
+	     * NB generate the source code expr describing *this*
+	     * function call after the code describing the argument
+	     * function calls (if any).  Otherwise (+ 1 (length foo))
+	     * means that the source code EXPR for the argument
+	     * expression (length foo) will be the outstanding
+	     * declaration when we come to make *this* function call.
+	     */
+	    IDIO_FLAGS (e) |= IDIO_FLAG_CONST;
+
+	    idio_ai_t mci = idio_codegen_constants_lookup_or_extend (cs, e);
+	    IDIO fmci = idio_fixnum (mci);
+	    idio_module_set_vci (idio_thread_current_env (), fmci, fmci);
+
+	    IDIO_IA_PUSH1 (IDIO_A_POP_EXPR);
+	    IDIO_IA_PUSH_VARUINT (mci);
+
+	    IDIO_IA_PUSH2 (IDIO_A_POP_FUNCTION, IDIO_A_FUNCTION_GOTO);
+	}
+	break;
+    case IDIO_I_CODE_REGULAR_CALL:
+	{
+	    if (! idio_isa_pair (mt) ||
+		idio_list_length (mt) != 3) {
+		idio_codegen_error_param_args ("REGULAR-CALL e m1 m*", mt, IDIO_C_FUNC_LOCATION_S ("REGULAR-CALL"));
+
+		/* notreached */
+		return;
+	    }
+
+	    IDIO e = IDIO_PAIR_H (mt);
+	    IDIO m1 = IDIO_PAIR_HT (mt);
+	    IDIO ms = IDIO_PAIR_HTT (mt);
+
+	    idio_codegen_compile (thr, ia, cs, m1, depth + 1);
+	    IDIO_IA_PUSH1 (IDIO_A_PUSH_VALUE);
+	    idio_codegen_compile (thr, ia, cs, ms, depth + 1);
+
+	    /*
+	     * NB generate the source code expr describing *this*
+	     * function call after the code describing the argument
+	     * function calls (if any).  Otherwise (+ 1 (length foo))
+	     * means that the source code EXPR for the argument
+	     * expression (length foo) will be the outstanding
+	     * declaration when we come to make *this* function call.
+	     */
+	    IDIO_FLAGS (e) |= IDIO_FLAG_CONST;
+
+	    idio_ai_t mci = idio_codegen_constants_lookup_or_extend (cs, e);
+	    IDIO fmci = idio_fixnum (mci);
+	    idio_module_set_vci (idio_thread_current_env (), fmci, fmci);
+
+	    IDIO_IA_PUSH1 (IDIO_A_POP_EXPR);
+	    IDIO_IA_PUSH_VARUINT (mci);
+
+	    IDIO_IA_PUSH4 (IDIO_A_POP_FUNCTION, IDIO_A_PRESERVE_STATE, IDIO_A_FUNCTION_INVOKE, IDIO_A_RESTORE_STATE);
 	}
 	break;
     case IDIO_I_CODE_FIX_CLOSURE:
@@ -1553,82 +1422,6 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    idio_ia_free (iap);
 	}
 	break;
-    case IDIO_I_CODE_TR_REGULAR_CALL:
-	{
-	    if (! idio_isa_pair (mt) ||
-		idio_list_length (mt) != 3) {
-		idio_codegen_error_param_args ("TR-REGULAR-CALL e m1 m*", mt, IDIO_C_FUNC_LOCATION_S ("TR-REGULAR-CALL"));
-
-		/* notreached */
-		return;
-	    }
-
-	    IDIO e = IDIO_PAIR_H (mt);
-	    IDIO m1 = IDIO_PAIR_HT (mt);
-	    IDIO ms = IDIO_PAIR_HTT (mt);
-
-	    idio_codegen_compile (thr, ia, cs, m1, depth + 1);
-	    IDIO_IA_PUSH1 (IDIO_A_PUSH_VALUE);
-	    idio_codegen_compile (thr, ia, cs, ms, depth + 1);
-
-	    /*
-	     * NB generate the source code expr describing *this*
-	     * function call after the code describing the argument
-	     * function calls (if any).  Otherwise (+ 1 (length foo))
-	     * means that the source code EXPR for the argument
-	     * expression (length foo) will be the outstanding
-	     * declaration when we come to make *this* function call.
-	     */
-	    IDIO_FLAGS (e) |= IDIO_FLAG_CONST;
-
-	    idio_ai_t mci = idio_codegen_constants_lookup_or_extend (cs, e);
-	    IDIO fmci = idio_fixnum (mci);
-	    idio_module_set_vci (idio_thread_current_env (), fmci, fmci);
-
-	    IDIO_IA_PUSH1 (IDIO_A_POP_EXPR);
-	    IDIO_IA_PUSH_VARUINT (mci);
-
-	    IDIO_IA_PUSH2 (IDIO_A_POP_FUNCTION, IDIO_A_FUNCTION_GOTO);
-	}
-	break;
-    case IDIO_I_CODE_REGULAR_CALL:
-	{
-	    if (! idio_isa_pair (mt) ||
-		idio_list_length (mt) != 3) {
-		idio_codegen_error_param_args ("REGULAR-CALL e m1 m*", mt, IDIO_C_FUNC_LOCATION_S ("REGULAR-CALL"));
-
-		/* notreached */
-		return;
-	    }
-
-	    IDIO e = IDIO_PAIR_H (mt);
-	    IDIO m1 = IDIO_PAIR_HT (mt);
-	    IDIO ms = IDIO_PAIR_HTT (mt);
-
-	    idio_codegen_compile (thr, ia, cs, m1, depth + 1);
-	    IDIO_IA_PUSH1 (IDIO_A_PUSH_VALUE);
-	    idio_codegen_compile (thr, ia, cs, ms, depth + 1);
-
-	    /*
-	     * NB generate the source code expr describing *this*
-	     * function call after the code describing the argument
-	     * function calls (if any).  Otherwise (+ 1 (length foo))
-	     * means that the source code EXPR for the argument
-	     * expression (length foo) will be the outstanding
-	     * declaration when we come to make *this* function call.
-	     */
-	    IDIO_FLAGS (e) |= IDIO_FLAG_CONST;
-
-	    idio_ai_t mci = idio_codegen_constants_lookup_or_extend (cs, e);
-	    IDIO fmci = idio_fixnum (mci);
-	    idio_module_set_vci (idio_thread_current_env (), fmci, fmci);
-
-	    IDIO_IA_PUSH1 (IDIO_A_POP_EXPR);
-	    IDIO_IA_PUSH_VARUINT (mci);
-
-	    IDIO_IA_PUSH4 (IDIO_A_POP_FUNCTION, IDIO_A_PRESERVE_STATE, IDIO_A_FUNCTION_INVOKE, IDIO_A_RESTORE_STATE);
-	}
-	break;
     case IDIO_I_CODE_STORE_ARGUMENT:
 	{
 	    if (! idio_isa_pair (mt) ||
@@ -1741,19 +1534,6 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (size) + 1);
 	}
 	break;
-    case IDIO_I_CODE_FINISH:
-	{
-	    if (! idio_isa_pair (mt) ||
-		idio_list_length (mt) != 0) {
-		idio_codegen_error_param_args ("FINISH", mt, IDIO_C_FUNC_LOCATION_S ("FINISH"));
-
-		/* notreached */
-		return;
-	    }
-
-	    IDIO_IA_PUSH1 (IDIO_A_FINISH);
-	}
-	break;
     case IDIO_I_CODE_PUSH_DYNAMIC:
 	{
 	    if (! idio_isa_pair (mt) ||
@@ -1793,11 +1573,11 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO_IA_PUSH1 (IDIO_A_POP_DYNAMIC);
 	}
 	break;
-    case IDIO_I_CODE_DYNAMIC_REF:
+    case IDIO_I_CODE_DYNAMIC_SYM_REF:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 1) {
-		idio_codegen_error_param_args ("DYNAMIC-REF mci", mt, IDIO_C_FUNC_LOCATION_S ("DYNAMIC-REF"));
+		idio_codegen_error_param_args ("DYNAMIC-SYM-REF mci", mt, IDIO_C_FUNC_LOCATION_S ("DYNAMIC-SYM-REF"));
 
 		/* notreached */
 		return;
@@ -1806,21 +1586,21 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO mci = IDIO_PAIR_H (mt);
 
 	    if (! idio_isa_fixnum (mci)) {
-		idio_codegen_error_param_type ("fixnum", mci, IDIO_C_FUNC_LOCATION_S ("DYNAMIC-REF"));
+		idio_codegen_error_param_type ("fixnum", mci, IDIO_C_FUNC_LOCATION_S ("DYNAMIC-SYM-REF"));
 
 		/* notreached */
 		return;
 	    }
 
-	    IDIO_IA_PUSH1 (IDIO_A_DYNAMIC_REF);
+	    IDIO_IA_PUSH1 (IDIO_A_DYNAMIC_SYM_REF);
 	    IDIO_IA_PUSH_REF (IDIO_FIXNUM_VAL (mci));
 	}
 	break;
-    case IDIO_I_CODE_DYNAMIC_FUNCTION_REF:
+    case IDIO_I_CODE_DYNAMIC_FUNCTION_SYM_REF:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 1) {
-		idio_codegen_error_param_args ("DYNAMIC-FUNCTION-REF mci", mt, IDIO_C_FUNC_LOCATION_S ("DYNAMIC-FUNCTION-REF"));
+		idio_codegen_error_param_args ("DYNAMIC-FUNCTION-SYM-REF mci", mt, IDIO_C_FUNC_LOCATION_S ("DYNAMIC-FUNCTION-SYM-REF"));
 
 		/* notreached */
 		return;
@@ -1829,13 +1609,13 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO mci = IDIO_PAIR_H (mt);
 
 	    if (! idio_isa_fixnum (mci)) {
-		idio_codegen_error_param_type ("fixnum", mci, IDIO_C_FUNC_LOCATION_S ("DYNAMIC-FUNCTION-REF"));
+		idio_codegen_error_param_type ("fixnum", mci, IDIO_C_FUNC_LOCATION_S ("DYNAMIC-FUNCTION-SYM-REF"));
 
 		/* notreached */
 		return;
 	    }
 
-	    IDIO_IA_PUSH1 (IDIO_A_DYNAMIC_FUNCTION_REF);
+	    IDIO_IA_PUSH1 (IDIO_A_DYNAMIC_FUNCTION_SYM_REF);
 	    IDIO_IA_PUSH_REF (IDIO_FIXNUM_VAL (mci));
 	}
 	break;
@@ -1878,11 +1658,11 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO_IA_PUSH1 (IDIO_A_POP_ENVIRON);
 	}
 	break;
-    case IDIO_I_CODE_ENVIRON_REF:
+    case IDIO_I_CODE_ENVIRON_SYM_REF:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 1) {
-		idio_codegen_error_param_args ("ENVIRON-REF mci", mt, IDIO_C_FUNC_LOCATION_S ("ENVIRON-REF"));
+		idio_codegen_error_param_args ("ENVIRON-SYM-REF mci", mt, IDIO_C_FUNC_LOCATION_S ("ENVIRON-SYM-REF"));
 
 		/* notreached */
 		return;
@@ -1891,13 +1671,13 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO mci = IDIO_PAIR_H (mt);
 
 	    if (! idio_isa_fixnum (mci)) {
-		idio_codegen_error_param_type ("fixnum", mci, IDIO_C_FUNC_LOCATION_S ("ENVIRON-REF"));
+		idio_codegen_error_param_type ("fixnum", mci, IDIO_C_FUNC_LOCATION_S ("ENVIRON-SYM-REF"));
 
 		/* notreached */
 		return;
 	    }
 
-	    IDIO_IA_PUSH1 (IDIO_A_ENVIRON_REF);
+	    IDIO_IA_PUSH1 (IDIO_A_ENVIRON_SYM_REF);
 	    IDIO_IA_PUSH_REF (IDIO_FIXNUM_VAL (mci));
 	}
 	break;
@@ -1934,6 +1714,213 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    }
 
 	    IDIO_IA_PUSH1 (IDIO_A_POP_TRAP);
+	}
+	break;
+    case IDIO_I_CODE_AND:
+	{
+	    if (! idio_isa_pair (mt) ||
+		idio_list_length (mt) < 1) {
+		idio_codegen_error_param_args ("AND m+", mt, IDIO_C_FUNC_LOCATION_S ("AND"));
+
+		/* notreached */
+		return;
+	    }
+
+	    /*
+	     * We don't know how far to jump to the end of the AND
+	     * sequence until we have generated the code for the
+	     * remaining clauses *and* the inter-clause jumps
+	     *
+	     * 1: compile the first clause and append it to ia
+	     * (nothing special here)
+	     *
+	     * 2: We can compile the meaning of each remaining clause
+	     * into iac[].
+	     *
+	     * 3: create a couple of holding buffers: {iat} for the
+	     * per-clause calculations, and {iar} for the accumulated
+	     * result of all the per-clause shuffling
+	     *
+	     * 3: Working *backwards* from n to 1, on behalf of clause
+	     * m-1 we can:
+	     *
+	     *   a: calculate the "jump to the end" which is the
+	     *   accumulated "jump to the end" plus the size of iac[m]
+	     *
+	     *   b: generate the JUMP-FALSE "jump to the end" in a
+	     *   temp buffer, iat
+	     *
+	     *   c: append iac[m] to iat
+	     *
+	     *   d: append iar to iat
+	     *
+	     *   e: copy iat back over iar
+	     *
+	     *   f: set the accumulated "jump to the end" to be the
+	     *   size of iar
+	     *
+	     * 4: append iar to ia
+	     */
+	    IDIO m1 = IDIO_PAIR_H (mt);
+	    mt = IDIO_PAIR_T (mt);
+
+	    idio_codegen_compile (thr, ia, cs, m1, depth + 1);
+
+	    size_t n = idio_list_length (mt);
+
+	    IDIO_IA_T iac[n];
+	    intptr_t i;
+
+	    /*
+	     * 1st pass, l is only the accumulated code size for
+	     * allocating iar/iat
+	     */
+	    size_t l = 0;
+	    for (i = 0; i < n ; i++) {
+		iac[i] = idio_ia (100);
+		idio_codegen_compile (thr, iac[i], cs, IDIO_PAIR_H (mt), depth + 1);
+		l += IDIO_IA_USIZE (iac[i]);
+		mt = IDIO_PAIR_T (mt);
+	    }
+
+	    /*
+	     * How much temporary instruction space?
+	     *
+	     * largest varuint is 9 bytes, jump ins is one and there
+	     * will be n of them.
+	     *
+	     * To grow the result we need (jump+iac[i]) in iat then
+	     * append iar then copy iat back to iar
+	     */
+	    IDIO_IA_T iar = idio_ia (l + n * (1 + 9));
+	    IDIO_IA_T iat = idio_ia (l + n * (1 + 9));
+
+	    /*
+	     * 2nd pass, l now includes jump sizes
+	     */
+	    l = 0;
+	    for (i = n - 1; i >= 0 ; i--) {
+		l += IDIO_IA_USIZE (iac[i]);
+		if (l <= IDIO_IA_VARUINT_1BYTE) {
+		    idio_ia_push (iat, IDIO_A_SHORT_JUMP_FALSE);
+		    idio_ia_push (iat, l);
+		} else {
+		    IDIO_IA_T jf = idio_ia_compute_varuint (l);
+		    idio_ia_push (iat, IDIO_A_LONG_JUMP_FALSE);
+		    idio_ia_append (iat, jf);
+		    idio_ia_free (jf);
+		}
+
+		idio_ia_append (iat, iac[i]);
+		idio_ia_free (iac[i]);
+
+		idio_ia_append (iat, iar);
+		idio_ia_copy (iar, iat);
+		IDIO_IA_USIZE (iat) = 0;
+		l = IDIO_IA_USIZE (iar);
+	    }
+
+
+	    idio_ia_append (ia, iar);
+	    idio_ia_free (iar);
+	    idio_ia_free (iat);
+	}
+	break;
+    case IDIO_I_CODE_OR:
+	{
+	    if (! idio_isa_pair (mt) ||
+		idio_list_length (mt) < 1) {
+		idio_codegen_error_param_args ("OR m+", mt, IDIO_C_FUNC_LOCATION_S ("OR"));
+
+		/* notreached */
+		return;
+	    }
+
+	    /*
+	     * We don't know how far to jump to the end of the OR
+	     * sequence until we have generated the code for the
+	     * remaining clauses *and* the inter-clause jumps
+	     *
+	     * See commentary for IDIO_I_CODE_AND, above
+	     */
+	    IDIO m1 = IDIO_PAIR_H (mt);
+	    mt = IDIO_PAIR_T (mt);
+
+	    idio_codegen_compile (thr, ia, cs, m1, depth + 1);
+
+	    size_t n = idio_list_length (mt);
+
+	    IDIO_IA_T iac[n];
+	    intptr_t i;
+
+	    /*
+	     * 1st pass, l is only the accumulated code size for
+	     * allocating iar/iat
+	     */
+	    size_t l = 0;
+	    for (i = 0; i < n ; i++) {
+		iac[i] = idio_ia (100);
+		idio_codegen_compile (thr, iac[i], cs, IDIO_PAIR_H (mt), depth + 1);
+		l += IDIO_IA_USIZE (iac[i]);
+		mt = IDIO_PAIR_T (mt);
+	    }
+
+	    /*
+	     * How much temporary instruction space?
+	     *
+	     * largest varuint is 9 bytes, jump ins is one and there
+	     * will be n of them.
+	     *
+	     * To grow the result we need (jump+iac[i]) in iat then
+	     * append iar then copy iat backto iar
+	     */
+	    IDIO_IA_T iar = idio_ia (l + n * (1 + 9));
+	    IDIO_IA_T iat = idio_ia (l + n * (1 + 9));
+
+	    /*
+	     * 2nd pass, l now includes jump sizes
+	     */
+	    l = 0;
+	    for (i = n - 1; i >= 0 ; i--) {
+		l += IDIO_IA_USIZE (iac[i]);
+		if (l <= IDIO_IA_VARUINT_1BYTE) {
+		    idio_ia_push (iat, IDIO_A_SHORT_JUMP_TRUE);
+		    idio_ia_push (iat, l);
+		} else {
+		    IDIO_IA_T jf = idio_ia_compute_varuint (l);
+		    idio_ia_push (iat, IDIO_A_LONG_JUMP_TRUE);
+		    idio_ia_append (iat, jf);
+		    idio_ia_free (jf);
+		}
+
+		idio_ia_append (iat, iac[i]);
+		idio_ia_free (iac[i]);
+
+		idio_ia_append (iat, iar);
+		idio_ia_copy (iar, iat);
+		IDIO_IA_USIZE (iat) = 0;
+		l = IDIO_IA_USIZE (iar);
+	    }
+
+	    idio_ia_append (ia, iar);
+	    idio_ia_free (iar);
+	    idio_ia_free (iat);
+	}
+	break;
+    case IDIO_I_CODE_BEGIN:
+	{
+	    if (! idio_isa_pair (mt) ||
+		idio_list_length (mt) < 1) {
+		idio_codegen_error_param_args ("BEGIN m+", mt, IDIO_C_FUNC_LOCATION_S ("BEGIN"));
+
+		/* notreached */
+		return;
+	    }
+
+	    while (idio_S_nil != mt) {
+		idio_codegen_compile (thr, ia, cs, IDIO_PAIR_H (mt), depth + 1);
+		mt = IDIO_PAIR_T (mt);
+	    }
 	}
 	break;
     case IDIO_I_CODE_EXPANDER:
@@ -2031,6 +2018,19 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO_IA_PUSH1 (IDIO_A_POSTFIX_OPERATOR);
 	    IDIO_IA_PUSH_REF (IDIO_FIXNUM_VAL (mci));
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (pri));
+	}
+	break;
+    case IDIO_I_CODE_FINISH:
+	{
+	    if (! idio_isa_pair (mt) ||
+		idio_list_length (mt) != 0) {
+		idio_codegen_error_param_args ("FINISH", mt, IDIO_C_FUNC_LOCATION_S ("FINISH"));
+
+		/* notreached */
+		return;
+	    }
+
+	    IDIO_IA_PUSH1 (IDIO_A_FINISH);
 	}
 	break;
     case IDIO_I_CODE_NOP:

@@ -62,43 +62,43 @@ int idio_type (IDIO o)
 const char *idio_type_enum2string (idio_type_e type)
 {
     switch (type) {
-    case IDIO_TYPE_NONE: return "NONE";
-    case IDIO_TYPE_FIXNUM: return "FIXNUM";
-    case IDIO_TYPE_CONSTANT_IDIO: return "CONSTANT_IDIO";
-    case IDIO_TYPE_CONSTANT_TOKEN: return "CONSTANT_TOKEN";
-    case IDIO_TYPE_CONSTANT_I_CODE: return "CONSTANT_I_CODE";
-    case IDIO_TYPE_CONSTANT_CHARACTER: return "CONSTANT_CHARACTER";
-    case IDIO_TYPE_PLACEHOLDER: return "PLACEHOLDER";
-    case IDIO_TYPE_STRING: return "STRING";
-    case IDIO_TYPE_SUBSTRING: return "SUBSTRING";
-    case IDIO_TYPE_SYMBOL: return "SYMBOL";
-    case IDIO_TYPE_KEYWORD: return "KEYWORD";
-    case IDIO_TYPE_PAIR: return "PAIR";
-    case IDIO_TYPE_ARRAY: return "ARRAY";
-    case IDIO_TYPE_HASH: return "HASH";
-    case IDIO_TYPE_CLOSURE: return "CLOSURE";
-    case IDIO_TYPE_PRIMITIVE: return "PRIMITIVE";
-    case IDIO_TYPE_BIGNUM: return "BIGNUM";
-    case IDIO_TYPE_MODULE: return "MODULE";
-    case IDIO_TYPE_FRAME: return "FRAME";
-    case IDIO_TYPE_HANDLE: return "HANDLE";
-    case IDIO_TYPE_STRUCT_TYPE: return "STRUCT_TYPE";
-    case IDIO_TYPE_STRUCT_INSTANCE: return "STRUCT_INSTANCE";
-    case IDIO_TYPE_THREAD: return "THREAD";
-    case IDIO_TYPE_CONTINUATION: return "CONTINUATION";
+    case IDIO_TYPE_NONE:		return "NONE";
+    case IDIO_TYPE_FIXNUM:		return "FIXNUM";
+    case IDIO_TYPE_CONSTANT_IDIO:	return "CONSTANT_IDIO";
+    case IDIO_TYPE_CONSTANT_TOKEN:	return "CONSTANT_TOKEN";
+    case IDIO_TYPE_CONSTANT_I_CODE:	return "CONSTANT_I_CODE";
+    case IDIO_TYPE_CONSTANT_CHARACTER:	return "CONSTANT_CHARACTER";
+    case IDIO_TYPE_PLACEHOLDER:		return "PLACEHOLDER";
+    case IDIO_TYPE_STRING:		return "STRING";
+    case IDIO_TYPE_SUBSTRING:		return "SUBSTRING";
+    case IDIO_TYPE_SYMBOL:		return "SYMBOL";
+    case IDIO_TYPE_KEYWORD:		return "KEYWORD";
+    case IDIO_TYPE_PAIR:		return "PAIR";
+    case IDIO_TYPE_ARRAY:		return "ARRAY";
+    case IDIO_TYPE_HASH:		return "HASH";
+    case IDIO_TYPE_CLOSURE:		return "CLOSURE";
+    case IDIO_TYPE_PRIMITIVE:		return "PRIMITIVE";
+    case IDIO_TYPE_BIGNUM:		return "BIGNUM";
+    case IDIO_TYPE_MODULE:		return "MODULE";
+    case IDIO_TYPE_FRAME:		return "FRAME";
+    case IDIO_TYPE_HANDLE:		return "HANDLE";
+    case IDIO_TYPE_STRUCT_TYPE:		return "STRUCT_TYPE";
+    case IDIO_TYPE_STRUCT_INSTANCE:	return "STRUCT_INSTANCE";
+    case IDIO_TYPE_THREAD:		return "THREAD";
+    case IDIO_TYPE_CONTINUATION:	return "CONTINUATION";
 
-    case IDIO_TYPE_C_INT: return "C_INT";
-    case IDIO_TYPE_C_UINT: return "C_UINT";
-    case IDIO_TYPE_C_FLOAT: return "C_FLOAT";
-    case IDIO_TYPE_C_DOUBLE: return "C_DOUBLE";
-    case IDIO_TYPE_C_POINTER: return "C_POINTER";
-    case IDIO_TYPE_C_VOID: return "C_VOID";
+    case IDIO_TYPE_C_INT:		return "C_INT";
+    case IDIO_TYPE_C_UINT:		return "C_UINT";
+    case IDIO_TYPE_C_FLOAT:		return "C_FLOAT";
+    case IDIO_TYPE_C_DOUBLE:		return "C_DOUBLE";
+    case IDIO_TYPE_C_POINTER:		return "C_POINTER";
+    case IDIO_TYPE_C_VOID:		return "C_VOID";
 
-    case IDIO_TYPE_C_TYPEDEF: return "TAG";
-    case IDIO_TYPE_C_STRUCT: return "C_STRUCT";
-    case IDIO_TYPE_C_INSTANCE: return "C_INSTANCE";
-    case IDIO_TYPE_C_FFI: return "C_FFI";
-    case IDIO_TYPE_OPAQUE: return "OPAQUE";
+    case IDIO_TYPE_C_TYPEDEF:		return "TAG";
+    case IDIO_TYPE_C_STRUCT:		return "C_STRUCT";
+    case IDIO_TYPE_C_INSTANCE:		return "C_INSTANCE";
+    case IDIO_TYPE_C_FFI:		return "C_FFI";
+    case IDIO_TYPE_OPAQUE:		return "OPAQUE";
     default:
 	IDIO_FPRINTF (stderr, "IDIO_TYPE_ENUM2STRING: unexpected type %d\n", type);
 	return "NOT KNOWN";
@@ -113,10 +113,10 @@ const char *idio_type2string (IDIO o)
     case IDIO_TYPE_CONSTANT_MARK:
 	{
 	    switch ((intptr_t) o & IDIO_TYPE_CONSTANT_MASK) {
-	    case IDIO_TYPE_CONSTANT_IDIO_MARK: return "CONSTANT_IDIO";
-	    case IDIO_TYPE_CONSTANT_TOKEN_MARK: return "CONSTANT_TOKEN";
-	    case IDIO_TYPE_CONSTANT_I_CODE_MARK: return "CONSTANT_I_CODE";
-	    case IDIO_TYPE_CONSTANT_CHARACTER_MARK: return "CONSTANT_CHARACTER";
+	    case IDIO_TYPE_CONSTANT_IDIO_MARK:		return "CONSTANT_IDIO";
+	    case IDIO_TYPE_CONSTANT_TOKEN_MARK:		return "CONSTANT_TOKEN";
+	    case IDIO_TYPE_CONSTANT_I_CODE_MARK:	return "CONSTANT_I_CODE";
+	    case IDIO_TYPE_CONSTANT_CHARACTER_MARK:	return "CONSTANT_CHARACTER";
 	    default:
 		idio_error_C ("idio_type2string: unexpected type", o, IDIO_C_FUNC_LOCATION_S ("CONSTANT"));
 
@@ -821,14 +821,14 @@ char *idio_as_string (IDIO o, int depth)
 		    intptr_t v = IDIO_CONSTANT_TOKEN_VAL (o);
 
 		    switch (v) {
-		    case IDIO_CONSTANT_NIL:                        t = "#n";                          break;
-		    case IDIO_CONSTANT_UNDEF:                      t = "#<undef>";                    break;
-		    case IDIO_CONSTANT_UNSPEC:                     t = "#<unspec>";                   break;
-		    case IDIO_CONSTANT_EOF:                        t = "#<eof>";                      break;
-		    case IDIO_CONSTANT_TRUE:                       t = "#t";                          break;
-		    case IDIO_CONSTANT_FALSE:                      t = "#f";                          break;
-		    case IDIO_CONSTANT_VOID:                       t = "#<void>";                     break;
-		    case IDIO_CONSTANT_NAN:                        t = "#<NaN>";                      break;
+		    case IDIO_CONSTANT_NIL:				t = "#n";				break;
+		    case IDIO_CONSTANT_UNDEF:				t = "#<undef>";				break;
+		    case IDIO_CONSTANT_UNSPEC:				t = "#<unspec>";			break;
+		    case IDIO_CONSTANT_EOF:				t = "#<eof>";				break;
+		    case IDIO_CONSTANT_TRUE:				t = "#t";				break;
+		    case IDIO_CONSTANT_FALSE:				t = "#f";				break;
+		    case IDIO_CONSTANT_VOID:				t = "#<void>";				break;
+		    case IDIO_CONSTANT_NAN:				t = "#<NaN>";				break;
 
 			/*
 			 * We shouldn't really see any of the
@@ -846,11 +846,11 @@ char *idio_as_string (IDIO o, int depth)
 		    case IDIO_STACK_MARKER_DYNAMIC:			t = "#<MARK dynamic>";			break;
 		    case IDIO_STACK_MARKER_ENVIRON:			t = "#<MARK environ>";			break;
 
-		    case IDIO_CONSTANT_TOPLEVEL:                   t = "#<CONST toplevel>";             break;
-		    case IDIO_CONSTANT_PREDEF:                     t = "#<CONST predef>";               break;
-		    case IDIO_CONSTANT_LOCAL:                      t = "#<CONST local>";                break;
-		    case IDIO_CONSTANT_ENVIRON:                    t = "#<CONST environ>";              break;
-		    case IDIO_CONSTANT_COMPUTED:                   t = "#<CONST computed>";             break;
+		    case IDIO_CONSTANT_TOPLEVEL:			t = "#<CONST toplevel>";		break;
+		    case IDIO_CONSTANT_PREDEF:				t = "#<CONST predef>";			break;
+		    case IDIO_CONSTANT_LOCAL:				t = "#<CONST local>";			break;
+		    case IDIO_CONSTANT_ENVIRON:				t = "#<CONST environ>";			break;
+		    case IDIO_CONSTANT_COMPUTED:			t = "#<CONST computed>";		break;
 
 			/*
 			 * There's a pretty strong argument that if
@@ -952,64 +952,83 @@ char *idio_as_string (IDIO o, int depth)
 
 		    switch (v) {
 
-		    case IDIO_I_CODE_SHALLOW_ARGUMENT_REF:        t = "SHALLOW-ARGUMENT-REF";        break;
-		    case IDIO_I_CODE_PREDEFINED:                  t = "PREDEFINED";                  break;
-		    case IDIO_I_CODE_DEEP_ARGUMENT_REF:           t = "DEEP-ARGUMENT-REF";           break;
-		    case IDIO_I_CODE_SHALLOW_ARGUMENT_SET:        t = "SHALLOW-ARGUMENT-SET";        break;
-		    case IDIO_I_CODE_DEEP_ARGUMENT_SET:           t = "DEEP-ARGUMENT-SET";           break;
+		    case IDIO_I_CODE_SHALLOW_ARGUMENT_REF:		t = "SHALLOW-ARGUMENT-REF";		break;
+		    case IDIO_I_CODE_DEEP_ARGUMENT_REF:			t = "DEEP-ARGUMENT-REF";		break;
 
-		    case IDIO_I_CODE_GLOBAL_REF:                  t = "GLOBAL-REF";                  break;
-		    case IDIO_I_CODE_CHECKED_GLOBAL_REF:          t = "CHECKED-GLOBAL-REF";          break;
-		    case IDIO_I_CODE_GLOBAL_FUNCTION_REF:	  t = "GLOBAL-FUNCTION-REF";	     break;
-		    case IDIO_I_CODE_CHECKED_GLOBAL_FUNCTION_REF: t = "CHECKED-GLOBAL-FUNCTION-REF"; break;
-		    case IDIO_I_CODE_GLOBAL_DEF:                  t = "GLOBAL-DEF";                  break;
-		    case IDIO_I_CODE_GLOBAL_SET:                  t = "GLOBAL-SET";                  break;
-		    case IDIO_I_CODE_CONSTANT:                    t = "CONSTANT";                    break;
-		    case IDIO_I_CODE_COMPUTED_REF:                t = "COMPUTED-REF";                break;
-		    case IDIO_I_CODE_COMPUTED_SET:                t = "COMPUTED-SET";                break;
-		    case IDIO_I_CODE_COMPUTED_DEFINE:             t = "COMPUTED-DEFINE";             break;
+		    case IDIO_I_CODE_SHALLOW_ARGUMENT_SET:		t = "SHALLOW-ARGUMENT-SET";		break;
+		    case IDIO_I_CODE_DEEP_ARGUMENT_SET:			t = "DEEP-ARGUMENT-SET";		break;
 
-		    case IDIO_I_CODE_ALTERNATIVE:                 t = "ALTERNATIVE";                 break;
-		    case IDIO_I_CODE_SEQUENCE:                    t = "SEQUENCE";                    break;
-		    case IDIO_I_CODE_TR_FIX_LET:                  t = "TR-FIX-LET";                  break;
-		    case IDIO_I_CODE_FIX_LET:                     t = "FIX-LET";                     break;
-		    case IDIO_I_CODE_PRIMCALL0:                   t = "PRIMCALL0";                   break;
+		    case IDIO_I_CODE_GLOBAL_SYM_REF:			t = "GLOBAL-SYM-REF";			break;
+		    case IDIO_I_CODE_CHECKED_GLOBAL_SYM_REF:		t = "CHECKED-GLOBAL-SYM-REF";		break;
+		    case IDIO_I_CODE_GLOBAL_FUNCTION_SYM_REF:		t  = "GLOBAL-FUNCTION-SYM-REF";		break;
+		    case IDIO_I_CODE_CHECKED_GLOBAL_FUNCTION_SYM_REF:	t = "CHECKED-GLOBAL-FUNCTION-SYM-REF";	break;
+		    case IDIO_I_CODE_CONSTANT_SYM_REF:			t = "CONSTANT";				break;
+		    case IDIO_I_CODE_COMPUTED_SYM_REF:			t = "COMPUTED-SYM-REF";			break;
 
-		    case IDIO_I_CODE_PRIMCALL1:                   t = "PRIMCALL1";                   break;
-		    case IDIO_I_CODE_PRIMCALL2:                   t = "PRIMCALL2";                   break;
-		    case IDIO_I_CODE_PRIMCALL3:                   t = "PRIMCALL3";                   break;
-		    case IDIO_I_CODE_FIX_CLOSURE:                 t = "FIX-CLOSURE";                 break;
-		    case IDIO_I_CODE_NARY_CLOSURE:                t = "NARY-CLOSURE";                break;
+		    case IDIO_I_CODE_GLOBAL_SYM_DEF:			t = "GLOBAL-SYM-DEF";			break;
+		    case IDIO_I_CODE_GLOBAL_SYM_SET:			t = "GLOBAL-SYM-SET";			break;
+		    case IDIO_I_CODE_COMPUTED_SYM_SET:			t = "COMPUTED-SYM-SET";			break;
+		    case IDIO_I_CODE_COMPUTED_SYM_DEFINE:		t = "COMPUTED-SYM-DEFINE";			break;
 
-		    case IDIO_I_CODE_TR_REGULAR_CALL:             t = "TR-REGULAR-CALL";             break;
-		    case IDIO_I_CODE_REGULAR_CALL:                t = "REGULAR-CALL";                break;
-		    case IDIO_I_CODE_STORE_ARGUMENT:              t = "STORE-ARGUMENT";              break;
-		    case IDIO_I_CODE_CONS_ARGUMENT:               t = "CONS-ARGUMENT";               break;
-		    case IDIO_I_CODE_ALLOCATE_FRAME:              t = "ALLOCATE-FRAME";              break;
+		    case IDIO_I_CODE_GLOBAL_VAL_REF:			t = "GLOBAL-VAL-REF";			break;
+		    case IDIO_I_CODE_CHECKED_GLOBAL_VAL_REF:		t = "CHECKED-GLOBAL-VAL-REF";		break;
+		    case IDIO_I_CODE_GLOBAL_FUNCTION_VAL_REF:		t  = "GLOBAL-FUNCTION-VAL-REF";		break;
+		    case IDIO_I_CODE_CHECKED_GLOBAL_FUNCTION_VAL_REF:	t = "CHECKED-GLOBAL-FUNCTION-VAL-REF";	break;
+		    case IDIO_I_CODE_CONSTANT_VAL_REF:			t = "CONSTANT";				break;
+		    case IDIO_I_CODE_COMPUTED_VAL_REF:			t = "COMPUTED-VAL-REF";			break;
 
-		    case IDIO_I_CODE_ALLOCATE_DOTTED_FRAME:       t = "ALLOCATE-DOTTED-FRAME";       break;
-		    case IDIO_I_CODE_FINISH:                      t = "FINISH";                      break;
-		    case IDIO_I_CODE_PUSH_DYNAMIC:                t = "PUSH-DYNAMIC";                break;
-		    case IDIO_I_CODE_POP_DYNAMIC:                 t = "POP-DYNAMIC";                 break;
-		    case IDIO_I_CODE_DYNAMIC_REF:                 t = "DYNAMIC-REF";                 break;
-		    case IDIO_I_CODE_DYNAMIC_FUNCTION_REF:        t = "DYNAMIC-FUNCTION-REF";        break;
+		    case IDIO_I_CODE_GLOBAL_VAL_DEF:			t = "GLOBAL-VAL-DEF";			break;
+		    case IDIO_I_CODE_GLOBAL_VAL_SET:			t = "GLOBAL-VAL-SET";			break;
+		    case IDIO_I_CODE_COMPUTED_VAL_SET:			t = "COMPUTED-VAL-SET";			break;
+		    case IDIO_I_CODE_COMPUTED_VAL_DEFINE:		t = "COMPUTED-VAL-DEFINE";			break;
 
-		    case IDIO_I_CODE_PUSH_ENVIRON:                t = "PUSH-ENVIRON";                break;
-		    case IDIO_I_CODE_POP_ENVIRON:                 t = "POP-ENVIRON";                 break;
-		    case IDIO_I_CODE_ENVIRON_REF:                 t = "ENVIRON-REF";                 break;
+		    case IDIO_I_CODE_PREDEFINED:			t = "PREDEFINED";			break;
+		    case IDIO_I_CODE_ALTERNATIVE:			t = "ALTERNATIVE";			break;
+		    case IDIO_I_CODE_SEQUENCE:				t = "SEQUENCE";				break;
+		    case IDIO_I_CODE_TR_FIX_LET:			t = "TR-FIX-LET";			break;
+		    case IDIO_I_CODE_FIX_LET:				t = "FIX-LET";				break;
 
-		    case IDIO_I_CODE_PUSH_TRAP:                   t = "PUSH-TRAP";		     break;
-		    case IDIO_I_CODE_POP_TRAP:                    t = "POP-TRAP";		     break;
+		    case IDIO_I_CODE_PRIMCALL0:				t = "PRIMCALL0";			break;
+		    case IDIO_I_CODE_PRIMCALL1:				t = "PRIMCALL1";			break;
+		    case IDIO_I_CODE_PRIMCALL2:				t = "PRIMCALL2";			break;
+		    case IDIO_I_CODE_PRIMCALL3:				t = "PRIMCALL3";			break;
+		    case IDIO_I_CODE_TR_REGULAR_CALL:			t = "TR-REGULAR-CALL";			break;
+		    case IDIO_I_CODE_REGULAR_CALL:			t = "REGULAR-CALL";			break;
 
-		    case IDIO_I_CODE_AND:                         t = "AND";                         break;
-		    case IDIO_I_CODE_OR:                          t = "OR";                          break;
-		    case IDIO_I_CODE_BEGIN:                       t = "BEGIN";                       break;
+		    case IDIO_I_CODE_FIX_CLOSURE:			t = "FIX-CLOSURE";			break;
+		    case IDIO_I_CODE_NARY_CLOSURE:			t = "NARY-CLOSURE";			break;
 
-		    case IDIO_I_CODE_EXPANDER:                    t = "EXPANDER";                    break;
-		    case IDIO_I_CODE_INFIX_OPERATOR:              t = "INFIX-OPERATOR";              break;
-		    case IDIO_I_CODE_POSTFIX_OPERATOR:            t = "POSTFIX-OPERATOR";            break;
+		    case IDIO_I_CODE_STORE_ARGUMENT:			t = "STORE-ARGUMENT";			break;
+		    case IDIO_I_CODE_CONS_ARGUMENT:			t = "CONS-ARGUMENT";			break;
 
-		    case IDIO_I_CODE_NOP:                         t = "NOP";                         break;
+		    case IDIO_I_CODE_ALLOCATE_FRAME:			t = "ALLOCATE-FRAME";			break;
+		    case IDIO_I_CODE_ALLOCATE_DOTTED_FRAME:		t = "ALLOCATE-DOTTED-FRAME";		break;
+
+		    case IDIO_I_CODE_DYNAMIC_SYM_REF:			t = "DYNAMIC-SYM-REF";			break;
+		    case IDIO_I_CODE_DYNAMIC_FUNCTION_SYM_REF:		t = "DYNAMIC-FUNCTION-SYM-REF";		break;
+		    case IDIO_I_CODE_DYNAMIC_VAL_REF:			t = "DYNAMIC-VAL-REF";			break;
+		    case IDIO_I_CODE_DYNAMIC_FUNCTION_VAL_REF:		t = "DYNAMIC-FUNCTION-VAL-REF";		break;
+		    case IDIO_I_CODE_PUSH_DYNAMIC:			t = "PUSH-DYNAMIC";			break;
+		    case IDIO_I_CODE_POP_DYNAMIC:			t = "POP-DYNAMIC";			break;
+
+		    case IDIO_I_CODE_ENVIRON_SYM_REF:			t = "ENVIRON-SYM-REF";			break;
+		    case IDIO_I_CODE_ENVIRON_VAL_REF:			t = "ENVIRON-VAL-REF";			break;
+		    case IDIO_I_CODE_PUSH_ENVIRON:			t = "PUSH-ENVIRON";			break;
+		    case IDIO_I_CODE_POP_ENVIRON:			t = "POP-ENVIRON";			break;
+
+		    case IDIO_I_CODE_PUSH_TRAP:				t = "PUSH-TRAP";			break;
+		    case IDIO_I_CODE_POP_TRAP:				t = "POP-TRAP";				break;
+
+		    case IDIO_I_CODE_AND:				t = "AND";				break;
+		    case IDIO_I_CODE_OR:				t = "OR";				break;
+		    case IDIO_I_CODE_BEGIN:				t = "BEGIN";				break;
+
+		    case IDIO_I_CODE_EXPANDER:				t = "EXPANDER";				break;
+		    case IDIO_I_CODE_INFIX_OPERATOR:			t = "INFIX-OPERATOR";			break;
+		    case IDIO_I_CODE_POSTFIX_OPERATOR:			t = "POSTFIX-OPERATOR";			break;
+
+		    case IDIO_I_CODE_FINISH:				t = "FINISH";				break;
+		    case IDIO_I_CODE_NOP:				t = "NOP";				break;
 
 		    default:
 			if (sprintf (m, "#<type/constant/vm_code?? o=%10p v=%lx>", o, v) == -1) {
@@ -1979,158 +1998,175 @@ const char *idio_vm_bytecode2string (int code)
     char *r;
 
     switch (code) {
-    case IDIO_A_SHALLOW_ARGUMENT_REF0:		r = "SHALLOW-ARGUMENT-REF0"; break;
-    case IDIO_A_SHALLOW_ARGUMENT_REF1:		r = "SHALLOW-ARGUMENT-REF1"; break;
-    case IDIO_A_SHALLOW_ARGUMENT_REF2:		r = "SHALLOW-ARGUMENT-REF2"; break;
-    case IDIO_A_SHALLOW_ARGUMENT_REF3:		r = "SHALLOW-ARGUMENT-REF3"; break;
-    case IDIO_A_SHALLOW_ARGUMENT_REF:		r = "SHALLOW-ARGUMENT-REF"; break;
-    case IDIO_A_DEEP_ARGUMENT_REF:		r = "DEEP-ARGUMENT-REF"; break;
-    case IDIO_A_GLOBAL_REF:			r = "GLOBAL-REF"; break;
-    case IDIO_A_CHECKED_GLOBAL_REF:		r = "CHECKED-GLOBAL-REF"; break;
-    case IDIO_A_GLOBAL_FUNCTION_REF:		r = "GLOBAL-FUNCTION-REF"; break;
-    case IDIO_A_CHECKED_GLOBAL_FUNCTION_REF:	r = "CHECKED-GLOBAL-FUNCTION-REF"; break;
-    case IDIO_A_CONSTANT_REF:			r = "CONSTANT-REF"; break;
-    case IDIO_A_PREDEFINED0:			r = "PREDEFINED0"; break;
+    case IDIO_A_SHALLOW_ARGUMENT_REF0:			r = "SHALLOW-ARGUMENT-REF0";		break;
+    case IDIO_A_SHALLOW_ARGUMENT_REF1:			r = "SHALLOW-ARGUMENT-REF1";		break;
+    case IDIO_A_SHALLOW_ARGUMENT_REF2:			r = "SHALLOW-ARGUMENT-REF2";		break;
+    case IDIO_A_SHALLOW_ARGUMENT_REF3:			r = "SHALLOW-ARGUMENT-REF3";		break;
+    case IDIO_A_SHALLOW_ARGUMENT_REF:			r = "SHALLOW-ARGUMENT-REF";		break;
+    case IDIO_A_DEEP_ARGUMENT_REF:			r = "DEEP-ARGUMENT-REF";		break;
 
-    case IDIO_A_COMPUTED_REF:			r = "COMPUTED-REF"; break;
-    case IDIO_A_PREDEFINED1:			r = "PREDEFINED1"; break;
-    case IDIO_A_PREDEFINED2:			r = "PREDEFINED2"; break;
-    case IDIO_A_PREDEFINED3:			r = "PREDEFINED3"; break;
-    case IDIO_A_PREDEFINED4:			r = "PREDEFINED4"; break;
-    case IDIO_A_PREDEFINED5:			r = "PREDEFINED5"; break;
-    case IDIO_A_PREDEFINED6:			r = "PREDEFINED6"; break;
-    case IDIO_A_PREDEFINED7:			r = "PREDEFINED7"; break;
-    case IDIO_A_PREDEFINED8:			r = "PREDEFINED8"; break;
-    case IDIO_A_PREDEFINED:			r = "PREDEFINED"; break;
+    case IDIO_A_SHALLOW_ARGUMENT_SET0:			r = "SHALLOW-ARGUMENT-SET0";		break;
+    case IDIO_A_SHALLOW_ARGUMENT_SET1:			r = "SHALLOW-ARGUMENT-SET1";		break;
+    case IDIO_A_SHALLOW_ARGUMENT_SET2:			r = "SHALLOW-ARGUMENT-SET2";		break;
+    case IDIO_A_SHALLOW_ARGUMENT_SET3:			r = "SHALLOW-ARGUMENT-SET3";		break;
+    case IDIO_A_SHALLOW_ARGUMENT_SET:			r = "SHALLOW-ARGUMENT-SET";		break;
+    case IDIO_A_DEEP_ARGUMENT_SET:			r = "DEEP-ARGUMENT-SET";		break;
 
-    case IDIO_A_SHALLOW_ARGUMENT_SET0:		r = "SHALLOW-ARGUMENT-SET0"; break;
-    case IDIO_A_SHALLOW_ARGUMENT_SET1:		r = "SHALLOW-ARGUMENT-SET1"; break;
-    case IDIO_A_SHALLOW_ARGUMENT_SET2:		r = "SHALLOW-ARGUMENT-SET2"; break;
-    case IDIO_A_SHALLOW_ARGUMENT_SET3:		r = "SHALLOW-ARGUMENT-SET3"; break;
-    case IDIO_A_SHALLOW_ARGUMENT_SET:		r = "SHALLOW-ARGUMENT-SET"; break;
-    case IDIO_A_DEEP_ARGUMENT_SET:		r = "DEEP-ARGUMENT-SET"; break;
-    case IDIO_A_GLOBAL_DEF:			r = "GLOBAL-DEF"; break;
-    case IDIO_A_GLOBAL_SET:			r = "GLOBAL-SET"; break;
-    case IDIO_A_COMPUTED_SET:			r = "COMPUTED-SET"; break;
-    case IDIO_A_COMPUTED_DEFINE:		r = "COMPUTED-DEFINE"; break;
+    case IDIO_A_GLOBAL_SYM_REF:				r = "GLOBAL-SYM-REF";			break;
+    case IDIO_A_CHECKED_GLOBAL_SYM_REF:			r = "CHECKED-GLOBAL-SYM-REF";		break;
+    case IDIO_A_GLOBAL_FUNCTION_SYM_REF:		r = "GLOBAL-FUNCTION-SYM-REF";		break;
+    case IDIO_A_CHECKED_GLOBAL_FUNCTION_SYM_REF:	r = "CHECKED-GLOBAL-FUNCTION-SYM-REF";	break;
+    case IDIO_A_CONSTANT_SYM_REF:			r = "CONSTANT-SYM-REF";			break;
+    case IDIO_A_COMPUTED_SYM_REF:			r = "COMPUTED-SYM-REF";			break;
 
-    case IDIO_A_LONG_GOTO:			r = "LONG-GOTO"; break;
-    case IDIO_A_LONG_JUMP_FALSE:		r = "LONG-JUMP-FALSE"; break;
-    case IDIO_A_SHORT_GOTO:			r = "SHORT-GOTO"; break;
-    case IDIO_A_SHORT_JUMP_FALSE:		r = "SHORT-JUMP-FALSE"; break;
+    case IDIO_A_GLOBAL_SYM_DEF:				r = "GLOBAL-SYM-DEF";			break;
+    case IDIO_A_GLOBAL_SYM_SET:				r = "GLOBAL-SYM-SET";			break;
+    case IDIO_A_COMPUTED_SYM_SET:			r = "COMPUTED-SYM-SET";			break;
+    case IDIO_A_COMPUTED_SYM_DEFINE:			r = "COMPUTED-SYM-DEFINE";		break;
 
-    case IDIO_A_PUSH_VALUE:			r = "PUSH-VALUE"; break;
-    case IDIO_A_POP_VALUE:			r = "POP-VALUE"; break;
-    case IDIO_A_POP_REG1:			r = "POP-REG1"; break;
-    case IDIO_A_POP_REG2:			r = "POP-REG2"; break;
-    case IDIO_A_POP_EXPR:			r = "POP-EXPR"; break;
-    case IDIO_A_POP_FUNCTION:			r = "POP-FUNCTION"; break;
-    case IDIO_A_PRESERVE_STATE:			r = "PRESERVE-STATE"; break;
-    case IDIO_A_RESTORE_STATE:			r = "RESTORE-STATE"; break;
-    case IDIO_A_CREATE_CLOSURE:			r = "CREATE-CLOSURE"; break;
+    case IDIO_A_GLOBAL_VAL_REF:				r = "GLOBAL-VAL-REF";			break;
+    case IDIO_A_CHECKED_GLOBAL_VAL_REF:			r = "CHECKED-GLOBAL-VAL-REF";		break;
+    case IDIO_A_GLOBAL_FUNCTION_VAL_REF:		r = "GLOBAL-FUNCTION-VAL-REF";		break;
+    case IDIO_A_CHECKED_GLOBAL_FUNCTION_VAL_REF:	r = "CHECKED-GLOBAL-FUNCTION-VAL-REF";	break;
+    case IDIO_A_CONSTANT_VAL_REF:			r = "CONSTANT-VAL-REF";			break;
+    case IDIO_A_COMPUTED_VAL_REF:			r = "COMPUTED-VAL-REF";			break;
 
-    case IDIO_A_RESTORE_ALL_STATE:		r = "RESTORE-ALL-STATE"; break;
-    case IDIO_A_FUNCTION_INVOKE:		r = "FUNCTION-INVOKE"; break;
-    case IDIO_A_FUNCTION_GOTO:			r = "FUNCTION-GOTO"; break;
-    case IDIO_A_RETURN:				r = "RETURN"; break;
-    case IDIO_A_FINISH:				r = "FINISH"; break;
+    case IDIO_A_GLOBAL_VAL_DEF:				r = "GLOBAL-VAL-DEF";			break;
+    case IDIO_A_GLOBAL_VAL_SET:				r = "GLOBAL-VAL-SET";			break;
+    case IDIO_A_COMPUTED_VAL_SET:			r = "COMPUTED-VAL-SET";			break;
+    case IDIO_A_COMPUTED_VAL_DEFINE:			r = "COMPUTED-VAL-DEFINE";		break;
 
-    case IDIO_A_ALLOCATE_FRAME1:		r = "ALLOCATE-FRAME1"; break;
-    case IDIO_A_ALLOCATE_FRAME2:		r = "ALLOCATE-FRAME2"; break;
-    case IDIO_A_ALLOCATE_FRAME3:		r = "ALLOCATE-FRAME3"; break;
-    case IDIO_A_ALLOCATE_FRAME4:		r = "ALLOCATE-FRAME4"; break;
-    case IDIO_A_ALLOCATE_FRAME5:		r = "ALLOCATE-FRAME5"; break;
-    case IDIO_A_ALLOCATE_FRAME:			r = "ALLOCATE-FRAME"; break;
-    case IDIO_A_POP_FRAME0:			r = "POP-FRAME0"; break;
+    case IDIO_A_PREDEFINED0:				r = "PREDEFINED0";			break;
+    case IDIO_A_PREDEFINED1:				r = "PREDEFINED1";			break;
+    case IDIO_A_PREDEFINED2:				r = "PREDEFINED2";			break;
+    case IDIO_A_PREDEFINED3:				r = "PREDEFINED3";			break;
+    case IDIO_A_PREDEFINED4:				r = "PREDEFINED4";			break;
+    case IDIO_A_PREDEFINED5:				r = "PREDEFINED5";			break;
+    case IDIO_A_PREDEFINED6:				r = "PREDEFINED6";			break;
+    case IDIO_A_PREDEFINED7:				r = "PREDEFINED7";			break;
+    case IDIO_A_PREDEFINED8:				r = "PREDEFINED8";			break;
+    case IDIO_A_PREDEFINED:				r = "PREDEFINED";			break;
 
-    case IDIO_A_ALLOCATE_DOTTED_FRAME:		r = "ALLOCATE-DOTTED-FRAME"; break;
-    case IDIO_A_POP_FRAME1:			r = "POP-FRAME1"; break;
-    case IDIO_A_POP_FRAME2:			r = "POP-FRAME2"; break;
-    case IDIO_A_POP_FRAME3:			r = "POP-FRAME3"; break;
-    case IDIO_A_EXTEND_FRAME:			r = "EXTEND-FRAME"; break;
+    case IDIO_A_LONG_GOTO:				r = "LONG-GOTO";			break;
+    case IDIO_A_LONG_JUMP_FALSE:			r = "LONG-JUMP-FALSE";			break;
+    case IDIO_A_SHORT_GOTO:				r = "SHORT-GOTO";			break;
+    case IDIO_A_SHORT_JUMP_FALSE:			r = "SHORT-JUMP-FALSE";			break;
 
-    case IDIO_A_POP_FRAME:			r = "POP-FRAME"; break;
-    case IDIO_A_UNLINK_FRAME:			r = "UNLINK-FRAME"; break;
-    case IDIO_A_PACK_FRAME:			r = "PACK-FRAME"; break;
-    case IDIO_A_POP_CONS_FRAME:			r = "POP-CONS-FRAME"; break;
+    case IDIO_A_PUSH_VALUE:				r = "PUSH-VALUE";			break;
+    case IDIO_A_POP_VALUE:				r = "POP-VALUE";			break;
+    case IDIO_A_POP_REG1:				r = "POP-REG1";				break;
+    case IDIO_A_POP_REG2:				r = "POP-REG2";				break;
+    case IDIO_A_POP_EXPR:				r = "POP-EXPR";				break;
+    case IDIO_A_POP_FUNCTION:				r = "POP-FUNCTION";			break;
+    case IDIO_A_PRESERVE_STATE:				r = "PRESERVE-STATE";			break;
+    case IDIO_A_RESTORE_STATE:				r = "RESTORE-STATE";			break;
+    case IDIO_A_RESTORE_ALL_STATE:			r = "RESTORE-ALL-STATE";		break;
 
-    case IDIO_A_ARITY1P:			r = "ARITY1P"; break;
-    case IDIO_A_ARITY2P:			r = "ARITY2P"; break;
-    case IDIO_A_ARITY3P:			r = "ARITY3P"; break;
-    case IDIO_A_ARITY4P:			r = "ARITY4P"; break;
-    case IDIO_A_ARITYEQP:			r = "ARITYEQP"; break;
-    case IDIO_A_ARITYGEP:			r = "ARITYGEP"; break;
+    case IDIO_A_CREATE_CLOSURE:				r = "CREATE-CLOSURE";			break;
+    case IDIO_A_FUNCTION_INVOKE:			r = "FUNCTION-INVOKE";			break;
+    case IDIO_A_FUNCTION_GOTO:				r = "FUNCTION-GOTO";			break;
+    case IDIO_A_RETURN:					r = "RETURN";				break;
+    case IDIO_A_FINISH:					r = "FINISH";				break;
 
-    case IDIO_A_SHORT_NUMBER:			r = "SHORT-NUMBER"; break;
-    case IDIO_A_SHORT_NEG_NUMBER:		r = "SHORT-NEG-NUMBER"; break;
-    case IDIO_A_CONSTANT_0:			r = "CONSTANT-0"; break;
-    case IDIO_A_CONSTANT_1:			r = "CONSTANT-1"; break;
-    case IDIO_A_CONSTANT_2:			r = "CONSTANT-2"; break;
-    case IDIO_A_CONSTANT_3:			r = "CONSTANT-3"; break;
-    case IDIO_A_CONSTANT_4:			r = "CONSTANT-4"; break;
+    case IDIO_A_ALLOCATE_FRAME1:			r = "ALLOCATE-FRAME1";			break;
+    case IDIO_A_ALLOCATE_FRAME2:			r = "ALLOCATE-FRAME2";			break;
+    case IDIO_A_ALLOCATE_FRAME3:			r = "ALLOCATE-FRAME3";			break;
+    case IDIO_A_ALLOCATE_FRAME4:			r = "ALLOCATE-FRAME4";			break;
+    case IDIO_A_ALLOCATE_FRAME5:			r = "ALLOCATE-FRAME5";			break;
+    case IDIO_A_ALLOCATE_FRAME:				r = "ALLOCATE-FRAME";			break;
+    case IDIO_A_ALLOCATE_DOTTED_FRAME:			r = "ALLOCATE-DOTTED-FRAME";		break;
 
-    case IDIO_A_PRIMCALL0_NEWLINE:		r = "PRIMCALL0-NEWLINE"; break;
-    case IDIO_A_PRIMCALL0_READ:			r = "PRIMCALL0-READ"; break;
-    case IDIO_A_PRIMCALL1_HEAD:			r = "PRIMCALL1-HEAD"; break;
-    case IDIO_A_PRIMCALL1_TAIL:			r = "PRIMCALL1-TAIL"; break;
-    case IDIO_A_PRIMCALL1_PAIRP:		r = "PRIMCALL1-PAIRP"; break;
-    case IDIO_A_PRIMCALL1_SYMBOLP:		r = "PRIMCALL1-SYMBOLP"; break;
-    case IDIO_A_PRIMCALL1_DISPLAY:		r = "PRIMCALL1-DISPLAY"; break;
-    case IDIO_A_PRIMCALL1_PRIMITIVEP:		r = "PRIMCALL1-PRIMITIVEP"; break;
-    case IDIO_A_PRIMCALL1_NULLP:		r = "PRIMCALL1-NULLP"; break;
-    case IDIO_A_PRIMCALL1_CONTINUATIONP:	r = "PRIMCALL1-CONTINUATIONP"; break;
-    case IDIO_A_PRIMCALL1_EOFP:			r = "PRIMCALL1-EOFP"; break;
-    case IDIO_A_PRIMCALL1_SET_CUR_MOD:		r = "PRIMCALL1-SET-CUR-MOD"; break;
-    case IDIO_A_PRIMCALL2_PAIR:			r = "PRIMCALL2-PAIR"; break;
-    case IDIO_A_PRIMCALL2_EQP:			r = "PRIMCALL2-EQP"; break;
-    case IDIO_A_PRIMCALL2_SET_HEAD:		r = "PRIMCALL2-SET-HEAD"; break;
-    case IDIO_A_PRIMCALL2_SET_TAIL:		r = "PRIMCALL2-SET-TAIL"; break;
-    case IDIO_A_PRIMCALL2_ADD:			r = "PRIMCALL2-ADD"; break;
-    case IDIO_A_PRIMCALL2_SUBTRACT:		r = "PRIMCALL2-SUBTRACT"; break;
-    case IDIO_A_PRIMCALL2_EQ:			r = "PRIMCALL2-EQ"; break;
-    case IDIO_A_PRIMCALL2_LT:			r = "PRIMCALL2-LT"; break;
-    case IDIO_A_PRIMCALL2_GT:			r = "PRIMCALL2-GT"; break;
-    case IDIO_A_PRIMCALL2_MULTIPLY:		r = "PRIMCALL2-MULTIPLY"; break;
-    case IDIO_A_PRIMCALL2_LE:			r = "PRIMCALL2-LE"; break;
-    case IDIO_A_PRIMCALL2_GE:			r = "PRIMCALL2-GE"; break;
-    case IDIO_A_PRIMCALL2_REMAINDER:		r = "PRIMCALL2-REMAINDER"; break;
+    case IDIO_A_POP_FRAME0:				r = "POP-FRAME0";			break;
+    case IDIO_A_POP_FRAME1:				r = "POP-FRAME1";			break;
+    case IDIO_A_POP_FRAME2:				r = "POP-FRAME2";			break;
+    case IDIO_A_POP_FRAME3:				r = "POP-FRAME3";			break;
+    case IDIO_A_POP_FRAME:				r = "POP-FRAME";			break;
 
-    case IDIO_A_NOP:				r = "NOP"; break;
-    case IDIO_A_PRIMCALL0:			r = "PRIMCALL0"; break;
-    case IDIO_A_PRIMCALL1:			r = "PRIMCALL1"; break;
-    case IDIO_A_PRIMCALL2:			r = "PRIMCALL2"; break;
-    case IDIO_A_PRIMCALL3:			r = "PRIMCALL3"; break;
-    case IDIO_A_PRIMCALL:			r = "PRIMCALL"; break;
+    case IDIO_A_EXTEND_FRAME:				r = "EXTEND-FRAME";			break;
+    case IDIO_A_UNLINK_FRAME:				r = "UNLINK-FRAME";			break;
+    case IDIO_A_PACK_FRAME:				r = "PACK-FRAME";			break;
+    case IDIO_A_POP_CONS_FRAME:				r = "POP-CONS-FRAME";			break;
 
-    case IDIO_A_LONG_JUMP_TRUE:			r = "LONG-JUMP-TRUE"; break;
-    case IDIO_A_SHORT_JUMP_TRUE:		r = "SHORT-JUMP-TRUE"; break;
-    case IDIO_A_FIXNUM:				r = "FIXNUM"; break;
-    case IDIO_A_NEG_FIXNUM:			r = "NEG-FIXNUM"; break;
-    case IDIO_A_CHARACTER:			r = "CHARACTER"; break;
-    case IDIO_A_NEG_CHARACTER:			r = "NEG-CHARACTER"; break;
-    case IDIO_A_CONSTANT:			r = "CONSTANT"; break;
-    case IDIO_A_NEG_CONSTANT:			r = "NEG-CONSTANT"; break;
+    case IDIO_A_ARITY1P:				r = "ARITY1P";				break;
+    case IDIO_A_ARITY2P:				r = "ARITY2P";				break;
+    case IDIO_A_ARITY3P:				r = "ARITY3P";				break;
+    case IDIO_A_ARITY4P:				r = "ARITY4P";				break;
+    case IDIO_A_ARITYEQP:				r = "ARITYEQP";				break;
+    case IDIO_A_ARITYGEP:				r = "ARITYGEP";				break;
 
-    case IDIO_A_EXPANDER:			r = "EXPANDER"; break;
-    case IDIO_A_INFIX_OPERATOR:			r = "INFIX-OPERATOR"; break;
-    case IDIO_A_POSTFIX_OPERATOR:		r = "POSTFIX-OPERATOR"; break;
+    case IDIO_A_SHORT_NUMBER:				r = "SHORT-NUMBER";			break;
+    case IDIO_A_SHORT_NEG_NUMBER:			r = "SHORT-NEG-NUMBER";			break;
+    case IDIO_A_CONSTANT_0:				r = "CONSTANT-0";			break;
+    case IDIO_A_CONSTANT_1:				r = "CONSTANT-1";			break;
+    case IDIO_A_CONSTANT_2:				r = "CONSTANT-2";			break;
+    case IDIO_A_CONSTANT_3:				r = "CONSTANT-3";			break;
+    case IDIO_A_CONSTANT_4:				r = "CONSTANT-4";			break;
 
-    case IDIO_A_DYNAMIC_REF:			r = "DYNAMIC-REF"; break;
-    case IDIO_A_DYNAMIC_FUNCTION_REF:		r = "DYNAMIC-FUNCTION-REF"; break;
-    case IDIO_A_POP_DYNAMIC:			r = "POP-DYNAMIC"; break;
-    case IDIO_A_PUSH_DYNAMIC:			r = "PUSH-DYNAMIC"; break;
+    case IDIO_A_PRIMCALL0_NEWLINE:			r = "PRIMCALL0-NEWLINE";		break;
+    case IDIO_A_PRIMCALL0_READ:				r = "PRIMCALL0-READ";			break;
+    case IDIO_A_PRIMCALL1_HEAD:				r = "PRIMCALL1-HEAD";			break;
+    case IDIO_A_PRIMCALL1_TAIL:				r = "PRIMCALL1-TAIL";			break;
+    case IDIO_A_PRIMCALL1_PAIRP:			r = "PRIMCALL1-PAIRP";			break;
+    case IDIO_A_PRIMCALL1_SYMBOLP:			r = "PRIMCALL1-SYMBOLP";		break;
+    case IDIO_A_PRIMCALL1_DISPLAY:			r = "PRIMCALL1-DISPLAY";		break;
+    case IDIO_A_PRIMCALL1_PRIMITIVEP:			r = "PRIMCALL1-PRIMITIVEP";		break;
+    case IDIO_A_PRIMCALL1_NULLP:			r = "PRIMCALL1-NULLP";			break;
+    case IDIO_A_PRIMCALL1_CONTINUATIONP:		r = "PRIMCALL1-CONTINUATIONP";		break;
+    case IDIO_A_PRIMCALL1_EOFP:				r = "PRIMCALL1-EOFP";			break;
+    case IDIO_A_PRIMCALL1_SET_CUR_MOD:			r = "PRIMCALL1-SET-CUR-MOD";		break;
+    case IDIO_A_PRIMCALL2_PAIR:				r = "PRIMCALL2-PAIR";			break;
+    case IDIO_A_PRIMCALL2_EQP:				r = "PRIMCALL2-EQP";			break;
+    case IDIO_A_PRIMCALL2_SET_HEAD:			r = "PRIMCALL2-SET-HEAD";		break;
+    case IDIO_A_PRIMCALL2_SET_TAIL:			r = "PRIMCALL2-SET-TAIL";		break;
+    case IDIO_A_PRIMCALL2_ADD:				r = "PRIMCALL2-ADD";			break;
+    case IDIO_A_PRIMCALL2_SUBTRACT:			r = "PRIMCALL2-SUBTRACT";		break;
+    case IDIO_A_PRIMCALL2_EQ:				r = "PRIMCALL2-EQ";			break;
+    case IDIO_A_PRIMCALL2_LT:				r = "PRIMCALL2-LT";			break;
+    case IDIO_A_PRIMCALL2_GT:				r = "PRIMCALL2-GT";			break;
+    case IDIO_A_PRIMCALL2_MULTIPLY:			r = "PRIMCALL2-MULTIPLY";		break;
+    case IDIO_A_PRIMCALL2_LE:				r = "PRIMCALL2-LE";			break;
+    case IDIO_A_PRIMCALL2_GE:				r = "PRIMCALL2-GE";			break;
+    case IDIO_A_PRIMCALL2_REMAINDER:			r = "PRIMCALL2-REMAINDER";		break;
 
-    case IDIO_A_ENVIRON_REF:			r = "ENVIRON-REF"; break;
-    case IDIO_A_POP_ENVIRON:			r = "POP-ENVIRON"; break;
-    case IDIO_A_PUSH_ENVIRON:			r = "PUSH-ENVIRON"; break;
+    case IDIO_A_NOP:					r = "NOP";				break;
+    case IDIO_A_PRIMCALL0:				r = "PRIMCALL0";			break;
+    case IDIO_A_PRIMCALL1:				r = "PRIMCALL1";			break;
+    case IDIO_A_PRIMCALL2:				r = "PRIMCALL2";			break;
+    case IDIO_A_PRIMCALL3:				r = "PRIMCALL3";			break;
+    case IDIO_A_PRIMCALL:				r = "PRIMCALL";				break;
 
-    case IDIO_A_NON_CONT_ERR:			r = "NON-CONT-ERR"; break;
-    case IDIO_A_PUSH_TRAP:			r = "PUSH-TRAP"; break;
-    case IDIO_A_POP_TRAP:			r = "POP-TRAP"; break;
-    case IDIO_A_RESTORE_TRAP:			r = "RESTORE-TRAP"; break;
+    case IDIO_A_LONG_JUMP_TRUE:				r = "LONG-JUMP-TRUE";			break;
+    case IDIO_A_SHORT_JUMP_TRUE:			r = "SHORT-JUMP-TRUE";			break;
+    case IDIO_A_FIXNUM:					r = "FIXNUM";				break;
+    case IDIO_A_NEG_FIXNUM:				r = "NEG-FIXNUM";			break;
+    case IDIO_A_CHARACTER:				r = "CHARACTER";			break;
+    case IDIO_A_NEG_CHARACTER:				r = "NEG-CHARACTER";			break;
+    case IDIO_A_CONSTANT:				r = "CONSTANT";				break;
+    case IDIO_A_NEG_CONSTANT:				r = "NEG-CONSTANT";			break;
 
-    case IDIO_A_POP_ESCAPER:			r = "POP-ESCAPER"; break;
-    case IDIO_A_PUSH_ESCAPER:			r = "PUSH-ESCAPER"; break;
+    case IDIO_A_EXPANDER:				r = "EXPANDER";				break;
+    case IDIO_A_INFIX_OPERATOR:				r = "INFIX-OPERATOR";			break;
+    case IDIO_A_POSTFIX_OPERATOR:			r = "POSTFIX-OPERATOR";			break;
+
+    case IDIO_A_POP_DYNAMIC:				r = "POP-DYNAMIC";			break;
+    case IDIO_A_PUSH_DYNAMIC:				r = "PUSH-DYNAMIC";			break;
+    case IDIO_A_DYNAMIC_SYM_REF:			r = "DYNAMIC-SYM-REF";			break;
+    case IDIO_A_DYNAMIC_FUNCTION_SYM_REF:		r = "DYNAMIC-FUNCTION-SYM-REF";		break;
+    case IDIO_A_DYNAMIC_VAL_REF:			r = "DYNAMIC-VAL-REF";			break;
+    case IDIO_A_DYNAMIC_FUNCTION_VAL_REF:		r = "DYNAMIC-FUNCTION-VAL-REF";		break;
+
+    case IDIO_A_POP_ENVIRON:				r = "POP-ENVIRON";			break;
+    case IDIO_A_PUSH_ENVIRON:				r = "PUSH-ENVIRON";			break;
+    case IDIO_A_ENVIRON_SYM_REF:			r = "ENVIRON-SYM-REF";			break;
+    case IDIO_A_ENVIRON_VAL_REF:			r = "ENVIRON-VAL-REF";			break;
+
+    case IDIO_A_NON_CONT_ERR:				r = "NON-CONT-ERR";			break;
+    case IDIO_A_PUSH_TRAP:				r = "PUSH-TRAP";			break;
+    case IDIO_A_POP_TRAP:				r = "POP-TRAP";				break;
+    case IDIO_A_RESTORE_TRAP:				r = "RESTORE-TRAP";			break;
+
+    case IDIO_A_POP_ESCAPER:				r = "POP-ESCAPER";			break;
+    case IDIO_A_PUSH_ESCAPER:				r = "PUSH-ESCAPER";			break;
 
     default:
 	/* fprintf (stderr, "idio_vm_bytecode2string: unexpected bytecode %d\n", code); */
