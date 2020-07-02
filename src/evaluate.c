@@ -1056,7 +1056,7 @@ static IDIO idio_meaning_quotation (IDIO src, IDIO v, IDIO nametree, int flags)
 
     IDIO_TYPE_ASSERT (list, nametree);
 
-    return IDIO_LIST2 (idio_I_CONSTANT, v);
+    return IDIO_LIST2 (idio_I_CONSTANT_SYM_REF, v);
 }
 
 static IDIO idio_meaning_dequasiquote (IDIO src, IDIO e, int level, int indent)

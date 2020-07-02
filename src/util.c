@@ -2049,8 +2049,10 @@ const char *idio_vm_bytecode2string (int code)
 
     case IDIO_A_LONG_GOTO:				r = "LONG-GOTO";			break;
     case IDIO_A_LONG_JUMP_FALSE:			r = "LONG-JUMP-FALSE";			break;
+    case IDIO_A_LONG_JUMP_TRUE:				r = "LONG-JUMP-TRUE";			break;
     case IDIO_A_SHORT_GOTO:				r = "SHORT-GOTO";			break;
     case IDIO_A_SHORT_JUMP_FALSE:			r = "SHORT-JUMP-FALSE";			break;
+    case IDIO_A_SHORT_JUMP_TRUE:			r = "SHORT-JUMP-TRUE";			break;
 
     case IDIO_A_PUSH_VALUE:				r = "PUSH-VALUE";			break;
     case IDIO_A_POP_VALUE:				r = "POP-VALUE";			break;
@@ -2101,9 +2103,18 @@ const char *idio_vm_bytecode2string (int code)
     case IDIO_A_CONSTANT_2:				r = "CONSTANT-2";			break;
     case IDIO_A_CONSTANT_3:				r = "CONSTANT-3";			break;
     case IDIO_A_CONSTANT_4:				r = "CONSTANT-4";			break;
+    case IDIO_A_FIXNUM:					r = "FIXNUM";				break;
+    case IDIO_A_NEG_FIXNUM:				r = "NEG-FIXNUM";			break;
+    case IDIO_A_CHARACTER:				r = "CHARACTER";			break;
+    case IDIO_A_NEG_CHARACTER:				r = "NEG-CHARACTER";			break;
+    case IDIO_A_CONSTANT:				r = "CONSTANT";				break;
+    case IDIO_A_NEG_CONSTANT:				r = "NEG-CONSTANT";			break;
 
+    case IDIO_A_NOP:					r = "NOP";				break;
+    case IDIO_A_PRIMCALL0:				r = "PRIMCALL0";			break;
     case IDIO_A_PRIMCALL0_NEWLINE:			r = "PRIMCALL0-NEWLINE";		break;
     case IDIO_A_PRIMCALL0_READ:				r = "PRIMCALL0-READ";			break;
+    case IDIO_A_PRIMCALL1:				r = "PRIMCALL1";			break;
     case IDIO_A_PRIMCALL1_HEAD:				r = "PRIMCALL1-HEAD";			break;
     case IDIO_A_PRIMCALL1_TAIL:				r = "PRIMCALL1-TAIL";			break;
     case IDIO_A_PRIMCALL1_PAIRP:			r = "PRIMCALL1-PAIRP";			break;
@@ -2114,6 +2125,7 @@ const char *idio_vm_bytecode2string (int code)
     case IDIO_A_PRIMCALL1_CONTINUATIONP:		r = "PRIMCALL1-CONTINUATIONP";		break;
     case IDIO_A_PRIMCALL1_EOFP:				r = "PRIMCALL1-EOFP";			break;
     case IDIO_A_PRIMCALL1_SET_CUR_MOD:			r = "PRIMCALL1-SET-CUR-MOD";		break;
+    case IDIO_A_PRIMCALL2:				r = "PRIMCALL2";			break;
     case IDIO_A_PRIMCALL2_PAIR:				r = "PRIMCALL2-PAIR";			break;
     case IDIO_A_PRIMCALL2_EQP:				r = "PRIMCALL2-EQP";			break;
     case IDIO_A_PRIMCALL2_SET_HEAD:			r = "PRIMCALL2-SET-HEAD";		break;
@@ -2128,35 +2140,22 @@ const char *idio_vm_bytecode2string (int code)
     case IDIO_A_PRIMCALL2_GE:				r = "PRIMCALL2-GE";			break;
     case IDIO_A_PRIMCALL2_REMAINDER:			r = "PRIMCALL2-REMAINDER";		break;
 
-    case IDIO_A_NOP:					r = "NOP";				break;
-    case IDIO_A_PRIMCALL0:				r = "PRIMCALL0";			break;
-    case IDIO_A_PRIMCALL1:				r = "PRIMCALL1";			break;
-    case IDIO_A_PRIMCALL2:				r = "PRIMCALL2";			break;
     case IDIO_A_PRIMCALL3:				r = "PRIMCALL3";			break;
     case IDIO_A_PRIMCALL:				r = "PRIMCALL";				break;
-
-    case IDIO_A_LONG_JUMP_TRUE:				r = "LONG-JUMP-TRUE";			break;
-    case IDIO_A_SHORT_JUMP_TRUE:			r = "SHORT-JUMP-TRUE";			break;
-    case IDIO_A_FIXNUM:					r = "FIXNUM";				break;
-    case IDIO_A_NEG_FIXNUM:				r = "NEG-FIXNUM";			break;
-    case IDIO_A_CHARACTER:				r = "CHARACTER";			break;
-    case IDIO_A_NEG_CHARACTER:				r = "NEG-CHARACTER";			break;
-    case IDIO_A_CONSTANT:				r = "CONSTANT";				break;
-    case IDIO_A_NEG_CONSTANT:				r = "NEG-CONSTANT";			break;
 
     case IDIO_A_EXPANDER:				r = "EXPANDER";				break;
     case IDIO_A_INFIX_OPERATOR:				r = "INFIX-OPERATOR";			break;
     case IDIO_A_POSTFIX_OPERATOR:			r = "POSTFIX-OPERATOR";			break;
 
-    case IDIO_A_POP_DYNAMIC:				r = "POP-DYNAMIC";			break;
     case IDIO_A_PUSH_DYNAMIC:				r = "PUSH-DYNAMIC";			break;
+    case IDIO_A_POP_DYNAMIC:				r = "POP-DYNAMIC";			break;
     case IDIO_A_DYNAMIC_SYM_REF:			r = "DYNAMIC-SYM-REF";			break;
     case IDIO_A_DYNAMIC_FUNCTION_SYM_REF:		r = "DYNAMIC-FUNCTION-SYM-REF";		break;
     case IDIO_A_DYNAMIC_VAL_REF:			r = "DYNAMIC-VAL-REF";			break;
     case IDIO_A_DYNAMIC_FUNCTION_VAL_REF:		r = "DYNAMIC-FUNCTION-VAL-REF";		break;
 
-    case IDIO_A_POP_ENVIRON:				r = "POP-ENVIRON";			break;
     case IDIO_A_PUSH_ENVIRON:				r = "PUSH-ENVIRON";			break;
+    case IDIO_A_POP_ENVIRON:				r = "POP-ENVIRON";			break;
     case IDIO_A_ENVIRON_SYM_REF:			r = "ENVIRON-SYM-REF";			break;
     case IDIO_A_ENVIRON_VAL_REF:			r = "ENVIRON-VAL-REF";			break;
 
@@ -2165,8 +2164,8 @@ const char *idio_vm_bytecode2string (int code)
     case IDIO_A_POP_TRAP:				r = "POP-TRAP";				break;
     case IDIO_A_RESTORE_TRAP:				r = "RESTORE-TRAP";			break;
 
-    case IDIO_A_POP_ESCAPER:				r = "POP-ESCAPER";			break;
     case IDIO_A_PUSH_ESCAPER:				r = "PUSH-ESCAPER";			break;
+    case IDIO_A_POP_ESCAPER:				r = "POP-ESCAPER";			break;
 
     default:
 	/* fprintf (stderr, "idio_vm_bytecode2string: unexpected bytecode %d\n", code); */

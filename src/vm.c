@@ -200,9 +200,9 @@ int idio_vm_exit = 0;
  *
  *       Again, a popular alternative is to rewrite the IDIO_A_*
  *       codes.  This would result in an even-quicker lookup -- a
- *       putative IDIO_A_GLOBAL_SYM_REF_DIRECT (global-value-index) which
- *       could be a simple array lookup -- much faster than a hash
- *       table lookup (as idio_module_get_vvi() is).
+ *       putative IDIO_A_GLOBAL_SYM_REF_DIRECT (global-value-index)
+ *       which could be a simple array lookup -- much faster than a
+ *       hash table lookup (as idio_module_get_vvi() is).
  *
  *     Naming Scheme
  *
@@ -2535,9 +2535,9 @@ static idio_ai_t idio_vm_get_or_create_vvi (idio_ai_t mci)
 	 * error.  However, in Idio that could be the name of a
 	 * program we want to execute: "ls -l" should have both "ls"
 	 * and "-l" as un-bound symbols for which we need to return a
-	 * gvi of 0 so that IDIO_A[_CHECKED]_GLOBAL_FUNCTION_SYM_REF (and
-	 * IDIO_A[_CHECKED]_GLOBAL_SYM_REF) can return the symbols for
-	 * idio_vm_invoke() to exec.
+	 * gvi of 0 so that IDIO_A[_CHECKED]_GLOBAL_FUNCTION_SYM_REF
+	 * (and IDIO_A[_CHECKED]_GLOBAL_SYM_REF) can return the
+	 * symbols for idio_vm_invoke() to exec.
 	 */
 
 	/*
@@ -2687,6 +2687,37 @@ int idio_vm_run1 (IDIO thr)
 	    uint64_t j = idio_vm_fetch_varuint (thr);
 	    IDIO_VM_RUN_DIS ("DEEP-ARGUMENT-REF %" PRId64 " %" PRId64 "", i, j);
 	    IDIO_THREAD_VAL (thr) = idio_frame_fetch (IDIO_THREAD_FRAME (thr), i, j);
+	}
+	break;
+    case IDIO_A_SHALLOW_ARGUMENT_SET0:
+	IDIO_VM_RUN_DIS ("SHALLOW-ARGUMENT-SET 0");
+	idio_frame_update (IDIO_THREAD_FRAME (thr), 0, 0, IDIO_THREAD_VAL (thr));
+	break;
+    case IDIO_A_SHALLOW_ARGUMENT_SET1:
+	IDIO_VM_RUN_DIS ("SHALLOW-ARGUMENT-SET 1");
+	idio_frame_update (IDIO_THREAD_FRAME (thr), 0, 1, IDIO_THREAD_VAL (thr));
+	break;
+    case IDIO_A_SHALLOW_ARGUMENT_SET2:
+	IDIO_VM_RUN_DIS ("SHALLOW-ARGUMENT-SET 2");
+	idio_frame_update (IDIO_THREAD_FRAME (thr), 0, 2, IDIO_THREAD_VAL (thr));
+	break;
+    case IDIO_A_SHALLOW_ARGUMENT_SET3:
+	IDIO_VM_RUN_DIS ("SHALLOW-ARGUMENT-SET 3");
+	idio_frame_update (IDIO_THREAD_FRAME (thr), 0, 3, IDIO_THREAD_VAL (thr));
+	break;
+    case IDIO_A_SHALLOW_ARGUMENT_SET:
+	{
+	    uint64_t i = idio_vm_fetch_varuint (thr);
+	    IDIO_VM_RUN_DIS ("SHALLOW-ARGUMENT-SET %" PRId64 "", i);
+	    idio_frame_update (IDIO_THREAD_FRAME (thr), 0, i, IDIO_THREAD_VAL (thr));
+	}
+	break;
+    case IDIO_A_DEEP_ARGUMENT_SET:
+	{
+	    uint64_t i = idio_vm_fetch_varuint (thr);
+	    uint64_t j = idio_vm_fetch_varuint (thr);
+	    IDIO_VM_RUN_DIS ("DEEP-ARGUMENT-SET %" PRId64 " %" PRId64 "", i, j);
+	    idio_frame_update (IDIO_THREAD_FRAME (thr), i, j, IDIO_THREAD_VAL (thr));
 	}
 	break;
     case IDIO_A_GLOBAL_SYM_REF:
@@ -2987,70 +3018,6 @@ int idio_vm_run1 (IDIO thr)
 	    }
 	}
 	break;
-    case IDIO_A_PREDEFINED0:
-	{
-	    IDIO_VM_RUN_DIS ("PREDEFINED 0 #t");
-	    IDIO_THREAD_VAL (thr) = idio_S_true;
-	}
-	break;
-    case IDIO_A_PREDEFINED1:
-	{
-	    IDIO_VM_RUN_DIS ("PREDEFINED 1 #f");
-	    IDIO_THREAD_VAL (thr) = idio_S_false;
-	}
-	break;
-    case IDIO_A_PREDEFINED2:
-	{
-	    IDIO_VM_RUN_DIS ("PREDEFINED 2 #nil");
-	    IDIO_THREAD_VAL (thr) = idio_S_nil;
-	}
-	break;
-    case IDIO_A_PREDEFINED:
-	{
-	    uint64_t vi = idio_vm_fetch_varuint (thr);
-	    IDIO pd = idio_vm_values_ref (vi);
-	    IDIO_VM_RUN_DIS ("PREDEFINED %" PRId64 " %s", vi, IDIO_PRIMITIVE_NAME (pd));
-	    IDIO_THREAD_VAL (thr) = pd;
-	}
-	break;
-    case IDIO_A_FINISH:
-	{
-	    /* invoke exit handler... */
-	    IDIO_VM_RUN_DIS ("FINISH\n");
-	    return 0;
-	}
-	break;
-    case IDIO_A_SHALLOW_ARGUMENT_SET0:
-	IDIO_VM_RUN_DIS ("SHALLOW-ARGUMENT-SET 0");
-	idio_frame_update (IDIO_THREAD_FRAME (thr), 0, 0, IDIO_THREAD_VAL (thr));
-	break;
-    case IDIO_A_SHALLOW_ARGUMENT_SET1:
-	IDIO_VM_RUN_DIS ("SHALLOW-ARGUMENT-SET 1");
-	idio_frame_update (IDIO_THREAD_FRAME (thr), 0, 1, IDIO_THREAD_VAL (thr));
-	break;
-    case IDIO_A_SHALLOW_ARGUMENT_SET2:
-	IDIO_VM_RUN_DIS ("SHALLOW-ARGUMENT-SET 2");
-	idio_frame_update (IDIO_THREAD_FRAME (thr), 0, 2, IDIO_THREAD_VAL (thr));
-	break;
-    case IDIO_A_SHALLOW_ARGUMENT_SET3:
-	IDIO_VM_RUN_DIS ("SHALLOW-ARGUMENT-SET 3");
-	idio_frame_update (IDIO_THREAD_FRAME (thr), 0, 3, IDIO_THREAD_VAL (thr));
-	break;
-    case IDIO_A_SHALLOW_ARGUMENT_SET:
-	{
-	    uint64_t i = idio_vm_fetch_varuint (thr);
-	    IDIO_VM_RUN_DIS ("SHALLOW-ARGUMENT-SET %" PRId64 "", i);
-	    idio_frame_update (IDIO_THREAD_FRAME (thr), 0, i, IDIO_THREAD_VAL (thr));
-	}
-	break;
-    case IDIO_A_DEEP_ARGUMENT_SET:
-	{
-	    uint64_t i = idio_vm_fetch_varuint (thr);
-	    uint64_t j = idio_vm_fetch_varuint (thr);
-	    IDIO_VM_RUN_DIS ("DEEP-ARGUMENT-SET %" PRId64 " %" PRId64 "", i, j);
-	    idio_frame_update (IDIO_THREAD_FRAME (thr), i, j, IDIO_THREAD_VAL (thr));
-	}
-	break;
     case IDIO_A_GLOBAL_SYM_DEF:
 	{
 	    uint64_t mci = IDIO_VM_FETCH_REF (thr);
@@ -3189,6 +3156,32 @@ int idio_vm_run1 (IDIO thr)
 	    idio_vm_computed_define (mci, gvi, val, thr);
 	}
 	break;
+    case IDIO_A_PREDEFINED0:
+	{
+	    IDIO_VM_RUN_DIS ("PREDEFINED 0 #t");
+	    IDIO_THREAD_VAL (thr) = idio_S_true;
+	}
+	break;
+    case IDIO_A_PREDEFINED1:
+	{
+	    IDIO_VM_RUN_DIS ("PREDEFINED 1 #f");
+	    IDIO_THREAD_VAL (thr) = idio_S_false;
+	}
+	break;
+    case IDIO_A_PREDEFINED2:
+	{
+	    IDIO_VM_RUN_DIS ("PREDEFINED 2 #nil");
+	    IDIO_THREAD_VAL (thr) = idio_S_nil;
+	}
+	break;
+    case IDIO_A_PREDEFINED:
+	{
+	    uint64_t vi = idio_vm_fetch_varuint (thr);
+	    IDIO pd = idio_vm_values_ref (vi);
+	    IDIO_VM_RUN_DIS ("PREDEFINED %" PRId64 " %s", vi, IDIO_PRIMITIVE_NAME (pd));
+	    IDIO_THREAD_VAL (thr) = pd;
+	}
+	break;
     case IDIO_A_LONG_GOTO:
 	{
 	    uint64_t i = idio_vm_fetch_varuint (thr);
@@ -3239,18 +3232,6 @@ int idio_vm_run1 (IDIO thr)
 	    }
 	}
 	break;
-    case IDIO_A_EXTEND_FRAME:
-	{
-	    IDIO_VM_RUN_DIS ("EXTEND-FRAME");
-	    IDIO_THREAD_FRAME (thr) = idio_frame_extend (IDIO_THREAD_FRAME (thr), IDIO_THREAD_VAL (thr));
-	}
-	break;
-    case IDIO_A_UNLINK_FRAME:
-	{
-	    IDIO_VM_RUN_DIS ("UNLINK-FRAME");
-	    IDIO_THREAD_FRAME (thr) = IDIO_FRAME_NEXT (IDIO_THREAD_FRAME (thr));
-	}
-	break;
     case IDIO_A_PUSH_VALUE:
 	{
 	    IDIO_VM_RUN_DIS ("PUSH-VALUE");
@@ -3296,6 +3277,12 @@ int idio_vm_run1 (IDIO thr)
 	    IDIO_THREAD_EXPR (thr) = e;
 	}
 	break;
+    case IDIO_A_POP_FUNCTION:
+	{
+	    IDIO_VM_RUN_DIS ("POP-FUNCTION");
+	    IDIO_THREAD_FUNC (thr) = IDIO_THREAD_STACK_POP ();
+	}
+	break;
     case IDIO_A_PRESERVE_STATE:
 	{
 	    IDIO_VM_RUN_DIS ("PRESERVE-STATE");
@@ -3312,12 +3299,6 @@ int idio_vm_run1 (IDIO thr)
 	{
 	    IDIO_VM_RUN_DIS ("RESTORE-ALL-STATE");
 	    idio_vm_restore_all_state (thr);
-	}
-	break;
-    case IDIO_A_POP_FUNCTION:
-	{
-	    IDIO_VM_RUN_DIS ("POP-FUNCTION");
-	    IDIO_THREAD_FUNC (thr) = IDIO_THREAD_STACK_POP ();
 	}
 	break;
     case IDIO_A_CREATE_CLOSURE:
@@ -3352,6 +3333,38 @@ int idio_vm_run1 (IDIO thr)
 	     * we are currently working in
 	     */
 	    IDIO_THREAD_VAL (thr) = idio_closure (IDIO_THREAD_PC (thr) + i, code_len, IDIO_THREAD_FRAME (thr), IDIO_THREAD_ENV (thr), sigstr, docstr);
+	}
+	break;
+    case IDIO_A_FUNCTION_INVOKE:
+	{
+	    IDIO_VM_RUN_DIS ("FUNCTION-INVOKE ...");
+	    if (! idio_isa_primitive (IDIO_THREAD_FUNC (thr))) {
+		IDIO_VM_RUN_DIS ("\n");
+	    }
+	    if (idio_vm_tracing) {
+		idio_vm_function_trace (ins, thr);
+	    }
+#ifdef IDIO_VM_PERF
+	    idio_vm_clos_time (thr, "FUNCTION-INVOKE");
+#endif
+
+	    idio_vm_invoke (thr, IDIO_THREAD_FUNC (thr), IDIO_VM_INVOKE_REGULAR_CALL);
+	}
+	break;
+    case IDIO_A_FUNCTION_GOTO:
+	{
+	    IDIO_VM_RUN_DIS ("FUNCTION-GOTO ...");
+	    if (! idio_isa_primitive (IDIO_THREAD_FUNC (thr))) {
+		IDIO_VM_RUN_DIS ("\n");
+	    }
+	    if (idio_vm_tracing) {
+		idio_vm_function_trace (ins, thr);
+	    }
+#ifdef IDIO_VM_PERF
+	    idio_vm_clos_time (thr, "FUNCTION-GOTO");
+#endif
+
+	    idio_vm_invoke (thr, IDIO_THREAD_FUNC (thr), IDIO_VM_INVOKE_TAIL_CALL);
 	}
 	break;
     case IDIO_A_RETURN:
@@ -3402,55 +3415,11 @@ int idio_vm_run1 (IDIO thr)
 #endif
 	}
 	break;
-    case IDIO_A_PACK_FRAME:
+    case IDIO_A_FINISH:
 	{
-	    uint64_t arity = idio_vm_fetch_varuint (thr);
-	    IDIO_VM_RUN_DIS ("PACK-FRAME %" PRId64 "", arity);
-	    idio_vm_listify (IDIO_THREAD_VAL (thr), arity);
-	}
-	break;
-    case IDIO_A_FUNCTION_INVOKE:
-	{
-	    IDIO_VM_RUN_DIS ("FUNCTION-INVOKE ...");
-	    if (! idio_isa_primitive (IDIO_THREAD_FUNC (thr))) {
-		IDIO_VM_RUN_DIS ("\n");
-	    }
-	    if (idio_vm_tracing) {
-		idio_vm_function_trace (ins, thr);
-	    }
-#ifdef IDIO_VM_PERF
-	    idio_vm_clos_time (thr, "FUNCTION-INVOKE");
-#endif
-
-	    idio_vm_invoke (thr, IDIO_THREAD_FUNC (thr), IDIO_VM_INVOKE_REGULAR_CALL);
-	}
-	break;
-    case IDIO_A_FUNCTION_GOTO:
-	{
-	    IDIO_VM_RUN_DIS ("FUNCTION-GOTO ...");
-	    if (! idio_isa_primitive (IDIO_THREAD_FUNC (thr))) {
-		IDIO_VM_RUN_DIS ("\n");
-	    }
-	    if (idio_vm_tracing) {
-		idio_vm_function_trace (ins, thr);
-	    }
-#ifdef IDIO_VM_PERF
-	    idio_vm_clos_time (thr, "FUNCTION-GOTO");
-#endif
-
-	    idio_vm_invoke (thr, IDIO_THREAD_FUNC (thr), IDIO_VM_INVOKE_TAIL_CALL);
-	}
-	break;
-    case IDIO_A_POP_CONS_FRAME:
-	{
-	    uint64_t arity = idio_vm_fetch_varuint (thr);
-
-	    IDIO_VM_RUN_DIS ("POP-CONS-FRAME %" PRId64 "", arity);
-	    idio_frame_update (IDIO_THREAD_VAL (thr),
-			       0,
-			       arity,
-			       idio_pair (IDIO_THREAD_STACK_POP (),
-					  idio_frame_fetch (IDIO_THREAD_VAL (thr), 0, arity)));
+	    /* invoke exit handler... */
+	    IDIO_VM_RUN_DIS ("FINISH\n");
+	    return 0;
 	}
 	break;
     case IDIO_A_ALLOCATE_FRAME1:
@@ -3528,6 +3497,37 @@ int idio_vm_run1 (IDIO thr)
 	    uint64_t rank = idio_vm_fetch_varuint (thr);
 	    IDIO_VM_RUN_DIS ("POP-FRAME %" PRId64 "", rank);
 	    idio_frame_update (IDIO_THREAD_VAL (thr), 0, rank, IDIO_THREAD_STACK_POP ());
+	}
+	break;
+    case IDIO_A_EXTEND_FRAME:
+	{
+	    IDIO_VM_RUN_DIS ("EXTEND-FRAME");
+	    IDIO_THREAD_FRAME (thr) = idio_frame_extend (IDIO_THREAD_FRAME (thr), IDIO_THREAD_VAL (thr));
+	}
+	break;
+    case IDIO_A_UNLINK_FRAME:
+	{
+	    IDIO_VM_RUN_DIS ("UNLINK-FRAME");
+	    IDIO_THREAD_FRAME (thr) = IDIO_FRAME_NEXT (IDIO_THREAD_FRAME (thr));
+	}
+	break;
+    case IDIO_A_PACK_FRAME:
+	{
+	    uint64_t arity = idio_vm_fetch_varuint (thr);
+	    IDIO_VM_RUN_DIS ("PACK-FRAME %" PRId64 "", arity);
+	    idio_vm_listify (IDIO_THREAD_VAL (thr), arity);
+	}
+	break;
+    case IDIO_A_POP_CONS_FRAME:
+	{
+	    uint64_t arity = idio_vm_fetch_varuint (thr);
+
+	    IDIO_VM_RUN_DIS ("POP-CONS-FRAME %" PRId64 "", arity);
+	    idio_frame_update (IDIO_THREAD_VAL (thr),
+			       0,
+			       arity,
+			       idio_pair (IDIO_THREAD_STACK_POP (),
+					  idio_frame_fetch (IDIO_THREAD_VAL (thr), 0, arity)));
 	}
 	break;
     case IDIO_A_ARITY1P:
@@ -3634,6 +3634,36 @@ int idio_vm_run1 (IDIO thr)
 	    }
 	}
 	break;
+    case IDIO_A_CONSTANT_0:
+	{
+	    IDIO_VM_RUN_DIS ("CONSTANT 0");
+	    IDIO_THREAD_VAL (thr) = idio_fixnum (0);
+	}
+	break;
+    case IDIO_A_CONSTANT_1:
+	{
+	    IDIO_VM_RUN_DIS ("CONSTANT 1");
+	    IDIO_THREAD_VAL (thr) = idio_fixnum (1);
+	}
+	break;
+    case IDIO_A_CONSTANT_2:
+	{
+	    IDIO_VM_RUN_DIS ("CONSTANT 2");
+	    IDIO_THREAD_VAL (thr) = idio_fixnum (2);
+	}
+	break;
+    case IDIO_A_CONSTANT_3:
+	{
+	    IDIO_VM_RUN_DIS ("CONSTANT 3");
+	    IDIO_THREAD_VAL (thr) = idio_fixnum (3);
+	}
+	break;
+    case IDIO_A_CONSTANT_4:
+	{
+	    IDIO_VM_RUN_DIS ("CONSTANT 4");
+	    IDIO_THREAD_VAL (thr) = idio_fixnum (4);
+	}
+	break;
     case IDIO_A_FIXNUM:
 	{
 	    uint64_t v = idio_vm_fetch_varuint (thr);
@@ -3715,34 +3745,24 @@ int idio_vm_run1 (IDIO thr)
 	    IDIO_THREAD_VAL (thr) = IDIO_CONSTANT_IDIO ((intptr_t) v);
 	}
 	break;
-    case IDIO_A_CONSTANT_0:
+    case IDIO_A_NOP:
 	{
-	    IDIO_VM_RUN_DIS ("CONSTANT 0");
-	    IDIO_THREAD_VAL (thr) = idio_fixnum (0);
+	    IDIO_VM_RUN_DIS ("NOP");
 	}
 	break;
-    case IDIO_A_CONSTANT_1:
+    case IDIO_A_PRIMCALL0:
 	{
-	    IDIO_VM_RUN_DIS ("CONSTANT 1");
-	    IDIO_THREAD_VAL (thr) = idio_fixnum (1);
-	}
-	break;
-    case IDIO_A_CONSTANT_2:
-	{
-	    IDIO_VM_RUN_DIS ("CONSTANT 2");
-	    IDIO_THREAD_VAL (thr) = idio_fixnum (2);
-	}
-	break;
-    case IDIO_A_CONSTANT_3:
-	{
-	    IDIO_VM_RUN_DIS ("CONSTANT 3");
-	    IDIO_THREAD_VAL (thr) = idio_fixnum (3);
-	}
-	break;
-    case IDIO_A_CONSTANT_4:
-	{
-	    IDIO_VM_RUN_DIS ("CONSTANT 4");
-	    IDIO_THREAD_VAL (thr) = idio_fixnum (4);
+	    uint64_t vi = idio_vm_fetch_varuint (thr);
+	    IDIO primdata = idio_vm_values_ref (vi);
+	    IDIO_VM_RUN_DIS ("PRIMITIVE0 %" PRId64 " %s", vi, IDIO_PRIMITIVE_NAME (primdata));
+	    if (idio_vm_tracing) {
+		idio_vm_primitive_call_trace (IDIO_PRIMITIVE_NAME (primdata), thr, 0);
+	    }
+
+	    IDIO_THREAD_VAL (thr) = IDIO_PRIMITIVE_F (primdata) ();
+	    if (idio_vm_tracing) {
+		idio_vm_primitive_result_trace (thr);
+	    }
 	}
 	break;
     case IDIO_A_PRIMCALL0_NEWLINE:
@@ -3766,16 +3786,16 @@ int idio_vm_run1 (IDIO thr)
 	    }
 	}
 	break;
-    case IDIO_A_PRIMCALL0:
+    case IDIO_A_PRIMCALL1:
 	{
 	    uint64_t vi = idio_vm_fetch_varuint (thr);
 	    IDIO primdata = idio_vm_values_ref (vi);
-	    IDIO_VM_RUN_DIS ("PRIMITIVE0 %" PRId64 " %s", vi, IDIO_PRIMITIVE_NAME (primdata));
+	    IDIO_VM_RUN_DIS ("PRIMITIVE1 %" PRId64 " %s", vi, IDIO_PRIMITIVE_NAME (primdata));
 	    if (idio_vm_tracing) {
-		idio_vm_primitive_call_trace (IDIO_PRIMITIVE_NAME (primdata), thr, 0);
+		idio_vm_primitive_call_trace (IDIO_PRIMITIVE_NAME (primdata), thr, 1);
 	    }
 
-	    IDIO_THREAD_VAL (thr) = IDIO_PRIMITIVE_F (primdata) ();
+	    IDIO_THREAD_VAL (thr) = IDIO_PRIMITIVE_F (primdata) (IDIO_THREAD_VAL (thr));
 	    if (idio_vm_tracing) {
 		idio_vm_primitive_result_trace (thr);
 	    }
@@ -3919,16 +3939,16 @@ int idio_vm_run1 (IDIO thr)
 	    }
 	}
 	break;
-    case IDIO_A_PRIMCALL1:
+    case IDIO_A_PRIMCALL2:
 	{
 	    uint64_t vi = idio_vm_fetch_varuint (thr);
 	    IDIO primdata = idio_vm_values_ref (vi);
-	    IDIO_VM_RUN_DIS ("PRIMITIVE1 %" PRId64 " %s", vi, IDIO_PRIMITIVE_NAME (primdata));
+	    IDIO_VM_RUN_DIS ("PRIMITIVE2 %" PRId64 " %s", vi, IDIO_PRIMITIVE_NAME (primdata));
 	    if (idio_vm_tracing) {
-		idio_vm_primitive_call_trace (IDIO_PRIMITIVE_NAME (primdata), thr, 1);
+		idio_vm_primitive_call_trace (IDIO_PRIMITIVE_NAME (primdata), thr, 2);
 	    }
 
-	    IDIO_THREAD_VAL (thr) = IDIO_PRIMITIVE_F (primdata) (IDIO_THREAD_VAL (thr));
+	    IDIO_THREAD_VAL (thr) = IDIO_PRIMITIVE_F (primdata) (IDIO_THREAD_REG1 (thr), IDIO_THREAD_VAL (thr));
 	    if (idio_vm_tracing) {
 		idio_vm_primitive_result_trace (thr);
 	    }
@@ -4103,135 +4123,6 @@ int idio_vm_run1 (IDIO thr)
 	    }
 	}
 	break;
-    case IDIO_A_PRIMCALL2:
-	{
-	    uint64_t vi = idio_vm_fetch_varuint (thr);
-	    IDIO primdata = idio_vm_values_ref (vi);
-	    IDIO_VM_RUN_DIS ("PRIMITIVE2 %" PRId64 " %s", vi, IDIO_PRIMITIVE_NAME (primdata));
-	    if (idio_vm_tracing) {
-		idio_vm_primitive_call_trace (IDIO_PRIMITIVE_NAME (primdata), thr, 2);
-	    }
-
-	    IDIO_THREAD_VAL (thr) = IDIO_PRIMITIVE_F (primdata) (IDIO_THREAD_REG1 (thr), IDIO_THREAD_VAL (thr));
-	    if (idio_vm_tracing) {
-		idio_vm_primitive_result_trace (thr);
-	    }
-	}
-	break;
-    case IDIO_A_NOP:
-	{
-	    IDIO_VM_RUN_DIS ("NOP");
-	}
-	break;
-    case IDIO_A_PUSH_DYNAMIC:
-	{
-	    uint64_t mci = IDIO_VM_FETCH_REF (thr);
-	    IDIO_VM_RUN_DIS ("PUSH-DYNAMIC %" PRId64, mci);
-	    idio_ai_t gvi = idio_vm_get_or_create_vvi (mci);
-
-	    if (gvi) {
-		idio_vm_push_dynamic (gvi, thr, IDIO_THREAD_VAL (thr));
-	    } else {
-		idio_vm_panic (thr, "PUSH-DYNAMIC: no gvi!");
-	    }
-	}
-	break;
-    case IDIO_A_POP_DYNAMIC:
-	{
-	    IDIO_VM_RUN_DIS ("POP-DYNAMIC");
-	    idio_vm_pop_dynamic (thr);
-	}
-	break;
-    case IDIO_A_DYNAMIC_SYM_REF:
-	{
-	    uint64_t mci = IDIO_VM_FETCH_REF (thr);
-	    IDIO_VM_RUN_DIS ("DYNAMIC-SYM-REF %" PRId64 "", mci);
-	    idio_ai_t gvi = idio_vm_get_or_create_vvi (mci);
-
-	    if (gvi) {
-		IDIO_THREAD_VAL (thr) = idio_vm_dynamic_ref (mci, gvi, thr, idio_S_nil);
-	    } else {
-		idio_vm_panic (thr, "DYNAMIC-SYM-REF: no gvi!");
-	    }
-	}
-	break;
-    case IDIO_A_DYNAMIC_FUNCTION_SYM_REF:
-	{
-	    uint64_t mci = IDIO_VM_FETCH_REF (thr);
-	    IDIO_VM_RUN_DIS ("DYNAMIC-FUNCTION-SYM-REF %" PRId64 "", mci);
-	    idio_ai_t gvi = idio_vm_get_or_create_vvi (mci);
-
-	    if (gvi) {
-		IDIO_THREAD_VAL (thr) = idio_vm_dynamic_ref (mci, gvi, thr, idio_S_nil);
-	    } else {
-		idio_vm_panic (thr, "DYNAMIC-FUNCTION-SYM-REF: no gvi!");
-	    }
-	}
-	break;
-    case IDIO_A_PUSH_ENVIRON:
-	{
-	    uint64_t mci = IDIO_VM_FETCH_REF (thr);
-	    IDIO_VM_RUN_DIS ("PUSH-ENVIRON %" PRId64, mci);
-	    idio_ai_t gvi = idio_vm_get_or_create_vvi (mci);
-
-	    if (gvi) {
-		idio_vm_push_environ (mci, gvi, thr, IDIO_THREAD_VAL (thr));
-	    } else {
-		idio_vm_panic (thr, "PUSH-ENVIRON: no gvi!");
-	    }
-	}
-	break;
-    case IDIO_A_POP_ENVIRON:
-	{
-	    IDIO_VM_RUN_DIS ("POP-ENVIRON");
-	    idio_vm_pop_environ (thr);
-	}
-	break;
-    case IDIO_A_ENVIRON_SYM_REF:
-	{
-	    uint64_t mci = IDIO_VM_FETCH_REF (thr);
-	    IDIO_VM_RUN_DIS ("ENVIRON-SYM-REF %" PRId64 "", mci);
-	    idio_ai_t gvi = idio_vm_get_or_create_vvi (mci);
-
-	    if (gvi) {
-		IDIO_THREAD_VAL (thr) = idio_vm_environ_ref (mci, gvi, thr, idio_S_nil);
-	    } else {
-		idio_vm_panic (thr, "ENVIRON-SYM-REF: no gvi!");
-	    }
-	}
-	break;
-    case IDIO_A_PUSH_TRAP:
-	{
-	    uint64_t mci = IDIO_VM_FETCH_REF (thr);
-
-	    IDIO_VM_RUN_DIS ("PUSH-TRAP %" PRId64 "", mci);
-	    idio_vm_push_trap (thr, IDIO_THREAD_VAL (thr), idio_fixnum (mci));
-	}
-	break;
-    case IDIO_A_POP_TRAP:
-	{
-	    IDIO_VM_RUN_DIS ("POP-TRAP");
-	    idio_vm_pop_trap (thr);
-	}
-	break;
-    case IDIO_A_RESTORE_TRAP:
-	{
-	    IDIO_VM_RUN_DIS ("RESTORE-TRAP");
-	    idio_vm_restore_trap (thr);
-	}
-	break;
-    case IDIO_A_NON_CONT_ERR:
-	{
-	    IDIO_VM_RUN_DIS ("NON-CONT-ERROR\n");
-	    idio_raise_condition (idio_S_false, idio_struct_instance (idio_condition_idio_error_type,
-								      IDIO_LIST3 (idio_string_C ("non-cont-error"),
-										  IDIO_C_FUNC_LOCATION_S ("NON_CONT_ERR"),
-										  IDIO_THREAD_VAL (thr))));
-
-	    /* notreached */
-	    return 0;
-	}
-	break;
     case IDIO_A_EXPANDER:
 	{
 	    /*
@@ -4332,6 +4223,115 @@ int idio_vm_run1 (IDIO thr)
 	     */
 	    idio_set_property (IDIO_THREAD_VAL (thr), idio_KW_name, sym);
 	    idio_install_postfix_operator (sym, IDIO_THREAD_VAL (thr), pri);
+	}
+	break;
+    case IDIO_A_PUSH_DYNAMIC:
+	{
+	    uint64_t mci = IDIO_VM_FETCH_REF (thr);
+	    IDIO_VM_RUN_DIS ("PUSH-DYNAMIC %" PRId64, mci);
+	    idio_ai_t gvi = idio_vm_get_or_create_vvi (mci);
+
+	    if (gvi) {
+		idio_vm_push_dynamic (gvi, thr, IDIO_THREAD_VAL (thr));
+	    } else {
+		idio_vm_panic (thr, "PUSH-DYNAMIC: no gvi!");
+	    }
+	}
+	break;
+    case IDIO_A_POP_DYNAMIC:
+	{
+	    IDIO_VM_RUN_DIS ("POP-DYNAMIC");
+	    idio_vm_pop_dynamic (thr);
+	}
+	break;
+    case IDIO_A_DYNAMIC_SYM_REF:
+	{
+	    uint64_t mci = IDIO_VM_FETCH_REF (thr);
+	    IDIO_VM_RUN_DIS ("DYNAMIC-SYM-REF %" PRId64 "", mci);
+	    idio_ai_t gvi = idio_vm_get_or_create_vvi (mci);
+
+	    if (gvi) {
+		IDIO_THREAD_VAL (thr) = idio_vm_dynamic_ref (mci, gvi, thr, idio_S_nil);
+	    } else {
+		idio_vm_panic (thr, "DYNAMIC-SYM-REF: no gvi!");
+	    }
+	}
+	break;
+    case IDIO_A_DYNAMIC_FUNCTION_SYM_REF:
+	{
+	    uint64_t mci = IDIO_VM_FETCH_REF (thr);
+	    IDIO_VM_RUN_DIS ("DYNAMIC-FUNCTION-SYM-REF %" PRId64 "", mci);
+	    idio_ai_t gvi = idio_vm_get_or_create_vvi (mci);
+
+	    if (gvi) {
+		IDIO_THREAD_VAL (thr) = idio_vm_dynamic_ref (mci, gvi, thr, idio_S_nil);
+	    } else {
+		idio_vm_panic (thr, "DYNAMIC-FUNCTION-SYM-REF: no gvi!");
+	    }
+	}
+	break;
+    case IDIO_A_PUSH_ENVIRON:
+	{
+	    uint64_t mci = IDIO_VM_FETCH_REF (thr);
+	    IDIO_VM_RUN_DIS ("PUSH-ENVIRON %" PRId64, mci);
+	    idio_ai_t gvi = idio_vm_get_or_create_vvi (mci);
+
+	    if (gvi) {
+		idio_vm_push_environ (mci, gvi, thr, IDIO_THREAD_VAL (thr));
+	    } else {
+		idio_vm_panic (thr, "PUSH-ENVIRON: no gvi!");
+	    }
+	}
+	break;
+    case IDIO_A_POP_ENVIRON:
+	{
+	    IDIO_VM_RUN_DIS ("POP-ENVIRON");
+	    idio_vm_pop_environ (thr);
+	}
+	break;
+    case IDIO_A_ENVIRON_SYM_REF:
+	{
+	    uint64_t mci = IDIO_VM_FETCH_REF (thr);
+	    IDIO_VM_RUN_DIS ("ENVIRON-SYM-REF %" PRId64 "", mci);
+	    idio_ai_t gvi = idio_vm_get_or_create_vvi (mci);
+
+	    if (gvi) {
+		IDIO_THREAD_VAL (thr) = idio_vm_environ_ref (mci, gvi, thr, idio_S_nil);
+	    } else {
+		idio_vm_panic (thr, "ENVIRON-SYM-REF: no gvi!");
+	    }
+	}
+	break;
+    case IDIO_A_NON_CONT_ERR:
+	{
+	    IDIO_VM_RUN_DIS ("NON-CONT-ERROR\n");
+	    idio_raise_condition (idio_S_false, idio_struct_instance (idio_condition_idio_error_type,
+								      IDIO_LIST3 (idio_string_C ("non-cont-error"),
+										  IDIO_C_FUNC_LOCATION_S ("NON_CONT_ERR"),
+										  IDIO_THREAD_VAL (thr))));
+
+	    /* notreached */
+	    return 0;
+	}
+	break;
+    case IDIO_A_PUSH_TRAP:
+	{
+	    uint64_t mci = IDIO_VM_FETCH_REF (thr);
+
+	    IDIO_VM_RUN_DIS ("PUSH-TRAP %" PRId64 "", mci);
+	    idio_vm_push_trap (thr, IDIO_THREAD_VAL (thr), idio_fixnum (mci));
+	}
+	break;
+    case IDIO_A_POP_TRAP:
+	{
+	    IDIO_VM_RUN_DIS ("POP-TRAP");
+	    idio_vm_pop_trap (thr);
+	}
+	break;
+    case IDIO_A_RESTORE_TRAP:
+	{
+	    IDIO_VM_RUN_DIS ("RESTORE-TRAP");
+	    idio_vm_restore_trap (thr);
 	}
 	break;
     default:
@@ -4459,6 +4459,31 @@ void idio_vm_dasm (IDIO thr, idio_ai_t pc0, idio_ai_t pce)
 		IDIO_VM_DASM ("DEEP-ARGUMENT-REF %" PRId64 " %" PRId64 "", i, j);
 	    }
 	    break;
+	case IDIO_A_SHALLOW_ARGUMENT_SET0:
+	    IDIO_VM_DASM ("SHALLOW-ARGUMENT-SET 0");
+	    break;
+	case IDIO_A_SHALLOW_ARGUMENT_SET1:
+	    IDIO_VM_DASM ("SHALLOW-ARGUMENT-SET 1");
+	    break;
+	case IDIO_A_SHALLOW_ARGUMENT_SET2:
+	    IDIO_VM_DASM ("SHALLOW-ARGUMENT-SET 2");
+	    break;
+	case IDIO_A_SHALLOW_ARGUMENT_SET3:
+	    IDIO_VM_DASM ("SHALLOW-ARGUMENT-SET 3");
+	    break;
+	case IDIO_A_SHALLOW_ARGUMENT_SET:
+	    {
+		uint64_t i = idio_vm_get_varuint (pcp);
+		IDIO_VM_DASM ("SHALLOW-ARGUMENT-SET %" PRId64 "", i);
+	    }
+	    break;
+	case IDIO_A_DEEP_ARGUMENT_SET:
+	    {
+		uint64_t i = idio_vm_get_varuint (pcp);
+		uint64_t j = idio_vm_get_varuint (pcp);
+		IDIO_VM_DASM ("DEEP-ARGUMENT-SET %" PRId64 " %" PRId64 "", i, j);
+	    }
+	    break;
 	case IDIO_A_GLOBAL_SYM_REF:
 	    {
 		uint64_t mci = IDIO_VM_GET_REF (pcp);
@@ -4508,62 +4533,6 @@ void idio_vm_dasm (IDIO thr, idio_ai_t pc0, idio_ai_t pce)
 		IDIO_VM_DASM ("COMPUTED-SYM-REF %" PRId64 "", mci);
 	    }
 	    break;
-	case IDIO_A_PREDEFINED0:
-	    {
-		IDIO_VM_DASM ("PREDEFINED 0 #t");
-	    }
-	    break;
-	case IDIO_A_PREDEFINED1:
-	    {
-		IDIO_VM_DASM ("PREDEFINED 1 #f");
-	    }
-	    break;
-	case IDIO_A_PREDEFINED2:
-	    {
-		IDIO_VM_DASM ("PREDEFINED 2 #nil");
-	    }
-	    break;
-	case IDIO_A_PREDEFINED:
-	    {
-		uint64_t vi = idio_vm_get_varuint (pcp);
-		IDIO pd = idio_vm_values_ref (vi);
-		if (idio_isa_primitive (pd)) {
-		    IDIO_VM_DASM ("PREDEFINED %" PRId64 " PRIM %s", vi, IDIO_PRIMITIVE_NAME (pd));
-		} else {
-		    IDIO_VM_DASM ("PREDEFINED %" PRId64 " %s", vi, idio_type2string (pd));
-		}
-	    }
-	    break;
-	case IDIO_A_FINISH:
-	    {
-		IDIO_VM_DASM ("FINISH");
-	    }
-	    break;
-	case IDIO_A_SHALLOW_ARGUMENT_SET0:
-	    IDIO_VM_DASM ("SHALLOW-ARGUMENT-SET 0");
-	    break;
-	case IDIO_A_SHALLOW_ARGUMENT_SET1:
-	    IDIO_VM_DASM ("SHALLOW-ARGUMENT-SET 1");
-	    break;
-	case IDIO_A_SHALLOW_ARGUMENT_SET2:
-	    IDIO_VM_DASM ("SHALLOW-ARGUMENT-SET 2");
-	    break;
-	case IDIO_A_SHALLOW_ARGUMENT_SET3:
-	    IDIO_VM_DASM ("SHALLOW-ARGUMENT-SET 3");
-	    break;
-	case IDIO_A_SHALLOW_ARGUMENT_SET:
-	    {
-		uint64_t i = idio_vm_get_varuint (pcp);
-		IDIO_VM_DASM ("SHALLOW-ARGUMENT-SET %" PRId64 "", i);
-	    }
-	    break;
-	case IDIO_A_DEEP_ARGUMENT_SET:
-	    {
-		uint64_t i = idio_vm_get_varuint (pcp);
-		uint64_t j = idio_vm_get_varuint (pcp);
-		IDIO_VM_DASM ("DEEP-ARGUMENT-SET %" PRId64 " %" PRId64 "", i, j);
-	    }
-	    break;
 	case IDIO_A_GLOBAL_SYM_DEF:
 	    {
 		uint64_t mci = IDIO_VM_GET_REF (pcp);
@@ -4611,6 +4580,32 @@ void idio_vm_dasm (IDIO thr, idio_ai_t pc0, idio_ai_t pce)
 		uint64_t mci = IDIO_VM_GET_REF (pcp);
 
 		IDIO_VM_DASM ("COMPUTED-SYM-DEFINE %" PRId64 "", mci);
+	    }
+	    break;
+	case IDIO_A_PREDEFINED0:
+	    {
+		IDIO_VM_DASM ("PREDEFINED 0 #t");
+	    }
+	    break;
+	case IDIO_A_PREDEFINED1:
+	    {
+		IDIO_VM_DASM ("PREDEFINED 1 #f");
+	    }
+	    break;
+	case IDIO_A_PREDEFINED2:
+	    {
+		IDIO_VM_DASM ("PREDEFINED 2 #nil");
+	    }
+	    break;
+	case IDIO_A_PREDEFINED:
+	    {
+		uint64_t vi = idio_vm_get_varuint (pcp);
+		IDIO pd = idio_vm_values_ref (vi);
+		if (idio_isa_primitive (pd)) {
+		    IDIO_VM_DASM ("PREDEFINED %" PRId64 " PRIM %s", vi, IDIO_PRIMITIVE_NAME (pd));
+		} else {
+		    IDIO_VM_DASM ("PREDEFINED %" PRId64 " %s", vi, idio_type2string (pd));
+		}
 	    }
 	    break;
 	case IDIO_A_LONG_GOTO:
@@ -4667,16 +4662,6 @@ void idio_vm_dasm (IDIO thr, idio_ai_t pc0, idio_ai_t pce)
 		IDIO_VM_DASM ("SHORT-JUMP-TRUE %d %td", i, pc + i);
 	    }
 	    break;
-	case IDIO_A_EXTEND_FRAME:
-	    {
-		IDIO_VM_DASM ("EXTEND-FRAME");
-	    }
-	    break;
-	case IDIO_A_UNLINK_FRAME:
-	    {
-		IDIO_VM_DASM ("UNLINK-FRAME");
-	    }
-	    break;
 	case IDIO_A_PUSH_VALUE:
 	    {
 		IDIO_VM_DASM ("PUSH-VALUE");
@@ -4711,6 +4696,11 @@ void idio_vm_dasm (IDIO thr, idio_ai_t pc0, idio_ai_t pce)
 		idio_debug_FILE (idio_dasm_FILE, " %s", c);
 	    }
 	    break;
+	case IDIO_A_POP_FUNCTION:
+	    {
+		IDIO_VM_DASM ("POP-FUNCTION");
+	    }
+	    break;
 	case IDIO_A_PRESERVE_STATE:
 	    {
 		IDIO_VM_DASM ("PRESERVE-STATE");
@@ -4724,11 +4714,6 @@ void idio_vm_dasm (IDIO thr, idio_ai_t pc0, idio_ai_t pce)
 	case IDIO_A_RESTORE_ALL_STATE:
 	    {
 		IDIO_VM_DASM ("RESTORE-ALL-STATE");
-	    }
-	    break;
-	case IDIO_A_POP_FUNCTION:
-	    {
-		IDIO_VM_DASM ("POP-FUNCTION");
 	    }
 	    break;
 	case IDIO_A_CREATE_CLOSURE:
@@ -4771,17 +4756,6 @@ void idio_vm_dasm (IDIO thr, idio_ai_t pc0, idio_ai_t pce)
 		}
 	    }
 	    break;
-	case IDIO_A_RETURN:
-	    {
-		IDIO_VM_DASM ("RETURN\n");
-	    }
-	    break;
-	case IDIO_A_PACK_FRAME:
-	    {
-		uint64_t arity = idio_vm_get_varuint (pcp);
-		IDIO_VM_DASM ("PACK-FRAME %" PRId64 "", arity);
-	    }
-	    break;
 	case IDIO_A_FUNCTION_INVOKE:
 	    {
 		IDIO_VM_DASM ("FUNCTION-INVOKE ... ");
@@ -4792,11 +4766,14 @@ void idio_vm_dasm (IDIO thr, idio_ai_t pc0, idio_ai_t pce)
 		IDIO_VM_DASM ("FUNCTION-GOTO ...");
 	    }
 	    break;
-	case IDIO_A_POP_CONS_FRAME:
+	case IDIO_A_RETURN:
 	    {
-		uint64_t arity = idio_vm_get_varuint (pcp);
-
-		IDIO_VM_DASM ("POP-CONS-FRAME %" PRId64 "", arity);
+		IDIO_VM_DASM ("RETURN\n");
+	    }
+	    break;
+	case IDIO_A_FINISH:
+	    {
+		IDIO_VM_DASM ("FINISH");
 	    }
 	    break;
 	case IDIO_A_ALLOCATE_FRAME1:
@@ -4862,6 +4839,29 @@ void idio_vm_dasm (IDIO thr, idio_ai_t pc0, idio_ai_t pce)
 		IDIO_VM_DASM ("POP-FRAME %" PRId64 "", rank);
 	    }
 	    break;
+	case IDIO_A_EXTEND_FRAME:
+	    {
+		IDIO_VM_DASM ("EXTEND-FRAME");
+	    }
+	    break;
+	case IDIO_A_UNLINK_FRAME:
+	    {
+		IDIO_VM_DASM ("UNLINK-FRAME");
+	    }
+	    break;
+	case IDIO_A_PACK_FRAME:
+	    {
+		uint64_t arity = idio_vm_get_varuint (pcp);
+		IDIO_VM_DASM ("PACK-FRAME %" PRId64 "", arity);
+	    }
+	    break;
+	case IDIO_A_POP_CONS_FRAME:
+	    {
+		uint64_t arity = idio_vm_get_varuint (pcp);
+
+		IDIO_VM_DASM ("POP-CONS-FRAME %" PRId64 "", arity);
+	    }
+	    break;
 	case IDIO_A_ARITY1P:
 	    {
 		IDIO_VM_DASM ("ARITY=1?");
@@ -4892,6 +4892,31 @@ void idio_vm_dasm (IDIO thr, idio_ai_t pc0, idio_ai_t pce)
 	    {
 		uint64_t arityp1 = idio_vm_get_varuint (pcp);
 		IDIO_VM_DASM ("ARITY>=? %" PRId64 "", arityp1);
+	    }
+	    break;
+	case IDIO_A_CONSTANT_0:
+	    {
+		IDIO_VM_DASM ("CONSTANT 0");
+	    }
+	    break;
+	case IDIO_A_CONSTANT_1:
+	    {
+		IDIO_VM_DASM ("CONSTANT 1");
+	    }
+	    break;
+	case IDIO_A_CONSTANT_2:
+	    {
+		IDIO_VM_DASM ("CONSTANT 2");
+	    }
+	    break;
+	case IDIO_A_CONSTANT_3:
+	    {
+		IDIO_VM_DASM ("CONSTANT 3");
+	    }
+	    break;
+	case IDIO_A_CONSTANT_4:
+	    {
+		IDIO_VM_DASM ("CONSTANT 4");
 	    }
 	    break;
 	case IDIO_A_FIXNUM:
@@ -4933,29 +4958,16 @@ void idio_vm_dasm (IDIO thr, idio_ai_t pc0, idio_ai_t pce)
 		IDIO_VM_DASM ("NEG-CONSTANT %" PRId64 "", v);
 	    }
 	    break;
-	case IDIO_A_CONSTANT_0:
+	case IDIO_A_NOP:
 	    {
-		IDIO_VM_DASM ("CONSTANT 0");
+		IDIO_VM_DASM ("NOP");
 	    }
 	    break;
-	case IDIO_A_CONSTANT_1:
+	case IDIO_A_PRIMCALL0:
 	    {
-		IDIO_VM_DASM ("CONSTANT 1");
-	    }
-	    break;
-	case IDIO_A_CONSTANT_2:
-	    {
-		IDIO_VM_DASM ("CONSTANT 2");
-	    }
-	    break;
-	case IDIO_A_CONSTANT_3:
-	    {
-		IDIO_VM_DASM ("CONSTANT 3");
-	    }
-	    break;
-	case IDIO_A_CONSTANT_4:
-	    {
-		IDIO_VM_DASM ("CONSTANT 4");
+		uint64_t vi = idio_vm_get_varuint (pcp);
+		IDIO primdata = idio_vm_values_ref (vi);
+		IDIO_VM_DASM ("PRIMITIVE0 %" PRId64 " %s", vi, IDIO_PRIMITIVE_NAME (primdata));
 	    }
 	    break;
 	case IDIO_A_PRIMCALL0_NEWLINE:
@@ -4968,11 +4980,11 @@ void idio_vm_dasm (IDIO thr, idio_ai_t pc0, idio_ai_t pce)
 		IDIO_VM_DASM ("PRIMITIVE0 read");
 	    }
 	    break;
-	case IDIO_A_PRIMCALL0:
+	case IDIO_A_PRIMCALL1:
 	    {
 		uint64_t vi = idio_vm_get_varuint (pcp);
 		IDIO primdata = idio_vm_values_ref (vi);
-		IDIO_VM_DASM ("PRIMITIVE0 %" PRId64 " %s", vi, IDIO_PRIMITIVE_NAME (primdata));
+		IDIO_VM_DASM ("PRIMITIVE1 %" PRId64 " %s", vi, IDIO_PRIMITIVE_NAME (primdata));
 	    }
 	    break;
 	case IDIO_A_PRIMCALL1_HEAD:
@@ -5025,11 +5037,11 @@ void idio_vm_dasm (IDIO thr, idio_ai_t pc0, idio_ai_t pce)
 		IDIO_VM_DASM ("PRIMITIVE1 %%set-current-module!");
 	    }
 	    break;
-	case IDIO_A_PRIMCALL1:
+	case IDIO_A_PRIMCALL2:
 	    {
 		uint64_t vi = idio_vm_get_varuint (pcp);
 		IDIO primdata = idio_vm_values_ref (vi);
-		IDIO_VM_DASM ("PRIMITIVE1 %" PRId64 " %s", vi, IDIO_PRIMITIVE_NAME (primdata));
+		IDIO_VM_DASM ("PRIMITIVE2 %" PRId64 " %s", vi, IDIO_PRIMITIVE_NAME (primdata));
 	    }
 	    break;
 	case IDIO_A_PRIMCALL2_PAIR:
@@ -5097,16 +5109,27 @@ void idio_vm_dasm (IDIO thr, idio_ai_t pc0, idio_ai_t pce)
 		IDIO_VM_DASM ("PRIMITIVE2 remainder");
 	    }
 	    break;
-	case IDIO_A_PRIMCALL2:
+	case IDIO_A_EXPANDER:
 	    {
-		uint64_t vi = idio_vm_get_varuint (pcp);
-		IDIO primdata = idio_vm_values_ref (vi);
-		IDIO_VM_DASM ("PRIMITIVE2 %" PRId64 " %s", vi, IDIO_PRIMITIVE_NAME (primdata));
+		uint64_t mci = IDIO_VM_GET_REF (pcp);
+
+		IDIO_VM_DASM ("EXPANDER %" PRId64 "", mci);
 	    }
 	    break;
-	case IDIO_A_NOP:
+	case IDIO_A_INFIX_OPERATOR:
 	    {
-		IDIO_VM_DASM ("NOP");
+		uint64_t mci = IDIO_VM_GET_REF (pcp);
+		uint64_t pri = idio_vm_get_varuint (pcp);
+
+		IDIO_VM_DASM ("INFIX-OPERATOR %" PRId64 " %" PRId64 "", mci, pri);
+	    }
+	    break;
+	case IDIO_A_POSTFIX_OPERATOR:
+	    {
+		uint64_t mci = IDIO_VM_GET_REF (pcp);
+		uint64_t pri = idio_vm_get_varuint (pcp);
+
+		IDIO_VM_DASM ("POSTFIX-OPERATOR %" PRId64 " %" PRId64 "", mci, pri);
 	    }
 	    break;
 	case IDIO_A_PUSH_DYNAMIC:
@@ -5154,6 +5177,11 @@ void idio_vm_dasm (IDIO thr, idio_ai_t pc0, idio_ai_t pce)
 		IDIO_VM_DASM ("ENVIRON-SYM-REF %" PRIu64, mci);
 	    }
 	    break;
+	case IDIO_A_NON_CONT_ERR:
+	    {
+		IDIO_VM_DASM ("NON-CONT-ERROR");
+	    }
+	    break;
 	case IDIO_A_PUSH_TRAP:
 	    {
 		uint64_t mci = IDIO_VM_GET_REF (pcp);
@@ -5169,34 +5197,6 @@ void idio_vm_dasm (IDIO thr, idio_ai_t pc0, idio_ai_t pce)
 	case IDIO_A_RESTORE_TRAP:
 	    {
 		IDIO_VM_DASM ("RESTORE-TRAP");
-	    }
-	    break;
-	case IDIO_A_NON_CONT_ERR:
-	    {
-		IDIO_VM_DASM ("NON-CONT-ERROR");
-	    }
-	    break;
-	case IDIO_A_EXPANDER:
-	    {
-		uint64_t mci = IDIO_VM_GET_REF (pcp);
-
-		IDIO_VM_DASM ("EXPANDER %" PRId64 "", mci);
-	    }
-	    break;
-	case IDIO_A_INFIX_OPERATOR:
-	    {
-		uint64_t mci = IDIO_VM_GET_REF (pcp);
-		uint64_t pri = idio_vm_get_varuint (pcp);
-
-		IDIO_VM_DASM ("INFIX-OPERATOR %" PRId64 " %" PRId64 "", mci, pri);
-	    }
-	    break;
-	case IDIO_A_POSTFIX_OPERATOR:
-	    {
-		uint64_t mci = IDIO_VM_GET_REF (pcp);
-		uint64_t pri = idio_vm_get_varuint (pcp);
-
-		IDIO_VM_DASM ("POSTFIX-OPERATOR %" PRId64 " %" PRId64 "", mci, pri);
 	    }
 	    break;
 	default:
