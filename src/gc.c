@@ -630,7 +630,10 @@ void idio_gc_process_grey (unsigned colour)
 	IDIO_C_ASSERT (idio_gc->grey != IDIO_FRAME_GREY (o));
 	idio_gc->grey = IDIO_FRAME_GREY (o);
 	idio_gc_gcc_mark (IDIO_FRAME_NEXT (o), colour);
-	idio_gc_gcc_mark (IDIO_FRAME_ARGS (o), colour);
+	idio_gc_gcc_mark (IDIO_FRAME_NAMES (o), colour);
+	for (i = 0; i < IDIO_FRAME_NARGS (o); i++) {
+	    idio_gc_gcc_mark (IDIO_FRAME_ARGS (o, i), colour);
+	}
 	break;
     case IDIO_TYPE_HANDLE:
 	IDIO_C_ASSERT (idio_gc->grey != IDIO_HANDLE_GREY (o));
@@ -1221,14 +1224,24 @@ void idio_gc_find_frame_r (IDIO id, int depth)
 		idio_gc_find_frame_r (o, depth + 1);
 		fprintf (stderr, "\n");
 		found = 1;
-	    }
-	    if (IDIO_FRAME_ARGS (o) == id) {
+	    } else if (IDIO_FRAME_NAMES (o) == id) {
 		idio_gc_find_frame_print_id (id, depth);
-		idio_debug ("frame args %s\n", o);
+		idio_debug ("frame names %s\n", o);
 		id = o;
 		idio_gc_find_frame_r (o, depth + 1);
 		fprintf (stderr, "\n");
 		found = 1;
+	    } else {
+		for (i = 0; i < IDIO_FRAME_NARGS (o); i++) {
+		    if (IDIO_FRAME_ARGS (o, i) == id) {
+			idio_gc_find_frame_print_id (id, depth);
+			fprintf (stderr, "frame arg #%zu ", i);
+			idio_debug ("%.100s\n", o);
+			idio_gc_find_frame_r (o, depth + 1);
+			fprintf (stderr, "\n");
+			found = 1;
+		    }
+		}
 	    }
 	    break;
 	case IDIO_TYPE_THREAD:

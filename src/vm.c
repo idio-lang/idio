@@ -330,12 +330,7 @@ static void idio_vm_error_arity (IDIO_I ins, IDIO thr, size_t given, size_t arit
 	idio_display (sigstr, dsh);
 	idio_display_C (") was called as (", dsh);
 	idio_display (func, dsh);
-	IDIO args = idio_S_nil;
-	if (IDIO_FRAME_NARGS (val) > 1) {
-	    IDIO fargs = idio_array_copy (IDIO_FRAME_ARGS (val), IDIO_COPY_SHALLOW, 0);
-	    idio_array_pop (fargs);
-	    args = idio_array_to_list (fargs);
-	}
+	IDIO args = idio_frame_params_as_list (val);
 	if (idio_S_nil != args) {
 	    idio_display_C (" ", dsh);
 	    char *s = idio_display_string (args);
@@ -771,10 +766,10 @@ static void idio_vm_listify (IDIO frame, size_t arity)
 
     for (;;) {
 	if (arity == index) {
-	    idio_array_insert_index (IDIO_FRAME_ARGS (frame), result, arity);
+	    IDIO_FRAME_ARGS (frame, arity) = result;
 	    return;
 	} else {
-	    result = idio_pair (idio_array_get_index (IDIO_FRAME_ARGS (frame), index - 1),
+	    result = idio_pair (IDIO_FRAME_ARGS (frame, index - 1),
 				result);
 	    index--;
 	}
@@ -1214,9 +1209,8 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
 	     */
 	    size_t pc0 = IDIO_THREAD_PC (thr);
 	    IDIO val = IDIO_THREAD_VAL (thr);
-	    IDIO args_a = IDIO_FRAME_ARGS (val);
 
-	    IDIO last = idio_array_pop (args_a);
+	    IDIO last = IDIO_FRAME_ARGS (val, IDIO_FRAME_NARGS (val) - 1);
 	    IDIO_FRAME_NARGS (val) -= 1;
 
 	    if (idio_S_nil != last) {
@@ -1242,57 +1236,57 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
 	    switch (IDIO_PRIMITIVE_ARITY (func)) {
 	    case 0:
 		{
-		    IDIO args = idio_array_to_list (args_a);
+		    IDIO args = idio_frame_args_as_list_from (val, 0);
 		    IDIO_THREAD_VAL (thr) = (IDIO_PRIMITIVE_F (func)) (args);
 		}
 		break;
 	    case 1:
 		{
-		    IDIO arg1 = idio_array_get_index (args_a, 0);
-		    IDIO args = idio_array_to_list_from (args_a, 1);
+		    IDIO arg1 = IDIO_FRAME_ARGS (val, 0);
+		    IDIO args = idio_frame_args_as_list_from (val, 1);
 		    IDIO_THREAD_VAL (thr) = (IDIO_PRIMITIVE_F (func)) (arg1, args);
 		}
 		break;
 	    case 2:
 		{
-		    IDIO arg1 = idio_array_get_index (args_a, 0);
-		    IDIO arg2 = idio_array_get_index (args_a, 1);
-		    IDIO args = idio_array_to_list_from (args_a, 2);
+		    IDIO arg1 = IDIO_FRAME_ARGS (val, 0);
+		    IDIO arg2 = IDIO_FRAME_ARGS (val, 1);
+		    IDIO args = idio_frame_args_as_list_from (val, 2);
 		    IDIO_THREAD_VAL (thr) = (IDIO_PRIMITIVE_F (func)) (arg1, arg2, args);
 		}
 		break;
 	    case 3:
 		{
-		    IDIO arg1 = idio_array_get_index (args_a, 0);
-		    IDIO arg2 = idio_array_get_index (args_a, 1);
-		    IDIO arg3 = idio_array_get_index (args_a, 2);
-		    IDIO args = idio_array_to_list_from (args_a, 3);
+		    IDIO arg1 = IDIO_FRAME_ARGS (val, 0);
+		    IDIO arg2 = IDIO_FRAME_ARGS (val, 1);
+		    IDIO arg3 = IDIO_FRAME_ARGS (val, 2);
+		    IDIO args = idio_frame_args_as_list_from (val, 3);
 		    IDIO_THREAD_VAL (thr) = (IDIO_PRIMITIVE_F (func)) (arg1, arg2, arg3, args);
 		}
 		break;
 	    case 4:
 		{
-		    IDIO arg1 = idio_array_get_index (args_a, 0);
-		    IDIO arg2 = idio_array_get_index (args_a, 1);
-		    IDIO arg3 = idio_array_get_index (args_a, 2);
-		    IDIO arg4 = idio_array_get_index (args_a, 3);
-		    IDIO args = idio_array_to_list_from (args_a, 4);
+		    IDIO arg1 = IDIO_FRAME_ARGS (val, 0);
+		    IDIO arg2 = IDIO_FRAME_ARGS (val, 1);
+		    IDIO arg3 = IDIO_FRAME_ARGS (val, 2);
+		    IDIO arg4 = IDIO_FRAME_ARGS (val, 3);
+		    IDIO args = idio_frame_args_as_list_from (val, 4);
 		    IDIO_THREAD_VAL (thr) = (IDIO_PRIMITIVE_F (func)) (arg1, arg2, arg3, arg4, args);
 		}
 		break;
 	    case 5:
 		{
-		    IDIO arg1 = idio_array_get_index (args_a, 0);
-		    IDIO arg2 = idio_array_get_index (args_a, 1);
-		    IDIO arg3 = idio_array_get_index (args_a, 2);
-		    IDIO arg4 = idio_array_get_index (args_a, 3);
-		    IDIO arg5 = idio_array_get_index (args_a, 4);
-		    IDIO args = idio_array_to_list_from (args_a, 5);
+		    IDIO arg1 = IDIO_FRAME_ARGS (val, 0);
+		    IDIO arg2 = IDIO_FRAME_ARGS (val, 1);
+		    IDIO arg3 = IDIO_FRAME_ARGS (val, 2);
+		    IDIO arg4 = IDIO_FRAME_ARGS (val, 3);
+		    IDIO arg5 = IDIO_FRAME_ARGS (val, 4);
+		    IDIO args = idio_frame_args_as_list_from (val, 5);
 		    IDIO_THREAD_VAL (thr) = (IDIO_PRIMITIVE_F (func)) (arg1, arg2, arg3, arg4, arg5, args);
 		}
 		break;
 	    default:
-		idio_vm_error_function_invoke ("arity unexpected", IDIO_LIST2 (func, args_a), IDIO_C_FUNC_LOCATION ());
+		idio_vm_error_function_invoke ("arity unexpected", IDIO_LIST2 (func, val), IDIO_C_FUNC_LOCATION ());
 
 		/* notreached */
 		return;
@@ -1322,9 +1316,8 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
     case IDIO_TYPE_CONTINUATION:
 	{
 	    IDIO val = IDIO_THREAD_VAL (thr);
-	    IDIO args_a = IDIO_FRAME_ARGS (val);
 
-	    IDIO last = idio_array_pop (args_a);
+	    IDIO last = IDIO_FRAME_ARGS (val, IDIO_FRAME_NARGS (val) - 1);
 	    IDIO_FRAME_NARGS (val) -= 1;
 
 	    if (idio_S_nil != last) {
@@ -1335,13 +1328,13 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
 	    }
 
 	    if (IDIO_FRAME_NARGS (val) != 1) {
-		idio_vm_error_function_invoke ("unary continuation", IDIO_LIST2 (func, args_a), IDIO_C_FUNC_LOCATION ());
+		idio_vm_error_function_invoke ("unary continuation", IDIO_LIST2 (func, val), IDIO_C_FUNC_LOCATION ());
 
 		/* notreached */
 		return;
 	    }
 
-	    idio_vm_restore_continuation (func, idio_array_get_index (args_a, 0));
+	    idio_vm_restore_continuation (func, IDIO_FRAME_ARGS (val, 0));
 	}
 	break;
     case IDIO_TYPE_SYMBOL:
@@ -1351,24 +1344,21 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
 		IDIO_THREAD_VAL (thr) = idio_command_invoke (func, thr, pathname);
 		free (pathname);
 	    } else {
+		IDIO val = IDIO_THREAD_VAL (thr);
 		/*
 		 * IDIO_FRAME_ARGS() includes a varargs element so
 		 * should always be one or more
 		 */
-		IDIO frame_args = IDIO_FRAME_ARGS (IDIO_THREAD_VAL (thr));
-		size_t frame_args_size = idio_array_size (frame_args);
-		IDIO_C_ASSERT (frame_args_size);
-
 		IDIO args = idio_S_nil;
-		if (frame_args_size > 1) {
-		    args = idio_array_to_list (frame_args);
+		if (IDIO_FRAME_NARGS (val) > 1) {
+		    args = idio_frame_args_as_list (val);
 		} else {
 		    /*
 		     * A single varargs element but if it is #n then
 		     * nothing
 		     */
-		    if (idio_S_nil != idio_array_get_index (frame_args, 0)) {
-			args = idio_array_to_list (frame_args);
+		    if (idio_S_nil != IDIO_FRAME_ARGS (val, 0)) {
+			args = IDIO_FRAME_ARGS (val, 0);
 		    }
 		}
 
@@ -1388,7 +1378,7 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
     default:
 	{
 	    idio_vm_error_function_invoke ("cannot invoke",
-					   IDIO_LIST2 (func, IDIO_FRAME_ARGS (IDIO_THREAD_VAL (thr))),
+					   IDIO_LIST2 (func, IDIO_THREAD_VAL (thr)),
 					   IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
@@ -2053,12 +2043,12 @@ IDIO idio_apply (IDIO fn, IDIO args)
     if (nargs) {
 	idio_ai_t vsi;
 	for (vsi = 0; vsi < nargs - 1; vsi++) {
-	    idio_frame_update (vs, 0, vsi, IDIO_PAIR_H (args));
+	    IDIO_FRAME_ARGS (vs, vsi) = IDIO_PAIR_H (args);
 	    args = IDIO_PAIR_T (args);
 	}
 	args = larg;
 	for (; idio_S_nil != args; vsi++) {
-	    idio_frame_update (vs, 0, vsi, IDIO_PAIR_H (args));
+	    IDIO_FRAME_ARGS (vs, vsi) = IDIO_PAIR_H (args);
 	    args = IDIO_PAIR_T (args);
 	}
     }
@@ -2334,12 +2324,7 @@ static void idio_vm_function_trace (IDIO_I ins, IDIO thr)
 {
     IDIO func = IDIO_THREAD_FUNC (thr);
     IDIO val = IDIO_THREAD_VAL (thr);
-    IDIO args = idio_S_nil;
-    if (IDIO_FRAME_NARGS (val) > 1) {
-	IDIO fargs = idio_array_copy (IDIO_FRAME_ARGS (val), IDIO_COPY_SHALLOW, 0);
-	idio_array_pop (fargs);
-	args = idio_array_to_list (fargs);
-    }
+    IDIO args = idio_frame_params_as_list (val);
     IDIO expr = idio_list_append2 (IDIO_LIST1 (func), args);
 
     struct timespec ts;
@@ -2660,25 +2645,25 @@ int idio_vm_run1 (IDIO thr)
     switch (ins) {
     case IDIO_A_SHALLOW_ARGUMENT_REF0:
 	IDIO_VM_RUN_DIS ("SHALLOW-ARGUMENT-REF 0");
-	IDIO_THREAD_VAL (thr) = idio_array_get_index (IDIO_FRAME_ARGS (IDIO_THREAD_FRAME (thr)), 0);
+	IDIO_THREAD_VAL (thr) = IDIO_FRAME_ARGS (IDIO_THREAD_FRAME (thr), 0);
 	break;
     case IDIO_A_SHALLOW_ARGUMENT_REF1:
 	IDIO_VM_RUN_DIS ("SHALLOW-ARGUMENT-REF 1");
-	IDIO_THREAD_VAL (thr) = idio_array_get_index (IDIO_FRAME_ARGS (IDIO_THREAD_FRAME (thr)), 1);
+	IDIO_THREAD_VAL (thr) = IDIO_FRAME_ARGS (IDIO_THREAD_FRAME (thr), 1);
 	break;
     case IDIO_A_SHALLOW_ARGUMENT_REF2:
 	IDIO_VM_RUN_DIS ("SHALLOW-ARGUMENT-REF 2");
-	IDIO_THREAD_VAL (thr) = idio_array_get_index (IDIO_FRAME_ARGS (IDIO_THREAD_FRAME (thr)), 2);
+	IDIO_THREAD_VAL (thr) = IDIO_FRAME_ARGS (IDIO_THREAD_FRAME (thr), 2);
 	break;
     case IDIO_A_SHALLOW_ARGUMENT_REF3:
 	IDIO_VM_RUN_DIS ("SHALLOW-ARGUMENT-REF 3");
-	IDIO_THREAD_VAL (thr) = idio_array_get_index (IDIO_FRAME_ARGS (IDIO_THREAD_FRAME (thr)), 3);
+	IDIO_THREAD_VAL (thr) = IDIO_FRAME_ARGS (IDIO_THREAD_FRAME (thr), 3);
 	break;
     case IDIO_A_SHALLOW_ARGUMENT_REF:
 	{
 	    uint64_t j = idio_vm_fetch_varuint (thr);
 	    IDIO_VM_RUN_DIS ("SHALLOW-ARGUMENT-REF %" PRId64 "", j);
-	    IDIO_THREAD_VAL (thr) = idio_array_get_index (IDIO_FRAME_ARGS (IDIO_THREAD_FRAME (thr)), j);
+	    IDIO_THREAD_VAL (thr) = IDIO_FRAME_ARGS (IDIO_THREAD_FRAME (thr), j);
 	}
 	break;
     case IDIO_A_DEEP_ARGUMENT_REF:
@@ -2691,25 +2676,25 @@ int idio_vm_run1 (IDIO thr)
 	break;
     case IDIO_A_SHALLOW_ARGUMENT_SET0:
 	IDIO_VM_RUN_DIS ("SHALLOW-ARGUMENT-SET 0");
-	idio_frame_update (IDIO_THREAD_FRAME (thr), 0, 0, IDIO_THREAD_VAL (thr));
+	IDIO_FRAME_ARGS (IDIO_THREAD_FRAME (thr), 0) = IDIO_THREAD_VAL (thr);
 	break;
     case IDIO_A_SHALLOW_ARGUMENT_SET1:
 	IDIO_VM_RUN_DIS ("SHALLOW-ARGUMENT-SET 1");
-	idio_frame_update (IDIO_THREAD_FRAME (thr), 0, 1, IDIO_THREAD_VAL (thr));
+	IDIO_FRAME_ARGS (IDIO_THREAD_FRAME (thr), 1) = IDIO_THREAD_VAL (thr);
 	break;
     case IDIO_A_SHALLOW_ARGUMENT_SET2:
 	IDIO_VM_RUN_DIS ("SHALLOW-ARGUMENT-SET 2");
-	idio_frame_update (IDIO_THREAD_FRAME (thr), 0, 2, IDIO_THREAD_VAL (thr));
+	IDIO_FRAME_ARGS (IDIO_THREAD_FRAME (thr), 2) = IDIO_THREAD_VAL (thr);
 	break;
     case IDIO_A_SHALLOW_ARGUMENT_SET3:
 	IDIO_VM_RUN_DIS ("SHALLOW-ARGUMENT-SET 3");
-	idio_frame_update (IDIO_THREAD_FRAME (thr), 0, 3, IDIO_THREAD_VAL (thr));
+	IDIO_FRAME_ARGS (IDIO_THREAD_FRAME (thr), 3) = IDIO_THREAD_VAL (thr);
 	break;
     case IDIO_A_SHALLOW_ARGUMENT_SET:
 	{
 	    uint64_t i = idio_vm_fetch_varuint (thr);
 	    IDIO_VM_RUN_DIS ("SHALLOW-ARGUMENT-SET %" PRId64 "", i);
-	    idio_frame_update (IDIO_THREAD_FRAME (thr), 0, i, IDIO_THREAD_VAL (thr));
+	    IDIO_FRAME_ARGS (IDIO_THREAD_FRAME (thr), i) = IDIO_THREAD_VAL (thr);
 	}
 	break;
     case IDIO_A_DEEP_ARGUMENT_SET:
@@ -6145,7 +6130,7 @@ void idio_vm_reset_thread (IDIO thr, int verbose)
 	size_t i = 0;
 	while (idio_S_nil != frame) {
 	    fprintf (stderr, "call frame %4zd: ", i++);
-	    idio_debug ("%s\n", IDIO_FRAME_ARGS (frame));
+	    idio_debug ("%s\n", frame);
 	    frame = IDIO_FRAME_NEXT (frame);
 	}
 
@@ -6299,7 +6284,7 @@ void idio_final_vm ()
 	float c_pct = 0;
 	float t_pct = 0;
 
-	fprintf (idio_vm_perf_FILE, "vm-ins:  %4.4s %-30.30s %8.8s %5.5s %15.15s %5.5s %6.6s\n", "code", "instruction", "count", "cnt%", "time (sec.nsec)", "time%", "ns/call");
+	fprintf (idio_vm_perf_FILE, "vm-ins:  %4.4s %-40.40s %8.8s %5.5s %15.15s %5.5s %6.6s\n", "code", "instruction", "count", "cnt%", "time (sec.nsec)", "time%", "ns/call");
 	for (IDIO_I i = 1; i < IDIO_I_MAX; i++) {
 	    if (1 || idio_vm_ins_counters[i]) {
 		const char *bc_name = idio_vm_bytecode2string (i);
@@ -6316,7 +6301,7 @@ void idio_final_vm ()
 		    float time_pct = i_time * 100 / t_time;
 		    t_pct += time_pct;
 
-		    fprintf (idio_vm_perf_FILE, "vm-ins:  %4" PRIu8 " %-30s %8" PRIu64 " %5.1f %5ld.%09ld %5.1f",
+		    fprintf (idio_vm_perf_FILE, "vm-ins:  %4" PRIu8 " %-40s %8" PRIu64 " %5.1f %5ld.%09ld %5.1f",
 			     i,
 			     bc_name,
 			     idio_vm_ins_counters[i],
@@ -6333,7 +6318,7 @@ void idio_final_vm ()
 		}
 	    }
 	}
-	fprintf (idio_vm_perf_FILE, "vm-ins:  %4s %-30s %8" PRIu64 " %5.1f %5ld.%09ld %5.1f\n", "", "total", c, c_pct, t.tv_sec, t.tv_nsec, t_pct);
+	fprintf (idio_vm_perf_FILE, "vm-ins:  %4s %-40s %8" PRIu64 " %5.1f %5ld.%09ld %5.1f\n", "", "total", c, c_pct, t.tv_sec, t.tv_nsec, t_pct);
 #endif
     }
 

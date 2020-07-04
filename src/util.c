@@ -1468,14 +1468,27 @@ char *idio_as_string (IDIO o, int depth)
 		}
 	    case IDIO_TYPE_FRAME:
 		{
-		    if (asprintf (&r, "#<FRAME %p ", o) == -1) {
+		    if (asprintf (&r, "#<FRAME %p n=%td [ ", o, IDIO_FRAME_NARGS (o)) == -1) {
 			idio_error_alloc ("asprintf");
 
 			/* notreached */
 			return NULL;
 		    }
-		    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_FRAME_ARGS (o), 1));
-		    IDIO_STRCAT (r, ">");
+		    for (i = 0; i < IDIO_FRAME_NARGS (o); i++) {
+			char *t = idio_as_string (IDIO_FRAME_ARGS (o, i), depth - 1);
+			char *fas;
+			if (asprintf (&fas, "%s ", t) == -1) {
+			    free (t);
+			    free (r);
+			    idio_error_alloc ("asprintf");
+
+			    /* notreached */
+			    return NULL;
+			}
+			free (t);
+			IDIO_STRCAT_FREE (r, fas);
+		    }
+		    IDIO_STRCAT (r, "]>");
 		    break;
 		}
 	    case IDIO_TYPE_HANDLE:
@@ -1657,7 +1670,7 @@ char *idio_as_string (IDIO o, int depth)
 				return NULL;
 			    }
 			    IDIO_STRCAT_FREE (r, es);
-			    IDIO_STRCAT_FREE (r, idio_as_string (IDIO_FRAME_ARGS (frame), 1));
+			    IDIO_STRCAT_FREE (r, idio_as_string (frame, 1));
 			}
 		    }
 		    IDIO_STRCAT (r, "\n  env=");

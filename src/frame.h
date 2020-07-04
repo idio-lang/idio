@@ -34,7 +34,9 @@ IDIO idio_frame_fetch (IDIO fo, size_t d, size_t i);
 void idio_frame_update (IDIO fo, size_t d, size_t i, IDIO v);
 IDIO idio_frame_extend (IDIO f1, IDIO f2);
 
+IDIO idio_frame_args_as_list_from (IDIO frame, idio_ai_t from);
 IDIO idio_frame_args_as_list (IDIO frame);
+IDIO idio_frame_params_as_list (IDIO frame);
 
 void idio_init_frame (void);
 void idio_frame_add_primitives (void);

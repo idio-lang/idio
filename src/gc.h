@@ -561,13 +561,15 @@ typedef struct idio_frame_s {
     struct idio_s *grey;
     struct idio_s *next;
     idio_ai_t nargs;
-    struct idio_s *args;
+    struct idio_s *names;		/* a ref into vm_constants */
+    struct idio_s* *args;
 } idio_frame_t;
 
 #define IDIO_FRAME_GREY(F)	((F)->u.frame->grey)
 #define IDIO_FRAME_NEXT(F)	((F)->u.frame->next)
 #define IDIO_FRAME_NARGS(F)	((F)->u.frame->nargs)
-#define IDIO_FRAME_ARGS(F)	((F)->u.frame->args)
+#define IDIO_FRAME_NAMES(F)	((F)->u.frame->names)
+#define IDIO_FRAME_ARGS(F,i)	((F)->u.frame->args[i])
 #define IDIO_FRAME_FLAGS(F)	((F)->tflags)
 
 #define IDIO_BIGNUM_FLAG_NONE          (0)

@@ -43,31 +43,20 @@ IDIO idio_frame_allocate (idio_ai_t arityp1)
     IDIO fo = idio_gc_get (IDIO_TYPE_FRAME);
 
     IDIO_GC_ALLOC (fo->u.frame, sizeof (idio_frame_t));
+    IDIO_GC_ALLOC (fo->u.frame->args, arityp1 * sizeof (idio_t));
 
     IDIO_FRAME_GREY (fo) = NULL;
     IDIO_FRAME_FLAGS (fo) = IDIO_FRAME_FLAG_NONE;
     IDIO_FRAME_NEXT (fo) = idio_S_nil;
 
     IDIO_FRAME_NARGS (fo) = arityp1;
-    IDIO_FRAME_ARGS (fo) = idio_array (arityp1);
+    IDIO_FRAME_NAMES (fo) = idio_S_nil;
 
-    /*
-     * We must supply values into the array otherwise the array code
-     * will think it is nominally empty (and flag errors when you try
-     * to access any element).
-     *
-     * This array is arity+1 in length where the last argument is a
-     * putative list of varargs.  It will have been be initialised by
-     * the array code to idio_S_nil but unless we set it then the
-     * array code will only allow access to the first arity elements.
-     * The others should be initialised to idio_S_undef so that we
-     * might spot misuse.
-     */
     idio_ai_t i;
     for (i = 0; i < arityp1 - 1; i++) {
-	idio_array_insert_index (IDIO_FRAME_ARGS (fo), idio_S_undef, i);
+	IDIO_FRAME_ARGS (fo, i) = idio_S_undef;
     }
-    idio_array_insert_index (IDIO_FRAME_ARGS (fo), idio_S_nil, i);
+    IDIO_FRAME_ARGS (fo, i) = idio_S_nil;
 
     return fo;
 }
@@ -85,7 +74,7 @@ IDIO idio_frame (IDIO next, IDIO args)
 
     idio_ai_t i = 0;
     while (idio_S_nil != args) {
-	idio_array_insert_index (IDIO_FRAME_ARGS (fo), IDIO_PAIR_H (args), i++);
+	IDIO_FRAME_ARGS (fo, i++) = IDIO_PAIR_H (args);
 	args = IDIO_PAIR_T (args);
     }
 
@@ -107,6 +96,7 @@ void idio_free_frame (IDIO fo)
 
     idio_gc_stats_free (sizeof (idio_frame_t));
 
+    free (fo->u.frame->args);
     free (fo->u.frame);
 }
 
@@ -123,22 +113,15 @@ IDIO idio_frame_fetch (IDIO fo, size_t d, size_t i)
 	IDIO_TYPE_ASSERT (frame, fo);
     }
 
-    if (i >= idio_array_size (IDIO_FRAME_ARGS (fo))) {
-	fprintf (stderr, "\n\nidio_frame_fetch (");
-	idio_debug ("%s", ofo);
-	fprintf (stderr, ", %zd, %zd)\n", d, i);
-	fprintf (stderr, "ARGS = ");
-	idio_gc_verboseness (3);
-	idio_dump (IDIO_FRAME_ARGS (fo), 10);
-	idio_gc_verboseness (0);
-	fprintf (stderr, "\n\nFRAME = ");
+    if (i >= IDIO_FRAME_NARGS (fo)) {
+	idio_dump (ofo, 10);
 	idio_dump (fo, 10);
 	idio_frame_error_range (fo, d, i, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
 
-    return idio_array_get_index (IDIO_FRAME_ARGS (fo), i);
+    return IDIO_FRAME_ARGS (fo, i);
 }
 
 void idio_frame_update (IDIO fo, size_t d, size_t i, IDIO v)
@@ -153,14 +136,14 @@ void idio_frame_update (IDIO fo, size_t d, size_t i, IDIO v)
 	IDIO_TYPE_ASSERT (frame, fo);
     }
 
-    if (i > idio_array_size (IDIO_FRAME_ARGS (fo))) {
+    if (i >= IDIO_FRAME_NARGS (fo)) {
 	idio_frame_error_range (fo, d, i, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return;
     }
 
-    idio_array_insert_index (IDIO_FRAME_ARGS (fo), v, i);
+    IDIO_FRAME_ARGS (fo, i) = v;
 }
 
 IDIO idio_frame_extend (IDIO f1, IDIO f2)
@@ -196,24 +179,57 @@ IDIO idio_frame_extend (IDIO f1, IDIO f2)
     return f2;
 }
 
-IDIO idio_frame_args_as_list (IDIO frame)
+IDIO idio_frame_args_as_list_from (IDIO frame, idio_ai_t from)
 {
     IDIO_ASSERT (frame);
     IDIO_TYPE_ASSERT (frame, frame);
 
     IDIO r = idio_S_nil;
 
-    IDIO args = IDIO_FRAME_ARGS (frame);
-    idio_ai_t al = idio_array_size (args);
-    if (al > 0) {
+    idio_ai_t nargs = IDIO_FRAME_NARGS (frame);
+    if (nargs > 0) {
 	idio_ai_t i;
-	for (i = 0; i < al - 1; i++) {
-	    r = idio_pair (idio_array_get_index (args, i), r);
+	for (i = nargs - 1; i >= from; i--) {
+	    r = idio_pair (IDIO_FRAME_ARGS (frame, i),
+			   r);
 	}
+    }
 
-	r = idio_improper_list_reverse (r, idio_array_get_index (args, i));
-    } else {
-	fprintf (stderr, "idio_frame_args_as_list: al == %zd\n", al);
+    return r;
+}
+
+IDIO idio_frame_args_as_list (IDIO frame)
+{
+    IDIO_ASSERT (frame);
+    IDIO_TYPE_ASSERT (frame, frame);
+
+    return idio_frame_args_as_list_from (frame, 0);
+}
+
+/*
+ * Not quite the same as idio_frame_args_as_list because we don't
+ * include the varargs element if it is #n.
+ *
+ * It's only real use is pretty-printing function calls.
+ */
+IDIO idio_frame_params_as_list (IDIO frame)
+{
+    IDIO_ASSERT (frame);
+    IDIO_TYPE_ASSERT (frame, frame);
+
+    IDIO r = idio_S_nil;
+    idio_ai_t nargs = IDIO_FRAME_NARGS (frame);
+
+    if (idio_S_nil != IDIO_FRAME_ARGS (frame, nargs - 1)) {
+	r = idio_pair (IDIO_FRAME_ARGS (frame, nargs - 1), r);
+    }
+
+    if (nargs > 1) {
+	idio_ai_t i;
+	for (i = nargs - 2; i >= 0; i--) {
+	    r = idio_pair (IDIO_FRAME_ARGS (frame, i),
+			   r);
+	}
     }
 
     return r;
