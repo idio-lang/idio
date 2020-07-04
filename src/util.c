@@ -881,7 +881,7 @@ char *idio_as_string (IDIO o, int depth)
 		    }
 
 		    if (NULL == t) {
-			if (asprintf (&r, "#<C=%" PRIdPTR ">", v) == -1) {
+			if (asprintf (&r, "#<CONST? %p>", o) == -1) {
 			    idio_error_alloc ("asprintf");
 
 			    /* notreached */
@@ -928,7 +928,7 @@ char *idio_as_string (IDIO o, int depth)
 		    }
 
 		    if (NULL == t) {
-			if (asprintf (&r, "#<C=%" PRIdPTR ">", v) == -1) {
+			if (asprintf (&r, "#<TOKEN=%" PRIdPTR ">", v) == -1) {
 			    idio_error_alloc ("asprintf");
 
 			    /* notreached */
@@ -1003,6 +1003,7 @@ char *idio_as_string (IDIO o, int depth)
 
 		    case IDIO_I_CODE_ALLOCATE_FRAME:			t = "ALLOCATE-FRAME";			break;
 		    case IDIO_I_CODE_ALLOCATE_DOTTED_FRAME:		t = "ALLOCATE-DOTTED-FRAME";		break;
+		    case IDIO_I_CODE_REUSE_FRAME:			t = "REUSE-FRAME";			break;
 
 		    case IDIO_I_CODE_DYNAMIC_SYM_REF:			t = "DYNAMIC-SYM-REF";			break;
 		    case IDIO_I_CODE_DYNAMIC_FUNCTION_SYM_REF:		t = "DYNAMIC-FUNCTION-SYM-REF";		break;
@@ -1042,7 +1043,7 @@ char *idio_as_string (IDIO o, int depth)
 		    }
 
 		    if (NULL == t) {
-			if (asprintf (&r, "#<C=%" PRIdPTR ">", v) == -1) {
+			if (asprintf (&r, "#<I-CODE? %p>", o) == -1) {
 			    idio_error_alloc ("asprintf");
 
 			    /* notreached */
@@ -1663,7 +1664,7 @@ char *idio_as_string (IDIO o, int depth)
 			    IDIO_STRCAT (r, "\n  fr=nil");
 			} else {
 			    char *es;
-			    if (asprintf (&es, "\n  fr=%p ", frame) == -1) {
+			    if (asprintf (&es, "\n  fr=%p n=%td ", frame, IDIO_FRAME_NARGS (frame)) == -1) {
 				idio_error_alloc ("asprintf");
 
 				/* notreached */
@@ -2090,6 +2091,7 @@ const char *idio_vm_bytecode2string (int code)
     case IDIO_A_ALLOCATE_FRAME5:			r = "ALLOCATE-FRAME5";			break;
     case IDIO_A_ALLOCATE_FRAME:				r = "ALLOCATE-FRAME";			break;
     case IDIO_A_ALLOCATE_DOTTED_FRAME:			r = "ALLOCATE-DOTTED-FRAME";		break;
+    case IDIO_A_REUSE_FRAME:				r = "REUSE-FRAME";			break;
 
     case IDIO_A_POP_FRAME0:				r = "POP-FRAME0";			break;
     case IDIO_A_POP_FRAME1:				r = "POP-FRAME1";			break;

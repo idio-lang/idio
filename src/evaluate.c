@@ -943,7 +943,7 @@ static IDIO idio_meaning_reference (IDIO src, IDIO name, IDIO nametree, int flag
     } else if (idio_S_toplevel == kind) {
 	IDIO fgvi = IDIO_PAIR_HTT (sk);
 	if (IDIO_FIXNUM_VAL (fgvi) > 0) {
-	    return IDIO_LIST2 (idio_I_CHECKED_GLOBAL_SYM_REF, fmci);
+	    return IDIO_LIST2 (idio_I_CHECKED_GLOBAL_VAL_REF, fgvi);
 	} else {
 	    return IDIO_LIST2 (idio_I_GLOBAL_SYM_REF, fmci);
 	}
@@ -1007,7 +1007,7 @@ static IDIO idio_meaning_function_reference (IDIO src, IDIO name, IDIO nametree,
     } else if (idio_S_toplevel == kind) {
 	IDIO fgvi = IDIO_PAIR_HTT (sk);
 	if (IDIO_FIXNUM_VAL (fgvi) > 0) {
-	    return IDIO_LIST2 (idio_I_CHECKED_GLOBAL_FUNCTION_SYM_REF, fmci);
+	    return IDIO_LIST2 (idio_I_CHECKED_GLOBAL_FUNCTION_VAL_REF, fgvi);
 	} else {
 	    return IDIO_LIST2 (idio_I_GLOBAL_FUNCTION_SYM_REF, fmci);
 	}
@@ -1529,7 +1529,13 @@ static IDIO idio_meaning_assignment (IDIO src, IDIO name, IDIO e, IDIO nametree,
 	    return IDIO_LIST4 (idio_I_DEEP_ARGUMENT_SET, fmci, fvi, m);
 	}
     } else if (idio_S_toplevel == kind) {
-	assign = IDIO_LIST3 (idio_I_GLOBAL_SYM_SET, fmci, m);
+	IDIO fgvi = IDIO_PAIR_HTT (sk);
+	if (IDIO_MEANING_IS_DEFINE (flags) ||
+	    0 == IDIO_FIXNUM_VAL (fgvi)) {
+	    assign = IDIO_LIST3 (idio_I_GLOBAL_SYM_SET, fmci, m);
+	} else {
+	    assign = IDIO_LIST3 (idio_I_GLOBAL_VAL_SET, fgvi, m);
+	}
     } else if (idio_S_dynamic == kind ||
 	       idio_S_environ == kind) {
 	assign = IDIO_LIST3 (idio_I_GLOBAL_SYM_SET, fmci, m);
@@ -1634,6 +1640,19 @@ static IDIO idio_meaning_define (IDIO src, IDIO name, IDIO e, IDIO nametree, int
 	}
     }
 
+    IDIO sk = idio_meaning_variable_kind (src, nametree, name, IDIO_MEANING_LEXICAL_SCOPE (flags), cs, cm);
+
+    IDIO kind = IDIO_PAIR_H (sk);
+    IDIO fmci = IDIO_PAIR_HT (sk);
+    IDIO fgvi = IDIO_PAIR_HTT (sk);
+    if (idio_S_toplevel == kind &&
+	0 == IDIO_FIXNUM_VAL (fgvi)) {
+	idio_ai_t gvi = idio_vm_extend_values ();
+	fgvi = idio_fixnum (gvi);
+	sk = IDIO_LIST5 (kind, fmci, fgvi, cm, idio_string_C ("idio-meaning-define/gvi=0"));
+	idio_module_set_symbol (name, sk, cm);
+    }
+
     return idio_meaning_assignment (src, name, e, nametree, IDIO_MEANING_DEFINE (IDIO_MEANING_LEXICAL_SCOPE (flags)), cs, cm);
 }
 
@@ -1682,7 +1701,7 @@ static IDIO idio_meaning_define_macro (IDIO src, IDIO name, IDIO e, IDIO nametre
 
     IDIO expander = IDIO_LIST4 (idio_S_function,
 				IDIO_LIST2 (x_sym, e_sym),
-				idio_string_C ("im_dm"),
+				idio_string_C ("im-define-macro"),
 				appl);
     idio_meaning_copy_src_properties (src, expander);
 
@@ -1958,7 +1977,7 @@ static IDIO idio_meaning_define_infix_operator (IDIO src, IDIO name, IDIO pri, I
 
 	IDIO fe = IDIO_LIST4 (idio_S_function,
 			      def_args,
-			      idio_string_C ("im_dio"),
+			      idio_string_C ("im-define-infix-operator"),
 			      e);
 
 	idio_meaning_copy_src_properties (src, fe);
@@ -2069,7 +2088,7 @@ static IDIO idio_meaning_define_postfix_operator (IDIO src, IDIO name, IDIO pri,
 
 	IDIO fe = IDIO_LIST4 (idio_S_function,
 			      def_args,
-			      idio_string_C ("im_dpo"),
+			      idio_string_C ("im-define-postfix-operator"),
 			      e);
 
 	idio_meaning_copy_src_properties (src, fe);
@@ -2796,7 +2815,7 @@ static IDIO idio_meaning_rewrite_body_letrec (IDIO src, IDIO e)
 		 */
 		IDIO fn = idio_list_append2 (IDIO_LIST3 (idio_S_function,
 							 IDIO_PAIR_T (bindings),
-							 idio_string_C ("im_rbl :+")),
+							 idio_string_C ("im-rbl internal :+")),
 					     IDIO_PAIR_TT (cur));
 		idio_meaning_copy_src_properties (cur, fn);
 
@@ -3022,7 +3041,11 @@ static IDIO idio_meaning_no_argument (IDIO src, IDIO nametree, size_t size, int 
 
     IDIO_TYPE_ASSERT (list, nametree);
 
-    return IDIO_LIST2 (idio_I_ALLOCATE_FRAME, idio_fixnum (size));
+    if (IDIO_MEANING_IS_FRAME_REUSE (flags)) {
+	return IDIO_LIST2 (idio_I_ALLOCATE_FRAME, idio_fixnum (size));
+    } else {
+	return IDIO_LIST2 (idio_I_ALLOCATE_FRAME, idio_fixnum (size));
+    }
 }
 
 static IDIO idio_meanings (IDIO src, IDIO es, IDIO nametree, size_t size, int flags, IDIO cs, IDIO cm)
@@ -3105,7 +3128,11 @@ static IDIO idio_meaning_no_dotted_argument (IDIO src, IDIO nametree, size_t siz
 
     IDIO_TYPE_ASSERT (list, nametree);
 
-    return IDIO_LIST2 (idio_I_ALLOCATE_FRAME, idio_fixnum (arity));
+    if (IDIO_MEANING_IS_FRAME_REUSE (flags)) {
+	return IDIO_LIST2 (idio_I_ALLOCATE_FRAME, idio_fixnum (arity));
+    } else {
+	return IDIO_LIST2 (idio_I_ALLOCATE_FRAME, idio_fixnum (arity));
+    }
 }
 
 static IDIO idio_meaning_dotteds (IDIO src, IDIO es, IDIO nametree, size_t size, size_t arity, int flags, IDIO cs, IDIO cm)
@@ -3422,7 +3449,13 @@ static IDIO idio_meaning_regular_application (IDIO src, IDIO e, IDIO es, IDIO na
     } else {
 	m = idio_meaning (e, e, nametree, IDIO_MEANING_NOT_TAILP (flags), cs, cm);
     }
-    IDIO ms = idio_meanings (es, es, nametree, idio_list_length (es), IDIO_MEANING_NOT_TAILP (flags), cs, cm);
+
+    int ms_flags = IDIO_MEANING_NOT_TAILP (flags);
+    if (IDIO_MEANING_IS_TAILP (flags)) {
+	ms_flags = IDIO_MEANING_FRAME_REUSE (ms_flags);
+    }
+
+    IDIO ms = idio_meanings (es, es, nametree, idio_list_length (es), ms_flags, cs, cm);
 
     if (IDIO_MEANING_IS_TAILP (flags)) {
 	return IDIO_LIST4 (idio_I_TR_REGULAR_CALL, src, m, ms);
@@ -3500,7 +3533,7 @@ static IDIO idio_meaning_application (IDIO src, IDIO e, IDIO es, IDIO nametree, 
 	if (0 == idio_isa_string (IDIO_PAIR_HTT (e))) {
 	    e = idio_list_append2 (IDIO_LIST3 (IDIO_PAIR_H (e),
 					       IDIO_PAIR_HT (e),
-					       idio_string_C ("im_appl closed")),
+					       idio_string_C ("im-application (closed)")),
 				   IDIO_PAIR_TT (e));
 	    /* idio_debug ("im_appl closed %s\n", e); */
 	}

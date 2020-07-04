@@ -1517,7 +1517,7 @@ IDIO idio_command_rcse_handler (IDIO c)
 {
     IDIO_ASSERT (c);
     IDIO_TYPE_ASSERT (struct_instance, c);
-    
+
     IDIO r = idio_vm_invoke_C (idio_thread_current_thread (),
 			       IDIO_LIST3 (idio_module_symbol_value (idio_symbols_C_intern ("format-job-info"),
 								     idio_command_module,

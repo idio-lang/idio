@@ -8,18 +8,16 @@
 
 ;; (fib 30)
 
-c := 0
-
-fib := function (n) {
-	 c = c + 1
-	 if (lt n 2) n {
-	   (fib (n - 1)) + (fib (n - 2))
-	 }
+define (fib n) {
+  if (lt n 2) n {
+    (fib (n - 1)) + (fib (n - 2))
+  }
 }
 
-fib 30
+n := 30
+r := fib n
 
-printf "%s\n" c
+printf "fib %s => %s in %ss\n" n r SECONDS
 
 #*
 
