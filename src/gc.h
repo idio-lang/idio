@@ -562,7 +562,7 @@ typedef struct idio_frame_s {
     struct idio_s *next;
     idio_ai_t nargs;
     struct idio_s *names;		/* a ref into vm_constants */
-    struct idio_s* *args;
+    struct idio_s* args[];
 } idio_frame_t;
 
 #define IDIO_FRAME_GREY(F)	((F)->u.frame->grey)
