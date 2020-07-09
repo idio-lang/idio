@@ -5,11 +5,12 @@ display* "This is trap.idio"
 
 trap ^rt-signal-SIGCHLD (function (c) {
 			   ;display* "trapped ^rt-signal-SIGCHLD" c
-  }) {
+			   c
+}) {
   trap ^rt-signal-SIGHUP (function (c) {
 			    display* "trapped ^rt-signal-SIGHUP" c
-    }) {
-      echo Hello World
+  }) {
+    echo Hello World
   }
 }
 

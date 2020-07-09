@@ -128,7 +128,8 @@ IDIO idio_evaluate_expander_source (IDIO x, IDIO e)
     IDIO_ASSERT (x);
     IDIO_ASSERT (e);
 
-    /* idio_debug ("evaluate-expander-source: in: %s\n", x);   */
+    /* idio_debug ("evaluate-expander-source: in: x=%s", x); */
+    /* idio_debug (" e=%s\n", e); */
 
     IDIO cthr = idio_thread_current_thread ();
     IDIO ethr = idio_expander_thread;
@@ -152,7 +153,7 @@ IDIO idio_evaluate_expander_source (IDIO x, IDIO e)
     }
     idio_thread_set_current_thread (cthr);
 
-    /* idio_debug ("evaluate-expander-source: out: %s\n", r);      */
+    /* idio_debug ("evaluate-expander-source: out: %s\n", r); */
 
     /* if (idio_S_nil == r) { */
     /* 	fprintf (stderr, "evaluate-expander: bad expansion?\n"); */
@@ -607,7 +608,7 @@ IDIO_DEFINE_PRIMITIVE1 ("expander?", expanderp, (IDIO o))
 
     IDIO r = idio_S_false;
 
-    if (idio_expanderp (o)) {
+    if (idio_S_false != idio_expanderp (o)) {
 	r = idio_S_true;
     }
 
@@ -627,7 +628,8 @@ static IDIO idio_application_expander (IDIO x, IDIO e)
      * map* is:
      */
 
-    /* idio_debug ("application-expander: in %s\n", x); */
+    /* idio_debug ("application-expander: in x=%s", x); */
+    /* idio_debug (" e=%s\n", e); */
 
     IDIO r = idio_S_nil;
 
@@ -663,8 +665,8 @@ static IDIO idio_initial_expander (IDIO x, IDIO e)
     IDIO_ASSERT (x);
     IDIO_ASSERT (e);
 
-    /* idio_debug ("initial-expander: %s", x); */
-    /* idio_debug (" %s\n", e); */
+    /* idio_debug ("initial-expander: x=%s", x); */
+    /* idio_debug (" e=%s\n", e); */
 
     if (! idio_isa_pair (x)) {
 	return x;
@@ -799,24 +801,9 @@ IDIO idio_macro_expand (IDIO e)
 {
     IDIO_ASSERT (e);
 
-    IDIO r = idio_evaluate_expander_source (e, idio_S_unspec);
+    IDIO r = idio_evaluate_expander_source (e, idio_S_false);
 
     return r;
-}
-
-IDIO_DEFINE_PRIMITIVE0V ("macro-expand", macro_expand, (IDIO x))
-{
-    IDIO_ASSERT (x);
-
-    IDIO me = idio_macro_expand (x);
-    idio_meaning_copy_src_properties (x, me);
-
-    if (idio_isa_pair (me) &&
-	idio_S_begin == IDIO_PAIR_H (me)) {
-	idio_meaning_copy_src_properties_r (x, IDIO_PAIR_T (me));
-    }
-
-    return me;
 }
 
 IDIO idio_macro_expands (IDIO e)
@@ -1489,7 +1476,6 @@ void idio_expander_add_primitives ()
     IDIO_ADD_EXPANDER (let);
     IDIO_ADD_EXPANDER (lets);
     IDIO_ADD_EXPANDER (letrec);
-    IDIO_ADD_PRIMITIVE (macro_expand);
 
     IDIO_ADD_PRIMITIVE (infix_operatorp);
     IDIO_ADD_PRIMITIVE (infix_operator_expand);

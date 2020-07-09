@@ -146,25 +146,32 @@ void idio_error_param_type (char *etype, IDIO who, IDIO c_location)
     IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (string, c_location);
 
-    IDIO sh = idio_open_output_string_handle_C ();
-    idio_display_C ("bad parameter type: ", sh);
-    idio_display (who, sh);
-    idio_display_C (" a ", sh);
-    idio_display_C ((char *) idio_type2string (who), sh);
-    idio_display_C (" is not a ", sh);
-    idio_display_C (etype, sh);
+    IDIO msh = idio_open_output_string_handle_C ();
+    idio_display_C ("bad parameter type: '", msh);
+    idio_display (who, msh);
+    idio_display_C ("' a ", msh);
+    idio_display_C ((char *) idio_type2string (who), msh);
+    idio_display_C (" is not a ", msh);
+    idio_display_C (etype, msh);
 
     IDIO location = idio_vm_source_location ();
 
+    IDIO dsh = idio_open_output_string_handle_C ();
+
+#ifdef IDIO_DEBUG
+    idio_display_C (": ", dsh);
+    idio_display (c_location, dsh);
+#endif
+
     IDIO c = idio_struct_instance (idio_condition_rt_parameter_type_error_type,
-				   IDIO_LIST3 (idio_get_output_string (sh),
+				   IDIO_LIST3 (idio_get_output_string (msh),
 					       location,
-					       c_location));
+					       idio_get_output_string (dsh)));
     idio_raise_condition (idio_S_false, c);
 }
 
 /*
- * Used by IDIO_TYPE_ASSERT
+ * Used by IDIO_TYPE_ASSERT and IDIO_VERIFY_PARAM_TYPE
  */
 void idio_error_param_type_C (char *etype, IDIO who, char *file, const char *func, int line)
 {
@@ -228,13 +235,22 @@ void idio_error (IDIO who, IDIO msg, IDIO args, IDIO c_location)
 	idio_error_param_type ("string|symbol", c_location, IDIO_C_FUNC_LOCATION ());
     }
 
+    IDIO location = idio_vm_source_location ();
+
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display (msg, sh);
-    idio_display_C (" ", sh);
-    idio_display (args, sh);
+    if (idio_S_nil != args) {
+	idio_display_C (" ", sh);
+	idio_display (args, sh);
+    }
+
+#ifdef IDIO_DEBUG
+    idio_display_C (" at ", sh);
+    idio_display (c_location, sh);
+#endif
 
     IDIO c = idio_condition_idio_error (idio_get_output_string (sh),
-					c_location,
+					location,
 					who);
 
     idio_raise_condition (idio_S_false, c);

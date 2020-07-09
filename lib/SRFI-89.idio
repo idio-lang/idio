@@ -1,0 +1,444 @@
+#*
+
+Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
+
+Licensed under the Apache License, Version 2.0 (the "License"); you
+may not use this file except in compliance with the License.  You
+may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+SFRI-89.idio
+
+A port of SRFI-89 Optional positional and named parameters.
+
+*#
+
+
+;------------------------------------------------------------------------------
+
+; Macro expander for define*.
+
+define-macro (define* pattern & body) {
+  if (pair? pattern) {
+    #T{
+      define $(ph pattern) {
+	function* $(pt pattern) $@body
+      }
+    }
+  } {
+    #T{
+      define $pattern $@body
+    }
+  }
+}
+
+; Macro expander for function*.
+
+define-macro (function* formals & body) {
+
+  ;------------------------------------------------------------------------------
+
+  ; Procedures needed at expansion time.
+
+  define (parse-formals formals) {
+
+    define (variable? x) {
+      symbol? x
+    }
+
+    define (required-positional? x) {
+      variable? x
+    }
+
+    define (optional-positional? x) {
+      (and (pair? x)
+	   (pair? (pt x))
+	   (null? (ptt x))
+	   (variable? (ph x)))
+    }
+
+    define (required-named? x) {
+      (and (pair? x)
+	   (pair? (pt x))
+	   (null? (ptt x))
+	   (keyword? (ph x))
+	   (variable? (pht x)))
+    }
+
+    define (optional-named? x) {
+      (and (pair? x)
+	   (pair? (pt x))
+	   (pair? (ptt x))
+	   (null? (pttt x))
+	   (keyword? (ph x))
+	   (variable? (pht x)))
+    }
+
+    define (named? x) {
+      (or (required-named? x)
+	  (optional-named? x))
+    }
+
+    define (duplicates? lst) {
+      cond ((null? lst)
+	    #f) \
+	   ((memq (ph lst) (pt lst))
+	    #t) \
+	   (else
+	    (duplicates? (pt lst)))
+    }
+
+    define (parse-positional-section lst cont) {
+      loop1 :+ function (lst rev-reqs) {
+		  if (and (pair? lst)
+			  (required-positional? (ph lst))) {
+			    loop1 (pt lst) (pair (ph lst) rev-reqs)
+			  } {
+			    loop2 :+ function (lst rev-opts) {
+					if (and (pair? lst)
+						(optional-positional? (ph lst))) {
+						  loop2 (pt lst) (pair (ph lst) rev-opts)
+						} {
+						  cont lst (pair (reverse rev-reqs) (reverse rev-opts))
+						}
+			    }
+			    loop2 lst #n
+			  }
+      }
+      loop1 lst #n
+    }
+
+    define (parse-named-section lst cont) {
+      loop :+ function (lst rev-named) {
+		 if (and (pair? lst)
+			 (named? (ph lst))) {
+			   loop (pt lst) (pair (ph lst) rev-named)
+			 } {
+			   cont lst (reverse rev-named)
+			 }
+	       }
+      loop lst #n
+    }
+
+    define (parse-rest lst positional-before-named? positional-reqs/opts named) {
+      if (null? lst) {
+	parse-end positional-before-named? positional-reqs/opts named #f
+      } {
+	if (variable? lst) {
+	  parse-end positional-before-named? positional-reqs/opts named lst
+	} {
+	  error 'parse-rest "syntax error in formal parameter list" lst
+	}
+      }
+    }
+
+
+    define (parse-end positional-before-named? positional-reqs/opts named rest) {
+      positional-reqs := ph positional-reqs/opts
+      positional-opts := pt positional-reqs/opts
+      vars := append positional-reqs (map ph positional-opts) (map pht named) (if rest (list rest) #n)
+      keys := map ph named
+
+      cond ((duplicates? vars)
+	    error 'parse-end "duplicate variable in formal parameter list" vars) \
+	   ((duplicates? keys)
+	    error 'parse-end "duplicate keyword in formal parameter list" vars) \
+	   (else {
+	     list positional-before-named? positional-reqs positional-opts named rest
+	   })
+    }
+
+    define (parse lst) {
+      if (and (pair? lst)
+	      (named? (ph lst))) {
+		parse-named-section lst (function (lst named) {
+					   parse-positional-section lst (function (lst positional-reqs/opts) {
+									   parse-rest lst #f positional-reqs/opts named
+					   })
+		})
+	      } {
+		parse-positional-section lst (function (lst positional-reqs/opts) {
+						parse-named-section lst (function (lst named) {
+									   parse-rest lst #t positional-reqs/opts named
+						})
+		})
+	      }
+    }
+
+    parse formals
+  }
+
+  define (expand-function* formals body) {
+
+    define (range lo hi) {
+      if (lt lo hi) {
+        pair lo (range (lo + 1) hi)
+      } #n
+    }
+
+    define (expand positional-before-named? positional-reqs positional-opts named rest) {
+      if (and (null? positional-opts)
+	      (null? named)) {
+		; direct R5RS equivalent
+		#T{
+		  function $(append positional-reqs (or rest #n)) $@body
+		}
+	      } {
+		utility-fns := #T{
+		  ( $@(if (or positional-before-named?
+			      (null? positional-reqs)) {
+				'#n
+			      } {
+				#T{
+				  ((&req (function () {
+					    if (pair? &args) {
+					      arg := ph &args
+					      set! &args (pt &args)
+					      arg
+					    } {
+					      error 'expand "utility-fns: too few actual parameters" &args
+					    }
+				  })))
+				}
+			      })
+
+		    $@(if (null? positional-opts) {
+		      '#n
+		    } {
+		      #T{
+			( (&opt (function (default) {
+				   if (pair? &args) {
+				     arg := ph &args
+				     set! &args (pt &args)
+				     arg
+				   } (default) ; this is an application of default
+			})) )
+		      }
+		    }) )
+		}
+
+
+		positional-bindings := #T{
+		  ($@(if positional-before-named? {
+		    '#n
+		  } {
+		    map (function (x) {
+			   #T{
+			     ( $x (&req) )
+			   }
+		    }) positional-reqs
+		  })
+		    $@(map (function (x) {
+			      #T{
+				( $(ph x) (&opt (function () $(pht x))) )
+			      }
+		    }) positional-opts))
+		}
+
+		define named-bindings {
+		  if (null? named) {
+		    '#n
+		  } {
+		    #T{
+		      ( ( &key-values
+			  (array $@(map (function (x) #T{ &undefined })
+					named)) )
+			( &args
+			  ( &process-keys
+			    &args
+			    '$(make-perfect-hash-table (map (function (x i) (pair (ph x) i))
+							  named
+							  (range 0 (length named))))
+			    &key-values) )
+
+			$@(map (function (x i)
+				  #T{
+				    ( $(pht x)
+				      $(if (null? (ptt x)) {
+					#T{
+					  ( &req-key &key-values $i )
+					}
+				      } {
+					#T{
+					  ( &opt-key &key-values $i (function ()
+								       $(phtt x)) )
+					}
+				      }) )
+				  })
+			   named
+			   (range 0 (length named))))
+		    }
+		  }
+		}
+
+		define rest-binding {
+		  if (not rest) {
+		    #T{
+		      ( ( &args (or (null? &args)
+				    (error 'expand "rest-binding: too many actual parameters" &args)) ) )
+		    }
+		  } {
+		    #T{
+		      ( ( $rest &args ) )
+		    }
+		  }
+		}
+
+		bindings := append (if positional-before-named? {
+		  append utility-fns positional-bindings named-bindings
+		} {
+		  append named-bindings utility-fns positional-bindings
+		}) \
+				   rest-binding
+
+		#T{
+		  function $(append (if positional-before-named? positional-reqs #n) '&args) {
+		    let* $bindings $@body
+		  }
+		}
+	      }
+    }
+
+    apply expand (parse-formals formals)
+  }
+
+  define (make-perfect-hash-table alist) {
+
+    ; "alist" is a list of pairs of the form "(keyword & value)"
+
+    ; The result is a perfect hash-table represented as an array of
+    ; length 2*N, where N is the hash modulus.  If the keyword K is in
+    ; the hash-table it is at index
+    ;
+    ;   X = (* 2 (&hash-keyword K N))
+    ;
+    ; and the associated value is at index X+1.
+
+    loop1 :+ function (n) {
+	       v := make-array (2 * n) #f
+	       loop2 :+ function (lst) {
+			  if (pair? lst) {
+			    key-val := ph lst
+			    key := ph key-val
+			    x := 2 * (&hash-keyword key n)
+			    if (array-ref v x) {
+			      loop1 (n + 1)
+			    } {
+			      array-set! v x key
+			      array-set! v (x + 1) (pt key-val)
+			      loop2 (pt lst)
+			    }
+			  } v
+	       }
+	       loop2 alist
+    }
+    loop1 (length alist)
+  }
+
+  define (&hash-keyword key n) {
+    str := keyword->string key
+    loop :+ function (h i) {
+      if (lt i (string-length str)) {
+	loop (modulo ((h * 65536) + (char->integer (string-ref str i)))
+		     n) \
+	     (i + 1)
+      } h
+    }
+    loop 0 0
+  }
+
+  expand-function* formals body
+}
+
+;------------------------------------------------------------------------------
+
+; Procedures needed at run time (called by the expanded code):
+
+; Perfect hash-tables with keyword keys.
+
+define (&hash-keyword key n) {
+  str := keyword->string key
+  loop :+ function (h i) {
+    if (lt i (string-length str)) {
+      loop (modulo ((h * 65536) + (char->integer (string-ref str i)))
+                        n) \
+	   (i + 1)
+      } h
+  }
+  loop 0 0
+}
+
+define (&perfect-hash-table-lookup table key) {
+  n := quotient (array-length table) 2
+  x := 2 * (&hash-keyword key n)
+  (and (eq? (array-ref table x) key)
+       (array-ref table (x + 1)))
+}
+
+; Handling of named parameters.
+
+define &undefined :undefined ;(list 'undefined-named-parameter)
+
+define (&req-key key-values i) {
+  val := array-ref key-values i
+  if (eq? val &undefined) {
+    error '&req-key "a required named parameter was not provided" val
+    } val
+}
+
+define (&opt-key key-values i default) {
+  val := array-ref key-values i
+  if (eq? val &undefined) {
+    (default)
+    } val
+}
+
+define (&process-keys args key-hash-table key-values) {
+  loop :+ function (args) {
+    if (null? args) {
+      args
+    } {
+      k := ph args
+        if (not (keyword? k)) {
+	  args
+	} {
+	  i := &perfect-hash-table-lookup key-hash-table k
+	  if (not i) {
+	    error '&process-keys "unknown parameter keyword" k
+	    } {
+	      if (null? (pt args)) {
+		error '&process-keys "a value was expected after keyword" k
+		} {
+		  if (eq? (array-ref key-values i) &undefined) {
+		    array-set! key-values i (pht args)
+		  } {
+		    error '&process-keys "duplicate parameter" k
+		  }
+		  loop (ptt args)
+		}
+	      }
+	    }
+	  }
+  }
+  loop args
+}
+
+;------------------------------------------------------------------------------
+#*
+Copyright
+
+Copyright (C) Marc Feeley (2006). All Rights Reserved.
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+*#

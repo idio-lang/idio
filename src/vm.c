@@ -1351,7 +1351,7 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
 		 */
 		IDIO args = idio_S_nil;
 		if (IDIO_FRAME_NARGS (val) > 1) {
-		    args = idio_frame_args_as_list (val);
+		    args = idio_frame_params_as_list (val);
 		} else {
 		    /*
 		     * A single varargs element but if it is #n then
@@ -1377,6 +1377,9 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
 	break;
     default:
 	{
+	    idio_debug ("iv-i: func=%s\n", func);
+	    idio_dump (func, 1);
+	    idio_vm_thread_state ();
 	    idio_vm_error_function_invoke ("cannot invoke",
 					   IDIO_LIST2 (func, IDIO_THREAD_VAL (thr)),
 					   IDIO_C_FUNC_LOCATION ());

@@ -36,6 +36,7 @@ include "debug.idio"
 
 ; SRFI-8 is in common.idio
 ; SRFI-17 is in closure.idio
+include "SRFI-89.idio"			; Optional positional and named parameters
 include "SRFI-95.idio"			; sort, merge
 
 ; after SRFI-95, please

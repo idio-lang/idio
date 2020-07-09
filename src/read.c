@@ -2444,7 +2444,13 @@ static IDIO idio_read_block (IDIO handle, IDIO lo, IDIO closedel, char *ic, int 
 	if (closedel == reason) {
 	    r = idio_list_reverse (r);
 	    if (depth) {
-		return idio_list_append2 (IDIO_LIST1 (idio_S_block), r);
+		if (idio_S_nil == r) {
+		    fprintf (stderr, "empty body for block => void\n");
+		    idio_debug ("line_lo=%s\n", line_lo);
+		    return idio_list_append2 (IDIO_LIST1 (idio_S_block), r);
+		} else {
+		    return idio_list_append2 (IDIO_LIST1 (idio_S_block), r);
+		}
 	    } else {
 		/*
 		 * At the time of writing idio_read_block is always

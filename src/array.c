@@ -722,6 +722,30 @@ test if `o` is an array				\n\
     return r;
 }
 
+IDIO_DEFINE_PRIMITIVE0V_DS ("array", array, (IDIO args), "[args]", "\
+create an array from `args`\n\
+						\n\
+:param args: initial elements			\n\
+:return: the new array				\n\
+:rtype: array					\n\
+						\n\
+The default value is #f.			\n\
+")
+{
+    IDIO_ASSERT (args);
+
+    IDIO_VERIFY_PARAM_TYPE (list, args);
+
+    IDIO a = idio_array (idio_list_length (args));
+
+    idio_ai_t ai = 0;
+    while (idio_S_nil != args) {
+	idio_array_insert_index (a, IDIO_PAIR_H (args), ai++);
+    }
+
+    return a;
+}
+
 IDIO_DEFINE_PRIMITIVE1V_DS ("make-array", make_array, (IDIO size, IDIO args), "size [default]", "\
 create an array with an initial allocation size of `size`\n\
 						\n\
@@ -1141,6 +1165,7 @@ void idio_init_array ()
 void idio_array_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (array_p);
+    IDIO_ADD_PRIMITIVE (array);
     IDIO_ADD_PRIMITIVE (make_array);
     IDIO_ADD_PRIMITIVE (copy_array);
     IDIO_ADD_PRIMITIVE (array_fill);

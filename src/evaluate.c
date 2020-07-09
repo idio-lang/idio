@@ -107,9 +107,10 @@ void idio_meaning_dump_src_properties (const char *prefix, const char*name, IDIO
 {
     IDIO_ASSERT (e);
 
+    fprintf (stderr, "SRC %-10s %-14s=", prefix, name);
+    idio_debug ("%s\n", e);
+
     if (idio_isa_pair (e)) {
-	fprintf (stderr, "SRC %-10s %-14s=", prefix, name);
-	idio_debug ("%s\n", e);
 	IDIO lo = idio_hash_get (idio_src_properties, e);
 	if (idio_S_unspec == lo){
 	    idio_debug ("                              %s\n", lo);
@@ -117,9 +118,6 @@ void idio_meaning_dump_src_properties (const char *prefix, const char*name, IDIO
 	    idio_debug ("                              %s", idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_NAME));
 	    idio_debug (": line % 3s\n", idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_LINE));
 	}
-    } else {
-	fprintf (stderr, "SRC %-10s %-14s=", prefix, name);
-	idio_debug ("%s\n", e);
     }
 }
 
@@ -2542,6 +2540,10 @@ static IDIO idio_meaning_rewrite_body (IDIO src, IDIO e)
 		 * What if {value-expr} has side-effects?
 		 */
 		fprintf (stderr, "imrb :=	OPT: empty body for let => no eval of {value-expr}\n");
+		idio_debug ("src=%s\n", src);
+		IDIO location = idio_vm_source_location ();
+		idio_debug ("loc=%s\n", location);
+
 		return r;
 	    }
 
@@ -4352,6 +4354,9 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO cs, I
 	    if (idio_isa_pair (et)) {
 		return idio_meaning_block (src, et, nametree, flags, cs, cm);
 	    } else {
+		fprintf (stderr, "empty body for block => void\n");
+		idio_debug ("src=%s\n", src);
+		idio_meaning_dump_src_properties ("idio_meaning", "block", src);
 		return idio_meaning (idio_S_void, idio_S_void, nametree, flags, cs, cm);
 	    }
 	} else if (idio_S_dynamic == eh) {
@@ -4548,6 +4553,37 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO cs, I
 		 * (include)
 		 */
 		idio_meaning_evaluation_error_param_nil (src, IDIO_C_FUNC_LOCATION_S ("include"), "no argument", eh);
+
+		return idio_S_notreached;
+	    }
+	} else if (idio_S_macro_expand == eh) {
+	    /* (macro-expand expr) */
+
+	    /*
+	     * macro-expand is here as a special form because it saves
+	     * a bit of legwork jumping to and from C and Idio.
+	     *
+	     * If it had been a regular macro then (macro-expand expr)
+	     * would be identified as a macro and idio_macro_expand
+	     * will be called with the full expression from which
+	     * idio_initial_expander will recognise macro-expand as an
+	     * expander and call idio_apply with the associated
+	     * function, the Primitive macro-expand, and the full
+	     * expression.  Just as it would for any other macro.  The
+	     * Primitive would then call idio_macro_expand (again!)
+	     * with just the expr.
+	     *
+	     * You sense we could skip the middle man...
+	     */
+	    if (idio_isa_pair (et)) {
+		return idio_macro_expand (et);
+	    } else {
+		/*
+		 * Test Case: evaluation-errors/macro-expand-nil.idio
+		 *
+		 * (macro-expand)
+		 */
+		idio_meaning_evaluation_error_param_nil (src, IDIO_C_FUNC_LOCATION_S ("macro-expand"), "no argument", eh);
 
 		return idio_S_notreached;
 	    }

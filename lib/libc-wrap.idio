@@ -76,7 +76,7 @@ export-struct-accessors-only struct-rlimit		rlim_cur rlim_max
 
 ;; File Permissions
 define (%file-access file mode) {
-
+  eprintf "%file-access %s %s: not implemented\n" file mode
 }
 
 ;; Temporary Files

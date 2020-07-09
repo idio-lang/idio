@@ -340,7 +340,8 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    }
 	    return;
 	} else {
-	    idio_debug ("\nWARNING: not a CONSTANT|pair: unexpected intermediate code: %s\n\n", mh);
+	    idio_debug ("\nWARNING: not a CONSTANT|pair: unexpected intermediate code: %s\n", mh);
+	    idio_debug ("%s\n\n", m);
 	    return;
 	}
     }
