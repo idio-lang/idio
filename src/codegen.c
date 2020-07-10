@@ -2428,6 +2428,28 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (pri));
 	}
 	break;
+    case IDIO_I_CODE_ABORT:
+	{
+	    if (! idio_isa_pair (mt) ||
+		idio_list_length (mt) != 1) {
+		idio_codegen_error_param_args ("ABORT m1", mt, IDIO_C_FUNC_LOCATION_S ("ABORT"));
+
+		/* notreached */
+		return;
+	    }
+
+	    IDIO m1 = IDIO_PAIR_H (mt);
+
+	    IDIO_IA_T ia1 = idio_ia (100);
+	    idio_codegen_compile (thr, ia1, cs, m1, depth + 1);
+
+	    IDIO_IA_PUSH1 (IDIO_A_ABORT);
+	    IDIO_IA_PUSH_VARUINT (IDIO_IA_USIZE (ia1));
+
+	    idio_ia_append (ia, ia1);
+	    idio_ia_free (ia1);
+	}
+	break;
     case IDIO_I_CODE_FINISH:
 	{
 	    if (! idio_isa_pair (mt) ||

@@ -761,14 +761,12 @@ does not return per se						\n\
     }
 
     /*
-     * The topmost krun on the VM's stack is the one that just blew up.
-     *
-     * As the restart-condition-handler we'll go back to the next most
-     * recent krun on the VM's stack.
+     * As the restart-condition-handler we'll go back to #1, the most
+     * recent ABORT.
      */
     idio_ai_t krun_p = idio_array_size (idio_vm_krun);
     IDIO krun = idio_S_nil;
-    while (krun_p > 0) {
+    while (krun_p > 1) {
 	krun = idio_array_pop (idio_vm_krun);
 	idio_debug ("restart-condition-handler: krun: popping %s\n", IDIO_PAIR_HT (krun));
 	krun_p--;
@@ -813,7 +811,7 @@ Does not return.						\n\
 
     /*
      * As the reset-condition-handler we'll go back to the first krun
-     * on the VM's stack.
+     * on the VM's stack which should be ABORT to main.
      */
     idio_ai_t krun_p = idio_array_size (idio_vm_krun);
     IDIO krun = idio_S_nil;
@@ -831,15 +829,19 @@ Does not return.						\n\
     }
 
     fprintf (stderr, "reset-condition-handler: nothing to restore\n");
-    IDIO thr = idio_thread_current_thread ();
 
-    idio_vm_reset_thread (thr, 1);
+    idio_exit_status = 1;
+    fprintf (stderr, "reset-condition-handler/exit (%d)\n", idio_exit_status);
+    idio_final ();
+    exit (idio_exit_status);
 
     /*
-     * For a continuable continuation, if it gets here, we'll
-     * return void because...
+     * Hmm, I think the sigjmpbuf can get mis-arranged so exit
+     * directly as above...
      */
-    return idio_S_void;
+    idio_vm_restore_exit (idio_k_exit, idio_S_unspec);
+
+    return idio_S_notreached;
 }
 
 void idio_init_condition ()

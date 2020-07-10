@@ -155,11 +155,13 @@ load "test-load-handle.idio"
 load "test-trap.idio"
 load "test-utf-8.idio"
 
+load "test-SRFI-89.idio"
+
 ;; test that we've seen as many tests as we should have.  How many is
 ;; that?  Erm, they've not been counted and are dynamic in number so
 ;; test we've seen at least as many as the largest number we've
 ;; seen.  Wait, some tests are OS-specific.  Drat!
-test (eq? Tests 3333) #t
+test (eq? Tests 3355) #t
 
 if (file-exists? testfile) (delete-file testfile)
 

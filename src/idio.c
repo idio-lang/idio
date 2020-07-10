@@ -251,7 +251,7 @@ int main (int argc, char **argv, char **envp)
     case 0:
 	break;
     case IDIO_VM_SIGLONGJMP_EXIT:
-	fprintf (stderr, "bootstrap/exit (%d)\n", idio_exit_status);
+	fprintf (stderr, "NOTICE: bootstrap/exit (%d) for PID %d\n", idio_exit_status, getpid ());
 	idio_final ();
 	exit (idio_exit_status);
 	break;
@@ -262,13 +262,19 @@ int main (int argc, char **argv, char **envp)
 	break;
     }
 
-    idio_load_file_name_aio (idio_string_C ("bootstrap"), idio_vm_constants);
-
     /*
      * Save a continuation for exit.
      */
     idio_k_exit = idio_continuation (thr);
     idio_gc_protect_auto (idio_k_exit);
+
+    IDIO dosh = idio_open_output_string_handle_C ();
+
+    idio_display_C ("ABORT to main", dosh);
+
+    idio_array_push (idio_vm_krun, IDIO_LIST2 (idio_k_exit, idio_get_output_string (dosh)));
+
+    idio_load_file_name_aio (idio_string_C ("bootstrap"), idio_vm_constants);
 
     if (argc > 1) {
 	/*
@@ -295,7 +301,6 @@ int main (int argc, char **argv, char **envp)
 	    fprintf (stderr, "load %s\n", argv[i]);
 
 	    IDIO filename = idio_string_C (argv[i]);
-	    idio_gc_protect (filename);
 
 	    /*
 	     * If we're given a sequence of files to load then any
@@ -321,9 +326,6 @@ int main (int argc, char **argv, char **envp)
 	    IDIO_THREAD_JMP_BUF (thr) = &sjb;
 	    sjv = sigsetjmp (*(IDIO_THREAD_JMP_BUF (thr)), 1);
 
-	    idio_k_exit = idio_continuation (thr);
-	    idio_gc_protect_auto (idio_k_exit);
-
 	    switch (sjv) {
 	    case 0:
 		idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST2 (load, filename));
@@ -334,7 +336,6 @@ int main (int argc, char **argv, char **envp)
 		break;
 	    case IDIO_VM_SIGLONGJMP_EXIT:
 		fprintf (stderr, "load/exit (%d)\n", idio_exit_status);
-		idio_gc_expose (filename);
 		idio_final ();
 		exit (idio_exit_status);
 		break;
@@ -344,8 +345,6 @@ int main (int argc, char **argv, char **envp)
 		exit (1);
 		break;
 	    }
-
-	    idio_gc_expose (filename);
 	}
     } else {
 	/*

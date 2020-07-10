@@ -4776,7 +4776,7 @@ IDIO idio_evaluate (IDIO src, IDIO cs)
 
     /* idio_debug ("evaluate: m %s\n", m); */
 
-    return m;
+    return IDIO_LIST2 (IDIO_I_ABORT, m);
 }
 
 IDIO_DEFINE_PRIMITIVE1 ("evaluate/meaning", evaluate_meaning, (IDIO e))

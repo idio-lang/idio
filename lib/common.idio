@@ -187,4 +187,3 @@ Invoke the ``hprintf`` function on an output string handle with
 
   get-output-string osh
 }
-

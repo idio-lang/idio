@@ -1028,6 +1028,7 @@ char *idio_as_string (IDIO o, int depth)
 		    case IDIO_I_CODE_INFIX_OPERATOR:			t = "INFIX-OPERATOR";			break;
 		    case IDIO_I_CODE_POSTFIX_OPERATOR:			t = "POSTFIX-OPERATOR";			break;
 
+		    case IDIO_I_CODE_ABORT:				t = "ABORT";				break;
 		    case IDIO_I_CODE_FINISH:				t = "FINISH";				break;
 		    case IDIO_I_CODE_NOP:				t = "NOP";				break;
 
@@ -2083,6 +2084,7 @@ const char *idio_vm_bytecode2string (int code)
     case IDIO_A_FUNCTION_GOTO:				r = "FUNCTION-GOTO";			break;
     case IDIO_A_RETURN:					r = "RETURN";				break;
     case IDIO_A_FINISH:					r = "FINISH";				break;
+    case IDIO_A_ABORT:					r = "ABORT";				break;
 
     case IDIO_A_ALLOCATE_FRAME1:			r = "ALLOCATE-FRAME1";			break;
     case IDIO_A_ALLOCATE_FRAME2:			r = "ALLOCATE-FRAME2";			break;

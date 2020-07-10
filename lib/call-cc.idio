@@ -319,11 +319,11 @@ define-macro (with-condition-handler condition handler & body) {
 ;; to determine if they should return a result from {handler} or
 ;; invoke the continuation, {return/trap}, inside either {handler} or
 ;; {body}.
-define-macro (trap* cs handler & body) {
+define-macro (trap* condition handler & body) {
   #T{
     return/trap := #n
 
-    trap $cs $handler {
+    trap $condition $handler {
       call/cc (function (k) {
 		 return/trap = k
 		 $@body

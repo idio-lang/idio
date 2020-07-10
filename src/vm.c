@@ -912,6 +912,11 @@ static void idio_vm_restore_all_state (IDIO thr)
     if (! (idio_isa_procedure (IDIO_THREAD_FUNC (thr)) ||
 	   idio_isa_symbol (IDIO_THREAD_FUNC (thr)) ||
 	   idio_isa_continuation (IDIO_THREAD_FUNC (thr)))) {
+	idio_debug ("iv-ras: func is not invokable: %s\n", IDIO_THREAD_FUNC (thr));
+	IDIO_THREAD_STACK_PUSH (IDIO_THREAD_FUNC (thr));
+	IDIO_THREAD_STACK_PUSH (IDIO_THREAD_VAL (thr));
+	IDIO_THREAD_STACK_PUSH (marker);
+	idio_vm_thread_state ();
 	idio_error_param_type ("not an invokable type", IDIO_THREAD_FUNC (thr), IDIO_C_FUNC_LOCATION ());
     }
 
@@ -2647,7 +2652,7 @@ int idio_vm_run1 (IDIO thr)
     }
 #endif
 
-    IDIO_VM_RUN_DIS ("idio_vm_run1: %10p %5zd %3d: ", thr, IDIO_THREAD_PC (thr), ins);
+    IDIO_VM_RUN_DIS ("idio_vm_run1: %10p %5zd %3d: ", thr, IDIO_THREAD_PC (thr) - 1, ins);
 
     switch (ins) {
     case IDIO_A_SHALLOW_ARGUMENT_REF0:
@@ -3589,6 +3594,35 @@ int idio_vm_run1 (IDIO thr)
 	    /* invoke exit handler... */
 	    IDIO_VM_RUN_DIS ("FINISH\n");
 	    return 0;
+	}
+	break;
+    case IDIO_A_ABORT:
+	{
+	    uint64_t o = idio_vm_fetch_varuint (thr);
+
+	    IDIO_VM_RUN_DIS ("ABORT to PC +%" PRIu64 "\n", o);
+
+	    /*
+	     * A continuation right now would just lead us back into
+	     * this errant code.  We want to massage the
+	     * continuation's PC to be offset by {o}.
+	     */
+	    IDIO k = idio_continuation (thr);
+	    IDIO k_stk = IDIO_CONTINUATION_STACK (k);
+
+	    /* continuation PC is penultimate arg */
+	    idio_ai_t al = idio_array_size (k_stk);
+	    IDIO I_PC = idio_array_get_index (k_stk, al - 2);
+	    I_PC = idio_fixnum (IDIO_FIXNUM_VAL (I_PC) + o);
+	    idio_array_insert_index (k_stk, I_PC, al - 2);
+
+	    IDIO dosh = idio_open_output_string_handle_C ();
+	    idio_display_C ("ABORT to toplevel (PC ", dosh);
+	    idio_display (I_PC, dosh);
+	    idio_display_C (")", dosh);
+
+	    /* ABORT to main should be in slot #0 */
+	    idio_array_insert_index (idio_vm_krun, IDIO_LIST2 (k, idio_get_output_string (dosh)), 1);
 	}
 	break;
     case IDIO_A_ALLOCATE_FRAME1:
@@ -5057,6 +5091,12 @@ void idio_vm_dasm (IDIO thr, idio_ai_t pc0, idio_ai_t pce)
 		IDIO_VM_DASM ("RETURN\n");
 	    }
 	    break;
+	case IDIO_A_ABORT:
+	    {
+		uint64_t o = idio_vm_get_varuint (pcp);
+		IDIO_VM_DASM ("ABORT to PC +%" PRIu64 "", o);
+	    }
+	    break;
 	case IDIO_A_FINISH:
 	    {
 		IDIO_VM_DASM ("FINISH");
@@ -5622,6 +5662,11 @@ IDIO idio_vm_run (IDIO thr, IDIO desc)
      * bail out.
      */
     idio_ai_t krun_p0 = idio_array_size (idio_vm_krun);
+    if (0 == krun_p0 &&
+	thr != idio_expander_thread) {
+	fprintf (stderr, "How is krun 0?\n");
+	idio_vm_thread_state ();
+    }
     /* idio_array_push (idio_vm_krun, IDIO_LIST2 (idio_continuation (thr), desc)); */
 
     idio_ai_t ss0 = idio_array_size (IDIO_THREAD_STACK (thr));
@@ -5894,8 +5939,8 @@ IDIO idio_vm_run (IDIO thr, IDIO desc)
     }
 
     /*
-     * idio_vm_raise_condition() will have added to idio_vm_krun with
-     * some abandon but is in no position to repair the stack
+     * ABORT and others will have added to idio_vm_krun with some
+     * abandon but are in no position to repair the krun stack
      */
     idio_ai_t krun_p = idio_array_size (idio_vm_krun);
     idio_ai_t krun_pd = krun_p - krun_p0;
@@ -6170,6 +6215,12 @@ void idio_vm_thread_state ()
 	idio_debug (" %s\n", IDIO_PAIR_HT (krun));
 	krun_p--;
     }
+
+    if (NULL == idio_k_exit) {
+	fprintf (stderr, "vm-thread-state: idio_k_exit NULL\n");
+    } else {
+	idio_debug ("vm-thread-state: idio_k_exit %s\n", idio_k_exit);
+    }
 }
 
 IDIO_DEFINE_PRIMITIVE0 ("idio-thread-state", idio_thread_state, ())
@@ -6294,7 +6345,9 @@ IDIO idio_vm_source_location ()
 	}
 
 	if (idio_S_nil == lo) {
-	    idio_display_C ("<no lexobj> ", lsh);
+	    idio_display_C ("<no lexobj for ", lsh);
+	    idio_display (expr, lsh);
+	    idio_display_C (">", lsh);
 	} else {
 	    idio_display (idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_NAME), lsh);
 	    idio_display_C (":line ", lsh);
