@@ -1100,7 +1100,7 @@ typedef struct idio_gc_s {
       as well as various internal well-known values used internally:
 
        - reader tokens, idio_T_*
-       - intermediate code identifiers, idio_I_*
+       - intermediate code identifiers, IDIO_I_*
        - VM instructions idio_A_*
 
      These are fixed sets -- fixed in the sense that we know it isn't
@@ -1346,13 +1346,6 @@ void idio_gc_set_verboseness (int n);
 void idio_init_gc ();
 void idio_gc_add_primitives ();
 void idio_final_gc ();
-
-/*
-  XXX delete me
- */
-#define idio_expr_dump(e)	(idio_expr_dump_ ((e), (#e), 1))
-#define idio_expr_dumpn(e,d)	(idio_expr_dump_ ((e), (#e), (d)))
-void idio_expr_dump_ (IDIO e, const char *en, int depth);
 
 #endif
 

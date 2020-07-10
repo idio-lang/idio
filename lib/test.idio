@@ -68,6 +68,16 @@ define-macro (test form result) {
   #T{ test3 '$form $form $result }
 }
 
+define-macro (test/error form result c-msg) {
+  #T{
+    with-condition-handler ^idio-error (function (c) {
+					  test c.message $c-msg
+    }) {
+      test3 '$form $form $result
+    }
+  }
+}
+
 ;; put the tests dirs on IDIOLIB
 testdir := #n
 

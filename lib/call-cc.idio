@@ -294,19 +294,40 @@ define-syntax unwind-protect (syntax-rules ()
        (function () body)
        (function () cleanup ...))))
 
+;; {with-condition-handler} will invoke {handler} and then
+;; automatically invoke the continuation of {with-condition-handler}
+;; with the result.
+;;
+;; The continuation is in scope of both {handler} and {body} as
+;; {return/handler}.
 define-macro (with-condition-handler condition handler & body) {
-  ;; edisplay* "with-condition-handler" handler body
   #T{
-    saved-k := #n
+    return/handler := #n
 
     trap $condition (function (c) {
-		       saved-k ($handler c)
+		       return/handler ($handler c)
     }) {
       call/cc (function (k) {
-		 saved-k = k
+		 return/handler = k
 		 $@body
       })
     }
   }
 }
 
+;; {trap*} is similar to {with-condition-handler} but allows the user
+;; to determine if they should return a result from {handler} or
+;; invoke the continuation, {return/trap}, inside either {handler} or
+;; {body}.
+define-macro (trap* cs handler & body) {
+  #T{
+    return/trap := #n
+
+    trap $cs $handler {
+      call/cc (function (k) {
+		 return/trap = k
+		 $@body
+      })
+    }
+  }
+}

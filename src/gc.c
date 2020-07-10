@@ -2200,18 +2200,9 @@ void idio_final_gc ()
 
     idio_gc_expose_all ();
     idio_gc_collect ("idio_final_gc");
+#ifdef IDIO_DEBUG
     idio_gc_dump ();
+#endif
     idio_gc_free ();
 }
 
-/*
-  XXX delete me
- */
-
-void idio_expr_dump_ (IDIO e, const char *en, int detail)
-{
-    fprintf (stderr, "%20s=", en);
-    idio_gc->verbose++;
-    idio_dump (e, detail);
-    idio_gc->verbose--;
-}

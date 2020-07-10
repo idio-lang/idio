@@ -292,7 +292,7 @@ idio_ai_t idio_codegen_constants_lookup_or_extend (IDIO cs, IDIO v)
 /*
  * Compiling
  *
- * Compiling the intermediate code (idio_I_*) is a reasonably
+ * Compiling the intermediate code (IDIO_I_*) is a reasonably
  * straightforward swap to IDIO_A_*.
  *
  * There's some specialisation for particularly common tuples to
@@ -324,7 +324,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 
     if (! IDIO_TYPE_CONSTANT_I_CODEP (mh)) {
 	/*
-	 * A sequence of idio_I_* code segments will appear here as a
+	 * A sequence of IDIO_I_* code segments will appear here as a
 	 * list so we simply recurse for each one.
 	 */
 	if (idio_isa_pair (mh)) {

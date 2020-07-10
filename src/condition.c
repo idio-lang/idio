@@ -447,7 +447,7 @@ resume.							\n\
 IDIO_DEFINE_PRIMITIVE1_DS ("default-condition-handler", default_condition_handler, (IDIO c), "c", "\
 Invoke the default handler for condition `c`			\n\
 								\n\
-If there is no default handler: and the session is interactive	\n\
+If there is no default handler:					\n\
 - if the session is interactive then the debugger is invoked	\n\
 - otherwise the condition is re-raised				\n\
 								\n\
@@ -490,6 +490,7 @@ does not return per se						\n\
 	sit = IDIO_STRUCT_TYPE_PARENT (sit);
     }
 
+    /* reset sit in case we changed it above */
     sit = IDIO_STRUCT_INSTANCE_TYPE (c);
     IDIO sif = IDIO_STRUCT_INSTANCE_FIELDS (c);
 

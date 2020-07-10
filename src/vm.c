@@ -544,11 +544,15 @@ void idio_vm_debug (IDIO thr, char *prefix, idio_ai_t stack_start)
     idio_debug ("   reg2=%s\n", IDIO_THREAD_REG2 (thr));
 
     IDIO fmci = IDIO_THREAD_EXPR (thr);
-    IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), fmci);
-    idio_ai_t gci = IDIO_FIXNUM_VAL (fgci);
+    if (idio_isa_fixnum (fmci)) {
+	IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), fmci);
+	idio_ai_t gci = IDIO_FIXNUM_VAL (fgci);
 
-    IDIO src = idio_vm_constants_ref (gci);
-    idio_debug ("   expr=%s\n", src);
+	IDIO src = idio_vm_constants_ref (gci);
+	idio_debug ("   expr=%s\n", src);
+    } else {
+	idio_debug ("   expr=%s\n", fmci);
+    }
     idio_debug ("   func=%s\n", IDIO_THREAD_FUNC (thr));
     idio_debug ("    env=%s\n", IDIO_THREAD_ENV (thr));
     idio_debug ("  frame=%s\n", IDIO_THREAD_FRAME (thr));
@@ -6274,26 +6278,30 @@ IDIO idio_vm_source_location ()
 {
     IDIO cthr = idio_thread_current_thread ();
     IDIO fmci = IDIO_THREAD_EXPR (cthr);
-    IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), fmci);
-    idio_ai_t gci = IDIO_FIXNUM_VAL (fgci);
+    if (idio_isa_fixnum (fmci)) {
+	IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), fmci);
+	idio_ai_t gci = IDIO_FIXNUM_VAL (fgci);
 
-    IDIO expr = idio_vm_constants_ref (gci);
+	IDIO expr = idio_vm_constants_ref (gci);
 
-    IDIO lo = idio_S_nil;
-    if (idio_S_nil != expr) {
-	lo = idio_hash_get (idio_src_properties, expr);
-	if (idio_S_unspec == lo) {
-	    lo = idio_S_nil;
+	IDIO lo = idio_S_nil;
+	if (idio_S_nil != expr) {
+	    lo = idio_hash_get (idio_src_properties, expr);
+	    if (idio_S_unspec == lo) {
+		lo = idio_S_nil;
+	    }
 	}
-    }
 
-    IDIO lsh = idio_open_output_string_handle_C ();
-    if (idio_S_nil == lo) {
-	idio_display_C ("<no lexobj> ", lsh);
+	IDIO lsh = idio_open_output_string_handle_C ();
+	if (idio_S_nil == lo) {
+	    idio_display_C ("<no lexobj> ", lsh);
+	} else {
+	    idio_display (idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_NAME), lsh);
+	    idio_display_C (":line ", lsh);
+	    idio_display (idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_LINE), lsh);
+	}
     } else {
-	idio_display (idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_NAME), lsh);
-	idio_display_C (":line ", lsh);
-	idio_display (idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_LINE), lsh);
+	idio_display (fmci, lsh);
     }
 
     return idio_get_output_string (lsh);
