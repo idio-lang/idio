@@ -6276,6 +6276,7 @@ IDIO_DEFINE_PRIMITIVE2_DS ("run-in-thread", run_in_thread, (IDIO thr, IDIO func,
  */
 IDIO idio_vm_source_location ()
 {
+    IDIO lsh = idio_open_output_string_handle_C ();
     IDIO cthr = idio_thread_current_thread ();
     IDIO fmci = IDIO_THREAD_EXPR (cthr);
     if (idio_isa_fixnum (fmci)) {
@@ -6292,7 +6293,6 @@ IDIO idio_vm_source_location ()
 	    }
 	}
 
-	IDIO lsh = idio_open_output_string_handle_C ();
 	if (idio_S_nil == lo) {
 	    idio_display_C ("<no lexobj> ", lsh);
 	} else {
