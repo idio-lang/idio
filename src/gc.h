@@ -169,6 +169,7 @@
 #define IDIO_TYPE_STRUCT_INSTANCE	25
 #define IDIO_TYPE_THREAD		26
 #define IDIO_TYPE_CONTINUATION		27
+#define IDIO_TYPE_BITSET		28
 
 #define IDIO_TYPE_C_INT         	30
 #define IDIO_TYPE_C_UINT        	31
@@ -797,6 +798,14 @@ typedef struct idio_continuation_s {
 #define IDIO_CONTINUATION_JMP_BUF(T)	((T)->u.continuation->jmp_buf)
 #define IDIO_CONTINUATION_STACK(T)	((T)->u.continuation->stack)
 
+typedef struct idio_bitset_s {
+    size_t size;
+    unsigned long *bits;
+} idio_bitset_t;
+
+#define IDIO_BITSET_SIZE(BS)	((BS)->u.bitset.size)
+#define IDIO_BITSET_BITS(BS,i)	((BS)->u.bitset.bits[i])
+
 /*
  * Who called siglongjmp?
  */
@@ -1008,6 +1017,7 @@ struct idio_s {
 	idio_C_FFI_t           *C_FFI;
 	idio_opaque_t          *opaque;
 	idio_continuation_t    *continuation;
+	idio_bitset_t	       bitset;
     } u;
 
     idio_hi_t hashval;		/* time/space tradeoff */

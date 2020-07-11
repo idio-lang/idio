@@ -1,0 +1,36 @@
+;;
+;; Copyright (c) 2020 Ian Fitchet <idf(at)idio-lang.org>
+;;
+;; Licensed under the Apache License, Version 2.0 (the "License"); you
+;; may not use this file except in compliance with the License.  You
+;; may obtain a copy of the License at
+;;
+;;     http://www.apache.org/licenses/LICENSE-2.0
+;;
+;; Unless required by applicable law or agreed to in writing, software
+;; distributed under the License is distributed on an "AS IS" BASIS,
+;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+;; See the License for the specific language governing permissions and
+;; limitations under the License.
+;;
+;;
+
+;;
+;; test-bitset.idio
+;;
+bitset0 := Tests
+
+bs := (make-bitset 3)
+test (bitset? bs) #t
+test (bitset-size bs) 3
+test (get-bitset bs 0) #f
+
+set-bitset bs 1
+
+test (get-bitset bs 0) #f
+test (get-bitset bs 1) #t
+
+test/error (get-bitset bs 3) #f "bitset bounds error: 3 >= size 3"
+
+;; all done?
+test (bitset0 + 6) Tests

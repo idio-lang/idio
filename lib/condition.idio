@@ -201,6 +201,9 @@ define-condition-type-accessors-only ^rt-fixnum-conversion-error	^runtime-error	
 
 define-condition-type-accessors-only ^rt-divide-by-zero-error		^runtime-error			rt-divide-by-zero-error?
 
+define-condition-type-accessors-only ^rt-bitset-bounds-error		^runtime-error			rt-bitset-bounds-error? \
+	(bit rt-bitset-bounds-error-bit)
+
 define-condition-type-accessors-only ^rt-signal				^error				rt-signal? \
 	(signal rt-signal-signal)
 
@@ -310,6 +313,9 @@ define (condition-report prefix c & args) "print a report on condition `c`
        }) \
        ((struct-type-isa (struct-instance-type c) ^rt-fixnum-conversion-error) {
 	 cr-printf ": fixnum %s" c.fixnum
+       }) \
+       ((struct-type-isa (struct-instance-type c) ^rt-bitset-bounds-error) {
+	 cr-printf ": bit %s" c.bit
        }) \
        ((struct-type-isa (struct-instance-type c) ^rt-signal) {
           cr-printf "signal %s (%s)" c.signum (libc/signal-name c.signum)

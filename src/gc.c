@@ -1538,6 +1538,9 @@ void idio_gc_sweep_free_value (IDIO vo)
     case IDIO_TYPE_CONTINUATION:
 	idio_free_continuation (vo);
 	break;
+    case IDIO_TYPE_BITSET:
+	idio_free_bitset (vo);
+	break;
     case IDIO_TYPE_C_TYPEDEF:
 	idio_free_C_typedef (vo);
 	break;

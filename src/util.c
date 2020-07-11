@@ -86,6 +86,7 @@ const char *idio_type_enum2string (idio_type_e type)
     case IDIO_TYPE_STRUCT_INSTANCE:	return "STRUCT_INSTANCE";
     case IDIO_TYPE_THREAD:		return "THREAD";
     case IDIO_TYPE_CONTINUATION:	return "CONTINUATION";
+    case IDIO_TYPE_BITSET:		return "BITSET";
 
     case IDIO_TYPE_C_INT:		return "C_INT";
     case IDIO_TYPE_C_UINT:		return "C_UINT";
@@ -698,6 +699,8 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		return (o1->u.thread == o2->u.thread);
 	    case IDIO_TYPE_CONTINUATION:
 		return (o1->u.continuation == o2->u.continuation);
+	    case IDIO_TYPE_BITSET:
+		return (o1 == o2);
 	    case IDIO_TYPE_C_TYPEDEF:
 		return (o1->u.C_typedef == o2->u.C_typedef);
 	    case IDIO_TYPE_C_STRUCT:
@@ -1733,6 +1736,44 @@ char *idio_as_string (IDIO o, int depth)
 		    }
 		}
 		break;
+	    case IDIO_TYPE_BITSET:
+		{
+		    if (asprintf (&r, "#<BS %p s=%zu ", o, IDIO_BITSET_SIZE (o)) == -1) {
+			idio_error_alloc ("asprintf");
+
+			/* notreached */
+			return NULL;
+		    }
+		    size_t l = IDIO_BITSET_SIZE (o);
+		    size_t c = 0;
+		    if (depth > 0) {
+			size_t n = l / IDIO_BITS_PER_LONG + 1;
+			for (i = 0; i < n; i++) {
+			    unsigned long ibits = IDIO_BITSET_BITS (o, i);
+
+			    char bits[IDIO_BITS_PER_LONG + 1];
+			    unsigned int j;
+			    for (j = 0; j < IDIO_BITS_PER_LONG; j++) {
+				if (ibits & (1UL << (j % IDIO_BITS_PER_LONG))) {
+				    bits[j] = '1';
+				} else {
+				    bits[j] = '0';
+				}
+				c++;
+				if (c > l){
+				    break;
+				}
+			    }
+			    bits[j] = '\0';
+			    IDIO_STRCAT (r, bits);
+			    IDIO_STRCAT (r, " ");
+			}
+		    } else {
+			IDIO_STRCAT (r, "... ");
+		    }
+		    IDIO_STRCAT (r, ">");
+		}
+		break;
 	    case IDIO_TYPE_C_TYPEDEF:
 		{
 		    if (asprintf (&r, "#<C/typedef %10p>", IDIO_C_TYPEDEF_SYM (o)) == -1) {
@@ -2476,6 +2517,7 @@ IDIO idio_copy (IDIO o, int depth)
 	    case IDIO_TYPE_STRUCT_TYPE:
 	    case IDIO_TYPE_THREAD:
 	    case IDIO_TYPE_CONTINUATION:
+	    case IDIO_TYPE_BITSET:
 	    case IDIO_TYPE_C_INT:
 	    case IDIO_TYPE_C_UINT:
 	    case IDIO_TYPE_C_FLOAT:
@@ -2639,6 +2681,7 @@ void idio_dump (IDIO o, int detail)
 	    case IDIO_TYPE_STRUCT_INSTANCE:
 	    case IDIO_TYPE_THREAD:
 	    case IDIO_TYPE_CONTINUATION:
+	    case IDIO_TYPE_BITSET:
 	    case IDIO_TYPE_C_INT:
 	    case IDIO_TYPE_C_UINT:
 	    case IDIO_TYPE_C_FLOAT:

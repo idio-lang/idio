@@ -59,6 +59,7 @@
 #include <strings.h>
 #include <pwd.h>
 #include <grp.h>
+#include <limits.h>
 
 #include <sys/resource.h>
 #include <sys/stat.h>
@@ -379,6 +380,7 @@ extern FILE *idio_vm_perf_FILE;
 
 #include "array.h"
 #include "bignum.h"
+#include "bitset.h"
 #include "c-ffi.h"
 #include "c-struct.h"
 #include "c-type.h"

@@ -34,8 +34,8 @@ include "path.idio"
 include "command.idio"
 include "debug.idio"
 
-; SRFI-8 is in common.idio
-; SRFI-17 is in closure.idio
+; SRFI-8 receive is in common.idio as with-values-from
+; SRFI-17 Generalized set! is in closure.idio
 include "SRFI-89.idio"			; Optional positional and named parameters
 include "SRFI-95.idio"			; sort, merge
 

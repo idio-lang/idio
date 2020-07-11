@@ -154,6 +154,7 @@ extern IDIO idio_condition_rt_hash_key_not_found_error_type;
 extern IDIO idio_condition_rt_bignum_conversion_error_type;
 extern IDIO idio_condition_rt_fixnum_conversion_error_type;
 extern IDIO idio_condition_rt_divide_by_zero_error_type;
+extern IDIO idio_condition_rt_bitset_bounds_error_type;
 
 extern IDIO idio_condition_rt_signal_type;
 
