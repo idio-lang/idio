@@ -19,7 +19,7 @@
 ;; bootstrap.idio
 ;;
 
-display "This is bootstrap.idio\n"
+;display "This is bootstrap.idio\n"
 
 include "operator.idio"
 include "closure.idio"

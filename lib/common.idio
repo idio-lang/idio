@@ -187,3 +187,27 @@ Invoke the ``hprintf`` function on an output string handle with
 
   get-output-string osh
 }
+
+*features* := #n
+
+define (require & features) {
+  loop :+ function (features) {
+	    if (null? features) #n {
+	      feature := ph features
+	      or (memq feature *features*) \
+		 (load (symbol->string feature))
+
+	      if (not (memq feature *features*)) {
+		eprintf "%s did not provide %s\n" feature feature
+	      }
+
+	      loop (pt features)
+	    }
+  }
+
+  loop features
+}
+
+define (provide feature) {
+  *features* = pair feature *features*
+}
