@@ -204,6 +204,10 @@ define-condition-type-accessors-only ^rt-divide-by-zero-error		^runtime-error			
 define-condition-type-accessors-only ^rt-bitset-bounds-error		^runtime-error			rt-bitset-bounds-error? \
 	(bit rt-bitset-bounds-error-bit)
 
+define-condition-type-accessors-only ^rt-bitset-size-mismatch-error	^runtime-error			rt-bitset-size-mismatch-error? \
+	(size1 rt-bitset-bounds-error-size1) \
+	(size2 rt-bitset-bounds-error-size2)
+
 define-condition-type-accessors-only ^rt-signal				^error				rt-signal? \
 	(signal rt-signal-signal)
 

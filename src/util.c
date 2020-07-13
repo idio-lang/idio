@@ -1738,40 +1738,79 @@ char *idio_as_string (IDIO o, int depth)
 		break;
 	    case IDIO_TYPE_BITSET:
 		{
-		    if (asprintf (&r, "#<BS %p s=%zu ", o, IDIO_BITSET_SIZE (o)) == -1) {
+		    if (asprintf (&r, "#B{ %zu ", IDIO_BITSET_SIZE (o)) == -1) {
 			idio_error_alloc ("asprintf");
 
 			/* notreached */
 			return NULL;
 		    }
-		    size_t l = IDIO_BITSET_SIZE (o);
-		    size_t c = 0;
-		    if (depth > 0) {
-			size_t n = l / IDIO_BITS_PER_LONG + 1;
-			for (i = 0; i < n; i++) {
-			    unsigned long ibits = IDIO_BITSET_BITS (o, i);
+		    size_t bs_size = IDIO_BITSET_SIZE (o);
+		    size_t count = 0;
+		    int print_lead = 0;
+		    size_t n_ul = bs_size / IDIO_BITS_PER_LONG + 1;
+		    for (i = 0; i < n_ul; i++) {
+			/*
+			 * Native format is chunked into unsigned
+			 * longs
+			 */
+			unsigned long ul_bits = IDIO_BITSET_BITS (o, i);
 
-			    char bits[IDIO_BITS_PER_LONG + 1];
-			    unsigned int j;
-			    for (j = 0; j < IDIO_BITS_PER_LONG; j++) {
-				if (ibits & (1UL << (j % IDIO_BITS_PER_LONG))) {
-				    bits[j] = '1';
+			if (ul_bits) {
+			    int b;
+			    for (b = 0; b < sizeof (unsigned long); b++) {
+				/*
+				 * Portable format is chunked into bytes
+				 */
+				/*
+				 * XXX can we rely on UCHAR_MAX
+				 * (255 if CHAR_BIT is 8) meaning
+				 * all bits are set?  Does it
+				 * assume two's complement?
+				 */
+				size_t offset = b * CHAR_BIT;
+				unsigned long mask = UCHAR_MAX;
+				mask <<= offset;
+				unsigned long byte_bits = ul_bits & mask;
+
+				if (byte_bits) {
+				    if (print_lead) {
+					print_lead = 0;
+					char *lead;
+					if (asprintf (&lead, "%zx:", count) == -1) {
+					    idio_error_alloc ("asprintf");
+
+					    /* notreached */
+					    return NULL;
+					}
+					IDIO_STRCAT_FREE (r, lead);
+				    }
+				    char bits[CHAR_BIT + 1];
+				    unsigned int j;
+				    for (j = 0; j < CHAR_BIT; j++) {
+					if (ul_bits & (1UL << (offset + j))) {
+					    bits[j] = '1';
+					} else {
+					    bits[j] = '0';
+					}
+					count++;
+					if (count > bs_size){
+					    break;
+					}
+				    }
+				    bits[j] = '\0';
+				    IDIO_STRCAT (r, bits);
+				    IDIO_STRCAT (r, " ");
 				} else {
-				    bits[j] = '0';
-				}
-				c++;
-				if (c > l){
-				    break;
+				    count += CHAR_BIT;
+				    print_lead = 1;
 				}
 			    }
-			    bits[j] = '\0';
-			    IDIO_STRCAT (r, bits);
-			    IDIO_STRCAT (r, " ");
+			} else {
+			    count += IDIO_BITS_PER_LONG;
+			    print_lead = 1;
 			}
-		    } else {
-			IDIO_STRCAT (r, "... ");
 		    }
-		    IDIO_STRCAT (r, ">");
+		    IDIO_STRCAT (r, "}");
 		}
 		break;
 	    case IDIO_TYPE_C_TYPEDEF:
@@ -2498,6 +2537,8 @@ IDIO idio_copy (IDIO o, int depth)
 		return idio_hash_copy (o, depth);
 	    case IDIO_TYPE_BIGNUM:
 		return idio_bignum_copy (o);
+	    case IDIO_TYPE_BITSET:
+		return idio_bitset_copy (o);
 
 	    case IDIO_TYPE_STRUCT_INSTANCE:
 		if (idio_struct_instance_isa (o, idio_path_type) ||
@@ -2517,7 +2558,6 @@ IDIO idio_copy (IDIO o, int depth)
 	    case IDIO_TYPE_STRUCT_TYPE:
 	    case IDIO_TYPE_THREAD:
 	    case IDIO_TYPE_CONTINUATION:
-	    case IDIO_TYPE_BITSET:
 	    case IDIO_TYPE_C_INT:
 	    case IDIO_TYPE_C_UINT:
 	    case IDIO_TYPE_C_FLOAT:

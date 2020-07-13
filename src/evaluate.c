@@ -4653,6 +4653,7 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO cs, I
 		case IDIO_TYPE_ARRAY:
 		case IDIO_TYPE_HASH:
 		case IDIO_TYPE_BIGNUM:
+		case IDIO_TYPE_BITSET:
 		    return idio_meaning_quotation (e, e, nametree, flags);
 
 		case IDIO_TYPE_CLOSURE:

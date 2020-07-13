@@ -2967,6 +2967,7 @@ int idio_vm_run1 (IDIO thr)
 		    case IDIO_TYPE_ARRAY:
 		    case IDIO_TYPE_HASH:
 		    case IDIO_TYPE_BIGNUM:
+		    case IDIO_TYPE_BITSET:
 			IDIO_THREAD_VAL (thr) = idio_copy (c, IDIO_COPY_DEEP);
 			break;
 		    case IDIO_TYPE_STRUCT_INSTANCE:
