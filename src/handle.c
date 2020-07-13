@@ -856,9 +856,9 @@ IDIO idio_handle_or_current (IDIO h, unsigned mode)
 }
 
 IDIO_DEFINE_PRIMITIVE0V_DS ("read", read, (IDIO args), "[handle]", "\
-read an Idio expression from ``handle`` or the current intput handle	\n\
+read an Idio expression from ``handle`` or the current input handle	\n\
 							\n\
-:param handle: handle to readfrom			\n\
+:param handle: handle to read from			\n\
 :type handle: handle					\n\
 :return: object						\n\
 ")
@@ -1198,6 +1198,37 @@ num	specifies a maximum limit on the output		\n\
 		    si += 1;
 		    char *c = ss;
 		    switch (*c) {
+		    case 'd':
+		    case 'x':
+		    case 'X':
+			{
+			    char fmt[BUFSIZ];
+			    strncpy (fmt, s, ss - s + 1);
+			    fmt[ss - s + 1] = '\0';
+			    if (idio_S_nil != args) {
+				IDIO arg = IDIO_PAIR_H (args);
+				args = IDIO_PAIR_T (args);
+				if (idio_isa_fixnum (arg)) {
+				    intmax_t n = IDIO_FIXNUM_VAL (arg);
+				    char str[BUFSIZ];
+				    sprintf (str, fmt, n);
+				    idio_puts_handle (h, str, strlen (str));
+				} else if (idio_isa_bignum (arg)) {
+				    s = idio_bignum_as_string (arg);
+				    idio_puts_handle (h, s, strlen (s));
+				    free (c);
+				} else {
+				    /* ?? */
+				    idio_puts_handle (h, c, strlen (c));
+				}
+			    } else {
+				c = "<no-arg>";
+				idio_puts_handle (h, c, strlen (c));
+			    }
+			    s = ss;
+			    i = si;
+			}
+			break;
 		    case 's':
 			{
 			    char fmt[BUFSIZ];
@@ -1207,9 +1238,15 @@ num	specifies a maximum limit on the output		\n\
 				IDIO arg = IDIO_PAIR_H (args);
 				args = IDIO_PAIR_T (args);
 				c = idio_display_string (arg);
-				char str[BUFSIZ];
-				sprintf (str, fmt, c);
-				idio_puts_handle (h, str, strlen (str));
+				if (strlen (c) > BUFSIZ) {
+				    /* hmm, let's pretend there was no
+				     * length, precision etc. */
+				    idio_puts_handle (h, c, strlen (c));
+				} else {
+				    char str[BUFSIZ];
+				    sprintf (str, fmt, c);
+				    idio_puts_handle (h, str, strlen (str));
+				}
 				free (c);
 			    } else {
 				c = "<no-arg>";

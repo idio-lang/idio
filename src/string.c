@@ -181,10 +181,11 @@ IDIO idio_substring_offset (IDIO p, size_t offset, size_t blen)
     IDIO_SUBSTRING_BLEN (so) = blen;
     if (idio_isa (p, IDIO_TYPE_SUBSTRING)) {
 	IDIO_SUBSTRING_S (so) = IDIO_SUBSTRING_S (p) + offset;
+	IDIO_SUBSTRING_PARENT (so) = IDIO_SUBSTRING_PARENT (p);
     } else {
 	IDIO_SUBSTRING_S (so) = IDIO_STRING_S (p) + offset;
+	IDIO_SUBSTRING_PARENT (so) = p;
     }
-    IDIO_SUBSTRING_PARENT (so) = p;
 
     return so;
 }
@@ -871,7 +872,7 @@ IDIO idio_split_string (IDIO iin, IDIO idelim)
     size_t blen = idio_string_blen (iin);
 
     char *lim = in + blen;
-    
+
     if (blen > 0) {
 	for (; ; in = NULL) {
 	    char *start = idio_string_token (in, delim, IDIO_STRING_TOKEN_FLAG_NONE, &saved, &blen, lim);

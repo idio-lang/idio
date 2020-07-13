@@ -49,6 +49,12 @@ RES := map (function (substr) {
 }) (split-string STR DE1)
 test RES '(("a/bbb///cc" "a" "bbb" "cc") ("xxx" "xxx") ("yyy" "yyy"))
 
+;; tripped up over this walking over DerivedCoreProperties.txt
+STR = "002B          ; Math # Sm       PLUS SIGN"
+parts := split-string s "#"
+dcp_parts := split-string (ph parts) ";"
+range := split-string (ph dcp_parts) ".." ; boom! substring extends beyong parent string length: 111011129 002B          ; Math 
+
 ;; join
 test (join-string "b" '("a" "c")) "abc"
 test (join-string "b" '("a")) "a"

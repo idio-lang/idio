@@ -124,7 +124,7 @@ Invoke the ``%printf`` function on ``handle`` with ``fmt`` and
   if (null? args) {
     %printf handle fmt
   } {
-    apply %printf handle fmt (map display-string args)
+    apply %printf handle fmt args
   }
 }
 
