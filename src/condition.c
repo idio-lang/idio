@@ -87,6 +87,7 @@ IDIO idio_condition_rt_bignum_conversion_error_type;
 IDIO idio_condition_rt_fixnum_conversion_error_type;
 IDIO idio_condition_rt_divide_by_zero_error_type;
 IDIO idio_condition_rt_bitset_bounds_error_type;
+IDIO idio_condition_rt_bitset_size_mismatch_error_type;
 
 IDIO idio_condition_rt_command_argv_type_error_type;
 IDIO idio_condition_rt_command_forked_error_type;
@@ -938,6 +939,7 @@ void idio_init_condition ()
     IDIO_DEFINE_CONDITION0 (idio_condition_rt_divide_by_zero_error_type, "^rt-divide-by-zero-error", idio_condition_runtime_error_type);
 
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_bitset_bounds_error_type, "^rt-bitset-bounds-error", idio_condition_runtime_error_type, "bit");
+    IDIO_DEFINE_CONDITION2 (idio_condition_rt_bitset_size_mismatch_error_type, "^rt-bitset-size-mismatch-error", idio_condition_runtime_error_type, "size1", "size2");
 
 #define IDIO_CONDITION_RT_SIGNAL_TYPE_NAME "^rt-signal"
 
@@ -1033,6 +1035,7 @@ void idio_final_condition ()
     idio_gc_expose (idio_condition_rt_divide_by_zero_error_type);
     idio_gc_expose (idio_condition_rt_signal_type);
     idio_gc_expose (idio_condition_rt_bitset_bounds_error_type);
+    idio_gc_expose (idio_condition_rt_bitset_size_mismatch_error_type);
 
     idio_gc_expose (idio_condition_default_handler);
 }

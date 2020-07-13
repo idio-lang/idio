@@ -617,6 +617,13 @@ idio_hi_t idio_idio_hash_default_hash_C_handle (IDIO h)
     return idio_hash_default_hash_C_void (IDIO_HANDLE_STREAM (h));
 }
 
+idio_hi_t idio_hash_default_hash_C_bitset (IDIO h)
+{
+    IDIO_ASSERT (h);
+
+    return idio_hash_default_hash_C_void (h->u.bitset.bits);
+}
+
 idio_hi_t idio_idio_hash_default_hash_C_struct_type (IDIO h)
 {
     IDIO_ASSERT (h);
@@ -743,6 +750,9 @@ idio_hi_t idio_hash_default_hash_C (IDIO h, void *kv)
 	break;
     case IDIO_TYPE_HANDLE:
 	hv = idio_idio_hash_default_hash_C_handle (k);
+	break;
+    case IDIO_TYPE_BITSET:
+	hv = idio_hash_default_hash_C_bitset (k);
 	break;
     case IDIO_TYPE_STRUCT_TYPE:
 	hv = idio_idio_hash_default_hash_C_struct_type (k);

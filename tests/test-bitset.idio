@@ -25,7 +25,7 @@ test (bitset? bs) #t
 test (bitset-size bs) 3
 test (get-bitset bs 0) #f
 
-set-bitset bs 1
+set-bitset! bs 1
 
 test (get-bitset bs 0) #f
 test (get-bitset bs 1) #t
