@@ -487,6 +487,68 @@ IDIO_DEFINE_PRIMITIVE1 ("list->array", list2array, (IDIO l))
     return idio_list_to_array (l);
 }
 
+IDIO_DEFINE_PRIMITIVE2V_DS ("nth", nth, (IDIO l, IDIO I_n, IDIO args), "l n [default]", "\
+return the nth (`n`) element from list `l`		\n\
+							\n\
+:param l: list						\n\
+:type orig: list					\n\
+:param n: nth element					\n\
+:type n: integer					\n\
+:param default: (optional) default value to return	\n\
+:return: the element or `default` if supplied or #n	\n\
+:rtype: array						\n\
+")
+{
+    IDIO_ASSERT (l);
+    IDIO_ASSERT (I_n);
+    IDIO_ASSERT (args);
+
+    IDIO_TYPE_ASSERT (list, l);
+
+    intmax_t C_n = -1;
+
+    if (idio_isa_fixnum (I_n)) {
+	C_n = IDIO_FIXNUM_VAL (I_n);
+    } else if (idio_isa_bignum (I_n)) {
+	if (IDIO_BIGNUM_INTEGER_P (I_n)) {
+	    C_n = idio_bignum_ptrdiff_value (I_n);
+	} else {
+	    IDIO bit_i = idio_bignum_real_to_integer (I_n);
+	    if (idio_S_nil == bit_i) {
+		idio_error_param_type ("integer", I_n, IDIO_C_FUNC_LOCATION ());
+
+		return idio_S_notreached;
+	    } else {
+		C_n = idio_bignum_ptrdiff_value (bit_i);
+	    }
+	}
+    } else {
+	idio_error_param_type ("integer", I_n, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    IDIO r = idio_S_nil;
+
+    IDIO_TYPE_ASSERT (list, args);
+
+    if (idio_S_nil != args) {
+	r = IDIO_PAIR_H (args);
+    }
+
+    while (idio_S_nil != l) {
+	if (1 == C_n) {
+	    r = IDIO_PAIR_H (l);
+	    break;
+	}
+
+	C_n--;
+	l = IDIO_PAIR_T (l);
+    }
+
+    return r;
+}
+
 void idio_init_pair ()
 {
 }
@@ -506,6 +568,7 @@ void idio_pair_add_primitives ()
     IDIO_ADD_PRIMITIVE (append);
     IDIO_ADD_PRIMITIVE (list2string);
     IDIO_ADD_PRIMITIVE (list2array);
+    IDIO_ADD_PRIMITIVE (nth);
 }
 
 void idio_final_pair ()

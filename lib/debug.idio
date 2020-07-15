@@ -52,17 +52,19 @@ debug := #n
 	    ;idio-debug "continuations = %s\n" continuations
 
 	    debug-loop :+ function () {
-			    printf "Choose between the following continuations:\n"
 			    al := array-length continuations
-			    dloop :+ function (n) {
-				       if (ge n 0) {
-					 printf "  %s%s: %s\n" n (if (eq? (ph continuations.n) debug-k) "*" " ") (pht continuations.n)
-					 dloop (n - 1)
-				       }
-			    }
+			    if (gt al 0) {
+			      printf "Choose between the following continuations:\n"
+			      dloop :+ function (n) {
+					 if (ge n 0) {
+					   printf "  %s%s: %s\n" n (if (eq? (ph continuations.n) debug-k) "*" " ") (pht continuations.n)
+					   dloop (n - 1)
+					 }
+			      }
 
-			    dloop (al - 1)
-			    printf "Invoke a continuation with: c <num> <val>\n"
+			      dloop (al - 1)
+			      printf "Invoke a continuation with: c <num> [<val>]\n"
+			    }
 			    printf "return a value to [*]: v <val>\n"
 
 			    line := (read-line)
@@ -81,6 +83,9 @@ debug := #n
 				 ((eqv? 'v cmd) {
 				   v := read-expr lsh
 				   debug-k v
+				 }) \
+				 ((eqv? 'ft cmd) {
+				   (%vm-frame-tree)
 				 }) \
 				 (else (printf "unrecognised line %s\n" line))
 

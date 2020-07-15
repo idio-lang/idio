@@ -189,25 +189,39 @@ Invoke the ``hprintf`` function on an output string handle with
 }
 
 *features* := #n
+*subfeatures* :~ #n
 
-define (require & features) {
-  loop :+ function (features) {
-	    if (null? features) #n {
-	      feature := ph features
-	      or (memq feature *features*) \
-		 (load (symbol->string feature))
+define (require feature & subfeatures) "
 
-	      if (not (memq feature *features*)) {
-		eprintf "%s did not provide %s\n" feature feature
-	      }
+Load ``feature`` unless it has previous been successfully required.
+``subfeatures`` are available to the loaded code as the dynamic
+variable ``*subfeatures*``
 
-	      loop (pt features)
-	    }
+:param feature: the name of the feature
+:type fmt: symbol
+:param subfeatures: names of subfeatures
+:type args: list
+
+The file to be loaded is ``(symbol->string feature)`` which must
+``(provide feature)``.
+
+:return: #t or #f
+
+" {
+  if (memq feature *features*) #t {
+    *subfeatures* = subfeatures
+
+    load (symbol->string feature)
+
+    if (memq feature *features*) #t {
+      eprintf "%s did not provide %s\n" feature feature
+      #f
+    }
   }
-
-  loop features
 }
 
 define (provide feature) {
-  *features* = pair feature *features*
+  if (not (memq feature *features*)) {
+    *features* = pair feature *features*
+    }
 }

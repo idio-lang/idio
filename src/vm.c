@@ -5095,7 +5095,10 @@ void idio_vm_dasm (IDIO thr, idio_ai_t pc0, idio_ai_t pce)
 	case IDIO_A_ABORT:
 	    {
 		uint64_t o = idio_vm_get_varuint (pcp);
-		IDIO_VM_DASM ("ABORT to PC +%" PRIu64 "", o);
+		char h[BUFSIZ];
+		sprintf (h, "A@%" PRId64 "", pc + o);
+		idio_hash_put (hints, idio_fixnum (pc + o), idio_symbols_C_intern (h));
+		IDIO_VM_DASM ("ABORT to PC +%" PRIu64 " %td", o, pc + o);
 	    }
 	    break;
 	case IDIO_A_FINISH:
@@ -5562,7 +5565,15 @@ void idio_vm_dasm (IDIO thr, idio_ai_t pc0, idio_ai_t pce)
     }
 }
 
-IDIO_DEFINE_PRIMITIVE0V ("%%idio-dasm", dasm, (IDIO args))
+IDIO_DEFINE_PRIMITIVE0V_DS ("%%idio-dasm", dasm, (IDIO args), "[c]", "\
+generate the disassembler code for closure ``c`` or everything	\n\
+								\n\
+:param c: (optional) the closure to disassemble			\n\
+:type c: closure						\n\
+								\n\
+The output goes to the file \"vm-dasm\" in the current directory.	\n\
+It will get overwritten when Idio stops.			\n\
+")
 {
     IDIO_ASSERT (args);
 
@@ -6288,6 +6299,14 @@ IDIO_DEFINE_PRIMITIVE0 ("SECONDS/get", SECONDS_get, (void))
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("run-in-thread", run_in_thread, (IDIO thr, IDIO func, IDIO args), "thr func [args]", "\
+Run ``func [args]`` in thread ``thr``.				\n\
+								\n\
+:param thr: the thread						\n\
+:type thr: thread						\n\
+:param func: a function						\n\
+:type func: function						\n\
+:param args: (optional) arguments to ``func``			\n\
+:type args: list						\n\
 ")
 {
     IDIO_ASSERT (thr);
@@ -6318,6 +6337,41 @@ IDIO_DEFINE_PRIMITIVE2_DS ("run-in-thread", run_in_thread, (IDIO thr, IDIO func,
     idio_thread_set_current_thread (cthr);
 
     return r;
+}
+
+IDIO_DEFINE_PRIMITIVE0V_DS ("%vm-frame-tree", vm_frame_tree, (IDIO args), "[args]", "\
+Show the current frame tree.					\n\
+								\n\
+:param args: (optional)						\n\
+:type args: list						\n\
+")
+{
+    IDIO_ASSERT (args);
+
+    IDIO thr = idio_thread_current_thread ();
+
+    IDIO frame = IDIO_THREAD_FRAME (thr);
+
+    int depth = 0;
+
+    while (idio_S_nil != frame) {
+	idio_ai_t al = IDIO_FRAME_NARGS (frame);
+	idio_ai_t i;
+	for (i = 0; i < al - 1; i++) {
+	    fprintf (stderr, "  %2d %td: ", depth, i);
+	    idio_debug ("%s\n", IDIO_FRAME_ARGS (frame, i));
+	}
+	if (idio_S_nil != IDIO_FRAME_ARGS (frame, i)) {
+	    fprintf (stderr, "  %2d %td: ", depth, i);
+	    idio_debug ("%s\n", IDIO_FRAME_ARGS (frame, i));
+	}
+	fprintf (stderr, "\n");
+
+	depth++;
+	frame = IDIO_FRAME_NEXT (frame);
+    }
+
+    return idio_S_unspec;
 }
 
 /*
@@ -6587,6 +6641,7 @@ void idio_vm_add_primitives ()
     IDIO_ADD_PRIMITIVE (idio_find_object);
     IDIO_ADD_PRIMITIVE (exit);
     IDIO_ADD_PRIMITIVE (run_in_thread);
+    IDIO_ADD_PRIMITIVE (vm_frame_tree);
 }
 
 void idio_final_vm ()

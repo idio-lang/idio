@@ -855,7 +855,7 @@ static char *idio_string_token (char *in, char *delim, int flags, char **saved, 
     return in;
 }
 
-IDIO idio_split_string (IDIO iin, IDIO idelim)
+IDIO idio_split_string (IDIO iin, IDIO idelim, int flags)
 {
     IDIO_ASSERT (iin);
     IDIO_ASSERT (idelim);
@@ -875,13 +875,14 @@ IDIO idio_split_string (IDIO iin, IDIO idelim)
 
     if (blen > 0) {
 	for (; ; in = NULL) {
-	    char *start = idio_string_token (in, delim, IDIO_STRING_TOKEN_FLAG_NONE, &saved, &blen, lim);
+	    char *start = idio_string_token (in, delim, flags, &saved, &blen, lim);
 
 	    if (NULL == start) {
 		break;
 	    }
 
-	    if (0 == blen) {
+	    if (IDIO_STRING_TOKEN_INEXACT (flags) &&
+		0 == blen) {
 		break;
 	    }
 
@@ -911,7 +912,26 @@ into a list	 of strings				\n\
     IDIO_VERIFY_PARAM_TYPE (string, in);
     IDIO_VERIFY_PARAM_TYPE (string, delim);
 
-    return idio_split_string (in, delim);
+    return idio_split_string (in, delim, IDIO_STRING_TOKEN_FLAG_NONE);
+}
+
+IDIO_DEFINE_PRIMITIVE2_DS ("split-string-exactly", split_string_exactly, (IDIO in, IDIO delim), "in delim", "\
+split string ``in`` using characters from ``delim``	\n\
+into a list	 of strings				\n\
+							\n\
+:param in: string to split				\n\
+:type in: string					\n\
+:param delim: string containing delimiter characters	\n\
+:type delim: string					\n\
+:return: list (of strings)				\n\
+")
+{
+    IDIO_ASSERT (in);
+    IDIO_ASSERT (delim);
+    IDIO_VERIFY_PARAM_TYPE (string, in);
+    IDIO_VERIFY_PARAM_TYPE (string, delim);
+
+    return idio_split_string (in, delim, IDIO_STRING_TOKEN_FLAG_EXACT);
 }
 
 IDIO idio_join_string (IDIO delim, IDIO args)
@@ -988,6 +1008,7 @@ void idio_string_add_primitives ()
     IDIO_ADD_PRIMITIVE (string_gt_p);
 
     IDIO_ADD_PRIMITIVE (split_string);
+    IDIO_ADD_PRIMITIVE (split_string_exactly);
     IDIO_ADD_PRIMITIVE (join_string);
 }
 
