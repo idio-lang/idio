@@ -1859,7 +1859,11 @@ IDIO idio_hash_ref (IDIO ht, IDIO key, IDIO args)
     if (idio_S_unspec == r) {
 	if (idio_S_nil != args) {
 	    IDIO dv = IDIO_PAIR_H (args);
-	    r = idio_vm_invoke_C (idio_thread_current_thread (), dv);
+	    if (idio_isa_procedure (dv)) {
+		r = idio_vm_invoke_C (idio_thread_current_thread (), dv);
+	    } else {
+		r = dv;
+	    }
 	} else {
 	    idio_hash_error_key_not_found (key, IDIO_C_FUNC_LOCATION ());
 
@@ -1877,9 +1881,8 @@ return the value indexed by ``key` in hash table ``ht``	\n\
 :type ht: hash table					\n\
 :param key: non-#n value				\n\
 :type key: any non-#n					\n\
-:param default: a thunk to supply a default value if	\n\
-		``key`` not found			\n\
-:type default: a thunk					\n\
+:param default: a default value if ``key`` not found	\n\
+:type default: a thunk or a simple value		\n\
 							\n\
 :return: value (#unspec if ``key`` not found and no	\n\
 	 ``default`` supplied)				\n\
