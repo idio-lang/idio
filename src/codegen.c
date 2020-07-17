@@ -1865,14 +1865,15 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
     case IDIO_I_CODE_ALLOCATE_FRAME:
 	{
 	    if (! idio_isa_pair (mt) ||
-		idio_list_length (mt) != 1) {
-		idio_codegen_error_param_args ("ALLOCATE-FRAME size", mt, IDIO_C_FUNC_LOCATION_S ("ALLOCATE-FRAME"));
+		idio_list_length (mt) != 2) {
+		idio_codegen_error_param_args ("ALLOCATE-FRAME size aci", mt, IDIO_C_FUNC_LOCATION_S ("ALLOCATE-FRAME"));
 
 		/* notreached */
 		return;
 	    }
 
 	    IDIO size = IDIO_PAIR_H (mt);
+	    IDIO aci = IDIO_PAIR_HT (mt);
 
 	    if (! idio_isa_fixnum (size)) {
 		idio_codegen_error_param_type ("fixnum", size, IDIO_C_FUNC_LOCATION_S ("ALLOCATE-FRAME"));
@@ -1881,15 +1882,38 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 		return;
 	    }
 
+	    if (! idio_isa_fixnum (aci)) {
+		idio_codegen_error_param_type ("fixnum", aci, IDIO_C_FUNC_LOCATION_S ("ALLOCATE-FRAME"));
+
+		/* notreached */
+		return;
+	    }
+
 	    switch (IDIO_FIXNUM_VAL (size)) {
-	    case 0: IDIO_IA_PUSH1 (IDIO_A_ALLOCATE_FRAME1); break;
-	    case 1: IDIO_IA_PUSH1 (IDIO_A_ALLOCATE_FRAME2); break;
-	    case 2: IDIO_IA_PUSH1 (IDIO_A_ALLOCATE_FRAME3); break;
-	    case 3: IDIO_IA_PUSH1 (IDIO_A_ALLOCATE_FRAME4); break;
-	    case 4: IDIO_IA_PUSH1 (IDIO_A_ALLOCATE_FRAME5); break;
+	    case 0:
+		IDIO_IA_PUSH1 (IDIO_A_ALLOCATE_FRAME1);
+		/* no args, no need to push an empty list ref */
+		break;
+	    case 1:
+		IDIO_IA_PUSH1 (IDIO_A_ALLOCATE_FRAME2);
+		IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (aci));
+		break;
+	    case 2:
+		IDIO_IA_PUSH1 (IDIO_A_ALLOCATE_FRAME3);
+		IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (aci));
+		break;
+	    case 3:
+		IDIO_IA_PUSH1 (IDIO_A_ALLOCATE_FRAME4);
+		IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (aci));
+		break;
+	    case 4:
+		IDIO_IA_PUSH1 (IDIO_A_ALLOCATE_FRAME5);
+		IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (aci));
+		break;
 	    default:
 		IDIO_IA_PUSH1 (IDIO_A_ALLOCATE_FRAME);
 		IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (size) + 1);
+		IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (aci));
 		break;
 	    }
 	}
@@ -1897,14 +1921,15 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
     case IDIO_I_CODE_ALLOCATE_DOTTED_FRAME:
 	{
 	    if (! idio_isa_pair (mt) ||
-		idio_list_length (mt) != 1) {
-		idio_codegen_error_param_args ("ALLOCATE-DOTTED-FRAME size", mt, IDIO_C_FUNC_LOCATION_S ("ALLOCATE-DOTTED-FRAME"));
+		idio_list_length (mt) != 2) {
+		idio_codegen_error_param_args ("ALLOCATE-DOTTED-FRAME size aci", mt, IDIO_C_FUNC_LOCATION_S ("ALLOCATE-DOTTED-FRAME"));
 
 		/* notreached */
 		return;
 	    }
 
 	    IDIO size = IDIO_PAIR_H (mt);
+	    IDIO aci = IDIO_PAIR_HT (mt);
 
 	    if (! idio_isa_fixnum (size)) {
 		idio_codegen_error_param_type ("fixnum", size, IDIO_C_FUNC_LOCATION_S ("ALLOCATE-DOTTED-FRAME"));
@@ -1913,8 +1938,16 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 		return;
 	    }
 
+	    if (! idio_isa_fixnum (aci)) {
+		idio_codegen_error_param_type ("fixnum", aci, IDIO_C_FUNC_LOCATION_S ("ALLOCATE-DOTTED-FRAME"));
+
+		/* notreached */
+		return;
+	    }
+
 	    IDIO_IA_PUSH1 (IDIO_A_ALLOCATE_DOTTED_FRAME);
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (size) + 1);
+	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (aci));
 	}
 	break;
     case IDIO_I_CODE_REUSE_FRAME:

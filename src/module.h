@@ -41,6 +41,8 @@ IDIO idio_Idio_module_instance ();
 IDIO idio_primitives_module_instance ();
 IDIO idio_thread_current_module ();
 IDIO idio_thread_current_env ();
+IDIO idio_module_extend_imports (IDIO module, IDIO syms);
+IDIO idio_module_extend_exports (IDIO module, IDIO syms);
 IDIO idio_module_symbols (IDIO module);
 IDIO idio_module_current_symbols ();
 IDIO idio_module_primitive_symbols ();

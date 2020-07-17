@@ -80,6 +80,8 @@ extern IDIO_SYMBOL_DECL (load);
 extern IDIO_SYMBOL_DECL (load_handle);
 extern IDIO_SYMBOL_DECL (lt);
 extern IDIO_SYMBOL_DECL (macro_expand);
+extern IDIO_SYMBOL_DECL (pct_module_export);
+extern IDIO_SYMBOL_DECL (pct_module_import);
 extern IDIO_SYMBOL_DECL (module);
 extern IDIO_SYMBOL_DECL (op);
 extern IDIO_SYMBOL_DECL (or);

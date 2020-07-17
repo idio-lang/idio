@@ -52,7 +52,7 @@ test (string-handle? ish) #t
 test (input-string-handle? ish) #t
 test (output-string-handle? ish) #f
 
-shi := read ish
+shi := *primitives*/read ish
 close-handle ish
 
 test (string-handle? ish) #t

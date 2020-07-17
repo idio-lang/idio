@@ -220,8 +220,10 @@ The file to be loaded is ``(symbol->string feature)`` which must
   }
 }
 
-define (provide feature) {
-  if (not (memq feature *features*)) {
-    *features* = pair feature *features*
+define-macro (provide feature) {
+  #T{
+    if (not (memq $feature *features*)) {
+      *features* = pair $feature *features*
     }
+  }
 }

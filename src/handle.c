@@ -430,6 +430,26 @@ int idio_putc_handle (IDIO h, int c)
 	if ('\n' == c &&
 	    IDIO_HANDLE_LINE (h)) {
 	    IDIO_HANDLE_LINE (h) += 1;
+
+	    /*
+	     * Hmm.  Idio has a per-handle buffer and if the handle is
+	     * a FILE* then it too has a buffer (probably).  There's
+	     * the odd edge-case where trailing newlines don't get
+	     * flushed.
+	     *
+	     * A handle-flush here fixes that but it feels wrong.
+	     *
+	     * This was picked up by:
+	     *
+	     * display* "first" | auto-exit -r 1
+	     *
+	     * which, it transpires, has Bash's {read} fail if the
+	     * output is not terminated by a newline (who knew?).
+	     * Indeed, the pipeline was only seeing "first" and not
+	     * the trailing newline that display* should have been
+	     * emitting.
+	     */
+	    IDIO_HANDLE_M_FLUSH (h) (h);
 	}
     }
 

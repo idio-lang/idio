@@ -29,9 +29,7 @@ include "module.idio"
 include "common.idio"
 include "struct.idio"
 include "condition.idio"
-include "libc-wrap.idio"
 include "path.idio"
-include "command.idio"
 include "debug.idio"
 
 ; SRFI-8 receive is in common.idio as with-values-from
@@ -41,9 +39,11 @@ include "SRFI-95.idio"			; sort, merge
 
 ; after SRFI-95, please
 include "doc.idio"
+
 ;; WARNING
 ;;
 ;; Do not import the C module as it has symbols that will conflict
 ;; with various operators.  Just invoke the C primitives directly:
 ;; C/== etc.
-import *command*
+
+import job-control libc

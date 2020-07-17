@@ -146,25 +146,42 @@ and calls
 
 
 ;; module-import
+
+;; This is slightly messed about because we have an existing ordered
+;; list of imports, say, (I1 I2 I3) and we want to prepend an ordered
+;; list of modules to be imported, say, (M1 M2).  Of course we have
+;; the usual list-y thing of prepending to some list which means
+;; working with a reversed list in-hand.
+
+;; The resultant list of module imports should be (M1 M2 I1 I2 I3).
+
 define (%module-import importer modules) {
   loop :+ function (mods result) {
 	    cond ((null? mods) {
-	      %set-module-imports! importer (reverse result)
+	      %set-module-imports! importer result
 	    }) \
 		 (else {
 		   mod := find-module (ph mods) #f
 		   if mod {
-		     loop (pt mods) (if ((eq? mod importer) or
-							    (memq mod result))
-				     result
-				     (pair mod result))
+		     loop (pt mods) (if (or (eq? mod importer)
+					    (assq mod result))
+				     result {
+				       require (module-name mod)
+				       pair (list mod) result
+				     })
 		   } {
-		     error 'import "module does not exist" (ph mods)
+		     name := ph mods
+
+		     require name
+		     mod := find-module name #f
+		     if mod {
+		       loop (pt mods) (pair (list mod) result)
+		     } (error '%module-import "failed to instantiate module" name)
 		   }
 		 })
   }
 
-  loop modules (reverse (module-imports importer))
+  loop (reverse modules) (module-imports importer)
 }
 
 define-macro (import & modules) {
@@ -173,7 +190,7 @@ define-macro (import & modules) {
   }
 }
 
-;; module-export
+;; %module-export
 define (%module-export exporter symbols) {
   loop :+ function (syms result) {
     if (null? syms) {

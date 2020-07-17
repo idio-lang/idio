@@ -28,6 +28,25 @@ character sets from UnicodeData.txt (and others) directly.
 
 http://www.unicode.org/reports/tr44/
 
+Broadly, Unicode have defined 17 Planes each with a potential for
+65,536 code points.  That makes any mapping be at least 1114109
+entries long.  Blocks within those Planes are assigned for groups of
+code points with a common ancestry.  For example, code points U+0000
+through U+007F are ASCII.  Some of those blocks are complete because
+the group is well defined, eg. ASCII, whereas others include
+unassigned code points leaving room for later additions.  The order in
+which those blocks are assigned is (probably) an editorial whim.
+
+Note: even though Unicode Planes 4-13 are currently unassigned, see
+https://en.wikipedia.org/wiki/Plane_(Unicode), it isn't clear that
+Unicode will stick to 17 planes.  Given that we have to read the
+Unicode UCD files we might as well leave the actual number of Unicode
+code points/Planes dynamic based on reading the files.
+
+Further note: given that those 10 planes are unassigned, perhaps we
+should invent a sparse bitset format for charsets saving at least 650k
+bits per charset.
+
 UnicodeData.txt is a long list (34k entries as of Unicode 13.0.0) of
 individual code points and code point ranges (whose individual code
 point properties are derivable within the range).  Each code point has
@@ -35,23 +54,12 @@ a primary Category: Letter lowercase, "Ll", Letter uppercase, "Lu",
 Number digit, "Nd", Symbol Math, "Sm" etc.
 
 The set of code points is not contiguous and the current highest
-numbered code point is 10FFFD, Plane 16 Private Use, Last.  That makes
-any mapping be at least 1114109 entries long.
-
-Note: even though Unicode Planes 4-13 are currently unassigned, see
-https://en.wikipedia.org/wiki/Plane_(Unicode), it isn't clear that
-Unicode will stick to 17 planes.  Given that we have to read the
-Unicode UCD files we might as well leave the actual number of Unicode
-data points dynamic based on reading the files.
-
-Further note: given that those 10 planes are unassigned, perhaps we
-should invent a sparse bitset format for charsets saving at least 650k
-bits per charset.
+numbered code point is 10FFFD, Plane 16 Private Use, Last.
 
 DerivedCoreProperties.txt is a fairly long list (12k lines) which
 summaries collections of code points which share a common Property:
-Alphabetic, Math, etc..  The Property Lowercase is the collection of
-the Category Ll plus the Property Other_Lowercase.
+Alphabetic, Math, etc..  For example, the Property Lowercase is the
+collection of the Category Ll plus the Property Other_Lowercase.
 
 Other_Lowercase includes 00AA, FEMININE ORDINAL INDICATOR and 00BA,
 MASCULINE ORDINAL INDICATOR, for example.
@@ -60,7 +68,8 @@ DerivedCoreProperties.txt defines other Properties such as
 ID_Start (the first code point of an identifier) and
 ID_Continue (subsequent code points for identifiers).  I'm not sure
 where they get their information from as surely such a set is
-language-specific?
+language-specific?  You are welcome to read
+http://www.unicode.org/reports/tr31/ to understand their thinking.
 
 PropList.txt is a fairly short file with more Properties.  Here we're
 specifically looking to pick up on the White_Space Property.
@@ -72,8 +81,9 @@ Again, it's hard to see how they can clearly define a
 Pattern_White_Space and Pattern_Syntax Properties.
 
 
-In the meanwhile this file servers a dual purpose.  By default it
-defines the SRFI-14 char-set bitsets as derived from the above files.
+In the meanwhile this file, unicode.idio, serves a dual purpose.  By
+default it defines the SRFI-14 char-set bitsets as derived from the
+above files.
 
 Where did they come from?  If the need arises, set char-set:ascii to
 #n (as commented out below) then the bottom section of code kicks in
@@ -81,7 +91,7 @@ and (load "unicode") will trawl through the above files and print to
 stdout the current bitsets.  You can then replace the definitions in
 this file.
 
-Other tables include:
+Other generated tables include:
 
 char-set:simple-upper-case-map and char-set:simple-lower-case-map
 which use the fields (12) and (13) in UnicodeData.txt to generate
@@ -96,15 +106,17 @@ to-lower (0049;LATIN CAPITAL LETTER I)			= 0069;LATIN SMALL LETTER I
 to-upper (01C8;LATIN CAPITAL LETTER L WITH SMALL LETTER J)	= 01C7;LATIN CAPITAL LETTER LJ
 to-lower (01C7;LATIN CAPITAL LETTER LJ)				= 01C9;LATIN SMALL LETTER LJ
 to-upper (01C9;LATIN SMALL LETTER LJ)				= 01C7;LATIN CAPITAL LETTER LJ
-``
+
 *#
+
+module unicode
 
 #*
 
 These bitsets are automatically generated from Unicode source files.
 
 *#
-  
+
 
 
 ; property Lowercase
@@ -160,7 +172,7 @@ char-set:simple-lower-case-map := #n
 
 
 if (memq 'ascii *subfeatures*) {
-  
+
 
   ; property Lowercase
   char-set:lower-case  = #B{ 128 60:01111111 11111111 11111111 11100000 }
@@ -326,7 +338,7 @@ if (null? char-set:ascii) {
 
   ascii-char-set:simple-upper-case-map := make-hash #n #n 64
   ascii-char-set:simple-lower-case-map := make-hash #n #n 64
-  
+
   char-set:lower-case	:= make-bitset char-set:size
   char-set:upper-case	:= make-bitset char-set:size
   char-set:title-case	:= make-bitset char-set:size
@@ -345,7 +357,7 @@ if (null? char-set:ascii) {
 
   char-set:simple-upper-case-map := make-hash #n #n 2500 ; 2303
   char-set:simple-lower-case-map := make-hash #n #n 2500 ; 2303
-  
+
   define (ud-parser) {
     loop :+ function () {
 	      if (eof? (current-input-handle)) #n {
@@ -357,7 +369,7 @@ if (null? char-set:ascii) {
 		  d := read-number (ph parts) 16
 
 		  cat := phtt parts
-		  
+
 		  cond ((string=? cat "Lt") {
 		    set-bitset! char-set:title-case d
 
@@ -382,7 +394,7 @@ if (null? char-set:ascii) {
 		       })
 
 		  cat1 := string-ref cat 0
-		  
+
 		  case cat1 \
 		       ((#\L #\N #\M #\S #\P) {
 			 set-bitset! char-set:graphic d
@@ -391,7 +403,7 @@ if (null? char-set:ascii) {
 			   set-bitset! ascii-char-set:graphic d
 			 }
 		  })
-		  
+
 		  case cat1 \
 		       ((#\P) {
 			 set-bitset! char-set:punctuation d
@@ -402,7 +414,7 @@ if (null? char-set:ascii) {
 		  }) \
 		       ((#\S) {
 			 set-bitset! char-set:symbol d
-			 
+
 			 if (lt d ascii-char-set:size) {
 			   set-bitset! ascii-char-set:symbol d
 			 }
@@ -413,7 +425,7 @@ if (null? char-set:ascii) {
 		    uc-cp := nth parts 13
 		    if (gt (string-length uc-cp) 0) {
 		      hash-set! char-set:simple-upper-case-map d (read-number uc-cp 16)
-		      
+
 		      if (lt d ascii-char-set:size) {
 			hash-set! ascii-char-set:simple-upper-case-map d (read-number uc-cp 16)
 		      }
@@ -423,7 +435,7 @@ if (null? char-set:ascii) {
 		    lc-cp := nth parts 14
 		    if (gt (string-length lc-cp) 0) {
 		      hash-set! char-set:simple-lower-case-map d (read-number lc-cp 16)
-		      
+
 		      if (lt d ascii-char-set:size) {
 			hash-set! ascii-char-set:simple-lower-case-map d (read-number lc-cp 16)
 		      }
@@ -468,7 +480,7 @@ if (null? char-set:ascii) {
 
 					     cond ((string=? (pht dcp_parts) " White_Space ") {
 					       range-loop char-set:whitespace (ph range) (pht range)
-					       
+
 					       if (lt (pht range) ascii-char-set:size) {
 						 range-loop ascii-char-set:whitespace (ph range) (pht range)
 					       }
@@ -484,7 +496,7 @@ if (null? char-set:ascii) {
   with-input-from-file PL pl-parser
 
   eprintf "Parsing %s\n" DCP
-  
+
   define (dcp-parser) {
     c := 0
     m := 0
@@ -519,21 +531,21 @@ if (null? char-set:ascii) {
 
 					     cond ((string=? (pht dcp_parts) " Lowercase ") {
 					       range-loop char-set:lower-case (ph range) (pht range)
-					       
+
 					       if (lt (pht range) ascii-char-set:size) {
 						 range-loop ascii-char-set:lower-case (ph range) (pht range)
 					       }
 					     }) \
 						  ((string=? (pht dcp_parts) " Uppercase ") {
 						    range-loop char-set:upper-case (ph range) (pht range)
-						    
+
 						    if (lt (pht range) ascii-char-set:size) {
 						      range-loop ascii-char-set:upper-case (ph range) (pht range)
 						    }
 						  }) \
 						  ((string=? (pht dcp_parts) " Alphabetic ") {
 						    range-loop char-set:letter (ph range) (pht range)
-						    
+
 						    if (lt (pht range) ascii-char-set:size) {
 						      range-loop ascii-char-set:letter (ph range) (pht range)
 						    }
@@ -550,17 +562,17 @@ if (null? char-set:ascii) {
 
   ascii-char-set:letter+digit := merge-bitset ascii-char-set:letter ascii-char-set:digit
   ascii-char-set:printing := merge-bitset ascii-char-set:graphic ascii-char-set:whitespace
-  
+
   char-set:letter+digit := merge-bitset char-set:letter char-set:digit
   char-set:printing := merge-bitset char-set:graphic char-set:whitespace
-  
+
   bs-range-loop :+ function (bs n e) {
 	    if (gt n e) #n {
 	      set-bitset! bs n
 	      bs-range-loop bs (n + 1) e
 	    }
   }
-  
+
   bs-range-loop ascii-char-set:hex-digit #x0030 #x0039
   bs-range-loop ascii-char-set:hex-digit #x0041 #x0046
   bs-range-loop ascii-char-set:hex-digit #x0061 #x0066
@@ -612,9 +624,9 @@ These bitsets are automatically generated from Unicode source files.
   printf "\n; %s\n%-20s := #n\n" "category Zs + 0009" "char-set:blank"
 
   printf "\n; %s\n%-20s := #n\n" "0000..007F" "char-set:ascii"
-    
+
   printf "\n; %s\n%-20s := #n\n" "Simple uppercase mapping (single character result)" "char-set:simple-upper-case-map"
-    
+
   printf "\n; %s\n%-20s := #n\n" "Simple lowercase mapping (single character result)" "char-set:simple-lower-case-map"
 
   printf "%s\n" "
@@ -650,11 +662,11 @@ if (memq 'ascii *subfeatures*) {
   printf "\n  ; %s\n  %-20s = %s\n" "category Zs + 0009" "char-set:blank" ascii-char-set:blank
 
   printf "\n  ; %s\n  %-20s = %s\n" "0000..007F" "char-set:ascii" ascii-char-set:ascii
-    
+
   printf "\n  ; %s\n  %-20s = %s\n" "Simple uppercase mapping (single character result)" "char-set:simple-upper-case-map" ascii-char-set:simple-upper-case-map
-    
+
   printf "\n  ; %s\n  %-20s = %s\n" "Simple lowercase mapping (single character result)" "char-set:simple-lower-case-map" ascii-char-set:simple-lower-case-map
-    
+
   printf "%s\n" "
 
 } {
@@ -690,11 +702,11 @@ if (memq 'ascii *subfeatures*) {
   printf "\n  ; %s\n  %-20s = %s\n" "category Zs + 0009" "char-set:blank" char-set:blank
 
   printf "\n  ; %s\n  %-20s = %s\n" "0000..007F" "char-set:ascii" char-set:ascii
-    
+
   printf "\n  ; %s\n  %-20s = %s\n" "Simple uppercase mapping (single character result)" "char-set:simple-upper-case-map" char-set:simple-upper-case-map
-    
+
   printf "\n  ; %s\n  %-20s = %s\n" "Simple lowercase mapping (single character result)" "char-set:simple-lower-case-map" char-set:simple-lower-case-map
-    
+
   printf "%s\n" "
 
 }
@@ -703,4 +715,4 @@ if (memq 'ascii *subfeatures*) {
 
 }
 
-(provide 'unicode)
+provide unicode

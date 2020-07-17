@@ -43,7 +43,7 @@ test (file-handle? ifh) #t
 test (input-file-handle? ifh) #t
 test (output-file-handle? ifh) #f
 
-fhi := read ifh
+fhi := *primitives*/read ifh
 close-handle ifh
 
 test (file-handle? ifh) #t

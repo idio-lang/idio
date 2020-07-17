@@ -660,6 +660,7 @@ does not return per se						\n\
 
 #ifdef IDIO_DEBUG
     idio_debug ("default-condition-handler: no handler re-raising %s\n", c);
+    idio_vm_frame_tree (idio_S_nil);
 #endif
     idio_raise_condition (idio_S_true, c);
 

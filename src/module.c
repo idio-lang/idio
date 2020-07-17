@@ -168,7 +168,9 @@ IDIO idio_module (IDIO name)
      * idio_primitives_module, idio_command_module and idio_Idio_module
      * which we patch up immediately after this call returns
      */
-    IDIO_MODULE_IMPORTS (mo) = IDIO_LIST3 (idio_command_module, idio_Idio_module, idio_primitives_module);
+    IDIO_MODULE_IMPORTS (mo) = IDIO_LIST3 (IDIO_LIST1 (idio_command_module),
+					   IDIO_LIST1 (idio_Idio_module),
+					   IDIO_LIST1 (idio_primitives_module));
     IDIO_MODULE_SYMBOLS (mo) = IDIO_HASH_EQP (1<<7);
     IDIO_MODULE_VCI (mo) = IDIO_HASH_EQP (1<<10);
     IDIO_MODULE_VVI (mo) = IDIO_HASH_EQP (1<<10);
@@ -343,6 +345,55 @@ IDIO_DEFINE_PRIMITIVE2 ("%set-module-imports!", set_module_imports, (IDIO module
 	idio_error_param_type ("list|nil", imports, IDIO_C_FUNC_LOCATION ());
 	return idio_S_unspec;
     }
+
+    return idio_S_unspec;
+}
+
+/*
+ * Invoke the functionally of %module-import in module.idio --
+ * required by the evaluator as a dirty hack...
+ */
+IDIO idio_module_extend_imports (IDIO module, IDIO syms)
+{
+    IDIO_ASSERT (module);
+    IDIO_ASSERT (syms);
+
+    IDIO_TYPE_ASSERT (module, module);
+    IDIO_TYPE_ASSERT (list, syms);
+
+    idio_vm_invoke_C (idio_thread_current_thread (),
+		      IDIO_LIST3 (idio_module_symbol_value (idio_S_pct_module_import,
+							    idio_Idio_module,
+							    idio_S_nil),
+				  module,
+				  syms));
+
+    return idio_S_unspec;
+}
+
+/*
+ * Functionally the same as %module-export in module.idio but used by
+ * the evaluator as a dirty hack...
+ */
+IDIO idio_module_extend_exports (IDIO module, IDIO syms)
+{
+    IDIO_ASSERT (module);
+    IDIO_ASSERT (syms);
+
+    IDIO_TYPE_ASSERT (module, module);
+    IDIO_TYPE_ASSERT (list, syms);
+
+    IDIO exports = IDIO_MODULE_EXPORTS (module);
+
+    while (idio_S_nil != syms) {
+	IDIO sym = IDIO_PAIR_H (syms);
+	if (idio_S_false == idio_list_memq (sym, exports)) {
+	    exports = idio_pair (sym, exports);
+	}
+	syms = IDIO_PAIR_T (syms);
+    }
+
+    IDIO_MODULE_EXPORTS (module) = exports;
 
     return idio_S_unspec;
 }
@@ -567,9 +618,10 @@ IDIO idio_module_visible_symbols (IDIO module, IDIO type)
     IDIO imports = IDIO_MODULE_IMPORTS (module);
     for (; idio_S_nil != imports; imports = IDIO_PAIR_T (imports)) {
 	IDIO import = IDIO_PAIR_H (imports);
-	r = idio_list_append2 (r, idio_module_visible_imported_symbols (import, type));
+	IDIO im = IDIO_PAIR_H (import);
+	r = idio_list_append2 (r, idio_module_visible_imported_symbols (im, type));
 	if (0 == seen_Idio &&
-	    idio_eqp (import, idio_Idio_module)) {
+	    idio_eqp (im, idio_Idio_module)) {
 	    seen_Idio = 1;
 	}
     }
@@ -713,9 +765,9 @@ IDIO idio_module_find_symbol_recurse (IDIO symbol, IDIO m_or_n, int recurse)
 	return idio_S_unspec;
     }
 
-    /* idio_debug ("im_fsr %s", IDIO_MODULE_NAME (module));  */
-    /* idio_debug ("/%s", symbol);  */
-    /* fprintf (stderr, " recurse=%d\n", recurse);  */
+    /* idio_debug ("im_fsr %s", IDIO_MODULE_NAME (module)); */
+    /* idio_debug ("/%s", symbol); */
+    /* fprintf (stderr, " recurse=%d\n", recurse); */
 
     IDIO cm_sk = idio_S_unspec;
     if (recurse < 2) {
@@ -751,12 +803,14 @@ IDIO idio_module_find_symbol_recurse (IDIO symbol, IDIO m_or_n, int recurse)
 	recurse) {
 	IDIO imports = IDIO_MODULE_IMPORTS (module);
 	for (; idio_S_nil != imports; imports = IDIO_PAIR_T (imports)) {
-	    if (! idio_isa_module (IDIO_PAIR_H (imports))) {
-		idio_debug ("module import error: %s imports", module);
+	    IDIO im = IDIO_PAIR_HH (imports);
+
+	    if (! idio_isa_module (im)) {
+		idio_debug ("module import error: not a module: %s imports", module);
 		idio_debug (" %s\n", IDIO_MODULE_IMPORTS (module));
 		continue;
 	    }
-	    IDIO mi_sk = idio_module_find_symbol_recurse_imports (symbol, IDIO_PAIR_H (imports), module);
+	    IDIO mi_sk = idio_module_find_symbol_recurse_imports (symbol, im, module);
 
 	    if (idio_S_unspec != mi_sk) {
 		/*
@@ -1334,7 +1388,7 @@ void idio_init_module ()
      * imports list for all other modules to be '(Idio *primitives*)
      */
     IDIO name;
-    
+
     name = idio_symbols_C_intern ("*primitives*");
     idio_primitives_module = idio_module (name);
     IDIO_MODULE_IMPORTS (idio_primitives_module) = idio_S_nil;
@@ -1343,7 +1397,7 @@ void idio_init_module ()
 
     name = idio_symbols_C_intern ("Idio");
     idio_Idio_module = idio_module (name);
-    IDIO_MODULE_IMPORTS (idio_Idio_module) = IDIO_LIST1 (idio_primitives_module);
+    IDIO_MODULE_IMPORTS (idio_Idio_module) = IDIO_LIST1 (IDIO_LIST1 (idio_primitives_module));
     idio_ai_t Im_gci = idio_vm_constants_lookup_or_extend (name);
     idio_ai_t Im_gvi = idio_vm_extend_values ();
 

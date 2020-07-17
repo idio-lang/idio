@@ -63,9 +63,10 @@ debug := #n
 			      }
 
 			      dloop (al - 1)
-			      printf "Invoke a continuation with: c <num> [<val>]\n"
+			      printf "c <num> [<val>]	Invoke continuation <num>\n"
 			    }
-			    printf "return a value to [*]: v <val>\n"
+			    printf "v <val>		return a value to continuation of failed expression\n"
+			    printf "ft		show the tree of frames\n"
 
 			    line := (read-line)
 			    lsh := open-input-string line

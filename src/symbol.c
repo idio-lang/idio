@@ -79,6 +79,8 @@ IDIO_SYMBOL_DECL (load);
 IDIO_SYMBOL_DECL (load_handle);
 IDIO_SYMBOL_DECL (lt);
 IDIO_SYMBOL_DECL (macro_expand);
+IDIO_SYMBOL_DECL (pct_module_export);
+IDIO_SYMBOL_DECL (pct_module_import);
 IDIO_SYMBOL_DECL (module);
 IDIO_SYMBOL_DECL (op);
 IDIO_SYMBOL_DECL (or);
@@ -631,6 +633,8 @@ void idio_init_symbol ()
     IDIO_SYMBOL_DEF ("load-handle", load_handle);
     IDIO_SYMBOL_DEF ("<", lt);
     IDIO_SYMBOL_DEF ("macro-expand", macro_expand);
+    IDIO_SYMBOL_DEF ("%module-export", pct_module_export);
+    IDIO_SYMBOL_DEF ("%module-import", pct_module_import);
     IDIO_SYMBOL_DEF ("module", module);
     IDIO_SYMBOL_DEF ("op", op);
     IDIO_SYMBOL_DEF ("or", or);

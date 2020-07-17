@@ -177,7 +177,7 @@ trap ^i/o-read-error (function (c) {
   ;; display* "read handle condition"
 
   osh := (open-output-string)
-  expr := read osh
+  expr := *primitives*/read osh
   close-handle osh
   test expr 'caught-a-read-error
 }
@@ -193,7 +193,7 @@ trap ^i/o-write-error (function (c) {
   ;; display* "write handle condition"
 
   ish := open-input-string "bob"
-  r := write "Hello" ish
+  r := *primitives*/write "Hello" ish
   close-handle ish
 
   test r 'caught-a-write-error
@@ -224,14 +224,14 @@ trap ^i/o-closed-error (function (c) {
   ;; display* "closed handle condition"
   test {
     call-with-output-file testfile (function (out) {
-      write '(this is a test) out
+      *primitives*/write '(this is a test) out
 
       ;; the cause of the error -- call-with-output-file will also
       ;; call close-output-handle (generating the condition) but we
       ;; need to close the handle here otherwise call-with-input-file
       ;; will get #eof
       close-output-handle out
-      call-with-input-file testfile read
+      call-with-input-file testfile *primitives*/read
     })
   } '(this is a test)
 }
@@ -267,7 +267,7 @@ trap ^i/o-filename-error (function (c) {
 
   ofh := open-output-file dir_filename
   ;; test we have a writeable fh
-  write "Hello" ofh
+  *primitives*/write "Hello" ofh
   close-handle ofh
 }
 
@@ -293,7 +293,7 @@ trap ^i/o-malformed-filename-error (function (c) {
 
   ofh := open-output-file bad_filename
   ;; test we have a writeable fh
-  write "Hello" ofh
+  *primitives*/write "Hello" ofh
   close-handle ofh
 }
 
@@ -343,7 +343,7 @@ if (equal? (struct-utsname-sysname libc/idio-uname) "SunOS") {
 
     ofh := open-file test_filename "wx"
     ;; test we have a writeable fh
-    write "Hello" ofh
+    *primitives*/write "Hello" ofh
     close-handle ofh
   }
 }

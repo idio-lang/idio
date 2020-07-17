@@ -741,6 +741,31 @@ static IDIO idio_meaning_variable_localp (IDIO src, IDIO nametree, size_t i, IDI
     return idio_S_nil;
 }
 
+static IDIO idio_meaning_nametree_to_list (IDIO nametree)
+{
+    IDIO_ASSERT (nametree);
+    IDIO_TYPE_ASSERT (list, nametree);
+
+    IDIO r = idio_S_nil;
+
+    if (idio_S_nil != nametree) {
+	IDIO v_list = IDIO_PAIR_H (nametree);
+	while (idio_S_nil != v_list) {
+	    IDIO v_data = IDIO_PAIR_H (v_list);
+
+	    r = idio_pair (IDIO_PAIR_H (v_data), r);
+
+	    v_list = IDIO_PAIR_T (v_list);
+	}
+
+	nametree = IDIO_PAIR_T (nametree);
+    }
+
+    r = idio_list_reverse (r);
+
+    return r;
+}
+
 static IDIO idio_meaning_nametree_extend (IDIO nametree, IDIO names)
 {
     IDIO_ASSERT (names);
@@ -3036,17 +3061,22 @@ static IDIO idio_meaning_some_arguments (IDIO src, IDIO e, IDIO es, IDIO nametre
     return IDIO_LIST4 (IDIO_I_STORE_ARGUMENT, m, ms, idio_fixnum (rank));
 }
 
-static IDIO idio_meaning_no_argument (IDIO src, IDIO nametree, size_t size, int flags)
+static IDIO idio_meaning_no_argument (IDIO src, IDIO nametree, size_t size, int flags, IDIO cs)
 {
     IDIO_ASSERT (src);
     IDIO_ASSERT (nametree);
 
     IDIO_TYPE_ASSERT (list, nametree);
 
+    IDIO args = idio_meaning_nametree_to_list (nametree);
+
+    idio_ai_t mci = idio_codegen_constants_lookup_or_extend (cs, args);
+    IDIO fmci = idio_fixnum (mci);
+
     if (IDIO_MEANING_IS_FRAME_REUSE (flags)) {
-	return IDIO_LIST2 (IDIO_I_ALLOCATE_FRAME, idio_fixnum (size));
+	return IDIO_LIST3 (IDIO_I_ALLOCATE_FRAME, idio_fixnum (size), fmci);
     } else {
-	return IDIO_LIST2 (IDIO_I_ALLOCATE_FRAME, idio_fixnum (size));
+	return IDIO_LIST3 (IDIO_I_ALLOCATE_FRAME, idio_fixnum (size), fmci);
     }
 }
 
@@ -3065,7 +3095,7 @@ static IDIO idio_meanings (IDIO src, IDIO es, IDIO nametree, size_t size, int fl
     if (idio_isa_pair (es)) {
 	return idio_meaning_some_arguments (IDIO_PAIR_H (es), IDIO_PAIR_H (es), IDIO_PAIR_T (es), nametree, size, flags, cs, cm);
     } else {
-	return idio_meaning_no_argument (src, nametree, size, flags);
+	return idio_meaning_no_argument (src, nametree, size, flags, cs);
     }
 }
 
@@ -3123,17 +3153,22 @@ static IDIO idio_meaning_some_dotted_arguments (IDIO src, IDIO e, IDIO es, IDIO 
     }
 }
 
-static IDIO idio_meaning_no_dotted_argument (IDIO src, IDIO nametree, size_t size, size_t arity, int flags)
+static IDIO idio_meaning_no_dotted_argument (IDIO src, IDIO nametree, size_t size, size_t arity, int flags, IDIO cs)
 {
     IDIO_ASSERT (src);
     IDIO_ASSERT (nametree);
 
     IDIO_TYPE_ASSERT (list, nametree);
 
+    IDIO args = idio_meaning_nametree_to_list (nametree);
+
+    idio_ai_t mci = idio_codegen_constants_lookup_or_extend (cs, args);
+    IDIO fmci = idio_fixnum (mci);
+
     if (IDIO_MEANING_IS_FRAME_REUSE (flags)) {
-	return IDIO_LIST2 (IDIO_I_ALLOCATE_FRAME, idio_fixnum (arity));
+	return IDIO_LIST3 (IDIO_I_ALLOCATE_FRAME, idio_fixnum (arity), fmci);
     } else {
-	return IDIO_LIST2 (IDIO_I_ALLOCATE_FRAME, idio_fixnum (arity));
+	return IDIO_LIST3 (IDIO_I_ALLOCATE_FRAME, idio_fixnum (arity), fmci);
     }
 }
 
@@ -3152,7 +3187,7 @@ static IDIO idio_meaning_dotteds (IDIO src, IDIO es, IDIO nametree, size_t size,
     if (idio_isa_pair (es)) {
 	return idio_meaning_some_dotted_arguments (IDIO_PAIR_H (es), IDIO_PAIR_H (es), IDIO_PAIR_T (es), nametree, size, arity, flags, cs, cm);
     } else {
-	return idio_meaning_no_dotted_argument (src, nametree, size, arity, flags);
+	return idio_meaning_no_dotted_argument (src, nametree, size, arity, flags, cs);
     }
 }
 
@@ -4616,6 +4651,42 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO cs, I
 
 		return idio_S_notreached;
 	    }
+	} else if (idio_S_pct_module_export == eh) {
+	    /* (%module-export names) */
+
+	    /*
+	     * %module-export names is unusual in that it affects
+	     * the evaluator here and now as we are changing the
+	     * set of names a module exports.
+	     *
+	     * The evaluator is going to lookup any given name
+	     * *before* any nominal {import} statement is
+	     * evaluated so we need to nip in first and update the
+	     * facts before idio_meaning_variable_kind gets to
+	     * work.
+	     */
+	    IDIO syms = IDIO_PAIR_H (IDIO_PAIR_THT (et));
+	    idio_module_extend_exports (idio_thread_current_module (), syms);
+
+	    return idio_meaning_application (src, eh, et, nametree, flags, cs, cm);
+	} else if (idio_S_pct_module_import == eh) {
+	    /* (%module-import names) */
+
+	    /*
+	     * %module-import names is unusual in that it affects
+	     * the evaluator here and now as we are changing the
+	     * set of names a module imports.
+	     *
+	     * The evaluator is going to lookup any given name
+	     * *before* any nominal {import} statement is
+	     * evaluated so we need to nip in first and update the
+	     * facts before idio_meaning_variable_kind gets to
+	     * work.
+	     */
+	    IDIO syms = IDIO_PAIR_H (IDIO_PAIR_THT (et));
+	    idio_module_extend_imports (idio_thread_current_module (), syms);
+
+	    return idio_meaning_application (src, eh, et, nametree, flags, cs, cm);
 	} else {
 	    if (idio_isa_symbol (eh)) {
 		IDIO k = idio_meaning_variable_kind (src, nametree, eh, IDIO_MEANING_LEXICAL_SCOPE (flags), cs, cm);

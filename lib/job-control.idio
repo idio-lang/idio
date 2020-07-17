@@ -18,7 +18,7 @@
 ;;
 ;; command.idio
 ;;
-module *command*
+module job-control
 import libc
 export (%idio-jobs
 	%%last-job
@@ -1382,3 +1382,5 @@ define (jobs) "display the state of outstanding jobs" {
 
   jobs-loop %idio-jobs
 }
+
+provide job-control

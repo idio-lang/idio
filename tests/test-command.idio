@@ -19,7 +19,7 @@
 ;; command.idio
 ;;
 module tests/command
-import *command* libc
+import job-control libc
 
 command0 := Tests
 
