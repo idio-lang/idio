@@ -1857,6 +1857,17 @@ char *idio_as_string (IDIO o, int depth)
 			    print_lead = 1;
 			}
 		    }
+		    if (in_range) {
+			char *lead;
+			if (asprintf (&lead, "%zx-%zx ", range_start, count - CHAR_BIT) == -1) {
+			    idio_error_alloc ("asprintf");
+
+			    /* notreached */
+			    return NULL;
+			}
+			IDIO_STRCAT_FREE (r, lead);
+			in_range = 0;
+		    }
 		    IDIO_STRCAT (r, "}");
 		}
 		break;
