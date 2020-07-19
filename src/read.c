@@ -57,6 +57,9 @@ IDIO idio_src_properties;
 #define IDIO_CHAR_EQUALS	'='
 #define IDIO_CHAR_PIPE		'|'
 #define IDIO_CHAR_ASTERISK	'*'
+#define IDIO_CHAR_HYPHEN_MINUS	'-'
+#define IDIO_CHAR_PLUS_SIGN	'+'
+#define IDIO_CHAR_PERIOD	'.'
 
 /*
  * What separates words from one another in Idio?
@@ -1397,6 +1400,8 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 	    break;
 	}
 
+	char *bit_range = NULL;
+
 	for (;;) {
 	    buf[i++] = c;
 
@@ -1437,6 +1442,9 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 		break;
 	    case IDIO_CHAR_COLON:
 		bit_block = buf + i;
+		break;
+	    case IDIO_CHAR_HYPHEN_MINUS:
+		bit_range = buf + i;
 		break;
 	    case IDIO_CHAR_RBRACE:
 		if (i > 0) {
@@ -1494,14 +1502,14 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 						idio_pair (idio_S_unspec,
 						idio_S_nil)))));
 
-		if (bit_block != buf) {
-		    /* bit_block is pointing at the colon */
-		    *bit_block = '\0';
-		    bit_block++;
+		if (NULL != bit_range) {
+		    /* bit_range is pointing at the HYPEN_MINUS */
+		    *bit_range = '\0';
+		    bit_range++;
 
-		    IDIO off_sh = idio_open_input_string_handle_C (buf);
+		    IDIO offset_sh = idio_open_input_string_handle_C (buf);
 
-		    IDIO I_offset = idio_read_bignum_radix (off_sh, lo, '?', 16);
+		    IDIO I_offset = idio_read_bignum_radix (offset_sh, lo, '?', 16);
 
 		    if (idio_isa_fixnum (I_offset)) {
 			offset = IDIO_FIXNUM_VAL (I_offset);
@@ -1531,54 +1539,151 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 
 			return idio_S_notreached;
 		    }
-		}
 
-		size_t bit_block_len = strlen (bit_block);
-		if (bit_block_len > CHAR_BIT) {
-		    char em[BUFSIZ];
-		    sprintf (em, "bitset bits should be fewer than %d", CHAR_BIT);
-		    idio_read_error_bitset (buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
+		    size_t end = 0;
+		    IDIO end_sh = idio_open_input_string_handle_C (bit_range);
 
-		    return idio_S_notreached;
-		}
+		    IDIO I_end = idio_read_bignum_radix (end_sh, lo, '?', 16);
 
-		if ((offset + bit_block_len) > IDIO_BITSET_SIZE (bs)) {
-		    char em[BUFSIZ];
-		    sprintf (em, "offset %#zx + %zu bits > bitset size %ld/%#lx", offset, bit_block_len, IDIO_BITSET_SIZE (bs), IDIO_BITSET_SIZE (bs));
-		    idio_read_error_bitset (buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
+		    if (idio_isa_fixnum (I_end)) {
+			end = IDIO_FIXNUM_VAL (I_end);
+		    } else if (idio_isa_bignum (I_end)) {
+			if (IDIO_BIGNUM_INTEGER_P (I_end)) {
+			    end = idio_bignum_ptrdiff_value (I_end);
+			} else {
+			    IDIO end_i = idio_bignum_real_to_integer (I_end);
+			    if (idio_S_nil == end_i) {
+				idio_error_param_type ("bitset end should be an integer", I_end, IDIO_C_FUNC_LOCATION ());
 
-		    return idio_S_notreached;
-		}
+				return idio_S_notreached;
+			    } else {
+				end = idio_bignum_ptrdiff_value (end_i);
+			    }
+			}
+		    } else {
+			idio_error_param_type ("bitset end should be an integer", I_end, IDIO_C_FUNC_LOCATION ());
 
-		unsigned long new = 0;
-		for (unsigned int i = 0; i < bit_block_len; i++) {
-		    switch (bit_block[i]) {
-		    case '0':
-			break;
-		    case '1':
-			new |= (1 << i);
-			break;
-		    default:
-			{
+			return idio_S_notreached;
+		    }
+
+		    if (end > IDIO_BITSET_SIZE (bs)) {
+			char em[BUFSIZ];
+			sprintf (em, "end %#zx > bitset size %ld/%#lX", end, IDIO_BITSET_SIZE (bs), IDIO_BITSET_SIZE (bs));
+			idio_read_error_bitset (buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
+
+			return idio_S_notreached;
+		    }
+
+		    while (offset <= end) {
+			size_t n = offset / IDIO_BITS_PER_LONG;
+			int b = (offset % IDIO_BITS_PER_LONG) / CHAR_BIT;
+
+			    if (0 == b &&
+				(offset + IDIO_BITS_PER_LONG) < end) {
+				IDIO_BITSET_BITS (bs, n) = ULONG_MAX;
+				offset += IDIO_BITS_PER_LONG;
+			    } else {
+				unsigned long br = 0;
+
+				for (; offset <= end &&
+					 b < sizeof (unsigned long); b++) {
+				    unsigned long mask = UCHAR_MAX;
+				    mask <<= (b * CHAR_BIT);
+				    br |= mask;
+
+				    offset += CHAR_BIT;
+				}
+				IDIO_BITSET_BITS (bs, n) |= br;
+			    }
+		    }
+
+		} else {
+		    if (bit_block != buf) {
+			/* bit_block is pointing at the colon */
+			*bit_block = '\0';
+			bit_block++;
+
+			IDIO off_sh = idio_open_input_string_handle_C (buf);
+
+			IDIO I_offset = idio_read_bignum_radix (off_sh, lo, '?', 16);
+
+			if (idio_isa_fixnum (I_offset)) {
+			    offset = IDIO_FIXNUM_VAL (I_offset);
+			} else if (idio_isa_bignum (I_offset)) {
+			    if (IDIO_BIGNUM_INTEGER_P (I_offset)) {
+				offset = idio_bignum_ptrdiff_value (I_offset);
+			    } else {
+				IDIO offset_i = idio_bignum_real_to_integer (I_offset);
+				if (idio_S_nil == offset_i) {
+				    idio_error_param_type ("bitset offset should be an integer", I_offset, IDIO_C_FUNC_LOCATION ());
+
+				    return idio_S_notreached;
+				} else {
+				    offset = idio_bignum_ptrdiff_value (offset_i);
+				}
+			    }
+			} else {
+			    idio_error_param_type ("bitset offset should be an integer", I_offset, IDIO_C_FUNC_LOCATION ());
+
+			    return idio_S_notreached;
+			}
+
+			if (offset > IDIO_BITSET_SIZE (bs)) {
 			    char em[BUFSIZ];
-			    sprintf (em, "bitset bits should be 0/1, not %#x @%d", bit_block[i], i);
+			    sprintf (em, "offset %#zx > bitset size %ld/%#lX", offset, IDIO_BITSET_SIZE (bs), IDIO_BITSET_SIZE (bs));
 			    idio_read_error_bitset (buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
 
 			    return idio_S_notreached;
 			}
-			break;
 		    }
+
+		    size_t bit_block_len = strlen (bit_block);
+		    if (bit_block_len > CHAR_BIT) {
+			char em[BUFSIZ];
+			sprintf (em, "bitset bits should be fewer than %d", CHAR_BIT);
+			idio_read_error_bitset (buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
+
+			return idio_S_notreached;
+		    }
+
+		    if ((offset + bit_block_len) > IDIO_BITSET_SIZE (bs)) {
+			char em[BUFSIZ];
+			sprintf (em, "offset %#zx + %zu bits > bitset size %ld/%#lx", offset, bit_block_len, IDIO_BITSET_SIZE (bs), IDIO_BITSET_SIZE (bs));
+			idio_read_error_bitset (buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
+
+			return idio_S_notreached;
+		    }
+
+		    unsigned long new = 0;
+		    for (unsigned int i = 0; i < bit_block_len; i++) {
+			switch (bit_block[i]) {
+			case '0':
+			    break;
+			case '1':
+			    new |= (1 << i);
+			    break;
+			default:
+			    {
+				char em[BUFSIZ];
+				sprintf (em, "bitset bits should be 0/1, not %#x @%d", bit_block[i], i);
+				idio_read_error_bitset (buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
+
+				return idio_S_notreached;
+			    }
+			    break;
+			}
+		    }
+
+		    size_t n = offset / IDIO_BITS_PER_LONG;
+		    size_t b = (offset % IDIO_BITS_PER_LONG) / CHAR_BIT;
+		    unsigned long ul = IDIO_BITSET_BITS (bs, n);
+		    unsigned long mask = UCHAR_MAX;
+		    mask <<= (b * CHAR_BIT);
+		    ul = (ul & ~mask) | (new << b * CHAR_BIT);
+		    IDIO_BITSET_BITS (bs, n) = ul;
+
+		    offset += bit_block_len;
 		}
-
-		size_t n = offset / IDIO_BITS_PER_LONG;
-		size_t b = (offset % IDIO_BITS_PER_LONG) / CHAR_BIT;
-		unsigned long ul = IDIO_BITSET_BITS (bs, n);
-		unsigned long mask = UCHAR_MAX;
-		mask <<= (b * CHAR_BIT);
-		ul = (ul & ~mask) | (new << b * CHAR_BIT);
-		IDIO_BITSET_BITS (bs, n) = ul;
-
-		offset += bit_block_len;
 	    }
 	}
     }
@@ -1769,11 +1874,11 @@ static IDIO idio_read_bignum_radix (IDIO handle, IDIO lo, char basec, int radix)
     int neg = 0;
 
     switch (c) {
-    case '-':
+    case IDIO_CHAR_HYPHEN_MINUS:
 	neg = 1;
 	c = idio_getc_handle (handle);
 	break;
-    case '+':
+    case IDIO_CHAR_PLUS_SIGN:
 	c = idio_getc_handle (handle);
 	break;
     }
@@ -1900,8 +2005,8 @@ static IDIO idio_read_number_C (IDIO handle, char *str)
      */
 
     int has_sign = 0;
-    if ('+' == s[i] ||
-	'-' == s[i]) {
+    if (IDIO_CHAR_PLUS_SIGN == s[i] ||
+	IDIO_CHAR_HYPHEN_MINUS == s[i]) {
 	has_sign = 1;
 	i++;
     }
@@ -1917,7 +2022,7 @@ static IDIO idio_read_number_C (IDIO handle, char *str)
     int inexact = 0;
 
     for (; s[i]; i++) {
-	if ('#' == s[i]) {
+	if (IDIO_CHAR_HASH == s[i]) {
 	    inexact = 1;
 	}
 
@@ -1925,12 +2030,12 @@ static IDIO idio_read_number_C (IDIO handle, char *str)
 	    has_digit &&
 	    ! has_exp) {
 	    if (isdigit (s[i+1]) ||
-		'#' == s[i+1]) {
+		IDIO_CHAR_HASH == s[i+1]) {
 		has_exp = 1;
-	    } else if (('+' == s[i+1] ||
-			'-' == s[i+1]) &&
+	    } else if ((IDIO_CHAR_PLUS_SIGN == s[i+1] ||
+			IDIO_CHAR_HYPHEN_MINUS == s[i+1]) &&
 		       (isdigit (s[i+2]) ||
-			'#' == s[i+2])) {
+			IDIO_CHAR_HASH == s[i+2])) {
 		has_exp = 1;
 
 		/* extra i++ to skip the +/- next time round the
@@ -1944,10 +2049,10 @@ static IDIO idio_read_number_C (IDIO handle, char *str)
 		 */
 		return idio_S_nil;
 	    }
-	} else if ('.' == s[i] &&
+	} else if (IDIO_CHAR_PERIOD == s[i] &&
 		   ! has_period) {
 	    has_period = 1;
-	} else if ('#' == s[i] &&
+	} else if (IDIO_CHAR_HASH == s[i] &&
 		   (has_digit ||
 		    has_period ||
 		    has_sign)) {

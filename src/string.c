@@ -812,7 +812,8 @@ static char *idio_string_token (char *in, char *delim, int flags, char **saved, 
 
     if (IDIO_STRING_TOKEN_INEXACT (flags)) {
 	in += strspn (in, delim);
-    } else if ('\0' != prev_delim) {
+    } else if (0 &&
+	       '\0' != prev_delim) {
 	char *start = in;
 	char *end = in + strspn (in, delim);
 	for (; in < end; in++) {

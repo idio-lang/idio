@@ -1747,6 +1747,8 @@ char *idio_as_string (IDIO o, int depth)
 		    size_t bs_size = IDIO_BITSET_SIZE (o);
 		    size_t count = 0;
 		    int print_lead = 0;
+		    int in_range = 0;
+		    size_t range_start = 0;
 		    size_t n_ul = bs_size / IDIO_BITS_PER_LONG + 1;
 		    for (i = 0; i < n_ul; i++) {
 			/*
@@ -1757,7 +1759,8 @@ char *idio_as_string (IDIO o, int depth)
 
 			if (ul_bits) {
 			    int b;
-			    for (b = 0; b < sizeof (unsigned long); b++) {
+			    for (b = 0; count < bs_size &&
+				     b < sizeof (unsigned long); b++) {
 				/*
 				 * Portable format is chunked into bytes
 				 */
@@ -1773,16 +1776,36 @@ char *idio_as_string (IDIO o, int depth)
 				unsigned long byte_bits = ul_bits & mask;
 
 				if (byte_bits) {
+				    if (byte_bits == mask) {
+					if (0 == in_range) {
+					    in_range = 1;
+					    range_start = count;
+					}
+					count += CHAR_BIT;
+					print_lead = 1;
+					continue;
+				    }
 				    if (print_lead) {
 					print_lead = 0;
 					char *lead;
-					if (asprintf (&lead, "%zx:", count) == -1) {
-					    idio_error_alloc ("asprintf");
+					if (in_range) {
+					    if (asprintf (&lead, "%zx-%zx ", range_start, count - CHAR_BIT) == -1) {
+						idio_error_alloc ("asprintf");
 
-					    /* notreached */
-					    return NULL;
+						/* notreached */
+						return NULL;
+					    }
+					    IDIO_STRCAT_FREE (r, lead);
+					    in_range = 0;
+					} else {
+					    if (asprintf (&lead, "%zx:", count) == -1) {
+						idio_error_alloc ("asprintf");
+
+						/* notreached */
+						return NULL;
+					    }
+					    IDIO_STRCAT_FREE (r, lead);
 					}
-					IDIO_STRCAT_FREE (r, lead);
 				    }
 				    char bits[CHAR_BIT + 1];
 				    unsigned int j;
@@ -1801,11 +1824,35 @@ char *idio_as_string (IDIO o, int depth)
 				    IDIO_STRCAT (r, bits);
 				    IDIO_STRCAT (r, " ");
 				} else {
+				    char *lead;
+				    if (in_range) {
+					if (asprintf (&lead, "%zx-%zx ", range_start, count - CHAR_BIT) == -1) {
+					    idio_error_alloc ("asprintf");
+
+					    /* notreached */
+					    return NULL;
+					}
+					IDIO_STRCAT_FREE (r, lead);
+					in_range = 0;
+				    }
+
 				    count += CHAR_BIT;
 				    print_lead = 1;
 				}
 			    }
 			} else {
+			    if (in_range) {
+				char *lead;
+				if (asprintf (&lead, "%zx-%zx ", range_start, count - CHAR_BIT) == -1) {
+				    idio_error_alloc ("asprintf");
+
+				    /* notreached */
+				    return NULL;
+				}
+				IDIO_STRCAT_FREE (r, lead);
+				in_range = 0;
+			    }
+
 			    count += IDIO_BITS_PER_LONG;
 			    print_lead = 1;
 			}
