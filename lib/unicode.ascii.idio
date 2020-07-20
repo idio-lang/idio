@@ -1,0 +1,101 @@
+#*
+
+These bitsets are automatically generated from Unicode source files.
+
+*#
+
+; char-set:lower-case is property Lowercase
+char-set:lower-case  = #B{ 128 60:01111111 68-70 11100000 }
+
+; char-set:upper-case is property Uppercase
+char-set:upper-case  = #B{ 128 40:01111111 48-50 11100000 }
+
+; char-set:title-case is category Lt
+char-set:title-case  = #B{ 128 }
+
+; char-set:letter is property Alphabetic
+char-set:letter      = #B{ 128 40:01111111 48-50 11100000 01111111 68-70 11100000 }
+
+; char-set:digit is category Nd
+char-set:digit       = #B{ 128 30-30 11000000 }
+
+; char-set:letter+digit is property Alphabetic + category Nd
+char-set:letter+digit = #B{ 128 30-30 11000000 01111111 48-50 11100000 01111111 68-70 11100000 }
+
+; char-set:graphic is category L* + category N* + category M* + category S* + category P*
+char-set:graphic     = #B{ 128 20:01111111 28-70 11111110 }
+
+; char-set:printing is char-set:graphic + char-set:whitespace
+char-set:printing    = #B{ 128 8:01111100 20-70 11111110 }
+
+; char-set:whitespace is property White_Space
+char-set:whitespace  = #B{ 128 8:01111100 20:10000000 }
+
+; char-set:iso-control is 0000..001F + 007F..009F
+char-set:iso-control = #B{ 128 0-18 78:00000001 }
+
+; char-set:punctuation is category P*
+char-set:punctuation = #B{ 128 20:01110111 11101111 38:00110001 10000000 58:00011101 78:00010100 }
+
+; char-set:symbol is category S*
+char-set:symbol      = #B{ 128 20:00001000 00010000 38:00001110 58:00000010 10000000 78:00001010 }
+
+; char-set:hex-digit is 0030..0039 + 0041..0046 + 0061..0066
+char-set:hex-digit   = #B{ 128 30-30 11000000 01111110 60:01111110 }
+
+; char-set:blank is category Zs + 0009
+char-set:blank       = #B{ 128 8:01000000 20:10000000 }
+
+; char-set:ascii is 0000..007F
+char-set:ascii       = #B{ 128 0-78 }
+
+; char-set:empty is empty
+char-set:empty       = #B{ 128 }
+
+; char-set:full is full == ~ empty
+char-set:full        = #B{ 128 0-78 }
+
+; char-set:nonl is char-set:full excl. #\newline
+char-set:nonl        = #B{ 128 0-0 11011111 10-78 }
+
+; char-set:word-constituent is char-set:letter+digit + _
+char-set:word-constituent = #B{ 128 30-30 11000000 01111111 48-50 11100001 01111111 68-70 11100000 }
+
+; %char-set:letter is char-set:letter restricted to ASCII range
+%char-set:letter     = #B{ 128 40:01111111 48-50 11100000 01111111 68-70 11100000 }
+
+; %char-set:lower-case is char-set:lower-case restricted to ASCII range
+%char-set:lower-case = #B{ 128 60:01111111 68-70 11100000 }
+
+; %char-set:upper-case is char-set:upper-case restricted to ASCII range
+%char-set:upper-case = #B{ 128 40:01111111 48-50 11100000 }
+
+; %char-set:digit is char-set:digit restricted to ASCII range
+%char-set:digit      = #B{ 128 30-30 11000000 }
+
+; %char-set:letter+digit is char-set:letter+digit restricted to ASCII range
+%char-set:letter+digit = #B{ 128 30-30 11000000 01111111 48-50 11100000 01111111 68-70 11100000 }
+
+; %char-set:punctuation is char-set:punctuation restricted to ASCII range
+%char-set:punctuation = #B{ 128 20:01110111 11101111 38:00110001 10000000 58:00011101 78:00010100 }
+
+; %char-set:symbol is char-set:symbol restricted to ASCII range
+%char-set:symbol     = #B{ 128 20:00001000 00010000 38:00001110 58:00000010 10000000 78:00001010 }
+
+; %char-set:graphic is char-set:graphic restricted to ASCII range
+%char-set:graphic    = #B{ 128 20:01111111 28-70 11111110 }
+
+; %char-set:whitespace is char-set:whitespace restricted to ASCII range
+%char-set:whitespace = #B{ 128 8:01111100 20:10000000 }
+
+; %char-set:printing is char-set:printing restricted to ASCII range
+%char-set:printing   = #B{ 128 8:01111100 20-70 11111110 }
+
+; %char-set:iso-control is char-set:iso-control restricted to ASCII range
+%char-set:iso-control = #B{ 128 0-18 78:00000001 }
+
+; Simple uppercase mapping (single character result)
+char-set:simple-upper-case-map = #{ (112 & 80) (97 & 65) (98 & 66) (99 & 67) (100 & 68) (101 & 69) (102 & 70) (103 & 71) (104 & 72) (105 & 73) (106 & 74) (107 & 75) (108 & 76) (109 & 77) (110 & 78) (111 & 79) (122 & 90) (121 & 89) (120 & 88) (119 & 87) (118 & 86) (117 & 85) (116 & 84) (115 & 83) (114 & 82) (113 & 81) }
+
+; Simple lowercase mapping (single character result)
+char-set:simple-lower-case-map = #{ (80 & 112) (65 & 97) (66 & 98) (67 & 99) (68 & 100) (69 & 101) (70 & 102) (71 & 103) (72 & 104) (73 & 105) (74 & 106) (75 & 107) (76 & 108) (77 & 109) (78 & 110) (79 & 111) (90 & 122) (89 & 121) (88 & 120) (87 & 119) (86 & 118) (85 & 117) (84 & 116) (83 & 115) (82 & 114) (81 & 113) }

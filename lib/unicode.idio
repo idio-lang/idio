@@ -156,7 +156,110 @@ export (
 ascii-char-set:size := 128
 char-set:size := 0
 
-load "unicode.auto"
+; property Lowercase
+char-set:lower-case  := #n
+
+; property Uppercase
+char-set:upper-case  := #n
+
+; category Lt
+char-set:title-case  := #n
+
+; property Alphabetic
+char-set:letter      := #n
+
+; category Nd
+char-set:digit       := #n
+
+; property Alphabetic + category Nd
+char-set:letter+digit := #n
+
+; category L* + category N* + category M* + category S* + category P*
+char-set:graphic     := #n
+
+; char-set:graphic + char-set:whitespace
+char-set:printing    := #n
+
+; property White_Space
+char-set:whitespace  := #n
+
+; 0000..001F + 007F..009F
+char-set:iso-control := #n
+
+; category P*
+char-set:punctuation := #n
+
+; category S*
+char-set:symbol      := #n
+
+; 0030..0039 + 0041..0046 + 0061..0066
+char-set:hex-digit   := #n
+
+; category Zs + 0009
+char-set:blank       := #n
+
+; 0000..007F
+char-set:ascii       := #n
+
+; empty
+char-set:empty       := #n
+
+; full == ~ empty
+char-set:full        := #n
+
+; char-set:full excl. #\newline
+char-set:nonl        := #n
+
+; 0000..001F
+char-set:control     := #n
+
+; char-set:letter+digit + _
+char-set:word-constituent := #n
+
+; char-set:letter restricted to ASCII range
+%char-set:letter     := #n
+
+; char-set:lower-case restricted to ASCII range
+%char-set:lower-case := #n
+
+; char-set:upper-case restricted to ASCII range
+%char-set:upper-case := #n
+
+; char-set:digit restricted to ASCII range
+%char-set:digit      := #n
+
+; char-set:letter+digit restricted to ASCII range
+%char-set:letter+digit := #n
+
+; char-set:punctuation restricted to ASCII range
+%char-set:punctuation := #n
+
+; char-set:symbol restricted to ASCII range
+%char-set:symbol     := #n
+
+; char-set:graphic restricted to ASCII range
+%char-set:graphic    := #n
+
+; char-set:whitespace restricted to ASCII range
+%char-set:whitespace := #n
+
+; char-set:printing restricted to ASCII range
+%char-set:printing   := #n
+
+; char-set:iso-control restricted to ASCII range
+%char-set:iso-control := #n
+
+; Simple uppercase mapping (single character result)
+char-set:simple-upper-case-map := #n
+
+; Simple lowercase mapping (single character result)
+char-set:simple-lower-case-map := #n
+
+if (memq 'ascii *subfeatures*) {
+  load "unicode.ascii"
+} {
+  load "unicode.full"
+}
 
 ;char-set:ascii := #n
 
@@ -271,8 +374,8 @@ if (null? char-set:ascii) {
   ; char-set:word-constituent is derived from char-set:letter+digit, see below
   ; The %X char-sets are (obviously?) derived
 
-  char-set:simple-upper-case-map := make-hash #n #n 2500 ; 2303
-  char-set:simple-lower-case-map := make-hash #n #n 2500 ; 2303
+  char-set:simple-upper-case-map := make-hash #n #n 2048 ; 1410
+  char-set:simple-lower-case-map := make-hash #n #n 2048 ; 1393
 
   define (ud-parser) {
     loop :+ function () {
@@ -346,7 +449,7 @@ if (null? char-set:ascii) {
 			hash-set! ascii-char-set:simple-upper-case-map d (read-number uc-cp 16)
 		      }
 		    }
-		  } (eprintf "no UC in %d %s from %s\n" (length parts) parts line)
+		  }
 		  if (ge (length parts) 14) {
 		    lc-cp := nth parts 14
 		    if (gt (string-length lc-cp) 0) {
@@ -515,116 +618,96 @@ if (null? char-set:ascii) {
 
   bs-range-loop char-set:ascii #x0000 #x007f
 
-  eprintf "printing after %ss\n" SECONDS
-
-  printf "%s\n\n" "#*
-
-These bitsets are automatically generated from Unicode source files.
-
-*#
-  "
-  for-each (function (def) {
-	      printf "\n; %s\n%-20s := #n\n" (pht def) (ph def)
-  }) char-sets
-
-  printf "\n; %s\n%-20s := #n\n" "Simple uppercase mapping (single character result)" "char-set:simple-upper-case-map"
-
-  printf "\n; %s\n%-20s := #n\n" "Simple lowercase mapping (single character result)" "char-set:simple-lower-case-map"
-
-  printf "%s\n" "
-
-if (memq 'ascii *subfeatures*) {
-  "
-
   define (printer cs val) {
     def := assq cs char-sets
     if def {
-      printf "\n  ; %s\n  %-20s := %s\n" (pht def) (ph def) val
+      printf "\n; %s is %s\n%-20s = %s\n" (ph def) (pht def) (ph def) val
     }
   }
 
-  printer 'char-set:lower-case ascii-char-set:lower-case
-  printer 'char-set:upper-case ascii-char-set:upper-case
-  printer 'char-set:title-case ascii-char-set:title-case
-  printer 'char-set:letter ascii-char-set:letter
-  printer 'char-set:digit ascii-char-set:digit
-  printer 'char-set:letter+digit ascii-char-set:letter+digit
-  printer 'char-set:graphic ascii-char-set:graphic
-  printer 'char-set:printing ascii-char-set:printing
-  printer 'char-set:whitespace ascii-char-set:whitespace
-  printer 'char-set:iso-control ascii-char-set:iso-control
-  printer 'char-set:punctuation ascii-char-set:punctuation
-  printer 'char-set:symbol ascii-char-set:symbol
-  printer 'char-set:hex-digit ascii-char-set:hex-digit
-  printer 'char-set:blank ascii-char-set:blank
-  printer 'char-set:ascii ascii-char-set:ascii
-  printer 'char-set:empty ascii-char-set:empty
-  printer 'char-set:full ascii-char-set:full
-  printer 'char-set:nonl ascii-char-set:nonl
-  printer 'char-set:word-constituent ascii-char-set:word-constituent
-  printer '%char-set:letter ascii-char-set:letter
-  printer '%char-set:lower-case ascii-char-set:lower-case
-  printer '%char-set:upper-case ascii-char-set:upper-case
-  printer '%char-set:digit ascii-char-set:digit
-  printer '%char-set:letter+digit ascii-char-set:letter+digit
-  printer '%char-set:punctuation ascii-char-set:punctuation
-  printer '%char-set:symbol ascii-char-set:symbol
-  printer '%char-set:graphic ascii-char-set:graphic
-  printer '%char-set:whitespace ascii-char-set:whitespace
-  printer '%char-set:printing ascii-char-set:printing
-  printer '%char-set:iso-control ascii-char-set:iso-control
+  with-output-to "unicode.ascii.idio" (function () {
+					 printf "%s\n" "#*
 
-  printf "\n  ; %s\n  %-20s = %s\n" "Simple uppercase mapping (single character result)" "char-set:simple-upper-case-map" ascii-char-set:simple-upper-case-map
+These bitsets are automatically generated from Unicode source files.
 
-  printf "\n  ; %s\n  %-20s = %s\n" "Simple lowercase mapping (single character result)" "char-set:simple-lower-case-map" ascii-char-set:simple-lower-case-map
+*#"
+					 printer 'char-set:lower-case ascii-char-set:lower-case
+					 printer 'char-set:upper-case ascii-char-set:upper-case
+					 printer 'char-set:title-case ascii-char-set:title-case
+					 printer 'char-set:letter ascii-char-set:letter
+					 printer 'char-set:digit ascii-char-set:digit
+					 printer 'char-set:letter+digit ascii-char-set:letter+digit
+					 printer 'char-set:graphic ascii-char-set:graphic
+					 printer 'char-set:printing ascii-char-set:printing
+					 printer 'char-set:whitespace ascii-char-set:whitespace
+					 printer 'char-set:iso-control ascii-char-set:iso-control
+					 printer 'char-set:punctuation ascii-char-set:punctuation
+					 printer 'char-set:symbol ascii-char-set:symbol
+					 printer 'char-set:hex-digit ascii-char-set:hex-digit
+					 printer 'char-set:blank ascii-char-set:blank
+					 printer 'char-set:ascii ascii-char-set:ascii
+					 printer 'char-set:empty ascii-char-set:empty
+					 printer 'char-set:full ascii-char-set:full
+					 printer 'char-set:nonl ascii-char-set:nonl
+					 printer 'char-set:word-constituent ascii-char-set:word-constituent
+					 printer '%char-set:letter ascii-char-set:letter
+					 printer '%char-set:lower-case ascii-char-set:lower-case
+					 printer '%char-set:upper-case ascii-char-set:upper-case
+					 printer '%char-set:digit ascii-char-set:digit
+					 printer '%char-set:letter+digit ascii-char-set:letter+digit
+					 printer '%char-set:punctuation ascii-char-set:punctuation
+					 printer '%char-set:symbol ascii-char-set:symbol
+					 printer '%char-set:graphic ascii-char-set:graphic
+					 printer '%char-set:whitespace ascii-char-set:whitespace
+					 printer '%char-set:printing ascii-char-set:printing
+					 printer '%char-set:iso-control ascii-char-set:iso-control
 
-  printf "%s\n" "
+					 printf "\n; %s\n%-20s = %s\n" "Simple uppercase mapping (single character result)" "char-set:simple-upper-case-map" ascii-char-set:simple-upper-case-map
 
-} {
+					 printf "\n; %s\n%-20s = %s\n" "Simple lowercase mapping (single character result)" "char-set:simple-lower-case-map" ascii-char-set:simple-lower-case-map
+  })
+  
+  with-output-to "unicode.full.idio" (function () {
+					printf "%s\n" "#*
 
-"
+These bitsets are automatically generated from Unicode source files.
 
-  printer 'char-set:lower-case char-set:lower-case
-  printer 'char-set:upper-case char-set:upper-case
-  printer 'char-set:title-case char-set:title-case
-  printer 'char-set:letter char-set:letter
-  printer 'char-set:digit char-set:digit
-  printer 'char-set:letter+digit char-set:letter+digit
-  printer 'char-set:graphic char-set:graphic
-  printer 'char-set:printing char-set:printing
-  printer 'char-set:whitespace char-set:whitespace
-  printer 'char-set:iso-control char-set:iso-control
-  printer 'char-set:punctuation char-set:punctuation
-  printer 'char-set:symbol char-set:symbol
-  printer 'char-set:hex-digit char-set:hex-digit
-  printer 'char-set:blank char-set:blank
-  printer 'char-set:ascii char-set:ascii
-  printer 'char-set:empty char-set:empty
-  printer 'char-set:full char-set:full
-  printer 'char-set:nonl char-set:nonl
-  printer 'char-set:word-constituent char-set:word-constituent
-  printer '%char-set:letter (bitset-and char-set:ascii char-set:letter)
-  printer '%char-set:lower-case (bitset-and char-set:ascii char-set:lower-case)
-  printer '%char-set:upper-case (bitset-and char-set:ascii char-set:upper-case)
-  printer '%char-set:digit (bitset-and char-set:ascii char-set:digit)
-  printer '%char-set:letter+digit (bitset-and char-set:ascii char-set:letter+digit)
-  printer '%char-set:punctuation (bitset-and char-set:ascii char-set:punctuation)
-  printer '%char-set:symbol (bitset-and char-set:ascii char-set:symbol)
-  printer '%char-set:graphic (bitset-and char-set:ascii char-set:graphic)
-  printer '%char-set:whitespace (bitset-and char-set:ascii char-set:whitespace)
-  printer '%char-set:printing (bitset-and char-set:ascii char-set:printing)
-  printer '%char-set:iso-control (bitset-and char-set:ascii char-set:iso-control)
+*#"
+					printer 'char-set:lower-case char-set:lower-case
+					printer 'char-set:upper-case char-set:upper-case
+					printer 'char-set:title-case char-set:title-case
+					printer 'char-set:letter char-set:letter
+					printer 'char-set:digit char-set:digit
+					printer 'char-set:letter+digit char-set:letter+digit
+					printer 'char-set:graphic char-set:graphic
+					printer 'char-set:printing char-set:printing
+					printer 'char-set:whitespace char-set:whitespace
+					printer 'char-set:iso-control char-set:iso-control
+					printer 'char-set:punctuation char-set:punctuation
+					printer 'char-set:symbol char-set:symbol
+					printer 'char-set:hex-digit char-set:hex-digit
+					printer 'char-set:blank char-set:blank
+					printer 'char-set:ascii char-set:ascii
+					printer 'char-set:empty char-set:empty
+					printer 'char-set:full char-set:full
+					printer 'char-set:nonl char-set:nonl
+					printer 'char-set:word-constituent char-set:word-constituent
+					printer '%char-set:letter (bitset-and char-set:ascii char-set:letter)
+					printer '%char-set:lower-case (bitset-and char-set:ascii char-set:lower-case)
+					printer '%char-set:upper-case (bitset-and char-set:ascii char-set:upper-case)
+					printer '%char-set:digit (bitset-and char-set:ascii char-set:digit)
+					printer '%char-set:letter+digit (bitset-and char-set:ascii char-set:letter+digit)
+					printer '%char-set:punctuation (bitset-and char-set:ascii char-set:punctuation)
+					printer '%char-set:symbol (bitset-and char-set:ascii char-set:symbol)
+					printer '%char-set:graphic (bitset-and char-set:ascii char-set:graphic)
+					printer '%char-set:whitespace (bitset-and char-set:ascii char-set:whitespace)
+					printer '%char-set:printing (bitset-and char-set:ascii char-set:printing)
+					printer '%char-set:iso-control (bitset-and char-set:ascii char-set:iso-control)
 
-  printf "\n  ; %s\n  %-20s = %s\n" "Simple uppercase mapping (single character result)" "char-set:simple-upper-case-map" char-set:simple-upper-case-map
+					printf "\n; %s\n%-20s = %s\n" "Simple uppercase mapping (single character result)" "char-set:simple-upper-case-map" char-set:simple-upper-case-map
 
-  printf "\n  ; %s\n  %-20s = %s\n" "Simple lowercase mapping (single character result)" "char-set:simple-lower-case-map" char-set:simple-lower-case-map
-
-  printf "%s\n" "
-
-}
-
-"
-
+					printf "\n; %s\n%-20s = %s\n" "Simple lowercase mapping (single character result)" "char-set:simple-lower-case-map" char-set:simple-lower-case-map
+  })
 }
 
 provide unicode

@@ -1449,7 +1449,7 @@ IDIO idio_load_file_name_aio (IDIO filename, IDIO cs)
 		    idio_gc_expose (filename_ext);
 		}
 
-		idio_thread_set_current_module ((*fe->modulep) ());
+		/* idio_thread_set_current_module ((*fe->modulep) ()); */
 		return idio_load_handle (fh, fe->reader, fe->evaluator, cs);
 	    }
 
@@ -1497,7 +1497,7 @@ IDIO idio_load_file_name_aio (IDIO filename, IDIO cs)
 		idio_gc_expose (filename_ext);
 	    }
 
-	    idio_thread_set_current_module ((*fe->modulep) ());
+	    /* idio_thread_set_current_module ((*fe->modulep) ()); */
 	    return idio_load_handle (fh, reader, evaluator, cs);
 	}
 
