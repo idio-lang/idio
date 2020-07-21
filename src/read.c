@@ -112,21 +112,36 @@ IDIO idio_src_properties;
 				 IDIO_CHAR_LBRACKET == (c) ||		\
 				 IDIO_CHAR_LANGLE == (c))
 
-#define IDIO_LIST_DEPTH_MARK	(0xffff)
-#define IDIO_LIST_PAREN_MARK	(1<<16)
-#define IDIO_LIST_BRACE_MARK	(1<<17)
-#define IDIO_LIST_BRACKET_MARK	(1<<18)
-#define IDIO_LIST_ANGLE_MARK	(1<<19)
+/*
+ * IDIO_LIST_X are counters (up to 0xffff) for depths of various kinds
+ * of nestable things
+ */
+#define IDIO_LIST_PAREN_MARK		(1 << 16) /* 0x01hhhh */
+#define IDIO_LIST_BRACE_MARK		(1 << 17) /* 0x02hhhh */
+#define IDIO_LIST_BRACKET_MARK		(1 << 18) /* 0x04hhhh */
+#define IDIO_LIST_ANGLE_MARK		(1 << 19) /* 0x08hhhh */
 
-#define IDIO_LIST_PAREN(d)	(IDIO_LIST_PAREN_MARK | ((d) & IDIO_LIST_DEPTH_MARK))
-#define IDIO_LIST_BRACE(d)	(IDIO_LIST_BRACE_MARK | ((d) & IDIO_LIST_DEPTH_MARK))
-#define IDIO_LIST_BRACKET(d)	(IDIO_LIST_BRACKET_MARK | ((d) & IDIO_LIST_DEPTH_MARK))
-#define IDIO_LIST_ANGLE(d)	(IDIO_LIST_ANGLE_MARK | ((d) & IDIO_LIST_DEPTH_MARK))
+/* QUOTE and QUASIQUOTE are on or off */
+#define IDIO_LIST_QUOTE_MARK		(1 << 30) /* 0x40hhhh */
+#define IDIO_LIST_QUASIQUOTE_MARK	(1 << 31) /* 0x80hhhh */
 
-#define IDIO_LIST_PAREN_P(d)	(((d) & IDIO_LIST_PAREN_MARK) && ((d) & IDIO_LIST_DEPTH_MARK))
-#define IDIO_LIST_BRACE_P(d)	(((d) & IDIO_LIST_BRACE_MARK) && ((d) & IDIO_LIST_DEPTH_MARK))
-#define IDIO_LIST_BRACKET_P(d)	(((d) & IDIO_LIST_BRACKET_MARK) && ((d) & IDIO_LIST_DEPTH_MARK))
-#define IDIO_LIST_ANGLE_P(d)	(((d) & IDIO_LIST_ANGLE_MARK) && ((d) & IDIO_LIST_DEPTH_MARK))
+#define IDIO_LIST_MASK			(0xffff | IDIO_LIST_QUOTE_MARK | IDIO_LIST_QUASIQUOTE_MARK)
+
+#define IDIO_LIST_PAREN(d)		(IDIO_LIST_PAREN_MARK | ((d) & IDIO_LIST_MASK))
+#define IDIO_LIST_BRACE(d)		(IDIO_LIST_BRACE_MARK | ((d) & IDIO_LIST_MASK))
+#define IDIO_LIST_BRACKET(d)		(IDIO_LIST_BRACKET_MARK | ((d) & IDIO_LIST_MASK))
+#define IDIO_LIST_ANGLE(d)		(IDIO_LIST_ANGLE_MARK | ((d) & IDIO_LIST_MASK))
+
+#define IDIO_LIST_QUOTE(d)		(IDIO_LIST_QUOTE_MARK | ((d) & IDIO_LIST_MASK))
+#define IDIO_LIST_QUASIQUOTE(d)		(IDIO_LIST_QUASIQUOTE_MARK | ((d) & IDIO_LIST_MASK))
+
+#define IDIO_LIST_PAREN_P(d)		(((d) & IDIO_LIST_PAREN_MARK) && ((d) & IDIO_LIST_MASK))
+#define IDIO_LIST_BRACE_P(d)		(((d) & IDIO_LIST_BRACE_MARK) && ((d) & IDIO_LIST_MASK))
+#define IDIO_LIST_BRACKET_P(d)		(((d) & IDIO_LIST_BRACKET_MARK) && ((d) & IDIO_LIST_MASK))
+#define IDIO_LIST_ANGLE_P(d)		(((d) & IDIO_LIST_ANGLE_MARK) && ((d) & IDIO_LIST_MASK))
+
+#define IDIO_LIST_QUOTE_P(d)		((d) & IDIO_LIST_QUOTE_MARK)
+#define IDIO_LIST_QUASIQUOTE_P(d)	((d) & IDIO_LIST_QUASIQUOTE_MARK)
 
 /*
  * Default interpolation characters:
@@ -2251,16 +2266,42 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl
 	 * ic[3] - escape operator handling: map \+ '(1 2 3) =!=> + map '(1 2 3)
 	 */
 	if (c == ic[0]) {
-	    c = idio_getc_handle (handle);
-	    if (c == ic[1]) {
-		idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_unquote_splicing (handle, lo, ic, depth));
+	    if (IDIO_LIST_QUASIQUOTE_P (depth)) {
+		/*
+		 * We should be disabling quaiquotation for the
+		 * quasiquoted expression
+		 */
+		depth &= (~ IDIO_LIST_QUASIQUOTE_MARK);
+
+		c = idio_getc_handle (handle);
+		if (EOF == c) {
+		    idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_S_eof);
+		    return lo;
+		}
+
+		if (c == ic[1]) {
+		    idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_unquote_splicing (handle, lo, ic, depth + 1));
+		    return lo;
+		}
+
+		/*
+		 * It's not unquote-splicing so put c back.
+		 */
+		idio_ungetc_handle (handle, c);
+
+		idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_unquote (handle, lo, ic, depth + 1));
+		return lo;
+	    } else {
+		/*
+		 * ic[0] is nominally only good inside a quasiquoted
+		 * expression so this must be a genuine word, eg. a
+		 * submatch, '($ ...), from SRFI-115.
+		 */
+		idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_word (handle, lo, c));
 		return lo;
 	    }
-	    idio_ungetc_handle (handle, c);
-	    idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_unquote (handle, lo, ic, depth));
-	    return lo;
 	} else if (c == ic[2]) {
-	    idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_quote (handle, lo, ic, depth));
+	    idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_quote (handle, lo, ic, IDIO_LIST_QUOTE (depth) + 1));
 	    return lo;
 	} else if (c == ic[3]) {
 	    c = idio_getc_handle (handle);
@@ -2390,8 +2431,12 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl
 		break;
 	    case IDIO_CHAR_BACKQUOTE:
 		{
+		    /*
+		     * This is a Scheme-ly quasiquote so use the
+		     * Scheme quasiquote chars -- plus \
+		     */
 		    char qq_ic[] = { IDIO_CHAR_COMMA, IDIO_CHAR_AT, IDIO_CHAR_SQUOTE, IDIO_CHAR_BACKSLASH };
-		    idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_quasiquote (handle, lo, qq_ic, depth));
+		    idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_quasiquote (handle, lo, qq_ic, IDIO_LIST_QUASIQUOTE (depth) + 1));
 		    return lo;
 		}
 	    case IDIO_CHAR_HASH:
@@ -2507,7 +2552,7 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl
 			    return lo;
 			}
 		    case 'T':
-			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_template (handle, lo, depth));
+			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_template (handle, lo, IDIO_LIST_QUASIQUOTE (depth) + 1));
 			return lo;
 		    case 'P':
 			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_pathname (handle, lo, depth));

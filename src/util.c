@@ -1180,6 +1180,7 @@ char *idio_as_string (IDIO o, int depth)
 		{
 		    if (idio_isa_symbol (IDIO_PAIR_H (o))) {
 			int special = 0;
+			char *trail = NULL;
 
 			if (idio_S_quote == IDIO_PAIR_H (o)) {
 			    special = 1;
@@ -1191,7 +1192,7 @@ char *idio_as_string (IDIO o, int depth)
 			    }
 			} else if (idio_S_unquote == IDIO_PAIR_H (o)) {
 			    special = 1;
-			    if (asprintf (&r, ",") == -1) {
+			    if (asprintf (&r, "$") == -1) {
 				idio_error_alloc ("asprintf");
 
 				/* notreached */
@@ -1199,7 +1200,7 @@ char *idio_as_string (IDIO o, int depth)
 			    }
 			} else if (idio_S_unquotesplicing == IDIO_PAIR_H (o)) {
 			    special = 1;
-			    if (asprintf (&r, ",@") == -1) {
+			    if (asprintf (&r, "$@") == -1) {
 				idio_error_alloc ("asprintf");
 
 				/* notreached */
@@ -1207,7 +1208,8 @@ char *idio_as_string (IDIO o, int depth)
 			    }
 			} else if (idio_S_quasiquote == IDIO_PAIR_H (o)) {
 			    special = 1;
-			    if (asprintf (&r, "`") == -1) {
+			    trail = " }";
+			    if (asprintf (&r, "#T{ ") == -1) {
 				idio_error_alloc ("asprintf");
 
 				/* notreached */
@@ -1220,6 +1222,9 @@ char *idio_as_string (IDIO o, int depth)
 				IDIO_STRCAT_FREE (r, idio_as_string (idio_list_head (IDIO_PAIR_T (o)), depth - 1));
 			    } else {
 				IDIO_STRCAT_FREE (r, idio_as_string (IDIO_PAIR_T (o), depth - 1));
+			    }
+			    if (NULL != trail) {
+				IDIO_STRCAT (r, trail);
 			    }
 			    break;
 			}
