@@ -2596,7 +2596,7 @@ IDIO idio_copy (IDIO o, int depth)
 	    case IDIO_TYPE_BIGNUM:
 		return idio_bignum_copy (o);
 	    case IDIO_TYPE_BITSET:
-		return idio_bitset_copy (o);
+		return idio_copy_bitset (o);
 
 	    case IDIO_TYPE_STRUCT_INSTANCE:
 		if (idio_struct_instance_isa (o, idio_path_type) ||

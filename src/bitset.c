@@ -102,7 +102,7 @@ void idio_free_bitset (IDIO bs)
     free (bs->u.bitset.bits);
 }
 
-IDIO idio_set_bitset (IDIO bs, size_t bit)
+IDIO idio_bitset_set (IDIO bs, size_t bit)
 {
     IDIO_ASSERT (bs);
 
@@ -121,7 +121,7 @@ IDIO idio_set_bitset (IDIO bs, size_t bit)
     return idio_S_unspec;
 }
 
-IDIO idio_clear_bitset (IDIO bs, size_t bit)
+IDIO idio_bitset_clear (IDIO bs, size_t bit)
 {
     IDIO_ASSERT (bs);
 
@@ -141,7 +141,7 @@ IDIO idio_clear_bitset (IDIO bs, size_t bit)
     return idio_S_unspec;
 }
 
-IDIO idio_get_bitset (IDIO bs, size_t bit)
+IDIO idio_bitset_ref (IDIO bs, size_t bit)
 {
     IDIO_ASSERT (bs);
 
@@ -164,7 +164,7 @@ IDIO idio_get_bitset (IDIO bs, size_t bit)
     return r;
 }
 
-IDIO idio_bitset_copy (IDIO obs)
+IDIO idio_copy_bitset (IDIO obs)
 {
     IDIO_ASSERT (obs);
 
@@ -253,7 +253,7 @@ return the size of bitset `bs`			\n\
     return idio_integer (IDIO_BITSET_SIZE (bs));
 }
 
-IDIO_DEFINE_PRIMITIVE2_DS ("set-bitset!", set_bitset, (IDIO bs, IDIO bit), "bs bit", "\
+IDIO_DEFINE_PRIMITIVE2_DS ("bitset-set!", bitset_set, (IDIO bs, IDIO bit), "bs bit", "\
 set bit `bit` in bitset `bs`			\n\
 						\n\
 :param size: bitset				\n\
@@ -291,10 +291,10 @@ set bit `bit` in bitset `bs`			\n\
 	return idio_S_notreached;
     }
 
-    return idio_set_bitset (bs, bs_bit);
+    return idio_bitset_set (bs, bs_bit);
 }
 
-IDIO_DEFINE_PRIMITIVE2_DS ("clear-bitset!", clear_bitset, (IDIO bs, IDIO bit), "bs bit", "\
+IDIO_DEFINE_PRIMITIVE2_DS ("bitset-clear!", bitset_clear, (IDIO bs, IDIO bit), "bs bit", "\
 clear bit `bit` in bitset `bs`			\n\
 						\n\
 :param size: bitset				\n\
@@ -332,10 +332,10 @@ clear bit `bit` in bitset `bs`			\n\
 	return idio_S_notreached;
     }
 
-    return idio_clear_bitset (bs, bs_bit);
+    return idio_bitset_clear (bs, bs_bit);
 }
 
-IDIO_DEFINE_PRIMITIVE2_DS ("get-bitset", get_bitset, (IDIO bs, IDIO bit), "bs bit", "\
+IDIO_DEFINE_PRIMITIVE2_DS ("bitset-ref", bitset_ref, (IDIO bs, IDIO bit), "bs bit", "\
 get bit `bit` in bitset `bs`			\n\
 						\n\
 :param size: bitset				\n\
@@ -373,7 +373,7 @@ get bit `bit` in bitset `bs`			\n\
 	return idio_S_notreached;
     }
 
-    return idio_get_bitset (bs, bs_bit);
+    return idio_bitset_ref (bs, bs_bit);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("copy-bitset", copy_bitset, (IDIO bs), "bs", "\
@@ -432,7 +432,7 @@ merge the bitsets				\n\
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE0V_DS ("bitset-and", bitset_and, (IDIO args), "[bs ...]", "\
+IDIO_DEFINE_PRIMITIVE0V_DS ("and-bitset", and_bitset, (IDIO args), "[bs ...]", "\
 logical AND the bitsets				\n\
 						\n\
 :param args: bitsets to be operated on		\n\
@@ -473,7 +473,7 @@ logical AND the bitsets				\n\
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE0V_DS ("bitset-ior", bitset_ior, (IDIO args), "[bs ...]", "\
+IDIO_DEFINE_PRIMITIVE0V_DS ("ior-bitset", ior_bitset, (IDIO args), "[bs ...]", "\
 logical Inclusive OR the bitsets		\n\
 						\n\
 :param args: bitsets to be operated on		\n\
@@ -514,7 +514,7 @@ logical Inclusive OR the bitsets		\n\
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE0V_DS ("bitset-xor", bitset_xor, (IDIO args), "[bs ...]", "\
+IDIO_DEFINE_PRIMITIVE0V_DS ("xor-bitset", xor_bitset, (IDIO args), "[bs ...]", "\
 logical Exclusive OR the bitsets		\n\
 						\n\
 :param args: bitsets to be operated on		\n\
@@ -555,7 +555,7 @@ logical Exclusive OR the bitsets		\n\
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1_DS ("bitset-not", bitset_not, (IDIO bs), "bs", "\
+IDIO_DEFINE_PRIMITIVE1_DS ("not-bitset", not_bitset, (IDIO bs), "bs", "\
 logical coplement of the bitset			\n\
 						\n\
 :param args: bitset to be operated on		\n\
@@ -587,15 +587,15 @@ void idio_bitset_add_primitives ()
     IDIO_ADD_PRIMITIVE (bitset_p);
     IDIO_ADD_PRIMITIVE (make_bitset);
     IDIO_ADD_PRIMITIVE (bitset_size);
-    IDIO_ADD_PRIMITIVE (set_bitset);
-    IDIO_ADD_PRIMITIVE (clear_bitset);
-    IDIO_ADD_PRIMITIVE (get_bitset);
+    IDIO_ADD_PRIMITIVE (bitset_set);
+    IDIO_ADD_PRIMITIVE (bitset_clear);
+    IDIO_ADD_PRIMITIVE (bitset_ref);
     IDIO_ADD_PRIMITIVE (copy_bitset);
     IDIO_ADD_PRIMITIVE (merge_bitset);
-    IDIO_ADD_PRIMITIVE (bitset_and);
-    IDIO_ADD_PRIMITIVE (bitset_ior);
-    IDIO_ADD_PRIMITIVE (bitset_xor);
-    IDIO_ADD_PRIMITIVE (bitset_not);
+    IDIO_ADD_PRIMITIVE (and_bitset);
+    IDIO_ADD_PRIMITIVE (ior_bitset);
+    IDIO_ADD_PRIMITIVE (xor_bitset);
+    IDIO_ADD_PRIMITIVE (not_bitset);
 }
 
 void idio_final_bitset ()

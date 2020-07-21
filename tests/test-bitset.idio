@@ -23,14 +23,14 @@ bitset0 := Tests
 bs := (make-bitset 3)
 test (bitset? bs) #t
 test (bitset-size bs) 3
-test (get-bitset bs 0) #f
+test (bitset-ref bs 0) #f
 
-set-bitset! bs 1
+bitset-set! bs 1
 
-test (get-bitset bs 0) #f
-test (get-bitset bs 1) #t
+test (bitset-ref bs 0) #f
+test (bitset-ref bs 1) #t
 
-test/error (get-bitset bs 3) #f "bitset bounds error: 3 >= size 3"
+test/error (bitset-ref bs 3) #f "bitset bounds error: 3 >= size 3"
 
 ;; all done?
 test (bitset0 + 6) Tests

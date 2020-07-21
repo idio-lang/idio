@@ -82,7 +82,7 @@ Pattern_White_Space and Pattern_Syntax Properties.
 
 
 In the meanwhile this file, unicode.idio, serves a dual purpose.  By
-default it defines the SRFI-14 char-set bitsets as derived from the
+default it defines the SRFI-14 char-bitset sets as derived from the
 above files.
 
 Where did they come from?  If the need arises, set char-set:ascii to
@@ -343,9 +343,9 @@ if (null? char-set:ascii) {
   ascii-char-set:blank		:= make-bitset ascii-char-set:size
   ascii-char-set:ascii		:= make-bitset ascii-char-set:size
   ascii-char-set:empty		:= make-bitset ascii-char-set:size
-  ascii-char-set:full		:= bitset-not ascii-char-set:empty
+  ascii-char-set:full		:= not-bitset ascii-char-set:empty
   ascii-char-set:nonl		:= copy-bitset ascii-char-set:full
-  clear-bitset! ascii-char-set:nonl (char->integer #\newline)
+  bitset-clear! ascii-char-set:nonl (char->integer #\newline)
   ; ascii-char-set:word-constituent is derived from ascii-char-set:letter+digit, see below
   ; The %X char-sets are (obviously?) derived
 
@@ -368,9 +368,9 @@ if (null? char-set:ascii) {
   char-set:blank	:= make-bitset char-set:size
   char-set:ascii	:= make-bitset char-set:size
   char-set:empty	:= make-bitset char-set:size
-  char-set:full		:= bitset-not char-set:empty
+  char-set:full		:= not-bitset char-set:empty
   char-set:nonl		:= copy-bitset char-set:full
-  clear-bitset! char-set:nonl (char->integer #\newline)
+  bitset-clear! char-set:nonl (char->integer #\newline)
   ; char-set:word-constituent is derived from char-set:letter+digit, see below
   ; The %X char-sets are (obviously?) derived
 
@@ -390,25 +390,25 @@ if (null? char-set:ascii) {
 		  cat := phtt parts
 
 		  cond ((string=? cat "Lt") {
-		    set-bitset! char-set:title-case d
+		    bitset-set! char-set:title-case d
 
 		    ; I don't think there are any Titlecase characters in ASCII
 		    if (lt d ascii-char-set:size) {
-		      set-bitset! ascii-char-set:title-case d
+		      bitset-set! ascii-char-set:title-case d
 		    }
 		  }) \
 		       ((string=? cat "Nd") {
-			 set-bitset! char-set:digit d
+			 bitset-set! char-set:digit d
 
 			 if (lt d ascii-char-set:size) {
-			   set-bitset! ascii-char-set:digit d
+			   bitset-set! ascii-char-set:digit d
 			 }
 		       }) \
 		       ((string=? cat "Zs") {
-			 set-bitset! char-set:blank d
+			 bitset-set! char-set:blank d
 
 			 if (lt d ascii-char-set:size) {
-			   set-bitset! ascii-char-set:blank d
+			   bitset-set! ascii-char-set:blank d
 			 }
 		       })
 
@@ -416,26 +416,26 @@ if (null? char-set:ascii) {
 
 		  case cat1 \
 		       ((#\L #\N #\M #\S #\P) {
-			 set-bitset! char-set:graphic d
+			 bitset-set! char-set:graphic d
 
 			 if (lt d ascii-char-set:size) {
-			   set-bitset! ascii-char-set:graphic d
+			   bitset-set! ascii-char-set:graphic d
 			 }
 		  })
 
 		  case cat1 \
 		       ((#\P) {
-			 set-bitset! char-set:punctuation d
+			 bitset-set! char-set:punctuation d
 
 			 if (lt d ascii-char-set:size) {
-			   set-bitset! ascii-char-set:punctuation d
+			   bitset-set! ascii-char-set:punctuation d
 			 }
 		  }) \
 		       ((#\S) {
-			 set-bitset! char-set:symbol d
+			 bitset-set! char-set:symbol d
 
 			 if (lt d ascii-char-set:size) {
-			   set-bitset! ascii-char-set:symbol d
+			   bitset-set! ascii-char-set:symbol d
 			 }
 		       })
 
@@ -492,7 +492,7 @@ if (null? char-set:ascii) {
 
 					     range-loop :+ function (bs n e) {
 						       if (gt n e) #n {
-							 set-bitset! bs n
+							 bitset-set! bs n
 							 range-loop bs (n + 1) e
 						       }
 					     }
@@ -543,7 +543,7 @@ if (null? char-set:ascii) {
 								 })
 					     range-loop :+ function (bs n e) {
 						       if (gt n e) #n {
-							 set-bitset! bs n
+							 bitset-set! bs n
 							 range-loop bs (n + 1) e
 						       }
 					     }
@@ -582,28 +582,28 @@ if (null? char-set:ascii) {
   ascii-char-set:letter+digit := merge-bitset ascii-char-set:letter ascii-char-set:digit
   ascii-char-set:printing := merge-bitset ascii-char-set:graphic ascii-char-set:whitespace
   ascii-char-set:word-constituent := copy-bitset ascii-char-set:letter+digit
-  set-bitset! ascii-char-set:word-constituent (char->integer #\_)
+  bitset-set! ascii-char-set:word-constituent (char->integer #\_)
 
   char-set:letter+digit := merge-bitset char-set:letter char-set:digit
   char-set:printing := merge-bitset char-set:graphic char-set:whitespace
   char-set:word-constituent := copy-bitset char-set:letter+digit
-  set-bitset! char-set:word-constituent (char->integer #\_)
+  bitset-set! char-set:word-constituent (char->integer #\_)
 
   bs-range-loop :+ function (bs n e) {
 	    if (gt n e) #n {
-	      set-bitset! bs n
+	      bitset-set! bs n
 	      bs-range-loop bs (n + 1) e
 	    }
   }
 
   bs-range-loop ascii-char-set:iso-control #x0000 #x001F
-  set-bitset! ascii-char-set:iso-control #x007F
+  bitset-set! ascii-char-set:iso-control #x007F
 
   bs-range-loop ascii-char-set:hex-digit #x0030 #x0039
   bs-range-loop ascii-char-set:hex-digit #x0041 #x0046
   bs-range-loop ascii-char-set:hex-digit #x0061 #x0066
 
-  set-bitset! ascii-char-set:blank #x0009
+  bitset-set! ascii-char-set:blank #x0009
 
   bs-range-loop ascii-char-set:ascii #x0000 #x007f
 
@@ -614,7 +614,7 @@ if (null? char-set:ascii) {
   bs-range-loop char-set:hex-digit #x0041 #x0046
   bs-range-loop char-set:hex-digit #x0061 #x0066
 
-  set-bitset! char-set:blank #x0009
+  bitset-set! char-set:blank #x0009
 
   bs-range-loop char-set:ascii #x0000 #x007f
 
@@ -692,17 +692,17 @@ These bitsets are automatically generated from Unicode source files.
 					printer 'char-set:full char-set:full
 					printer 'char-set:nonl char-set:nonl
 					printer 'char-set:word-constituent char-set:word-constituent
-					printer '%char-set:letter (bitset-and char-set:ascii char-set:letter)
-					printer '%char-set:lower-case (bitset-and char-set:ascii char-set:lower-case)
-					printer '%char-set:upper-case (bitset-and char-set:ascii char-set:upper-case)
-					printer '%char-set:digit (bitset-and char-set:ascii char-set:digit)
-					printer '%char-set:letter+digit (bitset-and char-set:ascii char-set:letter+digit)
-					printer '%char-set:punctuation (bitset-and char-set:ascii char-set:punctuation)
-					printer '%char-set:symbol (bitset-and char-set:ascii char-set:symbol)
-					printer '%char-set:graphic (bitset-and char-set:ascii char-set:graphic)
-					printer '%char-set:whitespace (bitset-and char-set:ascii char-set:whitespace)
-					printer '%char-set:printing (bitset-and char-set:ascii char-set:printing)
-					printer '%char-set:iso-control (bitset-and char-set:ascii char-set:iso-control)
+					printer '%char-set:letter (and-bitset char-set:ascii char-set:letter)
+					printer '%char-set:lower-case (and-bitset char-set:ascii char-set:lower-case)
+					printer '%char-set:upper-case (and-bitset char-set:ascii char-set:upper-case)
+					printer '%char-set:digit (and-bitset char-set:ascii char-set:digit)
+					printer '%char-set:letter+digit (and-bitset char-set:ascii char-set:letter+digit)
+					printer '%char-set:punctuation (and-bitset char-set:ascii char-set:punctuation)
+					printer '%char-set:symbol (and-bitset char-set:ascii char-set:symbol)
+					printer '%char-set:graphic (and-bitset char-set:ascii char-set:graphic)
+					printer '%char-set:whitespace (and-bitset char-set:ascii char-set:whitespace)
+					printer '%char-set:printing (and-bitset char-set:ascii char-set:printing)
+					printer '%char-set:iso-control (and-bitset char-set:ascii char-set:iso-control)
 
 					printf "\n; %s\n%-20s = %s\n" "Simple uppercase mapping (single character result)" "char-set:simple-upper-case-map" char-set:simple-upper-case-map
 

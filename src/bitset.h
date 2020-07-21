@@ -29,9 +29,9 @@ IDIO idio_bitset (size_t size);
 int idio_isa_bitset (IDIO o);
 void idio_free_bitset (IDIO bs);
 
-IDIO idio_set_bitset (IDIO bs, size_t bit);
-IDIO idio_get_bitset (IDIO bs, size_t bit);
-IDIO idio_bitset_copy (IDIO obs);
+IDIO idio_bitset_set (IDIO bs, size_t bit);
+IDIO idio_bitset_ref (IDIO bs, size_t bit);
+IDIO idio_copy_bitset (IDIO obs);
 
 void idio_init_bitset ();
 void idio_bitset_add_primitives ();
