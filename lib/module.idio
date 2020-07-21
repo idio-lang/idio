@@ -161,22 +161,26 @@ define (%module-import importer modules) {
 	      %set-module-imports! importer result
 	    }) \
 		 (else {
-		   mod := find-module (ph mods) #f
+		   feature := ph mods
+		   subfeatures := #n
+		   if (pair? feature) {
+		     subfeatures = pt feature
+		     feature = ph feature
+		   }
+		   mod := find-module feature #f
 		   if mod {
 		     loop (pt mods) (if (or (eq? mod importer)
 					    (assq mod result))
 				     result {
-				       require (module-name mod)
+				       apply require (module-name mod) subfeatures
 				       pair (list mod) result
 				     })
 		   } {
-		     name := ph mods
-
-		     require name
-		     mod := find-module name #f
+		     apply require feature subfeatures
+		     mod := find-module feature #f
 		     if mod {
 		       loop (pt mods) (pair (list mod) result)
-		     } (error '%module-import "failed to instantiate module" name)
+		     } (error '%module-import "failed to instantiate module" feature)
 		   }
 		 })
   }
