@@ -80,16 +80,21 @@ their Other_ID_Start too.
 Again, it's hard to see how they can clearly define a
 Pattern_White_Space and Pattern_Syntax Properties.
 
+GraphemeBreakProperty.txt is a fairly short file with more
+breaks-between-things Properties.  
+
+------------------------------
 
 In the meanwhile this file, unicode.idio, serves a dual purpose.  By
-default it defines the SRFI-14 char-bitset sets as derived from the
-above files.
+default it defines the SRFI-14 char-set bitsets as derived from the
+above files and loaded by discretion (unicode.ascii.idio or
+unicode.full.idio).
 
 Where did they come from?  If the need arises, set char-set:ascii to
 #n (as commented out below) then the bottom section of code kicks in
-and (load "unicode") will trawl through the above files and print to
-stdout the current bitsets.  You can then replace the definitions in
-this file.
+and (load "unicode") will trawl through the above files and prints to
+unicode.{ascii,full}.idio the current bitsets.  You can then check and
+copy them over the files in .../lib.
 
 Other generated tables include:
 
@@ -138,8 +143,9 @@ export (
 	 char-set:nonl
 	 char-set:control
 	 char-set:word-constituent
+	 char-set:cased
 
-	 ; %X == intersection ASCII X
+	 ; SRFI-115: %X == intersection of ASCII and X
 	 %char-set:letter
 	 %char-set:lower-case
 	 %char-set:upper-case
@@ -151,103 +157,136 @@ export (
 	 %char-set:whitespace
 	 %char-set:printing
 	 %char-set:iso-control
+
+	 ; SRFI-115: Unicode boundaries, TR29
+	 char-set:regional-indicator
+	 char-set:extend-or-spacing-mark
+	 char-set:hangul-l
+	 char-set:hangul-v
+	 char-set:hangul-t
+	 char-set:hangul-lv
+	 char-set:hangul-lvt
 )
 
 ascii-char-set:size := 128
 char-set:size := 0
 
-; property Lowercase
+; char-set:lower-case is Property Lowercase
 char-set:lower-case  := #n
 
-; property Uppercase
+; char-set:upper-case is Property Uppercase
 char-set:upper-case  := #n
 
-; category Lt
+; char-set:title-case is Category Lt
 char-set:title-case  := #n
 
-; property Alphabetic
+; char-set:letter is Property Alphabetic
 char-set:letter      := #n
 
-; category Nd
+; char-set:digit is Category Nd
 char-set:digit       := #n
 
-; property Alphabetic + category Nd
+; char-set:letter+digit is Property Alphabetic + Category Nd
 char-set:letter+digit := #n
 
-; category L* + category N* + category M* + category S* + category P*
+; char-set:graphic is Category L* + Category N* + Category M* + Category S* + Category P*
 char-set:graphic     := #n
 
-; char-set:graphic + char-set:whitespace
+; char-set:printing is char-set:graphic + char-set:whitespace
 char-set:printing    := #n
 
-; property White_Space
+; char-set:whitespace is Property White_Space
 char-set:whitespace  := #n
 
-; 0000..001F + 007F..009F
+; char-set:iso-control is 0000..001F + 007F..009F
 char-set:iso-control := #n
 
-; category P*
+; char-set:punctuation is Category P*
 char-set:punctuation := #n
 
-; category S*
+; char-set:symbol is Category S*
 char-set:symbol      := #n
 
-; 0030..0039 + 0041..0046 + 0061..0066
+; char-set:hex-digit is 0030..0039 + 0041..0046 + 0061..0066
 char-set:hex-digit   := #n
 
-; category Zs + 0009
+; char-set:blank is Category Zs + 0009
 char-set:blank       := #n
 
-; 0000..007F
+; char-set:ascii is 0000..007F
 char-set:ascii       := #n
 
-; empty
+; char-set:empty is empty
 char-set:empty       := #n
 
-; full == ~ empty
+; char-set:full is full == ~ empty
 char-set:full        := #n
 
-; char-set:full excl. #\newline
+; char-set:nonl is char-set:full excl. #\newline
 char-set:nonl        := #n
 
-; 0000..001F
+; char-set:control is Property Control
 char-set:control     := #n
 
-; char-set:letter+digit + _
+; char-set:word-constituent is char-set:letter+digit + _
 char-set:word-constituent := #n
 
-; char-set:letter restricted to ASCII range
+; char-set:cased is char-set:upper-case char-set:lower-case char-set:title-case
+char-set:cased := #n
+
+; %char-set:letter is char-set:letter restricted to ASCII range
 %char-set:letter     := #n
 
-; char-set:lower-case restricted to ASCII range
+; %char-set:lower-case is char-set:lower-case restricted to ASCII range
 %char-set:lower-case := #n
 
-; char-set:upper-case restricted to ASCII range
+; %char-set:upper-case is char-set:upper-case restricted to ASCII range
 %char-set:upper-case := #n
 
-; char-set:digit restricted to ASCII range
+; %char-set:digit is char-set:digit restricted to ASCII range
 %char-set:digit      := #n
 
-; char-set:letter+digit restricted to ASCII range
+; %char-set:letter+digit is char-set:letter+digit restricted to ASCII range
 %char-set:letter+digit := #n
 
-; char-set:punctuation restricted to ASCII range
+; %char-set:punctuation is char-set:punctuation restricted to ASCII range
 %char-set:punctuation := #n
 
-; char-set:symbol restricted to ASCII range
+; %char-set:symbol is char-set:symbol restricted to ASCII range
 %char-set:symbol     := #n
 
-; char-set:graphic restricted to ASCII range
+; %char-set:graphic is char-set:graphic restricted to ASCII range
 %char-set:graphic    := #n
 
-; char-set:whitespace restricted to ASCII range
+; %char-set:whitespace is char-set:whitespace restricted to ASCII range
 %char-set:whitespace := #n
 
-; char-set:printing restricted to ASCII range
+; %char-set:printing is char-set:printing restricted to ASCII range
 %char-set:printing   := #n
 
-; char-set:iso-control restricted to ASCII range
+; %char-set:iso-control is char-set:iso-control restricted to ASCII range
 %char-set:iso-control := #n
+
+; char-set:regional-indicator is Property Regional_Indicator
+char-set:regional-indicator := #n
+
+; char-set:extend-or-spacing-mark is Property Extend + Property SpacingMark
+char-set:extend-or-spacing-mark := #n
+
+; char-set:hangul-l is Property L
+char-set:hangul-l := #n
+
+; char-set:hangul-v is Property V
+char-set:hangul-v := #n
+
+; char-set:hangul-t is Property T
+char-set:hangul-t := #n
+
+; char-set:hangul-lv is Property LV
+char-set:hangul-lv := #n
+
+; char-set:hangul-lvt is Property LVT
+char-set:hangul-lvt := #n
 
 ; Simple uppercase mapping (single character result)
 char-set:simple-upper-case-map := #n
@@ -264,31 +303,36 @@ if (memq 'ascii *subfeatures*) {
 ;char-set:ascii := #n
 
 if (null? char-set:ascii) {
+  ; The source for most of these files is
+  ; https://www.unicode.org/Public/UCD/latest/ucd/ and
+  ; https://www.unicode.org/Public/UCD/latest/ucd/auxiliary/GraphemeBreakProperty.txt
   UD := "../utils/Unicode/UnicodeData.txt"
   DCP := "../utils/Unicode/DerivedCoreProperties.txt"
   PL := "../utils/Unicode/PropList.txt"
-
+  GBP := "../utils/Unicode/GraphemeBreakProperty.txt"
+  
   char-sets := '(
-		  (char-set:lower-case "property Lowercase")
-		  (char-set:upper-case "property Uppercase")
-		  (char-set:title-case "category Lt")
-		  (char-set:letter "property Alphabetic")
-		  (char-set:digit "category Nd")
-		  (char-set:letter+digit "property Alphabetic + category Nd")
-		  (char-set:graphic "category L* + category N* + category M* + category S* + category P*")
+		  (char-set:lower-case "Property Lowercase")
+		  (char-set:upper-case "Property Uppercase")
+		  (char-set:title-case "Category Lt")
+		  (char-set:letter "Property Alphabetic")
+		  (char-set:digit "Category Nd")
+		  (char-set:letter+digit "Property Alphabetic + Category Nd")
+		  (char-set:graphic "Category L* + Category N* + Category M* + Category S* + Category P*")
 		  (char-set:printing "char-set:graphic + char-set:whitespace")
-		  (char-set:whitespace "property White_Space")
+		  (char-set:whitespace "Property White_Space")
 		  (char-set:iso-control "0000..001F + 007F..009F")
-		  (char-set:punctuation "category P*")
-		  (char-set:symbol "category S*")
+		  (char-set:punctuation "Category P*")
+		  (char-set:symbol "Category S*")
 		  (char-set:hex-digit "0030..0039 + 0041..0046 + 0061..0066")
-		  (char-set:blank "category Zs + 0009")
+		  (char-set:blank "Category Zs + 0009")
 		  (char-set:ascii "0000..007F")
 		  (char-set:empty "empty")
 		  (char-set:full "full == ~ empty")
 		  (char-set:nonl "char-set:full excl. #\\newline")
-		  (char-set:control "0000..001F")
+		  (char-set:control "Property Control")
 		  (char-set:word-constituent "char-set:letter+digit + _")
+		  (char-set:cased "char-set:upper-case + char-set:lower-case + char-set:title-case")
 		  (%char-set:letter "char-set:letter restricted to ASCII range")
 		  (%char-set:lower-case "char-set:lower-case restricted to ASCII range")
 		  (%char-set:upper-case "char-set:upper-case restricted to ASCII range")
@@ -300,6 +344,13 @@ if (null? char-set:ascii) {
 		  (%char-set:whitespace "char-set:whitespace restricted to ASCII range")
 		  (%char-set:printing "char-set:printing restricted to ASCII range")
 		  (%char-set:iso-control "char-set:iso-control restricted to ASCII range")
+		  (char-set:regional-indicator "Property Regional_Indicator")
+		  (char-set:extend-or-spacing-mark "Property Extend + Property SpacingMark")
+		  (char-set:hangul-l "Property L")
+		  (char-set:hangul-v "Property V")
+		  (char-set:hangul-t "Property T")
+		  (char-set:hangul-lv "Property LV")
+		  (char-set:hangul-lvt "Property LVT")
   )
 
   char-set:size := 0
@@ -327,52 +378,70 @@ if (null? char-set:ascii) {
 
   with-input-from-file UD ud-max-cp
 
-  ascii-char-set:lower-case	:= make-bitset ascii-char-set:size
-  ascii-char-set:upper-case	:= make-bitset ascii-char-set:size
-  ascii-char-set:title-case	:= make-bitset ascii-char-set:size
-  ascii-char-set:letter		:= make-bitset ascii-char-set:size
-  ascii-char-set:digit		:= make-bitset ascii-char-set:size
+  ascii-char-set:lower-case		:= make-bitset ascii-char-set:size
+  ascii-char-set:upper-case		:= make-bitset ascii-char-set:size
+  ascii-char-set:title-case		:= make-bitset ascii-char-set:size
+  ascii-char-set:letter			:= make-bitset ascii-char-set:size
+  ascii-char-set:digit			:= make-bitset ascii-char-set:size
   ; ascii-char-set:letter+digit is a merge, see below
-  ascii-char-set:graphic	:= make-bitset ascii-char-set:size
+  ascii-char-set:graphic		:= make-bitset ascii-char-set:size
   ; ascii-char-set:printing is a merge, see below
-  ascii-char-set:whitespace	:= make-bitset ascii-char-set:size
-  ascii-char-set:iso-control	:= make-bitset ascii-char-set:size
-  ascii-char-set:punctuation	:= make-bitset ascii-char-set:size
-  ascii-char-set:symbol		:= make-bitset ascii-char-set:size
-  ascii-char-set:hex-digit	:= make-bitset ascii-char-set:size
-  ascii-char-set:blank		:= make-bitset ascii-char-set:size
-  ascii-char-set:ascii		:= make-bitset ascii-char-set:size
-  ascii-char-set:empty		:= make-bitset ascii-char-set:size
-  ascii-char-set:full		:= not-bitset ascii-char-set:empty
-  ascii-char-set:nonl		:= copy-bitset ascii-char-set:full
+  ascii-char-set:whitespace		:= make-bitset ascii-char-set:size
+  ascii-char-set:iso-control		:= make-bitset ascii-char-set:size
+  ascii-char-set:punctuation		:= make-bitset ascii-char-set:size
+  ascii-char-set:symbol			:= make-bitset ascii-char-set:size
+  ascii-char-set:hex-digit		:= make-bitset ascii-char-set:size
+  ascii-char-set:blank			:= make-bitset ascii-char-set:size
+  ascii-char-set:ascii			:= make-bitset ascii-char-set:size
+  ascii-char-set:empty			:= make-bitset ascii-char-set:size
+  ascii-char-set:full			:= not-bitset ascii-char-set:empty
+  ascii-char-set:nonl			:= copy-bitset ascii-char-set:full
+  ascii-char-set:control		:= make-bitset ascii-char-set:size
   bitset-clear! ascii-char-set:nonl (char->integer #\newline)
   ; ascii-char-set:word-constituent is derived from ascii-char-set:letter+digit, see below
+  ; ascii-char-set:cased is derived from others, see below
   ; The %X char-sets are (obviously?) derived
+  ascii-char-set:regional-indicator	:= make-bitset ascii-char-set:size
+  ascii-char-set:extend-or-spacing-mark	:= make-bitset ascii-char-set:size
+  ascii-char-set:hangul-l		:= make-bitset ascii-char-set:size
+  ascii-char-set:hangul-v		:= make-bitset ascii-char-set:size
+  ascii-char-set:hangul-t		:= make-bitset ascii-char-set:size
+  ascii-char-set:hangul-lv		:= make-bitset ascii-char-set:size
+  ascii-char-set:hangul-lvt		:= make-bitset ascii-char-set:size
 
   ascii-char-set:simple-upper-case-map := make-hash #n #n 64 ; 26
   ascii-char-set:simple-lower-case-map := make-hash #n #n 64 ; 26
 
-  char-set:lower-case	:= make-bitset char-set:size
-  char-set:upper-case	:= make-bitset char-set:size
-  char-set:title-case	:= make-bitset char-set:size
-  char-set:letter	:= make-bitset char-set:size
-  char-set:digit	:= make-bitset char-set:size
+  char-set:lower-case			:= make-bitset char-set:size
+  char-set:upper-case			:= make-bitset char-set:size
+  char-set:title-case			:= make-bitset char-set:size
+  char-set:letter			:= make-bitset char-set:size
+  char-set:digit			:= make-bitset char-set:size
   ; char-set:letter+digit is a merge, see below
-  char-set:graphic	:= make-bitset char-set:size
+  char-set:graphic			:= make-bitset char-set:size
   ; char-set:printing is a merge, see below
-  char-set:whitespace	:= make-bitset char-set:size
-  char-set:iso-control	:= make-bitset char-set:size
-  char-set:punctuation	:= make-bitset char-set:size
-  char-set:symbol	:= make-bitset char-set:size
-  char-set:hex-digit	:= make-bitset char-set:size
-  char-set:blank	:= make-bitset char-set:size
-  char-set:ascii	:= make-bitset char-set:size
-  char-set:empty	:= make-bitset char-set:size
-  char-set:full		:= not-bitset char-set:empty
-  char-set:nonl		:= copy-bitset char-set:full
+  char-set:whitespace			:= make-bitset char-set:size
+  char-set:iso-control			:= make-bitset char-set:size
+  char-set:punctuation			:= make-bitset char-set:size
+  char-set:symbol			:= make-bitset char-set:size
+  char-set:hex-digit			:= make-bitset char-set:size
+  char-set:blank			:= make-bitset char-set:size
+  char-set:ascii			:= make-bitset char-set:size
+  char-set:empty			:= make-bitset char-set:size
+  char-set:full				:= not-bitset char-set:empty
+  char-set:nonl				:= copy-bitset char-set:full
+  char-set:control			:= make-bitset char-set:size
   bitset-clear! char-set:nonl (char->integer #\newline)
   ; char-set:word-constituent is derived from char-set:letter+digit, see below
+  ; char-set:cased is derived from others, see below
   ; The %X char-sets are (obviously?) derived
+  char-set:regional-indicator		:= make-bitset char-set:size
+  char-set:extend-or-spacing-mark	:= make-bitset char-set:size
+  char-set:hangul-l			:= make-bitset char-set:size
+  char-set:hangul-v			:= make-bitset char-set:size
+  char-set:hangul-t			:= make-bitset char-set:size
+  char-set:hangul-lv			:= make-bitset char-set:size
+  char-set:hangul-lvt			:= make-bitset char-set:size
 
   char-set:simple-upper-case-map := make-hash #n #n 2048 ; 1410
   char-set:simple-lower-case-map := make-hash #n #n 2048 ; 1393
@@ -487,7 +556,7 @@ if (null? char-set:ascii) {
 								 ((2) #n) \
 								 (else {
 								   eprintf "%s: %s elements in code point range: %s\n" (handle-location (current-input-handle)) (length range) line
-								   error 'dcp-parser "unexpected number of elements" line
+								   error 'pl-parser "unexpected number of elements" line
 								 })
 
 					     range-loop :+ function (bs n e) {
@@ -503,7 +572,15 @@ if (null? char-set:ascii) {
 					       if (lt (pht range) ascii-char-set:size) {
 						 range-loop ascii-char-set:whitespace (ph range) (pht range)
 					       }
-					     })
+					     }) \
+						  ((string=? (pht dcp_parts) " Regional_Indicator ") {
+						    range-loop char-set:regional-indicator (ph range) (pht range)
+
+						    ; Unlikely!
+						    if (lt (pht range) ascii-char-set:size) {
+						      range-loop ascii-char-set:regional-indicator (ph range) (pht range)
+						    }
+						  })
 					   }
 					 })
 		(loop)
@@ -579,15 +656,116 @@ if (null? char-set:ascii) {
 
   with-input-from-file DCP dcp-parser
 
-  ascii-char-set:letter+digit := merge-bitset ascii-char-set:letter ascii-char-set:digit
-  ascii-char-set:printing := merge-bitset ascii-char-set:graphic ascii-char-set:whitespace
-  ascii-char-set:word-constituent := copy-bitset ascii-char-set:letter+digit
-  bitset-set! ascii-char-set:word-constituent (char->integer #\_)
+  eprintf "Parsing %s\n" GBP
 
-  char-set:letter+digit := merge-bitset char-set:letter char-set:digit
-  char-set:printing := merge-bitset char-set:graphic char-set:whitespace
-  char-set:word-constituent := copy-bitset char-set:letter+digit
+  define (gbp-parser) {
+    loop :+ function () {
+	      if (eof? (current-input-handle)) #n {
+		line := (read-line)
+		case (string-ref line 0) ((#\#) #n) \
+					 (else {
+					   parts := split-string line "#"
+					   if (gt (string-length (ph parts)) 0) {
+					     dcp_parts := split-string (ph parts) ";"
+					     range := map (function (n) {
+							     read-number n 16
+					     }) (split-string (ph dcp_parts) "..")
+					     case (length range) ((1) (range = (list (ph range) (ph range)))) \
+								 ((2) #n) \
+								 (else {
+								   eprintf "%s: %s elements in code point range: %s\n" (handle-location (current-input-handle)) (length range) line
+								   error 'gbp-parser "unexpected number of elements" line
+								 })
+
+					     range-loop :+ function (bs n e) {
+						       if (gt n e) #n {
+							 bitset-set! bs n
+							 range-loop bs (n + 1) e
+						       }
+					     }
+
+					     cond ((string=? (pht dcp_parts) " Control ") {
+					       range-loop char-set:control (ph range) (pht range)
+
+					       if (lt (pht range) ascii-char-set:size) {
+						 range-loop ascii-char-set:control (ph range) (pht range)
+					       }
+					     }) \
+						  ((string=? (pht dcp_parts) " Extend ") {
+					       range-loop char-set:extend-or-spacing-mark (ph range) (pht range)
+
+					       if (lt (pht range) ascii-char-set:size) {
+						 range-loop ascii-char-set:extend-or-spacing-mark (ph range) (pht range)
+					       }
+					     }) \
+						  ((string=? (pht dcp_parts) " SpacingMark ") {
+						    range-loop char-set:extend-or-spacing-mark (ph range) (pht range)
+
+						    if (lt (pht range) ascii-char-set:size) {
+						      range-loop ascii-char-set:extend-or-spacing-mark (ph range) (pht range)
+						    }
+					     }) \
+						  ((string=? (pht dcp_parts) " L ") {
+						    range-loop char-set:hangul-l (ph range) (pht range)
+
+						    ; Unlikely!
+						    if (lt (pht range) ascii-char-set:size) {
+						      range-loop ascii-char-set:hangul-l (ph range) (pht range)
+						    }
+					     }) \
+						  ((string=? (pht dcp_parts) " V ") {
+						    range-loop char-set:hangul-v (ph range) (pht range)
+
+						    ; Unlikely!
+						    if (lt (pht range) ascii-char-set:size) {
+						      range-loop ascii-char-set:hangul-v (ph range) (pht range)
+						    }
+					     }) \
+						  ((string=? (pht dcp_parts) " T ") {
+						    range-loop char-set:hangul-t (ph range) (pht range)
+
+						    ; Unlikely!
+						    if (lt (pht range) ascii-char-set:size) {
+						      range-loop ascii-char-set:hangul-t (ph range) (pht range)
+						    }
+					     }) \
+						  ((string=? (pht dcp_parts) " LV ") {
+						    range-loop char-set:hangul-lv (ph range) (pht range)
+
+						    ; Unlikely!
+						    if (lt (pht range) ascii-char-set:size) {
+						      range-loop ascii-char-set:hangul-lv (ph range) (pht range)
+						    }
+					     }) \
+						  ((string=? (pht dcp_parts) " LVT ") {
+						    range-loop char-set:hangul-lvt (ph range) (pht range)
+
+						    ; Unlikely!
+						    if (lt (pht range) ascii-char-set:size) {
+						      range-loop ascii-char-set:hangul-lvt (ph range) (pht range)
+						    }
+						  })
+					   }
+					 })
+		(loop)
+	      }
+    }
+    (loop)
+  }
+
+  with-input-from-file GBP gbp-parser
+
+  ascii-char-set:letter+digit		:= merge-bitset ascii-char-set:letter ascii-char-set:digit
+  ascii-char-set:printing		:= merge-bitset ascii-char-set:graphic ascii-char-set:whitespace
+  ascii-char-set:word-constituent	:= copy-bitset ascii-char-set:letter+digit
+  bitset-set! ascii-char-set:word-constituent (char->integer #\_)
+  ascii-char-set:cased			:= ior-bitset ascii-char-set:upper-case ascii-char-set:lower-case ascii-char-set:title-case
+
+  char-set:letter+digit			:= merge-bitset char-set:letter char-set:digit
+  char-set:printing			:= merge-bitset char-set:graphic char-set:whitespace
+  char-set:word-constituent		:= copy-bitset char-set:letter+digit
   bitset-set! char-set:word-constituent (char->integer #\_)
+  char-set:cased			:= ior-bitset char-set:upper-case char-set:lower-case char-set:title-case
 
   bs-range-loop :+ function (bs n e) {
 	    if (gt n e) #n {
@@ -625,88 +803,108 @@ if (null? char-set:ascii) {
     }
   }
 
-  with-output-to "unicode.ascii.idio" (function () {
-					 printf "%s\n" "#*
+  filename := "unicode.ascii.idio"
+  eprintf "Creating %s\n" filename
+  with-output-to filename (function () {
+			     printf "%s\n" "#*
 
-These bitsets are automatically generated from Unicode source files.
+			     These bitsets are automatically generated from Unicode source files.
 
-*#"
-					 printer 'char-set:lower-case ascii-char-set:lower-case
-					 printer 'char-set:upper-case ascii-char-set:upper-case
-					 printer 'char-set:title-case ascii-char-set:title-case
-					 printer 'char-set:letter ascii-char-set:letter
-					 printer 'char-set:digit ascii-char-set:digit
-					 printer 'char-set:letter+digit ascii-char-set:letter+digit
-					 printer 'char-set:graphic ascii-char-set:graphic
-					 printer 'char-set:printing ascii-char-set:printing
-					 printer 'char-set:whitespace ascii-char-set:whitespace
-					 printer 'char-set:iso-control ascii-char-set:iso-control
-					 printer 'char-set:punctuation ascii-char-set:punctuation
-					 printer 'char-set:symbol ascii-char-set:symbol
-					 printer 'char-set:hex-digit ascii-char-set:hex-digit
-					 printer 'char-set:blank ascii-char-set:blank
-					 printer 'char-set:ascii ascii-char-set:ascii
-					 printer 'char-set:empty ascii-char-set:empty
-					 printer 'char-set:full ascii-char-set:full
-					 printer 'char-set:nonl ascii-char-set:nonl
-					 printer 'char-set:word-constituent ascii-char-set:word-constituent
-					 printer '%char-set:letter ascii-char-set:letter
-					 printer '%char-set:lower-case ascii-char-set:lower-case
-					 printer '%char-set:upper-case ascii-char-set:upper-case
-					 printer '%char-set:digit ascii-char-set:digit
-					 printer '%char-set:letter+digit ascii-char-set:letter+digit
-					 printer '%char-set:punctuation ascii-char-set:punctuation
-					 printer '%char-set:symbol ascii-char-set:symbol
-					 printer '%char-set:graphic ascii-char-set:graphic
-					 printer '%char-set:whitespace ascii-char-set:whitespace
-					 printer '%char-set:printing ascii-char-set:printing
-					 printer '%char-set:iso-control ascii-char-set:iso-control
+			     *#"
+			     printer 'char-set:lower-case ascii-char-set:lower-case
+			     printer 'char-set:upper-case ascii-char-set:upper-case
+			     printer 'char-set:title-case ascii-char-set:title-case
+			     printer 'char-set:letter ascii-char-set:letter
+			     printer 'char-set:digit ascii-char-set:digit
+			     printer 'char-set:letter+digit ascii-char-set:letter+digit
+			     printer 'char-set:graphic ascii-char-set:graphic
+			     printer 'char-set:printing ascii-char-set:printing
+			     printer 'char-set:whitespace ascii-char-set:whitespace
+			     printer 'char-set:iso-control ascii-char-set:iso-control
+			     printer 'char-set:punctuation ascii-char-set:punctuation
+			     printer 'char-set:symbol ascii-char-set:symbol
+			     printer 'char-set:hex-digit ascii-char-set:hex-digit
+			     printer 'char-set:blank ascii-char-set:blank
+			     printer 'char-set:ascii ascii-char-set:ascii
+			     printer 'char-set:empty ascii-char-set:empty
+			     printer 'char-set:full ascii-char-set:full
+			     printer 'char-set:nonl ascii-char-set:nonl
+			     printer 'char-set:word-constituent ascii-char-set:word-constituent
+			     printer 'char-set:cased ascii-char-set:cased
+			     printer '%char-set:letter ascii-char-set:letter
+			     printer '%char-set:lower-case ascii-char-set:lower-case
+			     printer '%char-set:upper-case ascii-char-set:upper-case
+			     printer '%char-set:digit ascii-char-set:digit
+			     printer '%char-set:letter+digit ascii-char-set:letter+digit
+			     printer '%char-set:punctuation ascii-char-set:punctuation
+			     printer '%char-set:symbol ascii-char-set:symbol
+			     printer '%char-set:graphic ascii-char-set:graphic
+			     printer '%char-set:whitespace ascii-char-set:whitespace
+			     printer '%char-set:printing ascii-char-set:printing
+			     printer '%char-set:iso-control ascii-char-set:iso-control
+			     printer 'char-set:regional-indicator ascii-char-set:regional-indicator
+			     printer 'char-set:extend-or-spacing-mark ascii-char-set:extend-or-spacing-mark
+			     printer 'char-set:hangul-l ascii-char-set:hangul-l
+			     printer 'char-set:hangul-v ascii-char-set:hangul-v
+			     printer 'char-set:hangul-t ascii-char-set:hangul-t
+			     printer 'char-set:hangul-lv ascii-char-set:hangul-lv
+			     printer 'char-set:hangul-lvt ascii-char-set:hangul-lvt
 
-					 printf "\n; %s\n%-20s = %s\n" "Simple uppercase mapping (single character result)" "char-set:simple-upper-case-map" ascii-char-set:simple-upper-case-map
+			     printf "\n; %s\n%-20s = %s\n" "Simple uppercase mapping (single character result)" "char-set:simple-upper-case-map" ascii-char-set:simple-upper-case-map
 
-					 printf "\n; %s\n%-20s = %s\n" "Simple lowercase mapping (single character result)" "char-set:simple-lower-case-map" ascii-char-set:simple-lower-case-map
+			     printf "\n; %s\n%-20s = %s\n" "Simple lowercase mapping (single character result)" "char-set:simple-lower-case-map" ascii-char-set:simple-lower-case-map
   })
   
-  with-output-to "unicode.full.idio" (function () {
-					printf "%s\n" "#*
+  filename := "unicode.full.idio"
+  eprintf "Creating %s\n" filename
+  with-output-to filename (function () {
+			     printf "%s\n" "#*
 
-These bitsets are automatically generated from Unicode source files.
+			     These bitsets are automatically generated from Unicode source files.
 
-*#"
-					printer 'char-set:lower-case char-set:lower-case
-					printer 'char-set:upper-case char-set:upper-case
-					printer 'char-set:title-case char-set:title-case
-					printer 'char-set:letter char-set:letter
-					printer 'char-set:digit char-set:digit
-					printer 'char-set:letter+digit char-set:letter+digit
-					printer 'char-set:graphic char-set:graphic
-					printer 'char-set:printing char-set:printing
-					printer 'char-set:whitespace char-set:whitespace
-					printer 'char-set:iso-control char-set:iso-control
-					printer 'char-set:punctuation char-set:punctuation
-					printer 'char-set:symbol char-set:symbol
-					printer 'char-set:hex-digit char-set:hex-digit
-					printer 'char-set:blank char-set:blank
-					printer 'char-set:ascii char-set:ascii
-					printer 'char-set:empty char-set:empty
-					printer 'char-set:full char-set:full
-					printer 'char-set:nonl char-set:nonl
-					printer 'char-set:word-constituent char-set:word-constituent
-					printer '%char-set:letter (and-bitset char-set:ascii char-set:letter)
-					printer '%char-set:lower-case (and-bitset char-set:ascii char-set:lower-case)
-					printer '%char-set:upper-case (and-bitset char-set:ascii char-set:upper-case)
-					printer '%char-set:digit (and-bitset char-set:ascii char-set:digit)
-					printer '%char-set:letter+digit (and-bitset char-set:ascii char-set:letter+digit)
-					printer '%char-set:punctuation (and-bitset char-set:ascii char-set:punctuation)
-					printer '%char-set:symbol (and-bitset char-set:ascii char-set:symbol)
-					printer '%char-set:graphic (and-bitset char-set:ascii char-set:graphic)
-					printer '%char-set:whitespace (and-bitset char-set:ascii char-set:whitespace)
-					printer '%char-set:printing (and-bitset char-set:ascii char-set:printing)
-					printer '%char-set:iso-control (and-bitset char-set:ascii char-set:iso-control)
+			     *#"
+			     printer 'char-set:lower-case char-set:lower-case
+			     printer 'char-set:upper-case char-set:upper-case
+			     printer 'char-set:title-case char-set:title-case
+			     printer 'char-set:letter char-set:letter
+			     printer 'char-set:digit char-set:digit
+			     printer 'char-set:letter+digit char-set:letter+digit
+			     printer 'char-set:graphic char-set:graphic
+			     printer 'char-set:printing char-set:printing
+			     printer 'char-set:whitespace char-set:whitespace
+			     printer 'char-set:iso-control char-set:iso-control
+			     printer 'char-set:punctuation char-set:punctuation
+			     printer 'char-set:symbol char-set:symbol
+			     printer 'char-set:hex-digit char-set:hex-digit
+			     printer 'char-set:blank char-set:blank
+			     printer 'char-set:ascii char-set:ascii
+			     printer 'char-set:empty char-set:empty
+			     printer 'char-set:full char-set:full
+			     printer 'char-set:nonl char-set:nonl
+			     printer 'char-set:word-constituent char-set:word-constituent
+			     printer 'char-set:cased char-set:cased
+			     printer '%char-set:letter (and-bitset char-set:ascii char-set:letter)
+			     printer '%char-set:lower-case (and-bitset char-set:ascii char-set:lower-case)
+			     printer '%char-set:upper-case (and-bitset char-set:ascii char-set:upper-case)
+			     printer '%char-set:digit (and-bitset char-set:ascii char-set:digit)
+			     printer '%char-set:letter+digit (and-bitset char-set:ascii char-set:letter+digit)
+			     printer '%char-set:punctuation (and-bitset char-set:ascii char-set:punctuation)
+			     printer '%char-set:symbol (and-bitset char-set:ascii char-set:symbol)
+			     printer '%char-set:graphic (and-bitset char-set:ascii char-set:graphic)
+			     printer '%char-set:whitespace (and-bitset char-set:ascii char-set:whitespace)
+			     printer '%char-set:printing (and-bitset char-set:ascii char-set:printing)
+			     printer '%char-set:iso-control (and-bitset char-set:ascii char-set:iso-control)
+			     printer 'char-set:regional-indicator char-set:regional-indicator
+			     printer 'char-set:extend-or-spacing-mark char-set:extend-or-spacing-mark
+			     printer 'char-set:hangul-l char-set:hangul-l
+			     printer 'char-set:hangul-v char-set:hangul-v
+			     printer 'char-set:hangul-t char-set:hangul-t
+			     printer 'char-set:hangul-lv char-set:hangul-lv
+			     printer 'char-set:hangul-lvt char-set:hangul-lvt
 
-					printf "\n; %s\n%-20s = %s\n" "Simple uppercase mapping (single character result)" "char-set:simple-upper-case-map" char-set:simple-upper-case-map
+			     printf "\n; %s\n%-20s = %s\n" "Simple uppercase mapping (single character result)" "char-set:simple-upper-case-map" char-set:simple-upper-case-map
 
-					printf "\n; %s\n%-20s = %s\n" "Simple lowercase mapping (single character result)" "char-set:simple-lower-case-map" char-set:simple-lower-case-map
+			     printf "\n; %s\n%-20s = %s\n" "Simple lowercase mapping (single character result)" "char-set:simple-lower-case-map" char-set:simple-lower-case-map
   })
 }
 

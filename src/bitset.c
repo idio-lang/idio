@@ -515,7 +515,7 @@ logical Inclusive OR the bitsets		\n\
 }
 
 IDIO_DEFINE_PRIMITIVE0V_DS ("xor-bitset", xor_bitset, (IDIO args), "[bs ...]", "\
-logical Exclusive OR the bitsets		\n\
+logical eXclusive OR the bitsets		\n\
 						\n\
 :param args: bitsets to be operated on		\n\
 :type args: list				\n\
@@ -556,7 +556,7 @@ logical Exclusive OR the bitsets		\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("not-bitset", not_bitset, (IDIO bs), "bs", "\
-logical coplement of the bitset			\n\
+logical complement of the bitset		\n\
 						\n\
 :param args: bitset to be operated on		\n\
 :type args: bitset				\n\
@@ -573,6 +573,49 @@ logical coplement of the bitset			\n\
     size_t i;
     for (i = 0; i < n_ul; i++) {
 	IDIO_BITSET_BITS (r, i) = ~ IDIO_BITSET_BITS (bs, i);
+    }
+
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE0V_DS ("subtract-bitset", subtract_bitset, (IDIO args), "[bs ...]", "\
+subtract the bitsets				\n\
+						\n\
+:param args: bitsets to be operated on		\n\
+:type args: list				\n\
+:rtype: bitset or #n if no bitsets supplied	\n\
+")
+{
+    IDIO_ASSERT (args);
+
+    IDIO_TYPE_ASSERT (list, args);
+
+    IDIO r = idio_S_nil;
+
+    while (idio_S_nil != args) {
+	IDIO bs = IDIO_PAIR_H (args);
+
+	IDIO_TYPE_ASSERT (bitset, bs);
+
+	if (idio_S_nil == r) {
+	    r = idio_copy (bs, IDIO_COPY_SHALLOW);
+	} else {
+	    if (IDIO_BITSET_SIZE (bs) != IDIO_BITSET_SIZE (r)) {
+		idio_bitset_error_size_mismatch (IDIO_BITSET_SIZE (bs), IDIO_BITSET_SIZE (r), IDIO_C_FUNC_LOCATION ());
+
+		return idio_S_notreached;
+	    }
+
+	    size_t n_ul = IDIO_BITSET_SIZE (r) / IDIO_BITS_PER_LONG + 1;
+	    size_t i;
+	    for (i = 0; i < n_ul; i++) {
+		if (IDIO_BITSET_BITS (bs, i)) {
+		    IDIO_BITSET_BITS (r, i) = 0;
+		}
+	    }
+	}
+
+	args = IDIO_PAIR_T (args);
     }
 
     return r;
@@ -596,6 +639,7 @@ void idio_bitset_add_primitives ()
     IDIO_ADD_PRIMITIVE (ior_bitset);
     IDIO_ADD_PRIMITIVE (xor_bitset);
     IDIO_ADD_PRIMITIVE (not_bitset);
+    IDIO_ADD_PRIMITIVE (subtract_bitset);
 }
 
 void idio_final_bitset ()
