@@ -2797,11 +2797,11 @@ test (string->number "#.#") #f
 test (string->number "#23") #f
 test (inexact? (string->number "+###")) #t
 
-test (string-append "" "") ""
-test (string-append "abc" "") "abc"
-test (string-append "" "def") "def"
-test (string-append "abc" "def") "abcdef"
-test (string-append "abc" "def" "xyz") "abcdefxyz"
+test (append-string "" "") ""
+test (append-string "abc" "") "abc"
+test (append-string "" "def") "def"
+test (append-string "abc" "def") "abcdef"
+test (append-string "abc" "def" "xyz") "abcdefxyz"
 
 test (string-ci<? "test" "test") #f
 test (string-ci<? "test" "tesa") #f
@@ -2886,16 +2886,16 @@ test (string-ci>=? "ab" "ab" "cd") #f
 test (string-ci>=? "cd" "cd" "ab") #t
 test (string-ci>=? "ef" "cd" "ab") #t
 
-test (string-copy "") ""
-test (string-copy "abcdef") "abcdef"
+test (copy-string "") ""
+test (copy-string "abcdef") "abcdef"
 ;; (test (begin (let ((s "abc"))
-;;                 (let ((s2 (string-copy s)))
+;;                 (let ((s2 (copy-string s)))
 ;;                   (string-set! s2 1 #\x)
 ;;                   s)))
 ;;       "abc")
 test {
   s := "abc"
-  s2 := string-copy s
+  s2 := copy-string s
   string-set! s2 1 #\x
   s
 } "abc"
@@ -3308,7 +3308,7 @@ define foo 'bar
 ;;          foo)
 ;;       'baz)
 test {
-  testfile-idio := string-append testfile ".idio"
+  testfile-idio := append-string testfile ".idio"
   out := open-output-file testfile-idio
   write '(define foo 'baz) out
   close-output-handle out

@@ -102,7 +102,7 @@ IDIO idio_string_C_array (size_t ns, char *a_C[])
     return so;
 }
 
-IDIO idio_string_copy (IDIO string)
+IDIO idio_copy_string (IDIO string)
 {
     IDIO_ASSERT (string);
 
@@ -413,7 +413,7 @@ IDIO_DEFINE_PRIMITIVE1 ("string->symbol", string2symbol, (IDIO s))
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1V ("string-append", string_append, (IDIO s, IDIO args))
+IDIO_DEFINE_PRIMITIVE1V ("append-string", append_string, (IDIO s, IDIO args))
 {
     IDIO_ASSERT (s);
     IDIO_ASSERT (args);
@@ -443,12 +443,12 @@ IDIO_DEFINE_PRIMITIVE1V ("string-append", string_append, (IDIO s, IDIO args))
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("string-copy", string_copy, (IDIO s))
+IDIO_DEFINE_PRIMITIVE1 ("copy-string", copy_string, (IDIO s))
 {
     IDIO_ASSERT (s);
     IDIO_VERIFY_PARAM_TYPE (string, s);
 
-    return idio_string_copy (s);
+    return idio_copy_string (s);
 }
 
 IDIO_DEFINE_PRIMITIVE2 ("string-fill!", string_fill, (IDIO s, IDIO fill))
@@ -461,7 +461,7 @@ IDIO_DEFINE_PRIMITIVE2 ("string-fill!", string_fill, (IDIO s, IDIO fill))
     IDIO_ASSERT_NOT_CONST (string, s);
 
     if (idio_isa_substring (s)) {
-	s = idio_string_copy (s);
+	s = idio_copy_string (s);
     }
 
     char *Cs = idio_string_s (s);
@@ -565,7 +565,7 @@ IDIO idio_string_set (IDIO s, IDIO index, IDIO c)
     }
 
     if (idio_isa_substring (s)) {
-	s = idio_string_copy (s);
+	s = idio_copy_string (s);
     }
 
     char *Cs = idio_string_s (s);
@@ -989,8 +989,8 @@ void idio_string_add_primitives ()
     IDIO_ADD_PRIMITIVE (make_string);
     IDIO_ADD_PRIMITIVE (string2list);
     IDIO_ADD_PRIMITIVE (string2symbol);
-    IDIO_ADD_PRIMITIVE (string_append);
-    IDIO_ADD_PRIMITIVE (string_copy);
+    IDIO_ADD_PRIMITIVE (append_string);
+    IDIO_ADD_PRIMITIVE (copy_string);
     IDIO_ADD_PRIMITIVE (string_fill);
     IDIO_ADD_PRIMITIVE (string_length);
     IDIO_ADD_PRIMITIVE (string_ref);

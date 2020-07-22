@@ -84,8 +84,8 @@ accv := function (k v i) {
 
 test (hash-fold ht accv 0) 114
 
-;; hash-copy
-nht := hash-copy ht
+;; copy-hash
+nht := copy-hash ht
 
 test (hash-size nht) 2
 test (hash-fold nht accv 0) 114
@@ -98,8 +98,8 @@ test (hash-fold nht accv 0) 117
 test (hash-size ht) 2
 test (hash-fold ht accv 0) 114
 
-;; hash-merge
-ht = hash-merge! ht nht
+;; merge-hash
+ht = merge-hash! ht nht
 test (hash-size ht) 3
 test (hash-fold ht accv 0) 117
 
@@ -232,7 +232,7 @@ ht = make-hash ht-integer-eq?
 hash-set! ht 1 "apple"
 hash-set! ht 2 "banana"
 
-nht = hash-copy ht
+nht = copy-hash ht
 test (hash-equivalence-function nht) ht-integer-eq?
 
 ;; hashing functions
@@ -343,7 +343,7 @@ ht = make-hash #n ht-integer-hash
 hash-set! ht 1 "apple"
 hash-set! ht 2 "banana"
 
-nht = hash-copy ht
+nht = copy-hash ht
 test (hash-hash-function nht) ht-integer-hash
 
 ;; hash index operators

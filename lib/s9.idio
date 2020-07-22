@@ -801,7 +801,7 @@ define number->string {
 		       es := conv-int e 10
 		       i := if (negative? m) 2 1
 		       k := string-length ms
-		       string-append (substring ms 0 i) \
+		       append-string (substring ms 0 i) \
 				     "." \
 				     (if (== k i) "0" (substring ms i k)) \
 				     "e" \
@@ -820,7 +820,7 @@ define number->string {
     }
     conv-expanded-real :+ function (n offset) {
 			    m := abs n
-			    string-append (if (negative? n) "-" "") \
+			    append-string (if (negative? n) "-" "") \
 					  (cond ((negative? offset) "0.")
 						((zero? offset)     "0")
 						(else               "")) \
@@ -829,7 +829,7 @@ define number->string {
 					    ms := conv-int m 10
 					    k := string-length ms
 					    if (le 0 offset k){
-					      string-append (substring ms 0 offset) \
+					      append-string (substring ms 0 offset) \
 							    "." \
 							    (substring ms offset k)
 					    } {
@@ -1119,7 +1119,7 @@ define (check-bindings b who) {
 	    (not (pair? (ph b)))
 	    (not (symbol? (phh b)))
 	    (not (pair? (pth b)))
-	    (not (null? (ptth b)))) (error 'check-bindings (string-append who ": invalid syntax") b)) \
+	    (not (null? (ptth b)))) (error 'check-bindings (append-string who ": invalid syntax") b)) \
        (else (check-bindings (pt b) who))
 }
 
@@ -1616,7 +1616,7 @@ define (locate-file file) {
 
   loop :+ function (path) {
 	    if (null? path) #f {
-	      full-path := string-append (ph path) "/" file
+	      full-path := append-string (ph path) "/" file
 
 	      if (file-exists? full-path) full-path {
 		loop (pt path)
@@ -1642,7 +1642,7 @@ define (load-from-library file) {
   if full-path {
     do-load full-path
   } {
-    full-path := locate-file (string-append file ".idio")
+    full-path := locate-file (append-string file ".idio")
     if full-path {
       do-load full-path
     } {

@@ -27,7 +27,7 @@ test (raise (make-condition ^idio-error "CONT ^idio-error" "loc" "det")) 'defaul
 	  edisplay* "s =" s
 	  echo s
 	  raise (make-condition ^idio-error
-				(string-append "^idio-error: " s)
+				(append-string "^idio-error: " s)
 				"loc"
 				"det")
   })

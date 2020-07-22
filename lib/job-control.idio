@@ -268,7 +268,7 @@ for the benefit of the do loops in update-status_ and wait-for-job_.
 						 } {
 						   set-%idio-process-completed! (ph procs) #t
 						   if (WIFSIGNALED status) {
-						     edisplay* "Job Terminated: kill" (string-append "-" (signal-name (WTERMSIG status)))  pid
+						     edisplay* "Job Terminated: kill" (append-string "-" (signal-name (WTERMSIG status)))  pid
 						   }
 						 }
 						 #f
@@ -1116,9 +1116,9 @@ with-handle-redir := {
       file-handle-fflush s/d
       new-h = s/d
     }) \
-	 ((file-handle? s/d) (error 'with-handle-redir (string-append "not an " msg-h "-file-handle") s/d)) \
+	 ((file-handle? s/d) (error 'with-handle-redir (append-string "not an " msg-h "-file-handle") s/d)) \
 	 ((dir-string-h? s/d) (new-h = s/d)) \
-	 ((string-handle? s/d) (error 'with-handle-redir (string-append "not an " msg-h "-string-handle") s/d)) \
+	 ((string-handle? s/d) (error 'with-handle-redir (append-string "not an " msg-h "-string-handle") s/d)) \
 	 ((string? s/d) {
 	   new-h = open-file-h s/d
 	   close-file-handle-on-exec new-h
@@ -1129,12 +1129,12 @@ with-handle-redir := {
 	   close-file-handle-on-exec new-h
 	   close-h = #t
 	 }) \
-	 (else (error 'with-handle-redir (string-append "unexpected " msg-h) s/d))
+	 (else (error 'with-handle-redir (append-string "unexpected " msg-h) s/d))
 
     if new-h {
       set-h! new-h
     } {
-      error 'with-handle-redir (string-append "unexpected " msg-h) s/d
+      error 'with-handle-redir (append-string "unexpected " msg-h) s/d
     }
 
     unwind-protect {
@@ -1222,9 +1222,9 @@ with-handle-dup := {
       file-handle-fflush new
       new-h = new
     }) \
-	 ((file-handle? new) (error 'with-handle-dup (string-append "not an " msg-h "-file-handle") new)) \
+	 ((file-handle? new) (error 'with-handle-dup (append-string "not an " msg-h "-file-handle") new)) \
 	 ((dir-string-h? new) (new-h = new)) \
-	 ((string-handle? new) (error 'with-handle-dup (string-append "not an " msg-h "-string-handle") new)) \
+	 ((string-handle? new) (error 'with-handle-dup (append-string "not an " msg-h "-string-handle") new)) \
 	 ((or (C/int? new)
 	      (fixnum? new)) {
 		if (C/int? new) (new = C/->integer new)
@@ -1238,13 +1238,13 @@ with-handle-dup := {
 		       new-h = (current-error-handle)
 		     })
 	      }) \
-	 (else (error 'with-handle-dup (string-append "unexpected " msg-h) new))
+	 (else (error 'with-handle-dup (append-string "unexpected " msg-h) new))
 
     cond (new-h {
       set-h! new-h
     })\
 	 (else {
-	   error 'with-handle-dup (string-append "unexpected " msg-h) new
+	   error 'with-handle-dup (append-string "unexpected " msg-h) new
 	 })
 
     unwind-protect {

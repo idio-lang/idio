@@ -22,7 +22,7 @@ read-error-load := {
 			test c.line linenum
 			if (or (not (string=? c.message msg))
 			       (not (eq? c.line linenum))) {
-			  condition-report (string-append "read-error-load: " filename) c (current-error-handle)
+			  condition-report (append-string "read-error-load: " filename) c (current-error-handle)
 			}
 			load-k 'read-error
     }) {

@@ -126,7 +126,7 @@ define (%make-tmp-fd & args) {
     prefix = ph args
   }
 
-  tmpfilename := string-append tmpdir "/" prefix %%mkstemp-template
+  tmpfilename := append-string tmpdir "/" prefix %%mkstemp-template
   fd := mkstemp tmpfilename
   list fd tmpfilename
 }
@@ -146,7 +146,7 @@ define (make-tmp-dir & args) {
     prefix = ph args
   }
 
-  tmpdirname := string-append tmpdir "/" prefix %%mkstemp-template
+  tmpdirname := append-string tmpdir "/" prefix %%mkstemp-template
   mkdtemp tmpdirname
 }
 

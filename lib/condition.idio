@@ -70,9 +70,9 @@ define-macro (define-condition-type-accessors-only name parent pred-fname & fiel
 ;; generate default pred/accessor names for
 ;; define-condition-type/accessors
 define-macro (define-condition-type name parent & fields) {
-  pred-fname := string->symbol (string-append (symbol->string name) "?")
+  pred-fname := string->symbol (append-string (symbol->string name) "?")
   fa := map (function (field) {
-	       list field (string->symbol (string-append
+	       list field (string->symbol (append-string
 					   (symbol->string name)
 					   "-"
 					   (symbol->string field)))
@@ -235,7 +235,7 @@ define (condition-report prefix c & args) "print a report on condition `c`
   }
 
   if (not (null? prefix)) {
-    cr-printf (string-append prefix ":")
+    cr-printf (append-string prefix ":")
   }
 
   if (and (struct-type-isa (struct-instance-type c) ^idio-error)

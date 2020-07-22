@@ -332,9 +332,9 @@ trap ^rt-command-status-error (function (c) {
     ;; lsof gets a bit sniffy if the files have recently appeared
     touch redir-infile redir-outfile redir-errfile
 
-    where-in := (string-append "/" redir-infile)
-    where-out := (string-append "/" redir-outfile)
-    where-err := (string-append "/" redir-errfile)
+    where-in := (append-string "/" redir-infile)
+    where-out := (append-string "/" redir-outfile)
+    where-err := (append-string "/" redir-errfile)
 
     with-output-to-file redir-infile (function () {
       display test-str

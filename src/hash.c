@@ -274,7 +274,7 @@ static IDIO idio_hash_he_key (IDIO h, idio_hi_t hv)
     return ck;
 }
 
-IDIO idio_hash_copy (IDIO orig, int depth)
+IDIO idio_copy_hash (IDIO orig, int depth)
 {
     IDIO_ASSERT (orig);
     IDIO_TYPE_ASSERT (hash, orig);
@@ -301,7 +301,7 @@ IDIO idio_hash_copy (IDIO orig, int depth)
 	IDIO k = idio_hash_he_key (orig, i);
 	if (! k) {
 	    char em[BUFSIZ];
-	    sprintf (em, "hash-copy: key #%zd is NULL", i);
+	    sprintf (em, "copy-hash: key #%zd is NULL", i);
 	    idio_error_C (em, orig, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
@@ -321,7 +321,7 @@ IDIO idio_hash_copy (IDIO orig, int depth)
 /*
  * SRFI 69 -- allows a destructive merge
  */
-IDIO idio_hash_merge (IDIO ht1, IDIO ht2)
+IDIO idio_merge_hash (IDIO ht1, IDIO ht2)
 {
     IDIO_ASSERT (ht1);
     IDIO_ASSERT (ht2);
@@ -335,7 +335,7 @@ IDIO idio_hash_merge (IDIO ht1, IDIO ht2)
 	IDIO k = idio_hash_he_key (ht2, i);
 	if (! k) {
 	    char em[BUFSIZ];
-	    sprintf (em, "hash-merge: key #%zd is NULL", i);
+	    sprintf (em, "merge-hash: key #%zd is NULL", i);
 	    idio_error_C (em, ht2, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
@@ -2082,7 +2082,7 @@ IDIO_DEFINE_PRIMITIVE3 ("hash-fold", hash_fold, (IDIO ht, IDIO func, IDIO val))
     return val;
 }
 
-IDIO_DEFINE_PRIMITIVE1V_DS ("hash-copy", hash_copy, (IDIO ht, IDIO args), "orig [depth]", "\
+IDIO_DEFINE_PRIMITIVE1V_DS ("copy-hash", copy_hash, (IDIO ht, IDIO args), "orig [depth]", "\
 copy hash table `orig`					\n\
 							\n\
 :param orig: initial hash table				\n\
@@ -2117,17 +2117,17 @@ copy hash table `orig`					\n\
 	}
     }
 
-    return idio_hash_copy (ht, depth);
+    return idio_copy_hash (ht, depth);
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("hash-merge!", hash_merge, (IDIO ht1, IDIO ht2))
+IDIO_DEFINE_PRIMITIVE2 ("merge-hash!", merge_hash, (IDIO ht1, IDIO ht2))
 {
     IDIO_ASSERT (ht1);
     IDIO_ASSERT (ht2);
     IDIO_VERIFY_PARAM_TYPE (hash, ht1);
     IDIO_VERIFY_PARAM_TYPE (hash, ht2);
 
-    return idio_hash_merge (ht1, ht2);
+    return idio_merge_hash (ht1, ht2);
 }
 
 void idio_init_hash ()
@@ -2152,8 +2152,8 @@ void idio_hash_add_primitives ()
     IDIO_ADD_PRIMITIVE (hash_values);
     IDIO_ADD_PRIMITIVE (hash_walk);
     IDIO_ADD_PRIMITIVE (hash_fold);
-    IDIO_ADD_PRIMITIVE (hash_copy);
-    IDIO_ADD_PRIMITIVE (hash_merge);
+    IDIO_ADD_PRIMITIVE (copy_hash);
+    IDIO_ADD_PRIMITIVE (merge_hash);
 }
 
 void idio_final_hash ()

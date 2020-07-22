@@ -16,8 +16,8 @@ expander-error0 := Tests
 module *expander*
 
 define-macro (expander-trap type) {
-  loader-name := string->symbol (string-append "expander-trap-" (symbol->string type))
-  condition-name := string->symbol (string-append "^" (symbol->string type))
+  loader-name := string->symbol (append-string "expander-trap-" (symbol->string type))
+  condition-name := string->symbol (append-string "^" (symbol->string type))
   #T{
 
     $loader-name := {
@@ -32,7 +32,7 @@ define-macro (expander-trap type) {
 					   ;edisplay* "caught" msg c.location
 					   test c.message msg
 					   if (not (string=? c.message msg)) {
-					     condition-report (string-append "expander-error-load: " filename) c (current-error-handle)
+					     condition-report (append-string "expander-error-load: " filename) c (current-error-handle)
 					   }
 					   load-k c
 		   }) {

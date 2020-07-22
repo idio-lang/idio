@@ -2583,7 +2583,7 @@ IDIO idio_copy (IDIO o, int depth)
 	    switch (o->type) {
 	    case IDIO_TYPE_STRING:
 	    case IDIO_TYPE_SUBSTRING:
-		return idio_string_copy (o);
+		return idio_copy_string (o);
 	    case IDIO_TYPE_SYMBOL:
 	    case IDIO_TYPE_KEYWORD:
 		return o;
@@ -2592,7 +2592,7 @@ IDIO idio_copy (IDIO o, int depth)
 	    case IDIO_TYPE_ARRAY:
 		return idio_array_copy (o, depth, 0);
 	    case IDIO_TYPE_HASH:
-		return idio_hash_copy (o, depth);
+		return idio_copy_hash (o, depth);
 	    case IDIO_TYPE_BIGNUM:
 		return idio_bignum_copy (o);
 	    case IDIO_TYPE_BITSET:

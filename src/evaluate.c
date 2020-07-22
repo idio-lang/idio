@@ -74,7 +74,7 @@
  *    populate a normal list of names in the *primitives* and
  *    *operator* modules.
  *
- *    *primitives* for the usual culprits ("+", "string-append", etc.)
+ *    *primitives* for the usual culprits ("+", "append-string", etc.)
  *    and *operators* for operators (primarily because, say, the
  *    operator "-" is an obvious name clash with the regular
  *    subtraction primitive "-" and, in fact, is simply a transformer

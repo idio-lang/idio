@@ -144,7 +144,7 @@ This is the call-with-values call/cc variant which calls:
     }
   }
 
-  %set-property! call/cc :docstr-raw (string-append (%property call/cc :docstr-raw) (%property orig-call/cc :docstr-raw))
+  %set-property! call/cc :docstr-raw (append-string (%property call/cc :docstr-raw) (%property orig-call/cc :docstr-raw))
 
   ;; Remember, with this form, {args} will be #n or a list
 
@@ -267,7 +267,7 @@ This is the dynamic-wind call/cc variant which calls:
 	      })
   }
 
-  %set-property! call/cc :docstr-raw (string-append (%property call/cc :docstr-raw) (%property original-call/cc :docstr-raw))
+  %set-property! call/cc :docstr-raw (append-string (%property call/cc :docstr-raw) (%property original-call/cc :docstr-raw))
 
   dynamic-wind = function (before during after) {
 		   here := *here*

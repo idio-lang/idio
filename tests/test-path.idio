@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2020 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -24,9 +24,9 @@ import libc
 path0 := Tests
 
 d := make-tmp-dir "idio-test-"
-f1 := string-append d "/a"
-f2 := string-append d "/b"
-f3 := string-append d "/c"
+f1 := append-string d "/a"
+f2 := append-string d "/b"
+f3 := append-string d "/c"
 
 with-output-to-file f1 (function () {
   display "123"
@@ -49,36 +49,36 @@ touch -a -t "200001010000.00" f3
 touch -a -t "200001010000.01" f1
 touch -a -t "200001010000.02" f2
 
-p := make-struct-instance ~path (string-append d "/a")
+p := make-struct-instance ~path (append-string d "/a")
 test (length p) 1
 
-p = make-struct-instance ~path (string-append d "/*")
+p = make-struct-instance ~path (append-string d "/*")
 test (length p) 3
 
-p = make-struct-instance ~path (string-append d "/a*")
+p = make-struct-instance ~path (append-string d "/a*")
 test (length p) 1
 
-p = make-struct-instance ~path (string-append d "/*a")
+p = make-struct-instance ~path (append-string d "/*a")
 test (length p) 1
 
-p = make-struct-instance ~path (string-append d "/[ab]")
+p = make-struct-instance ~path (append-string d "/[ab]")
 test (length p) 2
 
 ;; glob(7) on CentOS 7: POSIX says [^...] is undefined
-p = make-struct-instance ~path (string-append d "/[!ab]")
+p = make-struct-instance ~path (append-string d "/[!ab]")
 test (length p) 1
 
-p = make-struct-instance ~path (string-append d "/[a-b]")
+p = make-struct-instance ~path (append-string d "/[a-b]")
 test (length p) 2
 
 ;; The use of POSIX character classes is not well supported.  In fact
 ;; only CentOS 7 supports them.
 
-;;p = make-struct-instance ~path (string-append d "/[[:lower:]]")
+;;p = make-struct-instance ~path (append-string d "/[[:lower:]]")
 ;;test (length p) 3
 
 ;; XXX should be [:lower:] but for lack of OS support.
-p = make-struct-instance ~path (string-append d "/[a-z]")
+p = make-struct-instance ~path (append-string d "/[a-z]")
 
 ;; The stat() sorts use "libc/<" as a comparator, so numerically
 ;; smallest first

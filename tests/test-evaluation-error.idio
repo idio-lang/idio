@@ -20,7 +20,7 @@ evaluation-error-load := {
 			      ;edisplay* n msg c
 			      test c.message msg
 			      if (not (string=? c.message msg)) {
-				condition-report (string-append "evaluation-error-load: " filename) c (current-error-handle)
+				condition-report (append-string "evaluation-error-load: " filename) c (current-error-handle)
 			      }
 			      load-k c
     }) {

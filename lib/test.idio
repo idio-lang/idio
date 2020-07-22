@@ -29,7 +29,7 @@ testfile := "__testfile__"
 if (file-exists? testfile) {
   delete-file testfile
 }
-    ;; (error (string-append "Please delete the file \""
+    ;; (error (append-string "Please delete the file \""
     ;;                       testfile
     ;;                       "\" before running this test.")))
 
@@ -83,8 +83,8 @@ testdir := #n
 
 map (function (d) {
        t-p := join-string "/" (reverse (pt (reverse (split-string d "/"))))
-       t-d := string-append "/" t-p "/tests"
-       r-e := string-append t-d "/test-operator.idio"
+       t-d := append-string "/" t-p "/tests"
+       r-e := append-string t-d "/test-operator.idio"
        if (file-exists? r-e) {
 	 testdir = t-d
        }
@@ -93,7 +93,7 @@ map (function (d) {
 if (null? testdir) {
   edisplay* "Cannot find 'tests' subdir on IDIOLIB" IDIOLIB
 } {
-  IDIOLIB = string-append IDIOLIB ":" testdir
+  IDIOLIB = append-string IDIOLIB ":" testdir
 }
 
 display* "This is test.idio using IDIOLIB" IDIOLIB
@@ -101,12 +101,12 @@ display* "This is test.idio using IDIOLIB" IDIOLIB
 ;; put the testing utilities on the PATH
 OPATH := PATH
 PWD-last := ph (reverse (split-string PWD "/"))
-PATH = string-append PATH ":" (string-append PWD "/" (if (equal? PWD-last "src") ".." ".") "/utils/bin")
+PATH = append-string PATH ":" (append-string PWD "/" (if (equal? PWD-last "src") ".." ".") "/utils/bin")
 
 ;; at least one test creates a local file then tries to "load" it --
 ;; so we need PWD on IDIOLIB
 OIDIOLIB := IDIOLIB
-IDIOLIB = string-append IDIOLIB ":" PWD
+IDIOLIB = append-string IDIOLIB ":" PWD
 
 ;; running tests under Jenkins means we inherit the agent's max open
 ;; files (eg. 1048576) which means our file descriptor reaping tests

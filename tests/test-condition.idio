@@ -263,7 +263,7 @@ trap ^i/o-filename-error (function (c) {
   rm -f test_filename
   touch test_filename
 
-  dir_filename := string-append "./" test_filename "/" test_filename
+  dir_filename := append-string "./" test_filename "/" test_filename
 
   ofh := open-output-file dir_filename
   ;; test we have a writeable fh

@@ -111,7 +111,7 @@ and calls
     load-r
   }
 
-  %set-property! load :docstr-raw (string-append (%property load :docstr-raw) (%property orig-load :docstr-raw))
+  %set-property! load :docstr-raw (append-string (%property load :docstr-raw) (%property orig-load :docstr-raw))
 
   load-handle = function (handle) "
 load Idio code from ``handle``
@@ -140,7 +140,7 @@ and calls
     load-handle-r
   }
 
-  %set-property! load-handle :docstr-raw (string-append (%property load-handle :docstr-raw) (%property orig-load-handle :docstr-raw))
+  %set-property! load-handle :docstr-raw (append-string (%property load-handle :docstr-raw) (%property orig-load-handle :docstr-raw))
 
 }
 
