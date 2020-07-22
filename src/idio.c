@@ -273,7 +273,7 @@ int main (int argc, char **argv, char **envp)
 
     IDIO dosh = idio_open_output_string_handle_C ();
 
-    idio_display_C ("ABORT to main", dosh);
+    idio_display_C ("ABORT to main => exit (probably badly)", dosh);
 
     idio_array_push (idio_vm_krun, IDIO_LIST2 (idio_k_exit, idio_get_output_string (dosh)));
 
