@@ -6404,7 +6404,7 @@ IDIO idio_vm_frame_tree (IDIO args)
 	    idio_debug ("%s\n", IDIO_FRAME_ARGS (frame, i));
 	}
 	if (idio_S_nil != IDIO_FRAME_ARGS (frame, i)) {
-	    fprintf (stderr, "  %2d %td: ", depth, i);
+	    fprintf (stderr, "  %2d *: ", depth);
 	    idio_debug ("%s\n", IDIO_FRAME_ARGS (frame, i));
 	}
 	fprintf (stderr, "\n");

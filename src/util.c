@@ -795,10 +795,6 @@ char *idio_as_string (IDIO o, int depth)
 
     IDIO_C_ASSERT (depth >= -10000);
 
-    if (depth < 0) {
-	return NULL;
-    }
-
     switch ((intptr_t) o & IDIO_TYPE_MASK) {
     case IDIO_TYPE_FIXNUM_MARK:
 	{
@@ -1127,6 +1123,16 @@ char *idio_as_string (IDIO o, int depth)
 	{
 	    idio_type_e type = idio_type (o);
 
+	    if (depth <= 0) {
+		if (asprintf (&r, "..") == -1) {
+		    idio_error_alloc ("asprintf");
+
+		    /* notreached */
+		    return NULL;
+		}
+		return r;
+	    }
+
 	    switch (type) {
 	    case IDIO_TYPE_NONE:
 		if (asprintf (&r, "#<!! -none- %p>", o) == -1) {
@@ -1302,7 +1308,7 @@ char *idio_as_string (IDIO o, int depth)
 			    IDIO_STRCAT_FREE (r, aes);
 			}
 			char *aei;
-			if (asprintf (&aei, "...[%zd] ", IDIO_ARRAY_USIZE (o) - 20) == -1) {
+			if (asprintf (&aei, "..[%zd] ", IDIO_ARRAY_USIZE (o) - 20) == -1) {
 			    free (r);
 			    idio_error_alloc ("asprintf");
 
@@ -1326,7 +1332,7 @@ char *idio_as_string (IDIO o, int depth)
 			}
 		    }
 		} else {
-		    IDIO_STRCAT (r, "... ");
+		    IDIO_STRCAT (r, ".. ");
 		}
 		IDIO_STRCAT (r, "]");
 		break;
@@ -1385,7 +1391,7 @@ char *idio_as_string (IDIO o, int depth)
 			}
 		    }
 		} else {
-		    IDIO_STRCAT (r, "...");
+		    IDIO_STRCAT (r, "..");
 		}
 		IDIO_STRCAT (r, "}");
 		break;
