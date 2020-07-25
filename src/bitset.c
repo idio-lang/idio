@@ -621,29 +621,21 @@ subtract the bitsets				\n\
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE0V_DS ("equal-bitset?", equal_bitsetp, (IDIO args), "[bs ...]", "\
-are the bitsets equal				\n\
-						\n\
-:param args: bitsets to be operated on		\n\
-:type args: list				\n\
-:rtype: bitset or #f if no bitsets supplied	\n\
-")
+int idio_equal_bitsetp (IDIO args)
 {
     IDIO_ASSERT (args);
 
     IDIO_TYPE_ASSERT (list, args);
 
-    IDIO r = idio_S_false;
     IDIO bs = idio_S_nil;
 
     if (idio_S_nil != args) {
 	bs = IDIO_PAIR_H (args);
-	if (idio_isa_bitset (bs)) {
-	    r = idio_S_true;
-	} else {
+	if (idio_isa_bitset (bs) == 0) {
 	    idio_error_param_type ("bitset", bs, IDIO_C_FUNC_LOCATION ());
 
-	    return idio_S_notreached;
+	    /* notreached */
+	    return 0;
 	}
 
 	args = IDIO_PAIR_T (args);
@@ -655,28 +647,32 @@ are the bitsets equal				\n\
 	IDIO_TYPE_ASSERT (bitset, bs2);
 
 	if (IDIO_BITSET_SIZE (bs) != IDIO_BITSET_SIZE (bs2)) {
-	    idio_bitset_error_size_mismatch (IDIO_BITSET_SIZE (bs), IDIO_BITSET_SIZE (bs2), IDIO_C_FUNC_LOCATION ());
-
-	    return idio_S_notreached;
+	    return 0;
 	}
 
 	size_t n_ul = IDIO_BITSET_SIZE (bs) / IDIO_BITS_PER_LONG + 1;
 	size_t i;
 	for (i = 0; i < n_ul; i++) {
 	    if (IDIO_BITSET_BITS (bs, i) != IDIO_BITSET_BITS (bs2, i)) {
-		r = idio_S_false;
-		break;
+		return 0;
 	    }
-	}
-
-	if (idio_S_false == r) {
-	    break;
 	}
 
 	args = IDIO_PAIR_T (args);
     }
 
-    return r;
+    return 1;
+}
+
+IDIO_DEFINE_PRIMITIVE0V_DS ("equal-bitset?", equal_bitsetp, (IDIO args), "[bs ...]", "\
+are the bitsets equal				\n\
+						\n\
+:param args: bitsets to be operated on		\n\
+:type args: list				\n\
+:rtype: bitset or #f if no bitsets supplied	\n\
+")
+{
+    return idio_equal_bitsetp (args) ? idio_S_true : idio_S_false;
 }
 
 void idio_init_bitset ()

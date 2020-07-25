@@ -393,6 +393,7 @@ IDIO idio_struct_instance_ref (IDIO si, IDIO field)
     idio_ai_t i = idio_array_find_eqp (IDIO_STRUCT_TYPE_FIELDS (sit), field, 0);
 
     if (-1 == i) {
+	fprintf (stderr, "\nERROR: struct-instance-ref: field not found\n");
 	idio_debug ("si=%s\n", si);
 	idio_debug ("fi=%s\n", field);
 	idio_debug ("sit=%s\n", sit);
@@ -464,10 +465,14 @@ IDIO idio_struct_instance_set (IDIO si, IDIO field, IDIO v)
     idio_ai_t i = idio_array_find_eqp (IDIO_STRUCT_TYPE_FIELDS (sit), field, 0);
 
     if (-1 == i) {
+	fprintf (stderr, "\nERROR: struct-instance-set!: field not found\n");
 	idio_debug ("struct-instance-set!: sit=%s\n", sit);
 	idio_debug ("si=%s\n", si);
-	idio_debug ("field=%s\n", field);
-	idio_error_printf (IDIO_C_FUNC_LOCATION (), "field not found");
+	idio_debug ("fi=%s\n", field);
+	idio_debug ("sit=%s\n", sit);
+	idio_struct_error_field_not_found (field, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
     }
 
     idio_array_insert_index (IDIO_STRUCT_INSTANCE_FIELDS (si), v, i);

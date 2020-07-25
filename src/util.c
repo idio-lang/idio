@@ -700,7 +700,13 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 	    case IDIO_TYPE_CONTINUATION:
 		return (o1->u.continuation == o2->u.continuation);
 	    case IDIO_TYPE_BITSET:
-		return (o1 == o2);
+		if (IDIO_EQUAL_EQP == eqp ||
+		    IDIO_EQUAL_EQVP == eqp) {
+		    return (o1 == o2);
+		}
+
+		return idio_equal_bitsetp (IDIO_LIST2 (o1, o2));
+		break;
 	    case IDIO_TYPE_C_TYPEDEF:
 		return (o1->u.C_typedef == o2->u.C_typedef);
 	    case IDIO_TYPE_C_STRUCT:
@@ -913,7 +919,7 @@ char *idio_as_string (IDIO o, int depth)
 		    case IDIO_TOKEN_LANGLE:                        t = "T/<";                         break;
 		    case IDIO_TOKEN_RANGLE:                        t = "T/>";                         break;
 		    case IDIO_TOKEN_EOL:                           t = "T/EOL";                       break;
-		    case IDIO_TOKEN_PAIR_SEPARATOR:                t = "T/p-s";                       break;
+		    case IDIO_TOKEN_PAIR_SEPARATOR:                t = "&";                           break;
 
 		    default:
 			if (sprintf (m, "#<type/constant/token?? %10p>", o) == -1) {
