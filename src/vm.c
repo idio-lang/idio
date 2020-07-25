@@ -4669,7 +4669,7 @@ void idio_vm_dasm (IDIO thr, idio_ai_t pc0, idio_ai_t pce)
     for (; pc < pce;) {
 	IDIO hint = idio_hash_get (hints, idio_fixnum (pc));
 	if (idio_S_unspec != hint) {
-	    char *hint_C = idio_as_string (hint, 40);
+	    char *hint_C = idio_as_string (hint, 1);
 	    IDIO_VM_DASM ("%-20s ", hint_C);
 	    free (hint_C);
 	} else {
@@ -6058,6 +6058,9 @@ idio_ai_t idio_vm_constants_lookup_or_extend (IDIO name)
 
 void idio_vm_dump_constants ()
 {
+#ifdef IDIO_DEBUG
+	fprintf (stderr, "vm-constants ");
+#endif
     FILE *fp = fopen ("vm-constants", "w");
     if (NULL == fp) {
 	perror ("fopen (vm-constants, w)");
@@ -6110,6 +6113,9 @@ void idio_vm_values_set (idio_ai_t gvi, IDIO v)
 
 void idio_vm_dump_values ()
 {
+#ifdef IDIO_DEBUG
+	fprintf (stderr, "vm-values ");
+#endif
     FILE *fp = fopen ("vm-values", "w");
     if (NULL == fp) {
 	perror ("fopen (vm-values, w)");
@@ -6134,7 +6140,7 @@ void idio_vm_dump_values ()
 	     */
 	    vs = idio_as_string (v, 0);
 	} else {
-	    vs = idio_as_string (v, 40);
+	    vs = idio_as_string (v, 3);
 	}
 	fprintf (fp, "%-20s %s\n", idio_type2string (v), vs);
 	free (vs);
@@ -6708,8 +6714,11 @@ void idio_final_vm ()
     IDIO thr = idio_thread_current_thread ();
 
     if (getpid () == idio_pid) {
-	fprintf (stderr, "final-vm:\n");
+	fprintf (stderr, "final-vm: ");
 
+#ifdef IDIO_DEBUG
+	fprintf (stderr, "vm-dasm ");
+#endif
 	idio_dasm_FILE = fopen ("vm-dasm", "w");
 	if (idio_dasm_FILE) {
 	    idio_vm_dasm (thr, 0, 0);
@@ -6728,6 +6737,9 @@ void idio_final_vm ()
 #endif
 
 #ifdef IDIO_VM_PERF
+#ifdef IDIO_DEBUG
+	fprintf (stderr, "vm-perf ");
+#endif
 	fprintf (idio_vm_perf_FILE, "final-vm: created %zu instruction bytes\n", IDIO_IA_USIZE (idio_all_code));
 	fprintf (idio_vm_perf_FILE, "final-vm: created %td constants\n", idio_array_size (idio_vm_constants));
 	fprintf (idio_vm_perf_FILE, "final-vm: created %td values\n", idio_array_size (idio_vm_values));
@@ -6789,6 +6801,9 @@ void idio_final_vm ()
 	fprintf (idio_vm_perf_FILE, "vm-ins:  %4s %-40s %8" PRIu64 " %5.1f %5ld.%09ld %5.1f\n", "", "total", c, c_pct, t.tv_sec, t.tv_nsec, t_pct);
 #endif
     }
+#ifdef IDIO_DEBUG
+	fprintf (stderr, "\n");
+#endif
 
     idio_ia_free (idio_all_code);
     idio_gc_expose (idio_vm_constants);

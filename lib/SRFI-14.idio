@@ -1,0 +1,273 @@
+#*
+
+Copyright (c) 2020 Ian Fitchet <idf(at)idio-lang.org>
+
+Licensed under the Apache License, Version 2.0 (the "License"); you
+may not use this file except in compliance with the License.  You
+may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+SRFI-14.idio
+
+A port of SRFI-14 Character-set Library.
+
+In particular, just the interfaces required for SRFI-115.
+
+*#
+
+module SRFI-14
+export (
+	 char-set
+	 char-set?
+	 copy-char-set
+	 string->char-set
+	 char-set->string
+	 ucs-range->char-set
+	 char-set-contains?
+	 char-upcase
+	 char-downcase
+	 char-set-adjoin
+	 char-set-adjoin!
+	 char-set-delete
+	 char-set-delete!
+	 char-set-complement
+	 char-set-complement!
+	 char-set-union
+	 char-set-union!
+	 char-set-intersection
+	 char-set-intersection!
+	 char-set-difference
+	 char-set-difference!
+	 char-set-fold
+)
+
+; unicode defines the actual char-sets!
+import (unicode ascii)
+
+define (char-set & cps) "
+Return a character set containing the given code points.
+" {
+  bs := make-bitset (bitset-size char-set:letter)
+  loop :+ function (cps) {
+	    if (null? cps) #n {
+	      ch := (ph cps)
+	      cond ((integer? ch) (bitset-set! bs ch)) \
+		   ((char? ch) (bitset-set! bs (char->integer ch))) \
+	      
+	      loop (pt cps)
+	    }
+  }
+  loop cps
+  bs
+}
+
+define char-set? bitset?
+
+define copy-char-set copy-bitset
+
+define (string->char-set str & base?) {
+  cs := #n
+  if (pair? base?) {
+    cs? := ph base?
+    if (char-set? cs?) {
+      cs = copy-char-set cs?
+    } (error 'string->char-set "not a char-set" cs?)
+  } {
+    cs = copy-char-set char-set:empty
+  }
+
+  slen := string-length str
+  do ((i 0 (i + 1))) \
+     ((ge i slen) cs) {
+       bitset-set! cs (char->integer (string-ref str i))
+     }
+}
+
+define (char-set->string cs) {
+  error 'char-set->string "not implemented" cs
+}
+
+define (%ucs-range->char-set bs n e) {
+  if (gt n e) #n {
+    bitset-set! bs n
+    %ucs-range->char-set bs (n + 1) e
+  }
+}
+define (ucs-range->char-set s e & base?) {
+  cs := #n
+  if (pair? base?) {
+    cs? := ph base?
+    if (char-set? cs?) {
+      bs = copy-char-set cs?
+    } (error 'string->char-set "not a char-set" cs?)
+  } {
+    cs = copy-char-set char-set:empty
+  }
+  %ucs-range->char-set cs s e
+  cs
+}
+
+define (char-set-contains? cs ch) {
+  cond ((integer? ch) (bitset-ref cs ch)) \
+       ((char? ch) (bitset-ref cs (char->integer ch)))
+}
+
+define (char-upcase cp) "
+Return the uppercase variant of ``cp`` if one exists or cp
+
+:param cp: Unicode code point
+:type cp: integer
+:return: uppercase variant of ``cp``
+:rtype: integer
+"  {
+  uc-cp := hash-ref char-set:simple-upper-case-map cp #f
+  if uc-cp uc-cp cp
+}
+
+define (char-downcase cp) "
+Return the lowercase variant of ``cp`` if one exists or cp
+
+:param cp: Unicode code point
+:type cp: integer
+:return: lowercase variant of ``cp``
+:rtype: integer
+"{
+  lc-cp := hash-ref char-set:simple-lower-case-map cp #f
+  if lc-cp lc-cp cp
+}
+
+define (char-set-adjoin-loop cs cps) {
+  if (null? cps) #n {
+    ch := (ph cps)
+    cond ((integer? ch) (bitset-set! cs ch)) \
+	 ((char? ch) (bitset-set! cs (char->integer ch)))
+    char-set-adjoin-loop cs (pt cps)
+  }
+}
+
+define (char-set-adjoin cs & cps) "
+Add the code points to character set cs.
+" {
+  if (null? cps) cs {
+    ncs := copy-char-set cs
+    char-set-adjoin-loop ncs cps
+    ncs
+  }
+}
+
+define (char-set-adjoin! cs & cps) "
+Add the code points to character set cs with side-effects.
+"{
+  if (null? cps) cs {
+    char-set-adjoin-loop cs cps
+    cs
+  }
+}
+
+define (char-set-delete-loop cs cps) {
+  if (null? cps) #n {
+    ch := (ph cps)
+    cond ((integer? ch) (bitset-clear! cs ch)) \
+	 ((char? ch) (bitset-clear! cs (char->integer ch)))
+    char-set-delete-loop cs (pt cps)
+  }
+}
+
+define (char-set-delete cs & cps) "
+Delete the code points from character set cs.
+" {
+  if (null? cps) cs {
+    ncs := copy-char-set cs
+    char-set-delete-loop ncs cps
+    ncs
+  }
+}
+
+define (char-set-delete! cs & cps) "
+Delete the code points from character set cs with side-effects.
+" {
+  if (null? cps) cs {
+    char-set-delete-loop cs cps
+    cs
+  }
+}
+
+define (char-set-complement cs) "
+Complement the code points from character set cs.
+" {
+  not-bitset cs
+}
+
+define (char-set-complement! cs) "
+Complement the code points from character set cs with side-effects.
+" {
+  cs = not-bitset cs
+}
+
+define (char-set-union & css) "
+Union of the code points from character set cs.
+" {
+  if (pair? css) {
+    apply ior-bitset css
+  } else {
+    char-set-copy char-set:empty
+  }
+}
+
+define (char-set-union! cs1 & css) "
+Union of the code points from character set cs with side-effects.
+" {
+  apply char-set-union cs1 css
+}
+
+define (char-set-intersection cs) "
+Intersection of the code points from character set cs.
+" {
+  xor-bitset cs
+}
+
+define (char-set-intersection! cs) "
+Intersection of the code points from character set cs with side-effects.
+" {
+  cs = xor-bitset cs
+}
+
+define (char-set-difference & css) "
+Difference the code points from character set cs.
+" {
+  apply subtract-bitset css
+}
+
+define (char-set-difference! & css) "
+Difference the code points from character set cs with side-effects.
+" {
+  cs = apply subtract-bitset css
+}
+
+define (char-set-fold kons knil cs) "
+This is the fundamental iterator for character sets. Applies the
+function kons across the character set cs using initial state value
+knil. That is, if cs is the empty set, the procedure returns
+knil. Otherwise, some element c of cs is chosen; let cs' be the
+remaining, unchosen characters. The procedure returns
+
+(char-set-fold kons (kons c knil) cs')
+" {
+  loop :+ function (i ans) {
+	    if (lt i 0) ans {
+	      loop (i - 1) (if (bitset-ref cs i) (kons i ans) ans)
+	    }
+  }
+
+  loop ((bitset-size cs) - 1) knil
+  
+}
+
+(provide 'SRFI-14)

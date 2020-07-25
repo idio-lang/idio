@@ -47,3 +47,4 @@ include "doc.idio"
 ;; C/== etc.
 
 import job-control libc
+import SRFI-115

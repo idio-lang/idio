@@ -2066,7 +2066,7 @@ char *idio_display_string (IDIO o)
     switch ((intptr_t) o & IDIO_TYPE_MASK) {
     case IDIO_TYPE_FIXNUM_MARK:
     case IDIO_TYPE_PLACEHOLDER_MARK:
-	r = idio_as_string (o, 4);
+	r = idio_as_string (o, 1);
 	break;
     case IDIO_TYPE_CONSTANT_MARK:
 	{
@@ -2074,7 +2074,7 @@ char *idio_display_string (IDIO o)
 	    case IDIO_TYPE_CONSTANT_IDIO_MARK:
 	    case IDIO_TYPE_CONSTANT_TOKEN_MARK:
 	    case IDIO_TYPE_CONSTANT_I_CODE_MARK:
-		r = idio_as_string (o, 4);
+		r = idio_as_string (o, 2);
 		break;
 	    case IDIO_TYPE_CONSTANT_CHARACTER_MARK:
 		{
@@ -2119,7 +2119,7 @@ char *idio_display_string (IDIO o)
 		}
 		break;
 	    default:
-		r = idio_as_string (o, 40);
+		r = idio_as_string (o, 10);
 		break;
 	    }
 	}
@@ -2147,7 +2147,7 @@ convert `o` to a string				\n\
 {
     IDIO_ASSERT (o);
 
-    return idio_string_C (idio_as_string (o, 40));
+    return idio_string_C (idio_as_string (o, 2));
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("display-string", display_string, (IDIO o), "o", "\
