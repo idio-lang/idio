@@ -1704,7 +1704,7 @@ If either of ``hash-func`` or ``equiv-func`` is ``#n``	\n\
 use the default.					\n\
 							\n\
 As an accelerator if ``equiv-comp`` is one of the	\n\
-*symbol* ``eq?``, ``eqv?`` or ``equal?`` then use the	\n\
+*symbols* ``eq?``, ``eqv?`` or ``equal?`` then use the	\n\
 underlying C function.					\n\
 							\n\
 :return: hash table					\n\
@@ -2037,21 +2037,27 @@ call ``func`` for each ``key` in hash table ``ht``		\n\
     IDIO_ASSERT (func);
     IDIO_VERIFY_PARAM_TYPE (hash, ht);
 
-    idio_hi_t i;
-    for (i = 0; i < IDIO_HASH_SIZE (ht); i++) {
-	IDIO k = idio_hash_he_key (ht, i);
-	if (! k) {
-	    char em[BUFSIZ];
-	    sprintf (em, "hash-walk: key #%zd is NULL", i);
-	    idio_error_C (em, ht, IDIO_C_FUNC_LOCATION ());
+    /*
+     * Careful of the old chestnut, the invocation of the function
+     * could perturb the hash so pull the keys from the hash then in a
+     * separate loop, invoke the function per key.
+     *
+     * As we're re-enetering the VM, protect the (C-land) list of keys
+     * from the GC.
+     */
+    IDIO keys = idio_hash_keys_to_list (ht);
+    IDIO safe_keys = idio_pair (keys, idio_S_nil);
+    idio_gc_protect (safe_keys);
 
-	    return idio_S_notreached;
-	}
-	if (idio_S_nil != k) {
-	    IDIO v = IDIO_HASH_HE_VALUE (ht, i);
-	    idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST3 (func, k, v));
-	}
+    while (idio_S_nil != keys) {
+	IDIO k = IDIO_PAIR_H (keys);
+	IDIO v = idio_hash_get (ht, k);
+	idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST3 (func, k, v));
+
+	keys = IDIO_PAIR_T (keys);
     }
+
+    idio_gc_expose (safe_keys);
 
     return idio_S_unspec;
 }
@@ -2063,21 +2069,27 @@ IDIO_DEFINE_PRIMITIVE3 ("hash-fold", hash_fold, (IDIO ht, IDIO func, IDIO val))
     IDIO_ASSERT (val);
     IDIO_VERIFY_PARAM_TYPE (hash, ht);
 
-    idio_hi_t i;
-    for (i = 0; i < IDIO_HASH_SIZE (ht); i++) {
-	IDIO k = idio_hash_he_key (ht, i);
-	if (! k) {
-	    char em[BUFSIZ];
-	    sprintf (em, "hash-fold: key #%zd is NULL", i);
-	    idio_error_C (em, ht, IDIO_C_FUNC_LOCATION ());
+    /*
+     * Careful of the old chestnut, the invocation of the function
+     * could perturb the hash so pull the keys from the hash then in a
+     * separate loop, invoke the function per key.
+     *
+     * As we're re-enetering the VM, protect the (C-land) list of keys
+     * from the GC.
+     */
+    IDIO keys = idio_hash_keys_to_list (ht);
+    IDIO safe_keys = idio_pair (keys, idio_S_nil);
+    idio_gc_protect (safe_keys);
 
-	    return idio_S_notreached;
-	}
-	if (idio_S_nil != k) {
-	    IDIO v = IDIO_HASH_HE_VALUE (ht, i);
-	    val = idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST4 (func, k, v, val));
-	}
+    while (idio_S_nil != keys) {
+	IDIO k = IDIO_PAIR_H (keys);
+	IDIO v = idio_hash_get (ht, k);
+	val = idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST4 (func, k, v, val));
+
+	keys = IDIO_PAIR_T (keys);
     }
+
+    idio_gc_expose (safe_keys);
 
     return val;
 }

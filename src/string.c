@@ -413,31 +413,93 @@ IDIO_DEFINE_PRIMITIVE1 ("string->symbol", string2symbol, (IDIO s))
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1V ("append-string", append_string, (IDIO s, IDIO args))
+IDIO_DEFINE_PRIMITIVE0V_DS ("append-string", append_string, (IDIO args), "[args]", "\
+append strings								\n\
+									\n\
+:param args: strings to append together					\n\
+:type args: list							\n\
+:return: string	(\"\" if no ``args`` supplied)				\n\
+									\n\
+``append-string`` takes multiple arguments each of which is		\n\
+a string.								\n\
+									\n\
+Compare to ``concatenate-string`` which takes a single argument,	\n\
+which is a list of strings.						\n\
+")
 {
-    IDIO_ASSERT (s);
     IDIO_ASSERT (args);
-    IDIO_VERIFY_PARAM_TYPE (string, s);
     IDIO_VERIFY_PARAM_TYPE (list, args);
 
-    ptrdiff_t n = 1 + idio_list_length (args);
-    char *copies[n];
+    IDIO r = idio_S_nil;
 
-    ptrdiff_t i = 0;
-    copies[i] = idio_string_as_C (s);
+    ptrdiff_t n = idio_list_length (args);
+    if (n) {
+	char *copies[n];
 
-    for (i++; idio_S_nil != args; i++) {
-	IDIO_VERIFY_PARAM_TYPE (string, IDIO_PAIR_H (args));
+	ptrdiff_t i = 0;
 
-	copies[i] = idio_string_as_C (IDIO_PAIR_H (args));
+	for (; idio_S_nil != args; i++) {
+	    IDIO_VERIFY_PARAM_TYPE (string, IDIO_PAIR_H (args));
 
-	args = IDIO_PAIR_T (args);
+	    copies[i] = idio_string_as_C (IDIO_PAIR_H (args));
+
+	    args = IDIO_PAIR_T (args);
+	}
+
+	r = idio_string_C_array (n, copies);
+
+	for (i = 0; i < n; i++) {
+	    free (copies[i]);
+	}
+    } else {
+	r = idio_string_C ("");
     }
 
-    IDIO r = idio_string_C_array (n, copies);
+    return r;
+}
 
-    for (i = 0; i < n; i++) {
-	free (copies[i]);
+IDIO_DEFINE_PRIMITIVE1_DS ("concatenate-string", concatenate_string, (IDIO args), "ls", "\
+concatenate strings in list ``ls``					\n\
+									\n\
+:param ls: list of strings to concatenate together			\n\
+:type ls: list								\n\
+:return: string	("" if no ``args`` supplied)				\n\
+									\n\
+``concatenate-string`` takes a single argument,				\n\
+which is a list of strings.  It is roughly comparable to		\n\
+									\n\
+``apply append-string ls``						\n\
+									\n\
+Compare to ``append-string`` takes multiple arguments each of which is	\n\
+a string.								\n\
+")
+{
+    IDIO_ASSERT (args);
+    IDIO_VERIFY_PARAM_TYPE (list, args);
+
+    IDIO r = idio_S_nil;
+
+    ptrdiff_t n = idio_list_length (args);
+    if (n) {
+	char *copies[n];
+
+	ptrdiff_t i = 0;
+
+	for (; idio_S_nil != args; i++) {
+	    IDIO_VERIFY_PARAM_TYPE (string, IDIO_PAIR_H (args));
+
+	    copies[i] = idio_string_as_C (IDIO_PAIR_H (args));
+
+	    args = IDIO_PAIR_T (args);
+	}
+
+	r = idio_string_C_array (n, copies);
+
+	for (i = 0; i < n; i++) {
+	    free (copies[i]);
+	}
+    } else {
+	r = idio_string_C ("");
     }
 
     return r;
@@ -990,6 +1052,7 @@ void idio_string_add_primitives ()
     IDIO_ADD_PRIMITIVE (string2list);
     IDIO_ADD_PRIMITIVE (string2symbol);
     IDIO_ADD_PRIMITIVE (append_string);
+    IDIO_ADD_PRIMITIVE (concatenate_string);
     IDIO_ADD_PRIMITIVE (copy_string);
     IDIO_ADD_PRIMITIVE (string_fill);
     IDIO_ADD_PRIMITIVE (string_length);
