@@ -829,6 +829,7 @@ if (null? char-set:ascii) {
 			     printer 'char-set:empty ascii-char-set:empty
 			     printer 'char-set:full ascii-char-set:full
 			     printer 'char-set:nonl ascii-char-set:nonl
+			     printer 'char-set:control ascii-char-set:control
 			     printer 'char-set:word-constituent ascii-char-set:word-constituent
 			     printer 'char-set:cased ascii-char-set:cased
 			     printer '%char-set:letter ascii-char-set:letter
@@ -881,6 +882,7 @@ if (null? char-set:ascii) {
 			     printer 'char-set:empty char-set:empty
 			     printer 'char-set:full char-set:full
 			     printer 'char-set:nonl char-set:nonl
+			     printer 'char-set:control char-set:control
 			     printer 'char-set:word-constituent char-set:word-constituent
 			     printer 'char-set:cased char-set:cased
 			     printer '%char-set:letter (and-bitset char-set:ascii char-set:letter)

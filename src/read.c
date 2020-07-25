@@ -532,6 +532,7 @@ static IDIO idio_read_1_expr (IDIO handle, char *ic, int depth);
 static IDIO idio_read_block (IDIO handle, IDIO lo, IDIO closedel, char *ic, int depth);
 static IDIO idio_read_number_C (IDIO handle, char *str);
 static IDIO idio_read_bignum_radix (IDIO handle, IDIO lo, char basec, int radix);
+static IDIO idio_read_unescape (IDIO ls);
 
 static void idio_read_whitespace (IDIO handle)
 {
@@ -766,6 +767,7 @@ static IDIO idio_read_list (IDIO handle, IDIO list_lo, IDIO opendel, char *ic, i
 		    idio_struct_instance_set_direct (r_lo, IDIO_LEXOBJ_EXPR, r);
 		    idio_hash_put (idio_src_properties, r, r_lo);
 		}
+		r = idio_read_unescape (r);
 		return r;
 	    }
 
@@ -884,6 +886,33 @@ static IDIO idio_read_escape (IDIO handle, IDIO lo, char *ic, int depth)
     idio_meaning_copy_src_properties (e, r);
 
     return r;
+}
+
+static IDIO idio_read_unescape (IDIO ls)
+{
+    IDIO_ASSERT (ls);
+
+    IDIO_TYPE_ASSERT (list, ls);
+    
+    IDIO r = idio_S_nil;
+
+    while (idio_S_nil != ls) {
+	IDIO e = IDIO_PAIR_H (ls);
+	
+	if (idio_isa_pair (e) &&
+	    idio_S_escape == IDIO_PAIR_H (e) &&
+	    idio_isa_pair (IDIO_PAIR_T (e)) &&
+	    idio_S_nil != IDIO_PAIR_HT (e) &&
+	    idio_S_nil == IDIO_PAIR_TT (e)) {
+	    e = IDIO_PAIR_HT (e);
+	}
+
+	r = idio_pair (e, r);
+
+	ls = IDIO_PAIR_T (ls);
+    }
+
+    return idio_list_reverse (r);
 }
 
 static void idio_read_line_comment (IDIO handle, IDIO lo, int depth)
@@ -2703,6 +2732,7 @@ static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, char *ic, int depth
 			idio_struct_instance_set_direct (re_lo, IDIO_LEXOBJ_EXPR, re);
 			idio_hash_put (idio_src_properties, re, re_lo);
 		    }
+		    re = idio_read_unescape (re);
 		}
 		idio_struct_instance_set_direct (line_lo, IDIO_LEXOBJ_EXPR, re);
 		return idio_pair (line_lo, idio_S_eof);
@@ -2727,6 +2757,7 @@ static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, char *ic, int depth
 			idio_struct_instance_set_direct (re_lo, IDIO_LEXOBJ_EXPR, re);
 			idio_hash_put (idio_src_properties, re, re_lo);
 		    }
+		    re = idio_read_unescape (re);
 		}
 		idio_struct_instance_set_direct (line_lo, IDIO_LEXOBJ_EXPR, re);
 		return idio_pair (line_lo, idio_T_eol);
@@ -2751,6 +2782,7 @@ static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, char *ic, int depth
 			idio_struct_instance_set_direct (re_lo, IDIO_LEXOBJ_EXPR, re);
 			idio_hash_put (idio_src_properties, re, re_lo);
 		    }
+		    re = idio_read_unescape (re);
 		}
 		idio_struct_instance_set_direct (line_lo, IDIO_LEXOBJ_EXPR, re);
 		return idio_pair (line_lo, closedel);
