@@ -181,6 +181,161 @@ for (prev = 0, current = 0; *s; prev = current, ++s) {
 
 */
 
+/*
+ * reconstruct C escapes in s
+ */
+char *idio_utf8_string (IDIO str, int escapes, int quoted)
+{
+    IDIO_ASSERT (str);
+
+    IDIO_TYPE_ASSERT (string, str);
+
+    char *s;
+    size_t len;
+    IDIO_FLAGS_T flags;
+    if (idio_isa_substring (str)) {
+	s = IDIO_SUBSTRING_S (str);
+	len = IDIO_SUBSTRING_LEN (str);
+	flags = IDIO_STRING_FLAGS (IDIO_SUBSTRING_PARENT (str));
+    } else {
+	s = IDIO_STRING_S (str);
+	len = IDIO_STRING_LEN (str);
+	flags = IDIO_STRING_FLAGS (str);
+    }
+
+    uint8_t *s8 = (uint8_t *) s;
+    uint16_t *s16 = (uint16_t *) s;
+    uint32_t *s32 = (uint32_t *) s;
+
+    /*
+     * Figure out the number of bytes required including escape
+     * sequences
+     */
+    size_t i;
+    size_t n = 0;
+    for (i = 0; i < len; i++) {
+	uint32_t c = 0;
+	switch (flags) {
+	case IDIO_STRING_FLAG_1BYTE:
+	    n += 1;
+	    c = s8[i];
+	    break;
+	case IDIO_STRING_FLAG_2BYTE:
+	    c = s16[i];
+	    if (c >= 0x0800) {
+		n += 3;
+	    } else if (c >= 0x0080) {
+		n += 2;
+	    } else {
+		n += 1;
+	    }
+	    break;
+	case IDIO_STRING_FLAG_4BYTE:
+	    c = s32[i];
+	    if (c >= 0x10000) {
+		n += 4;
+	    } else if (c >= 0x0800) {
+		n += 3;
+	    } else if (c >= 0x0080) {
+		n += 2;
+	    } else {
+		n += 1;
+	    }
+	    break;
+	}
+
+	if (escapes) {
+	    switch (c) {
+	    case '\a': n++; break;
+	    case '\b': n++; break;
+	    case '\f': n++; break;
+	    case '\n': n++; break;
+	    case '\r': n++; break;
+	    case '\t': n++; break;
+	    case '\v': n++; break;
+	    case '"': n++; break;
+	    }
+	}
+    }
+
+    size_t bytes = n + 1;
+    if (IDIO_UTF8_STRING_QUOTED == quoted) {
+	bytes += 2;
+    }
+    char *r = idio_alloc (bytes);
+
+    n = 0;
+    if (IDIO_UTF8_STRING_QUOTED == quoted) {
+	r[n++] = '"';
+    }
+    for (i = 0; i < len; i++) {
+	uint32_t c = 0;
+	switch (flags) {
+	case IDIO_STRING_FLAG_1BYTE:
+	    c = s8[i];
+	    break;
+	case IDIO_STRING_FLAG_2BYTE:
+	    c = s16[i];
+	    break;
+	case IDIO_STRING_FLAG_4BYTE:
+	    c = s32[i];
+	    break;
+	}
+
+	char ec = 0;
+	if (escapes) {
+	    switch (c) {
+	    case '\a': ec = 'a'; break;
+	    case '\b': ec = 'b'; break;
+	    case '\f': ec = 'f'; break;
+	    case '\n': ec = 'n'; break;
+	    case '\r': ec = 'r'; break;
+	    case '\t': ec = 't'; break;
+	    case '\v': ec = 'v'; break;
+	    case '"': ec = '"'; break;
+	    }
+	}
+
+	if (ec) {
+	    r[n++] = '\\';
+	    r[n++] = ec;
+	} else {
+	    switch (flags) {
+	    case IDIO_STRING_FLAG_1BYTE:
+		r[n++] = c;
+		break;
+	    case IDIO_STRING_FLAG_2BYTE:
+	    case IDIO_STRING_FLAG_4BYTE:
+		if (c > 0x10ffff) {
+		    fprintf (stderr, "oops c=%ux > 0x10ffff\n", c);
+		} else if (c >= 0x10000) {
+		    r[n++] = 0xf0 | ((c & (0x07 << 18)) >> 18);
+		    r[n++] = 0x80 | ((c & (0x3f << 12)) >> 12);
+		    r[n++] = 0x80 | ((c & (0x3f << 6)) >> 6);
+		    r[n++] = 0x80 | ((c & (0x3f << 0)) >> 0);
+		} else if (c >= 0x0800) {
+		    r[n++] = 0xe0 | ((c & (0x0f << 12)) >> 12);
+		    r[n++] = 0x80 | ((c & (0x3f << 6)) >> 6);
+		    r[n++] = 0x80 | ((c & (0x3f << 0)) >> 0);
+		} else if (c >= 0x0080) {
+		    r[n++] = 0xc0 | ((c & (0x1f << 6)) >> 6);
+		    r[n++] = 0x80 | ((c & (0x3f << 0)) >> 0);
+		} else {
+		    r[n++] = c & 0x7f;
+		}
+		break;
+	    }
+	}
+    }
+
+    if (IDIO_UTF8_STRING_QUOTED == quoted) {
+	r[n++] = '"';
+    }
+    r[n] = '\0';
+
+    return r;
+}
+
 void idio_init_unicode ()
 {
 }

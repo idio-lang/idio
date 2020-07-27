@@ -284,7 +284,7 @@ IDIO_DEFINE_PRIMITIVE1V ("open-file-from-fd", open_file_handle_from_fd, (IDIO if
     if (idio_S_nil != args) {
 	IDIO iname = IDIO_PAIR_H (args);
 	if (idio_isa_string (iname)) {
-	    size_t blen = idio_string_blen (iname);
+	    size_t blen = idio_string_len (iname);
 
 	    if (blen >= PATH_MAX) {
 		idio_error_C ("name too long", iname, IDIO_C_FUNC_LOCATION ());
@@ -292,7 +292,9 @@ IDIO_DEFINE_PRIMITIVE1V ("open-file-from-fd", open_file_handle_from_fd, (IDIO if
 		return idio_S_notreached;
 	    }
 
-	    sprintf (name, "%.*s", (int) blen, idio_string_s (iname));
+	    char *s = idio_string_as_C (iname);
+	    sprintf (name, "%s", s);
+	    free (s);
 
 	    args = IDIO_PAIR_T (args);
 	} else {
@@ -352,7 +354,7 @@ IDIO_DEFINE_PRIMITIVE1V ("open-input-file-from-fd", open_input_file_handle_from_
     if (idio_S_nil != args) {
 	IDIO iname = IDIO_PAIR_H (args);
 	if (idio_isa_string (iname)) {
-	    size_t blen = idio_string_blen (iname);
+	    size_t blen = idio_string_len (iname);
 
 	    if (blen >= PATH_MAX) {
 		idio_error_C ("name too long", iname, IDIO_C_FUNC_LOCATION ());
@@ -360,7 +362,9 @@ IDIO_DEFINE_PRIMITIVE1V ("open-input-file-from-fd", open_input_file_handle_from_
 		return idio_S_notreached;
 	    }
 
-	    sprintf (name, "%.*s", (int) blen, idio_string_s (iname));
+	    char *s = idio_string_as_C (iname);
+	    sprintf (name, "%s", s);
+	    free (s);
 
 	    args = IDIO_PAIR_T (args);
 	} else {
@@ -420,7 +424,7 @@ IDIO_DEFINE_PRIMITIVE1V ("open-output-file-from-fd", open_output_file_handle_fro
     if (idio_S_nil != args) {
 	IDIO iname = IDIO_PAIR_H (args);
 	if (idio_isa_string (iname)) {
-	    size_t blen = idio_string_blen (iname);
+	    size_t blen = idio_string_len (iname);
 
 	    if (blen >= PATH_MAX) {
 		idio_error_C ("name too long", iname, IDIO_C_FUNC_LOCATION ());
@@ -428,7 +432,9 @@ IDIO_DEFINE_PRIMITIVE1V ("open-output-file-from-fd", open_output_file_handle_fro
 		return idio_S_notreached;
 	    }
 
-	    sprintf (name, "%.*s", (int) blen, idio_string_s (iname));
+	    char *s = idio_string_as_C (iname);
+	    sprintf (name, "%s", s);
+	    free (s);
 
 	    args = IDIO_PAIR_T (args);
 	} else {
@@ -1009,7 +1015,7 @@ size_t idio_puts_file_handle (IDIO fh, char *s, size_t slen)
 	}
 	r = fwrite (s, 1, slen, IDIO_FILE_HANDLE_FILEP (fh));
 	if (r < slen) {
-	    idio_error_printf (IDIO_C_FUNC_LOCATION (), "fwrite (%s) => %zd / %zd", idio_handle_name (fh), r, slen);
+	    idio_error_printf (IDIO_C_FUNC_LOCATION (), "fwrite (%s) => %zd / %zd", idio_handle_name_as_C (fh), r, slen);
 
 	    /* notreached */
 	    return EOF;
@@ -1166,6 +1172,7 @@ char *idio_libfile_find_C (char *file)
      * idiolibe is the end of the whole IDIOLIB string, used to
      * calculate when we've tried all parts
      */
+    char *idiolib_copy = NULL;
     char *idiolib;
     char *idiolibe;
     if (idio_S_undef == IDIOLIB ||
@@ -1173,8 +1180,9 @@ char *idio_libfile_find_C (char *file)
 	idiolib = idio_env_IDIOLIB_default;
 	idiolibe = idiolib + strlen (idiolib);
     } else {
-	idiolib = idio_string_s (IDIOLIB);
-	idiolibe = idiolib + idio_string_blen (IDIOLIB);
+	idiolib_copy = idio_string_as_C (IDIOLIB);
+	idiolib = idiolib_copy;
+	idiolibe = idiolib + idio_string_len (IDIOLIB);
     }
 
     /*
@@ -1199,6 +1207,10 @@ char *idio_libfile_find_C (char *file)
     char libname[PATH_MAX];
     char cwd[PATH_MAX];
     if (getcwd (cwd, PATH_MAX) == NULL) {
+	if (idiolib_copy) {
+	    free (idiolib_copy);
+	}
+
 	idio_error_system_errno ("getcwd", idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
@@ -1212,6 +1224,10 @@ char *idio_libfile_find_C (char *file)
 	char * colon = NULL;
 
 	if (0 == idioliblen) {
+	    if (idiolib_copy) {
+		free (idiolib_copy);
+	    }
+
 	    return NULL;
 	}
 
@@ -1219,6 +1235,10 @@ char *idio_libfile_find_C (char *file)
 
 	if (NULL == colon) {
 	    if ((idioliblen + 1 + filelen + max_ext_len + 1) >= PATH_MAX) {
+		if (idiolib_copy) {
+		    free (idiolib_copy);
+		}
+
 		idio_error_system ("dir+file.idio libname length", IDIO_LIST2 (IDIOLIB, idio_string_C (file)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
 
 		/* notreached */
@@ -1238,6 +1258,10 @@ char *idio_libfile_find_C (char *file)
 		 * Is that a good thing?
 		 */
 		if ((cwdlen + 1 + filelen + max_ext_len + 1) >= PATH_MAX) {
+		    if (idiolib_copy) {
+			free (idiolib_copy);
+		    }
+
 		    idio_error_system ("cwd+file.idio libname length", IDIO_LIST2 (IDIOLIB, idio_string_C (file)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
 
 		    /* notreached */
@@ -1247,6 +1271,10 @@ char *idio_libfile_find_C (char *file)
 		strcpy (libname, cwd);
 	    } else {
 		if ((dirlen + 1 + filelen + max_ext_len + 1) >= PATH_MAX) {
+		    if (idiolib_copy) {
+			free (idiolib_copy);
+		    }
+
 		    idio_error_system ("dir+file.idio libname length", IDIO_LIST2 (IDIOLIB, idio_string_C (file)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
 
 		    /* notreached */
@@ -1277,6 +1305,10 @@ char *idio_libfile_find_C (char *file)
 	    if (NULL != fe->ext) {
 
 		if ((lnlen + strlen (fe->ext)) >= PATH_MAX) {
+		    if (idiolib_copy) {
+			free (idiolib_copy);
+		    }
+
 		    idio_file_handle_error_malformed_filename (idio_string_C (libname), IDIO_C_FUNC_LOCATION ());
 
 		    /* notreached */
@@ -1335,6 +1367,10 @@ char *idio_libfile_find_C (char *file)
     if (0 != libname[0]) {
 	idiolibname = idio_alloc (strlen (libname) + 1);
 	strcpy (idiolibname, libname);
+    }
+
+    if (idiolib_copy) {
+	free (idiolib_copy);
     }
 
     return idiolibname;
@@ -1435,8 +1471,10 @@ IDIO idio_load_file_name_aio (IDIO filename, IDIO cs)
 
 		strncpy (lfn_dot, fe->ext, PATH_MAX - l - 1);
 
-		char *ss[] = { idio_string_s (filename), fe->ext };
+		char *sfilename = idio_string_as_C (filename);
+		char *ss[] = { sfilename, fe->ext };
 		filename_ext = idio_string_C_array (2, ss);
+		free (sfilename);
 		idio_gc_protect (filename_ext);
 	    }
 
@@ -1479,8 +1517,10 @@ IDIO idio_load_file_name_aio (IDIO filename, IDIO cs)
 		     */
 		    if (NULL == filename_dot ||
 			strncmp (filename_dot, fe->ext, strlen (fe->ext))) {
-			char *ss[] = { idio_string_s (filename), fe->ext };
+			char *sfilename = idio_string_as_C (filename);
+			char *ss[] = { sfilename, fe->ext };
 			filename_ext = idio_string_C_array (2, ss);
+			free (sfilename);
 			idio_gc_protect (filename_ext);
 		    }
 		    break;

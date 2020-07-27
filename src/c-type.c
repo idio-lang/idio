@@ -283,8 +283,18 @@ IDIO idio_C_number_cast (IDIO co, idio_type_e type)
 	{
 	    switch (idio_type (co)) {
 	    case IDIO_TYPE_C_POINTER: r = idio_C_pointer (IDIO_C_TYPE_POINTER_P (co)); break;
-	    case IDIO_TYPE_STRING: r = idio_C_pointer ((void *) IDIO_STRING_S (co)); break;
-	    case IDIO_TYPE_SUBSTRING: r = idio_C_pointer ((void *) IDIO_SUBSTRING_S (co)); break;
+	    case IDIO_TYPE_STRING:
+		{
+		    char *sco = idio_string_as_C (co);
+		    r = idio_C_pointer_free_me ((void *) sco);
+		}
+		break;
+	    case IDIO_TYPE_SUBSTRING:
+		{
+		    char *sco = idio_string_as_C (co);
+		    r = idio_C_pointer_free_me ((void *) sco);
+		}
+		break;
 	    default:
 		fail = 1;
 		break;

@@ -73,6 +73,7 @@ extern IDIO idio_src_properties;
 IDIO idio_read (IDIO handle);
 IDIO idio_read_expr (IDIO handle);
 IDIO idio_read_char (IDIO handle);
+IDIO idio_read_character (IDIO handle, IDIO lo);
 
 void idio_init_read ();
 void idio_read_add_primitives ();

@@ -251,6 +251,15 @@ typedef uint8_t IDIO_I;
 /**
  * struct idio_string_s - Idio ``string`` structure
  */
+#define IDIO_STRING_FLAG_NONE		0
+/*
+ * Coincidentally, these are the number of bytes required for storage
+ * per code-point.  Do not rely on this, these are just flags!
+ */
+#define IDIO_STRING_FLAG_1BYTE		(1<<0)
+#define IDIO_STRING_FLAG_2BYTE		(1<<1)
+#define IDIO_STRING_FLAG_4BYTE		(1<<2)
+
 struct idio_string_s {
     /**
      * @blen: length in bytes
@@ -258,8 +267,9 @@ struct idio_string_s {
      * The string is not expected to be NUL-terminated.
      */
     size_t blen;		/* bytes */
+    size_t len;			/* code points */
     /**
-     * @s: the string
+     * @s: the "string": BYTE, UCS2, UCS4
      */
     char *s;
 };
@@ -275,10 +285,16 @@ typedef struct idio_string_s idio_string_t;
  */
 #define IDIO_STRING_BLEN(S)	((S)->u.string.blen)
 /**
+ * IDIO_STRING_LEN - accessor to @len in &struct idio_string_s
+ * @S: the &struct idio_string_s
+ */
+#define IDIO_STRING_LEN(S)	((S)->u.string.len)
+/**
  * IDIO_STRING_S - accessor to @s in &struct idio_string_s
  * @S: the &struct idio_string_s
  */
 #define IDIO_STRING_S(S)	((S)->u.string.s)
+#define IDIO_STRING_FLAGS(S)	((S)->tflags)
 
 typedef struct idio_substring_s {
     /*
@@ -286,12 +302,12 @@ typedef struct idio_substring_s {
      * a simple string and can just mark it as seen directly
      */
     struct idio_s *parent;
-    size_t blen;		/* bytes */
+    size_t len;			/* code points */
     char *s;			/* no allocation, just a pointer into
 				   parent's string */
 } idio_substring_t;
 
-#define IDIO_SUBSTRING_BLEN(S)	((S)->u.substring.blen)
+#define IDIO_SUBSTRING_LEN(S)	((S)->u.substring.len)
 #define IDIO_SUBSTRING_S(S)	((S)->u.substring.s)
 #define IDIO_SUBSTRING_PARENT(S) ((S)->u.substring.parent)
 
@@ -943,7 +959,7 @@ typedef struct idio_opaque_s {
 #define IDIO_OPAQUE_P(C)    ((C)->u.opaque->p)
 #define IDIO_OPAQUE_ARGS(C) ((C)->u.opaque->args)
 
-typedef unsigned char FLAGS_T;
+typedef unsigned char IDIO_FLAGS_T;
 
 #define IDIO_FLAG_NONE		0
 #define IDIO_FLAG_CONST		(1<<0)
@@ -961,13 +977,13 @@ struct idio_s {
     struct idio_s *next;
 
     /*
-     * The union will be word-aligned (or larger) so we have 4-8 bytes
-     * of room for "info"
+     * The union will be word-aligned (or larger) so we have 4 or 8
+     * bytes of room for "stuff"
      */
     idio_type_e type;
-    FLAGS_T gc_flags;
-    FLAGS_T flags;		/* generic type flags */
-    FLAGS_T tflags;		/* type-specific flags (since we have
+    IDIO_FLAGS_T gc_flags;
+    IDIO_FLAGS_T flags;		/* generic type flags */
+    IDIO_FLAGS_T tflags;	/* type-specific flags (since we have
 				   room here) */
     /*
      * Rationale for union.  We need to decide whether the union
@@ -1054,7 +1070,7 @@ typedef struct idio_gc_s {
     IDIO grey;
     unsigned int pause;
     unsigned char verbose;
-    FLAGS_T flags;		/* generic GC flags */
+    IDIO_FLAGS_T flags;		/* generic GC flags */
     struct stats {
 	unsigned long long nfree; /* # on free list */
 	unsigned long long tgets[IDIO_TYPE_MAX];

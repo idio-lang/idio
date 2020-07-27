@@ -426,30 +426,22 @@ IDIO_DEFINE_PRIMITIVE1 ("mkdtemp", libc_mkdtemp, (IDIO idirname))
     /*
      * XXX mkdtemp() requires a NUL-terminated C string and it will
      * modify the template part.
-     *
-     * If we are passed a SUBSTRING then we must substitute a
-     * NUL-terminated C string and copy the result back.
      */
-    char *dirname = idio_string_s (idirname);
-
-    int isa_substring = 0;
-    if (idio_isa_substring (idirname)) {
-	isa_substring = 1;
-	dirname = idio_string_as_C (idirname);
-    }
+    char *dirname = idio_string_as_C (idirname);
 
     char *d = mkdtemp (dirname);
 
     if (NULL == d) {
 	idio_error_system_errno ("mkdtemp", IDIO_LIST1 (idirname), IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
     }
 
-    if (isa_substring) {
-	memcpy (idio_string_s (idirname), dirname, idio_string_blen (idirname));
-	free (dirname);
-    }
+    IDIO r = idio_string_C (d);
 
-    return idio_string_C (d);
+    free (dirname);
+
+    return r;
 }
 
 IDIO_DEFINE_PRIMITIVE1 ("mkstemp", libc_mkstemp, (IDIO ifilename))
@@ -460,17 +452,8 @@ IDIO_DEFINE_PRIMITIVE1 ("mkstemp", libc_mkstemp, (IDIO ifilename))
     /*
      * XXX mkstemp() requires a NUL-terminated C string and it will
      * modify the template part.
-     *
-     * If we are passed a SUBSTRING then we must substitute a
-     * NUL-terminated C string and copy the result back.
      */
-    char *filename = idio_string_s (ifilename);
-
-    int isa_substring = 0;
-    if (idio_isa_substring (ifilename)) {
-	isa_substring = 1;
-	filename = idio_string_as_C (ifilename);
-    }
+    char *filename = idio_string_as_C (ifilename);
 
     int r = mkstemp (filename);
 
@@ -478,10 +461,38 @@ IDIO_DEFINE_PRIMITIVE1 ("mkstemp", libc_mkstemp, (IDIO ifilename))
 	idio_error_system_errno ("mkstemp", IDIO_LIST1 (ifilename), IDIO_C_FUNC_LOCATION ());
     }
 
-    if (isa_substring) {
-	memcpy (idio_string_s (ifilename), filename, idio_string_blen (ifilename));
-	free (filename);
+    /*
+     * Yuk!  The semantics of mkstemp are slightly different to
+     * mkdtemp, above.  mkdtemp "returns a pointer to the modified
+     * template string on success" so we can return a new Idio string.
+     *
+     * mkstemp, however, "return the file descriptor of the temporary
+     * file" with the tacit assumption that the caller can use the
+     * modified template to unlink the file.
+     *
+     * Yikes, we need to overwrite {ifilename} with whatever is in
+     * {filename}.
+     */
+    IDIO fn = idio_string_C (filename);
+    if (idio_isa_string (ifilename)) {
+	if (IDIO_STRING_FLAGS (ifilename) != IDIO_STRING_FLAGS (fn)) {
+	    fprintf (stderr, "ERROR: mkstemp: unable to rewrite template: flags differ: %x %x\n", IDIO_STRING_FLAGS (ifilename), IDIO_STRING_FLAGS (fn));
+	} else if (IDIO_STRING_LEN (ifilename) != IDIO_STRING_LEN (fn)) {
+	    fprintf (stderr, "ERROR: mkstemp: unable to rewrite template: len differs: %zu %zu\n", IDIO_STRING_LEN (ifilename), IDIO_STRING_LEN (fn));
+	} else {
+	    memcpy (IDIO_STRING_S (ifilename), IDIO_STRING_S (fn), IDIO_STRING_BLEN (fn));
+	}
+    } else {
+	fprintf (stderr, "mkstemp from a substring\n");
+	if (IDIO_STRING_FLAGS (IDIO_SUBSTRING_PARENT (ifilename)) != IDIO_STRING_FLAGS (fn)) {
+	    fprintf (stderr, "ERROR: mkstemp: unable to rewrite template: flags differ: %x %x\n", IDIO_STRING_FLAGS (IDIO_SUBSTRING_PARENT (ifilename)), IDIO_STRING_FLAGS (fn));
+	} else if (IDIO_SUBSTRING_LEN (ifilename) != IDIO_STRING_LEN (fn)) {
+	    fprintf (stderr, "ERROR: mkstemp: unable to rewrite template: len differs: %zu %zu\n", IDIO_SUBSTRING_LEN (ifilename), IDIO_STRING_LEN (fn));
+	} else {
+	    memcpy (IDIO_SUBSTRING_S (ifilename), IDIO_STRING_S (fn), IDIO_STRING_BLEN (fn));
+	}
     }
+    free (filename);
 
     return idio_C_int (r);
 }
@@ -867,6 +878,8 @@ IDIO_DEFINE_PRIMITIVE1 ("unlink", libc_unlink, (IDIO ipath))
 
     if (-1 == r) {
 	idio_error_system_errno ("unlink", IDIO_LIST1 (ipath), IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
     }
 
     return idio_C_int (r);
@@ -985,17 +998,16 @@ a wrapper to libc write (2)					\n\
 
     int fd = IDIO_C_TYPE_INT (ifd);
 
-    size_t blen = idio_string_blen (istr);
+    char *s = idio_string_as_C (istr);
+    size_t blen = strlen (s);
 
-    /*
-     * A rare occasion we can use idio_string_s() as we are also using
-     * blen.
-     */
-    ssize_t n = write (fd, idio_string_s (istr), blen);
+    ssize_t n = write (fd, s, blen);
 
     if (-1 == n) {
 	idio_error_system_errno ("write", IDIO_LIST2 (ifd, istr), IDIO_C_FUNC_LOCATION ());
     }
+
+    free (s);
 
     return idio_integer (n);
 }

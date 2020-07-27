@@ -42,6 +42,7 @@ IDIO idio_substring_offset (IDIO so, size_t offset, size_t blen);
 int idio_isa_substring (IDIO so);
 void idio_free_substring (IDIO so);
 size_t idio_string_blen (IDIO so);
+size_t idio_string_len (IDIO so);
 char *idio_string_s (IDIO so);
 char *idio_string_as_C (IDIO so);
 IDIO idio_string_ref (IDIO s, IDIO index);

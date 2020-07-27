@@ -239,16 +239,18 @@ static char **idio_command_get_envp ()
 	size_t vlen = 0;
 	if (idio_S_false != val) {
 	    if (idio_isa_string (val)) {
-		vlen = idio_string_blen (val);
+		char *sval = idio_string_as_C (val);
+
+		vlen = strlen (sval);
 
 		envp[n] = idio_alloc (slen + 1 + vlen + 1);
 		strcpy (envp[n], IDIO_SYMBOL_S (symbol));
 		strcat (envp[n], "=");
-		if (idio_S_undef != val) {
-		    strncat (envp[n], idio_string_s (val), vlen);
-		}
+		strncat (envp[n], sval, vlen);
 		envp[n][slen + 1 + vlen] = '\0';
 		n++;
+
+		free (sval);
 	    } else {
 		if (0) {
 		    idio_command_error_env_type (symbol, IDIO_C_FUNC_LOCATION ());
@@ -278,6 +280,7 @@ char *idio_command_find_exe_C (char *command)
 
     IDIO PATH = idio_module_current_symbol_value_recurse (idio_env_PATH_sym, idio_S_nil);
 
+    char *spath = NULL;
     char *path;
     char *pathe;
     if (idio_S_undef == PATH ||
@@ -285,8 +288,9 @@ char *idio_command_find_exe_C (char *command)
 	path = idio_env_PATH_default;
 	pathe = path + strlen (path);
     } else {
-	path = idio_string_s (PATH);
-	pathe = path + idio_string_blen (PATH);
+	spath = idio_string_as_C (PATH);
+	path = spath;
+	pathe = path + idio_string_len (PATH);
     }
 
     /*
@@ -295,6 +299,10 @@ char *idio_command_find_exe_C (char *command)
     char exename[PATH_MAX];
     char cwd[PATH_MAX];
     if (getcwd (cwd, PATH_MAX) == NULL) {
+	if (spath){
+	    free (spath);
+	}
+
 	idio_error_system_errno ("getcwd", idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
@@ -309,6 +317,10 @@ char *idio_command_find_exe_C (char *command)
 
 	if (0 == pathlen) {
 	    if ((cwdlen + 1 + cmdlen + 1) >= PATH_MAX) {
+		if (spath) {
+		    free (spath);
+		}
+
 		idio_error_system ("cwd+command exename length", IDIO_LIST2 (PATH, idio_string_C (command)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
 
 		/* notreached */
@@ -321,6 +333,10 @@ char *idio_command_find_exe_C (char *command)
 
 	    if (NULL == colon) {
 		if ((pathlen + 1 + cmdlen + 1) >= PATH_MAX) {
+		    if (spath) {
+			free (spath);
+		    }
+
 		    idio_error_system ("dir+command exename length", IDIO_LIST2 (PATH, idio_string_C (command)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
 
 		    /* notreached */
@@ -334,6 +350,10 @@ char *idio_command_find_exe_C (char *command)
 
 		if (0 == dirlen) {
 		    if ((cwdlen + 1 + cmdlen + 1) >= PATH_MAX) {
+			if (spath) {
+			    free (spath);
+			}
+
 			idio_error_system ("cwd+command exename length", IDIO_LIST2 (PATH, idio_string_C (command)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
 
 			/* notreached */
@@ -343,6 +363,10 @@ char *idio_command_find_exe_C (char *command)
 		    strcpy (exename, cwd);
 		} else {
 		    if ((dirlen + 1 + cmdlen + 1) >= PATH_MAX) {
+			if (spath) {
+			    free (spath);
+			}
+
 			idio_error_system ("dir+command exename length", IDIO_LIST2 (PATH, idio_string_C (command)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
 
 			/* notreached */
@@ -362,6 +386,10 @@ char *idio_command_find_exe_C (char *command)
 	    struct stat sb;
 
 	    if (stat (exename, &sb) == -1) {
+		if (spath) {
+		    free (spath);
+		}
+
 		idio_error_system_errno ("stat", IDIO_LIST1 (idio_string_C (exename)), IDIO_C_FUNC_LOCATION ());
 
 		/* notreached */
@@ -388,6 +416,10 @@ char *idio_command_find_exe_C (char *command)
     if (0 != exename[0]) {
 	pathname = idio_alloc (strlen (exename) + 1);
 	strcpy (pathname, exename);
+    }
+
+    if (spath) {
+	free (spath);
     }
 
     return pathname;
@@ -519,19 +551,31 @@ char **idio_command_argv (IDIO args)
 	    {
 		switch (idio_type (arg)) {
 		case IDIO_TYPE_STRING:
-		    if (asprintf (&argv[i++], "%.*s", (int) IDIO_STRING_BLEN (arg), IDIO_STRING_S (arg)) == -1) {
-			idio_error_alloc ("asprintf");
+		    {
+			char *s = idio_string_as_C (arg);
 
-			/* notreached */
-			return NULL;
+			if (asprintf (&argv[i++], "%s", s) == -1) {
+			    idio_error_alloc ("asprintf");
+
+			    /* notreached */
+			    return NULL;
+			}
+
+			free (s);
 		    }
 		    break;
 		case IDIO_TYPE_SUBSTRING:
-		    if (asprintf (&argv[i++], "%.*s", (int) IDIO_SUBSTRING_BLEN (arg), IDIO_SUBSTRING_S (arg)) == -1) {
-			idio_error_alloc ("asprintf");
+		    {
+			char *s = idio_string_as_C (arg);
 
-			/* notreached */
-			return NULL;
+			if (asprintf (&argv[i++], "%s", s) == -1) {
+			    idio_error_alloc ("asprintf");
+
+			    /* notreached */
+			    return NULL;
+			}
+
+			free (s);
 		    }
 		    break;
 		case IDIO_TYPE_SYMBOL:

@@ -26,9 +26,19 @@
 typedef uint32_t idio_utf8_t;
 
 #define IDIO_UTF8_ACCEPT 0
-#define IDIO_UTF8_REJECT 12
+#define IDIO_UTF8_REJECT 1
+/*
+ * other > 0 values mean more bytes are required
+ */
+
+#define IDIO_UTF8_STRING_VERBATIM	0
+#define IDIO_UTF8_STRING_ESCAPES	1
+
+#define IDIO_UTF8_STRING_UNQUOTED	0
+#define IDIO_UTF8_STRING_QUOTED		1
 
 idio_utf8_t idio_utf8_decode (idio_utf8_t* state, idio_utf8_t* codep, idio_utf8_t byte);
+char *idio_utf8_string (IDIO str, int escapes, int quoted);
 
 void idio_init_unicode ();
 void idio_unicode_add_primitives ();

@@ -513,11 +513,11 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		    {
 			switch (o2->type) {
 			case IDIO_TYPE_SUBSTRING:
-			    if (IDIO_STRING_BLEN (o1) != IDIO_SUBSTRING_BLEN (o2)) {
+			    if (IDIO_STRING_LEN (o1) != IDIO_SUBSTRING_LEN (o2)) {
 				return 0;
 			    }
 
-			    return (strncmp (IDIO_STRING_S (o1), IDIO_SUBSTRING_S (o2), IDIO_STRING_BLEN (o1)) == 0);
+			    return (memcmp (IDIO_STRING_S (o1), IDIO_SUBSTRING_S (o2), IDIO_STRING_BLEN (o1)) == 0);
 			}
 		    }
 		    break;
@@ -525,11 +525,11 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		    {
 			switch (o2->type) {
 			case IDIO_TYPE_STRING:
-			    if (IDIO_SUBSTRING_BLEN (o1) != IDIO_STRING_BLEN (o2)) {
+			    if (IDIO_SUBSTRING_LEN (o1) != IDIO_STRING_LEN (o2)) {
 				return 0;
 			    }
 
-			    return (strncmp (IDIO_SUBSTRING_S (o1), IDIO_STRING_S (o2), IDIO_SUBSTRING_BLEN (o1)) == 0);
+			    return (memcmp (IDIO_SUBSTRING_S (o1), IDIO_STRING_S (o2), IDIO_STRING_BLEN (o1)) == 0);
 			}
 		    }
 		    break;
@@ -573,21 +573,42 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		    return (o1 == o2);
 		}
 
-		if (IDIO_STRING_BLEN (o1) != IDIO_STRING_BLEN (o2)) {
+		if (IDIO_STRING_LEN (o1) != IDIO_STRING_LEN (o2)) {
 		    return 0;
 		}
 
-		return (strncmp (IDIO_STRING_S (o1), IDIO_STRING_S (o2), IDIO_STRING_BLEN (o1)) == 0);
+		return (memcmp (IDIO_STRING_S (o1), IDIO_STRING_S (o2), IDIO_STRING_BLEN (o1)) == 0);
 	    case IDIO_TYPE_SUBSTRING:
 		if (IDIO_EQUAL_EQP == eqp) {
 		    return (o1 == o2);
 		}
 
-		if (IDIO_SUBSTRING_BLEN (o1) != IDIO_SUBSTRING_BLEN (o2)) {
+		if (IDIO_SUBSTRING_LEN (o1) != IDIO_SUBSTRING_LEN (o2)) {
 		    return 0;
 		}
 
-		return (strncmp (IDIO_SUBSTRING_S (o1), IDIO_SUBSTRING_S (o2), IDIO_SUBSTRING_BLEN (o1)) == 0);
+		size_t blen;
+		switch (IDIO_STRING_FLAGS (IDIO_SUBSTRING_PARENT (o1))) {
+		case IDIO_STRING_FLAG_1BYTE:
+		    if (IDIO_STRING_FLAG_1BYTE != IDIO_STRING_FLAGS (IDIO_SUBSTRING_PARENT (o2))) {
+			return 0;
+		    }
+		    blen = IDIO_SUBSTRING_LEN (o1);
+		    break;
+		case IDIO_STRING_FLAG_2BYTE:
+		    if (IDIO_STRING_FLAG_2BYTE != IDIO_STRING_FLAGS (IDIO_SUBSTRING_PARENT (o2))) {
+			return 0;
+		    }
+		    blen = IDIO_SUBSTRING_LEN (o1) * 2;
+		    break;
+		case IDIO_STRING_FLAG_4BYTE:
+		    if (IDIO_STRING_FLAG_4BYTE != IDIO_STRING_FLAGS (IDIO_SUBSTRING_PARENT (o2))) {
+			return 0;
+		    }
+		    blen = IDIO_SUBSTRING_LEN (o1) * 4;
+		    break;
+		}
+		return (memcmp (IDIO_SUBSTRING_S (o1), IDIO_SUBSTRING_S (o2), blen) == 0);
 	    case IDIO_TYPE_SYMBOL:
 		return (o1 == o2);
 
@@ -1154,10 +1175,10 @@ char *idio_as_string (IDIO o, int depth)
 		return NULL;
 		break;
 	    case IDIO_TYPE_STRING:
-		r = idio_escape_string (IDIO_STRING_BLEN (o), IDIO_STRING_S (o));
+		r = idio_utf8_string (o, IDIO_UTF8_STRING_ESCAPES, IDIO_UTF8_STRING_QUOTED);
 		break;
 	    case IDIO_TYPE_SUBSTRING:
-		r = idio_escape_string (IDIO_SUBSTRING_BLEN (o), IDIO_SUBSTRING_S (o));
+		r = idio_utf8_string (o, IDIO_UTF8_STRING_ESCAPES, IDIO_UTF8_STRING_QUOTED);
 		break;
 	    case IDIO_TYPE_SYMBOL:
 		if (asprintf (&r, "%s", IDIO_SYMBOL_S (o)) == -1) {
@@ -1522,7 +1543,7 @@ char *idio_as_string (IDIO o, int depth)
 			return NULL;
 		    }
 
-		    FLAGS_T h_flags = IDIO_HANDLE_FLAGS (o);
+		    IDIO_FLAGS_T h_flags = IDIO_HANDLE_FLAGS (o);
 		    if (h_flags & IDIO_HANDLE_FLAG_CLOSED) {
 			IDIO_STRCAT (r, "c");
 		    } else {
@@ -1542,7 +1563,7 @@ char *idio_as_string (IDIO o, int depth)
 		    }
 		    if (h_flags & IDIO_HANDLE_FLAG_FILE) {
 
-			FLAGS_T s_flags = IDIO_FILE_HANDLE_FLAGS (o);
+			IDIO_FLAGS_T s_flags = IDIO_FILE_HANDLE_FLAGS (o);
 			if (s_flags & IDIO_FILE_HANDLE_FLAG_CLOEXEC) {
 			    IDIO_STRCAT (r, "E");
 			} else {
@@ -1561,13 +1582,16 @@ char *idio_as_string (IDIO o, int depth)
 		    }
 
 		    char *info;
-		    if (asprintf (&info, ":\"%s\":%jd:%jd>", idio_handle_name (o), (intmax_t) IDIO_HANDLE_LINE (o), (intmax_t) IDIO_HANDLE_POS (o)) == -1) {
+		    char *sname = idio_handle_name_as_C (o);
+		    if (asprintf (&info, ":\"%s\":%jd:%jd>", sname, (intmax_t) IDIO_HANDLE_LINE (o), (intmax_t) IDIO_HANDLE_POS (o)) == -1) {
+			free (sname);
 			free (r);
 			idio_error_alloc ("asprintf");
 
 			/* notreached */
 			return NULL;
 		    }
+		    free (sname);
 		    IDIO_STRCAT_FREE (r, info);
 		}
 		break;
@@ -2103,19 +2127,30 @@ char *idio_display_string (IDIO o)
 	{
 	    switch (o->type) {
 	    case IDIO_TYPE_STRING:
-		if (asprintf (&r, "%.*s", (int) IDIO_STRING_BLEN (o), IDIO_STRING_S (o)) == -1) {
-		    idio_error_alloc ("asprintf");
+		{
+		    char *s = idio_utf8_string (o, IDIO_UTF8_STRING_VERBATIM, IDIO_UTF8_STRING_UNQUOTED);
 
-		    /* notreached */
-		    return NULL;
+		    if (asprintf (&r, "%s", s) == -1) {
+			idio_error_alloc ("asprintf");
+
+			/* notreached */
+			return NULL;
+		    }
+
+		    free (s);
 		}
 		break;
 	    case IDIO_TYPE_SUBSTRING:
-		if (asprintf (&r, "%.*s", (int) IDIO_SUBSTRING_BLEN (o), IDIO_SUBSTRING_S (o)) == -1) {
-		    idio_error_alloc ("asprintf");
+		{
+		    char *s = idio_utf8_string (o, IDIO_UTF8_STRING_VERBATIM, IDIO_UTF8_STRING_UNQUOTED);
 
-		    /* notreached */
-		    return NULL;
+		    if (asprintf (&r, "%s", s) == -1) {
+			idio_error_alloc ("asprintf");
+
+			/* notreached */
+			return NULL;
+		    }
+		    free (s);
 		}
 		break;
 	    default:
@@ -2687,12 +2722,12 @@ void idio_dump (IDIO o, int detail)
 	    switch (o->type) {
 	    case IDIO_TYPE_STRING:
 		if (detail) {
-		    fprintf (stderr, "blen=%zu s=", IDIO_STRING_BLEN (o));
+		    fprintf (stderr, "len=%zu blen=%zu s=", IDIO_STRING_LEN (o), IDIO_STRING_BLEN (o));
 		}
 		break;
 	    case IDIO_TYPE_SUBSTRING:
 		if (detail) {
-		    fprintf (stderr, "blen=%zu parent=%10p subs=", IDIO_SUBSTRING_BLEN (o), IDIO_SUBSTRING_PARENT (o));
+		    fprintf (stderr, "len=%zu parent=%10p subs=", IDIO_SUBSTRING_LEN (o), IDIO_SUBSTRING_PARENT (o));
 		}
 		break;
 	    case IDIO_TYPE_SYMBOL:
@@ -2869,7 +2904,9 @@ IDIO_DEFINE_PRIMITIVE2 ("idio-debug", idio_debug, (IDIO fmt, IDIO o))
     IDIO_ASSERT (o);
     IDIO_TYPE_ASSERT (string, fmt);
 
-    idio_debug (IDIO_STRING_S (fmt), o);
+    char *sfmt = idio_string_as_C (fmt);
+    idio_debug (sfmt, o);
+    free (sfmt);
 
     return idio_S_unspec;
 }

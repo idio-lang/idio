@@ -32,7 +32,7 @@
 typedef struct idio_file_handle_stream_s {
     FILE *filep;		/* or NULL! */
     int fd;
-    FLAGS_T flags;		/* IDIO_FILE_HANDLE_FLAG_* */
+    IDIO_FLAGS_T flags;		/* IDIO_FILE_HANDLE_FLAG_* */
     char *buf;			/* buffer */
     int bufsiz;
     char *ptr;			/* ptr into buffer */

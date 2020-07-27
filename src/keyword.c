@@ -104,7 +104,10 @@ IDIO idio_keyword_C (const char *s_C)
 IDIO_DEFINE_PRIMITIVE1 ("make-keyword", make_keyword, (IDIO s))
 {
     if (idio_isa_string (s)) {
-	return idio_keywords_C_intern (idio_string_s (s));
+	char *Cs = idio_string_as_C (s);
+	IDIO r = idio_keywords_C_intern (Cs);
+	free (Cs);
+	return r;
     } else if (idio_isa_symbol (s)) {
 	return idio_keyword_C (IDIO_SYMBOL_S (s));
     } else {

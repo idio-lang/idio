@@ -534,8 +534,81 @@ static IDIO idio_read_number_C (IDIO handle, char *str);
 static IDIO idio_read_bignum_radix (IDIO handle, IDIO lo, char basec, int radix);
 static IDIO idio_read_unescape (IDIO ls);
 
-static void idio_read_whitespace (IDIO handle)
+IDIO idio_read_char (IDIO handle)
 {
+    IDIO_ASSERT (handle);
+    IDIO_TYPE_ASSERT (handle, handle);
+
+    int c = idio_getc_handle (handle);
+
+    if (EOF == c) {
+	return idio_S_eof;
+    } else {
+	/*
+	 * Technically more of an IDIO_OCTET than a true (UTF-8)
+	 * character but you didn't read this, right?
+	 */
+	return IDIO_CHARACTER (c);
+    }
+}
+
+IDIO idio_read_character (IDIO handle, IDIO lo)
+{
+    IDIO_ASSERT (handle);
+    IDIO_TYPE_ASSERT (handle, handle);
+
+    idio_utf8_t codepoint;
+    idio_utf8_t state = 0;
+
+    int i;
+    for (i = 0; ; i++) {
+	int c = idio_getc_handle (handle);
+
+	if (EOF == c) {
+	    if (i) {
+		fprintf (stderr, "EOF w/ i=%d\n", i);
+		idio_read_error_utf8_decode (handle, lo, IDIO_C_FUNC_LOCATION (), "EOF");
+
+		return idio_S_notreached;
+
+	    } else {
+		return idio_S_eof;
+	    }
+	}
+
+	/*
+	 * if this is a non-ASCII value then it should be the result
+	 * of an idio_ungetc_handle
+	 */
+	if (c > 0x7f) {
+	    codepoint = c;
+	    break;
+	}
+
+	if (0 == idio_utf8_decode (&state, &codepoint, c)) {
+	    fprintf (stderr, "idio_read_character: U+%04X\n", codepoint);
+	    break;
+	}
+
+	if (state != IDIO_UTF8_ACCEPT) {
+	    fprintf (stderr, "The (UTF-8) string is not well-formed\n");
+	    idio_read_error_utf8_decode (handle, lo, IDIO_C_FUNC_LOCATION (), "not well-formed");
+
+	    return idio_S_notreached;
+	}
+    }
+
+    return IDIO_CHARACTER (codepoint);
+}
+
+static void idio_read_whitespace (IDIO handle, IDIO lo)
+{
+    IDIO_ASSERT (handle);
+    IDIO_ASSERT (lo);
+
+    IDIO_TYPE_ASSERT (handle, handle);
+    IDIO_TYPE_ASSERT (struct_instance, lo);
+
     for (;;) {
 	int c = idio_getc_handle (handle);
 
@@ -552,8 +625,14 @@ static void idio_read_whitespace (IDIO handle)
     }
 }
 
-static void idio_read_newline (IDIO handle)
+static void idio_read_newline (IDIO handle, IDIO lo)
 {
+    IDIO_ASSERT (handle);
+    IDIO_ASSERT (lo);
+
+    IDIO_TYPE_ASSERT (handle, handle);
+    IDIO_TYPE_ASSERT (struct_instance, lo);
+
     for (;;) {
 	int c = idio_getc_handle (handle);
 
@@ -1187,7 +1266,7 @@ static IDIO idio_read_string (IDIO handle, IDIO lo)
      * docked that amount
      */
 
-#define IDIO_STRING_CHUNK_LEN	1<<1
+#define IDIO_STRING_CHUNK_LEN	sizeof (unsigned int)
     int nchunks = 1;
     size_t alen = (nchunks * IDIO_STRING_CHUNK_LEN); /* - 2 * sizeof (void *); */
     char *buf = idio_alloc (alen);
@@ -1420,7 +1499,7 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 	return idio_S_notreached;
     }
 
-    idio_read_whitespace (handle);
+    idio_read_whitespace (handle, lo);
 
     IDIO bs = idio_S_nil;
 
@@ -1479,7 +1558,7 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 	    case IDIO_CHAR_TAB:
 	    case IDIO_CHAR_NL:
 	    case IDIO_CHAR_CR:
-		idio_read_whitespace (handle);
+		idio_read_whitespace (handle, lo);
 		if (i > 0) {
 		    eow = 1;
 		}
@@ -1539,12 +1618,14 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 	    } else {
 		IDIO buf_sh = idio_open_input_string_handle_C (buf);
 
+		char *sname = idio_handle_name_as_C (buf_sh);
 		IDIO lo = idio_struct_instance (idio_lexobj_type,
-						idio_pair (idio_string_C (idio_handle_name (buf_sh)),
+						idio_pair (idio_string_C (sname),
 						idio_pair (idio_integer (IDIO_HANDLE_LINE (buf_sh)),
 						idio_pair (idio_integer (IDIO_HANDLE_POS (buf_sh)),
 						idio_pair (idio_S_unspec,
 						idio_S_nil)))));
+		free (sname);
 
 		if (NULL != bit_range) {
 		    /* bit_range is pointing at the HYPEN_MINUS */
@@ -2337,7 +2418,7 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl
 	    switch (c) {
 	    case IDIO_CHAR_CR:
 	    case IDIO_CHAR_NL:
-		idio_read_newline (handle);
+		idio_read_newline (handle, lo);
 		break;
 	    default:
 		idio_ungetc_handle (handle, c);
@@ -2352,13 +2433,13 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl
 		return lo;
 	    case IDIO_CHAR_SPACE:
 	    case IDIO_CHAR_TAB:
-		idio_read_whitespace (handle);
+		idio_read_whitespace (handle, lo);
 		moved = 1;
 		break;
 	    case IDIO_CHAR_CR:
 	    case IDIO_CHAR_NL:
 		if (0 == return_nl) {
-		    idio_read_newline (handle);
+		    idio_read_newline (handle, lo);
 		}
 		idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_T_eol);
 		return lo;
@@ -2975,73 +3056,6 @@ IDIO idio_read_expr (IDIO handle)
     return expr;
 }
 
-IDIO idio_read_char (IDIO handle)
-{
-    IDIO_ASSERT (handle);
-    IDIO_TYPE_ASSERT (handle, handle);
-
-    int c = idio_getc_handle (handle);
-
-    if (EOF == c) {
-	return idio_S_eof;
-    } else {
-	/*
-	 * Technically more of an IDIO_OCTET than a true (UTF-8)
-	 * character but you didn't read this, right?
-	 */
-	return IDIO_CHARACTER (c);
-    }
-}
-
-IDIO idio_read_character (IDIO handle, IDIO lo)
-{
-    IDIO_ASSERT (handle);
-    IDIO_TYPE_ASSERT (handle, handle);
-
-    idio_utf8_t codepoint;
-    idio_utf8_t state = 0;
-
-    int i;
-    for (i = 0; ; i++) {
-	int c = idio_getc_handle (handle);
-
-	if (EOF == c) {
-	    if (i) {
-		fprintf (stderr, "EOF w/ i=%d\n", i);
-		idio_read_error_utf8_decode (handle, lo, IDIO_C_FUNC_LOCATION (), "EOF");
-
-		return idio_S_notreached;
-
-	    } else {
-		return idio_S_eof;
-	    }
-	}
-
-	/*
-	 * if this is a non-ASCII value then it should be the result
-	 * of an idio_ungetc_handle
-	 */
-	if (c > 0x7f) {
-	    codepoint = c;
-	    break;
-	}
-
-	if (0 == idio_utf8_decode (&state, &codepoint, c)) {
-	    /* fprintf (stderr, "idio_read_character: U+%04X\n", codepoint); */
-	    break;
-	}
-
-	if (state != IDIO_UTF8_ACCEPT) {
-	    fprintf (stderr, "The (UTF-8) string is not well-formed\n");
-	    idio_read_error_utf8_decode (handle, lo, IDIO_C_FUNC_LOCATION (), "not well-formed");
-
-	    return idio_S_notreached;
-	}
-    }
-
-    return IDIO_CHARACTER (codepoint);
-}
-
 IDIO_DEFINE_PRIMITIVE1V_DS ("read-number", read_number, (IDIO src, IDIO args), "src [radix]", "\
 read a number from ``src``				\n\
 							\n\
@@ -3059,7 +3073,9 @@ read a number from ``src``				\n\
 
     if (! idio_isa_handle (src)) {
 	if (idio_isa_string (src)) {
-	    handle = idio_open_input_string_handle_C (idio_string_s (src));
+	    char *ssrc = idio_string_as_C (src);
+	    handle = idio_open_input_string_handle_C (ssrc);
+	    free (ssrc);
 	} else {
 	    idio_error_param_type ("handle or string", src, IDIO_C_FUNC_LOCATION ());
 
@@ -3067,12 +3083,14 @@ read a number from ``src``				\n\
 	}
     }
 
+    char *sname = idio_handle_name_as_C (handle);
     IDIO lo = idio_struct_instance (idio_lexobj_type,
-				    idio_pair (idio_string_C (idio_handle_name (handle)),
+				    idio_pair (idio_string_C (sname),
 				    idio_pair (idio_integer (IDIO_HANDLE_LINE (handle)),
 				    idio_pair (idio_integer (IDIO_HANDLE_POS (handle)),
 				    idio_pair (idio_S_unspec,
 				    idio_S_nil)))));
+    free (sname);
 
     IDIO_VERIFY_PARAM_TYPE (list, args);
 
