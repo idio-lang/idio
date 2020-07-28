@@ -75,6 +75,7 @@ read-error-load "read-errors/nested-block-comment-pipe-eof-2.idio" "comment: unt
 read-error-load "read-errors/string-unterminated.idio" "string: unterminated" 1
 read-error-load "read-errors/string-unterminated-emb.idio" "string: unterminated" 2
 
+read-error-load "read-errors/character-eof.idio" "UTF-8 decode: EOF" 1
 read-error-load "read-errors/named-character-eof.idio" "named character: EOF" 1
 read-error-load "read-errors/named-character-eof-emb.idio" "named character: EOF" 2
 
@@ -147,4 +148,4 @@ read-error-load "read-errors/op-eof.idio" "EOF in list" 3
 read-error-load "read-errors/op-eof-emb.idio" "EOF in list" 4
 
 ;; all done?
-test Tests (read-error0 + 120)
+test Tests (read-error0 + 122)

@@ -700,6 +700,7 @@ idio_hi_t idio_hash_default_hash_C (IDIO h, void *kv)
     case IDIO_TYPE_CONSTANT_TOKEN:
     case IDIO_TYPE_CONSTANT_I_CODE:
     case IDIO_TYPE_CONSTANT_CHARACTER:
+    case IDIO_TYPE_CONSTANT_UNICODE:
     return (idio_hash_default_hash_C_uintmax_t ((uintptr_t) k) & IDIO_HASH_MASK (h));
     }
 

@@ -222,7 +222,7 @@ char-set:empty       := #n
 ; char-set:full is full == ~ empty
 char-set:full        := #n
 
-; char-set:nonl is char-set:full excl. #\newline
+; char-set:nonl is char-set:full excl. #\{newline}
 char-set:nonl        := #n
 
 ; char-set:control is Property Control
@@ -329,7 +329,7 @@ if (null? char-set:ascii) {
 		  (char-set:ascii "0000..007F")
 		  (char-set:empty "empty")
 		  (char-set:full "full == ~ empty")
-		  (char-set:nonl "char-set:full excl. #\\newline")
+		  (char-set:nonl "char-set:full excl. #\\{newline}")
 		  (char-set:control "Property Control")
 		  (char-set:word-constituent "char-set:letter+digit + _")
 		  (char-set:cased "char-set:upper-case + char-set:lower-case + char-set:title-case")
@@ -397,7 +397,7 @@ if (null? char-set:ascii) {
   ascii-char-set:full			:= not-bitset ascii-char-set:empty
   ascii-char-set:nonl			:= copy-bitset ascii-char-set:full
   ascii-char-set:control		:= make-bitset ascii-char-set:size
-  bitset-clear! ascii-char-set:nonl (char->integer #\newline)
+  bitset-clear! ascii-char-set:nonl (unicode->integer #\{newline})
   ; ascii-char-set:word-constituent is derived from ascii-char-set:letter+digit, see below
   ; ascii-char-set:cased is derived from others, see below
   ; The %X char-sets are (obviously?) derived
@@ -431,7 +431,7 @@ if (null? char-set:ascii) {
   char-set:full				:= not-bitset char-set:empty
   char-set:nonl				:= copy-bitset char-set:full
   char-set:control			:= make-bitset char-set:size
-  bitset-clear! char-set:nonl (char->integer #\newline)
+  bitset-clear! char-set:nonl (unicode->integer #\{newline})
   ; char-set:word-constituent is derived from char-set:letter+digit, see below
   ; char-set:cased is derived from others, see below
   ; The %X char-sets are (obviously?) derived
@@ -758,13 +758,13 @@ if (null? char-set:ascii) {
   ascii-char-set:letter+digit		:= merge-bitset ascii-char-set:letter ascii-char-set:digit
   ascii-char-set:printing		:= merge-bitset ascii-char-set:graphic ascii-char-set:whitespace
   ascii-char-set:word-constituent	:= copy-bitset ascii-char-set:letter+digit
-  bitset-set! ascii-char-set:word-constituent (char->integer #\_)
+  bitset-set! ascii-char-set:word-constituent (unicode->integer #\_)
   ascii-char-set:cased			:= ior-bitset ascii-char-set:upper-case ascii-char-set:lower-case ascii-char-set:title-case
 
   char-set:letter+digit			:= merge-bitset char-set:letter char-set:digit
   char-set:printing			:= merge-bitset char-set:graphic char-set:whitespace
   char-set:word-constituent		:= copy-bitset char-set:letter+digit
-  bitset-set! char-set:word-constituent (char->integer #\_)
+  bitset-set! char-set:word-constituent (unicode->integer #\_)
   char-set:cased			:= ior-bitset char-set:upper-case char-set:lower-case char-set:title-case
 
   bs-range-loop :+ function (bs n e) {

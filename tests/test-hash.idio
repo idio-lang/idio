@@ -215,7 +215,7 @@ trap (^rt-parameter-type-error ^idio-error) \
   hash-set! ht i "integer"
   test ht.i "integer"
 
-  c := integer->char i
+  c := integer->unicode i
 
   hash-set! ht c "character"
 
@@ -328,7 +328,7 @@ trap ^rt-parameter-type-error (function (c) {
 				 0
 }) {
   i := 65
-  c := integer->char i
+  c := integer->unicode i
   hash-set! ht c "carrot"
 
   test (hash-exists? ht i) #f

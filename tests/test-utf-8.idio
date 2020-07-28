@@ -18,5 +18,3 @@ display* "str[" (string-length str) "] =" str
 
 display* "str.0 =" str.0
 display* "str.1 =" str.1
-display* "str.2 =" str.2
-display* "str.3 =" str.3

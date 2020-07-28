@@ -70,10 +70,12 @@ extern IDIO idio_src_properties;
 #define idio_T_pair_separator	((const IDIO) IDIO_CONSTANT_TOKEN (IDIO_TOKEN_PAIR_SEPARATOR))
 #define idio_T_semicolon	((const IDIO) IDIO_CONSTANT_TOKEN (IDIO_TOKEN_SEMICOLON))
 
+#define IDIO_READ_CHARACTER_SIMPLE	0
+#define IDIO_READ_CHARACTER_EXTENDED	1
+
 IDIO idio_read (IDIO handle);
 IDIO idio_read_expr (IDIO handle);
-IDIO idio_read_char (IDIO handle);
-IDIO idio_read_character (IDIO handle, IDIO lo);
+IDIO idio_read_character (IDIO handle, IDIO lo, int kind);
 
 void idio_init_read ();
 void idio_read_add_primitives ();

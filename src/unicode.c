@@ -52,6 +52,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 #include "idio.h"
 
+/**
+ * static idio_unicode_hash - table of known unicode names to values
+ *
+ */
+static IDIO idio_unicode_hash = idio_S_nil;
+
 static const uint8_t idio_utf8d[] = {
     // The first part of the table maps bytes to character classes that
     // to reduce the size of the transition table and create bitmasks.
@@ -73,9 +79,9 @@ static const uint8_t idio_utf8d[] = {
     12,36,12,12,12,12,12,12,12,12,12,12,
 };
 
-idio_utf8_t inline idio_utf8_decode (idio_utf8_t* state, idio_utf8_t* codep, idio_utf8_t byte)
+idio_unicode_t inline idio_utf8_decode (idio_unicode_t* state, idio_unicode_t* codep, idio_unicode_t byte)
 {
-    idio_utf8_t type = idio_utf8d[byte];
+    idio_unicode_t type = idio_utf8d[byte];
 
     *codep = (*state != IDIO_UTF8_ACCEPT) ?
 	(byte & 0x3fu) | (*codep << 6) :
@@ -98,8 +104,8 @@ if (countCodePoints(s, &count)) {
  */
 int idio_utf8_countCodePoints (uint8_t* s, size_t* count)
 {
-    idio_utf8_t codepoint;
-    idio_utf8_t state = 0;
+    idio_unicode_t codepoint;
+    idio_unicode_t state = 0;
 
     for (*count = 0; *s; ++s)
 	if (0 == idio_utf8_decode (&state, &codepoint, *s))
@@ -110,8 +116,8 @@ int idio_utf8_countCodePoints (uint8_t* s, size_t* count)
 
 void idio_utf8_printCodePoints (uint8_t* s)
 {
-    idio_utf8_t codepoint;
-    idio_utf8_t state = 0;
+    idio_unicode_t codepoint;
+    idio_unicode_t state = 0;
 
     for (; *s; ++s)
 	if (0 == idio_utf8_decode (&state, &codepoint, *s))
@@ -180,6 +186,51 @@ for (prev = 0, current = 0; *s; prev = current, ++s) {
   idf: presumably state / 12 + 1 with the Rich Felker tweak.
 
 */
+
+int idio_isa_unicode (IDIO o)
+{
+    IDIO_ASSERT (o);
+
+    if (((intptr_t) o & IDIO_TYPE_CONSTANT_MASK) == IDIO_TYPE_CONSTANT_UNICODE_MARK) {
+	return 1;
+    }
+
+    return 0;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("unicode?",  unicode_p, (IDIO o), "o", "\
+test if `o` is a unicode value				\n\
+							\n\
+:param o: object to test				\n\
+							\n\
+:return: #t if `o` is a unicode value, #f otherwise	\n\
+")
+{
+    IDIO_ASSERT (o);
+
+    IDIO r = idio_S_false;
+
+    if (idio_isa_unicode (o)) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("unicode->integer",  unicode2integer, (IDIO c), "c", "\
+convert `c` to an integer				\n\
+						\n\
+:param c: unicode to convert			\n\
+						\n\
+:return: integer (fixnum) conversion of `c`	\n\
+")
+{
+    IDIO_ASSERT (c);
+
+    IDIO_VERIFY_PARAM_TYPE (unicode, c);
+
+    return idio_fixnum (IDIO_UNICODE_VAL (c));
+}
 
 /*
  * reconstruct C escapes in s
@@ -307,7 +358,7 @@ char *idio_utf8_string (IDIO str, int escapes, int quoted)
 	    case IDIO_STRING_FLAG_2BYTE:
 	    case IDIO_STRING_FLAG_4BYTE:
 		if (c > 0x10ffff) {
-		    fprintf (stderr, "oops c=%ux > 0x10ffff\n", c);
+		    fprintf (stderr, "utf8-string: oops c=%x > 0x10ffff\n", c);
 		} else if (c >= 0x10000) {
 		    r[n++] = 0xf0 | ((c & (0x07 << 18)) >> 18);
 		    r[n++] = 0x80 | ((c & (0x3f << 12)) >> 12);
@@ -336,15 +387,516 @@ char *idio_utf8_string (IDIO str, int escapes, int quoted)
     return r;
 }
 
+int idio_unicode_C_eqp (void *s1, void *s2)
+{
+    /*
+     * We should only be here for idio_unicode_hash key comparisons
+     * but hash keys default to idio_S_nil
+     */
+    if (idio_S_nil == s1 ||
+	idio_S_nil == s2) {
+	return 0;
+    }
+
+    return (0 == strcmp ((const char *) s1, (const char *) s2));
+}
+
+idio_hi_t idio_unicode_C_hash (IDIO h, void *s)
+{
+    size_t hvalue = (uintptr_t) s;
+
+    if (idio_S_nil != s) {
+	hvalue = idio_hash_default_hash_C_string_C (strlen ((char *) s), s);
+    }
+
+    return (hvalue & IDIO_HASH_MASK (h));
+}
+
+IDIO idio_unicode_C_intern (char *s, IDIO v)
+{
+    IDIO_C_ASSERT (s);
+
+    IDIO c = idio_hash_get (idio_unicode_hash, s);
+
+    if (idio_S_unspec == c) {
+	size_t blen = strlen (s);
+	char *copy = idio_alloc (blen + 1);
+	strcpy (copy, s);
+	idio_hash_put (idio_unicode_hash, copy, v);
+    }
+
+    return v;
+}
+
+/**
+ * idio_unicode_lookup - return the code point of a named unicode code
+ * point
+ *
+ * @s: unicode name (a C string)
+ *
+ * Return:
+ * The Idio value of the code point or %idio_S_unspec.
+ */
+IDIO idio_unicode_lookup (char *s)
+{
+    IDIO_C_ASSERT (s);
+
+    return idio_hash_get (idio_unicode_hash, s);
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("unicode-alphabetic?",  unicode_alphabetic_p, (IDIO c), "c", "\
+test if `c` is alphabetic			\n\
+						\n\
+:param c: unicode to test			\n\
+						\n\
+This implementation uses libc isalpha()		\n\
+						\n\
+:return: #t if `c` is an alphabetic unicode, #f otherwise	\n\
+")
+{
+    IDIO_ASSERT (c);
+
+    IDIO_VERIFY_PARAM_TYPE (unicode, c);
+
+    IDIO r = idio_S_false;
+
+    if (isalpha (IDIO_UNICODE_VAL (c))) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("unicode-numeric?",  unicode_numeric_p, (IDIO c), "c", "\
+test if `c` is numeric			\n\
+						\n\
+:param c: unicode to test			\n\
+						\n\
+This implementation uses libc isdigit()		\n\
+						\n\
+:return: #t if `c` is an numeric unicode, #f otherwise	\n\
+")
+{
+    IDIO_ASSERT (c);
+
+    IDIO_VERIFY_PARAM_TYPE (unicode, c);
+
+    IDIO r = idio_S_false;
+
+    if (isdigit (IDIO_UNICODE_VAL (c))) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("unicode-whitespace?",  unicode_whitespace_p, (IDIO c), "c", "\
+test if `c` is whitespace			\n\
+						\n\
+:param c: unicode to test			\n\
+						\n\
+This implementation uses libc isblank() and isspace()		\n\
+						\n\
+:return: #t if `c` is a whitespace unicode, #f otherwise	\n\
+")
+{
+    IDIO_ASSERT (c);
+
+    IDIO_VERIFY_PARAM_TYPE (unicode, c);
+
+    IDIO r = idio_S_false;
+
+    if (isblank (IDIO_UNICODE_VAL (c)) ||
+	isspace (IDIO_UNICODE_VAL (c))) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
+intptr_t idio_unicode_ival (IDIO ic)
+{
+    IDIO_ASSERT (ic);
+
+    IDIO_VERIFY_PARAM_TYPE (unicode, ic);
+
+    intptr_t c = IDIO_UNICODE_VAL (ic);
+
+    intptr_t r = c;
+
+    /*
+     * ASCII only
+     */
+    if (c < 0x80) {
+	r = tolower (c);
+    }
+
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("unicode-downcase",  unicode_downcase, (IDIO c), "c", "\
+return lowercase variant of `c`			\n\
+						\n\
+:param c: unicode to convert			\n\
+						\n\
+This implementation uses libc tolower()		\n\
+						\n\
+:return: lowercase variant of `c`	\n\
+")
+{
+    IDIO_ASSERT (c);
+
+    IDIO_VERIFY_PARAM_TYPE (unicode, c);
+
+    return IDIO_UNICODE (idio_unicode_ival (c));
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("unicode-lower-case?",  unicode_lower_case_p, (IDIO c), "c", "\
+test if `c` is lower case			\n\
+						\n\
+:param c: unicode to test			\n\
+						\n\
+This implementation uses libc islower()		\n\
+						\n\
+:return: #t if `c` is a lower case unicode, #f otherwise	\n\
+")
+{
+    IDIO_ASSERT (c);
+
+    IDIO_VERIFY_PARAM_TYPE (unicode, c);
+
+    IDIO r = idio_S_false;
+
+    if (islower (IDIO_UNICODE_VAL (c))) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("unicode-upcase",  unicode_upcase, (IDIO c), "c", "\
+return uppercase variant of `c`			\n\
+						\n\
+:param c: unicode to convert			\n\
+						\n\
+This implementation uses libc toupper()		\n\
+						\n\
+:return: uppercase variant of `c`	\n\
+")
+{
+    IDIO_ASSERT (c);
+
+    IDIO_VERIFY_PARAM_TYPE (unicode, c);
+
+    return IDIO_UNICODE (toupper (IDIO_UNICODE_VAL (c)));
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("unicode-upper-case?",  unicode_upper_case_p, (IDIO c), "c", "\
+test if `c` is upper case			\n\
+						\n\
+:param c: unicode to test			\n\
+						\n\
+This implementation uses libc isupper()		\n\
+						\n\
+:return: #t if `c` is a upper case unicode, #f otherwise	\n\
+")
+{
+    IDIO_ASSERT (c);
+
+    IDIO_VERIFY_PARAM_TYPE (unicode, c);
+
+    IDIO r = idio_S_false;
+
+    if (isupper (IDIO_UNICODE_VAL (c))) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
+/*
+ * All the unicode-*? are essentially identical
+ */
+#define IDIO_DEFINE_UNICODE_PRIMITIVE2V(name,cname,cmp,accessor)	\
+    IDIO_DEFINE_PRIMITIVE2V (name, cname, (IDIO c1, IDIO c2, IDIO args)) \
+    {									\
+	IDIO_ASSERT (c1);						\
+	IDIO_ASSERT (c2);						\
+	IDIO_ASSERT (args);						\
+									\
+	IDIO_VERIFY_PARAM_TYPE (unicode, c1);				\
+	IDIO_VERIFY_PARAM_TYPE (unicode, c2);				\
+	IDIO_VERIFY_PARAM_TYPE (list, args);				\
+									\
+	args = idio_pair (c2, args);					\
+									\
+	IDIO r = idio_S_true;						\
+									\
+	while (idio_S_nil != args) {					\
+	    c2 = IDIO_PAIR_H (args);					\
+	    IDIO_VERIFY_PARAM_TYPE (unicode, c2);			\
+	    if (! (accessor (c1) cmp accessor (c2))) {			\
+		r = idio_S_false;					\
+		break;							\
+	    }								\
+	    c1 = c2;							\
+	    args = IDIO_PAIR_T (args);					\
+	}								\
+									\
+	return r;							\
+    }
+
+#define IDIO_DEFINE_UNICODE_CS_PRIMITIVE2V(name,cname,cmp)		\
+    IDIO_DEFINE_UNICODE_PRIMITIVE2V (name, unicode_ci_ ## cname ## _p, cmp, IDIO_UNICODE_VAL)
+
+#define IDIO_DEFINE_UNICODE_CI_PRIMITIVE2V(name,cname,cmp)		\
+    IDIO_DEFINE_UNICODE_PRIMITIVE2V (name, unicode_ ## cname ## _p, cmp, idio_unicode_ival)
+
+IDIO_DEFINE_UNICODE_CI_PRIMITIVE2V ("unicode-ci<=?", le, <=)
+IDIO_DEFINE_UNICODE_CI_PRIMITIVE2V ("unicode-ci<?", lt, <)
+IDIO_DEFINE_UNICODE_CI_PRIMITIVE2V ("unicode-ci=?", eq, ==)
+IDIO_DEFINE_UNICODE_CI_PRIMITIVE2V ("unicode-ci>=?", ge, >=)
+IDIO_DEFINE_UNICODE_CI_PRIMITIVE2V ("unicode-ci>?", gt, >)
+
+IDIO_DEFINE_UNICODE_CS_PRIMITIVE2V ("unicode<=?", le, <=)
+IDIO_DEFINE_UNICODE_CS_PRIMITIVE2V ("unicode<?", lt, <)
+IDIO_DEFINE_UNICODE_CS_PRIMITIVE2V ("unicode=?", eq, ==)
+IDIO_DEFINE_UNICODE_CS_PRIMITIVE2V ("unicode>=?", ge, >=)
+IDIO_DEFINE_UNICODE_CS_PRIMITIVE2V ("unicode>?", gt, >)
+
+#define IDIO_UNICODE_INTERN_C(name,c)	(idio_unicode_C_intern (name, IDIO_UNICODE (c)))
+
 void idio_init_unicode ()
 {
+    idio_unicode_hash = idio_hash (1<<7, idio_unicode_C_eqp, idio_unicode_C_hash, idio_S_nil, idio_S_nil);
+    idio_gc_protect (idio_unicode_hash);
+    IDIO_HASH_FLAGS (idio_unicode_hash) |= IDIO_HASH_FLAG_STRING_KEYS;
+
+    /* ASCII C0 control characters */
+    IDIO_UNICODE_INTERN_C ("nul", 0);
+    IDIO_UNICODE_INTERN_C ("soh", 1);
+    IDIO_UNICODE_INTERN_C ("stx", 2);
+    IDIO_UNICODE_INTERN_C ("etx", 3);
+    IDIO_UNICODE_INTERN_C ("eot", 4);
+    IDIO_UNICODE_INTERN_C ("enq", 5);
+    IDIO_UNICODE_INTERN_C ("ack", 6);
+    IDIO_UNICODE_INTERN_C ("bel", 7);
+    IDIO_UNICODE_INTERN_C ("bs", 8);
+    IDIO_UNICODE_INTERN_C ("ht", 9);
+    IDIO_UNICODE_INTERN_C ("lf", 10);
+    IDIO_UNICODE_INTERN_C ("vt", 11);
+    IDIO_UNICODE_INTERN_C ("ff", 12);
+    IDIO_UNICODE_INTERN_C ("cr", 13);
+    IDIO_UNICODE_INTERN_C ("so", 14);
+    IDIO_UNICODE_INTERN_C ("si", 15);
+    IDIO_UNICODE_INTERN_C ("dle", 16);
+    IDIO_UNICODE_INTERN_C ("dcl", 17);
+    IDIO_UNICODE_INTERN_C ("dc2", 18);
+    IDIO_UNICODE_INTERN_C ("dc3", 19);
+    IDIO_UNICODE_INTERN_C ("dc4", 20);
+    IDIO_UNICODE_INTERN_C ("nak", 21);
+    IDIO_UNICODE_INTERN_C ("syn", 22);
+    IDIO_UNICODE_INTERN_C ("etb", 23);
+    IDIO_UNICODE_INTERN_C ("can", 24);
+    IDIO_UNICODE_INTERN_C ("em", 25);
+    IDIO_UNICODE_INTERN_C ("sub", 26);
+    IDIO_UNICODE_INTERN_C ("esc", 27);
+    IDIO_UNICODE_INTERN_C ("fs", 28);
+    IDIO_UNICODE_INTERN_C ("gs", 29);
+    IDIO_UNICODE_INTERN_C ("rs", 30);
+    IDIO_UNICODE_INTERN_C ("us", 31);
+    IDIO_UNICODE_INTERN_C ("sp", 32);
+
+    /* C and other common names */
+    /* nul as above */
+    IDIO_UNICODE_INTERN_C ("alarm",		'\a'); /* 0x07 */
+    IDIO_UNICODE_INTERN_C ("backspace",		'\b'); /* 0x08 */
+    IDIO_UNICODE_INTERN_C ("tab",		'\t'); /* 0x09 */
+    IDIO_UNICODE_INTERN_C ("linefeed",		'\n'); /* 0x0a */
+    IDIO_UNICODE_INTERN_C ("newline",		'\n'); /* 0x0a */
+    IDIO_UNICODE_INTERN_C ("vtab",		'\v'); /* 0x0b */
+    IDIO_UNICODE_INTERN_C ("page",		'\f'); /* 0x0c */
+    IDIO_UNICODE_INTERN_C ("return",		'\r'); /* 0x0d */
+    IDIO_UNICODE_INTERN_C ("carriage-return",	'\r'); /* 0x0d */
+    IDIO_UNICODE_INTERN_C ("esc",		0x1b); /* 0x1b */
+    IDIO_UNICODE_INTERN_C ("escape",		0x1b); /* 0x1b */
+    IDIO_UNICODE_INTERN_C ("space",		' ');  /* 0x20 */
+    IDIO_UNICODE_INTERN_C ("del",		0x7f); /* 0x7f */
+    IDIO_UNICODE_INTERN_C ("delete",		0x7f); /* 0x7f */
+
+    /*
+     * As #\{ is the start of a named character we need to be able to
+     * "characterise" a left brace itself.  Lets have a couple of
+     * ways:
+     *
+     * #\{lbrace}
+     * #\{{}
+     */
+    IDIO_UNICODE_INTERN_C ("lbrace",		'{');
+    IDIO_UNICODE_INTERN_C ("{",			'{');
+
+    /* Unicode code points... */
 }
 
 void idio_unicode_add_primitives ()
 {
+    IDIO_ADD_PRIMITIVE (unicode_p);
+    IDIO_ADD_PRIMITIVE (unicode2integer);
+    IDIO_ADD_PRIMITIVE (unicode_alphabetic_p);
+    IDIO_ADD_PRIMITIVE (unicode_numeric_p);
+    IDIO_ADD_PRIMITIVE (unicode_downcase);
+    IDIO_ADD_PRIMITIVE (unicode_lower_case_p);
+    IDIO_ADD_PRIMITIVE (unicode_upcase);
+    IDIO_ADD_PRIMITIVE (unicode_upper_case_p);
+    IDIO_ADD_PRIMITIVE (unicode_whitespace_p);
+
+    /*
+     * The unicode_* functions were autogenerated but we still need to
+     * add the sigstr and docstr
+     */
+    IDIO fvi = IDIO_ADD_PRIMITIVE (unicode_le_p);
+    IDIO p = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+    idio_primitive_set_property_C (p, idio_KW_sigstr, "c1 c2 [...]");
+    idio_primitive_set_property_C (p, idio_KW_docstr_raw, "\
+test if unicode arguments are sorted non-decreasing			\n\
+									\n\
+:param c1: char								\n\
+:param c2: char								\n\
+:param ...: chars							\n\
+									\n\
+:return: #t if arguments are sorted non-decreasing, #f otherwise	\n\
+");
+
+    fvi = IDIO_ADD_PRIMITIVE (unicode_lt_p);
+    p = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+    idio_primitive_set_property_C (p, idio_KW_sigstr, "c1 c2 [...]");
+    idio_primitive_set_property_C (p, idio_KW_docstr_raw, "\
+test if unicode arguments are sorted increasing		\n\
+								\n\
+:param c1: char							\n\
+:param c2: char							\n\
+:param ...: chars						\n\
+								\n\
+:return: #t if arguments are sorted increasing, #f otherwise	\n\
+");
+
+    fvi = IDIO_ADD_PRIMITIVE (unicode_eq_p);
+    p = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+    idio_primitive_set_property_C (p, idio_KW_sigstr, "c1 c2 [...]");
+    idio_primitive_set_property_C (p, idio_KW_docstr_raw, "\
+test if unicode arguments are equal			\n\
+							\n\
+:param c1: char						\n\
+:param c2: char						\n\
+:param ...: chars					\n\
+							\n\
+:return: #t if arguments are equal, #f otherwise	\n\
+");
+
+    fvi = IDIO_ADD_PRIMITIVE (unicode_ge_p);
+    p = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+    idio_primitive_set_property_C (p, idio_KW_sigstr, "c1 c2 [...]");
+    idio_primitive_set_property_C (p, idio_KW_docstr_raw, "\
+test if unicode arguments are sorted non-increasing			\n\
+									\n\
+:param c1: char								\n\
+:param c2: char								\n\
+:param ...: chars							\n\
+									\n\
+:return: #t if arguments are sorted non-increasing, #f otherwise	\n\
+");
+
+    fvi = IDIO_ADD_PRIMITIVE (unicode_gt_p);
+    p = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+    idio_primitive_set_property_C (p, idio_KW_sigstr, "c1 c2 [...]");
+    idio_primitive_set_property_C (p, idio_KW_docstr_raw, "\
+test if unicode arguments are sorted decreasing		\n\
+								\n\
+:param c1: char							\n\
+:param c2: char							\n\
+:param ...: chars						\n\
+								\n\
+:return: #t if arguments are sorted decreasing, #f otherwise	\n\
+");
+
+    fvi = IDIO_ADD_PRIMITIVE (unicode_ci_le_p);
+    p = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+    idio_primitive_set_property_C (p, idio_KW_sigstr, "c1 c2 [...]");
+    idio_primitive_set_property_C (p, idio_KW_docstr_raw, "\
+test if unicode arguments are sorted non-decreasing case-insensitively		\n\
+											\n\
+:param c1: char										\n\
+:param c2: char										\n\
+:param ...: chars									\n\
+											\n\
+This implementation uses libc tolower()							\n\
+											\n\
+:return: #t if arguments are sorted non-decreasing case-insensitively, #f otherwise	\n\
+");
+
+    fvi = IDIO_ADD_PRIMITIVE (unicode_ci_lt_p);
+    p = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+    idio_primitive_set_property_C (p, idio_KW_sigstr, "c1 c2 [...]");
+    idio_primitive_set_property_C (p, idio_KW_docstr_raw, "\
+test if unicode arguments are sorted increasing case-insensitively		\n\
+										\n\
+:param c1: char									\n\
+:param c2: char									\n\
+:param ...: chars								\n\
+										\n\
+This implementation uses libc tolower()						\n\
+										\n\
+:return: #t if arguments are sorted increasing case-insensitively, #f otherwise	\n\
+");
+
+    fvi = IDIO_ADD_PRIMITIVE (unicode_ci_eq_p);
+    p = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+    idio_primitive_set_property_C (p, idio_KW_sigstr, "c1 c2 [...]");
+    idio_primitive_set_property_C (p, idio_KW_docstr_raw, "\
+test if unicode arguments are equal case-insensitively		\n\
+									\n\
+:param c1: char								\n\
+:param c2: char								\n\
+:param ...: chars							\n\
+									\n\
+This implementation uses libc tolower()					\n\
+									\n\
+:return: #t if arguments are equal case-insensitively, #f otherwise	\n\
+");
+
+    fvi = IDIO_ADD_PRIMITIVE (unicode_ci_ge_p);
+    p = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+    idio_primitive_set_property_C (p, idio_KW_sigstr, "c1 c2 [...]");
+    idio_primitive_set_property_C (p, idio_KW_docstr_raw, "\
+test if unicode arguments are sorted non-increasing case-insensitively		\n\
+											\n\
+:param c1: char										\n\
+:param c2: char										\n\
+:param ...: chars									\n\
+											\n\
+This implementation uses libc tolower()							\n\
+											\n\
+:return: #t if arguments are sorted non-increasing case-insensitively, #f otherwise	\n\
+");
+
+    fvi = IDIO_ADD_PRIMITIVE (unicode_ci_gt_p);
+    p = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+    idio_primitive_set_property_C (p, idio_KW_sigstr, "c1 c2 [...]");
+    idio_primitive_set_property_C (p, idio_KW_docstr_raw, "\
+test if unicode arguments are sorted decreasing case-insensitively		\n\
+										\n\
+:param c1: char									\n\
+:param c2: char									\n\
+:param ...: chars								\n\
+										\n\
+This implementation uses libc tolower()						\n\
+										\n\
+:return: #t if arguments are sorted decreasing case-insensitively, #f otherwise	\n\
+");
 }
 
 void idio_final_unicode ()
 {
+    idio_gc_expose (idio_unicode_hash);
 }
 

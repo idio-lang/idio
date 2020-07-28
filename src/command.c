@@ -529,6 +529,7 @@ char **idio_command_argv (IDIO args)
 	    {
 		switch ((intptr_t) arg & IDIO_TYPE_CONSTANT_MASK) {
 		case IDIO_TYPE_CONSTANT_CHARACTER_MARK:
+		case IDIO_TYPE_CONSTANT_UNICODE_MARK:
 		    {
 			argv[i++] = idio_display_string (arg);
 		    }

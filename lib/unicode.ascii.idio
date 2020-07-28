@@ -55,7 +55,7 @@ char-set:empty       = #B{ 128 }
 ; char-set:full is full == ~ empty
 char-set:full        = #B{ 128 0-78 }
 
-; char-set:nonl is char-set:full excl. #\newline
+; char-set:nonl is char-set:full excl. #\{newline}
 char-set:nonl        = #B{ 128 0-0 11011111 10-78 }
 
 ; char-set:control is Property Control

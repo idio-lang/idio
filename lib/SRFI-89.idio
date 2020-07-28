@@ -346,7 +346,7 @@ define-macro (function* formals & body) {
     str := keyword->string key
     loop :+ function (h i) {
       if (lt i (string-length str)) {
-	loop (modulo ((h * 65536) + (char->integer (string-ref str i)))
+	loop (modulo ((h * 65536) + (unicode->integer (string-ref str i)))
 		     n) \
 	     (i + 1)
       } h
@@ -367,7 +367,7 @@ define (&hash-keyword key n) {
   str := keyword->string key
   loop :+ function (h i) {
     if (lt i (string-length str)) {
-      loop (modulo ((h * 65536) + (char->integer (string-ref str i)))
+      loop (modulo ((h * 65536) + (unicode->integer (string-ref str i)))
                         n) \
 	   (i + 1)
       } h

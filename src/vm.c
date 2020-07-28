@@ -3994,6 +3994,19 @@ int idio_vm_run1 (IDIO thr)
 	    IDIO_THREAD_VAL (thr) = IDIO_CONSTANT_IDIO ((intptr_t) v);
 	}
 	break;
+    case IDIO_A_UNICODE:
+	{
+	    uint64_t v = idio_vm_fetch_varuint (thr);
+	    IDIO_VM_RUN_DIS ("UNICODE %" PRId64 "", v);
+	    if (IDIO_FIXNUM_MAX < v) {
+		idio_error_printf (IDIO_C_FUNC_LOCATION_S ("UNICODE"), "UNICODE OOB: %" PRIu64 " > %" PRIu64, v, IDIO_FIXNUM_MAX);
+
+		/* notreached */
+		return 0;
+	    }
+	    IDIO_THREAD_VAL (thr) = IDIO_UNICODE ((intptr_t) v);
+	}
+	break;
     case IDIO_A_NOP:
 	{
 	    IDIO_VM_RUN_DIS ("NOP");
@@ -4020,7 +4033,7 @@ int idio_vm_run1 (IDIO thr)
 	    if (idio_vm_tracing) {
 		idio_vm_primitive_call_trace ("newline", thr, 0);
 	    }
-	    IDIO_THREAD_VAL (thr) = idio_character_lookup ("newline");
+	    IDIO_THREAD_VAL (thr) = idio_unicode_lookup ("newline");
 	}
 	break;
     case IDIO_A_PRIMCALL0_READ:
@@ -5311,6 +5324,12 @@ void idio_vm_dasm (IDIO thr, idio_ai_t pc0, idio_ai_t pce)
 		uint64_t v = idio_vm_get_varuint (pcp);
 		v = -v;
 		IDIO_VM_DASM ("NEG-CONSTANT %" PRId64 "", v);
+	    }
+	    break;
+	case IDIO_A_UNICODE:
+	    {
+		uint64_t v = idio_vm_get_varuint (pcp);
+		IDIO_VM_DASM ("UNICODE %" PRId64 "", v);
 	    }
 	    break;
 	case IDIO_A_NOP:

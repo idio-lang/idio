@@ -363,7 +363,7 @@ IDIO_DEFINE_PRIMITIVE0V ("peek-char", peek_char, (IDIO args))
 
     int c = idio_peek_handle (h);
 
-    return IDIO_CHARACTER (c);
+    return IDIO_UNICODE (c);
 }
 
 int idio_eofp_handle (IDIO h)
@@ -924,11 +924,11 @@ IDIO idio_read_line (IDIO h)
 
 IDIO_DEFINE_PRIMITIVE0V_DS ("read-line", read_line, (IDIO args), "[handle]", "\
 read a string from ``handle`` or the current intput handle	\n\
-up to a #\newline character				\n\
-							\n\
-:param handle: handle to read from			\n\
-:type handle: handle					\n\
-:return: object						\n\
+up to a #\{newline} character					\n\
+								\n\
+:param handle: handle to read from				\n\
+:type handle: handle						\n\
+:return: object							\n\
 ")
 {
     IDIO_ASSERT (args);
@@ -989,7 +989,7 @@ IDIO_DEFINE_PRIMITIVE0V ("read-char", read_char, (IDIO args))
 
     IDIO h = idio_handle_or_current (idio_list_head (args), IDIO_HANDLE_FLAG_READ);
 
-    return idio_read_char (h);
+    return idio_read_character (h, idio_S_nil, IDIO_READ_CHARACTER_SIMPLE);
 }
 
 IDIO idio_write (IDIO o, IDIO h)
@@ -1030,9 +1030,9 @@ IDIO idio_write_char (IDIO c, IDIO h)
     IDIO_ASSERT (h);
     IDIO_TYPE_ASSERT (handle, h);
 
-    IDIO_TYPE_ASSERT (character, c);
+    IDIO_TYPE_ASSERT (unicode, c);
 
-    idio_putc_handle (h, IDIO_CHARACTER_VAL (c));
+    idio_putc_handle (h, IDIO_UNICODE_VAL (c));
 
     return idio_S_unspec;
 }
@@ -1042,7 +1042,7 @@ IDIO_DEFINE_PRIMITIVE1V ("write-char", write_char, (IDIO c, IDIO args))
     IDIO_ASSERT (c);
     IDIO_ASSERT (args);
 
-    IDIO_VERIFY_PARAM_TYPE (character, c);
+    IDIO_VERIFY_PARAM_TYPE (unicode, c);
 
     IDIO h = idio_handle_or_current (idio_list_head (args), IDIO_HANDLE_FLAG_WRITE);
 

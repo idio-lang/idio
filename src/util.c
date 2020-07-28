@@ -38,6 +38,8 @@ int idio_type (IDIO o)
 		return IDIO_TYPE_CONSTANT_I_CODE;
 	    case IDIO_TYPE_CONSTANT_CHARACTER_MARK:
 		return IDIO_TYPE_CONSTANT_CHARACTER;
+	    case IDIO_TYPE_CONSTANT_UNICODE_MARK:
+		return IDIO_TYPE_CONSTANT_UNICODE;
 	    default:
 		/* inconceivable! */
 		idio_error_printf (IDIO_C_FUNC_LOCATION_S ("CONSTANT"), "type: unexpected object type %#x", o);
@@ -68,6 +70,7 @@ const char *idio_type_enum2string (idio_type_e type)
     case IDIO_TYPE_CONSTANT_TOKEN:	return "CONSTANT_TOKEN";
     case IDIO_TYPE_CONSTANT_I_CODE:	return "CONSTANT_I_CODE";
     case IDIO_TYPE_CONSTANT_CHARACTER:	return "CONSTANT_CHARACTER";
+    case IDIO_TYPE_CONSTANT_UNICODE:	return "CONSTANT_UNICODE";
     case IDIO_TYPE_PLACEHOLDER:		return "PLACEHOLDER";
     case IDIO_TYPE_STRING:		return "STRING";
     case IDIO_TYPE_SUBSTRING:		return "SUBSTRING";
@@ -118,6 +121,7 @@ const char *idio_type2string (IDIO o)
 	    case IDIO_TYPE_CONSTANT_TOKEN_MARK:		return "CONSTANT_TOKEN";
 	    case IDIO_TYPE_CONSTANT_I_CODE_MARK:	return "CONSTANT_I_CODE";
 	    case IDIO_TYPE_CONSTANT_CHARACTER_MARK:	return "CONSTANT_CHARACTER";
+	    case IDIO_TYPE_CONSTANT_UNICODE_MARK:	return "CONSTANT_UNICODE";
 	    default:
 		idio_error_C ("idio_type2string: unexpected type", o, IDIO_C_FUNC_LOCATION_S ("CONSTANT"));
 
@@ -529,7 +533,7 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 				return 0;
 			    }
 
-			    return (memcmp (IDIO_SUBSTRING_S (o1), IDIO_STRING_S (o2), IDIO_STRING_BLEN (o1)) == 0);
+			    return (memcmp (IDIO_SUBSTRING_S (o1), IDIO_STRING_S (o2), IDIO_STRING_BLEN (o2)) == 0);
 			}
 		    }
 		    break;
@@ -1124,6 +1128,27 @@ char *idio_as_string (IDIO o, int depth)
 			    }
 			}
 			break;
+		    }
+		    break;
+		}
+	    case IDIO_TYPE_CONSTANT_UNICODE_MARK:
+		{
+		    idio_unicode_t u = IDIO_UNICODE_VAL (o);
+		    if (u <= 0x7f &&
+			isgraph (u)) {
+			if (asprintf (&r, "#\\%c", u) == -1) {
+			    idio_error_alloc ("asprintf");
+
+			    /* notreached */
+			    return NULL;
+			}
+		    } else {
+			if (asprintf (&r, "#U+%04X", u) == -1) {
+			    idio_error_alloc ("asprintf");
+
+			    /* notreached */
+			    return NULL;
+			}
 		    }
 		    break;
 		}
@@ -2120,6 +2145,53 @@ char *idio_display_string (IDIO o)
 		    /* 	} */
 		    /* } */
 		}
+		break;
+	    case IDIO_TYPE_CONSTANT_UNICODE_MARK:
+		{
+		    idio_unicode_t u = IDIO_UNICODE_VAL (o);
+		    if (u > 0x10ffff) {
+			fprintf (stderr, "display-string: oops u=%x > 0x10ffff\n", u);
+		    } else if (u >= 0x10000) {
+			if (asprintf (&r, "%c%c%c%c",
+				      0xf0 | ((u & (0x07 << 18)) >> 18),
+				      0x80 | ((u & (0x3f << 12)) >> 12),
+				      0x80 | ((u & (0x3f << 6)) >> 6),
+				      0x80 | ((u & (0x3f << 0)) >> 0)) == -1) {
+			    idio_error_alloc ("asprintf");
+
+			    /* notreached */
+			    return NULL;
+			}
+		    } else if (u >= 0x0800) {
+			if (asprintf (&r, "%c%c%c",
+				      0xe0 | ((u & (0x0f << 12)) >> 12),
+				      0x80 | ((u & (0x3f << 6)) >> 6),
+				      0x80 | ((u & (0x3f << 0)) >> 0)) == -1) {
+			    idio_error_alloc ("asprintf");
+
+			    /* notreached */
+			    return NULL;
+			}
+		    } else if (u >= 0x0080) {
+			if (asprintf (&r, "%c%c",
+				      0xc0 | ((u & (0x1f << 6)) >> 6),
+				      0x80 | ((u & (0x3f << 0)) >> 0)) == -1) {
+			    idio_error_alloc ("asprintf");
+
+			    /* notreached */
+			    return NULL;
+			}
+		    } else {
+			if (asprintf (&r, "%c",
+				      u & 0x7f) == -1) {
+			    idio_error_alloc ("asprintf");
+
+			    /* notreached */
+			    return NULL;
+			}
+		    }
+		}
+		break;
 	    }
 	}
 	break;
@@ -2316,6 +2388,7 @@ const char *idio_vm_bytecode2string (int code)
     case IDIO_A_NEG_CHARACTER:				r = "NEG-CHARACTER";			break;
     case IDIO_A_CONSTANT:				r = "CONSTANT";				break;
     case IDIO_A_NEG_CONSTANT:				r = "NEG-CONSTANT";			break;
+    case IDIO_A_UNICODE:				r = "UNICODE";				break;
 
     case IDIO_A_NOP:					r = "NOP";				break;
     case IDIO_A_PRIMCALL0:				r = "PRIMCALL0";			break;

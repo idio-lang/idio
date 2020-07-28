@@ -145,6 +145,7 @@
 #define IDIO_A_NEG_CHARACTER			150
 #define IDIO_A_CONSTANT				151
 #define IDIO_A_NEG_CONSTANT			152
+#define IDIO_A_UNICODE				153
 
 #define IDIO_A_NOP				160
 #define IDIO_A_PRIMCALL0			161

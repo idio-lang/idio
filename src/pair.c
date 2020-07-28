@@ -446,7 +446,16 @@ IDIO idio_list_list2string (IDIO l)
     while (idio_S_nil != l) {
 	IDIO h = IDIO_PAIR_H (l);
 
-	if (idio_isa_character (h)) {
+	if (idio_isa_unicode (h)) {
+	    intptr_t c = IDIO_UNICODE_VAL (h);
+
+	    if (c > INT8_MAX ||
+		c < INT8_MIN) {
+		idio_error_C ("unicode too large for C string", h, IDIO_C_FUNC_LOCATION ());
+	    }
+
+	    s[i] = c;
+	} else if (idio_isa_character (h)) {
 	    intptr_t c = IDIO_CHARACTER_VAL (h);
 
 	    if (c > INT8_MAX ||

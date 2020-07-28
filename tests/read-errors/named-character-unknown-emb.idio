@@ -1,4 +1,4 @@
 ;; limited to isalpha() names
 {
-  c := #\caveat
+  c := #\{caveat}
 }

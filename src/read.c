@@ -165,17 +165,15 @@ char idio_default_interpolation_chars[] = { IDIO_CHAR_DOLLARS, IDIO_CHAR_AT, IDI
  * don't know what character that is.
 
  * That said, there's no reason why we shouldn't be able to use
- * Unicode named characters.  What's the longest one of those?
- * According to http://www.unicode.org/charts/charindex.html and
- * turning non-printing chars into underscores, say, then "Aboriginal
- * Syllabics Extended, Unified Canadian" is some 47 chars long.  The
- * longest is 52 chars ("Digraphs Matching Serbian Cyrillic Letters,
- * Croatian, 01C4").
-
+ * Unicode named characters.  What's the longest one of those?  In
+ * Unicode 13.0.0 it appears to be 88 for the LEFT/RIGHT variants of
+ * "BOX DRAWINGS LIGHT DIAGONAL UPPER CENTRE TO MIDDLE RIGHT AND
+ * MIDDLE LEFT TO LOWER CENTRE"
+ *
  * In the meanwhile, we only have a handler for "space" and
  * "newline"...
  */
-#define IDIO_CHARACTER_MAX_NAME_LEN	10
+#define IDIO_CHARACTER_MAX_NAME_LEN	100
 #define IDIO_CHARACTER_SPACE		"space"
 #define IDIO_CHARACTER_NEWLINE		"newline"
 
@@ -528,77 +526,166 @@ static void idio_read_error_utf8_decode (IDIO handle, IDIO lo, IDIO c_location, 
     /* notreached */
 }
 
+static void idio_read_error_unicode_decode (IDIO handle, IDIO lo, IDIO c_location, char *msg)
+{
+    IDIO_ASSERT (handle);
+    IDIO_ASSERT (lo);
+    IDIO_ASSERT (c_location);
+    IDIO_C_ASSERT (msg);
+
+    IDIO_TYPE_ASSERT (handle, handle);
+    IDIO_TYPE_ASSERT (struct_instance, lo);
+    IDIO_TYPE_ASSERT (string, c_location);
+
+    IDIO sh = idio_open_output_string_handle_C ();
+    idio_display_C ("U+hhhh decode: ", sh);
+    idio_display_C (msg, sh);
+
+    idio_read_error (handle, lo, c_location, idio_get_output_string (sh));
+
+    /* notreached */
+}
+
 static IDIO idio_read_1_expr (IDIO handle, char *ic, int depth);
 static IDIO idio_read_block (IDIO handle, IDIO lo, IDIO closedel, char *ic, int depth);
 static IDIO idio_read_number_C (IDIO handle, char *str);
 static IDIO idio_read_bignum_radix (IDIO handle, IDIO lo, char basec, int radix);
 static IDIO idio_read_unescape (IDIO ls);
+static IDIO idio_read_named_character (IDIO handle, IDIO lo);
 
-IDIO idio_read_char (IDIO handle)
+IDIO idio_read_lexobj_from_handle (IDIO handle)
 {
     IDIO_ASSERT (handle);
+
     IDIO_TYPE_ASSERT (handle, handle);
+
+    return idio_struct_instance (idio_lexobj_type,
+				 idio_pair (IDIO_HANDLE_FILENAME (handle),
+				 idio_pair (idio_integer (IDIO_HANDLE_LINE (handle)),
+				 idio_pair (idio_integer (IDIO_HANDLE_POS (handle)),
+				 idio_pair (idio_S_unspec,
+				 idio_S_nil)))));
+}
+
+IDIO idio_read_unicode (IDIO handle, IDIO lo)
+{
+    IDIO_ASSERT (handle);
+    IDIO_ASSERT (lo);
+
+    IDIO_TYPE_ASSERT (handle, handle);
+    IDIO_TYPE_ASSERT (struct_instance, lo);
 
     int c = idio_getc_handle (handle);
 
+    IDIO r;
+
     if (EOF == c) {
-	return idio_S_eof;
+	idio_read_error_unicode_decode (handle, lo, IDIO_C_FUNC_LOCATION (), "EOF");
+
+	return idio_S_notreached;
     } else {
-	/*
-	 * Technically more of an IDIO_OCTET than a true (UTF-8)
-	 * character but you didn't read this, right?
-	 */
-	return IDIO_CHARACTER (c);
+	if ('+' != c) {
+	    idio_read_error_unicode_decode (handle, lo, IDIO_C_FUNC_LOCATION (), "U not followed by +");
+
+	    return idio_S_notreached;
+	}
+
+	uint32_t cp;
+	IDIO I_cp = idio_read_bignum_radix (handle, lo, '?', 16);
+
+	if (idio_isa_fixnum (I_cp)) {
+	    cp = IDIO_FIXNUM_VAL (I_cp);
+	} else if (idio_isa_bignum (I_cp)) {
+	    if (IDIO_BIGNUM_INTEGER_P (I_cp)) {
+		cp = idio_bignum_ptrdiff_value (I_cp);
+	    } else {
+		IDIO cp_i = idio_bignum_real_to_integer (I_cp);
+		if (idio_S_nil == cp_i) {
+		    idio_error_param_type ("unicode cp should be an integer", I_cp, IDIO_C_FUNC_LOCATION ());
+
+		    return idio_S_notreached;
+		} else {
+		    cp = idio_bignum_ptrdiff_value (cp_i);
+		}
+	    }
+	} else {
+	    idio_error_param_type ("unicode cp should be an integer", I_cp, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	}
+
+	if (cp > 0x10ffff) {
+	    idio_read_error_unicode_decode (handle, lo, IDIO_C_FUNC_LOCATION (), "code point too big");
+
+	    return idio_S_notreached;
+	}
+
+	r = IDIO_UNICODE (cp);
     }
+
+    return r;
 }
 
-IDIO idio_read_character (IDIO handle, IDIO lo)
+IDIO idio_read_character (IDIO handle, IDIO lo, int kind)
 {
     IDIO_ASSERT (handle);
     IDIO_TYPE_ASSERT (handle, handle);
 
-    idio_utf8_t codepoint;
-    idio_utf8_t state = 0;
+    if (idio_S_nil == lo) {
+	/* called from outside read.c */
+	lo = idio_read_lexobj_from_handle (handle);
+
+    } else {
+	IDIO_TYPE_ASSERT (struct_instance, lo);
+    }
+
+    idio_unicode_t codepoint;
+    idio_unicode_t state = 0;
 
     int i;
     for (i = 0; ; i++) {
 	int c = idio_getc_handle (handle);
 
 	if (EOF == c) {
-	    if (i) {
-		fprintf (stderr, "EOF w/ i=%d\n", i);
+	    if (IDIO_READ_CHARACTER_SIMPLE == kind) {
+		return idio_S_eof;
+	    } else {
+		/*
+		 * Test Case: read-errors/character-eof.idio
+		 *
+		 * #\
+		 */
 		idio_read_error_utf8_decode (handle, lo, IDIO_C_FUNC_LOCATION (), "EOF");
 
 		return idio_S_notreached;
-
-	    } else {
-		return idio_S_eof;
 	    }
 	}
 
-	/*
-	 * if this is a non-ASCII value then it should be the result
-	 * of an idio_ungetc_handle
-	 */
-	if (c > 0x7f) {
-	    codepoint = c;
+	uint8_t uc = c;
+	
+	if (0 == idio_utf8_decode (&state, &codepoint, uc)) {
 	    break;
-	}
-
-	if (0 == idio_utf8_decode (&state, &codepoint, c)) {
-	    fprintf (stderr, "idio_read_character: U+%04X\n", codepoint);
-	    break;
-	}
-
-	if (state != IDIO_UTF8_ACCEPT) {
-	    fprintf (stderr, "The (UTF-8) string is not well-formed\n");
-	    idio_read_error_utf8_decode (handle, lo, IDIO_C_FUNC_LOCATION (), "not well-formed");
-
-	    return idio_S_notreached;
 	}
     }
 
-    return IDIO_CHARACTER (codepoint);
+    if (state != IDIO_UTF8_ACCEPT) {
+	fprintf (stderr, "The (UTF-8) string is not well-formed\n");
+	idio_read_error_utf8_decode (handle, lo, IDIO_C_FUNC_LOCATION (), "not well-formed");
+
+	return idio_S_notreached;
+    }
+
+    if (IDIO_READ_CHARACTER_SIMPLE == kind) {
+	idio_gc_stats_inc (IDIO_TYPE_CONSTANT_UNICODE);
+	return IDIO_UNICODE (codepoint);
+    } else {
+	if (IDIO_CHAR_LBRACE == codepoint) {
+	    return idio_read_named_character (handle, lo);
+	} else {
+	    idio_gc_stats_inc (IDIO_TYPE_CONSTANT_UNICODE);
+	    return IDIO_UNICODE (codepoint);
+	}
+    }
 }
 
 static void idio_read_whitespace (IDIO handle, IDIO lo)
@@ -1389,20 +1476,23 @@ static IDIO idio_read_named_character (IDIO handle, IDIO lo)
 	    return idio_S_notreached;
 	}
 
-	/* first char could be a non-alpha, eg. #\( so that's not a
-	   reason to break out of the loop but after that all
-	   characters in the name must be alpha (until we choose to
-	   handle Unicode names etc.)
+	/*
+	 * All subsequent c's should be ASCII until '}' -- I believe
+	 * that other than test files non-ASCII chars only appear in
+	 * comments in Unicode data files so a named character can
+	 * only be named by ASCII characters.
 	*/
-	if (i &&
-	    ! isalpha (c)) {
+	if (c > 0x7f) {
+	    break;
+	}
+
+	if ('}' == c) {
 	    break;
 	}
 
 	buf[i] = c;
     }
 
-    idio_ungetc_handle (handle, c);
     buf[i] = '\0';
 
     IDIO r;
@@ -1418,10 +1508,8 @@ static IDIO idio_read_named_character (IDIO handle, IDIO lo)
 	idio_read_error_named_character (handle, lo, IDIO_C_FUNC_LOCATION (), "no letters in character name?");
 
 	return idio_S_notreached;
-    } else if (1 == i) {
-	r = IDIO_CHARACTER (buf[0]);
     } else {
-	r = idio_character_lookup (buf);
+	r = idio_unicode_lookup (buf);
 
 	if (r == idio_S_unspec) {
 	    /*
@@ -1441,7 +1529,7 @@ static IDIO idio_read_named_character (IDIO handle, IDIO lo)
 	}
     }
 
-    idio_gc_stats_inc (IDIO_TYPE_CONSTANT_CHARACTER);
+    idio_gc_stats_inc (IDIO_TYPE_CONSTANT_UNICODE);
     return r;
 }
 
@@ -2344,12 +2432,7 @@ static IDIO idio_read_word (IDIO handle, IDIO lo, int c)
  */
 static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl)
 {
-    IDIO lo = idio_struct_instance (idio_lexobj_type,
-				    idio_pair (IDIO_HANDLE_FILENAME (handle),
-				    idio_pair (idio_integer (IDIO_HANDLE_LINE (handle)),
-				    idio_pair (idio_integer (IDIO_HANDLE_POS (handle)),
-				    idio_pair (idio_S_unspec,
-				    idio_S_nil)))));
+    IDIO lo = idio_read_lexobj_from_handle (handle);
 
     int c = idio_getc_handle (handle);
 
@@ -2563,7 +2646,7 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl
 			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_S_nil);
 			return lo;
 		    case IDIO_CHAR_BACKSLASH:
-			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_named_character (handle, lo));
+			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_character (handle, lo, IDIO_READ_CHARACTER_EXTENDED));
 			return lo;
 		    case IDIO_CHAR_LBRACKET:
 			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_array (handle, lo, ic, IDIO_LIST_BRACKET (depth + 1)));
@@ -2585,6 +2668,9 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl
 			return lo;
 		    case 'x':
 			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_bignum_radix (handle, lo, c, 16));
+			return lo;
+		    case 'U':
+			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_unicode (handle, lo));
 			return lo;
 		    case 'e':
 		    case 'i':
@@ -2772,12 +2858,7 @@ static IDIO idio_read_1_expr (IDIO handle, char *ic, int depth)
  */
 static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, char *ic, int depth)
 {
-    IDIO line_lo = idio_struct_instance (idio_lexobj_type,
-					 idio_pair (IDIO_HANDLE_FILENAME (handle),
-					 idio_pair (idio_integer (IDIO_HANDLE_LINE (handle)),
-					 idio_pair (idio_integer (IDIO_HANDLE_POS (handle)),
-					 idio_pair (idio_S_unspec,
-					 idio_S_nil)))));
+    IDIO line_lo = idio_read_lexobj_from_handle (handle);
 
     /*
      * The return expression

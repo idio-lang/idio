@@ -82,21 +82,21 @@ IDIO idio_string_C_len (const char *s_C, size_t blen)
 
     IDIO_FLAGS_T flags = IDIO_STRING_FLAG_1BYTE;
 
-    idio_utf8_t codepoint;
-    idio_utf8_t state = IDIO_UTF8_ACCEPT;
+    idio_unicode_t codepoint;
+    idio_unicode_t state = IDIO_UTF8_ACCEPT;
 
     size_t cp_count = 0;
-    uint8_t *utf8_s = (unsigned char *) s_C;
+    uint8_t *s8 = (unsigned char *) s_C;
     size_t i;
-    for (i = 0; i < blen; utf8_s++, i++) {
-	for ( ; i < blen; utf8_s++, i++) {
-	    if (idio_utf8_decode (&state, &codepoint, *utf8_s) == IDIO_UTF8_ACCEPT) {
+    for (i = 0; i < blen; s8++, i++) {
+	for ( ; i < blen; s8++, i++) {
+	    if (idio_utf8_decode (&state, &codepoint, *s8) == IDIO_UTF8_ACCEPT) {
 		break;
 	    }
 	}
 
 	if (state != IDIO_UTF8_ACCEPT) {
-	    fprintf (stderr, "The (UTF-8) string [%s] is not well-formed at ['%c' %u %xu %x] %zu/%zu\n", s_C, *utf8_s, *utf8_s, *utf8_s, *utf8_s, i, blen);
+	    fprintf (stderr, "The (UTF-8) string [%s] is not well-formed at ['%c' %u %xu %x] %zu/%zu\n", s_C, *s8, *s8, *s8, *s8, i, blen);
 	    IDIO_C_ASSERT (0);
 	    exit (3);
 	    /*
@@ -156,10 +156,10 @@ IDIO idio_string_C_len (const char *s_C, size_t blen)
 	    uint16_t *s16 = (uint16_t *) IDIO_STRING_S (so);
 	    uint32_t *s32 = (uint32_t *) IDIO_STRING_S (so);
 
-	    utf8_s = (unsigned char *) s_C;
-	    for (i = 0; i < blen; cp_count++, utf8_s++, i++) {
-		for (; i < blen; utf8_s++, i++) {
-		    if (idio_utf8_decode (&state, &codepoint, *utf8_s) == IDIO_UTF8_ACCEPT) {
+	    s8 = (unsigned char *) s_C;
+	    for (i = 0; i < blen; cp_count++, s8++, i++) {
+		for (; i < blen; s8++, i++) {
+		    if (idio_utf8_decode (&state, &codepoint, *s8) == IDIO_UTF8_ACCEPT) {
 			break;
 		    }
 		}
@@ -224,24 +224,24 @@ IDIO idio_string_C_array (size_t ns, char *a_C[])
     IDIO_FLAGS_T flags = IDIO_STRING_FLAG_1BYTE;
     size_t cp_count = 0;
 
-    idio_utf8_t codepoint;
-    idio_utf8_t state = IDIO_UTF8_ACCEPT;
-    uint8_t *utf8_s;
+    idio_unicode_t codepoint;
+    idio_unicode_t state = IDIO_UTF8_ACCEPT;
+    uint8_t *s8;
 
     for (ai = 0; ai < ns; ai++) {
 	size_t blen = strlen (a_C[ai]);
 	ablen += blen;
 
-	utf8_s = (unsigned char *) a_C[ai];
-	for (size_t i = 0; i < blen; utf8_s++, i++) {
-	    for ( ; i < blen; utf8_s++, i++) {
-		if (idio_utf8_decode (&state, &codepoint, *utf8_s) == IDIO_UTF8_ACCEPT) {
+	s8 = (unsigned char *) a_C[ai];
+	for (size_t i = 0; i < blen; s8++, i++) {
+	    for ( ; i < blen; s8++, i++) {
+		if (idio_utf8_decode (&state, &codepoint, *s8) == IDIO_UTF8_ACCEPT) {
 		    break;
 		}
 	    }
 
 	    if (state != IDIO_UTF8_ACCEPT) {
-		fprintf (stderr, "The (UTF-8) string [%s] is not well-formed at ['%c' %u %xu %x] %zu/%zu\n", a_C[ai], *utf8_s, *utf8_s, *utf8_s, *utf8_s, i, blen);
+		fprintf (stderr, "The (UTF-8) string [%s] is not well-formed at ['%c' %u %xu %x] %zu/%zu\n", a_C[ai], *s8, *s8, *s8, *s8, i, blen);
 		IDIO_C_ASSERT (0);
 		exit (3);
 		/*
@@ -308,10 +308,10 @@ IDIO idio_string_C_array (size_t ns, char *a_C[])
 		size_t blen = strlen (a_C[ai]);
 		state = IDIO_UTF8_ACCEPT;
 
-		utf8_s = (unsigned char *) a_C[ai];
-		for (size_t i = 0; i < blen; cp_count++, utf8_s++, i++) {
-		    for (; i < blen; utf8_s++, i++) {
-			if (idio_utf8_decode (&state, &codepoint, *utf8_s) == IDIO_UTF8_ACCEPT) {
+		s8 = (unsigned char *) a_C[ai];
+		for (size_t i = 0; i < blen; cp_count++, s8++, i++) {
+		    for (; i < blen; s8++, i++) {
+			if (idio_utf8_decode (&state, &codepoint, *s8) == IDIO_UTF8_ACCEPT) {
 			    break;
 			}
 		    }
@@ -600,50 +600,81 @@ IDIO_DEFINE_PRIMITIVE1V ("make-string", make_string, (IDIO size, IDIO args))
     IDIO_ASSERT (size);
     IDIO_ASSERT (args);
 
-    ptrdiff_t blen = -1;
+    ptrdiff_t clen = -1;
 
     if (idio_isa_fixnum (size)) {
-	blen = IDIO_FIXNUM_VAL (size);
+	clen = IDIO_FIXNUM_VAL (size);
     } else if (idio_isa_bignum (size)) {
 	if (IDIO_BIGNUM_INTEGER_P (size)) {
-	    blen = idio_bignum_ptrdiff_value (size);
+	    clen = idio_bignum_ptrdiff_value (size);
 	} else {
 	    IDIO size_i = idio_bignum_real_to_integer (size);
 	    if (idio_S_nil == size_i) {
 		idio_error_param_type ("number", size, IDIO_C_FUNC_LOCATION ());
 	    } else {
-		blen = idio_bignum_ptrdiff_value (size_i);
+		clen = idio_bignum_ptrdiff_value (size_i);
 	    }
 	}
     } else {
 	idio_error_param_type ("number", size, IDIO_C_FUNC_LOCATION ());
     }
 
+    if (clen < 0) {
+	idio_error_printf (IDIO_C_FUNC_LOCATION (), "invalid length: %zd", clen);
+
+	return idio_S_notreached;
+    }
+
     IDIO_VERIFY_PARAM_TYPE (list, args);
 
-    char fillc = ' ';
+    size_t bpc = 0;
+    
+    idio_unicode_t fillc = ' ';
+    char fills[5];
     if (idio_S_nil != args) {
 	IDIO fill = IDIO_PAIR_H (args);
-	IDIO_VERIFY_PARAM_TYPE (character, fill);
-	if (IDIO_CHARACTER_VAL (fill) >= 0x80 ||
-	    IDIO_CHARACTER_VAL (fill) < 0) {
-	    idio_error_C ("fill character too large", fill, IDIO_C_FUNC_LOCATION ());
+	IDIO_VERIFY_PARAM_TYPE (unicode, fill);
+
+	fillc = IDIO_UNICODE_VAL (fill);
+	if (fillc > 0x10ffff) {
+	    fprintf (stderr, "make-string: oops fillc=%x > 0x10ffff\n", fillc);
+	} else if (fillc >= 0x10000) {
+	    bpc = 4;
+	    sprintf (fills, "%c%c%c%c",
+		     0xf0 | ((fillc & (0x07 << 18)) >> 18),
+		     0x80 | ((fillc & (0x3f << 12)) >> 12),
+		     0x80 | ((fillc & (0x3f << 6)) >> 6),
+		     0x80 | ((fillc & (0x3f << 0)) >> 0));
+	} else if (fillc >= 0x0800) {
+	    bpc = 3;
+	    sprintf (fills, "%c%c%c",
+		     0xe0 | ((fillc & (0x0f << 12)) >> 12),
+		     0x80 | ((fillc & (0x3f << 6)) >> 6),
+		     0x80 | ((fillc & (0x3f << 0)) >> 0));
+	} else if (fillc >= 0x0080) {
+	    bpc = 2;
+	    sprintf (fills, "%c%c",
+		     0xc0 | ((fillc & (0x1f << 6)) >> 6),
+		     0x80 | ((fillc & (0x3f << 0)) >> 0));
+	} else {
+	    bpc = 1;
+	    sprintf (fills, "%c",
+		     fillc & 0x7f);
 	}
-
-	fillc = IDIO_CHARACTER_VAL (fill);
+    } else {
+	bpc = 1;
+	sprintf (fills, "%c", fillc & 0x7f);
     }
 
-    if (blen < 0) {
-	idio_error_printf (IDIO_C_FUNC_LOCATION (), "invalid length: %zd", blen);
-    }
-
+    ptrdiff_t blen = clen * bpc;
     char *sC = idio_alloc (blen + 1);
-
+    sC[0] = '\0';
+    
     size_t i;
     for (i = 0; i < blen; i++) {
-	sC[i] = fillc;
+	strcat (sC, fills);
     }
-    sC[i] = '\0';
+    sC[blen] = '\0';
 
     IDIO s = idio_string_C (sC);
 
@@ -657,8 +688,6 @@ IDIO_DEFINE_PRIMITIVE1 ("string->list", string2list, (IDIO s))
     IDIO_ASSERT (s);
     IDIO_VERIFY_PARAM_TYPE (string, s);
 
-    idio_debug ("string->list requires Unicode character type %s\n", s);
-
     char *sC = idio_string_as_C (s);
     size_t sl = strlen (sC);
 
@@ -667,7 +696,7 @@ IDIO_DEFINE_PRIMITIVE1 ("string->list", string2list, (IDIO s))
     IDIO r = idio_S_nil;
 
     for (si = sl - 1; si >=0; si--) {
-	r = idio_pair (IDIO_CHARACTER (sC[si]), r);
+	r = idio_pair (IDIO_UNICODE (sC[si]), r);
     }
 
     free (sC);
@@ -789,35 +818,6 @@ IDIO_DEFINE_PRIMITIVE1 ("copy-string", copy_string, (IDIO s))
     return idio_copy_string (s);
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("string-fill!", string_fill, (IDIO s, IDIO fill))
-{
-    IDIO_ASSERT (s);
-    IDIO_ASSERT (fill);
-    IDIO_VERIFY_PARAM_TYPE (string, s);
-    IDIO_VERIFY_PARAM_TYPE (character, fill);
-
-    IDIO_ASSERT_NOT_CONST (string, s);
-
-    idio_debug ("string-fill! requires Unicode character type %s\n", s);
-
-    char *Cs = idio_string_as_C (s);
-    size_t l = strlen (Cs);
-
-    size_t i;
-    for (i = 0; i < l; i++) {
-	if (IDIO_CHARACTER_VAL (fill) >= 0x80 ||
-	    IDIO_CHARACTER_VAL (fill) < 0) {
-	    idio_error_C ("fill character too large", fill, IDIO_C_FUNC_LOCATION ());
-	}
-
-	Cs[i] = IDIO_CHARACTER_VAL (fill);
-    }
-
-    free (Cs);
-
-    return s;
-}
-
 IDIO_DEFINE_PRIMITIVE1 ("string-length", string_length, (IDIO s))
 {
     IDIO_ASSERT (s);
@@ -851,22 +851,66 @@ IDIO idio_string_ref (IDIO s, IDIO index)
 	idio_error_param_type ("number", index, IDIO_C_FUNC_LOCATION ());
     }
 
-    idio_debug ("string-ref requires Unicode character type %s\n", s);
-
-    char *Cs = idio_string_as_C (s);
-    size_t l = strlen (Cs);
+    uint8_t *s8;
+    uint16_t *s16;
+    uint32_t *s32;
+    size_t slen = -1;
+    size_t width;
+    
+    if (idio_isa_substring (s)) {
+	slen = IDIO_SUBSTRING_LEN (s);
+	switch (IDIO_STRING_FLAGS (IDIO_SUBSTRING_PARENT (s))) {
+	case IDIO_STRING_FLAG_1BYTE:
+	    width = 1;
+	    s8 = (uint8_t *) IDIO_SUBSTRING_S (s);
+	    break;
+	case IDIO_STRING_FLAG_2BYTE:
+	    width = 2;
+	    s16 = (uint16_t *) IDIO_SUBSTRING_S (s);
+	    break;
+	case IDIO_STRING_FLAG_4BYTE:
+	    width = 4;
+	    s32 = (uint32_t *) IDIO_SUBSTRING_S (s);
+	    break;
+	}
+    } else {
+	slen = IDIO_STRING_LEN (s);
+	switch (IDIO_STRING_FLAGS (s)) {
+	case IDIO_STRING_FLAG_1BYTE:
+	    width = 1;
+	    s8 = (uint8_t *) IDIO_STRING_S (s);
+	    break;
+	case IDIO_STRING_FLAG_2BYTE:
+	    width = 2;
+	    s16 = (uint16_t *) IDIO_STRING_S (s);
+	    break;
+	case IDIO_STRING_FLAG_4BYTE:
+	    width = 4;
+	    s32 = (uint32_t *) IDIO_STRING_S (s);
+	    break;
+	}
+    }
 
     if (i < 0 ||
-	i > l) {
+	i >= slen) {
 	idio_string_error_length ("out of bounds", s, i, IDIO_C_FUNC_LOCATION ());
 	return idio_S_unspec;
     }
 
-    IDIO r = IDIO_CHARACTER (Cs[i]);
+    switch (width) {
+    case 1:
+	return IDIO_UNICODE (s8[i]);
+	break;
+    case 2:
+	return IDIO_UNICODE (s16[i]);
+	break;
+    case 4:
+	return IDIO_UNICODE (s32[i]);
+	break;
+    }
 
-    free (Cs);
-
-    return r;
+    /* probably... */
+    return idio_S_notreached;
 }
 
 IDIO_DEFINE_PRIMITIVE2 ("string-ref", string_ref, (IDIO s, IDIO index))
@@ -884,7 +928,7 @@ IDIO idio_string_set (IDIO s, IDIO index, IDIO c)
     IDIO_ASSERT (index);
     IDIO_ASSERT (c);
     IDIO_TYPE_ASSERT (string, s);
-    IDIO_TYPE_ASSERT (character, c);
+    IDIO_TYPE_ASSERT (unicode, c);
 
     IDIO_ASSERT_NOT_CONST (string, s);
 
@@ -907,25 +951,83 @@ IDIO idio_string_set (IDIO s, IDIO index, IDIO c)
 	idio_error_param_type ("number", index, IDIO_C_FUNC_LOCATION ());
     }
 
-    idio_debug ("FATAL: string-set! requires Unicode character type %s\n", s);
+    size_t cwidth;
+    idio_unicode_t uc = IDIO_UNICODE_VAL (c);
+    if (uc <= 0xff) {
+	cwidth = 1;
+    } else if (uc <= 0xffff) {
+	cwidth = 2;
+    } else if (uc > 0x10ffff) {
+	fprintf (stderr, "string-set: oops c=%x > 0x10ffff\n", uc);
+    } else {
+	cwidth = 4;
+    }
 
-    char *Cs = idio_string_as_C (s);
-    size_t l = strlen (Cs);
+    uint8_t *s8;
+    uint16_t *s16;
+    uint32_t *s32;
+    size_t slen = -1;
+    size_t width;
+    
+    if (idio_isa_substring (s)) {
+	slen = IDIO_SUBSTRING_LEN (s);
+	switch (IDIO_STRING_FLAGS (IDIO_SUBSTRING_PARENT (s))) {
+	case IDIO_STRING_FLAG_1BYTE:
+	    width = 1;
+	    s8 = (uint8_t *) IDIO_SUBSTRING_S (s);
+	    break;
+	case IDIO_STRING_FLAG_2BYTE:
+	    width = 2;
+	    s16 = (uint16_t *) IDIO_SUBSTRING_S (s);
+	    break;
+	case IDIO_STRING_FLAG_4BYTE:
+	    width = 4;
+	    s32 = (uint32_t *) IDIO_SUBSTRING_S (s);
+	    break;
+	}
+    } else {
+	slen = IDIO_STRING_LEN (s);
+	switch (IDIO_STRING_FLAGS (s)) {
+	case IDIO_STRING_FLAG_1BYTE:
+	    width = 1;
+	    s8 = (uint8_t *) IDIO_STRING_S (s);
+	    break;
+	case IDIO_STRING_FLAG_2BYTE:
+	    width = 2;
+	    s16 = (uint16_t *) IDIO_STRING_S (s);
+	    break;
+	case IDIO_STRING_FLAG_4BYTE:
+	    width = 4;
+	    s32 = (uint32_t *) IDIO_STRING_S (s);
+	    break;
+	}
+    }
 
+    if (cwidth > width) {
+	idio_string_error_length ("replacement char too wide", s, i, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+    
     if (i < 0 ||
-	i > l) {
+	i >= slen) {
 	idio_string_error_length ("out of bounds", s, i, IDIO_C_FUNC_LOCATION ());
-	return idio_S_unspec;
+
+	return idio_S_notreached;
     }
 
-    if (IDIO_CHARACTER_VAL (c) >= 0x80 ||
-	IDIO_CHARACTER_VAL (c) < 0) {
-	idio_error_C ("character too large for C string", c, IDIO_C_FUNC_LOCATION ());
+    switch (width) {
+    case 1:
+	s8[i] = uc;
+	break;
+    case 2:
+	s16[i] = uc;
+	break;
+    case 4:
+	s32[i] = uc;
+	break;
     }
 
-    Cs[i] = IDIO_CHARACTER_VAL (c);
-
-    /* FATAL can't return s as we haven't modified it */
     return s;
 }
 
@@ -935,9 +1037,40 @@ IDIO_DEFINE_PRIMITIVE3 ("string-set!", string_set, (IDIO s, IDIO index, IDIO c))
     IDIO_ASSERT (index);
     IDIO_ASSERT (c);
     IDIO_VERIFY_PARAM_TYPE (string, s);
-    IDIO_VERIFY_PARAM_TYPE (character, c);
+    IDIO_VERIFY_PARAM_TYPE (unicode, c);
 
     return idio_string_set (s, index, c);
+}
+
+IDIO_DEFINE_PRIMITIVE2 ("string-fill!", string_fill, (IDIO s, IDIO fill))
+{
+    IDIO_ASSERT (s);
+    IDIO_ASSERT (fill);
+    IDIO_VERIFY_PARAM_TYPE (string, s);
+    IDIO_VERIFY_PARAM_TYPE (unicode, fill);
+
+    IDIO_ASSERT_NOT_CONST (string, s);
+
+    /*
+     * Ostensibly string-fill! is a loop over string-set!
+     *
+     * It could be quicker by duplicating the storage width code here
+     */
+
+    size_t slen;
+
+    if (idio_isa_substring (s)) {
+	slen = IDIO_SUBSTRING_LEN (s);
+    } else {
+	slen = IDIO_STRING_LEN (s);
+    }
+
+    size_t i;
+    for (i = 0; i < slen; i++) {
+	idio_string_set (s, idio_fixnum (i), fill);
+    }
+
+    return s;
 }
 
 /*
@@ -1338,10 +1471,10 @@ void idio_string_add_primitives ()
     IDIO_ADD_PRIMITIVE (append_string);
     IDIO_ADD_PRIMITIVE (concatenate_string);
     IDIO_ADD_PRIMITIVE (copy_string);
-    IDIO_ADD_PRIMITIVE (string_fill);
     IDIO_ADD_PRIMITIVE (string_length);
     IDIO_ADD_PRIMITIVE (string_ref);
     IDIO_ADD_PRIMITIVE (string_set);
+    IDIO_ADD_PRIMITIVE (string_fill);
     IDIO_ADD_PRIMITIVE (substring);
 
     IDIO_ADD_PRIMITIVE (string_ci_le_p);
