@@ -1236,7 +1236,7 @@ num	specifies a maximum limit on the output		\n\
 				} else if (idio_isa_bignum (arg)) {
 				    s = idio_bignum_as_string (arg);
 				    idio_puts_handle (h, s, strlen (s));
-				    free (c);
+				    free (s);
 				} else {
 				    /* ?? */
 				    idio_puts_handle (h, c, strlen (c));

@@ -25,8 +25,11 @@
 
 typedef uint32_t idio_unicode_t;
 
+/*
+ * The following values are x12 to avoid unnecessary shifts
+ */
 #define IDIO_UTF8_ACCEPT 0
-#define IDIO_UTF8_REJECT 1
+#define IDIO_UTF8_REJECT 12
 /*
  * other > 0 values mean more bytes are required
  */
