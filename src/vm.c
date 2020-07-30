@@ -1446,11 +1446,7 @@ IDIO idio_vm_invoke_C (IDIO thr, IDIO command)
 	     * properly (or at least consistently).
 	     */
 	    if (! idio_isa_primitive (IDIO_PAIR_H (command))) {
-		IDIO dosh = idio_open_output_string_handle_C ();
-		idio_display_C ("vm-invoke-C PAIR: ", dosh);
-		idio_display (command, dosh);
-
-		idio_vm_run (thr, idio_get_output_string (dosh));
+		idio_vm_run (thr);
 	    }
 	}
 	break;
@@ -1459,25 +1455,13 @@ IDIO idio_vm_invoke_C (IDIO thr, IDIO command)
 	    /*
 	     * Must be a thunk
 	     */
-	    IDIO dosh = idio_open_output_string_handle_C ();
-	    idio_display_C ("vm-invoke-C CLOS: ", dosh);
-
 	    IDIO name = idio_get_property (command, idio_KW_name, IDIO_LIST1 (idio_S_nil));
 	    IDIO sigstr = idio_get_property (command, idio_KW_sigstr, IDIO_LIST1 (idio_S_nil));
-
-	    if (idio_S_unspec != name) {
-		idio_display (name, dosh);
-	    }
-	    if (idio_S_nil != sigstr) {
-		idio_display_C (" ", dosh);
-		idio_display (sigstr, dosh);
-	    }
-	    idio_display_C (" {CLOS}", dosh);
 
 	    IDIO vs = idio_frame_allocate (1);
 	    IDIO_THREAD_VAL (thr) = vs;
 	    idio_vm_invoke (thr, command, IDIO_VM_INVOKE_TAIL_CALL);
-	    idio_vm_run (thr, idio_get_output_string (dosh));
+	    idio_vm_run (thr);
 	}
     }
 
@@ -5706,12 +5690,10 @@ void idio_vm_default_pc (IDIO thr)
 
 static uintptr_t idio_vm_run_loops = 0;
 
-IDIO idio_vm_run (IDIO thr, IDIO desc)
+IDIO idio_vm_run (IDIO thr)
 {
     IDIO_ASSERT (thr);
-    IDIO_ASSERT (desc);
     IDIO_TYPE_ASSERT (thread, thr);
-    IDIO_TYPE_ASSERT (string, desc);
 
     /*
      * Save a continuation in case things get ropey and we have to
@@ -5723,7 +5705,6 @@ IDIO idio_vm_run (IDIO thr, IDIO desc)
 	fprintf (stderr, "How is krun 0?\n");
 	idio_vm_thread_state ();
     }
-    /* idio_array_push (idio_vm_krun, IDIO_LIST2 (idio_continuation (thr), desc)); */
 
     idio_ai_t ss0 = idio_array_size (IDIO_THREAD_STACK (thr));
 
@@ -6379,12 +6360,8 @@ Run ``func [args]`` in thread ``thr``.				\n\
     idio_ai_t pc0 = IDIO_THREAD_PC (thr);
     idio_vm_default_pc (thr);
 
-    IDIO dosh = idio_open_output_string_handle_C ();
-    idio_display_C ("run-in-thread: ", dosh);
-    idio_display (func, dosh);
-
     idio_apply (func, args);
-    IDIO r = idio_vm_run (thr, idio_get_output_string (dosh));
+    IDIO r = idio_vm_run (thr);
 
     idio_ai_t pc = IDIO_THREAD_PC (thr);
     if (pc == (idio_vm_FINISH_pc + 1)) {

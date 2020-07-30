@@ -28,7 +28,7 @@ read-error-load := {
     }) {
       call/cc (function (k) {
 		 load-k = k
-		 (symbol-value 'load *primitives*) filename
+		 (symbol-value 'load 'Idio) filename
       })
     }
   }
@@ -134,11 +134,11 @@ read-error-load "read-errors/exact-expected-number-emb.idio" "number expected af
 read-error-load "read-errors/inexact-expected-number.idio" "number expected after #i: got SYMBOL" 1
 read-error-load "read-errors/inexact-expected-number-emb.idio" "number expected after #i: got SYMBOL" 2
 
-read-error-load "read-errors/not-ready-for-hash-format.idio" "not ready for # format: < (3c)" 1
-read-error-load "read-errors/not-ready-for-hash-format-emb.idio" "not ready for # format: < (3c)" 2
+read-error-load "read-errors/not-ready-for-hash-format.idio" "not ready for '#<' format" 1
+read-error-load "read-errors/not-ready-for-hash-format-emb.idio" "not ready for '#<' format" 2
 
-read-error-load "read-errors/unexpected-hash-format.idio" "unexpected # format: '^' (0x5e)" 1
-read-error-load "read-errors/unexpected-hash-format-emb.idio" "unexpected # format: '^' (0x5e)" 2
+read-error-load "read-errors/unexpected-hash-format.idio" "unexpected '#^' format (# then 0x5e)" 1
+read-error-load "read-errors/unexpected-hash-format-emb.idio" "unexpected '#^' format (# then 0x5e)" 2
 
 read-error-load "read-errors/unexpected-pair-separator.idio" "unexpected & outside of list" 1
 

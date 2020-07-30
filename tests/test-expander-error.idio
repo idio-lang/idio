@@ -38,7 +38,7 @@ define-macro (expander-trap type) {
 		   }) {
 		     call/cc (function (k) {
 				load-k = k
-				(symbol-value 'load *primitives*) filename
+				(symbol-value 'load 'Idio) filename
 		     })
 		   }
 	}

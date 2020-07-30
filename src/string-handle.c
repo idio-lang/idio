@@ -125,12 +125,20 @@ IDIO idio_open_input_string_handle_C (char *str)
     strncpy (str_copy, str, blen + 1);
     str_copy[blen] = '\0';
 
+    /*
+     * str_copy will be freed when the handle is freed
+     */
+    
     return idio_open_string_handle (str_copy, blen, IDIO_HANDLE_FLAG_READ);
 }
 
 IDIO idio_open_output_string_handle_C ()
 {
     char *str_C = idio_alloc (IDIO_STRING_HANDLE_DEFAULT_OUTPUT_SIZE);
+
+    /*
+     * str_C will be freed when the handle is freed
+     */
 
     return idio_open_string_handle (str_C, IDIO_STRING_HANDLE_DEFAULT_OUTPUT_SIZE, IDIO_HANDLE_FLAG_WRITE);
 }

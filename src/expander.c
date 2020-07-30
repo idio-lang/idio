@@ -140,12 +140,8 @@ IDIO idio_evaluate_expander_source (IDIO x, IDIO e)
     idio_ai_t pc0 = IDIO_THREAD_PC (ethr);
     idio_vm_default_pc (ethr);
 
-    IDIO dosh = idio_open_output_string_handle_C ();
-    idio_display_C ("evaluate-expander-source: ", dosh);
-    idio_display (x, dosh);
-
     idio_initial_expander (x, e);
-    IDIO r = idio_vm_run (ethr, idio_get_output_string (dosh));
+    IDIO r = idio_vm_run (ethr);
 
     idio_ai_t pc = IDIO_THREAD_PC (ethr);
     if (pc == (idio_vm_FINISH_pc + 1)) {
@@ -744,12 +740,8 @@ IDIO idio_evaluate_expander_code (IDIO m, IDIO cs)
     idio_ai_t pc0 = IDIO_THREAD_PC (ethr);
     idio_vm_default_pc (ethr);
 
-    IDIO dosh = idio_open_output_string_handle_C ();
-    idio_display_C ("evaluate-expander-code: ", dosh);
-    idio_display (m, dosh);
-
     idio_codegen (ethr, m, cs);
-    IDIO r = idio_vm_run (ethr, idio_get_output_string (dosh));
+    IDIO r = idio_vm_run (ethr);
 
     idio_ai_t pc = IDIO_THREAD_PC (ethr);
     if (pc == (idio_vm_FINISH_pc + 1)) {
@@ -914,12 +906,8 @@ IDIO idio_evaluate_infix_operator_code (IDIO m, IDIO cs)
     idio_ai_t pc0 = IDIO_THREAD_PC (ethr);
     idio_vm_default_pc (ethr);
 
-    IDIO dosh = idio_open_output_string_handle_C ();
-    idio_display_C ("evaluate-infix-operator-code: ", dosh);
-    idio_display (m, dosh);
-
     idio_codegen (ethr, m, cs);
-    IDIO r = idio_vm_run (ethr, idio_get_output_string (dosh));
+    IDIO r = idio_vm_run (ethr);
 
     idio_ai_t pc = IDIO_THREAD_PC (ethr);
     if (pc == (idio_vm_FINISH_pc + 1)) {
@@ -967,16 +955,12 @@ static IDIO idio_evaluate_infix_operator (IDIO n, IDIO e, IDIO b, IDIO a)
     idio_ai_t pc0 = IDIO_THREAD_PC (ethr);
     idio_vm_default_pc (ethr);
 
-    IDIO dosh = idio_open_output_string_handle_C ();
-    idio_display_C ("evaluate-infix-operator: ", dosh);
-    idio_display (e, dosh);
-
     idio_apply (func, IDIO_LIST3 (n, b, IDIO_LIST1 (a)));
 #ifdef IDIO_VM_PERF
     struct timespec prim_t0;
     idio_vm_func_start (func, &prim_t0);
 #endif
-    IDIO r = idio_vm_run (ethr, idio_get_output_string (dosh));
+    IDIO r = idio_vm_run (ethr);
 #ifdef IDIO_VM_PERF
     struct timespec prim_te;
     idio_vm_func_stop (func, &prim_te);
@@ -1119,12 +1103,8 @@ IDIO idio_evaluate_postfix_operator_code (IDIO m, IDIO cs)
     idio_ai_t pc0 = IDIO_THREAD_PC (ethr);
     idio_vm_default_pc (ethr);
 
-    IDIO dosh = idio_open_output_string_handle_C ();
-    idio_display_C ("evaluate-postfix-operator-code: ", dosh);
-    idio_display (m, dosh);
-
     idio_codegen (ethr, m, cs);
-    IDIO r = idio_vm_run (ethr, idio_get_output_string (dosh));
+    IDIO r = idio_vm_run (ethr);
 
     idio_ai_t pc = IDIO_THREAD_PC (ethr);
     if (pc == (idio_vm_FINISH_pc + 1)) {
@@ -1171,16 +1151,12 @@ static IDIO idio_evaluate_postfix_operator (IDIO n, IDIO e, IDIO b, IDIO a)
     idio_ai_t pc0 = IDIO_THREAD_PC (ethr);
     idio_vm_default_pc (ethr);
 
-    IDIO dosh = idio_open_output_string_handle_C ();
-    idio_display_C ("evaluate-postfix-operator: ", dosh);
-    idio_display (e, dosh);
-
     idio_apply (func, IDIO_LIST3 (n, b, IDIO_LIST1 (a)));
 #ifdef IDIO_VM_PERF
     struct timespec prim_t0;
     idio_vm_func_start (func, &prim_t0);
 #endif
-    IDIO r = idio_vm_run (ethr, idio_get_output_string (dosh));
+    IDIO r = idio_vm_run (ethr);
 #ifdef IDIO_VM_PERF
     struct timespec prim_te;
     idio_vm_func_stop (func, &prim_te);

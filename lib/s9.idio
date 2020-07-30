@@ -188,6 +188,7 @@ define (port? x) {
 
 ;; Equivalence predicates
 
+#*
 define (s9/eqv? a b) {
   cond ((number? a) (and (number? b)
 			 (== a b))) \
@@ -210,6 +211,7 @@ define (s9/equal? a b) {
 }
 
 ;define equal? s9/equal?
+*#
 
 ;; List procedures
 

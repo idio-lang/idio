@@ -1049,7 +1049,6 @@ static IDIO idio_read_escape (IDIO handle, IDIO lo, char *ic, int depth)
     IDIO elo = idio_read_1_expr (handle, ic, depth);
     IDIO e = idio_struct_instance_ref_direct (elo, IDIO_LEXOBJ_EXPR);
     IDIO r = IDIO_LIST2 (idio_S_escape, e);
-    idio_meaning_copy_src_properties (e, r);
 
     return r;
 }
@@ -2761,7 +2760,7 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl
 			     * #<foo>
 			     */
 			    char em[BUFSIZ];
-			    sprintf (em, "not ready for # format: %c (%02x)", c, c);
+			    sprintf (em, "not ready for '#%c' format", c);
 			    idio_read_error_parse (handle, lo, IDIO_C_FUNC_LOCATION (), em);
 
 			    return idio_S_notreached;
@@ -2787,7 +2786,7 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl
 			     * vital purposes...
 			     */
 			    char em[BUFSIZ];
-			    sprintf (em, "unexpected # format: '%c' (%#02x)", c, c);
+			    sprintf (em, "unexpected '#%c' format (# then %#02x)", c, c);
 			    idio_read_error_parse (handle, lo, IDIO_C_FUNC_LOCATION (), em);
 
 			    return idio_S_notreached;

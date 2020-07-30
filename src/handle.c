@@ -1345,7 +1345,96 @@ IDIO_DEFINE_PRIMITIVE1 ("handle-location", handle_location, (IDIO h))
     return idio_handle_location (h);
 }
 
-IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO e, IDIO cs), IDIO cs)
+IDIO idio_load_handle_ebe (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO e, IDIO cs), IDIO cs)
+{
+    IDIO_ASSERT (h);
+    IDIO_C_ASSERT (reader);
+    IDIO_C_ASSERT (evaluator);
+    IDIO_ASSERT (cs);
+    IDIO_TYPE_ASSERT (handle, h);
+    IDIO_TYPE_ASSERT (array, cs);
+
+    if (IDIO_FILE_HANDLE_FLAGS (h) & IDIO_FILE_HANDLE_FLAG_INTERACTIVE) {
+	return idio_load_handle_interactive (h, reader, evaluator, cs);
+    }
+
+    int timing = 0;
+
+    IDIO thr = idio_thread_current_thread ();
+    idio_ai_t ss0 = idio_array_size (IDIO_THREAD_STACK (thr));
+
+    /*
+     * When we call idio_vm_run() we are at risk of the garbage
+     * collector being called so we need to save the current file
+     * handle and any lists we're walking over
+     */
+    idio_remember_file_handle (h);
+
+    IDIO e = idio_S_nil;
+    IDIO r;
+
+    for (;;) {
+	e = (*reader) (h);
+
+	if (idio_S_eof == e) {
+	    break;
+	} else {
+	    IDIO m = (*evaluator) (e, cs);
+
+	    idio_ai_t lh_pc = -1;
+	    idio_codegen (thr, m, cs);
+	    if (-1 == lh_pc) {
+		lh_pc = IDIO_THREAD_PC (thr);
+	    }
+
+	    IDIO_THREAD_PC (thr) = lh_pc;
+	    r = idio_vm_run (thr);
+
+	    idio_ai_t ss = idio_array_size (IDIO_THREAD_STACK (thr));
+
+	    if (ss != ss0) {
+		char *sname = idio_handle_name_as_C (h);
+		fprintf (stderr, "load-handle-ebe: %s: SS %td != %td\n", sname, ss, ss0);
+		free (sname);
+		idio_debug ("THR %s\n", thr);
+		idio_debug ("STK %s\n", IDIO_THREAD_STACK (thr));
+	    }
+	}
+    }
+
+    IDIO_HANDLE_M_CLOSE (h) (h);
+
+    idio_forget_file_handle (h);
+
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("load-handle-ebe", load_handle_ebe, (IDIO h), "handle", "\
+load expressions from ``handle`` expression by expression	\n\
+								\n\
+:param handle: the handle to load from				\n\
+:type handle: handle						\n\
+								\n\
+This is the ``load-handle-ebe`` primitive.			\n\
+")
+{
+    IDIO_ASSERT (h);
+    IDIO_VERIFY_PARAM_TYPE (handle, h);
+
+    IDIO thr = idio_thread_current_thread ();
+    idio_ai_t pc0 = IDIO_THREAD_PC (thr);
+
+    IDIO r = idio_load_handle_ebe (h, idio_read, idio_evaluate, idio_vm_constants);
+
+    idio_ai_t pc = IDIO_THREAD_PC (thr);
+    if (pc == (idio_vm_FINISH_pc + 1)) {
+	IDIO_THREAD_PC (thr) = pc0;
+    }
+
+    return r;
+}
+
+IDIO idio_load_handle_aio (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO e, IDIO cs), IDIO cs)
 {
     IDIO_ASSERT (h);
     IDIO_C_ASSERT (reader);
@@ -1397,7 +1486,7 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
 	}
 
 	char *sname = idio_handle_name_as_C (h);
-	fprintf (stderr, "load-handle: %s: read time %ld.%03ld\n", sname, s, (long) us / 1000);
+	fprintf (stderr, "load-handle-aio: %s: read time %ld.%03ld\n", sname, s, (long) us / 1000);
 	free (sname);
     }
 
@@ -1407,7 +1496,7 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
 	es = IDIO_PAIR_T (es);
     }
     ms = idio_list_reverse (ms);
-    /* idio_debug ("load-handle: ms %s\n", ms);    */
+    /* idio_debug ("load-handle-aio: ms %s\n", ms);    */
 
     struct timeval te;
     if (timing) {
@@ -1422,7 +1511,7 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
 	}
 
 	char *sname = idio_handle_name_as_C (h);
-	fprintf (stderr, "load-handle: %s: evaluation time %ld.%03ld\n", sname, s, (long) us / 1000);
+	fprintf (stderr, "load-handle-aio: %s: evaluation time %ld.%03ld\n", sname, s, (long) us / 1000);
 	free (sname);
     }
 
@@ -1461,16 +1550,8 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
 	ms = IDIO_PAIR_T (ms);
     }
 
-    IDIO dosh = idio_open_output_string_handle_C ();
-    idio_display_C ("load-handle-aio: ", dosh);
-    char *sname = idio_handle_name_as_C (h);
-    idio_display_C (sname, dosh);
-    free (sname);
-    idio_display_C (": PC=", dosh);
-    idio_display (idio_fixnum (lh_pc), dosh);
-
     IDIO_THREAD_PC (thr) = lh_pc;
-    r = idio_vm_run (thr, idio_get_output_string (dosh));
+    r = idio_vm_run (thr);
 
     /* ms */
     idio_array_pop (IDIO_THREAD_STACK (thr));
@@ -1488,7 +1569,7 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
 	}
 
 	char *sname = idio_handle_name_as_C (h);
-	fprintf (stderr, "load-handle: %s: compile/run time %ld.%03ld\n", sname, s, (long) us / 1000);
+	fprintf (stderr, "load-handle-aio: %s: compile/run time %ld.%03ld\n", sname, s, (long) us / 1000);
 	free (sname);
     }
 
@@ -1501,7 +1582,7 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
     }
 
 #if IDIO_DEBUG
-    /* fprintf (stderr, "load-handle: %s: elapsed time %ld.%03ld\n", idio_handle_name_as_C (h), s, (long) us / 1000); */
+    /* fprintf (stderr, "load-handle-aio: %s: elapsed time %ld.%03ld\n", idio_handle_name_as_C (h), s, (long) us / 1000); */
     /* idio_debug (" => %s\n", r); */
 #endif
 
@@ -1509,7 +1590,7 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
 
     if (ss != ss0) {
 	char *sname = idio_handle_name_as_C (h);
-	fprintf (stderr, "load-handle: %s: SS %td != %td\n", sname, ss, ss0);
+	fprintf (stderr, "load-handle-aio: %s: SS %td != %td\n", sname, ss, ss0);
 	free (sname);
 	idio_debug ("THR %s\n", thr);
 	idio_debug ("STK %s\n", IDIO_THREAD_STACK (thr));
@@ -1520,13 +1601,13 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1_DS ("load-handle", load_handle, (IDIO h), "handle", "\
-load expressions from ``handle``				\n\
+IDIO_DEFINE_PRIMITIVE1_DS ("load-handle-aio", load_handle_aio, (IDIO h), "handle", "\
+load expressions from ``handle`` all in one			\n\
 								\n\
 :param handle: the handle to load from				\n\
 :type handle: handle						\n\
 								\n\
-This is the ``load-handle`` primitive.				\n\
+This is the ``load-handle-aio`` primitive.			\n\
 ")
 {
     IDIO_ASSERT (h);
@@ -1535,7 +1616,7 @@ This is the ``load-handle`` primitive.				\n\
     IDIO thr = idio_thread_current_thread ();
     idio_ai_t pc0 = IDIO_THREAD_PC (thr);
 
-    IDIO r = idio_load_handle (h, idio_read, idio_evaluate, idio_vm_constants);
+    IDIO r = idio_load_handle_aio (h, idio_read, idio_evaluate, idio_vm_constants);
 
     idio_ai_t pc = IDIO_THREAD_PC (thr);
     if (pc == (idio_vm_FINISH_pc + 1)) {
@@ -1613,13 +1694,7 @@ IDIO idio_load_handle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*eval
 	IDIO m = (*evaluator) (e, cs);
 	idio_codegen (thr, m, cs);
 
-	IDIO dosh = idio_open_output_string_handle_C ();
-	idio_display_C ("load-handle-interactive: ", dosh);
-	char *sname = idio_handle_name_as_C (fh);
-	idio_display_C (sname, dosh);
-	free (sname);
-
-	IDIO r = idio_vm_run (thr, idio_get_output_string (dosh));
+	IDIO r = idio_vm_run (thr);
 	idio_debug ("%s\n", r);
     }
 
@@ -1687,7 +1762,19 @@ void idio_handle_add_primitives ()
     IDIO_ADD_PRIMITIVE (flush_handle);
     IDIO_ADD_PRIMITIVE (seek_handle);
     IDIO_ADD_PRIMITIVE (handle_rewind);
-    IDIO_ADD_PRIMITIVE (load_handle);
+    IDIO_ADD_PRIMITIVE (load_handle_aio);
+    IDIO_ADD_PRIMITIVE (load_handle_ebe);
+
+    IDIO load_handle_sym = idio_symbols_C_intern ("load-handle");
+    IDIO load_handle_ebe_sym = idio_symbols_C_intern ("load-handle-ebe");
+    idio_module_export_symbol_value (load_handle_sym,
+				     idio_module_primitive_symbol_value (load_handle_ebe_sym, idio_S_nil),
+				     idio_Idio_module_instance ());
+
+    IDIO load_handle_ebe = idio_module_primitive_symbol_value (load_handle_ebe_sym, idio_S_nil);
+    IDIO load_handle = idio_module_toplevel_symbol_value (load_handle_sym, idio_S_nil);
+    idio_set_property (load_handle, idio_KW_sigstr, idio_get_property (load_handle_ebe, idio_KW_sigstr, idio_S_nil));
+    idio_set_property (load_handle, idio_KW_docstr_raw, idio_get_property (load_handle_ebe, idio_KW_docstr_raw, idio_S_nil));
 }
 
 void idio_final_handle ()

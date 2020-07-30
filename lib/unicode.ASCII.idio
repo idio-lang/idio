@@ -1,8 +1,8 @@
 #*
 
-			     These bitsets are automatically generated from Unicode source files.
+These bitsets are automatically generated from Unicode source files.
 
-			     *#
+*#
 
 ; char-set:lower-case is Property Lowercase
 char-set:lower-case  = #B{ 128 60:01111111 68-70 11100000 }
@@ -59,7 +59,7 @@ char-set:full        = #B{ 128 0-78 }
 char-set:nonl        = #B{ 128 0-0 11011111 10-78 }
 
 ; char-set:control is Property Control
-char-set:control     = #B{ 128 0-0 11011011 10-18 }
+char-set:control     = #B{ 128 0-0 11011011 10-18 78:00000001 }
 
 ; char-set:word-constituent is char-set:letter+digit + _
 char-set:word-constituent = #B{ 128 30-30 11000000 01111111 48-50 11100001 01111111 68-70 11100000 }

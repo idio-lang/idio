@@ -465,7 +465,7 @@ IDIO idio_list_list2string (IDIO l)
 
 	    s[i] = c;
 	} else {
-	    idio_error_param_type ("character", h, IDIO_C_FUNC_LOCATION ());
+	    idio_error_param_type ("unicode|character", h, IDIO_C_FUNC_LOCATION ());
 	    return idio_S_unspec;
 	}
 

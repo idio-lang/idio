@@ -23,7 +23,7 @@
 
 include "operator.idio"
 include "closure.idio"
-include "s9.idio"
+include "s9-syntax.idio"
 include "call-cc.idio"
 include "module.idio"
 include "common.idio"
@@ -31,6 +31,8 @@ include "struct.idio"
 include "condition.idio"
 include "path.idio"
 include "debug.idio"
+
+include "s9.idio"
 
 ; SRFI-8 receive is in common.idio as with-values-from
 ; SRFI-17 Generalized set! is in closure.idio
@@ -47,3 +49,5 @@ include "doc.idio"
 ;; C/== etc.
 
 import job-control libc
+import (unicode ASCII)
+

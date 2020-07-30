@@ -444,176 +444,6 @@ IDIO idio_unicode_lookup (char *s)
     return idio_hash_get (idio_unicode_hash, s);
 }
 
-IDIO_DEFINE_PRIMITIVE1_DS ("unicode-alphabetic?",  unicode_alphabetic_p, (IDIO c), "c", "\
-test if `c` is alphabetic			\n\
-						\n\
-:param c: unicode to test			\n\
-						\n\
-This implementation uses libc isalpha()		\n\
-						\n\
-:return: #t if `c` is an alphabetic unicode, #f otherwise	\n\
-")
-{
-    IDIO_ASSERT (c);
-
-    IDIO_VERIFY_PARAM_TYPE (unicode, c);
-
-    IDIO r = idio_S_false;
-
-    if (isalpha (IDIO_UNICODE_VAL (c))) {
-	r = idio_S_true;
-    }
-
-    return r;
-}
-
-IDIO_DEFINE_PRIMITIVE1_DS ("unicode-numeric?",  unicode_numeric_p, (IDIO c), "c", "\
-test if `c` is numeric			\n\
-						\n\
-:param c: unicode to test			\n\
-						\n\
-This implementation uses libc isdigit()		\n\
-						\n\
-:return: #t if `c` is an numeric unicode, #f otherwise	\n\
-")
-{
-    IDIO_ASSERT (c);
-
-    IDIO_VERIFY_PARAM_TYPE (unicode, c);
-
-    IDIO r = idio_S_false;
-
-    if (isdigit (IDIO_UNICODE_VAL (c))) {
-	r = idio_S_true;
-    }
-
-    return r;
-}
-
-IDIO_DEFINE_PRIMITIVE1_DS ("unicode-whitespace?",  unicode_whitespace_p, (IDIO c), "c", "\
-test if `c` is whitespace			\n\
-						\n\
-:param c: unicode to test			\n\
-						\n\
-This implementation uses libc isblank() and isspace()		\n\
-						\n\
-:return: #t if `c` is a whitespace unicode, #f otherwise	\n\
-")
-{
-    IDIO_ASSERT (c);
-
-    IDIO_VERIFY_PARAM_TYPE (unicode, c);
-
-    IDIO r = idio_S_false;
-
-    if (isblank (IDIO_UNICODE_VAL (c)) ||
-	isspace (IDIO_UNICODE_VAL (c))) {
-	r = idio_S_true;
-    }
-
-    return r;
-}
-
-intptr_t idio_unicode_ival (IDIO ic)
-{
-    IDIO_ASSERT (ic);
-
-    IDIO_VERIFY_PARAM_TYPE (unicode, ic);
-
-    intptr_t c = IDIO_UNICODE_VAL (ic);
-
-    intptr_t r = c;
-
-    /*
-     * ASCII only
-     */
-    if (c < 0x80) {
-	r = tolower (c);
-    }
-
-    return r;
-}
-
-IDIO_DEFINE_PRIMITIVE1_DS ("unicode-downcase",  unicode_downcase, (IDIO c), "c", "\
-return lowercase variant of `c`			\n\
-						\n\
-:param c: unicode to convert			\n\
-						\n\
-This implementation uses libc tolower()		\n\
-						\n\
-:return: lowercase variant of `c`	\n\
-")
-{
-    IDIO_ASSERT (c);
-
-    IDIO_VERIFY_PARAM_TYPE (unicode, c);
-
-    return IDIO_UNICODE (idio_unicode_ival (c));
-}
-
-IDIO_DEFINE_PRIMITIVE1_DS ("unicode-lower-case?",  unicode_lower_case_p, (IDIO c), "c", "\
-test if `c` is lower case			\n\
-						\n\
-:param c: unicode to test			\n\
-						\n\
-This implementation uses libc islower()		\n\
-						\n\
-:return: #t if `c` is a lower case unicode, #f otherwise	\n\
-")
-{
-    IDIO_ASSERT (c);
-
-    IDIO_VERIFY_PARAM_TYPE (unicode, c);
-
-    IDIO r = idio_S_false;
-
-    if (islower (IDIO_UNICODE_VAL (c))) {
-	r = idio_S_true;
-    }
-
-    return r;
-}
-
-IDIO_DEFINE_PRIMITIVE1_DS ("unicode-upcase",  unicode_upcase, (IDIO c), "c", "\
-return uppercase variant of `c`			\n\
-						\n\
-:param c: unicode to convert			\n\
-						\n\
-This implementation uses libc toupper()		\n\
-						\n\
-:return: uppercase variant of `c`	\n\
-")
-{
-    IDIO_ASSERT (c);
-
-    IDIO_VERIFY_PARAM_TYPE (unicode, c);
-
-    return IDIO_UNICODE (toupper (IDIO_UNICODE_VAL (c)));
-}
-
-IDIO_DEFINE_PRIMITIVE1_DS ("unicode-upper-case?",  unicode_upper_case_p, (IDIO c), "c", "\
-test if `c` is upper case			\n\
-						\n\
-:param c: unicode to test			\n\
-						\n\
-This implementation uses libc isupper()		\n\
-						\n\
-:return: #t if `c` is a upper case unicode, #f otherwise	\n\
-")
-{
-    IDIO_ASSERT (c);
-
-    IDIO_VERIFY_PARAM_TYPE (unicode, c);
-
-    IDIO r = idio_S_false;
-
-    if (isupper (IDIO_UNICODE_VAL (c))) {
-	r = idio_S_true;
-    }
-
-    return r;
-}
-
 /*
  * All the unicode-*? are essentially identical
  */
@@ -652,6 +482,7 @@ This implementation uses libc isupper()		\n\
 #define IDIO_DEFINE_UNICODE_CI_PRIMITIVE2V(name,cname,cmp)		\
     IDIO_DEFINE_UNICODE_PRIMITIVE2V (name, unicode_ ## cname ## _p, cmp, idio_unicode_ival)
 
+/*
 IDIO_DEFINE_UNICODE_CI_PRIMITIVE2V ("unicode-ci<=?", le, <=)
 IDIO_DEFINE_UNICODE_CI_PRIMITIVE2V ("unicode-ci<?", lt, <)
 IDIO_DEFINE_UNICODE_CI_PRIMITIVE2V ("unicode-ci=?", eq, ==)
@@ -660,9 +491,12 @@ IDIO_DEFINE_UNICODE_CI_PRIMITIVE2V ("unicode-ci>?", gt, >)
 
 IDIO_DEFINE_UNICODE_CS_PRIMITIVE2V ("unicode<=?", le, <=)
 IDIO_DEFINE_UNICODE_CS_PRIMITIVE2V ("unicode<?", lt, <)
+*/
 IDIO_DEFINE_UNICODE_CS_PRIMITIVE2V ("unicode=?", eq, ==)
+/*
 IDIO_DEFINE_UNICODE_CS_PRIMITIVE2V ("unicode>=?", ge, >=)
 IDIO_DEFINE_UNICODE_CS_PRIMITIVE2V ("unicode>?", gt, >)
+*/
 
 #define IDIO_UNICODE_INTERN_C(name,c)	(idio_unicode_C_intern (name, IDIO_UNICODE (c)))
 
@@ -742,18 +576,12 @@ void idio_unicode_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (unicode_p);
     IDIO_ADD_PRIMITIVE (unicode2integer);
-    IDIO_ADD_PRIMITIVE (unicode_alphabetic_p);
-    IDIO_ADD_PRIMITIVE (unicode_numeric_p);
-    IDIO_ADD_PRIMITIVE (unicode_downcase);
-    IDIO_ADD_PRIMITIVE (unicode_lower_case_p);
-    IDIO_ADD_PRIMITIVE (unicode_upcase);
-    IDIO_ADD_PRIMITIVE (unicode_upper_case_p);
-    IDIO_ADD_PRIMITIVE (unicode_whitespace_p);
 
     /*
      * The unicode_* functions were autogenerated but we still need to
      * add the sigstr and docstr
      */
+    /*
     IDIO fvi = IDIO_ADD_PRIMITIVE (unicode_le_p);
     IDIO p = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
     idio_primitive_set_property_C (p, idio_KW_sigstr, "c1 c2 [...]");
@@ -848,9 +676,9 @@ This implementation uses libc tolower()						\n\
 										\n\
 :return: #t if arguments are sorted increasing case-insensitively, #f otherwise	\n\
 ");
-
-    fvi = IDIO_ADD_PRIMITIVE (unicode_ci_eq_p);
-    p = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+    */
+    IDIO fvi = IDIO_ADD_PRIMITIVE (unicode_ci_eq_p);
+    IDIO p = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
     idio_primitive_set_property_C (p, idio_KW_sigstr, "c1 c2 [...]");
     idio_primitive_set_property_C (p, idio_KW_docstr_raw, "\
 test if unicode arguments are equal case-insensitively		\n\
@@ -863,7 +691,7 @@ This implementation uses libc tolower()					\n\
 									\n\
 :return: #t if arguments are equal case-insensitively, #f otherwise	\n\
 ");
-
+    /*
     fvi = IDIO_ADD_PRIMITIVE (unicode_ci_ge_p);
     p = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
     idio_primitive_set_property_C (p, idio_KW_sigstr, "c1 c2 [...]");
@@ -893,6 +721,7 @@ This implementation uses libc tolower()						\n\
 										\n\
 :return: #t if arguments are sorted decreasing case-insensitively, #f otherwise	\n\
 ");
+    */
 }
 
 void idio_final_unicode ()

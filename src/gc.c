@@ -1052,7 +1052,7 @@ void idio_gc_expose_all ()
     }
 
     if (n) {
-	fprintf (stderr, "idio_gc_expose_all for %zd objects\n", n);
+	fprintf (stderr, "idio_gc_expose_all for %zd root objects\n", n);
     }
 }
 
