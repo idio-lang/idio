@@ -479,11 +479,12 @@ IDIO_DEFINE_PRIMITIVE1 ("mkstemp", libc_mkstemp, (IDIO ifilename))
 	    fprintf (stderr, "ERROR: mkstemp: unable to rewrite template: flags differ: %x %x\n", IDIO_STRING_FLAGS (ifilename), IDIO_STRING_FLAGS (fn));
 	} else if (IDIO_STRING_LEN (ifilename) != IDIO_STRING_LEN (fn)) {
 	    fprintf (stderr, "ERROR: mkstemp: unable to rewrite template: len differs: %zu %zu\n", IDIO_STRING_LEN (ifilename), IDIO_STRING_LEN (fn));
+	} else if (IDIO_STRING_BLEN (ifilename) != IDIO_STRING_BLEN (fn)) {
+	    fprintf (stderr, "ERROR: mkstemp: unable to rewrite template: blen differs: %zu %zu\n", IDIO_STRING_BLEN (ifilename), IDIO_STRING_BLEN (fn));
 	} else {
 	    memcpy (IDIO_STRING_S (ifilename), IDIO_STRING_S (fn), IDIO_STRING_BLEN (fn));
 	}
     } else {
-	fprintf (stderr, "mkstemp from a substring\n");
 	if (IDIO_STRING_FLAGS (IDIO_SUBSTRING_PARENT (ifilename)) != IDIO_STRING_FLAGS (fn)) {
 	    fprintf (stderr, "ERROR: mkstemp: unable to rewrite template: flags differ: %x %x\n", IDIO_STRING_FLAGS (IDIO_SUBSTRING_PARENT (ifilename)), IDIO_STRING_FLAGS (fn));
 	} else if (IDIO_SUBSTRING_LEN (ifilename) != IDIO_STRING_LEN (fn)) {

@@ -111,6 +111,14 @@ static void idio_handle_error_bad_output (IDIO h, IDIO c_location)
  * therefore a safe value for "there is no lookahead char available"
  * is EOF.  The lookahead char is thus conceptually different to the
  * result of getc(3) itself as EOF now means "actually call getc(3)".
+ *
+ * EOF itself is now moot in the face of UTF-8 inputs.  Whilst the
+ * byte 0xff -- which will be recast as EOF, -1 -- is invalid UTF-8 it
+ * is used extensively (enough) as a test for validating UTF-8
+ * decoders!
+ *
+ * So you can't do a "switch (c) { case EOF: ..." or "(EOF == c)"
+ * comparison any more!
  */
 
 IDIO idio_handle ()
@@ -910,13 +918,11 @@ IDIO idio_read_line (IDIO h)
 
     for (;;) {
 	int c = idio_getc_handle (h);
-	switch (c) {
-	case EOF:
-	case '\n':
+	if (idio_eofp_handle (h) ||
+	    '\n' == c) {
 	    return idio_get_output_string (osh);
-	default:
+	} else {
 	    idio_putc_string_handle (osh, c);
-	    break;
 	}
     }
 
@@ -947,12 +953,10 @@ IDIO idio_read_lines (IDIO h)
 
     for (;;) {
 	int c = idio_getc_handle (h);
-	switch (c) {
-	case EOF:
+	if (idio_eofp_handle (h)) {
 	    return idio_get_output_string (osh);
-	default:
+	} else {
 	    idio_putc_string_handle (osh, c);
-	    break;
 	}
     }
 

@@ -141,6 +141,8 @@ define-condition-type-accessors-only ^read-error			^idio-error			read-error? \
 define-condition-type-accessors-only ^evaluation-error			^idio-error			evaluation-error? \
 	(expr evaluation-error-expr)
 
+define-condition-type-accessors-only ^string-error			^idio-error			string-error?
+
 ;; Idio generated conditions
 define-condition-type-accessors-only ^system-error			^idio-error			system-error? \
 	(errno system-error-errno)
@@ -238,10 +240,10 @@ define (condition-report prefix c & args) "print a report on condition `c`
     cr-printf (append-string prefix ":")
   }
 
-  if (and (struct-type-isa (struct-instance-type c) ^idio-error)
-	  (not (or (struct-type-isa (struct-instance-type c) ^read-error)
-		   (struct-type-isa (struct-instance-type c) ^evaluation-error)
-		   (struct-type-isa (struct-instance-type c) ^rt-command-status-error)))) {
+  if (and (idio-error? c)
+	  (not (or (read-error? c)
+		   (evaluation-error? c)
+		   (rt-command-status-error? c)))) {
 		     cr-printf "%s:" c.location
 		     cr-printf "%s:" (struct-type-name (struct-instance-type c))
 		     cr-printf "%s" c.message
@@ -250,37 +252,37 @@ define (condition-report prefix c & args) "print a report on condition `c`
 		     }
   }
 
-  cond ((struct-type-isa (struct-instance-type c) ^i/o-handle-error) {
+  cond ((i/o-handle-error? c) {
     cr-printf ": handle %s " c.handle
   }) \
-       ((struct-type-isa (struct-instance-type c) ^i/o-filename-error) {
+       ((i/o-filename-error? c) {
 	 cr-printf ": filename %s " c.filename
        }) \
-       ((struct-type-isa (struct-instance-type c) ^read-error) {
+       ((read-error? c) {
 	 cr-printf "%s:%s:%s" c.location c.line c.message
        }) \
-       ((struct-type-isa (struct-instance-type c) ^evaluation-error) {
+       ((evaluation-error? c) {
 	 cr-printf "%s:%s:%s" c.location c.expr c.message
        }) \
-       ((struct-type-isa (struct-instance-type c) ^system-error) {
+       ((system-error? c) {
           cr-printf "errno %s (%s)" c.errno (libc/errno-name c.errno)
         }) \
-       ((struct-type-isa (struct-instance-type c) ^st-variable-error) {
+       ((st-variable-error? c) {
 	 cr-printf ": variable %s" c.variable
        }) \
-       ((struct-type-isa (struct-instance-type c) ^rt-variable-error) {
+       ((rt-variable-error? c) {
 	 cr-printf ": variable %s" c.variable
        }) \
-       ((struct-type-isa (struct-instance-type c) ^rt-module-error) {
+       ((rt-module-erro? c) {
 	 cr-printf ": module %s" c.module
        }) \
-       ((struct-type-isa (struct-instance-type c) ^rt-module-symbol-unbound-error) {
+       ((rt-module-symbol-unbound-error? c) {
 	 cr-printf ": symbol %s" c.symbol
        }) \
-       ((struct-type-isa (struct-instance-type c) ^rt-glob-error) {
+       ((rt-glob-error? c) {
 	 cr-printf ": pattern %s" c.pattern
        }) \
-       ((struct-type-isa (struct-instance-type c) ^rt-command-status-error) {
+       ((rt-command-status-error? c) {
 	 cr-printf " %s" c.message
 	 job := idio-error-location c
 	 header := #t
@@ -306,25 +308,25 @@ define (condition-report prefix c & args) "print a report on condition `c`
 	 }
 	 cr-printf "job: %s => %s" (%idio-job-pipeline job) c.status
        }) \
-       ((struct-type-isa (struct-instance-type c) ^rt-array-bounds-error) {
+       ((rt-array-bounds-error? c) {
 	 cr-printf ": index %s" c.index
        }) \
-       ((struct-type-isa (struct-instance-type c) ^rt-hash-key-not-found) {
+       ((rt-hash-key-not-found? c) {
 	 cr-printf ": key %s" c.key
        }) \
-       ((struct-type-isa (struct-instance-type c) ^rt-bignum-conversion-error) {
+       ((rt-bignum-conversion-error? c) {
 	 cr-printf ": bignum %s" c.bignum
        }) \
-       ((struct-type-isa (struct-instance-type c) ^rt-fixnum-conversion-error) {
+       ((rt-fixnum-conversion-error? c) {
 	 cr-printf ": fixnum %s" c.fixnum
        }) \
-       ((struct-type-isa (struct-instance-type c) ^rt-bitset-bounds-error) {
+       ((rt-bitset-bounds-error? c) {
 	 cr-printf ": bit %s" c.bit
        }) \
-       ((struct-type-isa (struct-instance-type c) ^rt-signal) {
+       ((rt-signal? c) {
           cr-printf "signal %s (%s)" c.signum (libc/signal-name c.signum)
        }) \
-       ((struct-type-isa (struct-instance-type c) ^error) {
+       ((error? c) {
           cr-printf " %s" (struct-type-name (struct-instance-type c))
        }) \
        (else {

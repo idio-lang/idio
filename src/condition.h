@@ -116,6 +116,7 @@ extern IDIO idio_condition_io_file_already_exists_error_type;
 extern IDIO idio_condition_io_no_such_file_error_type;
 extern IDIO idio_condition_read_error_type;
 extern IDIO idio_condition_evaluation_error_type;
+extern IDIO idio_condition_string_error_type;
 
 extern IDIO idio_condition_idio_error_type;
 extern IDIO idio_condition_system_error_type;

@@ -384,6 +384,16 @@ char *idio_utf8_string (IDIO str, int escapes, int quoted)
     }
     r[n] = '\0';
 
+    /*
+    fprintf (stderr, "UTF-8 string: generated %zu bytes for %zu cp\n", n, len);
+    if (11 == len) {
+	size_t i;
+	for (i = 0; i < n; i++) {
+	    fprintf (stderr, "%02x ", r[i]);
+	}
+	fprintf (stderr, "\n");
+    }
+    */
     return r;
 }
 

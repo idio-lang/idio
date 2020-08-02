@@ -22,26 +22,52 @@
 
 #include "idio.h"
 
-static void idio_string_error_utf8_decode (const char *s_C, IDIO c_location, char *msg)
+static void idio_string_error (IDIO msg, IDIO detail, IDIO c_location)
 {
+    IDIO_ASSERT (msg);
+    IDIO_ASSERT (detail);
     IDIO_ASSERT (c_location);
+
+    IDIO_TYPE_ASSERT (string, msg);
+    IDIO_TYPE_ASSERT (string, detail);
+    IDIO_TYPE_ASSERT (string, c_location);
+
+#ifdef IDIO_DEBUG
+    IDIO sh = idio_open_output_string_handle_C ();
+    if (idio_S_nil != detail) {
+	idio_display (detail, sh);
+	idio_display_C (": ", sh);
+    }
+    idio_display (c_location, sh);
+
+    detail = idio_get_output_string (sh);
+#endif
+
+    IDIO c = idio_struct_instance (idio_condition_string_error_type,
+				   IDIO_LIST3 (msg,
+					       idio_S_nil,
+					       detail));
+
+    idio_raise_condition (idio_S_false, c);
+
+    /* notreached */
+}
+
+static void idio_string_error_utf8_decode (char *msg, char *det, IDIO c_location)
+{
     IDIO_C_ASSERT (msg);
+    IDIO_ASSERT (c_location);
 
     IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO msh = idio_open_output_string_handle_C ();
-    idio_display_C ("UTF-8 decode: ", msh);
+    idio_display_C ("string UTF-8 decode: ", msh);
     idio_display_C (msg, msh);
 
     IDIO dsh = idio_open_output_string_handle_C ();
-    idio_display_C ((char *) s_C, dsh);
+    idio_display_C (det, dsh);
 
-    IDIO c = idio_struct_instance (idio_condition_idio_error_type,
-				   IDIO_LIST3 (idio_get_output_string (msh),
-					       c_location,
-					       idio_get_output_string (dsh)));
-
-    idio_raise_condition (idio_S_false, c);
+    idio_string_error (idio_get_output_string (msh), idio_get_output_string (dsh), c_location);
 
     /* notreached */
 }
@@ -78,8 +104,6 @@ IDIO idio_string_C_len (const char *s_C, size_t blen)
 
     IDIO so = idio_gc_get (IDIO_TYPE_STRING);
 
-    IDIO_FPRINTF (stderr, "idio_string_C: %10p = '%s'\n", so, s_C);
-
     IDIO_FLAGS_T flags = IDIO_STRING_FLAG_1BYTE;
 
     idio_unicode_t codepoint;
@@ -89,25 +113,17 @@ IDIO idio_string_C_len (const char *s_C, size_t blen)
     uint8_t *us_C = (unsigned char *) s_C;
     size_t i;
     for (i = 0; i < blen; us_C++, i++) {
+	state = IDIO_UTF8_ACCEPT;
 	for ( ; i < blen; us_C++, i++) {
-	    if (idio_utf8_decode (&state, &codepoint, *us_C) == IDIO_UTF8_ACCEPT) {
+	    idio_utf8_decode (&state, &codepoint, *us_C);
+
+	    if (IDIO_UTF8_ACCEPT == state) {
+		break;
+	    } else if (IDIO_UTF8_REJECT == state) {
+		fprintf (stderr, "The (UTF-8) string is not well-formed with %#02X at byte %zu/%zu\n", *us_C, i, blen);
+		codepoint = 0xFFFD;
 		break;
 	    }
-	}
-
-	if (state != IDIO_UTF8_ACCEPT) {
-	    fprintf (stderr, "The (UTF-8) string [%s] is not well-formed at ['%c' %u %xu %x] %zu/%zu\n", s_C, *us_C, *us_C, *us_C, *us_C, i, blen);
-	    IDIO_C_ASSERT (0);
-	    exit (3);
-	    /*
-	     * XXX passing the not-well-formed string into the error
-	     * handler will result it it trying to be printed (to a
-	     * output string handle) which means it will come through
-	     * this code...only to fail again!
-	     */
-	    idio_string_error_utf8_decode (s_C, IDIO_C_FUNC_LOCATION (), "not well-formed");
-
-	    return idio_S_notreached;
 	}
 
 	if (codepoint > 0xffff) {
@@ -135,45 +151,26 @@ IDIO idio_string_C_len (const char *s_C, size_t blen)
 	break;
     }
 
-    if (reqd_bytes < blen) {
-	fprintf (stderr, "string: allocating %zu REQD bytes (%zu w/ %x) for blen %zu?? '%.*s'\n", reqd_bytes, cp_count, flags, blen, blen, s_C);
-	us_C = (unsigned char *) s_C;
-	for (size_t i = 0; i < blen; i++) {
-	    fprintf (stderr, "%02x ", us_C[i]);
-	}
-	fprintf (stderr, "\n");
-    }
     IDIO_GC_ALLOC (IDIO_STRING_S (so), reqd_bytes + 1);
     IDIO_STRING_BLEN (so) = reqd_bytes;
 
-    state = IDIO_UTF8_ACCEPT;
-
-    cp_count = 0;
     uint8_t *us8 = (uint8_t *) IDIO_STRING_S (so);
     uint16_t *us16 = (uint16_t *) IDIO_STRING_S (so);
     uint32_t *us32 = (uint32_t *) IDIO_STRING_S (so);
 
+    cp_count = 0;
     us_C = (unsigned char *) s_C;
     for (i = 0; i < blen; cp_count++, us_C++, i++) {
+	state = IDIO_UTF8_ACCEPT;
 	for (; i < blen; us_C++, i++) {
-	    if (idio_utf8_decode (&state, &codepoint, *us_C) == IDIO_UTF8_ACCEPT) {
+	    idio_utf8_decode (&state, &codepoint, *us_C);
+
+	    if (IDIO_UTF8_ACCEPT == state) {
+		break;
+	    } else if (IDIO_UTF8_REJECT == state) {
+		codepoint = 0xFFFD;
 		break;
 	    }
-	}
-
-	/* can this happen, now? */
-	if (state != IDIO_UTF8_ACCEPT) {
-	    fprintf (stderr, "The (UTF-8) string is not well-formed\n");
-	    /*
-	     * XXX passing the not-well-formed string into the
-	     * error handler will result it it trying to be
-	     * printed (to a output string handle) which means
-	     * it will come through this code...only to fail
-	     * again!
-	     */
-	    idio_string_error_utf8_decode ("dummy", IDIO_C_FUNC_LOCATION (), "not well-formed");
-
-	    return idio_S_notreached;
 	}
 
 	switch (flags) {
@@ -188,6 +185,17 @@ IDIO idio_string_C_len (const char *s_C, size_t blen)
 	    break;
 	}
     }
+    for (i = 0; i < cp_count; i++) {
+	switch (flags) {
+	case IDIO_STRING_FLAG_1BYTE:
+	    break;
+	case IDIO_STRING_FLAG_2BYTE:
+	    break;
+	case IDIO_STRING_FLAG_4BYTE:
+	    break;
+	}
+    }
+    IDIO_STRING_S (so)[reqd_bytes] = '\0';
 
     IDIO_STRING_LEN (so) = cp_count;
     IDIO_STRING_FLAGS (so) = flags;
@@ -227,24 +235,15 @@ IDIO idio_string_C_array (size_t ns, char *a_C[])
 	ua_C = (unsigned char *) a_C[ai];
 	for (size_t i = 0; i < blen; ua_C++, i++) {
 	    for ( ; i < blen; ua_C++, i++) {
-		if (idio_utf8_decode (&state, &codepoint, *ua_C) == IDIO_UTF8_ACCEPT) {
+		idio_utf8_decode (&state, &codepoint, *ua_C);
+
+		if (IDIO_UTF8_ACCEPT == state) {
+		    break;
+		} else if (IDIO_UTF8_REJECT == state) {
+		    /* fprintf (stderr, "The (UTF-8) string is not well-formed with %#02X at byte %zu/%zu\n", *ua_C, i, blen); */
+		    codepoint = 0xFFFD;
 		    break;
 		}
-	    }
-
-	    if (state != IDIO_UTF8_ACCEPT) {
-		fprintf (stderr, "The (UTF-8) string [%s] is not well-formed at ['%c' %u %xu %x] %zu/%zu\n", a_C[ai], *ua_C, *ua_C, *ua_C, *ua_C, i, blen);
-		IDIO_C_ASSERT (0);
-		exit (3);
-		/*
-		 * XXX passing the not-well-formed string into the error
-		 * handler will result it it trying to be printed (to a
-		 * output string handle) which means it will come through
-		 * this code...only to fail again!
-		 */
-		idio_string_error_utf8_decode (a_C[ai], IDIO_C_FUNC_LOCATION (), "not well-formed");
-
-		return idio_S_notreached;
 	    }
 
 	    if (codepoint > 0xffff) {
@@ -273,11 +272,8 @@ IDIO idio_string_C_array (size_t ns, char *a_C[])
 	break;
     }
 
-    if (reqd_bytes < ablen) {
-	fprintf (stderr, "string: allocating %zu REQD bytes for ablen %zu??\n", reqd_bytes, ablen);
-    }
-
     IDIO_GC_ALLOC (IDIO_STRING_S (so), ablen + 1);
+    IDIO_STRING_BLEN (so) = ablen;
 
     cp_count = 0;
     uint8_t *us8 = (uint8_t *) IDIO_STRING_S (so);
@@ -292,24 +288,14 @@ IDIO idio_string_C_array (size_t ns, char *a_C[])
 	ua_C = (unsigned char *) a_C[ai];
 	for (size_t i = 0; i < blen; cp_count++, ua_C++, i++) {
 	    for (; i < blen; ua_C++, i++) {
-		if (idio_utf8_decode (&state, &codepoint, *ua_C) == IDIO_UTF8_ACCEPT) {
+		idio_utf8_decode (&state, &codepoint, *ua_C);
+
+		if (IDIO_UTF8_ACCEPT == state) {
+		    break;
+		} else if (IDIO_UTF8_REJECT == state) {
+		    codepoint = 0xFFFD;
 		    break;
 		}
-	    }
-
-	    /* can this happen, now? */
-	    if (state != IDIO_UTF8_ACCEPT) {
-		fprintf (stderr, "The (UTF-8) string is not well-formed\n");
-		/*
-		 * XXX passing the not-well-formed string into the
-		 * error handler will result it it trying to be
-		 * printed (to a output string handle) which means
-		 * it will come through this code...only to fail
-		 * again!
-		 */
-		idio_string_error_utf8_decode ("dummy", IDIO_C_FUNC_LOCATION (), "not well-formed");
-
-		return idio_S_notreached;
 	    }
 
 	    switch (flags) {
@@ -325,9 +311,8 @@ IDIO idio_string_C_array (size_t ns, char *a_C[])
 	    }
 	}
     }
-
     IDIO_STRING_S (so)[ablen] = '\0';
-    IDIO_STRING_BLEN (so) = ablen;
+
     IDIO_STRING_FLAGS (so) = flags;
     IDIO_STRING_LEN (so) = cp_count;
 
@@ -348,9 +333,10 @@ IDIO idio_copy_string (IDIO string)
 	    copy = idio_gc_get (IDIO_TYPE_STRING);
 
 	    size_t blen = IDIO_STRING_BLEN (string);
-	    IDIO_STRING_BLEN (copy) = blen;
 	    IDIO_GC_ALLOC (IDIO_STRING_S (copy), blen + 1);
+	    IDIO_STRING_BLEN (copy) = blen;
 	    memcpy (IDIO_STRING_S (copy), IDIO_STRING_S (string), blen);
+
 	    IDIO_STRING_LEN (copy) = IDIO_STRING_LEN (string);
 	    IDIO_STRING_FLAGS (copy) = IDIO_STRING_FLAGS (string);
 	    break;
@@ -435,7 +421,7 @@ IDIO idio_substring_offset (IDIO str, size_t offset, size_t len)
 	break;
     default:
 	fprintf (stderr, "unexpected flag %x\n", flags);
-	idio_string_error_utf8_decode ("dummy", IDIO_C_FUNC_LOCATION (), "unexpected flag");
+	idio_string_error_utf8_decode ("unexpected flag", "dummy", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -604,7 +590,7 @@ IDIO_DEFINE_PRIMITIVE1V ("make-string", make_string, (IDIO size, IDIO args))
     IDIO_VERIFY_PARAM_TYPE (list, args);
 
     size_t bpc = 0;
-    
+
     idio_unicode_t fillc = ' ';
     char fills[5];
     if (idio_S_nil != args) {
@@ -645,7 +631,7 @@ IDIO_DEFINE_PRIMITIVE1V ("make-string", make_string, (IDIO size, IDIO args))
     ptrdiff_t blen = clen * bpc;
     char *sC = idio_alloc (blen + 1);
     sC[0] = '\0';
-    
+
     size_t i;
     for (i = 0; i < blen; i++) {
 	strcat (sC, fills);
@@ -832,7 +818,7 @@ IDIO idio_string_ref (IDIO s, IDIO index)
     uint32_t *s32;
     size_t slen = -1;
     size_t width;
-    
+
     if (idio_isa_substring (s)) {
 	slen = IDIO_SUBSTRING_LEN (s);
 	switch (IDIO_STRING_FLAGS (IDIO_SUBSTRING_PARENT (s))) {
@@ -944,7 +930,7 @@ IDIO idio_string_set (IDIO s, IDIO index, IDIO c)
     uint32_t *s32;
     size_t slen = -1;
     size_t width;
-    
+
     if (idio_isa_substring (s)) {
 	slen = IDIO_SUBSTRING_LEN (s);
 	switch (IDIO_STRING_FLAGS (IDIO_SUBSTRING_PARENT (s))) {
@@ -984,7 +970,7 @@ IDIO idio_string_set (IDIO s, IDIO index, IDIO c)
 
 	return idio_S_notreached;
     }
-    
+
     if (i < 0 ||
 	i >= slen) {
 	idio_string_error_length ("out of bounds", s, i, IDIO_C_FUNC_LOCATION ());

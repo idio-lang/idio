@@ -577,9 +577,7 @@ IDIO idio_read_unicode (IDIO handle, IDIO lo)
 
     int c = idio_getc_handle (handle);
 
-    IDIO r;
-
-    if (EOF == c) {
+    if (idio_eofp_handle (handle)) {
 	/*
 	 * Test Case: read-errors/unicode-eof.idio
 	 *
@@ -588,53 +586,55 @@ IDIO idio_read_unicode (IDIO handle, IDIO lo)
 	idio_read_error_unicode_decode (handle, lo, IDIO_C_FUNC_LOCATION (), "EOF");
 
 	return idio_S_notreached;
-    } else {
-	if ('+' != c) {
-	    /*
-	     * Test Case: read-errors/unicode-not-plus.idio
-	     *
-	     * #U-
-	     */
-	    idio_read_error_unicode_decode (handle, lo, IDIO_C_FUNC_LOCATION (), "U not followed by +");
-
-	    return idio_S_notreached;
-	}
-
-	uint32_t cp;
-	IDIO I_cp = idio_read_bignum_radix (handle, lo, 'x', 16);
-
-	if (idio_isa_fixnum (I_cp)) {
-	    cp = IDIO_FIXNUM_VAL (I_cp);
-	} else if (idio_isa_bignum (I_cp)) {
-	    cp = idio_bignum_ptrdiff_value (I_cp);
-	} else {
-	    /*
-	     * Test Case: read-errors/??
-	     *
-	     * with digits limited to 0-9A-F I don't think we can get
-	     * a non-integer
-	     */
-	    idio_error_param_type ("unicode cp should be an integer", I_cp, IDIO_C_FUNC_LOCATION ());
-
-	    return idio_S_notreached;
-	}
-
-	/*
-	 * cp is unsigned to negative code points are now too big
-	 */
-	if (cp > 0x10ffff) {
-	    /*
-	     * Test Case: read-errors/unicode-too-big.idio
-	     *
-	     * #U+110000
-	     */
-	    idio_read_error_unicode_decode (handle, lo, IDIO_C_FUNC_LOCATION (), "code point too big");
-
-	    return idio_S_notreached;
-	}
-
-	r = IDIO_UNICODE (cp);
     }
+
+    IDIO r;
+
+    if ('+' != c) {
+	/*
+	 * Test Case: read-errors/unicode-not-plus.idio
+	 *
+	 * #U-
+	 */
+	idio_read_error_unicode_decode (handle, lo, IDIO_C_FUNC_LOCATION (), "U not followed by +");
+
+	return idio_S_notreached;
+    }
+
+    uint32_t cp;
+    IDIO I_cp = idio_read_bignum_radix (handle, lo, 'x', 16);
+
+    if (idio_isa_fixnum (I_cp)) {
+	cp = IDIO_FIXNUM_VAL (I_cp);
+    } else if (idio_isa_bignum (I_cp)) {
+	cp = idio_bignum_ptrdiff_value (I_cp);
+    } else {
+	/*
+	 * Test Case: read-errors/??
+	 *
+	 * with digits limited to 0-9A-F I don't think we can get
+	 * a non-integer
+	 */
+	idio_error_param_type ("unicode cp should be an integer", I_cp, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    /*
+     * cp is unsigned to negative code points are now too big
+     */
+    if (cp > 0x10ffff) {
+	/*
+	 * Test Case: read-errors/unicode-too-big.idio
+	 *
+	 * #U+110000
+	 */
+	idio_read_error_unicode_decode (handle, lo, IDIO_C_FUNC_LOCATION (), "code point too big");
+
+	return idio_S_notreached;
+    }
+
+    r = IDIO_UNICODE (cp);
 
     return r;
 }
@@ -660,9 +660,9 @@ IDIO idio_read_character (IDIO handle, IDIO lo, int kind)
 	uint8_t uc = idio_getc_handle (handle);
 
 	idio_utf8_decode (&state, &codepoint, uc);
-	if (state == IDIO_UTF8_ACCEPT) {
+	if (IDIO_UTF8_ACCEPT == state) {
 	    break;
-	} else if (state == IDIO_UTF8_REJECT) {
+	} else if (IDIO_UTF8_REJECT == state) {
 	    /*
 	     * First up, check if we've hit EOF
 	     */
@@ -779,9 +779,11 @@ static void idio_read_whitespace (IDIO handle, IDIO lo)
     for (;;) {
 	int c = idio_getc_handle (handle);
 
-	switch (c) {
-	case EOF:
+	if (idio_eofp_handle (handle)) {
 	    return;
+	}
+
+	switch (c) {
 	case IDIO_CHAR_SPACE:
 	case IDIO_CHAR_TAB:
 	    break;
@@ -803,9 +805,11 @@ static void idio_read_newline (IDIO handle, IDIO lo)
     for (;;) {
 	int c = idio_getc_handle (handle);
 
-	switch (c) {
-	case EOF:
+	if (idio_eofp_handle (handle)) {
 	    return;
+	}
+
+	switch (c) {
 	case IDIO_CHAR_CR:
 	case IDIO_CHAR_NL:
 	    break;
@@ -1435,22 +1439,22 @@ static IDIO idio_read_string (IDIO handle, IDIO lo)
 #define IDIO_STRING_CHUNK_LEN	sizeof (unsigned int)
     int nchunks = 1;
     size_t alen = (nchunks * IDIO_STRING_CHUNK_LEN); /* - 2 * sizeof (void *); */
-    char *buf = idio_alloc (alen);
+    char *abuf = idio_alloc (alen);
     size_t slen = 0;
 
     int done = 0;
     int esc = 0;
 
     while (! done) {
-	int c = idio_getc_handle (handle);
+	uint8_t c = idio_getc_handle (handle);
 
-	if (EOF == c) {
+	if (idio_eofp_handle (handle)) {
 	    /*
-	     * Test Case: read-errors/string-unterminated.idio
+	     * Test Case: read-errors/string-eof.idio
 	     *
 	     * "
 	     */
-	    idio_read_error_string (handle, lo, IDIO_C_FUNC_LOCATION (), "unterminated");
+	    idio_read_error_string (handle, lo, IDIO_C_FUNC_LOCATION (), "EOF");
 
 	    return idio_S_notreached;
 	}
@@ -1458,14 +1462,14 @@ static IDIO idio_read_string (IDIO handle, IDIO lo)
 	switch (c) {
 	case IDIO_CHAR_DQUOTE:
 	    if (esc) {
-		buf[slen++] = c;
+		abuf[slen++] = c;
 	    } else {
 		done = 1;
 	    }
 	    break;
 	case IDIO_CHAR_BACKSLASH:
 	    if (esc) {
-		buf[slen++] = c;
+		abuf[slen++] = c;
 	    } else {
 		esc = 1;
 		continue;
@@ -1506,7 +1510,7 @@ static IDIO idio_read_string (IDIO handle, IDIO lo)
 		    break;
 		}
 	    }
-	    buf[slen++] = c;
+	    abuf[slen++] = c;
 	    break;
 	}
 
@@ -1516,15 +1520,15 @@ static IDIO idio_read_string (IDIO handle, IDIO lo)
 
 	if (slen >= alen) {
 	    alen += IDIO_STRING_CHUNK_LEN;
-	    buf = idio_realloc (buf, alen);
+	    abuf = idio_realloc (abuf, alen);
 	}
     }
 
-    buf[slen] = '\0';
+    abuf[slen] = '\0';
 
-    IDIO r = idio_string_C (buf);
+    idio_C_pointer_free_me (abuf);
 
-    free (buf);
+    IDIO r = idio_string_C_len (abuf, slen);
 
     return r;
 }
@@ -1653,8 +1657,7 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 
     int c = idio_getc_handle (handle);
 
-    switch (c) {
-    case EOF:
+    if (idio_eofp_handle (handle)) {
 	/*
 	 * Test Case: read-errors/bitset-eof.idio
 	 *
@@ -1663,6 +1666,9 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 	idio_read_error_bitset (handle, lo, IDIO_C_FUNC_LOCATION (), "EOF");
 
 	return idio_S_notreached;
+    }
+
+    switch (c) {
     case IDIO_CHAR_LBRACE:
 	break;
     default:
@@ -1691,7 +1697,8 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 	int eow = 0;
 
 	c = idio_getc_handle (handle);
-	if (EOF == c) {
+
+	if (idio_eofp_handle (handle)) {
 	    /*
 	     * Test Case: read-errors/bitset-internal-eof-1.idio
 	     *
@@ -1748,7 +1755,7 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 
 	    c = idio_getc_handle (handle);
 
-	    if (EOF == c) {
+	    if (idio_eofp_handle (handle)) {
 		/*
 		 * Test Case: read-errors/bitset-internal-eof-2.idio
 		 *
@@ -2097,7 +2104,7 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 			 *
 			 */
 			char em[BUFSIZ];
-			sprintf (em, "offset %#zx + %zu bits > bitset size %#zx", offset, bit_block_len, IDIO_BITSET_SIZE (bs), IDIO_BITSET_SIZE (bs));
+			sprintf (em, "offset %#zx + %zu bits > bitset size %#zx", offset, bit_block_len, IDIO_BITSET_SIZE (bs));
 			idio_read_error_bitset (buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
 
 			return idio_S_notreached;
@@ -2173,8 +2180,7 @@ static IDIO idio_read_template (IDIO handle, IDIO lo, int depth)
 	    return idio_S_notreached;
 	}
 
-	switch (c) {
-	case EOF:
+	if (idio_eofp_handle (handle)) {
 	    /*
 	     * Test Case: read-errors/template-eof.idio
 	     *
@@ -2183,10 +2189,10 @@ static IDIO idio_read_template (IDIO handle, IDIO lo, int depth)
 	    idio_read_error_template (handle, lo, IDIO_C_FUNC_LOCATION (), "EOF");
 
 	    return idio_S_notreached;
-	default:
-	    if (IDIO_CHAR_DOT != c) {
-		interpc[i] = c;
-	    }
+	}
+
+	if (IDIO_CHAR_DOT != c) {
+	    interpc[i] = c;
 	}
 
 	i++;
@@ -2290,8 +2296,7 @@ static IDIO idio_read_pathname (IDIO handle, IDIO lo, int depth)
 	    return idio_S_notreached;
 	}
 
-	switch (c) {
-	case EOF:
+	if (idio_eofp_handle (handle)) {
 	    /*
 	     * Test Case: read-errors/pathname-eof.idio
 	     *
@@ -2300,10 +2305,10 @@ static IDIO idio_read_pathname (IDIO handle, IDIO lo, int depth)
 	    idio_read_error_pathname (handle, lo, IDIO_C_FUNC_LOCATION (), "EOF");
 
 	    return idio_S_notreached;
-	default:
-	    if (IDIO_CHAR_DOT != c) {
-		interpc[i] = c;
-	    }
+	}
+
+	if (IDIO_CHAR_DOT != c) {
+	    interpc[i] = c;
 	}
 
 	i++;
@@ -2591,7 +2596,7 @@ static IDIO idio_read_word (IDIO handle, IDIO lo, int c)
 
 	c = idio_getc_handle (handle);
 
-	if (EOF == c) {
+	if (idio_eofp_handle (handle)) {
 	    break;
 	}
 
@@ -2709,7 +2714,7 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl
 		depth &= (~ IDIO_LIST_QUASIQUOTE_MARK);
 
 		c = idio_getc_handle (handle);
-		if (EOF == c) {
+		if (idio_eofp_handle (handle)) {
 		    idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_S_eof);
 		    return lo;
 		}
@@ -2752,10 +2757,12 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl
 	    }
 	} else {
 
-	    switch (c) {
-	    case EOF:
+	    if (idio_eofp_handle (handle)) {
 		idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_S_eof);
 		return lo;
+	    }
+
+	    switch (c) {
 	    case IDIO_CHAR_SPACE:
 	    case IDIO_CHAR_TAB:
 		idio_read_whitespace (handle, lo);

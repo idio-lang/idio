@@ -2101,7 +2101,8 @@ char *idio_as_string (IDIO o, int depth)
   Scheme-ish display -- no internal representation (where
   appropriate).  Unsuitable for (read).  Primarily:
 
-  CHARACTER #\a:	a
+  UNICODE #\a:		a
+  UNICODE #U+FFFD	�
   STRING "foo":		foo
 
   Most non-data types will still come out as some internal
@@ -2200,29 +2201,12 @@ char *idio_display_string (IDIO o)
 	    switch (o->type) {
 	    case IDIO_TYPE_STRING:
 		{
-		    char *s = idio_utf8_string (o, IDIO_UTF8_STRING_VERBATIM, IDIO_UTF8_STRING_UNQUOTED);
-
-		    if (asprintf (&r, "%s", s) == -1) {
-			idio_error_alloc ("asprintf");
-
-			/* notreached */
-			return NULL;
-		    }
-
-		    free (s);
+		    return idio_utf8_string (o, IDIO_UTF8_STRING_VERBATIM, IDIO_UTF8_STRING_UNQUOTED);
 		}
 		break;
 	    case IDIO_TYPE_SUBSTRING:
 		{
-		    char *s = idio_utf8_string (o, IDIO_UTF8_STRING_VERBATIM, IDIO_UTF8_STRING_UNQUOTED);
-
-		    if (asprintf (&r, "%s", s) == -1) {
-			idio_error_alloc ("asprintf");
-
-			/* notreached */
-			return NULL;
-		    }
-		    free (s);
+		    return idio_utf8_string (o, IDIO_UTF8_STRING_VERBATIM, IDIO_UTF8_STRING_UNQUOTED);
 		}
 		break;
 	    default:
@@ -2795,12 +2779,12 @@ void idio_dump (IDIO o, int detail)
 	    switch (o->type) {
 	    case IDIO_TYPE_STRING:
 		if (detail) {
-		    fprintf (stderr, "len=%zu blen=%zu s=", IDIO_STRING_LEN (o), IDIO_STRING_BLEN (o));
+		    fprintf (stderr, "len=%4zu blen=%4zu fl=%x s=", IDIO_STRING_LEN (o), IDIO_STRING_BLEN (o), IDIO_STRING_FLAGS (o));
 		}
 		break;
 	    case IDIO_TYPE_SUBSTRING:
 		if (detail) {
-		    fprintf (stderr, "len=%zu parent=%10p subs=", IDIO_SUBSTRING_LEN (o), IDIO_SUBSTRING_PARENT (o));
+		    fprintf (stderr, "len=%4zu parent=%10p subs=", IDIO_SUBSTRING_LEN (o), IDIO_SUBSTRING_PARENT (o));
 		}
 		break;
 	    case IDIO_TYPE_SYMBOL:

@@ -39,7 +39,7 @@
 ;; bar? foo			=> #t
 ;; struct-type? foo		=> #f
 ;; struct-instance? foo		=> #t
-;; struct-instance-type foo	=> #ST{0x202ace0}
+;; struct-instance-type foo	=> #<ST 0x202ace0 bar #n x y>
 ;; struct-type-name (struct-instance-type foo)	=> bar
 ;; struct-instance-fields foo	=> (1 2)
 ;; struct-instance-ref foo 'x	=> 1
