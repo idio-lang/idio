@@ -3403,7 +3403,13 @@ read a number from ``src``				\n\
 
     if (! idio_isa_handle (src)) {
 	if (idio_isa_string (src)) {
-	    char *ssrc = idio_string_as_C (src);
+	    size_t size = 0;
+	    char *ssrc = idio_string_as_C (src, &size);
+	    /*
+	     * XXX if src has ASCII NULs?
+	     *
+	     * Not sure what to do.
+	     */
 	    handle = idio_open_input_string_handle_C (ssrc);
 	    free (ssrc);
 	} else {
@@ -3413,14 +3419,7 @@ read a number from ``src``				\n\
 	}
     }
 
-    char *sname = idio_handle_name_as_C (handle);
-    IDIO lo = idio_struct_instance (idio_lexobj_type,
-				    idio_pair (idio_string_C (sname),
-				    idio_pair (idio_integer (IDIO_HANDLE_LINE (handle)),
-				    idio_pair (idio_integer (IDIO_HANDLE_POS (handle)),
-				    idio_pair (idio_S_unspec,
-				    idio_S_nil)))));
-    free (sname);
+    IDIO lo = idio_read_lexobj_from_handle (handle);
 
     IDIO_VERIFY_PARAM_TYPE (list, args);
 

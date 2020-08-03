@@ -147,19 +147,20 @@ IDIO_DEFINE_PRIMITIVE1 ("open-input-string", open_input_string_handle, (IDIO str
 {
     IDIO_ASSERT (str);
 
+    size_t size = 0;
     char *str_C = NULL;
 
     switch (idio_type (str)) {
     case IDIO_TYPE_STRING:
     case IDIO_TYPE_SUBSTRING:
-	str_C = idio_string_as_C (str);
+	str_C = idio_string_as_C (str, &size);
 	break;
     default:
 	idio_error_param_type ("string", str, IDIO_C_FUNC_LOCATION ());
 	break;
     }
 
-    IDIO r = idio_open_string_handle (str_C, strlen (str_C), IDIO_HANDLE_FLAG_READ);
+    IDIO r = idio_open_string_handle (str_C, size, IDIO_HANDLE_FLAG_READ);
 
     return r;
 }
@@ -406,8 +407,9 @@ void idio_print_string_handle (IDIO sh, IDIO o)
 	idio_handle_error_write (sh, IDIO_C_FUNC_LOCATION ());
     }
 
-    char *os = idio_display_string (o);
-    IDIO_HANDLE_M_PUTS (sh) (sh, os, strlen (os));
+    size_t size = 0;
+    char *os = idio_display_string (o, &size);
+    IDIO_HANDLE_M_PUTS (sh) (sh, os, size);
     IDIO_HANDLE_M_PUTS (sh) (sh, "\n", 1);
     free (os);
 }

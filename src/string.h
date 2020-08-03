@@ -34,6 +34,7 @@
 int idio_assign_string_C (IDIO so, const char *s_C);
 IDIO idio_string_C_len (const char *s_C, size_t blen);
 IDIO idio_string_C (const char *s_C);
+IDIO idio_string_C_array_lens (size_t ns, char *a_C[], size_t lens[]);
 IDIO idio_string_C_array (size_t ns, char *a_C[]);
 IDIO idio_copy_string (IDIO s);
 void idio_free_string (IDIO so);
@@ -43,8 +44,8 @@ int idio_isa_substring (IDIO so);
 void idio_free_substring (IDIO so);
 size_t idio_string_blen (IDIO so);
 size_t idio_string_len (IDIO so);
-char *idio_string_s (IDIO so);
-char *idio_string_as_C (IDIO so);
+char *idio_string_s (IDIO so, size_t *sizep);
+char *idio_string_as_C (IDIO so, size_t *sizep);
 IDIO idio_string_ref (IDIO s, IDIO index);
 IDIO idio_string_set (IDIO s, IDIO index, IDIO c);
 

@@ -435,8 +435,9 @@ static void idio_meaning_error_static_primitive_arity (IDIO src, IDIO c_location
     idio_display (f, dsh);
     if (idio_S_nil != args) {
 	idio_display_C (" ", dsh);
-	char *s = idio_display_string (args);
-	idio_display_C_len (s + 1, strlen (s) - 2, dsh);
+	size_t size = 0;
+	char *s = idio_display_string (args, &size);
+	idio_display_C_len (s + 1, size - 2, dsh);
 	free (s);
     }
     idio_display_C (")", dsh);
@@ -2980,10 +2981,11 @@ static IDIO idio_meaning_abstraction (IDIO src, IDIO nns, IDIO docstr, IDIO ep, 
     /*
      * signature string: (a b) -> "(a b)" and we don't want the parens
      */
-    char *sigstr_C = idio_display_string (nns);
+    size_t size = 0;
+    char *sigstr_C = idio_display_string (nns, &size);
     IDIO sigstr = idio_S_nil;
     if ('(' == *sigstr_C) {
-	size_t blen = strlen (sigstr_C);
+	size_t blen = size;
 
 	if (blen < 2) {
 	    /*

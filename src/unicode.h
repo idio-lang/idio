@@ -42,7 +42,7 @@ typedef uint32_t idio_unicode_t;
 
 int idio_isa_unicode (IDIO o);
 idio_unicode_t idio_utf8_decode (idio_unicode_t* state, idio_unicode_t* codep, idio_unicode_t byte);
-char *idio_utf8_string (IDIO str, int escapes, int quoted);
+char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted);
 IDIO idio_unicode_lookup (char *name);
 
 void idio_init_unicode ();

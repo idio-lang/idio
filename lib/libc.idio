@@ -127,8 +127,9 @@ define (%make-tmp-fd & args) {
   }
 
   tmpfilename := append-string tmpdir "/" prefix %%mkstemp-template
-  fd := mkstemp tmpfilename
-  list fd tmpfilename
+
+  ;; NB mkstemp returns a tuple of (fd, filename)
+  mkstemp tmpfilename
 }
 
 define (make-tmp-file-handle & prefix) {

@@ -179,6 +179,17 @@ void idio_property_error_key_not_found (IDIO key, IDIO c_location)
     idio_raise_condition (idio_S_true, c);
 }
 
+void idio_symbol_error_format (char *m, IDIO s, IDIO c_location)
+{
+    IDIO_C_ASSERT (m);
+    IDIO_ASSERT (s);
+    IDIO_ASSERT (c_location);
+    IDIO_TYPE_ASSERT (string, s);
+    IDIO_TYPE_ASSERT (string, c_location);
+
+    idio_error_C (m, s, c_location);
+}
+
 int idio_symbol_C_eqp (void *s1, void *s2)
 {
     /*
@@ -269,7 +280,14 @@ IDIO idio_symbols_string_intern (IDIO str)
     IDIO_ASSERT (str);
     IDIO_TYPE_ASSERT (string, str);
 
-    char *s_C = idio_string_as_C (str);
+    size_t size = 0;
+    char *s_C = idio_string_as_C (str, &size);
+    size_t C_size = strlen (s_C);
+    if (C_size != size) {
+	idio_symbol_error_format ("symbol: contains an ASCII NUL", str, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
 
     IDIO r = idio_symbols_C_intern (s_C);
 
@@ -325,7 +343,15 @@ IDIO_DEFINE_PRIMITIVE0V ("gensym", gensym, (IDIO args))
 	IDIO iprefix = IDIO_PAIR_H (args);
 
 	if (idio_isa_string (iprefix)) {
-	    prefix = idio_string_as_C (iprefix);
+	    size_t size = 0;
+	    prefix = idio_string_as_C (iprefix, &size);
+	    size_t C_size = strlen (prefix);
+	    if (C_size != size) {
+		idio_symbol_error_format ("gensym: prefix contains an ASCII NUL", iprefix, IDIO_C_FUNC_LOCATION ());
+
+		return idio_S_notreached;
+	    }
+
 	    free_me = 1;
 	} else if (idio_isa_symbol (iprefix)) {
 	    prefix = IDIO_SYMBOL_S (iprefix);

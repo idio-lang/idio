@@ -235,7 +235,7 @@ convert `c` to an integer				\n\
 /*
  * reconstruct C escapes in s
  */
-char *idio_utf8_string (IDIO str, int escapes, int quoted)
+char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted)
 {
     IDIO_ASSERT (str);
 
@@ -383,17 +383,8 @@ char *idio_utf8_string (IDIO str, int escapes, int quoted)
 	r[n++] = '"';
     }
     r[n] = '\0';
+    *sizep = n;
 
-    /*
-    fprintf (stderr, "UTF-8 string: generated %zu bytes for %zu cp\n", n, len);
-    if (11 == len) {
-	size_t i;
-	for (i = 0; i < n; i++) {
-	    fprintf (stderr, "%02x ", r[i]);
-	}
-	fprintf (stderr, "\n");
-    }
-    */
     return r;
 }
 

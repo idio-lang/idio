@@ -535,7 +535,8 @@ idio_hi_t idio_hash_default_hash_C_string (IDIO s)
 {
     IDIO_ASSERT (s);
 
-    char *Cs = idio_string_as_C (s);
+    size_t size = 0;
+    char *Cs = idio_string_as_C (s, &size);
     idio_hi_t r = idio_hash_default_hash_C_string_C (strlen (Cs), Cs);
     free (Cs);
     return r;
@@ -718,14 +719,16 @@ idio_hi_t idio_hash_default_hash_C (IDIO h, void *kv)
     switch (type) {
     case IDIO_TYPE_STRING:
 	{
-	    char *sk = idio_string_as_C (k);
+	    size_t size = 0;
+	    char *sk = idio_string_as_C (k, &size);
 	    hv = idio_hash_default_hash_C_string_C (strlen (sk), sk);
 	    free (sk);
 	}
 	break;
     case IDIO_TYPE_SUBSTRING:
 	{
-	    char *sk = idio_string_as_C (k);
+	    size_t size = 0;
+	    char *sk = idio_string_as_C (k, &size);
 	    hv = idio_hash_default_hash_C_string_C (strlen (sk), sk);
 	    free (sk);
 	}

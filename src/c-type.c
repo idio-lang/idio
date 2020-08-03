@@ -285,13 +285,23 @@ IDIO idio_C_number_cast (IDIO co, idio_type_e type)
 	    case IDIO_TYPE_C_POINTER: r = idio_C_pointer (IDIO_C_TYPE_POINTER_P (co)); break;
 	    case IDIO_TYPE_STRING:
 		{
-		    char *sco = idio_string_as_C (co);
+		    size_t size = 0;
+		    char *sco = idio_string_as_C (co, &size);
+		    /*
+		     * XXX NULs in co??
+		     *
+		     * Maybe this should store a pointer + length
+		     */
 		    r = idio_C_pointer_free_me ((void *) sco);
 		}
 		break;
 	    case IDIO_TYPE_SUBSTRING:
 		{
-		    char *sco = idio_string_as_C (co);
+		    size_t size = 0;
+		    char *sco = idio_string_as_C (co, &size);
+		    /*
+		     * XXX see above
+		     */
 		    r = idio_C_pointer_free_me ((void *) sco);
 		}
 		break;

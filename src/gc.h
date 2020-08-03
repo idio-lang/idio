@@ -1364,11 +1364,15 @@ void idio_gc_resume (char *caller);
 void idio_gc_reset (char *caller, int pause);
 void idio_gc_free ();
 
-char *idio_strcat (char *s1, const char *s2);
-char *idio_strcat_free (char *s1, char *s2);
+char *idio_strcat (char *s1, size_t *s1sp, const char *s2, const size_t s2s);
+char *idio_strcat_free (char *s1, size_t *s1sp, char *s2, const size_t s2s);
 
-#define IDIO_STRCAT(s1,s2)	((s1) = idio_strcat ((s1), (s2)))
-#define IDIO_STRCAT_FREE(s1,s2)	((s1) = idio_strcat_free ((s1), (s2)))
+#define IDIO_STRCAT(s1,s1sp,s2)		{			\
+	char *str = s2;						\
+	size_t size = strlen (str);				\
+	(s1) = idio_strcat ((s1), (s1sp), str, size);		\
+    }
+#define IDIO_STRCAT_FREE(s1,s1sp,s2,s2sp)	((s1) = idio_strcat_free ((s1), (s1sp), (s2), (s2sp)))
 
 int idio_gc_verboseness (int n);
 void idio_gc_set_verboseness (int n);

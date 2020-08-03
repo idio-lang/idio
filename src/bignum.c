@@ -2072,7 +2072,7 @@ IDIO idio_bignum_real_divide (IDIO a, IDIO b)
 
 /* printers */
 
-char *idio_bignum_integer_as_string (IDIO bn)
+char *idio_bignum_integer_as_string (IDIO bn, size_t *sizep)
 {
     IDIO_ASSERT (bn);
 
@@ -2095,13 +2095,14 @@ char *idio_bignum_integer_as_string (IDIO bn)
 	    sprintf (fmt, "%%0%dzd", IDIO_BIGNUM_DPW);
 	}
 	sprintf (buf, fmt, v);
-	s = idio_strcat (s, buf);
+	size_t buf_size = strlen (buf);
+	s = idio_strcat (s, sizep, buf, buf_size);
     }
 
     return s;
 }
 
-char *idio_bignum_expanded_real_as_string (IDIO bn, IDIO_BS_T exp, int digits, int neg)
+char *idio_bignum_expanded_real_as_string (IDIO bn, IDIO_BS_T exp, int digits, int neg, size_t *sizep)
 {
     IDIO_ASSERT (bn);
     IDIO_TYPE_ASSERT (bignum, bn);
@@ -2110,21 +2111,21 @@ char *idio_bignum_expanded_real_as_string (IDIO bn, IDIO_BS_T exp, int digits, i
     *s = '\0';
 
     if (IDIO_BIGNUM_REAL_NEGATIVE_P (bn)) {
-	IDIO_STRCAT (s, "-");
+	IDIO_STRCAT (s, sizep, "-");
     }
 
     IDIO_BS_T dp_offset = exp + digits;
 
     if (dp_offset <= 0) {
-	IDIO_STRCAT (s, "0");
+	IDIO_STRCAT (s, sizep, "0");
     }
 
     if (dp_offset < 0) {
-	IDIO_STRCAT (s, ".");
+	IDIO_STRCAT (s, sizep, ".");
     }
 
     while (dp_offset < 0) {
-	IDIO_STRCAT (s, "0");
+	IDIO_STRCAT (s, sizep, "0");
 	dp_offset++;
     }
 
@@ -2142,25 +2143,26 @@ char *idio_bignum_expanded_real_as_string (IDIO bn, IDIO_BS_T exp, int digits, i
 	    /* notreached */
 	    return NULL;
 	}
-	IDIO_STRCAT_FREE (s, vs);
+	size_t vs_size = strlen (vs);
+	IDIO_STRCAT_FREE (s, sizep, vs, vs_size);
     }
 
     if (dp_offset >= 0) {
 	while (dp_offset > 0) {
-	    IDIO_STRCAT (s, "0");
+	    IDIO_STRCAT (s, sizep, "0");
 	    dp_offset--;
 	}
-	IDIO_STRCAT (s, ".0");
+	IDIO_STRCAT (s, sizep, ".0");
     }
 
     if (IDIO_BIGNUM_REAL_INEXACT_P (bn)) {
-	IDIO_STRCAT (s, "-inexact");
+	IDIO_STRCAT (s, sizep, "-inexact");
     }
 
     return s;
 }
 
-char *idio_bignum_real_as_string (IDIO bn)
+char *idio_bignum_real_as_string (IDIO bn, size_t *sizep)
 {
     IDIO_ASSERT (bn);
     IDIO_TYPE_ASSERT (bignum, bn);
@@ -2175,18 +2177,18 @@ char *idio_bignum_real_as_string (IDIO bn)
 
     if (0 && (exp + digits) > -4 &&
 	(exp + digits) <= 9) {
-	return idio_bignum_expanded_real_as_string (bn, exp, digits, IDIO_BIGNUM_REAL_NEGATIVE_P (bn));
+	return idio_bignum_expanded_real_as_string (bn, exp, digits, IDIO_BIGNUM_REAL_NEGATIVE_P (bn), sizep);
     }
 
     char *s = idio_alloc (1);
     *s = '\0';
 
     if (IDIO_BIGNUM_REAL_INEXACT_P (bn)) {
-	IDIO_STRCAT (s, "#i");
+	IDIO_STRCAT (s, sizep, "#i");
     }
 
     if (IDIO_BIGNUM_REAL_NEGATIVE_P (bn)) {
-	IDIO_STRCAT (s, "-");
+	IDIO_STRCAT (s, sizep, "-");
     }
 
     size_t al = IDIO_BSA_SIZE (sig_a);
@@ -2209,14 +2211,16 @@ char *idio_bignum_real_as_string (IDIO bn)
     strcpy (vs_rest, vs + 1);
     vs[1] = '\0';
 
-    s = idio_strcat (s, vs);
-    IDIO_STRCAT (s, ".");
+    size_t vs_size = strlen (vs);
+    s = idio_strcat (s, sizep, vs, vs_size);
+    IDIO_STRCAT (s, sizep, ".");
 
-    if (strlen (vs_rest)) {
-	s = idio_strcat (s, vs_rest);
+    size_t vs_rest_size = strlen (vs_rest);
+    if (vs_rest_size) {
+	s = idio_strcat (s, sizep, vs_rest, vs_rest_size);
     } else {
 	if (0 == i) {
-	    IDIO_STRCAT (s, "0");
+	    IDIO_STRCAT (s, sizep, "0");
 	}
     }
     free (vs);
@@ -2225,10 +2229,11 @@ char *idio_bignum_real_as_string (IDIO bn)
 	v = idio_bsa_get (sig_a, i);
 	char buf[BUFSIZ];
 	sprintf (buf, "%0*" PRIdPTR, IDIO_BIGNUM_DPW, v);
-	s = idio_strcat (s, buf);
+	size_t buf_size = strlen (buf);
+	s = idio_strcat (s, sizep, buf, buf_size);
     }
 
-    IDIO_STRCAT (s, "e");
+    IDIO_STRCAT (s, sizep, "e");
     /* if ((exp + digits - 1) >= 0) { */
     /* 	IDIO_STRCAT (s, "+"); */
     /* } */
@@ -2239,12 +2244,13 @@ char *idio_bignum_real_as_string (IDIO bn)
 	/* notreached */
 	return NULL;
     }
-    s = idio_strcat_free (s, vs);
+    vs_size = strlen (vs);
+    s = idio_strcat_free (s, sizep, vs, vs_size);
 
     return s;
 }
 
-char *idio_bignum_as_string (IDIO bn)
+char *idio_bignum_as_string (IDIO bn, size_t *sizep)
 {
     IDIO_ASSERT (bn);
     IDIO_TYPE_ASSERT (bignum, bn);
@@ -2257,9 +2263,9 @@ char *idio_bignum_as_string (IDIO bn)
     }
 
     if (IDIO_BIGNUM_INTEGER_P (bn)) {
-	return idio_bignum_integer_as_string (bn);
+	return idio_bignum_integer_as_string (bn, sizep);
     }
-    return idio_bignum_real_as_string (bn);
+    return idio_bignum_real_as_string (bn, sizep);
 }
 
 /*

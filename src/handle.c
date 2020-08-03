@@ -154,11 +154,13 @@ char *idio_handle_name_as_C (IDIO h)
 	hname = IDIO_HANDLE_PATHNAME (h);
     }
     char *name = "n/a";
+    size_t size = strlen (name);
     if (hname->type) {
 	if (idio_isa_string (hname)) {
-	    name = idio_string_as_C (hname);
+	    name = idio_string_as_C (hname, &size);
 	} else if (idio_isa_symbol (hname)) {
 	    name = IDIO_SYMBOL_S (hname);
+	    size = strlen (name);
 	}
     } else {
 	/*
@@ -166,6 +168,7 @@ char *idio_handle_name_as_C (IDIO h)
 	 * during shutdown...
 	 */
 	name = "n/r";
+	size = strlen (name);
     }
 
     return name;
@@ -1002,9 +1005,10 @@ IDIO idio_write (IDIO o, IDIO h)
     IDIO_ASSERT (h);
     IDIO_TYPE_ASSERT (handle, h);
 
-    char *os = idio_as_string (o, 10);
+    size_t size = 0;
+    char *os = idio_as_string (o, &size, 10);
 
-    idio_puts_handle (h, os, strlen (os));
+    idio_puts_handle (h, os, size);
 
     free (os);
 
@@ -1070,7 +1074,8 @@ IDIO idio_display (IDIO o, IDIO h)
     IDIO_ASSERT (h);
     IDIO_TYPE_ASSERT (handle, h);
 
-    char *s = idio_display_string (o);
+    size_t size = 0;
+    char *s = idio_display_string (o, &size);
 
     idio_puts_handle (h, s, strlen (s));
     free (s);
@@ -1155,8 +1160,14 @@ num	specifies a maximum limit on the output		\n\
 	return idio_S_notreached;
     }
 
-    char *fmt_C = idio_string_as_C (fmt);
-    size_t blen = strlen (fmt_C);
+    size_t blen = 0;
+    char *fmt_C = idio_string_as_C (fmt, &blen);
+    /*
+     * fmt could have contained ASCII NULs.  So we care?  It means the
+     * format string has been truncated?
+     *
+     * Should we, Idio, print the NULs?
+     */
 
     char *s = fmt_C;
     size_t i = 0;
@@ -1173,10 +1184,12 @@ num	specifies a maximum limit on the output		\n\
 		 *
 		 * only '-' is meaningful
 		 */
+		int left_aligned = 0;
 		if ((si + 1) < blen) {
 		    char *c = ss + 1;
 		    switch (*c) {
 		    case '-':
+			left_aligned = 1;
 			ss++;
 			si++;
 			break;
@@ -1185,13 +1198,26 @@ num	specifies a maximum limit on the output		\n\
 		/*
 		 * width
 		 */
+		char width_c[BUFSIZ];
+		int width_len = 0;
 		while ((si + 1) < blen) {
 		    char *c = ss + 1;
 		    if (isdigit (*c)) {
+			width_c[width_len++] = *c;
 			ss++;
 			si++;
 		    } else {
 			break;
+		    }
+		}
+		long int width = 0;
+		if (width_len) {
+		    width_c[width_len] = '\0';
+		    char *end;
+		    width = strtol (width_c, &end, 10);
+		    if (0 == width &&
+			end == width_c) {
+			fprintf (stderr, "%%printf: bad width? '%s'\n", width_c);
 		    }
 		}
 		/*
@@ -1199,6 +1225,8 @@ num	specifies a maximum limit on the output		\n\
 		 *
 		 * preceded by a dot
 		 */
+		char prec_c[BUFSIZ];
+		int prec_len = 0;
 		if ((si + 1) < blen) {
 		    char *c = ss + 1;
 		    switch (*c) {
@@ -1208,6 +1236,7 @@ num	specifies a maximum limit on the output		\n\
 			while ((si + 1) < blen) {
 			    char *c = ss + 1;
 			    if (isdigit (*c)) {
+				prec_c[prec_len++] = *c;
 				ss++;
 				si++;
 			    } else {
@@ -1217,6 +1246,17 @@ num	specifies a maximum limit on the output		\n\
 			break;
 		    }
 		}
+		long int prec = 0;
+		if (prec_len) {
+		    prec_c[prec_len] = '\0';
+		    char *end;
+		    prec = strtol (prec_c, &end, 10);
+		    if (0 == prec &&
+			end == prec_c) {
+			fprintf (stderr, "%%printf: bad prec? '%s'\n", prec_c);
+		    }
+		}
+
 		if ((si + 1) < blen) {
 		    ss += 1;
 		    si += 1;
@@ -1238,8 +1278,9 @@ num	specifies a maximum limit on the output		\n\
 				    sprintf (str, fmt, n);
 				    idio_puts_handle (h, str, strlen (str));
 				} else if (idio_isa_bignum (arg)) {
-				    s = idio_bignum_as_string (arg);
-				    idio_puts_handle (h, s, strlen (s));
+				    size_t s_size = 0;
+				    s = idio_bignum_as_string (arg, &s_size);
+				    idio_puts_handle (h, s, s_size);
 				    free (s);
 				} else {
 				    /* ?? */
@@ -1255,22 +1296,33 @@ num	specifies a maximum limit on the output		\n\
 			break;
 		    case 's':
 			{
-			    char fmt[BUFSIZ];
-			    strncpy (fmt, s, ss - s + 1);
-			    fmt[ss - s + 1] = '\0';
 			    if (idio_S_nil != args) {
 				IDIO arg = IDIO_PAIR_H (args);
 				args = IDIO_PAIR_T (args);
-				c = idio_display_string (arg);
-				if (strlen (c) > BUFSIZ) {
-				    /* hmm, let's pretend there was no
-				     * length, precision etc. */
-				    idio_puts_handle (h, c, strlen (c));
-				} else {
-				    char str[BUFSIZ];
-				    sprintf (str, fmt, c);
-				    idio_puts_handle (h, str, strlen (str));
+
+				size_t size = 0;
+				c = idio_display_string (arg, &size);
+
+				size_t c_width = prec ? prec : size;
+
+				if (0 == left_aligned &&
+				    size < width) {
+				    size_t i = width - size;
+				    while (i) {
+					idio_putc_handle (h, ' ');
+					i--;
+				    }
 				}
+				idio_puts_handle (h, c, c_width);
+				if (left_aligned &&
+				    size < width) {
+				    size_t i = width - size;
+				    while (i) {
+					idio_putc_handle (h, ' ');
+					i--;
+				    }
+				}
+
 				free (c);
 			    } else {
 				c = "<no-arg>";
@@ -1699,7 +1751,9 @@ IDIO idio_load_handle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*eval
 	idio_codegen (thr, m, cs);
 
 	IDIO r = idio_vm_run (thr);
-	idio_debug ("%s\n", r);
+	size_t r_size = 0;
+	char *rs = idio_as_string (r, &r_size, 40);
+	idio_puts_handle (oh, rs, r_size);
     }
 
     IDIO_HANDLE_M_CLOSE (fh) (fh);
