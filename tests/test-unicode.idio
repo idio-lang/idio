@@ -21,7 +21,7 @@
 unicode-test0 := Tests
 import unicode
 ;;
-;; Idio tests - ported from
+;; Idio Unicode tests - ported from the char
 ;;
 ; Scheme 9 from Empty Space
 ; Test Suite
@@ -196,5 +196,265 @@ test {
   pair c (while-not-eof in read-char)
 } (pair #\{space} (with-range 32 126 integer->unicode))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Idio Unicode tests
+
+;; gcc prints some words bookended with U+2018 and U+2019 which has
+;; annoyed me no end...
+str := "‘stack’"
+
+test (string-length str) 7
+c := string-ref str 0
+test (unicode? c) #t
+test c #U+2018
+test str.0 #U+2018
+test str.1 #\s
+test str.6 #U+2019
+
+;; 1-byte encoding (all code points < 0x80)
+
+;; test # formats give the same value
+test (unicode? #U+0041) #t
+test (unicode? #U+003A) #t
+test (unicode? #U+003a) #t
+test (unicode? #\A) #t
+test #U+0041 #\A
+test #U+3A #U+3a
+
+;; U+0041 LATIN CAPITAL LETTER A
+c = #U+0041
+test (unicode? c) #t
+str = make-string 10 c
+test (string? str) #t
+test (string-length str) 10
+test str.4 #\A
+
+;; U+0000 <control> NULL -- aka ASCII control character, NUL -- this,
+;; of course, is perfectly valid Unicode so we should be able to pass
+;; a string of these around like, uh, normal.
+c = #U+00
+test (unicode? c) #t
+str = make-string 10 c
+test (string? str) #t
+test (string-length str) 10
+test str.4 #U+0
+
+;; bounce the NUL around inside a constructed string
+delim := make-string 1 c
+; "hello[NUL]world"
+str = join-string delim '("hello" "world")
+test (string? str) #t
+test (string-length str) 11
+test str.4 #\o
+test str.5 #U+0
+test str.6 #\w
+
+;; '("he" "o[NUL]wor" "d")
+sa := split-string str "l"
+
+test (string-length sa.1) 2
+test (string-length sa.2) 5
+sa2 := sa.2
+test sa2.0 #\o
+test sa2.1 #U+0
+test sa2.2 #\w
+
+;; U+00FF LATIN SMALL LETTER Y WITH DIAERESIS -- this, if read as a
+;; byte with getc, is -1 if it is compared to EOF in C.  So this
+;; should catch some of those cases.
+c = #U+00FF
+test (unicode? c) #t
+str = make-string 10 c
+test (string? str) #t
+test (string-length str) 10
+test str.4 #U+0000FF			; we allow any hex number...
+
+;; 2-byte encoding (0xff < all code points <= 0xffff)
+
+;; U+0127 LATIN SMALL LETTER H WITH STROKE (Planck constant)
+c = #U+0127
+test (unicode? c) #t
+str = make-string 10 c
+test (string? str) #t
+test (string-length str) 10
+test str.4 #U+127			; we allow U+h .. U+hhhhhh
+
+;; embed a 2-byte string in a 1-byte string
+delim = make-string 1 c
+str = join-string delim '("hello" "world")
+test (string-length str) 11
+sa = split-string str "l"
+
+test (string-length sa.1) 2
+test (string-length sa.2) 5
+sa2 := sa.2
+test sa2.0 #\o
+test sa2.1 #U+0127
+test sa2.2 #\w
+
+;; 4-byte encoding (any code point > 0xFFFF)
+
+;; U+1FBF8 SEGMENTED DIGIT 8
+c = #U+1FBF8
+test (unicode? c) #t
+str = make-string 10 c
+test (string? str) #t
+test (string-length str) 10
+test str.4 #U+1FBF8
+
+;; embed a 4-byte string in a 1-byte string
+delim = make-string 1 c
+str = join-string delim '("hello" "world")
+test (string-length str) 11
+sa = split-string str "l"
+
+test (string-length sa.1) 2
+test (string-length sa.2) 5
+sa2 := sa.2
+test sa2.0 #\o
+test sa2.1 #U+1FBF8
+test sa2.2 #\w
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; a bit of code coverage
+
+; string->list and string-set! have 6 variants which are
+; string/substring and 1/2/4 byte code points.  Clearly we can do the
+; tests for string then take a substring of the string and repeat the
+; command.
+
+; Also repeat the string/substring comparision tests forward and back
+; for coverage.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; 1-byte code points
+c = #\h
+str = make-string 2 c
+string->list str
+string-set! str 0 #\i
+test str "ih"
+
+ss := substring str 0 1
+string->list ss
+string-set! ss 0 #\j
+test ss "j"
+test "j" ss				; args reversed
+test str "jh"
+
+; a quick code coverage for string-fill! and substrings while we're
+; here...
+string-fill! ss #\k
+test ss "k"
+test str "kh"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; 2-byte code points
+c = #U+127
+str = make-string 2 c
+string->list str
+string-set! str 0 #U+129		; LATIN SMALL LETTER I WITH TILDE
+test (string-ref str 0) #U+129
+
+ss := substring str 0 1
+string->list ss
+string-set! ss 0 #U+135			; LATIN SMALL LETTER J WITH CIRCUMFLEX
+test (string-ref ss 0) #U+135
+test ss "ĵ"
+test "ĵ" ss				; args reversed
+test (string-ref str 0) #U+135
+test str "ĵħ"
+
+; coverage: 2-byte substring copy
+copy-string ss
+
+; 4-byte code points
+c = #U+1FBF8
+str = make-string 2 c
+string->list str
+string-set! str 0 #U+1FBF1		; SEGMENTED DIGIT 1
+test (string-ref str 0) #U+1FBF1
+test str "🯱🯸"				; "18"
+
+ss := substring str 0 1
+string->list ss
+string-set! ss 0 #U+1FBF7		; SEGMENTED DIGIT 7
+test (string-ref ss 0) #U+1FBF7
+test ss "🯷"				; "7"
+test "🯷" ss				; args reversed
+test (string-ref str 0) #U+1FBF7
+test str "🯷🯸"				; "78"
+
+; coverage: 4-byte substring copy
+test (copy-string ss) ss
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; append-string returns the empty string if supplied with no args
+test (append-string) ""
+
+; substring of a substring
+str = "hello"
+ss = substring str 1 4			; "ell"
+test (string-length ss) 3
+test ss "ell"
+sss := substring ss 1 2			; "l"
+test (string-length sss) 1
+test sss "l"
+
+; split-string without the delimiter
+str = "hello world"
+test (split-string str ":") (list str)
+test (split-string str "") (list str)
+test (split-string "" "foo") (list "")
+test (split-string str "d") (list "hello worl")
+delim = "delim"
+ss = substring delim 0 1
+test (split-string str ss) (list "hello worl")
+
+str = ":a::b:"
+test (split-string str ":") '("a" "b")
+test (split-string-exactly str ":") '("a" "" "b")
+
+; split-string with 2 and 4 byte code points for both the string and
+; the delimiter
+
+; 2-byte delim in (nominally) 1-byte strings
+c = #U+127
+delim = make-string 1 c
+str = join-string delim '("hello" "world") ; str is 2-byte because of delim
+test (string-length str) 11
+test str "helloħworld"
+sa = split-string str delim
+test sa.1 "hello"			; sa.1 is a 2-byte string
+test sa.2 "world"			; sa.2 is a 2-byte string
+
+; again for a substring of str
+ss = substring str 1 ((string-length str) - 1)
+test (string-length ss) 9
+test ss "elloħworl"
+sa = split-string ss delim
+test sa.1 "ello"
+test sa.2 "worl"
+
+; 4-byte delim in (nominally) 1-byte strings
+c = #U+1FBF8
+delim = make-string 1 c
+str = join-string delim '("hello" "world") ; str is 4-byte because of delim
+test (string-length str) 11
+test str "hello🯸world"
+sa = split-string str delim
+test sa.1 "hello"			; sa.1 is a 4-byte string
+test sa.2 "world"			; sa.2 is a 4-byte string
+
+; again for a substring of str
+ss = "bad data"
+ss = substring str 1 ((string-length str) - 1)
+test (string-length ss) 9
+test ss "ello🯸worl"
+sa = split-string ss delim
+test sa.1 "ello"
+test sa.2 "worl"
+
 ;; all done?
-test (unicode-test0 + 108) Tests
+test (unicode-test0 + 210) Tests

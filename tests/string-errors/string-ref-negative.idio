@@ -1,0 +1,4 @@
+
+s := "hello"
+
+string-ref s -1

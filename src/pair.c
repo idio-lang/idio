@@ -496,17 +496,7 @@ IDIO_DEFINE_PRIMITIVE1 ("list->array", list2array, (IDIO l))
     return idio_list_to_array (l);
 }
 
-IDIO_DEFINE_PRIMITIVE2V_DS ("nth", nth, (IDIO l, IDIO I_n, IDIO args), "l n [default]", "\
-return the nth (`n`) element from list `l`		\n\
-							\n\
-:param l: list						\n\
-:type orig: list					\n\
-:param n: nth element					\n\
-:type n: integer					\n\
-:param default: (optional) default value to return	\n\
-:return: the element or `default` if supplied or #n	\n\
-:rtype: array						\n\
-")
+IDIO idio_list_nth (IDIO l, IDIO I_n, IDIO args)
 {
     IDIO_ASSERT (l);
     IDIO_ASSERT (I_n);
@@ -556,6 +546,27 @@ return the nth (`n`) element from list `l`		\n\
     }
 
     return r;
+}
+
+IDIO_DEFINE_PRIMITIVE2V_DS ("nth", nth, (IDIO l, IDIO I_n, IDIO args), "l n [default]", "\
+return the nth (`n`) element from list `l`		\n\
+							\n\
+:param l: list						\n\
+:type orig: list					\n\
+:param n: nth element					\n\
+:type n: integer					\n\
+:param default: (optional) default value to return	\n\
+:return: the element or `default` if supplied or #n	\n\
+:rtype: array						\n\
+")
+{
+    IDIO_ASSERT (l);
+    IDIO_ASSERT (I_n);
+    IDIO_ASSERT (args);
+
+    IDIO_TYPE_ASSERT (list, l);
+
+    return idio_list_nth (l, I_n, args);
 }
 
 void idio_init_pair ()

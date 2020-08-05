@@ -137,6 +137,7 @@ load "test-closure.idio"
 load "test-keyword.idio"
 load "test-template.idio"
 load "test-string.idio"
+load "test-string-error.idio"
 load "test-array.idio"
 load "test-hash.idio"
 load "test-file-handle.idio"
@@ -163,7 +164,7 @@ load "test-SRFI-89.idio"
 ;; that?  Erm, they've not been counted and are dynamic in number so
 ;; test we've seen at least as many as the largest number we've
 ;; seen.  Wait, some tests are OS-specific.  Drat!
-test (eq? Tests 3286) #t
+test (eq? Tests 3465) #t
 
 if (file-exists? testfile) (delete-file testfile)
 

@@ -532,7 +532,7 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 				return 0;
 			    }
 
-			    return (memcmp (IDIO_STRING_S (o1), IDIO_SUBSTRING_S (o2), IDIO_STRING_BLEN (o1)) == 0);
+			    return idio_string_equal (o1, o2);
 			}
 		    }
 		    break;
@@ -544,7 +544,7 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 				return 0;
 			    }
 
-			    return (memcmp (IDIO_SUBSTRING_S (o1), IDIO_STRING_S (o2), IDIO_STRING_BLEN (o2)) == 0);
+			    return idio_string_equal (o1, o2);
 			}
 		    }
 		    break;
@@ -592,7 +592,9 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		    return 0;
 		}
 
-		return (memcmp (IDIO_STRING_S (o1), IDIO_STRING_S (o2), IDIO_STRING_BLEN (o1)) == 0);
+		return idio_string_equal (o1, o2);
+
+		break;
 	    case IDIO_TYPE_SUBSTRING:
 		if (IDIO_EQUAL_EQP == eqp) {
 		    return (o1 == o2);
@@ -602,28 +604,9 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		    return 0;
 		}
 
-		size_t blen;
-		switch (IDIO_STRING_FLAGS (IDIO_SUBSTRING_PARENT (o1))) {
-		case IDIO_STRING_FLAG_1BYTE:
-		    if (IDIO_STRING_FLAG_1BYTE != IDIO_STRING_FLAGS (IDIO_SUBSTRING_PARENT (o2))) {
-			return 0;
-		    }
-		    blen = IDIO_SUBSTRING_LEN (o1);
-		    break;
-		case IDIO_STRING_FLAG_2BYTE:
-		    if (IDIO_STRING_FLAG_2BYTE != IDIO_STRING_FLAGS (IDIO_SUBSTRING_PARENT (o2))) {
-			return 0;
-		    }
-		    blen = IDIO_SUBSTRING_LEN (o1) * 2;
-		    break;
-		case IDIO_STRING_FLAG_4BYTE:
-		    if (IDIO_STRING_FLAG_4BYTE != IDIO_STRING_FLAGS (IDIO_SUBSTRING_PARENT (o2))) {
-			return 0;
-		    }
-		    blen = IDIO_SUBSTRING_LEN (o1) * 4;
-		    break;
-		}
-		return (memcmp (IDIO_SUBSTRING_S (o1), IDIO_SUBSTRING_S (o2), blen) == 0);
+		return idio_string_equal (o1, o2);
+
+		break;
 	    case IDIO_TYPE_SYMBOL:
 		return (o1 == o2);
 
@@ -2680,6 +2663,8 @@ IDIO_DEFINE_PRIMITIVE2 ("value-index", value_index, (IDIO o, IDIO i))
     case IDIO_TYPE_POINTER_MARK:
 	{
 	    switch (o->type) {
+	    case IDIO_TYPE_PAIR:
+		return idio_list_nth (o, i, idio_S_nil);
 	    case IDIO_TYPE_SUBSTRING:
 	    case IDIO_TYPE_STRING:
 		return idio_string_ref (o, i);

@@ -1,0 +1,6 @@
+str := "hello"
+
+; 64bit FIXNUM-MAX is 2305843009213693951 or 1FFFFFFFFFFFFFFF
+; 32bit FIXNUM-MAX is 536870911 or 0x1fffffff
+
+string-set! str (if (gt FIXNUM-MAX 536870911) #x2000000000000000 #x20000000) #\a

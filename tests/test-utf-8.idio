@@ -1,20 +1,195 @@
+;;
+;; Copyright (c) 2015, 2020 Ian Fitchet <idf(at)idio-lang.org>
+;;
+;; Licensed under the Apache License, Version 2.0 (the "License"); you
+;; may not use this file except in compliance with the License.  You
+;; may obtain a copy of the License at
+;;
+;;     http://www.apache.org/licenses/LICENSE-2.0
+;;
+;; Unless required by applicable law or agreed to in writing, software
+;; distributed under the License is distributed on an "AS IS" BASIS,
+;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+;; See the License for the specific language governing permissions and
+;; limitations under the License.
+;;
+;;
 
+;;
+;; test-utf-8.idio
+;;
 
+#*
 
-str := "‘stack’"
+Idio stores strings as arrays of Unicode code points where the arrays
+are of 1, 2 or 4 bytes per code point depending on the largest Unicode
+code point in the string.  It isn't until we generate a string for
+output that we generate UTF-8.
 
-display* "str[" (string-length str) "] =" str
+On the other hand, Idio will read input as UTF-8 and create the above
+arrays.  This makes it hard to test the UTF-8 output directly as Idio
+never holds it directly.
 
-display* "str.0 =" str.0
-display* "str.1 =" str.1
-display* "str.2 =" str.2
-display* "str.3 =" str.3
+In that regard if we print a string to an output string handle then
+the UTF-8 exists, of sorts, in the string-handle object.  However our
+only access to that is get-output-string which will promptly decode
+the UTF-8.
 
-;; https://support.google.com/youtube/thread/19190975?hl=en
-;; youtube automatically delete "communist bandits" 共匪 in all comments now?
-str = "共匪"
+Without a means to test the UTF-8 output directly (**FIX ME**) then
+rather than testing UTF-8 directly the following "(equal? os str)"
+tests are testing the UTF-8 encoder (through %printf and
+idio_as_string()) followed by the UTF-8 decoder (in get-output-string
+and idio_string_C_len()).
 
-display* "str[" (string-length str) "] =" str
+*#
 
-display* "str.0 =" str.0
-display* "str.1 =" str.1
+utf-8-0 := Tests
+
+;; 1-byte sequences are used everywhere
+
+;; 2-byte encoding (>= 0x80)
+
+;; U+00DE LATIN CAPITAL LETTER THORN -- universally re-written as
+;; U+0059 LATIN CAPITAL LETTER Y, hence the mistake of pronouncing "Ye
+;; Olde Shoppe" when it should be "The Olde Shoppe".  Something to do
+;; with importing printing engines from Germany?
+c := #U+00DE
+str := append-string (make-string 1 c) "e Olde Shoppe"
+test (string? str) #t
+test (string-length str) 14
+
+osh := (open-output-string)
+hprintf osh "%s" str
+os := get-output-string osh
+test (string-length os) 14
+test os str
+
+;; U+00FF LATIN SMALL LETTER Y WITH DIAERESIS -- this, as a byte, is
+;; -1 if it is compared to EOF in C.  So this should catch some of
+;; those cases.
+c = #U+00FF
+test (unicode? c) #t
+str = make-string 10 c
+test (string? str) #t
+test (string-length str) 10
+test str.4 #U+0000FF			; we allow any hex number...
+
+; being > 0x80 this code point will trip a different section of the
+; UTF-8 encoder
+osh := (open-output-string)
+hprintf osh "%s" str
+os := get-output-string osh
+test (string-length os) 10
+test os str
+
+;; U+0000 <control> NULL -- this, of course, is perfectly valid
+;; Unicode so we should be able to pass a string of these around like,
+;; uh, normal.
+c = #U+00
+test (unicode? c) #t
+str = make-string 10 c
+test (string? str) #t
+test (string-length str) 10
+test str.4 #U+0
+
+;; bounce the NUL around inside a constructed string
+delim := make-string 1 c
+str = join-string delim '("hello" "world")
+test (string? str) #t
+test (string-length str) 11
+test str.4 #\o
+test str.5 #U+0
+test str.6 #\w
+
+;; '("he" "o[NUL]wor" "d")
+sa := split-string str "l"
+
+test (string-length sa.1) 2
+test (string-length sa.2) 5
+sa2 := sa.2
+test sa2.0 #\o
+test sa2.1 #U+0
+test sa2.2 #\w
+
+; UTF-8 3 byte sequence, eg U+0D0A MALAYALAM LETTER A
+c = #U+D0A
+str := make-string 5 c
+
+test (string-length str) 5
+test str.0 #U+0D0A
+
+; being > 0x800 this code point will trip a different section of the
+; UTF-8 encoder
+osh := (open-output-string)
+hprintf osh "%s" str
+os := get-output-string osh
+test (string-length os) 5
+test os str
+
+; UTF-8 4 byte sequence, eg U+100CC LINEAR B IDEOGRAM B240 WHEELED CHARIOT
+c = #U+100CC
+str := make-string 5 c
+
+test (string-length str) 5
+test str.0 #U+100CC
+
+; being > 0x800 this code point will trip a different section of the
+; UTF-8 encoder
+osh := (open-output-string)
+hprintf osh "%s" str
+os := get-output-string osh
+test (string-length os) 5
+test os str
+
+; code coverage: we need a 4-byte string with characters that have
+; UTF-8 3-byte, 2-byte and 1-byte encodings.
+c1 := #\a
+c2 := #U+127
+c3 := #U+D0A
+c4 := #U+100CC
+str = append-string (make-string 1 c1) (make-string 1 c2) (make-string 1 c3) (make-string 1 c4)
+test (string-length str) 4
+test str "aħഊ𐃌"
+
+osh := (open-output-string)
+hprintf osh "%s" str
+os := get-output-string osh
+test (string-length os) 4
+test os str
+
+; code coverage: do we handle our 10 C-ish escape sequences (still?) --
+; we'll dive right in with non-ASCII chars too.
+str = append-string os "\\\a\b\e\f\n\r\t\v\""
+test (string-length str) 14
+
+osh := (open-output-string)
+write str osh				; now includes leading and trailing "s and \s
+os := get-output-string osh
+test (string-length os) 26		; " + 4 orig + 10x \c + "
+ish := open-input-string os
+os = *primitives*/read ish		; now read the string in
+test os str
+
+; Invalid UTF-8
+
+;; There is a more comprehensive suite in Markus Kuhn's "UTF-8 decoder
+;; capability and stress test" in .../utils/Unicode/UTF-8-test.txt
+
+; The middle character is 0x80 which is invalid as it is not a
+; continuation byte.  It should get replaced with U+FFFD
+str = "hello�world"
+test (string? str) #t
+test (string-length str) 11
+test str.4 #\o
+test str.5 #U+FFFD
+test str.6 #\w
+
+; join-string tickles a slightly different part of the code
+str = join-string "�" '("hello" "world")
+test (string-length str) 11
+test str.4 #\o
+test str.5 #U+FFFD
+test str.6 #\w
+
+;; all done?
+test (utf-8-0 + 48) Tests

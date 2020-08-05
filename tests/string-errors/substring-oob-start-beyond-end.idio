@@ -1,0 +1,2 @@
+str := "hello"
+ss := substring str 3 2

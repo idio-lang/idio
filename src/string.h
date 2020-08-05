@@ -39,15 +39,14 @@ IDIO idio_string_C_array (size_t ns, char *a_C[]);
 IDIO idio_copy_string (IDIO s);
 void idio_free_string (IDIO so);
 int idio_isa_string (IDIO so);
-IDIO idio_substring_offset (IDIO so, size_t offset, size_t blen);
+IDIO idio_substring_offset_len (IDIO so, size_t offset, size_t blen);
 int idio_isa_substring (IDIO so);
 void idio_free_substring (IDIO so);
-size_t idio_string_blen (IDIO so);
 size_t idio_string_len (IDIO so);
-char *idio_string_s (IDIO so, size_t *sizep);
 char *idio_string_as_C (IDIO so, size_t *sizep);
 IDIO idio_string_ref (IDIO s, IDIO index);
 IDIO idio_string_set (IDIO s, IDIO index, IDIO c);
+int idio_string_equal (IDIO s1, IDIO s2);
 
 void idio_init_string ();
 void idio_string_add_primitives ();

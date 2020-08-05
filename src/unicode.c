@@ -91,102 +91,6 @@ idio_unicode_t inline idio_utf8_decode (idio_unicode_t* state, idio_unicode_t* c
     return *state;
 }
 
-/*
- *
-
-if (countCodePoints(s, &count)) {
-  printf("The string is malformed\n");
-} else {
-  printf("The string is %u characters long\n", count);
-}
-
- *
- */
-int idio_utf8_countCodePoints (uint8_t* s, size_t* count)
-{
-    idio_unicode_t codepoint;
-    idio_unicode_t state = 0;
-
-    for (*count = 0; *s; ++s)
-	if (0 == idio_utf8_decode (&state, &codepoint, *s))
-	    *count += 1;
-
-    return state != IDIO_UTF8_ACCEPT;
-}
-
-void idio_utf8_printCodePoints (uint8_t* s)
-{
-    idio_unicode_t codepoint;
-    idio_unicode_t state = 0;
-
-    for (; *s; ++s)
-	if (0 == idio_utf8_decode (&state, &codepoint, *s))
-	    printf("U+%04X\n", codepoint);
-
-    if (state != IDIO_UTF8_ACCEPT)
-	printf("The string is not well-formed\n");
-}
-
-/*
-  This loop prints out UTF-16 code units for the characters in a null-terminated UTF-8 encoded string.
-
-for (; *s; ++s) {
-
-  if (idio_utf8_decode (&state, &codepoint, *s))
-    continue;
-
-  if (codepoint <= 0xFFFF) {
-    printf("0x%04X\n", codepoint);
-    continue;
-  }
-
-  // Encode code points above U+FFFF as surrogate pair.
-  printf("0x%04X\n", (0xD7C0 + (codepoint >> 10)));
-  printf("0x%04X\n", (0xDC00 + (codepoint & 0x3FF)));
-}
-
-*/
-
-/*
-
-  The following code implements one such recovery strategy. When an
-  unexpected byte is encountered, the sequence up to that point will
-  be replaced and, if the error occured in the middle of a sequence,
-  will retry the byte as if it occured at the beginning of a
-  string. Note that the idio_utf8_decode function detects errors as
-  early as possible, so the sequence 0xED 0xA0 0x80 would result in
-  three replacement characters.
-
-for (prev = 0, current = 0; *s; prev = current, ++s) {
-
-  switch (idio_utf8_decode(&current, &codepoint, *s)) {
-  case IDIO_UTF8_ACCEPT:
-    // A properly encoded character has been found.
-    printf("U+%04X\n", codepoint);
-    break;
-
-  case IDIO_UTF8_REJECT:
-    // The byte is invalid, replace it and restart.
-    printf("U+FFFD (Bad UTF-8 sequence)\n");
-    current = IDIO_UTF8_ACCEPT;
-    if (prev != IDIO_UTF8_ACCEPT)
-      s--;
-    break;
-  ...
-
-  For some recovery strategies it may be useful to determine the
-  number of bytes expected. The states in the automaton are numbered
-  such that, assuming C's division operator, state / 3 + 1 is that
-  number. Of course, this will only work for states other than
-  IDIO_UTF8_ACCEPT and IDIO_UTF8_REJECT. This number could then be used, for
-  instance, to skip the continuation octets in the illegal sequence
-  0xED 0xA0 0x80 so it will be replaced by a single replacement
-  character.
-
-  idf: presumably state / 12 + 1 with the Rich Felker tweak.
-
-*/
-
 int idio_isa_unicode (IDIO o)
 {
     IDIO_ASSERT (o);
@@ -299,12 +203,14 @@ char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted)
 	    switch (c) {
 	    case '\a': n++; break;
 	    case '\b': n++; break;
+	    case '\e': n++; break;
 	    case '\f': n++; break;
 	    case '\n': n++; break;
 	    case '\r': n++; break;
 	    case '\t': n++; break;
 	    case '\v': n++; break;
 	    case '"': n++; break;
+	    case '\\': n++; break;
 	    }
 	}
     }
@@ -338,12 +244,14 @@ char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted)
 	    switch (c) {
 	    case '\a': ec = 'a'; break;
 	    case '\b': ec = 'b'; break;
+	    case '\e': ec = 'e'; break;
 	    case '\f': ec = 'f'; break;
 	    case '\n': ec = 'n'; break;
 	    case '\r': ec = 'r'; break;
 	    case '\t': ec = 't'; break;
 	    case '\v': ec = 'v'; break;
 	    case '"': ec = '"'; break;
+	    case '\\': ec = '\\'; break;
 	    }
 	}
 
@@ -351,30 +259,25 @@ char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted)
 	    r[n++] = '\\';
 	    r[n++] = ec;
 	} else {
-	    switch (flags) {
-	    case IDIO_STRING_FLAG_1BYTE:
-		r[n++] = c;
-		break;
-	    case IDIO_STRING_FLAG_2BYTE:
-	    case IDIO_STRING_FLAG_4BYTE:
-		if (c > 0x10ffff) {
-		    fprintf (stderr, "utf8-string: oops c=%x > 0x10ffff\n", c);
-		} else if (c >= 0x10000) {
-		    r[n++] = 0xf0 | ((c & (0x07 << 18)) >> 18);
-		    r[n++] = 0x80 | ((c & (0x3f << 12)) >> 12);
-		    r[n++] = 0x80 | ((c & (0x3f << 6)) >> 6);
-		    r[n++] = 0x80 | ((c & (0x3f << 0)) >> 0);
-		} else if (c >= 0x0800) {
-		    r[n++] = 0xe0 | ((c & (0x0f << 12)) >> 12);
-		    r[n++] = 0x80 | ((c & (0x3f << 6)) >> 6);
-		    r[n++] = 0x80 | ((c & (0x3f << 0)) >> 0);
-		} else if (c >= 0x0080) {
-		    r[n++] = 0xc0 | ((c & (0x1f << 6)) >> 6);
-		    r[n++] = 0x80 | ((c & (0x3f << 0)) >> 0);
-		} else {
-		    r[n++] = c & 0x7f;
-		}
-		break;
+	    if (c > 0x10ffff) {
+		/*
+		 * Hopefully, this is guarded against elsewhere
+		 */
+		fprintf (stderr, "utf8-string: oops c=%x > 0x10ffff\n", c);
+	    } else if (c >= 0x10000) {
+		r[n++] = 0xf0 | ((c & (0x07 << 18)) >> 18);
+		r[n++] = 0x80 | ((c & (0x3f << 12)) >> 12);
+		r[n++] = 0x80 | ((c & (0x3f << 6)) >> 6);
+		r[n++] = 0x80 | ((c & (0x3f << 0)) >> 0);
+	    } else if (c >= 0x0800) {
+		r[n++] = 0xe0 | ((c & (0x0f << 12)) >> 12);
+		r[n++] = 0x80 | ((c & (0x3f << 6)) >> 6);
+		r[n++] = 0x80 | ((c & (0x3f << 0)) >> 0);
+	    } else if (c >= 0x0080) {
+		r[n++] = 0xc0 | ((c & (0x1f << 6)) >> 6);
+		r[n++] = 0x80 | ((c & (0x3f << 0)) >> 0);
+	    } else {
+		r[n++] = c & 0x7f;
 	    }
 	}
     }

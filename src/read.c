@@ -1485,6 +1485,7 @@ static IDIO idio_read_string (IDIO handle, IDIO lo)
 		     */
 		case 'a': c = '\a'; break; /* alarm (bell) */
 		case 'b': c = '\b'; break; /* backspace */
+		case 'e': c = '\e'; break; /* ESC */
 		case 'f': c = '\f'; break; /* formfeed */
 		case 'n': c = '\n'; break; /* newline */
 		case 'r': c = '\r'; break; /* carriage return */

@@ -243,6 +243,7 @@ define (condition-report prefix c & args) "print a report on condition `c`
   if (and (idio-error? c)
 	  (not (or (read-error? c)
 		   (evaluation-error? c)
+		   (string-error? c)
 		   (rt-command-status-error? c)))) {
 		     cr-printf "%s:" c.location
 		     cr-printf "%s:" (struct-type-name (struct-instance-type c))
@@ -263,6 +264,9 @@ define (condition-report prefix c & args) "print a report on condition `c`
        }) \
        ((evaluation-error? c) {
 	 cr-printf "%s:%s:%s" c.location c.expr c.message
+       }) \
+       ((string-error? c) {
+	 cr-printf "%s:%s:%s" c.location c.message c.detail
        }) \
        ((system-error? c) {
           cr-printf "errno %s (%s)" c.errno (libc/errno-name c.errno)
