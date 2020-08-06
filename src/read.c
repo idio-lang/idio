@@ -1964,7 +1964,16 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 			 *
 			 */
 			char em[BUFSIZ];
-			sprintf (em, "range start %#zx from \"%s\"", offset, buf);
+			/*
+			 * XXX BUFSIZ could be the same order of
+			 * magnitude as {buf}, which is
+			 * IDIO_WORD_MAX_LEN bytes.  So curtail the
+			 * amount of buf we add into {em}, here.
+			 *
+			 * 32 should cover the potential textual
+			 * content of {em}.
+			 */
+			sprintf (em, "range start %#zx from \"%.*s\"", offset, BUFSIZ - 32, buf);
 			idio_read_error_bitset (buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
 
 			return idio_S_notreached;
