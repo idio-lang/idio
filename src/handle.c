@@ -467,7 +467,7 @@ int idio_putc_handle (IDIO h, int c)
     return n;
 }
 
-size_t idio_puts_handle (IDIO h, char *s, size_t slen)
+ptrdiff_t idio_puts_handle (IDIO h, char *s, size_t slen)
 {
     IDIO_ASSERT (h);
     IDIO_C_ASSERT (s);
@@ -479,7 +479,7 @@ size_t idio_puts_handle (IDIO h, char *s, size_t slen)
 	return 0;
     }
 
-    size_t n = IDIO_HANDLE_M_PUTS (h) (h, s, slen);
+    ptrdiff_t n = IDIO_HANDLE_M_PUTS (h) (h, s, slen);
 
     if (EOF != n) {
 	IDIO_HANDLE_POS (h) += n;
@@ -1300,14 +1300,18 @@ num	specifies a maximum limit on the output		\n\
 				IDIO arg = IDIO_PAIR_H (args);
 				args = IDIO_PAIR_T (args);
 
-				size_t size = 0;
-				c = idio_display_string (arg, &size);
+				size_t c_size = 0;
+				c = idio_display_string (arg, &c_size);
 
-				size_t c_width = prec ? prec : size;
+				size_t c_width = c_size;
+				if (prec &&
+				    prec < c_size) {
+				    c_width = prec;
+				}
 
 				if (0 == left_aligned &&
-				    size < width) {
-				    size_t i = width - size;
+				    c_width < width) {
+				    size_t i = width - c_size;
 				    while (i) {
 					idio_putc_handle (h, ' ');
 					i--;
@@ -1315,8 +1319,8 @@ num	specifies a maximum limit on the output		\n\
 				}
 				idio_puts_handle (h, c, c_width);
 				if (left_aligned &&
-				    size < width) {
-				    size_t i = width - size;
+				    c_width < width) {
+				    size_t i = width - c_size;
 				    while (i) {
 					idio_putc_handle (h, ' ');
 					i--;

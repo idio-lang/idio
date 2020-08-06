@@ -172,31 +172,24 @@ char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted)
 	uint32_t c = 0;
 	switch (flags) {
 	case IDIO_STRING_FLAG_1BYTE:
-	    n += 1;
 	    c = s8[i];
 	    break;
 	case IDIO_STRING_FLAG_2BYTE:
 	    c = s16[i];
-	    if (c >= 0x0800) {
-		n += 3;
-	    } else if (c >= 0x0080) {
-		n += 2;
-	    } else {
-		n += 1;
-	    }
 	    break;
 	case IDIO_STRING_FLAG_4BYTE:
 	    c = s32[i];
-	    if (c >= 0x10000) {
-		n += 4;
-	    } else if (c >= 0x0800) {
-		n += 3;
-	    } else if (c >= 0x0080) {
-		n += 2;
-	    } else {
-		n += 1;
-	    }
 	    break;
+	}
+
+	if (c >= 0x10000) {
+	    n += 4;
+	} else if (c >= 0x0800) {
+	    n += 3;
+	} else if (c >= 0x0080) {
+	    n += 2;
+	} else {
+	    n += 1;
 	}
 
 	if (escapes) {
@@ -219,6 +212,7 @@ char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted)
     if (IDIO_UTF8_STRING_QUOTED == quoted) {
 	bytes += 2;
     }
+
     char *r = idio_alloc (bytes);
 
     n = 0;

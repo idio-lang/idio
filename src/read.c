@@ -607,7 +607,7 @@ IDIO idio_read_unicode (IDIO handle, IDIO lo)
     if (idio_isa_fixnum (I_cp)) {
 	cp = IDIO_FIXNUM_VAL (I_cp);
     } else if (idio_isa_bignum (I_cp)) {
-	cp = idio_bignum_ptrdiff_value (I_cp);
+	cp = idio_bignum_uint64_value (I_cp);
     } else {
 	/*
 	 * Test Case: read-errors/??
@@ -1689,7 +1689,11 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 
     int done = 0;
     int seen_size = 0;
-    size_t offset = 0;
+
+    /*
+     * NB offset is a signed type to catch read errors
+     */
+    ptrdiff_t offset = 0;
 
     while (! done) {
 	char buf[IDIO_WORD_MAX_LEN + 1];
@@ -1805,38 +1809,66 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 		IDIO num_sh = idio_open_input_string_handle_C (buf);
 		IDIO I_size = idio_read_number_C (num_sh, buf);
 
+		/*
+		 * NB bs_size is a signed type to catch read errors
+		 */
 		ptrdiff_t bs_size = 0;
 
+		/*
+		 * idio_read_number_C() is a bit broad so there are
+		 * extra checks on size.
+		 */
 		if (idio_isa_fixnum (I_size)) {
 		    bs_size = IDIO_FIXNUM_VAL (I_size);
-		} else if (idio_isa_bignum (I_size)) {
-		    if (IDIO_BIGNUM_INTEGER_P (I_size)) {
-			/*
-			 * Code coverage?
-			 *
-			 * To get a bignum here means we passed a
-			 * number that was more than INTPTR_MAX >> 2:
-			 * ie. 2^30-1 or 2^62-1.  I don't think we
-			 * want to create a bitset that big for
-			 * testing...
-			 */
-			bs_size = idio_bignum_ptrdiff_value (I_size);
-		    } else {
-			IDIO size_i = idio_bignum_real_to_integer (I_size);
-			if (idio_S_nil == size_i) {
-			    /*
-			     * Test Case: read-errors/bitset-size-floating-point.idio
-			     *
-			     * #B{ 3.1 }
-			     *
-			     */
-			    idio_read_error_bitset (handle, lo, IDIO_C_FUNC_LOCATION (), "size must be an integer");
 
-			    return idio_S_notreached;
-			} else {
-			    bs_size = idio_bignum_ptrdiff_value (size_i);
-			}
+		    if (bs_size < 0) {
+			/*
+			 * Test Case: read-errors/bitset-size-negative.idio
+			 *
+			 * #B{ -1 }
+			 *
+			 */
+			idio_read_error_bitset (handle, lo, IDIO_C_FUNC_LOCATION (), "size must be a positive decimal integer");
+
+			return idio_S_notreached;
 		    }
+		} else if (idio_isa_bignum (I_size)) {
+		    if (idio_bignum_negative_p (I_size)) {
+			/*
+			 * Test Case: read-errors/bitset-size-negative-bignum.idio
+			 *
+			 * #B{ -2305843009213693952 }
+			 * #B{ -536870912 }
+			 *
+			 */
+			idio_read_error_bitset (handle, lo, IDIO_C_FUNC_LOCATION (), "size must be a positive decimal integer");
+
+			return idio_S_notreached;
+		    }
+
+		    IDIO size_i = idio_bignum_real_to_integer (I_size);
+		    if (idio_S_nil == size_i) {
+			/*
+			 * Test Case: read-errors/bitset-size-floating-point.idio
+			 *
+			 * #B{ 3.1 }
+			 *
+			 */
+			idio_read_error_bitset (handle, lo, IDIO_C_FUNC_LOCATION (), "size must be a positive decimal integer");
+
+			return idio_S_notreached;
+		    }
+
+		    /*
+		     * Code coverage?
+		     *
+		     * To get a bignum here means we passed a
+		     * number that was more than INTPTR_MAX >> 2:
+		     * ie. 2^30-1 or 2^62-1.  I don't think we
+		     * want to create a bitset that big for
+		     * testing...
+		     */
+		    bs_size = idio_bignum_uint64_value (I_size);
 		} else {
 		    /*
 		     * Test Case: read-errors/bitset-size-non-integer.idio
@@ -1846,7 +1878,7 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 		     * a plus sign on its own cause
 		     * idio_read_number_C() to return idio_S_nil
 		     */
-		    idio_read_error_bitset (handle, lo, IDIO_C_FUNC_LOCATION (), "size must be an integer");
+		    idio_read_error_bitset (handle, lo, IDIO_C_FUNC_LOCATION (), "size must be a positive decimal integer");
 
 		    return idio_S_notreached;
 		}
@@ -1876,7 +1908,29 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 
 		    if (idio_isa_fixnum (I_offset)) {
 			offset = IDIO_FIXNUM_VAL (I_offset);
+
+			if (offset < 0) {
+			    /*
+			     * Test Case: read-errors/bitset-range-start-negative.idio
+			     *
+			     * #B{ 3 -2-0: }
+			     */
+			    idio_read_error_bitset (handle, lo, IDIO_C_FUNC_LOCATION (), "range start must be a positive base-16 integer");
+
+			    return idio_S_notreached;
+			}
 		    } else if (idio_isa_bignum (I_offset)) {
+			if (idio_bignum_negative_p (I_offset)) {
+			    /*
+			     * Test Case: read-errors/bitset-range-start-negative-bignum.idio
+			     *
+			     * #B{ 3 -2000000000000000-20 }
+			     */
+			    idio_read_error_bitset (handle, lo, IDIO_C_FUNC_LOCATION (), "range start must be a positive base-16 integer");
+
+			    return idio_S_notreached;
+			}
+
 			/*
 			 * Test Case: read-errors/bitset-range-start-too-big-bignum.idio
 			 *
@@ -1884,7 +1938,22 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 			 *
 			 * Technically a code coverage issue but causes the too big error
 			 */
-			offset = idio_bignum_ptrdiff_value (I_offset);
+			offset = idio_bignum_uint64_value (I_offset);
+		    } else {
+			/*
+			 * Test Case: read-errors/bitset-range-start-non-integer.idio
+			 *
+			 * #B{ 3 +-0 }
+			 *
+			 * a plus sign on its own cause
+			 * idio_read_number_C() to return idio_S_nil
+			 *
+			 * However, we will not see this warning
+			 * because idio_read_bignum_radix() will have
+			 * barfed before we get here.
+			 */
+
+			return idio_S_notreached;
 		    }
 
 		    if (idio_handle_tell (offset_sh) != strlen (buf)) {
@@ -1932,9 +2001,24 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 			return idio_S_notreached;
 		    }
 
-		    size_t end = 0;
+		    /*
+		     * idio_read_bignum_radix () is going to catch any
+		     * negative 'range end' numbers, eg. 0--10 --
+		     * which becomes "0", "-" and "-10", because the
+		     * '-' (in "-10") is not a valid base-16 digit.
+		     *
+		     * Accordingly, {end} could be a size_t but we'll
+		     * leave it as ptrdiff_t in case we revise our
+		     * understanding.
+		     */
+		    ptrdiff_t end = 0;
 		    IDIO end_sh = idio_open_input_string_handle_C (bit_range);
 
+		    /*
+		     * Test Case: read-errors/bitset-range-end-negative.idio
+		     *
+		     * #B{ 3 0--10 }
+		     */
 		    IDIO I_end = idio_read_bignum_radix (end_sh, lo, 'x', 16);
 
 		    if (idio_isa_fixnum (I_end)) {
@@ -1947,7 +2031,7 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 			 *
 			 * Technically a code coverage issue but causes the too big error
 			 */
-			end = idio_bignum_ptrdiff_value (I_end);
+			end = idio_bignum_uint64_value (I_end);
 		    }
 
 		    if (idio_handle_tell (end_sh) != strlen (bit_range)) {
@@ -2041,7 +2125,29 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 
 			if (idio_isa_fixnum (I_offset)) {
 			    offset = IDIO_FIXNUM_VAL (I_offset);
+
+			    if (offset < 0) {
+				/*
+				 * Test Case: read-errors/bitset-offset-negative.idio
+				 *
+				 * #B{ 3 -2: }
+				 */
+				idio_read_error_bitset (handle, lo, IDIO_C_FUNC_LOCATION (), "offset must be a positive base-16 integer");
+
+				return idio_S_notreached;
+			    }
 			} else if (idio_isa_bignum (I_offset)) {
+			    if (idio_bignum_negative_p (I_offset)) {
+				/*
+				 * Test Case: read-errors/bitset-offset-negative-bignum.idio
+				 *
+				 * #B{ 3 -2000000000000000: }
+				 */
+				idio_read_error_bitset (handle, lo, IDIO_C_FUNC_LOCATION (), "offset must be a positive base-16 integer");
+
+				return idio_S_notreached;
+			    }
+
 			    /*
 			     * Test Case: read-errors/bitset-offset-too-big-bignum.idio
 			     *
@@ -2049,7 +2155,22 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 			     *
 			     * Technically a code coverage issue but causes the too big error
 			     */
-			    offset = idio_bignum_ptrdiff_value (I_offset);
+			    offset = idio_bignum_uint64_value (I_offset);
+			} else {
+			    /*
+			     * Test Case: read-errors/bitset-offset-non-integer.idio
+			     *
+			     * #B{ 3 +: }
+			     *
+			     * a plus sign on its own cause
+			     * idio_read_number_C() to return idio_S_nil
+			     *
+			     * However, we will not see this warning
+			     * because idio_read_bignum_radix() will have
+			     * barfed before we get here.
+			     */
+
+			    return idio_S_notreached;
 			}
 
 			if (offset > IDIO_BITSET_SIZE (bs)) {
@@ -2396,7 +2517,7 @@ static IDIO idio_read_bignum_radix (IDIO handle, IDIO lo, char basec, int radix)
 	     * what you want.
 	     */
 	    char em[BUFSIZ];
-	    sprintf (em, "invalid digit %c in bignum base #%c", c, basec);
+	    sprintf (em, "invalid digit '%c' in bignum base #%c", c, basec);
 	    idio_read_error_bignum (handle, lo, IDIO_C_FUNC_LOCATION (), em);
 
 	    return idio_S_notreached;

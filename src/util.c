@@ -1008,7 +1008,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		    case IDIO_I_CODE_NOP:				t = "NOP";				break;
 
 		    default:
-			if (sprintf (m, "#<type/constant/vm_code?? o=%10p v=%lx>", o, v) == -1) {
+			if (sprintf (m, "#<type/constant/vm_code?? o=%10p v=%tx>", o, v) == -1) {
 			    idio_error_alloc ("asprintf");
 
 			    /* notreached */
@@ -1223,11 +1223,10 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 				/* notreached */
 				return NULL;
 			    }
-			} else {
-			    r = idio_alloc (1);
-			    r[0] = '\0';
 			}
-			*sizep = strlen (r);
+			if (NULL != r) {
+			    *sizep = strlen (r);
+			}
 
 			if (special) {
 			    if (idio_isa_pair (IDIO_PAIR_T (o))) {

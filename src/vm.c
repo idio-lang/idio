@@ -5117,7 +5117,7 @@ void idio_vm_dasm (IDIO thr, idio_ai_t pc0, idio_ai_t pce)
 		char h[BUFSIZ];
 		sprintf (h, "A@%" PRId64 "", pc + o);
 		idio_hash_put (hints, idio_fixnum (pc + o), idio_symbols_C_intern (h));
-		IDIO_VM_DASM ("ABORT to PC +%" PRIu64 " %td", o, pc + o);
+		IDIO_VM_DASM ("ABORT to PC +%" PRIu64 " %" PRId64, o, pc + o);
 	    }
 	    break;
 	case IDIO_A_FINISH:

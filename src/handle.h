@@ -41,7 +41,7 @@ int idio_peek_handle (IDIO h);
 int idio_eofp_handle (IDIO h);
 int idio_close_handle (IDIO h);
 int idio_putc_handle (IDIO h, int c);
-size_t idio_puts_handle (IDIO h, char *s, size_t slen);
+ptrdiff_t idio_puts_handle (IDIO h, char *s, size_t slen);
 int idio_flush_handle (IDIO h);
 off_t idio_seek_handle (IDIO h, off_t offset, int whence);
 off_t idio_handle_tell (IDIO h);

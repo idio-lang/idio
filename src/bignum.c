@@ -432,8 +432,11 @@ int64_t idio_bignum_int64_value (IDIO bn)
 		    }
 		}
 	    }
+	    size_t size = 0;
+	    char *bn_is = idio_bignum_as_string (bn_i, &size);
 	    char em[BUFSIZ];
-	    sprintf (em, "too large for int64_t (%" PRId64 ")", INT64_MAX);
+	    sprintf (em, "%s is too large for int64_t (%" PRId64 ")", bn_is, INT64_MAX);
+	    free (bn_is);
 	    idio_bignum_error_conversion (em, bn, IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
@@ -489,8 +492,11 @@ uint64_t idio_bignum_uint64_value (IDIO bn)
 		    return v;
 		}
 	    }
+	    size_t size = 0;
+	    char *bn_is = idio_bignum_as_string (bn_i, &size);
 	    char em[BUFSIZ];
-	    sprintf (em, "too large for uint64_t (%" PRIu64 ")", UINT64_MAX);
+	    sprintf (em, "%s is too large for uint64_t (%" PRIu64 ")", bn_is, UINT64_MAX);
+	    free (bn_is);
 	    idio_bignum_error_conversion (em, bn, IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
@@ -555,8 +561,11 @@ ptrdiff_t idio_bignum_ptrdiff_value (IDIO bn)
 		    }
 		}
 	    }
+	    size_t size = 0;
+	    char *bn_is = idio_bignum_as_string (bn_i, &size);
 	    char em[BUFSIZ];
-	    sprintf (em, "too large for ptrdiff_t (%td)", (ptrdiff_t) PTRDIFF_MAX);
+	    sprintf (em, "%s is too large for ptrdiff_t (%td)", bn_is, (ptrdiff_t) PTRDIFF_MAX);
+	    free (bn_is);
 	    idio_bignum_error_conversion (em, bn, IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
@@ -621,8 +630,11 @@ intptr_t idio_bignum_intptr_value (IDIO bn)
 		    }
 		}
 	    }
+	    size_t size = 0;
+	    char *bn_is = idio_bignum_as_string (bn_i, &size);
 	    char em[BUFSIZ];
-	    sprintf (em, "too large for intptr_t (%" PRIdPTR ")", (intptr_t) INTPTR_MAX);
+	    sprintf (em, "%s is too large for intptr_t (%" PRIdPTR ")", bn_is, (intptr_t) INTPTR_MAX);
+	    free (bn_is);
 	    idio_bignum_error_conversion (em, bn, IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
@@ -691,8 +703,11 @@ intmax_t idio_bignum_intmax_value (IDIO bn)
 		    }
 		}
 	    }
+	    size_t size = 0;
+	    char *bn_is = idio_bignum_as_string (bn_i, &size);
 	    char em[BUFSIZ];
-	    sprintf (em, "too large for intmax_t (%jd)", (intmax_t) INTMAX_MAX);
+	    sprintf (em, "%s is too large for intmax_t (%jd)", bn_is, (intmax_t) INTMAX_MAX);
+	    free (bn_is);
 	    idio_bignum_error_conversion (em, bn, IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
