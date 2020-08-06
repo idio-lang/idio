@@ -117,8 +117,8 @@ read-error-load "read-errors/pathname-eof-emb.idio" "pathname: EOF" 2
 
 ;read-error-load "read-errors/bignum-radix.idio" "bignum: base #%c (%d) > max base %d"
 
-read-error-load "read-errors/bignum-invalid-digit.idio" "bignum: invalid digit a in bignum base #d" 2
-read-error-load "read-errors/bignum-invalid-digit-emb.idio" "bignum: invalid digit a in bignum base #d" 3
+read-error-load "read-errors/bignum-invalid-digit.idio" "bignum: invalid digit 'a' in bignum base #d" 2
+read-error-load "read-errors/bignum-invalid-digit-emb.idio" "bignum: invalid digit 'a' in bignum base #d" 3
 
 read-error-load "read-errors/bignum-no-digits.idio" "bignum: no digits after bignum base #d" 1
 read-error-load "read-errors/bignum-no-digits-emb.idio" "bignum: no digits after bignum base #d" 2
@@ -163,10 +163,13 @@ read-error-load "read-errors/bitset-internal-eof-1.idio" "bitset: EOF" 1
 read-error-load "read-errors/bitset-internal-eof-2.idio" "bitset: EOF" 1
 read-error-load "read-errors/bitset-not-lbrace.idio" "bitset: not a {" 1
 read-error-load "read-errors/bitset-word-too-long.idio" "word is too long: '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000111'" 11
-read-error-load "read-errors/bitset-size-floating-point.idio" "bitset: size must be an integer" 1
-read-error-load "read-errors/bitset-size-non-integer.idio" "bitset: size must be an integer" 1
+read-error-load "read-errors/bitset-size-floating-point.idio" "bitset: size must be a positive decimal integer" 1
+read-error-load "read-errors/bitset-size-non-integer.idio" "bitset: size must be a positive decimal integer" 1
+read-error-load "read-errors/bitset-size-negative.idio" "bitset: size must be a positive decimal integer" 1
+read-error-load "read-errors/bitset-size-negative-bignum.idio" "bitset: size must be a positive decimal integer" 1
 
 read-error-load "read-errors/bitset-range-start-floating-point.idio" "bitset: range start 0x1 from \"1.1\"" 1
+read-error-load "read-errors/bitset-range-start-non-integer.idio" "bignum: no digits after bignum base #x" 1
 read-error-load "read-errors/bitset-range-start-too-big.idio" "bitset: range start 0x10 > bitset size 0x3" 1
 if (gt FIXNUM-MAX 536870911) {
   read-error-load "read-errors/bitset-range-start-too-big-bignum.idio" "bitset: range start 0x2000000000000000 > bitset size 0x3" 1
@@ -174,8 +177,11 @@ if (gt FIXNUM-MAX 536870911) {
   read-error-load "read-errors/bitset-range-start-too-big-bignum.idio" "bitset: range start 0x20000000 > bitset size 0x3" 1
 }
 read-error-load "read-errors/bitset-range-start-non-byte-boundary.idio" "bitset: range start 0x1 is not a byte boundary" 1
+read-error-load "read-errors/bitset-range-start-negative.idio" "bitset: range start must be a positive base-16 integer" 1
+read-error-load "read-errors/bitset-range-start-negative-bignum.idio" "bitset: range start must be a positive base-16 integer" 1
 
 read-error-load "read-errors/bitset-range-end-floating-point.idio" "bitset: range end 0x2 from \"2.1\"" 1
+read-error-load "read-errors/bitset-range-start-non-integer.idio" "bignum: no digits after bignum base #x" 1
 read-error-load "read-errors/bitset-range-end-too-big.idio" "bitset: range end 0x20 > bitset size 0x3" 1
 if (gt FIXNUM-MAX 536870911) {
   read-error-load "read-errors/bitset-range-end-too-big-bignum.idio" "bitset: range end 0x2000000000000000 > bitset size 0x3" 1
@@ -184,7 +190,9 @@ if (gt FIXNUM-MAX 536870911) {
 }
 read-error-load "read-errors/bitset-range-end-non-byte-boundary.idio" "bitset: range end 0x2 is not a byte boundary" 1
 read-error-load "read-errors/bitset-range-start-greater-end.idio" "bitset: range start 0x10 > range end 0" 1
+read-error-load "read-errors/bitset-range-end-negative.idio" "bignum: invalid digit '-' in bignum base #x" 1
 
+read-error-load "read-errors/bitset-offset-non-integer.idio" "bignum: no digits after bignum base #x" 1
 read-error-load "read-errors/bitset-offset-too-big.idio" "bitset: offset 0x10 > bitset size 0x3" 1
 if (gt FIXNUM-MAX 536870911) {
   read-error-load "read-errors/bitset-offset-too-big-bignum.idio" "bitset: offset 0x2000000000000000 > bitset size 0x3" 1
@@ -192,6 +200,8 @@ if (gt FIXNUM-MAX 536870911) {
   read-error-load "read-errors/bitset-offset-too-big-bignum.idio" "bitset: offset 0x20000000 > bitset size 0x3" 1
 }
 read-error-load "read-errors/bitset-offset-non-byte-boundary.idio" "bitset: offset 0x1 is not a byte boundary" 1
+read-error-load "read-errors/bitset-offset-negative.idio" "bitset: offset must be a positive base-16 integer" 1
+read-error-load "read-errors/bitset-offset-negative-bignum.idio" "bitset: offset must be a positive base-16 integer" 1
 read-error-load "read-errors/bitset-offset-too-many-bits-in-block.idio" "bitset: bitset bits should be fewer than 8" 1
 read-error-load "read-errors/bitset-offset-too-many-bits.idio" "bitset: offset 0 + 8 bits > bitset size 0x3" 1
 read-error-load "read-errors/bitset-offset-bad-bits.idio" "bitset: bits should be 0/1, not 0x32 @2" 1
@@ -208,4 +218,4 @@ read-error-load "read-errors/op-eof.idio" "EOF in list" 3
 read-error-load "read-errors/op-eof-emb.idio" "EOF in list" 4
 
 ;; all done?
-test Tests (read-error0 + 188)
+test Tests (read-error0 + 208)
