@@ -180,6 +180,8 @@ void idio_env_init_idiolib (char *argv0)
 		    char *sidiolib = idio_string_as_C (idiolib, &idiolib_len);
 		    size_t C_size = strlen (sidiolib);
 		    if (C_size != idiolib_len) {
+			free (sidiolib);
+
 			idio_env_error_format ("IDIOLIB: contains an ASCII NUL", idiolib, IDIO_C_FUNC_LOCATION ());
 
 			/* notreached */
@@ -213,6 +215,8 @@ void idio_env_init_idiolib (char *argv0)
 			idio_module_env_set_symbol_value (idio_env_IDIOLIB_sym, idio_string_C (ni));
 			free (ni);
 		    }
+
+		    free (sidiolib);
 		}
 	    }
 	}

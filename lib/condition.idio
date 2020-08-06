@@ -277,7 +277,7 @@ define (condition-report prefix c & args) "print a report on condition `c`
        ((rt-variable-error? c) {
 	 cr-printf ": variable %s" c.variable
        }) \
-       ((rt-module-erro? c) {
+       ((rt-module-error? c) {
 	 cr-printf ": module %s" c.module
        }) \
        ((rt-module-symbol-unbound-error? c) {

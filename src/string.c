@@ -972,6 +972,8 @@ return a symbol derived from `s`		\n\
 	/*
 	 * Test Case: string-errors/string-symbol-format.idio
 	 */
+	free (sC);
+
 	idio_string_error_format ("string contains an ASCII NUL", s, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
@@ -2207,7 +2209,7 @@ IDIO idio_join_string (IDIO delim, IDIO args)
 	return idio_string_C_len ("", 0);
     }
 
-    ptrdiff_t n = 2 * idio_list_length (args) - 1;
+    ptrdiff_t n = 2 * idio_list_length (args);
     char *copies[n];
     size_t lens[n];
 
@@ -2225,7 +2227,7 @@ IDIO idio_join_string (IDIO delim, IDIO args)
 	args = IDIO_PAIR_T (args);
     }
 
-    IDIO r = idio_string_C_array_lens (n, copies, lens);
+    IDIO r = idio_string_C_array_lens (n - 1, copies, lens);
 
     free (delim_C);
     for (i = 0; i < n; i += 2) {

@@ -120,13 +120,17 @@ IDIO_DEFINE_PRIMITIVE1 ("make-keyword", make_keyword, (IDIO s))
 
 	size_t C_size = strlen (sC);
 	if (C_size != size) {
+	    free (sC);
+
 	    idio_keyword_error_format ("keyword contains an ASCII NUL", s, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
 
 	IDIO r = idio_keywords_C_intern (sC);
+
 	free (sC);
+
 	return r;
     } else if (idio_isa_symbol (s)) {
 	return idio_keyword_C (IDIO_SYMBOL_S (s));
@@ -176,6 +180,8 @@ IDIO idio_keywords_string_intern (IDIO str)
 
     size_t C_size = strlen (sC);
     if (C_size != size) {
+	free (sC);
+
 	idio_keyword_error_format ("keyword contains an ASCII NUL", str, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;

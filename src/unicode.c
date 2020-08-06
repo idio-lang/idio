@@ -137,7 +137,15 @@ convert `c` to an integer				\n\
 }
 
 /*
- * reconstruct C escapes in s
+ * construct a UTF-8 sequence from an Idio string
+ *
+ * escapes says to turn, say, a single ASCII 07 (Alert, Bell, ...)
+ * into the C-style two-character escape sequence \a
+ *
+ * quoted says to add a " at the front and back
+ *
+ * caller must free(3) this string
+ *
  */
 char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted)
 {

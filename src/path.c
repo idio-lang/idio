@@ -40,7 +40,10 @@ static void idio_path_error_glob (IDIO pattern, IDIO c_location)
 					       location,
 					       c_location,
 					       pattern));
+
     idio_raise_condition (idio_S_true, c);
+
+    /* notreached */
 }
 
 void idio_path_error_format (char *m, IDIO p, IDIO c_location)
@@ -52,6 +55,8 @@ void idio_path_error_format (char *m, IDIO p, IDIO c_location)
     IDIO_TYPE_ASSERT (string, c_location);
 
     idio_error_C (m, p, c_location);
+
+    /* notreached */
 }
 
 char **idio_path_env_split (const char *path_env)
@@ -196,6 +201,8 @@ IDIO idio_path_expand (IDIO p)
 
     size_t C_size = strlen (pat_C);
     if (C_size != size) {
+	free (pat_C);
+
 	idio_path_error_format ("pattern contains an ASCII NUL", p, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
@@ -218,10 +225,15 @@ IDIO idio_path_expand (IDIO p)
 	}
 	break;
     default:
+	globfree (&g);
+	free (pat_C);
 	idio_path_error_glob (pat, IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
 	break;
     }
 
+    globfree (&g);
     free (pat_C);
 
     return idio_list_reverse (r);

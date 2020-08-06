@@ -1454,6 +1454,8 @@ static IDIO idio_read_string (IDIO handle, IDIO lo)
 	     *
 	     * "
 	     */
+	    free (abuf);
+
 	    idio_read_error_string (handle, lo, IDIO_C_FUNC_LOCATION (), "EOF");
 
 	    return idio_S_notreached;
@@ -1527,9 +1529,9 @@ static IDIO idio_read_string (IDIO handle, IDIO lo)
 
     abuf[slen] = '\0';
 
-    idio_C_pointer_free_me (abuf);
-
     IDIO r = idio_string_C_len (abuf, slen);
+
+    free (abuf);
 
     return r;
 }

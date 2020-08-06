@@ -281,17 +281,19 @@ IDIO idio_symbols_string_intern (IDIO str)
     IDIO_TYPE_ASSERT (string, str);
 
     size_t size = 0;
-    char *s_C = idio_string_as_C (str, &size);
-    size_t C_size = strlen (s_C);
+    char *sC = idio_string_as_C (str, &size);
+    size_t C_size = strlen (sC);
     if (C_size != size) {
+	free (sC);
+
 	idio_symbol_error_format ("symbol: contains an ASCII NUL", str, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
 
-    IDIO r = idio_symbols_C_intern (s_C);
+    IDIO r = idio_symbols_C_intern (sC);
 
-    free (s_C);
+    free (sC);
 
     return r;
 }
@@ -347,6 +349,8 @@ IDIO_DEFINE_PRIMITIVE0V ("gensym", gensym, (IDIO args))
 	    prefix = idio_string_as_C (iprefix, &size);
 	    size_t C_size = strlen (prefix);
 	    if (C_size != size) {
+		free (prefix);
+
 		idio_symbol_error_format ("gensym: prefix contains an ASCII NUL", iprefix, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;

@@ -635,7 +635,7 @@ typedef struct idio_handle_methods_s {
     int (*eofp) (struct idio_s *h);
     int (*close) (struct idio_s *h);
     int (*putc) (struct idio_s *h, int c);
-    size_t (*puts) (struct idio_s *h, char *s, size_t slen);
+    ptrdiff_t (*puts) (struct idio_s *h, char *s, size_t slen);
     int (*flush) (struct idio_s *h);
     off_t (*seek) (struct idio_s *h, off_t offset, int whence);
     void (*print) (struct idio_s *h, struct idio_s *o);

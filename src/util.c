@@ -3024,12 +3024,15 @@ IDIO_DEFINE_PRIMITIVE2 ("idio-debug", idio_debug, (IDIO fmt, IDIO o))
     char *sfmt = idio_string_as_C (fmt, &size);
     size_t C_size = strlen (sfmt);
     if (C_size != size) {
+	free (sfmt);
+
 	idio_util_error_format ("idio-debug: fmt contains an ASCII NUL", fmt, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
 
     idio_debug (sfmt, o);
+
     free (sfmt);
 
     return idio_S_unspec;

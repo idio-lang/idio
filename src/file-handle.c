@@ -60,7 +60,10 @@ static void idio_file_handle_error_filename (IDIO filename, IDIO c_location)
 					       c_location,
 					       idio_get_output_string (dsh),
 					       filename));
+
     idio_raise_condition (idio_S_true, c);
+
+    /* notreached */
 }
 
 static void idio_file_handle_error_filename_C (char *name, IDIO c_location)
@@ -70,6 +73,8 @@ static void idio_file_handle_error_filename_C (char *name, IDIO c_location)
     IDIO_TYPE_ASSERT (string, c_location);
 
     idio_file_handle_error_filename (idio_string_C (name), c_location);
+
+    /* notreached */
 }
 
 static void idio_file_handle_error_filename_delete (IDIO filename, IDIO c_location)
@@ -92,7 +97,10 @@ static void idio_file_handle_error_filename_delete (IDIO filename, IDIO c_locati
 					       c_location,
 					       idio_get_output_string (dsh),
 					       filename));
+
     idio_raise_condition (idio_S_true, c);
+
+    /* notreached */
 }
 
 static void idio_file_handle_error_filename_delete_C (char *name, IDIO c_location)
@@ -102,6 +110,8 @@ static void idio_file_handle_error_filename_delete_C (char *name, IDIO c_locatio
     IDIO_TYPE_ASSERT (string, c_location);
 
     idio_file_handle_error_filename_delete (idio_string_C (name), c_location);
+
+    /* notreached */
 }
 
 static void idio_file_handle_error_malformed_filename (IDIO filename, IDIO c_location)
@@ -124,7 +134,10 @@ static void idio_file_handle_error_malformed_filename (IDIO filename, IDIO c_loc
 					       c_location,
 					       idio_get_output_string (dsh),
 					       filename));
+
     idio_raise_condition (idio_S_true, c);
+
+    /* notreached */
 }
 
 static void idio_file_handle_error_malformed_filename_C (char *name, IDIO c_location)
@@ -134,6 +147,8 @@ static void idio_file_handle_error_malformed_filename_C (char *name, IDIO c_loca
     IDIO_TYPE_ASSERT (string, c_location);
 
     idio_file_handle_error_malformed_filename (idio_string_C (name), c_location);
+
+    /* notreached */
 }
 
 static void idio_file_handle_error_file_protection (IDIO filename, IDIO c_location)
@@ -156,7 +171,10 @@ static void idio_file_handle_error_file_protection (IDIO filename, IDIO c_locati
 					       c_location,
 					       idio_get_output_string (dsh),
 					       filename));
+
     idio_raise_condition (idio_S_true, c);
+
+    /* notreached */
 }
 
 static void idio_file_handle_error_file_protection_C (char *name, IDIO c_location)
@@ -166,6 +184,8 @@ static void idio_file_handle_error_file_protection_C (char *name, IDIO c_locatio
     IDIO_TYPE_ASSERT (string, c_location);
 
     idio_file_handle_error_file_protection (idio_string_C (name), c_location);
+
+    /* notreached */
 }
 
 static void idio_file_handle_error_filename_already_exists (IDIO filename, IDIO c_location)
@@ -188,7 +208,10 @@ static void idio_file_handle_error_filename_already_exists (IDIO filename, IDIO 
 					       c_location,
 					       idio_get_output_string (dsh),
 					       filename));
+
     idio_raise_condition (idio_S_true, c);
+
+    /* notreached */
 }
 
 static void idio_file_handle_error_filename_already_exists_C (char *name, IDIO c_location)
@@ -198,6 +221,8 @@ static void idio_file_handle_error_filename_already_exists_C (char *name, IDIO c
     IDIO_TYPE_ASSERT (string, c_location);
 
     idio_file_handle_error_filename_already_exists (idio_string_C (name), c_location);
+
+    /* notreached */
 }
 
 static void idio_file_handle_error_filename_not_found (IDIO filename, IDIO c_location)
@@ -217,7 +242,10 @@ static void idio_file_handle_error_filename_not_found (IDIO filename, IDIO c_loc
 					       c_location,
 					       idio_S_nil,
 					       filename));
+
     idio_raise_condition (idio_S_true, c);
+
+    /* notreached */
 }
 
 static void idio_file_handle_error_filename_not_found_C (char *name, IDIO c_location)
@@ -227,6 +255,8 @@ static void idio_file_handle_error_filename_not_found_C (char *name, IDIO c_loca
     IDIO_TYPE_ASSERT (string, c_location);
 
     idio_file_handle_error_filename_not_found (idio_string_C (name), c_location);
+
+    /* notreached */
 }
 
 void idio_file_handle_error_format (char *m, IDIO s, IDIO c_location)
@@ -238,6 +268,8 @@ void idio_file_handle_error_format (char *m, IDIO s, IDIO c_location)
     IDIO_TYPE_ASSERT (string, c_location);
 
     idio_error_C (m, s, c_location);
+
+    /* notreached */
 }
 
 static IDIO idio_open_file_handle (IDIO filename, char *pathname, FILE *filep, int h_flags, int s_flags)
@@ -299,18 +331,23 @@ IDIO_DEFINE_PRIMITIVE1V ("open-file-from-fd", open_file_handle_from_fd, (IDIO if
 	    char *s = idio_string_as_C (iname, &size);
 	    size_t C_size = strlen (s);
 	    if (C_size != size) {
+		free (s);
+
 		idio_file_handle_error_format ("open-file-from-fd: name contains an ASCII NUL", iname, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    }
 
 	    if (size >= PATH_MAX) {
+		free (s);
+
 		idio_error_C ("name too long", iname, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    }
 
 	    sprintf (name, "%s", s);
+
 	    free (s);
 
 	    args = IDIO_PAIR_T (args);
@@ -331,6 +368,8 @@ IDIO_DEFINE_PRIMITIVE1V ("open-file-from-fd", open_file_handle_from_fd, (IDIO if
 	    mode = idio_string_as_C (imode, &size);
 	    size_t C_size = strlen (mode);
 	    if (C_size != size) {
+		free (mode);
+
 		idio_file_handle_error_format ("open-file-from-fd: mode contains an ASCII NUL", imode, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
@@ -347,6 +386,10 @@ IDIO_DEFINE_PRIMITIVE1V ("open-file-from-fd", open_file_handle_from_fd, (IDIO if
 
     FILE *filep = fdopen (fd, mode);
     if (NULL == filep) {
+	if (free_mode) {
+	    free (mode);
+	}
+
 	idio_error_system_errno ("fdopen", IDIO_LIST2 (idio_string_C (name), idio_string_C (mode)), IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
@@ -383,12 +426,16 @@ IDIO_DEFINE_PRIMITIVE1V ("open-input-file-from-fd", open_input_file_handle_from_
 	    char *s = idio_string_as_C (iname, &size);
 	    size_t C_size = strlen (s);
 	    if (C_size != size) {
+		free (s);
+
 		idio_file_handle_error_format ("open-input-file-from-fd: name contains an ASCII NUL", iname, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    }
 
 	    if (size >= PATH_MAX) {
+		free (s);
+
 		idio_error_C ("name too long", iname, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
@@ -415,6 +462,8 @@ IDIO_DEFINE_PRIMITIVE1V ("open-input-file-from-fd", open_input_file_handle_from_
 	    mode = idio_string_as_C (imode, &size);
 	    size_t C_size = strlen (mode);
 	    if (C_size != size) {
+		free (mode);
+
 		idio_file_handle_error_format ("open-input-file-from-fd: mode contains an ASCII NUL", imode, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
@@ -431,6 +480,10 @@ IDIO_DEFINE_PRIMITIVE1V ("open-input-file-from-fd", open_input_file_handle_from_
 
     FILE *filep = fdopen (fd, mode);
     if (NULL == filep) {
+	if (free_mode) {
+	    free (mode);
+	}
+
 	idio_error_system_errno ("fdopen", IDIO_LIST2 (idio_string_C (name), idio_string_C (mode)), IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
@@ -467,12 +520,16 @@ IDIO_DEFINE_PRIMITIVE1V ("open-output-file-from-fd", open_output_file_handle_fro
 	    char *s = idio_string_as_C (iname, &size);
 	    size_t C_size = strlen (s);
 	    if (C_size != size) {
+		free (s);
+
 		idio_file_handle_error_format ("open-output-file-from-fd: name contains an ASCII NUL", iname, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    }
 
 	    if (size >= PATH_MAX) {
+		free (s);
+
 		idio_error_C ("name too long", iname, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
@@ -499,6 +556,8 @@ IDIO_DEFINE_PRIMITIVE1V ("open-output-file-from-fd", open_output_file_handle_fro
 	    mode = idio_string_as_C (imode, &size);
 	    size_t C_size = strlen (mode);
 	    if (C_size != size) {
+		free (mode);
+
 		idio_file_handle_error_format ("open-output-file-from-fd: mode contains an ASCII NUL", imode, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
@@ -515,6 +574,10 @@ IDIO_DEFINE_PRIMITIVE1V ("open-output-file-from-fd", open_output_file_handle_fro
 
     FILE *filep = fdopen (fd, mode);
     if (NULL == filep) {
+	if (free_mode) {
+	    free (mode);
+	}
+
 	idio_error_system_errno ("fdopen", IDIO_LIST2 (idio_string_C (name), idio_string_C (mode)), IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
@@ -532,7 +595,7 @@ IDIO_DEFINE_PRIMITIVE1V ("open-output-file-from-fd", open_output_file_handle_fro
     return idio_open_file_handle (idio_string_C (name), name, filep, mflag, IDIO_FILE_HANDLE_FLAG_NONE);
 }
 
-IDIO idio_open_file_handle_C (IDIO filename, char *pathname, char *mode)
+IDIO idio_open_file_handle_C (IDIO filename, char *pathname, int free_pathname, char *mode, int free_mode)
 {
     IDIO_ASSERT (filename);	/* the user supplied name */
     IDIO_C_ASSERT (pathname);
@@ -557,6 +620,13 @@ IDIO idio_open_file_handle_C (IDIO filename, char *pathname, char *mode)
 	}
 	break;
     default:
+	if (free_pathname) {
+	    free (pathname);
+	}
+	if (free_mode) {
+	    free (mode);
+	}
+
 	idio_error_printf (IDIO_C_FUNC_LOCATION (), "unexpected mode", mode);
 
 	return idio_S_notreached;
@@ -586,29 +656,95 @@ IDIO idio_open_file_handle_C (IDIO filename, char *pathname, char *mode)
 		idio_gc_collect ("idio_open_file_handle_C");
 		break;
 	    case EACCES:
-		idio_file_handle_error_file_protection_C (pathname, IDIO_C_FUNC_LOCATION ());
+		{
+		    IDIO pn = idio_string_C (pathname);
 
-		return idio_S_notreached;
+		    if (free_pathname) {
+			free (pathname);
+		    }
+		    if (free_mode) {
+			free (mode);
+		    }
+
+		    idio_file_handle_error_file_protection (pn, IDIO_C_FUNC_LOCATION ());
+
+		    return idio_S_notreached;
+		}
 	    case EEXIST:
-		idio_file_handle_error_filename_already_exists_C (pathname, IDIO_C_FUNC_LOCATION ());
+		{
+		    IDIO pn = idio_string_C (pathname);
 
-		return idio_S_notreached;
+		    if (free_pathname) {
+			free (pathname);
+		    }
+		    if (free_mode) {
+			free (mode);
+		    }
+
+		    idio_file_handle_error_filename_already_exists (pn, IDIO_C_FUNC_LOCATION ());
+
+		    return idio_S_notreached;
+		}
 	    case ENAMETOOLONG:
-		idio_file_handle_error_malformed_filename_C (pathname, IDIO_C_FUNC_LOCATION ());
+		{
+		    IDIO pn = idio_string_C (pathname);
 
-		return idio_S_notreached;
+		    if (free_pathname) {
+			free (pathname);
+		    }
+		    if (free_mode) {
+			free (mode);
+		    }
+
+		    idio_file_handle_error_malformed_filename (pn, IDIO_C_FUNC_LOCATION ());
+
+		    return idio_S_notreached;
+		}
 	    case ENOENT:
-		idio_file_handle_error_filename_not_found_C (pathname, IDIO_C_FUNC_LOCATION ());
+		{
+		    IDIO pn = idio_string_C (pathname);
 
-		return idio_S_notreached;
+		    if (free_pathname) {
+			free (pathname);
+		    }
+		    if (free_mode) {
+			free (mode);
+		    }
+
+		    idio_file_handle_error_filename_not_found (pn, IDIO_C_FUNC_LOCATION ());
+
+		    return idio_S_notreached;
+		}
 	    case ENOTDIR:
-		idio_file_handle_error_filename_C (pathname, IDIO_C_FUNC_LOCATION ());
+		{
+		    IDIO pn = idio_string_C (pathname);
 
-		return idio_S_notreached;
+		    if (free_pathname) {
+			free (pathname);
+		    }
+		    if (free_mode) {
+			free (mode);
+		    }
+
+		    idio_file_handle_error_filename (pn, IDIO_C_FUNC_LOCATION ());
+
+		    return idio_S_notreached;
+		}
 	    default:
-		idio_error_system_errno ("fopen", IDIO_LIST1 (idio_string_C (pathname)), IDIO_C_FUNC_LOCATION ());
+		{
+		    IDIO pn = idio_string_C (pathname);
 
-		return idio_S_notreached;
+		    if (free_pathname) {
+			free (pathname);
+		    }
+		    if (free_mode) {
+			free (mode);
+		    }
+
+		    idio_error_system_errno ("fopen", IDIO_LIST1 (pn), IDIO_C_FUNC_LOCATION ());
+
+		    return idio_S_notreached;
+		}
 	    }
 	} else {
 	    break;
@@ -616,7 +752,17 @@ IDIO idio_open_file_handle_C (IDIO filename, char *pathname, char *mode)
     }
 
     if (NULL == filep) {
-	idio_error_system_errno ("fopen (final)", IDIO_LIST2 (idio_string_C (pathname), idio_string_C (mode)), IDIO_C_FUNC_LOCATION ());
+	IDIO pn = idio_string_C (pathname);
+	IDIO m = idio_string_C (mode);
+
+	if (free_pathname) {
+	    free (pathname);
+	}
+	if (free_mode) {
+	    free (mode);
+	}
+
+	idio_error_system_errno ("fopen (final)", IDIO_LIST2 (pn, m), IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -636,7 +782,17 @@ IDIO idio_open_file_handle_C (IDIO filename, char *pathname, char *mode)
 #if (defined (__APPLE__) && defined (__MACH__))
 	int fd = fileno (filep);
 	if (fcntl (fd, F_SETFD, FD_CLOEXEC) == -1) {
-	    idio_error_system_errno ("fcntl F_SETFD FD_CLOEXEC", IDIO_LIST3 (idio_string_C (pathname), idio_string_C (mode), idio_C_int (fd)), IDIO_C_FUNC_LOCATION ());
+	    IDIO pn = idio_string_C (pathname);
+	    IDIO m = idio_string_C (mode);
+
+	    if (free_pathname) {
+		free (pathname);
+	    }
+	    if (free_mode) {
+		free (mode);
+	    }
+
+	    idio_error_system_errno ("fcntl F_SETFD FD_CLOEXEC", IDIO_LIST3 (pn, m, idio_C_int (fd)), IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -660,6 +816,8 @@ IDIO_DEFINE_PRIMITIVE2 ("open-file", open_file_handle, (IDIO name, IDIO mode))
 	name_C = idio_string_as_C (name, &name_size);
 	size_t C_size = strlen (name_C);
 	if (C_size != name_size) {
+	    free (name_C);
+
 	    idio_file_handle_error_format ("open-file: name contains an ASCII NUL", name, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
@@ -681,19 +839,24 @@ IDIO_DEFINE_PRIMITIVE2 ("open-file", open_file_handle, (IDIO name, IDIO mode))
 	mode_C = idio_string_as_C (mode, &mode_size);
 	size_t C_size = strlen (mode_C);
 	if (C_size != mode_size) {
+	    free (name_C);
+	    free (mode_C);
+
 	    idio_file_handle_error_format ("open-file: mode contains an ASCII NUL", mode, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
 	break;
     default:
+	free (name_C);
+
 	idio_error_param_type ("string", mode, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
 	break;
     }
 
-    IDIO r = idio_open_file_handle_C (name, name_C, mode_C);
+    IDIO r = idio_open_file_handle_C (name, name_C, 1, mode_C, 1);
 
     free (mode_C);
     free (name_C);
@@ -714,6 +877,8 @@ IDIO_DEFINE_PRIMITIVE1 ("open-input-file", open_input_file_handle, (IDIO name))
 	name_C = idio_string_as_C (name, &name_size);
 	size_t C_size = strlen (name_C);
 	if (C_size != name_size) {
+	    free (name_C);
+
 	    idio_file_handle_error_format ("open-input-file: name contains an ASCII NUL", name, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
@@ -726,7 +891,7 @@ IDIO_DEFINE_PRIMITIVE1 ("open-input-file", open_input_file_handle, (IDIO name))
 	break;
     }
 
-    IDIO r = idio_open_file_handle_C (name, name_C, "re");
+    IDIO r = idio_open_file_handle_C (name, name_C, 1, "re", 0);
 
     free (name_C);
 
@@ -746,6 +911,8 @@ IDIO_DEFINE_PRIMITIVE1 ("open-output-file", open_output_file_handle, (IDIO name)
 	name_C = idio_string_as_C (name, &name_size);
 	size_t C_size = strlen (name_C);
 	if (C_size != name_size) {
+	    free (name_C);
+
 	    idio_file_handle_error_format ("open-output-file: name contains an ASCII NUL", name, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
@@ -758,7 +925,7 @@ IDIO_DEFINE_PRIMITIVE1 ("open-output-file", open_output_file_handle, (IDIO name)
 	break;
     }
 
-    IDIO r = idio_open_file_handle_C (name, name_C, "we");
+    IDIO r = idio_open_file_handle_C (name, name_C, 1, "we", 0);
 
     free (name_C);
 
@@ -1266,6 +1433,8 @@ char *idio_libfile_find_C (char *file)
 	idiolib_copy = idio_string_as_C (IDIOLIB, &size);
 	size_t C_size = strlen (idiolib_copy);
 	if (C_size != size) {
+	    free (idiolib_copy);
+
 	    idio_file_handle_error_format ("find-C: IDIOLIB contains an ASCII NUL", IDIOLIB, IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
@@ -1476,6 +1645,8 @@ char *idio_libfile_find (IDIO file)
     char *file_C = idio_string_as_C (file, &size);
     size_t C_size = strlen (file_C);
     if (C_size != size) {
+	free (file_C);
+
 	idio_file_handle_error_format ("libfile-find: file contains an ASCII NUL", file, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
@@ -1498,6 +1669,8 @@ IDIO_DEFINE_PRIMITIVE1 ("find-lib", find_lib, (IDIO file))
     char *file_C = idio_string_as_C (file, &size);
     size_t C_size = strlen (file_C);
     if (C_size != size) {
+	free (file_C);
+
 	idio_file_handle_error_format ("find-lib: file contains an ASCII NUL", file, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
@@ -1533,6 +1706,8 @@ IDIO idio_load_file_name_ebe (IDIO filename, IDIO cs)
     char *filename_C = idio_string_as_C (filename, &size);
     size_t C_size = strlen (filename_C);
     if (C_size != size) {
+	free (filename_C);
+
 	idio_file_handle_error_format ("load-file-ebe: filename contains an ASCII NUL", filename, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
@@ -1544,6 +1719,8 @@ IDIO idio_load_file_name_ebe (IDIO filename, IDIO cs)
     char *libfile = idio_libfile_find_C (filename_C);
 
     if (NULL == libfile) {
+	free (filename_C);
+
 	idio_file_handle_error_filename_not_found (filename, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
@@ -1578,6 +1755,8 @@ IDIO idio_load_file_name_ebe (IDIO filename, IDIO cs)
 	    if (NULL != fe->ext) {
 
 		if ((l + strlen (fe->ext)) >= PATH_MAX) {
+		    free (filename_C);
+
 		    idio_file_handle_error_malformed_filename (filename, IDIO_C_FUNC_LOCATION ());
 
 		    return idio_S_notreached;
@@ -1593,7 +1772,7 @@ IDIO idio_load_file_name_ebe (IDIO filename, IDIO cs)
 	    }
 
 	    if (access (lfn, R_OK) == 0) {
-		IDIO fh = idio_open_file_handle_C (filename_ext, lfn, "r");
+		IDIO fh = idio_open_file_handle_C (filename_ext, lfn, 0, "r", 0);
 
 		free (filename_C);
 
@@ -1644,7 +1823,7 @@ IDIO idio_load_file_name_ebe (IDIO filename, IDIO cs)
 	}
 
 	if (access (lfn, R_OK) == 0) {
-	    IDIO fh = idio_open_file_handle_C (filename_ext, lfn, "r");
+	    IDIO fh = idio_open_file_handle_C (filename_ext, lfn, 0, "r", 0);
 
 	    free (filename_C);
 
@@ -1660,6 +1839,8 @@ IDIO idio_load_file_name_ebe (IDIO filename, IDIO cs)
 	    idio_gc_expose (filename_ext);
 	}
     }
+
+    free (filename_C);
 
     idio_file_handle_error_filename_not_found (filename, IDIO_C_FUNC_LOCATION ());
 
@@ -1682,6 +1863,8 @@ IDIO idio_load_file_name_aio (IDIO filename, IDIO cs)
     char *filename_C = idio_string_as_C (filename, &size);
     size_t C_size = strlen (filename_C);
     if (C_size != size) {
+	free (filename_C);
+
 	idio_file_handle_error_format ("load-file-aio: filename contains an ASCII NUL", filename, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
@@ -1693,6 +1876,8 @@ IDIO idio_load_file_name_aio (IDIO filename, IDIO cs)
     char *libfile = idio_libfile_find_C (filename_C);
 
     if (NULL == libfile) {
+	free (filename_C);
+
 	idio_file_handle_error_filename_not_found (filename, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
@@ -1727,6 +1912,8 @@ IDIO idio_load_file_name_aio (IDIO filename, IDIO cs)
 	    if (NULL != fe->ext) {
 
 		if ((l + strlen (fe->ext)) >= PATH_MAX) {
+		    free (filename_C);
+
 		    idio_file_handle_error_malformed_filename (filename, IDIO_C_FUNC_LOCATION ());
 
 		    return idio_S_notreached;
@@ -1742,7 +1929,7 @@ IDIO idio_load_file_name_aio (IDIO filename, IDIO cs)
 	    }
 
 	    if (access (lfn, R_OK) == 0) {
-		IDIO fh = idio_open_file_handle_C (filename_ext, lfn, "r");
+		IDIO fh = idio_open_file_handle_C (filename_ext, lfn, 0, "r", 0);
 
 		free (filename_C);
 
@@ -1793,7 +1980,7 @@ IDIO idio_load_file_name_aio (IDIO filename, IDIO cs)
 	}
 
 	if (access (lfn, R_OK) == 0) {
-	    IDIO fh = idio_open_file_handle_C (filename_ext, lfn, "r");
+	    IDIO fh = idio_open_file_handle_C (filename_ext, lfn, 0, "r", 0);
 
 	    free (filename_C);
 
@@ -1809,6 +1996,8 @@ IDIO idio_load_file_name_aio (IDIO filename, IDIO cs)
 	    idio_gc_expose (filename_ext);
 	}
     }
+
+    free (filename_C);
 
     idio_file_handle_error_filename_not_found (filename, IDIO_C_FUNC_LOCATION ());
 
@@ -1895,6 +2084,8 @@ IDIO_DEFINE_PRIMITIVE1 ("file-exists?", file_exists_p, (IDIO filename))
     char *filename_C = idio_string_as_C (filename, &size);
     size_t C_size = strlen (filename_C);
     if (C_size != size) {
+	free (filename_C);
+
 	idio_file_handle_error_format ("file-exists?: filename contains an ASCII NUL", filename, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
@@ -1921,6 +2112,8 @@ IDIO_DEFINE_PRIMITIVE1 ("delete-file", delete_file, (IDIO filename))
     char *filename_C = idio_string_as_C (filename, &size);
     size_t C_size = strlen (filename_C);
     if (C_size != size) {
+	free (filename_C);
+
 	idio_file_handle_error_format ("delete-file: filename contains an ASCII NUL", filename, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
@@ -1930,6 +2123,7 @@ IDIO_DEFINE_PRIMITIVE1 ("delete-file", delete_file, (IDIO filename))
 
     if (remove (filename_C)) {
 	free (filename_C);
+
 	idio_file_handle_error_filename_delete (filename, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;

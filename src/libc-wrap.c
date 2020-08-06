@@ -122,6 +122,8 @@ a wrapper to libc access (2)					\n\
     char *pathname = idio_string_as_C (ipathname, &size);
     size_t C_size = strlen (pathname);
     if (C_size != size) {
+	free (pathname);
+
 	idio_libc_error_format ("access: pathname contains an ASCII NUL", ipathname, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
@@ -580,6 +582,8 @@ a wrapper to libc mkdtemp (3)					\n\
     char *template = idio_string_as_C (itemplate, &size);
     size_t C_size = strlen (template);
     if (C_size != size) {
+	free (template);
+
 	idio_libc_error_format ("mkdtemp: template contains an ASCII NUL", itemplate, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
@@ -588,6 +592,8 @@ a wrapper to libc mkdtemp (3)					\n\
     char *d = mkdtemp (template);
 
     if (NULL == d) {
+	free (template);
+
 	idio_error_system_errno ("mkdtemp", IDIO_LIST1 (itemplate), IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
@@ -621,6 +627,8 @@ a wrapper to libc mkstemp (3)					\n\
     char *template = idio_string_as_C (itemplate, &size);
     size_t C_size = strlen (template);
     if (C_size != size) {
+	free (template);
+
 	idio_libc_error_format ("mkstemp: template contains an ASCII NUL", itemplate, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
@@ -629,7 +637,11 @@ a wrapper to libc mkstemp (3)					\n\
     int r = mkstemp (template);
 
     if (-1 == r) {
+	free (template);
+
 	idio_error_system_errno ("mkstemp", IDIO_LIST1 (itemplate), IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
     }
 
     /*
@@ -919,6 +931,8 @@ IDIO idio_libc_stat (IDIO pathname)
     char *pathname_C = idio_string_as_C (pathname, &size);
     size_t C_size = strlen (pathname_C);
     if (C_size != size) {
+	free (pathname_C);
+
 	idio_libc_error_format ("stat: pathname contains an ASCII NUL", pathname, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
@@ -927,7 +941,11 @@ IDIO idio_libc_stat (IDIO pathname)
     struct stat sb;
 
     if (stat (pathname_C, &sb) == -1) {
+	free (pathname_C);
+
 	idio_error_system_errno ("stat", IDIO_LIST1 (pathname), IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
     }
 
     /*
@@ -948,6 +966,7 @@ IDIO idio_libc_stat (IDIO pathname)
 				   idio_pair (idio_C_uint (sb.st_mtime),
 				   idio_pair (idio_C_uint (sb.st_ctime),
 				   idio_S_nil))))))))))))));
+
     free (pathname_C);
 
     return r;
@@ -1205,6 +1224,8 @@ a wrapper to libc unlink (2)					\n\
     char *pathname = idio_string_as_C (ipathname, &size);
     size_t C_size = strlen (pathname);
     if (C_size != size) {
+	free (pathname);
+
 	idio_libc_error_format ("unlink: pathname contains an ASCII NUL", ipathname, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
@@ -1254,6 +1275,7 @@ for functions to manipulate ``status``.				\n\
     int options = IDIO_C_TYPE_INT (ioptions);
 
     int *statusp = idio_alloc (sizeof (int));
+    IDIO istatus = idio_C_pointer_free_me (statusp);
 
     pid_t r = waitpid (pid, statusp, options);
 
@@ -1263,8 +1285,6 @@ for functions to manipulate ``status``.				\n\
 	}
 	idio_error_system_errno ("waitpid", IDIO_LIST2 (ipid, ioptions), IDIO_C_FUNC_LOCATION ());
     }
-
-    IDIO istatus = idio_C_pointer_free_me (statusp);
 
     return IDIO_LIST2 (idio_C_int (r), istatus);
 }
