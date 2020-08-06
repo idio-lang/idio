@@ -43,7 +43,7 @@ extern IDIO idio_libc_struct_stat;
 #define IDIO_LIBC_SIGNAL_NAME_ONLY(n,i) {				\
 	IDIO sig_sym = idio_symbols_C_intern (#n);			\
 	idio_libc_export_symbol_value (sig_sym, idio_C_int (i));	\
-	sprintf (idio_libc_signal_names[i], "%s", IDIO_SYMBOL_S (sig_sym) + 3); \
+	sprintf (idio_libc_signal_names[i], "%s", IDIO_SYMBOL_S (sig_sym)); \
     }
 
 #define IDIO_LIBC_SIGNAL_CONDITION_ONLY(n,i)				\
@@ -60,7 +60,7 @@ extern IDIO idio_libc_struct_stat;
 #define IDIO_LIBC_SIGNAL(n) {						\
 	IDIO sig_sym = idio_symbols_C_intern (#n);			\
 	idio_libc_export_symbol_value (sig_sym, idio_C_int (n));	\
-	sprintf (idio_libc_signal_names[n], "%s", IDIO_SYMBOL_S (sig_sym) + 3);	\
+	sprintf (idio_libc_signal_names[n], "%s", IDIO_SYMBOL_S (sig_sym));	\
 	IDIO sig_ct;							\
 	IDIO_DEFINE_CONDITION0_DYNAMIC (sig_ct, "^rt-signal-" #n, idio_condition_rt_signal_type); \
 	IDIO sig_cond = idio_struct_instance (sig_ct, IDIO_LIST1 (idio_C_int (n))); \

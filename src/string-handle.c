@@ -125,12 +125,20 @@ IDIO idio_open_input_string_handle_C (char *str)
     strncpy (str_copy, str, blen + 1);
     str_copy[blen] = '\0';
 
+    /*
+     * str_copy will be freed when the handle is freed
+     */
+
     return idio_open_string_handle (str_copy, blen, IDIO_HANDLE_FLAG_READ);
 }
 
 IDIO idio_open_output_string_handle_C ()
 {
     char *str_C = idio_alloc (IDIO_STRING_HANDLE_DEFAULT_OUTPUT_SIZE);
+
+    /*
+     * str_C will be freed when the handle is freed
+     */
 
     return idio_open_string_handle (str_C, IDIO_STRING_HANDLE_DEFAULT_OUTPUT_SIZE, IDIO_HANDLE_FLAG_WRITE);
 }
@@ -139,19 +147,20 @@ IDIO_DEFINE_PRIMITIVE1 ("open-input-string", open_input_string_handle, (IDIO str
 {
     IDIO_ASSERT (str);
 
+    size_t size = 0;
     char *str_C = NULL;
 
     switch (idio_type (str)) {
     case IDIO_TYPE_STRING:
     case IDIO_TYPE_SUBSTRING:
-	str_C = idio_string_as_C (str);
+	str_C = idio_string_as_C (str, &size);
 	break;
     default:
 	idio_error_param_type ("string", str, IDIO_C_FUNC_LOCATION ());
 	break;
     }
 
-    IDIO r = idio_open_string_handle (str_C, strlen (str_C), IDIO_HANDLE_FLAG_READ);
+    IDIO r = idio_open_string_handle (str_C, size, IDIO_HANDLE_FLAG_READ);
 
     return r;
 }
@@ -291,7 +300,8 @@ int idio_putc_string_handle (IDIO sh, int c)
 	if (IDIO_STRING_HANDLE_END (sh) == (IDIO_STRING_HANDLE_BUF (sh) + IDIO_STRING_HANDLE_BLEN (sh))) {
 	    size_t blen = IDIO_STRING_HANDLE_BLEN (sh);
 	    char *buf = IDIO_STRING_HANDLE_BUF (sh);
-	    buf = idio_realloc (buf, blen + blen / 2);
+	    blen += blen / 2;	/* 50% more */
+	    buf = idio_realloc (buf, blen);
 
 	    /*
 	     * realloc can relocate data in memory!
@@ -310,7 +320,7 @@ int idio_putc_string_handle (IDIO sh, int c)
     return c;
 }
 
-size_t idio_puts_string_handle (IDIO sh, char *s, size_t slen)
+ptrdiff_t idio_puts_string_handle (IDIO sh, char *s, size_t slen)
 {
     IDIO_ASSERT (sh);
 
@@ -397,8 +407,9 @@ void idio_print_string_handle (IDIO sh, IDIO o)
 	idio_handle_error_write (sh, IDIO_C_FUNC_LOCATION ());
     }
 
-    char *os = idio_display_string (o);
-    IDIO_HANDLE_M_PUTS (sh) (sh, os, strlen (os));
+    size_t size = 0;
+    char *os = idio_display_string (o, &size);
+    IDIO_HANDLE_M_PUTS (sh) (sh, os, size);
     IDIO_HANDLE_M_PUTS (sh) (sh, "\n", 1);
     free (os);
 }

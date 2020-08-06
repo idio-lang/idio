@@ -31,7 +31,7 @@ int idio_getc_string_handle (IDIO sh);
 int idio_eofp_string_handle (IDIO sh);
 int idio_close_string_handle (IDIO sh);
 int idio_putc_string_handle (IDIO sh, int c);
-size_t idio_puts_string_handle (IDIO sh, char *s, size_t slen);
+ptrdiff_t idio_puts_string_handle (IDIO sh, char *s, size_t slen);
 int idio_flush_string_handle (IDIO sh);
 off_t idio_seek_string_handle (IDIO sh, off_t offset, int whence);
 void idio_print_string_handle (IDIO sh, IDIO o);

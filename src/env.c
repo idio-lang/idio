@@ -31,6 +31,17 @@ IDIO idio_env_IDIOLIB_sym;
 IDIO idio_env_PATH_sym;
 IDIO idio_env_PWD_sym;
 
+void idio_env_error_format (char *m, IDIO s, IDIO c_location)
+{
+    IDIO_C_ASSERT (m);
+    IDIO_ASSERT (s);
+    IDIO_ASSERT (c_location);
+    IDIO_TYPE_ASSERT (string, s);
+    IDIO_TYPE_ASSERT (string, c_location);
+
+    idio_error_C (m, s, c_location);
+}
+
 static int idio_env_set_default (IDIO name, char *val)
 {
     IDIO_ASSERT (name);
@@ -164,7 +175,20 @@ void idio_env_init_idiolib (char *argv0)
 
 		if (! idio_env_set_default (idio_env_IDIOLIB_sym, idio_env_IDIOLIB_default)) {
 		    IDIO idiolib = idio_module_env_symbol_value (idio_env_IDIOLIB_sym, IDIO_LIST1 (idio_S_false));
-		    char *index = strstr (IDIO_STRING_S (idiolib), idio_env_IDIOLIB_default);
+
+		    size_t idiolib_len = 0;
+		    char *sidiolib = idio_string_as_C (idiolib, &idiolib_len);
+		    size_t C_size = strlen (sidiolib);
+		    if (C_size != idiolib_len) {
+			free (sidiolib);
+
+			idio_env_error_format ("IDIOLIB: contains an ASCII NUL", idiolib, IDIO_C_FUNC_LOCATION ());
+
+			/* notreached */
+			return;
+		    }
+
+		    char *index = strstr (sidiolib, idio_env_IDIOLIB_default);
 		    int append = 0;
 		    if (index) {
 			if (! ('\0' == index[ieId_len + 1] ||
@@ -176,7 +200,6 @@ void idio_env_init_idiolib (char *argv0)
 		    }
 
 		    if (append) {
-			size_t idiolib_len = strlen (IDIO_STRING_S (idiolib));
 			size_t ni_len = idiolib_len + 1 + ieId_len + 1;
 			if (0 == idiolib_len) {
 			    ni_len = ieId_len + 1;
@@ -184,7 +207,7 @@ void idio_env_init_idiolib (char *argv0)
 			char *ni = idio_alloc (ni_len + 1);
 			ni[0] = '\0';
 			if (idiolib_len) {
-			    strcpy (ni, IDIO_STRING_S (idiolib));
+			    strcpy (ni, sidiolib);
 			    strcat (ni, ":");
 			}
 			strcat (ni, idio_env_IDIOLIB_default);
@@ -192,6 +215,8 @@ void idio_env_init_idiolib (char *argv0)
 			idio_module_env_set_symbol_value (idio_env_IDIOLIB_sym, idio_string_C (ni));
 			free (ni);
 		    }
+
+		    free (sidiolib);
 		}
 	    }
 	}

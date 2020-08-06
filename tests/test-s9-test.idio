@@ -16,9 +16,10 @@
 ;;
 
 ;;
-;; s9-test.idio
+;; test-s9-test.idio
 ;;
 s9-test0 := Tests
+;import (unicode ASCII)
 
 ;;
 ;; Idio tests - ported from
@@ -26,6 +27,8 @@ s9-test0 := Tests
 ; Scheme 9 from Empty Space
 ; Test Suite
 ; By Nils M Holm, 2007, 2008, 2009
+
+; char tests are now unicode tests in test-unicode.idio
 
 ;  This is a comment
 
@@ -50,8 +53,8 @@ test #\C #\C
 test #\( #\(
 test #\) #\)
 test #\; #\;
-test #\space #\space
-test #\newline #\newline
+test #\{space} #\{space}
+test #\{newline} #\{newline}
 
 ; strings
 
@@ -704,18 +707,6 @@ test (boolean? '#[array]) #f
 test (boolean? (current-input-handle)) #f
 test (boolean? (current-output-handle)) #f
 
-test (char? #f) #f
-test (char? #\c) #t
-test (char? 1) #f
-test (char? 0.1) #f
-test (char? '(pair)) #f
-test (char? (function () #f)) #f
-test (char? "string") #f
-test (char? 'symbol) #f
-test (char? '#[array]) #f
-test (char? (current-input-handle)) #f
-test (char? (current-output-handle)) #f
-
 test (input-handle? #f) #f
 test (input-handle? #\c) #f
 test (input-handle? 1) #f
@@ -838,17 +829,6 @@ test (array? (current-input-handle)) #f
 test (array? (current-output-handle)) #f
 
 ; --- conversion procedures ---
-
-test (char->integer #\A) 65
-test (char->integer #\z) 122
-test (char->integer #\newline) 10
-test (char->integer #\space) 32
-
-test (integer->char 65) #\A
-test (integer->char 122) #\z
-test (integer->char 10) #\newline
-test (integer->char 32) #\space
-test (integer->char 65.0) #\A
 
 test (list->string '(#\S #\t #\r #\i #\n #\g)) "String"
 test (list->string '()) ""
@@ -2361,255 +2341,9 @@ test (equal? tree tree) #t
 
 ; --- chars ---
 
-test (char-alphabetic? #\a) #t
-test (char-alphabetic? #\A) #t
-test (char-alphabetic? #\z) #t
-test (char-alphabetic? #\Z) #t
-test (char-alphabetic? #\@) #f
-test (char-alphabetic? #\[) #f
-test (char-alphabetic? #\`) #f
-test (char-alphabetic? #\{) #f
-
-test (char-ci<? #\+ #\+) #f
-test (char-ci<? #\+ #\-) #t
-test (char-ci<? #\A #\A) #f
-test (char-ci<? #\A #\a) #f
-test (char-ci<? #\a #\A) #f
-test (char-ci<? #\a #\a) #f
-test (char-ci<? #\A #\Z) #t
-test (char-ci<? #\A #\z) #t
-test (char-ci<? #\a #\Z) #t
-test (char-ci<? #\a #\z) #t
-test (char-ci<? #\Z #\A) #f
-test (char-ci<? #\Z #\a) #f
-test (char-ci<? #\z #\A) #f
-test (char-ci<? #\z #\a) #f
-test (char-ci<? #\a #\b #\c) #t
-test (char-ci<? #\a #\b #\b) #f
-test (char-ci<? #\b #\b #\a) #f
-test (char-ci<? #\c #\b #\a) #f
-
-test (char-ci<=? #\+ #\+) #t
-test (char-ci<=? #\+ #\-) #t
-test (char-ci<=? #\A #\A) #t
-test (char-ci<=? #\A #\a) #t
-test (char-ci<=? #\a #\A) #t
-test (char-ci<=? #\a #\a) #t
-test (char-ci<=? #\A #\Z) #t
-test (char-ci<=? #\A #\z) #t
-test (char-ci<=? #\a #\Z) #t
-test (char-ci<=? #\a #\z) #t
-test (char-ci<=? #\Z #\A) #f
-test (char-ci<=? #\Z #\a) #f
-test (char-ci<=? #\z #\A) #f
-test (char-ci<=? #\z #\a) #f
-test (char-ci<=? #\a #\b #\c) #t
-test (char-ci<=? #\a #\b #\b) #t
-test (char-ci<=? #\b #\b #\a) #f
-test (char-ci<=? #\c #\b #\a) #f
-
-test (char-ci=? #\+ #\+) #t
-test (char-ci=? #\+ #\-) #f
-test (char-ci=? #\A #\A) #t
-test (char-ci=? #\A #\a) #t
-test (char-ci=? #\a #\A) #t
-test (char-ci=? #\a #\a) #t
-test (char-ci=? #\A #\Z) #f
-test (char-ci=? #\A #\z) #f
-test (char-ci=? #\a #\Z) #f
-test (char-ci=? #\a #\z) #f
-test (char-ci=? #\a #\A #\a) #t
-test (char-ci=? #\a #\A #\b) #f
-
-test (char-ci>? #\+ #\+) #f
-test (char-ci>? #\+ #\-) #f
-test (char-ci>? #\A #\A) #f
-test (char-ci>? #\A #\a) #f
-test (char-ci>? #\a #\A) #f
-test (char-ci>? #\a #\a) #f
-test (char-ci>? #\A #\Z) #f
-test (char-ci>? #\A #\z) #f
-test (char-ci>? #\a #\Z) #f
-test (char-ci>? #\a #\z) #f
-test (char-ci>? #\Z #\A) #t
-test (char-ci>? #\Z #\a) #t
-test (char-ci>? #\z #\A) #t
-test (char-ci>? #\z #\a) #t
-test (char-ci>? #\a #\b #\c) #f
-test (char-ci>? #\a #\b #\b) #f
-test (char-ci>? #\b #\b #\a) #f
-test (char-ci>? #\c #\b #\a) #t
-
-test (char-ci>=? #\+ #\+) #t
-test (char-ci>=? #\+ #\-) #f
-test (char-ci>=? #\A #\A) #t
-test (char-ci>=? #\A #\a) #t
-test (char-ci>=? #\a #\A) #t
-test (char-ci>=? #\a #\a) #t
-test (char-ci>=? #\A #\Z) #f
-test (char-ci>=? #\A #\z) #f
-test (char-ci>=? #\a #\Z) #f
-test (char-ci>=? #\a #\z) #f
-test (char-ci>=? #\Z #\A) #t
-test (char-ci>=? #\Z #\a) #t
-test (char-ci>=? #\z #\A) #t
-test (char-ci>=? #\z #\a) #t
-test (char-ci>=? #\a #\b #\c) #f
-test (char-ci>=? #\a #\b #\b) #f
-test (char-ci>=? #\b #\b #\a) #t
-test (char-ci>=? #\c #\b #\a) #t
-
-test (char-downcase #\a) #\a
-test (char-downcase #\A) #\a
-test (char-downcase #\z) #\z
-test (char-downcase #\Z) #\z
-test (char-downcase #\@) #\@
-test (char-downcase #\[) #\[
-test (char-downcase #\`) #\`
-test (char-downcase #\{) #\{
-
-test (char-lower-case? #\a) #t
-test (char-lower-case? #\A) #f
-test (char-lower-case? #\z) #t
-test (char-lower-case? #\Z) #f
-test (char-lower-case? #\@) #f
-test (char-lower-case? #\[) #f
-test (char-lower-case? #\`) #f
-test (char-lower-case? #\{) #f
-
-test (char-numeric? #\0) #t
-test (char-numeric? #\9) #t
-test (char-numeric? #\/) #f
-test (char-numeric? #\:) #f
-
-test (char-upcase #\a) #\A
-test (char-upcase #\A) #\A
-test (char-upcase #\z) #\Z
-test (char-upcase #\Z) #\Z
-test (char-upcase #\@) #\@
-test (char-upcase #\[) #\[
-test (char-upcase #\`) #\`
-test (char-upcase #\{) #\{
-
-test (char-upper-case? #\a) #f
-test (char-upper-case? #\A) #t
-test (char-upper-case? #\z) #f
-test (char-upper-case? #\Z) #t
-test (char-upper-case? #\@) #f
-test (char-upper-case? #\[) #f
-test (char-upper-case? #\`) #f
-test (char-upper-case? #\{) #f
-
-test (char-whitespace? #\0) #f
-test (char-whitespace? #\9) #f
-test (char-whitespace? #\a) #f
-test (char-whitespace? #\z) #f
-test (char-whitespace? #\ ) #t
-test (char-whitespace? #\space) #t
-test (char-whitespace? #\newline) #t
-test (char-whitespace? (integer->char 9)) #t
-test (char-whitespace? (integer->char 10)) #t
-test (char-whitespace? (integer->char 12)) #t
-test (char-whitespace? (integer->char 13)) #t
-
-test (char<? #\+ #\+) #f
-test (char<? #\+ #\-) #t
-test (char<? #\A #\A) #f
-test (char<? #\A #\a) #t
-test (char<? #\a #\A) #f
-test (char<? #\a #\a) #f
-test (char<? #\A #\Z) #t
-test (char<? #\A #\z) #t
-test (char<? #\a #\Z) #f
-test (char<? #\a #\z) #t
-test (char<? #\Z #\A) #f
-test (char<? #\Z #\a) #t
-test (char<? #\z #\A) #f
-test (char<? #\z #\a) #f
-test (char<? #\a #\b #\c) #t
-test (char<? #\a #\a #\b) #f
-test (char<? #\c #\c #\b) #f
-test (char<? #\c #\b #\a) #f
-
-test (char<=? #\+ #\+) #t
-test (char<=? #\+ #\-) #t
-test (char<=? #\A #\A) #t
-test (char<=? #\A #\a) #t
-test (char<=? #\a #\A) #f
-test (char<=? #\a #\a) #t
-test (char<=? #\A #\Z) #t
-test (char<=? #\A #\z) #t
-test (char<=? #\a #\Z) #f
-test (char<=? #\a #\z) #t
-test (char<=? #\Z #\A) #f
-test (char<=? #\Z #\a) #t
-test (char<=? #\z #\A) #f
-test (char<=? #\z #\a) #f
-test (char<=? #\a #\b #\c) #t
-test (char<=? #\a #\a #\b) #t
-test (char<=? #\c #\c #\b) #f
-test (char<=? #\c #\b #\a) #f
-
-test (char=? #\+ #\+) #t
-test (char=? #\+ #\-) #f
-test (char=? #\A #\A) #t
-test (char=? #\A #\a) #f
-test (char=? #\a #\A) #f
-test (char=? #\a #\a) #t
-test (char=? #\A #\Z) #f
-test (char=? #\A #\z) #f
-test (char=? #\a #\Z) #f
-test (char=? #\a #\z) #f
-test (char=? #\Z #\A) #f
-test (char=? #\Z #\a) #f
-test (char=? #\z #\A) #f
-test (char=? #\z #\a) #f
-test (char=? #\a #\a #\a) #t
-test (char=? #\a #\a #\b #\a) #f
-
-test (char>? #\+ #\+) #f
-test (char>? #\+ #\-) #f
-test (char>? #\A #\A) #f
-test (char>? #\A #\a) #f
-test (char>? #\a #\A) #t
-test (char>? #\a #\a) #f
-test (char>? #\A #\Z) #f
-test (char>? #\A #\z) #f
-test (char>? #\a #\Z) #t
-test (char>? #\a #\z) #f
-test (char>? #\Z #\A) #t
-test (char>? #\Z #\a) #f
-test (char>? #\z #\A) #t
-test (char>? #\z #\a) #t
-test (char>? #\a #\b #\c) #f
-test (char>? #\a #\a #\b) #f
-test (char>? #\c #\c #\b) #f
-test (char>? #\c #\b #\a) #t
-
-test (char>=? #\+ #\+) #t
-test (char>=? #\+ #\-) #f
-test (char>=? #\A #\A) #t
-test (char>=? #\A #\a) #f
-test (char>=? #\a #\A) #t
-test (char>=? #\a #\a) #t
-test (char>=? #\A #\Z) #f
-test (char>=? #\A #\z) #f
-test (char>=? #\a #\Z) #t
-test (char>=? #\a #\z) #f
-test (char>=? #\Z #\A) #t
-test (char>=? #\Z #\a) #f
-test (char>=? #\z #\A) #t
-test (char>=? #\z #\a) #t
-test (char>=? #\a #\b #\c) #f
-test (char>=? #\a #\a #\b) #f
-test (char>=? #\c #\c #\b) #t
-test (char>=? #\c #\b #\a) #t
+; see test-unicode.idio
 
 ; --- strings ---
-
-define (string-downcase s) {
-  apply string (map char-downcase (string->list s))
-}
 
 test (make-string 0) ""
 test (make-string 1) " "
@@ -2621,15 +2355,12 @@ test (number->string 123) "123"
 test (number->string 165 2) "10100101"
 test (number->string 375 8) "567"
 test (number->string 789 10) "789"
-test (string-downcase (number->string 11259375 16)) "abcdef"
 test (number->string +165 2) "10100101"
 test (number->string +375 8) "567"
 test (number->string +789 10) "789"
-test (string-downcase (number->string +11259375 16)) "abcdef"
 test (number->string -165 2) "-10100101"
 test (number->string -375 8) "-567"
 test (number->string -789 10) "-789"
-test (string-downcase (number->string -11259375 16)) "-abcdef"
 test (number->string 1.0) "1"
 test (number->string 123.0) "123"
 test (number->string 123.45) "123.45"
@@ -2940,9 +2671,9 @@ test {
   string-set! s 1 #\b
   s
 } "abc"
-; (test (begin (string-set! s 1.0 #\space) s) "a c")
+; (test (begin (string-set! s 1.0 #\{space}) s) "a c")
 test {
-  string-set! s 1.0 #\space
+  string-set! s 1.0 #\{space}
   s
 } "a c"
 
@@ -3211,9 +2942,9 @@ define (visibility-check x) {
 
   out := open-output-file testfile
   write x out
-  display #\space out
+  display #\{space} out
   display x out
-  display #\space out
+  display #\{space} out
   write 'the-end out
   close-output-handle out
 
@@ -3243,18 +2974,18 @@ test (visibility-check 'foo) '(foo foo)
 test (visibility-check '(1 2 3)) '((1 2 3) (1 2 3))
 test (visibility-check '#[1 2 3]) '(#[1 2 3] #[1 2 3])
 test (visibility-check " ") '(" " the-end)
-test (visibility-check #\space) '(#\space the-end)
-test (visibility-check #\newline) '(#\newline the-end)
+test (visibility-check #\{space}) '(#\{space} the-end)
+test (visibility-check #\{newline}) '(#\{newline} the-end)
 
 delete-file testfile
 
 ;; (test (begin (with-output-to-file testfile newline)
 ;;                (with-input-from-file testfile read-char))
-;;       #\newline)
+;;       #\{newline})
 test {
   with-output-to-file testfile newline
   with-input-from-file testfile read-char
-} #\newline
+} #\{newline}
 
 delete-file testfile
 
@@ -3262,7 +2993,7 @@ delete-file testfile
 ;;                (function (out) (newline out)
 ;;                              (close-output-handle out)))
 ;;              (call-with-input-file testfile read-char))
-;;       #\newline)
+;;       #\{newline})
 
 ;; call-with-output-file containing a close-output-handle will
 ;; generate a ^i/o-closed-error when call-with-output-file calls
@@ -3278,7 +3009,7 @@ test {
     ;;close-output-handle out
   })
   call-with-input-file testfile read-char
-} #\newline
+} #\{newline}
 
 delete-file testfile
 
@@ -3297,72 +3028,6 @@ test {
     eof-object? e
   }
 } #t
-
-delete-file testfile
-
-define foo 'bar
-;; (test (let ((out (open-output-file testfile)))
-;;          (write '(define foo 'baz) out)
-;;          (close-output-handle out)
-;;          (load testfile)
-;;          foo)
-;;       'baz)
-test {
-  testfile-idio := append-string testfile ".idio"
-  out := open-output-file testfile-idio
-  write '(define foo 'baz) out
-  close-output-handle out
-
-  load testfile
-  delete-file testfile-idio
-  foo
-} 'baz
-
-define (with-range lo hi fn) {
-  if (lt hi lo) '() {
-    pair (fn lo) (with-range (1 + lo) hi fn)
-  }
-}
-
-;; (test (call-with-output-file testfile
-;;         (function (out)
-;;           (with-range 32 126
-;;             (function (x) (write-char (integer->char x) out)
-;;                         (integer->char x)))))
-;;       (with-range 32 126 integer->char))
-test {
-  call-with-output-file testfile (function (out) {
-    with-range 32 126 (function (x) {
-      write-char (integer->char x) out
-      integer->char x
-    })
-  })
-} (with-range 32 126 integer->char)
-
-define (while-not-eof input fn) {
-  c := fn input
-  if (eof-object? c) '() {
-    pair c (while-not-eof input fn)
-  }
-}
-
-;; (test (let ((in (open-input-file testfile)))
-;;          (while-not-eof in read-char))
-;;       (with-range 32 126 integer->char))
-test {
-  in := open-input-file testfile
-  while-not-eof in read-char
-} (with-range 32 126 integer->char)
-
-;; (test (let ((in (open-input-file testfile)))
-;;          (let ((c (peek-char in)))
-;;            (pair c (while-not-eof in read-char))))
-;;        (pair #\space (with-range 32 126 integer->char)))
-test {
-  in := open-input-file testfile
-  c := peek-char in
-  pair c (while-not-eof in read-char)
-} (pair #\space (with-range 32 126 integer->char))
 
 ; does GC close unused files?
 ; Set NFILES to a number that is greater than MAX_PORTS in s9.h
@@ -3402,6 +3067,27 @@ test {
     open NFILES
   } #t
 }
+
+; delete testfile now so it isn't picked up in preference to testfile-idio
+delete-file testfile
+
+define foo 'bar
+;; (test (let ((out (open-output-file testfile)))
+;;          (write '(define foo 'baz) out)
+;;          (close-output-handle out)
+;;          (load testfile)
+;;          foo)
+;;       'baz)
+test {
+  testfile-idio := append-string testfile ".idio"
+  out := open-output-file testfile-idio
+  write '(define foo 'baz) out
+  close-output-handle out
+
+  load testfile
+  delete-file testfile-idio
+  foo
+} 'baz
 
 ; --- syntax expansion ---
 
@@ -3492,4 +3178,4 @@ test {
 } '(0 1 2)
 
 ;; all done?
-test (s9-test0 + 2473) Tests
+test (s9-test0 + 2220) Tests

@@ -79,5 +79,11 @@ test (s.2) #\z
 
 test s "xyz"
 
+; code coverage - copy a substring
+s = "hello world"
+sa := split-string s " "
+ss-dup := copy-string sa.1
+test ss-dup sa.1
+
 ;; all done?
-test (string0 + 20) Tests
+test (string0 + 21) Tests

@@ -8,7 +8,7 @@ read-coverage-load := {
   function (filename) {
     if (not (string? filename)) (coverage 'load "not a string" filename)
 
-    (symbol-value 'load *primitives*) filename
+    (symbol-value 'load 'Idio) filename
   }
 }
 
@@ -27,4 +27,4 @@ read-coverage-load "read-coverage/bignum-radix-sep-eof.idio"
 read-coverage-load "read-coverage/numbers.idio"
 read-coverage-load "read-coverage/bracket-block.idio"
 read-coverage-load "read-coverage/bignum-integer.idio"
-
+read-coverage-load "read-coverage/bitset-rbrace.idio"

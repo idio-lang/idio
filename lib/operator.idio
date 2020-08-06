@@ -128,9 +128,9 @@ define-infix-operator + 900 {
   #T{ $result }
 }
 
-define-infix-operator - 900 +
-define-infix-operator * 800 +
-define-infix-operator / 800 +
+define-infix-operator - 900 \+
+define-infix-operator * 800 \+
+define-infix-operator / 800 \+
 
 ;; logical operators take a single expression either side and combine
 ;; with adjacent operators of the same type
@@ -219,7 +219,7 @@ define-infix-operator and 1000 {
 	;;   #T{ $op $@op-args ($@rest) }
 }
 
-define-infix-operator or 1000 and
+define-infix-operator or 1000 \and
 
 ;; Shell logical lists
 define-macro (&& & e*) {
@@ -279,10 +279,10 @@ define-infix-operator && 200 {
   #T{ $op $@op-args }
 }
 
-define-infix-operator || 200 &&
+define-infix-operator || 200 \&&
 
 ;; C bitwise-or
-define-infix-operator C/| 600 and
+define-infix-operator C/| 600 \and
 
 ;; Arrays: push
 define-infix-operator =+ 700 {
@@ -348,7 +348,7 @@ define-infix-operator =+ 700 {
 }
 
 ;; Arrays: unshift
-define-infix-operator += 700 =+
+define-infix-operator += 700 \=+
 
 ;; Arrays: pop
 define-postfix-operator =- 700 {
@@ -406,7 +406,7 @@ define-postfix-operator =- 700 {
 }
 
 ;; Arrays: shift
-define-postfix-operator -= 700 =-
+define-postfix-operator -= 700 \=-
 
 define-infix-operator . 800 {
   prefix := #n

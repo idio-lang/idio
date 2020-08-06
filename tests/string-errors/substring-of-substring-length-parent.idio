@@ -1,0 +1,3 @@
+str := "hello world"
+sa := split-string str "s"
+ss := substring sa.1 4 5

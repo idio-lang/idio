@@ -59,7 +59,7 @@ Return a character set containing the given code points.
 	    if (null? cps) #n {
 	      ch := (ph cps)
 	      cond ((integer? ch) (bitset-set! bs ch)) \
-		   ((char? ch) (bitset-set! bs (char->integer ch))) \
+		   ((unicode? ch) (bitset-set! bs (unicode->integer ch))) \
 	      
 	      loop (pt cps)
 	    }
@@ -86,7 +86,7 @@ define (string->char-set str & base?) {
   slen := string-length str
   do ((i 0 (i + 1))) \
      ((ge i slen) cs) {
-       bitset-set! cs (char->integer (string-ref str i))
+       bitset-set! cs (unicode->integer (string-ref str i))
      }
 }
 
@@ -116,7 +116,7 @@ define (ucs-range->char-set s e & base?) {
 
 define (char-set-contains? cs ch) {
   cond ((integer? ch) (bitset-ref cs ch)) \
-       ((char? ch) (bitset-ref cs (char->integer ch)))
+       ((unicode? ch) (bitset-ref cs (unicode->integer ch)))
 }
 
 define (char-upcase cp) "
@@ -147,7 +147,7 @@ define (char-set-adjoin-loop cs cps) {
   if (null? cps) #n {
     ch := (ph cps)
     cond ((integer? ch) (bitset-set! cs ch)) \
-	 ((char? ch) (bitset-set! cs (char->integer ch)))
+	 ((unicode? ch) (bitset-set! cs (unicode->integer ch)))
     char-set-adjoin-loop cs (pt cps)
   }
 }
@@ -175,7 +175,7 @@ define (char-set-delete-loop cs cps) {
   if (null? cps) #n {
     ch := (ph cps)
     cond ((integer? ch) (bitset-clear! cs ch)) \
-	 ((char? ch) (bitset-clear! cs (char->integer ch)))
+	 ((unicode? ch) (bitset-clear! cs (unicode->integer ch)))
     char-set-delete-loop cs (pt cps)
   }
 }

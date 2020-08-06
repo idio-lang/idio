@@ -76,7 +76,7 @@ define-syntax with-values-from \
 define (display* & x*) {
   p :+ function (x* first) {
 	 if (not (null? x*)) {
-	   if (not first) (write-char #\space)
+	   if (not first) (write-char #\{space})
 	   display (ph x*)
 	   p (pt x*) #f
 	 }
@@ -97,7 +97,7 @@ define (edisplay x) {
 define (edisplay* & x*) {
   p :+ function (x* first) {
 	 if (not (null? x*)) {
-	   if (not first) (write-char #\space (current-error-handle))
+	   if (not first) (write-char #\{space} (current-error-handle))
 	   edisplay (ph x*)
 	   p (pt x*) #f
 	 }

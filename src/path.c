@@ -40,7 +40,23 @@ static void idio_path_error_glob (IDIO pattern, IDIO c_location)
 					       location,
 					       c_location,
 					       pattern));
+
     idio_raise_condition (idio_S_true, c);
+
+    /* notreached */
+}
+
+void idio_path_error_format (char *m, IDIO p, IDIO c_location)
+{
+    IDIO_C_ASSERT (m);
+    IDIO_ASSERT (p);
+    IDIO_ASSERT (c_location);
+    IDIO_TYPE_ASSERT (struct_instance, p);
+    IDIO_TYPE_ASSERT (string, c_location);
+
+    idio_error_C (m, p, c_location);
+
+    /* notreached */
 }
 
 char **idio_path_env_split (const char *path_env)
@@ -180,7 +196,17 @@ IDIO idio_path_expand (IDIO p)
     IDIO pat = idio_array_get_index (IDIO_STRUCT_INSTANCE_FIELDS (p), IDIO_PATH_PATTERN);
 
     IDIO_TYPE_ASSERT (string, pat);
-    char *pat_C = idio_string_as_C (pat);
+    size_t size = 0;
+    char *pat_C = idio_string_as_C (pat, &size);
+
+    size_t C_size = strlen (pat_C);
+    if (C_size != size) {
+	free (pat_C);
+
+	idio_path_error_format ("pattern contains an ASCII NUL", p, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
 
     glob_t g;
     IDIO r = idio_S_nil;
@@ -199,10 +225,15 @@ IDIO idio_path_expand (IDIO p)
 	}
 	break;
     default:
+	globfree (&g);
+	free (pat_C);
 	idio_path_error_glob (pat, IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
 	break;
     }
 
+    globfree (&g);
     free (pat_C);
 
     return idio_list_reverse (r);

@@ -111,6 +111,14 @@ static void idio_handle_error_bad_output (IDIO h, IDIO c_location)
  * therefore a safe value for "there is no lookahead char available"
  * is EOF.  The lookahead char is thus conceptually different to the
  * result of getc(3) itself as EOF now means "actually call getc(3)".
+ *
+ * EOF itself is now moot in the face of UTF-8 inputs.  Whilst the
+ * byte 0xff -- which will be recast as EOF, -1 -- is invalid UTF-8 it
+ * is used extensively (enough) as a test for validating UTF-8
+ * decoders!
+ *
+ * So you can't do a "switch (c) { case EOF: ..." or "(EOF == c)"
+ * comparison any more!
  */
 
 IDIO idio_handle ()
@@ -136,7 +144,7 @@ int idio_isa_handle (IDIO h)
     return idio_isa (h, IDIO_TYPE_HANDLE);
 }
 
-char *idio_handle_name (IDIO h)
+char *idio_handle_name_as_C (IDIO h)
 {
     IDIO_ASSERT (h);
     IDIO_TYPE_ASSERT (handle, h);
@@ -146,11 +154,13 @@ char *idio_handle_name (IDIO h)
 	hname = IDIO_HANDLE_PATHNAME (h);
     }
     char *name = "n/a";
+    size_t size = strlen (name);
     if (hname->type) {
 	if (idio_isa_string (hname)) {
-	    name = idio_string_s (hname);
+	    name = idio_string_as_C (hname, &size);
 	} else if (idio_isa_symbol (hname)) {
 	    name = IDIO_SYMBOL_S (hname);
+	    size = strlen (name);
 	}
     } else {
 	/*
@@ -158,6 +168,7 @@ char *idio_handle_name (IDIO h)
 	 * during shutdown...
 	 */
 	name = "n/r";
+	size = strlen (name);
     }
 
     return name;
@@ -219,7 +230,7 @@ void idio_free_handle (IDIO h)
 
 void idio_handle_lookahead_error (IDIO h, int c)
 {
-    idio_error_printf (IDIO_C_FUNC_LOCATION (), "%s->unget => %#x (!= EOF)", idio_handle_name (h), c);
+    idio_error_printf (IDIO_C_FUNC_LOCATION (), "%s->unget => %#x (!= EOF)", idio_handle_name_as_C (h), c);
 }
 
 void idio_handle_finalizer (IDIO handle)
@@ -363,7 +374,7 @@ IDIO_DEFINE_PRIMITIVE0V ("peek-char", peek_char, (IDIO args))
 
     int c = idio_peek_handle (h);
 
-    return IDIO_CHARACTER (c);
+    return IDIO_UNICODE (c);
 }
 
 int idio_eofp_handle (IDIO h)
@@ -456,7 +467,7 @@ int idio_putc_handle (IDIO h, int c)
     return n;
 }
 
-size_t idio_puts_handle (IDIO h, char *s, size_t slen)
+ptrdiff_t idio_puts_handle (IDIO h, char *s, size_t slen)
 {
     IDIO_ASSERT (h);
     IDIO_C_ASSERT (s);
@@ -468,7 +479,7 @@ size_t idio_puts_handle (IDIO h, char *s, size_t slen)
 	return 0;
     }
 
-    size_t n = IDIO_HANDLE_M_PUTS (h) (h, s, slen);
+    ptrdiff_t n = IDIO_HANDLE_M_PUTS (h) (h, s, slen);
 
     if (EOF != n) {
 	IDIO_HANDLE_POS (h) += n;
@@ -910,13 +921,11 @@ IDIO idio_read_line (IDIO h)
 
     for (;;) {
 	int c = idio_getc_handle (h);
-	switch (c) {
-	case EOF:
-	case '\n':
+	if (idio_eofp_handle (h) ||
+	    '\n' == c) {
 	    return idio_get_output_string (osh);
-	default:
+	} else {
 	    idio_putc_string_handle (osh, c);
-	    break;
 	}
     }
 
@@ -924,11 +933,11 @@ IDIO idio_read_line (IDIO h)
 
 IDIO_DEFINE_PRIMITIVE0V_DS ("read-line", read_line, (IDIO args), "[handle]", "\
 read a string from ``handle`` or the current intput handle	\n\
-up to a #\newline character				\n\
-							\n\
-:param handle: handle to read from			\n\
-:type handle: handle					\n\
-:return: object						\n\
+up to a #\{newline} character					\n\
+								\n\
+:param handle: handle to read from				\n\
+:type handle: handle						\n\
+:return: object							\n\
 ")
 {
     IDIO_ASSERT (args);
@@ -947,12 +956,10 @@ IDIO idio_read_lines (IDIO h)
 
     for (;;) {
 	int c = idio_getc_handle (h);
-	switch (c) {
-	case EOF:
+	if (idio_eofp_handle (h)) {
 	    return idio_get_output_string (osh);
-	default:
+	} else {
 	    idio_putc_string_handle (osh, c);
-	    break;
 	}
     }
 
@@ -989,7 +996,7 @@ IDIO_DEFINE_PRIMITIVE0V ("read-char", read_char, (IDIO args))
 
     IDIO h = idio_handle_or_current (idio_list_head (args), IDIO_HANDLE_FLAG_READ);
 
-    return idio_read_char (h);
+    return idio_read_character (h, idio_S_nil, IDIO_READ_CHARACTER_SIMPLE);
 }
 
 IDIO idio_write (IDIO o, IDIO h)
@@ -998,9 +1005,10 @@ IDIO idio_write (IDIO o, IDIO h)
     IDIO_ASSERT (h);
     IDIO_TYPE_ASSERT (handle, h);
 
-    char *os = idio_as_string (o, 10);
+    size_t size = 0;
+    char *os = idio_as_string (o, &size, 10);
 
-    idio_puts_handle (h, os, strlen (os));
+    idio_puts_handle (h, os, size);
 
     free (os);
 
@@ -1030,9 +1038,9 @@ IDIO idio_write_char (IDIO c, IDIO h)
     IDIO_ASSERT (h);
     IDIO_TYPE_ASSERT (handle, h);
 
-    IDIO_TYPE_ASSERT (character, c);
+    IDIO_TYPE_ASSERT (unicode, c);
 
-    idio_putc_handle (h, IDIO_CHARACTER_VAL (c));
+    idio_putc_handle (h, IDIO_UNICODE_VAL (c));
 
     return idio_S_unspec;
 }
@@ -1042,7 +1050,7 @@ IDIO_DEFINE_PRIMITIVE1V ("write-char", write_char, (IDIO c, IDIO args))
     IDIO_ASSERT (c);
     IDIO_ASSERT (args);
 
-    IDIO_VERIFY_PARAM_TYPE (character, c);
+    IDIO_VERIFY_PARAM_TYPE (unicode, c);
 
     IDIO h = idio_handle_or_current (idio_list_head (args), IDIO_HANDLE_FLAG_WRITE);
 
@@ -1066,7 +1074,8 @@ IDIO idio_display (IDIO o, IDIO h)
     IDIO_ASSERT (h);
     IDIO_TYPE_ASSERT (handle, h);
 
-    char *s = idio_display_string (o);
+    size_t size = 0;
+    char *s = idio_display_string (o, &size);
 
     idio_puts_handle (h, s, strlen (s));
     free (s);
@@ -1151,8 +1160,14 @@ num	specifies a maximum limit on the output		\n\
 	return idio_S_notreached;
     }
 
-    char *fmt_C = IDIO_STRING_S (fmt);
-    size_t blen = IDIO_STRING_BLEN (fmt);
+    size_t blen = 0;
+    char *fmt_C = idio_string_as_C (fmt, &blen);
+    /*
+     * fmt could have contained ASCII NULs.  So we care?  It means the
+     * format string has been truncated?
+     *
+     * Should we, Idio, print the NULs?
+     */
 
     char *s = fmt_C;
     size_t i = 0;
@@ -1169,10 +1184,12 @@ num	specifies a maximum limit on the output		\n\
 		 *
 		 * only '-' is meaningful
 		 */
+		int left_aligned = 0;
 		if ((si + 1) < blen) {
 		    char *c = ss + 1;
 		    switch (*c) {
 		    case '-':
+			left_aligned = 1;
 			ss++;
 			si++;
 			break;
@@ -1181,13 +1198,26 @@ num	specifies a maximum limit on the output		\n\
 		/*
 		 * width
 		 */
+		char width_c[BUFSIZ];
+		int width_len = 0;
 		while ((si + 1) < blen) {
 		    char *c = ss + 1;
 		    if (isdigit (*c)) {
+			width_c[width_len++] = *c;
 			ss++;
 			si++;
 		    } else {
 			break;
+		    }
+		}
+		long int width = 0;
+		if (width_len) {
+		    width_c[width_len] = '\0';
+		    char *end;
+		    width = strtol (width_c, &end, 10);
+		    if (0 == width &&
+			end == width_c) {
+			fprintf (stderr, "%%printf: bad width? '%s'\n", width_c);
 		    }
 		}
 		/*
@@ -1195,6 +1225,8 @@ num	specifies a maximum limit on the output		\n\
 		 *
 		 * preceded by a dot
 		 */
+		char prec_c[BUFSIZ];
+		int prec_len = 0;
 		if ((si + 1) < blen) {
 		    char *c = ss + 1;
 		    switch (*c) {
@@ -1204,6 +1236,7 @@ num	specifies a maximum limit on the output		\n\
 			while ((si + 1) < blen) {
 			    char *c = ss + 1;
 			    if (isdigit (*c)) {
+				prec_c[prec_len++] = *c;
 				ss++;
 				si++;
 			    } else {
@@ -1213,6 +1246,17 @@ num	specifies a maximum limit on the output		\n\
 			break;
 		    }
 		}
+		long int prec = 0;
+		if (prec_len) {
+		    prec_c[prec_len] = '\0';
+		    char *end;
+		    prec = strtol (prec_c, &end, 10);
+		    if (0 == prec &&
+			end == prec_c) {
+			fprintf (stderr, "%%printf: bad prec? '%s'\n", prec_c);
+		    }
+		}
+
 		if ((si + 1) < blen) {
 		    ss += 1;
 		    si += 1;
@@ -1234,9 +1278,10 @@ num	specifies a maximum limit on the output		\n\
 				    sprintf (str, fmt, n);
 				    idio_puts_handle (h, str, strlen (str));
 				} else if (idio_isa_bignum (arg)) {
-				    s = idio_bignum_as_string (arg);
-				    idio_puts_handle (h, s, strlen (s));
-				    free (c);
+				    size_t s_size = 0;
+				    s = idio_bignum_as_string (arg, &s_size);
+				    idio_puts_handle (h, s, s_size);
+				    free (s);
 				} else {
 				    /* ?? */
 				    idio_puts_handle (h, c, strlen (c));
@@ -1251,22 +1296,37 @@ num	specifies a maximum limit on the output		\n\
 			break;
 		    case 's':
 			{
-			    char fmt[BUFSIZ];
-			    strncpy (fmt, s, ss - s + 1);
-			    fmt[ss - s + 1] = '\0';
 			    if (idio_S_nil != args) {
 				IDIO arg = IDIO_PAIR_H (args);
 				args = IDIO_PAIR_T (args);
-				c = idio_display_string (arg);
-				if (strlen (c) > BUFSIZ) {
-				    /* hmm, let's pretend there was no
-				     * length, precision etc. */
-				    idio_puts_handle (h, c, strlen (c));
-				} else {
-				    char str[BUFSIZ];
-				    sprintf (str, fmt, c);
-				    idio_puts_handle (h, str, strlen (str));
+
+				size_t c_size = 0;
+				c = idio_display_string (arg, &c_size);
+
+				size_t c_width = c_size;
+				if (prec &&
+				    prec < c_size) {
+				    c_width = prec;
 				}
+
+				if (0 == left_aligned &&
+				    c_width < width) {
+				    size_t i = width - c_size;
+				    while (i) {
+					idio_putc_handle (h, ' ');
+					i--;
+				    }
+				}
+				idio_puts_handle (h, c, c_width);
+				if (left_aligned &&
+				    c_width < width) {
+				    size_t i = width - c_size;
+				    while (i) {
+					idio_putc_handle (h, ' ');
+					i--;
+				    }
+				}
+
 				free (c);
 			    } else {
 				c = "<no-arg>";
@@ -1292,6 +1352,8 @@ num	specifies a maximum limit on the output		\n\
 	s++;
 	i++;
     }
+
+    free (fmt_C);
 
     return idio_S_unspec;
 }
@@ -1328,7 +1390,9 @@ IDIO idio_handle_location (IDIO h)
     IDIO_TYPE_ASSERT (handle, h);
 
     char buf[BUFSIZ];
-    sprintf (buf, "%s:line %jd", idio_handle_name (h), (intmax_t) IDIO_HANDLE_LINE (h));
+    char *sname = idio_handle_name_as_C (h);
+    sprintf (buf, "%s:line %jd", sname, (intmax_t) IDIO_HANDLE_LINE (h));
+    free (sname);
 
     return idio_string_C (buf);
 }
@@ -1341,7 +1405,96 @@ IDIO_DEFINE_PRIMITIVE1 ("handle-location", handle_location, (IDIO h))
     return idio_handle_location (h);
 }
 
-IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO e, IDIO cs), IDIO cs)
+IDIO idio_load_handle_ebe (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO e, IDIO cs), IDIO cs)
+{
+    IDIO_ASSERT (h);
+    IDIO_C_ASSERT (reader);
+    IDIO_C_ASSERT (evaluator);
+    IDIO_ASSERT (cs);
+    IDIO_TYPE_ASSERT (handle, h);
+    IDIO_TYPE_ASSERT (array, cs);
+
+    if (IDIO_FILE_HANDLE_FLAGS (h) & IDIO_FILE_HANDLE_FLAG_INTERACTIVE) {
+	return idio_load_handle_interactive (h, reader, evaluator, cs);
+    }
+
+    int timing = 0;
+
+    IDIO thr = idio_thread_current_thread ();
+    idio_ai_t ss0 = idio_array_size (IDIO_THREAD_STACK (thr));
+
+    /*
+     * When we call idio_vm_run() we are at risk of the garbage
+     * collector being called so we need to save the current file
+     * handle and any lists we're walking over
+     */
+    idio_remember_file_handle (h);
+
+    IDIO e = idio_S_nil;
+    IDIO r;
+
+    for (;;) {
+	e = (*reader) (h);
+
+	if (idio_S_eof == e) {
+	    break;
+	} else {
+	    IDIO m = (*evaluator) (e, cs);
+
+	    idio_ai_t lh_pc = -1;
+	    idio_codegen (thr, m, cs);
+	    if (-1 == lh_pc) {
+		lh_pc = IDIO_THREAD_PC (thr);
+	    }
+
+	    IDIO_THREAD_PC (thr) = lh_pc;
+	    r = idio_vm_run (thr);
+
+	    idio_ai_t ss = idio_array_size (IDIO_THREAD_STACK (thr));
+
+	    if (ss != ss0) {
+		char *sname = idio_handle_name_as_C (h);
+		fprintf (stderr, "load-handle-ebe: %s: SS %td != %td\n", sname, ss, ss0);
+		free (sname);
+		idio_debug ("THR %s\n", thr);
+		idio_debug ("STK %s\n", IDIO_THREAD_STACK (thr));
+	    }
+	}
+    }
+
+    IDIO_HANDLE_M_CLOSE (h) (h);
+
+    idio_forget_file_handle (h);
+
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("load-handle-ebe", load_handle_ebe, (IDIO h), "handle", "\
+load expressions from ``handle`` expression by expression	\n\
+								\n\
+:param handle: the handle to load from				\n\
+:type handle: handle						\n\
+								\n\
+This is the ``load-handle-ebe`` primitive.			\n\
+")
+{
+    IDIO_ASSERT (h);
+    IDIO_VERIFY_PARAM_TYPE (handle, h);
+
+    IDIO thr = idio_thread_current_thread ();
+    idio_ai_t pc0 = IDIO_THREAD_PC (thr);
+
+    IDIO r = idio_load_handle_ebe (h, idio_read, idio_evaluate, idio_vm_constants);
+
+    idio_ai_t pc = IDIO_THREAD_PC (thr);
+    if (pc == (idio_vm_FINISH_pc + 1)) {
+	IDIO_THREAD_PC (thr) = pc0;
+    }
+
+    return r;
+}
+
+IDIO idio_load_handle_aio (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO e, IDIO cs), IDIO cs)
 {
     IDIO_ASSERT (h);
     IDIO_C_ASSERT (reader);
@@ -1392,7 +1545,9 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
 	    s -= 1;
 	}
 
-	fprintf (stderr, "load-handle: %s: read time %ld.%03ld\n", idio_handle_name (h), s, (long) us / 1000);
+	char *sname = idio_handle_name_as_C (h);
+	fprintf (stderr, "load-handle-aio: %s: read time %ld.%03ld\n", sname, s, (long) us / 1000);
+	free (sname);
     }
 
     IDIO ms = idio_S_nil;
@@ -1401,7 +1556,7 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
 	es = IDIO_PAIR_T (es);
     }
     ms = idio_list_reverse (ms);
-    /* idio_debug ("load-handle: ms %s\n", ms);    */
+    /* idio_debug ("load-handle-aio: ms %s\n", ms);    */
 
     struct timeval te;
     if (timing) {
@@ -1415,7 +1570,9 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
 	    s -= 1;
 	}
 
-	fprintf (stderr, "load-handle: %s: evaluation time %ld.%03ld\n", idio_handle_name (h), s, (long) us / 1000);
+	char *sname = idio_handle_name_as_C (h);
+	fprintf (stderr, "load-handle-aio: %s: evaluation time %ld.%03ld\n", sname, s, (long) us / 1000);
+	free (sname);
     }
 
     /*
@@ -1447,20 +1604,14 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
 	idio_codegen (thr, IDIO_PAIR_H (ms), cs);
 	if (-1 == lh_pc) {
 	    lh_pc = IDIO_THREAD_PC (thr);
-	    /* fprintf (stderr, "\n\n%s lh_pc == %jd\n", idio_handle_name (h), lh_pc); */
+	    /* fprintf (stderr, "\n\n%s lh_pc == %jd\n", idio_handle_name_as_C (h), lh_pc); */
 	}
 	/* r = idio_vm_run (thr); */
 	ms = IDIO_PAIR_T (ms);
     }
 
-    IDIO dosh = idio_open_output_string_handle_C ();
-    idio_display_C ("load-handle-aio: ", dosh);
-    idio_display_C (idio_handle_name (h), dosh);
-    idio_display_C (": PC=", dosh);
-    idio_display (idio_fixnum (lh_pc), dosh);
-
     IDIO_THREAD_PC (thr) = lh_pc;
-    r = idio_vm_run (thr, idio_get_output_string (dosh));
+    r = idio_vm_run (thr);
 
     /* ms */
     idio_array_pop (IDIO_THREAD_STACK (thr));
@@ -1477,7 +1628,9 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
 	    s -= 1;
 	}
 
-	fprintf (stderr, "load-handle: %s: compile/run time %ld.%03ld\n", idio_handle_name (h), s, (long) us / 1000);
+	char *sname = idio_handle_name_as_C (h);
+	fprintf (stderr, "load-handle-aio: %s: compile/run time %ld.%03ld\n", sname, s, (long) us / 1000);
+	free (sname);
     }
 
     s = tr.tv_sec - t0.tv_sec;
@@ -1489,14 +1642,16 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
     }
 
 #if IDIO_DEBUG
-    /* fprintf (stderr, "load-handle: %s: elapsed time %ld.%03ld\n", idio_handle_name (h), s, (long) us / 1000); */
+    /* fprintf (stderr, "load-handle-aio: %s: elapsed time %ld.%03ld\n", idio_handle_name_as_C (h), s, (long) us / 1000); */
     /* idio_debug (" => %s\n", r); */
 #endif
 
     idio_ai_t ss = idio_array_size (IDIO_THREAD_STACK (thr));
 
     if (ss != ss0) {
-	fprintf (stderr, "load-handle: %s: SS %td != %td\n", idio_handle_name (h), ss, ss0);
+	char *sname = idio_handle_name_as_C (h);
+	fprintf (stderr, "load-handle-aio: %s: SS %td != %td\n", sname, ss, ss0);
+	free (sname);
 	idio_debug ("THR %s\n", thr);
 	idio_debug ("STK %s\n", IDIO_THREAD_STACK (thr));
     }
@@ -1506,13 +1661,13 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1_DS ("load-handle", load_handle, (IDIO h), "handle", "\
-load expressions from ``handle``				\n\
+IDIO_DEFINE_PRIMITIVE1_DS ("load-handle-aio", load_handle_aio, (IDIO h), "handle", "\
+load expressions from ``handle`` all in one			\n\
 								\n\
 :param handle: the handle to load from				\n\
 :type handle: handle						\n\
 								\n\
-This is the ``load-handle`` primitive.				\n\
+This is the ``load-handle-aio`` primitive.			\n\
 ")
 {
     IDIO_ASSERT (h);
@@ -1521,7 +1676,7 @@ This is the ``load-handle`` primitive.				\n\
     IDIO thr = idio_thread_current_thread ();
     idio_ai_t pc0 = IDIO_THREAD_PC (thr);
 
-    IDIO r = idio_load_handle (h, idio_read, idio_evaluate, idio_vm_constants);
+    IDIO r = idio_load_handle_aio (h, idio_read, idio_evaluate, idio_vm_constants);
 
     idio_ai_t pc = IDIO_THREAD_PC (thr);
     if (pc == (idio_vm_FINISH_pc + 1)) {
@@ -1599,12 +1754,10 @@ IDIO idio_load_handle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*eval
 	IDIO m = (*evaluator) (e, cs);
 	idio_codegen (thr, m, cs);
 
-	IDIO dosh = idio_open_output_string_handle_C ();
-	idio_display_C ("load-handle-interactive: ", dosh);
-	idio_display_C (idio_handle_name (fh), dosh);
-
-	IDIO r = idio_vm_run (thr, idio_get_output_string (dosh));
-	idio_debug ("%s\n", r);
+	IDIO r = idio_vm_run (thr);
+	size_t r_size = 0;
+	char *rs = idio_as_string (r, &r_size, 40);
+	idio_puts_handle (oh, rs, r_size);
     }
 
     IDIO_HANDLE_M_CLOSE (fh) (fh);
@@ -1619,7 +1772,9 @@ IDIO idio_load_handle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*eval
     idio_ai_t sp = idio_array_size (IDIO_THREAD_STACK (thr));
 
     if (sp != sp0) {
-	fprintf (stderr, "load-file-handle-interactive: %s: SP %td != SP0 %td\n", idio_handle_name (fh), sp, sp0);
+	char *sname = idio_handle_name_as_C (fh);
+	fprintf (stderr, "load-file-handle-interactive: %s: SP %td != SP0 %td\n", sname, sp, sp0);
+	free (sname);
 	idio_debug ("THR %s\n", thr);
 	idio_debug ("STK %s\n", IDIO_THREAD_STACK (thr));
     }
@@ -1669,7 +1824,19 @@ void idio_handle_add_primitives ()
     IDIO_ADD_PRIMITIVE (flush_handle);
     IDIO_ADD_PRIMITIVE (seek_handle);
     IDIO_ADD_PRIMITIVE (handle_rewind);
-    IDIO_ADD_PRIMITIVE (load_handle);
+    IDIO_ADD_PRIMITIVE (load_handle_aio);
+    IDIO_ADD_PRIMITIVE (load_handle_ebe);
+
+    IDIO load_handle_sym = idio_symbols_C_intern ("load-handle");
+    IDIO load_handle_ebe_sym = idio_symbols_C_intern ("load-handle-ebe");
+    idio_module_export_symbol_value (load_handle_sym,
+				     idio_module_primitive_symbol_value (load_handle_ebe_sym, idio_S_nil),
+				     idio_Idio_module_instance ());
+
+    IDIO load_handle_ebe = idio_module_primitive_symbol_value (load_handle_ebe_sym, idio_S_nil);
+    IDIO load_handle = idio_module_toplevel_symbol_value (load_handle_sym, idio_S_nil);
+    idio_set_property (load_handle, idio_KW_sigstr, idio_get_property (load_handle_ebe, idio_KW_sigstr, idio_S_nil));
+    idio_set_property (load_handle, idio_KW_docstr_raw, idio_get_property (load_handle_ebe, idio_KW_docstr_raw, idio_S_nil));
 }
 
 void idio_final_handle ()

@@ -333,8 +333,9 @@ static void idio_vm_error_arity (IDIO_I ins, IDIO thr, size_t given, size_t arit
 	IDIO args = idio_frame_params_as_list (val);
 	if (idio_S_nil != args) {
 	    idio_display_C (" ", dsh);
-	    char *s = idio_display_string (args);
-	    idio_display_C_len (s + 1, strlen (s) - 2, dsh);
+	    size_t size = 0;
+	    char *s = idio_display_string (args, &size);
+	    idio_display_C_len (s + 1, size - 2, dsh);
 	    free (s);
 	}
 	idio_display_C (")", dsh);
@@ -1446,11 +1447,7 @@ IDIO idio_vm_invoke_C (IDIO thr, IDIO command)
 	     * properly (or at least consistently).
 	     */
 	    if (! idio_isa_primitive (IDIO_PAIR_H (command))) {
-		IDIO dosh = idio_open_output_string_handle_C ();
-		idio_display_C ("vm-invoke-C PAIR: ", dosh);
-		idio_display (command, dosh);
-
-		idio_vm_run (thr, idio_get_output_string (dosh));
+		idio_vm_run (thr);
 	    }
 	}
 	break;
@@ -1459,25 +1456,10 @@ IDIO idio_vm_invoke_C (IDIO thr, IDIO command)
 	    /*
 	     * Must be a thunk
 	     */
-	    IDIO dosh = idio_open_output_string_handle_C ();
-	    idio_display_C ("vm-invoke-C CLOS: ", dosh);
-
-	    IDIO name = idio_get_property (command, idio_KW_name, IDIO_LIST1 (idio_S_nil));
-	    IDIO sigstr = idio_get_property (command, idio_KW_sigstr, IDIO_LIST1 (idio_S_nil));
-
-	    if (idio_S_unspec != name) {
-		idio_display (name, dosh);
-	    }
-	    if (idio_S_nil != sigstr) {
-		idio_display_C (" ", dosh);
-		idio_display (sigstr, dosh);
-	    }
-	    idio_display_C (" {CLOS}", dosh);
-
 	    IDIO vs = idio_frame_allocate (1);
 	    IDIO_THREAD_VAL (thr) = vs;
 	    idio_vm_invoke (thr, command, IDIO_VM_INVOKE_TAIL_CALL);
-	    idio_vm_run (thr, idio_get_output_string (dosh));
+	    idio_vm_run (thr);
 	}
     }
 
@@ -2392,14 +2374,16 @@ static void idio_vm_function_trace (IDIO_I ins, IDIO thr)
 	IDIO sigstr = idio_get_property (func, idio_KW_sigstr, IDIO_LIST1 (idio_S_nil));
 
 	if (idio_S_nil != name) {
-	    char *s = idio_display_string (name);
+	    size_t size = 0;
+	    char *s = idio_display_string (name, &size);
 	    fprintf (stderr, "(%s", s);
 	    free (s);
 	} else {
 	    fprintf (stderr, "(-anon-");
 	}
 	if (idio_S_nil != sigstr) {
-	    char *s = idio_display_string (sigstr);
+	    size_t size = 0;
+	    char *s = idio_display_string (sigstr, &size);
 	    fprintf (stderr, " %s", s);
 	    free (s);
 	}
@@ -3994,6 +3978,19 @@ int idio_vm_run1 (IDIO thr)
 	    IDIO_THREAD_VAL (thr) = IDIO_CONSTANT_IDIO ((intptr_t) v);
 	}
 	break;
+    case IDIO_A_UNICODE:
+	{
+	    uint64_t v = idio_vm_fetch_varuint (thr);
+	    IDIO_VM_RUN_DIS ("UNICODE %" PRId64 "", v);
+	    if (IDIO_FIXNUM_MAX < v) {
+		idio_error_printf (IDIO_C_FUNC_LOCATION_S ("UNICODE"), "UNICODE OOB: %" PRIu64 " > %" PRIu64, v, IDIO_FIXNUM_MAX);
+
+		/* notreached */
+		return 0;
+	    }
+	    IDIO_THREAD_VAL (thr) = IDIO_UNICODE ((intptr_t) v);
+	}
+	break;
     case IDIO_A_NOP:
 	{
 	    IDIO_VM_RUN_DIS ("NOP");
@@ -4020,7 +4017,7 @@ int idio_vm_run1 (IDIO thr)
 	    if (idio_vm_tracing) {
 		idio_vm_primitive_call_trace ("newline", thr, 0);
 	    }
-	    IDIO_THREAD_VAL (thr) = idio_character_lookup ("newline");
+	    IDIO_THREAD_VAL (thr) = idio_unicode_lookup ("newline");
 	}
 	break;
     case IDIO_A_PRIMCALL0_READ:
@@ -4113,8 +4110,9 @@ int idio_vm_run1 (IDIO thr)
 		idio_vm_primitive_call_trace ("display", thr, 1);
 	    }
 	    IDIO h = IDIO_THREAD_OUTPUT_HANDLE (thr);
-	    char *vs = idio_display_string (IDIO_THREAD_VAL (thr));
-	    IDIO_HANDLE_M_PUTS (h) (h, vs, strlen (vs));
+	    size_t size = 0;
+	    char *vs = idio_display_string (IDIO_THREAD_VAL (thr), &size);
+	    IDIO_HANDLE_M_PUTS (h) (h, vs, size);
 	    free (vs);
 	}
 	break;
@@ -4669,7 +4667,8 @@ void idio_vm_dasm (IDIO thr, idio_ai_t pc0, idio_ai_t pce)
     for (; pc < pce;) {
 	IDIO hint = idio_hash_get (hints, idio_fixnum (pc));
 	if (idio_S_unspec != hint) {
-	    char *hint_C = idio_as_string (hint, 1);
+	    size_t size = 0;
+	    char *hint_C = idio_as_string (hint, &size, 40);
 	    IDIO_VM_DASM ("%-20s ", hint_C);
 	    free (hint_C);
 	} else {
@@ -5076,7 +5075,8 @@ void idio_vm_dasm (IDIO thr, idio_ai_t pc0, idio_ai_t pce)
 		} else {
 		    fprintf (stderr, "vm cc sig: failed to find %" PRIu64 "\n", ssci);
 		}
-		char *ids = idio_display_string (ss);
+		size_t size = 0;
+		char *ids = idio_display_string (ss, &size);
 		IDIO_VM_DASM (" (%s)", ids);
 		free (ids);
 
@@ -5089,7 +5089,8 @@ void idio_vm_dasm (IDIO thr, idio_ai_t pc0, idio_ai_t pce)
 		    fprintf (stderr, "vm cc doc: failed to find %" PRIu64 "\n", dsci);
 		}
 		if (idio_S_nil != ds) {
-		    ids = idio_display_string (ds);
+		    size = 0;
+		    ids = idio_display_string (ds, &size);
 		    IDIO_VM_DASM ("\n%s", ids);
 		    free (ids);
 		}
@@ -5116,7 +5117,7 @@ void idio_vm_dasm (IDIO thr, idio_ai_t pc0, idio_ai_t pce)
 		char h[BUFSIZ];
 		sprintf (h, "A@%" PRId64 "", pc + o);
 		idio_hash_put (hints, idio_fixnum (pc + o), idio_symbols_C_intern (h));
-		IDIO_VM_DASM ("ABORT to PC +%" PRIu64 " %td", o, pc + o);
+		IDIO_VM_DASM ("ABORT to PC +%" PRIu64 " %" PRId64, o, pc + o);
 	    }
 	    break;
 	case IDIO_A_FINISH:
@@ -5311,6 +5312,12 @@ void idio_vm_dasm (IDIO thr, idio_ai_t pc0, idio_ai_t pce)
 		uint64_t v = idio_vm_get_varuint (pcp);
 		v = -v;
 		IDIO_VM_DASM ("NEG-CONSTANT %" PRId64 "", v);
+	    }
+	    break;
+	case IDIO_A_UNICODE:
+	    {
+		uint64_t v = idio_vm_get_varuint (pcp);
+		IDIO_VM_DASM ("UNICODE %" PRId64 "", v);
 	    }
 	    break;
 	case IDIO_A_NOP:
@@ -5687,12 +5694,10 @@ void idio_vm_default_pc (IDIO thr)
 
 static uintptr_t idio_vm_run_loops = 0;
 
-IDIO idio_vm_run (IDIO thr, IDIO desc)
+IDIO idio_vm_run (IDIO thr)
 {
     IDIO_ASSERT (thr);
-    IDIO_ASSERT (desc);
     IDIO_TYPE_ASSERT (thread, thr);
-    IDIO_TYPE_ASSERT (string, desc);
 
     /*
      * Save a continuation in case things get ropey and we have to
@@ -5704,7 +5709,6 @@ IDIO idio_vm_run (IDIO thr, IDIO desc)
 	fprintf (stderr, "How is krun 0?\n");
 	idio_vm_thread_state ();
     }
-    /* idio_array_push (idio_vm_krun, IDIO_LIST2 (idio_continuation (thr), desc)); */
 
     idio_ai_t ss0 = idio_array_size (IDIO_THREAD_STACK (thr));
 
@@ -6073,7 +6077,8 @@ void idio_vm_dump_constants ()
     for (i = 0 ; i < al; i++) {
 	IDIO c = idio_array_get_index (idio_vm_constants, i);
 	fprintf (fp, "%6td: ", i);
-	char *cs = idio_as_string (c, 40);
+	size_t size = 0;
+	char *cs = idio_as_string (c, &size, 40);
 	fprintf (fp, "%-20s %s\n", idio_type2string (c), cs);
 	free (cs);
     }
@@ -6128,6 +6133,7 @@ void idio_vm_dump_values ()
     for (i = 0 ; i < al; i++) {
 	IDIO v = idio_array_get_index (idio_vm_values, i);
 	fprintf (fp, "%6td: ", i);
+	size_t size = 0;
 	char *vs = NULL;
 	if (idio_src_properties == v) {
 	    /*
@@ -6138,9 +6144,9 @@ void idio_vm_dump_values ()
 	     * entries.  It takes millions of calls to implement and
 	     * seconds to print!
 	     */
-	    vs = idio_as_string (v, 0);
+	    vs = idio_as_string (v, &size, 0);
 	} else {
-	    vs = idio_as_string (v, 3);
+	    vs = idio_as_string (v, &size, 40);
 	}
 	fprintf (fp, "%-20s %s\n", idio_type2string (v), vs);
 	free (vs);
@@ -6366,12 +6372,8 @@ Run ``func [args]`` in thread ``thr``.				\n\
     idio_ai_t pc0 = IDIO_THREAD_PC (thr);
     idio_vm_default_pc (thr);
 
-    IDIO dosh = idio_open_output_string_handle_C ();
-    idio_display_C ("run-in-thread: ", dosh);
-    idio_display (func, dosh);
-
     idio_apply (func, args);
-    IDIO r = idio_vm_run (thr, idio_get_output_string (dosh));
+    IDIO r = idio_vm_run (thr);
 
     idio_ai_t pc = IDIO_THREAD_PC (thr);
     if (pc == (idio_vm_FINISH_pc + 1)) {

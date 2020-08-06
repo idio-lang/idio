@@ -99,7 +99,7 @@ IDIO idio_characters_C_intern (char *s, IDIO v)
  * @s: character name (a C string)
  *
  * Return:
- * The Idio value of the code point or %idio_S_nil.
+ * The Idio value of the code point or %idio_S_unspec.
  */
 IDIO idio_character_lookup (char *s)
 {
@@ -430,7 +430,7 @@ void idio_init_character ()
     IDIO_CHARACTER_INTERN_C ("us", 31);
     IDIO_CHARACTER_INTERN_C ("sp", 32);
 
-    /* C and other common names*/
+    /* C and other common names */
     /* nul as above */
     IDIO_CHARACTER_INTERN_C ("alarm",		'\a'); /* 0x07 */
     IDIO_CHARACTER_INTERN_C ("backspace",	'\b'); /* 0x08 */

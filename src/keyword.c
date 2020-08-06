@@ -53,6 +53,17 @@ void idio_keyword_error_key_not_found (IDIO key, IDIO c_location)
     idio_raise_condition (idio_S_true, c);
 }
 
+void idio_keyword_error_format (char *m, IDIO s, IDIO c_location)
+{
+    IDIO_C_ASSERT (m);
+    IDIO_ASSERT (s);
+    IDIO_ASSERT (c_location);
+    IDIO_TYPE_ASSERT (string, s);
+    IDIO_TYPE_ASSERT (string, c_location);
+
+    idio_error_C (m, s, c_location);
+}
+
 int idio_keyword_C_eqp (void *s1, void *s2)
 {
     /*
@@ -104,7 +115,23 @@ IDIO idio_keyword_C (const char *s_C)
 IDIO_DEFINE_PRIMITIVE1 ("make-keyword", make_keyword, (IDIO s))
 {
     if (idio_isa_string (s)) {
-	return idio_keywords_C_intern (idio_string_s (s));
+	size_t size = 0;
+	char *sC = idio_string_as_C (s, &size);
+
+	size_t C_size = strlen (sC);
+	if (C_size != size) {
+	    free (sC);
+
+	    idio_keyword_error_format ("keyword contains an ASCII NUL", s, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	}
+
+	IDIO r = idio_keywords_C_intern (sC);
+
+	free (sC);
+
+	return r;
     } else if (idio_isa_symbol (s)) {
 	return idio_keyword_C (IDIO_SYMBOL_S (s));
     } else {
@@ -148,11 +175,21 @@ IDIO idio_keywords_string_intern (IDIO str)
     IDIO_ASSERT (str);
     IDIO_TYPE_ASSERT (string, str);
 
-    char *s_C = idio_string_as_C (str);
+    size_t size = 0;
+    char *sC = idio_string_as_C (str, &size);
 
-    IDIO r = idio_keywords_C_intern (s_C);
+    size_t C_size = strlen (sC);
+    if (C_size != size) {
+	free (sC);
 
-    free (s_C);
+	idio_keyword_error_format ("keyword contains an ASCII NUL", str, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    IDIO r = idio_keywords_C_intern (sC);
+
+    free (sC);
 
     return r;
 }

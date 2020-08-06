@@ -143,9 +143,9 @@
 #define IDIO_TYPE_CONSTANT_IDIO		2
 #define IDIO_TYPE_CONSTANT_TOKEN	3
 #define IDIO_TYPE_CONSTANT_I_CODE	4
-#define IDIO_TYPE_CONSTANT_CHARACTER	5
+#define IDIO_TYPE_CONSTANT_CHARACTER	5 /* deprecated -- see UNICODE */
+#define IDIO_TYPE_CONSTANT_UNICODE	6
 /*
-#define IDIO_TYPE_CONSTANT_5		6
 #define IDIO_TYPE_CONSTANT_6		7
 #define IDIO_TYPE_CONSTANT_7		8
 #define IDIO_TYPE_CONSTANT_8		9
@@ -251,6 +251,15 @@ typedef uint8_t IDIO_I;
 /**
  * struct idio_string_s - Idio ``string`` structure
  */
+#define IDIO_STRING_FLAG_NONE		0
+/*
+ * Coincidentally, these are the number of bytes required for storage
+ * per code-point.  Do not rely on this, these are just flags!
+ */
+#define IDIO_STRING_FLAG_1BYTE		(1<<0)
+#define IDIO_STRING_FLAG_2BYTE		(1<<1)
+#define IDIO_STRING_FLAG_4BYTE		(1<<2)
+
 struct idio_string_s {
     /**
      * @blen: length in bytes
@@ -258,8 +267,9 @@ struct idio_string_s {
      * The string is not expected to be NUL-terminated.
      */
     size_t blen;		/* bytes */
+    size_t len;			/* code points */
     /**
-     * @s: the string
+     * @s: the "string": BYTE, UCS2, UCS4
      */
     char *s;
 };
@@ -275,10 +285,16 @@ typedef struct idio_string_s idio_string_t;
  */
 #define IDIO_STRING_BLEN(S)	((S)->u.string.blen)
 /**
+ * IDIO_STRING_LEN - accessor to @len in &struct idio_string_s
+ * @S: the &struct idio_string_s
+ */
+#define IDIO_STRING_LEN(S)	((S)->u.string.len)
+/**
  * IDIO_STRING_S - accessor to @s in &struct idio_string_s
  * @S: the &struct idio_string_s
  */
 #define IDIO_STRING_S(S)	((S)->u.string.s)
+#define IDIO_STRING_FLAGS(S)	((S)->tflags)
 
 typedef struct idio_substring_s {
     /*
@@ -286,12 +302,12 @@ typedef struct idio_substring_s {
      * a simple string and can just mark it as seen directly
      */
     struct idio_s *parent;
-    size_t blen;		/* bytes */
+    size_t len;			/* code points */
     char *s;			/* no allocation, just a pointer into
 				   parent's string */
 } idio_substring_t;
 
-#define IDIO_SUBSTRING_BLEN(S)	((S)->u.substring.blen)
+#define IDIO_SUBSTRING_LEN(S)	((S)->u.substring.len)
 #define IDIO_SUBSTRING_S(S)	((S)->u.substring.s)
 #define IDIO_SUBSTRING_PARENT(S) ((S)->u.substring.parent)
 
@@ -619,7 +635,7 @@ typedef struct idio_handle_methods_s {
     int (*eofp) (struct idio_s *h);
     int (*close) (struct idio_s *h);
     int (*putc) (struct idio_s *h, int c);
-    size_t (*puts) (struct idio_s *h, char *s, size_t slen);
+    ptrdiff_t (*puts) (struct idio_s *h, char *s, size_t slen);
     int (*flush) (struct idio_s *h);
     off_t (*seek) (struct idio_s *h, off_t offset, int whence);
     void (*print) (struct idio_s *h, struct idio_s *o);
@@ -943,7 +959,7 @@ typedef struct idio_opaque_s {
 #define IDIO_OPAQUE_P(C)    ((C)->u.opaque->p)
 #define IDIO_OPAQUE_ARGS(C) ((C)->u.opaque->args)
 
-typedef unsigned char FLAGS_T;
+typedef unsigned char IDIO_FLAGS_T;
 
 #define IDIO_FLAG_NONE		0
 #define IDIO_FLAG_CONST		(1<<0)
@@ -961,13 +977,13 @@ struct idio_s {
     struct idio_s *next;
 
     /*
-     * The union will be word-aligned (or larger) so we have 4-8 bytes
-     * of room for "info"
+     * The union will be word-aligned (or larger) so we have 4 or 8
+     * bytes of room for "stuff"
      */
     idio_type_e type;
-    FLAGS_T gc_flags;
-    FLAGS_T flags;		/* generic type flags */
-    FLAGS_T tflags;		/* type-specific flags (since we have
+    IDIO_FLAGS_T gc_flags;
+    IDIO_FLAGS_T flags;		/* generic type flags */
+    IDIO_FLAGS_T tflags;	/* type-specific flags (since we have
 				   room here) */
     /*
      * Rationale for union.  We need to decide whether the union
@@ -1054,7 +1070,7 @@ typedef struct idio_gc_s {
     IDIO grey;
     unsigned int pause;
     unsigned char verbose;
-    FLAGS_T flags;		/* generic GC flags */
+    IDIO_FLAGS_T flags;		/* generic GC flags */
     struct stats {
 	unsigned long long nfree; /* # on free list */
 	unsigned long long tgets[IDIO_TYPE_MAX];
@@ -1237,8 +1253,9 @@ typedef struct idio_gc_s {
 #define IDIO_TYPE_CONSTANT_TOKEN_MARK		((0x01 << IDIO_TYPE_BITS_SHIFT) | IDIO_TYPE_CONSTANT_MARK)
 #define IDIO_TYPE_CONSTANT_I_CODE_MARK		((0x02 << IDIO_TYPE_BITS_SHIFT) | IDIO_TYPE_CONSTANT_MARK)
 #define IDIO_TYPE_CONSTANT_CHARACTER_MARK	((0x03 << IDIO_TYPE_BITS_SHIFT) | IDIO_TYPE_CONSTANT_MARK)
+#define IDIO_TYPE_CONSTANT_UNICODE_MARK		((0x04 << IDIO_TYPE_BITS_SHIFT) | IDIO_TYPE_CONSTANT_MARK)
   /*
-   * 0x04 - 0x07 to be defined (or even thought of)
+   * 0x05 - 0x07 to be defined (or even thought of)
    */
 
 #define IDIO_TYPE_POINTERP(x)		((((intptr_t) x) & IDIO_TYPE_MASK) == IDIO_TYPE_POINTER_MARK)
@@ -1250,6 +1267,7 @@ typedef struct idio_gc_s {
 #define IDIO_TYPE_CONSTANT_TOKENP(x)		((((intptr_t) x) & IDIO_TYPE_CONSTANT_MASK) == IDIO_TYPE_CONSTANT_TOKEN_MARK)
 #define IDIO_TYPE_CONSTANT_I_CODEP(x)		((((intptr_t) x) & IDIO_TYPE_CONSTANT_MASK) == IDIO_TYPE_CONSTANT_I_CODE_MARK)
 #define IDIO_TYPE_CONSTANT_CHARACTERP(x)	((((intptr_t) x) & IDIO_TYPE_CONSTANT_MASK) == IDIO_TYPE_CONSTANT_CHARACTER_MARK)
+#define IDIO_TYPE_CONSTANT_UNICODEP(x)		((((intptr_t) x) & IDIO_TYPE_CONSTANT_MASK) == IDIO_TYPE_CONSTANT_UNICODE_MARK)
 
 #define IDIO_FIXNUM_VAL(x)	(((intptr_t) x) >> IDIO_TYPE_BITS_SHIFT)
 #define IDIO_FIXNUM(x)		((IDIO) ((x) << IDIO_TYPE_BITS_SHIFT | IDIO_TYPE_FIXNUM_MARK))
@@ -1266,6 +1284,8 @@ typedef struct idio_gc_s {
 #define IDIO_CHARACTER_VAL(x)	(((intptr_t) x) >> IDIO_TYPE_CONSTANT_BITS_SHIFT)
 /* #define IDIO_CHARACTER_IVAL(x)	(tolower (IDIO_CHARACTER_VAL (x))) */
 #define IDIO_CHARACTER(x)	((const IDIO) (((intptr_t) x) << IDIO_TYPE_CONSTANT_BITS_SHIFT | IDIO_TYPE_CONSTANT_CHARACTER_MARK))
+#define IDIO_UNICODE_VAL(x)	(((intptr_t) x) >> IDIO_TYPE_CONSTANT_BITS_SHIFT)
+#define IDIO_UNICODE(x)		((const IDIO) (((intptr_t) x) << IDIO_TYPE_CONSTANT_BITS_SHIFT | IDIO_TYPE_CONSTANT_UNICODE_MARK))
 
 /*
  * Idio instruction arrays.
@@ -1344,11 +1364,15 @@ void idio_gc_resume (char *caller);
 void idio_gc_reset (char *caller, int pause);
 void idio_gc_free ();
 
-char *idio_strcat (char *s1, const char *s2);
-char *idio_strcat_free (char *s1, char *s2);
+char *idio_strcat (char *s1, size_t *s1sp, const char *s2, const size_t s2s);
+char *idio_strcat_free (char *s1, size_t *s1sp, char *s2, const size_t s2s);
 
-#define IDIO_STRCAT(s1,s2)	((s1) = idio_strcat ((s1), (s2)))
-#define IDIO_STRCAT_FREE(s1,s2)	((s1) = idio_strcat_free ((s1), (s2)))
+#define IDIO_STRCAT(s1,s1sp,s2)		{			\
+	char *str = s2;						\
+	size_t size = strlen (str);				\
+	(s1) = idio_strcat ((s1), (s1sp), str, size);		\
+    }
+#define IDIO_STRCAT_FREE(s1,s1sp,s2,s2sp)	((s1) = idio_strcat_free ((s1), (s1sp), (s2), (s2sp)))
 
 int idio_gc_verboseness (int n);
 void idio_gc_set_verboseness (int n);

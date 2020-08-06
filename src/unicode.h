@@ -23,12 +23,27 @@
 #ifndef UNICODE_H
 #define UNICODE_H
 
-typedef uint32_t idio_utf8_t;
+typedef uint32_t idio_unicode_t;
 
+/*
+ * The following values are x12 to avoid unnecessary shifts
+ */
 #define IDIO_UTF8_ACCEPT 0
 #define IDIO_UTF8_REJECT 12
+/*
+ * other > 0 values mean more bytes are required
+ */
 
-idio_utf8_t idio_utf8_decode (idio_utf8_t* state, idio_utf8_t* codep, idio_utf8_t byte);
+#define IDIO_UTF8_STRING_VERBATIM	0
+#define IDIO_UTF8_STRING_ESCAPES	1
+
+#define IDIO_UTF8_STRING_UNQUOTED	0
+#define IDIO_UTF8_STRING_QUOTED		1
+
+int idio_isa_unicode (IDIO o);
+idio_unicode_t idio_utf8_decode (idio_unicode_t* state, idio_unicode_t* codep, idio_unicode_t byte);
+char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted);
+IDIO idio_unicode_lookup (char *name);
 
 void idio_init_unicode ();
 void idio_unicode_add_primitives ();

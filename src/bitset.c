@@ -241,8 +241,6 @@ create an bitset with a size of `size`		\n\
 IDIO_DEFINE_PRIMITIVE1_DS ("bitset-size", bitset_size, (IDIO bs), "bs", "\
 return the size of bitset `bs`			\n\
 						\n\
-:param bs: bitset				\n\
-:type size: bitset				\n\
 :rtype: integer					\n\
 ")
 {
@@ -256,11 +254,11 @@ return the size of bitset `bs`			\n\
 IDIO_DEFINE_PRIMITIVE2_DS ("bitset-set!", bitset_set, (IDIO bs, IDIO bit), "bs bit", "\
 set bit `bit` in bitset `bs`			\n\
 						\n\
-:param size: bitset				\n\
-:type size: bitset				\n\
-:param size: bit				\n\
-:type size: integer				\n\
-:rtype: bitset					\n\
+:param bs: bitset				\n\
+:type bs: bitset				\n\
+:param bit: bit					\n\
+:type bit: unicode or integer			\n\
+:return: #unsepc				\n\
 ")
 {
     IDIO_ASSERT (bs);
@@ -270,7 +268,9 @@ set bit `bit` in bitset `bs`			\n\
 
     ptrdiff_t bs_bit = -1;
 
-    if (idio_isa_fixnum (bit)) {
+    if (idio_isa_unicode (bit)) {
+	bs_bit = IDIO_UNICODE_VAL (bit);
+    } else if (idio_isa_fixnum (bit)) {
 	bs_bit = IDIO_FIXNUM_VAL (bit);
     } else if (idio_isa_bignum (bit)) {
 	if (IDIO_BIGNUM_INTEGER_P (bit)) {
@@ -278,7 +278,7 @@ set bit `bit` in bitset `bs`			\n\
 	} else {
 	    IDIO bit_i = idio_bignum_real_to_integer (bit);
 	    if (idio_S_nil == bit_i) {
-		idio_error_param_type ("integer", bit, IDIO_C_FUNC_LOCATION ());
+		idio_error_param_type ("unicode|integer", bit, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    } else {
@@ -297,11 +297,11 @@ set bit `bit` in bitset `bs`			\n\
 IDIO_DEFINE_PRIMITIVE2_DS ("bitset-clear!", bitset_clear, (IDIO bs, IDIO bit), "bs bit", "\
 clear bit `bit` in bitset `bs`			\n\
 						\n\
-:param size: bitset				\n\
-:type size: bitset				\n\
-:param size: bit				\n\
-:type size: integer				\n\
-:rtype: bitset					\n\
+:param bs: bitset				\n\
+:type bs: bitset				\n\
+:param bit: bit					\n\
+:type bit: unicode or integer			\n\
+:return: #unspec				\n\
 ")
 {
     IDIO_ASSERT (bs);
@@ -311,7 +311,9 @@ clear bit `bit` in bitset `bs`			\n\
 
     ptrdiff_t bs_bit = -1;
 
-    if (idio_isa_fixnum (bit)) {
+    if (idio_isa_unicode (bit)) {
+	bs_bit = IDIO_UNICODE_VAL (bit);
+    } else if (idio_isa_fixnum (bit)) {
 	bs_bit = IDIO_FIXNUM_VAL (bit);
     } else if (idio_isa_bignum (bit)) {
 	if (IDIO_BIGNUM_INTEGER_P (bit)) {
@@ -338,11 +340,11 @@ clear bit `bit` in bitset `bs`			\n\
 IDIO_DEFINE_PRIMITIVE2_DS ("bitset-ref", bitset_ref, (IDIO bs, IDIO bit), "bs bit", "\
 get bit `bit` in bitset `bs`			\n\
 						\n\
-:param size: bitset				\n\
-:type size: bitset				\n\
-:param size: bit				\n\
-:type size: integer				\n\
-:rtype: #t or #f				\n\
+:param bs: bitset				\n\
+:type bs: bitset				\n\
+:param bit: bit					\n\
+:type bit: unicode or integer			\n\
+:rtype: #unspec					\n\
 ")
 {
     IDIO_ASSERT (bs);
@@ -352,7 +354,9 @@ get bit `bit` in bitset `bs`			\n\
 
     ptrdiff_t bs_bit = -1;
 
-    if (idio_isa_fixnum (bit)) {
+    if (idio_isa_unicode (bit)) {
+	bs_bit = IDIO_UNICODE_VAL (bit);
+    } else if (idio_isa_fixnum (bit)) {
 	bs_bit = IDIO_FIXNUM_VAL (bit);
     } else if (idio_isa_bignum (bit)) {
 	if (IDIO_BIGNUM_INTEGER_P (bit)) {

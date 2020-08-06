@@ -50,6 +50,17 @@ IDIO idio_libc_struct_stat = NULL;
 #define IDIO_STRUCT_RLIMIT_RLIM_CUR		0
 #define IDIO_STRUCT_RLIMIT_RLIM_MAX		1
 
+void idio_libc_error_format (char *m, IDIO s, IDIO c_location)
+{
+    IDIO_C_ASSERT (m);
+    IDIO_ASSERT (s);
+    IDIO_ASSERT (c_location);
+    IDIO_TYPE_ASSERT (string, s);
+    IDIO_TYPE_ASSERT (string, c_location);
+
+    idio_error_C (m, s, c_location);
+}
+
 IDIO idio_libc_export_symbol_value (IDIO symbol, IDIO value)
 {
     IDIO_ASSERT (symbol);
@@ -59,7 +70,14 @@ IDIO idio_libc_export_symbol_value (IDIO symbol, IDIO value)
     return idio_module_export_symbol_value (symbol, value, idio_libc_wrap_module);
 }
 
-IDIO_DEFINE_PRIMITIVE0V ("system-error", libc_system_error, (IDIO args))
+IDIO_DEFINE_PRIMITIVE0V_DS ("system-error", libc_system_error, (IDIO args), "[name [args]]", "\
+raise a ^system-error						\n\
+								\n\
+:param name: error name						\n\
+:type name: string or symbol					\n\
+:param args: error args						\n\
+:type args: list						\n\
+")
 {
     IDIO_ASSERT (args);
     IDIO_VERIFY_PARAM_TYPE (list, args);
@@ -69,7 +87,8 @@ IDIO_DEFINE_PRIMITIVE0V ("system-error", libc_system_error, (IDIO args))
     if (idio_S_nil != args) {
 	IDIO h = IDIO_PAIR_H (args);
 	if (idio_isa_string (h)) {
-	    name = idio_string_as_C (h);
+	    size_t size = 0;
+	    name = idio_string_as_C (h, &size);
 	    args = IDIO_PAIR_T (args);
 	} else if (idio_isa_symbol (h)) {
 	    name = IDIO_SYMBOL_S (h);
@@ -82,28 +101,56 @@ IDIO_DEFINE_PRIMITIVE0V ("system-error", libc_system_error, (IDIO args))
     return idio_S_notreached;
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("access", libc_access, (IDIO ipath, IDIO imode))
+IDIO_DEFINE_PRIMITIVE2_DS ("access", libc_access, (IDIO ipathname, IDIO imode), "pathname mode", "\
+in C, access (pathname, mode)					\n\
+a wrapper to libc access (2)					\n\
+								\n\
+:param pathname: file name						\n\
+:type pathname: string						\n\
+:param mode: accessibility check(s)				\n\
+:type mode: C_int						\n\
+:return: #t or #f						\n\
+:rtype: boolean							\n\
+")
 {
-    IDIO_ASSERT (ipath);
+    IDIO_ASSERT (ipathname);
     IDIO_ASSERT (imode);
-    IDIO_VERIFY_PARAM_TYPE (string, ipath);
+    IDIO_VERIFY_PARAM_TYPE (string, ipathname);
     IDIO_VERIFY_PARAM_TYPE (C_int, imode);
 
-    char *path = idio_string_as_C (ipath);
+    size_t size = 0;
+    char *pathname = idio_string_as_C (ipathname, &size);
+    size_t C_size = strlen (pathname);
+    if (C_size != size) {
+	free (pathname);
+
+	idio_libc_error_format ("access: pathname contains an ASCII NUL", ipathname, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
     int mode = IDIO_C_TYPE_INT (imode);
 
     IDIO r = idio_S_false;
 
-    if (0 == access (path, mode)) {
+    if (0 == access (pathname, mode)) {
 	r = idio_S_true;
     }
 
-    free (path);
+    free (pathname);
 
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("close", libc_close, (IDIO ifd))
+IDIO_DEFINE_PRIMITIVE1_DS ("close", libc_close, (IDIO ifd), "fd", "\
+in C, close (fd)						\n\
+a wrapper to libc close (2)					\n\
+								\n\
+:param fd: file descriptor					\n\
+:type fd: C_int							\n\
+:return: 0 or raises ^system-error				\n\
+:rtype: C_int							\n\
+")
 {
     IDIO_ASSERT (ifd);
     IDIO_VERIFY_PARAM_TYPE (C_int, ifd);
@@ -114,12 +161,22 @@ IDIO_DEFINE_PRIMITIVE1 ("close", libc_close, (IDIO ifd))
 
     if (-1 == r) {
 	idio_error_system_errno ("close", IDIO_LIST1 (ifd), IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
     }
 
     return idio_C_int (r);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("dup", libc_dup, (IDIO ioldfd))
+IDIO_DEFINE_PRIMITIVE1_DS ("dup", libc_dup, (IDIO ioldfd), "oldfd", "\
+in C, dup (oldfd)						\n\
+a wrapper to libc dup (2)					\n\
+								\n\
+:param oldfd: file descriptor					\n\
+:type oldfd: C_int or fixnum					\n\
+:return: new fd or raises ^system-error				\n\
+:rtype: C_int							\n\
+")
 {
     IDIO_ASSERT (ioldfd);
 
@@ -141,7 +198,17 @@ IDIO_DEFINE_PRIMITIVE1 ("dup", libc_dup, (IDIO ioldfd))
     return idio_C_int (r);
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("dup2", libc_dup2, (IDIO ioldfd, IDIO inewfd))
+IDIO_DEFINE_PRIMITIVE2_DS ("dup2", libc_dup2, (IDIO ioldfd, IDIO inewfd), "oldfd newfd", "\
+in C, dup2 (oldfd, newfd)					\n\
+a wrapper to libc dup2 (2)					\n\
+								\n\
+:param oldfd: file descriptor					\n\
+:type oldfd: C_int or fixnum					\n\
+:param newfd: file descriptor					\n\
+:type newfd: C_int or fixnum					\n\
+:return: new fd or raises ^system-error				\n\
+:rtype: C_int							\n\
+")
 {
     IDIO_ASSERT (ioldfd);
     IDIO_ASSERT (inewfd);
@@ -174,7 +241,15 @@ IDIO_DEFINE_PRIMITIVE2 ("dup2", libc_dup2, (IDIO ioldfd, IDIO inewfd))
     return idio_C_int (r);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("exit", libc_exit, (IDIO istatus))
+IDIO_DEFINE_PRIMITIVE1_DS ("exit", libc_exit, (IDIO istatus), "status", "\
+in C, close (status)						\n\
+a wrapper to libc exit (2)					\n\
+								\n\
+:param status: exit status					\n\
+:type status: fixnum						\n\
+								\n\
+DOES NOT RETURN :)						\n\
+")
 {
     IDIO_ASSERT (istatus);
 
@@ -190,7 +265,25 @@ IDIO_DEFINE_PRIMITIVE1 ("exit", libc_exit, (IDIO istatus))
     return idio_S_notreached;
 }
 
-IDIO_DEFINE_PRIMITIVE2V ("fcntl", libc_fcntl, (IDIO ifd, IDIO icmd, IDIO args))
+IDIO_DEFINE_PRIMITIVE2V_DS ("fcntl", libc_fcntl, (IDIO ifd, IDIO icmd, IDIO args), "fd cmd [args]", "\
+in C, fcntl (oldfd, newfd)					\n\
+a wrapper to libc fcntl (2)					\n\
+								\n\
+:param fd: file descriptor					\n\
+:type fd: C_int or fixnum					\n\
+:param cmd: fcntl command					\n\
+:type cmd: C_int						\n\
+:param args: fcntl command args					\n\
+:type args: list						\n\
+:return: appropriate value or raises ^system-error		\n\
+:rtype: appropriate value					\n\
+								\n\
+Supported commands include:					\n\
+F_DUPFD								\n\
+F_DUPFD_CLOEXEC (if supported)					\n\
+F_GETFD								\n\
+F_SETFD								\n\
+")
 {
     IDIO_ASSERT (ifd);
     IDIO_ASSERT (icmd);
@@ -284,7 +377,15 @@ IDIO_DEFINE_PRIMITIVE2V ("fcntl", libc_fcntl, (IDIO ifd, IDIO icmd, IDIO args))
     return idio_C_int (r);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("fileno", libc_fileno, (IDIO ifilep))
+IDIO_DEFINE_PRIMITIVE1_DS ("fileno", libc_fileno, (IDIO ifilep), "FILE", "\
+in C, fileno (FILE)						\n\
+a wrapper to libc fileno (3)					\n\
+								\n\
+:param FILE: file handle					\n\
+:type FILE: handle						\n\
+:return: file descriptor					\n\
+:rtype: C_int							\n\
+")
 {
     IDIO_ASSERT (ifilep);
 
@@ -300,7 +401,13 @@ IDIO_DEFINE_PRIMITIVE1 ("fileno", libc_fileno, (IDIO ifilep))
     return idio_C_int (fd);
 }
 
-IDIO_DEFINE_PRIMITIVE0 ("fork", libc_fork, ())
+IDIO_DEFINE_PRIMITIVE0_DS ("fork", libc_fork, (void), "", "\
+in C, fork ()							\n\
+a wrapper to libc fork (2)					\n\
+								\n\
+:return: 0 or PID						\n\
+:rtype: C_int							\n\
+")
 {
     pid_t pid = fork ();
 
@@ -313,7 +420,13 @@ IDIO_DEFINE_PRIMITIVE0 ("fork", libc_fork, ())
     return idio_C_int (pid);
 }
 
-IDIO_DEFINE_PRIMITIVE0 ("getcwd", libc_getcwd, ())
+IDIO_DEFINE_PRIMITIVE0_DS ("getcwd", libc_getcwd, (void), "", "\
+in C, getcwd ()							\n\
+a wrapper to libc getcwd (3)					\n\
+								\n\
+:return: CWD or raises ^system-error				\n\
+:rtype: string							\n\
+")
 {
     /*
      * getcwd(3) and its arguments
@@ -361,7 +474,13 @@ IDIO_DEFINE_PRIMITIVE0 ("getcwd", libc_getcwd, ())
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE0 ("getpgrp", libc_getpgrp, ())
+IDIO_DEFINE_PRIMITIVE0_DS ("getpgrp", libc_getpgrp, (void), "", "\
+in C, getpgrp ()						\n\
+a wrapper to libc getpgrp (2)					\n\
+								\n\
+:return: PGID or raises ^system-error				\n\
+:rtype: C_int							\n\
+")
 {
     pid_t pid = getpgrp ();
 
@@ -372,7 +491,13 @@ IDIO_DEFINE_PRIMITIVE0 ("getpgrp", libc_getpgrp, ())
     return idio_C_int (pid);
 }
 
-IDIO_DEFINE_PRIMITIVE0 ("getpid", libc_getpid, ())
+IDIO_DEFINE_PRIMITIVE0_DS ("getpid", libc_getpid, (void), "", "\
+in C, getpid ()							\n\
+a wrapper to libc getpid (2)					\n\
+								\n\
+:return: PID or raises ^system-error				\n\
+:rtype: C_int							\n\
+")
 {
     pid_t pid = getpid ();
 
@@ -383,7 +508,15 @@ IDIO_DEFINE_PRIMITIVE0 ("getpid", libc_getpid, ())
     return idio_C_int (pid);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("isatty", libc_isatty, (IDIO ifd))
+IDIO_DEFINE_PRIMITIVE1_DS ("isatty", libc_isatty, (IDIO ifd), "fd", "\
+in C, isatty (fd)						\n\
+a wrapper to libc isatty (3)					\n\
+								\n\
+:param fd: file descriptor					\n\
+:type fd: C_int							\n\
+:return: 1 or raises ^system-error				\n\
+:rtype: C_int							\n\
+")
 {
     IDIO_ASSERT (ifd);
     IDIO_VERIFY_PARAM_TYPE (C_int, ifd);
@@ -399,7 +532,17 @@ IDIO_DEFINE_PRIMITIVE1 ("isatty", libc_isatty, (IDIO ifd))
     return idio_C_int (r);
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("kill", libc_kill, (IDIO ipid, IDIO isig))
+IDIO_DEFINE_PRIMITIVE2_DS ("kill", libc_kill, (IDIO ipid, IDIO isig), "pid sig", "\
+in C, kill (pid, sig)						\n\
+a wrapper to libc kill (2)					\n\
+								\n\
+:param pid: process ID						\n\
+:type pid: C_int						\n\
+:param fd: signal						\n\
+:type fd: C_int							\n\
+:return: 0 or raises ^system-error				\n\
+:rtype: C_int							\n\
+")
 {
     IDIO_ASSERT (ipid);
     IDIO_ASSERT (isig);
@@ -418,75 +561,118 @@ IDIO_DEFINE_PRIMITIVE2 ("kill", libc_kill, (IDIO ipid, IDIO isig))
     return idio_C_int (r);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("mkdtemp", libc_mkdtemp, (IDIO idirname))
+IDIO_DEFINE_PRIMITIVE1_DS ("mkdtemp", libc_mkdtemp, (IDIO itemplate), "template", "\
+in C, mkdtemp (template)						\n\
+a wrapper to libc mkdtemp (3)					\n\
+								\n\
+:param template: directory template				\n\
+:type template: string						\n\
+:return: modified template or raises ^system-error		\n\
+:rtype: string							\n\
+")
 {
-    IDIO_ASSERT (idirname);
-    IDIO_VERIFY_PARAM_TYPE (string, idirname);
+    IDIO_ASSERT (itemplate);
+    IDIO_VERIFY_PARAM_TYPE (string, itemplate);
 
     /*
      * XXX mkdtemp() requires a NUL-terminated C string and it will
      * modify the template part.
-     *
-     * If we are passed a SUBSTRING then we must substitute a
-     * NUL-terminated C string and copy the result back.
      */
-    char *dirname = idio_string_s (idirname);
+    size_t size = 0;
+    char *template = idio_string_as_C (itemplate, &size);
+    size_t C_size = strlen (template);
+    if (C_size != size) {
+	free (template);
 
-    int isa_substring = 0;
-    if (idio_isa_substring (idirname)) {
-	isa_substring = 1;
-	dirname = idio_string_as_C (idirname);
+	idio_libc_error_format ("mkdtemp: template contains an ASCII NUL", itemplate, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
     }
 
-    char *d = mkdtemp (dirname);
+    char *d = mkdtemp (template);
 
     if (NULL == d) {
-	idio_error_system_errno ("mkdtemp", IDIO_LIST1 (idirname), IDIO_C_FUNC_LOCATION ());
+	free (template);
+
+	idio_error_system_errno ("mkdtemp", IDIO_LIST1 (itemplate), IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
     }
 
-    if (isa_substring) {
-	memcpy (idio_string_s (idirname), dirname, idio_string_blen (idirname));
-	free (dirname);
-    }
+    IDIO r = idio_string_C (d);
 
-    return idio_string_C (d);
+    free (template);
+
+    return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("mkstemp", libc_mkstemp, (IDIO ifilename))
+IDIO_DEFINE_PRIMITIVE1_DS ("mkstemp", libc_mkstemp, (IDIO itemplate), "template", "\
+in C, mkstemp (template)						\n\
+a wrapper to libc mkstemp (3)					\n\
+								\n\
+:param template: template template				\n\
+:type template: string						\n\
+:return: a list of (file descriptor and new filename) or raises ^system-error\n\
+:rtype: list (C_int, string)					\n\
+")
 {
-    IDIO_ASSERT (ifilename);
-    IDIO_VERIFY_PARAM_TYPE (string, ifilename);
+    IDIO_ASSERT (itemplate);
+    IDIO_VERIFY_PARAM_TYPE (string, itemplate);
 
     /*
      * XXX mkstemp() requires a NUL-terminated C string and it will
      * modify the template part.
-     *
-     * If we are passed a SUBSTRING then we must substitute a
-     * NUL-terminated C string and copy the result back.
      */
-    char *filename = idio_string_s (ifilename);
+    size_t size = 0;
+    char *template = idio_string_as_C (itemplate, &size);
+    size_t C_size = strlen (template);
+    if (C_size != size) {
+	free (template);
 
-    int isa_substring = 0;
-    if (idio_isa_substring (ifilename)) {
-	isa_substring = 1;
-	filename = idio_string_as_C (ifilename);
+	idio_libc_error_format ("mkstemp: template contains an ASCII NUL", itemplate, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
     }
 
-    int r = mkstemp (filename);
+    int r = mkstemp (template);
 
     if (-1 == r) {
-	idio_error_system_errno ("mkstemp", IDIO_LIST1 (ifilename), IDIO_C_FUNC_LOCATION ());
+	free (template);
+
+	idio_error_system_errno ("mkstemp", IDIO_LIST1 (itemplate), IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
     }
 
-    if (isa_substring) {
-	memcpy (idio_string_s (ifilename), filename, idio_string_blen (ifilename));
-	free (filename);
-    }
+    /*
+     * Yuk!  The semantics of mkstemp are slightly different to
+     * mkdtemp, above.  mkdtemp "returns a pointer to the modified
+     * template string on success" so we can return a new Idio string.
+     *
+     * mkstemp, however, "return the file descriptor of the temporary
+     * file" with the tacit assumption that the caller can use the
+     * modified template to unlink the file.
+     *
+     * Therefore, we need to return a tuple of the file descriptor and
+     * a string of the created file name.
+     */
+    IDIO ifilename = idio_string_C (template);
 
-    return idio_C_int (r);
+    free (template);
+
+    return IDIO_LIST2 (idio_C_int (r), ifilename);
 }
 
-IDIO_DEFINE_PRIMITIVE0 ("pipe", libc_pipe, ())
+IDIO_DEFINE_PRIMITIVE0_DS ("pipe", libc_pipe, (void), "", "\
+in C, pipe ()							\n\
+a wrapper to libc pipe (2)					\n\
+								\n\
+:return: pointer to pipe array or raises ^system-error		\n\
+:rtype: C_pointer						\n\
+								\n\
+See ``pipe-reader`` and ``pipe-writer`` for accessors to	\n\
+the pipe array.							\n\
+")
 {
     int *pipefd = idio_alloc (2 * sizeof (int));
 
@@ -499,7 +685,16 @@ IDIO_DEFINE_PRIMITIVE0 ("pipe", libc_pipe, ())
     return idio_C_pointer_free_me (pipefd);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("pipe-reader", libc_pipe_reader, (IDIO ipipefd))
+IDIO_DEFINE_PRIMITIVE1_DS ("pipe-reader", libc_pipe_reader, (IDIO ipipefd), "pipefd", "\
+Return the read end of the pipe array				\n\
+								\n\
+:param pipefd: pointer to pipe array				\n\
+:type pipefd: C_pointer						\n\
+:return: read end of the pipe array				\n\
+:rtype: C_int							\n\
+								\n\
+See ``pipe`` for a constructor ofthe pipe array.		\n\
+")
 {
     IDIO_ASSERT (ipipefd);
     IDIO_VERIFY_PARAM_TYPE (C_pointer, ipipefd);
@@ -509,7 +704,16 @@ IDIO_DEFINE_PRIMITIVE1 ("pipe-reader", libc_pipe_reader, (IDIO ipipefd))
     return idio_C_int (pipefd[0]);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("pipe-writer", libc_pipe_writer, (IDIO ipipefd))
+IDIO_DEFINE_PRIMITIVE1_DS ("pipe-writer", libc_pipe_writer, (IDIO ipipefd), "pipefd", "\
+Return the write end of the pipe array				\n\
+								\n\
+:param pipefd: pointer to pipe array				\n\
+:type pipefd: C_pointer						\n\
+:return: write end of the pipe array				\n\
+:rtype: C_int							\n\
+								\n\
+See ``pipe`` for a constructor ofthe pipe array.		\n\
+")
 {
     IDIO_ASSERT (ipipefd);
     IDIO_VERIFY_PARAM_TYPE (C_pointer, ipipefd);
@@ -519,7 +723,17 @@ IDIO_DEFINE_PRIMITIVE1 ("pipe-writer", libc_pipe_writer, (IDIO ipipefd))
     return idio_C_int (pipefd[1]);
 }
 
-IDIO_DEFINE_PRIMITIVE1V ("read", libc_read, (IDIO ifd, IDIO icount))
+IDIO_DEFINE_PRIMITIVE1V_DS ("read", libc_read, (IDIO ifd, IDIO icount), "fd [count]", "\
+in C, read (fd[, count])					\n\
+a wrapper to libc read (2)					\n\
+								\n\
+:param fd: file descriptor					\n\
+:type fd: C_int							\n\
+:param count: number of bytes to read				\n\
+:type count: fixnum or C_int					\n\
+:return: string of bytes read or #<eof>				\n\
+:rtype: string or #<eof>					\n\
+")
 {
     IDIO_ASSERT (ifd);
     IDIO_VERIFY_PARAM_TYPE (C_int, ifd);
@@ -555,7 +769,17 @@ IDIO_DEFINE_PRIMITIVE1V ("read", libc_read, (IDIO ifd, IDIO icount))
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("setpgid", libc_setpgid, (IDIO ipid, IDIO ipgid))
+IDIO_DEFINE_PRIMITIVE2_DS ("setpgid", libc_setpgid, (IDIO ipid, IDIO ipgid), "pid pgid", "\
+in C, setpgid (pid, pgid)					\n\
+a wrapper to libc setpgid (2)					\n\
+								\n\
+:param pid: process ID						\n\
+:type pid: C_int						\n\
+:param pgid: PGID						\n\
+:type pgid: fixnum or C_int					\n\
+:return: 0 or raises ^system-error				\n\
+:rtype: C_int							\n\
+")
 {
     IDIO_ASSERT (ipid);
     IDIO_ASSERT (ipgid);
@@ -585,7 +809,21 @@ IDIO_DEFINE_PRIMITIVE2 ("setpgid", libc_setpgid, (IDIO ipid, IDIO ipgid))
     return idio_C_int (r);
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("signal", libc_signal, (IDIO isig, IDIO ifunc))
+IDIO_DEFINE_PRIMITIVE2_DS ("signal", libc_signal, (IDIO isig, IDIO ifunc), "sig func", "\
+in C, signal (sig, func)					\n\
+a wrapper to libc signal (2)					\n\
+								\n\
+:param sig: signal						\n\
+:type sig: C_int						\n\
+:param func: signal disposition					\n\
+:type func: C_pointer						\n\
+:return: previous disposition or raises ^system-error		\n\
+:rtype: C_pointer						\n\
+								\n\
+The following dispositions are defined:				\n\
+SIG_IGN								\n\
+SIG_DFL								\n\
+")
 {
     IDIO_ASSERT (isig);
     IDIO_ASSERT (ifunc);
@@ -609,11 +847,23 @@ IDIO_DEFINE_PRIMITIVE2 ("signal", libc_signal, (IDIO isig, IDIO ifunc))
  * to aid spotting if a parent process has kindly sigignored()d
  * SIGPIPE for us:
  *
- * == (c/signal-handler SIGPIPE) SIG_IGN
+ * == (libc/signal-handler SIGPIPE) SIG_IGN
  *
  * Hopefully we'll find other uses for it.
  */
-IDIO_DEFINE_PRIMITIVE1 ("signal-handler", libc_signal_handler, (IDIO isig))
+IDIO_DEFINE_PRIMITIVE1_DS ("signal-handler", libc_signal_handler, (IDIO isig), "sig", "\
+signal-handler (sig)						\n\
+								\n\
+A helper function to advise of the current disposition for a	\n\
+given signal.							\n\
+								\n\
+== (libc/signal-handler SIGPIPE) SIG_IGN			\n\
+								\n\
+:param sig: signal						\n\
+:type sig: C_int						\n\
+:return: current disposition or raises ^system-error		\n\
+:rtype: C_pointer						\n\
+")
 {
     IDIO_ASSERT (isig);
     IDIO_VERIFY_PARAM_TYPE (C_int, isig);
@@ -645,7 +895,15 @@ IDIO_DEFINE_PRIMITIVE1 ("signal-handler", libc_signal_handler, (IDIO isig))
     return idio_C_pointer (r);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("sleep", libc_sleep, (IDIO iseconds))
+IDIO_DEFINE_PRIMITIVE1_DS ("sleep", libc_sleep, (IDIO iseconds), "seconds", "\
+in C, sleep (seconds)						\n\
+a wrapper to libc sleep (3)					\n\
+								\n\
+:param seconds: seconds to sleep				\n\
+:type seconds: fixnum or C_int					\n\
+:return: 0 or the number of seconds left if interrupted		\n\
+:rtype: C_int							\n\
+")
 {
     IDIO_ASSERT (iseconds);
 
@@ -664,17 +922,30 @@ IDIO_DEFINE_PRIMITIVE1 ("sleep", libc_sleep, (IDIO iseconds))
     return idio_C_uint (r);
 }
 
-IDIO idio_libc_stat (IDIO p)
+IDIO idio_libc_stat (IDIO pathname)
 {
-    IDIO_ASSERT (p);
-    IDIO_TYPE_ASSERT (string, p);
+    IDIO_ASSERT (pathname);
+    IDIO_TYPE_ASSERT (string, pathname);
 
-    char *p_C = idio_string_as_C (p);
+    size_t size = 0;
+    char *pathname_C = idio_string_as_C (pathname, &size);
+    size_t C_size = strlen (pathname_C);
+    if (C_size != size) {
+	free (pathname_C);
+
+	idio_libc_error_format ("stat: pathname contains an ASCII NUL", pathname, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
 
     struct stat sb;
 
-    if (stat (p_C, &sb) == -1) {
-	idio_error_system_errno ("stat", IDIO_LIST1 (p), IDIO_C_FUNC_LOCATION ());
+    if (stat (pathname_C, &sb) == -1) {
+	free (pathname_C);
+
+	idio_error_system_errno ("stat", IDIO_LIST1 (pathname), IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
     }
 
     /*
@@ -695,20 +966,37 @@ IDIO idio_libc_stat (IDIO p)
 				   idio_pair (idio_C_uint (sb.st_mtime),
 				   idio_pair (idio_C_uint (sb.st_ctime),
 				   idio_S_nil))))))))))))));
-    free (p_C);
+
+    free (pathname_C);
 
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("stat", libc_stat, (IDIO p))
+IDIO_DEFINE_PRIMITIVE1_DS ("stat", libc_stat, (IDIO pathname), "pathname", "\
+in C, stat (pathname)						\n\
+a wrapper to libc stat (2)					\n\
+								\n\
+:param pathname: pathname to stat				\n\
+:type pathname: string						\n\
+:return: struct-stat or raises ^system-error			\n\
+:rtype: struct instance						\n\
+")
 {
-    IDIO_ASSERT (p);
-    IDIO_VERIFY_PARAM_TYPE (string, p);
+    IDIO_ASSERT (pathname);
+    IDIO_VERIFY_PARAM_TYPE (string, pathname);
 
-    return idio_libc_stat (p);
+    return idio_libc_stat (pathname);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("strerror", libc_strerror, (IDIO ierrnum))
+IDIO_DEFINE_PRIMITIVE1_DS ("strerror", libc_strerror, (IDIO ierrnum), "errnum", "\
+in C, strerror (errnum)						\n\
+a wrapper to libc strerror (3)					\n\
+								\n\
+:param errnum: error code to describe				\n\
+:type errnum : fixnum or C_int					\n\
+:return: string describing errnum				\n\
+:rtype: string							\n\
+")
 {
     IDIO_ASSERT (ierrnum);
 
@@ -726,7 +1014,15 @@ IDIO_DEFINE_PRIMITIVE1 ("strerror", libc_strerror, (IDIO ierrnum))
     return idio_string_C (r);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("strsignal", libc_strsignal, (IDIO isignum))
+IDIO_DEFINE_PRIMITIVE1_DS ("strsignal", libc_strsignal, (IDIO isignum), "sig", "\
+in C, strsignal (sig)						\n\
+a wrapper to libc strsignal (3)					\n\
+								\n\
+:param sig: signal number to describe				\n\
+:type sig : fixnum or C_int					\n\
+:return: string describing errnum				\n\
+:rtype: string							\n\
+")
 {
     IDIO_ASSERT (isignum);
 
@@ -744,7 +1040,15 @@ IDIO_DEFINE_PRIMITIVE1 ("strsignal", libc_strsignal, (IDIO isignum))
     return idio_string_C (r);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("tcgetattr", libc_tcgetattr, (IDIO ifd))
+IDIO_DEFINE_PRIMITIVE1_DS ("tcgetattr", libc_tcgetattr, (IDIO ifd), "fd", "\
+in C, tcgetattr (fd)						\n\
+a wrapper to libc tcgetattr (3)					\n\
+								\n\
+:param fd: file descriptor					\n\
+:type fd: C_int							\n\
+:return: struct termios or raises ^system-error			\n\
+:rtype: C_pointer						\n\
+")
 {
     IDIO_ASSERT (ifd);
     IDIO_VERIFY_PARAM_TYPE (C_int, ifd);
@@ -761,7 +1065,15 @@ IDIO_DEFINE_PRIMITIVE1 ("tcgetattr", libc_tcgetattr, (IDIO ifd))
     return idio_C_pointer_free_me (tcattrs);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("tcgetpgrp", libc_tcgetpgrp, (IDIO ifd))
+IDIO_DEFINE_PRIMITIVE1_DS ("tcgetpgrp", libc_tcgetpgrp, (IDIO ifd), "fd", "\
+in C, tcgetpgrp (fd)						\n\
+a wrapper to libc tcgetpgrp (3)					\n\
+								\n\
+:param fd: file descriptor					\n\
+:type fd: C_int							\n\
+:return: PID or raises ^system-error				\n\
+:rtype: C_int							\n\
+")
 {
     IDIO_ASSERT (ifd);
     IDIO_VERIFY_PARAM_TYPE (C_int, ifd);
@@ -777,7 +1089,25 @@ IDIO_DEFINE_PRIMITIVE1 ("tcgetpgrp", libc_tcgetpgrp, (IDIO ifd))
     return idio_C_int (pid);
 }
 
-IDIO_DEFINE_PRIMITIVE3 ("tcsetattr", libc_tcsetattr, (IDIO ifd, IDIO ioptions, IDIO itcattrs))
+IDIO_DEFINE_PRIMITIVE3_DS ("tcsetattr", libc_tcsetattr, (IDIO ifd, IDIO ioptions, IDIO itcattrs), "fd options tcattrs", "\
+in C, tcsetattr (fd)						\n\
+a wrapper to libc tcsetattr (3)					\n\
+								\n\
+:param fd: file descriptor					\n\
+:type fd: C_int							\n\
+:param options: see below					\n\
+:type options: C_int						\n\
+:param tcattrs: struct termios					\n\
+:type tcattrs: C_pointer					\n\
+:return: 0 or raises ^system-error				\n\
+:rtype: C_int							\n\
+								\n\
+The following options are defined:				\n\
+TCSADRAIN							\n\
+TCSAFLUSH							\n\
+								\n\
+See ``tcgetattr`` for obtaining a struct termios.		\n\
+")
 {
     IDIO_ASSERT (ifd);
     IDIO_ASSERT (ioptions);
@@ -799,7 +1129,17 @@ IDIO_DEFINE_PRIMITIVE3 ("tcsetattr", libc_tcsetattr, (IDIO ifd, IDIO ioptions, I
     return idio_C_int (r);
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("tcsetpgrp", libc_tcsetpgrp, (IDIO ifd, IDIO ipgrp))
+IDIO_DEFINE_PRIMITIVE2_DS ("tcsetpgrp", libc_tcsetpgrp, (IDIO ifd, IDIO ipgrp), "fd pgrp", "\
+in C, tcsetpgrp (fd, pgrp)					\n\
+a wrapper to libc tcsetpgrp (3)					\n\
+								\n\
+:param fd: file descriptor					\n\
+:type fd: C_int							\n\
+:param pgrp: PGID						\n\
+:type pgrp: C_int						\n\
+:return: 0 or raises ^system-error				\n\
+:rtype: C_int							\n\
+")
 {
     IDIO_ASSERT (ifd);
     IDIO_ASSERT (ipgrp);
@@ -842,7 +1182,20 @@ IDIO idio_libc_uname ()
 								       idio_string_C (u.machine)));
 }
 
-IDIO_DEFINE_PRIMITIVE0 ("uname", libc_uname, ())
+IDIO_DEFINE_PRIMITIVE0_DS ("uname", libc_uname, (void), "", "\
+in C, uname ()						\n\
+a wrapper to libc uname (3)					\n\
+								\n\
+:return: struct-utsname or raises ^system-error			\n\
+:rtype: C_pointer						\n\
+								\n\
+Not strictly useful at the moment.  You might want to use	\n\
+``libc/idio-uname`` such as:					\n\
+								\n\
+libc/idio-uname.nodename					\n\
+								\n\
+instead.							\n\
+")
 {
     struct utsname *up;
     up = idio_alloc (sizeof (struct utsname));
@@ -854,25 +1207,64 @@ IDIO_DEFINE_PRIMITIVE0 ("uname", libc_uname, ())
     return idio_C_pointer_free_me (up);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("unlink", libc_unlink, (IDIO ipath))
+IDIO_DEFINE_PRIMITIVE1_DS ("unlink", libc_unlink, (IDIO ipathname), "pathname", "\
+in C, unlink (pathname)						\n\
+a wrapper to libc unlink (2)					\n\
+								\n\
+:param pathname: filename to unlink					\n\
+:type pathname: string						\n\
+:return: 0 or raises ^system-error				\n\
+:rtype: C_int							\n\
+")
 {
-    IDIO_ASSERT (ipath);
-    IDIO_VERIFY_PARAM_TYPE (string, ipath);
+    IDIO_ASSERT (ipathname);
+    IDIO_VERIFY_PARAM_TYPE (string, ipathname);
 
-    char *path = idio_string_as_C (ipath);
+    size_t size = 0;
+    char *pathname = idio_string_as_C (ipathname, &size);
+    size_t C_size = strlen (pathname);
+    if (C_size != size) {
+	free (pathname);
 
-    int r = unlink (path);
+	idio_libc_error_format ("unlink: pathname contains an ASCII NUL", ipathname, IDIO_C_FUNC_LOCATION ());
 
-    free (path);
+	return idio_S_notreached;
+    }
+
+    int r = unlink (pathname);
+
+    free (pathname);
 
     if (-1 == r) {
-	idio_error_system_errno ("unlink", IDIO_LIST1 (ipath), IDIO_C_FUNC_LOCATION ());
+	idio_error_system_errno ("unlink", IDIO_LIST1 (ipathname), IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
     }
 
     return idio_C_int (r);
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("waitpid", libc_waitpid, (IDIO ipid, IDIO ioptions))
+IDIO_DEFINE_PRIMITIVE2_DS ("waitpid", libc_waitpid, (IDIO ipid, IDIO ioptions), "pid options", "\
+in C, waitpid (pid, options)					\n\
+a wrapper to libc waitpid (2)					\n\
+								\n\
+:param pid: process ID						\n\
+:type pid: C_int						\n\
+:param options: see below					\n\
+:type options: C_int						\n\
+:return: list of (return code, status) or raises ^system-error	\n\
+:rtype: list							\n\
+								\n\
+WAIT_ANY is defined as -1 in place of ``pid``.			\n\
+								\n\
+The following options are defined:				\n\
+WNOHANG								\n\
+WUNTRACED							\n\
+								\n\
+``status`` is C_pointer to a C ``int *``.  See ``WIFEXITED``,	\n\
+``WEXITSTATUS``, ``WIFSIGNALLED``, ``WTERMSIG``, ``WIFSTOPPED``	\n\
+for functions to manipulate ``status``.				\n\
+")
 {
     IDIO_ASSERT (ipid);
     IDIO_ASSERT (ioptions);
@@ -883,6 +1275,7 @@ IDIO_DEFINE_PRIMITIVE2 ("waitpid", libc_waitpid, (IDIO ipid, IDIO ioptions))
     int options = IDIO_C_TYPE_INT (ioptions);
 
     int *statusp = idio_alloc (sizeof (int));
+    IDIO istatus = idio_C_pointer_free_me (statusp);
 
     pid_t r = waitpid (pid, statusp, options);
 
@@ -893,12 +1286,18 @@ IDIO_DEFINE_PRIMITIVE2 ("waitpid", libc_waitpid, (IDIO ipid, IDIO ioptions))
 	idio_error_system_errno ("waitpid", IDIO_LIST2 (ipid, ioptions), IDIO_C_FUNC_LOCATION ());
     }
 
-    IDIO istatus = idio_C_pointer_free_me (statusp);
-
     return IDIO_LIST2 (idio_C_int (r), istatus);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("WEXITSTATUS", libc_WEXITSTATUS, (IDIO istatus))
+IDIO_DEFINE_PRIMITIVE1_DS ("WEXITSTATUS", libc_WEXITSTATUS, (IDIO istatus), "status", "\
+in C, WEXITSTATUS (status)					\n\
+a wrapper to libc macro WEXITSTATUS, see waitpid (2)		\n\
+								\n\
+:param status: process status					\n\
+:type status: C_pointer						\n\
+:return: exit status of child					\n\
+:rtype: C_int							\n\
+")
 {
     IDIO_ASSERT (istatus);
     IDIO_VERIFY_PARAM_TYPE (C_pointer, istatus);
@@ -908,7 +1307,15 @@ IDIO_DEFINE_PRIMITIVE1 ("WEXITSTATUS", libc_WEXITSTATUS, (IDIO istatus))
     return idio_C_int (WEXITSTATUS (*statusp));
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("WIFEXITED", libc_WIFEXITED, (IDIO istatus))
+IDIO_DEFINE_PRIMITIVE1_DS ("WIFEXITED", libc_WIFEXITED, (IDIO istatus), "status", "\
+in C, WIFEXITED (status)					\n\
+a wrapper to libc macro WIFEXITED, see waitpid (2)		\n\
+								\n\
+:param status: process status					\n\
+:type status: C_pointer						\n\
+:return: #t if the child exited normally or #f			\n\
+:rtype: boolean							\n\
+")
 {
     IDIO_ASSERT (istatus);
     IDIO_VERIFY_PARAM_TYPE (C_pointer, istatus);
@@ -924,7 +1331,15 @@ IDIO_DEFINE_PRIMITIVE1 ("WIFEXITED", libc_WIFEXITED, (IDIO istatus))
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("WIFSIGNALED", libc_WIFSIGNALED, (IDIO istatus))
+IDIO_DEFINE_PRIMITIVE1_DS ("WIFSIGNALED", libc_WIFSIGNALED, (IDIO istatus), "status", "\
+in C, WIFSIGNALLED (status)					\n\
+a wrapper to libc macro WIFSIGNALLED, see waitpid (2)		\n\
+								\n\
+:param status: process status					\n\
+:type status: C_pointer						\n\
+:return: #t if the child was terminated by a signal or #f	\n\
+:rtype: boolean							\n\
+")
 {
     IDIO_ASSERT (istatus);
     IDIO_VERIFY_PARAM_TYPE (C_pointer, istatus);
@@ -940,7 +1355,15 @@ IDIO_DEFINE_PRIMITIVE1 ("WIFSIGNALED", libc_WIFSIGNALED, (IDIO istatus))
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("WIFSTOPPED", libc_WIFSTOPPED, (IDIO istatus))
+IDIO_DEFINE_PRIMITIVE1_DS ("WIFSTOPPED", libc_WIFSTOPPED, (IDIO istatus), "status", "\
+in C, WIFSTOPPED (status)					\n\
+a wrapper to libc macro WIFSTOPPED, see waitpid (2)		\n\
+								\n\
+:param status: process status					\n\
+:type status: C_pointer						\n\
+:return: #t if the child was stopped by a signal or #f		\n\
+:rtype: boolean							\n\
+")
 {
     IDIO_ASSERT (istatus);
     IDIO_VERIFY_PARAM_TYPE (C_pointer, istatus);
@@ -956,7 +1379,15 @@ IDIO_DEFINE_PRIMITIVE1 ("WIFSTOPPED", libc_WIFSTOPPED, (IDIO istatus))
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("WTERMSIG", libc_WTERMSIG, (IDIO istatus))
+IDIO_DEFINE_PRIMITIVE1_DS ("WTERMSIG", libc_WTERMSIG, (IDIO istatus), "status", "\
+in C, WTERMSIG (status)						\n\
+a wrapper to libc macro WTERMSIG, see waitpid (2)		\n\
+								\n\
+:param status: process status					\n\
+:type status: C_pointer						\n\
+:return: signal number that terminated child			\n\
+:rtype: C_int							\n\
+")
 {
     IDIO_ASSERT (istatus);
     IDIO_VERIFY_PARAM_TYPE (C_pointer, istatus);
@@ -967,14 +1398,14 @@ IDIO_DEFINE_PRIMITIVE1 ("WTERMSIG", libc_WTERMSIG, (IDIO istatus))
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("write", libc_write, (IDIO ifd, IDIO istr), "fd str", "\
-write (fd, str)							\n\
+in C, write (fd, str)						\n\
 a wrapper to libc write (2)					\n\
 								\n\
 :param fd: file descriptor					\n\
 :type fd: C_int							\n\
 :param str: string						\n\
 :type str: string						\n\
-:return: number of bytes written				\n\
+:return: number of bytes written or raises ^system-error	\n\
 :rtype: integer							\n\
 ")
 {
@@ -985,17 +1416,16 @@ a wrapper to libc write (2)					\n\
 
     int fd = IDIO_C_TYPE_INT (ifd);
 
-    size_t blen = idio_string_blen (istr);
+    size_t blen = 0;
+    char *str = idio_string_as_C (istr, &blen);
 
-    /*
-     * A rare occasion we can use idio_string_s() as we are also using
-     * blen.
-     */
-    ssize_t n = write (fd, idio_string_s (istr), blen);
+    ssize_t n = write (fd, str, blen);
 
     if (-1 == n) {
 	idio_error_system_errno ("write", IDIO_LIST2 (ifd, istr), IDIO_C_FUNC_LOCATION ());
     }
+
+    free (str);
 
     return idio_integer (n);
 }
@@ -1286,22 +1716,6 @@ static void idio_libc_set_signal_names ()
  * as we've stripped off the "sig" part...can't be witty in the API,
  * though!)
  */
-char *idio_libc_sig_name (int signum)
-{
-    if (signum < IDIO_LIBC_FSIG ||
-	signum > IDIO_LIBC_NSIG) {
-	idio_error_param_type ("int < NSIG (or SIGRTMAX)", idio_C_int (signum), IDIO_C_FUNC_LOCATION ());
-    }
-
-    char *signame = idio_libc_signal_names[signum];
-
-    if (strncmp (signame, "SIG", 3) == 0) {
-	return (signame + 3);
-    } else {
-	return signame;
-    }
-}
-
 char *idio_libc_signal_name (int signum)
 {
     if (signum < IDIO_LIBC_FSIG ||
@@ -1312,7 +1726,29 @@ char *idio_libc_signal_name (int signum)
     return idio_libc_signal_names[signum];
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("sig-name", libc_sig_name, (IDIO isignum))
+char *idio_libc_sig_name (int signum)
+{
+    char *signame = idio_libc_signal_name (signum);
+
+    if (strncmp (signame, "SIG", 3) == 0) {
+	return (signame + 3);
+    } else {
+	return signame;
+    }
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("sig-name", libc_sig_name, (IDIO isignum), "signum", "\
+return the short signal name of ``signum``			\n\
+								\n\
+:param signum: signal number					\n\
+:type signum: C_int						\n\
+:return: short signal name					\n\
+:rtype: string							\n\
+								\n\
+A short signal name would be \"QUIT\" or \"INT\".		\n\
+								\n\
+See ``signal-name`` for long versions.				\n\
+")
 {
     IDIO_ASSERT (isignum);
     IDIO_VERIFY_PARAM_TYPE (C_int, isignum);
@@ -1320,7 +1756,16 @@ IDIO_DEFINE_PRIMITIVE1 ("sig-name", libc_sig_name, (IDIO isignum))
     return idio_string_C (idio_libc_sig_name (IDIO_C_TYPE_INT (isignum)));
 }
 
-IDIO_DEFINE_PRIMITIVE0 ("sig-names", libc_sig_names, ())
+IDIO_DEFINE_PRIMITIVE0_DS ("sig-names", libc_sig_names, (void), "", "\
+return a list of (number, short name) pairs of known signals	\n\
+								\n\
+:return: map of signal pairs					\n\
+:rtype: list							\n\
+								\n\
+A short signal name would be \"QUIT\" or \"INT\".		\n\
+								\n\
+See ``signal-names`` for long versions.				\n\
+")
 {
     IDIO r = idio_S_nil;
 
@@ -1332,7 +1777,18 @@ IDIO_DEFINE_PRIMITIVE0 ("sig-names", libc_sig_names, ())
     return idio_list_reverse (r);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("signal-name", libc_signal_name, (IDIO isignum))
+IDIO_DEFINE_PRIMITIVE1_DS ("signal-name", libc_signal_name, (IDIO isignum), "signum", "\
+return the long signal name of ``signum``			\n\
+								\n\
+:param signum: signal number					\n\
+:type signum: C_int						\n\
+:return: long signal name					\n\
+:rtype: string							\n\
+								\n\
+A long signal name would be \"SIGQUIT\" or \"SIGINT\".		\n\
+								\n\
+See ``sig-name`` for short versions.				\n\
+")
 {
     IDIO_ASSERT (isignum);
     IDIO_VERIFY_PARAM_TYPE (C_int, isignum);
@@ -1340,7 +1796,16 @@ IDIO_DEFINE_PRIMITIVE1 ("signal-name", libc_signal_name, (IDIO isignum))
     return idio_string_C (idio_libc_signal_name (IDIO_C_TYPE_INT (isignum)));
 }
 
-IDIO_DEFINE_PRIMITIVE0 ("signal-names", libc_signal_names, ())
+IDIO_DEFINE_PRIMITIVE0_DS ("signal-names", libc_signal_names, (void), "", "\
+return a list of (number, long name) pairs of known signals	\n\
+								\n\
+:return: map of signal pairs					\n\
+:rtype: list							\n\
+								\n\
+A long signal name would be \"SIGQUIT\" or \"SIGINT\".		\n\
+								\n\
+See ``sig-names`` for short versions.				\n\
+")
 {
     IDIO r = idio_S_nil;
 
@@ -2254,7 +2719,14 @@ char *idio_libc_errno_name (int errnum)
     return idio_libc_errno_names[errnum];
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("errno-name", libc_errno_name, (IDIO ierrnum))
+IDIO_DEFINE_PRIMITIVE1_DS ("errno-name", libc_errno_name, (IDIO ierrnum), "errnum", "\
+return the error name of ``errnum``				\n\
+								\n\
+:param errnum: error number					\n\
+:type errnum: C_int						\n\
+:return: error name						\n\
+:rtype: string							\n\
+")
 {
     IDIO_ASSERT (ierrnum);
     IDIO_VERIFY_PARAM_TYPE (C_int, ierrnum);
@@ -2262,7 +2734,12 @@ IDIO_DEFINE_PRIMITIVE1 ("errno-name", libc_errno_name, (IDIO ierrnum))
     return idio_string_C (idio_libc_errno_name (IDIO_C_TYPE_INT (ierrnum)));
 }
 
-IDIO_DEFINE_PRIMITIVE0 ("errno-names", libc_errno_names, ())
+IDIO_DEFINE_PRIMITIVE0_DS ("errno-names", libc_errno_names, (void), "", "\
+return a list of (number, name) pairs of known errno numbers	\n\
+								\n\
+:return: map of errno pairs					\n\
+:rtype: list							\n\
+")
 {
     IDIO r = idio_S_nil;
 
@@ -2277,7 +2754,16 @@ IDIO_DEFINE_PRIMITIVE0 ("errno-names", libc_errno_names, ())
 /*
  * Moral equivalent of strsignal(3) -- identical to errno-name, above.
  */
-IDIO_DEFINE_PRIMITIVE1 ("strerrno", libc_strerrno, (IDIO ierrnum))
+IDIO_DEFINE_PRIMITIVE1_DS ("strerrno", libc_strerrno, (IDIO ierrnum), "errnum", "\
+return the error name of ``errnum``				\n\
+								\n\
+:param errnum: error number					\n\
+:type errnum: C_int						\n\
+:return: error name						\n\
+:rtype: string							\n\
+								\n\
+Identical to ``errno-name``.					\n\
+")
 {
     IDIO_ASSERT (ierrnum);
     IDIO_VERIFY_PARAM_TYPE (C_int, ierrnum);
@@ -2285,7 +2771,14 @@ IDIO_DEFINE_PRIMITIVE1 ("strerrno", libc_strerrno, (IDIO ierrnum))
     return idio_string_C (idio_libc_errno_name (IDIO_C_TYPE_INT (ierrnum)));
 }
 
-IDIO_DEFINE_PRIMITIVE0 ("errno/get", libc_errno_get, (void))
+IDIO_DEFINE_PRIMITIVE0_DS ("errno/get", libc_errno_get, (void), "", "\
+return ``errno``						\n\
+								\n\
+:return: errno							\n\
+:rtype: C_int							\n\
+								\n\
+Identical to ``errno-name``.					\n\
+")
 {
     return idio_C_int (errno);
 }
@@ -2500,7 +2993,18 @@ IDIO idio_libc_getrlimit (int resource)
 								      idio_C_int (rlim.rlim_max)));
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("getrlimit", libc_getrlimit, (IDIO iresource))
+IDIO_DEFINE_PRIMITIVE1_DS ("getrlimit", libc_getrlimit, (IDIO iresource), "resource", "\
+in C, getrlimit (resource)					\n\
+a wrapper to libc getrlimit (2)					\n\
+								\n\
+:param resource: resource, see below				\n\
+:type resource: C_int						\n\
+:return: struct-rlimit or raises ^system-error			\n\
+:rtype: struct instance						\n\
+								\n\
+The resource names follow C conventions such as ``RLIMIT_AS``	\n\
+and ``RLIMIT_NOFILE``.						\n\
+")
 {
     IDIO_ASSERT (iresource);
     IDIO_VERIFY_PARAM_TYPE (C_int, iresource);
@@ -2515,7 +3019,22 @@ void idio_libc_setrlimit (int resource, struct rlimit *rlimp)
     }
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("setrlimit", libc_setrlimit, (IDIO iresource, IDIO irlim))
+IDIO_DEFINE_PRIMITIVE2_DS ("setrlimit", libc_setrlimit, (IDIO iresource, IDIO irlim), "resource rlim", "\
+in C, setrlimit (resource, rlim)				\n\
+a wrapper to libc setrlimit (2)					\n\
+								\n\
+:param resource: resource, see below				\n\
+:type resource: C_int						\n\
+:param rlim: struct-rlimit					\n\
+:type rlim: struct instance					\n\
+:return: 0 or raises ^system-error				\n\
+:rtype: C_int							\n\
+								\n\
+The resource names follow C conventions such as ``RLIMIT_AS``	\n\
+and ``RLIMIT_NOFILE``.						\n\
+								\n\
+See ``getrlimit`` to obtain a struct-rlimit.			\n\
+")
 {
     IDIO_ASSERT (iresource);
     IDIO_ASSERT (irlim);
@@ -2534,12 +3053,26 @@ IDIO_DEFINE_PRIMITIVE2 ("setrlimit", libc_setrlimit, (IDIO iresource, IDIO irlim
     return idio_S_unspec;
 }
 
-IDIO_DEFINE_PRIMITIVE0 ("EGID/get", EGID_get, (void))
+IDIO_DEFINE_PRIMITIVE0_DS ("EGID/get", EGID_get, (void), "", "\
+getter for the computed value ``EGID`` which is a call to	\n\
+getegid (2).							\n\
+								\n\
+:return: effective group ID					\n\
+:rtype: integer							\n\
+")
 {
     return idio_integer (getegid ());
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("EGID/set", EGID_set, (IDIO iegid))
+IDIO_DEFINE_PRIMITIVE1_DS ("EGID/set", EGID_set, (IDIO iegid), "egid", "\
+setter for the computed value ``EGID`` which is a call to	\n\
+setegid (2).							\n\
+								\n\
+:param egid: effective group ID					\n\
+:type egid: fixnum or C_int					\n\
+:return: 0 or raises ^system-error				\n\
+:rtype: fixnum							\n\
+")
 {
     IDIO_ASSERT (iegid);
 
@@ -2564,12 +3097,26 @@ IDIO_DEFINE_PRIMITIVE1 ("EGID/set", EGID_set, (IDIO iegid))
     return idio_fixnum (r);
 }
 
-IDIO_DEFINE_PRIMITIVE0 ("EUID/get", EUID_get, (void))
+IDIO_DEFINE_PRIMITIVE0_DS ("EUID/get", EUID_get, (void), "", "\
+getter for the computed value ``EUID`` which is a call to	\n\
+geteuid (2).							\n\
+								\n\
+:return: effective user ID					\n\
+:rtype: integer							\n\
+")
 {
     return idio_integer (geteuid ());
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("EUID/set", EUID_set, (IDIO ieuid))
+IDIO_DEFINE_PRIMITIVE1_DS ("EUID/set", EUID_set, (IDIO ieuid), "euid", "\
+setter for the computed value ``EUID`` which is a call to	\n\
+seteuid (2).							\n\
+								\n\
+:param euid: effective user ID					\n\
+:type euid: fixnum or C_int					\n\
+:return: 0 or raises ^system-error				\n\
+:rtype: fixnum							\n\
+")
 {
     IDIO_ASSERT (ieuid);
 
@@ -2594,12 +3141,26 @@ IDIO_DEFINE_PRIMITIVE1 ("EUID/set", EUID_set, (IDIO ieuid))
     return idio_fixnum (r);
 }
 
-IDIO_DEFINE_PRIMITIVE0 ("GID/get", GID_get, (void))
+IDIO_DEFINE_PRIMITIVE0_DS ("GID/get", GID_get, (void), "", "\
+getter for the computed value ``GID`` which is a call to	\n\
+getgid (2).							\n\
+								\n\
+:return: real group ID						\n\
+:rtype: integer							\n\
+")
 {
     return idio_integer (getgid ());
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("GID/set", GID_set, (IDIO igid))
+IDIO_DEFINE_PRIMITIVE1_DS ("GID/set", GID_set, (IDIO igid), "gid", "\
+setter for the computed value ``GID`` which is a call to	\n\
+setgid (2).							\n\
+								\n\
+:param gid: real group ID					\n\
+:type gid: fixnum or C_int					\n\
+:return: 0 or raises ^system-error				\n\
+:rtype: fixnum							\n\
+")
 {
     IDIO_ASSERT (igid);
 
@@ -2624,12 +3185,26 @@ IDIO_DEFINE_PRIMITIVE1 ("GID/set", GID_set, (IDIO igid))
     return idio_fixnum (r);
 }
 
-IDIO_DEFINE_PRIMITIVE0 ("UID/get", UID_get, (void))
+IDIO_DEFINE_PRIMITIVE0_DS ("UID/get", UID_get, (void), "", "\
+getter for the computed value ``UID`` which is a call to	\n\
+getuid (2).							\n\
+								\n\
+:return: real user ID						\n\
+:rtype: integer							\n\
+")
 {
     return idio_integer (getuid ());
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("UID/set", UID_set, (IDIO iuid))
+IDIO_DEFINE_PRIMITIVE1_DS ("UID/set", UID_set, (IDIO iuid), "uid", "\
+setter for the computed value ``UID`` which is a call to	\n\
+setuid (2).							\n\
+								\n\
+:param uid: real user ID					\n\
+:type uid: fixnum or C_int					\n\
+:return: 0 or raises ^system-error				\n\
+:rtype: fixnum							\n\
+")
 {
     IDIO_ASSERT (iuid);
 
@@ -2654,17 +3229,32 @@ IDIO_DEFINE_PRIMITIVE1 ("UID/set", UID_set, (IDIO iuid))
     return idio_fixnum (r);
 }
 
-IDIO_DEFINE_PRIMITIVE0 ("STDIN/get", libc_STDIN_get, (void))
+IDIO_DEFINE_PRIMITIVE0_DS ("STDIN/get", libc_STDIN_get, (void), "", "\
+return the current input handle					\n\
+								\n\
+:return: current input handle					\n\
+:rtype: handle							\n\
+")
 {
     return idio_thread_current_input_handle ();
 }
 
-IDIO_DEFINE_PRIMITIVE0 ("STDOUT/get", libc_STDOUT_get, (void))
+IDIO_DEFINE_PRIMITIVE0_DS ("STDOUT/get", libc_STDOUT_get, (void), "", "\
+return the current output handle				\n\
+								\n\
+:return: current output handle					\n\
+:rtype: handle							\n\
+")
 {
     return idio_thread_current_output_handle ();
 }
 
-IDIO_DEFINE_PRIMITIVE0 ("STDERR/get", libc_STDERR_get, (void))
+IDIO_DEFINE_PRIMITIVE0_DS ("STDERR/get", libc_STDERR_get, (void), "", "\
+return the current error handle					\n\
+								\n\
+:return: current error handle					\n\
+:rtype: handle							\n\
+")
 {
     return idio_thread_current_error_handle ();
 }

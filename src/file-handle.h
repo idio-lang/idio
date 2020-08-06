@@ -32,7 +32,7 @@
 typedef struct idio_file_handle_stream_s {
     FILE *filep;		/* or NULL! */
     int fd;
-    FLAGS_T flags;		/* IDIO_FILE_HANDLE_FLAG_* */
+    IDIO_FLAGS_T flags;		/* IDIO_FILE_HANDLE_FLAG_* */
     char *buf;			/* buffer */
     int bufsiz;
     char *ptr;			/* ptr into buffer */
@@ -63,7 +63,7 @@ void idio_gc_deregister_file_handle (IDIO fh);
 void idio_remember_file_handle (IDIO fh);
 void idio_forget_file_handle (IDIO fh);
 void idio_free_file_handle (IDIO fh);
-IDIO idio_open_file_handle_C (IDIO filename, char *pathname, char *mode);
+IDIO idio_open_file_handle_C (IDIO filename, char *pathname, int free_pathname, char *mode, int free_mode);
 IDIO idio_stdin_file_handle ();
 IDIO idio_stdout_file_handle ();
 IDIO idio_stderr_file_handle ();
@@ -72,11 +72,12 @@ int idio_getc_file_handle (IDIO fh);
 int idio_eofp_file_handle (IDIO fh);
 int idio_close_file_handle (IDIO fh);
 int idio_putc_file_handle (IDIO fh, int c);
-size_t idio_puts_file_handle (IDIO fh, char *s, size_t slen);
+ptrdiff_t idio_puts_file_handle (IDIO fh, char *s, size_t slen);
 int idio_flush_file_handle (IDIO fh);
 off_t idio_seek_file_handle (IDIO fh, off_t offset, int whence);
 void idio_print_file_handle (IDIO fh, IDIO o);
 IDIO idio_defprimitive_open_file_handle (IDIO name, IDIO mode);
+IDIO idio_load_file_name_ebe (IDIO filename, IDIO cs);
 IDIO idio_load_file_name_aio (IDIO filename, IDIO cs);
 IDIO idio_defprimitive_load_file (IDIO filename);
 

@@ -29,7 +29,7 @@ void idio_handle_error_closed (IDIO h, IDIO c_location);
 
 IDIO idio_handle ();
 int idio_isa_handle (IDIO d);
-char *idio_handle_name (IDIO h);
+char *idio_handle_name_as_C (IDIO h);
 void idio_free_handle (IDIO d);
 void idio_handle_finalizer (IDIO handle);
 
@@ -41,9 +41,10 @@ int idio_peek_handle (IDIO h);
 int idio_eofp_handle (IDIO h);
 int idio_close_handle (IDIO h);
 int idio_putc_handle (IDIO h, int c);
-size_t idio_puts_handle (IDIO h, char *s, size_t slen);
+ptrdiff_t idio_puts_handle (IDIO h, char *s, size_t slen);
 int idio_flush_handle (IDIO h);
 off_t idio_seek_handle (IDIO h, off_t offset, int whence);
+off_t idio_handle_tell (IDIO h);
 void idio_print_handle (IDIO h, IDIO o);
 
 IDIO idio_handle_or_current (IDIO h, unsigned mode);
@@ -60,7 +61,8 @@ IDIO idio_display_C_len (char *s, size_t blen, IDIO h);
 IDIO idio_display_C (char *s, IDIO h);
 IDIO idio_handle_location (IDIO h);
 
-IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO e, IDIO cs), IDIO cs);
+IDIO idio_load_handle_ebe (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO e, IDIO cs), IDIO cs);
+IDIO idio_load_handle_aio (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO e, IDIO cs), IDIO cs);
 IDIO idio_load_handle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO e, IDIO cs), IDIO cs);
 
 void idio_init_handle ();

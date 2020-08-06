@@ -52,6 +52,7 @@ IDIO idio_condition_io_file_already_exists_error_type;
 IDIO idio_condition_io_no_such_file_error_type;
 IDIO idio_condition_read_error_type;
 IDIO idio_condition_evaluation_error_type;
+IDIO idio_condition_string_error_type;
 
 /* Idio */
 IDIO idio_condition_idio_error_type;
@@ -889,6 +890,7 @@ void idio_init_condition ()
     /* NB. no column or span! */
     IDIO_DEFINE_CONDITION2 (idio_condition_read_error_type, "^read-error", idio_condition_idio_error_type, "line", "position");
     IDIO_DEFINE_CONDITION1 (idio_condition_evaluation_error_type, "^evaluation-error", idio_condition_idio_error_type, "expr");
+    IDIO_DEFINE_CONDITION0 (idio_condition_string_error_type, "^string-error", idio_condition_idio_error_type);
 
     /* Idio */
     IDIO_DEFINE_CONDITION1 (idio_condition_system_error_type, "^system-error", idio_condition_idio_error_type, "errno");
@@ -997,6 +999,7 @@ void idio_final_condition ()
     idio_gc_expose (idio_condition_io_no_such_file_error_type);
     idio_gc_expose (idio_condition_read_error_type);
     idio_gc_expose (idio_condition_evaluation_error_type);
+    idio_gc_expose (idio_condition_string_error_type);
 
     idio_gc_expose (idio_condition_system_error_type);
 

@@ -673,6 +673,15 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 			    return;
 			}
 			break;
+		    case IDIO_TYPE_CONSTANT_UNICODE_MARK:
+			{
+			    intptr_t v = IDIO_UNICODE_VAL (c);
+
+			    IDIO_IA_PUSH1 (IDIO_A_UNICODE);
+			    IDIO_IA_PUSH_VARUINT (v);
+			    return;
+			}
+			break;
 		    default:
 			idio_error_C ("unexpected constant/CONSTANT/??", c, IDIO_C_FUNC_LOCATION_S ("CONSTANT/CONSTANT"));
 			break;
@@ -1038,6 +1047,15 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 				IDIO_IA_PUSH1 (IDIO_A_NEG_CHARACTER);
 				IDIO_IA_PUSH_VARUINT (-v);
 			    }
+			    return;
+			}
+			break;
+		    case IDIO_TYPE_CONSTANT_UNICODE_MARK:
+			{
+			    intptr_t v = IDIO_UNICODE_VAL (c);
+
+			    IDIO_IA_PUSH1 (IDIO_A_UNICODE);
+			    IDIO_IA_PUSH_VARUINT (v);
 			    return;
 			}
 			break;

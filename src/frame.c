@@ -42,7 +42,7 @@ IDIO idio_frame_allocate (idio_ai_t arityp1)
 
     IDIO fo = idio_gc_get (IDIO_TYPE_FRAME);
 
-    IDIO_GC_ALLOC (fo->u.frame, sizeof (idio_frame_t) + arityp1 * sizeof (idio_t));
+    IDIO_GC_ALLOC (fo->u.frame, sizeof (idio_frame_t) + arityp1 * sizeof (IDIO));
 
     IDIO_FRAME_GREY (fo) = NULL;
     IDIO_FRAME_FLAGS (fo) = IDIO_FRAME_FLAG_NONE;

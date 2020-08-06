@@ -68,22 +68,20 @@ test-re '("abcdc" (("ab") ("cd")) "cd") \
 	'(: (* (*$ (or "ab" "cd"))) "c") \
 	"abcdc"
 
-test "ab" \
-     (regexp-match-submatch
+test (regexp-match-submatch
       (regexp-matches '(or (-> foo "ab") (-> foo "cd")) "ab")
-      'foo)
+      'foo) "ab"
 
-test "cd" \
-     (regexp-match-submatch
+test (regexp-match-submatch
       (regexp-matches '(or (-> foo "ab") (-> foo "cd")) "cd")
-      'foo)
+      'foo) "cd"
 
 ;; non-deterministic case from issue #229
 #;{
   elapsed := '(: (** 1 2 num) ":" num num (? ":" num num))
   span := #T{ rx $elapsed "-" $elapsed }
 
-  
+
   test-re-search '("1:45:02-2:06:13") span " 1:45:02-2:06:13 "
 }
 
@@ -119,13 +117,13 @@ test-re #f \
 	'(: ($ (* "ab")) bol "c" eol) \
 	"ababc"
 test-re '("\nabc\n" "abc") \
-	'(: (* #\newline) bol ($ (* alpha)) eol (* #\newline)) \
+	'(: (* #\{newline}) bol ($ (* alpha)) eol (* #\{newline})) \
 	"\nabc\n"
 test-re #f \
-	'(: (* #\newline) bol ($ (* alpha)) eol (* #\newline)) \
+	'(: (* #\{newline}) bol ($ (* alpha)) eol (* #\{newline})) \
 	"\n'abc\n"
 test-re #f \
-	'(: (* #\newline) bol ($ (* alpha)) eol (* #\newline)) \
+	'(: (* #\{newline}) bol ($ (* alpha)) eol (* #\{newline})) \
 	"\nabc.\n"
 
 test-re '("ababc" "abab") \
@@ -178,16 +176,18 @@ test-re '("12345beef" "beef") \
 
 {
   number := '($ (+ digit))
-  test '("555" "867" "5309") \
-       (pt
+  test (pt
 	(regexp-match->list
 	 (regexp-search `(: ,number "-" ,number "-" ,number)
-			"555-867-5309")))
-  test '("555" "5309") \
-            (pt
-             (regexp-match->list
-              (regexp-search `(: ,number "-" (w/nocapture ,number) "-" ,number)
-                             "555-867-5309")))
+			"555-867-5309"))) \
+       '("555" "867" "5309")
+
+  test (pt
+	(regexp-match->list
+	 (regexp-search `(: ,number "-" (w/nocapture ,number) "-" ,number)
+			"555-867-5309"))) \
+       '("555" "5309")
+
 }
 
 test-re '("12345BeeF" "BeeF") \
@@ -202,46 +202,44 @@ test-re '("Σ") '(* upper) "Σ"
 test-re '("\x01C5;") '(* title) "\x01C5;"
 test-re '("σζ\x01C5;") '(w/nocase (* lower)) "σζ\x01C5;"
 *#
-;test-re '("кириллица") '(* alpha) "кириллица"
-;test-re #f '(w/ascii (* alpha)) "кириллица"
-;test-re '("кириллица") '(w/nocase "КИРИЛЛИЦА") "кириллица"
+test-re '("кириллица") '(* alpha) "кириллица"
+test-re #f '(w/ascii (* alpha)) "кириллица"
+test-re '("кириллица") '(w/nocase "КИРИЛЛИЦА") "кириллица"
 
-;test-re '("１２３４５") '(* digit) "１２３４５"
-;test-re #f '(w/ascii (* digit)) "１２３４５"
+test-re '("１２３４５") '(* digit) "１２３４５"
+test-re #f '(w/ascii (* digit)) "１２３４５"
 
-#*
 test-re '("한") 'grapheme "한"
 test-re '("글") 'grapheme "글"
 
 test-re '("한") '(: bog grapheme eog) "한"
 test-re #f '(: "ᄒ" bog grapheme eog "ᆫ") "한"
-*#
 
-test '("a" "b" "c") (regexp-extract 'grapheme "abc")
-test '("a" " " "b" " " "c") (regexp-extract 'grapheme "a b c")
-test '("a" "\n" "b" "\r\n" "c") (regexp-extract 'grapheme "a\nb\r\nc")
+test (regexp-extract 'grapheme "abc") '("a" "b" "c")
+test (regexp-extract 'grapheme "a b c") '("a" " " "b" " " "c")
+;test (regexp-extract 'grapheme "a\nb\r\nc") '("a" "\n" "b" "\r\n" "c")
 #*
 test '("a\x0300;" "b\x0301;\x0302;" "c\x0303;\x0304;\x0305;") \
       (regexp-extract 'grapheme "a\x0300;b\x0301;\x0302;c\x0303;\x0304;\x0305;")
 *#
 ;test '("한" "글") (regexp-extract 'grapheme "한글")
 
-test '("123" "456" "789") (regexp-extract '(+ digit) "abc123def456ghi789")
-test '("123" "456" "789") (regexp-extract '(* digit) "abc123def456ghi789")
-test '("abc" "def" "ghi" "") (regexp-split '(+ digit) "abc123def456ghi789")
-test '("abc" "def" "ghi" "") \
-      (regexp-split '(* digit) "abc123def456ghi789")
-test '("a" "b") (regexp-split '(+ whitespace) "a b")
-test '("a" "" "b") \
-      (regexp-split '(",;") "a,,b")
-test '("a" "" "b" "")  \
-      (regexp-split '(",;") "a,,b,")
-test '("") \
-      (regexp-partition '(* digit) "")
-test '("abc" "123" "def" "456" "ghi") \
-      (regexp-partition '(* digit) "abc123def456ghi")
-test '("abc" "123" "def" "456" "ghi" "789") \
-      (regexp-partition '(* digit) "abc123def456ghi789")
+test (regexp-extract '(+ digit) "abc123def456ghi789") '("123" "456" "789")
+test (regexp-extract '(* digit) "abc123def456ghi789") '("123" "456" "789")
+test (regexp-split '(+ digit) "abc123def456ghi789") '("abc" "def" "ghi" "")
+test (regexp-split '(* digit) "abc123def456ghi789") '("abc" "def" "ghi" "")
+
+test (regexp-split '(+ whitespace) "a b") '("a" "b")
+test (regexp-split '(",;") "a,,b") '("a" "" "b")
+
+test (regexp-split '(",;") "a,,b,") '("a" "" "b" "")
+
+test (regexp-partition '(* digit) "") '("")
+
+test (regexp-partition '(* digit) "abc123def456ghi") '("abc" "123" "def" "456" "ghi")
+
+test (regexp-partition '(* digit) "abc123def456ghi789") '("abc" "123" "def" "456" "ghi" "789")
+
 
 #*
 (test '("한" "글")
@@ -251,32 +249,32 @@ test '("abc" "123" "def" "456" "ghi" "789") \
                                    #xe1 #x84 #x80 #xe1 #x85 #xb3 #xe1 #x86 #xaf))))
 *#
 
-test "abc def" (regexp-replace '(+ space) "abc \t\n def" " ")
-test "  abc-abc" \
-      (regexp-replace '(: ($ (+ alpha)) ":" (* space)) "  abc: " '(1 "-" 1))
-test "  abc-  abc" \
-      (regexp-replace '(: ($ (+ alpha)) ":" (* space)) "  abc: " '(1 "-" pre 1))
+test (regexp-replace '(+ space) "abc \t\n def" " ") "abc def"
+test (regexp-replace '(: ($ (+ alpha)) ":" (* space)) "  abc: " '(1 "-" 1)) "  abc-abc"
 
-test "-abc \t\n d ef  " \
-      (regexp-replace '(+ space) "  abc \t\n d ef  " "-" 0)
-test "-abc \t\n d ef  " \
-      (regexp-replace '(+ space) "  abc \t\n d ef  " "-" 0 #f 0)
-test "  abc-d ef  " \
-      (regexp-replace '(+ space) "  abc \t\n d ef  " "-" 0 #f 1)
-test "  abc \t\n d-ef  " \
-      (regexp-replace '(+ space) "  abc \t\n d ef  " "-" 0 #f 2)
-test "  abc \t\n d ef-" \
-      (regexp-replace '(+ space) "  abc \t\n d ef  " "-" 0 #f 3)
-test "  abc \t\n d ef  " \
-      (regexp-replace '(+ space) "  abc \t\n d ef  " "-" 0 #f 4)
-test " abc d ef " (regexp-replace-all '(+ space) "  abc \t\n d ef  " " ")
+test (regexp-replace '(: ($ (+ alpha)) ":" (* space)) "  abc: " '(1 "-" pre 1)) "  abc-  abc"
 
-test "bc pre: <<<bc >>> match1: <<<def>>> post: <<<gh>>>gh" \
-      (regexp-replace
-       '(: ($ (+ alpha)) ":" (* space))
-       "abc def: ghi"
-       '("pre: <<<" pre ">>> match1: <<<" 1 ">>> post: <<<" post ">>>")
-       1 11)
+
+test (regexp-replace '(+ space) "  abc \t\n d ef  " "-" 0) "-abc \t\n d ef  "
+
+test (regexp-replace '(+ space) "  abc \t\n d ef  " "-" 0 #f 0) "-abc \t\n d ef  "
+
+test (regexp-replace '(+ space) "  abc \t\n d ef  " "-" 0 #f 1) "  abc-d ef  "
+
+test (regexp-replace '(+ space) "  abc \t\n d ef  " "-" 0 #f 2) "  abc \t\n d-ef  "
+
+test (regexp-replace '(+ space) "  abc \t\n d ef  " "-" 0 #f 3) "  abc \t\n d ef-"
+
+test (regexp-replace '(+ space) "  abc \t\n d ef  " "-" 0 #f 4) "  abc \t\n d ef  "
+
+test (regexp-replace-all '(+ space) "  abc \t\n d ef  " " ") " abc d ef "
+
+test (regexp-replace
+      '(: ($ (+ alpha)) ":" (* space))
+      "abc def: ghi"
+      '("pre: <<<" pre ">>> match1: <<<" 1 ">>> post: <<<" post ">>>")
+      1 11) "bc pre: <<<bc >>> match1: <<<def>>> post: <<<gh>>>gh"
+
 
 ;; all done?
-test (SRFI-115-0 + 71) Tests
+test (SRFI-115-0 + 79) Tests

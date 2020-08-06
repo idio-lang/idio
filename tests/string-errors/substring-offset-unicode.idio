@@ -1,0 +1,4 @@
+
+str := "hello world"
+
+substring str #\a 2

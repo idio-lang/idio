@@ -109,7 +109,7 @@ void idio_assign_array (IDIO a, idio_ai_t asize, IDIO dv)
     IDIO_FPRINTF (stderr, "idio_assign_array: %10p = [%d]\n", a, asize);
 
     IDIO_GC_ALLOC (a->u.array, sizeof (idio_array_t));
-    IDIO_GC_ALLOC (a->u.array->ae, asize * sizeof (idio_t));
+    IDIO_GC_ALLOC (a->u.array->ae, asize * sizeof (IDIO));
 
     IDIO_ARRAY_GREY (a) = NULL;
     IDIO_ARRAY_ASIZE (a) = asize;
@@ -171,7 +171,7 @@ void idio_free_array (IDIO a)
     IDIO_ASSERT (a);
     IDIO_TYPE_ASSERT (array, a);
 
-    idio_gc_stats_free (sizeof (idio_array_t) + IDIO_ARRAY_ASIZE (a) * sizeof (idio_t));
+    idio_gc_stats_free (sizeof (idio_array_t) + IDIO_ARRAY_ASIZE (a) * sizeof (IDIO));
 
     free (a->u.array->ae);
     free (a->u.array);
@@ -205,8 +205,8 @@ void idio_array_resize (IDIO a)
     /* all the inserts above will have mucked usize up */
     IDIO_ARRAY_USIZE (a) = ousize;
 
-    idio_gc_stats_free (sizeof (idio_array_t) + oasize * sizeof (idio_t));
-    idio_gc_stats_free (sizeof (idio_array_t) + oasize * sizeof (idio_t));
+    idio_gc_stats_free (sizeof (idio_array_t) + oasize * sizeof (IDIO));
+    idio_gc_stats_free (sizeof (idio_array_t) + oasize * sizeof (IDIO));
 
     free (oarray->ae);
     free (oarray);

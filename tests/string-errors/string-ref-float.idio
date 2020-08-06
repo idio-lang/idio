@@ -1,0 +1,4 @@
+
+str := "hello world"
+
+string-ref str 1.5

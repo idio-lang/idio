@@ -434,50 +434,6 @@ IDIO_DEFINE_PRIMITIVE2 ("append", append, (IDIO a, IDIO b))
     return idio_list_append2 (a, b);
 }
 
-IDIO idio_list_list2string (IDIO l)
-{
-    IDIO_ASSERT (l);
-    IDIO_TYPE_ASSERT (list, l);
-
-    size_t ll = idio_list_length (l);
-    char s[ll+1];
-    size_t i = 0;
-
-    while (idio_S_nil != l) {
-	IDIO h = IDIO_PAIR_H (l);
-
-	if (idio_isa_character (h)) {
-	    intptr_t c = IDIO_CHARACTER_VAL (h);
-
-	    if (c > INT8_MAX ||
-		c < INT8_MIN) {
-		idio_error_C ("character too large for C string", h, IDIO_C_FUNC_LOCATION ());
-	    }
-
-	    s[i] = c;
-	} else {
-	    idio_error_param_type ("character", h, IDIO_C_FUNC_LOCATION ());
-	    return idio_S_unspec;
-	}
-
-	l = IDIO_PAIR_T (l);
-	i++;
-    }
-
-    s[i] = '\0';
-
-    return idio_string_C (s);
-}
-
-IDIO_DEFINE_PRIMITIVE1 ("list->string", list2string, (IDIO l))
-{
-    IDIO_ASSERT (l);
-
-    IDIO_VERIFY_PARAM_TYPE (list, l);
-
-    return idio_list_list2string (l);
-}
-
 IDIO_DEFINE_PRIMITIVE1 ("list->array", list2array, (IDIO l))
 {
     IDIO_ASSERT (l);
@@ -487,17 +443,7 @@ IDIO_DEFINE_PRIMITIVE1 ("list->array", list2array, (IDIO l))
     return idio_list_to_array (l);
 }
 
-IDIO_DEFINE_PRIMITIVE2V_DS ("nth", nth, (IDIO l, IDIO I_n, IDIO args), "l n [default]", "\
-return the nth (`n`) element from list `l`		\n\
-							\n\
-:param l: list						\n\
-:type orig: list					\n\
-:param n: nth element					\n\
-:type n: integer					\n\
-:param default: (optional) default value to return	\n\
-:return: the element or `default` if supplied or #n	\n\
-:rtype: array						\n\
-")
+IDIO idio_list_nth (IDIO l, IDIO I_n, IDIO args)
 {
     IDIO_ASSERT (l);
     IDIO_ASSERT (I_n);
@@ -549,6 +495,27 @@ return the nth (`n`) element from list `l`		\n\
     return r;
 }
 
+IDIO_DEFINE_PRIMITIVE2V_DS ("nth", nth, (IDIO l, IDIO I_n, IDIO args), "l n [default]", "\
+return the nth (`n`) element from list `l`		\n\
+							\n\
+:param l: list						\n\
+:type orig: list					\n\
+:param n: nth element					\n\
+:type n: integer					\n\
+:param default: (optional) default value to return	\n\
+:return: the element or `default` if supplied or #n	\n\
+:rtype: array						\n\
+")
+{
+    IDIO_ASSERT (l);
+    IDIO_ASSERT (I_n);
+    IDIO_ASSERT (args);
+
+    IDIO_TYPE_ASSERT (list, l);
+
+    return idio_list_nth (l, I_n, args);
+}
+
 void idio_init_pair ()
 {
 }
@@ -566,7 +533,6 @@ void idio_pair_add_primitives ()
     IDIO_ADD_PRIMITIVE (list_length);
     IDIO_ADD_PRIMITIVE (list);
     IDIO_ADD_PRIMITIVE (append);
-    IDIO_ADD_PRIMITIVE (list2string);
     IDIO_ADD_PRIMITIVE (list2array);
     IDIO_ADD_PRIMITIVE (nth);
 }

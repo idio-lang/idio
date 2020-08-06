@@ -1,0 +1,4 @@
+
+str := "hello world"
+
+substring str 1.5 2

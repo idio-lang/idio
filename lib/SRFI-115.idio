@@ -82,7 +82,7 @@ define (char-set-ci cset) {
 
 define (make-char-state ch flags next id) {
   if (flag-set? flags ~ci?) {
-    cset := cond ((char? ch) (char-set-ci (char-set ch))) \
+    cset := cond ((unicode? ch) (char-set-ci (char-set ch))) \
 		 ((char-set? ch) (char-set-ci ch)) \
 		 (else ch)
     make-state #f cset #f #f next #f id
@@ -485,7 +485,7 @@ define (epsilon-state? st) {
 
 define (state-matches? st str i ch start end matches) {
   matcher := state-chars st
-  cond ((char? matcher)
+  cond ((unicode? matcher)
 	(eqv? matcher ch)) \
        ((char-set? matcher)
 	(char-set-contains? matcher ch)) \
@@ -678,11 +678,11 @@ define (match/eos str i ch start end matches) {
 }
 define (match/bol str i ch start end matches) {
   or (== i start) \
-     (eqv? #\newline (string-ref str (i - 1)))
+     (eqv? #\{newline} (string-ref str (i - 1)))
 }
 define (match/eol str i ch start end matches) {
   or (ge i end) \
-     (eqv? #\newline (string-ref str i))
+     (eqv? #\{newline} (string-ref str i))
 }
 define (match/bow str i ch start end matches) {
   and (lt i end) \
@@ -804,7 +804,7 @@ define (every pred ls) {
 }
 
 define (char-set-sre? sre) {
-  or (char? sre) \
+  or (unicode? sre) \
      (and (string? sre) (== 1 (string-length sre))) \
      (lookup-char-set sre ~none) \
      (and (pair? sre)
@@ -841,7 +841,7 @@ define (sre->char-set sre & o) {
   }
   cond ((lookup-char-set sre flags)) \
        ((char-set? sre) (maybe-ci sre)) \
-       ((char? sre) (maybe-ci (char-set sre))) \
+       ((unicode? sre) (maybe-ci (char-set sre))) \
        ((string? sre)
 	(if (== 1 (string-length sre))
 	    (maybe-ci (string->char-set sre))
@@ -857,8 +857,8 @@ define (sre->char-set sre & o) {
 		   (->cs
 		    #T{
 		      or $@(map (function (x) (ucs-range->char-set
-					       (char->integer (ph x))
-					       (1 + (char->integer (pt x)))))
+					       (unicode->integer (ph x))
+					       (1 + (unicode->integer (pt x)))))
 			    (sre-flatten-ranges (pt sre)))
 		    }))
 		  ((\& \and) (apply char-set-intersection (map ->cs (pt sre))))
@@ -951,7 +951,7 @@ define (regexp sre & o) {
   }
   define (->rx sre flags next) {
     ;; The base cases chars and strings match literally.
-    cond ((char? sre)
+    cond ((unicode? sre)
 	  (make-char-state sre flags next (next-id))) \
 	 ((char-set? sre)
 	  (make-char-state sre flags next (next-id))) \
@@ -1177,7 +1177,7 @@ define (regexp sre & o) {
        ;;                                 ((and (char-set? (state-chars st))
        ;;                                       (< (char-set-size (state-chars st)) 5))
        ;;                                  (char-set->string (state-chars st)))
-       ;;                                 ((char? (state-chars st))
+       ;;                                 ((unicode? (state-chars st))
        ;;                                  (string (state-chars st)))
        ;;                                 (else '+))
        ;;                                (cond

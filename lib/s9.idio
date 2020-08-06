@@ -188,11 +188,12 @@ define (port? x) {
 
 ;; Equivalence predicates
 
+#*
 define (s9/eqv? a b) {
   cond ((number? a) (and (number? b)
 			 (== a b))) \
-       ((char? a)   (and (char? b)
-			 (char=? a b))) \
+       ((unicode? a)   (and (unicode? b)
+			 (unicode=? a b))) \
        (else        (eq? a b))
 }
 
@@ -210,6 +211,7 @@ define (s9/equal? a b) {
 }
 
 ;define equal? s9/equal?
+*#
 
 ;; List procedures
 
@@ -872,10 +874,10 @@ string->number := {
     value-of-digit :+ function (x) {
 			v :+ function (x d n) {
 			       cond ((null? d) 36) \
-				    ((char=? (ph d) x) n) \
+				    ((unicode=? (ph d) x) n) \
 				    (else (v x (pt d) (n + 1)))
 			}
-			v (char-downcase x) digits 0
+			v (unicode-downcase x) digits 0
     }
     find-exponent-mark :+ function (c) {
 			    memv c '(#\d #\D #\e #\E #\f #\F #\l #\L #\s #\S)
@@ -907,8 +909,8 @@ string->number := {
     }
     conv-int :+ function (lst rdx) {
 		  cond ((null? lst) FAIL) \
-		       ((char=? (ph lst) #\+) (conv (pt lst) rdx)) \
-		       ((char=? (ph lst) #\-) {
+		       ((unicode=? (ph lst) #\+) (conv (pt lst) rdx)) \
+		       ((unicode=? (ph lst) #\-) {
 			 r := conv (pt lst) rdx
 			 if (ok? r) {
 			   result (- (value r)) (rest r)
@@ -951,7 +953,7 @@ string->number := {
     }
     mantissa-digits? :+ function (x) {
 			  cond ((null? x)                    #f) \
-			       ((char-numeric? (ph x))      #t) \
+			       ((unicode-numeric? (ph x))      #t) \
 			       ((find-exponent-mark (ph x)) #f) \
 			       (else (mantissa-digits? (pt x)))
     }
@@ -968,7 +970,7 @@ string->number := {
 					  (pt (rest int-part))
 			  } FAIL
 			}) \
-			((char=? #\. (ph (rest int-part))) {
+			((unicode=? #\. (ph (rest int-part))) {
 			  if (radix-ten? rdx) {
 			    conv-decimals (value int-part) (pt (rest int-part))
 			  } FAIL
@@ -977,7 +979,7 @@ string->number := {
     }
     replace-inexact-digits! :+ function (a) {
 				 cond ((null? a) #f) \
-				      ((char=? #\# (ph a)) {
+				      ((unicode=? #\# (ph a)) {
 					set-ph! a #\5
 					set! inexact #t
 					replace-inexact-digits! (pt a)
@@ -995,29 +997,29 @@ string->number := {
     lst :+ string->list str
 
     if (and (gt (string-length str) 1)
-	    (char=? #\# (ph lst))) {
+	    (unicode=? #\# (ph lst))) {
 	      mod := pht lst
 	      set! lst (ptt lst)
-	      cond ((char=? mod #\e) (void)) \
-		   ((char=? mod #\d) (void)) \
-		   ((char=? mod #\i) (set! inexact #t)) \
-		   ((char=? mod #\b) (set! radix 2)) \
-		   ((char=? mod #\o) (set! radix 8)) \
-		   ((char=? mod #\x) (set! radix 16)) \
+	      cond ((unicode=? mod #\e) (void)) \
+		   ((unicode=? mod #\d) (void)) \
+		   ((unicode=? mod #\i) (set! inexact #t)) \
+		   ((unicode=? mod #\b) (set! radix 2)) \
+		   ((unicode=? mod #\o) (set! radix 8)) \
+		   ((unicode=? mod #\x) (set! radix 16)) \
 		   (else             (set! lst '#n))
 	    }
     if (or (null? lst)
 	   (memv (ph lst) '(#\+ #\- #\.))
-	   (char-numeric? (ph lst))) {
+	   (unicode-numeric? (ph lst))) {
 	     replace-inexact-digits! lst
 	   }
 
     r := cond ((null? lst) FAIL) \
-	      ((char=? #\- (ph lst)) (conv-real (pt lst) radix)) \
+	      ((unicode=? #\- (ph lst)) (conv-real (pt lst) radix)) \
 	      (else (conv-real lst radix))
 
     if (null? (rest r)) {
-      v := if (char=? #\- (ph lst)) {
+      v := if (unicode=? #\- (ph lst)) {
         - (value r)
       } {
 	value r
@@ -1033,7 +1035,7 @@ define (array & x) (list->array x)
 
 ;; Input/output procedures
 
-define (newline & port) (apply write-char #\newline port)
+define (newline & port) (apply write-char #\{newline} port)
 
 define (call-with-input-file file proc) {
   f := open-input-file file
@@ -1579,7 +1581,7 @@ define-macro define-syntax {
 define (print & x*) {
   p :+ function (x* first) {
 	 if (not (null? x*)) {
-	   if (not first) (write-char #\space)
+	   if (not first) (write-char #\{space})
 	   write (ph x*)
 	   p (pt x*) #f
 	 }
@@ -1598,7 +1600,7 @@ define (locate-file file) {
 					 out)
 			 }
 		       }) \
-			    ((char=? #\: (ph in)) {
+			    ((unicode=? #\: (ph in)) {
 			      loop (pt in) \
 				   '#n \
 				   (pair (list->string (reverse tmp))

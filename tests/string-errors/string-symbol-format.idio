@@ -1,0 +1,5 @@
+
+c := #U+0
+str := join-string (make-string 1 c) '("hello" "world")
+
+string->symbol str

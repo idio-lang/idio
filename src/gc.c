@@ -230,6 +230,8 @@ int idio_isa (IDIO o, idio_type_e type)
 		return (IDIO_TYPE_CONSTANT_I_CODE == type);
 	    case IDIO_TYPE_CONSTANT_CHARACTER_MARK:
 		return (IDIO_TYPE_CONSTANT_CHARACTER == type);
+	    case IDIO_TYPE_CONSTANT_UNICODE_MARK:
+		return (IDIO_TYPE_CONSTANT_UNICODE == type);
 	    default:
 		/* inconceivable! */
 		idio_error_printf (IDIO_C_FUNC_LOCATION_S ("CONSTANT"), "unexpected object mark type %#x", o);
@@ -1050,7 +1052,7 @@ void idio_gc_expose_all ()
     }
 
     if (n) {
-	fprintf (stderr, "idio_gc_expose_all for %zd objects\n", n);
+	fprintf (stderr, "idio_gc_expose_all for %zd root objects\n", n);
     }
 }
 
@@ -2014,9 +2016,11 @@ void idio_gc_free ()
 /* #endif */
 
 /**
- * idio_strcat() - concatenate two (non-static) C strings
+ * idio_strcat() - concatenate two (non-static) length defined strings
  * @s1: first string
+ * @s1sp: first string length pointer
  * @s2: second string
+ * @s2sp: second string length pointer
  *
  * If @s2 is non-NULL then @s1 is resized to have @s2 concatenated.
  *
@@ -2025,7 +2029,7 @@ void idio_gc_free ()
  *
  * See also idio_strcat_free().
  */
-char *idio_strcat (char *s1, const char *s2)
+char *idio_strcat (char *s1, size_t *s1sp, const char *s2, const size_t s2s)
 {
     IDIO_C_ASSERT (s1);
 
@@ -2033,9 +2037,11 @@ char *idio_strcat (char *s1, const char *s2)
 	return s1;
     }
 
-    char *r = idio_realloc (s1, strlen (s1) + strlen (s2) + 1);
+    char *r = idio_realloc (s1, *s1sp + s2s + 1);
     if (NULL != r) {
-	strcat (r, s2);
+	memcpy (r + *s1sp, s2, s2s);
+	r[*s1sp + s2s] = '\0';
+	*s1sp += s2s;
     }
 
     return r;
@@ -2044,14 +2050,16 @@ char *idio_strcat (char *s1, const char *s2)
 /**
  * idio_strcat_free() - cancatenate two (non-static) C strings
  * @s1: first string
+ * @s1sp: first string length pointer
  * @s2: second string
+ * @s2sp: second string length pointer
  *
  * Calls idio_strcat() then free()s @s2.
  *
  * Return:
  * Returns @s1 (original or new)
  */
-char *idio_strcat_free (char *s1, char *s2)
+char *idio_strcat_free (char *s1, size_t *s1sp, char *s2, const size_t s2s)
 {
     IDIO_C_ASSERT (s1);
 
@@ -2059,7 +2067,7 @@ char *idio_strcat_free (char *s1, char *s2)
 	return s1;
     }
 
-    char *r = idio_strcat (s1, s2);
+    char *r = idio_strcat (s1, s1sp, s2, s2s);
     free (s2);
 
     return r;

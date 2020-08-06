@@ -1,0 +1,380 @@
+;;
+;; Copyright (c) 2015, 2017, 2018, 2020 Ian Fitchet <idf(at)idio-lang.org>
+;;
+;; Licensed under the Apache License, Version 2.0 (the "License"); you
+;; may not use this file except in compliance with the License.  You
+;; may obtain a copy of the License at
+;;
+;;     http://www.apache.org/licenses/LICENSE-2.0
+;;
+;; Unless required by applicable law or agreed to in writing, software
+;; distributed under the License is distributed on an "AS IS" BASIS,
+;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+;; See the License for the specific language governing permissions and
+;; limitations under the License.
+;;
+;;
+
+;;
+;; s9-syntax.idio
+;;
+
+;; ported from
+;;
+;; Scheme 9 from Empty Space
+;; By Nils M Holm <nmh@t3x.org>, 2007,2008,2009
+;;
+
+;; Some obvious procedures first
+
+define (phhhh x) (ph (ph (ph (ph x))))
+define (phhht x) (ph (ph (ph (pt x))))
+define (phhth x) (ph (ph (pt (ph x))))
+define (phhtt x) (ph (ph (pt (pt x))))
+define (phthh x) (ph (pt (ph (ph x))))
+define (phtht x) (ph (pt (ph (pt x))))
+define (phtth x) (ph (pt (pt (ph x))))
+define (phttt x) (ph (pt (pt (pt x))))
+define (pthhh x) (pt (ph (ph (ph x))))
+define (pthht x) (pt (ph (ph (pt x))))
+define (pthth x) (pt (ph (pt (ph x))))
+define (pthtt x) (pt (ph (pt (pt x))))
+define (ptthh x) (pt (pt (ph (ph x))))
+define (pttht x) (pt (pt (ph (pt x))))
+define (pttth x) (pt (pt (pt (ph x))))
+define (ptttt x) (pt (pt (pt (pt x))))
+
+define (phhh x) (ph (ph (ph x)))
+define (phht x) (ph (ph (pt x)))
+define (phth x) (ph (pt (ph x)))
+define (phtt x) (ph (pt (pt x)))
+define (pthh x) (pt (ph (ph x)))
+define (ptht x) (pt (ph (pt x)))
+define (ptth x) (pt (pt (ph x)))
+define (pttt x) (pt (pt (pt x)))
+
+define (phh x) (ph (ph x))
+define (pht x) (ph (pt x))
+define (pth x) (pt (ph x))
+define (ptt x) (pt (pt x))
+
+define (void) (if #f #f)
+
+define (map-ph f a) "map-ph: mapph1 a r" {
+  mapph1 :+ function (a r) {
+	      if (null? a) {
+		reverse r
+	      } {
+		mapph1 (pt a) (pair (f (ph a)) r)
+	      }
+  }
+
+  mapph1 a '#n
+}
+
+ph-of := {
+  map-ph := map-ph
+
+  function (a*) "ph-of: map-ph ph a*" {
+    map-ph ph a*
+  }
+}
+
+pt-of := {
+  map-ph := map-ph
+
+  function (a*) {
+    map-ph pt a*
+  }
+}
+
+map := {
+  ph-of := ph-of
+  pt-of := pt-of
+  any-null? := any-null?
+
+  function (f & a*) {
+    map2 :+ function (a* r) {
+	      if (null? (ph a*)) {
+		reverse r
+	      } {
+		map2 (pt-of a*) (pair (apply f (ph-of a*))
+				      r)
+	      }
+    }
+
+    if (null? a*) {
+      error 'map "too few arguments"
+    } {
+      map2 a* '#n
+    }
+  }
+}
+
+define (for-each f & a*) {
+  if (null? a*) {
+    error 'for-each "too few arguments"
+  } {
+    apply map f a*
+  }
+  (void)
+}
+
+;;----- Syntax-rules-transformer -----
+
+; This expander rewrites DEFINE-SYNTAX to DEFINE-MACRO, e.g.:
+;
+; (define-syntax iff
+;   (syntax-rules (then else)
+;     ((_ p then c)        (or p c))
+;     ((_ p then c else a) (if p c a))))
+; ==>
+; (define-macro (iff & g283)
+;   ((function (syntax-expand syntax-match g283)
+;      (cond ((syntax-match g283 '(_ p then c) '(then else) '())
+;              => (function (env)
+;                   (syntax-expand '(_ p then c) '(or p c) env)))
+;            ((syntax-match g283 '(_ p then c else a) '(then else) '())
+;              => (function (env)
+;                   (syntax-expand '(_ p then c else a) '(if p c a) env)))
+;            (else
+;              (error "invalid syntax" g283))))
+;    #<PROCEDURE syntax-expand>
+;    #<PROCEDURE syntax-match>
+;    (pair 'iff g283)))
+
+; Match FORM against PATTERN.
+; KEYWORDS contains the keywords of SYNTAX-RULES.
+; When the given form matches the pattern, bind
+; each variable of PATTERN to the corresponding
+; part of the FORM, extend ENV by these bondings
+; and return it.
+; In case of a mismatch, return #F.
+;
+; NOTE: The ellipsis is an ordinary variable, but
+; it binds to an environment rather than a form.
+;
+define (syntax-match form pattern keywords env) {
+  ;edisplay* "syntax-match:\n  " form "\n  " pattern "\n  " keywords "\n  " env
+  match :+ function (form pattern keywords env) {
+	     ;edisplay* "match:\n  " form "\n  " pattern "\n  " keywords "\n  " env
+	     cond ((pair? pattern) {
+	       cond ((and (pair? (pt pattern))
+			  (eq? '... (pht pattern))) {
+			    e* := map (function (x)
+					 (match x (ph pattern) keywords '#n)) \
+				      form
+			    ;edisplay* "match ... " form pattern "e*" e*
+			    pair (pair '... e*) env
+			  }) \
+		    ((pair? form) {
+		      e := match (ph form) (ph pattern) keywords env
+		      and e \
+			  (match (pt form) (pt pattern) keywords e)
+		    }) \
+		    (else #f)
+	     }) \
+		  ((memq pattern keywords) {
+		    if (eq? pattern form) env #f
+		  }) \
+		  ((symbol? pattern) {
+		    ;edisplay* "syntax-match: symbol" (pair pattern form)
+		    pair (pair pattern form) env
+		  }) \
+		  (else {
+		    if (equal? pattern form) env #f
+		  })
+  }
+
+  e := match form pattern keywords env
+  r := if e (reverse e) e
+  ;edisplay* "syntax-match =>" r
+  r
+}
+
+; Give a unique name to each variable that is bound in FORM.
+; BOUND is a list of initially bound variables. This function
+; also renames variables of LET, LET*, and LETREC, e.g.:
+;
+; (ALPHA-CONV '(LET ((X Y)) X) '()) => (LET ((G0 Y)) G0)
+;
+define (alpha-conv form bound) {
+  subst :+ function (x env) {
+	     cond ((assq x env) => pt) \
+		  (else x)
+  }
+  map-improper :+ function (f a r) {
+		    cond ((null? a) (reverse r)) \
+			 ((not (pair? a)) (append (reverse r) (f a))) \
+			 (else (map-improper f (pt a) (pair (f (ph a)) r)))
+  }
+  remove-bound :+ function (env bound) {
+		    cond ((null? env) '#n) \
+			 ((memq (phh env) bound) (remove-bound (pt env) bound)) \
+			 (else (pair (ph env) (remove-bound (pt env) bound)))
+  }
+  conv :+ function (form env) {
+	    cond ((symbol? form) (subst form env)) \
+		 ((not (pair? form)) form) \
+		 ((and (eq? 'quote (ph form))
+		       (pair? (pt form))
+		       (null? (ptt form))) form) \
+		 ((and (eq? 'function (ph form))
+		       (pair? (pt form))
+		       (pair? (ptt form))) {
+			 e := map-improper (function (x) (pair x (gensym))) \
+					   (pht form) \
+					   '#n
+
+			 #T{ (function $@(conv (pt form)
+					       (append (remove-bound e bound)
+						       env))) }
+		       }) \
+		 ((and (or (eq? (ph form) 'let)
+			   (eq? (ph form) 'letrec)
+			   (eq? (ph form) 'let*))
+		   (pair? (pt form))
+		   (pair? (pht form))
+		   (pair? (phht form))
+		   (pair? (ptt form))) {
+		     e := map-improper (function (x)
+					  (pair x (gensym))) \
+				       (map (function (x)
+					       (if (pair? x) (ph x) #f))
+					(pht form)) \
+				       '#n
+
+		     #T{ ($(ph form) $@(conv (pt form)
+					     (append (remove-bound e bound)
+						     env))) }
+		   }) \
+		 (else (map-improper (function (x) (conv x env))
+				     form
+				     '#n))
+  }
+
+  conv form '#n
+}
+
+; Substitute variables of FORM by values of ENV.
+;
+define (syntax-expand bound tmpl env) {
+  ;edisplay* "syntax-expand: \n  bound:" bound "\n  tmpl:" tmpl "\n  env:" env
+  alpha-conv := alpha-conv
+  expand :+ function (tmpl env) {
+	      ;edisplay* "expand\n    tmpl:" tmpl "\n    env:" env
+	      cond ((not (pair? tmpl)) {
+		;edisplay* "not pair?" tmpl "=>" (and (assq tmpl env) (pt (assq tmpl env)))
+		cond ((assq tmpl env) => pt) \
+		     (else tmpl)
+	      }) \
+		   ((and (pair? tmpl)
+			 (pair? (pt tmpl))
+			 (eq? (pht tmpl) '...)) {
+			   eenv := assq '... env
+
+			   if (not eenv) {
+			     error 'syntax-rules "template without matching ... in pattern" tmpl env
+			   } {
+			     ;edisplay* "expand found ...: recursing with env:" (pt eenv)
+			     set-ph! eenv '(#f)
+			     map (function (x)
+				    (expand (ph tmpl) x)) \
+				 (pt eenv)
+			   }
+			 }) \
+		   (else {
+		     pair (expand (ph tmpl) env) \
+			  (expand (pt tmpl) env)
+		   })
+  }
+
+  e := expand tmpl env
+  ;edisplay* "syntax-expand e" e
+  r := alpha-conv e bound
+  ;edisplay* "syntax-expand r" r
+  r
+}
+
+; Check the syntax of DEFINE-SYNTAX and rewrite it
+; to an application of DEFINE-MACRO.
+;
+define-macro define-syntax {
+  flatten :+ function (x r) {
+	       cond ((null? x) r) \
+		    ((pair? x) (flatten (ph x)
+					(flatten (pt x)
+						 r))) \
+		    (else (pair x r))
+  }
+  list-of? :+ function (p a) {
+		or (null? a) \
+		   (and (p (ph a)) \
+		   (list-of? p (pt a)))
+  }
+  keywords-ok? :+ function (x) {
+		    list-of? symbol? x
+  }
+  rules-ok? :+ function (x) {
+		 list-of? (function (x)
+			     (and (pair? x) \
+				  (pair? (ph x)) \
+				  (pair? (pt x)) \
+				  (null? (ptt x)))) \
+				  x
+  }
+  pattern := phh
+  template := phth
+  rewrite-rules :+ function (app keywords rules-in rules-out) {
+		     if (null? rules-in) {
+		       reverse rules-out
+		     } {
+		       r := pair #T{
+			 ((syntax-match $app
+					'$(pattern rules-in)
+					'$keywords
+					'#n)
+			   => (function (env)
+				 (syntax-expand '$(flatten (pattern rules-in) '#n)
+						  '$(template rules-in)
+						  env)))
+		       } rules-out
+		       ;edisplay* "rewrite-rules =>" r
+		       r
+		       rewrite-rules app \
+				     keywords \
+				     (pt rules-in) \
+				     r
+		     }
+  }
+
+  function (name rules) {
+    cond ((not (symbol? name)) (error 'define-syntax "expected symbol" name)) \
+	 ((or (not (pair? rules))
+	      (not (eq? 'syntax-rules (ph rules)))) (error 'define-syntax "expected syntax-rules, got" rules)) \
+	 ((or (not (pair? (pt rules)))
+	      (not (pair? (ptt rules)))) (error 'define-syntax "syntax-rules: too few arguments" rules)) \
+	 ((not (keywords-ok? (pht rules))) (error 'define-syntax "syntax-rules: malformed keyword list" (pht rules))) \
+	 ((not (rules-ok? (ptt rules))) (error 'define-syntax "syntax-rules: invalid clause in rules" (ptt rules))) \
+	 (else {
+	   app := (gensym)
+	   default := #T{ ((else (error 'define-syntax "invalid syntax" $app))) }
+	   ;edisplay* "defining" name "with" rules
+	   t := #T{
+	     define-macro $(pair name app) {
+	       $app := pair '$name $app
+	       ;edisplay* "running" $app
+
+	       cond $@(append (rewrite-rules app
+					     (pht rules)
+					     (ptt rules)
+					     '#n)
+		       default)
+	     }
+	   }
+	   ;edisplay* "define-syntax =>" t
+	   t
+	 })
+  }
+}
+

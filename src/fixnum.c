@@ -928,6 +928,31 @@ IDIO_DEFINE_PRIMITIVE1 ("integer->char", integer2char, (IDIO i))
     return c;
 }
 
+IDIO_DEFINE_PRIMITIVE1 ("integer->unicode", integer2unicode, (IDIO i))
+{
+    IDIO_ASSERT (i);
+
+    IDIO u = idio_S_unspec;
+
+    if (idio_isa_fixnum (i)) {
+	u = IDIO_UNICODE (IDIO_FIXNUM_VAL (i));
+    } else if (idio_isa_bignum (i)) {
+	intptr_t iv = idio_bignum_intptr_value (i);
+
+	if (iv >= 0 &&
+	    iv <= 0x10ffff) {
+	    u = IDIO_UNICODE (iv);
+	}
+    }
+
+    if (! idio_isa_unicode (u)) {
+	idio_error_printf (IDIO_C_FUNC_LOCATION (), "invalid integer");
+	return idio_S_unspec;
+    }
+
+    return u;
+}
+
 void idio_init_fixnum ()
 {
 }
@@ -956,6 +981,7 @@ void idio_fixnum_add_primitives ()
     IDIO_ADD_PRIMITIVE (gt);
 
     IDIO_ADD_PRIMITIVE (integer2char);
+    IDIO_ADD_PRIMITIVE (integer2unicode);
 }
 
 void idio_final_fixnum ()
