@@ -51,6 +51,7 @@ static char *idio_vm_tracing_out = "<<<<<<<<<<<<<<<<<<<<<<<<<";
 static int idio_vm_dis = 0;
 #endif
 FILE *idio_dasm_FILE;
+int idio_vm_reports = 0;
 
 /**
  * DOC:
@@ -6716,20 +6717,9 @@ void idio_final_vm ()
     IDIO thr = idio_thread_current_thread ();
 
     if (getpid () == idio_pid) {
+#ifdef IDIO_DEBUG
 	fprintf (stderr, "final-vm: ");
 
-#ifdef IDIO_DEBUG
-	fprintf (stderr, "vm-dasm ");
-#endif
-	idio_dasm_FILE = fopen ("vm-dasm", "w");
-	if (idio_dasm_FILE) {
-	    idio_vm_dasm (thr, 0, 0);
-	    fclose (idio_dasm_FILE);
-	}
-	idio_vm_dump_constants ();
-	idio_vm_dump_values ();
-
-#ifdef IDIO_DEBUG
 	IDIO stack = IDIO_THREAD_STACK (thr);
 	idio_ai_t ss = idio_array_size (stack);
 	if (ss > 12) {
@@ -6738,73 +6728,86 @@ void idio_final_vm ()
 	}
 #endif
 
+	if (idio_vm_reports) {
+#ifdef IDIO_DEBUG
+	    fprintf (stderr, "vm-dasm ");
+#endif
+	    idio_dasm_FILE = fopen ("vm-dasm", "w");
+	    if (idio_dasm_FILE) {
+		idio_vm_dasm (thr, 0, 0);
+		fclose (idio_dasm_FILE);
+	    }
+	    idio_vm_dump_constants ();
+	    idio_vm_dump_values ();
+
 #ifdef IDIO_VM_PERF
 #ifdef IDIO_DEBUG
-	fprintf (stderr, "vm-perf ");
+	    fprintf (stderr, "vm-perf ");
 #endif
-	fprintf (idio_vm_perf_FILE, "final-vm: created %zu instruction bytes\n", IDIO_IA_USIZE (idio_all_code));
-	fprintf (idio_vm_perf_FILE, "final-vm: created %td constants\n", idio_array_size (idio_vm_constants));
-	fprintf (idio_vm_perf_FILE, "final-vm: created %td values\n", idio_array_size (idio_vm_values));
+	    fprintf (idio_vm_perf_FILE, "final-vm: created %zu instruction bytes\n", IDIO_IA_USIZE (idio_all_code));
+	    fprintf (idio_vm_perf_FILE, "final-vm: created %td constants\n", idio_array_size (idio_vm_constants));
+	    fprintf (idio_vm_perf_FILE, "final-vm: created %td values\n", idio_array_size (idio_vm_values));
 #endif
 
 #ifdef IDIO_VM_PERF
-	uint64_t c = 0;
-	struct timespec t;
-	t.tv_sec = 0;
-	t.tv_nsec = 0;
+	    uint64_t c = 0;
+	    struct timespec t;
+	    t.tv_sec = 0;
+	    t.tv_nsec = 0;
 
-	for (IDIO_I i = 1; i < IDIO_I_MAX; i++) {
-	    c += idio_vm_ins_counters[i];
-	    t.tv_sec += idio_vm_ins_call_time[i].tv_sec;
-	    t.tv_nsec += idio_vm_ins_call_time[i].tv_nsec;
-	    if (t.tv_nsec > IDIO_VM_NS) {
-		t.tv_nsec -= IDIO_VM_NS;
-		t.tv_sec += 1;
-	    }
-	}
-
-	float c_pct = 0;
-	float t_pct = 0;
-
-	fprintf (idio_vm_perf_FILE, "vm-ins:  %4.4s %-40.40s %8.8s %5.5s %15.15s %5.5s %6.6s\n", "code", "instruction", "count", "cnt%", "time (sec.nsec)", "time%", "ns/call");
-	for (IDIO_I i = 1; i < IDIO_I_MAX; i++) {
-	    if (1 || idio_vm_ins_counters[i]) {
-		const char *bc_name = idio_vm_bytecode2string (i);
-		if (strcmp (bc_name, "Unknown bytecode") ||
-		    idio_vm_ins_counters[i]) {
-		    float count_pct = 100.0 * idio_vm_ins_counters[i] / c;
-		    c_pct += count_pct;
-
-		    /*
-		     * convert to 100ths of a second
-		     */
-		    float t_time = t.tv_sec * 100 + t.tv_nsec / 10000000;
-		    float i_time = idio_vm_ins_call_time[i].tv_sec * 100 + idio_vm_ins_call_time[i].tv_nsec / 10000000;
-		    float time_pct = i_time * 100 / t_time;
-		    t_pct += time_pct;
-
-		    fprintf (idio_vm_perf_FILE, "vm-ins:  %4" PRIu8 " %-40s %8" PRIu64 " %5.1f %5ld.%09ld %5.1f",
-			     i,
-			     bc_name,
-			     idio_vm_ins_counters[i],
-			     count_pct,
-			     idio_vm_ins_call_time[i].tv_sec,
-			     idio_vm_ins_call_time[i].tv_nsec,
-			time_pct);
-		    double call_time = 0;
-		    if (idio_vm_ins_counters[i]) {
-			call_time = (idio_vm_ins_call_time[i].tv_sec * IDIO_VM_NS + idio_vm_ins_call_time[i].tv_nsec) / idio_vm_ins_counters[i];
-		    }
-		    fprintf (idio_vm_perf_FILE, " %6.f", call_time);
-		    fprintf (idio_vm_perf_FILE, "\n");
+	    for (IDIO_I i = 1; i < IDIO_I_MAX; i++) {
+		c += idio_vm_ins_counters[i];
+		t.tv_sec += idio_vm_ins_call_time[i].tv_sec;
+		t.tv_nsec += idio_vm_ins_call_time[i].tv_nsec;
+		if (t.tv_nsec > IDIO_VM_NS) {
+		    t.tv_nsec -= IDIO_VM_NS;
+		    t.tv_sec += 1;
 		}
 	    }
-	}
-	fprintf (idio_vm_perf_FILE, "vm-ins:  %4s %-40s %8" PRIu64 " %5.1f %5ld.%09ld %5.1f\n", "", "total", c, c_pct, t.tv_sec, t.tv_nsec, t_pct);
+
+	    float c_pct = 0;
+	    float t_pct = 0;
+
+	    fprintf (idio_vm_perf_FILE, "vm-ins:  %4.4s %-40.40s %8.8s %5.5s %15.15s %5.5s %6.6s\n", "code", "instruction", "count", "cnt%", "time (sec.nsec)", "time%", "ns/call");
+	    for (IDIO_I i = 1; i < IDIO_I_MAX; i++) {
+		if (1 || idio_vm_ins_counters[i]) {
+		    const char *bc_name = idio_vm_bytecode2string (i);
+		    if (strcmp (bc_name, "Unknown bytecode") ||
+			idio_vm_ins_counters[i]) {
+			float count_pct = 100.0 * idio_vm_ins_counters[i] / c;
+			c_pct += count_pct;
+
+			/*
+			 * convert to 100ths of a second
+			 */
+			float t_time = t.tv_sec * 100 + t.tv_nsec / 10000000;
+			float i_time = idio_vm_ins_call_time[i].tv_sec * 100 + idio_vm_ins_call_time[i].tv_nsec / 10000000;
+			float time_pct = i_time * 100 / t_time;
+			t_pct += time_pct;
+
+			fprintf (idio_vm_perf_FILE, "vm-ins:  %4" PRIu8 " %-40s %8" PRIu64 " %5.1f %5ld.%09ld %5.1f",
+				 i,
+				 bc_name,
+				 idio_vm_ins_counters[i],
+				 count_pct,
+				 idio_vm_ins_call_time[i].tv_sec,
+				 idio_vm_ins_call_time[i].tv_nsec,
+				 time_pct);
+			double call_time = 0;
+			if (idio_vm_ins_counters[i]) {
+			    call_time = (idio_vm_ins_call_time[i].tv_sec * IDIO_VM_NS + idio_vm_ins_call_time[i].tv_nsec) / idio_vm_ins_counters[i];
+			}
+			fprintf (idio_vm_perf_FILE, " %6.f", call_time);
+			fprintf (idio_vm_perf_FILE, "\n");
+		    }
+		}
+	    }
+	    fprintf (idio_vm_perf_FILE, "vm-ins:  %4s %-40s %8" PRIu64 " %5.1f %5ld.%09ld %5.1f\n", "", "total", c, c_pct, t.tv_sec, t.tv_nsec, t_pct);
 #endif
+	}
     }
 #ifdef IDIO_DEBUG
-	fprintf (stderr, "\n");
+    fprintf (stderr, "\n");
 #endif
 
     idio_ia_free (idio_all_code);

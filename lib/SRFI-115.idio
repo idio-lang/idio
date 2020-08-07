@@ -32,7 +32,7 @@ export (regexp regexp? valid-sre? rx regexp->sre char-set->sre
 						 regexp-match->list regexp-match->sexp)
 
 import SRFI-14
-import (unicode ascii)
+import unicode
 
 ;; regexp.scm -- simple non-bactracking NFA implementation
 ;; Copyright (c) 2013-2016 Alex Shinn.  All rights reserved.

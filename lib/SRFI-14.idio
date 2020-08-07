@@ -49,7 +49,7 @@ export (
 )
 
 ; unicode defines the actual char-sets!
-import (unicode ascii)
+import unicode
 
 define (char-set & cps) "
 Return a character set containing the given code points.

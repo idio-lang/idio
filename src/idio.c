@@ -224,9 +224,23 @@ void idio_final ()
 
 int main (int argc, char **argv, char **envp)
 {
-    idio_init (argc, argv);
+    int nargc = 0;
+    char **nargv = (char **) idio_alloc ((argc + 1) * sizeof (char *));
+    nargv[nargc++] = argv[0];
 
-    idio_env_init_idiolib (argv[0]);
+    int i;
+    for (i = 1; i < argc; i++) {
+	if (strcmp (argv[i], "--vm-reports") == 0) {
+	    idio_vm_reports = 1;
+	} else {
+	    nargv[nargc++] = argv[i];
+	}
+    }
+    nargv[nargc] = NULL;
+
+    idio_init (nargc, nargv);
+
+    idio_env_init_idiolib (nargv[0]);
 
     IDIO thr = idio_thread_current_thread ();
 
@@ -300,10 +314,10 @@ int main (int argc, char **argv, char **envp)
 	}
 
 	int i;
-	for (i = 1 ; i < argc; i++) {
-	    fprintf (stderr, "load %s\n", argv[i]);
+	for (i = 1 ; i < nargc; i++) {
+	    fprintf (stderr, "load %s\n", nargv[i]);
 
-	    IDIO filename = idio_string_C (argv[i]);
+	    IDIO filename = idio_string_C (nargv[i]);
 
 	    /*
 	     * If we're given a sequence of files to load then any
@@ -334,7 +348,7 @@ int main (int argc, char **argv, char **envp)
 		idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST2 (load, filename));
 		break;
 	    case IDIO_VM_SIGLONGJMP_CONTINUATION:
-		fprintf (stderr, "load %s: continuation was invoked => pending exit (1)\n", argv[i]);
+		fprintf (stderr, "load %s: continuation was invoked => pending exit (1)\n", nargv[i]);
 		idio_exit_status = 1;
 		break;
 	    case IDIO_VM_SIGLONGJMP_EXIT:
@@ -343,7 +357,7 @@ int main (int argc, char **argv, char **envp)
 		exit (idio_exit_status);
 		break;
 	    default:
-		fprintf (stderr, "sigsetjmp: load %s: failed with sjv %d\n", argv[i], sjv);
+		fprintf (stderr, "sigsetjmp: load %s: failed with sjv %d\n", nargv[i], sjv);
 		idio_final ();
 		exit (1);
 		break;

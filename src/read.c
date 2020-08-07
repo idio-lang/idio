@@ -122,26 +122,30 @@ IDIO idio_src_properties;
 #define IDIO_LIST_ANGLE_MARK		(1 << 19) /* 0x08hhhh */
 
 /* QUOTE and QUASIQUOTE are on or off */
-#define IDIO_LIST_QUOTE_MARK		(1 << 30) /* 0x40hhhh */
-#define IDIO_LIST_QUASIQUOTE_MARK	(1 << 31) /* 0x80hhhh */
+#define IDIO_LIST_QUOTE_MARK		(1 << 28) /* 0x1000hhhh */
+#define IDIO_LIST_QUASIQUOTE_MARK	(1 << 29) /* 0x2000hhhh */
+
+#define IDIO_LIST_CONSTANT_MARK		(1 << 30) /* 0x4000hhhh */
 
 #define IDIO_LIST_MASK			(0xffff | IDIO_LIST_QUOTE_MARK | IDIO_LIST_QUASIQUOTE_MARK)
 
-#define IDIO_LIST_PAREN(d)		(IDIO_LIST_PAREN_MARK | ((d) & IDIO_LIST_MASK))
-#define IDIO_LIST_BRACE(d)		(IDIO_LIST_BRACE_MARK | ((d) & IDIO_LIST_MASK))
-#define IDIO_LIST_BRACKET(d)		(IDIO_LIST_BRACKET_MARK | ((d) & IDIO_LIST_MASK))
-#define IDIO_LIST_ANGLE(d)		(IDIO_LIST_ANGLE_MARK | ((d) & IDIO_LIST_MASK))
+#define IDIO_LIST_PAREN(d)		(IDIO_LIST_PAREN_MARK | (d))
+#define IDIO_LIST_BRACE(d)		(IDIO_LIST_BRACE_MARK | (d))
+#define IDIO_LIST_BRACKET(d)		(IDIO_LIST_BRACKET_MARK | (d))
+#define IDIO_LIST_ANGLE(d)		(IDIO_LIST_ANGLE_MARK | (d))
 
-#define IDIO_LIST_QUOTE(d)		(IDIO_LIST_QUOTE_MARK | ((d) & IDIO_LIST_MASK))
-#define IDIO_LIST_QUASIQUOTE(d)		(IDIO_LIST_QUASIQUOTE_MARK | ((d) & IDIO_LIST_MASK))
+#define IDIO_LIST_QUOTE(d)		(IDIO_LIST_QUOTE_MARK | (d))
+#define IDIO_LIST_QUASIQUOTE(d)		(IDIO_LIST_QUASIQUOTE_MARK | (d))
+#define IDIO_LIST_CONSTANT(d)		(IDIO_LIST_CONSTANT_MARK | (d))
 
-#define IDIO_LIST_PAREN_P(d)		(((d) & IDIO_LIST_PAREN_MARK) && ((d) & IDIO_LIST_MASK))
-#define IDIO_LIST_BRACE_P(d)		(((d) & IDIO_LIST_BRACE_MARK) && ((d) & IDIO_LIST_MASK))
-#define IDIO_LIST_BRACKET_P(d)		(((d) & IDIO_LIST_BRACKET_MARK) && ((d) & IDIO_LIST_MASK))
-#define IDIO_LIST_ANGLE_P(d)		(((d) & IDIO_LIST_ANGLE_MARK) && ((d) & IDIO_LIST_MASK))
+#define IDIO_LIST_PAREN_P(d)		((d) & IDIO_LIST_PAREN_MARK)
+#define IDIO_LIST_BRACE_P(d)		((d) & IDIO_LIST_BRACE_MARK)
+#define IDIO_LIST_BRACKET_P(d)		((d) & IDIO_LIST_BRACKET_MARK)
+#define IDIO_LIST_ANGLE_P(d)		((d) & IDIO_LIST_ANGLE_MARK)
 
 #define IDIO_LIST_QUOTE_P(d)		((d) & IDIO_LIST_QUOTE_MARK)
 #define IDIO_LIST_QUASIQUOTE_P(d)	((d) & IDIO_LIST_QUASIQUOTE_MARK)
+#define IDIO_LIST_CONSTANT_P(d)		((d) & IDIO_LIST_CONSTANT_MARK)
 
 /*
  * Default interpolation characters:
@@ -884,6 +888,13 @@ static IDIO idio_read_list (IDIO handle, IDIO list_lo, IDIO opendel, char *ic, i
 	     */
 	    IDIO lo = idio_read_1_expr (handle, ic, depth);
 	    IDIO pt = idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_EXPR);
+	    /*
+	     * Careful of:
+	     *
+	     * ( a &
+	     *
+	     *   b )
+	     */
 	    while (idio_T_eol == pt) {
 		IDIO lo = idio_read_1_expr (handle, ic, depth);
 		pt = idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_EXPR);
@@ -1006,13 +1017,18 @@ static IDIO idio_read_list (IDIO handle, IDIO list_lo, IDIO opendel, char *ic, i
 
 	    if (closedel == e) {
 		r = idio_list_reverse (r);
-		if (idio_isa_pair (r)) {
+		if (idio_isa_pair (r) &&
+		    IDIO_LIST_CONSTANT_P (depth) == 0) {
 		    IDIO r_lo = idio_copy (lo, IDIO_COPY_SHALLOW);
 		    idio_struct_instance_set_direct (r_lo, IDIO_LEXOBJ_EXPR, r);
 		    idio_hash_put (idio_src_properties, r, r_lo);
 		}
-		r = idio_operator_expand (r, 0);
-		if (idio_isa_pair (r)) {
+		if (! (IDIO_LIST_QUOTE_P (depth) ||
+		       IDIO_LIST_CONSTANT_P (depth))) {
+		    r = idio_operator_expand (r, 0);
+		}
+		if (idio_isa_pair (r) &&
+		    IDIO_LIST_CONSTANT_P (depth) == 0) {
 		    IDIO r_lo = idio_copy (lo, IDIO_COPY_SHALLOW);
 		    idio_struct_instance_set_direct (r_lo, IDIO_LEXOBJ_EXPR, r);
 		    idio_hash_put (idio_src_properties, r, r_lo);
@@ -1647,8 +1663,9 @@ static IDIO idio_read_hash (IDIO handle, IDIO lo, char *ic, int depth)
 {
     IDIO_ASSERT (handle);
 
-    IDIO l = idio_read_list (handle, lo, idio_T_lbrace, ic, IDIO_LIST_BRACE (depth + 1));
-    return idio_hash_alist_to_hash (l, idio_S_nil);
+    IDIO l = idio_read_list (handle, lo, idio_T_lbrace, ic, IDIO_LIST_CONSTANT (IDIO_LIST_BRACE (depth + 1)));
+    IDIO r = idio_hash_alist_to_hash (l, idio_S_nil);
+    return r;
 }
 
 /*
@@ -2912,7 +2929,8 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl
 		{
 		    IDIO l = idio_read_list (handle, lo, idio_T_lparen, ic, IDIO_LIST_PAREN (depth) + 1);
 		    idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, l);
-		    if (idio_S_nil != l) {
+		    if (idio_S_nil != l &&
+			IDIO_LIST_CONSTANT_P (depth) == 0) {
 			idio_hash_put (idio_src_properties, l, lo);
 		    }
 		    return lo;
@@ -3031,10 +3049,10 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl
 			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_character (handle, lo, IDIO_READ_CHARACTER_EXTENDED));
 			return lo;
 		    case IDIO_CHAR_LBRACKET:
-			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_array (handle, lo, ic, IDIO_LIST_BRACKET (depth + 1)));
+			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_array (handle, lo, ic, depth + 1));
 			return lo;
 		    case IDIO_CHAR_LBRACE:
-			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_hash (handle, lo, ic, IDIO_LIST_BRACE (depth + 1)));
+			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_hash (handle, lo, ic, depth + 1));
 			return lo;
 		    case 'B':
 			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_bitset (handle, lo, depth));
@@ -3265,13 +3283,18 @@ static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, char *ic, int depth
 		if (idio_S_nil == IDIO_PAIR_T (re)) {
 		    re = IDIO_PAIR_H (re);
 		} else {
-		    if (idio_isa_pair (re)) {
+		    if (idio_isa_pair (re) &&
+			IDIO_LIST_CONSTANT_P (depth) == 0) {
 			IDIO re_lo = idio_copy (lo, IDIO_COPY_SHALLOW);
 			idio_struct_instance_set_direct (re_lo, IDIO_LEXOBJ_EXPR, re);
 			idio_hash_put (idio_src_properties, re, re_lo);
 		    }
-		    re = idio_operator_expand (re, 0);
-		    if (idio_isa_pair (re)) {
+		    if (! (IDIO_LIST_QUOTE_P (depth) ||
+			   IDIO_LIST_CONSTANT_P (depth))) {
+			re = idio_operator_expand (re, 0);
+		    }
+		    if (idio_isa_pair (re) &&
+			IDIO_LIST_CONSTANT_P (depth) == 0) {
 			IDIO re_lo = idio_copy (lo, IDIO_COPY_SHALLOW);
 			idio_struct_instance_set_direct (re_lo, IDIO_LEXOBJ_EXPR, re);
 			idio_hash_put (idio_src_properties, re, re_lo);
@@ -3290,13 +3313,18 @@ static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, char *ic, int depth
 		if (idio_S_nil == IDIO_PAIR_T (re)) {
 		    re = IDIO_PAIR_H (re);
 		} else {
-		    if (idio_isa_pair (re)) {
+		    if (idio_isa_pair (re) &&
+			IDIO_LIST_CONSTANT_P (depth) == 0) {
 			IDIO re_lo = idio_copy (lo, IDIO_COPY_SHALLOW);
 			idio_struct_instance_set_direct (re_lo, IDIO_LEXOBJ_EXPR, re);
 			idio_hash_put (idio_src_properties, re, re_lo);
 		    }
-		    re = idio_operator_expand (re, 0);
-		    if (idio_isa_pair (re)) {
+		    if (! (IDIO_LIST_QUOTE_P (depth) ||
+		       IDIO_LIST_CONSTANT_P (depth))) {
+			re = idio_operator_expand (re, 0);
+		    }
+		    if (idio_isa_pair (re) &&
+			IDIO_LIST_CONSTANT_P (depth) == 0) {
 			IDIO re_lo = idio_copy (lo, IDIO_COPY_SHALLOW);
 			idio_struct_instance_set_direct (re_lo, IDIO_LEXOBJ_EXPR, re);
 			idio_hash_put (idio_src_properties, re, re_lo);
@@ -3315,13 +3343,18 @@ static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, char *ic, int depth
 		if (idio_S_nil == IDIO_PAIR_T (re)) {
 		    re = IDIO_PAIR_H (re);
 		} else {
-		    if (idio_isa_pair (re)) {
+		    if (idio_isa_pair (re) &&
+			IDIO_LIST_CONSTANT_P (depth) == 0) {
 			IDIO re_lo = idio_copy (lo, IDIO_COPY_SHALLOW);
 			idio_struct_instance_set_direct (re_lo, IDIO_LEXOBJ_EXPR, re);
 			idio_hash_put (idio_src_properties, re, re_lo);
 		    }
-		    re = idio_operator_expand (re, 0);
-		    if (idio_isa_pair (re)) {
+		    if (! (IDIO_LIST_QUOTE_P (depth) ||
+		       IDIO_LIST_CONSTANT_P (depth))) {
+			re = idio_operator_expand (re, 0);
+		    }
+		    if (idio_isa_pair (re) &&
+			IDIO_LIST_CONSTANT_P (depth) == 0) {
 			IDIO re_lo = idio_copy (lo, IDIO_COPY_SHALLOW);
 			idio_struct_instance_set_direct (re_lo, IDIO_LEXOBJ_EXPR, re);
 			idio_hash_put (idio_src_properties, re, re_lo);
@@ -3431,7 +3464,8 @@ static IDIO idio_read_block (IDIO handle, IDIO lo, IDIO closedel, char *ic, int 
 	IDIO expr = idio_struct_instance_ref_direct (line_lo, IDIO_LEXOBJ_EXPR);
 	IDIO reason = IDIO_PAIR_T (line_p);
 
-	if (idio_isa_pair (expr)) {
+	if (idio_isa_pair (expr) &&
+	    IDIO_LIST_CONSTANT_P (depth) == 0) {
 	    idio_hash_put (idio_src_properties, expr, line_lo);
 	}
 

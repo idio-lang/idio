@@ -50,4 +50,4 @@ include "doc.idio"
 
 import job-control libc
 import SRFI-115
-import (unicode ASCII)
+import unicode
