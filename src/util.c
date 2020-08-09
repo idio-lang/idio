@@ -22,6 +22,8 @@
 
 #include "idio.h"
 
+static IDIO idio_util_value_as_string;
+
 void idio_util_error_format (char *m, IDIO s, IDIO c_location)
 {
     IDIO_C_ASSERT (m);
@@ -751,6 +753,29 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
     }
 
     return 1;
+}
+
+static IDIO idio_util_as_string_symbol (IDIO o)
+{
+    IDIO_ASSERT (o);
+
+    IDIO r = idio_S_nil;
+
+    if (idio_isa_struct_instance (o)) {
+	IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (o);
+	IDIO stn = IDIO_STRUCT_TYPE_NAME (sit);
+
+	size_t stnl = strlen (IDIO_SYMBOL_S (stn));
+	size_t blen = stnl + 10 + 1;
+	char *sym_name = idio_alloc (blen);
+	memcpy (sym_name, IDIO_SYMBOL_S (stn), stnl);
+	memcpy (sym_name + stnl, "-as-string", 10);
+	sym_name[blen] = '\0';
+
+	r = idio_symbols_C_intern (sym_name);
+    }
+
+    return r;
 }
 
 /*
@@ -1663,6 +1688,26 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		break;
 	    case IDIO_TYPE_STRUCT_INSTANCE:
 		{
+		    IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (o);
+		    IDIO as_string = idio_util_as_string_symbol (o);
+		    IDIO value_as_string = idio_module_symbol_value (idio_util_value_as_string, idio_Idio_module, idio_S_nil);
+
+		    if (idio_S_nil != value_as_string) {
+			IDIO s = idio_S_nil;
+			IDIO l = idio_list_assq (sit, value_as_string);
+			if (idio_S_false != l) {
+			    IDIO thr = idio_thread_current_thread ();
+
+			    IDIO cmd = IDIO_LIST3 (IDIO_PAIR_HT (l), o, idio_S_nil);
+
+			    s = idio_vm_invoke_C (thr, cmd);
+			}
+
+			if (idio_S_nil != s) {
+			    return idio_as_string (s, sizep, 1);
+			}
+		    }
+
 		    if (asprintf (&r, "#<SI %p ", o) == -1) {
 			idio_error_alloc ("asprintf");
 			/* notreached */
@@ -1670,7 +1715,6 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		    }
 		    *sizep = strlen (r);
 
-		    IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (o);
 		    size_t n_size = 0;
 		    char *ns = idio_as_string (IDIO_STRUCT_TYPE_NAME (sit), &n_size, 1);
 		    IDIO_STRCAT_FREE (r, sizep, ns, n_size);
@@ -3056,6 +3100,8 @@ size_t strnlen (const char *s, size_t maxlen)
 
 void idio_init_util ()
 {
+    idio_util_value_as_string = idio_symbols_C_intern ("%%value-as-string");
+    idio_module_set_symbol_value (idio_util_value_as_string, idio_S_nil, idio_Idio_module);
 }
 
 void idio_util_add_primitives ()

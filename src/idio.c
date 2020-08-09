@@ -293,7 +293,7 @@ int main (int argc, char **argv, char **envp)
 
     idio_load_file_name_aio (idio_string_C ("bootstrap"), idio_vm_constants);
 
-    if (argc > 1) {
+    if (nargc > 1) {
 	/*
 	 * idio_command_interactive is set to 1 if isatty (0) is true
 	 * however we are about to loop over files in a

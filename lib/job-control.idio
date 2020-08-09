@@ -53,6 +53,37 @@ export-struct-accessors-only %idio-job		pipeline procs pgid notified tcattrs std
 export-struct-accessors-only %idio-status	pid state reason
 
 %%last-job := #n
+
+define (job-as-string job seen) {
+  if (%idio-job? job) {
+    r := (open-output-string)
+    hprintf r "#<SI %idio-job "
+
+    hprintf r "%s %s " job.pgid job.pipeline
+
+    procs-first := #t
+    procs-loop :+ function (procs) {
+		    proc := ph procs
+		    if (null? proc) #t {
+		      if procs-first {
+			procs-first = #f
+		      } {
+			hprintf r "| "
+		      }
+		      hprintf r "[PID=%s C?=%s S?%s: %s] " proc.pid proc.completed proc.stopped proc.argv
+		      procs-loop (pt procs)
+		    }
+    }
+
+    procs-loop (reverse (%idio-job-procs job))
+
+    hprintf r ">"
+    get-output-string r
+  } #n
+}
+
+%%add-as-string %idio-job job-as-string
+
 ;;
 ;; These algorithms are directly from the libc info pages on Job
 ;; Control: "info libc" then "Job Control" then "Implementing a Shell"

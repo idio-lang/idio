@@ -107,6 +107,10 @@ define (edisplay* & x*) {
   newline (current-error-handle)
 }
 
+define (%%add-as-string o f) {
+  %%value-as-string = pair (list o f) %%value-as-string
+}
+
 define (hprintf handle fmt & args) "
 
 Invoke the ``%printf`` function on ``handle`` with ``fmt`` and

@@ -688,7 +688,7 @@ typedef struct idio_handle_s {
 
 typedef struct idio_struct_type_s {
     struct idio_s *grey;
-    struct idio_s *name;	/* a string */
+    struct idio_s *name;	/* a symbol */
     struct idio_s *parent;	/* a struct-type */
     struct idio_s *fields;	/* an array of strings */
 } idio_struct_type_t;
