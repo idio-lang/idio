@@ -766,13 +766,15 @@ static IDIO idio_util_as_string_symbol (IDIO o)
 	IDIO stn = IDIO_STRUCT_TYPE_NAME (sit);
 
 	size_t stnl = strlen (IDIO_SYMBOL_S (stn));
-	size_t blen = stnl + 10 + 1;
-	char *sym_name = idio_alloc (blen);
+	size_t blen = stnl + 10;
+	char *sym_name = idio_alloc (blen + 1);
 	memcpy (sym_name, IDIO_SYMBOL_S (stn), stnl);
 	memcpy (sym_name + stnl, "-as-string", 10);
 	sym_name[blen] = '\0';
 
 	r = idio_symbols_C_intern (sym_name);
+
+	free (sym_name);
     }
 
     return r;

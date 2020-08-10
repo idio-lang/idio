@@ -95,12 +95,10 @@ IDIO idio_keyword_C_len (const char *s_C, size_t blen)
 
     IDIO o = idio_gc_get (IDIO_TYPE_KEYWORD);
 
-    /* IDIO_GC_ALLOC (o->u.keyword, sizeof (idio_keyword_t)); */
-
     IDIO_GC_ALLOC (IDIO_KEYWORD_S (o), blen + 1);
 
     strncpy (IDIO_KEYWORD_S (o), s_C, blen);
-    *(IDIO_KEYWORD_S (o) + blen) = '\0';
+    IDIO_KEYWORD_S (o)[blen] = '\0';
 
     return o;
 }
@@ -133,7 +131,7 @@ IDIO_DEFINE_PRIMITIVE1 ("make-keyword", make_keyword, (IDIO s))
 
 	return r;
     } else if (idio_isa_symbol (s)) {
-	return idio_keyword_C (IDIO_SYMBOL_S (s));
+	return idio_keywords_C_intern (IDIO_SYMBOL_S (s));
     } else {
 	idio_error_param_type ("string|symbol", s, IDIO_C_FUNC_LOCATION ());
     }

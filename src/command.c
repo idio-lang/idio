@@ -2436,6 +2436,14 @@ IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
 		break;
 	    }
 	}
+
+	if (-1 == fclose (filep)) {
+	    idio_free_argv1 (argv);
+
+	    idio_error_system_errno ("fclose <job stdout>", IDIO_LIST1 (job_stdout), IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	}
     }
 
     if (idio_S_false != recover_stderr) {
@@ -2475,6 +2483,14 @@ IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
 		idio_putc_string_handle (recover_stderr, c);
 		break;
 	    }
+	}
+
+	if (-1 == fclose (filep)) {
+	    idio_free_argv1 (argv);
+
+	    idio_error_system_errno ("fclose <job stderr>", IDIO_LIST1 (job_stdout), IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
 	}
     }
 

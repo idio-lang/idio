@@ -235,8 +235,6 @@ static IDIO idio_symbol_C (const char *s_C)
 
     IDIO o = idio_gc_get (IDIO_TYPE_SYMBOL);
 
-    /* IDIO_GC_ALLOC (o->u.symbol, sizeof (idio_symbol_t)); */
-
     size_t blen = strlen (s_C);
     IDIO_GC_ALLOC (IDIO_SYMBOL_S (o), blen + 1);
     strcpy (IDIO_SYMBOL_S (o), s_C);

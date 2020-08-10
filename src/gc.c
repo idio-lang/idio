@@ -1668,7 +1668,9 @@ void idio_gc_collect (char *caller)
     idio_gc_mark ();
     idio_gc_sweep ();
 
-    idio_hash_tidy_weak_references ();
+    if (0 == (IDIO_GC_FLAGS (idio_gc) & IDIO_GC_FLAG_FINISH)) {
+	idio_hash_tidy_weak_references ();
+    }
 
     struct timeval t1;
     gettimeofday (&t1, NULL);
