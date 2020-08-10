@@ -6128,6 +6128,8 @@ void idio_vm_dump_values ()
 	return;
     }
 
+    IDIO Rx = idio_symbols_C_intern ("Rx");
+
     idio_ai_t al = idio_array_size (idio_vm_values);
     fprintf (fp, "idio_vm_values: %td\n", al);
     idio_ai_t i;
@@ -6146,6 +6148,13 @@ void idio_vm_dump_values ()
 	     * seconds to print!
 	     */
 	    vs = idio_as_string (v, &size, 0);
+	} else if (idio_isa_struct_instance (v) &&
+		   (IDIO_STRUCT_TYPE_NAME (IDIO_STRUCT_INSTANCE_TYPE (v)) == Rx)) {
+	    /*
+	     * These objects are a little bit recursive and can easily
+	     * become 100+MB when printed (to a depth of 40...)
+	     */
+	    vs = idio_as_string (v, &size, 4);
 	} else {
 	    vs = idio_as_string (v, &size, 40);
 	}

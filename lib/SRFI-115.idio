@@ -87,15 +87,22 @@ make-state = {
 ~nocapture?	:= #B{ 3 001 }
 
 define (flag-set? flags i)	(equal-bitset? i (and-bitset flags i))
-define (flag-join a b)		(if b (ior-bitset a b) a)
+define (flag-join a b)		(ior-bitset a b)
 define (flag-clear a b)		(and-bitset a (not-bitset b))
 
 define (char-set-ci cset) {
-  char-set-fold (function (ch res)
-		   (char-set-adjoin! (char-set-adjoin! res (char-upcase ch))
-				     (char-downcase ch))) \
-		(char-set) \
-		cset
+  cased := (char-set)
+  char-set-for-each-set cset (function (ch) {
+				cond ((bitset-ref char-set:lower-case ch) {
+				  uc := hash-ref char-set:simple-upper-case-map ch #f
+				  if uc (bitset-set! cased uc)
+				}) \
+				     ((bitset-ref char-set:upper-case ch) {
+				       lc := hash-ref char-set:simple-lower-case-map ch #f
+				       if lc (bitset-set! cased lc)
+				     })
+  })
+  ior-bitset cset cased
 }
 
 define (make-char-state ch flags next id) {

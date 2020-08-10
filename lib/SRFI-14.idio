@@ -24,8 +24,9 @@ In particular, just the interfaces required for SRFI-115.
 
 module SRFI-14
 export (
-	 char-set
 	 char-set?
+	 char-set-for-each-set
+	 char-set
 	 copy-char-set
 	 string->char-set
 	 char-set->string
@@ -51,6 +52,38 @@ export (
 ; unicode defines the actual char-sets!
 import unicode
 
+define char-set? bitset?
+
+#*
+
+char-set-for-each-set and, by extension, bitset-for-each-set, was
+introduced to avoid an appalling inability for Idio to iterate over
+the full Unicode bitsets calling a function on each in a timely
+fashion (1114112 elements).
+
+The offending caller is char-set-ci in SRFI-115 which wants to make
+the char-set case insensitive which it does by looping over all
+elements in the char-set finding the other case.  In principle it has
+to do this twice, once for a lower-to-upper conversion and a second
+for vice-versa.
+
+Even when simply looping over the hash tables of
+char-set-simple-*-case-map at 1300-odd entries each, checking to see
+if each entry existed in the char-set, it was still multiple seconds.
+
+This is compounded in the particular case of a regular expression of
+the form '(w/nocase "my string") which the nature of SRFI-115 converts
+into a nested set of char-sets each containing one character from the
+string.  In other words the slow loop over any individual char-set is
+now compounded by the length of the string.  Yikes!  Minutes!
+
+So, a bit if a hack where we only call the function for those bits
+that are set which it is much easier to find by testing the unsigned
+longs in the underlying implementation for non-zero values.
+
+*#
+define char-set-for-each-set bitset-for-each-set
+
 define (char-set & cps) "
 Return a character set containing the given code points.
 " {
@@ -67,8 +100,6 @@ Return a character set containing the given code points.
   loop cps
   bs
 }
-
-define char-set? bitset?
 
 define copy-char-set copy-bitset
 

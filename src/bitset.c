@@ -614,7 +614,7 @@ subtract the bitsets				\n\
 	    size_t i;
 	    for (i = 0; i < n_ul; i++) {
 		if (IDIO_BITSET_BITS (bs, i)) {
-		    IDIO_BITSET_BITS (r, i) = 0;
+		    IDIO_BITSET_BITS (r, i) &= (~ IDIO_BITSET_BITS (bs, i));
 		}
 	    }
 	}
@@ -679,6 +679,43 @@ are the bitsets equal				\n\
     return idio_equal_bitsetp (args) ? idio_S_true : idio_S_false;
 }
 
+IDIO_DEFINE_PRIMITIVE2_DS ("bitset-for-each-set", bitset_for_each_set, (IDIO bs, IDIO f), "bs f", "\
+invoke `f` on each bit in bitset `bs` that is set\n\
+						\n\
+:param bs: bitset to be operated on		\n\
+:type bs: bitset				\n\
+:param f: function to invoke on each set bit	\n\
+:type f: function of 1 arg			\n\
+:rtype: #unspec					\n\
+")
+{
+    IDIO_ASSERT (bs);
+    IDIO_ASSERT (f);
+
+    IDIO_TYPE_ASSERT (bitset, bs);
+    IDIO_TYPE_ASSERT (procedure, f);
+
+    IDIO thr = idio_thread_current_thread ();
+
+    size_t n_ul = IDIO_BITSET_SIZE (bs) / IDIO_BITS_PER_LONG + 1;
+    size_t i;
+    for (i = 0; i < n_ul; i++) {
+	unsigned long v = IDIO_BITSET_BITS (bs, i);
+	if (v) {
+	    size_t j;
+	    for (j = 0 ; j < IDIO_BITS_PER_LONG; j++) {
+		if (v & (1UL << j)) {
+		    IDIO cmd = IDIO_LIST2 (f, idio_fixnum (i * IDIO_BITS_PER_LONG + j));
+
+		    idio_vm_invoke_C (thr, cmd);
+		}
+	    }
+	}
+    }
+
+    return idio_S_unspec;
+}
+
 void idio_init_bitset ()
 {
 }
@@ -699,6 +736,7 @@ void idio_bitset_add_primitives ()
     IDIO_ADD_PRIMITIVE (not_bitset);
     IDIO_ADD_PRIMITIVE (subtract_bitset);
     IDIO_ADD_PRIMITIVE (equal_bitsetp);
+    IDIO_ADD_PRIMITIVE (bitset_for_each_set);
 }
 
 void idio_final_bitset ()
