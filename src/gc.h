@@ -806,7 +806,7 @@ typedef struct idio_thread_s {
  */
 typedef struct idio_continuation_s {
     struct idio_s *grey;
-    jmp_buf *jmp_buf;
+    sigjmp_buf *jmp_buf;
     struct idio_s *stack;
 } idio_continuation_t;
 
