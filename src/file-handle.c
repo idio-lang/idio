@@ -1102,40 +1102,12 @@ void idio_file_handle_read_more (IDIO fh)
 {
     IDIO_ASSERT (fh);
 
-    if (IDIO_FILE_HANDLE_FLAGS (fh) & IDIO_FILE_HANDLE_FLAG_INTERACTIVE) {
-	/*
-	 * fgets sets EOF if it saw EOF even if it read something.  In
-	 * practice you need to check for EOF before calling fgets the
-	 * next time round...
-	 */
-	if (idio_eofp_file_handle (fh)) {
-	    IDIO_FILE_HANDLE_FLAGS (fh) |= IDIO_FILE_HANDLE_FLAG_EOF;
-	    return;
-	}
-
-	char *s = fgets (IDIO_FILE_HANDLE_BUF (fh), IDIO_FILE_HANDLE_BUFSIZ (fh), IDIO_FILE_HANDLE_FILEP (fh));
-	if (NULL == s) {
-	    IDIO_FILE_HANDLE_FLAGS (fh) |= IDIO_FILE_HANDLE_FLAG_EOF;
-	    return;
-	}
-	IDIO_FILE_HANDLE_PTR (fh) = IDIO_FILE_HANDLE_BUF (fh);
-	IDIO_FILE_HANDLE_COUNT (fh) = strlen (IDIO_FILE_HANDLE_BUF (fh));
+    ssize_t nread = read (IDIO_FILE_HANDLE_FD (fh), IDIO_FILE_HANDLE_BUF (fh), IDIO_FILE_HANDLE_BUFSIZ (fh));
+    if (-1 == nread) {
+	perror ("read");
+    } else if (0 == nread) {
+	IDIO_FILE_HANDLE_FLAGS (fh) |= IDIO_FILE_HANDLE_FLAG_EOF;
     } else {
-	/*
-	 * fread sets EOF if it saw EOF even if it read something.  In
-	 * practice you need to check for EOF before calling fread the
-	 * next time round...
-	 */
-	if (idio_eofp_file_handle (fh)) {
-	    IDIO_FILE_HANDLE_FLAGS (fh) |= IDIO_FILE_HANDLE_FLAG_EOF;
-	    return;
-	}
-
-	int nread = fread (IDIO_FILE_HANDLE_BUF (fh), 1, IDIO_FILE_HANDLE_BUFSIZ (fh), IDIO_FILE_HANDLE_FILEP (fh));
-	if (0 == nread) {
-	    IDIO_FILE_HANDLE_FLAGS (fh) |= IDIO_FILE_HANDLE_FLAG_EOF;
-	    return;
-	}
 	IDIO_FILE_HANDLE_PTR (fh) = IDIO_FILE_HANDLE_BUF (fh);
 	IDIO_FILE_HANDLE_COUNT (fh) = nread;
     }

@@ -300,15 +300,21 @@ int idio_getc_handle (IDIO h)
     }
 
     /*
-     * Only increment the line number if we have a valid line number
-     * to start with
+     * We were bumping the line/pos up even if we'd hit EOF -- which
+     * confused the debugger.
      */
-    if ('\n' == r &&
-	IDIO_HANDLE_LINE (h)) {
-	IDIO_HANDLE_LINE (h) += 1;
-    }
+    if (idio_eofp_handle (h) == 0) {
+	/*
+	 * Only increment the line number if we have a valid line number
+	 * to start with
+	 */
+	if ('\n' == r &&
+	    IDIO_HANDLE_LINE (h)) {
+	    IDIO_HANDLE_LINE (h) += 1;
+	}
 
-    IDIO_HANDLE_POS (h) += 1;
+	IDIO_HANDLE_POS (h) += 1;
+    }
 
     return r;
 }

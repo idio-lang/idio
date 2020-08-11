@@ -1975,6 +1975,11 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 			return idio_S_notreached;
 		    }
 
+		    /*
+		     * Check if idio_read_bignum_radix() read fewer
+		     * characters than in buf indicating buf isn't a
+		     * valid hex value
+		     */
 		    if (idio_handle_tell (offset_sh) != strlen (buf)) {
 			/*
 			 * Test Case: read-errors/bitset-range-start-floating-point.idio
@@ -2573,7 +2578,12 @@ static IDIO idio_read_bignum_radix (IDIO handle, IDIO lo, char basec, int radix)
 	return idio_S_notreached;
     }
 
-    idio_ungetc_handle (handle, c);
+    /*
+     * We were ungetc'ing in EOF conditions -- which is confusing
+     */
+    if (idio_eofp_handle (handle) == 0) {
+	idio_ungetc_handle (handle, c);
+    }
 
     if (neg) {
 	bn = idio_bignum_negate (bn);
@@ -3439,6 +3449,7 @@ static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, char *ic, int depth
 		    expr = idio_S_pair_separator;
 		    break;
 		default:
+		    idio_debug ("expected %s as closing delimiter\n", closedel);
 		    idio_error_C ("unexpected token in line", IDIO_LIST2 (handle, expr), IDIO_C_FUNC_LOCATION ());
 
 		    return idio_S_notreached;
