@@ -2486,6 +2486,11 @@ static IDIO idio_read_bignum_radix (IDIO handle, IDIO lo, char basec, int radix)
 
     int c = idio_getc_handle (handle);
 
+    /*
+     * EOF will be caught as no digits below which is a clearer error
+     * message and handles more case
+     */
+
     int neg = 0;
 
     switch (c) {
@@ -2497,6 +2502,11 @@ static IDIO idio_read_bignum_radix (IDIO handle, IDIO lo, char basec, int radix)
 	c = idio_getc_handle (handle);
 	break;
     }
+
+    /*
+     * EOF will be caught as no digits below which is a clearer error
+     * message and handles more case
+     */
 
     char digits[] = "0123456789abcdefghijklmnopqrstuvwxyz"; /* base 36 is possible */
     char DIGITS[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"; /* base 36 is possible */
@@ -2875,8 +2885,14 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl
 
 		c = idio_getc_handle (handle);
 		if (idio_eofp_handle (handle)) {
-		    idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_S_eof);
-		    return lo;
+		    /*
+		     * Test Case: read-errors/interpc-quasiquote-eof.idio
+		     *
+		     * $
+		     */
+		    idio_read_error_parse (handle, lo, IDIO_C_FUNC_LOCATION (), "EOF in quasiquote");
+
+		    return idio_S_notreached;
 		}
 
 		if (c == ic[1]) {
@@ -2905,6 +2921,17 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl
 	    return lo;
 	} else if (c == ic[3]) {
 	    c = idio_getc_handle (handle);
+	    if (idio_eofp_handle (handle)) {
+		/*
+		 * Test Case: read-errors/interpc-escape-eof.idio
+		 *
+		 * \
+		 */
+		idio_read_error_parse (handle, lo, IDIO_C_FUNC_LOCATION (), "EOF in escape");
+
+		return idio_S_notreached;
+	    }
+
 	    switch (c) {
 	    case IDIO_CHAR_CR:
 	    case IDIO_CHAR_NL:
@@ -3045,6 +3072,17 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl
 	    case IDIO_CHAR_HASH:
 		{
 		    int c = idio_getc_handle (handle);
+		    if (idio_eofp_handle (handle)) {
+			/*
+			 * Test Case: read-errors/hash-format-eof.idio
+			 *
+			 * #
+			 */
+			idio_read_error_parse (handle, lo, IDIO_C_FUNC_LOCATION (), "#-format EOF");
+
+			return idio_S_notreached;
+		    }
+
 		    switch (c) {
 		    case 'f':
 			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_S_false);
