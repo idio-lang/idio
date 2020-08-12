@@ -49,5 +49,5 @@ include "doc.idio"
 ;; C/== etc.
 
 import job-control libc
+import SRFI-14 unicode
 import SRFI-115
-import unicode

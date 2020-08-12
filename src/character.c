@@ -370,10 +370,10 @@ This implementation uses libc isupper()		\n\
     }
 
 #define IDIO_DEFINE_CHARACTER_CS_PRIMITIVE2V(name,cname,cmp)		\
-    IDIO_DEFINE_CHARACTER_PRIMITIVE2V (name, char_ci_ ## cname ## _p, cmp, IDIO_CHARACTER_VAL)
+    IDIO_DEFINE_CHARACTER_PRIMITIVE2V (name, char_ ## cname ## _p, cmp, IDIO_CHARACTER_VAL)
 
 #define IDIO_DEFINE_CHARACTER_CI_PRIMITIVE2V(name,cname,cmp)		\
-    IDIO_DEFINE_CHARACTER_PRIMITIVE2V (name, char_ ## cname ## _p, cmp, idio_character_ival)
+    IDIO_DEFINE_CHARACTER_PRIMITIVE2V (name, char_ci_ ## cname ## _p, cmp, idio_character_ival)
 
 IDIO_DEFINE_CHARACTER_CI_PRIMITIVE2V ("char-ci<=?", le, <=)
 IDIO_DEFINE_CHARACTER_CI_PRIMITIVE2V ("char-ci<?", lt, <)

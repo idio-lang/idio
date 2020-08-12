@@ -93,16 +93,16 @@ define (flag-clear a b)		(and-bitset a (not-bitset b))
 define (char-set-ci cset) {
   cased := (char-set)
   char-set-for-each-set cset (function (ch) {
-				cond ((bitset-ref char-set:lower-case ch) {
+				cond ((char-set-ref char-set:lower-case ch) {
 				  uc := hash-ref char-set:simple-upper-case-map ch #f
-				  if uc (bitset-set! cased uc)
+				  if uc (char-set-set! cased uc)
 				}) \
-				     ((bitset-ref char-set:upper-case ch) {
+				     ((char-set-ref char-set:upper-case ch) {
 				       lc := hash-ref char-set:simple-lower-case-map ch #f
-				       if lc (bitset-set! cased lc)
+				       if lc (char-set-set! cased lc)
 				     })
   })
-  ior-bitset cset cased
+  ior-char-set cset cased
 }
 
 define (make-char-state ch flags next id) {
@@ -910,10 +910,10 @@ define (sre->char-set sre & o) {
 					       (1 + (unicode->integer (pt x)))))
 			    (sre-flatten-ranges (pt sre)))
 		    }))
-		  ((\& \and) (apply char-set-intersection (map ->cs (pt sre))))
-		  ((\| \or) (apply char-set-union (map ->cs (pt sre))))
-		  ((~ complement) (char-set-complement (->cs #T{ or $@(pt sre) })))
-		  ((- difference) (char-set-difference (->cs (pht sre))
+		  ((\& \and) (apply intersection-char-set (map ->cs (pt sre))))
+		  ((\| \or) (apply union-char-set (map ->cs (pt sre))))
+		  ((~ complement) (complement-char-set (->cs #T{ or $@(pt sre) })))
+		  ((- difference) (difference-char-set (->cs (pht sre))
 						       (->cs #T{ (or $@(ptt sre)) })))
 		  ((w/case) (if (null? (ptt sre))
 				(sre->char-set (pht sre) (flag-clear flags ~ci?))
@@ -1178,7 +1178,7 @@ define (regexp sre & o) {
 		((word+)
 		 (->rx #T{ (word (+ $(if (equal? '(any) (pt sre))
 				      'word-constituent
-				      (char-set-intersection
+				      (intersection-char-set
 				       char-set:word-constituent
 				       (sre->char-set #T{ (or $@(pt sre)) } flags))))) }
 		  flags

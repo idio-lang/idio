@@ -16,96 +16,10 @@ limitations under the License.
 
 unicode.idio
 
-This was going to be a port of SRFI-14 character-sets library to be
-modified with John Cowan's 2019 Unicode comments,
-https://srfi.schemers.org/srfi-14/contrib/unicode-2019/CharsetDefs.html
-as noted in https://srfi.schemers.org/srfi-14/srfi-14.html.
-
-However with bitsets available as an Idio type (created for this
-purpose) I think we can skip it and derive the nominal SRFI-14-ish
-character sets from UnicodeData.txt (and others) directly.
-
-In the meanwhile this file, unicode.idio, defines the SRFI-14 char-set
-bitsets as derived from the above files and loaded by
-discretion (unicode.ascii.idio or unicode.full.idio).
-
-Where did they come from?  ../utils/extract-unicode-char-sets.idio
-will trawl through the Unicode data files and generate
-unicode.{ASCII,BMP0,full}.idio files with the appropriate bitsets.
-You can then check and copy them over the files in .../lib.
-
-Other generated tables include:
-
-char-set:simple-upper-case-map and char-set:simple-lower-case-map
-which use the fields (12) and (13) in UnicodeData.txt to generate
-simple mappings.
-
-Beware that these two tables are NOT symmetric.  For example:
-
-to-lower (0130;LATIN CAPITAL LETTER I WITH DOT ABOVE)	= 0069;LATIN SMALL LETTER I
-to-upper (0069;LATIN SMALL LETTER I)			= 0049;LATIN CAPITAL LETTER I
-to-lower (0049;LATIN CAPITAL LETTER I)			= 0069;LATIN SMALL LETTER I
-
-to-upper (01C8;LATIN CAPITAL LETTER L WITH SMALL LETTER J)	= 01C7;LATIN CAPITAL LETTER LJ
-to-lower (01C7;LATIN CAPITAL LETTER LJ)				= 01C9;LATIN SMALL LETTER LJ
-to-upper (01C9;LATIN SMALL LETTER LJ)				= 01C7;LATIN CAPITAL LETTER LJ
-
 *#
 
 module unicode
 export (
-	 ; SRFI-14 char-sets
-	 char-set:lower-case
-	 char-set:upper-case
-	 char-set:title-case
-	 char-set:letter
-	 char-set:digit
-	 char-set:letter+digit
-	 char-set:graphic
-	 char-set:printing
-	 char-set:whitespace
-	 char-set:iso-control
-	 char-set:punctuation
-	 char-set:symbol
-	 char-set:hex-digit
-	 char-set:blank
-	 char-set:ascii
-	 char-set:empty
-	 char-set:full
-
-	 ; useful derived map
-	 char-set:simple-upper-case-map
-	 char-set:simple-lower-case-map
-
-	 ; support for SRFI-115
-	 char-set:nonl
-	 char-set:control
-	 char-set:word-constituent
-	 char-set:cased
-
-	 ; SRFI-115: %X == intersection of ASCII and X
-	 %char-set:letter
-	 %char-set:lower-case
-	 %char-set:upper-case
-	 %char-set:digit
-	 %char-set:letter+digit
-	 %char-set:punctuation
-	 %char-set:symbol
-	 %char-set:graphic
-	 %char-set:whitespace
-	 %char-set:printing
-	 %char-set:iso-control
-
-	 ; SRFI-115: Unicode boundaries, TR29
-	 char-set:regional-indicator
-	 char-set:extend-or-spacing-mark
-	 char-set:hangul-l
-	 char-set:hangul-v
-	 char-set:hangul-t
-	 char-set:hangul-lv
-	 char-set:hangul-lvt
-
-
 	 ; utility functions
 	 unicode-alphabetic?
 	 unicode-numeric?
@@ -116,142 +30,7 @@ export (
 	 unicode-upcase
 	 ; unicode=? is a primitive defined in unicode.c
 )
-
-ascii-char-set:size := 128
-char-set:size := 0
-
-; char-set:lower-case is Property Lowercase
-char-set:lower-case  := #n
-
-; char-set:upper-case is Property Uppercase
-char-set:upper-case  := #n
-
-; char-set:title-case is Category Lt
-char-set:title-case  := #n
-
-; char-set:letter is Property Alphabetic
-char-set:letter      := #n
-
-; char-set:digit is Category Nd
-char-set:digit       := #n
-
-; char-set:letter+digit is Property Alphabetic + Category Nd
-char-set:letter+digit := #n
-
-; char-set:graphic is Category L* + Category N* + Category M* + Category S* + Category P*
-char-set:graphic     := #n
-
-; char-set:printing is char-set:graphic + char-set:whitespace
-char-set:printing    := #n
-
-; char-set:whitespace is Property White_Space
-char-set:whitespace  := #n
-
-; char-set:iso-control is 0000..001F + 007F..009F
-char-set:iso-control := #n
-
-; char-set:punctuation is Category P*
-char-set:punctuation := #n
-
-; char-set:symbol is Category S*
-char-set:symbol      := #n
-
-; char-set:hex-digit is 0030..0039 + 0041..0046 + 0061..0066
-char-set:hex-digit   := #n
-
-; char-set:blank is Category Zs + 0009
-char-set:blank       := #n
-
-; char-set:ascii is 0000..007F
-char-set:ascii       := #n
-
-; char-set:empty is empty
-char-set:empty       := #n
-
-; char-set:full is full == ~ empty
-char-set:full        := #n
-
-; char-set:nonl is char-set:full excl. #\{newline}
-char-set:nonl        := #n
-
-; char-set:control is Property Control
-char-set:control     := #n
-
-; char-set:word-constituent is char-set:letter+digit + _
-char-set:word-constituent := #n
-
-; char-set:cased is char-set:upper-case char-set:lower-case char-set:title-case
-char-set:cased := #n
-
-; %char-set:letter is char-set:letter restricted to ASCII range
-%char-set:letter     := #n
-
-; %char-set:lower-case is char-set:lower-case restricted to ASCII range
-%char-set:lower-case := #n
-
-; %char-set:upper-case is char-set:upper-case restricted to ASCII range
-%char-set:upper-case := #n
-
-; %char-set:digit is char-set:digit restricted to ASCII range
-%char-set:digit      := #n
-
-; %char-set:letter+digit is char-set:letter+digit restricted to ASCII range
-%char-set:letter+digit := #n
-
-; %char-set:punctuation is char-set:punctuation restricted to ASCII range
-%char-set:punctuation := #n
-
-; %char-set:symbol is char-set:symbol restricted to ASCII range
-%char-set:symbol     := #n
-
-; %char-set:graphic is char-set:graphic restricted to ASCII range
-%char-set:graphic    := #n
-
-; %char-set:whitespace is char-set:whitespace restricted to ASCII range
-%char-set:whitespace := #n
-
-; %char-set:printing is char-set:printing restricted to ASCII range
-%char-set:printing   := #n
-
-; %char-set:iso-control is char-set:iso-control restricted to ASCII range
-%char-set:iso-control := #n
-
-; char-set:regional-indicator is Property Regional_Indicator
-char-set:regional-indicator := #n
-
-; char-set:extend-or-spacing-mark is Property Extend + Property SpacingMark
-char-set:extend-or-spacing-mark := #n
-
-; char-set:hangul-l is Property L
-char-set:hangul-l := #n
-
-; char-set:hangul-v is Property V
-char-set:hangul-v := #n
-
-; char-set:hangul-t is Property T
-char-set:hangul-t := #n
-
-; char-set:hangul-lv is Property LV
-char-set:hangul-lv := #n
-
-; char-set:hangul-lvt is Property LVT
-char-set:hangul-lvt := #n
-
-; Simple uppercase mapping (single character result)
-char-set:simple-upper-case-map := #n
-
-; Simple lowercase mapping (single character result)
-char-set:simple-lower-case-map := #n
-
-cond ((memq 'ASCII *subfeatures*) {
-  load "unicode.ASCII"
-}) \
-     ((memq 'BMP0 *subfeatures*) {
-       load "unicode.BMP0"
-     }) \
-     (else {
-       load "unicode.full"
-     })
+import SRFI-14
 
 define (unicode-alphabetic? cp) "
 Test if `cp` is alphabetic.
@@ -263,11 +42,7 @@ Property Alphabetic
 :type cp: integer or unicode
 :return: #t or #f
 " {
-  if (unicode? cp) {
-    bitset-ref char-set:letter (unicode->integer cp)
-  } {
-    bitset-ref char-set:letter cp
-  }
+  char-set-ref char-set:letter cp
 }
 
 define (unicode-numeric? cp) "
@@ -280,11 +55,7 @@ Category Nd
 :type cp: integer or unicode
 :return: #t or #f
 " {
-  if (unicode? cp) {
-    bitset-ref char-set:digit (unicode->integer cp)
-  } {
-    bitset-ref char-set:digit cp
-  }
+  char-set-ref char-set:digit cp
 }
 
 define (unicode-whitespace? cp) "
@@ -297,11 +68,7 @@ Property White_Space
 :type cp: integer or unicode
 :return: #t or #f
 " {
-  if (unicode? cp) {
-    bitset-ref char-set:whitespace (unicode->integer cp)
-  } {
-    bitset-ref char-set:whitespace cp
-  }
+  char-set-ref char-set:whitespace cp
 }
 
 define (unicode-lower-case? cp) "
@@ -314,11 +81,7 @@ Property Lowercase
 :type cp: integer or unicode
 :return: #t or #f
 " {
-  if (unicode? cp) {
-    bitset-ref char-set:lower-case (unicode->integer cp)
-  } {
-    bitset-ref char-set:lower-case cp
-  }
+  char-set-ref char-set:lower-case cp
 }
 
 define (unicode-upper-case? cp) "
@@ -331,11 +94,7 @@ Property Uppercase
 :type cp: integer or unicode
 :return: #t or #f
 " {
-  if (unicode? cp) {
-    bitset-ref char-set:upper-case (unicode->integer cp)
-  } {
-    bitset-ref char-set:upper-case cp
-  }
+  char-set-ref char-set:upper-case cp
 }
 
 define (unicode-downcase cp) "
@@ -350,12 +109,13 @@ have the Unicode Property Uppercase, then return `cp`.
 :return: lowercase variant or `cp`
 :rtype: same as `cp`
 " {
-  if (bitset-ref char-set:upper-case cp) {
-    if (unicode? cp) {
-      integer->unicode (hash-ref char-set:simple-lower-case-map (unicode->integer cp))
-    } {
-      hash-ref char-set:simple-lower-case-map cp
-    }
+  cp-i := cp
+  if (unicode? cp) {
+    cp-i = unicode->integer cp
+  }
+  if (char-set-ref char-set:upper-case cp-i) {
+    lc := hash-ref char-set:simple-lower-case-map cp #f
+    if lc lc cp
   } cp
 }
 
@@ -371,12 +131,13 @@ have the Unicode Property Lowercase, then return `cp`.
 :return: uppercase variant or `cp`
 :rtype: same as `cp`
 " {
-  if (bitset-ref char-set:lower-case cp) {
-    if (unicode? cp) {
-      integer->unicode (hash-ref char-set:simple-upper-case-map (unicode->integer cp))
-    } {
-      hash-ref char-set:simple-upper-case-map cp
-    }
+  cp-i := cp
+  if (unicode? cp) {
+    cp-i = unicode->integer cp
+  }
+  if (char-set-ref char-set:lower-case cp-i) {
+    uc := hash-ref char-set:simple-upper-case-map cp #f
+    if uc uc cp
   } cp
 }
 
