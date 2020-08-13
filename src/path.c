@@ -127,7 +127,7 @@ char *idio_find_file (const char *file)
     }
 
     char **idio_path = idio_paths;
-    char *filename;
+    char *filename = NULL;
 
     while (*ext) {
 	/* possible "file.ext", ie len(file) + len(ext) + 1 */
