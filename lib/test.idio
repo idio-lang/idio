@@ -96,7 +96,7 @@ if (null? testdir) {
   IDIOLIB = append-string IDIOLIB ":" testdir
 }
 
-display* "This is test.idio using IDIOLIB" IDIOLIB
+printf "[%s/%d] %3ds test.idio using IDIOLIB=%s\n" (getpid) PID SECONDS IDIOLIB
 
 ;; put the testing utilities on the PATH
 OPATH := PATH
@@ -124,42 +124,53 @@ if (C/> rl.rlim_cur C_nofiles_lim) {
   libc/setrlimit libc/RLIMIT_NOFILE rl
 }
 
+test-load := {
+  n := 0
 
-load "test-read-error.idio"
-load "test-read-coverage.idio"
-load "test-evaluation-error.idio"
-load "test-expander-error.idio"
+  function (filename) {
+    if (not (string? filename)) (error 'load "not a string" filename)
 
-load "test-s9-test.idio"
-load "test-unicode.idio"
-load "test-operator.idio"
-load "test-closure.idio"
-load "test-keyword.idio"
-load "test-template.idio"
-load "test-string.idio"
-load "test-string-error.idio"
-load "test-array.idio"
-load "test-hash.idio"
-load "test-file-handle.idio"
-load "test-string-handle.idio"
-load "test-handle.idio"
-load "test-struct.idio"
-load "test-condition.idio"
-load "test-dynamic.idio"
-load "test-computed.idio"
-load "test-call-cc.idio"
-load "test-env.idio"
-load "test-path.idio"
-load "test-command.idio"
-load "test-libc-wrap.idio"
+    printf "[%s/%d] %3ds %s\n" (getpid) PID SECONDS filename
+    load filename
+  }
+}
 
-load "test-load-handle.idio"
-load "test-trap.idio"
-load "test-bitset.idio"
-load "test-utf-8.idio"
 
-load "test-SRFI-89.idio"
-load "test-SRFI-115.idio"
+test-load "test-read-error.idio"
+test-load "test-read-coverage.idio"
+test-load "test-evaluation-error.idio"
+test-load "test-expander-error.idio"
+
+test-load "test-s9-test.idio"
+test-load "test-unicode.idio"
+test-load "test-operator.idio"
+test-load "test-closure.idio"
+test-load "test-keyword.idio"
+test-load "test-template.idio"
+test-load "test-string.idio"
+test-load "test-string-error.idio"
+test-load "test-array.idio"
+test-load "test-hash.idio"
+test-load "test-file-handle.idio"
+test-load "test-string-handle.idio"
+test-load "test-handle.idio"
+test-load "test-struct.idio"
+test-load "test-condition.idio"
+test-load "test-dynamic.idio"
+test-load "test-computed.idio"
+test-load "test-call-cc.idio"
+test-load "test-env.idio"
+test-load "test-path.idio"
+test-load "test-command.idio"
+test-load "test-libc-wrap.idio"
+
+test-load "test-load-handle.idio"
+test-load "test-trap.idio"
+test-load "test-bitset.idio"
+test-load "test-utf-8.idio"
+
+test-load "test-SRFI-89.idio"
+test-load "test-SRFI-115.idio"
 
 ;; test that we've seen as many tests as we should have.  How many is
 ;; that?  Erm, they've not been counted and are dynamic in number so
@@ -169,17 +180,11 @@ test (eq? Tests 3568) #t
 
 if (file-exists? testfile) (delete-file testfile)
 
-printf "test.idio completed after %ds\n" SECONDS
+printf "[%s/%s] %3ds test.idio\n" (getpid) PID SECONDS
 printf "# src-props %d\n" (length (hash-keys %idio-src-properties))
-if (zero? Errors) (display* "All" Tests "tests passed!") \
+if (zero? Errors) (printf "All %d tests passed!\n" Tests) \
    {
-     display Errors
-     if (gt Errors 1) {
-       display " errors "
-     } {
-       display " error "
-     }
-     display* "in" Tests "tests."
+     printf "%d error%s in %d tests.\n" Errors (if (gt Errors 1) "s" "") Tests
      exit 1
    }
 

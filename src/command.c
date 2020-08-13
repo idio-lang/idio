@@ -52,6 +52,8 @@ static IDIO idio_S_stdin_fileno;
 static IDIO idio_S_stdout_fileno;
 static IDIO idio_S_stderr_fileno;
 
+static IDIO idio_command_default_child_handler_sym;
+
 /*
  * Indexes into structures for direct references
  */
@@ -1946,6 +1948,10 @@ static void idio_command_launch_job (IDIO job, int foreground)
 	    /* notreached */
 	    return;
 	} else if (0 == pid) {
+	    idio_condition_set_default_handler (idio_condition_idio_error_type,
+						idio_module_symbol_value (idio_command_default_child_handler_sym,
+									  idio_command_module,
+									  idio_S_nil));
 	    idio_command_prep_process (job_pgid,
 				       infile,
 				       outfile,
@@ -2073,6 +2079,10 @@ static IDIO idio_command_launch_1proc_job (IDIO job, int foreground, char **argv
 
 	    return idio_S_notreached;
 	} else if (0 == pid) {
+	    idio_condition_set_default_handler (idio_condition_idio_error_type,
+						idio_module_symbol_value (idio_command_default_child_handler_sym,
+									  idio_command_module,
+									  idio_S_nil));
 	    idio_command_prep_process (job_pgid,
 				       job_stdin,
 				       job_stdout,
@@ -2747,6 +2757,8 @@ void idio_init_command ()
 					      idio_pair (idio_symbols_C_intern ("stderr"),
 					      idio_S_nil)))))))));
     idio_module_set_symbol_value (name, idio_command_job_type, idio_command_module);
+
+    idio_command_default_child_handler_sym = idio_symbols_C_intern ("default-child-handler");
 }
 
 void idio_command_add_primitives ()
