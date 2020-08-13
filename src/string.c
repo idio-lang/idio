@@ -898,9 +898,9 @@ return a list of the Unicode code points in `s`\n\
     IDIO_ASSERT (s);
     IDIO_VERIFY_PARAM_TYPE (string, s);
 
-    uint8_t *s8;
-    uint16_t *s16;
-    uint32_t *s32;
+    uint8_t *s8 = NULL;
+    uint16_t *s16 = NULL;
+    uint32_t *s32 = NULL;
     size_t slen = -1;
     size_t width = idio_string_storage_size (s);
 
@@ -2093,9 +2093,9 @@ static size_t idio_string_token (ptrdiff_t i, char *is, size_t ilen, size_t iw, 
      */
     idio_unicode_t prev_delim = 0xFFFF;
 
-    uint8_t *is8;
-    uint16_t *is16;
-    uint32_t *is32;
+    uint8_t *is8 = NULL;
+    uint16_t *is16 = NULL;
+    uint32_t *is32 = NULL;
 
     switch (iw) {
     case 1:
@@ -2141,7 +2141,7 @@ static size_t idio_string_token (ptrdiff_t i, char *is, size_t ilen, size_t iw, 
 	size_t start = i;
 	size_t end = i + idio_strspn (i, is, ilen, iw, ds, dlen, dw);
 	for (; i < end; i++) {
-	    idio_unicode_t icp;
+	    idio_unicode_t icp = 0;
 	    switch (iw) {
 	    case 1:
 		icp = is8[i];
