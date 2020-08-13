@@ -775,10 +775,10 @@ If no default value is supplied #\{space} is used.	\n\
     IDIO_ASSERT (size);
     IDIO_ASSERT (args);
 
-    ptrdiff_t clen = -1;
+    ptrdiff_t cp_count = -1;
 
     if (idio_isa_fixnum (size)) {
-	clen = IDIO_FIXNUM_VAL (size);
+	cp_count = IDIO_FIXNUM_VAL (size);
     } else if (idio_isa_bignum (size)) {
 	if (IDIO_BIGNUM_INTEGER_P (size)) {
 	    /*
@@ -786,7 +786,7 @@ If no default value is supplied #\{space} is used.	\n\
 	     *
 	     * Not sure we want to create a enormous string for test.
 	     */
-	    clen = idio_bignum_ptrdiff_value (size);
+	    cp_count = idio_bignum_ptrdiff_value (size);
 	} else {
 	    IDIO size_i = idio_bignum_real_to_integer (size);
 	    if (idio_S_nil == size_i) {
@@ -797,7 +797,7 @@ If no default value is supplied #\{space} is used.	\n\
 
 		return idio_S_notreached;
 	    } else {
-		clen = idio_bignum_ptrdiff_value (size_i);
+		cp_count = idio_bignum_ptrdiff_value (size_i);
 	    }
 	}
     } else {
@@ -809,28 +809,22 @@ If no default value is supplied #\{space} is used.	\n\
 	return idio_S_notreached;
     }
 
-    if (clen < 0) {
+    if (cp_count < 0) {
 	/*
 	 * Test Case: string-errors/make-string-negative.idio
 	 */
-	idio_string_error_size ("invalid", clen, IDIO_C_FUNC_LOCATION ());
+	idio_string_error_size ("invalid", cp_count, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
 
     IDIO_VERIFY_PARAM_TYPE (list, args);
 
-    size_t bpc = 0;
+    IDIO so = idio_gc_get (IDIO_TYPE_STRING);
 
-    /*
-     * This is a bit dim as we generate UTF-8 sequences and stuff a C
-     * string full of them then hand it off the idio_string_C_len() to
-     * convert it back into an Idio string (array of code points).
-     *
-     * We probably should just build the array here.
-     */
     idio_unicode_t fillc = ' ';
-    char fills[5];
+    IDIO_FLAGS_T flags = IDIO_STRING_FLAG_1BYTE;
+
     if (idio_S_nil != args) {
 	IDIO fill = IDIO_PAIR_H (args);
 	IDIO_VERIFY_PARAM_TYPE (unicode, fill);
@@ -841,49 +835,81 @@ If no default value is supplied #\{space} is used.	\n\
 	     * Hopefully, this is guarded against elsewhere
 	     */
 	    fprintf (stderr, "make-string: oops fillc=%#x > 0x10ffff\n", fillc);
-	} else if (fillc >= 0x10000) {
-	    bpc = 4;
-	    sprintf (fills, "%c%c%c%c",
-		     0xf0 | ((fillc & (0x07 << 18)) >> 18),
-		     0x80 | ((fillc & (0x3f << 12)) >> 12),
-		     0x80 | ((fillc & (0x3f << 6)) >> 6),
-		     0x80 | ((fillc & (0x3f << 0)) >> 0));
-	} else if (fillc >= 0x0800) {
-	    bpc = 3;
-	    sprintf (fills, "%c%c%c",
-		     0xe0 | ((fillc & (0x0f << 12)) >> 12),
-		     0x80 | ((fillc & (0x3f << 6)) >> 6),
-		     0x80 | ((fillc & (0x3f << 0)) >> 0));
-	} else if (fillc >= 0x0080) {
-	    bpc = 2;
-	    sprintf (fills, "%c%c",
-		     0xc0 | ((fillc & (0x1f << 6)) >> 6),
-		     0x80 | ((fillc & (0x3f << 0)) >> 0));
-	} else {
-	    bpc = 1;
-	    sprintf (fills, "%c",
-		     fillc & 0x7f);
+	} else if (fillc > 0xffff) {
+	    flags = IDIO_STRING_FLAG_4BYTE;
+	} else if (fillc > 0xff) {
+	    flags = IDIO_STRING_FLAG_2BYTE;
 	}
-    } else {
-	bpc = 1;
-	sprintf (fills, "%c", fillc & 0x7f);
     }
 
-    ptrdiff_t blen = clen * bpc;
-    char *sC = idio_alloc (blen + 1);
-    sC[0] = '\0';
+    /*
+     * How many bytes do we need?
+     */
+    size_t reqd_bytes = 0;
+    switch (flags) {
+    case IDIO_STRING_FLAG_1BYTE:
+	reqd_bytes = cp_count;
+	break;
+    case IDIO_STRING_FLAG_2BYTE:
+	reqd_bytes = cp_count * 2;
+	break;
+    case IDIO_STRING_FLAG_4BYTE:
+	reqd_bytes = cp_count * 4;
+	break;
+    default:
+	{
+	    /*
+	     * Coding error?
+	     */
+	    char em[BUFSIZ];
+	    sprintf (em, "%#x", flags);
+
+	    idio_string_error_utf8_decode ("unexpected flag", em, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	}
+    }
+
+    IDIO_GC_ALLOC (IDIO_STRING_S (so), reqd_bytes + 1);
+    IDIO_STRING_BLEN (so) = reqd_bytes;
+
+    uint8_t *us8 = (uint8_t *) IDIO_STRING_S (so);
+    uint16_t *us16 = (uint16_t *) IDIO_STRING_S (so);
+    uint32_t *us32 = (uint32_t *) IDIO_STRING_S (so);
 
     size_t i;
-    for (i = 0; i < clen; i++) {
-	memcpy (sC + i * bpc, fills, bpc);
+    for (i = 0; i < cp_count; i++) {
+	switch (flags) {
+	case IDIO_STRING_FLAG_1BYTE:
+	    us8[i] = (uint8_t) fillc;
+	    break;
+	case IDIO_STRING_FLAG_2BYTE:
+	    us16[i] = (uint16_t) fillc;
+	    break;
+	case IDIO_STRING_FLAG_4BYTE:
+	    us32[i] = (uint32_t) fillc;
+	    break;
+	default:
+	    {
+		/*
+		 * Coding error?  Caught above?
+		 */
+		char em[BUFSIZ];
+		sprintf (em, "%#x", flags);
+
+		idio_string_error_utf8_decode ("unexpected flag", em, IDIO_C_FUNC_LOCATION ());
+
+		return idio_S_notreached;
+	    }
+	}
     }
-    sC[blen] = '\0';
 
-    IDIO s = idio_string_C_len (sC, blen);
+    IDIO_STRING_S (so)[reqd_bytes] = '\0';
 
-    free (sC);
+    IDIO_STRING_LEN (so) = cp_count;
+    IDIO_STRING_FLAGS (so) = flags;
 
-    return s;
+    return so;
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("string->list", string2list, (IDIO s), "s", "\
