@@ -817,7 +817,7 @@ IDIO idio_module_find_symbol_recurse (IDIO symbol, IDIO m_or_n, int recurse)
 		/*
 		 * Careful!  Same trick as above.
 		 */
-		IDIO kind = IDIO_PAIR_H (mi_sk);
+		/* IDIO kind = IDIO_PAIR_H (mi_sk); */
 		IDIO fgvi = IDIO_PAIR_HTT (mi_sk);
 		idio_ai_t gvi = IDIO_FIXNUM_VAL (fgvi);
 

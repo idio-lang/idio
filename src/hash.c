@@ -1460,7 +1460,6 @@ void idio_hash_tidy_weak_references (void)
 	if (IDIO_HASH_FLAGS (h) & IDIO_HASH_FLAG_WEAK_KEYS) {
 	    idio_hi_t i;
 	    for (i = 0; i < IDIO_HASH_SIZE (h); i++) {
-		int k_freed = 0;
 		IDIO k = IDIO_HASH_HE_KEY (h, i);
 		switch ((uintptr_t) k & IDIO_TYPE_MASK) {
 		case IDIO_TYPE_FIXNUM_MARK:
@@ -1469,7 +1468,6 @@ void idio_hash_tidy_weak_references (void)
 		    break;
 		case IDIO_TYPE_POINTER_MARK:
 		    if (IDIO_TYPE_NONE == k->type) {
-			k_freed = 1;
 			fprintf (stderr, "ih_twr %p @%zu\n", h, i);
 			IDIO_HASH_HE_KEY (h, i) = idio_S_nil;
 			IDIO_HASH_HE_VALUE (h, i) = idio_S_nil;

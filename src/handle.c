@@ -1424,8 +1424,6 @@ IDIO idio_load_handle_ebe (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (I
 	return idio_load_handle_interactive (h, reader, evaluator, cs);
     }
 
-    int timing = 0;
-
     IDIO thr = idio_thread_current_thread ();
     idio_ai_t ss0 = idio_array_size (IDIO_THREAD_STACK (thr));
 
@@ -1437,7 +1435,7 @@ IDIO idio_load_handle_ebe (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (I
     idio_remember_file_handle (h);
 
     IDIO e = idio_S_nil;
-    IDIO r;
+    IDIO r = idio_S_nil;
 
     for (;;) {
 	e = (*reader) (h);
@@ -1513,15 +1511,8 @@ IDIO idio_load_handle_aio (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (I
 	return idio_load_handle_interactive (h, reader, evaluator, cs);
     }
 
-    int timing = 0;
-
     IDIO thr = idio_thread_current_thread ();
     idio_ai_t ss0 = idio_array_size (IDIO_THREAD_STACK (thr));
-
-    time_t s;
-    suseconds_t us;
-    struct timeval t0;
-    gettimeofday (&t0, NULL);
 
     IDIO es = idio_S_nil;
 
@@ -1539,23 +1530,6 @@ IDIO idio_load_handle_aio (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (I
 
     IDIO_HANDLE_M_CLOSE (h) (h);
 
-    struct timeval t_read;
-    if (timing) {
-	gettimeofday (&t_read, NULL);
-
-	s = t_read.tv_sec - t0.tv_sec;
-	us = t_read.tv_usec - t0.tv_usec;
-
-	if (us < 0) {
-	    us += 1000000;
-	    s -= 1;
-	}
-
-	char *sname = idio_handle_name_as_C (h);
-	fprintf (stderr, "load-handle-aio: %s: read time %ld.%03ld\n", sname, s, (long) us / 1000);
-	free (sname);
-    }
-
     IDIO ms = idio_S_nil;
     while (es != idio_S_nil) {
 	ms = idio_pair ((*evaluator) (IDIO_PAIR_H (es), cs), ms);
@@ -1563,23 +1537,6 @@ IDIO idio_load_handle_aio (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (I
     }
     ms = idio_list_reverse (ms);
     /* idio_debug ("load-handle-aio: ms %s\n", ms);    */
-
-    struct timeval te;
-    if (timing) {
-	gettimeofday (&te, NULL);
-
-	s = te.tv_sec - t_read.tv_sec;
-	us = te.tv_usec - t_read.tv_usec;
-
-	if (us < 0) {
-	    us += 1000000;
-	    s -= 1;
-	}
-
-	char *sname = idio_handle_name_as_C (h);
-	fprintf (stderr, "load-handle-aio: %s: evaluation time %ld.%03ld\n", sname, s, (long) us / 1000);
-	free (sname);
-    }
 
     /*
      * When we call idio_vm_run() we are at risk of the garbage
@@ -1621,36 +1578,6 @@ IDIO idio_load_handle_aio (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (I
 
     /* ms */
     idio_array_pop (IDIO_THREAD_STACK (thr));
-
-    struct timeval tr;
-    gettimeofday (&tr, NULL);
-
-    if (timing) {
-	s = tr.tv_sec - te.tv_sec;
-	us = tr.tv_usec - te.tv_usec;
-
-	if (us < 0) {
-	    us += 1000000;
-	    s -= 1;
-	}
-
-	char *sname = idio_handle_name_as_C (h);
-	fprintf (stderr, "load-handle-aio: %s: compile/run time %ld.%03ld\n", sname, s, (long) us / 1000);
-	free (sname);
-    }
-
-    s = tr.tv_sec - t0.tv_sec;
-    us = tr.tv_usec - t0.tv_usec;
-
-    if (us < 0) {
-	us += 1000000;
-	s -= 1;
-    }
-
-#if IDIO_DEBUG
-    /* fprintf (stderr, "load-handle-aio: %s: elapsed time %ld.%03ld\n", idio_handle_name_as_C (h), s, (long) us / 1000); */
-    /* idio_debug (" => %s\n", r); */
-#endif
 
     idio_ai_t ss = idio_array_size (IDIO_THREAD_STACK (thr));
 

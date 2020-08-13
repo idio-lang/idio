@@ -1691,7 +1691,6 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 	    case IDIO_TYPE_STRUCT_INSTANCE:
 		{
 		    IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (o);
-		    IDIO as_string = idio_util_as_string_symbol (o);
 		    IDIO value_as_string = idio_module_symbol_value (idio_util_value_as_string, idio_Idio_module, idio_S_nil);
 
 		    if (idio_S_nil != value_as_string) {

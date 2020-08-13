@@ -1115,7 +1115,6 @@ void idio_gc_find_frame_r (IDIO id, int depth)
     IDIO no = NULL;
     int nobj = 0;
     size_t i;
-    IDIO ro = idio_S_nil;
     int found = 0;
     while (o) {
 	IDIO_ASSERT (o);

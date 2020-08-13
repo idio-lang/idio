@@ -2986,12 +2986,16 @@ int idio_vm_run1 (IDIO thr)
     case IDIO_A_COMPUTED_SYM_REF:
 	{
 	    uint64_t mci = IDIO_VM_FETCH_REF (thr);
+
+#ifdef IDIO_DEBUG
 	    IDIO fmci = idio_fixnum (mci);
 	    IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), fmci);
 	    IDIO sym = idio_vm_constants_ref (IDIO_FIXNUM_VAL (fgci));
 	    IDIO_TYPE_ASSERT (symbol, sym);
 
 	    IDIO_VM_RUN_DIS ("COMPUTED-SYM-REF %" PRId64 " %s", mci, IDIO_SYMBOL_S (sym));
+#endif
+
 	    idio_ai_t gvi = idio_vm_get_or_create_vvi (mci);
 
 	    if (gvi) {
@@ -3087,12 +3091,15 @@ int idio_vm_run1 (IDIO thr)
     case IDIO_A_COMPUTED_SYM_SET:
 	{
 	    uint64_t mci = IDIO_VM_FETCH_REF (thr);
+
+#ifdef IDIO_DEBUG
 	    IDIO fmci = idio_fixnum (mci);
 	    IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), fmci);
 	    IDIO sym = idio_vm_constants_ref (IDIO_FIXNUM_VAL (fgci));
 	    IDIO_TYPE_ASSERT (symbol, sym);
 
 	    IDIO_VM_RUN_DIS ("COMPUTED-SYM-SET %" PRId64 " %s", mci, IDIO_SYMBOL_S (sym));
+#endif
 
 	    idio_ai_t gvi = idio_vm_get_or_create_vvi (mci);
 
@@ -3275,7 +3282,10 @@ int idio_vm_run1 (IDIO thr)
 	break;
     case IDIO_A_GLOBAL_VAL_DEF:
 	{
-	    uint64_t gvi = IDIO_VM_FETCH_REF (thr);
+#ifdef IDIO_DEBUG
+	    uint64_t gvi =
+#endif
+		IDIO_VM_FETCH_REF (thr);
 
 	    IDIO_VM_RUN_DIS ("GLOBAL-VAL-DEF %" PRId64, gvi);
 
@@ -3320,7 +3330,10 @@ int idio_vm_run1 (IDIO thr)
 	break;
     case IDIO_A_COMPUTED_VAL_DEFINE:
 	{
-	    uint64_t gvi = IDIO_VM_FETCH_REF (thr);
+#ifdef IDIO_DEBUG
+	    uint64_t gvi =
+#endif
+		IDIO_VM_FETCH_REF (thr);
 
 	    IDIO_VM_RUN_DIS ("COMPUTED-VAL-DEFINE %" PRId64, gvi);
 
@@ -4785,7 +4798,7 @@ void idio_vm_dasm (IDIO thr, idio_ai_t pc0, idio_ai_t pce)
 	case IDIO_A_GLOBAL_SYM_DEF:
 	    {
 		uint64_t mci = IDIO_VM_GET_REF (pcp);
-		uint64_t mkci = idio_vm_get_varuint (pcp);
+		/* uint64_t mkci = idio_vm_get_varuint (pcp); */
 
 		IDIO ce = idio_thread_current_env ();
 		IDIO fgci = idio_module_get_or_set_vci (ce, idio_fixnum (mci));
@@ -4883,7 +4896,7 @@ void idio_vm_dasm (IDIO thr, idio_ai_t pc0, idio_ai_t pce)
 	case IDIO_A_GLOBAL_VAL_DEF:
 	    {
 		uint64_t gvi = IDIO_VM_GET_REF (pcp);
-		uint64_t mkci = idio_vm_get_varuint (pcp);
+		/* uint64_t mkci = idio_vm_get_varuint (pcp); */
 
 		IDIO ce = idio_thread_current_env ();
 		IDIO fgci = idio_module_get_or_set_vci (ce, idio_fixnum (gvi));
@@ -5058,7 +5071,7 @@ void idio_vm_dasm (IDIO thr, idio_ai_t pc0, idio_ai_t pce)
 	case IDIO_A_CREATE_CLOSURE:
 	    {
 		uint64_t i = idio_vm_get_varuint (pcp);
-		uint64_t code_len = idio_vm_get_varuint (pcp);
+		/* uint64_t code_len = */ idio_vm_get_varuint (pcp);
 		uint64_t ssci = idio_vm_get_varuint (pcp);
 		uint64_t dsci = idio_vm_get_varuint (pcp);
 

@@ -1273,9 +1273,9 @@ IDIO idio_string_ref (IDIO s, IDIO index)
 	return idio_S_notreached;
     }
 
-    uint8_t *s8;
-    uint16_t *s16;
-    uint32_t *s32;
+    uint8_t *s8 = NULL;
+    uint16_t *s16 = NULL;
+    uint32_t *s32 = NULL;
     size_t slen = -1;
     size_t width = idio_string_storage_size (s);
 
@@ -1399,7 +1399,7 @@ IDIO idio_string_set (IDIO s, IDIO index, IDIO c)
 	return idio_S_notreached;
     }
 
-    size_t cwidth;
+    size_t cwidth = 0;
     idio_unicode_t uc = IDIO_UNICODE_VAL (c);
     if (uc <= 0xff) {
 	cwidth = 1;
@@ -1414,9 +1414,9 @@ IDIO idio_string_set (IDIO s, IDIO index, IDIO c)
 	cwidth = 4;
     }
 
-    uint8_t *s8;
-    uint16_t *s16;
-    uint32_t *s32;
+    uint8_t *s8 = NULL;
+    uint16_t *s16 = NULL;
+    uint32_t *s32 = NULL;
     size_t slen = -1;
     size_t width = idio_string_storage_size (s);
 
@@ -1683,9 +1683,9 @@ int idio_string_equal (IDIO s1, IDIO s2)
     IDIO_TYPE_ASSERT (string, s1);
     IDIO_TYPE_ASSERT (string, s2);
 
-    uint8_t *s1_8;
-    uint16_t *s1_16;
-    uint32_t *s1_32;
+    uint8_t *s1_8 = NULL;
+    uint16_t *s1_16 = NULL;
+    uint32_t *s1_32 = NULL;
     size_t s1len = -1;
     size_t s1w = idio_string_storage_size (s1);
 
@@ -1717,9 +1717,9 @@ int idio_string_equal (IDIO s1, IDIO s2)
 	}
     }
 
-    uint8_t *s2_8;
-    uint16_t *s2_16;
-    uint32_t *s2_32;
+    uint8_t *s2_8 = NULL;
+    uint16_t *s2_16 = NULL;
+    uint32_t *s2_32 = NULL;
     size_t s2len = -1;
     size_t s2w = idio_string_storage_size (s2);
 
@@ -1761,7 +1761,7 @@ int idio_string_equal (IDIO s1, IDIO s2)
 
     size_t i;
     for (i = 0; i < s1len; i++) {
-	idio_unicode_t s1_cp;
+	idio_unicode_t s1_cp = 0;
 	switch (s1w) {
 	case 1:
 	    s1_cp = s1_8[i];
@@ -1774,7 +1774,7 @@ int idio_string_equal (IDIO s1, IDIO s2)
 	    break;
 	}
 
-	idio_unicode_t s2_cp;
+	idio_unicode_t s2_cp = 0;
 	switch (s2w) {
 	case 1:
 	    s2_cp = s2_8[i];
@@ -1924,9 +1924,9 @@ IDIO_DEFINE_STRING_CS_PRIMITIVE2V ("string>?", gt, >)
  */
 static size_t idio_strspn (ptrdiff_t i, char *is, size_t ilen, size_t iw, char *as, size_t alen, size_t aw)
 {
-    uint8_t *is8;
-    uint16_t *is16;
-    uint32_t *is32;
+    uint8_t *is8 = NULL;
+    uint16_t *is16 = NULL;
+    uint32_t *is32 = NULL;
 
     switch (iw) {
     case 1:
@@ -1940,9 +1940,9 @@ static size_t idio_strspn (ptrdiff_t i, char *is, size_t ilen, size_t iw, char *
 	break;
     }
 
-    uint8_t *as8;
-    uint16_t *as16;
-    uint32_t *as32;
+    uint8_t *as8 = NULL;
+    uint16_t *as16 = NULL;
+    uint32_t *as32 = NULL;
 
     switch (aw) {
     case 1:
@@ -1959,7 +1959,7 @@ static size_t idio_strspn (ptrdiff_t i, char *is, size_t ilen, size_t iw, char *
     size_t r;
     for (r = 0; (i + r) < ilen; r++) {
 	size_t ii = i + r;
-	idio_unicode_t icp;
+	idio_unicode_t icp = 0;
 	switch (iw) {
 	case 1:
 	    icp = is8[ii];
@@ -1973,7 +1973,7 @@ static size_t idio_strspn (ptrdiff_t i, char *is, size_t ilen, size_t iw, char *
 	}
 
 	for (size_t ai = 0; ai < alen ; ai++) {
-	    idio_unicode_t acp;
+	    idio_unicode_t acp = 0;
 	    switch (aw) {
 	    case 1:
 		acp = as8[ai];
@@ -2007,9 +2007,9 @@ static size_t idio_strspn (ptrdiff_t i, char *is, size_t ilen, size_t iw, char *
  */
 static size_t idio_strpbrk (ptrdiff_t i, char *is, size_t ilen, size_t iw, char *as, size_t alen, size_t aw)
 {
-    uint8_t *is8;
-    uint16_t *is16;
-    uint32_t *is32;
+    uint8_t *is8 = NULL;
+    uint16_t *is16 = NULL;
+    uint32_t *is32 = NULL;
 
     switch (iw) {
     case 1:
@@ -2023,9 +2023,9 @@ static size_t idio_strpbrk (ptrdiff_t i, char *is, size_t ilen, size_t iw, char 
 	break;
     }
 
-    uint8_t *as8;
-    uint16_t *as16;
-    uint32_t *as32;
+    uint8_t *as8 = NULL;
+    uint16_t *as16 = NULL;
+    uint32_t *as32 = NULL;
 
     switch (aw) {
     case 1:
@@ -2041,7 +2041,7 @@ static size_t idio_strpbrk (ptrdiff_t i, char *is, size_t ilen, size_t iw, char 
 
     size_t r;
     for (r = i; r < ilen; r++) {
-	idio_unicode_t icp;
+	idio_unicode_t icp = 0;
 	switch (iw) {
 	case 1:
 	    icp = is8[r];
@@ -2055,7 +2055,7 @@ static size_t idio_strpbrk (ptrdiff_t i, char *is, size_t ilen, size_t iw, char 
 	}
 
 	for (size_t ai = 0; ai < alen ; ai++) {
-	    idio_unicode_t acp;
+	    idio_unicode_t acp = 0;
 	    switch (aw) {
 	    case 1:
 		acp = as8[ai];
