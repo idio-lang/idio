@@ -277,11 +277,13 @@ define (condition-report prefix c & args) "print a report on condition `c`
        ((rt-variable-error? c) {
 	 cr-printf ": variable %s" c.variable
        }) \
-       ((rt-module-error? c) {
-	 cr-printf ": module %s" c.module
-       }) \
        ((rt-module-symbol-unbound-error? c) {
-	 cr-printf ": symbol %s" c.symbol
+	 ; annoyingly c.module resolves module to #undef
+	 cr-printf ": %s/%s" (module-name (rt-module-error-module c)) c.symbol
+       }) \
+       ((rt-module-error? c) {
+	 ; annoyingly c.module resolves module to #undef
+	 cr-printf ": module %s" (module-name (rt-module-error-module c))
        }) \
        ((rt-glob-error? c) {
 	 cr-printf ": pattern %s" c.pattern

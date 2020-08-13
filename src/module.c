@@ -139,7 +139,7 @@ void idio_module_error_unbound_name (IDIO symbol, IDIO module, IDIO c_location)
 				   IDIO_LIST5 (idio_get_output_string (sh),
 					       location,
 					       c_location,
-					       IDIO_MODULE_NAME (module),
+					       module,
 					       symbol));
     idio_raise_condition (idio_S_true, c);
 }
@@ -551,13 +551,14 @@ IDIO idio_module_symbols_match_type (IDIO module, IDIO symbols, IDIO type)
 	r = symbols;
     } else {
 	while (idio_S_nil != symbols) {
-	    IDIO sv = idio_hash_get (IDIO_MODULE_SYMBOLS (module), IDIO_PAIR_H (symbols));
+	    IDIO sym = IDIO_PAIR_H (symbols);
+	    IDIO sv = idio_hash_get (IDIO_MODULE_SYMBOLS (module), sym);
 	    if (idio_S_unspec == sv) {
-		idio_module_error_unbound_name (module, IDIO_PAIR_H (symbols), IDIO_C_FUNC_LOCATION ());
+		idio_module_error_unbound_name (sym, module, IDIO_C_FUNC_LOCATION ());
 	    } else if (! idio_isa_pair (sv)) {
 		idio_error_C ("symbol not a pair", sv, IDIO_C_FUNC_LOCATION ());
 	    } else if (type == IDIO_PAIR_H (sv)) {
-		r = idio_pair (IDIO_PAIR_H (symbols), r);
+		r = idio_pair (sym, r);
 	    }
 
 	    symbols = IDIO_PAIR_T (symbols);

@@ -577,6 +577,16 @@ define (continue-job job foreground) "mark job `job` as running and foreground i
   }
 }
 
+define (default-child-handler c) "
+The default condition handler set in child processes.
+
+It will report the condition and exit (1).
+" {
+  condition-report "child exec issue" c (current-error-handle)
+  eprintf "child process %s will exit (1)\n" (getpid)
+  libc/exit 1
+}
+
 define (prep-io infile outfile errfile) "prepare the IO for the current process
 
 :param infile: to be used for stdin
@@ -820,6 +830,7 @@ define-infix-operator | 300 {
 		    }
 		    $pid := (fork)
 		    if (C/== $pid 0) {
+		      set-default-handler! ^idio-error default-child-handler
 		      %prep-process $pgid $infile $outfile $stderr $foreground
 
 		      ;; The Libc texinfo page seems to have missed
@@ -982,6 +993,7 @@ define-macro (fork-command foreground & cmd) {
 
       $pid := (fork)
       cond ((C/== $pid 0) {
+	set-default-handler! ^idio-error default-child-handler
 	%prep-process $pgid $stdin $stdout $stderr $foreground
 	cond ((pair? (ph '$cmd)) {
 	  $@cmd

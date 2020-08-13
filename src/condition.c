@@ -513,7 +513,7 @@ does not return per se						\n\
     } else if (idio_struct_type_isa (sit, idio_condition_rt_command_status_error_type)) {
 	/* return idio_command_rcse_handler (c); */
 	/* idio_debug ("default-c-h: rcse = %s\n", c); */
-	fprintf (stderr, "default-c-h: rcse?? =>> #unspec\n");
+	/* fprintf (stderr, "default-c-h: rcse?? =>> #unspec\n"); */
 	return idio_S_unspec;
     }
 
