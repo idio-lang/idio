@@ -631,7 +631,7 @@ define (char-set-delete-loop cs cps) {
   }
 }
 
-define (char-set-delete-me cs & cps) "
+define (char-set-delete cs & cps) "
 Delete the code points from character set cs.
 " {
   if (null? cps) cs {
