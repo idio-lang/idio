@@ -155,8 +155,8 @@ export (
 	 merge-char-set
 	 xor-char-set
 	 not-char-set
-	 adjoin-char-set
-	 adjoin-char-set!
+	 char-set-adjoin
+	 char-set-adjoin!
 	 char-set-delete
 	 char-set-delete!
 	 complement-char-set
@@ -586,66 +586,66 @@ Remove the code point from character set cs.
        (else (error 'char-set-clear! "not a char-set" cs))
 }
 
-define (adjoin-char-set-loop cs cps) {
+define (char-set-adjoin-loop cs cps) {
   if (null? cps) #n {
     setter! := #n
     cond ((sparse-char-set? cs) (setter! = char-set-set!)) \
 	 ((bitset? cs)		(setter! = bitset-set!)) \
-	 (else (error 'adjoin-char-set "not a char-set" cs))
+	 (else (error 'char-set-adjoin "not a char-set" cs))
     ch := (ph cps)
     cond ((integer? ch) (setter! cs ch)) \
 	 ((unicode? ch) (setter! cs (unicode->integer ch)))
-    adjoin-char-set-loop cs (pt cps)
+    char-set-adjoin-loop cs (pt cps)
   }
 }
 
-define (adjoin-char-set cs & cps) "
+define (char-set-adjoin cs & cps) "
 Add the code points to character set cs.
 " {
   if (null? cps) cs {
     ncs := copy-char-set cs
-    adjoin-char-set-loop ncs cps
+    char-set-adjoin-loop ncs cps
     ncs
   }
 }
 
-define (adjoin-char-set! cs & cps) "
+define (char-set-adjoin! cs & cps) "
 Add the code points to character set cs with side-effects.
 "{
   if (null? cps) cs {
-    adjoin-char-set-loop cs cps
+    char-set-adjoin-loop cs cps
     cs
   }
 }
 
-define (delete-char-set-loop cs cps) {
+define (char-set-delete-loop cs cps) {
   if (null? cps) #n {
     ch := (ph cps)
     clearer! := #n
     cond ((sparse-char-set? cs) (clearer! = char-set-set!)) \
 	 ((bitset? cs)		(clearer! = bitset-set!)) \
-	 (else (error 'delete-char-set "not a char-set" cs))
+	 (else (error 'char-set-delete "not a char-set" cs))
     cond ((integer? ch) (clearer! cs ch)) \
 	 ((unicode? ch) (clearer! cs (unicode->integer ch)))
-    delete-char-set-loop cs (pt cps)
+    char-set-delete-loop cs (pt cps)
   }
 }
 
-define (delete-char-set cs & cps) "
+define (char-set-delete-me cs & cps) "
 Delete the code points from character set cs.
 " {
   if (null? cps) cs {
     ncs := copy-char-set cs
-    delete-char-set-loop ncs cps
+    char-set-delete-loop ncs cps
     ncs
   }
 }
 
-define (delete-char-set! cs & cps) "
+define (char-set-delete! cs & cps) "
 Delete the code points from character set cs with side-effects.
 " {
   if (null? cps) cs {
-    delete-char-set-loop cs cps
+    char-set-delete-loop cs cps
     cs
   }
 }
@@ -908,4 +908,4 @@ cond ((memq 'ASCII *subfeatures*) {
        load "unicode.full"
      })
 
-(provide 'SRFI-14)
+provide SRFI-14

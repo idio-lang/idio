@@ -1486,4 +1486,4 @@ define (string-cursor-end s) (string-length s)
 
 define re:grapheme (regexp 'grapheme)
 
-(provide 'SRFI-115)
+provide SRFI-115
