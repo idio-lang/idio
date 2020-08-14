@@ -242,14 +242,19 @@ define-macro (provide feature) {
 ;
 ; time proc [args]
 
-define (time proc & args) {
+define (time proc & args) "
+Report the Real/User and System time for the invocation of
+proc [args]
+" {
+  r := #n
   start := (times)
   if (null? args) {
     (proc)
   } {
-    apply proc args
+    r = apply proc args
   }
   end := (times)
 
   printf "Real %d\nUser %d\nSyst %d\n" (end.tms_rtime - start.tms_rtime) (end.tms_utime - start.tms_utime) (end.tms_stime - start.tms_stime)
+  r
 }
