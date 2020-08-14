@@ -4798,7 +4798,7 @@ void idio_vm_dasm (IDIO thr, idio_ai_t pc0, idio_ai_t pce)
 	case IDIO_A_GLOBAL_SYM_DEF:
 	    {
 		uint64_t mci = IDIO_VM_GET_REF (pcp);
-		/* uint64_t mkci = idio_vm_get_varuint (pcp); */
+		uint64_t mkci = idio_vm_get_varuint (pcp);
 
 		IDIO ce = idio_thread_current_env ();
 		IDIO fgci = idio_module_get_or_set_vci (ce, idio_fixnum (mci));
@@ -5599,6 +5599,7 @@ void idio_vm_dasm (IDIO thr, idio_ai_t pc0, idio_ai_t pce)
 		    fprintf (stderr, "%3d ", IDIO_IA_AE (idio_all_code, pc));
 		}
 		fprintf (stderr, "\n");
+		return;
 		idio_error_printf (IDIO_C_FUNC_LOCATION (), "unexpected instruction: %3d @%" PRId64 "\n", ins, pci);
 
 		/* notreached */

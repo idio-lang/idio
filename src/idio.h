@@ -64,6 +64,7 @@
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+#include <sys/times.h>
 #include <sys/utsname.h>
 #include <sys/wait.h>
 
