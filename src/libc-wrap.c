@@ -31,7 +31,10 @@ char **idio_libc_rlimit_names = NULL;
 static IDIO idio_libc_struct_sigaction = NULL;
 static IDIO idio_libc_struct_utsname = NULL;
 static IDIO idio_libc_struct_rlimit = NULL;
+static IDIO idio_libc_struct_tms = NULL;
 IDIO idio_libc_struct_stat = NULL;
+
+static long idio_SC_CLK_TCK = 0;
 
 /*
  * Indexes into structures for direct references
@@ -49,6 +52,12 @@ IDIO idio_libc_struct_stat = NULL;
 
 #define IDIO_STRUCT_RLIMIT_RLIM_CUR		0
 #define IDIO_STRUCT_RLIMIT_RLIM_MAX		1
+
+#define IDIO_STRUCT_TMS_RTIME			0
+#define IDIO_STRUCT_TMS_UTIME			1
+#define IDIO_STRUCT_TMS_STIME			2
+#define IDIO_STRUCT_TMS_CUTIME			3
+#define IDIO_STRUCT_TMS_CSTIME			4
 
 void idio_libc_error_format (char *m, IDIO s, IDIO c_location)
 {
@@ -3053,6 +3062,41 @@ See ``getrlimit`` to obtain a struct-rlimit.			\n\
     return idio_S_unspec;
 }
 
+IDIO_DEFINE_PRIMITIVE0_DS ("times", libc_times, (void), "", "\
+in C, times ()							\n\
+a wrapper to libc times (3)					\n\
+								\n\
+:return: structure or raises ^system-error			\n\
+:rtype: struct							\n\
+								\n\
+times(3) is complicated because we need to return the struct tms\n\
+that the user would have passed in as a pointer and the clock_t,\n\
+elapsed real time that times(3) returns.			\n\
+								\n\
+The elapsed real time appears as a new field, tms_rtime in the	\n\
+structure.							\n\
+								\n\
+All fields are in clock ticks for which sysconf(_SC_CLK_TCK) is	\n\
+available for reference as the exported symbol CLK_TCK.		\n\
+								\n\
+The fields are Idio numbers, not C_int types.			\n\
+")
+{
+    struct tms tms_buf;
+
+    clock_t ert = times (&tms_buf);
+
+    if (-1 == ert) {
+	idio_error_system_errno ("times", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+    }
+
+    return idio_struct_instance (idio_libc_struct_tms, IDIO_LIST5 (idio_integer (ert),
+								   idio_integer (tms_buf.tms_utime),
+								   idio_integer (tms_buf.tms_stime),
+								   idio_integer (tms_buf.tms_cutime),
+								   idio_integer (tms_buf.tms_cstime)));
+}
+
 IDIO_DEFINE_PRIMITIVE0_DS ("EGID/get", EGID_get, (void), "", "\
 getter for the computed value ``EGID`` which is a call to	\n\
 getegid (2).							\n\
@@ -3500,6 +3544,26 @@ void idio_init_libc_wrap ()
     idio_module_set_symbol_value (idio_symbols_C_intern ("PID"), idio_integer (getpid ()), main_module);
     idio_module_set_symbol_value (idio_symbols_C_intern ("PPID"), idio_integer (getppid ()), main_module);
 
+    /*
+     * POSIX times(3) and struct tms
+     */
+    idio_SC_CLK_TCK = sysconf (_SC_CLK_TCK);
+    if (-1 == idio_SC_CLK_TCK){
+	idio_error_system_errno ("sysconf (_SC_CLK_TCK)", idio_integer (idio_SC_CLK_TCK), IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
+    }
+    idio_module_export_symbol_value (idio_symbols_C_intern ("CLK_TCK"), idio_integer (idio_SC_CLK_TCK), idio_libc_wrap_module);
+    name = idio_symbols_C_intern ("struct-tms");
+    idio_libc_struct_tms = idio_struct_type (name,
+					     idio_S_nil,
+					     idio_pair (idio_symbols_C_intern ("tms_rtime"),
+					     idio_pair (idio_symbols_C_intern ("tms_utime"),
+					     idio_pair (idio_symbols_C_intern ("tms_stime"),
+					     idio_pair (idio_symbols_C_intern ("tms_cutime"),
+					     idio_pair (idio_symbols_C_intern ("tms_cstime"),
+					     idio_S_nil))))));
+    idio_module_export_symbol_value (name, idio_libc_struct_tms, idio_libc_wrap_module);
 }
 
 void idio_libc_wrap_add_primitives ()
@@ -3556,6 +3620,7 @@ void idio_libc_wrap_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_rlimit_names);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_getrlimit);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_setrlimit);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_times);
 }
 
 void idio_final_libc_wrap ()

@@ -192,6 +192,12 @@ Invoke the ``hprintf`` function on an output string handle with
   get-output-string osh
 }
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;
+; require / provide
+;
+; a simple load-once mechanism
+
 *features* := #n
 *subfeatures* :~ #n
 
@@ -230,4 +236,20 @@ define-macro (provide feature) {
       *features* = pair $feature *features*
     }
   }
+}
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;
+; time proc [args]
+
+define (time proc & args) {
+  start := (times)
+  if (null? args) {
+    (proc)
+  } {
+    apply proc args
+  }
+  end := (times)
+
+  printf "Real %d\nUser %d\nSyst %d\n" (end.tms_rtime - start.tms_rtime) (end.tms_utime - start.tms_utime) (end.tms_stime - start.tms_stime)
 }
