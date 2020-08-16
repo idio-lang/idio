@@ -149,7 +149,7 @@ test (unicode=? #\a #\a #\b #\a) #f
 ; --- strings ---
 
 define (string-downcase s) {
-  apply string (map unicode-downcase (string->list s))
+  apply s9/string (map unicode-downcase (string->list s))
 }
 
 test (string-downcase (number->string 11259375 16)) "abcdef"

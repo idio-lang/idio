@@ -3066,7 +3066,7 @@ IDIO_DEFINE_PRIMITIVE0_DS ("times", libc_times, (void), "", "\
 in C, times ()							\n\
 a wrapper to libc times (3)					\n\
 								\n\
-:return: structure or raises ^system-error			\n\
+:return: struct-tms or raises ^system-error			\n\
 :rtype: struct							\n\
 								\n\
 times(3) is complicated because we need to return the struct tms\n\
@@ -3095,6 +3095,211 @@ The fields are Idio numbers, not C_int types.			\n\
 								   idio_integer (tms_buf.tms_stime),
 								   idio_integer (tms_buf.tms_cutime),
 								   idio_integer (tms_buf.tms_cstime)));
+}
+
+IDIO idio_libc_struct_timeval_pointer (struct timeval *tvp);
+
+IDIO_DEFINE_PRIMITIVE0_DS ("gettimeofday", libc_gettimeofday, (void), "", "\
+in C, gettimeofday ()						\n\
+a wrapper to libc gettimeofday (2)				\n\
+								\n\
+:return: struct-timeval or raises ^system-error			\n\
+:rtype: struct-timeval						\n\
+								\n\
+The struct timezone parameter is not used.			\n\
+")
+{
+    struct timeval *tvp = (struct timeval *) idio_alloc (sizeof (struct timeval));
+
+    if (-1 == gettimeofday (tvp, NULL)) {
+	idio_error_system_errno ("gettimeofday", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+    }
+
+    return idio_libc_struct_timeval_pointer (tvp);
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("struct-timeval-as-string", libc_struct_timeval_as_string, (IDIO tv), "tv", "\
+Return a C struct timeval as a string				\n\
+								\n\
+:param tv: C struct timeval					\n\
+:type tv: C_pointer						\n\
+:return: string							\n\
+:rtype: string							\n\
+")
+{
+    IDIO_ASSERT (tv);
+
+    IDIO_TYPE_ASSERT (C_pointer, tv);
+
+    struct timeval *tvp = IDIO_C_TYPE_POINTER_P (tv);
+
+    IDIO osh = idio_open_output_string_handle_C ();
+
+    char buf[BUFSIZ];
+    sprintf (buf, "%ld.%06ld", tvp->tv_sec, tvp->tv_usec);
+    idio_display_C (buf, osh);
+
+    return idio_get_output_string (osh);
+}
+
+IDIO idio_libc_struct_timeval_pointer (struct timeval *tvp)
+{
+    IDIO_C_ASSERT (tvp);
+
+    IDIO r = idio_C_pointer_free_me (tvp);
+    IDIO_C_TYPE_POINTER_PRINTER (r)  = idio_defprimitive_libc_struct_timeval_as_string;
+
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE2_DS ("subtract-struct-timeval", libc_subtract_struct_timeval, (IDIO tv1, IDIO tv2), "tv1 tv2", "\
+A simple function to calculate the difference between two C	\n\
+struct timevals							\n\
+								\n\
+tv1 - tv2							\n\
+								\n\
+:param tv1: first timeval					\n\
+:type tv1: C_pointer						\n\
+:param tv2: second timeval					\n\
+:type tv2: C_pointer						\n\
+:return: C struct timeval or raises ^system-error		\n\
+:rtype: C_pointer						\n\
+")
+{
+    IDIO_ASSERT (tv1);
+    IDIO_ASSERT (tv2);
+
+    IDIO_TYPE_ASSERT (C_pointer, tv1);
+    IDIO_TYPE_ASSERT (C_pointer, tv2);
+
+    struct timeval *tv1p = IDIO_C_TYPE_POINTER_P (tv1);
+    struct timeval *tv2p = IDIO_C_TYPE_POINTER_P (tv2);
+
+    struct timeval *tvp = (struct timeval *) idio_alloc (sizeof (struct timeval));
+
+    tvp->tv_sec = tv1p->tv_sec - tv2p->tv_sec;
+    tvp->tv_usec = tv1p->tv_usec - tv2p->tv_usec;
+
+    if (tvp->tv_usec < 0) {
+	tvp->tv_usec += 1000000;
+	tvp->tv_sec -= 1;
+    }
+
+    return idio_libc_struct_timeval_pointer (tvp);
+}
+
+IDIO_DEFINE_PRIMITIVE2_DS ("add-struct-timeval", libc_add_struct_timeval, (IDIO tv1, IDIO tv2), "tv1 tv2", "\
+A simple function to calculate the sum of two C struct timevals \n\
+								\n\
+tv1 + tv2							\n\
+								\n\
+:param tv1: first timeval					\n\
+:type tv1: C_pointer						\n\
+:param tv2: second timeval					\n\
+:type tv2: C_pointer						\n\
+:return: C struct timeval or raises ^system-error		\n\
+:rtype: C_pointer						\n\
+")
+{
+    IDIO_ASSERT (tv1);
+    IDIO_ASSERT (tv2);
+
+    IDIO_TYPE_ASSERT (C_pointer, tv1);
+    IDIO_TYPE_ASSERT (C_pointer, tv2);
+
+    struct timeval *tv1p = IDIO_C_TYPE_POINTER_P (tv1);
+    struct timeval *tv2p = IDIO_C_TYPE_POINTER_P (tv2);
+
+    struct timeval *tvp = (struct timeval *) idio_alloc (sizeof (struct timeval));
+
+    tvp->tv_sec = tv1p->tv_sec + tv2p->tv_sec;
+    tvp->tv_usec = tv1p->tv_usec + tv2p->tv_usec;
+
+    if (tvp->tv_usec > 1000000) {
+	tvp->tv_usec -= 1000000;
+	tvp->tv_sec += 1;
+    }
+
+    return idio_libc_struct_timeval_pointer (tvp);
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("getrusage", libc_getrusage, (IDIO who), "who", "\
+in C, getrusage (who)						\n\
+a wrapper to libc getrusage (2)					\n\
+								\n\
+:param who: who, see below					\n\
+:type who: C_int						\n\
+:return: struct-rusage or raises ^system-error			\n\
+:rtype: struct-rusage						\n\
+								\n\
+The parameter `who` refers to RUSAGE_SELF or RUSAGE_CHILDREN	\n\
+")
+{
+    IDIO_ASSERT (who);
+
+    IDIO_TYPE_ASSERT (C_int, who);
+
+    struct rusage *rup = (struct rusage *) idio_alloc (sizeof (struct rusage));
+
+    if (-1 == getrusage (IDIO_C_TYPE_INT (who), rup)) {
+	idio_error_system_errno ("getrusage", who, IDIO_C_FUNC_LOCATION ());
+    }
+
+    return idio_C_pointer_free_me (rup);
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("struct-rusage-ru_utime", libc_struct_rusage_ru_utime, (IDIO rusage), "rusage", "\
+in C, rusage.ru_utime						\n\
+								\n\
+:param rusage: C struct rusage					\n\
+:type rusage: C_pointer						\n\
+:return: C struct timeval					\n\
+:rtype: C_pointer						\n\
+								\n\
+See `getrusage` for a C struct rusage object.			\n\
+								\n\
+This function returns a copy of the ru_utime field.		\n\
+")
+{
+    IDIO_ASSERT (rusage);
+
+    IDIO_TYPE_ASSERT (C_pointer, rusage);
+
+    struct rusage *rup = IDIO_C_TYPE_POINTER_P (rusage);
+
+    struct timeval *tvp = (struct timeval *) idio_alloc (sizeof (struct timeval));
+
+    tvp->tv_sec = rup->ru_utime.tv_sec;
+    tvp->tv_usec = rup->ru_utime.tv_usec;
+
+    return idio_C_pointer_free_me (tvp);
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("struct-rusage-ru_stime", libc_struct_rusage_ru_stime, (IDIO rusage), "rusage", "\
+in C, rusage.ru_stime						\n\
+								\n\
+:param rusage: C struct rusage					\n\
+:type rusage: C_pointer						\n\
+:return: C struct timeval					\n\
+:rtype: C_pointer						\n\
+								\n\
+See `getrusage` for a C struct rusage object.			\n\
+								\n\
+This function returns a copy of the ru_stime field.		\n\
+")
+{
+    IDIO_ASSERT (rusage);
+
+    IDIO_TYPE_ASSERT (C_pointer, rusage);
+
+    struct rusage *rup = IDIO_C_TYPE_POINTER_P (rusage);
+
+    struct timeval *tvp = (struct timeval *) idio_alloc (sizeof (struct timeval));
+
+    tvp->tv_sec = rup->ru_stime.tv_sec;
+    tvp->tv_usec = rup->ru_stime.tv_usec;
+
+    return idio_C_pointer_free_me (tvp);
 }
 
 IDIO_DEFINE_PRIMITIVE0_DS ("EGID/get", EGID_get, (void), "", "\
@@ -3553,6 +3758,10 @@ void idio_init_libc_wrap ()
 
 	/* notreached */
     }
+    /*
+     * We can use an idio_integer () for CLK_TCK as it is a usage-only
+     * value -- ie we use it in Idio but don't pass it back to C
+     */
     idio_module_export_symbol_value (idio_symbols_C_intern ("CLK_TCK"), idio_integer (idio_SC_CLK_TCK), idio_libc_wrap_module);
     name = idio_symbols_C_intern ("struct-tms");
     idio_libc_struct_tms = idio_struct_type (name,
@@ -3564,6 +3773,15 @@ void idio_init_libc_wrap ()
 					     idio_pair (idio_symbols_C_intern ("tms_cstime"),
 					     idio_S_nil))))));
     idio_module_export_symbol_value (name, idio_libc_struct_tms, idio_libc_wrap_module);
+
+    idio_module_export_symbol_value (idio_symbols_C_intern ("RUSAGE_SELF"), idio_C_int (RUSAGE_SELF), idio_libc_wrap_module);
+    idio_module_export_symbol_value (idio_symbols_C_intern ("RUSAGE_CHILDREN"), idio_C_int (RUSAGE_CHILDREN), idio_libc_wrap_module);
+    /*
+     * It's not clear how portable the RUSAGE_THREAD parameter is.  In
+     * Linux it requires the _GNU_SOURCE feature test macro.  In
+     * FreeBSD 10 you might need to define it yourself (as 1).  It is
+     * not in OpenIndiana.
+     */
 }
 
 void idio_libc_wrap_add_primitives ()
@@ -3621,6 +3839,13 @@ void idio_libc_wrap_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_getrlimit);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_setrlimit);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_times);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_gettimeofday);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_struct_timeval_as_string);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_subtract_struct_timeval);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_add_struct_timeval);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_getrusage);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_struct_rusage_ru_utime);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_struct_rusage_ru_stime);
 }
 
 void idio_final_libc_wrap ()

@@ -494,6 +494,33 @@ ptrdiff_t idio_puts_handle (IDIO h, char *s, size_t slen)
     return n;
 }
 
+IDIO_DEFINE_PRIMITIVE1V_DS ("puts", puts, (IDIO o, IDIO args), "o [handle]", "\
+Write the string ``o`` to ``handle`` or the current	\n\
+output handle						\n\
+							\n\
+:param o: object					\n\
+:param handle: handle to puts to			\n\
+:type handle: handle					\n\
+:return: <unspec>					\n\
+")
+{
+    IDIO_ASSERT (o);
+    IDIO_ASSERT (args);
+
+    IDIO_TYPE_ASSERT (string, o);
+
+    IDIO h = idio_handle_or_current (idio_list_head (args), IDIO_HANDLE_FLAG_WRITE);
+
+    size_t size = 0;
+    char *str = idio_string_as_C (o, &size);
+
+    ptrdiff_t n = idio_puts_handle (h, str, size);
+
+    free (str);
+
+    return idio_integer (n);
+}
+
 int idio_flush_handle (IDIO h)
 {
     IDIO_ASSERT (h);
@@ -1309,24 +1336,24 @@ num	specifies a maximum limit on the output		\n\
 				size_t c_size = 0;
 				c = idio_display_string (arg, &c_size);
 
-				size_t c_width = c_size;
+				size_t c_prec_width = c_size;
 				if (prec &&
 				    prec < c_size) {
-				    c_width = prec;
+				    c_prec_width = prec;
 				}
 
 				if (0 == left_aligned &&
-				    c_width < width) {
-				    size_t i = width - c_size;
+				    c_prec_width < width) {
+				    size_t i = width - c_prec_width;
 				    while (i) {
 					idio_putc_handle (h, ' ');
 					i--;
 				    }
 				}
-				idio_puts_handle (h, c, c_width);
+				idio_puts_handle (h, c, c_prec_width);
 				if (left_aligned &&
-				    c_width < width) {
-				    size_t i = width - c_size;
+				    c_prec_width < width) {
+				    size_t i = width - c_prec_width;
 				    while (i) {
 					idio_putc_handle (h, ' ');
 					i--;
@@ -1754,6 +1781,7 @@ void idio_handle_add_primitives ()
     IDIO_ADD_PRIMITIVE (handle_line);
     IDIO_ADD_PRIMITIVE (handle_pos);
     IDIO_ADD_PRIMITIVE (handle_location);
+    IDIO_ADD_PRIMITIVE (puts);
     IDIO_ADD_PRIMITIVE (flush_handle);
     IDIO_ADD_PRIMITIVE (seek_handle);
     IDIO_ADD_PRIMITIVE (handle_rewind);

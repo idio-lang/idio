@@ -307,4 +307,6 @@ keyword, eg. ``:NOFILE`` for ``libc/RLIMIT_NOFILE``
   }
 }
 
+%%add-as-string struct-timeval struct-timeval-as-string
+
 provide libc

@@ -193,6 +193,7 @@ IDIO idio_C_pointer (void * v)
     IDIO_GC_ALLOC (co->u.C_type.u.C_pointer, sizeof (idio_C_pointer_t));
 
     IDIO_C_TYPE_POINTER_P (co) = v;
+    IDIO_C_TYPE_POINTER_PRINTER (co) = NULL;
     IDIO_C_TYPE_POINTER_FREEP (co) = 0;
 
     return co;

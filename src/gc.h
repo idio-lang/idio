@@ -834,6 +834,7 @@ typedef struct idio_bitset_s {
 
 typedef struct idio_C_pointer_s {
     void *p;
+    struct idio_s *(*printer) (struct idio_s *cp);
     char freep;
 } idio_C_pointer_t;
 
@@ -891,6 +892,7 @@ typedef struct idio_C_type_s {
 #define IDIO_C_TYPE_POINTER(C)       ((C)->u.C_type->u.C_pointer)
 */
 #define IDIO_C_TYPE_POINTER_P(C)     ((C)->u.C_type.u.C_pointer->p)
+#define IDIO_C_TYPE_POINTER_PRINTER(C)     ((C)->u.C_type.u.C_pointer->printer)
 #define IDIO_C_TYPE_POINTER_FREEP(C) ((C)->u.C_type.u.C_pointer->freep)
 
 typedef struct idio_C_typedef_s {

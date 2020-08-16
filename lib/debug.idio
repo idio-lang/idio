@@ -67,6 +67,9 @@ debug := #n
 			    }
 			    printf "v <val>		return a value to continuation of failed expression\n"
 			    printf "ft		show the tree of frames\n"
+			    printf "t		show the thread state\n"
+			    printf "debug> "
+			    file-handle-fflush (current-output-handle)
 
 			    line := (read-line)
 			    lsh := open-input-string line
@@ -87,6 +90,9 @@ debug := #n
 				 }) \
 				 ((eqv? 'ft cmd) {
 				   (%vm-frame-tree)
+				 }) \
+				 ((eqv? 't cmd) {
+				   (idio-thread-state)
 				 }) \
 				 (else (printf "unrecognised line %s\n" line))
 
