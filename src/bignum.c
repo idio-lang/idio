@@ -2096,6 +2096,24 @@ char *idio_bignum_integer_as_string (IDIO bn, size_t *sizep)
     char *s = idio_alloc (1);
     *s = '\0';
 
+    int prec = 0;
+    if (idio_S_nil != idio_print_conversion_precision_sym) {
+	IDIO ipcp = idio_module_symbol_value (idio_print_conversion_precision_sym,
+					      idio_Idio_module,
+					      IDIO_LIST1 (idio_S_false));
+
+	if (idio_S_false != ipcp) {
+	    if (idio_isa_fixnum (ipcp)) {
+		prec = IDIO_FIXNUM_VAL (ipcp);
+	    } else {
+		idio_error_param_type ("fixnum", ipcp, IDIO_C_FUNC_LOCATION ());
+
+		/* notreached */
+		return NULL;
+	    }
+	}
+    }
+
     size_t al = IDIO_BSA_SIZE (sig_a);
     intptr_t i;
     for (i = al - 1; i >= 0; i--) {
@@ -2104,10 +2122,20 @@ char *idio_bignum_integer_as_string (IDIO bn, size_t *sizep)
 	char fmt[BUFSIZ];
 	if (i == al - 1) {
 	    sprintf (fmt, "%%zd");
+	    sprintf (buf, fmt, v);
+
+	    size_t bn_digits = strlen (buf) + i * IDIO_BIGNUM_DPW;
+	    if (prec > bn_digits) {
+		int pad = prec - bn_digits;
+		char pads[pad+1];
+		sprintf (fmt, "%%.%dd", pad);
+		sprintf (pads, fmt, 0);
+		idio_strcat (s, sizep, pads, pad);
+	    }
 	} else {
 	    sprintf (fmt, "%%0%dzd", IDIO_BIGNUM_DPW);
+	    sprintf (buf, fmt, v);
 	}
-	sprintf (buf, fmt, v);
 	size_t buf_size = strlen (buf);
 	s = idio_strcat (s, sizep, buf, buf_size);
     }
@@ -2175,6 +2203,9 @@ char *idio_bignum_expanded_real_as_string (IDIO bn, IDIO_BS_T exp, int digits, i
     return s;
 }
 
+#define IDIO_BIGNUM_CONVERSION_FORMAT_E	0x65
+#define IDIO_BIGNUM_CONVERSION_FORMAT_F	0x66
+
 char *idio_bignum_real_as_string (IDIO bn, size_t *sizep)
 {
     IDIO_ASSERT (bn);
@@ -2193,6 +2224,55 @@ char *idio_bignum_real_as_string (IDIO bn, size_t *sizep)
 	return idio_bignum_expanded_real_as_string (bn, exp, digits, IDIO_BIGNUM_REAL_NEGATIVE_P (bn), sizep);
     }
 
+    idio_unicode_t format = IDIO_BIGNUM_CONVERSION_FORMAT_E;
+    if (idio_S_nil != idio_print_conversion_format_sym) {
+	IDIO ipcf = idio_module_symbol_value (idio_print_conversion_format_sym,
+					      idio_Idio_module,
+					      IDIO_LIST1 (idio_S_false));
+
+	if (idio_S_false != ipcf) {
+	    if (idio_isa_unicode (ipcf)) {
+		idio_unicode_t f = IDIO_UNICODE_VAL (ipcf);
+		switch (f) {
+		case IDIO_BIGNUM_CONVERSION_FORMAT_E:
+		case IDIO_BIGNUM_CONVERSION_FORMAT_F:
+		    format = f;
+		    break;
+		default:
+		    fprintf (stderr, "bignum-as-string: unexpected conversion format: %c (%#x).  Using 'e'.\n", (int) f, (int) f);
+		    format = IDIO_BIGNUM_CONVERSION_FORMAT_E;
+		    break;
+		}
+	    } else {
+		idio_error_param_type ("unicode", ipcf, IDIO_C_FUNC_LOCATION ());
+
+		/* notreached */
+		return NULL;
+	    }
+	}
+    }
+
+    /*
+     * The default precision for both e and f formats is 6
+     */
+    int prec = 6;
+    if (idio_S_nil != idio_print_conversion_precision_sym) {
+	IDIO ipcp = idio_module_symbol_value (idio_print_conversion_precision_sym,
+					      idio_Idio_module,
+					      IDIO_LIST1 (idio_S_false));
+
+	if (idio_S_false != ipcp) {
+	    if (idio_isa_fixnum (ipcp)) {
+		prec = IDIO_FIXNUM_VAL (ipcp);
+	    } else {
+		idio_error_param_type ("fixnum", ipcp, IDIO_C_FUNC_LOCATION ());
+
+		/* notreached */
+		return NULL;
+	    }
+	}
+    }
+
     char *s = idio_alloc (1);
     *s = '\0';
 
@@ -2208,57 +2288,73 @@ char *idio_bignum_real_as_string (IDIO bn, size_t *sizep)
     intptr_t i = al - 1;
     IDIO_BS_T v = idio_bsa_get (sig_a, i);
 
-    /*
-     * vs can be n digits long (n >= 1).  We want to add vs[0] then
-     * ".".  If vs is more than 1 digit then add the rest of vs.  If
-     * there are no more digits to add then add "0".
-     */
-    char *vs;
-    if (asprintf (&vs, "%" PRIdPTR, v) == -1) {
-	idio_error_alloc ("asprintf");
+    if (IDIO_BIGNUM_CONVERSION_FORMAT_E == format) {
+	/*
+	 * vs can be n digits long (n >= 1).  We want to add vs[0] then
+	 * ".".  If vs is more than 1 digit then add the rest of vs.  If
+	 * there are no more digits to add then add "0".
+	 */
+	char *vs;
+	if (asprintf (&vs, "%" PRIdPTR, v) == -1) {
+	    idio_error_alloc ("asprintf");
 
-	/* notreached */
-	return NULL;
-    }
-    char vs_rest[IDIO_BIGNUM_DPW+1]; /* +1 in case DPW is 1 for debug! */
-    strcpy (vs_rest, vs + 1);
-    vs[1] = '\0';
-
-    size_t vs_size = strlen (vs);
-    s = idio_strcat (s, sizep, vs, vs_size);
-    IDIO_STRCAT (s, sizep, ".");
-
-    size_t vs_rest_size = strlen (vs_rest);
-    if (vs_rest_size) {
-	s = idio_strcat (s, sizep, vs_rest, vs_rest_size);
-    } else {
-	if (0 == i) {
-	    IDIO_STRCAT (s, sizep, "0");
+	    /* notreached */
+	    return NULL;
 	}
-    }
-    free (vs);
+	char vs_rest[IDIO_BIGNUM_DPW+1]; /* +1 in case DPW is 1 for debug! */
+	strcpy (vs_rest, vs + 1);
+	vs[1] = '\0';
 
-    for (i--; i >= 0; i--) {
-	v = idio_bsa_get (sig_a, i);
-	char buf[BUFSIZ];
-	sprintf (buf, "%0*" PRIdPTR, IDIO_BIGNUM_DPW, v);
-	size_t buf_size = strlen (buf);
-	s = idio_strcat (s, sizep, buf, buf_size);
-    }
+	size_t vs_size = strlen (vs);
+	s = idio_strcat (s, sizep, vs, vs_size);
 
-    IDIO_STRCAT (s, sizep, "e");
-    /* if ((exp + digits - 1) >= 0) { */
-    /* 	IDIO_STRCAT (s, "+"); */
-    /* } */
-    v = exp + digits - 1;
-    if (asprintf (&vs, "%+" PRIdPTR, v) == -1) {
-	idio_error_alloc ("asprintf");
+	if (prec) {
+	    IDIO_STRCAT (s, sizep, ".");
+	}
 
-	/* notreached */
-	return NULL;
+	size_t vs_rest_size = strlen (vs_rest);
+	size_t vs_rest_prec = vs_rest_size;
+	if (prec < vs_rest_prec) {
+	    vs_rest_prec = prec;
+	}
+	if (vs_rest_size) {
+	    s = idio_strcat (s, sizep, vs_rest, vs_rest_prec);
+	} else {
+	    if (0 == i &&
+		prec > vs_rest_size) {
+		int pad = prec - vs_rest_size;
+		char pads[pad+1];
+		char fmt[BUFSIZ];
+		sprintf (fmt, "%%.%dd", pad);
+		sprintf (pads, fmt, 0);
+		idio_strcat (s, sizep, pads, pad);
+	    }
+	}
+	free (vs);
+
+	for (i--; i >= 0; i--) {
+	    v = idio_bsa_get (sig_a, i);
+	    char buf[BUFSIZ];
+	    sprintf (buf, "%0*" PRIdPTR, IDIO_BIGNUM_DPW, v);
+	    size_t buf_size = strlen (buf);
+	    s = idio_strcat (s, sizep, buf, buf_size);
+	}
+
+	IDIO_STRCAT (s, sizep, "e");
+	/* if ((exp + digits - 1) >= 0) { */
+	/* 	IDIO_STRCAT (s, "+"); */
+	/* } */
+	v = exp + digits - 1;
+	if (asprintf (&vs, "%+03" PRIdPTR, v) == -1) {
+	    idio_error_alloc ("asprintf");
+
+	    /* notreached */
+	    return NULL;
+	}
+	vs_size = strlen (vs);
+	s = idio_strcat_free (s, sizep, vs, vs_size);
+    } else if (IDIO_BIGNUM_CONVERSION_FORMAT_F == format) {
     }
-    vs_size = strlen (vs);
-    s = idio_strcat_free (s, sizep, vs, vs_size);
 
     return s;
 }

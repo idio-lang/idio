@@ -293,6 +293,8 @@ The default padding character is #\{space}
 			       v = ph args
 			       args = pt args
 
+			       idio-print-conversion-format = k
+
 			       vs = display-string v
 			       vs-len = string-length vs
 			     })
