@@ -673,7 +673,33 @@ IDIO idio_environ_extend (IDIO src, IDIO name, IDIO val, IDIO cs)
     return fmci;
 }
 
-static IDIO idio_meaning_variable_localp (IDIO src, IDIO nametree, size_t i, IDIO name)
+/*
+ * idio_meaning_variable_lookup
+ *
+ * {nametree} is a list of association lists with each association
+ * list representing the names of variables introduced at some level
+ * with newer levels preceding older ones with the effect that at the
+ * time of lookup the innermost level is the first association list
+ * and will therefore be searched first.
+ *
+ * local variables for a given level are stashed as (name 'local j)
+ * where {name} is the {j}th variable introduced at that level.
+ *
+ * Nominally, you would walk through each "level" of names looking for
+ * your variable name.  If you found it at depth {i} then you can
+ * combine that with the corresponding {j} to give a SHALLOW (for {i}
+ * == 0) or DEEP (for {i} > 0) variable reference.
+ *
+ * The return for a local is ('local {i} {j})
+ *
+ * It is interspersed with dynamic and environ variables.  They are
+ * one-at-a-time variable introductions and they should not increment
+ * {i}!
+ *
+ * The return is, say, ('dynamic {mci}) where {mci} is the constant
+ * index associated with the dynamic/environ variable.
+ */
+static IDIO idio_meaning_variable_lookup (IDIO src, IDIO nametree, size_t i, IDIO name)
 {
     IDIO_ASSERT (src);
     IDIO_ASSERT (nametree);
@@ -682,61 +708,45 @@ static IDIO idio_meaning_variable_localp (IDIO src, IDIO nametree, size_t i, IDI
     IDIO_TYPE_ASSERT (list, nametree);
     IDIO_TYPE_ASSERT (symbol, name);
 
-    if (idio_isa_pair (nametree)) {
+    while (idio_S_nil != nametree) {
 	IDIO names = IDIO_PAIR_H (nametree);
-	for (;;) {
-	    if (idio_isa_pair (names)) {
-		IDIO assq = idio_list_assq (name, names);
-		if (idio_S_false != assq) {
-		    IDIO kind = IDIO_PAIR_HT (assq);
-		    if (idio_S_local == kind) {
-			return IDIO_LIST3 (kind, idio_fixnum (i), IDIO_PAIR_HTT (assq));
-		    } else if (idio_S_dynamic == kind ||
-			       idio_S_environ == kind) {
-			return IDIO_PAIR_T (assq);
-		    } else {
-			/*
-			 * I'm not sure we can get here without a
-			 * coding error.
-			 *
-			 * One for developers.
-			 */
-			idio_meaning_error_static_variable (src, IDIO_C_FUNC_LOCATION (), "unexpected local variant", name);
 
-			return idio_S_notreached;
-		    }
+	if (idio_isa_pair (names)) {
+	    IDIO assq = idio_list_assq (name, names);
+	    if (idio_S_false != assq) {
+		IDIO kind = IDIO_PAIR_HT (assq);
+		if (idio_S_local == kind) {
+		    IDIO r = IDIO_LIST3 (kind, idio_fixnum (i), IDIO_PAIR_HTT (assq));
+		    return r;
+		} else if (idio_S_dynamic == kind ||
+			   idio_S_environ == kind) {
+		    return IDIO_PAIR_T (assq);
 		} else {
-		    names = IDIO_PAIR_T (names);
-		}
-	    } else if (idio_S_nil == names) {
-		nametree = IDIO_PAIR_T (nametree);
+		    /*
+		     * I'm not sure we can get here without a
+		     * coding error.
+		     *
+		     * One for developers.
+		     */
+		    idio_meaning_error_static_variable (src, IDIO_C_FUNC_LOCATION (), "unexpected local variant", name);
 
-		if (idio_S_nil == nametree) {
-		    return idio_S_nil;
-		}
-
-		IDIO_TYPE_ASSERT (pair, nametree);
-
-		names = IDIO_PAIR_H (nametree);
-		i++;
-	    } else {
-		/*
-		 * To get here would be require a duff names list
-		 * being passed in.
-		 *
-		 * Developer error.
-		 */
-		idio_error_C ("unexpected localp", IDIO_LIST2 (name, nametree), IDIO_C_FUNC_LOCATION ());
-
-		return idio_S_notreached;
-
-		if (idio_eqp (name, names)) {
-		    return IDIO_LIST3 (idio_S_local, idio_fixnum (i), idio_fixnum (0));
-		} else {
-		    return idio_S_nil;
+		    return idio_S_notreached;
 		}
 	    }
+
+	    /*
+	     * Only increment i if the names represented local
+	     * bindings
+	     */
+	    IDIO first = IDIO_PAIR_H (names);
+	    if (idio_S_local == IDIO_PAIR_HT (first)) {
+		i++;
+	    }
+	} else {
+	    i++;
 	}
+
+	nametree = IDIO_PAIR_T (nametree);
     }
 
     return idio_S_nil;
@@ -813,7 +823,7 @@ static IDIO idio_meaning_variable_kind (IDIO src, IDIO nametree, IDIO name, int 
     IDIO_TYPE_ASSERT (array, cs);
     IDIO_TYPE_ASSERT (module, cm);
 
-    IDIO r = idio_meaning_variable_localp (src, nametree, 0, name);
+    IDIO r = idio_meaning_variable_lookup (src, nametree, 0, name);
 
     if (idio_S_nil == r) {
 	/*
