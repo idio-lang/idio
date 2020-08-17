@@ -147,6 +147,10 @@ with the key will be printed according to the specification.
 If K is a % character then as % is printed according to the
 specification.
 
+If `type` is 'timeformat then it works similarly to 'keyed except we
+avoid a double application of any precision.  TIMEFORMAT describes a
+%f-like precision to the struct timeval strings.
+
 The flags are:
 
 * '-' left align the output within width if applicable.
@@ -155,199 +159,220 @@ The flags are:
 
 The default padding character is #\{space}
 " {
-  handle := (open-output-string)
-  data := #n
-  cond ((eq? type 'args)) \
-       ((eq? type 'keyed) {
-	 if (pair? args) {
-	   data = ph args
-	   if (not (hash? data)) (error '%format "not a hash table" data)
-	 }
-       }) \
-       (else (error '%format "unexpected format type" type))
+  orig-ipcf := idio-print-conversion-format
+  orig-ipcp := idio-print-conversion-precision
 
-  cp-loop :+ (function (i e) {
-		if (ge i e) #n {
-		  c := string-ref fmt i
+  unwind-protect {
+    handle := (open-output-string)
+    data := #n
+    timeformat := #f
+    if (eq? type 'timeformat) {
+      timeformat = #t
+      type = 'keyed
+    }
+    cond ((eq? type 'args)) \
+	 ((eq? type 'keyed) {
+		if (pair? args) {
+		  data = ph args
+		  if (not (hash? data)) (error '%format "not a hash table" data)
+		}
+	      }) \
+	 (else (error '%format "unexpected format type" type))
 
-		  cond ((unicode=? c #\%) {
+    cp-loop :+ (function (i e) {
+		  if (ge i e) #n {
+		    c := string-ref fmt i
 
-		    ;; flags
-		    i+1 := i + 1
-		    left-aligned := #f
-		    left-pad := #U+20
-		    if (lt i+1 e) {
-		      c = string-ref fmt i+1
-		      cond ((unicode=? c #\-) {
-			left-aligned = #t
-			i = i+1
-		      }) \
-			   ((unicode=? c #U+20) {
-			     left-pad = c
-			     i = i+1
-			   }) \
-			   ((unicode=? c #\0) {
-			     left-pad = c
-			     i = i+1
-			   })
-		    }
+		    cond ((unicode=? c #\%) {
 
-		    ;; width
-		    ws := i + 1
-		    we := ws
-		    w-loop :+ (function (i) {
-				 i+1 := i + 1
-				 c = string-ref fmt i+1
-				 if (ASCII-numeric? c) {
-				   we = we + 1
-				   w-loop i+1
-				 } i
-		    })
+		      ;; flags
+		      i+1 := i + 1
+		      left-aligned := #f
+		      left-pad := #U+20
+		      if (lt i+1 e) {
+			c = string-ref fmt i+1
+			cond ((unicode=? c #\-) {
+			  left-aligned = #t
+			  i = i+1
+			}) \
+			     ((unicode=? c #U+20) {
+			       left-pad = c
+			       i = i+1
+			     }) \
+			     ((unicode=? c #\0) {
+			       left-pad = c
+			       i = i+1
+			     })
+		      }
 
-		    i = w-loop i
-
-		    spec-width := 0
-		    if (gt (we - ws) 0) {
-		      wstr := substring fmt ws we
-		      spec-width = read-number wstr 10
-		    }
-
-		    ;; precision (preceded by a dot)
-		    ps := i + 1
-		    pe := ps
-		    if (unicode=? (string-ref fmt (i + 1)) #\.) {
-		      i = i + 1
-		      ps = i + 1
-		      pe = ps
-		      p-loop :+ (function (i) {
+		      ;; width
+		      ws := i + 1
+		      we := ws
+		      w-loop :+ (function (i) {
 				   i+1 := i + 1
 				   c = string-ref fmt i+1
 				   if (ASCII-numeric? c) {
-				     pe = pe + 1
-				     p-loop i+1
+				     we = we + 1
+				     w-loop i+1
 				   } i
 		      })
 
-		      i = p-loop i
-		    }
+		      i = w-loop i
 
-		    spec-prec := 0
-		    if (gt (pe - ps) 0) {
-		      pstr := substring fmt ps pe
-		      spec-prec = read-number pstr 10
-		      idio-print-conversion-precision = spec-prec
-		    }
+		      spec-width := 0
+		      if (gt (we - ws) 0) {
+			wstr := substring fmt ws we
+			spec-width = read-number wstr 10
+		      }
 
-		    if (lt i e) {
-		      i = i + 1
-		      k := string-ref fmt i
-		      v := #n
-		      vs := #n
-		      vs-len := #n
+		      ;; precision (preceded by a dot)
+		      ps := i + 1
+		      pe := ps
+		      if (unicode=? (string-ref fmt (i + 1)) #\.) {
+			i = i + 1
+			ps = i + 1
+			pe = ps
+			p-loop :+ (function (i) {
+				     i+1 := i + 1
+				     c = string-ref fmt i+1
+				     if (ASCII-numeric? c) {
+				       pe = pe + 1
+				       p-loop i+1
+				     } i
+			})
 
-		      cond ((eq? type 'keyed) {
-			cond ((unicode=? k #\%) {
-			  v = k
-			}) \
-			     ((unicode-alphabetic? k) {
-			       v = hash-ref data k #f
-			       if (not v) {
-				 eprintf "%format: %s is not a key in data\n" k
-			       }
+			i = p-loop i
+		      }
 
-			       if (and (unicode=? left-pad #\0)
-				       (not (number? v))) {
-					 left-pad = #U+20
-				       }
+		      spec-prec := 0
+		      if (gt (pe - ps) 0) {
+			pstr := substring fmt ps pe
+			spec-prec = read-number pstr 10
+			idio-print-conversion-precision = spec-prec
+		      }
 
-			       cond ((number? v) {
-				 idio-print-conversion-format = #\d
+		      if (lt i e) {
+			i = i + 1
+			k := string-ref fmt i
+			v := #n
+			vs := #n
+			vs-len := #n
+
+			cond ((eq? type 'keyed) {
+			  cond ((unicode=? k #\%) {
+			    v = k
+			  }) \
+			       ((unicode-alphabetic? k) {
+				 v = hash-ref data k #f
+				 if (not v) {
+				   eprintf "%format: %s is not a key in data\n" k
+				 }
+
+				 if (and (unicode=? left-pad #\0)
+					 (not (number? v))) {
+					   left-pad = #U+20
+					 }
+
+				 cond ((number? v) {
+				   idio-print-conversion-format = #\d
+				 }) \
+				      (else {
+					idio-print-conversion-format = #\s
+				      })
 			       }) \
-				    (else {
-				      idio-print-conversion-format = #\s
-				    })
-			     }) \
-			     (else {
-			       eprintf "%format: %s is not a Unicode graphic code point\n" k
+			       (else {
+				 eprintf "%format: '%s' is not a Unicode graphic code point\n" k
+			       })
+
+			  vs = display-string v
+			  vs-len = string-length vs
+			}) \
+			     ((eq? type 'args) {
+			       if (null? args) (error '%format "not enough args for %" k)
+
+			       v = ph args
+			       args = pt args
+
+			       vs = display-string v
+			       vs-len = string-length vs
 			     })
 
-			vs = display-string v
-			vs-len = string-length vs
-		      }) \
-				((eq? type 'args) {
-				  if (null? args) (error '%format "not enough args for %" k)
+			;; avoid re-application of precision in puts
+			idio-print-conversion-format = orig-ipcf
+			idio-print-conversion-precision = orig-ipcp
 
-				  v = ph args
-				  args = pt args
+			vs-prec-width := vs-len
+			vs-prec := vs
 
-				  vs = display-string v
-				  vs-len = string-length vs
-				})
-
-		      vs-prec-width := vs-len
-		      vs-prec := vs
-
-		      ; precision means different things to different
-		      ; types
-		      if (gt spec-prec 0) {
-			cond ((and (number? v)
-				   (gt spec-prec vs-len)) {
-				     ; for a number, a precision is
-				     ; the minimum number of digits
-				     ; which potentially means
-				     ; left-padding with 0s
-				     vs-prec-width = spec-prec
-				   }) \
-			     ((and (not (number? v))
-				   (lt spec-prec vs-len)) {
-				     ; for a string, a precision is
-				     ; the maximum number of code
-				     ; points to print
-				     vs-prec-width = spec-prec
-				     vs-prec = substring vs 0 spec-prec
-				   })
-		      }
-
-		      pad-loop :+ (function (c n) {
-				     if (le n 0) #n {
-				       write-char c handle
-				       pad-loop c (n - 1)
-				     }
-		      })
-
-		      ; left padding has two parts, a bit like the
-		      ; HTML box model: a margin, padding and then the
-		      ; object.
-		      if (not left-aligned) {
-			if (lt vs-prec-width spec-width) {
-			  ; might print nothing!
-			  pad-loop left-pad (spec-width - vs-prec-width)
+			; precision means different things to different
+			; types
+			if (gt spec-prec 0) {
+			  cond ((and (number? v)
+				     (gt spec-prec vs-len)) {
+				       ; for a number, a precision is
+				       ; the minimum number of digits
+				       ; which potentially means
+				       ; left-padding with 0s
+				       vs-prec-width = spec-prec
+				     }) \
+			       ((and (not (number? v))
+				     (lt spec-prec vs-len)
+				     (not timeformat)) {
+				       ; for a string, a precision is
+				       ; the maximum number of code
+				       ; points to print
+				       ;
+				       ; but don't re-apply precision
+				       ; for timeformat
+				       vs-prec-width = spec-prec
+				       vs-prec = substring vs 0 spec-prec
+				     })
 			}
+
+			pad-loop :+ (function (c n) {
+				       if (le n 0) #n {
+					 write-char c handle
+					 pad-loop c (n - 1)
+				       }
+			})
+
+			; left padding has two parts, a bit like the
+			; HTML box model: a margin, padding and then the
+			; object.
+			if (not left-aligned) {
+			  if (lt vs-prec-width spec-width) {
+			    ; might print nothing!
+			    pad-loop left-pad (spec-width - vs-prec-width)
+			  }
+			}
+			if (and (number? v)
+				(lt vs-len spec-prec)) {
+				  pad-loop #\0 (spec-prec - vs-len)
+				}
+
+			puts vs-prec handle
+
+			if (and left-aligned
+				(lt vs-prec-width spec-width)) {
+				  ; might print nothing!
+				  pad-loop #U+20 (spec-width - vs-prec-width)
+				}
 		      }
-		      if (and (number? v)
-			      (lt vs-len spec-prec)) {
-				pad-loop #\0 (spec-prec - vs-len)
-			      }
+		    }) \
+			 (else {
+			   write-char c handle
+			 })
+		    cp-loop (i + 1) e
+		  }
+    })
 
-		      puts vs-prec handle
+    cp-loop 0 (string-length fmt)
 
-		      if (and left-aligned
-			      (lt vs-prec-width spec-width)) {
-				; might print nothing!
-				pad-loop #U+20 (spec-width - vs-prec-width)
-			      }
-		    }
-		  }) \
-			   (else {
-			     write-char c handle
-			   })
-		  cp-loop (i + 1) e
-		}
-  })
-
-  cp-loop 0 (string-length fmt)
-
-  get-output-string handle
+    get-output-string handle
+  } {
+    idio-print-conversion-format = orig-ipcf
+    idio-print-conversion-precision = orig-ipcp
+  }
 }
 
 define (format fmt & args) "
@@ -491,7 +516,7 @@ define-macro (provide feature) {
 ;
 ; time proc [args]
 
-TIMEFORMAT :~ "Real %R\nUser %U\nSyst %S\n"
+TIMEFORMAT :~ "Real %.3R\nUser %.3U\nSyst %.3S\n"
 
 define (times proc & args) "
 Report the Real/User and System time for the invocation of
@@ -576,6 +601,6 @@ This takes after Bash's time_command
   hash-set! h #\U U
   hash-set! h #\S S
 
-  printf "%s" (%format 'keyed TIMEFORMAT h)
+  printf "%s" (%format 'timeformat TIMEFORMAT h)
   ph rusage-data
 }

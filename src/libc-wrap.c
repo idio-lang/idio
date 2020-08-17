@@ -3118,6 +3118,47 @@ The struct timezone parameter is not used.			\n\
     return idio_libc_struct_timeval_pointer (tvp);
 }
 
+char *idio_libc_struct_timeval_as_string (IDIO tv)
+{
+    IDIO_ASSERT (tv);
+
+    IDIO_TYPE_ASSERT (C_pointer, tv);
+
+    struct timeval *tvp = IDIO_C_TYPE_POINTER_P (tv);
+
+    int prec = 6;
+    if (idio_S_nil != idio_print_conversion_precision_sym) {
+	IDIO ipcp = idio_module_symbol_value (idio_print_conversion_precision_sym,
+					      idio_Idio_module,
+					      IDIO_LIST1 (idio_S_false));
+
+	if (idio_S_false != ipcp) {
+	    if (idio_isa_fixnum (ipcp)) {
+		prec = IDIO_FIXNUM_VAL (ipcp);
+	    } else {
+		idio_error_param_type ("fixnum", ipcp, IDIO_C_FUNC_LOCATION ());
+
+		/* notreached */
+		return NULL;
+	    }
+	}
+    }
+
+    char us[BUFSIZ];
+    sprintf (us, "%06ld", tvp->tv_usec);
+    char fmt[BUFSIZ];
+    sprintf (fmt, "%%ld.%%.%ds", prec);
+    char *buf;
+    if (asprintf (&buf, fmt, tvp->tv_sec, us) == -1) {
+	idio_error_alloc ("asprintf");
+
+	/* notreached */
+	return NULL;
+    }
+
+    return buf;
+}
+
 IDIO_DEFINE_PRIMITIVE1_DS ("struct-timeval-as-string", libc_struct_timeval_as_string, (IDIO tv), "tv", "\
 Return a C struct timeval as a string				\n\
 								\n\
@@ -3131,13 +3172,13 @@ Return a C struct timeval as a string				\n\
 
     IDIO_TYPE_ASSERT (C_pointer, tv);
 
-    struct timeval *tvp = IDIO_C_TYPE_POINTER_P (tv);
-
     IDIO osh = idio_open_output_string_handle_C ();
 
-    char buf[BUFSIZ];
-    sprintf (buf, "%ld.%06ld", tvp->tv_sec, tvp->tv_usec);
-    idio_display_C (buf, osh);
+    char *tvs = idio_libc_struct_timeval_as_string (tv);
+
+    idio_display_C (tvs, osh);
+
+    free (tvs);
 
     return idio_get_output_string (osh);
 }
@@ -3147,7 +3188,7 @@ IDIO idio_libc_struct_timeval_pointer (struct timeval *tvp)
     IDIO_C_ASSERT (tvp);
 
     IDIO r = idio_C_pointer_free_me (tvp);
-    IDIO_C_TYPE_POINTER_PRINTER (r)  = idio_defprimitive_libc_struct_timeval_as_string;
+    IDIO_C_TYPE_POINTER_PRINTER (r)  = idio_libc_struct_timeval_as_string;
 
     return r;
 }

@@ -1650,8 +1650,9 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		break;
 	    case IDIO_TYPE_C_POINTER:
 		if (NULL != IDIO_C_TYPE_POINTER_PRINTER (o)) {
-		    IDIO s = IDIO_C_TYPE_POINTER_PRINTER (o) (o);
-		    return idio_display_string (s, sizep);
+		    char *s = IDIO_C_TYPE_POINTER_PRINTER (o) (o);
+		    *sizep = strlen (s);
+		    return s;
 		} else {
 		    if (asprintf (&r, "#<C/* %p%s>", IDIO_C_TYPE_POINTER_P (o), IDIO_C_TYPE_POINTER_FREEP (o) ? " free" : "") == -1) {
 			idio_error_alloc ("asprintf");
