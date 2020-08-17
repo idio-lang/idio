@@ -2390,9 +2390,10 @@ test (number->string -0.00012345) "-0.00012345"
 test (number->string -0.000012345) "-1.2345e-5"
 test (number->string -12345e-100) "-1.2345e-96"
 
-test (string) ""
-test (string #\x) "x"
-test (string #\a #\b #\c) "abc"
+; s9/string is list->string
+test (s9/string) ""
+test (s9/string #\x) "x"
+test (s9/string #\a #\b #\c) "abc"
 
 test (string->number "") #f
 test (string->number "+") #f
@@ -2655,7 +2656,7 @@ test (string-ref "abc" 1) #\b
 test (string-ref "abc" 2) #\c
 test (string-ref "abc" 1.0) #\b
 
-define s (string #\1 #\2 #\3)
+define s (s9/string #\1 #\2 #\3)
 ; (test (begin (string-set! s 0 #\a) s) "a23")
 test {
   string-set! s 0 #\a

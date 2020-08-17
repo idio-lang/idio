@@ -23,6 +23,8 @@
 #include "idio.h"
 
 static IDIO idio_util_value_as_string;
+IDIO idio_print_conversion_format_sym = idio_S_nil;
+IDIO idio_print_conversion_precision_sym = idio_S_nil;
 
 void idio_util_error_format (char *m, IDIO s, IDIO c_location)
 {
@@ -1647,11 +1649,16 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		*sizep = strlen (r);
 		break;
 	    case IDIO_TYPE_C_POINTER:
-		if (asprintf (&r, "#<C/* %p%s>", IDIO_C_TYPE_POINTER_P (o), IDIO_C_TYPE_POINTER_FREEP (o) ? " free" : "") == -1) {
-		    idio_error_alloc ("asprintf");
+		if (NULL != IDIO_C_TYPE_POINTER_PRINTER (o)) {
+		    IDIO s = IDIO_C_TYPE_POINTER_PRINTER (o) (o);
+		    return idio_display_string (s, sizep);
+		} else {
+		    if (asprintf (&r, "#<C/* %p%s>", IDIO_C_TYPE_POINTER_P (o), IDIO_C_TYPE_POINTER_FREEP (o) ? " free" : "") == -1) {
+			idio_error_alloc ("asprintf");
 
-		    /* notreached */
-		    return NULL;
+			/* notreached */
+			return NULL;
+		    }
 		}
 		*sizep = strlen (r);
 		break;
@@ -2334,7 +2341,10 @@ convert `o` to a string				\n\
     IDIO_ASSERT (o);
 
     size_t size = 0;
-    return idio_string_C_len (idio_as_string (o, &size, 40), size);
+    char *str = idio_as_string (o, &size, 40);
+    IDIO r = idio_string_C_len (str, size);
+    free (str);
+    return r;
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("display-string", display_string, (IDIO o), "o", "\
@@ -2348,7 +2358,10 @@ convert `o` to a display string			\n\
     IDIO_ASSERT (o);
 
     size_t size = 0;
-    return idio_string_C_len (idio_display_string (o, &size), size);
+    char *str = idio_display_string (o, &size);
+    IDIO r = idio_string_C_len (str, size);
+    free (str);
+    return r;
 }
 
 const char *idio_vm_bytecode2string (int code)
@@ -3103,6 +3116,8 @@ void idio_init_util ()
 {
     idio_util_value_as_string = idio_symbols_C_intern ("%%value-as-string");
     idio_module_set_symbol_value (idio_util_value_as_string, idio_S_nil, idio_Idio_module);
+    idio_print_conversion_format_sym = idio_symbols_C_intern ("idio-print-conversion-format");
+    idio_print_conversion_precision_sym = idio_symbols_C_intern ("idio-print-conversion-precision");
 }
 
 void idio_util_add_primitives ()

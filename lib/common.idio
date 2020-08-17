@@ -111,6 +111,255 @@ define (%%add-as-string o f) {
   %%value-as-string = pair (list o f) %%value-as-string
 }
 
+#*
+
+To support the printing of objects we can enable a couple of dynamic
+scope variables which advise as to the requested format (mostly number
+format, say, decimal or hexadecimal) and the precision of that format.
+
+They are advisory.
+
+Set the default to be false so you can quickly check with a
+conditional form.
+
+*#
+
+idio-print-conversion-format :~ #f
+idio-print-conversion-precision :~ #f
+
+
+define (%format type fmt & args) "
+
+Return a string from the format string ``fmt`` expanded by any escape
+sequences.
+
+If `type` is 'args then a % character in the format string starts an
+escape sequence which has the general form %[flags][prec][.width]K
+where K is a printf(2)-ish format character with arguments in `args`.
+
+If `type` is 'keyed then a % character in the format string starts an
+escape sequence which has the general form %[flags][prec][.width]K
+where K is a single Unicode code point (satisfying
+unicode-alphabetic?) which is expected to be a key in the optional
+hash table -- unless it is another % character.  The value associated
+with the key will be printed according to the specification.
+
+If K is a % character then as % is printed according to the
+specification.
+
+The flags are:
+
+* '-' left align the output within width if applicable.
+* ' ' use #\{space} as the left padding character
+* '0' use #\0 as the left padding character
+
+The default padding character is #\{space}
+" {
+  handle := (open-output-string)
+  data := #n
+  cond ((eq? type 'args)) \
+       ((eq? type 'keyed) {
+	 if (pair? args) {
+	   data = ph args
+	   if (not (hash? data)) (error '%format "not a hash table" data)
+	 }
+       }) \
+       (else (error '%format "unexpected format type" type))
+
+  cp-loop :+ (function (i e) {
+		if (ge i e) #n {
+		  c := string-ref fmt i
+
+		  cond ((unicode=? c #\%) {
+
+		    ;; flags
+		    i+1 := i + 1
+		    left-aligned := #f
+		    left-pad := #U+20
+		    if (lt i+1 e) {
+		      c = string-ref fmt i+1
+		      cond ((unicode=? c #\-) {
+			left-aligned = #t
+			i = i+1
+		      }) \
+			   ((unicode=? c #U+20) {
+			     left-pad = c
+			     i = i+1
+			   }) \
+			   ((unicode=? c #\0) {
+			     left-pad = c
+			     i = i+1
+			   })
+		    }
+
+		    ;; width
+		    ws := i + 1
+		    we := ws
+		    w-loop :+ (function (i) {
+				 i+1 := i + 1
+				 c = string-ref fmt i+1
+				 if (ASCII-numeric? c) {
+				   we = we + 1
+				   w-loop i+1
+				 } i
+		    })
+
+		    i = w-loop i
+
+		    spec-width := 0
+		    if (gt (we - ws) 0) {
+		      wstr := substring fmt ws we
+		      spec-width = read-number wstr 10
+		    }
+
+		    ;; precision (preceded by a dot)
+		    ps := i + 1
+		    pe := ps
+		    if (unicode=? (string-ref fmt (i + 1)) #\.) {
+		      i = i + 1
+		      ps = i + 1
+		      pe = ps
+		      p-loop :+ (function (i) {
+				   i+1 := i + 1
+				   c = string-ref fmt i+1
+				   if (ASCII-numeric? c) {
+				     pe = pe + 1
+				     p-loop i+1
+				   } i
+		      })
+
+		      i = p-loop i
+		    }
+
+		    spec-prec := 0
+		    if (gt (pe - ps) 0) {
+		      pstr := substring fmt ps pe
+		      spec-prec = read-number pstr 10
+		      idio-print-conversion-precision = spec-prec
+		    }
+
+		    if (lt i e) {
+		      i = i + 1
+		      k := string-ref fmt i
+		      v := #n
+		      vs := #n
+		      vs-len := #n
+
+		      cond ((eq? type 'keyed) {
+			cond ((unicode=? k #\%) {
+			  v = k
+			}) \
+			     ((unicode-alphabetic? k) {
+			       v = hash-ref data k #f
+			       if (not v) {
+				 eprintf "%format: %s is not a key in data\n" k
+			       }
+
+			       if (and (unicode=? left-pad #\0)
+				       (not (number? v))) {
+					 left-pad = #U+20
+				       }
+
+			       cond ((number? v) {
+				 idio-print-conversion-format = #\d
+			       }) \
+				    (else {
+				      idio-print-conversion-format = #\s
+				    })
+			     }) \
+			     (else {
+			       eprintf "%format: %s is not a Unicode graphic code point\n" k
+			     })
+
+			vs = display-string v
+			vs-len = string-length vs
+		      }) \
+				((eq? type 'args) {
+				  if (null? args) (error '%format "not enough args for %" k)
+
+				  v = ph args
+				  args = pt args
+
+				  vs = display-string v
+				  vs-len = string-length vs
+				})
+
+		      vs-prec-width := vs-len
+		      vs-prec := vs
+
+		      ; precision means different things to different
+		      ; types
+		      if (gt spec-prec 0) {
+			cond ((and (number? v)
+				   (gt spec-prec vs-len)) {
+				     ; for a number, a precision is
+				     ; the minimum number of digits
+				     ; which potentially means
+				     ; left-padding with 0s
+				     vs-prec-width = spec-prec
+				   }) \
+			     ((and (not (number? v))
+				   (lt spec-prec vs-len)) {
+				     ; for a string, a precision is
+				     ; the maximum number of code
+				     ; points to print
+				     vs-prec-width = spec-prec
+				     vs-prec = substring vs 0 spec-prec
+				   })
+		      }
+
+		      pad-loop :+ (function (c n) {
+				     if (le n 0) #n {
+				       write-char c handle
+				       pad-loop c (n - 1)
+				     }
+		      })
+
+		      ; left padding has two parts, a bit like the
+		      ; HTML box model: a margin, padding and then the
+		      ; object.
+		      if (not left-aligned) {
+			if (lt vs-prec-width spec-width) {
+			  ; might print nothing!
+			  pad-loop left-pad (spec-width - vs-prec-width)
+			}
+		      }
+		      if (and (number? v)
+			      (lt vs-len spec-prec)) {
+				pad-loop #\0 (spec-prec - vs-len)
+			      }
+
+		      puts vs-prec handle
+
+		      if (and left-aligned
+			      (lt vs-prec-width spec-width)) {
+				; might print nothing!
+				pad-loop #U+20 (spec-width - vs-prec-width)
+			      }
+		    }
+		  }) \
+			   (else {
+			     write-char c handle
+			   })
+		  cp-loop (i + 1) e
+		}
+  })
+
+  cp-loop 0 (string-length fmt)
+
+  get-output-string handle
+}
+
+define (format fmt & args) "
+Call %format with 'args
+" {
+  if (null? args) {
+    %format 'args fmt
+  } {
+    apply %format 'args fmt args
+  }
+}
+
 define (hprintf handle fmt & args) "
 
 Invoke the ``%printf`` function on ``handle`` with ``fmt`` and
@@ -242,14 +491,16 @@ define-macro (provide feature) {
 ;
 ; time proc [args]
 
-define (time proc & args) "
+TIMEFORMAT :~ "Real %R\nUser %U\nSyst %S\n"
+
+define (times proc & args) "
 Report the Real/User and System time for the invocation of
 proc [args]
 " {
   r := #n
   start := (times)
   if (null? args) {
-    (proc)
+    r = (proc)
   } {
     r = apply proc args
   }
@@ -257,4 +508,74 @@ proc [args]
 
   printf "Real %d\nUser %d\nSyst %d\n" (end.tms_rtime - start.tms_rtime) (end.tms_utime - start.tms_utime) (end.tms_stime - start.tms_stime)
   r
+}
+
+define (time-command proc & args) "
+Return a list of the result and Real, User and System time for the
+invocation of
+
+proc [args]
+
+The Real, User and System times are C struct timevals.
+
+This takes after Bash's time_command
+" {
+  tv-before := (gettimeofday)
+  rus-before := getrusage RUSAGE_SELF
+  ruk-before := getrusage RUSAGE_CHILDREN
+
+  r := #n
+
+  if (null? args) {
+    r = (proc)
+  } {
+    r = apply proc args
+  }
+
+  tv-after := (gettimeofday)
+  rus-after := getrusage RUSAGE_SELF
+  ruk-after := getrusage RUSAGE_CHILDREN
+
+  ; now we have real time in tv-before/after and user and system time
+  ; spread across the SELF and CHILDREN rusage data both before and
+  ; after...
+
+  ; the add/subtract -struct-timeval functions do what they say on the tin
+
+  tv-real := subtract-struct-timeval tv-after tv-before
+  tv-utime := add-struct-timeval (subtract-struct-timeval (struct-rusage-ru_utime rus-after) (struct-rusage-ru_utime rus-before))\
+				 (subtract-struct-timeval (struct-rusage-ru_utime ruk-after) (struct-rusage-ru_utime ruk-before))
+  tv-stime := add-struct-timeval (subtract-struct-timeval (struct-rusage-ru_stime rus-after) (struct-rusage-ru_stime rus-before))\
+				 (subtract-struct-timeval (struct-rusage-ru_stime ruk-after) (struct-rusage-ru_stime ruk-before))
+
+  list r tv-real tv-utime tv-stime
+}
+
+define (time proc & args) "
+Report the Real, User and System time for the invocation of
+
+proc [args]
+
+The report format is defined in `TIMEFORMAT`.
+
+This takes after Bash's time_command
+" {
+  rusage-data := #n
+  if (null? args) {
+    rusage-data = time-command proc
+  } {
+    rusage-data = apply time-command proc args
+  }
+
+  R := pht rusage-data
+  U := phtt rusage-data
+  S := phtt rusage-data
+
+  h := (make-hash)
+  hash-set! h #\R R
+  hash-set! h #\U U
+  hash-set! h #\S S
+
+  printf "%s" (%format 'keyed TIMEFORMAT h)
+  ph rusage-data
 }

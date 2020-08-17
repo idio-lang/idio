@@ -183,6 +183,24 @@ char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted)
 
     IDIO_TYPE_ASSERT (string, str);
 
+    int prec = 0;
+    if (idio_S_nil != idio_print_conversion_precision_sym) {
+	IDIO ipcp = idio_module_symbol_value (idio_print_conversion_precision_sym,
+					      idio_Idio_module,
+					      IDIO_LIST1 (idio_S_false));
+
+	if (idio_S_false != ipcp) {
+	    if (idio_isa_fixnum (ipcp)) {
+		prec = IDIO_FIXNUM_VAL (ipcp);
+	    } else {
+		idio_error_param_type ("fixnum", ipcp, IDIO_C_FUNC_LOCATION ());
+
+		/* notreached */
+		return NULL;
+	    }
+	}
+    }
+
     char *s;
     size_t len;
     IDIO_FLAGS_T flags;
@@ -194,6 +212,11 @@ char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted)
 	s = IDIO_STRING_S (str);
 	len = IDIO_STRING_LEN (str);
 	flags = IDIO_STRING_FLAGS (str);
+    }
+
+    if (prec > 0 &&
+	prec < len) {
+	len = prec;
     }
 
     uint8_t *s8 = (uint8_t *) s;

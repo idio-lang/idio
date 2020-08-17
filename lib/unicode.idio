@@ -29,6 +29,12 @@ export (
 	 unicode-downcase
 	 unicode-upcase
 	 ; unicode=? is a primitive defined in unicode.c
+
+	 ASCII-alphabetic?
+	 ASCII-numeric?
+	 ASCII-whitespace?
+	 ASCII-lower-case?
+	 ASCII-upper-case?
 )
 import SRFI-14
 
@@ -139,6 +145,71 @@ have the Unicode Property Lowercase, then return `cp`.
     uc := hash-ref char-set:simple-upper-case-map cp #f
     if uc uc cp
   } cp
+}
+
+define (ASCII-alphabetic? cp) "
+Test if `cp` is alphabetic.
+
+In particular if `cp` is in %char-set:letter which has the Unicode
+Property Alphabetic restricted to the ASCII range.
+
+:param cp: Unicode code point
+:type cp: integer or unicode
+:return: #t or #f
+" {
+  char-set-ref %char-set:letter cp
+}
+
+define (ASCII-numeric? cp) "
+Test if `cp` is numeric.
+
+In particular if `cp` is in %char-set:digit which is the Unicode
+Category Nd restricted to the ASCII range.
+
+:param cp: Unicode code point
+:type cp: integer or unicode
+:return: #t or #f
+" {
+  char-set-ref %char-set:digit cp
+}
+
+define (ASCII-whitespace? cp) "
+Test if `cp` is whitespace.
+
+In particular if `cp` is in %char-set:whitespace which has the Unicode
+Property White_Space restricted to the ASCII range.
+
+:param cp: Unicode code point
+:type cp: integer or unicode
+:return: #t or #f
+" {
+  char-set-ref %char-set:whitespace cp
+}
+
+define (ASCII-lower-case? cp) "
+Test if `cp` is lower case.
+
+In particular if `cp` is in %char-set:lower-case which has the Unicode
+Property Lowercase restricted to the ASCII range.
+
+:param cp: Unicode code point
+:type cp: integer or unicode
+:return: #t or #f
+" {
+  char-set-ref %char-set:lower-case cp
+}
+
+define (ASCII-upper-case? cp) "
+Test if `cp` is upper case.
+
+In particular if `cp` is in %char-set:upper-case which has the Unicode
+Property Uppercase restricted to the ASCII range.
+
+:param cp: Unicode code point
+:type cp: integer or unicode
+:return: #t or #f
+" {
+  char-set-ref %char-set:upper-case cp
 }
 
 provide unicode
