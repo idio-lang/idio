@@ -3634,7 +3634,7 @@ int idio_vm_run1 (IDIO thr)
     case IDIO_A_ALLOCATE_FRAME2:
 	{
 	    uint64_t aci = idio_vm_fetch_varuint (thr);
-	    IDIO_VM_RUN_DIS ("ALLOCATE-FRAME 2, args %" PRIu64, aci);
+	    IDIO_VM_RUN_DIS ("ALLOCATE-FRAME 2, args-ci=%" PRIu64, aci);
 	    IDIO frame = idio_frame_allocate (2);
 	    IDIO_FRAME_NAMES (frame) = idio_fixnum (aci);
 	    IDIO_THREAD_VAL (thr) = frame;
@@ -3643,7 +3643,7 @@ int idio_vm_run1 (IDIO thr)
     case IDIO_A_ALLOCATE_FRAME3:
 	{
 	    uint64_t aci = idio_vm_fetch_varuint (thr);
-	    IDIO_VM_RUN_DIS ("ALLOCATE-FRAME 3, args %" PRIu64, aci);
+	    IDIO_VM_RUN_DIS ("ALLOCATE-FRAME 3, args-ci=%" PRIu64, aci);
 	    IDIO frame = idio_frame_allocate (3);
 	    IDIO_FRAME_NAMES (frame) = idio_fixnum (aci);
 	    IDIO_THREAD_VAL (thr) = frame;
@@ -3652,7 +3652,7 @@ int idio_vm_run1 (IDIO thr)
     case IDIO_A_ALLOCATE_FRAME4:
 	{
 	    uint64_t aci = idio_vm_fetch_varuint (thr);
-	    IDIO_VM_RUN_DIS ("ALLOCATE-FRAME 4, args %" PRIu64, aci);
+	    IDIO_VM_RUN_DIS ("ALLOCATE-FRAME 4, args-ci=%" PRIu64, aci);
 	    IDIO frame = idio_frame_allocate (4);
 	    IDIO_FRAME_NAMES (frame) = idio_fixnum (aci);
 	    IDIO_THREAD_VAL (thr) = frame;
@@ -3661,7 +3661,7 @@ int idio_vm_run1 (IDIO thr)
     case IDIO_A_ALLOCATE_FRAME5:
 	{
 	    uint64_t aci = idio_vm_fetch_varuint (thr);
-	    IDIO_VM_RUN_DIS ("ALLOCATE-FRAME 5, args %" PRIu64, aci);
+	    IDIO_VM_RUN_DIS ("ALLOCATE-FRAME 5, args-ci=%" PRIu64, aci);
 	    IDIO frame = idio_frame_allocate (5);
 	    IDIO_FRAME_NAMES (frame) = idio_fixnum (aci);
 	    IDIO_THREAD_VAL (thr) = frame;
@@ -3671,7 +3671,7 @@ int idio_vm_run1 (IDIO thr)
 	{
 	    uint64_t i = idio_vm_fetch_varuint (thr);
 	    uint64_t aci = idio_vm_fetch_varuint (thr);
-	    IDIO_VM_RUN_DIS ("ALLOCATE-FRAME %" PRId64 ", args %" PRIu64, i, aci);
+	    IDIO_VM_RUN_DIS ("ALLOCATE-FRAME %" PRId64 ", args-ci=%" PRIu64, i, aci);
 	    IDIO frame = idio_frame_allocate (i);
 	    IDIO_FRAME_NAMES (frame) = idio_fixnum (aci);
 	    IDIO_THREAD_VAL (thr) = frame;
@@ -3681,7 +3681,7 @@ int idio_vm_run1 (IDIO thr)
 	{
 	    uint64_t arity = idio_vm_fetch_varuint (thr);
 	    uint64_t aci = idio_vm_fetch_varuint (thr);
-	    IDIO_VM_RUN_DIS ("ALLOCATE-DOTTED-FRAME %" PRId64 ", args %" PRIu64, arity, aci);
+	    IDIO_VM_RUN_DIS ("ALLOCATE-DOTTED-FRAME %" PRId64 ", args-ci=%" PRIu64, arity, aci);
 	    IDIO vs = idio_frame_allocate (arity);
 	    IDIO_FRAME_NAMES (vs) = idio_fixnum (aci);
 	    idio_frame_update (vs, 0, arity - 1, idio_S_nil);
@@ -5148,39 +5148,39 @@ void idio_vm_dasm (IDIO thr, idio_ai_t pc0, idio_ai_t pce)
 	case IDIO_A_ALLOCATE_FRAME2:
 	    {
 		uint64_t aci = idio_vm_get_varuint (pcp);
-		IDIO_VM_DASM ("ALLOCATE-FRAME 2, args %" PRIu64, aci);
+		IDIO_VM_DASM ("ALLOCATE-FRAME 2, args-ci=%" PRIu64, aci);
 	    }
 	    break;
 	case IDIO_A_ALLOCATE_FRAME3:
 	    {
 		uint64_t aci = idio_vm_get_varuint (pcp);
-		IDIO_VM_DASM ("ALLOCATE-FRAME 3, args %" PRIu64, aci);
+		IDIO_VM_DASM ("ALLOCATE-FRAME 3, args-ci=%" PRIu64, aci);
 	    }
 	    break;
 	case IDIO_A_ALLOCATE_FRAME4:
 	    {
 		uint64_t aci = idio_vm_get_varuint (pcp);
-		IDIO_VM_DASM ("ALLOCATE-FRAME 4, args %" PRIu64, aci);
+		IDIO_VM_DASM ("ALLOCATE-FRAME 4, args-ci=%" PRIu64, aci);
 	    }
 	    break;
 	case IDIO_A_ALLOCATE_FRAME5:
 	    {
 		uint64_t aci = idio_vm_get_varuint (pcp);
-		IDIO_VM_DASM ("ALLOCATE-FRAME 5, args %" PRIu64, aci);
+		IDIO_VM_DASM ("ALLOCATE-FRAME 5, args-ci=%" PRIu64, aci);
 	    }
 	    break;
 	case IDIO_A_ALLOCATE_FRAME:
 	    {
 		uint64_t i = idio_vm_get_varuint (pcp);
 		uint64_t aci = idio_vm_get_varuint (pcp);
-		IDIO_VM_DASM ("ALLOCATE-FRAME %" PRId64 ", args %" PRIu64, i, aci);
+		IDIO_VM_DASM ("ALLOCATE-FRAME %" PRId64 ", args-ci=%" PRIu64, i, aci);
 	    }
 	    break;
 	case IDIO_A_ALLOCATE_DOTTED_FRAME:
 	    {
 		uint64_t arity = idio_vm_get_varuint (pcp);
 		uint64_t aci = idio_vm_get_varuint (pcp);
-		IDIO_VM_DASM ("ALLOCATE-DOTTED-FRAME %" PRId64 ", args %" PRIu64, arity, aci);
+		IDIO_VM_DASM ("ALLOCATE-DOTTED-FRAME %" PRId64 ", args-ci=%" PRIu64, arity, aci);
 	    }
 	    break;
 	case IDIO_A_POP_FRAME0:
@@ -5722,7 +5722,10 @@ IDIO idio_vm_run (IDIO thr)
     if (0 == krun_p0 &&
 	thr != idio_expander_thread) {
 	fprintf (stderr, "How is krun 0?\n");
-	idio_vm_thread_state ();
+	/*
+	 * experience suggests that things are bad, now
+	 */
+	IDIO_C_ASSERT (0);
     }
 
     idio_ai_t ss0 = idio_array_size (IDIO_THREAD_STACK (thr));
@@ -6121,8 +6124,7 @@ IDIO idio_vm_values_ref (idio_ai_t gvi)
 
 	return v;
     } else {
-	fprintf (stderr, "ivvr: gvi == 0\n");
-	return idio_S_unspec;
+	return idio_S_undef;
     }
 }
 
@@ -6420,6 +6422,7 @@ IDIO idio_vm_frame_tree (IDIO args)
 
     while (idio_S_nil != frame) {
 	IDIO faci = IDIO_FRAME_NAMES (frame);
+	fprintf (stderr, "aci=%td\n", IDIO_FIXNUM_VAL (faci));
 	IDIO names = idio_S_nil;
 	names = idio_vm_constants_ref (IDIO_FIXNUM_VAL (faci));
 

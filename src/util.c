@@ -789,6 +789,11 @@ static IDIO idio_util_as_string_symbol (IDIO o)
   CHARACTER #\a:	#\a
   STRING "foo":		"foo"
  */
+#define IDIO_FIXNUM_CONVERSION_FORMAT_X		0x58
+#define IDIO_FIXNUM_CONVERSION_FORMAT_d		0x64
+#define IDIO_FIXNUM_CONVERSION_FORMAT_o		0x6F
+#define IDIO_FIXNUM_CONVERSION_FORMAT_x		0x78
+
 char *idio_as_string (IDIO o, size_t *sizep, int depth)
 {
     char *r = NULL;
@@ -799,11 +804,83 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
     switch ((intptr_t) o & IDIO_TYPE_MASK) {
     case IDIO_TYPE_FIXNUM_MARK:
 	{
-	    if (asprintf (&r, "%" PRIdPTR, IDIO_FIXNUM_VAL (o)) == -1) {
-		idio_error_alloc ("asprintf");
+	    idio_unicode_t format = IDIO_FIXNUM_CONVERSION_FORMAT_d;
+	    if (idio_S_nil != idio_print_conversion_format_sym) {
+		IDIO ipcf = idio_module_symbol_value (idio_print_conversion_format_sym,
+						      idio_Idio_module,
+						      IDIO_LIST1 (idio_S_false));
 
-		/* notreached */
-		return NULL;
+		if (idio_S_false != ipcf) {
+		    if (idio_isa_unicode (ipcf)) {
+			idio_unicode_t f = IDIO_UNICODE_VAL (ipcf);
+			switch (f) {
+			case IDIO_FIXNUM_CONVERSION_FORMAT_X:
+			case IDIO_FIXNUM_CONVERSION_FORMAT_d:
+			case IDIO_FIXNUM_CONVERSION_FORMAT_o:
+			case IDIO_FIXNUM_CONVERSION_FORMAT_x:
+			    format = f;
+			    break;
+			default:
+			    fprintf (stderr, "fixnum-as-string: unexpected conversion format: %c (%#x).  Using 'd'.\n", (int) f, (int) f);
+			    format = IDIO_FIXNUM_CONVERSION_FORMAT_d;
+			    break;
+			}
+		    } else {
+			size_t s = 0;
+			fprintf (stderr, "ipcf isa %s %s\n", idio_type2string (ipcf), idio_as_string (ipcf, &s, 1));
+			if (0) {
+			IDIO_C_ASSERT (0);
+			idio_error_param_type ("unicode", ipcf, IDIO_C_FUNC_LOCATION ());
+
+			/* notreached */
+			return NULL;
+			}
+		    }
+		}
+	    }
+
+	    switch (format) {
+	    case IDIO_FIXNUM_CONVERSION_FORMAT_X:
+		if (asprintf (&r, "%lX", (uintptr_t) IDIO_FIXNUM_VAL (o)) == -1) {
+		    idio_error_alloc ("asprintf");
+
+		    /* notreached */
+		    return NULL;
+		}
+		break;
+	    case IDIO_FIXNUM_CONVERSION_FORMAT_d:
+		if (asprintf (&r, "%" PRIdPTR, IDIO_FIXNUM_VAL (o)) == -1) {
+		    idio_error_alloc ("asprintf");
+
+		    /* notreached */
+		    return NULL;
+		}
+		break;
+	    case IDIO_FIXNUM_CONVERSION_FORMAT_o:
+		if (asprintf (&r, "%lo", (uintptr_t) IDIO_FIXNUM_VAL (o)) == -1) {
+		    idio_error_alloc ("asprintf");
+
+		    /* notreached */
+		    return NULL;
+		}
+		break;
+	    case IDIO_FIXNUM_CONVERSION_FORMAT_x:
+		if (asprintf (&r, "%lx", (uintptr_t) IDIO_FIXNUM_VAL (o)) == -1) {
+		    idio_error_alloc ("asprintf");
+
+		    /* notreached */
+		    return NULL;
+		}
+		break;
+	    default:
+		{
+		    fprintf (stderr, "fixnum-as-string: unimplemented conversion format: %c (%#x)\n", (int) format, (int) format);
+		    idio_error_printf (IDIO_C_FUNC_LOCATION (), "fixnum-as-string unimplemented conversion format");
+
+		    /* notreached */
+		    return NULL;
+		}
+		break;
 	    }
 	    *sizep = strlen (r);
 	    break;

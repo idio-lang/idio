@@ -273,8 +273,12 @@ The default padding character is #\{space}
 					   left-pad = #U+20
 					 }
 
-				 cond ((number? v) {
+				 cond ((fixnum? v) {
 				   idio-print-conversion-format = #\d
+				 }) \
+				      ((bignum? v) {
+					; %f format!
+					idio-print-conversion-format = #\f
 				 }) \
 				      (else {
 					idio-print-conversion-format = #\s

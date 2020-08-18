@@ -2127,7 +2127,7 @@ char *idio_bignum_integer_as_string (IDIO bn, size_t *sizep)
 	    size_t bn_digits = strlen (buf) + i * IDIO_BIGNUM_DPW;
 	    if (prec > bn_digits) {
 		int pad = prec - bn_digits;
-		char pads[pad+1];
+		char pads[pad + 1];
 		sprintf (fmt, "%%.%dd", pad);
 		sprintf (pads, fmt, 0);
 		idio_strcat (s, sizep, pads, pad);
@@ -2293,6 +2293,11 @@ char *idio_bignum_real_as_string (IDIO bn, size_t *sizep)
     case IDIO_BIGNUM_CONVERSION_FORMAT_SCHEME:
 	{
 	    /*
+	     * Scheme?  Does it have an official floating point
+	     * printed representation?  This is approximately S9fES.
+	     */
+
+	    /*
 	     * vs can be n digits long (n >= 1).  We want to add vs[0] then
 	     * ".".  If vs is more than 1 digit then add the rest of vs.  If
 	     * there are no more digits to add then add "0".
@@ -2316,7 +2321,7 @@ char *idio_bignum_real_as_string (IDIO bn, size_t *sizep)
 		    IDIO_STRCAT (s, sizep, "0");
 		}
 	    }
-	
+
 	    for (i--; i >= 0; i--) {
 		v = idio_bsa_get (sig_a, i);
 		sprintf (vs, "%0*" PRIdPTR, IDIO_BIGNUM_DPW, v);
@@ -2358,7 +2363,7 @@ char *idio_bignum_real_as_string (IDIO bn, size_t *sizep)
 		s = idio_strcat (s, sizep, vs_rest, vs_rest_prec);
 	    }
 	    prec -= vs_rest_prec;
-	
+
 	    for (i--; i >= 0; i--) {
 		v = idio_bsa_get (sig_a, i);
 		sprintf (vs, "%0*" PRIdPTR, IDIO_BIGNUM_DPW, v);
@@ -2374,15 +2379,12 @@ char *idio_bignum_real_as_string (IDIO bn, size_t *sizep)
 	    }
 	    if (prec > 0) {
 		int pad = prec;
-		char pads[pad+1];
+		char pads[pad + 1];
 		sprintf (pads, "%.*d", pad, 0);
 		s = idio_strcat (s, sizep, pads, pad);
 	    }
 
 	    IDIO_STRCAT (s, sizep, "e");
-	    /* if ((exp + digits - 1) >= 0) { */
-	    /* 	IDIO_STRCAT (s, "+"); */
-	    /* } */
 	    v = exp + digits - 1;
 	    sprintf (vs, "%+03" PRIdPTR, v);
 	    vs_size = strlen (vs);
@@ -2391,9 +2393,90 @@ char *idio_bignum_real_as_string (IDIO bn, size_t *sizep)
 	break;
     case IDIO_BIGNUM_CONVERSION_FORMAT_F:
 	{
+	    char vs[IDIO_BIGNUM_DPW + 1];
+	    sprintf (vs, "%" PRIdPTR, v);
+	    size_t vs_size = strlen (vs);
+	    int pre_dp_digits = digits + exp;
+
+	    if (exp >= 0) {
+		s = idio_strcat (s, sizep, vs, vs_size);
+		int pad = exp;
+		if (pad > 0) {
+		    char pads[pad + 1];
+		    sprintf (pads, "%.*d", pad, 0);
+		    s = idio_strcat (s, sizep, pads, pad);
+		}
+		if (prec) {
+		    IDIO_STRCAT (s, sizep, ".");
+		    pad = prec;
+		    char pads[pad + 1];
+		    sprintf (pads, "%.*d", pad, 0);
+		    s = idio_strcat (s, sizep, pads, pad);
+		}
+	    } else {
+		char *vs_rest = vs;
+		if (pre_dp_digits > 0) {
+		    s = idio_strcat (s, sizep, vs, pre_dp_digits);
+		    vs_rest = vs + pre_dp_digits;
+		} else {
+		    IDIO_STRCAT (s, sizep, "0");
+		}
+
+		if (prec) {
+		    IDIO_STRCAT (s, sizep, ".");
+		    if (pre_dp_digits < 0) {
+			int pad = - pre_dp_digits;
+			if (prec < pad) {
+			    pad = prec;
+			}
+			char pads[pad + 1];
+			sprintf (pads, "%.*d", pad, 0);
+			s = idio_strcat (s, sizep, pads, pad);
+			prec -= pad;
+		    }
+
+		    size_t vs_rest_size = strlen (vs_rest);
+		    size_t vs_rest_prec = vs_rest_size;
+		    if (prec < vs_rest_prec) {
+			vs_rest_prec = prec;
+		    }
+		    if (vs_rest_size) {
+			s = idio_strcat (s, sizep, vs_rest, vs_rest_prec);
+		    }
+		    prec -= vs_rest_prec;
+
+		    for (i--; i >= 0; i--) {
+			v = idio_bsa_get (sig_a, i);
+			sprintf (vs, "%0*" PRIdPTR, IDIO_BIGNUM_DPW, v);
+			vs_size = strlen (vs);
+			if (prec < vs_size) {
+			    vs_size = prec;
+			}
+			s = idio_strcat (s, sizep, vs, vs_size);
+			if (prec == vs_size) {
+			    break;
+			}
+			prec -= vs_size;
+		    }
+		    if (prec > 0) {
+			int pad = prec;
+			char pads[pad + 1];
+			sprintf (pads, "%.*d", pad, 0);
+			s = idio_strcat (s, sizep, pads, pad);
+		    }
+		}
+	    }
+	    break;
 	}
 	break;
     default:
+	{
+	    fprintf (stderr, "bignum-as-string: unimplemented conversion format: %c (%#x)\n", (int) format, (int) format);
+	    idio_error_printf (IDIO_C_FUNC_LOCATION (), "bignum-as-string unimplemented conversion format");
+
+	    /* notreached */
+	    return NULL;
+	}
 	break;
     }
 
