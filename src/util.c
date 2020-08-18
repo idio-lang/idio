@@ -790,6 +790,7 @@ static IDIO idio_util_as_string_symbol (IDIO o)
   STRING "foo":		"foo"
  */
 #define IDIO_FIXNUM_CONVERSION_FORMAT_X		0x58
+#define IDIO_FIXNUM_CONVERSION_FORMAT_b		0x62
 #define IDIO_FIXNUM_CONVERSION_FORMAT_d		0x64
 #define IDIO_FIXNUM_CONVERSION_FORMAT_o		0x6F
 #define IDIO_FIXNUM_CONVERSION_FORMAT_x		0x78
@@ -815,6 +816,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 			idio_unicode_t f = IDIO_UNICODE_VAL (ipcf);
 			switch (f) {
 			case IDIO_FIXNUM_CONVERSION_FORMAT_X:
+			case IDIO_FIXNUM_CONVERSION_FORMAT_b:
 			case IDIO_FIXNUM_CONVERSION_FORMAT_d:
 			case IDIO_FIXNUM_CONVERSION_FORMAT_o:
 			case IDIO_FIXNUM_CONVERSION_FORMAT_x:
@@ -846,6 +848,31 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 
 		    /* notreached */
 		    return NULL;
+		}
+		break;
+	    case IDIO_FIXNUM_CONVERSION_FORMAT_b:
+		{
+		    unsigned long ul = (unsigned long) IDIO_FIXNUM_VAL (o);
+		    int j = sizeof (unsigned long)* CHAR_BIT;
+		    char bits[j+1];
+		    int seen_bit = 0;
+		    for (int i = 0; i < j; i++) {
+			if (ul & (1UL << (j - 1 - i))) {
+			    bits[i] = '1';
+			    if (0 == seen_bit) {
+				seen_bit = i;
+			    }
+			} else {
+			    bits[i] = '0';
+			}
+		    }
+		    bits[j] = '\0';
+		    if (asprintf (&r, "%s", bits + seen_bit) == -1) {
+			idio_error_alloc ("asprintf");
+
+			/* notreached */
+			return NULL;
+		    }
 		}
 		break;
 	    case IDIO_FIXNUM_CONVERSION_FORMAT_d:

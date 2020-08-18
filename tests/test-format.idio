@@ -46,66 +46,77 @@ test (format "%d" n)	"10"
 test (format "%x" n)	"a"
 test (format "%X" n)	"A"
 test (format "%o" n)	"12"
+test (format "%b" n)	"1010"
 
 ; min width (no change)
 test (format "%1d" n)	"10"
 test (format "%1x" n)	"a"
 test (format "%1X" n)	"A"
 test (format "%1o" n)	"12"
+test (format "%1b" n)	"1010"
 
 ; min width (change)
 test (format "%4d" n)	"  10"
 test (format "%4x" n)	"   a"
 test (format "%4X" n)	"   A"
 test (format "%4o" n)	"  12"
+test (format "%6b" n)	"  1010"
 
 ; min width (change) ; left aligned
 test (format "%-4d" n)	"10  "
 test (format "%-4x" n)	"a   "
 test (format "%-4X" n)	"A   "
 test (format "%-4o" n)	"12  "
+test (format "%-6b" n)	"1010  "
 
 ; min width (no change) ; zero padded
 test (format "%01d" n)	"10"
 test (format "%01x" n)	"a"
 test (format "%01X" n)	"A"
 test (format "%01o" n)	"12"
+test (format "%01b" n)	"1010"
 
 ; min width (change) ; zero padded
 test (format "%04d" n)	"0010"
 test (format "%04x" n)	"000a"
 test (format "%04X" n)	"000A"
 test (format "%04o" n)	"0012"
+test (format "%06b" n)	"001010"
 
 ; min precision (no change)
 test (format "%.1d" n)	"10"
 test (format "%.1x" n)	"a"
 test (format "%.1X" n)	"A"
 test (format "%.1o" n)	"12"
+test (format "%.1b" n)	"1010"
 
 ; min precision (change)
 test (format "%.3d" n)	"010"
 test (format "%.3x" n)	"00a"
 test (format "%.3X" n)	"00A"
 test (format "%.3o" n)	"012"
+test (format "%.6b" n)	"001010"
 
 ; min width > min precision
 test (format "%4.3d" n)	" 010"
 test (format "%4.3x" n)	" 00a"
 test (format "%4.3X" n)	" 00A"
 test (format "%4.3o" n)	" 012"
+test (format "%8.6b" n)	"  001010"
 
 ; min width > min precision ; left aligned
 test (format "%-4.3d" n)	"010 "
 test (format "%-4.3x" n)	"00a "
 test (format "%-4.3X" n)	"00A "
 test (format "%-4.3o" n)	"012 "
+test (format "%-8.6b" n)	"001010  "
 
 ; min width < min precision
 test (format "%2.3d" n)	"010"
 test (format "%2.3x" n)	"00a"
 test (format "%2.3X" n)	"00A"
 test (format "%2.3o" n)	"012"
+test (format "%4.6b" n)	"001010"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -364,4 +375,4 @@ test (%format 'keyed "%4.3f" h)		" 010"
 test (%format 'keyed "%10.2b" h)	"    123.45"
 
 ;; all done?
-test Tests (format0 + 149)
+test Tests (format0 + 160)
