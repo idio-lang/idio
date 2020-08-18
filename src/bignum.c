@@ -2203,8 +2203,9 @@ char *idio_bignum_expanded_real_as_string (IDIO bn, IDIO_BS_T exp, int digits, i
     return s;
 }
 
-#define IDIO_BIGNUM_CONVERSION_FORMAT_E	0x65
-#define IDIO_BIGNUM_CONVERSION_FORMAT_F	0x66
+#define IDIO_BIGNUM_CONVERSION_FORMAT_SCHEME	0
+#define IDIO_BIGNUM_CONVERSION_FORMAT_E		0x65
+#define IDIO_BIGNUM_CONVERSION_FORMAT_F		0x66
 
 char *idio_bignum_real_as_string (IDIO bn, size_t *sizep)
 {
@@ -2224,7 +2225,7 @@ char *idio_bignum_real_as_string (IDIO bn, size_t *sizep)
 	return idio_bignum_expanded_real_as_string (bn, exp, digits, IDIO_BIGNUM_REAL_NEGATIVE_P (bn), sizep);
     }
 
-    idio_unicode_t format = IDIO_BIGNUM_CONVERSION_FORMAT_E;
+    idio_unicode_t format = IDIO_BIGNUM_CONVERSION_FORMAT_SCHEME;
     if (idio_S_nil != idio_print_conversion_format_sym) {
 	IDIO ipcf = idio_module_symbol_value (idio_print_conversion_format_sym,
 					      idio_Idio_module,
@@ -2288,62 +2289,112 @@ char *idio_bignum_real_as_string (IDIO bn, size_t *sizep)
     intptr_t i = al - 1;
     IDIO_BS_T v = idio_bsa_get (sig_a, i);
 
-    if (IDIO_BIGNUM_CONVERSION_FORMAT_E == format) {
-	/*
-	 * vs can be n digits long (n >= 1).  We want to add vs[0] then
-	 * ".".  If vs is more than 1 digit then add the rest of vs.  If
-	 * there are no more digits to add then add "0".
-	 */
-	char vs[IDIO_BIGNUM_DPW + 1];
-	sprintf (vs, "%" PRIdPTR, v);
-	char *vs_rest = vs + 1;
+    switch (format) {
+    case IDIO_BIGNUM_CONVERSION_FORMAT_SCHEME:
+	{
+	    /*
+	     * vs can be n digits long (n >= 1).  We want to add vs[0] then
+	     * ".".  If vs is more than 1 digit then add the rest of vs.  If
+	     * there are no more digits to add then add "0".
+	     */
+	    char vs[IDIO_BIGNUM_DPW + 1];
+	    sprintf (vs, "%" PRIdPTR, v);
+	    char *vs_rest = vs + 1;
 
-	size_t vs_size = strlen (vs);
-	s = idio_strcat (s, sizep, vs, 1);
+	    size_t vs_size = strlen (vs);
+	    s = idio_strcat (s, sizep, vs, 1);
 
-	if (prec) {
-	    IDIO_STRCAT (s, sizep, ".");
-	}
+	    if (prec) {
+		IDIO_STRCAT (s, sizep, ".");
+	    }
 
-	size_t vs_rest_size = strlen (vs_rest);
-	size_t vs_rest_prec = vs_rest_size;
-	if (prec < vs_rest_prec) {
-	    vs_rest_prec = prec;
-	}
-	if (vs_rest_size) {
-	    s = idio_strcat (s, sizep, vs_rest, vs_rest_prec);
-	}
-	prec -= vs_rest_prec;
+	    size_t vs_rest_size = strlen (vs_rest);
+	    if (vs_rest_size) {
+		s = idio_strcat (s, sizep, vs_rest, vs_rest_size);
+	    } else {
+		if (0 == i) {
+		    IDIO_STRCAT (s, sizep, "0");
+		}
+	    }
 	
-	for (i--; i >= 0; i--) {
-	    v = idio_bsa_get (sig_a, i);
-	    sprintf (vs, "%0*" PRIdPTR, IDIO_BIGNUM_DPW, v);
-	    vs_size = strlen (vs);
-	    if (prec < vs_size) {
-		vs_size = prec;
+	    for (i--; i >= 0; i--) {
+		v = idio_bsa_get (sig_a, i);
+		sprintf (vs, "%0*" PRIdPTR, IDIO_BIGNUM_DPW, v);
+		vs_size = strlen (vs);
+		s = idio_strcat (s, sizep, vs, vs_size);
 	    }
-	    s = idio_strcat (s, sizep, vs, vs_size);
-	    if (prec == vs_size) {
-		break;
-	    }
-	    prec -= vs_size;
-	}
-	if (prec > 0) {
-	    int pad = prec;
-	    char pads[pad+1];
-	    sprintf (pads, "%.*d", pad, 0);
-	    s = idio_strcat (s, sizep, pads, pad);
-	}
 
-	IDIO_STRCAT (s, sizep, "e");
-	/* if ((exp + digits - 1) >= 0) { */
-	/* 	IDIO_STRCAT (s, "+"); */
-	/* } */
-	v = exp + digits - 1;
-	sprintf (vs, "%+03" PRIdPTR, v);
-	vs_size = strlen (vs);
-	s = idio_strcat (s, sizep, vs, vs_size);
-    } else if (IDIO_BIGNUM_CONVERSION_FORMAT_F == format) {
+	    IDIO_STRCAT (s, sizep, "e");
+	    v = exp + digits - 1;
+	    sprintf (vs, "%+" PRIdPTR, v);
+	    vs_size = strlen (vs);
+	    s = idio_strcat (s, sizep, vs, vs_size);
+	}
+	break;
+    case IDIO_BIGNUM_CONVERSION_FORMAT_E:
+	{
+	    /*
+	     * vs can be n digits long (n >= 1).  We want to add vs[0] then
+	     * ".".  If vs is more than 1 digit then add the rest of vs.  If
+	     * there are no more digits to add then add "0".
+	     */
+	    char vs[IDIO_BIGNUM_DPW + 1];
+	    sprintf (vs, "%" PRIdPTR, v);
+	    char *vs_rest = vs + 1;
+
+	    size_t vs_size = strlen (vs);
+	    s = idio_strcat (s, sizep, vs, 1);
+
+	    if (prec) {
+		IDIO_STRCAT (s, sizep, ".");
+	    }
+
+	    size_t vs_rest_size = strlen (vs_rest);
+	    size_t vs_rest_prec = vs_rest_size;
+	    if (prec < vs_rest_prec) {
+		vs_rest_prec = prec;
+	    }
+	    if (vs_rest_size) {
+		s = idio_strcat (s, sizep, vs_rest, vs_rest_prec);
+	    }
+	    prec -= vs_rest_prec;
+	
+	    for (i--; i >= 0; i--) {
+		v = idio_bsa_get (sig_a, i);
+		sprintf (vs, "%0*" PRIdPTR, IDIO_BIGNUM_DPW, v);
+		vs_size = strlen (vs);
+		if (prec < vs_size) {
+		    vs_size = prec;
+		}
+		s = idio_strcat (s, sizep, vs, vs_size);
+		if (prec == vs_size) {
+		    break;
+		}
+		prec -= vs_size;
+	    }
+	    if (prec > 0) {
+		int pad = prec;
+		char pads[pad+1];
+		sprintf (pads, "%.*d", pad, 0);
+		s = idio_strcat (s, sizep, pads, pad);
+	    }
+
+	    IDIO_STRCAT (s, sizep, "e");
+	    /* if ((exp + digits - 1) >= 0) { */
+	    /* 	IDIO_STRCAT (s, "+"); */
+	    /* } */
+	    v = exp + digits - 1;
+	    sprintf (vs, "%+03" PRIdPTR, v);
+	    vs_size = strlen (vs);
+	    s = idio_strcat (s, sizep, vs, vs_size);
+	}
+	break;
+    case IDIO_BIGNUM_CONVERSION_FORMAT_F:
+	{
+	}
+	break;
+    default:
+	break;
     }
 
     return s;
