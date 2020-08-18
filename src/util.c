@@ -843,7 +843,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 
 	    switch (format) {
 	    case IDIO_FIXNUM_CONVERSION_FORMAT_X:
-		if (asprintf (&r, "%lX", (uintptr_t) IDIO_FIXNUM_VAL (o)) == -1) {
+		if (asprintf (&r, "%" PRIXPTR, (uintptr_t) IDIO_FIXNUM_VAL (o)) == -1) {
 		    idio_error_alloc ("asprintf");
 
 		    /* notreached */
@@ -884,7 +884,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		}
 		break;
 	    case IDIO_FIXNUM_CONVERSION_FORMAT_o:
-		if (asprintf (&r, "%lo", (uintptr_t) IDIO_FIXNUM_VAL (o)) == -1) {
+		if (asprintf (&r, "%" PRIoPTR, (uintptr_t) IDIO_FIXNUM_VAL (o)) == -1) {
 		    idio_error_alloc ("asprintf");
 
 		    /* notreached */
@@ -892,7 +892,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		}
 		break;
 	    case IDIO_FIXNUM_CONVERSION_FORMAT_x:
-		if (asprintf (&r, "%lx", (uintptr_t) IDIO_FIXNUM_VAL (o)) == -1) {
+		if (asprintf (&r, "%" PRIxPTR, (uintptr_t) IDIO_FIXNUM_VAL (o)) == -1) {
 		    idio_error_alloc ("asprintf");
 
 		    /* notreached */
