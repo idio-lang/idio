@@ -2155,6 +2155,161 @@ IDIO_DEFINE_PRIMITIVE2 ("merge-hash!", merge_hash, (IDIO ht1, IDIO ht2))
     return idio_merge_hash (ht1, ht2);
 }
 
+#ifdef IDIO_DEBUG
+/*
+ * Referencing
+ * https://attractivechaos.wordpress.com/2019/12/28/deletion-from-hash-tables-without-tombstones/
+ * we can see other algorithms tending towards 0.06s per million
+ * inputs and that the (randomized input) left some 6.2m entries in
+ * the 50m test and 10-40 bytes per key.
+ *
+ * There is a subtlety here in that you really want to be using the
+ * same random number generator to get comparable results.  For
+ * example, using random() will get you just about 100% post-run
+ * occupancy -- as you would hope for a decent random number
+ * generator.
+ *
+ * The bits that look clever are from common.c in
+ * https://github.com/attractivechaos/udb2.
+ *
+ * I'm seeing 0.9s per million and 12.0% of entries left across all
+ * variants (suspicious!) and 50-100 bytes / key.
+ *
+ * We do have to rework the key into a fixnum.
+ */
+static inline uint32_t hash32(uint32_t key)
+{
+    key += ~(key << 15);
+    key ^=  (key >> 10);
+    key +=  (key << 3);
+    key ^=  (key >> 6);
+    key += ~(key << 11);
+    key ^=  (key >> 16);
+    return key;
+}
+
+/*****************************************************
+ * This is the hash function used by almost everyone *
+ *****************************************************/
+static inline uint32_t hash_fn(uint32_t key)
+{
+	return key;
+}
+
+static double cputime(void)
+{
+	struct rusage r;
+	getrusage(RUSAGE_SELF, &r);
+	return r.ru_utime.tv_sec + r.ru_stime.tv_sec + 1e-6 * (r.ru_utime.tv_usec + r.ru_stime.tv_usec);
+}
+
+static long peakrss(void)
+{
+	struct rusage r;
+	getrusage(RUSAGE_SELF, &r);
+#ifdef __linux__
+	return r.ru_maxrss * 1024;
+#else
+	return r.ru_maxrss;
+#endif
+}
+
+static inline uint32_t get_key(const uint32_t n, const uint32_t x)
+{
+	return hash32(x % (n>>2));
+}
+
+uint64_t traverse_rng(uint32_t n, uint32_t x0)
+{
+	uint64_t sum = 0;
+	uint32_t i, x;
+	for (i = 0, x = x0; i < n; ++i) {
+		x = hash32(x);
+		sum += get_key(n, x);
+	}
+	return sum;
+}
+
+size_t idio_unit_test_hash_n (size_t n, size_t x0)
+{
+    idio_gc_collect ("%%unit-test-hash");
+
+    struct timeval t0;
+    if (gettimeofday (&t0, NULL) == -1) {
+	perror ("gettimeofday");
+    }
+
+    IDIO ht = IDIO_HASH_EQP (1024);
+
+    size_t x = x0;
+    size_t i;
+    for (i = 0 ; i < n; i++) {
+	x = hash32 (x);
+	long k = get_key(n, x);
+	IDIO key = idio_fixnum (k % (INTPTR_MAX >> 2));
+	if (idio_hash_exists_key (ht, key)) {
+	    idio_hash_delete (ht, key);
+	} else {
+	    idio_hash_put (ht, key, idio_S_nil);
+	}
+    }
+
+    struct timeval te;
+    if (gettimeofday (&te, NULL) == -1) {
+	perror ("gettimeofday");
+    }
+
+    struct timeval td;
+    td.tv_sec = te.tv_sec - t0.tv_sec;
+    td.tv_usec = te.tv_usec - t0.tv_usec;
+    if (td.tv_usec < 0) {
+	td.tv_usec += 1000000;
+	td.tv_sec -= 1;
+    }
+
+    double pct = IDIO_HASH_COUNT (ht) * 100 / n;
+    fprintf (stderr, "%%unit-test-hash %8zu: %5ld.%06ld %8zu/%-8zu %5.1f\n", n, td.tv_sec, td.tv_usec, IDIO_HASH_COUNT (ht), IDIO_HASH_SIZE (ht), pct);
+
+    return IDIO_HASH_COUNT (ht);
+}
+
+void idio_unit_test_hash (void)
+{
+    double t, t0;
+    uint32_t i, m = 5, max = 50000000, n = 10000000, x0 = 1, step;
+    uint64_t sum;
+    long m0;
+
+    t = cputime();
+    sum = traverse_rng(n, x0);
+    t0 = cputime() - t;
+    fprintf(stderr, "CPU time spent on RNG: %.3f sec; total sum: %lu\n", t0, (unsigned long)sum);
+    m0 = peakrss();
+
+    step = (max - n) / m;
+    for (i = 0; i <= m; ++i, n += step) {
+	double t, mem;
+	uint32_t size;
+	t = cputime();
+	size = idio_unit_test_hash_n(n, x0);
+	t = cputime() - t;
+	mem = (peakrss() - m0) / 1024.0 / 1024.0;
+	printf("%d %8d t=%6.3f m=%7.3f t/m %6.4f m/m %7.4f\n", i, n, t, mem, t * 1e6 / n, mem * 1e6 / size);
+    }
+
+    return;
+}
+
+IDIO_DEFINE_PRIMITIVE0_DS ("%%unit-test-hash", unit_test_hash, (void), "", "\
+Perform some hash unit tests				\n\
+")
+{
+    idio_unit_test_hash ();
+
+    return idio_S_unspec;
+}
+#endif
+
 void idio_init_hash ()
 {
     idio_gc_set_verboseness (3);
@@ -2179,6 +2334,9 @@ void idio_hash_add_primitives ()
     IDIO_ADD_PRIMITIVE (hash_fold);
     IDIO_ADD_PRIMITIVE (copy_hash);
     IDIO_ADD_PRIMITIVE (merge_hash);
+#ifdef IDIO_DEBUG
+    IDIO_ADD_PRIMITIVE (unit_test_hash);
+#endif
 }
 
 void idio_final_hash ()
