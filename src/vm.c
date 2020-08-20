@@ -234,6 +234,7 @@ int idio_vm_exit = 0;
  *   to.
  */
 IDIO idio_vm_constants;
+IDIO idio_vm_constants_hash;
 static IDIO idio_vm_values;
 IDIO idio_vm_krun;
 
@@ -6669,6 +6670,10 @@ void idio_init_vm_values ()
 {
     idio_vm_constants = idio_array (8000); /* 6100 */
     idio_gc_protect (idio_vm_constants);
+    idio_array_push (idio_vm_constants, idio_S_nil);
+
+    idio_vm_constants_hash = IDIO_HASH_EQP (8192);
+    idio_gc_protect (idio_vm_constants_hash);
 
     idio_vm_values = idio_array (8000); /* 1600 */
     idio_gc_protect (idio_vm_values);
@@ -6846,6 +6851,7 @@ void idio_final_vm ()
 
     idio_ia_free (idio_all_code);
     idio_gc_expose (idio_vm_constants);
+    idio_gc_expose (idio_vm_constants_hash);
     idio_gc_expose (idio_vm_values);
     idio_gc_expose (idio_vm_krun);
     idio_gc_expose (idio_vm_signal_handler_name);

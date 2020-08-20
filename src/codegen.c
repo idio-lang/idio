@@ -254,6 +254,9 @@ idio_ai_t idio_codegen_extend_constants (IDIO cs, IDIO v)
 
     idio_ai_t gci = idio_array_size (cs);
     idio_array_push (cs, v);
+    if (idio_S_nil != v) {
+	idio_hash_put (idio_vm_constants_hash, v, idio_fixnum (gci));
+    }
     return gci;
 }
 
@@ -263,15 +266,20 @@ idio_ai_t idio_codegen_constants_lookup (IDIO cs, IDIO v)
     IDIO_ASSERT (v);
     IDIO_TYPE_ASSERT (array, cs);
 
-    idio_ai_t al = idio_array_size (cs);
-    idio_ai_t i;
-    for (i = 0 ; i < al; i++) {
-	if (idio_equalp (v, idio_array_get_index (cs, i))) {
-	    return i;
+    if (idio_S_nil != v) {
+	IDIO fgci = idio_hash_get (idio_vm_constants_hash, v);
+	if (idio_S_unspec == fgci) {
+	    return -1;
+	} else {
+	    return IDIO_FIXNUM_VAL (fgci);
 	}
     }
 
-    return -1;
+    /*
+     * This should only be for #n and we should have put that in slot
+     * 0...
+     */
+    return idio_array_find_eqp (cs, v, 0);
 }
 
 idio_ai_t idio_codegen_constants_lookup_or_extend (IDIO cs, IDIO v)

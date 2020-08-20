@@ -208,6 +208,7 @@
 #define IDIO_A_POP_ESCAPER			251 /* not implemented */
 
 extern IDIO idio_vm_constants;
+extern IDIO idio_vm_constants_hash;
 extern IDIO idio_vm_krun;
 extern int idio_vm_reports;
 extern IDIO_IA_T idio_all_code;
