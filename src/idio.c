@@ -28,18 +28,18 @@ IDIO idio_k_exit = NULL;
 
 void idio_add_primitives ();
 
-#ifdef IDIO_VM_PERF
-#define IDIO_VM_PERF_FILE_NAME "vm-perf.log"
+#ifdef IDIO_VM_PROF
+#define IDIO_VM_PROF_FILE_NAME "vm-perf.log"
 FILE *idio_vm_perf_FILE;
 #endif
 
 void idio_init (int argc, char **argv)
 {
 
-#ifdef IDIO_VM_PERF
-    idio_vm_perf_FILE = fopen (IDIO_VM_PERF_FILE_NAME, "w");
+#ifdef IDIO_VM_PROF
+    idio_vm_perf_FILE = fopen (IDIO_VM_PROF_FILE_NAME, "w");
     if (NULL == idio_vm_perf_FILE) {
-	perror ("fopen " IDIO_VM_PERF_FILE_NAME);
+	perror ("fopen " IDIO_VM_PROF_FILE_NAME);
 	exit (1);
     }
 #endif
@@ -214,9 +214,9 @@ void idio_final ()
 
     idio_final_gc ();
 
-#ifdef IDIO_VM_PERF
+#ifdef IDIO_VM_PROF
     if (fclose (idio_vm_perf_FILE)) {
-	perror ("fclose " IDIO_VM_PERF_FILE_NAME);
+	perror ("fclose " IDIO_VM_PROF_FILE_NAME);
     }
     idio_vm_perf_FILE = stderr;
 #endif

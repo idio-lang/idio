@@ -24,19 +24,19 @@ LIBFFI_INCDIR	= $(wildcard /usr/lib*/libffi-*/include)
 LDFLAGS		:= -rdynamic
 LIBS		:= -ldl
 ifeq ($(ARCH),x86_64)
-CFLAGS		:= $(CFLAGS) -m64 # -fsanitize=undefined
-LDFLAGS		:= $(LDFLAGS) -m64 -Wl,-Map=map
+CFLAGS		:= -m64 $(CFLAGS) # -fsanitize=undefined
+LDFLAGS		:= -m64 -Wl,-Map=map $(LDFLAGS)
 endif
 
-ifneq (,$(findstring centos-6,${HOSTNAME}))
-LIBS		:= ${LIBS} -lrt
+ifneq (,$(findstring centos-6,$(HOSTNAME)))
+LIBS		:= -lrt $(LIBS)
 endif
 
-ifneq (,$(findstring debian-,${HOSTNAME}))
+ifneq (,$(findstring debian-,$(HOSTNAME)))
 CC		:= gcc-8
 endif
 
-ifneq (,$(findstring ubuntu-,${HOSTNAME}))
+ifneq (,$(findstring ubuntu-,$(HOSTNAME)))
 CC		:= gcc-8
 endif
 
@@ -49,8 +49,8 @@ LIBS		:= -ldl
 CFLAGS		:= -D__EXTENSIONS__
 M64		:= $(filter %64, $(shell isainfo))
 ifeq ($(M64),amd64)
-CFLAGS		:= $(CFLAGS) -m64
-LDFLAGS		:= $(LDFLAGS) -m64
+CFLAGS		:= -m64 $(CFLAGS)
+LDFLAGS		:= -m64 $(LDFLAGS)
 endif
 
 else ifeq ($(OS),FreeBSD)
@@ -72,29 +72,29 @@ endif
 endif
 
 ifdef MAKE_LEAN
-CDEBUG	       := -O3 -UIDIO_DEBUG
+CDEBUG		:= -O3 -UIDIO_DEBUG -UIDIO_VM_PROF
 else ifdef MAKE_DEBUG
-CDEBUG	       := -DIDIO_DEBUG=3 -g
+CDEBUG		:= -DIDIO_DEBUG=3 -g -DIDIO_VM_PROF
 else
-CDEBUG	       := -DIDIO_DEBUG -g
+CDEBUG		:= -DIDIO_DEBUG -g -DIDIO_VM_PROF
 endif 
 
 
 PROFLAGS	:=
 COVFLAGS	:=
-CFLAGS	       := ${CFLAGS} ${PROFLAGS} ${COVFLAGS} ${SAN_CFLAGS} ${CDEBUG} -std=c99 -Wall -Wno-unused-function -fPIC ${LIBFFI_INC} -DIDIO_VM_PERF
-LDFLAGS        := ${PROFLAGS} ${COVFLAGS} ${SAN_LDFLAGS} ${LDFLAGS}
-LIBS	       := ${LIBS} -lffi
+CFLAGS		:= -std=c99 -Wall -Wno-unused-function -fPIC $(CFLAGS) $(PROFLAGS) $(COVFLAGS) $(SAN_CFLAGS) $(CDEBUG) $(LIBFFI_INC)
+LDFLAGS		:= $(PROFLAGS) $(COVFLAGS) $(SAN_LDFLAGS) $(LDFLAGS)
+LIBS		:= -lffi $(LIBS)
 
-sources	       := $(wildcard *.c)
-objects	       := $(patsubst %.c,%.o,$(sources))
+sources		:= $(wildcard *.c)
+objects		:= $(patsubst %.c,%.o,$(sources))
 
 ifneq ($(OS),Darwin)
-DLIBS := libos.so libposix-regex.so
+DLIBS		:= libos.so libposix-regex.so
 endif
 
 all : tags $(BINDIR)/idio
-#all : idio scm1-c-structs.scm1 ${DLIBS} tags
+#all : idio scm1-c-structs.scm1 $(DLIBS) tags
 
 profiled :
 	$(MAKE) PROFLAGS=-pg
@@ -124,16 +124,16 @@ doc :
 include $(subst .c,.d,$(sources))
 
 $(BINDIR)/idio : $(objects) | $(BINDIR)
-	${CC} ${LDFLAGS} -o $@ $^ ${LIBS}
+	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 lib%.so : %.o
-	${CC} -shared -o $@ $^
+	$(CC) -shared -o $@ $^
 
 scm1-c-structs.scm1 : scm1-c-structs
 	./scm1-c-structs > $@
 
 clean : tidy
-	rm -f *.o *.d ${BINDIR}/idio scm1-c-structs *.so scm1-c-structs.scm1 o e TAGS map vm-*
+	rm -f *.o *.d $(BINDIR)/idio scm1-c-structs *.so scm1-c-structs.scm1 o e TAGS map vm-*
 
 tidy :
 	rm -f vgcore.* core.* core *~ $(LIBDIR)/*~ $(TESTSDIR)/*~ *.gcda *.gcno *.gcov gmon.out

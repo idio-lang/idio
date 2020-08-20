@@ -632,14 +632,14 @@ idio_hi_t idio_idio_hash_default_hash_C_struct_type (IDIO h)
 {
     IDIO_ASSERT (h);
 
-    return idio_hash_default_hash_C_void (IDIO_STRUCT_TYPE_FIELDS (h));
+    return idio_hash_default_hash_C_void (h->u.struct_type->fields);
 }
 
 idio_hi_t idio_idio_hash_default_hash_C_struct_instance (IDIO h)
 {
     IDIO_ASSERT (h);
 
-    return idio_hash_default_hash_C_void (IDIO_STRUCT_INSTANCE_FIELDS (h));
+    return idio_hash_default_hash_C_void (h->u.struct_instance.fields);
 }
 
 idio_hi_t idio_hash_default_hash_C_C_struct (IDIO h)

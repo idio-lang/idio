@@ -956,12 +956,12 @@ static IDIO idio_evaluate_infix_operator (IDIO n, IDIO e, IDIO b, IDIO a)
     idio_vm_default_pc (ethr);
 
     idio_apply (func, IDIO_LIST3 (n, b, IDIO_LIST1 (a)));
-#ifdef IDIO_VM_PERF
+#ifdef IDIO_VM_PROF
     struct timespec prim_t0;
     idio_vm_func_start (func, &prim_t0);
 #endif
     IDIO r = idio_vm_run (ethr);
-#ifdef IDIO_VM_PERF
+#ifdef IDIO_VM_PROF
     struct timespec prim_te;
     idio_vm_func_stop (func, &prim_te);
     idio_vm_prim_time (func, &prim_t0, &prim_te);
@@ -1152,12 +1152,12 @@ static IDIO idio_evaluate_postfix_operator (IDIO n, IDIO e, IDIO b, IDIO a)
     idio_vm_default_pc (ethr);
 
     idio_apply (func, IDIO_LIST3 (n, b, IDIO_LIST1 (a)));
-#ifdef IDIO_VM_PERF
+#ifdef IDIO_VM_PROF
     struct timespec prim_t0;
     idio_vm_func_start (func, &prim_t0);
 #endif
     IDIO r = idio_vm_run (ethr);
-#ifdef IDIO_VM_PERF
+#ifdef IDIO_VM_PROF
     struct timespec prim_te;
     idio_vm_func_stop (func, &prim_te);
     idio_vm_prim_time (func, &prim_t0, &prim_te);

@@ -648,13 +648,25 @@ void idio_gc_process_grey (unsigned colour)
 	idio_gc->grey = IDIO_STRUCT_TYPE_GREY (o);
 	idio_gc_gcc_mark (IDIO_STRUCT_TYPE_NAME (o), colour);
 	idio_gc_gcc_mark (IDIO_STRUCT_TYPE_PARENT (o), colour);
-	idio_gc_gcc_mark (IDIO_STRUCT_TYPE_FIELDS (o), colour);
+	{
+	    size_t size = IDIO_STRUCT_TYPE_SIZE (o);
+	    size_t i;
+	    for (i = 0; i < size ; i++) {
+		idio_gc_gcc_mark (IDIO_STRUCT_TYPE_FIELDS (o, i), colour);
+	    }
+	}
 	break;
     case IDIO_TYPE_STRUCT_INSTANCE:
 	IDIO_C_ASSERT (idio_gc->grey != IDIO_STRUCT_INSTANCE_GREY (o));
 	idio_gc->grey = IDIO_STRUCT_INSTANCE_GREY (o);
 	idio_gc_gcc_mark (IDIO_STRUCT_INSTANCE_TYPE (o), colour);
-	idio_gc_gcc_mark (IDIO_STRUCT_INSTANCE_FIELDS (o), colour);
+	{
+	    size_t size = IDIO_STRUCT_INSTANCE_SIZE (o);
+	    size_t i;
+	    for (i = 0; i < size; i++) {
+		idio_gc_gcc_mark (IDIO_STRUCT_INSTANCE_FIELDS (o, i), colour);
+	    }
+	}
 	break;
     case IDIO_TYPE_THREAD:
 	IDIO_C_ASSERT (idio_gc->grey != IDIO_THREAD_GREY (o));
@@ -1366,7 +1378,7 @@ void idio_gc_mark ()
     }
 }
 
-#ifdef IDIO_VM_PERF
+#ifdef IDIO_VM_PROF
 static struct timespec idio_gc_all_closure_t;
 static struct timespec idio_gc_all_primitive_t;
 
@@ -1718,7 +1730,7 @@ void idio_gc_stats ()
 {
     FILE *fh = stderr;
 
-#ifdef IDIO_VM_PERF
+#ifdef IDIO_VM_PROF
     fh = idio_vm_perf_FILE;
 #endif
 
@@ -1852,6 +1864,7 @@ void idio_gc_stats ()
 	}
 	/* idio_dump (o, 160); */
 
+#ifdef IDIO_VM_PROF
 	switch (o->type) {
 	case IDIO_TYPE_CLOSURE:
 	    idio_gc_closure_stats (o);
@@ -1860,13 +1873,15 @@ void idio_gc_stats ()
 	    idio_gc_primitive_stats (o);
 	    break;
 	}
-
+#endif
 	o = o->next;
     }
     idio_gc->verbose--;
 
+#ifdef IDIO_VM_PROF
     fprintf (fh, "idio_gc_stats: all closures   %4ld.%09ld\n", idio_gc_all_closure_t.tv_sec, idio_gc_all_closure_t.tv_nsec);
     fprintf (fh, "idio_gc_stats: all primitives %4ld.%09ld\n", idio_gc_all_primitive_t.tv_sec, idio_gc_all_primitive_t.tv_nsec);
+#endif
 
     count = uc;
     scale = 0;
@@ -2156,7 +2171,7 @@ void idio_init_gc ()
     idio_gc_protect (idio_gc_finalizer_hash);
     idio_hash_add_weak_table (idio_gc_finalizer_hash);
 
-#ifdef IDIO_VM_PERF
+#ifdef IDIO_VM_PROF
     idio_gc_all_closure_t.tv_sec = 0;
     idio_gc_all_closure_t.tv_nsec = 0;
     idio_gc_all_primitive_t.tv_sec = 0;
@@ -2197,7 +2212,9 @@ static void idio_gc_run_all_finalizers ()
 
 void idio_final_gc ()
 {
+#ifdef IDIO_DEBUG
     idio_gc_stats ();
+#endif
 
     IDIO_GC_FLAGS (idio_gc) |= IDIO_GC_FLAG_FINISH;
 

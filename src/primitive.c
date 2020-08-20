@@ -49,7 +49,7 @@ IDIO idio_primitive (IDIO (*func) (IDIO args), const char *name_C, size_t arity,
      */
     strcpy (IDIO_PRIMITIVE_NAME (o), name_C);
 
-#ifdef IDIO_VM_PERF
+#ifdef IDIO_VM_PROF
     IDIO_PRIMITIVE_CALLED (o) = 0;
     IDIO_PRIMITIVE_CALL_TIME (o).tv_sec = 0;
     IDIO_PRIMITIVE_CALL_TIME (o).tv_nsec = 0;
@@ -86,7 +86,7 @@ IDIO idio_primitive_data (idio_primitive_desc_t *desc)
 
     strcpy (IDIO_PRIMITIVE_NAME (o), desc->name);
 
-#ifdef IDIO_VM_PERF
+#ifdef IDIO_VM_PROF
     IDIO_PRIMITIVE_CALLED (o) = 0;
     IDIO_PRIMITIVE_CALL_TIME (o).tv_sec = 0;
     IDIO_PRIMITIVE_CALL_TIME (o).tv_nsec = 0;

@@ -3314,11 +3314,13 @@ void idio_bignum_add_primitives ()
 
 void idio_final_bignum ()
 {
+#ifdef IDIO_DEBUG
     FILE *fh = stderr;
 
-#ifdef IDIO_VM_PERF
+#ifdef IDIO_VM_PROF
     fh = idio_vm_perf_FILE;
 #endif
 
     fprintf (fh, "bignums: current %zd of simultaneous max %zd; max segs %zd/%d (%zd significant digits)\n", idio_bignums, idio_bignums_max, idio_bignum_seg_max, IDIO_BIGNUM_SIG_SEGMENTS, idio_bignum_seg_max * IDIO_BIGNUM_DPW);
+#endif
 }

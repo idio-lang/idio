@@ -3675,7 +3675,7 @@ void idio_init_read ()
 					 idio_S_nil)))));
     idio_module_set_symbol_value (name, idio_lexobj_type, idio_Idio_module);
 
-    idio_src_properties = IDIO_HASH_EQP (4 * 1024);
+    idio_src_properties = IDIO_HASH_EQP (128 * 1024); /* 80k? */
     idio_hash_add_weak_table (idio_src_properties);
     name = idio_symbols_C_intern ("%idio-src-properties");
     idio_module_set_symbol_value (name, idio_src_properties, idio_Idio_module);
@@ -3688,6 +3688,15 @@ void idio_read_add_primitives ()
 
 void idio_final_read ()
 {
+#ifdef IDIO_DEBUG
+    FILE *fh = stderr;
+
+#ifdef IDIO_VM_PROF
+    fh = idio_vm_perf_FILE;
+#endif
+
+    fprintf (fh, "src-properties: %zu/%zu\n", IDIO_HASH_COUNT (idio_src_properties), IDIO_HASH_SIZE (idio_src_properties));
+#endif
     idio_hash_remove_weak_table (idio_src_properties);
 }
 

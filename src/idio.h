@@ -116,7 +116,7 @@ wither RLIMIT_NLIMITS?
 #define IDIO_LIBC_NSIG NSIG
 #endif
 
-#ifdef IDIO_VM_PERF
+#ifdef IDIO_VM_PROF
 extern FILE *idio_vm_perf_FILE;
 #endif
 
@@ -161,8 +161,16 @@ extern FILE *idio_vm_perf_FILE;
 #else
 
 #define IDIO_C_ASSERT(x)	((void) 0)
-#define IDIO_TYPE_ASSERT(t,x)	((void) 0)
-#define IDIO_ASSERT_NOT_CONST(t,x) ((void) 0)
+#define IDIO_TYPE_ASSERT(t,x)	{					\
+	if (! idio_isa_ ## t (x)) {					\
+	    idio_error_param_type_C (#t, x, __FILE__, __func__, __LINE__); \
+	}								\
+    }
+#define IDIO_ASSERT_NOT_CONST(t,x) {					\
+	if (IDIO_FLAGS (x) & IDIO_FLAG_CONST) {				\
+	    idio_error_const_param_C (#t " " #x, x, __FILE__, __func__, __LINE__); \
+	}								\
+    }
 #define IDIO_ASSERT(x)		((void) 0)
 #define IDIO_ASSERT_FREE(x)	((void) 0)
 #define IDIO_ASSERT_NOT_FREED(x) ((void) 0)
@@ -223,7 +231,7 @@ extern FILE *idio_vm_perf_FILE;
  *
  * We are looking for the following for foo_C, ie. Idio's "foo-idio"
 
-   IDIO_DEFINE_PRIMITIVE2 ("foo-idio", foo_C, (T1 a1, T2, a2), sigstr, docstr)
+   IDIO_DEFINE_PRIMITIVE2 ("foo-idio", foo_C, (T1 a1, T2 a2), sigstr, docstr)
    {
      ...
    }

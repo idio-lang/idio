@@ -1464,13 +1464,38 @@ IDIO idio_load_handle_ebe (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (I
     IDIO e = idio_S_nil;
     IDIO r = idio_S_nil;
 
+    int i = 0;
     for (;;) {
+#ifdef IDIO_LOAD_TIMING
+	struct timeval t0;
+	if (gettimeofday (&t0, NULL) == -1) {
+	    perror ("gettimeofday");
+	}
+#endif
 	e = (*reader) (h);
 
 	if (idio_S_eof == e) {
 	    break;
 	} else {
+#ifdef IDIO_LOAD_TIMING
+	    struct timeval te;
+	    struct timeval td;
+	    fprintf (stderr, "  ebe %4d", i++);
+#endif
 	    IDIO m = (*evaluator) (e, cs);
+
+#ifdef IDIO_LOAD_TIMING
+	    if (gettimeofday (&te, NULL) == -1) {
+		perror ("gettimeofday");
+	    }
+	    td.tv_sec = te.tv_sec - t0.tv_sec;
+	    td.tv_usec = te.tv_usec - t0.tv_usec;
+	    if (td.tv_usec < 0) {
+		td.tv_usec += 1000000;
+		td.tv_sec -= 1;
+	    }
+	    fprintf (stderr, " e %ld.%06ld", td.tv_sec, td.tv_usec);
+#endif
 
 	    idio_ai_t lh_pc = -1;
 	    idio_codegen (thr, m, cs);
@@ -1490,6 +1515,30 @@ IDIO idio_load_handle_ebe (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (I
 		idio_debug ("THR %s\n", thr);
 		idio_debug ("STK %s\n", IDIO_THREAD_STACK (thr));
 	    }
+
+#ifdef IDIO_LOAD_TIMING
+	    if (gettimeofday (&te, NULL) == -1) {
+		perror ("gettimeofday");
+	    }
+	    td.tv_sec = te.tv_sec - t0.tv_sec;
+	    td.tv_usec = te.tv_usec - t0.tv_usec;
+	    if (td.tv_usec < 0) {
+		td.tv_usec += 1000000;
+		td.tv_sec -= 1;
+	    }
+	    fprintf (stderr, " r %ld.%06ld", td.tv_sec, td.tv_usec);
+	    if (td.tv_sec > 0 ||
+		td.tv_usec > 400000) {
+		if (idio_S_define == IDIO_PAIR_H (e) &&
+		    idio_isa_pair (IDIO_PAIR_HTT (e))) {
+		    fprintf (stderr, " %zu", idio_list_length (IDIO_PAIR_HTT (e)));
+		    idio_debug (" %s", IDIO_PAIR_HTT (e));
+		} else {
+		    idio_debug (" %s", e);
+		}
+	    }
+	    fprintf (stderr, "\n");
+#endif
 	}
     }
 

@@ -251,7 +251,7 @@ void idio_vm_add_module_constants (IDIO module, IDIO constants);
 void idio_raise_condition (IDIO continuablep, IDIO e);
 IDIO idio_apply (IDIO fn, IDIO args);
 void idio_vm_debug (IDIO thr, char *prefix, idio_ai_t stack_start);
-#ifdef IDIO_VM_PERF
+#ifdef IDIO_VM_PROF
 void idio_vm_func_start (IDIO clos, struct timespec *tsp);
 void idio_vm_func_stop (IDIO clos, struct timespec *tsp);
 void idio_vm_prim_time (IDIO clos, struct timespec *ts0p, struct timespec *tsep);

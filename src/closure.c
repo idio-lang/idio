@@ -58,7 +58,7 @@ IDIO idio_closure (size_t code_pc, size_t code_len, IDIO frame, IDIO env, IDIO s
     IDIO_CLOSURE_CODE_LEN (c) = code_len;
     IDIO_CLOSURE_FRAME (c) = frame;
     IDIO_CLOSURE_ENV (c) = env;
-#ifdef IDIO_VM_PERF
+#ifdef IDIO_VM_PROF
     IDIO_CLOSURE_CALLED (c) = 0;
     IDIO_CLOSURE_CALL_TIME (c).tv_sec = 0;
     IDIO_CLOSURE_CALL_TIME (c).tv_nsec = 0;

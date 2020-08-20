@@ -4592,7 +4592,29 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO cs, I
 	} else if (idio_S_include == eh) {
 	    /* (include filename) */
 	    if (idio_isa_pair (et)) {
-		return idio_meaning_include (src, IDIO_PAIR_H (et), nametree, flags, cs, cm);
+#ifdef IDIO_INCLUDE_TIMING
+		struct timeval t0;
+		if (gettimeofday (&t0, NULL) == -1) {
+		    perror ("gettimeofday");
+		}
+#endif
+		IDIO r = idio_meaning_include (src, IDIO_PAIR_H (et), nametree, flags, cs, cm);
+#ifdef IDIO_INCLUDE_TIMING
+		struct timeval te;
+		if (gettimeofday (&te, NULL) == -1) {
+		    perror ("gettimeofday");
+		}
+		struct timeval td;
+		td.tv_sec = te.tv_sec - t0.tv_sec;
+		td.tv_usec = te.tv_usec - t0.tv_usec;
+		if (td.tv_usec < 0) {
+		    td.tv_usec += 1000000;
+		    td.tv_sec -= 1;
+		}
+		fprintf (stderr, "include: +%2lds %ld.%06ld e ", idio_vm_elapsed (), td.tv_sec, td.tv_usec);
+		idio_debug ("%s\n", IDIO_PAIR_H (et));
+#endif
+		return r;
 	    } else {
 		/*
 		 * Test Case: evaluation-errors/include-nil.idio
@@ -4696,8 +4718,30 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO cs, I
 	     * work.
 	     */
 	    IDIO syms = IDIO_PAIR_H (IDIO_PAIR_THT (et));
+#ifdef IDIO_IMPORT_TIMING
+	    fprintf (stderr, "import: +%2lds s ", idio_vm_elapsed ());
+	    idio_debug ("%s\n", syms);
+	    struct timeval t0;
+	    if (gettimeofday (&t0, NULL) == -1) {
+		perror ("gettimeofday");
+	    }
+#endif
 	    idio_module_extend_imports (idio_thread_current_module (), syms);
-
+#ifdef IDIO_IMPORT_TIMING
+	    struct timeval te;
+	    if (gettimeofday (&te, NULL) == -1) {
+		perror ("gettimeofday");
+	    }
+	    struct timeval td;
+	    td.tv_sec = te.tv_sec - t0.tv_sec;
+	    td.tv_usec = te.tv_usec - t0.tv_usec;
+	    if (td.tv_usec < 0) {
+		td.tv_usec += 1000000;
+		td.tv_sec -= 1;
+	    }
+	    fprintf (stderr, "import: +%2lds %ld.%06ld e ", idio_vm_elapsed (), td.tv_sec, td.tv_usec);
+	    idio_debug ("%s\n", syms);
+#endif
 	    return idio_meaning_application (src, eh, et, nametree, flags, cs, cm);
 	} else {
 	    if (idio_isa_symbol (eh)) {

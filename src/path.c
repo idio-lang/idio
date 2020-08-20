@@ -193,7 +193,7 @@ IDIO idio_path_expand (IDIO p)
 	idio_error_param_type ("~path", p, IDIO_C_FUNC_LOCATION ());
     }
 
-    IDIO pat = idio_array_get_index (IDIO_STRUCT_INSTANCE_FIELDS (p), IDIO_PATH_PATTERN);
+    IDIO pat = IDIO_STRUCT_INSTANCE_FIELDS (p, IDIO_PATH_PATTERN);
 
     IDIO_TYPE_ASSERT (string, pat);
     size_t size = 0;

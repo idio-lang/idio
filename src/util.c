@@ -26,6 +26,57 @@ static IDIO idio_util_value_as_string;
 IDIO idio_print_conversion_format_sym = idio_S_nil;
 IDIO idio_print_conversion_precision_sym = idio_S_nil;
 
+#ifdef IDIO_DEBUG
+#undef IDIO_EQUAL_DEBUG
+#endif
+
+#ifdef IDIO_EQUAL_DEBUG
+typedef struct idio_equal_stat_s {
+    /*
+     * We *could* have an o1 and o2 type array but we don't really
+     * care about the specifics of mixed types equality
+     */
+    unsigned long count;
+    struct timeval duration;
+    unsigned long mixed;
+} idio_equal_stat_t;
+static idio_equal_stat_t idio_equal_stats[IDIO_TYPE_MAX];
+
+static void idio_equal_stat_increment (IDIO o1, IDIO o2, struct timeval t0)
+{
+    struct timeval te;
+    if (gettimeofday (&te, NULL) == -1) {
+	perror ("gettimeofday");
+    }
+
+    int t1 = (intptr_t) o1 & IDIO_TYPE_MASK;
+    if (0 == t1) {
+	t1 = o1->type;
+    }
+    idio_equal_stats[t1].count++;
+    struct timeval td;
+    td.tv_sec = te.tv_sec - t0.tv_sec;
+    td.tv_usec = te.tv_usec - t0.tv_usec;
+    if (td.tv_usec < 0) {
+	td.tv_usec += 1000000;
+	td.tv_sec -= 1;
+    }
+    idio_equal_stats[t1].duration.tv_sec += td.tv_sec;
+    idio_equal_stats[t1].duration.tv_usec += td.tv_usec;
+    if (idio_equal_stats[t1].duration.tv_usec > 1000000) {
+	idio_equal_stats[t1].duration.tv_usec -= 1000000;
+	idio_equal_stats[t1].duration.tv_sec += 1;
+    }
+    int t2 = (intptr_t) o2 & IDIO_TYPE_MASK;
+    if (0 == t2) {
+	t2 = o2->type;
+    }
+    if (t1 != t2) {
+	idio_equal_stats[t1].mixed++;
+    }
+}
+#endif
+
 void idio_util_error_format (char *m, IDIO s, IDIO c_location)
 {
     IDIO_C_ASSERT (m);
@@ -443,6 +494,13 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
      * equality test) implicitly tests their type as well.
      */
     if (o1 == o2) {
+#ifdef IDIO_EQUAL_DEBUG
+	int t1 = (intptr_t) o1 & IDIO_TYPE_MASK;
+	if (0 == t1) {
+	    t1 = o1->type;
+	}
+	idio_equal_stats[t1].count++;
+#endif
 	return 1;
     }
 
@@ -462,12 +520,20 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
      * code has been interspersed below.
      */
 
+#ifdef IDIO_EQUAL_DEBUG
+    struct timeval t0;
+    if (gettimeofday (&t0, NULL) == -1) {
+	perror ("gettimeofday");
+    }
+#endif
     switch (m1) {
     case IDIO_TYPE_FIXNUM_MARK:
 	if (IDIO_EQUAL_EQP != eqp) {
 	    IDIO r = idio_S_false;
 
-	    if (idio_isa_number (o2)) {
+	    if (IDIO_TYPE_FIXNUM_MARK == m2) {
+		return (o1 == o2);
+	    } else if (idio_isa_number (o2)) {
 		r = idio_vm_invoke_C (idio_thread_current_thread (),
 				      IDIO_LIST3 (idio_module_symbol_value (idio_symbols_C_intern ("=="),
 									    idio_Idio_module,
@@ -476,6 +542,9 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 						  o2));
 	    }
 
+#ifdef IDIO_EQUAL_DEBUG
+	    idio_equal_stat_increment (o1, o2, t0);
+#endif
 	    return (idio_S_true == r);
 	} else {
 	    return 0;
@@ -495,7 +564,7 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		if (IDIO_EQUAL_EQP != eqp) {
 		    IDIO r = idio_S_false;
 
-		    if (idio_isa_number (o1)) {
+		    if (idio_isa_bignum (o1)) {
 			r = idio_vm_invoke_C (idio_thread_current_thread (),
 					      IDIO_LIST3 (idio_module_symbol_value (idio_symbols_C_intern ("=="),
 										    idio_Idio_module,
@@ -504,6 +573,9 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 							  o2));
 		    }
 
+#ifdef IDIO_EQUAL_DEBUG
+		    idio_equal_stat_increment (o1, o2, t0);
+#endif
 		    return (idio_S_true == r);
 		} else {
 		    return 0;
@@ -536,6 +608,9 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 				return 0;
 			    }
 
+#ifdef IDIO_EQUAL_DEBUG
+			    idio_equal_stat_increment (o1, o2, t0);
+#endif
 			    return idio_string_equal (o1, o2);
 			}
 		    }
@@ -548,6 +623,9 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 				return 0;
 			    }
 
+#ifdef IDIO_EQUAL_DEBUG
+			    idio_equal_stat_increment (o1, o2, t0);
+#endif
 			    return idio_string_equal (o1, o2);
 			}
 		    }
@@ -596,6 +674,9 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		    return 0;
 		}
 
+#ifdef IDIO_EQUAL_DEBUG
+		idio_equal_stat_increment (o1, o2, t0);
+#endif
 		return idio_string_equal (o1, o2);
 
 		break;
@@ -608,6 +689,9 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		    return 0;
 		}
 
+#ifdef IDIO_EQUAL_DEBUG
+		idio_equal_stat_increment (o1, o2, t0);
+#endif
 		return idio_string_equal (o1, o2);
 
 		break;
@@ -625,8 +709,8 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		    return (o1 == o2);
 		}
 
-		return (idio_equalp (IDIO_PAIR_H (o1), IDIO_PAIR_H (o2)) &&
-			idio_equalp (IDIO_PAIR_T (o1), IDIO_PAIR_T (o2)));
+		return (idio_equal (IDIO_PAIR_H (o1), IDIO_PAIR_H (o2), eqp) &&
+			idio_equal (IDIO_PAIR_T (o1), IDIO_PAIR_T (o2), eqp));
 	    case IDIO_TYPE_ARRAY:
 		if (IDIO_EQUAL_EQP == eqp ||
 		    IDIO_EQUAL_EQVP == eqp) {
@@ -638,7 +722,7 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		}
 
 		for (i = 0; i < IDIO_ARRAY_USIZE (o1); i++) {
-		    if (! idio_equalp (IDIO_ARRAY_AE (o1, i), IDIO_ARRAY_AE (o2, i))) {
+		    if (! idio_equal (IDIO_ARRAY_AE (o1, i), IDIO_ARRAY_AE (o2, i), eqp)) {
 			return 0;
 		    }
 		}
@@ -659,8 +743,8 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		}
 
 		for (i = 0; i < IDIO_HASH_SIZE (o1); i++) {
-		    if (! idio_equalp (IDIO_HASH_HE_KEY (o1, i), IDIO_HASH_HE_KEY (o2, i)) ||
-			! idio_equalp (IDIO_HASH_HE_VALUE (o1, i), IDIO_HASH_HE_VALUE (o2, i))) {
+		    if (! idio_equal (IDIO_HASH_HE_KEY (o1, i), IDIO_HASH_HE_KEY (o2, i), eqp) ||
+			! idio_equal (IDIO_HASH_HE_VALUE (o1, i), IDIO_HASH_HE_VALUE (o2, i), eqp)) {
 			return 0;
 		    }
 		}
@@ -678,6 +762,9 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		    return (IDIO_BIGNUM_SIG (o1) == IDIO_BIGNUM_SIG (o2));
 		}
 
+#ifdef IDIO_EQUAL_DEBUG
+		    idio_equal_stat_increment (o1, o2, t0);
+#endif
 		return idio_bignum_real_equal_p (o1, o2);
 	    case IDIO_TYPE_MODULE:
 		return (o1 == o2);
@@ -696,26 +783,58 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 	    case IDIO_TYPE_C_POINTER:
 		return (IDIO_C_TYPE_POINTER_P (o1) == IDIO_C_TYPE_POINTER_P (o2));
 	    case IDIO_TYPE_STRUCT_TYPE:
-		if (IDIO_EQUAL_EQP == eqp ||
-		    IDIO_EQUAL_EQVP == eqp) {
-		    return (o1->u.struct_type == o2->u.struct_type);
-		}
+		{
+		    if (IDIO_EQUAL_EQP == eqp ||
+			IDIO_EQUAL_EQVP == eqp) {
+			return (o1->u.struct_type == o2->u.struct_type);
+		    }
 
-		if (! idio_equalp (IDIO_STRUCT_TYPE_NAME (o1), IDIO_STRUCT_TYPE_NAME (o2)) ||
-		    ! idio_equalp (IDIO_STRUCT_TYPE_PARENT (o1), IDIO_STRUCT_TYPE_PARENT (o2)) ||
-		    ! idio_equalp (IDIO_STRUCT_TYPE_FIELDS (o1), IDIO_STRUCT_TYPE_FIELDS (o2))) {
-		    return 0;
+		    if (! idio_equal (IDIO_STRUCT_TYPE_NAME (o1), IDIO_STRUCT_TYPE_NAME (o2), eqp) ||
+			! idio_equal (IDIO_STRUCT_TYPE_PARENT (o1), IDIO_STRUCT_TYPE_PARENT (o2), eqp)) {
+			return 0;
+		    }
+
+		    size_t s1 = IDIO_STRUCT_TYPE_SIZE (o1);
+		    if (s1 != IDIO_STRUCT_TYPE_SIZE (o2)) {
+			return 0;
+		    }
+
+		    /*
+		     * We're now at the stage of having two
+		     * identically named and sized struct types.
+		     * Check each field.
+		     */
+		    size_t i;
+		    for (i = 0 ; i < s1 ; i++) {
+			if (! idio_equal (IDIO_STRUCT_TYPE_FIELDS (o1, i), IDIO_STRUCT_TYPE_FIELDS (o2, i), eqp)) {
+			    return 0;
+			}
+		    }
 		}
 		break;
 	    case IDIO_TYPE_STRUCT_INSTANCE:
-		if (IDIO_EQUAL_EQP == eqp ||
-		    IDIO_EQUAL_EQVP == eqp) {
-		    return (o1->u.struct_instance == o2->u.struct_instance);
-		}
+		{
+		    if (IDIO_EQUAL_EQP == eqp ||
+			IDIO_EQUAL_EQVP == eqp) {
+			return (o1 == o2);
+		    }
 
-		if (! idio_equalp (IDIO_STRUCT_INSTANCE_TYPE (o1), IDIO_STRUCT_INSTANCE_TYPE (o2)) ||
-		    ! idio_equalp (IDIO_STRUCT_INSTANCE_FIELDS (o1), IDIO_STRUCT_INSTANCE_FIELDS (o2))) {
-		    return 0;
+		    if (! idio_equal (IDIO_STRUCT_INSTANCE_TYPE (o1), IDIO_STRUCT_INSTANCE_TYPE (o2), eqp)) {
+			return 0;
+		    }
+
+		    /*
+		     * These struct instances are the same type
+		     * therefore must have the same size.  Check each
+		     * value.
+		     */
+		    size_t s1 = IDIO_STRUCT_INSTANCE_SIZE (o1);
+		    size_t i;
+		    for (i = 0 ; i < s1 ; i++) {
+			if (! idio_equal (IDIO_STRUCT_INSTANCE_FIELDS (o1, i), IDIO_STRUCT_INSTANCE_FIELDS (o2, i), eqp)) {
+			    return 0;
+			}
+		    }
 		}
 		break;
 	    case IDIO_TYPE_THREAD:
@@ -728,6 +847,9 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		    return (o1 == o2);
 		}
 
+#ifdef IDIO_EQUAL_DEBUG
+		    idio_equal_stat_increment (o1, o2, t0);
+#endif
 		return idio_equal_bitsetp (IDIO_LIST2 (o1, o2));
 		break;
 	    case IDIO_TYPE_C_TYPEDEF:
@@ -1786,14 +1908,12 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		    char *stp = idio_as_string (IDIO_STRUCT_TYPE_PARENT (o), &stp_size, 1);
 		    IDIO_STRCAT_FREE (r, sizep, stp, stp_size);
 
-		    IDIO stf = IDIO_STRUCT_TYPE_FIELDS (o);
-
-		    idio_ai_t al = idio_array_size (stf);
-		    idio_ai_t ai;
-		    for (ai = 0; ai < al; ai++) {
+		    size_t size = IDIO_STRUCT_TYPE_SIZE (o);
+		    size_t i;
+		    for (i = 0; i < size; i++) {
 			IDIO_STRCAT (r, sizep, " ");
 			size_t f_size = 0;
-			char *fs = idio_as_string (idio_array_get_index (stf, ai), &f_size, 1);
+			char *fs = idio_as_string (IDIO_STRUCT_TYPE_FIELDS (o, i), &f_size, 1);
 			IDIO_STRCAT_FREE (r, sizep, fs, f_size);
 		    }
 
@@ -1832,19 +1952,16 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		    char *ns = idio_as_string (IDIO_STRUCT_TYPE_NAME (sit), &n_size, 1);
 		    IDIO_STRCAT_FREE (r, sizep, ns, n_size);
 
-		    IDIO stf = IDIO_STRUCT_TYPE_FIELDS (sit);
-		    IDIO sif = IDIO_STRUCT_INSTANCE_FIELDS (o);
-
-		    idio_ai_t al = idio_array_size (stf);
-		    idio_ai_t ai;
-		    for (ai = 0; ai < al; ai++) {
+		    size_t size = IDIO_STRUCT_TYPE_SIZE (sit);
+		    size_t i;
+		    for (i = 0; i < size; i++) {
 			IDIO_STRCAT (r, sizep, " ");
 			size_t fn_size = 0;
-			char *fns = idio_as_string (idio_array_get_index (stf, ai), &fn_size, 1);
+			char *fns = idio_as_string (IDIO_STRUCT_TYPE_FIELDS (sit, i), &fn_size, 1);
 			IDIO_STRCAT_FREE (r, sizep, fns, fn_size);
 			IDIO_STRCAT (r, sizep, ":");
 			size_t fv_size = 0;
-			char *fvs = idio_as_string (idio_array_get_index (sif, ai), &fv_size, depth - 1);
+			char *fvs = idio_as_string (IDIO_STRUCT_INSTANCE_FIELDS (o, i), &fv_size, depth - 1);
 			IDIO_STRCAT_FREE (r, sizep, fvs, fv_size);
 		    }
 
@@ -3223,6 +3340,15 @@ void idio_init_util ()
     idio_module_set_symbol_value (idio_util_value_as_string, idio_S_nil, idio_Idio_module);
     idio_print_conversion_format_sym = idio_symbols_C_intern ("idio-print-conversion-format");
     idio_print_conversion_precision_sym = idio_symbols_C_intern ("idio-print-conversion-precision");
+
+#ifdef IDIO_EQUAL_DEBUG
+    for (int i = 0; i < IDIO_TYPE_MAX; i++) {
+	idio_equal_stats[i].count = 0;
+	idio_equal_stats[i].duration.tv_sec = 0;
+	idio_equal_stats[i].duration.tv_usec = 0;
+	idio_equal_stats[i].mixed = 0;
+    }
+#endif
 }
 
 void idio_util_add_primitives ()
@@ -3254,6 +3380,13 @@ void idio_util_add_primitives ()
 
 void idio_final_util ()
 {
+#ifdef IDIO_EQUAL_DEBUG
+    for (int i = 0; i < IDIO_TYPE_MAX; i++) {
+	if (idio_equal_stats[i].count) {
+	    fprintf (stderr, "equal %3d %15s %9lu %5ld.%06ld %5lu\n", i, idio_type_enum2string (i), idio_equal_stats[i].count, idio_equal_stats[i].duration.tv_sec, idio_equal_stats[i].duration.tv_usec, idio_equal_stats[i].mixed);
+	}
+    }
+#endif
 }
 
 /* Local Variables: */

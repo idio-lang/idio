@@ -495,10 +495,9 @@ does not return per se						\n\
 
     /* reset sit in case we changed it above */
     sit = IDIO_STRUCT_INSTANCE_TYPE (c);
-    IDIO sif = IDIO_STRUCT_INSTANCE_FIELDS (c);
 
     if (idio_struct_type_isa (sit, idio_condition_rt_signal_type)) {
-	IDIO signum_I = idio_array_get_index (sif, IDIO_SI_RT_SIGNAL_TYPE_SIGNUM);
+	IDIO signum_I = IDIO_STRUCT_INSTANCE_FIELDS (c, IDIO_SI_RT_SIGNAL_TYPE_SIGNUM);
 	int signum_C = IDIO_C_TYPE_INT (signum_I);
 
 	switch (signum_C) {
@@ -519,7 +518,6 @@ does not return per se						\n\
 
     if (idio_command_interactive) {
 	IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (c);
-	IDIO sif = IDIO_STRUCT_INSTANCE_FIELDS (c);
 
 	if (idio_struct_type_isa (sit, idio_condition_system_error_type)) {
 	    IDIO eh = idio_thread_current_error_handle ();
@@ -527,19 +525,19 @@ does not return per se						\n\
 
 	    idio_display_C ("\ndefault-condition-handler: ", eh);
 
-	    IDIO l = idio_array_get_index (sif, IDIO_SI_IDIO_ERROR_TYPE_LOCATION);
+	    IDIO l = IDIO_STRUCT_INSTANCE_FIELDS (c, IDIO_SI_IDIO_ERROR_TYPE_LOCATION);
 	    if (idio_S_nil != l) {
 		idio_display (l, eh);
 		printed = 1;
 
 		if (idio_struct_type_isa (sit, idio_condition_read_error_type)) {
 		    idio_display_C (":", eh);
-		    idio_display (idio_array_get_index (sif, IDIO_SI_READ_ERROR_TYPE_LINE), eh);
+		    idio_display (IDIO_STRUCT_INSTANCE_FIELDS (c, IDIO_SI_READ_ERROR_TYPE_LINE), eh);
 		    idio_display_C (":", eh);
-		    idio_display (idio_array_get_index (sif, IDIO_SI_READ_ERROR_TYPE_POSITION), eh);
+		    idio_display (IDIO_STRUCT_INSTANCE_FIELDS (c, IDIO_SI_READ_ERROR_TYPE_POSITION), eh);
 		} else if (idio_struct_type_isa (sit, idio_condition_evaluation_error_type)) {
 		    idio_display_C (":", eh);
-		    idio_display (idio_array_get_index (sif, IDIO_SI_EVALUATION_ERROR_TYPE_EXPR), eh);
+		    idio_display (IDIO_STRUCT_INSTANCE_FIELDS (c, IDIO_SI_EVALUATION_ERROR_TYPE_EXPR), eh);
 		}
 	    }
 
@@ -549,7 +547,7 @@ does not return per se						\n\
 	    idio_display (IDIO_STRUCT_TYPE_NAME (sit), eh);
 	    idio_display_C (": ", eh);
 
-	    IDIO m = idio_array_get_index (sif, IDIO_SI_IDIO_ERROR_TYPE_MESSAGE);
+	    IDIO m = IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_IDIO_ERROR_TYPE_MESSAGE);
 	    if (idio_S_nil != m) {
 		if (printed) {
 		    idio_display_C (": ", eh);
@@ -557,14 +555,14 @@ does not return per se						\n\
 		idio_display (m, eh);
 		printed = 1;
 	    }
-	    IDIO e = idio_array_get_index (sif, IDIO_SI_SYSTEM_ERROR_TYPE_ERRNO);
+	    IDIO e = IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_SYSTEM_ERROR_TYPE_ERRNO);
 	    if (idio_S_nil != e) {
 		idio_display_C (" => ", eh);
 		int er = IDIO_C_TYPE_INT (e);
 		idio_display_C (idio_libc_errno_name (er), eh);
 		printed = 1;
 	    }
-	    IDIO d = idio_array_get_index (sif, IDIO_SI_IDIO_ERROR_TYPE_DETAIL);
+	    IDIO d = IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_IDIO_ERROR_TYPE_DETAIL);
 	    if (idio_S_nil != d) {
 		if (printed) {
 		    idio_display_C (": ", eh);
@@ -579,19 +577,19 @@ does not return per se						\n\
 
 	    idio_display_C ("\ndefault-condition-handler: ", eh);
 
-	    IDIO l = idio_array_get_index (sif, IDIO_SI_IDIO_ERROR_TYPE_LOCATION);
+	    IDIO l = IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_IDIO_ERROR_TYPE_LOCATION);
 	    if (idio_S_nil != l) {
 		idio_display (l, eh);
 		printed = 1;
 
 		if (idio_struct_type_isa (sit, idio_condition_read_error_type)) {
 		    idio_display_C (":", eh);
-		    idio_display (idio_array_get_index (sif, IDIO_SI_READ_ERROR_TYPE_LINE), eh);
+		    idio_display (IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_READ_ERROR_TYPE_LINE), eh);
 		    idio_display_C (":", eh);
-		    idio_display (idio_array_get_index (sif, IDIO_SI_READ_ERROR_TYPE_POSITION), eh);
+		    idio_display (IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_READ_ERROR_TYPE_POSITION), eh);
 		} else if (idio_struct_type_isa (sit, idio_condition_evaluation_error_type)) {
 		    idio_display_C (":", eh);
-		    idio_display (idio_array_get_index (sif, IDIO_SI_EVALUATION_ERROR_TYPE_EXPR), eh);
+		    idio_display (IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_EVALUATION_ERROR_TYPE_EXPR), eh);
 		}
 	    }
 
@@ -602,7 +600,7 @@ does not return per se						\n\
 	    idio_display_C (": ", eh);
 
 	    if (idio_struct_type_isa (sit, idio_condition_rt_variable_error_type)) {
-		IDIO name = idio_array_get_index (sif, IDIO_SI_RT_VARIABLE_ERROR_TYPE_NAME);
+		IDIO name = IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_RT_VARIABLE_ERROR_TYPE_NAME);
 		if (idio_S_nil != name) {
 		    if (printed) {
 			idio_display_C (": ", eh);
@@ -613,12 +611,12 @@ does not return per se						\n\
 		}
 	    }
 
-	    IDIO m = idio_array_get_index (sif, IDIO_SI_IDIO_ERROR_TYPE_MESSAGE);
+	    IDIO m = IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_IDIO_ERROR_TYPE_MESSAGE);
 	    if (idio_S_nil != m) {
 		idio_display (m, eh);
 		printed = 1;
 	    }
-	    IDIO d = idio_array_get_index (sif, IDIO_SI_IDIO_ERROR_TYPE_DETAIL);
+	    IDIO d = IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_IDIO_ERROR_TYPE_DETAIL);
 	    if (idio_S_nil != d) {
 		if (printed) {
 		    idio_display_C (": ", eh);
@@ -687,15 +685,13 @@ does not return per se						\n\
 
     if (idio_isa_condition (c)) {
 	IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (c);
-	/* IDIO stf = IDIO_STRUCT_TYPE_FIELDS (sit); */
-	IDIO sif = IDIO_STRUCT_INSTANCE_FIELDS (c);
 
 	/*
 	 * Hmm, a timing issue with SIGCHLD?  Should have been caught
 	 * in default-condition-handler.
 	 */
 	if (idio_struct_type_isa (sit, idio_condition_rt_signal_type)) {
-	    IDIO signum_I = idio_array_get_index (sif, IDIO_SI_RT_SIGNAL_TYPE_SIGNUM);
+	    IDIO signum_I = IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_RT_SIGNAL_TYPE_SIGNUM);
 	    int signum_C = IDIO_C_TYPE_INT (signum_I);
 
 	    switch (signum_C) {
@@ -721,7 +717,7 @@ does not return per se						\n\
 
 	    idio_display_C ("\nrestart-condition-handler: ", eh);
 
-	    IDIO l = idio_array_get_index (sif, IDIO_SI_IDIO_ERROR_TYPE_LOCATION);
+	    IDIO l = IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_IDIO_ERROR_TYPE_LOCATION);
 	    if (idio_S_nil != l) {
 		if (printed) {
 		    idio_display_C (": ", eh);
@@ -731,12 +727,12 @@ does not return per se						\n\
 
 		if (idio_struct_type_isa (sit, idio_condition_read_error_type)) {
 		    idio_display_C (":", eh);
-		    idio_display (idio_array_get_index (sif, IDIO_SI_READ_ERROR_TYPE_LINE), eh);
+		    idio_display (IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_READ_ERROR_TYPE_LINE), eh);
 		    idio_display_C (":", eh);
-		    idio_display (idio_array_get_index (sif, IDIO_SI_READ_ERROR_TYPE_POSITION), eh);
+		    idio_display (IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_READ_ERROR_TYPE_POSITION), eh);
 		} else if (idio_struct_type_isa (sit, idio_condition_evaluation_error_type)) {
 		    idio_display_C (":", eh);
-		    idio_display (idio_array_get_index (sif, IDIO_SI_EVALUATION_ERROR_TYPE_EXPR), eh);
+		    idio_display (IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_EVALUATION_ERROR_TYPE_EXPR), eh);
 		}
 	    }
 
@@ -746,12 +742,12 @@ does not return per se						\n\
 	    idio_display (IDIO_STRUCT_TYPE_NAME (sit), eh);
 	    idio_display_C (": ", eh);
 
-	    IDIO m = idio_array_get_index (sif, IDIO_SI_IDIO_ERROR_TYPE_MESSAGE);
+	    IDIO m = IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_IDIO_ERROR_TYPE_MESSAGE);
 	    if (idio_S_nil != m) {
 		idio_display (m, eh);
 		printed = 1;
 	    }
-	    IDIO d = idio_array_get_index (sif, IDIO_SI_IDIO_ERROR_TYPE_DETAIL);
+	    IDIO d = IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_IDIO_ERROR_TYPE_DETAIL);
 	    if (idio_S_nil != d) {
 		if (printed) {
 		    idio_display_C (": ", eh);

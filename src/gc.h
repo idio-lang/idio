@@ -488,7 +488,7 @@ typedef struct idio_closure_s {
     size_t code_len;
     struct idio_s *frame;
     struct idio_s *env;
-#ifdef IDIO_VM_PERF
+#ifdef IDIO_VM_PROF
     uint64_t called;
     struct timespec call_time;
 #endif
@@ -499,7 +499,7 @@ typedef struct idio_closure_s {
 #define IDIO_CLOSURE_CODE_LEN(C)   ((C)->u.closure->code_len)
 #define IDIO_CLOSURE_FRAME(C)      ((C)->u.closure->frame)
 #define IDIO_CLOSURE_ENV(C)        ((C)->u.closure->env)
-#ifdef IDIO_VM_PERF
+#ifdef IDIO_VM_PROF
 #define IDIO_CLOSURE_CALLED(C)     ((C)->u.closure->called)
 #define IDIO_CLOSURE_CALL_TIME(C)  ((C)->u.closure->call_time)
 #endif
@@ -534,7 +534,7 @@ typedef struct idio_primitive_s {
     char *name;
     uint8_t arity;
     char varargs;
-#ifdef IDIO_VM_PERF
+#ifdef IDIO_VM_PROF
     uint64_t called;
     struct timespec call_time;
 #endif
@@ -545,7 +545,7 @@ typedef struct idio_primitive_s {
 #define IDIO_PRIMITIVE_NAME(P)       ((P)->u.primitive->name)
 #define IDIO_PRIMITIVE_ARITY(P)      ((P)->u.primitive->arity)
 #define IDIO_PRIMITIVE_VARARGS(P)    ((P)->u.primitive->varargs)
-#ifdef IDIO_VM_PERF
+#ifdef IDIO_VM_PROF
 #define IDIO_PRIMITIVE_CALLED(P)     ((P)->u.primitive->called)
 #define IDIO_PRIMITIVE_CALL_TIME(P)  ((P)->u.primitive->call_time)
 #endif
@@ -690,23 +690,27 @@ typedef struct idio_struct_type_s {
     struct idio_s *grey;
     struct idio_s *name;	/* a symbol */
     struct idio_s *parent;	/* a struct-type */
-    struct idio_s *fields;	/* an array of strings */
+    size_t size;		/* number of fields *including parents* */
+    struct idio_s* *fields;	/* an array of strings */
 } idio_struct_type_t;
 
-#define IDIO_STRUCT_TYPE_GREY(S)	((S)->u.struct_type->grey)
-#define IDIO_STRUCT_TYPE_NAME(S)	((S)->u.struct_type->name)
-#define IDIO_STRUCT_TYPE_PARENT(S)	((S)->u.struct_type->parent)
-#define IDIO_STRUCT_TYPE_FIELDS(S)	((S)->u.struct_type->fields)
+#define IDIO_STRUCT_TYPE_GREY(ST)	((ST)->u.struct_type->grey)
+#define IDIO_STRUCT_TYPE_NAME(ST)	((ST)->u.struct_type->name)
+#define IDIO_STRUCT_TYPE_PARENT(ST)	((ST)->u.struct_type->parent)
+#define IDIO_STRUCT_TYPE_SIZE(ST)	((ST)->u.struct_type->size)
+#define IDIO_STRUCT_TYPE_FIELDS(ST,i)	((ST)->u.struct_type->fields[i])
 
 typedef struct idio_struct_instance_s {
     struct idio_s *grey;
     struct idio_s *type;	/* a struct-type */
-    struct idio_s *fields;	/* an array */
+    struct idio_s* *fields;	/* an array */
 } idio_struct_instance_t;
 
-#define IDIO_STRUCT_INSTANCE_GREY(I)	((I)->u.struct_instance->grey)
-#define IDIO_STRUCT_INSTANCE_TYPE(I)	((I)->u.struct_instance->type)
-#define IDIO_STRUCT_INSTANCE_FIELDS(I)	((I)->u.struct_instance->fields)
+#define IDIO_STRUCT_INSTANCE_GREY(SI)		((SI)->u.struct_instance.grey)
+#define IDIO_STRUCT_INSTANCE_TYPE(SI)		((SI)->u.struct_instance.type)
+#define IDIO_STRUCT_INSTANCE_FIELDS(SI,i)	((SI)->u.struct_instance.fields[i])
+
+#define IDIO_STRUCT_INSTANCE_SIZE(SI)		(IDIO_STRUCT_TYPE_SIZE(IDIO_STRUCT_INSTANCE_TYPE(SI)))
 
 typedef struct idio_thread_s {
     struct idio_s *grey;
@@ -1024,7 +1028,7 @@ struct idio_s {
 	idio_frame_t           *frame;
 	idio_handle_t          *handle;
 	idio_struct_type_t     *struct_type;
-	idio_struct_instance_t *struct_instance;
+	idio_struct_instance_t struct_instance;
 	idio_thread_t	       *thread;
 
 	idio_C_type_t          C_type;
