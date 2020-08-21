@@ -1,0 +1,4 @@
+
+str := "hello"
+
+string-set! str 1 #\a

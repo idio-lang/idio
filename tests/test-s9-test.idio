@@ -2316,7 +2316,11 @@ test (eq? #t #t) #t
 test (eq? #f #f) #t
 test (eq? (list 'pair) (list 'pair)) #f
 test (eq? (function () #f) (function () #f)) #f
-test (eq? "string" "string") #f
+test (eq? "string" "string") #t		; same constant
+s := "string"
+test (eq? s "string") #t		; same constant
+s = copy-string s
+test (eq? s "string") #f
 test (eq? 'symbol 'symbol) #t
 test (eq? (array 'array) (array 'array)) #f
 
@@ -3179,4 +3183,4 @@ test {
 } '(0 1 2)
 
 ;; all done?
-test (s9-test0 + 2220) Tests
+test (s9-test0 + 2222) Tests

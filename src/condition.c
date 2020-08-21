@@ -104,6 +104,12 @@ IDIO idio_condition_default_condition_handler;
 
 IDIO idio_condition_default_handler;
 
+static IDIO idio_condition_define_condition0_string = idio_S_nil;
+IDIO idio_condition_define_condition0_dynamic_string = idio_S_nil; /* needed in lib-wrap.c */
+static IDIO idio_condition_define_condition1_string = idio_S_nil;
+static IDIO idio_condition_define_condition2_string = idio_S_nil;
+static IDIO idio_condition_define_condition3_string = idio_S_nil;
+
 IDIO_DEFINE_PRIMITIVE2V_DS ("make-condition-type", make_condition_type, (IDIO name, IDIO parent, IDIO fields), "name parent fields", "\
 make a new condition type			\n\
 						\n\
@@ -846,6 +852,13 @@ Does not return.						\n\
 
 void idio_init_condition ()
 {
+#define IDIO_CONDITION_STRING(c,s) idio_condition_ ## c ## _string = idio_string_C (s); idio_gc_protect_auto (idio_condition_ ## c ## _string);
+
+    IDIO_CONDITION_STRING (define_condition0, "IDIO-DEFINE-CONDITION0");
+    IDIO_CONDITION_STRING (define_condition0_dynamic, "IDIO-DEFINE-CONDITION0-DYNAMIC");
+    IDIO_CONDITION_STRING (define_condition1, "IDIO-DEFINE-CONDITION1");
+    IDIO_CONDITION_STRING (define_condition2, "IDIO-DEFINE-CONDITION2");
+    IDIO_CONDITION_STRING (define_condition3, "IDIO-DEFINE-CONDITION3");
 
 #define IDIO_CONDITION_CONDITION_TYPE_NAME "^condition"
 
@@ -901,8 +914,8 @@ void idio_init_condition ()
     IDIO_DEFINE_CONDITION0 (idio_condition_runtime_error_type, "^runtime-error", idio_condition_idio_error_type);
 
     IDIO_DEFINE_CONDITION0 (idio_condition_rt_parameter_type_error_type, "^rt-parameter-type-error", idio_condition_runtime_error_type);
-    IDIO_DEFINE_CONDITION0 (idio_condition_rt_const_parameter_error_type, "^rt-const-parameter-error", idio_condition_runtime_error_type);
-    IDIO_DEFINE_CONDITION0 (idio_condition_rt_parameter_nil_error_type, "^rt-parameter-nil-error", idio_condition_runtime_error_type);
+    IDIO_DEFINE_CONDITION0 (idio_condition_rt_const_parameter_error_type, "^rt-const-parameter-error", idio_condition_rt_parameter_type_error_type);
+    IDIO_DEFINE_CONDITION0 (idio_condition_rt_parameter_nil_error_type, "^rt-parameter-nil-error", idio_condition_rt_parameter_type_error_type);
 
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_variable_error_type, "^rt-variable-error", idio_condition_runtime_error_type, "name");
     IDIO_DEFINE_CONDITION0 (idio_condition_rt_variable_unbound_error_type, "^rt-variable-unbound-error", idio_condition_rt_variable_error_type);

@@ -1,6 +1,6 @@
 
 ; str is 1-byte code points
-str := "hello"
+str := copy-string "hello"
 
 ; U+0127 LATIN SMALL LETTER H WITH STROKE (Planck constant) is 2-bytes
 c = #U+0127

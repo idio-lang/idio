@@ -40,6 +40,10 @@ static IDIO idio_modules_hash = idio_S_nil;
 
 IDIO idio_primitives_module = idio_S_nil;
 IDIO idio_Idio_module = idio_S_nil;
+static IDIO idio_module_direct_reference_string = idio_S_nil;
+static IDIO idio_module_set_symbol_value_string = idio_S_nil;
+static IDIO idio_module_add_computed_symbol_string = idio_S_nil;
+static IDIO idio_module_init_string = idio_S_nil;
 
 void idio_module_error_duplicate_name (IDIO name, IDIO c_location)
 {
@@ -710,7 +714,7 @@ IDIO idio_module_direct_reference (IDIO name)
 		    idio_ai_t mci = idio_vm_constants_lookup_or_extend (name);
 		    r = IDIO_LIST3 (m_sym,
 				    s_sym,
-				    IDIO_LIST5 (IDIO_PAIR_H (sk), idio_fixnum (mci), IDIO_PAIR_HTT (sk), mod, idio_string_C ("idio_module_direct_reference")));
+				    IDIO_LIST5 (IDIO_PAIR_H (sk), idio_fixnum (mci), IDIO_PAIR_HTT (sk), mod, idio_module_direct_reference_string));
 		}
 	    }
 	}
@@ -1256,7 +1260,7 @@ IDIO idio_module_set_symbol_value (IDIO symbol, IDIO value, IDIO module)
 	idio_ai_t gvi = idio_vm_extend_values ();
 	fgvi = idio_fixnum (gvi);
 
-	idio_hash_put (IDIO_MODULE_SYMBOLS (module), symbol, IDIO_LIST5 (kind, fmci, fgvi, module, idio_string_C ("idio_module_set_symbol_value")));
+	idio_hash_put (IDIO_MODULE_SYMBOLS (module), symbol, IDIO_LIST5 (kind, fmci, fgvi, module, idio_module_set_symbol_value_string));
     } else {
 	kind = IDIO_PAIR_H (sv);
 	fmci = IDIO_PAIR_HT (sv);
@@ -1379,7 +1383,7 @@ IDIO idio_module_add_computed_symbol (IDIO symbol, IDIO get, IDIO set, IDIO modu
 	idio_ai_t gvi = idio_vm_extend_values ();
 	fgvi = idio_fixnum (gvi);
 
-	idio_hash_put (IDIO_MODULE_SYMBOLS (module), symbol, IDIO_LIST5 (kind, idio_fixnum (mci), fgvi, module, idio_string_C ("idio_module_add_computed_symbol")));
+	idio_hash_put (IDIO_MODULE_SYMBOLS (module), symbol, IDIO_LIST5 (kind, idio_fixnum (mci), fgvi, module, idio_module_add_computed_symbol_string));
     } else {
 	kind = IDIO_PAIR_H (sv);
 	if (idio_S_computed != kind) {
@@ -1406,6 +1410,13 @@ void idio_init_module ()
     idio_modules_hash = IDIO_HASH_EQP (1<<4);
     idio_gc_protect (idio_modules_hash);
 
+#define IDIO_MODULE_STRING(c,s) idio_module_ ## c ## _string = idio_string_C (s); idio_gc_protect_auto (idio_module_ ## c ## _string);
+
+    IDIO_MODULE_STRING (direct_reference, "idio-module-direct-reference");
+    IDIO_MODULE_STRING (set_symbol_value, "idio-module-set-symbol-value");
+    IDIO_MODULE_STRING (add_computed_symbol, "idio-module-add-computed-symbol");
+    IDIO_MODULE_STRING (init, "idio-module-init");
+
     /*
      * We need to pre-seed the Idio module with the names of these two
      * modules.
@@ -1430,8 +1441,8 @@ void idio_init_module ()
     idio_ai_t Im_gci = idio_vm_constants_lookup_or_extend (name);
     idio_ai_t Im_gvi = idio_vm_extend_values ();
 
-    idio_module_set_symbol (name, IDIO_LIST5 (idio_S_toplevel, idio_fixnum (pm_gci), idio_fixnum (pm_gvi), idio_Idio_module, idio_string_C ("idio_init_module")), idio_Idio_module);
-    idio_module_set_symbol (name, IDIO_LIST5 (idio_S_toplevel, idio_fixnum (Im_gci), idio_fixnum (Im_gvi), idio_Idio_module, idio_string_C ("idio_init_module")), idio_Idio_module);
+    idio_module_set_symbol (name, IDIO_LIST5 (idio_S_toplevel, idio_fixnum (pm_gci), idio_fixnum (pm_gvi), idio_Idio_module, idio_module_init_string), idio_Idio_module);
+    idio_module_set_symbol (name, IDIO_LIST5 (idio_S_toplevel, idio_fixnum (Im_gci), idio_fixnum (Im_gvi), idio_Idio_module, idio_module_init_string), idio_Idio_module);
 }
 
 void idio_module_add_primitives ()

@@ -218,8 +218,6 @@ void idio_error_const_param_C (char *type_name, IDIO who, char *file, const char
     char c_location[BUFSIZ];
     sprintf (c_location, "%s:%s:%d", func, file, line);
 
-    idio_debug ("const: %s\n", who);
-
     idio_error_const_param (type_name, who, idio_string_C (c_location));
 }
 

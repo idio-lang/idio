@@ -143,6 +143,69 @@ IDIO idio_open_output_string_handle_C ()
     return idio_open_string_handle (str_C, IDIO_STRING_HANDLE_DEFAULT_OUTPUT_SIZE, IDIO_HANDLE_FLAG_WRITE);
 }
 
+/*
+ * Dirty hack for bitsets.  We open an input string for each offset
+ * and two for each range description (to be able to call read-number
+ * with a handle) which, for the Unicode set adds up to 13,000 input
+ * string handles each of which has attendent strings (for their
+ * names)!
+ *
+ * Given that those do not recurse we could save a lot of allocations
+ * by re-using an existing input string handle...
+ */
+IDIO idio_reopen_input_string_handle_C (IDIO sh, char *str)
+{
+    IDIO_ASSERT (sh);
+    IDIO_C_ASSERT (str);
+
+    IDIO_TYPE_ASSERT (string_handle, sh);
+
+    /*
+     * Out with the old
+     */
+    free (IDIO_STRING_HANDLE_BUF (sh));
+
+    size_t blen = strlen (str);
+    char *str_copy = idio_alloc (blen + 1);
+    /*
+     * gcc warns "output truncated before terminating nul copying as
+     * many bytes from a string as its length [-Wstringop-truncation]"
+     * for just strncpy(..., blen)
+     */
+    strncpy (str_copy, str, blen + 1);
+    str_copy[blen] = '\0';
+
+    /*
+     * We could open an input-string-handle from "" so blen can be 0
+     */
+
+    idio_string_handle_stream_t *shsp = IDIO_HANDLE_STREAM (sh);
+    IDIO_STRING_HANDLE_STREAM_PTR (shsp) = IDIO_STRING_HANDLE_STREAM_BUF (shsp);
+    IDIO_STRING_HANDLE_STREAM_EOF (shsp) = 0;
+
+    IDIO_STRING_HANDLE_STREAM_BUF (shsp) = str_copy;
+    IDIO_STRING_HANDLE_STREAM_BLEN (shsp) = blen;
+    IDIO_STRING_HANDLE_STREAM_PTR (shsp) = IDIO_STRING_HANDLE_STREAM_BUF (shsp);
+
+    int sflags = IDIO_HANDLE_FLAGS (sh);
+    if (sflags & IDIO_HANDLE_FLAG_WRITE) {
+	IDIO_STRING_HANDLE_STREAM_END (shsp) = str_copy;
+    } else {
+	IDIO_STRING_HANDLE_STREAM_END (shsp) = str_copy + blen;
+    }
+
+    IDIO_STRING_HANDLE_STREAM_EOF (shsp) = 0;
+
+    /*
+     * Don't forget the parent handle object
+     */
+    IDIO_HANDLE_LC (sh) = EOF;
+    IDIO_HANDLE_LINE (sh) = 1;
+    IDIO_HANDLE_POS (sh) = 0;
+
+    return sh;
+}
+
 IDIO_DEFINE_PRIMITIVE1 ("open-input-string", open_input_string_handle, (IDIO str))
 {
     IDIO_ASSERT (str);
@@ -359,6 +422,10 @@ int idio_flush_string_handle (IDIO sh)
     IDIO_ASSERT (sh);
 
     IDIO_TYPE_ASSERT (string_handle, sh);
+
+    idio_string_handle_stream_t *shsp = IDIO_HANDLE_STREAM (sh);
+    IDIO_STRING_HANDLE_STREAM_PTR (shsp) = IDIO_STRING_HANDLE_STREAM_BUF (shsp);
+    IDIO_STRING_HANDLE_STREAM_EOF (shsp) = 0;
 
     return 0;
 }

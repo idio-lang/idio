@@ -242,6 +242,15 @@ static IDIO idio_vm_signal_handler_name;
 
 static time_t idio_vm_t0;
 
+static IDIO idio_vm_get_or_create_vvi_string = idio_S_nil;
+static IDIO idio_vm_GLOBAL_SYM_DEF_string = idio_S_nil;
+static IDIO idio_vm_GLOBAL_SYM_DEF_gvi0_string = idio_S_nil;
+static IDIO idio_vm_GLOBAL_SYM_SET_string = idio_S_nil;
+static IDIO idio_vm_COMPUTED_SYM_DEFINE_string = idio_S_nil;
+static IDIO idio_vm_EXPANDER_string = idio_S_nil;
+static IDIO idio_vm_INFIX_OPERATOR_string = idio_S_nil;
+static IDIO idio_vm_POSTFIX_OPERATOR_string = idio_S_nil;
+
 static idio_ai_t idio_vm_get_or_create_vvi (idio_ai_t mci);
 
 #ifdef IDIO_VM_PROF
@@ -2561,7 +2570,7 @@ static idio_ai_t idio_vm_get_or_create_vvi (idio_ai_t mci)
 		 */
 		gvi = idio_vm_extend_values ();
 		fgvi = idio_fixnum (gvi);
-		sk_im = IDIO_LIST5 (idio_S_toplevel, fmci, fgvi, ce, idio_string_C ("idio_vm_get_or_create_vvi"));
+		sk_im = IDIO_LIST5 (idio_S_toplevel, fmci, fgvi, ce, idio_vm_get_or_create_vvi_string);
 		idio_module_set_symbol (sym, sk_im, ce);
 		idio_module_set_symbol_value (sym, sym, ce);
 
@@ -2947,6 +2956,12 @@ int idio_vm_run1 (IDIO thr)
 		{
 		    switch (c->type) {
 		    case IDIO_TYPE_STRING:
+			if (IDIO_FLAGS (c) & IDIO_FLAG_CONST) {
+			    IDIO_THREAD_VAL (thr) = c;
+			} else {
+			    IDIO_THREAD_VAL (thr) = idio_copy (c, IDIO_COPY_DEEP);
+			}
+			break;
 		    case IDIO_TYPE_SYMBOL:
 		    case IDIO_TYPE_KEYWORD:
 		    case IDIO_TYPE_PAIR:
@@ -3026,7 +3041,7 @@ int idio_vm_run1 (IDIO thr)
 		idio_ai_t gvi = idio_vm_extend_values ();
 		IDIO fgvi = idio_fixnum (gvi);
 		idio_module_set_vvi (ce, idio_fixnum (mci), fgvi);
-		sk_ce = IDIO_LIST5 (kind, fmci, fgvi, ce, idio_string_C ("IDIO_A_GLOBAL_SYM_DEF"));
+		sk_ce = IDIO_LIST5 (kind, fmci, fgvi, ce, idio_vm_GLOBAL_SYM_DEF_string);
 		idio_module_set_symbol (sym, sk_ce, ce);
 	    } else {
 		IDIO fgvi = IDIO_PAIR_HTT (sk_ce);
@@ -3034,7 +3049,7 @@ int idio_vm_run1 (IDIO thr)
 		    idio_ai_t gvi = idio_vm_extend_values ();
 		    fgvi = idio_fixnum (gvi);
 		    idio_module_set_vvi (ce, idio_fixnum (mci), fgvi);
-		    sk_ce = IDIO_LIST5 (kind, fmci, fgvi, ce, idio_string_C ("IDIO_A_GLOBAL_SYM_DEF/gvi=0"));
+		    sk_ce = IDIO_LIST5 (kind, fmci, fgvi, ce, idio_vm_GLOBAL_SYM_DEF_gvi0_string);
 		    idio_module_set_symbol (sym, sk_ce, ce);
 		}
 	    }
@@ -3059,7 +3074,7 @@ int idio_vm_run1 (IDIO thr)
 
 		if (idio_isa_closure (val)) {
 		    idio_set_property (val, idio_KW_name, sym);
-		    idio_set_property (val, idio_KW_source, idio_string_C ("GLOBAL-SYM-SET"));
+		    idio_set_property (val, idio_KW_source, idio_vm_GLOBAL_SYM_SET_string);
 		    IDIO str = idio_get_property (val, idio_KW_sigstr, IDIO_LIST1 (idio_S_nil));
 		    if (idio_S_nil != str) {
 			idio_set_property (val, idio_KW_sigstr, str);
@@ -3136,7 +3151,7 @@ int idio_vm_run1 (IDIO thr)
 	    IDIO sk_ce = idio_module_find_symbol (sym, ce);
 
 	    if (idio_S_unspec == sk_ce) {
-		sk_ce = IDIO_LIST5 (idio_S_toplevel, idio_fixnum (mci), fgvi, ce, idio_string_C ("IDIO_A_COMPUTED_SYM_DEFINE"));
+		sk_ce = IDIO_LIST5 (idio_S_toplevel, idio_fixnum (mci), fgvi, ce, idio_vm_COMPUTED_SYM_DEFINE_string);
 		idio_module_set_symbol (sym, sk_ce, ce);
 	    } else {
 		IDIO_PAIR_HTT (sk_ce) = fgvi;
@@ -4413,7 +4428,7 @@ int idio_vm_run1 (IDIO thr)
 	    IDIO sk_ce = idio_module_find_symbol (sym, ce);
 
 	    if (idio_S_unspec == sk_ce) {
-		sk_ce = IDIO_LIST5 (idio_S_toplevel, idio_fixnum (mci), fgvi, ce, idio_string_C ("IDIO_A_EXPANDER"));
+		sk_ce = IDIO_LIST5 (idio_S_toplevel, idio_fixnum (mci), fgvi, ce, idio_vm_EXPANDER_string);
 		idio_module_set_symbol (sym, sk_ce, ce);
 	    } else {
 		IDIO_PAIR_HTT (sk_ce) = fgvi;
@@ -4441,7 +4456,7 @@ int idio_vm_run1 (IDIO thr)
 	    IDIO sk_ce = idio_module_find_symbol (sym, idio_operator_module);
 
 	    if (idio_S_unspec == sk_ce) {
-		sk_ce = IDIO_LIST5 (idio_S_toplevel, idio_fixnum (mci), fgvi, idio_operator_module, idio_string_C ("IDIO_A_INFIX_OPERATOR"));
+		sk_ce = IDIO_LIST5 (idio_S_toplevel, idio_fixnum (mci), fgvi, idio_operator_module, idio_vm_INFIX_OPERATOR_string);
 		idio_module_set_symbol (sym, sk_ce, idio_operator_module);
 	    } else {
 		IDIO_PAIR_HTT (sk_ce) = fgvi;
@@ -4474,7 +4489,7 @@ int idio_vm_run1 (IDIO thr)
 	    IDIO sk_ce = idio_module_find_symbol (sym, ce);
 
 	    if (idio_S_unspec == sk_ce) {
-		sk_ce = IDIO_LIST5 (idio_S_toplevel, idio_fixnum (mci), fgvi, idio_operator_module, idio_string_C ("IDIO_A_POSTFIX_OPERATOR"));
+		sk_ce = IDIO_LIST5 (idio_S_toplevel, idio_fixnum (mci), fgvi, idio_operator_module, idio_vm_POSTFIX_OPERATOR_string);
 		idio_module_set_symbol (sym, sk_ce, idio_operator_module);
 	    } else {
 		IDIO_PAIR_HTT (sk_ce) = fgvi;
@@ -6049,6 +6064,9 @@ idio_ai_t idio_vm_extend_constants (IDIO v)
 
     idio_ai_t gci = idio_array_size (idio_vm_constants);
     idio_array_push (idio_vm_constants, v);
+    if (idio_S_nil != v) {
+	idio_hash_put (idio_vm_constants_hash, v, idio_fixnum (gci));
+    }
     return gci;
 }
 
@@ -6064,15 +6082,20 @@ idio_ai_t idio_vm_constants_lookup (IDIO name)
 {
     IDIO_ASSERT (name);
 
-    idio_ai_t al = idio_array_size (idio_vm_constants);
-    idio_ai_t i;
-    for (i = 0 ; i < al; i++) {
-	if (idio_eqp (name, idio_array_get_index (idio_vm_constants, i))) {
-	    return i;
+    if (idio_S_nil != name) {
+	IDIO fgci = idio_hash_get (idio_vm_constants_hash, name);
+	if (idio_S_unspec == fgci) {
+	    return -1;
+	} else {
+	    return IDIO_FIXNUM_VAL (fgci);
 	}
     }
 
-    return -1;
+    /*
+     * This should only be for #n and we should have put that in slot
+     * 0...
+     */
+    return idio_array_find_eqp (idio_vm_constants, name, 0);
 }
 
 idio_ai_t idio_vm_constants_lookup_or_extend (IDIO name)
@@ -6670,9 +6693,14 @@ void idio_init_vm_values ()
 {
     idio_vm_constants = idio_array (8000); /* 6100 */
     idio_gc_protect (idio_vm_constants);
+    /*
+     * The only "constant" we can't put in our idio_vm_constants_hash
+     * is #n (#n can't be a key) so plonk it in slot 0 so it is a
+     * quick lookup when we fail to find the key in the hash.
+     */
     idio_array_push (idio_vm_constants, idio_S_nil);
 
-    idio_vm_constants_hash = IDIO_HASH_EQP (8192);
+    idio_vm_constants_hash = IDIO_HASH_EQUALP (8192);
     idio_gc_protect (idio_vm_constants_hash);
 
     idio_vm_values = idio_array (8000); /* 1600 */
@@ -6691,6 +6719,17 @@ void idio_init_vm_values ()
      * a double-take
      */
     idio_array_push (idio_vm_values, idio_S_undef);
+
+#define IDIO_VM_STRING(c,s) idio_vm_ ## c ## _string = idio_string_C (s); idio_gc_protect_auto (idio_vm_ ## c ## _string);
+
+    IDIO_VM_STRING (get_or_create_vvi, "get-or-create-vvi");
+    IDIO_VM_STRING (GLOBAL_SYM_DEF, "GLOBAL-SYM-DEF");
+    IDIO_VM_STRING (GLOBAL_SYM_DEF_gvi0, "GLOBAL-SYM-DEF/gvi=0");
+    IDIO_VM_STRING (GLOBAL_SYM_SET, "GLOBAL-SYM-SET");
+    IDIO_VM_STRING (COMPUTED_SYM_DEFINE, "COMPUTED-SYM-DEFINE");
+    IDIO_VM_STRING (EXPANDER, "EXPANDER");
+    IDIO_VM_STRING (INFIX_OPERATOR, "INFIX-OPERATOR");
+    IDIO_VM_STRING (POSTFIX_OPERATOR, "POSTFIX-OPERATOR");
 }
 
 void idio_init_vm ()

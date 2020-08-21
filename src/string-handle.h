@@ -23,6 +23,7 @@
 #ifndef STRING_HANDLE_H
 #define STRING_HANDLE_H
 
+IDIO idio_reopen_input_string_handle_C (IDIO sh, char *str);
 IDIO idio_open_input_string_handle_C (char *str);
 IDIO idio_open_output_string_handle_C ();
 void idio_free_string_handle (IDIO sh);
@@ -36,6 +37,7 @@ int idio_flush_string_handle (IDIO sh);
 off_t idio_seek_string_handle (IDIO sh, off_t offset, int whence);
 void idio_print_string_handle (IDIO sh, IDIO o);
 
+int idio_isa_string_handle (IDIO o);
 IDIO idio_get_output_string (IDIO sh);
 
 void idio_init_string_handle ();

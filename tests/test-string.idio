@@ -66,6 +66,8 @@ s := "abc"
 test (string-ref s 0) #\a
 test (s.0) #\a
 
+test/error (string-set! s 0 #\x) #n "bad parameter: string (\"abc\") is constant"
+s = copy-string s
 string-set! s 0 #\x
 test (string-ref s 0) #\x
 test (s.0) #\x
@@ -86,4 +88,4 @@ ss-dup := copy-string sa.1
 test ss-dup sa.1
 
 ;; all done?
-test (string0 + 21) Tests
+test (string0 + 22) Tests

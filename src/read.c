@@ -1546,6 +1546,7 @@ static IDIO idio_read_string (IDIO handle, IDIO lo)
     abuf[slen] = '\0';
 
     IDIO r = idio_string_C_len (abuf, slen);
+    IDIO_FLAGS (r) |= IDIO_FLAG_CONST;
 
     free (abuf);
 
@@ -1671,6 +1672,10 @@ static IDIO idio_read_hash (IDIO handle, IDIO lo, char *ic, int depth)
 /*
  * idio_read_bitset returns the bitset -- not a lexical object.
  */
+static IDIO idio_read_bitset_buf_sh = idio_S_nil;
+static IDIO idio_read_bitset_offset_sh = idio_S_nil;
+static IDIO idio_read_bitset_end_sh = idio_S_nil;
+
 static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 {
     IDIO_ASSERT (handle);
@@ -1825,8 +1830,8 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 
 	if (eow) {
 	    if (0 == seen_size) {
-		IDIO num_sh = idio_open_input_string_handle_C (buf);
-		IDIO I_size = idio_read_number_C (num_sh, buf);
+		idio_reopen_input_string_handle_C (idio_read_bitset_buf_sh, buf);
+		IDIO I_size = idio_read_number_C (idio_read_bitset_buf_sh, buf);
 
 		/*
 		 * NB bs_size is a signed type to catch read errors
@@ -1905,25 +1910,18 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 		bs = idio_bitset (bs_size);
 		seen_size = 1;
 	    } else {
-		IDIO buf_sh = idio_open_input_string_handle_C (buf);
+		idio_reopen_input_string_handle_C (idio_read_bitset_buf_sh, buf);
 
-		char *sname = idio_handle_name_as_C (buf_sh);
-		IDIO lo = idio_struct_instance (idio_lexobj_type,
-						idio_pair (idio_string_C (sname),
-						idio_pair (idio_integer (IDIO_HANDLE_LINE (buf_sh)),
-						idio_pair (idio_integer (IDIO_HANDLE_POS (buf_sh)),
-						idio_pair (idio_S_unspec,
-						idio_S_nil)))));
-		free (sname);
+		IDIO lo = idio_read_lexobj_from_handle (idio_read_bitset_buf_sh);
 
 		if (NULL != bit_range) {
 		    /* bit_range is pointing at the HYPEN_MINUS */
 		    *bit_range = '\0';
 		    bit_range++;
 
-		    IDIO offset_sh = idio_open_input_string_handle_C (buf);
+		    idio_reopen_input_string_handle_C (idio_read_bitset_offset_sh, buf);
 
-		    IDIO I_offset = idio_read_bignum_radix (offset_sh, lo, 'x', 16);
+		    IDIO I_offset = idio_read_bignum_radix (idio_read_bitset_offset_sh, lo, 'x', 16);
 
 		    if (idio_isa_fixnum (I_offset)) {
 			offset = IDIO_FIXNUM_VAL (I_offset);
@@ -1980,7 +1978,7 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 		     * characters than in buf indicating buf isn't a
 		     * valid hex value
 		     */
-		    if (idio_handle_tell (offset_sh) != strlen (buf)) {
+		    if (idio_handle_tell (idio_read_bitset_offset_sh) != strlen (buf)) {
 			/*
 			 * Test Case: read-errors/bitset-range-start-floating-point.idio
 			 *
@@ -1998,7 +1996,7 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 			 * content of {em}.
 			 */
 			sprintf (em, "range start %#zx from \"%.*s\"", offset, BUFSIZ - 32, buf);
-			idio_read_error_bitset (buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
+			idio_read_error_bitset (idio_read_bitset_buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
 
 			return idio_S_notreached;
 		    }
@@ -2015,7 +2013,7 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 			 */
 			char em[BUFSIZ];
 			sprintf (em, "range start %#zx > bitset size %#zx", offset, IDIO_BITSET_SIZE (bs));
-			idio_read_error_bitset (buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
+			idio_read_error_bitset (idio_read_bitset_buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
 
 			return idio_S_notreached;
 		    }
@@ -2029,7 +2027,7 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 			 */
 			char em[BUFSIZ];
 			sprintf (em, "range start %#zx is not a byte boundary", offset);
-			idio_read_error_bitset (buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
+			idio_read_error_bitset (idio_read_bitset_buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
 
 			return idio_S_notreached;
 		    }
@@ -2045,14 +2043,14 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 		     * understanding.
 		     */
 		    ptrdiff_t end = 0;
-		    IDIO end_sh = idio_open_input_string_handle_C (bit_range);
+		    idio_reopen_input_string_handle_C (idio_read_bitset_end_sh, bit_range);
 
 		    /*
 		     * Test Case: read-errors/bitset-range-end-negative.idio
 		     *
 		     * #B{ 3 0--10 }
 		     */
-		    IDIO I_end = idio_read_bignum_radix (end_sh, lo, 'x', 16);
+		    IDIO I_end = idio_read_bignum_radix (idio_read_bitset_end_sh, lo, 'x', 16);
 
 		    if (idio_isa_fixnum (I_end)) {
 			end = IDIO_FIXNUM_VAL (I_end);
@@ -2067,7 +2065,7 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 			end = idio_bignum_uint64_value (I_end);
 		    }
 
-		    if (idio_handle_tell (end_sh) != strlen (bit_range)) {
+		    if (idio_handle_tell (idio_read_bitset_end_sh) != strlen (bit_range)) {
 			/*
 			 * Test Case: read-errors/bitset-range-end-floating-point.idio
 			 *
@@ -2076,7 +2074,7 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 			 */
 			char em[BUFSIZ];
 			sprintf (em, "range end %#zx from \"%s\"", end, bit_range);
-			idio_read_error_bitset (buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
+			idio_read_error_bitset (idio_read_bitset_buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
 
 			return idio_S_notreached;
 		    }
@@ -2090,7 +2088,7 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 			 */
 			char em[BUFSIZ];
 			sprintf (em, "range end %#zx > bitset size %#zx", end, IDIO_BITSET_SIZE (bs));
-			idio_read_error_bitset (buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
+			idio_read_error_bitset (idio_read_bitset_buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
 
 			return idio_S_notreached;
 		    }
@@ -2104,7 +2102,7 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 			 */
 			char em[BUFSIZ];
 			sprintf (em, "range end %#zx is not a byte boundary", end);
-			idio_read_error_bitset (buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
+			idio_read_error_bitset (idio_read_bitset_buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
 
 			return idio_S_notreached;
 		    }
@@ -2118,7 +2116,7 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 			 */
 			char em[BUFSIZ];
 			sprintf (em, "range start %#zx > range end %#zx", offset, end);
-			idio_read_error_bitset (buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
+			idio_read_error_bitset (idio_read_bitset_buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
 
 			return idio_S_notreached;
 		    }
@@ -2215,7 +2213,7 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 			     */
 			    char em[BUFSIZ];
 			    sprintf (em, "offset %#zx > bitset size %#zx", offset, IDIO_BITSET_SIZE (bs));
-			    idio_read_error_bitset (buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
+			    idio_read_error_bitset (idio_read_bitset_buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
 
 			    return idio_S_notreached;
 			}
@@ -2229,7 +2227,7 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 			     */
 			    char em[BUFSIZ];
 			    sprintf (em, "offset %#zx is not a byte boundary", offset);
-			    idio_read_error_bitset (buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
+			    idio_read_error_bitset (idio_read_bitset_buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
 
 			    return idio_S_notreached;
 			}
@@ -2246,7 +2244,7 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 			 */
 			char em[BUFSIZ];
 			sprintf (em, "bitset bits should be fewer than %d", CHAR_BIT);
-			idio_read_error_bitset (buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
+			idio_read_error_bitset (idio_read_bitset_buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
 
 			return idio_S_notreached;
 		    }
@@ -2260,7 +2258,7 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 			 */
 			char em[BUFSIZ];
 			sprintf (em, "offset %#zx + %zu bits > bitset size %#zx", offset, bit_block_len, IDIO_BITSET_SIZE (bs));
-			idio_read_error_bitset (buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
+			idio_read_error_bitset (idio_read_bitset_buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
 
 			return idio_S_notreached;
 		    }
@@ -2283,7 +2281,7 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 				 */
 				char em[BUFSIZ];
 				sprintf (em, "bits should be 0/1, not %#x @%d", bit_block[i], i);
-				idio_read_error_bitset (buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
+				idio_read_error_bitset (idio_read_bitset_buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
 
 				return idio_S_notreached;
 			    }
@@ -3679,6 +3677,13 @@ void idio_init_read ()
     idio_hash_add_weak_table (idio_src_properties);
     name = idio_symbols_C_intern ("%idio-src-properties");
     idio_module_set_symbol_value (name, idio_src_properties, idio_Idio_module);
+
+    idio_read_bitset_buf_sh = idio_open_input_string_handle_C ("");
+    idio_gc_protect_auto (idio_read_bitset_buf_sh);
+    idio_read_bitset_offset_sh = idio_open_input_string_handle_C ("");
+    idio_gc_protect_auto (idio_read_bitset_offset_sh);
+    idio_read_bitset_end_sh = idio_open_input_string_handle_C ("");
+    idio_gc_protect_auto (idio_read_bitset_end_sh);
 }
 
 void idio_read_add_primitives ()
