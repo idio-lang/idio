@@ -106,8 +106,6 @@ void idio_assign_array (IDIO a, idio_ai_t asize, IDIO dv)
     IDIO_C_ASSERT (asize);
     IDIO_TYPE_ASSERT (array, a);
 
-    IDIO_FPRINTF (stderr, "idio_assign_array: %10p = [%d]\n", a, asize);
-
     IDIO_GC_ALLOC (a->u.array, sizeof (idio_array_t));
     IDIO_GC_ALLOC (a->u.array->ae, asize * sizeof (IDIO));
 
@@ -189,7 +187,6 @@ void idio_array_resize (IDIO a)
     idio_ai_t ousize = IDIO_ARRAY_USIZE (a);
     idio_ai_t nsize = oasize << 1;
 
-    IDIO_FPRINTF (stderr, "idio_array_resize: %10p = {%d} -> {%d}\n", a, oasize, nsize);
     idio_assign_array (a, nsize, IDIO_ARRAY_DV (a));
 
     idio_ai_t i;

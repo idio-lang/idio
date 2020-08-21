@@ -170,7 +170,6 @@ const char *idio_type_enum2string (idio_type_e type)
     case IDIO_TYPE_C_FFI:		return "C_FFI";
     case IDIO_TYPE_OPAQUE:		return "OPAQUE";
     default:
-	IDIO_FPRINTF (stderr, "IDIO_TYPE_ENUM2STRING: unexpected type %d\n", type);
 	return "NOT KNOWN";
     }
 }

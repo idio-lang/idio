@@ -139,9 +139,6 @@ IDIO idio_gc_get (idio_type_e type)
     idio_gc->stats.tgets[type]++;
     idio_gc->stats.igets++;
 
-    if ((idio_gc->stats.igets & 0xffff) == 0) {
-	IDIO_FPRINTF (stderr, "igets = %llu\n", idio_gc->stats.igets);
-    }
     IDIO o = idio_gc->free;
     if (NULL == o) {
 	idio_gc->stats.allocs++;
@@ -326,8 +323,6 @@ void idio_gc_gcc_mark (IDIO o, unsigned colour)
 	return;
     }
 
-    IDIO_FPRINTF (stderr, "idio_gc_gcc_mark: mark %10p -> %10p t=%2d/%.5s f=%2x colour=%d\n", o, o->next, o->type, idio_type2string (o), o->gc_flags, colour);
-
     if ((o->gc_flags & IDIO_GC_FLAG_FREE_UMASK) & IDIO_GC_FLAG_FREE) {
 	fprintf (stderr, "idio_gc_gcc_mark: already free?: ");
 	idio_gc->verbose++;
@@ -345,7 +340,6 @@ void idio_gc_gcc_mark (IDIO o, unsigned colour)
 	    break;
 	}
 	if (o->gc_flags & IDIO_GC_FLAG_GCC_LGREY) {
-	    IDIO_FPRINTF (stderr, "idio_gc_gcc_mark: object is already grey: %10p t=%2d %s f=%x\n", o, o->type, idio_type2string (o), o->gc_flags);
 	    break;
 	}
 
@@ -748,30 +742,12 @@ idio_root_t *idio_gc_new_root ()
 void idio_gc_dump_root (idio_root_t *root)
 {
     IDIO_C_ASSERT (root);
-
-    IDIO_FPRINTF (stderr, "idio_gc_dump_root: self @%10p ->%10p o=%10p ", root, root->next, root->object);
-    switch (((intptr_t) root->object) & IDIO_TYPE_MASK) {
-    case IDIO_TYPE_FIXNUM_MARK:
-	IDIO_FPRINTF (stderr, "FIXNUM %d", ((intptr_t) root->object >> IDIO_TYPE_BITS_SHIFT));
-	break;
-    case IDIO_TYPE_CONSTANT_MARK:
-	IDIO_FPRINTF (stderr, "SCONSTANT %d", ((intptr_t) root->object >> IDIO_TYPE_BITS_SHIFT));
-	break;
-    case IDIO_TYPE_POINTER_MARK:
-	IDIO_FPRINTF (stderr, "IDIO %s", idio_type2string (root->object));
-	break;
-    default:
-	IDIO_FPRINTF (stderr, "?? %p", root->object);
-	break;
-    }
-    IDIO_FPRINTF (stderr, "\n");
 }
 
 void idio_gc_gcc_mark_root (idio_root_t *root, unsigned colour)
 {
     IDIO_C_ASSERT (root);
 
-    IDIO_FPRINTF (stderr, "idio_gc_gcc_mark_root: mark as %d\n", colour);
     idio_gc_gcc_mark (root->object, colour);
 }
 
@@ -843,8 +819,6 @@ void idio_gc_walk_tree ()
 
     idio_gc->verbose++;
 
-    IDIO_FPRINTF (stderr, "idio_walk_tree: \n");
-
     size_t ri = 0;
     idio_root_t *root = idio_gc->roots;
     while (root) {
@@ -862,9 +836,6 @@ void idio_gc_walk_tree ()
 void idio_gc_dump ()
 {
     idio_gc->verbose = 3;
-
-    IDIO_FPRINTF (stderr, "\ndump\n");
-    IDIO_FPRINTF (stderr, "idio_gc_dump: self @%10p\n", idio_gc);
 
     size_t n = 0;
     idio_root_t *root = idio_gc->roots;
@@ -889,7 +860,6 @@ void idio_gc_dump ()
 	o = o->next;
 	n++;
     }
-    IDIO_FPRINTF (stderr, "idio_gc_dump: %" PRIdPTR " on free list\n", n);
     IDIO_C_ASSERT (n == idio_gc->stats.nfree);
 
     o = idio_gc->used;
@@ -908,7 +878,6 @@ void idio_gc_dump ()
 	    fprintf (stderr, "... +%zd more\n", n - 10);
 	}
     }
-    IDIO_FPRINTF (stderr, "idio_gc_dump: %" PRIdPTR " on used list\n", n);
 }
 
 /**
@@ -943,8 +912,6 @@ void idio_gc_protect (IDIO o)
 	/* notreached */
 	return;
     }
-
-    IDIO_FPRINTF (stderr, "idio_gc_protect: %10p\n", o);
 
     idio_root_t *r = idio_gc->roots;
     while (r) {
@@ -986,8 +953,6 @@ void idio_gc_protect_auto (IDIO o)
 	return;
     }
 
-    IDIO_FPRINTF (stderr, "idio_gc_protect_auto: %10p\n", o);
-
     idio_gc_protect (o);
 
     IDIO_PAIR_H (idio_gc->dynamic_roots) = idio_pair (o, IDIO_PAIR_H (idio_gc->dynamic_roots));
@@ -1006,8 +971,6 @@ void idio_gc_protect_auto (IDIO o)
 void idio_gc_expose (IDIO o)
 {
     IDIO_ASSERT (o);
-
-    IDIO_FPRINTF (stderr, "idio_gc_expose: %10p\n", o);
 
     int seen = 0;
     idio_root_t *r = idio_gc->roots;
@@ -1042,7 +1005,6 @@ void idio_gc_expose (IDIO o)
 	return;
     }
 
-    IDIO_FPRINTF (stderr, "idio_gc_expose: %10p no longer protected\n", o);
     r = idio_gc->roots;
     while (r) {
 	idio_gc_dump_root (r);
@@ -1053,7 +1015,6 @@ void idio_gc_expose (IDIO o)
 void idio_gc_expose_all ()
 {
 
-    IDIO_FPRINTF (stderr, "idio_gc_expose_all\n");
     idio_root_t *r = idio_gc->roots;
     size_t n = 0;
     while (r) {
@@ -1070,8 +1031,6 @@ void idio_gc_expose_all ()
 
 void idio_gc_expose_autos ()
 {
-
-    IDIO_FPRINTF (stderr, "idio_gc_expose_autos\n");
 
     IDIO dr = idio_gc->dynamic_roots;
     IDIO d = IDIO_PAIR_H (dr);
@@ -1357,7 +1316,6 @@ void idio_gc_find_frame ()
 void idio_gc_mark ()
 {
 
-    IDIO_FPRINTF (stderr, "idio_gc_mark: all used -> WHITE %ux\n", IDIO_GC_FLAG_GCC_WHITE);
     IDIO o = idio_gc->used;
     while (o) {
 	idio_gc_gcc_mark (o, IDIO_GC_FLAG_GCC_WHITE);
@@ -1365,14 +1323,12 @@ void idio_gc_mark ()
     }
     idio_gc->grey = NULL;
 
-    IDIO_FPRINTF (stderr, "idio_gc_mark: roots -> BLACK %x\n", IDIO_GC_FLAG_GCC_BLACK);
     idio_root_t *root = idio_gc->roots;
     while (root) {
 	idio_gc_gcc_mark_root (root, IDIO_GC_FLAG_GCC_BLACK);
 	root = root->next;
     }
 
-    IDIO_FPRINTF (stderr, "idio_gc_mark: process grey list\n");
     while (idio_gc->grey) {
 	idio_gc_process_grey (IDIO_GC_FLAG_GCC_BLACK);
     }
@@ -1590,7 +1546,6 @@ void idio_gc_sweep ()
     size_t nobj = 0;
     size_t freed = 0;
 
-    IDIO_FPRINTF (stderr, "idio_gc_sweep: used list\n");
     IDIO co = idio_gc->used;
     IDIO po = NULL;
     IDIO no = NULL;
@@ -1628,7 +1583,6 @@ void idio_gc_sweep ()
 	    idio_gc->stats.nfree++;
 	    freed++;
 	} else {
-	    IDIO_FPRINTF (stderr, "idio_gc_sweep: keeping %10p %x == %x %x == %x\n", co, co->gc_flags & IDIO_GC_FLAG_STICKY_MASK, IDIO_GC_FLAG_NOTSTICKY, co->gc_flags & IDIO_GC_FLAG_GCC_MASK, IDIO_GC_FLAG_GCC_WHITE);
 	    po = co;
 	}
 
@@ -1693,8 +1647,6 @@ void idio_gc_collect (char *caller)
 	us += 1000000;
 	s -= 1;
     }
-
-    IDIO_FPRINTF (stderr, "idio-gc-collect: GC time %ld.%03ld\n", s, us / 1000);
 
     idio_gc->stats.dur.tv_usec += us;
     if (idio_gc->stats.dur.tv_usec > 1000000) {
@@ -1969,7 +1921,6 @@ void idio_gc_free ()
     }
 
     if (idio_gc->pause) {
-	IDIO_FPRINTF (stderr, "idio_gc_free: pause is non-zero: %" PRIdPTR ", zeroing\n", idio_gc->pause);
 	idio_gc->pause = 0;
     }
 
@@ -1986,7 +1937,6 @@ void idio_gc_free ()
 	free (co);
 	n++;
     }
-    IDIO_FPRINTF (stderr, "idio_gc_free: %" PRIdPTR " on free list\n", n);
     IDIO_C_ASSERT (n == idio_gc->stats.nfree);
 
     n = 0;
@@ -1996,7 +1946,6 @@ void idio_gc_free ()
 	free (co);
 	n++;
     }
-    IDIO_FPRINTF (stderr, "idio_gc_free: %" PRIdPTR " on used list\n", n);
 
     free (idio_gc);
 }

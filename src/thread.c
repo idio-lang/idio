@@ -30,8 +30,6 @@ IDIO idio_thread_base (idio_ai_t stack_size)
 {
     IDIO t = idio_gc_get (IDIO_TYPE_THREAD);
 
-    IDIO_FPRINTF (stderr, "idio_thread: %10p\n", t);
-
     IDIO_GC_ALLOC (t->u.thread, sizeof (idio_thread_t));
 
     IDIO main_module = idio_Idio_module_instance ();

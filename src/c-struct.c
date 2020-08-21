@@ -303,8 +303,6 @@ IDIO idio_C_struct (IDIO fields_array, IDIO methods, IDIO frame)
 
     IDIO cs = idio_gc_get (IDIO_TYPE_C_STRUCT);
 
-    IDIO_FPRINTF (stderr, "idio_C_struct: %10p = (%10p %10p)\n", cs, fields_array, methods);
-
     IDIO_GC_ALLOC (cs->u.C_struct, sizeof (idio_C_struct_t));
 
     IDIO_C_STRUCT_GREY (cs) = NULL;
@@ -340,8 +338,6 @@ IDIO idio_C_instance (IDIO cs, IDIO frame)
     IDIO_ASSERT (frame);
 
     IDIO ci = idio_gc_get (IDIO_TYPE_C_INSTANCE);
-
-    IDIO_FPRINTF (stderr, "idio_C_instance: %10p = (%10p)\n", ci, cs);
 
     IDIO_GC_ALLOC (ci->u.C_instance, sizeof (idio_C_instance_t));
     IDIO_GC_ALLOC (IDIO_C_INSTANCE_P (ci), IDIO_C_STRUCT_SIZE (cs));

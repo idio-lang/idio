@@ -241,10 +241,19 @@ void idio_error (IDIO who, IDIO msg, IDIO args, IDIO c_location)
 	idio_display_C (" ", sh);
 	idio_display (args, sh);
     }
+    /*
+     * Quick hack for when called by {error} primitive
+     */
+    if (idio_isa_symbol (c_location)) {
+	idio_display_C (" at ", sh);
+	idio_display (c_location, sh);
+    }
 
 #ifdef IDIO_DEBUG
-    idio_display_C (" at ", sh);
-    idio_display (c_location, sh);
+    if (idio_isa_string (c_location)) {
+	idio_display_C (" at ", sh);
+	idio_display (c_location, sh);
+    }
 #endif
 
     IDIO c = idio_condition_idio_error (idio_get_output_string (sh),
@@ -264,16 +273,16 @@ void idio_error_C (char *msg, IDIO args, IDIO c_location)
     idio_error (idio_S_internal, idio_string_C (msg), args, c_location);
 }
 
-IDIO_DEFINE_PRIMITIVE2V ("error", error, (IDIO c_location, IDIO msg, IDIO args))
+IDIO_DEFINE_PRIMITIVE2V ("error", error, (IDIO where, IDIO msg, IDIO args))
 {
-    IDIO_ASSERT (c_location);
+    IDIO_ASSERT (where);
     IDIO_ASSERT (msg);
     IDIO_ASSERT (args);
-    IDIO_VERIFY_PARAM_TYPE (symbol, c_location);
+    IDIO_VERIFY_PARAM_TYPE (symbol, where);
     IDIO_VERIFY_PARAM_TYPE (string, msg);
     IDIO_VERIFY_PARAM_TYPE (list, args);
 
-    idio_error (idio_S_user_code, msg, args, c_location);
+    idio_error (idio_S_user_code, msg, args, where);
 
     return idio_S_notreached;
 }

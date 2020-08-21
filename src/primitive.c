@@ -29,8 +29,6 @@ IDIO idio_primitive (IDIO (*func) (IDIO args), const char *name_C, size_t arity,
 
     IDIO o = idio_gc_get (IDIO_TYPE_PRIMITIVE);
 
-    IDIO_FPRINTF (stderr, "idio_primitive: %10p = (%10p)\n", o, func);
-
     IDIO_GC_ALLOC (o->u.primitive, sizeof (idio_primitive_t));
 
     IDIO_PRIMITIVE_GREY (o) = NULL;

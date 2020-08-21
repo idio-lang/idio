@@ -93,8 +93,6 @@ IDIO idio_C_FFI (IDIO symbol, IDIO arg_types, IDIO result_type)
 
     IDIO o = idio_gc_get (IDIO_TYPE_C_FFI);
 
-    IDIO_FPRINTF (stderr, "idio_C_FFI: %10p\n", o);
-
     IDIO_TYPE_ASSERT (opaque, symbol);
     IDIO_TYPE_ASSERT (list, arg_types);
 

@@ -49,8 +49,6 @@ IDIO idio_closure (size_t code_pc, size_t code_len, IDIO frame, IDIO env, IDIO s
 
     IDIO c = idio_gc_get (IDIO_TYPE_CLOSURE);
 
-    IDIO_FPRINTF (stderr, "idio_closure: %10p = (%10p %10p)\n", c, code_pc, env);
-
     IDIO_GC_ALLOC (c->u.closure, sizeof (idio_closure_t));
 
     IDIO_CLOSURE_GREY (c) = NULL;

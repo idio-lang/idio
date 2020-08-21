@@ -29,8 +29,6 @@ IDIO idio_pair (IDIO h, IDIO t)
 
     IDIO p = idio_gc_get (IDIO_TYPE_PAIR);
 
-    IDIO_FPRINTF (stderr, "idio_pair: %10p = (%10p %10p)\n", p, h, t);
-
     IDIO_PAIR_GREY (p) = NULL;
     IDIO_PAIR_H (p) = h;
     IDIO_PAIR_T (p) = t;
