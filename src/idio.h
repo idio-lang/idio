@@ -168,7 +168,7 @@ extern FILE *idio_vm_perf_FILE;
     }
 #define IDIO_ASSERT_NOT_CONST(t,x) {					\
 	if (IDIO_FLAGS (x) & IDIO_FLAG_CONST) {				\
-	    idio_error_const_param_C (#t " " #x, x, __FILE__, __func__, __LINE__); \
+	    idio_error_const_param_C (#t, x, __FILE__, __func__, __LINE__); \
 	}								\
     }
 #define IDIO_ASSERT(x)		((void) 0)
