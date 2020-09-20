@@ -6458,7 +6458,7 @@ IDIO idio_vm_frame_tree (IDIO args)
 
     while (idio_S_nil != frame) {
 	IDIO faci = IDIO_FRAME_NAMES (frame);
-	fprintf (stderr, "aci=%ld\n", IDIO_FIXNUM_VAL (faci));
+	fprintf (stderr, "aci=%td\n", IDIO_FIXNUM_VAL (faci));
 	IDIO names = idio_S_nil;
 	names = idio_vm_constants_ref (IDIO_FIXNUM_VAL (faci));
 
