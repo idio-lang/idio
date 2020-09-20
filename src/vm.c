@@ -550,7 +550,7 @@ void idio_vm_debug (IDIO thr, char *prefix, idio_ai_t stack_start)
 
     fprintf (stderr, "idio-debug: %s THR %10p\n", prefix, thr);
     idio_debug ("  src=%s\n", idio_vm_source_location ());
-    fprintf (stderr, "     pc=%6zd\n", IDIO_THREAD_PC (thr));
+    fprintf (stderr, "     pc=%6td\n", IDIO_THREAD_PC (thr));
     idio_debug ("    val=%s\n", IDIO_THREAD_VAL (thr));
     idio_debug ("   reg1=%s\n", IDIO_THREAD_REG1 (thr));
     idio_debug ("   reg2=%s\n", IDIO_THREAD_REG2 (thr));
@@ -2332,10 +2332,12 @@ static void idio_vm_function_trace (IDIO_I ins, IDIO thr)
     IDIO args = idio_frame_params_as_list (val);
     IDIO expr = idio_list_append2 (IDIO_LIST1 (func), args);
 
+#ifdef IDIO_VM_PROF
     struct timespec ts;
     if (0 != clock_gettime (CLOCK_MONOTONIC, &ts)) {
 	perror ("clock_gettime (CLOCK_MONOTONIC, ts)");
     }
+#endif
 
     /*
      * %9d	- clock ns
@@ -2350,8 +2352,10 @@ static void idio_vm_function_trace (IDIO_I ins, IDIO thr)
      * %s	- expression
      */
 
+#ifdef IDIO_VM_PROF
     fprintf (stderr, "%09ld ", ts.tv_nsec);
-    fprintf (stderr, "%7zd ", IDIO_THREAD_PC (thr) - 1);
+#endif
+    fprintf (stderr, "%7td ", IDIO_THREAD_PC (thr) - 1);
 
     IDIO fmci = IDIO_THREAD_EXPR (thr);
     IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), fmci);
@@ -2435,7 +2439,7 @@ static void idio_vm_primitive_call_trace (char *name, IDIO thr, int nargs)
      * %s	- expression
      */
     fprintf (stderr, "%9s ", "");
-    fprintf (stderr, "%7zd ", IDIO_THREAD_PC (thr) - 1);
+    fprintf (stderr, "%7td ", IDIO_THREAD_PC (thr) - 1);
     fprintf (stderr, "%40s", "");
 
     /* fprintf (stderr, "        __primcall__    "); */
@@ -2465,7 +2469,7 @@ static void idio_vm_primitive_result_trace (IDIO thr)
     /* fprintf (stderr, "                                "); */
 
     fprintf (stderr, "%9s ", "");
-    fprintf (stderr, "%7zd ", IDIO_THREAD_PC (thr));
+    fprintf (stderr, "%7td ", IDIO_THREAD_PC (thr));
     fprintf (stderr, "%40s", "");
     fprintf (stderr, "%.*s  ", idio_vm_tracing, idio_vm_tracing_out);
     idio_debug ("%s\n", val);
@@ -2631,10 +2635,10 @@ int idio_vm_run1 (IDIO thr)
     IDIO_TYPE_ASSERT (thread, thr);
 
     if (IDIO_THREAD_PC(thr) < 0) {
-	fprintf (stderr, "\n\nidio_vm_run1: PC %" PRIdPTR " < 0\n", IDIO_THREAD_PC (thr));
+	fprintf (stderr, "\n\nidio_vm_run1: PC %td < 0\n", IDIO_THREAD_PC (thr));
 	idio_vm_panic (thr, "idio_vm_run1: bad PC!");
     } else if (IDIO_THREAD_PC(thr) > IDIO_IA_USIZE (idio_all_code)) {
-	fprintf (stderr, "\n\nidio_vm_run1: PC %" PRIdPTR " > max code PC %" PRIdPTR "\n", IDIO_THREAD_PC (thr), IDIO_IA_USIZE (idio_all_code));
+	fprintf (stderr, "\n\nidio_vm_run1: PC %td > max code PC %" PRIdPTR "\n", IDIO_THREAD_PC (thr), IDIO_IA_USIZE (idio_all_code));
 	idio_vm_panic (thr, "idio_vm_run1: bad PC!");
     }
     IDIO_I ins = IDIO_THREAD_FETCH_NEXT ();
@@ -3589,7 +3593,7 @@ int idio_vm_run1 (IDIO thr)
 	    IDIO_THREAD_PC (thr) = pc;
 	    if (idio_vm_tracing) {
 		fprintf (stderr, "%9s ", "");
-		fprintf (stderr, "%7zd ", IDIO_THREAD_PC (thr));
+		fprintf (stderr, "%7td ", IDIO_THREAD_PC (thr));
 		fprintf (stderr, "%40s", "");
 		fprintf (stderr, "%.*s  ", idio_vm_tracing, idio_vm_tracing_out);
 		idio_debug ("%s\n", IDIO_THREAD_VAL (thr));
@@ -4681,13 +4685,13 @@ void idio_vm_dasm (IDIO thr, idio_ai_t pc0, idio_ai_t pce)
     }
 
     if (pc0 > pce) {
-	fprintf (stderr, "\n\nPC %" PRIdPTR " > max code PC %" PRIdPTR"\n", pc0, pce);
+	fprintf (stderr, "\n\nPC %td > max code PC %td\n", pc0, pce);
 	idio_debug ("THR %s\n", thr);
 	idio_debug ("STK %.1000s\n", IDIO_THREAD_STACK (thr));
 	idio_vm_panic (thr, "vm-dasm: bad PC!");
     }
 
-    IDIO_VM_DASM ("idio_vm_dasm: thr %p pc0 %6zd pce %6zd\n", thr, pc0, pce);
+    IDIO_VM_DASM ("idio_vm_dasm: thr %p pc0 %6td pce %6td\n", thr, pc0, pce);
 
     IDIO hints = IDIO_HASH_EQP (256);
 
@@ -4705,7 +4709,7 @@ void idio_vm_dasm (IDIO thr, idio_ai_t pc0, idio_ai_t pce)
 	    IDIO_VM_DASM ("%20s ", "");
 	}
 
-	IDIO_VM_DASM ("%6zd ", pc);
+	IDIO_VM_DASM ("%6td ", pc);
 
 	IDIO_I ins = IDIO_IA_GET_NEXT (pcp);
 
@@ -6006,7 +6010,7 @@ IDIO idio_vm_run (IDIO thr)
      */
     int bail = 0;
     if (IDIO_THREAD_PC (thr) != (idio_vm_FINISH_pc + 1)) {
-	fprintf (stderr, "vm-run: THREAD failed to run FINISH: PC %zu != %td\n", IDIO_THREAD_PC (thr), (idio_vm_FINISH_pc + 1));
+	fprintf (stderr, "vm-run: THREAD failed to run FINISH: PC %td != %td\n", IDIO_THREAD_PC (thr), (idio_vm_FINISH_pc + 1));
 	bail = 1;
     }
 
@@ -6454,7 +6458,7 @@ IDIO idio_vm_frame_tree (IDIO args)
 
     while (idio_S_nil != frame) {
 	IDIO faci = IDIO_FRAME_NAMES (frame);
-	fprintf (stderr, "aci=%td\n", IDIO_FIXNUM_VAL (faci));
+	fprintf (stderr, "aci=%ld\n", IDIO_FIXNUM_VAL (faci));
 	IDIO names = idio_S_nil;
 	names = idio_vm_constants_ref (IDIO_FIXNUM_VAL (faci));
 
@@ -6548,7 +6552,7 @@ void idio_vm_decode_thread (IDIO thr)
     idio_ai_t dsp = IDIO_FIXNUM_VAL (IDIO_THREAD_DYNAMIC_SP (thr));
     idio_ai_t esp = IDIO_FIXNUM_VAL (IDIO_THREAD_ENVIRON_SP (thr));
 
-    fprintf (stderr, "vm-decode-thread: thr=%8p esp=%4td dsp=%4td tsp=%4td sp=%4td pc=%6zd\n", thr, esp, dsp, tsp, sp, IDIO_THREAD_PC (thr));
+    fprintf (stderr, "vm-decode-thread: thr=%8p esp=%4td dsp=%4td tsp=%4td sp=%4td pc=%6td\n", thr, esp, dsp, tsp, sp, IDIO_THREAD_PC (thr));
 
     idio_vm_decode_stack (stack);
 }

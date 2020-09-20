@@ -1,5 +1,6 @@
 HOSTNAME	:= $(shell uname -n)
 OS		:= $(shell uname -s)
+REV		:= $(shell uname -r)
 ARCH		:= $(shell uname -m)
 SHELL		:= bash
 
@@ -14,7 +15,11 @@ SRCKDOUTDIR	:= $(SRCDOCDIR)/kernel-autodoc-out
 ifeq ($(OS),Darwin)
 
 LIBFFI_INCDIR	:= /usr/include/ffi
+ifeq ($(REV),9.8.0)
+LIBFFI_INCDIR	:= /Developer//SDKs/MacOSX10.5.sdk/usr/include/ffi
+else
 LIBFFI_INCDIR	:= /Library/Developer/CommandLineTools/SDKs/MacOSX10.15.sdk/usr/include/ffi
+endif
 LDFLAGS		:= -rdynamic
 LIBS		:= -ldl
 
