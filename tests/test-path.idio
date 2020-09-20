@@ -80,11 +80,11 @@ test (length p) 2
 ;; XXX should be [:lower:] but for lack of OS support.
 p = make-struct-instance ~path (append-string d "/[a-z]")
 
-;; The stat() sorts use "libc/<" as a comparator, so numerically
-;; smallest first
-test (sort_size p) (list f3 f2 f1)
-test (sort_mtime p) (list f1 f2 f3)
-test (sort_atime p) (list f3 f1 f2)
+;; The stat() sorts use "C/<" as a comparator, so numerically smallest
+;; first
+test (sort-size p) (list f3 f2 f1)
+test (sort-mtime p) (list f1 f2 f3)
+test (sort-atime p) (list f3 f1 f2)
 
 rm -rf d
 

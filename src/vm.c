@@ -5762,8 +5762,8 @@ IDIO idio_vm_run (IDIO thr)
     if (gettimeofday (&t0, NULL) == -1) {
 	perror ("gettimeofday");
     }
-#endif
     uintptr_t loops0 = idio_vm_run_loops;
+#endif
 
     int gc_pause = idio_gc_get_pause ("idio_vm_run");
 

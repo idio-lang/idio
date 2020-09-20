@@ -42,8 +42,8 @@ kw-table := (make-keyword-table)
 
 test (keyword-get kw-table :a #f) #f
 
-trap ^rt-hash-key-not-found (function (c) {
-			       test (rt-hash-key-not-found? c) #t
+trap ^rt-hash-key-not-found-error (function (c) {
+			       test (rt-hash-key-not-found-error? c) #t
 			       #f
 }) {
   test (keyword-get kw-table :a) #f

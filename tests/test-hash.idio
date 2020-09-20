@@ -31,8 +31,8 @@ test (hash-size ht) 1
 test (hash-exists? ht 'a) #t
 test (hash-ref ht 'a) 3
 
-trap ^rt-hash-key-not-found (function (c) {
-			       test (rt-hash-key-not-found? c) #t
+trap ^rt-hash-key-not-found-error (function (c) {
+			       test (rt-hash-key-not-found-error? c) #t
 			       #f
 }) {
   test (hash-ref ht 'b) #f

@@ -193,8 +193,8 @@ define-condition-type-accessors-only ^rt-command-status-error		^runtime-error			
 define-condition-type-accessors-only ^rt-array-bounds-error		^runtime-error			rt-array-bounds-error? \
 	(index rt-array-bounds-error-index)
 
-define-condition-type-accessors-only ^rt-hash-key-not-found		^runtime-error			rt-hash-key-not-found? \
-	(key rt-hash-key-not-found-key)
+define-condition-type-accessors-only ^rt-hash-key-not-found-error	^runtime-error			rt-hash-key-not-found-error? \
+	(key rt-hash-key-not-found-error-key)
 
 define-condition-type-accessors-only ^rt-bignum-conversion-error	^runtime-error			rt-bignum-conversion-error? \
 	(bignum rt-bignum-conversion-error-bignum)
@@ -318,7 +318,7 @@ define (condition-report prefix c & args) "print a report on condition `c`
        ((rt-array-bounds-error? c) {
 	 cr-printf ": index %s" c.index
        }) \
-       ((rt-hash-key-not-found? c) {
+       ((rt-hash-key-not-found-error? c) {
 	 cr-printf ": key %s" c.key
        }) \
        ((rt-bignum-conversion-error? c) {
