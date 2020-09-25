@@ -47,14 +47,14 @@ size_t idio_hash_default_hash_C (IDIO h, void *k);
 IDIO idio_hash_put (IDIO h, void *k, IDIO v);
 int idio_hash_exists_key (IDIO h, void *kv);
 IDIO idio_hash_exists (IDIO h, void *k);
-IDIO idio_hash_get (IDIO h, void *k);
+IDIO idio_hash_ref (IDIO h, void *k);
 int idio_hash_delete (IDIO h, void *k);
 void idio_hash_tidy_weak_references (void);
 void idio_hash_add_weak_table (IDIO h);
 void idio_hash_remove_weak_table (IDIO h);
 IDIO idio_hash_keys_to_list (IDIO h);
 IDIO idio_hash_make_hash (IDIO args);
-IDIO idio_hash_ref (IDIO ht, IDIO key, IDIO args);
+IDIO idio_hash_reference (IDIO ht, IDIO key, IDIO args);
 IDIO idio_hash_set (IDIO ht, IDIO key, IDIO v);
 
 void idio_init_hash ();

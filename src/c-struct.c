@@ -108,7 +108,7 @@ IDIO idio_C_typedefs_get (IDIO s)
     IDIO_ASSERT (s);
     IDIO_TYPE_ASSERT (symbol, s);
 
-    return idio_hash_get (idio_C_typedefs_hash, s);
+    return idio_hash_ref (idio_C_typedefs_hash, s);
 }
 
 IDIO idio_C_typedefs_exists (IDIO s)
@@ -286,9 +286,9 @@ size_t idio_sizeof_C_struct (IDIO fields_array)
 
     size_t sas = idio_array_size (fields_array);
 
-    IDIO field_data = idio_array_get_index (fields_array, sas - 1);
-    IDIO offset = idio_array_get_index (field_data, IDIO_C_FIELD_DATA_OFFSET);
-    IDIO size = idio_array_get_index (field_data, IDIO_C_FIELD_DATA_SIZE);
+    IDIO field_data = idio_array_ref_index (fields_array, sas - 1);
+    IDIO offset = idio_array_ref_index (field_data, IDIO_C_FIELD_DATA_OFFSET);
+    IDIO size = idio_array_ref_index (field_data, IDIO_C_FIELD_DATA_SIZE);
 
     r = IDIO_C_TYPE_INT (offset) + IDIO_C_TYPE_UINT (size);
 

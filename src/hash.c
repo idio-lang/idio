@@ -1284,7 +1284,7 @@ IDIO idio_hash_exists (IDIO h, void *kv)
     */
 }
 
-IDIO idio_hash_get (IDIO h, void *kv)
+IDIO idio_hash_ref (IDIO h, void *kv)
 {
     IDIO_ASSERT (h);
 
@@ -1804,7 +1804,7 @@ return the key count of ``h``				\n\
     return idio_integer (IDIO_HASH_COUNT (ht));
 }
 
-IDIO idio_hash_ref (IDIO ht, IDIO key, IDIO args)
+IDIO idio_hash_reference (IDIO ht, IDIO key, IDIO args)
 {
     IDIO_ASSERT (ht);
     IDIO_ASSERT (key);
@@ -1812,7 +1812,7 @@ IDIO idio_hash_ref (IDIO ht, IDIO key, IDIO args)
     IDIO_VERIFY_PARAM_TYPE (hash, ht);
     IDIO_VERIFY_PARAM_TYPE (list, args);
 
-    IDIO r = idio_hash_get (ht, key);
+    IDIO r = idio_hash_ref (ht, key);
 
     if (idio_S_unspec == r) {
 	if (idio_S_nil != args) {
@@ -1852,7 +1852,7 @@ return the value indexed by ``key` in hash table ``ht``	\n\
     IDIO_VERIFY_PARAM_TYPE (hash, ht);
     IDIO_VERIFY_PARAM_TYPE (list, args);
 
-    return idio_hash_ref (ht, key, args);
+    return idio_hash_reference (ht, key, args);
 }
 
 IDIO idio_hash_set (IDIO ht, IDIO key, IDIO v)
@@ -1955,7 +1955,7 @@ key to the returned value					\n\
 
     IDIO_ASSERT_NOT_CONST (hash, ht);
 
-    IDIO cv = idio_hash_ref (ht, key, args);
+    IDIO cv = idio_hash_reference (ht, key, args);
 
     IDIO nv = idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST2 (func, cv));
 
@@ -2009,7 +2009,7 @@ call ``func`` for each ``key` in hash table ``ht``		\n\
 
     while (idio_S_nil != keys) {
 	IDIO k = IDIO_PAIR_H (keys);
-	IDIO v = idio_hash_get (ht, k);
+	IDIO v = idio_hash_ref (ht, k);
 	idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST3 (func, k, v));
 
 	keys = IDIO_PAIR_T (keys);
@@ -2041,7 +2041,7 @@ IDIO_DEFINE_PRIMITIVE3 ("hash-fold", hash_fold, (IDIO ht, IDIO func, IDIO val))
 
     while (idio_S_nil != keys) {
 	IDIO k = IDIO_PAIR_H (keys);
-	IDIO v = idio_hash_get (ht, k);
+	IDIO v = idio_hash_ref (ht, k);
 	val = idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST4 (func, k, v, val));
 
 	keys = IDIO_PAIR_T (keys);

@@ -153,7 +153,7 @@ IDIO idio_module (IDIO name)
     IDIO_ASSERT (name);
     IDIO_TYPE_ASSERT (symbol, name);
 
-    IDIO m = idio_hash_get (idio_modules_hash, name);
+    IDIO m = idio_hash_ref (idio_modules_hash, name);
 
     if (idio_S_unspec != m) {
 	idio_module_error_duplicate_name (name, IDIO_C_FUNC_LOCATION ());
@@ -210,7 +210,7 @@ IDIO idio_module_get_vci (IDIO module, IDIO mci)
     IDIO_TYPE_ASSERT (module, module);
     IDIO_TYPE_ASSERT (fixnum, mci);
 
-    return idio_hash_get (IDIO_MODULE_VCI (module), mci);
+    return idio_hash_ref (IDIO_MODULE_VCI (module), mci);
 }
 
 IDIO idio_module_set_vci (IDIO module, IDIO mci, IDIO gci)
@@ -248,7 +248,7 @@ IDIO idio_module_get_vvi (IDIO module, IDIO mci)
     IDIO_TYPE_ASSERT (module, module);
     IDIO_TYPE_ASSERT (fixnum, mci);
 
-    return idio_hash_get (IDIO_MODULE_VVI (module), mci);
+    return idio_hash_ref (IDIO_MODULE_VVI (module), mci);
 }
 
 IDIO idio_module_set_vvi (IDIO module, IDIO msi, IDIO gvi)
@@ -268,7 +268,7 @@ IDIO idio_module_find_module (IDIO name)
     IDIO_ASSERT (name);
     IDIO_TYPE_ASSERT (symbol, name);
 
-    return idio_hash_get (idio_modules_hash, name);
+    return idio_hash_ref (idio_modules_hash, name);
 }
 
 IDIO_DEFINE_PRIMITIVE1V ("find-module", find_module, (IDIO name, IDIO args))
@@ -452,7 +452,7 @@ IDIO_DEFINE_PRIMITIVE1 ("module-imports", module_imports, (IDIO m_or_n))
     if (idio_isa_module (m_or_n)) {
 	module = m_or_n;
     } else if (idio_isa_symbol (m_or_n)) {
-	module = idio_hash_get (idio_modules_hash, m_or_n);
+	module = idio_hash_ref (idio_modules_hash, m_or_n);
 
 	if (idio_S_unspec == module) {
 	    idio_module_error_unbound (m_or_n, IDIO_C_FUNC_LOCATION ());
@@ -477,7 +477,7 @@ IDIO_DEFINE_PRIMITIVE1 ("module-exports", module_exports, (IDIO m_or_n))
     if (idio_isa_module (m_or_n)) {
 	module = m_or_n;
     } else if (idio_isa_symbol (m_or_n)) {
-	module = idio_hash_get (idio_modules_hash, m_or_n);
+	module = idio_hash_ref (idio_modules_hash, m_or_n);
 
 	if (idio_S_unspec == module) {
 	    idio_module_error_unbound (m_or_n, IDIO_C_FUNC_LOCATION ());
@@ -506,7 +506,7 @@ IDIO idio_module_symbols (IDIO m_or_n)
     if (idio_isa_module (m_or_n)) {
 	module = m_or_n;
     } else if (idio_isa_symbol (m_or_n)) {
-	module = idio_hash_get (idio_modules_hash, m_or_n);
+	module = idio_hash_ref (idio_modules_hash, m_or_n);
 
 	if (idio_S_unspec == module) {
 	    idio_module_error_unbound (m_or_n, IDIO_C_FUNC_LOCATION ());
@@ -561,7 +561,7 @@ IDIO idio_module_symbols_match_type (IDIO module, IDIO symbols, IDIO type)
     } else {
 	while (idio_S_nil != symbols) {
 	    IDIO sym = IDIO_PAIR_H (symbols);
-	    IDIO sv = idio_hash_get (IDIO_MODULE_SYMBOLS (module), sym);
+	    IDIO sv = idio_hash_ref (IDIO_MODULE_SYMBOLS (module), sym);
 	    if (idio_S_unspec == sv) {
 		idio_module_error_unbound_name (sym, module, IDIO_C_FUNC_LOCATION ());
 
@@ -734,7 +734,7 @@ IDIO idio_module_find_symbol_recurse_imports (IDIO symbol, IDIO imported_module,
     IDIO_TYPE_ASSERT (symbol, symbol);
     IDIO_TYPE_ASSERT (module, imported_module);
 
-    IDIO sv = idio_hash_get (IDIO_MODULE_SYMBOLS (imported_module), symbol);
+    IDIO sv = idio_hash_ref (IDIO_MODULE_SYMBOLS (imported_module), symbol);
 
     /*
      * If it was a symbol in the given module then we still need to
@@ -771,7 +771,7 @@ IDIO idio_module_find_symbol_recurse (IDIO symbol, IDIO m_or_n, int recurse)
     if (idio_isa_module (m_or_n)) {
 	module = m_or_n;
     } else if (idio_isa_symbol (m_or_n)) {
-	module = idio_hash_get (idio_modules_hash, m_or_n);
+	module = idio_hash_ref (idio_modules_hash, m_or_n);
 
 	if (idio_S_unspec == module) {
 	    idio_module_error_unbound (m_or_n, IDIO_C_FUNC_LOCATION ());
@@ -790,7 +790,7 @@ IDIO idio_module_find_symbol_recurse (IDIO symbol, IDIO m_or_n, int recurse)
 
     IDIO cm_sk = idio_S_unspec;
     if (recurse < 2) {
-	cm_sk = idio_hash_get (IDIO_MODULE_SYMBOLS (module), symbol);
+	cm_sk = idio_hash_ref (IDIO_MODULE_SYMBOLS (module), symbol);
     } else {
 	/* idio_debug ("im_fsr %s", IDIO_MODULE_NAME (module));  */
 	/* idio_debug ("/%s", symbol);  */
@@ -949,7 +949,7 @@ IDIO idio_module_symbol_value (IDIO symbol, IDIO m_or_n, IDIO args)
     if (idio_isa_module (m_or_n)) {
 	module = m_or_n;
     } else if (idio_isa_symbol (m_or_n)) {
-	module = idio_hash_get (idio_modules_hash, m_or_n);
+	module = idio_hash_ref (idio_modules_hash, m_or_n);
 
 	if (idio_S_unspec == module) {
 	    idio_module_error_unbound (m_or_n, IDIO_C_FUNC_LOCATION ());
@@ -962,7 +962,7 @@ IDIO idio_module_symbol_value (IDIO symbol, IDIO m_or_n, IDIO args)
 	return idio_S_notreached;
     }
 
-    IDIO sk = idio_hash_get (IDIO_MODULE_SYMBOLS (module), symbol);
+    IDIO sk = idio_hash_ref (IDIO_MODULE_SYMBOLS (module), symbol);
 
     IDIO r = idio_S_unspec;
     if (idio_S_nil != args) {
@@ -1063,7 +1063,7 @@ IDIO idio_module_symbol_value_recurse (IDIO symbol, IDIO m_or_n, IDIO args)
     if (idio_isa_module (m_or_n)) {
 	module = m_or_n;
     } else if (idio_isa_symbol (m_or_n)) {
-	module = idio_hash_get (idio_modules_hash, m_or_n);
+	module = idio_hash_ref (idio_modules_hash, m_or_n);
 
 	if (idio_S_unspec == module) {
 	    idio_module_error_unbound (m_or_n, IDIO_C_FUNC_LOCATION ());
@@ -1241,7 +1241,7 @@ IDIO idio_module_set_symbol_value (IDIO symbol, IDIO value, IDIO module)
     IDIO_TYPE_ASSERT (symbol, symbol);
     IDIO_TYPE_ASSERT (module, module);
 
-    IDIO sv = idio_hash_get (IDIO_MODULE_SYMBOLS (module), symbol);
+    IDIO sv = idio_hash_ref (IDIO_MODULE_SYMBOLS (module), symbol);
     IDIO kind;
     IDIO fmci;
     IDIO fgvi;
@@ -1373,7 +1373,7 @@ IDIO idio_module_add_computed_symbol (IDIO symbol, IDIO get, IDIO set, IDIO modu
     IDIO_TYPE_ASSERT (symbol, symbol);
     IDIO_TYPE_ASSERT (module, module);
 
-    IDIO sv = idio_hash_get (IDIO_MODULE_SYMBOLS (module), symbol);
+    IDIO sv = idio_hash_ref (IDIO_MODULE_SYMBOLS (module), symbol);
     IDIO kind;
     IDIO fgvi;
 

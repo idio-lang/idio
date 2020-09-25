@@ -286,7 +286,7 @@ static void idio_gc_finalizer_run (IDIO o)
 	return;
     }
 
-    IDIO ofunc = idio_hash_get (idio_gc_finalizer_hash, o);
+    IDIO ofunc = idio_hash_ref (idio_gc_finalizer_hash, o);
     if (idio_S_unspec != ofunc) {
 	IDIO_TYPE_ASSERT (C_pointer, ofunc);
 

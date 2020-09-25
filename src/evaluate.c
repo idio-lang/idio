@@ -120,7 +120,7 @@ void idio_meaning_dump_src_properties (const char *prefix, const char*name, IDIO
     idio_debug ("%s\n", e);
 
     if (idio_isa_pair (e)) {
-	IDIO lo = idio_hash_get (idio_src_properties, e);
+	IDIO lo = idio_hash_ref (idio_src_properties, e);
 	if (idio_S_unspec == lo){
 	    idio_debug ("                              %s\n", lo);
 	} else {
@@ -136,7 +136,7 @@ static IDIO idio_meaning_error_location (IDIO src)
 
     IDIO lo = idio_S_nil;
     if (idio_S_nil != src) {
-	lo = idio_hash_get (idio_src_properties, src);
+	lo = idio_hash_ref (idio_src_properties, src);
 	if (idio_S_unspec == lo) {
 	    lo = idio_S_nil;
 	}
@@ -867,10 +867,10 @@ void idio_meaning_copy_src_properties (IDIO src, IDIO dst)
     IDIO_ASSERT (dst);
 
     if (idio_isa_pair (dst)) {
-	IDIO dlo = idio_hash_get (idio_src_properties, dst);
+	IDIO dlo = idio_hash_ref (idio_src_properties, dst);
 	if (idio_S_unspec == dlo) {
 	    if (idio_S_nil != src) {
-		IDIO slo = idio_hash_get (idio_src_properties, src);
+		IDIO slo = idio_hash_ref (idio_src_properties, src);
 		if (idio_S_unspec == slo) {
 		    /* idio_debug ("im_isp !!!! no lo for src=%s", src); */
 		    /* idio_debug (" dst=%s\n", dst); */
@@ -918,7 +918,7 @@ void idio_meaning_copy_src_properties_r (IDIO src, IDIO p)
 
     if (idio_isa_pair (p)) {
 	if (idio_S_nil != src) {
-	    IDIO slo = idio_hash_get (idio_src_properties, src);
+	    IDIO slo = idio_hash_ref (idio_src_properties, src);
 	    if (idio_S_unspec == slo) {
 		/* idio_debug ("im_isp !!!! no lo for src=%s", src); */
 		/* idio_debug (" dst=%s\n", dst); */

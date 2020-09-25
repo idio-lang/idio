@@ -2092,7 +2092,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		{
 		    IDIO ks = IDIO_CONTINUATION_STACK (o);
 		    idio_ai_t kss = idio_array_size (ks);
-		    IDIO pc_I = idio_array_get_index (ks, kss - 2);
+		    IDIO pc_I = idio_array_ref_index (ks, kss - 2);
 
 		    /*
 		     * We preserved some of the continuation state on
@@ -2949,7 +2949,7 @@ IDIO_DEFINE_PRIMITIVE2 ("value-index", value_index, (IDIO o, IDIO i))
 	    case IDIO_TYPE_ARRAY:
 		return idio_array_ref (o, i);
 	    case IDIO_TYPE_HASH:
-		return idio_hash_ref (o, i, idio_S_nil);
+		return idio_hash_reference (o, i, idio_S_nil);
 	    case IDIO_TYPE_STRUCT_INSTANCE:
 		return idio_struct_instance_ref (o, i);
 	    default:

@@ -82,7 +82,7 @@ IDIO idio_characters_C_intern (char *s, IDIO v)
 {
     IDIO_C_ASSERT (s);
 
-    IDIO c = idio_hash_get (idio_characters_hash, s);
+    IDIO c = idio_hash_ref (idio_characters_hash, s);
 
     if (idio_S_unspec == c) {
 	size_t blen = strlen (s);
@@ -105,7 +105,7 @@ IDIO idio_character_lookup (char *s)
 {
     IDIO_C_ASSERT (s);
 
-    return idio_hash_get (idio_characters_hash, s);
+    return idio_hash_ref (idio_characters_hash, s);
 }
 
 int idio_isa_character (IDIO o)

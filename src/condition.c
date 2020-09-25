@@ -479,7 +479,7 @@ does not return per se						\n\
      */
     IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (c);
     while (idio_S_nil != sit) {
-	IDIO handler = idio_hash_get (idio_condition_default_handler, sit);
+	IDIO handler = idio_hash_ref (idio_condition_default_handler, sit);
 
 	if (idio_S_unspec != handler) {
 	    IDIO thr = idio_thread_current_thread ();

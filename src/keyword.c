@@ -158,7 +158,7 @@ IDIO idio_keywords_C_intern (char *s)
 {
     IDIO_C_ASSERT (s);
 
-    IDIO sym = idio_hash_get (idio_keywords_hash, s);
+    IDIO sym = idio_hash_ref (idio_keywords_hash, s);
 
     if (idio_S_unspec == sym) {
 	sym = idio_keyword_C (s);
@@ -234,7 +234,7 @@ IDIO_DEFINE_PRIMITIVE0V ("make-keyword-table", make_keyword_table, (IDIO args))
     return idio_hash_make_keyword_table (args);
 }
 
-IDIO idio_keyword_get (IDIO ht, IDIO kw, IDIO args)
+IDIO idio_keyword_ref (IDIO ht, IDIO kw, IDIO args)
 {
     IDIO_ASSERT (ht);
     IDIO_ASSERT (kw);
@@ -250,7 +250,7 @@ IDIO idio_keyword_get (IDIO ht, IDIO kw, IDIO args)
 
     IDIO_TYPE_ASSERT (hash, ht);
 
-    IDIO v = idio_hash_get (ht, kw);
+    IDIO v = idio_hash_ref (ht, kw);
 
     if (idio_S_unspec != v) {
 	return v;
@@ -265,7 +265,7 @@ IDIO idio_keyword_get (IDIO ht, IDIO kw, IDIO args)
     }
 }
 
-IDIO_DEFINE_PRIMITIVE2V ("keyword-get", keyword_get, (IDIO ht, IDIO kw, IDIO args))
+IDIO_DEFINE_PRIMITIVE2V ("keyword-ref", keyword_ref, (IDIO ht, IDIO kw, IDIO args))
 {
     IDIO_ASSERT (ht);
     IDIO_ASSERT (kw);
@@ -273,7 +273,7 @@ IDIO_DEFINE_PRIMITIVE2V ("keyword-get", keyword_get, (IDIO ht, IDIO kw, IDIO arg
     IDIO_VERIFY_PARAM_TYPE (keyword, kw);
     IDIO_VERIFY_PARAM_TYPE (list, args);
 
-    return idio_keyword_get (ht, kw, args);
+    return idio_keyword_ref (ht, kw, args);
 }
 
 IDIO idio_keyword_set (IDIO ht, IDIO kw, IDIO v)
@@ -328,7 +328,7 @@ void idio_keyword_add_primitives ()
     IDIO_ADD_PRIMITIVE (keyword2string);
     IDIO_ADD_PRIMITIVE (keywords);
     IDIO_ADD_PRIMITIVE (make_keyword_table);
-    IDIO_ADD_PRIMITIVE (keyword_get);
+    IDIO_ADD_PRIMITIVE (keyword_ref);
     IDIO_ADD_PRIMITIVE (keyword_set);
 }
 

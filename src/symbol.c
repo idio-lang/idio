@@ -263,7 +263,7 @@ IDIO idio_symbols_C_intern (char *sym_C)
 {
     IDIO_C_ASSERT (sym_C);
 
-    IDIO sym = idio_hash_get (idio_symbols_hash, sym_C);
+    IDIO sym = idio_hash_ref (idio_symbols_hash, sym_C);
 
     if (idio_S_unspec == sym) {
 	sym = idio_symbol_C (sym_C);
@@ -318,7 +318,7 @@ IDIO idio_gensym (char *pref_prefix)
     for (;idio_gensym_id;idio_gensym_id++) {
 	sprintf (buf, "%s/%" PRIuMAX, prefix, idio_gensym_id);
 
-	sym = idio_hash_get (idio_symbols_hash, buf);
+	sym = idio_hash_ref (idio_symbols_hash, buf);
 
 	if (idio_S_unspec == sym) {
 	    sym = idio_symbols_C_intern (buf);
@@ -415,7 +415,7 @@ return all known symbols			\n\
     return r;
 }
 
-IDIO idio_properties_get (IDIO o, IDIO args)
+IDIO idio_properties_ref (IDIO o, IDIO args)
 {
     IDIO_ASSERT (o);
     IDIO_ASSERT (args);
@@ -426,7 +426,7 @@ IDIO idio_properties_get (IDIO o, IDIO args)
 	return idio_S_notreached;
     }
 
-    IDIO properties = idio_hash_get (idio_properties_hash, o);
+    IDIO properties = idio_hash_ref (idio_properties_hash, o);
 
     if (idio_S_unspec == properties) {
 	if (idio_isa_pair (args)) {
@@ -441,12 +441,12 @@ IDIO idio_properties_get (IDIO o, IDIO args)
     return properties;
 }
 
-IDIO_DEFINE_PRIMITIVE1V ("%properties", properties_get, (IDIO o, IDIO args))
+IDIO_DEFINE_PRIMITIVE1V ("%properties", properties_ref, (IDIO o, IDIO args))
 {
     IDIO_ASSERT (o);
     IDIO_ASSERT (args);
 
-    return idio_properties_get (o, args);
+    return idio_properties_ref (o, args);
 }
 
 void idio_properties_set (IDIO o, IDIO properties)
@@ -517,7 +517,7 @@ IDIO idio_get_property (IDIO o, IDIO property, IDIO args)
 	return idio_S_notreached;
     }
 
-    IDIO properties = idio_hash_get (idio_properties_hash, o);
+    IDIO properties = idio_hash_ref (idio_properties_hash, o);
 
     if (idio_S_unspec == properties) {
 	if (idio_isa_pair (args)) {
@@ -539,7 +539,7 @@ IDIO idio_get_property (IDIO o, IDIO property, IDIO args)
 	}
     }
 
-    IDIO value = idio_hash_get (properties, property);
+    IDIO value = idio_hash_ref (properties, property);
 
     if (idio_S_unspec == value) {
 	if (idio_isa_pair (args)) {
@@ -575,7 +575,7 @@ void idio_set_property (IDIO o, IDIO property, IDIO value)
 	idio_property_error_nil_object ("object is #n", IDIO_C_FUNC_LOCATION ());
     }
 
-    IDIO properties = idio_hash_get (idio_properties_hash, o);
+    IDIO properties = idio_hash_ref (idio_properties_hash, o);
 
     if (idio_S_nil == properties) {
 	idio_property_error_no_properties ("properties is #n", IDIO_C_FUNC_LOCATION ());
@@ -708,7 +708,7 @@ void idio_symbol_add_primitives ()
     IDIO_ADD_PRIMITIVE (gensym);
     IDIO_ADD_PRIMITIVE (symbol2string);
     IDIO_ADD_PRIMITIVE (symbols);
-    IDIO_ADD_PRIMITIVE (properties_get);
+    IDIO_ADD_PRIMITIVE (properties_ref);
     IDIO_ADD_PRIMITIVE (properties_set);
     IDIO_ADD_PRIMITIVE (get_property);
     IDIO_ADD_PRIMITIVE (set_property);

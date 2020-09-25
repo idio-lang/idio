@@ -375,7 +375,7 @@ IDIO idio_unicode_C_intern (char *s, IDIO v)
 {
     IDIO_C_ASSERT (s);
 
-    IDIO c = idio_hash_get (idio_unicode_hash, s);
+    IDIO c = idio_hash_ref (idio_unicode_hash, s);
 
     if (idio_S_unspec == c) {
 	size_t blen = strlen (s);
@@ -400,7 +400,7 @@ IDIO idio_unicode_lookup (char *s)
 {
     IDIO_C_ASSERT (s);
 
-    return idio_hash_get (idio_unicode_hash, s);
+    return idio_hash_ref (idio_unicode_hash, s);
 }
 
 /*

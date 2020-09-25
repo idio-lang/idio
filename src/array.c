@@ -326,7 +326,7 @@ IDIO idio_array_pop (IDIO a)
     }
 
     /*
-     * The functions idio_array_get_index and idio_array_delete_index
+     * The functions idio_array_ref_index and idio_array_delete_index
      * are defensive in the face of a negative index etc..  We know we
      * have a positive index that is not beyond the end of the array.
      * So we can dive right in.
@@ -361,10 +361,10 @@ IDIO idio_array_shift (IDIO a)
 	return idio_S_nil;
     }
 
-    IDIO e = idio_array_get_index (a, 0);
+    IDIO e = idio_array_ref_index (a, 0);
     idio_ai_t i;
     for (i = 0 ; i < IDIO_ARRAY_USIZE (a) - 1; i++) {
-	IDIO e = idio_array_get_index (a, i + 1);
+	IDIO e = idio_array_ref_index (a, i + 1);
 	IDIO_ASSERT (e);
 
 	idio_array_insert_index (a, e, i);
@@ -396,7 +396,7 @@ void idio_array_unshift (IDIO a, IDIO o)
     idio_ai_t i;
     if (IDIO_ARRAY_USIZE (a) > 0) {
 	for (i = IDIO_ARRAY_USIZE (a); i > 0; i--) {
-	    IDIO e = idio_array_get_index (a, i - 1);
+	    IDIO e = idio_array_ref_index (a, i - 1);
 	    IDIO_ASSERT (e);
 
 	    idio_array_insert_index (a, e, i);
@@ -424,7 +424,7 @@ IDIO idio_array_head (IDIO a)
 	return idio_S_nil;
     }
 
-    return idio_array_get_index (a, 0);
+    return idio_array_ref_index (a, 0);
 }
 
 /**
@@ -444,18 +444,18 @@ IDIO idio_array_top (IDIO a)
 	return idio_S_nil;
     }
 
-    return idio_array_get_index (a, IDIO_ARRAY_USIZE (a) - 1);
+    return idio_array_ref_index (a, IDIO_ARRAY_USIZE (a) - 1);
 }
 
 /**
- * idio_array_get_index() - return the value at the given index of an array
+ * idio_array_ref_index() - return the value at the given index of an array
  * @a: array
  * @index: the index
  *
  * Return:
  * ``IDIO`` value.
  */
-IDIO idio_array_get_index (IDIO a, idio_ai_t index)
+IDIO idio_array_ref_index (IDIO a, idio_ai_t index)
 {
     IDIO_ASSERT (a);
     IDIO_TYPE_ASSERT (array, a);
@@ -579,7 +579,7 @@ void idio_array_bind (IDIO a, idio_ai_t nargs, ...)
     idio_ai_t i;
     for (i = 0; i < nargs; i++) {
 	IDIO *arg = va_arg (ap, IDIO *);
-	*arg = idio_array_get_index (a, i);
+	*arg = idio_array_ref_index (a, i);
 	IDIO_ASSERT (*arg);
     }
 
@@ -607,7 +607,7 @@ IDIO idio_array_copy (IDIO a, int depth, idio_ai_t extra)
 
     idio_ai_t i;
     for (i = 0; i < osz; i++) {
-	IDIO e = idio_array_get_index (a, i);
+	IDIO e = idio_array_ref_index (a, i);
 	if (IDIO_COPY_DEEP == depth) {
 	    e = idio_copy (e, depth);
 	}
@@ -637,7 +637,7 @@ IDIO idio_array_to_list_from (IDIO a, idio_ai_t index)
     IDIO r = idio_S_nil;
 
     for (ai = al -1; ai >= index; ai--) {
-	r = idio_pair (idio_array_get_index (a, ai),
+	r = idio_pair (idio_array_ref_index (a, ai),
 		       r);
     }
 
@@ -968,7 +968,7 @@ IDIO idio_array_ref (IDIO a, IDIO index)
 	return idio_S_notreached;
     }
 
-    return idio_array_get_index (a, i);
+    return idio_array_ref_index (a, i);
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("array-ref", array_ref, (IDIO a, IDIO index), "a index", "\

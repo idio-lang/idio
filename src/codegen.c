@@ -267,7 +267,7 @@ idio_ai_t idio_codegen_constants_lookup (IDIO cs, IDIO v)
     IDIO_TYPE_ASSERT (array, cs);
 
     if (idio_S_nil != v) {
-	IDIO fgci = idio_hash_get (idio_vm_constants_hash, v);
+	IDIO fgci = idio_hash_ref (idio_vm_constants_hash, v);
 	if (idio_S_unspec == fgci) {
 	    return -1;
 	} else {

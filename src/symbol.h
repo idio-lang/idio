@@ -119,7 +119,7 @@ IDIO idio_symbols_string_intern (IDIO str);
 
 IDIO idio_gensym (char *pref_prefix);
 
-IDIO idio_properties_get (IDIO o, IDIO args);
+IDIO idio_properties_ref (IDIO o, IDIO args);
 void idio_properties_set (IDIO o, IDIO properties);
 void idio_properties_create (IDIO o);
 void idio_properties_delete (IDIO o);
