@@ -20,13 +20,13 @@ char-set:letter      = make-sparse-char-set 128 #[ #B{ 128 40:01111111 48-50 111
 char-set:digit       = make-sparse-char-set 128 #[ #B{ 128 30-30 11000000 } #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f ]
 
 ; char-set:letter+digit is Property Alphabetic + Category Nd
-char-set:letter+digit = make-sparse-char-set 128 #[ #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f ]
+char-set:letter+digit = make-sparse-char-set 128 #[ #B{ 128 30-30 11000000 01111111 48-50 11100000 01111111 68-70 11100000 } #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f ]
 
 ; char-set:graphic is Category L* + Category N* + Category M* + Category S* + Category P*
 char-set:graphic     = make-sparse-char-set 128 #[ #B{ 128 20:01111111 28-70 11111110 } #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f ]
 
 ; char-set:printing is char-set:graphic + char-set:whitespace
-char-set:printing    = make-sparse-char-set 128 #[ #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f ]
+char-set:printing    = make-sparse-char-set 128 #[ #B{ 128 8:01111100 20-70 11111110 } #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f ]
 
 ; char-set:whitespace is Property White_Space
 char-set:whitespace  = make-sparse-char-set 128 #[ #B{ 128 8:01111100 20:10000000 } #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f ]
@@ -53,52 +53,52 @@ char-set:ascii       = make-sparse-char-set 128 #[ #B{ 128 0-78 } #f #f #f #f #f
 char-set:empty       = make-sparse-char-set 128 #[ #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f ]
 
 ; char-set:full is full == ~ empty
-char-set:full        = make-sparse-char-set 128 #[ #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f ]
+char-set:full        = make-sparse-char-set 128 #[ #B{ 128 0-78 } #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f ]
 
 ; char-set:nonl is char-set:full excl. #\{newline}
-char-set:nonl        = make-sparse-char-set 128 #[ #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f ]
+char-set:nonl        = make-sparse-char-set 128 #[ #B{ 128 0-0 11011111 10-78 } #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f ]
 
 ; char-set:control is Property Control
 char-set:control     = make-sparse-char-set 128 #[ #B{ 128 0-0 11011011 10-18 78:00000001 } #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f ]
 
 ; char-set:word-constituent is char-set:letter+digit + _
-char-set:word-constituent = make-sparse-char-set 128 #[ #B{ 128 58:00000001 } #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f ]
+char-set:word-constituent = make-sparse-char-set 128 #[ #B{ 128 30-30 11000000 01111111 48-50 11100001 01111111 68-70 11100000 } #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f ]
 
 ; char-set:cased is char-set:upper-case + char-set:lower-case + char-set:title-case
-char-set:cased       = make-sparse-char-set 128 #[ #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f ]
+char-set:cased       = make-sparse-char-set 128 #[ #B{ 128 40:01111111 48-50 11100000 01111111 68-70 11100000 } #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f ]
 
 ; %char-set:letter is char-set:letter restricted to ASCII range
-%char-set:letter     = make-sparse-char-set 128 #[ #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f ]
+%char-set:letter     = make-sparse-char-set 128 #[ #B{ 128 40:01111111 48-50 11100000 01111111 68-70 11100000 } #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f ]
 
 ; %char-set:lower-case is char-set:lower-case restricted to ASCII range
-%char-set:lower-case = make-sparse-char-set 128 #[ #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f ]
+%char-set:lower-case = make-sparse-char-set 128 #[ #B{ 128 60:01111111 68-70 11100000 } #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f ]
 
 ; %char-set:upper-case is char-set:upper-case restricted to ASCII range
-%char-set:upper-case = make-sparse-char-set 128 #[ #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f ]
+%char-set:upper-case = make-sparse-char-set 128 #[ #B{ 128 40:01111111 48-50 11100000 } #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f ]
 
 ; %char-set:digit is char-set:digit restricted to ASCII range
-%char-set:digit      = make-sparse-char-set 128 #[ #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f ]
+%char-set:digit      = make-sparse-char-set 128 #[ #B{ 128 30-30 11000000 } #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f ]
 
 ; %char-set:letter+digit is char-set:letter+digit restricted to ASCII range
-%char-set:letter+digit = make-sparse-char-set 128 #[ #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f ]
+%char-set:letter+digit = make-sparse-char-set 128 #[ #B{ 128 30-30 11000000 01111111 48-50 11100000 01111111 68-70 11100000 } #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f ]
 
 ; %char-set:punctuation is char-set:punctuation restricted to ASCII range
-%char-set:punctuation = make-sparse-char-set 128 #[ #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f ]
+%char-set:punctuation = make-sparse-char-set 128 #[ #B{ 128 20:01110111 11101111 38:00110001 10000000 58:00011101 78:00010100 } #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f ]
 
 ; %char-set:symbol is char-set:symbol restricted to ASCII range
-%char-set:symbol     = make-sparse-char-set 128 #[ #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f ]
+%char-set:symbol     = make-sparse-char-set 128 #[ #B{ 128 20:00001000 00010000 38:00001110 58:00000010 10000000 78:00001010 } #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f ]
 
 ; %char-set:graphic is char-set:graphic restricted to ASCII range
-%char-set:graphic    = make-sparse-char-set 128 #[ #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f ]
+%char-set:graphic    = make-sparse-char-set 128 #[ #B{ 128 20:01111111 28-70 11111110 } #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f ]
 
 ; %char-set:whitespace is char-set:whitespace restricted to ASCII range
-%char-set:whitespace = make-sparse-char-set 128 #[ #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f ]
+%char-set:whitespace = make-sparse-char-set 128 #[ #B{ 128 8:01111100 20:10000000 } #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f ]
 
 ; %char-set:printing is char-set:printing restricted to ASCII range
-%char-set:printing   = make-sparse-char-set 128 #[ #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f ]
+%char-set:printing   = make-sparse-char-set 128 #[ #B{ 128 8:01111100 20-70 11111110 } #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f ]
 
 ; %char-set:iso-control is char-set:iso-control restricted to ASCII range
-%char-set:iso-control = make-sparse-char-set 128 #[ #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f ]
+%char-set:iso-control = make-sparse-char-set 128 #[ #B{ 128 0-18 78:00000001 } #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f ]
 
 ; char-set:regional-indicator is Property Regional_Indicator
 char-set:regional-indicator = make-sparse-char-set 128 #[ #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f ]
