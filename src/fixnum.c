@@ -115,6 +115,7 @@ IDIO idio_fixnum_C (char *str, int base)
     }
 
     if ('\0' == *end) {
+	idio_gc_stats_inc (IDIO_TYPE_FIXNUM);
 	return idio_fixnum ((intptr_t) val);
     } else {
 	char em[BUFSIZ];

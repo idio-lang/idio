@@ -2096,6 +2096,21 @@ char *idio_bignum_integer_as_string (IDIO bn, size_t *sizep)
     char *s = idio_alloc (1);
     *s = '\0';
 
+    /*
+     * We only check for idio-print-conversion-precision here and NOT
+     * idio-print-conversion-format because I don't know how to
+     * convert the decimalised bignum into a hexadecimal or octal (or
+     * binary!) number without an extremely expensive reworking.
+     *
+     * The problem relates to us having split the value of the bignum
+     * into DPW decimal segments.  If I've got the second segment in
+     * my hands and its value is 1, that won't guarantee to be 1 in
+     * any other format, in the same way that the 1 in 1234 won't
+     * guarantee to be a 1 in the hex (#x4D2), octal (#o2322) or
+     * binary (#b10011010010) -- OK, a reasonable chance with the
+     * binary.
+     */
+
     int prec = 0;
     if (idio_S_nil != idio_print_conversion_precision_sym) {
 	IDIO ipcp = idio_module_symbol_value (idio_print_conversion_precision_sym,

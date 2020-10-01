@@ -2617,11 +2617,11 @@ static IDIO idio_read_bignum_radix (IDIO handle, IDIO lo, char basec, int radix)
 
 /* this is a port of string_numeric_p from S9fES */
 
-#define EXPONENT(c)	('d' == c || 'D' == c || \
-			 'e' == c || 'E' == c || \
-			 'f' == c || 'F' == c || \
-			 'l' == c || 'L' == c || \
-			 's' == c || 'S' == c)
+#define IDIO_READ_BIGNUM_EXPONENT(c)	('d' == c || 'D' == c || \
+					 'e' == c || 'E' == c || \
+					 'f' == c || 'F' == c || \
+					 'l' == c || 'L' == c || \
+					 's' == c || 'S' == c)
 
 static IDIO idio_read_number_C (IDIO handle, char *str)
 {
@@ -2654,7 +2654,7 @@ static IDIO idio_read_number_C (IDIO handle, char *str)
 	    inexact = 1;
 	}
 
-	if (EXPONENT (s[i]) &&
+	if (IDIO_READ_BIGNUM_EXPONENT (s[i]) &&
 	    has_digit &&
 	    ! has_exp) {
 	    if (isdigit (s[i+1]) ||
@@ -2703,10 +2703,13 @@ static IDIO idio_read_number_C (IDIO handle, char *str)
 	 * It might be possible to use a fixnum -- if it's small
 	 * enough.
 	 *
-	 * log2(10) => 3.22 bits per decimal digit, we have (i-1)
+	 * log2(10) => 3.32 bits per decimal digit, we have (i-1)
 	 * digits so multiple that by four for some rounding error.
+	 *
+	 * Compare to the number of available FIXNUM bits less a sign
+	 * bit.
 	 */
-	if (((i - 1) * 4) < ((sizeof (intptr_t) * 8) - 2)) {
+	if (((i - 1) * 4) < ((sizeof (intptr_t) * CHAR_BIT) - IDIO_TYPE_BITS - 1)) {
 	    num = idio_fixnum_C (str, 10);
 	    idio_gc_stats_inc (IDIO_TYPE_FIXNUM);
 	} else {
@@ -2739,6 +2742,8 @@ static IDIO idio_read_word (IDIO handle, IDIO lo, int c)
 {
     char buf[IDIO_WORD_MAX_LEN + 1];
     int i = 0;
+
+    int not_a_number = 0;
 
     for (;;) {
 	buf[i++] = c;
@@ -2798,16 +2803,19 @@ static IDIO idio_read_word (IDIO handle, IDIO lo, int c)
 
 	    if (idio_S_nil != r) {
 		continue;
+	    } else {
+		not_a_number = 1;
 	    }
 
 	    /*
 	     * Remember, i will be >= 1 and c is effectively the
 	     * lookahead char
 	     *
-	     * If the previous charcater was also DOT then this is a
+	     * If the previous character was also DOT then this is a
 	     * symbol, eg. ..., so continue reading characters.
 	     */
 	    if (IDIO_CHAR_DOT == buf[i-1]) {
+		not_a_number = 1;
 		continue;
 	    }
 	}
@@ -2820,7 +2828,11 @@ static IDIO idio_read_word (IDIO handle, IDIO lo, int c)
 
     buf[i] = '\0';
 
-    IDIO r = idio_read_number_C (handle, buf);
+    IDIO r = idio_S_nil;
+
+    if (0 == not_a_number) {
+	r = idio_read_number_C (handle, buf);
+    }
 
     if (idio_S_nil == r) {
 	/*

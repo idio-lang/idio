@@ -30,7 +30,7 @@
 #define IDIO_FILE_HANDLE_FLAG_CLOEXEC	  (1<<3)
 
 typedef struct idio_file_handle_stream_s {
-    FILE *filep;		/* or NULL! */
+    FILE *filep;
     int fd;
     IDIO_FLAGS_T flags;		/* IDIO_FILE_HANDLE_FLAG_* */
     char *buf;			/* buffer */

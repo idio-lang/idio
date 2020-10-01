@@ -1764,9 +1764,16 @@ IDIO idio_load_handle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*eval
 	idio_codegen (thr, m, cs);
 
 	IDIO r = idio_vm_run (thr);
+	/*
+	 * NB.  We must deliberately call idio_as_string() because the
+	 * idio_print_handle (oh, r) method will call
+	 * idio_display_string(), ie. strings will not be
+	 * double-quoted which is *precisely* what we want here.
+	 */
 	size_t r_size = 0;
 	char *rs = idio_as_string (r, &r_size, 40);
 	idio_puts_handle (oh, rs, r_size);
+	free (rs);
     }
 
     IDIO_HANDLE_M_CLOSE (fh) (fh);

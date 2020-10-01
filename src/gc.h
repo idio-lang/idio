@@ -619,7 +619,7 @@ typedef idio_bsa_t* IDIO_BSA;
 #define IDIO_BSA_AE(BSA,i)	((BSA)->ae[i])
 
 typedef struct idio_bignum_s {
-    IDIO_BS_T exp;		/* exponent, a raw int64_t */
+    IDIO_BS_T exp;
     IDIO_BSA sig;
 } idio_bignum_t;
 
