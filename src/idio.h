@@ -231,7 +231,7 @@ extern FILE *idio_vm_perf_FILE;
  *
  * We are looking for the following for foo_C, ie. Idio's "foo-idio"
 
-   IDIO_DEFINE_PRIMITIVE2 ("foo-idio", foo_C, (T1 a1, T2 a2), sigstr, docstr)
+   IDIO_DEFINE_PRIMITIVE2_DS ("foo-idio", foo_C, (T1 a1, T2 a2), sigstr, docstr)
    {
      ...
    }
@@ -242,7 +242,6 @@ extern FILE *idio_vm_perf_FILE;
    static struct idio_primitive_desc_s idio_primitive_data_foo_C = {
       idio_defprimitive_foo_C,
       "foo-idio",
-      idio_S_nil,
       2,
       0,
       sigstr,

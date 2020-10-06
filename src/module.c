@@ -1405,6 +1405,29 @@ IDIO idio_module_export_computed_symbol (IDIO symbol, IDIO get, IDIO set, IDIO m
     return idio_module_add_computed_symbol (symbol, get, set, module);
 }
 
+#ifdef IDIO_DEBUG
+IDIO_DEFINE_PRIMITIVE1_DS ("%dump-module", dump_module, (IDIO mo), "module", "\
+print the internal details of `module`		\n\
+						\n\
+:param module: the module to dump		\n\
+:type module: module				\n\
+:return: #unspec				\n\
+")
+{
+    IDIO_ASSERT (mo);
+    IDIO_VERIFY_PARAM_TYPE (module, mo);
+
+    idio_debug ("Module %s\n", IDIO_MODULE_NAME (mo));
+    idio_debug ("  exports: %s\n", IDIO_MODULE_EXPORTS (mo));
+    idio_debug ("  imports: %s\n", IDIO_MODULE_IMPORTS (mo));
+    idio_debug ("  symbols: %s\n", IDIO_MODULE_SYMBOLS (mo));
+    idio_debug ("  vci: %s\n", IDIO_MODULE_VCI (mo));
+    idio_debug ("  vvi: %s\n", IDIO_MODULE_VVI (mo));
+
+    return idio_S_unspec;
+}
+#endif
+
 void idio_init_module ()
 {
     idio_modules_hash = IDIO_HASH_EQP (1<<4);
@@ -1463,10 +1486,80 @@ void idio_module_add_primitives ()
     IDIO_ADD_PRIMITIVE (symbol_value);
     IDIO_ADD_PRIMITIVE (symbol_value_recurse);
     IDIO_ADD_PRIMITIVE (set_symbol_value);
+
+#ifdef IDIO_DEBUG
+    IDIO_ADD_PRIMITIVE (dump_module);
+#endif
 }
 
 void idio_final_module ()
 {
+    if (idio_vm_reports) {
+	FILE *fp = fopen ("vm-modules", "w");
+	if (NULL == fp) {
+	    perror ("fopen (vm-modules, w)");
+	    return;
+	}
+
+	fprintf (fp, " %5s %-40s%.2s %5s\n", "MCI", "symbol", "Exported", "VVI");
+
+	IDIO module_names = idio_hash_keys_to_list (idio_modules_hash);
+	int first = 1;
+	int comma = 0;
+	int printed = 0;
+	while (idio_S_nil != module_names) {
+	    IDIO module_name = IDIO_PAIR_H (module_names);
+	    IDIO module = idio_hash_ref (idio_modules_hash, module_name);
+
+	    idio_debug_FILE (fp, "\nModule %s\n", module_name);
+
+	    /*
+	     * Warn about mci/gci mis-matches
+	     */
+	    IDIO mcis = idio_hash_keys_to_list (IDIO_MODULE_VCI (module));
+	    while (idio_S_nil != mcis) {
+		IDIO mci = IDIO_PAIR_H (mcis);
+		IDIO gci = idio_hash_ref (IDIO_MODULE_VCI (module), mci);
+		if (mci != gci) {
+		    if (first) {
+			first = 0;
+			printed = 1;
+			idio_debug ("module %s: ", module_name);
+		    }
+		    if (comma) {
+			fprintf (stderr, ", ");
+		    }
+		    idio_debug ("%s != ", mci);
+		    idio_debug ("%s", gci);
+		    comma = 1;
+		}
+
+		if (printed) {
+		    fprintf (stderr, "\n");
+		}
+
+		IDIO gvi = idio_hash_ref (IDIO_MODULE_VVI (module), mci);
+		if (idio_S_unspec != gvi) {
+		    idio_debug_FILE (fp, " %5s", mci);
+		    IDIO sym = idio_vm_constants_ref (IDIO_FIXNUM_VAL (mci));
+		    idio_debug_FILE (fp, " %-40s", sym);
+		    if (idio_S_false != idio_list_memq (sym, IDIO_MODULE_EXPORTS (module))) {
+			fprintf (fp, "E ");
+		    } else {
+			fprintf (fp, "  ");
+		    }
+		    idio_debug_FILE (fp, " %5s", gvi);
+		    fprintf (fp, "\n");
+		}
+
+		mcis = IDIO_PAIR_T (mcis);
+	    }
+
+	    module_names = IDIO_PAIR_T (module_names);
+	}
+	fclose (fp);
+    }
+
     idio_gc_expose (idio_modules_hash);
 }
 

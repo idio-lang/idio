@@ -454,7 +454,7 @@ int idio_putc_handle (IDIO h, int c)
 	     * the odd edge-case where trailing newlines don't get
 	     * flushed.
 	     *
-	     * A handle-flush here fixes that but it feels wrong.
+	     * A flush-handle here fixes that but it feels wrong.
 	     *
 	     * This was picked up by:
 	     *

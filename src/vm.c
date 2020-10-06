@@ -2565,7 +2565,9 @@ static idio_ai_t idio_vm_get_or_create_vvi (idio_ai_t mci)
 		    return IDIO_FIXNUM_VAL (fgvi);
 		} else {
 		    idio_debug ("ivgoc-vvi: %-20s return 0\n", sym);
-		    return 0;
+		    idio_debug ("ce %s\n", ce);
+		    idio_debug ("ivsl: %s\n", idio_vm_source_location ());
+		    /* return 0; */
 		}
 
 		/*
@@ -3077,15 +3079,18 @@ int idio_vm_run1 (IDIO thr)
 		idio_vm_values_set (gvi, val);
 
 		if (idio_isa_closure (val)) {
-		    idio_set_property (val, idio_KW_name, sym);
-		    idio_set_property (val, idio_KW_source, idio_vm_GLOBAL_SYM_SET_string);
-		    IDIO str = idio_get_property (val, idio_KW_sigstr, IDIO_LIST1 (idio_S_nil));
-		    if (idio_S_nil != str) {
-			idio_set_property (val, idio_KW_sigstr, str);
-		    }
-		    str = idio_get_property (val, idio_KW_docstr, IDIO_LIST1 (idio_S_nil));
-		    if (idio_S_nil != str) {
-			idio_set_property (val, idio_KW_docstr, str);
+		    IDIO name = idio_get_property (val, idio_KW_name, IDIO_LIST1 (idio_S_false));
+		    if (idio_S_false == name) {
+			idio_set_property (val, idio_KW_name, sym);
+			idio_set_property (val, idio_KW_source, idio_vm_GLOBAL_SYM_SET_string);
+			IDIO str = idio_get_property (val, idio_KW_sigstr, IDIO_LIST1 (idio_S_nil));
+			if (idio_S_nil != str) {
+			    idio_set_property (val, idio_KW_sigstr, str);
+			}
+			str = idio_get_property (val, idio_KW_docstr, IDIO_LIST1 (idio_S_nil));
+			if (idio_S_nil != str) {
+			    idio_set_property (val, idio_KW_docstr, str);
+			}
 		    }
 		}
 	    } else {
@@ -3517,14 +3522,9 @@ int idio_vm_run1 (IDIO thr)
 	    if (idio_S_unspec != fgci) {
 		docstr = idio_vm_constants_ref (IDIO_FIXNUM_VAL (fgci));
 	    } else {
-		fprintf (stderr, "vm cc doc: failed to find %" PRId64 " (%" PRId64 ")\n", (int64_t) IDIO_FIXNUM_VAL (fci), ssci);
+		fprintf (stderr, "vm cc doc: failed to find %" PRId64 " (%" PRId64 ")\n", (int64_t) IDIO_FIXNUM_VAL (fci), dsci);
 	    }
 
-	    /*
-	     * NB create the closure in the environment of the current
-	     * module -- irrespective of whatever IDIO_THREAD_ENV(thr)
-	     * we are currently working in
-	     */
 	    IDIO_THREAD_VAL (thr) = idio_closure (IDIO_THREAD_PC (thr) + i, code_len, IDIO_THREAD_FRAME (thr), IDIO_THREAD_ENV (thr), sigstr, docstr);
 	}
 	break;
