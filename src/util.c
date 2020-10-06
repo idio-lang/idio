@@ -3032,7 +3032,7 @@ IDIO idio_copy (IDIO o, int depth)
 	    case IDIO_TYPE_PAIR:
 		return idio_copy_pair (o, depth);
 	    case IDIO_TYPE_ARRAY:
-		return idio_array_copy (o, depth, 0);
+		return idio_copy_array (o, depth, 0);
 	    case IDIO_TYPE_HASH:
 		return idio_copy_hash (o, depth);
 	    case IDIO_TYPE_BIGNUM:

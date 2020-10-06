@@ -92,7 +92,7 @@ static void idio_array_error_bounds (idio_ai_t index, idio_ai_t size, IDIO c_loc
  * idio_gc_get().
  *
  * It is nominally called by idio_array_default() and
- * idio_array_resize().
+ * idio_resize_array().
  *
  * Return:
  * void
@@ -172,7 +172,7 @@ void idio_free_array (IDIO a)
     free (a->u.array);
 }
 
-void idio_array_resize (IDIO a)
+void idio_resize_array (IDIO a)
 {
     IDIO_ASSERT (a);
     IDIO_TYPE_ASSERT (array, a);
@@ -262,7 +262,7 @@ void idio_array_insert_index (IDIO a, IDIO o, idio_ai_t index)
 	}
     } else if (index >= IDIO_ARRAY_ASIZE (a)) {
 	if (index < (IDIO_ARRAY_ASIZE (a) + 1)) {
-	    idio_array_resize (a);
+	    idio_resize_array (a);
 	} else {
 	    idio_array_error_bounds (index, IDIO_ARRAY_ASIZE (a), IDIO_C_FUNC_LOCATION ());
 
@@ -582,7 +582,7 @@ void idio_array_bind (IDIO a, idio_ai_t nargs, ...)
 }
 
 /**
- * idio_array_copy() - copy an array
+ * idio_copy_array() - copy an array
  * @a: array
  * @depth: shallow or deep
  * @extra: size of the new array beyond the original
@@ -590,7 +590,7 @@ void idio_array_bind (IDIO a, idio_ai_t nargs, ...)
  * Return:
  * The new array.
  */
-IDIO idio_array_copy (IDIO a, int depth, idio_ai_t extra)
+IDIO idio_copy_array (IDIO a, int depth, idio_ai_t extra)
 {
     IDIO_ASSERT (a);
     IDIO_C_ASSERT (depth);
@@ -598,7 +598,8 @@ IDIO idio_array_copy (IDIO a, int depth, idio_ai_t extra)
 
     idio_ai_t osz = IDIO_ARRAY_USIZE (a);
     idio_ai_t nsz = osz + extra;
-    IDIO na = idio_array (nsz);
+
+    IDIO na = idio_array_dv (nsz, IDIO_ARRAY_DV (a));
 
     idio_ai_t i;
     for (i = 0; i < osz; i++) {
@@ -871,7 +872,7 @@ copy array `orig` and add an optional `extra` elements	\n\
 	return idio_S_notreached;
     }
 
-    IDIO a = idio_array_copy (orig, depth, extra);
+    IDIO a = idio_copy_array (orig, depth, extra);
 
     return a;
 }

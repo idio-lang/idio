@@ -2098,7 +2098,7 @@ void idio_vm_restore_continuation_data (IDIO k, IDIO val)
      * continuation is used again.
      */
 
-    IDIO_THREAD_STACK (thr) = idio_array_copy (IDIO_CONTINUATION_STACK (k), IDIO_COPY_SHALLOW, 0);
+    IDIO_THREAD_STACK (thr) = idio_copy_array (IDIO_CONTINUATION_STACK (k), IDIO_COPY_SHALLOW, 0);
 
     IDIO marker = IDIO_THREAD_STACK_POP ();
     if (idio_SM_preserve_continuation != marker) {
