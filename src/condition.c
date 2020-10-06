@@ -826,6 +826,7 @@ Does not return.						\n\
 	krun_p--;
     }
 
+    idio_exit_status = 1;
     if (idio_isa_pair (krun)) {
 	fprintf (stderr, "reset-condition-handler: restoring krun #%td: ", krun_p);
 	idio_debug ("%s\n", IDIO_PAIR_HT (krun));
@@ -836,7 +837,6 @@ Does not return.						\n\
 
     fprintf (stderr, "reset-condition-handler: nothing to restore\n");
 
-    idio_exit_status = 1;
     fprintf (stderr, "reset-condition-handler/exit (%d)\n", idio_exit_status);
     idio_final ();
     exit (idio_exit_status);

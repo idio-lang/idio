@@ -366,9 +366,6 @@ typedef struct idio_pair_s {
 /*
  * Array Indices
  *
- * I've misread things.  size_t is for *arrays* and arrays can be
- * indexed up to SIZE_MAX.  Arrays are not pointers!
- *
  * On normal machines size_t is probably the same as intptr_t (an
  * integral type that can contain a pointer).  On segmented
  * architectures, SIZE_MAX might be 65535, the index of the largest
@@ -406,10 +403,10 @@ typedef struct idio_pair_s {
  *
  *   was successful.  2**30-1 was not.
  *
- * However, at some point we should accomodate negative array indices,
- * eg. the nominal, array[-i], which we take to mean the i'th last
- * index.  The means using a signed type even if we won't ever
- * actually use a[-i] -- as we'll convert it into a[size-i].
+ * However, we accomodate negative array indices, eg. the nominal,
+ * array[-i], which we take to mean the i'th last index.  The means
+ * using a signed type even if we won't ever actually use a[-i] -- as
+ * we'll convert it into a[size-i].
  *
  * So, the type we use must be ptrdiff_t and therefore the largest
  * positive index is PTRDIFF_MAX.
@@ -444,12 +441,6 @@ struct idio_array_s {
      *
      * Push an element on (therefore at index 0 itself) will have
      * @usize be 1 -- there is one element in the array.
-     *
-     * Then insert into directly into index 5 then @usize will be 6.
-     * Even though you've only inserted two elements, elements at
-     * indexes 1 through 4 will have the default value and appear to
-     * have sprung into life.  There are now six elements in the
-     * array.
      */
     idio_ai_t usize;
     /**

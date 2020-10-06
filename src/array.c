@@ -29,15 +29,12 @@
  * An array holds two sizes: the actual allocation size and the
  * "used" size (being the highest accessed index plus one).
  *
- * You can access indexes up to twice the allocated size and the array
- * will automatically grow.  Accessing an index more than twice the
- * allocated size will result in a bounds error.
- *
  * You can access negative indexes up to the used size which will
  * access elements indexed from the last used index backwards.
  *
  * You can access the array as a stack by using push/pop and
- * shift/unshift.  These use the used size of the array.
+ * shift/unshift.  These use the used size of the array.  These are
+ * the only way to grow the size of an array.
  *
  * You can find indexes of elements in the array: either the first
  * index with the default value or the first index where the specified
@@ -235,8 +232,9 @@ idio_ai_t idio_array_size (IDIO a)
  *
  * * negative - but cannot be larger than the size of the existing
  *   array
- * * up to twice the size of the existing array *allocation*.
- *   The array will be resized.
+ *
+ * * up to the size of the existing array *allocation* plus one
+ *   (ie. push).  The array will be resized.
  *
  * Return:
  * void
@@ -263,10 +261,7 @@ void idio_array_insert_index (IDIO a, IDIO o, idio_ai_t index)
 	    return;
 	}
     } else if (index >= IDIO_ARRAY_ASIZE (a)) {
-	/*
-	  positive indexes can't be too large...
-	*/
-	if (index < (IDIO_ARRAY_ASIZE (a) * 2)) {
+	if (index < (IDIO_ARRAY_ASIZE (a) + 1)) {
 	    idio_array_resize (a);
 	} else {
 	    idio_array_error_bounds (index, IDIO_ARRAY_ASIZE (a), IDIO_C_FUNC_LOCATION ());
