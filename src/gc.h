@@ -493,7 +493,7 @@ typedef struct idio_hash_entry_s {
 
 typedef struct idio_hash_s {
     struct idio_s *grey;
-    idio_hi_t size;	      /* nominal hash size */
+    idio_hi_t size;
     idio_hi_t mask;	      /* bitmask for easy modulo arithmetic */
     idio_hi_t count;	      /* (key) count */
     idio_hi_t start;	      /* start free search */
