@@ -1,0 +1,4 @@
+
+{
+  bar :+ define-template (baz) {#T{ 1 }}
+}

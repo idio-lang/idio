@@ -24,7 +24,7 @@
 		   ((match-beginning 4) font-lock-constant-face)
 		   (t font-lock-type-face))
 	     nil t))
-   (list (concat "\\<\\(define\\(\\|-macro\\)\\)\\>"
+   (list (concat "\\<\\(define\\(\\|-template\\)\\)\\>"
 		 "[ \t]*"
 		 "\\(\"[^\"]*\"\\)?"
 		 "("

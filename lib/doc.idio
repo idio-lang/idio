@@ -21,7 +21,7 @@
 
 ;; after SRFI-95, please
 
-define-macro (help x) {
+define-template (help x) {
   #T{
     cond ((function? $x) {
       sigstr := %property $x :sigstr #n

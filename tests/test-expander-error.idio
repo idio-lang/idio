@@ -8,14 +8,14 @@ expander-error0 := Tests
 
 ;; One slight inconvenience is that {trap} only takes literal symbols,
 ;; not values that evaluate to a symbol.  So we need a number of
-;; trap-thunks all of which do much of a muchness.  Cue the macro.
+;; trap-thunks all of which do much of a muchness.  Cue the template.
 
 ;c := make-condition ^idio-error "msg" "loc" "det"
 ;edisplay* c.location
 
 module *expander*
 
-define-macro (expander-trap type) {
+define-template (expander-trap type) {
   loader-name := string->symbol (append-string "expander-trap-" (symbol->string type))
   condition-name := string->symbol (append-string "^" (symbol->string type))
   #T{

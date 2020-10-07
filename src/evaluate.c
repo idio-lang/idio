@@ -106,7 +106,7 @@ static IDIO idio_meaning_predef_extend_string = idio_S_nil;
 static IDIO idio_meaning_toplevel_extend_string = idio_S_nil;
 static IDIO idio_meaning_environ_extend_string = idio_S_nil;
 static IDIO idio_meaning_define_gvi0_string = idio_S_nil;
-static IDIO idio_meaning_define_macro_string = idio_S_nil;
+static IDIO idio_meaning_define_template_string = idio_S_nil;
 static IDIO idio_meaning_define_infix_operator_string = idio_S_nil;
 static IDIO idio_meaning_define_postfix_operator_string = idio_S_nil;
 static IDIO idio_meaning_rewrite_body_letrec_string = idio_S_nil;
@@ -1143,7 +1143,7 @@ static IDIO idio_meaning_dequasiquote (IDIO src, IDIO e, int level, int indent)
      * error handling of the template.
      *
      * In the future, the *application* of the template (ie. the call
-     * to the macro) will itself have a source property and that is
+     * to the template) will itself have a source property and that is
      * the only thing that can get passed to the expansion of the
      * template (at runtime).  So all of the expanded lines of code
      * will bear the source property of the single line where the
@@ -1160,7 +1160,7 @@ static IDIO idio_meaning_dequasiquote (IDIO src, IDIO e, int level, int indent)
      * template (within the line of the template (...))) becomes a bit
      * onerous.  I suspect that's why in Scheme-ly languages you
      * simply get a complaint about the line where the template was
-     * applied and then you're left running (macro-expand) with your
+     * applied and then you're left running (template-expand) with your
      * arguments to figure out what went wrong.
      */
 
@@ -1699,7 +1699,7 @@ static IDIO idio_meaning_define (IDIO src, IDIO name, IDIO e, IDIO nametree, int
     return idio_meaning_assignment (src, name, e, nametree, IDIO_MEANING_DEFINE (IDIO_MEANING_LEXICAL_SCOPE (flags)), cs, cm);
 }
 
-static IDIO idio_meaning_define_macro (IDIO src, IDIO name, IDIO e, IDIO nametree, int flags, IDIO cs, IDIO cm)
+static IDIO idio_meaning_define_template (IDIO src, IDIO name, IDIO e, IDIO nametree, int flags, IDIO cs, IDIO cm)
 {
     IDIO_ASSERT (src);
     IDIO_ASSERT (name);
@@ -1712,12 +1712,12 @@ static IDIO idio_meaning_define_macro (IDIO src, IDIO name, IDIO e, IDIO nametre
     IDIO_TYPE_ASSERT (array, cs);
     IDIO_TYPE_ASSERT (module, cm);
 
-    /* idio_debug ("meaning-define-macro:\nname=%s\n", name); */
+    /* idio_debug ("meaning-define-template:\nname=%s\n", name); */
     /* idio_debug ("e=%s\n", e); */
     /* idio_debug ("src=%s\n", src); */
 
     /*
-     * (define-macro (func arg) ...) => (define-macro func (function (arg) ...))
+     * (define-template (func arg) ...) => (define-template func (function (arg) ...))
      */
     if (idio_isa_pair (name)) {
 	e = IDIO_LIST3 (idio_S_function,
@@ -1744,20 +1744,20 @@ static IDIO idio_meaning_define_macro (IDIO src, IDIO name, IDIO e, IDIO nametre
 
     IDIO expander = IDIO_LIST4 (idio_S_function,
 				IDIO_LIST2 (x_sym, e_sym),
-				idio_meaning_define_macro_string,
+				idio_meaning_define_template_string,
 				appl);
     idio_meaning_copy_src_properties (src, expander);
 
     /*
-     * In general (define-macro a ...) means that "a" is associated
+     * In general (define-template a ...) means that "a" is associated
      * with an expander and that expander takes the pt of the
      * expression it is passed, "(a ...)" (ie. it skips over its own
      * name).
      *
      * It happens that people say
      *
-     * (define-macro %b ...)
-     * (define-macro b %b)
+     * (define-template %b ...)
+     * (define-template b %b)
      *
      * (in particular where they are creating an enhanced version of b
      * which may require using the existing b to define itself hence
@@ -1765,13 +1765,13 @@ static IDIO idio_meaning_define_macro (IDIO src, IDIO name, IDIO e, IDIO nametre
      * redefine b to this new version)
      *
      * However, we can't just use the current value of "%b" in
-     * (define-macro b %b) as this macro-expander association means we
-     * are replacing the nominal definition of a macro with an
-     * expander which takes two arguments and the body of which will
-     * take the pt of its first argument.  Left alone, expander "b"
-     * will take the pt then expander "%b" will take the pt....  "A PT
-     * Too Far", one would say, in hindsight and thinking of the big
-     * budget movie potential.
+     * (define-template b %b) as this template-expander association
+     * means we are replacing the nominal definition of a template
+     * with an expander which takes two arguments and the body of
+     * which will take the pt of its first argument.  Left alone,
+     * expander "b" will take the pt then expander "%b" will take the
+     * pt....  "A PT Too Far", one would say, in hindsight and
+     * thinking of the big budget movie potential.
      *
      * So catch the case where the value is already an expander.
      */
@@ -1858,7 +1858,7 @@ static IDIO idio_meaning_define_macro (IDIO src, IDIO name, IDIO e, IDIO nametre
     }
 
     /*
-     * XXX define-macro bootstrap
+     * XXX define-template bootstrap
      *
      * We really want the entry in *expander-list* to be some compiled
      * code but we don't know what that code is yet because we have't
@@ -1879,7 +1879,7 @@ static IDIO idio_meaning_define_macro (IDIO src, IDIO name, IDIO e, IDIO nametre
      * As a further twist, we really need to embed a call to
      * idio_install_expander in the *object* code too!  When
      * someone in the future loads the object file containing this
-     * define-macro who will have called idio_install_expander?
+     * define-template who will have called idio_install_expander?
      *
      * In summary: we need the expander in the here and now as someone
      * might use it in the next line of source and we need to embed a
@@ -1887,13 +1887,13 @@ static IDIO idio_meaning_define_macro (IDIO src, IDIO name, IDIO e, IDIO nametre
      * users.
      */
 
-    /* idio_debug ("meaning-define-macro: expander=%s\n", expander); */
+    /* idio_debug ("meaning-define-template: expander=%s\n", expander); */
 
     IDIO m_a = idio_meaning_assignment (src, name, expander, nametree,
 					IDIO_MEANING_NOT_TAILP (IDIO_MEANING_DEFINE (IDIO_MEANING_LEXICAL_SCOPE (flags))),
 					cs, cm);
 
-    /* idio_debug ("meaning-define-macro: meaning=%s\n", m_a); */
+    /* idio_debug ("meaning-define-template: meaning=%s\n", m_a); */
 
     idio_install_expander_source (name, expander, expander);
 
@@ -1907,24 +1907,24 @@ static IDIO idio_meaning_define_macro (IDIO src, IDIO name, IDIO e, IDIO nametre
 
     idio_module_set_vci (ce, fmci, fmci);
     idio_module_set_vvi (ce, fmci, fgvi);
-    idio_module_set_symbol (name, IDIO_LIST5 (idio_S_toplevel, fmci, fgvi, ce, idio_meaning_define_macro_string), ce);
+    idio_module_set_symbol (name, IDIO_LIST5 (idio_S_toplevel, fmci, fgvi, ce, idio_meaning_define_template_string), ce);
 
     /*
      * Careful!  Evaluate the expander code after we've called
      * idio_module_set_symbol() for the symbol.  For normal code this
-     * wouldn't matter but macros are evaluated during compilation.
+     * wouldn't matter but templates are evaluated during compilation.
      */
     idio_evaluate_expander_code (m_a, cs);
 
     /*
-     * NB.  This effectively creates/stores the macro body code a
+     * NB.  This effectively creates/stores the template body code a
      * second time *in this instance of the engine*.  When the object
-     * code is read in there won't be an instance of the macro body
+     * code is read in there won't be an instance of the template body
      * code lying around -- at least not one we can access.
      */
 
     IDIO r = IDIO_LIST3 (IDIO_I_EXPANDER, idio_fixnum (mci), m_a);
-    /* idio_debug ("idio-meaning-define-macro %s", name); */
+    /* idio_debug ("idio-meaning-define-template %s", name); */
     /* idio_debug (" r=%s\n", r); */
     return r;
 }
@@ -2534,7 +2534,7 @@ static IDIO idio_meaning_rewrite_body (IDIO src, IDIO e)
 	} else if (idio_isa_pair (l) &&
 		   idio_isa_pair (IDIO_PAIR_H (l)) &&
 		   idio_S_false != idio_expanderp (IDIO_PAIR_HH (l))) {
-	    cur = idio_macro_expands (IDIO_PAIR_H (l));
+	    cur = idio_template_expands (IDIO_PAIR_H (l));
 	    idio_meaning_copy_src_properties (IDIO_PAIR_H (l), cur);
 	} else {
 	    cur = IDIO_PAIR_H (l);
@@ -2751,19 +2751,19 @@ static IDIO idio_meaning_rewrite_body (IDIO src, IDIO e)
 	    r = idio_list_append2 (r, IDIO_LIST1 (r_cur));
 	    return r;
 	} else if (idio_isa_pair (cur) &&
-		   idio_S_define_macro == IDIO_PAIR_H (cur)) {
-	    /* internal define-macro */
+		   idio_S_define_template == IDIO_PAIR_H (cur)) {
+	    /* internal define-template */
 
 	    /*
-	     * Test Case: evaluation-errors/internal-define-macro.idio
+	     * Test Case: evaluation-errors/internal-define-template.idio
 	     *
 	     * {
-	     *   define-macro (bar) {
+	     *   define-template (bar) {
 	     *     #T{ 1 }
 	     *   }
 	     * }
 	     */
-	    idio_meaning_evaluation_error (cur, IDIO_C_FUNC_LOCATION (), "internal define-macro", cur);
+	    idio_meaning_evaluation_error (cur, IDIO_C_FUNC_LOCATION (), "internal define-template", cur);
 
 	    return idio_S_notreached;
 	} else {
@@ -2832,7 +2832,7 @@ static IDIO idio_meaning_rewrite_body_letrec (IDIO src, IDIO e)
 	} else if (idio_isa_pair (l) &&
 		   idio_isa_pair (IDIO_PAIR_H (l)) &&
 		   idio_S_false != idio_expanderp (IDIO_PAIR_HH (l))) {
-	    cur = idio_macro_expands (IDIO_PAIR_H (l));
+	    cur = idio_template_expands (IDIO_PAIR_H (l));
 	    idio_meaning_copy_src_properties (IDIO_PAIR_H (l), cur);
 	} else {
 	    cur = IDIO_PAIR_H (l);
@@ -2884,16 +2884,16 @@ static IDIO idio_meaning_rewrite_body_letrec (IDIO src, IDIO e)
 	    l = IDIO_PAIR_T (l);
 	    continue;
 	} else if (idio_isa_pair (cur) &&
-		   idio_S_define_macro == IDIO_PAIR_H (cur)) {
-	    /* internal define-macro */
+		   idio_S_define_template == IDIO_PAIR_H (cur)) {
+	    /* internal define-template */
 	    /*
-	     * Test Case: (nominally) evaluation-errors/letrec-internal-define-macro.idio
+	     * Test Case: (nominally) evaluation-errors/letrec-internal-define-template.idio
 	     *
-	     * bar :+ define-macro (baz) { #T{ 1 } }
+	     * bar :+ define-template (baz) { #T{ 1 } }
 	     *
 	     * XXX I can't get this to trigger the error
 	     */
-	    idio_meaning_evaluation_error (cur, IDIO_C_FUNC_LOCATION (), "letrec: internal define-macro", cur);
+	    idio_meaning_evaluation_error (cur, IDIO_C_FUNC_LOCATION (), "letrec: internal define-template", cur);
 
 	    return idio_S_notreached;
 	} else {
@@ -3887,7 +3887,7 @@ static IDIO idio_meaning_expander (IDIO src, IDIO e, IDIO nametree, int flags, I
     IDIO_TYPE_ASSERT (array, cs);
     IDIO_TYPE_ASSERT (module, cm);
 
-    IDIO me = idio_macro_expand (e);
+    IDIO me = idio_template_expand (e);
     idio_meaning_copy_src_properties (src, me);
 
     /*
@@ -4113,29 +4113,29 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO cs, I
 
 		return idio_S_notreached;
 	    }
-	} else if (idio_S_define_macro == eh) {
-	    /* (define-macro bindings body ...) */
+	} else if (idio_S_define_template == eh) {
+	    /* (define-template bindings body ...) */
 	    if (idio_isa_pair (et)) {
 		IDIO ett = IDIO_PAIR_T (et);
 		if (idio_isa_pair (ett)) {
-		    return idio_meaning_define_macro (src, IDIO_PAIR_H (et), IDIO_PAIR_H (ett), nametree, flags, cs, cm);
+		    return idio_meaning_define_template (src, IDIO_PAIR_H (et), IDIO_PAIR_H (ett), nametree, flags, cs, cm);
 		} else {
 		    /*
-		     * Test Case: evaluation-errors/define-macro-bindings-nil.idio
+		     * Test Case: evaluation-errors/define-template-bindings-nil.idio
 		     *
-		     * define-macro (m)
+		     * define-template (m)
 		     */
-		    idio_meaning_evaluation_error_param_nil (src, IDIO_C_FUNC_LOCATION_S ("define-macro"), "no body", e);
+		    idio_meaning_evaluation_error_param_nil (src, IDIO_C_FUNC_LOCATION_S ("define-template"), "no body", e);
 
 		    return idio_S_notreached;
 		}
 	    } else {
 		/*
-		 * Test Case: evaluation-errors/define-macro-nil.idio
+		 * Test Case: evaluation-errors/define-template-nil.idio
 		 *
-		 * (define-macro)
+		 * (define-template)
 		 */
-		idio_meaning_evaluation_error_param_nil (src, IDIO_C_FUNC_LOCATION_S ("define-macro"), "no arguments", eh);
+		idio_meaning_evaluation_error_param_nil (src, IDIO_C_FUNC_LOCATION_S ("define-template"), "no arguments", eh);
 
 		return idio_S_notreached;
 	    }
@@ -4609,34 +4609,34 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO cs, I
 
 		return idio_S_notreached;
 	    }
-	} else if (idio_S_macro_expand == eh) {
-	    /* (macro-expand expr) */
+	} else if (idio_S_template_expand == eh) {
+	    /* (template-expand expr) */
 
 	    /*
-	     * macro-expand is here as a special form because it saves
+	     * template-expand is here as a special form because it saves
 	     * a bit of legwork jumping to and from C and Idio.
 	     *
-	     * If it had been a regular macro then (macro-expand expr)
-	     * would be identified as a macro and idio_macro_expand
-	     * will be called with the full expression from which
-	     * idio_initial_expander will recognise macro-expand as an
-	     * expander and call idio_apply with the associated
-	     * function, the Primitive macro-expand, and the full
-	     * expression.  Just as it would for any other macro.  The
-	     * Primitive would then call idio_macro_expand (again!)
-	     * with just the expr.
+	     * If it had been a regular template then (template-expand
+	     * expr) would be identified as a template and
+	     * idio_template_expand will be called with the full
+	     * expression from which idio_initial_expander will
+	     * recognise template-expand as an expander and call
+	     * idio_apply with the associated function, the Primitive
+	     * template-expand, and the full expression.  Just as it
+	     * would for any other template.  The Primitive would then
+	     * call idio_template_expand (again!)  with just the expr.
 	     *
 	     * You sense we could skip the middle man...
 	     */
 	    if (idio_isa_pair (et)) {
-		return idio_macro_expand (et);
+		return idio_template_expand (et);
 	    } else {
 		/*
-		 * Test Case: evaluation-errors/macro-expand-nil.idio
+		 * Test Case: evaluation-errors/template-expand-nil.idio
 		 *
-		 * (macro-expand)
+		 * (template-expand)
 		 */
-		idio_meaning_evaluation_error_param_nil (src, IDIO_C_FUNC_LOCATION_S ("macro-expand"), "no argument", eh);
+		idio_meaning_evaluation_error_param_nil (src, IDIO_C_FUNC_LOCATION_S ("template-expand"), "no argument", eh);
 
 		return idio_S_notreached;
 	    }
@@ -4656,7 +4656,7 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO cs, I
 		idio_thread_set_current_module (cm);
 
 		/*
-		 * define-macro (module name) ... is in module.idio
+		 * define-template (module name) ... is in module.idio
 		 */
 		return idio_meaning_expander (e, e, nametree, flags, cs, cm);
 	    } else {
@@ -4964,7 +4964,7 @@ void idio_init_evaluate ()
     IDIO_MEANING_STRING (toplevel_extend, "idio_toplevel_extend");
     IDIO_MEANING_STRING (environ_extend, "idio_environ_extend");
     IDIO_MEANING_STRING (define_gvi0, "idio-meaning-define/gvi=0");
-    IDIO_MEANING_STRING (define_macro, "idio-meaning-define-macro");
+    IDIO_MEANING_STRING (define_template, "idio-meaning-define-template");
     IDIO_MEANING_STRING (define_infix_operator, "idio-meaning-define-infix-operator");
     IDIO_MEANING_STRING (define_postfix_operator, "idio-meaning-define-postfix-operator");
     IDIO_MEANING_STRING (rewrite_body_letrec, "idio-meaning-rewrite-body-letrec");

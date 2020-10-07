@@ -26,13 +26,13 @@ define (atom? x) "predicate to test if object is an atom
   not (pair? x)
 }
 
-define-macro (defined? s) {
+define-template (defined? s) {
   #T{
     %defined? '$s
   }
 }
 
-;; http://stackoverflow.com/questions/15552057/is-it-possible-to-implement-define-macro-in-mit-scheme
+;; http://stackoverflow.com/questions/15552057/is-it-possible-to-implement-define-template-in-mit-scheme
 define-syntax define-syntax-rule (syntax-rules ()
     ((define-syntax-rule (name & pattern) template)
      (define-syntax name
@@ -47,7 +47,7 @@ define-syntax-rule (unless test body ...) (
   if (not test) (begin body ...)
 )
 
-define-macro (suppress-errors conds & cmd) {
+define-template (suppress-errors conds & cmd) {
   #T{
     trap $conds (function (c) {
 		   ;; What should we return?  Something hard to mistake for a
@@ -510,7 +510,7 @@ The file to be loaded is ``(symbol->string feature)`` which must
   }
 }
 
-define-macro (provide feature) {
+define-template (provide feature) {
   #T{
     if (not (memq $feature *features*)) {
       *features* = pair $feature *features*

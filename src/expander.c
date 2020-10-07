@@ -789,7 +789,7 @@ IDIO idio_evaluate_expander_code (IDIO m, IDIO cs)
 /*     return; */
 /* } */
 
-IDIO idio_macro_expand (IDIO e)
+IDIO idio_template_expand (IDIO e)
 {
     IDIO_ASSERT (e);
 
@@ -798,7 +798,7 @@ IDIO idio_macro_expand (IDIO e)
     return r;
 }
 
-IDIO idio_macro_expands (IDIO e)
+IDIO idio_template_expands (IDIO e)
 {
     IDIO_ASSERT (e);
 

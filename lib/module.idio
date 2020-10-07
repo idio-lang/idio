@@ -44,7 +44,7 @@ define (%module-handler c) {
   raise c
 }
 
-define-macro (define-module name & body) {
+define-template (define-module name & body) {
   #T{
     with-condition-handler ^condition %module-handler {
       %set-current-module! (%module-push $name)
@@ -55,7 +55,7 @@ define-macro (define-module name & body) {
   }
 }
 
-define-macro (in-module name & body) "Run `body` in module `name`
+define-template (in-module name & body) "Run `body` in module `name`
 
 Control will revert to the current module on exit or any ^condition" {
   #T{
@@ -73,7 +73,7 @@ Control will revert to the current module on exit or any ^condition" {
 ;; {module} simply sets the current module but {load} now needs to be
 ;; module-aware and restore the original module value at the end of
 ;; file or on an error
-define-macro (module name) {
+define-template (module name) {
   #T{
     %set-current-module! (%find-or-create-module '$name)
   }
@@ -188,7 +188,7 @@ define (%module-import importer modules) {
   loop (reverse modules) (module-imports importer)
 }
 
-define-macro (import & modules) {
+define-template (import & modules) {
   if (null? modules) #n #T{
     %module-import (current-module) '$modules
   }
@@ -215,7 +215,7 @@ define (%module-export exporter symbols) {
 ;; export sym ...
 ;; export (sym
 ;;	   ...)
-define-macro (export & symbols) {
+define-template (export & symbols) {
   cond ((null? symbols) #n) \
        ((pair? (ph symbols)) {
 	 #T{

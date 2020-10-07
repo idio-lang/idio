@@ -111,10 +111,10 @@ int idio_vm_exit = 0;
  *   mapping to a value index).
  *
  *   The *evaluator* cares about symbols.  By and large it doesn't
- *   care about values although for primitives and macros it must set
- *   values as soon as it sees them because the macros will be run
- *   during evaluation and need primitives (and other macros) to be
- *   available.
+ *   care about values although for primitives and templates it must
+ *   set values as soon as it sees them because the templates will be
+ *   run during evaluation and need primitives (and other templates)
+ *   to be available.
  *
  *   Note: MODULES
  *

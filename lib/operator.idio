@@ -222,7 +222,7 @@ define-infix-operator and 1000 {
 define-infix-operator or 1000 \and
 
 ;; Shell logical lists
-define-macro (&& & e*) {
+define-template (&& & e*) {
   #T{
     {
       trap ^rt-command-status-error (function (c) {
@@ -237,7 +237,7 @@ define-macro (&& & e*) {
   }
 }
 
-define-macro (|| & e*) {
+define-template (|| & e*) {
   #T{
     {
       trap ^rt-command-status-error (function (c) {

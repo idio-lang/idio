@@ -64,11 +64,11 @@ define (test3 expr result expected) {
   }
 }
 
-define-macro (test form result) {
+define-template (test form result) {
   #T{ test3 '$form $form $result }
 }
 
-define-macro (test/error form result c-msg) {
+define-template (test/error form result c-msg) {
   #T{
     with-condition-handler ^idio-error (function (c) {
 					  test c.message $c-msg

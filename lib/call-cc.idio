@@ -300,7 +300,7 @@ define-syntax unwind-protect (syntax-rules ()
 ;;
 ;; The continuation is in scope of both {handler} and {body} as
 ;; {return/handler}.
-define-macro (with-condition-handler condition handler & body) {
+define-template (with-condition-handler condition handler & body) {
   #T{
     return/handler := #n
 
@@ -319,7 +319,7 @@ define-macro (with-condition-handler condition handler & body) {
 ;; to determine if they should return a result from {handler} or
 ;; invoke the continuation, {return/trap}, inside either {handler} or
 ;; {body}.
-define-macro (trap* condition handler & body) {
+define-template (trap* condition handler & body) {
   #T{
     return/trap := #n
 

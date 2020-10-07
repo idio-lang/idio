@@ -952,7 +952,7 @@ define-infix-operator | 300 {
   }
 }
 
-define-macro (fork-command foreground & cmd) {
+define-template (fork-command foreground & cmd) {
   stdin          := (gensym)
   close-stdin    := (gensym)
   stdout         := (gensym)
@@ -1056,11 +1056,11 @@ define-macro (fork-command foreground & cmd) {
   }
 }
 
-define-macro (fg-job & cmd) {
+define-template (fg-job & cmd) {
   #T{ fork-command #t $@cmd }
 }
 
-define-macro (bg-job & cmd) {
+define-template (bg-job & cmd) {
   #T{ fork-command #f $@cmd }
 }
 
