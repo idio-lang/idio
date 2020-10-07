@@ -1108,7 +1108,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		    }
 
 		    if (NULL == t) {
-			if (asprintf (&r, "#<CONST? %p>", o) == -1) {
+			if (asprintf (&r, "#<CONST? %10p>", o) == -1) {
 			    idio_error_alloc ("asprintf");
 
 			    /* notreached */
@@ -1273,7 +1273,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		    }
 
 		    if (NULL == t) {
-			if (asprintf (&r, "#<I-CODE? %p>", o) == -1) {
+			if (asprintf (&r, "#<I-CODE? %10p>", o) == -1) {
 			    idio_error_alloc ("asprintf");
 
 			    /* notreached */
@@ -1393,7 +1393,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 	    switch (type) {
 	    case IDIO_TYPE_NONE:
 		fprintf (stderr, "TYPE_NONE in flight :(\n");
-		if (asprintf (&r, "#<!! -none- %p>", o) == -1) {
+		if (asprintf (&r, "#<!! -none- %10p>", o) == -1) {
 		    idio_error_alloc ("asprintf");
 
 		    /* notreached */
@@ -1890,7 +1890,11 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		break;
 	    case IDIO_TYPE_STRUCT_TYPE:
 		{
-		    if (asprintf (&r, "#<ST %p ", o) == -1) {
+#ifdef IDIO_DEBUG
+		    if (asprintf (&r, "#<ST %10p ", o) == -1) {
+#else
+		    if (asprintf (&r, "#<ST ") == -1) {
+#endif
 			idio_error_alloc ("asprintf");
 
 			/* notreached */
@@ -1940,7 +1944,11 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 			}
 		    }
 
-		    if (asprintf (&r, "#<SI %p ", o) == -1) {
+#ifdef IDIO_DEBUG
+		    if (asprintf (&r, "#<SI %10p ", o) == -1) {
+#else
+		    if (asprintf (&r, "#<SI ") == -1) {
+#endif
 			idio_error_alloc ("asprintf");
 			/* notreached */
 			return NULL;
@@ -1970,7 +1978,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 	    case IDIO_TYPE_THREAD:
 		{
 		    idio_ai_t sp = idio_array_size (IDIO_THREAD_STACK (o));
-		    if (asprintf (&r, "#<THREAD %p\n  pc=%6zd\n  sp/top=%2zd/",
+		    if (asprintf (&r, "#<THREAD %10p\n  pc=%6zd\n  sp/top=%2zd/",
 				  o,
 				  IDIO_THREAD_PC (o),
 				  sp - 1) == -1) {
@@ -2001,7 +2009,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 			    IDIO_STRCAT (r, sizep, "\n  fr=nil");
 			} else {
 			    char *es;
-			    if (asprintf (&es, "\n  fr=%p n=%td ", frame, IDIO_FRAME_NARGS (frame)) == -1) {
+			    if (asprintf (&es, "\n  fr=%10p n=%td ", frame, IDIO_FRAME_NARGS (frame)) == -1) {
 				idio_error_alloc ("asprintf");
 
 				/* notreached */
@@ -2100,7 +2108,11 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		     * continuation stack size is kss minus eight.
 		     * Check idio_continuation().
 		     */
-		    if (asprintf (&r, "#<K %p ss=%zu PC=%td>", o, kss - 8, IDIO_FIXNUM_VAL (pc_I)) == -1) {
+#ifdef IDIO_DEBUG
+		    if (asprintf (&r, "#<K %10p ss=%zu PC=%td>", o, kss - 8, IDIO_FIXNUM_VAL (pc_I)) == -1) {
+#else
+		    if (asprintf (&r, "#<K ss=%zu PC=%td>", kss - 8, IDIO_FIXNUM_VAL (pc_I)) == -1) {
+#endif
 			idio_error_alloc ("asprintf");
 
 			/* notreached */
@@ -2265,7 +2277,11 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		}
 	    case IDIO_TYPE_C_STRUCT:
 		{
+#ifdef IDIO_DEBUG
 		    if (asprintf (&r, "#<C/struct %10p ", o) == -1) {
+#else
+		    if (asprintf (&r, "#<C/struct ") == -1) {
+#endif
 			idio_error_alloc ("asprintf");
 
 			/* notreached */
@@ -2316,7 +2332,11 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		}
 	    case IDIO_TYPE_C_INSTANCE:
 		{
+#ifdef IDIO_DEBUG
 		    if (asprintf (&r, "#<C/instance %10p C/*=%10p C/struct=%10p>", o, IDIO_C_INSTANCE_P (o), IDIO_C_INSTANCE_C_STRUCT (o)) == -1) {
+#else
+		    if (asprintf (&r, "#<C/instance C/*=%10p C/struct=%10p>", IDIO_C_INSTANCE_P (o), IDIO_C_INSTANCE_C_STRUCT (o)) == -1) {
+#endif
 			idio_error_alloc ("asprintf");
 
 			/* notreached */
