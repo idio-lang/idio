@@ -37,6 +37,7 @@ extern IDIO_SYMBOL_DECL (begin);
 extern IDIO_SYMBOL_DECL (block);
 extern IDIO_SYMBOL_DECL (c_struct);
 extern IDIO_SYMBOL_DECL (class);
+extern IDIO_SYMBOL_DECL (cmp_eq);
 extern IDIO_SYMBOL_DECL (colon_caret);
 extern IDIO_SYMBOL_DECL (colon_dollar);
 extern IDIO_SYMBOL_DECL (colon_eq);

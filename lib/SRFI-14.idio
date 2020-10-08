@@ -310,7 +310,7 @@ otherwise an empty array of 17 elements will be used.
     planes := #n
     if (and (pair? o)
 	    (array? (ph o))
-	    (== 17 (array-length (ph o)))) {
+	    (eq 17 (array-length (ph o)))) {
 	      planes = ph o
 	    } {
 	      planes = make-array 17

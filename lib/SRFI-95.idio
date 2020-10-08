@@ -200,7 +200,7 @@ define (sort:sort-list! seq less? key) {
 
 	   sort:merge! a b less? keyer
 	 }) \
-	 ((== n 2) {
+	 ((eq n 2) {
 	   x := ph seq
 	   y := pht seq
 	   p := seq
@@ -215,7 +215,7 @@ define (sort:sort-list! seq less? key) {
 	   set-pt! (pt p) #n
 	   p
 	 }) \
-	 ((== n 1) {
+	 ((eq n 1) {
 	   p := seq
 	   seq = pt seq
 	   set-pt! p #n

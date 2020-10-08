@@ -175,7 +175,7 @@ define (copy-regexp-match md) {
   dst := make-array len #f
 
   do ((i 0 (i + 1))) \
-     ((== i len)
+     ((eq i len)
       (make-regexp-match dst (regexp-match-rx md) (regexp-match-string md))) {
        array-set! dst i (array-ref src i)
      }
@@ -347,7 +347,7 @@ define (regexp-match>=? m1 m2) {
 				   (regexp-match-ref m1 i))) 
 			  ((if (memq (i + 1) non-greedy-indexes) not values)
 			   (and
-			    (== (regexp-match-ref m2 i)
+			    (eq (regexp-match-ref m2 i)
 				(regexp-match-ref m1 i))
 			    (or (not (integer? (regexp-match-ref m2 (i + 1))))
 				(and (integer? (regexp-match-ref m1 (i + 1)))
@@ -614,7 +614,7 @@ define (regexp-run-offsets search? rx str start end) {
   lp :+ function (i searchers1 searchers2) {
 	  ;; Advance initial epsilons once from the first index, or
 	  ;; every time when searching.
-	  cond ((or search? (== i start)) {
+	  cond ((or search? (eq i start)) {
 	    posse-advance! searchers1 epsilons accept (make-start-searcher rx str) \
 						      str i start end
 	    posse-clear! epsilons
@@ -720,13 +720,13 @@ define (char-word-constituent? ch) {
 }
 
 define (match/bos str i ch start end matches) {
-  == i start
+  eq i start
 }
 define (match/eos str i ch start end matches) {
   ge i end
 }
 define (match/bol str i ch start end matches) {
-  or (== i start) \
+  or (eq i start) \
      (eqv? #\{newline} (string-ref str (i - 1)))
 }
 define (match/eol str i ch start end matches) {
@@ -735,7 +735,7 @@ define (match/eol str i ch start end matches) {
 }
 define (match/bow str i ch start end matches) {
   and (lt i end) \
-      (or (== i start)
+      (or (eq i start)
 	  (not (char-word-constituent?
 		(string-ref str (i - 1))))) \
       (char-word-constituent? ch)
@@ -753,7 +753,7 @@ define (match/nwb str i ch start end matches) {
 }
 define (match/bog str i ch start end matches) {
   and (lt i end) \
-      (or (== i start)
+      (or (eq i start)
 	  (match/eog str (i - 1) ch start end matches))
 }
 define (match/eog str i ch start end matches) {
@@ -854,7 +854,7 @@ define (every pred ls) {
 
 define (char-set-sre? sre) {
   or (unicode? sre) \
-     (and (string? sre) (== 1 (string-length sre))) \
+     (and (string? sre) (eq 1 (string-length sre))) \
      (lookup-char-set sre ~none) \
      (and (pair? sre)
 	  (or (string? (ph sre))
@@ -892,7 +892,7 @@ define (sre->char-set sre & o) {
        ((char-set? sre) (maybe-ci sre)) \
        ((unicode? sre) (maybe-ci (char-set sre))) \
        ((string? sre)
-	(if (== 1 (string-length sre))
+	(if (eq 1 (string-length sre))
 	    (maybe-ci (string->char-set sre))
 	    (error 'sre-char-set "only single char strings can be char-sets"))) \
        ((pair? sre)
@@ -948,11 +948,11 @@ define (strip-submatches sre) {
 define (sre-expand-reps from to sre) {
   sre0 := strip-submatches sre
   lp :+ function (i res) {
-	  if (== i from) \
+	  if (eq i from) \
 	     (cond
 	      ((not to)
 	       (reverse (pair #T{ (* $sre) } res)))
-	      ((== from to)
+	      ((eq from to)
 	       (reverse (pair sre (pt res))))
 	      (else {
 		lp :+ function (i res) {
@@ -1272,7 +1272,7 @@ define (regexp-fold rx kons knil str & o) {
 		=> (function (md) {
 		      j := regexp-match-ref md 1
 
-		      lp (if (and (== i j) (lt j end))
+		      lp (if (and (eq i j) (lt j end))
 			     (string-cursor-next str j)
 			     j) \
 			 j \

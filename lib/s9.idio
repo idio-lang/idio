@@ -191,7 +191,7 @@ define (port? x) {
 #*
 define (s9/eqv? a b) {
   cond ((number? a) (and (number? b)
-			 (== a b))) \
+			 (eq a b))) \
        ((unicode? a)   (and (unicode? b)
 			 (unicode=? a b))) \
        (else        (eq? a b))
@@ -525,7 +525,7 @@ define (round x) {
   rx := floor x+
 
   if (and (odd? (inexact->exact rx))
-	  (== x+ rx)) {
+	  (eq x+ rx)) {
 	    rx - 1
 	  } rx
 }
@@ -536,7 +536,7 @@ define (truncate x) {
 
 ; used by EXP and SIN
 define (fact2 x r) {
-  if (== x 0) r {
+  if (eq x 0) r {
     fact2 (x - 1) (x * r)
   }
 }
@@ -546,7 +546,7 @@ exp := {
 
   function (x) {
     e-series :+ function (x y r last) {
-		  if (== r last) r {
+		  if (eq r last) r {
 		    e-series x \
 			     (1 + y) \
 			     (r + ((expt x y) /
@@ -574,7 +574,7 @@ exp := {
 define (log x) {
   l-series :+ function (x y r last lim) {
 		cond ((and lim (zero? lim)) r) \
-		     ((== r last) (2 * r)) \
+		     ((eq r last) (2 * r)) \
 		     (else (l-series x
 				     (2 + y)
 				     (r + ((expt ((x - 1) / (x + 1))
@@ -627,7 +627,7 @@ p-series  := {
   fact2 := fact2
 
   function (x y r add last) {
-    if (== r last) r {
+    if (eq r last) r {
       p-series x \
 	       (2 + y) \
 	       ((if add \+ \-) r ((expt x y) / (fact2 y 1))) \
@@ -648,10 +648,10 @@ cos := {
   function (x) {
     x := ->circle x
 
-    cond ((== 0     x)       (if (inexact? x)  #i1.0  1.0)) \
-	 ((== pi/2  x)       (if (inexact? x)  #i0.0  0.0)) \
-	 ((== pi    x)       (if (inexact? x) #i-1.0 -1.0)) \
-	 ((== 3pi/2 x)       (if (inexact? x)  #i0.0  0.0)) \
+    cond ((eq 0     x)       (if (inexact? x)  #i1.0  1.0)) \
+	 ((eq pi/2  x)       (if (inexact? x)  #i0.0  0.0)) \
+	 ((eq pi    x)       (if (inexact? x) #i-1.0 -1.0)) \
+	 ((eq 3pi/2 x)       (if (inexact? x)  #i0.0  0.0)) \
 	 ((le 0     x pi/2)  (p-series    x         2 1.0 #f 0)) \
 	 ((le pi/2  x pi)    (- (p-series (- pi x)  2 1.0 #f 0))) \
 	 ((le pi    x 3pi/2) (- (p-series (- x pi)  2 1.0 #f 0))) \
@@ -670,10 +670,10 @@ sin := {
   function (x) {
     x := ->circle x
 
-    cond ((== 0     x) (if (inexact? x)  #i0.0  0.0)) \
-	 ((== pi/2  x) (if (inexact? x)  #i1.0  1.0)) \
-	 ((== pi    x) (if (inexact? x)  #i0.0  0.0)) \
-	 ((== 3pi/2 x) (if (inexact? x) #i-1.0 -1.0)) \
+    cond ((eq 0     x) (if (inexact? x)  #i0.0  0.0)) \
+	 ((eq pi/2  x) (if (inexact? x)  #i1.0  1.0)) \
+	 ((eq pi    x) (if (inexact? x)  #i0.0  0.0)) \
+	 ((eq 3pi/2 x) (if (inexact? x) #i-1.0 -1.0)) \
 	 (else {
 	   z := cond ((le 0    x  pi/2) x) \
 		     ((le pi/2 x  pi)   (- pi x)) \
@@ -699,9 +699,9 @@ tan := {
 
   function (x) {
     x := ->circle x
-    cond ((or (== x 0)     (== x  pi))   (if (inexact? x)  #i0.0  0.0)) \
-	 ((or (== x  pi/4) (== x 5pi/4)) (if (inexact? x)  #i1.0  1.0)) \
-	 ((or (== x 3pi/4) (== x 7pi/4)) (if (inexact? x) #i-1.0 -1.0)) \
+    cond ((or (eq x 0)     (eq x  pi))   (if (inexact? x)  #i0.0  0.0)) \
+	 ((or (eq x  pi/4) (eq x 5pi/4)) (if (inexact? x)  #i1.0  1.0)) \
+	 ((or (eq x 3pi/4) (eq x 7pi/4)) (if (inexact? x) #i-1.0 -1.0)) \
 	 (else                         ((sin x) / (cos x)))
   }
 }
@@ -709,7 +709,7 @@ tan := {
 atan := {
   pi/2 := pi/2
   at-series :+ function (x y r last) {
-		 if (== r last) r {
+		 if (eq r last) r {
 		   at-series x \
 			     (1 + y) \
 			     (r + ((((expt 2 (y + y)) * (expt (fact2 y 1) 2)) /
@@ -728,7 +728,7 @@ atan := {
 }
 
 define (asin x) {
-  cond ((== 1 x) (2 * (atan x))) \
+  cond ((eq 1 x) (2 * (atan x))) \
        ((negative? x) (- (asin (- x)))) \
        (else (atan (x / (sqrt (1 - (x * x))))))
 }
@@ -738,15 +738,15 @@ acos := {
   pi/2 := pi/2
 
   function (x) {
-    cond ((== -1 x) pi) \
-	 ((==  1 x) 0) \
+    cond ((eq -1 x) pi) \
+	 ((eq  1 x) 0) \
 	 (else (pi/2 - (asin x)))
   }
 }
 
 define (sqrt square) {
   sqrt2 :+ function (x last) {
-	     if (== last x) x {
+	     if (eq last x) x {
 	       sqrt2 ((x + (square / x)) / 2) x
 	     }
   }
@@ -755,13 +755,13 @@ define (sqrt square) {
     error 'sqrt "negative argument" square
   } {
     rt := sqrt2 square 0
-    if (== square (* rt rt)) {
+    if (eq square (* rt rt)) {
       inexact->exact rt
     } rt
   }
 }
 
-define (zero? x) (== 0 x)
+define (zero? x) (eq 0 x)
 
 ;; String procedures
 
@@ -805,7 +805,7 @@ define number->string {
 		       k := string-length ms
 		       append-string (substring ms 0 i) \
 				     "." \
-				     (if (== k i) "0" (substring ms i k)) \
+				     (if (eq k i) "0" (substring ms i k)) \
 				     "e" \
 				     (if (le 0 e) "+" "") \
 				     es
@@ -858,7 +858,7 @@ define number->string {
     }
 
     r := (get-radix)
-    cond ((not (or (integer? n) (== 10 r)))
+    cond ((not (or (integer? n) (eq 10 r)))
 	  (error 'number->string "real number needs a radix of 10" n)) \
 	 ((integer? n) (conv-int (inexact->exact n) r)) \
 	 (else (conv-real n))
@@ -947,7 +947,7 @@ string->number := {
 			    })
     }
     radix-ten? :+ function (rdx) {
-		    if (not (== 10 rdx)) {
+		    if (not (eq 10 rdx)) {
 		      if (null? radix) #f (error 'string->number "real number needs a radix of 10")
 		    } #t
     }

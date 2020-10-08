@@ -156,7 +156,7 @@ ht-integer-eq? := function (k1 k2) {
 			   c := make-condition ^rt-parameter-type-error "k2 is not an integer" 'ht-integer-eq? k2
 			   raise c
 			 }) \
-			 (else (== k1 k2))
+			 (else (eq k1 k2))
 }
 
 ht = make-hash ht-integer-eq?
