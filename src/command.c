@@ -2617,7 +2617,7 @@ void idio_init_command ()
      * The following is from the "info libc" pages, 28.5.2
      * Initializing the Shell.
      *
-     * WIth some patching of Idio values.
+     * With some patching of Idio values.
      */
     idio_command_pid = getpid ();
     idio_command_terminal = STDIN_FILENO;
@@ -2689,11 +2689,23 @@ void idio_init_command ()
 	 * Put ourselves in our own process group.
 	 */
 	idio_command_pgid = idio_command_pid;
-	if (setpgid (idio_command_pgid, idio_command_pgid) < 0) {
-	    idio_error_system_errno ("setpgid", IDIO_LIST1 (idio_C_int (idio_command_pgid)), IDIO_C_FUNC_LOCATION ());
+	/*
+	 * Triggered by rlwrap(1):
+	 *
+	 * setpgid() returns EPERM ... or to change the process group
+	 * ID of a session leader.
+	 *
+	 * That appears to be the case even if we are setting it to
+	 * ourselves.
+	 */
+	pid_t sid = getsid (0);
+	if (sid != idio_command_pgid) {
+	    if (setpgid (idio_command_pgid, idio_command_pgid) < 0) {
+		idio_error_system_errno ("setpgid", IDIO_LIST1 (idio_C_int (idio_command_pgid)), IDIO_C_FUNC_LOCATION ());
 
-	    /* notreached */
-	    return;
+		/* notreached */
+		return;
+	    }
 	}
 
 	idio_module_set_symbol_value (idio_symbols_C_intern ("%idio-pgid"),
