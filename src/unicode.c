@@ -532,15 +532,13 @@ void idio_unicode_add_primitives ()
     IDIO p = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
     idio_primitive_set_property_C (p, idio_KW_sigstr, "c1 c2 [...]");
     idio_primitive_set_property_C (p, idio_KW_docstr_raw, "\
-test if unicode arguments are equal case-insensitively		\n\
-									\n\
-:param c1: char								\n\
-:param c2: char								\n\
-:param ...: chars							\n\
-									\n\
-This implementation uses libc tolower()					\n\
-									\n\
-:return: #t if arguments are equal case-insensitively, #f otherwise	\n\
+test if unicode arguments are equal			\n\
+							\n\
+:param c1: unicode					\n\
+:param c2: unicode					\n\
+:param ...: unicode					\n\
+							\n\
+:return: #t if arguments are equal, #f otherwise	\n\
 ");
 }
 

@@ -80,7 +80,7 @@ test (peek-char ifh) #\e
 seek-handle ifh -2 'end
 test (peek-char ifh) #\o
 
-handle-rewind ifh
+rewind-handle ifh
 test (peek-char ifh) #\"
 
 test (handle-pos ifh) 0

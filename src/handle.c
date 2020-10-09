@@ -675,7 +675,7 @@ unless ``whence`` is 'set and position is 0 (zero)	\n\
     return r;
 }
 
-void idio_handle_rewind (IDIO h)
+void idio_rewind_handle (IDIO h)
 {
     IDIO_ASSERT (h);
 
@@ -689,13 +689,13 @@ void idio_handle_rewind (IDIO h)
     idio_seek_handle (h, 0, SEEK_SET);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("handle-rewind", handle_rewind, (IDIO h))
+IDIO_DEFINE_PRIMITIVE1 ("rewind-handle", rewind_handle, (IDIO h))
 {
     IDIO_ASSERT (h);
 
     IDIO_VERIFY_PARAM_TYPE (handle, h);
 
-    idio_handle_rewind (h);
+    idio_rewind_handle (h);
 
     return idio_S_unspec;
 }
@@ -1840,7 +1840,7 @@ void idio_handle_add_primitives ()
     IDIO_ADD_PRIMITIVE (puts);
     IDIO_ADD_PRIMITIVE (flush_handle);
     IDIO_ADD_PRIMITIVE (seek_handle);
-    IDIO_ADD_PRIMITIVE (handle_rewind);
+    IDIO_ADD_PRIMITIVE (rewind_handle);
     IDIO_ADD_PRIMITIVE (load_handle_aio);
     IDIO_ADD_PRIMITIVE (load_handle_ebe);
 

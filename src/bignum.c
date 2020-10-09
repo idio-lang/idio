@@ -3303,7 +3303,7 @@ IDIO_DEFINE_PRIMITIVE1 ("bignum-dump", bignum_dump, (IDIO n))
 {
     IDIO_ASSERT (n);
 
-    IDIO_BIGNUM_FIXNUM_TYPE (n);
+    IDIO_TYPE_ASSERT (bignum, n);
 
     idio_bignum_dump (n);
 

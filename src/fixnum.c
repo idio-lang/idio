@@ -936,7 +936,12 @@ IDIO_DEFINE_PRIMITIVE1 ("integer->unicode", integer2unicode, (IDIO i))
     IDIO u = idio_S_unspec;
 
     if (idio_isa_fixnum (i)) {
-	u = IDIO_UNICODE (IDIO_FIXNUM_VAL (i));
+	intptr_t iv = IDIO_FIXNUM_VAL (i);
+
+	if (iv >= 0 &&
+	    iv <= 0x10ffff) {
+	    u = IDIO_UNICODE (iv);
+	}
     } else if (idio_isa_bignum (i)) {
 	intptr_t iv = idio_bignum_intptr_value (i);
 
