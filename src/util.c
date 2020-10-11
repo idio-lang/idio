@@ -944,7 +944,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 			    format = f;
 			    break;
 			default:
-			    fprintf (stderr, "fixnum-as-string: unexpected conversion format: %c (%#x).  Using 'd'.\n", (int) f, (int) f);
+			    fprintf (stderr, "fixnum-as-string: unexpected conversion format: '%c' (%#x).  Using 'd'.\n", (int) f, (int) f);
 			    format = IDIO_FIXNUM_CONVERSION_FORMAT_d;
 			    break;
 			}
