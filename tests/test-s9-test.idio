@@ -39,7 +39,7 @@ s9-test0 := Tests
 test 'x 'x
 test 'mississippi 'mississippi
 ;(test 'MIssissiPPi 'mississippi)
-test '!$%&*+-/^_ '!$%&*+-/^_
+test '!$@`'%&*+-/^_ '!$@`'%&*+-/^_
 
 ; booleans
 

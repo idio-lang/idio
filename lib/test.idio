@@ -138,6 +138,7 @@ test-load := {
 
 test-load "test-read-error.idio"
 test-load "test-read-coverage.idio"
+test-load "test-reader-issues.idio"
 test-load "test-evaluation-error.idio"
 test-load "test-expander-error.idio"
 
@@ -177,7 +178,7 @@ test-load "test-SRFI-115.idio"
 ;; that?  Erm, they've not been counted and are dynamic in number so
 ;; test we've seen at least as many as the largest number we've
 ;; seen.  Wait, some tests are OS-specific.  Drat!
-test (eq Tests 3733) #t
+test (eq Tests 3748) #t
 
 if (file-exists? testfile) (delete-file testfile)
 

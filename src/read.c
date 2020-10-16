@@ -102,9 +102,6 @@ IDIO idio_src_properties;
 				 IDIO_CHAR_RBRACKET == (c) ||		\
 				 IDIO_CHAR_DOT == (c) ||		\
 				 IDIO_CHAR_SEMICOLON == (c) ||		\
-				 IDIO_CHAR_SQUOTE == (c) ||		\
-				 IDIO_CHAR_BACKQUOTE == (c) ||		\
-				 IDIO_CHAR_COMMA == (c) ||		\
 				 IDIO_CHAR_DQUOTE == (c))
 
 #define IDIO_OPEN_DELIMITER(c)	(IDIO_CHAR_LPAREN == (c) ||		\
@@ -2738,7 +2735,7 @@ static IDIO idio_read_number_C (IDIO handle, char *str)
     return num;
 }
 
-static IDIO idio_read_word (IDIO handle, IDIO lo, int c)
+static IDIO idio_read_word (IDIO handle, IDIO lo, int c, char *ic)
 {
     char buf[IDIO_WORD_MAX_LEN + 1];
     int i = 0;
@@ -2820,10 +2817,49 @@ static IDIO idio_read_word (IDIO handle, IDIO lo, int c)
 	    }
 	}
 
+	if (c == ic[3]) {
+	    c = idio_getc_handle (handle);
+	    if (idio_eofp_handle (handle)) {
+		/*
+		 * Test Case: ?? was: read-errors/interpc-escape-eof.idio
+		 *
+		 * \
+		 */
+		idio_read_error_parse (handle, lo, IDIO_C_FUNC_LOCATION (), "EOF in escaped word");
+
+		return idio_S_notreached;
+	    }
+
+	    continue;
+	}
+
 	if (IDIO_SEPARATOR (c)) {
 	    idio_ungetc_handle (handle, c);
 	    break;
 	}
+
+	/*
+	 * What to do if we see an interpolation character in the
+	 * word?
+	 *
+	 * ic[0] - unquote
+	 * ic[1] - unquote-splicing
+	 * ic[2] - quote
+	 * ic[3] - escape -- handled above
+	 *
+	 * unquote-splicing should only occur after unquote so should
+	 * be a generally allowed character in a word
+	 *
+	 * quote is more interesting as I can't see a case for quote
+	 * mid-word where it is meant to quote the following
+	 * expression
+	 *
+	 * unquote, however, might well occur mid-expression in a
+	 * template for another language: PATH=!IDIOPATH:$PATH except
+	 * that the reader doesn't know that the : terminates the
+	 * word.  So, in practice, unquote is only useful at the start
+	 * of a word and shouldn't break a word subsequently.
+	 */
     }
 
     buf[i] = '\0';
@@ -2923,7 +2959,7 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl
 		 * expression so this must be a genuine word, eg. a
 		 * submatch, '($ ...), from SRFI-115.
 		 */
-		idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_word (handle, lo, c));
+		idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_word (handle, lo, c, ic));
 		return lo;
 	    }
 	} else if (c == ic[2]) {
@@ -3058,7 +3094,7 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl
 		    case IDIO_CHAR_DOT:
 			{
 			    idio_ungetc_handle (handle, c);
-			    idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_word (handle, lo, IDIO_CHAR_DOT));
+			    idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_word (handle, lo, IDIO_CHAR_DOT, ic));
 			    return lo;
 			}
 			break;
@@ -3276,7 +3312,7 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl
 			}
 		    }
 
-		    idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_word (handle, lo, c));
+		    idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_word (handle, lo, c, ic));
 		    return lo;
 		}
 	    case IDIO_CHAR_SEMICOLON:
@@ -3287,7 +3323,7 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl
 		idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_string (handle, lo));
 		return lo;
 	    default:
-		idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_word (handle, lo, c));
+		idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_word (handle, lo, c, ic));
 		return lo;
 	    }
 	}
