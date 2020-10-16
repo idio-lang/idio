@@ -3466,11 +3466,11 @@ int idio_vm_run1 (IDIO thr)
 	    IDIO_THREAD_REG2 (thr) = IDIO_THREAD_STACK_POP ();
 	}
 	break;
-    case IDIO_A_POP_EXPR:
+    case IDIO_A_SRC_EXPR:
 	{
     	    idio_ai_t mci = idio_vm_fetch_varuint (thr);
 	    IDIO fmci = idio_fixnum (mci);
-	    IDIO_VM_RUN_DIS ("POP-EXPR %td", mci);
+	    IDIO_VM_RUN_DIS ("SRC-EXPR %td", mci);
 	    IDIO_THREAD_EXPR (thr) = fmci;
 	    break;
 	}
@@ -5054,7 +5054,7 @@ void idio_vm_dasm (IDIO thr, idio_ai_t pc0, idio_ai_t pce)
 		IDIO_VM_DASM ("POP-REG2");
 	    }
 	    break;
-	case IDIO_A_POP_EXPR:
+	case IDIO_A_SRC_EXPR:
 	    {
 		idio_ai_t mci = idio_vm_get_varuint (pcp);
 
@@ -5064,7 +5064,7 @@ void idio_vm_dasm (IDIO thr, idio_ai_t pc0, idio_ai_t pce)
 
 		IDIO c = idio_vm_constants_ref (gci);
 
-		IDIO_VM_DASM ("POP-EXPR %td", mci);
+		IDIO_VM_DASM ("SRC-EXPR %td", mci);
 		idio_debug_FILE (idio_dasm_FILE, " %s", c);
 	    }
 	    break;
@@ -6538,6 +6538,20 @@ IDIO idio_vm_source_location ()
     }
 
     return idio_get_output_string (lsh);
+}
+
+IDIO idio_vm_source_expr ()
+{
+    IDIO cthr = idio_thread_current_thread ();
+    IDIO fmci = IDIO_THREAD_EXPR (cthr);
+    if (idio_isa_fixnum (fmci)) {
+	IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), fmci);
+	idio_ai_t gci = IDIO_FIXNUM_VAL (fgci);
+
+	return idio_vm_constants_ref (gci);
+    }
+
+    return idio_S_nil;
 }
 
 void idio_vm_decode_thread (IDIO thr)

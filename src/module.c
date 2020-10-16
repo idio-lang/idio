@@ -914,7 +914,16 @@ IDIO idio_module_env_symbol (IDIO symbol)
     return idio_module_find_symbol (symbol, idio_thread_current_env ());
 }
 
-IDIO_DEFINE_PRIMITIVE1V ("find-symbol", find_symbol, (IDIO symbol, IDIO args))
+IDIO_DEFINE_PRIMITIVE1V_DS ("find-symbol", find_symbol, (IDIO symbol, IDIO args), "sym [module]", "\
+find evaluator details for ``symbol`` in ``module``		\n\
+or the current environment if no ``module`` supplied		\n\
+								\n\
+:param symbol: symbol to find					\n\
+:type symbol: symbol						\n\
+:param mod: module to search from				\n\
+:type mod: module or module name				\n\
+:return: evaluator details for ``symbol``			\n\
+")
 {
     IDIO_ASSERT (symbol);
     IDIO_ASSERT (args);

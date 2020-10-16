@@ -466,6 +466,10 @@ a wrapper to libc getcwd (3)					\n\
      * Given that we can't set {size} to zero on some systems then
      * always set {size} to PATH_MAX which should be be enough.
      *
+     * Bah! Until Fedora 33/gcc 10.2.1 which is complaining:
+     *
+     *  warning: argument 1 is null but the corresponding size argument 2 value is 4096
+     *
      * If getcwd(3) returns a value that consumes all of PATH_MAX (or
      * more) then we're doomed to hit other problems in the near
      * future anyway as other parts of the system try to use the

@@ -297,6 +297,19 @@ char-set:simple-lower-case-map := #n
 
 define-struct sparse-char-set size planes
 
+define (sparse-char-set-as-string scs seen-scss) {
+  if (sparse-char-set? scs) {
+    r := (open-output-string)
+    hprintf r "#<SI sparse-char-set"
+    hprintf r " size=%d" scs.size
+    hprintf r " planes=%s" scs.planes
+    hprintf r ">"
+    get-output-string r
+  } #n
+}
+
+%%add-as-string sparse-char-set sparse-char-set-as-string
+
 ; refine make-sparse-char-set to only require size and create the
 ; first bitset.  It will use the planes if passed.
 make-sparse-char-set = {

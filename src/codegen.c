@@ -1568,7 +1568,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO fmci = idio_fixnum (mci);
 	    idio_module_set_vci (idio_thread_current_env (), fmci, fmci);
 
-	    IDIO_IA_PUSH1 (IDIO_A_POP_EXPR);
+	    IDIO_IA_PUSH1 (IDIO_A_SRC_EXPR);
 	    IDIO_IA_PUSH_VARUINT (mci);
 
 	    IDIO_IA_PUSH2 (IDIO_A_POP_FUNCTION, IDIO_A_FUNCTION_GOTO);
@@ -1606,7 +1606,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO fmci = idio_fixnum (mci);
 	    idio_module_set_vci (idio_thread_current_env (), fmci, fmci);
 
-	    IDIO_IA_PUSH1 (IDIO_A_POP_EXPR);
+	    IDIO_IA_PUSH1 (IDIO_A_SRC_EXPR);
 	    IDIO_IA_PUSH_VARUINT (mci);
 
 	    IDIO_IA_PUSH4 (IDIO_A_POP_FUNCTION, IDIO_A_PRESERVE_STATE, IDIO_A_FUNCTION_INVOKE, IDIO_A_RESTORE_STATE);

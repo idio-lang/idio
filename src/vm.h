@@ -91,7 +91,7 @@
 #define IDIO_A_POP_VALUE			81
 #define IDIO_A_POP_REG1				82
 #define IDIO_A_POP_REG2				83
-#define IDIO_A_POP_EXPR				84
+#define IDIO_A_SRC_EXPR				84
 #define IDIO_A_POP_FUNCTION			85
 #define IDIO_A_PRESERVE_STATE			86
 #define IDIO_A_RESTORE_STATE			87
@@ -259,6 +259,7 @@ void idio_vm_prim_time (IDIO clos, struct timespec *ts0p, struct timespec *tsep)
 #endif
 IDIO idio_vm_invoke_C (IDIO thr, IDIO command);
 IDIO idio_vm_source_location ();
+IDIO idio_vm_source_expr ();
 IDIO idio_vm_frame_tree (IDIO args);
 
 void idio_vm_thread_init (IDIO thr);

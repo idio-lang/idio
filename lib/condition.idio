@@ -261,7 +261,7 @@ define (condition-report prefix c & args) "print a report on condition `c`
 	 cr-printf ": filename %s " c.filename
        }) \
        ((read-error? c) {
-	 cr-printf "%s:%s:%s" c.location c.line c.message
+	 cr-printf "%s:%d:%s" c.location c.line c.message
        }) \
        ((evaluation-error? c) {
 	 cr-printf "%s:%s:%s" c.location c.expr c.message
@@ -325,7 +325,7 @@ define (condition-report prefix c & args) "print a report on condition `c`
 	 cr-printf ": bignum %s" c.bignum
        }) \
        ((rt-fixnum-conversion-error? c) {
-	 cr-printf ": fixnum %s" c.fixnum
+	 cr-printf ": fixnum %d" c.fixnum
        }) \
        ((rt-bitset-bounds-error? c) {
 	 cr-printf ": bit %s" c.bit

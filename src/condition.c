@@ -473,6 +473,8 @@ does not return per se						\n\
      */
     IDIO_TYPE_ASSERT (condition, c);
 
+    IDIO thr = idio_thread_current_thread ();
+
     /*
      * Technically we can allow the user to override the SIGCHLD and
      * SIGHUP handlers -- though we'd advise against it.
@@ -482,8 +484,6 @@ does not return per se						\n\
 	IDIO handler = idio_hash_ref (idio_condition_default_handler, sit);
 
 	if (idio_S_unspec != handler) {
-	    IDIO thr = idio_thread_current_thread ();
-
 	    /*
 	    idio_debug ("d-c-h user-defined handler %s", handler);
 	    idio_debug (" for %s", IDIO_STRUCT_TYPE_NAME (sit));
@@ -529,7 +529,7 @@ does not return per se						\n\
 	    IDIO eh = idio_thread_current_error_handle ();
 	    int printed = 0;
 
-	    idio_display_C ("\ndefault-condition-handler: ", eh);
+	    idio_display_C ("\ndefault-condition-handler: system-error: ", eh);
 
 	    IDIO l = IDIO_STRUCT_INSTANCE_FIELDS (c, IDIO_SI_IDIO_ERROR_TYPE_LOCATION);
 	    if (idio_S_nil != l) {
@@ -581,12 +581,16 @@ does not return per se						\n\
 	    IDIO eh = idio_thread_current_error_handle ();
 	    int printed = 0;
 
-	    idio_display_C ("\ndefault-condition-handler: ", eh);
+	    idio_display_C ("\ndefault-condition-handler: idio-error: ", eh);
 
 	    IDIO l = IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_IDIO_ERROR_TYPE_LOCATION);
 	    if (idio_S_nil != l) {
-		idio_display (l, eh);
 		printed = 1;
+
+		idio_display_C ("'", eh);
+		idio_display (idio_vm_source_expr (), eh);
+		idio_display_C ("' at ", eh);
+		idio_display (l, eh);
 
 		if (idio_struct_type_isa (sit, idio_condition_read_error_type)) {
 		    idio_display_C (":", eh);
@@ -634,14 +638,12 @@ does not return per se						\n\
 	} else if (idio_struct_type_isa (sit, idio_condition_error_type)) {
 	    IDIO eh = idio_thread_current_error_handle ();
 
-	    idio_display_C ("\ndefault-condition-handler: ", eh);
+	    idio_display_C ("\ndefault-condition-handler: error: ", eh);
 	    idio_display (IDIO_STRUCT_TYPE_NAME (sit), eh);
 	    idio_display_C ("\n", eh);
 	} else {
 	    idio_debug ("default-condition-handler: no clause for %s\n", c);
 	}
-
-	IDIO thr = idio_thread_current_thread ();
 
 	IDIO cmd = IDIO_LIST1 (idio_module_symbol_value (idio_symbols_C_intern ("debug"),
 							 idio_Idio_module,

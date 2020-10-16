@@ -49,8 +49,8 @@ define (Rx-as-string rx seen-rxs) {
     r := (open-output-string)
     hprintf r "#<SI Rx"
     hprintf r " ss=%s" (state-as-string rx.start-state #n)
-    hprintf r " n-m=%s" rx.num-matches
-    hprintf r " n-si=%s" rx.num-save-indexes
+    hprintf r " n-m=%d" rx.num-matches
+    hprintf r " n-si=%d" rx.num-save-indexes
     hprintf r " n-gi=%s" rx.non-greedy-indexes
     hprintf r " m-r=%s" rx.match-rules
     hprintf r " m-n=%s" rx.match-names
@@ -70,6 +70,44 @@ define-syntax rx \
 
 ;;; A state is a single nfa state with transition rules.
 define-struct state accept? chars match match-rule next1 next2 id
+
+define (state-as-string st seen-ids) {
+  if (state? st) {
+    r := (open-output-string)
+    hprintf r "#<SI state "
+    seen := assq st.id seen-ids
+    if seen {
+      hprintf r "@%d" (ph seen)
+    } {
+      seen-ids = pair (list st.id) seen-ids
+      hprintf r "id=%2d ch=%2s a?=%s sm=%2d" st.id st.chars st.accept? st.match
+      if st.next1 {
+	seen = assq st.next1.id seen-ids
+	if seen {
+	  hprintf r " n1=@%d" (ph seen)
+	} {
+	  hprintf r " n1=%s" (state-as-string st.next1 seen-ids)
+	}
+      } {
+	hprintf r " n1=%s" st.next1
+      }
+      if st.next2 {
+	seen = assq st.next2.id seen-ids
+	if seen {
+	  hprintf r " n2=@%d" (ph seen)
+	} {
+	  hprintf r " n2=%s" (state-as-string st.next2 seen-ids)
+	}
+      } {
+	hprintf r " n2=%s" st.next2
+      }
+    }
+    hprintf r ">"
+    get-output-string r
+  } #n
+}
+
+%%add-as-string state state-as-string
 
 make-state = {
   orig-make-state := make-state
@@ -128,6 +166,22 @@ define (make-accept-state id) {
 ;; A record holding the current match data - essentially a wrapper
 ;; around an array, plus a reference to the RX for meta-info.
 define-struct regexp-match matches rx string
+
+define (regexp-match-as-string rm seen-rms & o) {
+  if (regexp-match? rm) {
+    r := (open-output-string)
+    hprintf r "#<SI regexp-match "
+    if (not (null? o)) {
+      hprintf r (ph o)
+    }
+    rx := regexp-match-rx rm
+    hprintf r "ms=%-16s ss=%s ngi=%s" rm.matches (state-as-string (Rx-start-state rx) #n) (Rx-non-greedy-indexes rx)
+    hprintf r ">"
+    get-output-string r
+  } #n
+}
+
+%%add-as-string regexp-match regexp-match-as-string
 
 define (regexp-match-rules md) {
   Rx-match-rules (regexp-match-rx md)
@@ -321,6 +375,22 @@ define (match-collect md spec) {
 ;; A searcher represents a single rx state and match information.
 define-struct searcher state matches
 
+define (searcher-as-string sr seen-searchers & o) {
+  if (searcher? sr) {
+    r := (open-output-string)
+    hprintf r "#<SI searcher "
+    if (not (null? o)) {
+      hprintf r (ph o)
+    }
+    hprintf r "st=<%s>" (state-as-string (searcher-state sr) #n)
+    hprintf r " ms=<%s>" (regexp-match-as-string sr.matches #n)
+    hprintf r ">"
+    get-output-string r
+  } #n
+}
+
+%%add-as-string searcher searcher-as-string
+
 ;; Merge two regexp-matches, preferring the leftmost-longest of their
 ;; matches, or shortest for non-greedy matches.
 define (regexp-match>=? m1 m2) {
@@ -434,60 +504,6 @@ define (make-start-searcher rx str) {
   make-searcher (Rx-start-state rx) (make-regexp-match-for-rx rx str)
 }
 
-define (state-as-string st seen-ids) {
-  if (state? st) {
-    r := (open-output-string)
-    hprintf r "#<SI state "
-    seen := assq st.id seen-ids
-    if seen {
-      hprintf r "@%s" (ph seen)
-    } {
-      seen-ids = pair (list st.id) seen-ids
-      hprintf r "id=%2d ch=%2s a?=%s sm=%2s" st.id st.chars st.accept? st.match
-      if st.next1 {
-	seen = assq st.next1.id seen-ids
-	if seen {
-	  hprintf r " n1=@%s" (ph seen)
-	} {
-	  hprintf r " n1=%s" (state-as-string st.next1 seen-ids)
-	}
-      } {
-	hprintf r " n1=%s" st.next1
-      }
-      if st.next2 {
-	seen = assq st.next2.id seen-ids
-	if seen {
-	  hprintf r " n2=@%s" (ph seen)
-	} {
-	  hprintf r " n2=%s" (state-as-string st.next2 seen-ids)
-	}
-      } {
-	hprintf r " n2=%s" st.next2
-      }
-    }
-    hprintf r ">"
-    get-output-string r
-  } #n
-}
-
-%%add-as-string state state-as-string
-
-define (searcher-as-string sr seen-searchers & o) {
-  if (searcher? sr) {
-    r := (open-output-string)
-    hprintf r "#<SI searcher "
-    if (not (null? o)) {
-      hprintf r (ph o)
-    }
-    hprintf r "st=<%s>" (state-as-string (searcher-state sr) #n)
-    hprintf r " ms=<%s>" (regexp-match-as-string sr.matches #n)
-    hprintf r ">"
-    get-output-string r
-  } #n
-}
-
-%%add-as-string searcher searcher-as-string
-
 define (psrs srs & o) {
   r := (open-output-string)
   skeys := sort (hash-keys srs) (function (a b) {
@@ -503,22 +519,6 @@ define (psrs srs & o) {
   }) skeys
   get-output-string r
 }
-
-define (regexp-match-as-string rm seen-rms & o) {
-  if (regexp-match? rm) {
-    r := (open-output-string)
-    hprintf r "#<SI regexp-match "
-    if (not (null? o)) {
-      hprintf r (ph o)
-    }
-    rx := regexp-match-rx rm
-    hprintf r "ms=%-16s ss=%s ngi=%s" rm.matches (state-as-string (Rx-start-state rx) #n) (Rx-non-greedy-indexes rx)
-    hprintf r ">"
-    get-output-string r
-  } #n
-}
-
-%%add-as-string regexp-match regexp-match-as-string
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Execution

@@ -107,15 +107,44 @@ define (edisplay* & x*) {
   newline (current-error-handle)
 }
 
-define (%%add-as-string o f) {
+#*
+
+%%value-as-string is a nominally generic mechanism to associate a
+user-defined printer with a value.
+
+In practice it is only used for struct instances where the struct type
+is associated with a printer and when we come to print a struct
+instance we check to see if a printer exists for its type.
+
+The printer will be invoked with the value to be printed and an inital
+#n.  The second argument can be used for any subsequent purpose but
+might normally be used to maintain a set of previously seen values to
+handle circular data structures.
+
+*#
+define (%%add-as-string o f) "
+Associate a printer function `f` with `o`.
+
+`f` will be invoked with the value to be printed and #n.
+
+The second argument can be used for any subsequent purpose but might
+normally be used to maintain a set of previously seen values to handle
+circular data structures.
+
+This is currently only used for struct instances where a struct type
+was associated with a printer.  When we come to print a struct
+instance we check to see if a printer exists for its type.
+
+" {
   %%value-as-string = pair (list o f) %%value-as-string
 }
 
 #*
 
-To support the printing of objects we can enable a couple of dynamic
-scope variables which advise as to the requested format (mostly number
-format, say, decimal or hexadecimal) and the precision of that format.
+To support the formatted printing of values we can enable a couple of
+dynamic scope variables which advise as to the requested
+format (mostly number format, say, decimal or hexadecimal) and the
+precision of that format.
 
 They are advisory.
 

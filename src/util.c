@@ -944,7 +944,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 			    format = f;
 			    break;
 			default:
-			    fprintf (stderr, "fixnum-as-string: unexpected conversion format: '%c' (%#x).  Using 'd'.\n", (int) f, (int) f);
+			    fprintf (stderr, "fixnum-as-string: unexpected conversion format: '%c' (%#x).  Using 'd' for %" PRIdPTR ".\n", (int) f, (int) f, IDIO_FIXNUM_VAL (o));
 			    format = IDIO_FIXNUM_CONVERSION_FORMAT_d;
 			    break;
 			}
@@ -2670,7 +2670,7 @@ const char *idio_vm_bytecode2string (int code)
     case IDIO_A_POP_VALUE:				r = "POP-VALUE";			break;
     case IDIO_A_POP_REG1:				r = "POP-REG1";				break;
     case IDIO_A_POP_REG2:				r = "POP-REG2";				break;
-    case IDIO_A_POP_EXPR:				r = "POP-EXPR";				break;
+    case IDIO_A_SRC_EXPR:				r = "SRC-EXPR";				break;
     case IDIO_A_POP_FUNCTION:				r = "POP-FUNCTION";			break;
     case IDIO_A_PRESERVE_STATE:				r = "PRESERVE-STATE";			break;
     case IDIO_A_RESTORE_STATE:				r = "RESTORE-STATE";			break;
