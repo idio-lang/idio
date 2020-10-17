@@ -1,0 +1,16 @@
+#*
+
+Issue #178: putc doesn't generate UTF-8 with the supplied Unicode code
+point
+
+Obviously we need to capture the output to check.
+
+*#
+
+osh := (open-output-string)
+
+cp := #U+127
+
+write-char cp osh
+
+test (get-output-string osh) "ħ"

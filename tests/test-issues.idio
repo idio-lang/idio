@@ -1,5 +1,5 @@
 
-reader-issues0 := Tests
+issues0 := Tests
 
 ;; We have a bunch of test cases which should provoke a ^read-error or
 ;; ^string-error of some kind.  So we can write a load function which
@@ -9,7 +9,7 @@ reader-issues0 := Tests
 
 ;; So one or two tests per, uh, test.
 
-reader-issues-load := {
+issues-load := {
   n := 0
 
   function (filename) {
@@ -27,7 +27,8 @@ reader-issues-load := {
 ;
 ; 1 - Ian's Gitlab
 
-reader-issues-load "reader-issues/1-173.idio"
+issues-load "issues/1-173.idio"
+issues-load "issues/1-178.idio"
 
 ;; all done?
-test Tests (reader-issues0 + 12)
+test Tests (issues0 + 13)

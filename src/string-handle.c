@@ -359,26 +359,32 @@ int idio_putc_string_handle (IDIO sh, int c)
 	idio_handle_error_write (sh, IDIO_C_FUNC_LOCATION ());
     }
 
-    if (IDIO_STRING_HANDLE_PTR (sh) >= IDIO_STRING_HANDLE_END (sh)) {
-	if (IDIO_STRING_HANDLE_END (sh) == (IDIO_STRING_HANDLE_BUF (sh) + IDIO_STRING_HANDLE_BLEN (sh))) {
-	    size_t blen = IDIO_STRING_HANDLE_BLEN (sh);
-	    char *buf = IDIO_STRING_HANDLE_BUF (sh);
-	    blen += blen / 2;	/* 50% more */
-	    buf = idio_realloc (buf, blen);
+    char buf[4];
+    int size;
+    idio_utf8_code_point (c, buf, &size);
 
-	    /*
-	     * realloc can relocate data in memory!
-	     */
-	    IDIO_STRING_HANDLE_BUF (sh) = buf;
-	    IDIO_STRING_HANDLE_PTR (sh) = buf + IDIO_STRING_HANDLE_BLEN (sh);
-	    IDIO_STRING_HANDLE_BLEN (sh) = blen;
+    for (int n = 0;n < size;n++) {
+	if (IDIO_STRING_HANDLE_PTR (sh) >= IDIO_STRING_HANDLE_END (sh)) {
+	    if (IDIO_STRING_HANDLE_END (sh) == (IDIO_STRING_HANDLE_BUF (sh) + IDIO_STRING_HANDLE_BLEN (sh))) {
+		size_t blen = IDIO_STRING_HANDLE_BLEN (sh);
+		char *buf = IDIO_STRING_HANDLE_BUF (sh);
+		blen += blen / 2;	/* 50% more */
+		buf = idio_realloc (buf, blen);
+
+		/*
+		 * realloc can relocate data in memory!
+		 */
+		IDIO_STRING_HANDLE_BUF (sh) = buf;
+		IDIO_STRING_HANDLE_PTR (sh) = buf + IDIO_STRING_HANDLE_BLEN (sh);
+		IDIO_STRING_HANDLE_BLEN (sh) = blen;
+	    }
+
+	    IDIO_STRING_HANDLE_END (sh) = IDIO_STRING_HANDLE_PTR (sh) + 1;
 	}
 
-	IDIO_STRING_HANDLE_END (sh) = IDIO_STRING_HANDLE_PTR (sh) + 1;
+	*(IDIO_STRING_HANDLE_PTR (sh)) = buf[n];
+	IDIO_STRING_HANDLE_PTR (sh) += 1;
     }
-
-    *(IDIO_STRING_HANDLE_PTR (sh)) = (char) c;
-    IDIO_STRING_HANDLE_PTR (sh) += 1;
 
     return c;
 }

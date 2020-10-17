@@ -1,5 +1,8 @@
 #*
 
+Issue #173: IDIO_SEPARATOR() uses fixed values and is not dynamically
+dependent on interpc (which isn't passed into idio_read_word anyway)
+
 The old code used to use the fixed triple '`, (quote, backquote,
 comma) to break a word.  That is, not even use $ (dollars the Idi
 ovariant of , to break a word -- double plus bad).  

@@ -1188,9 +1188,13 @@ int idio_putc_file_handle (IDIO fh, int c)
 	return EOF;
     }
 
-    for (;;) {
+    char buf[4];
+    int size;
+    idio_utf8_code_point (c, buf, &size);
+
+    for (int n = 0;n < size;n++) {
 	if (IDIO_FILE_HANDLE_COUNT (fh) < IDIO_FILE_HANDLE_BUFSIZ (fh)) {
-	    *(IDIO_FILE_HANDLE_PTR (fh)) = (char) c;
+	    *(IDIO_FILE_HANDLE_PTR (fh)) = buf[n];
 	    IDIO_FILE_HANDLE_PTR (fh) += 1;
 	    IDIO_FILE_HANDLE_COUNT (fh) += 1;
 

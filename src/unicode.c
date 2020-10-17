@@ -346,6 +346,41 @@ char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted)
     return r;
 }
 
+/*
+ * construct a UTF-8 sequence from an Unicode code point
+ *
+ * caller must supply a char* (of at least 4 bytes) and an int* which
+ * will be set to the number of bytes written to the char*
+ *
+ */
+void idio_utf8_code_point (int c, char *buf, int *sizep)
+{
+    int n = 0;
+
+    if (c > 0x10ffff) {
+	/*
+	 * Hopefully, this is guarded against elsewhere
+	 */
+	fprintf (stderr, "utf8-code-point: oops c=%x > 0x10ffff\n", c);
+    } else if (c >= 0x10000) {
+	buf[n++] = 0xf0 | ((c & (0x07 << 18)) >> 18);
+	buf[n++] = 0x80 | ((c & (0x3f << 12)) >> 12);
+	buf[n++] = 0x80 | ((c & (0x3f << 6)) >> 6);
+	buf[n++] = 0x80 | ((c & (0x3f << 0)) >> 0);
+    } else if (c >= 0x0800) {
+	buf[n++] = 0xe0 | ((c & (0x0f << 12)) >> 12);
+	buf[n++] = 0x80 | ((c & (0x3f << 6)) >> 6);
+	buf[n++] = 0x80 | ((c & (0x3f << 0)) >> 0);
+    } else if (c >= 0x0080) {
+	buf[n++] = 0xc0 | ((c & (0x1f << 6)) >> 6);
+	buf[n++] = 0x80 | ((c & (0x3f << 0)) >> 0);
+    } else {
+	buf[n++] = c & 0x7f;
+    }
+
+    *sizep = n;
+}
+
 int idio_unicode_C_eqp (void *s1, void *s2)
 {
     /*
