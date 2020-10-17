@@ -1564,7 +1564,11 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	     */
 	    IDIO_FLAGS (e) |= IDIO_FLAG_CONST;
 
-	    idio_ai_t mci = idio_codegen_constants_lookup_or_extend (cs, e);
+	    /*
+	     * XXX must be unique, this (+ 1 1) is different to the
+	     * next (+ 1 1)
+	     */
+	    idio_ai_t mci = idio_codegen_extend_constants (cs, e);
 	    IDIO fmci = idio_fixnum (mci);
 	    idio_module_set_vci (idio_thread_current_env (), fmci, fmci);
 
@@ -1602,7 +1606,11 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	     */
 	    IDIO_FLAGS (e) |= IDIO_FLAG_CONST;
 
-	    idio_ai_t mci = idio_codegen_constants_lookup_or_extend (cs, e);
+	    /*
+	     * XXX must be unique, this (+ 1 1) is different to the
+	     * next (+ 1 1)
+	     */
+	    idio_ai_t mci = idio_codegen_extend_constants (cs, e);
 	    IDIO fmci = idio_fixnum (mci);
 	    idio_module_set_vci (idio_thread_current_env (), fmci, fmci);
 
