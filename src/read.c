@@ -70,11 +70,17 @@ IDIO idio_src_properties;
  *
  *	A(B)C	=>	A ( B ) C
  *
+ * which allow words to abutt parentheses.
+ *
  * end of arrays RBRACKET
  *
  *	(start is handled by #[ -- HASH LBRACKET )
  *
  *	#[A]B	=>	#[ A ] B
+ *
+ * also LBRACKET to avoid words like a[b
+ *
+ * similarly LBRACE and RBRACE to avoid a{b and c}d
  *
  * value indexing - DOT
  *
@@ -99,7 +105,10 @@ IDIO idio_src_properties;
 				 IDIO_CHAR_CR == (c) ||			\
 				 IDIO_CHAR_LPAREN == (c) ||		\
 				 IDIO_CHAR_RPAREN == (c) ||		\
+				 IDIO_CHAR_LBRACKET == (c) ||		\
 				 IDIO_CHAR_RBRACKET == (c) ||		\
+				 IDIO_CHAR_LBRACE == (c) ||		\
+				 IDIO_CHAR_RBRACE == (c) ||		\
 				 IDIO_CHAR_DOT == (c) ||		\
 				 IDIO_CHAR_SEMICOLON == (c) ||		\
 				 IDIO_CHAR_DQUOTE == (c))
