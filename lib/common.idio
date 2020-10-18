@@ -290,6 +290,8 @@ The default padding character is #\{space}
 			cond ((eq? type 'keyed) {
 			  cond ((unicode=? k #\%) {
 			    v = k
+			    vs = "%"
+			    vs-len = 1
 			  }) \
 			       ((unicode-alphabetic? k) {
 				 v = hash-ref data k #f
@@ -308,7 +310,7 @@ The default padding character is #\{space}
 				      ((bignum? v) {
 					; %f format!
 					idio-print-conversion-format = #\f
-				 }) \
+				      }) \
 				      (else {
 					idio-print-conversion-format = #\s
 				      })
@@ -321,15 +323,22 @@ The default padding character is #\{space}
 			  vs-len = string-length vs
 			}) \
 			     ((eq? type 'args) {
-			       if (null? args) (error '%format "not enough args for %" k)
+			       cond ((unicode=? k #\%) {
+				 v = k
+				 vs = "%"
+				 vs-len = 1
+			       }) \
+				    (else {
+				      if (null? args) (error '%format "not enough args for %" k)
 
-			       v = ph args
-			       args = pt args
+				      v = ph args
+				      args = pt args
 
-			       idio-print-conversion-format = k
+				      idio-print-conversion-format = k
 
-			       vs = display-string v
-			       vs-len = string-length vs
+				      vs = display-string v
+				      vs-len = string-length vs
+				    })
 			     })
 
 			;; avoid re-application of precision in puts

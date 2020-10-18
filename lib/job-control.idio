@@ -57,7 +57,7 @@ export-struct-accessors-only %idio-status	pid state reason
 define (job-as-string job seen) {
   if (%idio-job? job) {
     r := (open-output-string)
-    hprintf r "#<SI %idio-job "
+    hprintf r "#<SI %%idio-job "
 
     hprintf r "%s %s " job.pgid job.pipeline
 
