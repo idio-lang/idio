@@ -216,6 +216,8 @@
  */
 typedef unsigned char idio_type_e;
 
+typedef int32_t idio_unicode_t;	/* must handle EOF as well! */
+
 /* byte compiler instruction */
 typedef uint8_t IDIO_I;
 #define IDIO_I_MAX	UINT8_MAX
@@ -675,10 +677,11 @@ typedef struct idio_bignum_s {
 typedef struct idio_handle_methods_s {
     void (*free) (struct idio_s *h);
     int (*readyp) (struct idio_s *h);
-    int (*getc) (struct idio_s *h);
+    int (*getb) (struct idio_s *h);
     int (*eofp) (struct idio_s *h);
     int (*close) (struct idio_s *h);
-    int (*putc) (struct idio_s *h, int c);
+    int (*putb) (struct idio_s *h, uint8_t c);
+    int (*putc) (struct idio_s *h, idio_unicode_t c);
     ptrdiff_t (*puts) (struct idio_s *h, char *s, size_t slen);
     int (*flush) (struct idio_s *h);
     off_t (*seek) (struct idio_s *h, off_t offset, int whence);
@@ -721,9 +724,10 @@ typedef struct idio_handle_s {
 
 #define IDIO_HANDLE_M_FREE(H)	(IDIO_HANDLE_METHODS (H)->free)
 #define IDIO_HANDLE_M_READYP(H)	(IDIO_HANDLE_METHODS (H)->readyp)
-#define IDIO_HANDLE_M_GETC(H)	(IDIO_HANDLE_METHODS (H)->getc)
+#define IDIO_HANDLE_M_GETB(H)	(IDIO_HANDLE_METHODS (H)->getb)
 #define IDIO_HANDLE_M_EOFP(H)	(IDIO_HANDLE_METHODS (H)->eofp)
 #define IDIO_HANDLE_M_CLOSE(H)	(IDIO_HANDLE_METHODS (H)->close)
+#define IDIO_HANDLE_M_PUTB(H)	(IDIO_HANDLE_METHODS (H)->putb)
 #define IDIO_HANDLE_M_PUTC(H)	(IDIO_HANDLE_METHODS (H)->putc)
 #define IDIO_HANDLE_M_PUTS(H)	(IDIO_HANDLE_METHODS (H)->puts)
 #define IDIO_HANDLE_M_FLUSH(H)	(IDIO_HANDLE_METHODS (H)->flush)

@@ -35,12 +35,14 @@ void idio_handle_finalizer (IDIO handle);
 
 void idio_free_handle (IDIO h);
 int idio_readyp_handle (IDIO h);
-int idio_getc_handle (IDIO h);
-int idio_ungetc_handle (IDIO h, int c);
+int idio_getb_handle (IDIO h);
+idio_unicode_t idio_getc_handle (IDIO h);
+int idio_ungetc_handle (IDIO h, idio_unicode_t c);
 int idio_peek_handle (IDIO h);
 int idio_eofp_handle (IDIO h);
 int idio_close_handle (IDIO h);
-int idio_putc_handle (IDIO h, int c);
+int idio_putb_handle (IDIO h, uint8_t c);
+int idio_putc_handle (IDIO h, idio_unicode_t c);
 ptrdiff_t idio_puts_handle (IDIO h, char *s, size_t slen);
 int idio_flush_handle (IDIO h);
 off_t idio_seek_handle (IDIO h, off_t offset, int whence);

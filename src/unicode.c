@@ -353,7 +353,7 @@ char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted)
  * will be set to the number of bytes written to the char*
  *
  */
-void idio_utf8_code_point (int c, char *buf, int *sizep)
+void idio_utf8_code_point (idio_unicode_t c, char *buf, int *sizep)
 {
     int n = 0;
 

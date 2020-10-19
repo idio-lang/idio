@@ -49,9 +49,10 @@ typedef struct idio_string_handle_stream_s {
 static idio_handle_methods_t idio_string_handle_methods = {
     idio_free_string_handle,
     idio_readyp_string_handle,
-    idio_getc_string_handle,
+    idio_getb_string_handle,
     idio_eofp_string_handle,
     idio_close_string_handle,
+    idio_putb_string_handle,
     idio_putc_string_handle,
     idio_puts_string_handle,
     idio_flush_string_handle,
@@ -313,7 +314,7 @@ int idio_readyp_string_handle (IDIO sh)
     return (idio_eofp_string_handle (sh) == 0);
 }
 
-int idio_getc_string_handle (IDIO sh)
+int idio_getb_string_handle (IDIO sh)
 {
     IDIO_ASSERT (sh);
 
@@ -351,7 +352,39 @@ int idio_close_string_handle (IDIO sh)
     return 0;
 }
 
-int idio_putc_string_handle (IDIO sh, int c)
+int idio_putb_string_handle (IDIO sh, uint8_t c)
+{
+    IDIO_ASSERT (sh);
+
+    if (! idio_output_string_handlep (sh)) {
+	idio_handle_error_write (sh, IDIO_C_FUNC_LOCATION ());
+    }
+
+    if (IDIO_STRING_HANDLE_PTR (sh) >= IDIO_STRING_HANDLE_END (sh)) {
+	if (IDIO_STRING_HANDLE_END (sh) == (IDIO_STRING_HANDLE_BUF (sh) + IDIO_STRING_HANDLE_BLEN (sh))) {
+	    size_t blen = IDIO_STRING_HANDLE_BLEN (sh);
+	    char *buf = IDIO_STRING_HANDLE_BUF (sh);
+	    blen += blen / 2;	/* 50% more */
+	    buf = idio_realloc (buf, blen);
+
+	    /*
+	     * realloc can relocate data in memory!
+	     */
+	    IDIO_STRING_HANDLE_BUF (sh) = buf;
+	    IDIO_STRING_HANDLE_PTR (sh) = buf + IDIO_STRING_HANDLE_BLEN (sh);
+	    IDIO_STRING_HANDLE_BLEN (sh) = blen;
+	}
+
+	IDIO_STRING_HANDLE_END (sh) = IDIO_STRING_HANDLE_PTR (sh) + 1;
+    }
+
+    *(IDIO_STRING_HANDLE_PTR (sh)) = (char) c;
+    IDIO_STRING_HANDLE_PTR (sh) += 1;
+
+    return 1;
+}
+
+int idio_putc_string_handle (IDIO sh, idio_unicode_t c)
 {
     IDIO_ASSERT (sh);
 
@@ -386,7 +419,7 @@ int idio_putc_string_handle (IDIO sh, int c)
 	IDIO_STRING_HANDLE_PTR (sh) += 1;
     }
 
-    return c;
+    return size;
 }
 
 ptrdiff_t idio_puts_string_handle (IDIO sh, char *s, size_t slen)

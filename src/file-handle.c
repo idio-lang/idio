@@ -30,9 +30,10 @@ static IDIO idio_stderr = idio_S_nil;
 static idio_handle_methods_t idio_file_handle_methods = {
     idio_free_file_handle,
     idio_readyp_file_handle,
-    idio_getc_file_handle,
+    idio_getb_file_handle,
     idio_eofp_file_handle,
     idio_close_file_handle,
+    idio_putb_file_handle,
     idio_putc_file_handle,
     idio_puts_file_handle,
     idio_flush_file_handle,
@@ -1113,7 +1114,7 @@ void idio_file_handle_read_more (IDIO fh)
     }
 }
 
-int idio_getc_file_handle (IDIO fh)
+int idio_getb_file_handle (IDIO fh)
 {
     IDIO_ASSERT (fh);
 
@@ -1177,7 +1178,41 @@ int idio_close_file_handle (IDIO fh)
     }
 }
 
-int idio_putc_file_handle (IDIO fh, int c)
+int idio_putb_file_handle (IDIO fh, uint8_t c)
+{
+    IDIO_ASSERT (fh);
+
+    if (! idio_output_file_handlep (fh)) {
+	idio_handle_error_write (fh, IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
+	return EOF;
+    }
+
+    for (;;) {
+	if (IDIO_FILE_HANDLE_COUNT (fh) < IDIO_FILE_HANDLE_BUFSIZ (fh)) {
+	    *(IDIO_FILE_HANDLE_PTR (fh)) = (char) c;
+	    IDIO_FILE_HANDLE_PTR (fh) += 1;
+	    IDIO_FILE_HANDLE_COUNT (fh) += 1;
+
+	    if ('\n' == c &&
+		IDIO_FILE_HANDLE_FLAGS (fh) & IDIO_FILE_HANDLE_FLAG_INTERACTIVE) {
+		if (EOF == idio_flush_file_handle (fh)) {
+		    return EOF;
+		}
+	    }
+	    break;
+	} else {
+	    if (EOF == idio_flush_file_handle (fh)) {
+		return EOF;
+	    }
+	}
+    }
+
+    return 1;
+}
+
+int idio_putc_file_handle (IDIO fh, idio_unicode_t c)
 {
     IDIO_ASSERT (fh);
 
@@ -1212,7 +1247,7 @@ int idio_putc_file_handle (IDIO fh, int c)
 	}
     }
 
-    return c;
+    return size;
 }
 
 ptrdiff_t idio_puts_file_handle (IDIO fh, char *s, size_t slen)
