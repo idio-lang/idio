@@ -1349,7 +1349,7 @@ IDIO idio_display (IDIO o, IDIO h)
     size_t size = 0;
     char *s = idio_display_string (o, &size);
 
-    idio_puts_handle (h, s, strlen (s));
+    idio_puts_handle (h, s, size);
     free (s);
 
     return idio_S_unspec;

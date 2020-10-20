@@ -61,6 +61,8 @@ IDIO idio_src_properties;
 #define IDIO_CHAR_PLUS_SIGN	'+'
 #define IDIO_CHAR_PERIOD	'.'
 
+#define IDIO_UNICODE_REPLACEMENT_CHARACTER 0xFFFD
+
 /*
  * What separates words from one another in Idio?
  *
@@ -650,7 +652,11 @@ IDIO idio_read_unicode (IDIO handle, IDIO lo)
 }
 
 /*
- * idio_getc_handle() will come here as well as idio_read_character(), below
+ * idio_getc_handle() will come here as well as idio_read_character(),
+ * below
+ *
+ * We can raise a conditon for EOF but not for badly formed UTF-8
+ * sequences.  Return the replacement character for those.
  */
 idio_unicode_t idio_read_character_int (IDIO handle, IDIO lo, int kind)
 {
@@ -720,10 +726,14 @@ idio_unicode_t idio_read_character_int (IDIO handle, IDIO lo, int kind)
 	     * *shakes fist*
 	     */
 
-	    idio_read_error_utf8_decode (handle, lo, IDIO_C_FUNC_LOCATION (), "not well-formed");
+	    if (IDIO_READ_CHARACTER_SIMPLE == kind) {
+		return IDIO_UNICODE_REPLACEMENT_CHARACTER;
+	    } else {
+		idio_read_error_utf8_decode (handle, lo, IDIO_C_FUNC_LOCATION (), "not well-formed");
 
-	    /* notreached */
-	    return EOF;
+		/* notreached */
+		return EOF;
+	    }
 	}
 	/*
 	 * more bytes required...
@@ -766,10 +776,14 @@ idio_unicode_t idio_read_character_int (IDIO handle, IDIO lo, int kind)
 	 * where x is a literal byte which is not a UTF-8 prefix of
 	 * some sort (as you'll get EOF, above, instead)
 	 */
-	idio_read_error_utf8_decode (handle, lo, IDIO_C_FUNC_LOCATION (), "not well-formed");
+	if (IDIO_READ_CHARACTER_SIMPLE == kind) {
+	    return IDIO_UNICODE_REPLACEMENT_CHARACTER;
+	} else {
+	    idio_read_error_utf8_decode (handle, lo, IDIO_C_FUNC_LOCATION (), "not well-formed");
 
-	/* notreached */
-	return EOF;
+	    /* notreached */
+	    return EOF;
+	}
     }
 
     return codepoint;

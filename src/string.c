@@ -1229,7 +1229,7 @@ return the number of code points in `s`		\n\
     IDIO_ASSERT (s);
     IDIO_VERIFY_PARAM_TYPE (string, s);
 
-    return idio_fixnum (idio_string_len (s));
+    return idio_integer (idio_string_len (s));
 }
 
 IDIO idio_string_ref (IDIO s, IDIO index)
