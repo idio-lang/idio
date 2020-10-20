@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2020 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -30,6 +30,10 @@ test (2 * 3 + 4) 10
 test (2 + 3 * 4 + 5) 19
 test (2 * 3 + 4 * 5) 26
 
+; mis-application of operator-expand on the "suffix" was generating
+; (- (+ 1 2) (+ 3 4)) rather than (+ (- (+ 1 2) 3) 4)
+test (1 + 2 - 3 + 4) 4
+
 test (1 and 2 and 3) 3
 test (1 and #f and 3) #f
 test (1 or 2 or 3) 1
@@ -44,4 +48,4 @@ test (1 and 2 and 3 or 4) 3
 test (1 or 2 or 3 and 4) 4
 
 ;; all done?
-test (operator0 + 19) Tests
+test (operator0 + 20) Tests

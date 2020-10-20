@@ -21,28 +21,16 @@
 
 ;; TIP
 ;;
-;; Operators cannot be *used* in the same file they are defined in.
-;; That is because operators are used by the reader and the ones in
-;; this file cannot exist before the reader has completely read the
-;; file and only then sends the results to the evaluator.
-;;
-;; As a side-effect, you can use the operator name in the same file it
-;; is defined in without it having its expected re-write effect,
-;; hence:
+;; You can use the operator name in the same file it is defined in
+;; without it having its expected re-write effect, so long as you
+;; escape it from the reader, hence:
 ;;
 ;;   define-infix-operator + 700 { ... }
-;;   define-infix-operator - 700 +
+;;   define-infix-operator - 700 \+
 ;;
-;; You might expect the "+" at the end of the second line to cause the
-;; reader to consume the following (unseen) expression and be
-;; transformed into an addition expression but as this file is yet to
-;; be evaluated "+" has no meaning as an operator.
-;;
-;;
-;; Note that the same is not true of an interactive session where each
-;; complete "line" is run through the reader, evaluator, compiler and
-;; is run.  Immediately thereafter, the "+" would be an operator and
-;; make the second line above rather more tricky to express.
+;; Otherwise you might expect the "+" at the end of the second line to
+;; cause the reader to consume the following (unseen) expression and
+;; be transformed into an addition expression.
 
 define (operator-precedence-table) {
   og := symbol-value '*operator-group* (find-module '*operator*)
@@ -99,7 +87,7 @@ define-infix-operator + 900 {
   if (and (pair? after)
 	  (pair? (pt after))
 	  (not (null? (pt (pt after))))) {
-	    suffix = operator-expand (pt after)
+	    suffix = pt after
 	    after = (list (ph after))
 	  }
 
@@ -184,7 +172,7 @@ define-infix-operator and 1000 {
 
   if (and (pair? after)
 	  (pair? (pt after))) {
-	    suffix = operator-expand (pt after)
+	    suffix = pt after
 	    after = (list (ph after))
 	  }
 
@@ -221,66 +209,6 @@ define-infix-operator and 1000 {
 
 define-infix-operator or 1000 \and
 
-;; Shell logical lists
-define-template (&& & e*) {
-  #T{
-    {
-      trap ^rt-command-status-error (function (c) {
-				       job := idio-error-location c
-				       if (job-is-completed job) {
-					 rt-command-status-error-status c
-				       } (raise c)
-      }) {
-	and $@e*
-      }
-    }
-  }
-}
-
-define-template (|| & e*) {
-  #T{
-    {
-      trap ^rt-command-status-error (function (c) {
-				       job := idio-error-location c
-				       if (job-is-completed job) {
-					 rt-command-status-error-status c
-				       } (raise c)
-      }) {
-	or $@e*
-      }
-    }
-  }
-}
-
-;; e1 ... || e2 ...		=> || (e1 ...) (e2 ...)
-define-infix-operator && 200 {
-
-  ;; we want a list of lists -- a list of the {op}-separated lists
-  split :+ function (op op-args expr after) {
-	     cond ((null? after) (reverse (pair (reverse expr) op-args))) \
-		  ((not (pair? after)) (error 'operator-&& "bad syntax" op (reverse op-args) after)) \
-		  ((eq? op (ph after)) (split op (pair (reverse expr) op-args) #n (pt after))) \
-		  (else (split op op-args (pair (ph after) expr) (pt after)))
-  }
-
-  op-args := split op (list before) #n after
-
-  ;; we have created new lists so we should expand any operators in
-  ;; them
-  op-args = map operator-expand op-args
-
-  reduce := function (e) {
-	      cond ((atom? e) e) \
-		   ((null? (pt e)) (ph e)) \
-		   (else e)
-  }
-  op-args = map reduce op-args
-
-  #T{ $op $@op-args }
-}
-
-define-infix-operator || 200 \&&
-
 ;; C bitwise-or
 define-infix-operator C/| 600 \and
 
@@ -313,7 +241,7 @@ define-infix-operator =+ 700 {
 
   if (and (pair? after)
 	  (pair? (pt after))) {
-	    suffix = operator-expand (pt after)
+	    suffix = pt after
 	    after = (list (ph after))
 	  }
 
