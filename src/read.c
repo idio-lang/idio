@@ -1480,6 +1480,29 @@ static void idio_read_sl_block_comment (IDIO handle, IDIO lo, int depth)
 
 /*
  * idio_read_string returns the string -- not a lexical object.
+ *
+ * There is an interesting question about *how* we read in a UTF-8
+ * encoded string.
+ *
+ * 1. read in Unicode code points until the successful decode is " --
+ *    you will have to use a uint32_t array as you cannot predict what
+ *    codepoint is coming next.
+ *
+ * 2. read in a byte at a time until the byte is " then use the utf8
+ *    decoder on the byte array
+ *
+ * In both cases, you now require to convert the uint32_t[] or
+ * uint8_t[] into a correctly sized Idio string.
+ *
+ * The problem though is what happens with malformed UTF-8 sequences.  In each case
+ *
+ * 1. if you have a valid UTF-8 prefix where " is not a valid sequence
+ *    then *that* " is consumed and you will continue looking for " in
+ *    the rest of the file
+ *
+ * 2. you will stop at the first " byte and if the previous byte was a
+ *    valid prefix expecting another byte then it will fail UTF-8
+ *    decoding
  */
 static IDIO idio_read_string (IDIO handle, IDIO lo)
 {
