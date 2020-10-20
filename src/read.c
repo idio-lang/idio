@@ -3339,8 +3339,8 @@ static IDIO idio_read_1_expr_nl (IDIO handle, idio_unicode_t *ic, int depth, int
 			idio_read_sl_block_comment (handle, lo, depth);
 			return lo;
 		    case IDIO_CHAR_SEMICOLON:
-			idio_read (handle);
-			return lo;
+			idio_read_expr (handle);
+			break;
 		    default:
 			{
 			    /*

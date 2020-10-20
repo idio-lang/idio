@@ -1,0 +1,11 @@
+
+eqv? (+ (2 * 3) #;(5 - 1) (6 / 2)) 9.0
+
+; Even though the following contains a static arity error the code is
+; never seen by the evaluator because it has been consumed by the sexp
+; comment #;
+
+#;(and #t {
+  pair 1
+})
+
