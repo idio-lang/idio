@@ -337,16 +337,14 @@ define char-set? sparse-char-set?
 
 define (char-set-size cs) {
   cond ((sparse-char-set? cs) cs.size) \
-       ((bitset? cs)	      (bitset-size cs)) \
        (else (error 'char-set-size "not a char-set" cs))
 }
 
 define (sparse-char-set-planes cs) "
 Return the largest Unicode Plane used by this char-set.
 " {
-  size := cond ((sparse-char-set? cs) cs.size) \
-	       ((bitset? cs)	      (bitset-size cs))
-  unicode->plane (integer->unicode (size - 1))
+  cond ((sparse-char-set? cs) (unicode->plane (integer->unicode (cs.size - 1)))) \
+       (else (error 'sparse-char-set-planes "not a char-set" cs))
 }
 
 define char-set-planes sparse-char-set-planes
@@ -362,8 +360,8 @@ The offending caller is char-set-ci in SRFI-115 which wants to make
 the char-set case insensitive which it does by looping over all
 elements in the char-set finding the other case.  In principle it has
 to do this twice, once for a lower-to-upper conversion and a second
-for vice-versa.  Calling a function a million times where many of the
-referenced elemnts were 0, ie. not present, took several seconds.
+for upper-to-lower.  Calling a function a million times where many of
+the referenced elemnts were 0, ie. not present, took several seconds.
 
 Even when simply looping over the hash tables of
 char-set-simple-*-case-map at 1300-odd entries each, checking to see
@@ -378,10 +376,16 @@ Yikes!  Minutes!
 
 Character sets are not true bitsets (or collection of bitsets for
 sparse-char-set) in the sense that they are logically a group of code
-points that exist in this char-set.  So iterating over elements of the
-group is a subset of all the elements of the implementation's
-underlying bitset and we can casually ignore the 0 bits in the bitset
-because they are not code points in our group.
+points that exist in this char-set.  Consider a character set of
+English vowels.  That's a group of five characters (usually) and the
+fact that it is implemented with a 65536 bitset in an array of 17
+planes (mostly #f) is neither here nor there.  We should perform any
+action on those five items only.
+
+So iterating over elements of the group is a subset of all the
+elements of the implementation's underlying array of bitsets and we
+can casually ignore the 0 bits in the bitsets because they are not
+code points in our group.
 
 So, a bit if a hack where we only call the function for those bits
 that are set which it is much easier to find by testing the unsigned
@@ -403,9 +407,6 @@ Invoke `f` on each code point in char-set `cs`
 	  }
 	}
   }) \
-       ((bitset? cs) {
-	 bitset-for-each-set cs f
-       }) \
        (else (error 'char-set-for-each-set "not a char-set" cs))
 }
 
@@ -414,9 +415,7 @@ Return a character set containing the given code points.
 
 The character set will be the same size as char-set:empty.
 " {
-  size := cond ((sparse-char-set? char-set:empty) char-set:empty.size) \
-	       ((bitset? char-set:empty)	  (bitset-size char-set:empty))
-  cs := make-sparse-char-set size
+  cs := make-sparse-char-set char-set:empty.size
   loop :+ function (cps) {
 	    if (null? cps) cs {
 	      char-set-set! cs (ph cps)
@@ -428,8 +427,7 @@ The character set will be the same size as char-set:empty.
 
 define (copy-char-set cs) {
   cond ((sparse-char-set? cs) {
-    size := cond ((sparse-char-set? cs) cs.size) \
-		 ((bitset? cs)		(bitset-size cs))
+    size := cs.size
     new := make-sparse-char-set size
     nplanes := sparse-char-set-planes cs
     do ((i 0 (i + 1))) \
@@ -441,9 +439,6 @@ define (copy-char-set cs) {
 	  }
 	}
     }) \
-       ((bitset? cs) {
-	 copy-bitset cs
-       }) \
        (else (error 'copy-char-set "not a char-set" cs))
 }
 
@@ -519,9 +514,8 @@ Is the code point cp in the character set cs?
   if (integer? cp) {
     cp = integer->unicode cp
   }
-  size := cond ((sparse-char-set? cs) cs.size) \
-	       ((bitset? cs)	      (bitset-size cs))
-  if (ge (unicode->integer cp) size) (error 'char-set-set! "cp greater than char-set size" cp)
+
+  if (ge (unicode->integer cp) cs.size) (error 'char-set-set! "cp greater than char-set size" cp cs.size)
 
   cond ((sparse-char-set? cs) {
     bs := array-ref cs.planes (unicode->plane cp)
@@ -529,9 +523,6 @@ Is the code point cp in the character set cs?
       bitset-ref bs cp
     } #f
   }) \
-       ((bitset? cs) {
-	 bitset-ref cs cp
-       }) \
        (else (error 'char-set-ref "not a char-set" cs))
 }
 
@@ -543,9 +534,8 @@ Add the code point to character set cs.
   if (integer? cp) {
     cp = integer->unicode cp
   }
-  size := cond ((sparse-char-set? cs) cs.size) \
-	       ((bitset? cs)	      (bitset-size cs))
-  if (ge (unicode->integer cp) size) (error 'char-set-set! "cp greater than char-set size" cp)
+
+  if (ge (unicode->integer cp) cs.size) (error 'char-set-set! "cp greater than char-set size" cp cs.size)
 
   cond ((sparse-char-set? cs) {
     plane := unicode->plane cp
@@ -568,9 +558,6 @@ Add the code point to character set cs.
 
     bitset-set! bs (unicode->plane-cp cp)
   }) \
-       ((bitset? cs) {
-	 bitset-set! cs cp
-       }) \
        (else (error 'char-set-set! "not a char-set" cs))
 }
 
@@ -580,9 +567,8 @@ Remove the code point from character set cs.
   if (integer? cp) {
     cp = integer->unicode cp
   }
-  size := cond ((sparse-char-set? cs) cs.size) \
-	       ((bitset? cs)	      (bitset-size cs))
-  if (ge (unicode->integer cp) size) (error 'char-set-clear! "cp greater than char-set size" cp)
+
+  if (ge (unicode->integer cp) cs.size) (error 'char-set-clear! "cp greater than char-set size" cp cs.size)
 
   cond ((sparse-char-set? cs) {
     bs := array-ref cs.planes (unicode->plane cp)
@@ -593,9 +579,6 @@ Remove the code point from character set cs.
       bs
     }
   }) \
-       ((bitset? cs) {
-	 bitset-clear! cs cp
-       }) \
        (else (error 'char-set-clear! "not a char-set" cs))
 }
 
@@ -603,7 +586,6 @@ define (char-set-adjoin-loop cs cps) {
   if (null? cps) #n {
     setter! := #n
     cond ((sparse-char-set? cs) (setter! = char-set-set!)) \
-	 ((bitset? cs)		(setter! = bitset-set!)) \
 	 (else (error 'char-set-adjoin "not a char-set" cs))
     ch := (ph cps)
     cond ((integer? ch) (setter! cs ch)) \
@@ -636,7 +618,6 @@ define (char-set-delete-loop cs cps) {
     ch := (ph cps)
     clearer! := #n
     cond ((sparse-char-set? cs) (clearer! = char-set-set!)) \
-	 ((bitset? cs)		(clearer! = bitset-set!)) \
 	 (else (error 'char-set-delete "not a char-set" cs))
     cond ((integer? ch) (clearer! cs ch)) \
 	 ((unicode? ch) (clearer! cs (unicode->integer ch)))
@@ -684,9 +665,6 @@ If no arguments are passed the return value is char-set:empty.
 		    }
 
 	    }) \
-		 ((bitset? cs) {
-		   res = and-bitset res cs
-		 }) \
 		 (else (error 'and-char-set "not a char-set" cs))
 
 	    lp (pt css) res
@@ -719,10 +697,9 @@ If no arguments are passed the return value is char-set:full.
 		    }
 
 	    }) \
-		 ((bitset? cs) {
-		   res = ior-bitset res cs
-		 }) \
-		 (else (error 'ior-char-set "not a char-set" cs))
+		 (else {
+		   (error 'ior-char-set "not a char-set" cs)
+		   })
 
 	    lp (pt css) res
 	  }
@@ -756,9 +733,6 @@ If no arguments are passed the return value is char-set:empty.
 		    }
 
 	    }) \
-		 ((bitset? cs) {
-		   res = xor-bitset res cs
-		 }) \
 		 (else (error 'xor-char-set "not a char-set" cs))
 
 	    lp (pt css) res
@@ -774,9 +748,7 @@ define (not-char-set cs) "
 Logical complement the code points from the character set.
 " {
   cond ((sparse-char-set? cs) {
-    size := cond ((sparse-char-set? cs) cs.size) \
-		 ((bitset? cs)		(bitset-size cs))
-    new := make-sparse-char-set size
+    new := make-sparse-char-set cs.size
     nplanes := sparse-char-set-planes cs
     do ((i 0 (i + 1))) \
        ((gt i nplanes)
@@ -785,7 +757,7 @@ Logical complement the code points from the character set.
 	  if bs {
 	    new.planes.i = not-bitset bs
 	  } {
-	    m := modulo size #x10000
+	    m := modulo cs.size #x10000
 	    if (gt m 0) {
 	      bs = make-bitset m
 	    } {
@@ -796,9 +768,6 @@ Logical complement the code points from the character set.
 	}
 
   }) \
-       ((bitset? cs) {
-	 new = not-bitset cs
-       }) \
        (else (error 'not-char-set "not a char-set" cs))
 }
 
@@ -829,9 +798,6 @@ Subtract the code points of the character sets css from cs.
 		    }
 
 	    }) \
-		 ((bitset? cs) {
-		   res = subtract-bitset res cs
-		 }) \
 		 (else (error 'subtract-char-set "not a char-set" cs))
 
 	    lp (pt css) res
