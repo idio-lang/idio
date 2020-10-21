@@ -4702,7 +4702,7 @@ void idio_vm_dasm (IDIO thr, idio_ai_t pc0, idio_ai_t pce)
 	IDIO hint = idio_hash_ref (hints, idio_fixnum (pc));
 	if (idio_S_unspec != hint) {
 	    size_t size = 0;
-	    char *hint_C = idio_as_string (hint, &size, 40);
+	    char *hint_C = idio_as_string (hint, &size, 40, 1);
 	    IDIO_VM_DASM ("%-20s ", hint_C);
 	    free (hint_C);
 	} else {
@@ -6132,7 +6132,7 @@ void idio_vm_dump_constants ()
 	IDIO c = idio_array_ref_index (idio_vm_constants, i);
 	fprintf (fp, "%6td: ", i);
 	size_t size = 0;
-	char *cs = idio_as_string (c, &size, 40);
+	char *cs = idio_as_string (c, &size, 40, 1);
 	fprintf (fp, "%-20s %s\n", idio_type2string (c), cs);
 	free (cs);
     }
@@ -6199,16 +6199,16 @@ void idio_vm_dump_values ()
 	     * entries.  It takes millions of calls to implement and
 	     * seconds to print!
 	     */
-	    vs = idio_as_string (v, &size, 0);
+	    vs = idio_as_string (v, &size, 0, 1);
 	} else if (idio_isa_struct_instance (v) &&
 		   (IDIO_STRUCT_TYPE_NAME (IDIO_STRUCT_INSTANCE_TYPE (v)) == Rx)) {
 	    /*
 	     * These objects are a little bit recursive and can easily
 	     * become 100+MB when printed (to a depth of 40...)
 	     */
-	    vs = idio_as_string (v, &size, 4);
+	    vs = idio_as_string (v, &size, 4, 1);
 	} else {
-	    vs = idio_as_string (v, &size, 40);
+	    vs = idio_as_string (v, &size, 40, 1);
 	}
 	fprintf (fp, "%-20s %s\n", idio_type2string (v), vs);
 	free (vs);

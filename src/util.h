@@ -40,7 +40,7 @@ int idio_eqvp (void *o1, void *o2);
 int idio_equalp (void *o1, void *o2);
 int idio_equal (IDIO o1, IDIO o2, int eqp);
 IDIO idio_value (IDIO o);
-char *idio_as_string (IDIO o, size_t *sizep, int depth);
+char *idio_as_string (IDIO o, size_t *sizep, int depth, int first);
 char *idio_display_string (IDIO o, size_t *sizep);
 const char *idio_vm_bytecode2string (int code);
 void idio_as_flat_string (IDIO o, char **argv, int *i);
