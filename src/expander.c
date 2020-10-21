@@ -858,7 +858,7 @@ void idio_install_infix_operator (IDIO id, IDIO proc, int pri)
 	    IDIO p = idio_S_nil;
 	    while (idio_S_nil != c) {
 		IDIO cpri = IDIO_PAIR_HH (c);
-		if (IDIO_FIXNUM_VAL (cpri) > pri) {
+		if (IDIO_FIXNUM_VAL (cpri) < pri) {
 		    if (idio_S_nil == p) {
 			idio_module_set_symbol_value (idio_infix_operator_group,
 						      idio_pair (idio_pair (fpri, grp),
@@ -928,9 +928,10 @@ static IDIO idio_evaluate_infix_operator (IDIO n, IDIO e, IDIO b, IDIO a)
     IDIO_ASSERT (a);
     IDIO_TYPE_ASSERT (pair, e);
 
-    /* idio_debug ("evaluate-infix-operator: in n %s", n);  */
-    /* idio_debug (" b %s", b);  */
-    /* idio_debug (" a %s\n", a);  */
+    /* fprintf (stderr, "evaluate-infix-operator:");   */
+    /* idio_debug (" %s", b);   */
+    /* idio_debug (" %s", n);   */
+    /* idio_debug (" %s\n", a);   */
 
     IDIO func = IDIO_PAIR_T (e);
     if (! (idio_isa_closure (func) ||
@@ -1054,7 +1055,7 @@ void idio_install_postfix_operator (IDIO id, IDIO proc, int pri)
 	    IDIO p = idio_S_nil;
 	    while (idio_S_nil != c) {
 		IDIO cpri = IDIO_PAIR_HH (c);
-		if (IDIO_FIXNUM_VAL (cpri) > pri) {
+		if (IDIO_FIXNUM_VAL (cpri) < pri) {
 		    if (idio_S_nil == p) {
 			idio_module_set_symbol_value (idio_postfix_operator_group,
 						      idio_pair (idio_pair (fpri, grp),
@@ -1249,9 +1250,10 @@ IDIO idio_infix_operator_expand (IDIO e, int depth)
 	    while (idio_S_nil != a) {
 		IDIO s = IDIO_PAIR_H (a);
 
-		if (idio_isa_pair (s) &&
-		    idio_S_escape == IDIO_PAIR_H (s)) {
-		    /* s = IDIO_PAIR_HT (s); */
+		if (idio_isa_pair (s)) {
+		    if (idio_S_escape == IDIO_PAIR_H (s)) {
+			/* s = IDIO_PAIR_HT (s); */
+		    }
 		} else {
 		    IDIO opex = idio_list_assq (s, ops);
 
@@ -1384,7 +1386,7 @@ IDIO_DEFINE_PRIMITIVE1 ("operator-expand", operator_expand, (IDIO l))
 	IDIO_ASSERT (args);						\
 									\
 	if (idio_S_nil != IDIO_PAIR_T (before)) {			\
-	    idio_meaning_error_static_arity (before, IDIO_C_FUNC_LOCATION (), "too many args before " #iname, args); \
+	    idio_meaning_error_static_arity (before, IDIO_C_FUNC_LOCATION (), "too many args before " #iname, IDIO_LIST2 (before, args)); \
 	    return idio_S_notreached;					\
 	}								\
     									\

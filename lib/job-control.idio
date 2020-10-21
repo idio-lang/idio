@@ -702,7 +702,7 @@ define (%prep-process pgid infile outfile errfile foreground) "prepare the curre
   prep-io infile outfile errfile
 }
 
-define-infix-operator | 300 {
+define-infix-operator | 1700 {
   ;; edisplay* "operator" op before after
 
   foreground := #t
@@ -1301,7 +1301,7 @@ with-handle-dup := {
 ;; ... < e1 ...
 ;; ... > e1 ...
 ;; ... 2> e1 ...
-define-infix-operator > 400 {
+define-infix-operator > 1600 {
   suffix := #n
 
   if (and (pair? after)
@@ -1341,13 +1341,13 @@ define-infix-operator > 400 {
   result
 }
 
-define-infix-operator < 400 \>
-define-infix-operator 2> 400 \>
+define-infix-operator < 1600 \>
+define-infix-operator 2> 1600 \>
 
 ;; ... <& e1 ...
 ;; ... >& e1 ...
 ;; ... 2>& e1 ...
-define-infix-operator >& 400 {
+define-infix-operator >& 1600 {
   suffix := #n
 
   if (and (pair? after)
@@ -1387,8 +1387,8 @@ define-infix-operator >& 400 {
   result
 }
 
-define-infix-operator <& 400 \>&
-define-infix-operator 2>& 400 \>&
+define-infix-operator <& 1600 \>&
+define-infix-operator 2>& 1600 \>&
 
 define (jobs) "display the state of outstanding jobs" {
   first-j := #t

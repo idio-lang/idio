@@ -32,8 +32,22 @@
 ;; cause the reader to consume the following (unseen) expression and
 ;; be transformed into an addition expression.
 
-define (operator-precedence-table) {
-  og := symbol-value '*operator-group* (find-module '*operator*)
+define (infix-operator-precedence-table) {
+  og := symbol-value '*infix-operator-group* (find-module '*operator*)
+  loop :+ function (groups r) {
+	    cond ((null? groups) (reverse r)) \
+		 (else {
+		   prec-group := ph groups
+		   ops := map ph (pt prec-group)
+		   loop (pt groups) (pair (pair (ph prec-group) ops) r)
+		 })
+  }
+
+  loop og #n
+}
+
+define (postfix-operator-precedence-table) {
+  og := symbol-value '*postfix-operator-group* (find-module '*operator*)
   loop :+ function (groups r) {
 	    cond ((null? groups) (reverse r)) \
 		 (else {
@@ -58,7 +72,7 @@ define (operator-expand* exp) {
 ;; X + Y		=> + X Y
 ;; X + Y Z		=> (+ X Y) Z
 ;; X Y + Z		=> X (+ Y Z)
-define-infix-operator + 900 {
+define-infix-operator + 1100 {
   prefix := #n
 
   if (not (null? (pt before))) {
@@ -85,8 +99,7 @@ define-infix-operator + 900 {
   suffix := #n
 
   if (and (pair? after)
-	  (pair? (pt after))
-	  (not (null? (pt (pt after))))) {
+	  (pair? (pt after))) {
 	    suffix = pt after
 	    after = (list (ph after))
 	  }
@@ -116,9 +129,9 @@ define-infix-operator + 900 {
   #T{ $result }
 }
 
-define-infix-operator - 900 \+
-define-infix-operator * 800 \+
-define-infix-operator / 800 \+
+define-infix-operator - 1100 \+
+define-infix-operator * 1200 \+
+define-infix-operator / 1200 \+
 
 ;; logical operators take a single expression either side and combine
 ;; with adjacent operators of the same type
@@ -210,10 +223,10 @@ define-infix-operator and 1000 {
 define-infix-operator or 1000 \and
 
 ;; C bitwise-or
-define-infix-operator C/| 600 \and
+define-infix-operator C/| 1400 \and
 
 ;; Arrays: push
-define-infix-operator =+ 700 {
+define-infix-operator =+ 1300 {
   prefix := #n
 
   if (not (null? (pt before))) {
@@ -276,10 +289,10 @@ define-infix-operator =+ 700 {
 }
 
 ;; Arrays: unshift
-define-infix-operator += 700 \=+
+define-infix-operator += 1300 \=+
 
 ;; Arrays: pop
-define-postfix-operator =- 700 {
+define-postfix-operator =- 1300 {
   prefix := #n
 
   if (not (null? (pt before))) {
@@ -334,9 +347,9 @@ define-postfix-operator =- 700 {
 }
 
 ;; Arrays: shift
-define-postfix-operator -= 700 \=-
+define-postfix-operator -= 1300 \=-
 
-define-infix-operator . 800 {
+define-infix-operator . 1200 {
   prefix := #n
 
   if (not (null? (pt before))) {
