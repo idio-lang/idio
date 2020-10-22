@@ -60,8 +60,11 @@ evaluation-error-load "evaluation-errors/closed-function-too-many-args-1.idio" "
 evaluation-error-load "evaluation-errors/primitive-arity.idio" "wrong arity for primitive"
 
 evaluation-error-load "evaluation-errors/escape-nil.idio" "escape: no argument"
+evaluation-error-load "evaluation-errors/escape-multiple-args.idio" "escape: too many arguments"
 evaluation-error-load "evaluation-errors/quote-nil.idio" "quote: no argument"
+evaluation-error-load "evaluation-errors/quote-multiple-args.idio" "quote: too many arguments"
 evaluation-error-load "evaluation-errors/quasiquote-nil.idio" "quasiquote: no argument"
+evaluation-error-load "evaluation-errors/quasiquote-multiple-args.idio" "quasiquote: too many arguments"
 evaluation-error-load "evaluation-errors/function-nil.idio" "function: no arguments"
 evaluation-error-load "evaluation-errors/if-cond-nil.idio" "(if 1): no consequent/alternative"
 evaluation-error-load "evaluation-errors/if-nil.idio" "if: no arguments"
@@ -105,4 +108,4 @@ evaluation-error-load "evaluation-errors/template-expand-nil.idio" "template-exp
 evaluation-error-load "evaluation-errors/module-nil.idio" "module: no argument"
 
 ;; all done?
-test Tests (evaluation-error0 + 63)
+test Tests (evaluation-error0 + 66)

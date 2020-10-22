@@ -3948,7 +3948,18 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO cs, I
 	} else if (idio_S_escape == eh) {
 	    /* (escape x) */
 	    if (idio_isa_pair (et)) {
-		return idio_meaning_escape (IDIO_PAIR_H (et), IDIO_PAIR_H (et), nametree, flags, cs, cm);
+		if (idio_S_nil != IDIO_PAIR_T (et)) {
+		    /*
+		     * Test Case: evaluation-errors/escape-multiple-args.idio
+		     *
+		     * (escape 1 2)
+		     */
+		    idio_meaning_evaluation_error_param_nil (src, IDIO_C_FUNC_LOCATION_S ("escape"), "too many arguments", eh);
+
+		    return idio_S_notreached;
+		} else {
+		    return idio_meaning_escape (IDIO_PAIR_H (et), IDIO_PAIR_H (et), nametree, flags, cs, cm);
+		}
 	    } else {
 		/*
 		 * Test Case: evaluation-errors/escape-nil.idio
@@ -3962,7 +3973,18 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO cs, I
 	} else if (idio_S_quote == eh) {
 	    /* (quote x) */
 	    if (idio_isa_pair (et)) {
-		return idio_meaning_quotation (IDIO_PAIR_H (et), IDIO_PAIR_H (et), nametree, flags);
+		if (idio_S_nil != IDIO_PAIR_T (et)) {
+		    /*
+		     * Test Case: evaluation-errors/quote-multiple-args.idio
+		     *
+		     * (quote 1 2)
+		     */
+		    idio_meaning_evaluation_error_param_nil (src, IDIO_C_FUNC_LOCATION_S ("quote"), "too many arguments", eh);
+
+		    return idio_S_notreached;
+		} else {
+		    return idio_meaning_quotation (IDIO_PAIR_H (et), IDIO_PAIR_H (et), nametree, flags);
+		}
 	    } else {
 		/*
 		 * Test Case: evaluation-errors/quote-nil.idio
@@ -3979,7 +4001,18 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO cs, I
 	} else if (idio_S_quasiquote == eh) {
 	    /* (quasiquote x) */
 	    if (idio_isa_pair (et)) {
-		return idio_meaning_quasiquotation (e, IDIO_PAIR_H (et), nametree, flags, cs, cm);
+		if (idio_S_nil != IDIO_PAIR_T (et)) {
+		    /*
+		     * Test Case: evaluation-errors/quasiquote-multiple-args.idio
+		     *
+		     * (quasiquote 1 2)
+		     */
+		    idio_meaning_evaluation_error_param_nil (src, IDIO_C_FUNC_LOCATION_S ("quasiquote"), "too many arguments", eh);
+
+		    return idio_S_notreached;
+		} else {
+		    return idio_meaning_quasiquotation (e, IDIO_PAIR_H (et), nametree, flags, cs, cm);
+		}
 	    } else {
 		/*
 		 * Test Case: evaluation-errors/quasiquote-nil.idio
@@ -4733,7 +4766,7 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO cs, I
 
 		if (idio_S_unspec != k) {
 		    if (idio_S_false != idio_expanderp (eh)) {
-			return idio_meaning_expander (e, e, nametree, flags, cs, cm);
+			return idio_meaning_expander (src, e, nametree, flags, cs, cm);
 		    }
 		}
 	    }
