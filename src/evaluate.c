@@ -579,7 +579,7 @@ IDIO idio_toplevel_extend (IDIO src, IDIO name, int flags, IDIO cs, IDIO cm)
 
     IDIO kind;
     switch (IDIO_MEANING_SCOPE (flags)) {
-    case IDIO_MEANING_FLAG_LEXICAL_SCOPE:
+    case IDIO_MEANING_FLAG_TOPLEVEL_SCOPE:
 	kind = idio_S_toplevel;
 	break;
     case IDIO_MEANING_FLAG_DYNAMIC_SCOPE:
@@ -1025,7 +1025,7 @@ static IDIO idio_meaning_function_reference (IDIO src, IDIO name, IDIO nametree,
     IDIO_TYPE_ASSERT (array, cs);
     IDIO_TYPE_ASSERT (module, cm);
 
-    IDIO sk = idio_meaning_variable_kind (src, nametree, name, IDIO_MEANING_LEXICAL_SCOPE (flags), cs, cm);
+    IDIO sk = idio_meaning_variable_kind (src, nametree, name, IDIO_MEANING_TOPLEVEL_SCOPE (flags), cs, cm);
 
     if (idio_S_unspec == sk) {
 	/*
@@ -1602,7 +1602,7 @@ static IDIO idio_meaning_assignment (IDIO src, IDIO name, IDIO e, IDIO nametree,
 	 * We need a new mci as the existing one is tagged as a predef.
 	 * This new one will be tagged as a lexical.
 	 */
-	IDIO new_mci = idio_toplevel_extend (src, name, IDIO_MEANING_LEXICAL_SCOPE (flags), cs, cm);
+	IDIO new_mci = idio_toplevel_extend (src, name, IDIO_MEANING_TOPLEVEL_SCOPE (flags), cs, cm);
 
 	/*
 	 * But now we have a problem.
@@ -1683,7 +1683,7 @@ static IDIO idio_meaning_define (IDIO src, IDIO name, IDIO e, IDIO nametree, int
 	}
     }
 
-    IDIO sk = idio_meaning_variable_kind (src, nametree, name, IDIO_MEANING_LEXICAL_SCOPE (flags), cs, cm);
+    IDIO sk = idio_meaning_variable_kind (src, nametree, name, IDIO_MEANING_TOPLEVEL_SCOPE (flags), cs, cm);
 
     IDIO kind = IDIO_PAIR_H (sk);
     IDIO fmci = IDIO_PAIR_HT (sk);
@@ -1696,7 +1696,7 @@ static IDIO idio_meaning_define (IDIO src, IDIO name, IDIO e, IDIO nametree, int
 	idio_module_set_symbol (name, sk, cm);
     }
 
-    return idio_meaning_assignment (src, name, e, nametree, IDIO_MEANING_DEFINE (IDIO_MEANING_LEXICAL_SCOPE (flags)), cs, cm);
+    return idio_meaning_assignment (src, name, e, nametree, IDIO_MEANING_DEFINE (IDIO_MEANING_TOPLEVEL_SCOPE (flags)), cs, cm);
 }
 
 static IDIO idio_meaning_define_template (IDIO src, IDIO name, IDIO e, IDIO nametree, int flags, IDIO cs, IDIO cm)
@@ -1853,7 +1853,7 @@ static IDIO idio_meaning_define_template (IDIO src, IDIO name, IDIO e, IDIO name
 	     * "hard" to debug.
 	     */
 	    idio_install_expander_source (name, exp, expander);
-	    return idio_meaning_assignment (src, name, IDIO_PAIR_H (exp), nametree, IDIO_MEANING_LEXICAL_SCOPE (flags), cs, cm);
+	    return idio_meaning_assignment (src, name, IDIO_PAIR_H (exp), nametree, IDIO_MEANING_TOPLEVEL_SCOPE (flags), cs, cm);
 	}
     }
 
@@ -1890,7 +1890,7 @@ static IDIO idio_meaning_define_template (IDIO src, IDIO name, IDIO e, IDIO name
     /* idio_debug ("meaning-define-template: expander=%s\n", expander); */
 
     IDIO m_a = idio_meaning_assignment (src, name, expander, nametree,
-					IDIO_MEANING_NOT_TAILP (IDIO_MEANING_DEFINE (IDIO_MEANING_LEXICAL_SCOPE (flags))),
+					IDIO_MEANING_NOT_TAILP (IDIO_MEANING_DEFINE (IDIO_MEANING_TOPLEVEL_SCOPE (flags))),
 					cs, cm);
 
     /* idio_debug ("meaning-define-template: meaning=%s\n", m_a); */
@@ -3512,7 +3512,7 @@ static IDIO idio_meaning_application (IDIO src, IDIO e, IDIO es, IDIO nametree, 
     /* idio_meaning_dump_src_properties ("im_appl", "src", src); */
 
     if (idio_isa_symbol (e)) {
-	IDIO sk = idio_meaning_variable_kind (src, nametree, e, IDIO_MEANING_LEXICAL_SCOPE (flags), cs, cm);
+	IDIO sk = idio_meaning_variable_kind (src, nametree, e, IDIO_MEANING_TOPLEVEL_SCOPE (flags), cs, cm);
 
 	if (idio_isa_pair (sk)) {
 	    IDIO kind = IDIO_PAIR_H (sk);
@@ -3829,7 +3829,7 @@ static IDIO idio_meaning_trap (IDIO src, IDIO ce, IDIO he, IDIO be, IDIO nametre
 	    fmci = IDIO_PAIR_HT (sk);
 	} else {
 	    idio_debug ("im_trap: condition name unknown: %s\n", cname);
-	    fmci = idio_toplevel_extend (src, cname, IDIO_MEANING_LEXICAL_SCOPE (flags), cs, cm);
+	    fmci = idio_toplevel_extend (src, cname, IDIO_MEANING_TOPLEVEL_SCOPE (flags), cs, cm);
 	}
 
 	pushs = idio_pair (IDIO_LIST2 (IDIO_I_PUSH_TRAP, fmci), pushs);
@@ -4125,7 +4125,7 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO cs, I
 	    if (idio_isa_pair (et)) {
 		IDIO ett = IDIO_PAIR_T (et);
 		if (idio_isa_pair (ett)) {
-		    return idio_meaning_assignment (src, IDIO_PAIR_H (et), IDIO_PAIR_H (ett), nametree, IDIO_MEANING_LEXICAL_SCOPE (flags), cs, cm);
+		    return idio_meaning_assignment (src, IDIO_PAIR_H (et), IDIO_PAIR_H (ett), nametree, IDIO_MEANING_TOPLEVEL_SCOPE (flags), cs, cm);
 		} else {
 		    /*
 		     * Test Case: evaluation-errors/set-symbol-nil.idio
@@ -4762,7 +4762,7 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO cs, I
 	    return idio_meaning_application (src, eh, et, nametree, flags, cs, cm);
 	} else {
 	    if (idio_isa_symbol (eh)) {
-		IDIO k = idio_meaning_variable_kind (src, nametree, eh, IDIO_MEANING_LEXICAL_SCOPE (flags), cs, cm);
+		IDIO k = idio_meaning_variable_kind (src, nametree, eh, IDIO_MEANING_TOPLEVEL_SCOPE (flags), cs, cm);
 
 		if (idio_S_unspec != k) {
 		    if (idio_S_false != idio_expanderp (eh)) {
@@ -4789,7 +4789,7 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO cs, I
 	    {
 		switch (e->type) {
 		case IDIO_TYPE_SYMBOL:
-		    return idio_meaning_reference (e, e, nametree, IDIO_MEANING_LEXICAL_SCOPE (flags), cs, cm);
+		    return idio_meaning_reference (e, e, nametree, IDIO_MEANING_TOPLEVEL_SCOPE (flags), cs, cm);
 
 		case IDIO_TYPE_STRING:
 		case IDIO_TYPE_KEYWORD:
