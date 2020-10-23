@@ -1573,8 +1573,7 @@ static IDIO idio_meaning_assignment (IDIO src, IDIO name, IDIO e, IDIO nametree,
 	}
     } else if (idio_S_toplevel == kind) {
 	IDIO fgvi = IDIO_PAIR_HTT (sk);
-	if (IDIO_MEANING_IS_DEFINE (flags) ||
-	    0 == IDIO_FIXNUM_VAL (fgvi)) {
+	if (0 == IDIO_FIXNUM_VAL (fgvi)) {
 	    assign = IDIO_LIST3 (IDIO_I_GLOBAL_SYM_SET, fmci, m);
 	} else {
 	    assign = IDIO_LIST3 (IDIO_I_GLOBAL_VAL_SET, fgvi, m);
@@ -1599,8 +1598,8 @@ static IDIO idio_meaning_assignment (IDIO src, IDIO name, IDIO e, IDIO nametree,
 	 * the new definition of ph immediately or just that functions
 	 * defined after this should use the new definition?
 	 *
-	 * We need a new mci as the existing one is tagged as a predef.
-	 * This new one will be tagged as a lexical.
+	 * We need a new mci as the existing one is tagged as a
+	 * predef.  This new one will be tagged as a toplevel.
 	 */
 	IDIO new_mci = idio_toplevel_extend (src, name, IDIO_MEANING_TOPLEVEL_SCOPE (flags), cs, cm);
 
@@ -2405,14 +2404,15 @@ static IDIO idio_meaning_sequence (IDIO src, IDIO ep, IDIO nametree, int flags, 
 	} else {
 	    return idio_meanings_single_sequence (eph, eph, nametree, flags, cs, cm);
 	}
+    } else {
+	/*
+	 * Not sure we can get here as it requires developer coding
+	 * error.  The args were checked in idio_meaning().
+	 */
+	idio_meaning_evaluation_error (keyword, IDIO_C_FUNC_LOCATION (), "sequence: not a pair", ep);
+
+	return idio_S_notreached;
     }
-
-    /*
-     * We can get here for the x in the bindings of
-
-     * (define (list . x) x)
-     */
-    return idio_meaning (ep, ep, nametree, flags, cs, cm);
 }
 
 static IDIO idio_meaning_fix_abstraction (IDIO src, IDIO ns, IDIO args, IDIO docstr, IDIO ep, IDIO nametree, int flags, IDIO cs, IDIO cm)
