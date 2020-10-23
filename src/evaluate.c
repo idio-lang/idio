@@ -4021,8 +4021,7 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO cs, I
 
 		return idio_S_notreached;
 	    }
-	} else if (idio_S_function == eh ||
-		   idio_S_lambda == eh) {
+	} else if (idio_S_function == eh) {
 	    /* (function bindings [docstr] body ...) */
 	    if (idio_isa_pair (et)) {
 		IDIO ett = IDIO_PAIR_T (et);

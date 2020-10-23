@@ -73,7 +73,6 @@ extern IDIO_SYMBOL_DECL (gt);
 extern IDIO_SYMBOL_DECL (if);
 extern IDIO_SYMBOL_DECL (include);
 extern IDIO_SYMBOL_DECL (init);
-extern IDIO_SYMBOL_DECL (lambda);
 extern IDIO_SYMBOL_DECL (let);
 extern IDIO_SYMBOL_DECL (letrec);
 extern IDIO_SYMBOL_DECL (list);

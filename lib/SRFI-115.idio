@@ -1007,7 +1007,7 @@ define (regexp sre & o) {
 	 ((string? sre)
 	  (->rx (pair 'seq (string->list sre)) flags next)) \
 	 ((and (symbol? sre) (lookup-char-set sre flags))
-	  => (lambda (cset) (make-char-state cset ~none next (next-id)))) \
+	  => (function (cset) (make-char-state cset ~none next (next-id)))) \
 	 ((symbol? sre)
 	  (case sre
 		((epsilon) next)
@@ -1458,7 +1458,7 @@ define (regexp-apply-match m str ls start end) {
 		      (else
 		       (cond
 			((assq (ph ls) (regexp-match-names m))
-			 => (lambda (x) (lp (pair (pt x) (pt ls)) res)))
+			 => (function (x) (lp (pair (pt x) (pt ls)) res)))
 			(else
 			 (error 'regexp-apply-match "unknown match replacement" (ph ls))))))) \
 	       (else

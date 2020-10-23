@@ -72,7 +72,6 @@ IDIO_SYMBOL_DECL (gt);
 IDIO_SYMBOL_DECL (if);
 IDIO_SYMBOL_DECL (include);
 IDIO_SYMBOL_DECL (init);
-IDIO_SYMBOL_DECL (lambda);
 IDIO_SYMBOL_DECL (let);
 IDIO_SYMBOL_DECL (letrec);
 IDIO_SYMBOL_DECL (list);
@@ -655,7 +654,6 @@ void idio_init_symbol ()
     IDIO_SYMBOL_DEF ("if", if);
     IDIO_SYMBOL_DEF ("include", include);
     IDIO_SYMBOL_DEF ("init", init);
-    IDIO_SYMBOL_DEF ("lambda", lambda);
     IDIO_SYMBOL_DEF ("let", let);
     IDIO_SYMBOL_DEF ("letrec", letrec);
     IDIO_SYMBOL_DEF ("list", list);
