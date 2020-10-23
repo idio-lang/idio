@@ -3540,8 +3540,6 @@ static IDIO idio_meaning_application (IDIO src, IDIO e, IDIO es, IDIO nametree, 
 
 			    return idio_S_notreached;
 			}
-		    } else if (idio_isa_closure (p)) {
-			return idio_meaning_regular_application (src, e, es, nametree, flags, cs, cm);
 		    } else {
 			/*
 			 * Can we get here?  We'd need to be a predef
