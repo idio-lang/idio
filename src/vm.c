@@ -3785,11 +3785,11 @@ int idio_vm_run1 (IDIO thr)
 	    idio_vm_listify (IDIO_THREAD_VAL (thr), arity);
 	}
 	break;
-    case IDIO_A_POP_CONS_FRAME:
+    case IDIO_A_POP_LIST_FRAME:
 	{
 	    uint64_t arity = idio_vm_fetch_varuint (thr);
 
-	    IDIO_VM_RUN_DIS ("POP-CONS-FRAME %" PRId64 "", arity);
+	    IDIO_VM_RUN_DIS ("POP-LIST-FRAME %" PRId64 "", arity);
 	    idio_frame_update (IDIO_THREAD_VAL (thr),
 			       0,
 			       arity,
@@ -5245,11 +5245,11 @@ void idio_vm_dasm (IDIO thr, idio_ai_t pc0, idio_ai_t pce)
 		IDIO_VM_DASM ("PACK-FRAME %" PRId64 "", arity);
 	    }
 	    break;
-	case IDIO_A_POP_CONS_FRAME:
+	case IDIO_A_POP_LIST_FRAME:
 	    {
 		uint64_t arity = idio_vm_get_varuint (pcp);
 
-		IDIO_VM_DASM ("POP-CONS-FRAME %" PRId64 "", arity);
+		IDIO_VM_DASM ("POP-LIST-FRAME %" PRId64 "", arity);
 	    }
 	    break;
 	case IDIO_A_ARITY1P:

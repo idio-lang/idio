@@ -1875,11 +1875,11 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    }
 	}
 	break;
-    case IDIO_I_CODE_CONS_ARGUMENT:
+    case IDIO_I_CODE_LIST_ARGUMENT:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 3) {
-		idio_codegen_error_param_args ("CONS-ARGUMENT m1 m* arity", mt, IDIO_C_FUNC_LOCATION_S ("CONS-ARGUMENT"));
+		idio_codegen_error_param_args ("LIST-ARGUMENT m1 m* arity", mt, IDIO_C_FUNC_LOCATION_S ("LIST-ARGUMENT"));
 
 		/* notreached */
 		return;
@@ -1892,7 +1892,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    idio_codegen_compile (thr, ia, cs, m1, depth + 1);
 	    IDIO_IA_PUSH1 (IDIO_A_PUSH_VALUE);
 	    idio_codegen_compile (thr, ia, cs, ms, depth + 1);
-	    IDIO_IA_PUSH1 (IDIO_A_POP_CONS_FRAME);
+	    IDIO_IA_PUSH1 (IDIO_A_POP_LIST_FRAME);
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (arity));
 	}
 	break;

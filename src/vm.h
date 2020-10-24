@@ -122,7 +122,7 @@
 #define IDIO_A_EXTEND_FRAME			120
 #define IDIO_A_UNLINK_FRAME			121
 #define IDIO_A_PACK_FRAME			122
-#define IDIO_A_POP_CONS_FRAME			123
+#define IDIO_A_POP_LIST_FRAME			123
 
 /* NB. No ARITY0P as there is always an implied varargs */
 #define IDIO_A_ARITY1P				130

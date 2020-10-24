@@ -1235,7 +1235,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, int first)
 		    case IDIO_I_CODE_NARY_CLOSURE:			t = "NARY-CLOSURE";			break;
 
 		    case IDIO_I_CODE_STORE_ARGUMENT:			t = "STORE-ARGUMENT";			break;
-		    case IDIO_I_CODE_CONS_ARGUMENT:			t = "CONS-ARGUMENT";			break;
+		    case IDIO_I_CODE_LIST_ARGUMENT:			t = "LIST-ARGUMENT";			break;
 
 		    case IDIO_I_CODE_ALLOCATE_FRAME:			t = "ALLOCATE-FRAME";			break;
 		    case IDIO_I_CODE_ALLOCATE_DOTTED_FRAME:		t = "ALLOCATE-DOTTED-FRAME";		break;
@@ -2708,7 +2708,7 @@ const char *idio_vm_bytecode2string (int code)
     case IDIO_A_EXTEND_FRAME:				r = "EXTEND-FRAME";			break;
     case IDIO_A_UNLINK_FRAME:				r = "UNLINK-FRAME";			break;
     case IDIO_A_PACK_FRAME:				r = "PACK-FRAME";			break;
-    case IDIO_A_POP_CONS_FRAME:				r = "POP-CONS-FRAME";			break;
+    case IDIO_A_POP_LIST_FRAME:				r = "POP-LIST-FRAME";			break;
 
     case IDIO_A_ARITY1P:				r = "ARITY1P";				break;
     case IDIO_A_ARITY2P:				r = "ARITY2P";				break;
