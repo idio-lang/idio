@@ -1701,7 +1701,7 @@ IDIO_DEFINE_PRIMITIVE1 ("find-lib", find_lib, (IDIO file))
     return  r;
 }
 
-IDIO idio_load_file_name_ebe (IDIO filename, IDIO cs)
+IDIO idio_load_file_name (IDIO filename, IDIO cs)
 {
     IDIO_ASSERT (filename);
     IDIO_ASSERT (cs);
@@ -1719,7 +1719,7 @@ IDIO idio_load_file_name_ebe (IDIO filename, IDIO cs)
     if (C_size != size) {
 	free (filename_C);
 
-	idio_file_handle_error_format ("load-file-ebe: filename contains an ASCII NUL", filename, IDIO_C_FUNC_LOCATION ());
+	idio_file_handle_error_format ("load-file: filename contains an ASCII NUL", filename, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -1792,7 +1792,7 @@ IDIO idio_load_file_name_ebe (IDIO filename, IDIO cs)
 		}
 
 		/* idio_thread_set_current_module ((*fe->modulep) ()); */
-		return idio_load_handle_ebe (fh, fe->reader, fe->evaluator, cs);
+		return idio_load_handle (fh, fe->reader, fe->evaluator, cs);
 	    }
 
 	    if (filename_ext != filename) {
@@ -1843,7 +1843,7 @@ IDIO idio_load_file_name_ebe (IDIO filename, IDIO cs)
 	    }
 
 	    /* idio_thread_set_current_module ((*fe->modulep) ()); */
-	    return idio_load_handle_ebe (fh, reader, evaluator, cs);
+	    return idio_load_handle (fh, reader, evaluator, cs);
 	}
 
 	if (filename_ext != filename) {
@@ -1858,200 +1858,8 @@ IDIO idio_load_file_name_ebe (IDIO filename, IDIO cs)
     return idio_S_notreached;
 }
 
-IDIO idio_load_file_name_aio (IDIO filename, IDIO cs)
-{
-    IDIO_ASSERT (filename);
-    IDIO_ASSERT (cs);
-
-    if (! idio_isa_string (filename)) {
-	idio_error_param_type ("string", filename, IDIO_C_FUNC_LOCATION ());
-
-	return idio_S_notreached;
-    }
-    IDIO_TYPE_ASSERT (array, cs);
-
-    size_t size = 0;
-    char *filename_C = idio_string_as_C (filename, &size);
-    size_t C_size = strlen (filename_C);
-    if (C_size != size) {
-	free (filename_C);
-
-	idio_file_handle_error_format ("load-file-aio: filename contains an ASCII NUL", filename, IDIO_C_FUNC_LOCATION ());
-
-	return idio_S_notreached;
-    }
-
-    char lfn[PATH_MAX];
-    size_t l;
-
-    char *libfile = idio_libfile_find_C (filename_C);
-
-    if (NULL == libfile) {
-	free (filename_C);
-
-	idio_file_handle_error_filename_not_found (filename, IDIO_C_FUNC_LOCATION ());
-
-	return idio_S_notreached;
-    }
-
-    strncpy (lfn, libfile, PATH_MAX - 1);
-    l = strlen (lfn);
-    free (libfile);
-
-    char *filename_slash = strrchr (filename_C, '/');
-    if (NULL == filename_slash) {
-	filename_slash = filename_C;
-    }
-
-    char *filename_dot = strrchr (filename_slash, '.');
-
-    char *lfn_slash = strrchr (lfn, '/');
-    if (NULL == lfn_slash) {
-	lfn_slash = lfn;
-    }
-
-    char *lfn_dot = strrchr (lfn_slash, '.');
-
-    if (NULL == lfn_dot) {
-	lfn_dot = strrchr (lfn_slash, '\0'); /* end of string */
-
-	idio_file_extension_t *fe = idio_file_extensions;
-
-	for (;NULL != fe->reader;fe++) {
-	    IDIO filename_ext = filename;
-
-	    if (NULL != fe->ext) {
-
-		if ((l + strlen (fe->ext)) >= PATH_MAX) {
-		    free (filename_C);
-
-		    idio_file_handle_error_malformed_filename (filename, IDIO_C_FUNC_LOCATION ());
-
-		    return idio_S_notreached;
-		}
-
-		strncpy (lfn_dot, fe->ext, PATH_MAX - l - 1);
-
-		char *ss[] = { filename_C, fe->ext };
-
-		filename_ext = idio_string_C_array (2, ss);
-
-		idio_gc_protect (filename_ext);
-	    }
-
-	    if (access (lfn, R_OK) == 0) {
-		IDIO fh = idio_open_file_handle_C (filename_ext, lfn, 0, "r", 0);
-
-		free (filename_C);
-
-		if (filename_ext != filename) {
-		    idio_gc_expose (filename_ext);
-		}
-
-		/* idio_thread_set_current_module ((*fe->modulep) ()); */
-		return idio_load_handle_aio (fh, fe->reader, fe->evaluator, cs);
-	    }
-
-	    if (filename_ext != filename) {
-		idio_gc_expose (filename_ext);
-	    }
-
-	    /* reset lfn without ext */
-	    *lfn_dot = '\0';
-	}
-    } else {
-	IDIO (*reader) (IDIO h) = idio_read;
-	IDIO (*evaluator) (IDIO e, IDIO cs) = idio_evaluate;
-
-	idio_file_extension_t *fe = idio_file_extensions;
-	IDIO filename_ext = filename;
-
-	for (;NULL != fe->reader;fe++) {
-	    if (NULL != fe->ext) {
-		if (strncmp (lfn_dot, fe->ext, strlen (fe->ext)) == 0) {
-		    reader = fe->reader;
-		    evaluator = fe->evaluator;
-
-		    /*
-		     * If it's not the same extension as the user gave
-		     * us then tack it on the end
-		     */
-		    if (NULL == filename_dot ||
-			strncmp (filename_dot, fe->ext, strlen (fe->ext))) {
-
-			char *ss[] = { filename_C, fe->ext };
-
-			filename_ext = idio_string_C_array (2, ss);
-
-			idio_gc_protect (filename_ext);
-		    }
-		    break;
-		}
-	    }
-	}
-
-	if (access (lfn, R_OK) == 0) {
-	    IDIO fh = idio_open_file_handle_C (filename_ext, lfn, 0, "r", 0);
-
-	    free (filename_C);
-
-	    if (filename_ext != filename) {
-		idio_gc_expose (filename_ext);
-	    }
-
-	    /* idio_thread_set_current_module ((*fe->modulep) ()); */
-	    return idio_load_handle_aio (fh, reader, evaluator, cs);
-	}
-
-	if (filename_ext != filename) {
-	    idio_gc_expose (filename_ext);
-	}
-    }
-
-    free (filename_C);
-
-    idio_file_handle_error_filename_not_found (filename, IDIO_C_FUNC_LOCATION ());
-
-    return idio_S_notreached;
-}
-
-IDIO_DEFINE_PRIMITIVE1_DS ("load-ebe", load_ebe, (IDIO filename), "filename", "\
+IDIO_DEFINE_PRIMITIVE1_DS ("load", load, (IDIO filename), "filename", "\
 load ``filename`` expression by expression			\n\
-								\n\
-:param filename: the file to load				\n\
-:type filename: string						\n\
-								\n\
-The system will use the environment variable ``IDIOLIB`` to	\n\
-find ``filename``.						\n\
-								\n\
-This is the ``load-ebe`` primitive.				\n\
-")
-{
-    IDIO_ASSERT (filename);
-
-    IDIO_VERIFY_PARAM_TYPE (string, filename);
-
-    IDIO thr = idio_thread_current_thread ();
-    idio_ai_t pc0 = IDIO_THREAD_PC (thr);
-
-    /*
-     * Explicitly disable interactive for the duration of a load
-     *
-     * It will be reset just prior to the prompt.
-     */
-    idio_command_interactive = 0;
-    IDIO r = idio_load_file_name_ebe (filename, idio_vm_constants);
-
-    idio_ai_t pc = IDIO_THREAD_PC (thr);
-    if (pc == (idio_vm_FINISH_pc + 1)) {
-	IDIO_THREAD_PC (thr) = pc0;
-    }
-
-    return r;
-}
-
-IDIO_DEFINE_PRIMITIVE1_DS ("load-aio", load_aio, (IDIO filename), "filename", "\
-load ``filename`` all in one					\n\
 								\n\
 :param filename: the file to load				\n\
 :type filename: string						\n\
@@ -2075,7 +1883,7 @@ This is the ``load`` primitive.					\n\
      * It will be reset just prior to the prompt.
      */
     idio_command_interactive = 0;
-    IDIO r = idio_load_file_name_aio (filename, idio_vm_constants);
+    IDIO r = idio_load_file_name (filename, idio_vm_constants);
 
     idio_ai_t pc = IDIO_THREAD_PC (thr);
     if (pc == (idio_vm_FINISH_pc + 1)) {
@@ -2171,22 +1979,10 @@ void idio_file_handle_add_primitives ()
     IDIO_ADD_PRIMITIVE (file_handle_fflush);
     IDIO_ADD_PRIMITIVE (file_handle_fd);
     IDIO_ADD_PRIMITIVE (find_lib);
-    IDIO_ADD_PRIMITIVE (load_ebe);
-    IDIO_ADD_PRIMITIVE (load_aio);
+    IDIO_ADD_PRIMITIVE (load);
     IDIO_ADD_PRIMITIVE (file_exists_p);
     IDIO_ADD_PRIMITIVE (delete_file);
     IDIO_ADD_PRIMITIVE (close_file_handle_on_exec);
-
-    IDIO load_sym = idio_symbols_C_intern ("load");
-    IDIO load_ebe_sym = idio_symbols_C_intern ("load-ebe");
-    idio_module_export_symbol_value (load_sym,
-				     idio_module_primitive_symbol_value (load_ebe_sym, idio_S_nil),
-				     idio_Idio_module_instance ());
-
-    IDIO load_ebe = idio_module_primitive_symbol_value (load_ebe_sym, idio_S_nil);
-    IDIO load = idio_module_toplevel_symbol_value (load_sym, idio_S_nil);
-    idio_set_property (load, idio_KW_sigstr, idio_get_property (load_ebe, idio_KW_sigstr, idio_S_nil));
-    idio_set_property (load, idio_KW_docstr_raw, idio_get_property (load_ebe, idio_KW_docstr_raw, idio_S_nil));
 }
 
 void idio_final_file_handle ()

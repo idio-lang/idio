@@ -1703,7 +1703,7 @@ in handle ``handle``					\n\
     return idio_handle_location (h);
 }
 
-IDIO idio_load_handle_ebe (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO e, IDIO cs), IDIO cs)
+IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO e, IDIO cs), IDIO cs)
 {
     IDIO_ASSERT (h);
     IDIO_C_ASSERT (reader);
@@ -1745,7 +1745,7 @@ IDIO idio_load_handle_ebe (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (I
 #ifdef IDIO_LOAD_TIMING
 	    struct timeval te;
 	    struct timeval td;
-	    fprintf (stderr, "  ebe %4d", i++);
+	    fprintf (stderr, "  load %4d", i++);
 #endif
 	    IDIO m = (*evaluator) (e, cs);
 
@@ -1775,7 +1775,7 @@ IDIO idio_load_handle_ebe (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (I
 
 	    if (ss != ss0) {
 		char *sname = idio_handle_name_as_C (h);
-		fprintf (stderr, "load-handle-ebe: %s: SS %td != %td\n", sname, ss, ss0);
+		fprintf (stderr, "load-handle: %s: SS %td != %td\n", sname, ss, ss0);
 		free (sname);
 		idio_debug ("THR %s\n", thr);
 		idio_debug ("STK %s\n", IDIO_THREAD_STACK (thr));
@@ -1814,13 +1814,13 @@ IDIO idio_load_handle_ebe (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (I
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1_DS ("load-handle-ebe", load_handle_ebe, (IDIO h), "handle", "\
+IDIO_DEFINE_PRIMITIVE1_DS ("load-handle", load_handle, (IDIO h), "handle", "\
 load expressions from ``handle`` expression by expression	\n\
 								\n\
 :param handle: the handle to load from				\n\
 :type handle: handle						\n\
 								\n\
-This is the ``load-handle-ebe`` primitive.			\n\
+This is the ``load-handle`` primitive.				\n\
 ")
 {
     IDIO_ASSERT (h);
@@ -1829,128 +1829,7 @@ This is the ``load-handle-ebe`` primitive.			\n\
     IDIO thr = idio_thread_current_thread ();
     idio_ai_t pc0 = IDIO_THREAD_PC (thr);
 
-    IDIO r = idio_load_handle_ebe (h, idio_read, idio_evaluate, idio_vm_constants);
-
-    idio_ai_t pc = IDIO_THREAD_PC (thr);
-    if (pc == (idio_vm_FINISH_pc + 1)) {
-	IDIO_THREAD_PC (thr) = pc0;
-    }
-
-    return r;
-}
-
-IDIO idio_load_handle_aio (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO e, IDIO cs), IDIO cs)
-{
-    IDIO_ASSERT (h);
-    IDIO_C_ASSERT (reader);
-    IDIO_C_ASSERT (evaluator);
-    IDIO_ASSERT (cs);
-    IDIO_TYPE_ASSERT (handle, h);
-    IDIO_TYPE_ASSERT (array, cs);
-
-    if (IDIO_FILE_HANDLE_FLAGS (h) & IDIO_FILE_HANDLE_FLAG_INTERACTIVE) {
-	return idio_load_handle_interactive (h, reader, evaluator, cs);
-    }
-
-    IDIO thr = idio_thread_current_thread ();
-    idio_ai_t ss0 = idio_array_size (IDIO_THREAD_STACK (thr));
-
-    IDIO es = idio_S_nil;
-
-    for (;;) {
-	IDIO expr = (*reader) (h);
-
-	if (idio_S_eof == expr) {
-	    break;
-	} else {
-	    es = idio_pair (expr, es);
-	}
-    }
-
-    es = idio_list_reverse (es);
-
-    IDIO_HANDLE_M_CLOSE (h) (h);
-
-    IDIO ms = idio_S_nil;
-    while (es != idio_S_nil) {
-	ms = idio_pair ((*evaluator) (IDIO_PAIR_H (es), cs), ms);
-	es = IDIO_PAIR_T (es);
-    }
-    ms = idio_list_reverse (ms);
-    /* idio_debug ("load-handle-aio: ms %s\n", ms);    */
-
-    /*
-     * When we call idio_vm_run() we are at risk of the garbage
-     * collector being called so we need to save the current file
-     * handle and any lists we're walking over
-     */
-    idio_remember_file_handle (h);
-    /*
-     * We might have called idio_gc_protect (and later idio_gc_expose)
-     * to safeguard {ms} however we know (because we wrote the code)
-     * that "load" might call a continuation (to a state before we
-     * were called) which will unwind the stack and call
-     * siglongjmp(3).  That means we'll never reach the
-     * idio_gc_expose() call and stuff starts to accumulate in the GC
-     * never to be released.
-     *
-     * However, invoking that continuation will clear the stack
-     * including anything we stick on it here.  Very convenient.
-     *
-     * If you dump the stack you will find an enormous list, {ms},
-     * representing the loaded file.  Which is annoying.
-     */
-    idio_array_push (IDIO_THREAD_STACK (thr), ms);
-
-    idio_ai_t lh_pc = -1;
-    IDIO r;
-    while (idio_S_nil != ms) {
-	idio_codegen (thr, IDIO_PAIR_H (ms), cs);
-	if (-1 == lh_pc) {
-	    lh_pc = IDIO_THREAD_PC (thr);
-	    /* fprintf (stderr, "\n\n%s lh_pc == %jd\n", idio_handle_name_as_C (h), lh_pc); */
-	}
-	/* r = idio_vm_run (thr); */
-	ms = IDIO_PAIR_T (ms);
-    }
-
-    IDIO_THREAD_PC (thr) = lh_pc;
-    r = idio_vm_run (thr);
-
-    /* ms */
-    idio_array_pop (IDIO_THREAD_STACK (thr));
-
-    idio_ai_t ss = idio_array_size (IDIO_THREAD_STACK (thr));
-
-    if (ss != ss0) {
-	char *sname = idio_handle_name_as_C (h);
-	fprintf (stderr, "load-handle-aio: %s: SS %td != %td\n", sname, ss, ss0);
-	free (sname);
-	idio_debug ("THR %s\n", thr);
-	idio_debug ("STK %s\n", IDIO_THREAD_STACK (thr));
-    }
-
-    idio_forget_file_handle (h);
-
-    return r;
-}
-
-IDIO_DEFINE_PRIMITIVE1_DS ("load-handle-aio", load_handle_aio, (IDIO h), "handle", "\
-load expressions from ``handle`` all in one			\n\
-								\n\
-:param handle: the handle to load from				\n\
-:type handle: handle						\n\
-								\n\
-This is the ``load-handle-aio`` primitive.			\n\
-")
-{
-    IDIO_ASSERT (h);
-    IDIO_VERIFY_PARAM_TYPE (handle, h);
-
-    IDIO thr = idio_thread_current_thread ();
-    idio_ai_t pc0 = IDIO_THREAD_PC (thr);
-
-    IDIO r = idio_load_handle_aio (h, idio_read, idio_evaluate, idio_vm_constants);
+    IDIO r = idio_load_handle (h, idio_read, idio_evaluate, idio_vm_constants);
 
     idio_ai_t pc = IDIO_THREAD_PC (thr);
     if (pc == (idio_vm_FINISH_pc + 1)) {
@@ -2106,19 +1985,7 @@ void idio_handle_add_primitives ()
     IDIO_ADD_PRIMITIVE (flush_handle);
     IDIO_ADD_PRIMITIVE (seek_handle);
     IDIO_ADD_PRIMITIVE (rewind_handle);
-    IDIO_ADD_PRIMITIVE (load_handle_aio);
-    IDIO_ADD_PRIMITIVE (load_handle_ebe);
-
-    IDIO load_handle_sym = idio_symbols_C_intern ("load-handle");
-    IDIO load_handle_ebe_sym = idio_symbols_C_intern ("load-handle-ebe");
-    idio_module_export_symbol_value (load_handle_sym,
-				     idio_module_primitive_symbol_value (load_handle_ebe_sym, idio_S_nil),
-				     idio_Idio_module_instance ());
-
-    IDIO load_handle_ebe = idio_module_primitive_symbol_value (load_handle_ebe_sym, idio_S_nil);
-    IDIO load_handle = idio_module_toplevel_symbol_value (load_handle_sym, idio_S_nil);
-    idio_set_property (load_handle, idio_KW_sigstr, idio_get_property (load_handle_ebe, idio_KW_sigstr, idio_S_nil));
-    idio_set_property (load_handle, idio_KW_docstr_raw, idio_get_property (load_handle_ebe, idio_KW_docstr_raw, idio_S_nil));
+    IDIO_ADD_PRIMITIVE (load_handle);
 }
 
 void idio_final_handle ()

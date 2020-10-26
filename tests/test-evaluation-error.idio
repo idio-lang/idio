@@ -105,7 +105,6 @@ evaluation-error-load "evaluation-errors/trap-condition-nil.idio" "(trap conditi
 evaluation-error-load "evaluation-errors/trap-nil.idio" "trap: no arguments"
 evaluation-error-load "evaluation-errors/include-nil.idio" "include: no argument"
 evaluation-error-load "evaluation-errors/template-expand-nil.idio" "template-expand: no argument"
-evaluation-error-load "evaluation-errors/module-nil.idio" "module: no argument"
 
 ;; all done?
-test Tests (evaluation-error0 + 66)
+test Tests (evaluation-error0 + 65)

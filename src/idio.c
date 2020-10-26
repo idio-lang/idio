@@ -293,7 +293,7 @@ int main (int argc, char **argv, char **envp)
 
     idio_array_push (idio_vm_krun, IDIO_LIST2 (idio_k_exit, idio_get_output_string (dosh)));
 
-    idio_load_file_name_ebe (idio_string_C ("bootstrap"), idio_vm_constants);
+    idio_load_file_name (idio_string_C ("bootstrap"), idio_vm_constants);
 
     if (nargc > 1) {
 	/*
@@ -412,7 +412,7 @@ int main (int argc, char **argv, char **envp)
 	}
 
 	/* repl */
-	idio_load_handle_ebe (idio_thread_current_input_handle (), idio_read, idio_evaluate, idio_vm_constants);
+	idio_load_handle (idio_thread_current_input_handle (), idio_read, idio_evaluate, idio_vm_constants);
     }
 
     free (nargv);

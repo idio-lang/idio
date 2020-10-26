@@ -3872,7 +3872,7 @@ static IDIO idio_meaning_include (IDIO src, IDIO e, IDIO nametree, int flags, ID
     IDIO thr = idio_thread_current_thread ();
     idio_ai_t pc0 = IDIO_THREAD_PC (thr);
 
-    idio_load_file_name_ebe (e, cs);
+    idio_load_file_name (e, cs);
 
     idio_ai_t pc = IDIO_THREAD_PC (thr);
     if (pc == (idio_vm_FINISH_pc + 1)) {
@@ -4679,93 +4679,6 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO cs, I
 
 		return idio_S_notreached;
 	    }
-	} else if (idio_S_module == eh) {
-	    /* (module MODULE-NAME) */
-	    if (idio_isa_pair (et)) {
-		/*
-		 * module MODULE-NAME is unusual in that it affects
-		 * the evaluator here and now as we are changing the
-		 * scope of names.
-		 *
-		 * We also need to change the global sense of
-		 * current-module as subsequent read's will expect us
-		 * to remain in the module
-		 */
-		cm = idio_module_find_or_create_module (IDIO_PAIR_H (et));
-		idio_thread_set_current_module (cm);
-
-		/*
-		 * define-template (module name) ... is in module.idio
-		 */
-		return idio_meaning_expander (e, e, nametree, flags, cs, cm);
-	    } else {
-		/*
-		 * Test Case: evaluation-errors/module-nil.idio
-		 *
-		 * (module)
-		 */
-		idio_meaning_evaluation_error_param_nil (src, IDIO_C_FUNC_LOCATION_S ("module"), "no argument", eh);
-
-		return idio_S_notreached;
-	    }
-	} else if (idio_S_pct_module_export == eh) {
-	    /* (%module-export names) */
-
-	    /*
-	     * %module-export names is unusual in that it affects
-	     * the evaluator here and now as we are changing the
-	     * set of names a module exports.
-	     *
-	     * The evaluator is going to lookup any given name
-	     * *before* any nominal {import} statement is
-	     * evaluated so we need to nip in first and update the
-	     * facts before idio_meaning_variable_kind gets to
-	     * work.
-	     */
-	    IDIO syms = IDIO_PAIR_H (IDIO_PAIR_THT (et));
-	    idio_module_extend_exports (idio_thread_current_module (), syms);
-
-	    return idio_meaning_application (src, eh, et, nametree, flags, cs, cm);
-	} else if (idio_S_pct_module_import == eh) {
-	    /* (%module-import names) */
-
-	    /*
-	     * %module-import names is unusual in that it affects
-	     * the evaluator here and now as we are changing the
-	     * set of names a module imports.
-	     *
-	     * The evaluator is going to lookup any given name
-	     * *before* any nominal {import} statement is
-	     * evaluated so we need to nip in first and update the
-	     * facts before idio_meaning_variable_kind gets to
-	     * work.
-	     */
-	    IDIO syms = IDIO_PAIR_H (IDIO_PAIR_THT (et));
-#ifdef IDIO_IMPORT_TIMING
-	    fprintf (stderr, "import: +%2lds s ", idio_vm_elapsed ());
-	    idio_debug ("%s\n", syms);
-	    struct timeval t0;
-	    if (gettimeofday (&t0, NULL) == -1) {
-		perror ("gettimeofday");
-	    }
-#endif
-	    idio_module_extend_imports (idio_thread_current_module (), syms);
-#ifdef IDIO_IMPORT_TIMING
-	    struct timeval te;
-	    if (gettimeofday (&te, NULL) == -1) {
-		perror ("gettimeofday");
-	    }
-	    struct timeval td;
-	    td.tv_sec = te.tv_sec - t0.tv_sec;
-	    td.tv_usec = te.tv_usec - t0.tv_usec;
-	    if (td.tv_usec < 0) {
-		td.tv_usec += 1000000;
-		td.tv_sec -= 1;
-	    }
-	    fprintf (stderr, "import: +%2lds %ld.%06ld e ", idio_vm_elapsed (), td.tv_sec, td.tv_usec);
-	    idio_debug ("%s\n", syms);
-#endif
-	    return idio_meaning_application (src, eh, et, nametree, flags, cs, cm);
 	} else {
 	    if (idio_isa_symbol (eh)) {
 		IDIO k = idio_meaning_variable_kind (src, nametree, eh, IDIO_MEANING_TOPLEVEL_SCOPE (flags), cs, cm);
