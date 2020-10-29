@@ -922,6 +922,8 @@ static IDIO idio_util_as_string_symbol (IDIO o)
 #define IDIO_FIXNUM_CONVERSION_FORMAT_o		0x6F
 #define IDIO_FIXNUM_CONVERSION_FORMAT_x		0x78
 
+#define IDIO_FIXNUM_CONVERSION_FORMAT_s		0x73
+
 char *idio_as_string (IDIO o, size_t *sizep, int depth, int first)
 {
     char *r = NULL;
@@ -949,6 +951,12 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, int first)
 			case IDIO_FIXNUM_CONVERSION_FORMAT_o:
 			case IDIO_FIXNUM_CONVERSION_FORMAT_x:
 			    format = f;
+			    break;
+			case IDIO_FIXNUM_CONVERSION_FORMAT_s:
+			    /*
+			     * A generic: printf "%s" e
+			     */
+			    format = IDIO_FIXNUM_CONVERSION_FORMAT_d;
 			    break;
 			default:
 			    fprintf (stderr, "fixnum-as-string: unexpected conversion format: '%c' (%#x).  Using 'd' for %" PRIdPTR " @%d.\n", (int) f, (int) f, IDIO_FIXNUM_VAL (o), depth);
