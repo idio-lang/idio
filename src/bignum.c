@@ -2219,8 +2219,10 @@ char *idio_bignum_expanded_real_as_string (IDIO bn, IDIO_BS_T exp, int digits, i
 }
 
 #define IDIO_BIGNUM_CONVERSION_FORMAT_SCHEME	0
-#define IDIO_BIGNUM_CONVERSION_FORMAT_E		0x65
-#define IDIO_BIGNUM_CONVERSION_FORMAT_F		0x66
+#define IDIO_BIGNUM_CONVERSION_FORMAT_e		0x65
+#define IDIO_BIGNUM_CONVERSION_FORMAT_f		0x66
+
+#define IDIO_BIGNUM_CONVERSION_FORMAT_s		0x73
 
 char *idio_bignum_real_as_string (IDIO bn, size_t *sizep)
 {
@@ -2250,13 +2252,19 @@ char *idio_bignum_real_as_string (IDIO bn, size_t *sizep)
 	    if (idio_isa_unicode (ipcf)) {
 		idio_unicode_t f = IDIO_UNICODE_VAL (ipcf);
 		switch (f) {
-		case IDIO_BIGNUM_CONVERSION_FORMAT_E:
-		case IDIO_BIGNUM_CONVERSION_FORMAT_F:
+		case IDIO_BIGNUM_CONVERSION_FORMAT_e:
+		case IDIO_BIGNUM_CONVERSION_FORMAT_f:
 		    format = f;
+		    break;
+		case IDIO_BIGNUM_CONVERSION_FORMAT_s:
+		    /*
+		     * A generic: printf "%s" e
+		     */
+		    format = IDIO_BIGNUM_CONVERSION_FORMAT_e;
 		    break;
 		default:
 		    fprintf (stderr, "bignum-as-string: unexpected conversion format: %c (%#x).  Using 'e'.\n", (int) f, (int) f);
-		    format = IDIO_BIGNUM_CONVERSION_FORMAT_E;
+		    format = IDIO_BIGNUM_CONVERSION_FORMAT_e;
 		    break;
 		}
 	    } else {
@@ -2351,7 +2359,7 @@ char *idio_bignum_real_as_string (IDIO bn, size_t *sizep)
 	    s = idio_strcat (s, sizep, vs, vs_size);
 	}
 	break;
-    case IDIO_BIGNUM_CONVERSION_FORMAT_E:
+    case IDIO_BIGNUM_CONVERSION_FORMAT_e:
 	{
 	    /*
 	     * vs can be n digits long (n >= 1).  We want to add vs[0] then
@@ -2406,7 +2414,7 @@ char *idio_bignum_real_as_string (IDIO bn, size_t *sizep)
 	    s = idio_strcat (s, sizep, vs, vs_size);
 	}
 	break;
-    case IDIO_BIGNUM_CONVERSION_FORMAT_F:
+    case IDIO_BIGNUM_CONVERSION_FORMAT_f:
 	{
 	    char vs[IDIO_BIGNUM_DPW + 1];
 	    sprintf (vs, "%" PRIdPTR, v);
