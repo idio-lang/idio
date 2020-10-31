@@ -25,7 +25,7 @@
 
 #define IDIO_MEANING_FLAG_NONE			0
 #define IDIO_MEANING_FLAG_TAILP			(1<<0)
-#define IDIO_MEANING_FLAG_TOPLEVEL_SCOPE		(1<<1)
+#define IDIO_MEANING_FLAG_TOPLEVEL_SCOPE	(1<<1)
 #define IDIO_MEANING_FLAG_DYNAMIC_SCOPE		(1<<2)
 #define IDIO_MEANING_FLAG_ENVIRON_SCOPE		(1<<3)
 #define IDIO_MEANING_FLAG_COMPUTED_SCOPE	(1<<4)
@@ -55,8 +55,10 @@
 #define IDIO_MEANING_FRAME_REUSE(f)		((f) | IDIO_MEANING_FLAG_FRAME_REUSE)
 #define IDIO_MEANING_NO_FRAME_REUSE(f)		((f) & (~ IDIO_MEANING_FLAG_FRAME_REUSE))
 
+extern IDIO idio_evaluation_module;
+
 void idio_meaning_dump_src_properties (const char *prefix, const char*name, IDIO e);
-void idio_meaning_evaluation_error_param_type (IDIO src, IDIO c_location, char *msg, IDIO expr);
+void idio_meaning_error_param_type (IDIO src, IDIO c_location, char *msg, IDIO expr);
 void idio_meaning_error_static_redefine (IDIO lo, IDIO c_location, char *msg, IDIO name, IDIO cv, IDIO new);
 void idio_meaning_error_static_arity (IDIO lo, IDIO c_location, char *msg, IDIO args);
 

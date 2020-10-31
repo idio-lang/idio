@@ -406,7 +406,7 @@ define (regexp-match>=? m1 m2) {
 		       (regexp-match-ref m2 (i + 1))))
 		 (lp (i + 2))) \
 	       (else
-		(not 
+		(not
 		 (and (integer? (regexp-match-ref m2 i))
 		      (or (not (integer? (regexp-match-ref m1 i)))
 			  (lt (regexp-match-ref m2 i)
@@ -414,7 +414,7 @@ define (regexp-match>=? m1 m2) {
 			  ;; sanity check for incompletely advanced epsilons
 			  (and (integer? (regexp-match-ref m1 (i + 1)))
 			       (lt (regexp-match-ref m1 (i + 1))
-				   (regexp-match-ref m1 i))) 
+				   (regexp-match-ref m1 i)))
 			  ((if (memq (i + 1) non-greedy-indexes) not values)
 			   (and
 			    (eq (regexp-match-ref m2 i)

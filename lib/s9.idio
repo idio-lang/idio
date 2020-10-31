@@ -1080,36 +1080,35 @@ with-output-to-file := {
 
 ;;----- Quasi-quote-expander -----
 
-define-template (s9/quasiquote) \
-	     function (form) {
-	       qq-pair :+ function (a b) {
-			    cond ((and (pair? a)
-				       (eq? 'unquote-splicing (ph a))) {
-					 if (and (pair? b)
-						 (eq? 'quote (ph b))
-						 (null? (pht b))) {
-						   pht a
-						 } {
-						   list 'append (pht a) b
-						 }
-				       }) \
-				 (else (list 'pair a b))
-	       }
-	       qq-expand :+ function (x) {
-			      cond ((array? x) (list 'list->array (qq-expand (array->list x)))) \
-				   ((not (pair? x)) (list 'quote x)) \
-				   ((and (eq? 'unquote (ph x))
-					 (pair? (pt x))) (pht x)) \
-				   ((and (eq? 'unquote-splicing (ph x))
-					 (pair? (pt x))) (list 'unquote-splicing (pht x))) \
-				   ((and (eq? 'quasiquote (ph x))
-					 (pair? (pt x))) (error 'quasiquote "may not be nested")) \
-				   (else (qq-pair (qq-expand (ph x))
-						  (qq-expand (pt x))))
-	       }
+define-template (s9/quasiquote form) {
+  qq-pair :+ function (a b) {
+	       cond ((and (pair? a)
+			  (eq? 'unquote-splicing (ph a))) {
+			    if (and (pair? b)
+				    (eq? 'quote (ph b))
+				    (null? (pht b))) {
+				      pht a
+				    } {
+				      list 'append (pht a) b
+				    }
+			  }) \
+		    (else (list 'pair a b))
+  }
+  qq-expand :+ function (x) {
+		 cond ((array? x) (list 'list->array (qq-expand (array->list x)))) \
+		      ((not (pair? x)) (list 'quote x)) \
+		      ((and (eq? 'unquote (ph x))
+			    (pair? (pt x))) (pht x)) \
+		      ((and (eq? 'unquote-splicing (ph x))
+			    (pair? (pt x))) (list 'unquote-splicing (pht x))) \
+		      ((and (eq? 'quasiquote (ph x))
+			    (pair? (pt x))) (error 'quasiquote "may not be nested")) \
+		      (else (qq-pair (qq-expand (ph x))
+				     (qq-expand (pt x))))
+  }
 
-	       qq-expand form
-	     }
+  qq-expand form
+}
 
 
 ;;----- Library -----

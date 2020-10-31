@@ -49,9 +49,9 @@ static IDIO idio_evaluator_extend (IDIO name, IDIO primdata, IDIO module, const 
     IDIO_TYPE_ASSERT (primitive, primdata);
     IDIO_TYPE_ASSERT (module, module);
 
-    IDIO cv = idio_module_find_symbol (name, module);
-    if (idio_S_unspec != cv) {
-	IDIO fvi = IDIO_PAIR_HTT (cv);
+    IDIO si = idio_module_find_symbol (name, module);
+    if (idio_S_false != si) {
+	IDIO fvi = IDIO_PAIR_HTT (si);
 	IDIO pd = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
 
 	if (IDIO_PRIMITIVE_F (primdata) != IDIO_PRIMITIVE_F (pd)) {
@@ -213,7 +213,7 @@ IDIO_DEFINE_PRIMITIVE1 ("let", let, (IDIO e))
 	 *
 	 * let 1 2
 	 */
-	idio_meaning_evaluation_error_param_type (src, IDIO_C_FUNC_LOCATION (), "bindings: pair", bindings);
+	idio_meaning_error_param_type (src, IDIO_C_FUNC_LOCATION (), "bindings: pair", bindings);
 
 	return idio_S_notreached;
     }
@@ -239,7 +239,7 @@ IDIO_DEFINE_PRIMITIVE1 ("let", let, (IDIO e))
 	     *
 	     * let (1) 2
 	     */
-	    idio_meaning_evaluation_error_param_type (src, IDIO_C_FUNC_LOCATION (), "binding: pair/symbol", binding);
+	    idio_meaning_error_param_type (src, IDIO_C_FUNC_LOCATION (), "binding: pair/symbol", binding);
 
 	    return idio_S_notreached;
 	}
@@ -377,7 +377,7 @@ IDIO_DEFINE_PRIMITIVE1 ("let*", lets, (IDIO e))
 	 *
 	 * let 1 2
 	 */
-	idio_meaning_evaluation_error_param_type (src, IDIO_C_FUNC_LOCATION (), "bindings: pair", bindings);
+	idio_meaning_error_param_type (src, IDIO_C_FUNC_LOCATION (), "bindings: pair", bindings);
 
 	return idio_S_notreached;
     }
@@ -477,7 +477,7 @@ poor man's letrec				\n\
 	 *
 	 * letrec 1 2
 	 */
-	idio_meaning_evaluation_error_param_type (src, IDIO_C_FUNC_LOCATION (), "bindings: pair", bindings);
+	idio_meaning_error_param_type (src, IDIO_C_FUNC_LOCATION (), "bindings: pair", bindings);
 
 	return idio_S_notreached;
     }
@@ -505,7 +505,7 @@ poor man's letrec				\n\
 	     *
 	     * let (1) 2
 	     */
-	    idio_meaning_evaluation_error_param_type (src, IDIO_C_FUNC_LOCATION (), "binding: pair/symbol", binding);
+	    idio_meaning_error_param_type (src, IDIO_C_FUNC_LOCATION (), "binding: pair/symbol", binding);
 
 	    return idio_S_notreached;
 	}

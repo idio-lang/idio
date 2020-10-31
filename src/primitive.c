@@ -143,12 +143,72 @@ void idio_free_primitive (IDIO o)
     free (o->u.primitive);
 }
 
+IDIO_DEFINE_PRIMITIVE1_DS ("primitive-arity", primitive_arity, (IDIO p), "p", "\
+Return the arity of `p`				\n\
+						\n\
+:param p: primtive				\n\
+:type p: primitive				\n\
+:return: arity					\n\
+:rtype: integer					\n\
+")
+{
+    IDIO_ASSERT (p);
+
+    IDIO_TYPE_ASSERT (primitive, p);
+
+    return idio_integer (IDIO_PRIMITIVE_ARITY (p));
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("primitive-name", primitive_name, (IDIO p), "p", "\
+Return the name of `p`				\n\
+						\n\
+:param p: primtive				\n\
+:type p: primitive				\n\
+:return: name					\n\
+:rtype: string					\n\
+")
+{
+    IDIO_ASSERT (p);
+
+    IDIO_TYPE_ASSERT (primitive, p);
+
+    return idio_string_C (IDIO_PRIMITIVE_NAME (p));
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("primitive-varargs?", primitive_varargsp, (IDIO p), "p", "\
+Return #t if `p` is varargs			\n\
+						\n\
+:param p: primtive				\n\
+:type p: primitive				\n\
+:return: varargs				\n\
+:rtype: boolean					\n\
+")
+{
+    IDIO_ASSERT (p);
+
+    IDIO_TYPE_ASSERT (primitive, p);
+
+    IDIO r = idio_S_false;
+
+    if (IDIO_PRIMITIVE_VARARGS (p)) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
 void idio_init_primitive ()
 {
 }
 
 void idio_primitive_add_primitives ()
 {
+    /*
+     * Export these into *evaluation* for the evaluator to use
+     */
+    IDIO_ADD_MODULE_PRIMITIVE (idio_evaluation_module, primitive_arity);
+    IDIO_ADD_MODULE_PRIMITIVE (idio_evaluation_module, primitive_name);
+    IDIO_ADD_MODULE_PRIMITIVE (idio_evaluation_module, primitive_varargsp);
 }
 
 void idio_final_primitive ()

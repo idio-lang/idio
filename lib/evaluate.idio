@@ -1,0 +1,1943 @@
+#*
+
+Copyright (c) 2020 Ian Fitchet <idf(at)idio-lang.org>
+
+Licensed under the Apache License, Version 2.0 (the "License"); you
+may not use this file except in compliance with the License.  You
+may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+evaluate.idio
+
+*#
+
+module evaluate
+export (
+	 evaluate
+)
+import codegen vm
+
+define (meaning-error-location src) {
+  lo := #f
+  if (not (null? src)) {
+    lo = hash-ref %idio-src-properties src #f
+  }
+
+  if lo {
+    sprintf "%s:line %d" lo.name lo.line
+  } {
+    sprintf "<no lexobj>"
+  }
+}
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; all evaluation errors are derived from ^evaluation-error
+;
+; most of the specific errors just add some pertinent text
+
+define (meaning-base-error src msg expr) {
+  c := make-condition ^evaluation-error msg (meaning-error-location src) #n expr
+  raise c
+}
+
+define (meaning-error-param-type src msg expr) {
+  meaning-base-error src (sprintf "parameter type: %s" msg) expr
+}
+
+define (meaning-error-param src msg expr) {
+  meaning-base-error src (sprintf "%s: %s" expr msg) expr
+}
+
+define (meaning-evaluation-error src msg expr) {
+  meaning-base-error src msg expr
+}
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; some of the various static errors should only occur in broken
+; internal code
+define (meaning-error-static-redefine src msg name cv new) {
+  det := sprintf "%s: %s is currently %s: proposed %s" msg name cv new
+  c := make-condition ^st-variable-error msg (meaning-error-location src) det name
+  raise c
+}
+
+define (meaning-error-static-variable src msg name) {
+  c := make-condition ^st-variable-error msg (meaning-error-location src) name name
+  raise c
+}
+
+define (meaning-error-static-unbound src name) {
+  meaning-error-static-variable src "unbound" name
+}
+
+define (meaning-error-static-immutable src name) {
+  meaning-error-static-variable src "immutable" name
+}
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+define (meaning-error-static-primitive-arity src msg f args name primdata) {
+  arity := sprintf "%d" primtive-arity primdata
+  if (primtive-varargs? primdata) {
+    arity = append-string arity "*"
+  }
+  det := sprintf "arity != %s; primitive (%s %s) was called as (%s %@)" arity f (%property f :sigstr) f args
+  c := make-condition ^st-function-arity-error msg (meaning-error-location src) det
+  raise c
+}
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; flags is a bitset with bits named ~X
+
+~none		:= #B{ 8 }
+~tailp		:= #B{ 8 1 }
+~toplevel	:= #B{ 8 01 }
+~dynamic	:= #B{ 8 001 }
+~environ	:= #B{ 8 0001 }
+~computed	:= #B{ 8 00001 }
+~define		:= #B{ 8 000001 }
+
+~all-scopes	:= #B{ 8 01111 }
+
+define (flag-set? flags i)	(equal-bitset? i (and-bitset flags i))
+define (flag-set a b)		(ior-bitset a b)
+define (flag-clear a b)		(and-bitset a (not-bitset b))
+define (scope flags) {
+  (cond ((flag-set? ~toplevel flags) 'toplevel)
+	((flag-set? ~dynamic flags) 'dynamic)
+	((flag-set? ~environ flags) 'environ)
+	((flag-set? ~computed flags) 'computed)
+	(else (error 'scope "no scope flag set" flags)))
+}
+define (set-flag-scope scope flags) {
+  if (not (flag-set? scope flags)) {
+    flag-set scope (flag-clear ~all-scopes flags)
+  }
+}
+
+;; sym-info is a tuple: (scope ci vi mod creator)
+
+define (meaning-toplevel-extend src name flags cs cm) {
+  eprintf "name %-20s fl %s\n" name flags
+  sleep 1
+  flag-scope := scope flags
+
+  sym-info = find-symbol name cm
+
+  if (pair? sym-info) {
+    cur-scope := ph sym-info
+
+    if (not (eq? cur-scope flag-scope)) {
+      meaning-error-static-redefine src "toplevel-extend: type change" name sym-info flag-scope
+    } else {
+      pht sym-info
+    }
+  } {
+    ci := codegen-constants-lookup-or-extend cs name
+
+    set-symbol! name (list flag-scope mci 0 cm "idio-toplevel-extend") cm
+  }
+}
+
+define (meaning-environ-extend src name val cs) {
+  ; environment variables are only defined in 'Idio module
+  im := find-module 'Idio
+
+  sym-info = find-symbol name im
+
+  if (pair? sym-info) {
+    cur-scope := ph sym-info
+
+    if (not (eq? cur-scope 'environ)) {
+      meaning-error-static-redefine src "environ-extend: type change" name sym-info cur-scope
+    } else {
+      pht sym-info
+    }
+  } {
+    ci := codegen-constants-lookup-or-extend cs name
+    vi := (vm-extend-values)
+
+    ; module ci/vi ?
+    set-symbol! name (list 'environ ci vi im "idio-environ-extend") im
+    set-symbol-value! name val im
+  }
+}
+
+#*
+
+meaning-variable-lookup
+
+{nametree} is a list of association lists with each association list
+representing the names of variables introduced at some level with
+newer levels preceding older ones with the effect that at the time of
+lookup the innermost level is the first association list and will
+therefore be searched first.
+
+local variables for a given level are stashed as (name 'local j) where
+{name} is the {j}th variable introduced at that level.
+
+Nominally, you would walk through each "level" of names looking for
+your variable name.  If you found it at depth {i} then you can combine
+that with the corresponding {j} to give a SHALLOW (for {i} == 0) or
+DEEP (for {i} > 0) variable reference.
+
+The return for a local is ('local {i} {j})
+
+It is interspersed with dynamic and environ variables.  They are
+one-at-a-time variable introductions and they should not increment
+{i}!
+
+The return is, say, ('dynamic {mci}) where {mci} is the constant index
+associated with the dynamic/environ variable.
+
+*#
+define (meaning-variable-lookup src nametree name) {
+  loop :+ function (nt i) {
+	    if (null? nt) #f {
+	      names := ph nt
+
+	      if (pair? names) {
+		l := assq name names
+		scope := pht l		; ({name} 'local {j})
+		if l {
+		  (case scope
+			((local) (list scope i (phtt l)))
+			((dynamic environ) (pt l))
+			(else (meaning-error-static-variable src "unexpected local variant" name)))
+		} {
+		  ; only bump i if these were local vars
+		  if (eq? 'local scope) {
+		    loop (pt nt) (i + 1)
+		  } {
+		    loop (pt nt) i
+		  }
+		}
+	      } {
+		loop (pt nt) (i + 1)
+	      }
+	    }
+  }
+
+  loop nametree 0
+}
+
+define (meaning-nametree->list nametree) {
+  loop :+ function (nt r) {
+	    if (null? nt) (reverse r) {
+	      loop2 :+ function (names r2) {
+			 if (null? names) (reverse r2) {
+			   loop2 (pt names) (pair (ph names) r2)
+			 }
+	      }
+
+	      loop (pt nt) (loop2 (ph nt) #n)
+	    }
+  }
+
+  loop nametree #n
+}
+
+define (meaning-nametree-extend nametree names) {
+  i := 0
+  loop :+ function (ns r) {
+	    if (null? ns) (reverse r) {
+	      tuple := list (ph ns) 'local i
+	      i = i + 1
+	      loop (pt ns) (pair tuple r)
+	    }
+  }
+
+  pair (loop names #n) nametree
+}
+
+define (meaning-nametree-dynamic-extend nametree name index scope) {
+  pair (list (list name scope index)) nametree
+}
+
+define (meaning-variable-info src nametree name flags cs cm) {
+  r := meaning-variable-lookup src nametree name
+
+  if (not r) {
+    r = find-symbol name cm
+    if (not r) {
+      ; is name M/S ?
+      r = symbol-direct-reference name
+      if r {
+	r = phtt r
+	set-symbol! name r cm
+      } {
+	; not found -> extend toplevel
+	meaning-toplevel-extend src name flags cs cm
+
+	; toplevel-extend only returns a ci
+	r = find-symbol name cm
+      }
+    }
+  }
+
+  r
+}
+
+define (meaning-copy-src-properties src dst) {
+  if (pair? dst) {
+    dst-lo := hash-ref %idio-src-properties dst #f
+    if (not dst-lo) {
+      if (not (null? src)) {
+	src-lo := hash-ref %idio-src-properties src #f
+	if src-lo {
+	  dst-lo = copy-value src-lo 'shallow
+	  dst-lo.expr = dst
+	  hash-set! %idio-src-properties dst dst-lo
+	}
+      }
+    }
+  }
+}
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; let's find some meaning in all of this!
+
+define (meaning-reference src name nametree flags cs cm) {
+  si := meaning-variable-info src nametree name flags cs cm
+
+  if (not si) {
+    ; shouldn't get here as unknowns are automatically made toplevel
+    meaning-error-static-unbound src name
+  }
+
+  scope := ph si
+  i := pht si
+
+  (case scope
+	((local) {
+	  ; ('local {i} {j})
+	  j := phtt si
+	  (if (gt 0 i)
+	      (list 'DEEP-ARGUMENT-REF i j)
+	      (list 'SHALLOW-ARGUMENT-REF j))
+	})
+	((toplevel) {
+	  ; ('toplevel ci vi)
+	  vi := phtt si
+	  (if (gt 0 vi)
+	      (list 'CHECKED-GLOBAL-VAL-REF vi)
+	      (list 'GLOBAL-SYM-REF i))
+	})
+	((dynamic) (list 'DYNAMIC-SYM-REF i))
+	((environ) (list 'ENVIRON-SYM-REF i))
+	((computed) (list 'COMPUTED-SYM-REF i))
+	((predef) {
+	  vi := phtt si
+	  list 'PREDEFINED vi
+	})
+	(else {
+	  ;; Shouldn't get here unless the if clauses above don't
+	  ;; cover everything.  Developer error?
+	  meaning-error-static-unbound src name
+	}))
+}
+
+define (meaning-function-reference src name nametree flags cs cm) {
+  si := meaning-variable-info src nametree name flags cs cm
+
+  if (not si) {
+    ; shouldn't get here as unknowns are automatically made toplevel
+    meaning-error-static-unbound src name
+  }
+
+  scope := ph si
+  i := pht si
+
+  eprintf "si=%s scope=%s\n" si scope
+  (case scope
+	((local) {
+	  ; ('local {i} {j})
+	  j := phtt si
+	  (if (gt 0 i)
+	      (list 'DEEP-ARGUMENT-REF i j)
+	      (list 'SHALLOW-ARGUMENT-REF j))
+	})
+	((toplevel) {
+	  ; ('toplevel ci vi)
+	  vi := phtt si
+	  (if (gt 0 vi)
+	      (list 'CHECKED-GLOBAL-FUNCTION-VAL-REF vi)
+	      (list 'GLOBAL-FUNCTION-SYM-REF i))
+	})
+	((dynamic) (list 'DYNAMIC-FUNCTION-SYM-REF i))
+	((environ) (list 'ENVIRON-SYM-REF i))
+	((computed) (list 'COMPUTED-SYM-REF i))
+	((predef) {
+	  vi := phtt si
+	  list 'PREDEFINED vi
+	})
+	(else {
+	  ;; Shouldn't get here unless the if clauses above don't
+	  ;; cover everything.  Developer error?
+	  meaning-error-static-unbound src name
+	}))
+}
+
+define (meaning-escape src e nametree flags cs cm) {
+  meaning e e nametree flags cs cm
+}
+
+define (meaning-quotation src v nametree flags) {
+  list 'CONSTANT-SYM-REF v
+}
+
+; a couple of helper functions from Alan Bawden's Quasiquotation in
+; Lisp paper -- reworked slightly
+
+define (qq-expand-list e) {
+  if (pair? e) {
+    sym := ph e
+    (cond ((eq? 'unquote sym)		#T{ (list $(pht e)) })
+	  ((eq? 'unquote-splicing sym)	(pht e))
+	  ((eq? 'quasiquote sym)	(qq-expand-list
+					 (qq-expand (pht e))))
+	  (else				#T{ (list (append
+						   $(qq-expand-list (ph e))
+						   $(qq-expand (pt e)))) }))
+  } {
+    #T{ '($e) }
+  }
+}
+
+define (qq-expand e) {
+  if (pair? e) {
+    sym := ph e
+    (cond ((eq? 'unquote sym)		(pht e))
+	  ((eq? 'unquote-splicing sym)	(error 'qq-expand "illegal"))
+	  ((eq? 'quasiquote sym)	(qq-expand
+					 (qq-expand (pht e))))
+	  (else				#T{ (append $(qq-expand-list (ph e))
+						    $(qq-expand (pt e))) }))
+  } {
+    #T{ '$e }
+  }
+}
+
+define (qq-expand-list/verbose e c) {
+  printf " %-10s > qel p?=%s e=%s\n" c (pair? e) e
+  if (pair? e) {
+    sym := ph e
+    (cond ((eq? 'unquote sym)		(list 'list (pht e)))
+	  ((eq? 'unquote-splicing sym)	(pht e))
+	  ((or (eq? 'quasiquote sym)
+	       (eq? 'qq sym))		(qq-expand-list/verbose
+					 (qq-expand/verbose (pht e) "qel qq i")
+					 "qel qq o"))
+	  (else				(list 'list (list 'append (qq-expand-list/verbose (ph e) "qel e qel")
+								  (qq-expand/verbose (pt e) "qel e qe")))))
+  } {
+    (list 'quote (list e))
+  }
+}
+
+define (qq-expand/verbose e c) {
+  printf " %-10s > qe  p?=%s e=%s\n" c (pair? e) e
+  if (pair? e) {
+    sym := ph e
+    (cond ((eq? 'unquote sym)		(pht e))
+	  ((eq? 'unquote-splicing sym)	(error 'qq-expand/verbose "illegal"))
+	  ((or (eq? 'quasiquote sym)
+	       (eq? 'qq sym))		(qq-expand/verbose
+					 (qq-expand/verbose (pht e) "qe qq i")
+					 "qe qq o"))
+	  (else				(list 'append (qq-expand-list/verbose (ph e) "qe e qel")
+						      (qq-expand/verbose (pt e) "qe e qe"))))
+  } {
+    (list 'quote e)
+  }
+}
+
+define (qq-expand/verbose e) {
+  qq-expand/verbose (pht e) "repl"
+}
+
+define (STklos-backquotify e level) {
+  printf "              bq    p?=%s e=%s\n" (pair? e) e
+  (cond
+   ((pair? e)
+    (cond
+     ((eq? (ph e) 'quasiquote)
+      (list 'list ''quasiquote
+		  (STklos-backquotify (pht e) (+ level 1))))
+     ((eq? (ph e) 'unquote)
+      (if (le level 0)
+	  (pht e)
+	  (list 'list ''unquote
+		      (STklos-backquotify (pht e) (- level 1)))))
+     ((eq? (ph e) 'unquote-splicing)
+      (if (le level 0)
+	  (list 'pair
+		(STklos-backquotify (ph e) level)
+		(STklos-backquotify (pt e) level))
+	  (list 'list ''unquote-splicing
+		      (STklos-backquotify (pht e) (- level 1)))))
+     ((and (le level 0) (pair? (ph e)) (eq? (phh e) 'unquote-splicing))
+      (if (null? (pt e))
+	  (phth e)
+	  (list 'append (phth e)
+                        (STklos-backquotify (pt e) level))))
+     (else
+      (list 'pair
+	    (STklos-backquotify (ph e) level)
+	    (STklos-backquotify (pt e) level)))))
+   ((symbol? e)
+    (list 'quote e))
+   (else
+    e))
+}
+
+define (STklos-expand e) {
+  STklos-backquotify (pht e) 0
+}
+
+define (meaning-quasiquotation src e level) {
+  ee := qq-expand e
+  meaning ee
+}
+
+define (meaning-alternative src e1 e2 e3 nametree flags cs cm) {
+  m1 := meaning e1 e1 nametree (flag-clear ~tailp flags) cs cm
+  m2 := meaning e2 e2 nametree flags cs cm
+  m3 := meaning e3 e3 nametree flags cs cm
+
+  list 'ALTERNATIVE m1 m2 m3
+}
+
+#*
+
+validate & rewrite the cond clauses, {clauses}, noting the special
+cases of {=>}, {else}
+
+*#
+
+define (meaning-rewrite-cond prev src clauses) {
+  (cond ((null? clauses) (void))
+	((not (pair? clauses))
+	 ;; Shouldn't get here, eg. "(cond)", as we test that the cond
+	 ;; clauses are a pair in the main idio_meaning loop.
+	 (meaning-evaluation-error src "cond: no clauses" clauses))
+	((not (pair? (ph clauses))) {
+	  if (and (pair? (pt clauses))
+		  (pair? (pht clauses))) {
+		    ;; Test Cases:
+		    ;; evaluation-errors/rewrite-cond-isa-pair-only.idio
+		    ;; evaluation-errors/rewrite-cond-isa-pair-before.idio
+		    ;; evaluation-errors/rewrite-cond-isa-pair-after.idio
+
+		    ;; cond #t
+		    ;; cond #t (#f 1)
+		    ;; cond (#f 1) #t
+		    meaning-error-param-type (pht clauses) "cond: clause is not a pair (before)" clauses
+		  } {
+		    ;; Test Case: ??
+		    meaning-error-param-type prev "cond: clause is not a pair (in/after)" clauses
+		  }
+	})
+	((eq? 'else (phh clauses)) {
+	  if (null? (pt clauses)) {
+	    append (list 'begin) (pth clauses)
+	  } {
+	    ;; Test Case: evaluation-errors/rewrite-cond-else-not-last.idio
+
+	    ;; cond (else 1) (#t 2)
+	    meaning-evaluation-error (ph clauses) "cond: else not in last clause" clauses
+	  }
+	}))
+
+  (cond ((and (pair? (pth clauses))
+	      (eq? '=> (phth clauses))) {
+		;; XXX We've just accessed the {phth clauses} so *of
+		;; course* it's a list...the only useful thing we're
+		;; doing here is checking there's explicitly three
+		;; elements.
+
+		ph-clauses := ph clauses
+
+		if (and (list? ph-clauses)
+			(== 3 (length ph-clauses))) {
+			  ;; The {=>} operator is a bit of a
+			  ;; Scheme-ism in that the clause says {(c =>
+			  ;; f)} and means that if {c} is true then
+			  ;; apply {f} to {c} and return the result of
+			  ;; that.  Of course we need to stage the
+			  ;; (result of the) evaluation of {c} in a
+			  ;; temporary variable because we don't want
+			  ;; it evaluated twice.
+
+			  ;; There is an unhelpful indirection
+			  ;; complication in that we are looking at
+			  ;; {clauses} so this clause is {ph clauses}
+			  ;; and then {c} and {f} are the {ph clause}
+			  ;; (therefore {phh clauses}) and {phtt
+			  ;; clause} (and therefore {phtth clauses})
+			  ;; respectively.
+
+			  ;; Finally, this clause is just one of many,
+			  ;; so we need to keep rewriting all the
+			  ;; remaining clauses ({pt clauses}).
+
+			  gs := (gensym)
+
+			  ;; `(let ((gs ,(phh clauses)))
+			  ;;	(if gs
+			  ;;	    (,(phtth clauses) gs)
+			  ;;	    ,(rewrite-cond-clauses (pt clauses))))
+			  pt-clauses := pt clauses
+			  phh-clauses := phh clauses
+			  appl := list (phtth clauses) gs
+
+			  (list 'let
+				(list (list gs phh-clauses))
+				(list 'if
+				      gs
+				      appl
+				      (meaning-rewrite-cond ph-clauses pt-clauses pt-clauses)))
+			} {
+			  if (pair? src) {
+			    ;; Test Cases:
+			    ;; evaluation-errors/rewrite-cond-apply-two-args.idio
+			    ;; evaluation-errors/rewrite-cond-apply-four-args.idio
+
+			    ;; cond (1 =>)
+			    ;; cond (1 => a b)
+			    meaning-evaluation-error (ph src) "cond: invalid => clause" clauses
+			  } {
+			    ;; Test Case: ??
+			    meaning-evaluation-error src "cond: invalid => clause" clauses
+			  }
+			}
+	      })
+   ((null? (pth clauses)) {
+     gs := (gensym)
+     ;; `(let ((gs ,(phh clauses)))
+     ;;	   (or gs
+     ;;	       ,(rewrite-cond-clauses (pt clauses))))
+
+     pt-clauses := pt clauses
+
+     (list 'let
+	   (list (list gs (phh clauses)))
+	   (list 'or
+		 gs
+		 (meaning-rewrite-cond ph-clauses pt-clauses pt-clauses)))
+   })
+  (else {
+     pt-clauses := pt clauses
+
+    (list 'if
+	   (phh clauses )
+	   (append (list 'begin) (pth clauses))
+	  (meaning-rewrite-cond ph-clauses pt-clauses pt-clauses))
+   }))
+}
+
+define (meaning-assignment src name e nametree flags cs cm) {
+  (cond ((pair? (name)) {
+    ;; setter
+
+    ;; append will deconstruct the (setter name) construct so we need
+    ;; extra levels of list
+    args := pt name
+    setter := list (list 'setter (ph name))
+
+    se := append setter args (list e)
+
+    meaning se se nametree (flag-clear ~define flags) cs cm
+  })
+   ((symbol? name) {
+     m := meaning e e nametree (flag-clear ~define (flag-clear ~tailp flags)) cs cm
+
+     si := meaning-variable-info src nametree name flags cs cm
+
+     if (not si) {
+       ; shouldn't get here as unknowns are automatically made toplevel
+       meaning-error-static-unbound src name
+     }
+
+     scope := ph si
+     ci := pht si
+
+     ; without being able to return early we can presume that if
+     ; someone has set the intermediate code {i-code} then they
+     ; intended to return immediately
+     i-code := #f
+
+     ; otherwise set {assign} to the intermediate code for the
+     ; assignment part and we'll also check the ~define flag for all
+     ; three callers
+     assign := #n
+
+     (case scope
+	   ((local) {
+	     vi := phtt si
+	     if (== 0 ci) {
+	       i-code = list 'SHALLOW-ARGUMENT-SET vi m
+	     } {
+	       i-code = list 'DEEP-ARGUMENT-SET ci vi m
+	     }
+	   })
+	   ((toplevel) {
+	     vi := phtt si
+	     if (== 0 vi) {
+	       assign = list 'GLOBAL-SYM-SET ci m
+	     } {
+	       assign = list 'GLOBAL-VAL-SET vi m
+	     }
+	   })
+	   ((dynamic environ) {
+	     assign = list 'GLOBAL-SYM-SET ci m
+	   })
+	   ((computed) {
+	     if (flag-set? ~define flags) {
+	       i-code = (list (list 'GLOBAL-SYM-DEF name scope ci)
+			      (list 'COMPUTED-SYM-DEFINE ci m))
+	       } {
+		 i-code = list 'COMPUTED-SYM-SET ci m
+	       }
+	   })
+	   ((predef) {
+	     new-ci := toplevel-extend src name (set-flag-scope ~toplevel flags) cs cm
+
+	     vi := phtt si
+	     set-symbol-value! name (vm-values-ref vi) cm
+	     assign = list 'GLOBAL-SYM-SET new-ci m
+	     ci = new-ci
+	   })
+	   (else {
+	     ;; Shouldn't get here unless the if clauses above don't
+	     ;; cover everything.  Developer error?
+	     meaning-error-static-unbound src name
+	   }))
+
+     (cond (i-code i-code)
+	   ((flags-set? ~define flags) {
+	     (list (list 'GLOBAL-SYM-DEF name scope ci)
+		   assign)
+	   })
+	   (else assign))
+   })
+   (else
+    ;; Test Case: evaluation-errors/assign-non-symbol.idio
+
+    ;; 1 = 3
+    (meaning-evaluation-error src "cannot assign to" name)))
+}
+
+define (meaning-define src name e nametree flags cs cm) {
+  if (pair? (name)) {
+    ;; (define (func arg) ...) => (define func (function (arg) ...))
+    e = append (list 'function (pt name)) e
+    name = ph name
+
+    meaning-copy-src-properties src e
+  } else {
+    if (pair? e) {
+      e = ph e
+
+      meaning-copy-src-properties src e
+    }
+  }
+
+  si := meaning-variable-info src nametree name (set-flag-scope ~toplevel flags) cs cm
+  scope :=  ph si
+  vi := phtt si
+  if (and (eq? 'toplevel scope)
+	  (== 0 vi)) {
+	    vi = (vm-extend-values)
+	    si = list scope (pht si) vi sm "meaning-define/gvi=0"
+	    set-symbol! name si cm
+	  }
+
+  meaning-assignment src name e nametree (flag-set ~define (set-flag-scope ~toplevel flags)) cs cm
+}
+
+define (meaning-define-template src name e nametree flags cs cm) {
+  eprintf "meaning-define-template: come back to me!\n" src
+  e
+}
+
+define (meaning-define-infix-operator src name e nametree flags cs cm) {
+  eprintf "meaning-define-infix-operator: come back to me!\n" src
+  e
+}
+
+define (meaning-define-postfix-operator src name e nametree flags cs cm) {
+  eprintf "meaning-define-postfix-operator: come back to me!\n" src
+  e
+}
+
+define (meaning-define-dynamic src name e nametree flags cs cm) {
+  if (pair? e) {
+    e = ph e
+
+    meaning-copy-src-properties src e
+  }
+
+  meaning-assignment src name e nametree (flag-set ~define (set-flag-scope ~dynamic flags)) cs cm
+}
+
+define (meaning-define-environ src name e nametree flags cs cm) {
+  if (pair? e) {
+    e = ph e
+
+    meaning-copy-src-properties src e
+  }
+
+  meaning-assignment src name e nametree (flag-set ~define (set-flag-scope ~environ flags)) cs cm
+}
+
+;; A computed variable's value should be a pair, (getter & setter).
+;; Either of getter or setter can be #n.
+;;
+;; We shouldn't have both #n as it wouldn't be much use.
+
+define (meaning-define-computed src name e nametree flags cs cm) {
+  getter := #n
+  setter := #n
+
+  if (pair? e) {
+    he := ph e
+
+    if (pair? he) {
+      getter = ph he
+      setter = pht he
+    } {
+      getter = he
+    }
+  } {
+    ;; Not sure we can get here as {e} is either #n or a list
+    meaning-evaluation-error src "define-computed: no getter/setter" e
+  }
+
+  if (and (null? getter)
+	  (null? setter)) {
+	    ;; Test Case: evaluation-errors/define-computed-no-args.idio
+
+	    ;; C :$ #n
+	    meaning-evaluation-error src "define-computed: no getter/setter" name
+	  }
+
+  #*
+
+  There are no property lists associated with variables so we can't
+  pull the same (set! (proc ...) v) => ((setter proc) ... v) trick as
+  we can with procs.
+
+  So, to set the actual getter/setter pair, as opposed to setting the
+  variable (which is a call to the setter proc), we need a magic flag
+  for meaning-assignment: IDIO_MEANING_FLAG_DEFINE.  Here, then, this
+  is a re-definition rather than an assignment per se.
+
+  *#
+
+  meaning-assignment src name (list 'pair getter setter) nametree (flag-set ~define (set-flag-scope ~computed flags)) cs cm
+}
+
+define (meaning*-single-sequence src e nametree flags cs cm) {
+  meaning e e nametree flags cs cm
+}
+
+define (meaning*-multiple-sequence src e e+ nametree flags keyword cs cm) {
+  m := meaning e e nametree (flag-clear ~tailp flags) cs cm
+  m+ := meaning-sequence e+ e+ nametree flags keyword cs cm
+
+  (case keyword
+	((and)		(list 'AND m m+))
+	((or)		(list 'OR m m+))
+	((begin)	(list 'BEGIN m m+))
+	(else
+	  ;; Shouldn't get here unless the clauses above don't cover
+	  ;; everything.  Developer error?
+	 (meaning-evaluation-error src "unexpected sequence keyword" keyword)))
+}
+
+define (meaning-sequence src e+ nametree flags keyword cs cm) {
+  if (pair? e+) {
+    e+h := ph e+
+    if (pair? (pt e+)) {
+      meaning*-multiple-sequence e+h e+h (pt e+) nametree flags keyword cs cm
+    } {
+      meaning*-single-sequence e+h e+h nametree flags keyword cs cm
+    }
+  } {
+    ;; Shouldn't get here as the args were checked in meaning.
+    ;; Developer error?
+    meaning-evaluation-error keyword "sequence: not a pair" e+
+  }
+}
+
+define (meaning-fix-abstraction src formal* args docstr e+ nametree flags cs cm) {
+  arity := length formal*
+  ent := meaning-nametree-extend nametree formal*
+
+  m+ := meaning-sequence e+ e+ ent (flag-set ~tailp flags) 'begin cs cm
+
+  list 'FIX-CLOSURE m+ arity args docstr
+}
+
+define (meaning-dotted-abstraction src formal* vararg args docstr e+ nametree flags cs cm) {
+  arity := length formal*
+  ent := meaning-nametree-extend nametree (append formal* (list vararg))
+
+  m+ := meaning-sequence e+ e+ ent (flag-set ~tailp flags) 'begin cs cm
+
+  list 'NARY-CLOSURE m+ arity args docstr
+}
+
+define (meaning-rewrite-body src e) {
+  eprintf "meaning-rewrite-body: come back to me!\n" src
+  e
+}
+
+define (meaning-rewrite-body-letrec src e) {
+  eprintf "meaning-rewrite-body-letrec: come back to me!\n" src
+}
+
+define (meaning-abstraction src formal* docstr e+ nametree flags cs cm) {
+  e+ := meaning-rewrite-body e+ e+
+  meaning-copy-src-properties src e+
+
+  ;; neat trick: walk down the list of formal* and if it is an
+  ;; improper list then it must be a dotted abstraction
+  formals-loop :+ function (f* regular) {
+		    (cond
+		     ((pair? f*) (formals-loop (pt f*) (pair (ph f*) regular)))
+		     ((null? f*) (meaning-fix-abstraction src formal* formal* docstr e+ nametree flags cs cm))
+		     (else (meaning-dotted-abstraction src (reverse regular) f* formal* docstr e+ nametree flags cs cm)))
+  }
+
+  formals-loop formal* #n
+}
+
+define (meaning-block src e* nametree flags cs cm) {
+  e* = meaning-rewrite-body e* e*
+  meaning-copy-src-properties src e*
+
+  meaning-sequence e* e* nametree flags 'begin cs cm
+}
+
+define (meaning-some-arguments src ae ae* nametree size flags cs cm) {
+  am := meaning ae ae nametree (flag-clear ~tailp flags) cs cm
+  am* := meaning-arguments ae* ae* nametree size flags cs cm
+
+  rank := size - (length ae*)
+
+  list 'STORE-ARGUMENT am am* rank
+}
+
+define (meaning-no-argument src nametree size flags cs) {
+  args := meaning-nametree->list nametree
+  ci := codegen-constants-lookup-or-extend cs args
+
+  list 'ALLOCATE-FRAME size ci
+}
+
+define (meaning-arguments src ae* nametree size flags cs cm) {
+  if (pair? ae*) {
+    meaning-some-arguments (ph ae*) (ph ae*) (pt ae*) nametree size flags cs cm
+  } {
+    meaning-no-argument src nametree size flags cs
+  }
+}
+
+define (meaning-fix-closed-application src formal* body ae* nametree flags cs cm) {
+  body = meaning-rewrite-body body
+  meaning-copy-src-properties src body
+
+  am* := meaning-arguments ae* ae* nametree (length ae*) (flag-clear ~tailp flags) cs cm
+  ent := meaning-nametree-extend nametree formal*
+
+  mbody := meaning-sequence body body ent flags 'begin cs cm
+
+  if (flag-set? ~tailp flags) {
+    list 'TR-FIX-LET am* mbody
+  } {
+    list 'FIX-LET am* mbody
+  }
+}
+
+define (meaning-some-dotted-arguments src ae ae* nametree size arity flags cs cm) {
+  am := meaning ae ae nametree (flag-clear ~tailp flags) cs cm
+  am* := meaning-dotted-arguments ae* ae* nametree size arity flags cs cm
+  rank := size - (length ae*)
+
+  if (lt rank arity) {
+    list 'STORE-ARGUMENT am am* rank
+  } {
+    list 'LIST-ARGUMENT am am* arity
+  }
+}
+
+define (meaning-no-dotted-argument src nametree size arity flags cs) {
+  args := meaning-nametree->list nametree
+  ci := codegen-constants-lookup-or-extend cs args
+
+  list 'ALLOCATE-FRAME arity ci
+}
+
+define (meaning-dotted-arguments src ae* nametree size arity flags cs cm) {
+  if (pair? ae*) {
+    meaning-some-dotted-arguments (ph ae*) (ph ae*) (pt ae*) nametree size arity flags cs cm
+  } {
+    meaning-no-dotted-argument src nametree size arity flags cs
+  }
+}
+
+define (meaning-dotted-closed-application src formal* vararg body ae* nametree flags cs cm) {
+  body = meaning-rewrite-body body
+  meaning-copy-src-properties src body
+
+  am* = meaning-dotted-arguments ae* ae* nametree (length ae*) (length formal*) (flag-clear ~tailp flags) cs cm
+  ent := meaning-nametree-extend nametree (append formal* (list vararg))
+
+  mbody := meaning-sequence body body ent flags 'begin cs cm
+
+  if (flag-set? ~tailp flags) {
+    list 'TR-FIX-LET am* mbody
+  } {
+    list 'FIX-LET am* mbody
+  }
+}
+
+define (meaning-closed-application src fe ae* nametree flags cs cm) {
+  ;; ((function ...) args)
+  ;;
+  ;; fe		~ (function ...)
+  ;; (ph fe)	~ 'function
+  ;; (pt fe)	~ ...		~ (formals* body)
+  ;; (pht fe)	~ formals*
+  ;; (ptt fe)	~ (body)
+
+  ;; neat trick: walk down the list of formal* and if it is an
+  ;; improper list then it must be a dotted abstraction
+
+  ;; unlike meaning-abstraction above, we need to check the arguments
+  ;; being supplied at the same time
+  formals-loop :+ function (f* a* regular) {
+		    (cond
+		     ((pair? f*) {
+		       if (pair? a*) {
+			 formals-loop (pt f*) (pt a*) (pair (ph f*) regular)
+		       } {
+			 ;; Test Cases:
+			 ;; evaluation-errors/closed-function-not-enough-args-{0,1}.idio
+
+			 ;; ((function (x) x) )
+			 ;; (function (x y) x) 1
+
+			 ;; XXX Note that in the first case we must
+			 ;; wrap the putative ``func-defn args`` in
+			 ;; parens otherwise we're simply writing
+			 ;; ``func-defn`` which defines and
+			 ;; immediately throws away the function.
+
+			 ;; In the second case the system can see
+			 ;; there's an arg!
+			 meaning-evaluation-error src "closed function: not enough arguments" (list formal* ae*)
+		       }
+		     })
+		     ((null? f*) {
+		       if (null? a*) {
+			 meaning-fix-abstraction fe formal* (ptt fe) ae* nametree flags cs cm
+		       } {
+			 ;; Test Cases:
+			 ;; evaluation-errors/closed-function-too-many-args-{0,1}.idio
+
+			 ;; (function () 1) 2
+			 ;; (function (x) x) 1 2
+			 meaning-evaluation-error src "closed function: too many arguments" (list formal* ae*)
+		       }
+		     })
+		     (else (meaning-dotted-closed-abstraction fe (reverse regular) f* (ptt fe) ae* nametree flags cs cm)))
+  }
+
+  formals-loop (pht fe) ae* #n
+}
+
+#*
+
+Of these IDIO_A_PRIMCALL1_SET_CUR_MOD *must* be a specialized
+primitive call because it must be called "inline", ie. not in the
+context of a regular Idio FUNCTION_INVOKE.
+
+If you allow the latter then IDIO_THREAD_ENV() is saved/restored
+around the call which defeats the point in it trying to alter
+IDIO_THREAD_ENV().
+
+Everything will remain permanently in the main Idio module.
+
+--
+
+Yuk!  Data in two places problem.
+
+For regular function calls the duty cycle is to evaluate all the
+arguments, pushing them onto the stack, create a frame, pop the
+arguments off the stack into the frame, evaluate the functional
+argument and push the resultant function in a register then call
+FUNCTION_INVOKE or FUNCTION_GOTO.
+
+For our hand-crafted primitives written in C we know they take a small
+number (three or fewer, probably) arguments and that mechanically
+we're going to end up with a call to the primitive's C function with
+those three or fewer arguments.  We must be able to save some time.
+
+We can accelerate fixed-arity primitive calls which, rather than
+allocating frames on the stack, can just call the primitive function
+with the contents of the VM registers directly.  Better yet, we can
+accelerate some of them by having a dedicated VM instruction thus
+avoiding having to pass the index of the primitive at all.
+
+However, if we leave the decision as to which calls to accelerate to
+the compiler then the compiler must be able to fall back to the
+general function call evaluator, idio_meaning_regular_application().
+Which is very complex.
+
+For us to do it here we must know which primitive calls the VM is
+capable of specializing which is knowledge that our strongly-held pure
+encapsulation beliefs say we shouldn't have.
+
+There must be a better way...but in the meanwhile it's much less code
+for us to check the specialization here.
+
+*#
+
+define (meaning-primitive-application src fe ae* nametree flags arity vi cs cm) {
+  primdata := vm-values-ref vi
+
+  if (primtive-varargs? primdata) {
+    ;; only a full function call protocol can cope with varargs!
+    meanning-regular-application src fe ae* nametree flags cs cm
+  } {
+    name := primitive-name primdata
+
+    i-code := #f
+
+    (case arity
+	  ((0) {
+	    (case name
+		  (("read") (i-code := (list 'PRIMCALL0 'A-PRIMCALL0-READ)))
+		  (("newline") (i-code := (list 'PRIMCALL0 'A-PRIMCALL0-NEWLINE))))
+	  })
+	  ((1) {
+	    (case name
+		  (("ph") (i-code := (list 'PRIMCALL1 'A-PRIMCALL1-HEAD)))
+		  (("pt") (i-code := (list 'PRIMCALL1 'A-PRIMCALL1-TAIL))))
+	  }))
+
+    if i-code i-code {
+      meaning-regular-application src fe ae* nametree flags cs cm
+    }
+  }
+}
+
+define (meaning-regular-application src fe ae* nametree flags cs cm) {
+  fm := #n
+  if (symbol? fe) {
+    fm = meaning-function-reference fe fe nametree flags cs cm
+  } {
+    fm = meaning fe fe nametree (flag-clear ~tailp flags) cs cm
+  }
+
+  am* := meaning-arguments ae* ae* nametree (length ae*) (flag-clear ~tailp flags) cs cm
+
+  if (flag-set? ~tailp flags) {
+    list 'TR-REGULAR-CALL src fm am*
+  } {
+    list 'REGULAR-CALL src fm am*
+  }
+}
+
+define (meaning-application src fe ae* nametree flags cs cm) {
+  i-code := #f
+
+  ;; check for a primitive
+  if (symbol? fe) {
+    si := meaning-variable-info src nametree fe (set-flag-scope ~toplevel flags) cs cm
+
+    if (pair? si) {
+      scope := ph si
+
+      if (eq? 'predef scope) {
+	primdata := vm-values-ref (phtt si)
+
+	if (primitive? primdata) {
+	  arity := primitive-arity primdata
+	  n-args := length ae*
+
+	  if (or (and (primitive-varargs? primdata)
+		      (ge n-args arity))
+	      (== n-args arity)) {
+		i-code = meaning-primitive-application src fe ae* nametree flags arity (phtt si) cs cm
+	      } {
+		;; Test Case: evaluation-errors/primitive-arity.idio
+
+		;; pair 1
+		meaning-evaluation-error src "wrong arity for primitive" (list fe ae*)
+	      }
+	} {
+	  ;; Can we get here?  We'd need to be a predef but those are
+	  ;; all, uh, primitives.  Developer error?
+	  meaning-evaluation-error src "BAD application: not a primitive" fe
+	}
+      }
+    }
+  }
+
+  if i-code i-code {
+    ;; check for a closed application
+    if (and (pair? fe)
+	    (eq? 'function (ph fe))) {
+	      ;; check for a documentation string and forge one to
+	      ;; help debugging
+	      if (not (string? (phtt fe))) {
+		fe = append (list (ph fe) (pht fe) "closed application") (ptt fe)
+	      }
+
+	      meaning-closed-application src fe ae* nametree flags cs cm
+	    } {
+	      meaning-regular-application src fe ae* nametree flags cs cm
+	    }
+  }
+}
+
+define (meaning-dynamic-reference src name nametree flags cs cm) {
+  meaning-reference src name nametree (set-flag-scope ~dynamic flags) cs cm
+}
+
+define (meaning-dynamic-let src name e e+ nametree flags cs cm) {
+  m := meaning e e nametree (flag-clear ~tailp flag-clear) cs cm
+
+  si := find-symbol name cm
+
+  ci := #f
+
+  if si {
+    ci = pht si
+  } {
+    ci = toplevel-extend src name (set-flag-scope ~dynamic flags) cs cm
+  }
+
+  ent := meaning-nametree-dynamic-extend nametree name ci 'dynamic
+
+  m+ := meaning-sequence e+ e+ ent (flag-clear ~ tailp flags) 'begin cs cm
+
+  dynamic-wrap := (list (list 'PUSH-DYNAMIC ci m)
+			m+
+			(list 'POP-DYNAMIC))
+
+  (list (list 'GLOBAL-SYM-DEF name 'dynamic ci)
+	dynamic-wrap)
+}
+
+define (meaning-dynamic-unset src name e+ nametree flags cs cm) {
+  meaning-dynamic-let src name 'undef e+ nametree flags cs cm
+}
+
+define (meaning-environ-reference src name nametree flags cs cm) {
+  meaning-reference src name nametree (set-flag-scope ~environ flags) cs cm
+}
+
+define (meaning-environ-let src name e e+ nametree flags cs cm) {
+  m := meaning e e nametree (flag-clear ~tailp flag-clear) cs cm
+
+  si := find-symbol name cm
+
+  ci := #f
+
+  if si {
+    ci = pht si
+  } {
+    ci = toplevel-extend src name (set-flag-scope ~environ flags) cs cm
+  }
+
+  ent := meaning-nametree-environ-extend nametree name ci 'environ
+
+  m+ := meaning-sequence e+ e+ ent (flag-clear ~ tailp flags) 'begin cs cm
+
+  environ-wrap := (list (list 'PUSH-ENVIRON ci m)
+			m+
+			(list 'POP-ENVIRON))
+
+  (list (list 'GLOBAL-SYM-DEF name 'environ ci)
+	environ-wrap)
+}
+
+define (meaning-environ-unset src name e+ nametree flags cs cm) {
+  meaning-environ-let src name 'undef e+ nametree flags cs cm
+}
+
+define (meaning-computed-reference src name nametree flags cs cm) {
+  meaning-reference src name nametree (set-flag-scope ~computed flags) cs cm
+}
+
+define (meaning-trap src ce he be nametree flags cs cm) {
+  he = meaning-rewrite-body he he
+  meaning-copy-src-properties src he
+
+  hm := meaning he he nametree (flag-clear ~tailp flags) cs cm
+
+  ;; if the condition expression is not a list then make it one
+  if (not (pair? ce)) {
+    ce = list ce
+  }
+
+  ;; For each condition, resolve/discover the condition's name then
+  ;; build pushs with the fmci.
+
+  ;; pushs is now the the reverse order of ce
+
+  pushs := #n
+  pops := #n
+
+  c-loop :+ function (c*) {
+	      if (null? c*) #n {
+		c-sym := ph c*
+
+		ci := #f
+
+		si := find-symbol c-sym cm
+		if (pair? si) {
+		  ci = pht si
+		} {
+		  eprintf "meaning-trap: condition name unknown: '%s'\n" c-sym
+		  ci = toplevel-extend src c-sym (set-flag-scope ~toplevel flags) cs cm
+		}
+
+		pushs = pair (list 'PUSH-TRAP ci) pushs
+		pops = pair (list 'POP-TRAP) pops
+
+		c-loop (pt c*)
+	      }
+  }
+
+  c-loop ce
+
+  be = meaning-rewrite-body be be
+  meaning-copy-src-properties src be
+
+  bm := meaning-sequence be be nametree (flag-clear ~tailp flags) 'begin cs cm
+
+  append (list hm) pushs (list bm) pops
+}
+
+define (meaning-include src e nametree flags cs cm) {
+  eprintf "meaning-include: come back to me!\n" src
+  e
+}
+
+define (meaning-expander src e nametree flags cs cm) {
+  te := *expander*/template-expand e
+  meaning-copy-src-properties src te
+
+  ;; copy src properties?
+
+  meaning te te nametree flags cs cm
+}
+
+define (meaning src e nametree flags cs cm) {
+  if (pair? e) {
+    he := ph e
+    te := pt e
+
+    (case he
+	  ((begin \and \or) {
+	    if (pair? te) {
+	      meaning-sequence te te nametree flags he cs cm
+	    } {
+	      (case he
+		    ((begin) (meaning (void) (void) nametree flags cs cm))
+		    ((and) (meaning #t #t nametree flags cs cm))
+		    ((or) (meaning #f #f nametree flags cs cm))
+		    (else
+		     ;; can we even get here?
+		     (meaning-evaluation-error src "unexpected sequence keyword" he)))
+	    }
+	  })
+
+	  ((escape) {
+	    if (pair? te) {
+	      if (pair? (pt te)) {
+		;; Test Case: evaluation-errors/escape-multiple-args.idio
+
+		;; (escape 1 2)
+		meaning-error-param src "too many arguments" he
+	      } {
+		meaning-escape (ph te) (ph te) nametree flags cs cm
+	      }
+	    } {
+	      ;; Test Case: evaluation-errors/escape-nil.idio
+
+	      ;; (escape)
+	      meaning-error-param src "no argument" he
+	    }
+	  })
+
+	  ((quote) {
+	    if (pair? te) {
+	      if (pair? (pt te)) {
+		;; Test Case: evaluation-errors/quote-multiple-args.idio
+
+		;; (quote 1 2)
+		meaning-error-param src "too many arguments" he
+	      } {
+		meaning-quotation (ph te) (ph te) nametree flags
+	      }
+	    } {
+	      ;; Test Case: evaluation-errors/quote-nil.idio
+
+	      ;; (quote)
+
+	      ;; XXX is (quote) actually '#n ??
+	      meaning-error-param src "no argument" he
+	    }
+	  })
+
+	  ((quasiquote) {
+	    if (pair? te) {
+	      if (pair? (pt te)) {
+		;; Test Case: evaluation-errors/quasiquote-multiple-args.idio
+
+		;; (quasiquote 1 2)
+		meaning-error-param src "too many arguments" he
+	      } {
+		meaning-quasiquotation e (ph te) nametree flags
+	      }
+	    } {
+	      ;; Test Case: evaluation-errors/quasiquote-nil.idio
+
+	      ;; (quasiquote)
+	      meaning-error-param src "no argument" he
+	    }
+	  })
+
+	  ((function) {
+	    ;; (function bindings [docstr] body ...)
+	    if (pair? te) {
+	      tte := pt te
+	      if (pair? tte) {
+		htte := ph tte
+		ttte := pt tte
+		if (and (string? htte)
+			(not (null? ttte))) {
+			  ;; (function bindings "docstr" body ...)
+			  meaning-abstraction src (ph te) htte ttte nametree flags cs cm
+			} {
+			  ;; (function bindings body ...)
+			  ;; (function bindings "...")
+
+			  ;; The second is a function whose body is a
+			  ;; string
+
+			  meaning-abstraction src (ph te) #n ett nametree flags cs cm
+			}
+	      } {
+		;; (function bindings body ...)
+		meaning-abstraction src (ph te) #n tte nametree flags cs cm
+	      }
+	    } {
+	      ;; Test Case: evaluation-errors/function-nil.idio
+
+	      ;; (function)
+	      meaning-error-param src "no arguments" he
+	    }
+	  })
+
+	  ((if) {
+	    ;; (if condition consequent alternative)
+	    if (pair? te) {
+	      tte := pt te
+	      if (pair? tte) {
+		ttte := pt tte
+		httte := (void)		; default: (if #f e) -> #void
+		if (pair? ttte) {
+		  httte = ph ttte
+		}
+		meaning-alternative src (ph te) (ph tte) httte nametree flags cs cm
+	      } {
+		;; Test Case: evaluation-errors/if-cond-nil.idio
+
+		;; (if 1)
+		meaning-error-param src "no consequent/alternative" e
+	      }
+	    } {
+	      ;; Test Case: evaluation-errors/if-nil.idio
+
+	      ;; (if)
+	      meaning-error-param src "no arguments" he
+	    }
+	  })
+
+	  ((cond) {
+	    ;; (cond clause ...)
+	    if (pair? te) {
+	      ;; What was I thinking here...
+	      if (null? (pt te)) {
+		hte := ph te
+		if (and (pair? hte)
+			(eq? 'block (ph hte))) {
+			  ;; (cond )
+			  te = pt hte
+			}
+	      }
+
+	      ce := meaning-rewrite-cond e te te
+	      meaning-copy-src-properties src ce
+
+	      meaning ce ce nametree flags cs cm
+	    } {
+	      ;; Test Case: evaluation-errors/cond-nil.idio
+
+	      ;; (cond)
+	      meaning-error-param src "no arguments" he
+	    }
+	  })
+
+	  ((set! \=) {
+	    ;; (set! var expr)
+	    if (pair? te) {
+	      tte := pt te
+	      if (pair? tte) {
+		meaning-assignment src (ph te) (ph tte) nametree (set-flag-scope ~toplevel flags) cs cm
+	      } {
+		;; Test Case: evaluation-errors/set-symbol-nil.idio
+
+		;; (set! x )
+		meaning-error-param src "no value" e
+	      }
+	    } {
+	      ;; Test Case: evaluation-errors/set-nil.idio
+
+	      ;; (set!)
+	      meaning-error-param src "no arguments" he
+	    }
+	  })
+
+	  ((define-template) {
+	    ;; (define-template bindings body ...)
+	    if (pair? te) {
+	      tte := pt te
+	      if (pair? tte) {
+		meaning-define-template src (ph te) (ph tte) nametree flags cs cm
+	      } {
+		;; Test Case: evaluation-errors/define-template-bindings-nil.idio
+
+		;; define-template (m)
+		meaning-error-param src "no body" e
+	      }
+	    } {
+	      ;; Test Case: evaluation-errors/define-template-nil.idio
+
+	      ;; (define-template)
+	      meaning-error-param src "no arguments" he
+	    }
+	  })
+
+	  ((define-infix-operator) {
+	    ;; (define-infix-operator sym pri body ...)
+	    if (pair? te) {
+	      tte := pt te
+	      if (pair? tte) {
+		ttte := pt tte
+		if (pair? ttte) {
+		  meaning-define-infix-operator src (ph te) (ph tte) (ph ttte) nametree flags cs cm
+		} {
+		  ;; Test Case: evaluation-errors/define-infix-op-symbol-pri-nil.idio
+
+		  ;; define-infix-operator sym pri
+		  meaning-error-param src "no body" e
+		}
+	      } {
+		;; Test Case: evaluation-errors/define-infix-op-symbol-nil.idio
+
+		;; define-infix-operator sym
+		meaning-error-param src "no pri body" e
+	      }
+	    } {
+	      ;; Test Case: evaluation-errors/define-infix-op-nil.idio
+
+	      ;; (define-infix-operator)
+	      meaning-error-param src "no arguments" he
+	    }
+	  })
+
+	  ((define-postfix-operator) {
+	    ;; (define-postfix-operator sym pri body ...)
+	    if (pair? te) {
+	      tte := pt te
+	      if (pair? tte) {
+		ttte := pt tte
+		if (pair? ttte) {
+		  meaning-define-postfix-operator src (ph te) (ph tte) (ph ttte) nametree flags cs cm
+		} {
+		  ;; Test Case: evaluation-errors/define-postfix-op-symbol-pri-nil.idio
+
+		  ;; define-postfix-operator sym pri
+		  meaning-error-param src "no body" e
+		}
+	      } {
+		;; Test Case: evaluation-errors/define-postfix-op-symbol-nil.idio
+
+		;; define-postfix-operator sym
+		meaning-error-param src "no pri body" e
+	      }
+	    } {
+	      ;; Test Case: evaluation-errors/define-postfix-op-nil.idio
+
+	      ;; (define-postfix-operator)
+	      meaning-error-param src "no arguments" he
+	    }
+	  })
+
+	  ((define) {
+	    ;; (define var expr)
+	    ;; (define bindings body ...)
+	    if (pair? te) {
+	      tte := pt te
+	      if (pair? tte) {
+		meaning-define src (ph te) tte nametree flags cs cm
+	      } {
+		;; Test Case: evaluation-errors/define-sym-nil.idio
+
+		;; define-template sym
+		meaning-error-param src "no value" e
+	      }
+	    } {
+	      ;; Test Case: evaluation-errors/define-nil.idio
+
+	      ;; (define)
+	      meaning-error-param src "no arguments" he
+	    }
+	  })
+
+	  ((:=) {
+	    ;; (:= var expr)
+	    ;; (:= bindings body ...)
+
+	    ;; (:= vars expr)	;; ?? cf. let-values (call-with-values producer consumer)
+
+	    ;; in the short term => define
+	    if (pair? te) {
+	      tte := pt te
+	      if (pair? tte) {
+		meaning-define src (ph te) tte nametree flags cs cm
+	      } {
+		;; Test Case: evaluation-errors/toplevel-define-sym-nil.idio
+
+		;; := sym
+
+		;; XXX can't do ``sym :=`` as you'll get the EOF in
+		;; list error from the reader
+		meaning-error-param src "no value" e
+	      }
+	    } {
+	      ;; Test Case: evaluation-errors/toplevel-define-nil.idio
+
+	      ;; (:=)
+	      meaning-error-param src "no arguments" he
+	    }
+	  })
+
+	  ((:*) {
+	    ;; (:* var expr)
+
+	    ;; in the short term => define-environ
+	    if (pair? te) {
+	      tte := pt te
+	      if (pair? tte) {
+		meaning-define-environ src (ph te) tte nametree flags cs cm
+	      } {
+		;; Test Case: evaluation-errors/environ-define-sym-nil.idio
+
+		;; :* sym
+
+		;; XXX can't do ``sym :*`` as you'll get the EOF in
+		;; list error from the reader
+		meaning-error-param src "no value" e
+	      }
+	    } {
+	      ;; Test Case: evaluation-errors/environ-define-nil.idio
+
+	      ;; (:*)
+	      meaning-error-param src "no arguments" he
+	    }
+	  })
+
+	  ((:~) {
+	    ;; (:~ var expr)
+
+	    ;; in the short term => define-dynamic
+	    if (pair? te) {
+	      tte := pt te
+	      if (pair? tte) {
+		meaning-define-dynamic src (ph te) tte nametree flags cs cm
+	      } {
+		;; Test Case: evaluation-errors/dynamic-define-sym-nil.idio
+
+		;; :~ sym
+
+		;; XXX can't do ``sym :~`` as you'll get the EOF in
+		;; list error from the reader
+		meaning-error-param src "no value" e
+	      }
+	    } {
+	      ;; Test Case: evaluation-errors/dynamic-define-nil.idio
+
+	      ;; (:~)
+	      meaning-error-param src "no arguments" he
+	    }
+	  })
+
+	  ((:$) {
+	    ;; (:$ var getter setter)
+	    ;; (:$ var getter)
+
+	    ;; in the short term => define-computed
+	    if (pair? te) {
+	      tte := pt te
+	      if (pair? tte) {
+		meaning-define-computed src (ph te) tte nametree flags cs cm
+	      } {
+		;; Test Case: evaluation-errors/computed-define-sym-nil.idio
+
+		;; :$ sym
+
+		;; XXX can't do ``sym :$`` as you'll get the EOF in
+		;; list error from the reader
+		meaning-error-param src "no getter [setter]" e
+	      }
+	    } {
+	      ;; Test Case: evaluation-errors/computed-define-nil.idio
+
+	      ;; (:$)
+	      meaning-error-param src "no arguments" he
+	    }
+	  })
+
+	  ((block) {
+	    ;; { ... }
+	    if (pair? te) {
+	      meaning-block src te nametree flags cs cm
+	    } {
+	      eprintf "empty body for block => voi\n"
+	      meaning (void) (void) nametree flags cs cm
+	    }
+	  })
+
+	  ((dynamic) {
+	    ;; (dynamic var)
+	    if (pair? te) {
+	      meaning-dynamic-reference src (ph te) nametree flags cs cm
+	    } {
+	      ;; Test Case: evaluation-errors/dynamic-nil.idio
+
+	      ;; (dynamic)
+	      meaning-error-param src "no argument" he
+	    }
+	  })
+
+	  ((dynamic-let) {
+	    ;; (dynamic-let (var expr) body)
+	    if (pair? te) {
+	      hte := ph te
+	      if (pair? hte) {
+		thte := pt hte
+		if (pair? thte) {
+		  meaning-dynamic-let src (ph hte) (ph thte) (pt te) nametree flags cs cm
+		} {
+		  ;; Test Case: evaluation-errors/dynamic-let-bindings-not-tuple.idio
+
+		  ;; dynamic-let (d)
+		  meaning-error-param src "bindings not a tuple" e
+		}
+	      } {
+		;; Test Case: evaluation-errors/dynamic-let-bindings-not-pair.idio
+
+		;; dynamic-let #n
+		meaning-error-param src "bindings not a pair" e
+	      }
+	    } {
+	      ;; Test Case: evaluation-errors/dynamic-let-nil.idio
+
+	      ;; (dynamic-let)
+	      meaning-error-param src "no arguments" he
+	    }
+	  })
+
+	  ((dynamic-unset) {
+	    ;; (dynamic-unset var body)
+	    if (pair? te) {
+	      hte := ph te
+	      if (symbol? hte) {
+		meaning-dynamic-unset hte hte (pt te) nametree flags cs cm
+	      } {
+		;; Test Case: evaluation-errors/dynamic-unset-non-sym.idio
+
+		;; dynamic-unset 1
+		meaning-error-param src "not a symbol" e
+	      }
+	    } {
+	      ;; Test Case: evaluation-errors/dynamic-unset-nil.idio
+
+	      ;; (dynamic-unset)
+	      meaning-error-param src "no arguments" he
+	    }
+	  })
+
+	  ((environ-let) {
+	    ;; (environ-let (var expr) body)
+	    if (pair? te) {
+	      hte := ph te
+	      if (pair? hte) {
+		thte := pt hte
+		if (pair? thte) {
+		  meaning-environ-let src (ph hte) (ph thte) (pt te) nametree flags cs cm
+		} {
+		  ;; Test Case: evaluation-errors/environ-let-bindings-not-tuple.idio
+
+		  ;; environ-let (d)
+		  meaning-error-param src "bindings not a tuple" e
+		}
+	      } {
+		;; Test Case: evaluation-errors/environ-let-bindings-not-pair.idio
+
+		;; environ-let #n
+		meaning-error-param src "bindings not a pair" e
+	      }
+	    } {
+	      ;; Test Case: evaluation-errors/environ-let-nil.idio
+
+	      ;; (environ-let)
+	      meaning-error-param src "no arguments" he
+	    }
+	  })
+
+	  ((environ-unset) {
+	    ;; (environ-unset var body)
+	    if (pair? te) {
+	      hte := ph te
+	      if (symbol? hte) {
+		meaning-environ-unset hte hte (pt te) nametree flags cs cm
+	      } {
+		;; Test Case: evaluation-errors/environ-unset-non-sym.idio
+
+		;; environ-unset 1
+		meaning-error-param src "not a symbol" e
+	      }
+	    } {
+	      ;; Test Case: evaluation-errors/environ-unset-nil.idio
+
+	      ;; (environ-unset)
+	      meaning-error-param src "no arguments" he
+	    }
+	  })
+
+	  ((trap) {
+	    ;; (trap condition		handler body ...)
+	    ;; (trap (condition ...)	handler body ...)
+	    if (pair? te) {
+	      tte := pt te
+	      if (pair? tte) {
+		ttte := pt tte
+		if (pair? ttte) {
+		  meaning-trap src (ph te) (ph tte) ttte nametree flags cs cm
+		} {
+		  ;; Test Case: evaluation-errors/trap-condition-handler-nil.idio
+
+		  ;; trap condition handler
+		  meaning-error-param src "no body" e
+		}
+	      } {
+		;; Test Case: evaluation-errors/trap-condition-nil.idio
+
+		;; trap condition
+		meaning-error-param src "no handler" e
+	      }
+	    } {
+	      ;; Test Case: evaluation-errors/trap-nil.idio
+
+	      ;; (trap)
+	      meaning-error-param src "no arguments" he
+	    }
+	  })
+
+	  ((include) {
+	    ;; (include filename)
+	    if (pair? te) {
+	      meaning-include src (ph te) nametree flags cs cm
+	    } {
+	      ;; Test Case: evaluation-errors/include-nil.idio
+
+	      ;; (include)
+	      meaning-error-param src "no argument" he
+	    }
+	  })
+
+	  (else {
+	    ;; not a special form
+
+	    ;; check if {he} is a symbol and if so, if it has been
+	    ;; flagged as an expander
+
+	    ;; otherwise it is a derived form, ie. an application
+	    if (symbol? he) {
+	      si := meaning-variable-info src nametree he (set-flag-scope ~toplevel flags) cs cm
+
+	      if (and si
+		      (expander? he)) {
+			meaning-expander src e nametree flags cs cm
+		      } {
+			meaning-application src he te nametree flags cs cm
+		      }
+	    } {
+	      meaning-application src he te nametree flags cs cm
+	    }
+	  }))
+  } {
+    ;; {e} is not a pair so is mostly a constant unless it is a symbol
+    ;; in which case (de-)reference it
+    (cond ((or (fixnum? e)
+	       (constant? e)
+	       (string? e)
+	       (keyword? e)
+	       (array? e)
+	       (hash? e)
+	       (bignum? e)
+	       (bignum? e)
+	       (struct-instance? e))
+	    (meaning-quotation e e nametree flags))
+     ((symbol? e) (meaning-reference e e nametree (set-flag-scope ~toplevel flags) cs cm))
+     (else
+      ;; anything else is something the user shouldn't be dealing
+      ;; with!
+      (meaning-error-param src "invalid constant type" e)))
+  }
+}
+
+define (evaluate src & constants) {
+  c* := #n
+  if (pair? constants) {
+    c* = ph constants
+  } {
+    c* = (vm-constants)
+  }
+  meaning src src #n ~none c* (current-module)
+}
+
+;; done -- the symbol evaluate conflicts with the function evaluate
+provide 'evaluate

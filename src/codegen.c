@@ -22,6 +22,8 @@
 
 #include "idio.h"
 
+static IDIO idio_codegen_module = idio_S_nil;
+
 static void idio_codegen_error_param_args (char *m, IDIO mt, IDIO c_location)
 {
     IDIO_C_ASSERT (m);
@@ -297,6 +299,25 @@ idio_ai_t idio_codegen_constants_lookup_or_extend (IDIO cs, IDIO v)
     return gci;
 }
 
+IDIO_DEFINE_PRIMITIVE2_DS ("codegen-constants-lookup-or-extend", codegen_constants_lookup_or_extend, (IDIO cs, IDIO v), "cs v", "\
+Find `v` in `cs` or extend `cs`			\n\
+						\n\
+:param cs: constants				\n\
+:type args: array				\n\
+:param v: constant				\n\
+:type v: any					\n\
+:return: index					\n\
+:type args: integer				\n\
+")
+{
+    IDIO_ASSERT (cs);
+    IDIO_ASSERT (v);
+
+    idio_ai_t gci = idio_codegen_constants_lookup_or_extend (cs, v);
+
+    return idio_integer (gci);
+}
+
 /*
  * Compiling
  *
@@ -348,7 +369,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    }
 	    return;
 	} else {
-	    idio_debug ("\nWARNING: not a CONSTANT|pair: unexpected intermediate code: %s\n", mh);
+	    idio_debug ("\nWARNING: codegen: not a CONSTANT|pair: unexpected intermediate code: %s\n", mh);
 	    idio_debug ("%s\n\n", m);
 	    return;
 	}
@@ -2598,10 +2619,12 @@ void idio_codegen (IDIO thr, IDIO m, IDIO cs)
 
 void idio_init_codegen ()
 {
+    idio_codegen_module = idio_module (idio_symbols_C_intern ("codegen"));
 }
 
 void idio_codegen_add_primitives ()
 {
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_codegen_module, codegen_constants_lookup_or_extend);
 }
 
 void idio_final_codegen ()

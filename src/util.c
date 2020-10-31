@@ -320,7 +320,7 @@ IDIO_DEFINE_PRIMITIVE1 ("%defined?", definedp, (IDIO s))
 
     IDIO sk = idio_module_env_symbol_recurse (s);
 
-    if (idio_S_unspec != sk) {
+    if (idio_S_false != sk) {
 	r = idio_S_true;
     }
 
@@ -3124,6 +3124,46 @@ IDIO idio_copy (IDIO o, int depth)
     return idio_S_notreached;
 }
 
+IDIO_DEFINE_PRIMITIVE1V_DS ("copy-value", copy_value, (IDIO v, IDIO args), "v [depth]", "\
+copy ``v`` to `depth`					\n\
+							\n\
+:param v: value to copy					\n\
+:type str: any						\n\
+:param depth: (optional) 'shallow or 'deep (default)	\n\
+:return: copy of `v`					\n\
+")
+{
+    IDIO_ASSERT (v);
+    IDIO_ASSERT (args);
+
+    IDIO_VERIFY_PARAM_TYPE (list, args);
+
+    int depth = IDIO_COPY_DEEP;
+
+    if (idio_S_nil != args) {
+	IDIO idepth = IDIO_PAIR_H (args);
+
+	if (idio_isa_symbol (idepth)) {
+	    if (idio_S_deep == idepth) {
+		depth = IDIO_COPY_DEEP;
+	    } else if (idio_S_shallow == idepth) {
+		depth = IDIO_COPY_SHALLOW;
+	    } else {
+		idio_error_param_type ("'deep or 'shallow", idepth, IDIO_C_FUNC_LOCATION ());
+
+		return idio_S_notreached;
+	    }
+	} else {
+	    idio_error_param_type ("symbol", idepth, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	}
+    }
+
+    IDIO c = idio_copy (v, depth);
+
+    return c;
+}
 
 void idio_dump (IDIO o, int detail)
 {
@@ -3408,6 +3448,7 @@ void idio_util_add_primitives ()
     IDIO_ADD_PRIMITIVE (value_index);
     IDIO_ADD_PRIMITIVE (set_value_index);
     IDIO_ADD_PRIMITIVE (identity);
+    IDIO_ADD_PRIMITIVE (copy_value);
     IDIO_ADD_PRIMITIVE (idio_dump);
     IDIO_ADD_PRIMITIVE (idio_debug);
 }
