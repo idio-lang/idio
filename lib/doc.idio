@@ -26,7 +26,7 @@ define-template (help x) {
     cond ((function? $x) {
       sigstr := %property $x :sigstr #n
       docstr := %property $x :docstr-raw #n
-      details := find-symbol '$x
+      details := evaluate/find-symbol '$x
 
       display '$x
       display " is a function"
@@ -91,7 +91,7 @@ define-template (help x) {
 	cond ((expander? '$x) {
 	  sigstr := %property $x :sigstr #n
 	  docstr := %property $x :docstr-raw #n
-	  details := find-symbol '$x
+	  details := evaluate/find-symbol '$x
 
 	  display '$x
 	  display " is an expander"

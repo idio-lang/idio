@@ -143,6 +143,25 @@ void idio_free_primitive (IDIO o)
     free (o->u.primitive);
 }
 
+IDIO_DEFINE_PRIMITIVE1_DS ("primitive?", primitivep, (IDIO o), "o", "\
+test if `o` is a primitive				\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is a primitive, #f otherwise	\n\
+")
+{
+    IDIO_ASSERT (o);
+
+    IDIO r = idio_S_false;
+
+    if (idio_isa_primitive (o)) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
 IDIO_DEFINE_PRIMITIVE1_DS ("primitive-arity", primitive_arity, (IDIO p), "p", "\
 Return the arity of `p`				\n\
 						\n\
@@ -203,6 +222,8 @@ void idio_init_primitive ()
 
 void idio_primitive_add_primitives ()
 {
+    IDIO_ADD_PRIMITIVE (primitivep);
+
     /*
      * Export these into *evaluation* for the evaluator to use
      */

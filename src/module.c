@@ -961,6 +961,38 @@ IDIO_DEFINE_PRIMITIVE1V_DS ("find-symbol", find_symbol, (IDIO symbol, IDIO args)
 find evaluator details for ``symbol`` in ``module``		\n\
 or the current environment if no ``module`` supplied		\n\
 								\n\
+This does not recurse into imported modules.			\n\
+								\n\
+:param symbol: symbol to find					\n\
+:type symbol: symbol						\n\
+:param mod: module to search from				\n\
+:type mod: module or module name				\n\
+:return: evaluator details for ``symbol``			\n\
+")
+{
+    IDIO_ASSERT (symbol);
+    IDIO_ASSERT (args);
+    IDIO_VERIFY_PARAM_TYPE (symbol, symbol);
+
+    IDIO m_or_n = idio_thread_current_env ();
+
+    if (idio_isa_pair (args)) {
+	IDIO m = IDIO_PAIR_H (args);
+	if (idio_isa_module (m) ||
+	    idio_isa_symbol (m)) {
+	    m_or_n = m;
+	}
+    }
+
+    return idio_module_find_symbol_recurse (symbol, m_or_n, 0);
+}
+
+IDIO_DEFINE_PRIMITIVE1V_DS ("find-symbol-recurse", find_symbol_recurse, (IDIO symbol, IDIO args), "sym [module]", "\
+find evaluator details for ``symbol`` in ``module``		\n\
+or the current environment if no ``module`` supplied		\n\
+								\n\
+This does recurse into imported modules.			\n\
+								\n\
 :param symbol: symbol to find					\n\
 :type symbol: symbol						\n\
 :param mod: module to search from				\n\
@@ -1558,7 +1590,12 @@ void idio_module_add_primitives ()
     IDIO_ADD_PRIMITIVE (all_modules);
 
     IDIO_ADD_MODULE_PRIMITIVE (idio_evaluation_module, symbol_direct_reference);
-    IDIO_ADD_MODULE_PRIMITIVE (idio_evaluation_module, find_symbol);
+    /*
+     * find-symbol is used in doc.idio which can access it through
+     * evaluate/find-symbol
+     */
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_evaluation_module, find_symbol);
+    IDIO_ADD_MODULE_PRIMITIVE (idio_evaluation_module, find_symbol_recurse);
     IDIO_ADD_PRIMITIVE (symbol_value);
     IDIO_ADD_MODULE_PRIMITIVE (idio_evaluation_module, symbol_value_recurse);
     IDIO_ADD_MODULE_PRIMITIVE (idio_evaluation_module, set_symbol);

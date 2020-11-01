@@ -683,7 +683,7 @@ IDIO idio_environ_extend (IDIO src, IDIO name, IDIO val, IDIO cs)
 }
 
 /*
- * idio_meaning_variable_lookup
+ * idio_meaning_lexical_lookup
  *
  * {nametree} is a list of association lists with each association
  * list representing the names of variables introduced at some level
@@ -708,7 +708,7 @@ IDIO idio_environ_extend (IDIO src, IDIO name, IDIO val, IDIO cs)
  * The return is, say, ('dynamic {mci}) where {mci} is the constant
  * index associated with the dynamic/environ variable.
  */
-static IDIO idio_meaning_variable_lookup (IDIO src, IDIO nametree, IDIO name)
+static IDIO idio_meaning_lexical_lookup (IDIO src, IDIO nametree, IDIO name)
 {
     IDIO_ASSERT (src);
     IDIO_ASSERT (nametree);
@@ -834,7 +834,7 @@ static IDIO idio_meaning_variable_info (IDIO src, IDIO nametree, IDIO name, int 
     IDIO_TYPE_ASSERT (array, cs);
     IDIO_TYPE_ASSERT (module, cm);
 
-    IDIO r = idio_meaning_variable_lookup (src, nametree, name);
+    IDIO r = idio_meaning_lexical_lookup (src, nametree, name);
 
     if (idio_S_false == r) {
 	/*
@@ -1443,11 +1443,11 @@ static IDIO idio_meaning_rewrite_cond (IDIO prev, IDIO src, IDIO clauses)
 	    idio_meaning_copy_src_properties (ph_clauses, appl);
 
 	    IDIO let = IDIO_LIST3 (idio_S_let,
-			       IDIO_LIST1 (IDIO_LIST2 (gs, phh_clauses)),
-			       IDIO_LIST4 (idio_S_if,
-					   gs,
-					   appl,
-					   idio_meaning_rewrite_cond (ph_clauses, IDIO_PAIR_T (clauses), IDIO_PAIR_T (clauses))));
+				   IDIO_LIST1 (IDIO_LIST2 (gs, phh_clauses)),
+				   IDIO_LIST4 (idio_S_if,
+					       gs,
+					       appl,
+					       idio_meaning_rewrite_cond (ph_clauses, IDIO_PAIR_T (clauses), IDIO_PAIR_T (clauses))));
 	    idio_meaning_copy_src_properties (ph_clauses, let);
 
 	    return let;
@@ -3257,7 +3257,7 @@ static IDIO idio_meaning_closed_application (IDIO src, IDIO fe, IDIO aes, IDIO n
     IDIO fns = IDIO_PAIR_H (fet); /* formals* */
     IDIO ns = fns;		  /* tmp to loop over formals* */
     IDIO es = aes;		  /* tmp to loop over aes */
-    IDIO regular = idio_S_nil;	  /* positional formals* */
+    IDIO fixed_args = idio_S_nil;	  /* positional formals* */
 
     /*
      * Walk down the formals and the arguments checking that they
@@ -3269,7 +3269,7 @@ static IDIO idio_meaning_closed_application (IDIO src, IDIO fe, IDIO aes, IDIO n
     for (;;) {
 	if (idio_isa_pair (ns)) {
 	    if (idio_isa_pair (es)) {
-		regular = idio_pair (IDIO_PAIR_H (ns), regular);
+		fixed_args = idio_pair (IDIO_PAIR_H (ns), fixed_args);
 		ns = IDIO_PAIR_T (ns);
 		es = IDIO_PAIR_T (es);
 	    } else {
@@ -3305,7 +3305,7 @@ static IDIO idio_meaning_closed_application (IDIO src, IDIO fe, IDIO aes, IDIO n
 		return idio_S_notreached;
 	    }
 	} else {
-	    return idio_meaning_dotted_closed_application (fe, idio_list_reverse (regular), ns, IDIO_PAIR_T (fet), aes, nametree, flags, cs, cm);
+	    return idio_meaning_dotted_closed_application (fe, idio_list_reverse (fixed_args), ns, IDIO_PAIR_T (fet), aes, nametree, flags, cs, cm);
 	}
     }
 

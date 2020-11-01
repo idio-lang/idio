@@ -443,12 +443,6 @@ extern FILE *idio_vm_perf_FILE;
 #define IDIO_CONSTANT_PUSH_TRAP			 22
 #define IDIO_CONSTANT_PRESERVE_CONTINUATION	 23
 
-#define IDIO_CONSTANT_TOPLEVEL         30
-#define IDIO_CONSTANT_PREDEF           31
-#define IDIO_CONSTANT_LOCAL            32
-#define IDIO_CONSTANT_ENVIRON          33
-#define IDIO_CONSTANT_COMPUTED         34
-
 /*
  * Stack markers
  */
@@ -486,12 +480,6 @@ extern FILE *idio_vm_perf_FILE;
 #define idio_SM_return			((const IDIO) IDIO_CONSTANT_IDIO (IDIO_STACK_MARKER_RETURN))
 #define idio_SM_dynamic			((const IDIO) IDIO_CONSTANT_IDIO (IDIO_STACK_MARKER_DYNAMIC))
 #define idio_SM_environ			((const IDIO) IDIO_CONSTANT_IDIO (IDIO_STACK_MARKER_ENVIRON))
-
-#define idio_S_toplevel		((const IDIO) IDIO_CONSTANT_IDIO (IDIO_CONSTANT_TOPLEVEL))
-#define idio_S_predef		((const IDIO) IDIO_CONSTANT_IDIO (IDIO_CONSTANT_PREDEF))
-#define idio_S_local		((const IDIO) IDIO_CONSTANT_IDIO (IDIO_CONSTANT_LOCAL))
-#define idio_S_environ		((const IDIO) IDIO_CONSTANT_IDIO (IDIO_CONSTANT_ENVIRON))
-#define idio_S_computed		((const IDIO) IDIO_CONSTANT_IDIO (IDIO_CONSTANT_COMPUTED))
 
 #define idio_S_notreached	((const IDIO) IDIO_CONSTANT_IDIO (IDIO_CONSTANT_NOTREACHED))
 

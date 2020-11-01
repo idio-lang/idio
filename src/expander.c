@@ -1423,7 +1423,7 @@ IDIO_DEFINE_ASSIGNMENT_INFIX_OPERATOR (":$", colon_dollar);
 
 void idio_init_expander ()
 {
-    idio_expander_module = idio_module (idio_symbols_C_intern ("*expander*"));
+    idio_expander_module = idio_module (idio_symbols_C_intern ("expander"));
     IDIO_MODULE_IMPORTS (idio_expander_module) = IDIO_LIST2 (IDIO_LIST1 (idio_Idio_module),
 							     IDIO_LIST1 (idio_primitives_module));
 

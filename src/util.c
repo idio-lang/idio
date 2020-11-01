@@ -1087,12 +1087,6 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, int first)
 		    case IDIO_STACK_MARKER_DYNAMIC:			t = "#<MARK dynamic>";			break;
 		    case IDIO_STACK_MARKER_ENVIRON:			t = "#<MARK environ>";			break;
 
-		    case IDIO_CONSTANT_TOPLEVEL:			t = "#<CONST toplevel>";		break;
-		    case IDIO_CONSTANT_PREDEF:				t = "#<CONST predef>";			break;
-		    case IDIO_CONSTANT_LOCAL:				t = "#<CONST local>";			break;
-		    case IDIO_CONSTANT_ENVIRON:				t = "#<CONST environ>";			break;
-		    case IDIO_CONSTANT_COMPUTED:			t = "#<CONST computed>";		break;
-
 			/*
 			 * There's a pretty strong argument that if
 			 * idio_S_notreached is in *anything* then
