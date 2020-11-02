@@ -716,7 +716,7 @@ test if `o` is an array				\n\
 }
 
 IDIO_DEFINE_PRIMITIVE0V_DS ("array", array, (IDIO args), "[args]", "\
-create an array from `args`\n\
+create an array from `args`			\n\
 						\n\
 :param args: initial elements			\n\
 :return: the new array				\n\

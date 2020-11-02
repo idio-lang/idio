@@ -598,17 +598,17 @@ IDIO idio_expanderp (IDIO name)
     return assq;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("expander?", expanderp, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1_DS ("expander?", expanderp, (IDIO o), "o", "\
+is `o` an expander				\n\
+						\n\
+:param o: value to test				\n\
+:return: an extry from the xpanders table if `o`\n\
+is an expander or #f				\n\
+")
 {
     IDIO_ASSERT (o);
 
-    IDIO r = idio_S_false;
-
-    if (idio_S_false != idio_expanderp (o)) {
-	r = idio_S_true;
-    }
-
-    return r;
+    return idio_expanderp (o);
 }
 
 static IDIO idio_application_expander (IDIO x, IDIO e)

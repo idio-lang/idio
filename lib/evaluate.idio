@@ -897,13 +897,362 @@ define (meaning-dotted-abstraction src formal* vararg args docstr e+ nametree fl
   list 'NARY-CLOSURE m+ arity args docstr
 }
 
+#*
+
+With meaning-rewrite-body/meaning-rewrite-body-letrec we want to
+massage the code to support some semantic trickery.
+
+The two broad swathes are:
+
+1. multiple function defines in (Scheme: at the start of) the body.
+
+   {
+     define (f) { ... }
+     define (g) { ... }
+     ...
+   }
+
+   Here, these two are expected to be self or mutually recursive
+   (as well as being of local scope) and so the body is rewritten such
+   that these are letrec definitions (and can safely be self/mutually
+   recursive) and rest of the the body becomes the body of the letrec
+
+   In Scheme these are only allowed at the start of the body whereas
+   Idio allows them to appear anywhere in the body and when one
+   appears we combine them with any immediately following.
+
+2. new variable introductions
+
+   a. := (let*)
+
+      This is an extension of the letrec mechanism above so that the
+      remaining body is transformed into a let* of the variable
+      assignment.
+
+   b. :* :~ !* !~
+
+      These require a similar transform as the introduction of
+      (potentially shadowing) environment/dynamic variables requires
+      that their definitions be removed from the stack at the end of
+      the body.
+
+      Essentially the same as introducing environment/dynamic
+      variables we can unset them which requires the same technique.
+
+3. source properties
+
+   If we're inventing code snippets then we should make some small
+   effort to ensure that the source properties of the original code
+   are propagated to our snippet.  This is especially important when
+   several of these snippets invoke expanders -- which need to do much
+   the same themselves!
+
+---
+
+meaning-rewrite-body is the main entry point and this will perform the
+let* rewrites for := (and similar for dynamic/environ variables)
+
+meaning-rewrite-body-letrec is called if we see an internal define/:+
+
+*#
+
 define (meaning-rewrite-body src e) {
-  eprintf "meaning-rewrite-body: come back to me!\n" src
-  e
+  loop :+ function (l r) {
+	    cur := (cond ((null? l) (reverse r))
+
+			 ((and (pair? l)
+			       (pair? (ph l))
+			       (expander? (phh l))) {
+				 te := template-expand* (ph l)
+				 meaning-copy-src-properties (ph l) te
+				 te
+			       })
+
+			 (else {
+			   ph l
+			 }))
+
+	    (cond ((null? l) {
+	      reverse r
+	    })
+
+	     ((and (pair? cur)
+		   (eq? 'begin (ph cur))) {
+		     ;; redundant begin
+		     loop (append (pt cur) (pt l)) r
+		   })
+
+	     ((and (pair? cur)
+		   (or (eq? 'define (ph cur))
+		       (eq? ':+ (ph cur)))) {
+			 ;; :+ or define ==> letrec
+			 reverse (pair (meaning-rewrite-body-letrec l l) r)
+		       })
+
+	     ((and (pair? cur)
+		   (eq? ':= (ph cur))) {
+		     ;; := ==> let*
+
+		     ;; we have ((:= name value-expr) ...)
+
+		     ;; which we can rewrite as
+
+		     ;; (let ((name value-expr))
+		     ;;      (begin
+		     ;;       ...
+		     ;;       ))
+
+		     ;; and recurse on ..., the body of the let
+
+		     body := meaning-rewrite-body cur (pt l)
+
+		     if (null? body) {
+		       ;; what if value-expr has side-effects?
+		       eprintf "mrb :=	OPT: empty body for let* => no eval of value-expr\n"
+		       eprintf "src=%s\n" src
+		       reverse r
+		     } {
+
+		       body-seq := append (list 'begin) body
+
+		       binding := pt cur
+		       value-expr := pht binding
+
+		       r-cur := (list 'let
+				      (list binding)
+				      body-seq)
+
+		       meaning-copy-src-properties cur r-cur
+
+		       append (reverse r) (list r-cur)
+		     }
+		   })
+
+	     ((and (pair? cur)
+		   (or (eq? ':* (ph cur))
+		       (eq? '!* (ph cur))
+		       (eq? ':~ (ph cur))
+		       (eq? '!~ (ph cur)))) {
+
+			 op := (case ((':*) 'environ-let)
+				     (('!*) 'environ-unset)
+				     ((':~) 'dynamic-let)
+				     (('!~) 'dynamic-unset)
+				     (else (meaning-error-param src "bad operator" cur)))
+
+			 body := meaning-rewrite-body cur (pt l)
+
+			 if (null? body) {
+			   ;; what if value-expr has side-effects?
+			   eprintf "mrb :=	OPT: empty body for %s => no eval of value-expr\n" op
+			   eprintf "src=%s\n" src
+			   reverse r
+			 } {
+
+			   body-seq := append (list 'begin) body
+
+			   binding := pt cur
+			   value-expr := pht binding
+
+			   r-cur := (list op
+					  binding
+					  body-seq)
+
+			   meaning-copy-src-properties cur r-cur
+
+			   append (reverse r) (list r-cur)
+			 }
+		       })
+
+	     ((and (pair? cur)
+		   (eq? 'define-template (ph cur))) {
+
+		     meaning-error-param src "internal define-template" cur
+		   })
+
+	     (else {
+	       loop (pt l) (pair cur r)
+	     }))
+  }
+
+  loop e #n
 }
 
+#*
+
+meaning-rewrite-body-letrec is slightly more sophisticated that
+meaning-rewrite-body in that it needs to accumulate
+consecutive "define"s to produce the letrec statement.
+
+The algorithm was inspired by rewrite-body in STklos
+.../lib/compiler.stk
+
+*#
+
 define (meaning-rewrite-body-letrec src e) {
-  eprintf "meaning-rewrite-body-letrec: come back to me!\n" src
+  loop :+ function (l defs r) {
+	    cur := (cond ((null? l) {
+	      ;; Test Case: evaluation-errors/letrec-empty-body.idio
+
+	      ;; {
+	      ;;   bar :+ "foo"
+	      ;;
+	      ;; }
+
+	      ;; NB The point is that there is nothing else in the
+	      ;; block after the creation of {bar}, so there is no
+	      ;; "body" for the (generated) letrec of {bar}.
+
+	      ;; Regardless of whether {bar} is a (faintly) pointless
+	      ;; sort of letrec, notably not involving a function.
+
+	      ;; There's an argument that it could be optimised away
+	      ;; (if the value-expression has no side-effects, etc.).
+	      meaning-evaluation-error src "letrec: empty body" l
+	    })
+
+			 ((and (pair? l)
+			       (pair? (ph l))
+			       (expander? (phh l))) {
+				 te := template-expand* (ph l)
+				 meaning-copy-src-properties (ph l) te
+				 te
+			       })
+
+			 (else {
+			   ph l
+			 }))
+
+	    (cond ((null? l) {
+	      reverse r
+	    })
+
+	     ((and (pair? cur)
+		   (eq? 'begin (ph cur))) {
+		     ;; redundant begin
+		     loop (append (pt cur) (pt l)) defs r
+		   })
+
+	     ((and (pair? cur)
+		   (or (eq? 'define (ph cur))
+		       (eq? ':+ (ph cur)))) {
+			 ;; cur	~ (define (name formal*) ...)
+			 ;; cur	~ (:+ name value-expr)
+
+			 bindings := pht cur
+			 form := #f
+
+			 if (pair? bindings) {
+			   ;; cur	~ (define (name formal*) ...)
+
+			   ;; form	~ (name (function (formal*)) ...)
+
+			   fn := (append (list 'function)
+					 (pt bindings)
+					 (list (sprintf "rewrite body letrec: %s" bindings))
+					 (ptt cur))
+
+			   meaning-copy-src-properties cur fn
+
+			   form = list (ph bindings) fn
+			 } {
+			   ;; cur	~ (:+ name value-expr)
+
+			   ;; form	~ (name value-expr)
+			   form = pt cur
+
+			   ;; copy src props to {value-expr}
+			   meaning-copy-src-properties cur (pht form)
+			 }
+
+			 loop (pt l) (pair form defs) r
+		       })
+
+	     ((and (pair? cur)
+		   (eq? 'define-template (ph cur))) {
+
+		     ;; Test Case: (nominally) evaluation-errors/letrec-internal-define-template.idio
+
+		     ;; bar :+ define-template (baz) { #T{ 1 } }
+
+		     ;; XXX I can't get this to trigger the error
+		     meaning-error-param src "internal define-template" cur
+		   })
+
+	     (else {
+	       ;; body proper
+
+	       l = meaning-rewrite-body l l
+
+	       ;; should this be cur rather than (ph src)?
+	       meaning-copy-src-properties (ph src) l
+
+	       ;; if no defs just return l
+	       if (null? defs) l {
+		 ;; poor man's letrec*
+
+		 ;; We are aiming for:
+
+		 ;; {
+		 ;;   v1 :+ a1
+		 ;;   v2 :+ a2
+		 ;;   body
+		 ;; }
+
+		 ;; to become
+
+		 ;; (let ((v1 #f)
+		 ;;       (v2 #f))
+		 ;;   (set! v1 a1)
+		 ;;   (set1 v2 a2)
+		 ;;   body)
+
+		 ;; but we return it as a list of one, ((let
+		 ;; ... body)), so that idio_meaning_sequence will
+		 ;; re-read the first element in the list and interpret
+		 ;; it as the expander "let"
+
+		 ;; NB Leave defs reversed as creating the
+		 ;; bindings/assignments will implicitly re-order them
+
+		 bindings := #n
+		 for-each (function (formal) {
+			     bindings = pair (list formal #f) bindings
+		 }) (map ph defs)
+
+		 body := #n
+		 ;; Remember {defs} is the list of tuples
+
+		 ;; ((v1 a1) (v2 a2))
+
+		 ;; so that (ph vs) is (v1 a1) and therefore
+
+		 ;; (append (set!) (v1 a1))
+
+		 ;; gives us the desired
+
+		 ;; (set! v1 a1)
+
+		 ;; and that as we walk down {vs} we'll get a
+		 ;; (reversed) list of assignments in {body}
+
+		 ;; ((set! v2 a2)
+		 ;;  (set! v1 a1))
+		 for-each (function (def) {
+			     assign := append (list 'set!) def
+			     body = append (list assign) body
+		 }) defs
+		 body = append body l
+
+		 stmt := append (list 'let bindings) body
+		 meaning-copy-src-properties (ph src) stmt
+
+		 stmt
+	       }
+	     }))
+  }
+
+  loop e #n #n
 }
 
 define (meaning-abstraction src formal* docstr e+ nametree flags cs cm) {
@@ -954,7 +1303,7 @@ define (meaning-arguments src ae* nametree size flags cs cm) {
 }
 
 define (meaning-fix-closed-application src formal* body ae* nametree flags cs cm) {
-  body = meaning-rewrite-body body
+  body = meaning-rewrite-body body body
   meaning-copy-src-properties src body
 
   am* := meaning-arguments ae* ae* nametree (length ae*) (clear-tailp flags) cs cm
@@ -997,7 +1346,7 @@ define (meaning-dotted-arguments src ae* nametree size arity flags cs cm) {
 }
 
 define (meaning-dotted-closed-application src formal* vararg body ae* nametree flags cs cm) {
-  body = meaning-rewrite-body body
+  body = meaning-rewrite-body body body
   meaning-copy-src-properties src body
 
   am* = meaning-dotted-arguments ae* ae* nametree (length ae*) (length formal*) (clear-tailp flags) cs cm
@@ -1054,7 +1403,7 @@ define (meaning-closed-application src fe ae* nametree flags cs cm) {
 		     })
 		     ((null? f*) {
 		       if (null? a*) {
-			 meaning-fix-closed-abstraction fe formal* (ptt fe) ae* nametree flags cs cm
+			 meaning-fix-closed-application fe formal* (ptt fe) ae* nametree flags cs cm
 		       } {
 			 ;; Test Cases:
 			 ;; evaluation-errors/closed-function-too-many-args-{0,1}.idio
@@ -1064,7 +1413,7 @@ define (meaning-closed-application src fe ae* nametree flags cs cm) {
 			 meaning-evaluation-error src "closed application: too many arguments" (list formal* ae*)
 		       }
 		     })
-		     (else (meaning-dotted-closed-abstraction fe (reverse fixed-args) f* (ptt fe) ae* nametree flags cs cm)))
+		     (else (meaning-dotted-closed-application fe (reverse fixed-args) f* (ptt fe) ae* nametree flags cs cm)))
   }
 
   formals-loop formal* ae* #n
@@ -1342,8 +1691,7 @@ define (meaning-include src e nametree flags cs cm) {
 }
 
 define (meaning-expander src e nametree flags cs cm) {
-  ;expander/template-expand e
-  te := "template-expand!"
+  te := expander/template-expand e
   meaning-copy-src-properties src te
 
   ;; copy src properties?
@@ -1735,7 +2083,7 @@ define (meaning src e nametree flags cs cm) {
 	    if (pair? te) {
 	      meaning-block src te nametree flags cs cm
 	    } {
-	      eprintf "empty body for block => voi\n"
+	      eprintf "empty body for block => void\n"
 	      meaning (void) (void) nametree flags cs cm
 	    }
 	  })

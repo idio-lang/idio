@@ -13,7 +13,7 @@ expander-error0 := Tests
 ;c := make-condition ^idio-error "msg" "loc" "det"
 ;edisplay* c.location
 
-module *expander*
+module expander
 
 define-template (expander-trap type) {
   loader-name := string->symbol (append-string "expander-trap-" (symbol->string type))

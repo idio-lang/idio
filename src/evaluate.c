@@ -2535,7 +2535,7 @@ static IDIO idio_meaning_rewrite_body (IDIO src, IDIO e)
 
     IDIO l = e;
 
-    /* idio_debug ("rewrite-body: %s\n", l);  */
+    /* idio_debug ("rewrite-body: %s\n", l); */
 
     IDIO r = idio_S_nil;
 

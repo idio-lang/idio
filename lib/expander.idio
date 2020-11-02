@@ -21,11 +21,113 @@ expander.idio
 module expander
 export (
 	 template-expand
+	 template-expand*
 )
 
+#*
+
+The C code has defined some variables:
+
+*expander-list* is an association list of (id proc) where id is the
+nominal template name and proc is the associated function
+
+*expander-list-src* is an association list of (id src) where src is
+the original source code of the template
+
+The C code for expander? is the equivalent of
+
+define (expander? o) {
+  assq o *expander-list*
+}
+
+*#
+
+#*
+
+For the *-expander functions I've followed in the style of STklos'
+lib/runtime.stk which itself appears to be following in the style of
+Dybvig, Friedman and Haynes' Expansion-Passing Style: A General Macro
+Mechanism, http://www.cs.indiana.edu/~dyb/pubs/LaSC-1-1-pp53-75.pdf
+
+In essence, we pass the expression to be expanded, {x}, and
+an "expander" function, {e}, around to everything -- by passing {e} it
+is the "expander" passing style.  {e} only really gets used in
+application-expander.
+
+The entry point for expansion is always initial-expander and the
+nominal value for {e} is also initial-expander.
+
+initial-expander looks at the expression and decides if it is:
+
+* an atom -- return it
+
+* a template -- use the template's associated function to do the
+expansion
+
+* or we call application-expander
+
+application-expander descends into {x} and asks {e} to expand each
+element -- of course we pass {e} into the expansion otherwise it
+wouldn't be EPS!
+
+{e} doesn't have to be initial-expander.  The EPS paper suggests an
+expand-once function with a do-nothing {e}:
+
+define (expand-once x) {
+  initial-expander x (function (x e) x)
+}
+
+thus preventing the recursive descent.
+
+*#
+
+define (application-expander x e) {
+  ;; STklos uses map* which accepts dotted-lists -- the original paper
+  ;; uses map
+  map (function (x) {
+	 e x e
+  }) x
+}
+
+define (initial-expander x e) {
+  (cond ((not (pair? x)) x)
+	((not (symbol? (ph x))) {
+	  application-expander x e
+	})
+	(else {
+	  hx := ph x
+	  expander := expander? hx
+	  if expander {
+	    ;; apply the template
+
+	    ;; ((pt (assq f *expander-list*)) x e)
+	    (pt expander) x e
+	  } {
+	    application-expander x e
+	  }
+	}))
+}
+
+define (evaluate-expander-source x e) {
+  initial-expander x e
+  ;vm-run-thread
+}
+
 define (template-expand e) {
-  eprintf "template-expand: come back to me!\n" src
-  e
+  evaluate-expander-source e initial-expander
+}
+
+define (template-expand* e) {
+  loop :+ function (e) {
+	    new := evaluate-expander-source e initial-expander
+	    if (equal? new e) {
+	      new
+	    } {
+	      loop new
+	    }
+  }
+
+  loop e
 }
 
 provide expander
