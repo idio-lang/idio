@@ -462,9 +462,10 @@ int idio_flush_string_handle (IDIO sh)
 
     IDIO_TYPE_ASSERT (string_handle, sh);
 
-    idio_string_handle_stream_t *shsp = IDIO_HANDLE_STREAM (sh);
-    IDIO_STRING_HANDLE_STREAM_PTR (shsp) = IDIO_STRING_HANDLE_STREAM_BUF (shsp);
-    IDIO_STRING_HANDLE_STREAM_EOF (shsp) = 0;
+    /*
+     * There is nowhere for a string-handle to flush to -- it makes no
+     * sense...
+     */
 
     return 0;
 }
