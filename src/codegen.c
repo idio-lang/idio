@@ -271,7 +271,13 @@ idio_ai_t idio_codegen_constants_lookup (IDIO cs, IDIO v)
     if (idio_S_nil != v) {
 	IDIO fgci = idio_hash_ref (idio_vm_constants_hash, v);
 	if (idio_S_unspec == fgci) {
-	    return -1;
+	    /*
+	     * hash(pair) is pair specific not generalised to the
+	     * equal?-ness of pair
+	     *
+	     * So, walk through the array anyway
+	     */
+	    return idio_array_find_equalp (cs, v, 0);
 	} else {
 	    return IDIO_FIXNUM_VAL (fgci);
 	}
@@ -1444,8 +1450,8 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
     case IDIO_I_CODE_TR_FIX_LET:
 	{
 	    if (! idio_isa_pair (mt) ||
-		idio_list_length (mt) != 2) {
-		idio_codegen_error_param_args ("TR-FIX-LET m* m+", mt, IDIO_C_FUNC_LOCATION_S ("TR-FIX-LET"));
+		idio_list_length (mt) != 3) {
+		idio_codegen_error_param_args ("TR-FIX-LET m* m+ formals", mt, IDIO_C_FUNC_LOCATION_S ("TR-FIX-LET"));
 
 		/* notreached */
 		return;
@@ -1453,17 +1459,23 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 
 	    IDIO ms = IDIO_PAIR_H (mt);
 	    IDIO mp = IDIO_PAIR_HT (mt);
+	    IDIO formals = IDIO_PAIR_HTT (mt);
+
+	    idio_ai_t fci = idio_codegen_constants_lookup_or_extend (cs, formals);
 
 	    idio_codegen_compile (thr, ia, cs, ms, depth + 1);
+
 	    IDIO_IA_PUSH1 (IDIO_A_EXTEND_FRAME);
+	    IDIO_IA_PUSH_VARUINT (fci);
+
 	    idio_codegen_compile (thr, ia, cs, mp, depth + 1);
 	}
 	break;
     case IDIO_I_CODE_FIX_LET:
 	{
 	    if (! idio_isa_pair (mt) ||
-		idio_list_length (mt) != 2) {
-		idio_codegen_error_param_args ("FIX-LET m* m+", mt, IDIO_C_FUNC_LOCATION_S ("FIX-LET"));
+		idio_list_length (mt) != 3) {
+		idio_codegen_error_param_args ("FIX-LET m* m+ formals", mt, IDIO_C_FUNC_LOCATION_S ("FIX-LET"));
 
 		/* notreached */
 		return;
@@ -1471,9 +1483,15 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 
 	    IDIO ms = IDIO_PAIR_H (mt);
 	    IDIO mp = IDIO_PAIR_HT (mt);
+	    IDIO formals = IDIO_PAIR_HTT (mt);
+
+	    idio_ai_t fci = idio_codegen_constants_lookup_or_extend (cs, formals);
 
 	    idio_codegen_compile (thr, ia, cs, ms, depth + 1);
+
 	    IDIO_IA_PUSH1 (IDIO_A_EXTEND_FRAME);
+	    IDIO_IA_PUSH_VARUINT (fci);
+
 	    idio_codegen_compile (thr, ia, cs, mp, depth + 1);
 	    IDIO_IA_PUSH1 (IDIO_A_UNLINK_FRAME);
 	}
@@ -1645,7 +1663,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 4) {
-		idio_codegen_error_param_args ("FIX-CLOSURE m+ arity args docstr", mt, IDIO_C_FUNC_LOCATION_S ("FIX-CLOSURE"));
+		idio_codegen_error_param_args ("FIX-CLOSURE m+ arity formals docstr", mt, IDIO_C_FUNC_LOCATION_S ("FIX-CLOSURE"));
 
 		/* notreached */
 		return;
@@ -1653,7 +1671,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 
 	    IDIO mp = IDIO_PAIR_H (mt);
 	    IDIO arity = IDIO_PAIR_HT (mt);
-	    IDIO args = IDIO_PAIR_HTT (mt);
+	    IDIO formals = IDIO_PAIR_HTT (mt);
 	    IDIO docstr = IDIO_PAIR_HTTT (mt);
 
 	    if (! idio_isa_fixnum (arity)) {
@@ -1663,7 +1681,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 		return;
 	    }
 
-	    idio_ai_t aci = idio_codegen_constants_lookup_or_extend (cs, args);
+	    idio_ai_t fci = idio_codegen_constants_lookup_or_extend (cs, formals);
 	    idio_ai_t dsci = idio_codegen_constants_lookup_or_extend (cs, docstr);
 
 	    /*
@@ -1750,6 +1768,10 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    }
 
 	    idio_ia_push (iap, IDIO_A_EXTEND_FRAME);
+	    IDIO_IA_T ia_vui = idio_ia_compute_varuint (fci);
+	    idio_ia_append (iap, ia_vui);
+	    idio_ia_free (ia_vui);
+
 	    idio_codegen_compile (thr, iap, cs, mp, depth + 1);
 	    idio_ia_push (iap, IDIO_A_RETURN);
 
@@ -1758,7 +1780,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 		/* 2: */
 		IDIO_IA_PUSH2 (IDIO_A_CREATE_CLOSURE, 2);
 		IDIO_IA_PUSH_VARUINT (code_len);
-		IDIO_IA_PUSH_VARUINT (aci);
+		IDIO_IA_PUSH_VARUINT (fci);
 		IDIO_IA_PUSH_VARUINT (dsci);
 
 		/* 3: */
@@ -1769,7 +1791,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 		IDIO_IA_T g5 = idio_ia_compute_varuint (code_len);
 		IDIO_IA_PUSH2 (IDIO_A_CREATE_CLOSURE, (1 + IDIO_IA_USIZE (g5)));
 		IDIO_IA_PUSH_VARUINT (code_len);
-		IDIO_IA_PUSH_VARUINT (aci);
+		IDIO_IA_PUSH_VARUINT (fci);
 		IDIO_IA_PUSH_VARUINT (dsci);
 
 		/* 3: */
@@ -1788,7 +1810,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 4) {
-		idio_codegen_error_param_args ("NARY-CLOSURE m+ arity args docstr", mt, IDIO_C_FUNC_LOCATION_S ("NARY-CLOSURE"));
+		idio_codegen_error_param_args ("NARY-CLOSURE m+ arity formals docstr", mt, IDIO_C_FUNC_LOCATION_S ("NARY-CLOSURE"));
 
 		/* notreached */
 		return;
@@ -1796,7 +1818,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 
 	    IDIO mp = IDIO_PAIR_H (mt);
 	    IDIO arity = IDIO_PAIR_HT (mt);
-	    IDIO args = IDIO_PAIR_HTT (mt);
+	    IDIO formals = IDIO_PAIR_HTT (mt);
 	    IDIO docstr = IDIO_PAIR_HTTT (mt);
 
 	    if (! idio_isa_fixnum (arity)) {
@@ -1806,7 +1828,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 		return;
 	    }
 
-	    idio_ai_t aci = idio_codegen_constants_lookup_or_extend (cs, args);
+	    idio_ai_t fci = idio_codegen_constants_lookup_or_extend (cs, formals);
 	    idio_ai_t dsci = idio_codegen_constants_lookup_or_extend (cs, docstr);
 
 	    /*
@@ -1826,6 +1848,10 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    idio_ia_free (a);
 
 	    idio_ia_push (iap, IDIO_A_EXTEND_FRAME);
+	    IDIO_IA_T ia_vui = idio_ia_compute_varuint (fci);
+	    idio_ia_append (iap, ia_vui);
+	    idio_ia_free (ia_vui);
+
 	    idio_codegen_compile (thr, iap, cs, mp, depth + 1);
 	    idio_ia_push (iap, IDIO_A_RETURN);
 
@@ -1834,7 +1860,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 		/* 2: */
 		IDIO_IA_PUSH2 (IDIO_A_CREATE_CLOSURE, 2);
 		IDIO_IA_PUSH_VARUINT (code_len);
-		IDIO_IA_PUSH_VARUINT (aci);
+		IDIO_IA_PUSH_VARUINT (fci);
 		IDIO_IA_PUSH_VARUINT (dsci);
 
 		/* 3: */
@@ -1845,7 +1871,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 		IDIO_IA_T g5 = idio_ia_compute_varuint (code_len);
 		IDIO_IA_PUSH2 (IDIO_A_CREATE_CLOSURE, (1 + IDIO_IA_USIZE (g5)));
 		IDIO_IA_PUSH_VARUINT (code_len);
-		IDIO_IA_PUSH_VARUINT (aci);
+		IDIO_IA_PUSH_VARUINT (fci);
 		IDIO_IA_PUSH_VARUINT (dsci);
 
 		/* 3: */
@@ -1920,25 +1946,17 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
     case IDIO_I_CODE_ALLOCATE_FRAME:
 	{
 	    if (! idio_isa_pair (mt) ||
-		idio_list_length (mt) != 2) {
-		idio_codegen_error_param_args ("ALLOCATE-FRAME size aci", mt, IDIO_C_FUNC_LOCATION_S ("ALLOCATE-FRAME"));
+		idio_list_length (mt) != 1) {
+		idio_codegen_error_param_args ("ALLOCATE-FRAME size", mt, IDIO_C_FUNC_LOCATION_S ("ALLOCATE-FRAME"));
 
 		/* notreached */
 		return;
 	    }
 
 	    IDIO size = IDIO_PAIR_H (mt);
-	    IDIO aci = IDIO_PAIR_HT (mt);
 
 	    if (! idio_isa_fixnum (size)) {
 		idio_codegen_error_param_type ("fixnum", size, IDIO_C_FUNC_LOCATION_S ("ALLOCATE-FRAME"));
-
-		/* notreached */
-		return;
-	    }
-
-	    if (! idio_isa_fixnum (aci)) {
-		idio_codegen_error_param_type ("fixnum", aci, IDIO_C_FUNC_LOCATION_S ("ALLOCATE-FRAME"));
 
 		/* notreached */
 		return;
@@ -1951,24 +1969,19 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 		break;
 	    case 1:
 		IDIO_IA_PUSH1 (IDIO_A_ALLOCATE_FRAME2);
-		IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (aci));
 		break;
 	    case 2:
 		IDIO_IA_PUSH1 (IDIO_A_ALLOCATE_FRAME3);
-		IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (aci));
 		break;
 	    case 3:
 		IDIO_IA_PUSH1 (IDIO_A_ALLOCATE_FRAME4);
-		IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (aci));
 		break;
 	    case 4:
 		IDIO_IA_PUSH1 (IDIO_A_ALLOCATE_FRAME5);
-		IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (aci));
 		break;
 	    default:
 		IDIO_IA_PUSH1 (IDIO_A_ALLOCATE_FRAME);
 		IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (size) + 1);
-		IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (aci));
 		break;
 	    }
 	}
@@ -1976,15 +1989,14 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
     case IDIO_I_CODE_ALLOCATE_DOTTED_FRAME:
 	{
 	    if (! idio_isa_pair (mt) ||
-		idio_list_length (mt) != 2) {
-		idio_codegen_error_param_args ("ALLOCATE-DOTTED-FRAME size aci", mt, IDIO_C_FUNC_LOCATION_S ("ALLOCATE-DOTTED-FRAME"));
+		idio_list_length (mt) != 1) {
+		idio_codegen_error_param_args ("ALLOCATE-DOTTED-FRAME size", mt, IDIO_C_FUNC_LOCATION_S ("ALLOCATE-DOTTED-FRAME"));
 
 		/* notreached */
 		return;
 	    }
 
 	    IDIO size = IDIO_PAIR_H (mt);
-	    IDIO aci = IDIO_PAIR_HT (mt);
 
 	    if (! idio_isa_fixnum (size)) {
 		idio_codegen_error_param_type ("fixnum", size, IDIO_C_FUNC_LOCATION_S ("ALLOCATE-DOTTED-FRAME"));
@@ -1993,16 +2005,8 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 		return;
 	    }
 
-	    if (! idio_isa_fixnum (aci)) {
-		idio_codegen_error_param_type ("fixnum", aci, IDIO_C_FUNC_LOCATION_S ("ALLOCATE-DOTTED-FRAME"));
-
-		/* notreached */
-		return;
-	    }
-
 	    IDIO_IA_PUSH1 (IDIO_A_ALLOCATE_DOTTED_FRAME);
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (size) + 1);
-	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (aci));
 	}
 	break;
     case IDIO_I_CODE_REUSE_FRAME:

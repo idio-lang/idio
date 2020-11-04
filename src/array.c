@@ -511,15 +511,16 @@ idio_ai_t idio_array_find_free_index (IDIO a, idio_ai_t index)
 }
 
 /**
- * idio_array_find_eqp() - return the index of the first element eqp to e
+ * idio_array_find() - return the index of the first element eqp to e
  * @a: array
+ * @eqp: IDIO_EQUAL_EQP etc.
  * @e: ``IDIO`` value to match
  * @index: starting index
  *
  * Return:
  * The index of the first matching element or -1.
  */
-idio_ai_t idio_array_find_eqp (IDIO a, IDIO e, idio_ai_t index)
+idio_ai_t idio_array_find (IDIO a, int eqp, IDIO e, idio_ai_t index)
 {
     IDIO_ASSERT (a);
     IDIO_TYPE_ASSERT (array, a);
@@ -539,12 +540,46 @@ idio_ai_t idio_array_find_eqp (IDIO a, IDIO e, idio_ai_t index)
     }
 
     for (; index < IDIO_ARRAY_USIZE (a); index++) {
-	if (idio_eqp (IDIO_ARRAY_AE (a, index), e)) {
+	if (idio_equal (IDIO_ARRAY_AE (a, index), e, eqp)) {
 	    return index;
 	}
     }
 
     return -1;
+}
+
+/**
+ * idio_array_find_eqp() - return the index of the first element eq? to e
+ * @a: array
+ * @e: ``IDIO`` value to match
+ * @index: starting index
+ *
+ * Return:
+ * The index of the first matching element or -1.
+ */
+idio_ai_t idio_array_find_eqp (IDIO a, IDIO e, idio_ai_t index)
+{
+    IDIO_ASSERT (a);
+    IDIO_TYPE_ASSERT (array, a);
+
+    return idio_array_find (a, IDIO_EQUAL_EQP, e, index);
+}
+
+/**
+ * idio_array_find_equalp() - return the index of the first element eq? to e
+ * @a: array
+ * @e: ``IDIO`` value to match
+ * @index: starting index
+ *
+ * Return:
+ * The index of the first matching element or -1.
+ */
+idio_ai_t idio_array_find_equalp (IDIO a, IDIO e, idio_ai_t index)
+{
+    IDIO_ASSERT (a);
+    IDIO_TYPE_ASSERT (array, a);
+
+    return idio_array_find (a, IDIO_EQUAL_EQUALP, e, index);
 }
 
 /**
