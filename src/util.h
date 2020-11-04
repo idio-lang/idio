@@ -23,6 +23,10 @@
 #ifndef UTIL_H
 #define UTIL_H
 
+#define IDIO_EQUAL_EQP		1
+#define IDIO_EQUAL_EQVP		2
+#define IDIO_EQUAL_EQUALP	3
+
 #define IDIO_COPY_DEEP		1
 #define IDIO_COPY_SHALLOW	2
 

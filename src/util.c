@@ -414,9 +414,6 @@ IDIO_DEFINE_PRIMITIVE1 ("not", not, (IDIO e))
  * compared and then each element is compared with equal?.
  *
  */
-#define IDIO_EQUAL_EQP		1
-#define IDIO_EQUAL_EQVP		2
-#define IDIO_EQUAL_EQUALP	3
 
 int idio_eqp (void *o1, void *o2)
 {
