@@ -106,11 +106,8 @@ static IDIO idio_meaning_predef_extend_string = idio_S_nil;
 static IDIO idio_meaning_toplevel_extend_string = idio_S_nil;
 static IDIO idio_meaning_environ_extend_string = idio_S_nil;
 static IDIO idio_meaning_define_gvi0_string = idio_S_nil;
-static IDIO idio_meaning_define_template_string = idio_S_nil;
 static IDIO idio_meaning_define_infix_operator_string = idio_S_nil;
 static IDIO idio_meaning_define_postfix_operator_string = idio_S_nil;
-static IDIO idio_meaning_rewrite_body_letrec_string = idio_S_nil;
-static IDIO idio_meaning_application_closed_string = idio_S_nil;
 
 void idio_meaning_dump_src_properties (const char *prefix, const char*name, IDIO e)
 {
@@ -621,6 +618,17 @@ IDIO idio_toplevel_extend (IDIO src, IDIO name, int flags, IDIO cs, IDIO cm)
 	}
     }
 
+#ifdef IDIO_DEBUG
+    if (idio_S_toplevel == scope &&
+	0 == IDIO_MEANING_IS_DEFINE (flags)) {
+	idio_debug ("C/toplevel-extend: forward reference to %s at ", name);
+	idio_debug ("%s\n", idio_meaning_error_location (src));
+	if (idio_S_unspec == idio_hash_ref (idio_src_properties, src)) {
+	    idio_debug ("src=%s\n", src);
+	}
+    }
+#endif
+
     idio_ai_t mci = idio_codegen_constants_lookup_or_extend (cs, name);
     IDIO fmci = idio_fixnum (mci);
 
@@ -863,6 +871,21 @@ static IDIO idio_meaning_variable_info (IDIO src, IDIO nametree, IDIO name, int 
     return r;
 }
 
+static IDIO idio_meaning_prefer_properties (IDIO e, IDIO src)
+{
+    IDIO_ASSERT (e);
+    IDIO_ASSERT (src);
+
+    if (idio_isa_pair (e) &&
+	idio_S_unspec != idio_hash_ref (idio_src_properties, e)) {
+	return e;
+    } else {
+	return src;
+    }
+}
+
+#define IDIO_MPP(e,src) idio_meaning_prefer_properties (e, src)
+
 void idio_meaning_copy_src_properties (IDIO src, IDIO dst)
 {
     IDIO_ASSERT (src);
@@ -871,11 +894,16 @@ void idio_meaning_copy_src_properties (IDIO src, IDIO dst)
     if (idio_isa_pair (dst)) {
 	IDIO dlo = idio_hash_ref (idio_src_properties, dst);
 	if (idio_S_unspec == dlo) {
-	    if (idio_S_nil != src) {
+	    if (idio_isa_pair (src)) {
 		IDIO slo = idio_hash_ref (idio_src_properties, src);
 		if (idio_S_unspec == slo) {
-		    /* idio_debug ("im_isp !!!! no lo for src=%s", src); */
-		    /* idio_debug (" dst=%s\n", dst); */
+#ifdef IDIO_DEBUG
+		    if (idio_S_function == IDIO_PAIR_H (src)) {
+			idio_debug ("im_csp !!!! no src lo for\n src=%s\n", src);
+			idio_debug (" dst=%s\n", dst);
+			IDIO_C_ASSERT (0);
+		    }
+#endif
 		} else {
 		    dlo = idio_copy (slo, IDIO_COPY_SHALLOW);
 		    idio_struct_instance_set_direct (dlo, IDIO_LEXOBJ_EXPR, dst);
@@ -883,68 +911,6 @@ void idio_meaning_copy_src_properties (IDIO src, IDIO dst)
 		}
 	    }
 	}
-    }
-}
-
-/*
- * For an expander expansion, we require to pass the source properties
- * on to all elements (well, pairs) in the result.  This requires that
- * we recurse over all parts of {p}.
- *
- * We should only have been called from idio_meaning_expander() so we
- * know we can blindly slap (new) source properties on anything we
- * find.
- *
- * We also know that all source properties we hand out are derivative
- * of the original {src} so we can have a wrapper function to dig
- * those out once and then pass them on direct to the actual recursor.
- */
-void idio_meaning_copy_src_properties_r2 (IDIO slo, IDIO p)
-{
-    IDIO_ASSERT (slo);
-    IDIO_ASSERT (p);
-
-    if (idio_isa_pair (p)) {
-	IDIO plo = idio_copy (slo, IDIO_COPY_SHALLOW);
-	idio_struct_instance_set_direct (plo, IDIO_LEXOBJ_EXPR, p);
-	idio_hash_put (idio_src_properties, p, plo);
-	idio_meaning_copy_src_properties_r2 (plo, IDIO_PAIR_H (p));
-	idio_meaning_copy_src_properties_r2 (plo, IDIO_PAIR_T (p));
-    }
-}
-
-void idio_meaning_copy_src_properties_r (IDIO src, IDIO p)
-{
-    IDIO_ASSERT (src);
-    IDIO_ASSERT (p);
-
-    if (idio_isa_pair (p)) {
-	if (idio_S_nil != src) {
-	    IDIO slo = idio_hash_ref (idio_src_properties, src);
-	    if (idio_S_unspec == slo) {
-		/* idio_debug ("im_isp !!!! no lo for src=%s", src); */
-		/* idio_debug (" dst=%s\n", dst); */
-	    } else {
-		idio_meaning_copy_src_properties_r2 (slo, p);
-	    }
-	}
-    }
-}
-
-/*
- * For an operator expansion, we require to pass the source properties
- * on to all elements (well, pairs) in the result.  This requires that
- * we recurse over all parts of {e}.
- */
-void idio_meaning_copy_src_properties_f (IDIO src, IDIO e)
-{
-    IDIO_ASSERT (src);
-    IDIO_ASSERT (e);
-
-    if (idio_isa_pair (e)) {
-	idio_meaning_copy_src_properties (src, e);
-	idio_meaning_copy_src_properties_f (src, IDIO_PAIR_H (e));
-	idio_meaning_copy_src_properties_f (src, IDIO_PAIR_T (e));
     }
 }
 
@@ -1090,7 +1056,7 @@ static IDIO idio_meaning_escape (IDIO src, IDIO e, IDIO nametree, int flags, IDI
     IDIO_TYPE_ASSERT (array, cs);
     IDIO_TYPE_ASSERT (module, cm);
 
-    return idio_meaning (e, e, nametree, flags, cs, cm);
+    return idio_meaning (IDIO_MPP (e, src), e, nametree, flags, cs, cm);
 }
 
 static IDIO idio_meaning_quotation (IDIO src, IDIO v, IDIO nametree, int flags)
@@ -1187,7 +1153,6 @@ static IDIO idio_meaning_dequasiquote (IDIO src, IDIO e, int level, int indent)
 	    r = IDIO_LIST3 (idio_S_list,
 			    IDIO_LIST2 (idio_S_quote, idio_S_quasiquote),
 			    idio_meaning_dequasiquote (src, pht, level + 1, indent + 1));
-	    idio_meaning_copy_src_properties (src, r);
 	} else if (idio_S_unquote == eh) {
 	    if (level <= 0) {
 		r = IDIO_PAIR_HT (e);
@@ -1204,7 +1169,6 @@ static IDIO idio_meaning_dequasiquote (IDIO src, IDIO e, int level, int indent)
 		r = IDIO_LIST3 (idio_S_list,
 				IDIO_LIST2 (idio_S_quote, idio_S_unquote),
 				idio_meaning_dequasiquote (src, pht, level - 1, indent + 1));
-		idio_meaning_copy_src_properties (src, r);
 	    }
 	} else if (idio_S_unquotesplicing == eh) {
 	    if (level <= 0) {
@@ -1227,7 +1191,6 @@ static IDIO idio_meaning_dequasiquote (IDIO src, IDIO e, int level, int indent)
 		r = IDIO_LIST3 (idio_S_pair,
 				idio_meaning_dequasiquote (src_h, ph,level, indent + 1),
 				idio_meaning_dequasiquote (src_t, pt, level, indent + 1));
-		idio_meaning_copy_src_properties (src, r);
 	    } else {
 		/* ('list ''unquotesplicing (de-qq (pht e) (- level 1))) */
 
@@ -1241,7 +1204,6 @@ static IDIO idio_meaning_dequasiquote (IDIO src, IDIO e, int level, int indent)
 		r = IDIO_LIST3 (idio_S_list,
 				IDIO_LIST2 (idio_S_quote, idio_S_unquotesplicing),
 				idio_meaning_dequasiquote (src, pht, level - 1, indent + 1));
-		idio_meaning_copy_src_properties (src, r);
 	    }
 	} else if (level <= 0 &&
 		   idio_isa_pair (IDIO_PAIR_H (e)) &&
@@ -1261,7 +1223,6 @@ static IDIO idio_meaning_dequasiquote (IDIO src, IDIO e, int level, int indent)
 		r = IDIO_LIST3 (idio_S_append,
 				IDIO_PAIR_HTH (e),
 				idio_meaning_dequasiquote (src, pt, level, indent + 1));
-		idio_meaning_copy_src_properties (src, r);
 	    }
 	} else {
 	    IDIO src_h = src;
@@ -1282,17 +1243,13 @@ static IDIO idio_meaning_dequasiquote (IDIO src, IDIO e, int level, int indent)
 	    r = IDIO_LIST3 (idio_S_pair,
 			    idio_meaning_dequasiquote (src_h, ph, level, indent + 1),
 			    idio_meaning_dequasiquote (src_t, pt, level, indent + 1));
-	    idio_meaning_copy_src_properties (src, r);
 	}
     } else if (idio_isa_array (e)) {
 	IDIO iatl = idio_array_to_list (e);
-	idio_meaning_copy_src_properties (src, iatl);
 
 	r = IDIO_LIST2 (idio_symbols_C_intern ("list->array"), idio_meaning_dequasiquote (iatl, iatl, level, indent + 1));
-	idio_meaning_copy_src_properties (src, r);
     } else if (idio_isa_symbol (e)) {
 	r = IDIO_LIST2 (idio_S_quote, e);
-	idio_meaning_copy_src_properties (src, r);
     } else {
 	r = e;
     }
@@ -1314,7 +1271,7 @@ static IDIO idio_meaning_quasiquotation (IDIO src, IDIO e, IDIO nametree, int fl
 
     IDIO dq = idio_meaning_dequasiquote (src, e, 0, 0);
 
-    return idio_meaning (dq, dq, nametree, flags, cs, cm);
+    return idio_meaning (src, dq, nametree, flags, cs, cm);
 }
 
 static IDIO idio_meaning_alternative (IDIO src, IDIO e1, IDIO e2, IDIO e3, IDIO nametree, int flags, IDIO cs, IDIO cm)
@@ -1331,9 +1288,9 @@ static IDIO idio_meaning_alternative (IDIO src, IDIO e1, IDIO e2, IDIO e3, IDIO 
     IDIO_TYPE_ASSERT (array, cs);
     IDIO_TYPE_ASSERT (module, cm);
 
-    IDIO m1 = idio_meaning (e1, e1, nametree, IDIO_MEANING_NOT_TAILP (flags), cs, cm);
-    IDIO m2 = idio_meaning (e2, e2, nametree, flags, cs, cm);
-    IDIO m3 = idio_meaning (e3, e3, nametree, flags, cs, cm);
+    IDIO m1 = idio_meaning (IDIO_MPP (e1, src), e1, nametree, IDIO_MEANING_NOT_TAILP (flags), cs, cm);
+    IDIO m2 = idio_meaning (IDIO_MPP (e2, src), e2, nametree, flags, cs, cm);
+    IDIO m3 = idio_meaning (IDIO_MPP (e3, src), e3, nametree, flags, cs, cm);
 
     return IDIO_LIST4 (IDIO_I_ALTERNATIVE, m1, m2, m3);
 }
@@ -1384,7 +1341,9 @@ static IDIO idio_meaning_rewrite_cond (IDIO prev, IDIO src, IDIO clauses)
 	return idio_S_notreached;
     } else if (idio_S_else == IDIO_PAIR_HH (clauses)) {
 	if (idio_S_nil == IDIO_PAIR_T (clauses)) {
-	    return idio_list_append2 (IDIO_LIST1 (idio_S_begin), IDIO_PAIR_TH (clauses));
+	    IDIO cs = idio_list_append2 (IDIO_LIST1 (idio_S_begin), IDIO_PAIR_TH (clauses));
+	    idio_meaning_copy_src_properties (IDIO_MPP (IDIO_PAIR_TH (clauses), src), cs);
+	    return cs;
 	} else {
 	    /*
 	     * Test Case: evaluation-errors/rewrite-cond-else-not-last.idio
@@ -1436,19 +1395,19 @@ static IDIO idio_meaning_rewrite_cond (IDIO prev, IDIO src, IDIO clauses)
 	             ,(rewrite-cond-clauses (pt clauses))))
 	     */
 	    IDIO phh_clauses = IDIO_PAIR_HH (clauses);
-	    idio_meaning_copy_src_properties (ph_clauses, phh_clauses);
 
 	    IDIO appl = IDIO_LIST2 (IDIO_PAIR_HTTH (clauses),
 				    gs);
-	    idio_meaning_copy_src_properties (ph_clauses, appl);
 
 	    IDIO let = IDIO_LIST3 (idio_S_let,
 				   IDIO_LIST1 (IDIO_LIST2 (gs, phh_clauses)),
 				   IDIO_LIST4 (idio_S_if,
 					       gs,
 					       appl,
-					       idio_meaning_rewrite_cond (ph_clauses, IDIO_PAIR_T (clauses), IDIO_PAIR_T (clauses))));
-	    idio_meaning_copy_src_properties (ph_clauses, let);
+					       idio_meaning_rewrite_cond (ph_clauses,
+									  IDIO_MPP (IDIO_PAIR_T (clauses), src),
+									  IDIO_PAIR_T (clauses))));
+	    idio_meaning_copy_src_properties (IDIO_MPP (ph_clauses, src), let);
 
 	    return let;
 	} else {
@@ -1478,16 +1437,24 @@ static IDIO idio_meaning_rewrite_cond (IDIO prev, IDIO src, IDIO clauses)
 	     (or gs
 	         ,(rewrite-cond-clauses (pt clauses))))
 	*/
-	return IDIO_LIST3 (idio_S_let,
+	IDIO cs = IDIO_LIST3 (idio_S_let,
 			   IDIO_LIST1 (IDIO_LIST2 (gs, IDIO_PAIR_HH (clauses))),
 			   IDIO_LIST3 (idio_S_or,
 				       gs,
-				       idio_meaning_rewrite_cond (IDIO_PAIR_H (clauses), IDIO_PAIR_T (clauses), IDIO_PAIR_T (clauses))));
+				       idio_meaning_rewrite_cond (IDIO_PAIR_H (clauses),
+								  IDIO_MPP (IDIO_PAIR_T (clauses), src),
+								  IDIO_PAIR_T (clauses))));
+	idio_meaning_copy_src_properties (IDIO_MPP (IDIO_PAIR_H (clauses), src), cs);
+	return cs;
     } else {
-	return IDIO_LIST4 (idio_S_if,
-			   IDIO_PAIR_HH (clauses),
-			   idio_list_append2 (IDIO_LIST1 (idio_S_begin), IDIO_PAIR_TH (clauses)),
-			   idio_meaning_rewrite_cond (IDIO_PAIR_H (clauses), IDIO_PAIR_T (clauses), IDIO_PAIR_T (clauses)));
+	IDIO c = IDIO_LIST4 (idio_S_if,
+			     IDIO_PAIR_HH (clauses),
+			     idio_list_append2 (IDIO_LIST1 (idio_S_begin), IDIO_PAIR_TH (clauses)),
+			     idio_meaning_rewrite_cond (IDIO_PAIR_H (clauses),
+							IDIO_MPP (IDIO_PAIR_T (clauses), src),
+							IDIO_PAIR_T (clauses)));
+	idio_meaning_copy_src_properties (IDIO_MPP (IDIO_PAIR_H (clauses), src), c);
+	return c;
     }
 }
 
@@ -1523,10 +1490,8 @@ static IDIO idio_meaning_assignment (IDIO src, IDIO name, IDIO e, IDIO nametree,
 	 * expr being passed to {set!}
 	 */
 	IDIO args = IDIO_PAIR_T (name);
-	idio_meaning_copy_src_properties (src, args);
 
 	IDIO setter = IDIO_LIST2 (idio_S_setter, IDIO_PAIR_H (name));
-	idio_meaning_copy_src_properties (src, setter);
 
 	/*
 	 * Nominally we could do with an append3() function here but
@@ -1534,9 +1499,8 @@ static IDIO idio_meaning_assignment (IDIO src, IDIO name, IDIO e, IDIO nametree,
 	 */
 	IDIO se = idio_list_append2 (IDIO_LIST1 (setter), args);
 	se = idio_list_append2 (se, IDIO_LIST1 (e));
-	idio_meaning_copy_src_properties (src, se);
 
-	return idio_meaning (se, se, nametree, IDIO_MEANING_NO_DEFINE (flags), cs, cm);
+	return idio_meaning (src, se, nametree, IDIO_MEANING_NO_DEFINE (flags), cs, cm);
     } else if (! idio_isa_symbol (name)) {
 	/*
 	 * Test Case: evaluation-errors/assign-non-symbol.idio
@@ -1552,9 +1516,7 @@ static IDIO idio_meaning_assignment (IDIO src, IDIO name, IDIO e, IDIO nametree,
      * Normal assignment to a symbol
      */
 
-    idio_meaning_copy_src_properties (src, e);
-
-    IDIO m = idio_meaning (e, e, nametree, IDIO_MEANING_NO_DEFINE (IDIO_MEANING_NOT_TAILP (flags)), cs, cm);
+    IDIO m = idio_meaning (IDIO_MPP (e, src), e, nametree, IDIO_MEANING_NO_DEFINE (IDIO_MEANING_NOT_TAILP (flags)), cs, cm);
 
     IDIO si = idio_meaning_variable_info (src, nametree, name, flags, cs, cm);
 
@@ -1594,7 +1556,7 @@ static IDIO idio_meaning_assignment (IDIO src, IDIO name, IDIO e, IDIO nametree,
     } else if (idio_S_computed == scope) {
 	if (IDIO_MEANING_IS_DEFINE (flags)) {
 	    return IDIO_LIST2 (IDIO_LIST4 (IDIO_I_GLOBAL_SYM_DEF, name, scope, fmci),
-			       IDIO_LIST3 (IDIO_I_COMPUTED_SYM_DEFINE, fmci, m));
+			       IDIO_LIST3 (IDIO_I_COMPUTED_SYM_DEF, fmci, m));
 	} else {
 	    return IDIO_LIST3 (IDIO_I_COMPUTED_SYM_SET, fmci, m);
 	}
@@ -1692,7 +1654,13 @@ static IDIO idio_meaning_define (IDIO src, IDIO name, IDIO e, IDIO nametree, int
 	}
     }
 
-    IDIO si = idio_meaning_variable_info (src, nametree, name, IDIO_MEANING_TOPLEVEL_SCOPE (flags), cs, cm);
+    int define_flags = IDIO_MEANING_DEFINE (IDIO_MEANING_TOPLEVEL_SCOPE (flags));
+    IDIO si = idio_meaning_variable_info (src, nametree, name, define_flags, cs, cm);
+
+    /*
+     * if the act of looking the variable up auto-created it then
+     * actually give it a value slot as this *is* the definition of it
+     */
 
     IDIO scope = IDIO_PAIR_H (si);
     IDIO fmci = IDIO_PAIR_HT (si);
@@ -1705,7 +1673,7 @@ static IDIO idio_meaning_define (IDIO src, IDIO name, IDIO e, IDIO nametree, int
 	idio_module_set_symbol (name, si, cm);
     }
 
-    return idio_meaning_assignment (src, name, e, nametree, IDIO_MEANING_DEFINE (IDIO_MEANING_TOPLEVEL_SCOPE (flags)), cs, cm);
+    return idio_meaning_assignment (src, name, e, nametree, define_flags, cs, cm);
 }
 
 static IDIO idio_meaning_define_template (IDIO src, IDIO name, IDIO e, IDIO nametree, int flags, IDIO cs, IDIO cm)
@@ -1726,34 +1694,43 @@ static IDIO idio_meaning_define_template (IDIO src, IDIO name, IDIO e, IDIO name
     /* idio_debug ("src=%s\n", src); */
 
     /*
-     * (define-template (func arg) ...) => (define-template func (function (arg) ...))
+     * (define-template (name formal*) ...) => (define-template name (function (formal*) ...))
      */
     if (idio_isa_pair (name)) {
 	e = IDIO_LIST3 (idio_S_function,
 			IDIO_PAIR_T (name),
 			e);
-	idio_meaning_copy_src_properties (src, e);
-
 	name = IDIO_PAIR_H (name);
+
+	idio_meaning_copy_src_properties (src, e);
     }
 
     /*
      * create an expander: (function (x e) (apply proc (pt x)))
      *
-     * where proc is (function (arg) ...) from above, ie. e
+     * where proc is (function (formal*) ...) from above, ie. e
      */
-    IDIO x_sym = idio_symbols_C_intern ("xx");
-    IDIO e_sym = idio_symbols_C_intern ("ee");
+    IDIO x_sym = idio_symbols_C_intern ("x");
+    IDIO e_sym = idio_symbols_C_intern ("e");
 
-    IDIO pt_xx = IDIO_LIST2 (idio_S_pt, x_sym);
-    idio_meaning_copy_src_properties (src, pt_xx);
+    IDIO pt_x = IDIO_LIST2 (idio_S_pt, x_sym);
+    idio_meaning_copy_src_properties (src, pt_x);
 
-    IDIO appl = IDIO_LIST3 (idio_S_apply, e, pt_xx);
+    IDIO appl = IDIO_LIST3 (idio_S_apply, e, pt_x);
     idio_meaning_copy_src_properties (src, appl);
 
+    IDIO bindings = IDIO_LIST2 (x_sym, e_sym);
+
+    IDIO dsh  = idio_open_output_string_handle_C ();
+    idio_display_C ("define-template: ", dsh);
+    idio_display (name, dsh);
+    idio_display_C (" (x e)", dsh);
+
+    IDIO docstr = idio_get_output_string (dsh);
+
     IDIO expander = IDIO_LIST4 (idio_S_function,
-				IDIO_LIST2 (x_sym, e_sym),
-				idio_meaning_define_template_string,
+				bindings,
+				docstr,
 				appl);
     idio_meaning_copy_src_properties (src, expander);
 
@@ -1779,10 +1756,12 @@ static IDIO idio_meaning_define_template (IDIO src, IDIO name, IDIO e, IDIO name
      * with an expander which takes two arguments and the body of
      * which will take the pt of its first argument.  Left alone,
      * expander "b" will take the pt then expander "%b" will take the
-     * pt....  "A PT Too Far", one would say, in hindsight and
+     * pt....  "A Pair-Tail Too Far", one would say, in hindsight and
      * thinking of the big budget movie potential.
      *
-     * So catch the case where the value is already an expander.
+     * So catch the case where the value is already an expander and
+     * replace it with the (obvious?) assignment with some
+     * *expander-list* copying.
      */
     if (idio_isa_symbol (e)) {
 	IDIO exp = idio_expanderp (e);
@@ -1898,7 +1877,7 @@ static IDIO idio_meaning_define_template (IDIO src, IDIO name, IDIO e, IDIO name
 
     /* idio_debug ("meaning-define-template: expander=%s\n", expander); */
 
-    IDIO m_a = idio_meaning_assignment (src, name, expander, nametree,
+    IDIO m_a = idio_meaning_assignment (expander, name, expander, nametree,
 					IDIO_MEANING_NOT_TAILP (IDIO_MEANING_DEFINE (IDIO_MEANING_TOPLEVEL_SCOPE (flags))),
 					cs, cm);
 
@@ -1906,6 +1885,15 @@ static IDIO idio_meaning_define_template (IDIO src, IDIO name, IDIO e, IDIO name
 
     idio_install_expander_source (name, expander, expander);
 
+    /*
+     * Generate a ci/vi for name.
+     *
+     * The ci is required so that the EXPANDER opcode can call
+     * idio_install_expander() to overwrite the proc from the
+     * idio_install_expander_source() call we just made
+     *
+     * The vi is because this is definitely a define
+     */
     idio_ai_t mci = idio_codegen_constants_lookup_or_extend (cs, name);
     IDIO fmci = idio_fixnum (mci);
 
@@ -1916,21 +1904,7 @@ static IDIO idio_meaning_define_template (IDIO src, IDIO name, IDIO e, IDIO name
 
     idio_module_set_vci (ce, fmci, fmci);
     idio_module_set_vvi (ce, fmci, fgvi);
-    idio_module_set_symbol (name, IDIO_LIST5 (idio_S_toplevel, fmci, fgvi, ce, idio_meaning_define_template_string), ce);
-
-    /*
-     * Careful!  Evaluate the expander code after we've called
-     * idio_module_set_symbol() for the symbol.  For normal code this
-     * wouldn't matter but templates are evaluated during compilation.
-     */
-    idio_evaluate_expander_code (m_a, cs);
-
-    /*
-     * NB.  This effectively creates/stores the template body code a
-     * second time *in this instance of the engine*.  When the object
-     * code is read in there won't be an instance of the template body
-     * code lying around -- at least not one we can access.
-     */
+    idio_module_set_symbol (name, IDIO_LIST5 (idio_S_toplevel, fmci, fgvi, ce, docstr), ce);
 
     IDIO r = IDIO_LIST3 (IDIO_I_EXPANDER, idio_fixnum (mci), m_a);
     /* idio_debug ("idio-meaning-define-template %s", name); */
@@ -2294,7 +2268,7 @@ static IDIO idio_meanings_single_sequence (IDIO src, IDIO e, IDIO nametree, int 
     IDIO_TYPE_ASSERT (array, cs);
     IDIO_TYPE_ASSERT (module, cm);
 
-    return idio_meaning (e, e, nametree, flags, cs, cm);
+    return idio_meaning (IDIO_MPP (e, src), e, nametree, flags, cs, cm);
 }
 
 static IDIO idio_meanings_multiple_sequence (IDIO src, IDIO e, IDIO ep, IDIO nametree, int flags, IDIO keyword, IDIO cs, IDIO cm)
@@ -2311,8 +2285,8 @@ static IDIO idio_meanings_multiple_sequence (IDIO src, IDIO e, IDIO ep, IDIO nam
     IDIO_TYPE_ASSERT (array, cs);
     IDIO_TYPE_ASSERT (module, cm);
 
-    IDIO m = idio_meaning (e, e, nametree, IDIO_MEANING_NOT_TAILP (flags), cs, cm);
-    IDIO mp = idio_meaning_sequence (ep, ep, nametree, flags, keyword, cs, cm);
+    IDIO m = idio_meaning (IDIO_MPP (e, src), e, nametree, IDIO_MEANING_NOT_TAILP (flags), cs, cm);
+    IDIO mp = idio_meaning_sequence (src, ep, nametree, flags, keyword, cs, cm);
 
     if (idio_S_and == keyword) {
 	return IDIO_LIST3 (IDIO_I_AND, m, mp);
@@ -2391,7 +2365,7 @@ static IDIO idio_meaning_sequence (IDIO src, IDIO ep, IDIO nametree, int flags, 
 		    seq_flags = flags;
 		}
 
-		IDIO m = idio_meaning (e, e, nametree, seq_flags, cs, cm);
+		IDIO m = idio_meaning (IDIO_MPP (e, src), e, nametree, seq_flags, cs, cm);
 		mp = idio_pair (m, mp);
 
 		if (idio_S_nil == ep) {
@@ -2414,7 +2388,7 @@ static IDIO idio_meaning_sequence (IDIO src, IDIO ep, IDIO nametree, int flags, 
 
 	    return idio_pair (c, r);
 	} else {
-	    return idio_meanings_single_sequence (eph, eph, nametree, flags, cs, cm);
+	    return idio_meanings_single_sequence (IDIO_MPP (eph, src), eph, nametree, flags, cs, cm);
 	}
     } else {
 	/*
@@ -2445,7 +2419,7 @@ static IDIO idio_meaning_fix_abstraction (IDIO src, IDIO ns, IDIO formals, IDIO 
     size_t arity = idio_list_length (ns);
     IDIO ent = idio_meaning_nametree_extend (nametree, ns);
 
-    IDIO mp = idio_meaning_sequence (ep, ep, ent, IDIO_MEANING_SET_TAILP (flags), idio_S_begin, cs, cm);
+    IDIO mp = idio_meaning_sequence (src, ep, ent, IDIO_MEANING_SET_TAILP (flags), idio_S_begin, cs, cm);
 
     return IDIO_LIST5 (IDIO_I_FIX_CLOSURE, mp, idio_fixnum (arity), formals, docstr);
 }
@@ -2470,7 +2444,7 @@ static IDIO idio_meaning_dotted_abstraction (IDIO src, IDIO ns, IDIO n, IDIO for
     IDIO fix_formals = idio_list_append2 (ns, IDIO_LIST1 (n));
 
     IDIO ent = idio_meaning_nametree_extend (nametree, fix_formals);
-    IDIO mp = idio_meaning_sequence (ep, ep, ent, IDIO_MEANING_SET_TAILP (flags), idio_S_begin, cs, cm);
+    IDIO mp = idio_meaning_sequence (src, ep, ent, IDIO_MEANING_SET_TAILP (flags), idio_S_begin, cs, cm);
 
     return IDIO_LIST5 (IDIO_I_NARY_CLOSURE, mp, idio_fixnum (arity), fix_formals, docstr);
 }
@@ -2549,10 +2523,10 @@ static IDIO idio_meaning_rewrite_body (IDIO src, IDIO e)
 		   idio_isa_pair (IDIO_PAIR_H (l)) &&
 		   idio_S_false != idio_expanderp (IDIO_PAIR_HH (l))) {
 	    cur = idio_template_expands (IDIO_PAIR_H (l));
-	    idio_meaning_copy_src_properties (IDIO_PAIR_H (l), cur);
 	} else {
 	    cur = IDIO_PAIR_H (l);
 	}
+	idio_meaning_copy_src_properties (IDIO_MPP (IDIO_PAIR_H (l), src), cur);
 
 	if (idio_isa_pair (cur) &&
 	    idio_S_begin == IDIO_PAIR_H (cur)) {
@@ -2564,7 +2538,7 @@ static IDIO idio_meaning_rewrite_body (IDIO src, IDIO e)
 		    idio_S_colon_plus == IDIO_PAIR_H (cur))) {
 	    /* :+ or define -> letrec */
 
-	    r = idio_pair (idio_meaning_rewrite_body_letrec (l, l), r);
+	    r = idio_pair (idio_meaning_rewrite_body_letrec (IDIO_MPP (l, src), l), r);
 	    break;
 	} else if (idio_isa_pair (cur) &&
 		   idio_S_colon_eq == IDIO_PAIR_H (cur)) {
@@ -2589,7 +2563,7 @@ static IDIO idio_meaning_rewrite_body (IDIO src, IDIO e)
 	     * our (let)
 	     */
 
-	    IDIO body = idio_meaning_rewrite_body (cur, IDIO_PAIR_T (l));
+	    IDIO body = idio_meaning_rewrite_body (IDIO_MPP (cur, src), IDIO_PAIR_T (l));
 	    if (idio_S_nil != r) {
 		r = idio_list_reverse (r);
 	    }
@@ -2607,7 +2581,6 @@ static IDIO idio_meaning_rewrite_body (IDIO src, IDIO e)
 	    }
 
 	    IDIO body_sequence = idio_list_append2 (IDIO_LIST1 (idio_S_begin), body);
-	    idio_meaning_copy_src_properties (IDIO_PAIR_H (body), body_sequence);
 
 	    /*
 	     * binding == (pt cur) ~ (name value-expr)
@@ -2617,30 +2590,12 @@ static IDIO idio_meaning_rewrite_body (IDIO src, IDIO e)
 	     * can just dive in
 	     */
 	    IDIO binding = IDIO_PAIR_T (cur);
-	    IDIO value_expr = IDIO_PAIR_HT (binding);
-	    if (idio_isa_pair (value_expr)) {
-		/*
-		 * name := value-expr
-		 *
-		 * where {value-expr} might be some complex
-		 * expression, eg.
-		 *
-		 * a := pair 1 2
-		 *
-		 * at this point (pair 1 2) does not have any source
-		 * properties -- because it was read as part of the
-		 * larger declaration statement -- which will make it
-		 * hard to diagnose any issues when the {value-expr}
-		 * is evaluated later, so let's add some.
-		 */
-		idio_meaning_copy_src_properties (cur, value_expr);
-	    }
 
 	    IDIO r_cur = IDIO_LIST3 (idio_S_let,
 				     IDIO_LIST1 (binding),
 				     body_sequence);
 
-	    idio_meaning_copy_src_properties (cur, r_cur);
+	    idio_meaning_copy_src_properties (IDIO_MPP (cur, src), r_cur);
 
 	    r = idio_list_append2 (r, IDIO_LIST1 (r_cur));
 	    return r;
@@ -2651,7 +2606,7 @@ static IDIO idio_meaning_rewrite_body (IDIO src, IDIO e)
 	    /*
 	     * See commentary in := above
 	     */
-	    IDIO body = idio_meaning_rewrite_body (cur, IDIO_PAIR_T (l));
+	    IDIO body = idio_meaning_rewrite_body (IDIO_MPP (cur, src), IDIO_PAIR_T (l));
 	    if (idio_S_nil != r) {
 		r = idio_list_reverse (r);
 	    }
@@ -2662,18 +2617,13 @@ static IDIO idio_meaning_rewrite_body (IDIO src, IDIO e)
 	    }
 
 	    IDIO body_sequence = idio_list_append2 (IDIO_LIST1 (idio_S_begin), body);
-	    idio_meaning_copy_src_properties (IDIO_PAIR_H (body), body_sequence);
 
 	    IDIO binding = IDIO_PAIR_T (cur);
-	    IDIO value_expr = IDIO_PAIR_HT (binding);
-	    if (idio_isa_pair (value_expr)) {
-		idio_meaning_copy_src_properties (cur, value_expr);
-	    }
 
 	    IDIO r_cur = IDIO_LIST3 (idio_S_environ_let,
 				     binding,
 				     body_sequence);
-	    idio_meaning_copy_src_properties (cur, r_cur);
+	    idio_meaning_copy_src_properties (IDIO_MPP (cur, src), r_cur);
 
 	    r = idio_list_append2 (r, IDIO_LIST1 (r_cur));
 	    return r;
@@ -2684,7 +2634,7 @@ static IDIO idio_meaning_rewrite_body (IDIO src, IDIO e)
 	    /*
 	     * See commentary in := above
 	     */
-	    IDIO body = idio_meaning_rewrite_body (IDIO_PAIR_T (l), IDIO_PAIR_T (l));
+	    IDIO body = idio_meaning_rewrite_body (IDIO_MPP (cur, src), IDIO_PAIR_T (l));
 	    if (idio_S_nil != r) {
 		r = idio_list_reverse (r);
 	    }
@@ -2695,12 +2645,11 @@ static IDIO idio_meaning_rewrite_body (IDIO src, IDIO e)
 	    }
 
 	    IDIO body_sequence = idio_list_append2 (IDIO_LIST1 (idio_S_begin), body);
-	    idio_meaning_copy_src_properties (IDIO_PAIR_H (body), body_sequence);
 
 	    IDIO r_cur = IDIO_LIST3 (idio_S_environ_unset,
 				     IDIO_PAIR_HT (cur),
 				     body_sequence);
-	    idio_meaning_copy_src_properties (cur, r_cur);
+	    idio_meaning_copy_src_properties (IDIO_MPP (cur, src), r_cur);
 
 	    r = idio_list_append2 (r, IDIO_LIST1 (r_cur));
 	    return r;
@@ -2711,7 +2660,7 @@ static IDIO idio_meaning_rewrite_body (IDIO src, IDIO e)
 	    /*
 	     * See commentary in := above
 	     */
-	    IDIO body = idio_meaning_rewrite_body (IDIO_PAIR_T (l), IDIO_PAIR_T (l));
+	    IDIO body = idio_meaning_rewrite_body (IDIO_MPP (cur, src), IDIO_PAIR_T (l));
 	    if (idio_S_nil != r) {
 		r = idio_list_reverse (r);
 	    }
@@ -2722,18 +2671,13 @@ static IDIO idio_meaning_rewrite_body (IDIO src, IDIO e)
 	    }
 
 	    IDIO body_sequence = idio_list_append2 (IDIO_LIST1 (idio_S_begin), body);
-	    idio_meaning_copy_src_properties (IDIO_PAIR_H (body), body_sequence);
 
 	    IDIO binding = IDIO_PAIR_T (cur);
-	    IDIO value_expr = IDIO_PAIR_HT (binding);
-	    if (idio_isa_pair (value_expr)) {
-		idio_meaning_copy_src_properties (cur, value_expr);
-	    }
 
 	    IDIO r_cur = IDIO_LIST3 (idio_S_dynamic_let,
 				     binding,
 				     body_sequence);
-	    idio_meaning_copy_src_properties (cur, r_cur);
+	    idio_meaning_copy_src_properties (IDIO_MPP (cur, src), r_cur);
 
 	    r = idio_list_append2 (r, IDIO_LIST1 (r_cur));
 	    return r;
@@ -2744,7 +2688,7 @@ static IDIO idio_meaning_rewrite_body (IDIO src, IDIO e)
 	    /*
 	     * See commentary in := above
 	     */
-	    IDIO body = idio_meaning_rewrite_body (IDIO_PAIR_T (l), IDIO_PAIR_T (l));
+	    IDIO body = idio_meaning_rewrite_body (IDIO_MPP (cur, src), IDIO_PAIR_T (l));
 	    if (idio_S_nil != r) {
 		r = idio_list_reverse (r);
 	    }
@@ -2755,12 +2699,12 @@ static IDIO idio_meaning_rewrite_body (IDIO src, IDIO e)
 	    }
 
 	    IDIO body_sequence = idio_list_append2 (IDIO_LIST1 (idio_S_begin), body);
-	    idio_meaning_copy_src_properties (IDIO_PAIR_H (body), body_sequence);
+
 
 	    IDIO r_cur = IDIO_LIST3 (idio_S_dynamic_unset,
 				     IDIO_PAIR_HT (cur),
 				     body_sequence);
-	    idio_meaning_copy_src_properties (cur, r_cur);
+	    idio_meaning_copy_src_properties (IDIO_MPP (cur, src), r_cur);
 
 	    r = idio_list_append2 (r, IDIO_LIST1 (r_cur));
 	    return r;
@@ -2847,10 +2791,10 @@ static IDIO idio_meaning_rewrite_body_letrec (IDIO src, IDIO e)
 		   idio_isa_pair (IDIO_PAIR_H (l)) &&
 		   idio_S_false != idio_expanderp (IDIO_PAIR_HH (l))) {
 	    cur = idio_template_expands (IDIO_PAIR_H (l));
-	    idio_meaning_copy_src_properties (IDIO_PAIR_H (l), cur);
 	} else {
 	    cur = IDIO_PAIR_H (l);
 	}
+	idio_meaning_copy_src_properties (IDIO_MPP (IDIO_PAIR_H (l), src), cur);
 
 	if (idio_isa_pair (cur) &&
 	    idio_S_begin == IDIO_PAIR_H (cur)) {
@@ -2874,12 +2818,13 @@ static IDIO idio_meaning_rewrite_body_letrec (IDIO src, IDIO e)
 		 *
 		 * (name (function (args) ...))
 		 */
+		IDIO dsh  = idio_open_output_string_handle_C ();
+		idio_display_C ("rewrite body letrec: define ", dsh);
+		idio_display (bindings, dsh);
 		IDIO fn = idio_list_append2 (IDIO_LIST3 (idio_S_function,
 							 IDIO_PAIR_T (bindings),
-							 idio_meaning_rewrite_body_letrec_string),
+							 idio_get_output_string (dsh)),
 					     IDIO_PAIR_TT (cur));
-		idio_meaning_copy_src_properties (cur, fn);
-
 		form = IDIO_LIST2 (IDIO_PAIR_H (bindings), fn);
 	    } else {
 		/*
@@ -2888,12 +2833,8 @@ static IDIO idio_meaning_rewrite_body_letrec (IDIO src, IDIO e)
 		 * (name value-expr)
 		 */
 		form = IDIO_PAIR_T (cur);
-
-		/*
-		 * Copy the source properties to {value-expr}
-		 */
-		idio_meaning_copy_src_properties (cur, IDIO_PAIR_HT (form));
 	    }
+	    idio_meaning_copy_src_properties (IDIO_MPP (cur, src), form);
 	    defs = idio_pair (form, defs);
 	    l = IDIO_PAIR_T (l);
 	    continue;
@@ -2912,8 +2853,8 @@ static IDIO idio_meaning_rewrite_body_letrec (IDIO src, IDIO e)
 	    return idio_S_notreached;
 	} else {
 	    /* body proper */
-	    l = idio_meaning_rewrite_body (l, l);
-	    idio_meaning_copy_src_properties (IDIO_PAIR_H (src), l);
+	    IDIO cur_props = IDIO_MPP (cur, src);
+	    l = idio_meaning_rewrite_body (cur_props, l);
 
 	    /* idio_debug ("irb-letrec: body: l %s\n", l);  */
 
@@ -2983,7 +2924,7 @@ static IDIO idio_meaning_rewrite_body_letrec (IDIO src, IDIO e)
 		body = idio_list_append2 (body, l);
 
 		IDIO let = idio_list_append2 (IDIO_LIST2 (idio_S_let, bindings), body);
-		idio_meaning_copy_src_properties (IDIO_PAIR_H (src), let);
+		idio_meaning_copy_src_properties (cur_props, let);
 
 		return let;
 	    }
@@ -3005,7 +2946,7 @@ static IDIO idio_meaning_abstraction (IDIO src, IDIO nns, IDIO docstr, IDIO ep, 
     IDIO_TYPE_ASSERT (array, cs);
     IDIO_TYPE_ASSERT (module, cm);
 
-    ep = idio_meaning_rewrite_body (ep, ep);
+    ep = idio_meaning_rewrite_body (IDIO_MPP (ep, src), ep);
     idio_meaning_copy_src_properties (src, ep);
 
     IDIO ns = nns;
@@ -3042,10 +2983,10 @@ static IDIO idio_meaning_block (IDIO src, IDIO es, IDIO nametree, int flags, IDI
     IDIO_TYPE_ASSERT (array, cs);
     IDIO_TYPE_ASSERT (module, cm);
 
-    es = idio_meaning_rewrite_body (es, es);
+    es = idio_meaning_rewrite_body (IDIO_MPP (es, src), es);
     idio_meaning_copy_src_properties (src, es);
 
-    return idio_meaning_sequence (es, es, nametree, flags, idio_S_begin, cs, cm);
+    return idio_meaning_sequence (IDIO_MPP (es, src), es, nametree, flags, idio_S_begin, cs, cm);
 }
 
 static IDIO idio_meaning_arguments (IDIO src, IDIO aes, IDIO nametree, size_t size, int flags, IDIO cs, IDIO cm);
@@ -3063,8 +3004,8 @@ static IDIO idio_meaning_some_arguments (IDIO src, IDIO ae, IDIO aes, IDIO namet
     IDIO_TYPE_ASSERT (array, cs);
     IDIO_TYPE_ASSERT (module, cm);
 
-    IDIO am = idio_meaning (ae, ae, nametree, IDIO_MEANING_NOT_TAILP (flags), cs, cm);
-    IDIO ams = idio_meaning_arguments (aes, aes, nametree, size, flags, cs, cm);
+    IDIO am = idio_meaning (IDIO_MPP (ae, src), ae, nametree, IDIO_MEANING_NOT_TAILP (flags), cs, cm);
+    IDIO ams = idio_meaning_arguments (src, aes, nametree, size, flags, cs, cm);
     size_t rank = size - (idio_list_length (aes) + 1);
 
     return IDIO_LIST4 (IDIO_I_STORE_ARGUMENT, am, ams, idio_fixnum (rank));
@@ -3097,7 +3038,7 @@ static IDIO idio_meaning_arguments (IDIO src, IDIO aes, IDIO nametree, size_t si
     IDIO_TYPE_ASSERT (module, cm);
 
     if (idio_isa_pair (aes)) {
-	return idio_meaning_some_arguments (IDIO_PAIR_H (aes), IDIO_PAIR_H (aes), IDIO_PAIR_T (aes), nametree, size, flags, cs, cm);
+	return idio_meaning_some_arguments (src, IDIO_PAIR_H (aes), IDIO_PAIR_T (aes), nametree, size, flags, cs, cm);
     } else {
 	return idio_meaning_no_argument (src, nametree, size, flags, cs);
     }
@@ -3117,12 +3058,12 @@ static IDIO idio_meaning_fix_closed_application (IDIO src, IDIO ns, IDIO body, I
     IDIO_TYPE_ASSERT (array, cs);
     IDIO_TYPE_ASSERT (module, cm);
 
-    body = idio_meaning_rewrite_body (body, body);
+    body = idio_meaning_rewrite_body (IDIO_MPP (body, src), body);
     idio_meaning_copy_src_properties (src, body);
 
-    IDIO ams = idio_meaning_arguments (aes, aes, nametree, idio_list_length (aes), IDIO_MEANING_NOT_TAILP (flags), cs, cm);
+    IDIO ams = idio_meaning_arguments (src, aes, nametree, idio_list_length (aes), IDIO_MEANING_NOT_TAILP (flags), cs, cm);
     IDIO ent = idio_meaning_nametree_extend (nametree, ns);
-    IDIO mbody = idio_meaning_sequence (body, body, ent, flags, idio_S_begin, cs, cm);
+    IDIO mbody = idio_meaning_sequence (IDIO_MPP (body, src), body, ent, flags, idio_S_begin, cs, cm);
 
     if (IDIO_MEANING_IS_TAILP (flags)) {
 	return IDIO_LIST4 (IDIO_I_TR_FIX_LET, ams, mbody, ns);
@@ -3146,8 +3087,8 @@ static IDIO idio_meaning_some_dotted_arguments (IDIO src, IDIO ae, IDIO aes, IDI
     IDIO_TYPE_ASSERT (array, cs);
     IDIO_TYPE_ASSERT (module, cm);
 
-    IDIO am = idio_meaning (ae, ae, nametree, IDIO_MEANING_NOT_TAILP (flags), cs, cm);
-    IDIO ams = idio_meaning_dotted_arguments (aes, aes, nametree, size, arity, flags, cs, cm);
+    IDIO am = idio_meaning (IDIO_MPP (ae, src), ae, nametree, IDIO_MEANING_NOT_TAILP (flags), cs, cm);
+    IDIO ams = idio_meaning_dotted_arguments (src, aes, nametree, size, arity, flags, cs, cm);
     size_t rank = size - (idio_list_length (aes) + 1);
 
     if (rank < arity) {
@@ -3184,7 +3125,7 @@ static IDIO idio_meaning_dotted_arguments (IDIO src, IDIO aes, IDIO nametree, si
     IDIO_TYPE_ASSERT (module, cm);
 
     if (idio_isa_pair (aes)) {
-	return idio_meaning_some_dotted_arguments (IDIO_PAIR_H (aes), IDIO_PAIR_H (aes), IDIO_PAIR_T (aes), nametree, size, arity, flags, cs, cm);
+	return idio_meaning_some_dotted_arguments (src, IDIO_PAIR_H (aes), IDIO_PAIR_T (aes), nametree, size, arity, flags, cs, cm);
     } else {
 	return idio_meaning_no_dotted_argument (src, nametree, size, arity, flags, cs);
     }
@@ -3205,15 +3146,15 @@ static IDIO idio_meaning_dotted_closed_application (IDIO src, IDIO ns, IDIO n, I
     IDIO_TYPE_ASSERT (array, cs);
     IDIO_TYPE_ASSERT (module, cm);
 
-    body = idio_meaning_rewrite_body (body, body);
+    body = idio_meaning_rewrite_body (IDIO_MPP (body, src), body);
     idio_meaning_copy_src_properties (src, body);
 
-    IDIO ams = idio_meaning_dotted_arguments (aes, aes, nametree, idio_list_length (aes), idio_list_length (ns), IDIO_MEANING_NOT_TAILP (flags), cs, cm);
+    IDIO ams = idio_meaning_dotted_arguments (src, aes, nametree, idio_list_length (aes), idio_list_length (ns), IDIO_MEANING_NOT_TAILP (flags), cs, cm);
 
     IDIO fix_formals = idio_list_append2 (ns, IDIO_LIST1 (n));
     IDIO ent = idio_meaning_nametree_extend (nametree, fix_formals);
 
-    IDIO mbody = idio_meaning_sequence (body, body, ent, flags, idio_S_begin, cs, cm);
+    IDIO mbody = idio_meaning_sequence (IDIO_MPP (body, src), body, ent, flags, idio_S_begin, cs, cm);
 
     if (IDIO_MEANING_IS_TAILP (flags)) {
 	return IDIO_LIST4 (IDIO_I_TR_FIX_LET, ams, mbody, fix_formals);
@@ -3403,7 +3344,7 @@ static IDIO idio_meaning_primitive_application (IDIO src, IDIO fe, IDIO aes, IDI
 	    break;
 	case 1:
 	    {
-		IDIO m1 = idio_meaning (IDIO_PAIR_H (aes), IDIO_PAIR_H (aes), nametree, IDIO_MEANING_NOT_TAILP (flags), cs, cm);
+		IDIO m1 = idio_meaning (IDIO_MPP (IDIO_PAIR_H (aes), src), IDIO_PAIR_H (aes), nametree, IDIO_MEANING_NOT_TAILP (flags), cs, cm);
 
 		if (IDIO_STREQP (name, "ph")) {
 		    return IDIO_LIST3 (IDIO_I_PRIMCALL1, idio_fixnum (IDIO_A_PRIMCALL1_HEAD), m1);
@@ -3432,8 +3373,8 @@ static IDIO idio_meaning_primitive_application (IDIO src, IDIO fe, IDIO aes, IDI
 	    break;
 	case 2:
 	    {
-		IDIO m1 = idio_meaning (IDIO_PAIR_H (aes), IDIO_PAIR_H (aes), nametree, IDIO_MEANING_NOT_TAILP (flags), cs, cm);
-		IDIO m2 = idio_meaning (IDIO_PAIR_HT (aes), IDIO_PAIR_HT (aes), nametree, IDIO_MEANING_NOT_TAILP (flags), cs, cm);
+		IDIO m1 = idio_meaning (IDIO_MPP (IDIO_PAIR_H (aes), src), IDIO_PAIR_H (aes), nametree, IDIO_MEANING_NOT_TAILP (flags), cs, cm);
+		IDIO m2 = idio_meaning (IDIO_MPP (IDIO_PAIR_HT (aes), src), IDIO_PAIR_HT (aes), nametree, IDIO_MEANING_NOT_TAILP (flags), cs, cm);
 
 		if (IDIO_STREQP (name, "pair")) {
 		    return IDIO_LIST4 (IDIO_I_PRIMCALL2, idio_fixnum (IDIO_A_PRIMCALL2_PAIR), m1, m2);
@@ -3497,7 +3438,7 @@ static IDIO idio_meaning_regular_application (IDIO src, IDIO fe, IDIO aes, IDIO 
 
     IDIO fm;
     if (idio_isa_symbol (fe)) {
-	fm = idio_meaning_function_reference (fe, fe, nametree, flags, cs, cm);
+	fm = idio_meaning_function_reference (src, fe, nametree, flags, cs, cm);
     } else {
 	fm = idio_meaning (fe, fe, nametree, IDIO_MEANING_NOT_TAILP (flags), cs, cm);
     }
@@ -3507,7 +3448,7 @@ static IDIO idio_meaning_regular_application (IDIO src, IDIO fe, IDIO aes, IDIO 
 	ams_flags = IDIO_MEANING_FRAME_REUSE (ams_flags);
     }
 
-    IDIO ams = idio_meaning_arguments (aes, aes, nametree, idio_list_length (aes), ams_flags, cs, cm);
+    IDIO ams = idio_meaning_arguments (src, aes, nametree, idio_list_length (aes), ams_flags, cs, cm);
 
     if (IDIO_MEANING_IS_TAILP (flags)) {
 	return IDIO_LIST4 (IDIO_I_TR_REGULAR_CALL, src, fm, ams);
@@ -3582,10 +3523,14 @@ static IDIO idio_meaning_application (IDIO src, IDIO fe, IDIO aes, IDIO nametree
 	idio_eqp (idio_S_function, IDIO_PAIR_H (fe))) {
 	if (1 &&
 	    0 == idio_isa_string (IDIO_PAIR_HTT (fe))) {
+	    IDIO dsh  = idio_open_output_string_handle_C ();
+	    idio_display_C ("closed application: ", dsh);
+	    idio_display (IDIO_PAIR_HT (fe), dsh);
 	    fe = idio_list_append2 (IDIO_LIST3 (IDIO_PAIR_H (fe),
 						IDIO_PAIR_HT (fe),
-						idio_meaning_application_closed_string),
+						idio_get_output_string (dsh)),
 				    IDIO_PAIR_TT (fe));
+	    idio_meaning_copy_src_properties (src, fe);
 	    /* idio_debug ("im_appl closed %s\n", fe); */
 	}
 
@@ -3653,7 +3598,7 @@ static IDIO idio_meaning_dynamic_let (IDIO src, IDIO name, IDIO e, IDIO ep, IDIO
     IDIO_TYPE_ASSERT (array, cs);
     IDIO_TYPE_ASSERT (module, cm);
 
-    IDIO m = idio_meaning (e, e, nametree, IDIO_MEANING_NOT_TAILP (flags), cs, cm);
+    IDIO m = idio_meaning (IDIO_MPP (e, src), e, nametree, IDIO_MEANING_NOT_TAILP (flags), cs, cm);
 
     IDIO fmci;
     IDIO si = idio_module_find_symbol (name, cm);
@@ -3673,7 +3618,7 @@ static IDIO idio_meaning_dynamic_let (IDIO src, IDIO name, IDIO e, IDIO ep, IDIO
      */
     IDIO ent = idio_meaning_nametree_dynamic_extend (nametree, name, fmci, idio_S_dynamic);
 
-    IDIO mp = idio_meaning_sequence (ep, ep, ent, IDIO_MEANING_NOT_TAILP (flags), idio_S_begin, cs, cm);
+    IDIO mp = idio_meaning_sequence (src, ep, ent, IDIO_MEANING_NOT_TAILP (flags), idio_S_begin, cs, cm);
 
     IDIO dynamic_wrap = IDIO_LIST3 (IDIO_LIST3 (IDIO_I_PUSH_DYNAMIC, fmci, m),
 				    mp,
@@ -3727,7 +3672,7 @@ static IDIO idio_meaning_environ_let (IDIO src, IDIO name, IDIO e, IDIO ep, IDIO
     IDIO_TYPE_ASSERT (array, cs);
     IDIO_TYPE_ASSERT (module, cm);
 
-    IDIO m = idio_meaning (e, e, nametree, IDIO_MEANING_NOT_TAILP (flags), cs, cm);
+    IDIO m = idio_meaning (IDIO_MPP (e, src), e, nametree, IDIO_MEANING_NOT_TAILP (flags), cs, cm);
 
     IDIO fmci;
     IDIO si = idio_module_find_symbol (name, cm);
@@ -3747,7 +3692,7 @@ static IDIO idio_meaning_environ_let (IDIO src, IDIO name, IDIO e, IDIO ep, IDIO
      */
     IDIO ent = idio_meaning_nametree_dynamic_extend (nametree, name, fmci, idio_S_environ);
 
-    IDIO mp = idio_meaning_sequence (ep, ep, ent, IDIO_MEANING_NOT_TAILP (flags), idio_S_begin, cs, cm);
+    IDIO mp = idio_meaning_sequence (src, ep, ent, IDIO_MEANING_NOT_TAILP (flags), idio_S_begin, cs, cm);
 
     IDIO environ_wrap = IDIO_LIST3 (IDIO_LIST3 (IDIO_I_PUSH_ENVIRON, fmci, m),
 				    mp,
@@ -3816,10 +3761,10 @@ static IDIO idio_meaning_trap (IDIO src, IDIO ce, IDIO he, IDIO be, IDIO nametre
      * We need the meaning of handler now as it'll be used by all the
      * traps.
      */
-    he = idio_meaning_rewrite_body (he, he);
+    he = idio_meaning_rewrite_body (IDIO_MPP (he, src), he);
     idio_meaning_copy_src_properties (src, he);
 
-    IDIO hm = idio_meaning (he, he, nametree, IDIO_MEANING_NOT_TAILP (flags), cs, cm);
+    IDIO hm = idio_meaning (IDIO_MPP (he, src), he, nametree, IDIO_MEANING_NOT_TAILP (flags), cs, cm);
 
     /*
      * if the condition expression is not a list then make it one
@@ -3856,10 +3801,10 @@ static IDIO idio_meaning_trap (IDIO src, IDIO ce, IDIO he, IDIO be, IDIO nametre
 	ce = IDIO_PAIR_T (ce);
     }
 
-    be = idio_meaning_rewrite_body (be, be);
+    be = idio_meaning_rewrite_body (IDIO_MPP (be, src), be);
     idio_meaning_copy_src_properties (src, be);
 
-    IDIO bm = idio_meaning_sequence (be, be, nametree, IDIO_MEANING_NOT_TAILP (flags), idio_S_begin, cs, cm);
+    IDIO bm = idio_meaning_sequence (IDIO_MPP (be, src), be, nametree, IDIO_MEANING_NOT_TAILP (flags), idio_S_begin, cs, cm);
 
     IDIO r = idio_list_append2 (IDIO_LIST1 (hm), pushs);
     r = idio_list_append2 (r, IDIO_LIST1 (bm));
@@ -3908,19 +3853,6 @@ static IDIO idio_meaning_expander (IDIO src, IDIO e, IDIO nametree, int flags, I
     IDIO te = idio_template_expand (e);
     idio_meaning_copy_src_properties (src, te);
 
-    /*
-     * As noted in idio_meaning_dequasiquote() *someone* has to pass
-     * on some source properties to the result of applying the
-     * expander.  Well, we just did that so I guess it's up to us to
-     * pass on the source properties.
-     *
-    * This really should be a recursive loop over ph and pt...
-     */
-    if (idio_isa_pair (te) &&
-	idio_S_begin == IDIO_PAIR_H (te)) {
-	idio_meaning_copy_src_properties_r (src, IDIO_PAIR_T (te));
-    }
-
     return idio_meaning (te, te, nametree, flags, cs, cm);
 }
 
@@ -3947,13 +3879,13 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO cs, I
 	    idio_S_and == eh ||
 	    idio_S_or == eh) {
 	    if (idio_isa_pair (et)) {
-		return idio_meaning_sequence (et, et, nametree, flags, eh, cs, cm);
+		return idio_meaning_sequence (src, et, nametree, flags, eh, cs, cm);
 	    } else if (idio_S_begin == eh) {
-		return idio_meaning (idio_S_void, idio_S_void, nametree, flags, cs, cm);
+		return idio_meaning (src, idio_S_void, nametree, flags, cs, cm);
 	    } else if (idio_S_and == eh) {
-		return idio_meaning (idio_S_true, idio_S_true, nametree, flags, cs, cm);
+		return idio_meaning (src, idio_S_true, nametree, flags, cs, cm);
 	    } else if (idio_S_or == eh) {
-		return idio_meaning (idio_S_false, idio_S_false, nametree, flags, cs, cm);
+		return idio_meaning (src, idio_S_false, nametree, flags, cs, cm);
 	    } else {
 		/*
 		 * Not sure we can get here as it requires developer
@@ -3976,7 +3908,7 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO cs, I
 
 		    return idio_S_notreached;
 		} else {
-		    return idio_meaning_escape (IDIO_PAIR_H (et), IDIO_PAIR_H (et), nametree, flags, cs, cm);
+		    return idio_meaning_escape (src, IDIO_PAIR_H (et), nametree, flags, cs, cm);
 		}
 	    } else {
 		/*
@@ -4001,7 +3933,7 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO cs, I
 
 		    return idio_S_notreached;
 		} else {
-		    return idio_meaning_quotation (IDIO_PAIR_H (et), IDIO_PAIR_H (et), nametree, flags);
+		    return idio_meaning_quotation (src, IDIO_PAIR_H (et), nametree, flags);
 		}
 	    } else {
 		/*
@@ -4029,7 +3961,7 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO cs, I
 
 		    return idio_S_notreached;
 		} else {
-		    return idio_meaning_quasiquotation (e, IDIO_PAIR_H (et), nametree, flags, cs, cm);
+		    return idio_meaning_quasiquotation (src, IDIO_PAIR_H (et), nametree, flags, cs, cm);
 		}
 	    } else {
 		/*
@@ -4124,7 +4056,7 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO cs, I
 		    }
 		}
 
-		IDIO etc = idio_meaning_rewrite_cond (e, et, et);
+		IDIO etc = idio_meaning_rewrite_cond (e, IDIO_MPP (et, src), et);
 		idio_meaning_copy_src_properties (src, etc);
 
 		IDIO c = idio_meaning (etc, etc, nametree, flags, cs, cm);
@@ -4442,7 +4374,7 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO cs, I
 		fprintf (stderr, "empty body for block => void\n");
 		idio_debug ("src=%s\n", src);
 		idio_meaning_dump_src_properties ("idio_meaning", "block", src);
-		return idio_meaning (idio_S_void, idio_S_void, nametree, flags, cs, cm);
+		return idio_meaning (src, idio_S_void, nametree, flags, cs, cm);
 	    }
 	} else if (idio_S_dynamic == eh) {
 	    /* (dynamic var) */
@@ -4501,7 +4433,7 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO cs, I
 	    if (idio_isa_pair (et)) {
 		IDIO eth = IDIO_PAIR_H (et);
 		if (idio_isa_symbol (eth)) {
-		    return idio_meaning_dynamic_unset (eth, eth, IDIO_PAIR_T (et), nametree, flags, cs, cm);
+		    return idio_meaning_dynamic_unset (src, eth, IDIO_PAIR_T (et), nametree, flags, cs, cm);
 		} else {
 		    /*
 		     * Test Case: evaluation-errors/dynamic-unset-non-sym.idio
@@ -4565,7 +4497,7 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO cs, I
 	    if (idio_isa_pair (et)) {
 		IDIO eth = IDIO_PAIR_H (et);
 		if (idio_isa_symbol (eth)) {
-		    return idio_meaning_environ_unset (eth, eth, IDIO_PAIR_T (et), nametree, flags, cs, cm);
+		    return idio_meaning_environ_unset (src, eth, IDIO_PAIR_T (et), nametree, flags, cs, cm);
 		} else {
 		    /*
 		     * Test Case: evaluation-errors/environ-unset-non-sym.idio
@@ -4711,7 +4643,7 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO cs, I
 	switch ((intptr_t) e & IDIO_TYPE_MASK) {
 	case IDIO_TYPE_FIXNUM_MARK:
 	case IDIO_TYPE_CONSTANT_MARK:
-	    return idio_meaning_quotation (e, e, nametree, flags);
+	    return idio_meaning_quotation (src, e, nametree, flags);
 	case IDIO_TYPE_PLACEHOLDER_MARK:
 	    /*
 	     * Can'r get here without a developer coding issue.
@@ -4723,7 +4655,7 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO cs, I
 	    {
 		switch (e->type) {
 		case IDIO_TYPE_SYMBOL:
-		    return idio_meaning_reference (e, e, nametree, IDIO_MEANING_TOPLEVEL_SCOPE (flags), cs, cm);
+		    return idio_meaning_reference (src, e, nametree, IDIO_MEANING_TOPLEVEL_SCOPE (flags), cs, cm);
 
 		case IDIO_TYPE_STRING:
 		case IDIO_TYPE_KEYWORD:
@@ -4731,7 +4663,7 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO cs, I
 		case IDIO_TYPE_HASH:
 		case IDIO_TYPE_BIGNUM:
 		case IDIO_TYPE_BITSET:
-		    return idio_meaning_quotation (e, e, nametree, flags);
+		    return idio_meaning_quotation (src, e, nametree, flags);
 
 		case IDIO_TYPE_CLOSURE:
 		case IDIO_TYPE_PRIMITIVE:
@@ -4747,7 +4679,7 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, int flags, IDIO cs, I
 		    /*
 		     * Needed for conditions, pathnames, ...
 		     */
-		    return idio_meaning_quotation (e, e, nametree, flags);
+		    return idio_meaning_quotation (src, e, nametree, flags);
 
 		case IDIO_TYPE_MODULE:
 		case IDIO_TYPE_FRAME:
@@ -4936,11 +4868,8 @@ void idio_init_evaluate ()
     IDIO_MEANING_STRING (toplevel_extend, "idio_toplevel_extend");
     IDIO_MEANING_STRING (environ_extend, "idio_environ_extend");
     IDIO_MEANING_STRING (define_gvi0, "idio-meaning-define/gvi=0");
-    IDIO_MEANING_STRING (define_template, "idio-meaning-define-template");
     IDIO_MEANING_STRING (define_infix_operator, "idio-meaning-define-infix-operator");
     IDIO_MEANING_STRING (define_postfix_operator, "idio-meaning-define-postfix-operator");
-    IDIO_MEANING_STRING (rewrite_body_letrec, "idio-meaning-rewrite-body-letrec");
-    IDIO_MEANING_STRING (application_closed, "idio-meaning-application (closed)");
 }
 
 void idio_evaluate_add_primitives ()

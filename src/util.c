@@ -1203,7 +1203,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, int first)
 		    case IDIO_I_CODE_GLOBAL_SYM_DEF:			t = "GLOBAL-SYM-DEF";			break;
 		    case IDIO_I_CODE_GLOBAL_SYM_SET:			t = "GLOBAL-SYM-SET";			break;
 		    case IDIO_I_CODE_COMPUTED_SYM_SET:			t = "COMPUTED-SYM-SET";			break;
-		    case IDIO_I_CODE_COMPUTED_SYM_DEFINE:		t = "COMPUTED-SYM-DEFINE";			break;
+		    case IDIO_I_CODE_COMPUTED_SYM_DEF:			t = "COMPUTED-SYM-DEF";			break;
 
 		    case IDIO_I_CODE_GLOBAL_VAL_REF:			t = "GLOBAL-VAL-REF";			break;
 		    case IDIO_I_CODE_CHECKED_GLOBAL_VAL_REF:		t = "CHECKED-GLOBAL-VAL-REF";		break;
@@ -1215,7 +1215,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, int first)
 		    case IDIO_I_CODE_GLOBAL_VAL_DEF:			t = "GLOBAL-VAL-DEF";			break;
 		    case IDIO_I_CODE_GLOBAL_VAL_SET:			t = "GLOBAL-VAL-SET";			break;
 		    case IDIO_I_CODE_COMPUTED_VAL_SET:			t = "COMPUTED-VAL-SET";			break;
-		    case IDIO_I_CODE_COMPUTED_VAL_DEFINE:		t = "COMPUTED-VAL-DEFINE";			break;
+		    case IDIO_I_CODE_COMPUTED_VAL_DEF:			t = "COMPUTED-VAL-DEF";			break;
 
 		    case IDIO_I_CODE_PREDEFINED:			t = "PREDEFINED";			break;
 		    case IDIO_I_CODE_ALTERNATIVE:			t = "ALTERNATIVE";			break;
@@ -1242,13 +1242,10 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, int first)
 
 		    case IDIO_I_CODE_DYNAMIC_SYM_REF:			t = "DYNAMIC-SYM-REF";			break;
 		    case IDIO_I_CODE_DYNAMIC_FUNCTION_SYM_REF:		t = "DYNAMIC-FUNCTION-SYM-REF";		break;
-		    case IDIO_I_CODE_DYNAMIC_VAL_REF:			t = "DYNAMIC-VAL-REF";			break;
-		    case IDIO_I_CODE_DYNAMIC_FUNCTION_VAL_REF:		t = "DYNAMIC-FUNCTION-VAL-REF";		break;
 		    case IDIO_I_CODE_PUSH_DYNAMIC:			t = "PUSH-DYNAMIC";			break;
 		    case IDIO_I_CODE_POP_DYNAMIC:			t = "POP-DYNAMIC";			break;
 
 		    case IDIO_I_CODE_ENVIRON_SYM_REF:			t = "ENVIRON-SYM-REF";			break;
-		    case IDIO_I_CODE_ENVIRON_VAL_REF:			t = "ENVIRON-VAL-REF";			break;
 		    case IDIO_I_CODE_PUSH_ENVIRON:			t = "PUSH-ENVIRON";			break;
 		    case IDIO_I_CODE_POP_ENVIRON:			t = "POP-ENVIRON";			break;
 
@@ -1773,6 +1770,13 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, int first)
 			IDIO_STRCAT_FREE (r, sizep, t, t_size);
 			IDIO_STRCAT (r, sizep, " ");
 		    }
+
+		    if (idio_S_nil != IDIO_FRAME_NAMES (o)) {
+			size_t n_size = 0;
+			char *n = idio_as_string (IDIO_FRAME_NAMES (o), &n_size, depth - 1, 0);
+			IDIO_STRCAT_FREE (r, sizep, n, n_size);
+		    }
+
 		    IDIO_STRCAT (r, sizep, "]>");
 		    break;
 		}
@@ -2640,7 +2644,7 @@ const char *idio_vm_bytecode2string (int code)
     case IDIO_A_GLOBAL_SYM_DEF:				r = "GLOBAL-SYM-DEF";			break;
     case IDIO_A_GLOBAL_SYM_SET:				r = "GLOBAL-SYM-SET";			break;
     case IDIO_A_COMPUTED_SYM_SET:			r = "COMPUTED-SYM-SET";			break;
-    case IDIO_A_COMPUTED_SYM_DEFINE:			r = "COMPUTED-SYM-DEFINE";		break;
+    case IDIO_A_COMPUTED_SYM_DEF:			r = "COMPUTED-SYM-DEF";			break;
 
     case IDIO_A_GLOBAL_VAL_REF:				r = "GLOBAL-VAL-REF";			break;
     case IDIO_A_CHECKED_GLOBAL_VAL_REF:			r = "CHECKED-GLOBAL-VAL-REF";		break;
@@ -2652,7 +2656,7 @@ const char *idio_vm_bytecode2string (int code)
     case IDIO_A_GLOBAL_VAL_DEF:				r = "GLOBAL-VAL-DEF";			break;
     case IDIO_A_GLOBAL_VAL_SET:				r = "GLOBAL-VAL-SET";			break;
     case IDIO_A_COMPUTED_VAL_SET:			r = "COMPUTED-VAL-SET";			break;
-    case IDIO_A_COMPUTED_VAL_DEFINE:			r = "COMPUTED-VAL-DEFINE";		break;
+    case IDIO_A_COMPUTED_VAL_DEF:			r = "COMPUTED-VAL-DEF";			break;
 
     case IDIO_A_PREDEFINED0:				r = "PREDEFINED0";			break;
     case IDIO_A_PREDEFINED1:				r = "PREDEFINED1";			break;

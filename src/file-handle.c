@@ -1658,7 +1658,7 @@ char *idio_libfile_find (IDIO file)
     if (C_size != size) {
 	free (file_C);
 
-	idio_file_handle_error_format ("libfile-find: file contains an ASCII NUL", file, IDIO_C_FUNC_LOCATION ());
+	idio_file_handle_error_format ("find-lib: file contains an ASCII NUL", file, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return NULL;
@@ -1676,20 +1676,7 @@ IDIO_DEFINE_PRIMITIVE1 ("find-lib", find_lib, (IDIO file))
     IDIO_ASSERT (file);
     IDIO_VERIFY_PARAM_TYPE (string, file);
 
-    size_t size = 0;
-    char *file_C = idio_string_as_C (file, &size);
-    size_t C_size = strlen (file_C);
-    if (C_size != size) {
-	free (file_C);
-
-	idio_file_handle_error_format ("find-lib: file contains an ASCII NUL", file, IDIO_C_FUNC_LOCATION ());
-
-	return idio_S_notreached;
-    }
-
-    char *r_C = idio_libfile_find_C (file_C);
-
-    free (file_C);
+    char *r_C = idio_libfile_find (file);
 
     IDIO r = idio_S_nil;
 

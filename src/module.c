@@ -1168,7 +1168,7 @@ IDIO idio_module_symbol_value_recurse (IDIO symbol, IDIO m_or_n, IDIO args)
 	r = IDIO_PAIR_H (args);
     }
 
-    if (idio_S_unspec != si) {
+    if (idio_S_false != si) {
 	IDIO scope = IDIO_PAIR_H (si);
 	IDIO fmci = IDIO_PAIR_HT (si);
 	IDIO fgvi = IDIO_PAIR_HTT (si);

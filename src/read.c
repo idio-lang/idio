@@ -1373,7 +1373,8 @@ static void idio_read_block_comment (IDIO handle, IDIO lo, int depth)
  * Semi-literate block comments #| ... |# can be nested!
  *
  * The line of the opening #| should be the engine the comment text
- * will be piped into.
+ * will be piped into.  No engines are currently defined by maybe
+ * something like:
  *
  * #| .rst
  * ..note this is ReStructuredText
@@ -3334,10 +3335,10 @@ static IDIO idio_read_1_expr_nl (IDIO handle, idio_unicode_t *ic, int depth, int
 			}
 		    case IDIO_CHAR_ASTERISK:
 			idio_read_block_comment (handle, lo, depth);
-			return lo;
+			break;
 		    case IDIO_CHAR_PIPE:
 			idio_read_sl_block_comment (handle, lo, depth);
-			return lo;
+			break;
 		    case IDIO_CHAR_SEMICOLON:
 			idio_read_expr (handle);
 			break;

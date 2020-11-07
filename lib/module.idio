@@ -153,44 +153,47 @@ and calls
 ;; the usual list-y thing of prepending to some list which means
 ;; working with a reversed list in-hand.
 
-;; The resultant list of module imports should be (M1 M2 I1 I2 I3).
+;; We should be require'ing the modules in order, M1 then M2, and the
+;; resultant list of module imports should be (M1 M2 I1 I2 I3).
 
-define (%module-import importer modules) {
-  loop :+ function (mods result) {
-	    cond ((null? mods) {
-	      %set-module-imports! importer result
+define (%module-import importer module*) {
+  loop :+ function (m* r) {
+	    cond ((null? m*) {
+	      %set-module-imports! importer (append (reverse r) (module-imports importer))
 	    }) \
 		 (else {
-		   feature := ph mods
+		   mod-name := ph m*
 		   subfeatures := #n
-		   if (pair? feature) {
-		     subfeatures = pt feature
-		     feature = ph feature
+		   if (pair? mod-name) {
+		     subfeatures = pt mod-name
+		     mod-name = ph mod-name
 		   }
-		   mod := find-module feature #f
+		   mod := find-module mod-name #f
 		   if mod {
-		     loop (pt mods) (if (or (eq? mod importer)
-					    (assq mod result))
-				     result {
-				       apply require (module-name mod) subfeatures
-				       pair (list mod) result
-				     })
+		     loop (pt m*) (if (or (eq? mod importer)
+					  (assq mod r))
+				   r {
+				     apply require (module-name mod) subfeatures
+				     pair (list mod) r
+				   })
 		   } {
-		     apply require feature subfeatures
-		     mod := find-module feature #f
+		     apply require mod-name subfeatures
+		     mod := find-module mod-name #f
 		     if mod {
-		       loop (pt mods) (pair (list mod) result)
-		     } (error '%module-import "failed to instantiate module" feature)
+		       loop (pt m*) (pair (list mod) r)
+		     } (error '%module-import "failed to instantiate module" mod-name)
 		   }
 		 })
   }
 
-  loop (reverse modules) (module-imports importer)
+  if (null? module*) #n {
+    loop module* #n
+  }
 }
 
-define-template (import & modules) {
-  if (null? modules) #n #T{
-    %module-import (current-module) '$modules
+define-template (import & module*) {
+  if (null? module*) #n #T{
+    %module-import (current-module) '$module*
   }
 }
 

@@ -377,6 +377,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	} else {
 	    idio_debug ("\nWARNING: codegen: not a CONSTANT|pair: unexpected intermediate code: %s\n", mh);
 	    idio_debug ("%s\n\n", m);
+	    idio_dump (mh, 1);
 	    return;
 	}
     }
@@ -868,11 +869,11 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO_IA_PUSH_REF (IDIO_FIXNUM_VAL (mci));
 	}
 	break;
-    case IDIO_I_CODE_COMPUTED_SYM_DEFINE:
+    case IDIO_I_CODE_COMPUTED_SYM_DEF:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 2) {
-		idio_codegen_error_param_args ("COMPUTED-SYM-DEFINE mci m1", mt, IDIO_C_FUNC_LOCATION_S ("COMPUTED-SYM-DEFINE"));
+		idio_codegen_error_param_args ("COMPUTED-SYM-DEF mci m1", mt, IDIO_C_FUNC_LOCATION_S ("COMPUTED-SYM-DEF"));
 
 		/* notreached */
 		return;
@@ -881,7 +882,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO mci = IDIO_PAIR_H (mt);
 
 	    if (! idio_isa_fixnum (mci)) {
-		idio_codegen_error_param_type ("fixnum", mci, IDIO_C_FUNC_LOCATION_S ("COMPUTED-SYM-DEFINE"));
+		idio_codegen_error_param_type ("fixnum", mci, IDIO_C_FUNC_LOCATION_S ("COMPUTED-SYM-DEF"));
 
 		/* notreached */
 		return;
@@ -891,7 +892,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 
 	    idio_codegen_compile (thr, ia, cs, m1, depth + 1);
 
-	    IDIO_IA_PUSH1 (IDIO_A_COMPUTED_SYM_DEFINE);
+	    IDIO_IA_PUSH1 (IDIO_A_COMPUTED_SYM_DEF);
 	    IDIO_IA_PUSH_REF (IDIO_FIXNUM_VAL (mci));
 	}
 	break;
@@ -1245,11 +1246,11 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO_IA_PUSH_REF (IDIO_FIXNUM_VAL (gvi));
 	}
 	break;
-    case IDIO_I_CODE_COMPUTED_VAL_DEFINE:
+    case IDIO_I_CODE_COMPUTED_VAL_DEF:
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 2) {
-		idio_codegen_error_param_args ("COMPUTED-VAL-DEFINE gvi m1", mt, IDIO_C_FUNC_LOCATION_S ("COMPUTED-VAL-DEFINE"));
+		idio_codegen_error_param_args ("COMPUTED-VAL-DEF gvi m1", mt, IDIO_C_FUNC_LOCATION_S ("COMPUTED-VAL-DEF"));
 
 		/* notreached */
 		return;
@@ -1258,7 +1259,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO gvi = IDIO_PAIR_H (mt);
 
 	    if (! idio_isa_fixnum (gvi)) {
-		idio_codegen_error_param_type ("fixnum", gvi, IDIO_C_FUNC_LOCATION_S ("COMPUTED-VAL-DEFINE"));
+		idio_codegen_error_param_type ("fixnum", gvi, IDIO_C_FUNC_LOCATION_S ("COMPUTED-VAL-DEF"));
 
 		/* notreached */
 		return;
@@ -1268,7 +1269,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 
 	    idio_codegen_compile (thr, ia, cs, m1, depth + 1);
 
-	    IDIO_IA_PUSH1 (IDIO_A_COMPUTED_VAL_DEFINE);
+	    IDIO_IA_PUSH1 (IDIO_A_COMPUTED_VAL_DEF);
 	    IDIO_IA_PUSH_REF (IDIO_FIXNUM_VAL (gvi));
 	}
 	break;
@@ -2614,6 +2615,11 @@ void idio_codegen (IDIO thr, IDIO m, IDIO cs)
 
     idio_codegen_compile (thr, ia, cs, m, 0);
 
+    if (0 == IDIO_IA_USIZE (ia)) {
+	fprintf (stderr, "no code => NOP\n");
+	idio_ia_push (ia, IDIO_A_NOP);
+    }
+
     idio_ia_append (idio_all_code, ia);
 
     idio_ia_free (ia);
@@ -2621,14 +2627,131 @@ void idio_codegen (IDIO thr, IDIO m, IDIO cs)
     /* idio_vm_add_module_constants (idio_Idio_module_instance (), cs); */
 }
 
+IDIO_DEFINE_PRIMITIVE3_DS ("codegen", codegen, (IDIO thr, IDIO m, IDIO cs), "thr m cs", "\
+Generate the code for `m` using `cs` in `thr`	\n\
+						\n\
+:param thr: thread				\n\
+:type thr: thread				\n\
+:param m: evaluation meaning			\n\
+:type m: list					\n\
+:param cs: constants				\n\
+:type cs: array					\n\
+:return: #<unspec>				\n\
+")
+{
+    IDIO_ASSERT (thr);
+    IDIO_ASSERT (m);
+    IDIO_ASSERT (cs);
+
+    IDIO_TYPE_ASSERT (thread, thr);
+    IDIO_TYPE_ASSERT (list, m);
+    IDIO_TYPE_ASSERT (array, cs);
+
+    idio_codegen (thr, m, cs);
+
+    return idio_S_unspec;
+}
+
+typedef struct idio_codegen_symbol_s {
+    char *name;
+    IDIO value;
+} idio_codegen_symbol_t;
+
+static idio_codegen_symbol_t idio_codegen_symbols[] = {
+    { "I-SHALLOW-ARGUMENT-REF",			IDIO_I_SHALLOW_ARGUMENT_REF },
+    { "I-DEEP-ARGUMENT-REF",			IDIO_I_DEEP_ARGUMENT_REF },
+
+    { "I-SHALLOW-ARGUMENT-SET",			IDIO_I_SHALLOW_ARGUMENT_SET },
+    { "I-DEEP-ARGUMENT-SET",			IDIO_I_DEEP_ARGUMENT_SET },
+
+    { "I-GLOBAL-SYM-REF",			IDIO_I_GLOBAL_SYM_REF },
+    { "I-CHECKED-GLOBAL-SYM-REF",		IDIO_I_CHECKED_GLOBAL_SYM_REF },
+    { "I-GLOBAL-FUNCTION-SYM-REF",		IDIO_I_GLOBAL_FUNCTION_SYM_REF },
+    { "I-CHECKED-GLOBAL-FUNCTION-SYM-REF",	IDIO_I_CHECKED_GLOBAL_FUNCTION_SYM_REF },
+    { "I-CONSTANT-SYM-REF",			IDIO_I_CONSTANT_SYM_REF },
+    { "I-COMPUTED-SYM-REF",			IDIO_I_COMPUTED_SYM_REF },
+
+    { "I-GLOBAL-SYM-DEF"	,		IDIO_I_GLOBAL_SYM_DEF },
+    { "I-GLOBAL-SYM-SET",			IDIO_I_GLOBAL_SYM_SET },
+    { "I-COMPUTED-SYM-SET",			IDIO_I_COMPUTED_SYM_SET },
+    { "I-COMPUTEDSYM-DEF",			IDIO_I_COMPUTED_SYM_DEF },
+
+    { "I-GLOBAL-VAL-REF",			IDIO_I_GLOBAL_VAL_REF },
+    { "I-CHECKED-GLOBAL-VALUE-REF",		IDIO_I_CHECKED_GLOBAL_VAL_REF },
+    { "I-GLOBAL-FUNCTION-VAL-REF",		IDIO_I_GLOBAL_FUNCTION_VAL_REF },
+    { "I-CHECKED-GLOBAL-FUNCTION-VALUE-REF",	IDIO_I_CHECKED_GLOBAL_FUNCTION_VAL_REF },
+    { "I-CONSTANT-VAL-REF",			IDIO_I_CONSTANT_VAL_REF },
+    { "I-COMPUTED-VAL-REF",			IDIO_I_COMPUTED_VAL_REF },
+
+    { "I-GLOBAL-VAL-DEF",			IDIO_I_GLOBAL_VAL_DEF },
+    { "I-GLOBAL-VAL-SET",			IDIO_I_GLOBAL_VAL_SET },
+    { "I-COMPUTED-VALUE-SET",			IDIO_I_COMPUTED_VAL_SET },
+    { "I-COMPUTED-VAL-DEF",			IDIO_I_COMPUTED_VAL_DEF },
+
+    { "I-PREDEFINED",				IDIO_I_PREDEFINED },
+    { "I-ALTERNATIVE",				IDIO_I_ALTERNATIVE },
+    { "I-SEQUENCE",				IDIO_I_SEQUENCE },
+    { "I-TR-FIX-LET",				IDIO_I_TR_FIX_LET },
+    { "I-FIX-LET",				IDIO_I_FIX_LET },
+
+    { "I-PRIMCALL0",				IDIO_I_PRIMCALL0 },
+    { "I-PRIMCALL1",				IDIO_I_PRIMCALL1 },
+    { "I-PRIMCALL2",				IDIO_I_PRIMCALL2 },
+    { "I-PRIMCALL3",				IDIO_I_PRIMCALL3 },
+    { "I-TR-REGULAR-CALL",			IDIO_I_TR_REGULAR_CALL },
+    { "I-REGULAR-CALL",				IDIO_I_REGULAR_CALL },
+
+    { "I-FIX-CLOSURE",				IDIO_I_FIX_CLOSURE },
+    { "I-NARY-CLOSURE",				IDIO_I_NARY_CLOSURE },
+
+    { "I-STORE-ARGUMENT",			IDIO_I_STORE_ARGUMENT },
+    { "I-LIST-ARGUMENT",			IDIO_I_LIST_ARGUMENT },
+    { "I-ALLOCATE-FRAME",			IDIO_I_ALLOCATE_FRAME },
+    { "I-ALLOCATE-DOTTED-FRAME",		IDIO_I_ALLOCATE_DOTTED_FRAME },
+    { "I-REUSE-FRAME",				IDIO_I_REUSE_FRAME },
+
+    { "I-PUSH-DYNAMIC",				IDIO_I_PUSH_DYNAMIC },
+    { "I-POP-DYNAMIC",				IDIO_I_POP_DYNAMIC },
+    { "I-DYNAMIC-SYM-REF",			IDIO_I_DYNAMIC_SYM_REF },
+    { "I-DYNAMIC-FUNCTION-SYM-REF",		IDIO_I_DYNAMIC_FUNCTION_SYM_REF },
+
+    { "I-PUSH-ENVIRON",				IDIO_I_PUSH_ENVIRON },
+    { "I-POP-ENVIRON",				IDIO_I_POP_ENVIRON },
+    { "I-ENVIRON-SYM-REF",			IDIO_I_ENVIRON_SYM_REF },
+
+    { "I-PUSH-TRAP",				IDIO_I_PUSH_TRAP },
+    { "I-POP-TRAP",				IDIO_I_POP_TRAP },
+
+    { "I-AND",					IDIO_I_AND },
+    { "I-OR",					IDIO_I_OR },
+    { "I-BEGIN",				IDIO_I_BEGIN },
+
+    { "I-EXPANDER",				IDIO_I_EXPANDER },
+    { "I-INFIX-OPERATOR",			IDIO_I_INFIX_OPERATOR },
+    { "I-POSTFIX-OPERATOR",			IDIO_I_POSTFIX_OPERATOR },
+
+    { "I-ABORT",				IDIO_I_ABORT },
+    { "I-FINISH",				IDIO_I_FINISH },
+    { "I-NOP",					IDIO_I_NOP },
+
+    { NULL, NULL }
+};
+
 void idio_init_codegen ()
 {
     idio_codegen_module = idio_module (idio_symbols_C_intern ("codegen"));
+
+    idio_codegen_symbol_t *cs = idio_codegen_symbols;
+    for (; cs->name != NULL; cs++) {
+	IDIO sym = idio_symbols_C_intern (cs->name);
+	idio_module_export_symbol_value (sym, cs->value, idio_codegen_module);
+    }
 }
 
 void idio_codegen_add_primitives ()
 {
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_codegen_module, codegen_constants_lookup_or_extend);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_codegen_module, codegen);
 }
 
 void idio_final_codegen ()

@@ -2543,7 +2543,7 @@ exec `command` `args`				\n\
     return idio_S_notreached;
 }
 
-IDIO_DEFINE_PRIMITIVE0_DS ("%idio-interactive/get", idio_interactive_get, (void), "", "\
+IDIO_DEFINE_PRIMITIVE0_DS ("%interactive?", interactivep, (void), "", "\
 get the current interactiveness			\n\
 						\n\
 :return: #t or #f				\n\
@@ -2634,7 +2634,7 @@ void idio_init_command ()
      * messages.  So it should be a (read-only) computed variable.
      */
     IDIO geti;
-    geti = IDIO_ADD_PRIMITIVE (idio_interactive_get);
+    geti = IDIO_ADD_PRIMITIVE (interactivep);
     idio_module_add_computed_symbol (idio_symbols_C_intern ("%idio-interactive"), idio_vm_values_ref (IDIO_FIXNUM_VAL (geti)), idio_S_nil, idio_command_module);
 
     /*

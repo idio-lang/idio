@@ -122,6 +122,7 @@ might normally be used to maintain a set of previously seen values to
 handle circular data structures.
 
 *#
+
 define (%%add-as-string o f) "
 Associate a printer function `f` with `o`.
 
@@ -198,7 +199,7 @@ The default padding character is #\{space}
   orig-ipcp := idio-print-conversion-precision
 
   unwind-protect {
-    handle := (open-output-string)
+    osh := (open-output-string)
     data := #n
     timeformat := #f
     if (eq? type 'timeformat) {
@@ -402,7 +403,7 @@ The default padding character is #\{space}
 
 			pad-loop :+ (function (c n) {
 				       if (le n 0) #n {
-					 write-char c handle
+					 write-char c osh
 					 pad-loop c (n - 1)
 				       }
 			})
@@ -421,7 +422,7 @@ The default padding character is #\{space}
 				  pad-loop #\0 (spec-prec - vs-len)
 				}
 
-			puts vs-prec handle
+			puts vs-prec osh
 
 			if (and left-aligned
 				(lt vs-prec-width spec-width)) {
@@ -431,7 +432,7 @@ The default padding character is #\{space}
 		      }
 		    }) \
 			 (else {
-			   write-char c handle
+			   write-char c osh
 			 })
 		    cp-loop (i + 1) e
 		  }
@@ -439,7 +440,7 @@ The default padding character is #\{space}
 
     cp-loop 0 (string-length fmt)
 
-    get-output-string handle
+    get-output-string osh
   } {
     idio-print-conversion-format = orig-ipcf
     idio-print-conversion-precision = orig-ipcp
@@ -576,9 +577,11 @@ The file to be loaded is ``(symbol->string feature)`` which must
 }
 
 define-template (provide feature) {
+  ;; XXX need to quote $feature as some function names shadow module
+  ;; names and we just want the symbol(ic name) in *features*
   #T{
-    if (not (memq $feature *features*)) {
-      *features* = pair $feature *features*
+    if (not (memq '$feature *features*)) {
+      *features* = pair '$feature *features*
     }
   }
 }

@@ -227,7 +227,6 @@ IDIO_DEFINE_PRIMITIVE1 ("let", let, (IDIO e))
 	    vars = idio_pair (IDIO_PAIR_H (binding), vars);
 	    if (idio_isa_pair (IDIO_PAIR_T (binding))) {
 		value_expr = IDIO_PAIR_HT (binding);
-		idio_meaning_copy_src_properties (src, value_expr);
 	    }
 	    vals = idio_pair (value_expr, vals);
 	} else if (idio_isa_symbol (binding)) {
@@ -263,7 +262,6 @@ IDIO_DEFINE_PRIMITIVE1 ("let", let, (IDIO e))
 	e = IDIO_PAIR_H (e);
     } else {
 	IDIO e2 = idio_list_append2 (IDIO_LIST1 (idio_S_begin), e);
-	idio_meaning_copy_src_properties (e, e2);
 	e = e2;
     }
 
@@ -319,7 +317,6 @@ IDIO_DEFINE_PRIMITIVE1 ("let", let, (IDIO e))
 	idio_meaning_copy_src_properties (src, fn);
 
 	IDIO appl = idio_list_append2 (IDIO_LIST1 (name), idio_list_reverse (vals));
-	idio_meaning_copy_src_properties (src, appl);
 
 	IDIO letrec = IDIO_LIST3 (idio_S_letrec,
 				  IDIO_LIST1 (IDIO_LIST2 (name, fn)),
@@ -406,7 +403,6 @@ IDIO_DEFINE_PRIMITIVE1 ("let*", lets, (IDIO e))
 	e = IDIO_PAIR_H (e);
     } else {
 	IDIO e2 = idio_list_append2 (IDIO_LIST1 (idio_S_begin), e);
-	idio_meaning_copy_src_properties (e, e2);
 	e = e2;
     }
 
@@ -417,7 +413,6 @@ IDIO_DEFINE_PRIMITIVE1 ("let*", lets, (IDIO e))
 	lets = IDIO_LIST3 (idio_S_let,
 			   IDIO_LIST1 (binding),
 			   lets);
-	idio_meaning_copy_src_properties (binding, lets);
 
 	bindings = IDIO_PAIR_T (bindings);
     }
@@ -492,7 +487,6 @@ poor man's letrec				\n\
 	    tmps = idio_pair (idio_gensym (NULL), tmps);
 	    if (idio_isa_pair (IDIO_PAIR_T (binding))) {
 		value_expr = IDIO_PAIR_HT (binding);
-		idio_meaning_copy_src_properties (src, value_expr);
 	    }
 	    vals = idio_pair (value_expr, vals);
 	} else if (idio_isa_symbol (binding)) {
@@ -544,17 +538,14 @@ poor man's letrec				\n\
 
     IDIO rs_body = idio_list_append2 (IDIO_LIST1 (idio_S_begin),
 				      idio_list_append2 (rs, e));
-    idio_meaning_copy_src_properties (src, rs_body);
 
     IDIO let_rt= IDIO_LIST3 (idio_S_let,
 			     rt,
 			     rs_body);
-    idio_meaning_copy_src_properties (src, let_rt);
 
     r = IDIO_LIST3 (idio_S_let,
 		    ri,
 		    let_rt);
-    idio_meaning_copy_src_properties (src, r);
 
     return r;
 }
@@ -581,8 +572,13 @@ IDIO idio_expanderp (IDIO name)
 		idio_isa_closure (lv)) {
 		IDIO_PAIR_T (assq) = lv;
 	    } else {
-		if (idio_S_undef == lv &&
-		    idio_isa_symbol (name)) {
+		/*
+		 * idio_module_current_symbol_value_recurse()
+		 * nominally returns #unspec but when the template was
+		 * defined we extended the VM's values which means
+		 * we'll get back the default value, #undef
+		 */
+		if (idio_S_undef == lv) {
 		    idio_debug ("WARNING: using %s in the same file it is defined in may not have the desired effects\n", name);
 		} else {
 		    idio_debug ("expander?: %s not an expander?\n", name);
@@ -1341,8 +1337,6 @@ IDIO idio_operator_expand (IDIO e, int depth)
     IDIO r = idio_infix_operator_expand (e, depth);
     r = idio_postfix_operator_expand (r, depth);
 
-    idio_meaning_copy_src_properties_f (e, r);
-
     return r;
 }
 
@@ -1352,10 +1346,6 @@ IDIO_DEFINE_PRIMITIVE1 ("operator-expand", operator_expand, (IDIO l))
     IDIO_TYPE_ASSERT (list, l);
 
     IDIO r = idio_operator_expand (l, 0);
-
-    if (idio_isa_pair (r)) {
-	idio_meaning_copy_src_properties (l, r);
-    }
 
     return r;
 }
@@ -1399,13 +1389,7 @@ IDIO_DEFINE_PRIMITIVE1 ("operator-expand", operator_expand, (IDIO l))
 	    if (idio_S_nil == IDIO_PAIR_T (after)) {			\
 		after = IDIO_PAIR_H (after);				\
 	    } else {							\
-		if (idio_isa_pair (after)) {				\
-		    idio_meaning_copy_src_properties (before, after);	\
-		}							\
 		IDIO r_a = idio_operator_expand (after, 0);		\
-		if (idio_isa_pair (r_a)) {				\
-		    idio_meaning_copy_src_properties (after, r_a);	\
-		}							\
 		after = r_a;						\
 	    }								\
 	    return IDIO_LIST3 (op, IDIO_PAIR_H (before), after);	\

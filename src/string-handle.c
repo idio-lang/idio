@@ -403,7 +403,6 @@ int idio_putc_string_handle (IDIO sh, idio_unicode_t c)
 		char *buf = IDIO_STRING_HANDLE_BUF (sh);
 		blen += blen / 2;	/* 50% more */
 		buf = idio_realloc (buf, blen);
-
 		/*
 		 * realloc can relocate data in memory!
 		 */
@@ -417,6 +416,10 @@ int idio_putc_string_handle (IDIO sh, idio_unicode_t c)
 
 	*(IDIO_STRING_HANDLE_PTR (sh)) = buf[n];
 	IDIO_STRING_HANDLE_PTR (sh) += 1;
+    }
+
+    if (IDIO_STRING_HANDLE_PTR (sh) > IDIO_STRING_HANDLE_END (sh)) {
+	IDIO_STRING_HANDLE_END (sh) = IDIO_STRING_HANDLE_PTR (sh);
     }
 
     return size;
@@ -433,7 +436,8 @@ ptrdiff_t idio_puts_string_handle (IDIO sh, char *s, size_t slen)
     if ((IDIO_STRING_HANDLE_PTR (sh) + slen) >= (IDIO_STRING_HANDLE_BUF (sh) + IDIO_STRING_HANDLE_BLEN (sh))) {
 	size_t blen = IDIO_STRING_HANDLE_BLEN (sh);
 	char *buf = IDIO_STRING_HANDLE_BUF (sh);
-	size_t offset = IDIO_STRING_HANDLE_PTR (sh) - buf;
+	size_t ptr_offset = IDIO_STRING_HANDLE_PTR (sh) - buf;
+	size_t end_offset = IDIO_STRING_HANDLE_END (sh) - buf;
 
 	blen = blen + slen + IDIO_STRING_HANDLE_DEFAULT_OUTPUT_SIZE;
 	buf = idio_realloc (buf, blen);
@@ -442,9 +446,9 @@ ptrdiff_t idio_puts_string_handle (IDIO sh, char *s, size_t slen)
 	 * realloc can relocate data in memory!
 	 */
 	IDIO_STRING_HANDLE_BUF (sh) = buf;
-	IDIO_STRING_HANDLE_PTR (sh) = buf + offset;
+	IDIO_STRING_HANDLE_PTR (sh) = buf + ptr_offset;
 	IDIO_STRING_HANDLE_BLEN (sh) = blen;
-	IDIO_STRING_HANDLE_END (sh) = IDIO_STRING_HANDLE_PTR (sh) + slen;
+	IDIO_STRING_HANDLE_END (sh) = buf + end_offset;
     }
 
     memcpy (IDIO_STRING_HANDLE_PTR (sh), s, slen);

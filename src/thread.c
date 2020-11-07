@@ -23,8 +23,8 @@
 #include "idio.h"
 
 static IDIO idio_running_threads;
-
 static IDIO idio_running_thread = idio_S_nil;
+IDIO idio_threading_module = idio_S_nil;
 
 IDIO idio_thread_base (idio_ai_t stack_size)
 {
@@ -99,6 +99,16 @@ IDIO idio_thread_current_thread ()
     return idio_running_thread;
 }
 
+IDIO_DEFINE_PRIMITIVE0_DS ("current-thread", current_thread, (void), "", "\
+Return the current thread			\n\
+						\n\
+:return: current thread				\n\
+:rtype: thread					\n\
+")
+{
+    return idio_thread_current_thread ();
+}
+
 void idio_thread_set_current_thread (IDIO thr)
 {
     IDIO_ASSERT (thr);
@@ -106,7 +116,6 @@ void idio_thread_set_current_thread (IDIO thr)
 
     idio_running_thread = thr;
 }
-
 
 void idio_thread_codegen (IDIO code)
 {
@@ -196,6 +205,11 @@ void idio_init_thread ()
 {
     idio_running_threads = idio_array (8);
     idio_gc_protect (idio_running_threads);
+
+    idio_threading_module = idio_module (idio_symbols_C_intern ("threading"));
+    IDIO_MODULE_IMPORTS (idio_threading_module) = IDIO_LIST2 (IDIO_LIST1 (idio_Idio_module),
+							      IDIO_LIST1 (idio_primitives_module));
+
 }
 
 void idio_thread_add_primitives ()
@@ -204,6 +218,8 @@ void idio_thread_add_primitives ()
      * Required by environ stuff during add_primitives...
      */
     idio_running_thread = idio_thread_base (40);
+
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_threading_module, current_thread);
 }
 
 void idio_init_first_thread ()
@@ -211,6 +227,9 @@ void idio_init_first_thread ()
     idio_vm_thread_init (idio_running_thread);
     idio_array_push (idio_running_threads, idio_running_thread);
 
+    /*
+     * We also need the expander thread "early doors"
+     */
     idio_expander_thread = idio_thread (40);
     idio_gc_protect (idio_expander_thread);
 
