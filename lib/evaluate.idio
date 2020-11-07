@@ -290,7 +290,7 @@ define (meaning-variable-info src nametree name flags cs cm) {
 
 define (meaning-prefer-properties e src) {
   if (and (pair? e)
-	  (not (%idio-src-properties src #f))) {
+	  (not (hash-ref %idio-src-properties src #f))) {
     e
   } {
     src
@@ -2471,7 +2471,9 @@ define (evaluate src & constants) {
   } {
     c* = (vm-constants)
   }
-  meaning src src #n no-flags c* (current-module)
+  m := meaning src src #n no-flags c* (current-module)
+
+  list I-ABORT m
 }
 
 ;; done
