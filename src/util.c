@@ -921,7 +921,7 @@ static IDIO idio_util_as_string_symbol (IDIO o)
 
 #define IDIO_FIXNUM_CONVERSION_FORMAT_s		0x73
 
-char *idio_as_string (IDIO o, size_t *sizep, int depth, int first)
+char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 {
     char *r = NULL;
     size_t i;
@@ -962,7 +962,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, int first)
 			}
 		    } else {
 			size_t s = 0;
-			fprintf (stderr, "ipcf isa %s %s\n", idio_type2string (ipcf), idio_as_string (ipcf, &s, 1, 0));
+			fprintf (stderr, "ipcf isa %s %s\n", idio_type2string (ipcf), idio_as_string (ipcf, &s, 1, seen, 0));
 			if (0) {
 			IDIO_C_ASSERT (0);
 			idio_error_param_type ("unicode", ipcf, IDIO_C_FUNC_LOCATION ());
@@ -1402,6 +1402,17 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, int first)
 		return r;
 	    }
 
+	    if (idio_S_false != idio_list_memq (o, seen)) {
+		if (asprintf (&r, "<<%p>>", o) == -1) {
+		    idio_error_alloc ("asprintf");
+
+		    /* notreached */
+		    return NULL;
+		}
+		*sizep = strlen (r);
+		return r;
+	    }
+
 	    switch (type) {
 	    case IDIO_TYPE_NONE:
 		fprintf (stderr, "TYPE_NONE in flight :(\n");
@@ -1452,6 +1463,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, int first)
 		  itself a pair
 		*/
 		{
+		    seen = idio_pair (o, seen);
 		    if (idio_isa_symbol (IDIO_PAIR_H (o))) {
 			int special = 0;
 			char *trail = NULL;
@@ -1497,11 +1509,11 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, int first)
 			if (special) {
 			    if (idio_isa_pair (IDIO_PAIR_T (o))) {
 				size_t hs_size = 0;
-				char *hs = idio_as_string (idio_list_head (IDIO_PAIR_T (o)), &hs_size, depth - 1, 0);
+				char *hs = idio_as_string (idio_list_head (IDIO_PAIR_T (o)), &hs_size, depth - 1, seen, 0);
 				IDIO_STRCAT_FREE (r, sizep, hs, hs_size);
 			    } else {
 				size_t ts_size = 0;
-				char *ts = idio_as_string (IDIO_PAIR_T (o), &ts_size, depth - 1, 0);
+				char *ts = idio_as_string (IDIO_PAIR_T (o), &ts_size, depth - 1, seen, 0);
 				IDIO_STRCAT_FREE (r, sizep, ts, ts_size);
 			    }
 
@@ -1522,7 +1534,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, int first)
 
 		    while (1) {
 			size_t hs_size = 0;
-			char *hs = idio_as_string (IDIO_PAIR_H (o), &hs_size, depth - 1, 0);
+			char *hs = idio_as_string (IDIO_PAIR_H (o), &hs_size, depth - 1, seen, 0);
 			IDIO_STRCAT_FREE (r, sizep, hs, hs_size);
 
 			o = IDIO_PAIR_T (o);
@@ -1541,7 +1553,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, int first)
 				IDIO_STRCAT_FREE (r, sizep, ps, ps_size);
 
 				size_t t_size = 0;
-				char *t = idio_as_string (o, &t_size, depth - 1, 0);
+				char *t = idio_as_string (o, &t_size, depth - 1, seen, 0);
 				IDIO_STRCAT_FREE (r, sizep, t, t_size);
 			    }
 			    break;
@@ -1553,6 +1565,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, int first)
 		}
 		break;
 	    case IDIO_TYPE_ARRAY:
+		seen = idio_pair (o, seen);
 		if (asprintf (&r, "#[ ") == -1) {
 		    idio_error_alloc ("asprintf");
 
@@ -1564,14 +1577,14 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, int first)
 		    if (IDIO_ARRAY_USIZE (o) < 40) {
 			for (i = 0; i < IDIO_ARRAY_USIZE (o); i++) {
 			    size_t t_size = 0;
-			    char *t = idio_as_string (IDIO_ARRAY_AE (o, i), &t_size, depth - 1, 0);
+			    char *t = idio_as_string (IDIO_ARRAY_AE (o, i), &t_size, depth - 1, seen, 0);
 			    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 			    IDIO_STRCAT (r, sizep, " ");
 			}
 		    } else {
 			for (i = 0; i < 20; i++) {
 			    size_t t_size = 0;
-			    char *t = idio_as_string (IDIO_ARRAY_AE (o, i), &t_size, depth - 1, 0);
+			    char *t = idio_as_string (IDIO_ARRAY_AE (o, i), &t_size, depth - 1, seen, 0);
 			    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 			    IDIO_STRCAT (r, sizep, " ");
 			}
@@ -1587,7 +1600,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, int first)
 			IDIO_STRCAT_FREE (r, sizep, aei, aei_size);
 			for (i = IDIO_ARRAY_USIZE (o) - 20; i < IDIO_ARRAY_USIZE (o); i++) {
 			    size_t t_size = 0;
-			    char *t = idio_as_string (IDIO_ARRAY_AE (o, i), &t_size, depth - 1, 0);
+			    char *t = idio_as_string (IDIO_ARRAY_AE (o, i), &t_size, depth - 1, seen, 0);
 			    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 			    IDIO_STRCAT (r, sizep, " ");
 			}
@@ -1598,6 +1611,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, int first)
 		IDIO_STRCAT (r, sizep, "]");
 		break;
 	    case IDIO_TYPE_HASH:
+		seen = idio_pair (o, seen);
 		if (asprintf (&r, "#{ ") == -1) {
 		    idio_error_alloc ("asprintf");
 
@@ -1630,7 +1644,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, int first)
 				t = (char *) IDIO_HASH_HE_KEY (o, i);
 				t_size = strlen (t);
 			    } else {
-				t = idio_as_string (IDIO_HASH_HE_KEY (o, i), &t_size, depth - 1, 0);
+				t = idio_as_string (IDIO_HASH_HE_KEY (o, i), &t_size, depth - 1, seen, 0);
 			    }
 			    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
@@ -1647,7 +1661,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, int first)
 
 			    if (IDIO_HASH_HE_VALUE (o, i)) {
 				t_size = 0;
-				t = idio_as_string (IDIO_HASH_HE_VALUE (o, i), &t_size, depth - 1, 0);
+				t = idio_as_string (IDIO_HASH_HE_VALUE (o, i), &t_size, depth - 1, seen, 0);
 				IDIO_STRCAT_FREE (r, sizep, t, t_size);
 			    } else {
 				IDIO_STRCAT (r, sizep, "-");
@@ -1662,6 +1676,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, int first)
 		break;
 	    case IDIO_TYPE_CLOSURE:
 		{
+		    seen = idio_pair (o, seen);
 		    if (asprintf (&r, "#<CLOS ") == -1) {
 			idio_error_alloc ("asprintf");
 
@@ -1697,7 +1712,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, int first)
 		    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
 		    size_t mn_size = 0;
-		    char *mn = idio_as_string (IDIO_MODULE_NAME (IDIO_CLOSURE_ENV (o)), &mn_size, depth - 1, 0);
+		    char *mn = idio_as_string (IDIO_MODULE_NAME (IDIO_CLOSURE_ENV (o)), &mn_size, depth - 1, seen, 0);
 		    IDIO_STRCAT_FREE (r, sizep, mn, mn_size);
 
 		    IDIO_STRCAT (r, sizep, ">");
@@ -1731,7 +1746,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, int first)
 			IDIO_STRCAT (r, sizep, "(nil)");
 		    } else {
 			size_t mn_size = 0;
-			char *mn = idio_as_string (IDIO_MODULE_NAME (o), &mn_size, depth - 1, 0);
+			char *mn = idio_as_string (IDIO_MODULE_NAME (o), &mn_size, depth - 1, seen, 0);
 			IDIO_STRCAT_FREE (r, sizep, mn, mn_size);
 		    }
 		    if (0 && depth > 0) {
@@ -1740,7 +1755,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, int first)
 			    IDIO_STRCAT (r, sizep, "(nil)");
 			} else {
 			    size_t e_size = 0;
-			    char *es = idio_as_string (IDIO_MODULE_EXPORTS (o), &e_size, depth - 1, 0);
+			    char *es = idio_as_string (IDIO_MODULE_EXPORTS (o), &e_size, depth - 1, seen, 0);
 			    IDIO_STRCAT_FREE (r, sizep, es, e_size);
 			}
 			IDIO_STRCAT (r, sizep, " imports=");
@@ -1748,7 +1763,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, int first)
 			    IDIO_STRCAT (r, sizep, "(nil)");
 			} else {
 			    size_t i_size = 0;
-			    char *is = idio_as_string (IDIO_MODULE_IMPORTS (o), &i_size, 0, 0);
+			    char *is = idio_as_string (IDIO_MODULE_IMPORTS (o), &i_size, 0, seen, 0);
 			    IDIO_STRCAT_FREE (r, sizep, is, i_size);
 			}
 			IDIO_STRCAT (r, sizep, " symbols=");
@@ -1756,7 +1771,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, int first)
 			    IDIO_STRCAT (r, sizep, "(nil)");
 			} else {
 			    size_t s_size = 0;
-			    char *ss = idio_as_string (IDIO_MODULE_SYMBOLS (o), &s_size, depth - 1, 0);
+			    char *ss = idio_as_string (IDIO_MODULE_SYMBOLS (o), &s_size, depth - 1, seen, 0);
 			    IDIO_STRCAT_FREE (r, sizep, ss, s_size);
 			}
 		    }
@@ -1765,6 +1780,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, int first)
 		}
 	    case IDIO_TYPE_FRAME:
 		{
+		    seen = idio_pair (o, seen);
 		    if (asprintf (&r, "#<FRAME %p n=%td [ ", o, IDIO_FRAME_NARGS (o)) == -1) {
 			idio_error_alloc ("asprintf");
 
@@ -1775,7 +1791,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, int first)
 
 		    for (i = 0; i < IDIO_FRAME_NARGS (o); i++) {
 			size_t t_size = 0;
-			char *t = idio_as_string (IDIO_FRAME_ARGS (o, i), &t_size, depth - 1, 0);
+			char *t = idio_as_string (IDIO_FRAME_ARGS (o, i), &t_size, depth - 1, seen, 0);
 			IDIO_STRCAT_FREE (r, sizep, t, t_size);
 			IDIO_STRCAT (r, sizep, " ");
 		    }
@@ -1915,12 +1931,12 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, int first)
 		    *sizep = strlen (r);
 
 		    size_t stn_size = 0;
-		    char *stn = idio_as_string (IDIO_STRUCT_TYPE_NAME (o), &stn_size, 1, 0);
+		    char *stn = idio_as_string (IDIO_STRUCT_TYPE_NAME (o), &stn_size, 1, seen, 0);
 		    IDIO_STRCAT_FREE (r, sizep, stn, stn_size);
 		    IDIO_STRCAT (r, sizep, " ");
 
 		    size_t stp_size = 0;
-		    char *stp = idio_as_string (IDIO_STRUCT_TYPE_PARENT (o), &stp_size, 1, 0);
+		    char *stp = idio_as_string (IDIO_STRUCT_TYPE_PARENT (o), &stp_size, 1, seen, 0);
 		    IDIO_STRCAT_FREE (r, sizep, stp, stp_size);
 
 		    size_t size = IDIO_STRUCT_TYPE_SIZE (o);
@@ -1928,7 +1944,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, int first)
 		    for (i = 0; i < size; i++) {
 			IDIO_STRCAT (r, sizep, " ");
 			size_t f_size = 0;
-			char *fs = idio_as_string (IDIO_STRUCT_TYPE_FIELDS (o, i), &f_size, 1, 0);
+			char *fs = idio_as_string (IDIO_STRUCT_TYPE_FIELDS (o, i), &f_size, 1, seen, 0);
 			IDIO_STRCAT_FREE (r, sizep, fs, f_size);
 		    }
 
@@ -1937,6 +1953,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, int first)
 		break;
 	    case IDIO_TYPE_STRUCT_INSTANCE:
 		{
+		    seen = idio_pair (o, seen);
 		    IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (o);
 		    IDIO value_as_string = idio_module_symbol_value (idio_util_value_as_string, idio_Idio_module, idio_S_nil);
 
@@ -1952,7 +1969,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, int first)
 			}
 
 			if (idio_S_nil != s) {
-			    return idio_as_string (s, sizep, 1, 0);
+			    return idio_as_string (s, sizep, 1, seen, 0);
 			}
 		    }
 
@@ -1968,7 +1985,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, int first)
 		    *sizep = strlen (r);
 
 		    size_t n_size = 0;
-		    char *ns = idio_as_string (IDIO_STRUCT_TYPE_NAME (sit), &n_size, 1, 0);
+		    char *ns = idio_as_string (IDIO_STRUCT_TYPE_NAME (sit), &n_size, 1, seen, 0);
 		    IDIO_STRCAT_FREE (r, sizep, ns, n_size);
 
 		    size_t size = IDIO_STRUCT_TYPE_SIZE (sit);
@@ -1976,11 +1993,11 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, int first)
 		    for (i = 0; i < size; i++) {
 			IDIO_STRCAT (r, sizep, " ");
 			size_t fn_size = 0;
-			char *fns = idio_as_string (IDIO_STRUCT_TYPE_FIELDS (sit, i), &fn_size, 1, 0);
+			char *fns = idio_as_string (IDIO_STRUCT_TYPE_FIELDS (sit, i), &fn_size, 1, seen, 0);
 			IDIO_STRCAT_FREE (r, sizep, fns, fn_size);
 			IDIO_STRCAT (r, sizep, ":");
 			size_t fv_size = 0;
-			char *fvs = idio_as_string (IDIO_STRUCT_INSTANCE_FIELDS (o, i), &fv_size, depth - 1, 0);
+			char *fvs = idio_as_string (IDIO_STRUCT_INSTANCE_FIELDS (o, i), &fv_size, depth - 1, seen, 0);
 			IDIO_STRCAT_FREE (r, sizep, fvs, fv_size);
 		    }
 
@@ -1989,6 +2006,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, int first)
 		break;
 	    case IDIO_TYPE_THREAD:
 		{
+		    seen = idio_pair (o, seen);
 		    idio_ai_t sp = idio_array_size (IDIO_THREAD_STACK (o));
 		    if (asprintf (&r, "#<THREAD %10p\n  pc=%6zd\n  sp/top=%2zd/",
 				  o,
@@ -2002,17 +2020,17 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, int first)
 		    *sizep = strlen (r);
 
 		    size_t t_size = 0;
-		    char *t = idio_as_string (idio_array_top (IDIO_THREAD_STACK (o)), &t_size, 1, 0);
+		    char *t = idio_as_string (idio_array_top (IDIO_THREAD_STACK (o)), &t_size, 1, seen, 0);
 		    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
 		    IDIO_STRCAT (r, sizep, "\n  val=");
 		    t_size = 0;
-		    t = idio_as_string (IDIO_THREAD_VAL (o), &t_size, 2, 0);
+		    t = idio_as_string (IDIO_THREAD_VAL (o), &t_size, 2, seen, 0);
 		    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
 		    IDIO_STRCAT (r, sizep, "\n  func=");
 		    t_size = 0;
-		    t = idio_as_string (IDIO_THREAD_FUNC (o), &t_size, 1, 0);
+		    t = idio_as_string (IDIO_THREAD_FUNC (o), &t_size, 1, seen, 0);
 		    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 		    if (1 == depth) {
 			IDIO frame = IDIO_THREAD_FRAME (o);
@@ -2031,46 +2049,46 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, int first)
 			    IDIO_STRCAT_FREE (r, sizep, es, es_size);
 
 			    size_t f_size = 0;
-			    char *fs = idio_as_string (frame, &f_size, 1, 0);
+			    char *fs = idio_as_string (frame, &f_size, 1, seen, 0);
 			    IDIO_STRCAT_FREE (r, sizep, fs, f_size);
 			}
 		    }
 
 		    IDIO_STRCAT (r, sizep, "\n  env=");
 		    t_size = 0;
-		    t = idio_as_string (IDIO_THREAD_ENV (o), &t_size, 1, 0);
+		    t = idio_as_string (IDIO_THREAD_ENV (o), &t_size, 1, seen, 0);
 		    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
 		    IDIO_STRCAT (r, sizep, "\n  t/sp=");
 		    t_size = 0;
-		    t = idio_as_string (IDIO_THREAD_TRAP_SP (o), &t_size, 1, 0);
+		    t = idio_as_string (IDIO_THREAD_TRAP_SP (o), &t_size, 1, seen, 0);
 		    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
 		    IDIO_STRCAT (r, sizep, "\n  d/sp=");
 		    t_size = 0;
-		    t = idio_as_string (IDIO_THREAD_DYNAMIC_SP (o), &t_size, 1, 0);
+		    t = idio_as_string (IDIO_THREAD_DYNAMIC_SP (o), &t_size, 1, seen, 0);
 		    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
 		    IDIO_STRCAT (r, sizep, "\n  e/sp=");
 		    t_size = 0;
-		    t = idio_as_string (IDIO_THREAD_ENVIRON_SP (o), &t_size, 1, 0);
+		    t = idio_as_string (IDIO_THREAD_ENVIRON_SP (o), &t_size, 1, seen, 0);
 		    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
 		    if (depth > 1) {
 			IDIO_STRCAT (r, sizep, "\n  fr=");
 			t_size = 0;
-			t = idio_as_string (IDIO_THREAD_FRAME (o), &t_size, 1, 0);
+			t = idio_as_string (IDIO_THREAD_FRAME (o), &t_size, 1, seen, 0);
 			IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
 			if (depth > 2) {
 			    IDIO_STRCAT (r, sizep, "\n  reg1=");
 			    t_size = 0;
-			    t = idio_as_string (IDIO_THREAD_REG1 (o), &t_size, 1, 0);
+			    t = idio_as_string (IDIO_THREAD_REG1 (o), &t_size, 1, seen, 0);
 			    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
 			    IDIO_STRCAT (r, sizep, "\n  reg2=");
 			    t_size = 0;
-			    t = idio_as_string (IDIO_THREAD_REG2 (o), &t_size, 1, 0);
+			    t = idio_as_string (IDIO_THREAD_REG2 (o), &t_size, 1, seen, 0);
 			    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
 			    IDIO_STRCAT (r, sizep, "\n  expr=");
@@ -2081,27 +2099,27 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, int first)
 			    IDIO src = idio_vm_constants_ref (gci);
 
 			    t_size = 0;
-			    t = idio_as_string (src, &t_size, 1, 0);
+			    t = idio_as_string (src, &t_size, 1, seen, 0);
 			    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
 			    IDIO_STRCAT (r, sizep, "\n  input_handle=");
 			    t_size = 0;
-			    t = idio_as_string (IDIO_THREAD_INPUT_HANDLE (o), &t_size, 1, 0);
+			    t = idio_as_string (IDIO_THREAD_INPUT_HANDLE (o), &t_size, 1, seen, 0);
 			    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
 			    IDIO_STRCAT (r, sizep, "\n  output_handle=");
 			    t_size = 0;
-			    t = idio_as_string (IDIO_THREAD_OUTPUT_HANDLE (o), &t_size, 1, 0);
+			    t = idio_as_string (IDIO_THREAD_OUTPUT_HANDLE (o), &t_size, 1, seen, 0);
 			    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
 			    IDIO_STRCAT (r, sizep, "\n  error_handle=");
 			    t_size = 0;
-			    t = idio_as_string (IDIO_THREAD_ERROR_HANDLE (o), &t_size, 1, 0);
+			    t = idio_as_string (IDIO_THREAD_ERROR_HANDLE (o), &t_size, 1, seen, 0);
 			    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
 			    IDIO_STRCAT (r, sizep, "\n  module=");
 			    t_size = 0;
-			    t = idio_as_string (IDIO_THREAD_MODULE (o), &t_size, 1, 0);
+			    t = idio_as_string (IDIO_THREAD_MODULE (o), &t_size, 1, seen, 0);
 			    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 			}
 		    }
@@ -2110,6 +2128,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, int first)
 		break;
 	    case IDIO_TYPE_CONTINUATION:
 		{
+		    seen = idio_pair (o, seen);
 		    IDIO ks = IDIO_CONTINUATION_STACK (o);
 		    idio_ai_t kss = idio_array_size (ks);
 		    IDIO pc_I = idio_array_ref_index (ks, kss - 2);
@@ -2303,7 +2322,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, int first)
 
 		    IDIO_STRCAT (r, sizep, "\n\tfields: ");
 		    size_t f_size = 0;
-		    char *fs = idio_as_string (IDIO_C_STRUCT_FIELDS (o), &f_size, depth - 1, 0);
+		    char *fs = idio_as_string (IDIO_C_STRUCT_FIELDS (o), &f_size, depth - 1, seen, 0);
 		    IDIO_STRCAT_FREE (r, sizep, fs, f_size);
 
 		    IDIO mh = IDIO_C_STRUCT_METHODS (o);
@@ -2314,12 +2333,12 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, int first)
 			    if (idio_S_nil != IDIO_HASH_HE_KEY (mh, i)) {
 				IDIO_STRCAT (r, sizep, "\n\t");
 				size_t t_size = 0;
-				char *t = idio_as_string (IDIO_HASH_HE_KEY (mh, i), &t_size, depth - 1, 0);
+				char *t = idio_as_string (IDIO_HASH_HE_KEY (mh, i), &t_size, depth - 1, seen, 0);
 				IDIO_STRCAT_FREE (r, sizep, t, t_size);
 				IDIO_STRCAT (r, sizep, ":");
 				if (IDIO_HASH_HE_VALUE (mh, i)) {
 				    t_size = 0;
-				    t = idio_as_string (IDIO_HASH_HE_VALUE (mh, i), &t_size, depth - 1, 0);
+				    t = idio_as_string (IDIO_HASH_HE_VALUE (mh, i), &t_size, depth - 1, seen, 0);
 				} else {
 				    if (asprintf (&t, "-") == -1) {
 					free (r);
@@ -2337,7 +2356,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, int first)
 		    }
 		    IDIO_STRCAT (r, sizep, "\n\tframe: ");
 		    f_size = 0;
-		    fs = idio_as_string (IDIO_C_STRUCT_FRAME (o), &f_size, depth - 1, 0);
+		    fs = idio_as_string (IDIO_C_STRUCT_FRAME (o), &f_size, depth - 1, seen, 0);
 		    IDIO_STRCAT_FREE (r, sizep, fs, f_size);
 		    IDIO_STRCAT (r, sizep, "\n>");
 		    break;
@@ -2368,26 +2387,26 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, int first)
 		    *sizep = strlen (r);
 
 		    size_t t_size = 0;
-		    char *t = idio_as_string (IDIO_C_FFI_NAME (o), &t_size, depth - 1, 0);
+		    char *t = idio_as_string (IDIO_C_FFI_NAME (o), &t_size, depth - 1, seen, 0);
 		    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
 		    t_size = 0;
-		    t = idio_as_string (IDIO_C_FFI_SYMBOL (o), &t_size, depth - 1, 0);
-		    IDIO_STRCAT_FREE (r, sizep, t, t_size);
-		    IDIO_STRCAT (r, sizep, " ");
-
-		    t_size = 0;
-		    t = idio_as_string (IDIO_C_FFI_ARGS (o), &t_size, depth - 1, 0);
+		    t = idio_as_string (IDIO_C_FFI_SYMBOL (o), &t_size, depth - 1, seen, 0);
 		    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 		    IDIO_STRCAT (r, sizep, " ");
 
 		    t_size = 0;
-		    t = idio_as_string (IDIO_C_FFI_RESULT (o), &t_size, depth - 1, 0);
+		    t = idio_as_string (IDIO_C_FFI_ARGS (o), &t_size, depth - 1, seen, 0);
 		    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 		    IDIO_STRCAT (r, sizep, " ");
 
 		    t_size = 0;
-		    t = idio_as_string (IDIO_C_FFI_NAME (o), &t_size, depth - 1, 0);
+		    t = idio_as_string (IDIO_C_FFI_RESULT (o), &t_size, depth - 1, seen, 0);
+		    IDIO_STRCAT_FREE (r, sizep, t, t_size);
+		    IDIO_STRCAT (r, sizep, " ");
+
+		    t_size = 0;
+		    t = idio_as_string (IDIO_C_FFI_NAME (o), &t_size, depth - 1, seen, 0);
 		    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 		    IDIO_STRCAT (r, sizep, " >");
 		    break;
@@ -2403,7 +2422,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, int first)
 		    *sizep = strlen (r);
 
 		    size_t t_size = 0;
-		    char *t = idio_as_string (IDIO_OPAQUE_ARGS (o), &t_size, depth - 1, 0);
+		    char *t = idio_as_string (IDIO_OPAQUE_ARGS (o), &t_size, depth - 1, seen, 0);
 		    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 		    IDIO_STRCAT (r, sizep, ">");
 		    break;
@@ -2478,7 +2497,7 @@ char *idio_display_string (IDIO o, size_t *sizep)
     switch ((intptr_t) o & IDIO_TYPE_MASK) {
     case IDIO_TYPE_FIXNUM_MARK:
     case IDIO_TYPE_PLACEHOLDER_MARK:
-	r = idio_as_string (o, sizep, 4, 1);
+	r = idio_as_string (o, sizep, 4, idio_S_nil, 1);
 	break;
     case IDIO_TYPE_CONSTANT_MARK:
 	{
@@ -2486,7 +2505,7 @@ char *idio_display_string (IDIO o, size_t *sizep)
 	    case IDIO_TYPE_CONSTANT_IDIO_MARK:
 	    case IDIO_TYPE_CONSTANT_TOKEN_MARK:
 	    case IDIO_TYPE_CONSTANT_I_CODE_MARK:
-		r = idio_as_string (o, sizep, 4, 1);
+		r = idio_as_string (o, sizep, 4, idio_S_nil, 1);
 		break;
 	    case IDIO_TYPE_CONSTANT_CHARACTER_MARK:
 		{
@@ -2564,7 +2583,7 @@ char *idio_display_string (IDIO o, size_t *sizep)
 		}
 		break;
 	    default:
-		r = idio_as_string (o, sizep, 40, 1);
+		r = idio_as_string (o, sizep, 40, idio_S_nil, 1);
 		break;
 	    }
 	}
@@ -2594,7 +2613,7 @@ convert `o` to a string				\n\
     IDIO_ASSERT (o);
 
     size_t size = 0;
-    char *str = idio_as_string (o, &size, 40, 1);
+    char *str = idio_as_string (o, &size, 40, idio_S_nil, 1);
     IDIO r = idio_string_C_len (str, size);
     free (str);
     return r;
@@ -2906,8 +2925,6 @@ IDIO idio_list_assq (IDIO k, IDIO l)
     IDIO_ASSERT (l);
     IDIO_TYPE_ASSERT (list, l);
 
-    /* fprintf (stderr, "assq: k=%s in l=%s\n", idio_as_string (k, 1), idio_as_string (idio_list_map_ph (l), 4), 1); */
-
     while (idio_S_nil != l) {
 	IDIO p = IDIO_PAIR_H (l);
 
@@ -3172,7 +3189,7 @@ void idio_dump (IDIO o, int detail)
 			    if (idio_S_nil != IDIO_ARRAY_AE (o, i) ||
 				detail > 3) {
 				size_t size = 0;
-				char *s = idio_as_string (IDIO_ARRAY_AE (o, i), &size, 4, 1);
+				char *s = idio_as_string (IDIO_ARRAY_AE (o, i), &size, 4, idio_S_nil, 1);
 				fprintf (stderr, "\t%3zu: %10p %10s\n", i, IDIO_ARRAY_AE (o, i), s);
 				free (s);
 			    }
@@ -3213,7 +3230,7 @@ void idio_dump (IDIO o, int detail)
 				if (IDIO_HASH_FLAGS (o) & IDIO_HASH_FLAG_STRING_KEYS) {
 				    s = (char *) IDIO_HASH_HE_KEY (o, i);
 				} else {
-				    s = idio_as_string (IDIO_HASH_HE_KEY (o, i), &size, 4, 1);
+				    s = idio_as_string (IDIO_HASH_HE_KEY (o, i), &size, 4, idio_S_nil, 1);
 				}
 				if (detail & 0x4) {
 				    fprintf (stderr, "\t%30s : ", s);
@@ -3230,7 +3247,7 @@ void idio_dump (IDIO o, int detail)
 				}
 				if (IDIO_HASH_HE_VALUE (o, i)) {
 				    size = 0;
-				    s = idio_as_string (IDIO_HASH_HE_VALUE (o, i), &size, 4, 1);
+				    s = idio_as_string (IDIO_HASH_HE_VALUE (o, i), &size, 4, idio_S_nil, 1);
 				} else {
 				    if (asprintf (&s, "-") == -1) {
 					idio_error_alloc ("asprintf");
@@ -3312,7 +3329,7 @@ void idio_debug_FILE (FILE *file, const char *fmt, IDIO o)
     /* fprintf (file, "[%d]", getpid()); */
 
     size_t size = 0;
-    char *os = idio_as_string (o, &size, 40, 1);
+    char *os = idio_as_string (o, &size, 40, idio_S_nil, 1);
     fprintf (file, fmt, os);
     free (os);
 }

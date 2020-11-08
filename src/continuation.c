@@ -33,7 +33,7 @@ IDIO idio_continuation (IDIO thr)
 
     IDIO_CONTINUATION_GREY (k) = NULL;
     IDIO_CONTINUATION_JMP_BUF (k) = IDIO_THREAD_JMP_BUF (thr);
-    IDIO_CONTINUATION_STACK (k) = idio_copy_array (IDIO_THREAD_STACK (thr), IDIO_COPY_SHALLOW, 8);
+    IDIO_CONTINUATION_STACK (k) = idio_copy_array (IDIO_THREAD_STACK (thr), IDIO_COPY_SHALLOW, 9);
 
     /*
      * XXX same order as idio_vm_preserve_state() !!!
@@ -47,7 +47,12 @@ IDIO idio_continuation (IDIO thr)
 
     idio_ai_t pc = IDIO_THREAD_PC (thr);
 
+    /*
+     * XXX check IDIO_A_ABORT in idio_vm_run1() is matching this
+     */
     idio_array_push (IDIO_CONTINUATION_STACK (k), idio_fixnum (pc));
+
+    idio_array_push (IDIO_CONTINUATION_STACK (k), thr);
 
     idio_array_push (IDIO_CONTINUATION_STACK (k), idio_SM_preserve_continuation);
 

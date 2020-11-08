@@ -2089,7 +2089,21 @@ void idio_vm_restore_continuation_data (IDIO k, IDIO val)
     IDIO_ASSERT (val);
     IDIO_TYPE_ASSERT (continuation, k);
 
-    IDIO thr = idio_thread_current_thread ();
+    IDIO marker = idio_array_pop (IDIO_CONTINUATION_STACK (k));
+    if (idio_SM_preserve_continuation != marker) {
+	idio_debug ("iv_rest_k_data: marker: expected idio_SM_preserve_continuation not %s\n", marker);
+	idio_vm_panic (idio_thread_current_thread (), "iv_rest_cont_data: unexpected stack marker");
+
+	/* notreached */
+    }
+
+    IDIO thr = idio_array_pop (IDIO_CONTINUATION_STACK (k));
+    if (!idio_isa_thread (thr)) {
+	idio_debug ("iv_rest_k_data: thr: expected a thread not %s\n", thr);
+	idio_vm_panic (thr, "iv_rest_k_data: unexpected value");
+
+	/* notreached */
+    }
 
     /*
      * WARNING:
@@ -2100,17 +2114,17 @@ void idio_vm_restore_continuation_data (IDIO k, IDIO val)
 
     IDIO_THREAD_STACK (thr) = idio_copy_array (IDIO_CONTINUATION_STACK (k), IDIO_COPY_SHALLOW, 0);
 
-    IDIO marker = IDIO_THREAD_STACK_POP ();
-    if (idio_SM_preserve_continuation != marker) {
-	idio_debug ("iv_rest_cont_data: marker: expected idio_SM_preserve_continuation not %s\n", marker);
-	IDIO_THREAD_STACK_PUSH (marker);
-	idio_vm_panic (thr, "iv_rest_cont_data: unexpected stack marker");
+    IDIO_THREAD_PC (thr) = IDIO_FIXNUM_VAL (IDIO_THREAD_STACK_POP ());
+    if (NULL == idio_all_code) {
+	idio_vm_panic (thr, "iv_rest_k_data: idio_all_code freed?");
+
+	/* notreached */
+    } else if (IDIO_THREAD_PC (thr) >= IDIO_IA_USIZE (idio_all_code)) {
+	fprintf (stderr, "iv_rest_k_data: thr-PC %td >= size (code) %td\n", IDIO_THREAD_PC (thr), IDIO_IA_USIZE (idio_all_code));
+	idio_vm_panic (thr, "iv_rest_k_data: PC outsized");
 
 	/* notreached */
     }
-
-    IDIO_THREAD_PC (thr) = IDIO_FIXNUM_VAL (IDIO_THREAD_STACK_POP ());
-    IDIO_C_ASSERT (IDIO_THREAD_PC (thr) < IDIO_IA_USIZE (idio_all_code));
 
     idio_vm_restore_state (thr);
 
@@ -3629,11 +3643,15 @@ int idio_vm_run1 (IDIO thr)
 	    IDIO k = idio_continuation (thr);
 	    IDIO k_stk = IDIO_CONTINUATION_STACK (k);
 
-	    /* continuation PC is penultimate arg */
+	    /*
+	     * continuation PC is 3rd from top arg
+	     *
+	     * Check with idio_continuation()
+	     */
 	    idio_ai_t al = idio_array_size (k_stk);
-	    IDIO I_PC = idio_array_ref_index (k_stk, al - 2);
+	    IDIO I_PC = idio_array_ref_index (k_stk, al - 3);
 	    I_PC = idio_fixnum (IDIO_FIXNUM_VAL (I_PC) + o);
-	    idio_array_insert_index (k_stk, I_PC, al - 2);
+	    idio_array_insert_index (k_stk, I_PC, al - 3);
 
 	    IDIO dosh = idio_open_output_string_handle_C ();
 	    idio_display_C ("ABORT to toplevel (PC ", dosh);
@@ -4698,7 +4716,7 @@ void idio_vm_dasm (IDIO thr, idio_ai_t pc0, idio_ai_t pce)
 	IDIO hint = idio_hash_ref (hints, idio_fixnum (pc));
 	if (idio_S_unspec != hint) {
 	    size_t size = 0;
-	    char *hint_C = idio_as_string (hint, &size, 40, 1);
+	    char *hint_C = idio_as_string (hint, &size, 40, idio_S_nil, 1);
 	    IDIO_VM_DASM ("%-20s ", hint_C);
 	    free (hint_C);
 	} else {
@@ -5743,13 +5761,14 @@ IDIO idio_vm_run (IDIO thr)
 
     /*
      * make sure this segment returns to idio_vm_FINISH_pc
-     *
-     * XXX should this be in idio_codegen_compile?
      */
     IDIO_THREAD_STACK_PUSH (idio_fixnum (idio_vm_FINISH_pc));
     IDIO_THREAD_STACK_PUSH (idio_SM_return);
-    /* idio_ia_push (idio_all_code, IDIO_A_NOP); */
-    idio_ia_push (idio_all_code, IDIO_A_NOP);
+
+    /*
+     * We get called from places where code has been generated but no
+     * RETURN is appended.
+     */
     idio_ia_push (idio_all_code, IDIO_A_RETURN);
 
 #ifdef IDIO_DEBUG
@@ -6123,7 +6142,7 @@ void idio_vm_dump_constants ()
 	IDIO c = idio_array_ref_index (idio_vm_constants, i);
 	fprintf (fp, "%6td: ", i);
 	size_t size = 0;
-	char *cs = idio_as_string (c, &size, 40, 1);
+	char *cs = idio_as_string (c, &size, 40, idio_S_nil, 1);
 	fprintf (fp, "%-20s %s\n", idio_type2string (c), cs);
 	free (cs);
     }
@@ -6190,16 +6209,16 @@ void idio_vm_dump_values ()
 	     * entries.  It takes millions of calls to implement and
 	     * seconds to print!
 	     */
-	    vs = idio_as_string (v, &size, 0, 1);
+	    vs = idio_as_string (v, &size, 0, idio_S_nil, 1);
 	} else if (idio_isa_struct_instance (v) &&
 		   (IDIO_STRUCT_TYPE_NAME (IDIO_STRUCT_INSTANCE_TYPE (v)) == Rx)) {
 	    /*
 	     * These objects are a little bit recursive and can easily
 	     * become 100+MB when printed (to a depth of 40...)
 	     */
-	    vs = idio_as_string (v, &size, 4, 1);
+	    vs = idio_as_string (v, &size, 4, idio_S_nil, 1);
 	} else {
-	    vs = idio_as_string (v, &size, 40, 1);
+	    vs = idio_as_string (v, &size, 40, idio_S_nil, 1);
 	}
 	fprintf (fp, "%-20s %s\n", idio_type2string (v), vs);
 	free (vs);
@@ -6907,6 +6926,7 @@ void idio_final_vm ()
 #endif
 
     idio_ia_free (idio_all_code);
+    idio_all_code = NULL;
     idio_gc_expose (idio_vm_constants);
     idio_gc_expose (idio_vm_constants_hash);
     idio_gc_expose (idio_vm_values);

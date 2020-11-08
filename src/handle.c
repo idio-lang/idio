@@ -1263,7 +1263,7 @@ IDIO idio_write (IDIO o, IDIO h)
     IDIO_TYPE_ASSERT (handle, h);
 
     size_t size = 0;
-    char *os = idio_as_string (o, &size, 10, 1);
+    char *os = idio_as_string (o, &size, 10, idio_S_nil, 1);
 
     idio_puts_handle (h, os, size);
 
@@ -1915,7 +1915,7 @@ IDIO idio_load_handle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*eval
 	 * double-quoted which is *precisely* what we want here.
 	 */
 	size_t r_size = 0;
-	char *rs = idio_as_string (r, &r_size, 40, 1);
+	char *rs = idio_as_string (r, &r_size, 40, idio_S_nil, 1);
 	idio_puts_handle (oh, rs, r_size);
 	free (rs);
     }
