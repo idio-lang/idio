@@ -266,6 +266,9 @@ char-set:cased := #n
 ; %char-set:iso-control is char-set:iso-control restricted to ASCII range
 %char-set:iso-control := #n
 
+; %char-set:word-constituent is char-set:word-constituent restricted to ASCII range
+%char-set:word-constituent := #n
+
 ; char-set:regional-indicator is Property Regional_Indicator
 char-set:regional-indicator := #n
 
@@ -515,9 +518,9 @@ Is the code point cp in the character set cs?
     cp = integer->unicode cp
   }
 
-  if (ge (unicode->integer cp) cs.size) (error 'char-set-set! "cp greater than char-set size" cp cs.size)
-
   cond ((sparse-char-set? cs) {
+    if (ge (unicode->integer cp) cs.size) (error 'char-set-set! "cp greater than char-set size" cp cs.size)
+
     bs := array-ref cs.planes (unicode->plane cp)
     if bs {
       bitset-ref bs cp
@@ -535,9 +538,9 @@ Add the code point to character set cs.
     cp = integer->unicode cp
   }
 
-  if (ge (unicode->integer cp) cs.size) (error 'char-set-set! "cp greater than char-set size" cp cs.size)
-
   cond ((sparse-char-set? cs) {
+    if (ge (unicode->integer cp) cs.size) (error 'char-set-set! "cp greater than char-set size" cp cs.size)
+
     plane := unicode->plane cp
     bs := array-ref cs.planes plane
 
@@ -546,7 +549,7 @@ Add the code point to character set cs.
       if (lt plane nplanes) {
 	bs = make-bitset #x10000
       } {
-	m := modulo size #x10000
+	m := modulo cs.size #x10000
 	if (gt m 0) {
 	  bs = make-bitset m
 	} {
@@ -568,9 +571,9 @@ Remove the code point from character set cs.
     cp = integer->unicode cp
   }
 
-  if (ge (unicode->integer cp) cs.size) (error 'char-set-clear! "cp greater than char-set size" cp cs.size)
-
   cond ((sparse-char-set? cs) {
+    if (ge (unicode->integer cp) cs.size) (error 'char-set-clear! "cp greater than char-set size" cp cs.size)
+
     bs := array-ref cs.planes (unicode->plane cp)
     if bs {
       bitset-clear! bs (unicode->plane-cp cp)

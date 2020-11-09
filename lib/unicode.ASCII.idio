@@ -100,6 +100,9 @@ char-set:cased       = make-sparse-char-set 128 #[ #B{ 128 40:01111111 48-50 111
 ; %char-set:iso-control is char-set:iso-control restricted to ASCII range
 %char-set:iso-control = make-sparse-char-set 128 #[ #B{ 128 0-18 78:00000001 } #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f ]
 
+; %char-set:word-constituent is char-set:word-constituent restricted to ASCII range
+%char-set:word-constituent = make-sparse-char-set 128 #[ #B{ 128 30-30 11000000 01111111 48-50 11100001 01111111 68-70 11100000 } #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f ]
+
 ; char-set:regional-indicator is Property Regional_Indicator
 char-set:regional-indicator = make-sparse-char-set 128 #[ #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f ]
 

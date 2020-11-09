@@ -282,7 +282,7 @@ IDIO_DEFINE_PRIMITIVE2V ("error", error, (IDIO where, IDIO msg, IDIO args))
     IDIO_VERIFY_PARAM_TYPE (string, msg);
     IDIO_VERIFY_PARAM_TYPE (list, args);
 
-    idio_error (idio_S_user_code, msg, args, where);
+    idio_error (where, msg, args, where);
 
     return idio_S_notreached;
 }
