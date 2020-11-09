@@ -150,6 +150,7 @@ char-sets := '(
 		(char-set:control "Property Control")
 		(char-set:word-constituent "char-set:letter+digit + _")
 		(char-set:cased "char-set:upper-case + char-set:lower-case + char-set:title-case")
+
 		(%char-set:letter "char-set:letter restricted to ASCII range")
 		(%char-set:lower-case "char-set:lower-case restricted to ASCII range")
 		(%char-set:upper-case "char-set:upper-case restricted to ASCII range")
@@ -161,6 +162,8 @@ char-sets := '(
 		(%char-set:whitespace "char-set:whitespace restricted to ASCII range")
 		(%char-set:printing "char-set:printing restricted to ASCII range")
 		(%char-set:iso-control "char-set:iso-control restricted to ASCII range")
+		(%char-set:word-constituent "char-set:word-constituent restricted to ASCII range")
+
 		(char-set:regional-indicator "Property Regional_Indicator")
 		(char-set:extend-or-spacing-mark "Property Extend + Property SpacingMark")
 		(char-set:hangul-l "Property L")
@@ -170,7 +173,7 @@ char-sets := '(
 		(char-set:hangul-lvt "Property LVT")
 )
 
-define-macro (declare-base-char-sets pn & cs) {
+define-template (declare-base-char-sets pn & cs) {
   ps-data := assv pn plane-sets
   ps-str := symbol->string (ph ps-data)
   cs-size := pht ps-data
@@ -200,7 +203,7 @@ define-macro (declare-base-char-sets pn & cs) {
 	    
 	    $cs-sym := make-sparse-char-set $cs-size
 	    do ((i 0 (i + 1))) \
-	       ((== i $nplanes)
+	       ((eq i $nplanes)
 		#n) {
 		  array-ref $cs-sym.planes i
 		}
@@ -520,7 +523,7 @@ define (gbp-parser) {
 
 with-input-from-file GBP gbp-parser
 
-define-macro (declare-derived-char-sets pn) {
+define-template (declare-derived-char-sets pn) {
   ps := assv pn plane-sets
 
   letter-sym := string->symbol (append-string (symbol->string pn) "-char-set:letter")
@@ -587,7 +590,7 @@ range-set-ASCII-char-set:ascii #x0000 #x007f
 range-set-BMP0-char-set:ascii #x0000 #x007f
 range-set-full-char-set:ascii #x0000 #x007f
 
-define-macro (print-char-sets pn & cs) {
+define-template (print-char-sets pn & cs) {
   pn-str := symbol->string pn
 
   ascii-cs-sym := string->symbol (append-string pn-str "-char-set:ascii")
@@ -648,7 +651,7 @@ These char-sets are automatically generated from Unicode source files.
 
 *#"
 
-			   print-char-sets ASCII lower-case upper-case title-case letter digit letter+digit graphic printing whitespace iso-control punctuation symbol hex-digit blank ascii empty full nonl control word-constituent cased %letter %lower-case %upper-case %digit %letter+digit %punctuation %symbol %graphic %whitespace %printing %iso-control regional-indicator extend-or-spacing-mark hangul-l hangul-v hangul-t hangul-lv hangul-lvt
+			   print-char-sets ASCII lower-case upper-case title-case letter digit letter+digit graphic printing whitespace iso-control punctuation symbol hex-digit blank ascii empty full nonl control word-constituent cased %letter %lower-case %upper-case %digit %letter+digit %punctuation %symbol %graphic %whitespace %printing %iso-control %word-constituent regional-indicator extend-or-spacing-mark hangul-l hangul-v hangul-t hangul-lv hangul-lvt
 
 })
 
@@ -662,7 +665,7 @@ These char-sets are automatically generated from Unicode source files.
 
 *#"
 
-			   print-char-sets BMP0 lower-case upper-case title-case letter digit letter+digit graphic printing whitespace iso-control punctuation symbol hex-digit blank ascii empty full nonl control word-constituent cased %letter %lower-case %upper-case %digit %letter+digit %punctuation %symbol %graphic %whitespace %printing %iso-control regional-indicator extend-or-spacing-mark hangul-l hangul-v hangul-t hangul-lv hangul-lvt
+			   print-char-sets BMP0 lower-case upper-case title-case letter digit letter+digit graphic printing whitespace iso-control punctuation symbol hex-digit blank ascii empty full nonl control word-constituent cased %letter %lower-case %upper-case %digit %letter+digit %punctuation %symbol %graphic %whitespace %printing %iso-control %word-constituent regional-indicator extend-or-spacing-mark hangul-l hangul-v hangul-t hangul-lv hangul-lvt
 
 })
 
@@ -676,7 +679,7 @@ These char-sets are automatically generated from Unicode source files.
 
 *#"
 
-			   print-char-sets full lower-case upper-case title-case letter digit letter+digit graphic printing whitespace iso-control punctuation symbol hex-digit blank ascii empty full nonl control word-constituent cased %letter %lower-case %upper-case %digit %letter+digit %punctuation %symbol %graphic %whitespace %printing %iso-control regional-indicator extend-or-spacing-mark hangul-l hangul-v hangul-t hangul-lv hangul-lvt
+			   print-char-sets full lower-case upper-case title-case letter digit letter+digit graphic printing whitespace iso-control punctuation symbol hex-digit blank ascii empty full nonl control word-constituent cased %letter %lower-case %upper-case %digit %letter+digit %punctuation %symbol %graphic %whitespace %printing %iso-control %word-constituent regional-indicator extend-or-spacing-mark hangul-l hangul-v hangul-t hangul-lv hangul-lvt
 
 })
 
