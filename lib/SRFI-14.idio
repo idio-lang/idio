@@ -125,6 +125,7 @@ export (
 	 %char-set:whitespace
 	 %char-set:printing
 	 %char-set:iso-control
+	 %char-set:word-constituent
 
 	 ; SRFI-115: Unicode boundaries, TR29
 	 char-set:regional-indicator
