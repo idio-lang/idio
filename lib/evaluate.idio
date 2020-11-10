@@ -440,7 +440,7 @@ define (eps-qq-expand e) {
 }
 
 define (qq-expand e) {
-  eps-qq-expand (pht e)
+  eps-qq-expand e
 }
 
 define (qq-expand-list/verbose e c) {
@@ -478,7 +478,7 @@ define (qq-expand/verbose e c) {
 }
 
 define (qq-expand/verbose e) {
-  qq-expand/verbose (pht e) "repl"
+  qq-expand/verbose e "repl"
 }
 
 define (STklos-backquotify e level) {
@@ -517,12 +517,11 @@ define (STklos-backquotify e level) {
 }
 
 define (STklos-expand e) {
-  STklos-backquotify (pht e) 0
+  STklos-backquotify e 0
 }
 
 define (meaning-quasiquotation src e nametree flags cs cm) {
   ee := qq-expand e
-  ;eprintf "mq: %s\n" ee
 
   meaning src ee nametree flags cs cm
 }
