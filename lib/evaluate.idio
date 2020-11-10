@@ -22,7 +22,7 @@ module evaluate
 export (
 	 evaluate
 )
-import expander codegen vm
+import expander codegen threading vm
 
 define (meaning-error-location src) {
   lo := #f
@@ -86,7 +86,7 @@ define (meaning-error-static-immutable src name) {
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 define (meaning-error-static-primitive-arity src msg f args name primdata) {
-  arity := sprintf "%d" primtive-arity primdata
+  arity := sprintf "%d" (primitive-arity primdata)
   if (primitive-varargs? primdata) {
     arity = append-string arity "*"
   }
@@ -145,7 +145,7 @@ define (meaning-toplevel-extend src name flags cs cm) {
     }
     ci := codegen-constants-lookup-or-extend cs name
 
-    set-symbol! name (list flag-scope ci 0 cm "idio-toplevel-extend") cm
+    set-symbol! name (list flag-scope ci 0 cm "meaning-toplevel-extend") cm
   }
 }
 
@@ -279,7 +279,7 @@ define (meaning-variable-info src nametree name flags cs cm) {
 	; not found -> (auto) extend toplevel
 	meaning-toplevel-extend src name flags cs cm
 
-	; toplevel-extend only returns a ci
+	; meaning-toplevel-extend only returns a ci
 	r = find-symbol name cm
       }
     }
@@ -522,7 +522,7 @@ define (STklos-expand e) {
 
 define (meaning-quasiquotation src e nametree flags cs cm) {
   ee := qq-expand e
-  eprintf "mq: %s\n" ee
+  ;eprintf "mq: %s\n" ee
 
   meaning src ee nametree flags cs cm
 }
@@ -750,7 +750,7 @@ define (meaning-assignment src name e nametree flags cs cm) {
 	       }
 	   })
 	   ((predef) {
-	     new-ci := toplevel-extend src name (define-scope 'toplevel flags) cs cm
+	     new-ci := meaning-toplevel-extend src name (define-scope 'toplevel flags) cs cm
 
 	     vi := phtt si
 	     set-symbol-value! name (vm-values-ref vi) cm
@@ -802,7 +802,7 @@ define (meaning-define src name e nametree flags cs cm) {
   if (and (eq? 'toplevel scope)
 	  (eq 0 vi)) {
 	    vi = (vm-extend-values)
-	    si = list scope (pht si) vi sm "meaning-define/gvi=0"
+	    si = list scope (pht si) vi cm "meaning-define/gvi=0"
 	    set-symbol! name si cm
 	  }
 
@@ -934,13 +934,13 @@ define (meaning-define-template src name e nametree flags cs cm) {
 
 define (meaning-define-infix-operator src name e nametree flags cs cm) {
   eprintf "meaning-define-infix-operator: come back to me for %s!\n" src
-  sleep 1
+  libc/sleep 1
   e
 }
 
 define (meaning-define-postfix-operator src name e nametree flags cs cm) {
   eprintf "meaning-define-postfix-operator: come back to me for %s!\n" src
-  sleep 1
+  libc/sleep 1
   e
 }
 
@@ -1444,7 +1444,7 @@ define (meaning-some-arguments src ae ae* nametree size flags cs cm) {
   am := meaning (mpp ae src) ae nametree (clear-tailp flags) cs cm
   am* := meaning-arguments src ae* nametree size flags cs cm
 
-  rank := size - (length ae*)
+  rank := size - ((length ae*) + 1)
 
   list I-STORE-ARGUMENT am am* rank
 }
@@ -1480,7 +1480,7 @@ define (meaning-fix-closed-application src formal* body ae* nametree flags cs cm
 define (meaning-some-dotted-arguments src ae ae* nametree size arity flags cs cm) {
   am := meaning (mpp ae src) ae nametree (clear-tailp flags) cs cm
   am* := meaning-dotted-arguments src ae* nametree size arity flags cs cm
-  rank := size - (length ae*)
+  rank := size - ((length ae*) + 1)
 
   if (lt rank arity) {
     list I-STORE-ARGUMENT am am* rank
@@ -1505,7 +1505,7 @@ define (meaning-dotted-closed-application src formal* vararg body ae* nametree f
   body = meaning-rewrite-body (mpp body src) body
   meaning-copy-src-properties src body
 
-  am* = meaning-dotted-arguments src ae* nametree (length ae*) (length formal*) (clear-tailp flags) cs cm
+  am* := meaning-dotted-arguments src ae* nametree (length ae*) (length formal*) (clear-tailp flags) cs cm
 
   fix-formal* := append formal* (list vararg)
   nt+ := meaning-nametree-extend nametree fix-formal*
@@ -1740,7 +1740,7 @@ define (meaning-dynamic-let src name e e+ nametree flags cs cm) {
   if si {
     ci = pht si
   } {
-    ci = toplevel-extend src name (set-scope 'dynamic flags) cs cm
+    ci = meaning-toplevel-extend src name (set-scope 'dynamic flags) cs cm
   }
 
   nt+ := meaning-nametree-dynamic-extend nametree name ci 'dynamic
@@ -1773,10 +1773,10 @@ define (meaning-environ-let src name e e+ nametree flags cs cm) {
   if si {
     ci = pht si
   } {
-    ci = toplevel-extend src name (set-scope 'environ flags) cs cm
+    ci = meaning-toplevel-extend src name (set-scope 'environ flags) cs cm
   }
 
-  nt+ := meaning-nametree-environ-extend nametree name ci 'environ
+  nt+ := meaning-nametree-dynamic-extend nametree name ci 'environ
 
   m+ := meaning-sequence src e+ nt+ (clear-tailp flags) 'begin cs cm
 
@@ -1826,7 +1826,7 @@ define (meaning-trap src ce he be nametree flags cs cm) {
 		  ci = pht si
 		} {
 		  eprintf "meaning-trap: condition name unknown: '%s'\n" c-sym
-		  ci = toplevel-extend src c-sym (set-scope 'toplevel flags) cs cm
+		  ci = meaning-toplevel-extend src c-sym (set-scope 'toplevel flags) cs cm
 		}
 
 		pushs = pair (list I-PUSH-TRAP ci) pushs
@@ -1851,10 +1851,10 @@ define (evaluate-include-file fh cs) {
   c := *primitives*/read fh
   if (not (eof? fh)) {
     ;eprintf "incl:\tc=%s\n" c
-    m := time evaluate c
+    m := evaluate c
     eprintf "incl:\tm=%s\n" m
-    time codegen (current-thread) m cs
-    r := time vm-run (current-thread)
+    pc := codegen (current-thread) m cs
+    r := vm-run (current-thread) pc
     eprintf "incl:\tr=%s\n" r
     evaluate-include-file fh cs
   }
@@ -1870,6 +1870,7 @@ define (meaning-include src e nametree flags cs cm) {
 }
 
 define (meaning-expander src e nametree flags cs cm) {
+  ;eprintf "meaning-expander: %s\n" e
   te := expander/template-expand e
   meaning-copy-src-properties src te
 
@@ -2459,7 +2460,7 @@ define (meaning src e nametree flags cs cm) {
       idio-dump e
       eprintf "unexpected expression: %s\n" e
       eprintf "\n\n"
-      sleep 10
+      libc/sleep 10
       (meaning-error-param src "invalid constant type" e)))
   }
 }

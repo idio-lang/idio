@@ -16,28 +16,29 @@ expander-error0 := Tests
 module expander
 
 define-template (expander-trap type) {
-  loader-name := string->symbol (append-string "expander-trap-" (symbol->string type))
+  loader-name := append-string "expander-trap-" (symbol->string type)
+  loader-sym := string->symbol loader-name
   condition-name := string->symbol (append-string "^" (symbol->string type))
   #T{
 
-    $loader-name := {
+    $loader-sym := {
       function (filename msg) {
-	if (not (string? filename)) (error 'load "not a string" filename)
+	if (not (string? filename)) (error '$loader-sym "not a string" filename)
 
 	load-k := #n
 
-	;edisplay* "loading #" filename "looking for" msg
 	thunk := function () {
 		   trap $condition-name (function (c) {
 					   ;edisplay* "caught" msg c.location
 					   test c.message msg
 					   if (not (string=? c.message msg)) {
-					     condition-report (append-string "expander-error-load: " filename) c (current-error-handle)
+					     condition-report (append-string $loader-name " " filename) c (current-error-handle)
 					   }
 					   load-k c
 		   }) {
 		     call/cc (function (k) {
 				load-k = k
+				;edisplay* "loading #" filename "looking for" msg
 				(symbol-value 'load 'Idio) filename
 		     })
 		   }

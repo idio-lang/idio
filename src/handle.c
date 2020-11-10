@@ -1762,14 +1762,9 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
 	    fprintf (stderr, " e %ld.%06ld", td.tv_sec, td.tv_usec);
 #endif
 
-	    idio_ai_t lh_pc = -1;
-	    idio_codegen (thr, m, cs);
-	    if (-1 == lh_pc) {
-		lh_pc = IDIO_THREAD_PC (thr);
-	    }
+	    idio_ai_t pc = idio_codegen (thr, m, cs);
 
-	    IDIO_THREAD_PC (thr) = lh_pc;
-	    r = idio_vm_run (thr);
+	    r = idio_vm_run_C (thr, pc);
 
 	    idio_ai_t ss = idio_array_size (IDIO_THREAD_STACK (thr));
 
@@ -1905,9 +1900,9 @@ IDIO idio_load_handle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*eval
 	}
 
 	IDIO m = (*evaluator) (e, cs);
-	idio_codegen (thr, m, cs);
+	idio_ai_t pc = idio_codegen (thr, m, cs);
 
-	IDIO r = idio_vm_run (thr);
+	IDIO r = idio_vm_run_C (thr, pc);
 	/*
 	 * NB.  We must deliberately call idio_as_string() because the
 	 * idio_print_handle (oh, r) method will call

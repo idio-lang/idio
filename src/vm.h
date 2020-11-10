@@ -225,7 +225,12 @@ extern int idio_vm_exit;
 void idio_vm_panic (IDIO thr, char *m);
 IDIO idio_vm_closure_name (IDIO c);
 
-IDIO idio_vm_run (IDIO thr);
+#define IDIO_VM_RUN_C		0
+#define IDIO_VM_RUN_IDIO	1
+
+IDIO idio_vm_run (IDIO thr, idio_ai_t pc, int caller);
+IDIO idio_vm_run_C (IDIO thr, idio_ai_t pc);
+void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_ai_t pc0, idio_ai_t pce);
 
 void idio_vm_restore_continuation (IDIO k, IDIO val);
 void idio_vm_restore_exit (IDIO k, IDIO val);

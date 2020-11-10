@@ -450,11 +450,7 @@ The default padding character is #\{space}
 define (format fmt & args) "
 Call %format with 'args
 " {
-  if (null? args) {
-    %format 'args fmt
-  } {
-    apply %format 'args fmt args
-  }
+  apply %format 'args fmt args
 }
 
 define (hprintf handle fmt & args) "
@@ -471,11 +467,7 @@ applying ``format`` to ``fmt`` and ``args``.
 
 :return: #unspec
 " {
-  if (null? args) {
-    display (format fmt) handle
-  } {
-    display (apply format fmt args) handle
-  }
+  display (apply format fmt args) handle
 }
 
 define (printf fmt & args) "
@@ -490,11 +482,7 @@ Invoke the ``hprintf`` function on the current output handle with
 
 :return: #unspec
 " {
-  if (null? args) {
-    hprintf (current-output-handle) fmt
-  } {
-    apply hprintf (current-output-handle) fmt args
-  }
+  apply hprintf (current-output-handle) fmt args
 }
 
 define (eprintf fmt & args) "
@@ -509,11 +497,7 @@ Invoke the ``hprintf`` function on the current error handle with
 
 :return: #unspec
 " {
-  if (null? args) {
-    hprintf (current-error-handle) fmt
-  } {
-    apply hprintf (current-error-handle) fmt args
-  }
+  apply hprintf (current-error-handle) fmt args
 }
 
 define (sprintf fmt & args) "
@@ -529,11 +513,8 @@ Invoke the ``hprintf`` function on an output string handle with
 :return: string
 " {
   osh := (open-output-string)
-  if (null? args) {
-    hprintf osh fmt
-  } {
-    apply hprintf osh fmt args
-  }
+
+  apply hprintf osh fmt args
 
   get-output-string osh
 }
@@ -596,13 +577,8 @@ define (times proc & args) "
 Report the Real/User and System time for the invocation of
 proc [args]
 " {
-  r := #n
   start := (times)
-  if (null? args) {
-    r = (proc)
-  } {
-    r = apply proc args
-  }
+  r := apply proc args
   end := (times)
 
   printf "Real %d\nUser %d\nSyst %d\n" (end.tms_rtime - start.tms_rtime) (end.tms_utime - start.tms_utime) (end.tms_stime - start.tms_stime)
@@ -623,13 +599,7 @@ This takes after Bash's time_command
   rus-before := getrusage RUSAGE_SELF
   ruk-before := getrusage RUSAGE_CHILDREN
 
-  r := #n
-
-  if (null? args) {
-    r = (proc)
-  } {
-    r = apply proc args
-  }
+  r := apply proc args
 
   tv-after := (gettimeofday)
   rus-after := getrusage RUSAGE_SELF
@@ -659,12 +629,7 @@ The report format is defined in `TIMEFORMAT`.
 
 This takes after Bash's time_command
 " {
-  rusage-data := #n
-  if (null? args) {
-    rusage-data = time-command proc
-  } {
-    rusage-data = apply time-command proc args
-  }
+  rusage-data := apply time-command proc args
 
   R := pht rusage-data
   U := phtt rusage-data

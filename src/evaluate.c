@@ -1573,7 +1573,7 @@ static IDIO idio_meaning_assignment (IDIO src, IDIO name, IDIO e, IDIO nametree,
 	 * We need a new mci as the existing one is tagged as a
 	 * predef.  This new one will be tagged as a toplevel.
 	 */
-	IDIO new_mci = idio_toplevel_extend (src, name, IDIO_MEANING_TOPLEVEL_SCOPE (flags), cs, cm);
+	IDIO new_mci = idio_toplevel_extend (src, name, IDIO_MEANING_DEFINE (IDIO_MEANING_TOPLEVEL_SCOPE (flags)), cs, cm);
 
 	/*
 	 * But now we have a problem.

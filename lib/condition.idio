@@ -174,7 +174,7 @@ define-condition-type-accessors-only ^rt-computed-variable-error         ^rt-var
 define-condition-type-accessors-only ^rt-computed-variable-no-accessor-error ^rt-computed-variable-error	rt-computed-variable-no-accessor-error?
 
 define-condition-type-accessors-only ^rt-function-error			^runtime-error			rt-function-error?
-define-condition-type-accessors-only ^rt-function-type-error		^rt-function-error		rt-function-type-error?
+define-condition-type-accessors-only ^rt-function-arity-error		^rt-function-error		rt-function-arity-error?
 
 define-condition-type-accessors-only ^rt-module-error			^runtime-error			rt-module-error? \
 	(module rt-module-error-module)
@@ -230,11 +230,7 @@ define (condition-report prefix c & args) "print a report on condition `c`
 	  }
 
   define (cr-printf fmt & args*) {
-    if (null? args*) {
-      hprintf oh fmt
-    } {
-      apply hprintf oh fmt args*
-    }
+    apply hprintf oh fmt args*
   }
 
   if (not (null? prefix)) {

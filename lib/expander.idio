@@ -28,7 +28,7 @@ export (
 	 template-expand
 	 template-expand*
 )
-import threading
+import codegen threading vm
 
 #*
 
@@ -202,8 +202,8 @@ define (copy-expander! new-id old-id) {
 
 define (evaluate-expander m cs) {
   eprintf "ee:\n"
-  codegen *expander-thread* m cs
-  r := vm-run *expander-thread*
+  pc := codegen *expander-thread* m cs
+  r := vm-run *expander-thread* pc
   eprintf "ee:\tr=%s\n" r
 
   r

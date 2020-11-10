@@ -479,7 +479,7 @@ define (ucs-range->char-set s e & base?) {
   if (pair? base?) {
     cs? := ph base?
     if (char-set? cs?) {
-      bs = copy-char-set cs?
+      cs = copy-char-set cs?
     } (error 'string->char-set "not a char-set" cs?)
   } {
     cs = copy-char-set char-set:empty
@@ -835,7 +835,7 @@ Intersection of the code points from character set cs with side-effects.
 If no arguments are passed the return value is a copy of char-set:full.
 " {
   if (pair? css) {
-    cs = apply and-char-set css
+    apply and-char-set css
   } {
     copy-char-set char-set:full
   }

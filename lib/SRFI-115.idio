@@ -34,6 +34,20 @@ export (regexp regexp? valid-sre? rx regexp->sre char-set->sre
 import SRFI-14
 import unicode
 
+; chibi defines a number of utility functions in the .sld
+define (string-cursor-start s) 0
+define (string-cursor-end s) (string-length s)
+define (string-cursor->index str off) off
+define (string-index->cursor str i) i
+define (string-start-arg s o) {
+  if (pair? o) (string-index->cursor s (ph o)) (string-cursor-start s)
+}
+define (string-end-arg s o) {
+  if (pair? o) (string-index->cursor s (ph o)) (string-cursor-end s)
+}
+define (string-cursor-next s i) (+ i 1)
+define (string-cursor-prev s i) (- i 1)
+
 ;; regexp.scm -- simple non-bactracking NFA implementation
 ;; Copyright (c) 2013-2016 Alex Shinn.  All rights reserved.
 ;; BSD-style license: http://synthcode.com/license.txt
@@ -1467,22 +1481,6 @@ define (regexp-apply-match m str ls start end) {
 
   lp ls #n
 }
-
-; chibi defines a number of utility functions in the .sld
-define (string-start-arg s o) {
-  if (pair? o) (string-index->cursor s (ph o)) (string-cursor-start s)
-}
-define (string-end-arg s o) {
-  if (pair? o) (string-index->cursor s (ph o)) (string-cursor-end s)
-}
-define (string-cursor-next s i) (+ i 1)
-define (string-cursor-prev s i) (- i 1)
-define (string-cursor->index str off) off
-define (string-index->cursor str i) i
-
-; and
-define (string-cursor-start s) 0
-define (string-cursor-end s) (string-length s)
 
 define re:grapheme (regexp 'grapheme)
 

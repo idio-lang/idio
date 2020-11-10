@@ -48,7 +48,11 @@ IDIO idio_continuation (IDIO thr)
     idio_ai_t pc = IDIO_THREAD_PC (thr);
 
     /*
-     * XXX check IDIO_A_ABORT in idio_vm_run1() is matching this
+     * XXX check the use of PC in
+     *
+     * 1. IDIO_A_ABORT in idio_vm_run1()
+     *
+     * 2. printing a continuation in util.c
      */
     idio_array_push (IDIO_CONTINUATION_STACK (k), idio_fixnum (pc));
 

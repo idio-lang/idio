@@ -60,8 +60,12 @@ IDIO_IA_T idio_ia (size_t asize)
 
 void idio_ia_free (IDIO_IA_T ia)
 {
-    free (ia->ae);
-    free (ia);
+    if (ia) {
+	free (ia->ae);
+	free (ia);
+    } else {
+	fprintf (stderr, "already freed ia?\n");
+    }
 }
 
 static void idio_ia_resize_by (IDIO_IA_T ia, size_t n)
@@ -2521,6 +2525,34 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (pri));
 	}
 	break;
+    case IDIO_I_CODE_RETURN:
+	{
+	    if (idio_S_nil != mt) {
+		idio_codegen_error_param_args ("RETURN", mt, IDIO_C_FUNC_LOCATION_S ("RETURN"));
+
+		/* notreached */
+		return;
+	    }
+
+	    IDIO_IA_PUSH1 (IDIO_A_RETURN);
+	}
+	break;
+    case IDIO_I_CODE_FINISH:
+	{
+	    if (idio_S_nil != mt) {
+		idio_codegen_error_param_args ("FINISH", mt, IDIO_C_FUNC_LOCATION_S ("FINISH"));
+
+		/* notreached */
+		return;
+	    }
+
+	    /*
+	     * Wait!  No-one should be encoding a FINISH instruction!
+	     */
+	    IDIO_C_ASSERT (0);
+	    IDIO_IA_PUSH1 (IDIO_A_FINISH);
+	}
+	break;
     case IDIO_I_CODE_ABORT:
 	{
 	    if (! idio_isa_pair (mt) ||
@@ -2541,19 +2573,6 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 
 	    idio_ia_append (ia, ia1);
 	    idio_ia_free (ia1);
-	}
-	break;
-    case IDIO_I_CODE_FINISH:
-	{
-	    if (! idio_isa_pair (mt) ||
-		idio_list_length (mt) != 0) {
-		idio_codegen_error_param_args ("FINISH", mt, IDIO_C_FUNC_LOCATION_S ("FINISH"));
-
-		/* notreached */
-		return;
-	    }
-
-	    IDIO_IA_PUSH1 (IDIO_A_FINISH);
 	}
 	break;
     case IDIO_I_CODE_NOP:
@@ -2602,21 +2621,21 @@ void idio_codegen_code_prologue (IDIO_IA_T ia)
     IDIO_IA_PUSH2 (IDIO_A_RESTORE_ALL_STATE, IDIO_A_RETURN);
 }
 
-void idio_codegen (IDIO thr, IDIO m, IDIO cs)
+idio_ai_t idio_codegen (IDIO thr, IDIO m, IDIO cs)
 {
     IDIO_ASSERT (thr);
     IDIO_ASSERT (m);
     IDIO_TYPE_ASSERT (thread, thr);
     IDIO_TYPE_ASSERT (pair, m);
 
-    IDIO_THREAD_PC (thr) = IDIO_IA_USIZE (idio_all_code);
+    idio_ai_t PC0 = IDIO_IA_USIZE (idio_all_code);
 
     IDIO_IA_T ia = idio_ia (1024);
 
     idio_codegen_compile (thr, ia, cs, m, 0);
 
     if (0 == IDIO_IA_USIZE (ia)) {
-	fprintf (stderr, "no code => NOP\n");
+	fprintf (stderr, "codegen: no code in m's %zu entries => NOP\n", idio_list_length (m));
 	idio_ia_push (ia, IDIO_A_NOP);
     }
 
@@ -2624,7 +2643,7 @@ void idio_codegen (IDIO thr, IDIO m, IDIO cs)
 
     idio_ia_free (ia);
 
-    /* idio_vm_add_module_constants (idio_Idio_module_instance (), cs); */
+    return PC0;
 }
 
 IDIO_DEFINE_PRIMITIVE3_DS ("codegen", codegen, (IDIO thr, IDIO m, IDIO cs), "thr m cs", "\
@@ -2636,7 +2655,7 @@ Generate the code for `m` using `cs` in `thr`	\n\
 :type m: list					\n\
 :param cs: constants				\n\
 :type cs: array					\n\
-:return: #<unspec>				\n\
+:return: PC of start of code			\n\
 ")
 {
     IDIO_ASSERT (thr);
@@ -2647,9 +2666,18 @@ Generate the code for `m` using `cs` in `thr`	\n\
     IDIO_TYPE_ASSERT (list, m);
     IDIO_TYPE_ASSERT (array, cs);
 
-    idio_codegen (thr, m, cs);
+    idio_ai_t PC0 = idio_codegen (thr, m, cs);
 
-    return idio_S_unspec;
+    /*
+     * When some Idio code calls {codegen} then we are already *in*
+     * idio_vm_run() which means that we don't enter idio_vm_run() to
+     * have a RETURN added to the code
+     */
+    idio_ia_push (idio_all_code, IDIO_A_RETURN);
+
+    /* idio_vm_dasm (thr, idio_all_code, PC0, 0); */
+
+    return idio_fixnum (PC0);
 }
 
 typedef struct idio_codegen_symbol_s {
@@ -2671,15 +2699,15 @@ static idio_codegen_symbol_t idio_codegen_symbols[] = {
     { "I-CONSTANT-SYM-REF",			IDIO_I_CONSTANT_SYM_REF },
     { "I-COMPUTED-SYM-REF",			IDIO_I_COMPUTED_SYM_REF },
 
-    { "I-GLOBAL-SYM-DEF"	,		IDIO_I_GLOBAL_SYM_DEF },
+    { "I-GLOBAL-SYM-DEF",			IDIO_I_GLOBAL_SYM_DEF },
     { "I-GLOBAL-SYM-SET",			IDIO_I_GLOBAL_SYM_SET },
     { "I-COMPUTED-SYM-SET",			IDIO_I_COMPUTED_SYM_SET },
-    { "I-COMPUTEDSYM-DEF",			IDIO_I_COMPUTED_SYM_DEF },
+    { "I-COMPUTED-SYM-DEF",			IDIO_I_COMPUTED_SYM_DEF },
 
     { "I-GLOBAL-VAL-REF",			IDIO_I_GLOBAL_VAL_REF },
-    { "I-CHECKED-GLOBAL-VALUE-REF",		IDIO_I_CHECKED_GLOBAL_VAL_REF },
+    { "I-CHECKED-GLOBAL-VAL-REF",		IDIO_I_CHECKED_GLOBAL_VAL_REF },
     { "I-GLOBAL-FUNCTION-VAL-REF",		IDIO_I_GLOBAL_FUNCTION_VAL_REF },
-    { "I-CHECKED-GLOBAL-FUNCTION-VALUE-REF",	IDIO_I_CHECKED_GLOBAL_FUNCTION_VAL_REF },
+    { "I-CHECKED-GLOBAL-FUNCTION-VAL-REF",	IDIO_I_CHECKED_GLOBAL_FUNCTION_VAL_REF },
     { "I-CONSTANT-VAL-REF",			IDIO_I_CONSTANT_VAL_REF },
     { "I-COMPUTED-VAL-REF",			IDIO_I_COMPUTED_VAL_REF },
 
@@ -2730,8 +2758,9 @@ static idio_codegen_symbol_t idio_codegen_symbols[] = {
     { "I-INFIX-OPERATOR",			IDIO_I_INFIX_OPERATOR },
     { "I-POSTFIX-OPERATOR",			IDIO_I_POSTFIX_OPERATOR },
 
-    { "I-ABORT",				IDIO_I_ABORT },
+    { "I-RETURN",				IDIO_I_RETURN },
     { "I-FINISH",				IDIO_I_FINISH },
+    { "I-ABORT",				IDIO_I_ABORT },
     { "I-NOP",					IDIO_I_NOP },
 
     { NULL, NULL }

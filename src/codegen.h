@@ -99,8 +99,9 @@
 #define IDIO_I_CODE_INFIX_OPERATOR			141
 #define IDIO_I_CODE_POSTFIX_OPERATOR			142
 
-#define IDIO_I_CODE_ABORT				997
-#define IDIO_I_CODE_FINISH				998
+#define IDIO_I_CODE_RETURN				996
+#define IDIO_I_CODE_FINISH				997
+#define IDIO_I_CODE_ABORT				998
 #define IDIO_I_CODE_NOP					999
 
 /*
@@ -181,8 +182,9 @@
 #define IDIO_I_INFIX_OPERATOR			((const IDIO) IDIO_CONSTANT_I_CODE (IDIO_I_CODE_INFIX_OPERATOR))
 #define IDIO_I_POSTFIX_OPERATOR			((const IDIO) IDIO_CONSTANT_I_CODE (IDIO_I_CODE_POSTFIX_OPERATOR))
 
-#define IDIO_I_ABORT				((const IDIO) IDIO_CONSTANT_I_CODE (IDIO_I_CODE_ABORT))
+#define IDIO_I_RETURN				((const IDIO) IDIO_CONSTANT_I_CODE (IDIO_I_CODE_RETURN))
 #define IDIO_I_FINISH				((const IDIO) IDIO_CONSTANT_I_CODE (IDIO_I_CODE_FINISH))
+#define IDIO_I_ABORT				((const IDIO) IDIO_CONSTANT_I_CODE (IDIO_I_CODE_ABORT))
 #define IDIO_I_NOP				((const IDIO) IDIO_CONSTANT_I_CODE (IDIO_I_CODE_NOP))
 
 IDIO_IA_T idio_ia (size_t n);
@@ -192,7 +194,7 @@ idio_ai_t idio_codegen_extend_constants (IDIO cs, IDIO v);
 idio_ai_t idio_codegen_constants_lookup (IDIO cs, IDIO v);
 idio_ai_t idio_codegen_constants_lookup_or_extend (IDIO cs, IDIO v);
 void idio_codegen_code_prologue (IDIO_IA_T ia);
-void idio_codegen (IDIO thr, IDIO m, IDIO cs);
+idio_ai_t idio_codegen (IDIO thr, IDIO m, IDIO cs);
 
 void idio_init_codegen ();
 void idio_codegen_add_primitives ();

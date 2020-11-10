@@ -141,7 +141,7 @@ IDIO idio_evaluate_expander_source (IDIO x, IDIO e)
     idio_vm_default_pc (ethr);
 
     idio_initial_expander (x, e);
-    IDIO r = idio_vm_run (ethr);
+    IDIO r = idio_vm_run_C (ethr, IDIO_THREAD_PC (ethr));
 
     idio_ai_t pc = IDIO_THREAD_PC (ethr);
     if (pc == (idio_vm_FINISH_pc + 1)) {
@@ -736,8 +736,8 @@ IDIO idio_evaluate_expander_code (IDIO m, IDIO cs)
     idio_ai_t pc0 = IDIO_THREAD_PC (ethr);
     idio_vm_default_pc (ethr);
 
-    idio_codegen (ethr, m, cs);
-    IDIO r = idio_vm_run (ethr);
+    idio_ai_t cg_pc = idio_codegen (ethr, m, cs);
+    IDIO r = idio_vm_run_C (ethr, cg_pc);
 
     idio_ai_t pc = IDIO_THREAD_PC (ethr);
     if (pc == (idio_vm_FINISH_pc + 1)) {
@@ -902,8 +902,8 @@ IDIO idio_evaluate_infix_operator_code (IDIO m, IDIO cs)
     idio_ai_t pc0 = IDIO_THREAD_PC (ethr);
     idio_vm_default_pc (ethr);
 
-    idio_codegen (ethr, m, cs);
-    IDIO r = idio_vm_run (ethr);
+    idio_ai_t cg_pc = idio_codegen (ethr, m, cs);
+    IDIO r = idio_vm_run_C (ethr, cg_pc);
 
     idio_ai_t pc = IDIO_THREAD_PC (ethr);
     if (pc == (idio_vm_FINISH_pc + 1)) {
@@ -957,7 +957,7 @@ static IDIO idio_evaluate_infix_operator (IDIO n, IDIO e, IDIO b, IDIO a)
     struct timespec prim_t0;
     idio_vm_func_start (func, &prim_t0);
 #endif
-    IDIO r = idio_vm_run (ethr);
+    IDIO r = idio_vm_run_C (ethr, IDIO_THREAD_PC (ethr));
 #ifdef IDIO_VM_PROF
     struct timespec prim_te;
     idio_vm_func_stop (func, &prim_te);
@@ -1100,8 +1100,8 @@ IDIO idio_evaluate_postfix_operator_code (IDIO m, IDIO cs)
     idio_ai_t pc0 = IDIO_THREAD_PC (ethr);
     idio_vm_default_pc (ethr);
 
-    idio_codegen (ethr, m, cs);
-    IDIO r = idio_vm_run (ethr);
+    idio_ai_t cg_pc = idio_codegen (ethr, m, cs);
+    IDIO r = idio_vm_run_C (ethr, cg_pc);
 
     idio_ai_t pc = IDIO_THREAD_PC (ethr);
     if (pc == (idio_vm_FINISH_pc + 1)) {
@@ -1153,7 +1153,7 @@ static IDIO idio_evaluate_postfix_operator (IDIO n, IDIO e, IDIO b, IDIO a)
     struct timespec prim_t0;
     idio_vm_func_start (func, &prim_t0);
 #endif
-    IDIO r = idio_vm_run (ethr);
+    IDIO r = idio_vm_run_C (ethr, IDIO_THREAD_PC (ethr));
 #ifdef IDIO_VM_PROF
     struct timespec prim_te;
     idio_vm_func_stop (func, &prim_te);

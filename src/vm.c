@@ -268,6 +268,8 @@ static struct timespec idio_vm_ins_call_time[IDIO_I_MAX];
 #define IDIO_VM_INVOKE_REGULAR_CALL	0
 #define IDIO_VM_INVOKE_TAIL_CALL	1
 
+static char *idio_vm_panicking = NULL;
+
 void idio_vm_panic (IDIO thr, char *m)
 {
     IDIO_ASSERT (thr);
@@ -281,11 +283,17 @@ void idio_vm_panic (IDIO thr, char *m)
      */
 
     fprintf (stderr, "\n\nPANIC: %s\n\n", m);
-    idio_vm_debug (thr, "PANIC", 0);
-    idio_final_vm();
-    idio_exit_status = -1;
-    idio_vm_restore_exit (idio_k_exit, idio_S_unspec);
-    IDIO_C_ASSERT (0);
+    if (idio_vm_panicking) {
+	fprintf (stderr, "VM already panicking for %s\n", idio_vm_panicking);
+	exit (-2);
+    } else {
+	idio_vm_panicking = m;
+	idio_vm_debug (thr, "PANIC", 0);
+	idio_final_vm();
+	idio_exit_status = -1;
+	idio_vm_restore_exit (idio_k_exit, idio_S_unspec);
+	IDIO_C_ASSERT (0);
+    }
 }
 
 static void idio_vm_error_function_invoke (char *msg, IDIO args, IDIO c_location)
@@ -551,7 +559,7 @@ void idio_vm_debug (IDIO thr, char *prefix, idio_ai_t stack_start)
     IDIO_TYPE_ASSERT (thread, thr);
 
     fprintf (stderr, "idio-debug: %s THR %10p\n", prefix, thr);
-    idio_debug ("  src=%s\n", idio_vm_source_location ());
+    idio_debug ("    src=%s\n", idio_vm_source_location ());
     fprintf (stderr, "     pc=%6td\n", IDIO_THREAD_PC (thr));
     idio_debug ("    val=%s\n", IDIO_THREAD_VAL (thr));
     idio_debug ("   reg1=%s\n", IDIO_THREAD_REG1 (thr));
@@ -1209,7 +1217,7 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
 	     * don't really care if they were called in tail position
 	     * or not they just do whatever and set VAL.
 	     *
-	     * However, (apply proc . args) will prepare some
+	     * However, (apply proc & args) will prepare some
 	     * procedure which may well be a closure which *will*
 	     * alter the PC.  (As an aside, apply always invokes proc
 	     * in tail position -- as proc *is* in tail position from
@@ -1237,7 +1245,11 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
 	    IDIO_FRAME_NARGS (val) -= 1;
 
 	    if (idio_S_nil != last) {
-		idio_error_C ("primitive: varargs?", last, IDIO_C_FUNC_LOCATION ());
+		fprintf (stderr, "func args (%td): %s ", IDIO_FRAME_NARGS (val), IDIO_PRIMITIVE_NAME (func));
+		idio_debug ("*val* %s; ", val);
+		idio_debug ("last %s\n", last);
+		idio_vm_thread_state ();
+		idio_error_C ("primitive: using varargs?", last, IDIO_C_FUNC_LOCATION ());
 
 		/* notreached */
 		return;
@@ -1448,6 +1460,7 @@ IDIO idio_vm_invoke_C (IDIO thr, IDIO command)
 	    }
 	    IDIO_THREAD_VAL (thr) = vs;
 	    /* IDIO func = idio_module_current_symbol_value (IDIO_PAIR_H (command)); */
+
 	    idio_vm_invoke (thr, IDIO_PAIR_H (command), IDIO_VM_INVOKE_TAIL_CALL);
 
 	    /*
@@ -1460,7 +1473,7 @@ IDIO idio_vm_invoke_C (IDIO thr, IDIO command)
 	     * properly (or at least consistently).
 	     */
 	    if (! idio_isa_primitive (IDIO_PAIR_H (command))) {
-		idio_vm_run (thr);
+		idio_vm_run_C (thr, IDIO_THREAD_PC (thr));
 	    }
 	}
 	break;
@@ -1471,8 +1484,9 @@ IDIO idio_vm_invoke_C (IDIO thr, IDIO command)
 	     */
 	    IDIO vs = idio_frame_allocate (1);
 	    IDIO_THREAD_VAL (thr) = vs;
+
 	    idio_vm_invoke (thr, command, IDIO_VM_INVOKE_TAIL_CALL);
-	    idio_vm_run (thr);
+	    idio_vm_run_C (thr, IDIO_THREAD_PC (thr));
 	}
     }
 
@@ -1804,7 +1818,7 @@ static void idio_vm_restore_trap (IDIO thr)
     IDIO_THREAD_TRAP_SP (thr) = IDIO_THREAD_STACK_POP ();
     if (idio_isa_fixnum (IDIO_THREAD_TRAP_SP (thr)) == 0) {
 	IDIO_THREAD_STACK_PUSH (IDIO_THREAD_TRAP_SP (thr));
-	idio_vm_panic (thr, "eek!");
+	idio_vm_panic (thr, "restore-trap: eek!");
     }
     IDIO_TYPE_ASSERT (fixnum, IDIO_THREAD_TRAP_SP (thr));
 }
@@ -2147,8 +2161,8 @@ void idio_vm_restore_continuation (IDIO k, IDIO val)
 	siglongjmp (*(IDIO_THREAD_JMP_BUF (thr)), IDIO_VM_SIGLONGJMP_CONTINUATION);
     } else {
 	fprintf (stderr, "WARNING: restore-continuation: unable to use jmp_buf==NULL\n");
-	idio_vm_debug (thr, "iv_rest_cont unable to use jmp_buf==NULL", 0);
-	idio_vm_panic (thr, "iv_rest_cont unable to use jmp_buf==NULL");
+	idio_vm_debug (thr, "iv_rest_k unable to use jmp_buf==NULL", 0);
+	idio_vm_panic (thr, "iv_rest_k unable to use jmp_buf==NULL");
 	return;
     }
 }
@@ -5146,7 +5160,7 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_ai_t pc0, idio_ai_t pce)
 		}
 		if (idio_S_nil != ds) {
 		    size = 0;
-		    ids = idio_as_string (ds, &size, 1, 1);
+		    ids = idio_as_string (ds, &size, 1, idio_S_nil, 1);
 		    IDIO_VM_DASM ("\n%s", ids);
 		    free (ids);
 		}
@@ -5746,9 +5760,11 @@ void idio_vm_default_pc (IDIO thr)
 
 static uintptr_t idio_vm_run_loops = 0;
 
-IDIO idio_vm_run (IDIO thr)
+IDIO idio_vm_run (IDIO thr, idio_ai_t pc, int caller)
 {
     IDIO_ASSERT (thr);
+    IDIO_C_ASSERT (pc);
+
     IDIO_TYPE_ASSERT (thread, thr);
 
     /*
@@ -5765,14 +5781,17 @@ IDIO idio_vm_run (IDIO thr)
 	IDIO_C_ASSERT (0);
     }
 
+    IDIO_THREAD_PC (thr) = pc;
     idio_ai_t PC0 = IDIO_THREAD_PC (thr);
     idio_ai_t ss0 = idio_array_size (IDIO_THREAD_STACK (thr));
 
-    /*
-     * make sure this segment returns to idio_vm_FINISH_pc
-     */
-    IDIO_THREAD_STACK_PUSH (idio_fixnum (idio_vm_FINISH_pc));
-    IDIO_THREAD_STACK_PUSH (idio_SM_return);
+    if (IDIO_VM_RUN_C == caller) {
+	/*
+	 * make sure this segment returns to idio_vm_FINISH_pc
+	 */
+	IDIO_THREAD_STACK_PUSH (idio_fixnum (idio_vm_FINISH_pc));
+	IDIO_THREAD_STACK_PUSH (idio_SM_return);
+    }
 
     /*
      * We get called from places where code has been generated but no
@@ -6028,72 +6047,141 @@ IDIO idio_vm_run (IDIO thr)
      * XXX except if a handler went off from a signal handler...
      */
     int bail = 0;
-    if (IDIO_THREAD_PC (thr) != (idio_vm_FINISH_pc + 1)) {
-	fprintf (stderr, "vm-run: THREAD %td failed to run to FINISH: PC %td != %td\n", PC0, IDIO_THREAD_PC (thr), (idio_vm_FINISH_pc + 1));
-	bail = 1;
-    }
-
-    idio_ai_t ss = idio_array_size (IDIO_THREAD_STACK (thr));
-
-    if (ss != ss0) {
-	fprintf (stderr, "vm-run: THREAD failed to consume stack: SP0 %td -> %td\n", ss0 - 1, ss - 1);
-	idio_vm_decode_thread (thr);
-	if (ss < ss0) {
-	    fprintf (stderr, "\n\nNOTICE: current stack smaller than when we started\n");
-	}
-	bail = 1;
-    }
-
-    /*
-     * ABORT and others will have added to idio_vm_krun with some
-     * abandon but are in no position to repair the krun stack
-     */
-    idio_ai_t krun_p = idio_array_size (idio_vm_krun);
-    idio_ai_t krun_pd = krun_p - krun_p0;
     IDIO krun = idio_S_nil;
-    if (krun_pd > 1) {
-	fprintf (stderr, "vm-run: krun: popping %td to #%td\n", krun_pd, krun_p0);
-    }
-    while (krun_p > krun_p0) {
-	krun = idio_array_pop (idio_vm_krun);
-	krun_p--;
-    }
-    if (krun_pd > 1) {
-	idio_gc_collect ("vm-run: pop krun");
-    }
+    idio_ai_t krun_p = 0;
+    if (IDIO_VM_RUN_C == caller) {
+	if (IDIO_THREAD_PC (thr) != (idio_vm_FINISH_pc + 1)) {
+	    fprintf (stderr, "vm-run: THREAD %td failed to run to FINISH: PC %td != %td\n", PC0, IDIO_THREAD_PC (thr), (idio_vm_FINISH_pc + 1));
+	    idio_vm_dasm (thr, idio_all_code, PC0, IDIO_THREAD_PC (thr));
+	    bail = 1;
+	}
 
-    if (bail) {
-	if (idio_isa_pair (krun)) {
-	    fprintf (stderr, "vm-run/bail: restoring krun #%td: ", krun_p - 1);
-	    idio_debug ("%s\n", IDIO_PAIR_HT (krun));
-	    idio_vm_restore_continuation (IDIO_PAIR_H (krun), idio_S_unspec);
+	idio_ai_t ss = idio_array_size (IDIO_THREAD_STACK (thr));
 
-	    return idio_S_notreached;
-	} else {
-	    fprintf (stderr, "vm-run/bail: nothing to restore => exit (1)\n");
-	    idio_exit_status = 1;
-	    idio_vm_restore_exit (idio_k_exit, idio_S_unspec);
+	if (ss != ss0) {
+	    fprintf (stderr, "vm-run: THREAD failed to consume stack: SP0 %td -> %td\n", ss0 - 1, ss - 1);
+	    idio_vm_decode_thread (thr);
+	    if (ss < ss0) {
+		fprintf (stderr, "\n\nNOTICE: current stack smaller than when we started\n");
+	    }
+	    bail = 1;
+	}
 
-	    return idio_S_notreached;
+	/*
+	 * ABORT and others will have added to idio_vm_krun with some
+	 * abandon but are in no position to repair the krun stack
+	 */
+	krun_p = idio_array_size (idio_vm_krun);
+	idio_ai_t krun_pd = krun_p - krun_p0;
+	if (krun_pd > 1) {
+	    fprintf (stderr, "vm-run: krun: popping %td to #%td\n", krun_pd, krun_p0);
+	}
+	while (krun_p > krun_p0) {
+	    krun = idio_array_pop (idio_vm_krun);
+	    krun_p--;
+	}
+	if (krun_pd > 1) {
+	    idio_gc_collect ("vm-run: pop krun");
+	}
+
+	if (bail) {
+	    if (idio_isa_pair (krun)) {
+		fprintf (stderr, "vm-run/bail: restoring krun #%td: ", krun_p - 1);
+		idio_debug ("%s\n", IDIO_PAIR_HT (krun));
+		idio_vm_restore_continuation (IDIO_PAIR_H (krun), idio_S_unspec);
+
+		return idio_S_notreached;
+	    } else {
+		fprintf (stderr, "vm-run/bail: nothing to restore => exit (1)\n");
+		idio_exit_status = 1;
+		idio_vm_restore_exit (idio_k_exit, idio_S_unspec);
+
+		return idio_S_notreached;
+	    }
 	}
     }
 
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1_DS ("vm-run", vm_run, (IDIO t), "t", "\
-run thread ``t``				\n\
+IDIO idio_vm_run_C (IDIO thr, idio_ai_t pc)
+{
+    IDIO_ASSERT (thr);
+    IDIO_C_ASSERT (pc);
+
+    IDIO_TYPE_ASSERT (thread, thr);
+
+    return idio_vm_run (thr, pc, IDIO_VM_RUN_C);
+}
+
+IDIO_DEFINE_PRIMITIVE2_DS ("vm-run", vm_run, (IDIO thr, IDIO PC), "thr PC", "\
+run code at ``PC`` in thread ``thr``		\n\
 						\n\
-:param t: thread to run				\n\
-:rtype: thread					\n\
+:param thr: thread to run			\n\
+:type thr: thread				\n\
+:param PC: PC to use				\n\
+:type PC: fixnum				\n\
 :return: *val* register				\n\
 ")
 {
-    IDIO_ASSERT (t);
+    IDIO_ASSERT (thr);
+    IDIO_ASSERT (PC);
 
-    IDIO_TYPE_ASSERT (thread, t);
+    IDIO_TYPE_ASSERT (thread, thr);
+    IDIO_TYPE_ASSERT (fixnum, PC);
 
-    return idio_vm_run (t);
+    /*
+     * We've been called from Idio-land to start running some code --
+     * usually that which has just been generated by the {codegen}
+     * primitive.
+     *
+     * This is ostensibly a function call so push the current PC on
+     * the stack, right?
+     *
+     * Not quite, this call to a primitive was already inside
+     * idio_vm_run() so if we set, say, the current PC on the stack to
+     * be returned to and call idio_vm_run() then it will
+     *
+     * 1. run this new bit of code which will
+     *
+     * 2. RETURN to the PC on the stack (the caller of this primitive)
+     *
+     * 3. continue from there
+     *
+     * Wait!  We never came back *here* to return the value to the
+     * caller of this primitive.
+     *
+     * As it happens, our caller *will* have received the correct
+     * value as part of the above loop but careful analysis (read:
+     * printf()) shows that we *enter* this primitive any number of
+     * times but only ever *leave* it when X (for some X) happens.
+     *
+     * At which point things don't line up any more.
+     *
+     * Instead, set the RETURN jump to idio_vm_FINISH_pc to cause
+     * whatever we intend to have run actually stop the idio_vm_run()
+     * loop and return a value to us.
+     *
+     * However, before we return to our caller we must set the PC back
+     * to the original PC we saw when we were called in order that our
+     * caller can continue.
+     *
+     * NB.  If you don't do that final part you may get an obscure
+     * "PANIC: restore-trap" failure.  That's because the PC *after*
+     * idio_vm_PC is the instruction in the prologue for, er,
+     * restoring a trap.  It's not meant to be called next!
+     */
+
+    idio_ai_t PC0 = IDIO_THREAD_PC (thr);
+
+    IDIO_THREAD_STACK_PUSH (idio_fixnum (idio_vm_FINISH_pc));
+    IDIO_THREAD_STACK_PUSH (idio_SM_return);
+
+    IDIO r = idio_vm_run (thr, IDIO_FIXNUM_VAL (PC), IDIO_VM_RUN_IDIO);
+
+    IDIO_THREAD_PC (thr) = PC0;
+
+    return r;
 }
 
 idio_ai_t idio_vm_extend_constants (IDIO v)
@@ -6531,13 +6619,19 @@ Run ``func [args]`` in thread ``thr``.				\n\
     idio_ai_t pc0 = IDIO_THREAD_PC (thr);
     idio_vm_default_pc (thr);
 
-    idio_apply (func, args);
-    IDIO r = idio_vm_run (thr);
+    IDIO r = idio_apply (func, args);
+    if (IDIO_THREAD_PC (thr) != pc0) {
+	IDIO_THREAD_STACK_PUSH (idio_fixnum (idio_vm_FINISH_pc));
+	IDIO_THREAD_STACK_PUSH (idio_SM_return);
 
-    idio_ai_t pc = IDIO_THREAD_PC (thr);
-    if (pc == (idio_vm_FINISH_pc + 1)) {
-	IDIO_THREAD_PC (thr) = pc0;
+	r = idio_vm_run (thr, IDIO_THREAD_PC (thr), IDIO_VM_RUN_IDIO);
+
+	idio_ai_t pc = IDIO_THREAD_PC (thr);
+	if (pc == (idio_vm_FINISH_pc + 1)) {
+	    IDIO_THREAD_PC (thr) = pc0;
+	}
     }
+
     idio_thread_set_current_thread (cthr);
 
     return r;
