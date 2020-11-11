@@ -59,6 +59,7 @@ extern IDIO idio_evaluation_module;
 
 void idio_meaning_dump_src_properties (const char *prefix, const char*name, IDIO e);
 void idio_meaning_error_param_type (IDIO src, IDIO c_location, char *msg, IDIO expr);
+void idio_meaning_evaluation_error (IDIO src, IDIO c_location, char *msg, IDIO expr);
 void idio_meaning_error_static_redefine (IDIO lo, IDIO c_location, char *msg, IDIO name, IDIO cv, IDIO new);
 void idio_meaning_error_static_arity (IDIO lo, IDIO c_location, char *msg, IDIO args);
 

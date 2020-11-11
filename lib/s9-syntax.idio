@@ -88,10 +88,18 @@ pt-of := {
   }
 }
 
+any-null? := {
+  map-ph := map-ph
+
+  function (a*) {
+    and (memq #t (map-ph null? a*)) \
+	#t
+  }
+}
+
 map := {
   ph-of := ph-of
   pt-of := pt-of
-  any-null? := any-null?
 
   function (f & a*) {
     map2 :+ function (a* r) {

@@ -22,7 +22,7 @@ module evaluate
 export (
 	 evaluate
 )
-import expander codegen threading vm
+import expander operator codegen threading vm
 
 define (meaning-error-location src) {
   lo := #f
@@ -414,7 +414,7 @@ define (eps-qq-expand-list e) {
   if (pair? e) {
     sym := ph e
     (cond ((eq? 'unquote sym)		#T{ (list $(pht e)) })
-	  ((eq? 'unquote-splicing sym)	(pht e))
+	  ((eq? 'unquotesplicing sym)	(pht e))
 	  ((eq? 'quasiquote sym)	(eps-qq-expand-list
 					 (eps-qq-expand (pht e))))
 	  (else				#T{ (list (append
@@ -429,7 +429,7 @@ define (eps-qq-expand e) {
   if (pair? e) {
     sym := ph e
     (cond ((eq? 'unquote sym)		(pht e))
-	  ((eq? 'unquote-splicing sym)	(error 'eps-qq-expand "illegal"))
+	  ((eq? 'unquotesplicing sym)	(error 'eps-qq-expand "illegal"))
 	  ((eq? 'quasiquote sym)	(eps-qq-expand
 					 (eps-qq-expand (pht e))))
 	  (else				#T{ (append $(eps-qq-expand-list (ph e))
@@ -448,7 +448,7 @@ define (qq-expand-list/verbose e c) {
   if (pair? e) {
     sym := ph e
     (cond ((eq? 'unquote sym)		(list 'list (pht e)))
-	  ((eq? 'unquote-splicing sym)	(pht e))
+	  ((eq? 'unquotesplicing sym)	(pht e))
 	  ((or (eq? 'quasiquote sym)
 	       (eq? 'qq sym))		(qq-expand-list/verbose
 					 (qq-expand/verbose (pht e) "qel qq i")
@@ -465,7 +465,7 @@ define (qq-expand/verbose e c) {
   if (pair? e) {
     sym := ph e
     (cond ((eq? 'unquote sym)		(pht e))
-	  ((eq? 'unquote-splicing sym)	(error 'qq-expand/verbose "illegal"))
+	  ((eq? 'unquotesplicing sym)	(error 'qq-expand/verbose "illegal"))
 	  ((or (eq? 'quasiquote sym)
 	       (eq? 'qq sym))		(qq-expand/verbose
 					 (qq-expand/verbose (pht e) "qe qq i")
@@ -494,14 +494,14 @@ define (STklos-backquotify e level) {
 	  (pht e)
 	  (list 'list ''unquote
 		      (STklos-backquotify (pht e) (- level 1)))))
-     ((eq? (ph e) 'unquote-splicing)
+     ((eq? (ph e) 'unquotesplicing)
       (if (le level 0)
 	  (list 'pair
 		(STklos-backquotify (ph e) level)
 		(STklos-backquotify (pt e) level))
-	  (list 'list ''unquote-splicing
+	  (list 'list ''unquotesplicing
 		      (STklos-backquotify (pht e) (- level 1)))))
-     ((and (le level 0) (pair? (ph e)) (eq? (phh e) 'unquote-splicing))
+     ((and (le level 0) (pair? (ph e)) (eq? (phh e) 'unquotesplicing))
       (if (null? (pt e))
 	  (phth e)
 	  (list 'append (phth e)
@@ -931,16 +931,124 @@ define (meaning-define-template src name e nametree flags cs cm) {
 	  }
 }
 
-define (meaning-define-infix-operator src name e nametree flags cs cm) {
-  eprintf "meaning-define-infix-operator: come back to me for %s!\n" src
-  libc/sleep 1
-  e
+define (meaning-define-infix-operator src name pri e nametree flags cs cm) {
+  if (lt pri 0) {
+    meaning-evaluation-error src "positive priority" pri
+  }
+
+  ;; Step 1: find the existing symbol for {name} or create a new one
+  ci := codegen-constants-lookup-or-extend cs name
+
+  ;; XXX the plain use of operator gets a symbol in set-symbol! ??
+  op-mod := find-module 'operator
+
+  set-symbol! name (list 'toplevel ci 0 op-mod (sprintf "meaning-define-infix-operator %s" name)) op-mod
+  eprintf "INFIX-OPERATOR: defined %d in %s\n" ci op-mod
+
+  ;; Step 2: rework the expression into some appropriate code and
+  ;; compile
+  m := #f
+  if (symbol? e) {
+    ;; define-infix-operator X pri Y
+
+    if (infix-operator? e) {
+      ;; We happen to have the closure for Y, (pt (assq Y
+      ;; *infix-operator-list*)), but when this object code is loaded
+      ;; the compiled code's value could be anywhere so we should be
+      ;; looking the value up.
+
+      sve := #T{ symbol-value '$e (find-module 'operator) }
+      meaning-copy-src-properties src sve
+      eprintf "sve is %s\n" sve
+
+      copy-infix-operator! name pri e
+      m = meaning-assignment src name sve nametree (define-scope 'toplevel flags) cs cm
+    } {
+      ;; Test Case: evaluation-errors/infix-op-not-an-operator.idio
+
+      ;; define-infix-operator qqq 300 zzz
+      meaning-evaluation-error src "not an operator" e
+    }
+  } {
+    ;; define-infix-operator X pri { ... }
+
+    ;; should really be a function definition with args: {op},
+    ;; {before} and {after}:
+
+    ;; define-infix-operator (X op before after) { ... }
+
+    args := '(op before after)
+
+    fe := (list 'function
+		'(op before after)
+		(sprintf "infix-operator %s" name)
+		e)
+    meaning-copy-src-properties src fe
+
+    m = meaning fe fe nametree flags cs cm
+  }
+
+  list I-INFIX-OPERATOR ci pri m
 }
 
-define (meaning-define-postfix-operator src name e nametree flags cs cm) {
-  eprintf "meaning-define-postfix-operator: come back to me for %s!\n" src
-  libc/sleep 1
-  e
+define (meaning-define-postfix-operator src name pri e nametree flags cs cm) {
+  if (lt pri 0) {
+    meaning-evaluation-error src "positive priority" pri
+  }
+
+  ;; Step 1: find the existing symbol for {name} or create a new one
+  ci := codegen-constants-lookup-or-extend cs name
+
+  ;; XXX the plain use of operator gets a symbol in set-symbol! ??
+  op-mod := find-module 'operator
+
+  set-symbol! name (list 'toplevel ci 0 op-mod (sprintf "meaning-define-postfix-operator %s" name)) op-mod
+  eprintf "POSTFIX-OPERATOR: defined %d in %s\n" ci op-mod
+
+  ;; Step 2: rework the expression into some appropriate code and
+  ;; compile
+  m := #f
+  if (symbol? e) {
+    ;; define-postfix-operator X pri Y
+
+    if (postfix-operator? e) {
+      ;; We happen to have the closure for Y, (pt (assq Y
+      ;; *postfix-operator-list*)), but when this object code is loaded
+      ;; the compiled code's value could be anywhere so we should be
+      ;; looking the value up.
+
+      sve := #T{ symbol-value '$e (find-module 'operator) }
+      meaning-copy-src-properties src sve
+      eprintf "sve is %s\n" sve
+
+      copy-postfix-operator! name pri e
+      m = meaning-assignment src name sve nametree (define-scope 'toplevel flags) cs cm
+    } {
+      ;; Test Case: evaluation-errors/postfix-op-not-an-operator.idio
+
+      ;; define-postfix-operator qqq 300 zzz
+      meaning-evaluation-error src "not an operator" e
+    }
+  } {
+    ;; define-postfix-operator X pri { ... }
+
+    ;; should really be a function definition with args: {op},
+    ;; {before} and {after}:
+
+    ;; define-postfix-operator (X op before after) { ... }
+
+    args := '(op before after)
+
+    fe := (list 'function
+		'(op before after)
+		(sprintf "postfix-operator %s" name)
+		e)
+    meaning-copy-src-properties src fe
+
+    m = meaning fe fe nametree flags cs cm
+  }
+
+  list I-POSTFIX-OPERATOR ci pri m
 }
 
 define (meaning-define-dynamic src name e nametree flags cs cm) {

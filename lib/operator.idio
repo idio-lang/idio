@@ -1,39 +1,64 @@
-;;
-;; Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
-;;
-;; Licensed under the Apache License, Version 2.0 (the "License"); you
-;; may not use this file except in compliance with the License.  You
-;; may obtain a copy of the License at
-;;
-;;     http://www.apache.org/licenses/LICENSE-2.0
-;;
-;; Unless required by applicable law or agreed to in writing, software
-;; distributed under the License is distributed on an "AS IS" BASIS,
-;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-;; See the License for the specific language governing permissions and
-;; limitations under the License.
+#*
+
+Copyright (c) 2020 Ian Fitchet <idf(at)idio-lang.org>
+
+Licensed under the Apache License, Version 2.0 (the "License"); you
+may not use this file except in compliance with the License.  You
+may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+operator.idio
+
+*#
+
+module operator
+export (
+	 infix-operator-precedence-table
+	 postfix-operator-precedence-table
+	 copy-infix-operator!
+	 copy-postfix-operator!
+	 operator-expand*
+)
+
+#*
+
+The C code (in expander.c!) has defined some variables:
+
+*infix-operator-list* is an association list of (id proc) where id is
+the nominal operator name and proc is the associated operator function
+and is used as an existence of an operator test.
+
+*infix-operator-group* is a numerically descending ordered association
+list of (pri grp) where pri is the operator precedence and grp is a
+list of (id & proc) pairs.
+
+The C code for infix-operator? is the equivalent of
+
+define (infix-operator? o) {
+  assq o *infix-operator-list*
+}
+
+Ditto for postfix operators.
+
+*#
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;;
 
-;;
-;; operator.idio
-;;
+define (operator-error msg loc name) {
+  c := make-condition ^runtime-error msg loc name
+  raise c
+}
 
-;; TIP
-;;
-;; You can use the operator name in the same file it is defined in
-;; without it having its expected re-write effect, so long as you
-;; escape it from the reader, hence:
-;;
-;;   define-infix-operator + 700 { ... }
-;;   define-infix-operator - 700 \+
-;;
-;; Otherwise you might expect the "+" at the end of the second line to
-;; cause the reader to consume the following (unseen) expression and
-;; be transformed into an addition expression.
-
-define (infix-operator-precedence-table) {
-  og := symbol-value '*infix-operator-group* (find-module '*operator*)
+define (operator-precedence-table og) {
   loop :+ function (groups r) {
 	    cond ((null? groups) (reverse r)) \
 		 (else {
@@ -46,18 +71,71 @@ define (infix-operator-precedence-table) {
   loop og #n
 }
 
+define (infix-operator-precedence-table) {
+  og := symbol-value '*infix-operator-group* (find-module 'operator)
+  operator-precedence-table og
+}
+
 define (postfix-operator-precedence-table) {
-  og := symbol-value '*postfix-operator-group* (find-module '*operator*)
-  loop :+ function (groups r) {
-	    cond ((null? groups) (reverse r)) \
-		 (else {
-		   prec-group := ph groups
-		   ops := map ph (pt prec-group)
-		   loop (pt groups) (pair (pair (ph prec-group) ops) r)
-		 })
+  og := symbol-value '*postfix-operator-group* (find-module 'operator)
+  operator-precedence-table og
+}
+
+define (copy-operator! new-id new-pri old-id ol og) {
+  new := assq new-id ol
+
+  if new {
+    operator-error "operator already defined" 'copy-operator! new-id
   }
 
-  loop og #n
+  old := assq old-id ol
+
+  if old {
+    ol = (pair (pair new-id (pt old))
+	       ol)
+
+    grp := assq new-pri og
+
+    if grp {
+      procs := pt grp
+      set-pt! grp (pair (pair new-id (pt old))
+			procs)
+    } {
+      grp := (list (pair new-id (pt old)))
+
+      og-loop :+ function (og p) {
+		   if (null? og) {
+		     og = (append og
+				  (list (pair new-pri grp)))
+		   } {
+		     og-pri := phh og
+		     if (lt og-pri new-pri) {
+		       if (null? p) {
+			 og = (pair (pair new-pri grp)
+				    og)
+		       } {
+			 set-pt! p (pair (pair new-pri grp)
+					 og)
+		       }
+		     } {
+		       og-loop (pt og) (ph og)
+		     }
+		   }
+      }
+
+      og-loop og #n
+    }
+  } {
+    operator-error "operator not defined" 'copy-operator! old-id
+  }
+}
+
+define (copy-infix-operator! new-id new-pri old-id) {
+  copy-operator! new-id new-pri old-id *infix-operator-list* *infix-operator-group*
+}
+
+define (copy-postfix-operator! new-id new-pri old-id) {
+  copy-operator! new-id new-pri old-id *postfix-operator-list* *postfix-operator-group*
 }
 
 define (operator-expand* exp) {
@@ -67,354 +145,4 @@ define (operator-expand* exp) {
   }
 }
 
-;; standard arithmetic operator:
-;;
-;; X + Y		=> + X Y
-;; X + Y Z		=> (+ X Y) Z
-;; X Y + Z		=> X (+ Y Z)
-define-infix-operator + 1100 {
-  prefix := #n
-
-  if (not (null? (pt before))) {
-    prefix = before
-    loop :+ function (before) {
-	      cond ((null? (pt before)) {
-		before
-	      }) \
-		   ((null? (pt (pt before))) {
-		     r := pt before
-		     set-pt! before #n
-		     r
-		   }) \
-		   (else {
-		     loop (pt before)
-		   })
-    }
-
-    ;; before must be a list of at least one (as an operator cannot be
-    ;; in functional position)
-    before = loop before
-  }
-
-  suffix := #n
-
-  if (and (pair? after)
-	  (pair? (pt after))) {
-	    suffix = pt after
-	    after = (list (ph after))
-	  }
-
-  result := #n
-
-  if (not (null? prefix)) {
-    result = prefix
-  }
-
-  op+args := list op (ph before) (ph after)
-
-  if (null? result) {
-    if (null? suffix) {
-      result = op+args
-    } {
-      result = list op+args
-    }
-  } {
-    result = append result (list op+args)
-  }
-
-  if (not (null? suffix)) {
-    result = append result suffix
-  }
-
-  #T{ $result }
-}
-
-define-infix-operator - 1100 \+
-define-infix-operator * 1200 \+
-define-infix-operator / 1200 \+
-
-;; logical operators take a single expression either side and combine
-;; with adjacent operators of the same type
-
-;; X and Y		=> and X Y
-;; X and Y and Z	=> and X Y Z
-;; X and Y or Z		=> or (and X Y) Z
-;; X Y and Z		=> X (and Y Z)
-;; X and Y Z		=> (and X Y) Z
-define-infix-operator and 1000 {
-  prefix := #n
-
-  if (not (null? (pt before))) {
-    prefix = before
-    loop :+ function (before) {
-	      cond ((null? (pt before)) {
-		before
-	      }) \
-		   ((null? (pt (pt before))) {
-		     r := pt before
-		     set-pt! before #n
-		     r
-		   }) \
-		   (else {
-		     loop (pt before)
-		   })
-    }
-
-    ;; before must be a list of at least one (as an operator cannot be
-    ;; in functional position)
-    before = loop before
-  }
-
-  ;; split - we want to consume (into op-args) the set of expressions
-  ;; that successive {op}s are operating on
-  split :+ function (op op-args after) {
-	     cond ((null? after) (error 'operator-and "not enough args after" op (reverse op-args))) \
-		  ((not (pair? after)) (error 'operator-and "bad syntax" op (reverse op-args) after)) \
-		  ((null? (pt after)) (list (reverse (pair (ph after) op-args)) #n)) \
-		  ((and (pair? after)
-			(pair? (pt after))
-			(eq? op (ph (pt after)))) (split op (pair (ph after) op-args) (pt (pt after)))) \
-		  (else (list (reverse op-args) after))
-  }
-
-  dis := split op before after
-  op-args := ph dis
-  after = ph (pt dis)
-
-  suffix := #n
-
-  if (and (pair? after)
-	  (pair? (pt after))) {
-	    suffix = pt after
-	    after = (list (ph after))
-	  }
-
-  result := #n
-
-  if (not (null? prefix)) {
-    result = prefix
-  }
-
-  op+args := #T{ $op $@op-args }
-  if (not (null? after)) {
-    op+args = append op+args after
-  }
-
-  if (null? result) {
-    if (null? suffix) {
-      result = op+args
-    } {
-      result = list op+args
-    }
-  } {
-    result = append result (list op+args)
-  }
-
-  if (not (null? suffix)) {
-    result = append result suffix
-  }
-
-  #T{ $result }
-  ;; if (null? rest) \
-	;;   #T{ $op $@op-args } \
-	;;   #T{ $op $@op-args ($@rest) }
-}
-
-define-infix-operator or 1000 \and
-
-;; C bitwise-or
-define-infix-operator C/| 1400 \and
-
-;; Arrays: push
-define-infix-operator =+ 1300 {
-  prefix := #n
-
-  if (not (null? (pt before))) {
-    prefix = before
-    loop :+ function (before) {
-	      cond ((null? (pt before)) {
-		before
-	      }) \
-		   ((null? (pt (pt before))) {
-		     r := pt before
-		     set-pt! before #n
-		     r
-		   }) \
-		   (else {
-		     loop (pt before)
-		   })
-    }
-
-    ;; before must be a list of at least one (as an operator cannot be
-    ;; in functional position)
-    before = loop before
-  }
-
-  suffix := #n
-
-  if (and (pair? after)
-	  (pair? (pt after))) {
-	    suffix = pt after
-	    after = (list (ph after))
-	  }
-
-  result := #n
-
-  if (not (null? prefix)) {
-    result = prefix
-  }
-
-  op-func := #f
-  cond ((eq? op '=+) (op-func = 'array-push!)) \
-       ((eq? op '+=) (op-func = 'array-unshift!)) \
-       (else (error op "unexpected array extend operator" op))
-
-  op+args := list op-func (ph before) (ph after)
-
-  if (null? result) {
-    if (null? suffix) {
-      result = op+args
-    } {
-      result = list op+args
-    }
-  } {
-    result = append result (list op+args)
-  }
-
-  if (not (null? suffix)) {
-    result = append result suffix
-  }
-
-  #T{ $result }
-}
-
-;; Arrays: unshift
-define-infix-operator += 1300 \=+
-
-;; Arrays: pop
-define-postfix-operator =- 1300 {
-  prefix := #n
-
-  if (not (null? (pt before))) {
-    prefix = before
-    loop :+ function (before) {
-	      cond ((null? (pt before)) {
-		before
-	      }) \
-		   ((null? (pt (pt before))) {
-		     r := pt before
-		     set-pt! before #n
-		     r
-		   }) \
-		   (else {
-		     loop (pt before)
-		   })
-    }
-
-    ;; before must be a list of at least one (as an operator cannot be
-    ;; in functional position)
-    before = loop before
-  }
-
-  result := #n
-
-  if (not (null? prefix)) {
-    result = prefix
-  }
-
-  op-func := #f
-  cond ((eq? op '=-) (op-func = 'array-pop!)) \
-       ((eq? op '-=) (op-func = 'array-shift!)) \
-       (else (error op "unexpected array reduce operator" op))
-
-  op+args := list op-func (ph before)
-
-  if (null? result) {
-    if (null? after) {
-      result = op+args
-    } {
-      result = list op+args
-    }
-  } {
-    result = append result (list op+args)
-  }
-
-  if (not (null? after)) {
-    result = append result after
-  }
-
-  #T{ $result }
-}
-
-;; Arrays: shift
-define-postfix-operator -= 1300 \=-
-
-define-infix-operator . 1200 {
-  prefix := #n
-
-  if (not (null? (pt before))) {
-    prefix = before
-    loop :+ function (before) {
-	      cond ((null? (pt before)) {
-		before
-	      }) \
-		   ((null? (pt (pt before))) {
-		     r := pt before
-		     set-pt! before #n
-		     r
-		   }) \
-		   (else {
-		     loop (pt before)
-		   })
-    }
-
-    ;; before must be a list of at least one (as an operator cannot be
-    ;; in functional position)
-    before = loop before
-  }
-
-  ;; split - we want to consume (into indices) the set of expressions
-  ;; that successive {op}s are operating on
-  split :+ function (op indices after) {
-	     cond ((null? after) (error 'operator-dot "not enough args after" op (reverse indices))) \
-		  ((not (pair? after)) (error 'operator-dot "bad syntax" op (reverse indices) after)) \
-		  ((null? (pt after)) (list (reverse (pair (ph after) indices)) #n)) \
-		  ((and (pair? after)
-			(pair? (pt after))
-			(eq? op (ph (pt after)))) (split op (pair (ph after) indices) (pt (pt after)))) \
-		  (else (list (reverse (pair (ph after) indices)) (pt after)))
-  }
-
-  dis := split op #n after
-  indices := ph dis
-  after = ph (pt dis)
-
-  result := #n
-
-  if (not (null? prefix)) {
-    result = prefix
-  }
-
-  ;; the result we want is for each index in indices to wrap the
-  ;; "previous" result in (value-index <prev> <index>)
-  op+args := ph before
-  for-each (function (index) {
-	      op+args = list 'value-index op+args index
-  }) indices
-
-  if (null? result) {
-    if (null? after) {
-      result = op+args
-    } {
-      result = list op+args
-    }
-  } {
-    result = append result (list op+args)
-  }
-
-  if (not (null? after)) {
-    result = append result after
-  }
-
-  #T{ $result }
-}
+provide operator

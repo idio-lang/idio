@@ -240,7 +240,7 @@ static void idio_meaning_error_param (IDIO src, IDIO c_location, char *msg, IDIO
     /* notreached */
 }
 
-static void idio_meaning_evaluation_error (IDIO src, IDIO c_location, char *msg, IDIO expr)
+void idio_meaning_evaluation_error (IDIO src, IDIO c_location, char *msg, IDIO expr)
 {
     IDIO_ASSERT (src);
     IDIO_ASSERT (c_location);
@@ -1947,12 +1947,13 @@ static IDIO idio_meaning_define_infix_operator (IDIO src, IDIO name, IDIO pri, I
     idio_ai_t mci = idio_codegen_constants_lookup_or_extend (cs, name);
     IDIO fmci = idio_fixnum (mci);
 
-    idio_ai_t gvi = idio_vm_extend_values ();
-    IDIO fgvi = idio_fixnum (gvi);
-
-    idio_module_set_vci (idio_operator_module, fmci, fmci);
-    idio_module_set_vvi (idio_operator_module, fmci, fgvi);
-    idio_module_set_symbol (name, IDIO_LIST5 (idio_S_toplevel, fmci, fgvi, idio_operator_module, idio_meaning_define_infix_operator_string), idio_operator_module);
+    idio_module_set_symbol (name,
+			    IDIO_LIST5 (idio_S_toplevel,
+					fmci,
+					idio_fixnum (0),
+					idio_operator_module,
+					idio_meaning_define_infix_operator_string),
+			    idio_operator_module);
 
     /*
      * Step 2: rework the expression into some appropriate code and
@@ -1989,6 +1990,7 @@ static IDIO idio_meaning_define_infix_operator (IDIO src, IDIO name, IDIO pri, I
 			       find_module);
 	idio_meaning_copy_src_properties (src, sve);
 
+	idio_copy_infix_operator (name, pri, e);
 	m = idio_meaning (sve, sve, nametree, flags, cs, cm);
     } else {
 	/*
@@ -2012,17 +2014,6 @@ static IDIO idio_meaning_define_infix_operator (IDIO src, IDIO name, IDIO pri, I
     }
     IDIO r = IDIO_LIST4 (IDIO_I_INFIX_OPERATOR, fmci, pri, m);
 
-    /*
-     * NB.  idio_evaluate_infix_operator_code will invoke
-     * idio_install_infix_operator (see IDIO_A_INFIX_OPERATOR in vm.c).
-     */
-    IDIO cl = idio_evaluate_infix_operator_code (r, cs);
-
-    /*
-     * Step 3: insert the value "live"
-     */
-    idio_module_set_symbol_value (name, cl, idio_operator_module);
-
     return r;
 }
 
@@ -2041,11 +2032,14 @@ static IDIO idio_meaning_define_postfix_operator (IDIO src, IDIO name, IDIO pri,
     IDIO_TYPE_ASSERT (array, cs);
     IDIO_TYPE_ASSERT (module, cm);
 
+    /* idio_debug ("define-postfix-operator: %s", name); */
+    /* idio_debug (" %s\n", e); */
+
     if (IDIO_FIXNUM_VAL (pri) < 0) {
 	/*
-	 * Test Case: evaluation-errors/infix-op-negative-priority.idio
+	 * Test Case: evaluation-errors/postfix-op-negative-priority.idio
 	 *
-	 * define-infix-operator qqq -300 ...
+	 * define-postfix-operator qqq -300 ...
 	 */
 	idio_meaning_evaluation_error (src, IDIO_C_FUNC_LOCATION (), "positive priority", pri);
 
@@ -2058,12 +2052,13 @@ static IDIO idio_meaning_define_postfix_operator (IDIO src, IDIO name, IDIO pri,
     idio_ai_t mci = idio_codegen_constants_lookup_or_extend (cs, name);
     IDIO fmci = idio_fixnum (mci);
 
-    idio_ai_t gvi = idio_vm_extend_values ();
-    IDIO fgvi = idio_fixnum (gvi);
-
-    idio_module_set_vci (idio_operator_module, fmci, fmci);
-    idio_module_set_vvi (idio_operator_module, fmci, fgvi);
-    idio_module_set_symbol (name, IDIO_LIST5 (idio_S_toplevel, fmci, fgvi, idio_operator_module, idio_meaning_define_postfix_operator_string), idio_operator_module);
+    idio_module_set_symbol (name,
+			    IDIO_LIST5 (idio_S_toplevel,
+					fmci,
+					idio_fixnum (0),
+					idio_operator_module,
+					idio_meaning_define_postfix_operator_string),
+			    idio_operator_module);
 
     /*
      * Step 2: rework the expression into some appropriate code and
@@ -2082,9 +2077,9 @@ static IDIO idio_meaning_define_postfix_operator (IDIO src, IDIO name, IDIO pri,
 	 */
 	if (idio_S_false == exp) {
 	    /*
-	     * Test Case: evaluation-errors/infix-op-not-an-operator.idio
+	     * Test Case: evaluation-errors/postfix-op-not-an-operator.idio
 	     *
-	     * define-infix-operator qqq 300 zzz
+	     * define-postfix-operator qqq 300 zzz
 	     */
 	    idio_meaning_evaluation_error (src, IDIO_C_FUNC_LOCATION (), "not an operator", e);
 
@@ -2100,6 +2095,7 @@ static IDIO idio_meaning_define_postfix_operator (IDIO src, IDIO name, IDIO pri,
 			       find_module);
 	idio_meaning_copy_src_properties (src, sve);
 
+	idio_copy_postfix_operator (name, pri, e);
 	m = idio_meaning (sve, sve, nametree, flags, cs, cm);
     } else {
 	/*
@@ -2122,17 +2118,6 @@ static IDIO idio_meaning_define_postfix_operator (IDIO src, IDIO name, IDIO pri,
 	m = idio_meaning (fe, fe, nametree, flags, cs, cm);
     }
     IDIO r = IDIO_LIST4 (IDIO_I_POSTFIX_OPERATOR, fmci, pri, m);
-
-    /*
-     * NB.  idio_evaluate_postfix_operator_code will invoke
-     * idio_install_postfix_operator (see IDIO_A_POSTFIX_OPERATOR in vm.c).
-     */
-    IDIO cl = idio_evaluate_postfix_operator_code (r, cs);
-
-    /*
-     * Step 3: insert the value "live"
-     */
-    idio_module_set_symbol_value (name, cl, idio_operator_module);
 
     return r;
 }

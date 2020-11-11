@@ -4478,31 +4478,33 @@ int idio_vm_run1 (IDIO thr)
 	    uint64_t mci = IDIO_VM_FETCH_REF (thr, bc);
 	    uint64_t pri = idio_vm_fetch_varuint (thr);
 	    IDIO_VM_RUN_DIS ("INFIX-OPERATOR %" PRId64 "", mci);
+
 	    IDIO fmci = idio_fixnum (mci);
-	    IDIO fgci = idio_module_get_vci (idio_operator_module, fmci);
-	    IDIO sym = idio_S_unspec;
-	    if (idio_S_unspec != fgci) {
-		sym = idio_vm_constants_ref (IDIO_FIXNUM_VAL (fgci));
-	    }
+	    idio_module_set_vci (idio_operator_module, fmci, fmci);
+	    IDIO sym = idio_vm_constants_ref (IDIO_FIXNUM_VAL (fmci));
 
 	    idio_ai_t gvi = idio_vm_extend_values ();
 	    IDIO fgvi = idio_fixnum (gvi);
-	    idio_module_set_vvi (idio_operator_module, idio_fixnum (mci), fgvi);
+	    idio_module_set_vvi (idio_operator_module, fmci, fgvi);
 
 	    IDIO si_ce = idio_module_find_symbol (sym, idio_operator_module);
 
 	    if (idio_S_false == si_ce) {
-		si_ce = IDIO_LIST5 (idio_S_toplevel, idio_fixnum (mci), fgvi, idio_operator_module, idio_vm_INFIX_OPERATOR_string);
+		idio_debug ("INFIX-OPERATOR: %s ", sym);
+		fprintf (stderr, "%" PRIu64 " undefined?  setting...\n", mci);
+		si_ce = IDIO_LIST5 (idio_S_toplevel, fmci, fgvi, idio_operator_module, idio_vm_INFIX_OPERATOR_string);
 		idio_module_set_symbol (sym, si_ce, idio_operator_module);
 	    } else {
 		IDIO_PAIR_HTT (si_ce) = fgvi;
 	    }
 
-	    /*
-	     * XXX overrides any existing name
-	     */
-	    idio_set_property (IDIO_THREAD_VAL (thr), idio_KW_name, sym);
-	    idio_install_infix_operator (sym, IDIO_THREAD_VAL (thr), pri);
+	    IDIO val = IDIO_THREAD_VAL (thr);
+	    IDIO cname = idio_get_property (val, idio_KW_name, IDIO_LIST1 (idio_S_false));
+	    if (idio_S_false == cname) {
+		idio_set_property (val, idio_KW_name, sym);
+	    }
+	    idio_install_infix_operator (sym, val, pri);
+	    idio_module_set_symbol_value (sym, val, idio_operator_module);
 	}
 	break;
     case IDIO_A_POSTFIX_OPERATOR:
@@ -4510,32 +4512,33 @@ int idio_vm_run1 (IDIO thr)
 	    uint64_t mci = IDIO_VM_FETCH_REF (thr, bc);
 	    uint64_t pri = idio_vm_fetch_varuint (thr);
 	    IDIO_VM_RUN_DIS ("POSTFIX-OPERATOR %" PRId64 "", mci);
+
 	    IDIO fmci = idio_fixnum (mci);
-	    IDIO ce = idio_thread_current_env ();
-	    IDIO fgci = idio_module_get_vci (idio_operator_module, fmci);
-	    IDIO sym = idio_S_unspec;
-	    if (idio_S_unspec != fgci) {
-		sym = idio_vm_constants_ref (IDIO_FIXNUM_VAL (fgci));
-	    }
+	    idio_module_set_vci (idio_operator_module, fmci, fmci);
+	    IDIO sym = idio_vm_constants_ref (IDIO_FIXNUM_VAL (fmci));
 
 	    idio_ai_t gvi = idio_vm_extend_values ();
 	    IDIO fgvi = idio_fixnum (gvi);
-	    idio_module_set_vvi (idio_operator_module, idio_fixnum (mci), fgvi);
+	    idio_module_set_vvi (idio_operator_module, fmci, fgvi);
 
-	    IDIO si_ce = idio_module_find_symbol (sym, ce);
+	    IDIO si_ce = idio_module_find_symbol (sym, idio_operator_module);
 
 	    if (idio_S_false == si_ce) {
-		si_ce = IDIO_LIST5 (idio_S_toplevel, idio_fixnum (mci), fgvi, idio_operator_module, idio_vm_POSTFIX_OPERATOR_string);
+		idio_debug ("POSTFIX-OPERATOR: %s ", sym);
+		fprintf (stderr, "%" PRIu64 " undefined?  setting...\n", mci);
+		si_ce = IDIO_LIST5 (idio_S_toplevel, fmci, fgvi, idio_operator_module, idio_vm_POSTFIX_OPERATOR_string);
 		idio_module_set_symbol (sym, si_ce, idio_operator_module);
 	    } else {
 		IDIO_PAIR_HTT (si_ce) = fgvi;
 	    }
 
-	    /*
-	     * XXX overrides any existing name
-	     */
-	    idio_set_property (IDIO_THREAD_VAL (thr), idio_KW_name, sym);
-	    idio_install_postfix_operator (sym, IDIO_THREAD_VAL (thr), pri);
+	    IDIO val = IDIO_THREAD_VAL (thr);
+	    IDIO cname = idio_get_property (val, idio_KW_name, IDIO_LIST1 (idio_S_false));
+	    if (idio_S_false == cname) {
+		idio_set_property (val, idio_KW_name, sym);
+	    }
+	    idio_install_postfix_operator (sym, val, pri);
+	    idio_module_set_symbol_value (sym, val, idio_operator_module);
 	}
 	break;
     case IDIO_A_PUSH_DYNAMIC:

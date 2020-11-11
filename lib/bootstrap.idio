@@ -21,11 +21,12 @@
 
 ;display "This is bootstrap.idio\n"
 
-include "operator.idio"
-include "closure.idio"
 include "s9-syntax.idio"
 include "call-cc.idio"
 include "module.idio"
+
+include "standard-operators.idio"
+include "closure.idio"
 include "common.idio"
 include "struct.idio"
 include "condition.idio"

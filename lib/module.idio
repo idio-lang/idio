@@ -19,7 +19,10 @@
 ;; module.idio
 ;;
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 ;; Following in the style of STklos
+;;
 
 ;; define-module
 ;;
@@ -68,6 +71,8 @@ Control will revert to the current module on exit or any ^condition" {
   }
 }
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 ;; module and load are concomitant
 ;;
 ;; {module} simply sets the current module but {load} now needs to be
@@ -144,7 +149,59 @@ and calls
 
 }
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; require / provide
+;;
+;; a simple load-once mechanism
+;;
+;; XXX define *after* the above module/load concomitant block!
 
+*features* := #n
+*subfeatures* :~ #n
+
+define (require feature & subfeatures) "
+
+Load ``feature`` unless it has previous been successfully required.
+``subfeatures`` are available to the loaded code as the dynamic
+variable ``*subfeatures*``
+
+:param feature: the name of the feature
+:type fmt: symbol
+:param subfeatures: names of subfeatures
+:type args: list
+
+The file to be loaded is ``(symbol->string feature)`` which must
+``(provide feature)``.
+
+:return: #t or #f
+
+" {
+  if (memq feature *features*) #t {
+    *subfeatures* = subfeatures
+
+    load (symbol->string feature)
+
+    if (memq feature *features*) #t {
+      eprintf "%s did not provide %s\n" feature feature
+      #f
+    }
+  }
+}
+
+define-template (provide feature) {
+  ;; XXX need to quote $feature as some function names shadow module
+  ;; names and we just want the symbol(ic name) in *features*
+  #T{
+    if (not (memq '$feature *features*)) {
+      *features* = pair '$feature *features*
+    }
+  }
+}
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 ;; module-import
 
 ;; This is slightly messed about because we have an existing ordered
