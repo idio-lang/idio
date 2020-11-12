@@ -209,10 +209,10 @@ associated with the dynamic/environ variable.
 define (meaning-lexical-lookup src nametree name) {
   loop :+ function (nt i) {
 	    if (null? nt) #f {
-	      names := ph nt
+	      name* := ph nt
 
-	      if (pair? names) {
-		l := assq name names
+	      if (pair? name*) {
+		l := assq name name*
 		if l {
 		  scope := pht l	; ({name} 'local {j})
 		  (case scope
@@ -221,7 +221,7 @@ define (meaning-lexical-lookup src nametree name) {
 			(else (meaning-error-static-variable src "unexpected local variant" name)))
 		} {
 		  ;; only bump i if these were local vars
-		  if (eq? 'local scope) {
+		  if (eq? 'local (phth name*)) {
 		    loop (pt nt) (i + 1)
 		  } {
 		    loop (pt nt) i
@@ -339,14 +339,14 @@ define (meaning-reference src name nametree flags cs cm) {
 	((local) {
 	  ; ('local {i} {j})
 	  j := phtt si
-	  (if (gt 0 i)
+	  (if (gt i 0)
 	      (list I-DEEP-ARGUMENT-REF i j)
 	      (list I-SHALLOW-ARGUMENT-REF j))
 	})
 	((toplevel) {
 	  ; ('toplevel ci vi)
 	  vi := phtt si
-	  (if (gt 0 vi)
+	  (if (gt vi 0)
 	      (list I-CHECKED-GLOBAL-VAL-REF vi)
 	      (list I-GLOBAL-SYM-REF i))
 	})
@@ -379,14 +379,14 @@ define (meaning-function-reference src name nametree flags cs cm) {
 	((local) {
 	  ; ('local {i} {j})
 	  j := phtt si
-	  (if (gt 0 i)
+	  (if (gt i 0)
 	      (list I-DEEP-ARGUMENT-REF i j)
 	      (list I-SHALLOW-ARGUMENT-REF j))
 	})
 	((toplevel) {
 	  ; ('toplevel ci vi)
 	  vi := phtt si
-	  (if (gt 0 vi)
+	  (if (gt vi 0)
 	      (list I-CHECKED-GLOBAL-FUNCTION-VAL-REF vi)
 	      (list I-GLOBAL-FUNCTION-SYM-REF i))
 	})
@@ -448,46 +448,8 @@ define (qq-expand e) {
   eps-qq-expand e
 }
 
-define (qq-expand-list/verbose e c) {
-  printf " %-10s > qel p?=%s e=%s\n" c (pair? e) e
-  if (pair? e) {
-    sym := ph e
-    (cond ((eq? 'unquote sym)		(list 'list (pht e)))
-	  ((eq? 'unquotesplicing sym)	(pht e))
-	  ((or (eq? 'quasiquote sym)
-	       (eq? 'qq sym))		(qq-expand-list/verbose
-					 (qq-expand/verbose (pht e) "qel qq i")
-					 "qel qq o"))
-	  (else				(list 'list (list 'append (qq-expand-list/verbose (ph e) "qel e qel")
-								  (qq-expand/verbose (pt e) "qel e qe")))))
-  } {
-    (list 'quote (list e))
-  }
-}
-
-define (qq-expand/verbose e c) {
-  printf " %-10s > qe  p?=%s e=%s\n" c (pair? e) e
-  if (pair? e) {
-    sym := ph e
-    (cond ((eq? 'unquote sym)		(pht e))
-	  ((eq? 'unquotesplicing sym)	(error 'qq-expand/verbose "illegal"))
-	  ((or (eq? 'quasiquote sym)
-	       (eq? 'qq sym))		(qq-expand/verbose
-					 (qq-expand/verbose (pht e) "qe qq i")
-					 "qe qq o"))
-	  (else				(list 'append (qq-expand-list/verbose (ph e) "qe e qel")
-						      (qq-expand/verbose (pt e) "qe e qe"))))
-  } {
-    (list 'quote e)
-  }
-}
-
-define (qq-expand/verbose e) {
-  qq-expand/verbose e "repl"
-}
-
 define (STklos-backquotify e level) {
-  printf "              bq    p?=%s e=%s\n" (pair? e) e
+  ;printf "              bq    p?=%s e=%s\n" (pair? e) e
   (cond
    ((pair? e)
     (cond
@@ -527,8 +489,9 @@ define (STklos-expand e) {
 
 define (meaning-quasiquotation src e nametree flags cs cm) {
   ee := qq-expand e
+  meaning-copy-src-properties src ee
 
-  meaning src ee nametree flags cs cm
+  meaning ee ee nametree flags cs cm
 }
 
 define (meaning-alternative src e1 e2 e3 nametree flags cs cm) {
@@ -948,7 +911,6 @@ define (meaning-define-infix-operator src name pri e nametree flags cs cm) {
   op-mod := find-module 'operator
 
   set-symbol! name (list 'toplevel ci 0 op-mod (sprintf "meaning-define-infix-operator %s" name)) op-mod
-  eprintf "INFIX-OPERATOR: defined %d in %s\n" ci op-mod
 
   ;; Step 2: rework the expression into some appropriate code and
   ;; compile
@@ -964,7 +926,6 @@ define (meaning-define-infix-operator src name pri e nametree flags cs cm) {
 
       sve := #T{ symbol-value '$e (find-module 'operator) }
       meaning-copy-src-properties src sve
-      eprintf "sve is %s\n" sve
 
       copy-infix-operator! name pri e
       m = meaning-assignment src name sve nametree (define-scope 'toplevel flags) cs cm
@@ -1008,7 +969,6 @@ define (meaning-define-postfix-operator src name pri e nametree flags cs cm) {
   op-mod := find-module 'operator
 
   set-symbol! name (list 'toplevel ci 0 op-mod (sprintf "meaning-define-postfix-operator %s" name)) op-mod
-  eprintf "POSTFIX-OPERATOR: defined %d in %s\n" ci op-mod
 
   ;; Step 2: rework the expression into some appropriate code and
   ;; compile
@@ -1024,7 +984,6 @@ define (meaning-define-postfix-operator src name pri e nametree flags cs cm) {
 
       sve := #T{ symbol-value '$e (find-module 'operator) }
       meaning-copy-src-properties src sve
-      eprintf "sve is %s\n" sve
 
       copy-postfix-operator! name pri e
       m = meaning-assignment src name sve nametree (define-scope 'toplevel flags) cs cm
@@ -1959,15 +1918,11 @@ define (meaning-trap src ce he be nametree flags cs cm) {
 }
 
 define (evaluate-include-file fh cs) {
-  eprintf "\nincl:\th=%s\n" fh
   c := *primitives*/read fh
   if (not (eof? fh)) {
-    ;eprintf "incl:\tc=%s\n" c
     m := evaluate c
-    eprintf "incl:\tm=%s\n" m
     pc := codegen (current-thread) m cs
     r := vm-run (current-thread) pc
-    eprintf "incl:\tr=%s\n" r
     evaluate-include-file fh cs
   }
 }
@@ -1982,11 +1937,8 @@ define (meaning-include src e nametree flags cs cm) {
 }
 
 define (meaning-expander src e nametree flags cs cm) {
-  ;eprintf "meaning-expander: %s\n" e
   te := expander/template-expand e
   meaning-copy-src-properties src te
-
-  ;; copy src properties?
 
   meaning te te nametree flags cs cm
 }

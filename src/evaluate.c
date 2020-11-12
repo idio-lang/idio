@@ -1082,7 +1082,7 @@ static IDIO idio_meaning_dequasiquote (IDIO src, IDIO e, int level, int indent)
      * some source properties.
      *
      * However, our problem here in de-quasiquote is that we will
-     * decend down inside all expressions until we find individual
+     * descend down inside all expressions until we find individual
      * symbols, say, at which point we will generate a mini-form,
      * (quote symbol), say, which we intend to be re-evaluated.
      *

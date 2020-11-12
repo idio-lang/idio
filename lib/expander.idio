@@ -201,23 +201,14 @@ define (copy-expander! new-id old-id) {
 }
 
 define (evaluate-expander m cs) {
-  eprintf "ee:\n"
   pc := codegen *expander-thread* m cs
-  r := vm-run *expander-thread* pc
-  eprintf "ee:\tr=%s\n" r
-
-  r
+  vm-run *expander-thread* pc
 }
 
 define (evaluate-expander-source x e) {
-  eprintf "ees:\tx=%s\n" x
-  r := run-in-thread *expander-thread* (function () {
-					  initial-expander x e
+  run-in-thread *expander-thread* (function () {
+				     initial-expander x e
   })
-
-  eprintf "ees:\tr=%s\n" r
-
-  r
 }
 
 define (template-expand e) {
