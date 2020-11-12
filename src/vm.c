@@ -4438,39 +4438,36 @@ int idio_vm_run1 (IDIO thr)
 	break;
     case IDIO_A_EXPANDER:
 	{
-	    /*
-	     * A slight dance, here.
-	     *
-	     * During *compilation* the expander's mci was mapped to a
-	     * gci in idio_expander_module.
-	     *
-	     * However, during runtime it should be available as an
-	     * mci in the current envronment.
-	     */
 	    uint64_t mci = IDIO_VM_FETCH_REF (thr, bc);
 	    IDIO_VM_RUN_DIS ("EXPANDER %" PRId64 "", mci);
+
 	    IDIO fmci = idio_fixnum (mci);
 	    IDIO ce = idio_thread_current_env ();
-	    IDIO fgci = idio_module_get_vci (ce, fmci);
-	    IDIO sym = idio_S_unspec;
-	    if (idio_S_unspec != fgci) {
-		sym = idio_vm_constants_ref (IDIO_FIXNUM_VAL (fgci));
-	    }
+	    idio_module_set_vci (ce, fmci, fmci);
+	    IDIO sym = idio_vm_constants_ref (mci);
 
 	    idio_ai_t gvi = idio_vm_extend_values ();
 	    IDIO fgvi = idio_fixnum (gvi);
-	    idio_module_set_vvi (ce, idio_fixnum (mci), fgvi);
+	    idio_module_set_vvi (ce, fmci, fgvi);
 
 	    IDIO si_ce = idio_module_find_symbol (sym, ce);
 
 	    if (idio_S_false == si_ce) {
-		si_ce = IDIO_LIST5 (idio_S_toplevel, idio_fixnum (mci), fgvi, ce, idio_vm_EXPANDER_string);
+		idio_debug ("EXPANDER: %s ", sym);
+		fprintf (stderr, "%" PRIu64 " undefined?  setting...\n", mci);
+		si_ce = IDIO_LIST5 (idio_S_toplevel, fmci, fgvi, ce, idio_vm_EXPANDER_string);
 		idio_module_set_symbol (sym, si_ce, ce);
 	    } else {
 		IDIO_PAIR_HTT (si_ce) = fgvi;
 	    }
 
-	    idio_install_expander (sym, IDIO_THREAD_VAL (thr));
+	    IDIO val = IDIO_THREAD_VAL (thr);
+	    IDIO cname = idio_get_property (val, idio_KW_name, IDIO_LIST1 (idio_S_false));
+	    if (idio_S_false == cname) {
+		idio_set_property (val, idio_KW_name, sym);
+	    }
+	    idio_install_expander (sym, val);
+	    idio_module_set_symbol_value (sym, val, ce);
 	}
 	break;
     case IDIO_A_INFIX_OPERATOR:
@@ -4481,7 +4478,7 @@ int idio_vm_run1 (IDIO thr)
 
 	    IDIO fmci = idio_fixnum (mci);
 	    idio_module_set_vci (idio_operator_module, fmci, fmci);
-	    IDIO sym = idio_vm_constants_ref (IDIO_FIXNUM_VAL (fmci));
+	    IDIO sym = idio_vm_constants_ref (mci);
 
 	    idio_ai_t gvi = idio_vm_extend_values ();
 	    IDIO fgvi = idio_fixnum (gvi);
@@ -4515,7 +4512,7 @@ int idio_vm_run1 (IDIO thr)
 
 	    IDIO fmci = idio_fixnum (mci);
 	    idio_module_set_vci (idio_operator_module, fmci, fmci);
-	    IDIO sym = idio_vm_constants_ref (IDIO_FIXNUM_VAL (fmci));
+	    IDIO sym = idio_vm_constants_ref (mci);
 
 	    idio_ai_t gvi = idio_vm_extend_values ();
 	    IDIO fgvi = idio_fixnum (gvi);

@@ -167,7 +167,12 @@ define (meaning-environ-extend src name val cs) {
     ci := codegen-constants-lookup-or-extend cs name
     vi := (vm-extend-values)
 
-    ; module ci/vi ?
+    ;; I don't like these two statements.  They should be the concern
+    ;; of the VM but there's no explicit instruction to the VM to
+    ;; create an environ variable.  Perhaps there should be?
+    set-module-vci! ci ci
+    set-module-vvi! ci vi
+
     set-symbol! name (list 'environ ci vi im "idio-environ-extend") im
     set-symbol-value! name val im
   }

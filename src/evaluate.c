@@ -462,18 +462,24 @@ static void idio_meaning_error_static_primitive_arity (IDIO src, IDIO c_location
     /* notreached */
 }
 
-static IDIO idio_meaning_predef_extend (IDIO name, IDIO primdata, IDIO module, IDIO cs, const char *cpp__FILE__, int cpp__LINE__)
+#define IDIO_MEANING_PREDEF_FLAG_NONE	0
+#define IDIO_MEANING_PREDEF_FLAG_EXPORT	1
+
+static IDIO idio_meaning_predef_extend (idio_primitive_desc_t *d, int flags, IDIO module, IDIO cs, const char *cpp__FILE__, int cpp__LINE__)
 {
-    IDIO_ASSERT (name);
-    IDIO_ASSERT (primdata);
+    IDIO_C_ASSERT (d);
     IDIO_ASSERT (module);
     IDIO_ASSERT (cs);
 
-    IDIO_TYPE_ASSERT (symbol, name);
-    IDIO_TYPE_ASSERT (primitive, primdata);
     IDIO_TYPE_ASSERT (module, module);
     IDIO_TYPE_ASSERT (array, cs);
 
+    IDIO primdata = idio_primitive_data (d);
+    IDIO name = idio_symbols_C_intern (d->name);
+
+    if (IDIO_MEANING_PREDEF_FLAG_EXPORT == flags) {
+	IDIO_MODULE_EXPORTS (module) = idio_pair (name, IDIO_MODULE_EXPORTS (module));
+    }
     IDIO si = idio_module_find_symbol (name, module);
     if (idio_S_false != si) {
 	IDIO fgvi = IDIO_PAIR_HTT (si);
@@ -500,6 +506,7 @@ static IDIO idio_meaning_predef_extend (IDIO name, IDIO primdata, IDIO module, I
 
     idio_ai_t mci = idio_codegen_constants_lookup_or_extend (cs, name);
     IDIO fmci = idio_fixnum (mci);
+    idio_module_set_vci (module, fmci, fmci);
 
     idio_ai_t gvi = idio_vm_extend_values ();
     IDIO fgvi = idio_fixnum (gvi);
@@ -525,14 +532,7 @@ IDIO idio_add_module_primitive (IDIO module, idio_primitive_desc_t *d, IDIO cs, 
     IDIO_TYPE_ASSERT (module, module);
     IDIO_TYPE_ASSERT (array, cs);
 
-    IDIO primdata = idio_primitive_data (d);
-    IDIO sym = idio_symbols_C_intern (d->name);
-
-    idio_ai_t mci = idio_codegen_constants_lookup_or_extend (cs, sym);
-    IDIO fmci = idio_fixnum (mci);
-    idio_module_set_vci (module, fmci, fmci);
-
-    return idio_meaning_predef_extend (sym, primdata, module, cs, cpp__FILE__, cpp__LINE__);
+    return idio_meaning_predef_extend (d, IDIO_MEANING_PREDEF_FLAG_NONE, module, cs, cpp__FILE__, cpp__LINE__);
 }
 
 IDIO idio_export_module_primitive (IDIO module, idio_primitive_desc_t *d, IDIO cs, const char *cpp__FILE__, int cpp__LINE__)
@@ -543,15 +543,7 @@ IDIO idio_export_module_primitive (IDIO module, idio_primitive_desc_t *d, IDIO c
     IDIO_TYPE_ASSERT (module, module);
     IDIO_TYPE_ASSERT (array, cs);
 
-    IDIO primdata = idio_primitive_data (d);
-    IDIO sym = idio_symbols_C_intern (d->name);
-
-    idio_ai_t mci = idio_codegen_constants_lookup_or_extend (cs, sym);
-    IDIO fmci = idio_fixnum (mci);
-    idio_module_set_vci (module, fmci, fmci);
-
-    IDIO_MODULE_EXPORTS (module) = idio_pair (sym, IDIO_MODULE_EXPORTS (module));
-    return idio_meaning_predef_extend (sym, primdata, module, cs, cpp__FILE__, cpp__LINE__);
+    return idio_meaning_predef_extend (d, IDIO_MEANING_PREDEF_FLAG_EXPORT, module, cs, cpp__FILE__, cpp__LINE__);
 }
 
 IDIO idio_add_primitive (idio_primitive_desc_t *d, IDIO cs, const char *cpp__FILE__, int cpp__LINE__)
@@ -681,6 +673,11 @@ IDIO idio_environ_extend (IDIO src, IDIO name, IDIO val, IDIO cs)
     idio_ai_t gvi = idio_vm_extend_values ();
     IDIO fgvi = idio_fixnum (gvi);
 
+    /*
+     * I don't like these two statements.  They should be the concern
+     * of the VM but there's no explicit instruction to the VM to
+     * create an environ variable.  Perhaps there should be?
+     */
     idio_module_set_vci (im, fmci, fmci);
     idio_module_set_vvi (im, fmci, fgvi);
     si = IDIO_LIST5 (idio_S_environ, fmci, fgvi, im, idio_meaning_environ_extend_string);
@@ -1897,14 +1894,9 @@ static IDIO idio_meaning_define_template (IDIO src, IDIO name, IDIO e, IDIO name
     idio_ai_t mci = idio_codegen_constants_lookup_or_extend (cs, name);
     IDIO fmci = idio_fixnum (mci);
 
-    idio_ai_t gvi = idio_vm_extend_values ();
-    IDIO fgvi = idio_fixnum (gvi);
-
     IDIO ce = idio_thread_current_env ();
 
-    idio_module_set_vci (ce, fmci, fmci);
-    idio_module_set_vvi (ce, fmci, fgvi);
-    idio_module_set_symbol (name, IDIO_LIST5 (idio_S_toplevel, fmci, fgvi, ce, docstr), ce);
+    idio_module_set_symbol (name, IDIO_LIST5 (idio_S_toplevel, fmci, idio_fixnum (0), ce, docstr), ce);
 
     IDIO r = IDIO_LIST3 (IDIO_I_EXPANDER, idio_fixnum (mci), m_a);
     /* idio_debug ("idio-meaning-define-template %s", name); */
