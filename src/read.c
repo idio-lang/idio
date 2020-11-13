@@ -1199,12 +1199,12 @@ static IDIO idio_read_unescape (IDIO ls)
     IDIO_ASSERT (ls);
 
     IDIO_TYPE_ASSERT (list, ls);
-    
+
     IDIO r = idio_S_nil;
 
     while (idio_S_nil != ls) {
 	IDIO e = IDIO_PAIR_H (ls);
-	
+
 	if (idio_isa_pair (e) &&
 	    idio_S_escape == IDIO_PAIR_H (e) &&
 	    idio_isa_pair (IDIO_PAIR_T (e)) &&
@@ -1853,7 +1853,7 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 		/*
 		 * Test Case: read-errors/bitset-internal-eof-2.idio
 		 *
-		 * #B{ 23 
+		 * #B{ 23
 		 *
 		 */
 		idio_read_error_bitset (handle, lo, IDIO_C_FUNC_LOCATION (), "EOF");

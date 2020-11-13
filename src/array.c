@@ -817,7 +817,7 @@ If no default value is supplied #f is used.	\n\
     /*
      * S9fES -- Scheme specs say unspecified
      */
-    IDIO dv = idio_array_default_value; 
+    IDIO dv = idio_array_default_value;
 
     if (idio_S_nil != args) {
 	dv = IDIO_PAIR_H (args);

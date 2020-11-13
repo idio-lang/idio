@@ -23,6 +23,7 @@
 #include "idio.h"
 
 pid_t idio_pid = 0;
+int idio_bootstrap_complete = 0;
 int idio_exit_status = 0;
 IDIO idio_k_exit = NULL;
 
@@ -294,6 +295,8 @@ int main (int argc, char **argv, char **envp)
     idio_array_push (idio_vm_krun, IDIO_LIST2 (idio_k_exit, idio_get_output_string (dosh)));
 
     idio_load_file_name (idio_string_C ("bootstrap"), idio_vm_constants);
+
+    idio_bootstrap_complete = 1;
 
     if (nargc > 1) {
 	/*

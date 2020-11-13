@@ -653,30 +653,30 @@ Logical AND the code points from the character sets.
 
 If no arguments are passed the return value is char-set:empty.
 " {
-  lp :+ function (css res) {
-	  if (null? css) res {
-	    cs := ph css
-	    cond ((sparse-char-set? res) {
-	      nplanes := sparse-char-set-planes res
-	      do ((i 0 (i + 1))) \
-		 ((gt i nplanes)
-		  res) {
-		    bs1 := array-ref res.planes i
-		    bs2 := array-ref cs.planes i
-		    array-set! res.planes i (cond ((not bs1) bs1)
-						  ((not bs2) bs2)
-						  (else (and-bitset bs1 bs2)))
+  loop :+ function (css res) {
+	    if (null? css) res {
+	      cs := ph css
+	      cond ((sparse-char-set? res) {
+		nplanes := sparse-char-set-planes res
+		do ((i 0 (i + 1))) \
+		   ((gt i nplanes)
+		    res) {
+		      bs1 := array-ref res.planes i
+		      bs2 := array-ref cs.planes i
+		      array-set! res.planes i (cond ((not bs1) bs1)
+						    ((not bs2) bs2)
+						    (else (and-bitset bs1 bs2)))
 		    }
 
-	    }) \
-		 (else (error 'and-char-set "not a char-set" cs))
+	      }) \
+		   (else (error 'and-char-set "not a char-set" cs))
 
-	    lp (pt css) res
-	  }
+	      loop (pt css) res
+	    }
   }
 
   if (null? css) (copy-char-set char-set:empty) {
-    lp (pt css) (copy-char-set (ph css))
+    loop (pt css) (copy-char-set (ph css))
   }
 }
 
@@ -685,32 +685,32 @@ Logical Inclusive OR the code points from the character sets.
 
 If no arguments are passed the return value is char-set:full.
 " {
-  lp :+ function (css res) {
-	  if (null? css) res {
-	    cs := ph css
-	    cond ((sparse-char-set? res) {
-	      nplanes := sparse-char-set-planes res
-	      do ((i 0 (i + 1))) \
-		 ((gt i nplanes)
-		  res) {
-		    bs1 := array-ref res.planes i
-		    bs2 := array-ref cs.planes i
-		    array-set! res.planes i (cond ((not bs1) bs2)
-						  ((not bs2) bs1)
-						  (else (ior-bitset bs1 bs2)))
+  loop :+ function (css res) {
+	    if (null? css) res {
+	      cs := ph css
+	      cond ((sparse-char-set? res) {
+		nplanes := sparse-char-set-planes res
+		do ((i 0 (i + 1))) \
+		   ((gt i nplanes)
+		    res) {
+		      bs1 := array-ref res.planes i
+		      bs2 := array-ref cs.planes i
+		      array-set! res.planes i (cond ((not bs1) bs2)
+						    ((not bs2) bs1)
+						    (else (ior-bitset bs1 bs2)))
 		    }
 
-	    }) \
-		 (else {
-		   (error 'ior-char-set "not a char-set" cs)
+	      }) \
+		   (else {
+		     (error 'ior-char-set "not a char-set" cs)
 		   })
 
-	    lp (pt css) res
-	  }
+	      loop (pt css) res
+	    }
   }
 
   if (null? css) (copy-char-set char-set:full) {
-    lp (pt css) (copy-char-set (ph css))
+    loop (pt css) (copy-char-set (ph css))
   }
 }
 
@@ -721,30 +721,30 @@ Logical eXclusive OR the code points from the character sets.
 
 If no arguments are passed the return value is char-set:empty.
 " {
-  lp :+ function (css res) {
-	  if (null? css) res {
-	    cs := ph css
-	    cond ((sparse-char-set? res) {
-	      nplanes := sparse-char-set-planes res
-	      do ((i 0 (i + 1))) \
-		 ((gt i nplanes)
-		  res) {
-		    bs1 := array-ref res.planes i
-		    bs2 := array-ref cs.planes i
-		    array-set! res.planes i (cond ((not bs1) bs2)
-						  ((not bs2) bs1)
-						  (else (xor-bitset bs1 bs2)))
+  loop :+ function (css res) {
+	    if (null? css) res {
+	      cs := ph css
+	      cond ((sparse-char-set? res) {
+		nplanes := sparse-char-set-planes res
+		do ((i 0 (i + 1))) \
+		   ((gt i nplanes)
+		    res) {
+		      bs1 := array-ref res.planes i
+		      bs2 := array-ref cs.planes i
+		      array-set! res.planes i (cond ((not bs1) bs2)
+						    ((not bs2) bs1)
+						    (else (xor-bitset bs1 bs2)))
 		    }
 
-	    }) \
-		 (else (error 'xor-char-set "not a char-set" cs))
+	      }) \
+		   (else (error 'xor-char-set "not a char-set" cs))
 
-	    lp (pt css) res
-	  }
+	      loop (pt css) res
+	    }
   }
 
   if (null? css) (copy-char-set char-set:empty) {
-    lp (pt css) (copy-char-set (ph css))
+    loop (pt css) (copy-char-set (ph css))
   }
 }
 
@@ -786,30 +786,30 @@ Complement the code points from character set cs with side-effects.
 define (subtract-char-set cs & css) "
 Subtract the code points of the character sets css from cs.
 " {
-  lp :+ function (css res) {
-	  if (null? css) res {
-	    cs := ph css
-	    cond ((sparse-char-set? res) {
-	      nplanes := sparse-char-set-planes res
-	      do ((i 0 (i + 1))) \
-		 ((gt i nplanes)
-		  res) {
-		    bs1 := array-ref res.planes i
-		    bs2 := array-ref cs.planes i
-		    array-set! res.planes i (cond ((not bs1) bs2)
-						  ((not bs2) bs1)
-						  (else (subtract-bitset bs1 bs2)))
+  loop :+ function (css res) {
+	    if (null? css) res {
+	      cs := ph css
+	      cond ((sparse-char-set? res) {
+		nplanes := sparse-char-set-planes res
+		do ((i 0 (i + 1))) \
+		   ((gt i nplanes)
+		    res) {
+		      bs1 := array-ref res.planes i
+		      bs2 := array-ref cs.planes i
+		      array-set! res.planes i (cond ((not bs1) bs2)
+						    ((not bs2) bs1)
+						    (else (subtract-bitset bs1 bs2)))
 		    }
 
-	    }) \
-		 (else (error 'subtract-char-set "not a char-set" cs))
+	      }) \
+		   (else (error 'subtract-char-set "not a char-set" cs))
 
-	    lp (pt css) res
-	  }
+	      loop (pt css) res
+	    }
   }
 
   if (null? css) (copy-char-set cs) {
-    lp css (copy-char-set cs)
+    loop css (copy-char-set cs)
   }
 }
 

@@ -645,24 +645,28 @@ does not return per se						\n\
 	    idio_debug ("default-condition-handler: no clause for %s\n", c);
 	}
 
-	IDIO cmd = IDIO_LIST1 (idio_module_symbol_value (idio_symbols_C_intern ("debug"),
-							 idio_Idio_module,
-							 idio_S_nil));
+	if (idio_bootstrap_complete) {
+	    IDIO cmd = IDIO_LIST1 (idio_module_symbol_value (idio_symbols_C_intern ("debug"),
+							     idio_Idio_module,
+							     idio_S_nil));
 
-	IDIO r = idio_vm_invoke_C (thr, cmd);
+	    IDIO r = idio_vm_invoke_C (thr, cmd);
 
-	/*
-	 * PC for RETURN
-	 *
-	 * If we were invoked as a condition handler then the stack is
-	 * prepared with a return to idio_vm_CHR_pc (which will
-	 * POP-TRAP, RESTORE-STATE and RETURN).
-	 *
-	 *
-	 */
-	/* IDIO_THREAD_PC (thr) = idio_vm_CHR_pc + 2; */
+	    /*
+	     * PC for RETURN
+	     *
+	     * If we were invoked as a condition handler then the stack is
+	     * prepared with a return to idio_vm_CHR_pc (which will
+	     * POP-TRAP, RESTORE-STATE and RETURN).
+	     *
+	     *
+	     */
+	    /* IDIO_THREAD_PC (thr) = idio_vm_CHR_pc + 2; */
 
-	return r;
+	    return r;
+	} else {
+	    fprintf (stderr, "default-condition-handler: bootstrap incomplete\n");
+	}
     }
 
 #ifdef IDIO_DEBUG

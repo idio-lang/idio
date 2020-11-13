@@ -36,7 +36,7 @@ IDIO_SYMBOL_DECL (before);
 IDIO_SYMBOL_DECL (begin);
 IDIO_SYMBOL_DECL (block);
 IDIO_SYMBOL_DECL (class);
-IDIO_SYMBOL_DECL (cmp_eq);
+IDIO_SYMBOL_DECL (num_eq);
 IDIO_SYMBOL_DECL (colon_caret);
 IDIO_SYMBOL_DECL (colon_dollar);
 IDIO_SYMBOL_DECL (colon_eq);
@@ -653,7 +653,7 @@ void idio_init_symbol ()
     IDIO_SYMBOL_DEF ("environ", environ);
     IDIO_SYMBOL_DEF ("environ-let", environ_let);
     IDIO_SYMBOL_DEF ("environ-unset", environ_unset);
-    IDIO_SYMBOL_DEF ("eq", cmp_eq);
+    IDIO_SYMBOL_DEF ("eq", num_eq);
     IDIO_SYMBOL_DEF ("eq?", eqp);
     IDIO_SYMBOL_DEF ("equal?", equalp);
     IDIO_SYMBOL_DEF ("eqv?", eqvp);

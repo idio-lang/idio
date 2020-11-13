@@ -531,8 +531,8 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		return (o1 == o2);
 	    } else if (idio_isa_number (o2)) {
 		r = idio_vm_invoke_C (idio_thread_current_thread (),
-				      IDIO_LIST3 (idio_module_symbol_value (idio_S_cmp_eq,
-									    idio_Idio_module,
+				      IDIO_LIST3 (idio_module_symbol_value (idio_S_num_eq,
+									    idio_primitives_module,
 									    idio_S_nil),
 						  o1,
 						  o2));
@@ -562,8 +562,8 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 
 		    if (idio_isa_bignum (o1)) {
 			r = idio_vm_invoke_C (idio_thread_current_thread (),
-					      IDIO_LIST3 (idio_module_symbol_value (idio_S_cmp_eq,
-										    idio_Idio_module,
+					      IDIO_LIST3 (idio_module_symbol_value (idio_S_num_eq,
+										    idio_primitives_module,
 										    idio_S_nil),
 							  o1,
 							  o2));
