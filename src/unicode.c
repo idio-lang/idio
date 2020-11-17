@@ -174,7 +174,7 @@ convert `c` to an integer				\n\
  *
  * quoted says to add a " at the front and back
  *
- * caller must free(3) this string
+ * caller must IDIO_GC_FREE() this string
  *
  */
 char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted)

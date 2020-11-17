@@ -246,10 +246,10 @@ void idio_free_C_pointer (IDIO co)
     IDIO_ASSERT (co);
 
     if (IDIO_C_TYPE_POINTER_FREEP (co)) {
-	free (IDIO_C_TYPE_POINTER_P (co));
+	IDIO_GC_FREE (IDIO_C_TYPE_POINTER_P (co));
     }
 
-    free (co->u.C_type.u.C_pointer);
+    IDIO_GC_FREE (co->u.C_type.u.C_pointer);
 }
 
 IDIO idio_C_number_cast (IDIO co, idio_type_e type)

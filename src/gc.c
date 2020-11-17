@@ -46,7 +46,11 @@ static IDIO idio_gc_finalizer_hash = idio_S_nil;
  */
 void *idio_alloc (size_t s)
 {
+#ifdef IDIO_MALLOC
+    void *blob = idio_malloc_malloc (s);
+#else
     void *blob = malloc (s);
+#endif
     if (NULL == blob) {
 	idio_error_alloc ("malloc");
 
@@ -58,8 +62,10 @@ void *idio_alloc (size_t s)
     /*
      * memset to something not all-zeroes and not all-ones to try to
      * catch assumptions about default memory bugs
+     *
+     * Lucky number seven
      */
-    memset (blob, 0x5e, s);
+    memset (blob, 0x37, s);
 #endif
 
     return blob;
@@ -67,8 +73,11 @@ void *idio_alloc (size_t s)
 
 void *idio_realloc (void *p, size_t s)
 {
+#ifdef IDIO_MALLOC
+    p = idio_malloc_realloc (p, s);
+#else
     p = realloc (p, s);
-
+#endif
     if (NULL == p) {
 	idio_error_alloc ("realloc");
 
@@ -77,6 +86,15 @@ void *idio_realloc (void *p, size_t s)
     }
 
     return p;
+}
+
+void idio_gc_free (void *p)
+{
+#ifdef IDIO_MALLOC
+    idio_malloc_free (p);
+#else
+    free (p);
+#endif
 }
 
 /**
@@ -751,7 +769,7 @@ void idio_gc_gcc_mark_root (idio_root_t *root, unsigned colour)
     idio_gc_gcc_mark (root->object, colour);
 }
 
-idio_gc_t *idio_gc_new ()
+idio_gc_t *idio_gc_obj_new ()
 {
     idio_gc_t *c = idio_alloc (sizeof (idio_gc_t));
     c->next = NULL;
@@ -983,7 +1001,7 @@ void idio_gc_expose (IDIO o)
 	    } else {
 		idio_gc->roots = r->next;
 	    }
-	    free (r);
+	    IDIO_GC_FREE (r);
 	    break;
 	} else {
 	    p = r;
@@ -1539,7 +1557,7 @@ void idio_gc_sweep ()
     while (idio_gc->stats.nfree > 0x1000) {
     	IDIO fo = idio_gc->free;
 	idio_gc->free = fo->next;
-	free (fo);
+	IDIO_GC_FREE (fo);
 	idio_gc->stats.nfree--;
     }
 
@@ -1897,7 +1915,7 @@ void idio_gc_ports_free ()
 {
 }
 
-void idio_gc_free ()
+void idio_gc_obj_free ()
 {
     /*
       Things with finalizers will try to use embedded references which
@@ -1917,7 +1935,7 @@ void idio_gc_free ()
 	    /* notreached */
 	    return;
 	}
-	free (root);
+	IDIO_GC_FREE (root);
     }
 
     if (idio_gc->pause) {
@@ -1934,7 +1952,7 @@ void idio_gc_free ()
     while (idio_gc->free) {
 	IDIO co = idio_gc->free;
 	idio_gc->free = co->next;
-	free (co);
+	IDIO_GC_FREE (co);
 	n++;
     }
     IDIO_C_ASSERT (n == idio_gc->stats.nfree);
@@ -1943,42 +1961,12 @@ void idio_gc_free ()
     while (idio_gc->used) {
 	IDIO co = idio_gc->used;
 	idio_gc->used = co->next;
-	free (co);
+	IDIO_GC_FREE (co);
 	n++;
     }
 
-    free (idio_gc);
+    IDIO_GC_FREE (idio_gc);
 }
-
-/* #ifndef asprintf */
-/* /\* */
-/*   http://stackoverflow.com/questions/3774417/sprintf-with-automatic-memory-allocation */
-/*  *\/ */
-/* int */
-/* vasprintf(char **strp, const char *fmt, va_list ap) */
-/* { */
-/*     size_t size = vsnprintf(NULL, 0, fmt, ap) + 1; */
-/*     char *buffer = calloc(1, size); */
-
-/*     if (!buffer) */
-/*         return -1; */
-
-/*     return vsnprintf(buffer, size, fmt, ap); */
-/* } */
-
-/* int */
-/* asprintf(char **strp, const char *fmt, ...) */
-/* { */
-/*     int error; */
-/*     va_list ap; */
-
-/*     va_start(ap, fmt); */
-/*     error = vasprintf(strp, fmt, ap); */
-/*     va_end(ap); */
-
-/*     return error; */
-/* } */
-/* #endif */
 
 /**
  * idio_strcat() - concatenate two (non-static) length defined strings
@@ -2002,7 +1990,17 @@ char *idio_strcat (char *s1, size_t *s1sp, const char *s2, const size_t s2s)
 	return s1;
     }
 
-    char *r = idio_realloc (s1, *s1sp + s2s + 1);
+#ifdef IDIO_MALLOC
+    /*
+     * The original string was allocated by idio_malloc_asprintf()
+     */
+    char *r = idio_malloc_realloc (s1, *s1sp + s2s + 1);
+#else
+    /*
+     * The original string was allocated by asprintf()
+     */
+    char *r = realloc (s1, *s1sp + s2s + 1);
+#endif
     if (NULL != r) {
 	memcpy (r + *s1sp, s2, s2s);
 	r[*s1sp + s2s] = '\0';
@@ -2033,7 +2031,11 @@ char *idio_strcat_free (char *s1, size_t *s1sp, char *s2, const size_t s2s)
     }
 
     char *r = idio_strcat (s1, s1sp, s2, s2s);
+#ifdef IDIO_MALLOC
+    idio_malloc_free (s2);
+#else
     free (s2);
+#endif
 
     return r;
 }
@@ -2057,7 +2059,7 @@ IDIO_DEFINE_PRIMITIVE0 ("gc/collect", gc_collect, (void))
 
 void idio_init_gc ()
 {
-    idio_gc = idio_gc_new ();
+    idio_gc = idio_gc_obj_new ();
 
     idio_gc->verbose = 0;
 
@@ -2181,6 +2183,6 @@ void idio_final_gc ()
 #ifdef IDIO_DEBUG
     idio_gc_dump ();
 #endif
-    idio_gc_free ();
+    idio_gc_obj_free ();
 }
 

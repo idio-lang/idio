@@ -86,7 +86,7 @@ void idio_free_thread (IDIO t)
 
     idio_gc_stats_free (sizeof (idio_thread_t));
 
-    free (t->u.thread);
+    IDIO_GC_FREE (t->u.thread);
 }
 
 IDIO idio_thread_current_thread ()

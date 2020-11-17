@@ -131,7 +131,7 @@ a wrapper to libc access (2)					\n\
     char *pathname = idio_string_as_C (ipathname, &size);
     size_t C_size = strlen (pathname);
     if (C_size != size) {
-	free (pathname);
+	IDIO_GC_FREE (pathname);
 
 	idio_libc_error_format ("access: pathname contains an ASCII NUL", ipathname, IDIO_C_FUNC_LOCATION ());
 
@@ -146,7 +146,7 @@ a wrapper to libc access (2)					\n\
 	r = idio_S_true;
     }
 
-    free (pathname);
+    IDIO_GC_FREE (pathname);
 
     return r;
 }
@@ -482,6 +482,9 @@ a wrapper to libc getcwd (3)					\n\
     }
 
     IDIO r = idio_string_C (cwd);
+    /*
+     * XXX getcwd() used system allocator
+     */
     free (cwd);
 
     return r;
@@ -595,7 +598,7 @@ a wrapper to libc mkdtemp (3)					\n\
     char *template = idio_string_as_C (itemplate, &size);
     size_t C_size = strlen (template);
     if (C_size != size) {
-	free (template);
+	IDIO_GC_FREE (template);
 
 	idio_libc_error_format ("mkdtemp: template contains an ASCII NUL", itemplate, IDIO_C_FUNC_LOCATION ());
 
@@ -605,7 +608,7 @@ a wrapper to libc mkdtemp (3)					\n\
     char *d = mkdtemp (template);
 
     if (NULL == d) {
-	free (template);
+	IDIO_GC_FREE (template);
 
 	idio_error_system_errno ("mkdtemp", IDIO_LIST1 (itemplate), IDIO_C_FUNC_LOCATION ());
 
@@ -614,7 +617,7 @@ a wrapper to libc mkdtemp (3)					\n\
 
     IDIO r = idio_string_C (d);
 
-    free (template);
+    IDIO_GC_FREE (template);
 
     return r;
 }
@@ -640,7 +643,7 @@ a wrapper to libc mkstemp (3)					\n\
     char *template = idio_string_as_C (itemplate, &size);
     size_t C_size = strlen (template);
     if (C_size != size) {
-	free (template);
+	IDIO_GC_FREE (template);
 
 	idio_libc_error_format ("mkstemp: template contains an ASCII NUL", itemplate, IDIO_C_FUNC_LOCATION ());
 
@@ -650,7 +653,7 @@ a wrapper to libc mkstemp (3)					\n\
     int r = mkstemp (template);
 
     if (-1 == r) {
-	free (template);
+	IDIO_GC_FREE (template);
 
 	idio_error_system_errno ("mkstemp", IDIO_LIST1 (itemplate), IDIO_C_FUNC_LOCATION ());
 
@@ -671,7 +674,7 @@ a wrapper to libc mkstemp (3)					\n\
      */
     IDIO ifilename = idio_string_C (template);
 
-    free (template);
+    IDIO_GC_FREE (template);
 
     return IDIO_LIST2 (idio_C_int (r), ifilename);
 }
@@ -944,7 +947,7 @@ IDIO idio_libc_stat (IDIO pathname)
     char *pathname_C = idio_string_as_C (pathname, &size);
     size_t C_size = strlen (pathname_C);
     if (C_size != size) {
-	free (pathname_C);
+	IDIO_GC_FREE (pathname_C);
 
 	idio_libc_error_format ("stat: pathname contains an ASCII NUL", pathname, IDIO_C_FUNC_LOCATION ());
 
@@ -954,7 +957,7 @@ IDIO idio_libc_stat (IDIO pathname)
     struct stat sb;
 
     if (stat (pathname_C, &sb) == -1) {
-	free (pathname_C);
+	IDIO_GC_FREE (pathname_C);
 
 	idio_error_system_errno ("stat", IDIO_LIST1 (pathname), IDIO_C_FUNC_LOCATION ());
 
@@ -980,7 +983,7 @@ IDIO idio_libc_stat (IDIO pathname)
 				   idio_pair (idio_C_uint (sb.st_ctime),
 				   idio_S_nil))))))))))))));
 
-    free (pathname_C);
+    IDIO_GC_FREE (pathname_C);
 
     return r;
 }
@@ -1237,7 +1240,7 @@ a wrapper to libc unlink (2)					\n\
     char *pathname = idio_string_as_C (ipathname, &size);
     size_t C_size = strlen (pathname);
     if (C_size != size) {
-	free (pathname);
+	IDIO_GC_FREE (pathname);
 
 	idio_libc_error_format ("unlink: pathname contains an ASCII NUL", ipathname, IDIO_C_FUNC_LOCATION ());
 
@@ -1246,7 +1249,7 @@ a wrapper to libc unlink (2)					\n\
 
     int r = unlink (pathname);
 
-    free (pathname);
+    IDIO_GC_FREE (pathname);
 
     if (-1 == r) {
 	idio_error_system_errno ("unlink", IDIO_LIST1 (ipathname), IDIO_C_FUNC_LOCATION ());
@@ -1438,7 +1441,7 @@ a wrapper to libc write (2)					\n\
 	idio_error_system_errno ("write", IDIO_LIST2 (ifd, istr), IDIO_C_FUNC_LOCATION ());
     }
 
-    free (str);
+    IDIO_GC_FREE (str);
 
     return idio_integer (n);
 }
@@ -3153,7 +3156,7 @@ char *idio_libc_struct_timeval_as_string (IDIO tv)
     char fmt[BUFSIZ];
     sprintf (fmt, "%%ld.%%.%ds", prec);
     char *buf;
-    if (asprintf (&buf, fmt, tvp->tv_sec, us) == -1) {
+    if (IDIO_ASPRINTF (&buf, fmt, tvp->tv_sec, us) == -1) {
 	idio_error_alloc ("asprintf");
 
 	/* notreached */
@@ -3182,7 +3185,7 @@ Return a C struct timeval as a string				\n\
 
     idio_display_C (tvs, osh);
 
-    free (tvs);
+    IDIO_GC_FREE (tvs);
 
     return idio_get_output_string (osh);
 }
@@ -3745,7 +3748,7 @@ void idio_init_libc_wrap ()
 	idio_module_export_symbol_value (name, SHELL, idio_libc_wrap_module);
     }
 
-    free (pwd_buf);
+    IDIO_GC_FREE (pwd_buf);
     */
 
     geti = IDIO_ADD_MODULE_PRIMITIVE (idio_libc_wrap_module, UID_get);
@@ -3899,20 +3902,20 @@ void idio_final_libc_wrap ()
 
     idio_gc_expose (idio_vm_signal_handler_conditions);
     for (i = IDIO_LIBC_FSIG; NULL != idio_libc_signal_names[i]; i++) {
-        free (idio_libc_signal_names[i]);
+        IDIO_GC_FREE (idio_libc_signal_names[i]);
     }
-    free (idio_libc_signal_names);
+    IDIO_GC_FREE (idio_libc_signal_names);
 
     idio_gc_expose (idio_vm_errno_conditions);
     for (i = IDIO_LIBC_FERRNO; i < IDIO_LIBC_NERRNO; i++) {
-        free (idio_libc_errno_names[i]);
+        IDIO_GC_FREE (idio_libc_errno_names[i]);
     }
-    free (idio_libc_errno_names);
+    IDIO_GC_FREE (idio_libc_errno_names);
 
     for (i = IDIO_LIBC_FRLIMIT; i < IDIO_LIBC_NRLIMIT; i++) {
-        free (idio_libc_rlimit_names[i]);
+        IDIO_GC_FREE (idio_libc_rlimit_names[i]);
     }
-    free (idio_libc_rlimit_names);
+    IDIO_GC_FREE (idio_libc_rlimit_names);
 
     idio_gc_expose (idio_libc_struct_stat);
 }

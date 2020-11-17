@@ -608,7 +608,7 @@ void idio_free_string (IDIO so)
 
     idio_gc_stats_free (IDIO_STRING_BLEN (so));
 
-    free (IDIO_STRING_S (so));
+    IDIO_GC_FREE (IDIO_STRING_S (so));
 }
 
 /*
@@ -729,7 +729,7 @@ size_t idio_string_len (IDIO so)
 }
 
 /*
- * caller must free(3) this string
+ * caller must idio_gc_free(3) this string
  */
 char *idio_string_as_C (IDIO so, size_t *sizep)
 {
@@ -881,7 +881,7 @@ If no default value is supplied #\{space} is used.	\n\
 
     IDIO s = idio_string_C_len (sC, blen);
 
-    free (sC);
+    IDIO_GC_FREE (sC);
 
     return s;
 }
@@ -1094,7 +1094,7 @@ return a symbol derived from `s`		\n\
 	/*
 	 * Test Case: string-errors/string-symbol-format.idio
 	 */
-	free (sC);
+	IDIO_GC_FREE (sC);
 
 	idio_string_error_format ("string contains an ASCII NUL", s, IDIO_C_FUNC_LOCATION ());
 
@@ -1103,7 +1103,7 @@ return a symbol derived from `s`		\n\
 
     IDIO r = idio_symbols_C_intern (sC);
 
-    free (sC);
+    IDIO_GC_FREE (sC);
 
     return r;
 }
@@ -1145,7 +1145,7 @@ which is a list of strings.						\n\
 	r = idio_string_C_array (n, copies);
 
 	for (i = 0; i < n; i++) {
-	    free (copies[i]);
+	    IDIO_GC_FREE (copies[i]);
 	}
     } else {
 	r = idio_string_C ("");
@@ -1193,7 +1193,7 @@ a string.								\n\
 	r = idio_string_C_array (n, copies);
 
 	for (i = 0; i < n; i++) {
-	    free (copies[i]);
+	    IDIO_GC_FREE (copies[i]);
 	}
     } else {
 	r = idio_string_C ("");
@@ -1839,18 +1839,18 @@ int idio_string_equal (IDIO s1, IDIO s2)
 	    }								\
 									\
 	    if (0 == cr) {						\
-		free (C1);						\
-		free (C2);						\
+		IDIO_GC_FREE (C1);						\
+		IDIO_GC_FREE (C2);						\
 		return idio_S_false;					\
 	    }								\
 									\
-	    free (C1);							\
+	    IDIO_GC_FREE (C1);							\
 	    C1 = C2;							\
 	    l1 = l2;							\
 	    args = IDIO_PAIR_T (args);					\
 	}								\
 									\
-	free (C1);							\
+	IDIO_GC_FREE (C1);							\
 	return idio_S_true;						\
     }
 
@@ -2351,9 +2351,9 @@ IDIO idio_join_string (IDIO delim, IDIO args)
 
     IDIO r = idio_string_C_array_lens (n - 1, copies, lens);
 
-    free (delim_C);
+    IDIO_GC_FREE (delim_C);
     for (i = 0; i < n; i += 2) {
-	free (copies[i]);
+	IDIO_GC_FREE (copies[i]);
     }
 
     return r;

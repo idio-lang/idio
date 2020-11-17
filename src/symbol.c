@@ -261,7 +261,7 @@ void idio_free_symbol (IDIO s)
     IDIO_ASSERT (s);
     IDIO_TYPE_ASSERT (symbol, s);
 
-    /* free (s->u.symbol); */
+    /* IDIO_GC_FREE (s->u.symbol); */
 }
 
 IDIO idio_symbols_C_intern (char *sym_C)
@@ -287,7 +287,7 @@ IDIO idio_symbols_string_intern (IDIO str)
     char *sC = idio_string_as_C (str, &size);
     size_t C_size = strlen (sC);
     if (C_size != size) {
-	free (sC);
+	IDIO_GC_FREE (sC);
 
 	idio_symbol_error_format ("symbol: contains an ASCII NUL", str, IDIO_C_FUNC_LOCATION ());
 
@@ -296,7 +296,7 @@ IDIO idio_symbols_string_intern (IDIO str)
 
     IDIO r = idio_symbols_C_intern (sC);
 
-    free (sC);
+    IDIO_GC_FREE (sC);
 
     return r;
 }
@@ -352,7 +352,7 @@ IDIO_DEFINE_PRIMITIVE0V ("gensym", gensym, (IDIO args))
 	    prefix = idio_string_as_C (iprefix, &size);
 	    size_t C_size = strlen (prefix);
 	    if (C_size != size) {
-		free (prefix);
+		IDIO_GC_FREE (prefix);
 
 		idio_symbol_error_format ("gensym: prefix contains an ASCII NUL", iprefix, IDIO_C_FUNC_LOCATION ());
 
@@ -372,7 +372,7 @@ IDIO_DEFINE_PRIMITIVE0V ("gensym", gensym, (IDIO args))
     IDIO sym = idio_gensym (prefix);
 
     if (free_me) {
-	free (prefix);
+	IDIO_GC_FREE (prefix);
     }
 
     return sym;

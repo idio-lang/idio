@@ -151,8 +151,8 @@ void idio_free_C_FFI (IDIO o)
 
     idio_gc_stats_free (sizeof (idio_C_FFI_t));
 
-    free (IDIO_C_FFI_CIFP (o));
-    free (IDIO_C_FFI_ARG_TYPES (o));
-    free (o->u.C_FFI);
+    IDIO_GC_FREE (IDIO_C_FFI_CIFP (o));
+    IDIO_GC_FREE (IDIO_C_FFI_ARG_TYPES (o));
+    IDIO_GC_FREE (o->u.C_FFI);
 }
 

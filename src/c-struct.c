@@ -76,7 +76,7 @@ void idio_free_C_typedef (IDIO o)
 
     idio_gc_stats_free (sizeof (idio_C_typedef_t));
 
-    free (o->u.C_typedef);
+    IDIO_GC_FREE (o->u.C_typedef);
 }
 
 int idio_C_typedef_type_cmp (IDIO C_typedef, IDIO val)
@@ -328,7 +328,7 @@ void idio_free_C_struct (IDIO cs)
 
     idio_gc_stats_free (sizeof (idio_C_struct_t));
 
-    free (cs->u.C_struct);
+    IDIO_GC_FREE (cs->u.C_struct);
 }
 
 IDIO idio_C_instance (IDIO cs, IDIO frame)
@@ -363,8 +363,8 @@ void idio_free_C_instance (IDIO ci)
 
     idio_gc_stats_free (sizeof (idio_C_instance_t));
 
-    free (ci->u.C_instance->p);
-    free (ci->u.C_instance);
+    IDIO_GC_FREE (ci->u.C_instance->p);
+    IDIO_GC_FREE (ci->u.C_instance);
 }
 
 IDIO idio_opaque (void *p)
@@ -413,7 +413,7 @@ void idio_free_opaque (IDIO o)
 
     idio_gc_stats_free (sizeof (idio_opaque_t));
 
-    free (o->u.opaque);
+    IDIO_GC_FREE (o->u.opaque);
 }
 
 void idio_init_C_struct ()

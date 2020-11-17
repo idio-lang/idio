@@ -90,7 +90,7 @@ void idio_free_continuation (IDIO k)
 
     idio_gc_stats_free (sizeof (idio_continuation_t));
 
-    free (k->u.continuation);
+    IDIO_GC_FREE (k->u.continuation);
 }
 
 void idio_init_continuation ()

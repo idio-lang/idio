@@ -1535,7 +1535,7 @@ static IDIO idio_read_string (IDIO handle, IDIO lo)
 	     *
 	     * "
 	     */
-	    free (abuf);
+	    IDIO_GC_FREE (abuf);
 
 	    idio_read_error_string (handle, lo, IDIO_C_FUNC_LOCATION (), "EOF");
 
@@ -1613,7 +1613,7 @@ static IDIO idio_read_string (IDIO handle, IDIO lo)
     IDIO r = idio_string_C_len (abuf, slen);
     IDIO_FLAGS (r) |= IDIO_FLAG_CONST;
 
-    free (abuf);
+    IDIO_GC_FREE (abuf);
 
     return r;
 }
@@ -3746,7 +3746,7 @@ read a number from ``src``				\n\
 	     * Not sure what to do.
 	     */
 	    handle = idio_open_input_string_handle_C (ssrc);
-	    free (ssrc);
+	    IDIO_GC_FREE (ssrc);
 	} else {
 	    idio_error_param_type ("handle or string", src, IDIO_C_FUNC_LOCATION ());
 

@@ -139,8 +139,8 @@ void idio_free_primitive (IDIO o)
 
     idio_gc_stats_free (sizeof (idio_primitive_t));
 
-    free (IDIO_PRIMITIVE_NAME (o));
-    free (o->u.primitive);
+    IDIO_GC_FREE (IDIO_PRIMITIVE_NAME (o));
+    IDIO_GC_FREE (o->u.primitive);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("primitive?", primitivep, (IDIO o), "o", "\

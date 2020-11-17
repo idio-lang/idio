@@ -168,8 +168,8 @@ void idio_free_array (IDIO a)
 
     idio_gc_stats_free (sizeof (idio_array_t) + IDIO_ARRAY_ASIZE (a) * sizeof (IDIO));
 
-    free (a->u.array->ae);
-    free (a->u.array);
+    IDIO_GC_FREE (a->u.array->ae);
+    IDIO_GC_FREE (a->u.array);
 }
 
 void idio_resize_array (IDIO a)
@@ -202,8 +202,8 @@ void idio_resize_array (IDIO a)
     idio_gc_stats_free (sizeof (idio_array_t) + oasize * sizeof (IDIO));
     idio_gc_stats_free (sizeof (idio_array_t) + oasize * sizeof (IDIO));
 
-    free (oarray->ae);
-    free (oarray);
+    IDIO_GC_FREE (oarray->ae);
+    IDIO_GC_FREE (oarray);
 }
 
 /**

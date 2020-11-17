@@ -95,7 +95,7 @@ void idio_free_closure (IDIO c)
 
     idio_gc_stats_free (sizeof (idio_closure_t));
 
-    free (c->u.closure);
+    IDIO_GC_FREE (c->u.closure);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("function?", functionp, (IDIO o), "o", "\

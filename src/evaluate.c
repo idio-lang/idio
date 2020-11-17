@@ -444,7 +444,7 @@ static void idio_meaning_error_static_primitive_arity (IDIO src, IDIO c_location
 	size_t size = 0;
 	char *s = idio_display_string (args, &size);
 	idio_display_C_len (s + 1, size - 2, dsh);
-	free (s);
+	IDIO_GC_FREE (s);
     }
     idio_display_C (")", dsh);
 

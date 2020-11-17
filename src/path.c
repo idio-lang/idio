@@ -151,19 +151,19 @@ char *idio_find_file (const char *file)
 		break;
 	    }
 
-	    free (filename);
+	    IDIO_GC_FREE (filename);
 	    filename = NULL;
 	    idio_path++;
 	}
 
 	if (*idio_path == NULL) {
 	    if (NULL != filename) {
-		free (filename);
+		IDIO_GC_FREE (filename);
 	    }
 	    filename = NULL;
 	}
 
-	free (file_with_ext);
+	IDIO_GC_FREE (file_with_ext);
 
 	if (NULL != filename) {
 	    break;
@@ -174,12 +174,12 @@ char *idio_find_file (const char *file)
 
     idio_path = idio_paths;
     while (*idio_path) {
-	free (*idio_path);
+	IDIO_GC_FREE (*idio_path);
 	idio_path++;
     }
 
-    free (*idio_path);
-    free (idio_paths);
+    IDIO_GC_FREE (*idio_path);
+    IDIO_GC_FREE (idio_paths);
 
     return filename;
 }
@@ -201,7 +201,7 @@ IDIO idio_path_expand (IDIO p)
 
     size_t C_size = strlen (pat_C);
     if (C_size != size) {
-	free (pat_C);
+	IDIO_GC_FREE (pat_C);
 
 	idio_path_error_format ("pattern contains an ASCII NUL", p, IDIO_C_FUNC_LOCATION ());
 
@@ -226,7 +226,7 @@ IDIO idio_path_expand (IDIO p)
 	break;
     default:
 	globfree (&g);
-	free (pat_C);
+	IDIO_GC_FREE (pat_C);
 	idio_path_error_glob (pat, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
@@ -234,7 +234,7 @@ IDIO idio_path_expand (IDIO p)
     }
 
     globfree (&g);
-    free (pat_C);
+    IDIO_GC_FREE (pat_C);
 
     return idio_list_reverse (r);
 }

@@ -81,7 +81,7 @@ void idio_free_pair (IDIO p)
 
     /* idio_gc_stats_free (sizeof (idio_pair_t)); */
 
-    /* free (p->u.pair); */
+    /* IDIO_GC_FREE (p->u.pair); */
 }
 
 IDIO idio_pair_set_head (IDIO p, IDIO v)

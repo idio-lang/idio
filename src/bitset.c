@@ -99,7 +99,7 @@ void idio_free_bitset (IDIO bs)
 
     idio_gc_stats_free (sizeof (idio_bitset_t) + IDIO_BITSET_SIZE (bs) / sizeof (unsigned long) + 1);
 
-    free (bs->u.bitset.bits);
+    IDIO_GC_FREE (bs->u.bitset.bits);
 }
 
 IDIO idio_bitset_set (IDIO bs, size_t bit)

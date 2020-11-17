@@ -255,7 +255,7 @@ static char **idio_command_get_envp ()
 		char *sval = idio_string_as_C (val, &vlen);
 		size_t C_size = strlen (sval);
 		if (C_size != vlen) {
-		    free (sval);
+		    IDIO_GC_FREE (sval);
 
 		    idio_command_error_format ("env: var contains an ASCII NUL", val, IDIO_C_FUNC_LOCATION ());
 
@@ -270,7 +270,7 @@ static char **idio_command_get_envp ()
 		envp[n][slen + 1 + vlen] = '\0';
 		n++;
 
-		free (sval);
+		IDIO_GC_FREE (sval);
 	    } else {
 		if (0) {
 		    idio_command_error_env_type (symbol, IDIO_C_FUNC_LOCATION ());
@@ -312,7 +312,7 @@ char *idio_command_find_exe_C (char *command)
 	spath = idio_string_as_C (PATH, &size);
 	size_t C_size = strlen (spath);
 	if (C_size != size) {
-	    free (spath);
+	    IDIO_GC_FREE (spath);
 
 	    idio_command_error_format ("find-exe: PATH contains an ASCII NUL", PATH, IDIO_C_FUNC_LOCATION ());
 
@@ -331,7 +331,7 @@ char *idio_command_find_exe_C (char *command)
     char cwd[PATH_MAX];
     if (getcwd (cwd, PATH_MAX) == NULL) {
 	if (spath){
-	    free (spath);
+	    IDIO_GC_FREE (spath);
 	}
 
 	idio_error_system_errno ("getcwd", idio_S_nil, IDIO_C_FUNC_LOCATION ());
@@ -349,7 +349,7 @@ char *idio_command_find_exe_C (char *command)
 	if (0 == pathlen) {
 	    if ((cwdlen + 1 + cmdlen + 1) >= PATH_MAX) {
 		if (spath) {
-		    free (spath);
+		    IDIO_GC_FREE (spath);
 		}
 
 		idio_error_system ("cwd+command exename length", IDIO_LIST2 (PATH, idio_string_C (command)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
@@ -365,7 +365,7 @@ char *idio_command_find_exe_C (char *command)
 	    if (NULL == colon) {
 		if ((pathlen + 1 + cmdlen + 1) >= PATH_MAX) {
 		    if (spath) {
-			free (spath);
+			IDIO_GC_FREE (spath);
 		    }
 
 		    idio_error_system ("dir+command exename length", IDIO_LIST2 (PATH, idio_string_C (command)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
@@ -382,7 +382,7 @@ char *idio_command_find_exe_C (char *command)
 		if (0 == dirlen) {
 		    if ((cwdlen + 1 + cmdlen + 1) >= PATH_MAX) {
 			if (spath) {
-			    free (spath);
+			    IDIO_GC_FREE (spath);
 			}
 
 			idio_error_system ("cwd+command exename length", IDIO_LIST2 (PATH, idio_string_C (command)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
@@ -395,7 +395,7 @@ char *idio_command_find_exe_C (char *command)
 		} else {
 		    if ((dirlen + 1 + cmdlen + 1) >= PATH_MAX) {
 			if (spath) {
-			    free (spath);
+			    IDIO_GC_FREE (spath);
 			}
 
 			idio_error_system ("dir+command exename length", IDIO_LIST2 (PATH, idio_string_C (command)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
@@ -418,7 +418,7 @@ char *idio_command_find_exe_C (char *command)
 
 	    if (stat (exename, &sb) == -1) {
 		if (spath) {
-		    free (spath);
+		    IDIO_GC_FREE (spath);
 		}
 
 		idio_error_system_errno ("stat", IDIO_LIST1 (idio_string_C (exename)), IDIO_C_FUNC_LOCATION ());
@@ -450,7 +450,7 @@ char *idio_command_find_exe_C (char *command)
     }
 
     if (spath) {
-	free (spath);
+	IDIO_GC_FREE (spath);
     }
 
     return pathname;
@@ -497,7 +497,7 @@ static size_t idio_command_possible_filename_glob (IDIO arg, glob_t *gp)
 	glob_C = idio_string_as_C (arg, &size);
 	size_t C_size = strlen (glob_C);
 	if (C_size != size) {
-	    free (glob_C);
+	    IDIO_GC_FREE (glob_C);
 
 	    idio_command_error_format ("glob: arg contains an ASCII NUL", arg, IDIO_C_FUNC_LOCATION ());
 
@@ -524,7 +524,7 @@ static size_t idio_command_possible_filename_glob (IDIO arg, glob_t *gp)
 	    r = gp->gl_pathc;
 	} else {
 	    if (free_me) {
-		free (glob_C);
+		IDIO_GC_FREE (glob_C);
 	    }
 
 	    idio_command_error_glob (arg, IDIO_C_FUNC_LOCATION ());
@@ -535,7 +535,7 @@ static size_t idio_command_possible_filename_glob (IDIO arg, glob_t *gp)
     }
 
     if (free_me) {
-	free (glob_C);
+	IDIO_GC_FREE (glob_C);
     }
 
     return r;
@@ -605,7 +605,7 @@ char **idio_command_argv (IDIO args)
 			argv[i] = idio_string_as_C (arg, &size);
 			size_t C_size = strlen (argv[i]);
 			if (C_size != size) {
-			    free (argv[i]);
+			    IDIO_GC_FREE (argv[i]);
 
 			    idio_command_error_format ("argv: arg contains an ASCII NUL", arg, IDIO_C_FUNC_LOCATION ());
 
@@ -621,7 +621,7 @@ char **idio_command_argv (IDIO args)
 			argv[i] = idio_string_as_C (arg, &size);
 			size_t C_size = strlen (argv[i]);
 			if (C_size != size) {
-			    free (argv[i]);
+			    IDIO_GC_FREE (argv[i]);
 
 			    idio_command_error_format ("argv: arg contains an ASCII NUL", arg, IDIO_C_FUNC_LOCATION ());
 
@@ -637,7 +637,7 @@ char **idio_command_argv (IDIO args)
 			size_t n = idio_command_possible_filename_glob (arg, &g);
 
 			if (0 == n) {
-			    if (asprintf (&argv[i++], "%s", IDIO_SYMBOL_S (arg)) == -1) {
+			    if (IDIO_ASPRINTF (&argv[i++], "%s", IDIO_SYMBOL_S (arg)) == -1) {
 				idio_error_alloc ("asprintf");
 
 				/* notreached */
@@ -1246,7 +1246,7 @@ display to stderr `msg` alongside job `job` details\n\
     size_t size = 0;
     char *msgs = idio_string_as_C (msg, &size);
     idio_command_format_job_info (job, msgs);
-    free (msgs);
+    IDIO_GC_FREE (msgs);
 
     return idio_S_unspec;
 }
@@ -2287,9 +2287,9 @@ void idio_free_argv1 (char **argv)
      */
     int j;
     for (j = 1; NULL != argv[j]; j++) {
-	free (argv[j]);
+	IDIO_GC_FREE (argv[j]);
     }
-    free (argv);
+    IDIO_GC_FREE (argv);
 }
 
 /*

@@ -91,8 +91,8 @@ void idio_bsa_free (IDIO_BSA bsa)
     if (bsa->refs > 1) {
 	bsa->refs--;
     } else {
-	free (bsa->ae);
-	free (bsa);
+	IDIO_GC_FREE (bsa->ae);
+	IDIO_GC_FREE (bsa);
 	idio_bignums--;
     }
 }
@@ -276,7 +276,7 @@ void idio_free_bignum (IDIO bn)
     /* idio_gc_stats_free (sizeof (idio_bignum_t)); */
 
     idio_bsa_free (IDIO_BIGNUM_SIG (bn));
-    /* free (bn->u.bignum); */
+    /* IDIO_GC_FREE (bn->u.bignum); */
 }
 
 IDIO idio_bignum_copy (IDIO bn)
@@ -434,7 +434,7 @@ int64_t idio_bignum_int64_value (IDIO bn)
 	    char *bn_is = idio_bignum_as_string (bn_i, &size);
 	    char em[BUFSIZ];
 	    sprintf (em, "%s is too large for int64_t (%" PRId64 ")", bn_is, INT64_MAX);
-	    free (bn_is);
+	    IDIO_GC_FREE (bn_is);
 	    idio_bignum_error_conversion (em, bn, IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
@@ -494,7 +494,7 @@ uint64_t idio_bignum_uint64_value (IDIO bn)
 	    char *bn_is = idio_bignum_as_string (bn_i, &size);
 	    char em[BUFSIZ];
 	    sprintf (em, "%s is too large for uint64_t (%" PRIu64 ")", bn_is, UINT64_MAX);
-	    free (bn_is);
+	    IDIO_GC_FREE (bn_is);
 	    idio_bignum_error_conversion (em, bn, IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
@@ -563,7 +563,7 @@ ptrdiff_t idio_bignum_ptrdiff_value (IDIO bn)
 	    char *bn_is = idio_bignum_as_string (bn_i, &size);
 	    char em[BUFSIZ];
 	    sprintf (em, "%s is too large for ptrdiff_t (%td)", bn_is, (ptrdiff_t) PTRDIFF_MAX);
-	    free (bn_is);
+	    IDIO_GC_FREE (bn_is);
 	    idio_bignum_error_conversion (em, bn, IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
@@ -632,7 +632,7 @@ intptr_t idio_bignum_intptr_value (IDIO bn)
 	    char *bn_is = idio_bignum_as_string (bn_i, &size);
 	    char em[BUFSIZ];
 	    sprintf (em, "%s is too large for intptr_t (%" PRIdPTR ")", bn_is, (intptr_t) INTPTR_MAX);
-	    free (bn_is);
+	    IDIO_GC_FREE (bn_is);
 	    idio_bignum_error_conversion (em, bn, IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
@@ -705,7 +705,7 @@ intmax_t idio_bignum_intmax_value (IDIO bn)
 	    char *bn_is = idio_bignum_as_string (bn_i, &size);
 	    char em[BUFSIZ];
 	    sprintf (em, "%s is too large for intmax_t (%jd)", bn_is, (intmax_t) INTMAX_MAX);
-	    free (bn_is);
+	    IDIO_GC_FREE (bn_is);
 	    idio_bignum_error_conversion (em, bn, IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
@@ -2193,7 +2193,7 @@ char *idio_bignum_expanded_real_as_string (IDIO bn, IDIO_BS_T exp, int digits, i
     for (ai = al - 1; ai >= 0; ai--) {
 	IDIO_BS_T v = idio_bsa_get (sig_a, ai);
 	char *vs;
-	if (asprintf (&vs, "%" PRIdPTR, v) == -1) {
+	if (IDIO_ASPRINTF (&vs, "%" PRIdPTR, v) == -1) {
 	    idio_error_alloc ("asprintf");
 
 	    /* notreached */
@@ -2601,7 +2601,7 @@ IDIO idio_bignum_integer_C (char *nums, int req_exact)
 	      i == LLONG_MIN)) ||
 	    (errno != 0 &&
 	     i == 0)) {
-	    free (buf);
+	    IDIO_GC_FREE (buf);
 	    char em[BUFSIZ];
 	    sprintf (em, "strtoll (%s) = %lld", nums, i);
 	    idio_error_system_errno (em, idio_S_nil, IDIO_C_FUNC_LOCATION ());
@@ -2610,7 +2610,7 @@ IDIO idio_bignum_integer_C (char *nums, int req_exact)
 	}
 
 	if (end == nums) {
-	    free (buf);
+	    IDIO_GC_FREE (buf);
 	    char em[BUFSIZ];
 	    sprintf (em, "strtoll (%s): No digits?", nums);
 	    idio_error_system_errno (em, idio_S_nil, IDIO_C_FUNC_LOCATION ());
@@ -2619,7 +2619,7 @@ IDIO idio_bignum_integer_C (char *nums, int req_exact)
 	}
 
 	if ('\0' != *end) {
-	    free (buf);
+	    IDIO_GC_FREE (buf);
 	    idio_error_printf (IDIO_C_FUNC_LOCATION (), "strtoll (%s) = %ld", nums, i);
 
 	    return idio_S_notreached;
@@ -2637,7 +2637,7 @@ IDIO idio_bignum_integer_C (char *nums, int req_exact)
 	ri++;
     }
 
-    free (buf);
+    IDIO_GC_FREE (buf);
 
     /* remove leading zeroes */
     size_t rl = ri;

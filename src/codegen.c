@@ -61,8 +61,8 @@ IDIO_IA_T idio_ia (size_t asize)
 void idio_ia_free (IDIO_IA_T ia)
 {
     if (ia) {
-	free (ia->ae);
-	free (ia);
+	IDIO_GC_FREE (ia->ae);
+	IDIO_GC_FREE (ia);
     } else {
 	fprintf (stderr, "already freed ia?\n");
     }

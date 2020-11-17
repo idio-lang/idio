@@ -408,6 +408,7 @@ extern FILE *idio_vm_perf_FILE;
 #include "handle.h"
 #include "hash.h"
 #include "keyword.h"
+#include "malloc.h"
 #include "module.h"
 #include "pair.h"
 #include "path.h"

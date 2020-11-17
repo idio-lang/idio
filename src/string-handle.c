@@ -164,7 +164,7 @@ IDIO idio_reopen_input_string_handle_C (IDIO sh, char *str)
     /*
      * Out with the old
      */
-    free (IDIO_STRING_HANDLE_BUF (sh));
+    IDIO_GC_FREE (IDIO_STRING_HANDLE_BUF (sh));
 
     size_t blen = strlen (str);
     char *str_copy = idio_alloc (blen + 1);
@@ -303,8 +303,8 @@ void idio_free_string_handle (IDIO sh)
 {
     IDIO_ASSERT (sh);
 
-    free (IDIO_STRING_HANDLE_BUF (sh));
-    free (IDIO_HANDLE_STREAM (sh));
+    IDIO_GC_FREE (IDIO_STRING_HANDLE_BUF (sh));
+    IDIO_GC_FREE (IDIO_HANDLE_STREAM (sh));
 }
 
 int idio_readyp_string_handle (IDIO sh)
@@ -522,7 +522,7 @@ void idio_print_string_handle (IDIO sh, IDIO o)
     char *os = idio_display_string (o, &size);
     IDIO_HANDLE_M_PUTS (sh) (sh, os, size);
     IDIO_HANDLE_M_PUTS (sh) (sh, "\n", 1);
-    free (os);
+    IDIO_GC_FREE (os);
 }
 
 IDIO idio_get_output_string (IDIO sh)

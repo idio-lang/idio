@@ -95,7 +95,7 @@ void idio_free_frame (IDIO fo)
 
     idio_gc_stats_free (sizeof (idio_frame_t));
 
-    free (fo->u.frame);
+    IDIO_GC_FREE (fo->u.frame);
 }
 
 IDIO idio_frame_fetch (IDIO fo, size_t d, size_t i)

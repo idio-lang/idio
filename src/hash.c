@@ -365,13 +365,13 @@ void idio_free_hash (IDIO h)
 	for (i = 0; i < IDIO_HASH_SIZE (h); i++) {
 	    void *kv = idio_hash_he_key (h, i);
 	    if (idio_S_nil != kv) {
-		free (kv);
+		IDIO_GC_FREE (kv);
 	    }
 	}
     }
 
-    free (h->u.hash->he);
-    free (h->u.hash);
+    IDIO_GC_FREE (h->u.hash->he);
+    IDIO_GC_FREE (h->u.hash);
 }
 
 void idio_hash_resize (IDIO h, int larger)
@@ -451,7 +451,7 @@ void idio_hash_resize (IDIO h, int larger)
     idio_gc_stats_free (osize * sizeof (idio_hash_entry_t));
     idio_gc_stats_free (osize * sizeof (idio_hash_entry_t));
 
-    free (ohe);
+    IDIO_GC_FREE (ohe);
 
     idio_hash_verify_all_keys (h);
 }
@@ -532,7 +532,7 @@ idio_hi_t idio_hash_default_hash_C_string (IDIO s)
     size_t size = 0;
     char *Cs = idio_string_as_C (s, &size);
     idio_hi_t r = idio_hash_default_hash_C_string_C (strlen (Cs), Cs);
-    free (Cs);
+    IDIO_GC_FREE (Cs);
     return r;
 }
 
@@ -716,7 +716,7 @@ idio_hi_t idio_hash_default_hash_C (IDIO h, void *kv)
 	    size_t size = 0;
 	    char *sk = idio_string_as_C (k, &size);
 	    hv = idio_hash_default_hash_C_string_C (strlen (sk), sk);
-	    free (sk);
+	    IDIO_GC_FREE (sk);
 	}
 	break;
     case IDIO_TYPE_SUBSTRING:
@@ -724,7 +724,7 @@ idio_hi_t idio_hash_default_hash_C (IDIO h, void *kv)
 	    size_t size = 0;
 	    char *sk = idio_string_as_C (k, &size);
 	    hv = idio_hash_default_hash_C_string_C (strlen (sk), sk);
-	    free (sk);
+	    IDIO_GC_FREE (sk);
 	}
 	break;
     case IDIO_TYPE_SYMBOL:
