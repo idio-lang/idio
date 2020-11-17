@@ -2165,6 +2165,9 @@ void idio_final_gc ()
 {
 #ifdef IDIO_DEBUG
     idio_gc_stats ();
+#ifdef IDIO_MALLOC
+    idio_malloc_stats ("final-gc");
+#endif
 #endif
 
     IDIO_GC_FLAGS (idio_gc) |= IDIO_GC_FLAG_FINISH;

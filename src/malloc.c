@@ -147,13 +147,12 @@ static union idio_malloc_overhead_u *idio_malloc_nextf[IDIO_MALLOC_NBUCKETS];
 static long idio_malloc_pagesz;			/* page size - result from sysconf() */
 static int idio_malloc_pagesz_bucket;		/* the page size bucket */
 
-#ifdef IDIO_MALLOC_STATS
+#ifdef IDIO_DEBUG
 /*
- * nmalloc[i] is the difference between the number of mallocs and frees
- * for a given block size.
+ * idio_malloc_nmalloc[i] is the difference between the number of
+ * mallocs and frees for a given block size.
  */
-static u_int nmalloc[IDIO_MALLOC_NBUCKETS];
-#include <stdio.h>
+static u_int idio_malloc_nmalloc[IDIO_MALLOC_NBUCKETS];
 #endif
 
 /*
@@ -298,8 +297,8 @@ void *idio_malloc_malloc (size_t size)
     /* fprintf (stderr, "d: nextf[%2d] = %p\n", bucket, idio_malloc_nextf[bucket]); */
     op->ov_magic = IDIO_MALLOC_MAGIC_ALLOC;
     op->ov_bucket = bucket;
-#ifdef IDIO_MALLOC_STATS
-    nmalloc[bucket]++;
+#ifdef IDIO_DEBUG
+    idio_malloc_nmalloc[bucket]++;
 #endif
 
     /*
@@ -435,8 +434,8 @@ void idio_malloc_free (void *cp)
     op->ov_magic = IDIO_MALLOC_MAGIC_FREE;
     IDIO_MALLOC_OVERHEAD_CHAIN (op) = idio_malloc_nextf[bucket];	/* also clobbers ov_magic */
     idio_malloc_nextf[bucket] = op;
-#ifdef IDIO_MALLOC_STATS
-    nmalloc[bucket]--;
+#ifdef IDIO_DEBUG
+    idio_malloc_nmalloc[bucket]--;
 #endif
 
     /* fprintf (stderr, "im-free: cp %8p -> nextf[%2d] %8p CHAIN %8p\n", cp, bucket, op, IDIO_MALLOC_OVERHEAD_CHAIN (op)); */
@@ -548,7 +547,7 @@ static int idio_malloc_findbucket (union idio_malloc_overhead_u *freep, int srch
     return (-1);
 }
 
-#ifdef IDIO_MALLOC_STATS
+#ifdef IDIO_DEBUG
 /*
  * mstats - print out statistics about malloc
  *
@@ -556,24 +555,39 @@ static int idio_malloc_findbucket (union idio_malloc_overhead_u *freep, int srch
  * for each size category, the second showing the number of mallocs -
  * frees for each size category.
  */
-idio_malloc_mstats (char *s)
+void idio_malloc_stats (char *s)
 {
-    register int i, j;
+    register int i, j, k;
     register union idio_malloc_overhead_u *p;
     int totfree = 0,
   	totused = 0;
 
-    fprintf(stderr, "Memory allocation statistics %s\nfree:\t", s);
     for (i = 0; i < IDIO_MALLOC_NBUCKETS; i++) {
+	for (j = 0, p = idio_malloc_nextf[i]; p; p = IDIO_MALLOC_OVERHEAD_CHAIN (p), j++) {
+	    if (j ||
+		idio_malloc_nmalloc[i]) {
+		k = i;
+	    }
+	}
+    }
+    k++;
+
+    fprintf(stderr, "Memory allocation statistics %s\nbucket:\t", s);
+    for (i = 0; i < k; i++) {
+	fprintf(stderr, " %6zu", idio_malloc_bucket_sizes[i]);
+	totfree += j * (1 << (i + 3));
+    }
+    fprintf (stderr, "\nfree:\t");
+    for (i = 0; i < k; i++) {
 	for (j = 0, p = idio_malloc_nextf[i]; p; p = IDIO_MALLOC_OVERHEAD_CHAIN (p), j++)
 	    ;
-	fprintf(stderr, " %d", j);
+	fprintf(stderr, " %6d", j);
 	totfree += j * (1 << (i + 3));
     }
     fprintf(stderr, "\nused:\t");
-    for (i = 0; i < IDIO_MALLOC_NBUCKETS; i++) {
-	fprintf(stderr, " %d", nmalloc[i]);
-	totused += nmalloc[i] * (1 << (i + 3));
+    for (i = 0; i < k; i++) {
+	fprintf(stderr, " %6d", idio_malloc_nmalloc[i]);
+	totused += idio_malloc_nmalloc[i] * (1 << (i + 3));
     }
     fprintf(stderr, "\n\tTotal in use: %d, total free: %d\n",
 	    totused, totfree);
