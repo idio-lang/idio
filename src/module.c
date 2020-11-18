@@ -354,7 +354,17 @@ IDIO idio_module_find_module (IDIO name)
     return idio_hash_ref (idio_modules_hash, name);
 }
 
-IDIO_DEFINE_PRIMITIVE1V ("find-module", find_module, (IDIO name, IDIO args))
+IDIO_DEFINE_PRIMITIVE1V_DS ("find-module", find_module, (IDIO name, IDIO args), "name [default]", "\
+Find the module called `name` otherwise return `default`	\n\
+or #unspec if `default` is not supplied				\n\
+								\n\
+:param name: module name to look for				\n\
+:type module: symbol						\n\
+:param default: (optional) return value if `name` is not found	\n\
+:type default: any						\n\
+:return: module called `name` or `default` (or #unspec)		\n\
+:rtype: module							\n\
+")
 {
     IDIO_ASSERT (name);
     IDIO_ASSERT (args);
@@ -400,7 +410,14 @@ IDIO idio_module_find_or_create_module (IDIO name)
     return m;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("%find-or-create-module", find_or_create_module, (IDIO name))
+IDIO_DEFINE_PRIMITIVE1_DS ("%find-or-create-module", find_or_create_module, (IDIO name), "name", "\
+Find the module called `name` or create one	\n\
+						\n\
+:param name: module name to look for		\n\
+:type module: symbol				\n\
+:return: module called `name`			\n\
+:rtype: module					\n\
+")
 {
     IDIO_ASSERT (name);
     IDIO_VERIFY_PARAM_TYPE (symbol, name);
@@ -408,12 +425,23 @@ IDIO_DEFINE_PRIMITIVE1 ("%find-or-create-module", find_or_create_module, (IDIO n
     return idio_module_find_or_create_module (name);
 }
 
-IDIO_DEFINE_PRIMITIVE0 ("current-module", current_module, ())
+IDIO_DEFINE_PRIMITIVE0_DS ("current-module", current_module, (), "", "\
+Return the current module			\n\
+						\n\
+:return: current module				\n\
+:rtype: module					\n\
+")
 {
     return idio_thread_current_module ();
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("%set-current-module!", set_current_module, (IDIO module))
+IDIO_DEFINE_PRIMITIVE1_DS ("%set-current-module!", set_current_module, (IDIO module), "module", "\
+Set the current module to `module`		\n\
+						\n\
+:param module: module to use			\n\
+:type module: module				\n\
+:return: #unspec				\n\
+")
 {
     IDIO_ASSERT (module);
     IDIO_VERIFY_PARAM_TYPE (module, module);
@@ -423,7 +451,15 @@ IDIO_DEFINE_PRIMITIVE1 ("%set-current-module!", set_current_module, (IDIO module
     return idio_S_unspec;
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("%set-module-imports!", set_module_imports, (IDIO module, IDIO imports))
+IDIO_DEFINE_PRIMITIVE2_DS ("%set-module-imports!", set_module_imports, (IDIO module, IDIO imports), "module imports", "\
+Set the imports of `module` to `imports`	\n\
+						\n\
+:param name: module to use			\n\
+:type module: module				\n\
+:param imports: import list to use		\n\
+:type module: list				\n\
+:return: #unspec				\n\
+")
 {
     IDIO_ASSERT (module);
     IDIO_ASSERT (imports);
@@ -489,7 +525,15 @@ IDIO idio_module_extend_exports (IDIO module, IDIO syms)
     return idio_S_unspec;
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("%set-module-exports!", set_module_exports, (IDIO module, IDIO exports))
+IDIO_DEFINE_PRIMITIVE2_DS ("%set-module-exports!", set_module_exports, (IDIO module, IDIO exports), "module exports", "\
+Set the exports of `module` to `exports`	\n\
+						\n\
+:param name: module to use			\n\
+:type module: module				\n\
+:param exports: export list to use		\n\
+:type module: list				\n\
+:return: #unspec				\n\
+")
 {
     IDIO_ASSERT (module);
     IDIO_ASSERT (exports);
@@ -506,19 +550,32 @@ IDIO_DEFINE_PRIMITIVE2 ("%set-module-exports!", set_module_exports, (IDIO module
     return idio_S_unspec;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("module?", modulep, (IDIO module))
+IDIO_DEFINE_PRIMITIVE1_DS ("module?", modulep, (IDIO o), "o", "\
+Is `o` a module?				\n\
+						\n\
+:param o: value to test				\n\
+:type o: any					\n\
+:return: #t if `o` is a module, #f otherwise	\n\
+")
 {
-    IDIO_ASSERT (module);
+    IDIO_ASSERT (o);
 
     IDIO r = idio_S_false;
-    if (idio_isa_module (module)) {
+    if (idio_isa_module (o)) {
 	r = idio_S_true;
     }
 
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("module-name", module_name, (IDIO module))
+IDIO_DEFINE_PRIMITIVE1_DS ("module-name", module_name, (IDIO module), "module", "\
+Return the name of `module`			\n\
+						\n\
+:param module: module to query			\n\
+:type module: module				\n\
+:return: module name				\n\
+:rtype: symbol					\n\
+")
 {
     IDIO_ASSERT (module);
     IDIO_VERIFY_PARAM_TYPE (module, module);
@@ -526,7 +583,14 @@ IDIO_DEFINE_PRIMITIVE1 ("module-name", module_name, (IDIO module))
     return IDIO_MODULE_NAME (module);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("module-imports", module_imports, (IDIO m_or_n))
+IDIO_DEFINE_PRIMITIVE1_DS ("module-imports", module_imports, (IDIO m_or_n), "mod", "\
+Return the imports of `mod`			\n\
+						\n\
+:param mod: module to query			\n\
+:type mod: module or name			\n\
+:return: module imports				\n\
+:rtype: list					\n\
+")
 {
     IDIO_ASSERT (m_or_n);
 
@@ -551,7 +615,14 @@ IDIO_DEFINE_PRIMITIVE1 ("module-imports", module_imports, (IDIO m_or_n))
     return IDIO_MODULE_IMPORTS (module);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("module-exports", module_exports, (IDIO m_or_n))
+IDIO_DEFINE_PRIMITIVE1_DS ("module-exports", module_exports, (IDIO m_or_n), "mod", "\
+Return the exports of `mod`			\n\
+						\n\
+:param mod: module to query			\n\
+:type mod: module or name			\n\
+:return: module exports				\n\
+:rtype: list					\n\
+")
 {
     IDIO_ASSERT (m_or_n);
 
@@ -754,7 +825,12 @@ IDIO idio_module_visible_symbols (IDIO module, IDIO type)
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE0 ("all-modules", all_modules, ())
+IDIO_DEFINE_PRIMITIVE0_DS ("all-modules", all_modules, (), "", "\
+Return a list of all modules			\n\
+						\n\
+:return: all modules				\n\
+:rtype: list					\n\
+")
 {
     return idio_hash_keys_to_list (idio_modules_hash);
 }
@@ -1205,7 +1281,17 @@ IDIO idio_module_toplevel_symbol_value (IDIO symbol, IDIO args)
  * Only look in the given module.  If not present return the optional
  * default or error.
  */
-IDIO_DEFINE_PRIMITIVE2V ("symbol-value", symbol_value, (IDIO symbol, IDIO m_or_n, IDIO args))
+IDIO_DEFINE_PRIMITIVE2V_DS ("symbol-value", symbol_value, (IDIO symbol, IDIO m_or_n, IDIO args), "sym mod [default]", "\
+Return the value of `sym` in `mod` or `default` if supplied	\n\
+						\n\
+:param sym: symbol to query			\n\
+:type sym: symbol				\n\
+:param mod: module to query			\n\
+:type mod: module or name			\n\
+:param default: (optional) value to return if `sym` is not defined in `mod`	\n\
+:type defined: any				\n\
+:return: value or `default`			\n\
+")
 {
     IDIO_ASSERT (symbol);
     IDIO_ASSERT (m_or_n);
@@ -1405,8 +1491,8 @@ set the information associated with ``symbol`` in ``mod`` to ``v``	\n\
 									\n\
 :param symbol: symbol to use						\n\
 :type symbol: symbol							\n\
-:param v: tupe of value information					\n\
-:type mod: list								\n\
+:param v: tuple of value information					\n\
+:type v: list								\n\
 :param mod: module to search from					\n\
 :type mod: module or module name					\n\
 :return: `symbol``							\n\
@@ -1542,7 +1628,17 @@ IDIO idio_module_toplevel_set_symbol_value (IDIO symbol, IDIO value)
     return idio_module_set_symbol_value (symbol, value, idio_Idio_module);
 }
 
-IDIO_DEFINE_PRIMITIVE3 ("set-symbol-value!", set_symbol_value, (IDIO symbol, IDIO value, IDIO module))
+IDIO_DEFINE_PRIMITIVE3_DS ("set-symbol-value!", set_symbol_value, (IDIO symbol, IDIO value, IDIO module), "sym val module", "\
+set the value associated with ``symbol`` in ``mod`` to ``val``		\n\
+									\n\
+:param symbol: symbol to use						\n\
+:type symbol: symbol							\n\
+:param val: value							\n\
+:type val: any								\n\
+:param module: module to locate `sym` in				\n\
+:type mod: module							\n\
+:return: `val``								\n\
+")
 {
     IDIO_ASSERT (symbol);
     IDIO_ASSERT (value);

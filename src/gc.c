@@ -813,7 +813,11 @@ void IDIO_GC_VFPRINTF (FILE *stream, const char *format, va_list argp)
 {
     IDIO_C_ASSERT (stream);
     IDIO_C_ASSERT (format);
-    IDIO_C_ASSERT (argp);
+
+    /*
+     * Raspbian's cc says: error: used struct type value where scalar is required
+     */
+    /* IDIO_C_ASSERT (argp); */
 
     if (idio_gc->verbose > 2) {
 	vfprintf (stream, format, argp);

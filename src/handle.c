@@ -1729,7 +1729,6 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
     IDIO e = idio_S_nil;
     IDIO r = idio_S_nil;
 
-    int i = 0;
     for (;;) {
 #ifdef IDIO_LOAD_TIMING
 	struct timeval t0;
