@@ -4665,7 +4665,7 @@ int idio_vm_run1 (IDIO thr)
 		fprintf (stderr, "%3d ", IDIO_IA_AE (bc, pc));
 	    }
 	    fprintf (stderr, "\n");
-	    fprintf (stderr, "unexpected instruction: %3d @%" PRId64 "\n", ins, IDIO_THREAD_PC (thr) - 1);
+	    fprintf (stderr, "unexpected instruction: %3d @%td\n", ins, IDIO_THREAD_PC (thr) - 1);
 	    exit (1);
 	    idio_error_printf (IDIO_C_FUNC_LOCATION (), "unexpected instruction: %3d @%" PRId64 "\n", ins, IDIO_THREAD_PC (thr) - 1);
 
@@ -6416,7 +6416,7 @@ void idio_vm_thread_state ()
 	IDIO names = idio_S_nil;
 	names = idio_vm_constants_ref (IDIO_FIXNUM_VAL (faci));
 
-	fprintf (stderr, "vm-thread-state: frame: %p (%p) %4jd", frame, IDIO_FRAME_NEXT (frame), IDIO_FIXNUM_VAL (faci));
+	fprintf (stderr, "vm-thread-state: frame: %p (%p) %4td", frame, IDIO_FRAME_NEXT (frame), IDIO_FIXNUM_VAL (faci));
 	idio_debug (" - %-10s - ", names);
 	idio_debug ("%s\n", idio_frame_args_as_list (frame));
 	frame = IDIO_FRAME_NEXT (frame);
