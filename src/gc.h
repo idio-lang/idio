@@ -1454,6 +1454,7 @@ char *idio_strcat_free (char *s1, size_t *s1sp, char *s2, const size_t s2s);
 
 int idio_gc_verboseness (int n);
 void idio_gc_set_verboseness (int n);
+void idio_hcount (unsigned long long *bytes, int *scale);
 void idio_gc_stats ();
 
 void idio_init_gc ();

@@ -1832,14 +1832,14 @@ void idio_gc_primitive_stats (IDIO p)
 }
 #endif
 
-void idio_hcount (unsigned long long *bytes, int *scale)
+void idio_hcount (unsigned long long *bp, int *ip)
 {
-    if (*bytes < 10000) {
+    if (*bp < 10000) {
 	return;
     }
-    *scale += 1;
-    *bytes /= 1000;
-    idio_hcount (bytes, scale);
+    *ip += 1;
+    *bp /= 1000;
+    idio_hcount (bp, ip);
 }
 
 void idio_gc_stats_inc (idio_type_e type)

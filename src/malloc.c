@@ -593,7 +593,7 @@ void idio_malloc_stats (char *s)
     fh = idio_vm_perf_FILE;
 #endif
 
-    register int i, j, k;
+    unsigned long long i, j, k;
     register union idio_malloc_overhead_u *p;
     int totfree = 0;
     int totused = 0;
@@ -610,6 +610,9 @@ void idio_malloc_stats (char *s)
     }
     k++;
 
+    char scales[] = " KMGT";
+    int scale;
+
     fprintf(fh, "Memory allocation statistics %s\nbucket:\t", s);
     for (i = 0; i < k; i++) {
 	fprintf(fh, " %6zu%c", idio_malloc_bucket_sizes[i], (idio_malloc_pagesz_bucket == i) ? '*' : ' ');
@@ -618,29 +621,43 @@ void idio_malloc_stats (char *s)
     for (i = 0; i < k; i++) {
 	for (j = 0, p = idio_malloc_nextf[i]; p; p = IDIO_MALLOC_OVERHEAD_CHAIN (p), j++)
 	    ;
-	fprintf(fh, " %6d ", j);
 	nfree += j;
 	totfree += j * (1 << (i + 3));
+	scale = 0;
+	idio_hcount (&j, &scale);
+	fprintf(fh, " %6lld%c", j, scales[scale]);
     }
     fprintf(fh, "\nused:\t");
     for (i = 0; i < k; i++) {
-	fprintf(fh, " %6d ", idio_malloc_stats_num[i]);
-	nused += idio_malloc_stats_num[i];
-	totused += idio_malloc_stats_num[i] * (1 << (i + 3));
+	j = idio_malloc_stats_num[i];
+	nused += j;
+	totused += j * (1 << (i + 3));
+	scale = 0;
+	idio_hcount (&j, &scale);
+	fprintf(fh, " %6lld%c", j, scales[scale]);
     }
     fprintf(fh, "\npeak:\t");
     for (i = 0; i < k; i++) {
-	fprintf(fh, " %6d ", idio_malloc_stats_peak[i]);
+	j = idio_malloc_stats_peak[i];
+	scale = 0;
+	idio_hcount (&j, &scale);
+	fprintf(fh, " %6lld%c", j, scales[scale]);
     }
     fprintf(fh, "\nmmap:\t");
     for (i = 0; i < k; i++) {
-	fprintf(fh, " %6d ", idio_malloc_stats_mmaps[i]);
-	mmaps += idio_malloc_stats_mmaps[i];
+	j = idio_malloc_stats_mmaps[i];
+	mmaps += j;
+	scale = 0;
+	idio_hcount (&j, &scale);
+	fprintf(fh, " %6lld%c", j, scales[scale]);
     }
     fprintf(fh, "\nmunmap:\t");
     for (i = 0; i < k; i++) {
-	fprintf(fh, " %6d ", idio_malloc_stats_munmaps[i]);
-	munmaps += idio_malloc_stats_munmaps[i];
+	j = idio_malloc_stats_munmaps[i];
+	munmaps += j;
+	scale = 0;
+	idio_hcount (&j, &scale);
+	fprintf(fh, " %6lld%c", j, scales[scale]);
     }
     fprintf(fh, "\n\tTotal in use: %d for %d, total free: %d for %d\n",
 	    nused, totused, nfree, totfree);
