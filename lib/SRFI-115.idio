@@ -846,6 +846,10 @@ define (sre-flatten-ranges orig-ls) {
   loop orig-ls #n
 }
 
+define (every pred ls) {
+  or (null? ls) (and (pred (ph ls)) (every pred (pt ls)))
+}
+
 ; any is from Chibi's lib/init-7.scm
 define (any pred ls & lol) {
   define (any1 pred ls) {
@@ -860,10 +864,6 @@ define (any pred ls & lol) {
         #f)
   }
   if (null? lol) (if (pair? ls) (any1 pred ls) #f) (anyn pred (pair ls lol))
-}
-
-define (every pred ls) {
-  or (null? ls) (and (pred (ph ls)) (every pred (pt ls)))
 }
 
 define (char-set-sre? sre) {

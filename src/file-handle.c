@@ -654,7 +654,7 @@ IDIO idio_open_file_handle_C (IDIO filename, char *pathname, int free_pathname, 
 	    switch (errno) {
 	    case EMFILE:	/* process max */
 	    case ENFILE:	/* system max */
-		idio_gc_collect ("idio_open_file_handle_C");
+		idio_gc_collect_all ("idio_open_file_handle_C");
 		break;
 	    case EACCES:
 		{

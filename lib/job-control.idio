@@ -472,14 +472,13 @@ If `cont` is set a SIGCONT is sent to the process group
 
   if %idio-interactive {
     ;; put the job in the foreground
-    job-pgid := %idio-job-pgid job
-    suppress-errors ^idio-error tcsetpgrp %idio-terminal job-pgid
+    suppress-errors ^idio-error tcsetpgrp %idio-terminal (%idio-job-pgid job)
   }
   if cont {
     if %idio-interactive {
       tcsetattr %idio-terminal TCSADRAIN (%idio-job-tcattrs job)
     }
-    kill (- job-pgid) SIGCONT
+    kill (- (%idio-job-pgid job)) SIGCONT
   }
 
   r := wait-for-job job
@@ -550,7 +549,7 @@ define (mark-job-as-running job) "mark job `job` as running
 
 In particular, mark job `job` as not stopped.
 " {
-  loop := function (procs) {
+  loop :+ function (procs) {
 	    cond ((null? procs) #n) \
 		 (else {
 		   set-%idio-process-stopped! (ph procs) #f

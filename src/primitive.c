@@ -51,6 +51,10 @@ IDIO idio_primitive (IDIO (*func) (IDIO args), const char *name_C, size_t arity,
     IDIO_PRIMITIVE_CALLED (o) = 0;
     IDIO_PRIMITIVE_CALL_TIME (o).tv_sec = 0;
     IDIO_PRIMITIVE_CALL_TIME (o).tv_nsec = 0;
+    IDIO_PRIMITIVE_RU_UTIME (o).tv_sec = 0;
+    IDIO_PRIMITIVE_RU_UTIME (o).tv_usec = 0;
+    IDIO_PRIMITIVE_RU_STIME (o).tv_sec = 0;
+    IDIO_PRIMITIVE_RU_STIME (o).tv_usec = 0;
 #endif
 
     idio_properties_create (o);
@@ -88,6 +92,10 @@ IDIO idio_primitive_data (idio_primitive_desc_t *desc)
     IDIO_PRIMITIVE_CALLED (o) = 0;
     IDIO_PRIMITIVE_CALL_TIME (o).tv_sec = 0;
     IDIO_PRIMITIVE_CALL_TIME (o).tv_nsec = 0;
+    IDIO_PRIMITIVE_RU_UTIME (o).tv_sec = 0;
+    IDIO_PRIMITIVE_RU_UTIME (o).tv_usec = 0;
+    IDIO_PRIMITIVE_RU_STIME (o).tv_sec = 0;
+    IDIO_PRIMITIVE_RU_STIME (o).tv_usec = 0;
 #endif
 
     idio_properties_create (o);

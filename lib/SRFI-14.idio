@@ -851,7 +851,7 @@ Subtract the code points of the character sets css from cs.
   }
 }
 
-define (difference-char-set! & css) "
+define (difference-char-set! cs & css) "
 Subtract the code points of the character sets css from cs with
 side-effects.
 " {

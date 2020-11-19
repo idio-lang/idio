@@ -149,10 +149,13 @@ static int idio_malloc_pagesz_bucket;		/* the page size bucket */
 
 #ifdef IDIO_DEBUG
 /*
- * idio_malloc_nmalloc[i] is the difference between the number of
+ * idio_malloc_stats_num[i] is the difference between the number of
  * mallocs and frees for a given block size.
  */
-static u_int idio_malloc_nmalloc[IDIO_MALLOC_NBUCKETS];
+static u_int idio_malloc_stats_num[IDIO_MALLOC_NBUCKETS];
+static u_int idio_malloc_stats_peak[IDIO_MALLOC_NBUCKETS];
+static u_int idio_malloc_stats_mmaps[IDIO_MALLOC_NBUCKETS];
+static u_int idio_malloc_stats_munmaps[IDIO_MALLOC_NBUCKETS];
 #endif
 
 /*
@@ -298,7 +301,10 @@ void *idio_malloc_malloc (size_t size)
     op->ov_magic = IDIO_MALLOC_MAGIC_ALLOC;
     op->ov_bucket = bucket;
 #ifdef IDIO_DEBUG
-    idio_malloc_nmalloc[bucket]++;
+    idio_malloc_stats_num[bucket]++;
+    if (idio_malloc_stats_num[bucket] > idio_malloc_stats_peak[bucket]) {
+	idio_malloc_stats_peak[bucket] = idio_malloc_stats_num[bucket];
+    }
 #endif
 
     /*
@@ -361,6 +367,19 @@ static void idio_malloc_morecore (int bucket)
 	nblks = 1;
     }
 
+    if (bucket > 1 &&
+	bucket < 6) {
+	amt = 1 * idio_malloc_pagesz;
+	nblks = amt / sz;
+#ifdef IDIO_DEBUG
+	idio_malloc_stats_mmaps[bucket] += 1;
+#endif
+    } else {
+#ifdef IDIO_DEBUG
+	idio_malloc_stats_mmaps[bucket]++;
+#endif
+    }
+
     /* fprintf (stderr, "im-morecore: pagesizes[%2d] sz %8ld amt %8d in %4d blks\n", bucket, sz, amt, nblks); */
     register union idio_malloc_overhead_u *op;
     op = (union idio_malloc_overhead_u *) mmap (0, amt, PROT_READ|PROT_WRITE, MAP_ANON|MAP_PRIVATE, -1, 0);
@@ -421,21 +440,32 @@ void idio_malloc_free (void *cp)
 	IDIO_C_ASSERT (0);
     }
 
+    if (bucket >= idio_malloc_pagesz_bucket) {
+	if (munmap (op, idio_malloc_bucket_sizes[bucket]) < 0) {
+	    perror ("munmap");
+	}
+#ifdef IDIO_DEBUG
+	idio_malloc_stats_munmaps[bucket]++;
+#endif
+    } else {
 #if IDIO_DEBUG
-    /*
-     * memset to something not all-zeroes and not all-ones to try to
-     * catch assumptions about default memory bugs
-     *
-     * Also be different to idio_gc_alloc() which uses 0x37
-     */
-    memset (cp, 0x38, op->ov_size);
+	/*
+	 * memset to something not all-zeroes and not all-ones to try to
+	 * catch assumptions about default memory bugs
+	 *
+	 * Also be different to idio_gc_alloc() which uses A
+	 *
+	 * F for free
+	 */
+	memset (cp, 0x46, op->ov_size);
 #endif
     
-    op->ov_magic = IDIO_MALLOC_MAGIC_FREE;
-    IDIO_MALLOC_OVERHEAD_CHAIN (op) = idio_malloc_nextf[bucket];	/* also clobbers ov_magic */
-    idio_malloc_nextf[bucket] = op;
+	op->ov_magic = IDIO_MALLOC_MAGIC_FREE;
+	IDIO_MALLOC_OVERHEAD_CHAIN (op) = idio_malloc_nextf[bucket];	/* also clobbers ov_magic */
+	idio_malloc_nextf[bucket] = op;
+    }
 #ifdef IDIO_DEBUG
-    idio_malloc_nmalloc[bucket]--;
+    idio_malloc_stats_num[bucket]--;
 #endif
 
     /* fprintf (stderr, "im-free: cp %8p -> nextf[%2d] %8p CHAIN %8p\n", cp, bucket, op, IDIO_MALLOC_OVERHEAD_CHAIN (op)); */
@@ -557,40 +587,64 @@ static int idio_malloc_findbucket (union idio_malloc_overhead_u *freep, int srch
  */
 void idio_malloc_stats (char *s)
 {
+    FILE *fh = stderr;
+
+#ifdef IDIO_VM_PROF
+    fh = idio_vm_perf_FILE;
+#endif
+
     register int i, j, k;
     register union idio_malloc_overhead_u *p;
-    int totfree = 0,
-  	totused = 0;
+    int totfree = 0;
+    int totused = 0;
+    int nfree = 0;
+    int nused = 0;
+    int mmaps = 0;
+    int munmaps = 0;
 
     for (i = 0; i < IDIO_MALLOC_NBUCKETS; i++) {
-	for (j = 0, p = idio_malloc_nextf[i]; p; p = IDIO_MALLOC_OVERHEAD_CHAIN (p), j++) {
-	    if (j ||
-		idio_malloc_nmalloc[i]) {
-		k = i;
-	    }
+	if (idio_malloc_stats_num[i] ||
+	    idio_malloc_stats_peak[i]) {
+	    k = i;
 	}
     }
     k++;
 
-    fprintf(stderr, "Memory allocation statistics %s\nbucket:\t", s);
+    fprintf(fh, "Memory allocation statistics %s\nbucket:\t", s);
     for (i = 0; i < k; i++) {
-	fprintf(stderr, " %6zu", idio_malloc_bucket_sizes[i]);
-	totfree += j * (1 << (i + 3));
+	fprintf(fh, " %6zu%c", idio_malloc_bucket_sizes[i], (idio_malloc_pagesz_bucket == i) ? '*' : ' ');
     }
-    fprintf (stderr, "\nfree:\t");
+    fprintf (fh, "\nfree:\t");
     for (i = 0; i < k; i++) {
 	for (j = 0, p = idio_malloc_nextf[i]; p; p = IDIO_MALLOC_OVERHEAD_CHAIN (p), j++)
 	    ;
-	fprintf(stderr, " %6d", j);
+	fprintf(fh, " %6d ", j);
+	nfree += j;
 	totfree += j * (1 << (i + 3));
     }
-    fprintf(stderr, "\nused:\t");
+    fprintf(fh, "\nused:\t");
     for (i = 0; i < k; i++) {
-	fprintf(stderr, " %6d", idio_malloc_nmalloc[i]);
-	totused += idio_malloc_nmalloc[i] * (1 << (i + 3));
+	fprintf(fh, " %6d ", idio_malloc_stats_num[i]);
+	nused += idio_malloc_stats_num[i];
+	totused += idio_malloc_stats_num[i] * (1 << (i + 3));
     }
-    fprintf(stderr, "\n\tTotal in use: %d, total free: %d\n",
-	    totused, totfree);
+    fprintf(fh, "\npeak:\t");
+    for (i = 0; i < k; i++) {
+	fprintf(fh, " %6d ", idio_malloc_stats_peak[i]);
+    }
+    fprintf(fh, "\nmmap:\t");
+    for (i = 0; i < k; i++) {
+	fprintf(fh, " %6d ", idio_malloc_stats_mmaps[i]);
+	mmaps += idio_malloc_stats_mmaps[i];
+    }
+    fprintf(fh, "\nmunmap:\t");
+    for (i = 0; i < k; i++) {
+	fprintf(fh, " %6d ", idio_malloc_stats_munmaps[i]);
+	munmaps += idio_malloc_stats_munmaps[i];
+    }
+    fprintf(fh, "\n\tTotal in use: %d for %d, total free: %d for %d\n",
+	    nused, totused, nfree, totfree);
+    fprintf (fh, "\t %5d mmaps, %5d munmaps\n", mmaps, munmaps);
 }
 #endif
 

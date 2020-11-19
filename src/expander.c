@@ -1001,13 +1001,15 @@ static IDIO idio_evaluate_operator (IDIO n, IDIO e, IDIO b, IDIO a)
     idio_apply (func, IDIO_LIST3 (n, b, IDIO_LIST1 (a)));
 #ifdef IDIO_VM_PROF
     struct timespec prim_t0;
-    idio_vm_func_start (func, &prim_t0);
+    struct rusage prim_ru0;
+    idio_vm_func_start (func, &prim_t0, &prim_ru0);
 #endif
     IDIO r = idio_vm_run_C (ethr, IDIO_THREAD_PC (ethr));
 #ifdef IDIO_VM_PROF
     struct timespec prim_te;
-    idio_vm_func_stop (func, &prim_te);
-    idio_vm_prim_time (func, &prim_t0, &prim_te);
+    struct rusage prim_rue;
+    idio_vm_func_stop (func, &prim_te, &prim_rue);
+    idio_vm_prim_time (func, &prim_t0, &prim_te, &prim_ru0, &prim_rue);
 #endif
 
     idio_ai_t pc = IDIO_THREAD_PC (ethr);

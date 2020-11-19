@@ -297,6 +297,7 @@ int main (int argc, char **argv, char **envp)
     idio_load_file_name (idio_string_C ("bootstrap"), idio_vm_constants);
 
     idio_bootstrap_complete = 1;
+    idio_gc_collect_all ("post-bootstrap");
 
     if (nargc > 1) {
 	/*

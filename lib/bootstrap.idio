@@ -43,12 +43,4 @@ include "SRFI-95.idio"			; sort, merge
 ; after SRFI-95, please
 include "doc.idio"
 
-;; WARNING
-;;
-;; Do not import the C module as it has symbols that will conflict
-;; with various operators.  Just invoke the C primitives directly:
-;; C/== etc.
-
-import job-control libc
-import SRFI-14 unicode
-import SRFI-115
+import unicode

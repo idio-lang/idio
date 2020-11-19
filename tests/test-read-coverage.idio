@@ -6,7 +6,7 @@ read-coverage-load := {
   n := 0
 
   function (filename) {
-    if (not (string? filename)) (coverage 'load "not a string" filename)
+    if (not (string? filename)) (error 'load "not a string" filename)
 
     (symbol-value 'load 'Idio) filename
   }

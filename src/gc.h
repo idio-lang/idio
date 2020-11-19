@@ -537,6 +537,8 @@ typedef struct idio_closure_s {
 #ifdef IDIO_VM_PROF
     uint64_t called;
     struct timespec call_time;
+    struct timeval ru_utime;
+    struct timeval ru_stime;
 #endif
 } idio_closure_t;
 
@@ -548,6 +550,8 @@ typedef struct idio_closure_s {
 #ifdef IDIO_VM_PROF
 #define IDIO_CLOSURE_CALLED(C)     ((C)->u.closure->called)
 #define IDIO_CLOSURE_CALL_TIME(C)  ((C)->u.closure->call_time)
+#define IDIO_CLOSURE_RU_UTIME(C)   ((C)->u.closure->ru_utime)
+#define IDIO_CLOSURE_RU_STIME(C)   ((C)->u.closure->ru_stime)
 #endif
 
 /*
@@ -583,6 +587,8 @@ typedef struct idio_primitive_s {
 #ifdef IDIO_VM_PROF
     uint64_t called;
     struct timespec call_time;
+    struct timeval ru_utime;
+    struct timeval ru_stime;
 #endif
 } idio_primitive_t;
 
@@ -594,6 +600,8 @@ typedef struct idio_primitive_s {
 #ifdef IDIO_VM_PROF
 #define IDIO_PRIMITIVE_CALLED(P)     ((P)->u.primitive->called)
 #define IDIO_PRIMITIVE_CALL_TIME(P)  ((P)->u.primitive->call_time)
+#define IDIO_PRIMITIVE_RU_UTIME(P)   ((P)->u.primitive->ru_utime)
+#define IDIO_PRIMITIVE_RU_STIME(P)   ((P)->u.primitive->ru_stime)
 #endif
 
 typedef struct idio_module_s {
@@ -1124,6 +1132,7 @@ typedef struct idio_gc_s {
     IDIO grey;
     unsigned int pause;
     unsigned char verbose;
+    unsigned char inst;
     IDIO_FLAGS_T flags;		/* generic GC flags */
     struct stats {
 	unsigned long long nfree; /* # on free list */
@@ -1138,6 +1147,8 @@ typedef struct idio_gc_s {
 	unsigned long long collections;	/* # times gc has been run */
 	unsigned long long bounces;
 	struct timeval dur;
+	struct timeval ru_utime;
+	struct timeval ru_stime;
     }  stats;
 } idio_gc_t;
 
@@ -1416,10 +1427,15 @@ void idio_gc_expose (IDIO o);
 void idio_gc_expose_all ();
 void idio_gc_find_frame_capture (IDIO frame);
 void idio_gc_find_frame ();
-void idio_gc_mark ();
-void idio_gc_sweep ();
+void idio_gc_mark (idio_gc_t *idio_gc);
+void idio_gc_sweep (idio_gc_t *idio_gc);
 void idio_gc_possibly_collect ();
-void idio_gc_collect (char *caller);
+#define IDIO_GC_COLLECT_GEN	0
+#define IDIO_GC_COLLECT_ALL	1
+void idio_gc_collect (idio_gc_t *idio_gc, int gen, char *caller);
+void idio_gc_collect_gen (char *caller);
+void idio_gc_collect_all (char *caller);
+void idio_gc_new_gen ();
 int idio_gc_get_pause (char *caller);
 void idio_gc_pause (char *caller);
 void idio_gc_resume (char *caller);
@@ -1438,6 +1454,7 @@ char *idio_strcat_free (char *s1, size_t *s1sp, char *s2, const size_t s2s);
 
 int idio_gc_verboseness (int n);
 void idio_gc_set_verboseness (int n);
+void idio_gc_stats ();
 
 void idio_init_gc ();
 void idio_gc_add_primitives ();

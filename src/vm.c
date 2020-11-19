@@ -44,12 +44,12 @@ static IDIO idio_vm_module = idio_S_nil;
  *
  * It is very^W verbose.
  *
- * You need the compile flag -DIDIO_DEBUG to use it.
+ * You need the compile flag -DIDIO_VM_DIS to use it.
  */
 static int idio_vm_tracing = 0;
 static char *idio_vm_tracing_in = ">>>>>>>>>>>>>>>>>>>>>>>>>";
 static char *idio_vm_tracing_out = "<<<<<<<<<<<<<<<<<<<<<<<<<";
-#ifdef IDIO_DEBUG
+#ifdef IDIO_VM_DIS
 static int idio_vm_dis = 0;
 #endif
 FILE *idio_dasm_FILE;
@@ -951,9 +951,10 @@ static void idio_vm_restore_all_state (IDIO thr)
 
 #ifdef IDIO_VM_PROF
 static struct timespec idio_vm_clos_t0;
+static struct rusage idio_vm_clos_ru0;
 static IDIO idio_vm_clos = NULL;
 
-void idio_vm_func_start (IDIO func, struct timespec *tsp)
+void idio_vm_func_start (IDIO func, struct timespec *tsp, struct rusage *rup)
 {
     IDIO_ASSERT (func);
 
@@ -976,17 +977,24 @@ void idio_vm_func_start (IDIO func, struct timespec *tsp)
 	{
 	    idio_vm_clos = func;
 	    IDIO_CLOSURE_CALLED (idio_vm_clos)++;
-	    if (0 != clock_gettime (CLOCK_MONOTONIC, &idio_vm_clos_t0)) {
-		perror ("clock_gettime (CLOCK_MONOTONIC, idio_vm_clos_t0)");
+	    if (clock_gettime (CLOCK_MONOTONIC, &idio_vm_clos_t0) < 0) {
+		perror ("vm-func-start: clock_gettime (CLOCK_MONOTONIC, idio_vm_clos_t0)");
+	    }
+	    if (getrusage (RUSAGE_SELF, &idio_vm_clos_ru0) < 0) {
+		perror ("vm-func-start: getrusage (RUSAGE_SELF, idio_vm_clos_ru0)");
 	    }
 	}
 	break;
     case IDIO_TYPE_PRIMITIVE:
 	{
-	    IDIO_C_ASSERT (tsp);
 	    IDIO_PRIMITIVE_CALLED (func)++;
-	    if (0 != clock_gettime (CLOCK_MONOTONIC, tsp)) {
+	    IDIO_C_ASSERT (tsp);
+	    if (clock_gettime (CLOCK_MONOTONIC, tsp) < 0) {
 		perror ("clock_gettime (CLOCK_MONOTONIC, tsp)");
+	    }
+	    IDIO_C_ASSERT (rup);
+	    if (getrusage (RUSAGE_SELF, rup)) {
+		perror ("getrusage (RUSAGE_SELF, rup)");
 	    }
 	}
 	break;
@@ -1003,7 +1011,7 @@ void idio_vm_func_start (IDIO func, struct timespec *tsp)
     }
 }
 
-void idio_vm_func_stop (IDIO func, struct timespec *tsp)
+void idio_vm_func_stop (IDIO func, struct timespec *tsp, struct rusage *rup)
 {
     IDIO_ASSERT (func);
 
@@ -1029,9 +1037,12 @@ void idio_vm_func_stop (IDIO func, struct timespec *tsp)
     case IDIO_TYPE_PRIMITIVE:
 	{
 	    IDIO_C_ASSERT (tsp);
-	    IDIO_PRIMITIVE_CALLED (func)++;
-	    if (0 != clock_gettime (CLOCK_MONOTONIC, tsp)) {
+	    if (clock_gettime (CLOCK_MONOTONIC, tsp) < 0) {
 		perror ("clock_gettime (CLOCK_MONOTONIC, tsp)");
+	    }
+	    IDIO_C_ASSERT (rup);
+	    if (getrusage (RUSAGE_SELF, rup)) {
+		perror ("getrusage (RUSAGE_SELF, rup)");
 	    }
 	}
 	break;
@@ -1074,29 +1085,66 @@ static void idio_vm_clos_time (IDIO thr, const char *context)
     }
 
     struct timespec clos_te;
-    if (0 != clock_gettime (CLOCK_MONOTONIC, &clos_te)) {
-	perror ("clock_gettime (CLOCK_MONOTONIC, clos_te)");
+    if (clock_gettime (CLOCK_MONOTONIC, &clos_te) < 0) {
+	perror ("vm-clos-time: clock_gettime (CLOCK_MONOTONIC, clos_te)");
     }
 
-    struct timespec clos_td;
-    clos_td.tv_sec = clos_te.tv_sec - idio_vm_clos_t0.tv_sec;
-    clos_td.tv_nsec = clos_te.tv_nsec - idio_vm_clos_t0.tv_nsec;
-    if (clos_td.tv_nsec < 0) {
-	clos_td.tv_nsec += IDIO_VM_NS;
-	clos_td.tv_sec -= 1;
+    struct rusage clos_rue;
+    if (getrusage (RUSAGE_SELF, &clos_rue) < 0) {
+	perror ("vm-clos-time: getrusage (RUSAGE_SELF, clos_rue)");
     }
 
-    IDIO_CLOSURE_CALL_TIME (idio_vm_clos).tv_sec += clos_td.tv_sec;
-    IDIO_CLOSURE_CALL_TIME (idio_vm_clos).tv_nsec += clos_td.tv_nsec;
+    struct timespec ts_d;
+    /* elapsed */
+    ts_d.tv_sec = clos_te.tv_sec - idio_vm_clos_t0.tv_sec;
+    ts_d.tv_nsec = clos_te.tv_nsec - idio_vm_clos_t0.tv_nsec;
+    if (ts_d.tv_nsec < 0) {
+	ts_d.tv_nsec += IDIO_VM_NS;
+	ts_d.tv_sec -= 1;
+    }
+
+    IDIO_CLOSURE_CALL_TIME (idio_vm_clos).tv_sec += ts_d.tv_sec;
+    IDIO_CLOSURE_CALL_TIME (idio_vm_clos).tv_nsec += ts_d.tv_nsec;
     if (IDIO_CLOSURE_CALL_TIME (idio_vm_clos).tv_nsec > IDIO_VM_NS) {
 	IDIO_CLOSURE_CALL_TIME (idio_vm_clos).tv_nsec -= IDIO_VM_NS;
 	IDIO_CLOSURE_CALL_TIME (idio_vm_clos).tv_sec += 1;
     }
 
+    struct timeval tv_d;
+    /* User */
+    tv_d.tv_sec = clos_rue.ru_utime.tv_sec - idio_vm_clos_ru0.ru_utime.tv_sec;
+    tv_d.tv_usec = clos_rue.ru_utime.tv_usec - idio_vm_clos_ru0.ru_utime.tv_usec;
+    if (tv_d.tv_usec < 0) {
+	tv_d.tv_usec += IDIO_VM_US;
+	tv_d.tv_sec -= 1;
+    }
+
+    IDIO_CLOSURE_RU_UTIME (idio_vm_clos).tv_sec += tv_d.tv_sec;
+    IDIO_CLOSURE_RU_UTIME (idio_vm_clos).tv_usec += tv_d.tv_usec;
+    if (IDIO_CLOSURE_RU_UTIME (idio_vm_clos).tv_usec > IDIO_VM_US) {
+	IDIO_CLOSURE_RU_UTIME (idio_vm_clos).tv_usec -= IDIO_VM_US;
+	IDIO_CLOSURE_RU_UTIME (idio_vm_clos).tv_sec += 1;
+    }
+
+    /* Sys */
+    tv_d.tv_sec = clos_rue.ru_stime.tv_sec - idio_vm_clos_ru0.ru_stime.tv_sec;
+    tv_d.tv_usec = clos_rue.ru_stime.tv_usec - idio_vm_clos_ru0.ru_stime.tv_usec;
+    if (tv_d.tv_usec < 0) {
+	tv_d.tv_usec += IDIO_VM_US;
+	tv_d.tv_sec -= 1;
+    }
+
+    IDIO_CLOSURE_RU_STIME (idio_vm_clos).tv_sec += tv_d.tv_sec;
+    IDIO_CLOSURE_RU_STIME (idio_vm_clos).tv_usec += tv_d.tv_usec;
+    if (IDIO_CLOSURE_RU_STIME (idio_vm_clos).tv_usec > IDIO_VM_US) {
+	IDIO_CLOSURE_RU_STIME (idio_vm_clos).tv_usec -= IDIO_VM_US;
+	IDIO_CLOSURE_RU_STIME (idio_vm_clos).tv_sec += 1;
+    }
+
     idio_vm_clos = NULL;
 }
 
-void idio_vm_prim_time (IDIO func, struct timespec *ts0p, struct timespec *tsep)
+void idio_vm_prim_time (IDIO func, struct timespec *ts0p, struct timespec *tsep, struct rusage *ru0p, struct rusage *ruep)
 {
     IDIO_ASSERT (func);
 
@@ -1123,19 +1171,55 @@ void idio_vm_prim_time (IDIO func, struct timespec *ts0p, struct timespec *tsep)
 	{
 	    IDIO_C_ASSERT (ts0p);
 	    IDIO_C_ASSERT (tsep);
-	    struct timespec prim_td;
-	    prim_td.tv_sec = tsep->tv_sec - ts0p->tv_sec;
-	    prim_td.tv_nsec = tsep->tv_nsec - ts0p->tv_nsec;
-	    if (prim_td.tv_nsec < 0) {
-		prim_td.tv_nsec += IDIO_VM_NS;
-		prim_td.tv_sec -= 1;
+
+	    struct timespec ts_d;
+	    /* Elapsed */
+	    ts_d.tv_sec = tsep->tv_sec - ts0p->tv_sec;
+	    ts_d.tv_nsec = tsep->tv_nsec - ts0p->tv_nsec;
+	    if (ts_d.tv_nsec < 0) {
+		ts_d.tv_nsec += IDIO_VM_NS;
+		ts_d.tv_sec -= 1;
 	    }
 
-	    IDIO_PRIMITIVE_CALL_TIME (func).tv_sec += prim_td.tv_sec;
-	    IDIO_PRIMITIVE_CALL_TIME (func).tv_nsec += prim_td.tv_nsec;
+	    IDIO_PRIMITIVE_CALL_TIME (func).tv_sec += ts_d.tv_sec;
+	    IDIO_PRIMITIVE_CALL_TIME (func).tv_nsec += ts_d.tv_nsec;
 	    if (IDIO_PRIMITIVE_CALL_TIME (func).tv_nsec > IDIO_VM_NS) {
 		IDIO_PRIMITIVE_CALL_TIME (func).tv_nsec -= IDIO_VM_NS;
 		IDIO_PRIMITIVE_CALL_TIME (func).tv_sec += 1;
+	    }
+
+	    IDIO_C_ASSERT (ru0p);
+	    IDIO_C_ASSERT (ruep);
+
+	    struct timeval tv_d;
+	    /* User */
+	    tv_d.tv_sec = ruep->ru_utime.tv_sec - ru0p->ru_utime.tv_sec;
+	    tv_d.tv_usec = ruep->ru_utime.tv_usec - ru0p->ru_utime.tv_usec;
+	    if (tv_d.tv_usec < 0) {
+		tv_d.tv_usec += IDIO_VM_US;
+		tv_d.tv_sec -= 1;
+	    }
+
+	    IDIO_PRIMITIVE_RU_UTIME (func).tv_sec += tv_d.tv_sec;
+	    IDIO_PRIMITIVE_RU_UTIME (func).tv_usec += tv_d.tv_usec;
+	    if (IDIO_PRIMITIVE_RU_UTIME (func).tv_usec > IDIO_VM_US) {
+		IDIO_PRIMITIVE_RU_UTIME (func).tv_usec -= IDIO_VM_US;
+		IDIO_PRIMITIVE_RU_UTIME (func).tv_sec += 1;
+	    }
+
+	    /* Sys */
+	    tv_d.tv_sec = ruep->ru_stime.tv_sec - ru0p->ru_stime.tv_sec;
+	    tv_d.tv_usec = ruep->ru_stime.tv_usec - ru0p->ru_stime.tv_usec;
+	    if (tv_d.tv_usec < 0) {
+		tv_d.tv_usec += IDIO_VM_US;
+		tv_d.tv_sec -= 1;
+	    }
+
+	    IDIO_PRIMITIVE_RU_STIME (func).tv_sec += tv_d.tv_sec;
+	    IDIO_PRIMITIVE_RU_STIME (func).tv_usec += tv_d.tv_usec;
+	    if (IDIO_PRIMITIVE_RU_STIME (func).tv_usec > IDIO_VM_US) {
+		IDIO_PRIMITIVE_RU_STIME (func).tv_usec -= IDIO_VM_US;
+		IDIO_PRIMITIVE_RU_STIME (func).tv_sec += 1;
 	    }
 	}
 	break;
@@ -1194,7 +1278,7 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
 		idio_vm_tracing++;
 	    }
 #ifdef IDIO_VM_PROF
-	    idio_vm_func_start (func, NULL);
+	    idio_vm_func_start (func, NULL, NULL);
 #endif
 	}
 	break;
@@ -1261,7 +1345,8 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
 	     */
 #ifdef IDIO_VM_PROF
 	    struct timespec prim_t0;
-	    idio_vm_func_start (func, &prim_t0);
+	    struct rusage prim_ru0;
+	    idio_vm_func_start (func, &prim_t0, &prim_ru0);
 #endif
 
 	    switch (IDIO_PRIMITIVE_ARITY (func)) {
@@ -1326,8 +1411,9 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
 
 #ifdef IDIO_VM_PROF
 	    struct timespec prim_te;
-	    idio_vm_func_stop (func, &prim_te);
-	    idio_vm_prim_time (func, &prim_t0, &prim_te);
+	    struct rusage prim_rue;
+	    idio_vm_func_stop (func, &prim_te, &prim_rue);
+	    idio_vm_prim_time (func, &prim_t0, &prim_te, &prim_ru0, &prim_rue);
 #endif
 	    size_t pc = IDIO_THREAD_PC (thr);
 
@@ -2326,7 +2412,7 @@ IDIO_DEFINE_PRIMITIVE1 ("%%vm-trace", vm_trace, (IDIO trace))
     return idio_S_unspec;
 }
 
-#ifdef IDIO_DEBUG
+#ifdef IDIO_VM_DIS
 IDIO_DEFINE_PRIMITIVE1 ("%%vm-dis", vm_dis, (IDIO dis))
 {
     IDIO_ASSERT (dis);
@@ -2339,9 +2425,8 @@ IDIO_DEFINE_PRIMITIVE1 ("%%vm-dis", vm_dis, (IDIO dis))
 
 #define IDIO_VM_RUN_DIS(...)	if (idio_vm_dis) { fprintf (stderr, __VA_ARGS__); }
 #else
-#define IDIO_VM_RUN_DIS(...)	((void) 0)
+#define IDIO_VM_RUN_DIS(...)
 #endif
-#define IDIO_VM_DASM(...)	{ fprintf (idio_dasm_FILE, __VA_ARGS__); }
 
 IDIO idio_vm_closure_name (IDIO c)
 {
@@ -2360,7 +2445,7 @@ static void idio_vm_function_trace (IDIO_I ins, IDIO thr)
 
 #ifdef IDIO_VM_PROF
     struct timespec ts;
-    if (0 != clock_gettime (CLOCK_MONOTONIC, &ts)) {
+    if (clock_gettime (CLOCK_MONOTONIC, &ts) < 0) {
 	perror ("clock_gettime (CLOCK_MONOTONIC, ts)");
     }
 #endif
@@ -2676,7 +2761,7 @@ int idio_vm_run1 (IDIO thr)
 #ifdef IDIO_VM_PROF
     idio_vm_ins_counters[ins]++;
     struct timespec ins_t0;
-    if (0 != clock_gettime (CLOCK_MONOTONIC, &ins_t0)) {
+    if (clock_gettime (CLOCK_MONOTONIC, &ins_t0) < 0) {
 	perror ("clock_gettime (CLOCK_MONOTONIC, ins_t0)");
     }
 #endif
@@ -2971,7 +3056,7 @@ int idio_vm_run1 (IDIO thr)
 	    IDIO c = idio_vm_constants_ref (gci);
 
     	    IDIO_VM_RUN_DIS ("CONSTANT %td", gci);
-#ifdef IDIO_DEBUG
+#ifdef IDIO_VM_DIS
 	    if (idio_vm_dis) {
 		idio_debug (" %s", c);
 	    }
@@ -3265,7 +3350,7 @@ int idio_vm_run1 (IDIO thr)
 	    IDIO c = idio_vm_constants_ref (gci);
 
 	    IDIO_VM_RUN_DIS ("CONSTANT %td", gci);
-#ifdef IDIO_DEBUG
+#ifdef IDIO_VM_DIS
 	    if (idio_vm_dis) {
 		idio_debug (" %s", c);
 	    }
@@ -4677,7 +4762,7 @@ int idio_vm_run1 (IDIO thr)
 
 #ifdef IDIO_VM_PROF
     struct timespec ins_te;
-    if (0 != clock_gettime (CLOCK_MONOTONIC, &ins_te)) {
+    if (clock_gettime (CLOCK_MONOTONIC, &ins_te) < 0) {
 	perror ("clock_gettime (CLOCK_MONOTONIC, ins_te)");
     }
 
@@ -4700,6 +4785,8 @@ int idio_vm_run1 (IDIO thr)
     IDIO_VM_RUN_DIS ("\n");
     return 1;
 }
+
+#define IDIO_VM_DASM(...)	{ fprintf (idio_dasm_FILE, __VA_ARGS__); }
 
 void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_ai_t pc0, idio_ai_t pce)
 {
@@ -5978,7 +6065,7 @@ IDIO idio_vm_run (IDIO thr, idio_ai_t pc, int caller)
 		    /* fprintf (stderr, "VM: no sighandler for signal #%d\n", signum); */
 		}
 
-		if ((idio_vm_run_loops++ & 0xff) == 0) {
+		if ((++idio_vm_run_loops & 0xff) == 0) {
 		    idio_gc_possibly_collect ();
 		}
 	    }
@@ -6019,7 +6106,7 @@ IDIO idio_vm_run (IDIO thr, idio_ai_t pc, int caller)
 #ifdef IDIO_VM_PROF
 	fh = idio_vm_perf_FILE;
 #endif
-	fprintf (fh, "vm_run: %" PRIdPTR " ins in time %ld.%03ld => %" PRIdPTR " i/ms\n", loops, td.tv_sec, (long) td.tv_usec / 1000, ipms);
+	fprintf (fh, "vm_run: %10" PRIdPTR " ins in time %3ld.%03ld => %6" PRIdPTR " i/ms\n", loops, td.tv_sec, (long) td.tv_usec / 1000, ipms);
     }
 #endif
 
@@ -6077,7 +6164,7 @@ IDIO idio_vm_run (IDIO thr, idio_ai_t pc, int caller)
 	    krun_p--;
 	}
 	if (krun_pd > 1) {
-	    idio_gc_collect ("vm-run: pop krun");
+	    idio_gc_collect_gen ("vm-run: pop krun");
 	}
 
 	if (bail) {
@@ -6926,7 +7013,7 @@ void idio_init_vm_values ()
      */
     idio_array_push (idio_vm_constants, idio_S_nil);
 
-    idio_vm_constants_hash = IDIO_HASH_EQUALP (8192);
+    idio_vm_constants_hash = IDIO_HASH_EQUALP (2048);
     idio_gc_protect (idio_vm_constants_hash);
 
     /*
@@ -7080,7 +7167,7 @@ void idio_vm_add_primitives ()
     IDIO_ADD_PRIMITIVE (vm_continuations);
     IDIO_ADD_PRIMITIVE (vm_apply_continuation);
     IDIO_ADD_PRIMITIVE (vm_trace);
-#ifdef IDIO_DEBUG
+#ifdef IDIO_VM_DIS
     IDIO_ADD_PRIMITIVE (vm_dis);
 #endif
     IDIO_ADD_PRIMITIVE (dasm);
@@ -7104,7 +7191,7 @@ void idio_final_vm ()
      * Run a GC in case someone is hogging all the file descriptors,
      * say, as we want to use one, at least.
      */
-    idio_gc_collect ("idio_final_vm");
+    idio_gc_collect_all ("final-vm");
     IDIO thr = idio_thread_current_thread ();
 
     if (getpid () == idio_pid) {
@@ -7193,7 +7280,7 @@ void idio_final_vm ()
 		    }
 		}
 	    }
-	    fprintf (idio_vm_perf_FILE, "vm-ins:  %4s %-40s %8" PRIu64 " %5.1f %5ld.%09ld %5.1f\n", "", "total", c, c_pct, t.tv_sec, t.tv_nsec, t_pct);
+	    fprintf (idio_vm_perf_FILE, "vm-ins:  %4s %-38s %10" PRIu64 " %5.1f %5ld.%09ld %5.1f\n", "", "total", c, c_pct, t.tv_sec, t.tv_nsec, t_pct);
 #endif
 	}
     }

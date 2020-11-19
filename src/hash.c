@@ -292,6 +292,7 @@ IDIO idio_copy_hash (IDIO orig, int depth)
 
     idio_assign_hash_he (new, IDIO_HASH_COUNT (orig));
 
+    idio_gc_protect (new);
     idio_hi_t i;
     for (i = 0; i < IDIO_HASH_SIZE (orig); i++) {
 	IDIO k = idio_hash_he_key (orig, i);
@@ -310,6 +311,7 @@ IDIO idio_copy_hash (IDIO orig, int depth)
 	    idio_hash_put (new, k, v);
 	}
     }
+    idio_gc_expose (new);
 
     return new;
 }
@@ -2177,7 +2179,7 @@ uint64_t traverse_rng(uint32_t n, uint32_t x0)
 
 size_t idio_unit_test_hash_n (size_t n, size_t x0)
 {
-    idio_gc_collect ("%%unit-test-hash");
+    idio_gc_collect_gen ("%%unit-test-hash");
 
     struct timeval t0;
     if (gettimeofday (&t0, NULL) == -1) {

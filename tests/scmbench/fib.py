@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 
 # FIB -- A classic benchmark, computes fib(30) inefficiently.
 
@@ -8,4 +8,4 @@ def fib (n):
     else:
         return fib (n - 1) + fib (n - 2)
 
-fib (30)
+print ("fib ({0} = {1}".format (30, fib (30)))

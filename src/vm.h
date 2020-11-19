@@ -221,6 +221,7 @@ extern size_t idio_prologue_len;
 extern int idio_vm_exit;
 
 #define IDIO_VM_NS	1000000000L
+#define IDIO_VM_US	1000000L
 
 void idio_vm_panic (IDIO thr, char *m);
 IDIO idio_vm_closure_name (IDIO c);
@@ -258,9 +259,9 @@ void idio_raise_condition (IDIO continuablep, IDIO e);
 IDIO idio_apply (IDIO fn, IDIO args);
 void idio_vm_debug (IDIO thr, char *prefix, idio_ai_t stack_start);
 #ifdef IDIO_VM_PROF
-void idio_vm_func_start (IDIO clos, struct timespec *tsp);
-void idio_vm_func_stop (IDIO clos, struct timespec *tsp);
-void idio_vm_prim_time (IDIO clos, struct timespec *ts0p, struct timespec *tsep);
+void idio_vm_func_start (IDIO clos, struct timespec *tsp, struct rusage *rup);
+void idio_vm_func_stop (IDIO clos, struct timespec *tsp, struct rusage *rup);
+void idio_vm_prim_time (IDIO clos, struct timespec *ts0p, struct timespec *tsep, struct rusage *ru0p, struct rusage *ruep);
 #endif
 IDIO idio_vm_invoke_C (IDIO thr, IDIO command);
 IDIO idio_vm_source_location ();

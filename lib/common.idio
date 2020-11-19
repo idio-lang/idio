@@ -529,9 +529,9 @@ define (times proc & args) "
 Report the Real/User and System time for the invocation of
 proc [args]
 " {
-  start := (times)
+  start := (libc/times)
   r := apply proc args
-  end := (times)
+  end := (libc/times)
 
   printf "Real %d\nUser %d\nSyst %d\n" (end.tms_rtime - start.tms_rtime) (end.tms_utime - start.tms_utime) (end.tms_stime - start.tms_stime)
   r
@@ -547,15 +547,15 @@ The Real, User and System times are C struct timevals.
 
 This takes after Bash's time_command
 " {
-  tv-before := (gettimeofday)
-  rus-before := getrusage RUSAGE_SELF
-  ruk-before := getrusage RUSAGE_CHILDREN
+  tv-before := (libc/gettimeofday)
+  rus-before := libc/getrusage libc/RUSAGE_SELF
+  ruk-before := libc/getrusage libc/RUSAGE_CHILDREN
 
   r := apply proc args
 
-  tv-after := (gettimeofday)
-  rus-after := getrusage RUSAGE_SELF
-  ruk-after := getrusage RUSAGE_CHILDREN
+  tv-after := (libc/gettimeofday)
+  rus-after := libc/getrusage libc/RUSAGE_SELF
+  ruk-after := libc/getrusage libc/RUSAGE_CHILDREN
 
   ; now we have real time in tv-before/after and user and system time
   ; spread across the SELF and CHILDREN rusage data both before and
@@ -563,11 +563,18 @@ This takes after Bash's time_command
 
   ; the add/subtract -struct-timeval functions do what they say on the tin
 
-  tv-real := subtract-struct-timeval tv-after tv-before
-  tv-utime := add-struct-timeval (subtract-struct-timeval (struct-rusage-ru_utime rus-after) (struct-rusage-ru_utime rus-before))\
-				 (subtract-struct-timeval (struct-rusage-ru_utime ruk-after) (struct-rusage-ru_utime ruk-before))
-  tv-stime := add-struct-timeval (subtract-struct-timeval (struct-rusage-ru_stime rus-after) (struct-rusage-ru_stime rus-before))\
-				 (subtract-struct-timeval (struct-rusage-ru_stime ruk-after) (struct-rusage-ru_stime ruk-before))
+  tv-real := libc/subtract-struct-timeval tv-after tv-before
+  tv-utime := (libc/add-struct-timeval
+	       (libc/subtract-struct-timeval (libc/struct-rusage-ru_utime rus-after)
+					     (libc/struct-rusage-ru_utime rus-before))
+	       (libc/subtract-struct-timeval (libc/struct-rusage-ru_utime ruk-after)
+					     (libc/struct-rusage-ru_utime ruk-before)))
+
+  tv-stime := (libc/add-struct-timeval
+	       (libc/subtract-struct-timeval (libc/struct-rusage-ru_stime rus-after)
+					     (libc/struct-rusage-ru_stime rus-before))
+	       (libc/subtract-struct-timeval (libc/struct-rusage-ru_stime ruk-after)
+					     (libc/struct-rusage-ru_stime ruk-before)))
 
   list r tv-real tv-utime tv-stime
 }

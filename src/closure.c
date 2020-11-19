@@ -60,6 +60,10 @@ IDIO idio_closure (size_t code_pc, size_t code_len, IDIO frame, IDIO env, IDIO s
     IDIO_CLOSURE_CALLED (c) = 0;
     IDIO_CLOSURE_CALL_TIME (c).tv_sec = 0;
     IDIO_CLOSURE_CALL_TIME (c).tv_nsec = 0;
+    IDIO_CLOSURE_RU_UTIME (c).tv_sec = 0;
+    IDIO_CLOSURE_RU_UTIME (c).tv_usec = 0;
+    IDIO_CLOSURE_RU_STIME (c).tv_sec = 0;
+    IDIO_CLOSURE_RU_STIME (c).tv_usec = 0;
 #endif
 
     idio_properties_create (c);
