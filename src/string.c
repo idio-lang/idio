@@ -818,7 +818,7 @@ If no default value is supplied #\{space} is used.	\n\
 	return idio_S_notreached;
     }
 
-    IDIO_VERIFY_PARAM_TYPE (list, args);
+    IDIO_USER_TYPE_ASSERT (list, args);
 
     size_t bpc = 0;
 
@@ -833,7 +833,7 @@ If no default value is supplied #\{space} is used.	\n\
     char fills[5];
     if (idio_S_nil != args) {
 	IDIO fill = IDIO_PAIR_H (args);
-	IDIO_VERIFY_PARAM_TYPE (unicode, fill);
+	IDIO_USER_TYPE_ASSERT (unicode, fill);
 
 	fillc = IDIO_UNICODE_VAL (fill);
 	if (fillc > 0x10ffff) {
@@ -896,7 +896,8 @@ return a list of the Unicode code points in `s`\n\
 ")
 {
     IDIO_ASSERT (s);
-    IDIO_VERIFY_PARAM_TYPE (string, s);
+
+    IDIO_USER_TYPE_ASSERT (string, s);
 
     uint8_t *s8 = NULL;
     uint16_t *s16 = NULL;
@@ -1069,7 +1070,7 @@ IDIO_DEFINE_PRIMITIVE1 ("list->string", list2string, (IDIO l))
 {
     IDIO_ASSERT (l);
 
-    IDIO_VERIFY_PARAM_TYPE (list, l);
+    IDIO_USER_TYPE_ASSERT (list, l);
 
     return idio_list_list2string (l);
 }
@@ -1084,7 +1085,8 @@ return a symbol derived from `s`		\n\
 ")
 {
     IDIO_ASSERT (s);
-    IDIO_VERIFY_PARAM_TYPE (string, s);
+
+    IDIO_USER_TYPE_ASSERT (string, s);
 
     size_t size = 0;
     char *sC = idio_string_as_C (s, &size);
@@ -1123,7 +1125,8 @@ which is a list of strings.						\n\
 ")
 {
     IDIO_ASSERT (args);
-    IDIO_VERIFY_PARAM_TYPE (list, args);
+
+    IDIO_USER_TYPE_ASSERT (list, args);
 
     IDIO r = idio_S_nil;
 
@@ -1134,7 +1137,7 @@ which is a list of strings.						\n\
 	ptrdiff_t i = 0;
 
 	for (; idio_S_nil != args; i++) {
-	    IDIO_VERIFY_PARAM_TYPE (string, IDIO_PAIR_H (args));
+	    IDIO_USER_TYPE_ASSERT (string, IDIO_PAIR_H (args));
 
 	    size_t size = 0;
 	    copies[i] = idio_string_as_C (IDIO_PAIR_H (args), &size);
@@ -1171,7 +1174,8 @@ a string.								\n\
 ")
 {
     IDIO_ASSERT (args);
-    IDIO_VERIFY_PARAM_TYPE (list, args);
+
+    IDIO_USER_TYPE_ASSERT (list, args);
 
     IDIO r = idio_S_nil;
 
@@ -1182,7 +1186,7 @@ a string.								\n\
 	ptrdiff_t i = 0;
 
 	for (; idio_S_nil != args; i++) {
-	    IDIO_VERIFY_PARAM_TYPE (string, IDIO_PAIR_H (args));
+	    IDIO_USER_TYPE_ASSERT (string, IDIO_PAIR_H (args));
 
 	    size_t size = 0;
 	    copies[i] = idio_string_as_C (IDIO_PAIR_H (args), &size);
@@ -1212,7 +1216,8 @@ return a copy of `s` which is not eq? to `s`	\n\
 ")
 {
     IDIO_ASSERT (s);
-    IDIO_VERIFY_PARAM_TYPE (string, s);
+
+    IDIO_USER_TYPE_ASSERT (string, s);
 
     return idio_copy_string (s);
 }
@@ -1227,7 +1232,8 @@ return the number of code points in `s`		\n\
 ")
 {
     IDIO_ASSERT (s);
-    IDIO_VERIFY_PARAM_TYPE (string, s);
+
+    IDIO_USER_TYPE_ASSERT (string, s);
 
     return idio_integer (idio_string_len (s));
 }
@@ -1349,7 +1355,8 @@ positions start at 0				\n\
 {
     IDIO_ASSERT (s);
     IDIO_ASSERT (index);
-    IDIO_VERIFY_PARAM_TYPE (string, s);
+
+    IDIO_USER_TYPE_ASSERT (string, s);
 
     return idio_string_ref (s, index);
 }
@@ -1500,8 +1507,9 @@ existing storage allocation for `s`		\n\
     IDIO_ASSERT (s);
     IDIO_ASSERT (index);
     IDIO_ASSERT (c);
-    IDIO_VERIFY_PARAM_TYPE (string, s);
-    IDIO_VERIFY_PARAM_TYPE (unicode, c);
+
+    IDIO_USER_TYPE_ASSERT (string, s);
+    IDIO_USER_TYPE_ASSERT (unicode, c);
 
     return idio_string_set (s, index, c);
 }
@@ -1521,8 +1529,9 @@ existing storage allocation for `s`		\n\
 {
     IDIO_ASSERT (s);
     IDIO_ASSERT (fill);
-    IDIO_VERIFY_PARAM_TYPE (string, s);
-    IDIO_VERIFY_PARAM_TYPE (unicode, fill);
+
+    IDIO_USER_TYPE_ASSERT (string, s);
+    IDIO_USER_TYPE_ASSERT (unicode, fill);
 
     IDIO_ASSERT_NOT_CONST (string, s);
 
@@ -1573,7 +1582,8 @@ through to but excluuding position `pn`		\n\
     IDIO_ASSERT (s);
     IDIO_ASSERT (p0);
     IDIO_ASSERT (pn);
-    IDIO_VERIFY_PARAM_TYPE (string, s);
+
+    IDIO_USER_TYPE_ASSERT (string, s);
 
     ptrdiff_t ip0 = -1;
     ptrdiff_t ipn = -1;
@@ -1810,9 +1820,9 @@ int idio_string_equal (IDIO s1, IDIO s2)
     {									\
 	IDIO_ASSERT (s1);						\
 	IDIO_ASSERT (s2);						\
-	IDIO_VERIFY_PARAM_TYPE (string, s1);				\
-	IDIO_VERIFY_PARAM_TYPE (string, s2);				\
-	IDIO_VERIFY_PARAM_TYPE (list, args);				\
+	IDIO_USER_TYPE_ASSERT (string, s1);				\
+	IDIO_USER_TYPE_ASSERT (string, s2);				\
+	IDIO_USER_TYPE_ASSERT (list, args);				\
 									\
 	args = idio_pair (s2, args);					\
 									\
@@ -2295,8 +2305,9 @@ into a list of strings					\n\
 {
     IDIO_ASSERT (in);
     IDIO_ASSERT (delim);
-    IDIO_VERIFY_PARAM_TYPE (string, in);
-    IDIO_VERIFY_PARAM_TYPE (string, delim);
+
+    IDIO_USER_TYPE_ASSERT (string, in);
+    IDIO_USER_TYPE_ASSERT (string, delim);
 
     return idio_split_string (in, delim, IDIO_STRING_TOKEN_FLAG_NONE);
 }
@@ -2314,8 +2325,9 @@ into a list	 of strings				\n\
 {
     IDIO_ASSERT (in);
     IDIO_ASSERT (delim);
-    IDIO_VERIFY_PARAM_TYPE (string, in);
-    IDIO_VERIFY_PARAM_TYPE (string, delim);
+
+    IDIO_USER_TYPE_ASSERT (string, in);
+    IDIO_USER_TYPE_ASSERT (string, delim);
 
     return idio_split_string (in, delim, IDIO_STRING_TOKEN_FLAG_EXACT);
 }
@@ -2324,6 +2336,7 @@ IDIO idio_join_string (IDIO delim, IDIO args)
 {
     IDIO_ASSERT (delim);
     IDIO_ASSERT (args);
+
     IDIO_TYPE_ASSERT (string, delim);
     IDIO_TYPE_ASSERT (list, args);
 
@@ -2340,7 +2353,7 @@ IDIO idio_join_string (IDIO delim, IDIO args)
 
     ptrdiff_t i;
     for (i = 0; idio_S_nil != args; i += 2) {
-	IDIO_VERIFY_PARAM_TYPE (string, IDIO_PAIR_H (args));
+	IDIO_USER_TYPE_ASSERT (string, IDIO_PAIR_H (args));
 
 	copies[i] = idio_string_as_C (IDIO_PAIR_H (args), &lens[i]);
 	copies[i+1] = delim_C;
@@ -2372,8 +2385,9 @@ return a string of `args` interspersed with `delim`	\n\
 {
     IDIO_ASSERT (delim);
     IDIO_ASSERT (args);
-    IDIO_VERIFY_PARAM_TYPE (string, delim);
-    IDIO_VERIFY_PARAM_TYPE (list, args);
+
+    IDIO_USER_TYPE_ASSERT (string, delim);
+    IDIO_USER_TYPE_ASSERT (list, args);
 
     return idio_join_string (delim, args);
 }

@@ -337,7 +337,17 @@ IDIO idio_gensym (char *pref_prefix)
     return idio_S_notreached;
 }
 
-IDIO_DEFINE_PRIMITIVE0V ("gensym", gensym, (IDIO args))
+IDIO_DEFINE_PRIMITIVE0V_DS ("gensym", gensym, (IDIO args), "[prefix]", "\
+generate a new *unique* symbol using `prefix` (if	\n\
+supplied or ``g``) followed by ``/``			\n\
+							\n\
+Such *gensyms* are not guaranteed to be unique if saved.\n\
+							\n\
+:param prefix: (optional) prefix string		\n\
+:type prefix: string or symbol			\n\
+						\n\
+:return: symbol					\n\
+")
 {
     IDIO_ASSERT (args);
 
@@ -378,7 +388,13 @@ IDIO_DEFINE_PRIMITIVE0V ("gensym", gensym, (IDIO args))
     return sym;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("symbol?", symbol_p, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1_DS ("symbol?", symbol_p, (IDIO o), "o", "\
+test if `o` is a symbol				\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is a symbol, #f otherwise	\n\
+")
 {
     IDIO_ASSERT (o);
 
@@ -391,11 +407,19 @@ IDIO_DEFINE_PRIMITIVE1 ("symbol?", symbol_p, (IDIO o))
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("symbol->string", symbol2string, (IDIO s))
+IDIO_DEFINE_PRIMITIVE1_DS ("symbol->string", symbol2string, (IDIO s), "s", "\
+convert symbol `s` into a string		\n\
+						\n\
+:param s: symbol to convert			\n\
+:param s: symbol				\n\
+						\n\
+:return: string					\n\
+:rtype: string					\n\
+")
 {
     IDIO_ASSERT (s);
 
-    IDIO_VERIFY_PARAM_TYPE (symbol, s);
+    IDIO_USER_TYPE_ASSERT (symbol, s);
 
     return idio_string_C (IDIO_SYMBOL_S (s));
 }
@@ -446,7 +470,18 @@ IDIO idio_properties_ref (IDIO o, IDIO args)
     return properties;
 }
 
-IDIO_DEFINE_PRIMITIVE1V ("%properties", properties_ref, (IDIO o, IDIO args))
+IDIO_DEFINE_PRIMITIVE1V_DS ("%properties", properties_ref, (IDIO o, IDIO args), "o [default]", "\
+return the properties table of `o` or		\n\
+``default`` if none exist			\n\
+						\n\
+:param o: value to get properties for		\n\
+:param o: non-#n				\n\
+:param default: (optional) default value to return if no properties exist	\n\
+:param default: any				\n\
+						\n\
+:return: properties table, default or raise ^rt-hash-key-not-found condition	\n\
+:rtype: as above				\n\
+")
 {
     IDIO_ASSERT (o);
     IDIO_ASSERT (args);
@@ -498,11 +533,21 @@ void idio_properties_delete (IDIO o)
     idio_hash_delete (idio_properties_hash, o);
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("%set-properties!", properties_set, (IDIO o, IDIO properties))
+IDIO_DEFINE_PRIMITIVE2_DS ("%set-properties!", properties_set, (IDIO o, IDIO properties), "o properties", "\
+set the properties table of `o` to ``properties``	\n\
+						\n\
+:param o: value to set properties for		\n\
+:param o: non-#n				\n\
+:param properties: properties table		\n\
+:param properties: hash table			\n\
+						\n\
+:return: #unspec				\n\
+")
 {
     IDIO_ASSERT (o);
     IDIO_ASSERT (properties);
-    IDIO_TYPE_ASSERT (hash, properties);
+
+    IDIO_USER_TYPE_ASSERT (hash, properties);
 
     idio_properties_set (o, properties);
 
@@ -559,12 +604,26 @@ IDIO idio_get_property (IDIO o, IDIO property, IDIO args)
     return value;
 }
 
-IDIO_DEFINE_PRIMITIVE2V ("%property", get_property, (IDIO o, IDIO property, IDIO args))
+IDIO_DEFINE_PRIMITIVE2V_DS ("%property", get_property, (IDIO o, IDIO property, IDIO args), "o kw [default]", "\
+return the property `kw` for `o` or		\n\
+``default`` if no such property exists		\n\
+						\n\
+:param o: value to get properties for		\n\
+:param o: non-#n				\n\
+:param kw: property				\n\
+:param kw: keyword				\n\
+:param default: (optional) default value to return if no such property exists	\n\
+:param default: any				\n\
+						\n\
+:return: property, default or raise ^rt-hash-key-not-found condition	\n\
+:rtype: as above				\n\
+")
 {
     IDIO_ASSERT (o);
     IDIO_ASSERT (property);
     IDIO_ASSERT (args);
-    IDIO_TYPE_ASSERT (keyword, property);
+
+    IDIO_USER_TYPE_ASSERT (keyword, property);
 
     return idio_get_property (o, property, args);
 }
@@ -594,12 +653,24 @@ void idio_set_property (IDIO o, IDIO property, IDIO value)
     idio_hash_set (properties, property, value);
 }
 
-IDIO_DEFINE_PRIMITIVE3 ("%set-property!", set_property, (IDIO o, IDIO property, IDIO value))
+IDIO_DEFINE_PRIMITIVE3_DS ("%set-property!", set_property, (IDIO o, IDIO property, IDIO value), "o kw v", "\
+set the property `kw` for `o` to ``v``		\n\
+						\n\
+:param o: value to get properties for		\n\
+:param o: non-#n				\n\
+:param kw: property				\n\
+:param kw: keyword				\n\
+:param v: value					\n\
+:param v: any					\n\
+						\n\
+:return: #unspec				\n\
+")
 {
     IDIO_ASSERT (o);
     IDIO_ASSERT (property);
     IDIO_ASSERT (value);
-    IDIO_TYPE_ASSERT (keyword, property);
+
+    IDIO_USER_TYPE_ASSERT (keyword, property);
 
     idio_set_property (o, property, value);
 

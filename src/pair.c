@@ -53,7 +53,13 @@ int idio_isa_pair (IDIO p)
     return idio_isa (p, IDIO_TYPE_PAIR);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("pair?", pair_p, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1_DS ("pair?", pair_p, (IDIO o), "o", "\
+test if `o` is a pair				\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is a pair, #f otherwise	\n\
+")
 {
     IDIO_ASSERT (o);
 
@@ -123,7 +129,14 @@ IDIO idio_list_head (IDIO p)
     return IDIO_PAIR_H (p);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("ph", pair_head, (IDIO p))
+IDIO_DEFINE_PRIMITIVE1_DS ("ph", pair_head, (IDIO p), "p", "\
+return the head of pair `p`			\n\
+						\n\
+:param p: pair to query				\n\
+:type p: pair					\n\
+						\n\
+:return: head of `p`				\n\
+")
 {
     IDIO_ASSERT (p);
 
@@ -131,17 +144,26 @@ IDIO_DEFINE_PRIMITIVE1 ("ph", pair_head, (IDIO p))
 	return idio_S_nil;
     }
 
-    IDIO_VERIFY_PARAM_TYPE (pair, p);
+    IDIO_USER_TYPE_ASSERT (pair, p);
 
     return idio_list_head (p);
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("set-ph!", set_pair_head, (IDIO p, IDIO v))
+IDIO_DEFINE_PRIMITIVE2_DS ("set-ph!", set_pair_head, (IDIO p, IDIO v), "p v", "\
+set the head of pair `p` to ``v``		\n\
+						\n\
+:param p: pair to modify			\n\
+:type p: pair					\n\
+:param v: value					\n\
+:type v: any					\n\
+						\n\
+:return: #unspec				\n\
+")
 {
     IDIO_ASSERT (p);
     IDIO_ASSERT (v);
 
-    IDIO_VERIFY_PARAM_TYPE (pair, p);
+    IDIO_USER_TYPE_ASSERT (pair, p);
 
     IDIO_PAIR_H (p) = v;
 
@@ -161,7 +183,14 @@ IDIO idio_list_tail (IDIO p)
     return IDIO_PAIR_T (p);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("pt", pair_tail, (IDIO p))
+IDIO_DEFINE_PRIMITIVE1_DS ("pt", pair_tail, (IDIO p), "p", "\
+return the tail of pair `p`			\n\
+						\n\
+:param p: pair to query				\n\
+:type p: pair					\n\
+						\n\
+:return: tail of `p`				\n\
+")
 {
     IDIO_ASSERT (p);
 
@@ -169,17 +198,26 @@ IDIO_DEFINE_PRIMITIVE1 ("pt", pair_tail, (IDIO p))
 	return idio_S_nil;
     }
 
-    IDIO_VERIFY_PARAM_TYPE (pair, p);
+    IDIO_USER_TYPE_ASSERT (pair, p);
 
     return idio_list_tail (p);
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("set-pt!", set_pair_tail, (IDIO p, IDIO v))
+IDIO_DEFINE_PRIMITIVE2_DS ("set-pt!", set_pair_tail, (IDIO p, IDIO v), "p v", "\
+set the tail of pair `p` to ``v``		\n\
+						\n\
+:param p: pair to modify			\n\
+:type p: pair					\n\
+:param v: value					\n\
+:type v: any					\n\
+						\n\
+:return: #unspec				\n\
+")
 {
     IDIO_ASSERT (p);
     IDIO_ASSERT (v);
 
-    IDIO_VERIFY_PARAM_TYPE (pair, p);
+    IDIO_USER_TYPE_ASSERT (pair, p);
 
     IDIO_PAIR_T (p) = v;
 
@@ -242,10 +280,18 @@ IDIO idio_list_reverse (IDIO l)
     return idio_improper_list_reverse (l, idio_S_nil);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("reverse", list_reverse, (IDIO l))
+IDIO_DEFINE_PRIMITIVE1_DS ("reverse", list_reverse, (IDIO l), "l", "\
+reverse the list ``l``				\n\
+						\n\
+:param l: list to reverse			\n\
+:type l: list					\n\
+						\n\
+:return: reversed list				\n\
+")
 {
     IDIO_ASSERT (l);
-    IDIO_VERIFY_PARAM_TYPE (list, l);
+
+    IDIO_USER_TYPE_ASSERT (list, l);
 
     return idio_list_reverse (l);
 }
@@ -290,12 +336,21 @@ size_t idio_list_length (IDIO l)
     return len;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("length", list_length, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1_DS ("length", list_length, (IDIO l), "l", "\
+return the number of elements in list ``l``	\n\
+						\n\
+:param l: list to count				\n\
+:type l: list					\n\
+						\n\
+:return: number of elements in ``l``		\n\
+:rtype: integer					\n\
+")
 {
-    IDIO_ASSERT (o);
-    IDIO_VERIFY_PARAM_TYPE (list, o);
+    IDIO_ASSERT (l);
 
-    size_t len = idio_list_length (o);
+    IDIO_USER_TYPE_ASSERT (list, l);
+
+    size_t len = idio_list_length (l);
 
     return idio_integer (len);
 }
@@ -405,14 +460,33 @@ IDIO idio_list_append2 (IDIO l1, IDIO l2)
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE0V ("list", list, (IDIO args))
+IDIO_DEFINE_PRIMITIVE0V_DS ("list", list, (IDIO args), "args", "\
+return ``args`` as a list			\n\
+						\n\
+:param args: arguments to convert		\n\
+						\n\
+:return: list of ``args``			\n\
+:rtype: list					\n\
+")
 {
     IDIO_ASSERT (args);
 
     return args;
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("append", append, (IDIO a, IDIO b))
+IDIO_DEFINE_PRIMITIVE2_DS ("append", append, (IDIO a, IDIO b), "a b", "\
+append list ``b`` to list ``a``			\n\
+						\n\
+list ``a`` is copied, list ``b`` is untouched	\n\
+						\n\
+:param a: list to be appended to		\n\
+:type a: list					\n\
+:param b: list to be appended			\n\
+:type b: list					\n\
+						\n\
+:return: combined list				\n\
+:rtype: list					\n\
+")
 {
     IDIO_ASSERT (a);
     IDIO_ASSERT (b);
@@ -421,7 +495,7 @@ IDIO_DEFINE_PRIMITIVE2 ("append", append, (IDIO a, IDIO b))
 	return b;
     }
 
-    IDIO_VERIFY_PARAM_TYPE (list, a);
+    IDIO_USER_TYPE_ASSERT (list, a);
 
     if (idio_S_nil == b) {
 	return a;
@@ -430,11 +504,19 @@ IDIO_DEFINE_PRIMITIVE2 ("append", append, (IDIO a, IDIO b))
     return idio_list_append2 (a, b);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("list->array", list2array, (IDIO l))
+IDIO_DEFINE_PRIMITIVE1_DS ("list->array", list2array, (IDIO l), "l", "\
+convert list ``l`` to an array			\n\
+						\n\
+:param l: list to be converted			\n\
+:type l: list					\n\
+						\n\
+:return: array					\n\
+:rtype: array					\n\
+")
 {
     IDIO_ASSERT (l);
 
-    IDIO_VERIFY_PARAM_TYPE (list, l);
+    IDIO_USER_TYPE_ASSERT (list, l);
 
     return idio_list_to_array (l);
 }
@@ -507,7 +589,7 @@ return the nth (`n`) element from list `l`		\n\
     IDIO_ASSERT (I_n);
     IDIO_ASSERT (args);
 
-    IDIO_TYPE_ASSERT (list, l);
+    IDIO_USER_TYPE_ASSERT (list, l);
 
     return idio_list_nth (l, I_n, args);
 }

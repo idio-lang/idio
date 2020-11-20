@@ -1589,7 +1589,7 @@ test if `o` is an hash				\n\
 IDIO idio_hash_make_hash (IDIO args)
 {
     IDIO_ASSERT (args);
-    IDIO_VERIFY_PARAM_TYPE (list, args);
+    IDIO_USER_TYPE_ASSERT (list, args);
 
     idio_hi_t size = 32;
     int (*equal) (void *k1, void *k2) = idio_equalp;
@@ -1671,7 +1671,8 @@ underlying C function.					\n\
 ")
 {
     IDIO_ASSERT (args);
-    IDIO_VERIFY_PARAM_TYPE (list, args);
+
+    IDIO_USER_TYPE_ASSERT (list, args);
 
     return idio_hash_make_hash (args);
 }
@@ -1680,8 +1681,8 @@ IDIO idio_hash_alist_to_hash (IDIO alist, IDIO args)
 {
     IDIO_ASSERT (alist);
     IDIO_ASSERT (args);
-    IDIO_VERIFY_PARAM_TYPE (list, alist);
-    IDIO_VERIFY_PARAM_TYPE (list, args);
+    IDIO_USER_TYPE_ASSERT (list, alist);
+    IDIO_USER_TYPE_ASSERT (list, args);
 
     IDIO ht = idio_hash_make_hash (args);
 
@@ -1724,8 +1725,9 @@ convert association list ``al`` into a hash table	\n\
 {
     IDIO_ASSERT (alist);
     IDIO_ASSERT (args);
-    IDIO_VERIFY_PARAM_TYPE (list, alist);
-    IDIO_VERIFY_PARAM_TYPE (list, args);
+
+    IDIO_USER_TYPE_ASSERT (list, alist);
+    IDIO_USER_TYPE_ASSERT (list, args);
 
     return idio_hash_alist_to_hash (alist, args);
 }
@@ -1740,7 +1742,8 @@ return the ``equiv-func`` of ``h``			\n\
 ")
 {
     IDIO_ASSERT (ht);
-    IDIO_VERIFY_PARAM_TYPE (hash, ht);
+
+    IDIO_USER_TYPE_ASSERT (hash, ht);
 
     IDIO r = idio_S_unspec;
 
@@ -1769,7 +1772,8 @@ return the ``hash-func`` of ``h``			\n\
 ")
 {
     IDIO_ASSERT (ht);
-    IDIO_VERIFY_PARAM_TYPE (hash, ht);
+
+    IDIO_USER_TYPE_ASSERT (hash, ht);
 
     IDIO r = idio_S_unspec;
 
@@ -1794,7 +1798,8 @@ return the key count of ``h``				\n\
 ")
 {
     IDIO_ASSERT (ht);
-    IDIO_VERIFY_PARAM_TYPE (hash, ht);
+
+    IDIO_USER_TYPE_ASSERT (hash, ht);
 
     /*
      * Can we create a hash table with entries than IDIO_FIXNUM_MAX?
@@ -1811,8 +1816,8 @@ IDIO idio_hash_reference (IDIO ht, IDIO key, IDIO args)
     IDIO_ASSERT (ht);
     IDIO_ASSERT (key);
     IDIO_ASSERT (args);
-    IDIO_VERIFY_PARAM_TYPE (hash, ht);
-    IDIO_VERIFY_PARAM_TYPE (list, args);
+    IDIO_USER_TYPE_ASSERT (hash, ht);
+    IDIO_USER_TYPE_ASSERT (list, args);
 
     IDIO r = idio_hash_ref (ht, key);
 
@@ -1851,8 +1856,9 @@ return the value indexed by ``key` in hash table ``ht``	\n\
     IDIO_ASSERT (ht);
     IDIO_ASSERT (key);
     IDIO_ASSERT (args);
-    IDIO_VERIFY_PARAM_TYPE (hash, ht);
-    IDIO_VERIFY_PARAM_TYPE (list, args);
+
+    IDIO_USER_TYPE_ASSERT (hash, ht);
+    IDIO_USER_TYPE_ASSERT (list, args);
 
     return idio_hash_reference (ht, key, args);
 }
@@ -1871,12 +1877,24 @@ IDIO idio_hash_set (IDIO ht, IDIO key, IDIO v)
     return idio_S_unspec;
 }
 
-IDIO_DEFINE_PRIMITIVE3 ("hash-set!", hash_set, (IDIO ht, IDIO key, IDIO v))
+IDIO_DEFINE_PRIMITIVE3_DS ("hash-set!", hash_set, (IDIO ht, IDIO key, IDIO v), "ht key v", "\
+set the index of ``key` in hash table ``ht`` to ``v``	\n\
+							\n\
+:param ht: hash table					\n\
+:type ht: hash table					\n\
+:param key: non-#n value				\n\
+:type key: any non-#n					\n\
+:param v: value						\n\
+:type v: a value					\n\
+							\n\
+:return: #unspec					\n\
+")
 {
     IDIO_ASSERT (ht);
     IDIO_ASSERT (key);
     IDIO_ASSERT (v);
-    IDIO_VERIFY_PARAM_TYPE (hash, ht);
+
+    IDIO_USER_TYPE_ASSERT (hash, ht);
 
     return idio_hash_set (ht, key, v);
 }
@@ -1884,22 +1902,44 @@ IDIO_DEFINE_PRIMITIVE3 ("hash-set!", hash_set, (IDIO ht, IDIO key, IDIO v))
 /*
  * SRFI 69 -- not an error to delete a non-existent key
  */
-IDIO_DEFINE_PRIMITIVE2 ("hash-delete!", hash_delete, (IDIO ht, IDIO key))
+IDIO_DEFINE_PRIMITIVE2_DS ("hash-delete!", hash_delete, (IDIO ht, IDIO key), "ht key", "\
+delete the value associated with index of ``key` in	\n\
+hash table ``ht``					\n\
+							\n\
+:param ht: hash table					\n\
+:type ht: hash table					\n\
+:param key: non-#n value				\n\
+:type key: any non-#n					\n\
+							\n\
+:return: #unspec					\n\
+")
 {
     IDIO_ASSERT (ht);
     IDIO_ASSERT (key);
-    IDIO_VERIFY_PARAM_TYPE (hash, ht);
+
+    IDIO_USER_TYPE_ASSERT (hash, ht);
 
     idio_hash_delete (ht, key);
 
     return idio_S_unspec;
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("hash-exists?", hash_existsp, (IDIO ht, IDIO key))
+IDIO_DEFINE_PRIMITIVE2_DS ("hash-exists?", hash_existsp, (IDIO ht, IDIO key), "ht key", "\
+assert whether index of ``key` in hash table ``ht`` has	\n\
+a value							\n\
+							\n\
+:param ht: hash table					\n\
+:type ht: hash table					\n\
+:param key: non-#n value				\n\
+:type key: any non-#n					\n\
+							\n\
+:return: #t or #f					\n\
+")
 {
     IDIO_ASSERT (ht);
     IDIO_ASSERT (key);
-    IDIO_VERIFY_PARAM_TYPE (hash, ht);
+
+    IDIO_USER_TYPE_ASSERT (hash, ht);
 
     IDIO r = idio_S_false;
 
@@ -1952,8 +1992,9 @@ key to the returned value					\n\
     IDIO_ASSERT (key);
     IDIO_ASSERT (func);
     IDIO_ASSERT (args);
-    IDIO_VERIFY_PARAM_TYPE (hash, ht);
-    IDIO_VERIFY_PARAM_TYPE (list, args);
+
+    IDIO_USER_TYPE_ASSERT (hash, ht);
+    IDIO_USER_TYPE_ASSERT (list, args);
 
     IDIO_ASSERT_NOT_CONST (hash, ht);
 
@@ -1966,18 +2007,38 @@ key to the returned value					\n\
     return idio_S_unspec;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("hash-keys", hash_keys, (IDIO ht))
+IDIO_DEFINE_PRIMITIVE1_DS ("hash-keys", hash_keys, (IDIO ht), "ht", "\
+return a list of the keys of the hash table ``ht``	\n\
+							\n\
+no order can be presumed				\n\
+							\n\
+:param ht: hash table					\n\
+:type ht: hash table					\n\
+							\n\
+:return: #unspec					\n\
+")
 {
     IDIO_ASSERT (ht);
-    IDIO_VERIFY_PARAM_TYPE (hash, ht);
+
+    IDIO_USER_TYPE_ASSERT (hash, ht);
 
     return idio_hash_keys_to_list (ht);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("hash-values", hash_values, (IDIO ht))
+IDIO_DEFINE_PRIMITIVE1_DS ("hash-values", hash_values, (IDIO ht), "ht", "\
+return a list of the values of the hash table ``ht``	\n\
+							\n\
+no order can be presumed				\n\
+							\n\
+:param ht: hash table					\n\
+:type ht: hash table					\n\
+							\n\
+:return: #unspec					\n\
+")
 {
     IDIO_ASSERT (ht);
-    IDIO_VERIFY_PARAM_TYPE (hash, ht);
+
+    IDIO_USER_TYPE_ASSERT (hash, ht);
 
     return idio_hash_values_to_list (ht);
 }
@@ -1995,7 +2056,8 @@ call ``func`` for each ``key` in hash table ``ht``		\n\
 {
     IDIO_ASSERT (ht);
     IDIO_ASSERT (func);
-    IDIO_VERIFY_PARAM_TYPE (hash, ht);
+
+    IDIO_USER_TYPE_ASSERT (hash, ht);
 
     /*
      * Careful of the old chestnut, the invocation of the function
@@ -2022,12 +2084,29 @@ call ``func`` for each ``key` in hash table ``ht``		\n\
     return idio_S_unspec;
 }
 
-IDIO_DEFINE_PRIMITIVE3 ("hash-fold", hash_fold, (IDIO ht, IDIO func, IDIO val))
+IDIO_DEFINE_PRIMITIVE3_DS ("hash-fold", hash_fold, (IDIO ht, IDIO func, IDIO val), "ht func val", "\
+call ``func`` for each ``key` in hash table ``ht`` with arguments:	\n\
+``key``, the value indexed by ``key`` and ``val``		\n\
+								\n\
+``val`` is updated to the value returned by ``func``		\n\
+								\n\
+The final value of ``val`` is returned				\n\
+								\n\
+:param ht: hash table						\n\
+:type ht: hash table						\n\
+:param func: func to be called with each key, value, val tuple	\n\
+:type func: 3-ary function					\n\
+:param val: initial value for ``val``				\n\
+:type func: value						\n\
+								\n\
+:return: final value of ``val``					\n\
+")
 {
     IDIO_ASSERT (ht);
     IDIO_ASSERT (func);
     IDIO_ASSERT (val);
-    IDIO_VERIFY_PARAM_TYPE (hash, ht);
+
+    IDIO_USER_TYPE_ASSERT (hash, ht);
 
     /*
      * Careful of the old chestnut, the invocation of the function
@@ -2065,7 +2144,8 @@ copy hash table `orig`					\n\
 ")
 {
     IDIO_ASSERT (ht);
-    IDIO_VERIFY_PARAM_TYPE (hash, ht);
+
+    IDIO_USER_TYPE_ASSERT (hash, ht);
 
     int depth = IDIO_COPY_DEEP;
 
@@ -2092,12 +2172,25 @@ copy hash table `orig`					\n\
     return idio_copy_hash (ht, depth);
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("merge-hash!", merge_hash, (IDIO ht1, IDIO ht2))
+IDIO_DEFINE_PRIMITIVE2_DS ("merge-hash!", merge_hash, (IDIO ht1, IDIO ht2), "ht1 ht2", "\
+merge the key/value pairs in hash table ``ht2`` into hash	\n\
+table ``ht1``							\n\
+								\n\
+duplicate keys in ``ht2`` will overwrite keys in `ht1``		\n\
+								\n\
+:param ht1: hash table						\n\
+:type ht1: hash table						\n\
+:param ht2: hash table						\n\
+:type ht2: hash table						\n\
+								\n\
+:return: ``ht1``						\n\
+")
 {
     IDIO_ASSERT (ht1);
     IDIO_ASSERT (ht2);
-    IDIO_VERIFY_PARAM_TYPE (hash, ht1);
-    IDIO_VERIFY_PARAM_TYPE (hash, ht2);
+
+    IDIO_USER_TYPE_ASSERT (hash, ht1);
+    IDIO_USER_TYPE_ASSERT (hash, ht2);
 
     return idio_merge_hash (ht1, ht2);
 }

@@ -3732,7 +3732,7 @@ read a number from ``src``				\n\
 
     IDIO lo = idio_read_lexobj_from_handle (handle);
 
-    IDIO_VERIFY_PARAM_TYPE (list, args);
+    IDIO_USER_TYPE_ASSERT (list, args);
 
     unsigned int radix = 10;
 

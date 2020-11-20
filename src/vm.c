@@ -2099,10 +2099,20 @@ void idio_raise_condition (IDIO continuablep, IDIO condition)
     idio_vm_raise_condition (continuablep, condition, 0);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("raise", raise, (IDIO c))
+IDIO_DEFINE_PRIMITIVE1_DS ("raise", raise, (IDIO c), "c", "\
+raise the condition ``c``				\n\
+							\n\
+!! MAY RETURN !!					\n\
+							\n\
+:param c: condition to raise				\n\
+:type fmt: condition					\n\
+							\n\
+:return: #unspec					\n\
+")
 {
     IDIO_ASSERT (c);
-    IDIO_VERIFY_PARAM_TYPE (condition, c);
+
+    IDIO_USER_TYPE_ASSERT (condition, c);
 
     idio_raise_condition (idio_S_true, c);
 
@@ -2114,8 +2124,8 @@ IDIO idio_apply (IDIO fn, IDIO args)
     IDIO_ASSERT (fn);
     IDIO_ASSERT (args);
 
-    /* idio_debug ("apply: %s", fn);    */
-    /* idio_debug (" %s\n", args);    */
+    /* idio_debug ("apply: %s", fn); */
+    /* idio_debug (" %s\n", args); */
 
     size_t nargs = idio_list_length (args);
     size_t size = nargs;
@@ -2138,7 +2148,13 @@ IDIO idio_apply (IDIO fn, IDIO args)
     }
     if (idio_S_nil != larg) {
 	larg = IDIO_PAIR_H (larg);
-	size = (nargs - 1) + idio_list_length (larg);
+	if (idio_S_nil == larg ||
+	    idio_isa_pair (larg)) {
+	    size = (nargs - 1) + idio_list_length (larg);
+	} else {
+	    nargs += 1;
+	    larg = idio_S_nil;
+	}
     }
 
     IDIO vs = idio_frame_allocate (size + 1);
@@ -2164,21 +2180,27 @@ IDIO idio_apply (IDIO fn, IDIO args)
     return IDIO_THREAD_VAL (thr);
 }
 
-IDIO_DEFINE_PRIMITIVE1V ("apply", apply, (IDIO fn, IDIO args))
+IDIO_DEFINE_PRIMITIVE1V_DS ("apply", apply, (IDIO fn, IDIO args), "fn [args]", "\
+call ``fn`` with ``args``		\n\
+					\n\
+The last element of ``args`` is special.	\n\
+If it is a list then the elements of that list	\n\
+are appended to the arguments to `fn`	\n\
+					\n\
+apply \\+ 1 2 3				\n\
+apply \\+ 1 2 3 #n			\n\
+apply \\+ 1 2 3 '(4 5)			\n\
+					\n\
+:param fn: function to call		\n\
+:type fn: function			\n\
+:param args: arguments to `fn`		\n\
+:type args: parameters plus list	\n\
+")
 {
     IDIO_ASSERT (fn);
     IDIO_ASSERT (args);
 
     return idio_apply (fn, args);
-}
-
-IDIO_DEFINE_PRIMITIVE0 ("%%make-continuation", make_continuation, ())
-{
-    IDIO thr = idio_thread_current_thread ();
-
-    IDIO k = idio_continuation (thr);
-
-    return k;
 }
 
 void idio_vm_restore_continuation_data (IDIO k, IDIO val)
@@ -2269,31 +2291,18 @@ void idio_vm_restore_exit (IDIO k, IDIO val)
     }
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("%%restore-continuation", restore_continuation, (IDIO k, IDIO val))
-{
-    IDIO_ASSERT (k);
-    IDIO_ASSERT (val);
-    IDIO_TYPE_ASSERT (continuation, k);
-
-    idio_vm_restore_continuation (k, val);
-
-    /* not reached */
-    IDIO_C_ASSERT (0);
-
-    return idio_S_notreached;
-}
-
 IDIO_DEFINE_PRIMITIVE1_DS ("%%call/cc", call_cc, (IDIO proc), "proc", "\
 call ``proc`` with the current continuation			\n\
 								\n\
 :param proc:							\n\
-:type proc: a procedure of 1 argument				\n\
+:type proc: a closure of 1 argument				\n\
 								\n\
 This is the ``call/cc`` primitive.				\n\
 ")
 {
     IDIO_ASSERT (proc);
-    IDIO_TYPE_ASSERT (closure, proc);
+
+    IDIO_USER_TYPE_ASSERT (closure, proc);
 
     IDIO thr = idio_thread_current_thread ();
 
@@ -2402,21 +2411,37 @@ The function does not return.					\n\
     return idio_S_notreached;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("%%vm-trace", vm_trace, (IDIO trace))
+IDIO_DEFINE_PRIMITIVE1_DS ("%%vm-trace", vm_trace, (IDIO level), "level", "\
+set VM tracing to ``level``				\n\
+							\n\
+:param level: new VM tracing level			\n\
+:type level: fixnum					\n\
+							\n\
+:return: #unspec					\n\
+")
 {
-    IDIO_ASSERT (trace);
-    IDIO_VERIFY_PARAM_TYPE (fixnum, trace);
+    IDIO_ASSERT (level);
 
-    idio_vm_tracing = IDIO_FIXNUM_VAL (trace);
+    IDIO_USER_TYPE_ASSERT (fixnum, level);
+
+    idio_vm_tracing = IDIO_FIXNUM_VAL (level);
 
     return idio_S_unspec;
 }
 
 #ifdef IDIO_VM_DIS
-IDIO_DEFINE_PRIMITIVE1 ("%%vm-dis", vm_dis, (IDIO dis))
+IDIO_DEFINE_PRIMITIVE1_DS ("%%vm-dis", vm_dis, (IDIO dis), "dis", "\
+set VM live disassembly to to ``dis``			\n\
+							\n\
+:param dis: new VM live disassembly setting		\n\
+:type dis: fixnum					\n\
+							\n\
+:return: #unspec					\n\
+")
 {
     IDIO_ASSERT (dis);
-    IDIO_VERIFY_PARAM_TYPE (fixnum, dis);
+
+    IDIO_USER_TYPE_ASSERT (fixnum, dis);
 
     idio_vm_dis = IDIO_FIXNUM_VAL (dis);
 
@@ -6210,8 +6235,8 @@ run code at ``PC`` in thread ``thr``		\n\
     IDIO_ASSERT (thr);
     IDIO_ASSERT (PC);
 
-    IDIO_TYPE_ASSERT (thread, thr);
-    IDIO_TYPE_ASSERT (fixnum, PC);
+    IDIO_USER_TYPE_ASSERT (thread, thr);
+    IDIO_USER_TYPE_ASSERT (fixnum, PC);
 
     /*
      * We've been called from Idio-land to start running some code --
@@ -6611,14 +6636,18 @@ void idio_vm_thread_state ()
     }
 }
 
-IDIO_DEFINE_PRIMITIVE0 ("idio-thread-state", idio_thread_state, ())
+IDIO_DEFINE_PRIMITIVE0_DS ("idio-thread-state", idio_thread_state, (), "", "\
+Display a dump of the current thread's state	\n\
+						\n\
+:return: #unspec				\n\
+")
 {
     idio_vm_thread_state ();
 
     return idio_S_unspec;
 }
 
-IDIO_DEFINE_PRIMITIVE0 ("idio-find-frame", idio_find_frame, ())
+IDIO_DEFINE_PRIMITIVE0_DS ("idio-find-frame", idio_find_frame, (), "", "XXX")
 {
     IDIO thr = idio_thread_current_thread ();
     IDIO frame = IDIO_THREAD_FRAME (thr);
@@ -6629,7 +6658,7 @@ IDIO_DEFINE_PRIMITIVE0 ("idio-find-frame", idio_find_frame, ())
     return idio_S_unspec;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("idio-find-object", idio_find_object, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1_DS ("idio-find-object", idio_find_object, (IDIO o), "", "XXX")
 {
     IDIO_ASSERT (o);
 
@@ -6639,7 +6668,14 @@ IDIO_DEFINE_PRIMITIVE1 ("idio-find-object", idio_find_object, (IDIO o))
     return idio_S_unspec;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("exit", exit, (IDIO istatus))
+IDIO_DEFINE_PRIMITIVE1_DS ("exit", exit, (IDIO istatus), "status", "\
+attempt to exit with status ``status``			\n\
+							\n\
+:param status: exit status				\n\
+:type status: fixnum or C-int				\n\
+							\n\
+Does not return						\n\
+")
 {
     IDIO_ASSERT (istatus);
 
@@ -6681,7 +6717,14 @@ time_t idio_vm_elapsed (void)
     return (time ((time_t *) NULL) - idio_vm_t0);
 }
 
-IDIO_DEFINE_PRIMITIVE0 ("SECONDS/get", SECONDS_get, (void))
+IDIO_DEFINE_PRIMITIVE0_DS ("SECONDS/get", SECONDS_get, (void), "", "\
+Return the VM's elapsed running time in seconds	\n\
+						\n\
+Normally accessed as the variable SECONDS	\n\
+						\n\
+:return: elapsed VM running time		\n\
+:rtype: integer					\n\
+")
 {
     return idio_integer (idio_vm_elapsed ());
 }
@@ -6701,8 +6744,8 @@ Run ``func [args]`` in thread ``thr``.				\n\
     IDIO_ASSERT (func);
     IDIO_ASSERT (args);
 
-    IDIO_TYPE_ASSERT (thread, thr);
-    IDIO_TYPE_ASSERT (procedure, func);
+    IDIO_USER_TYPE_ASSERT (thread, thr);
+    IDIO_USER_TYPE_ASSERT (procedure, func);
 
     IDIO cthr = idio_thread_current_thread ();
 
@@ -7161,8 +7204,6 @@ void idio_vm_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (raise);
     IDIO_ADD_PRIMITIVE (apply);
-    IDIO_ADD_PRIMITIVE (make_continuation);
-    IDIO_ADD_PRIMITIVE (restore_continuation);
     IDIO_ADD_PRIMITIVE (call_cc);
     IDIO_ADD_PRIMITIVE (vm_continuations);
     IDIO_ADD_PRIMITIVE (vm_apply_continuation);

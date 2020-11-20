@@ -3136,20 +3136,33 @@ int idio_realp (IDIO n)
     return 0;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("bignum?", bignump, (IDIO n))
+IDIO_DEFINE_PRIMITIVE1_DS ("bignum?", bignump, (IDIO o), "o", "\
+test if `o` is a bignum				\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is a bignum, #f otherwise	\n\
+")
 {
-    IDIO_ASSERT (n);
+    IDIO_ASSERT (o);
 
     IDIO r = idio_S_false;
 
-    if (idio_isa_bignum (n)) {
+    if (idio_isa_bignum (o)) {
 	r = idio_S_true;
     }
 
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("real?", realp, (IDIO n))
+IDIO_DEFINE_PRIMITIVE1_DS ("real?", realp, (IDIO n), "n", "\
+test if `n` is a real				\n\
+						\n\
+:param n: number to test			\n\
+:type n: bignum					\n\
+						\n\
+:return: #t if `n` is a real, #f otherwise	\n\
+")
 {
     IDIO_ASSERT (n);
 
@@ -3166,56 +3179,77 @@ IDIO_DEFINE_PRIMITIVE1 ("real?", realp, (IDIO n))
     if (idio_isa_fixnum (n)) {					\
 	n = idio_bignum_integer_intmax_t (IDIO_FIXNUM_VAL (n));	\
     } else {							\
-	IDIO_VERIFY_PARAM_TYPE (bignum, n);			\
+	IDIO_USER_TYPE_ASSERT (bignum, n);			\
     }
 
-IDIO_DEFINE_PRIMITIVE1 ("exact?", exactp, (IDIO n))
+IDIO_DEFINE_PRIMITIVE1_DS ("exact?", exactp, (IDIO n), "n", "\
+test if `n` is exact				\n\
+						\n\
+:param n: number to test			\n\
+:type n: bignum	or fixnum			\n\
+						\n\
+:return: #t if `n` is exact, #f otherwise	\n\
+")
 {
     IDIO_ASSERT (n);
-
-    IDIO_BIGNUM_FIXNUM_TYPE (n);
 
     IDIO r = idio_S_false;
 
     if (idio_isa_fixnum (n)) {
 	r = idio_S_true;
-    } else if (IDIO_BIGNUM_INTEGER_P (n)) {
-	r = idio_S_true;
-    } else if (! IDIO_BIGNUM_REAL_INEXACT_P (n)) {
-	r = idio_S_true;
-    }
+    } else {
+	IDIO_USER_TYPE_ASSERT (bignum, n);
 
-    return r;
-}
-
-IDIO_DEFINE_PRIMITIVE1 ("inexact?", inexactp, (IDIO n))
-{
-    IDIO_ASSERT (n);
-
-    IDIO_BIGNUM_FIXNUM_TYPE (n);
-
-    IDIO r = idio_S_false;
-
-    if (! idio_isa_fixnum (n)) {
-	if (! IDIO_BIGNUM_INTEGER_P (n)) {
-	    if (IDIO_BIGNUM_REAL_INEXACT_P (n)) {
-		r = idio_S_true;
-	    }
+	if (IDIO_BIGNUM_INTEGER_P (n)) {
+	    r = idio_S_true;
+	} else if (! IDIO_BIGNUM_REAL_INEXACT_P (n)) {
+	    r = idio_S_true;
 	}
     }
 
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("exact->inexact", exact2inexact, (IDIO n))
+IDIO_DEFINE_PRIMITIVE1_DS ("inexact?", inexactp, (IDIO n), "n", "\
+test if `n` is inexact				\n\
+						\n\
+:param n: number to test			\n\
+:type n: bignum	or fixnum			\n\
+						\n\
+:return: #t if `n` is inexact, #f otherwise	\n\
+")
+{
+    IDIO_ASSERT (n);
+
+    if (idio_isa_fixnum (n)) {
+	return idio_S_false;
+    }
+
+    IDIO_USER_TYPE_ASSERT (bignum, n);
+
+    IDIO r = idio_S_false;
+
+    if (! IDIO_BIGNUM_INTEGER_P (n)) {
+	if (IDIO_BIGNUM_REAL_INEXACT_P (n)) {
+	    r = idio_S_true;
+	}
+    }
+
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("exact->inexact", exact2inexact, (IDIO n), "n", "\
+convert `n` to inexact				\n\
+						\n\
+:param n: number to convert			\n\
+:type n: bignum	or fixnum			\n\
+						\n\
+:return: inexact value of `n`			\n\
+")
 {
     IDIO_ASSERT (n);
 
     IDIO_BIGNUM_FIXNUM_TYPE (n);
-
-    if (idio_isa_fixnum (n)) {
-	n = idio_bignum_integer_intmax_t (IDIO_FIXNUM_VAL (n));
-    }
 
     IDIO r = idio_S_unspec;
 
@@ -3232,22 +3266,31 @@ IDIO_DEFINE_PRIMITIVE1 ("exact->inexact", exact2inexact, (IDIO n))
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("inexact->exact", inexact2exact, (IDIO n))
+IDIO_DEFINE_PRIMITIVE1_DS ("inexact->exact", inexact2exact, (IDIO n), "n", "\
+convert `n` to exact				\n\
+						\n\
+:param n: number to convert			\n\
+:type n: bignum	or fixnum			\n\
+						\n\
+:return: exact value of `n`			\n\
+")
 {
     IDIO_ASSERT (n);
-
-    IDIO_BIGNUM_FIXNUM_TYPE (n);
 
     IDIO r = idio_S_unspec;
 
     if (idio_isa_fixnum (n)) {
-	r = n;
-    } else if (IDIO_BIGNUM_INTEGER_P (n)) {
-	r = n;
+	return n;
     } else {
-        r = idio_bignum_real_to_integer (n);
-	if (idio_S_nil == r) {
-	    r = idio_bignum_real_to_exact (n);
+	IDIO_USER_TYPE_ASSERT (bignum, n);
+
+	if (IDIO_BIGNUM_INTEGER_P (n)) {
+	    r = n;
+	} else {
+	    r = idio_bignum_real_to_integer (n);
+	    if (idio_S_nil == r) {
+		r = idio_bignum_real_to_exact (n);
+	    }
 	}
     }
 
@@ -3259,15 +3302,22 @@ IDIO_DEFINE_PRIMITIVE1 ("inexact->exact", inexact2exact, (IDIO n))
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("mantissa", mantissa, (IDIO n))
+IDIO_DEFINE_PRIMITIVE1_DS ("mantissa", mantissa, (IDIO n), "n", "\
+return the mantissa of `n`			\n\
+						\n\
+:param n: number to find mantissa of		\n\
+:type n: bignum	or fixnum			\n\
+						\n\
+:return: mantissa of `n`			\n\
+")
 {
     IDIO_ASSERT (n);
-
-    IDIO_BIGNUM_FIXNUM_TYPE (n);
 
     if (idio_isa_fixnum (n)) {
 	return n;
     }
+
+    IDIO_USER_TYPE_ASSERT (bignum, n);
 
     IDIO r = idio_S_unspec;
 
@@ -3289,11 +3339,18 @@ IDIO_DEFINE_PRIMITIVE1 ("mantissa", mantissa, (IDIO n))
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("exponent", exponent, (IDIO n))
+IDIO_DEFINE_PRIMITIVE1_DS ("exponent", exponent, (IDIO n), "n", "\
+return the exponent of `n`			\n\
+						\n\
+:param n: number to find exponent of		\n\
+:type n: bignum	or fixnum			\n\
+						\n\
+:return: exponent of `n`			\n\
+")
 {
     IDIO_ASSERT (n);
 
-    IDIO_BIGNUM_FIXNUM_TYPE (n);
+    IDIO_USER_TYPE_ASSERT (bignum, n);
 
     IDIO r = idio_S_unspec;
 
@@ -3307,11 +3364,18 @@ IDIO_DEFINE_PRIMITIVE1 ("exponent", exponent, (IDIO n))
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("bignum-dump", bignum_dump, (IDIO n))
+IDIO_DEFINE_PRIMITIVE1_DS ("%bignum-dump", bignum_dump, (IDIO n), "n", "\
+dump the bignum structure of `n`	\n\
+					\n\
+:param n: number to dump		\n\
+:type n: bignum				\n\
+					\n\
+:return: #unspec			\n\
+")
 {
     IDIO_ASSERT (n);
 
-    IDIO_TYPE_ASSERT (bignum, n);
+    IDIO_USER_TYPE_ASSERT (bignum, n);
 
     idio_bignum_dump (n);
 

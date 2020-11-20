@@ -130,6 +130,8 @@ extern FILE *idio_vm_perf_FILE;
 	}								\
     }
 
+#define IDIO_USER_TYPE_ASSERT(t,x) IDIO_TYPE_ASSERT(t,x)
+
 #define IDIO_ASSERT_NOT_CONST(t,x) {					\
 	if (IDIO_FLAGS (x) & IDIO_FLAG_CONST) {				\
 	    idio_error_const_param_C (#t, x, __FILE__, __func__, __LINE__); \
@@ -160,22 +162,25 @@ extern FILE *idio_vm_perf_FILE;
 
 #else
 
-#define IDIO_C_ASSERT(x)	((void) 0)
-#define IDIO_TYPE_ASSERT(t,x)	{					\
+#define IDIO_C_ASSERT(x)
+#define IDIO_TYPE_ASSERT(t,x)
+
+#define IDIO_USER_TYPE_ASSERT(t,x)	{				\
 	if (! idio_isa_ ## t (x)) {					\
 	    idio_error_param_type_C (#t, x, __FILE__, __func__, __LINE__); \
 	}								\
     }
+
 #define IDIO_ASSERT_NOT_CONST(t,x) {					\
 	if (IDIO_FLAGS (x) & IDIO_FLAG_CONST) {				\
 	    idio_error_const_param_C (#t, x, __FILE__, __func__, __LINE__); \
 	}								\
     }
-#define IDIO_ASSERT(x)		((void) 0)
-#define IDIO_ASSERT_FREE(x)	((void) 0)
-#define IDIO_ASSERT_NOT_FREED(x) ((void) 0)
-#define IDIO_EXIT(x)		{exit(x);}
-#define IDIO_C_EXIT(x)		{exit(x);}
+#define IDIO_ASSERT(x)
+#define IDIO_ASSERT_FREE(x)
+#define IDIO_ASSERT_NOT_FREED(x)
+#define IDIO_EXIT(x)			{exit(x);}
+#define IDIO_C_EXIT(x)			{exit(x);}
 #define IDIO__LINE__			__LINE__
 #define IDIO_C_LOCATION(s)		(idio_string_C (s))
 #define IDIO_C_FUNC_LOCATION()		IDIO_C_LOCATION(__func__)
@@ -371,13 +376,6 @@ extern FILE *idio_vm_perf_FILE;
     IDIO_DEFINE_POSTFIX_OPERATOR_DESC(iname,cname,params,2,1)
 
 #define IDIO_ADD_POSTFIX_OPERATOR(cname,pri)	  idio_add_postfix_operator_primitive (&idio_postfix_operator_data_ ## cname, pri);
-
-#define IDIO_VERIFY_PARAM_TYPE(type,param)				\
-    {									\
-	if (! idio_isa_ ## type (param)) {				\
-	    idio_error_param_type_C (#type, param, __FILE__, __func__, __LINE__); \
-	}								\
-    }
 
 #define IDIO_STREQP(s,cs)	(strlen (s) == strlen (cs) && strncmp (s, cs, strlen (cs)) == 0)
 

@@ -257,16 +257,16 @@ define-template (import & module*) {
 ;; %module-export
 define (%module-export exporter symbols) {
   loop :+ function (syms result) {
-    if (null? syms) {
-      %set-module-exports! exporter result
-    } {
-      sym := ph syms
-      if (symbol? sym) {
-	loop (pt syms) (if (memq sym result) result (pair sym result))
-      } {
-	error 'export "not a symbol" sym
-      }
-    }
+	    if (null? syms) {
+	      %set-module-exports! exporter result
+	    } {
+	      sym := ph syms
+	      if (symbol? sym) {
+		loop (pt syms) (if (memq sym result) result (pair sym result))
+	      } {
+		error 'export "not a symbol" sym
+	      }
+	    }
   }
 
   loop symbols (module-exports exporter)

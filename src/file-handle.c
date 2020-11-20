@@ -313,12 +313,27 @@ static IDIO idio_open_file_handle (IDIO filename, char *pathname, FILE *filep, i
     return fh;
 }
 
-IDIO_DEFINE_PRIMITIVE1V ("open-file-from-fd", open_file_handle_from_fd, (IDIO ifd, IDIO args))
+IDIO_DEFINE_PRIMITIVE1V_DS ("open-file-from-fd", open_file_handle_from_fd, (IDIO ifd, IDIO args), "fd [name [mode]]", "\
+construct an input file handle from `fd` using the optional	\n\
+`name` instead of the default `/dev/fd/{fd}` and	\n\
+the optional mode `mode` instead of ``re``		\n\
+							\n\
+:param fd: file descriptor				\n\
+:type fd: C-int						\n\
+:param name: (optional) file name for display		\n\
+:type fd: string					\n\
+:param name: (optional) file mode for opening		\n\
+:type fd: string					\n\
+							\n\
+:return: file handle					\n\
+:rtype: handle						\n\
+")
 {
     IDIO_ASSERT (ifd);
     IDIO_ASSERT (args);
-    IDIO_VERIFY_PARAM_TYPE (C_int, ifd);
-    IDIO_VERIFY_PARAM_TYPE (list, args);
+
+    IDIO_USER_TYPE_ASSERT (C_int, ifd);
+    IDIO_USER_TYPE_ASSERT (list, args);
 
     int fd = IDIO_C_TYPE_INT (ifd);
 
@@ -408,12 +423,27 @@ IDIO_DEFINE_PRIMITIVE1V ("open-file-from-fd", open_file_handle_from_fd, (IDIO if
     return idio_open_file_handle (idio_string_C (name), name, filep, mflag, IDIO_FILE_HANDLE_FLAG_NONE);
 }
 
-IDIO_DEFINE_PRIMITIVE1V ("open-input-file-from-fd", open_input_file_handle_from_fd, (IDIO ifd, IDIO args))
+IDIO_DEFINE_PRIMITIVE1V_DS ("open-input-file-from-fd", open_input_file_handle_from_fd, (IDIO ifd, IDIO args), "fd [name [mode]]", "\
+construct an input file handle from `fd` using the optional	\n\
+`name` instead of the default `/dev/fd/{fd}` and	\n\
+the optional mode `mode` instead of ``re``		\n\
+							\n\
+:param fd: file descriptor				\n\
+:type fd: C-int						\n\
+:param name: (optional) file name for display		\n\
+:type fd: string					\n\
+:param name: (optional) file mode for opening		\n\
+:type fd: string					\n\
+							\n\
+:return: file handle					\n\
+:rtype: handle						\n\
+")
 {
     IDIO_ASSERT (ifd);
     IDIO_ASSERT (args);
-    IDIO_VERIFY_PARAM_TYPE (C_int, ifd);
-    IDIO_VERIFY_PARAM_TYPE (list, args);
+
+    IDIO_USER_TYPE_ASSERT (C_int, ifd);
+    IDIO_USER_TYPE_ASSERT (list, args);
 
     int fd = IDIO_C_TYPE_INT (ifd);
 
@@ -502,12 +532,27 @@ IDIO_DEFINE_PRIMITIVE1V ("open-input-file-from-fd", open_input_file_handle_from_
     return idio_open_file_handle (idio_string_C (name), name, filep, mflag, IDIO_FILE_HANDLE_FLAG_NONE);
 }
 
-IDIO_DEFINE_PRIMITIVE1V ("open-output-file-from-fd", open_output_file_handle_from_fd, (IDIO ifd, IDIO args))
+IDIO_DEFINE_PRIMITIVE1V_DS ("open-output-file-from-fd", open_output_file_handle_from_fd, (IDIO ifd, IDIO args), "fd [name [mode]]", "\
+construct an output file handle from `fd` using the optional	\n\
+`name` instead of the default `/dev/fd/{fd}` and	\n\
+the optional mode `mode` instead of ``re``		\n\
+							\n\
+:param fd: file descriptor				\n\
+:type fd: C-int						\n\
+:param name: (optional) file name for display		\n\
+:type fd: string					\n\
+:param name: (optional) file mode for opening		\n\
+:type fd: string					\n\
+							\n\
+:return: file handle					\n\
+:rtype: handle						\n\
+")
 {
     IDIO_ASSERT (ifd);
     IDIO_ASSERT (args);
-    IDIO_VERIFY_PARAM_TYPE (C_int, ifd);
-    IDIO_VERIFY_PARAM_TYPE (list, args);
+
+    IDIO_USER_TYPE_ASSERT (C_int, ifd);
+    IDIO_USER_TYPE_ASSERT (list, args);
 
     int fd = IDIO_C_TYPE_INT (ifd);
 
@@ -803,7 +848,17 @@ IDIO idio_open_file_handle_C (IDIO filename, char *pathname, int free_pathname, 
     return idio_open_file_handle (filename, pathname, filep, h_flags, s_flags);
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("open-file", open_file_handle, (IDIO name, IDIO mode))
+IDIO_DEFINE_PRIMITIVE2_DS ("open-file", open_file_handle, (IDIO name, IDIO mode), "name mode", "\
+open input file `name` using mode `mode`		\n\
+							\n\
+:param name: file name					\n\
+:type name: string					\n\
+:param mode: open mode					\n\
+:type mode: string					\n\
+							\n\
+:return: file handle					\n\
+:rtype: handle						\n\
+")
 {
     IDIO_ASSERT (name);
     IDIO_ASSERT (mode);
@@ -865,7 +920,15 @@ IDIO_DEFINE_PRIMITIVE2 ("open-file", open_file_handle, (IDIO name, IDIO mode))
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("open-input-file", open_input_file_handle, (IDIO name))
+IDIO_DEFINE_PRIMITIVE1_DS ("open-input-file", open_input_file_handle, (IDIO name), "name", "\
+open input file `name`					\n\
+							\n\
+:param name: file name					\n\
+:type name: string					\n\
+							\n\
+:return: file handle					\n\
+:rtype: handle						\n\
+")
 {
     IDIO_ASSERT (name);
 
@@ -899,7 +962,15 @@ IDIO_DEFINE_PRIMITIVE1 ("open-input-file", open_input_file_handle, (IDIO name))
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("open-output-file", open_output_file_handle, (IDIO name))
+IDIO_DEFINE_PRIMITIVE1_DS ("open-output-file", open_output_file_handle, (IDIO name), "name", "\
+open output file `name`					\n\
+							\n\
+:param name: file name					\n\
+:type name: string					\n\
+							\n\
+:return: file handle					\n\
+:rtype: handle						\n\
+")
 {
     IDIO_ASSERT (name);
 
@@ -985,7 +1056,13 @@ int idio_isa_file_handle (IDIO o)
     return 0;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("file-handle?", file_handlep, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1_DS ("file-handle?", file_handlep, (IDIO o), "o", "\
+test if `o` is a file handle			\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is a file handle, #f otherwise	\n\
+")
 {
     IDIO_ASSERT (o);
 
@@ -1006,7 +1083,13 @@ int idio_input_file_handlep (IDIO o)
 	    IDIO_INPUTP_HANDLE (o));
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("input-file-handle?", input_file_handlep, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1_DS ("input-file-handle?", input_file_handlep, (IDIO o), "o", "\
+test if `o` is an input file handle		\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is an input file handle, #f otherwise	\n\
+")
 {
     IDIO_ASSERT (o);
 
@@ -1027,7 +1110,13 @@ int idio_output_file_handlep (IDIO o)
 	    IDIO_OUTPUTP_HANDLE (o));
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("output-file-handle?", output_file_handlep, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1_DS ("output-file-handle?", output_file_handlep, (IDIO o), "o", "\
+test if `o` is an output file handle		\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is an output file handle, #f otherwise	\n\
+")
 {
     IDIO_ASSERT (o);
 
@@ -1048,10 +1137,20 @@ int idio_file_handle_fd (IDIO fh)
     return IDIO_FILE_HANDLE_FD (fh);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("file-handle-fd", file_handle_fd, (IDIO fh))
+IDIO_DEFINE_PRIMITIVE1_DS ("file-handle-fd", file_handle_fd, (IDIO fh), "fh", "\
+return the file descriptor associated with	\n\
+file handle `fh`				\n\
+						\n\
+:param fh: file handle to query			\n\
+:type fh: file handle				\n\
+						\n\
+:return: file descriptor			\n\
+:rtype: fixnum					\n\
+")
 {
     IDIO_ASSERT (fh);
-    IDIO_VERIFY_PARAM_TYPE (file_handle, fh);
+
+    IDIO_USER_TYPE_ASSERT (file_handle, fh);
 
     return idio_fixnum (IDIO_FILE_HANDLE_FD (fh));
 }
@@ -1339,13 +1438,27 @@ int idio_flush_file_handle (IDIO fh)
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("file-handle-fflush", file_handle_fflush, (IDIO fh))
+IDIO_DEFINE_PRIMITIVE1_DS ("file-handle-fflush", file_handle_fflush, (IDIO fh), "fh", "\
+call fflush(3) on the C `FILE *` associated with	\n\
+file handle `fh`				\n\
+						\n\
+:param fh: file handle to flush			\n\
+:type fh: file handle				\n\
+						\n\
+:return: 0 or raises ^system-error		\n\
+:rtype: C-int					\n\
+")
 {
     IDIO_ASSERT (fh);
-    IDIO_VERIFY_PARAM_TYPE (file_handle, fh);
+
+    IDIO_USER_TYPE_ASSERT (file_handle, fh);
 
     idio_flush_file_handle (fh);
     int r = fflush (IDIO_FILE_HANDLE_FILEP (fh));
+
+    if (-1 == r) {
+	idio_error_system_errno ("fflush", IDIO_LIST1 (fh), IDIO_C_LOCATION ("file-handle-fflush"));
+    }
 
     return idio_C_int (r);
 }
@@ -1382,11 +1495,20 @@ void idio_print_file_handle (IDIO fh, IDIO o)
     IDIO_GC_FREE (os);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("close-file-handle-on-exec", close_file_handle_on_exec, (IDIO fh))
+IDIO_DEFINE_PRIMITIVE1_DS ("close-file-handle-on-exec", close_file_handle_on_exec, (IDIO fh), "fh", "\
+call fcntl(3) on the C file descriptor associated with		\n\
+file handle `fh` with `F_SETFD` and `FD_CLOEXEC` arguments	\n\
+						\n\
+:param fh: file handle to cloexec		\n\
+:type fh: file handle				\n\
+						\n\
+:return: 0 or raises ^system-error		\n\
+:rtype: C-int					\n\
+")
 {
     IDIO_ASSERT (fh);
 
-    IDIO_VERIFY_PARAM_TYPE (file_handle, fh);
+    IDIO_USER_TYPE_ASSERT (file_handle, fh);
 
     int fd = IDIO_FILE_HANDLE_FD (fh);
 
@@ -1671,10 +1793,20 @@ char *idio_libfile_find (IDIO file)
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("find-lib", find_lib, (IDIO file))
+IDIO_DEFINE_PRIMITIVE1_DS ("find-lib", find_lib, (IDIO file), "filename", "\
+search `IDIOLIB` for `filename` with a set of	\n\
+possible file name extensions			\n\
+						\n\
+:param filename: file to search for		\n\
+:type filename: string				\n\
+						\n\
+:return: the full pathname to `filename`	\n\
+:rtype: string					\n\
+")
 {
     IDIO_ASSERT (file);
-    IDIO_VERIFY_PARAM_TYPE (string, file);
+
+    IDIO_USER_TYPE_ASSERT (string, file);
 
     char *r_C = idio_libfile_find (file);
 
@@ -1859,7 +1991,7 @@ This is the ``load`` primitive.					\n\
 {
     IDIO_ASSERT (filename);
 
-    IDIO_VERIFY_PARAM_TYPE (string, filename);
+    IDIO_USER_TYPE_ASSERT (string, filename);
 
     IDIO thr = idio_thread_current_thread ();
     idio_ai_t pc0 = IDIO_THREAD_PC (thr);
@@ -1880,11 +2012,19 @@ This is the ``load`` primitive.					\n\
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("file-exists?", file_exists_p, (IDIO filename))
+IDIO_DEFINE_PRIMITIVE1_DS ("file-exists?", file_exists_p, (IDIO filename), "filename", "\
+does `filename` pass `access (filename, R_OK)`?	\n\
+						\n\
+:param filename: file to test			\n\
+:type filename: string				\n\
+						\n\
+:return: #t / # f				\n\
+:rtype: boolean					\n\
+")
 {
     IDIO_ASSERT (filename);
 
-    IDIO_VERIFY_PARAM_TYPE (string, filename);
+    IDIO_USER_TYPE_ASSERT (string, filename);
 
     size_t size = 0;
     char *filename_C = idio_string_as_C (filename, &size);
@@ -1908,11 +2048,18 @@ IDIO_DEFINE_PRIMITIVE1 ("file-exists?", file_exists_p, (IDIO filename))
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("delete-file", delete_file, (IDIO filename))
+IDIO_DEFINE_PRIMITIVE1_DS ("delete-file", delete_file, (IDIO filename), "filename", "\
+does `remove (filename)` succeed?		\n\
+						\n\
+:param filename: file to delete			\n\
+:type filename: string				\n\
+						\n\
+:return: #t or raises ^file-handle-error otherwise	\n\
+")
 {
     IDIO_ASSERT (filename);
 
-    IDIO_VERIFY_PARAM_TYPE (string, filename);
+    IDIO_USER_TYPE_ASSERT (string, filename);
 
     size_t size = 0;
     char *filename_C = idio_string_as_C (filename, &size);

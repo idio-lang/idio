@@ -181,7 +181,7 @@ Return the arity of `p`				\n\
 {
     IDIO_ASSERT (p);
 
-    IDIO_TYPE_ASSERT (primitive, p);
+    IDIO_USER_TYPE_ASSERT (primitive, p);
 
     return idio_integer (IDIO_PRIMITIVE_ARITY (p));
 }
@@ -197,7 +197,7 @@ Return the name of `p`				\n\
 {
     IDIO_ASSERT (p);
 
-    IDIO_TYPE_ASSERT (primitive, p);
+    IDIO_USER_TYPE_ASSERT (primitive, p);
 
     return idio_string_C (IDIO_PRIMITIVE_NAME (p));
 }
@@ -213,7 +213,7 @@ Return #t if `p` is varargs			\n\
 {
     IDIO_ASSERT (p);
 
-    IDIO_TYPE_ASSERT (primitive, p);
+    IDIO_USER_TYPE_ASSERT (primitive, p);
 
     IDIO r = idio_S_false;
 

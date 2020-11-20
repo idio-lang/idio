@@ -172,10 +172,13 @@ IDIO idio_evaluate_expander_source (IDIO x, IDIO e)
  * 2. (apply (letrec ((name (function (map ph bindings) body))) (map pht bindings)))
  */
 
-IDIO_DEFINE_PRIMITIVE1 ("let", let, (IDIO e))
+IDIO_DEFINE_PRIMITIVE1_DS ("let", let, (IDIO e), "e", "\
+poor man's let	\n\
+")
 {
     IDIO_ASSERT (e);
-    IDIO_TYPE_ASSERT (list, e);
+
+    IDIO_USER_TYPE_ASSERT (list, e);
 
     /*
      * e should be (let bindings body)
@@ -339,10 +342,13 @@ IDIO_DEFINE_PRIMITIVE1 ("let", let, (IDIO e))
  * (apply (function (map ph bindings) body) (map pt bindings))
  */
 
-IDIO_DEFINE_PRIMITIVE1 ("let*", lets, (IDIO e))
+IDIO_DEFINE_PRIMITIVE1_DS ("let*", lets, (IDIO e), "e", "\
+poor man's let*	\n\
+")
 {
     IDIO_ASSERT (e);
-    IDIO_TYPE_ASSERT (list, e);
+
+    IDIO_USER_TYPE_ASSERT (list, e);
 
     /*
      * e should be (let* bindings body)
@@ -439,7 +445,8 @@ poor man's letrec				\n\
 ")
 {
     IDIO_ASSERT (e);
-    IDIO_TYPE_ASSERT (list, e);
+
+    IDIO_USER_TYPE_ASSERT (list, e);
 
     /*
      * e should be (letrec bindings body)
@@ -600,8 +607,8 @@ IDIO_DEFINE_PRIMITIVE1_DS ("expander?", expanderp, (IDIO o), "o", "\
 is `o` an expander				\n\
 						\n\
 :param o: value to test				\n\
-:return: an extry from the xpanders table if `o`\n\
-is an expander or #f				\n\
+:return: an entry from the expanders table if	\n\
+`o` is an expander or #f			\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -1109,11 +1116,17 @@ IDIO idio_infix_operatorp (IDIO name)
     return idio_common_operatorp (name, idio_infix_operator_list);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("infix-operator?", infix_operatorp, (IDIO x))
+IDIO_DEFINE_PRIMITIVE1_DS ("infix-operator?", infix_operatorp, (IDIO o), "o", "\
+test if `o` is a infix operator		\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is a infix operator, #f otherwise	\n\
+")
 {
-    IDIO_ASSERT (x);
+    IDIO_ASSERT (o);
 
-    return idio_infix_operatorp (x);
+    return idio_infix_operatorp (o);
 }
 
 void idio_install_postfix_operator (IDIO id, IDIO proc, int pri)
@@ -1173,11 +1186,17 @@ IDIO idio_postfix_operatorp (IDIO name)
     return idio_common_operatorp (name, idio_postfix_operator_list);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("postfix-operator?", postfix_operatorp, (IDIO x))
+IDIO_DEFINE_PRIMITIVE1_DS ("postfix-operator?", postfix_operatorp, (IDIO o), "o", "\
+test if `o` is a postfix operator		\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is a postfix operator, #f otherwise	\n\
+")
 {
-    IDIO_ASSERT (x);
+    IDIO_ASSERT (o);
 
-    return idio_postfix_operatorp (x);
+    return idio_postfix_operatorp (o);
 }
 
 IDIO idio_operatorp (IDIO name)
@@ -1196,11 +1215,17 @@ IDIO idio_operatorp (IDIO name)
     return assq;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("operator?", operatorp, (IDIO x))
+IDIO_DEFINE_PRIMITIVE1_DS ("operator?", operatorp, (IDIO o), "o", "\
+test if `o` is a operator		\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is a operator, #f otherwise	\n\
+")
 {
-    IDIO_ASSERT (x);
+    IDIO_ASSERT (o);
 
-    return idio_operatorp (x);
+    return idio_operatorp (o);
 }
 
 IDIO idio_common_operator_expand (IDIO e, int depth, IDIO og)
@@ -1255,10 +1280,11 @@ IDIO idio_infix_operator_expand (IDIO e, int depth)
     return idio_common_operator_expand (e, depth, og);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("infix-operator-expand", infix_operator_expand, (IDIO l))
+IDIO_DEFINE_PRIMITIVE1_DS ("infix-operator-expand", infix_operator_expand, (IDIO l), "l", "XXX")
 {
     IDIO_ASSERT (l);
-    IDIO_TYPE_ASSERT (list, l);
+
+    IDIO_USER_TYPE_ASSERT (list, l);
 
     return idio_infix_operator_expand (l, 0);
 }
@@ -1273,10 +1299,11 @@ IDIO idio_postfix_operator_expand (IDIO e, int depth)
     return idio_common_operator_expand (e, depth, og);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("postfix-operator-expand", postfix_operator_expand, (IDIO l))
+IDIO_DEFINE_PRIMITIVE1_DS ("postfix-operator-expand", postfix_operator_expand, (IDIO l), "l", "XXX")
 {
     IDIO_ASSERT (l);
-    IDIO_TYPE_ASSERT (list, l);
+
+    IDIO_USER_TYPE_ASSERT (list, l);
 
     return idio_postfix_operator_expand (l, 0);
 }
@@ -1293,10 +1320,11 @@ IDIO idio_operator_expand (IDIO e, int depth)
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("operator-expand", operator_expand, (IDIO l))
+IDIO_DEFINE_PRIMITIVE1_DS ("operator-expand", operator_expand, (IDIO l), "l", "XXX")
 {
     IDIO_ASSERT (l);
-    IDIO_TYPE_ASSERT (list, l);
+
+    IDIO_USER_TYPE_ASSERT (list, l);
 
     IDIO r = idio_operator_expand (l, 0);
 

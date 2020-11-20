@@ -634,8 +634,6 @@ output handle						\n\
     IDIO_ASSERT (o);
     IDIO_ASSERT (args);
 
-    IDIO_TYPE_ASSERT (string, o);
-
     IDIO h = idio_handle_or_current (idio_list_head (args), IDIO_HANDLE_FLAG_WRITE);
 
     size_t size = 0;
@@ -675,7 +673,7 @@ implementation is buffered.				\n\
 {
     IDIO_ASSERT (h);
 
-    IDIO_VERIFY_PARAM_TYPE (handle, h);
+    IDIO_USER_TYPE_ASSERT (handle, h);
 
     idio_flush_handle (h);
 
@@ -738,14 +736,14 @@ unless ``whence`` is 'set and position is 0 (zero)	\n\
     IDIO_ASSERT (pos);
     IDIO_ASSERT (args);
 
-    IDIO_VERIFY_PARAM_TYPE (handle, h);
-    IDIO_VERIFY_PARAM_TYPE (integer, pos);
+    IDIO_USER_TYPE_ASSERT (handle, h);
+    IDIO_USER_TYPE_ASSERT (integer, pos);
 
     int whence = -1;
 
     if (idio_S_nil != args) {
 	IDIO w = idio_list_head (args);
-	IDIO_VERIFY_PARAM_TYPE (symbol, w);
+	IDIO_USER_TYPE_ASSERT (symbol, w);
 
 	if (IDIO_STREQP (IDIO_SYMBOL_S (w), "set")) {
 	    whence = SEEK_SET;
@@ -838,7 +836,7 @@ the handle's line number to 1				\n\
 {
     IDIO_ASSERT (h);
 
-    IDIO_VERIFY_PARAM_TYPE (handle, h);
+    IDIO_USER_TYPE_ASSERT (handle, h);
 
     idio_rewind_handle (h);
 
@@ -942,7 +940,7 @@ Set the current input handle to `handle`		\n\
 {
     IDIO_ASSERT (h);
 
-    IDIO_VERIFY_PARAM_TYPE (handle, h);
+    IDIO_USER_TYPE_ASSERT (handle, h);
 
     idio_thread_set_current_input_handle (h);
 
@@ -959,7 +957,7 @@ Set the current output handle to `handle`		\n\
 {
     IDIO_ASSERT (h);
 
-    IDIO_VERIFY_PARAM_TYPE (handle, h);
+    IDIO_USER_TYPE_ASSERT (handle, h);
 
     idio_thread_set_current_output_handle (h);
 
@@ -976,7 +974,7 @@ Set the current error handle to `handle`		\n\
 {
     IDIO_ASSERT (h);
 
-    IDIO_VERIFY_PARAM_TYPE (handle, h);
+    IDIO_USER_TYPE_ASSERT (handle, h);
 
     idio_thread_set_current_error_handle (h);
 
@@ -1294,8 +1292,8 @@ IDIO idio_write_char (IDIO c, IDIO h)
 {
     IDIO_ASSERT (c);
     IDIO_ASSERT (h);
-    IDIO_TYPE_ASSERT (handle, h);
 
+    IDIO_TYPE_ASSERT (handle, h);
     IDIO_TYPE_ASSERT (unicode, c);
 
     idio_putc_handle (h, IDIO_UNICODE_VAL (c));
@@ -1315,7 +1313,7 @@ or the current output handle				\n\
     IDIO_ASSERT (c);
     IDIO_ASSERT (args);
 
-    IDIO_VERIFY_PARAM_TYPE (unicode, c);
+    IDIO_USER_TYPE_ASSERT (unicode, c);
 
     IDIO h = idio_handle_or_current (idio_list_head (args), IDIO_HANDLE_FLAG_WRITE);
 
@@ -1422,8 +1420,8 @@ num	specifies a maximum limit on the output		\n\
     IDIO_ASSERT (fmt);
     IDIO_ASSERT (args);
 
-    IDIO_TYPE_ASSERT (handle, h);
-    IDIO_TYPE_ASSERT (string, fmt);
+    IDIO_USER_TYPE_ASSERT (handle, h);
+    IDIO_USER_TYPE_ASSERT (string, fmt);
 
     if (! (idio_S_nil == args ||
 	   idio_isa_pair (args))) {
@@ -1698,7 +1696,8 @@ in handle ``handle``					\n\
 ")
 {
     IDIO_ASSERT (h);
-    IDIO_TYPE_ASSERT (handle, h);
+
+    IDIO_USER_TYPE_ASSERT (handle, h);
 
     return idio_handle_location (h);
 }
@@ -1818,7 +1817,8 @@ This is the ``load-handle`` primitive.				\n\
 ")
 {
     IDIO_ASSERT (h);
-    IDIO_VERIFY_PARAM_TYPE (handle, h);
+
+    IDIO_USER_TYPE_ASSERT (handle, h);
 
     IDIO thr = idio_thread_current_thread ();
     idio_ai_t pc0 = IDIO_THREAD_PC (thr);

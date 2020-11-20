@@ -89,7 +89,8 @@ raise a ^system-error						\n\
 ")
 {
     IDIO_ASSERT (args);
-    IDIO_VERIFY_PARAM_TYPE (list, args);
+
+    IDIO_USER_TYPE_ASSERT (list, args);
 
     char *name = "n/k";
 
@@ -124,8 +125,9 @@ a wrapper to libc access (2)					\n\
 {
     IDIO_ASSERT (ipathname);
     IDIO_ASSERT (imode);
-    IDIO_VERIFY_PARAM_TYPE (string, ipathname);
-    IDIO_VERIFY_PARAM_TYPE (C_int, imode);
+
+    IDIO_USER_TYPE_ASSERT (string, ipathname);
+    IDIO_USER_TYPE_ASSERT (C_int, imode);
 
     size_t size = 0;
     char *pathname = idio_string_as_C (ipathname, &size);
@@ -162,7 +164,8 @@ a wrapper to libc close (2)					\n\
 ")
 {
     IDIO_ASSERT (ifd);
-    IDIO_VERIFY_PARAM_TYPE (C_int, ifd);
+
+    IDIO_USER_TYPE_ASSERT (C_int, ifd);
 
     int fd = IDIO_C_TYPE_INT (ifd);
 
@@ -535,7 +538,8 @@ a wrapper to libc isatty (3)					\n\
 ")
 {
     IDIO_ASSERT (ifd);
-    IDIO_VERIFY_PARAM_TYPE (C_int, ifd);
+
+    IDIO_USER_TYPE_ASSERT (C_int, ifd);
 
     int fd = IDIO_C_TYPE_INT (ifd);
 
@@ -562,8 +566,9 @@ a wrapper to libc kill (2)					\n\
 {
     IDIO_ASSERT (ipid);
     IDIO_ASSERT (isig);
-    IDIO_VERIFY_PARAM_TYPE (C_int, ipid);
-    IDIO_VERIFY_PARAM_TYPE (C_int, isig);
+
+    IDIO_USER_TYPE_ASSERT (C_int, ipid);
+    IDIO_USER_TYPE_ASSERT (C_int, isig);
 
     pid_t pid = IDIO_C_TYPE_INT (ipid);
     int sig = IDIO_C_TYPE_INT (isig);
@@ -588,7 +593,8 @@ a wrapper to libc mkdtemp (3)					\n\
 ")
 {
     IDIO_ASSERT (itemplate);
-    IDIO_VERIFY_PARAM_TYPE (string, itemplate);
+
+    IDIO_USER_TYPE_ASSERT (string, itemplate);
 
     /*
      * XXX mkdtemp() requires a NUL-terminated C string and it will
@@ -633,7 +639,8 @@ a wrapper to libc mkstemp (3)					\n\
 ")
 {
     IDIO_ASSERT (itemplate);
-    IDIO_VERIFY_PARAM_TYPE (string, itemplate);
+
+    IDIO_USER_TYPE_ASSERT (string, itemplate);
 
     /*
      * XXX mkstemp() requires a NUL-terminated C string and it will
@@ -713,7 +720,8 @@ See ``pipe`` for a constructor ofthe pipe array.		\n\
 ")
 {
     IDIO_ASSERT (ipipefd);
-    IDIO_VERIFY_PARAM_TYPE (C_pointer, ipipefd);
+
+    IDIO_USER_TYPE_ASSERT (C_pointer, ipipefd);
 
     int *pipefd = IDIO_C_TYPE_POINTER_P (ipipefd);
 
@@ -732,7 +740,8 @@ See ``pipe`` for a constructor ofthe pipe array.		\n\
 ")
 {
     IDIO_ASSERT (ipipefd);
-    IDIO_VERIFY_PARAM_TYPE (C_pointer, ipipefd);
+
+    IDIO_USER_TYPE_ASSERT (C_pointer, ipipefd);
 
     int *pipefd = IDIO_C_TYPE_POINTER_P (ipipefd);
 
@@ -752,7 +761,8 @@ a wrapper to libc read (2)					\n\
 ")
 {
     IDIO_ASSERT (ifd);
-    IDIO_VERIFY_PARAM_TYPE (C_int, ifd);
+
+    IDIO_USER_TYPE_ASSERT (C_int, ifd);
 
     int fd = IDIO_C_TYPE_INT (ifd);
 
@@ -799,8 +809,9 @@ a wrapper to libc setpgid (2)					\n\
 {
     IDIO_ASSERT (ipid);
     IDIO_ASSERT (ipgid);
-    IDIO_VERIFY_PARAM_TYPE (C_int, ipid);
-    IDIO_VERIFY_PARAM_TYPE (C_int, ipgid);
+
+    IDIO_USER_TYPE_ASSERT (C_int, ipid);
+    IDIO_USER_TYPE_ASSERT (C_int, ipgid);
 
     pid_t pid = IDIO_C_TYPE_INT (ipid);
     pid_t pgid = IDIO_C_TYPE_INT (ipgid);
@@ -843,8 +854,9 @@ SIG_DFL								\n\
 {
     IDIO_ASSERT (isig);
     IDIO_ASSERT (ifunc);
-    IDIO_VERIFY_PARAM_TYPE (C_int, isig);
-    IDIO_VERIFY_PARAM_TYPE (C_pointer, ifunc);
+
+    IDIO_USER_TYPE_ASSERT (C_int, isig);
+    IDIO_USER_TYPE_ASSERT (C_pointer, ifunc);
 
     int sig = IDIO_C_TYPE_INT (isig);
     void (*func) (int) = IDIO_C_TYPE_POINTER_P (ifunc);
@@ -882,7 +894,8 @@ given signal.							\n\
 ")
 {
     IDIO_ASSERT (isig);
-    IDIO_VERIFY_PARAM_TYPE (C_int, isig);
+
+    IDIO_USER_TYPE_ASSERT (C_int, isig);
 
     int sig = IDIO_C_TYPE_INT (isig);
 
@@ -999,7 +1012,8 @@ a wrapper to libc stat (2)					\n\
 ")
 {
     IDIO_ASSERT (pathname);
-    IDIO_VERIFY_PARAM_TYPE (string, pathname);
+
+    IDIO_USER_TYPE_ASSERT (string, pathname);
 
     return idio_libc_stat (pathname);
 }
@@ -1067,7 +1081,8 @@ a wrapper to libc tcgetattr (3)					\n\
 ")
 {
     IDIO_ASSERT (ifd);
-    IDIO_VERIFY_PARAM_TYPE (C_int, ifd);
+
+    IDIO_USER_TYPE_ASSERT (C_int, ifd);
 
     int fd = IDIO_C_TYPE_INT (ifd);
 
@@ -1092,7 +1107,8 @@ a wrapper to libc tcgetpgrp (3)					\n\
 ")
 {
     IDIO_ASSERT (ifd);
-    IDIO_VERIFY_PARAM_TYPE (C_int, ifd);
+
+    IDIO_USER_TYPE_ASSERT (C_int, ifd);
 
     int fd = IDIO_C_TYPE_INT (ifd);
 
@@ -1128,9 +1144,10 @@ See ``tcgetattr`` for obtaining a struct termios.		\n\
     IDIO_ASSERT (ifd);
     IDIO_ASSERT (ioptions);
     IDIO_ASSERT (itcattrs);
-    IDIO_VERIFY_PARAM_TYPE (C_int, ifd);
-    IDIO_VERIFY_PARAM_TYPE (C_int, ioptions);
-    IDIO_VERIFY_PARAM_TYPE (C_pointer, itcattrs);
+
+    IDIO_USER_TYPE_ASSERT (C_int, ifd);
+    IDIO_USER_TYPE_ASSERT (C_int, ioptions);
+    IDIO_USER_TYPE_ASSERT (C_pointer, itcattrs);
 
     int fd = IDIO_C_TYPE_INT (ifd);
     int options = IDIO_C_TYPE_INT (ioptions);
@@ -1159,8 +1176,9 @@ a wrapper to libc tcsetpgrp (3)					\n\
 {
     IDIO_ASSERT (ifd);
     IDIO_ASSERT (ipgrp);
-    IDIO_VERIFY_PARAM_TYPE (C_int, ifd);
-    IDIO_VERIFY_PARAM_TYPE (C_int, ipgrp);
+
+    IDIO_USER_TYPE_ASSERT (C_int, ifd);
+    IDIO_USER_TYPE_ASSERT (C_int, ipgrp);
 
     int fd = IDIO_C_TYPE_INT (ifd);
     pid_t pgrp = IDIO_C_TYPE_INT (ipgrp);
@@ -1234,7 +1252,8 @@ a wrapper to libc unlink (2)					\n\
 ")
 {
     IDIO_ASSERT (ipathname);
-    IDIO_VERIFY_PARAM_TYPE (string, ipathname);
+
+    IDIO_USER_TYPE_ASSERT (string, ipathname);
 
     size_t size = 0;
     char *pathname = idio_string_as_C (ipathname, &size);
@@ -1284,8 +1303,9 @@ for functions to manipulate ``status``.				\n\
 {
     IDIO_ASSERT (ipid);
     IDIO_ASSERT (ioptions);
-    IDIO_VERIFY_PARAM_TYPE (C_int, ipid);
-    IDIO_VERIFY_PARAM_TYPE (C_int, ioptions);
+
+    IDIO_USER_TYPE_ASSERT (C_int, ipid);
+    IDIO_USER_TYPE_ASSERT (C_int, ioptions);
 
     pid_t pid = IDIO_C_TYPE_INT (ipid);
     int options = IDIO_C_TYPE_INT (ioptions);
@@ -1316,7 +1336,8 @@ a wrapper to libc macro WEXITSTATUS, see waitpid (2)		\n\
 ")
 {
     IDIO_ASSERT (istatus);
-    IDIO_VERIFY_PARAM_TYPE (C_pointer, istatus);
+
+    IDIO_USER_TYPE_ASSERT (C_pointer, istatus);
 
     int *statusp = IDIO_C_TYPE_POINTER_P (istatus);
 
@@ -1334,7 +1355,8 @@ a wrapper to libc macro WIFEXITED, see waitpid (2)		\n\
 ")
 {
     IDIO_ASSERT (istatus);
-    IDIO_VERIFY_PARAM_TYPE (C_pointer, istatus);
+
+    IDIO_USER_TYPE_ASSERT (C_pointer, istatus);
 
     int *statusp = IDIO_C_TYPE_POINTER_P (istatus);
 
@@ -1358,7 +1380,8 @@ a wrapper to libc macro WIFSIGNALLED, see waitpid (2)		\n\
 ")
 {
     IDIO_ASSERT (istatus);
-    IDIO_VERIFY_PARAM_TYPE (C_pointer, istatus);
+
+    IDIO_USER_TYPE_ASSERT (C_pointer, istatus);
 
     int *statusp = IDIO_C_TYPE_POINTER_P (istatus);
 
@@ -1382,7 +1405,8 @@ a wrapper to libc macro WIFSTOPPED, see waitpid (2)		\n\
 ")
 {
     IDIO_ASSERT (istatus);
-    IDIO_VERIFY_PARAM_TYPE (C_pointer, istatus);
+
+    IDIO_USER_TYPE_ASSERT (C_pointer, istatus);
 
     int *statusp = IDIO_C_TYPE_POINTER_P (istatus);
 
@@ -1406,7 +1430,8 @@ a wrapper to libc macro WTERMSIG, see waitpid (2)		\n\
 ")
 {
     IDIO_ASSERT (istatus);
-    IDIO_VERIFY_PARAM_TYPE (C_pointer, istatus);
+
+    IDIO_USER_TYPE_ASSERT (C_pointer, istatus);
 
     int *statusp = IDIO_C_TYPE_POINTER_P (istatus);
 
@@ -1427,8 +1452,9 @@ a wrapper to libc write (2)					\n\
 {
     IDIO_ASSERT (ifd);
     IDIO_ASSERT (istr);
-    IDIO_VERIFY_PARAM_TYPE (C_int, ifd);
-    IDIO_VERIFY_PARAM_TYPE (string, istr);
+
+    IDIO_USER_TYPE_ASSERT (C_int, ifd);
+    IDIO_USER_TYPE_ASSERT (string, istr);
 
     int fd = IDIO_C_TYPE_INT (ifd);
 
@@ -1767,7 +1793,8 @@ See ``signal-name`` for long versions.				\n\
 ")
 {
     IDIO_ASSERT (isignum);
-    IDIO_VERIFY_PARAM_TYPE (C_int, isignum);
+
+    IDIO_USER_TYPE_ASSERT (C_int, isignum);
 
     return idio_string_C (idio_libc_sig_name (IDIO_C_TYPE_INT (isignum)));
 }
@@ -1807,7 +1834,8 @@ See ``sig-name`` for short versions.				\n\
 ")
 {
     IDIO_ASSERT (isignum);
-    IDIO_VERIFY_PARAM_TYPE (C_int, isignum);
+
+    IDIO_USER_TYPE_ASSERT (C_int, isignum);
 
     return idio_string_C (idio_libc_signal_name (IDIO_C_TYPE_INT (isignum)));
 }
@@ -2745,7 +2773,8 @@ return the error name of ``errnum``				\n\
 ")
 {
     IDIO_ASSERT (ierrnum);
-    IDIO_VERIFY_PARAM_TYPE (C_int, ierrnum);
+
+    IDIO_USER_TYPE_ASSERT (C_int, ierrnum);
 
     return idio_string_C (idio_libc_errno_name (IDIO_C_TYPE_INT (ierrnum)));
 }
@@ -2782,7 +2811,8 @@ Identical to ``errno-name``.					\n\
 ")
 {
     IDIO_ASSERT (ierrnum);
-    IDIO_VERIFY_PARAM_TYPE (C_int, ierrnum);
+
+    IDIO_USER_TYPE_ASSERT (C_int, ierrnum);
 
     return idio_string_C (idio_libc_errno_name (IDIO_C_TYPE_INT (ierrnum)));
 }
@@ -2972,7 +3002,8 @@ C macro						\n\
 ")
 {
     IDIO_ASSERT (irlim);
-    IDIO_VERIFY_PARAM_TYPE (C_int, irlim);
+
+    IDIO_USER_TYPE_ASSERT (C_int, irlim);
 
     return idio_string_C (idio_libc_rlimit_name (IDIO_C_TYPE_INT (irlim)));
 }
@@ -3023,7 +3054,8 @@ and ``RLIMIT_NOFILE``.						\n\
 ")
 {
     IDIO_ASSERT (iresource);
-    IDIO_VERIFY_PARAM_TYPE (C_int, iresource);
+
+    IDIO_USER_TYPE_ASSERT (C_int, iresource);
 
     return idio_libc_getrlimit (IDIO_C_TYPE_INT (iresource));
 }
@@ -3054,8 +3086,9 @@ See ``getrlimit`` to obtain a struct-rlimit.			\n\
 {
     IDIO_ASSERT (iresource);
     IDIO_ASSERT (irlim);
-    IDIO_VERIFY_PARAM_TYPE (C_int, iresource);
-    IDIO_VERIFY_PARAM_TYPE (struct_instance, irlim);
+
+    IDIO_USER_TYPE_ASSERT (C_int, iresource);
+    IDIO_USER_TYPE_ASSERT (struct_instance, irlim);
 
     IDIO cur = idio_struct_instance_ref_direct (irlim, IDIO_STRUCT_RLIMIT_RLIM_CUR);
     IDIO max = idio_struct_instance_ref_direct (irlim, IDIO_STRUCT_RLIMIT_RLIM_MAX);
@@ -3177,7 +3210,7 @@ Return a C struct timeval as a string				\n\
 {
     IDIO_ASSERT (tv);
 
-    IDIO_TYPE_ASSERT (C_pointer, tv);
+    IDIO_USER_TYPE_ASSERT (C_pointer, tv);
 
     IDIO osh = idio_open_output_string_handle_C ();
 
@@ -3217,8 +3250,8 @@ tv1 - tv2							\n\
     IDIO_ASSERT (tv1);
     IDIO_ASSERT (tv2);
 
-    IDIO_TYPE_ASSERT (C_pointer, tv1);
-    IDIO_TYPE_ASSERT (C_pointer, tv2);
+    IDIO_USER_TYPE_ASSERT (C_pointer, tv1);
+    IDIO_USER_TYPE_ASSERT (C_pointer, tv2);
 
     struct timeval *tv1p = IDIO_C_TYPE_POINTER_P (tv1);
     struct timeval *tv2p = IDIO_C_TYPE_POINTER_P (tv2);
@@ -3252,8 +3285,8 @@ tv1 + tv2							\n\
     IDIO_ASSERT (tv1);
     IDIO_ASSERT (tv2);
 
-    IDIO_TYPE_ASSERT (C_pointer, tv1);
-    IDIO_TYPE_ASSERT (C_pointer, tv2);
+    IDIO_USER_TYPE_ASSERT (C_pointer, tv1);
+    IDIO_USER_TYPE_ASSERT (C_pointer, tv2);
 
     struct timeval *tv1p = IDIO_C_TYPE_POINTER_P (tv1);
     struct timeval *tv2p = IDIO_C_TYPE_POINTER_P (tv2);
@@ -3285,7 +3318,7 @@ The parameter `who` refers to RUSAGE_SELF or RUSAGE_CHILDREN	\n\
 {
     IDIO_ASSERT (who);
 
-    IDIO_TYPE_ASSERT (C_int, who);
+    IDIO_USER_TYPE_ASSERT (C_int, who);
 
     struct rusage *rup = (struct rusage *) idio_alloc (sizeof (struct rusage));
 
@@ -3311,7 +3344,7 @@ This function returns a copy of the ru_utime field.		\n\
 {
     IDIO_ASSERT (rusage);
 
-    IDIO_TYPE_ASSERT (C_pointer, rusage);
+    IDIO_USER_TYPE_ASSERT (C_pointer, rusage);
 
     struct rusage *rup = IDIO_C_TYPE_POINTER_P (rusage);
 
@@ -3338,7 +3371,7 @@ This function returns a copy of the ru_stime field.		\n\
 {
     IDIO_ASSERT (rusage);
 
-    IDIO_TYPE_ASSERT (C_pointer, rusage);
+    IDIO_USER_TYPE_ASSERT (C_pointer, rusage);
 
     struct rusage *rup = IDIO_C_TYPE_POINTER_P (rusage);
 

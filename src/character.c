@@ -134,7 +134,7 @@ int idio_isa_character (IDIO o)
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("char?",  char_p, (IDIO o), "o", "\
-test if `o` is an character				\n\
+test if `o` is an character			\n\
 						\n\
 :param o: object to test			\n\
 						\n\
@@ -162,7 +162,7 @@ convert `c` to an integer				\n\
 {
     IDIO_ASSERT (c);
 
-    IDIO_VERIFY_PARAM_TYPE (character, c);
+    IDIO_USER_TYPE_ASSERT (character, c);
 
     return idio_fixnum (IDIO_CHARACTER_VAL (c));
 }
@@ -179,7 +179,7 @@ This implementation uses libc isalpha()		\n\
 {
     IDIO_ASSERT (c);
 
-    IDIO_VERIFY_PARAM_TYPE (character, c);
+    IDIO_USER_TYPE_ASSERT (character, c);
 
     IDIO r = idio_S_false;
 
@@ -202,7 +202,7 @@ This implementation uses libc isdigit()		\n\
 {
     IDIO_ASSERT (c);
 
-    IDIO_VERIFY_PARAM_TYPE (character, c);
+    IDIO_USER_TYPE_ASSERT (character, c);
 
     IDIO r = idio_S_false;
 
@@ -225,7 +225,7 @@ This implementation uses libc isblank() and isspace()		\n\
 {
     IDIO_ASSERT (c);
 
-    IDIO_VERIFY_PARAM_TYPE (character, c);
+    IDIO_USER_TYPE_ASSERT (character, c);
 
     IDIO r = idio_S_false;
 
@@ -241,7 +241,7 @@ intptr_t idio_character_ival (IDIO ic)
 {
     IDIO_ASSERT (ic);
 
-    IDIO_VERIFY_PARAM_TYPE (character, ic);
+    IDIO_USER_TYPE_ASSERT (character, ic);
 
     intptr_t c = IDIO_CHARACTER_VAL (ic);
 
@@ -269,7 +269,7 @@ This implementation uses libc tolower()		\n\
 {
     IDIO_ASSERT (c);
 
-    IDIO_VERIFY_PARAM_TYPE (character, c);
+    IDIO_USER_TYPE_ASSERT (character, c);
 
     return IDIO_CHARACTER (idio_character_ival (c));
 }
@@ -286,7 +286,7 @@ This implementation uses libc islower()		\n\
 {
     IDIO_ASSERT (c);
 
-    IDIO_VERIFY_PARAM_TYPE (character, c);
+    IDIO_USER_TYPE_ASSERT (character, c);
 
     IDIO r = idio_S_false;
 
@@ -309,7 +309,7 @@ This implementation uses libc toupper()		\n\
 {
     IDIO_ASSERT (c);
 
-    IDIO_VERIFY_PARAM_TYPE (character, c);
+    IDIO_USER_TYPE_ASSERT (character, c);
 
     return IDIO_CHARACTER (toupper (IDIO_CHARACTER_VAL (c)));
 }
@@ -326,7 +326,7 @@ This implementation uses libc isupper()		\n\
 {
     IDIO_ASSERT (c);
 
-    IDIO_VERIFY_PARAM_TYPE (character, c);
+    IDIO_USER_TYPE_ASSERT (character, c);
 
     IDIO r = idio_S_false;
 
@@ -347,9 +347,9 @@ This implementation uses libc isupper()		\n\
 	IDIO_ASSERT (c2);						\
 	IDIO_ASSERT (args);						\
 									\
-	IDIO_VERIFY_PARAM_TYPE (character, c1);				\
-	IDIO_VERIFY_PARAM_TYPE (character, c2);				\
-	IDIO_VERIFY_PARAM_TYPE (list, args);				\
+	IDIO_USER_TYPE_ASSERT (character, c1);				\
+	IDIO_USER_TYPE_ASSERT (character, c2);				\
+	IDIO_USER_TYPE_ASSERT (list, args);				\
 									\
 	args = idio_pair (c2, args);					\
 									\
@@ -357,7 +357,7 @@ This implementation uses libc isupper()		\n\
 									\
 	while (idio_S_nil != args) {					\
 	    c2 = IDIO_PAIR_H (args);					\
-	    IDIO_VERIFY_PARAM_TYPE (character, c2);			\
+	    IDIO_USER_TYPE_ASSERT (character, c2);			\
 	    if (! (accessor (c1) cmp accessor (c2))) {			\
 		r = idio_S_false;					\
 		break;							\

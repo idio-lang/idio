@@ -110,7 +110,14 @@ IDIO idio_keyword_C (const char *s_C)
     return idio_keyword_C_len (s_C, strlen (s_C));
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("make-keyword", make_keyword, (IDIO s))
+IDIO_DEFINE_PRIMITIVE1_DS ("make-keyword", make_keyword, (IDIO s), "s", "\
+create a keyword from `s`			\n\
+						\n\
+:param s: keyword				\n\
+:type size: symbol or string			\n\
+:return: keyword				\n\
+:rtype: keyword					\n\
+")
 {
     if (idio_isa_string (s)) {
 	size_t size = 0;
@@ -192,7 +199,13 @@ IDIO idio_keywords_string_intern (IDIO str)
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("keyword?", keyword_p, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1_DS ("keyword?", keyword_p, (IDIO o), "o", "\
+test if `o` is an keyword			\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is an keyword, #f otherwise	\n\
+")
 {
     IDIO_ASSERT (o);
 
@@ -205,15 +218,27 @@ IDIO_DEFINE_PRIMITIVE1 ("keyword?", keyword_p, (IDIO o))
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("keyword->string", keyword2string, (IDIO kw))
+IDIO_DEFINE_PRIMITIVE1_DS ("keyword->string", keyword2string, (IDIO kw), "kw", "\
+convert keyword `kw` to a string		\n\
+						\n\
+:param kw: keyword to convert			\n\
+:type kw: keyword				\n\
+						\n\
+:return: string					\n\
+")
 {
     IDIO_ASSERT (kw);
-    IDIO_VERIFY_PARAM_TYPE (keyword, kw);
+
+    IDIO_USER_TYPE_ASSERT (keyword, kw);
 
     return idio_string_C (IDIO_KEYWORD_S (kw));
 }
 
-IDIO_DEFINE_PRIMITIVE0 ("keywords", keywords, ())
+IDIO_DEFINE_PRIMITIVE0_DS ("keywords", keywords, (), "", "\
+return a list of all keywords			\n\
+						\n\
+:return: list					\n\
+")
 {
     return idio_hash_keys_to_list (idio_keywords_hash);
 }
@@ -221,15 +246,23 @@ IDIO_DEFINE_PRIMITIVE0 ("keywords", keywords, ())
 IDIO idio_hash_make_keyword_table (IDIO args)
 {
     IDIO_ASSERT (args);
-    IDIO_VERIFY_PARAM_TYPE (list, args);
+    IDIO_USER_TYPE_ASSERT (list, args);
 
     return idio_hash_make_hash (idio_list_append2 (IDIO_LIST2 (idio_S_eqp, idio_S_nil), args));
 }
 
-IDIO_DEFINE_PRIMITIVE0V ("make-keyword-table", make_keyword_table, (IDIO args))
+IDIO_DEFINE_PRIMITIVE0V_DS ("make-keyword-table", make_keyword_table, (IDIO args), "[size]", "\
+used for constructing property tables		\n\
+						\n\
+:param size: size of underlying hash table	\n\
+:type size: integer				\n\
+						\n\
+:return: keyword table				\n\
+")
 {
     IDIO_ASSERT (args);
-    IDIO_VERIFY_PARAM_TYPE (list, args);
+
+    IDIO_USER_TYPE_ASSERT (list, args);
 
     return idio_hash_make_keyword_table (args);
 }
@@ -265,13 +298,27 @@ IDIO idio_keyword_ref (IDIO ht, IDIO kw, IDIO args)
     }
 }
 
-IDIO_DEFINE_PRIMITIVE2V ("keyword-ref", keyword_ref, (IDIO ht, IDIO kw, IDIO args))
+IDIO_DEFINE_PRIMITIVE2V_DS ("keyword-ref", keyword_ref, (IDIO ht, IDIO kw, IDIO args), "kt kw [default]", "\
+return the value indexed by keyword ``kw` in keyword	\n\
+ able ``ht``						\n\
+							\n\
+:param ht: hash table					\n\
+:type ht: hash table					\n\
+:param kw: keyword index				\n\
+:type kw: keyword					\n\
+:param default: a default value if ``kw`` not found	\n\
+:type default: value					\n\
+							\n\
+:return: value (#unspec if ``key`` not found and no	\n\
+	 ``default`` supplied)				\n\
+")
 {
     IDIO_ASSERT (ht);
     IDIO_ASSERT (kw);
     IDIO_ASSERT (args);
-    IDIO_VERIFY_PARAM_TYPE (keyword, kw);
-    IDIO_VERIFY_PARAM_TYPE (list, args);
+
+    IDIO_USER_TYPE_ASSERT (keyword, kw);
+    IDIO_USER_TYPE_ASSERT (list, args);
 
     return idio_keyword_ref (ht, kw, args);
 }
@@ -295,12 +342,24 @@ IDIO idio_keyword_set (IDIO ht, IDIO kw, IDIO v)
 
     return idio_S_unspec;
 }
-IDIO_DEFINE_PRIMITIVE3 ("keyword-set!", keyword_set, (IDIO ht, IDIO kw, IDIO v))
+IDIO_DEFINE_PRIMITIVE3_DS ("keyword-set!", keyword_set, (IDIO ht, IDIO kw, IDIO v), "ht kw v", "\
+set the index of ``kw` in hash table ``ht`` to ``v``	\n\
+							\n\
+:param ht: hash table					\n\
+:type ht: hash table					\n\
+:param kw: non-#n value					\n\
+:type kw: any non-#n					\n\
+:param v: value						\n\
+:type v: a value					\n\
+							\n\
+:return: #unspec					\n\
+")
 {
     IDIO_ASSERT (ht);
     IDIO_ASSERT (kw);
     IDIO_ASSERT (v);
-    IDIO_VERIFY_PARAM_TYPE (keyword, kw);
+
+    IDIO_USER_TYPE_ASSERT (keyword, kw);
 
     return idio_keyword_set (ht, kw, v);
 }

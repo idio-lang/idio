@@ -243,8 +243,8 @@ Associate ``mci`` with ``gci`` in ``module``		\n\
     IDIO_ASSERT (mci);
     IDIO_ASSERT (gci);
 
-    IDIO_TYPE_ASSERT (fixnum, mci);
-    IDIO_TYPE_ASSERT (fixnum, gci);
+    IDIO_USER_TYPE_ASSERT (fixnum, mci);
+    IDIO_USER_TYPE_ASSERT (fixnum, gci);
 
     IDIO module = idio_S_undef;
 
@@ -322,8 +322,8 @@ Assoviate ``mci`` with ``gvi`` in ``module``		\n\
     IDIO_ASSERT (mci);
     IDIO_ASSERT (gvi);
 
-    IDIO_TYPE_ASSERT (fixnum, mci);
-    IDIO_TYPE_ASSERT (fixnum, gvi);
+    IDIO_USER_TYPE_ASSERT (fixnum, mci);
+    IDIO_USER_TYPE_ASSERT (fixnum, gvi);
 
     IDIO module = idio_S_undef;
 
@@ -368,8 +368,9 @@ or #unspec if `default` is not supplied				\n\
 {
     IDIO_ASSERT (name);
     IDIO_ASSERT (args);
-    IDIO_VERIFY_PARAM_TYPE (symbol, name);
-    IDIO_VERIFY_PARAM_TYPE (list, args);
+
+    IDIO_USER_TYPE_ASSERT (symbol, name);
+    IDIO_USER_TYPE_ASSERT (list, args);
 
     IDIO r = idio_module_find_module (name);
 
@@ -399,7 +400,7 @@ IDIO idio_primitives_module_instance ()
 IDIO idio_module_find_or_create_module (IDIO name)
 {
     IDIO_ASSERT (name);
-    IDIO_VERIFY_PARAM_TYPE (symbol, name);
+    IDIO_USER_TYPE_ASSERT (symbol, name);
 
     IDIO m = idio_module_find_module (name);
 
@@ -420,7 +421,8 @@ Find the module called `name` or create one	\n\
 ")
 {
     IDIO_ASSERT (name);
-    IDIO_VERIFY_PARAM_TYPE (symbol, name);
+
+    IDIO_USER_TYPE_ASSERT (symbol, name);
 
     return idio_module_find_or_create_module (name);
 }
@@ -444,7 +446,8 @@ Set the current module to `module`		\n\
 ")
 {
     IDIO_ASSERT (module);
-    IDIO_VERIFY_PARAM_TYPE (module, module);
+
+    IDIO_USER_TYPE_ASSERT (module, module);
 
     idio_thread_set_current_module (module);
 
@@ -463,7 +466,8 @@ Set the imports of `module` to `imports`	\n\
 {
     IDIO_ASSERT (module);
     IDIO_ASSERT (imports);
-    IDIO_VERIFY_PARAM_TYPE (module, module);
+
+    IDIO_USER_TYPE_ASSERT (module, module);
 
     if (idio_isa_list (imports)) {
 	IDIO_MODULE_IMPORTS (module) = imports;
@@ -537,9 +541,16 @@ Set the exports of `module` to `exports`	\n\
 {
     IDIO_ASSERT (module);
     IDIO_ASSERT (exports);
-    IDIO_VERIFY_PARAM_TYPE (module, module);
+
+    IDIO_USER_TYPE_ASSERT (module, module);
 
     if (idio_isa_list (exports)) {
+	IDIO el = exports;
+	while (idio_S_nil != el) {
+	    IDIO e = IDIO_PAIR_H (el);
+	    IDIO_USER_TYPE_ASSERT (symbol, e);
+	    el = IDIO_PAIR_T (el);
+	}
 	IDIO_MODULE_EXPORTS (module) = exports;
     } else {
 	idio_error_param_type ("list|nil", exports, IDIO_C_FUNC_LOCATION ());
@@ -578,7 +589,8 @@ Return the name of `module`			\n\
 ")
 {
     IDIO_ASSERT (module);
-    IDIO_VERIFY_PARAM_TYPE (module, module);
+
+    IDIO_USER_TYPE_ASSERT (module, module);
 
     return IDIO_MODULE_NAME (module);
 }
@@ -917,7 +929,7 @@ find evaluator details for ``symbol``				\n\
 {
     IDIO_ASSERT (symbol);
 
-    IDIO_VERIFY_PARAM_TYPE (symbol, symbol);
+    IDIO_USER_TYPE_ASSERT (symbol, symbol);
 
     return idio_module_direct_reference (symbol);
 }
@@ -1131,7 +1143,7 @@ This does not recurse into imported modules.			\n\
 {
     IDIO_ASSERT (symbol);
     IDIO_ASSERT (args);
-    IDIO_VERIFY_PARAM_TYPE (symbol, symbol);
+    IDIO_USER_TYPE_ASSERT (symbol, symbol);
 
     IDIO m_or_n = idio_thread_current_env ();
 
@@ -1161,7 +1173,8 @@ This does recurse into imported modules.			\n\
 {
     IDIO_ASSERT (symbol);
     IDIO_ASSERT (args);
-    IDIO_VERIFY_PARAM_TYPE (symbol, symbol);
+
+    IDIO_USER_TYPE_ASSERT (symbol, symbol);
 
     IDIO m_or_n = idio_thread_current_env ();
 
@@ -1296,8 +1309,9 @@ Return the value of `sym` in `mod` or `default` if supplied	\n\
     IDIO_ASSERT (symbol);
     IDIO_ASSERT (m_or_n);
     IDIO_ASSERT (args);
-    IDIO_VERIFY_PARAM_TYPE (symbol, symbol);
-    IDIO_TYPE_ASSERT (list, args);
+
+    IDIO_USER_TYPE_ASSERT (symbol, symbol);
+    IDIO_USER_TYPE_ASSERT (list, args);
 
     return idio_module_symbol_value (symbol, m_or_n, args);
 }
@@ -1426,8 +1440,9 @@ value or ``default`` if no value found					\n\
 {
     IDIO_ASSERT (symbol);
     IDIO_ASSERT (args);
-    IDIO_VERIFY_PARAM_TYPE (symbol, symbol);
-    IDIO_TYPE_ASSERT (list, args);
+
+    IDIO_USER_TYPE_ASSERT (symbol, symbol);
+    IDIO_USER_TYPE_ASSERT (list, args);
 
     IDIO m_or_n = idio_thread_current_env ();
 
@@ -1502,8 +1517,8 @@ set the information associated with ``symbol`` in ``mod`` to ``v``	\n\
     IDIO_ASSERT (v);
     IDIO_ASSERT (mod);
 
-    IDIO_VERIFY_PARAM_TYPE (symbol, symbol);
-    IDIO_TYPE_ASSERT (list, v);
+    IDIO_USER_TYPE_ASSERT (symbol, symbol);
+    IDIO_USER_TYPE_ASSERT (list, v);
 
     return idio_module_set_symbol (symbol, v, mod);
 }
@@ -1643,8 +1658,9 @@ set the value associated with ``symbol`` in ``mod`` to ``val``		\n\
     IDIO_ASSERT (symbol);
     IDIO_ASSERT (value);
     IDIO_ASSERT (module);
-    IDIO_VERIFY_PARAM_TYPE (symbol, symbol);
-    IDIO_VERIFY_PARAM_TYPE (module, module);
+
+    IDIO_USER_TYPE_ASSERT (symbol, symbol);
+    IDIO_USER_TYPE_ASSERT (module, module);
 
     return idio_module_set_symbol_value (symbol, value, module);
 }
@@ -1700,7 +1716,8 @@ print the internal details of `module`		\n\
 ")
 {
     IDIO_ASSERT (mo);
-    IDIO_VERIFY_PARAM_TYPE (module, mo);
+
+    IDIO_USER_TYPE_ASSERT (module, mo);
 
     idio_debug ("Module %s\n", IDIO_MODULE_NAME (mo));
     idio_debug ("  exports: %s\n", IDIO_MODULE_EXPORTS (mo));

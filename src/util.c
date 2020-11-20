@@ -219,7 +219,13 @@ return the type of `o` as a string		\n\
     return idio_string_C (idio_type2string (o));
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("zero?", zerop, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1_DS ("zero?", zerop, (IDIO o), "o", "\
+test if `o` is the numeric value zero		\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is zero, #f otherwise	\n\
+")
 {
     IDIO_ASSERT (o);
 
@@ -242,7 +248,13 @@ int idio_isa_nil (IDIO o)
     return (idio_S_nil == o);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("null?", nullp, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1_DS ("null?", nullp, (IDIO o), "o", "\
+test if `o` is #n				\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is #n, #f otherwise	\n\
+")
 {
     IDIO_ASSERT (o);
 
@@ -255,7 +267,13 @@ IDIO_DEFINE_PRIMITIVE1 ("null?", nullp, (IDIO o))
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("unset?", unsetp, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1_DS ("unset?", unsetp, (IDIO o), "o", "\
+test if `o` is unset				\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is unset, #f otherwise	\n\
+")
 {
     IDIO_ASSERT (o);
 
@@ -268,7 +286,13 @@ IDIO_DEFINE_PRIMITIVE1 ("unset?", unsetp, (IDIO o))
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("undef?", undefp, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1_DS ("undef?", undefp, (IDIO o), "o", "\
+test if `o` is undefined (#undef)		\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is undefined, #f otherwise	\n\
+")
 {
     IDIO_ASSERT (o);
 
@@ -281,7 +305,13 @@ IDIO_DEFINE_PRIMITIVE1 ("undef?", undefp, (IDIO o))
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("unspec?", unspecp, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1_DS ("unspec?", unspecp, (IDIO o), "o", "\
+test if `o` is unspecified (#unspec)		\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is unspecified, #f otherwise	\n\
+")
 {
     IDIO_ASSERT (o);
 
@@ -294,7 +324,13 @@ IDIO_DEFINE_PRIMITIVE1 ("unspec?", unspecp, (IDIO o))
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("void?", voidp, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1_DS ("void?", voidp, (IDIO o), "o", "\
+test if `o` is void (#void)			\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is void, #f otherwise	\n\
+")
 {
     IDIO_ASSERT (o);
 
@@ -311,10 +347,18 @@ IDIO_DEFINE_PRIMITIVE1 ("void?", voidp, (IDIO o))
  * Unrelated to undef?, %undefined? tests whether a non-local symbol
  * is defined in this environment.
  */
-IDIO_DEFINE_PRIMITIVE1 ("%defined?", definedp, (IDIO s))
+IDIO_DEFINE_PRIMITIVE1_DS ("%defined?", definedp, (IDIO s), "s", "\
+test if symbol `s` is defined in this environment	\n\
+						\n\
+:param s: symbol to test			\n\
+:type s: symbol					\n\
+						\n\
+:return: #t if `s` is defined in this environment, #f otherwise	\n\
+")
 {
     IDIO_ASSERT (s);
-    IDIO_TYPE_ASSERT (symbol, s);
+
+    IDIO_USER_TYPE_ASSERT (symbol, s);
 
     IDIO r = idio_S_false;
 
@@ -335,7 +379,13 @@ int idio_isa_boolean (IDIO o)
 	    idio_S_false == o);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("boolean?", booleanp, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1_DS ("boolean?", booleanp, (IDIO o), "o", "\
+test if `o` is a boolean			\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is a boolean			\n\
+")
 {
     IDIO_ASSERT (o);
 
@@ -348,7 +398,14 @@ IDIO_DEFINE_PRIMITIVE1 ("boolean?", booleanp, (IDIO o))
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("not", not, (IDIO e))
+IDIO_DEFINE_PRIMITIVE1_DS ("not", not, (IDIO e), "e", "\
+return the boolean inverse of `e`		\n\
+						\n\
+:param e: expression to invert			\n\
+:type e: any					\n\
+						\n\
+:return: #t if `s` is #f, #f otherwise		\n\
+")
 {
     IDIO_ASSERT (e);
 
@@ -430,7 +487,16 @@ int idio_equalp (void *o1, void *o2)
     return idio_equal ((IDIO) o1, (IDIO) o2, IDIO_EQUAL_EQUALP);
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("eq?", eqp, (IDIO o1, IDIO o2))
+IDIO_DEFINE_PRIMITIVE2_DS ("eq?", eqp, (IDIO o1, IDIO o2), "o1 o2", "\
+test if `o1` and `o2` are eq?			\n\
+						\n\
+:param o1: object to test			\n\
+:type o1: any					\n\
+:param o2: object to test			\n\
+:type o2: any					\n\
+						\n\
+:return: #t if `o1` is eq? to `o2`, #f otherwise\n\
+")
 {
     IDIO_ASSERT (o1);
     IDIO_ASSERT (o2);
@@ -444,7 +510,16 @@ IDIO_DEFINE_PRIMITIVE2 ("eq?", eqp, (IDIO o1, IDIO o2))
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("eqv?", eqvp, (IDIO o1, IDIO o2))
+IDIO_DEFINE_PRIMITIVE2_DS ("eqv?", eqvp, (IDIO o1, IDIO o2), "o1 o2", "\
+test if `o1` and `o2` are eqv?			\n\
+						\n\
+:param o1: object to test			\n\
+:type o1: any					\n\
+:param o2: object to test			\n\
+:type o2: any					\n\
+						\n\
+:return: #t if `o1` is eqv? to `o2`, #f otherwise\n\
+")
 {
     IDIO_ASSERT (o1);
     IDIO_ASSERT (o2);
@@ -464,7 +539,16 @@ IDIO_DEFINE_PRIMITIVE2 ("eqv?", eqvp, (IDIO o1, IDIO o2))
  * used in its definition
  */
 
-IDIO_DEFINE_PRIMITIVE2 ("equal?", equalp, (IDIO o1, IDIO o2))
+IDIO_DEFINE_PRIMITIVE2_DS ("equal?", equalp, (IDIO o1, IDIO o2), "o1 o2", "\
+test if `o1` and `o2` are equal?			\n\
+						\n\
+:param o1: object to test			\n\
+:type o1: any					\n\
+:param o2: object to test			\n\
+:type o2: any					\n\
+						\n\
+:return: #t if `o1` is equal? to `o2`, #f otherwise\n\
+")
 {
     IDIO_ASSERT (o1);
     IDIO_ASSERT (o2);
@@ -2607,7 +2691,7 @@ convert `o` to a string				\n\
 						\n\
 :param o: object to convert			\n\
 						\n\
-:return: a string representation of `o`	\n\
+:return: a string representation of `o`		\n\
 ")
 {
     IDIO_ASSERT (o);
@@ -2616,6 +2700,7 @@ convert `o` to a string				\n\
     char *str = idio_as_string (o, &size, 40, idio_S_nil, 1);
     IDIO r = idio_string_C_len (str, size);
     idio_gc_free (str);
+
     return r;
 }
 
@@ -2633,6 +2718,7 @@ convert `o` to a display string			\n\
     char *str = idio_display_string (o, &size);
     IDIO r = idio_string_C_len (str, size);
     idio_gc_free (str);
+
     return r;
 }
 
@@ -2843,8 +2929,8 @@ each element of ``list``				\n\
     IDIO_ASSERT (fn);
     IDIO_ASSERT (list);
 
-    IDIO_VERIFY_PARAM_TYPE (primitive, fn);
-    IDIO_VERIFY_PARAM_TYPE (list, list);
+    IDIO_USER_TYPE_ASSERT (primitive, fn);
+    IDIO_USER_TYPE_ASSERT (list, list);
 
     IDIO r = idio_S_nil;
 
@@ -2918,12 +3004,22 @@ IDIO idio_list_memq (IDIO k, IDIO l)
     return idio_S_false;
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("memq", memq, (IDIO k, IDIO l))
+IDIO_DEFINE_PRIMITIVE2_DS ("memq", memq, (IDIO k, IDIO l), "k l", "\
+return the remainder of the list `l` from the	\n\
+first incidence of `k` or #f if `k` is not in `l`	\n\
+						\n\
+:param k: object to search for			\n\
+:type k: any					\n\
+:param l: list to search in			\n\
+:type l: list					\n\
+						\n\
+:return: a list starting from `k`, #f if `k` is not in `l`\n\
+")
 {
     IDIO_ASSERT (k);
     IDIO_ASSERT (l);
 
-    IDIO_VERIFY_PARAM_TYPE (list, l);
+    IDIO_USER_TYPE_ASSERT (list, l);
 
     return idio_list_memq (k, l);
 }
@@ -2957,12 +3053,22 @@ IDIO idio_list_assq (IDIO k, IDIO l)
     return idio_S_false;
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("assq", assq, (IDIO k, IDIO l))
+IDIO_DEFINE_PRIMITIVE2_DS ("assq", assq, (IDIO k, IDIO l), "k l", "\
+return the first entry of association list `l`	\n\
+with the key `k` or #f if `k` is not a key in `l`	\n\
+						\n\
+:param k: object to search for			\n\
+:type k: any					\n\
+:param l: association list to search in		\n\
+:type l: list					\n\
+						\n\
+:return: the list (`k` & value), #f if `k` is not a key in `l`\n\
+")
 {
     IDIO_ASSERT (k);
     IDIO_ASSERT (l);
 
-    IDIO_VERIFY_PARAM_TYPE (list, l);
+    IDIO_USER_TYPE_ASSERT (list, l);
 
     return idio_list_assq (k, l);
 }
@@ -2986,7 +3092,31 @@ IDIO idio_list_set_difference (IDIO set1, IDIO set2)
     }
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("value-index", value_index, (IDIO o, IDIO i))
+IDIO_DEFINE_PRIMITIVE2_DS ("value-index", value_index, (IDIO o, IDIO i), "o i", "\
+index the object `o` by `i`			\n\
+						\n\
+indexable object types are:			\n\
+pair:			(nth o i)		\n\
+string:			(string-ref o i)	\n\
+array:			(array-ref o i)		\n\
+hash:			(hash-ref o i)		\n\
+struct instance:	(struct-instance-ref o i)	\n\
+						\n\
+Note that, in particular for struct instance,	\n\
+the symbol used for a symbolic field name may	\n\
+have been evaluated to a value.			\n\
+						\n\
+Quote if necessary: o.'i			\n\
+						\n\
+value-index is not efficient			\n\
+						\n\
+:param o: object to index			\n\
+:type o: any					\n\
+:param i: index					\n\
+:type i: any					\n\
+						\n\
+:return: the indexed value			\n\
+")
 {
     IDIO_ASSERT (o);
     IDIO_ASSERT (i);
@@ -3023,7 +3153,33 @@ IDIO_DEFINE_PRIMITIVE2 ("value-index", value_index, (IDIO o, IDIO i))
     return idio_S_notreached;
 }
 
-IDIO_DEFINE_PRIMITIVE3 ("set-value-index!", set_value_index, (IDIO o, IDIO i, IDIO v))
+IDIO_DEFINE_PRIMITIVE3_DS ("set-value-index!", set_value_index, (IDIO o, IDIO i, IDIO v), "o i v", "\
+set value of the object `o` indexed by `i` to `v`	\n\
+						\n\
+indexable object types are:			\n\
+pair:			(nth o i)		\n\
+string:			(string-ref o i)	\n\
+array:			(array-ref o i)		\n\
+hash:			(hash-ref o i)		\n\
+struct instance:	(struct-instance-ref o i)	\n\
+						\n\
+Note that, in particular for struct instance,	\n\
+the symbol used for a symbolic field name may	\n\
+have been evaluated to a value.			\n\
+						\n\
+Quote if necessary: o.'i			\n\
+						\n\
+value-index is not efficient			\n\
+						\n\
+:param o: object to index			\n\
+:type o: any					\n\
+:param i: index					\n\
+:type i: any					\n\
+:param v: value					\n\
+:type v: any					\n\
+						\n\
+:return: the indexed value			\n\
+")
 {
     IDIO_ASSERT (o);
     IDIO_ASSERT (i);
@@ -3059,7 +3215,11 @@ IDIO_DEFINE_PRIMITIVE3 ("set-value-index!", set_value_index, (IDIO o, IDIO i, ID
     return idio_S_notreached;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("identity", identity, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1_DS ("identity", identity, (IDIO o), "o", "\
+return the value of `o`		\n\
+				\n\
+:return: `o`			\n\
+")
 {
     IDIO_ASSERT (o);
 
@@ -3151,15 +3311,16 @@ IDIO_DEFINE_PRIMITIVE1V_DS ("copy-value", copy_value, (IDIO v, IDIO args), "v [d
 copy ``v`` to `depth`					\n\
 							\n\
 :param v: value to copy					\n\
-:type str: any						\n\
+:type v: any						\n\
 :param depth: (optional) 'shallow or 'deep (default)	\n\
+							\n\
 :return: copy of `v`					\n\
 ")
 {
     IDIO_ASSERT (v);
     IDIO_ASSERT (args);
 
-    IDIO_VERIFY_PARAM_TYPE (list, args);
+    IDIO_USER_TYPE_ASSERT (list, args);
 
     int depth = IDIO_COPY_DEEP;
 
@@ -3361,7 +3522,14 @@ void idio_dump (IDIO o, int detail)
     fprintf (stderr, "\n");
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("idio-dump", idio_dump, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1_DS ("idio-dump", idio_dump, (IDIO o), "o", "\
+print the internal details of ``o`` to *stderr*		\n\
+							\n\
+:param o: value to dump					\n\
+:type o: any						\n\
+							\n\
+:return: #unspec					\n\
+")
 {
     IDIO_ASSERT (o);
 
@@ -3391,11 +3559,26 @@ void idio_debug (const char *fmt, IDIO o)
     idio_debug_FILE (stderr, fmt, o);
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("idio-debug", idio_debug, (IDIO fmt, IDIO o))
+IDIO_DEFINE_PRIMITIVE2_DS ("idio-debug", idio_debug, (IDIO fmt, IDIO o), "fmt o", "\
+print the string value of ``o`` according to `fmt` to	\n\
+*stderr*						\n\
+							\n\
+There must be a single %s conversion specification	\n\
+							\n\
+idio-debug \"foo is %20s\n\" foo			\n\
+							\n\
+:param fmt: printf(3) format string			\n\
+:type fmt: string					\n\
+:param o: value to dump					\n\
+:type o: any						\n\
+							\n\
+:return: #unspec					\n\
+")
 {
     IDIO_ASSERT (fmt);
     IDIO_ASSERT (o);
-    IDIO_TYPE_ASSERT (string, fmt);
+
+    IDIO_USER_TYPE_ASSERT (string, fmt);
 
     size_t size = 0;
     char *sfmt = idio_string_as_C (fmt, &size);

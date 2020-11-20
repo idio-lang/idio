@@ -834,6 +834,10 @@ static IDIO idio_meaning_variable_info (IDIO src, IDIO nametree, IDIO name, int 
     IDIO_ASSERT (cs);
     IDIO_ASSERT (cm);
 
+		if (! idio_isa_symbol (name)) {
+		    idio_debug ("searching for %s", name);
+		    idio_debug ("in %s\n", src);
+		}
     IDIO_TYPE_ASSERT (list, nametree);
     IDIO_TYPE_ASSERT (symbol, name);
     IDIO_TYPE_ASSERT (array, cs);
@@ -4766,22 +4770,20 @@ IDIO idio_evaluate (IDIO src, IDIO cs)
     return IDIO_LIST2 (IDIO_I_ABORT, m);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("evaluate/meaning", evaluate_meaning, (IDIO e))
+IDIO_DEFINE_PRIMITIVE1_DS ("environ?", environp, (IDIO o), "o", "\
+test if `o` is an environ variable		\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is an environ variable, #f otherwise	\n\
+")
 {
-    IDIO_ASSERT (e);
-    IDIO_VERIFY_PARAM_TYPE (list, e);
-
-    return idio_evaluate (e, idio_vm_constants);
-}
-
-IDIO_DEFINE_PRIMITIVE1 ("environ?", environp, (IDIO name))
-{
-    IDIO_ASSERT (name);
+    IDIO_ASSERT (o);
 
     IDIO r = idio_S_false;
 
-    if (idio_isa_symbol (name)) {
-	IDIO si = idio_module_env_symbol_recurse (name);
+    if (idio_isa_symbol (o)) {
+	IDIO si = idio_module_env_symbol_recurse (o);
 
 	if (idio_S_false != si &&
 	    idio_S_environ == IDIO_PAIR_H (si)) {
@@ -4792,14 +4794,20 @@ IDIO_DEFINE_PRIMITIVE1 ("environ?", environp, (IDIO name))
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("dynamic?", dynamicp, (IDIO name))
+IDIO_DEFINE_PRIMITIVE1_DS ("dynamic?", dynamicp, (IDIO o), "o", "\
+test if `o` is a dynamic variable		\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is a dynamic variable, #f otherwise	\n\
+")
 {
-    IDIO_ASSERT (name);
+    IDIO_ASSERT (o);
 
     IDIO r = idio_S_false;
 
-    if (idio_isa_symbol (name)) {
-	IDIO si = idio_module_env_symbol_recurse (name);
+    if (idio_isa_symbol (o)) {
+	IDIO si = idio_module_env_symbol_recurse (o);
 
 	if (idio_S_false != si &&
 	    idio_S_dynamic == IDIO_PAIR_H (si)) {
@@ -4810,14 +4818,20 @@ IDIO_DEFINE_PRIMITIVE1 ("dynamic?", dynamicp, (IDIO name))
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("computed?", computedp, (IDIO name))
+IDIO_DEFINE_PRIMITIVE1_DS ("computed?", computedp, (IDIO o), "o", "\
+test if `o` is a computed variable		\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is a computed variable, #f otherwise	\n\
+")
 {
-    IDIO_ASSERT (name);
+    IDIO_ASSERT (o);
 
     IDIO r = idio_S_false;
 
-    if (idio_isa_symbol (name)) {
-	IDIO si = idio_module_env_symbol_recurse (name);
+    if (idio_isa_symbol (o)) {
+	IDIO si = idio_module_env_symbol_recurse (o);
 
 	if (idio_S_false != si &&
 	    idio_S_computed == IDIO_PAIR_H (si)) {
@@ -4851,7 +4865,6 @@ void idio_init_evaluate ()
 
 void idio_evaluate_add_primitives ()
 {
-    IDIO_ADD_PRIMITIVE (evaluate_meaning);
     IDIO_ADD_PRIMITIVE (environp);
     IDIO_ADD_PRIMITIVE (dynamicp);
     IDIO_ADD_PRIMITIVE (computedp);

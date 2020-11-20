@@ -2662,9 +2662,9 @@ Generate the code for `m` using `cs` in `thr`	\n\
     IDIO_ASSERT (m);
     IDIO_ASSERT (cs);
 
-    IDIO_TYPE_ASSERT (thread, thr);
-    IDIO_TYPE_ASSERT (list, m);
-    IDIO_TYPE_ASSERT (array, cs);
+    IDIO_USER_TYPE_ASSERT (thread, thr);
+    IDIO_USER_TYPE_ASSERT (list, m);
+    IDIO_USER_TYPE_ASSERT (array, cs);
 
     idio_ai_t PC0 = idio_codegen (thr, m, cs);
 

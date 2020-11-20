@@ -538,7 +538,7 @@ IDIO_DEFINE_PRIMITIVE1 ("get-output-string", get_output_string, (IDIO sh))
 {
     IDIO_ASSERT (sh);
 
-    IDIO_VERIFY_PARAM_TYPE (string_handle, sh);
+    IDIO_USER_TYPE_ASSERT (string_handle, sh);
 
     return idio_get_output_string (sh);
 }

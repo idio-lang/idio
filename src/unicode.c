@@ -131,7 +131,7 @@ convert `c` to an integer				\n\
 {
     IDIO_ASSERT (c);
 
-    IDIO_VERIFY_PARAM_TYPE (unicode, c);
+    IDIO_USER_TYPE_ASSERT (unicode, c);
 
     return idio_fixnum (IDIO_UNICODE_VAL (c) >> 16);
 }
@@ -146,7 +146,7 @@ convert `c` to an integer				\n\
 {
     IDIO_ASSERT (c);
 
-    IDIO_VERIFY_PARAM_TYPE (unicode, c);
+    IDIO_USER_TYPE_ASSERT (unicode, c);
 
     return idio_fixnum (IDIO_UNICODE_VAL (c) & 0xffff);
 }
@@ -161,7 +161,7 @@ convert `c` to an integer				\n\
 {
     IDIO_ASSERT (c);
 
-    IDIO_VERIFY_PARAM_TYPE (unicode, c);
+    IDIO_USER_TYPE_ASSERT (unicode, c);
 
     return idio_fixnum (IDIO_UNICODE_VAL (c));
 }
@@ -448,9 +448,9 @@ IDIO idio_unicode_lookup (char *s)
 	IDIO_ASSERT (c2);						\
 	IDIO_ASSERT (args);						\
 									\
-	IDIO_VERIFY_PARAM_TYPE (unicode, c1);				\
-	IDIO_VERIFY_PARAM_TYPE (unicode, c2);				\
-	IDIO_VERIFY_PARAM_TYPE (list, args);				\
+	IDIO_USER_TYPE_ASSERT (unicode, c1);				\
+	IDIO_USER_TYPE_ASSERT (unicode, c2);				\
+	IDIO_USER_TYPE_ASSERT (list, args);				\
 									\
 	args = idio_pair (c2, args);					\
 									\
@@ -458,7 +458,7 @@ IDIO idio_unicode_lookup (char *s)
 									\
 	while (idio_S_nil != args) {					\
 	    c2 = IDIO_PAIR_H (args);					\
-	    IDIO_VERIFY_PARAM_TYPE (unicode, c2);			\
+	    IDIO_USER_TYPE_ASSERT (unicode, c2);			\
 	    if (! (accessor (c1) cmp accessor (c2))) {			\
 		r = idio_S_false;					\
 		break;							\

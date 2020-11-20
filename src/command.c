@@ -797,7 +797,8 @@ test if job `job` is stopped			\n\
 ")
 {
     IDIO_ASSERT (job);
-    IDIO_VERIFY_PARAM_TYPE (struct_instance, job);
+
+    IDIO_USER_TYPE_ASSERT (struct_instance, job);
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("%idio-job", job, IDIO_C_FUNC_LOCATION ());
@@ -848,7 +849,8 @@ test if job `job` has completed			\n\
 ")
 {
     IDIO_ASSERT (job);
-    IDIO_VERIFY_PARAM_TYPE (struct_instance, job);
+
+    IDIO_USER_TYPE_ASSERT (struct_instance, job);
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("%idio-job", job, IDIO_C_FUNC_LOCATION ());
@@ -908,7 +910,8 @@ test if job `job` has failed			\n\
 ")
 {
     IDIO_ASSERT (job);
-    IDIO_VERIFY_PARAM_TYPE (struct_instance, job);
+
+    IDIO_USER_TYPE_ASSERT (struct_instance, job);
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("%idio-job", job, IDIO_C_FUNC_LOCATION ());
@@ -967,7 +970,8 @@ Note that this is the inverse behaviour you might expect.\n\
 ")
 {
     IDIO_ASSERT (job);
-    IDIO_VERIFY_PARAM_TYPE (struct_instance, job);
+
+    IDIO_USER_TYPE_ASSERT (struct_instance, job);
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("%idio-job", job, IDIO_C_FUNC_LOCATION ());
@@ -1021,7 +1025,8 @@ value can be: exit status for 'exit or signal number for 'killed\n\
 ")
 {
     IDIO_ASSERT (job);
-    IDIO_VERIFY_PARAM_TYPE (struct_instance, job);
+
+    IDIO_USER_TYPE_ASSERT (struct_instance, job);
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("%idio-job", job, IDIO_C_FUNC_LOCATION ());
@@ -1108,8 +1113,9 @@ update the process status of pid `pid` with `status`\n\
 {
     IDIO_ASSERT (ipid);
     IDIO_ASSERT (istatus);
-    IDIO_VERIFY_PARAM_TYPE (C_int, ipid);
-    IDIO_VERIFY_PARAM_TYPE (C_pointer, istatus);
+
+    IDIO_USER_TYPE_ASSERT (C_int, ipid);
+    IDIO_USER_TYPE_ASSERT (C_pointer, istatus);
 
     int pid = IDIO_C_TYPE_INT (ipid);
     int *statusp = IDIO_C_TYPE_POINTER_P (istatus);
@@ -1189,7 +1195,8 @@ wait for job `job` to be stopped or completed	\n\
 ")
 {
     IDIO_ASSERT (job);
-    IDIO_VERIFY_PARAM_TYPE (struct_instance, job);
+
+    IDIO_USER_TYPE_ASSERT (struct_instance, job);
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("%idio-job", job, IDIO_C_FUNC_LOCATION ());
@@ -1234,8 +1241,9 @@ display to stderr `msg` alongside job `job` details\n\
 {
     IDIO_ASSERT (job);
     IDIO_ASSERT (msg);
-    IDIO_VERIFY_PARAM_TYPE (struct_instance, job);
-    IDIO_VERIFY_PARAM_TYPE (string, msg);
+
+    IDIO_USER_TYPE_ASSERT (struct_instance, job);
+    IDIO_USER_TYPE_ASSERT (string, msg);
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("%idio-job", job, IDIO_C_FUNC_LOCATION ());
@@ -1439,8 +1447,9 @@ If `cont` is set a SIGCONT is sent to the process group\n\
 {
     IDIO_ASSERT (job);
     IDIO_ASSERT (icont);
-    IDIO_VERIFY_PARAM_TYPE (struct_instance, job);
-    IDIO_VERIFY_PARAM_TYPE (boolean, icont);
+
+    IDIO_USER_TYPE_ASSERT (struct_instance, job);
+    IDIO_USER_TYPE_ASSERT (boolean, icont);
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("%idio-job", job, IDIO_C_FUNC_LOCATION ());
@@ -1499,8 +1508,9 @@ Backgrounding a job is always successful hence returns 0.\n\
 {
     IDIO_ASSERT (job);
     IDIO_ASSERT (icont);
-    IDIO_VERIFY_PARAM_TYPE (struct_instance, job);
-    IDIO_VERIFY_PARAM_TYPE (boolean, icont);
+
+    IDIO_USER_TYPE_ASSERT (struct_instance, job);
+    IDIO_USER_TYPE_ASSERT (boolean, icont);
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("%idio-job", job, IDIO_C_FUNC_LOCATION ());
@@ -1572,7 +1582,8 @@ Send the process group of `job` a SIGCONT then a SIGHUP\n\
 ")
 {
     IDIO_ASSERT (job);
-    IDIO_VERIFY_PARAM_TYPE (struct_instance, job);
+
+    IDIO_USER_TYPE_ASSERT (struct_instance, job);
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("%idio-job", job, IDIO_C_FUNC_LOCATION ());
@@ -1662,7 +1673,8 @@ In particular, mark job `job` as not stopped\n\
 ")
 {
     IDIO_ASSERT (job);
-    IDIO_VERIFY_PARAM_TYPE (struct_instance, job);
+
+    IDIO_USER_TYPE_ASSERT (struct_instance, job);
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("%idio-job", job, IDIO_C_FUNC_LOCATION ());
@@ -1707,8 +1719,9 @@ mark job `job` as running and foreground it if required\n\
 {
     IDIO_ASSERT (job);
     IDIO_ASSERT (iforeground);
-    IDIO_VERIFY_PARAM_TYPE (struct_instance, job);
-    IDIO_VERIFY_PARAM_TYPE (boolean, iforeground);
+
+    IDIO_USER_TYPE_ASSERT (struct_instance, job);
+    IDIO_USER_TYPE_ASSERT (boolean, iforeground);
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("%idio-job", job, IDIO_C_FUNC_LOCATION ());
@@ -1873,10 +1886,10 @@ File descriptors are C integers.		\n\
     IDIO_ASSERT (ierrfile);
     IDIO_ASSERT (iforeground);
 
-    IDIO_VERIFY_PARAM_TYPE (C_int, iinfile);
-    IDIO_VERIFY_PARAM_TYPE (C_int, ioutfile);
-    IDIO_VERIFY_PARAM_TYPE (C_int, ierrfile);
-    IDIO_VERIFY_PARAM_TYPE (boolean, iforeground);
+    IDIO_USER_TYPE_ASSERT (C_int, iinfile);
+    IDIO_USER_TYPE_ASSERT (C_int, ioutfile);
+    IDIO_USER_TYPE_ASSERT (C_int, ierrfile);
+    IDIO_USER_TYPE_ASSERT (boolean, iforeground);
 
     pid_t pgid = 0;
     if (idio_isa_fixnum (ipgid)) {
@@ -2217,7 +2230,8 @@ launch job `job`				\n\
 ")
 {
     IDIO_ASSERT (job);
-    IDIO_VERIFY_PARAM_TYPE (struct_instance, job);
+
+    IDIO_USER_TYPE_ASSERT (struct_instance, job);
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("job", job, IDIO_C_FUNC_LOCATION ());
@@ -2239,7 +2253,8 @@ launch a pipeline of `commands`			\n\
 ")
 {
     IDIO_ASSERT (commands);
-    IDIO_VERIFY_PARAM_TYPE (list, commands);
+
+    IDIO_USER_TYPE_ASSERT (list, commands);
 
     idio_debug ("%launch-pipeline: %s\n", commands);
 
@@ -2520,7 +2535,8 @@ exec `command` `args`				\n\
 {
     IDIO_ASSERT (command);
     IDIO_ASSERT (args);
-    IDIO_VERIFY_PARAM_TYPE (symbol, command);
+
+    IDIO_USER_TYPE_ASSERT (symbol, command);
 
     char *pathname = idio_command_find_exe (command);
     if (NULL == pathname) {

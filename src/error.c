@@ -171,7 +171,7 @@ void idio_error_param_type (char *etype, IDIO who, IDIO c_location)
 }
 
 /*
- * Used by IDIO_TYPE_ASSERT and IDIO_VERIFY_PARAM_TYPE
+ * Used by IDIO_TYPE_ASSERT and IDIO_USER_TYPE_ASSERT
  */
 void idio_error_param_type_C (char *etype, IDIO who, char *file, const char *func, int line)
 {
@@ -273,16 +273,27 @@ void idio_error_C (char *msg, IDIO args, IDIO c_location)
     idio_error (idio_S_internal, idio_string_C (msg), args, c_location);
 }
 
-IDIO_DEFINE_PRIMITIVE2V ("error", error, (IDIO where, IDIO msg, IDIO args))
+IDIO_DEFINE_PRIMITIVE2V_DS ("error", error, (IDIO loc, IDIO msg, IDIO args), "loc msg args", "\
+raise an ^idio-error				\n\
+						\n\
+:param loc: location				\n\
+:type loc: symbol				\n\
+:param msg: error message			\n\
+:type loc: string				\n\
+:param args: detail				\n\
+:type args: list				\n\
+						\n\
+This does not return!				\n\
+")
 {
-    IDIO_ASSERT (where);
+    IDIO_ASSERT (loc);
     IDIO_ASSERT (msg);
     IDIO_ASSERT (args);
-    IDIO_VERIFY_PARAM_TYPE (symbol, where);
-    IDIO_VERIFY_PARAM_TYPE (string, msg);
-    IDIO_VERIFY_PARAM_TYPE (list, args);
+    IDIO_USER_TYPE_ASSERT (symbol, loc);
+    IDIO_USER_TYPE_ASSERT (string, msg);
+    IDIO_USER_TYPE_ASSERT (list, args);
 
-    idio_error (where, msg, args, where);
+    idio_error (loc, msg, args, loc);
 
     return idio_S_notreached;
 }

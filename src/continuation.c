@@ -70,7 +70,13 @@ int idio_isa_continuation (IDIO o)
     return idio_isa (o, IDIO_TYPE_CONTINUATION);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("continuation?", continuation_p, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1_DS ("continuation?", continuation_p, (IDIO o), "o", "\
+test if `o` is a continuation			\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is a continuation #f otherwise\n\
+")
 {
     IDIO_ASSERT (o);
 

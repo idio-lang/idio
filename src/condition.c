@@ -125,12 +125,13 @@ make a new condition type based on existing condition `parent` with fields `fiel
     IDIO_ASSERT (name);
     IDIO_ASSERT (parent);
     IDIO_ASSERT (fields);
-    IDIO_VERIFY_PARAM_TYPE (symbol, name);
+
+    IDIO_USER_TYPE_ASSERT (symbol, name);
 
     if (idio_S_nil != parent) {
-	IDIO_VERIFY_PARAM_TYPE (condition_type, parent);
+	IDIO_USER_TYPE_ASSERT (condition_type, parent);
     }
-    IDIO_VERIFY_PARAM_TYPE (list, fields);
+    IDIO_USER_TYPE_ASSERT (list, fields);
 
     return idio_struct_type (name, parent, fields);
 }
@@ -219,7 +220,8 @@ The allocated condition will have fields set to #n\n\
 ")
 {
     IDIO_ASSERT (ct);
-    IDIO_VERIFY_PARAM_TYPE (condition_type, ct);
+
+    IDIO_USER_TYPE_ASSERT (condition_type, ct);
 
     return idio_allocate_struct_instance (ct, 1);
 }
@@ -235,8 +237,8 @@ initialize a condition of condition type `ct` with values `values`\n\
 {
     IDIO_ASSERT (ct);
     IDIO_ASSERT (values);
-    IDIO_VERIFY_PARAM_TYPE (condition_type, ct);
-    IDIO_VERIFY_PARAM_TYPE (list, values);
+    IDIO_USER_TYPE_ASSERT (condition_type, ct);
+    IDIO_USER_TYPE_ASSERT (list, values);
 
     return idio_struct_instance (ct, values);
 }
@@ -246,6 +248,7 @@ IDIO idio_condition_idio_error (IDIO message, IDIO location, IDIO detail)
     IDIO_ASSERT (message);
     IDIO_ASSERT (location);
     IDIO_ASSERT (detail);
+
     IDIO_TYPE_ASSERT (string, message);
 
     if (! (idio_isa_string (location) ||
@@ -267,8 +270,9 @@ create an ^idio-error condition values `message` and any `args`\n\
 {
     IDIO_ASSERT (message);
     IDIO_ASSERT (args);
-    IDIO_VERIFY_PARAM_TYPE (string, message);
-    IDIO_VERIFY_PARAM_TYPE (list, args);
+
+    IDIO_USER_TYPE_ASSERT (string, message);
+    IDIO_USER_TYPE_ASSERT (list, args);
 
     return idio_struct_instance (idio_condition_idio_error_type, idio_list_append2 (IDIO_LIST1 (message), args));
 }
@@ -308,8 +312,8 @@ int idio_condition_isap (IDIO c, IDIO ct)
 {
     IDIO_ASSERT (c);
     IDIO_ASSERT (ct);
-    IDIO_VERIFY_PARAM_TYPE (condition, c);
-    IDIO_VERIFY_PARAM_TYPE (condition_type, ct);
+    IDIO_USER_TYPE_ASSERT (condition, c);
+    IDIO_USER_TYPE_ASSERT (condition_type, ct);
 
     if (idio_struct_instance_isa (c, ct)) {
 	return 1;
@@ -318,12 +322,22 @@ int idio_condition_isap (IDIO c, IDIO ct)
     return 0;
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("condition-isa?", condition_isap, (IDIO c, IDIO ct))
+IDIO_DEFINE_PRIMITIVE2_DS ("condition-isa?", condition_isap, (IDIO c, IDIO ct), "c ct", "\
+test if condition `c` is a condition type `ct`	\n\
+						\n\
+:param c: condition to test			\n\
+:type c: condition				\n\
+:param ct: condition type to assert		\n\
+:type ct: condition type			\n\
+						\n\
+:return: #t if `c` is a condition type `ct`, #f otherwise\n\
+")
 {
     IDIO_ASSERT (c);
     IDIO_ASSERT (ct);
-    IDIO_VERIFY_PARAM_TYPE (condition, c);
-    IDIO_VERIFY_PARAM_TYPE (condition_type, ct);
+
+    IDIO_USER_TYPE_ASSERT (condition, c);
+    IDIO_USER_TYPE_ASSERT (condition_type, ct);
 
     IDIO r = idio_S_false;
 
@@ -345,8 +359,9 @@ return field `field` of condition `c`		\n\
 {
     IDIO_ASSERT (c);
     IDIO_ASSERT (field);
-    IDIO_VERIFY_PARAM_TYPE (condition, c);
-    IDIO_VERIFY_PARAM_TYPE (symbol, field);
+
+    IDIO_USER_TYPE_ASSERT (condition, c);
+    IDIO_USER_TYPE_ASSERT (symbol, field);
 
     return idio_struct_instance_ref (c, field);
 }
@@ -363,7 +378,8 @@ return field `message` of condition `c`		\n\
 ")
 {
     IDIO_ASSERT (c);
-    IDIO_VERIFY_PARAM_TYPE (condition, c);
+
+    IDIO_USER_TYPE_ASSERT (condition, c);
 
     if (! idio_struct_instance_isa (c, idio_condition_message_type)) {
 	idio_error_printf (IDIO_C_FUNC_LOCATION (), "not a message condition", c);
@@ -386,8 +402,9 @@ set field `field` of condition `c` to value `value`\n\
     IDIO_ASSERT (c);
     IDIO_ASSERT (field);
     IDIO_ASSERT (value);
-    IDIO_VERIFY_PARAM_TYPE (condition, c);
-    IDIO_VERIFY_PARAM_TYPE (symbol, field);
+
+    IDIO_USER_TYPE_ASSERT (condition, c);
+    IDIO_USER_TYPE_ASSERT (symbol, field);
 
     return idio_struct_instance_set (c, field, value);
 }
@@ -396,7 +413,7 @@ void idio_condition_set_default_handler (IDIO ct, IDIO handler)
 {
     IDIO_ASSERT (ct);
     IDIO_ASSERT (handler);
-    IDIO_VERIFY_PARAM_TYPE (condition_type, ct);
+    IDIO_USER_TYPE_ASSERT (condition_type, ct);
 
     idio_hash_put (idio_condition_default_handler, ct, handler);
 }
@@ -418,7 +435,8 @@ then ``handler`` will be invoked with the continuation.	\n\
 {
     IDIO_ASSERT (ct);
     IDIO_ASSERT (handler);
-    IDIO_VERIFY_PARAM_TYPE (condition_type, ct);
+
+    IDIO_USER_TYPE_ASSERT (condition_type, ct);
 
     idio_condition_set_default_handler (ct, handler);
 
@@ -428,7 +446,8 @@ then ``handler`` will be invoked with the continuation.	\n\
 void idio_condition_clear_default_handler (IDIO ct)
 {
     IDIO_ASSERT (ct);
-    IDIO_VERIFY_PARAM_TYPE (condition_type, ct);
+
+    IDIO_USER_TYPE_ASSERT (condition_type, ct);
 
     idio_hash_delete (idio_condition_default_handler, ct);
 }
@@ -446,7 +465,8 @@ resume.							\n\
 ")
 {
     IDIO_ASSERT (ct);
-    IDIO_VERIFY_PARAM_TYPE (condition_type, ct);
+
+    IDIO_USER_TYPE_ASSERT (condition_type, ct);
 
     idio_condition_clear_default_handler (ct);
 
@@ -471,7 +491,7 @@ does not return per se						\n\
     /*
      * XXX IDIO_TYPE_ASSERT() will raise a condition if it fails!
      */
-    IDIO_TYPE_ASSERT (condition, c);
+    IDIO_USER_TYPE_ASSERT (condition, c);
 
     IDIO thr = idio_thread_current_thread ();
 

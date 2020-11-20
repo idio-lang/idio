@@ -762,7 +762,7 @@ The default value is #f.			\n\
 {
     IDIO_ASSERT (args);
 
-    IDIO_VERIFY_PARAM_TYPE (list, args);
+    IDIO_USER_TYPE_ASSERT (list, args);
 
     IDIO a = idio_array (idio_list_length (args));
 
@@ -812,7 +812,7 @@ If no default value is supplied #f is used.	\n\
 	return idio_S_notreached;
     }
 
-    IDIO_VERIFY_PARAM_TYPE (list, args);
+    IDIO_USER_TYPE_ASSERT (list, args);
 
     /*
      * S9fES -- Scheme specs say unspecified
@@ -849,9 +849,8 @@ copy array `orig` and add an optional `extra` elements	\n\
     IDIO_ASSERT (orig);
     IDIO_ASSERT (args);
 
-    IDIO_TYPE_ASSERT (array, orig);
-
-    IDIO_VERIFY_PARAM_TYPE (list, args);
+    IDIO_USER_TYPE_ASSERT (array, orig);
+    IDIO_USER_TYPE_ASSERT (list, args);
 
     idio_ai_t extra = 0;
     int depth = IDIO_COPY_DEEP;
@@ -923,8 +922,8 @@ set all the elements of `a` to `fill`		\n\
 {
     IDIO_ASSERT (a);
     IDIO_ASSERT (fill);
-    IDIO_VERIFY_PARAM_TYPE (array, a);
 
+    IDIO_USER_TYPE_ASSERT (array, a);
     IDIO_ASSERT_NOT_CONST (array, a);
 
     idio_ai_t al = idio_array_size (a);
@@ -949,7 +948,8 @@ The used length is the highest accessed index plus one\n\
 ")
 {
     IDIO_ASSERT (a);
-    IDIO_VERIFY_PARAM_TYPE (array, a);
+
+    IDIO_USER_TYPE_ASSERT (array, a);
 
     return idio_fixnum (idio_array_size (a));
 }
@@ -1016,7 +1016,8 @@ return the value at `index` of `a`		\n\
 {
     IDIO_ASSERT (a);
     IDIO_ASSERT (index);
-    IDIO_VERIFY_PARAM_TYPE (array, a);
+
+    IDIO_USER_TYPE_ASSERT (array, a);
 
     return idio_array_ref (a, index);
 }
@@ -1089,7 +1090,8 @@ set the `index` of `a` to `v`			\n\
     IDIO_ASSERT (a);
     IDIO_ASSERT (index);
     IDIO_ASSERT (v);
-    IDIO_VERIFY_PARAM_TYPE (array, a);
+
+    IDIO_USER_TYPE_ASSERT (array, a);
 
     return idio_array_set (a, index, v);
 }
@@ -1108,7 +1110,8 @@ Treats `a` as a stack and appends `v` to the end\n\
 {
     IDIO_ASSERT (a);
     IDIO_ASSERT (v);
-    IDIO_VERIFY_PARAM_TYPE (array, a);
+
+    IDIO_USER_TYPE_ASSERT (array, a);
 
     idio_array_push (a, v);
 
@@ -1127,7 +1130,8 @@ Treats `a` as a stack and pops a value off the end\n\
 ")
 {
     IDIO_ASSERT (a);
-    IDIO_VERIFY_PARAM_TYPE (array, a);
+
+    IDIO_USER_TYPE_ASSERT (array, a);
 
     IDIO v = idio_array_pop (a);
 
@@ -1147,7 +1151,8 @@ Treats `a` as a stack and unshifts (prepends) `v` to the start\n\
 {
     IDIO_ASSERT (a);
     IDIO_ASSERT (v);
-    IDIO_VERIFY_PARAM_TYPE (array, a);
+
+    IDIO_USER_TYPE_ASSERT (array, a);
 
     idio_array_unshift (a, v);
 
@@ -1165,7 +1170,8 @@ Treats `a` as a stack and shifts a value off the start\n\
 ")
 {
     IDIO_ASSERT (a);
-    IDIO_VERIFY_PARAM_TYPE (array, a);
+
+    IDIO_USER_TYPE_ASSERT (array, a);
 
     IDIO v = idio_array_shift (a);
 
@@ -1181,7 +1187,8 @@ convert `a` to a list				\n\
 ")
 {
     IDIO_ASSERT (a);
-    IDIO_VERIFY_PARAM_TYPE (array, a);
+
+    IDIO_USER_TYPE_ASSERT (array, a);
 
     return idio_array_to_list (a);
 }
