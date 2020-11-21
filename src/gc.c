@@ -118,7 +118,6 @@ IDIO idio_gc_get_alloc ()
     IDIO_GC_FLAGS (idio_gc) |= IDIO_GC_FLAG_REQUEST;
     IDIO p = NULL;
     for (n = 0 ; n < IDIO_GC_ALLOC_POOL; n++) {
-	idio_gc->stats.igets++;
 	idio_gc->stats.allocs++;
 	o = idio_alloc (sizeof (idio_t));
 	if (NULL == p) {
@@ -170,6 +169,7 @@ IDIO idio_gc_get (idio_type_e type)
 	idio_gc->stats.reuse++;
 	idio_gc->free = o->next;
     }
+    idio_gc->stats.igets++;
 
     /* assign type late in case we've re-used a previous object */
     o->type = type;
