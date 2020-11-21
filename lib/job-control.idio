@@ -50,7 +50,6 @@ export (%idio-jobs
 
 export-struct-accessors-only %idio-process	argv pid completed stopped status
 export-struct-accessors-only %idio-job		pipeline procs pgid notified tcattrs stdin stdout stderr
-export-struct-accessors-only %idio-status	pid state reason
 
 %%last-job := #n
 
@@ -317,7 +316,7 @@ for the benefit of the do loops in update-status_ and wait-for-job_.
     jobs-loop %idio-jobs
   })\
        ((or (C/== pid 0)
-	    (C/== errno ECHILD)) {
+	    (C/== libc/errno ECHILD)) {
 	      ;; edisplay* "mps: pid ==" pid ", errno ==" (strerrno errno)
 	      #t
 	    }) \

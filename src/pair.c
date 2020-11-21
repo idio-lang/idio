@@ -118,12 +118,6 @@ IDIO idio_list_head (IDIO p)
 	return idio_S_nil;
     }
 
-    if (! idio_isa_pair (p)) {
-	idio_debug ("ERROR: ilh p=%s\n", p);
-	idio_error_param_type ("pair", p, IDIO_C_FUNC_LOCATION ());
-
-	return idio_S_notreached;
-    }
     IDIO_TYPE_ASSERT (pair, p);
 
     return IDIO_PAIR_H (p);

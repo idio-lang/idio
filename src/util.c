@@ -25,6 +25,7 @@
 static IDIO idio_util_value_as_string;
 IDIO idio_print_conversion_format_sym = idio_S_nil;
 IDIO idio_print_conversion_precision_sym = idio_S_nil;
+static IDIO idio_features;
 
 #ifdef IDIO_DEBUG
 #undef IDIO_EQUAL_DEBUG
@@ -2609,6 +2610,15 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
     return r;
 }
 
+char *idio_as_string_safe (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
+{
+    idio_gc_pause ("idio-as-string-safe");
+    char *s = idio_as_string (o, sizep, depth, seen, first);
+    idio_gc_resume ("idio-as-string-safe");
+
+    return s;
+}
+
 /*
   Scheme-ish display -- no internal representation (where
   appropriate).  Unsuitable for (read).  Primarily:
@@ -2714,7 +2724,7 @@ char *idio_display_string (IDIO o, size_t *sizep)
 		}
 		break;
 	    default:
-		r = idio_as_string (o, sizep, 40, idio_S_nil, 1);
+		r = idio_as_string_safe (o, sizep, 40, idio_S_nil, 1);
 		break;
 	    }
 	}
@@ -3647,6 +3657,37 @@ idio-debug \"foo is %20s\n\" foo			\n\
     return idio_S_unspec;
 }
 
+IDIO idio_add_feature (IDIO f)
+{
+    IDIO_ASSERT (f);
+
+    if (!(idio_isa_symbol (f) ||
+	  idio_isa_string (f))) {
+	idio_error_param_type ("symbol|string",  f, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    IDIO fs = idio_module_symbol_value (idio_features, idio_Idio_module, idio_S_nil);
+
+    return idio_module_set_symbol_value (idio_features, idio_pair (f, fs), idio_Idio_module);
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("%add-feature", add_feature, (IDIO f), "f", "\
+add feature ``f`` to Idio features			\n\
+							\n\
+:param f: feature to add				\n\
+:type f: symbol or string				\n\
+:return: new list of features				\n\
+")
+{
+    IDIO_ASSERT (f);
+
+    IDIO_TYPE_ASSERT (symbol, f);
+
+    return idio_add_feature (f);
+}
+
 #if ! defined (strnlen)
 /*
  * Mac OS X - 10.5.8
@@ -3669,6 +3710,13 @@ void idio_init_util ()
     idio_module_set_symbol_value (idio_util_value_as_string, idio_S_nil, idio_Idio_module);
     idio_print_conversion_format_sym = idio_symbols_C_intern ("idio-print-conversion-format");
     idio_print_conversion_precision_sym = idio_symbols_C_intern ("idio-print-conversion-precision");
+
+    idio_features = idio_symbols_C_intern ("*idio-features*");
+    idio_module_set_symbol_value (idio_features, idio_S_nil, idio_Idio_module);
+
+#ifdef IDIO_DEBUG
+    idio_add_feature (idio_symbols_C_intern ("IDIO_DEBUG"));
+#endif
 
 #ifdef IDIO_EQUAL_DEBUG
     for (int i = 0; i < IDIO_TYPE_MAX; i++) {
@@ -3706,6 +3754,7 @@ void idio_util_add_primitives ()
     IDIO_ADD_PRIMITIVE (copy_value);
     IDIO_ADD_PRIMITIVE (idio_dump);
     IDIO_ADD_PRIMITIVE (idio_debug);
+    IDIO_ADD_PRIMITIVE (add_feature);
 
     IDIO name = idio_symbols_C_intern ("map");
     IDIO sym = idio_symbols_C_intern ("%map1");

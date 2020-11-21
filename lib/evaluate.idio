@@ -434,7 +434,7 @@ define (eps-qq-expand e) {
   if (pair? e) {
     sym := ph e
     (cond ((eq? 'unquote sym)		(pht e))
-	  ((eq? 'unquotesplicing sym)	(error 'eps-qq-expand "illegal"))
+	  ((eq? 'unquotesplicing sym)	(error 'eps-qq-expand "illegal use of $@ at head" e))
 	  ((eq? 'quasiquote sym)	(eps-qq-expand
 					 (eps-qq-expand (pht e))))
 	  (else				#T{ (append $(eps-qq-expand-list (ph e))

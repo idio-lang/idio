@@ -45,6 +45,7 @@ int idio_equalp (void *o1, void *o2);
 int idio_equal (IDIO o1, IDIO o2, int eqp);
 IDIO idio_value (IDIO o);
 char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first);
+char *idio_as_string_safe (IDIO o, size_t *sizep, int depth, IDIO seen, int first);
 char *idio_display_string (IDIO o, size_t *sizep);
 const char *idio_vm_bytecode2string (int code);
 void idio_as_flat_string (IDIO o, char **argv, int *i);
@@ -57,6 +58,7 @@ IDIO idio_copy (IDIO o, int depth);
 void idio_dump (IDIO o, int detail);
 void idio_debug_FILE (FILE *file, const char *fmt, IDIO o);
 void idio_debug (const char *fmt, IDIO o);
+IDIO idio_add_feature (IDIO f);
 
 #if ! defined (strnlen)
 size_t strnlen (const char *s, size_t maxlen);

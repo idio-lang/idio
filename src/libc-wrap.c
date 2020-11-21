@@ -3726,13 +3726,20 @@ void idio_init_libc_wrap ()
      */
     IDIO main_module = idio_Idio_module_instance ();
 
+    struct utsname u;
+    if (uname (&u) == -1) {
+	idio_error_system_errno ("uname", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+    }
+
     if (getenv ("HOSTNAME") == NULL) {
-	struct utsname u;
-	if (uname (&u) == -1) {
-	    idio_error_system_errno ("uname", idio_S_nil, IDIO_C_FUNC_LOCATION ());
-	}
 	idio_module_set_symbol_value (idio_symbols_C_intern ("HOSTNAME"), idio_string_C (u.nodename), main_module);
     }
+
+    idio_add_feature (idio_symbols_C_intern (u.sysname));
+    idio_add_feature (idio_symbols_C_intern (u.nodename));
+    idio_add_feature (idio_symbols_C_intern (u.release));
+    /* idio_add_feature (idio_string_C (u.version)); */
+    idio_add_feature (idio_symbols_C_intern (u.machine));
 
     /*
      * From getpwuid(3) on CentOS
