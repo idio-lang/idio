@@ -292,7 +292,6 @@ poor man's let	\n\
 	 * ((function (a1 a2) ...) v1 v2)
 	 */
 	fn = IDIO_LIST3 (idio_S_function, idio_list_reverse (vars), e);
-	idio_meaning_copy_src_properties (src, fn);
 
 	IDIO appl = idio_list_append2 (IDIO_LIST1 (fn), idio_list_reverse (vals));
 	idio_meaning_copy_src_properties (src, appl);
@@ -319,7 +318,6 @@ poor man's let	\n\
 	 * Those Schemers, eh?
 	 */
 	fn = IDIO_LIST3 (idio_S_function, idio_list_reverse (vars), e);
-	idio_meaning_copy_src_properties (src, fn);
 
 	IDIO appl = idio_list_append2 (IDIO_LIST1 (name), idio_list_reverse (vals));
 

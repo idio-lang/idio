@@ -807,12 +807,13 @@ static void idio_vm_preserve_state (IDIO thr)
     IDIO_ASSERT (thr);
     IDIO_TYPE_ASSERT (thread, thr);
 
-    IDIO_THREAD_STACK_PUSH (IDIO_THREAD_ENVIRON_SP (thr));
-    IDIO_THREAD_STACK_PUSH (IDIO_THREAD_DYNAMIC_SP (thr));
-    IDIO_THREAD_STACK_PUSH (IDIO_THREAD_TRAP_SP (thr));
-    IDIO_THREAD_STACK_PUSH (IDIO_THREAD_FRAME (thr));
-    IDIO_THREAD_STACK_PUSH (IDIO_THREAD_ENV (thr));
-    IDIO_THREAD_STACK_PUSH (idio_SM_preserve_state);
+    idio_array_push_n (IDIO_THREAD_STACK (thr), 6,
+		       IDIO_THREAD_ENVIRON_SP (thr),
+		       IDIO_THREAD_DYNAMIC_SP (thr),
+		       IDIO_THREAD_TRAP_SP (thr),
+		       IDIO_THREAD_FRAME (thr),
+		       IDIO_THREAD_ENV (thr),
+		       idio_SM_preserve_state);
 }
 
 static void idio_vm_preserve_all_state (IDIO thr)
@@ -2781,6 +2782,7 @@ int idio_vm_run1 (IDIO thr)
 	fprintf (stderr, "\n\nidio_vm_run1: PC %td > max code PC %" PRIdPTR "\n", IDIO_THREAD_PC (thr), IDIO_IA_USIZE (bc));
 	idio_vm_panic (thr, "idio_vm_run1: bad PC!");
     }
+
     IDIO_I ins = IDIO_THREAD_FETCH_NEXT (bc);
 
 #ifdef IDIO_VM_PROF

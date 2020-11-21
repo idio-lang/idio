@@ -298,6 +298,41 @@ void idio_array_push (IDIO a, IDIO o)
     idio_array_insert_index (a, o, IDIO_ARRAY_USIZE (a));
 }
 
+void idio_array_push_n (IDIO a, size_t nargs, ...)
+{
+    IDIO_ASSERT (a);
+    IDIO_TYPE_ASSERT (array, a);
+
+    IDIO_ASSERT_NOT_CONST (array, a);
+
+    idio_ai_t index = IDIO_ARRAY_USIZE (a);
+
+    while ((index + nargs) >= IDIO_ARRAY_ASIZE (a)) {
+	idio_resize_array (a);
+    }
+
+    va_list ap;
+    va_start (ap, nargs);
+
+    size_t i;
+    for (i = 0; i < nargs; i++) {
+	IDIO arg = va_arg (ap, IDIO);
+	/* IDIO_ASSERT (*arg); */
+	IDIO_ARRAY_AE (a, index + i) = arg;
+    }
+
+    va_end (ap);
+
+
+    /* index is 0+, usize is 1+ */
+    index += nargs;
+    if (index > IDIO_ARRAY_USIZE (a)) {
+	IDIO_ARRAY_USIZE (a) = index;
+    }
+
+    IDIO_C_ASSERT (IDIO_ARRAY_USIZE (a) <= IDIO_ARRAY_ASIZE (a));
+}
+
 /**
  * idio_array_pop() - pop value off the end of an array
  * @a: array

@@ -165,5 +165,8 @@ $(BINDIR):
 valgrind: $(BINDIR)/idio
 	valgrind --leak-check=full --show-leak-kinds=all --child-silent-after-fork=yes $(BINDIR)/idio # 2>&1 | less +/^==
 
+	valgrind --tool=callgrind ../bin/idio counter
+	qcachegrind
+
 cppcheck:
 	cppcheck --force --enable=all .
