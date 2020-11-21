@@ -536,20 +536,58 @@ void idio_gc_process_grey (idio_gc_t *gc, unsigned colour)
 	gc->grey = IDIO_HASH_GREY (o);
 	if (IDIO_HASH_FLAGS (o) & IDIO_HASH_FLAG_WEAK_KEYS) {
 	    for (i = 0; i < IDIO_HASH_SIZE (o); i++) {
-		int k_freed = 0;
+		idio_hash_entry_t *he = IDIO_HASH_HA (o, i);
+		for ( ; NULL != he; he = IDIO_HASH_HE_NEXT (he)) {
+		    int k_freed = 0;
 
-		/*
-		 * Don't mark the key
-		 */
-		IDIO k = IDIO_HASH_HE_KEY (o, i);
-		switch ((uintptr_t) k & IDIO_TYPE_MASK) {
-		case IDIO_TYPE_FIXNUM_MARK:
-		case IDIO_TYPE_CONSTANT_MARK:
-		case IDIO_TYPE_PLACEHOLDER_MARK:
-		    break;
-		case IDIO_TYPE_POINTER_MARK:
-		    if (k->type) {
-			IDIO v = IDIO_HASH_HE_VALUE (o, i);
+		    /*
+		     * Don't mark the key
+		     */
+		    IDIO k = IDIO_HASH_HE_KEY (he);
+		    switch ((uintptr_t) k & IDIO_TYPE_MASK) {
+		    case IDIO_TYPE_FIXNUM_MARK:
+		    case IDIO_TYPE_CONSTANT_MARK:
+		    case IDIO_TYPE_PLACEHOLDER_MARK:
+			break;
+		    case IDIO_TYPE_POINTER_MARK:
+			if (k->type) {
+			    IDIO v = IDIO_HASH_HE_VALUE (he);
+			    switch ((uintptr_t) v & IDIO_TYPE_MASK) {
+			    case IDIO_TYPE_FIXNUM_MARK:
+			    case IDIO_TYPE_CONSTANT_MARK:
+			    case IDIO_TYPE_PLACEHOLDER_MARK:
+				break;
+			    case IDIO_TYPE_POINTER_MARK:
+				if (v->type) {
+				    if (idio_S_nil != v) {
+					idio_gc_gcc_mark (gc, v, colour);
+				    }
+				} else {
+				    fprintf (stderr, "ig_pg k OK, v freed %p?\n", v);
+				}
+				break;
+			    default:
+				/* inconceivable! */
+				idio_error_printf (IDIO_C_FUNC_LOCATION (), "unexpected object mark type %#x", v);
+
+				/* notreached */
+				return;
+			    }
+			} else {
+			    k_freed = 1;
+			    IDIO_HASH_HE_VALUE (he) = idio_S_nil;
+			}
+			break;
+		    default:
+			/* inconceivable! */
+			idio_error_printf (IDIO_C_FUNC_LOCATION (), "unexpected object mark type %#x", k);
+
+			/* notreached */
+			return;
+		    }
+
+		    if (! k_freed) {
+			IDIO v = IDIO_HASH_HE_VALUE (he);
 			switch ((uintptr_t) v & IDIO_TYPE_MASK) {
 			case IDIO_TYPE_FIXNUM_MARK:
 			case IDIO_TYPE_CONSTANT_MARK:
@@ -561,7 +599,7 @@ void idio_gc_process_grey (idio_gc_t *gc, unsigned colour)
 				    idio_gc_gcc_mark (gc, v, colour);
 				}
 			    } else {
-				fprintf (stderr, "ig_pg k OK, v freed %p?\n", v);
+				fprintf (stderr, "ig_pg v freed %p?\n", v);
 			    }
 			    break;
 			default:
@@ -571,55 +609,23 @@ void idio_gc_process_grey (idio_gc_t *gc, unsigned colour)
 			    /* notreached */
 			    return;
 			}
-		    } else {
-			k_freed = 1;
-			IDIO_HASH_HE_VALUE (o, i) = idio_S_nil;
-		    }
-		    break;
-		default:
-		    /* inconceivable! */
-		    idio_error_printf (IDIO_C_FUNC_LOCATION (), "unexpected object mark type %#x", k);
-
-		    /* notreached */
-		    return;
-		}
-
-		if (! k_freed) {
-		    IDIO v = IDIO_HASH_HE_VALUE (o, i);
-		    switch ((uintptr_t) v & IDIO_TYPE_MASK) {
-		    case IDIO_TYPE_FIXNUM_MARK:
-		    case IDIO_TYPE_CONSTANT_MARK:
-		    case IDIO_TYPE_PLACEHOLDER_MARK:
-			break;
-		    case IDIO_TYPE_POINTER_MARK:
-			if (v->type) {
-			    if (idio_S_nil != v) {
-				idio_gc_gcc_mark (gc, v, colour);
-			    }
-			} else {
-			    fprintf (stderr, "ig_pg v freed %p?\n", v);
-			}
-			break;
-		    default:
-			/* inconceivable! */
-			idio_error_printf (IDIO_C_FUNC_LOCATION (), "unexpected object mark type %#x", v);
-
-			/* notreached */
-			return;
 		    }
 		}
 	    }
 	} else {
 	    for (i = 0; i < IDIO_HASH_SIZE (o); i++) {
-		if (!(IDIO_HASH_FLAGS (o) & IDIO_HASH_FLAG_STRING_KEYS)) {
-		    IDIO k = IDIO_HASH_HE_KEY (o, i);
-		    if (idio_S_nil != k) {
-			idio_gc_gcc_mark (gc, k, colour);
+		idio_hash_entry_t *he = IDIO_HASH_HA (o, i);
+		for ( ; NULL != he; he = IDIO_HASH_HE_NEXT (he)) {
+		    if (!(IDIO_HASH_FLAGS (o) & IDIO_HASH_FLAG_STRING_KEYS)) {
+			IDIO k = IDIO_HASH_HE_KEY (he);
+			if (idio_S_nil != k) {
+			    idio_gc_gcc_mark (gc, k, colour);
+			}
 		    }
-		}
-		IDIO v = IDIO_HASH_HE_VALUE (o, i);
-		if (idio_S_nil != v) {
-		    idio_gc_gcc_mark (gc, v, colour);
+		    IDIO v = IDIO_HASH_HE_VALUE (he);
+		    if (idio_S_nil != v) {
+			idio_gc_gcc_mark (gc, v, colour);
+		    }
 		}
 	    }
 	}
@@ -915,7 +921,7 @@ void idio_gc_dump ()
 	while (NULL != o) {
 	    IDIO_ASSERT (o);
 	    if (n < 10) {
-		idio_dump (o, 1);
+		idio_dump (o, 0);
 	    }
 	    o = o->next;
 	    n++;
@@ -1072,7 +1078,7 @@ void idio_gc_expose_all ()
 {
     idio_gc_t *gc = idio_gc;
     while (NULL != gc) {
-	fprintf (stderr, "gc-expose-all %d\n", gc->inst);
+	fprintf (stderr, "gc-expose-all #%d\n", gc->inst);
 	idio_root_t *r = gc->roots;
 	size_t n = 0;
 	while (r) {
@@ -1083,7 +1089,7 @@ void idio_gc_expose_all ()
 	}
 
 	if (n) {
-	    fprintf (stderr, "gc-expose-all %d: for %zd root objects\n", gc->inst, n);
+	    fprintf (stderr, "gc-expose-all #%d: for %zd root objects\n", gc->inst, n);
 	}
 
 	gc = gc->next;
@@ -1108,274 +1114,6 @@ void idio_gc_expose_autos ()
 
 	gc = gc->next;
     }
-}
-
-static IDIO idio_gc_find_frame_id = idio_S_nil;
-
-void idio_gc_find_frame_capture (IDIO frame)
-{
-    idio_gc_find_frame_id = frame;
-}
-
-void idio_gc_find_frame_print_id (IDIO id, int depth)
-{
-    for (int i = 0; i < depth; i++) {
-	fprintf (stderr, "  ");
-    }
-
-    fprintf (stderr, "idio_gc_find_frame_r: %10p %-12s in ", id, idio_type2string (id));
-}
-
-void idio_gc_find_frame_r (IDIO id, int depth)
-{
-    if (depth > 20) {
-	fprintf (stderr, "depth!\n");
-	return;
-    }
-
-    int ri = 0;
-    idio_root_t *root = idio_gc->roots;
-    while (root) {
-	if (root->object == id) {
-	    idio_gc_find_frame_print_id (id, depth);
-	    fprintf (stderr, "root #%d: ", ri);
-	    idio_gc_dump_root (root);
-	    fprintf (stderr, "\n");
-	    return;
-	}
-	root = root->next;
-	ri++;
-    }
-
-    IDIO o = idio_gc->used;
-    IDIO no = NULL;
-    int nobj = 0;
-    size_t i;
-    int found = 0;
-    while (o) {
-	IDIO_ASSERT (o);
-	nobj++;
-
-	no = o->next;
-
-	switch (o->type) {
-	case IDIO_TYPE_PAIR:
-	    if (IDIO_PAIR_H (o) == id) {
-		idio_gc_find_frame_print_id (id, depth);
-		idio_debug ("pair h %.100s\n", o);
-		idio_gc_find_frame_r (o, depth + 1);
-		fprintf (stderr, "\n");
-		found = 1;
-	    } else if (IDIO_PAIR_T (o) == id) {
-		idio_gc_find_frame_print_id (id, depth);
-		idio_debug ("pair t %.100s\n", o);
-		idio_gc_find_frame_r (o, depth + 1);
-		fprintf (stderr, "\n");
-		found = 1;
-	    }
-	    break;
-	case IDIO_TYPE_ARRAY:
-	    for (i = 0; i < IDIO_ARRAY_USIZE (o); i++) {
-		if (NULL != IDIO_ARRAY_AE (o, i)) {
-		    if (IDIO_ARRAY_AE (o, i) == id) {
-			idio_gc_find_frame_print_id (id, depth);
-			fprintf (stderr, "array #%zu ", i);
-			idio_debug ("%.100s\n", o);
-			idio_gc_find_frame_r (o, depth + 1);
-			fprintf (stderr, "\n");
-			found = 1;
-		    }
-		}
-	    }
-	    break;
-	case IDIO_TYPE_HASH:
-	    for (i = 0; i < IDIO_HASH_SIZE (o); i++) {
-		if (!((IDIO_HASH_FLAGS (o) & IDIO_HASH_FLAG_STRING_KEYS) ||
-		      (IDIO_HASH_FLAGS (o) & IDIO_HASH_FLAG_WEAK_KEYS))) {
-		    if (idio_S_nil != IDIO_HASH_HE_KEY (o, i)) {
-			if (IDIO_HASH_HE_KEY (o, i) == id) {
-			    idio_gc_find_frame_print_id (id, depth);
-			    fprintf (stderr, "hash key #%zu\n", i);
-			    idio_gc_find_frame_r (o, depth + 1);
-			    fprintf (stderr, "\n");
-			    found = 1;
-			}
-		    }
-		} else {
-		    if (idio_S_nil != IDIO_HASH_HE_KEY (o, i)) {
-			if (IDIO_HASH_HE_KEY (o, i) == id) {
-			    idio_gc_find_frame_print_id (id, depth);
-			    fprintf (stderr, "hash W/S key #%zu\n", i);
-			    idio_gc_find_frame_r (o, depth + 1);
-			    fprintf (stderr, "\n");
-			    found = 1;
-			}
-		    }
-		}
-		if (idio_S_nil != IDIO_HASH_HE_VALUE (o, i)) {
-		    if (IDIO_HASH_HE_VALUE (o, i) == id) {
-			idio_gc_find_frame_print_id (id, depth);
-			fprintf (stderr, "hash value #%zu\n", i);
-			idio_gc_find_frame_r (o, depth + 1);
-			fprintf (stderr, "\n");
-			found = 1;
-		    }
-		}
-	    }
-	    break;
-	case IDIO_TYPE_CLOSURE:
-	    if (IDIO_CLOSURE_FRAME (o) == id) {
-		idio_gc_find_frame_print_id (id, depth);
-		idio_debug ("clos frame %s\n", o);
-		id = o;
-		idio_gc_find_frame_r (o, depth + 1);
-		fprintf (stderr, "\n");
-		found = 1;
-	    }
-	    if (IDIO_CLOSURE_ENV (o) == id) {
-		idio_gc_find_frame_print_id (id, depth);
-		idio_debug ("clos env? %s\n", o);
-		id = o;
-		idio_gc_find_frame_r (o, depth + 1);
-		fprintf (stderr, "\n");
-		found = 1;
-	    }
-	    break;
-	case IDIO_TYPE_FRAME:
-	    if (o == id) {
-		idio_gc_find_frame_print_id (id, depth);
-		idio_debug ("frame itself %s\n", o);
-		if (idio_S_nil != IDIO_FRAME_NEXT (o)) {
-		    id = IDIO_FRAME_NEXT (o);
-		    /* idio_gc_find_frame_r (o, depth + 1); */
-		    fprintf (stderr, "\n");
-		    found = 1;
-		} else {
-		    fprintf (stderr, "dead end?");
-		    break;
-		}
-	    } else if (IDIO_FRAME_NEXT (o) == id) {
-		idio_gc_find_frame_print_id (id, depth);
-		idio_debug ("frame next %s\n", o);
-		id = o;
-		idio_gc_find_frame_r (o, depth + 1);
-		fprintf (stderr, "\n");
-		found = 1;
-	    } else if (IDIO_FRAME_NAMES (o) == id) {
-		idio_gc_find_frame_print_id (id, depth);
-		idio_debug ("frame names %s\n", o);
-		id = o;
-		idio_gc_find_frame_r (o, depth + 1);
-		fprintf (stderr, "\n");
-		found = 1;
-	    } else {
-		for (i = 0; i < IDIO_FRAME_NARGS (o); i++) {
-		    if (IDIO_FRAME_ARGS (o, i) == id) {
-			idio_gc_find_frame_print_id (id, depth);
-			fprintf (stderr, "frame arg #%zu ", i);
-			idio_debug ("%.100s\n", o);
-			idio_gc_find_frame_r (o, depth + 1);
-			fprintf (stderr, "\n");
-			found = 1;
-		    }
-		}
-	    }
-	    break;
-	case IDIO_TYPE_THREAD:
-	    if (IDIO_THREAD_STACK (o) == id) {
-		idio_gc_find_frame_print_id (id, depth);
-		idio_debug ("thr stack %s\n", o);
-		id = o;
-		idio_gc_find_frame_r (o, depth + 1);
-		fprintf (stderr, "\n");
-		found = 1;
-	    } else if (IDIO_THREAD_VAL (o) == id) {
-		idio_gc_find_frame_print_id (id, depth);
-		idio_debug ("thr val %s\n", o);
-		id = o;
-		idio_gc_find_frame_r (o, depth + 1);
-		fprintf (stderr, "\n");
-		found = 1;
-	    } else if (IDIO_THREAD_FRAME (o) == id) {
-		idio_gc_find_frame_print_id (id, depth);
-		idio_debug ("thr frame %s\n", o);
-		id = o;
-		idio_gc_find_frame_r (o, depth + 1);
-		fprintf (stderr, "\n");
-		found = 1;
-	    } else if (IDIO_THREAD_ENV (o) == id) {
-		idio_gc_find_frame_print_id (id, depth);
-		idio_debug ("thr env %s\n", o);
-		id = o;
-		idio_gc_find_frame_r (o, depth + 1);
-		fprintf (stderr, "\n");
-		found = 1;
-	    } else if (IDIO_THREAD_FUNC (o) == id) {
-		idio_gc_find_frame_print_id (id, depth);
-		idio_debug ("thr func %s\n", o);
-		id = o;
-		idio_gc_find_frame_r (o, depth + 1);
-		fprintf (stderr, "\n");
-		found = 1;
-	    } else if (IDIO_THREAD_REG1 (o) == id) {
-		idio_gc_find_frame_print_id (id, depth);
-		idio_debug ("thr reg1 %s\n", o);
-		id = o;
-		idio_gc_find_frame_r (o, depth + 1);
-		fprintf (stderr, "\n");
-		found = 1;
-	    } else if (IDIO_THREAD_REG2 (o) == id) {
-		idio_gc_find_frame_print_id (id, depth);
-		idio_debug ("thr reg2 %s\n", o);
-		id = o;
-		idio_gc_find_frame_r (o, depth + 1);
-		fprintf (stderr, "\n");
-		found = 1;
-	    } else if (IDIO_THREAD_EXPR (o) == id) {
-		idio_gc_find_frame_print_id (id, depth);
-		idio_debug ("thr expr %s\n", o);
-		id = o;
-		idio_gc_find_frame_r (o, depth + 1);
-		fprintf (stderr, "\n");
-		found = 1;
-	    }
-	    break;
-	case IDIO_TYPE_CONTINUATION:
-	    if (IDIO_CONTINUATION_STACK (o) == id) {
-		idio_gc_find_frame_print_id (id, depth);
-		idio_debug ("k stack %s\n", o);
-		id = o;
-		idio_gc_find_frame_r (o, depth + 1);
-		fprintf (stderr, "\n");
-		found = 1;
-	    }
-	    break;
-	}
-
-	o = no;
-    }
-
-    if (0 == found) {
-	idio_gc_find_frame_print_id (id, depth);
-	fprintf (stderr, "??: %d objs: done\n", nobj);
-    }
-}
-
-void idio_gc_find_frame ()
-{
-    if (idio_S_nil == idio_gc_find_frame_id) {
-	return;
-    }
-
-    if (IDIO_TYPE_NONE == idio_gc_find_frame_id->type) {
-	fprintf (stderr, "igff: frame freed\n");
-	idio_gc_find_frame_id = idio_S_nil;
-	return;
-    }
-
-    idio_gc_find_frame_print_id (idio_gc_find_frame_id, 0);
-    idio_debug ("%s\n", idio_gc_find_frame_id);
-    idio_gc_find_frame_r (idio_gc_find_frame_id, 0);
 }
 
 void idio_gc_mark (idio_gc_t *gc)
@@ -1567,9 +1305,9 @@ void idio_gc_sweep (idio_gc_t *gc)
     }
 
     if (nobj) {
-	fprintf (stderr, "gc-sweep %d: saw %7zd obj; freed %5.1f%%; left %7zd + %6zd\n", gc->inst, nobj, freed * 100.0 / nobj, nobj - freed, freed);
+	fprintf (stderr, "gc-sweep #%d: saw %7zd obj; freed %5.1f%%; left %7zd + %6zd\n", gc->inst, nobj, freed * 100.0 / nobj, nobj - freed, freed);
     } else {
-	fprintf (stderr, "gc-sweep %d: saw %7zd obj; freed     0%%; left %7zd + %6zd\n", gc->inst, nobj, nobj - freed, freed);
+	fprintf (stderr, "gc-sweep #%d: saw %7zd obj; freed     0%%; left %7zd + %6zd\n", gc->inst, nobj, nobj - freed, freed);
     }
 }
 
@@ -1613,7 +1351,7 @@ void idio_gc_collect (idio_gc_t *gc, int gen, char *caller)
 	return;
     }
 
-    fprintf (stderr, "gc-collect %d: %20s: ", gc->inst, caller);
+    fprintf (stderr, "gc-collect #%d: %20s: ", gc->inst, caller);
     /* idio_gc_find_frame (); */
 
     IDIO_GC_FLAGS (idio_gc) &= ~ IDIO_GC_FLAG_REQUEST;
@@ -1868,7 +1606,7 @@ void idio_gc_stats ()
 
     idio_gc_t *gc = idio_gc;
     while (NULL != gc) {
-	fprintf (fh, "gc-stats %d: %4lld   collections\n", gc->inst, gc->stats.collections);
+	fprintf (fh, "gc-stats #%d: %4lld   collections\n", gc->inst, gc->stats.collections);
 
 	count = gc->stats.bounces;
 	scale = 0;
@@ -2331,18 +2069,21 @@ static void idio_gc_run_all_finalizers ()
     int n = 0;
     idio_ai_t hi;
     for (hi = 0; hi < IDIO_HASH_SIZE (idio_gc_finalizer_hash); hi++) {
-	IDIO k = IDIO_HASH_HE_KEY (idio_gc_finalizer_hash, hi);
-	IDIO_ASSERT (k);
-	if (idio_S_nil != k) {
-	    n++;
+	idio_hash_entry_t *he = IDIO_HASH_HA (idio_gc_finalizer_hash, hi);
+	for (; NULL != he; he = IDIO_HASH_HE_NEXT (he)) {
+	    IDIO k = IDIO_HASH_HE_KEY (he);
+	    IDIO_ASSERT (k);
+	    if (idio_S_nil != k) {
+		n++;
 
-	    /* apply the finalizer */
-	    IDIO C_p = IDIO_HASH_HE_VALUE (idio_gc_finalizer_hash, hi);
-	    void (*func) (IDIO o) = IDIO_C_TYPE_POINTER_P (C_p);
-	    (*func) (k);
+		/* apply the finalizer */
+		IDIO C_p = IDIO_HASH_HE_VALUE (he);
+		void (*func) (IDIO o) = IDIO_C_TYPE_POINTER_P (C_p);
+		(*func) (k);
 
-	    /* expunge the key/value pair from this hash */
-	    idio_hash_delete (idio_gc_finalizer_hash, k);
+		/* expunge the key/value pair from this hash */
+		idio_hash_delete (idio_gc_finalizer_hash, k);
+	    }
 	}
     }
     idio_hash_remove_weak_table (idio_gc_finalizer_hash);

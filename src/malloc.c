@@ -428,7 +428,7 @@ void idio_malloc_free (void *cp)
     register int bucket = op->ov_bucket;
 
     IDIO_C_ASSERT (bucket < IDIO_MALLOC_NBUCKETS);
-    
+
     /*
      * If someone ran cp[-1] = RMAGIC then we don't know what else
      * they've done.  Not that there's *that* much we can do as any of
@@ -459,7 +459,7 @@ void idio_malloc_free (void *cp)
 	 */
 	memset (cp, 0x46, op->ov_size);
 #endif
-    
+
 	op->ov_magic = IDIO_MALLOC_MAGIC_FREE;
 	IDIO_MALLOC_OVERHEAD_CHAIN (op) = idio_malloc_nextf[bucket];	/* also clobbers ov_magic */
 	idio_malloc_nextf[bucket] = op;
@@ -507,7 +507,7 @@ void * idio_malloc_realloc (void *cp, size_t size)
     register int bucket = op->ov_bucket;
 
     IDIO_C_ASSERT (bucket < IDIO_MALLOC_NBUCKETS);
-    
+
     /*
      * If someone ran cp[-1] = RMAGIC then we don't know what else
      * they've done.  Not that there's *that* much we can do as any of
@@ -548,11 +548,11 @@ void * idio_malloc_realloc (void *cp, size_t size)
     if ((res = idio_malloc_malloc (size)) == NULL) {
 	return NULL;
     }
-    
+
     bcopy(cp, res, count);
 
     idio_malloc_free (cp);
-    
+
     return res;
 }
 

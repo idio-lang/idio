@@ -484,10 +484,14 @@ typedef struct idio_array_s idio_array_t;
 typedef size_t idio_hi_t;
 
 typedef struct idio_hash_entry_s {
-    struct idio_s *k;
-    struct idio_s *v;
-    idio_hi_t n;		/* next in chain */
+    struct idio_hash_entry_s *next;
+    struct idio_s *key;
+    struct idio_s *value;
 } idio_hash_entry_t;
+
+#define IDIO_HASH_HE_NEXT(HE)	((HE)->next)
+#define IDIO_HASH_HE_KEY(HE)	((HE)->key)
+#define IDIO_HASH_HE_VALUE(HE)	((HE)->value)
 
 #define IDIO_HASH_FLAG_NONE		0
 #define IDIO_HASH_FLAG_STRING_KEYS	(1<<0)
@@ -498,26 +502,22 @@ typedef struct idio_hash_s {
     idio_hi_t size;
     idio_hi_t mask;	      /* bitmask for easy modulo arithmetic */
     idio_hi_t count;	      /* (key) count */
-    idio_hi_t start;	      /* start free search */
     int (*comp_C) (void *k1, void *k2);	/* C equivalence function */
     idio_hi_t (*hash_C) (struct idio_s *h, void *k); /* C hashing function */
     struct idio_s *comp;	/* user-supplied comparator */
     struct idio_s *hash;	/* user-supplied hashing function */
-    idio_hash_entry_t *he;	/* a C array */
+    idio_hash_entry_t* *ha;	/* a C array */
 } idio_hash_t;
 
 #define IDIO_HASH_GREY(H)	((H)->u.hash->grey)
 #define IDIO_HASH_SIZE(H)	((H)->u.hash->size)
 #define IDIO_HASH_MASK(H)	((H)->u.hash->mask)
 #define IDIO_HASH_COUNT(H)	((H)->u.hash->count)
-#define IDIO_HASH_START(H)	((H)->u.hash->start)
 #define IDIO_HASH_COMP_C(H)	((H)->u.hash->comp_C)
 #define IDIO_HASH_HASH_C(H)	((H)->u.hash->hash_C)
 #define IDIO_HASH_COMP(H)	((H)->u.hash->comp)
 #define IDIO_HASH_HASH(H)	((H)->u.hash->hash)
-#define IDIO_HASH_HE_KEY(H,i)	((H)->u.hash->he[i].k)
-#define IDIO_HASH_HE_VALUE(H,i)	((H)->u.hash->he[i].v)
-#define IDIO_HASH_HE_NEXT(H,i)	((H)->u.hash->he[i].n)
+#define IDIO_HASH_HA(H,i)	((H)->u.hash->ha[i])
 #define IDIO_HASH_FLAGS(H)	((H)->tflags)
 
 /*
@@ -1425,8 +1425,6 @@ void idio_gc_protect (IDIO o);
 void idio_gc_protect_auto (IDIO o);
 void idio_gc_expose (IDIO o);
 void idio_gc_expose_all ();
-void idio_gc_find_frame_capture (IDIO frame);
-void idio_gc_find_frame ();
 void idio_gc_mark (idio_gc_t *idio_gc);
 void idio_gc_sweep (idio_gc_t *idio_gc);
 void idio_gc_possibly_collect ();

@@ -818,16 +818,57 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		    return (o1->u.hash == o2->u.hash);
 		}
 
-		if (IDIO_HASH_SIZE (o1) != IDIO_HASH_SIZE (o2)) {
+		if (IDIO_HASH_COUNT (o1) != IDIO_HASH_COUNT (o2)) {
 		    return 0;
 		}
 
-		for (i = 0; i < IDIO_HASH_SIZE (o1); i++) {
-		    if (! idio_equal (IDIO_HASH_HE_KEY (o1, i), IDIO_HASH_HE_KEY (o2, i), eqp) ||
-			! idio_equal (IDIO_HASH_HE_VALUE (o1, i), IDIO_HASH_HE_VALUE (o2, i), eqp)) {
-			return 0;
+		{
+		    /*
+		     * We could have two hashes of different sizes
+		     * with the same key/value tuples -- but the
+		     * orderings will be different
+		     *
+		     * So, if the keys are the same then if each value
+		     * is the same against each key...
+		     */
+
+		    IDIO o1k = idio_hash_keys_to_list (o1);
+		    idio_gc_protect (o1k);
+		    IDIO kl = o1k;
+		    while (idio_S_nil != kl) {
+			if (! idio_hash_exists_key (o2, IDIO_PAIR_H (kl))) {
+			    idio_gc_expose (o1k);
+			    return 0;
+			}
+			if (! idio_equal (idio_hash_ref (o1, IDIO_PAIR_H (kl)),
+					  idio_hash_ref (o2, IDIO_PAIR_H (kl)),
+					  eqp)) {
+			    idio_gc_expose (o1k);
+			    return 0;
+			}
+			kl = IDIO_PAIR_T (kl);
 		    }
+		    idio_gc_expose (o1k);
+
+		    IDIO o2k = idio_hash_keys_to_list (o2);
+		    idio_gc_protect (o2k);
+		    kl = o2k;
+		    while (idio_S_nil != kl) {
+			if (! idio_hash_exists_key (o1, IDIO_PAIR_H (kl))) {
+			    idio_gc_expose (o2k);
+			    return 0;
+			}
+			if (! idio_equal (idio_hash_ref (o1, IDIO_PAIR_H (kl)),
+					  idio_hash_ref (o2, IDIO_PAIR_H (kl)),
+					  eqp)) {
+			    idio_gc_expose (o2k);
+			    return 0;
+			}
+			kl = IDIO_PAIR_T (kl);
+		    }
+		    idio_gc_expose (o2k);
 		}
+
 		return 1;
 	    case IDIO_TYPE_CLOSURE:
 		return (o1 == o2);
@@ -1697,52 +1738,55 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 		*sizep = strlen (r);
 		if (depth > 0) {
 		    for (i = 0; i < IDIO_HASH_SIZE (o); i++) {
-			if (idio_S_nil != IDIO_HASH_HE_KEY (o, i)) {
-			    /*
-			     * We're looking to generate:
-			     *
-			     * (k & v)
-			     *
-			     */
-			    IDIO_STRCAT (r, sizep, "(");
+			idio_hash_entry_t *he = IDIO_HASH_HA (o, i);
+			for (; NULL != he; he = IDIO_HASH_HE_NEXT (he)) {
+			    if (idio_S_nil != IDIO_HASH_HE_KEY (he)) {
+				/*
+				 * We're looking to generate:
+				 *
+				 * (k & v)
+				 *
+				 */
+				IDIO_STRCAT (r, sizep, "(");
 
-			    size_t t_size = 0;
-			    char *t;
-			    if (IDIO_HASH_FLAGS (o) & IDIO_HASH_FLAG_STRING_KEYS) {
-				if (IDIO_ASPRINTF (&t, "%s", (char *) IDIO_HASH_HE_KEY (o, i)) == -1) {
+				size_t t_size = 0;
+				char *t;
+				if (IDIO_HASH_FLAGS (o) & IDIO_HASH_FLAG_STRING_KEYS) {
+				    if (IDIO_ASPRINTF (&t, "%s", (char *) IDIO_HASH_HE_KEY (he)) == -1) {
+					idio_gc_free (r);
+					idio_error_alloc ("asprintf");
+
+					/* notreached */
+					return NULL;
+				    }
+
+				    t = (char *) IDIO_HASH_HE_KEY (he);
+				    t_size = strlen (t);
+				} else {
+				    t = idio_as_string (IDIO_HASH_HE_KEY (he), &t_size, depth - 1, seen, 0);
+				}
+				IDIO_STRCAT_FREE (r, sizep, t, t_size);
+
+				char *hes;
+				if (IDIO_ASPRINTF (&hes, " %c ", IDIO_PAIR_SEPARATOR) == -1) {
 				    idio_gc_free (r);
 				    idio_error_alloc ("asprintf");
 
 				    /* notreached */
 				    return NULL;
 				}
+				size_t hes_size = strlen (hes);
+				IDIO_STRCAT_FREE (r, sizep, hes, hes_size);
 
-				t = (char *) IDIO_HASH_HE_KEY (o, i);
-				t_size = strlen (t);
-			    } else {
-				t = idio_as_string (IDIO_HASH_HE_KEY (o, i), &t_size, depth - 1, seen, 0);
+				if (IDIO_HASH_HE_VALUE (he)) {
+				    t_size = 0;
+				    t = idio_as_string (IDIO_HASH_HE_VALUE (he), &t_size, depth - 1, seen, 0);
+				    IDIO_STRCAT_FREE (r, sizep, t, t_size);
+				} else {
+				    IDIO_STRCAT (r, sizep, "-");
+				}
+				IDIO_STRCAT (r, sizep, ")");
 			    }
-			    IDIO_STRCAT_FREE (r, sizep, t, t_size);
-
-			    char *hes;
-			    if (IDIO_ASPRINTF (&hes, " %c ", IDIO_PAIR_SEPARATOR) == -1) {
-				idio_gc_free (r);
-				idio_error_alloc ("asprintf");
-
-				/* notreached */
-				return NULL;
-			    }
-			    size_t hes_size = strlen (hes);
-			    IDIO_STRCAT_FREE (r, sizep, hes, hes_size);
-
-			    if (IDIO_HASH_HE_VALUE (o, i)) {
-				t_size = 0;
-				t = idio_as_string (IDIO_HASH_HE_VALUE (o, i), &t_size, depth - 1, seen, 0);
-				IDIO_STRCAT_FREE (r, sizep, t, t_size);
-			    } else {
-				IDIO_STRCAT (r, sizep, "-");
-			    }
-			    IDIO_STRCAT (r, sizep, ")");
 			}
 		    }
 		} else {
@@ -2414,27 +2458,30 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 		    IDIO_STRCAT (r, sizep, "\n\tmethods: ");
 		    if (idio_S_nil != mh) {
 			for (i = 0; i < IDIO_HASH_SIZE (mh); i++) {
-			    if (idio_S_nil != IDIO_HASH_HE_KEY (mh, i)) {
-				IDIO_STRCAT (r, sizep, "\n\t");
-				size_t t_size = 0;
-				char *t = idio_as_string (IDIO_HASH_HE_KEY (mh, i), &t_size, depth - 1, seen, 0);
-				IDIO_STRCAT_FREE (r, sizep, t, t_size);
-				IDIO_STRCAT (r, sizep, ":");
-				if (IDIO_HASH_HE_VALUE (mh, i)) {
-				    t_size = 0;
-				    t = idio_as_string (IDIO_HASH_HE_VALUE (mh, i), &t_size, depth - 1, seen, 0);
-				} else {
-				    if (IDIO_ASPRINTF (&t, "-") == -1) {
-					idio_gc_free (r);
-					idio_error_alloc ("asprintf");
+			    idio_hash_entry_t *he = IDIO_HASH_HA (mh, i);
+			    for (; NULL != he ; he = IDIO_HASH_HE_NEXT (he)) {
+				if (idio_S_nil != IDIO_HASH_HE_KEY (he)) {
+				    IDIO_STRCAT (r, sizep, "\n\t");
+				    size_t t_size = 0;
+				    char *t = idio_as_string (IDIO_HASH_HE_KEY (he), &t_size, depth - 1, seen, 0);
+				    IDIO_STRCAT_FREE (r, sizep, t, t_size);
+				    IDIO_STRCAT (r, sizep, ":");
+				    if (IDIO_HASH_HE_VALUE (he)) {
+					t_size = 0;
+					t = idio_as_string (IDIO_HASH_HE_VALUE (he), &t_size, depth - 1, seen, 0);
+				    } else {
+					if (IDIO_ASPRINTF (&t, "-") == -1) {
+					    idio_gc_free (r);
+					    idio_error_alloc ("asprintf");
 
-					/* notreached */
-					return NULL;
+					    /* notreached */
+					    return NULL;
+					}
+					t_size = strlen (t);
 				    }
-				    t_size = strlen (t);
+				    IDIO_STRCAT_FREE (r, sizep, t, t_size);
+				    IDIO_STRCAT (r, sizep, " ");
 				}
-				IDIO_STRCAT_FREE (r, sizep, t, t_size);
-				IDIO_STRCAT (r, sizep, " ");
 			    }
 			}
 		    }
@@ -3365,8 +3412,8 @@ void idio_dump (IDIO o, int detail)
 		if (detail > 4) {
 		    fprintf (stderr, "-> %10p ", o->next);
 		}
-		fprintf (stderr, "t=%2d/%4.4s f=%2x gcf=%2x ", o->type, idio_type2string (o), o->flags, o->gc_flags);
 	    }
+	    fprintf (stderr, "t=%2d/%4.4s f=%2x gcf=%2x ", o->type, idio_type2string (o), o->flags, o->gc_flags);
 
 	    switch (o->type) {
 	    case IDIO_TYPE_STRING:
@@ -3409,7 +3456,7 @@ void idio_dump (IDIO o, int detail)
 		break;
 	    case IDIO_TYPE_HASH:
 		if (detail) {
-		    fprintf (stderr, "hsz=%zu hm=%zx hc=%zu hst=%zu\n", IDIO_HASH_SIZE (o), IDIO_HASH_MASK (o), IDIO_HASH_COUNT (o), IDIO_HASH_START (o));
+		    fprintf (stderr, "hsz=%zu hm=%zx hc=%zu\n", IDIO_HASH_SIZE (o), IDIO_HASH_MASK (o), IDIO_HASH_COUNT (o));
 		    if (IDIO_HASH_COMP_C (o) != NULL) {
 			if (IDIO_HASH_COMP_C (o) == idio_eqp) {
 			    fprintf (stderr, "eq=idio_S_eqp");;
@@ -3432,43 +3479,45 @@ void idio_dump (IDIO o, int detail)
 		    if (detail > 1) {
 			size_t i;
 			for (i = 0; i < IDIO_HASH_SIZE (o); i++) {
-			    if (idio_S_nil == IDIO_HASH_HE_KEY (o, i)) {
-				continue;
-			    } else {
-				size_t size = 0;
-				char *s;
-				if (IDIO_HASH_FLAGS (o) & IDIO_HASH_FLAG_STRING_KEYS) {
-				    s = (char *) IDIO_HASH_HE_KEY (o, i);
+			    idio_hash_entry_t *he = IDIO_HASH_HA (o, i);
+			    for (; NULL != he; he = IDIO_HASH_HE_NEXT (he)) {
+				if (idio_S_nil == IDIO_HASH_HE_KEY (he)) {
+				    continue;
 				} else {
-				    s = idio_as_string (IDIO_HASH_HE_KEY (o, i), &size, 4, idio_S_nil, 1);
-				}
-				if (detail & 0x4) {
-				    fprintf (stderr, "\t%30s : ", s);
-				} else {
-				    fprintf (stderr, "\t%3zu: k=%10p v=%10p n=%3zu %10s : ",
-							i,
-							IDIO_HASH_HE_KEY (o, i),
-							IDIO_HASH_HE_VALUE (o, i),
-							IDIO_HASH_HE_NEXT (o, i),
-							s);
-				}
-				if (! (IDIO_HASH_FLAGS (o) & IDIO_HASH_FLAG_STRING_KEYS)) {
+				    size_t size = 0;
+				    char *s;
+				    if (IDIO_HASH_FLAGS (o) & IDIO_HASH_FLAG_STRING_KEYS) {
+					s = (char *) IDIO_HASH_HE_KEY (he);
+				    } else {
+					s = idio_as_string (IDIO_HASH_HE_KEY (he), &size, 4, idio_S_nil, 1);
+				    }
+				    if (detail & 0x4) {
+					fprintf (stderr, "\t%30s : ", s);
+				    } else {
+					fprintf (stderr, "\t%3zu: k=%10p v=%10p %10s : ",
+						 i,
+						 IDIO_HASH_HE_KEY (he),
+						 IDIO_HASH_HE_VALUE (he),
+						 s);
+				    }
+				    if (! (IDIO_HASH_FLAGS (o) & IDIO_HASH_FLAG_STRING_KEYS)) {
+					idio_gc_free (s);
+				    }
+				    if (IDIO_HASH_HE_VALUE (he)) {
+					size = 0;
+					s = idio_as_string (IDIO_HASH_HE_VALUE (he), &size, 4, idio_S_nil, 1);
+				    } else {
+					if (IDIO_ASPRINTF (&s, "-") == -1) {
+					    idio_error_alloc ("asprintf");
+
+					    /* notreached */
+					    return;
+					}
+					size = strlen (s);
+				    }
+				    fprintf (stderr, "%-10s\n", s);
 				    idio_gc_free (s);
 				}
-				if (IDIO_HASH_HE_VALUE (o, i)) {
-				    size = 0;
-				    s = idio_as_string (IDIO_HASH_HE_VALUE (o, i), &size, 4, idio_S_nil, 1);
-				} else {
-				    if (IDIO_ASPRINTF (&s, "-") == -1) {
-					idio_error_alloc ("asprintf");
-
-					/* notreached */
-					return;
-				    }
-				    size = strlen (s);
-				}
-				fprintf (stderr, "%-10s\n", s);
-				idio_gc_free (s);
 			    }
 			}
 		    }

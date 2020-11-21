@@ -371,8 +371,9 @@ ht = #{ (1 & "apple") (2 & #{ ("cow" "beef") ("sheep" "lamb")}) }
 ht.2 ."pig" = "pork"
 test (ht.2 ."pig") "pork"
 
-;; dumb equality bug in idio_hash_verify_chain -- the second use of
-;; the (non-integer) key would trigger a key not found error.
+;; (comment not relevant any more but worth keeping the test) dumb
+;; equality bug in idio_hash_verify_chain -- the second use of the
+;; (non-integer) key would trigger a key not found error.
 ht."one" = 1
 ht."one" = 2
 

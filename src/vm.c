@@ -6649,27 +6649,6 @@ Display a dump of the current thread's state	\n\
     return idio_S_unspec;
 }
 
-IDIO_DEFINE_PRIMITIVE0_DS ("idio-find-frame", idio_find_frame, (), "", "XXX")
-{
-    IDIO thr = idio_thread_current_thread ();
-    IDIO frame = IDIO_THREAD_FRAME (thr);
-
-    fprintf (stderr, "iff: %p\n", frame);
-    idio_gc_find_frame_capture (frame);
-
-    return idio_S_unspec;
-}
-
-IDIO_DEFINE_PRIMITIVE1_DS ("idio-find-object", idio_find_object, (IDIO o), "", "XXX")
-{
-    IDIO_ASSERT (o);
-
-    fprintf (stderr, "ifo: %p\n", o);
-    idio_gc_find_frame_capture (o);
-
-    return idio_S_unspec;
-}
-
 IDIO_DEFINE_PRIMITIVE1_DS ("exit", exit, (IDIO istatus), "status", "\
 attempt to exit with status ``status``			\n\
 							\n\
@@ -7221,8 +7200,6 @@ void idio_vm_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_vm_module, vm_values_ref);
 
     IDIO_ADD_PRIMITIVE (idio_thread_state);
-    IDIO_ADD_PRIMITIVE (idio_find_frame);
-    IDIO_ADD_PRIMITIVE (idio_find_object);
     IDIO_ADD_PRIMITIVE (exit);
     IDIO_ADD_PRIMITIVE (run_in_thread);
     IDIO_ADD_PRIMITIVE (vm_frame_tree);
