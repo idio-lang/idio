@@ -1304,11 +1304,13 @@ void idio_gc_sweep (idio_gc_t *gc)
 	co = no;
     }
 
+#ifdef IDIO_GC_DEBUG
     if (nobj) {
 	fprintf (stderr, "gc-sweep #%d: saw %7zd obj; freed %5.1f%%; left %7zd + %6zd\n", gc->inst, nobj, freed * 100.0 / nobj, nobj - freed, freed);
     } else {
 	fprintf (stderr, "gc-sweep #%d: saw %7zd obj; freed     0%%; left %7zd + %6zd\n", gc->inst, nobj, nobj - freed, freed);
     }
+#endif
 }
 
 void idio_gc_stats ();
@@ -1333,11 +1335,13 @@ void idio_gc_possibly_collect ()
     if (idio_gc->pause == 0 &&
 	(IDIO_GC_FLAGS (idio_gc) & IDIO_GC_FLAG_REQUEST) &&
 	idio_gc->stats.igets) {
+#ifdef IDIO_GC_DEBUG
 	fprintf (stderr, "possibly-collect: reqd=%d %6llu igets %7llu allocs %6lld free\n",
 		 (IDIO_GC_FLAGS (idio_gc) & IDIO_GC_FLAG_REQUEST) ? 1 : 0,
 		 idio_gc->stats.igets,
 		 idio_gc->stats.allocs,
 		 idio_gc->stats.nfree);
+#endif
 	idio_gc_collect (idio_gc, IDIO_GC_COLLECT_GEN, "gc-possibly-collect");
     }
 }
@@ -1351,8 +1355,9 @@ void idio_gc_collect (idio_gc_t *gc, int gen, char *caller)
 	return;
     }
 
+#ifdef IDIO_GC_DEBUG
     fprintf (stderr, "gc-collect #%d: %20s: ", gc->inst, caller);
-    /* idio_gc_find_frame (); */
+#endif
 
     IDIO_GC_FLAGS (idio_gc) &= ~ IDIO_GC_FLAG_REQUEST;
 

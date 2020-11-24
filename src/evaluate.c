@@ -610,7 +610,7 @@ IDIO idio_toplevel_extend (IDIO src, IDIO name, int flags, IDIO cs, IDIO cm)
 	}
     }
 
-#ifdef IDIO_DEBUG
+#ifdef IDIO_EVALUATE_DEBUG
     if (idio_S_toplevel == scope &&
 	0 == IDIO_MEANING_IS_DEFINE (flags)) {
 	idio_debug ("C/toplevel-extend: forward reference to %s at ", name);

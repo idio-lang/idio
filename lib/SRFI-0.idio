@@ -87,6 +87,7 @@ define (%idio-feature? f) {
 define (cond-expand-expander clause*) {
   (cond
    ((null? clause*) {
+     #f
      ;error 'cond-expand "no clauses"
    })
 
