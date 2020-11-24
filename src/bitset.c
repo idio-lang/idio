@@ -700,11 +700,11 @@ invoke `f` on each bit in bitset `bs` that is set\n\
     size_t n_ul = IDIO_BITSET_SIZE (bs) / IDIO_BITS_PER_LONG + 1;
     size_t i;
     for (i = 0; i < n_ul; i++) {
-	unsigned long v = IDIO_BITSET_BITS (bs, i);
-	if (v) {
+	unsigned long ul = IDIO_BITSET_BITS (bs, i);
+	if (ul) {
 	    size_t j;
 	    for (j = 0 ; j < IDIO_BITS_PER_LONG; j++) {
-		if (v & (1UL << j)) {
+		if (ul & (1UL << j)) {
 		    IDIO cmd = IDIO_LIST2 (f, idio_fixnum (i * IDIO_BITS_PER_LONG + j));
 
 		    idio_vm_invoke_C (thr, cmd);
@@ -714,6 +714,48 @@ invoke `f` on each bit in bitset `bs` that is set\n\
     }
 
     return idio_S_unspec;
+}
+
+IDIO_DEFINE_PRIMITIVE3_DS ("fold-bitset", fold_bitset, (IDIO bs, IDIO f, IDIO v), "bs f v", "\
+invoke `f` on each bit in bitset `bs` that is set\n\
+accumulating the result in `v`			\n\
+						\n\
+:param bs: bitset to be operated on		\n\
+:type bs: bitset				\n\
+:param f: function to invoke on each set bit	\n\
+:type f: function of 2 args			\n\
+:param v: accumulated value			\n\
+:type v: any					\n\
+:return: the accumulated value			\n\
+:rtype: any					\n\
+")
+{
+    IDIO_ASSERT (bs);
+    IDIO_ASSERT (f);
+    IDIO_ASSERT (v);
+
+    IDIO_TYPE_ASSERT (bitset, bs);
+    IDIO_TYPE_ASSERT (procedure, f);
+
+    IDIO thr = idio_thread_current_thread ();
+
+    size_t n_ul = IDIO_BITSET_SIZE (bs) / IDIO_BITS_PER_LONG + 1;
+    size_t i;
+    for (i = 0; i < n_ul; i++) {
+	unsigned long ul = IDIO_BITSET_BITS (bs, i);
+	if (ul) {
+	    size_t j;
+	    for (j = 0 ; j < IDIO_BITS_PER_LONG; j++) {
+		if (ul & (1UL << j)) {
+		    IDIO cmd = IDIO_LIST3 (f, idio_fixnum (i * IDIO_BITS_PER_LONG + j), v);
+
+		    v = idio_vm_invoke_C (thr, cmd);
+		}
+	    }
+	}
+    }
+
+    return v;
 }
 
 void idio_init_bitset ()
@@ -737,6 +779,7 @@ void idio_bitset_add_primitives ()
     IDIO_ADD_PRIMITIVE (subtract_bitset);
     IDIO_ADD_PRIMITIVE (equal_bitsetp);
     IDIO_ADD_PRIMITIVE (bitset_for_each_set);
+    IDIO_ADD_PRIMITIVE (fold_bitset);
 }
 
 void idio_final_bitset ()

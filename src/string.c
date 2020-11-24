@@ -388,6 +388,19 @@ IDIO idio_string_C (const char *s_C)
     return idio_string_C_len (s_C, strlen (s_C));
 }
 
+/*
+ * Avoiding decoding the UTF-8 string twice requires creating a
+ * temporary array of codepoints of unknown size (until we decode the
+ * UTF-8 string).  We could realloc() an array as we go along or, as
+ * here, create a automatic variable the size of the number of bytes
+ * (the worst case for ASCII strings).  We can then just copy the
+ * array of code points into the appropriate sized array
+ * us8/us16/us32.
+ *
+ * It turns out to make *very* little difference, the UTF-8 decode
+ * algorithm is very quick.
+ */
+
 IDIO idio_string_C_array_lens (size_t ns, char *a_C[], size_t lens[])
 {
     IDIO_C_ASSERT (a_C);
@@ -400,12 +413,12 @@ IDIO idio_string_C_array_lens (size_t ns, char *a_C[], size_t lens[])
     size_t ai;
 
     IDIO_FLAGS_T flags = IDIO_STRING_FLAG_1BYTE;
-    size_t cp_count = 0;
 
     idio_unicode_t codepoint;
     idio_unicode_t state;
     uint8_t *ua_C;
 
+    size_t cp_count = 0;
     for (ai = 0; ai < ns; ai++) {
 	size_t blen = lens[ai];
 
@@ -478,11 +491,11 @@ IDIO idio_string_C_array_lens (size_t ns, char *a_C[], size_t lens[])
     IDIO_GC_ALLOC (IDIO_STRING_S (so), reqd_bytes + 1);
     IDIO_STRING_BLEN (so) = reqd_bytes;
 
-    cp_count = 0;
     uint8_t *us8 = (uint8_t *) IDIO_STRING_S (so);
     uint16_t *us16 = (uint16_t *) IDIO_STRING_S (so);
     uint32_t *us32 = (uint32_t *) IDIO_STRING_S (so);
 
+    cp_count = 0;
     for (ai = 0; ai < ns; ai++) {
 	size_t blen = lens[ai];
 	state = IDIO_UTF8_ACCEPT;
@@ -531,6 +544,7 @@ IDIO idio_string_C_array_lens (size_t ns, char *a_C[], size_t lens[])
 	    }
 	}
     }
+
     IDIO_STRING_S (so)[reqd_bytes] = '\0';
 
     IDIO_STRING_FLAGS (so) = flags;
@@ -1159,6 +1173,7 @@ which is a list of strings.						\n\
     ptrdiff_t n = idio_list_length (args);
     if (n) {
 	char *copies[n];
+	size_t lens[n];
 
 	ptrdiff_t i = 0;
 
@@ -1167,11 +1182,12 @@ which is a list of strings.						\n\
 
 	    size_t size = 0;
 	    copies[i] = idio_string_as_C (IDIO_PAIR_H (args), &size);
+	    lens[i] = strlen (copies[i]);
 
 	    args = IDIO_PAIR_T (args);
 	}
 
-	r = idio_string_C_array (n, copies);
+	r = idio_string_C_array_lens (n, copies, lens);
 
 	for (i = 0; i < n; i++) {
 	    IDIO_GC_FREE (copies[i]);
