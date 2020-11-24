@@ -3735,11 +3735,12 @@ void idio_init_libc_wrap ()
 	idio_module_set_symbol_value (idio_symbols_C_intern ("HOSTNAME"), idio_string_C (u.nodename), main_module);
     }
 
-    idio_add_feature (idio_symbols_C_intern (u.sysname));
-    idio_add_feature (idio_symbols_C_intern (u.nodename));
-    idio_add_feature (idio_symbols_C_intern (u.release));
+    idio_add_feature_ps ("uname/sysname/", u.sysname);
+    idio_add_feature_ps ("uname/nodename/", u.nodename);
+    idio_add_feature_ps ("uname/release/", u.release);
     /* idio_add_feature (idio_string_C (u.version)); */
-    idio_add_feature (idio_symbols_C_intern (u.machine));
+    idio_add_feature_ps ("uname/machine/", u.machine);
+    idio_add_feature_pi ("sizeof/pointer/", sizeof (void *) * CHAR_BIT);
 
     /*
      * From getpwuid(3) on CentOS

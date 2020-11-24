@@ -44,3 +44,4 @@ include "SRFI-95.idio"			; sort, merge
 include "doc.idio"
 
 import unicode
+import SRFI-0				; cond-expand

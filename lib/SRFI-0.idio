@@ -35,7 +35,7 @@ module SRFI-0
 export (
 	 cond-expand
 )
-import SRFI-115
+import posix-regex
 
 #*
 
@@ -44,14 +44,22 @@ The C code has defined *idio-features* (in the Idio module) and a
 
 The C derived features are:
 
-IDIO_DEBUG	if compiled with C macro IDIO_DEBUG enabled
+IDIO_DEBUG				if compiled with C macro IDIO_DEBUG enabled
 
-$sysname	uname(2)
-$nodename	uname(2)
-$release	uname(2)
-$machine	uname(2)
+uname/sysname/$sysname			uname(2)
+uname/nodename/$nodename		uname(2)
+uname/release/$release			uname(2)
+uname/machine/$machine			uname(2)
 
-$ID		os-release(5)
+sizeof/pointer/$n			sizeof (void *) * CHAR_BIT
+
+At the bottom of this file we'll add:
+Linux
+os-release/ID/$ID			os-release(5)
+os-release/VERSION_ID/$VERSION_ID	os-release(5)
+
+SunOS:
+release/${1st word of /etc/release}	release/OpenIndiana
 
 *#
 
@@ -79,7 +87,6 @@ define (%idio-feature? f) {
 define (cond-expand-expander clause*) {
   (cond
    ((null? clause*) {
-     eprintf "no clauses\n"
      ;error 'cond-expand "no clauses"
    })
 
@@ -197,13 +204,11 @@ define (cond-expand-expander clause*) {
 }
 
 define-template (cond-expand & clause*) {
-  ;eprintf "ce: %s\n" (ph clause*)
   cond-expand-expander clause*
 }
 
-t0 := SECONDS
 (cond-expand
- (Linux {
+ (uname/sysname/Linux {
    loop :+ function (fn*) {
 	     if (null? fn*) #n {
 	       fn := ph fn*
@@ -212,16 +217,17 @@ t0 := SECONDS
 		 loop :+ function () {
 			   if (eof? fh) #n {
 			     line := read-line fh
-			     ;printf "l=%s\n" line
 			     (cond
-			      ((regexp-matches? (rx bol #\#) line) {
-				printf "comment\n"
+			      ((regexp-matches "^#" line) {
 				(loop)
 			      })
-			      ((regexp-matches (rx ($ (+ word-constituent)) #\= ($ (* any))) line)
-			       => (function (m) {
-				     printf "match 1 %s\n" (regexp-match-submatch m 1)
-				     printf "match 2 %s\n" (regexp-match-submatch m 2)
+			      ((regexp-matches "([[:alnum:]_]+)=(.*)" line)
+			       => (function (res) {
+				     k := array-ref res 1
+				     (case k
+					   (("ID" "VERSION_ID") {
+					     %add-feature (append-string "os-release/" k "/" (array-ref res 2))
+					   }))
 				     (loop)
 			       })))
 			     (loop)
@@ -235,7 +241,44 @@ t0 := SECONDS
    }
 
    loop '("/etc/os-release" "/usr/lib/os-release")
+ })
+ (uname/sysname/SunOS {
+   loop :+ function (fn*) {
+	     if (null? fn*) #n {
+	       fn := ph fn*
+	       if (file-exists? fn) {
+		 fh := open-input-file fn
+		 loop :+ function () {
+			   if (eof? fh) #n {
+			     line := read-line fh
+			     (cond
+			      (
+				; OpenIndiana Development oi_151.1.8 X86 (powered by illumos)
+				; OpenIndiana Hipster 2020.04 (powered by illumos)
+				; ...and from the Intertubes...
+				; Solaris 9 9/04 s9s_u7wos_09 SPARC
+				; Solaris 10 5/08 s10x_u5wos_10 X86
+				; Oracle Solaris 11.4 X86
+				; OpenSolaris 2009.06 snv_111b X86
+				; annoyingly different is:
+				; Oracle Solaris 11 Express snv_151a X86
+				(regexp-matches "(Solaris|OpenSolaris|OpenIndiana|Oracle) " line)
+				=> (function (res) {
+				      %add-feature (append-string "release/" (array-ref res 1))
+				      ; skip the remaining lines
+				}))
+			      (else
+			       (loop)))
+			   }
+		 }
+		 (loop)
+	       } {
+		 loop (pt fn*)
+	       }
+	     }
+   }
+
+   loop '("/etc/release")
  }))
-printf "+%s\n" (SECONDS - t0)
 
 provide SRFI-0

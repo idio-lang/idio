@@ -59,6 +59,8 @@ void idio_dump (IDIO o, int detail);
 void idio_debug_FILE (FILE *file, const char *fmt, IDIO o);
 void idio_debug (const char *fmt, IDIO o);
 IDIO idio_add_feature (IDIO f);
+IDIO idio_add_feature_ps (char *p, char *s);
+IDIO idio_add_feature_pi (char *p, size_t size);
 
 #if ! defined (strnlen)
 size_t strnlen (const char *s, size_t maxlen);

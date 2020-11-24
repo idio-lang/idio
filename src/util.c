@@ -3668,6 +3668,11 @@ IDIO idio_add_feature (IDIO f)
 	return idio_S_notreached;
     }
 
+    if (idio_isa_string (f)) {
+	size_t size = 0;
+	f = idio_symbols_C_intern (idio_display_string (f, &size));
+    }
+
     IDIO fs = idio_module_symbol_value (idio_features, idio_Idio_module, idio_S_nil);
 
     return idio_module_set_symbol_value (idio_features, idio_pair (f, fs), idio_Idio_module);
@@ -3683,9 +3688,41 @@ add feature ``f`` to Idio features			\n\
 {
     IDIO_ASSERT (f);
 
-    IDIO_TYPE_ASSERT (symbol, f);
+    if (idio_isa_symbol (f) ||
+	idio_isa_string (f)) {
+	return idio_add_feature (f);
+    } else {
+	idio_error_param_type ("symbol|string",  f, IDIO_C_FUNC_LOCATION ());
 
-    return idio_add_feature (f);
+	return idio_S_notreached;
+    }
+}
+
+IDIO idio_add_feature_ps (char *p, char *s)
+{
+    IDIO_C_ASSERT (p);
+    IDIO_C_ASSERT (s);
+
+    size_t buflen = strlen (p) + strlen (s) + 1;
+    char *buf;
+    IDIO_GC_ALLOC (buf, buflen);
+    sprintf (buf, "%s%s", p, s);
+    IDIO r = idio_add_feature (idio_symbols_C_intern (buf));
+    IDIO_GC_FREE (buf);
+    return r;
+}
+
+IDIO idio_add_feature_pi (char *p, size_t size)
+{
+    IDIO_C_ASSERT (p);
+
+    size_t buflen = strlen (p) + 20;
+    char *buf;
+    IDIO_GC_ALLOC (buf, buflen);
+    sprintf (buf, "%s%zu", p, size);
+    IDIO r = idio_add_feature (idio_symbols_C_intern (buf));
+    IDIO_GC_FREE (buf);
+    return r;
 }
 
 #if ! defined (strnlen)
