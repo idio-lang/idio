@@ -200,7 +200,7 @@ define (sort:sort-list! seq less? key) {
 
 	   sort:merge! a b less? keyer
 	 }) \
-	 ((== n 2) {
+	 ((eq n 2) {
 	   x := ph seq
 	   y := pht seq
 	   p := seq
@@ -215,7 +215,7 @@ define (sort:sort-list! seq less? key) {
 	   set-pt! (pt p) #n
 	   p
 	 }) \
-	 ((== n 1) {
+	 ((eq n 1) {
 	   p := seq
 	   seq = pt seq
 	   set-pt! p #n
@@ -309,7 +309,7 @@ define (sort seq less? & opt-key) {
 
   ;;%%vm-trace 1
   cond ((array? seq) {
-	newra := apply make-array seq (array-dimensions seq)
+	newra := copy-array seq
 
 	do ((sorted (sort:sort-list! (rank-1-array->list seq) less? key) (pt sorted))
 	    (i 0 (+ i 1))) \

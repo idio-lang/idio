@@ -36,31 +36,34 @@ IDIO_SYMBOL_DECL (before);
 IDIO_SYMBOL_DECL (begin);
 IDIO_SYMBOL_DECL (block);
 IDIO_SYMBOL_DECL (class);
+IDIO_SYMBOL_DECL (num_eq);
 IDIO_SYMBOL_DECL (colon_caret);
 IDIO_SYMBOL_DECL (colon_dollar);
 IDIO_SYMBOL_DECL (colon_eq);
 IDIO_SYMBOL_DECL (colon_plus);
 IDIO_SYMBOL_DECL (colon_star);
 IDIO_SYMBOL_DECL (colon_tilde);
+IDIO_SYMBOL_DECL (computed);
 IDIO_SYMBOL_DECL (cond);
+IDIO_SYMBOL_DECL (deep);
 IDIO_SYMBOL_DECL (define);
-IDIO_SYMBOL_DECL (define_macro);
 IDIO_SYMBOL_DECL (define_infix_operator);
 IDIO_SYMBOL_DECL (define_postfix_operator);
-IDIO_SYMBOL_DECL (deep);
+IDIO_SYMBOL_DECL (define_template);
 IDIO_SYMBOL_DECL (dloads);
 IDIO_SYMBOL_DECL (dot);
 IDIO_SYMBOL_DECL (dynamic);
 IDIO_SYMBOL_DECL (dynamic_let);
 IDIO_SYMBOL_DECL (dynamic_unset);
 IDIO_SYMBOL_DECL (else);
+IDIO_SYMBOL_DECL (environ);
 IDIO_SYMBOL_DECL (environ_let);
 IDIO_SYMBOL_DECL (environ_unset);
 IDIO_SYMBOL_DECL (eq);
-IDIO_SYMBOL_DECL (eqp);
-IDIO_SYMBOL_DECL (eqvp);
-IDIO_SYMBOL_DECL (equalp);
 IDIO_SYMBOL_DECL (eq_gt);
+IDIO_SYMBOL_DECL (eqp);
+IDIO_SYMBOL_DECL (equalp);
+IDIO_SYMBOL_DECL (eqvp);
 IDIO_SYMBOL_DECL (error);
 IDIO_SYMBOL_DECL (escape);
 IDIO_SYMBOL_DECL (excl_star);
@@ -71,25 +74,25 @@ IDIO_SYMBOL_DECL (gt);
 IDIO_SYMBOL_DECL (if);
 IDIO_SYMBOL_DECL (include);
 IDIO_SYMBOL_DECL (init);
-IDIO_SYMBOL_DECL (lambda);
 IDIO_SYMBOL_DECL (let);
 IDIO_SYMBOL_DECL (letrec);
 IDIO_SYMBOL_DECL (list);
 IDIO_SYMBOL_DECL (load);
 IDIO_SYMBOL_DECL (load_handle);
+IDIO_SYMBOL_DECL (local);
 IDIO_SYMBOL_DECL (lt);
-IDIO_SYMBOL_DECL (macro_expand);
-IDIO_SYMBOL_DECL (pct_module_export);
-IDIO_SYMBOL_DECL (pct_module_import);
 IDIO_SYMBOL_DECL (module);
 IDIO_SYMBOL_DECL (op);
 IDIO_SYMBOL_DECL (or);
 IDIO_SYMBOL_DECL (pair);
 IDIO_SYMBOL_DECL (pair_separator);
+IDIO_SYMBOL_DECL (pct_module_export);
+IDIO_SYMBOL_DECL (pct_module_import);
 IDIO_SYMBOL_DECL (ph);
 IDIO_SYMBOL_DECL (pipe);
-IDIO_SYMBOL_DECL (pt);
+IDIO_SYMBOL_DECL (predef);
 IDIO_SYMBOL_DECL (profile);
+IDIO_SYMBOL_DECL (pt);
 IDIO_SYMBOL_DECL (quasiquote);
 IDIO_SYMBOL_DECL (quote);
 IDIO_SYMBOL_DECL (root);
@@ -98,7 +101,9 @@ IDIO_SYMBOL_DECL (setter);
 IDIO_SYMBOL_DECL (shallow);
 IDIO_SYMBOL_DECL (super);
 IDIO_SYMBOL_DECL (template);
+IDIO_SYMBOL_DECL (template_expand);
 IDIO_SYMBOL_DECL (this);
+IDIO_SYMBOL_DECL (toplevel);
 IDIO_SYMBOL_DECL (trap);
 IDIO_SYMBOL_DECL (unquote);
 IDIO_SYMBOL_DECL (unquotesplicing);
@@ -256,14 +261,14 @@ void idio_free_symbol (IDIO s)
     IDIO_ASSERT (s);
     IDIO_TYPE_ASSERT (symbol, s);
 
-    /* free (s->u.symbol); */
+    /* IDIO_GC_FREE (s->u.symbol); */
 }
 
 IDIO idio_symbols_C_intern (char *sym_C)
 {
     IDIO_C_ASSERT (sym_C);
 
-    IDIO sym = idio_hash_get (idio_symbols_hash, sym_C);
+    IDIO sym = idio_hash_ref (idio_symbols_hash, sym_C);
 
     if (idio_S_unspec == sym) {
 	sym = idio_symbol_C (sym_C);
@@ -282,7 +287,7 @@ IDIO idio_symbols_string_intern (IDIO str)
     char *sC = idio_string_as_C (str, &size);
     size_t C_size = strlen (sC);
     if (C_size != size) {
-	free (sC);
+	IDIO_GC_FREE (sC);
 
 	idio_symbol_error_format ("symbol: contains an ASCII NUL", str, IDIO_C_FUNC_LOCATION ());
 
@@ -291,7 +296,7 @@ IDIO idio_symbols_string_intern (IDIO str)
 
     IDIO r = idio_symbols_C_intern (sC);
 
-    free (sC);
+    IDIO_GC_FREE (sC);
 
     return r;
 }
@@ -318,7 +323,7 @@ IDIO idio_gensym (char *pref_prefix)
     for (;idio_gensym_id;idio_gensym_id++) {
 	sprintf (buf, "%s/%" PRIuMAX, prefix, idio_gensym_id);
 
-	sym = idio_hash_get (idio_symbols_hash, buf);
+	sym = idio_hash_ref (idio_symbols_hash, buf);
 
 	if (idio_S_unspec == sym) {
 	    sym = idio_symbols_C_intern (buf);
@@ -332,7 +337,17 @@ IDIO idio_gensym (char *pref_prefix)
     return idio_S_notreached;
 }
 
-IDIO_DEFINE_PRIMITIVE0V ("gensym", gensym, (IDIO args))
+IDIO_DEFINE_PRIMITIVE0V_DS ("gensym", gensym, (IDIO args), "[prefix]", "\
+generate a new *unique* symbol using `prefix` (if	\n\
+supplied or ``g``) followed by ``/``			\n\
+							\n\
+Such *gensyms* are not guaranteed to be unique if saved.\n\
+							\n\
+:param prefix: (optional) prefix string		\n\
+:type prefix: string or symbol			\n\
+						\n\
+:return: symbol					\n\
+")
 {
     IDIO_ASSERT (args);
 
@@ -347,7 +362,7 @@ IDIO_DEFINE_PRIMITIVE0V ("gensym", gensym, (IDIO args))
 	    prefix = idio_string_as_C (iprefix, &size);
 	    size_t C_size = strlen (prefix);
 	    if (C_size != size) {
-		free (prefix);
+		IDIO_GC_FREE (prefix);
 
 		idio_symbol_error_format ("gensym: prefix contains an ASCII NUL", iprefix, IDIO_C_FUNC_LOCATION ());
 
@@ -367,13 +382,19 @@ IDIO_DEFINE_PRIMITIVE0V ("gensym", gensym, (IDIO args))
     IDIO sym = idio_gensym (prefix);
 
     if (free_me) {
-	free (prefix);
+	IDIO_GC_FREE (prefix);
     }
 
     return sym;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("symbol?", symbol_p, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1_DS ("symbol?", symbol_p, (IDIO o), "o", "\
+test if `o` is a symbol				\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is a symbol, #f otherwise	\n\
+")
 {
     IDIO_ASSERT (o);
 
@@ -386,11 +407,19 @@ IDIO_DEFINE_PRIMITIVE1 ("symbol?", symbol_p, (IDIO o))
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("symbol->string", symbol2string, (IDIO s))
+IDIO_DEFINE_PRIMITIVE1_DS ("symbol->string", symbol2string, (IDIO s), "s", "\
+convert symbol `s` into a string		\n\
+						\n\
+:param s: symbol to convert			\n\
+:param s: symbol				\n\
+						\n\
+:return: string					\n\
+:rtype: string					\n\
+")
 {
     IDIO_ASSERT (s);
 
-    IDIO_VERIFY_PARAM_TYPE (symbol, s);
+    IDIO_USER_TYPE_ASSERT (symbol, s);
 
     return idio_string_C (IDIO_SYMBOL_S (s));
 }
@@ -415,7 +444,7 @@ return all known symbols			\n\
     return r;
 }
 
-IDIO idio_properties_get (IDIO o, IDIO args)
+IDIO idio_properties_ref (IDIO o, IDIO args)
 {
     IDIO_ASSERT (o);
     IDIO_ASSERT (args);
@@ -426,7 +455,7 @@ IDIO idio_properties_get (IDIO o, IDIO args)
 	return idio_S_notreached;
     }
 
-    IDIO properties = idio_hash_get (idio_properties_hash, o);
+    IDIO properties = idio_hash_ref (idio_properties_hash, o);
 
     if (idio_S_unspec == properties) {
 	if (idio_isa_pair (args)) {
@@ -441,12 +470,23 @@ IDIO idio_properties_get (IDIO o, IDIO args)
     return properties;
 }
 
-IDIO_DEFINE_PRIMITIVE1V ("%properties", properties_get, (IDIO o, IDIO args))
+IDIO_DEFINE_PRIMITIVE1V_DS ("%properties", properties_ref, (IDIO o, IDIO args), "o [default]", "\
+return the properties table of `o` or		\n\
+``default`` if none exist			\n\
+						\n\
+:param o: value to get properties for		\n\
+:param o: non-#n				\n\
+:param default: (optional) default value to return if no properties exist	\n\
+:param default: any				\n\
+						\n\
+:return: properties table, default or raise ^rt-hash-key-not-found condition	\n\
+:rtype: as above				\n\
+")
 {
     IDIO_ASSERT (o);
     IDIO_ASSERT (args);
 
-    return idio_properties_get (o, args);
+    return idio_properties_ref (o, args);
 }
 
 void idio_properties_set (IDIO o, IDIO properties)
@@ -493,11 +533,21 @@ void idio_properties_delete (IDIO o)
     idio_hash_delete (idio_properties_hash, o);
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("%set-properties!", properties_set, (IDIO o, IDIO properties))
+IDIO_DEFINE_PRIMITIVE2_DS ("%set-properties!", properties_set, (IDIO o, IDIO properties), "o properties", "\
+set the properties table of `o` to ``properties``	\n\
+						\n\
+:param o: value to set properties for		\n\
+:param o: non-#n				\n\
+:param properties: properties table		\n\
+:param properties: hash table			\n\
+						\n\
+:return: #unspec				\n\
+")
 {
     IDIO_ASSERT (o);
     IDIO_ASSERT (properties);
-    IDIO_TYPE_ASSERT (hash, properties);
+
+    IDIO_USER_TYPE_ASSERT (hash, properties);
 
     idio_properties_set (o, properties);
 
@@ -517,7 +567,7 @@ IDIO idio_get_property (IDIO o, IDIO property, IDIO args)
 	return idio_S_notreached;
     }
 
-    IDIO properties = idio_hash_get (idio_properties_hash, o);
+    IDIO properties = idio_hash_ref (idio_properties_hash, o);
 
     if (idio_S_unspec == properties) {
 	if (idio_isa_pair (args)) {
@@ -539,7 +589,7 @@ IDIO idio_get_property (IDIO o, IDIO property, IDIO args)
 	}
     }
 
-    IDIO value = idio_hash_get (properties, property);
+    IDIO value = idio_hash_ref (properties, property);
 
     if (idio_S_unspec == value) {
 	if (idio_isa_pair (args)) {
@@ -554,12 +604,26 @@ IDIO idio_get_property (IDIO o, IDIO property, IDIO args)
     return value;
 }
 
-IDIO_DEFINE_PRIMITIVE2V ("%property", get_property, (IDIO o, IDIO property, IDIO args))
+IDIO_DEFINE_PRIMITIVE2V_DS ("%property", get_property, (IDIO o, IDIO property, IDIO args), "o kw [default]", "\
+return the property `kw` for `o` or		\n\
+``default`` if no such property exists		\n\
+						\n\
+:param o: value to get properties for		\n\
+:param o: non-#n				\n\
+:param kw: property				\n\
+:param kw: keyword				\n\
+:param default: (optional) default value to return if no such property exists	\n\
+:param default: any				\n\
+						\n\
+:return: property, default or raise ^rt-hash-key-not-found condition	\n\
+:rtype: as above				\n\
+")
 {
     IDIO_ASSERT (o);
     IDIO_ASSERT (property);
     IDIO_ASSERT (args);
-    IDIO_TYPE_ASSERT (keyword, property);
+
+    IDIO_USER_TYPE_ASSERT (keyword, property);
 
     return idio_get_property (o, property, args);
 }
@@ -575,7 +639,7 @@ void idio_set_property (IDIO o, IDIO property, IDIO value)
 	idio_property_error_nil_object ("object is #n", IDIO_C_FUNC_LOCATION ());
     }
 
-    IDIO properties = idio_hash_get (idio_properties_hash, o);
+    IDIO properties = idio_hash_ref (idio_properties_hash, o);
 
     if (idio_S_nil == properties) {
 	idio_property_error_no_properties ("properties is #n", IDIO_C_FUNC_LOCATION ());
@@ -589,12 +653,24 @@ void idio_set_property (IDIO o, IDIO property, IDIO value)
     idio_hash_set (properties, property, value);
 }
 
-IDIO_DEFINE_PRIMITIVE3 ("%set-property!", set_property, (IDIO o, IDIO property, IDIO value))
+IDIO_DEFINE_PRIMITIVE3_DS ("%set-property!", set_property, (IDIO o, IDIO property, IDIO value), "o kw v", "\
+set the property `kw` for `o` to ``v``		\n\
+						\n\
+:param o: value to get properties for		\n\
+:param o: non-#n				\n\
+:param kw: property				\n\
+:param kw: keyword				\n\
+:param v: value					\n\
+:param v: any					\n\
+						\n\
+:return: #unspec				\n\
+")
 {
     IDIO_ASSERT (o);
     IDIO_ASSERT (property);
     IDIO_ASSERT (value);
-    IDIO_TYPE_ASSERT (keyword, property);
+
+    IDIO_USER_TYPE_ASSERT (keyword, property);
 
     idio_set_property (o, property, value);
 
@@ -607,62 +683,64 @@ void idio_init_symbol ()
     idio_gc_protect (idio_symbols_hash);
     IDIO_HASH_FLAGS (idio_symbols_hash) |= IDIO_HASH_FLAG_STRING_KEYS;
 
-    IDIO_SYMBOL_DEF ("c_struct", C_struct);
+    IDIO_SYMBOL_DEF ("!*", excl_star);
+    IDIO_SYMBOL_DEF ("!~", excl_tilde);
+    IDIO_SYMBOL_DEF ("%module-export", pct_module_export);
+    IDIO_SYMBOL_DEF ("%module-import", pct_module_import);
     IDIO_SYMBOL_DEF ("&", ampersand);
+    IDIO_SYMBOL_DEF ("*", asterisk);
+    IDIO_SYMBOL_DEF (".", dot);
+    IDIO_SYMBOL_DEF (":$", colon_dollar);
+    IDIO_SYMBOL_DEF (":*", colon_star);
+    IDIO_SYMBOL_DEF (":+", colon_plus);
+    IDIO_SYMBOL_DEF (":=", colon_eq);
+    IDIO_SYMBOL_DEF (":^", colon_caret);
+    IDIO_SYMBOL_DEF (":~", colon_tilde);
+    IDIO_SYMBOL_DEF ("<", lt);
+    IDIO_SYMBOL_DEF ("=", eq);
+    IDIO_SYMBOL_DEF ("=>", eq_gt);
+    IDIO_SYMBOL_DEF (">", gt);
     IDIO_SYMBOL_DEF ("after", after);
     IDIO_SYMBOL_DEF ("and", and);
     IDIO_SYMBOL_DEF ("append", append);
     IDIO_SYMBOL_DEF ("apply", apply);
-    IDIO_SYMBOL_DEF ("*", asterisk);
     IDIO_SYMBOL_DEF ("before", before);
     IDIO_SYMBOL_DEF ("begin", begin);
     IDIO_SYMBOL_DEF ("block", block);
+    IDIO_SYMBOL_DEF ("c_struct", C_struct);
     IDIO_SYMBOL_DEF ("class", class);
-    IDIO_SYMBOL_DEF (":^", colon_caret);
-    IDIO_SYMBOL_DEF (":$", colon_dollar);
-    IDIO_SYMBOL_DEF (":=", colon_eq);
-    IDIO_SYMBOL_DEF (":+", colon_plus);
-    IDIO_SYMBOL_DEF (":*", colon_star);
-    IDIO_SYMBOL_DEF (":~", colon_tilde);
+    IDIO_SYMBOL_DEF ("computed", computed);
     IDIO_SYMBOL_DEF ("cond", cond);
+    IDIO_SYMBOL_DEF ("deep", deep);
     IDIO_SYMBOL_DEF ("define", define);
-    IDIO_SYMBOL_DEF ("define-macro", define_macro);
     IDIO_SYMBOL_DEF ("define-infix-operator", define_infix_operator);
     IDIO_SYMBOL_DEF ("define-postfix-operator", define_postfix_operator);
-    IDIO_SYMBOL_DEF ("deep", deep);
+    IDIO_SYMBOL_DEF ("define-template", define_template);
     IDIO_SYMBOL_DEF ("dloads", dloads);
-    IDIO_SYMBOL_DEF (".", dot);
     IDIO_SYMBOL_DEF ("dynamic", dynamic);
     IDIO_SYMBOL_DEF ("dynamic-let", dynamic_let);
     IDIO_SYMBOL_DEF ("dynamic-unset", dynamic_unset);
     IDIO_SYMBOL_DEF ("else", else);
+    IDIO_SYMBOL_DEF ("environ", environ);
     IDIO_SYMBOL_DEF ("environ-let", environ_let);
     IDIO_SYMBOL_DEF ("environ-unset", environ_unset);
-    IDIO_SYMBOL_DEF ("=", eq);
+    IDIO_SYMBOL_DEF ("eq", num_eq);
     IDIO_SYMBOL_DEF ("eq?", eqp);
-    IDIO_SYMBOL_DEF ("eqv?", eqvp);
     IDIO_SYMBOL_DEF ("equal?", equalp);
-    IDIO_SYMBOL_DEF ("=>", eq_gt);
+    IDIO_SYMBOL_DEF ("eqv?", eqvp);
     IDIO_SYMBOL_DEF ("error", error);
     IDIO_SYMBOL_DEF ("escape", escape);
-    IDIO_SYMBOL_DEF ("!*", excl_star);
-    IDIO_SYMBOL_DEF ("!~", excl_tilde);
     IDIO_SYMBOL_DEF ("fixed_template", fixed_template);
     IDIO_SYMBOL_DEF ("function", function);
-    IDIO_SYMBOL_DEF (">", gt);
     IDIO_SYMBOL_DEF ("if", if);
     IDIO_SYMBOL_DEF ("include", include);
     IDIO_SYMBOL_DEF ("init", init);
-    IDIO_SYMBOL_DEF ("lambda", lambda);
     IDIO_SYMBOL_DEF ("let", let);
     IDIO_SYMBOL_DEF ("letrec", letrec);
     IDIO_SYMBOL_DEF ("list", list);
     IDIO_SYMBOL_DEF ("load", load);
     IDIO_SYMBOL_DEF ("load-handle", load_handle);
-    IDIO_SYMBOL_DEF ("<", lt);
-    IDIO_SYMBOL_DEF ("macro-expand", macro_expand);
-    IDIO_SYMBOL_DEF ("%module-export", pct_module_export);
-    IDIO_SYMBOL_DEF ("%module-import", pct_module_import);
+    IDIO_SYMBOL_DEF ("local", local);
     IDIO_SYMBOL_DEF ("module", module);
     IDIO_SYMBOL_DEF ("op", op);
     IDIO_SYMBOL_DEF ("or", or);
@@ -673,8 +751,9 @@ void idio_init_symbol ()
     IDIO_SYMBOL_DEF (buf, pair_separator);
     IDIO_SYMBOL_DEF ("ph", ph);
     IDIO_SYMBOL_DEF ("|", pipe);
-    IDIO_SYMBOL_DEF ("pt", pt);
+    IDIO_SYMBOL_DEF ("predef", predef);
     IDIO_SYMBOL_DEF ("profile", profile);
+    IDIO_SYMBOL_DEF ("pt", pt);
     IDIO_SYMBOL_DEF ("quasiquote", quasiquote);
     IDIO_SYMBOL_DEF ("quote", quote);
     IDIO_SYMBOL_DEF ("root", root);
@@ -683,7 +762,9 @@ void idio_init_symbol ()
     IDIO_SYMBOL_DEF ("shallow", shallow);
     IDIO_SYMBOL_DEF ("super", super);
     IDIO_SYMBOL_DEF ("template", template);
+    IDIO_SYMBOL_DEF ("template-expand", template_expand);
     IDIO_SYMBOL_DEF ("this", this);
+    IDIO_SYMBOL_DEF ("toplevel", toplevel);
     IDIO_SYMBOL_DEF ("trap", trap);
     IDIO_SYMBOL_DEF ("unquote", unquote);
     IDIO_SYMBOL_DEF ("unquotesplicing", unquotesplicing);
@@ -708,7 +789,7 @@ void idio_symbol_add_primitives ()
     IDIO_ADD_PRIMITIVE (gensym);
     IDIO_ADD_PRIMITIVE (symbol2string);
     IDIO_ADD_PRIMITIVE (symbols);
-    IDIO_ADD_PRIMITIVE (properties_get);
+    IDIO_ADD_PRIMITIVE (properties_ref);
     IDIO_ADD_PRIMITIVE (properties_set);
     IDIO_ADD_PRIMITIVE (get_property);
     IDIO_ADD_PRIMITIVE (set_property);

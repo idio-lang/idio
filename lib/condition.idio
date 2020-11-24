@@ -22,7 +22,7 @@
 
 ;; define-condition-type/accessors name super pred & fields
 ;; field == (field accessor)
-define-macro (define-condition-type/accessors name parent pred-fname & fields) {
+define-template (define-condition-type/accessors name parent pred-fname & fields) {
   #T{
     define $name (make-condition-type '$name $parent $@(map (function (field) { #T{ '$(ph field) } }) fields))
 
@@ -41,7 +41,7 @@ define-macro (define-condition-type/accessors name parent pred-fname & fields) {
 ;; If we (re-)defined those conditions here as well then we'd have two
 ;; distinct objects with the same name.  Which is generally considered
 ;; to be "an issue."
-define-macro (define-condition-type-accessors-only name parent pred-fname & fields) {
+define-template (define-condition-type-accessors-only name parent pred-fname & fields) {
   arg := (gensym)
 
   #T{
@@ -69,7 +69,7 @@ define-macro (define-condition-type-accessors-only name parent pred-fname & fiel
 ;;
 ;; generate default pred/accessor names for
 ;; define-condition-type/accessors
-define-macro (define-condition-type name parent & fields) {
+define-template (define-condition-type name parent & fields) {
   pred-fname := string->symbol (append-string (symbol->string name) "?")
   fa := map (function (field) {
 	       list field (string->symbol (append-string
@@ -87,7 +87,7 @@ define-macro (define-condition-type name parent & fields) {
 ;;
 ;; use a sequence of condition-set! expressions rather than than
 ;; anything more direct to allow for multi-type conditions
-define-macro (condition type & field-bindings) {
+define-template (condition type & field-bindings) {
   c := (gensym)
 
   #T{
@@ -158,7 +158,8 @@ define-condition-type-accessors-only ^st-function-arity-error		^st-function-erro
 define-condition-type-accessors-only ^runtime-error			^idio-error			runtime-error?
 
 define-condition-type-accessors-only ^rt-parameter-type-error		^runtime-error			rt-parameter-type-error?
-define-condition-type-accessors-only ^rt-parameter-nil-error		^runtime-error			rt-parameter-nil-error?
+define-condition-type-accessors-only ^rt-const-parameter-error		^rt-parameter-type-error	rt-const-parameter-error?
+define-condition-type-accessors-only ^rt-parameter-nil-error		^rt-parameter-type-error	rt-parameter-nil-error?
 
 define-condition-type-accessors-only ^rt-variable-error			^runtime-error			rt-variable-error? \
 	(name rt-variable-error-name)
@@ -173,7 +174,7 @@ define-condition-type-accessors-only ^rt-computed-variable-error         ^rt-var
 define-condition-type-accessors-only ^rt-computed-variable-no-accessor-error ^rt-computed-variable-error	rt-computed-variable-no-accessor-error?
 
 define-condition-type-accessors-only ^rt-function-error			^runtime-error			rt-function-error?
-define-condition-type-accessors-only ^rt-function-type-error		^rt-function-error		rt-function-type-error?
+define-condition-type-accessors-only ^rt-function-arity-error		^rt-function-error		rt-function-arity-error?
 
 define-condition-type-accessors-only ^rt-module-error			^runtime-error			rt-module-error? \
 	(module rt-module-error-module)
@@ -192,8 +193,8 @@ define-condition-type-accessors-only ^rt-command-status-error		^runtime-error			
 define-condition-type-accessors-only ^rt-array-bounds-error		^runtime-error			rt-array-bounds-error? \
 	(index rt-array-bounds-error-index)
 
-define-condition-type-accessors-only ^rt-hash-key-not-found		^runtime-error			rt-hash-key-not-found? \
-	(key rt-hash-key-not-found-key)
+define-condition-type-accessors-only ^rt-hash-key-not-found-error	^runtime-error			rt-hash-key-not-found-error? \
+	(key rt-hash-key-not-found-error-key)
 
 define-condition-type-accessors-only ^rt-bignum-conversion-error	^runtime-error			rt-bignum-conversion-error? \
 	(bignum rt-bignum-conversion-error-bignum)
@@ -229,11 +230,7 @@ define (condition-report prefix c & args) "print a report on condition `c`
 	  }
 
   define (cr-printf fmt & args*) {
-    if (null? args*) {
-      hprintf oh fmt
-    } {
-      apply hprintf oh fmt args*
-    }
+    apply hprintf oh fmt args*
   }
 
   if (not (null? prefix)) {
@@ -260,7 +257,7 @@ define (condition-report prefix c & args) "print a report on condition `c`
 	 cr-printf ": filename %s " c.filename
        }) \
        ((read-error? c) {
-	 cr-printf "%s:%s:%s" c.location c.line c.message
+	 cr-printf "%s:%d:%s" c.location c.line c.message
        }) \
        ((evaluation-error? c) {
 	 cr-printf "%s:%s:%s" c.location c.expr c.message
@@ -269,7 +266,7 @@ define (condition-report prefix c & args) "print a report on condition `c`
 	 cr-printf "%s:%s:%s" c.location c.message c.detail
        }) \
        ((system-error? c) {
-          cr-printf "errno %s (%s)" c.errno (libc/errno-name c.errno)
+          cr-printf "errno %s (%s)" c.'errno (libc/errno-name c.errno)
         }) \
        ((st-variable-error? c) {
 	 cr-printf ": variable %s" c.variable
@@ -317,14 +314,14 @@ define (condition-report prefix c & args) "print a report on condition `c`
        ((rt-array-bounds-error? c) {
 	 cr-printf ": index %s" c.index
        }) \
-       ((rt-hash-key-not-found? c) {
+       ((rt-hash-key-not-found-error? c) {
 	 cr-printf ": key %s" c.key
        }) \
        ((rt-bignum-conversion-error? c) {
 	 cr-printf ": bignum %s" c.bignum
        }) \
        ((rt-fixnum-conversion-error? c) {
-	 cr-printf ": fixnum %s" c.fixnum
+	 cr-printf ": fixnum %d" c.fixnum
        }) \
        ((rt-bitset-bounds-error? c) {
 	 cr-printf ": bit %s" c.bit

@@ -49,8 +49,6 @@ IDIO idio_closure (size_t code_pc, size_t code_len, IDIO frame, IDIO env, IDIO s
 
     IDIO c = idio_gc_get (IDIO_TYPE_CLOSURE);
 
-    IDIO_FPRINTF (stderr, "idio_closure: %10p = (%10p %10p)\n", c, code_pc, env);
-
     IDIO_GC_ALLOC (c->u.closure, sizeof (idio_closure_t));
 
     IDIO_CLOSURE_GREY (c) = NULL;
@@ -58,10 +56,14 @@ IDIO idio_closure (size_t code_pc, size_t code_len, IDIO frame, IDIO env, IDIO s
     IDIO_CLOSURE_CODE_LEN (c) = code_len;
     IDIO_CLOSURE_FRAME (c) = frame;
     IDIO_CLOSURE_ENV (c) = env;
-#ifdef IDIO_VM_PERF
+#ifdef IDIO_VM_PROF
     IDIO_CLOSURE_CALLED (c) = 0;
     IDIO_CLOSURE_CALL_TIME (c).tv_sec = 0;
     IDIO_CLOSURE_CALL_TIME (c).tv_nsec = 0;
+    IDIO_CLOSURE_RU_UTIME (c).tv_sec = 0;
+    IDIO_CLOSURE_RU_UTIME (c).tv_usec = 0;
+    IDIO_CLOSURE_RU_STIME (c).tv_sec = 0;
+    IDIO_CLOSURE_RU_STIME (c).tv_usec = 0;
 #endif
 
     idio_properties_create (c);
@@ -97,7 +99,7 @@ void idio_free_closure (IDIO c)
 
     idio_gc_stats_free (sizeof (idio_closure_t));
 
-    free (c->u.closure);
+    IDIO_GC_FREE (c->u.closure);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("function?", functionp, (IDIO o), "o", "\

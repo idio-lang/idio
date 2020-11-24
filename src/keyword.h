@@ -42,7 +42,7 @@ int idio_isa_keyword (IDIO s);
 IDIO idio_keywords_C_intern (char *s);
 IDIO idio_keywords_string_intern (IDIO str);
 IDIO idio_hash_make_keyword_table (IDIO args);
-IDIO idio_keyword_get (IDIO ht, IDIO kw, IDIO args);
+IDIO idio_keyword_ref (IDIO ht, IDIO kw, IDIO args);
 IDIO idio_keyword_set (IDIO ht, IDIO kw, IDIO v);
 
 void idio_init_keyword (void);

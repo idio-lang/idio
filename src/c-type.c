@@ -49,7 +49,13 @@ int idio_isa_C_int (IDIO co)
     return idio_isa (co, IDIO_TYPE_C_INT);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("int?", C_intp, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1_DS ("int?", C_intp, (IDIO o), "o", "\
+test if `o` is an C-int				\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is an C-int, #f otherwise	\n\
+")
 {
     IDIO_ASSERT (o);
 
@@ -86,7 +92,13 @@ int idio_isa_C_uint (IDIO co)
     return idio_isa (co, IDIO_TYPE_C_UINT);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("uint?", C_uintp, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1_DS ("uint?", C_uintp, (IDIO o), "o", "\
+test if `o` is an C-uint			\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is an C-uint, #f otherwise	\n\
+")
 {
     IDIO_ASSERT (o);
 
@@ -123,7 +135,13 @@ int idio_isa_C_float (IDIO co)
     return idio_isa (co, IDIO_TYPE_C_FLOAT);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("float?", C_floatp, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1_DS ("float?", C_floatp, (IDIO o), "o", "\
+test if `o` is an C-float			\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is an C-float, #f otherwise	\n\
+")
 {
     IDIO_ASSERT (o);
 
@@ -160,7 +178,13 @@ int idio_isa_C_double (IDIO co)
     return idio_isa (co, IDIO_TYPE_C_DOUBLE);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("double?", C_doublep, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1_DS ("double?", C_doublep, (IDIO o), "o", "\
+test if `o` is an C-double			\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is an C-double, #f otherwise	\n\
+")
 {
     IDIO_ASSERT (o);
 
@@ -220,7 +244,13 @@ int idio_isa_C_pointer (IDIO co)
     return idio_isa (co, IDIO_TYPE_C_POINTER);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("pointer?", C_pointerp, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1_DS ("pointer?", C_pointerp, (IDIO o), "o", "\
+test if `o` is an C-pointer			\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is an C-pointer, #f otherwise	\n\
+")
 {
     IDIO_ASSERT (o);
 
@@ -246,10 +276,10 @@ void idio_free_C_pointer (IDIO co)
     IDIO_ASSERT (co);
 
     if (IDIO_C_TYPE_POINTER_FREEP (co)) {
-	free (IDIO_C_TYPE_POINTER_P (co));
+	IDIO_GC_FREE (IDIO_C_TYPE_POINTER_P (co));
     }
 
-    free (co->u.C_type.u.C_pointer);
+    IDIO_GC_FREE (co->u.C_type.u.C_pointer);
 }
 
 IDIO idio_C_number_cast (IDIO co, idio_type_e type)
@@ -408,7 +438,15 @@ IDIO_DEFINE_C_ARITHMETIC_CMP_PRIMITIVE ("==", C_eq, ==)
 IDIO_DEFINE_C_ARITHMETIC_CMP_PRIMITIVE (">=", C_ge, >=)
 IDIO_DEFINE_C_ARITHMETIC_CMP_PRIMITIVE (">", C_gt, >)
 
-IDIO_DEFINE_PRIMITIVE1 ("->integer", C_to_integer, (IDIO inum))
+IDIO_DEFINE_PRIMITIVE1_DS ("->integer", C_to_integer, (IDIO inum), "i", "\
+convert C integer `i` to an Idio integer	\n\
+						\n\
+:param o: C integer to convert			\n\
+:type o: C-int, C-uint				\n\
+						\n\
+:return: Idio integer				\n\
+:rtype: integer					\n\
+")
 {
     IDIO_ASSERT (inum);
 
@@ -423,7 +461,15 @@ IDIO_DEFINE_PRIMITIVE1 ("->integer", C_to_integer, (IDIO inum))
     return idio_S_notreached;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("integer->", C_integer_to, (IDIO inum))
+IDIO_DEFINE_PRIMITIVE1_DS ("integer->", C_integer_to, (IDIO inum), "i", "\
+convert Idio integer `i` to a C integer		\n\
+						\n\
+:param o: Idio integer to convert		\n\
+:type o: bignum or fixnum			\n\
+						\n\
+:return: C integer				\n\
+:rtype: C-int					\n\
+")
 {
     IDIO_ASSERT (inum);
 
@@ -438,58 +484,90 @@ IDIO_DEFINE_PRIMITIVE1 ("integer->", C_integer_to, (IDIO inum))
     return idio_S_notreached;
 }
 
-IDIO_DEFINE_PRIMITIVE1V ("|", C_bw_or, (IDIO v1, IDIO args))
+IDIO_DEFINE_PRIMITIVE1V_DS ("|", C_bw_or, (IDIO v1, IDIO args), "v1 [...]", "\
+perform a C bitwise-OR on `v1` etc.		\n\
+						\n\
+:param v1: C integer				\n\
+:type v1: C-int					\n\
+						\n\
+:return: C integer				\n\
+:rtype: C-int					\n\
+")
 {
     IDIO_ASSERT (v1);
     IDIO_ASSERT (args);
-    IDIO_VERIFY_PARAM_TYPE (C_int, v1);
+    IDIO_USER_TYPE_ASSERT (C_int, v1);
 
     int r = IDIO_C_TYPE_INT (v1);
     while (idio_S_nil != args) {
 	IDIO arg = IDIO_PAIR_H (args);
-	IDIO_VERIFY_PARAM_TYPE (C_int, arg);
+	IDIO_USER_TYPE_ASSERT (C_int, arg);
 	r = r | IDIO_C_TYPE_INT (arg);
 	args = IDIO_PAIR_T (args);
     }
     return idio_C_int (r);
 }
 
-IDIO_DEFINE_PRIMITIVE1V ("&", C_bw_and, (IDIO v1, IDIO args))
+IDIO_DEFINE_PRIMITIVE1V_DS ("&", C_bw_and, (IDIO v1, IDIO args), "v1 [...]", "\
+perform a C bitwise-AND on `v1` etc.		\n\
+						\n\
+:param v1: C integer				\n\
+:type v1: C-int					\n\
+						\n\
+:return: C integer				\n\
+:rtype: C-int					\n\
+")
 {
     IDIO_ASSERT (v1);
     IDIO_ASSERT (args);
-    IDIO_VERIFY_PARAM_TYPE (C_int, v1);
+    IDIO_USER_TYPE_ASSERT (C_int, v1);
 
     int r = IDIO_C_TYPE_INT (v1);
     while (idio_S_nil != args) {
 	IDIO arg = IDIO_PAIR_H (args);
-	IDIO_VERIFY_PARAM_TYPE (C_int, arg);
+	IDIO_USER_TYPE_ASSERT (C_int, arg);
 	r = r & IDIO_C_TYPE_INT (arg);
 	args = IDIO_PAIR_T (args);
     }
     return idio_C_int (r);
 }
 
-IDIO_DEFINE_PRIMITIVE1V ("^", C_bw_xor, (IDIO v1, IDIO args))
+IDIO_DEFINE_PRIMITIVE1V_DS ("^", C_bw_xor, (IDIO v1, IDIO args), "v1 [...]", "\
+perform a C bitwise-XOR on `v1` etc.		\n\
+						\n\
+:param v1: C integer				\n\
+:type v1: C-int					\n\
+						\n\
+:return: C integer				\n\
+:rtype: C-int					\n\
+")
 {
     IDIO_ASSERT (v1);
     IDIO_ASSERT (args);
-    IDIO_VERIFY_PARAM_TYPE (C_int, v1);
+    IDIO_USER_TYPE_ASSERT (C_int, v1);
 
     int r = IDIO_C_TYPE_INT (v1);
     while (idio_S_nil != args) {
 	IDIO arg = IDIO_PAIR_H (args);
-	IDIO_VERIFY_PARAM_TYPE (C_int, arg);
+	IDIO_USER_TYPE_ASSERT (C_int, arg);
 	r = r ^ IDIO_C_TYPE_INT (arg);
 	args = IDIO_PAIR_T (args);
     }
     return idio_C_int (r);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("~", C_bw_complement, (IDIO v1))
+IDIO_DEFINE_PRIMITIVE1_DS ("~", C_bw_complement, (IDIO v1), "v1", "\
+perform a C bitwise-complement on `v1`		\n\
+						\n\
+:param v1: C integer				\n\
+:type v1: C-int					\n\
+						\n\
+:return: C integer				\n\
+:rtype: C-int					\n\
+")
 {
     IDIO_ASSERT (v1);
-    IDIO_VERIFY_PARAM_TYPE (C_int, v1);
+    IDIO_USER_TYPE_ASSERT (C_int, v1);
 
     int v = IDIO_C_TYPE_INT (v1);
 

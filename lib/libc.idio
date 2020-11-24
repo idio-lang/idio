@@ -241,7 +241,7 @@ keyword, eg. ``:NOFILE`` for ``libc/RLIMIT_NOFILE``
 :param res: either the ``libc/RLIMIT_*`` symbol or C/int or :* keyword
 :rtype: struct-rlimit
 
-:return: 
+:return: struct-rlimit
   " {
     resource := #n
     cond ((C/int? res) (resource = res)) \

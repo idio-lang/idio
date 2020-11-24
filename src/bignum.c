@@ -91,8 +91,8 @@ void idio_bsa_free (IDIO_BSA bsa)
     if (bsa->refs > 1) {
 	bsa->refs--;
     } else {
-	free (bsa->ae);
-	free (bsa);
+	IDIO_GC_FREE (bsa->ae);
+	IDIO_GC_FREE (bsa);
 	idio_bignums--;
     }
 }
@@ -276,7 +276,7 @@ void idio_free_bignum (IDIO bn)
     /* idio_gc_stats_free (sizeof (idio_bignum_t)); */
 
     idio_bsa_free (IDIO_BIGNUM_SIG (bn));
-    /* free (bn->u.bignum); */
+    /* IDIO_GC_FREE (bn->u.bignum); */
 }
 
 IDIO idio_bignum_copy (IDIO bn)
@@ -434,7 +434,7 @@ int64_t idio_bignum_int64_value (IDIO bn)
 	    char *bn_is = idio_bignum_as_string (bn_i, &size);
 	    char em[BUFSIZ];
 	    sprintf (em, "%s is too large for int64_t (%" PRId64 ")", bn_is, INT64_MAX);
-	    free (bn_is);
+	    IDIO_GC_FREE (bn_is);
 	    idio_bignum_error_conversion (em, bn, IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
@@ -494,7 +494,7 @@ uint64_t idio_bignum_uint64_value (IDIO bn)
 	    char *bn_is = idio_bignum_as_string (bn_i, &size);
 	    char em[BUFSIZ];
 	    sprintf (em, "%s is too large for uint64_t (%" PRIu64 ")", bn_is, UINT64_MAX);
-	    free (bn_is);
+	    IDIO_GC_FREE (bn_is);
 	    idio_bignum_error_conversion (em, bn, IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
@@ -563,7 +563,7 @@ ptrdiff_t idio_bignum_ptrdiff_value (IDIO bn)
 	    char *bn_is = idio_bignum_as_string (bn_i, &size);
 	    char em[BUFSIZ];
 	    sprintf (em, "%s is too large for ptrdiff_t (%td)", bn_is, (ptrdiff_t) PTRDIFF_MAX);
-	    free (bn_is);
+	    IDIO_GC_FREE (bn_is);
 	    idio_bignum_error_conversion (em, bn, IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
@@ -632,7 +632,7 @@ intptr_t idio_bignum_intptr_value (IDIO bn)
 	    char *bn_is = idio_bignum_as_string (bn_i, &size);
 	    char em[BUFSIZ];
 	    sprintf (em, "%s is too large for intptr_t (%" PRIdPTR ")", bn_is, (intptr_t) INTPTR_MAX);
-	    free (bn_is);
+	    IDIO_GC_FREE (bn_is);
 	    idio_bignum_error_conversion (em, bn, IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
@@ -705,7 +705,7 @@ intmax_t idio_bignum_intmax_value (IDIO bn)
 	    char *bn_is = idio_bignum_as_string (bn_i, &size);
 	    char em[BUFSIZ];
 	    sprintf (em, "%s is too large for intmax_t (%jd)", bn_is, (intmax_t) INTMAX_MAX);
-	    free (bn_is);
+	    IDIO_GC_FREE (bn_is);
 	    idio_bignum_error_conversion (em, bn, IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
@@ -2096,6 +2096,39 @@ char *idio_bignum_integer_as_string (IDIO bn, size_t *sizep)
     char *s = idio_alloc (1);
     *s = '\0';
 
+    /*
+     * We only check for idio-print-conversion-precision here and NOT
+     * idio-print-conversion-format because I don't know how to
+     * convert the decimalised bignum into a hexadecimal or octal (or
+     * binary!) number without an extremely expensive reworking.
+     *
+     * The problem relates to us having split the value of the bignum
+     * into DPW decimal segments.  If I've got the second segment in
+     * my hands and its value is 1, that won't guarantee to be 1 in
+     * any other format, in the same way that the 1 in 1234 won't
+     * guarantee to be a 1 in the hex (#x4D2), octal (#o2322) or
+     * binary (#b10011010010) -- OK, a reasonable chance with the
+     * binary.
+     */
+
+    int prec = 0;
+    if (idio_S_nil != idio_print_conversion_precision_sym) {
+	IDIO ipcp = idio_module_symbol_value (idio_print_conversion_precision_sym,
+					      idio_Idio_module,
+					      IDIO_LIST1 (idio_S_false));
+
+	if (idio_S_false != ipcp) {
+	    if (idio_isa_fixnum (ipcp)) {
+		prec = IDIO_FIXNUM_VAL (ipcp);
+	    } else {
+		idio_error_param_type ("fixnum", ipcp, IDIO_C_FUNC_LOCATION ());
+
+		/* notreached */
+		return NULL;
+	    }
+	}
+    }
+
     size_t al = IDIO_BSA_SIZE (sig_a);
     intptr_t i;
     for (i = al - 1; i >= 0; i--) {
@@ -2104,10 +2137,20 @@ char *idio_bignum_integer_as_string (IDIO bn, size_t *sizep)
 	char fmt[BUFSIZ];
 	if (i == al - 1) {
 	    sprintf (fmt, "%%zd");
+	    sprintf (buf, fmt, v);
+
+	    size_t bn_digits = strlen (buf) + i * IDIO_BIGNUM_DPW;
+	    if (prec > bn_digits) {
+		int pad = prec - bn_digits;
+		char pads[pad + 1];
+		sprintf (fmt, "%%.%dd", pad);
+		sprintf (pads, fmt, 0);
+		idio_strcat (s, sizep, pads, pad);
+	    }
 	} else {
 	    sprintf (fmt, "%%0%dzd", IDIO_BIGNUM_DPW);
+	    sprintf (buf, fmt, v);
 	}
-	sprintf (buf, fmt, v);
 	size_t buf_size = strlen (buf);
 	s = idio_strcat (s, sizep, buf, buf_size);
     }
@@ -2150,7 +2193,7 @@ char *idio_bignum_expanded_real_as_string (IDIO bn, IDIO_BS_T exp, int digits, i
     for (ai = al - 1; ai >= 0; ai--) {
 	IDIO_BS_T v = idio_bsa_get (sig_a, ai);
 	char *vs;
-	if (asprintf (&vs, "%" PRIdPTR, v) == -1) {
+	if (IDIO_ASPRINTF (&vs, "%" PRIdPTR, v) == -1) {
 	    idio_error_alloc ("asprintf");
 
 	    /* notreached */
@@ -2175,6 +2218,12 @@ char *idio_bignum_expanded_real_as_string (IDIO bn, IDIO_BS_T exp, int digits, i
     return s;
 }
 
+#define IDIO_BIGNUM_CONVERSION_FORMAT_SCHEME	0
+#define IDIO_BIGNUM_CONVERSION_FORMAT_e		0x65
+#define IDIO_BIGNUM_CONVERSION_FORMAT_f		0x66
+
+#define IDIO_BIGNUM_CONVERSION_FORMAT_s		0x73
+
 char *idio_bignum_real_as_string (IDIO bn, size_t *sizep)
 {
     IDIO_ASSERT (bn);
@@ -2193,6 +2242,61 @@ char *idio_bignum_real_as_string (IDIO bn, size_t *sizep)
 	return idio_bignum_expanded_real_as_string (bn, exp, digits, IDIO_BIGNUM_REAL_NEGATIVE_P (bn), sizep);
     }
 
+    idio_unicode_t format = IDIO_BIGNUM_CONVERSION_FORMAT_SCHEME;
+    if (idio_S_nil != idio_print_conversion_format_sym) {
+	IDIO ipcf = idio_module_symbol_value (idio_print_conversion_format_sym,
+					      idio_Idio_module,
+					      IDIO_LIST1 (idio_S_false));
+
+	if (idio_S_false != ipcf) {
+	    if (idio_isa_unicode (ipcf)) {
+		idio_unicode_t f = IDIO_UNICODE_VAL (ipcf);
+		switch (f) {
+		case IDIO_BIGNUM_CONVERSION_FORMAT_e:
+		case IDIO_BIGNUM_CONVERSION_FORMAT_f:
+		    format = f;
+		    break;
+		case IDIO_BIGNUM_CONVERSION_FORMAT_s:
+		    /*
+		     * A generic: printf "%s" e
+		     */
+		    format = IDIO_BIGNUM_CONVERSION_FORMAT_e;
+		    break;
+		default:
+		    fprintf (stderr, "bignum-as-string: unexpected conversion format: %c (%#x).  Using 'e'.\n", (int) f, (int) f);
+		    format = IDIO_BIGNUM_CONVERSION_FORMAT_e;
+		    break;
+		}
+	    } else {
+		idio_error_param_type ("unicode", ipcf, IDIO_C_FUNC_LOCATION ());
+
+		/* notreached */
+		return NULL;
+	    }
+	}
+    }
+
+    /*
+     * The default precision for both e and f formats is 6
+     */
+    int prec = 6;
+    if (idio_S_nil != idio_print_conversion_precision_sym) {
+	IDIO ipcp = idio_module_symbol_value (idio_print_conversion_precision_sym,
+					      idio_Idio_module,
+					      IDIO_LIST1 (idio_S_false));
+
+	if (idio_S_false != ipcp) {
+	    if (idio_isa_fixnum (ipcp)) {
+		prec = IDIO_FIXNUM_VAL (ipcp);
+	    } else {
+		idio_error_param_type ("fixnum", ipcp, IDIO_C_FUNC_LOCATION ());
+
+		/* notreached */
+		return NULL;
+	    }
+	}
+    }
+
     char *s = idio_alloc (1);
     *s = '\0';
 
@@ -2208,57 +2312,196 @@ char *idio_bignum_real_as_string (IDIO bn, size_t *sizep)
     intptr_t i = al - 1;
     IDIO_BS_T v = idio_bsa_get (sig_a, i);
 
-    /*
-     * vs can be n digits long (n >= 1).  We want to add vs[0] then
-     * ".".  If vs is more than 1 digit then add the rest of vs.  If
-     * there are no more digits to add then add "0".
-     */
-    char *vs;
-    if (asprintf (&vs, "%" PRIdPTR, v) == -1) {
-	idio_error_alloc ("asprintf");
+    switch (format) {
+    case IDIO_BIGNUM_CONVERSION_FORMAT_SCHEME:
+	{
+	    /*
+	     * Scheme?  Does it have an official floating point
+	     * printed representation?  This is approximately S9fES.
+	     */
 
-	/* notreached */
-	return NULL;
-    }
-    char vs_rest[IDIO_BIGNUM_DPW+1]; /* +1 in case DPW is 1 for debug! */
-    strcpy (vs_rest, vs + 1);
-    vs[1] = '\0';
+	    /*
+	     * vs can be n digits long (n >= 1).  We want to add vs[0] then
+	     * ".".  If vs is more than 1 digit then add the rest of vs.  If
+	     * there are no more digits to add then add "0".
+	     */
+	    char vs[IDIO_BIGNUM_DPW + 1];
+	    sprintf (vs, "%" PRIdPTR, v);
+	    char *vs_rest = vs + 1;
 
-    size_t vs_size = strlen (vs);
-    s = idio_strcat (s, sizep, vs, vs_size);
-    IDIO_STRCAT (s, sizep, ".");
+	    size_t vs_size = strlen (vs);
+	    s = idio_strcat (s, sizep, vs, 1);
 
-    size_t vs_rest_size = strlen (vs_rest);
-    if (vs_rest_size) {
-	s = idio_strcat (s, sizep, vs_rest, vs_rest_size);
-    } else {
-	if (0 == i) {
-	    IDIO_STRCAT (s, sizep, "0");
+	    if (prec) {
+		IDIO_STRCAT (s, sizep, ".");
+	    }
+
+	    size_t vs_rest_size = strlen (vs_rest);
+	    if (vs_rest_size) {
+		s = idio_strcat (s, sizep, vs_rest, vs_rest_size);
+	    } else {
+		if (0 == i) {
+		    IDIO_STRCAT (s, sizep, "0");
+		}
+	    }
+
+	    for (i--; i >= 0; i--) {
+		v = idio_bsa_get (sig_a, i);
+		sprintf (vs, "%0*" PRIdPTR, IDIO_BIGNUM_DPW, v);
+		vs_size = strlen (vs);
+		s = idio_strcat (s, sizep, vs, vs_size);
+	    }
+
+	    IDIO_STRCAT (s, sizep, "e");
+	    v = exp + digits - 1;
+	    sprintf (vs, "%+" PRIdPTR, v);
+	    vs_size = strlen (vs);
+	    s = idio_strcat (s, sizep, vs, vs_size);
 	}
-    }
-    free (vs);
+	break;
+    case IDIO_BIGNUM_CONVERSION_FORMAT_e:
+	{
+	    /*
+	     * vs can be n digits long (n >= 1).  We want to add vs[0] then
+	     * ".".  If vs is more than 1 digit then add the rest of vs.  If
+	     * there are no more digits to add then add "0".
+	     */
+	    char vs[IDIO_BIGNUM_DPW + 1];
+	    sprintf (vs, "%" PRIdPTR, v);
+	    char *vs_rest = vs + 1;
 
-    for (i--; i >= 0; i--) {
-	v = idio_bsa_get (sig_a, i);
-	char buf[BUFSIZ];
-	sprintf (buf, "%0*" PRIdPTR, IDIO_BIGNUM_DPW, v);
-	size_t buf_size = strlen (buf);
-	s = idio_strcat (s, sizep, buf, buf_size);
-    }
+	    size_t vs_size = strlen (vs);
+	    s = idio_strcat (s, sizep, vs, 1);
 
-    IDIO_STRCAT (s, sizep, "e");
-    /* if ((exp + digits - 1) >= 0) { */
-    /* 	IDIO_STRCAT (s, "+"); */
-    /* } */
-    v = exp + digits - 1;
-    if (asprintf (&vs, "%+" PRIdPTR, v) == -1) {
-	idio_error_alloc ("asprintf");
+	    if (prec) {
+		IDIO_STRCAT (s, sizep, ".");
+	    }
 
-	/* notreached */
-	return NULL;
+	    size_t vs_rest_size = strlen (vs_rest);
+	    size_t vs_rest_prec = vs_rest_size;
+	    if (prec < vs_rest_prec) {
+		vs_rest_prec = prec;
+	    }
+	    if (vs_rest_size) {
+		s = idio_strcat (s, sizep, vs_rest, vs_rest_prec);
+	    }
+	    prec -= vs_rest_prec;
+
+	    for (i--; i >= 0; i--) {
+		v = idio_bsa_get (sig_a, i);
+		sprintf (vs, "%0*" PRIdPTR, IDIO_BIGNUM_DPW, v);
+		vs_size = strlen (vs);
+		if (prec < vs_size) {
+		    vs_size = prec;
+		}
+		s = idio_strcat (s, sizep, vs, vs_size);
+		if (prec == vs_size) {
+		    break;
+		}
+		prec -= vs_size;
+	    }
+	    if (prec > 0) {
+		int pad = prec;
+		char pads[pad + 1];
+		sprintf (pads, "%.*d", pad, 0);
+		s = idio_strcat (s, sizep, pads, pad);
+	    }
+
+	    IDIO_STRCAT (s, sizep, "e");
+	    v = exp + digits - 1;
+	    sprintf (vs, "%+03" PRIdPTR, v);
+	    vs_size = strlen (vs);
+	    s = idio_strcat (s, sizep, vs, vs_size);
+	}
+	break;
+    case IDIO_BIGNUM_CONVERSION_FORMAT_f:
+	{
+	    char vs[IDIO_BIGNUM_DPW + 1];
+	    sprintf (vs, "%" PRIdPTR, v);
+	    size_t vs_size = strlen (vs);
+	    int pre_dp_digits = digits + exp;
+
+	    if (exp >= 0) {
+		s = idio_strcat (s, sizep, vs, vs_size);
+		int pad = exp;
+		if (pad > 0) {
+		    char pads[pad + 1];
+		    sprintf (pads, "%.*d", pad, 0);
+		    s = idio_strcat (s, sizep, pads, pad);
+		}
+		if (prec) {
+		    IDIO_STRCAT (s, sizep, ".");
+		    pad = prec;
+		    char pads[pad + 1];
+		    sprintf (pads, "%.*d", pad, 0);
+		    s = idio_strcat (s, sizep, pads, pad);
+		}
+	    } else {
+		char *vs_rest = vs;
+		if (pre_dp_digits > 0) {
+		    s = idio_strcat (s, sizep, vs, pre_dp_digits);
+		    vs_rest = vs + pre_dp_digits;
+		} else {
+		    IDIO_STRCAT (s, sizep, "0");
+		}
+
+		if (prec) {
+		    IDIO_STRCAT (s, sizep, ".");
+		    if (pre_dp_digits < 0) {
+			int pad = - pre_dp_digits;
+			if (prec < pad) {
+			    pad = prec;
+			}
+			char pads[pad + 1];
+			sprintf (pads, "%.*d", pad, 0);
+			s = idio_strcat (s, sizep, pads, pad);
+			prec -= pad;
+		    }
+
+		    size_t vs_rest_size = strlen (vs_rest);
+		    size_t vs_rest_prec = vs_rest_size;
+		    if (prec < vs_rest_prec) {
+			vs_rest_prec = prec;
+		    }
+		    if (vs_rest_size) {
+			s = idio_strcat (s, sizep, vs_rest, vs_rest_prec);
+		    }
+		    prec -= vs_rest_prec;
+
+		    for (i--; i >= 0; i--) {
+			v = idio_bsa_get (sig_a, i);
+			sprintf (vs, "%0*" PRIdPTR, IDIO_BIGNUM_DPW, v);
+			vs_size = strlen (vs);
+			if (prec < vs_size) {
+			    vs_size = prec;
+			}
+			s = idio_strcat (s, sizep, vs, vs_size);
+			if (prec == vs_size) {
+			    break;
+			}
+			prec -= vs_size;
+		    }
+		    if (prec > 0) {
+			int pad = prec;
+			char pads[pad + 1];
+			sprintf (pads, "%.*d", pad, 0);
+			s = idio_strcat (s, sizep, pads, pad);
+		    }
+		}
+	    }
+	    break;
+	}
+	break;
+    default:
+	{
+	    fprintf (stderr, "bignum-as-string: unimplemented conversion format: %c (%#x)\n", (int) format, (int) format);
+	    idio_error_printf (IDIO_C_FUNC_LOCATION (), "bignum-as-string unimplemented conversion format");
+
+	    /* notreached */
+	    return NULL;
+	}
+	break;
     }
-    vs_size = strlen (vs);
-    s = idio_strcat_free (s, sizep, vs, vs_size);
 
     return s;
 }
@@ -2358,7 +2601,7 @@ IDIO idio_bignum_integer_C (char *nums, int req_exact)
 	      i == LLONG_MIN)) ||
 	    (errno != 0 &&
 	     i == 0)) {
-	    free (buf);
+	    IDIO_GC_FREE (buf);
 	    char em[BUFSIZ];
 	    sprintf (em, "strtoll (%s) = %lld", nums, i);
 	    idio_error_system_errno (em, idio_S_nil, IDIO_C_FUNC_LOCATION ());
@@ -2367,7 +2610,7 @@ IDIO idio_bignum_integer_C (char *nums, int req_exact)
 	}
 
 	if (end == nums) {
-	    free (buf);
+	    IDIO_GC_FREE (buf);
 	    char em[BUFSIZ];
 	    sprintf (em, "strtoll (%s): No digits?", nums);
 	    idio_error_system_errno (em, idio_S_nil, IDIO_C_FUNC_LOCATION ());
@@ -2376,7 +2619,7 @@ IDIO idio_bignum_integer_C (char *nums, int req_exact)
 	}
 
 	if ('\0' != *end) {
-	    free (buf);
+	    IDIO_GC_FREE (buf);
 	    idio_error_printf (IDIO_C_FUNC_LOCATION (), "strtoll (%s) = %ld", nums, i);
 
 	    return idio_S_notreached;
@@ -2394,7 +2637,7 @@ IDIO idio_bignum_integer_C (char *nums, int req_exact)
 	ri++;
     }
 
-    free (buf);
+    IDIO_GC_FREE (buf);
 
     /* remove leading zeroes */
     size_t rl = ri;
@@ -2893,20 +3136,33 @@ int idio_realp (IDIO n)
     return 0;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("bignum?", bignump, (IDIO n))
+IDIO_DEFINE_PRIMITIVE1_DS ("bignum?", bignump, (IDIO o), "o", "\
+test if `o` is a bignum				\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is a bignum, #f otherwise	\n\
+")
 {
-    IDIO_ASSERT (n);
+    IDIO_ASSERT (o);
 
     IDIO r = idio_S_false;
 
-    if (idio_isa_bignum (n)) {
+    if (idio_isa_bignum (o)) {
 	r = idio_S_true;
     }
 
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("real?", realp, (IDIO n))
+IDIO_DEFINE_PRIMITIVE1_DS ("real?", realp, (IDIO n), "n", "\
+test if `n` is a real				\n\
+						\n\
+:param n: number to test			\n\
+:type n: bignum					\n\
+						\n\
+:return: #t if `n` is a real, #f otherwise	\n\
+")
 {
     IDIO_ASSERT (n);
 
@@ -2923,56 +3179,77 @@ IDIO_DEFINE_PRIMITIVE1 ("real?", realp, (IDIO n))
     if (idio_isa_fixnum (n)) {					\
 	n = idio_bignum_integer_intmax_t (IDIO_FIXNUM_VAL (n));	\
     } else {							\
-	IDIO_VERIFY_PARAM_TYPE (bignum, n);			\
+	IDIO_USER_TYPE_ASSERT (bignum, n);			\
     }
 
-IDIO_DEFINE_PRIMITIVE1 ("exact?", exactp, (IDIO n))
+IDIO_DEFINE_PRIMITIVE1_DS ("exact?", exactp, (IDIO n), "n", "\
+test if `n` is exact				\n\
+						\n\
+:param n: number to test			\n\
+:type n: bignum	or fixnum			\n\
+						\n\
+:return: #t if `n` is exact, #f otherwise	\n\
+")
 {
     IDIO_ASSERT (n);
-
-    IDIO_BIGNUM_FIXNUM_TYPE (n);
 
     IDIO r = idio_S_false;
 
     if (idio_isa_fixnum (n)) {
 	r = idio_S_true;
-    } else if (IDIO_BIGNUM_INTEGER_P (n)) {
-	r = idio_S_true;
-    } else if (! IDIO_BIGNUM_REAL_INEXACT_P (n)) {
-	r = idio_S_true;
-    }
+    } else {
+	IDIO_USER_TYPE_ASSERT (bignum, n);
 
-    return r;
-}
-
-IDIO_DEFINE_PRIMITIVE1 ("inexact?", inexactp, (IDIO n))
-{
-    IDIO_ASSERT (n);
-
-    IDIO_BIGNUM_FIXNUM_TYPE (n);
-
-    IDIO r = idio_S_false;
-
-    if (! idio_isa_fixnum (n)) {
-	if (! IDIO_BIGNUM_INTEGER_P (n)) {
-	    if (IDIO_BIGNUM_REAL_INEXACT_P (n)) {
-		r = idio_S_true;
-	    }
+	if (IDIO_BIGNUM_INTEGER_P (n)) {
+	    r = idio_S_true;
+	} else if (! IDIO_BIGNUM_REAL_INEXACT_P (n)) {
+	    r = idio_S_true;
 	}
     }
 
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("exact->inexact", exact2inexact, (IDIO n))
+IDIO_DEFINE_PRIMITIVE1_DS ("inexact?", inexactp, (IDIO n), "n", "\
+test if `n` is inexact				\n\
+						\n\
+:param n: number to test			\n\
+:type n: bignum	or fixnum			\n\
+						\n\
+:return: #t if `n` is inexact, #f otherwise	\n\
+")
+{
+    IDIO_ASSERT (n);
+
+    if (idio_isa_fixnum (n)) {
+	return idio_S_false;
+    }
+
+    IDIO_USER_TYPE_ASSERT (bignum, n);
+
+    IDIO r = idio_S_false;
+
+    if (! IDIO_BIGNUM_INTEGER_P (n)) {
+	if (IDIO_BIGNUM_REAL_INEXACT_P (n)) {
+	    r = idio_S_true;
+	}
+    }
+
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("exact->inexact", exact2inexact, (IDIO n), "n", "\
+convert `n` to inexact				\n\
+						\n\
+:param n: number to convert			\n\
+:type n: bignum	or fixnum			\n\
+						\n\
+:return: inexact value of `n`			\n\
+")
 {
     IDIO_ASSERT (n);
 
     IDIO_BIGNUM_FIXNUM_TYPE (n);
-
-    if (idio_isa_fixnum (n)) {
-	n = idio_bignum_integer_intmax_t (IDIO_FIXNUM_VAL (n));
-    }
 
     IDIO r = idio_S_unspec;
 
@@ -2989,22 +3266,31 @@ IDIO_DEFINE_PRIMITIVE1 ("exact->inexact", exact2inexact, (IDIO n))
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("inexact->exact", inexact2exact, (IDIO n))
+IDIO_DEFINE_PRIMITIVE1_DS ("inexact->exact", inexact2exact, (IDIO n), "n", "\
+convert `n` to exact				\n\
+						\n\
+:param n: number to convert			\n\
+:type n: bignum	or fixnum			\n\
+						\n\
+:return: exact value of `n`			\n\
+")
 {
     IDIO_ASSERT (n);
-
-    IDIO_BIGNUM_FIXNUM_TYPE (n);
 
     IDIO r = idio_S_unspec;
 
     if (idio_isa_fixnum (n)) {
-	r = n;
-    } else if (IDIO_BIGNUM_INTEGER_P (n)) {
-	r = n;
+	return n;
     } else {
-        r = idio_bignum_real_to_integer (n);
-	if (idio_S_nil == r) {
-	    r = idio_bignum_real_to_exact (n);
+	IDIO_USER_TYPE_ASSERT (bignum, n);
+
+	if (IDIO_BIGNUM_INTEGER_P (n)) {
+	    r = n;
+	} else {
+	    r = idio_bignum_real_to_integer (n);
+	    if (idio_S_nil == r) {
+		r = idio_bignum_real_to_exact (n);
+	    }
 	}
     }
 
@@ -3016,15 +3302,22 @@ IDIO_DEFINE_PRIMITIVE1 ("inexact->exact", inexact2exact, (IDIO n))
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("mantissa", mantissa, (IDIO n))
+IDIO_DEFINE_PRIMITIVE1_DS ("mantissa", mantissa, (IDIO n), "n", "\
+return the mantissa of `n`			\n\
+						\n\
+:param n: number to find mantissa of		\n\
+:type n: bignum	or fixnum			\n\
+						\n\
+:return: mantissa of `n`			\n\
+")
 {
     IDIO_ASSERT (n);
-
-    IDIO_BIGNUM_FIXNUM_TYPE (n);
 
     if (idio_isa_fixnum (n)) {
 	return n;
     }
+
+    IDIO_USER_TYPE_ASSERT (bignum, n);
 
     IDIO r = idio_S_unspec;
 
@@ -3046,11 +3339,18 @@ IDIO_DEFINE_PRIMITIVE1 ("mantissa", mantissa, (IDIO n))
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("exponent", exponent, (IDIO n))
+IDIO_DEFINE_PRIMITIVE1_DS ("exponent", exponent, (IDIO n), "n", "\
+return the exponent of `n`			\n\
+						\n\
+:param n: number to find exponent of		\n\
+:type n: bignum	or fixnum			\n\
+						\n\
+:return: exponent of `n`			\n\
+")
 {
     IDIO_ASSERT (n);
 
-    IDIO_BIGNUM_FIXNUM_TYPE (n);
+    IDIO_USER_TYPE_ASSERT (bignum, n);
 
     IDIO r = idio_S_unspec;
 
@@ -3064,11 +3364,18 @@ IDIO_DEFINE_PRIMITIVE1 ("exponent", exponent, (IDIO n))
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("bignum-dump", bignum_dump, (IDIO n))
+IDIO_DEFINE_PRIMITIVE1_DS ("%bignum-dump", bignum_dump, (IDIO n), "n", "\
+dump the bignum structure of `n`	\n\
+					\n\
+:param n: number to dump		\n\
+:type n: bignum				\n\
+					\n\
+:return: #unspec			\n\
+")
 {
     IDIO_ASSERT (n);
 
-    IDIO_BIGNUM_FIXNUM_TYPE (n);
+    IDIO_USER_TYPE_ASSERT (bignum, n);
 
     idio_bignum_dump (n);
 
@@ -3094,11 +3401,13 @@ void idio_bignum_add_primitives ()
 
 void idio_final_bignum ()
 {
+#ifdef IDIO_DEBUG
     FILE *fh = stderr;
 
-#ifdef IDIO_VM_PERF
+#ifdef IDIO_VM_PROF
     fh = idio_vm_perf_FILE;
 #endif
 
     fprintf (fh, "bignums: current %zd of simultaneous max %zd; max segs %zd/%d (%zd significant digits)\n", idio_bignums, idio_bignums_max, idio_bignum_seg_max, IDIO_BIGNUM_SIG_SEGMENTS, idio_bignum_seg_max * IDIO_BIGNUM_DPW);
+#endif
 }

@@ -1,0 +1,94 @@
+#*
+
+Issue #173: IDIO_SEPARATOR() uses fixed values and is not dynamically
+dependent on interpc (which isn't passed into idio_read_word anyway)
+
+The old code used to use the fixed triple '`, (quote, backquote,
+comma) to break a word.  That is, not even use $ (dollars the Idi
+ovariant of , to break a word -- double plus bad).  
+
+Interpolation characters should only be functional as the first
+character.
+
+Otherwise an embedded interpolation character should just return that
+character and have no other behaviour.
+
+The escapes all return 1 albeit that the old code DIDN'T honour the
+escape character therefore the resultant symbol will have a backslash
+in it.
+
+*#
+
+; old code will generate 2 elements because it uses a fixed ,
+define-template (with-dollars-embed-comma) {
+  #T{
+    list a,b
+  }
+}
+
+; old code will still generate 2 elements because it didn't honour escape
+define-template (with-dollars-escape-comma) {
+  #T{
+    list a\,b
+  }
+}
+
+; all code should generate 1 element
+define-template (with-dollars-embed-dollars) {
+  #T{
+    list a$b
+  }
+}
+
+; all code should generate 1 element
+define-template (with-dollars-escape-dollars) {
+  #T{
+    list a\$b
+  }
+}
+
+; all code should generate 1 element
+define-template (with-pling-embed-dollars) {
+  #T!{
+    list a$b
+  }
+}
+
+; all code should generate 1 element
+define-template (with-pling-escape-dollars) {
+  #T!{
+    list a\$b
+  }
+}
+
+; all code should generate 1 element
+define-template (with-pling-embed-pling) {
+  #T!{
+    list a!b
+  }
+}
+
+; all code should generate 1 element
+define-template (with-pling-escape-pling) {
+  #T!{
+    list a\!b
+  }
+}
+
+test (length (with-dollars-embed-comma)) 1
+test (length (with-dollars-escape-comma)) 1
+
+test (length (with-dollars-embed-dollars)) 1
+test (length (with-dollars-escape-dollars)) 1
+
+test (length (with-pling-embed-dollars)) 1
+test (length (with-pling-escape-dollars)) 1
+
+test (length (with-pling-embed-pling)) 1
+test (length (with-pling-escape-pling)) 1
+
+; non-templated
+test (list 1$2) '(1$2)
+test (list 1@2) '(1@2)
+test (list 1'2) '(1'2)
+test (list 1\$2) '(1$2)

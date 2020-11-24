@@ -24,6 +24,8 @@
 ;; Scheme 9 from Empty Space
 ;; By Nils M Holm <nmh@t3x.org>, 2007,2008,2009
 
+require init
+
 testfile := "__testfile__"
 
 if (file-exists? testfile) {
@@ -58,17 +60,17 @@ define (fail expr result expected) {
 
 define (test3 expr result expected) {
   set! Tests (1 + Tests)
-  ;edisplay* "test #" Tests ":" expr "=>" result "==?" expected
+  ;edisplay* "test #" Tests ":" expr "=> (equal? " result expected " )"
   if (not (equal? result expected)) {
     fail expr result expected
   }
 }
 
-define-macro (test form result) {
+define-template (test form result) {
   #T{ test3 '$form $form $result }
 }
 
-define-macro (test/error form result c-msg) {
+define-template (test/error form result c-msg) {
   #T{
     with-condition-handler ^idio-error (function (c) {
 					  test c.message $c-msg
@@ -141,7 +143,7 @@ test-load "test-read-coverage.idio"
 test-load "test-evaluation-error.idio"
 test-load "test-expander-error.idio"
 
-test-load "test-s9-test.idio"
+time test-load "test-s9-test.idio"
 test-load "test-unicode.idio"
 test-load "test-operator.idio"
 test-load "test-closure.idio"
@@ -168,19 +170,23 @@ test-load "test-load-handle.idio"
 test-load "test-trap.idio"
 test-load "test-bitset.idio"
 test-load "test-utf-8.idio"
+test-load "test-format.idio"
 
 test-load "test-SRFI-89.idio"
 test-load "test-SRFI-115.idio"
+test-load "test-posix-regex.idio"
+
+test-load "test-issues.idio"
 
 ;; test that we've seen as many tests as we should have.  How many is
 ;; that?  Erm, they've not been counted and are dynamic in number so
 ;; test we've seen at least as many as the largest number we've
 ;; seen.  Wait, some tests are OS-specific.  Drat!
-test (eq? Tests 3568) #t
+test (eq Tests 3762) #t
 
 if (file-exists? testfile) (delete-file testfile)
 
-printf "[%s/%s] %3ds test.idio\n" (getpid) PID SECONDS
+printf "[%s/%d] %3ds test.idio\n" (getpid) PID SECONDS
 printf "# src-props %d\n" (length (hash-keys %idio-src-properties))
 if (zero? Errors) (printf "All %d tests passed!\n" Tests) \
    {

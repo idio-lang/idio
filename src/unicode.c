@@ -131,7 +131,7 @@ convert `c` to an integer				\n\
 {
     IDIO_ASSERT (c);
 
-    IDIO_VERIFY_PARAM_TYPE (unicode, c);
+    IDIO_USER_TYPE_ASSERT (unicode, c);
 
     return idio_fixnum (IDIO_UNICODE_VAL (c) >> 16);
 }
@@ -146,7 +146,7 @@ convert `c` to an integer				\n\
 {
     IDIO_ASSERT (c);
 
-    IDIO_VERIFY_PARAM_TYPE (unicode, c);
+    IDIO_USER_TYPE_ASSERT (unicode, c);
 
     return idio_fixnum (IDIO_UNICODE_VAL (c) & 0xffff);
 }
@@ -161,7 +161,7 @@ convert `c` to an integer				\n\
 {
     IDIO_ASSERT (c);
 
-    IDIO_VERIFY_PARAM_TYPE (unicode, c);
+    IDIO_USER_TYPE_ASSERT (unicode, c);
 
     return idio_fixnum (IDIO_UNICODE_VAL (c));
 }
@@ -174,7 +174,7 @@ convert `c` to an integer				\n\
  *
  * quoted says to add a " at the front and back
  *
- * caller must free(3) this string
+ * caller must IDIO_GC_FREE() this string
  *
  */
 char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted)
@@ -346,6 +346,41 @@ char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted)
     return r;
 }
 
+/*
+ * construct a UTF-8 sequence from an Unicode code point
+ *
+ * caller must supply a char* (of at least 4 bytes) and an int* which
+ * will be set to the number of bytes written to the char*
+ *
+ */
+void idio_utf8_code_point (idio_unicode_t c, char *buf, int *sizep)
+{
+    int n = 0;
+
+    if (c > 0x10ffff) {
+	/*
+	 * Hopefully, this is guarded against elsewhere
+	 */
+	fprintf (stderr, "utf8-code-point: oops c=%x > 0x10ffff\n", c);
+    } else if (c >= 0x10000) {
+	buf[n++] = 0xf0 | ((c & (0x07 << 18)) >> 18);
+	buf[n++] = 0x80 | ((c & (0x3f << 12)) >> 12);
+	buf[n++] = 0x80 | ((c & (0x3f << 6)) >> 6);
+	buf[n++] = 0x80 | ((c & (0x3f << 0)) >> 0);
+    } else if (c >= 0x0800) {
+	buf[n++] = 0xe0 | ((c & (0x0f << 12)) >> 12);
+	buf[n++] = 0x80 | ((c & (0x3f << 6)) >> 6);
+	buf[n++] = 0x80 | ((c & (0x3f << 0)) >> 0);
+    } else if (c >= 0x0080) {
+	buf[n++] = 0xc0 | ((c & (0x1f << 6)) >> 6);
+	buf[n++] = 0x80 | ((c & (0x3f << 0)) >> 0);
+    } else {
+	buf[n++] = c & 0x7f;
+    }
+
+    *sizep = n;
+}
+
 int idio_unicode_C_eqp (void *s1, void *s2)
 {
     /*
@@ -375,7 +410,7 @@ IDIO idio_unicode_C_intern (char *s, IDIO v)
 {
     IDIO_C_ASSERT (s);
 
-    IDIO c = idio_hash_get (idio_unicode_hash, s);
+    IDIO c = idio_hash_ref (idio_unicode_hash, s);
 
     if (idio_S_unspec == c) {
 	size_t blen = strlen (s);
@@ -400,7 +435,7 @@ IDIO idio_unicode_lookup (char *s)
 {
     IDIO_C_ASSERT (s);
 
-    return idio_hash_get (idio_unicode_hash, s);
+    return idio_hash_ref (idio_unicode_hash, s);
 }
 
 /*
@@ -413,9 +448,9 @@ IDIO idio_unicode_lookup (char *s)
 	IDIO_ASSERT (c2);						\
 	IDIO_ASSERT (args);						\
 									\
-	IDIO_VERIFY_PARAM_TYPE (unicode, c1);				\
-	IDIO_VERIFY_PARAM_TYPE (unicode, c2);				\
-	IDIO_VERIFY_PARAM_TYPE (list, args);				\
+	IDIO_USER_TYPE_ASSERT (unicode, c1);				\
+	IDIO_USER_TYPE_ASSERT (unicode, c2);				\
+	IDIO_USER_TYPE_ASSERT (list, args);				\
 									\
 	args = idio_pair (c2, args);					\
 									\
@@ -423,7 +458,7 @@ IDIO idio_unicode_lookup (char *s)
 									\
 	while (idio_S_nil != args) {					\
 	    c2 = IDIO_PAIR_H (args);					\
-	    IDIO_VERIFY_PARAM_TYPE (unicode, c2);			\
+	    IDIO_USER_TYPE_ASSERT (unicode, c2);			\
 	    if (! (accessor (c1) cmp accessor (c2))) {			\
 		r = idio_S_false;					\
 		break;							\
@@ -532,15 +567,13 @@ void idio_unicode_add_primitives ()
     IDIO p = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
     idio_primitive_set_property_C (p, idio_KW_sigstr, "c1 c2 [...]");
     idio_primitive_set_property_C (p, idio_KW_docstr_raw, "\
-test if unicode arguments are equal case-insensitively		\n\
-									\n\
-:param c1: char								\n\
-:param c2: char								\n\
-:param ...: chars							\n\
-									\n\
-This implementation uses libc tolower()					\n\
-									\n\
-:return: #t if arguments are equal case-insensitively, #f otherwise	\n\
+test if unicode arguments are equal			\n\
+							\n\
+:param c1: unicode					\n\
+:param c2: unicode					\n\
+:param ...: unicode					\n\
+							\n\
+:return: #t if arguments are equal, #f otherwise	\n\
 ");
 }
 

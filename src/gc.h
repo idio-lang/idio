@@ -216,6 +216,8 @@
  */
 typedef unsigned char idio_type_e;
 
+typedef int32_t idio_unicode_t;	/* must handle EOF as well! */
+
 /* byte compiler instruction */
 typedef uint8_t IDIO_I;
 #define IDIO_I_MAX	UINT8_MAX
@@ -363,6 +365,56 @@ typedef struct idio_pair_s {
  */
 #define IDIO_PAIR_SEPARATOR	'&'
 
+/*
+ * Array Indices
+ *
+ * On normal machines size_t is probably the same as intptr_t (an
+ * integral type that can contain a pointer).  On segmented
+ * architectures, SIZE_MAX might be 65535, the index of the largest
+ * addressable element of an array on this architecture if it has
+ * 16bit segments.
+ *
+ * Following that, ptrdiff_t is the difference between the indices of
+ * two elements *in the same array* (and is not well defined
+ * otherwise).  Technically, ptrdiff_t requires one more bit than
+ * size_t (as it can be negative) but otherwise is the same (broad)
+ * size and unrelated to pointers.
+ *
+ * Hence, if you are using array indexing, "a[i]", then you should be
+ * using size_t/ptrdiff_t to be portable.  We are using array
+ * indexing, usually via "IDIO_ARRAY_AE (a, i)" although the odd a[i]
+ * creeps in.
+ *
+ * So, let's revisit the original comment:
+ *
+ * C99 suggests that sizes should be size_t so we could create an
+ * array with SIZE_MAX elements.  On non-segmented architectures, such
+ * a memory allocation will almost certainly fail(1) but, sticking to
+ * principles, someone might want to create a just-over-half-of-memory
+ * (2**(n-1))+1 element array.
+ *
+ * (1) as every Idio array element is a pointer, ie 4 or 8 bytes, then
+ * we can't physically allocate nor address 2**32 * 4 bytes or 2**64 *
+ * 8 bytes just for the array as those are 4 and 8 times larger than
+ * addressable memory.  So, in practice, we're limited to arrays of
+ * length 2**30 or 2**61 -- with no room for any other data!
+ *
+ *   As a real-world example, on an OpenSolaris 4GB/32bit machine:
+ *
+ *     make-array ((expt 2 29) - 1)
+ *
+ *   was successful.  2**30-1 was not.
+ *
+ * However, we accomodate negative array indices, eg. the nominal,
+ * array[-i], which we take to mean the i'th last index.  The means
+ * using a signed type even if we won't ever actually use a[-i] -- as
+ * we'll convert it into a[size-i].
+ *
+ * So, the type we use must be ptrdiff_t and therefore the largest
+ * positive index is PTRDIFF_MAX.
+ *
+ */
+
 /**
  * typedef idio_ai_t - Idio ``array`` index
  */
@@ -391,12 +443,6 @@ struct idio_array_s {
      *
      * Push an element on (therefore at index 0 itself) will have
      * @usize be 1 -- there is one element in the array.
-     *
-     * Then insert into directly into index 5 then @usize will be 6.
-     * Even though you've only inserted two elements, elements at
-     * indexes 1 through 4 will have the default value and appear to
-     * have sprung into life.  There are now six elements in the
-     * array.
      */
     idio_ai_t usize;
     /**
@@ -438,10 +484,14 @@ typedef struct idio_array_s idio_array_t;
 typedef size_t idio_hi_t;
 
 typedef struct idio_hash_entry_s {
-    struct idio_s *k;
-    struct idio_s *v;
-    idio_hi_t n;		/* next in chain */
+    struct idio_hash_entry_s *next;
+    struct idio_s *key;
+    struct idio_s *value;
 } idio_hash_entry_t;
+
+#define IDIO_HASH_HE_NEXT(HE)	((HE)->next)
+#define IDIO_HASH_HE_KEY(HE)	((HE)->key)
+#define IDIO_HASH_HE_VALUE(HE)	((HE)->value)
 
 #define IDIO_HASH_FLAG_NONE		0
 #define IDIO_HASH_FLAG_STRING_KEYS	(1<<0)
@@ -449,29 +499,25 @@ typedef struct idio_hash_entry_s {
 
 typedef struct idio_hash_s {
     struct idio_s *grey;
-    idio_hi_t size;	      /* nominal hash size */
+    idio_hi_t size;
     idio_hi_t mask;	      /* bitmask for easy modulo arithmetic */
     idio_hi_t count;	      /* (key) count */
-    idio_hi_t start;	      /* start free search */
     int (*comp_C) (void *k1, void *k2);	/* C equivalence function */
     idio_hi_t (*hash_C) (struct idio_s *h, void *k); /* C hashing function */
     struct idio_s *comp;	/* user-supplied comparator */
     struct idio_s *hash;	/* user-supplied hashing function */
-    idio_hash_entry_t *he;	/* a C array */
+    idio_hash_entry_t* *ha;	/* a C array */
 } idio_hash_t;
 
 #define IDIO_HASH_GREY(H)	((H)->u.hash->grey)
 #define IDIO_HASH_SIZE(H)	((H)->u.hash->size)
 #define IDIO_HASH_MASK(H)	((H)->u.hash->mask)
 #define IDIO_HASH_COUNT(H)	((H)->u.hash->count)
-#define IDIO_HASH_START(H)	((H)->u.hash->start)
 #define IDIO_HASH_COMP_C(H)	((H)->u.hash->comp_C)
 #define IDIO_HASH_HASH_C(H)	((H)->u.hash->hash_C)
 #define IDIO_HASH_COMP(H)	((H)->u.hash->comp)
 #define IDIO_HASH_HASH(H)	((H)->u.hash->hash)
-#define IDIO_HASH_HE_KEY(H,i)	((H)->u.hash->he[i].k)
-#define IDIO_HASH_HE_VALUE(H,i)	((H)->u.hash->he[i].v)
-#define IDIO_HASH_HE_NEXT(H,i)	((H)->u.hash->he[i].n)
+#define IDIO_HASH_HA(H,i)	((H)->u.hash->ha[i])
 #define IDIO_HASH_FLAGS(H)	((H)->tflags)
 
 /*
@@ -488,9 +534,11 @@ typedef struct idio_closure_s {
     size_t code_len;
     struct idio_s *frame;
     struct idio_s *env;
-#ifdef IDIO_VM_PERF
+#ifdef IDIO_VM_PROF
     uint64_t called;
     struct timespec call_time;
+    struct timeval ru_utime;
+    struct timeval ru_stime;
 #endif
 } idio_closure_t;
 
@@ -499,9 +547,11 @@ typedef struct idio_closure_s {
 #define IDIO_CLOSURE_CODE_LEN(C)   ((C)->u.closure->code_len)
 #define IDIO_CLOSURE_FRAME(C)      ((C)->u.closure->frame)
 #define IDIO_CLOSURE_ENV(C)        ((C)->u.closure->env)
-#ifdef IDIO_VM_PERF
+#ifdef IDIO_VM_PROF
 #define IDIO_CLOSURE_CALLED(C)     ((C)->u.closure->called)
 #define IDIO_CLOSURE_CALL_TIME(C)  ((C)->u.closure->call_time)
+#define IDIO_CLOSURE_RU_UTIME(C)   ((C)->u.closure->ru_utime)
+#define IDIO_CLOSURE_RU_STIME(C)   ((C)->u.closure->ru_stime)
 #endif
 
 /*
@@ -534,9 +584,11 @@ typedef struct idio_primitive_s {
     char *name;
     uint8_t arity;
     char varargs;
-#ifdef IDIO_VM_PERF
+#ifdef IDIO_VM_PROF
     uint64_t called;
     struct timespec call_time;
+    struct timeval ru_utime;
+    struct timeval ru_stime;
 #endif
 } idio_primitive_t;
 
@@ -545,9 +597,11 @@ typedef struct idio_primitive_s {
 #define IDIO_PRIMITIVE_NAME(P)       ((P)->u.primitive->name)
 #define IDIO_PRIMITIVE_ARITY(P)      ((P)->u.primitive->arity)
 #define IDIO_PRIMITIVE_VARARGS(P)    ((P)->u.primitive->varargs)
-#ifdef IDIO_VM_PERF
+#ifdef IDIO_VM_PROF
 #define IDIO_PRIMITIVE_CALLED(P)     ((P)->u.primitive->called)
 #define IDIO_PRIMITIVE_CALL_TIME(P)  ((P)->u.primitive->call_time)
+#define IDIO_PRIMITIVE_RU_UTIME(P)   ((P)->u.primitive->ru_utime)
+#define IDIO_PRIMITIVE_RU_STIME(P)   ((P)->u.primitive->ru_stime)
 #endif
 
 typedef struct idio_module_s {
@@ -619,7 +673,7 @@ typedef idio_bsa_t* IDIO_BSA;
 #define IDIO_BSA_AE(BSA,i)	((BSA)->ae[i])
 
 typedef struct idio_bignum_s {
-    IDIO_BS_T exp;		/* exponent, a raw int64_t */
+    IDIO_BS_T exp;
     IDIO_BSA sig;
 } idio_bignum_t;
 
@@ -631,10 +685,11 @@ typedef struct idio_bignum_s {
 typedef struct idio_handle_methods_s {
     void (*free) (struct idio_s *h);
     int (*readyp) (struct idio_s *h);
-    int (*getc) (struct idio_s *h);
+    int (*getb) (struct idio_s *h);
     int (*eofp) (struct idio_s *h);
     int (*close) (struct idio_s *h);
-    int (*putc) (struct idio_s *h, int c);
+    int (*putb) (struct idio_s *h, uint8_t c);
+    int (*putc) (struct idio_s *h, idio_unicode_t c);
     ptrdiff_t (*puts) (struct idio_s *h, char *s, size_t slen);
     int (*flush) (struct idio_s *h);
     off_t (*seek) (struct idio_s *h, off_t offset, int whence);
@@ -677,9 +732,10 @@ typedef struct idio_handle_s {
 
 #define IDIO_HANDLE_M_FREE(H)	(IDIO_HANDLE_METHODS (H)->free)
 #define IDIO_HANDLE_M_READYP(H)	(IDIO_HANDLE_METHODS (H)->readyp)
-#define IDIO_HANDLE_M_GETC(H)	(IDIO_HANDLE_METHODS (H)->getc)
+#define IDIO_HANDLE_M_GETB(H)	(IDIO_HANDLE_METHODS (H)->getb)
 #define IDIO_HANDLE_M_EOFP(H)	(IDIO_HANDLE_METHODS (H)->eofp)
 #define IDIO_HANDLE_M_CLOSE(H)	(IDIO_HANDLE_METHODS (H)->close)
+#define IDIO_HANDLE_M_PUTB(H)	(IDIO_HANDLE_METHODS (H)->putb)
 #define IDIO_HANDLE_M_PUTC(H)	(IDIO_HANDLE_METHODS (H)->putc)
 #define IDIO_HANDLE_M_PUTS(H)	(IDIO_HANDLE_METHODS (H)->puts)
 #define IDIO_HANDLE_M_FLUSH(H)	(IDIO_HANDLE_METHODS (H)->flush)
@@ -690,23 +746,27 @@ typedef struct idio_struct_type_s {
     struct idio_s *grey;
     struct idio_s *name;	/* a symbol */
     struct idio_s *parent;	/* a struct-type */
-    struct idio_s *fields;	/* an array of strings */
+    size_t size;		/* number of fields *including parents* */
+    struct idio_s* *fields;	/* an array of strings */
 } idio_struct_type_t;
 
-#define IDIO_STRUCT_TYPE_GREY(S)	((S)->u.struct_type->grey)
-#define IDIO_STRUCT_TYPE_NAME(S)	((S)->u.struct_type->name)
-#define IDIO_STRUCT_TYPE_PARENT(S)	((S)->u.struct_type->parent)
-#define IDIO_STRUCT_TYPE_FIELDS(S)	((S)->u.struct_type->fields)
+#define IDIO_STRUCT_TYPE_GREY(ST)	((ST)->u.struct_type->grey)
+#define IDIO_STRUCT_TYPE_NAME(ST)	((ST)->u.struct_type->name)
+#define IDIO_STRUCT_TYPE_PARENT(ST)	((ST)->u.struct_type->parent)
+#define IDIO_STRUCT_TYPE_SIZE(ST)	((ST)->u.struct_type->size)
+#define IDIO_STRUCT_TYPE_FIELDS(ST,i)	((ST)->u.struct_type->fields[i])
 
 typedef struct idio_struct_instance_s {
     struct idio_s *grey;
     struct idio_s *type;	/* a struct-type */
-    struct idio_s *fields;	/* an array */
+    struct idio_s* *fields;	/* an array */
 } idio_struct_instance_t;
 
-#define IDIO_STRUCT_INSTANCE_GREY(I)	((I)->u.struct_instance->grey)
-#define IDIO_STRUCT_INSTANCE_TYPE(I)	((I)->u.struct_instance->type)
-#define IDIO_STRUCT_INSTANCE_FIELDS(I)	((I)->u.struct_instance->fields)
+#define IDIO_STRUCT_INSTANCE_GREY(SI)		((SI)->u.struct_instance.grey)
+#define IDIO_STRUCT_INSTANCE_TYPE(SI)		((SI)->u.struct_instance.type)
+#define IDIO_STRUCT_INSTANCE_FIELDS(SI,i)	((SI)->u.struct_instance.fields[i])
+
+#define IDIO_STRUCT_INSTANCE_SIZE(SI)		(IDIO_STRUCT_TYPE_SIZE(IDIO_STRUCT_INSTANCE_TYPE(SI)))
 
 typedef struct idio_thread_s {
     struct idio_s *grey;
@@ -834,7 +894,7 @@ typedef struct idio_bitset_s {
 
 typedef struct idio_C_pointer_s {
     void *p;
-    struct idio_s *(*printer) (struct idio_s *cp);
+    char *(*printer) (struct idio_s *cp);
     char freep;
 } idio_C_pointer_t;
 
@@ -1024,7 +1084,7 @@ struct idio_s {
 	idio_frame_t           *frame;
 	idio_handle_t          *handle;
 	idio_struct_type_t     *struct_type;
-	idio_struct_instance_t *struct_instance;
+	idio_struct_instance_t struct_instance;
 	idio_thread_t	       *thread;
 
 	idio_C_type_t          C_type;
@@ -1072,6 +1132,7 @@ typedef struct idio_gc_s {
     IDIO grey;
     unsigned int pause;
     unsigned char verbose;
+    unsigned char inst;
     IDIO_FLAGS_T flags;		/* generic GC flags */
     struct stats {
 	unsigned long long nfree; /* # on free list */
@@ -1086,6 +1147,8 @@ typedef struct idio_gc_s {
 	unsigned long long collections;	/* # times gc has been run */
 	unsigned long long bounces;
 	struct timeval dur;
+	struct timeval ru_utime;
+	struct timeval ru_stime;
     }  stats;
 } idio_gc_t;
 
@@ -1319,6 +1382,7 @@ void idio_gc_register_finalizer (IDIO o, void (*func) (IDIO o));
 void idio_gc_deregister_finalizer (IDIO o);
 void idio_run_finalizer (IDIO o);
 void *idio_alloc (size_t s);
+void idio_free (void *p);
 void *idio_realloc (void *p, size_t s);
 IDIO idio_gc_get (idio_type_e type);
 void idio_gc_alloc (void **p, size_t size);
@@ -1332,6 +1396,13 @@ void idio_gc_alloc (void **p, size_t size);
  * value.
  */
 #define IDIO_GC_ALLOC(p,s)	(idio_gc_alloc ((void **)&(p), s))
+#define IDIO_GC_FREE(p)		(idio_gc_free ((void *)(p)))
+#ifdef IDIO_MALLOC
+#define IDIO_ASPRINTF(strp,fmt,...) idio_malloc_asprintf (strp,fmt, ##__VA_ARGS__)
+#else
+#define IDIO_ASPRINTF(strp,fmt,...) asprintf (strp,fmt, ##__VA_ARGS__)
+#endif
+
 IDIO idio_clone_base (IDIO o);
 int idio_isa (IDIO o, idio_type_e type);
 void idio_gc_stats_free (size_t n);
@@ -1354,12 +1425,15 @@ void idio_gc_protect (IDIO o);
 void idio_gc_protect_auto (IDIO o);
 void idio_gc_expose (IDIO o);
 void idio_gc_expose_all ();
-void idio_gc_find_frame_capture (IDIO frame);
-void idio_gc_find_frame ();
-void idio_gc_mark ();
-void idio_gc_sweep ();
+void idio_gc_mark (idio_gc_t *idio_gc);
+void idio_gc_sweep (idio_gc_t *idio_gc);
 void idio_gc_possibly_collect ();
-void idio_gc_collect (char *caller);
+#define IDIO_GC_COLLECT_GEN	0
+#define IDIO_GC_COLLECT_ALL	1
+void idio_gc_collect (idio_gc_t *idio_gc, int gen, char *caller);
+void idio_gc_collect_gen (char *caller);
+void idio_gc_collect_all (char *caller);
+void idio_gc_new_gen ();
 int idio_gc_get_pause (char *caller);
 void idio_gc_pause (char *caller);
 void idio_gc_resume (char *caller);
@@ -1378,6 +1452,8 @@ char *idio_strcat_free (char *s1, size_t *s1sp, char *s2, const size_t s2s);
 
 int idio_gc_verboseness (int n);
 void idio_gc_set_verboseness (int n);
+void idio_hcount (unsigned long long *bytes, int *scale);
+void idio_gc_stats ();
 
 void idio_init_gc ();
 void idio_gc_add_primitives ();

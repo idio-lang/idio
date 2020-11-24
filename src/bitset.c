@@ -99,7 +99,7 @@ void idio_free_bitset (IDIO bs)
 
     idio_gc_stats_free (sizeof (idio_bitset_t) + IDIO_BITSET_SIZE (bs) / sizeof (unsigned long) + 1);
 
-    free (bs->u.bitset.bits);
+    IDIO_GC_FREE (bs->u.bitset.bits);
 }
 
 IDIO idio_bitset_set (IDIO bs, size_t bit)
@@ -246,7 +246,7 @@ return the size of bitset `bs`			\n\
 {
     IDIO_ASSERT (bs);
 
-    IDIO_TYPE_ASSERT (bitset, bs);
+    IDIO_USER_TYPE_ASSERT (bitset, bs);
 
     return idio_integer (IDIO_BITSET_SIZE (bs));
 }
@@ -264,7 +264,7 @@ set bit `bit` in bitset `bs`			\n\
     IDIO_ASSERT (bs);
     IDIO_ASSERT (bit);
 
-    IDIO_TYPE_ASSERT (bitset, bs);
+    IDIO_USER_TYPE_ASSERT (bitset, bs);
 
     ptrdiff_t bs_bit = -1;
 
@@ -307,7 +307,7 @@ clear bit `bit` in bitset `bs`			\n\
     IDIO_ASSERT (bs);
     IDIO_ASSERT (bit);
 
-    IDIO_TYPE_ASSERT (bitset, bs);
+    IDIO_USER_TYPE_ASSERT (bitset, bs);
 
     ptrdiff_t bs_bit = -1;
 
@@ -350,7 +350,7 @@ get bit `bit` in bitset `bs`			\n\
     IDIO_ASSERT (bs);
     IDIO_ASSERT (bit);
 
-    IDIO_TYPE_ASSERT (bitset, bs);
+    IDIO_USER_TYPE_ASSERT (bitset, bs);
 
     ptrdiff_t bs_bit = -1;
 
@@ -390,7 +390,7 @@ copy the bitset					\n\
 {
     IDIO_ASSERT (bs);
 
-    IDIO_TYPE_ASSERT (bitset, bs);
+    IDIO_USER_TYPE_ASSERT (bitset, bs);
 
     return idio_copy (bs, IDIO_COPY_SHALLOW);
 }
@@ -405,14 +405,14 @@ merge the bitsets				\n\
 {
     IDIO_ASSERT (args);
 
-    IDIO_TYPE_ASSERT (list, args);
+    IDIO_USER_TYPE_ASSERT (list, args);
 
     IDIO r = idio_S_nil;
 
     while (idio_S_nil != args) {
 	IDIO bs = IDIO_PAIR_H (args);
 
-	IDIO_TYPE_ASSERT (bitset, bs);
+	IDIO_USER_TYPE_ASSERT (bitset, bs);
 
 	if (idio_S_nil == r) {
 	    r = idio_copy (bs, IDIO_COPY_SHALLOW);
@@ -446,14 +446,14 @@ logical AND the bitsets				\n\
 {
     IDIO_ASSERT (args);
 
-    IDIO_TYPE_ASSERT (list, args);
+    IDIO_USER_TYPE_ASSERT (list, args);
 
     IDIO r = idio_S_nil;
 
     while (idio_S_nil != args) {
 	IDIO bs = IDIO_PAIR_H (args);
 
-	IDIO_TYPE_ASSERT (bitset, bs);
+	IDIO_USER_TYPE_ASSERT (bitset, bs);
 
 	if (idio_S_nil == r) {
 	    r = idio_copy (bs, IDIO_COPY_SHALLOW);
@@ -487,14 +487,14 @@ logical Inclusive OR the bitsets		\n\
 {
     IDIO_ASSERT (args);
 
-    IDIO_TYPE_ASSERT (list, args);
+    IDIO_USER_TYPE_ASSERT (list, args);
 
     IDIO r = idio_S_nil;
 
     while (idio_S_nil != args) {
 	IDIO bs = IDIO_PAIR_H (args);
 
-	IDIO_TYPE_ASSERT (bitset, bs);
+	IDIO_USER_TYPE_ASSERT (bitset, bs);
 
 	if (idio_S_nil == r) {
 	    r = idio_copy (bs, IDIO_COPY_SHALLOW);
@@ -528,14 +528,14 @@ logical eXclusive OR the bitsets		\n\
 {
     IDIO_ASSERT (args);
 
-    IDIO_TYPE_ASSERT (list, args);
+    IDIO_USER_TYPE_ASSERT (list, args);
 
     IDIO r = idio_S_nil;
 
     while (idio_S_nil != args) {
 	IDIO bs = IDIO_PAIR_H (args);
 
-	IDIO_TYPE_ASSERT (bitset, bs);
+	IDIO_USER_TYPE_ASSERT (bitset, bs);
 
 	if (idio_S_nil == r) {
 	    r = idio_copy (bs, IDIO_COPY_SHALLOW);
@@ -569,7 +569,7 @@ logical complement of the bitset		\n\
 {
     IDIO_ASSERT (bs);
 
-    IDIO_TYPE_ASSERT (bitset, bs);
+    IDIO_USER_TYPE_ASSERT (bitset, bs);
 
     IDIO r = idio_copy (bs, IDIO_COPY_SHALLOW);
 
@@ -592,14 +592,14 @@ subtract the bitsets				\n\
 {
     IDIO_ASSERT (args);
 
-    IDIO_TYPE_ASSERT (list, args);
+    IDIO_USER_TYPE_ASSERT (list, args);
 
     IDIO r = idio_S_nil;
 
     while (idio_S_nil != args) {
 	IDIO bs = IDIO_PAIR_H (args);
 
-	IDIO_TYPE_ASSERT (bitset, bs);
+	IDIO_USER_TYPE_ASSERT (bitset, bs);
 
 	if (idio_S_nil == r) {
 	    r = idio_copy (bs, IDIO_COPY_SHALLOW);
@@ -629,7 +629,7 @@ int idio_equal_bitsetp (IDIO args)
 {
     IDIO_ASSERT (args);
 
-    IDIO_TYPE_ASSERT (list, args);
+    IDIO_USER_TYPE_ASSERT (list, args);
 
     IDIO bs = idio_S_nil;
 
@@ -648,7 +648,7 @@ int idio_equal_bitsetp (IDIO args)
     while (idio_S_nil != args) {
 	IDIO bs2 = IDIO_PAIR_H (args);
 
-	IDIO_TYPE_ASSERT (bitset, bs2);
+	IDIO_USER_TYPE_ASSERT (bitset, bs2);
 
 	if (IDIO_BITSET_SIZE (bs) != IDIO_BITSET_SIZE (bs2)) {
 	    return 0;
@@ -692,8 +692,8 @@ invoke `f` on each bit in bitset `bs` that is set\n\
     IDIO_ASSERT (bs);
     IDIO_ASSERT (f);
 
-    IDIO_TYPE_ASSERT (bitset, bs);
-    IDIO_TYPE_ASSERT (procedure, f);
+    IDIO_USER_TYPE_ASSERT (bitset, bs);
+    IDIO_USER_TYPE_ASSERT (procedure, f);
 
     IDIO thr = idio_thread_current_thread ();
 

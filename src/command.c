@@ -255,7 +255,7 @@ static char **idio_command_get_envp ()
 		char *sval = idio_string_as_C (val, &vlen);
 		size_t C_size = strlen (sval);
 		if (C_size != vlen) {
-		    free (sval);
+		    IDIO_GC_FREE (sval);
 
 		    idio_command_error_format ("env: var contains an ASCII NUL", val, IDIO_C_FUNC_LOCATION ());
 
@@ -270,7 +270,7 @@ static char **idio_command_get_envp ()
 		envp[n][slen + 1 + vlen] = '\0';
 		n++;
 
-		free (sval);
+		IDIO_GC_FREE (sval);
 	    } else {
 		if (0) {
 		    idio_command_error_env_type (symbol, IDIO_C_FUNC_LOCATION ());
@@ -312,7 +312,7 @@ char *idio_command_find_exe_C (char *command)
 	spath = idio_string_as_C (PATH, &size);
 	size_t C_size = strlen (spath);
 	if (C_size != size) {
-	    free (spath);
+	    IDIO_GC_FREE (spath);
 
 	    idio_command_error_format ("find-exe: PATH contains an ASCII NUL", PATH, IDIO_C_FUNC_LOCATION ());
 
@@ -331,7 +331,7 @@ char *idio_command_find_exe_C (char *command)
     char cwd[PATH_MAX];
     if (getcwd (cwd, PATH_MAX) == NULL) {
 	if (spath){
-	    free (spath);
+	    IDIO_GC_FREE (spath);
 	}
 
 	idio_error_system_errno ("getcwd", idio_S_nil, IDIO_C_FUNC_LOCATION ());
@@ -349,7 +349,7 @@ char *idio_command_find_exe_C (char *command)
 	if (0 == pathlen) {
 	    if ((cwdlen + 1 + cmdlen + 1) >= PATH_MAX) {
 		if (spath) {
-		    free (spath);
+		    IDIO_GC_FREE (spath);
 		}
 
 		idio_error_system ("cwd+command exename length", IDIO_LIST2 (PATH, idio_string_C (command)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
@@ -365,7 +365,7 @@ char *idio_command_find_exe_C (char *command)
 	    if (NULL == colon) {
 		if ((pathlen + 1 + cmdlen + 1) >= PATH_MAX) {
 		    if (spath) {
-			free (spath);
+			IDIO_GC_FREE (spath);
 		    }
 
 		    idio_error_system ("dir+command exename length", IDIO_LIST2 (PATH, idio_string_C (command)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
@@ -382,7 +382,7 @@ char *idio_command_find_exe_C (char *command)
 		if (0 == dirlen) {
 		    if ((cwdlen + 1 + cmdlen + 1) >= PATH_MAX) {
 			if (spath) {
-			    free (spath);
+			    IDIO_GC_FREE (spath);
 			}
 
 			idio_error_system ("cwd+command exename length", IDIO_LIST2 (PATH, idio_string_C (command)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
@@ -395,7 +395,7 @@ char *idio_command_find_exe_C (char *command)
 		} else {
 		    if ((dirlen + 1 + cmdlen + 1) >= PATH_MAX) {
 			if (spath) {
-			    free (spath);
+			    IDIO_GC_FREE (spath);
 			}
 
 			idio_error_system ("dir+command exename length", IDIO_LIST2 (PATH, idio_string_C (command)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
@@ -418,7 +418,7 @@ char *idio_command_find_exe_C (char *command)
 
 	    if (stat (exename, &sb) == -1) {
 		if (spath) {
-		    free (spath);
+		    IDIO_GC_FREE (spath);
 		}
 
 		idio_error_system_errno ("stat", IDIO_LIST1 (idio_string_C (exename)), IDIO_C_FUNC_LOCATION ());
@@ -450,7 +450,7 @@ char *idio_command_find_exe_C (char *command)
     }
 
     if (spath) {
-	free (spath);
+	IDIO_GC_FREE (spath);
     }
 
     return pathname;
@@ -497,7 +497,7 @@ static size_t idio_command_possible_filename_glob (IDIO arg, glob_t *gp)
 	glob_C = idio_string_as_C (arg, &size);
 	size_t C_size = strlen (glob_C);
 	if (C_size != size) {
-	    free (glob_C);
+	    IDIO_GC_FREE (glob_C);
 
 	    idio_command_error_format ("glob: arg contains an ASCII NUL", arg, IDIO_C_FUNC_LOCATION ());
 
@@ -524,7 +524,7 @@ static size_t idio_command_possible_filename_glob (IDIO arg, glob_t *gp)
 	    r = gp->gl_pathc;
 	} else {
 	    if (free_me) {
-		free (glob_C);
+		IDIO_GC_FREE (glob_C);
 	    }
 
 	    idio_command_error_glob (arg, IDIO_C_FUNC_LOCATION ());
@@ -535,7 +535,7 @@ static size_t idio_command_possible_filename_glob (IDIO arg, glob_t *gp)
     }
 
     if (free_me) {
-	free (glob_C);
+	IDIO_GC_FREE (glob_C);
     }
 
     return r;
@@ -605,7 +605,7 @@ char **idio_command_argv (IDIO args)
 			argv[i] = idio_string_as_C (arg, &size);
 			size_t C_size = strlen (argv[i]);
 			if (C_size != size) {
-			    free (argv[i]);
+			    IDIO_GC_FREE (argv[i]);
 
 			    idio_command_error_format ("argv: arg contains an ASCII NUL", arg, IDIO_C_FUNC_LOCATION ());
 
@@ -621,7 +621,7 @@ char **idio_command_argv (IDIO args)
 			argv[i] = idio_string_as_C (arg, &size);
 			size_t C_size = strlen (argv[i]);
 			if (C_size != size) {
-			    free (argv[i]);
+			    IDIO_GC_FREE (argv[i]);
 
 			    idio_command_error_format ("argv: arg contains an ASCII NUL", arg, IDIO_C_FUNC_LOCATION ());
 
@@ -637,7 +637,7 @@ char **idio_command_argv (IDIO args)
 			size_t n = idio_command_possible_filename_glob (arg, &g);
 
 			if (0 == n) {
-			    if (asprintf (&argv[i++], "%s", IDIO_SYMBOL_S (arg)) == -1) {
+			    if (IDIO_ASPRINTF (&argv[i++], "%s", IDIO_SYMBOL_S (arg)) == -1) {
 				idio_error_alloc ("asprintf");
 
 				/* notreached */
@@ -797,7 +797,8 @@ test if job `job` is stopped			\n\
 ")
 {
     IDIO_ASSERT (job);
-    IDIO_VERIFY_PARAM_TYPE (struct_instance, job);
+
+    IDIO_USER_TYPE_ASSERT (struct_instance, job);
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("%idio-job", job, IDIO_C_FUNC_LOCATION ());
@@ -848,7 +849,8 @@ test if job `job` has completed			\n\
 ")
 {
     IDIO_ASSERT (job);
-    IDIO_VERIFY_PARAM_TYPE (struct_instance, job);
+
+    IDIO_USER_TYPE_ASSERT (struct_instance, job);
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("%idio-job", job, IDIO_C_FUNC_LOCATION ());
@@ -908,7 +910,8 @@ test if job `job` has failed			\n\
 ")
 {
     IDIO_ASSERT (job);
-    IDIO_VERIFY_PARAM_TYPE (struct_instance, job);
+
+    IDIO_USER_TYPE_ASSERT (struct_instance, job);
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("%idio-job", job, IDIO_C_FUNC_LOCATION ());
@@ -967,7 +970,8 @@ Note that this is the inverse behaviour you might expect.\n\
 ")
 {
     IDIO_ASSERT (job);
-    IDIO_VERIFY_PARAM_TYPE (struct_instance, job);
+
+    IDIO_USER_TYPE_ASSERT (struct_instance, job);
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("%idio-job", job, IDIO_C_FUNC_LOCATION ());
@@ -1021,7 +1025,8 @@ value can be: exit status for 'exit or signal number for 'killed\n\
 ")
 {
     IDIO_ASSERT (job);
-    IDIO_VERIFY_PARAM_TYPE (struct_instance, job);
+
+    IDIO_USER_TYPE_ASSERT (struct_instance, job);
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("%idio-job", job, IDIO_C_FUNC_LOCATION ());
@@ -1108,8 +1113,9 @@ update the process status of pid `pid` with `status`\n\
 {
     IDIO_ASSERT (ipid);
     IDIO_ASSERT (istatus);
-    IDIO_VERIFY_PARAM_TYPE (C_int, ipid);
-    IDIO_VERIFY_PARAM_TYPE (C_pointer, istatus);
+
+    IDIO_USER_TYPE_ASSERT (C_int, ipid);
+    IDIO_USER_TYPE_ASSERT (C_pointer, istatus);
 
     int pid = IDIO_C_TYPE_INT (ipid);
     int *statusp = IDIO_C_TYPE_POINTER_P (istatus);
@@ -1189,7 +1195,8 @@ wait for job `job` to be stopped or completed	\n\
 ")
 {
     IDIO_ASSERT (job);
-    IDIO_VERIFY_PARAM_TYPE (struct_instance, job);
+
+    IDIO_USER_TYPE_ASSERT (struct_instance, job);
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("%idio-job", job, IDIO_C_FUNC_LOCATION ());
@@ -1234,8 +1241,9 @@ display to stderr `msg` alongside job `job` details\n\
 {
     IDIO_ASSERT (job);
     IDIO_ASSERT (msg);
-    IDIO_VERIFY_PARAM_TYPE (struct_instance, job);
-    IDIO_VERIFY_PARAM_TYPE (string, msg);
+
+    IDIO_USER_TYPE_ASSERT (struct_instance, job);
+    IDIO_USER_TYPE_ASSERT (string, msg);
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("%idio-job", job, IDIO_C_FUNC_LOCATION ());
@@ -1246,7 +1254,7 @@ display to stderr `msg` alongside job `job` details\n\
     size_t size = 0;
     char *msgs = idio_string_as_C (msg, &size);
     idio_command_format_job_info (job, msgs);
-    free (msgs);
+    IDIO_GC_FREE (msgs);
 
     return idio_S_unspec;
 }
@@ -1439,8 +1447,9 @@ If `cont` is set a SIGCONT is sent to the process group\n\
 {
     IDIO_ASSERT (job);
     IDIO_ASSERT (icont);
-    IDIO_VERIFY_PARAM_TYPE (struct_instance, job);
-    IDIO_VERIFY_PARAM_TYPE (boolean, icont);
+
+    IDIO_USER_TYPE_ASSERT (struct_instance, job);
+    IDIO_USER_TYPE_ASSERT (boolean, icont);
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("%idio-job", job, IDIO_C_FUNC_LOCATION ());
@@ -1499,8 +1508,9 @@ Backgrounding a job is always successful hence returns 0.\n\
 {
     IDIO_ASSERT (job);
     IDIO_ASSERT (icont);
-    IDIO_VERIFY_PARAM_TYPE (struct_instance, job);
-    IDIO_VERIFY_PARAM_TYPE (boolean, icont);
+
+    IDIO_USER_TYPE_ASSERT (struct_instance, job);
+    IDIO_USER_TYPE_ASSERT (boolean, icont);
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("%idio-job", job, IDIO_C_FUNC_LOCATION ());
@@ -1572,7 +1582,8 @@ Send the process group of `job` a SIGCONT then a SIGHUP\n\
 ")
 {
     IDIO_ASSERT (job);
-    IDIO_VERIFY_PARAM_TYPE (struct_instance, job);
+
+    IDIO_USER_TYPE_ASSERT (struct_instance, job);
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("%idio-job", job, IDIO_C_FUNC_LOCATION ());
@@ -1662,7 +1673,8 @@ In particular, mark job `job` as not stopped\n\
 ")
 {
     IDIO_ASSERT (job);
-    IDIO_VERIFY_PARAM_TYPE (struct_instance, job);
+
+    IDIO_USER_TYPE_ASSERT (struct_instance, job);
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("%idio-job", job, IDIO_C_FUNC_LOCATION ());
@@ -1707,8 +1719,9 @@ mark job `job` as running and foreground it if required\n\
 {
     IDIO_ASSERT (job);
     IDIO_ASSERT (iforeground);
-    IDIO_VERIFY_PARAM_TYPE (struct_instance, job);
-    IDIO_VERIFY_PARAM_TYPE (boolean, iforeground);
+
+    IDIO_USER_TYPE_ASSERT (struct_instance, job);
+    IDIO_USER_TYPE_ASSERT (boolean, iforeground);
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("%idio-job", job, IDIO_C_FUNC_LOCATION ());
@@ -1873,10 +1886,10 @@ File descriptors are C integers.		\n\
     IDIO_ASSERT (ierrfile);
     IDIO_ASSERT (iforeground);
 
-    IDIO_VERIFY_PARAM_TYPE (C_int, iinfile);
-    IDIO_VERIFY_PARAM_TYPE (C_int, ioutfile);
-    IDIO_VERIFY_PARAM_TYPE (C_int, ierrfile);
-    IDIO_VERIFY_PARAM_TYPE (boolean, iforeground);
+    IDIO_USER_TYPE_ASSERT (C_int, iinfile);
+    IDIO_USER_TYPE_ASSERT (C_int, ioutfile);
+    IDIO_USER_TYPE_ASSERT (C_int, ierrfile);
+    IDIO_USER_TYPE_ASSERT (boolean, iforeground);
 
     pid_t pgid = 0;
     if (idio_isa_fixnum (ipgid)) {
@@ -2217,7 +2230,8 @@ launch job `job`				\n\
 ")
 {
     IDIO_ASSERT (job);
-    IDIO_VERIFY_PARAM_TYPE (struct_instance, job);
+
+    IDIO_USER_TYPE_ASSERT (struct_instance, job);
 
     if (! idio_struct_instance_isa (job, idio_command_job_type)) {
 	idio_error_param_type ("job", job, IDIO_C_FUNC_LOCATION ());
@@ -2239,7 +2253,8 @@ launch a pipeline of `commands`			\n\
 ")
 {
     IDIO_ASSERT (commands);
-    IDIO_VERIFY_PARAM_TYPE (list, commands);
+
+    IDIO_USER_TYPE_ASSERT (list, commands);
 
     idio_debug ("%launch-pipeline: %s\n", commands);
 
@@ -2287,9 +2302,9 @@ void idio_free_argv1 (char **argv)
      */
     int j;
     for (j = 1; NULL != argv[j]; j++) {
-	free (argv[j]);
+	IDIO_GC_FREE (argv[j]);
     }
-    free (argv);
+    IDIO_GC_FREE (argv);
 }
 
 /*
@@ -2442,7 +2457,7 @@ IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
 		done = 1;
 		break;
 	    default:
-		idio_putc_string_handle (recover_stdout, c);
+		idio_putb_string_handle (recover_stdout, c);
 		break;
 	    }
 	}
@@ -2490,7 +2505,7 @@ IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
 		done = 1;
 		break;
 	    default:
-		idio_putc_string_handle (recover_stderr, c);
+		idio_putb_string_handle (recover_stderr, c);
 		break;
 	    }
 	}
@@ -2520,7 +2535,8 @@ exec `command` `args`				\n\
 {
     IDIO_ASSERT (command);
     IDIO_ASSERT (args);
-    IDIO_VERIFY_PARAM_TYPE (symbol, command);
+
+    IDIO_USER_TYPE_ASSERT (symbol, command);
 
     char *pathname = idio_command_find_exe (command);
     if (NULL == pathname) {
@@ -2543,7 +2559,7 @@ exec `command` `args`				\n\
     return idio_S_notreached;
 }
 
-IDIO_DEFINE_PRIMITIVE0_DS ("%idio-interactive/get", idio_interactive_get, (void), "", "\
+IDIO_DEFINE_PRIMITIVE0_DS ("%interactive?", interactivep, (void), "", "\
 get the current interactiveness			\n\
 						\n\
 :return: #t or #f				\n\
@@ -2617,7 +2633,7 @@ void idio_init_command ()
      * The following is from the "info libc" pages, 28.5.2
      * Initializing the Shell.
      *
-     * WIth some patching of Idio values.
+     * With some patching of Idio values.
      */
     idio_command_pid = getpid ();
     idio_command_terminal = STDIN_FILENO;
@@ -2634,7 +2650,7 @@ void idio_init_command ()
      * messages.  So it should be a (read-only) computed variable.
      */
     IDIO geti;
-    geti = IDIO_ADD_PRIMITIVE (idio_interactive_get);
+    geti = IDIO_ADD_PRIMITIVE (interactivep);
     idio_module_add_computed_symbol (idio_symbols_C_intern ("%idio-interactive"), idio_vm_values_ref (IDIO_FIXNUM_VAL (geti)), idio_S_nil, idio_command_module);
 
     /*
@@ -2689,11 +2705,23 @@ void idio_init_command ()
 	 * Put ourselves in our own process group.
 	 */
 	idio_command_pgid = idio_command_pid;
-	if (setpgid (idio_command_pgid, idio_command_pgid) < 0) {
-	    idio_error_system_errno ("setpgid", IDIO_LIST1 (idio_C_int (idio_command_pgid)), IDIO_C_FUNC_LOCATION ());
+	/*
+	 * Triggered by rlwrap(1):
+	 *
+	 * setpgid() returns EPERM ... or to change the process group
+	 * ID of a session leader.
+	 *
+	 * That appears to be the case even if we are setting it to
+	 * ourselves.
+	 */
+	pid_t sid = getsid (0);
+	if (sid != idio_command_pgid) {
+	    if (setpgid (idio_command_pgid, idio_command_pgid) < 0) {
+		idio_error_system_errno ("setpgid", IDIO_LIST1 (idio_C_int (idio_command_pgid)), IDIO_C_FUNC_LOCATION ());
 
-	    /* notreached */
-	    return;
+		/* notreached */
+		return;
+	    }
 	}
 
 	idio_module_set_symbol_value (idio_symbols_C_intern ("%idio-pgid"),

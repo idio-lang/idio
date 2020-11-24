@@ -61,6 +61,8 @@ IDIO idio_src_properties;
 #define IDIO_CHAR_PLUS_SIGN	'+'
 #define IDIO_CHAR_PERIOD	'.'
 
+#define IDIO_UNICODE_REPLACEMENT_CHARACTER 0xFFFD
+
 /*
  * What separates words from one another in Idio?
  *
@@ -70,11 +72,17 @@ IDIO idio_src_properties;
  *
  *	A(B)C	=>	A ( B ) C
  *
+ * which allow words to abutt parentheses.
+ *
  * end of arrays RBRACKET
  *
  *	(start is handled by #[ -- HASH LBRACKET )
  *
  *	#[A]B	=>	#[ A ] B
+ *
+ * also LBRACKET to avoid words like a[b
+ *
+ * similarly LBRACE and RBRACE to avoid a{b and c}d
  *
  * value indexing - DOT
  *
@@ -99,12 +107,12 @@ IDIO idio_src_properties;
 				 IDIO_CHAR_CR == (c) ||			\
 				 IDIO_CHAR_LPAREN == (c) ||		\
 				 IDIO_CHAR_RPAREN == (c) ||		\
+				 IDIO_CHAR_LBRACKET == (c) ||		\
 				 IDIO_CHAR_RBRACKET == (c) ||		\
+				 IDIO_CHAR_LBRACE == (c) ||		\
+				 IDIO_CHAR_RBRACE == (c) ||		\
 				 IDIO_CHAR_DOT == (c) ||		\
 				 IDIO_CHAR_SEMICOLON == (c) ||		\
-				 IDIO_CHAR_SQUOTE == (c) ||		\
-				 IDIO_CHAR_BACKQUOTE == (c) ||		\
-				 IDIO_CHAR_COMMA == (c) ||		\
 				 IDIO_CHAR_DQUOTE == (c))
 
 #define IDIO_OPEN_DELIMITER(c)	(IDIO_CHAR_LPAREN == (c) ||		\
@@ -158,7 +166,7 @@ IDIO idio_src_properties;
  * 3. expression quoting
  * 4. escape char to prevent operator handling
  */
-char idio_default_interpolation_chars[] = { IDIO_CHAR_DOLLARS, IDIO_CHAR_AT, IDIO_CHAR_SQUOTE, IDIO_CHAR_BACKSLASH };
+idio_unicode_t idio_default_interpolation_chars[] = { IDIO_CHAR_DOLLARS, IDIO_CHAR_AT, IDIO_CHAR_SQUOTE, IDIO_CHAR_BACKSLASH };
 #define IDIO_INTERPOLATION_CHARS 4
 
 /*
@@ -550,8 +558,8 @@ static void idio_read_error_unicode_decode (IDIO handle, IDIO lo, IDIO c_locatio
     /* notreached */
 }
 
-static IDIO idio_read_1_expr (IDIO handle, char *ic, int depth);
-static IDIO idio_read_block (IDIO handle, IDIO lo, IDIO closedel, char *ic, int depth);
+static IDIO idio_read_1_expr (IDIO handle, idio_unicode_t *ic, int depth);
+static IDIO idio_read_block (IDIO handle, IDIO lo, IDIO closedel, idio_unicode_t *ic, int depth);
 static IDIO idio_read_number_C (IDIO handle, char *str);
 static IDIO idio_read_bignum_radix (IDIO handle, IDIO lo, char basec, int radix);
 static IDIO idio_read_unescape (IDIO ls);
@@ -579,7 +587,7 @@ IDIO idio_read_unicode (IDIO handle, IDIO lo)
     IDIO_TYPE_ASSERT (handle, handle);
     IDIO_TYPE_ASSERT (struct_instance, lo);
 
-    int c = idio_getc_handle (handle);
+    idio_unicode_t c = idio_getc_handle (handle);
 
     if (idio_eofp_handle (handle)) {
 	/*
@@ -643,7 +651,14 @@ IDIO idio_read_unicode (IDIO handle, IDIO lo)
     return r;
 }
 
-IDIO idio_read_character (IDIO handle, IDIO lo, int kind)
+/*
+ * idio_getc_handle() will come here as well as idio_read_character(),
+ * below
+ *
+ * We can raise a conditon for EOF but not for badly formed UTF-8
+ * sequences.  Return the replacement character for those.
+ */
+idio_unicode_t idio_read_character_int (IDIO handle, IDIO lo, int kind)
 {
     IDIO_ASSERT (handle);
     IDIO_TYPE_ASSERT (handle, handle);
@@ -661,7 +676,7 @@ IDIO idio_read_character (IDIO handle, IDIO lo, int kind)
 
     int i;
     for (i = 0; ; i++) {
-	uint8_t uc = idio_getc_handle (handle);
+	uint8_t uc = idio_getb_handle (handle);
 
 	idio_utf8_decode (&state, &codepoint, uc);
 	if (IDIO_UTF8_ACCEPT == state) {
@@ -672,7 +687,7 @@ IDIO idio_read_character (IDIO handle, IDIO lo, int kind)
 	     */
 	    if (idio_eofp_handle (handle)) {
 		if (IDIO_READ_CHARACTER_SIMPLE == kind) {
-		    return idio_S_eof;
+		    return EOF;
 		} else {
 		    /*
 		     * Test Case: read-errors/character-eof.idio
@@ -681,7 +696,8 @@ IDIO idio_read_character (IDIO handle, IDIO lo, int kind)
 		     */
 		    idio_read_error_utf8_decode (handle, lo, IDIO_C_FUNC_LOCATION (), "EOF");
 
-		    return idio_S_notreached;
+		    /* notreached */
+		    return EOF;
 		}
 	    }
 
@@ -710,9 +726,14 @@ IDIO idio_read_character (IDIO handle, IDIO lo, int kind)
 	     * *shakes fist*
 	     */
 
-	    idio_read_error_utf8_decode (handle, lo, IDIO_C_FUNC_LOCATION (), "not well-formed");
+	    if (IDIO_READ_CHARACTER_SIMPLE == kind) {
+		return IDIO_UNICODE_REPLACEMENT_CHARACTER;
+	    } else {
+		idio_read_error_utf8_decode (handle, lo, IDIO_C_FUNC_LOCATION (), "not well-formed");
 
-	    return idio_S_notreached;
+		/* notreached */
+		return EOF;
+	    }
 	}
 	/*
 	 * more bytes required...
@@ -727,7 +748,7 @@ IDIO idio_read_character (IDIO handle, IDIO lo, int kind)
 
 	if (idio_eofp_handle (handle)) {
 	    if (IDIO_READ_CHARACTER_SIMPLE == kind) {
-		return idio_S_eof;
+		return EOF;
 	    } else {
 		/*
 		 * Test Case: read-errors/character-incomplete-eof.idio
@@ -742,7 +763,8 @@ IDIO idio_read_character (IDIO handle, IDIO lo, int kind)
 		 */
 		idio_read_error_utf8_decode (handle, lo, IDIO_C_FUNC_LOCATION (), "EOF");
 
-		return idio_S_notreached;
+		/* notreached */
+		return EOF;
 	    }
 	}
 
@@ -754,9 +776,28 @@ IDIO idio_read_character (IDIO handle, IDIO lo, int kind)
 	 * where x is a literal byte which is not a UTF-8 prefix of
 	 * some sort (as you'll get EOF, above, instead)
 	 */
-	idio_read_error_utf8_decode (handle, lo, IDIO_C_FUNC_LOCATION (), "not well-formed");
+	if (IDIO_READ_CHARACTER_SIMPLE == kind) {
+	    return IDIO_UNICODE_REPLACEMENT_CHARACTER;
+	} else {
+	    idio_read_error_utf8_decode (handle, lo, IDIO_C_FUNC_LOCATION (), "not well-formed");
 
-	return idio_S_notreached;
+	    /* notreached */
+	    return EOF;
+	}
+    }
+
+    return codepoint;
+}
+
+IDIO idio_read_character (IDIO handle, IDIO lo, int kind)
+{
+    IDIO_ASSERT (handle);
+    IDIO_TYPE_ASSERT (handle, handle);
+
+    idio_unicode_t codepoint = idio_read_character_int (handle, lo, kind);
+
+    if (EOF == codepoint) {
+	return idio_S_eof;
     }
 
     if (IDIO_READ_CHARACTER_SIMPLE == kind) {
@@ -781,7 +822,7 @@ static void idio_read_whitespace (IDIO handle, IDIO lo)
     IDIO_TYPE_ASSERT (struct_instance, lo);
 
     for (;;) {
-	int c = idio_getc_handle (handle);
+	idio_unicode_t c = idio_getc_handle (handle);
 
 	if (idio_eofp_handle (handle)) {
 	    return;
@@ -807,7 +848,7 @@ static void idio_read_newline (IDIO handle, IDIO lo)
     IDIO_TYPE_ASSERT (struct_instance, lo);
 
     for (;;) {
-	int c = idio_getc_handle (handle);
+	idio_unicode_t c = idio_getc_handle (handle);
 
 	if (idio_eofp_handle (handle)) {
 	    return;
@@ -827,7 +868,7 @@ static void idio_read_newline (IDIO handle, IDIO lo)
 /*
  * idio_read_list returns the list -- not a lexical object.
  */
-static IDIO idio_read_list (IDIO handle, IDIO list_lo, IDIO opendel, char *ic, int depth)
+static IDIO idio_read_list (IDIO handle, IDIO list_lo, IDIO opendel, idio_unicode_t *ic, int depth)
 {
     int count = 0;		/* # of elements in list */
 
@@ -1017,23 +1058,17 @@ static IDIO idio_read_list (IDIO handle, IDIO list_lo, IDIO opendel, char *ic, i
 
 	    if (closedel == e) {
 		r = idio_list_reverse (r);
-		if (idio_isa_pair (r) &&
-		    IDIO_LIST_CONSTANT_P (depth) == 0) {
-		    IDIO r_lo = idio_copy (lo, IDIO_COPY_SHALLOW);
-		    idio_struct_instance_set_direct (r_lo, IDIO_LEXOBJ_EXPR, r);
-		    idio_hash_put (idio_src_properties, r, r_lo);
-		}
 		if (! (IDIO_LIST_QUOTE_P (depth) ||
 		       IDIO_LIST_CONSTANT_P (depth))) {
 		    r = idio_operator_expand (r, 0);
 		}
+		r = idio_read_unescape (r);
 		if (idio_isa_pair (r) &&
 		    IDIO_LIST_CONSTANT_P (depth) == 0) {
 		    IDIO r_lo = idio_copy (lo, IDIO_COPY_SHALLOW);
 		    idio_struct_instance_set_direct (r_lo, IDIO_LEXOBJ_EXPR, r);
 		    idio_hash_put (idio_src_properties, r, r_lo);
 		}
-		r = idio_read_unescape (r);
 		return r;
 	    }
 
@@ -1090,7 +1125,7 @@ static IDIO idio_read_list (IDIO handle, IDIO list_lo, IDIO opendel, char *ic, i
     return idio_S_notreached;
 }
 
-static IDIO idio_read_quote (IDIO handle, IDIO lo, char *ic, int depth)
+static IDIO idio_read_quote (IDIO handle, IDIO lo, idio_unicode_t *ic, int depth)
 {
     IDIO_ASSERT (handle);
     IDIO_ASSERT (lo);
@@ -1103,7 +1138,7 @@ static IDIO idio_read_quote (IDIO handle, IDIO lo, char *ic, int depth)
     return r;
 }
 
-static IDIO idio_read_quasiquote (IDIO handle, IDIO lo, char *ic, int depth)
+static IDIO idio_read_quasiquote (IDIO handle, IDIO lo, idio_unicode_t *ic, int depth)
 {
     IDIO_ASSERT (handle);
     IDIO_ASSERT (lo);
@@ -1116,7 +1151,7 @@ static IDIO idio_read_quasiquote (IDIO handle, IDIO lo, char *ic, int depth)
     return r;
 }
 
-static IDIO idio_read_unquote_splicing (IDIO handle, IDIO lo, char *ic, int depth)
+static IDIO idio_read_unquote_splicing (IDIO handle, IDIO lo, idio_unicode_t *ic, int depth)
 {
     IDIO_ASSERT (handle);
     IDIO_ASSERT (lo);
@@ -1129,7 +1164,7 @@ static IDIO idio_read_unquote_splicing (IDIO handle, IDIO lo, char *ic, int dept
     return r;
 }
 
-static IDIO idio_read_unquote (IDIO handle, IDIO lo, char *ic, int depth)
+static IDIO idio_read_unquote (IDIO handle, IDIO lo, idio_unicode_t *ic, int depth)
 {
     IDIO_ASSERT (handle);
     IDIO_ASSERT (lo);
@@ -1142,7 +1177,7 @@ static IDIO idio_read_unquote (IDIO handle, IDIO lo, char *ic, int depth)
     return r;
 }
 
-static IDIO idio_read_escape (IDIO handle, IDIO lo, char *ic, int depth)
+static IDIO idio_read_escape (IDIO handle, IDIO lo, idio_unicode_t *ic, int depth)
 {
     IDIO_ASSERT (handle);
 
@@ -1158,12 +1193,12 @@ static IDIO idio_read_unescape (IDIO ls)
     IDIO_ASSERT (ls);
 
     IDIO_TYPE_ASSERT (list, ls);
-    
+
     IDIO r = idio_S_nil;
 
     while (idio_S_nil != ls) {
 	IDIO e = IDIO_PAIR_H (ls);
-	
+
 	if (idio_isa_pair (e) &&
 	    idio_S_escape == IDIO_PAIR_H (e) &&
 	    idio_isa_pair (IDIO_PAIR_T (e)) &&
@@ -1189,7 +1224,7 @@ static void idio_read_line_comment (IDIO handle, IDIO lo, int depth)
     IDIO_TYPE_ASSERT (struct_instance, lo);
 
     for (;;) {
-	int c = idio_getc_handle (handle);
+	idio_unicode_t c = idio_getc_handle (handle);
 
 	if (idio_eofp_handle (handle)) {
 	    /*
@@ -1243,7 +1278,7 @@ static void idio_read_block_comment (IDIO handle, IDIO lo, int depth)
     int asterisk_esc = 0;
     int hash_esc = 0;
 
-    int c = idio_getc_handle (handle);
+    idio_unicode_t c = idio_getc_handle (handle);
 
     if (idio_eofp_handle (handle)) {
 	/*
@@ -1332,7 +1367,8 @@ static void idio_read_block_comment (IDIO handle, IDIO lo, int depth)
  * Semi-literate block comments #| ... |# can be nested!
  *
  * The line of the opening #| should be the engine the comment text
- * will be piped into.
+ * will be piped into.  No engines are currently defined by maybe
+ * something like:
  *
  * #| .rst
  * ..note this is ReStructuredText
@@ -1352,7 +1388,7 @@ static void idio_read_sl_block_comment (IDIO handle, IDIO lo, int depth)
     int pipe_esc = 0;
     int hash_esc = 0;
 
-    int c = idio_getc_handle (handle);
+    idio_unicode_t c = idio_getc_handle (handle);
 
     if (idio_eofp_handle (handle)) {
 	/*
@@ -1439,6 +1475,29 @@ static void idio_read_sl_block_comment (IDIO handle, IDIO lo, int depth)
 
 /*
  * idio_read_string returns the string -- not a lexical object.
+ *
+ * There is an interesting question about *how* we read in a UTF-8
+ * encoded string.
+ *
+ * 1. read in Unicode code points until the successful decode is " --
+ *    you will have to use a uint32_t array as you cannot predict what
+ *    codepoint is coming next.
+ *
+ * 2. read in a byte at a time until the byte is " then use the utf8
+ *    decoder on the byte array
+ *
+ * In both cases, you now require to convert the uint32_t[] or
+ * uint8_t[] into a correctly sized Idio string.
+ *
+ * The problem though is what happens with malformed UTF-8 sequences.  In each case
+ *
+ * 1. if you have a valid UTF-8 prefix where " is not a valid sequence
+ *    then *that* " is consumed and you will continue looking for " in
+ *    the rest of the file
+ *
+ * 2. you will stop at the first " byte and if the previous byte was a
+ *    valid prefix expecting another byte then it will fail UTF-8
+ *    decoding
  */
 static IDIO idio_read_string (IDIO handle, IDIO lo)
 {
@@ -1462,7 +1521,7 @@ static IDIO idio_read_string (IDIO handle, IDIO lo)
     int esc = 0;
 
     while (! done) {
-	uint8_t c = idio_getc_handle (handle);
+	int c = idio_getb_handle (handle);
 
 	if (idio_eofp_handle (handle)) {
 	    /*
@@ -1470,7 +1529,7 @@ static IDIO idio_read_string (IDIO handle, IDIO lo)
 	     *
 	     * "
 	     */
-	    free (abuf);
+	    IDIO_GC_FREE (abuf);
 
 	    idio_read_error_string (handle, lo, IDIO_C_FUNC_LOCATION (), "EOF");
 
@@ -1546,8 +1605,9 @@ static IDIO idio_read_string (IDIO handle, IDIO lo)
     abuf[slen] = '\0';
 
     IDIO r = idio_string_C_len (abuf, slen);
+    IDIO_FLAGS (r) |= IDIO_FLAG_CONST;
 
-    free (abuf);
+    IDIO_GC_FREE (abuf);
 
     return r;
 }
@@ -1562,7 +1622,7 @@ static IDIO idio_read_named_character (IDIO handle, IDIO lo)
 
     char buf[IDIO_CHARACTER_MAX_NAME_LEN+1];
     int i;
-    uint8_t c;
+    idio_unicode_t c;
 
     for (i = 0 ; i < IDIO_CHARACTER_MAX_NAME_LEN; i++) {
 	c = idio_getc_handle (handle);
@@ -1648,7 +1708,7 @@ static IDIO idio_read_named_character (IDIO handle, IDIO lo)
 /*
  * idio_read_array returns the array -- not a lexical object.
  */
-static IDIO idio_read_array (IDIO handle, IDIO lo, char *ic, int depth)
+static IDIO idio_read_array (IDIO handle, IDIO lo, idio_unicode_t *ic, int depth)
 {
     IDIO_ASSERT (handle);
 
@@ -1659,7 +1719,7 @@ static IDIO idio_read_array (IDIO handle, IDIO lo, char *ic, int depth)
 /*
  * idio_read_hash returns the hash -- not a lexical object.
  */
-static IDIO idio_read_hash (IDIO handle, IDIO lo, char *ic, int depth)
+static IDIO idio_read_hash (IDIO handle, IDIO lo, idio_unicode_t *ic, int depth)
 {
     IDIO_ASSERT (handle);
 
@@ -1671,11 +1731,15 @@ static IDIO idio_read_hash (IDIO handle, IDIO lo, char *ic, int depth)
 /*
  * idio_read_bitset returns the bitset -- not a lexical object.
  */
+static IDIO idio_read_bitset_buf_sh = idio_S_nil;
+static IDIO idio_read_bitset_offset_sh = idio_S_nil;
+static IDIO idio_read_bitset_end_sh = idio_S_nil;
+
 static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 {
     IDIO_ASSERT (handle);
 
-    int c = idio_getc_handle (handle);
+    idio_unicode_t c = idio_getc_handle (handle);
 
     if (idio_eofp_handle (handle)) {
 	/*
@@ -1783,7 +1847,7 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 		/*
 		 * Test Case: read-errors/bitset-internal-eof-2.idio
 		 *
-		 * #B{ 23 
+		 * #B{ 23
 		 *
 		 */
 		idio_read_error_bitset (handle, lo, IDIO_C_FUNC_LOCATION (), "EOF");
@@ -1825,8 +1889,8 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 
 	if (eow) {
 	    if (0 == seen_size) {
-		IDIO num_sh = idio_open_input_string_handle_C (buf);
-		IDIO I_size = idio_read_number_C (num_sh, buf);
+		idio_reopen_input_string_handle_C (idio_read_bitset_buf_sh, buf);
+		IDIO I_size = idio_read_number_C (idio_read_bitset_buf_sh, buf);
 
 		/*
 		 * NB bs_size is a signed type to catch read errors
@@ -1905,25 +1969,18 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 		bs = idio_bitset (bs_size);
 		seen_size = 1;
 	    } else {
-		IDIO buf_sh = idio_open_input_string_handle_C (buf);
+		idio_reopen_input_string_handle_C (idio_read_bitset_buf_sh, buf);
 
-		char *sname = idio_handle_name_as_C (buf_sh);
-		IDIO lo = idio_struct_instance (idio_lexobj_type,
-						idio_pair (idio_string_C (sname),
-						idio_pair (idio_integer (IDIO_HANDLE_LINE (buf_sh)),
-						idio_pair (idio_integer (IDIO_HANDLE_POS (buf_sh)),
-						idio_pair (idio_S_unspec,
-						idio_S_nil)))));
-		free (sname);
+		IDIO lo = idio_read_lexobj_from_handle (idio_read_bitset_buf_sh);
 
 		if (NULL != bit_range) {
 		    /* bit_range is pointing at the HYPEN_MINUS */
 		    *bit_range = '\0';
 		    bit_range++;
 
-		    IDIO offset_sh = idio_open_input_string_handle_C (buf);
+		    idio_reopen_input_string_handle_C (idio_read_bitset_offset_sh, buf);
 
-		    IDIO I_offset = idio_read_bignum_radix (offset_sh, lo, 'x', 16);
+		    IDIO I_offset = idio_read_bignum_radix (idio_read_bitset_offset_sh, lo, 'x', 16);
 
 		    if (idio_isa_fixnum (I_offset)) {
 			offset = IDIO_FIXNUM_VAL (I_offset);
@@ -1980,7 +2037,7 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 		     * characters than in buf indicating buf isn't a
 		     * valid hex value
 		     */
-		    if (idio_handle_tell (offset_sh) != strlen (buf)) {
+		    if (idio_handle_tell (idio_read_bitset_offset_sh) != strlen (buf)) {
 			/*
 			 * Test Case: read-errors/bitset-range-start-floating-point.idio
 			 *
@@ -1998,7 +2055,7 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 			 * content of {em}.
 			 */
 			sprintf (em, "range start %#zx from \"%.*s\"", offset, BUFSIZ - 32, buf);
-			idio_read_error_bitset (buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
+			idio_read_error_bitset (idio_read_bitset_buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
 
 			return idio_S_notreached;
 		    }
@@ -2015,7 +2072,7 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 			 */
 			char em[BUFSIZ];
 			sprintf (em, "range start %#zx > bitset size %#zx", offset, IDIO_BITSET_SIZE (bs));
-			idio_read_error_bitset (buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
+			idio_read_error_bitset (idio_read_bitset_buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
 
 			return idio_S_notreached;
 		    }
@@ -2029,7 +2086,7 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 			 */
 			char em[BUFSIZ];
 			sprintf (em, "range start %#zx is not a byte boundary", offset);
-			idio_read_error_bitset (buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
+			idio_read_error_bitset (idio_read_bitset_buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
 
 			return idio_S_notreached;
 		    }
@@ -2045,14 +2102,14 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 		     * understanding.
 		     */
 		    ptrdiff_t end = 0;
-		    IDIO end_sh = idio_open_input_string_handle_C (bit_range);
+		    idio_reopen_input_string_handle_C (idio_read_bitset_end_sh, bit_range);
 
 		    /*
 		     * Test Case: read-errors/bitset-range-end-negative.idio
 		     *
 		     * #B{ 3 0--10 }
 		     */
-		    IDIO I_end = idio_read_bignum_radix (end_sh, lo, 'x', 16);
+		    IDIO I_end = idio_read_bignum_radix (idio_read_bitset_end_sh, lo, 'x', 16);
 
 		    if (idio_isa_fixnum (I_end)) {
 			end = IDIO_FIXNUM_VAL (I_end);
@@ -2067,7 +2124,7 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 			end = idio_bignum_uint64_value (I_end);
 		    }
 
-		    if (idio_handle_tell (end_sh) != strlen (bit_range)) {
+		    if (idio_handle_tell (idio_read_bitset_end_sh) != strlen (bit_range)) {
 			/*
 			 * Test Case: read-errors/bitset-range-end-floating-point.idio
 			 *
@@ -2076,7 +2133,7 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 			 */
 			char em[BUFSIZ];
 			sprintf (em, "range end %#zx from \"%s\"", end, bit_range);
-			idio_read_error_bitset (buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
+			idio_read_error_bitset (idio_read_bitset_buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
 
 			return idio_S_notreached;
 		    }
@@ -2090,7 +2147,7 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 			 */
 			char em[BUFSIZ];
 			sprintf (em, "range end %#zx > bitset size %#zx", end, IDIO_BITSET_SIZE (bs));
-			idio_read_error_bitset (buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
+			idio_read_error_bitset (idio_read_bitset_buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
 
 			return idio_S_notreached;
 		    }
@@ -2104,7 +2161,7 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 			 */
 			char em[BUFSIZ];
 			sprintf (em, "range end %#zx is not a byte boundary", end);
-			idio_read_error_bitset (buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
+			idio_read_error_bitset (idio_read_bitset_buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
 
 			return idio_S_notreached;
 		    }
@@ -2118,7 +2175,7 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 			 */
 			char em[BUFSIZ];
 			sprintf (em, "range start %#zx > range end %#zx", offset, end);
-			idio_read_error_bitset (buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
+			idio_read_error_bitset (idio_read_bitset_buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
 
 			return idio_S_notreached;
 		    }
@@ -2215,7 +2272,7 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 			     */
 			    char em[BUFSIZ];
 			    sprintf (em, "offset %#zx > bitset size %#zx", offset, IDIO_BITSET_SIZE (bs));
-			    idio_read_error_bitset (buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
+			    idio_read_error_bitset (idio_read_bitset_buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
 
 			    return idio_S_notreached;
 			}
@@ -2229,7 +2286,7 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 			     */
 			    char em[BUFSIZ];
 			    sprintf (em, "offset %#zx is not a byte boundary", offset);
-			    idio_read_error_bitset (buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
+			    idio_read_error_bitset (idio_read_bitset_buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
 
 			    return idio_S_notreached;
 			}
@@ -2246,7 +2303,7 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 			 */
 			char em[BUFSIZ];
 			sprintf (em, "bitset bits should be fewer than %d", CHAR_BIT);
-			idio_read_error_bitset (buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
+			idio_read_error_bitset (idio_read_bitset_buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
 
 			return idio_S_notreached;
 		    }
@@ -2260,7 +2317,7 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 			 */
 			char em[BUFSIZ];
 			sprintf (em, "offset %#zx + %zu bits > bitset size %#zx", offset, bit_block_len, IDIO_BITSET_SIZE (bs));
-			idio_read_error_bitset (buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
+			idio_read_error_bitset (idio_read_bitset_buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
 
 			return idio_S_notreached;
 		    }
@@ -2283,7 +2340,7 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 				 */
 				char em[BUFSIZ];
 				sprintf (em, "bits should be 0/1, not %#x @%d", bit_block[i], i);
-				idio_read_error_bitset (buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
+				idio_read_error_bitset (idio_read_bitset_buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
 
 				return idio_S_notreached;
 			    }
@@ -2313,13 +2370,13 @@ static IDIO idio_read_template (IDIO handle, IDIO lo, int depth)
     IDIO_ASSERT (handle);
 
     int i;
-    char interpc[IDIO_INTERPOLATION_CHARS];
+    idio_unicode_t interpc[IDIO_INTERPOLATION_CHARS];
     for (i = 0; i < IDIO_INTERPOLATION_CHARS; i++) {
 	interpc[i] = idio_default_interpolation_chars[i];
     }
     i = 0;
 
-    int c = idio_getc_handle (handle);
+    idio_unicode_t c = idio_getc_handle (handle);
 
     while (! IDIO_OPEN_DELIMITER (c)) {
 	if (i >= IDIO_INTERPOLATION_CHARS) {
@@ -2429,13 +2486,13 @@ static IDIO idio_read_pathname (IDIO handle, IDIO lo, int depth)
     IDIO_ASSERT (handle);
 
     int i;
-    char interpc[IDIO_INTERPOLATION_CHARS];
+    idio_unicode_t interpc[IDIO_INTERPOLATION_CHARS];
     for (i = 0; i < IDIO_INTERPOLATION_CHARS; i++) {
 	interpc[i] = idio_default_interpolation_chars[i];
     }
     i = 0;
 
-    int c = idio_getc_handle (handle);
+    idio_unicode_t c = idio_getc_handle (handle);
 
     while (IDIO_CHAR_DQUOTE != c) {
 	if (i >= IDIO_INTERPOLATION_CHARS) {
@@ -2484,7 +2541,7 @@ static IDIO idio_read_bignum_radix (IDIO handle, IDIO lo, char basec, int radix)
 {
     IDIO_ASSERT (handle);
 
-    int c = idio_getc_handle (handle);
+    idio_unicode_t c = idio_getc_handle (handle);
 
     /*
      * EOF will be caught as no digits below which is a clearer error
@@ -2619,11 +2676,11 @@ static IDIO idio_read_bignum_radix (IDIO handle, IDIO lo, char basec, int radix)
 
 /* this is a port of string_numeric_p from S9fES */
 
-#define EXPONENT(c)	('d' == c || 'D' == c || \
-			 'e' == c || 'E' == c || \
-			 'f' == c || 'F' == c || \
-			 'l' == c || 'L' == c || \
-			 's' == c || 'S' == c)
+#define IDIO_READ_BIGNUM_EXPONENT(c)	('d' == c || 'D' == c || \
+					 'e' == c || 'E' == c || \
+					 'f' == c || 'F' == c || \
+					 'l' == c || 'L' == c || \
+					 's' == c || 'S' == c)
 
 static IDIO idio_read_number_C (IDIO handle, char *str)
 {
@@ -2656,7 +2713,7 @@ static IDIO idio_read_number_C (IDIO handle, char *str)
 	    inexact = 1;
 	}
 
-	if (EXPONENT (s[i]) &&
+	if (IDIO_READ_BIGNUM_EXPONENT (s[i]) &&
 	    has_digit &&
 	    ! has_exp) {
 	    if (isdigit (s[i+1]) ||
@@ -2705,10 +2762,13 @@ static IDIO idio_read_number_C (IDIO handle, char *str)
 	 * It might be possible to use a fixnum -- if it's small
 	 * enough.
 	 *
-	 * log2(10) => 3.22 bits per decimal digit, we have (i-1)
+	 * log2(10) => 3.32 bits per decimal digit, we have (i-1)
 	 * digits so multiple that by four for some rounding error.
+	 *
+	 * Compare to the number of available FIXNUM bits less a sign
+	 * bit.
 	 */
-	if (((i - 1) * 4) < ((sizeof (intptr_t) * 8) - 2)) {
+	if (((i - 1) * 4) < ((sizeof (intptr_t) * CHAR_BIT) - IDIO_TYPE_BITS - 1)) {
 	    num = idio_fixnum_C (str, 10);
 	    idio_gc_stats_inc (IDIO_TYPE_FIXNUM);
 	} else {
@@ -2737,13 +2797,20 @@ static IDIO idio_read_number_C (IDIO handle, char *str)
     return num;
 }
 
-static IDIO idio_read_word (IDIO handle, IDIO lo, int c)
+static IDIO idio_read_word (IDIO handle, IDIO lo, idio_unicode_t c, idio_unicode_t *ic)
 {
-    char buf[IDIO_WORD_MAX_LEN + 1];
+    /*
+     * +4 in case c is encoded in 4 bytes and we're on the cusp
+     */
+    char buf[IDIO_WORD_MAX_LEN + 4];
     int i = 0;
 
+    int not_a_number = 0;
+
     for (;;) {
-	buf[i++] = c;
+	int size;
+	idio_utf8_code_point (c, buf + i, &size);
+	i += size;
 
 	if (i > IDIO_WORD_MAX_LEN) {
 	    /*
@@ -2800,29 +2867,75 @@ static IDIO idio_read_word (IDIO handle, IDIO lo, int c)
 
 	    if (idio_S_nil != r) {
 		continue;
+	    } else {
+		not_a_number = 1;
 	    }
 
 	    /*
 	     * Remember, i will be >= 1 and c is effectively the
 	     * lookahead char
 	     *
-	     * If the previous charcater was also DOT then this is a
+	     * If the previous character was also DOT then this is a
 	     * symbol, eg. ..., so continue reading characters.
 	     */
 	    if (IDIO_CHAR_DOT == buf[i-1]) {
+		not_a_number = 1;
 		continue;
 	    }
+	}
+
+	if (c == ic[3]) {
+	    c = idio_getc_handle (handle);
+	    if (idio_eofp_handle (handle)) {
+		/*
+		 * Test Case: ?? was: read-errors/interpc-escape-eof.idio
+		 *
+		 * \
+		 */
+		idio_read_error_parse (handle, lo, IDIO_C_FUNC_LOCATION (), "EOF in escaped word");
+
+		return idio_S_notreached;
+	    }
+
+	    continue;
 	}
 
 	if (IDIO_SEPARATOR (c)) {
 	    idio_ungetc_handle (handle, c);
 	    break;
 	}
+
+	/*
+	 * What to do if we see an interpolation character in the
+	 * word?
+	 *
+	 * ic[0] - unquote
+	 * ic[1] - unquote-splicing
+	 * ic[2] - quote
+	 * ic[3] - escape -- handled above
+	 *
+	 * unquote-splicing should only occur after unquote so should
+	 * be a generally allowed character in a word
+	 *
+	 * quote is more interesting as I can't see a case for quote
+	 * mid-word where it is meant to quote the following
+	 * expression
+	 *
+	 * unquote, however, might well occur mid-expression in a
+	 * template for another language: PATH=!IDIOPATH:$PATH except
+	 * that the reader doesn't know that the : terminates the
+	 * word.  So, in practice, unquote is only useful at the start
+	 * of a word and shouldn't break a word subsequently.
+	 */
     }
 
     buf[i] = '\0';
 
-    IDIO r = idio_read_number_C (handle, buf);
+    IDIO r = idio_S_nil;
+
+    if (0 == not_a_number) {
+	r = idio_read_number_C (handle, buf);
+    }
 
     if (idio_S_nil == r) {
 	/*
@@ -2833,8 +2946,8 @@ static IDIO idio_read_word (IDIO handle, IDIO lo, int c)
 	 * All keywords will be : followed by a non-punctutation char
 	 */
 	if (IDIO_CHAR_COLON == buf[0] &&
-	     i > 1 &&
-	     ! ispunct (buf[1])) {
+	    i > 1 &&
+	    ! ispunct (buf[1])) {
 	    r = idio_keywords_C_intern (buf + 1);
 	} else {
 	    r = idio_symbols_C_intern (buf);
@@ -2847,11 +2960,11 @@ static IDIO idio_read_word (IDIO handle, IDIO lo, int c)
 /*
  * idio_read_1_expr_nl returns a lexical object
  */
-static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl)
+static IDIO idio_read_1_expr_nl (IDIO handle, idio_unicode_t *ic, int depth, int return_nl)
 {
     IDIO lo = idio_read_lexobj_from_handle (handle);
 
-    int c = idio_getc_handle (handle);
+    idio_unicode_t c = idio_getc_handle (handle);
 
     /*
      * moved is representative of moving over whitespace, comments
@@ -2913,7 +3026,7 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl
 		 * expression so this must be a genuine word, eg. a
 		 * submatch, '($ ...), from SRFI-115.
 		 */
-		idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_word (handle, lo, c));
+		idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_word (handle, lo, c, ic));
 		return lo;
 	    }
 	} else if (c == ic[2]) {
@@ -3043,12 +3156,12 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl
 		     * syntax-rules.  certainly, multiple consecutive
 		     * DOTs are not an indexing operation
 		     */
-		    int c = idio_getc_handle (handle);
+		    idio_unicode_t c = idio_getc_handle (handle);
 		    switch (c) {
 		    case IDIO_CHAR_DOT:
 			{
 			    idio_ungetc_handle (handle, c);
-			    idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_word (handle, lo, IDIO_CHAR_DOT));
+			    idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_word (handle, lo, IDIO_CHAR_DOT, ic));
 			    return lo;
 			}
 			break;
@@ -3065,13 +3178,13 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl
 		     * This is a Scheme-ly quasiquote so use the
 		     * Scheme quasiquote chars -- plus \
 		     */
-		    char qq_ic[] = { IDIO_CHAR_COMMA, IDIO_CHAR_AT, IDIO_CHAR_SQUOTE, IDIO_CHAR_BACKSLASH };
+		    idio_unicode_t qq_ic[] = { IDIO_CHAR_COMMA, IDIO_CHAR_AT, IDIO_CHAR_SQUOTE, IDIO_CHAR_BACKSLASH };
 		    idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_quasiquote (handle, lo, qq_ic, IDIO_LIST_QUASIQUOTE (depth) + 1));
 		    return lo;
 		}
 	    case IDIO_CHAR_HASH:
 		{
-		    int c = idio_getc_handle (handle);
+		    idio_unicode_t c = idio_getc_handle (handle);
 		    if (idio_eofp_handle (handle)) {
 			/*
 			 * Test Case: read-errors/hash-format-eof.idio
@@ -3216,13 +3329,13 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl
 			}
 		    case IDIO_CHAR_ASTERISK:
 			idio_read_block_comment (handle, lo, depth);
-			return lo;
+			break;
 		    case IDIO_CHAR_PIPE:
 			idio_read_sl_block_comment (handle, lo, depth);
-			return lo;
+			break;
 		    case IDIO_CHAR_SEMICOLON:
-			idio_read (handle);
-			return lo;
+			idio_read_expr (handle);
+			break;
 		    default:
 			{
 			    /*
@@ -3266,7 +3379,7 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl
 			}
 		    }
 
-		    idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_word (handle, lo, c));
+		    idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_word (handle, lo, c, ic));
 		    return lo;
 		}
 	    case IDIO_CHAR_SEMICOLON:
@@ -3277,7 +3390,7 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl
 		idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_string (handle, lo));
 		return lo;
 	    default:
-		idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_word (handle, lo, c));
+		idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_word (handle, lo, c, ic));
 		return lo;
 	    }
 	}
@@ -3286,7 +3399,7 @@ static IDIO idio_read_1_expr_nl (IDIO handle, char *ic, int depth, int return_nl
     }
 }
 
-static IDIO idio_read_1_expr (IDIO handle, char *ic, int depth)
+static IDIO idio_read_1_expr (IDIO handle, idio_unicode_t *ic, int depth)
 {
     IDIO lo = idio_read_1_expr_nl (handle, ic, depth, 0);
     return lo;
@@ -3304,7 +3417,7 @@ static IDIO idio_read_1_expr (IDIO handle, char *ic, int depth)
  * or EOF or the closing brace of a block.  Which some people care
  * about.
  */
-static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, char *ic, int depth)
+static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, idio_unicode_t *ic, int depth)
 {
     IDIO line_lo = idio_read_lexobj_from_handle (handle);
 
@@ -3331,23 +3444,17 @@ static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, char *ic, int depth
 		if (idio_S_nil == IDIO_PAIR_T (re)) {
 		    re = IDIO_PAIR_H (re);
 		} else {
-		    if (idio_isa_pair (re) &&
-			IDIO_LIST_CONSTANT_P (depth) == 0) {
-			IDIO re_lo = idio_copy (lo, IDIO_COPY_SHALLOW);
-			idio_struct_instance_set_direct (re_lo, IDIO_LEXOBJ_EXPR, re);
-			idio_hash_put (idio_src_properties, re, re_lo);
-		    }
 		    if (! (IDIO_LIST_QUOTE_P (depth) ||
 			   IDIO_LIST_CONSTANT_P (depth))) {
 			re = idio_operator_expand (re, 0);
 		    }
+		    re = idio_read_unescape (re);
 		    if (idio_isa_pair (re) &&
 			IDIO_LIST_CONSTANT_P (depth) == 0) {
 			IDIO re_lo = idio_copy (lo, IDIO_COPY_SHALLOW);
 			idio_struct_instance_set_direct (re_lo, IDIO_LEXOBJ_EXPR, re);
 			idio_hash_put (idio_src_properties, re, re_lo);
 		    }
-		    re = idio_read_unescape (re);
 		}
 		idio_struct_instance_set_direct (line_lo, IDIO_LEXOBJ_EXPR, re);
 		return idio_pair (line_lo, idio_S_eof);
@@ -3361,23 +3468,17 @@ static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, char *ic, int depth
 		if (idio_S_nil == IDIO_PAIR_T (re)) {
 		    re = IDIO_PAIR_H (re);
 		} else {
-		    if (idio_isa_pair (re) &&
-			IDIO_LIST_CONSTANT_P (depth) == 0) {
-			IDIO re_lo = idio_copy (lo, IDIO_COPY_SHALLOW);
-			idio_struct_instance_set_direct (re_lo, IDIO_LEXOBJ_EXPR, re);
-			idio_hash_put (idio_src_properties, re, re_lo);
-		    }
 		    if (! (IDIO_LIST_QUOTE_P (depth) ||
 		       IDIO_LIST_CONSTANT_P (depth))) {
 			re = idio_operator_expand (re, 0);
 		    }
+		    re = idio_read_unescape (re);
 		    if (idio_isa_pair (re) &&
 			IDIO_LIST_CONSTANT_P (depth) == 0) {
 			IDIO re_lo = idio_copy (lo, IDIO_COPY_SHALLOW);
 			idio_struct_instance_set_direct (re_lo, IDIO_LEXOBJ_EXPR, re);
 			idio_hash_put (idio_src_properties, re, re_lo);
 		    }
-		    re = idio_read_unescape (re);
 		}
 		idio_struct_instance_set_direct (line_lo, IDIO_LEXOBJ_EXPR, re);
 		return idio_pair (line_lo, idio_T_eol);
@@ -3391,23 +3492,17 @@ static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, char *ic, int depth
 		if (idio_S_nil == IDIO_PAIR_T (re)) {
 		    re = IDIO_PAIR_H (re);
 		} else {
-		    if (idio_isa_pair (re) &&
-			IDIO_LIST_CONSTANT_P (depth) == 0) {
-			IDIO re_lo = idio_copy (lo, IDIO_COPY_SHALLOW);
-			idio_struct_instance_set_direct (re_lo, IDIO_LEXOBJ_EXPR, re);
-			idio_hash_put (idio_src_properties, re, re_lo);
-		    }
 		    if (! (IDIO_LIST_QUOTE_P (depth) ||
 		       IDIO_LIST_CONSTANT_P (depth))) {
 			re = idio_operator_expand (re, 0);
 		    }
+		    re = idio_read_unescape (re);
 		    if (idio_isa_pair (re) &&
 			IDIO_LIST_CONSTANT_P (depth) == 0) {
 			IDIO re_lo = idio_copy (lo, IDIO_COPY_SHALLOW);
 			idio_struct_instance_set_direct (re_lo, IDIO_LEXOBJ_EXPR, re);
 			idio_hash_put (idio_src_properties, re, re_lo);
 		    }
-		    re = idio_read_unescape (re);
 		}
 		idio_struct_instance_set_direct (line_lo, IDIO_LEXOBJ_EXPR, re);
 		return idio_pair (line_lo, closedel);
@@ -3503,7 +3598,7 @@ static IDIO idio_read_expr_line (IDIO handle, IDIO closedel, char *ic, int depth
 /*
  *
  */
-static IDIO idio_read_block (IDIO handle, IDIO lo, IDIO closedel, char *ic, int depth)
+static IDIO idio_read_block (IDIO handle, IDIO lo, IDIO closedel, idio_unicode_t *ic, int depth)
 {
     IDIO r = idio_S_nil;
 
@@ -3627,7 +3722,7 @@ read a number from ``src``				\n\
 	     * Not sure what to do.
 	     */
 	    handle = idio_open_input_string_handle_C (ssrc);
-	    free (ssrc);
+	    IDIO_GC_FREE (ssrc);
 	} else {
 	    idio_error_param_type ("handle or string", src, IDIO_C_FUNC_LOCATION ());
 
@@ -3637,7 +3732,7 @@ read a number from ``src``				\n\
 
     IDIO lo = idio_read_lexobj_from_handle (handle);
 
-    IDIO_VERIFY_PARAM_TYPE (list, args);
+    IDIO_USER_TYPE_ASSERT (list, args);
 
     unsigned int radix = 10;
 
@@ -3675,10 +3770,17 @@ void idio_init_read ()
 					 idio_S_nil)))));
     idio_module_set_symbol_value (name, idio_lexobj_type, idio_Idio_module);
 
-    idio_src_properties = IDIO_HASH_EQP (4 * 1024);
+    idio_src_properties = IDIO_HASH_EQP (1024);
     idio_hash_add_weak_table (idio_src_properties);
     name = idio_symbols_C_intern ("%idio-src-properties");
     idio_module_set_symbol_value (name, idio_src_properties, idio_Idio_module);
+
+    idio_read_bitset_buf_sh = idio_open_input_string_handle_C ("");
+    idio_gc_protect_auto (idio_read_bitset_buf_sh);
+    idio_read_bitset_offset_sh = idio_open_input_string_handle_C ("");
+    idio_gc_protect_auto (idio_read_bitset_offset_sh);
+    idio_read_bitset_end_sh = idio_open_input_string_handle_C ("");
+    idio_gc_protect_auto (idio_read_bitset_end_sh);
 }
 
 void idio_read_add_primitives ()
@@ -3688,6 +3790,15 @@ void idio_read_add_primitives ()
 
 void idio_final_read ()
 {
+#ifdef IDIO_DEBUG
+    FILE *fh = stderr;
+
+#ifdef IDIO_VM_PROF
+    fh = idio_vm_perf_FILE;
+#endif
+
+    fprintf (fh, "src-properties: %zu/%zu\n", IDIO_HASH_COUNT (idio_src_properties), IDIO_HASH_SIZE (idio_src_properties));
+#endif
     idio_hash_remove_weak_table (idio_src_properties);
 }
 

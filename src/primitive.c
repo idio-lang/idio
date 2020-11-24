@@ -29,8 +29,6 @@ IDIO idio_primitive (IDIO (*func) (IDIO args), const char *name_C, size_t arity,
 
     IDIO o = idio_gc_get (IDIO_TYPE_PRIMITIVE);
 
-    IDIO_FPRINTF (stderr, "idio_primitive: %10p = (%10p)\n", o, func);
-
     IDIO_GC_ALLOC (o->u.primitive, sizeof (idio_primitive_t));
 
     IDIO_PRIMITIVE_GREY (o) = NULL;
@@ -49,10 +47,14 @@ IDIO idio_primitive (IDIO (*func) (IDIO args), const char *name_C, size_t arity,
      */
     strcpy (IDIO_PRIMITIVE_NAME (o), name_C);
 
-#ifdef IDIO_VM_PERF
+#ifdef IDIO_VM_PROF
     IDIO_PRIMITIVE_CALLED (o) = 0;
     IDIO_PRIMITIVE_CALL_TIME (o).tv_sec = 0;
     IDIO_PRIMITIVE_CALL_TIME (o).tv_nsec = 0;
+    IDIO_PRIMITIVE_RU_UTIME (o).tv_sec = 0;
+    IDIO_PRIMITIVE_RU_UTIME (o).tv_usec = 0;
+    IDIO_PRIMITIVE_RU_STIME (o).tv_sec = 0;
+    IDIO_PRIMITIVE_RU_STIME (o).tv_usec = 0;
 #endif
 
     idio_properties_create (o);
@@ -86,10 +88,14 @@ IDIO idio_primitive_data (idio_primitive_desc_t *desc)
 
     strcpy (IDIO_PRIMITIVE_NAME (o), desc->name);
 
-#ifdef IDIO_VM_PERF
+#ifdef IDIO_VM_PROF
     IDIO_PRIMITIVE_CALLED (o) = 0;
     IDIO_PRIMITIVE_CALL_TIME (o).tv_sec = 0;
     IDIO_PRIMITIVE_CALL_TIME (o).tv_nsec = 0;
+    IDIO_PRIMITIVE_RU_UTIME (o).tv_sec = 0;
+    IDIO_PRIMITIVE_RU_UTIME (o).tv_usec = 0;
+    IDIO_PRIMITIVE_RU_STIME (o).tv_sec = 0;
+    IDIO_PRIMITIVE_RU_STIME (o).tv_usec = 0;
 #endif
 
     idio_properties_create (o);
@@ -141,8 +147,81 @@ void idio_free_primitive (IDIO o)
 
     idio_gc_stats_free (sizeof (idio_primitive_t));
 
-    free (IDIO_PRIMITIVE_NAME (o));
-    free (o->u.primitive);
+    IDIO_GC_FREE (IDIO_PRIMITIVE_NAME (o));
+    IDIO_GC_FREE (o->u.primitive);
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("primitive?", primitivep, (IDIO o), "o", "\
+test if `o` is a primitive				\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is a primitive, #f otherwise	\n\
+")
+{
+    IDIO_ASSERT (o);
+
+    IDIO r = idio_S_false;
+
+    if (idio_isa_primitive (o)) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("primitive-arity", primitive_arity, (IDIO p), "p", "\
+Return the arity of `p`				\n\
+						\n\
+:param p: primtive				\n\
+:type p: primitive				\n\
+:return: arity					\n\
+:rtype: integer					\n\
+")
+{
+    IDIO_ASSERT (p);
+
+    IDIO_USER_TYPE_ASSERT (primitive, p);
+
+    return idio_integer (IDIO_PRIMITIVE_ARITY (p));
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("primitive-name", primitive_name, (IDIO p), "p", "\
+Return the name of `p`				\n\
+						\n\
+:param p: primtive				\n\
+:type p: primitive				\n\
+:return: name					\n\
+:rtype: string					\n\
+")
+{
+    IDIO_ASSERT (p);
+
+    IDIO_USER_TYPE_ASSERT (primitive, p);
+
+    return idio_string_C (IDIO_PRIMITIVE_NAME (p));
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("primitive-varargs?", primitive_varargsp, (IDIO p), "p", "\
+Return #t if `p` is varargs			\n\
+						\n\
+:param p: primtive				\n\
+:type p: primitive				\n\
+:return: varargs				\n\
+:rtype: boolean					\n\
+")
+{
+    IDIO_ASSERT (p);
+
+    IDIO_USER_TYPE_ASSERT (primitive, p);
+
+    IDIO r = idio_S_false;
+
+    if (IDIO_PRIMITIVE_VARARGS (p)) {
+	r = idio_S_true;
+    }
+
+    return r;
 }
 
 void idio_init_primitive ()
@@ -151,6 +230,14 @@ void idio_init_primitive ()
 
 void idio_primitive_add_primitives ()
 {
+    IDIO_ADD_PRIMITIVE (primitivep);
+
+    /*
+     * Export these into *evaluation* for the evaluator to use
+     */
+    IDIO_ADD_MODULE_PRIMITIVE (idio_evaluation_module, primitive_arity);
+    IDIO_ADD_MODULE_PRIMITIVE (idio_evaluation_module, primitive_name);
+    IDIO_ADD_MODULE_PRIMITIVE (idio_evaluation_module, primitive_varargsp);
 }
 
 void idio_final_primitive ()

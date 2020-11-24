@@ -104,6 +104,12 @@ IDIO idio_condition_default_condition_handler;
 
 IDIO idio_condition_default_handler;
 
+static IDIO idio_condition_define_condition0_string = idio_S_nil;
+IDIO idio_condition_define_condition0_dynamic_string = idio_S_nil; /* needed in lib-wrap.c */
+static IDIO idio_condition_define_condition1_string = idio_S_nil;
+static IDIO idio_condition_define_condition2_string = idio_S_nil;
+static IDIO idio_condition_define_condition3_string = idio_S_nil;
+
 IDIO_DEFINE_PRIMITIVE2V_DS ("make-condition-type", make_condition_type, (IDIO name, IDIO parent, IDIO fields), "name parent fields", "\
 make a new condition type			\n\
 						\n\
@@ -119,12 +125,13 @@ make a new condition type based on existing condition `parent` with fields `fiel
     IDIO_ASSERT (name);
     IDIO_ASSERT (parent);
     IDIO_ASSERT (fields);
-    IDIO_VERIFY_PARAM_TYPE (symbol, name);
+
+    IDIO_USER_TYPE_ASSERT (symbol, name);
 
     if (idio_S_nil != parent) {
-	IDIO_VERIFY_PARAM_TYPE (condition_type, parent);
+	IDIO_USER_TYPE_ASSERT (condition_type, parent);
     }
-    IDIO_VERIFY_PARAM_TYPE (list, fields);
+    IDIO_USER_TYPE_ASSERT (list, fields);
 
     return idio_struct_type (name, parent, fields);
 }
@@ -213,7 +220,8 @@ The allocated condition will have fields set to #n\n\
 ")
 {
     IDIO_ASSERT (ct);
-    IDIO_VERIFY_PARAM_TYPE (condition_type, ct);
+
+    IDIO_USER_TYPE_ASSERT (condition_type, ct);
 
     return idio_allocate_struct_instance (ct, 1);
 }
@@ -229,8 +237,8 @@ initialize a condition of condition type `ct` with values `values`\n\
 {
     IDIO_ASSERT (ct);
     IDIO_ASSERT (values);
-    IDIO_VERIFY_PARAM_TYPE (condition_type, ct);
-    IDIO_VERIFY_PARAM_TYPE (list, values);
+    IDIO_USER_TYPE_ASSERT (condition_type, ct);
+    IDIO_USER_TYPE_ASSERT (list, values);
 
     return idio_struct_instance (ct, values);
 }
@@ -240,6 +248,7 @@ IDIO idio_condition_idio_error (IDIO message, IDIO location, IDIO detail)
     IDIO_ASSERT (message);
     IDIO_ASSERT (location);
     IDIO_ASSERT (detail);
+
     IDIO_TYPE_ASSERT (string, message);
 
     if (! (idio_isa_string (location) ||
@@ -261,8 +270,9 @@ create an ^idio-error condition values `message` and any `args`\n\
 {
     IDIO_ASSERT (message);
     IDIO_ASSERT (args);
-    IDIO_VERIFY_PARAM_TYPE (string, message);
-    IDIO_VERIFY_PARAM_TYPE (list, args);
+
+    IDIO_USER_TYPE_ASSERT (string, message);
+    IDIO_USER_TYPE_ASSERT (list, args);
 
     return idio_struct_instance (idio_condition_idio_error_type, idio_list_append2 (IDIO_LIST1 (message), args));
 }
@@ -302,8 +312,8 @@ int idio_condition_isap (IDIO c, IDIO ct)
 {
     IDIO_ASSERT (c);
     IDIO_ASSERT (ct);
-    IDIO_VERIFY_PARAM_TYPE (condition, c);
-    IDIO_VERIFY_PARAM_TYPE (condition_type, ct);
+    IDIO_USER_TYPE_ASSERT (condition, c);
+    IDIO_USER_TYPE_ASSERT (condition_type, ct);
 
     if (idio_struct_instance_isa (c, ct)) {
 	return 1;
@@ -312,12 +322,22 @@ int idio_condition_isap (IDIO c, IDIO ct)
     return 0;
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("condition-isa?", condition_isap, (IDIO c, IDIO ct))
+IDIO_DEFINE_PRIMITIVE2_DS ("condition-isa?", condition_isap, (IDIO c, IDIO ct), "c ct", "\
+test if condition `c` is a condition type `ct`	\n\
+						\n\
+:param c: condition to test			\n\
+:type c: condition				\n\
+:param ct: condition type to assert		\n\
+:type ct: condition type			\n\
+						\n\
+:return: #t if `c` is a condition type `ct`, #f otherwise\n\
+")
 {
     IDIO_ASSERT (c);
     IDIO_ASSERT (ct);
-    IDIO_VERIFY_PARAM_TYPE (condition, c);
-    IDIO_VERIFY_PARAM_TYPE (condition_type, ct);
+
+    IDIO_USER_TYPE_ASSERT (condition, c);
+    IDIO_USER_TYPE_ASSERT (condition_type, ct);
 
     IDIO r = idio_S_false;
 
@@ -339,8 +359,9 @@ return field `field` of condition `c`		\n\
 {
     IDIO_ASSERT (c);
     IDIO_ASSERT (field);
-    IDIO_VERIFY_PARAM_TYPE (condition, c);
-    IDIO_VERIFY_PARAM_TYPE (symbol, field);
+
+    IDIO_USER_TYPE_ASSERT (condition, c);
+    IDIO_USER_TYPE_ASSERT (symbol, field);
 
     return idio_struct_instance_ref (c, field);
 }
@@ -357,7 +378,8 @@ return field `message` of condition `c`		\n\
 ")
 {
     IDIO_ASSERT (c);
-    IDIO_VERIFY_PARAM_TYPE (condition, c);
+
+    IDIO_USER_TYPE_ASSERT (condition, c);
 
     if (! idio_struct_instance_isa (c, idio_condition_message_type)) {
 	idio_error_printf (IDIO_C_FUNC_LOCATION (), "not a message condition", c);
@@ -380,8 +402,9 @@ set field `field` of condition `c` to value `value`\n\
     IDIO_ASSERT (c);
     IDIO_ASSERT (field);
     IDIO_ASSERT (value);
-    IDIO_VERIFY_PARAM_TYPE (condition, c);
-    IDIO_VERIFY_PARAM_TYPE (symbol, field);
+
+    IDIO_USER_TYPE_ASSERT (condition, c);
+    IDIO_USER_TYPE_ASSERT (symbol, field);
 
     return idio_struct_instance_set (c, field, value);
 }
@@ -390,7 +413,7 @@ void idio_condition_set_default_handler (IDIO ct, IDIO handler)
 {
     IDIO_ASSERT (ct);
     IDIO_ASSERT (handler);
-    IDIO_VERIFY_PARAM_TYPE (condition_type, ct);
+    IDIO_USER_TYPE_ASSERT (condition_type, ct);
 
     idio_hash_put (idio_condition_default_handler, ct, handler);
 }
@@ -412,7 +435,8 @@ then ``handler`` will be invoked with the continuation.	\n\
 {
     IDIO_ASSERT (ct);
     IDIO_ASSERT (handler);
-    IDIO_VERIFY_PARAM_TYPE (condition_type, ct);
+
+    IDIO_USER_TYPE_ASSERT (condition_type, ct);
 
     idio_condition_set_default_handler (ct, handler);
 
@@ -422,7 +446,8 @@ then ``handler`` will be invoked with the continuation.	\n\
 void idio_condition_clear_default_handler (IDIO ct)
 {
     IDIO_ASSERT (ct);
-    IDIO_VERIFY_PARAM_TYPE (condition_type, ct);
+
+    IDIO_USER_TYPE_ASSERT (condition_type, ct);
 
     idio_hash_delete (idio_condition_default_handler, ct);
 }
@@ -440,7 +465,8 @@ resume.							\n\
 ")
 {
     IDIO_ASSERT (ct);
-    IDIO_VERIFY_PARAM_TYPE (condition_type, ct);
+
+    IDIO_USER_TYPE_ASSERT (condition_type, ct);
 
     idio_condition_clear_default_handler (ct);
 
@@ -465,7 +491,9 @@ does not return per se						\n\
     /*
      * XXX IDIO_TYPE_ASSERT() will raise a condition if it fails!
      */
-    IDIO_TYPE_ASSERT (condition, c);
+    IDIO_USER_TYPE_ASSERT (condition, c);
+
+    IDIO thr = idio_thread_current_thread ();
 
     /*
      * Technically we can allow the user to override the SIGCHLD and
@@ -473,11 +501,9 @@ does not return per se						\n\
      */
     IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (c);
     while (idio_S_nil != sit) {
-	IDIO handler = idio_hash_get (idio_condition_default_handler, sit);
+	IDIO handler = idio_hash_ref (idio_condition_default_handler, sit);
 
 	if (idio_S_unspec != handler) {
-	    IDIO thr = idio_thread_current_thread ();
-
 	    /*
 	    idio_debug ("d-c-h user-defined handler %s", handler);
 	    idio_debug (" for %s", IDIO_STRUCT_TYPE_NAME (sit));
@@ -495,10 +521,9 @@ does not return per se						\n\
 
     /* reset sit in case we changed it above */
     sit = IDIO_STRUCT_INSTANCE_TYPE (c);
-    IDIO sif = IDIO_STRUCT_INSTANCE_FIELDS (c);
 
     if (idio_struct_type_isa (sit, idio_condition_rt_signal_type)) {
-	IDIO signum_I = idio_array_get_index (sif, IDIO_SI_RT_SIGNAL_TYPE_SIGNUM);
+	IDIO signum_I = IDIO_STRUCT_INSTANCE_FIELDS (c, IDIO_SI_RT_SIGNAL_TYPE_SIGNUM);
 	int signum_C = IDIO_C_TYPE_INT (signum_I);
 
 	switch (signum_C) {
@@ -519,27 +544,26 @@ does not return per se						\n\
 
     if (idio_command_interactive) {
 	IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (c);
-	IDIO sif = IDIO_STRUCT_INSTANCE_FIELDS (c);
 
 	if (idio_struct_type_isa (sit, idio_condition_system_error_type)) {
 	    IDIO eh = idio_thread_current_error_handle ();
 	    int printed = 0;
 
-	    idio_display_C ("\ndefault-condition-handler: ", eh);
+	    idio_display_C ("\ndefault-condition-handler: system-error: ", eh);
 
-	    IDIO l = idio_array_get_index (sif, IDIO_SI_IDIO_ERROR_TYPE_LOCATION);
+	    IDIO l = IDIO_STRUCT_INSTANCE_FIELDS (c, IDIO_SI_IDIO_ERROR_TYPE_LOCATION);
 	    if (idio_S_nil != l) {
 		idio_display (l, eh);
 		printed = 1;
 
 		if (idio_struct_type_isa (sit, idio_condition_read_error_type)) {
 		    idio_display_C (":", eh);
-		    idio_display (idio_array_get_index (sif, IDIO_SI_READ_ERROR_TYPE_LINE), eh);
+		    idio_display (IDIO_STRUCT_INSTANCE_FIELDS (c, IDIO_SI_READ_ERROR_TYPE_LINE), eh);
 		    idio_display_C (":", eh);
-		    idio_display (idio_array_get_index (sif, IDIO_SI_READ_ERROR_TYPE_POSITION), eh);
+		    idio_display (IDIO_STRUCT_INSTANCE_FIELDS (c, IDIO_SI_READ_ERROR_TYPE_POSITION), eh);
 		} else if (idio_struct_type_isa (sit, idio_condition_evaluation_error_type)) {
 		    idio_display_C (":", eh);
-		    idio_display (idio_array_get_index (sif, IDIO_SI_EVALUATION_ERROR_TYPE_EXPR), eh);
+		    idio_display (IDIO_STRUCT_INSTANCE_FIELDS (c, IDIO_SI_EVALUATION_ERROR_TYPE_EXPR), eh);
 		}
 	    }
 
@@ -549,7 +573,7 @@ does not return per se						\n\
 	    idio_display (IDIO_STRUCT_TYPE_NAME (sit), eh);
 	    idio_display_C (": ", eh);
 
-	    IDIO m = idio_array_get_index (sif, IDIO_SI_IDIO_ERROR_TYPE_MESSAGE);
+	    IDIO m = IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_IDIO_ERROR_TYPE_MESSAGE);
 	    if (idio_S_nil != m) {
 		if (printed) {
 		    idio_display_C (": ", eh);
@@ -557,14 +581,14 @@ does not return per se						\n\
 		idio_display (m, eh);
 		printed = 1;
 	    }
-	    IDIO e = idio_array_get_index (sif, IDIO_SI_SYSTEM_ERROR_TYPE_ERRNO);
+	    IDIO e = IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_SYSTEM_ERROR_TYPE_ERRNO);
 	    if (idio_S_nil != e) {
 		idio_display_C (" => ", eh);
 		int er = IDIO_C_TYPE_INT (e);
 		idio_display_C (idio_libc_errno_name (er), eh);
 		printed = 1;
 	    }
-	    IDIO d = idio_array_get_index (sif, IDIO_SI_IDIO_ERROR_TYPE_DETAIL);
+	    IDIO d = IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_IDIO_ERROR_TYPE_DETAIL);
 	    if (idio_S_nil != d) {
 		if (printed) {
 		    idio_display_C (": ", eh);
@@ -577,21 +601,25 @@ does not return per se						\n\
 	    IDIO eh = idio_thread_current_error_handle ();
 	    int printed = 0;
 
-	    idio_display_C ("\ndefault-condition-handler: ", eh);
+	    idio_display_C ("\ndefault-condition-handler: idio-error: ", eh);
 
-	    IDIO l = idio_array_get_index (sif, IDIO_SI_IDIO_ERROR_TYPE_LOCATION);
+	    IDIO l = IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_IDIO_ERROR_TYPE_LOCATION);
 	    if (idio_S_nil != l) {
-		idio_display (l, eh);
 		printed = 1;
+
+		idio_display_C ("'", eh);
+		idio_display (idio_vm_source_expr (), eh);
+		idio_display_C ("' at ", eh);
+		idio_display (l, eh);
 
 		if (idio_struct_type_isa (sit, idio_condition_read_error_type)) {
 		    idio_display_C (":", eh);
-		    idio_display (idio_array_get_index (sif, IDIO_SI_READ_ERROR_TYPE_LINE), eh);
+		    idio_display (IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_READ_ERROR_TYPE_LINE), eh);
 		    idio_display_C (":", eh);
-		    idio_display (idio_array_get_index (sif, IDIO_SI_READ_ERROR_TYPE_POSITION), eh);
+		    idio_display (IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_READ_ERROR_TYPE_POSITION), eh);
 		} else if (idio_struct_type_isa (sit, idio_condition_evaluation_error_type)) {
 		    idio_display_C (":", eh);
-		    idio_display (idio_array_get_index (sif, IDIO_SI_EVALUATION_ERROR_TYPE_EXPR), eh);
+		    idio_display (IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_EVALUATION_ERROR_TYPE_EXPR), eh);
 		}
 	    }
 
@@ -602,7 +630,7 @@ does not return per se						\n\
 	    idio_display_C (": ", eh);
 
 	    if (idio_struct_type_isa (sit, idio_condition_rt_variable_error_type)) {
-		IDIO name = idio_array_get_index (sif, IDIO_SI_RT_VARIABLE_ERROR_TYPE_NAME);
+		IDIO name = IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_RT_VARIABLE_ERROR_TYPE_NAME);
 		if (idio_S_nil != name) {
 		    if (printed) {
 			idio_display_C (": ", eh);
@@ -613,12 +641,12 @@ does not return per se						\n\
 		}
 	    }
 
-	    IDIO m = idio_array_get_index (sif, IDIO_SI_IDIO_ERROR_TYPE_MESSAGE);
+	    IDIO m = IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_IDIO_ERROR_TYPE_MESSAGE);
 	    if (idio_S_nil != m) {
 		idio_display (m, eh);
 		printed = 1;
 	    }
-	    IDIO d = idio_array_get_index (sif, IDIO_SI_IDIO_ERROR_TYPE_DETAIL);
+	    IDIO d = IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_IDIO_ERROR_TYPE_DETAIL);
 	    if (idio_S_nil != d) {
 		if (printed) {
 		    idio_display_C (": ", eh);
@@ -630,33 +658,35 @@ does not return per se						\n\
 	} else if (idio_struct_type_isa (sit, idio_condition_error_type)) {
 	    IDIO eh = idio_thread_current_error_handle ();
 
-	    idio_display_C ("\ndefault-condition-handler: ", eh);
+	    idio_display_C ("\ndefault-condition-handler: error: ", eh);
 	    idio_display (IDIO_STRUCT_TYPE_NAME (sit), eh);
 	    idio_display_C ("\n", eh);
 	} else {
 	    idio_debug ("default-condition-handler: no clause for %s\n", c);
 	}
 
-	IDIO thr = idio_thread_current_thread ();
+	if (idio_bootstrap_complete) {
+	    IDIO cmd = IDIO_LIST1 (idio_module_symbol_value (idio_symbols_C_intern ("debug"),
+							     idio_Idio_module,
+							     idio_S_nil));
 
-	IDIO cmd = IDIO_LIST1 (idio_module_symbol_value (idio_symbols_C_intern ("debug"),
-							 idio_Idio_module,
-							 idio_S_nil));
+	    IDIO r = idio_vm_invoke_C (thr, cmd);
 
-	IDIO r = idio_vm_invoke_C (thr, cmd);
+	    /*
+	     * PC for RETURN
+	     *
+	     * If we were invoked as a condition handler then the stack is
+	     * prepared with a return to idio_vm_CHR_pc (which will
+	     * POP-TRAP, RESTORE-STATE and RETURN).
+	     *
+	     *
+	     */
+	    /* IDIO_THREAD_PC (thr) = idio_vm_CHR_pc + 2; */
 
-	/*
-	 * PC for RETURN
-	 *
-	 * If we were invoked as a condition handler then the stack is
-	 * prepared with a return to idio_vm_CHR_pc (which will
-	 * POP-TRAP, RESTORE-STATE and RETURN).
-	 *
-	 *
-	 */
-	/* IDIO_THREAD_PC (thr) = idio_vm_CHR_pc + 2; */
-
-	return r;
+	    return r;
+	} else {
+	    fprintf (stderr, "default-condition-handler: bootstrap incomplete\n");
+	}
     }
 
 #ifdef IDIO_DEBUG
@@ -687,15 +717,13 @@ does not return per se						\n\
 
     if (idio_isa_condition (c)) {
 	IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (c);
-	/* IDIO stf = IDIO_STRUCT_TYPE_FIELDS (sit); */
-	IDIO sif = IDIO_STRUCT_INSTANCE_FIELDS (c);
 
 	/*
 	 * Hmm, a timing issue with SIGCHLD?  Should have been caught
 	 * in default-condition-handler.
 	 */
 	if (idio_struct_type_isa (sit, idio_condition_rt_signal_type)) {
-	    IDIO signum_I = idio_array_get_index (sif, IDIO_SI_RT_SIGNAL_TYPE_SIGNUM);
+	    IDIO signum_I = IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_RT_SIGNAL_TYPE_SIGNUM);
 	    int signum_C = IDIO_C_TYPE_INT (signum_I);
 
 	    switch (signum_C) {
@@ -721,7 +749,7 @@ does not return per se						\n\
 
 	    idio_display_C ("\nrestart-condition-handler: ", eh);
 
-	    IDIO l = idio_array_get_index (sif, IDIO_SI_IDIO_ERROR_TYPE_LOCATION);
+	    IDIO l = IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_IDIO_ERROR_TYPE_LOCATION);
 	    if (idio_S_nil != l) {
 		if (printed) {
 		    idio_display_C (": ", eh);
@@ -731,12 +759,12 @@ does not return per se						\n\
 
 		if (idio_struct_type_isa (sit, idio_condition_read_error_type)) {
 		    idio_display_C (":", eh);
-		    idio_display (idio_array_get_index (sif, IDIO_SI_READ_ERROR_TYPE_LINE), eh);
+		    idio_display (IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_READ_ERROR_TYPE_LINE), eh);
 		    idio_display_C (":", eh);
-		    idio_display (idio_array_get_index (sif, IDIO_SI_READ_ERROR_TYPE_POSITION), eh);
+		    idio_display (IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_READ_ERROR_TYPE_POSITION), eh);
 		} else if (idio_struct_type_isa (sit, idio_condition_evaluation_error_type)) {
 		    idio_display_C (":", eh);
-		    idio_display (idio_array_get_index (sif, IDIO_SI_EVALUATION_ERROR_TYPE_EXPR), eh);
+		    idio_display (IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_EVALUATION_ERROR_TYPE_EXPR), eh);
 		}
 	    }
 
@@ -746,12 +774,12 @@ does not return per se						\n\
 	    idio_display (IDIO_STRUCT_TYPE_NAME (sit), eh);
 	    idio_display_C (": ", eh);
 
-	    IDIO m = idio_array_get_index (sif, IDIO_SI_IDIO_ERROR_TYPE_MESSAGE);
+	    IDIO m = IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_IDIO_ERROR_TYPE_MESSAGE);
 	    if (idio_S_nil != m) {
 		idio_display (m, eh);
 		printed = 1;
 	    }
-	    IDIO d = idio_array_get_index (sif, IDIO_SI_IDIO_ERROR_TYPE_DETAIL);
+	    IDIO d = IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_IDIO_ERROR_TYPE_DETAIL);
 	    if (idio_S_nil != d) {
 		if (printed) {
 		    idio_display_C (": ", eh);
@@ -824,6 +852,7 @@ Does not return.						\n\
 	krun_p--;
     }
 
+    idio_exit_status = 1;
     if (idio_isa_pair (krun)) {
 	fprintf (stderr, "reset-condition-handler: restoring krun #%td: ", krun_p);
 	idio_debug ("%s\n", IDIO_PAIR_HT (krun));
@@ -834,7 +863,6 @@ Does not return.						\n\
 
     fprintf (stderr, "reset-condition-handler: nothing to restore\n");
 
-    idio_exit_status = 1;
     fprintf (stderr, "reset-condition-handler/exit (%d)\n", idio_exit_status);
     idio_final ();
     exit (idio_exit_status);
@@ -850,6 +878,13 @@ Does not return.						\n\
 
 void idio_init_condition ()
 {
+#define IDIO_CONDITION_STRING(c,s) idio_condition_ ## c ## _string = idio_string_C (s); idio_gc_protect_auto (idio_condition_ ## c ## _string);
+
+    IDIO_CONDITION_STRING (define_condition0, "IDIO-DEFINE-CONDITION0");
+    IDIO_CONDITION_STRING (define_condition0_dynamic, "IDIO-DEFINE-CONDITION0-DYNAMIC");
+    IDIO_CONDITION_STRING (define_condition1, "IDIO-DEFINE-CONDITION1");
+    IDIO_CONDITION_STRING (define_condition2, "IDIO-DEFINE-CONDITION2");
+    IDIO_CONDITION_STRING (define_condition3, "IDIO-DEFINE-CONDITION3");
 
 #define IDIO_CONDITION_CONDITION_TYPE_NAME "^condition"
 
@@ -905,8 +940,8 @@ void idio_init_condition ()
     IDIO_DEFINE_CONDITION0 (idio_condition_runtime_error_type, "^runtime-error", idio_condition_idio_error_type);
 
     IDIO_DEFINE_CONDITION0 (idio_condition_rt_parameter_type_error_type, "^rt-parameter-type-error", idio_condition_runtime_error_type);
-    IDIO_DEFINE_CONDITION0 (idio_condition_rt_const_parameter_error_type, "^rt-const-parameter-error", idio_condition_runtime_error_type);
-    IDIO_DEFINE_CONDITION0 (idio_condition_rt_parameter_nil_error_type, "^rt-parameter-nil-error", idio_condition_runtime_error_type);
+    IDIO_DEFINE_CONDITION0 (idio_condition_rt_const_parameter_error_type, "^rt-const-parameter-error", idio_condition_rt_parameter_type_error_type);
+    IDIO_DEFINE_CONDITION0 (idio_condition_rt_parameter_nil_error_type, "^rt-parameter-nil-error", idio_condition_rt_parameter_type_error_type);
 
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_variable_error_type, "^rt-variable-error", idio_condition_runtime_error_type, "name");
     IDIO_DEFINE_CONDITION0 (idio_condition_rt_variable_unbound_error_type, "^rt-variable-unbound-error", idio_condition_rt_variable_error_type);
@@ -934,7 +969,7 @@ void idio_init_condition ()
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_command_status_error_type, "^rt-command-status-error", idio_condition_runtime_error_type, "status");
 
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_array_bounds_error_type, "^rt-array-bounds-error", idio_condition_runtime_error_type, "index");
-    IDIO_DEFINE_CONDITION1 (idio_condition_rt_hash_key_not_found_error_type, "^rt-hash-key-not-found", idio_condition_runtime_error_type, "key");
+    IDIO_DEFINE_CONDITION1 (idio_condition_rt_hash_key_not_found_error_type, "^rt-hash-key-not-found-error", idio_condition_runtime_error_type, "key");
 
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_bignum_conversion_error_type, "^rt-bignum-conversion-error", idio_condition_runtime_error_type, "bignum");
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_fixnum_conversion_error_type, "^rt-fixnum-conversion-error", idio_condition_runtime_error_type, "fixnum");

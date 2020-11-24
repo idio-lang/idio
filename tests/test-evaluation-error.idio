@@ -47,11 +47,11 @@ evaluation-error-load "evaluation-errors/infix-op-not-an-operator.idio" "not an 
 evaluation-error-load "evaluation-errors/postfix-op-negative-priority.idio" "positive priority"
 evaluation-error-load "evaluation-errors/postfix-op-not-an-operator.idio" "not an operator"
 evaluation-error-load "evaluation-errors/define-computed-no-args.idio" "define-computed: no getter/setter"
-evaluation-error-load "evaluation-errors/internal-define-macro.idio" "internal define-macro"
+evaluation-error-load "evaluation-errors/internal-define-template.idio" "internal define-template"
 evaluation-error-load "evaluation-errors/letrec-empty-body.idio" "letrec: empty body"
 
 ;; I can't trigger the error
-;evaluation-error-load "evaluation-errors/letrec-internal-define-macro.idio" "letrec: internal define-macro"
+;evaluation-error-load "evaluation-errors/letrec-internal-define-template.idio" "letrec: internal define-template"
 
 evaluation-error-load "evaluation-errors/closed-function-not-enough-args-0.idio" "closed function: not enough arguments"
 evaluation-error-load "evaluation-errors/closed-function-not-enough-args-1.idio" "closed function: not enough arguments"
@@ -60,16 +60,19 @@ evaluation-error-load "evaluation-errors/closed-function-too-many-args-1.idio" "
 evaluation-error-load "evaluation-errors/primitive-arity.idio" "wrong arity for primitive"
 
 evaluation-error-load "evaluation-errors/escape-nil.idio" "escape: no argument"
+evaluation-error-load "evaluation-errors/escape-multiple-args.idio" "escape: too many arguments"
 evaluation-error-load "evaluation-errors/quote-nil.idio" "quote: no argument"
+evaluation-error-load "evaluation-errors/quote-multiple-args.idio" "quote: too many arguments"
 evaluation-error-load "evaluation-errors/quasiquote-nil.idio" "quasiquote: no argument"
+evaluation-error-load "evaluation-errors/quasiquote-multiple-args.idio" "quasiquote: too many arguments"
 evaluation-error-load "evaluation-errors/function-nil.idio" "function: no arguments"
 evaluation-error-load "evaluation-errors/if-cond-nil.idio" "(if 1): no consequent/alternative"
 evaluation-error-load "evaluation-errors/if-nil.idio" "if: no arguments"
 evaluation-error-load "evaluation-errors/cond-nil.idio" "cond: no clauses"
 evaluation-error-load "evaluation-errors/set-symbol-nil.idio" "(set! x): no value"
 evaluation-error-load "evaluation-errors/set-nil.idio" "set!: no arguments"
-evaluation-error-load "evaluation-errors/define-macro-bindings-nil.idio" "(define-macro (m)): no body"
-evaluation-error-load "evaluation-errors/define-macro-nil.idio" "define-macro: no arguments"
+evaluation-error-load "evaluation-errors/define-template-bindings-nil.idio" "(define-template (m)): no body"
+evaluation-error-load "evaluation-errors/define-template-nil.idio" "define-template: no arguments"
 evaluation-error-load "evaluation-errors/define-infix-op-sym-pri-nil.idio" "(define-infix-operator qqq 10): no body"
 evaluation-error-load "evaluation-errors/define-infix-op-sym-nil.idio" "(define-infix-operator qqq): no pri body"
 evaluation-error-load "evaluation-errors/define-infix-op-nil.idio" "define-infix-operator: no arguments"
@@ -101,8 +104,7 @@ evaluation-error-load "evaluation-errors/trap-condition-handler-nil.idio" "(trap
 evaluation-error-load "evaluation-errors/trap-condition-nil.idio" "(trap condition): no handler"
 evaluation-error-load "evaluation-errors/trap-nil.idio" "trap: no arguments"
 evaluation-error-load "evaluation-errors/include-nil.idio" "include: no argument"
-evaluation-error-load "evaluation-errors/macro-expand-nil.idio" "macro-expand: no argument"
-evaluation-error-load "evaluation-errors/module-nil.idio" "module: no argument"
+evaluation-error-load "evaluation-errors/template-expand-nil.idio" "template-expand: no argument"
 
 ;; all done?
-test Tests (evaluation-error0 + 63)
+test Tests (evaluation-error0 + 65)

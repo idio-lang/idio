@@ -1,4 +1,0 @@
-
-{
-  bar :+ define-macro (baz) {#T{ 1 }}
-}

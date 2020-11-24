@@ -34,13 +34,17 @@ void idio_error_vfprintf (char *format, va_list argp)
 IDIO idio_error_string (char *format, va_list argp)
 {
     char *s;
+#ifdef IDIO_MALLOC
+    if (-1 == idio_malloc_vasprintf (&s, format, argp)) {
+#else
     if (-1 == vasprintf (&s, format, argp)) {
+#endif
 	idio_error_alloc ("asprintf");
     }
 
     IDIO sh = idio_open_output_string_handle_C ();
     idio_display_C (s, sh);
-    free (s);
+    IDIO_GC_FREE (s);
 
     return idio_get_output_string (sh);
 }
@@ -171,7 +175,7 @@ void idio_error_param_type (char *etype, IDIO who, IDIO c_location)
 }
 
 /*
- * Used by IDIO_TYPE_ASSERT and IDIO_VERIFY_PARAM_TYPE
+ * Used by IDIO_TYPE_ASSERT and IDIO_USER_TYPE_ASSERT
  */
 void idio_error_param_type_C (char *etype, IDIO who, char *file, const char *func, int line)
 {
@@ -218,8 +222,6 @@ void idio_error_const_param_C (char *type_name, IDIO who, char *file, const char
     char c_location[BUFSIZ];
     sprintf (c_location, "%s:%s:%d", func, file, line);
 
-    idio_debug ("const: %s\n", who);
-
     idio_error_const_param (type_name, who, idio_string_C (c_location));
 }
 
@@ -243,10 +245,19 @@ void idio_error (IDIO who, IDIO msg, IDIO args, IDIO c_location)
 	idio_display_C (" ", sh);
 	idio_display (args, sh);
     }
+    /*
+     * Quick hack for when called by {error} primitive
+     */
+    if (idio_isa_symbol (c_location)) {
+	idio_display_C (" at ", sh);
+	idio_display (c_location, sh);
+    }
 
 #ifdef IDIO_DEBUG
-    idio_display_C (" at ", sh);
-    idio_display (c_location, sh);
+    if (idio_isa_string (c_location)) {
+	idio_display_C (" at ", sh);
+	idio_display (c_location, sh);
+    }
 #endif
 
     IDIO c = idio_condition_idio_error (idio_get_output_string (sh),
@@ -266,16 +277,27 @@ void idio_error_C (char *msg, IDIO args, IDIO c_location)
     idio_error (idio_S_internal, idio_string_C (msg), args, c_location);
 }
 
-IDIO_DEFINE_PRIMITIVE2V ("error", error, (IDIO c_location, IDIO msg, IDIO args))
+IDIO_DEFINE_PRIMITIVE2V_DS ("error", error, (IDIO loc, IDIO msg, IDIO args), "loc msg args", "\
+raise an ^idio-error				\n\
+						\n\
+:param loc: location				\n\
+:type loc: symbol				\n\
+:param msg: error message			\n\
+:type loc: string				\n\
+:param args: detail				\n\
+:type args: list				\n\
+						\n\
+This does not return!				\n\
+")
 {
-    IDIO_ASSERT (c_location);
+    IDIO_ASSERT (loc);
     IDIO_ASSERT (msg);
     IDIO_ASSERT (args);
-    IDIO_VERIFY_PARAM_TYPE (symbol, c_location);
-    IDIO_VERIFY_PARAM_TYPE (string, msg);
-    IDIO_VERIFY_PARAM_TYPE (list, args);
+    IDIO_USER_TYPE_ASSERT (symbol, loc);
+    IDIO_USER_TYPE_ASSERT (string, msg);
+    IDIO_USER_TYPE_ASSERT (list, args);
 
-    idio_error (idio_S_user_code, msg, args, c_location);
+    idio_error (loc, msg, args, loc);
 
     return idio_S_notreached;
 }

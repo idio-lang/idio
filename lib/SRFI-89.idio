@@ -25,7 +25,7 @@ A port of SRFI-89 Optional positional and named parameters.
 
 ; Macro expander for define*.
 
-define-macro (define* pattern & body) {
+define-template (define* pattern & body) {
   if (pair? pattern) {
     #T{
       define $(ph pattern) {
@@ -41,7 +41,7 @@ define-macro (define* pattern & body) {
 
 ; Macro expander for function*.
 
-define-macro (function* formals & body) {
+define-template (function* formals & body) {
 
   ;------------------------------------------------------------------------------
 

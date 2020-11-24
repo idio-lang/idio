@@ -40,17 +40,17 @@ test (symbol? kw) #f
 
 kw-table := (make-keyword-table)
 
-test (keyword-get kw-table :a #f) #f
+test (keyword-ref kw-table :a #f) #f
 
-trap ^rt-hash-key-not-found (function (c) {
-			       test (rt-hash-key-not-found? c) #t
+trap ^rt-hash-key-not-found-error (function (c) {
+			       test (rt-hash-key-not-found-error? c) #t
 			       #f
 }) {
-  test (keyword-get kw-table :a) #f
+  test (keyword-ref kw-table :a) #f
 }
 
 keyword-set! kw-table :a "apple"
-test (keyword-get kw-table :a) "apple"
+test (keyword-ref kw-table :a) "apple"
 
 ;; all done?
 test (keyword0 + 12) Tests

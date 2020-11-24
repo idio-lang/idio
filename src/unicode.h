@@ -23,8 +23,6 @@
 #ifndef UNICODE_H
 #define UNICODE_H
 
-typedef uint32_t idio_unicode_t;
-
 /*
  * The following values are x12 to avoid unnecessary shifts
  */
@@ -42,6 +40,7 @@ typedef uint32_t idio_unicode_t;
 
 int idio_isa_unicode (IDIO o);
 idio_unicode_t idio_utf8_decode (idio_unicode_t* state, idio_unicode_t* codep, idio_unicode_t byte);
+void idio_utf8_code_point (idio_unicode_t c, char *buf, int *sizep);
 char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted);
 IDIO idio_unicode_lookup (char *name);
 

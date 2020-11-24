@@ -25,6 +25,58 @@
 static IDIO idio_util_value_as_string;
 IDIO idio_print_conversion_format_sym = idio_S_nil;
 IDIO idio_print_conversion_precision_sym = idio_S_nil;
+static IDIO idio_features;
+
+#ifdef IDIO_DEBUG
+#undef IDIO_EQUAL_DEBUG
+#endif
+
+#ifdef IDIO_EQUAL_DEBUG
+typedef struct idio_equal_stat_s {
+    /*
+     * We *could* have an o1 and o2 type array but we don't really
+     * care about the specifics of mixed types equality
+     */
+    unsigned long count;
+    struct timeval duration;
+    unsigned long mixed;
+} idio_equal_stat_t;
+static idio_equal_stat_t idio_equal_stats[IDIO_TYPE_MAX];
+
+static void idio_equal_stat_increment (IDIO o1, IDIO o2, struct timeval t0)
+{
+    struct timeval te;
+    if (gettimeofday (&te, NULL) == -1) {
+	perror ("gettimeofday");
+    }
+
+    int t1 = (intptr_t) o1 & IDIO_TYPE_MASK;
+    if (0 == t1) {
+	t1 = o1->type;
+    }
+    idio_equal_stats[t1].count++;
+    struct timeval td;
+    td.tv_sec = te.tv_sec - t0.tv_sec;
+    td.tv_usec = te.tv_usec - t0.tv_usec;
+    if (td.tv_usec < 0) {
+	td.tv_usec += 1000000;
+	td.tv_sec -= 1;
+    }
+    idio_equal_stats[t1].duration.tv_sec += td.tv_sec;
+    idio_equal_stats[t1].duration.tv_usec += td.tv_usec;
+    if (idio_equal_stats[t1].duration.tv_usec > 1000000) {
+	idio_equal_stats[t1].duration.tv_usec -= 1000000;
+	idio_equal_stats[t1].duration.tv_sec += 1;
+    }
+    int t2 = (intptr_t) o2 & IDIO_TYPE_MASK;
+    if (0 == t2) {
+	t2 = o2->type;
+    }
+    if (t1 != t2) {
+	idio_equal_stats[t1].mixed++;
+    }
+}
+#endif
 
 void idio_util_error_format (char *m, IDIO s, IDIO c_location)
 {
@@ -119,7 +171,6 @@ const char *idio_type_enum2string (idio_type_e type)
     case IDIO_TYPE_C_FFI:		return "C_FFI";
     case IDIO_TYPE_OPAQUE:		return "OPAQUE";
     default:
-	IDIO_FPRINTF (stderr, "IDIO_TYPE_ENUM2STRING: unexpected type %d\n", type);
 	return "NOT KNOWN";
     }
 }
@@ -169,7 +220,13 @@ return the type of `o` as a string		\n\
     return idio_string_C (idio_type2string (o));
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("zero?", zerop, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1_DS ("zero?", zerop, (IDIO o), "o", "\
+test if `o` is the numeric value zero		\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is zero, #f otherwise	\n\
+")
 {
     IDIO_ASSERT (o);
 
@@ -192,7 +249,13 @@ int idio_isa_nil (IDIO o)
     return (idio_S_nil == o);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("null?", nullp, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1_DS ("null?", nullp, (IDIO o), "o", "\
+test if `o` is #n				\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is #n, #f otherwise	\n\
+")
 {
     IDIO_ASSERT (o);
 
@@ -205,7 +268,13 @@ IDIO_DEFINE_PRIMITIVE1 ("null?", nullp, (IDIO o))
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("unset?", unsetp, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1_DS ("unset?", unsetp, (IDIO o), "o", "\
+test if `o` is unset				\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is unset, #f otherwise	\n\
+")
 {
     IDIO_ASSERT (o);
 
@@ -218,7 +287,13 @@ IDIO_DEFINE_PRIMITIVE1 ("unset?", unsetp, (IDIO o))
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("undef?", undefp, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1_DS ("undef?", undefp, (IDIO o), "o", "\
+test if `o` is undefined (#undef)		\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is undefined, #f otherwise	\n\
+")
 {
     IDIO_ASSERT (o);
 
@@ -231,7 +306,13 @@ IDIO_DEFINE_PRIMITIVE1 ("undef?", undefp, (IDIO o))
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("unspec?", unspecp, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1_DS ("unspec?", unspecp, (IDIO o), "o", "\
+test if `o` is unspecified (#unspec)		\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is unspecified, #f otherwise	\n\
+")
 {
     IDIO_ASSERT (o);
 
@@ -244,7 +325,13 @@ IDIO_DEFINE_PRIMITIVE1 ("unspec?", unspecp, (IDIO o))
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("void?", voidp, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1_DS ("void?", voidp, (IDIO o), "o", "\
+test if `o` is void (#void)			\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is void, #f otherwise	\n\
+")
 {
     IDIO_ASSERT (o);
 
@@ -261,16 +348,24 @@ IDIO_DEFINE_PRIMITIVE1 ("void?", voidp, (IDIO o))
  * Unrelated to undef?, %undefined? tests whether a non-local symbol
  * is defined in this environment.
  */
-IDIO_DEFINE_PRIMITIVE1 ("%defined?", definedp, (IDIO s))
+IDIO_DEFINE_PRIMITIVE1_DS ("%defined?", definedp, (IDIO s), "s", "\
+test if symbol `s` is defined in this environment	\n\
+						\n\
+:param s: symbol to test			\n\
+:type s: symbol					\n\
+						\n\
+:return: #t if `s` is defined in this environment, #f otherwise	\n\
+")
 {
     IDIO_ASSERT (s);
-    IDIO_TYPE_ASSERT (symbol, s);
+
+    IDIO_USER_TYPE_ASSERT (symbol, s);
 
     IDIO r = idio_S_false;
 
     IDIO sk = idio_module_env_symbol_recurse (s);
 
-    if (idio_S_unspec != sk) {
+    if (idio_S_false != sk) {
 	r = idio_S_true;
     }
 
@@ -285,7 +380,13 @@ int idio_isa_boolean (IDIO o)
 	    idio_S_false == o);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("boolean?", booleanp, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1_DS ("boolean?", booleanp, (IDIO o), "o", "\
+test if `o` is a boolean			\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is a boolean			\n\
+")
 {
     IDIO_ASSERT (o);
 
@@ -298,7 +399,14 @@ IDIO_DEFINE_PRIMITIVE1 ("boolean?", booleanp, (IDIO o))
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("not", not, (IDIO e))
+IDIO_DEFINE_PRIMITIVE1_DS ("not", not, (IDIO e), "e", "\
+return the boolean inverse of `e`		\n\
+						\n\
+:param e: expression to invert			\n\
+:type e: any					\n\
+						\n\
+:return: #t if `s` is #f, #f otherwise		\n\
+")
 {
     IDIO_ASSERT (e);
 
@@ -364,9 +472,6 @@ IDIO_DEFINE_PRIMITIVE1 ("not", not, (IDIO e))
  * compared and then each element is compared with equal?.
  *
  */
-#define IDIO_EQUAL_EQP		1
-#define IDIO_EQUAL_EQVP		2
-#define IDIO_EQUAL_EQUALP	3
 
 int idio_eqp (void *o1, void *o2)
 {
@@ -383,7 +488,16 @@ int idio_equalp (void *o1, void *o2)
     return idio_equal ((IDIO) o1, (IDIO) o2, IDIO_EQUAL_EQUALP);
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("eq?", eqp, (IDIO o1, IDIO o2))
+IDIO_DEFINE_PRIMITIVE2_DS ("eq?", eqp, (IDIO o1, IDIO o2), "o1 o2", "\
+test if `o1` and `o2` are eq?			\n\
+						\n\
+:param o1: object to test			\n\
+:type o1: any					\n\
+:param o2: object to test			\n\
+:type o2: any					\n\
+						\n\
+:return: #t if `o1` is eq? to `o2`, #f otherwise\n\
+")
 {
     IDIO_ASSERT (o1);
     IDIO_ASSERT (o2);
@@ -397,7 +511,16 @@ IDIO_DEFINE_PRIMITIVE2 ("eq?", eqp, (IDIO o1, IDIO o2))
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("eqv?", eqvp, (IDIO o1, IDIO o2))
+IDIO_DEFINE_PRIMITIVE2_DS ("eqv?", eqvp, (IDIO o1, IDIO o2), "o1 o2", "\
+test if `o1` and `o2` are eqv?			\n\
+						\n\
+:param o1: object to test			\n\
+:type o1: any					\n\
+:param o2: object to test			\n\
+:type o2: any					\n\
+						\n\
+:return: #t if `o1` is eqv? to `o2`, #f otherwise\n\
+")
 {
     IDIO_ASSERT (o1);
     IDIO_ASSERT (o2);
@@ -417,7 +540,16 @@ IDIO_DEFINE_PRIMITIVE2 ("eqv?", eqvp, (IDIO o1, IDIO o2))
  * used in its definition
  */
 
-IDIO_DEFINE_PRIMITIVE2 ("equal?", equalp, (IDIO o1, IDIO o2))
+IDIO_DEFINE_PRIMITIVE2_DS ("equal?", equalp, (IDIO o1, IDIO o2), "o1 o2", "\
+test if `o1` and `o2` are equal?			\n\
+						\n\
+:param o1: object to test			\n\
+:type o1: any					\n\
+:param o2: object to test			\n\
+:type o2: any					\n\
+						\n\
+:return: #t if `o1` is equal? to `o2`, #f otherwise\n\
+")
 {
     IDIO_ASSERT (o1);
     IDIO_ASSERT (o2);
@@ -443,6 +575,13 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
      * equality test) implicitly tests their type as well.
      */
     if (o1 == o2) {
+#ifdef IDIO_EQUAL_DEBUG
+	int t1 = (intptr_t) o1 & IDIO_TYPE_MASK;
+	if (0 == t1) {
+	    t1 = o1->type;
+	}
+	idio_equal_stats[t1].count++;
+#endif
 	return 1;
     }
 
@@ -462,20 +601,31 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
      * code has been interspersed below.
      */
 
+#ifdef IDIO_EQUAL_DEBUG
+    struct timeval t0;
+    if (gettimeofday (&t0, NULL) == -1) {
+	perror ("gettimeofday");
+    }
+#endif
     switch (m1) {
     case IDIO_TYPE_FIXNUM_MARK:
 	if (IDIO_EQUAL_EQP != eqp) {
 	    IDIO r = idio_S_false;
 
-	    if (idio_isa_number (o2)) {
+	    if (IDIO_TYPE_FIXNUM_MARK == m2) {
+		return (o1 == o2);
+	    } else if (idio_isa_number (o2)) {
 		r = idio_vm_invoke_C (idio_thread_current_thread (),
-				      IDIO_LIST3 (idio_module_symbol_value (idio_symbols_C_intern ("=="),
-									    idio_Idio_module,
+				      IDIO_LIST3 (idio_module_symbol_value (idio_S_num_eq,
+									    idio_primitives_module,
 									    idio_S_nil),
 						  o1,
 						  o2));
 	    }
 
+#ifdef IDIO_EQUAL_DEBUG
+	    idio_equal_stat_increment (o1, o2, t0);
+#endif
 	    return (idio_S_true == r);
 	} else {
 	    return 0;
@@ -495,15 +645,18 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		if (IDIO_EQUAL_EQP != eqp) {
 		    IDIO r = idio_S_false;
 
-		    if (idio_isa_number (o1)) {
+		    if (idio_isa_bignum (o1)) {
 			r = idio_vm_invoke_C (idio_thread_current_thread (),
-					      IDIO_LIST3 (idio_module_symbol_value (idio_symbols_C_intern ("=="),
-										    idio_Idio_module,
+					      IDIO_LIST3 (idio_module_symbol_value (idio_S_num_eq,
+										    idio_primitives_module,
 										    idio_S_nil),
 							  o1,
 							  o2));
 		    }
 
+#ifdef IDIO_EQUAL_DEBUG
+		    idio_equal_stat_increment (o1, o2, t0);
+#endif
 		    return (idio_S_true == r);
 		} else {
 		    return 0;
@@ -536,6 +689,9 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 				return 0;
 			    }
 
+#ifdef IDIO_EQUAL_DEBUG
+			    idio_equal_stat_increment (o1, o2, t0);
+#endif
 			    return idio_string_equal (o1, o2);
 			}
 		    }
@@ -548,6 +704,9 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 				return 0;
 			    }
 
+#ifdef IDIO_EQUAL_DEBUG
+			    idio_equal_stat_increment (o1, o2, t0);
+#endif
 			    return idio_string_equal (o1, o2);
 			}
 		    }
@@ -596,6 +755,9 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		    return 0;
 		}
 
+#ifdef IDIO_EQUAL_DEBUG
+		idio_equal_stat_increment (o1, o2, t0);
+#endif
 		return idio_string_equal (o1, o2);
 
 		break;
@@ -608,6 +770,9 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		    return 0;
 		}
 
+#ifdef IDIO_EQUAL_DEBUG
+		idio_equal_stat_increment (o1, o2, t0);
+#endif
 		return idio_string_equal (o1, o2);
 
 		break;
@@ -625,8 +790,8 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		    return (o1 == o2);
 		}
 
-		return (idio_equalp (IDIO_PAIR_H (o1), IDIO_PAIR_H (o2)) &&
-			idio_equalp (IDIO_PAIR_T (o1), IDIO_PAIR_T (o2)));
+		return (idio_equal (IDIO_PAIR_H (o1), IDIO_PAIR_H (o2), eqp) &&
+			idio_equal (IDIO_PAIR_T (o1), IDIO_PAIR_T (o2), eqp));
 	    case IDIO_TYPE_ARRAY:
 		if (IDIO_EQUAL_EQP == eqp ||
 		    IDIO_EQUAL_EQVP == eqp) {
@@ -638,7 +803,7 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		}
 
 		for (i = 0; i < IDIO_ARRAY_USIZE (o1); i++) {
-		    if (! idio_equalp (IDIO_ARRAY_AE (o1, i), IDIO_ARRAY_AE (o2, i))) {
+		    if (! idio_equal (IDIO_ARRAY_AE (o1, i), IDIO_ARRAY_AE (o2, i), eqp)) {
 			return 0;
 		    }
 		}
@@ -654,16 +819,57 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		    return (o1->u.hash == o2->u.hash);
 		}
 
-		if (IDIO_HASH_SIZE (o1) != IDIO_HASH_SIZE (o2)) {
+		if (IDIO_HASH_COUNT (o1) != IDIO_HASH_COUNT (o2)) {
 		    return 0;
 		}
 
-		for (i = 0; i < IDIO_HASH_SIZE (o1); i++) {
-		    if (! idio_equalp (IDIO_HASH_HE_KEY (o1, i), IDIO_HASH_HE_KEY (o2, i)) ||
-			! idio_equalp (IDIO_HASH_HE_VALUE (o1, i), IDIO_HASH_HE_VALUE (o2, i))) {
-			return 0;
+		{
+		    /*
+		     * We could have two hashes of different sizes
+		     * with the same key/value tuples -- but the
+		     * orderings will be different
+		     *
+		     * So, if the keys are the same then if each value
+		     * is the same against each key...
+		     */
+
+		    IDIO o1k = idio_hash_keys_to_list (o1);
+		    idio_gc_protect (o1k);
+		    IDIO kl = o1k;
+		    while (idio_S_nil != kl) {
+			if (! idio_hash_exists_key (o2, IDIO_PAIR_H (kl))) {
+			    idio_gc_expose (o1k);
+			    return 0;
+			}
+			if (! idio_equal (idio_hash_ref (o1, IDIO_PAIR_H (kl)),
+					  idio_hash_ref (o2, IDIO_PAIR_H (kl)),
+					  eqp)) {
+			    idio_gc_expose (o1k);
+			    return 0;
+			}
+			kl = IDIO_PAIR_T (kl);
 		    }
+		    idio_gc_expose (o1k);
+
+		    IDIO o2k = idio_hash_keys_to_list (o2);
+		    idio_gc_protect (o2k);
+		    kl = o2k;
+		    while (idio_S_nil != kl) {
+			if (! idio_hash_exists_key (o1, IDIO_PAIR_H (kl))) {
+			    idio_gc_expose (o2k);
+			    return 0;
+			}
+			if (! idio_equal (idio_hash_ref (o1, IDIO_PAIR_H (kl)),
+					  idio_hash_ref (o2, IDIO_PAIR_H (kl)),
+					  eqp)) {
+			    idio_gc_expose (o2k);
+			    return 0;
+			}
+			kl = IDIO_PAIR_T (kl);
+		    }
+		    idio_gc_expose (o2k);
 		}
+
 		return 1;
 	    case IDIO_TYPE_CLOSURE:
 		return (o1 == o2);
@@ -678,6 +884,9 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		    return (IDIO_BIGNUM_SIG (o1) == IDIO_BIGNUM_SIG (o2));
 		}
 
+#ifdef IDIO_EQUAL_DEBUG
+		    idio_equal_stat_increment (o1, o2, t0);
+#endif
 		return idio_bignum_real_equal_p (o1, o2);
 	    case IDIO_TYPE_MODULE:
 		return (o1 == o2);
@@ -696,26 +905,58 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 	    case IDIO_TYPE_C_POINTER:
 		return (IDIO_C_TYPE_POINTER_P (o1) == IDIO_C_TYPE_POINTER_P (o2));
 	    case IDIO_TYPE_STRUCT_TYPE:
-		if (IDIO_EQUAL_EQP == eqp ||
-		    IDIO_EQUAL_EQVP == eqp) {
-		    return (o1->u.struct_type == o2->u.struct_type);
-		}
+		{
+		    if (IDIO_EQUAL_EQP == eqp ||
+			IDIO_EQUAL_EQVP == eqp) {
+			return (o1->u.struct_type == o2->u.struct_type);
+		    }
 
-		if (! idio_equalp (IDIO_STRUCT_TYPE_NAME (o1), IDIO_STRUCT_TYPE_NAME (o2)) ||
-		    ! idio_equalp (IDIO_STRUCT_TYPE_PARENT (o1), IDIO_STRUCT_TYPE_PARENT (o2)) ||
-		    ! idio_equalp (IDIO_STRUCT_TYPE_FIELDS (o1), IDIO_STRUCT_TYPE_FIELDS (o2))) {
-		    return 0;
+		    if (! idio_equal (IDIO_STRUCT_TYPE_NAME (o1), IDIO_STRUCT_TYPE_NAME (o2), eqp) ||
+			! idio_equal (IDIO_STRUCT_TYPE_PARENT (o1), IDIO_STRUCT_TYPE_PARENT (o2), eqp)) {
+			return 0;
+		    }
+
+		    size_t s1 = IDIO_STRUCT_TYPE_SIZE (o1);
+		    if (s1 != IDIO_STRUCT_TYPE_SIZE (o2)) {
+			return 0;
+		    }
+
+		    /*
+		     * We're now at the stage of having two
+		     * identically named and sized struct types.
+		     * Check each field.
+		     */
+		    size_t i;
+		    for (i = 0 ; i < s1 ; i++) {
+			if (! idio_equal (IDIO_STRUCT_TYPE_FIELDS (o1, i), IDIO_STRUCT_TYPE_FIELDS (o2, i), eqp)) {
+			    return 0;
+			}
+		    }
 		}
 		break;
 	    case IDIO_TYPE_STRUCT_INSTANCE:
-		if (IDIO_EQUAL_EQP == eqp ||
-		    IDIO_EQUAL_EQVP == eqp) {
-		    return (o1->u.struct_instance == o2->u.struct_instance);
-		}
+		{
+		    if (IDIO_EQUAL_EQP == eqp ||
+			IDIO_EQUAL_EQVP == eqp) {
+			return (o1 == o2);
+		    }
 
-		if (! idio_equalp (IDIO_STRUCT_INSTANCE_TYPE (o1), IDIO_STRUCT_INSTANCE_TYPE (o2)) ||
-		    ! idio_equalp (IDIO_STRUCT_INSTANCE_FIELDS (o1), IDIO_STRUCT_INSTANCE_FIELDS (o2))) {
-		    return 0;
+		    if (! idio_equal (IDIO_STRUCT_INSTANCE_TYPE (o1), IDIO_STRUCT_INSTANCE_TYPE (o2), eqp)) {
+			return 0;
+		    }
+
+		    /*
+		     * These struct instances are the same type
+		     * therefore must have the same size.  Check each
+		     * value.
+		     */
+		    size_t s1 = IDIO_STRUCT_INSTANCE_SIZE (o1);
+		    size_t i;
+		    for (i = 0 ; i < s1 ; i++) {
+			if (! idio_equal (IDIO_STRUCT_INSTANCE_FIELDS (o1, i), IDIO_STRUCT_INSTANCE_FIELDS (o2, i), eqp)) {
+			    return 0;
+			}
+		    }
 		}
 		break;
 	    case IDIO_TYPE_THREAD:
@@ -728,6 +969,9 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		    return (o1 == o2);
 		}
 
+#ifdef IDIO_EQUAL_DEBUG
+		    idio_equal_stat_increment (o1, o2, t0);
+#endif
 		return idio_equal_bitsetp (IDIO_LIST2 (o1, o2));
 		break;
 	    case IDIO_TYPE_C_TYPEDEF:
@@ -776,7 +1020,7 @@ static IDIO idio_util_as_string_symbol (IDIO o)
 
 	r = idio_symbols_C_intern (sym_name);
 
-	free (sym_name);
+	IDIO_GC_FREE (sym_name);
     }
 
     return r;
@@ -788,8 +1032,22 @@ static IDIO idio_util_as_string_symbol (IDIO o)
 
   CHARACTER #\a:	#\a
   STRING "foo":		"foo"
+
+  A significant annoyance is that this function recurses which means
+  that any idio-print-conversion-format which was valid for the
+  initial call is now invalid for the recursed varaints.
+
+  We can escape that with a first tag.
  */
-char *idio_as_string (IDIO o, size_t *sizep, int depth)
+#define IDIO_FIXNUM_CONVERSION_FORMAT_X		0x58
+#define IDIO_FIXNUM_CONVERSION_FORMAT_b		0x62
+#define IDIO_FIXNUM_CONVERSION_FORMAT_d		0x64
+#define IDIO_FIXNUM_CONVERSION_FORMAT_o		0x6F
+#define IDIO_FIXNUM_CONVERSION_FORMAT_x		0x78
+
+#define IDIO_FIXNUM_CONVERSION_FORMAT_s		0x73
+
+char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 {
     char *r = NULL;
     size_t i;
@@ -799,11 +1057,116 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
     switch ((intptr_t) o & IDIO_TYPE_MASK) {
     case IDIO_TYPE_FIXNUM_MARK:
 	{
-	    if (asprintf (&r, "%" PRIdPTR, IDIO_FIXNUM_VAL (o)) == -1) {
-		idio_error_alloc ("asprintf");
+	    idio_unicode_t format = IDIO_FIXNUM_CONVERSION_FORMAT_d;
+	    if (first &&
+		idio_S_nil != idio_print_conversion_format_sym) {
+		IDIO ipcf = idio_module_symbol_value (idio_print_conversion_format_sym,
+						      idio_Idio_module,
+						      IDIO_LIST1 (idio_S_false));
 
-		/* notreached */
-		return NULL;
+		if (idio_S_false != ipcf) {
+		    if (idio_isa_unicode (ipcf)) {
+			idio_unicode_t f = IDIO_UNICODE_VAL (ipcf);
+			switch (f) {
+			case IDIO_FIXNUM_CONVERSION_FORMAT_X:
+			case IDIO_FIXNUM_CONVERSION_FORMAT_b:
+			case IDIO_FIXNUM_CONVERSION_FORMAT_d:
+			case IDIO_FIXNUM_CONVERSION_FORMAT_o:
+			case IDIO_FIXNUM_CONVERSION_FORMAT_x:
+			    format = f;
+			    break;
+			case IDIO_FIXNUM_CONVERSION_FORMAT_s:
+			    /*
+			     * A generic: printf "%s" e
+			     */
+			    format = IDIO_FIXNUM_CONVERSION_FORMAT_d;
+			    break;
+			default:
+			    fprintf (stderr, "fixnum-as-string: unexpected conversion format: '%c' (%#x).  Using 'd' for %" PRIdPTR " @%d.\n", (int) f, (int) f, IDIO_FIXNUM_VAL (o), depth);
+			    format = IDIO_FIXNUM_CONVERSION_FORMAT_d;
+			    break;
+			}
+		    } else {
+			size_t s = 0;
+			fprintf (stderr, "ipcf isa %s %s\n", idio_type2string (ipcf), idio_as_string (ipcf, &s, 1, seen, 0));
+			if (0) {
+			IDIO_C_ASSERT (0);
+			idio_error_param_type ("unicode", ipcf, IDIO_C_FUNC_LOCATION ());
+
+			/* notreached */
+			return NULL;
+			}
+		    }
+		}
+	    }
+
+	    switch (format) {
+	    case IDIO_FIXNUM_CONVERSION_FORMAT_X:
+		if (IDIO_ASPRINTF (&r, "%" PRIXPTR, (uintptr_t) IDIO_FIXNUM_VAL (o)) == -1) {
+		    idio_error_alloc ("asprintf");
+
+		    /* notreached */
+		    return NULL;
+		}
+		break;
+	    case IDIO_FIXNUM_CONVERSION_FORMAT_b:
+		{
+		    unsigned long ul = (unsigned long) IDIO_FIXNUM_VAL (o);
+		    int j = sizeof (unsigned long)* CHAR_BIT;
+		    char bits[j+1];
+		    int seen_bit = 0;
+		    for (int i = 0; i < j; i++) {
+			if (ul & (1UL << (j - 1 - i))) {
+			    bits[i] = '1';
+			    if (0 == seen_bit) {
+				seen_bit = i;
+			    }
+			} else {
+			    bits[i] = '0';
+			}
+		    }
+		    bits[j] = '\0';
+		    if (IDIO_ASPRINTF (&r, "%s", bits + seen_bit) == -1) {
+			idio_error_alloc ("asprintf");
+
+			/* notreached */
+			return NULL;
+		    }
+		}
+		break;
+	    case IDIO_FIXNUM_CONVERSION_FORMAT_d:
+		if (IDIO_ASPRINTF (&r, "%" PRIdPTR, IDIO_FIXNUM_VAL (o)) == -1) {
+		    idio_error_alloc ("asprintf");
+
+		    /* notreached */
+		    return NULL;
+		}
+		break;
+	    case IDIO_FIXNUM_CONVERSION_FORMAT_o:
+		if (IDIO_ASPRINTF (&r, "%" PRIoPTR, (uintptr_t) IDIO_FIXNUM_VAL (o)) == -1) {
+		    idio_error_alloc ("asprintf");
+
+		    /* notreached */
+		    return NULL;
+		}
+		break;
+	    case IDIO_FIXNUM_CONVERSION_FORMAT_x:
+		if (IDIO_ASPRINTF (&r, "%" PRIxPTR, (uintptr_t) IDIO_FIXNUM_VAL (o)) == -1) {
+		    idio_error_alloc ("asprintf");
+
+		    /* notreached */
+		    return NULL;
+		}
+		break;
+	    default:
+		{
+		    fprintf (stderr, "fixnum-as-string: unimplemented conversion format: %c (%#x)\n", (int) format, (int) format);
+		    idio_error_printf (IDIO_C_FUNC_LOCATION (), "fixnum-as-string unimplemented conversion format");
+
+		    /* notreached */
+		    return NULL;
+		}
+		break;
 	    }
 	    *sizep = strlen (r);
 	    break;
@@ -847,12 +1210,6 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		    case IDIO_STACK_MARKER_DYNAMIC:			t = "#<MARK dynamic>";			break;
 		    case IDIO_STACK_MARKER_ENVIRON:			t = "#<MARK environ>";			break;
 
-		    case IDIO_CONSTANT_TOPLEVEL:			t = "#<CONST toplevel>";		break;
-		    case IDIO_CONSTANT_PREDEF:				t = "#<CONST predef>";			break;
-		    case IDIO_CONSTANT_LOCAL:				t = "#<CONST local>";			break;
-		    case IDIO_CONSTANT_ENVIRON:				t = "#<CONST environ>";			break;
-		    case IDIO_CONSTANT_COMPUTED:			t = "#<CONST computed>";		break;
-
 			/*
 			 * There's a pretty strong argument that if
 			 * idio_S_notreached is in *anything* then
@@ -872,7 +1229,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 			}
 
 		    default:
-			if (asprintf (&r, "#<type/constant/idio?? %10p>", o) == -1) {
+			if (IDIO_ASPRINTF (&r, "#<type/constant/idio?? %10p>", o) == -1) {
 			    idio_error_alloc ("asprintf");
 
 			    /* notreached */
@@ -883,14 +1240,14 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		    }
 
 		    if (NULL == t) {
-			if (asprintf (&r, "#<CONST? %p>", o) == -1) {
+			if (IDIO_ASPRINTF (&r, "#<CONST? %10p>", o) == -1) {
 			    idio_error_alloc ("asprintf");
 
 			    /* notreached */
 			    return NULL;
 			}
 		    } else {
-			if (asprintf (&r, "%s", t) == -1) {
+			if (IDIO_ASPRINTF (&r, "%s", t) == -1) {
 			    idio_error_alloc ("asprintf");
 
 			    /* notreached */
@@ -931,14 +1288,14 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		    }
 
 		    if (NULL == t) {
-			if (asprintf (&r, "#<TOKEN=%" PRIdPTR ">", v) == -1) {
+			if (IDIO_ASPRINTF (&r, "#<TOKEN=%" PRIdPTR ">", v) == -1) {
 			    idio_error_alloc ("asprintf");
 
 			    /* notreached */
 			    return NULL;
 			}
 		    } else {
-			if (asprintf (&r, "%s", t) == -1) {
+			if (IDIO_ASPRINTF (&r, "%s", t) == -1) {
 			    idio_error_alloc ("asprintf");
 
 			    /* notreached */
@@ -956,85 +1313,83 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 
 		    switch (v) {
 
-		    case IDIO_I_CODE_SHALLOW_ARGUMENT_REF:		t = "SHALLOW-ARGUMENT-REF";		break;
-		    case IDIO_I_CODE_DEEP_ARGUMENT_REF:			t = "DEEP-ARGUMENT-REF";		break;
+		    case IDIO_I_CODE_SHALLOW_ARGUMENT_REF:		t = "I-SHALLOW-ARGUMENT-REF";		break;
+		    case IDIO_I_CODE_DEEP_ARGUMENT_REF:			t = "I-DEEP-ARGUMENT-REF";		break;
 
-		    case IDIO_I_CODE_SHALLOW_ARGUMENT_SET:		t = "SHALLOW-ARGUMENT-SET";		break;
-		    case IDIO_I_CODE_DEEP_ARGUMENT_SET:			t = "DEEP-ARGUMENT-SET";		break;
+		    case IDIO_I_CODE_SHALLOW_ARGUMENT_SET:		t = "I-SHALLOW-ARGUMENT-SET";		break;
+		    case IDIO_I_CODE_DEEP_ARGUMENT_SET:			t = "I-DEEP-ARGUMENT-SET";		break;
 
-		    case IDIO_I_CODE_GLOBAL_SYM_REF:			t = "GLOBAL-SYM-REF";			break;
-		    case IDIO_I_CODE_CHECKED_GLOBAL_SYM_REF:		t = "CHECKED-GLOBAL-SYM-REF";		break;
-		    case IDIO_I_CODE_GLOBAL_FUNCTION_SYM_REF:		t  = "GLOBAL-FUNCTION-SYM-REF";		break;
-		    case IDIO_I_CODE_CHECKED_GLOBAL_FUNCTION_SYM_REF:	t = "CHECKED-GLOBAL-FUNCTION-SYM-REF";	break;
-		    case IDIO_I_CODE_CONSTANT_SYM_REF:			t = "CONSTANT";				break;
-		    case IDIO_I_CODE_COMPUTED_SYM_REF:			t = "COMPUTED-SYM-REF";			break;
+		    case IDIO_I_CODE_GLOBAL_SYM_REF:			t = "I-GLOBAL-SYM-REF";			break;
+		    case IDIO_I_CODE_CHECKED_GLOBAL_SYM_REF:		t = "I-CHECKED-GLOBAL-SYM-REF";		break;
+		    case IDIO_I_CODE_GLOBAL_FUNCTION_SYM_REF:		t = "I-GLOBAL-FUNCTION-SYM-REF";	break;
+		    case IDIO_I_CODE_CHECKED_GLOBAL_FUNCTION_SYM_REF:	t = "I-CHECKED-GLOBAL-FUNCTION-SYM-REF";break;
+		    case IDIO_I_CODE_CONSTANT_SYM_REF:			t = "I-CONSTANT";			break;
+		    case IDIO_I_CODE_COMPUTED_SYM_REF:			t = "I-COMPUTED-SYM-REF";		break;
 
-		    case IDIO_I_CODE_GLOBAL_SYM_DEF:			t = "GLOBAL-SYM-DEF";			break;
-		    case IDIO_I_CODE_GLOBAL_SYM_SET:			t = "GLOBAL-SYM-SET";			break;
-		    case IDIO_I_CODE_COMPUTED_SYM_SET:			t = "COMPUTED-SYM-SET";			break;
-		    case IDIO_I_CODE_COMPUTED_SYM_DEFINE:		t = "COMPUTED-SYM-DEFINE";			break;
+		    case IDIO_I_CODE_GLOBAL_SYM_DEF:			t = "I-GLOBAL-SYM-DEF";			break;
+		    case IDIO_I_CODE_GLOBAL_SYM_SET:			t = "I-GLOBAL-SYM-SET";			break;
+		    case IDIO_I_CODE_COMPUTED_SYM_SET:			t = "I-COMPUTED-SYM-SET";		break;
+		    case IDIO_I_CODE_COMPUTED_SYM_DEF:			t = "I-COMPUTED-SYM-DEF";		break;
 
-		    case IDIO_I_CODE_GLOBAL_VAL_REF:			t = "GLOBAL-VAL-REF";			break;
-		    case IDIO_I_CODE_CHECKED_GLOBAL_VAL_REF:		t = "CHECKED-GLOBAL-VAL-REF";		break;
-		    case IDIO_I_CODE_GLOBAL_FUNCTION_VAL_REF:		t  = "GLOBAL-FUNCTION-VAL-REF";		break;
-		    case IDIO_I_CODE_CHECKED_GLOBAL_FUNCTION_VAL_REF:	t = "CHECKED-GLOBAL-FUNCTION-VAL-REF";	break;
-		    case IDIO_I_CODE_CONSTANT_VAL_REF:			t = "CONSTANT";				break;
-		    case IDIO_I_CODE_COMPUTED_VAL_REF:			t = "COMPUTED-VAL-REF";			break;
+		    case IDIO_I_CODE_GLOBAL_VAL_REF:			t = "I-GLOBAL-VAL-REF";			break;
+		    case IDIO_I_CODE_CHECKED_GLOBAL_VAL_REF:		t = "I-CHECKED-GLOBAL-VAL-REF";		break;
+		    case IDIO_I_CODE_GLOBAL_FUNCTION_VAL_REF:		t = "I-GLOBAL-FUNCTION-VAL-REF";	break;
+		    case IDIO_I_CODE_CHECKED_GLOBAL_FUNCTION_VAL_REF:	t = "I-CHECKED-GLOBAL-FUNCTION-VAL-REF";break;
+		    case IDIO_I_CODE_CONSTANT_VAL_REF:			t = "I-CONSTANT";			break;
+		    case IDIO_I_CODE_COMPUTED_VAL_REF:			t = "I-COMPUTED-VAL-REF";		break;
 
-		    case IDIO_I_CODE_GLOBAL_VAL_DEF:			t = "GLOBAL-VAL-DEF";			break;
-		    case IDIO_I_CODE_GLOBAL_VAL_SET:			t = "GLOBAL-VAL-SET";			break;
-		    case IDIO_I_CODE_COMPUTED_VAL_SET:			t = "COMPUTED-VAL-SET";			break;
-		    case IDIO_I_CODE_COMPUTED_VAL_DEFINE:		t = "COMPUTED-VAL-DEFINE";			break;
+		    case IDIO_I_CODE_GLOBAL_VAL_DEF:			t = "I-GLOBAL-VAL-DEF";			break;
+		    case IDIO_I_CODE_GLOBAL_VAL_SET:			t = "I-GLOBAL-VAL-SET";			break;
+		    case IDIO_I_CODE_COMPUTED_VAL_SET:			t = "I-COMPUTED-VAL-SET";		break;
+		    case IDIO_I_CODE_COMPUTED_VAL_DEF:			t = "I-COMPUTED-VAL-DEF";		break;
 
-		    case IDIO_I_CODE_PREDEFINED:			t = "PREDEFINED";			break;
-		    case IDIO_I_CODE_ALTERNATIVE:			t = "ALTERNATIVE";			break;
-		    case IDIO_I_CODE_SEQUENCE:				t = "SEQUENCE";				break;
-		    case IDIO_I_CODE_TR_FIX_LET:			t = "TR-FIX-LET";			break;
-		    case IDIO_I_CODE_FIX_LET:				t = "FIX-LET";				break;
+		    case IDIO_I_CODE_PREDEFINED:			t = "I-PREDEFINED";			break;
+		    case IDIO_I_CODE_ALTERNATIVE:			t = "I-ALTERNATIVE";			break;
+		    case IDIO_I_CODE_SEQUENCE:				t = "I-SEQUENCE";			break;
+		    case IDIO_I_CODE_TR_FIX_LET:			t = "I-TR-FIX-LET";			break;
+		    case IDIO_I_CODE_FIX_LET:				t = "I-FIX-LET";			break;
 
-		    case IDIO_I_CODE_PRIMCALL0:				t = "PRIMCALL0";			break;
-		    case IDIO_I_CODE_PRIMCALL1:				t = "PRIMCALL1";			break;
-		    case IDIO_I_CODE_PRIMCALL2:				t = "PRIMCALL2";			break;
-		    case IDIO_I_CODE_PRIMCALL3:				t = "PRIMCALL3";			break;
-		    case IDIO_I_CODE_TR_REGULAR_CALL:			t = "TR-REGULAR-CALL";			break;
-		    case IDIO_I_CODE_REGULAR_CALL:			t = "REGULAR-CALL";			break;
+		    case IDIO_I_CODE_PRIMCALL0:				t = "I-PRIMCALL0";			break;
+		    case IDIO_I_CODE_PRIMCALL1:				t = "I-PRIMCALL1";			break;
+		    case IDIO_I_CODE_PRIMCALL2:				t = "I-PRIMCALL2";			break;
+		    case IDIO_I_CODE_PRIMCALL3:				t = "I-PRIMCALL3";			break;
+		    case IDIO_I_CODE_TR_REGULAR_CALL:			t = "I-TR-REGULAR-CALL";		break;
+		    case IDIO_I_CODE_REGULAR_CALL:			t = "I-REGULAR-CALL";			break;
 
-		    case IDIO_I_CODE_FIX_CLOSURE:			t = "FIX-CLOSURE";			break;
-		    case IDIO_I_CODE_NARY_CLOSURE:			t = "NARY-CLOSURE";			break;
+		    case IDIO_I_CODE_FIX_CLOSURE:			t = "I-FIX-CLOSURE";			break;
+		    case IDIO_I_CODE_NARY_CLOSURE:			t = "I-NARY-CLOSURE";			break;
 
-		    case IDIO_I_CODE_STORE_ARGUMENT:			t = "STORE-ARGUMENT";			break;
-		    case IDIO_I_CODE_CONS_ARGUMENT:			t = "CONS-ARGUMENT";			break;
+		    case IDIO_I_CODE_STORE_ARGUMENT:			t = "I-STORE-ARGUMENT";			break;
+		    case IDIO_I_CODE_LIST_ARGUMENT:			t = "I-LIST-ARGUMENT";			break;
 
-		    case IDIO_I_CODE_ALLOCATE_FRAME:			t = "ALLOCATE-FRAME";			break;
-		    case IDIO_I_CODE_ALLOCATE_DOTTED_FRAME:		t = "ALLOCATE-DOTTED-FRAME";		break;
-		    case IDIO_I_CODE_REUSE_FRAME:			t = "REUSE-FRAME";			break;
+		    case IDIO_I_CODE_ALLOCATE_FRAME:			t = "I-ALLOCATE-FRAME";			break;
+		    case IDIO_I_CODE_ALLOCATE_DOTTED_FRAME:		t = "I-ALLOCATE-DOTTED-FRAME";		break;
+		    case IDIO_I_CODE_REUSE_FRAME:			t = "I-REUSE-FRAME";			break;
 
-		    case IDIO_I_CODE_DYNAMIC_SYM_REF:			t = "DYNAMIC-SYM-REF";			break;
-		    case IDIO_I_CODE_DYNAMIC_FUNCTION_SYM_REF:		t = "DYNAMIC-FUNCTION-SYM-REF";		break;
-		    case IDIO_I_CODE_DYNAMIC_VAL_REF:			t = "DYNAMIC-VAL-REF";			break;
-		    case IDIO_I_CODE_DYNAMIC_FUNCTION_VAL_REF:		t = "DYNAMIC-FUNCTION-VAL-REF";		break;
-		    case IDIO_I_CODE_PUSH_DYNAMIC:			t = "PUSH-DYNAMIC";			break;
-		    case IDIO_I_CODE_POP_DYNAMIC:			t = "POP-DYNAMIC";			break;
+		    case IDIO_I_CODE_DYNAMIC_SYM_REF:			t = "I-DYNAMIC-SYM-REF";		break;
+		    case IDIO_I_CODE_DYNAMIC_FUNCTION_SYM_REF:		t = "I-DYNAMIC-FUNCTION-SYM-REF";	break;
+		    case IDIO_I_CODE_PUSH_DYNAMIC:			t = "I-PUSH-DYNAMIC";			break;
+		    case IDIO_I_CODE_POP_DYNAMIC:			t = "I-POP-DYNAMIC";			break;
 
-		    case IDIO_I_CODE_ENVIRON_SYM_REF:			t = "ENVIRON-SYM-REF";			break;
-		    case IDIO_I_CODE_ENVIRON_VAL_REF:			t = "ENVIRON-VAL-REF";			break;
-		    case IDIO_I_CODE_PUSH_ENVIRON:			t = "PUSH-ENVIRON";			break;
-		    case IDIO_I_CODE_POP_ENVIRON:			t = "POP-ENVIRON";			break;
+		    case IDIO_I_CODE_ENVIRON_SYM_REF:			t = "I-ENVIRON-SYM-REF";		break;
+		    case IDIO_I_CODE_PUSH_ENVIRON:			t = "I-PUSH-ENVIRON";			break;
+		    case IDIO_I_CODE_POP_ENVIRON:			t = "I-POP-ENVIRON";			break;
 
-		    case IDIO_I_CODE_PUSH_TRAP:				t = "PUSH-TRAP";			break;
-		    case IDIO_I_CODE_POP_TRAP:				t = "POP-TRAP";				break;
+		    case IDIO_I_CODE_PUSH_TRAP:				t = "I-PUSH-TRAP";			break;
+		    case IDIO_I_CODE_POP_TRAP:				t = "I-POP-TRAP";			break;
 
-		    case IDIO_I_CODE_AND:				t = "AND";				break;
-		    case IDIO_I_CODE_OR:				t = "OR";				break;
-		    case IDIO_I_CODE_BEGIN:				t = "BEGIN";				break;
+		    case IDIO_I_CODE_AND:				t = "I-AND";				break;
+		    case IDIO_I_CODE_OR:				t = "I-OR";				break;
+		    case IDIO_I_CODE_BEGIN:				t = "I-BEGIN";				break;
 
-		    case IDIO_I_CODE_EXPANDER:				t = "EXPANDER";				break;
-		    case IDIO_I_CODE_INFIX_OPERATOR:			t = "INFIX-OPERATOR";			break;
-		    case IDIO_I_CODE_POSTFIX_OPERATOR:			t = "POSTFIX-OPERATOR";			break;
+		    case IDIO_I_CODE_EXPANDER:				t = "I-EXPANDER";			break;
+		    case IDIO_I_CODE_INFIX_OPERATOR:			t = "I-INFIX-OPERATOR";			break;
+		    case IDIO_I_CODE_POSTFIX_OPERATOR:			t = "I-POSTFIX-OPERATOR";		break;
 
-		    case IDIO_I_CODE_ABORT:				t = "ABORT";				break;
-		    case IDIO_I_CODE_FINISH:				t = "FINISH";				break;
-		    case IDIO_I_CODE_NOP:				t = "NOP";				break;
+		    case IDIO_I_CODE_RETURN:				t = "I-RETURN";				break;
+		    case IDIO_I_CODE_FINISH:				t = "I-FINISH";				break;
+		    case IDIO_I_CODE_ABORT:				t = "I-ABORT";				break;
+		    case IDIO_I_CODE_NOP:				t = "I-NOP";				break;
 
 		    default:
 			if (sprintf (m, "#<type/constant/vm_code?? o=%10p v=%tx>", o, v) == -1) {
@@ -1048,14 +1403,14 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		    }
 
 		    if (NULL == t) {
-			if (asprintf (&r, "#<I-CODE? %p>", o) == -1) {
+			if (IDIO_ASPRINTF (&r, "#<I-CODE? %10p>", o) == -1) {
 			    idio_error_alloc ("asprintf");
 
 			    /* notreached */
 			    return NULL;
 			}
 		    } else {
-			if (asprintf (&r, "%s", t) == -1) {
+			if (IDIO_ASPRINTF (&r, "%s", t) == -1) {
 			    idio_error_alloc ("asprintf");
 
 			    /* notreached */
@@ -1071,7 +1426,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		    intptr_t c = IDIO_CHARACTER_VAL (o);
 		    switch (c) {
 		    case ' ':
-			if (asprintf (&r, "#\\space") == -1) {
+			if (IDIO_ASPRINTF (&r, "#\\space") == -1) {
 			    idio_error_alloc ("asprintf");
 
 			    /* notreached */
@@ -1079,7 +1434,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 			}
 			break;
 		    case '\n':
-			if (asprintf (&r, "#\\newline") == -1) {
+			if (IDIO_ASPRINTF (&r, "#\\newline") == -1) {
 			    idio_error_alloc ("asprintf");
 
 			    /* notreached */
@@ -1088,14 +1443,14 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 			break;
 		    default:
 			if (isprint (c)) {
-			    if (asprintf (&r, "#\\%c", (char) c) == -1) {
+			    if (IDIO_ASPRINTF (&r, "#\\%c", (char) c) == -1) {
 				idio_error_alloc ("asprintf");
 
 				/* notreached */
 				return NULL;
 			    }
 			} else {
-			    if (asprintf (&r, "#\\%#" PRIxPTR, c) == -1) {
+			    if (IDIO_ASPRINTF (&r, "#\\%#" PRIxPTR, c) == -1) {
 				idio_error_alloc ("asprintf");
 
 				/* notreached */
@@ -1112,14 +1467,14 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		    idio_unicode_t u = IDIO_UNICODE_VAL (o);
 		    if (u <= 0x7f &&
 			isgraph (u)) {
-			if (asprintf (&r, "#\\%c", u) == -1) {
+			if (IDIO_ASPRINTF (&r, "#\\%c", u) == -1) {
 			    idio_error_alloc ("asprintf");
 
 			    /* notreached */
 			    return NULL;
 			}
 		    } else {
-			if (asprintf (&r, "#U+%04X", u) == -1) {
+			if (IDIO_ASPRINTF (&r, "#U+%04X", u) == -1) {
 			    idio_error_alloc ("asprintf");
 
 			    /* notreached */
@@ -1130,7 +1485,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		    break;
 		}
 	    default:
-		if (asprintf (&r, "#<type/constant?? %10p>", o) == -1) {
+		if (IDIO_ASPRINTF (&r, "#<type/constant?? %10p>", o) == -1) {
 		    idio_error_alloc ("asprintf");
 
 		    /* notreached */
@@ -1142,7 +1497,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 	}
 	break;
     case IDIO_TYPE_PLACEHOLDER_MARK:
-	if (asprintf (&r, "#<type/placecholder?? %10p>", o) == -1) {
+	if (IDIO_ASPRINTF (&r, "#<type/placecholder?? %10p>", o) == -1) {
 	    idio_error_alloc ("asprintf");
 
 	    /* notreached */
@@ -1155,7 +1510,18 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 	    idio_type_e type = idio_type (o);
 
 	    if (depth <= 0) {
-		if (asprintf (&r, "..") == -1) {
+		if (IDIO_ASPRINTF (&r, "..") == -1) {
+		    idio_error_alloc ("asprintf");
+
+		    /* notreached */
+		    return NULL;
+		}
+		*sizep = strlen (r);
+		return r;
+	    }
+
+	    if (idio_S_false != idio_list_memq (o, seen)) {
+		if (IDIO_ASPRINTF (&r, "#<^{%s@%p}>", idio_type2string (o), o) == -1) {
 		    idio_error_alloc ("asprintf");
 
 		    /* notreached */
@@ -1168,7 +1534,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 	    switch (type) {
 	    case IDIO_TYPE_NONE:
 		fprintf (stderr, "TYPE_NONE in flight :(\n");
-		if (asprintf (&r, "#<!! -none- %p>", o) == -1) {
+		if (IDIO_ASPRINTF (&r, "#<!! -none- %10p>", o) == -1) {
 		    idio_error_alloc ("asprintf");
 
 		    /* notreached */
@@ -1183,7 +1549,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		r = idio_utf8_string (o, sizep, IDIO_UTF8_STRING_ESCAPES, IDIO_UTF8_STRING_QUOTED);
 		break;
 	    case IDIO_TYPE_SYMBOL:
-		if (asprintf (&r, "%s", IDIO_SYMBOL_S (o)) == -1) {
+		if (IDIO_ASPRINTF (&r, "%s", IDIO_SYMBOL_S (o)) == -1) {
 		    idio_error_alloc ("asprintf");
 
 		    /* notreached */
@@ -1192,7 +1558,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		*sizep = strlen (r);
 		break;
 	    case IDIO_TYPE_KEYWORD:
-		if (asprintf (&r, ":%s", IDIO_KEYWORD_S (o)) == -1) {
+		if (IDIO_ASPRINTF (&r, ":%s", IDIO_KEYWORD_S (o)) == -1) {
 		    idio_error_alloc ("asprintf");
 
 		    /* notreached */
@@ -1215,13 +1581,14 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		  itself a pair
 		*/
 		{
+		    seen = idio_pair (o, seen);
 		    if (idio_isa_symbol (IDIO_PAIR_H (o))) {
 			int special = 0;
 			char *trail = NULL;
 
 			if (idio_S_quote == IDIO_PAIR_H (o)) {
 			    special = 1;
-			    if (asprintf (&r, "'") == -1) {
+			    if (IDIO_ASPRINTF (&r, "'") == -1) {
 				idio_error_alloc ("asprintf");
 
 				/* notreached */
@@ -1229,7 +1596,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 			    }
 			} else if (idio_S_unquote == IDIO_PAIR_H (o)) {
 			    special = 1;
-			    if (asprintf (&r, "$") == -1) {
+			    if (IDIO_ASPRINTF (&r, "$") == -1) {
 				idio_error_alloc ("asprintf");
 
 				/* notreached */
@@ -1237,7 +1604,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 			    }
 			} else if (idio_S_unquotesplicing == IDIO_PAIR_H (o)) {
 			    special = 1;
-			    if (asprintf (&r, "$@") == -1) {
+			    if (IDIO_ASPRINTF (&r, "$@") == -1) {
 				idio_error_alloc ("asprintf");
 
 				/* notreached */
@@ -1246,7 +1613,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 			} else if (idio_S_quasiquote == IDIO_PAIR_H (o)) {
 			    special = 1;
 			    trail = " }";
-			    if (asprintf (&r, "#T{ ") == -1) {
+			    if (IDIO_ASPRINTF (&r, "#T{ ") == -1) {
 				idio_error_alloc ("asprintf");
 
 				/* notreached */
@@ -1260,11 +1627,11 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 			if (special) {
 			    if (idio_isa_pair (IDIO_PAIR_T (o))) {
 				size_t hs_size = 0;
-				char *hs = idio_as_string (idio_list_head (IDIO_PAIR_T (o)), &hs_size, depth - 1);
+				char *hs = idio_as_string (idio_list_head (IDIO_PAIR_T (o)), &hs_size, depth - 1, seen, 0);
 				IDIO_STRCAT_FREE (r, sizep, hs, hs_size);
 			    } else {
 				size_t ts_size = 0;
-				char *ts = idio_as_string (IDIO_PAIR_T (o), &ts_size, depth - 1);
+				char *ts = idio_as_string (IDIO_PAIR_T (o), &ts_size, depth - 1, seen, 0);
 				IDIO_STRCAT_FREE (r, sizep, ts, ts_size);
 			    }
 
@@ -1275,7 +1642,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 			}
 		    }
 
-		    if (asprintf (&r, "(") == -1) {
+		    if (IDIO_ASPRINTF (&r, "(") == -1) {
 			idio_error_alloc ("asprintf");
 
 			/* notreached */
@@ -1285,15 +1652,15 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 
 		    while (1) {
 			size_t hs_size = 0;
-			char *hs = idio_as_string (IDIO_PAIR_H (o), &hs_size, depth - 1);
+			char *hs = idio_as_string (IDIO_PAIR_H (o), &hs_size, depth - 1, seen, 0);
 			IDIO_STRCAT_FREE (r, sizep, hs, hs_size);
 
 			o = IDIO_PAIR_T (o);
 			if (idio_type (o) != IDIO_TYPE_PAIR) {
 			    if (idio_S_nil != o) {
 				char *ps;
-				if (asprintf (&ps, " %c ", IDIO_PAIR_SEPARATOR) == -1) {
-				    free (r);
+				if (IDIO_ASPRINTF (&ps, " %c ", IDIO_PAIR_SEPARATOR) == -1) {
+				    idio_gc_free (r);
 				    idio_error_alloc ("asprintf");
 
 				    /* notreached */
@@ -1304,7 +1671,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 				IDIO_STRCAT_FREE (r, sizep, ps, ps_size);
 
 				size_t t_size = 0;
-				char *t = idio_as_string (o, &t_size, depth - 1);
+				char *t = idio_as_string (o, &t_size, depth - 1, seen, 0);
 				IDIO_STRCAT_FREE (r, sizep, t, t_size);
 			    }
 			    break;
@@ -1316,7 +1683,8 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		}
 		break;
 	    case IDIO_TYPE_ARRAY:
-		if (asprintf (&r, "#[ ") == -1) {
+		seen = idio_pair (o, seen);
+		if (IDIO_ASPRINTF (&r, "#[ ") == -1) {
 		    idio_error_alloc ("asprintf");
 
 		    /* notreached */
@@ -1327,20 +1695,20 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		    if (IDIO_ARRAY_USIZE (o) < 40) {
 			for (i = 0; i < IDIO_ARRAY_USIZE (o); i++) {
 			    size_t t_size = 0;
-			    char *t = idio_as_string (IDIO_ARRAY_AE (o, i), &t_size, depth - 1);
+			    char *t = idio_as_string (IDIO_ARRAY_AE (o, i), &t_size, depth - 1, seen, 0);
 			    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 			    IDIO_STRCAT (r, sizep, " ");
 			}
 		    } else {
 			for (i = 0; i < 20; i++) {
 			    size_t t_size = 0;
-			    char *t = idio_as_string (IDIO_ARRAY_AE (o, i), &t_size, depth - 1);
+			    char *t = idio_as_string (IDIO_ARRAY_AE (o, i), &t_size, depth - 1, seen, 0);
 			    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 			    IDIO_STRCAT (r, sizep, " ");
 			}
 			char *aei;
-			if (asprintf (&aei, "..[%zd] ", IDIO_ARRAY_USIZE (o) - 20) == -1) {
-			    free (r);
+			if (IDIO_ASPRINTF (&aei, "..[%zd] ", IDIO_ARRAY_USIZE (o) - 20) == -1) {
+			    idio_gc_free (r);
 			    idio_error_alloc ("asprintf");
 
 			    /* notreached */
@@ -1350,7 +1718,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 			IDIO_STRCAT_FREE (r, sizep, aei, aei_size);
 			for (i = IDIO_ARRAY_USIZE (o) - 20; i < IDIO_ARRAY_USIZE (o); i++) {
 			    size_t t_size = 0;
-			    char *t = idio_as_string (IDIO_ARRAY_AE (o, i), &t_size, depth - 1);
+			    char *t = idio_as_string (IDIO_ARRAY_AE (o, i), &t_size, depth - 1, seen, 0);
 			    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 			    IDIO_STRCAT (r, sizep, " ");
 			}
@@ -1361,7 +1729,8 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		IDIO_STRCAT (r, sizep, "]");
 		break;
 	    case IDIO_TYPE_HASH:
-		if (asprintf (&r, "#{ ") == -1) {
+		seen = idio_pair (o, seen);
+		if (IDIO_ASPRINTF (&r, "#{ ") == -1) {
 		    idio_error_alloc ("asprintf");
 
 		    /* notreached */
@@ -1370,52 +1739,55 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		*sizep = strlen (r);
 		if (depth > 0) {
 		    for (i = 0; i < IDIO_HASH_SIZE (o); i++) {
-			if (idio_S_nil != IDIO_HASH_HE_KEY (o, i)) {
-			    /*
-			     * We're looking to generate:
-			     *
-			     * (k & v)
-			     *
-			     */
-			    IDIO_STRCAT (r, sizep, "(");
+			idio_hash_entry_t *he = IDIO_HASH_HA (o, i);
+			for (; NULL != he; he = IDIO_HASH_HE_NEXT (he)) {
+			    if (idio_S_nil != IDIO_HASH_HE_KEY (he)) {
+				/*
+				 * We're looking to generate:
+				 *
+				 * (k & v)
+				 *
+				 */
+				IDIO_STRCAT (r, sizep, "(");
 
-			    size_t t_size = 0;
-			    char *t;
-			    if (IDIO_HASH_FLAGS (o) & IDIO_HASH_FLAG_STRING_KEYS) {
-				if (asprintf (&t, "%s", (char *) IDIO_HASH_HE_KEY (o, i)) == -1) {
-				    free (r);
+				size_t t_size = 0;
+				char *t;
+				if (IDIO_HASH_FLAGS (o) & IDIO_HASH_FLAG_STRING_KEYS) {
+				    if (IDIO_ASPRINTF (&t, "%s", (char *) IDIO_HASH_HE_KEY (he)) == -1) {
+					idio_gc_free (r);
+					idio_error_alloc ("asprintf");
+
+					/* notreached */
+					return NULL;
+				    }
+
+				    t = (char *) IDIO_HASH_HE_KEY (he);
+				    t_size = strlen (t);
+				} else {
+				    t = idio_as_string (IDIO_HASH_HE_KEY (he), &t_size, depth - 1, seen, 0);
+				}
+				IDIO_STRCAT_FREE (r, sizep, t, t_size);
+
+				char *hes;
+				if (IDIO_ASPRINTF (&hes, " %c ", IDIO_PAIR_SEPARATOR) == -1) {
+				    idio_gc_free (r);
 				    idio_error_alloc ("asprintf");
 
 				    /* notreached */
 				    return NULL;
 				}
+				size_t hes_size = strlen (hes);
+				IDIO_STRCAT_FREE (r, sizep, hes, hes_size);
 
-				t = (char *) IDIO_HASH_HE_KEY (o, i);
-				t_size = strlen (t);
-			    } else {
-				t = idio_as_string (IDIO_HASH_HE_KEY (o, i), &t_size, depth - 1);
+				if (IDIO_HASH_HE_VALUE (he)) {
+				    t_size = 0;
+				    t = idio_as_string (IDIO_HASH_HE_VALUE (he), &t_size, depth - 1, seen, 0);
+				    IDIO_STRCAT_FREE (r, sizep, t, t_size);
+				} else {
+				    IDIO_STRCAT (r, sizep, "-");
+				}
+				IDIO_STRCAT (r, sizep, ")");
 			    }
-			    IDIO_STRCAT_FREE (r, sizep, t, t_size);
-
-			    char *hes;
-			    if (asprintf (&hes, " %c ", IDIO_PAIR_SEPARATOR) == -1) {
-				free (r);
-				idio_error_alloc ("asprintf");
-
-				/* notreached */
-				return NULL;
-			    }
-			    size_t hes_size = strlen (hes);
-			    IDIO_STRCAT_FREE (r, sizep, hes, hes_size);
-
-			    if (IDIO_HASH_HE_VALUE (o, i)) {
-				t_size = 0;
-				t = idio_as_string (IDIO_HASH_HE_VALUE (o, i), &t_size, depth - 1);
-				IDIO_STRCAT_FREE (r, sizep, t, t_size);
-			    } else {
-				IDIO_STRCAT (r, sizep, "-");
-			    }
-			    IDIO_STRCAT (r, sizep, ")");
 			}
 		    }
 		} else {
@@ -1425,7 +1797,8 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		break;
 	    case IDIO_TYPE_CLOSURE:
 		{
-		    if (asprintf (&r, "#<CLOS ") == -1) {
+		    seen = idio_pair (o, seen);
+		    if (IDIO_ASPRINTF (&r, "#<CLOS ") == -1) {
 			idio_error_alloc ("asprintf");
 
 			/* notreached */
@@ -1436,8 +1809,8 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		    IDIO name = idio_get_property (o, idio_KW_name, IDIO_LIST1 (idio_S_nil));
 		    if (idio_S_nil != name) {
 			char *name_C;
-			if (asprintf (&name_C, "%s ", IDIO_SYMBOL_S (name)) == -1) {
-			    free (r);
+			if (IDIO_ASPRINTF (&name_C, "%s ", IDIO_SYMBOL_S (name)) == -1) {
+			    idio_gc_free (r);
 			    idio_error_alloc ("asprintf");
 
 			    /* notreached */
@@ -1450,7 +1823,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		    }
 
 		    char *t;
-		    if (asprintf (&t, "@%zd/%p/", IDIO_CLOSURE_CODE_PC (o), IDIO_CLOSURE_FRAME (o)) == -1) {
+		    if (IDIO_ASPRINTF (&t, "@%zd/%p/", IDIO_CLOSURE_CODE_PC (o), IDIO_CLOSURE_FRAME (o)) == -1) {
 			idio_error_alloc ("asprintf");
 
 			/* notreached */
@@ -1460,14 +1833,14 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
 		    size_t mn_size = 0;
-		    char *mn = idio_as_string (IDIO_MODULE_NAME (IDIO_CLOSURE_ENV (o)), &mn_size, depth - 1);
+		    char *mn = idio_as_string (IDIO_MODULE_NAME (IDIO_CLOSURE_ENV (o)), &mn_size, depth - 1, seen, 0);
 		    IDIO_STRCAT_FREE (r, sizep, mn, mn_size);
 
 		    IDIO_STRCAT (r, sizep, ">");
 		    break;
 		}
 	    case IDIO_TYPE_PRIMITIVE:
-		if (asprintf (&r, "#<PRIM %s>", IDIO_PRIMITIVE_NAME (o)) == -1) {
+		if (IDIO_ASPRINTF (&r, "#<PRIM %s>", IDIO_PRIMITIVE_NAME (o)) == -1) {
 		    idio_error_alloc ("asprintf");
 
 		    /* notreached */
@@ -1482,7 +1855,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		}
 	    case IDIO_TYPE_MODULE:
 		{
-		    if (asprintf (&r, "#<module ") == -1) {
+		    if (IDIO_ASPRINTF (&r, "#<module ") == -1) {
 			idio_error_alloc ("asprintf");
 
 			/* notreached */
@@ -1494,7 +1867,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 			IDIO_STRCAT (r, sizep, "(nil)");
 		    } else {
 			size_t mn_size = 0;
-			char *mn = idio_as_string (IDIO_MODULE_NAME (o), &mn_size, depth - 1);
+			char *mn = idio_as_string (IDIO_MODULE_NAME (o), &mn_size, depth - 1, seen, 0);
 			IDIO_STRCAT_FREE (r, sizep, mn, mn_size);
 		    }
 		    if (0 && depth > 0) {
@@ -1503,7 +1876,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 			    IDIO_STRCAT (r, sizep, "(nil)");
 			} else {
 			    size_t e_size = 0;
-			    char *es = idio_as_string (IDIO_MODULE_EXPORTS (o), &e_size, depth - 1);
+			    char *es = idio_as_string (IDIO_MODULE_EXPORTS (o), &e_size, depth - 1, seen, 0);
 			    IDIO_STRCAT_FREE (r, sizep, es, e_size);
 			}
 			IDIO_STRCAT (r, sizep, " imports=");
@@ -1511,7 +1884,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 			    IDIO_STRCAT (r, sizep, "(nil)");
 			} else {
 			    size_t i_size = 0;
-			    char *is = idio_as_string (IDIO_MODULE_IMPORTS (o), &i_size, 0);
+			    char *is = idio_as_string (IDIO_MODULE_IMPORTS (o), &i_size, 0, seen, 0);
 			    IDIO_STRCAT_FREE (r, sizep, is, i_size);
 			}
 			IDIO_STRCAT (r, sizep, " symbols=");
@@ -1519,7 +1892,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 			    IDIO_STRCAT (r, sizep, "(nil)");
 			} else {
 			    size_t s_size = 0;
-			    char *ss = idio_as_string (IDIO_MODULE_SYMBOLS (o), &s_size, depth - 1);
+			    char *ss = idio_as_string (IDIO_MODULE_SYMBOLS (o), &s_size, depth - 1, seen, 0);
 			    IDIO_STRCAT_FREE (r, sizep, ss, s_size);
 			}
 		    }
@@ -1528,7 +1901,8 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		}
 	    case IDIO_TYPE_FRAME:
 		{
-		    if (asprintf (&r, "#<FRAME %p n=%td [ ", o, IDIO_FRAME_NARGS (o)) == -1) {
+		    seen = idio_pair (o, seen);
+		    if (IDIO_ASPRINTF (&r, "#<FRAME %p n=%td [ ", o, IDIO_FRAME_NARGS (o)) == -1) {
 			idio_error_alloc ("asprintf");
 
 			/* notreached */
@@ -1538,16 +1912,23 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 
 		    for (i = 0; i < IDIO_FRAME_NARGS (o); i++) {
 			size_t t_size = 0;
-			char *t = idio_as_string (IDIO_FRAME_ARGS (o, i), &t_size, depth - 1);
+			char *t = idio_as_string (IDIO_FRAME_ARGS (o, i), &t_size, depth - 1, seen, 0);
 			IDIO_STRCAT_FREE (r, sizep, t, t_size);
 			IDIO_STRCAT (r, sizep, " ");
 		    }
+
+		    if (idio_S_nil != IDIO_FRAME_NAMES (o)) {
+			size_t n_size = 0;
+			char *n = idio_as_string (IDIO_FRAME_NAMES (o), &n_size, depth - 1, seen, 0);
+			IDIO_STRCAT_FREE (r, sizep, n, n_size);
+		    }
+
 		    IDIO_STRCAT (r, sizep, "]>");
 		    break;
 		}
 	    case IDIO_TYPE_HANDLE:
 		{
-		    if (asprintf (&r, "#<H ") == -1) {
+		    if (IDIO_ASPRINTF (&r, "#<H ") == -1) {
 			idio_error_alloc ("asprintf");
 
 			/* notreached */
@@ -1583,8 +1964,8 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 			}
 
 			char *fds;
-			if (asprintf (&fds, "%4d", idio_file_handle_fd (o)) == -1) {
-			    free (r);
+			if (IDIO_ASPRINTF (&fds, "%4d", idio_file_handle_fd (o)) == -1) {
+			    idio_gc_free (r);
 			    idio_error_alloc ("asprintf");
 
 			    /* notreached */
@@ -1599,21 +1980,21 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		     */
 		    char *sname = idio_handle_name_as_C (o);
 		    char *info;
-		    if (asprintf (&info, ":\"%s\":%jd:%jd>", sname, (intmax_t) IDIO_HANDLE_LINE (o), (intmax_t) IDIO_HANDLE_POS (o)) == -1) {
-			free (sname);
-			free (r);
+		    if (IDIO_ASPRINTF (&info, ":\"%s\":%jd:%jd>", sname, (intmax_t) IDIO_HANDLE_LINE (o), (intmax_t) IDIO_HANDLE_POS (o)) == -1) {
+			idio_gc_free (sname);
+			idio_gc_free (r);
 			idio_error_alloc ("asprintf");
 
 			/* notreached */
 			return NULL;
 		    }
-		    free (sname);
+		    idio_gc_free (sname);
 		    size_t info_size = strlen (info);
 		    IDIO_STRCAT_FREE (r, sizep, info, info_size);
 		}
 		break;
 	    case IDIO_TYPE_C_INT:
-		if (asprintf (&r, "%jd", IDIO_C_TYPE_INT (o)) == -1) {
+		if (IDIO_ASPRINTF (&r, "%jd", IDIO_C_TYPE_INT (o)) == -1) {
 		    idio_error_alloc ("asprintf");
 
 		    /* notreached */
@@ -1622,7 +2003,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		*sizep = strlen (r);
 		break;
 	    case IDIO_TYPE_C_UINT:
-		if (asprintf (&r, "%ju", IDIO_C_TYPE_UINT (o)) == -1) {
+		if (IDIO_ASPRINTF (&r, "%ju", IDIO_C_TYPE_UINT (o)) == -1) {
 		    idio_error_alloc ("asprintf");
 
 		    /* notreached */
@@ -1631,7 +2012,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		*sizep = strlen (r);
 		break;
 	    case IDIO_TYPE_C_FLOAT:
-		if (asprintf (&r, "%g", IDIO_C_TYPE_FLOAT (o)) == -1) {
+		if (IDIO_ASPRINTF (&r, "%g", IDIO_C_TYPE_FLOAT (o)) == -1) {
 		    idio_error_alloc ("asprintf");
 
 		    /* notreached */
@@ -1640,7 +2021,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		*sizep = strlen (r);
 		break;
 	    case IDIO_TYPE_C_DOUBLE:
-		if (asprintf (&r, "%g", IDIO_C_TYPE_DOUBLE (o)) == -1) {
+		if (IDIO_ASPRINTF (&r, "%g", IDIO_C_TYPE_DOUBLE (o)) == -1) {
 		    idio_error_alloc ("asprintf");
 
 		    /* notreached */
@@ -1650,10 +2031,11 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		break;
 	    case IDIO_TYPE_C_POINTER:
 		if (NULL != IDIO_C_TYPE_POINTER_PRINTER (o)) {
-		    IDIO s = IDIO_C_TYPE_POINTER_PRINTER (o) (o);
-		    return idio_display_string (s, sizep);
+		    char *s = IDIO_C_TYPE_POINTER_PRINTER (o) (o);
+		    *sizep = strlen (s);
+		    return s;
 		} else {
-		    if (asprintf (&r, "#<C/* %p%s>", IDIO_C_TYPE_POINTER_P (o), IDIO_C_TYPE_POINTER_FREEP (o) ? " free" : "") == -1) {
+		    if (IDIO_ASPRINTF (&r, "#<C/* %p%s>", IDIO_C_TYPE_POINTER_P (o), IDIO_C_TYPE_POINTER_FREEP (o) ? " free" : "") == -1) {
 			idio_error_alloc ("asprintf");
 
 			/* notreached */
@@ -1664,7 +2046,11 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		break;
 	    case IDIO_TYPE_STRUCT_TYPE:
 		{
-		    if (asprintf (&r, "#<ST %p ", o) == -1) {
+#ifdef IDIO_DEBUG
+		    if (IDIO_ASPRINTF (&r, "#<ST %10p ", o) == -1) {
+#else
+		    if (IDIO_ASPRINTF (&r, "#<ST ") == -1) {
+#endif
 			idio_error_alloc ("asprintf");
 
 			/* notreached */
@@ -1673,22 +2059,20 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		    *sizep = strlen (r);
 
 		    size_t stn_size = 0;
-		    char *stn = idio_as_string (IDIO_STRUCT_TYPE_NAME (o), &stn_size, 1);
+		    char *stn = idio_as_string (IDIO_STRUCT_TYPE_NAME (o), &stn_size, 1, seen, 0);
 		    IDIO_STRCAT_FREE (r, sizep, stn, stn_size);
 		    IDIO_STRCAT (r, sizep, " ");
 
 		    size_t stp_size = 0;
-		    char *stp = idio_as_string (IDIO_STRUCT_TYPE_PARENT (o), &stp_size, 1);
+		    char *stp = idio_as_string (IDIO_STRUCT_TYPE_PARENT (o), &stp_size, 1, seen, 0);
 		    IDIO_STRCAT_FREE (r, sizep, stp, stp_size);
 
-		    IDIO stf = IDIO_STRUCT_TYPE_FIELDS (o);
-
-		    idio_ai_t al = idio_array_size (stf);
-		    idio_ai_t ai;
-		    for (ai = 0; ai < al; ai++) {
+		    size_t size = IDIO_STRUCT_TYPE_SIZE (o);
+		    size_t i;
+		    for (i = 0; i < size; i++) {
 			IDIO_STRCAT (r, sizep, " ");
 			size_t f_size = 0;
-			char *fs = idio_as_string (idio_array_get_index (stf, ai), &f_size, 1);
+			char *fs = idio_as_string (IDIO_STRUCT_TYPE_FIELDS (o, i), &f_size, 1, seen, 0);
 			IDIO_STRCAT_FREE (r, sizep, fs, f_size);
 		    }
 
@@ -1697,6 +2081,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		break;
 	    case IDIO_TYPE_STRUCT_INSTANCE:
 		{
+		    seen = idio_pair (o, seen);
 		    IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (o);
 		    IDIO value_as_string = idio_module_symbol_value (idio_util_value_as_string, idio_Idio_module, idio_S_nil);
 
@@ -1712,11 +2097,15 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 			}
 
 			if (idio_S_nil != s) {
-			    return idio_as_string (s, sizep, 1);
+			    return idio_as_string (s, sizep, 1, seen, 0);
 			}
 		    }
 
-		    if (asprintf (&r, "#<SI %p ", o) == -1) {
+#ifdef IDIO_DEBUG
+		    if (IDIO_ASPRINTF (&r, "#<SI %10p ", o) == -1) {
+#else
+		    if (IDIO_ASPRINTF (&r, "#<SI ") == -1) {
+#endif
 			idio_error_alloc ("asprintf");
 			/* notreached */
 			return NULL;
@@ -1724,22 +2113,19 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		    *sizep = strlen (r);
 
 		    size_t n_size = 0;
-		    char *ns = idio_as_string (IDIO_STRUCT_TYPE_NAME (sit), &n_size, 1);
+		    char *ns = idio_as_string (IDIO_STRUCT_TYPE_NAME (sit), &n_size, 1, seen, 0);
 		    IDIO_STRCAT_FREE (r, sizep, ns, n_size);
 
-		    IDIO stf = IDIO_STRUCT_TYPE_FIELDS (sit);
-		    IDIO sif = IDIO_STRUCT_INSTANCE_FIELDS (o);
-
-		    idio_ai_t al = idio_array_size (stf);
-		    idio_ai_t ai;
-		    for (ai = 0; ai < al; ai++) {
+		    size_t size = IDIO_STRUCT_TYPE_SIZE (sit);
+		    size_t i;
+		    for (i = 0; i < size; i++) {
 			IDIO_STRCAT (r, sizep, " ");
 			size_t fn_size = 0;
-			char *fns = idio_as_string (idio_array_get_index (stf, ai), &fn_size, 1);
+			char *fns = idio_as_string (IDIO_STRUCT_TYPE_FIELDS (sit, i), &fn_size, 1, seen, 0);
 			IDIO_STRCAT_FREE (r, sizep, fns, fn_size);
 			IDIO_STRCAT (r, sizep, ":");
 			size_t fv_size = 0;
-			char *fvs = idio_as_string (idio_array_get_index (sif, ai), &fv_size, depth - 1);
+			char *fvs = idio_as_string (IDIO_STRUCT_INSTANCE_FIELDS (o, i), &fv_size, depth - 1, seen, 0);
 			IDIO_STRCAT_FREE (r, sizep, fvs, fv_size);
 		    }
 
@@ -1748,8 +2134,9 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		break;
 	    case IDIO_TYPE_THREAD:
 		{
+		    seen = idio_pair (o, seen);
 		    idio_ai_t sp = idio_array_size (IDIO_THREAD_STACK (o));
-		    if (asprintf (&r, "#<THREAD %p\n  pc=%6zd\n  sp/top=%2zd/",
+		    if (IDIO_ASPRINTF (&r, "#<THREAD %10p\n  pc=%6zd\n  sp/top=%2zd/",
 				  o,
 				  IDIO_THREAD_PC (o),
 				  sp - 1) == -1) {
@@ -1761,17 +2148,17 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		    *sizep = strlen (r);
 
 		    size_t t_size = 0;
-		    char *t = idio_as_string (idio_array_top (IDIO_THREAD_STACK (o)), &t_size, 1);
+		    char *t = idio_as_string (idio_array_top (IDIO_THREAD_STACK (o)), &t_size, 1, seen, 0);
 		    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
 		    IDIO_STRCAT (r, sizep, "\n  val=");
 		    t_size = 0;
-		    t = idio_as_string (IDIO_THREAD_VAL (o), &t_size, 2);
+		    t = idio_as_string (IDIO_THREAD_VAL (o), &t_size, 2, seen, 0);
 		    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
 		    IDIO_STRCAT (r, sizep, "\n  func=");
 		    t_size = 0;
-		    t = idio_as_string (IDIO_THREAD_FUNC (o), &t_size, 1);
+		    t = idio_as_string (IDIO_THREAD_FUNC (o), &t_size, 1, seen, 0);
 		    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 		    if (1 == depth) {
 			IDIO frame = IDIO_THREAD_FRAME (o);
@@ -1780,7 +2167,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 			    IDIO_STRCAT (r, sizep, "\n  fr=nil");
 			} else {
 			    char *es;
-			    if (asprintf (&es, "\n  fr=%p n=%td ", frame, IDIO_FRAME_NARGS (frame)) == -1) {
+			    if (IDIO_ASPRINTF (&es, "\n  fr=%10p n=%td ", frame, IDIO_FRAME_NARGS (frame)) == -1) {
 				idio_error_alloc ("asprintf");
 
 				/* notreached */
@@ -1790,46 +2177,46 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 			    IDIO_STRCAT_FREE (r, sizep, es, es_size);
 
 			    size_t f_size = 0;
-			    char *fs = idio_as_string (frame, &f_size, 1);
+			    char *fs = idio_as_string (frame, &f_size, 1, seen, 0);
 			    IDIO_STRCAT_FREE (r, sizep, fs, f_size);
 			}
 		    }
 
 		    IDIO_STRCAT (r, sizep, "\n  env=");
 		    t_size = 0;
-		    t = idio_as_string (IDIO_THREAD_ENV (o), &t_size, 1);
+		    t = idio_as_string (IDIO_THREAD_ENV (o), &t_size, 1, seen, 0);
 		    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
 		    IDIO_STRCAT (r, sizep, "\n  t/sp=");
 		    t_size = 0;
-		    t = idio_as_string (IDIO_THREAD_TRAP_SP (o), &t_size, 1);
+		    t = idio_as_string (IDIO_THREAD_TRAP_SP (o), &t_size, 1, seen, 0);
 		    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
 		    IDIO_STRCAT (r, sizep, "\n  d/sp=");
 		    t_size = 0;
-		    t = idio_as_string (IDIO_THREAD_DYNAMIC_SP (o), &t_size, 1);
+		    t = idio_as_string (IDIO_THREAD_DYNAMIC_SP (o), &t_size, 1, seen, 0);
 		    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
 		    IDIO_STRCAT (r, sizep, "\n  e/sp=");
 		    t_size = 0;
-		    t = idio_as_string (IDIO_THREAD_ENVIRON_SP (o), &t_size, 1);
+		    t = idio_as_string (IDIO_THREAD_ENVIRON_SP (o), &t_size, 1, seen, 0);
 		    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
 		    if (depth > 1) {
 			IDIO_STRCAT (r, sizep, "\n  fr=");
 			t_size = 0;
-			t = idio_as_string (IDIO_THREAD_FRAME (o), &t_size, 1);
+			t = idio_as_string (IDIO_THREAD_FRAME (o), &t_size, 1, seen, 0);
 			IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
 			if (depth > 2) {
 			    IDIO_STRCAT (r, sizep, "\n  reg1=");
 			    t_size = 0;
-			    t = idio_as_string (IDIO_THREAD_REG1 (o), &t_size, 1);
+			    t = idio_as_string (IDIO_THREAD_REG1 (o), &t_size, 1, seen, 0);
 			    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
 			    IDIO_STRCAT (r, sizep, "\n  reg2=");
 			    t_size = 0;
-			    t = idio_as_string (IDIO_THREAD_REG2 (o), &t_size, 1);
+			    t = idio_as_string (IDIO_THREAD_REG2 (o), &t_size, 1, seen, 0);
 			    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
 			    IDIO_STRCAT (r, sizep, "\n  expr=");
@@ -1840,27 +2227,27 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 			    IDIO src = idio_vm_constants_ref (gci);
 
 			    t_size = 0;
-			    t = idio_as_string (src, &t_size, 1);
+			    t = idio_as_string (src, &t_size, 1, seen, 0);
 			    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
 			    IDIO_STRCAT (r, sizep, "\n  input_handle=");
 			    t_size = 0;
-			    t = idio_as_string (IDIO_THREAD_INPUT_HANDLE (o), &t_size, 1);
+			    t = idio_as_string (IDIO_THREAD_INPUT_HANDLE (o), &t_size, 1, seen, 0);
 			    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
 			    IDIO_STRCAT (r, sizep, "\n  output_handle=");
 			    t_size = 0;
-			    t = idio_as_string (IDIO_THREAD_OUTPUT_HANDLE (o), &t_size, 1);
+			    t = idio_as_string (IDIO_THREAD_OUTPUT_HANDLE (o), &t_size, 1, seen, 0);
 			    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
 			    IDIO_STRCAT (r, sizep, "\n  error_handle=");
 			    t_size = 0;
-			    t = idio_as_string (IDIO_THREAD_ERROR_HANDLE (o), &t_size, 1);
+			    t = idio_as_string (IDIO_THREAD_ERROR_HANDLE (o), &t_size, 1, seen, 0);
 			    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
 			    IDIO_STRCAT (r, sizep, "\n  module=");
 			    t_size = 0;
-			    t = idio_as_string (IDIO_THREAD_MODULE (o), &t_size, 1);
+			    t = idio_as_string (IDIO_THREAD_MODULE (o), &t_size, 1, seen, 0);
 			    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 			}
 		    }
@@ -1869,17 +2256,23 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		break;
 	    case IDIO_TYPE_CONTINUATION:
 		{
+		    seen = idio_pair (o, seen);
 		    IDIO ks = IDIO_CONTINUATION_STACK (o);
 		    idio_ai_t kss = idio_array_size (ks);
-		    IDIO pc_I = idio_array_get_index (ks, kss - 2);
+		    IDIO pc_I = idio_array_ref_index (ks, kss - 3);
 
 		    /*
 		     * We preserved some of the continuation state on
 		     * the continuation stack so the actual
 		     * continuation stack size is kss minus eight.
-		     * Check idio_continuation().
+		     *
+		     * Check idio_continuation() for pc_I above.
 		     */
-		    if (asprintf (&r, "#<K %p ss=%zu PC=%td>", o, kss - 8, IDIO_FIXNUM_VAL (pc_I)) == -1) {
+#ifdef IDIO_DEBUG
+		    if (IDIO_ASPRINTF (&r, "#<K %10p ss=%zu PC=%td>", o, kss - 8, IDIO_FIXNUM_VAL (pc_I)) == -1) {
+#else
+		    if (IDIO_ASPRINTF (&r, "#<K ss=%zu PC=%td>", kss - 8, IDIO_FIXNUM_VAL (pc_I)) == -1) {
+#endif
 			idio_error_alloc ("asprintf");
 
 			/* notreached */
@@ -1890,7 +2283,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		break;
 	    case IDIO_TYPE_BITSET:
 		{
-		    if (asprintf (&r, "#B{ %zu ", IDIO_BITSET_SIZE (o)) == -1) {
+		    if (IDIO_ASPRINTF (&r, "#B{ %zu ", IDIO_BITSET_SIZE (o)) == -1) {
 			idio_error_alloc ("asprintf");
 
 			/* notreached */
@@ -1943,7 +2336,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 					print_lead = 0;
 					char *lead;
 					if (in_range) {
-					    if (asprintf (&lead, "%zx-%zx ", range_start, count - CHAR_BIT) == -1) {
+					    if (IDIO_ASPRINTF (&lead, "%zx-%zx ", range_start, count - CHAR_BIT) == -1) {
 						idio_error_alloc ("asprintf");
 
 						/* notreached */
@@ -1953,7 +2346,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 					    IDIO_STRCAT_FREE (r, sizep, lead, lead_size);
 					    in_range = 0;
 					} else {
-					    if (asprintf (&lead, "%zx:", count) == -1) {
+					    if (IDIO_ASPRINTF (&lead, "%zx:", count) == -1) {
 						idio_error_alloc ("asprintf");
 
 						/* notreached */
@@ -1983,7 +2376,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 				} else {
 				    char *lead;
 				    if (in_range) {
-					if (asprintf (&lead, "%zx-%zx ", range_start, count - CHAR_BIT) == -1) {
+					if (IDIO_ASPRINTF (&lead, "%zx-%zx ", range_start, count - CHAR_BIT) == -1) {
 					    idio_error_alloc ("asprintf");
 
 					    /* notreached */
@@ -2001,7 +2394,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 			} else {
 			    if (in_range) {
 				char *lead;
-				if (asprintf (&lead, "%zx-%zx ", range_start, count - CHAR_BIT) == -1) {
+				if (IDIO_ASPRINTF (&lead, "%zx-%zx ", range_start, count - CHAR_BIT) == -1) {
 				    idio_error_alloc ("asprintf");
 
 				    /* notreached */
@@ -2018,7 +2411,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		    }
 		    if (in_range) {
 			char *lead;
-			if (asprintf (&lead, "%zx-%zx ", range_start, count - CHAR_BIT) == -1) {
+			if (IDIO_ASPRINTF (&lead, "%zx-%zx ", range_start, count - CHAR_BIT) == -1) {
 			    idio_error_alloc ("asprintf");
 
 			    /* notreached */
@@ -2033,7 +2426,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		break;
 	    case IDIO_TYPE_C_TYPEDEF:
 		{
-		    if (asprintf (&r, "#<C/typedef %10p>", IDIO_C_TYPEDEF_SYM (o)) == -1) {
+		    if (IDIO_ASPRINTF (&r, "#<C/typedef %10p>", IDIO_C_TYPEDEF_SYM (o)) == -1) {
 			idio_error_alloc ("asprintf");
 
 			/* notreached */
@@ -2044,7 +2437,11 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		}
 	    case IDIO_TYPE_C_STRUCT:
 		{
-		    if (asprintf (&r, "#<C/struct %10p ", o) == -1) {
+#ifdef IDIO_DEBUG
+		    if (IDIO_ASPRINTF (&r, "#<C/struct %10p ", o) == -1) {
+#else
+		    if (IDIO_ASPRINTF (&r, "#<C/struct ") == -1) {
+#endif
 			idio_error_alloc ("asprintf");
 
 			/* notreached */
@@ -2054,7 +2451,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 
 		    IDIO_STRCAT (r, sizep, "\n\tfields: ");
 		    size_t f_size = 0;
-		    char *fs = idio_as_string (IDIO_C_STRUCT_FIELDS (o), &f_size, depth - 1);
+		    char *fs = idio_as_string (IDIO_C_STRUCT_FIELDS (o), &f_size, depth - 1, seen, 0);
 		    IDIO_STRCAT_FREE (r, sizep, fs, f_size);
 
 		    IDIO mh = IDIO_C_STRUCT_METHODS (o);
@@ -2062,40 +2459,47 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		    IDIO_STRCAT (r, sizep, "\n\tmethods: ");
 		    if (idio_S_nil != mh) {
 			for (i = 0; i < IDIO_HASH_SIZE (mh); i++) {
-			    if (idio_S_nil != IDIO_HASH_HE_KEY (mh, i)) {
-				IDIO_STRCAT (r, sizep, "\n\t");
-				size_t t_size = 0;
-				char *t = idio_as_string (IDIO_HASH_HE_KEY (mh, i), &t_size, depth - 1);
-				IDIO_STRCAT_FREE (r, sizep, t, t_size);
-				IDIO_STRCAT (r, sizep, ":");
-				if (IDIO_HASH_HE_VALUE (mh, i)) {
-				    t_size = 0;
-				    t = idio_as_string (IDIO_HASH_HE_VALUE (mh, i), &t_size, depth - 1);
-				} else {
-				    if (asprintf (&t, "-") == -1) {
-					free (r);
-					idio_error_alloc ("asprintf");
+			    idio_hash_entry_t *he = IDIO_HASH_HA (mh, i);
+			    for (; NULL != he ; he = IDIO_HASH_HE_NEXT (he)) {
+				if (idio_S_nil != IDIO_HASH_HE_KEY (he)) {
+				    IDIO_STRCAT (r, sizep, "\n\t");
+				    size_t t_size = 0;
+				    char *t = idio_as_string (IDIO_HASH_HE_KEY (he), &t_size, depth - 1, seen, 0);
+				    IDIO_STRCAT_FREE (r, sizep, t, t_size);
+				    IDIO_STRCAT (r, sizep, ":");
+				    if (IDIO_HASH_HE_VALUE (he)) {
+					t_size = 0;
+					t = idio_as_string (IDIO_HASH_HE_VALUE (he), &t_size, depth - 1, seen, 0);
+				    } else {
+					if (IDIO_ASPRINTF (&t, "-") == -1) {
+					    idio_gc_free (r);
+					    idio_error_alloc ("asprintf");
 
-					/* notreached */
-					return NULL;
+					    /* notreached */
+					    return NULL;
+					}
+					t_size = strlen (t);
 				    }
-				    t_size = strlen (t);
+				    IDIO_STRCAT_FREE (r, sizep, t, t_size);
+				    IDIO_STRCAT (r, sizep, " ");
 				}
-				IDIO_STRCAT_FREE (r, sizep, t, t_size);
-				IDIO_STRCAT (r, sizep, " ");
 			    }
 			}
 		    }
 		    IDIO_STRCAT (r, sizep, "\n\tframe: ");
 		    f_size = 0;
-		    fs = idio_as_string (IDIO_C_STRUCT_FRAME (o), &f_size, depth - 1);
+		    fs = idio_as_string (IDIO_C_STRUCT_FRAME (o), &f_size, depth - 1, seen, 0);
 		    IDIO_STRCAT_FREE (r, sizep, fs, f_size);
 		    IDIO_STRCAT (r, sizep, "\n>");
 		    break;
 		}
 	    case IDIO_TYPE_C_INSTANCE:
 		{
-		    if (asprintf (&r, "#<C/instance %10p C/*=%10p C/struct=%10p>", o, IDIO_C_INSTANCE_P (o), IDIO_C_INSTANCE_C_STRUCT (o)) == -1) {
+#ifdef IDIO_DEBUG
+		    if (IDIO_ASPRINTF (&r, "#<C/instance %10p C/*=%10p C/struct=%10p>", o, IDIO_C_INSTANCE_P (o), IDIO_C_INSTANCE_C_STRUCT (o)) == -1) {
+#else
+		    if (IDIO_ASPRINTF (&r, "#<C/instance C/*=%10p C/struct=%10p>", IDIO_C_INSTANCE_P (o), IDIO_C_INSTANCE_C_STRUCT (o)) == -1) {
+#endif
 			idio_error_alloc ("asprintf");
 
 			/* notreached */
@@ -2106,7 +2510,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		}
 	    case IDIO_TYPE_C_FFI:
 		{
-		    if (asprintf (&r, "#<CFFI ") == -1) {
+		    if (IDIO_ASPRINTF (&r, "#<CFFI ") == -1) {
 			idio_error_alloc ("asprintf");
 
 			/* notreached */
@@ -2115,33 +2519,33 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		    *sizep = strlen (r);
 
 		    size_t t_size = 0;
-		    char *t = idio_as_string (IDIO_C_FFI_NAME (o), &t_size, depth - 1);
+		    char *t = idio_as_string (IDIO_C_FFI_NAME (o), &t_size, depth - 1, seen, 0);
 		    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
 		    t_size = 0;
-		    t = idio_as_string (IDIO_C_FFI_SYMBOL (o), &t_size, depth - 1);
-		    IDIO_STRCAT_FREE (r, sizep, t, t_size);
-		    IDIO_STRCAT (r, sizep, " ");
-
-		    t_size = 0;
-		    t = idio_as_string (IDIO_C_FFI_ARGS (o), &t_size, depth - 1);
+		    t = idio_as_string (IDIO_C_FFI_SYMBOL (o), &t_size, depth - 1, seen, 0);
 		    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 		    IDIO_STRCAT (r, sizep, " ");
 
 		    t_size = 0;
-		    t = idio_as_string (IDIO_C_FFI_RESULT (o), &t_size, depth - 1);
+		    t = idio_as_string (IDIO_C_FFI_ARGS (o), &t_size, depth - 1, seen, 0);
 		    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 		    IDIO_STRCAT (r, sizep, " ");
 
 		    t_size = 0;
-		    t = idio_as_string (IDIO_C_FFI_NAME (o), &t_size, depth - 1);
+		    t = idio_as_string (IDIO_C_FFI_RESULT (o), &t_size, depth - 1, seen, 0);
+		    IDIO_STRCAT_FREE (r, sizep, t, t_size);
+		    IDIO_STRCAT (r, sizep, " ");
+
+		    t_size = 0;
+		    t = idio_as_string (IDIO_C_FFI_NAME (o), &t_size, depth - 1, seen, 0);
 		    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 		    IDIO_STRCAT (r, sizep, " >");
 		    break;
 		}
 	    case IDIO_TYPE_OPAQUE:
 		{
-		    if (asprintf (&r, "#<O %10p ", IDIO_OPAQUE_P (o)) == -1) {
+		    if (IDIO_ASPRINTF (&r, "#<O %10p ", IDIO_OPAQUE_P (o)) == -1) {
 			idio_error_alloc ("asprintf");
 
 			/* notreached */
@@ -2150,7 +2554,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		    *sizep = strlen (r);
 
 		    size_t t_size = 0;
-		    char *t = idio_as_string (IDIO_OPAQUE_ARGS (o), &t_size, depth - 1);
+		    char *t = idio_as_string (IDIO_OPAQUE_ARGS (o), &t_size, depth - 1, seen, 0);
 		    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 		    IDIO_STRCAT (r, sizep, ">");
 		    break;
@@ -2171,14 +2575,14 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 		     */
 		    size_t n = strnlen ((char *) o, 40);
 		    if (40 == n) {
-			if (asprintf (&r, "#<void?? %10p>", o) == -1) {
+			if (IDIO_ASPRINTF (&r, "#<void?? %10p>", o) == -1) {
 			    idio_error_alloc ("asprintf");
 
 			    /* notreached */
 			    return NULL;
 			}
 		    } else {
-			if (asprintf (&r, "#<string?? \"%s\">", (char *) o) == -1) {
+			if (IDIO_ASPRINTF (&r, "#<string?? \"%s\">", (char *) o) == -1) {
 			    idio_error_alloc ("asprintf");
 
 			    /* notreached */
@@ -2193,7 +2597,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
 	}
 	break;
     default:
-	if (asprintf (&r, "#<type?? %10p>", o) == -1) {
+	if (IDIO_ASPRINTF (&r, "#<type?? %10p>", o) == -1) {
 	    idio_error_alloc ("asprintf");
 
 	    /* notreached */
@@ -2204,6 +2608,15 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth)
     }
 
     return r;
+}
+
+char *idio_as_string_safe (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
+{
+    idio_gc_pause ("idio-as-string-safe");
+    char *s = idio_as_string (o, sizep, depth, seen, first);
+    idio_gc_resume ("idio-as-string-safe");
+
+    return s;
 }
 
 /*
@@ -2225,7 +2638,7 @@ char *idio_display_string (IDIO o, size_t *sizep)
     switch ((intptr_t) o & IDIO_TYPE_MASK) {
     case IDIO_TYPE_FIXNUM_MARK:
     case IDIO_TYPE_PLACEHOLDER_MARK:
-	r = idio_as_string (o, sizep, 4);
+	r = idio_as_string (o, sizep, 4, idio_S_nil, 1);
 	break;
     case IDIO_TYPE_CONSTANT_MARK:
 	{
@@ -2233,12 +2646,12 @@ char *idio_display_string (IDIO o, size_t *sizep)
 	    case IDIO_TYPE_CONSTANT_IDIO_MARK:
 	    case IDIO_TYPE_CONSTANT_TOKEN_MARK:
 	    case IDIO_TYPE_CONSTANT_I_CODE_MARK:
-		r = idio_as_string (o, sizep, 4);
+		r = idio_as_string (o, sizep, 4, idio_S_nil, 1);
 		break;
 	    case IDIO_TYPE_CONSTANT_CHARACTER_MARK:
 		{
 		    intptr_t c = IDIO_CHARACTER_VAL (o);
-		    if (asprintf (&r, "%c", (char) c) == -1) {
+		    if (IDIO_ASPRINTF (&r, "%c", (char) c) == -1) {
 			idio_error_alloc ("asprintf");
 
 			/* notreached */
@@ -2253,7 +2666,7 @@ char *idio_display_string (IDIO o, size_t *sizep)
 		    if (u > 0x10ffff) {
 			fprintf (stderr, "display-string: oops u=%x > 0x10ffff\n", u);
 		    } else if (u >= 0x10000) {
-			if (asprintf (&r, "%c%c%c%c",
+			if (IDIO_ASPRINTF (&r, "%c%c%c%c",
 				      0xf0 | ((u & (0x07 << 18)) >> 18),
 				      0x80 | ((u & (0x3f << 12)) >> 12),
 				      0x80 | ((u & (0x3f << 6)) >> 6),
@@ -2264,7 +2677,7 @@ char *idio_display_string (IDIO o, size_t *sizep)
 			    return NULL;
 			}
 		    } else if (u >= 0x0800) {
-			if (asprintf (&r, "%c%c%c",
+			if (IDIO_ASPRINTF (&r, "%c%c%c",
 				      0xe0 | ((u & (0x0f << 12)) >> 12),
 				      0x80 | ((u & (0x3f << 6)) >> 6),
 				      0x80 | ((u & (0x3f << 0)) >> 0)) == -1) {
@@ -2274,7 +2687,7 @@ char *idio_display_string (IDIO o, size_t *sizep)
 			    return NULL;
 			}
 		    } else if (u >= 0x0080) {
-			if (asprintf (&r, "%c%c",
+			if (IDIO_ASPRINTF (&r, "%c%c",
 				      0xc0 | ((u & (0x1f << 6)) >> 6),
 				      0x80 | ((u & (0x3f << 0)) >> 0)) == -1) {
 			    idio_error_alloc ("asprintf");
@@ -2283,7 +2696,7 @@ char *idio_display_string (IDIO o, size_t *sizep)
 			    return NULL;
 			}
 		    } else {
-			if (asprintf (&r, "%c",
+			if (IDIO_ASPRINTF (&r, "%c",
 				      u & 0x7f) == -1) {
 			    idio_error_alloc ("asprintf");
 
@@ -2311,13 +2724,13 @@ char *idio_display_string (IDIO o, size_t *sizep)
 		}
 		break;
 	    default:
-		r = idio_as_string (o, sizep, 40);
+		r = idio_as_string_safe (o, sizep, 40, idio_S_nil, 1);
 		break;
 	    }
 	}
 	break;
     default:
-	if (asprintf (&r, "type %d n/k", o->type) == -1) {
+	if (IDIO_ASPRINTF (&r, "type %d n/k", o->type) == -1) {
 	    idio_error_alloc ("asprintf");
 
 	    /* notreached */
@@ -2335,15 +2748,16 @@ convert `o` to a string				\n\
 						\n\
 :param o: object to convert			\n\
 						\n\
-:return: a string representation of `o`	\n\
+:return: a string representation of `o`		\n\
 ")
 {
     IDIO_ASSERT (o);
 
     size_t size = 0;
-    char *str = idio_as_string (o, &size, 40);
+    char *str = idio_as_string (o, &size, 40, idio_S_nil, 1);
     IDIO r = idio_string_C_len (str, size);
-    free (str);
+    idio_gc_free (str);
+
     return r;
 }
 
@@ -2360,7 +2774,8 @@ convert `o` to a display string			\n\
     size_t size = 0;
     char *str = idio_display_string (o, &size);
     IDIO r = idio_string_C_len (str, size);
-    free (str);
+    idio_gc_free (str);
+
     return r;
 }
 
@@ -2369,177 +2784,177 @@ const char *idio_vm_bytecode2string (int code)
     char *r;
 
     switch (code) {
-    case IDIO_A_SHALLOW_ARGUMENT_REF0:			r = "SHALLOW-ARGUMENT-REF0";		break;
-    case IDIO_A_SHALLOW_ARGUMENT_REF1:			r = "SHALLOW-ARGUMENT-REF1";		break;
-    case IDIO_A_SHALLOW_ARGUMENT_REF2:			r = "SHALLOW-ARGUMENT-REF2";		break;
-    case IDIO_A_SHALLOW_ARGUMENT_REF3:			r = "SHALLOW-ARGUMENT-REF3";		break;
-    case IDIO_A_SHALLOW_ARGUMENT_REF:			r = "SHALLOW-ARGUMENT-REF";		break;
-    case IDIO_A_DEEP_ARGUMENT_REF:			r = "DEEP-ARGUMENT-REF";		break;
+    case IDIO_A_SHALLOW_ARGUMENT_REF0:		r = "A-SHALLOW-ARGUMENT-REF0";		break;
+    case IDIO_A_SHALLOW_ARGUMENT_REF1:		r = "A-SHALLOW-ARGUMENT-REF1";		break;
+    case IDIO_A_SHALLOW_ARGUMENT_REF2:		r = "A-SHALLOW-ARGUMENT-REF2";		break;
+    case IDIO_A_SHALLOW_ARGUMENT_REF3:		r = "A-SHALLOW-ARGUMENT-REF3";		break;
+    case IDIO_A_SHALLOW_ARGUMENT_REF:		r = "A-SHALLOW-ARGUMENT-REF";		break;
+    case IDIO_A_DEEP_ARGUMENT_REF:		r = "A-DEEP-ARGUMENT-REF";		break;
 
-    case IDIO_A_SHALLOW_ARGUMENT_SET0:			r = "SHALLOW-ARGUMENT-SET0";		break;
-    case IDIO_A_SHALLOW_ARGUMENT_SET1:			r = "SHALLOW-ARGUMENT-SET1";		break;
-    case IDIO_A_SHALLOW_ARGUMENT_SET2:			r = "SHALLOW-ARGUMENT-SET2";		break;
-    case IDIO_A_SHALLOW_ARGUMENT_SET3:			r = "SHALLOW-ARGUMENT-SET3";		break;
-    case IDIO_A_SHALLOW_ARGUMENT_SET:			r = "SHALLOW-ARGUMENT-SET";		break;
-    case IDIO_A_DEEP_ARGUMENT_SET:			r = "DEEP-ARGUMENT-SET";		break;
+    case IDIO_A_SHALLOW_ARGUMENT_SET0:		r = "A-SHALLOW-ARGUMENT-SET0";		break;
+    case IDIO_A_SHALLOW_ARGUMENT_SET1:		r = "A-SHALLOW-ARGUMENT-SET1";		break;
+    case IDIO_A_SHALLOW_ARGUMENT_SET2:		r = "A-SHALLOW-ARGUMENT-SET2";		break;
+    case IDIO_A_SHALLOW_ARGUMENT_SET3:		r = "A-SHALLOW-ARGUMENT-SET3";		break;
+    case IDIO_A_SHALLOW_ARGUMENT_SET:		r = "A-SHALLOW-ARGUMENT-SET";		break;
+    case IDIO_A_DEEP_ARGUMENT_SET:		r = "A-DEEP-ARGUMENT-SET";		break;
 
-    case IDIO_A_GLOBAL_SYM_REF:				r = "GLOBAL-SYM-REF";			break;
-    case IDIO_A_CHECKED_GLOBAL_SYM_REF:			r = "CHECKED-GLOBAL-SYM-REF";		break;
-    case IDIO_A_GLOBAL_FUNCTION_SYM_REF:		r = "GLOBAL-FUNCTION-SYM-REF";		break;
-    case IDIO_A_CHECKED_GLOBAL_FUNCTION_SYM_REF:	r = "CHECKED-GLOBAL-FUNCTION-SYM-REF";	break;
-    case IDIO_A_CONSTANT_SYM_REF:			r = "CONSTANT-SYM-REF";			break;
-    case IDIO_A_COMPUTED_SYM_REF:			r = "COMPUTED-SYM-REF";			break;
+    case IDIO_A_GLOBAL_SYM_REF:			r = "A-GLOBAL-SYM-REF";			break;
+    case IDIO_A_CHECKED_GLOBAL_SYM_REF:		r = "A-CHECKED-GLOBAL-SYM-REF";		break;
+    case IDIO_A_GLOBAL_FUNCTION_SYM_REF:	r = "A-GLOBAL-FUNCTION-SYM-REF";	break;
+    case IDIO_A_CHECKED_GLOBAL_FUNCTION_SYM_REF:r = "A-CHECKED-GLOBAL-FUNCTION-SYM-REF";break;
+    case IDIO_A_CONSTANT_SYM_REF:		r = "A-CONSTANT-SYM-REF";		break;
+    case IDIO_A_COMPUTED_SYM_REF:		r = "A-COMPUTED-SYM-REF";		break;
 
-    case IDIO_A_GLOBAL_SYM_DEF:				r = "GLOBAL-SYM-DEF";			break;
-    case IDIO_A_GLOBAL_SYM_SET:				r = "GLOBAL-SYM-SET";			break;
-    case IDIO_A_COMPUTED_SYM_SET:			r = "COMPUTED-SYM-SET";			break;
-    case IDIO_A_COMPUTED_SYM_DEFINE:			r = "COMPUTED-SYM-DEFINE";		break;
+    case IDIO_A_GLOBAL_SYM_DEF:			r = "A-GLOBAL-SYM-DEF";			break;
+    case IDIO_A_GLOBAL_SYM_SET:			r = "A-GLOBAL-SYM-SET";			break;
+    case IDIO_A_COMPUTED_SYM_SET:		r = "A-COMPUTED-SYM-SET";		break;
+    case IDIO_A_COMPUTED_SYM_DEF:		r = "A-COMPUTED-SYM-DEF";		break;
 
-    case IDIO_A_GLOBAL_VAL_REF:				r = "GLOBAL-VAL-REF";			break;
-    case IDIO_A_CHECKED_GLOBAL_VAL_REF:			r = "CHECKED-GLOBAL-VAL-REF";		break;
-    case IDIO_A_GLOBAL_FUNCTION_VAL_REF:		r = "GLOBAL-FUNCTION-VAL-REF";		break;
-    case IDIO_A_CHECKED_GLOBAL_FUNCTION_VAL_REF:	r = "CHECKED-GLOBAL-FUNCTION-VAL-REF";	break;
-    case IDIO_A_CONSTANT_VAL_REF:			r = "CONSTANT-VAL-REF";			break;
-    case IDIO_A_COMPUTED_VAL_REF:			r = "COMPUTED-VAL-REF";			break;
+    case IDIO_A_GLOBAL_VAL_REF:			r = "A-GLOBAL-VAL-REF";			break;
+    case IDIO_A_CHECKED_GLOBAL_VAL_REF:		r = "A-CHECKED-GLOBAL-VAL-REF";		break;
+    case IDIO_A_GLOBAL_FUNCTION_VAL_REF:	r = "A-GLOBAL-FUNCTION-VAL-REF";	break;
+    case IDIO_A_CHECKED_GLOBAL_FUNCTION_VAL_REF:r = "A-CHECKED-GLOBAL-FUNCTION-VAL-REF";break;
+    case IDIO_A_CONSTANT_VAL_REF:		r = "A-CONSTANT-VAL-REF";		break;
+    case IDIO_A_COMPUTED_VAL_REF:		r = "A-COMPUTED-VAL-REF";		break;
 
-    case IDIO_A_GLOBAL_VAL_DEF:				r = "GLOBAL-VAL-DEF";			break;
-    case IDIO_A_GLOBAL_VAL_SET:				r = "GLOBAL-VAL-SET";			break;
-    case IDIO_A_COMPUTED_VAL_SET:			r = "COMPUTED-VAL-SET";			break;
-    case IDIO_A_COMPUTED_VAL_DEFINE:			r = "COMPUTED-VAL-DEFINE";		break;
+    case IDIO_A_GLOBAL_VAL_DEF:			r = "A-GLOBAL-VAL-DEF";			break;
+    case IDIO_A_GLOBAL_VAL_SET:			r = "A-GLOBAL-VAL-SET";			break;
+    case IDIO_A_COMPUTED_VAL_SET:		r = "A-COMPUTED-VAL-SET";		break;
+    case IDIO_A_COMPUTED_VAL_DEF:		r = "A-COMPUTED-VAL-DEF";		break;
 
-    case IDIO_A_PREDEFINED0:				r = "PREDEFINED0";			break;
-    case IDIO_A_PREDEFINED1:				r = "PREDEFINED1";			break;
-    case IDIO_A_PREDEFINED2:				r = "PREDEFINED2";			break;
-    case IDIO_A_PREDEFINED3:				r = "PREDEFINED3";			break;
-    case IDIO_A_PREDEFINED4:				r = "PREDEFINED4";			break;
-    case IDIO_A_PREDEFINED5:				r = "PREDEFINED5";			break;
-    case IDIO_A_PREDEFINED6:				r = "PREDEFINED6";			break;
-    case IDIO_A_PREDEFINED7:				r = "PREDEFINED7";			break;
-    case IDIO_A_PREDEFINED8:				r = "PREDEFINED8";			break;
-    case IDIO_A_PREDEFINED:				r = "PREDEFINED";			break;
+    case IDIO_A_PREDEFINED0:			r = "A-PREDEFINED0";			break;
+    case IDIO_A_PREDEFINED1:			r = "A-PREDEFINED1";			break;
+    case IDIO_A_PREDEFINED2:			r = "A-PREDEFINED2";			break;
+    case IDIO_A_PREDEFINED3:			r = "A-PREDEFINED3";			break;
+    case IDIO_A_PREDEFINED4:			r = "A-PREDEFINED4";			break;
+    case IDIO_A_PREDEFINED5:			r = "A-PREDEFINED5";			break;
+    case IDIO_A_PREDEFINED6:			r = "A-PREDEFINED6";			break;
+    case IDIO_A_PREDEFINED7:			r = "A-PREDEFINED7";			break;
+    case IDIO_A_PREDEFINED8:			r = "A-PREDEFINED8";			break;
+    case IDIO_A_PREDEFINED:			r = "A-PREDEFINED";			break;
 
-    case IDIO_A_LONG_GOTO:				r = "LONG-GOTO";			break;
-    case IDIO_A_LONG_JUMP_FALSE:			r = "LONG-JUMP-FALSE";			break;
-    case IDIO_A_LONG_JUMP_TRUE:				r = "LONG-JUMP-TRUE";			break;
-    case IDIO_A_SHORT_GOTO:				r = "SHORT-GOTO";			break;
-    case IDIO_A_SHORT_JUMP_FALSE:			r = "SHORT-JUMP-FALSE";			break;
-    case IDIO_A_SHORT_JUMP_TRUE:			r = "SHORT-JUMP-TRUE";			break;
+    case IDIO_A_LONG_GOTO:			r = "A-LONG-GOTO";			break;
+    case IDIO_A_LONG_JUMP_FALSE:		r = "A-LONG-JUMP-FALSE";		break;
+    case IDIO_A_LONG_JUMP_TRUE:			r = "A-LONG-JUMP-TRUE";			break;
+    case IDIO_A_SHORT_GOTO:			r = "A-SHORT-GOTO";			break;
+    case IDIO_A_SHORT_JUMP_FALSE:		r = "A-SHORT-JUMP-FALSE";		break;
+    case IDIO_A_SHORT_JUMP_TRUE:		r = "A-SHORT-JUMP-TRUE";		break;
 
-    case IDIO_A_PUSH_VALUE:				r = "PUSH-VALUE";			break;
-    case IDIO_A_POP_VALUE:				r = "POP-VALUE";			break;
-    case IDIO_A_POP_REG1:				r = "POP-REG1";				break;
-    case IDIO_A_POP_REG2:				r = "POP-REG2";				break;
-    case IDIO_A_POP_EXPR:				r = "POP-EXPR";				break;
-    case IDIO_A_POP_FUNCTION:				r = "POP-FUNCTION";			break;
-    case IDIO_A_PRESERVE_STATE:				r = "PRESERVE-STATE";			break;
-    case IDIO_A_RESTORE_STATE:				r = "RESTORE-STATE";			break;
-    case IDIO_A_RESTORE_ALL_STATE:			r = "RESTORE-ALL-STATE";		break;
+    case IDIO_A_PUSH_VALUE:			r = "A-PUSH-VALUE";			break;
+    case IDIO_A_POP_VALUE:			r = "A-POP-VALUE";			break;
+    case IDIO_A_POP_REG1:			r = "A-POP-REG1";			break;
+    case IDIO_A_POP_REG2:			r = "A-POP-REG2";			break;
+    case IDIO_A_SRC_EXPR:			r = "A-SRC-EXPR";			break;
+    case IDIO_A_POP_FUNCTION:			r = "A-POP-FUNCTION";			break;
+    case IDIO_A_PRESERVE_STATE:			r = "A-PRESERVE-STATE";			break;
+    case IDIO_A_RESTORE_STATE:			r = "A-RESTORE-STATE";			break;
+    case IDIO_A_RESTORE_ALL_STATE:		r = "A-RESTORE-ALL-STATE";		break;
 
-    case IDIO_A_CREATE_CLOSURE:				r = "CREATE-CLOSURE";			break;
-    case IDIO_A_FUNCTION_INVOKE:			r = "FUNCTION-INVOKE";			break;
-    case IDIO_A_FUNCTION_GOTO:				r = "FUNCTION-GOTO";			break;
-    case IDIO_A_RETURN:					r = "RETURN";				break;
-    case IDIO_A_FINISH:					r = "FINISH";				break;
-    case IDIO_A_ABORT:					r = "ABORT";				break;
+    case IDIO_A_CREATE_CLOSURE:			r = "A-CREATE-CLOSURE";			break;
+    case IDIO_A_FUNCTION_INVOKE:		r = "A-FUNCTION-INVOKE";		break;
+    case IDIO_A_FUNCTION_GOTO:			r = "A-FUNCTION-GOTO";			break;
+    case IDIO_A_RETURN:				r = "A-RETURN";				break;
+    case IDIO_A_FINISH:				r = "A-FINISH";				break;
+    case IDIO_A_ABORT:				r = "A-ABORT";				break;
 
-    case IDIO_A_ALLOCATE_FRAME1:			r = "ALLOCATE-FRAME1";			break;
-    case IDIO_A_ALLOCATE_FRAME2:			r = "ALLOCATE-FRAME2";			break;
-    case IDIO_A_ALLOCATE_FRAME3:			r = "ALLOCATE-FRAME3";			break;
-    case IDIO_A_ALLOCATE_FRAME4:			r = "ALLOCATE-FRAME4";			break;
-    case IDIO_A_ALLOCATE_FRAME5:			r = "ALLOCATE-FRAME5";			break;
-    case IDIO_A_ALLOCATE_FRAME:				r = "ALLOCATE-FRAME";			break;
-    case IDIO_A_ALLOCATE_DOTTED_FRAME:			r = "ALLOCATE-DOTTED-FRAME";		break;
-    case IDIO_A_REUSE_FRAME:				r = "REUSE-FRAME";			break;
+    case IDIO_A_ALLOCATE_FRAME1:		r = "A-ALLOCATE-FRAME1";		break;
+    case IDIO_A_ALLOCATE_FRAME2:		r = "A-ALLOCATE-FRAME2";		break;
+    case IDIO_A_ALLOCATE_FRAME3:		r = "A-ALLOCATE-FRAME3";		break;
+    case IDIO_A_ALLOCATE_FRAME4:		r = "A-ALLOCATE-FRAME4";		break;
+    case IDIO_A_ALLOCATE_FRAME5:		r = "A-ALLOCATE-FRAME5";		break;
+    case IDIO_A_ALLOCATE_FRAME:			r = "A-ALLOCATE-FRAME";			break;
+    case IDIO_A_ALLOCATE_DOTTED_FRAME:		r = "A-ALLOCATE-DOTTED-FRAME";		break;
+    case IDIO_A_REUSE_FRAME:			r = "A-REUSE-FRAME";			break;
 
-    case IDIO_A_POP_FRAME0:				r = "POP-FRAME0";			break;
-    case IDIO_A_POP_FRAME1:				r = "POP-FRAME1";			break;
-    case IDIO_A_POP_FRAME2:				r = "POP-FRAME2";			break;
-    case IDIO_A_POP_FRAME3:				r = "POP-FRAME3";			break;
-    case IDIO_A_POP_FRAME:				r = "POP-FRAME";			break;
+    case IDIO_A_POP_FRAME0:			r = "A-POP-FRAME0";			break;
+    case IDIO_A_POP_FRAME1:			r = "A-POP-FRAME1";			break;
+    case IDIO_A_POP_FRAME2:			r = "A-POP-FRAME2";			break;
+    case IDIO_A_POP_FRAME3:			r = "A-POP-FRAME3";			break;
+    case IDIO_A_POP_FRAME:			r = "A-POP-FRAME";			break;
 
-    case IDIO_A_EXTEND_FRAME:				r = "EXTEND-FRAME";			break;
-    case IDIO_A_UNLINK_FRAME:				r = "UNLINK-FRAME";			break;
-    case IDIO_A_PACK_FRAME:				r = "PACK-FRAME";			break;
-    case IDIO_A_POP_CONS_FRAME:				r = "POP-CONS-FRAME";			break;
+    case IDIO_A_EXTEND_FRAME:			r = "A-EXTEND-FRAME";			break;
+    case IDIO_A_UNLINK_FRAME:			r = "A-UNLINK-FRAME";			break;
+    case IDIO_A_PACK_FRAME:			r = "A-PACK-FRAME";			break;
+    case IDIO_A_POP_LIST_FRAME:			r = "A-POP-LIST-FRAME";			break;
 
-    case IDIO_A_ARITY1P:				r = "ARITY1P";				break;
-    case IDIO_A_ARITY2P:				r = "ARITY2P";				break;
-    case IDIO_A_ARITY3P:				r = "ARITY3P";				break;
-    case IDIO_A_ARITY4P:				r = "ARITY4P";				break;
-    case IDIO_A_ARITYEQP:				r = "ARITYEQP";				break;
-    case IDIO_A_ARITYGEP:				r = "ARITYGEP";				break;
+    case IDIO_A_ARITY1P:			r = "A-ARITY1P";			break;
+    case IDIO_A_ARITY2P:			r = "A-ARITY2P";			break;
+    case IDIO_A_ARITY3P:			r = "A-ARITY3P";			break;
+    case IDIO_A_ARITY4P:			r = "A-ARITY4P";			break;
+    case IDIO_A_ARITYEQP:			r = "A-ARITYEQP";			break;
+    case IDIO_A_ARITYGEP:			r = "A-ARITYGEP";			break;
 
-    case IDIO_A_SHORT_NUMBER:				r = "SHORT-NUMBER";			break;
-    case IDIO_A_SHORT_NEG_NUMBER:			r = "SHORT-NEG-NUMBER";			break;
-    case IDIO_A_CONSTANT_0:				r = "CONSTANT-0";			break;
-    case IDIO_A_CONSTANT_1:				r = "CONSTANT-1";			break;
-    case IDIO_A_CONSTANT_2:				r = "CONSTANT-2";			break;
-    case IDIO_A_CONSTANT_3:				r = "CONSTANT-3";			break;
-    case IDIO_A_CONSTANT_4:				r = "CONSTANT-4";			break;
-    case IDIO_A_FIXNUM:					r = "FIXNUM";				break;
-    case IDIO_A_NEG_FIXNUM:				r = "NEG-FIXNUM";			break;
-    case IDIO_A_CHARACTER:				r = "CHARACTER";			break;
-    case IDIO_A_NEG_CHARACTER:				r = "NEG-CHARACTER";			break;
-    case IDIO_A_CONSTANT:				r = "CONSTANT";				break;
-    case IDIO_A_NEG_CONSTANT:				r = "NEG-CONSTANT";			break;
-    case IDIO_A_UNICODE:				r = "UNICODE";				break;
+    case IDIO_A_SHORT_NUMBER:			r = "A-SHORT-NUMBER";			break;
+    case IDIO_A_SHORT_NEG_NUMBER:		r = "A-SHORT-NEG-NUMBER";		break;
+    case IDIO_A_CONSTANT_0:			r = "A-CONSTANT-0";			break;
+    case IDIO_A_CONSTANT_1:			r = "A-CONSTANT-1";			break;
+    case IDIO_A_CONSTANT_2:			r = "A-CONSTANT-2";			break;
+    case IDIO_A_CONSTANT_3:			r = "A-CONSTANT-3";			break;
+    case IDIO_A_CONSTANT_4:			r = "A-CONSTANT-4";			break;
+    case IDIO_A_FIXNUM:				r = "A-FIXNUM";				break;
+    case IDIO_A_NEG_FIXNUM:			r = "A-NEG-FIXNUM";			break;
+    case IDIO_A_CHARACTER:			r = "A-CHARACTER";			break;
+    case IDIO_A_NEG_CHARACTER:			r = "A-NEG-CHARACTER";			break;
+    case IDIO_A_CONSTANT:			r = "A-CONSTANT";			break;
+    case IDIO_A_NEG_CONSTANT:			r = "A-NEG-CONSTANT";			break;
+    case IDIO_A_UNICODE:			r = "A-UNICODE";			break;
 
-    case IDIO_A_NOP:					r = "NOP";				break;
-    case IDIO_A_PRIMCALL0:				r = "PRIMCALL0";			break;
-    case IDIO_A_PRIMCALL0_NEWLINE:			r = "PRIMCALL0-NEWLINE";		break;
-    case IDIO_A_PRIMCALL0_READ:				r = "PRIMCALL0-READ";			break;
-    case IDIO_A_PRIMCALL1:				r = "PRIMCALL1";			break;
-    case IDIO_A_PRIMCALL1_HEAD:				r = "PRIMCALL1-HEAD";			break;
-    case IDIO_A_PRIMCALL1_TAIL:				r = "PRIMCALL1-TAIL";			break;
-    case IDIO_A_PRIMCALL1_PAIRP:			r = "PRIMCALL1-PAIRP";			break;
-    case IDIO_A_PRIMCALL1_SYMBOLP:			r = "PRIMCALL1-SYMBOLP";		break;
-    case IDIO_A_PRIMCALL1_DISPLAY:			r = "PRIMCALL1-DISPLAY";		break;
-    case IDIO_A_PRIMCALL1_PRIMITIVEP:			r = "PRIMCALL1-PRIMITIVEP";		break;
-    case IDIO_A_PRIMCALL1_NULLP:			r = "PRIMCALL1-NULLP";			break;
-    case IDIO_A_PRIMCALL1_CONTINUATIONP:		r = "PRIMCALL1-CONTINUATIONP";		break;
-    case IDIO_A_PRIMCALL1_EOFP:				r = "PRIMCALL1-EOFP";			break;
-    case IDIO_A_PRIMCALL1_SET_CUR_MOD:			r = "PRIMCALL1-SET-CUR-MOD";		break;
-    case IDIO_A_PRIMCALL2:				r = "PRIMCALL2";			break;
-    case IDIO_A_PRIMCALL2_PAIR:				r = "PRIMCALL2-PAIR";			break;
-    case IDIO_A_PRIMCALL2_EQP:				r = "PRIMCALL2-EQP";			break;
-    case IDIO_A_PRIMCALL2_SET_HEAD:			r = "PRIMCALL2-SET-HEAD";		break;
-    case IDIO_A_PRIMCALL2_SET_TAIL:			r = "PRIMCALL2-SET-TAIL";		break;
-    case IDIO_A_PRIMCALL2_ADD:				r = "PRIMCALL2-ADD";			break;
-    case IDIO_A_PRIMCALL2_SUBTRACT:			r = "PRIMCALL2-SUBTRACT";		break;
-    case IDIO_A_PRIMCALL2_EQ:				r = "PRIMCALL2-EQ";			break;
-    case IDIO_A_PRIMCALL2_LT:				r = "PRIMCALL2-LT";			break;
-    case IDIO_A_PRIMCALL2_GT:				r = "PRIMCALL2-GT";			break;
-    case IDIO_A_PRIMCALL2_MULTIPLY:			r = "PRIMCALL2-MULTIPLY";		break;
-    case IDIO_A_PRIMCALL2_LE:				r = "PRIMCALL2-LE";			break;
-    case IDIO_A_PRIMCALL2_GE:				r = "PRIMCALL2-GE";			break;
-    case IDIO_A_PRIMCALL2_REMAINDER:			r = "PRIMCALL2-REMAINDER";		break;
+    case IDIO_A_NOP:				r = "A-NOP";				break;
+    case IDIO_A_PRIMCALL0:			r = "A-PRIMCALL0";			break;
+    case IDIO_A_PRIMCALL0_NEWLINE:		r = "A-PRIMCALL0-NEWLINE";		break;
+    case IDIO_A_PRIMCALL0_READ:			r = "A-PRIMCALL0-READ";			break;
+    case IDIO_A_PRIMCALL1:			r = "A-PRIMCALL1";			break;
+    case IDIO_A_PRIMCALL1_HEAD:			r = "A-PRIMCALL1-HEAD";			break;
+    case IDIO_A_PRIMCALL1_TAIL:			r = "A-PRIMCALL1-TAIL";			break;
+    case IDIO_A_PRIMCALL1_PAIRP:		r = "A-PRIMCALL1-PAIRP";		break;
+    case IDIO_A_PRIMCALL1_SYMBOLP:		r = "A-PRIMCALL1-SYMBOLP";		break;
+    case IDIO_A_PRIMCALL1_DISPLAY:		r = "A-PRIMCALL1-DISPLAY";		break;
+    case IDIO_A_PRIMCALL1_PRIMITIVEP:		r = "A-PRIMCALL1-PRIMITIVEP";		break;
+    case IDIO_A_PRIMCALL1_NULLP:		r = "A-PRIMCALL1-NULLP";		break;
+    case IDIO_A_PRIMCALL1_CONTINUATIONP:	r = "A-PRIMCALL1-CONTINUATIONP";	break;
+    case IDIO_A_PRIMCALL1_EOFP:			r = "A-PRIMCALL1-EOFP";			break;
+    case IDIO_A_PRIMCALL1_SET_CUR_MOD:		r = "A-PRIMCALL1-SET-CUR-MOD";		break;
+    case IDIO_A_PRIMCALL2:			r = "A-PRIMCALL2";			break;
+    case IDIO_A_PRIMCALL2_PAIR:			r = "A-PRIMCALL2-PAIR";			break;
+    case IDIO_A_PRIMCALL2_EQP:			r = "A-PRIMCALL2-EQP";			break;
+    case IDIO_A_PRIMCALL2_SET_HEAD:		r = "A-PRIMCALL2-SET-HEAD";		break;
+    case IDIO_A_PRIMCALL2_SET_TAIL:		r = "A-PRIMCALL2-SET-TAIL";		break;
+    case IDIO_A_PRIMCALL2_ADD:			r = "A-PRIMCALL2-ADD";			break;
+    case IDIO_A_PRIMCALL2_SUBTRACT:		r = "A-PRIMCALL2-SUBTRACT";		break;
+    case IDIO_A_PRIMCALL2_EQ:			r = "A-PRIMCALL2-EQ";			break;
+    case IDIO_A_PRIMCALL2_LT:			r = "A-PRIMCALL2-LT";			break;
+    case IDIO_A_PRIMCALL2_GT:			r = "A-PRIMCALL2-GT";			break;
+    case IDIO_A_PRIMCALL2_MULTIPLY:		r = "A-PRIMCALL2-MULTIPLY";		break;
+    case IDIO_A_PRIMCALL2_LE:			r = "A-PRIMCALL2-LE";			break;
+    case IDIO_A_PRIMCALL2_GE:			r = "A-PRIMCALL2-GE";			break;
+    case IDIO_A_PRIMCALL2_REMAINDER:		r = "A-PRIMCALL2-REMAINDER";		break;
 
-    case IDIO_A_PRIMCALL3:				r = "PRIMCALL3";			break;
-    case IDIO_A_PRIMCALL:				r = "PRIMCALL";				break;
+    case IDIO_A_PRIMCALL3:			r = "A-PRIMCALL3";			break;
+    case IDIO_A_PRIMCALL:			r = "A-PRIMCALL";			break;
 
-    case IDIO_A_EXPANDER:				r = "EXPANDER";				break;
-    case IDIO_A_INFIX_OPERATOR:				r = "INFIX-OPERATOR";			break;
-    case IDIO_A_POSTFIX_OPERATOR:			r = "POSTFIX-OPERATOR";			break;
+    case IDIO_A_EXPANDER:			r = "A-EXPANDER";			break;
+    case IDIO_A_INFIX_OPERATOR:			r = "A-INFIX-OPERATOR";			break;
+    case IDIO_A_POSTFIX_OPERATOR:		r = "A-POSTFIX-OPERATOR";		break;
 
-    case IDIO_A_PUSH_DYNAMIC:				r = "PUSH-DYNAMIC";			break;
-    case IDIO_A_POP_DYNAMIC:				r = "POP-DYNAMIC";			break;
-    case IDIO_A_DYNAMIC_SYM_REF:			r = "DYNAMIC-SYM-REF";			break;
-    case IDIO_A_DYNAMIC_FUNCTION_SYM_REF:		r = "DYNAMIC-FUNCTION-SYM-REF";		break;
-    case IDIO_A_DYNAMIC_VAL_REF:			r = "DYNAMIC-VAL-REF";			break;
-    case IDIO_A_DYNAMIC_FUNCTION_VAL_REF:		r = "DYNAMIC-FUNCTION-VAL-REF";		break;
+    case IDIO_A_PUSH_DYNAMIC:			r = "A-PUSH-DYNAMIC";			break;
+    case IDIO_A_POP_DYNAMIC:			r = "A-POP-DYNAMIC";			break;
+    case IDIO_A_DYNAMIC_SYM_REF:		r = "A-DYNAMIC-SYM-REF";		break;
+    case IDIO_A_DYNAMIC_FUNCTION_SYM_REF:	r = "A-DYNAMIC-FUNCTION-SYM-REF";	break;
+    case IDIO_A_DYNAMIC_VAL_REF:		r = "A-DYNAMIC-VAL-REF";		break;
+    case IDIO_A_DYNAMIC_FUNCTION_VAL_REF:	r = "A-DYNAMIC-FUNCTION-VAL-REF";	break;
 
-    case IDIO_A_PUSH_ENVIRON:				r = "PUSH-ENVIRON";			break;
-    case IDIO_A_POP_ENVIRON:				r = "POP-ENVIRON";			break;
-    case IDIO_A_ENVIRON_SYM_REF:			r = "ENVIRON-SYM-REF";			break;
-    case IDIO_A_ENVIRON_VAL_REF:			r = "ENVIRON-VAL-REF";			break;
+    case IDIO_A_PUSH_ENVIRON:			r = "A-PUSH-ENVIRON";			break;
+    case IDIO_A_POP_ENVIRON:			r = "A-POP-ENVIRON";			break;
+    case IDIO_A_ENVIRON_SYM_REF:		r = "A-ENVIRON-SYM-REF";		break;
+    case IDIO_A_ENVIRON_VAL_REF:		r = "A-ENVIRON-VAL-REF";		break;
 
-    case IDIO_A_NON_CONT_ERR:				r = "NON-CONT-ERR";			break;
-    case IDIO_A_PUSH_TRAP:				r = "PUSH-TRAP";			break;
-    case IDIO_A_POP_TRAP:				r = "POP-TRAP";				break;
-    case IDIO_A_RESTORE_TRAP:				r = "RESTORE-TRAP";			break;
+    case IDIO_A_NON_CONT_ERR:			r = "A-NON-CONT-ERR";			break;
+    case IDIO_A_PUSH_TRAP:			r = "A-PUSH-TRAP";			break;
+    case IDIO_A_POP_TRAP:			r = "A-POP-TRAP";			break;
+    case IDIO_A_RESTORE_TRAP:			r = "A-RESTORE-TRAP";			break;
 
-    case IDIO_A_PUSH_ESCAPER:				r = "PUSH-ESCAPER";			break;
-    case IDIO_A_POP_ESCAPER:				r = "POP-ESCAPER";			break;
+    case IDIO_A_PUSH_ESCAPER:			r = "A-PUSH-ESCAPER";			break;
+    case IDIO_A_POP_ESCAPER:			r = "A-POP-ESCAPER";			break;
 
     default:
 	/* fprintf (stderr, "idio_vm_bytecode2string: unexpected bytecode %d\n", code); */
@@ -2557,13 +2972,22 @@ const char *idio_vm_bytecode2string (int code)
  *
  * The real map is defined early on in bootstrap.
  */
-IDIO_DEFINE_PRIMITIVE2 ("%map1", map1, (IDIO fn, IDIO list))
+IDIO_DEFINE_PRIMITIVE2_DS ("%map1", map1, (IDIO fn, IDIO list), "fn list", "\
+return the collected results of applying ``fn`` to	\n\
+each element of ``list``				\n\
+							\n\
+:param fn: function					\n\
+:type fn: *primitive* only				\n\
+:param list: list of elements				\n\
+:type list: list					\n\
+:return: copy of `v`					\n\
+")
 {
     IDIO_ASSERT (fn);
     IDIO_ASSERT (list);
 
-    IDIO_VERIFY_PARAM_TYPE (primitive, fn);
-    IDIO_VERIFY_PARAM_TYPE (list, list);
+    IDIO_USER_TYPE_ASSERT (primitive, fn);
+    IDIO_USER_TYPE_ASSERT (list, list);
 
     IDIO r = idio_S_nil;
 
@@ -2637,12 +3061,22 @@ IDIO idio_list_memq (IDIO k, IDIO l)
     return idio_S_false;
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("memq", memq, (IDIO k, IDIO l))
+IDIO_DEFINE_PRIMITIVE2_DS ("memq", memq, (IDIO k, IDIO l), "k l", "\
+return the remainder of the list `l` from the	\n\
+first incidence of `k` or #f if `k` is not in `l`	\n\
+						\n\
+:param k: object to search for			\n\
+:type k: any					\n\
+:param l: list to search in			\n\
+:type l: list					\n\
+						\n\
+:return: a list starting from `k`, #f if `k` is not in `l`\n\
+")
 {
     IDIO_ASSERT (k);
     IDIO_ASSERT (l);
 
-    IDIO_VERIFY_PARAM_TYPE (list, l);
+    IDIO_USER_TYPE_ASSERT (list, l);
 
     return idio_list_memq (k, l);
 }
@@ -2652,8 +3086,6 @@ IDIO idio_list_assq (IDIO k, IDIO l)
     IDIO_ASSERT (k);
     IDIO_ASSERT (l);
     IDIO_TYPE_ASSERT (list, l);
-
-    /* fprintf (stderr, "assq: k=%s in l=%s\n", idio_as_string (k, 1), idio_as_string (idio_list_map_ph (l), 4)); */
 
     while (idio_S_nil != l) {
 	IDIO p = IDIO_PAIR_H (l);
@@ -2678,12 +3110,22 @@ IDIO idio_list_assq (IDIO k, IDIO l)
     return idio_S_false;
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("assq", assq, (IDIO k, IDIO l))
+IDIO_DEFINE_PRIMITIVE2_DS ("assq", assq, (IDIO k, IDIO l), "k l", "\
+return the first entry of association list `l`	\n\
+with the key `k` or #f if `k` is not a key in `l`	\n\
+						\n\
+:param k: object to search for			\n\
+:type k: any					\n\
+:param l: association list to search in		\n\
+:type l: list					\n\
+						\n\
+:return: the list (`k` & value), #f if `k` is not a key in `l`\n\
+")
 {
     IDIO_ASSERT (k);
     IDIO_ASSERT (l);
 
-    IDIO_VERIFY_PARAM_TYPE (list, l);
+    IDIO_USER_TYPE_ASSERT (list, l);
 
     return idio_list_assq (k, l);
 }
@@ -2707,7 +3149,31 @@ IDIO idio_list_set_difference (IDIO set1, IDIO set2)
     }
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("value-index", value_index, (IDIO o, IDIO i))
+IDIO_DEFINE_PRIMITIVE2_DS ("value-index", value_index, (IDIO o, IDIO i), "o i", "\
+index the object `o` by `i`			\n\
+						\n\
+indexable object types are:			\n\
+pair:			(nth o i)		\n\
+string:			(string-ref o i)	\n\
+array:			(array-ref o i)		\n\
+hash:			(hash-ref o i)		\n\
+struct instance:	(struct-instance-ref o i)	\n\
+						\n\
+Note that, in particular for struct instance,	\n\
+the symbol used for a symbolic field name may	\n\
+have been evaluated to a value.			\n\
+						\n\
+Quote if necessary: o.'i			\n\
+						\n\
+value-index is not efficient			\n\
+						\n\
+:param o: object to index			\n\
+:type o: any					\n\
+:param i: index					\n\
+:type i: any					\n\
+						\n\
+:return: the indexed value			\n\
+")
 {
     IDIO_ASSERT (o);
     IDIO_ASSERT (i);
@@ -2728,7 +3194,7 @@ IDIO_DEFINE_PRIMITIVE2 ("value-index", value_index, (IDIO o, IDIO i))
 	    case IDIO_TYPE_ARRAY:
 		return idio_array_ref (o, i);
 	    case IDIO_TYPE_HASH:
-		return idio_hash_ref (o, i, idio_S_nil);
+		return idio_hash_reference (o, i, idio_S_nil);
 	    case IDIO_TYPE_STRUCT_INSTANCE:
 		return idio_struct_instance_ref (o, i);
 	    default:
@@ -2744,7 +3210,33 @@ IDIO_DEFINE_PRIMITIVE2 ("value-index", value_index, (IDIO o, IDIO i))
     return idio_S_notreached;
 }
 
-IDIO_DEFINE_PRIMITIVE3 ("set-value-index!", set_value_index, (IDIO o, IDIO i, IDIO v))
+IDIO_DEFINE_PRIMITIVE3_DS ("set-value-index!", set_value_index, (IDIO o, IDIO i, IDIO v), "o i v", "\
+set value of the object `o` indexed by `i` to `v`	\n\
+						\n\
+indexable object types are:			\n\
+pair:			(nth o i)		\n\
+string:			(string-ref o i)	\n\
+array:			(array-ref o i)		\n\
+hash:			(hash-ref o i)		\n\
+struct instance:	(struct-instance-ref o i)	\n\
+						\n\
+Note that, in particular for struct instance,	\n\
+the symbol used for a symbolic field name may	\n\
+have been evaluated to a value.			\n\
+						\n\
+Quote if necessary: o.'i			\n\
+						\n\
+value-index is not efficient			\n\
+						\n\
+:param o: object to index			\n\
+:type o: any					\n\
+:param i: index					\n\
+:type i: any					\n\
+:param v: value					\n\
+:type v: any					\n\
+						\n\
+:return: the indexed value			\n\
+")
 {
     IDIO_ASSERT (o);
     IDIO_ASSERT (i);
@@ -2780,7 +3272,11 @@ IDIO_DEFINE_PRIMITIVE3 ("set-value-index!", set_value_index, (IDIO o, IDIO i, ID
     return idio_S_notreached;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("identity", identity, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1_DS ("identity", identity, (IDIO o), "o", "\
+return the value of `o`		\n\
+				\n\
+:return: `o`			\n\
+")
 {
     IDIO_ASSERT (o);
 
@@ -2811,7 +3307,7 @@ IDIO idio_copy (IDIO o, int depth)
 	    case IDIO_TYPE_PAIR:
 		return idio_copy_pair (o, depth);
 	    case IDIO_TYPE_ARRAY:
-		return idio_array_copy (o, depth, 0);
+		return idio_copy_array (o, depth, 0);
 	    case IDIO_TYPE_HASH:
 		return idio_copy_hash (o, depth);
 	    case IDIO_TYPE_BIGNUM:
@@ -2868,6 +3364,47 @@ IDIO idio_copy (IDIO o, int depth)
     return idio_S_notreached;
 }
 
+IDIO_DEFINE_PRIMITIVE1V_DS ("copy-value", copy_value, (IDIO v, IDIO args), "v [depth]", "\
+copy ``v`` to `depth`					\n\
+							\n\
+:param v: value to copy					\n\
+:type v: any						\n\
+:param depth: (optional) 'shallow or 'deep (default)	\n\
+							\n\
+:return: copy of `v`					\n\
+")
+{
+    IDIO_ASSERT (v);
+    IDIO_ASSERT (args);
+
+    IDIO_USER_TYPE_ASSERT (list, args);
+
+    int depth = IDIO_COPY_DEEP;
+
+    if (idio_S_nil != args) {
+	IDIO idepth = IDIO_PAIR_H (args);
+
+	if (idio_isa_symbol (idepth)) {
+	    if (idio_S_deep == idepth) {
+		depth = IDIO_COPY_DEEP;
+	    } else if (idio_S_shallow == idepth) {
+		depth = IDIO_COPY_SHALLOW;
+	    } else {
+		idio_error_param_type ("'deep or 'shallow", idepth, IDIO_C_FUNC_LOCATION ());
+
+		return idio_S_notreached;
+	    }
+	} else {
+	    idio_error_param_type ("symbol", idepth, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	}
+    }
+
+    IDIO c = idio_copy (v, depth);
+
+    return c;
+}
 
 void idio_dump (IDIO o, int detail)
 {
@@ -2885,8 +3422,8 @@ void idio_dump (IDIO o, int detail)
 		if (detail > 4) {
 		    fprintf (stderr, "-> %10p ", o->next);
 		}
-		fprintf (stderr, "t=%2d/%4.4s f=%2x gcf=%2x ", o->type, idio_type2string (o), o->flags, o->gc_flags);
 	    }
+	    fprintf (stderr, "t=%2d/%4.4s f=%2x gcf=%2x ", o->type, idio_type2string (o), o->flags, o->gc_flags);
 
 	    switch (o->type) {
 	    case IDIO_TYPE_STRING:
@@ -2919,9 +3456,9 @@ void idio_dump (IDIO o, int detail)
 			    if (idio_S_nil != IDIO_ARRAY_AE (o, i) ||
 				detail > 3) {
 				size_t size = 0;
-				char *s = idio_as_string (IDIO_ARRAY_AE (o, i), &size, 4);
+				char *s = idio_as_string (IDIO_ARRAY_AE (o, i), &size, 4, idio_S_nil, 1);
 				fprintf (stderr, "\t%3zu: %10p %10s\n", i, IDIO_ARRAY_AE (o, i), s);
-				free (s);
+				idio_gc_free (s);
 			    }
 			}
 		    }
@@ -2929,7 +3466,7 @@ void idio_dump (IDIO o, int detail)
 		break;
 	    case IDIO_TYPE_HASH:
 		if (detail) {
-		    fprintf (stderr, "hsz=%zu hm=%zx hc=%zu hst=%zu\n", IDIO_HASH_SIZE (o), IDIO_HASH_MASK (o), IDIO_HASH_COUNT (o), IDIO_HASH_START (o));
+		    fprintf (stderr, "hsz=%zu hm=%zx hc=%zu\n", IDIO_HASH_SIZE (o), IDIO_HASH_MASK (o), IDIO_HASH_COUNT (o));
 		    if (IDIO_HASH_COMP_C (o) != NULL) {
 			if (IDIO_HASH_COMP_C (o) == idio_eqp) {
 			    fprintf (stderr, "eq=idio_S_eqp");;
@@ -2952,43 +3489,45 @@ void idio_dump (IDIO o, int detail)
 		    if (detail > 1) {
 			size_t i;
 			for (i = 0; i < IDIO_HASH_SIZE (o); i++) {
-			    if (idio_S_nil == IDIO_HASH_HE_KEY (o, i)) {
-				continue;
-			    } else {
-				size_t size = 0;
-				char *s;
-				if (IDIO_HASH_FLAGS (o) & IDIO_HASH_FLAG_STRING_KEYS) {
-				    s = (char *) IDIO_HASH_HE_KEY (o, i);
+			    idio_hash_entry_t *he = IDIO_HASH_HA (o, i);
+			    for (; NULL != he; he = IDIO_HASH_HE_NEXT (he)) {
+				if (idio_S_nil == IDIO_HASH_HE_KEY (he)) {
+				    continue;
 				} else {
-				    s = idio_as_string (IDIO_HASH_HE_KEY (o, i), &size, 4);
-				}
-				if (detail & 0x4) {
-				    fprintf (stderr, "\t%30s : ", s);
-				} else {
-				    fprintf (stderr, "\t%3zu: k=%10p v=%10p n=%3zu %10s : ",
-							i,
-							IDIO_HASH_HE_KEY (o, i),
-							IDIO_HASH_HE_VALUE (o, i),
-							IDIO_HASH_HE_NEXT (o, i),
-							s);
-				}
-				if (! (IDIO_HASH_FLAGS (o) & IDIO_HASH_FLAG_STRING_KEYS)) {
-				    free (s);
-				}
-				if (IDIO_HASH_HE_VALUE (o, i)) {
-				    size = 0;
-				    s = idio_as_string (IDIO_HASH_HE_VALUE (o, i), &size, 4);
-				} else {
-				    if (asprintf (&s, "-") == -1) {
-					idio_error_alloc ("asprintf");
-
-					/* notreached */
-					return;
+				    size_t size = 0;
+				    char *s;
+				    if (IDIO_HASH_FLAGS (o) & IDIO_HASH_FLAG_STRING_KEYS) {
+					s = (char *) IDIO_HASH_HE_KEY (he);
+				    } else {
+					s = idio_as_string (IDIO_HASH_HE_KEY (he), &size, 4, idio_S_nil, 1);
 				    }
-				    size = strlen (s);
+				    if (detail & 0x4) {
+					fprintf (stderr, "\t%30s : ", s);
+				    } else {
+					fprintf (stderr, "\t%3zu: k=%10p v=%10p %10s : ",
+						 i,
+						 IDIO_HASH_HE_KEY (he),
+						 IDIO_HASH_HE_VALUE (he),
+						 s);
+				    }
+				    if (! (IDIO_HASH_FLAGS (o) & IDIO_HASH_FLAG_STRING_KEYS)) {
+					idio_gc_free (s);
+				    }
+				    if (IDIO_HASH_HE_VALUE (he)) {
+					size = 0;
+					s = idio_as_string (IDIO_HASH_HE_VALUE (he), &size, 4, idio_S_nil, 1);
+				    } else {
+					if (IDIO_ASPRINTF (&s, "-") == -1) {
+					    idio_error_alloc ("asprintf");
+
+					    /* notreached */
+					    return;
+					}
+					size = strlen (s);
+				    }
+				    fprintf (stderr, "%-10s\n", s);
+				    idio_gc_free (s);
 				}
-				fprintf (stderr, "%-10s\n", s);
-				free (s);
 			    }
 			}
 		    }
@@ -3042,7 +3581,14 @@ void idio_dump (IDIO o, int detail)
     fprintf (stderr, "\n");
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("idio-dump", idio_dump, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1_DS ("idio-dump", idio_dump, (IDIO o), "o", "\
+print the internal details of ``o`` to *stderr*		\n\
+							\n\
+:param o: value to dump					\n\
+:type o: any						\n\
+							\n\
+:return: #unspec					\n\
+")
 {
     IDIO_ASSERT (o);
 
@@ -3059,9 +3605,9 @@ void idio_debug_FILE (FILE *file, const char *fmt, IDIO o)
     /* fprintf (file, "[%d]", getpid()); */
 
     size_t size = 0;
-    char *os = idio_as_string (o, &size, 40);
+    char *os = idio_as_string (o, &size, 40, idio_S_nil, 1);
     fprintf (file, fmt, os);
-    free (os);
+    idio_gc_free (os);
 }
 
 void idio_debug (const char *fmt, IDIO o)
@@ -3072,17 +3618,32 @@ void idio_debug (const char *fmt, IDIO o)
     idio_debug_FILE (stderr, fmt, o);
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("idio-debug", idio_debug, (IDIO fmt, IDIO o))
+IDIO_DEFINE_PRIMITIVE2_DS ("idio-debug", idio_debug, (IDIO fmt, IDIO o), "fmt o", "\
+print the string value of ``o`` according to `fmt` to	\n\
+*stderr*						\n\
+							\n\
+There must be a single %s conversion specification	\n\
+							\n\
+idio-debug \"foo is %20s\n\" foo			\n\
+							\n\
+:param fmt: printf(3) format string			\n\
+:type fmt: string					\n\
+:param o: value to dump					\n\
+:type o: any						\n\
+							\n\
+:return: #unspec					\n\
+")
 {
     IDIO_ASSERT (fmt);
     IDIO_ASSERT (o);
-    IDIO_TYPE_ASSERT (string, fmt);
+
+    IDIO_USER_TYPE_ASSERT (string, fmt);
 
     size_t size = 0;
     char *sfmt = idio_string_as_C (fmt, &size);
     size_t C_size = strlen (sfmt);
     if (C_size != size) {
-	free (sfmt);
+	idio_gc_free (sfmt);
 
 	idio_util_error_format ("idio-debug: fmt contains an ASCII NUL", fmt, IDIO_C_FUNC_LOCATION ());
 
@@ -3091,9 +3652,77 @@ IDIO_DEFINE_PRIMITIVE2 ("idio-debug", idio_debug, (IDIO fmt, IDIO o))
 
     idio_debug (sfmt, o);
 
-    free (sfmt);
+    idio_gc_free (sfmt);
 
     return idio_S_unspec;
+}
+
+IDIO idio_add_feature (IDIO f)
+{
+    IDIO_ASSERT (f);
+
+    if (!(idio_isa_symbol (f) ||
+	  idio_isa_string (f))) {
+	idio_error_param_type ("symbol|string",  f, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    if (idio_isa_string (f)) {
+	size_t size = 0;
+	f = idio_symbols_C_intern (idio_display_string (f, &size));
+    }
+
+    IDIO fs = idio_module_symbol_value (idio_features, idio_Idio_module, idio_S_nil);
+
+    return idio_module_set_symbol_value (idio_features, idio_pair (f, fs), idio_Idio_module);
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("%add-feature", add_feature, (IDIO f), "f", "\
+add feature ``f`` to Idio features			\n\
+							\n\
+:param f: feature to add				\n\
+:type f: symbol or string				\n\
+:return: new list of features				\n\
+")
+{
+    IDIO_ASSERT (f);
+
+    if (idio_isa_symbol (f) ||
+	idio_isa_string (f)) {
+	return idio_add_feature (f);
+    } else {
+	idio_error_param_type ("symbol|string",  f, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+}
+
+IDIO idio_add_feature_ps (char *p, char *s)
+{
+    IDIO_C_ASSERT (p);
+    IDIO_C_ASSERT (s);
+
+    size_t buflen = strlen (p) + strlen (s) + 1;
+    char *buf;
+    IDIO_GC_ALLOC (buf, buflen);
+    sprintf (buf, "%s%s", p, s);
+    IDIO r = idio_add_feature (idio_symbols_C_intern (buf));
+    IDIO_GC_FREE (buf);
+    return r;
+}
+
+IDIO idio_add_feature_pi (char *p, size_t size)
+{
+    IDIO_C_ASSERT (p);
+
+    size_t buflen = strlen (p) + 20;
+    char *buf;
+    IDIO_GC_ALLOC (buf, buflen);
+    sprintf (buf, "%s%zu", p, size);
+    IDIO r = idio_add_feature (idio_symbols_C_intern (buf));
+    IDIO_GC_FREE (buf);
+    return r;
 }
 
 #if ! defined (strnlen)
@@ -3118,6 +3747,22 @@ void idio_init_util ()
     idio_module_set_symbol_value (idio_util_value_as_string, idio_S_nil, idio_Idio_module);
     idio_print_conversion_format_sym = idio_symbols_C_intern ("idio-print-conversion-format");
     idio_print_conversion_precision_sym = idio_symbols_C_intern ("idio-print-conversion-precision");
+
+    idio_features = idio_symbols_C_intern ("*idio-features*");
+    idio_module_set_symbol_value (idio_features, idio_S_nil, idio_Idio_module);
+
+#ifdef IDIO_DEBUG
+    idio_add_feature (idio_symbols_C_intern ("IDIO_DEBUG"));
+#endif
+
+#ifdef IDIO_EQUAL_DEBUG
+    for (int i = 0; i < IDIO_TYPE_MAX; i++) {
+	idio_equal_stats[i].count = 0;
+	idio_equal_stats[i].duration.tv_sec = 0;
+	idio_equal_stats[i].duration.tv_usec = 0;
+	idio_equal_stats[i].mixed = 0;
+    }
+#endif
 }
 
 void idio_util_add_primitives ()
@@ -3143,12 +3788,26 @@ void idio_util_add_primitives ()
     IDIO_ADD_PRIMITIVE (value_index);
     IDIO_ADD_PRIMITIVE (set_value_index);
     IDIO_ADD_PRIMITIVE (identity);
+    IDIO_ADD_PRIMITIVE (copy_value);
     IDIO_ADD_PRIMITIVE (idio_dump);
     IDIO_ADD_PRIMITIVE (idio_debug);
+    IDIO_ADD_PRIMITIVE (add_feature);
+
+    IDIO name = idio_symbols_C_intern ("map");
+    IDIO sym = idio_symbols_C_intern ("%map1");
+    idio_module_set_symbol_value (name, idio_module_symbol_value (sym, idio_Idio_module, idio_S_nil), idio_Idio_module);
+
 }
 
 void idio_final_util ()
 {
+#ifdef IDIO_EQUAL_DEBUG
+    for (int i = 0; i < IDIO_TYPE_MAX; i++) {
+	if (idio_equal_stats[i].count) {
+	    fprintf (stderr, "equal %3d %15s %9lu %5ld.%06ld %5lu\n", i, idio_type_enum2string (i), idio_equal_stats[i].count, idio_equal_stats[i].duration.tv_sec, idio_equal_stats[i].duration.tv_usec, idio_equal_stats[i].mixed);
+	}
+    }
+#endif
 }
 
 /* Local Variables: */

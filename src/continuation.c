@@ -33,7 +33,7 @@ IDIO idio_continuation (IDIO thr)
 
     IDIO_CONTINUATION_GREY (k) = NULL;
     IDIO_CONTINUATION_JMP_BUF (k) = IDIO_THREAD_JMP_BUF (thr);
-    IDIO_CONTINUATION_STACK (k) = idio_array_copy (IDIO_THREAD_STACK (thr), IDIO_COPY_SHALLOW, 8);
+    IDIO_CONTINUATION_STACK (k) = idio_copy_array (IDIO_THREAD_STACK (thr), IDIO_COPY_SHALLOW, 9);
 
     /*
      * XXX same order as idio_vm_preserve_state() !!!
@@ -47,7 +47,16 @@ IDIO idio_continuation (IDIO thr)
 
     idio_ai_t pc = IDIO_THREAD_PC (thr);
 
+    /*
+     * XXX check the use of PC in
+     *
+     * 1. IDIO_A_ABORT in idio_vm_run1()
+     *
+     * 2. printing a continuation in util.c
+     */
     idio_array_push (IDIO_CONTINUATION_STACK (k), idio_fixnum (pc));
+
+    idio_array_push (IDIO_CONTINUATION_STACK (k), thr);
 
     idio_array_push (IDIO_CONTINUATION_STACK (k), idio_SM_preserve_continuation);
 
@@ -61,7 +70,13 @@ int idio_isa_continuation (IDIO o)
     return idio_isa (o, IDIO_TYPE_CONTINUATION);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("continuation?", continuation_p, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1_DS ("continuation?", continuation_p, (IDIO o), "o", "\
+test if `o` is a continuation			\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is a continuation #f otherwise\n\
+")
 {
     IDIO_ASSERT (o);
 
@@ -81,7 +96,7 @@ void idio_free_continuation (IDIO k)
 
     idio_gc_stats_free (sizeof (idio_continuation_t));
 
-    free (k->u.continuation);
+    IDIO_GC_FREE (k->u.continuation);
 }
 
 void idio_init_continuation ()

@@ -50,14 +50,13 @@ export (%idio-jobs
 
 export-struct-accessors-only %idio-process	argv pid completed stopped status
 export-struct-accessors-only %idio-job		pipeline procs pgid notified tcattrs stdin stdout stderr
-export-struct-accessors-only %idio-status	pid state reason
 
 %%last-job := #n
 
 define (job-as-string job seen) {
   if (%idio-job? job) {
     r := (open-output-string)
-    hprintf r "#<SI %idio-job "
+    hprintf r "#<SI %%idio-job "
 
     hprintf r "%s %s " job.pgid job.pipeline
 
@@ -317,7 +316,7 @@ for the benefit of the do loops in update-status_ and wait-for-job_.
     jobs-loop %idio-jobs
   })\
        ((or (C/== pid 0)
-	    (C/== errno ECHILD)) {
+	    (C/== libc/errno ECHILD)) {
 	      ;; edisplay* "mps: pid ==" pid ", errno ==" (strerrno errno)
 	      #t
 	    }) \
@@ -472,14 +471,13 @@ If `cont` is set a SIGCONT is sent to the process group
 
   if %idio-interactive {
     ;; put the job in the foreground
-    job-pgid := %idio-job-pgid job
-    suppress-errors ^idio-error tcsetpgrp %idio-terminal job-pgid
+    suppress-errors ^idio-error tcsetpgrp %idio-terminal (%idio-job-pgid job)
   }
   if cont {
     if %idio-interactive {
       tcsetattr %idio-terminal TCSADRAIN (%idio-job-tcattrs job)
     }
-    kill (- job-pgid) SIGCONT
+    kill (- (%idio-job-pgid job)) SIGCONT
   }
 
   r := wait-for-job job
@@ -550,7 +548,7 @@ define (mark-job-as-running job) "mark job `job` as running
 
 In particular, mark job `job` as not stopped.
 " {
-  loop := function (procs) {
+  loop :+ function (procs) {
 	    cond ((null? procs) #n) \
 		 (else {
 		   set-%idio-process-stopped! (ph procs) #f
@@ -702,7 +700,7 @@ define (%prep-process pgid infile outfile errfile foreground) "prepare the curre
   prep-io infile outfile errfile
 }
 
-define-infix-operator | 300 {
+define-infix-operator | 1700 {
   ;; edisplay* "operator" op before after
 
   foreground := #t
@@ -952,7 +950,7 @@ define-infix-operator | 300 {
   }
 }
 
-define-macro (fork-command foreground & cmd) {
+define-template (fork-command foreground & cmd) {
   stdin          := (gensym)
   close-stdin    := (gensym)
   stdout         := (gensym)
@@ -1056,11 +1054,11 @@ define-macro (fork-command foreground & cmd) {
   }
 }
 
-define-macro (fg-job & cmd) {
+define-template (fg-job & cmd) {
   #T{ fork-command #t $@cmd }
 }
 
-define-macro (bg-job & cmd) {
+define-template (bg-job & cmd) {
   #T{ fork-command #f $@cmd }
 }
 
@@ -1301,7 +1299,7 @@ with-handle-dup := {
 ;; ... < e1 ...
 ;; ... > e1 ...
 ;; ... 2> e1 ...
-define-infix-operator > 400 {
+define-infix-operator > 1600 {
   suffix := #n
 
   if (and (pair? after)
@@ -1341,13 +1339,13 @@ define-infix-operator > 400 {
   result
 }
 
-define-infix-operator < 400 \>
-define-infix-operator 2> 400 \>
+define-infix-operator < 1600 \>
+define-infix-operator 2> 1600 \>
 
 ;; ... <& e1 ...
 ;; ... >& e1 ...
 ;; ... 2>& e1 ...
-define-infix-operator >& 400 {
+define-infix-operator >& 1600 {
   suffix := #n
 
   if (and (pair? after)
@@ -1387,8 +1385,8 @@ define-infix-operator >& 400 {
   result
 }
 
-define-infix-operator <& 400 \>&
-define-infix-operator 2>& 400 \>&
+define-infix-operator <& 1600 \>&
+define-infix-operator 2>& 1600 \>&
 
 define (jobs) "display the state of outstanding jobs" {
   first-j := #t

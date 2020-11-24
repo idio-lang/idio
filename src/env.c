@@ -71,7 +71,7 @@ static void idio_env_add_environ ()
 	    strncpy (name, *env, e - *env);
 	    name[e - *env] = '\0';
 	    var = idio_symbols_C_intern (name);
-	    free (name);
+	    IDIO_GC_FREE (name);
 
 	    val = idio_string_C (e + 1);
 	} else {
@@ -123,6 +123,9 @@ static void idio_env_add_environ ()
 	idio_module_env_set_symbol_value (idio_env_PWD_sym, idio_string_C (cwd));
     }
 
+    /*
+     * XXX getcwd() used system allocator
+     */
     free (cwd);
 }
 
@@ -180,7 +183,7 @@ void idio_env_init_idiolib (char *argv0)
 		    char *sidiolib = idio_string_as_C (idiolib, &idiolib_len);
 		    size_t C_size = strlen (sidiolib);
 		    if (C_size != idiolib_len) {
-			free (sidiolib);
+			IDIO_GC_FREE (sidiolib);
 
 			idio_env_error_format ("IDIOLIB: contains an ASCII NUL", idiolib, IDIO_C_FUNC_LOCATION ());
 
@@ -213,10 +216,10 @@ void idio_env_init_idiolib (char *argv0)
 			strcat (ni, idio_env_IDIOLIB_default);
 			ni[ni_len] = '\0';
 			idio_module_env_set_symbol_value (idio_env_IDIOLIB_sym, idio_string_C (ni));
-			free (ni);
+			IDIO_GC_FREE (ni);
 		    }
 
-		    free (sidiolib);
+		    IDIO_GC_FREE (sidiolib);
 		}
 	    }
 	}
@@ -237,5 +240,5 @@ void idio_env_add_primitives ()
 
 void idio_final_env ()
 {
-    free (idio_env_IDIOLIB_default);
+    IDIO_GC_FREE (idio_env_IDIOLIB_default);
 }

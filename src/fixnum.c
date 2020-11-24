@@ -115,6 +115,7 @@ IDIO idio_fixnum_C (char *str, int base)
     }
 
     if ('\0' == *end) {
+	idio_gc_stats_inc (IDIO_TYPE_FIXNUM);
 	return idio_fixnum ((intptr_t) val);
     } else {
 	char em[BUFSIZ];
@@ -132,7 +133,13 @@ int idio_isa_fixnum (IDIO o)
     return (((intptr_t) o & IDIO_TYPE_MASK) == IDIO_TYPE_FIXNUM_MARK);
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("fixnum?", fixnump, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1_DS ("fixnum?", fixnump, (IDIO o), "o", "\
+test if `o` is a fixnum				\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is an fixnum, #f otherwise	\n\
+")
 {
     IDIO_ASSERT (o);
 
@@ -165,7 +172,15 @@ int idio_isa_integer (IDIO o)
     return 0;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("integer?", integerp, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1_DS ("integer?", integerp, (IDIO o), "o", "\
+test if `o` is an integer			\n\
+						\n\
+a fixnum or a bignum integer			\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is an integer, #f otherwise	\n\
+")
 {
     IDIO_ASSERT (o);
 
@@ -191,7 +206,15 @@ int idio_isa_number (IDIO o)
     return 0;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("number?", numberp, (IDIO o))
+IDIO_DEFINE_PRIMITIVE1_DS ("number?", numberp, (IDIO o), "o", "\
+test if `o` is a number				\n\
+						\n\
+fixnum or bignum				\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is an number, #f otherwise	\n\
+")
 {
     IDIO_ASSERT (o);
 
@@ -491,7 +514,14 @@ IDIO idio_fixnum_primitive_floor (IDIO a)
     return a;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("floor", floor, (IDIO a))
+IDIO_DEFINE_PRIMITIVE1_DS ("floor", floor, (IDIO a), "a", "\
+return the floor of `a`				\n\
+						\n\
+:param a: number				\n\
+:type a: fixnum or bignum			\n\
+						\n\
+:return: floor of `a`				\n\
+")
 {
     IDIO_ASSERT (a);
 
@@ -528,7 +558,17 @@ IDIO idio_fixnum_primitive_remainder (IDIO a, IDIO b)
     return idio_fixnum (r_mod);
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("remainder", remainder, (IDIO a, IDIO b))
+IDIO_DEFINE_PRIMITIVE2_DS ("remainder", remainder, (IDIO a, IDIO b), "a b", "\
+return the remainder of `a` less `floor (b)`	\n\
+						\n\
+:param a: number				\n\
+:type a: fixnum or bignum			\n\
+:param b: number				\n\
+:type b: fixnum or bignum			\n\
+						\n\
+:return: remainder of `a` less `floor(b)`	\n\
+:rtype: fixnum or bignum			\n\
+")
 {
     IDIO_ASSERT (a);
     IDIO_ASSERT (b);
@@ -584,7 +624,17 @@ IDIO idio_fixnum_primitive_quotient (IDIO a, IDIO b)
     return idio_fixnum (IDIO_FIXNUM_VAL (a) / ib);
 }
 
-IDIO_DEFINE_PRIMITIVE2 ("quotient", quotient, (IDIO a, IDIO b))
+IDIO_DEFINE_PRIMITIVE2_DS ("quotient", quotient, (IDIO a, IDIO b), "a b", "\
+return the quotient `a / b`			\n\
+						\n\
+:param a: number				\n\
+:type a: fixnum or bignum			\n\
+:param b: number				\n\
+:type b: fixnum or bignum			\n\
+						\n\
+:return: quotient of `a / b`			\n\
+:rtype: fixnum or bignum			\n\
+")
 {
     IDIO_ASSERT (a);
     IDIO_ASSERT (b);
@@ -899,11 +949,22 @@ IDIO_DEFINE_ARITHMETIC_BIGNUM_PRIMITIVE1V ("/", divide)
 
 IDIO_DEFINE_ARITHMETIC_CMP_PRIMITIVE1V ("le", le)
 IDIO_DEFINE_ARITHMETIC_CMP_PRIMITIVE1V ("lt", lt)
-IDIO_DEFINE_ARITHMETIC_CMP_PRIMITIVE1V ("==", eq)
+IDIO_DEFINE_ARITHMETIC_CMP_PRIMITIVE1V ("eq", eq)
 IDIO_DEFINE_ARITHMETIC_CMP_PRIMITIVE1V ("ge", ge)
 IDIO_DEFINE_ARITHMETIC_CMP_PRIMITIVE1V ("gt", gt)
 
-IDIO_DEFINE_PRIMITIVE1 ("integer->char", integer2char, (IDIO i))
+IDIO_DEFINE_PRIMITIVE1_DS ("integer->char", integer2char, (IDIO i), "i", "\
+[deprecated]					\n\
+						\n\
+convert integer `i` to a character		\n\
+						\n\
+:param i: number				\n\
+:type i: integer				\n\
+						\n\
+:return: character				\n\
+:rtype: character				\n\
+"
+)
 {
     IDIO_ASSERT (i);
 
@@ -928,14 +989,27 @@ IDIO_DEFINE_PRIMITIVE1 ("integer->char", integer2char, (IDIO i))
     return c;
 }
 
-IDIO_DEFINE_PRIMITIVE1 ("integer->unicode", integer2unicode, (IDIO i))
+IDIO_DEFINE_PRIMITIVE1_DS ("integer->unicode", integer2unicode, (IDIO i), "i", "\
+convert integer `i` to a Unicode code point	\n\
+						\n\
+:param i: number				\n\
+:type i: integer				\n\
+						\n\
+:return: Unicode code point			\n\
+:rtype: unicode					\n\
+")
 {
     IDIO_ASSERT (i);
 
     IDIO u = idio_S_unspec;
 
     if (idio_isa_fixnum (i)) {
-	u = IDIO_UNICODE (IDIO_FIXNUM_VAL (i));
+	intptr_t iv = IDIO_FIXNUM_VAL (i);
+
+	if (iv >= 0 &&
+	    iv <= 0x10ffff) {
+	    u = IDIO_UNICODE (iv);
+	}
     } else if (idio_isa_bignum (i)) {
 	intptr_t iv = idio_bignum_intptr_value (i);
 

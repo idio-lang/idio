@@ -45,21 +45,22 @@
 #include <unistd.h>
 #include <stdarg.h>
 
+#include <assert.h>
+#include <ctype.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <ffi.h>
+#include <glob.h>
+#include <grp.h>
+#include <inttypes.h>
+#include <limits.h>
+#include <pwd.h>
+#include <regex.h>
+#include <signal.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <inttypes.h>
-#include <errno.h>
-#include <assert.h>
-#include <ffi.h>
-#include <ctype.h>
-#include <glob.h>
-#include <signal.h>
-#include <fcntl.h>
-#include <time.h>
 #include <strings.h>
-#include <pwd.h>
-#include <grp.h>
-#include <limits.h>
+#include <time.h>
 
 #include <sys/resource.h>
 #include <sys/stat.h>
@@ -116,7 +117,7 @@ wither RLIMIT_NLIMITS?
 #define IDIO_LIBC_NSIG NSIG
 #endif
 
-#ifdef IDIO_VM_PERF
+#ifdef IDIO_VM_PROF
 extern FILE *idio_vm_perf_FILE;
 #endif
 
@@ -130,9 +131,11 @@ extern FILE *idio_vm_perf_FILE;
 	}								\
     }
 
+#define IDIO_USER_TYPE_ASSERT(t,x) IDIO_TYPE_ASSERT(t,x)
+
 #define IDIO_ASSERT_NOT_CONST(t,x) {					\
 	if (IDIO_FLAGS (x) & IDIO_FLAG_CONST) {				\
-	    idio_error_const_param_C (#t " " #x, x, __FILE__, __func__, __LINE__); \
+	    idio_error_const_param_C (#t, x, __FILE__, __func__, __LINE__); \
 	}								\
     }
 
@@ -160,14 +163,25 @@ extern FILE *idio_vm_perf_FILE;
 
 #else
 
-#define IDIO_C_ASSERT(x)	((void) 0)
-#define IDIO_TYPE_ASSERT(t,x)	((void) 0)
-#define IDIO_ASSERT_NOT_CONST(t,x) ((void) 0)
-#define IDIO_ASSERT(x)		((void) 0)
-#define IDIO_ASSERT_FREE(x)	((void) 0)
-#define IDIO_ASSERT_NOT_FREED(x) ((void) 0)
-#define IDIO_EXIT(x)		{exit(x);}
-#define IDIO_C_EXIT(x)		{exit(x);}
+#define IDIO_C_ASSERT(x)
+#define IDIO_TYPE_ASSERT(t,x)
+
+#define IDIO_USER_TYPE_ASSERT(t,x)	{				\
+	if (! idio_isa_ ## t (x)) {					\
+	    idio_error_param_type_C (#t, x, __FILE__, __func__, __LINE__); \
+	}								\
+    }
+
+#define IDIO_ASSERT_NOT_CONST(t,x) {					\
+	if (IDIO_FLAGS (x) & IDIO_FLAG_CONST) {				\
+	    idio_error_const_param_C (#t, x, __FILE__, __func__, __LINE__); \
+	}								\
+    }
+#define IDIO_ASSERT(x)
+#define IDIO_ASSERT_FREE(x)
+#define IDIO_ASSERT_NOT_FREED(x)
+#define IDIO_EXIT(x)			{exit(x);}
+#define IDIO_C_EXIT(x)			{exit(x);}
 #define IDIO__LINE__			__LINE__
 #define IDIO_C_LOCATION(s)		(idio_string_C (s))
 #define IDIO_C_FUNC_LOCATION()		IDIO_C_LOCATION(__func__)
@@ -223,7 +237,7 @@ extern FILE *idio_vm_perf_FILE;
  *
  * We are looking for the following for foo_C, ie. Idio's "foo-idio"
 
-   IDIO_DEFINE_PRIMITIVE2 ("foo-idio", foo_C, (T1 a1, T2, a2), sigstr, docstr)
+   IDIO_DEFINE_PRIMITIVE2_DS ("foo-idio", foo_C, (T1 a1, T2 a2), sigstr, docstr)
    {
      ...
    }
@@ -234,7 +248,6 @@ extern FILE *idio_vm_perf_FILE;
    static struct idio_primitive_desc_s idio_primitive_data_foo_C = {
       idio_defprimitive_foo_C,
       "foo-idio",
-      idio_S_nil,
       2,
       0,
       sigstr,
@@ -365,13 +378,6 @@ extern FILE *idio_vm_perf_FILE;
 
 #define IDIO_ADD_POSTFIX_OPERATOR(cname,pri)	  idio_add_postfix_operator_primitive (&idio_postfix_operator_data_ ## cname, pri);
 
-#define IDIO_VERIFY_PARAM_TYPE(type,param)				\
-    {									\
-	if (! idio_isa_ ## type (param)) {				\
-	    idio_error_param_type_C (#type, param, __FILE__, __func__, __LINE__); \
-	}								\
-    }
-
 #define IDIO_STREQP(s,cs)	(strlen (s) == strlen (cs) && strncmp (s, cs, strlen (cs)) == 0)
 
 #define IDIO_KEYWORD_DECL(n)		IDIO idio_KW_ ## n
@@ -401,9 +407,11 @@ extern FILE *idio_vm_perf_FILE;
 #include "handle.h"
 #include "hash.h"
 #include "keyword.h"
+#include "malloc.h"
 #include "module.h"
 #include "pair.h"
 #include "path.h"
+#include "posix-regex.h"
 #include "primitive.h"
 #include "read.h"
 #include "string-handle.h"
@@ -435,12 +443,6 @@ extern FILE *idio_vm_perf_FILE;
 #define IDIO_CONSTANT_PRESERVE_ALL_STATE	 21
 #define IDIO_CONSTANT_PUSH_TRAP			 22
 #define IDIO_CONSTANT_PRESERVE_CONTINUATION	 23
-
-#define IDIO_CONSTANT_TOPLEVEL         30
-#define IDIO_CONSTANT_PREDEF           31
-#define IDIO_CONSTANT_LOCAL            32
-#define IDIO_CONSTANT_ENVIRON          33
-#define IDIO_CONSTANT_COMPUTED         34
 
 /*
  * Stack markers
@@ -480,15 +482,10 @@ extern FILE *idio_vm_perf_FILE;
 #define idio_SM_dynamic			((const IDIO) IDIO_CONSTANT_IDIO (IDIO_STACK_MARKER_DYNAMIC))
 #define idio_SM_environ			((const IDIO) IDIO_CONSTANT_IDIO (IDIO_STACK_MARKER_ENVIRON))
 
-#define idio_S_toplevel		((const IDIO) IDIO_CONSTANT_IDIO (IDIO_CONSTANT_TOPLEVEL))
-#define idio_S_predef		((const IDIO) IDIO_CONSTANT_IDIO (IDIO_CONSTANT_PREDEF))
-#define idio_S_local		((const IDIO) IDIO_CONSTANT_IDIO (IDIO_CONSTANT_LOCAL))
-#define idio_S_environ		((const IDIO) IDIO_CONSTANT_IDIO (IDIO_CONSTANT_ENVIRON))
-#define idio_S_computed		((const IDIO) IDIO_CONSTANT_IDIO (IDIO_CONSTANT_COMPUTED))
-
 #define idio_S_notreached	((const IDIO) IDIO_CONSTANT_IDIO (IDIO_CONSTANT_NOTREACHED))
 
 extern pid_t idio_pid;
+extern int idio_bootstrap_complete;
 extern int idio_exit_status;
 extern IDIO idio_k_exit;
 void idio_final ();

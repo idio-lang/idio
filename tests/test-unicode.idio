@@ -272,7 +272,7 @@ test str.4 #U+0000FF			; we allow any hex number...
 
 ;; 2-byte encoding (0xff < all code points <= 0xffff)
 
-;; U+0127 LATIN SMALL LETTER H WITH STROKE (Planck constant)
+;; U+0127 LATIN SMALL LETTER H WITH STROKE
 c = #U+0127
 test (unicode? c) #t
 str = make-string 10 c
@@ -456,5 +456,27 @@ sa = split-string ss delim
 test sa.1 "ello"
 test sa.2 "worl"
 
+;; Unicode variable names
+
+;; The reduced Planck constant is U+210F (PLANCK CONSTANT OVER TWO PI)
+;; -- Wikipedia suggested it is the italic variant of ћ U+045B
+;; (CYRILLIC SMALL LETTER TSHE) -- known as h-bar and is measured in
+;; in J⋅s/radian
+h-bar := 1.054571817e-34
+ℏ := h-bar
+test ℏ h-bar
+
+;; Unicode interpolation characters
+define-template (unicode-safe in) {
+  ;; the unquote character is U+0127 meaning we should return the
+  ;; value passed in
+  #Tħ{
+    ħin
+  }
+}
+
+test (unicode-safe "foo") "foo"
+test (unicode-safe "ħ") "ħ"
+
 ;; all done?
-test (unicode-test0 + 209) Tests
+test (unicode-test0 + 212) Tests

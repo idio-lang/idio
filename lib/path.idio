@@ -21,67 +21,67 @@
 
 define-struct-accessors-only ~path		pattern
 
-sort_size := #n
-sort_atime := #n
-sort_mtime := #n
-sort_ctime := #n
+sort-size := #n
+sort-atime := #n
+sort-mtime := #n
+sort-ctime := #n
 
 {
-  sort_stats := #n
+  sort-stats := #n
 
-  key_stat_size := function (p) {
-    sort_stats.p.sb_size
+  key-stat-size := function (p) {
+    sort-stats.p.sb_size
   }
 
-  key_stat_atime := function (p) {
-    sort_stats.p.sb_atime
+  key-stat-atime := function (p) {
+    sort-stats.p.sb_atime
   }
 
-  key_stat_mtime := function (p) {
-    sort_stats.p.sb_mtime
+  key-stat-mtime := function (p) {
+    sort-stats.p.sb_mtime
   }
 
-  key_stat_ctime := function (p) {
-    sort_stats.p.sb_ctime
+  key-stat-ctime := function (p) {
+    sort-stats.p.sb_ctime
   }
 
-  sort_size = function (l) {
-    sort_stats = (make-hash #n #n ((length l) + 10))
+  sort-size = function (l) {
+    sort-stats = make-hash #n #n ((length l) + 10)
 
-    map (function (p) {
-      sort_stats.p = libc/stat p
+    for-each (function (p) {
+      sort-stats.p = libc/stat p
     }) l
 
-    sort l C/< key_stat_size
+    sort l C/< key-stat-size
   }
 
-  sort_atime = function (l) {
-    sort_stats = (make-hash #n #n ((length l) + 10))
+  sort-atime = function (l) {
+    sort-stats = make-hash #n #n ((length l) + 10)
 
-    map (function (p) {
-      sort_stats.p = libc/stat p
+    for-each (function (p) {
+      sort-stats.p = libc/stat p
     }) l
 
-    sort l C/< key_stat_atime
+    sort l C/< key-stat-atime
   }
 
-  sort_mtime = function (l) {
-    sort_stats = (make-hash #n #n ((length l) + 10))
+  sort-mtime = function (l) {
+    sort-stats = make-hash #n #n ((length l) + 10)
 
-    map (function (p) {
-      sort_stats.p = libc/stat p
+    for-each (function (p) {
+      sort-stats.p = libc/stat p
     }) l
 
-    sort l C/< key_stat_mtime
+    sort l C/< key-stat-mtime
   }
 
-  sort_ctime = function (l) {
-    sort_stats = (make-hash #n #n ((length l) + 10))
+  sort-ctime = function (l) {
+    sort-stats = make-hash #n #n ((length l) + 10)
 
-    map (function (p) {
-      sort_stats.p = libc/stat p
+    for-each (function (p) {
+      sort-stats.p = libc/stat p
     }) l
 
-    sort l C/< key_stat_ctime
+    sort l C/< key-stat-ctime
   }
 }

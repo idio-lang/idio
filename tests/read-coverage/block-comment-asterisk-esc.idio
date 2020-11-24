@@ -58,10 +58,3 @@ Finally, this block comment ends now...
 
 *#
 
-; Even though the following contains a static arity error the code is
-; never seen by the evaluator because it has been consumed by the sexp
-; comment #;
-
-#;and #t {
-  pair 1
-}

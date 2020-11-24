@@ -47,7 +47,7 @@
 ;; set-bar-y! foo 10		=> #unspec
 ;; bar-y foo			=> 10
 
-define-macro (define-struct name & fields) {
+define-template (define-struct name & fields) {
   #T{
     ;; define bar (make-struct-type 'bar #n '(x y))
     define $name (make-struct-type '$name #n '$fields)
@@ -56,7 +56,7 @@ define-macro (define-struct name & fields) {
   }
 }
 
-define-macro (export-struct name & fields) {
+define-template (export-struct name & fields) {
   #T{
     define-struct $name $@fields
     export $name
@@ -71,7 +71,7 @@ define-macro (export-struct name & fields) {
 ;; never used in C-land anyway).
 ;;
 ;; cf. condition.idio
-define-macro (define-struct-accessors-only name & fields) {
+define-template (define-struct-accessors-only name & fields) {
   ;; handy parameters
   arg := (gensym)
   val := (gensym)
@@ -99,10 +99,10 @@ define-macro (define-struct-accessors-only name & fields) {
     }
 
     ;; define (bar-x g/7) {
-    ;;   %struct-instance-ref-direct g/7 bar 'bar-x 0
+    ;;   %struct-instance-ref-direct g/7 bar 0
     ;; }
     ;; define (bar-y g/7) {
-    ;;   %struct-instance-ref-direct g/7 bar 'bar-y 1
+    ;;   %struct-instance-ref-direct g/7 bar 1
     ;; }
     $@(map (function (field) {
 	      get-fname := string->symbol (append-string
@@ -112,17 +112,17 @@ define-macro (define-struct-accessors-only name & fields) {
 
 	      #T{
 		define ($get-fname $arg) {
-		  %struct-instance-ref-direct $arg $name '$get-fname $(field-index field fields)
+		  %struct-instance-ref-direct $arg $name $(field-index field fields)
 		}
 	      }
     })
        fields)
 
     ;; define (set-bar-x! g/7 g/8) {
-    ;;   %struct-instance-set-direct! g/7 bar 'bar-x 0 g/8
+    ;;   %struct-instance-set-direct! g/7 bar 0 g/8
     ;; }
     ;; define (set-bar-y! g/7 g/8) {
-    ;;   %struct-instance-set-direct! g/7 bar 'bar-y 1 g/8
+    ;;   %struct-instance-set-direct! g/7 bar 1 g/8
     ;; }
     $@(map (function (field) {
 	      set-fname := string->symbol (append-string
@@ -134,7 +134,7 @@ define-macro (define-struct-accessors-only name & fields) {
 
 	      #T{
 		define ($set-fname $arg $val) {
-		  %struct-instance-set-direct! $arg $name '$set-fname $(field-index field fields) $val
+		  %struct-instance-set-direct! $arg $name $(field-index field fields) $val
 		}
 	      }
     })
@@ -142,7 +142,7 @@ define-macro (define-struct-accessors-only name & fields) {
   }
 }
 
-define-macro (export-struct-accessors-only name & fields) {
+define-template (export-struct-accessors-only name & fields) {
   ;; handy parameters
   arg := (gensym)
   val := (gensym)

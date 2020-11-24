@@ -1,0 +1,378 @@
+;;
+;; Copyright (c) 2020 Ian Fitchet <idf(at)idio-lang.org>
+;;
+;; Licensed under the Apache License, Version 2.0 (the "License"); you
+;; may not use this file except in compliance with the License.  You
+;; may obtain a copy of the License at
+;;
+;;     http://www.apache.org/licenses/LICENSE-2.0
+;;
+;; Unless required by applicable law or agreed to in writing, software
+;; distributed under the License is distributed on an "AS IS" BASIS,
+;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+;; See the License for the specific language governing permissions and
+;; limitations under the License.
+;;
+;;
+
+;;
+;; test-format.idio
+;;
+
+#*
+
+{format} and the underlying {%format} allow us to use printf(3)-ish
+escape sequences for strings and numbers.
+
+What is correct?  Modulo Unicode-strings (for which printf appears to
+use UTF-8 bytes) we can compare the the output from Bash's printf
+built-in.
+
+There may be discrepancies with The Truth as Idio is not (currently?)
+rounding.
+
+*#
+
+format0 := Tests
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; fixnums
+
+n := 10
+
+; basic conversion
+test (format "%d" n)	"10"
+test (format "%x" n)	"a"
+test (format "%X" n)	"A"
+test (format "%o" n)	"12"
+test (format "%b" n)	"1010"
+
+; min width (no change)
+test (format "%1d" n)	"10"
+test (format "%1x" n)	"a"
+test (format "%1X" n)	"A"
+test (format "%1o" n)	"12"
+test (format "%1b" n)	"1010"
+
+; min width (change)
+test (format "%4d" n)	"  10"
+test (format "%4x" n)	"   a"
+test (format "%4X" n)	"   A"
+test (format "%4o" n)	"  12"
+test (format "%6b" n)	"  1010"
+
+; min width (change) ; left aligned
+test (format "%-4d" n)	"10  "
+test (format "%-4x" n)	"a   "
+test (format "%-4X" n)	"A   "
+test (format "%-4o" n)	"12  "
+test (format "%-6b" n)	"1010  "
+
+; min width (no change) ; zero padded
+test (format "%01d" n)	"10"
+test (format "%01x" n)	"a"
+test (format "%01X" n)	"A"
+test (format "%01o" n)	"12"
+test (format "%01b" n)	"1010"
+
+; min width (change) ; zero padded
+test (format "%04d" n)	"0010"
+test (format "%04x" n)	"000a"
+test (format "%04X" n)	"000A"
+test (format "%04o" n)	"0012"
+test (format "%06b" n)	"001010"
+
+; min precision (no change)
+test (format "%.1d" n)	"10"
+test (format "%.1x" n)	"a"
+test (format "%.1X" n)	"A"
+test (format "%.1o" n)	"12"
+test (format "%.1b" n)	"1010"
+
+; min precision (change)
+test (format "%.3d" n)	"010"
+test (format "%.3x" n)	"00a"
+test (format "%.3X" n)	"00A"
+test (format "%.3o" n)	"012"
+test (format "%.6b" n)	"001010"
+
+; min width > min precision
+test (format "%4.3d" n)	" 010"
+test (format "%4.3x" n)	" 00a"
+test (format "%4.3X" n)	" 00A"
+test (format "%4.3o" n)	" 012"
+test (format "%8.6b" n)	"  001010"
+
+; min width > min precision ; left aligned
+test (format "%-4.3d" n)	"010 "
+test (format "%-4.3x" n)	"00a "
+test (format "%-4.3X" n)	"00A "
+test (format "%-4.3o" n)	"012 "
+test (format "%-8.6b" n)	"001010  "
+
+; min width < min precision
+test (format "%2.3d" n)	"010"
+test (format "%2.3x" n)	"00a"
+test (format "%2.3X" n)	"00A"
+test (format "%2.3o" n)	"012"
+test (format "%4.6b" n)	"001010"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; bignums
+;;
+;; lots of variants, enjoy!
+;;
+;; %e		as printf(3)
+;; %f		as printf(3)
+;; string	as S9fES
+
+; the 1e6 format forces a bignum!
+n := 1e6
+
+test (string n)		"1.0e+6"
+
+; default formats - precision is 6
+test (format "%e" n)	"1.000000e+06"
+test (format "%f" n)	"1000000.000000"
+
+; min width (no change)
+test (format "%1e" n)	"1.000000e+06"
+test (format "%1f" n)	"1000000.000000"
+
+; min width (change)
+test (format "%15e" n)	"   1.000000e+06"
+test (format "%15f" n)	" 1000000.000000"
+
+; min width (change) ; left aligned
+test (format "%-15e" n)	"1.000000e+06   "
+test (format "%-15f" n)	"1000000.000000 "
+
+; min width (no change) ; zero padded
+test (format "%01e" n)	"1.000000e+06"
+test (format "%01f" n)	"1000000.000000"
+
+; min width (change) ; zero padded
+test (format "%015e" n)	"0001.000000e+06"
+test (format "%015f" n)	"01000000.000000"
+
+; min precision
+test (format "%.2e" n)	"1.00e+06"
+test (format "%.2f" n)	"1000000.00"
+
+; zero precision
+test (format "%.0e" n)	"1e+06"
+test (format "%.0f" n)	"1000000"
+
+; min width ; min precision
+test (format "%15.2e" n)	"       1.00e+06"
+test (format "%15.2f" n)	"     1000000.00"
+
+; min width ; min precision ; left aligned
+test (format "%-15.2e" n)	"1.00e+06       "
+test (format "%-15.2f" n)	"1000000.00     "
+
+; bigger!
+n := 1e100
+
+test (string n)		"1.0e+100"
+
+; default formats - precision is 6
+test (format "%e" n)	"1.000000e+100"
+test (format "%f" n)	"10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000.000000"
+
+#*
+
+let's assume the rest work...Bash's printf isn't so far off!
+
+% printf "%f\n" 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+9999999999999999999669353532207342619498699019828496079271391541752018669482644324418977840117055488.000000
+
+*#
+
+; smaller!
+n := 1e-6
+
+test (string n)		"1.0e-6"
+
+; default formats - precision is 6
+test (format "%e" n)	"1.000000e-06"
+test (format "%f" n)	"0.000001"
+
+; min width (no change)
+test (format "%1e" n)	"1.000000e-06"
+test (format "%1f" n)	"0.000001"
+
+; min width (change)
+test (format "%15e" n)	"   1.000000e-06"
+test (format "%15f" n)	"       0.000001"
+
+; min width (change) ; left aligned
+test (format "%-15e" n)	"1.000000e-06   "
+test (format "%-15f" n)	"0.000001       "
+
+; min width (no change) ; zero padded
+test (format "%01e" n)	"1.000000e-06"
+test (format "%01f" n)	"0.000001"
+
+; min width (change) ; zero padded
+test (format "%015e" n)	"0001.000000e-06"
+test (format "%015f" n)	"00000000.000001"
+
+; min precision
+test (format "%.2e" n)	"1.00e-06"
+test (format "%.2f" n)	"0.00"
+
+; zero precision
+test (format "%.0e" n)	"1e-06"
+test (format "%.0f" n)	"0"
+
+; min width ; min precision
+test (format "%15.2e" n)	"       1.00e-06"
+test (format "%15.2f" n)	"           0.00"
+
+; min width ; min precision ; left aligned
+test (format "%-15.2e" n)	"1.00e-06       "
+test (format "%-15.2f" n)	"0.00           "
+
+; more digits (not too many as we can check min precision)
+n := 123.456
+
+test (string n)		"1.23456e+2"
+
+; default formats - precision is 6
+test (format "%e" n)	"1.234560e+02"	; note trailing 0 due to precision 6
+test (format "%f" n)	"123.456000"
+
+; min width (no change)
+test (format "%1e" n)	"1.234560e+02"
+test (format "%1f" n)	"123.456000"
+
+; min width (change)
+test (format "%15e" n)	"   1.234560e+02"
+test (format "%15f" n)	"     123.456000"
+
+; min width (change) ; left aligned
+test (format "%-15e" n)	"1.234560e+02   "
+test (format "%-15f" n)	"123.456000     "
+
+; min width (no change) ; zero padded
+test (format "%01e" n)	"1.234560e+02"
+test (format "%01f" n)	"123.456000"
+
+; min width (change) ; zero padded
+test (format "%015e" n)	"0001.234560e+02"
+test (format "%015f" n)	"00000123.456000"
+
+; min precision
+test (format "%.2e" n)	"1.23e+02"
+test (format "%.2f" n)	"123.45"
+
+; zero precision
+test (format "%.0e" n)	"1e+02"
+test (format "%.0f" n)	"123"
+
+; min width ; min precision
+test (format "%15.2e" n)	"       1.23e+02"
+test (format "%15.2f" n)	"         123.45"
+
+; min width ; min precision ; left aligned
+test (format "%-15.2e" n)	"1.23e+02       "
+test (format "%-15.2f" n)	"123.45         "
+
+; many digits (in particular more than 9 (one segment) on 32bit
+; systems)
+
+; we should be rounding the 6th digit from 2 to 3 (because of the 6)
+; in most cases
+n := 3.14159265358979323
+
+test (string n)		"3.14159265358979323e+0"
+
+; default formats - precision is 6
+test (format "%e" n)	"3.141592e+00"	; note trailing 0 due to precision 6
+test (format "%f" n)	"3.141592"
+
+; min width (no change)
+test (format "%1e" n)	"3.141592e+00"
+test (format "%1f" n)	"3.141592"
+
+; min width (change)
+test (format "%15e" n)	"   3.141592e+00"
+test (format "%15f" n)	"       3.141592"
+
+; min width (change) ; left aligned
+test (format "%-15e" n)	"3.141592e+00   "
+test (format "%-15f" n)	"3.141592       "
+
+; min width (no change) ; zero padded
+test (format "%01e" n)	"3.141592e+00"
+test (format "%01f" n)	"3.141592"
+
+; min width (change) ; zero padded
+test (format "%015e" n)	"0003.141592e+00"
+test (format "%015f" n)	"00000003.141592"
+
+; min precision
+test (format "%.2e" n)	"3.14e+00"
+test (format "%.2f" n)	"3.14"
+
+; zero precision
+test (format "%.0e" n)	"3e+00"
+test (format "%.0f" n)	"3"
+
+; min width ; min precision
+test (format "%15.2e" n)	"       3.14e+00"
+test (format "%15.2f" n)	"           3.14"
+
+; min width ; min precision ; left aligned
+test (format "%-15.2e" n)	"3.14e+00       "
+test (format "%-15.2f" n)	"3.14           "
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; strings
+
+s := "hello world"
+
+test (format "%s" s)	"hello world"
+test (format "%15s" s)	"    hello world"
+test (format "%-15s" s)	"hello world    "
+test (format "%.5s" s)	"hello"
+test (format "%15.5s" s)	"          hello"
+test (format "%-15.5s" s)	"hello          "
+
+; 2-byte string with 9 code points -- the precision measures code
+; points (nothing to do with UTF-8 bytes)
+s := "кириллица"
+
+test (format "%s" s)	"кириллица"
+test (format "%15s" s)	"      кириллица"
+test (format "%-15s" s)	"кириллица      "
+test (format "%.5s" s)	"кирил"
+test (format "%15.5s" s)	"          кирил"
+test (format "%-15.5s" s)	"кирил          "
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; keyed data for %format
+
+h := (make-hash)
+
+h.#\s = "hello world"			; a string
+h.#\f = 10				; a fixnum => %d
+h.#\b = 123.456				; a bignum => %f
+
+; basic access
+test (%format 'keyed "%s" h)		"hello world"
+test (%format 'keyed "%f" h)		"10"
+test (%format 'keyed "%b" h)		"123.456000"
+
+; now a more exotic format
+test (%format 'keyed "%-15.5s" h)	"hello          "
+test (%format 'keyed "%4.3f" h)		" 010"
+test (%format 'keyed "%10.2b" h)	"    123.45"
+
+;; all done?
+test Tests (format0 + 160)

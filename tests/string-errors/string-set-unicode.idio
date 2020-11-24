@@ -1,4 +1,4 @@
 
-str := "hello world"
+str := copy-string "hello world"
 
 string-set! str #\a #\a

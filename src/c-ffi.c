@@ -24,7 +24,7 @@
 
 ffi_type *idio_C_FFI_type (IDIO field_data)
 {
-    IDIO type = idio_array_get_index (field_data, IDIO_C_FIELD_DATA_TYPE);
+    IDIO type = idio_array_ref_index (field_data, IDIO_C_FIELD_DATA_TYPE);
 
     if (idio_S_nil == type) {
 	return &ffi_type_void;
@@ -79,7 +79,7 @@ ffi_type **idio_C_FFI_ffi_arg_types (size_t nargs, IDIO args)
     ffi_type **arg_types = idio_alloc (nargs * sizeof (ffi_type *));
     size_t i;
     for (i = 0; i < nargs; i++) {
-	arg_types[i] = idio_C_FFI_type (idio_array_get_index (args, i));
+	arg_types[i] = idio_C_FFI_type (idio_array_ref_index (args, i));
     }
 
     return arg_types;
@@ -92,8 +92,6 @@ IDIO idio_C_FFI (IDIO symbol, IDIO arg_types, IDIO result_type)
     IDIO_ASSERT (result_type);
 
     IDIO o = idio_gc_get (IDIO_TYPE_C_FFI);
-
-    IDIO_FPRINTF (stderr, "idio_C_FFI: %10p\n", o);
 
     IDIO_TYPE_ASSERT (opaque, symbol);
     IDIO_TYPE_ASSERT (list, arg_types);
@@ -122,7 +120,7 @@ IDIO idio_C_FFI (IDIO symbol, IDIO arg_types, IDIO result_type)
     IDIO_C_FFI_NARGS (o) = nargs;
     IDIO_C_FFI_ARG_TYPES (o) = idio_C_FFI_ffi_arg_types (nargs, IDIO_C_FFI_ARGS (o));
 
-    IDIO result_field_data = idio_array_get_index (IDIO_C_FFI_RESULT (o), 0);
+    IDIO result_field_data = idio_array_ref_index (IDIO_C_FFI_RESULT (o), 0);
     IDIO_C_FFI_RTYPE (o) = idio_C_FFI_type (result_field_data);
 
     IDIO_C_FFI_CIFP (o) = idio_alloc (sizeof (ffi_cif));
@@ -153,8 +151,8 @@ void idio_free_C_FFI (IDIO o)
 
     idio_gc_stats_free (sizeof (idio_C_FFI_t));
 
-    free (IDIO_C_FFI_CIFP (o));
-    free (IDIO_C_FFI_ARG_TYPES (o));
-    free (o->u.C_FFI);
+    IDIO_GC_FREE (IDIO_C_FFI_CIFP (o));
+    IDIO_GC_FREE (IDIO_C_FFI_ARG_TYPES (o));
+    IDIO_GC_FREE (o->u.C_FFI);
 }
 

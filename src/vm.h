@@ -55,7 +55,7 @@
 #define IDIO_A_GLOBAL_SYM_DEF			30
 #define IDIO_A_GLOBAL_SYM_SET			31
 #define IDIO_A_COMPUTED_SYM_SET			32
-#define IDIO_A_COMPUTED_SYM_DEFINE		33
+#define IDIO_A_COMPUTED_SYM_DEF			33
 
 #define IDIO_A_GLOBAL_VAL_REF			40
 #define IDIO_A_CHECKED_GLOBAL_VAL_REF		41
@@ -67,7 +67,7 @@
 #define IDIO_A_GLOBAL_VAL_DEF			50
 #define IDIO_A_GLOBAL_VAL_SET			51
 #define IDIO_A_COMPUTED_VAL_SET			52
-#define IDIO_A_COMPUTED_VAL_DEFINE		53
+#define IDIO_A_COMPUTED_VAL_DEF			53
 
 #define IDIO_A_PREDEFINED0			60
 #define IDIO_A_PREDEFINED1			61
@@ -91,7 +91,7 @@
 #define IDIO_A_POP_VALUE			81
 #define IDIO_A_POP_REG1				82
 #define IDIO_A_POP_REG2				83
-#define IDIO_A_POP_EXPR				84
+#define IDIO_A_SRC_EXPR				84
 #define IDIO_A_POP_FUNCTION			85
 #define IDIO_A_PRESERVE_STATE			86
 #define IDIO_A_RESTORE_STATE			87
@@ -122,7 +122,7 @@
 #define IDIO_A_EXTEND_FRAME			120
 #define IDIO_A_UNLINK_FRAME			121
 #define IDIO_A_PACK_FRAME			122
-#define IDIO_A_POP_CONS_FRAME			123
+#define IDIO_A_POP_LIST_FRAME			123
 
 /* NB. No ARITY0P as there is always an implied varargs */
 #define IDIO_A_ARITY1P				130
@@ -208,6 +208,7 @@
 #define IDIO_A_POP_ESCAPER			251 /* not implemented */
 
 extern IDIO idio_vm_constants;
+extern IDIO idio_vm_constants_hash;
 extern IDIO idio_vm_krun;
 extern int idio_vm_reports;
 extern IDIO_IA_T idio_all_code;
@@ -220,11 +221,17 @@ extern size_t idio_prologue_len;
 extern int idio_vm_exit;
 
 #define IDIO_VM_NS	1000000000L
+#define IDIO_VM_US	1000000L
 
 void idio_vm_panic (IDIO thr, char *m);
 IDIO idio_vm_closure_name (IDIO c);
 
-IDIO idio_vm_run (IDIO thr);
+#define IDIO_VM_RUN_C		0
+#define IDIO_VM_RUN_IDIO	1
+
+IDIO idio_vm_run (IDIO thr, idio_ai_t pc, int caller);
+IDIO idio_vm_run_C (IDIO thr, idio_ai_t pc);
+void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_ai_t pc0, idio_ai_t pce);
 
 void idio_vm_restore_continuation (IDIO k, IDIO val);
 void idio_vm_restore_exit (IDIO k, IDIO val);
@@ -251,13 +258,14 @@ void idio_vm_add_module_constants (IDIO module, IDIO constants);
 void idio_raise_condition (IDIO continuablep, IDIO e);
 IDIO idio_apply (IDIO fn, IDIO args);
 void idio_vm_debug (IDIO thr, char *prefix, idio_ai_t stack_start);
-#ifdef IDIO_VM_PERF
-void idio_vm_func_start (IDIO clos, struct timespec *tsp);
-void idio_vm_func_stop (IDIO clos, struct timespec *tsp);
-void idio_vm_prim_time (IDIO clos, struct timespec *ts0p, struct timespec *tsep);
+#ifdef IDIO_VM_PROF
+void idio_vm_func_start (IDIO clos, struct timespec *tsp, struct rusage *rup);
+void idio_vm_func_stop (IDIO clos, struct timespec *tsp, struct rusage *rup);
+void idio_vm_prim_time (IDIO clos, struct timespec *ts0p, struct timespec *tsep, struct rusage *ru0p, struct rusage *ruep);
 #endif
 IDIO idio_vm_invoke_C (IDIO thr, IDIO command);
 IDIO idio_vm_source_location ();
+IDIO idio_vm_source_expr ();
 IDIO idio_vm_frame_tree (IDIO args);
 
 void idio_vm_thread_init (IDIO thr);

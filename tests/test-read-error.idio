@@ -132,6 +132,8 @@ read-error-load "read-errors/word-too-long-emb.idio" "word is too long: 'aaaaaaa
 read-error-load "read-errors/interpc-quasiquote-eof.idio" "EOF in quasiquote" 1
 read-error-load "read-errors/interpc-escape-eof.idio" "EOF in escape" 1
 
+read-error-load "read-errors/word-escape-eof.idio" "EOF in escaped word" 1
+
 read-error-load "read-errors/unexpected-rparen.idio" "unexpected ')'" 1
 read-error-load "read-errors/unexpected-rparen-emb.idio" "unexpected ')'" 2
 
@@ -223,4 +225,4 @@ read-error-load "read-errors/op-eof.idio" "EOF in list" 3
 read-error-load "read-errors/op-eof-emb.idio" "EOF in list" 4
 
 ;; all done?
-test Tests (read-error0 + 212)
+test Tests (read-error0 + 214)

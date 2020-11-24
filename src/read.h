@@ -75,6 +75,7 @@ extern IDIO idio_src_properties;
 
 IDIO idio_read (IDIO handle);
 IDIO idio_read_expr (IDIO handle);
+idio_unicode_t idio_read_character_int (IDIO handle, IDIO lo, int kind);
 IDIO idio_read_character (IDIO handle, IDIO lo, int kind);
 
 void idio_init_read ();

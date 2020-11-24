@@ -23,23 +23,24 @@
 #include "idio.h"
 
 pid_t idio_pid = 0;
+int idio_bootstrap_complete = 0;
 int idio_exit_status = 0;
 IDIO idio_k_exit = NULL;
 
 void idio_add_primitives ();
 
-#ifdef IDIO_VM_PERF
-#define IDIO_VM_PERF_FILE_NAME "vm-perf.log"
+#ifdef IDIO_VM_PROF
+#define IDIO_VM_PROF_FILE_NAME "vm-perf.log"
 FILE *idio_vm_perf_FILE;
 #endif
 
 void idio_init (int argc, char **argv)
 {
 
-#ifdef IDIO_VM_PERF
-    idio_vm_perf_FILE = fopen (IDIO_VM_PERF_FILE_NAME, "w");
+#ifdef IDIO_VM_PROF
+    idio_vm_perf_FILE = fopen (IDIO_VM_PROF_FILE_NAME, "w");
     if (NULL == idio_vm_perf_FILE) {
-	perror ("fopen " IDIO_VM_PERF_FILE_NAME);
+	perror ("fopen " IDIO_VM_PROF_FILE_NAME);
 	exit (1);
     }
 #endif
@@ -88,6 +89,7 @@ void idio_init (int argc, char **argv)
     idio_init_codegen ();
 
     idio_init_libc_wrap ();
+    idio_init_posix_regex ();
 
     /*
      * Arguments
@@ -159,6 +161,7 @@ void idio_add_primitives ()
     idio_codegen_add_primitives ();
 
     idio_libc_wrap_add_primitives ();
+    idio_posix_regex_add_primitives ();
 
     /*
      * We can't patch up the first thread's IO handles until modules
@@ -173,6 +176,7 @@ void idio_final ()
     /*
      * reverse order of idio_init () ??
      */
+    idio_final_posix_regex ();
     idio_final_libc_wrap ();
 
     idio_final_codegen ();
@@ -214,9 +218,9 @@ void idio_final ()
 
     idio_final_gc ();
 
-#ifdef IDIO_VM_PERF
+#ifdef IDIO_VM_PROF
     if (fclose (idio_vm_perf_FILE)) {
-	perror ("fclose " IDIO_VM_PERF_FILE_NAME);
+	perror ("fclose " IDIO_VM_PROF_FILE_NAME);
     }
     idio_vm_perf_FILE = stderr;
 #endif
@@ -269,13 +273,13 @@ int main (int argc, char **argv, char **envp)
 	break;
     case IDIO_VM_SIGLONGJMP_EXIT:
 	fprintf (stderr, "NOTICE: bootstrap/exit (%d) for PID %d\n", idio_exit_status, getpid ());
-	free (nargv);
+	IDIO_GC_FREE (nargv);
 	idio_final ();
 	exit (idio_exit_status);
 	break;
     default:
 	fprintf (stderr, "sigsetjmp: bootstrap failed with sjv %d: exit (%d)\n", sjv, idio_exit_status);
-	free (nargv);
+	IDIO_GC_FREE (nargv);
 	idio_final ();
 	exit (idio_exit_status);
 	break;
@@ -293,7 +297,10 @@ int main (int argc, char **argv, char **envp)
 
     idio_array_push (idio_vm_krun, IDIO_LIST2 (idio_k_exit, idio_get_output_string (dosh)));
 
-    idio_load_file_name_aio (idio_string_C ("bootstrap"), idio_vm_constants);
+    idio_load_file_name (idio_string_C ("bootstrap"), idio_vm_constants);
+
+    idio_bootstrap_complete = 1;
+    idio_gc_collect_all ("post-bootstrap");
 
     if (nargc > 1) {
 	/*
@@ -309,7 +316,7 @@ int main (int argc, char **argv, char **envp)
 	 */
 	IDIO load = idio_module_symbol_value (idio_S_load, idio_Idio_module_instance (), IDIO_LIST1 (idio_S_false));
 	if (idio_S_false == load) {
-	    free (nargv);
+	    IDIO_GC_FREE (nargv);
 	    idio_error_C ("cannot lookup 'load'", idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
@@ -356,13 +363,13 @@ int main (int argc, char **argv, char **envp)
 		break;
 	    case IDIO_VM_SIGLONGJMP_EXIT:
 		fprintf (stderr, "load/exit (%d)\n", idio_exit_status);
-		free (nargv);
+		IDIO_GC_FREE (nargv);
 		idio_final ();
 		exit (idio_exit_status);
 		break;
 	    default:
 		fprintf (stderr, "sigsetjmp: load %s: failed with sjv %d\n", nargv[i], sjv);
-		free (nargv);
+		IDIO_GC_FREE (nargv);
 		idio_final ();
 		exit (1);
 		break;
@@ -401,21 +408,21 @@ int main (int argc, char **argv, char **envp)
 	    break;
 	case IDIO_VM_SIGLONGJMP_EXIT:
 	    idio_gc_reset ("REPL/exit", gc_pause);
-	    free (nargv);
+	    IDIO_GC_FREE (nargv);
 	    idio_final ();
 	    exit (idio_exit_status);
 	default:
 	    fprintf (stderr, "sigsetjmp: repl failed with sjv %d\n", sjv);
-	    free (nargv);
+	    IDIO_GC_FREE (nargv);
 	    exit (1);
 	    break;
 	}
 
 	/* repl */
-	idio_load_handle_ebe (idio_thread_current_input_handle (), idio_read, idio_evaluate, idio_vm_constants);
+	idio_load_handle (idio_thread_current_input_handle (), idio_read, idio_evaluate, idio_vm_constants);
     }
 
-    free (nargv);
+    IDIO_GC_FREE (nargv);
     idio_final ();
 
     return idio_exit_status;
