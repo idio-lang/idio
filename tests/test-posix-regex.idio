@@ -1,0 +1,56 @@
+#*
+
+POSIX regex(3) regular expressions.
+
+We're not looking to test regcomp/regexec -- we can assume they work
+-- we're looking to see if we successfully wrapper them.
+
+Remember, Idio uses UTF-8 internally and regex(3) use your locale(7).
+If your locale is not UTF-8 oriented then these tests may fail.
+
+*#
+
+module test/posix-regex
+
+posix-regex-0 := Tests
+
+define (maybe-match->sexp rx str) {
+  crx := regcomp rx
+  res := regexec crx str
+  and res (array->list res)
+}
+
+define (test-pre res rx str) {
+  test (maybe-match->sexp rx str) res
+}
+
+str := "xababcy"
+
+;; match
+test-pre '("ab") "ab" str
+
+;; no match
+test-pre #f "xy" str
+
+;; one sub-expression
+test-pre '("abc" "ab") \
+	"(ab)c" \
+	str
+
+;; two sub-expressions
+test-pre '("xababc" "xa" "ab") \
+	"(x[^b]*)b(.*)c" \
+	str
+
+;; nested sub-expressions
+test-pre '("ababc" "abab" "ab") \
+	"((ab)*)c" \
+	str
+
+;; empty sub-expression
+test-pre '("c" "") \
+	"(k*)c" \
+	str
+
+;; all done?
+test (posix-regex-0 + 6) Tests

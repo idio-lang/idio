@@ -89,6 +89,7 @@ void idio_init (int argc, char **argv)
     idio_init_codegen ();
 
     idio_init_libc_wrap ();
+    idio_init_posix_regex ();
 
     /*
      * Arguments
@@ -160,6 +161,7 @@ void idio_add_primitives ()
     idio_codegen_add_primitives ();
 
     idio_libc_wrap_add_primitives ();
+    idio_posix_regex_add_primitives ();
 
     /*
      * We can't patch up the first thread's IO handles until modules
@@ -174,6 +176,7 @@ void idio_final ()
     /*
      * reverse order of idio_init () ??
      */
+    idio_final_posix_regex ();
     idio_final_libc_wrap ();
 
     idio_final_codegen ();

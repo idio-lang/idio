@@ -45,21 +45,22 @@
 #include <unistd.h>
 #include <stdarg.h>
 
+#include <assert.h>
+#include <ctype.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <ffi.h>
+#include <glob.h>
+#include <grp.h>
+#include <inttypes.h>
+#include <limits.h>
+#include <pwd.h>
+#include <regex.h>
+#include <signal.h>
 #include <stddef.h>
 #include <stdint.h>
-#include <inttypes.h>
-#include <errno.h>
-#include <assert.h>
-#include <ffi.h>
-#include <ctype.h>
-#include <glob.h>
-#include <signal.h>
-#include <fcntl.h>
-#include <time.h>
 #include <strings.h>
-#include <pwd.h>
-#include <grp.h>
-#include <limits.h>
+#include <time.h>
 
 #include <sys/resource.h>
 #include <sys/stat.h>
@@ -410,6 +411,7 @@ extern FILE *idio_vm_perf_FILE;
 #include "module.h"
 #include "pair.h"
 #include "path.h"
+#include "posix-regex.h"
 #include "primitive.h"
 #include "read.h"
 #include "string-handle.h"

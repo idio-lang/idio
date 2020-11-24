@@ -315,7 +315,7 @@ static void idio_gc_finalizer_run (IDIO o)
 	void (*p) (IDIO o) = IDIO_C_TYPE_POINTER_P (ofunc);
 	(*p) (o);
 
-	idio_hash_delete (idio_gc_finalizer_hash, o);
+	idio_gc_deregister_finalizer (o);
     }
 }
 
@@ -2066,26 +2066,18 @@ static void idio_gc_run_all_finalizers ()
 	return;
     }
 
-    int n = 0;
-    idio_ai_t hi;
-    for (hi = 0; hi < IDIO_HASH_SIZE (idio_gc_finalizer_hash); hi++) {
-	idio_hash_entry_t *he = IDIO_HASH_HA (idio_gc_finalizer_hash, hi);
-	for (; NULL != he; he = IDIO_HASH_HE_NEXT (he)) {
-	    IDIO k = IDIO_HASH_HE_KEY (he);
-	    IDIO_ASSERT (k);
-	    if (idio_S_nil != k) {
-		n++;
+    IDIO keys = idio_hash_keys_to_list (idio_gc_finalizer_hash);
+    while (idio_S_nil != keys) {
+	IDIO k = IDIO_PAIR_H (keys);
 
-		/* apply the finalizer */
-		IDIO C_p = IDIO_HASH_HE_VALUE (he);
-		void (*func) (IDIO o) = IDIO_C_TYPE_POINTER_P (C_p);
-		(*func) (k);
+	/* apply the finalizer */
+	IDIO C_p = idio_hash_ref (idio_gc_finalizer_hash, k);
+	void (*func) (IDIO o) = IDIO_C_TYPE_POINTER_P (C_p);
+	(*func) (k);
 
-		/* expunge the key/value pair from this hash */
-		idio_hash_delete (idio_gc_finalizer_hash, k);
-	    }
-	}
+	keys = IDIO_PAIR_T (keys);
     }
+
     idio_hash_remove_weak_table (idio_gc_finalizer_hash);
 }
 
