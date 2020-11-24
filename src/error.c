@@ -34,7 +34,11 @@ void idio_error_vfprintf (char *format, va_list argp)
 IDIO idio_error_string (char *format, va_list argp)
 {
     char *s;
+#ifdef IDIO_MALLOC
+    if (-1 == idio_malloc_vasprintf (&s, format, argp)) {
+#else
     if (-1 == vasprintf (&s, format, argp)) {
+#endif
 	idio_error_alloc ("asprintf");
     }
 
