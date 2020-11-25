@@ -3758,8 +3758,29 @@ read a number from ``src``				\n\
     return idio_read_bignum_radix (handle, lo, '?', radix);
 }
 
+void idio_read_add_primitives ()
+{
+    IDIO_ADD_PRIMITIVE (read_number);
+}
+
+void idio_final_read ()
+{
+#ifdef IDIO_DEBUG
+    FILE *fh = stderr;
+
+#ifdef IDIO_VM_PROF
+    fh = idio_vm_perf_FILE;
+#endif
+
+    fprintf (fh, "src-properties: %zu/%zu\n", IDIO_HASH_COUNT (idio_src_properties), IDIO_HASH_SIZE (idio_src_properties));
+#endif
+    idio_hash_remove_weak_table (idio_src_properties);
+}
+
 void idio_init_read ()
 {
+    idio_module_table_register (idio_read_add_primitives, idio_final_read);
+
     IDIO name = idio_symbols_C_intern ("%idio-lexical-object");
     idio_lexobj_type = idio_struct_type (name,
 					 idio_S_nil,
@@ -3781,24 +3802,5 @@ void idio_init_read ()
     idio_gc_protect_auto (idio_read_bitset_offset_sh);
     idio_read_bitset_end_sh = idio_open_input_string_handle_C ("");
     idio_gc_protect_auto (idio_read_bitset_end_sh);
-}
-
-void idio_read_add_primitives ()
-{
-    IDIO_ADD_PRIMITIVE (read_number);
-}
-
-void idio_final_read ()
-{
-#ifdef IDIO_DEBUG
-    FILE *fh = stderr;
-
-#ifdef IDIO_VM_PROF
-    fh = idio_vm_perf_FILE;
-#endif
-
-    fprintf (fh, "src-properties: %zu/%zu\n", IDIO_HASH_COUNT (idio_src_properties), IDIO_HASH_SIZE (idio_src_properties));
-#endif
-    idio_hash_remove_weak_table (idio_src_properties);
 }
 

@@ -27,8 +27,6 @@ int idio_isa_character (IDIO o);
 IDIO idio_character_lookup (char *name);
 
 void idio_init_character ();
-void idio_character_add_primitives ();
-void idio_final_character ();
 
 #endif
 

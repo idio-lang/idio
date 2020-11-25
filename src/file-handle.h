@@ -82,8 +82,6 @@ IDIO idio_load_file_name (IDIO filename, IDIO cs);
 IDIO idio_defprimitive_load_file (IDIO filename);
 
 void idio_init_file_handle ();
-void idio_file_handle_add_primitives ();
-void idio_final_file_handle ();
 
 #endif
 

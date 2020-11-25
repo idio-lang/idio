@@ -49,8 +49,6 @@ IDIO idio_string_set (IDIO s, IDIO index, IDIO c);
 int idio_string_equal (IDIO s1, IDIO s2);
 
 void idio_init_string ();
-void idio_string_add_primitives ();
-void idio_final_string ();
 
 #endif
 

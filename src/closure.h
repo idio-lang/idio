@@ -29,8 +29,6 @@ int idio_isa_procedure (IDIO o);
 void idio_free_closure (IDIO c);
 
 void idio_init_closure ();
-void idio_closure_add_primitives ();
-void idio_final_closure ();
 
 #endif
 

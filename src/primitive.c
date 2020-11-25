@@ -224,10 +224,6 @@ Return #t if `p` is varargs			\n\
     return r;
 }
 
-void idio_init_primitive ()
-{
-}
-
 void idio_primitive_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (primitivep);
@@ -240,7 +236,8 @@ void idio_primitive_add_primitives ()
     IDIO_ADD_MODULE_PRIMITIVE (idio_evaluation_module, primitive_varargsp);
 }
 
-void idio_final_primitive ()
+void idio_init_primitive ()
 {
+    idio_module_table_register (idio_primitive_add_primitives, NULL);
 }
 

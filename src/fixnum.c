@@ -1027,10 +1027,6 @@ convert integer `i` to a Unicode code point	\n\
     return u;
 }
 
-void idio_init_fixnum ()
-{
-}
-
 void idio_fixnum_add_primitives ()
 {
     idio_module_set_symbol_value (idio_symbols_C_intern ("FIXNUM-MAX"), idio_fixnum (IDIO_FIXNUM_MAX), idio_Idio_module_instance ());
@@ -1058,7 +1054,8 @@ void idio_fixnum_add_primitives ()
     IDIO_ADD_PRIMITIVE (integer2unicode);
 }
 
-void idio_final_fixnum ()
+void idio_init_fixnum ()
 {
+    idio_module_table_register (idio_fixnum_add_primitives, NULL);
 }
 

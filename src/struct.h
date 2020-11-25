@@ -23,31 +23,31 @@
 #ifndef STRUCT_H
 #define STRUCT_H
 
-#define IDIO_DEFINE_STRUCT0(v,n,p) {			\
-	IDIO sym = idio_symbols_C_intern (n);		\
-	v = idio_struct_type (sym, p, idio_S_nil);	\
-	idio_gc_protect (v);				\
-	idio_module_toplevel_set_symbol_value (sym, v);	\
+#define IDIO_DEFINE_STRUCT0(v,n,p) {				\
+	IDIO sym = idio_symbols_C_intern (n);			\
+	v = idio_struct_type (sym, p, idio_S_nil);		\
+	idio_gc_protect_auto (v);				\
+	idio_module_toplevel_set_symbol_value (sym, v);		\
     }
 
 #define IDIO_DEFINE_STRUCT1(v,n,p,f1) {					\
 	IDIO sym = idio_symbols_C_intern (n);				\
 	v = idio_struct_type (sym, p, IDIO_LIST1 (idio_symbols_C_intern (f1)));	\
-	idio_gc_protect (v);						\
+	idio_gc_protect_auto (v);					\
 	idio_module_toplevel_set_symbol_value (sym, v);			\
     }
 
 #define IDIO_DEFINE_STRUCT2(v,n,p,f1,f2) {				\
 	IDIO sym = idio_symbols_C_intern (n);				\
 	v = idio_struct_type (sym, p, IDIO_LIST2 (idio_symbols_C_intern (f1), idio_symbols_C_intern (f2))); \
-	idio_gc_protect (v);						\
+	idio_gc_protect_auto (v);					\
 	idio_module_toplevel_set_symbol_value (sym, v);			\
     }
 
 #define IDIO_DEFINE_STRUCT3(v,n,p,f1,f2,f3) {				\
 	IDIO sym = idio_symbols_C_intern (n);				\
 	v = idio_struct_type (sym, p, IDIO_LIST3 (idio_symbols_C_intern (f1), idio_symbols_C_intern (f2), idio_symbols_C_intern (f3))); \
-	idio_gc_protect (v);						\
+	idio_gc_protect_auto (v);					\
 	idio_module_toplevel_set_symbol_value (sym, v);			\
     }
 
@@ -73,7 +73,7 @@
 	    fields = idio_pair (field, fields);				\
 	}								\
 	v = idio_struct_type (sym, p, fields);				\
-	idio_gc_protect (v);						\
+	idio_gc_protect_auto (v);					\
 	idio_module_set_symbol_value (sym, v, m);			\
     }
 
@@ -96,8 +96,6 @@ IDIO idio_struct_instance_set (IDIO si, IDIO field, IDIO v);
 IDIO idio_struct_instance_set_direct (IDIO si, idio_ai_t index, IDIO v);
 
 void idio_init_struct ();
-void idio_struct_add_primitives ();
-void idio_final_struct ();
 
 #endif
 

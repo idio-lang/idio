@@ -235,13 +235,9 @@ IDIO idio_frame_params_as_list (IDIO frame)
 
 void idio_init_frame ()
 {
-}
-
-void idio_frame_add_primitives ()
-{
-}
-
-void idio_final_frame ()
-{
+    /*
+     * XXX nothing to do here
+     */
+    idio_module_table_register (NULL, NULL);
 }
 

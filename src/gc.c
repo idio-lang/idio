@@ -1994,8 +1994,65 @@ invoke the garbage collector			\n\
     return idio_S_unspec;
 }
 
+void idio_gc_add_primitives ()
+{
+    IDIO_ADD_PRIMITIVE (gc_collect);
+}
+
+static void idio_gc_run_all_finalizers ()
+{
+    if (idio_S_nil == idio_gc_finalizer_hash) {
+	return;
+    }
+
+    IDIO keys = idio_hash_keys_to_list (idio_gc_finalizer_hash);
+    while (idio_S_nil != keys) {
+	IDIO k = IDIO_PAIR_H (keys);
+
+	/* apply the finalizer */
+	IDIO C_p = idio_hash_ref (idio_gc_finalizer_hash, k);
+	void (*func) (IDIO o) = IDIO_C_TYPE_POINTER_P (C_p);
+	(*func) (k);
+
+	keys = IDIO_PAIR_T (keys);
+    }
+
+    idio_hash_remove_weak_table (idio_gc_finalizer_hash);
+}
+
+void idio_final_gc ()
+{
+#ifdef IDIO_DEBUG
+    idio_gc_stats ();
+#ifdef IDIO_MALLOC
+    idio_malloc_stats ("final-gc");
+#endif
+#endif
+
+    IDIO_GC_FLAGS (idio_gc) |= IDIO_GC_FLAG_FINISH;
+
+    idio_gc_run_all_finalizers ();
+
+    /* unprotect the finalizer hash itself */
+    idio_gc_expose (idio_gc_finalizer_hash);
+    /*  prevent it being used */
+    idio_gc_finalizer_hash = idio_S_nil;
+
+    idio_gc_expose_autos ();
+
+    idio_gc_expose_all ();
+
+    idio_gc_collect (idio_gc, IDIO_GC_COLLECT_ALL, "final-gc");
+#ifdef IDIO_DEBUG
+    idio_gc_dump ();
+#endif
+    idio_gc_obj_free ();
+}
+
 void idio_init_gc ()
 {
+    idio_module_table_register (idio_gc_add_primitives, idio_final_gc);
+
     idio_gc = idio_gc_obj_new (NULL);
 
     idio_gc->verbose = 0;
@@ -2075,57 +2132,3 @@ void idio_init_gc ()
 #endif
 }
 
-void idio_gc_add_primitives ()
-{
-    IDIO_ADD_PRIMITIVE (gc_collect);
-}
-
-static void idio_gc_run_all_finalizers ()
-{
-    if (idio_S_nil == idio_gc_finalizer_hash) {
-	return;
-    }
-
-    IDIO keys = idio_hash_keys_to_list (idio_gc_finalizer_hash);
-    while (idio_S_nil != keys) {
-	IDIO k = IDIO_PAIR_H (keys);
-
-	/* apply the finalizer */
-	IDIO C_p = idio_hash_ref (idio_gc_finalizer_hash, k);
-	void (*func) (IDIO o) = IDIO_C_TYPE_POINTER_P (C_p);
-	(*func) (k);
-
-	keys = IDIO_PAIR_T (keys);
-    }
-
-    idio_hash_remove_weak_table (idio_gc_finalizer_hash);
-}
-
-void idio_final_gc ()
-{
-#ifdef IDIO_DEBUG
-    idio_gc_stats ();
-#ifdef IDIO_MALLOC
-    idio_malloc_stats ("final-gc");
-#endif
-#endif
-
-    IDIO_GC_FLAGS (idio_gc) |= IDIO_GC_FLAG_FINISH;
-
-    idio_gc_run_all_finalizers ();
-
-    /* unprotect the finalizer hash itself */
-    idio_gc_expose (idio_gc_finalizer_hash);
-    /*  prevent it being used */
-    idio_gc_finalizer_hash = idio_S_nil;
-
-    idio_gc_expose_autos ();
-
-    idio_gc_expose_all ();
-
-    idio_gc_collect (idio_gc, IDIO_GC_COLLECT_ALL, "final-gc");
-#ifdef IDIO_DEBUG
-    idio_gc_dump ();
-#endif
-    idio_gc_obj_free ();
-}

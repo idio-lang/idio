@@ -801,10 +801,6 @@ of struct type ``st``				\n\
     return r;
 }
 
-void idio_init_struct ()
-{
-}
-
 void idio_struct_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (make_struct_type);
@@ -825,7 +821,7 @@ void idio_struct_add_primitives ()
     IDIO_ADD_PRIMITIVE (struct_instance_isa);
 }
 
-void idio_final_struct ()
+void idio_init_struct ()
 {
+    idio_module_table_register (idio_struct_add_primitives, NULL);
 }
-

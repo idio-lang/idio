@@ -543,10 +543,6 @@ IDIO_DEFINE_PRIMITIVE1 ("get-output-string", get_output_string, (IDIO sh))
     return idio_get_output_string (sh);
 }
 
-void idio_init_string_handle ()
-{
-}
-
 void idio_string_handle_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (open_input_string_handle);
@@ -557,7 +553,8 @@ void idio_string_handle_add_primitives ()
     IDIO_ADD_PRIMITIVE (output_string_handlep);
 }
 
-void idio_final_string_handle ()
+void idio_init_string_handle ()
 {
+    idio_module_table_register (idio_string_handle_add_primitives, NULL);
 }
 

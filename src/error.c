@@ -360,25 +360,20 @@ void idio_error_divide_by_zero (char *msg, IDIO c_location)
     /* notreached */
 }
 
-void idio_init_error ()
-{
-    idio_S_internal = idio_symbols_C_intern ("internal");
-    idio_gc_protect (idio_S_internal);
-    idio_S_user = idio_symbols_C_intern ("user");
-    idio_gc_protect (idio_S_user);
-    idio_S_user_code = idio_string_C ("user code");
-    idio_gc_protect (idio_S_user_code);
-}
-
 void idio_error_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (error);
 }
 
-void idio_final_error ()
+void idio_init_error ()
 {
-    idio_gc_expose (idio_S_internal);
-    idio_gc_expose (idio_S_user);
-    idio_gc_expose (idio_S_user_code);
+    idio_module_table_register (idio_error_add_primitives, NULL);
+
+    idio_S_internal = idio_symbols_C_intern ("internal");
+    idio_gc_protect_auto (idio_S_internal);
+    idio_S_user = idio_symbols_C_intern ("user");
+    idio_gc_protect_auto (idio_S_user);
+    idio_S_user_code = idio_string_C ("user code");
+    idio_gc_protect_auto (idio_S_user_code);
 }
 

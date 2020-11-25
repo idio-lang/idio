@@ -364,22 +364,6 @@ set the index of ``kw` in hash table ``ht`` to ``v``	\n\
     return idio_keyword_set (ht, kw, v);
 }
 
-void idio_init_keyword ()
-{
-    idio_keywords_hash = idio_hash (1<<7, idio_keyword_C_eqp, idio_keyword_C_hash, idio_S_nil, idio_S_nil);
-    idio_gc_protect (idio_keywords_hash);
-    IDIO_HASH_FLAGS (idio_keywords_hash) |= IDIO_HASH_FLAG_STRING_KEYS;
-
-    IDIO_KEYWORD_DEF ("docstr", docstr);
-    IDIO_KEYWORD_DEF ("docstr-raw", docstr_raw);
-    IDIO_KEYWORD_DEF ("handle", handle);
-    IDIO_KEYWORD_DEF ("line", line);
-    IDIO_KEYWORD_DEF ("name", name);
-    IDIO_KEYWORD_DEF ("setter", setter);
-    IDIO_KEYWORD_DEF ("sigstr", sigstr);
-    IDIO_KEYWORD_DEF ("source", source);
-}
-
 void idio_keyword_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (make_keyword);
@@ -391,8 +375,21 @@ void idio_keyword_add_primitives ()
     IDIO_ADD_PRIMITIVE (keyword_set);
 }
 
-void idio_final_keyword ()
+void idio_init_keyword ()
 {
-    idio_gc_expose (idio_keywords_hash);
+    idio_module_table_register (idio_keyword_add_primitives, NULL);
+
+    idio_keywords_hash = idio_hash (1<<7, idio_keyword_C_eqp, idio_keyword_C_hash, idio_S_nil, idio_S_nil);
+    idio_gc_protect_auto (idio_keywords_hash);
+    IDIO_HASH_FLAGS (idio_keywords_hash) |= IDIO_HASH_FLAG_STRING_KEYS;
+
+    IDIO_KEYWORD_DEF ("docstr", docstr);
+    IDIO_KEYWORD_DEF ("docstr-raw", docstr_raw);
+    IDIO_KEYWORD_DEF ("handle", handle);
+    IDIO_KEYWORD_DEF ("line", line);
+    IDIO_KEYWORD_DEF ("name", name);
+    IDIO_KEYWORD_DEF ("setter", setter);
+    IDIO_KEYWORD_DEF ("sigstr", sigstr);
+    IDIO_KEYWORD_DEF ("source", source);
 }
 

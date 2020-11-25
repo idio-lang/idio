@@ -1730,46 +1730,6 @@ print the internal details of `module`		\n\
 }
 #endif
 
-void idio_init_module ()
-{
-    idio_modules_hash = IDIO_HASH_EQP (1<<4);
-    idio_gc_protect (idio_modules_hash);
-
-#define IDIO_MODULE_STRING(c,s) idio_module_ ## c ## _string = idio_string_C (s); idio_gc_protect_auto (idio_module_ ## c ## _string);
-
-    IDIO_MODULE_STRING (direct_reference, "idio-module-direct-reference");
-    IDIO_MODULE_STRING (set_symbol_value, "idio-module-set-symbol-value");
-    IDIO_MODULE_STRING (add_computed_symbol, "idio-module-add-computed-symbol");
-    IDIO_MODULE_STRING (init, "idio-module-init");
-
-    /*
-     * We need to pre-seed the Idio module with the names of these two
-     * modules.
-     *
-     * So *primitives* is a symbol (and value) in the Idio module.  As
-     * is Idio itself -- as a bootstrap for other people to use.
-     *
-     * The implied usage is that in idio_module() we set the default
-     * imports list for all other modules to be '(Idio *primitives*)
-     */
-    IDIO name;
-
-    name = idio_symbols_C_intern ("*primitives*");
-    idio_primitives_module = idio_module (name);
-    IDIO_MODULE_IMPORTS (idio_primitives_module) = idio_S_nil;
-    idio_ai_t pm_gci = idio_vm_constants_lookup_or_extend (name);
-    idio_ai_t pm_gvi = idio_vm_extend_values ();
-
-    name = idio_symbols_C_intern ("Idio");
-    idio_Idio_module = idio_module (name);
-    IDIO_MODULE_IMPORTS (idio_Idio_module) = IDIO_LIST1 (IDIO_LIST1 (idio_primitives_module));
-    idio_ai_t Im_gci = idio_vm_constants_lookup_or_extend (name);
-    idio_ai_t Im_gvi = idio_vm_extend_values ();
-
-    idio_module_set_symbol (name, IDIO_LIST5 (idio_S_toplevel, idio_fixnum (pm_gci), idio_fixnum (pm_gvi), idio_Idio_module, idio_module_init_string), idio_Idio_module);
-    idio_module_set_symbol (name, IDIO_LIST5 (idio_S_toplevel, idio_fixnum (Im_gci), idio_fixnum (Im_gvi), idio_Idio_module, idio_module_init_string), idio_Idio_module);
-}
-
 void idio_module_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (find_or_create_module);
@@ -1871,7 +1831,47 @@ void idio_final_module ()
 	}
 	fclose (fp);
     }
+}
 
-    idio_gc_expose (idio_modules_hash);
+void idio_init_module ()
+{
+    idio_module_table_register (idio_module_add_primitives, idio_final_module);
+
+    idio_modules_hash = IDIO_HASH_EQP (1<<4);
+    idio_gc_protect_auto (idio_modules_hash);
+
+#define IDIO_MODULE_STRING(c,s) idio_module_ ## c ## _string = idio_string_C (s); idio_gc_protect_auto (idio_module_ ## c ## _string);
+
+    IDIO_MODULE_STRING (direct_reference, "idio-module-direct-reference");
+    IDIO_MODULE_STRING (set_symbol_value, "idio-module-set-symbol-value");
+    IDIO_MODULE_STRING (add_computed_symbol, "idio-module-add-computed-symbol");
+    IDIO_MODULE_STRING (init, "idio-module-init");
+
+    /*
+     * We need to pre-seed the Idio module with the names of these two
+     * modules.
+     *
+     * So *primitives* is a symbol (and value) in the Idio module.  As
+     * is Idio itself -- as a bootstrap for other people to use.
+     *
+     * The implied usage is that in idio_module() we set the default
+     * imports list for all other modules to be '(Idio *primitives*)
+     */
+    IDIO name;
+
+    name = idio_symbols_C_intern ("*primitives*");
+    idio_primitives_module = idio_module (name);
+    IDIO_MODULE_IMPORTS (idio_primitives_module) = idio_S_nil;
+    idio_ai_t pm_gci = idio_vm_constants_lookup_or_extend (name);
+    idio_ai_t pm_gvi = idio_vm_extend_values ();
+
+    name = idio_symbols_C_intern ("Idio");
+    idio_Idio_module = idio_module (name);
+    IDIO_MODULE_IMPORTS (idio_Idio_module) = IDIO_LIST1 (IDIO_LIST1 (idio_primitives_module));
+    idio_ai_t Im_gci = idio_vm_constants_lookup_or_extend (name);
+    idio_ai_t Im_gvi = idio_vm_extend_values ();
+
+    idio_module_set_symbol (name, IDIO_LIST5 (idio_S_toplevel, idio_fixnum (pm_gci), idio_fixnum (pm_gvi), idio_Idio_module, idio_module_init_string), idio_Idio_module);
+    idio_module_set_symbol (name, IDIO_LIST5 (idio_S_toplevel, idio_fixnum (Im_gci), idio_fixnum (Im_gvi), idio_Idio_module, idio_module_init_string), idio_Idio_module);
 }
 

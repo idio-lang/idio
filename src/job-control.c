@@ -1699,8 +1699,57 @@ void idio_job_control_set_interactive (void)
     }
 }
 
+void idio_job_control_add_primitives ()
+{
+    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, job_is_stopped);
+    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, job_is_completed);
+    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, job_failed);
+    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, job_status);
+    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, job_detail);
+    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, mark_process_status);
+    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, update_status);
+    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, wait_for_job);
+    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, format_job_info);
+    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, do_job_notification);
+    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, foreground_job);
+    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, background_job);
+    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, hangup_job);
+
+    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, mark_job_as_running);
+    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, continue_job);
+    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, prep_process);
+    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, launch_job);
+    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, launch_pipeline);
+}
+
+void idio_final_job_control ()
+{
+    /*
+     * restore the terminal state
+     */
+    struct termios *tcattrsp = IDIO_C_TYPE_POINTER_P (idio_job_control_tcattrs);
+    tcsetattr (idio_job_control_terminal, TCSADRAIN, tcattrsp);
+
+    /*
+     * Be a good citizen and tidy up.  This will reported completed
+     * jobs, though.  Maybe we should suppress the reports.
+     */
+    idio_job_control_interactive = 0;
+
+    /*
+     * This deliberately uses the C versions of these functions as
+     * other modules have been shutting down -- we don't want to be
+     * running any more Idio code here!
+     */
+    idio_job_control_do_job_notification ();
+
+    idio_job_control_SIGHUP_signal_handler (idio_C_int (SIGHUP));
+}
+
 void idio_init_job_control ()
 {
+    idio_module_table_register (idio_job_control_add_primitives, idio_final_job_control);
+
     idio_job_control_module = idio_module (idio_symbols_C_intern ("job-control"));
     IDIO_MODULE_IMPORTS (idio_job_control_module) = IDIO_LIST2 (IDIO_LIST1 (idio_Idio_module),
 								IDIO_LIST1 (idio_primitives_module));
@@ -1900,52 +1949,5 @@ void idio_init_job_control ()
     idio_module_set_symbol_value (name, idio_job_control_job_type, idio_job_control_module);
 
     idio_job_control_default_child_handler_sym = idio_symbols_C_intern ("default-child-handler");
-}
-
-void idio_job_control_add_primitives ()
-{
-    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, job_is_stopped);
-    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, job_is_completed);
-    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, job_failed);
-    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, job_status);
-    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, job_detail);
-    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, mark_process_status);
-    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, update_status);
-    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, wait_for_job);
-    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, format_job_info);
-    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, do_job_notification);
-    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, foreground_job);
-    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, background_job);
-    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, hangup_job);
-
-    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, mark_job_as_running);
-    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, continue_job);
-    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, prep_process);
-    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, launch_job);
-    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, launch_pipeline);
-}
-
-void idio_final_job_control ()
-{
-    /*
-     * restore the terminal state
-     */
-    struct termios *tcattrsp = IDIO_C_TYPE_POINTER_P (idio_job_control_tcattrs);
-    tcsetattr (idio_job_control_terminal, TCSADRAIN, tcattrsp);
-
-    /*
-     * Be a good citizen and tidy up.  This will reported completed
-     * jobs, though.  Maybe we should suppress the reports.
-     */
-    idio_job_control_interactive = 0;
-
-    /*
-     * This deliberately uses the C versions of these functions as
-     * other modules have been shutting down -- we don't want to be
-     * running any more Idio code here!
-     */
-    idio_job_control_do_job_notification ();
-
-    idio_job_control_SIGHUP_signal_handler (idio_C_int (SIGHUP));
 }
 

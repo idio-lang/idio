@@ -876,8 +876,41 @@ Does not return.						\n\
     return idio_S_notreached;
 }
 
+void idio_condition_add_primitives ()
+{
+    idio_condition_default_handler = IDIO_HASH_EQP (8);
+    idio_gc_protect_auto (idio_condition_default_handler);
+
+    IDIO_ADD_PRIMITIVE (make_condition_type);
+    IDIO_ADD_PRIMITIVE (condition_typep);
+    IDIO_ADD_PRIMITIVE (message_conditionp);
+    IDIO_ADD_PRIMITIVE (errorp);
+
+    IDIO_ADD_PRIMITIVE (allocate_condition);
+    IDIO_ADD_PRIMITIVE (make_condition);
+    IDIO_ADD_PRIMITIVE (idio_error_condition);
+    IDIO_ADD_PRIMITIVE (conditionp);
+    IDIO_ADD_PRIMITIVE (condition_isap);
+    IDIO_ADD_PRIMITIVE (condition_ref);
+    IDIO_ADD_PRIMITIVE (condition_message);
+    IDIO_ADD_PRIMITIVE (condition_set);
+
+    IDIO_ADD_PRIMITIVE (set_default_handler);
+    IDIO_ADD_PRIMITIVE (clear_default_handler);
+
+    IDIO fvi;
+    fvi = IDIO_ADD_MODULE_PRIMITIVE (idio_Idio_module, reset_condition_handler);
+    idio_condition_reset_condition_handler = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+    fvi = IDIO_ADD_MODULE_PRIMITIVE (idio_Idio_module, restart_condition_handler);
+    idio_condition_restart_condition_handler = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+    fvi = IDIO_ADD_MODULE_PRIMITIVE (idio_Idio_module, default_condition_handler);
+    idio_condition_default_condition_handler = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+}
+
 void idio_init_condition ()
 {
+    idio_module_table_register (idio_condition_add_primitives, NULL);
+
 #define IDIO_CONDITION_STRING(c,s) idio_condition_ ## c ## _string = idio_string_C (s); idio_gc_protect_auto (idio_condition_ ## c ## _string);
 
     IDIO_CONDITION_STRING (define_condition0, "IDIO-DEFINE-CONDITION0");
@@ -982,100 +1015,5 @@ void idio_init_condition ()
 #define IDIO_CONDITION_RT_SIGNAL_TYPE_NAME "^rt-signal"
 
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_signal_type, IDIO_CONDITION_RT_SIGNAL_TYPE_NAME, idio_condition_error_type, "signum");
-}
-
-void idio_condition_add_primitives ()
-{
-    idio_condition_default_handler = IDIO_HASH_EQP (8);
-    idio_gc_protect (idio_condition_default_handler);
-
-    IDIO_ADD_PRIMITIVE (make_condition_type);
-    IDIO_ADD_PRIMITIVE (condition_typep);
-    IDIO_ADD_PRIMITIVE (message_conditionp);
-    IDIO_ADD_PRIMITIVE (errorp);
-
-    IDIO_ADD_PRIMITIVE (allocate_condition);
-    IDIO_ADD_PRIMITIVE (make_condition);
-    IDIO_ADD_PRIMITIVE (idio_error_condition);
-    IDIO_ADD_PRIMITIVE (conditionp);
-    IDIO_ADD_PRIMITIVE (condition_isap);
-    IDIO_ADD_PRIMITIVE (condition_ref);
-    IDIO_ADD_PRIMITIVE (condition_message);
-    IDIO_ADD_PRIMITIVE (condition_set);
-
-    IDIO_ADD_PRIMITIVE (set_default_handler);
-    IDIO_ADD_PRIMITIVE (clear_default_handler);
-
-    IDIO fvi;
-    fvi = IDIO_ADD_MODULE_PRIMITIVE (idio_Idio_module, reset_condition_handler);
-    idio_condition_reset_condition_handler = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
-    fvi = IDIO_ADD_MODULE_PRIMITIVE (idio_Idio_module, restart_condition_handler);
-    idio_condition_restart_condition_handler = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
-    fvi = IDIO_ADD_MODULE_PRIMITIVE (idio_Idio_module, default_condition_handler);
-    idio_condition_default_condition_handler = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
-}
-
-void idio_final_condition ()
-{
-    idio_gc_expose (idio_condition_condition_type);
-    idio_gc_expose (idio_condition_message_type);
-    idio_gc_expose (idio_condition_error_type);
-    idio_gc_expose (idio_condition_idio_error_type);
-    idio_gc_expose (idio_condition_io_error_type);
-    idio_gc_expose (idio_condition_io_handle_error_type);
-    idio_gc_expose (idio_condition_io_read_error_type);
-    idio_gc_expose (idio_condition_io_write_error_type);
-    idio_gc_expose (idio_condition_io_closed_error_type);
-    idio_gc_expose (idio_condition_io_filename_error_type);
-    idio_gc_expose (idio_condition_io_malformed_filename_error_type);
-    idio_gc_expose (idio_condition_io_file_protection_error_type);
-    idio_gc_expose (idio_condition_io_file_is_read_only_error_type);
-    idio_gc_expose (idio_condition_io_file_already_exists_error_type);
-    idio_gc_expose (idio_condition_io_no_such_file_error_type);
-    idio_gc_expose (idio_condition_read_error_type);
-    idio_gc_expose (idio_condition_evaluation_error_type);
-    idio_gc_expose (idio_condition_string_error_type);
-
-    idio_gc_expose (idio_condition_system_error_type);
-
-    idio_gc_expose (idio_condition_static_error_type);
-    idio_gc_expose (idio_condition_st_variable_error_type);
-    idio_gc_expose (idio_condition_st_variable_type_error_type);
-    idio_gc_expose (idio_condition_st_function_error_type);
-    idio_gc_expose (idio_condition_st_function_arity_error_type);
-
-    idio_gc_expose (idio_condition_runtime_error_type);
-    idio_gc_expose (idio_condition_rt_parameter_type_error_type);
-    idio_gc_expose (idio_condition_rt_const_parameter_error_type);
-    idio_gc_expose (idio_condition_rt_parameter_nil_error_type);
-    idio_gc_expose (idio_condition_rt_variable_error_type);
-    idio_gc_expose (idio_condition_rt_variable_unbound_error_type);
-    idio_gc_expose (idio_condition_rt_dynamic_variable_error_type);
-    idio_gc_expose (idio_condition_rt_dynamic_variable_unbound_error_type);
-    idio_gc_expose (idio_condition_rt_environ_variable_error_type);
-    idio_gc_expose (idio_condition_rt_environ_variable_unbound_error_type);
-    idio_gc_expose (idio_condition_rt_computed_variable_error_type);
-    idio_gc_expose (idio_condition_rt_computed_variable_no_accessor_error_type);
-    idio_gc_expose (idio_condition_rt_function_error_type);
-    idio_gc_expose (idio_condition_rt_function_arity_error_type);
-    idio_gc_expose (idio_condition_rt_module_error_type);
-    idio_gc_expose (idio_condition_rt_module_unbound_error_type);
-    idio_gc_expose (idio_condition_rt_module_symbol_unbound_error_type);
-    idio_gc_expose (idio_condition_rt_glob_error_type);
-    idio_gc_expose (idio_condition_rt_command_argv_type_error_type);
-    idio_gc_expose (idio_condition_rt_command_forked_error_type);
-    idio_gc_expose (idio_condition_rt_command_env_type_error_type);
-    idio_gc_expose (idio_condition_rt_command_exec_error_type);
-    idio_gc_expose (idio_condition_rt_job_control_status_error_type);
-    idio_gc_expose (idio_condition_rt_array_bounds_error_type);
-    idio_gc_expose (idio_condition_rt_hash_key_not_found_error_type);
-    idio_gc_expose (idio_condition_rt_bignum_conversion_error_type);
-    idio_gc_expose (idio_condition_rt_fixnum_conversion_error_type);
-    idio_gc_expose (idio_condition_rt_divide_by_zero_error_type);
-    idio_gc_expose (idio_condition_rt_signal_type);
-    idio_gc_expose (idio_condition_rt_bitset_bounds_error_type);
-    idio_gc_expose (idio_condition_rt_bitset_size_mismatch_error_type);
-
-    idio_gc_expose (idio_condition_default_handler);
 }
 

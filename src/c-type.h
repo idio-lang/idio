@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2020 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -44,8 +44,6 @@ void idio_free_C_pointer (struct idio_s *co);
 IDIO idio_C_number_cast (IDIO co, idio_type_e type);
 
 void idio_init_c_type ();
-void idio_c_type_add_primtives ();
-void idio_final_c_type ();
 
 #endif /* AUTO_C_TYPE_H */
 

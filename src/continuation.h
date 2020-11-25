@@ -28,8 +28,6 @@ int idio_isa_continuation (IDIO o);
 void idio_free_continuation (IDIO k);
 
 void idio_init_continuation ();
-void idio_continuation_add_primitives ();
-void idio_final_continuation ();
 
 #endif
 

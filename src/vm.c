@@ -270,6 +270,8 @@ static struct timespec idio_vm_ins_call_time[IDIO_I_MAX];
 
 static char *idio_vm_panicking = NULL;
 
+void idio_final_vm ();
+
 void idio_vm_panic (IDIO thr, char *m)
 {
     IDIO_ASSERT (thr);
@@ -7029,7 +7031,7 @@ void idio_init_vm_values ()
       * source code property.
       */
     idio_vm_constants = idio_array (24000);
-    idio_gc_protect (idio_vm_constants);
+    idio_gc_protect_auto (idio_vm_constants);
     /*
      * The only "constant" we can't put in our idio_vm_constants_hash
      * is #n (#n can't be a key in a hash) so plonk it in slot 0 so it
@@ -7038,17 +7040,17 @@ void idio_init_vm_values ()
     idio_array_push (idio_vm_constants, idio_S_nil);
 
     idio_vm_constants_hash = IDIO_HASH_EQUALP (2048);
-    idio_gc_protect (idio_vm_constants_hash);
+    idio_gc_protect_auto (idio_vm_constants_hash);
 
     /*
      * Start up and shutdown generates some 1761 values and running
      * the test suite generates 2034 values
      */
     idio_vm_values = idio_array (3000);
-    idio_gc_protect (idio_vm_values);
+    idio_gc_protect_auto (idio_vm_values);
 
     idio_vm_krun = idio_array (4);
-    idio_gc_protect (idio_vm_krun);
+    idio_gc_protect_auto (idio_vm_krun);
 
     /*
      * Push a dummy value onto idio_vm_values so that slot 0 is
@@ -7087,99 +7089,6 @@ static idio_vm_symbol_t idio_vm_symbols[] = {
 
     { NULL, 0 }
 };
-
-void idio_init_vm ()
-{
-    /*
-     * Careful analysis:
-     *
-     * grep CONSTANT vm-dasm | sed 's/.*[0-9]: //' | sort | uniq -c |
-     * sort -n
-     *
-     * suggests that, for common terms, to keep the varuints small
-     * (<240 -- see idio_vm_fetch_varuint()) we should pre-fill the
-     * constants array with things we know are going to get used.
-     *
-     * NB The idio_S_X values are initialised after idio_vm_values()
-     * is run, above, so we might as well add them all down here.  It
-     * means they get shoved out to ~80th in the constants list (as
-     * other modules have initialised before us) -- but that's well
-     * within the 240 allowed for in the 1 byte varuint limit.
-     */
-
-    /* used in bootstrap */
-    idio_vm_extend_constants (idio_S_block);
-    idio_vm_extend_constants (idio_S_colon_eq);
-    idio_vm_extend_constants (idio_S_cond);
-    idio_vm_extend_constants (idio_S_define);
-    idio_vm_extend_constants (idio_S_else);
-    idio_vm_extend_constants (idio_S_eq);
-    idio_vm_extend_constants (idio_S_error);
-    idio_vm_extend_constants (idio_S_function);
-    idio_vm_extend_constants (idio_S_if);
-    idio_vm_extend_constants (idio_S_ph);
-    idio_vm_extend_constants (idio_S_quote);
-    idio_vm_extend_constants (idio_bignum_real_C ("0.0"));
-    idio_vm_extend_constants (idio_bignum_real_C ("1.0"));
-    idio_vm_extend_constants (idio_string_C ("\n"));
-    idio_vm_extend_constants (idio_string_C ("closed application: (e)"));
-    idio_vm_extend_constants (idio_string_C ("closed application: (end)"));
-    idio_vm_extend_constants (idio_string_C ("closed application: (loop)"));
-    idio_vm_extend_constants (idio_string_C ("closed application: (r)"));
-    idio_vm_extend_constants (idio_string_C ("closed application: (start)"));
-    idio_vm_extend_constants (idio_string_C ("closed application: (v)"));
-    idio_vm_extend_constants (idio_string_C ("closed application: (x)"));
-    idio_vm_extend_constants (idio_string_C ("invalid syntax"));
-    idio_vm_extend_constants (idio_string_C ("not a char-set"));
-    idio_vm_extend_constants (idio_string_C ("not a condition:"));
-    idio_vm_extend_constants (idio_symbols_C_intern ("&args"));
-    idio_vm_extend_constants (idio_symbols_C_intern (":"));
-    idio_vm_extend_constants (idio_symbols_C_intern ("close"));
-    idio_vm_extend_constants (idio_symbols_C_intern ("define-syntax"));
-    idio_vm_extend_constants (idio_symbols_C_intern ("display"));
-    idio_vm_extend_constants (idio_symbols_C_intern ("display*"));
-    idio_vm_extend_constants (idio_symbols_C_intern ("ih"));
-    idio_vm_extend_constants (idio_symbols_C_intern ("operator"));
-    idio_vm_extend_constants (idio_symbols_C_intern ("pair?"));
-    idio_vm_extend_constants (idio_symbols_C_intern ("seq"));
-
-    idio_vm_module = idio_module (idio_symbols_C_intern ("vm"));
-
-    idio_vm_t0 = time ((time_t *) NULL);
-
-    idio_all_code = idio_ia (500000);
-
-    idio_codegen_code_prologue (idio_all_code);
-    idio_prologue_len = IDIO_IA_USIZE (idio_all_code);
-
-    idio_vm_signal_handler_name = idio_array (IDIO_LIBC_NSIG + 1);
-    idio_gc_protect (idio_vm_signal_handler_name);
-    /*
-     * idio_vm_run1() will be indexing anywhere into this array when
-     * it gets a signal so make sure that the "used" size is up there
-     * by putting a value in index NSIG.
-     */
-    idio_array_insert_index (idio_vm_signal_handler_name, idio_S_nil, (idio_ai_t) IDIO_LIBC_NSIG);
-
-    IDIO geti;
-    geti = IDIO_ADD_PRIMITIVE (SECONDS_get);
-    idio_module_add_computed_symbol (idio_symbols_C_intern ("SECONDS"), idio_vm_values_ref (IDIO_FIXNUM_VAL (geti)), idio_S_nil, idio_Idio_module_instance ());
-
-#ifdef IDIO_VM_PROF
-    for (IDIO_I i = 1; i < IDIO_I_MAX; i++) {
-	idio_vm_ins_call_time[i].tv_sec = 0;
-	idio_vm_ins_call_time[i].tv_nsec = 0;
-    }
-#endif
-    idio_dasm_FILE = stderr;
-
-    idio_vm_symbol_t *cs = idio_vm_symbols;
-    for (; cs->name != NULL; cs++) {
-	IDIO sym = idio_symbols_C_intern (cs->name);
-	idio_module_export_symbol_value (sym, idio_fixnum (cs->value), idio_vm_module);
-    }
-
-}
 
 void idio_vm_add_primitives ()
 {
@@ -7310,9 +7219,100 @@ void idio_final_vm ()
 
     idio_ia_free (idio_all_code);
     idio_all_code = NULL;
-    idio_gc_expose (idio_vm_constants);
-    idio_gc_expose (idio_vm_constants_hash);
-    idio_gc_expose (idio_vm_values);
-    idio_gc_expose (idio_vm_krun);
-    idio_gc_expose (idio_vm_signal_handler_name);
 }
+
+void idio_init_vm ()
+{
+    idio_module_table_register (idio_vm_add_primitives, idio_final_vm);
+
+    /*
+     * Careful analysis:
+     *
+     * grep CONSTANT vm-dasm | sed 's/.*[0-9]: //' | sort | uniq -c |
+     * sort -n
+     *
+     * suggests that, for common terms, to keep the varuints small
+     * (<240 -- see idio_vm_fetch_varuint()) we should pre-fill the
+     * constants array with things we know are going to get used.
+     *
+     * NB The idio_S_X values are initialised after idio_vm_values()
+     * is run, above, so we might as well add them all down here.  It
+     * means they get shoved out to ~80th in the constants list (as
+     * other modules have initialised before us) -- but that's well
+     * within the 240 allowed for in the 1 byte varuint limit.
+     */
+
+    /* used in bootstrap */
+    idio_vm_extend_constants (idio_S_block);
+    idio_vm_extend_constants (idio_S_colon_eq);
+    idio_vm_extend_constants (idio_S_cond);
+    idio_vm_extend_constants (idio_S_define);
+    idio_vm_extend_constants (idio_S_else);
+    idio_vm_extend_constants (idio_S_eq);
+    idio_vm_extend_constants (idio_S_error);
+    idio_vm_extend_constants (idio_S_function);
+    idio_vm_extend_constants (idio_S_if);
+    idio_vm_extend_constants (idio_S_ph);
+    idio_vm_extend_constants (idio_S_quote);
+    idio_vm_extend_constants (idio_bignum_real_C ("0.0"));
+    idio_vm_extend_constants (idio_bignum_real_C ("1.0"));
+    idio_vm_extend_constants (idio_string_C ("\n"));
+    idio_vm_extend_constants (idio_string_C ("closed application: (e)"));
+    idio_vm_extend_constants (idio_string_C ("closed application: (end)"));
+    idio_vm_extend_constants (idio_string_C ("closed application: (loop)"));
+    idio_vm_extend_constants (idio_string_C ("closed application: (r)"));
+    idio_vm_extend_constants (idio_string_C ("closed application: (start)"));
+    idio_vm_extend_constants (idio_string_C ("closed application: (v)"));
+    idio_vm_extend_constants (idio_string_C ("closed application: (x)"));
+    idio_vm_extend_constants (idio_string_C ("invalid syntax"));
+    idio_vm_extend_constants (idio_string_C ("not a char-set"));
+    idio_vm_extend_constants (idio_string_C ("not a condition:"));
+    idio_vm_extend_constants (idio_symbols_C_intern ("&args"));
+    idio_vm_extend_constants (idio_symbols_C_intern (":"));
+    idio_vm_extend_constants (idio_symbols_C_intern ("close"));
+    idio_vm_extend_constants (idio_symbols_C_intern ("define-syntax"));
+    idio_vm_extend_constants (idio_symbols_C_intern ("display"));
+    idio_vm_extend_constants (idio_symbols_C_intern ("display*"));
+    idio_vm_extend_constants (idio_symbols_C_intern ("ih"));
+    idio_vm_extend_constants (idio_symbols_C_intern ("operator"));
+    idio_vm_extend_constants (idio_symbols_C_intern ("pair?"));
+    idio_vm_extend_constants (idio_symbols_C_intern ("seq"));
+
+    idio_vm_module = idio_module (idio_symbols_C_intern ("vm"));
+
+    idio_vm_t0 = time ((time_t *) NULL);
+
+    idio_all_code = idio_ia (500000);
+
+    idio_codegen_code_prologue (idio_all_code);
+    idio_prologue_len = IDIO_IA_USIZE (idio_all_code);
+
+    idio_vm_signal_handler_name = idio_array (IDIO_LIBC_NSIG + 1);
+    idio_gc_protect_auto (idio_vm_signal_handler_name);
+    /*
+     * idio_vm_run1() will be indexing anywhere into this array when
+     * it gets a signal so make sure that the "used" size is up there
+     * by putting a value in index NSIG.
+     */
+    idio_array_insert_index (idio_vm_signal_handler_name, idio_S_nil, (idio_ai_t) IDIO_LIBC_NSIG);
+
+    IDIO geti;
+    geti = IDIO_ADD_PRIMITIVE (SECONDS_get);
+    idio_module_add_computed_symbol (idio_symbols_C_intern ("SECONDS"), idio_vm_values_ref (IDIO_FIXNUM_VAL (geti)), idio_S_nil, idio_Idio_module_instance ());
+
+#ifdef IDIO_VM_PROF
+    for (IDIO_I i = 1; i < IDIO_I_MAX; i++) {
+	idio_vm_ins_call_time[i].tv_sec = 0;
+	idio_vm_ins_call_time[i].tv_nsec = 0;
+    }
+#endif
+    idio_dasm_FILE = stderr;
+
+    idio_vm_symbol_t *cs = idio_vm_symbols;
+    for (; cs->name != NULL; cs++) {
+	IDIO sym = idio_symbols_C_intern (cs->name);
+	idio_module_export_symbol_value (sym, idio_fixnum (cs->value), idio_vm_module);
+    }
+
+}
+

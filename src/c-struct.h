@@ -83,8 +83,6 @@ IDIO idio_opaque_args (void *p, IDIO args);
 IDIO idio_opaque_final (void *p, void (*func) (IDIO o), IDIO args);
 
 void idio_init_C_struct ();
-void idio_C_struct_add_primitives ();
-void idio_final_C_struct ();
 
 #endif
 

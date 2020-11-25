@@ -27,8 +27,6 @@ IDIO idio_posix_regex_regcomp (IDIO rx, IDIO flags);
 void idio_posix_regex_regcomp_finalizer (IDIO rx);
 
 void idio_init_posix_regex ();
-void idio_posix_regex_add_primitives ();
-void idio_final_posix_regex ();
 
 #endif
 

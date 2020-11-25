@@ -241,16 +241,11 @@ IDIO idio_path_expand (IDIO p)
 
 void idio_init_path ()
 {
+    /*
+     * Nothing to do here...
+     */
+    idio_module_table_register (NULL, NULL);
+
     IDIO_DEFINE_STRUCT1 (idio_path_type, "~path", idio_S_nil, "pattern");
 }
-
-void idio_path_add_primitives ()
-{
-}
-
-void idio_final_path ()
-{
-    idio_gc_expose (idio_path_type);
-}
-
 

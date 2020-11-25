@@ -46,8 +46,6 @@ IDIO idio_keyword_ref (IDIO ht, IDIO kw, IDIO args);
 IDIO idio_keyword_set (IDIO ht, IDIO kw, IDIO v);
 
 void idio_init_keyword (void);
-void idio_keyword_add_primitives (void);
-void idio_final_keyword (void);
 
 #endif
 

@@ -1171,7 +1171,7 @@ void idio_hash_add_weak_table (IDIO h)
      */
     if (idio_S_nil == idio_hash_weak_tables) {
 	idio_hash_weak_tables = idio_pair (idio_S_nil, idio_S_nil);
-	idio_gc_protect (idio_hash_weak_tables);
+	idio_gc_protect_auto (idio_hash_weak_tables);
     }
 
     IDIO_PAIR_H (idio_hash_weak_tables) = idio_pair (h, IDIO_PAIR_H (idio_hash_weak_tables));
@@ -2070,11 +2070,6 @@ Perform some hash unit tests				\n\
 }
 #endif
 
-void idio_init_hash ()
-{
-    idio_gc_set_verboseness (3);
-}
-
 void idio_hash_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (hash_p);
@@ -2099,8 +2094,8 @@ void idio_hash_add_primitives ()
 #endif
 }
 
-void idio_final_hash ()
+void idio_init_hash ()
 {
-    idio_gc_expose (idio_hash_weak_tables);
+    idio_module_table_register (idio_hash_add_primitives, NULL);
 }
 

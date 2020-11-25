@@ -299,8 +299,16 @@ corresponding array element will be #f	.	\n\
     return idio_posix_regex_regexec (rx, str, flags);
 }
 
+void idio_posix_regex_add_primitives ()
+{
+    IDIO_ADD_PRIMITIVE (regcomp);
+    IDIO_ADD_PRIMITIVE (regexec);
+}
+
 void idio_init_posix_regex ()
 {
+    idio_module_table_register (idio_posix_regex_add_primitives, NULL);
+
     /*
      * XXX REG_BASIC is not a thing in regex.h however we could do
      * with a "not-REG_EXTENDED" flag
@@ -316,15 +324,4 @@ void idio_init_posix_regex ()
     idio_posix_regex_REG_STARTEND_sym = idio_symbols_C_intern ("REG_STARTEND");
 #endif
 }
-
-void idio_posix_regex_add_primitives ()
-{
-    IDIO_ADD_PRIMITIVE (regcomp);
-    IDIO_ADD_PRIMITIVE (regexec);
-}
-
-void idio_final_posix_regex ()
-{
-}
-
 

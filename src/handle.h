@@ -67,8 +67,6 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
 IDIO idio_load_handle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO e, IDIO cs), IDIO cs);
 
 void idio_init_handle ();
-void idio_handle_add_primitives ();
-void idio_final_handle ();
 
 #endif
 

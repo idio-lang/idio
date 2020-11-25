@@ -1938,10 +1938,6 @@ IDIO idio_load_handle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*eval
     return idio_S_unspec;
 }
 
-void idio_init_handle ()
-{
-}
-
 void idio_handle_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (handlep);
@@ -1982,8 +1978,9 @@ void idio_handle_add_primitives ()
     IDIO_ADD_PRIMITIVE (load_handle);
 }
 
-void idio_final_handle ()
+void idio_init_handle ()
 {
+    idio_module_table_register (idio_handle_add_primitives, NULL);
 }
 
 /* Local Variables: */

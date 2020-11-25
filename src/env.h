@@ -29,9 +29,8 @@ extern IDIO idio_env_PATH_sym;
 extern IDIO idio_env_IDIOLIB_sym;
 
 void idio_env_init_idiolib (char *argv0);
+
 void idio_init_env ();
-void idio_env_add_primitives ();
-void idio_final_env ();
 
 #endif
 

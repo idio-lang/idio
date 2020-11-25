@@ -201,17 +201,6 @@ void idio_thread_set_current_module (IDIO m)
     IDIO_THREAD_ENV (thr) = m;
 }
 
-void idio_init_thread ()
-{
-    idio_running_threads = idio_array (8);
-    idio_gc_protect (idio_running_threads);
-
-    idio_threading_module = idio_module (idio_symbols_C_intern ("threading"));
-    IDIO_MODULE_IMPORTS (idio_threading_module) = IDIO_LIST2 (IDIO_LIST1 (idio_Idio_module),
-							      IDIO_LIST1 (idio_primitives_module));
-
-}
-
 void idio_thread_add_primitives ()
 {
     /*
@@ -220,6 +209,19 @@ void idio_thread_add_primitives ()
     idio_running_thread = idio_thread_base (40);
 
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_threading_module, current_thread);
+}
+
+void idio_init_thread ()
+{
+    idio_module_table_register (idio_thread_add_primitives, NULL);
+
+    idio_running_threads = idio_array (8);
+    idio_gc_protect_auto (idio_running_threads);
+
+    idio_threading_module = idio_module (idio_symbols_C_intern ("threading"));
+    IDIO_MODULE_IMPORTS (idio_threading_module) = IDIO_LIST2 (IDIO_LIST1 (idio_Idio_module),
+							      IDIO_LIST1 (idio_primitives_module));
+
 }
 
 void idio_init_first_thread ()
@@ -231,7 +233,6 @@ void idio_init_first_thread ()
      * We also need the expander thread "early doors"
      */
     idio_expander_thread = idio_thread (40);
-    idio_gc_protect (idio_expander_thread);
 
     /* IDIO_THREAD_MODULE (idio_expander_thread) = idio_expander_module; */
     IDIO_THREAD_PC (idio_expander_thread) = 1;
@@ -240,7 +241,3 @@ void idio_init_first_thread ()
     idio_module_set_symbol_value (ethr, idio_expander_thread, idio_expander_module);
 }
 
-void idio_final_thread ()
-{
-    idio_gc_expose (idio_running_threads);
-}

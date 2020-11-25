@@ -3382,10 +3382,6 @@ dump the bignum structure of `n`	\n\
     return idio_S_unspec;
 }
 
-void idio_init_bignum ()
-{
-}
-
 void idio_bignum_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (bignump);
@@ -3411,3 +3407,9 @@ void idio_final_bignum ()
     fprintf (fh, "bignums: current %zd of simultaneous max %zd; max segs %zd/%d (%zd significant digits)\n", idio_bignums, idio_bignums_max, idio_bignum_seg_max, IDIO_BIGNUM_SIG_SEGMENTS, idio_bignum_seg_max * IDIO_BIGNUM_DPW);
 #endif
 }
+
+void idio_init_bignum ()
+{
+    idio_module_table_register (idio_bignum_add_primitives, idio_final_bignum);
+}
+

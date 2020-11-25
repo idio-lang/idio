@@ -132,8 +132,6 @@ IDIO idio_get_property (IDIO o, IDIO property, IDIO args);
 void idio_set_property (IDIO o, IDIO property, IDIO value);
 
 void idio_init_symbol (void);
-void idio_symbol_add_primitives (void);
-void idio_final_symbol (void);
 
 #endif
 

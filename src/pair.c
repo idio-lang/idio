@@ -588,10 +588,6 @@ return the nth (`n`) element from list `l`		\n\
     return idio_list_nth (l, I_n, args);
 }
 
-void idio_init_pair ()
-{
-}
-
 void idio_pair_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (pair_p);
@@ -609,6 +605,8 @@ void idio_pair_add_primitives ()
     IDIO_ADD_PRIMITIVE (nth);
 }
 
-void idio_final_pair ()
+void idio_init_pair ()
 {
+    idio_module_table_register (idio_pair_add_primitives, NULL);
 }
+

@@ -574,12 +574,7 @@ perform a C bitwise-complement on `v1`		\n\
     return idio_C_int (~ v);
 }
 
-void idio_init_c_type ()
-{
-    idio_C_module = idio_module (idio_symbols_C_intern ("C"));
-}
-
-void idio_c_type_add_primtives ()
+void idio_c_type_add_primitives ()
 {
     /*
      * NB As "<", "==", ">" etc. conflict with operators or primitives
@@ -606,7 +601,10 @@ void idio_c_type_add_primtives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_bw_complement);
 }
 
-void idio_final_c_type ()
+void idio_init_c_type ()
 {
+    idio_module_table_register (idio_c_type_add_primitives, NULL);
+
+    idio_C_module = idio_module (idio_symbols_C_intern ("C"));
 }
 

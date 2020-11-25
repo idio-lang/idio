@@ -3741,30 +3741,6 @@ size_t strnlen (const char *s, size_t maxlen)
 }
 #endif
 
-void idio_init_util ()
-{
-    idio_util_value_as_string = idio_symbols_C_intern ("%%value-as-string");
-    idio_module_set_symbol_value (idio_util_value_as_string, idio_S_nil, idio_Idio_module);
-    idio_print_conversion_format_sym = idio_symbols_C_intern ("idio-print-conversion-format");
-    idio_print_conversion_precision_sym = idio_symbols_C_intern ("idio-print-conversion-precision");
-
-    idio_features = idio_symbols_C_intern ("*idio-features*");
-    idio_module_set_symbol_value (idio_features, idio_S_nil, idio_Idio_module);
-
-#ifdef IDIO_DEBUG
-    idio_add_feature (idio_symbols_C_intern ("IDIO_DEBUG"));
-#endif
-
-#ifdef IDIO_EQUAL_DEBUG
-    for (int i = 0; i < IDIO_TYPE_MAX; i++) {
-	idio_equal_stats[i].count = 0;
-	idio_equal_stats[i].duration.tv_sec = 0;
-	idio_equal_stats[i].duration.tv_usec = 0;
-	idio_equal_stats[i].mixed = 0;
-    }
-#endif
-}
-
 void idio_util_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (type_string);
@@ -3806,6 +3782,32 @@ void idio_final_util ()
 	if (idio_equal_stats[i].count) {
 	    fprintf (stderr, "equal %3d %15s %9lu %5ld.%06ld %5lu\n", i, idio_type_enum2string (i), idio_equal_stats[i].count, idio_equal_stats[i].duration.tv_sec, idio_equal_stats[i].duration.tv_usec, idio_equal_stats[i].mixed);
 	}
+    }
+#endif
+}
+
+void idio_init_util ()
+{
+    idio_module_table_register (idio_util_add_primitives, idio_final_util);
+
+    idio_util_value_as_string = idio_symbols_C_intern ("%%value-as-string");
+    idio_module_set_symbol_value (idio_util_value_as_string, idio_S_nil, idio_Idio_module);
+    idio_print_conversion_format_sym = idio_symbols_C_intern ("idio-print-conversion-format");
+    idio_print_conversion_precision_sym = idio_symbols_C_intern ("idio-print-conversion-precision");
+
+    idio_features = idio_symbols_C_intern ("*idio-features*");
+    idio_module_set_symbol_value (idio_features, idio_S_nil, idio_Idio_module);
+
+#ifdef IDIO_DEBUG
+    idio_add_feature (idio_symbols_C_intern ("IDIO_DEBUG"));
+#endif
+
+#ifdef IDIO_EQUAL_DEBUG
+    for (int i = 0; i < IDIO_TYPE_MAX; i++) {
+	idio_equal_stats[i].count = 0;
+	idio_equal_stats[i].duration.tv_sec = 0;
+	idio_equal_stats[i].duration.tv_usec = 0;
+	idio_equal_stats[i].mixed = 0;
     }
 #endif
 }

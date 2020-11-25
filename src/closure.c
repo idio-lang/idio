@@ -149,10 +149,6 @@ return the setter of `p`			\n\
     return setter;
 }
 
-void idio_init_closure ()
-{
-}
-
 void idio_closure_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (functionp);
@@ -166,7 +162,8 @@ void idio_closure_add_primitives ()
     idio_properties_create (setter);
 }
 
-void idio_final_closure ()
+void idio_init_closure ()
 {
+    idio_module_table_register (idio_closure_add_primitives, NULL);
 }
 

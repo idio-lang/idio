@@ -2434,10 +2434,6 @@ return a string of `args` interspersed with `delim`	\n\
     return idio_join_string (delim, args);
 }
 
-void idio_init_string ()
-{
-}
-
 void idio_string_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (string_p);
@@ -2470,6 +2466,7 @@ void idio_string_add_primitives ()
     IDIO_ADD_PRIMITIVE (join_string);
 }
 
-void idio_final_string ()
+void idio_init_string ()
 {
+    idio_module_table_register (idio_string_add_primitives, NULL);
 }

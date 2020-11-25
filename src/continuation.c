@@ -99,15 +99,13 @@ void idio_free_continuation (IDIO k)
     IDIO_GC_FREE (k->u.continuation);
 }
 
-void idio_init_continuation ()
-{
-}
-
 void idio_continuation_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (continuation_p);
 }
 
-void idio_final_continuation ()
+void idio_init_continuation ()
 {
+    idio_module_table_register (idio_continuation_add_primitives, NULL);
 }
+

@@ -3595,8 +3595,94 @@ return the current error handle					\n\
     return idio_thread_current_error_handle ();
 }
 
+void idio_libc_wrap_add_primitives ()
+{
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_system_error);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_access);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_close);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_dup);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_dup2);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_exit);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_fcntl);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_fileno);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_fork);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_getcwd);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_getpgrp);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_getpid);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_isatty);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_kill);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_mkdtemp);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_mkstemp);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_pipe);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_pipe_reader);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_pipe_writer);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_read);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_setpgid);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_signal);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_signal_handler);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_sleep);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_stat);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_strerror);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_strsignal);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_tcgetattr);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_tcgetpgrp);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_tcsetattr);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_tcsetpgrp);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_uname);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_unlink);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_waitpid);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_WEXITSTATUS);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_WIFEXITED);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_WIFSIGNALED);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_WIFSTOPPED);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_WTERMSIG);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_write);
+
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_sig_name);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_sig_names);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_signal_name);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_signal_names);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_errno_name);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_errno_names);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_strerrno);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_rlimit_name);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_rlimit_names);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_getrlimit);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_setrlimit);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_times);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_gettimeofday);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_struct_timeval_as_string);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_subtract_struct_timeval);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_add_struct_timeval);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_getrusage);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_struct_rusage_ru_utime);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_struct_rusage_ru_stime);
+}
+
+void idio_final_libc_wrap ()
+{
+    int i;
+
+    for (i = IDIO_LIBC_FSIG; NULL != idio_libc_signal_names[i]; i++) {
+        IDIO_GC_FREE (idio_libc_signal_names[i]);
+    }
+    IDIO_GC_FREE (idio_libc_signal_names);
+
+    for (i = IDIO_LIBC_FERRNO; i < IDIO_LIBC_NERRNO; i++) {
+        IDIO_GC_FREE (idio_libc_errno_names[i]);
+    }
+    IDIO_GC_FREE (idio_libc_errno_names);
+
+    for (i = IDIO_LIBC_FRLIMIT; i < IDIO_LIBC_NRLIMIT; i++) {
+        IDIO_GC_FREE (idio_libc_rlimit_names[i]);
+    }
+    IDIO_GC_FREE (idio_libc_rlimit_names);
+}
+
 void idio_init_libc_wrap ()
 {
+    idio_module_table_register (idio_libc_wrap_add_primitives, idio_final_libc_wrap);
+
     idio_libc_wrap_module = idio_module (idio_symbols_C_intern ("libc"));
 
     idio_module_export_symbol_value (idio_symbols_C_intern ("0U"), idio_C_uint (0U), idio_libc_wrap_module);
@@ -3711,7 +3797,7 @@ void idio_init_libc_wrap ()
     idio_module_export_symbol_value (name, idio_libc_struct_rlimit, idio_libc_wrap_module);
 
     idio_vm_signal_handler_conditions = idio_array (IDIO_LIBC_NSIG + 1);
-    idio_gc_protect (idio_vm_signal_handler_conditions);
+    idio_gc_protect_auto (idio_vm_signal_handler_conditions);
     /*
      * idio_vm_run1() will be indexing anywhere into this array when
      * it gets a signal so make sure that the "used" size is up there
@@ -3721,7 +3807,7 @@ void idio_init_libc_wrap ()
     idio_libc_set_signal_names ();
 
     idio_vm_errno_conditions = idio_array (IDIO_LIBC_NERRNO + 1);
-    idio_gc_protect (idio_vm_errno_conditions);
+    idio_gc_protect_auto (idio_vm_errno_conditions);
     idio_array_insert_index (idio_vm_errno_conditions, idio_S_nil, (idio_ai_t) IDIO_LIBC_NERRNO);
     idio_libc_set_errno_names ();
 
@@ -3877,93 +3963,5 @@ void idio_init_libc_wrap ()
      * FreeBSD 10 you might need to define it yourself (as 1).  It is
      * not in OpenIndiana.
      */
-}
-
-void idio_libc_wrap_add_primitives ()
-{
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_system_error);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_access);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_close);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_dup);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_dup2);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_exit);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_fcntl);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_fileno);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_fork);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_getcwd);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_getpgrp);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_getpid);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_isatty);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_kill);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_mkdtemp);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_mkstemp);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_pipe);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_pipe_reader);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_pipe_writer);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_read);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_setpgid);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_signal);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_signal_handler);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_sleep);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_stat);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_strerror);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_strsignal);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_tcgetattr);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_tcgetpgrp);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_tcsetattr);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_tcsetpgrp);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_uname);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_unlink);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_waitpid);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_WEXITSTATUS);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_WIFEXITED);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_WIFSIGNALED);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_WIFSTOPPED);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_WTERMSIG);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_write);
-
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_sig_name);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_sig_names);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_signal_name);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_signal_names);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_errno_name);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_errno_names);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_strerrno);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_rlimit_name);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_rlimit_names);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_getrlimit);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_setrlimit);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_times);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_gettimeofday);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_struct_timeval_as_string);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_subtract_struct_timeval);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_add_struct_timeval);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_getrusage);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_struct_rusage_ru_utime);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_struct_rusage_ru_stime);
-}
-
-void idio_final_libc_wrap ()
-{
-    int i;
-
-    idio_gc_expose (idio_vm_signal_handler_conditions);
-    for (i = IDIO_LIBC_FSIG; NULL != idio_libc_signal_names[i]; i++) {
-        IDIO_GC_FREE (idio_libc_signal_names[i]);
-    }
-    IDIO_GC_FREE (idio_libc_signal_names);
-
-    idio_gc_expose (idio_vm_errno_conditions);
-    for (i = IDIO_LIBC_FERRNO; i < IDIO_LIBC_NERRNO; i++) {
-        IDIO_GC_FREE (idio_libc_errno_names[i]);
-    }
-    IDIO_GC_FREE (idio_libc_errno_names);
-
-    for (i = IDIO_LIBC_FRLIMIT; i < IDIO_LIBC_NRLIMIT; i++) {
-        IDIO_GC_FREE (idio_libc_rlimit_names[i]);
-    }
-    IDIO_GC_FREE (idio_libc_rlimit_names);
-
-    idio_gc_expose (idio_libc_struct_stat);
 }
 

@@ -42,8 +42,6 @@ IDIO idio_list_append2 (IDIO l1, IDIO l2);
 IDIO idio_list_nth (IDIO l, IDIO I_n, IDIO args);
 
 void idio_init_pair ();
-void idio_pair_add_primitives ();
-void idio_final_pair ();
 
 #define IDIO_LIST1(e1)		idio_pair (e1, idio_S_nil)
 #define IDIO_LIST2(e1,e2)	idio_pair (e1, idio_pair (e2, idio_S_nil))

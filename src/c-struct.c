@@ -418,8 +418,13 @@ void idio_free_opaque (IDIO o)
 
 void idio_init_C_struct ()
 {
+    /*
+     * XXX nothing to do here...
+     */
+    idio_module_table_register (NULL, NULL);
+
     idio_C_typedefs_hash = IDIO_HASH_EQP (1<<6);
-    idio_gc_protect (idio_C_typedefs_hash);
+    idio_gc_protect_auto (idio_C_typedefs_hash);
 
     IDIO_C_TYPEDEF_ADD (int8);
     IDIO_C_TYPEDEF_ADD (uint8);
@@ -451,14 +456,5 @@ void idio_init_C_struct ()
     IDIO_C_TYPEDEF_ADD_VALUE (ulong, uint32);
 #endif
 
-}
-
-void idio_C_struct_add_primitives ()
-{
-}
-
-void idio_final_C_struct ()
-{
-    idio_gc_expose (idio_C_typedefs_hash);
 }
 

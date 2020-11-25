@@ -389,67 +389,6 @@ IDIO_DEFINE_CHARACTER_CS_PRIMITIVE2V ("char>?", gt, >)
 
 #define IDIO_CHARACTER_INTERN_C(name,c)	(idio_characters_C_intern (name, IDIO_CHARACTER (c)))
 
-void idio_init_character ()
-{
-    idio_characters_hash = idio_hash (1<<7, idio_character_C_eqp, idio_character_C_hash, idio_S_nil, idio_S_nil);
-    idio_gc_protect (idio_characters_hash);
-    IDIO_HASH_FLAGS (idio_characters_hash) |= IDIO_HASH_FLAG_STRING_KEYS;
-
-    /* ASCII C0 control characters */
-    IDIO_CHARACTER_INTERN_C ("nul", 0);
-    IDIO_CHARACTER_INTERN_C ("soh", 1);
-    IDIO_CHARACTER_INTERN_C ("stx", 2);
-    IDIO_CHARACTER_INTERN_C ("etx", 3);
-    IDIO_CHARACTER_INTERN_C ("eot", 4);
-    IDIO_CHARACTER_INTERN_C ("enq", 5);
-    IDIO_CHARACTER_INTERN_C ("ack", 6);
-    IDIO_CHARACTER_INTERN_C ("bel", 7);
-    IDIO_CHARACTER_INTERN_C ("bs", 8);
-    IDIO_CHARACTER_INTERN_C ("ht", 9);
-    IDIO_CHARACTER_INTERN_C ("lf", 10);
-    IDIO_CHARACTER_INTERN_C ("vt", 11);
-    IDIO_CHARACTER_INTERN_C ("ff", 12);
-    IDIO_CHARACTER_INTERN_C ("cr", 13);
-    IDIO_CHARACTER_INTERN_C ("so", 14);
-    IDIO_CHARACTER_INTERN_C ("si", 15);
-    IDIO_CHARACTER_INTERN_C ("dle", 16);
-    IDIO_CHARACTER_INTERN_C ("dcl", 17);
-    IDIO_CHARACTER_INTERN_C ("dc2", 18);
-    IDIO_CHARACTER_INTERN_C ("dc3", 19);
-    IDIO_CHARACTER_INTERN_C ("dc4", 20);
-    IDIO_CHARACTER_INTERN_C ("nak", 21);
-    IDIO_CHARACTER_INTERN_C ("syn", 22);
-    IDIO_CHARACTER_INTERN_C ("etb", 23);
-    IDIO_CHARACTER_INTERN_C ("can", 24);
-    IDIO_CHARACTER_INTERN_C ("em", 25);
-    IDIO_CHARACTER_INTERN_C ("sub", 26);
-    IDIO_CHARACTER_INTERN_C ("esc", 27);
-    IDIO_CHARACTER_INTERN_C ("fs", 28);
-    IDIO_CHARACTER_INTERN_C ("gs", 29);
-    IDIO_CHARACTER_INTERN_C ("rs", 30);
-    IDIO_CHARACTER_INTERN_C ("us", 31);
-    IDIO_CHARACTER_INTERN_C ("sp", 32);
-
-    /* C and other common names */
-    /* nul as above */
-    IDIO_CHARACTER_INTERN_C ("alarm",		'\a'); /* 0x07 */
-    IDIO_CHARACTER_INTERN_C ("backspace",	'\b'); /* 0x08 */
-    IDIO_CHARACTER_INTERN_C ("tab",		'\t'); /* 0x09 */
-    IDIO_CHARACTER_INTERN_C ("linefeed",	'\n'); /* 0x0a */
-    IDIO_CHARACTER_INTERN_C ("newline",		'\n'); /* 0x0a */
-    IDIO_CHARACTER_INTERN_C ("vtab",		'\v'); /* 0x0b */
-    IDIO_CHARACTER_INTERN_C ("page",		'\f'); /* 0x0c */
-    IDIO_CHARACTER_INTERN_C ("return",		'\r'); /* 0x0d */
-    IDIO_CHARACTER_INTERN_C ("carriage-return", '\r'); /* 0x0d */
-    IDIO_CHARACTER_INTERN_C ("esc",		0x1b); /* 0x1b */
-    IDIO_CHARACTER_INTERN_C ("escape",		0x1b); /* 0x1b */
-    IDIO_CHARACTER_INTERN_C ("space",		' ');  /* 0x20 */
-    IDIO_CHARACTER_INTERN_C ("del",		0x7f); /* 0x7f */
-    IDIO_CHARACTER_INTERN_C ("delete",		0x7f); /* 0x7f */
-
-    /* Unicode code points... */
-}
-
 void idio_character_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (char_p);
@@ -607,8 +546,66 @@ This implementation uses libc tolower()						\n\
 ");
 }
 
-void idio_final_character ()
+void idio_init_character ()
 {
-    idio_gc_expose (idio_characters_hash);
+    idio_module_table_register (idio_character_add_primitives, NULL);
+
+    idio_characters_hash = idio_hash (1<<7, idio_character_C_eqp, idio_character_C_hash, idio_S_nil, idio_S_nil);
+    idio_gc_protect_auto (idio_characters_hash);
+    IDIO_HASH_FLAGS (idio_characters_hash) |= IDIO_HASH_FLAG_STRING_KEYS;
+
+    /* ASCII C0 control characters */
+    IDIO_CHARACTER_INTERN_C ("nul", 0);
+    IDIO_CHARACTER_INTERN_C ("soh", 1);
+    IDIO_CHARACTER_INTERN_C ("stx", 2);
+    IDIO_CHARACTER_INTERN_C ("etx", 3);
+    IDIO_CHARACTER_INTERN_C ("eot", 4);
+    IDIO_CHARACTER_INTERN_C ("enq", 5);
+    IDIO_CHARACTER_INTERN_C ("ack", 6);
+    IDIO_CHARACTER_INTERN_C ("bel", 7);
+    IDIO_CHARACTER_INTERN_C ("bs", 8);
+    IDIO_CHARACTER_INTERN_C ("ht", 9);
+    IDIO_CHARACTER_INTERN_C ("lf", 10);
+    IDIO_CHARACTER_INTERN_C ("vt", 11);
+    IDIO_CHARACTER_INTERN_C ("ff", 12);
+    IDIO_CHARACTER_INTERN_C ("cr", 13);
+    IDIO_CHARACTER_INTERN_C ("so", 14);
+    IDIO_CHARACTER_INTERN_C ("si", 15);
+    IDIO_CHARACTER_INTERN_C ("dle", 16);
+    IDIO_CHARACTER_INTERN_C ("dcl", 17);
+    IDIO_CHARACTER_INTERN_C ("dc2", 18);
+    IDIO_CHARACTER_INTERN_C ("dc3", 19);
+    IDIO_CHARACTER_INTERN_C ("dc4", 20);
+    IDIO_CHARACTER_INTERN_C ("nak", 21);
+    IDIO_CHARACTER_INTERN_C ("syn", 22);
+    IDIO_CHARACTER_INTERN_C ("etb", 23);
+    IDIO_CHARACTER_INTERN_C ("can", 24);
+    IDIO_CHARACTER_INTERN_C ("em", 25);
+    IDIO_CHARACTER_INTERN_C ("sub", 26);
+    IDIO_CHARACTER_INTERN_C ("esc", 27);
+    IDIO_CHARACTER_INTERN_C ("fs", 28);
+    IDIO_CHARACTER_INTERN_C ("gs", 29);
+    IDIO_CHARACTER_INTERN_C ("rs", 30);
+    IDIO_CHARACTER_INTERN_C ("us", 31);
+    IDIO_CHARACTER_INTERN_C ("sp", 32);
+
+    /* C and other common names */
+    /* nul as above */
+    IDIO_CHARACTER_INTERN_C ("alarm",		'\a'); /* 0x07 */
+    IDIO_CHARACTER_INTERN_C ("backspace",	'\b'); /* 0x08 */
+    IDIO_CHARACTER_INTERN_C ("tab",		'\t'); /* 0x09 */
+    IDIO_CHARACTER_INTERN_C ("linefeed",	'\n'); /* 0x0a */
+    IDIO_CHARACTER_INTERN_C ("newline",		'\n'); /* 0x0a */
+    IDIO_CHARACTER_INTERN_C ("vtab",		'\v'); /* 0x0b */
+    IDIO_CHARACTER_INTERN_C ("page",		'\f'); /* 0x0c */
+    IDIO_CHARACTER_INTERN_C ("return",		'\r'); /* 0x0d */
+    IDIO_CHARACTER_INTERN_C ("carriage-return", '\r'); /* 0x0d */
+    IDIO_CHARACTER_INTERN_C ("esc",		0x1b); /* 0x1b */
+    IDIO_CHARACTER_INTERN_C ("escape",		0x1b); /* 0x1b */
+    IDIO_CHARACTER_INTERN_C ("space",		' ');  /* 0x20 */
+    IDIO_CHARACTER_INTERN_C ("del",		0x7f); /* 0x7f */
+    IDIO_CHARACTER_INTERN_C ("delete",		0x7f); /* 0x7f */
+
+    /* Unicode code points... */
 }
 

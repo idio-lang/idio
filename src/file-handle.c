@@ -2089,16 +2089,6 @@ does `remove (filename)` succeed?		\n\
     return r;
 }
 
-void idio_init_file_handle ()
-{
-    idio_file_handles = IDIO_HASH_EQP (1<<3);
-    idio_gc_protect (idio_file_handles);
-
-    idio_stdin = idio_open_std_file_handle (stdin);
-    idio_stdout = idio_open_std_file_handle (stdout);
-    idio_stderr = idio_open_std_file_handle (stderr);
-}
-
 void idio_file_handle_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (open_file_handle_from_fd);
@@ -2132,7 +2122,17 @@ void idio_final_file_handle ()
 
 	fhl = IDIO_PAIR_T (fhl);
     }
+}
 
-    idio_gc_expose (idio_file_handles);
+void idio_init_file_handle ()
+{
+    idio_module_table_register (idio_file_handle_add_primitives, idio_final_file_handle);
+
+    idio_file_handles = IDIO_HASH_EQP (1<<3);
+    idio_gc_protect_auto (idio_file_handles);
+
+    idio_stdin = idio_open_std_file_handle (stdin);
+    idio_stdout = idio_open_std_file_handle (stdout);
+    idio_stderr = idio_open_std_file_handle (stderr);
 }
 

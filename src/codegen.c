@@ -2766,8 +2766,16 @@ static idio_codegen_symbol_t idio_codegen_symbols[] = {
     { NULL, NULL }
 };
 
+void idio_codegen_add_primitives ()
+{
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_codegen_module, codegen_constants_lookup_or_extend);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_codegen_module, codegen);
+}
+
 void idio_init_codegen ()
 {
+    idio_module_table_register (idio_codegen_add_primitives, NULL);
+
     idio_codegen_module = idio_module (idio_symbols_C_intern ("codegen"));
 
     idio_codegen_symbol_t *cs = idio_codegen_symbols;
@@ -2777,12 +2785,3 @@ void idio_init_codegen ()
     }
 }
 
-void idio_codegen_add_primitives ()
-{
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_codegen_module, codegen_constants_lookup_or_extend);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_codegen_module, codegen);
-}
-
-void idio_final_codegen ()
-{
-}

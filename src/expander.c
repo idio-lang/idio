@@ -1384,8 +1384,32 @@ IDIO_DEFINE_ASSIGNMENT_INFIX_OPERATOR (":*", colon_star);
 IDIO_DEFINE_ASSIGNMENT_INFIX_OPERATOR (":~", colon_tilde);
 IDIO_DEFINE_ASSIGNMENT_INFIX_OPERATOR (":$", colon_dollar);
 
+void idio_expander_add_primitives ()
+{
+    IDIO_ADD_EXPANDER (let);
+    IDIO_ADD_EXPANDER (lets);
+    IDIO_ADD_EXPANDER (letrec);
+
+    IDIO_ADD_PRIMITIVE (expanderp);
+    IDIO_ADD_PRIMITIVE (infix_operatorp);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_operator_module, infix_operator_expand);
+    IDIO_ADD_PRIMITIVE (postfix_operatorp);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_operator_module, postfix_operator_expand);
+    IDIO_ADD_PRIMITIVE (operatorp);
+    IDIO_ADD_PRIMITIVE (operator_expand);
+
+    IDIO_ADD_INFIX_OPERATOR (set, 1000);
+    IDIO_ADD_INFIX_OPERATOR (colon_eq, 1000);
+    IDIO_ADD_INFIX_OPERATOR (colon_plus, 1000);
+    IDIO_ADD_INFIX_OPERATOR (colon_star, 1000);
+    IDIO_ADD_INFIX_OPERATOR (colon_tilde, 1000);
+    IDIO_ADD_INFIX_OPERATOR (colon_dollar, 1000);
+}
+
 void idio_init_expander ()
 {
+    idio_module_table_register (idio_expander_add_primitives, NULL);
+
     idio_expander_module = idio_module (idio_symbols_C_intern ("expander"));
     IDIO_MODULE_IMPORTS (idio_expander_module) = IDIO_LIST2 (IDIO_LIST1 (idio_Idio_module),
 							     IDIO_LIST1 (idio_primitives_module));
@@ -1413,29 +1437,3 @@ void idio_init_expander ()
     idio_module_set_symbol_value (idio_postfix_operator_group, idio_S_nil, idio_operator_module);
 }
 
-void idio_expander_add_primitives ()
-{
-    IDIO_ADD_EXPANDER (let);
-    IDIO_ADD_EXPANDER (lets);
-    IDIO_ADD_EXPANDER (letrec);
-
-    IDIO_ADD_PRIMITIVE (expanderp);
-    IDIO_ADD_PRIMITIVE (infix_operatorp);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_operator_module, infix_operator_expand);
-    IDIO_ADD_PRIMITIVE (postfix_operatorp);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_operator_module, postfix_operator_expand);
-    IDIO_ADD_PRIMITIVE (operatorp);
-    IDIO_ADD_PRIMITIVE (operator_expand);
-
-    IDIO_ADD_INFIX_OPERATOR (set, 1000);
-    IDIO_ADD_INFIX_OPERATOR (colon_eq, 1000);
-    IDIO_ADD_INFIX_OPERATOR (colon_plus, 1000);
-    IDIO_ADD_INFIX_OPERATOR (colon_star, 1000);
-    IDIO_ADD_INFIX_OPERATOR (colon_tilde, 1000);
-    IDIO_ADD_INFIX_OPERATOR (colon_dollar, 1000);
-}
-
-void idio_final_expander ()
-{
-    idio_gc_expose (idio_expander_thread);
-}

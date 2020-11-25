@@ -276,8 +276,6 @@ time_t idio_vm_elapsed (void);
 
 void idio_init_vm_values ();
 void idio_init_vm ();
-void idio_vm_add_primitives ();
-void idio_final_vm ();
 
 #endif
 

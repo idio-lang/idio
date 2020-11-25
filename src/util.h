@@ -67,8 +67,6 @@ size_t strnlen (const char *s, size_t maxlen);
 #endif
 
 void idio_init_util ();
-void idio_util_add_primitives ();
-void idio_final_util ();
 
 #endif
 

@@ -197,8 +197,6 @@ void idio_codegen_code_prologue (IDIO_IA_T ia);
 idio_ai_t idio_codegen (IDIO thr, IDIO m, IDIO cs);
 
 void idio_init_codegen ();
-void idio_codegen_add_primitives ();
-void idio_final_codegen ();
 
 #endif
 

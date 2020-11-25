@@ -35,8 +35,6 @@ char *idio_find_file (const char *file);
 IDIO idio_path_expand (IDIO p);
 
 void idio_init_path ();
-void idio_path_add_primitives ();
-void idio_final_path ();
 
 #endif
 

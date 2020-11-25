@@ -226,13 +226,6 @@ void idio_env_init_idiolib (char *argv0)
     }
 }
 
-void idio_init_env ()
-{
-    idio_env_IDIOLIB_sym = idio_symbols_C_intern ("IDIOLIB");
-    idio_env_PATH_sym = idio_symbols_C_intern ("PATH");
-    idio_env_PWD_sym = idio_symbols_C_intern ("PWD");
-}
-
 void idio_env_add_primitives ()
 {
     idio_env_add_environ ();
@@ -242,3 +235,13 @@ void idio_final_env ()
 {
     IDIO_GC_FREE (idio_env_IDIOLIB_default);
 }
+
+void idio_init_env ()
+{
+    idio_module_table_register (idio_env_add_primitives, idio_final_env);
+
+    idio_env_IDIOLIB_sym = idio_symbols_C_intern ("IDIOLIB");
+    idio_env_PATH_sym = idio_symbols_C_intern ("PATH");
+    idio_env_PWD_sym = idio_symbols_C_intern ("PWD");
+}
+

@@ -80,8 +80,6 @@ IDIO idio_module_add_computed_symbol (IDIO symbol, IDIO get, IDIO set, IDIO modu
 IDIO idio_module_export_computed_symbol (IDIO symbol, IDIO get, IDIO set, IDIO module);
 
 void idio_init_module (void);
-void idio_module_add_primitives ();
-void idio_final_module (void);
 
 #endif
 

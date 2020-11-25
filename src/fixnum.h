@@ -54,8 +54,6 @@ IDIO idio_defprimitive_gt ();
 IDIO idio_defprimitive_remainder ();
 
 void idio_init_fixnum ();
-void idio_fixnum_add_primitives ();
-void idio_final_fixnum ();
 
 #endif
 

@@ -58,8 +58,6 @@ IDIO idio_hash_reference (IDIO ht, IDIO key, IDIO args);
 IDIO idio_hash_set (IDIO ht, IDIO key, IDIO v);
 
 void idio_init_hash ();
-void idio_hash_add_primitives ();
-void idio_final_hash ();
 
 #endif
 

@@ -45,8 +45,6 @@ char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted);
 IDIO idio_unicode_lookup (char *name);
 
 void idio_init_unicode ();
-void idio_unicode_add_primitives ();
-void idio_final_unicode ();
 
 #endif
 

@@ -34,6 +34,83 @@ void idio_add_primitives ();
 FILE *idio_vm_perf_FILE;
 #endif
 
+typedef struct idio_module_table_s {
+    size_t size;
+    size_t used;
+    void (**table) (void);
+} idio_module_table_t;
+
+static idio_module_table_t idio_add_primitives_table;
+static idio_module_table_t idio_final_table;
+
+void idio_module_table_init ()
+{
+    idio_add_primitives_table.used = 0;
+    idio_add_primitives_table.size = 40;
+    idio_add_primitives_table.table = idio_alloc (40 * sizeof (void *));
+    idio_final_table.used = 0;
+    idio_final_table.size = 40;
+    idio_final_table.table = idio_alloc (40 * sizeof (void *));
+}
+
+void idio_module_table_register (void (*ap_func) (void), void (*f_func) (void))
+{
+    if (NULL != ap_func) {
+	if (idio_add_primitives_table.used >= idio_add_primitives_table.size) {
+	    idio_realloc (idio_add_primitives_table.table, (idio_add_primitives_table.size + 10) * sizeof (void *));
+	}
+	idio_add_primitives_table.table[idio_add_primitives_table.used++] = ap_func;
+    }
+    if (NULL != f_func) {
+	if (idio_final_table.used >= idio_final_table.size) {
+	    idio_realloc (idio_final_table.table, (idio_final_table.size + 10) * sizeof (void *));
+	}
+	idio_final_table.table[idio_final_table.used++] = f_func;
+    }
+}
+
+void idio_module_table_remove (idio_module_table_t *table, void (*func) (void))
+{
+    size_t i;
+    for (i = 0; i < table->used; i++) {
+	if (func == table->table[i]) {
+	    if (i < table->size - 1) {
+		for (; i < table->used - 1; i++) {
+		    table->table[i] = table->table[i + 1];
+		}
+	    }
+	    table->table[i] = NULL;
+	    break;
+	}
+    }
+}
+
+void idio_module_table_deregister (void (*ap_func) (void), void (*f_func) (void))
+{
+    if (NULL != ap_func) {
+	idio_module_table_remove (&idio_add_primitives_table, ap_func);
+    }
+    if (NULL != f_func) {
+	idio_module_table_remove (&idio_final_table, f_func);
+    }
+}
+
+void idio_module_table_add_primitives ()
+{
+    size_t i;
+    for (i = 0; i < idio_add_primitives_table.used; i++) {
+	(idio_add_primitives_table.table[i]) ();
+    }
+}
+
+void idio_module_table_final ()
+{
+    ptrdiff_t i;
+    for (i = idio_final_table.used - 1; i >= 0; i--) {
+	(idio_final_table.table[i]) ();
+    }
+}
+
 void idio_init (int argc, char **argv)
 {
 
@@ -59,7 +136,6 @@ void idio_init (int argc, char **argv)
     idio_init_condition ();
     idio_init_evaluate ();
     idio_init_expander ();
-    /* idio_init_scm_evaluate (); */
     idio_init_pair ();
     idio_init_handle ();
     idio_init_string_handle ();
@@ -81,13 +157,13 @@ void idio_init (int argc, char **argv)
     idio_init_error ();
     idio_init_keyword ();
     idio_init_read ();
-    /* idio_init_scm_read (); */
     idio_init_env ();
     idio_init_path ();
     idio_init_command ();
     idio_init_job_control ();
     idio_init_vm ();
     idio_init_codegen ();
+    idio_init_continuation ();
 
     idio_init_libc_wrap ();
     idio_init_posix_regex ();
@@ -119,51 +195,9 @@ void idio_add_primitives ()
      * module" in idio_init_symbol() until we have modules initialised
      * which can't happen until after symbols have been initialised
      * because modules interns the names of the default modules...
-     *
-     * Neither of which can happen until scm_evaluate is up and
-     * running...
      */
-    idio_gc_add_primitives ();
-    idio_symbol_add_primitives ();
-    idio_module_add_primitives ();
-    idio_thread_add_primitives ();
 
-    idio_struct_add_primitives ();
-    idio_condition_add_primitives ();
-    idio_evaluate_add_primitives ();
-    idio_expander_add_primitives ();
-    /* idio_scm_evaluate_add_primitives (); */
-    idio_pair_add_primitives ();
-    idio_handle_add_primitives ();
-    idio_string_handle_add_primitives ();
-    idio_file_handle_add_primitives ();
-    idio_c_type_add_primtives ();
-    idio_C_struct_add_primitives ();
-    idio_frame_add_primitives ();
-    idio_util_add_primitives ();
-    idio_primitive_add_primitives ();
-    idio_character_add_primitives ();
-    idio_unicode_add_primitives ();
-    idio_string_add_primitives ();
-    idio_array_add_primitives ();
-    idio_hash_add_primitives ();
-    idio_fixnum_add_primitives ();
-    idio_bignum_add_primitives ();
-    idio_bitset_add_primitives ();
-    idio_closure_add_primitives ();
-    idio_error_add_primitives ();
-    idio_keyword_add_primitives ();
-    idio_read_add_primitives ();
-    /* idio_scm_read_add_primitives (); */
-    idio_env_add_primitives ();
-    idio_path_add_primitives ();
-    idio_command_add_primitives ();
-    idio_job_control_add_primitives ();
-    idio_vm_add_primitives ();
-    idio_codegen_add_primitives ();
-
-    idio_libc_wrap_add_primitives ();
-    idio_posix_regex_add_primitives ();
+    idio_module_table_add_primitives ();
 
     /*
      * We can't patch up the first thread's IO handles until modules
@@ -175,51 +209,7 @@ void idio_add_primitives ()
 
 void idio_final ()
 {
-    /*
-     * reverse order of idio_init () ??
-     */
-    idio_final_posix_regex ();
-    idio_final_libc_wrap ();
-
-    idio_final_codegen ();
-    idio_final_vm ();
-    idio_final_job_control ();
-    idio_final_command ();
-    idio_final_path ();
-    idio_final_env ();
-    /* idio_final_scm_read (); */
-    idio_final_read ();
-    idio_final_keyword ();
-    idio_final_error ();
-    idio_final_closure ();
-    idio_final_bitset ();
-    idio_final_bignum ();
-    idio_final_fixnum ();
-    idio_final_hash ();
-    idio_final_array ();
-    idio_final_string ();
-    idio_final_unicode ();
-    idio_final_character ();
-    idio_final_primitive ();
-    idio_final_util ();
-    idio_final_frame ();
-    idio_final_C_struct ();
-    idio_final_c_type ();
-    idio_final_file_handle ();
-    idio_final_string_handle ();
-    idio_final_handle ();
-    idio_final_pair ();
-    /* idio_final_scm_evaluate (); */
-    idio_final_expander ();
-    idio_final_evaluate ();
-    idio_final_condition ();
-    idio_final_struct ();
-
-    idio_final_thread ();
-    idio_final_module ();
-    idio_final_symbol ();
-
-    idio_final_gc ();
+    idio_module_table_final ();
 
 #ifdef IDIO_VM_PROF
     if (fclose (idio_vm_perf_FILE)) {
@@ -245,6 +235,7 @@ int main (int argc, char **argv, char **envp)
     }
     nargv[nargc] = NULL;
 
+    idio_module_table_init ();
     idio_init (nargc, nargv);
 
     idio_env_init_idiolib (nargv[0]);

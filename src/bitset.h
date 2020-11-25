@@ -35,8 +35,6 @@ IDIO idio_copy_bitset (IDIO obs);
 int idio_equal_bitsetp (IDIO args);
 
 void idio_init_bitset ();
-void idio_bitset_add_primitives ();
-void idio_final_bitset ();
 
 #endif
 

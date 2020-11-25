@@ -46,8 +46,6 @@ void idio_error_system_errno (char *msg, IDIO args, IDIO c_location);
 void idio_error_divide_by_zero (char *msg, IDIO c_location);
 
 void idio_init_error ();
-void idio_error_add_primitives ();
-void idio_final_error ();
 
 #endif
 

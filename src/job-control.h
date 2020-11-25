@@ -38,10 +38,8 @@ void idio_job_control_set_interactive (void);
 IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char **argv);
 
 extern volatile sig_atomic_t idio_job_control_signal_record[IDIO_LIBC_NSIG+1];
-void idio_init_job_control ();
-void idio_job_control_add_primitives ();
-void idio_final_job_control ();
 
+void idio_init_job_control ();
 
 #endif
 

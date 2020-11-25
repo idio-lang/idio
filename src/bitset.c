@@ -758,10 +758,6 @@ accumulating the result in `v`			\n\
     return v;
 }
 
-void idio_init_bitset ()
-{
-}
-
 void idio_bitset_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (bitset_p);
@@ -782,6 +778,8 @@ void idio_bitset_add_primitives ()
     IDIO_ADD_PRIMITIVE (fold_bitset);
 }
 
-void idio_final_bitset ()
+void idio_init_bitset ()
 {
+    idio_module_table_register (idio_bitset_add_primitives, NULL);
 }
+

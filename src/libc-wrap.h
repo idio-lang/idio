@@ -95,8 +95,6 @@ extern char **idio_libc_rlimit_names;
 char *idio_libc_rlimit_name (int errnum);
 
 void idio_init_libc_wrap ();
-void idio_libc_wrap_add_primitives ();
-void idio_final_libc_wrap ();
 
 #endif
 

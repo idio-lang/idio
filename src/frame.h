@@ -39,8 +39,6 @@ IDIO idio_frame_args_as_list (IDIO frame);
 IDIO idio_frame_params_as_list (IDIO frame);
 
 void idio_init_frame (void);
-void idio_frame_add_primitives (void);
-void idio_final_frame (void);
 
 #endif
 

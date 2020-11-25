@@ -79,8 +79,6 @@ idio_unicode_t idio_read_character_int (IDIO handle, IDIO lo, int kind);
 IDIO idio_read_character (IDIO handle, IDIO lo, int kind);
 
 void idio_init_read ();
-void idio_read_add_primitives ();
-void idio_final_read ();
 
 #endif
 

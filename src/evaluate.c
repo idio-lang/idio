@@ -4842,8 +4842,17 @@ test if `o` is a computed variable		\n\
     return r;
 }
 
+void idio_evaluate_add_primitives ()
+{
+    IDIO_ADD_PRIMITIVE (environp);
+    IDIO_ADD_PRIMITIVE (dynamicp);
+    IDIO_ADD_PRIMITIVE (computedp);
+}
+
 void idio_init_evaluate ()
 {
+    idio_module_table_register (idio_evaluate_add_primitives, NULL);
+
     idio_evaluation_module = idio_module (idio_symbols_C_intern ("evaluate"));
     /*
      * Yuk!  imports defaults to idio_command_module ('job-control),
@@ -4861,17 +4870,6 @@ void idio_init_evaluate ()
     IDIO_MEANING_STRING (define_gvi0, "idio-meaning-define/gvi=0");
     IDIO_MEANING_STRING (define_infix_operator, "idio-meaning-define-infix-operator");
     IDIO_MEANING_STRING (define_postfix_operator, "idio-meaning-define-postfix-operator");
-}
-
-void idio_evaluate_add_primitives ()
-{
-    IDIO_ADD_PRIMITIVE (environp);
-    IDIO_ADD_PRIMITIVE (dynamicp);
-    IDIO_ADD_PRIMITIVE (computedp);
-}
-
-void idio_final_evaluate ()
-{
 }
 
 /* Local Variables: */

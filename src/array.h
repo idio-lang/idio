@@ -53,8 +53,6 @@ IDIO idio_array_ref (IDIO a, IDIO index);
 IDIO idio_array_set (IDIO a, IDIO index, IDIO v);
 
 void idio_init_array ();
-void idio_array_add_primitives ();
-void idio_final_array ();
 
 #endif
 

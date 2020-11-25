@@ -42,9 +42,6 @@ int idio_isa_string_handle (IDIO o);
 IDIO idio_get_output_string (IDIO sh);
 
 void idio_init_string_handle ();
-void idio_string_handle_add_primitives ();
-void idio_final_string_handle ();
-
 
 #endif
 

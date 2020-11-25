@@ -1228,10 +1228,6 @@ convert `a` to a list				\n\
     return idio_array_to_list (a);
 }
 
-void idio_init_array ()
-{
-}
-
 void idio_array_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (array_p);
@@ -1249,7 +1245,8 @@ void idio_array_add_primitives ()
     IDIO_ADD_PRIMITIVE (array2list);
 }
 
-void idio_final_array ()
+void idio_init_array ()
 {
+    idio_module_table_register (idio_array_add_primitives, NULL);
 }
 

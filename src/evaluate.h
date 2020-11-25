@@ -89,9 +89,8 @@ IDIO idio_postfix_operator_expand (IDIO e, int depth);
 IDIO idio_operator_expand (IDIO e, int depth);
 
 IDIO idio_evaluate (IDIO e, IDIO cs);
+
 void idio_init_evaluate ();
-void idio_evaluate_add_primitives ();
-void idio_final_evaluate ();
 
 #endif
 

@@ -677,10 +677,29 @@ set the property `kw` for `o` to ``v``		\n\
     return idio_S_unspec;
 }
 
+void idio_symbol_add_primitives ()
+{
+    IDIO_ADD_PRIMITIVE (symbol_p);
+    IDIO_ADD_PRIMITIVE (gensym);
+    IDIO_ADD_PRIMITIVE (symbol2string);
+    IDIO_ADD_PRIMITIVE (symbols);
+    IDIO_ADD_PRIMITIVE (properties_ref);
+    IDIO_ADD_PRIMITIVE (properties_set);
+    IDIO_ADD_PRIMITIVE (get_property);
+    IDIO_ADD_PRIMITIVE (set_property);
+}
+
+void idio_final_symbol ()
+{
+    idio_hash_remove_weak_table (idio_properties_hash);
+}
+
 void idio_init_symbol ()
 {
+    idio_module_table_register (idio_symbol_add_primitives, idio_final_symbol);
+
     idio_symbols_hash = idio_hash (1<<7, idio_symbol_C_eqp, idio_symbol_C_hash, idio_S_nil, idio_S_nil);
-    idio_gc_protect (idio_symbols_hash);
+    idio_gc_protect_auto (idio_symbols_hash);
     IDIO_HASH_FLAGS (idio_symbols_hash) |= IDIO_HASH_FLAG_STRING_KEYS;
 
     IDIO_SYMBOL_DEF ("!*", excl_star);
@@ -780,25 +799,6 @@ void idio_init_symbol ()
      */
     idio_properties_hash = IDIO_HASH_EQP (4 * 1024);
     idio_hash_add_weak_table (idio_properties_hash);
-    idio_gc_protect (idio_properties_hash);
-}
-
-void idio_symbol_add_primitives ()
-{
-    IDIO_ADD_PRIMITIVE (symbol_p);
-    IDIO_ADD_PRIMITIVE (gensym);
-    IDIO_ADD_PRIMITIVE (symbol2string);
-    IDIO_ADD_PRIMITIVE (symbols);
-    IDIO_ADD_PRIMITIVE (properties_ref);
-    IDIO_ADD_PRIMITIVE (properties_set);
-    IDIO_ADD_PRIMITIVE (get_property);
-    IDIO_ADD_PRIMITIVE (set_property);
-}
-
-void idio_final_symbol ()
-{
-    idio_hash_remove_weak_table (idio_properties_hash);
-    idio_gc_expose (idio_properties_hash);
-    idio_gc_expose (idio_symbols_hash);
+    idio_gc_protect_auto (idio_properties_hash);
 }
 

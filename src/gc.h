@@ -127,9 +127,9 @@
  *     int idio_isa_foo (IDIO o);
  *     void idio_free_foo (IDIO f);
  *
- *     void idio_init_foo ();
  *     void idio_foo_add_primitives ();
  *     void idio_final_foo ();
+ *     void idio_init_foo ();
  *
  */
 
@@ -1456,8 +1456,6 @@ void idio_hcount (unsigned long long *bytes, int *scale);
 void idio_gc_stats ();
 
 void idio_init_gc ();
-void idio_gc_add_primitives ();
-void idio_final_gc ();
 
 #endif
 

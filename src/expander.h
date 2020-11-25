@@ -41,8 +41,6 @@ void idio_add_infix_operator_primitive (idio_primitive_desc_t *d, int pri, const
 void idio_add_postfix_operator_primitive (idio_primitive_desc_t *d, int pri, const char *cpp__FILE__, int cpp__LINE__);
 
 void idio_init_expander ();
-void idio_expander_add_primitives ();
-void idio_final_expander ();
 
 #endif
 
