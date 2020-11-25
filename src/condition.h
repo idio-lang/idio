@@ -151,7 +151,7 @@ extern IDIO idio_condition_rt_command_argv_type_error_type;
 extern IDIO idio_condition_rt_command_forked_error_type;
 extern IDIO idio_condition_rt_command_env_type_error_type;
 extern IDIO idio_condition_rt_command_exec_error_type;
-extern IDIO idio_condition_rt_command_status_error_type;
+extern IDIO idio_condition_rt_job_control_status_error_type;
 extern IDIO idio_condition_rt_array_bounds_error_type;
 extern IDIO idio_condition_rt_hash_key_not_found_error_type;
 extern IDIO idio_condition_rt_bignum_conversion_error_type;

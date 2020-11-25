@@ -94,7 +94,7 @@ IDIO idio_condition_rt_command_argv_type_error_type;
 IDIO idio_condition_rt_command_forked_error_type;
 IDIO idio_condition_rt_command_env_type_error_type;
 IDIO idio_condition_rt_command_exec_error_type;
-IDIO idio_condition_rt_command_status_error_type;
+IDIO idio_condition_rt_job_control_status_error_type;
 
 IDIO idio_condition_rt_signal_type;
 
@@ -529,20 +529,20 @@ does not return per se						\n\
 	switch (signum_C) {
 	case SIGCHLD:
 	    /* fprintf (stderr, "default-c-h: SIGCHLD -> idio_command_SIGCHLD_signal_handler\n"); */
-	    return idio_command_SIGCHLD_signal_handler ();
+	    return idio_job_control_SIGCHLD_signal_handler ();
 	case SIGHUP:
-	    return idio_command_SIGHUP_signal_handler ();
+	    return idio_job_control_SIGHUP_signal_handler ();
 	default:
 	    break;
 	}
-    } else if (idio_struct_type_isa (sit, idio_condition_rt_command_status_error_type)) {
+    } else if (idio_struct_type_isa (sit, idio_condition_rt_job_control_status_error_type)) {
 	/* return idio_command_rcse_handler (c); */
 	/* idio_debug ("default-c-h: rcse = %s\n", c); */
 	/* fprintf (stderr, "default-c-h: rcse?? =>> #unspec\n"); */
 	return idio_S_unspec;
     }
 
-    if (idio_command_interactive) {
+    if (idio_job_control_interactive) {
 	IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (c);
 
 	if (idio_struct_type_isa (sit, idio_condition_system_error_type)) {
@@ -729,16 +729,16 @@ does not return per se						\n\
 	    switch (signum_C) {
 	    case SIGCHLD:
 		fprintf (stderr, "restart-c-h: SIGCHLD -> idio_command_SIGCHLD_signal_handler\n");
-		idio_command_SIGCHLD_signal_handler ();
+		idio_job_control_SIGCHLD_signal_handler ();
 		return idio_S_unspec;
 	    case SIGHUP:
 		fprintf (stderr, "restart-c-h: SIGHUP -> idio_command_SIGHUP_signal_handler\n");
-		idio_command_SIGHUP_signal_handler ();
+		idio_job_control_SIGHUP_signal_handler ();
 		return idio_S_unspec;
 	    default:
 		break;
 	    }
-	} else if (idio_struct_type_isa (sit, idio_condition_rt_command_status_error_type)) {
+	} else if (idio_struct_type_isa (sit, idio_condition_rt_job_control_status_error_type)) {
 	    /* return idio_command_rcse_handler (c); */
 	    idio_debug ("restart-c-h: rcse = %s\n", c);
 	    fprintf (stderr, "restart-c-h: rcse?? =>> #unspec\n");
@@ -966,7 +966,7 @@ void idio_init_condition ()
     IDIO_DEFINE_CONDITION0 (idio_condition_rt_command_forked_error_type, "^rt-command-forked-error", idio_condition_runtime_error_type);
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_command_env_type_error_type, "^rt-command-env-type-error", idio_condition_rt_command_forked_error_type, "name");
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_command_exec_error_type, "^rt-command-exec-error", idio_condition_rt_command_forked_error_type, "errno");
-    IDIO_DEFINE_CONDITION1 (idio_condition_rt_command_status_error_type, "^rt-command-status-error", idio_condition_runtime_error_type, "status");
+    IDIO_DEFINE_CONDITION1 (idio_condition_rt_job_control_status_error_type, "^rt-job-control-status-error", idio_condition_runtime_error_type, "status");
 
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_array_bounds_error_type, "^rt-array-bounds-error", idio_condition_runtime_error_type, "index");
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_hash_key_not_found_error_type, "^rt-hash-key-not-found-error", idio_condition_runtime_error_type, "key");
@@ -1066,7 +1066,7 @@ void idio_final_condition ()
     idio_gc_expose (idio_condition_rt_command_forked_error_type);
     idio_gc_expose (idio_condition_rt_command_env_type_error_type);
     idio_gc_expose (idio_condition_rt_command_exec_error_type);
-    idio_gc_expose (idio_condition_rt_command_status_error_type);
+    idio_gc_expose (idio_condition_rt_job_control_status_error_type);
     idio_gc_expose (idio_condition_rt_array_bounds_error_type);
     idio_gc_expose (idio_condition_rt_hash_key_not_found_error_type);
     idio_gc_expose (idio_condition_rt_bignum_conversion_error_type);

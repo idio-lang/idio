@@ -2001,7 +2001,7 @@ This is the ``load`` primitive.					\n\
      *
      * It will be reset just prior to the prompt.
      */
-    idio_command_interactive = 0;
+    idio_job_control_interactive = 0;
     IDIO r = idio_load_file_name (filename, idio_vm_constants);
 
     idio_ai_t pc = IDIO_THREAD_PC (thr);

@@ -355,7 +355,7 @@ define (wait-for-job job) "wait for job `job` to be stopped or completed
   ;eprintf "wfj: %5s C=%s S=%s %s %s\n" (%idio-job-pgid job) (job-is-completed job) (job-is-stopped job) (if (job-failed job) "failed" "succeeded") (pipeline-detail job)
 
   if (job-failed job) {
-    c := make-condition ^rt-command-status-error "job failed" job (pipeline-detail job) (job-detail job)
+    c := make-condition ^rt-job-control-status-error "job failed" job (pipeline-detail job) (job-detail job)
     raise c
   }
 
@@ -443,7 +443,7 @@ define (do-job-notification) "notify of any job status changes" {
 		cond ((null? jobs) #n) \
 		     (else {
 		       job := ph jobs
-		       c := make-condition ^rt-command-status-error "job failed" job (pipeline-detail job) (job-detail job)
+		       c := make-condition ^rt-job-control-status-error "job failed" job (pipeline-detail job) (job-detail job)
 		       ;edisplay* "djn: raising for job" job
 		       ;raise c
 

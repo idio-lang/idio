@@ -6005,8 +6005,8 @@ IDIO idio_vm_run (IDIO thr, idio_ai_t pc, int caller)
 	     */
 	    int signum;
 	    for (signum = IDIO_LIBC_FSIG; signum <= IDIO_LIBC_NSIG; signum++) {
-		if (idio_command_signal_record[signum]) {
-		    idio_command_signal_record[signum] = 0;
+		if (idio_job_control_signal_record[signum]) {
+		    idio_job_control_signal_record[signum] = 0;
 
 		    IDIO signal_condition = idio_array_ref_index (idio_vm_signal_handler_conditions, (idio_ai_t) signum);
 		    if (idio_S_nil != signal_condition) {

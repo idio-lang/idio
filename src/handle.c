@@ -1875,12 +1875,12 @@ IDIO idio_load_handle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*eval
 	 * idio_command_interactive will have been set to 0 by {load}
 	 * so we need to reset it, just in case.
 	 */
-	idio_command_set_interactive ();
+	idio_job_control_set_interactive ();
 
 	/*
 	 * Throw out some messages about any recently failed jobs
 	 */
-	idio_command_SIGCHLD_signal_handler ();
+	idio_job_control_SIGCHLD_signal_handler ();
 
 	if (idio_isa_file_handle (oh)) {
 	    fflush (IDIO_FILE_HANDLE_FILEP (oh));

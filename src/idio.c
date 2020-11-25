@@ -85,6 +85,7 @@ void idio_init (int argc, char **argv)
     idio_init_env ();
     idio_init_path ();
     idio_init_command ();
+    idio_init_job_control ();
     idio_init_vm ();
     idio_init_codegen ();
 
@@ -157,6 +158,7 @@ void idio_add_primitives ()
     idio_env_add_primitives ();
     idio_path_add_primitives ();
     idio_command_add_primitives ();
+    idio_job_control_add_primitives ();
     idio_vm_add_primitives ();
     idio_codegen_add_primitives ();
 
@@ -181,6 +183,7 @@ void idio_final ()
 
     idio_final_codegen ();
     idio_final_vm ();
+    idio_final_job_control ();
     idio_final_command ();
     idio_final_path ();
     idio_final_env ();
@@ -308,7 +311,7 @@ int main (int argc, char **argv, char **envp)
 	 * however we are about to loop over files in a
 	 * non-interactive way.  So turn it off.
 	 */
-	idio_command_interactive = 0;
+	idio_job_control_interactive = 0;
 
 	/*
 	 * Dig out the (post-bootstrap) definition of "load" which
