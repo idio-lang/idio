@@ -119,11 +119,11 @@ IDIO idio_posix_regex_regcomp (IDIO rx, IDIO flags)
      * regfree() is required to free up undocumented stuff but not the
      * regex_t itself:
      *
-     * Calling 'regfree' frees all the storage that '*COMPILED' points
-     * to.  This includes various internal fields of the 'regex_t'
-     * structure that aren't documented in this manual.
+     *   Calling 'regfree' frees all the storage that '*COMPILED'
+     *   points to.  This includes various internal fields of the
+     *   'regex_t' structure that aren't documented in this manual.
      *
-     * 'regfree' does not free the object '*COMPILED' itself.
+     *   'regfree' does not free the object '*COMPILED' itself.
      *
      * Hence we require a finaliser to call regfree() and use
      * idio_C_pointer_free_me() to ensure that we free *preg.

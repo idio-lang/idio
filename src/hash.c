@@ -433,8 +433,22 @@ void idio_hash_resize (IDIO h, int larger)
 	    if (idio_S_nil != IDIO_HASH_HE_KEY (he)) {
 		c++;
 		idio_hash_put (h, IDIO_HASH_HE_KEY (he), IDIO_HASH_HE_VALUE (he));
+	    } else {
+		fprintf (stderr, "hash-resize: #n key?\n");
 	    }
 	}
+    }
+
+    if (hcount != c) {
+	fprintf (stderr, "LOST HASH ENTRIES (c): %3zu != %3zu\n", IDIO_HASH_COUNT (h), hcount);
+	idio_dump (h, 2);
+	exit (2);
+    }
+
+    if (hcount != IDIO_HASH_COUNT (h)) {
+	fprintf (stderr, "LOST HASH ENTRIES (count): %3zu != %3zu\n", IDIO_HASH_COUNT (h), hcount);
+	idio_dump (h, 2);
+	exit (3);
     }
 
     idio_gc_stats_free (osize * sizeof (idio_hash_entry_t));
@@ -1027,6 +1041,10 @@ IDIO idio_hash_ref (IDIO h, void *kv)
     return IDIO_HASH_HE_VALUE (he);
 }
 
+/*
+ * It is quite possible we may be asked to delete a key that doesn't
+ * exist.
+ */
 int idio_hash_delete (IDIO h, void *kv)
 {
     IDIO_ASSERT (h);
@@ -1046,30 +1064,33 @@ int idio_hash_delete (IDIO h, void *kv)
 	return 0;
     }
 
-    idio_hash_entry_t *he = idio_hash_he (h, kv);
-    if (NULL == he) {
-	return 0;
-    }
-
     idio_hi_t hv = idio_hash_value_index (h, kv);
 
     idio_hash_entry_t *hel = IDIO_HASH_HA (h, hv);
     if (NULL == hel) {
-    idio_debug ("ih-delete from %s\n", h);
-
-	idio_dump (h, 1);
-	IDIO_C_ASSERT (hel);
+	return 0;
     }
+
+    idio_hash_entry_t *he = hel;
+
     if (idio_hash_equal (h, kv, IDIO_HASH_HE_KEY (he))) {
 	IDIO_HASH_HA (h, hv) = IDIO_HASH_HE_NEXT (he);
     } else {
 	while (NULL != hel &&
-	       ! idio_hash_equal (h, kv, IDIO_HASH_HE_KEY (IDIO_HASH_HE_NEXT (hel)))) {
+	       NULL != IDIO_HASH_HE_NEXT (hel)) {
+	    if (idio_hash_equal (h, kv, IDIO_HASH_HE_KEY (IDIO_HASH_HE_NEXT (hel)))) {
+		break;
+	    }
 	    hel = IDIO_HASH_HE_NEXT (hel);
 	}
 	he = IDIO_HASH_HE_NEXT (hel);
 	IDIO_HASH_HE_NEXT (hel) = IDIO_HASH_HE_NEXT (he);
     }
+
+    if (NULL == he) {
+	return 0;
+    }
+
     IDIO_GC_FREE (he);
     IDIO_HASH_COUNT (h) -= 1;
 

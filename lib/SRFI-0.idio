@@ -99,7 +99,7 @@ define (cond-expand-expander clause*) {
 
    (else {
      clause := ph clause*
-     
+
      (cond
       ((eq? 'else (ph clause)) {
 	if (null? (pt clause*)) {
@@ -215,14 +215,16 @@ define-template (cond-expand & clause*) {
 	       fn := ph fn*
 	       if (file-exists? fn) {
 		 fh := open-input-file fn
+		 comment-rx := regcomp "^#"
+		 kv-rx := regcomp "([[:alnum:]_]+)=(.*)"
 		 loop :+ function () {
 			   if (eof? fh) #n {
 			     line := read-line fh
 			     (cond
-			      ((regexp-matches "^#" line) {
+			      ((regexec comment-rx line) {
 				(loop)
 			      })
-			      ((regexp-matches "([[:alnum:]_]+)=(.*)" line)
+			      ((regexec kv-rx line)
 			       => (function (res) {
 				     k := array-ref res 1
 				     (case k

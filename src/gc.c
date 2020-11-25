@@ -292,8 +292,13 @@ void idio_gc_deregister_finalizer (IDIO o)
 {
     IDIO_ASSERT (o);
 
-    idio_hash_delete (idio_gc_finalizer_hash, o);
-    o->gc_flags &= IDIO_GC_FLAG_FINALIZER_UMASK;
+    if (o->gc_flags & IDIO_GC_FLAG_FINALIZER_MASK) {
+	idio_hash_delete (idio_gc_finalizer_hash, o);
+	o->gc_flags &= IDIO_GC_FLAG_FINALIZER_UMASK;
+    } else {
+	/* fprintf (stderr, "final del: already done?\n"); */
+	/* idio_dump (idio_gc_finalizer_hash, 2); */
+    }
 }
 
 static void idio_gc_finalizer_run (IDIO o)
@@ -316,6 +321,10 @@ static void idio_gc_finalizer_run (IDIO o)
 	(*p) (o);
 
 	idio_gc_deregister_finalizer (o);
+    } else {
+	fprintf (stderr, "gc-finalizer-run: no finalizer for %10p? (%s)\n", o, idio_type2string (o));
+	idio_dump (idio_gc_finalizer_hash, 2);
+	exit (4);
     }
 }
 
@@ -2046,6 +2055,12 @@ void idio_init_gc ()
 
     }
 
+    /*
+     * Hmm, debugging something else I noticed that as file handles
+     * come and go, they actually go and are therefore deregistered
+     * quite early on which provokes a resize from 64 back down to
+     * 8...
+     */
     idio_gc_finalizer_hash = IDIO_HASH_EQP (64);
     idio_gc_protect (idio_gc_finalizer_hash);
     idio_hash_add_weak_table (idio_gc_finalizer_hash);

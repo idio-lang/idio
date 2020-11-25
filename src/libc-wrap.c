@@ -1738,6 +1738,9 @@ static void idio_libc_set_signal_names ()
 		fprintf (stderr, "Unmapped signal numbers:\n");
 		fprintf (stderr, " %3.3s %-*.*s %s\n", "id", IDIO_LIBC_SIGNAMELEN, IDIO_LIBC_SIGNAMELEN, "Idio name", "strsignal()");
 	    }
+	    /*
+	     * strsignal() leaks memory?
+	     */
 	    fprintf (stderr, " %3d %-*s %s\n", i, IDIO_LIBC_SIGNAMELEN, sig_name, strsignal (i));
 	}
     }
@@ -2744,6 +2747,9 @@ static void idio_libc_set_errno_names ()
 		fprintf (stderr, "Unmapped errno numbers:\n");
 		fprintf (stderr, " %3.3s %-*.*s %s\n", "id", IDIO_LIBC_ERRNAMELEN, IDIO_LIBC_ERRNAMELEN, "Idio name", "strerror ()");
 	    }
+	    /*
+	     * strerror() leaks memory?
+	     */
 	    fprintf (stderr, " %3d %-*s %s\n", i, IDIO_LIBC_ERRNAMELEN, err_name, strerror (i));
 	}
     }
