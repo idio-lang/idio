@@ -1708,16 +1708,18 @@ define (meaning-primitive-application src fe ae* nametree flags arity vi cs cm) 
 
     (case arity
 	  ((0) {
-	    (case name
-		  (("read") (i-code := (list I-PRIMCALL0 A-PRIMCALL0-READ)))
-		  (("newline") (i-code := (list I-PRIMCALL0 A-PRIMCALL0-NEWLINE))))
+	    i-code := (list I-PRIMCALL0 A-PRIMCALL0 vi)
 	  })
 	  ((1) {
 	    m1 := meaning (mpp (ph ae*) src) (ph ae*) nametree (clear-tailp flags) cs cm
 
-	    (case name
-		  (("ph") (i-code := (list I-PRIMCALL1 A-PRIMCALL1-HEAD m1)))
-		  (("pt") (i-code := (list I-PRIMCALL1 A-PRIMCALL1-TAIL m1))))
+	    i-code := (list I-PRIMCALL1 A-PRIMCALL1 m1 vi)
+	  })
+	  ((2) {
+	    m1 := meaning (mpp (ph ae*) src) (ph ae*) nametree (clear-tailp flags) cs cm
+	    m2 := meaning (mpp (pht ae*) src) (pht ae*) nametree (clear-tailp flags) cs cm
+
+	    i-code := (list I-PRIMCALL2 A-PRIMCALL2 m1 m2 vi)
 	  }))
 
     if i-code i-code {

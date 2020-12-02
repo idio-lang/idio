@@ -4176,11 +4176,15 @@ int idio_vm_run1 (IDIO thr)
 	{
 	    uint64_t vi = idio_vm_fetch_varuint (thr);
 	    IDIO primdata = idio_vm_values_ref (vi);
+	    /*
+	     * XXX see comment in idio_meaning_primitive_application()
+	     * for setting *func*
+	     */
+	    IDIO_THREAD_FUNC (thr) = primdata;
 	    IDIO_VM_RUN_DIS ("PRIMITIVE0 %" PRId64 " %s", vi, IDIO_PRIMITIVE_NAME (primdata));
 	    if (idio_vm_tracing) {
 		idio_vm_primitive_call_trace (IDIO_PRIMITIVE_NAME (primdata), thr, 0);
 	    }
-
 	    IDIO_THREAD_VAL (thr) = IDIO_PRIMITIVE_F (primdata) ();
 	    if (idio_vm_tracing) {
 		idio_vm_primitive_result_trace (thr);
@@ -4212,11 +4216,15 @@ int idio_vm_run1 (IDIO thr)
 	{
 	    uint64_t vi = idio_vm_fetch_varuint (thr);
 	    IDIO primdata = idio_vm_values_ref (vi);
+	    /*
+	     * XXX see comment in idio_meaning_primitive_application()
+	     * for setting *func*
+	     */
+	    IDIO_THREAD_FUNC (thr) = primdata;
 	    IDIO_VM_RUN_DIS ("PRIMITIVE1 %" PRId64 " %s", vi, IDIO_PRIMITIVE_NAME (primdata));
 	    if (idio_vm_tracing) {
 		idio_vm_primitive_call_trace (IDIO_PRIMITIVE_NAME (primdata), thr, 1);
 	    }
-
 	    IDIO_THREAD_VAL (thr) = IDIO_PRIMITIVE_F (primdata) (IDIO_THREAD_VAL (thr));
 	    if (idio_vm_tracing) {
 		idio_vm_primitive_result_trace (thr);
@@ -4366,11 +4374,15 @@ int idio_vm_run1 (IDIO thr)
 	{
 	    uint64_t vi = idio_vm_fetch_varuint (thr);
 	    IDIO primdata = idio_vm_values_ref (vi);
+	    /*
+	     * XXX see comment in idio_meaning_primitive_application()
+	     * for setting *func*
+	     */
+	    IDIO_THREAD_FUNC (thr) = primdata;
 	    IDIO_VM_RUN_DIS ("PRIMITIVE2 %" PRId64 " %s", vi, IDIO_PRIMITIVE_NAME (primdata));
 	    if (idio_vm_tracing) {
 		idio_vm_primitive_call_trace (IDIO_PRIMITIVE_NAME (primdata), thr, 2);
 	    }
-
 	    IDIO_THREAD_VAL (thr) = IDIO_PRIMITIVE_F (primdata) (IDIO_THREAD_REG1 (thr), IDIO_THREAD_VAL (thr));
 	    if (idio_vm_tracing) {
 		idio_vm_primitive_result_trace (thr);
@@ -6532,7 +6544,7 @@ void idio_vm_thread_state ()
 	IDIO names = idio_S_nil;
 	names = idio_vm_constants_ref (IDIO_FIXNUM_VAL (faci));
 
-	fprintf (stderr, "vm-thread-state: frame: %p (%p) %4td", frame, IDIO_FRAME_NEXT (frame), IDIO_FIXNUM_VAL (faci));
+	fprintf (stderr, "vm-thread-state: frame: %p (%p) %5td", frame, IDIO_FRAME_NEXT (frame), IDIO_FIXNUM_VAL (faci));
 	idio_debug (" - %-10s - ", names);
 	idio_debug ("%s\n", idio_frame_args_as_list (frame));
 	frame = IDIO_FRAME_NEXT (frame);
@@ -6738,6 +6750,7 @@ Run ``func [args]`` in thread ``thr``.				\n\
     idio_vm_default_pc (thr);
 
     IDIO r = idio_apply (func, args);
+
     if (IDIO_THREAD_PC (thr) != pc0) {
 	IDIO_THREAD_STACK_PUSH (idio_fixnum (idio_vm_FINISH_pc));
 	IDIO_THREAD_STACK_PUSH (idio_SM_return);

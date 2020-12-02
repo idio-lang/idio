@@ -266,7 +266,7 @@ define (condition-report prefix c & args) "print a report on condition `c`
 	 cr-printf "%s:%s:%s" c.location c.message c.detail
        }) \
        ((system-error? c) {
-          cr-printf "errno %s (%s)" c.'errno (libc/errno-name c.errno)
+          cr-printf "errno %s (%s)" (system-error-errno c) (libc/errno-name (system-error-errno c))
         }) \
        ((st-variable-error? c) {
 	 cr-printf ": variable %s" c.variable

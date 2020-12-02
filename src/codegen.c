@@ -1504,8 +1504,9 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
     case IDIO_I_CODE_PRIMCALL0:
 	{
 	    if (! idio_isa_pair (mt) ||
-		idio_list_length (mt) != 1) {
-		idio_codegen_error_param_args ("CALL0 ins", mt, IDIO_C_FUNC_LOCATION_S ("CALL0"));
+		(idio_list_length (mt) != 1 &&
+		 idio_list_length (mt) != 2)) {
+		idio_codegen_error_param_args ("CALL0 ins [pd]", mt, IDIO_C_FUNC_LOCATION_S ("CALL0"));
 
 		/* notreached */
 		return;
@@ -1514,13 +1515,17 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    IDIO ins = IDIO_PAIR_H (mt);
 
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (ins));
+	    if (idio_list_length (mt) == 2) {
+		IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (IDIO_PAIR_HT (mt)));
+	    }
 	}
 	break;
     case IDIO_I_CODE_PRIMCALL1:
 	{
 	    if (! idio_isa_pair (mt) ||
-		idio_list_length (mt) != 2) {
-		idio_codegen_error_param_args ("CALL1 ins m1", mt, IDIO_C_FUNC_LOCATION_S ("CALL1"));
+		(idio_list_length (mt) != 2 &&
+		 idio_list_length (mt) != 3)) {
+		idio_codegen_error_param_args ("CALL1 ins m1 [pd]", mt, IDIO_C_FUNC_LOCATION_S ("CALL1"));
 
 		/* notreached */
 		return;
@@ -1531,13 +1536,17 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 
 	    idio_codegen_compile (thr, ia, cs, m1, depth + 1);
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (ins));
+	    if (idio_list_length (mt) == 3) {
+		IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (IDIO_PAIR_HTT (mt)));
+	    }
 	}
 	break;
     case IDIO_I_CODE_PRIMCALL2:
 	{
 	    if (! idio_isa_pair (mt) ||
-		idio_list_length (mt) != 3) {
-		idio_codegen_error_param_args ("CALL2 ins m1 m2", mt, IDIO_C_FUNC_LOCATION_S ("CALL2"));
+		(idio_list_length (mt) != 3 &&
+		 idio_list_length (mt) != 4)) {
+		idio_codegen_error_param_args ("CALL2 ins m1 m2 [pd]", mt, IDIO_C_FUNC_LOCATION_S ("CALL2"));
 
 		/* notreached */
 		return;
@@ -1553,6 +1562,9 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    idio_codegen_compile (thr, ia, cs, m2, depth + 1);
 	    IDIO_IA_PUSH1 (IDIO_A_POP_REG1);
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (ins));
+	    if (idio_list_length (mt) == 4) {
+		IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (IDIO_PAIR_HTTT (mt)));
+	    }
 	}
 	break;
     case IDIO_I_CODE_PRIMCALL3:

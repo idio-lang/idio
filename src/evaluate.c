@@ -3237,71 +3237,53 @@ static IDIO idio_meaning_closed_application (IDIO src, IDIO fe, IDIO aes, IDIO n
 
 static IDIO idio_meaning_regular_application (IDIO src, IDIO fe, IDIO aes, IDIO nametree, int flags, IDIO cs, IDIO cm);
 
-static IDIO idio_meaning_primitive_application (IDIO src, IDIO fe, IDIO aes, IDIO nametree, int flags, size_t arity, IDIO index, IDIO cs, IDIO cm)
+static IDIO idio_meaning_primitive_application (IDIO src, IDIO fe, IDIO aes, IDIO nametree, int flags, size_t arity, IDIO gvi, IDIO cs, IDIO cm)
 {
     IDIO_ASSERT (src);
     IDIO_ASSERT (fe);
     IDIO_ASSERT (aes);
     IDIO_ASSERT (nametree);
-    IDIO_ASSERT (index);
+    IDIO_ASSERT (gvi);
     IDIO_ASSERT (cs);
     IDIO_ASSERT (cm);
 
     IDIO_TYPE_ASSERT (symbol, fe);
     IDIO_TYPE_ASSERT (list, aes);
     IDIO_TYPE_ASSERT (list, nametree);
-    IDIO_TYPE_ASSERT (fixnum, index);
+    IDIO_TYPE_ASSERT (fixnum, gvi);
     IDIO_TYPE_ASSERT (array, cs);
     IDIO_TYPE_ASSERT (module, cm);
 
     /*
-     * Of these IDIO_A_PRIMCALL1_SET_CUR_MOD *must* be a specialized
-     * primitive call because it must be called "inline", ie. not in
-     * the context of a regular Idio FUNCTION_INVOKE.
+     * We used to follow LiSP and specialise PRIMCALLn with
+     * PRIMCALLn_X but in practice we should just call the primitives
+     * and save a run around with frames etc.
      *
-     * If you allow the latter then IDIO_THREAD_ENV() is
-     * saved/restored around the call which defeats the point in it
-     * trying to alter IDIO_THREAD_ENV().
+     * One thing we need to be leery of is ensuring that we set the
+     * *func* register -- which would have been done by the full
+     * function call protocol.
      *
-     * Everything will remain permanently in the main Idio module.
+     * The problem here is incredibly subtle.  We had relied on the
+     * *func* register being reset with every (true) function call
+     * which meant that after a continuation had been called then the
+     * continuation's value would have been flushed away by the next
+     * function call.
+     *
+     * If we don't do that with primitive calls then we can leave a
+     * continuation lying around in *func* which means it won't get
+     * GC'd and in turn the values in that continuation's embedded
+     * stack won't get GC'd.
+     *
+     * It just so happens that our "use all the file descriptors" test
+     * will have had the array of file descriptors on the stack of the
+     * wrappering continuation (via the saved *frame*?).  If we don't
+     * flush the continuation from *func* then the array of fds won't
+     * get flushed and we won't get to use any more file descriptors.
+     * Not ideal.
+     *
+     * Need to figure out run-in-thread too...
      */
-
-    /*
-     * Yuk!  Data in two places problem.
-
-     * For regular function calls the duty cycle is to evaluate all
-     * the arguments, pushing them onto the stack, create a frame, pop
-     * the arguments off the stack into the frame, evaluate the
-     * functional argument and push the resultant function in a
-     * register then call FUNCTION_INVOKE or FUNCTION_GOTO.
-
-     * For our hand-crafted primitives written in C we know they take
-     * a small number (three or fewer, probably) arguments and that
-     * mechanically we're going to end up with a call to the
-     * primitive's C function with those three or fewer arguments.  We
-     * must be able to save some time.
-
-     * We can accelerate fixed-arity primitive calls which, rather
-     * than allocating frames on the stack, can just call the
-     * primitive function with the contents of the VM registers
-     * directly.  Better yet, we can accelerate some of them by having
-     * a dedicated VM instruction thus avoiding having to pass the
-     * index of the primitive at all.
-
-     * However, if we leave the decision as to which calls to
-     * accelerate to the compiler then the compiler must be able to
-     * fall back to the general function call evaluator,
-     * idio_meaning_regular_application().  Which is very complex.
-
-     * For us to do it here we must know which primitive calls the VM
-     * is capable of specializing which is knowledge that our
-     * strongly-held pure encapsulation beliefs say we shouldn't have.
-
-     * There must be a better way...but in the meanwhile it's much
-     * less code for us to check the specialization here.
-     */
-
-    IDIO primdata = idio_vm_values_ref (IDIO_FIXNUM_VAL (index));
+    IDIO primdata = idio_vm_values_ref (IDIO_FIXNUM_VAL (gvi));
 
     if (IDIO_PRIMITIVE_VARARGS (primdata)) {
 	/*
@@ -3314,12 +3296,13 @@ static IDIO idio_meaning_primitive_application (IDIO src, IDIO fe, IDIO aes, IDI
 	switch (arity) {
 	case 0:
 	    {
+		return IDIO_LIST3 (IDIO_I_PRIMCALL0, idio_fixnum (IDIO_A_PRIMCALL0), gvi);
 		if (IDIO_STREQP (name, "read")) {
 		    return IDIO_LIST2 (IDIO_I_PRIMCALL0, idio_fixnum (IDIO_A_PRIMCALL0_READ));
 		} else if (IDIO_STREQP (name, "newline")) {
 		    return IDIO_LIST2 (IDIO_I_PRIMCALL0, idio_fixnum (IDIO_A_PRIMCALL0_NEWLINE));
 		} else {
-		    break;
+		    return IDIO_LIST3 (IDIO_I_PRIMCALL0, idio_fixnum (IDIO_A_PRIMCALL0), gvi);
 		}
 	    }
 	    break;
@@ -3327,6 +3310,7 @@ static IDIO idio_meaning_primitive_application (IDIO src, IDIO fe, IDIO aes, IDI
 	    {
 		IDIO m1 = idio_meaning (IDIO_MPP (IDIO_PAIR_H (aes), src), IDIO_PAIR_H (aes), nametree, IDIO_MEANING_NOT_TAILP (flags), cs, cm);
 
+		return IDIO_LIST4 (IDIO_I_PRIMCALL1, idio_fixnum (IDIO_A_PRIMCALL1), m1, gvi);
 		if (IDIO_STREQP (name, "ph")) {
 		    return IDIO_LIST3 (IDIO_I_PRIMCALL1, idio_fixnum (IDIO_A_PRIMCALL1_HEAD), m1);
 		} else if (IDIO_STREQP (name, "pt")) {
@@ -3348,7 +3332,7 @@ static IDIO idio_meaning_primitive_application (IDIO src, IDIO fe, IDIO aes, IDI
 		} else if (IDIO_STREQP (name, "%set-current-module!")) {
 		    return IDIO_LIST3 (IDIO_I_PRIMCALL1, idio_fixnum (IDIO_A_PRIMCALL1_SET_CUR_MOD), m1);
 		} else {
-		    break;
+		    return IDIO_LIST4 (IDIO_I_PRIMCALL1, idio_fixnum (IDIO_A_PRIMCALL1), m1, gvi);
 		}
 	    }
 	    break;
@@ -3357,6 +3341,12 @@ static IDIO idio_meaning_primitive_application (IDIO src, IDIO fe, IDIO aes, IDI
 		IDIO m1 = idio_meaning (IDIO_MPP (IDIO_PAIR_H (aes), src), IDIO_PAIR_H (aes), nametree, IDIO_MEANING_NOT_TAILP (flags), cs, cm);
 		IDIO m2 = idio_meaning (IDIO_MPP (IDIO_PAIR_HT (aes), src), IDIO_PAIR_HT (aes), nametree, IDIO_MEANING_NOT_TAILP (flags), cs, cm);
 
+		if (IDIO_STREQP (name, "run-in-thread")) {
+		    break;
+		} else {
+		    return IDIO_LIST5 (IDIO_I_PRIMCALL2, idio_fixnum (IDIO_A_PRIMCALL2), m1, m2, gvi);
+		}
+		return IDIO_LIST5 (IDIO_I_PRIMCALL2, idio_fixnum (IDIO_A_PRIMCALL2), m1, m2, gvi);
 		if (IDIO_STREQP (name, "pair")) {
 		    return IDIO_LIST4 (IDIO_I_PRIMCALL2, idio_fixnum (IDIO_A_PRIMCALL2_PAIR), m1, m2);
 		} else if (IDIO_STREQP (name, "eq?")) {
@@ -3386,7 +3376,11 @@ static IDIO idio_meaning_primitive_application (IDIO src, IDIO fe, IDIO aes, IDI
 		} else if (IDIO_STREQP (name, "remainder")) {
 		    return IDIO_LIST4 (IDIO_I_PRIMCALL2, idio_fixnum (IDIO_A_PRIMCALL2_REMAINDER), m1, m2);
 		} else {
-		    break;
+		    if (IDIO_STREQP (name, "run-in-thread")) {
+			break;
+		    } else {
+			return IDIO_LIST5 (IDIO_I_PRIMCALL2, idio_fixnum (IDIO_A_PRIMCALL2), m1, m2, gvi);
+		    }
 		}
 	    }
 	    break;

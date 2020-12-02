@@ -1087,7 +1087,9 @@ void idio_gc_expose_all ()
 {
     idio_gc_t *gc = idio_gc;
     while (NULL != gc) {
+#ifdef IDIO_GC_DEBUG
 	fprintf (stderr, "gc-expose-all #%d\n", gc->inst);
+#endif
 	idio_root_t *r = gc->roots;
 	size_t n = 0;
 	while (r) {

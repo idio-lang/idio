@@ -99,8 +99,8 @@ test (handle-pos ifh) 2
   fds := #[ ]
   loop-k := #n
   trap ^system-error (function (c) {
-			test (C/== c.'errno (C/integer-> 24)) #t
-			if (C/== c.'errno (C/integer-> 24)) {
+			test (C/== (system-error-errno c) (C/integer-> 24)) #t
+			if (C/== (system-error-errno c) (C/integer-> 24)) {
                           display* "test file-handle trap: created" (array-length fds) "fds"
                         } {
                           condition-report "test file-handle trap" c (current-error-handle)
