@@ -327,7 +327,7 @@ otherwise an empty array of 17 elements will be used.
     planes := #n
     if (and (pair? o)
 	    (array? (ph o))
-	    (eq 17 (array-length (ph o)))) {
+	    (17 eq (array-length (ph o)))) {
 	      planes = ph o
 	    } {
 	      planes = make-array 17
@@ -408,7 +408,7 @@ Invoke `f` on each code point in char-set `cs`
   cond ((sparse-char-set? cs) {
     nplanes := sparse-char-set-planes cs
     do ((i 0 (i + 1))) \
-       ((gt i nplanes)
+       ((i gt nplanes)
 	#n) {
 	  bs := array-ref cs.planes i
 	  if bs {
@@ -440,7 +440,7 @@ define (copy-char-set cs) {
     new := make-sparse-char-set size
     nplanes := sparse-char-set-planes cs
     do ((i 0 (i + 1))) \
-       ((gt i nplanes)
+       ((i gt nplanes)
 	new) {
 	  bs := array-ref cs.planes i
 	  if bs {
@@ -464,7 +464,7 @@ define (string->char-set str & base?) {
 
   slen := string-length str
   do ((i 0 (i + 1))) \
-     ((ge i slen) cs) {
+     ((i ge slen) cs) {
        char-set-set! cs (string-ref str i)
      }
 }
@@ -472,7 +472,7 @@ define (string->char-set str & base?) {
 define (char-set->string cs) {
   n := fold-char-set cs (function (cp i) (+ i 1)) 0
   m := fold-char-set cs (function (cp max) {
-			       if (gt cp max) cp max
+			       if (cp gt max) cp max
   }) 0
   s := make-string n (integer->unicode m)
   i := 0
@@ -484,7 +484,7 @@ define (char-set->string cs) {
 }
 
 define (%ucs-range->char-set bs n e) {
-  if (gt n e) #n {
+  if (n gt e) #n {
     char-set-set! bs n
     %ucs-range->char-set bs (n + 1) e
   }
@@ -562,11 +562,11 @@ Add the code point to character set cs.
 
     if (not bs) {
       nplanes := sparse-char-set-planes cs
-      if (lt plane nplanes) {
+      if (plane lt nplanes) {
 	bs = make-bitset #x10000
       } {
 	m := modulo cs.size #x10000
-	if (gt m 0) {
+	if (m gt 0) {
 	  bs = make-bitset m
 	} {
 	  bs = make-bitset #x10000
@@ -674,7 +674,7 @@ If no arguments are passed the return value is char-set:empty.
 	      cond ((sparse-char-set? res) {
 		nplanes := sparse-char-set-planes res
 		do ((i 0 (i + 1))) \
-		   ((gt i nplanes)
+		   ((i gt nplanes)
 		    res) {
 		      bs1 := array-ref res.planes i
 		      bs2 := array-ref cs.planes i
@@ -706,7 +706,7 @@ If no arguments are passed the return value is char-set:full.
 	      cond ((sparse-char-set? res) {
 		nplanes := sparse-char-set-planes res
 		do ((i 0 (i + 1))) \
-		   ((gt i nplanes)
+		   ((i gt nplanes)
 		    res) {
 		      bs1 := array-ref res.planes i
 		      bs2 := array-ref cs.planes i
@@ -742,7 +742,7 @@ If no arguments are passed the return value is char-set:empty.
 	      cond ((sparse-char-set? res) {
 		nplanes := sparse-char-set-planes res
 		do ((i 0 (i + 1))) \
-		   ((gt i nplanes)
+		   ((i gt nplanes)
 		    res) {
 		      bs1 := array-ref res.planes i
 		      bs2 := array-ref cs.planes i
@@ -770,14 +770,14 @@ Logical complement the code points from the character set.
     new := make-sparse-char-set cs.size
     nplanes := sparse-char-set-planes cs
     do ((i 0 (i + 1))) \
-       ((gt i nplanes)
+       ((i gt nplanes)
 	new) {
 	  bs := array-ref cs.planes i
 	  if bs {
 	    new.planes.i = not-bitset bs
 	  } {
 	    m := modulo cs.size #x10000
-	    if (gt m 0) {
+	    if (m gt 0) {
 	      bs = make-bitset m
 	    } {
 	      bs = make-bitset #x10000
@@ -807,7 +807,7 @@ Subtract the code points of the character sets css from cs.
 	      cond ((sparse-char-set? res) {
 		nplanes := sparse-char-set-planes res
 		do ((i 0 (i + 1))) \
-		   ((gt i nplanes)
+		   ((i gt nplanes)
 		    res) {
 		      bs1 := array-ref res.planes i
 		      bs2 := array-ref cs.planes i

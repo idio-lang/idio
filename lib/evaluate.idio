@@ -339,14 +339,14 @@ define (meaning-reference src name nametree flags cs cm) {
 	((local) {
 	  ; ('local {i} {j})
 	  j := phtt si
-	  (if (gt i 0)
+	  (if (i gt 0)
 	      (list I-DEEP-ARGUMENT-REF i j)
 	      (list I-SHALLOW-ARGUMENT-REF j))
 	})
 	((toplevel) {
 	  ; ('toplevel ci vi)
 	  vi := phtt si
-	  (if (gt vi 0)
+	  (if (vi gt 0)
 	      (list I-CHECKED-GLOBAL-VAL-REF vi)
 	      (list I-GLOBAL-SYM-REF i))
 	})
@@ -379,14 +379,14 @@ define (meaning-function-reference src name nametree flags cs cm) {
 	((local) {
 	  ; ('local {i} {j})
 	  j := phtt si
-	  (if (gt i 0)
+	  (if (i gt 0)
 	      (list I-DEEP-ARGUMENT-REF i j)
 	      (list I-SHALLOW-ARGUMENT-REF j))
 	})
 	((toplevel) {
 	  ; ('toplevel ci vi)
 	  vi := phtt si
-	  (if (gt vi 0)
+	  (if (vi gt 0)
 	      (list I-CHECKED-GLOBAL-FUNCTION-VAL-REF vi)
 	      (list I-GLOBAL-FUNCTION-SYM-REF i))
 	})
@@ -457,18 +457,18 @@ define (STklos-backquotify e level) {
       (list 'list ''quasiquote
 		  (STklos-backquotify (pht e) (+ level 1))))
      ((eq? (ph e) 'unquote)
-      (if (le level 0)
+      (if (level le 0)
 	  (pht e)
 	  (list 'list ''unquote
 		      (STklos-backquotify (pht e) (- level 1)))))
      ((eq? (ph e) 'unquotesplicing)
-      (if (le level 0)
+      (if (level le 0)
 	  (list 'pair
 		(STklos-backquotify (ph e) level)
 		(STklos-backquotify (pt e) level))
 	  (list 'list ''unquotesplicing
 		      (STklos-backquotify (pht e) (- level 1)))))
-     ((and (le level 0) (pair? (ph e)) (eq? (phh e) 'unquotesplicing))
+     ((and (level le 0) (pair? (ph e)) (eq? (phh e) 'unquotesplicing))
       (if (null? (pt e))
 	  (phth e)
 	  (list 'append (phth e)
@@ -558,7 +558,7 @@ define (meaning-rewrite-cond prev src clause*) {
 		ph-clause* := ph clause*
 
 		if (and (list? ph-clause*)
-			(eq 3 (length ph-clause*))) {
+			(3 eq (length ph-clause*))) {
 			  ;; The {=>} operator is a bit of a
 			  ;; Scheme-ism in that the clause says {(c =>
 			  ;; f)} and means that if {c} is true then
@@ -691,7 +691,7 @@ define (meaning-assignment src name e nametree flags cs cm) {
      (case scope
 	   ((local) {
 	     vi := phtt si
-	     if (eq 0 ci) {
+	     if (0 eq ci) {
 	       i-code = list I-SHALLOW-ARGUMENT-SET vi m
 	     } {
 	       i-code = list I-DEEP-ARGUMENT-SET ci vi m
@@ -699,7 +699,7 @@ define (meaning-assignment src name e nametree flags cs cm) {
 	   })
 	   ((toplevel) {
 	     vi := phtt si
-	     if (eq 0 vi) {
+	     if (0 eq vi) {
 	       assign = list I-GLOBAL-SYM-SET ci m
 	     } {
 	       assign = list I-GLOBAL-VAL-SET vi m
@@ -767,7 +767,7 @@ define (meaning-define src name e nametree flags cs cm) {
   scope :=  ph si
   vi := phtt si
   if (and (eq? 'toplevel scope)
-	  (eq 0 vi)) {
+	  (0 eq vi)) {
 	    vi = (vm-extend-values)
 	    si = list scope (pht si) vi cm "meaning-define/gvi=0"
 	    set-symbol! name si cm
@@ -900,7 +900,7 @@ define (meaning-define-template src name e nametree flags cs cm) {
 }
 
 define (meaning-define-infix-operator src name pri e nametree flags cs cm) {
-  if (lt pri 0) {
+  if (pri lt 0) {
     meaning-evaluation-error src "positive priority" pri
   }
 
@@ -958,7 +958,7 @@ define (meaning-define-infix-operator src name pri e nametree flags cs cm) {
 }
 
 define (meaning-define-postfix-operator src name pri e nametree flags cs cm) {
-  if (lt pri 0) {
+  if (pri lt 0) {
     meaning-evaluation-error src "positive priority" pri
   }
 
@@ -1553,7 +1553,7 @@ define (meaning-some-dotted-arguments src ae ae* nametree size arity flags cs cm
   am* := meaning-dotted-arguments src ae* nametree size arity flags cs cm
   rank := size - ((length ae*) + 1)
 
-  if (lt rank arity) {
+  if (rank lt arity) {
     list I-STORE-ARGUMENT am am* rank
   } {
     list I-LIST-ARGUMENT am am* arity
@@ -1763,8 +1763,8 @@ define (meaning-application src fe ae* nametree flags cs cm) {
 	  n-args := length ae*
 
 	  if (or (and (primitive-varargs? primdata)
-		      (ge n-args arity))
-	      (eq n-args arity)) {
+		      (n-args ge arity))
+	      (n-args eq arity)) {
 		i-code = meaning-primitive-application src fe ae* nametree flags arity (phtt si) cs cm
 	      } {
 		;; Test Case: evaluation-errors/primitive-arity.idio

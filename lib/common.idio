@@ -216,7 +216,7 @@ The default padding character is #\{space}
 	 (else (error '%format "unexpected format type" type))
 
     cp-loop :+ (function (i e) {
-		  if (ge i e) #n {
+		  if (i ge e) #n {
 		    c := string-ref fmt i
 
 		    cond ((unicode=? c #\%) {
@@ -225,7 +225,7 @@ The default padding character is #\{space}
 		      i+1 := i + 1
 		      left-aligned := #f
 		      left-pad := #U+20
-		      if (lt i+1 e) {
+		      if (i+1 lt e) {
 			c = string-ref fmt i+1
 			cond ((unicode=? c #\-) {
 			  left-aligned = #t
@@ -256,7 +256,7 @@ The default padding character is #\{space}
 		      i = w-loop i
 
 		      spec-width := 0
-		      if (gt (we - ws) 0) {
+		      if ((we - ws) gt 0) {
 			wstr := substring fmt ws we
 			spec-width = read-number wstr 10
 		      }
@@ -281,13 +281,13 @@ The default padding character is #\{space}
 		      }
 
 		      spec-prec := 0
-		      if (gt (pe - ps) 0) {
+		      if ((pe - ps) gt 0) {
 			pstr := substring fmt ps pe
 			spec-prec = read-number pstr 10
 			idio-print-conversion-precision = spec-prec
 		      }
 
-		      if (lt i e) {
+		      if (i lt e) {
 			i = i + 1
 			k := string-ref fmt i
 			v := #n
@@ -344,7 +344,7 @@ The default padding character is #\{space}
 				      vs = ""
 				      c := 0
 				      for-each (function (e) {
-						  if (gt c 0) {
+						  if (c gt 0) {
 						    vs = append-string vs " "
 						  }
 						  if (fixnum? e) {
@@ -378,9 +378,9 @@ The default padding character is #\{space}
 
 			; precision means different things to different
 			; types
-			if (gt spec-prec 0) {
+			if (spec-prec gt 0) {
 			  cond ((and (number? v)
-				     (gt spec-prec vs-len)) {
+				     (spec-prec gt vs-len)) {
 				       ; for a number, a precision is
 				       ; the minimum number of digits
 				       ; which potentially means
@@ -388,7 +388,7 @@ The default padding character is #\{space}
 				       vs-prec-width = spec-prec
 				     }) \
 			       ((and (not (number? v))
-				     (lt spec-prec vs-len)
+				     (spec-prec lt vs-len)
 				     (not timeformat)) {
 				       ; for a string, a precision is
 				       ; the maximum number of code
@@ -402,7 +402,7 @@ The default padding character is #\{space}
 			}
 
 			pad-loop :+ (function (c n) {
-				       if (le n 0) #n {
+				       if (n le 0) #n {
 					 write-char c osh
 					 pad-loop c (n - 1)
 				       }
@@ -412,20 +412,20 @@ The default padding character is #\{space}
 			; HTML box model: a margin, padding and then the
 			; object.
 			if (not left-aligned) {
-			  if (lt vs-prec-width spec-width) {
+			  if (vs-prec-width lt spec-width) {
 			    ; might print nothing!
 			    pad-loop left-pad (spec-width - vs-prec-width)
 			  }
 			}
 			if (and (number? v)
-				(lt vs-len spec-prec)) {
+				(vs-len lt spec-prec)) {
 				  pad-loop #\0 (spec-prec - vs-len)
 				}
 
 			puts vs-prec osh
 
 			if (and left-aligned
-				(lt vs-prec-width spec-width)) {
+				(vs-prec-width lt spec-width)) {
 				  ; might print nothing!
 				  pad-loop #U+20 (spec-width - vs-prec-width)
 				}

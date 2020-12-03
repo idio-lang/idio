@@ -178,7 +178,7 @@ define-template (function* formals & body) {
   define (expand-function* formals body) {
 
     define (range lo hi) {
-      if (lt lo hi) {
+      if (lo lt hi) {
         pair lo (range (lo + 1) hi)
       } #n
     }
@@ -345,7 +345,7 @@ define-template (function* formals & body) {
   define (&hash-keyword key n) {
     str := keyword->string key
     loop :+ function (h i) {
-      if (lt i (string-length str)) {
+      if (i lt (string-length str)) {
 	loop (modulo ((h * 65536) + (unicode->integer (string-ref str i)))
 		     n) \
 	     (i + 1)
@@ -366,7 +366,7 @@ define-template (function* formals & body) {
 define (&hash-keyword key n) {
   str := keyword->string key
   loop :+ function (h i) {
-    if (lt i (string-length str)) {
+    if (i lt (string-length str)) {
       loop (modulo ((h * 65536) + (unicode->integer (string-ref str i)))
                         n) \
 	   (i + 1)

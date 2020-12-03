@@ -727,7 +727,7 @@ IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(gt, >)
 		break;							\
 	    } else {							\
 		if (! idio_isa_fixnum (h)) {				\
-		    idio_error_param_type ("number", h, idio_string_C ("arithmetic " name));	\
+		    idio_error_param_type ("number", h, idio_string_C ("arithmetic " name)); \
 		    return idio_S_unspec;				\
 		}							\
 	    }								\
@@ -752,7 +752,7 @@ IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(gt, >)
 									\
 	    bn_args = idio_list_reverse (bn_args);			\
 	    /* idio_debug ("primitive: " #cname ": -> bignum: %s\n", bn_args); */ \
-	    IDIO num = idio_bignum_primitive_ ## cname (bn_args); \
+	    IDIO num = idio_bignum_primitive_ ## cname (bn_args);	\
 									\
 	    /* convert to a fixnum if possible */			\
 	    IDIO fn = idio_bignum_to_fixnum (num);			\
@@ -761,69 +761,68 @@ IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(gt, >)
 	    }								\
 									\
 	    return num;							\
-									\
 	} else {							\
 	    /* idio_debug ("primitive: " #cname ": -> fixnum: %s\n", args); */ \
 	    return idio_fixnum_primitive_ ## cname (args);		\
         }								\
     }
 
-#define IDIO_DEFINE_ARITHMETIC_PRIMITIVE1V(name,cname)		\
-    IDIO_DEFINE_PRIMITIVE1V (name, cname, (IDIO n1, IDIO args))	\
-    {								\
-	IDIO_ASSERT (n1);					\
-	IDIO_ASSERT (args);					\
-								\
-	int ibn = 0;						\
-	if (! idio_isa_fixnum (n1)) {				\
-	    ibn = idio_isa_bignum (n1);				\
-								\
-	    if (0 == ibn) {					\
+#define IDIO_DEFINE_ARITHMETIC_PRIMITIVE1V(name,cname)			\
+    IDIO_DEFINE_PRIMITIVE1V (name, cname, (IDIO n1, IDIO args))		\
+    {									\
+	IDIO_ASSERT (n1);						\
+	IDIO_ASSERT (args);						\
+									\
+	int ibn = 0;							\
+	if (! idio_isa_fixnum (n1)) {					\
+	    ibn = idio_isa_bignum (n1);					\
+									\
+	    if (0 == ibn) {						\
 		idio_error_param_type ("number", n1, idio_string_C ("arithmetic " name)); \
-		return idio_S_unspec;				\
-	    }							\
-	}							\
-								\
-	if (0 == ibn) {						\
-	    IDIO a = args;					\
-								\
-	    while (idio_S_nil != a) {				\
-		IDIO h = IDIO_PAIR_H (a);			\
-		ibn = idio_isa_bignum (h);			\
-								\
-		if (ibn) {					\
-		    break;					\
-		} else {					\
-		    if (! idio_isa_fixnum (h)) {		\
+		return idio_S_unspec;					\
+	    }								\
+	}								\
+									\
+	if (0 == ibn) {							\
+	    IDIO a = args;						\
+									\
+	    while (idio_S_nil != a) {					\
+		IDIO h = IDIO_PAIR_H (a);				\
+		ibn = idio_isa_bignum (h);				\
+									\
+		if (ibn) {						\
+		    break;						\
+		} else {						\
+		    if (! idio_isa_fixnum (h)) {			\
 			idio_error_param_type ("number", h, idio_string_C ("arithmetic " name)); \
-			return idio_S_unspec;			\
-		    }						\
-		}						\
-								\
-		a = IDIO_PAIR_T (a);				\
-	    }							\
-	}							\
-								\
-	args = idio_pair (n1, args);				\
-								\
-	if (ibn) {						\
-	    IDIO bn_args = idio_S_nil;				\
-	    							\
-	    while (idio_S_nil != args) {			\
-		IDIO h = IDIO_PAIR_H (args);			\
-								\
-		if (idio_isa_fixnum (h)) {			\
+			return idio_S_unspec;				\
+		    }							\
+		}							\
+									\
+		a = IDIO_PAIR_T (a);					\
+	    }								\
+	}								\
+									\
+	args = idio_pair (n1, args);					\
+									\
+	if (ibn) {							\
+	    IDIO bn_args = idio_S_nil;					\
+									\
+	    while (idio_S_nil != args) {				\
+		IDIO h = IDIO_PAIR_H (args);				\
+									\
+		if (idio_isa_fixnum (h)) {				\
 		    bn_args = idio_pair (idio_bignum_integer_intmax_t (IDIO_FIXNUM_VAL (h)), bn_args); \
-		} else {					\
-		    bn_args = idio_pair (h, bn_args);		\
-		}						\
-								\
+		} else {						\
+		    bn_args = idio_pair (h, bn_args);			\
+		}							\
+									\
 		args = IDIO_PAIR_T (args);				\
 	    }								\
 	    								\
 	    bn_args = idio_list_reverse (bn_args);			\
 	    /* idio_debug ("primitive: " #cname ": -> bignum: %s\n", bn_args); */ \
-	    IDIO num = idio_bignum_primitive_ ## cname (bn_args); \
+	    IDIO num = idio_bignum_primitive_ ## cname (bn_args);	\
 									\
 	    /* convert to a fixnum if possible */			\
 	    IDIO fn = idio_bignum_to_fixnum (num);			\
@@ -832,7 +831,6 @@ IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(gt, >)
 	    }								\
 	    								\
 	    return num;							\
-	    								\
 	} else {							\
 	    /* idio_debug ("primitive: " #cname ": -> fixnum: %s\n", args); */ \
 	    return idio_fixnum_primitive_ ## cname (args);		\
@@ -843,19 +841,19 @@ IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(gt, >)
  * For divide we should always convert to bignums: 1 / 3 is 0; 9 / 2
  * is 4 in fixnums; 10 / 2 will be converted back to a fixnum.
  */
-#define IDIO_DEFINE_ARITHMETIC_BIGNUM_PRIMITIVE1V(name,cname)	\
-    IDIO_DEFINE_PRIMITIVE1V (name, cname, (IDIO n1, IDIO args))	\
-    {								\
-	IDIO_ASSERT (n1);					\
-	IDIO_ASSERT (args);					\
-								\
-	args = idio_pair (n1, args);				\
-	IDIO a = args;						\
-	IDIO bn_args = idio_S_nil;				\
-								\
-	while (idio_S_nil != a) {				\
-	    IDIO h = IDIO_PAIR_H (a);				\
-	    							\
+#define IDIO_DEFINE_ARITHMETIC_BIGNUM_PRIMITIVE1V(name,cname)		\
+    IDIO_DEFINE_PRIMITIVE1V (name, cname, (IDIO n1, IDIO args))		\
+    {									\
+	IDIO_ASSERT (n1);						\
+	IDIO_ASSERT (args);						\
+									\
+	args = idio_pair (n1, args);					\
+	IDIO a = args;							\
+	IDIO bn_args = idio_S_nil;					\
+									\
+	while (idio_S_nil != a) {					\
+	    IDIO h = IDIO_PAIR_H (a);					\
+									\
 	    if (idio_isa_fixnum (h)) {					\
 		bn_args = idio_pair (idio_bignum_integer_intmax_t (IDIO_FIXNUM_VAL (h)), bn_args); \
 	    } else if (idio_isa_bignum (h)) {				\
@@ -881,50 +879,50 @@ IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(gt, >)
 	return num;							\
     }
 
-#define IDIO_DEFINE_ARITHMETIC_CMP_PRIMITIVE1V(name,cname)	\
-    IDIO_DEFINE_PRIMITIVE1V (name, cname, (IDIO n1, IDIO args))	\
-    {								\
-	IDIO_ASSERT (n1);					\
-	IDIO_ASSERT (args);					\
-								\
-	int ibn = 0;						\
-	if (! idio_isa_fixnum (n1)) {				\
-	    ibn = idio_isa_bignum (n1);				\
-								\
-	    if (0 == ibn) {					\
+#define IDIO_DEFINE_ARITHMETIC_CMP_PRIMITIVE1V(name,cname)		\
+    IDIO_DEFINE_PRIMITIVE1V (name, cname, (IDIO n1, IDIO args))		\
+    {									\
+	IDIO_ASSERT (n1);						\
+	IDIO_ASSERT (args);						\
+									\
+	int ibn = 0;							\
+	if (! idio_isa_fixnum (n1)) {					\
+	    ibn = idio_isa_bignum (n1);					\
+									\
+	    if (0 == ibn) {						\
 		idio_error_param_type ("number", n1, idio_string_C ("arithmetic cmp " name)); \
-		return idio_S_unspec;				\
-	    }							\
-	}							\
-								\
-	if (0 == ibn) {						\
-	    IDIO a = args;					\
-								\
-	    while (idio_S_nil != a) {				\
-		IDIO h = IDIO_PAIR_H (a);			\
-		ibn = idio_isa_bignum (h);			\
-								\
-		if (ibn) {					\
-		    break;					\
-		} else {					\
-		    if (! idio_isa_fixnum (h)) {		\
+		return idio_S_unspec;					\
+	    }								\
+	}								\
+									\
+	if (0 == ibn) {							\
+	    IDIO a = args;						\
+									\
+	    while (idio_S_nil != a) {					\
+		IDIO h = IDIO_PAIR_H (a);				\
+		ibn = idio_isa_bignum (h);				\
+									\
+		if (ibn) {						\
+		    break;						\
+		} else {						\
+		    if (! idio_isa_fixnum (h)) {			\
 			idio_error_param_type ("number", h, idio_string_C ("arithmetic cmp " name)); \
-			return idio_S_unspec;			\
-		    }						\
-		}						\
-								\
-		a = IDIO_PAIR_T (a);				\
-	    }							\
-	}							\
-								\
-	args = idio_pair (n1, args);				\
-								\
-	if (ibn) {						\
-	    IDIO bn_args = idio_S_nil;				\
-	    							\
-	    while (idio_S_nil != args) {			\
-		IDIO h = IDIO_PAIR_H (args);			\
-								\
+			return idio_S_unspec;				\
+		    }							\
+		}							\
+									\
+		a = IDIO_PAIR_T (a);					\
+	    }								\
+	}								\
+									\
+	args = idio_pair (n1, args);					\
+									\
+	if (ibn) {							\
+	    IDIO bn_args = idio_S_nil;					\
+									\
+	    while (idio_S_nil != args) {				\
+		IDIO h = IDIO_PAIR_H (args);				\
+									\
 		if (idio_isa_fixnum (h)) {				\
 		    bn_args = idio_pair (idio_bignum_integer_intmax_t (IDIO_FIXNUM_VAL (h)), bn_args); \
 		} else {						\
@@ -952,6 +950,162 @@ IDIO_DEFINE_ARITHMETIC_CMP_PRIMITIVE1V ("lt", lt)
 IDIO_DEFINE_ARITHMETIC_CMP_PRIMITIVE1V ("eq", eq)
 IDIO_DEFINE_ARITHMETIC_CMP_PRIMITIVE1V ("ge", ge)
 IDIO_DEFINE_ARITHMETIC_CMP_PRIMITIVE1V ("gt", gt)
+
+/*
+ * In particular the infix operators (a + b) are binary so we can call
+ * the *_primitive variant directly and save some list-shuffling in
+ * type-checking args.
+ *
+ * We can even call the underlying implementation directly rather than
+ * going through the *_primitive variants (which use lists).
+ */
+
+#define IDIO_DEFINE_ARITHMETIC_BINARY_PRIMITIVE(name,cname,icname)	\
+    IDIO_DEFINE_PRIMITIVE2 (name, cname, (IDIO n1, IDIO n2))		\
+    {									\
+	IDIO_ASSERT (n1);						\
+	IDIO_ASSERT (n2);						\
+									\
+	IDIO args = IDIO_LIST2 (n1, n2);				\
+									\
+	int ibn = 0;							\
+	if (idio_isa_bignum (n1)) {					\
+	    ibn |= 1;							\
+	} else {							\
+	    if (! idio_isa_fixnum (n1)) {				\
+		idio_error_param_type ("number", n1, idio_string_C ("binary op " name)); \
+		return idio_S_unspec;					\
+	    }								\
+	}								\
+									\
+	if (idio_isa_bignum (n2)) {					\
+	    ibn |= 2;							\
+	} else {							\
+	    if (! idio_isa_fixnum (n2)) {				\
+		idio_error_param_type ("number", n2, idio_string_C ("binary op " name)); \
+		return idio_S_unspec;					\
+	    }								\
+	}								\
+									\
+	if (ibn) {							\
+	    if (0 == (ibn & 1)) {					\
+		IDIO_PAIR_H (args) = idio_bignum_integer_intmax_t (IDIO_FIXNUM_VAL (n1)); \
+	    }								\
+	    if (0 == (ibn & 2)) {					\
+		IDIO_PAIR_HT (args) = idio_bignum_integer_intmax_t (IDIO_FIXNUM_VAL (n2)); \
+	    }								\
+									\
+	    IDIO num = idio_bignum_primitive_ ## icname (args);		\
+									\
+	    /* convert to a fixnum if possible */			\
+	    IDIO fn = idio_bignum_to_fixnum (num);			\
+	    if (idio_S_nil != fn) {					\
+		num = fn;						\
+	    }								\
+									\
+	    return num;							\
+	} else {							\
+	    return idio_fixnum_primitive_ ## icname (args);		\
+        }								\
+    }
+
+#define IDIO_DEFINE_ARITHMETIC_BINDIV_PRIMITIVE(name,cname,icname)	\
+    IDIO_DEFINE_PRIMITIVE2 (name, cname, (IDIO n1, IDIO n2))		\
+    {									\
+	IDIO_ASSERT (n1);						\
+	IDIO_ASSERT (n2);						\
+									\
+	int ibn = 0;							\
+	if (idio_isa_bignum (n1)) {					\
+	    ibn |= 1;							\
+	} else {							\
+	    if (! idio_isa_fixnum (n1)) {				\
+		idio_error_param_type ("number", n1, idio_string_C ("binary op " name)); \
+		return idio_S_unspec;					\
+	    }								\
+	}								\
+									\
+	if (idio_isa_bignum (n2)) {					\
+	    ibn |= 2;							\
+	} else {							\
+	    if (! idio_isa_fixnum (n2)) {				\
+		idio_error_param_type ("number", n2, idio_string_C ("binary op " name)); \
+		return idio_S_unspec;					\
+	    }								\
+	}								\
+									\
+	IDIO bn_args = IDIO_LIST2 (n1, n2);				\
+									\
+	if (0 == (ibn & 1)) {						\
+	    IDIO_PAIR_H (bn_args) = idio_bignum_integer_intmax_t (IDIO_FIXNUM_VAL (n1)); \
+	}								\
+	if (0 == (ibn & 2)) {						\
+	    IDIO_PAIR_HT (bn_args) = idio_bignum_integer_intmax_t (IDIO_FIXNUM_VAL (n2)); \
+	}								\
+									\
+	IDIO num = idio_bignum_primitive_ ## icname (bn_args);		\
+									\
+	/* convert to a fixnum if possible */				\
+	IDIO fn = idio_bignum_to_fixnum (num);				\
+	if (idio_S_nil != fn) {						\
+	    num = fn;							\
+	}								\
+									\
+	return num;							\
+    }
+
+#define IDIO_DEFINE_ARITHMETIC_BINARY_CMP_PRIMITIVE(name,cname,icname)	\
+    IDIO_DEFINE_PRIMITIVE2 (name, cname, (IDIO n1, IDIO n2))		\
+    {									\
+	IDIO_ASSERT (n1);						\
+	IDIO_ASSERT (n2);						\
+									\
+	int ibn = 0;							\
+	if (idio_isa_bignum (n1)) {					\
+	    ibn |= 1;							\
+	} else {							\
+	    if (! idio_isa_fixnum (n1)) {				\
+		fprintf (stderr, "n1 isa %s\n", idio_type2string (n1));	\
+		idio_error_param_type ("number", n1, idio_string_C ("binary op " name)); \
+		return idio_S_unspec;					\
+	    }								\
+	}								\
+									\
+	if (idio_isa_bignum (n2)) {					\
+	    ibn |= 2;							\
+	} else {							\
+	    if (! idio_isa_fixnum (n2)) {				\
+		idio_error_param_type ("number", n2, idio_string_C ("binary op " name)); \
+		return idio_S_unspec;					\
+	    }								\
+	}								\
+									\
+	if (ibn) {							\
+	    IDIO bn_args = IDIO_LIST2 (n1, n2);				\
+									\
+	    if (0 == (ibn & 1)) {					\
+		IDIO_PAIR_H (bn_args) = idio_bignum_integer_intmax_t (IDIO_FIXNUM_VAL (n1)); \
+	    }								\
+	    if (0 == (ibn & 2)) {					\
+		IDIO_PAIR_HT (bn_args) = idio_bignum_integer_intmax_t (IDIO_FIXNUM_VAL (n2)); \
+	    }								\
+									\
+	    return idio_bignum_primitive_ ## icname (bn_args);		\
+	} else {							\
+	    return idio_fixnum_primitive_ ## icname (IDIO_LIST2 (n1, n2)); \
+        }								\
+    }
+
+IDIO_DEFINE_ARITHMETIC_BINARY_PRIMITIVE ("binary-+", binary_add, add)
+IDIO_DEFINE_ARITHMETIC_BINARY_PRIMITIVE ("binary--", binary_subtract, subtract)
+IDIO_DEFINE_ARITHMETIC_BINARY_PRIMITIVE ("binary-*", binary_multiply, multiply)
+IDIO_DEFINE_ARITHMETIC_BINDIV_PRIMITIVE ("binary-/", binary_divide, divide)
+
+IDIO_DEFINE_ARITHMETIC_BINARY_CMP_PRIMITIVE ("binary-le", binary_le, le)
+IDIO_DEFINE_ARITHMETIC_BINARY_CMP_PRIMITIVE ("binary-lt", binary_lt, lt)
+IDIO_DEFINE_ARITHMETIC_BINARY_CMP_PRIMITIVE ("binary-eq", binary_eq, eq)
+IDIO_DEFINE_ARITHMETIC_BINARY_CMP_PRIMITIVE ("binary-ge", binary_ge, ge)
+IDIO_DEFINE_ARITHMETIC_BINARY_CMP_PRIMITIVE ("binary-gt", binary_gt, gt)
 
 IDIO_DEFINE_PRIMITIVE1_DS ("integer->char", integer2char, (IDIO i), "i", "\
 [deprecated]					\n\
@@ -1049,6 +1203,17 @@ void idio_fixnum_add_primitives ()
     IDIO_ADD_PRIMITIVE (eq);
     IDIO_ADD_PRIMITIVE (ge);
     IDIO_ADD_PRIMITIVE (gt);
+
+    IDIO_ADD_PRIMITIVE (binary_add);
+    IDIO_ADD_PRIMITIVE (binary_subtract);
+    IDIO_ADD_PRIMITIVE (binary_multiply);
+    IDIO_ADD_PRIMITIVE (binary_divide);
+
+    IDIO_ADD_PRIMITIVE (binary_le);
+    IDIO_ADD_PRIMITIVE (binary_lt);
+    IDIO_ADD_PRIMITIVE (binary_eq);
+    IDIO_ADD_PRIMITIVE (binary_ge);
+    IDIO_ADD_PRIMITIVE (binary_gt);
 
     IDIO_ADD_PRIMITIVE (integer2char);
     IDIO_ADD_PRIMITIVE (integer2unicode);

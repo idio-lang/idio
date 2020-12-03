@@ -820,7 +820,7 @@ define-infix-operator | 1700 {
 		    ;; have a proc entry to update.
 		    set-%idio-job-procs! $job (pair $proc (%idio-job-procs $job))
 
-		    if (lt $proc-id $nprocs) {
+		    if ($proc-id lt $nprocs) {
 		      $pipe = (pipe)
 		      $outfile = (pipe-writer $pipe)
 		    } {
@@ -846,7 +846,7 @@ define-infix-operator | 1700 {
 		      ;; closes (pipe-reader $pipe) in us?
 
 		      ;; Ah, OK.  We do.
-		      if (lt $proc-id $nprocs) {
+		      if ($proc-id lt $nprocs) {
 			close (pipe-reader $pipe)
 		      }
 

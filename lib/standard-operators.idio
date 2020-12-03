@@ -79,7 +79,9 @@ define-infix-operator + 1100 {
     result = prefix
   }
 
-  op+args := list op (ph before) (ph after)
+  ;; op is a binary operator so call the binary primitives
+  binary-op := string->symbol (append-string "binary-" (symbol->string op))
+  op+args := list binary-op (ph before) (ph after)
 
   if (null? result) {
     if (null? suffix) {
@@ -101,6 +103,12 @@ define-infix-operator + 1100 {
 define-infix-operator - 1100 \+
 define-infix-operator * 1200 \+
 define-infix-operator / 1200 \+
+
+define-infix-operator lt 1200 \+
+define-infix-operator le 1200 \+
+define-infix-operator eq 1200 \+
+define-infix-operator ge 1200 \+
+define-infix-operator gt 1200 \+
 
 ;; logical operators take a single expression either side and combine
 ;; with adjacent operators of the same type

@@ -243,7 +243,7 @@ define (copy-regexp-match md) {
   dst := make-array len #f
 
   do ((i 0 (i + 1))) \
-     ((eq i len)
+     ((i eq len)
       (make-regexp-match dst (regexp-match-rx md) (regexp-match-string md))) {
        array-set! dst i (array-ref src i)
      }
@@ -256,7 +256,7 @@ define (copy-regexp-match md) {
 define (regexp-match-submatch/list md n) {
   n := if (integer? n) n (regexp-match-name-offset md n)
 
-  cond ((ge n (array-length (regexp-match-rules md)))
+  cond ((n ge (array-length (regexp-match-rules md)))
 	#f) \
        (else {
 	 rule := array-ref (regexp-match-rules md) n
@@ -288,7 +288,7 @@ define (regexp-match-submatch md n) {
 define (regexp-match-submatch-start+end md n) {
   n := if (integer? n) n (regexp-match-name-offset md n)
 
-  and (lt n (array-length (regexp-match-rules md))) {
+  and (n lt (array-length (regexp-match-rules md))) {
     rule := array-ref (regexp-match-rules md) n
     if (pair? rule) {
       start := regexp-match-ref md (ph rule)
@@ -318,7 +318,7 @@ define (regexp-match-submatch-end md n) {
 define (regexp-match-convert recurse? md str) {
   cond ((array? md) {
     loop :+ function (i res) {
-	      cond ((ge i (array-length md))
+	      cond ((i ge (array-length md))
 		    (reverse res)) \
 		   ((integer? (array-ref md i))
 		    (loop (i + 2)
@@ -378,7 +378,7 @@ define (match-collect md spec) {
   end := pht spec
   vec := regexp-match-matches md
   loop :+ function (i ls) {
-	    if (ge i end) \
+	    if (i ge end) \
 	       (reverse ls) \
 	       (loop (i + 1) (pair (match-extract md i) ls))
   }
@@ -412,7 +412,7 @@ define (regexp-match>=? m1 m2) {
   end := (array-length (regexp-match-matches m1)) - 1
 
   loop :+ function (i) {
-	    cond ((ge i end)
+	    cond ((i ge end)
 		  #t) \
 		 ((and (eqv? (regexp-match-ref m1 i)
 			     (regexp-match-ref m2 i))
@@ -423,21 +423,16 @@ define (regexp-match>=? m1 m2) {
 		  (not
 		   (and (integer? (regexp-match-ref m2 i))
 			(or (not (integer? (regexp-match-ref m1 i)))
-			    (lt (regexp-match-ref m2 i)
-				(regexp-match-ref m1 i))
+			    ((regexp-match-ref m2 i) lt (regexp-match-ref m1 i))
 			    ;; sanity check for incompletely advanced epsilons
 			    (and (integer? (regexp-match-ref m1 (i + 1)))
-				 (lt (regexp-match-ref m1 (i + 1))
-				     (regexp-match-ref m1 i)))
+				 ((regexp-match-ref m1 (i + 1)) lt (regexp-match-ref m1 i)))
 			    ((if (memq (i + 1) non-greedy-indexes) not values)
 			     (and
-			      (eq (regexp-match-ref m2 i)
-				  (regexp-match-ref m1 i))
+			      ((regexp-match-ref m2 i) eq (regexp-match-ref m1 i))
 			      (or (not (integer? (regexp-match-ref m2 (i + 1))))
 				  (and (integer? (regexp-match-ref m1 (i + 1)))
-				       (gt
-					(regexp-match-ref m2 (i + 1))
-					(regexp-match-ref m1 (i + 1)))))))))))
+				       ((regexp-match-ref m2 (i + 1)) gt (regexp-match-ref m1 (i + 1)))))))))))
   }
 
   loop 0
@@ -581,8 +576,7 @@ define (posse-advance! new seen accept sr str i start end) {
 		  }) \
 		       ((not (and (eq? 'non-greedy-left (state-match-rule st))
 				  (regexp-match-ref matches index)
-				  (ge (regexp-match-ref matches index)
-				      (regexp-match-ref matches (index - 1)))))
+				  ((regexp-match-ref matches index) ge (regexp-match-ref matches (index - 1)))))
 			 (regexp-match-set! matches index i))
 		})
 		;; Follow transitions.
@@ -591,7 +585,7 @@ define (posse-advance! new seen accept sr str i start end) {
 		     ((posse-ref seen sr)
 		      => (function (sr-prev) (searcher-merge! sr-prev sr))) \
 		     ((epsilon-state? st) {
-		       ch := and (lt i end) (string-ref str i)
+		       ch := and (i lt end) (string-ref str i)
 		       cond ((state-matches? st str i ch start end (searcher-matches sr)) {
 			 posse-add! seen sr
 			 next1 := state-next1 st
@@ -628,18 +622,17 @@ define (regexp-run-offsets search? rx str start end) {
   loop :+ function (i searchers1 searchers2) {
 	    ;; Advance initial epsilons once from the first index, or
 	    ;; every time when searching.
-	    cond ((or search? (eq i start)) {
+	    cond ((or search? (i eq start)) {
 	      posse-advance! searchers1 epsilons accept (make-start-searcher rx str) \
 							str i start end
 	      posse-clear! epsilons
 	    })
-	    cond ((or (ge i end)
+	    cond ((or (i ge end)
 		      (and search?
 			   (searcher? (pt accept)) {
 			     accept-start := searcher-start-match (pt accept)
 			     posse-every (function (searcher)
-					    (gt (searcher-start-match searcher)
-						accept-start)) \
+					    ((searcher-start-match searcher) gt accept-start)) \
 					 searchers1
 			   })
 		      (and (not search?)
@@ -649,8 +642,7 @@ define (regexp-run-offsets search? rx str start end) {
 		   ;; are not searching, return false.
 		   (and (searcher? (pt accept)) {
 		     matches := searcher-matches (pt accept)
-		     and (or search? (ge (regexp-match-ref matches 1)
-					 end)) \
+		     and (or search? ((regexp-match-ref matches 1) ge end)) \
 			 (searcher-matches (pt accept))
 		   })) \
 		 (else {
@@ -734,30 +726,30 @@ define (char-word-constituent? ch) {
 }
 
 define (match/bos str i ch start end matches) {
-  eq i start
+  i eq start
 }
 define (match/eos str i ch start end matches) {
-  ge i end
+  i ge end
 }
 define (match/bol str i ch start end matches) {
-  or (eq i start) \
+  or (i eq start) \
      (eqv? #\{newline} (string-ref str (i - 1)))
 }
 define (match/eol str i ch start end matches) {
-  or (ge i end) \
+  or (i ge end) \
      (eqv? #\{newline} (string-ref str i))
 }
 define (match/bow str i ch start end matches) {
-  and (lt i end) \
-      (or (eq i start)
+  and (i lt end) \
+      (or (i eq start)
 	  (not (char-word-constituent?
 		(string-ref str (i - 1))))) \
       (char-word-constituent? ch)
 }
 define (match/eow str i ch start end matches) {
-  and (or (ge i end)
+  and (or (i ge end)
 	  (not (char-word-constituent? ch))) \
-      (gt i start) \
+      (i gt start) \
       (char-word-constituent?
        (string-ref str (i - 1)))
 }
@@ -766,17 +758,17 @@ define (match/nwb str i ch start end matches) {
       (not (match/eow str i ch start end matches))
 }
 define (match/bog str i ch start end matches) {
-  and (lt i end) \
-      (or (eq i start)
+  and (i lt end) \
+      (or (i eq start)
 	  (match/eog str (i - 1) ch start end matches))
 }
 define (match/eog str i ch start end matches) {
-  and (gt i start) \
-      (or (ge i end) {
+  and (i gt start) \
+      (or (i ge end) {
 	sci := string-cursor->index str i
 	sce := string-cursor->index str end
 	m := regexp-search re:grapheme str sci sce
-	and m (le (regexp-match-submatch-end m 0) sci)
+	and m ((regexp-match-submatch-end m 0) le sci)
       })
 }
 
@@ -868,7 +860,7 @@ define (any pred ls & lol) {
 
 define (char-set-sre? sre) {
   or (unicode? sre) \
-     (and (string? sre) (eq 1 (string-length sre))) \
+     (and (string? sre) (1 eq (string-length sre))) \
      (lookup-char-set sre ~none) \
      (and (pair? sre)
 	  (or (string? (ph sre))
@@ -906,7 +898,7 @@ define (sre->char-set sre & o) {
        ((char-set? sre) (maybe-ci sre)) \
        ((unicode? sre) (maybe-ci (char-set sre))) \
        ((string? sre)
-	(if (eq 1 (string-length sre))
+	(if (1 eq (string-length sre))
 	    (maybe-ci (string->char-set sre))
 	    (error 'sre-char-set "only single char strings can be char-sets"))) \
        ((pair? sre)
@@ -962,15 +954,15 @@ define (strip-submatches sre) {
 define (sre-expand-reps from to sre) {
   sre0 := strip-submatches sre
   loop :+ function (i res) {
-	    if (eq i from) \
+	    if (i eq from) \
 	       (cond
 		((not to)
 		 (reverse (pair #T{ (* $sre) } res)))
-		((eq from to)
+		((from eq to)
 		 (reverse (pair sre (pt res))))
 		(else {
 		  loop :+ function (i res) {
-			    if (ge i to) \
+			    if (i ge to) \
 			       (reverse (pair #T{ (? $sre) } res)) \
 			       (loop (i + 1) (pair #T{ (? $sre0) } res))
 		  }
@@ -1282,11 +1274,11 @@ define (regexp-fold rx kons knil str & o) {
   end := string-end-arg str (if (pair? o) (pt o) o)
 
   loop :+ function (i from acc) {
-	    cond ((and (lt i end) (regexp-run-offsets #t rx str i end))
+	    cond ((and (i lt end) (regexp-run-offsets #t rx str i end))
 		  => (function (md) {
 			j := regexp-match-ref md 1
 
-			loop (if (and (eq i j) (lt j end))
+			loop (if (and (i eq j) (j lt end))
 				 (string-cursor-next str j)
 				 j) \
 			     j \
@@ -1370,7 +1362,7 @@ define (regexp-partition rx str & o) {
        }
   }
   define (final from md str a) {
-    if (or (lt from end) (null? (pt a))) \
+    if (or (from lt end) (null? (pt a))) \
        (pair (substring str (ph a) end) (pt a)) \
        (pt a)
   }
@@ -1433,7 +1425,7 @@ define (regexp-replace-all rx str subst & o) {
 		 m-start := regexp-match-submatch-start m 0
 
 		 append (regexp-apply-match m str subst start end) \
-			(if (ge i m-start)
+			(if (i ge m-start)
 			    acc
 			    (pair (substring str i m-start) acc))
 	      }) \
@@ -1442,7 +1434,7 @@ define (regexp-replace-all rx str subst & o) {
 	      (function (i m str acc) {
 		 end := string-length str
 
-		 concatenate-string (reverse (if (ge i end)
+		 concatenate-string (reverse (if (i ge end)
 						 acc
 						 (pair (substring str i end) acc)))
 	      }) \

@@ -109,7 +109,7 @@ define (copy-operator! new-id new-pri old-id ol og) {
 				  (list (pair new-pri grp)))
 		   } {
 		     og-pri := phh og
-		     if (lt og-pri new-pri) {
+		     if (og-pri lt new-pri) {
 		       if (null? p) {
 			 og = (pair (pair new-pri grp)
 				    og)

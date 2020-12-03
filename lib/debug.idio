@@ -26,7 +26,7 @@ debug := #n
   continuations := #n
 
   debug-c := function (n v) {
-	       if (le n ((array-length continuations) - 1)) {
+	       if (n le ((array-length continuations) - 1)) {
 		 printf "invoking continuation %d: %s\n" n (pht continuations.n)
 		 %%vm-apply-continuation n v
 	       } {
@@ -53,10 +53,10 @@ debug := #n
 
 	    debug-loop :+ function () {
 			    al := array-length continuations
-			    if (gt al 0) {
+			    if (al gt 0) {
 			      printf "Choose between the following continuations:\n"
 			      dloop :+ function (n) {
-					 if (ge n 0) {
+					 if (n ge 0) {
 					   printf "  %d%s: %s\n" n (if (eq? (ph continuations.n) debug-k) "*" " ") (pht continuations.n)
 					   dloop (n - 1)
 					 }

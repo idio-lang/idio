@@ -70,7 +70,7 @@ define (sorted? seq less? & opt-key) {
        ((array? seq) {
 	 dimax := (array-length seq) - 1
 
-	 (le dimax 1) or {
+	 (dimax le 1) or {
 	   loop :+ function (idx last) {
 	     (negative? idx) or {
 		nxt := key (array-ref seq idx)
@@ -192,7 +192,7 @@ define (sort:sort-list! seq less? key) {
   keyer := if key ph identity
 
   define (step n) {
-    cond ((gt n 2) {
+    cond ((n gt 2) {
 	   j := quotient n 2
 	   a := step j
 	   k := n - j
@@ -200,7 +200,7 @@ define (sort:sort-list! seq less? key) {
 
 	   sort:merge! a b less? keyer
 	 }) \
-	 ((eq n 2) {
+	 ((n eq 2) {
 	   x := ph seq
 	   y := pht seq
 	   p := seq
@@ -215,7 +215,7 @@ define (sort:sort-list! seq less? key) {
 	   set-pt! (pt p) #n
 	   p
 	 }) \
-	 ((eq n 1) {
+	 ((n eq 1) {
 	   p := seq
 	   seq = pt seq
 	   set-pt! p #n
@@ -256,7 +256,7 @@ define (rank-1-array->list array) {
 
   do ((idx (dimensions - 1) (idx - 1))
       (lst #n		    (pair (array-ref array idx) lst))) \
-     ((lt idx 0) lst)
+     ((idx lt 0) lst)
 }
 
 ;;; (sort! sequence less?)

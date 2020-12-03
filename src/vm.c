@@ -1327,6 +1327,7 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
 	    IDIO last = IDIO_FRAME_ARGS (val, IDIO_FRAME_NARGS (val) - 1);
 	    IDIO_FRAME_NARGS (val) -= 1;
 
+	    /* fprintf (stderr, "iv-invoke %20s %2td\n", IDIO_PRIMITIVE_NAME (func), IDIO_FRAME_NARGS (val)); */
 	    if (idio_S_nil != last) {
 		fprintf (stderr, "func args (%td): %s ", IDIO_FRAME_NARGS (val), IDIO_PRIMITIVE_NAME (func));
 		idio_debug ("*val* %s; ", val);
@@ -4185,7 +4186,18 @@ int idio_vm_run1 (IDIO thr)
 	    if (idio_vm_tracing) {
 		idio_vm_primitive_call_trace (IDIO_PRIMITIVE_NAME (primdata), thr, 0);
 	    }
+#ifdef IDIO_VM_PROF
+	    struct timespec prim_t0;
+	    struct rusage prim_ru0;
+	    idio_vm_func_start (primdata, &prim_t0, &prim_ru0);
+#endif
 	    IDIO_THREAD_VAL (thr) = IDIO_PRIMITIVE_F (primdata) ();
+#ifdef IDIO_VM_PROF
+	    struct timespec prim_te;
+	    struct rusage prim_rue;
+	    idio_vm_func_stop (primdata, &prim_te, &prim_rue);
+	    idio_vm_prim_time (primdata, &prim_t0, &prim_te, &prim_ru0, &prim_rue);
+#endif
 	    if (idio_vm_tracing) {
 		idio_vm_primitive_result_trace (thr);
 	    }
@@ -4225,7 +4237,18 @@ int idio_vm_run1 (IDIO thr)
 	    if (idio_vm_tracing) {
 		idio_vm_primitive_call_trace (IDIO_PRIMITIVE_NAME (primdata), thr, 1);
 	    }
+#ifdef IDIO_VM_PROF
+	    struct timespec prim_t0;
+	    struct rusage prim_ru0;
+	    idio_vm_func_start (primdata, &prim_t0, &prim_ru0);
+#endif
 	    IDIO_THREAD_VAL (thr) = IDIO_PRIMITIVE_F (primdata) (IDIO_THREAD_VAL (thr));
+#ifdef IDIO_VM_PROF
+	    struct timespec prim_te;
+	    struct rusage prim_rue;
+	    idio_vm_func_stop (primdata, &prim_te, &prim_rue);
+	    idio_vm_prim_time (primdata, &prim_t0, &prim_te, &prim_ru0, &prim_rue);
+#endif
 	    if (idio_vm_tracing) {
 		idio_vm_primitive_result_trace (thr);
 	    }
@@ -4383,7 +4406,18 @@ int idio_vm_run1 (IDIO thr)
 	    if (idio_vm_tracing) {
 		idio_vm_primitive_call_trace (IDIO_PRIMITIVE_NAME (primdata), thr, 2);
 	    }
+#ifdef IDIO_VM_PROF
+	    struct timespec prim_t0;
+	    struct rusage prim_ru0;
+	    idio_vm_func_start (primdata, &prim_t0, &prim_ru0);
+#endif
 	    IDIO_THREAD_VAL (thr) = IDIO_PRIMITIVE_F (primdata) (IDIO_THREAD_REG1 (thr), IDIO_THREAD_VAL (thr));
+#ifdef IDIO_VM_PROF
+	    struct timespec prim_te;
+	    struct rusage prim_rue;
+	    idio_vm_func_stop (primdata, &prim_te, &prim_rue);
+	    idio_vm_prim_time (primdata, &prim_t0, &prim_te, &prim_ru0, &prim_rue);
+#endif
 	    if (idio_vm_tracing) {
 		idio_vm_primitive_result_trace (thr);
 	    }
