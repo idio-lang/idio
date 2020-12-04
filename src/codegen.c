@@ -1470,7 +1470,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 
 	    idio_codegen_compile (thr, ia, cs, ms, depth + 1);
 
-	    IDIO_IA_PUSH1 (IDIO_A_EXTEND_FRAME);
+	    IDIO_IA_PUSH1 (IDIO_A_LINK_FRAME);
 	    IDIO_IA_PUSH_VARUINT (fci);
 
 	    idio_codegen_compile (thr, ia, cs, mp, depth + 1);
@@ -1494,7 +1494,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 
 	    idio_codegen_compile (thr, ia, cs, ms, depth + 1);
 
-	    IDIO_IA_PUSH1 (IDIO_A_EXTEND_FRAME);
+	    IDIO_IA_PUSH1 (IDIO_A_LINK_FRAME);
 	    IDIO_IA_PUSH_VARUINT (fci);
 
 	    idio_codegen_compile (thr, ia, cs, mp, depth + 1);
@@ -1784,7 +1784,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 		break;
 	    }
 
-	    idio_ia_push (iap, IDIO_A_EXTEND_FRAME);
+	    idio_ia_push (iap, IDIO_A_LINK_FRAME);
 	    IDIO_IA_T ia_vui = idio_ia_compute_varuint (fci);
 	    idio_ia_append (iap, ia_vui);
 	    idio_ia_free (ia_vui);
@@ -1864,7 +1864,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    idio_ia_append (iap, a);
 	    idio_ia_free (a);
 
-	    idio_ia_push (iap, IDIO_A_EXTEND_FRAME);
+	    idio_ia_push (iap, IDIO_A_LINK_FRAME);
 	    IDIO_IA_T ia_vui = idio_ia_compute_varuint (fci);
 	    idio_ia_append (iap, ia_vui);
 	    idio_ia_free (ia_vui);

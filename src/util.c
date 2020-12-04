@@ -1902,7 +1902,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 	    case IDIO_TYPE_FRAME:
 		{
 		    seen = idio_pair (o, seen);
-		    if (IDIO_ASPRINTF (&r, "#<FRAME %p n=%td [ ", o, IDIO_FRAME_NARGS (o)) == -1) {
+		    if (IDIO_ASPRINTF (&r, "#<FRAME %p n=%d/%d [ ", o, IDIO_FRAME_NARGS (o), IDIO_FRAME_NALLOC (o)) == -1) {
 			idio_error_alloc ("asprintf");
 
 			/* notreached */
@@ -2872,7 +2872,7 @@ const char *idio_vm_bytecode2string (int code)
     case IDIO_A_POP_FRAME3:			r = "A-POP-FRAME3";			break;
     case IDIO_A_POP_FRAME:			r = "A-POP-FRAME";			break;
 
-    case IDIO_A_EXTEND_FRAME:			r = "A-EXTEND-FRAME";			break;
+    case IDIO_A_LINK_FRAME:			r = "A-LINK-FRAME";			break;
     case IDIO_A_UNLINK_FRAME:			r = "A-UNLINK-FRAME";			break;
     case IDIO_A_PACK_FRAME:			r = "A-PACK-FRAME";			break;
     case IDIO_A_POP_LIST_FRAME:			r = "A-POP-LIST-FRAME";			break;

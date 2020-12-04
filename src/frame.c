@@ -49,6 +49,7 @@ IDIO idio_frame_allocate (idio_ai_t arityp1)
     IDIO_FRAME_NEXT (fo) = idio_S_nil;
 
     IDIO_FRAME_NARGS (fo) = arityp1;
+    IDIO_FRAME_NALLOC (fo) = arityp1;
     IDIO_FRAME_NAMES (fo) = idio_S_nil;
 
     idio_ai_t i;

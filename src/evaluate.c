@@ -3000,7 +3000,7 @@ static IDIO idio_meaning_no_argument (IDIO src, IDIO nametree, size_t size, int 
     IDIO_TYPE_ASSERT (list, nametree);
 
     if (IDIO_MEANING_IS_FRAME_REUSE (flags)) {
-	return IDIO_LIST2 (IDIO_I_ALLOCATE_FRAME, idio_fixnum (size));
+	return IDIO_LIST2 (IDIO_I_REUSE_FRAME, idio_fixnum (size));
     } else {
 	return IDIO_LIST2 (IDIO_I_ALLOCATE_FRAME, idio_fixnum (size));
     }
@@ -3087,7 +3087,7 @@ static IDIO idio_meaning_no_dotted_argument (IDIO src, IDIO nametree, size_t siz
     IDIO_TYPE_ASSERT (list, nametree);
 
     if (IDIO_MEANING_IS_FRAME_REUSE (flags)) {
-	return IDIO_LIST2 (IDIO_I_ALLOCATE_FRAME, idio_fixnum (arity));
+	return IDIO_LIST2 (IDIO_I_REUSE_FRAME, idio_fixnum (arity));
     } else {
 	return IDIO_LIST2 (IDIO_I_ALLOCATE_FRAME, idio_fixnum (arity));
     }

@@ -1329,7 +1329,7 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
 
 	    /* fprintf (stderr, "iv-invoke %20s %2td\n", IDIO_PRIMITIVE_NAME (func), IDIO_FRAME_NARGS (val)); */
 	    if (idio_S_nil != last) {
-		fprintf (stderr, "func args (%td): %s ", IDIO_FRAME_NARGS (val), IDIO_PRIMITIVE_NAME (func));
+		fprintf (stderr, "func args (%d): %s ", IDIO_FRAME_NARGS (val), IDIO_PRIMITIVE_NAME (func));
 		idio_debug ("*val* %s; ", val);
 		idio_debug ("last %s\n", last);
 		idio_vm_thread_state ();
@@ -3845,29 +3845,36 @@ int idio_vm_run1 (IDIO thr)
 	break;
     case IDIO_A_REUSE_FRAME:
 	{
-	    uint64_t i = idio_vm_fetch_varuint (thr);
-	    IDIO_VM_RUN_DIS ("REUSE-FRAME %" PRId64 "", i);
-	    fprintf (stderr, "\n");
-	    IDIO fr = IDIO_THREAD_FRAME (thr);
-	    while (idio_S_nil != fr) {
-		idio_dump (fr, 16);
-		fr = IDIO_FRAME_NEXT (fr);
-	    }
-	    idio_ai_t ai = IDIO_FRAME_NARGS (IDIO_THREAD_FRAME (thr));
-	    if (i > ai) {
+	    uint64_t arity = idio_vm_fetch_varuint (thr);
+	    IDIO frame = IDIO_THREAD_FRAME (thr);
+	    /* fprintf (stderr, "REUSE %2d for %2" PRIu64 "\n", IDIO_FRAME_NARGS (frame), arity); */
+	    IDIO_VM_RUN_DIS ("REUSE-FRAME %" PRId64 "", arity);
+	    if (arity > IDIO_FRAME_NALLOC (frame)) {
+		IDIO_THREAD_VAL (thr) = idio_frame_allocate (arity);
 	    } else {
-		for (; ai > i; ai--) {
-		    /* idio_array_pop (IDIO_FRAME_ARGS (IDIO_THREAD_FRAME (thr))); */
+		/*
+		 * XXX needs some thought -- there's interaction with
+		 * UNLINK-FRAME which doesn't know we REUSED
+		 */
+		IDIO_THREAD_VAL (thr) = idio_frame_allocate (arity);
+		break;
+
+		if (! idio_isa_frame (frame)) {
+		    idio_vm_thread_state ();
+		    exit (3);
 		}
+		idio_debug ("reuse %s\n", frame);
+		idio_ai_t i;
+		for (i = 0; i < arity - 1; i++) {
+		    IDIO_FRAME_ARGS (frame, i) = idio_S_undef;
+		}
+		IDIO_FRAME_ARGS (frame, i) = idio_S_nil;
+		IDIO_FRAME_NARGS (frame) = arity;
+		idio_debug ("reuse %s\n", frame);
+		IDIO_THREAD_VAL (thr) = frame;
+		IDIO_THREAD_FRAME (thr) = IDIO_FRAME_NEXT (frame);
+		IDIO_THREAD_VAL (thr) = idio_frame_allocate (arity);
 	    }
-	    for (ai = 0; ai < i; ai++) {
-		/* idio_array_insert_index (IDIO_FRAME_ARGS (IDIO_THREAD_FRAME (thr)), idio_S_undef, ai); */
-	    }
-	    /* idio_array_insert_index (IDIO_FRAME_ARGS (IDIO_THREAD_FRAME (thr)), idio_S_nil, ai); */
-	    IDIO_FRAME_NARGS (IDIO_THREAD_FRAME (thr)) = i;
-	    IDIO_THREAD_VAL (thr) = IDIO_THREAD_FRAME (thr);
-	    fprintf (stderr, "->\n");
-	    idio_dump (IDIO_THREAD_FRAME (thr), 16);
 	}
 	break;
     case IDIO_A_POP_FRAME0:
@@ -3901,7 +3908,7 @@ int idio_vm_run1 (IDIO thr)
 	    idio_frame_update (IDIO_THREAD_VAL (thr), 0, rank, IDIO_THREAD_STACK_POP ());
 	}
 	break;
-    case IDIO_A_EXTEND_FRAME:
+    case IDIO_A_LINK_FRAME:
 	{
 	    uint64_t ssci = idio_vm_fetch_varuint (thr);
 	    if (ssci) {
@@ -3911,7 +3918,7 @@ int idio_vm_run1 (IDIO thr)
 		IDIO_FRAME_NAMES (IDIO_THREAD_VAL (thr)) = fgci;
 	    }
 
-	    IDIO_VM_RUN_DIS ("EXTEND-FRAME %10p -> %10p sci=%" PRId64, IDIO_THREAD_FRAME (thr), IDIO_THREAD_VAL (thr), ssci);
+	    IDIO_VM_RUN_DIS ("LINK-FRAME %10p -> %10p sci=%" PRId64, IDIO_THREAD_FRAME (thr), IDIO_THREAD_VAL (thr), ssci);
 	    IDIO_THREAD_FRAME (thr) = idio_frame_extend (IDIO_THREAD_FRAME (thr), IDIO_THREAD_VAL (thr));
 	}
 	break;
@@ -5391,6 +5398,12 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_ai_t pc0, idio_ai_t pce)
 		IDIO_VM_DASM ("ALLOCATE-DOTTED-FRAME %" PRId64, arity);
 	    }
 	    break;
+	case IDIO_A_REUSE_FRAME:
+	    {
+		uint64_t i = idio_vm_get_varuint (bc, pcp);
+		IDIO_VM_DASM ("REUSE-FRAME %" PRId64, i);
+	    }
+	    break;
 	case IDIO_A_POP_FRAME0:
 	    {
 		IDIO_VM_DASM ("POP-FRAME 0");
@@ -5417,10 +5430,10 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_ai_t pc0, idio_ai_t pce)
 		IDIO_VM_DASM ("POP-FRAME %" PRId64 "", rank);
 	    }
 	    break;
-	case IDIO_A_EXTEND_FRAME:
+	case IDIO_A_LINK_FRAME:
 	    {
 		uint64_t ssci = idio_vm_get_varuint (bc, pcp);
-		IDIO_VM_DASM ("EXTEND-FRAME sci=%" PRId64, ssci);
+		IDIO_VM_DASM ("LINK-FRAME sci=%" PRId64, ssci);
 	    }
 	    break;
 	case IDIO_A_UNLINK_FRAME:

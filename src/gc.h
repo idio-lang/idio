@@ -628,10 +628,17 @@ typedef struct idio_module_s {
 #define IDIO_FRAME_FLAG_PROFILE  (1<<2)
 #define IDIO_FRAME_FLAG_C_STRUCT (1<<3)
 
+#if PTRDIFF_MAX == 2147483647L
+typedef uint16_t idio_frame_args_t;
+#else
+typedef uint32_t idio_frame_args_t;
+#endif
+
 typedef struct idio_frame_s {
     struct idio_s *grey;
     struct idio_s *next;
-    idio_ai_t nargs;
+    idio_frame_args_t nargs;	/* number in use */
+    idio_frame_args_t nalloc;	/* number allocated */
     struct idio_s *names;		/* a ref into vm_constants */
     struct idio_s* args[];
 } idio_frame_t;
@@ -639,6 +646,7 @@ typedef struct idio_frame_s {
 #define IDIO_FRAME_GREY(F)	((F)->u.frame->grey)
 #define IDIO_FRAME_NEXT(F)	((F)->u.frame->next)
 #define IDIO_FRAME_NARGS(F)	((F)->u.frame->nargs)
+#define IDIO_FRAME_NALLOC(F)	((F)->u.frame->nalloc)
 #define IDIO_FRAME_NAMES(F)	((F)->u.frame->names)
 #define IDIO_FRAME_ARGS(F,i)	((F)->u.frame->args[i])
 #define IDIO_FRAME_FLAGS(F)	((F)->tflags)
