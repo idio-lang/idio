@@ -207,7 +207,7 @@ const char *idio_type2string (IDIO o)
     }
 }
 
-IDIO_DEFINE_PRIMITIVE1_DS ("type-string", type_string, (IDIO o), "o", "\
+IDIO_DEFINE_PRIMITIVE1_DS ("type->string", type_string, (IDIO o), "o", "\
 return the type of `o` as a string		\n\
 						\n\
 :param o: object				\n\
@@ -2097,7 +2097,17 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 			}
 
 			if (idio_S_nil != s) {
-			    return idio_as_string (s, sizep, 1, seen, 0);
+			    /*
+			     * NB call the display_string variant at
+			     * this point as {s} is now a string and
+			     * returning as_string ({s}) => "<#SI
+			     * ...>" (ie. with "s) rather than the
+			     * <#SI ...> we expect from a struct
+			     * instance.
+			     *
+			     * It confused me...
+			     */
+			    return idio_display_string (s, sizep);
 			}
 		    }
 

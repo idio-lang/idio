@@ -2588,6 +2588,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	}
 	break;
     case IDIO_I_CODE_NOP:
+	    IDIO_IA_PUSH1 (IDIO_A_NOP);
 	break;
     default:
 	idio_error_C ("bad instruction", mh, IDIO_C_FUNC_LOCATION ());

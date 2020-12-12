@@ -27,10 +27,6 @@
 
 #include "idio.h"
 
-void idio_hash_verify_chain (IDIO h, void *kv, int reqd);
-void idio_hash_verify_all_keys (IDIO h);
-size_t idio_hash_find_free_slot (IDIO h);
-size_t idio_hash_hv_follow_chain (IDIO h, void *k);
 IDIO idio_hash_weak_tables = idio_S_nil;
 
 void idio_hash_error (char *m, IDIO c_location)
@@ -504,8 +500,8 @@ idio_hi_t idio_hash_default_hash_C_string_C (idio_hi_t blen, const char *s_C)
      *
      * The trick here is to say that using 32 characters should be
      * sufficient to "sample" the uniqueness of the string.  If it
-     * isn't (and examples are trivial) then we fall back to chaining
-     * within the hash table and the use of eq?/strncmp to
+     * isn't (and examples are trivial) then we fall back to linking
+     * within the hash table bucket and the use of eq?/strncmp to
      * differentitate between strings.
      *
      * Note that there are always pathological examples for whatever
@@ -555,6 +551,7 @@ idio_hi_t idio_hash_default_hash_C_pair (IDIO h)
 {
     IDIO_ASSERT (h);
 
+    return idio_hash_default_hash_C_uintmax_t ((unsigned long) h);
     return idio_hash_default_hash_C_uintmax_t ((unsigned long) IDIO_PAIR_H (h) ^ (unsigned long) IDIO_PAIR_T (h));
 }
 
@@ -810,7 +807,7 @@ idio_hi_t idio_hash_default_hash_C (IDIO h, void *kv)
 }
 
 /*
- * idio_hash_value_index() will return an index into the hash table
+ * idio_hash_index() will return an index into the hash table
  * ``ht`` for the key ``kv``.
  *
  * This is, the result will be modulo IDIO_HASH_MASK (ht).
@@ -824,7 +821,7 @@ idio_hi_t idio_hash_default_hash_C (IDIO h, void *kv)
  * idio_hi_t result of the hashing function and is suitable to be used
  * module IDIO_HASH_MASK (ht).
  */
-idio_hi_t idio_hash_value_index (IDIO ht, void *kv)
+idio_hi_t idio_hash_index (IDIO ht, void *kv)
 {
     IDIO_ASSERT (ht);
     IDIO_TYPE_ASSERT (hash, ht);
@@ -834,6 +831,12 @@ idio_hi_t idio_hash_value_index (IDIO ht, void *kv)
     } else {
 	IDIO k = (IDIO) kv;
 
+	/*
+	 * Use a saved computed value if we can
+	 *
+	 * Anything that truly hashes to 0 will just have to get
+	 * re-computed each time round.
+	 */
 	switch ((intptr_t) kv & IDIO_TYPE_MASK) {
 	case IDIO_TYPE_POINTER_MARK:
 	    if (0 != IDIO_HASHVAL (k)) {
@@ -865,6 +868,9 @@ idio_hi_t idio_hash_value_index (IDIO ht, void *kv)
 	    return -1;
 	}
 
+	/*
+	 * Save this computed value if we can
+	 */
 	switch ((intptr_t) kv & IDIO_TYPE_MASK) {
 	case IDIO_TYPE_POINTER_MARK:
 	    IDIO_HASHVAL (k) = hvi;
@@ -918,7 +924,7 @@ IDIO idio_hash_put (IDIO h, void *kv, IDIO v)
 	return idio_S_notreached;
     }
 
-    idio_hi_t hv = idio_hash_value_index (h, kv);
+    idio_hi_t hv = idio_hash_index (h, kv);
 
     idio_hash_entry_t *he = IDIO_HASH_HA (h, hv);
     int found = 0;
@@ -965,7 +971,7 @@ idio_hash_entry_t *idio_hash_he (IDIO h, void *kv)
 	return NULL;
     }
 
-    idio_hi_t hv = idio_hash_value_index (h, kv);
+    idio_hi_t hv = idio_hash_index (h, kv);
 
     idio_hash_entry_t *he = IDIO_HASH_HA (h, hv);
     for (; NULL != he; he = IDIO_HASH_HE_NEXT (he)) {
@@ -1064,7 +1070,7 @@ int idio_hash_delete (IDIO h, void *kv)
 	return 0;
     }
 
-    idio_hi_t hv = idio_hash_value_index (h, kv);
+    idio_hi_t hv = idio_hash_index (h, kv);
 
     idio_hash_entry_t *hel = IDIO_HASH_HA (h, hv);
     if (NULL == hel) {

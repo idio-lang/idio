@@ -28,17 +28,17 @@ command0 := Tests
 ;; side-effects?
 
 ;; to avoid repeating the bulk of the error handler we'll just
-;; (re)define the interesting bit, rt-job-control-status-error-handler or
+;; (re)define the interesting bit, rt-command-status-error-handler or
 ;; rcseh:
 rcseh := #n
 
-trap ^rt-job-control-status-error (function (c) {
-				     ;condition-report "test-command: ^rt-job-control-status-error" c (current-error-handle)
-				     test (rt-job-control-status-error? c) #t
+trap ^rt-command-status-error (function (c) {
+				     ;condition-report "test-command: ^rt-command-status-error" c (current-error-handle)
+				     test (rt-command-status-error? c) #t
 				     rcseh c
 }) {
 
-  ;; define some rt-job-control-status-error-handlers for the conditions
+  ;; define some rt-command-status-error-handlers for the conditions
   ;; we are contriving to generate so that we can switch between them
   ;; as we go along
 
@@ -48,7 +48,7 @@ trap ^rt-job-control-status-error (function (c) {
   exit0 := function (c) {
 	     edisplay* "command tests: exit0: unexpected status error" PID 
 	     condition-report "command tests: exit0" c (current-error-handle)
-	     test (rt-job-control-status-error-status c) 'job-failed
+	     test (rt-command-status-error-status c) 'job-failed
   }
 
   exit1 := function (c) {
@@ -56,7 +56,7 @@ trap ^rt-job-control-status-error (function (c) {
 	     ;condition-report "command tests: exit1" c (current-error-handle)
 	     job := idio-error-location c
 	     test (job-detail job) #T{ (exit $(C/integer-> 1)) }
-	     rt-job-control-status-error-status c
+	     rt-command-status-error-status c
   }
 
   killed1 := function (c) {
@@ -64,7 +64,7 @@ trap ^rt-job-control-status-error (function (c) {
 	       ;condition-report "command tests: killed1" c (current-error-handle)
 	       job := idio-error-location c
 	       test (job-detail job) #T{ (killed $(C/integer-> 1)) }
-	       rt-job-control-status-error-status c
+	       rt-command-status-error-status c
   }
 
   killed13 := function (c) {
@@ -72,7 +72,7 @@ trap ^rt-job-control-status-error (function (c) {
 		;condition-report "command tests: killed13" c (current-error-handle)
 		job := idio-error-location c
 		test (job-detail job) #T{ (killed $(C/integer-> 13)) }
-		rt-job-control-status-error-status c
+		rt-command-status-error-status c
   }
 
   ;; Testing the tests! 
@@ -85,7 +85,7 @@ trap ^rt-job-control-status-error (function (c) {
   ;; Remember, though, the test itself, as written in the rest of this
   ;; block, will increment Tests as well as any potential OOB handler.
   ;; The OOB handler will increment Tests twice: once to check the
-  ;; condition is an rt-job-control-status-error and once in
+  ;; condition is an rt-command-status-error and once in
   ;; exit1/killed1 to verify the value of the status.
 
   test-id := Tests

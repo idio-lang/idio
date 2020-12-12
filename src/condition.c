@@ -94,13 +94,15 @@ IDIO idio_condition_rt_command_argv_type_error_type;
 IDIO idio_condition_rt_command_forked_error_type;
 IDIO idio_condition_rt_command_env_type_error_type;
 IDIO idio_condition_rt_command_exec_error_type;
-IDIO idio_condition_rt_job_control_status_error_type;
+IDIO idio_condition_rt_command_status_error_type;
 
 IDIO idio_condition_rt_signal_type;
 
 IDIO idio_condition_reset_condition_handler;
 IDIO idio_condition_restart_condition_handler;
 IDIO idio_condition_default_condition_handler;
+IDIO idio_condition_default_rcse_handler;
+IDIO idio_condition_default_SIGCHLD_handler;
 
 IDIO idio_condition_default_handler;
 
@@ -473,6 +475,80 @@ resume.							\n\
     return idio_S_unspec;
 }
 
+IDIO_DEFINE_PRIMITIVE1_DS ("default-SIGCHLD-handler", default_SIGCHLD_handler, (IDIO c), "c", "\
+The default handler for an ^rt-signal-SIGCHLD condition		\n\
+								\n\
+This invokes do-job-notification				\n\
+								\n\
+:param c: the condition						\n\
+:type c: condition instance					\n\
+")
+{
+    IDIO_ASSERT (c);
+
+    /*
+     * XXX IDIO_TYPE_ASSERT() will raise a condition if it fails!
+     */
+    IDIO_USER_TYPE_ASSERT (condition, c);
+
+    IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (c);
+
+    if (idio_struct_type_isa (sit, idio_condition_rt_signal_type)) {
+	IDIO signum_I = IDIO_STRUCT_INSTANCE_FIELDS (c, IDIO_SI_RT_SIGNAL_TYPE_SIGNUM);
+	int signum_C = IDIO_C_TYPE_INT (signum_I);
+
+	switch (signum_C) {
+	case SIGCHLD:
+	    return idio_job_control_SIGCHLD_signal_handler ();
+	default:
+	    fprintf (stderr, "default-SIGCHLD-handler: condition signum was %d\n", signum_C);
+	    break;
+	}
+    }
+
+    idio_raise_condition (idio_S_true, c);
+
+    /*
+     * For a continuable continuation, if it gets here, we'll
+     * return void because...
+     */
+    return idio_S_void;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("default-rcse-handler", default_rcse_handler, (IDIO c), "c", "\
+The default handler for an ^rt-command-status-error condition	\n\
+								\n\
+This returns #unspec						\n\
+								\n\
+:param c: the condition						\n\
+:type c: condition instance					\n\
+:return: #unspec						\n\
+")
+{
+    IDIO_ASSERT (c);
+
+    /*
+     * XXX IDIO_TYPE_ASSERT() will raise a condition if it fails!
+     */
+    IDIO_USER_TYPE_ASSERT (condition, c);
+
+    IDIO thr = idio_thread_current_thread ();
+
+    IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (c);
+
+    if (idio_struct_type_isa (sit, idio_condition_rt_command_status_error_type)) {
+	return idio_S_unspec;
+    }
+
+    idio_raise_condition (idio_S_true, c);
+
+    /*
+     * For a continuable continuation, if it gets here, we'll
+     * return void because...
+     */
+    return idio_S_void;
+}
+
 IDIO_DEFINE_PRIMITIVE1_DS ("default-condition-handler", default_condition_handler, (IDIO c), "c", "\
 Invoke the default handler for condition `c`			\n\
 								\n\
@@ -535,7 +611,7 @@ does not return per se						\n\
 	default:
 	    break;
 	}
-    } else if (idio_struct_type_isa (sit, idio_condition_rt_job_control_status_error_type)) {
+    } else if (idio_struct_type_isa (sit, idio_condition_rt_command_status_error_type)) {
 	/* return idio_command_rcse_handler (c); */
 	/* idio_debug ("default-c-h: rcse = %s\n", c); */
 	/* fprintf (stderr, "default-c-h: rcse?? =>> #unspec\n"); */
@@ -738,7 +814,7 @@ does not return per se						\n\
 	    default:
 		break;
 	    }
-	} else if (idio_struct_type_isa (sit, idio_condition_rt_job_control_status_error_type)) {
+	} else if (idio_struct_type_isa (sit, idio_condition_rt_command_status_error_type)) {
 	    /* return idio_command_rcse_handler (c); */
 	    idio_debug ("restart-c-h: rcse = %s\n", c);
 	    fprintf (stderr, "restart-c-h: rcse?? =>> #unspec\n");
@@ -905,6 +981,10 @@ void idio_condition_add_primitives ()
     idio_condition_restart_condition_handler = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
     fvi = IDIO_ADD_MODULE_PRIMITIVE (idio_Idio_module, default_condition_handler);
     idio_condition_default_condition_handler = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+    fvi = IDIO_ADD_MODULE_PRIMITIVE (idio_Idio_module, default_rcse_handler);
+    idio_condition_default_rcse_handler = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+    fvi = IDIO_ADD_MODULE_PRIMITIVE (idio_Idio_module, default_SIGCHLD_handler);
+    idio_condition_default_SIGCHLD_handler = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
 }
 
 void idio_init_condition ()
@@ -918,8 +998,6 @@ void idio_init_condition ()
     IDIO_CONDITION_STRING (define_condition1, "IDIO-DEFINE-CONDITION1");
     IDIO_CONDITION_STRING (define_condition2, "IDIO-DEFINE-CONDITION2");
     IDIO_CONDITION_STRING (define_condition3, "IDIO-DEFINE-CONDITION3");
-
-#define IDIO_CONDITION_CONDITION_TYPE_NAME "^condition"
 
     /* SRFI-35-ish */
     IDIO_DEFINE_CONDITION0 (idio_condition_condition_type, IDIO_CONDITION_CONDITION_TYPE_NAME, idio_S_nil);
@@ -999,7 +1077,7 @@ void idio_init_condition ()
     IDIO_DEFINE_CONDITION0 (idio_condition_rt_command_forked_error_type, "^rt-command-forked-error", idio_condition_runtime_error_type);
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_command_env_type_error_type, "^rt-command-env-type-error", idio_condition_rt_command_forked_error_type, "name");
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_command_exec_error_type, "^rt-command-exec-error", idio_condition_rt_command_forked_error_type, "errno");
-    IDIO_DEFINE_CONDITION1 (idio_condition_rt_job_control_status_error_type, "^rt-job-control-status-error", idio_condition_runtime_error_type, "status");
+    IDIO_DEFINE_CONDITION1 (idio_condition_rt_command_status_error_type, IDIO_CONDITION_RCSE_TYPE_NAME, idio_condition_runtime_error_type, "status");
 
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_array_bounds_error_type, "^rt-array-bounds-error", idio_condition_runtime_error_type, "index");
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_hash_key_not_found_error_type, "^rt-hash-key-not-found-error", idio_condition_runtime_error_type, "key");
@@ -1011,8 +1089,6 @@ void idio_init_condition ()
 
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_bitset_bounds_error_type, "^rt-bitset-bounds-error", idio_condition_runtime_error_type, "bit");
     IDIO_DEFINE_CONDITION2 (idio_condition_rt_bitset_size_mismatch_error_type, "^rt-bitset-size-mismatch-error", idio_condition_runtime_error_type, "size1", "size2");
-
-#define IDIO_CONDITION_RT_SIGNAL_TYPE_NAME "^rt-signal"
 
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_signal_type, IDIO_CONDITION_RT_SIGNAL_TYPE_NAME, idio_condition_error_type, "signum");
 }

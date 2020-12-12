@@ -187,8 +187,8 @@ define-condition-type-accessors-only ^rt-glob-error			^runtime-error			rt-glob-e
 
 define-condition-type-accessors-only ^rt-command-exec-error		^runtime-error			rt-command-exec-error?
 
-define-condition-type-accessors-only ^rt-job-control-status-error	^runtime-error			rt-job-control-status-error? \
-	(status rt-job-control-status-error-status)
+define-condition-type-accessors-only ^rt-command-status-error		^runtime-error			rt-command-status-error? \
+	(status rt-command-status-error-status)
 
 define-condition-type-accessors-only ^rt-array-bounds-error		^runtime-error			rt-array-bounds-error? \
 	(index rt-array-bounds-error-index)
@@ -241,7 +241,7 @@ define (condition-report prefix c & args) "print a report on condition `c`
 	  (not (or (read-error? c)
 		   (evaluation-error? c)
 		   (string-error? c)
-		   (rt-job-control-status-error? c)))) {
+		   (rt-command-status-error? c)))) {
 		     cr-printf "%s:" c.location
 		     cr-printf "%s:" (struct-type-name (struct-instance-type c))
 		     cr-printf "%s" c.message
@@ -285,7 +285,7 @@ define (condition-report prefix c & args) "print a report on condition `c`
        ((rt-glob-error? c) {
 	 cr-printf ": pattern %s" c.pattern
        }) \
-       ((rt-job-control-status-error? c) {
+       ((rt-command-status-error? c) {
 	 cr-printf " %s" c.message
 	 job := idio-error-location c
 	 header := #t

@@ -23,6 +23,11 @@
 #ifndef CONDITION_H
 #define CONDITION_H
 
+#define IDIO_CONDITION_CONDITION_TYPE_NAME	"^condition"
+#define IDIO_CONDITION_RT_SIGNAL_TYPE_NAME	"^rt-signal"
+#define IDIO_CONDITION_RT_SIGCHLD_TYPE_NAME	"^rt-signal-SIGCHLD"
+#define IDIO_CONDITION_RCSE_TYPE_NAME		"^rt-command-status-error"
+
 /*
  * Indexes into structures for direct references -- not all are
  * created here, only those used in C
@@ -151,7 +156,7 @@ extern IDIO idio_condition_rt_command_argv_type_error_type;
 extern IDIO idio_condition_rt_command_forked_error_type;
 extern IDIO idio_condition_rt_command_env_type_error_type;
 extern IDIO idio_condition_rt_command_exec_error_type;
-extern IDIO idio_condition_rt_job_control_status_error_type;
+extern IDIO idio_condition_rt_command_status_error_type;
 extern IDIO idio_condition_rt_array_bounds_error_type;
 extern IDIO idio_condition_rt_hash_key_not_found_error_type;
 extern IDIO idio_condition_rt_bignum_conversion_error_type;
@@ -165,6 +170,8 @@ extern IDIO idio_condition_rt_signal_type;
 extern IDIO idio_condition_reset_condition_handler;
 extern IDIO idio_condition_restart_condition_handler;
 extern IDIO idio_condition_default_condition_handler;
+extern IDIO idio_condition_default_rcse_handler;
+extern IDIO idio_condition_default_SIGCHLD_handler;
 
 extern IDIO idio_condition_default_handler;
 

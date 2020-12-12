@@ -49,7 +49,7 @@ export (%idio-jobs
 
 
 export-struct-accessors-only %idio-process	argv pid completed stopped status
-export-struct-accessors-only %idio-job		pipeline procs pgid notified tcattrs stdin stdout stderr
+export-struct-accessors-only %idio-job		pipeline procs pgid notified raised tcattrs stdin stdout stderr
 
 %%last-job := #n
 
@@ -355,8 +355,11 @@ define (wait-for-job job) "wait for job `job` to be stopped or completed
   ;eprintf "wfj: %5s C=%s S=%s %s %s\n" (%idio-job-pgid job) (job-is-completed job) (job-is-stopped job) (if (job-failed job) "failed" "succeeded") (pipeline-detail job)
 
   if (job-failed job) {
-    c := make-condition ^rt-job-control-status-error "job failed" job (pipeline-detail job) (job-detail job)
-    raise c
+    if (not (%idio-job-raised job)) {
+      c := make-condition ^rt-command-status-error "job failed" job (pipeline-detail job) (job-detail job)
+      reraise c
+      set-%idio-job-raised! job #t
+    }
   }
 
   job-status job
@@ -443,9 +446,11 @@ define (do-job-notification) "notify of any job status changes" {
 		cond ((null? jobs) #n) \
 		     (else {
 		       job := ph jobs
-		       c := make-condition ^rt-job-control-status-error "job failed" job (pipeline-detail job) (job-detail job)
-		       ;edisplay* "djn: raising for job" job
-		       ;raise c
+		       if (not (%idio-job-raised job)) {
+			 c := make-condition ^rt-command-status-error "job failed" job (pipeline-detail job) (job-detail job)
+			 reraise c
+			 set-%idio-job-raised! job #t
+		       }
 
 		       ;; if someone handled that error and returned (anything)
 		       ;; then we can loop onto the next
@@ -801,7 +806,7 @@ define-infix-operator | 1700 {
       $outfile := $stdout
       $stderr := (stderr-fileno) ; STDERR_FILENO
       $pgid := 0
-      $job := make-%idio-job '$pipeline #n $pgid #f #n $stdin $stdout $stderr
+      $job := make-%idio-job '$pipeline #n $pgid #f #f #n $stdin $stdout $stderr
 
       $proc-id := 1
       $pipe := #n
@@ -987,7 +992,7 @@ define-template (fork-command foreground & cmd) {
       }
       $pgid := 0
       $proc := make-%idio-process '$cmd -1 #f #f #n
-      $job := make-%idio-job '$cmd (list $proc) $pgid #f #n $stdin $stdout $stderr
+      $job := make-%idio-job '$cmd (list $proc) $pgid #f #f #n $stdin $stdout $stderr
 
       $pid := (fork)
       cond ((C/== $pid 0) {

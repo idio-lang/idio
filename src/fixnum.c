@@ -1175,7 +1175,8 @@ convert integer `i` to a Unicode code point	\n\
 
     if (! idio_isa_unicode (u)) {
 	idio_error_printf (IDIO_C_FUNC_LOCATION (), "invalid integer");
-	return idio_S_unspec;
+
+	return idio_S_notreached;
     }
 
     return u;
