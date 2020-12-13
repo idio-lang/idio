@@ -2197,6 +2197,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 		    t = idio_as_string (IDIO_THREAD_ENV (o), &t_size, 1, seen, 0);
 		    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
+#ifdef IDIO_VM_DYNAMIC_REGISTERS
 		    IDIO_STRCAT (r, sizep, "\n  t/sp=");
 		    t_size = 0;
 		    t = idio_as_string (IDIO_THREAD_TRAP_SP (o), &t_size, 1, seen, 0);
@@ -2211,7 +2212,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 		    t_size = 0;
 		    t = idio_as_string (IDIO_THREAD_ENVIRON_SP (o), &t_size, 1, seen, 0);
 		    IDIO_STRCAT_FREE (r, sizep, t, t_size);
-
+#endif
 		    if (depth > 1) {
 			IDIO_STRCAT (r, sizep, "\n  fr=");
 			t_size = 0;

@@ -38,9 +38,11 @@ IDIO idio_continuation (IDIO thr)
     /*
      * XXX same order as idio_vm_preserve_state() !!!
      */
+#ifdef IDIO_VM_DYNAMIC_REGISTERS
     idio_array_push (IDIO_CONTINUATION_STACK (k), IDIO_THREAD_ENVIRON_SP (thr));
     idio_array_push (IDIO_CONTINUATION_STACK (k), IDIO_THREAD_DYNAMIC_SP (thr));
     idio_array_push (IDIO_CONTINUATION_STACK (k), IDIO_THREAD_TRAP_SP (thr));
+#endif
     idio_array_push (IDIO_CONTINUATION_STACK (k), IDIO_THREAD_FRAME (thr));
     idio_array_push (IDIO_CONTINUATION_STACK (k), IDIO_THREAD_ENV (thr));
     idio_array_push (IDIO_CONTINUATION_STACK (k), idio_SM_preserve_state);
