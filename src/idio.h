@@ -429,7 +429,7 @@ extern FILE *idio_vm_perf_FILE;
 /*
  * Some well-known constants.
  *
- * Update util.c:idio_as-string as well!
+ * Update util.c:idio_as_string as well!
  */
 #define IDIO_CONSTANT_NIL              0
 #define IDIO_CONSTANT_UNDEF           -1
@@ -440,17 +440,12 @@ extern FILE *idio_vm_perf_FILE;
 #define IDIO_CONSTANT_VOID            -6
 #define IDIO_CONSTANT_NAN             -7
 
-#define IDIO_CONSTANT_PRESERVE_STATE		 20
-#define IDIO_CONSTANT_PRESERVE_ALL_STATE	 21
-#define IDIO_CONSTANT_PUSH_TRAP			 22
-#define IDIO_CONSTANT_PRESERVE_CONTINUATION	 23
-
 /*
  * Stack markers
  */
 #define IDIO_STACK_MARKER_PRESERVE_STATE		 20
 #define IDIO_STACK_MARKER_PRESERVE_ALL_STATE		 21
-#define IDIO_STACK_MARKER_PUSH_TRAP			 22
+#define IDIO_STACK_MARKER_TRAP				 22
 #define IDIO_STACK_MARKER_PRESERVE_CONTINUATION		 23
 #define IDIO_STACK_MARKER_RETURN			 24
 #define IDIO_STACK_MARKER_DYNAMIC			 25
@@ -477,7 +472,7 @@ extern FILE *idio_vm_perf_FILE;
 
 #define idio_SM_preserve_state		((const IDIO) IDIO_CONSTANT_IDIO (IDIO_STACK_MARKER_PRESERVE_STATE))
 #define idio_SM_preserve_all_state	((const IDIO) IDIO_CONSTANT_IDIO (IDIO_STACK_MARKER_PRESERVE_ALL_STATE))
-#define idio_SM_push_trap		((const IDIO) IDIO_CONSTANT_IDIO (IDIO_STACK_MARKER_PUSH_TRAP))
+#define idio_SM_trap			((const IDIO) IDIO_CONSTANT_IDIO (IDIO_STACK_MARKER_TRAP))
 #define idio_SM_preserve_continuation	((const IDIO) IDIO_CONSTANT_IDIO (IDIO_STACK_MARKER_PRESERVE_CONTINUATION))
 #define idio_SM_return			((const IDIO) IDIO_CONSTANT_IDIO (IDIO_STACK_MARKER_RETURN))
 #define idio_SM_dynamic			((const IDIO) IDIO_CONSTANT_IDIO (IDIO_STACK_MARKER_DYNAMIC))

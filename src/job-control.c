@@ -1815,12 +1815,11 @@ void idio_final_job_control ()
 {
     /*
      * restore the terminal state
-     *
-     * NB Don't test for idio_job_control_interactive as it may have
-     * been goosed by something.
      */
-    struct termios *tcattrsp = IDIO_C_TYPE_POINTER_P (idio_job_control_tcattrs);
-    tcsetattr (idio_job_control_terminal, TCSADRAIN, tcattrsp);
+    if (idio_job_control_interactive) {
+	struct termios *tcattrsp = IDIO_C_TYPE_POINTER_P (idio_job_control_tcattrs);
+	tcsetattr (idio_job_control_terminal, TCSADRAIN, tcattrsp);
+    }
 
     /*
      * Be a good citizen and tidy up.  This will reported completed

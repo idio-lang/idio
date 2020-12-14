@@ -1641,7 +1641,7 @@ static idio_ai_t idio_vm_find_stack_marker (IDIO stack, IDIO mark, idio_ai_t max
 	    IDIO se = idio_array_ref_index (stack, sp);
 	    if (mark == se) {
 		IDIO val;
-		if (idio_SM_push_trap == mark) {
+		if (idio_SM_trap == mark) {
 		    val = idio_array_ref_index (stack, sp - 3);
 		    if (IDIO_FIXNUM_VAL (val) > max_next) {
 			max = sp;
@@ -2017,7 +2017,7 @@ void idio_vm_push_trap (IDIO thr, IDIO handler, IDIO fmci, idio_ai_t next)
     /*
      * stack order:
      *
-     * n   idio_SM_push_trap
+     * n   idio_SM_trap
      * n-1 handler
      * n-2 condition-type
      * n-3 next-trap-sp of mark
@@ -2027,7 +2027,7 @@ void idio_vm_push_trap (IDIO thr, IDIO handler, IDIO fmci, idio_ai_t next)
     idio_array_push (stack, IDIO_THREAD_TRAP_SP (thr));
     IDIO_THREAD_TRAP_SP (thr) = idio_fixnum (idio_array_size (stack) + 2);
 #else
-    idio_ai_t tsp = idio_vm_find_stack_marker (stack, idio_SM_push_trap, 0);
+    idio_ai_t tsp = idio_vm_find_stack_marker (stack, idio_SM_trap, 0);
     if (next) {
 	tsp = next;
     }
@@ -2043,7 +2043,7 @@ void idio_vm_push_trap (IDIO thr, IDIO handler, IDIO fmci, idio_ai_t next)
 #endif
     idio_array_push (stack, fmci);
     idio_array_push (stack, handler);
-    idio_array_push (stack, idio_SM_push_trap);
+    idio_array_push (stack, idio_SM_trap);
 }
 
 static void idio_vm_pop_trap (IDIO thr)
@@ -2052,8 +2052,8 @@ static void idio_vm_pop_trap (IDIO thr)
     IDIO_TYPE_ASSERT (thread, thr);
 
     IDIO marker = IDIO_THREAD_STACK_POP ();
-    if (idio_SM_push_trap != marker) {
-	idio_debug ("iv-pop-trap: marker: expected idio_SM_push_trap not %s\n", marker);
+    if (idio_SM_trap != marker) {
+	idio_debug ("iv-pop-trap: marker: expected idio_SM_trap not %s\n", marker);
 	idio_vm_panic (thr, "iv-pop-trap: unexpected stack marker");
     }
     IDIO_THREAD_STACK_POP ();	/* handler */
@@ -2097,15 +2097,15 @@ void idio_vm_raise_condition (IDIO continuablep, IDIO condition, int IHR, int re
 #ifdef IDIO_VM_DYNAMIC_REGISTERS
     IDIO otrap_sp = IDIO_THREAD_TRAP_SP (thr);
 #else
-    IDIO otrap_sp = idio_fixnum (idio_vm_find_stack_marker (stack, idio_SM_push_trap, 0));
+    IDIO otrap_sp = idio_fixnum (idio_vm_find_stack_marker (stack, idio_SM_trap, 0));
 #endif
     idio_ai_t trap_sp = IDIO_FIXNUM_VAL (otrap_sp);
 
     if (reraise) {
 #ifdef IDIO_VM_DYNAMIC_REGISTERS
-	trap_sp = idio_vm_find_stack_marker (stack, idio_SM_push_trap, 0);
+	trap_sp = idio_vm_find_stack_marker (stack, idio_SM_trap, 0);
 #else
-	trap_sp = idio_vm_find_stack_marker (stack, idio_SM_push_trap, 1);
+	trap_sp = idio_vm_find_stack_marker (stack, idio_SM_trap, 1);
 #endif
     }
 
@@ -6100,7 +6100,7 @@ void idio_vm_thread_init (IDIO thr)
 #ifdef IDIO_VM_DYNAMIC_REGISTERS
     idio_ai_t tsp = IDIO_FIXNUM_VAL (IDIO_THREAD_TRAP_SP (thr));
 #else
-    idio_ai_t tsp = idio_vm_find_stack_marker (IDIO_THREAD_STACK (thr), idio_SM_push_trap, 0);
+    idio_ai_t tsp = idio_vm_find_stack_marker (IDIO_THREAD_STACK (thr), idio_SM_trap, 0);
 #endif
     IDIO_C_ASSERT (tsp <= sp);
 
@@ -6125,7 +6125,7 @@ void idio_vm_thread_init (IDIO thr)
 	IDIO_THREAD_STACK_PUSH (idio_fixnum (sp + 3));
 	IDIO_THREAD_STACK_PUSH (idio_condition_condition_type_mci);
 	IDIO_THREAD_STACK_PUSH (idio_condition_reset_condition_handler);
-	IDIO_THREAD_STACK_PUSH (idio_SM_push_trap);
+	IDIO_THREAD_STACK_PUSH (idio_SM_trap);
 #ifdef IDIO_VM_DYNAMIC_REGISTERS
 	IDIO_THREAD_TRAP_SP (thr) = idio_fixnum (sp + 3);
 	IDIO_TYPE_ASSERT (fixnum, IDIO_THREAD_TRAP_SP (thr));
@@ -6372,7 +6372,7 @@ IDIO idio_vm_run (IDIO thr, idio_ai_t pc, int caller)
 			 * have something to pop off
 			 */
 			IDIO stack = IDIO_THREAD_STACK (thr);
-			idio_ai_t next_tsp = idio_vm_find_stack_marker (stack, idio_SM_push_trap, 0);
+			idio_ai_t next_tsp = idio_vm_find_stack_marker (stack, idio_SM_trap, 0);
 			idio_vm_push_trap (thr,
 					   idio_array_ref_index (stack, next_tsp - 1),
 					   idio_array_ref_index (stack, next_tsp - 2),
@@ -6855,7 +6855,7 @@ void idio_vm_thread_state (IDIO thr)
     IDIO_TYPE_ASSERT (fixnum, IDIO_THREAD_TRAP_SP (thr));
     idio_ai_t tsp = IDIO_FIXNUM_VAL (IDIO_THREAD_TRAP_SP (thr));
 #else
-    idio_ai_t tsp = idio_vm_find_stack_marker (stack, idio_SM_push_trap, 0);
+    idio_ai_t tsp = idio_vm_find_stack_marker (stack, idio_SM_trap, 0);
 #endif
 
     if (tsp > ss) {
@@ -7236,7 +7236,7 @@ void idio_vm_decode_stack (IDIO stack)
 	 * Make some educated guess about what was pushed onto the
 	 * stack
 	 */
-	if (idio_SM_push_trap == sv0 &&
+	if (idio_SM_trap == sv0 &&
 	    sp >= 3 &&
 	    idio_isa_procedure (sv1) &&
 	    idio_isa_fixnum (sv2) &&

@@ -1204,7 +1204,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 			 */
 		    case IDIO_STACK_MARKER_PRESERVE_STATE:		t = "#<MARK preserve-state>";		break;
 		    case IDIO_STACK_MARKER_PRESERVE_ALL_STATE:		t = "#<MARK preserve-all-state>";	break;
-		    case IDIO_STACK_MARKER_PUSH_TRAP:			t = "#<MARK push-trap>";		break;
+		    case IDIO_STACK_MARKER_TRAP:			t = "#<MARK trap>";			break;
 		    case IDIO_STACK_MARKER_PRESERVE_CONTINUATION:	t = "#<MARK preserve-continuation>";	break;
 		    case IDIO_STACK_MARKER_RETURN:			t = "#<MARK return>";			break;
 		    case IDIO_STACK_MARKER_DYNAMIC:			t = "#<MARK dynamic>";			break;
