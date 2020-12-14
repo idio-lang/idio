@@ -1235,11 +1235,11 @@ IDIO idio_module_symbol_value (IDIO symbol, IDIO m_or_n, IDIO args)
 	} else if (idio_S_predef == scope) {
 	    r = idio_vm_values_ref (IDIO_FIXNUM_VAL (fgvi));
 	} else if (idio_S_dynamic == scope) {
-	    r = idio_vm_dynamic_ref (IDIO_FIXNUM_VAL (fmci), IDIO_FIXNUM_VAL (fgvi), idio_thread_current_thread (), args);
+	    r = idio_vm_dynamic_ref (idio_thread_current_thread (), IDIO_FIXNUM_VAL (fmci), IDIO_FIXNUM_VAL (fgvi), args);
 	} else if (idio_S_environ == scope) {
-	    r = idio_vm_environ_ref (IDIO_FIXNUM_VAL (fmci), IDIO_FIXNUM_VAL (fgvi), idio_thread_current_thread (), args);
+	    r = idio_vm_environ_ref (idio_thread_current_thread (), IDIO_FIXNUM_VAL (fmci), IDIO_FIXNUM_VAL (fgvi), args);
 	} else if (idio_S_computed == scope) {
-	    r = idio_vm_computed_ref (IDIO_FIXNUM_VAL (fmci), IDIO_FIXNUM_VAL (fgvi), idio_thread_current_thread ());
+	    r = idio_vm_computed_ref (idio_thread_current_thread (), IDIO_FIXNUM_VAL (fmci), IDIO_FIXNUM_VAL (fgvi));
 	} else {
 	    idio_error_C ("unexpected symbol scope", IDIO_LIST3 (symbol, module, si), IDIO_C_FUNC_LOCATION ());
 
@@ -1363,9 +1363,9 @@ IDIO idio_module_symbol_value_recurse (IDIO symbol, IDIO m_or_n, IDIO args)
 	    } else if (idio_S_predef == scope) {
 		r = idio_vm_values_ref (gvi);
 	    } else if (idio_S_dynamic == scope) {
-		r = idio_vm_dynamic_ref (IDIO_FIXNUM_VAL (fmci), gvi, idio_thread_current_thread (), args);
+		r = idio_vm_dynamic_ref (idio_thread_current_thread (), IDIO_FIXNUM_VAL (fmci), gvi, args);
 	    } else if (idio_S_environ == scope) {
-		r = idio_vm_environ_ref (IDIO_FIXNUM_VAL (fmci), gvi, idio_thread_current_thread (), args);
+		r = idio_vm_environ_ref (idio_thread_current_thread (), IDIO_FIXNUM_VAL (fmci), gvi, args);
 	    } else if (idio_S_computed == scope) {
 		idio_error_C ("cannot get a computed variable from C", IDIO_LIST3 (symbol, module, si), IDIO_C_FUNC_LOCATION ());
 
@@ -1576,11 +1576,11 @@ IDIO idio_module_set_symbol_value (IDIO symbol, IDIO value, IDIO module)
     if (idio_S_toplevel == scope) {
 	idio_vm_values_set (gvi, value);
     } else if (idio_S_dynamic == scope) {
-	idio_vm_dynamic_set (mci, gvi, value, idio_thread_current_thread ());
+	idio_vm_dynamic_set (idio_thread_current_thread (), mci, gvi, value);
     } else if (idio_S_environ == scope) {
-	idio_vm_environ_set (mci, gvi, value, idio_thread_current_thread ());
+	idio_vm_environ_set (idio_thread_current_thread (), mci, gvi, value);
     } else if (idio_S_computed == scope) {
-	idio_vm_computed_set (mci, gvi, value, idio_thread_current_thread ());
+	idio_vm_computed_set (idio_thread_current_thread (), mci, gvi, value);
     } else if (idio_S_predef == scope) {
 	if (module == idio_primitives_module) {
 	    idio_error_C ("cannot set a primitive", IDIO_LIST2 (symbol, module), IDIO_C_FUNC_LOCATION ());

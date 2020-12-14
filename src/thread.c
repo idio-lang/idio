@@ -41,6 +41,7 @@ IDIO idio_thread_base (idio_ai_t stack_size)
     IDIO_THREAD_FRAME (t) = idio_S_nil;
     IDIO_THREAD_ENV (t) = main_module;
 
+#ifdef IDIO_VM_DYNAMIC_REGISTERS
     /*
      * 0 is used as a marker for bootstrapping the first thread when
      * there are no previous trap handlers -- see
@@ -50,6 +51,7 @@ IDIO idio_thread_base (idio_ai_t stack_size)
 
     IDIO_THREAD_DYNAMIC_SP (t) = idio_fixnum (-1);
     IDIO_THREAD_ENVIRON_SP (t) = idio_fixnum (-1);
+#endif
     IDIO_THREAD_JMP_BUF (t) = NULL;
     IDIO_THREAD_FUNC (t) = idio_S_unspec;
     IDIO_THREAD_REG1 (t) = idio_S_unspec;

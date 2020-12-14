@@ -3763,11 +3763,12 @@ static IDIO idio_meaning_trap (IDIO src, IDIO ce, IDIO he, IDIO be, IDIO nametre
 	IDIO fmci;
 	IDIO si = idio_module_find_symbol_recurse (cname, cm, 1);
 
-	if (idio_S_unspec != si) {
+	if (idio_isa_pair (si)) {
 	    fmci = IDIO_PAIR_HT (si);
 	} else {
-	    idio_debug ("im_trap: condition name unknown: %s\n", cname);
-	    fmci = idio_toplevel_extend (src, cname, IDIO_MEANING_TOPLEVEL_SCOPE (flags), cs, cm);
+	    idio_meaning_error_param (src, IDIO_C_FUNC_LOCATION (), "trap: unknown condition name", cname);
+
+	    return idio_S_notreached;
 	}
 
 	pushs = idio_pair (IDIO_LIST2 (IDIO_I_PUSH_TRAP, fmci), pushs);

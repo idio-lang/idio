@@ -207,7 +207,7 @@ const char *idio_type2string (IDIO o)
     }
 }
 
-IDIO_DEFINE_PRIMITIVE1_DS ("type-string", type_string, (IDIO o), "o", "\
+IDIO_DEFINE_PRIMITIVE1_DS ("type->string", type_string, (IDIO o), "o", "\
 return the type of `o` as a string		\n\
 						\n\
 :param o: object				\n\
@@ -1204,7 +1204,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 			 */
 		    case IDIO_STACK_MARKER_PRESERVE_STATE:		t = "#<MARK preserve-state>";		break;
 		    case IDIO_STACK_MARKER_PRESERVE_ALL_STATE:		t = "#<MARK preserve-all-state>";	break;
-		    case IDIO_STACK_MARKER_PUSH_TRAP:			t = "#<MARK push-trap>";		break;
+		    case IDIO_STACK_MARKER_TRAP:			t = "#<MARK trap>";			break;
 		    case IDIO_STACK_MARKER_PRESERVE_CONTINUATION:	t = "#<MARK preserve-continuation>";	break;
 		    case IDIO_STACK_MARKER_RETURN:			t = "#<MARK return>";			break;
 		    case IDIO_STACK_MARKER_DYNAMIC:			t = "#<MARK dynamic>";			break;
@@ -2097,7 +2097,17 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 			}
 
 			if (idio_S_nil != s) {
-			    return idio_as_string (s, sizep, 1, seen, 0);
+			    /*
+			     * NB call the display_string variant at
+			     * this point as {s} is now a string and
+			     * returning as_string ({s}) => "<#SI
+			     * ...>" (ie. with "s) rather than the
+			     * <#SI ...> we expect from a struct
+			     * instance.
+			     *
+			     * It confused me...
+			     */
+			    return idio_display_string (s, sizep);
 			}
 		    }
 
@@ -2187,6 +2197,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 		    t = idio_as_string (IDIO_THREAD_ENV (o), &t_size, 1, seen, 0);
 		    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 
+#ifdef IDIO_VM_DYNAMIC_REGISTERS
 		    IDIO_STRCAT (r, sizep, "\n  t/sp=");
 		    t_size = 0;
 		    t = idio_as_string (IDIO_THREAD_TRAP_SP (o), &t_size, 1, seen, 0);
@@ -2201,7 +2212,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 		    t_size = 0;
 		    t = idio_as_string (IDIO_THREAD_ENVIRON_SP (o), &t_size, 1, seen, 0);
 		    IDIO_STRCAT_FREE (r, sizep, t, t_size);
-
+#endif
 		    if (depth > 1) {
 			IDIO_STRCAT (r, sizep, "\n  fr=");
 			t_size = 0;

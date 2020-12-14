@@ -246,16 +246,17 @@ idio_ai_t idio_vm_extend_primitives (IDIO v);
 void idio_vm_decode_thread (IDIO thr);
 void idio_vm_decode_stack (IDIO stack);
 void idio_vm_reset_thread (IDIO thr, int verbose);
-IDIO idio_vm_dynamic_ref (idio_ai_t msi, idio_ai_t gvi, IDIO thr, IDIO args);
-void idio_vm_dynamic_set (idio_ai_t msi, idio_ai_t gvi, IDIO v, IDIO thr);
-IDIO idio_vm_environ_ref (idio_ai_t msi, idio_ai_t gvi, IDIO thr, IDIO args);
-void idio_vm_environ_set (idio_ai_t msi, idio_ai_t gvi, IDIO v, IDIO thr);
-IDIO idio_vm_computed_ref (idio_ai_t msi, idio_ai_t gvi, IDIO thr);
-IDIO idio_vm_computed_set (idio_ai_t msi, idio_ai_t gvi, IDIO v, IDIO thr);
-void idio_vm_computed_define (idio_ai_t msi, idio_ai_t gvi, IDIO v, IDIO thr);
+IDIO idio_vm_dynamic_ref (IDIO thr, idio_ai_t msi, idio_ai_t gvi, IDIO args);
+void idio_vm_dynamic_set (IDIO thr, idio_ai_t msi, idio_ai_t gvi, IDIO v);
+IDIO idio_vm_environ_ref (IDIO thr, idio_ai_t msi, idio_ai_t gvi, IDIO args);
+void idio_vm_environ_set (IDIO thr, idio_ai_t msi, idio_ai_t gvi, IDIO v);
+IDIO idio_vm_computed_ref (IDIO thr, idio_ai_t msi, idio_ai_t gvi);
+IDIO idio_vm_computed_set (IDIO thr, idio_ai_t msi, idio_ai_t gvi, IDIO v);
+void idio_vm_computed_define (IDIO thr, idio_ai_t msi, idio_ai_t gvi, IDIO v);
 void idio_vm_add_module_constants (IDIO module, IDIO constants);
 
 void idio_raise_condition (IDIO continuablep, IDIO e);
+void idio_reraise_condition (IDIO continuablep, IDIO condition);
 IDIO idio_apply (IDIO fn, IDIO args);
 void idio_vm_debug (IDIO thr, char *prefix, idio_ai_t stack_start);
 #ifdef IDIO_VM_PROF
@@ -270,7 +271,7 @@ IDIO idio_vm_frame_tree (IDIO args);
 
 void idio_vm_thread_init (IDIO thr);
 void idio_vm_default_pc (IDIO thr);
-void idio_vm_thread_state ();
+void idio_vm_thread_state (IDIO thr);
 
 time_t idio_vm_elapsed (void);
 

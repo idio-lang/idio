@@ -19,8 +19,19 @@
 ;; command.idio
 ;;
 module job-control
+
+;; Even though we import libc here in job-control (because we do a lot
+;; of libc-ish things) the templates/operators we export -- which will
+;; be expanded in the user's namespace -- will use libc values and we
+;; have no idea if the importer (of us) has imported libc.  We don't
+;; want to force them to import libc as it annoyingly duplicates many
+;; names.
+;;
+;; So the "fix" is to ensure that the templates/operators we export
+;; dutifully call the libc/X "direct" names for any libc X they use.
 import libc
-export (%idio-jobs
+export (%idio-interactive
+	%idio-jobs
 	%%last-job
 	job-failed
 	job-detail
@@ -28,6 +39,7 @@ export (%idio-jobs
 	%prep-process
 	background-job
 	foreground-job
+	default-child-handler
 	wait-for-job
 
 	; default SIGCHLD handler via SIGCHLD clause in
@@ -49,7 +61,7 @@ export (%idio-jobs
 
 
 export-struct-accessors-only %idio-process	argv pid completed stopped status
-export-struct-accessors-only %idio-job		pipeline procs pgid notified tcattrs stdin stdout stderr
+export-struct-accessors-only %idio-job		pipeline procs pgid notified raised tcattrs stdin stdout stderr
 
 %%last-job := #n
 
@@ -282,7 +294,9 @@ for the benefit of the do loops in update-status_ and wait-for-job_.
   cond ((C/> pid 0) {
     jobs-loop :+ function (jobs) {
 		   cond ((null? jobs) {
-		     edisplay* "no child process" pid
+		     if %idio-interactive {
+		       eprintf "no child process %d\n" pid
+		     }
 		     #t
 		   }) \
 			(else {
@@ -297,8 +311,9 @@ for the benefit of the do loops in update-status_ and wait-for-job_.
 						   set-%idio-process-stopped! (ph procs) #t
 						 } {
 						   set-%idio-process-completed! (ph procs) #t
-						   if (WIFSIGNALED status) {
-						     edisplay* "Job Terminated: kill" (append-string "-" (signal-name (WTERMSIG status)))  pid
+						   if (and %idio-interactive
+							   (WIFSIGNALED status)) {
+						     eprintf "Job Terminated: kill -%s %d\n" (signal-name (WTERMSIG status)) pid
 						   }
 						 }
 						 #f
@@ -317,7 +332,9 @@ for the benefit of the do loops in update-status_ and wait-for-job_.
   })\
        ((or (C/== pid 0)
 	    (C/== libc/errno ECHILD)) {
-	      ;; edisplay* "mps: pid ==" pid ", errno ==" (strerrno errno)
+	      ;; We can get here if foreground-job was blocked in
+	      ;; wait-for-job then a SIGCHLD event fired and the
+	      ;; (default) handler calls do-job-notification.
 	      #t
 	    }) \
        (else {
@@ -355,8 +372,11 @@ define (wait-for-job job) "wait for job `job` to be stopped or completed
   ;eprintf "wfj: %5s C=%s S=%s %s %s\n" (%idio-job-pgid job) (job-is-completed job) (job-is-stopped job) (if (job-failed job) "failed" "succeeded") (pipeline-detail job)
 
   if (job-failed job) {
-    c := make-condition ^rt-job-control-status-error "job failed" job (pipeline-detail job) (job-detail job)
-    raise c
+    if (not (%idio-job-raised job)) {
+      c := make-condition ^rt-command-status-error "job failed" job (pipeline-detail job) (job-detail job)
+      reraise c
+      set-%idio-job-raised! job #t
+    }
   }
 
   job-status job
@@ -378,10 +398,6 @@ define (format-job-info job msg) "display to stderr `msg` alongside job `job` de
 }
 
 define (do-job-notification) "notify of any job status changes" {
-  ;; edisplay* "djn:" (map (function (job) {
-  ;; 			   %idio-job-pipeline job
-  ;; 			 }) %idio-jobs)
-  ;; get the latest data
   (update-status)
 
   failed-jobs := #n
@@ -443,9 +459,11 @@ define (do-job-notification) "notify of any job status changes" {
 		cond ((null? jobs) #n) \
 		     (else {
 		       job := ph jobs
-		       c := make-condition ^rt-job-control-status-error "job failed" job (pipeline-detail job) (job-detail job)
-		       ;edisplay* "djn: raising for job" job
-		       ;raise c
+		       if (not (%idio-job-raised job)) {
+			 c := make-condition ^rt-command-status-error "job failed" job (pipeline-detail job) (job-detail job)
+			 reraise c
+			 set-%idio-job-raised! job #t
+		       }
 
 		       ;; if someone handled that error and returned (anything)
 		       ;; then we can loop onto the next
@@ -469,29 +487,25 @@ define (foreground-job job cont) "place job `job` in the foreground
 If `cont` is set a SIGCONT is sent to the process group
 " {
 
-  if %idio-interactive {
-    ;; put the job in the foreground
-    suppress-errors ^idio-error tcsetpgrp %idio-terminal (%idio-job-pgid job)
-  }
+  ;; put the job in the foreground
+  suppress-errors ^idio-error tcsetpgrp %idio-terminal (%idio-job-pgid job)
+
   if cont {
-    if %idio-interactive {
-      tcsetattr %idio-terminal TCSADRAIN (%idio-job-tcattrs job)
-    }
+    tcsetattr %idio-terminal TCSADRAIN (%idio-job-tcattrs job)
+
     kill (- (%idio-job-pgid job)) SIGCONT
   }
 
   r := wait-for-job job
 
-  if %idio-interactive {
-    ;; put the shell back in the foreground
-    tcsetpgrp %idio-terminal %idio-pgid
+  ;; put the shell back in the foreground
+  tcsetpgrp %idio-terminal %idio-pgid
 
-    ;; save the job's current terminal state
-    set-%idio-job-tcattrs! job (tcgetattr %idio-terminal)
+  ;; save the job's current terminal state
+  set-%idio-job-tcattrs! job (tcgetattr %idio-terminal)
 
-    ;; restore the shell's terminal state
-    tcsetattr %idio-terminal TCSADRAIN %idio-tcattrs
-  }
+  ;; restore the shell's terminal state
+  tcsetattr %idio-terminal TCSADRAIN %idio-tcattrs
 
   r
 }
@@ -581,7 +595,7 @@ The default condition handler set in child processes.
 It will report the condition and exit (1).
 " {
   condition-report "child exec issue" c (current-error-handle)
-  eprintf "child process %s will exit (1)\n" (getpid)
+  eprintf "child process %s will exit (1)\n" (libc/getpid)
   libc/exit 1
 }
 
@@ -593,8 +607,6 @@ define (prep-io infile outfile errfile) "prepare the IO for the current process
 
 :return: #<unspec>
 " {
-  ;; edisplay* "prep-io" infile outfile errfile
-
   ;; The nominal libc texinfo algorithm is:
 
   ;;   Switch stdin/stdout/stderr to the supplied file descriptor if
@@ -669,9 +681,8 @@ define (%prep-process pgid infile outfile errfile foreground) "prepare the curre
 
 :return: #<unspec>
 " {
-  ;edisplay* "%pp:" (getpid) infile outfile errfile
   if %idio-interactive {
-    pid := (getpid)
+    pid := (libc/getpid)
     if (C/== pgid 0) {
       pgid = pid
     }
@@ -683,9 +694,7 @@ define (%prep-process pgid infile outfile errfile foreground) "prepare the curre
     if foreground {
       ;; give the terminal to the process group -- dupe of parent to
       ;; avoid race conditions
-      if %idio-interactive {
-	suppress-errors ^idio-error tcsetpgrp %idio-terminal pgid
-      }
+      suppress-errors ^idio-error tcsetpgrp %idio-terminal pgid
     }
 
     ;; set job control signals back to default
@@ -701,8 +710,6 @@ define (%prep-process pgid infile outfile errfile foreground) "prepare the curre
 }
 
 define-infix-operator | 1700 {
-  ;; edisplay* "operator" op before after
-
   foreground := #t
   if (eq? 'bg-job (ph before)) {
     before = pt before
@@ -743,7 +750,7 @@ define-infix-operator | 1700 {
   ;; The trick is to open another pipe and have the first process
   ;; block reading from the pipe just before it starts.  All the other
   ;; processes in the pipeline simply close the pipe when they're
-  ;; about to exelibc/start.  When the last one has closed the pipe the
+  ;; about to exec/start.  When the last one has closed the pipe the
   ;; first will have its blocking read() return (with zero bytes, ie
   ;; EOF -- we don't care) and we're good to go.
   ;;
@@ -785,27 +792,27 @@ define-infix-operator | 1700 {
   nprocs := length op-args
   #T{
     {
-      $stdin := (stdin-fileno) ; STDIN_FILENO
+      $stdin := (libc/stdin-fileno) ; STDIN_FILENO
       $close-stdin := #f
       if (pair? $stdin) {
 	$stdin = ph $stdin
 	$close-stdin = $stdin
       }
       $infile := $stdin
-      $stdout := (stdout-fileno) ; STDOUT_FILENO
+      $stdout := (libc/stdout-fileno) ; STDOUT_FILENO
       $recover-stdout := #f
       if (pair? $stdout) {
 	$recover-stdout = pht $stdout
 	$stdout = ph $stdout
       }
       $outfile := $stdout
-      $stderr := (stderr-fileno) ; STDERR_FILENO
+      $stderr := (libc/stderr-fileno) ; STDERR_FILENO
       $pgid := 0
-      $job := make-%idio-job '$pipeline #n $pgid #f #n $stdin $stdout $stderr
+      $job := make-%idio-job '$pipeline #n $pgid #f #f #n $stdin $stdout $stderr
 
       $proc-id := 1
       $pipe := #n
-      $pgrp-pipe := (pipe)
+      $pgrp-pipe := (libc/pipe)
 
       $@(map (function (cmd) {
 	        #T{
@@ -821,12 +828,12 @@ define-infix-operator | 1700 {
 		    set-%idio-job-procs! $job (pair $proc (%idio-job-procs $job))
 
 		    if ($proc-id lt $nprocs) {
-		      $pipe = (pipe)
-		      $outfile = (pipe-writer $pipe)
+		      $pipe = (libc/pipe)
+		      $outfile = (libc/pipe-writer $pipe)
 		    } {
 		      $outfile = $stdout
 		    }
-		    $pid := (fork)
+		    $pid := (libc/fork)
 		    if (C/== $pid 0) {
 		      set-default-handler! ^idio-error default-child-handler
 		      %prep-process $pgid $infile $outfile $stderr $foreground
@@ -847,7 +854,7 @@ define-infix-operator | 1700 {
 
 		      ;; Ah, OK.  We do.
 		      if ($proc-id lt $nprocs) {
-			close (pipe-reader $pipe)
+			libc/close (libc/pipe-reader $pipe)
 		      }
 
 		      ;; We don't have the same problem with
@@ -863,19 +870,19 @@ define-infix-operator | 1700 {
 		      ;; hands.
 
 		      if (C/== $pgid 0) {
-			close (pipe-writer $pgrp-pipe)
+			libc/close (libc/pipe-writer $pgrp-pipe)
 
 			;; $pgid is 0 so we must be the first in the
 			;; pipeline -- block reading a single byte
 			;; from the $pgrp-pipe
-			libc/read (pipe-reader $pgrp-pipe) 1
-			close (pipe-reader $pgrp-pipe)
+			libc/read (libc/pipe-reader $pgrp-pipe) 1
+			libc/close (libc/pipe-reader $pgrp-pipe)
                       } {
-			close (pipe-reader $pgrp-pipe)
-			close (pipe-writer $pgrp-pipe)
+			libc/close (libc/pipe-reader $pgrp-pipe)
+			libc/close (libc/pipe-writer $pgrp-pipe)
 		      }
 
-		      ;; edisplay* "child" (getpid) "cmd" '$cmd
+
 		      cond ((pair? (ph '$cmd)) {
 			$@cmd
 		      }) \
@@ -891,7 +898,7 @@ define-infix-operator | 1700 {
 		      exit 0
 		    } {
 		      set-%idio-process-pid! $proc $pid
-		      if %idio-interactive {
+		      if job-control/%idio-interactive {
 			if (C/== $pgid 0) {
 			  $pgid = $pid
 			  set-%idio-job-pgid! $job $pgid
@@ -902,13 +909,13 @@ define-infix-operator | 1700 {
 
 		    ;; tidy up any trailing pipes
 		    if (not (C/== $infile $stdin)) {
-		      close $infile
+		      libc/close $infile
 		    }
 		    if (not (C/== $outfile $stdout)) {
-		      close $outfile
+		      libc/close $outfile
 		    }
 
-		    $infile = (pipe-reader $pipe)
+		    $infile = (libc/pipe-reader $pipe)
 		    $proc-id = $proc-id + 1
 		  }
 	        }
@@ -916,14 +923,14 @@ define-infix-operator | 1700 {
 	 op-args)
 
       ;; finally let the first process go
-      close (pipe-reader $pgrp-pipe)
-      close (pipe-writer $pgrp-pipe)
+      libc/close (libc/pipe-reader $pgrp-pipe)
+      libc/close (libc/pipe-writer $pgrp-pipe)
 
       %idio-jobs = pair $job %idio-jobs
       %%last-job = $job
 
       $status := #f
-      cond ((not %idio-interactive) {
+      cond ((not job-control/%idio-interactive) {
 	$status = wait-for-job $job
       }) \
 	   ($foreground {
@@ -934,7 +941,7 @@ define-infix-operator | 1700 {
 	   })
 
       if $close-stdin {
-	close $close-stdin
+	libc/close $close-stdin
       }
 
       if $recover-stdout {
@@ -965,21 +972,21 @@ define-template (fork-command foreground & cmd) {
 
   #T{
     {
-      $stdin       := (stdin-fileno) ; STDIN_FILENO
+      $stdin       := (libc/stdin-fileno) ; STDIN_FILENO
       $close-stdin := #f
       if (pair? $stdin) {
 	$stdin       = ph $stdin
 	$close-stdin = $stdin
       }
 
-      $stdout         := (stdout-fileno) ; STDOUT_FILENO
+      $stdout         := (libc/stdout-fileno) ; STDOUT_FILENO
       $recover-stdout := #f
       if (pair? $stdout) {
 	$recover-stdout = pht $stdout
 	$stdout         = ph $stdout
       }
 
-      $stderr         := (stderr-fileno) ; STDERR_FILENO
+      $stderr         := (libc/stderr-fileno) ; STDERR_FILENO
       $recover-stderr := #f
       if (pair? $stderr) {
 	$recover-stderr = pht $stderr
@@ -987,9 +994,9 @@ define-template (fork-command foreground & cmd) {
       }
       $pgid := 0
       $proc := make-%idio-process '$cmd -1 #f #f #n
-      $job := make-%idio-job '$cmd (list $proc) $pgid #f #n $stdin $stdout $stderr
+      $job := make-%idio-job '$cmd (list $proc) $pgid #f #f #n $stdin $stdout $stderr
 
-      $pid := (fork)
+      $pid := (libc/fork)
       cond ((C/== $pid 0) {
 	set-default-handler! ^idio-error default-child-handler
 	%prep-process $pgid $stdin $stdout $stderr $foreground
@@ -1002,7 +1009,7 @@ define-template (fork-command foreground & cmd) {
       }) \
 	   (else {
 	     set-%idio-process-pid! $proc $pid
-	     if %idio-interactive {
+	     if job-control/%idio-interactive {
 	       $pgid = $pid
 	       set-%idio-job-pgid! $job $pgid
 	       suppress-errors ^idio-error setpgid $pid $pgid
@@ -1013,7 +1020,7 @@ define-template (fork-command foreground & cmd) {
       %%last-job = $job
 
       $status := #f
-      cond ((not %idio-interactive) {
+      cond ((not job-control/%idio-interactive) {
 	$status = wait-for-job $job
       })\
 	   ($foreground {
@@ -1024,7 +1031,7 @@ define-template (fork-command foreground & cmd) {
 	   })
 
       if $close-stdin {
-	close $close-stdin
+	libc/close $close-stdin
       }
 
       if $recover-stdout {
@@ -1077,12 +1084,8 @@ define (wait & jobs) {
     jobs = %idio-jobs
   }
 
-  ;; edisplay* "wait jobs:" (map (function (job) {
-  ;; 				%idio-job-pipeline job
-  ;; 			      }) jobs)
   loop jobs
 
-  ;; display* "notify?" notify
   if notify (do-job-notification)
 }
 
@@ -1225,7 +1228,6 @@ with-handle-dup := {
   set-error-handle!     := set-error-handle!
 
   function (type new thunk) {
-    ;; edisplay* 'with-handle-dup type new
     ;; handle-oriented indirection function/variables
     get-current-h := #f
     set-h!        := #f
@@ -1335,7 +1337,6 @@ define-infix-operator > 1600 {
     }
   }
 
-  ;; edisplay* "with-handle-redir result:" result
   result
 }
 
@@ -1381,7 +1382,6 @@ define-infix-operator >& 1600 {
     }
   }
 
-  ;; edisplay* "with-handle-dup result:" result
   result
 }
 

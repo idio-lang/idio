@@ -24,6 +24,7 @@
 #define JOB_CONTROL_H
 
 extern IDIO idio_job_control_module;
+extern int idio_job_control_terminal;
 extern int idio_job_control_interactive;
 extern IDIO idio_job_control_process_type;
 extern IDIO idio_job_control_job_type;
@@ -33,8 +34,7 @@ extern IDIO idio_S_stderr_fileno;
 
 IDIO idio_job_control_SIGHUP_signal_handler ();
 IDIO idio_job_control_SIGCHLD_signal_handler ();
-IDIO idio_job_control_rcse_handler (IDIO c);
-void idio_job_control_set_interactive (void);
+void idio_job_control_set_interactive (int interactive);
 IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char **argv);
 
 extern volatile sig_atomic_t idio_job_control_signal_record[IDIO_LIBC_NSIG+1];

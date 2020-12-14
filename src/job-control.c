@@ -35,7 +35,7 @@ IDIO idio_job_control_module = idio_S_nil;
 static pid_t idio_job_control_pid;
 static pid_t idio_job_control_pgid;
 static IDIO idio_job_control_tcattrs;
-static int idio_job_control_terminal;
+int idio_job_control_terminal;
 int idio_job_control_interactive;
 
 IDIO idio_job_control_process_type;
@@ -61,10 +61,11 @@ static IDIO idio_job_control_default_child_handler_sym;
 #define IDIO_JOB_TYPE_PROCS		1
 #define IDIO_JOB_TYPE_PGID		2
 #define IDIO_JOB_TYPE_NOTIFIED		3
-#define IDIO_JOB_TYPE_TCATTRS		4
-#define IDIO_JOB_TYPE_STDIN		5
-#define IDIO_JOB_TYPE_STDOUT		6
-#define IDIO_JOB_TYPE_STDERR		7
+#define IDIO_JOB_TYPE_RAISED		4
+#define IDIO_JOB_TYPE_TCATTRS		5
+#define IDIO_JOB_TYPE_STDIN		6
+#define IDIO_JOB_TYPE_STDOUT		7
+#define IDIO_JOB_TYPE_STDERR		8
 
 #define IDIO_PROCESS_TYPE_ARGV		0
 #define IDIO_PROCESS_TYPE_PID		1
@@ -365,7 +366,7 @@ static IDIO idio_job_control_job_detail (IDIO job)
     IDIO_TYPE_ASSERT (struct_instance, job);
 
     if (! idio_struct_instance_isa (job, idio_job_control_job_type)) {
-	idio_error_param_type ("job", job, IDIO_C_FUNC_LOCATION ());
+	idio_error_param_type ("%idio-job", job, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -425,9 +426,23 @@ static int idio_job_control_mark_process_status (pid_t pid, int status)
 	while (idio_S_nil != jobs) {
 	    IDIO job = IDIO_PAIR_H (jobs);
 
+	    if (! idio_struct_instance_isa (job, idio_job_control_job_type)) {
+		idio_error_param_type ("%idio-job", job, IDIO_C_FUNC_LOCATION ());
+
+		/* notreached */
+		return -3;
+	    }
+
 	    IDIO procs = idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PROCS);
 	    while (idio_S_nil != procs) {
 		IDIO proc = IDIO_PAIR_H (procs);
+
+		if (! idio_struct_instance_isa (proc, idio_job_control_process_type)) {
+		    idio_error_param_type ("%idio-process", proc, IDIO_C_FUNC_LOCATION ());
+
+		    /* notreached */
+		    return -4;
+		}
 
 		int proc_pid = IDIO_C_TYPE_INT (idio_struct_instance_ref_direct (proc, IDIO_PROCESS_TYPE_PID));
 
@@ -534,7 +549,7 @@ static IDIO idio_job_control_wait_for_job (IDIO job)
     IDIO_TYPE_ASSERT (struct_instance, job);
 
     if (! idio_struct_instance_isa (job, idio_job_control_job_type)) {
-	idio_error_param_type ("job", job, IDIO_C_FUNC_LOCATION ());
+	idio_error_param_type ("%idio-job", job, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -549,15 +564,19 @@ static IDIO idio_job_control_wait_for_job (IDIO job)
 	   !idio_job_control_job_is_completed (job));
 
     if (idio_job_control_job_failed (job)) {
-	IDIO c = idio_struct_instance (idio_condition_rt_job_control_status_error_type,
-				       IDIO_LIST4 (idio_string_C ("job failed"),
-						   IDIO_C_FUNC_LOCATION (),
-						   job,
-						   idio_job_control_job_status (job)));
+	IDIO raised = idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_RAISED);
+	if (idio_S_false == raised) {
+	    IDIO c = idio_struct_instance (idio_condition_rt_command_status_error_type,
+					   IDIO_LIST4 (idio_string_C ("job failed"),
+						       IDIO_C_FUNC_LOCATION (),
+						       job,
+						       idio_job_control_job_status (job)));
 
-	idio_raise_condition (idio_S_true, c);
+	    idio_struct_instance_set_direct (job, IDIO_JOB_TYPE_RAISED, idio_S_true);
+	    idio_reraise_condition (idio_S_true, c);
 
-	return idio_S_notreached;
+	    return idio_S_notreached;
+	}
     }
 
     return idio_job_control_job_status (job);
@@ -595,7 +614,7 @@ static void idio_job_control_format_job_info (IDIO job, char *msg)
     }
 
     if (! idio_struct_instance_isa (job, idio_job_control_job_type)) {
-	idio_error_param_type ("job", job, IDIO_C_FUNC_LOCATION ());
+	idio_error_param_type ("%idio-job", job, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return;
@@ -603,8 +622,8 @@ static void idio_job_control_format_job_info (IDIO job, char *msg)
 
     pid_t job_pgid = IDIO_C_TYPE_INT (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PGID));
 
-    fprintf (stderr, "%ld (%s): ", (long) job_pgid, msg);
-    idio_debug ("%s\n", idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PIPELINE));
+    fprintf (stderr, "job %5ld (%s)", (long) job_pgid, msg);
+    idio_debug (": %s\n", idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PIPELINE));
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("format-job-info", format_job_info, (IDIO job, IDIO msg), "job msg", "\
@@ -636,7 +655,7 @@ display to stderr `msg` alongside job `job` details\n\
     return idio_S_unspec;
 }
 
-void idio_job_control_do_job_notification (void)
+void idio_job_control_do_job_notification ()
 {
     /*
      * Get up to date info
@@ -645,17 +664,12 @@ void idio_job_control_do_job_notification (void)
 
     IDIO jobs = idio_module_symbol_value (idio_job_control_jobs_sym, idio_job_control_module, idio_S_nil);
     IDIO njobs = idio_S_nil;
-    IDIO failed_jobs = idio_S_nil;
 
     while (idio_S_nil != jobs) {
 	IDIO job = IDIO_PAIR_H (jobs);
 
 	if (idio_job_control_job_is_completed (job)) {
 	    idio_job_control_format_job_info (job, "completed");
-
-	    if (idio_job_control_job_failed (job)) {
-		failed_jobs = idio_pair (job, failed_jobs);
-	    }
 	} else if (idio_job_control_job_is_stopped (job)) {
 	    IDIO ntfy = idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_NOTIFIED);
 	    if (idio_S_false == ntfy) {
@@ -676,31 +690,10 @@ void idio_job_control_do_job_notification (void)
 
     idio_module_set_symbol_value (idio_job_control_jobs_sym, njobs, idio_job_control_module);
 
-    if (0) {
-    while (idio_S_nil != failed_jobs) {
-	IDIO job = IDIO_PAIR_H (failed_jobs);
-
-	IDIO c = idio_struct_instance (idio_condition_rt_job_control_status_error_type,
-				       IDIO_LIST4 (idio_string_C ("job failed"),
-						   IDIO_C_FUNC_LOCATION (),
-						   job,
-						   idio_job_control_job_status (job)));
-
-	idio_raise_condition (idio_S_true, c);
-
-	/* notreached */
-	return;
-
-	/*
-	 * Unlike an Idio-variant of this function, we won't return
-	 * here with our C hats on because of the siglongjmp(3) in
-	 * idio_raise_condition() that jumps back into idio_vm_run().
-	 *
-	 * If we (somehow) did, then we'd loop around again.
-	 */
-	failed_jobs = IDIO_PAIR_T (failed_jobs);
-    }
-    }
+    /*
+     * Scheduling the failed-jobs code here in C-land breaks the stack
+     * in hard to debug ways.  Leave it in Idio-land.
+     */
 }
 
 IDIO_DEFINE_PRIMITIVE0_DS ("do-job-notification", do_job_notification, (), "", "\
@@ -719,40 +712,36 @@ static IDIO idio_job_control_foreground_job (IDIO job, int cont)
     IDIO_TYPE_ASSERT (struct_instance, job);
 
     if (! idio_struct_instance_isa (job, idio_job_control_job_type)) {
-	idio_error_param_type ("job", job, IDIO_C_FUNC_LOCATION ());
+	idio_error_param_type ("%idio-job", job, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
 
     pid_t job_pgid = IDIO_C_TYPE_INT (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PGID));
 
-    if (idio_job_control_interactive) {
-	/*
-	 * Put the job in the foreground
-	 */
-	if (tcsetpgrp (idio_job_control_terminal, job_pgid) < 0) {
-	    idio_error_system ("icfg tcsetpgrp",
-			       IDIO_LIST3 (idio_C_int (idio_job_control_terminal),
-					   idio_C_int (job_pgid),
-					   job),
-			       errno,
-			       IDIO_C_FUNC_LOCATION ());
+    /*
+     * Put the job in the foreground
+     */
+    if (tcsetpgrp (idio_job_control_terminal, job_pgid) < 0) {
+	idio_error_system ("icfg tcsetpgrp",
+			   IDIO_LIST3 (idio_C_int (idio_job_control_terminal),
+				       idio_C_int (job_pgid),
+				       job),
+			   errno,
+			   IDIO_C_FUNC_LOCATION ());
 
-	    return idio_S_notreached;
-	}
+	return idio_S_notreached;
     }
 
     if (cont) {
-	if (idio_job_control_interactive) {
-	    IDIO job_tcattrs = idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_TCATTRS);
-	    IDIO_TYPE_ASSERT (C_pointer, job_tcattrs);
-	    struct termios *tcattrsp = IDIO_C_TYPE_POINTER_P (job_tcattrs);
+	IDIO job_tcattrs = idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_TCATTRS);
+	IDIO_TYPE_ASSERT (C_pointer, job_tcattrs);
+	struct termios *tcattrsp = IDIO_C_TYPE_POINTER_P (job_tcattrs);
 
-	    if (tcsetattr (idio_job_control_terminal, TCSADRAIN, tcattrsp) < 0) {
-		idio_error_system_errno ("tcsetattr", IDIO_LIST1 (idio_C_int (idio_job_control_terminal)), IDIO_C_FUNC_LOCATION ());
+	if (tcsetattr (idio_job_control_terminal, TCSADRAIN, tcattrsp) < 0) {
+	    idio_error_system_errno ("tcsetattr", IDIO_LIST1 (idio_C_int (idio_job_control_terminal)), IDIO_C_FUNC_LOCATION ());
 
-		return idio_S_notreached;
-	    }
+	    return idio_S_notreached;
 	}
 
 	if (kill (-job_pgid, SIGCONT) < 0) {
@@ -762,50 +751,53 @@ static IDIO idio_job_control_foreground_job (IDIO job, int cont)
 	}
     }
 
-    IDIO r = idio_job_control_wait_for_job (job);
+    IDIO r = idio_vm_invoke_C (idio_thread_current_thread (),
+			       IDIO_LIST2 (idio_module_symbol_value (idio_S_wait_for_job,
+								     idio_job_control_module,
+								     idio_S_nil),
+					   job));
+    /* IDIO r = idio_job_control_wait_for_job (job); */
 
-    if (idio_job_control_interactive) {
-	/*
-	 * Put the shell back in the foreground.
-	 */
-	if (tcsetpgrp (idio_job_control_terminal, idio_job_control_pgid) < 0) {
-	    idio_error_system ("tcsetpgrp",
-			       IDIO_LIST3 (idio_C_int (idio_job_control_terminal),
-					   idio_C_int (idio_job_control_pgid),
-					   job),
-			       errno,
-			       IDIO_C_FUNC_LOCATION ());
+    /*
+     * Put the shell back in the foreground.
+     */
+    if (tcsetpgrp (idio_job_control_terminal, idio_job_control_pgid) < 0) {
+	idio_error_system ("tcsetpgrp",
+			   IDIO_LIST3 (idio_C_int (idio_job_control_terminal),
+				       idio_C_int (idio_job_control_pgid),
+				       job),
+			   errno,
+			   IDIO_C_FUNC_LOCATION ());
 
-	    return idio_S_notreached;
-	}
+	return idio_S_notreached;
+    }
 
-	/*
-	 * Save the job's current terminal state -- creating a struct
-	 * termios if necessary
-	 */
-	IDIO job_tcattrs = idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_TCATTRS);
-	struct termios *tcattrsp = NULL;
-	if (idio_S_nil == job_tcattrs) {
-	    tcattrsp = idio_alloc (sizeof (struct termios));
-	    job_tcattrs = idio_C_pointer_free_me (tcattrsp);
-	    idio_struct_instance_set_direct (job, IDIO_JOB_TYPE_TCATTRS, job_tcattrs);
-	}
+    /*
+     * Save the job's current terminal state -- creating a struct
+     * termios if necessary
+     */
+    IDIO job_tcattrs = idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_TCATTRS);
+    struct termios *tcattrsp = NULL;
+    if (idio_S_nil == job_tcattrs) {
+	tcattrsp = idio_alloc (sizeof (struct termios));
+	job_tcattrs = idio_C_pointer_free_me (tcattrsp);
+	idio_struct_instance_set_direct (job, IDIO_JOB_TYPE_TCATTRS, job_tcattrs);
+    }
 
-	if (tcgetattr (idio_job_control_terminal, tcattrsp) < 0) {
-	    idio_error_system_errno ("tcgetattr", IDIO_LIST1 (idio_C_int (idio_job_control_terminal)), IDIO_C_FUNC_LOCATION ());
+    if (tcgetattr (idio_job_control_terminal, tcattrsp) < 0) {
+	idio_error_system_errno ("tcgetattr", IDIO_LIST1 (idio_C_int (idio_job_control_terminal)), IDIO_C_FUNC_LOCATION ());
 
-	    return idio_S_notreached;
-	}
+	return idio_S_notreached;
+    }
 
-	/*
-	 * Restore the shell's terminal state
-	 */
-	tcattrsp = IDIO_C_TYPE_POINTER_P (idio_job_control_tcattrs);
-	if (tcsetattr (idio_job_control_terminal, TCSADRAIN, tcattrsp) < 0) {
-	    idio_error_system_errno ("tcgetattr", IDIO_LIST1 (idio_C_int (idio_job_control_terminal)), IDIO_C_FUNC_LOCATION ());
+    /*
+     * Restore the shell's terminal state
+     */
+    tcattrsp = IDIO_C_TYPE_POINTER_P (idio_job_control_tcattrs);
+    if (tcsetattr (idio_job_control_terminal, TCSADRAIN, tcattrsp) < 0) {
+	idio_error_system_errno ("tcgetattr", IDIO_LIST1 (idio_C_int (idio_job_control_terminal)), IDIO_C_FUNC_LOCATION ());
 
-	    return idio_S_notreached;
-	}
+	return idio_S_notreached;
     }
 
     return r;
@@ -849,7 +841,7 @@ static IDIO idio_job_control_background_job (IDIO job, int cont)
     IDIO_TYPE_ASSERT (struct_instance, job);
 
     if (! idio_struct_instance_isa (job, idio_job_control_job_type)) {
-	idio_error_param_type ("job", job, IDIO_C_FUNC_LOCATION ());
+	idio_error_param_type ("%idio-job", job, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -910,7 +902,7 @@ static void idio_job_control_hangup_job (IDIO job)
     IDIO_TYPE_ASSERT (struct_instance, job);
 
     if (! idio_struct_instance_isa (job, idio_job_control_job_type)) {
-	idio_error_param_type ("job", job, IDIO_C_FUNC_LOCATION ());
+	idio_error_param_type ("%idio-job", job, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return;
@@ -977,7 +969,7 @@ IDIO idio_job_control_SIGHUP_signal_handler ()
 {
     IDIO jobs = idio_module_symbol_value (idio_job_control_jobs_sym, idio_job_control_module, idio_S_nil);
     if (idio_S_nil != jobs) {
-	/* fprintf (stderr, "There are outstanding jobs\n"); */
+	fprintf (stderr, "HUP: There are outstanding jobs\n");
 	while (idio_S_nil != jobs) {
 	    IDIO job = IDIO_PAIR_H (jobs);
 	    idio_job_control_hangup_job (job);
@@ -1001,28 +993,13 @@ IDIO idio_job_control_SIGCHLD_signal_handler ()
     return r;
 }
 
-IDIO idio_job_control_rcse_handler (IDIO c)
-{
-    IDIO_ASSERT (c);
-    IDIO_TYPE_ASSERT (struct_instance, c);
-
-    IDIO r = idio_vm_invoke_C (idio_thread_current_thread (),
-			       IDIO_LIST3 (idio_module_symbol_value (idio_symbols_C_intern ("format-job-info"),
-								     idio_job_control_module,
-								     idio_S_nil),
-					   idio_struct_instance_ref_direct (c, IDIO_SI_IDIO_ERROR_TYPE_LOCATION),
-					   idio_string_C ("hi")));
-
-    return r;
-}
-
 static void idio_job_control_mark_job_as_running (IDIO job)
 {
     IDIO_ASSERT (job);
     IDIO_TYPE_ASSERT (struct_instance, job);
 
     if (! idio_struct_instance_isa (job, idio_job_control_job_type)) {
-	idio_error_param_type ("job", job, IDIO_C_FUNC_LOCATION ());
+	idio_error_param_type ("%idio-job", job, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return;
@@ -1031,9 +1008,17 @@ static void idio_job_control_mark_job_as_running (IDIO job)
     IDIO procs = idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PROCS);
     while (idio_S_nil != procs) {
 	IDIO proc = IDIO_PAIR_H (procs);
-	procs = IDIO_PAIR_T (procs);
+
+	if (! idio_struct_instance_isa (proc, idio_job_control_process_type)) {
+	    idio_error_param_type ("%idio-process", proc, IDIO_C_FUNC_LOCATION ());
+
+	    /* notreached */
+	    return;
+	}
 
 	idio_struct_instance_set_direct (proc, IDIO_PROCESS_TYPE_STOPPED, idio_S_false);
+
+	procs = IDIO_PAIR_T (procs);
     }
 
     idio_struct_instance_set_direct (job, IDIO_JOB_TYPE_NOTIFIED, idio_S_false);
@@ -1070,7 +1055,7 @@ static void idio_job_control_continue_job (IDIO job, int foreground)
     IDIO_TYPE_ASSERT (struct_instance, job);
 
     if (! idio_struct_instance_isa (job, idio_job_control_job_type)) {
-	idio_error_param_type ("job", job, IDIO_C_FUNC_LOCATION ());
+	idio_error_param_type ("%idio-job", job, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return;
@@ -1300,7 +1285,7 @@ static void idio_job_control_launch_job (IDIO job, int foreground)
     IDIO_TYPE_ASSERT (struct_instance, job);
 
     if (! idio_struct_instance_isa (job, idio_job_control_job_type)) {
-	idio_error_param_type ("job", job, IDIO_C_FUNC_LOCATION ());
+	idio_error_param_type ("%idio-job", job, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return;
@@ -1317,6 +1302,14 @@ static void idio_job_control_launch_job (IDIO job, int foreground)
 
     while (idio_S_nil != procs) {
 	IDIO proc = IDIO_PAIR_H (procs);
+
+	if (! idio_struct_instance_isa (proc, idio_job_control_process_type)) {
+	    idio_error_param_type ("%idio-process", proc, IDIO_C_FUNC_LOCATION ());
+
+	    /* notreached */
+	    return;
+	}
+
 	procs = IDIO_PAIR_T (procs);
 
 	if (idio_S_nil != procs) {
@@ -1418,17 +1411,21 @@ IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char **argv)
     IDIO_ASSERT (job);
     IDIO_TYPE_ASSERT (struct_instance, job);
 
-    /* fprintf (stderr, "icl1pj %d/%d", idio_job_control_pid, getpid ());  */
-    /* idio_debug (" %s\n", job);  */
-
     if (! idio_struct_instance_isa (job, idio_job_control_job_type)) {
-	idio_error_param_type ("job", job, IDIO_C_FUNC_LOCATION ());
+	idio_error_param_type ("%idio-job", job, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
 
     IDIO procs = idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PROCS);
     IDIO proc = IDIO_PAIR_H (procs);
+
+    if (! idio_struct_instance_isa (proc, idio_job_control_process_type)) {
+	idio_error_param_type ("%idio-process", proc, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
     pid_t job_pgid = IDIO_C_TYPE_INT (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PGID));
     int job_stdin = IDIO_C_TYPE_INT (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_STDIN));
     int job_stdout = IDIO_C_TYPE_INT (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_STDOUT));
@@ -1551,6 +1548,7 @@ IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char **argv)
 	     * version won't get used once the Idio version is
 	     * defined.
 	     */
+
 	    IDIO cmd = idio_S_nil;
 	    if (! idio_job_control_interactive) {
 		IDIO wfj = idio_module_symbol_value (idio_S_wait_for_job, idio_job_control_module, idio_S_nil);
@@ -1611,7 +1609,7 @@ launch job `job`				\n\
     IDIO_USER_TYPE_ASSERT (struct_instance, job);
 
     if (! idio_struct_instance_isa (job, idio_job_control_job_type)) {
-	idio_error_param_type ("job", job, IDIO_C_FUNC_LOCATION ());
+	idio_error_param_type ("%idio-job", job, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -1687,149 +1685,16 @@ get the current interactiveness			\n\
     return r;
 }
 
-void idio_job_control_set_interactive (void)
+void idio_job_control_set_interactive (int interactive)
 {
-    idio_job_control_interactive = isatty (idio_job_control_terminal);
-
-    if (idio_job_control_interactive < 0) {
+    if (interactive < 0) {
 	idio_error_system_errno ("isatty", IDIO_LIST1 (idio_C_int (idio_job_control_terminal)), IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return;
     }
-}
 
-void idio_job_control_add_primitives ()
-{
-    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, job_is_stopped);
-    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, job_is_completed);
-    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, job_failed);
-    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, job_status);
-    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, job_detail);
-    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, mark_process_status);
-    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, update_status);
-    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, wait_for_job);
-    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, format_job_info);
-    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, do_job_notification);
-    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, foreground_job);
-    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, background_job);
-    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, hangup_job);
-
-    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, mark_job_as_running);
-    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, continue_job);
-    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, prep_process);
-    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, launch_job);
-    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, launch_pipeline);
-}
-
-void idio_final_job_control ()
-{
-    /*
-     * restore the terminal state
-     */
-    struct termios *tcattrsp = IDIO_C_TYPE_POINTER_P (idio_job_control_tcattrs);
-    tcsetattr (idio_job_control_terminal, TCSADRAIN, tcattrsp);
-
-    /*
-     * Be a good citizen and tidy up.  This will reported completed
-     * jobs, though.  Maybe we should suppress the reports.
-     */
-    idio_job_control_interactive = 0;
-
-    /*
-     * This deliberately uses the C versions of these functions as
-     * other modules have been shutting down -- we don't want to be
-     * running any more Idio code here!
-     */
-    idio_job_control_do_job_notification ();
-
-    idio_job_control_SIGHUP_signal_handler (idio_C_int (SIGHUP));
-}
-
-void idio_init_job_control ()
-{
-    idio_module_table_register (idio_job_control_add_primitives, idio_final_job_control);
-
-    idio_job_control_module = idio_module (idio_symbols_C_intern ("job-control"));
-    IDIO_MODULE_IMPORTS (idio_job_control_module) = IDIO_LIST2 (IDIO_LIST1 (idio_Idio_module),
-								IDIO_LIST1 (idio_primitives_module));
-
-    idio_S_background_job = idio_symbols_C_intern ("background-job");
-    idio_S_exit = idio_symbols_C_intern ("exit");
-    idio_S_foreground_job = idio_symbols_C_intern ("foreground-job");
-    idio_S_killed = idio_symbols_C_intern ("killed");
-    idio_S_wait_for_job = idio_symbols_C_intern ("wait-for-job");
-    idio_S_stdin_fileno = idio_symbols_C_intern ("stdin-fileno");
-    idio_S_stdout_fileno = idio_symbols_C_intern ("stdout-fileno");
-    idio_S_stderr_fileno = idio_symbols_C_intern ("stderr-fileno");
-
-    struct termios *tcattrsp = idio_alloc (sizeof (struct termios));
-    idio_job_control_tcattrs = idio_C_pointer_free_me (tcattrsp);
-
-    idio_module_set_symbol_value (idio_symbols_C_intern ("%idio-tcattrs"),
-				  idio_job_control_tcattrs,
-				  idio_job_control_module);
-
-    int signum;
-    for (signum = IDIO_LIBC_FSIG; signum <= IDIO_LIBC_NSIG; signum++) {
-	idio_job_control_signal_record[signum] = 0;
-    }
-
-    struct sigaction nsa, osa;
-    nsa.sa_handler = idio_job_control_sa_signal;
-    sigemptyset (& nsa.sa_mask);
-    nsa.sa_flags = SA_RESTART;
-
-    if (sigaction (SIGCHLD, &nsa, &osa) < 0) {
-	idio_error_system_errno ("sigaction/SIGCHLD", idio_S_nil, IDIO_C_FUNC_LOCATION ());
-
-	/* notreached */
-	return;
-    }
-
-    if (osa.sa_handler == SIG_IGN) {
-	fprintf (stderr, "WARNING: SIGCHLD == SIG_IGN\n");
-    }
-
-    /*
-     * The following is from the "info libc" pages, 28.5.2
-     * Initializing the Shell.
-     *
-     * With some patching of Idio values.
-     */
-    idio_job_control_pid = getpid ();
-    idio_job_control_terminal = STDIN_FILENO;
-    idio_job_control_set_interactive ();
-
-    idio_module_set_symbol_value (idio_symbols_C_intern ("%idio-terminal"),
-				  idio_C_int (idio_job_control_terminal),
-				  idio_job_control_module);
-
-    /*
-     * The Idio-visible %idio-interactive should be read-only.
-     * However, we actually play some tricks with it like disabling
-     * during {load} so we don't get plagued with job failure
-     * messages.  So it should be a (read-only) computed variable.
-     */
-    IDIO geti;
-    geti = IDIO_ADD_PRIMITIVE (interactivep);
-    idio_module_add_computed_symbol (idio_symbols_C_intern ("%idio-interactive"), idio_vm_values_ref (IDIO_FIXNUM_VAL (geti)), idio_S_nil, idio_job_control_module);
-
-    /*
-     * Not noted in the Job Control docs is that if we are launched
-     * non-interactively then we never set
-     * idio_job_control_pgid/%idio-pgid with a later complaint about a
-     * symbol not being a C_int when the variable is accessed in
-     * foreground-job in job_control.idio.
-     *
-     * Arguably foreground-job shouldn't be changing pgid if the shell
-     * is not interactive -- but there's still a sense of using unset
-     * variables which we should avoid.
-     */
-    idio_job_control_pgid = getpgrp ();
-    idio_module_set_symbol_value (idio_symbols_C_intern ("%idio-pgid"),
-				  idio_C_int (idio_job_control_pgid),
-				  idio_job_control_module);
+    idio_job_control_interactive = interactive;
 
     if (idio_job_control_interactive) {
 	/*
@@ -1839,7 +1704,13 @@ void idio_init_job_control ()
 	 * How tight is this loop?  Presumably the kill suspends us
 	 * until we check again.
 	 */
+	int c = 0;
 	while (tcgetpgrp (idio_job_control_terminal) != (idio_job_control_pgid = getpgrp ())) {
+	    fprintf (stderr, "%2d: tcgetpgrp(%d)=%d getpgrp()=%d\n", c, tcgetpgrp (idio_job_control_terminal), idio_job_control_terminal, getpgrp ());
+	    c++;
+	    if (c > 2) {
+		exit (128 + 15);
+	    }
 	    if (kill (-idio_job_control_pgid, SIGTTIN) < 0) {
 		idio_error_system_errno ("kill SIGTTIN", IDIO_LIST1 (idio_C_int (-idio_job_control_pgid)), IDIO_C_FUNC_LOCATION ());
 
@@ -1915,16 +1786,167 @@ void idio_init_job_control ()
 	    return;
 	}
     }
+}
+
+void idio_job_control_add_primitives ()
+{
+    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, job_is_stopped);
+    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, job_is_completed);
+    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, job_failed);
+    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, job_status);
+    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, job_detail);
+    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, mark_process_status);
+    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, update_status);
+    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, wait_for_job);
+    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, format_job_info);
+    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, do_job_notification);
+    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, foreground_job);
+    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, background_job);
+    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, hangup_job);
+
+    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, mark_job_as_running);
+    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, continue_job);
+    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, prep_process);
+    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, launch_job);
+    IDIO_ADD_MODULE_PRIMITIVE (idio_job_control_module, launch_pipeline);
+}
+
+void idio_final_job_control ()
+{
+    /*
+     * restore the terminal state
+     */
+    if (idio_job_control_interactive) {
+	struct termios *tcattrsp = IDIO_C_TYPE_POINTER_P (idio_job_control_tcattrs);
+	tcsetattr (idio_job_control_terminal, TCSADRAIN, tcattrsp);
+    }
+
+    /*
+     * Be a good citizen and tidy up.  This will reported completed
+     * jobs, though.  Maybe we should suppress the reports.
+     */
+    idio_job_control_set_interactive (0);
+
+    /*
+     * This deliberately uses the C versions of these functions as
+     * other modules have been shutting down -- we don't want to be
+     * running any more Idio code here!
+     */
+    idio_job_control_do_job_notification ();
+
+    idio_job_control_SIGHUP_signal_handler (idio_C_int (SIGHUP));
+}
+
+void idio_init_job_control ()
+{
+    idio_module_table_register (idio_job_control_add_primitives, idio_final_job_control);
+
+    idio_job_control_module = idio_module (idio_symbols_C_intern ("job-control"));
+    IDIO_MODULE_IMPORTS (idio_job_control_module) = IDIO_LIST2 (IDIO_LIST1 (idio_Idio_module),
+								IDIO_LIST1 (idio_primitives_module));
+
+    idio_S_background_job = idio_symbols_C_intern ("background-job");
+    idio_S_exit = idio_symbols_C_intern ("exit");
+    idio_S_foreground_job = idio_symbols_C_intern ("foreground-job");
+    idio_S_killed = idio_symbols_C_intern ("killed");
+    idio_S_wait_for_job = idio_symbols_C_intern ("wait-for-job");
+    idio_S_stdin_fileno = idio_symbols_C_intern ("stdin-fileno");
+    idio_S_stdout_fileno = idio_symbols_C_intern ("stdout-fileno");
+    idio_S_stderr_fileno = idio_symbols_C_intern ("stderr-fileno");
+
+    struct termios *tcattrsp = idio_alloc (sizeof (struct termios));
+    idio_job_control_tcattrs = idio_C_pointer_free_me (tcattrsp);
+
+    idio_module_set_symbol_value (idio_symbols_C_intern ("%idio-tcattrs"),
+				  idio_job_control_tcattrs,
+				  idio_job_control_module);
+
+    int signum;
+    for (signum = IDIO_LIBC_FSIG; signum <= IDIO_LIBC_NSIG; signum++) {
+	idio_job_control_signal_record[signum] = 0;
+    }
+
+    struct sigaction nsa, osa;
+    nsa.sa_handler = idio_job_control_sa_signal;
+    sigemptyset (& nsa.sa_mask);
+    nsa.sa_flags = SA_RESTART;
+
+    if (sigaction (SIGCHLD, &nsa, &osa) < 0) {
+	idio_error_system_errno ("sigaction/SIGCHLD", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
+	return;
+    }
+
+    if (osa.sa_handler == SIG_IGN) {
+	fprintf (stderr, "WARNING: SIGCHLD == SIG_IGN\n");
+    }
+
+    /*
+     * The following is from the "info libc" pages, 28.5.2
+     * Initializing the Shell.
+     *
+     * With some patching of Idio values.
+     */
+    idio_job_control_pid = getpid ();
+    idio_job_control_terminal = STDIN_FILENO;
+
+    IDIO sym;
+    sym = idio_symbols_C_intern ("%idio-terminal");
+    idio_module_set_symbol_value (sym,
+				  idio_C_int (idio_job_control_terminal),
+				  idio_job_control_module);
+    IDIO v = idio_module_symbol_value (sym,
+				       idio_job_control_module,
+				       idio_S_nil);
+    IDIO_FLAGS (v) |= IDIO_FLAG_CONST;
+
+    /*
+     * The Idio-visible %idio-interactive should be read-only.
+     * However, we actually play some tricks with it like disabling
+     * during {load} so we don't get plagued with job failure
+     * messages.  So it should be a (read-only) computed variable.
+     */
+    IDIO geti;
+    geti = IDIO_ADD_PRIMITIVE (interactivep);
+    idio_module_add_computed_symbol (idio_symbols_C_intern ("%idio-interactive"),
+				     idio_vm_values_ref (IDIO_FIXNUM_VAL (geti)),
+				     idio_S_nil,
+				     idio_job_control_module);
+
+    /*
+     * Not noted in the Job Control docs is that if we are launched
+     * non-interactively then we never set
+     * idio_job_control_pgid/%idio-pgid with a later complaint about a
+     * symbol not being a C_int when the variable is accessed in
+     * foreground-job in job_control.idio.
+     *
+     * More specifically, idio_job_control_pgid is set to 0 (as a C
+     * global) but we don't (otherwise) explicitly set the matching
+     * Idio variable, %idio-pgid.  I guess the C example wasn't
+     * expecting this sort of parallel behaviour...
+     *
+     * Arguably foreground-job shouldn't be changing pgid if the shell
+     * is not interactive -- but there's still a sense of using unset
+     * variables which we should avoid.
+     */
+    idio_job_control_pgid = getpgrp ();
+    sym = idio_symbols_C_intern ("%idio-pgid");
+    idio_module_set_symbol_value (sym,
+				  idio_C_int (idio_job_control_pgid),
+				  idio_job_control_module);
+    v = idio_module_symbol_value (sym,
+				  idio_job_control_module,
+				  idio_S_nil);
+    IDIO_FLAGS (v) |= IDIO_FLAG_CONST;
 
     idio_job_control_jobs_sym = idio_symbols_C_intern ("%idio-jobs");
     idio_module_set_symbol_value (idio_job_control_jobs_sym, idio_S_nil, idio_job_control_module);
     idio_job_control_last_job = idio_symbols_C_intern ("%%last-job");
     idio_module_set_symbol_value (idio_job_control_last_job, idio_S_nil, idio_job_control_module);
 
-    IDIO name;
-
-    name = idio_symbols_C_intern ("%idio-process");
-    idio_job_control_process_type = idio_struct_type (name,
+    sym = idio_symbols_C_intern ("%idio-process");
+    idio_job_control_process_type = idio_struct_type (sym,
 						      idio_S_nil,
 						      idio_pair (idio_symbols_C_intern ("argv"),
 						      idio_pair (idio_symbols_C_intern ("pid"),
@@ -1932,21 +1954,22 @@ void idio_init_job_control ()
 						      idio_pair (idio_symbols_C_intern ("stopped"),
 						      idio_pair (idio_symbols_C_intern ("status"),
 						      idio_S_nil))))));
-    idio_module_set_symbol_value (name, idio_job_control_process_type, idio_job_control_module);
+    idio_module_set_symbol_value (sym, idio_job_control_process_type, idio_job_control_module);
 
-    name = idio_symbols_C_intern ("%idio-job");
-    idio_job_control_job_type = idio_struct_type (name,
+    sym = idio_symbols_C_intern ("%idio-job");
+    idio_job_control_job_type = idio_struct_type (sym,
 						  idio_S_nil,
 						  idio_pair (idio_symbols_C_intern ("pipeline"),
 						  idio_pair (idio_symbols_C_intern ("procs"),
 						  idio_pair (idio_symbols_C_intern ("pgid"),
 						  idio_pair (idio_symbols_C_intern ("notified"),
+						  idio_pair (idio_symbols_C_intern ("raised"),
 						  idio_pair (idio_symbols_C_intern ("tcattrs"),
 						  idio_pair (idio_symbols_C_intern ("stdin"),
 						  idio_pair (idio_symbols_C_intern ("stdout"),
 						  idio_pair (idio_symbols_C_intern ("stderr"),
-						  idio_S_nil)))))))));
-    idio_module_set_symbol_value (name, idio_job_control_job_type, idio_job_control_module);
+						  idio_S_nil))))))))));
+    idio_module_set_symbol_value (sym, idio_job_control_job_type, idio_job_control_module);
 
     idio_job_control_default_child_handler_sym = idio_symbols_C_intern ("default-child-handler");
 }

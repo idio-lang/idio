@@ -30,9 +30,9 @@ read-error-load := {
 					if (or (not (string=? c.message msg))
 					       (and isa-read-error
 						    (not (eq? c.line linenum)))) {
-			  condition-report (append-string "read-error-load: " filename) c (current-error-handle)
-			}
-			load-k 'read-error
+						      condition-report (append-string "read-error-load: " filename) c (current-error-handle)
+						    }
+					load-k 'read-error
     }) {
       call/cc (function (k) {
 		 load-k = k

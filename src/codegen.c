@@ -2588,6 +2588,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	}
 	break;
     case IDIO_I_CODE_NOP:
+	    IDIO_IA_PUSH1 (IDIO_A_NOP);
 	break;
     default:
 	idio_error_C ("bad instruction", mh, IDIO_C_FUNC_LOCATION ());
@@ -2621,7 +2622,11 @@ void idio_codegen_code_prologue (IDIO_IA_T ia)
     IDIO_IA_PUSH1 (IDIO_A_FINISH);
 
     idio_vm_CHR_pc = IDIO_IA_USIZE (idio_all_code); /* PC == 2 */
+#ifdef IDIO_VM_DYNAMIC_REGISTERS
     IDIO_IA_PUSH3 (IDIO_A_RESTORE_TRAP, IDIO_A_RESTORE_STATE, IDIO_A_RETURN);
+#else
+    IDIO_IA_PUSH3 (IDIO_A_POP_TRAP, IDIO_A_RESTORE_STATE, IDIO_A_RETURN);
+#endif
 
     /*
      * Just the RESTORE_STATE, RETURN for apply
@@ -2630,7 +2635,11 @@ void idio_codegen_code_prologue (IDIO_IA_T ia)
     IDIO_IA_PUSH2 (IDIO_A_RESTORE_STATE, IDIO_A_RETURN);
 
     idio_vm_IHR_pc = IDIO_IA_USIZE (idio_all_code); /* PC == 7 */
+#ifdef IDIO_VM_DYNAMIC_REGISTERS
     IDIO_IA_PUSH2 (IDIO_A_RESTORE_ALL_STATE, IDIO_A_RETURN);
+#else
+    IDIO_IA_PUSH3 (IDIO_A_POP_TRAP, IDIO_A_RESTORE_ALL_STATE, IDIO_A_RETURN);
+#endif
 }
 
 idio_ai_t idio_codegen (IDIO thr, IDIO m, IDIO cs)

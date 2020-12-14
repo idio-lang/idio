@@ -316,7 +316,7 @@ test (hash-ref ht 2) "banana"
 done := #f
 trap ^rt-parameter-type-error (function (c) {
 				 ;; be called several times when a key collides in which case we'll
-				 ;; get an error riased several times.
+				 ;; get an error raised several times.
 				 if (not done) {
 				   test #t #t
 				   ;; set done

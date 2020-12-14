@@ -1872,15 +1872,18 @@ IDIO idio_load_handle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*eval
 	IDIO oh = idio_thread_current_output_handle ();
 
 	/*
+	 * Throw out some messages about any recently failed jobs
+	 */
+	idio_vm_invoke_C (idio_thread_current_thread (),
+			  idio_module_symbol_value (idio_symbols_C_intern ("do-job-notification"),
+						    idio_job_control_module,
+						    idio_S_nil));
+
+	/*
 	 * idio_command_interactive will have been set to 0 by {load}
 	 * so we need to reset it, just in case.
 	 */
-	idio_job_control_set_interactive ();
-
-	/*
-	 * Throw out some messages about any recently failed jobs
-	 */
-	idio_job_control_SIGCHLD_signal_handler ();
+	idio_job_control_set_interactive (isatty (idio_job_control_terminal));
 
 	if (idio_isa_file_handle (oh)) {
 	    fflush (IDIO_FILE_HANDLE_FILEP (oh));
