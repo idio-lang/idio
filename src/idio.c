@@ -302,7 +302,7 @@ int main (int argc, char **argv, char **envp)
 	 * however we are about to loop over files in a
 	 * non-interactive way.  So turn it off.
 	 */
-	idio_job_control_interactive = 0;
+	idio_job_control_set_interactive (0);
 
 	/*
 	 * Dig out the (post-bootstrap) definition of "load" which

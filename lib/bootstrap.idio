@@ -43,5 +43,6 @@ include "SRFI-95.idio"			; sort, merge
 ; after SRFI-95, please
 include "doc.idio"
 
+import job-control			; override C primitives
 import unicode
 import SRFI-0				; cond-expand

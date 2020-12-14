@@ -27,7 +27,7 @@ trap ^rt-signal-SIGCHLD (function (c) {
 			   c
 }) {
   trap ^rt-command-status-error (function (c) {
-				       edisplay* "test load-handle trap:" c.message "with" c.status
+				   edisplay* "test load-handle trap:" c.message "with" c.status
   }) {
     display* "NOTICE: test-load-handle.idio: exec false; this will be picked up by test load-handle trap: pre"
     load-handle ish

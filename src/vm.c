@@ -2088,7 +2088,7 @@ void idio_vm_raise_condition (IDIO continuablep, IDIO condition, int IHR, int re
     IDIO_ASSERT (condition);
     IDIO_TYPE_ASSERT (boolean, continuablep);
 
-    /* idio_debug ("\n\nraise-condition: %s\n", condition); */
+    /* idio_debug ("raise-condition: %s\n", condition); */
 
     IDIO thr = idio_thread_current_thread ();
 
@@ -6359,11 +6359,26 @@ IDIO idio_vm_run (IDIO thr, idio_ai_t pc, int caller)
 			 * regular call, ie. not in tail position.
 			 */
 
+#ifdef IDIO_DEBUG
+			fprintf (stderr, "iv-run: handling signum %d\n", signum);
+#endif
 			IDIO_THREAD_STACK_PUSH (idio_fixnum (IDIO_THREAD_PC (thr)));
 			IDIO_THREAD_STACK_PUSH (idio_SM_return);
+
 			idio_vm_preserve_all_state (thr);
-			/* IDIO_THREAD_STACK_PUSH (idio_fixnum (idio_vm_IHR_pc));  */
-			IDIO_THREAD_PC (thr) = idio_vm_IHR_pc; /* => RESTORE-ALL-STATE, RETURN */
+#ifndef IDIO_VM_DYNAMIC_REGISTERS
+			/*
+			 * Duplicate the existing top-most trap to
+			 * have something to pop off
+			 */
+			IDIO stack = IDIO_THREAD_STACK (thr);
+			idio_ai_t next_tsp = idio_vm_find_stack_marker (stack, idio_SM_push_trap, 0);
+			idio_vm_push_trap (thr,
+					   idio_array_ref_index (stack, next_tsp - 1),
+					   idio_array_ref_index (stack, next_tsp - 2),
+					   IDIO_FIXNUM_VAL (idio_array_ref_index (stack, next_tsp - 3)));
+#endif
+			IDIO_THREAD_PC (thr) = idio_vm_IHR_pc; /* => (POP-TRAP) RESTORE-ALL-STATE, RETURN */
 
 			/* one arg, signum */
 			IDIO vs = idio_frame_allocate (2);

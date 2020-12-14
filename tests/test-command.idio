@@ -33,9 +33,9 @@ command0 := Tests
 rcseh := #n
 
 trap ^rt-command-status-error (function (c) {
-				     ;condition-report "test-command: ^rt-command-status-error" c (current-error-handle)
-				     test (rt-command-status-error? c) #t
-				     rcseh c
+				 ;condition-report "test-command: ^rt-command-status-error" c (current-error-handle)
+				 test (rt-command-status-error? c) #t
+				 rcseh c
 }) {
 
   ;; define some rt-command-status-error-handlers for the conditions
@@ -85,8 +85,8 @@ trap ^rt-command-status-error (function (c) {
   ;; Remember, though, the test itself, as written in the rest of this
   ;; block, will increment Tests as well as any potential OOB handler.
   ;; The OOB handler will increment Tests twice: once to check the
-  ;; condition is an rt-command-status-error and once in
-  ;; exit1/killed1 to verify the value of the status.
+  ;; condition is an rt-command-status-error and once in exit1/killed1
+  ;; to verify the value of the status.
 
   test-id := Tests
 
