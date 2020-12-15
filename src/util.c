@@ -2621,10 +2621,10 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
     return r;
 }
 
-char *idio_as_string_safe (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
+char *idio_as_string_safe (IDIO o, size_t *sizep, int depth, int first)
 {
     idio_gc_pause ("idio-as-string-safe");
-    char *s = idio_as_string (o, sizep, depth, seen, first);
+    char *s = idio_as_string (o, sizep, depth, idio_S_nil, first);
     idio_gc_resume ("idio-as-string-safe");
 
     return s;
@@ -2649,7 +2649,7 @@ char *idio_display_string (IDIO o, size_t *sizep)
     switch ((intptr_t) o & IDIO_TYPE_MASK) {
     case IDIO_TYPE_FIXNUM_MARK:
     case IDIO_TYPE_PLACEHOLDER_MARK:
-	r = idio_as_string (o, sizep, 4, idio_S_nil, 1);
+	r = idio_as_string_safe (o, sizep, 4, 1);
 	break;
     case IDIO_TYPE_CONSTANT_MARK:
 	{
@@ -2657,7 +2657,7 @@ char *idio_display_string (IDIO o, size_t *sizep)
 	    case IDIO_TYPE_CONSTANT_IDIO_MARK:
 	    case IDIO_TYPE_CONSTANT_TOKEN_MARK:
 	    case IDIO_TYPE_CONSTANT_I_CODE_MARK:
-		r = idio_as_string (o, sizep, 4, idio_S_nil, 1);
+		r = idio_as_string_safe (o, sizep, 4, 1);
 		break;
 	    case IDIO_TYPE_CONSTANT_CHARACTER_MARK:
 		{
@@ -2735,7 +2735,7 @@ char *idio_display_string (IDIO o, size_t *sizep)
 		}
 		break;
 	    default:
-		r = idio_as_string_safe (o, sizep, 40, idio_S_nil, 1);
+		r = idio_as_string_safe (o, sizep, 40, 1);
 		break;
 	    }
 	}
@@ -2765,7 +2765,7 @@ convert `o` to a string				\n\
     IDIO_ASSERT (o);
 
     size_t size = 0;
-    char *str = idio_as_string (o, &size, 40, idio_S_nil, 1);
+    char *str = idio_as_string_safe (o, &size, 40, 1);
     IDIO r = idio_string_C_len (str, size);
     idio_gc_free (str);
 
@@ -3467,7 +3467,7 @@ void idio_dump (IDIO o, int detail)
 			    if (idio_S_nil != IDIO_ARRAY_AE (o, i) ||
 				detail > 3) {
 				size_t size = 0;
-				char *s = idio_as_string (IDIO_ARRAY_AE (o, i), &size, 4, idio_S_nil, 1);
+				char *s = idio_as_string_safe (IDIO_ARRAY_AE (o, i), &size, 4, 1);
 				fprintf (stderr, "\t%3zu: %10p %10s\n", i, IDIO_ARRAY_AE (o, i), s);
 				idio_gc_free (s);
 			    }
@@ -3510,7 +3510,7 @@ void idio_dump (IDIO o, int detail)
 				    if (IDIO_HASH_FLAGS (o) & IDIO_HASH_FLAG_STRING_KEYS) {
 					s = (char *) IDIO_HASH_HE_KEY (he);
 				    } else {
-					s = idio_as_string (IDIO_HASH_HE_KEY (he), &size, 4, idio_S_nil, 1);
+					s = idio_as_string_safe (IDIO_HASH_HE_KEY (he), &size, 4, 1);
 				    }
 				    if (detail & 0x4) {
 					fprintf (stderr, "\t%30s : ", s);
@@ -3526,7 +3526,7 @@ void idio_dump (IDIO o, int detail)
 				    }
 				    if (IDIO_HASH_HE_VALUE (he)) {
 					size = 0;
-					s = idio_as_string (IDIO_HASH_HE_VALUE (he), &size, 4, idio_S_nil, 1);
+					s = idio_as_string_safe (IDIO_HASH_HE_VALUE (he), &size, 4, 1);
 				    } else {
 					if (IDIO_ASPRINTF (&s, "-") == -1) {
 					    idio_error_alloc ("asprintf");
@@ -3616,7 +3616,7 @@ void idio_debug_FILE (FILE *file, const char *fmt, IDIO o)
     /* fprintf (file, "[%d]", getpid()); */
 
     size_t size = 0;
-    char *os = idio_as_string (o, &size, 40, idio_S_nil, 1);
+    char *os = idio_as_string_safe (o, &size, 40, 1);
     fprintf (file, fmt, os);
     idio_gc_free (os);
 }
