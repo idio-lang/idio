@@ -188,15 +188,19 @@ newer levels preceding older ones with the effect that at the time of
 lookup the innermost level is the first association list and will
 therefore be searched first.
 
+formal parameters for a given level are stashed as (name 'param j)
+where {name} is the {j}th formal parameter introduced at that level.
+
 local variables for a given level are stashed as (name 'local j) where
-{name} is the {j}th variable introduced at that level.
+{name} is the {j}th variable introduced at that level -- j starts at
+length(formals)+1 (for varargs)
 
 Nominally, you would walk through each "level" of names looking for
 your variable name.  If you found it at depth {i} then you can combine
 that with the corresponding {j} to give a SHALLOW (for {i} == 0) or
 DEEP (for {i} > 0) variable reference.
 
-The return for a local is ('local {i} {j})
+The return for a name is ('param {i} {j}) or ('local {i} {j})
 
 It is interspersed with dynamic and environ variables.  They are
 one-at-a-time variable introductions and they should not increment
@@ -214,14 +218,14 @@ define (meaning-lexical-lookup src nametree name) {
 	      if (pair? name*) {
 		l := assq name name*
 		if l {
-		  scope := pht l	; ({name} 'local {j})
+		  scope := pht l	; ({name} 'param {j})
 		  (case scope
-			((local) (list scope i (phtt l)))
+			((param local) (list scope i (phtt l)))
 			((dynamic environ) (pt l))
 			(else (meaning-error-static-variable src "unexpected local variant" name)))
 		} {
-		  ;; only bump i if these were local vars
-		  if (eq? 'local (phth name*)) {
+		  ;; only bump i if these were formal parameters
+		  if (eq? 'param (phth name*)) {
 		    loop (pt nt) (i + 1)
 		  } {
 		    loop (pt nt) i
@@ -237,32 +241,77 @@ define (meaning-lexical-lookup src nametree name) {
 }
 
 define (meaning-nametree->list nametree) {
-  loop :+ function (nt r) {
-	    if (null? nt) (reverse r) {
+  loop :+ function (nt r done) {
+	    if done r {
 	      loop2 :+ function (names r2) {
 			 if (null? names) (reverse r2) {
+			   if (and (not done)
+				   (eq? 'param (pht names))) {
+			     done = #t
+			   }
 			   loop2 (pt names) (pair (ph names) r2)
 			 }
 	      }
 
-	      loop (pt nt) (loop2 (ph nt) #n)
+	      loop (pt nt) (loop2 (ph nt) #n) done
 	    }
   }
 
-  loop nametree #n
+  loop nametree #n #f
 }
 
-define (meaning-nametree-extend nametree names) {
+define (meaning-nametree-extend-vparams nametree name*) {
   i := 0
   loop :+ function (ns r) {
-	    if (null? ns) (reverse r) {
-	      tuple := list (ph ns) 'local i
+	    if (null? ns) r {
+	      tuple := list (ph ns) 'param i
 	      i = i + 1
 	      loop (pt ns) (pair tuple r)
 	    }
   }
 
-  pair (loop names #n) nametree
+  pair (loop name* #n) nametree
+}
+
+define (meaning-nametree-extend-params nametree name*) {
+  ;; consume a slot for varargs
+  name* = append name* '(#f)
+
+  meaning-nametree-extend-vparams nametree name*
+}
+
+define (meaning-nametree-extend-locals nametree name*) {
+  ;; the correct value of i depends on what the params to the current
+  ;; scope are.
+
+  ;; Given n params plus 1 varargs the starting value of i for a local
+  ;; is n+1 (remembering the slots start at 0)
+  i := 0
+  loop :+ function (nt) {
+	    if (null? nt) #n {
+	      name* := ph nt
+	      if (null? name*) {
+		; a thunk
+	      } {
+		(case (phth names*)
+		      ((local) {
+			i = i + 1
+			loop (pt nt)
+		      })
+		      ((param) (i = i + (length name*))))
+	      }
+	    }
+  }
+  loop nametree
+
+  loop :+ function (ns r) {
+	    if (null? ns) (reverse r) {
+	      i = i + 1
+	      loop (pt ns) (pair (list (ph ns) 'local i) r)
+	    }
+  }
+
+  pair (loop name* #n) nametree
 }
 
 define (meaning-nametree-dynamic-extend nametree name index scope) {
@@ -336,8 +385,8 @@ define (meaning-reference src name nametree flags cs cm) {
   i := pht si
 
   (case scope
-	((local) {
-	  ; ('local {i} {j})
+	((param local) {
+	  ; ('param {i} {j})
 	  j := phtt si
 	  (if (i gt 0)
 	      (list I-DEEP-ARGUMENT-REF i j)
@@ -376,8 +425,8 @@ define (meaning-function-reference src name nametree flags cs cm) {
   i := pht si
 
   (case scope
-	((local) {
-	  ; ('local {i} {j})
+	((param local) {
+	  ; ('param {i} {j})
 	  j := phtt si
 	  (if (i gt 0)
 	      (list I-DEEP-ARGUMENT-REF i j)
@@ -689,7 +738,7 @@ define (meaning-assignment src name e nametree flags cs cm) {
      assign := #n
 
      (case scope
-	   ((local) {
+	   ((param local) {
 	     vi := phtt si
 	     if (0 eq ci) {
 	       i-code = list I-SHALLOW-ARGUMENT-SET vi m
@@ -1117,22 +1166,22 @@ define (meaning-sequence src e+ nametree flags keyword cs cm) {
 
 define (meaning-fix-abstraction src formal* arg-name* docstr e+ nametree flags cs cm) {
   arity := length formal*
-  nt+ := meaning-nametree-extend nametree formal*
+  nt+ := meaning-nametree-extend-params nametree formal*
 
   m+ := meaning-sequence src e+ nt+ (set-tailp flags) 'begin cs cm
 
-  list I-FIX-CLOSURE m+ arity arg-name* docstr
+  list I-FIX-CLOSURE m+ arity (meaning-nametree->list nt+) docstr
 }
 
 define (meaning-dotted-abstraction src formal* vararg arg-name* docstr e+ nametree flags cs cm) {
   arity := length formal*
   fix-formal* := append formal* (list vararg)
 
-  nt+ := meaning-nametree-extend nametree fix-formal*
+  nt+ := meaning-nametree-extend-vparams nametree fix-formal*
 
   m+ := meaning-sequence src e+ nt+ (set-tailp flags) 'begin cs cm
 
-  list I-NARY-CLOSURE m+ arity fix-formal* docstr
+  list I-NARY-CLOSURE m+ arity (meaning-nametree->list nt+) docstr
 }
 
 #*
@@ -1167,6 +1216,9 @@ The two broad swathes are:
       remaining body is transformed into a let* of the variable
       assignment.
 
+      In fact, if we have an existing nametree then we can start using
+      local variables in the existing frame.
+
    b. :* :~ !* !~
 
       These require a similar transform as the introduction of
@@ -1194,7 +1246,7 @@ meaning-rewrite-body-letrec is called if we see an internal define/:+
 
 *#
 
-define (meaning-rewrite-body src e) {
+define (meaning-rewrite-body src e nametree) {
   loop :+ function (l r) {
 	    cur := (cond ((null? l) (reverse r))
 
@@ -1224,7 +1276,7 @@ define (meaning-rewrite-body src e) {
 		   (or (eq? 'define (ph cur))
 		       (eq? ':+ (ph cur)))) {
 			 ;; :+ or define ==> letrec
-			 reverse (pair (meaning-rewrite-body-letrec (mpp l src) l) r)
+			 reverse (pair (meaning-rewrite-body-letrec (mpp l src) l nametree) r)
 		       })
 
 	     ((and (pair? cur)
@@ -1243,7 +1295,14 @@ define (meaning-rewrite-body src e) {
 		     ;; and recurse on ..., which is now the body of
 		     ;; our (let)
 
-		     body := meaning-rewrite-body (mpp cur src) (pt l)
+		     binding := pt cur
+
+		     assign := 'let
+		     if (not (null? nametree)) {
+		       assign = 'function+
+		     }
+
+		     body := meaning-rewrite-body (mpp cur src) (pt l) nametree
 
 		     if (null? body) {
 		       ;; what if value-expr has side-effects?
@@ -1254,16 +1313,20 @@ define (meaning-rewrite-body src e) {
 
 		       body-seq := append (list 'begin) body
 
-		       binding := pt cur
-		       value-expr := pht binding
+		       r-cur := false
 
-		       r-cur := (list 'let
-				      (list binding)
-				      body-seq)
+		       if (eq? 'let assign) {
+			 r-cur = (list 'let
+				       (list binding)
+				       body-seq)
+		       } {
+			 r-cur = list assign (ph binding) (pht binding) body-seq
+		       }
 
 		       meaning-copy-src-properties (mpp cur src) r-cur
 
-		       append (reverse r) (list r-cur)
+		       append (list r-cur) r
+		       reverse r
 		     }
 		   })
 
@@ -1279,7 +1342,7 @@ define (meaning-rewrite-body src e) {
 				     (('!~) 'dynamic-unset)
 				     (else (meaning-error-param src "bad operator" cur)))
 
-			 body := meaning-rewrite-body (mpp cur src) (pt l)
+			 body := meaning-rewrite-body (mpp cur src) (pt l) nametree
 
 			 if (null? body) {
 			   ;; what if value-expr has side-effects?
@@ -1328,7 +1391,7 @@ The algorithm was inspired by rewrite-body in STklos
 
 *#
 
-define (meaning-rewrite-body-letrec src e) {
+define (meaning-rewrite-body-letrec src e nametree) {
   loop :+ function (l defs r) {
 	    cur := (cond ((null? l) {
 	      ;; Test Case: evaluation-errors/letrec-empty-body.idio
@@ -1418,7 +1481,7 @@ define (meaning-rewrite-body-letrec src e) {
 	       ;; body proper
 
 	       cur-props := mpp cur src
-	       l = meaning-rewrite-body cur-props l
+	       l = meaning-rewrite-body cur-props l nametree
 
 	       ;; if no defs just return l
 	       if (null? defs) l {
@@ -1489,7 +1552,7 @@ define (meaning-rewrite-body-letrec src e) {
 }
 
 define (meaning-abstraction src formal* docstr e+ nametree flags cs cm) {
-  e+ := meaning-rewrite-body (mpp e+ src) e+
+  e+ := meaning-rewrite-body (mpp e+ src) e+ nametree
   meaning-copy-src-properties src e+
 
   ;; neat trick: walk down the list of formal* and if it is an
@@ -1505,53 +1568,53 @@ define (meaning-abstraction src formal* docstr e+ nametree flags cs cm) {
 }
 
 define (meaning-block src e* nametree flags cs cm) {
-  e* = meaning-rewrite-body (mpp e* src) e*
+  e* = meaning-rewrite-body (mpp e* src) e* nametree
   meaning-copy-src-properties src e*
 
   meaning-sequence (mpp e* src) e* nametree flags 'begin cs cm
 }
 
-define (meaning-some-arguments src ae ae* nametree size flags cs cm) {
+define (meaning-some-arguments src ae ae* nametree arity flags cs cm) {
   am := meaning (mpp ae src) ae nametree (clear-tailp flags) cs cm
-  am* := meaning-arguments src ae* nametree size flags cs cm
+  am* := meaning-arguments src ae* nametree arity flags cs cm
 
-  rank := size - ((length ae*) + 1)
+  rank := arity - ((length ae*) + 1)
 
   list I-STORE-ARGUMENT am am* rank
 }
 
-define (meaning-no-argument src nametree size flags cs) {
-  list I-ALLOCATE-FRAME size
+define (meaning-no-argument src nametree arity flags cs) {
+  list I-ALLOCATE-FRAME arity
 }
 
-define (meaning-arguments src ae* nametree size flags cs cm) {
+define (meaning-arguments src ae* nametree arity flags cs cm) {
   if (pair? ae*) {
-    meaning-some-arguments src (ph ae*) (pt ae*) nametree size flags cs cm
+    meaning-some-arguments src (ph ae*) (pt ae*) nametree arity flags cs cm
   } {
-    meaning-no-argument src nametree size flags cs
+    meaning-no-argument src nametree arity flags cs
   }
 }
 
 define (meaning-fix-closed-application src formal* body ae* nametree flags cs cm) {
-  body = meaning-rewrite-body (mpp body src) body
+  body = meaning-rewrite-body (mpp body src) body nametree
   meaning-copy-src-properties src body
 
   am* := meaning-arguments src ae* nametree (length ae*) (clear-tailp flags) cs cm
-  nt+ := meaning-nametree-extend nametree formal*
+  nt+ := meaning-nametree-extend-params nametree formal*
 
   mbody := meaning-sequence (mpp body src) body nt+ flags 'begin cs cm
 
   if flags.tailp {
-    list I-TR-FIX-LET am* mbody formal*
+    list I-TR-FIX-LET am* mbody (meaning-nametree->list nt+)
   } {
-    list I-FIX-LET am* mbody formal*
+    list I-FIX-LET am* mbody (meaning-nametree->list nt+)
   }
 }
 
-define (meaning-some-dotted-arguments src ae ae* nametree size arity flags cs cm) {
+define (meaning-some-dotted-arguments src ae ae* nametree nargs arity flags cs cm) {
   am := meaning (mpp ae src) ae nametree (clear-tailp flags) cs cm
-  am* := meaning-dotted-arguments src ae* nametree size arity flags cs cm
-  rank := size - ((length ae*) + 1)
+  am* := meaning-dotted-arguments src ae* nametree nargs arity flags cs cm
+  rank := nargs - ((length ae*) + 1)
 
   if (rank lt arity) {
     list I-STORE-ARGUMENT am am* rank
@@ -1560,33 +1623,33 @@ define (meaning-some-dotted-arguments src ae ae* nametree size arity flags cs cm
   }
 }
 
-define (meaning-no-dotted-argument src nametree size arity flags cs) {
+define (meaning-no-dotted-argument src nametree nargs arity flags cs) {
   list I-ALLOCATE-FRAME arity
 }
 
-define (meaning-dotted-arguments src ae* nametree size arity flags cs cm) {
+define (meaning-dotted-arguments src ae* nametree nargs arity flags cs cm) {
   if (pair? ae*) {
-    meaning-some-dotted-arguments src (ph ae*) (pt ae*) nametree size arity flags cs cm
+    meaning-some-dotted-arguments src (ph ae*) (pt ae*) nametree nargs arity flags cs cm
   } {
-    meaning-no-dotted-argument src nametree size arity flags cs
+    meaning-no-dotted-argument src nametree nargs arity flags cs
   }
 }
 
 define (meaning-dotted-closed-application src formal* vararg body ae* nametree flags cs cm) {
-  body = meaning-rewrite-body (mpp body src) body
+  body = meaning-rewrite-body (mpp body src) body nametree
   meaning-copy-src-properties src body
 
   am* := meaning-dotted-arguments src ae* nametree (length ae*) (length formal*) (clear-tailp flags) cs cm
 
   fix-formal* := append formal* (list vararg)
-  nt+ := meaning-nametree-extend nametree fix-formal*
+  nt+ := meaning-nametree-extend-vparams nametree fix-formal*
 
   mbody := meaning-sequence (mpp body src) body nt+ flags 'begin cs cm
 
   if flags.tailp {
-    list I-TR-FIX-LET am* mbody fix-formal*
+    list I-TR-FIX-LET am* mbody (meaning-nametree->list nt+)
   } {
-    list I-FIX-LET am* mbody fix-formal*
+    list I-FIX-LET am* mbody (meaning-nametree->list nt+)
   }
 }
 
@@ -1632,6 +1695,7 @@ define (meaning-closed-application src fe ae* nametree flags cs cm) {
 		     })
 		     ((null? f*) {
 		       if (null? a*) {
+			 meaning-nametree-extend-locals nametree formal*
 			 meaning-fix-closed-application fe formal* (ptt fe) ae* nametree flags cs cm
 		       } {
 			 ;; Test Cases:
@@ -1646,6 +1710,21 @@ define (meaning-closed-application src fe ae* nametree flags cs cm) {
   }
 
   formals-loop formal* ae* #n
+}
+
+define (meaning-local-application src n ae body nametree flags cs cm) {
+  body = meaning-rewrite-body (mpp body src) body nametree
+  meaning-copy-src-properties src body
+
+  am := meaning (mpp ae src) ae nametree (clear-tailp flags) cs cm
+
+  nt+ := meaning-nametree-extend-locals nametree (list n)
+
+  mbody := meaning-sequence (mpp body src) body nt+ flags 'begin cs cm
+
+  ll := meaning-lexical-lookup src nt+ n
+
+  list I-LOCAL (phtt ll) am mbody (meaning-nametree->list nt+)
 }
 
 #*
@@ -1708,18 +1787,19 @@ define (meaning-primitive-application src fe ae* nametree flags arity vi cs cm) 
 
     (case arity
 	  ((0) {
-	    i-code := (list I-PRIMCALL0 A-PRIMCALL0 vi)
+	    i-code = (list I-PRIMCALL0 A-PRIMCALL0 vi)
 	  })
 	  ((1) {
 	    m1 := meaning (mpp (ph ae*) src) (ph ae*) nametree (clear-tailp flags) cs cm
 
-	    i-code := (list I-PRIMCALL1 A-PRIMCALL1 m1 vi)
+	    i-code = (list I-PRIMCALL1 A-PRIMCALL1 m1 vi)
 	  })
 	  ((2) {
 	    m1 := meaning (mpp (ph ae*) src) (ph ae*) nametree (clear-tailp flags) cs cm
 	    m2 := meaning (mpp (pht ae*) src) (pht ae*) nametree (clear-tailp flags) cs cm
 
-	    i-code := (list I-PRIMCALL2 A-PRIMCALL2 m1 m2 vi)
+	    ;; XXX run-in-thread?
+	    i-code = (list I-PRIMCALL2 A-PRIMCALL2 m1 m2 vi)
 	  }))
 
     if i-code i-code {
@@ -1870,7 +1950,7 @@ define (meaning-computed-reference src name nametree flags cs cm) {
 }
 
 define (meaning-trap src ce he be nametree flags cs cm) {
-  he = meaning-rewrite-body (mpp he src) he
+  he = meaning-rewrite-body (mpp he src) he nametree
   meaning-copy-src-properties src he
 
   hm := meaning (mpp he src) he nametree (clear-tailp flags) cs cm
@@ -1911,7 +1991,7 @@ define (meaning-trap src ce he be nametree flags cs cm) {
 
   c-loop ce
 
-  be = meaning-rewrite-body (mpp be src) be
+  be = meaning-rewrite-body (mpp be src) be nametree
   meaning-copy-src-properties src be
 
   bm := meaning-sequence (mpp be src) be nametree (clear-tailp flags) 'begin cs cm
@@ -2053,6 +2133,35 @@ define (meaning src e nametree flags cs cm) {
 	    }
 	  })
 
+	  ((function+) {
+	    ;; (function var val body ...)
+	    if (pair? te) {
+	      tte := pt te
+	      if (pair? tte) {
+		ttte := pt tte
+		if (pair? ttte) {
+		  ;; (function+ var val body ...)
+		  meaning-local-application src (ph et) (ph ett) ettt nametree flags cs cm
+		} {
+		  ;; Test Case: evaluation-errors/function+-no-body.idio
+		  
+		  ;; (function+ var val)
+		  meaning-error-param src "no body" he
+		}
+	      } {
+		  ;; Test Case: evaluation-errors/function+-no-val.idio
+		  
+		;; (function+ var)
+		meaning-error-param src "no value" he
+	      }
+	    } {
+	      ;; Test Case: evaluation-errors/function+-nil.idio
+
+	      ;; (function+)
+	      meaning-error-param src "no arguments" he
+	    }
+	  })
+
 	  ((if) {
 	    ;; (if condition consequent alternative)
 	    if (pair? te) {
@@ -2091,7 +2200,7 @@ define (meaning src e nametree flags cs cm) {
 			}
 	      }
 
-	      ce := meaning-rewrite-cond e (mpp te src) te
+	      ce := meaning-rewrite-cond e (mpp te src) te nametree
 	      meaning-copy-src-properties src ce
 
 	      meaning ce ce nametree flags cs cm

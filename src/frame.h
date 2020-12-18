@@ -32,7 +32,8 @@ void idio_free_frame (IDIO fo);
 
 IDIO idio_frame_fetch (IDIO fo, size_t d, size_t i);
 void idio_frame_update (IDIO fo, size_t d, size_t i, IDIO v);
-IDIO idio_frame_extend (IDIO f1, IDIO f2);
+IDIO idio_link_frame (IDIO f1, IDIO f2);
+void idio_extend_frame (IDIO f1, size_t nalloc);
 
 IDIO idio_frame_args_as_list_from (IDIO frame, idio_ai_t from);
 IDIO idio_frame_args_as_list (IDIO frame);

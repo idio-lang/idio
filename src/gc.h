@@ -637,15 +637,15 @@ typedef uint32_t idio_frame_args_t;
 typedef struct idio_frame_s {
     struct idio_s *grey;
     struct idio_s *next;
-    idio_frame_args_t nargs;	/* number in use */
+    idio_frame_args_t nparams;	/* number in use */
     idio_frame_args_t nalloc;	/* number allocated */
-    struct idio_s *names;		/* a ref into vm_constants */
-    struct idio_s* args[];
+    struct idio_s *names;	/* a ref into vm_constants */
+    struct idio_s* *args;
 } idio_frame_t;
 
 #define IDIO_FRAME_GREY(F)	((F)->u.frame->grey)
 #define IDIO_FRAME_NEXT(F)	((F)->u.frame->next)
-#define IDIO_FRAME_NARGS(F)	((F)->u.frame->nargs)
+#define IDIO_FRAME_NPARAMS(F)	((F)->u.frame->nparams)
 #define IDIO_FRAME_NALLOC(F)	((F)->u.frame->nalloc)
 #define IDIO_FRAME_NAMES(F)	((F)->u.frame->names)
 #define IDIO_FRAME_ARGS(F,i)	((F)->u.frame->args[i])

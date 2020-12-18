@@ -42,13 +42,14 @@ IDIO idio_frame_allocate (idio_ai_t arityp1)
 
     IDIO fo = idio_gc_get (IDIO_TYPE_FRAME);
 
-    IDIO_GC_ALLOC (fo->u.frame, sizeof (idio_frame_t) + arityp1 * sizeof (IDIO));
+    IDIO_GC_ALLOC (fo->u.frame, sizeof (idio_frame_t));
+    IDIO_GC_ALLOC (fo->u.frame->args, arityp1 * sizeof (IDIO));
 
     IDIO_FRAME_GREY (fo) = NULL;
     IDIO_FRAME_FLAGS (fo) = IDIO_FRAME_FLAG_NONE;
     IDIO_FRAME_NEXT (fo) = idio_S_nil;
 
-    IDIO_FRAME_NARGS (fo) = arityp1;
+    IDIO_FRAME_NPARAMS (fo) = arityp1 - 1;
     IDIO_FRAME_NALLOC (fo) = arityp1;
     IDIO_FRAME_NAMES (fo) = idio_S_nil;
 
@@ -65,6 +66,13 @@ IDIO idio_frame (IDIO next, IDIO args)
 {
     IDIO_ASSERT (next);
     IDIO_ASSERT (args);
+
+    if (!(idio_S_nil == next ||
+	  idio_isa_frame (next))) {
+	idio_error_param_type ("frame", next, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
 
     idio_ai_t nargs = idio_list_length (args);
 
@@ -96,6 +104,7 @@ void idio_free_frame (IDIO fo)
 
     idio_gc_stats_free (sizeof (idio_frame_t));
 
+    IDIO_GC_FREE (fo->u.frame->args);
     IDIO_GC_FREE (fo->u.frame);
 }
 
@@ -104,17 +113,14 @@ IDIO idio_frame_fetch (IDIO fo, size_t d, size_t i)
     IDIO_ASSERT (fo);
     IDIO_TYPE_ASSERT (frame, fo);
 
-    IDIO ofo = fo;
-
     for (; d; d--) {
 	fo = IDIO_FRAME_NEXT (fo);
 	IDIO_ASSERT (fo);
 	IDIO_TYPE_ASSERT (frame, fo);
     }
 
-    if (i >= IDIO_FRAME_NARGS (fo)) {
-	idio_dump (ofo, 10);
-	idio_dump (fo, 10);
+    if (i >= IDIO_FRAME_NALLOC (fo)) {
+	idio_vm_frame_tree (idio_S_nil);
 	idio_frame_error_range (fo, d, i, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
@@ -135,7 +141,8 @@ void idio_frame_update (IDIO fo, size_t d, size_t i, IDIO v)
 	IDIO_TYPE_ASSERT (frame, fo);
     }
 
-    if (i >= IDIO_FRAME_NARGS (fo)) {
+    if (i >= IDIO_FRAME_NALLOC (fo)) {
+	idio_vm_frame_tree (idio_S_nil);
 	idio_frame_error_range (fo, d, i, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
@@ -145,7 +152,7 @@ void idio_frame_update (IDIO fo, size_t d, size_t i, IDIO v)
     IDIO_FRAME_ARGS (fo, i) = v;
 }
 
-IDIO idio_frame_extend (IDIO f1, IDIO f2)
+IDIO idio_link_frame (IDIO f1, IDIO f2)
 {
     IDIO_ASSERT (f1);
     IDIO_ASSERT (f2);
@@ -157,8 +164,9 @@ IDIO idio_frame_extend (IDIO f1, IDIO f2)
     if (! idio_isa_frame (f2)) {
 	/*
 	 * The reason we should be here is because we've computed an
-	 * argument frame and want to extend the current frame.  If f2
-	 * isn't a frame value then something has gone horribly wrong.
+	 * argument frame and want to link it into the current frame.
+	 * If f2 isn't a frame value then something has gone horribly
+	 * wrong.
 	 *
 	 * Abort!  Abort!  Abort!
 	 *
@@ -178,14 +186,47 @@ IDIO idio_frame_extend (IDIO f1, IDIO f2)
     return f2;
 }
 
+void idio_extend_frame (IDIO fo, size_t nalloc)
+{
+    IDIO_ASSERT (fo);
+    IDIO_C_ASSERT (nalloc);
+
+    size_t nparams = IDIO_FRAME_NPARAMS (fo);
+    size_t oalloc = IDIO_FRAME_NALLOC (fo);
+
+    if ((nparams + 1) == nalloc) {
+	return;
+    } else if (nalloc < oalloc) {
+	/*
+	 * The original frame was created for a varargs function which
+	 * subsequently packed the frame.  Hence NALLOC > NPARAMS+1
+	 * because the extra are now a list *in* NPARAMS+1.
+	 *
+	 * The code in the function doesn't know that and is now
+	 * simply trying to use slot NPARAMS+2 which is (usually) <<
+	 * NALLOC
+	 */
+	return;
+    }
+
+    fo->u.frame->args = idio_realloc (fo->u.frame->args, nalloc * sizeof (IDIO));
+
+    IDIO_FRAME_NALLOC (fo) = nalloc;
+
+    idio_ai_t i;
+    for (i = oalloc; i < nalloc; i++) {
+	IDIO_FRAME_ARGS (fo, i) = idio_S_undef;
+    }
+}
+
 IDIO idio_frame_args_as_list_from (IDIO frame, idio_ai_t from)
 {
     IDIO_ASSERT (frame);
     IDIO_TYPE_ASSERT (frame, frame);
 
-    IDIO r = idio_S_nil;
+    idio_ai_t nargs = IDIO_FRAME_NPARAMS (frame);
+    IDIO r = IDIO_FRAME_ARGS (frame, nargs);
 
-    idio_ai_t nargs = IDIO_FRAME_NARGS (frame);
     if (nargs > 0) {
 	idio_ai_t i;
 	for (i = nargs - 1; i >= from; i--) {
@@ -216,16 +257,12 @@ IDIO idio_frame_params_as_list (IDIO frame)
     IDIO_ASSERT (frame);
     IDIO_TYPE_ASSERT (frame, frame);
 
-    IDIO r = idio_S_nil;
-    idio_ai_t nargs = IDIO_FRAME_NARGS (frame);
+    idio_ai_t nargs = IDIO_FRAME_NPARAMS (frame);
+    IDIO r = IDIO_FRAME_ARGS (frame, nargs);
 
-    if (idio_S_nil != IDIO_FRAME_ARGS (frame, nargs - 1)) {
-	r = idio_pair (IDIO_FRAME_ARGS (frame, nargs - 1), r);
-    }
-
-    if (nargs > 1) {
+    if (nargs > 0) {
 	idio_ai_t i;
-	for (i = nargs - 2; i >= 0; i--) {
+	for (i = nargs - 1; i >= 0; i--) {
 	    r = idio_pair (IDIO_FRAME_ARGS (frame, i),
 			   r);
 	}

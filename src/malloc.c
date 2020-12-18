@@ -182,7 +182,7 @@ static int idio_malloc_pagealign ()
     char *curbrk = sbrk (0);
     long sbrk_reqd = idio_malloc_pagesz - ((long) curbrk & (idio_malloc_pagesz - 1)); /* sbrk(0) % pagesz */
     if (sbrk_reqd < 0) {
-	fprintf (stderr, "sbrk_reqd < 0? curbrk %p pagesz %lx\n", curbrk, idio_malloc_pagesz);
+	fprintf (stderr, "im-pagealign: sbrk_reqd < 0? curbrk %p pagesz %lx\n", curbrk, idio_malloc_pagesz);
 	sbrk_reqd += idio_malloc_pagesz;
     }
 
@@ -275,8 +275,6 @@ void *idio_malloc_malloc (size_t size)
 	}
     }
 
-    /* fprintf (stderr, "b: sz %8zu in bkt[%2d] %ld\n", size, bucket, idio_malloc_bucket_sizes[bucket]); */
-
     /*
      * If nothing in hash bucket right now,
      * request more memory from the system.
@@ -289,15 +287,13 @@ void *idio_malloc_malloc (size_t size)
 	    return (NULL);
 	}
     }
-    /* fprintf (stderr, "c: nextf[%2d] = %p\n", bucket, idio_malloc_nextf[bucket]); */
     if ((intptr_t) idio_malloc_nextf[bucket] & 0x3) {
-	fprintf (stderr, "op %8p ! pointer\n", op);
+	fprintf (stderr, "im-malloc: nextf[%2d] %8p is not a pointer\n", bucket, op);
 	assert (0);
     }
 
     /* remove from linked list */
     idio_malloc_nextf[bucket] = IDIO_MALLOC_OVERHEAD_CHAIN (op);
-    /* fprintf (stderr, "d: nextf[%2d] = %p\n", bucket, idio_malloc_nextf[bucket]); */
     op->ov_magic = IDIO_MALLOC_MAGIC_ALLOC;
     op->ov_bucket = bucket;
 #ifdef IDIO_DEBUG
@@ -315,7 +311,6 @@ void *idio_malloc_malloc (size_t size)
     op->ov_rmagic = IDIO_MALLOC_RMAGIC;
     *(uint16_t *)((caddr_t)(op + 1) + op->ov_size) = IDIO_MALLOC_RMAGIC;
 
-    /* fprintf (stderr, "im-malloc: (%5zu)-> %8p\n", size, ((char *)(op + 1))); */
     return ((char *)(op + 1));
 }
 
@@ -380,10 +375,8 @@ static void idio_malloc_morecore (int bucket)
 #endif
     }
 
-    /* fprintf (stderr, "im-morecore: pagesizes[%2d] sz %8ld amt %8d in %4d blks\n", bucket, sz, amt, nblks); */
     register union idio_malloc_overhead_u *op;
     op = (union idio_malloc_overhead_u *) mmap (0, amt, PROT_READ|PROT_WRITE, MAP_ANON|MAP_PRIVATE, -1, 0);
-    /* fprintf (stderr, "im-morecore: pagesizes[%2d] op %8p CHAIN %8p\n", bucket, op, IDIO_MALLOC_OVERHEAD_CHAIN (op)); */
     if ((void *) op != (void *) -1) {
 	idio_malloc_nextf[bucket] = op;
 
@@ -400,7 +393,6 @@ static void idio_malloc_morecore (int bucket)
 	}
 	IDIO_MALLOC_OVERHEAD_CHAIN (op) = NULL;
     }
-    /* fprintf (stderr, "im-morecore: pagesizes[%2d] op %8p CHAIN %8p\n", bucket, idio_malloc_nextf[bucket], IDIO_MALLOC_OVERHEAD_CHAIN (idio_malloc_nextf[bucket])); */
 }
 
 void idio_malloc_free (void *cp)
@@ -436,7 +428,7 @@ void idio_malloc_free (void *cp)
      */
     register long reqd_size = op->ov_size + sizeof (union idio_malloc_overhead_u) + IDIO_MALLOC_RSLOP;
     if (reqd_size > idio_malloc_bucket_sizes[bucket]) {
-	fprintf (stderr, "im-realloc: %ld (%d)> bucket[%2d] == %zu\n", reqd_size, op->ov_size, bucket, idio_malloc_bucket_sizes[bucket]);
+	fprintf (stderr, "im-free: %ld (%d)> bucket[%2d] == %zu\n", reqd_size, op->ov_size, bucket, idio_malloc_bucket_sizes[bucket]);
 	IDIO_C_ASSERT (0);
     }
 
@@ -467,8 +459,6 @@ void idio_malloc_free (void *cp)
 #ifdef IDIO_DEBUG
     idio_malloc_stats_num[bucket]--;
 #endif
-
-    /* fprintf (stderr, "im-free: cp %8p -> nextf[%2d] %8p CHAIN %8p\n", cp, bucket, op, IDIO_MALLOC_OVERHEAD_CHAIN (op)); */
 }
 
 /*
@@ -477,8 +467,6 @@ void idio_malloc_free (void *cp)
 
 void * idio_malloc_realloc (void *cp, size_t size)
 {
-    /* fprintf (stderr, "im-realloc: %8p + %8zu\n", cp, size); */
-
     if (0 == size) {
 	idio_malloc_free (cp);
 	return NULL;
@@ -524,7 +512,7 @@ void * idio_malloc_realloc (void *cp, size_t size)
     }
 
     if (0 == bucket) {
-	fprintf (stderr, "BUCKET_RANGE (%ld, %d)?\n", reqd_size, bucket);
+	fprintf (stderr, "im-realloc: BUCKET_RANGE (%ld, %d)?\n", reqd_size, bucket);
     }
     /*
      * Rework with the (actual) requested size -- do we fit in this
@@ -534,7 +522,6 @@ void * idio_malloc_realloc (void *cp, size_t size)
     reqd_size = size + sizeof (union idio_malloc_overhead_u) + IDIO_MALLOC_RSLOP;
     if (IDIO_MALLOC_BUCKET_RANGE (reqd_size, bucket) ||
 	IDIO_MALLOC_BUCKET_RANGE (reqd_size, bucket - 1)) {
-	/* fprintf (stderr, "BUCKET_RANGE %d -> %zu\n", op->ov_size, size); */
 	op->ov_size = size;
 	return cp;
     }

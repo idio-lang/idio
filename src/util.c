@@ -1902,7 +1902,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 	    case IDIO_TYPE_FRAME:
 		{
 		    seen = idio_pair (o, seen);
-		    if (IDIO_ASPRINTF (&r, "#<FRAME %p n=%d/%d [ ", o, IDIO_FRAME_NARGS (o), IDIO_FRAME_NALLOC (o)) == -1) {
+		    if (IDIO_ASPRINTF (&r, "#<FRAME %p n=%d/%d [ ", o, IDIO_FRAME_NPARAMS (o), IDIO_FRAME_NALLOC (o)) == -1) {
 			idio_error_alloc ("asprintf");
 
 			/* notreached */
@@ -1910,7 +1910,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 		    }
 		    *sizep = strlen (r);
 
-		    for (i = 0; i < IDIO_FRAME_NARGS (o); i++) {
+		    for (i = 0; i < IDIO_FRAME_NALLOC (o); i++) {
 			size_t t_size = 0;
 			char *t = idio_as_string (IDIO_FRAME_ARGS (o, i), &t_size, depth - 1, seen, 0);
 			IDIO_STRCAT_FREE (r, sizep, t, t_size);
@@ -2177,7 +2177,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 			    IDIO_STRCAT (r, sizep, "\n  fr=nil");
 			} else {
 			    char *es;
-			    if (IDIO_ASPRINTF (&es, "\n  fr=%10p n=%td ", frame, IDIO_FRAME_NARGS (frame)) == -1) {
+			    if (IDIO_ASPRINTF (&es, "\n  fr=%10p n=%td ", frame, IDIO_FRAME_NPARAMS (frame)) == -1) {
 				idio_error_alloc ("asprintf");
 
 				/* notreached */

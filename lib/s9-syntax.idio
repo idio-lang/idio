@@ -163,16 +163,13 @@ define (for-each f & a*) {
 ; it binds to an environment rather than a form.
 ;
 define (syntax-match form pattern keywords env) {
-  ;edisplay* "syntax-match:\n  " form "\n  " pattern "\n  " keywords "\n  " env
   match :+ function (form pattern keywords env) {
-	     ;edisplay* "match:\n  " form "\n  " pattern "\n  " keywords "\n  " env
 	     cond ((pair? pattern) {
 	       cond ((and (pair? (pt pattern))
 			  (eq? '... (pht pattern))) {
 			    e* := map (function (x)
 					 (match x (ph pattern) keywords '#n)) \
 				      form
-			    ;edisplay* "match ... " form pattern "e*" e*
 			    pair (pair '... e*) env
 			  }) \
 		    ((pair? form) {
@@ -186,7 +183,6 @@ define (syntax-match form pattern keywords env) {
 		    if (eq? pattern form) env #f
 		  }) \
 		  ((symbol? pattern) {
-		    ;edisplay* "syntax-match: symbol" (pair pattern form)
 		    pair (pair pattern form) env
 		  }) \
 		  (else {
@@ -195,9 +191,7 @@ define (syntax-match form pattern keywords env) {
   }
 
   e := match form pattern keywords env
-  r := if e (reverse e) e
-  ;edisplay* "syntax-match =>" r
-  r
+  if e (reverse e) e
 }
 
 ; Give a unique name to each variable that is bound in FORM.
@@ -267,12 +261,9 @@ define (alpha-conv form bound) {
 ; Substitute variables of FORM by values of ENV.
 ;
 define (syntax-expand bound tmpl env) {
-  ;edisplay* "syntax-expand: \n  bound:" bound "\n  tmpl:" tmpl "\n  env:" env
   alpha-conv := alpha-conv
   expand :+ function (tmpl env) {
-	      ;edisplay* "expand\n    tmpl:" tmpl "\n    env:" env
 	      cond ((not (pair? tmpl)) {
-		;edisplay* "not pair?" tmpl "=>" (and (assq tmpl env) (pt (assq tmpl env)))
 		cond ((assq tmpl env) => pt) \
 		     (else tmpl)
 	      }) \
@@ -284,7 +275,6 @@ define (syntax-expand bound tmpl env) {
 			   if (not eenv) {
 			     error 'syntax-rules "template without matching ... in pattern" tmpl env
 			   } {
-			     ;edisplay* "expand found ...: recursing with env:" (pt eenv)
 			     set-ph! eenv '(#f)
 			     map (function (x)
 				    (expand (ph tmpl) x)) \
@@ -298,10 +288,7 @@ define (syntax-expand bound tmpl env) {
   }
 
   e := expand tmpl env
-  ;edisplay* "syntax-expand e" e
-  r := alpha-conv e bound
-  ;edisplay* "syntax-expand r" r
-  r
+  alpha-conv e bound
 }
 
 ; Check the syntax of DEFINE-SYNTAX and rewrite it
@@ -347,8 +334,7 @@ define-template define-syntax {
 						  '$(template rules-in)
 						  env)))
 		       } rules-out
-		       ;edisplay* "rewrite-rules =>" r
-		       r
+
 		       rewrite-rules app \
 				     keywords \
 				     (pt rules-in) \
@@ -367,11 +353,10 @@ define-template define-syntax {
 	 (else {
 	   app := (gensym)
 	   default := #T{ ((else (error 'define-syntax "invalid syntax" $app))) }
-	   ;edisplay* "defining" name "with" rules
-	   t := #T{
+
+	   #T{
 	     define-template $(pair name app) {
 	       $app := pair '$name $app
-	       ;edisplay* "running" $app
 
 	       cond $@(append (rewrite-rules app
 					     (pht rules)
@@ -380,8 +365,6 @@ define-template define-syntax {
 		       default)
 	     }
 	   }
-	   ;edisplay* "define-syntax =>" t
-	   t
 	 })
   }
 }

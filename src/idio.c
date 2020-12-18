@@ -57,13 +57,13 @@ void idio_module_table_register (void (*ap_func) (void), void (*f_func) (void))
 {
     if (NULL != ap_func) {
 	if (idio_add_primitives_table.used >= idio_add_primitives_table.size) {
-	    idio_realloc (idio_add_primitives_table.table, (idio_add_primitives_table.size + 10) * sizeof (void *));
+	    idio_add_primitives_table.table = idio_realloc (idio_add_primitives_table.table, (idio_add_primitives_table.size + 10) * sizeof (void *));
 	}
 	idio_add_primitives_table.table[idio_add_primitives_table.used++] = ap_func;
     }
     if (NULL != f_func) {
 	if (idio_final_table.used >= idio_final_table.size) {
-	    idio_realloc (idio_final_table.table, (idio_final_table.size + 10) * sizeof (void *));
+	    idio_final_table.table = idio_realloc (idio_final_table.table, (idio_final_table.size + 10) * sizeof (void *));
 	}
 	idio_final_table.table[idio_final_table.used++] = f_func;
     }
@@ -298,8 +298,8 @@ int main (int argc, char **argv, char **envp)
 
     if (nargc > 1) {
 	/*
-	 * idio_command_interactive is set to 1 if isatty (0) is true
-	 * however we are about to loop over files in a
+	 * idio_job_control_interactive is set to 1 if isatty (0) is
+	 * true however we are about to loop over files in a
 	 * non-interactive way.  So turn it off.
 	 */
 	idio_job_control_set_interactive (0);

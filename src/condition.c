@@ -738,7 +738,7 @@ does not return per se						\n\
 	    idio_display (IDIO_STRUCT_TYPE_NAME (sit), eh);
 	    idio_display_C ("\n", eh);
 	} else {
-	    idio_debug ("default-condition-handler: no clause for %s\n", c);
+	    idio_debug ("\ndefault-condition-handler: no clause for %s\n", c);
 	}
 
 	if (idio_bootstrap_complete) {
@@ -761,12 +761,12 @@ does not return per se						\n\
 
 	    return r;
 	} else {
-	    fprintf (stderr, "default-condition-handler: bootstrap incomplete\n");
+	    fprintf (stderr, "\ndefault-condition-handler: bootstrap incomplete\n");
 	}
     }
 
 #ifdef IDIO_DEBUG
-    idio_debug ("default-condition-handler: no handler re-raising %s\n", c);
+    idio_debug ("\ndefault-condition-handler: no handler re-raising %s\n", c);
     idio_vm_frame_tree (idio_S_nil);
 #endif
     idio_raise_condition (idio_S_true, c);

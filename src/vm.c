@@ -791,7 +791,7 @@ static void idio_vm_listify (IDIO frame, size_t arity)
     IDIO_ASSERT (frame);
     IDIO_TYPE_ASSERT (frame, frame);
 
-    size_t index = IDIO_FRAME_NARGS (frame) - 1;
+    size_t index = IDIO_FRAME_NPARAMS (frame);
     IDIO result = idio_S_nil;
 
     for (;;) {
@@ -1333,12 +1333,12 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
 	    size_t pc0 = IDIO_THREAD_PC (thr);
 	    IDIO val = IDIO_THREAD_VAL (thr);
 
-	    IDIO last = IDIO_FRAME_ARGS (val, IDIO_FRAME_NARGS (val) - 1);
-	    IDIO_FRAME_NARGS (val) -= 1;
+	    IDIO last = IDIO_FRAME_ARGS (val, IDIO_FRAME_NPARAMS (val));
+	    /* IDIO_FRAME_NPARAMS (val) -= 1; */
 
-	    /* fprintf (stderr, "iv-invoke %20s %2td\n", IDIO_PRIMITIVE_NAME (func), IDIO_FRAME_NARGS (val)); */
+	    /* fprintf (stderr, "iv-invoke %20s %2td\n", IDIO_PRIMITIVE_NAME (func), IDIO_FRAME_NPARAMS (val)); */
 	    if (idio_S_nil != last) {
-		fprintf (stderr, "func args (%d): %s ", IDIO_FRAME_NARGS (val), IDIO_PRIMITIVE_NAME (func));
+		fprintf (stderr, "func args (%d): %s ", IDIO_FRAME_NPARAMS (val) + 1, IDIO_PRIMITIVE_NAME (func));
 		idio_debug ("*val* %s; ", val);
 		idio_debug ("last %s\n", last);
 		idio_vm_thread_state (thr);
@@ -1447,8 +1447,8 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
 	{
 	    IDIO val = IDIO_THREAD_VAL (thr);
 
-	    IDIO last = IDIO_FRAME_ARGS (val, IDIO_FRAME_NARGS (val) - 1);
-	    IDIO_FRAME_NARGS (val) -= 1;
+	    IDIO last = IDIO_FRAME_ARGS (val, IDIO_FRAME_NPARAMS (val));
+	    /* IDIO_FRAME_NPARAMS (val) -= 1; */
 
 	    if (idio_S_nil != last) {
 		idio_error_C ("continuation: varargs?", last, IDIO_C_FUNC_LOCATION ());
@@ -1457,7 +1457,7 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
 		return;
 	    }
 
-	    if (IDIO_FRAME_NARGS (val) != 1) {
+	    if (IDIO_FRAME_NPARAMS (val) != 1) {
 		idio_vm_error_function_invoke ("unary continuation", IDIO_LIST2 (func, val), IDIO_C_FUNC_LOCATION ());
 
 		/* notreached */
@@ -1480,7 +1480,7 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
 		 * should always be one or more
 		 */
 		IDIO args = idio_S_nil;
-		if (IDIO_FRAME_NARGS (val) > 1) {
+		if (IDIO_FRAME_NPARAMS (val) > 0) {
 		    args = idio_frame_params_as_list (val);
 		} else {
 		    /*
@@ -3032,7 +3032,7 @@ int idio_vm_run1 (IDIO thr)
     }
 #endif
 
-    IDIO_VM_RUN_DIS ("idio_vm_run1: %10p %5zd %3d: ", thr, IDIO_THREAD_PC (thr) - 1, ins);
+    IDIO_VM_RUN_DIS ("idio_vm_run1: %5zd %3d: ", IDIO_THREAD_PC (thr) - 1, ins);
 
     switch (ins) {
     case IDIO_A_SHALLOW_ARGUMENT_REF0:
@@ -3863,13 +3863,13 @@ int idio_vm_run1 (IDIO thr)
     case IDIO_A_PRESERVE_STATE:
 	{
 	    idio_vm_preserve_state (thr);
-	    IDIO_VM_RUN_DIS ("PRESERVE-STATE frame = %10p", IDIO_THREAD_FRAME (thr));
+	    IDIO_VM_RUN_DIS ("PRESERVE-STATE");
 	}
 	break;
     case IDIO_A_RESTORE_STATE:
 	{
 	    idio_vm_restore_state (thr);
-	    IDIO_VM_RUN_DIS ("RESTORE-STATE frame = %10p", IDIO_THREAD_FRAME (thr));
+	    IDIO_VM_RUN_DIS ("RESTORE-STATE");
 	}
 	break;
     case IDIO_A_RESTORE_ALL_STATE:
@@ -4036,15 +4036,15 @@ int idio_vm_run1 (IDIO thr)
 	break;
     case IDIO_A_ALLOCATE_FRAME2:
 	{
-	    IDIO_VM_RUN_DIS ("ALLOCATE-FRAME 2");
 	    IDIO frame = idio_frame_allocate (2);
+	    IDIO_VM_RUN_DIS ("ALLOCATE-FRAME 2");
 	    IDIO_THREAD_VAL (thr) = frame;
 	}
 	break;
     case IDIO_A_ALLOCATE_FRAME3:
 	{
-	    IDIO_VM_RUN_DIS ("ALLOCATE-FRAME 3");
 	    IDIO frame = idio_frame_allocate (3);
+	    IDIO_VM_RUN_DIS ("ALLOCATE-FRAME 3");
 	    IDIO_THREAD_VAL (thr) = frame;
 	}
 	break;
@@ -4081,35 +4081,19 @@ int idio_vm_run1 (IDIO thr)
 	break;
     case IDIO_A_REUSE_FRAME:
 	{
-	    uint64_t arity = idio_vm_fetch_varuint (thr);
+	    uint64_t size = idio_vm_fetch_varuint (thr);
 	    IDIO frame = IDIO_THREAD_FRAME (thr);
-	    /* fprintf (stderr, "REUSE %2d for %2" PRIu64 "\n", IDIO_FRAME_NARGS (frame), arity); */
-	    IDIO_VM_RUN_DIS ("REUSE-FRAME %" PRId64 "", arity);
-	    if (arity > IDIO_FRAME_NALLOC (frame)) {
-		IDIO_THREAD_VAL (thr) = idio_frame_allocate (arity);
+	    /* fprintf (stderr, "REUSE %2d for %2" PRIu64 "\n", IDIO_FRAME_NPARAMS (frame), size); */
+	    IDIO_VM_RUN_DIS ("REUSE-FRAME %" PRId64 "", size);
+	    if (size > IDIO_FRAME_NALLOC (frame)) {
+		IDIO_THREAD_VAL (thr) = idio_frame_allocate (size);
 	    } else {
 		/*
 		 * XXX needs some thought -- there's interaction with
 		 * UNLINK-FRAME which doesn't know we REUSED
 		 */
-		IDIO_THREAD_VAL (thr) = idio_frame_allocate (arity);
+		IDIO_THREAD_VAL (thr) = idio_frame_allocate (size);
 		break;
-
-		if (! idio_isa_frame (frame)) {
-		    idio_vm_thread_state ();
-		    exit (3);
-		}
-		idio_debug ("reuse %s\n", frame);
-		idio_ai_t i;
-		for (i = 0; i < arity - 1; i++) {
-		    IDIO_FRAME_ARGS (frame, i) = idio_S_undef;
-		}
-		IDIO_FRAME_ARGS (frame, i) = idio_S_nil;
-		IDIO_FRAME_NARGS (frame) = arity;
-		idio_debug ("reuse %s\n", frame);
-		IDIO_THREAD_VAL (thr) = frame;
-		IDIO_THREAD_FRAME (thr) = IDIO_FRAME_NEXT (frame);
-		IDIO_THREAD_VAL (thr) = idio_frame_allocate (arity);
 	    }
 	}
 	break;
@@ -4155,8 +4139,8 @@ int idio_vm_run1 (IDIO thr)
 		IDIO_FRAME_NAMES (IDIO_THREAD_VAL (thr)) = fgci;
 	    }
 
-	    IDIO_VM_RUN_DIS ("LINK-FRAME %10p -> %10p sci=%" PRId64, IDIO_THREAD_FRAME (thr), IDIO_THREAD_VAL (thr), ssci);
-	    IDIO_THREAD_FRAME (thr) = idio_frame_extend (IDIO_THREAD_FRAME (thr), IDIO_THREAD_VAL (thr));
+	    IDIO_VM_RUN_DIS ("LINK-FRAME sci=%" PRId64, ssci);
+	    IDIO_THREAD_FRAME (thr) = idio_link_frame (IDIO_THREAD_FRAME (thr), IDIO_THREAD_VAL (thr));
 	}
 	break;
     case IDIO_A_UNLINK_FRAME:
@@ -4184,6 +4168,20 @@ int idio_vm_run1 (IDIO thr)
 					  idio_frame_fetch (IDIO_THREAD_VAL (thr), 0, arity)));
 	}
 	break;
+    case IDIO_A_EXTEND_FRAME:
+	{
+	    uint64_t alloc = idio_vm_fetch_varuint (thr);
+	    uint64_t ssci = idio_vm_fetch_varuint (thr);
+	    if (ssci) {
+		IDIO fci = idio_fixnum (ssci);
+		IDIO ce = idio_thread_current_env ();
+		IDIO fgci = idio_module_get_or_set_vci (ce, fci);
+		IDIO_FRAME_NAMES (IDIO_THREAD_FRAME (thr)) = fgci;
+	    }
+	    IDIO_VM_RUN_DIS ("EXTEND-FRAME %" PRId64 " sci=%" PRId64, alloc, ssci);
+	    idio_extend_frame (IDIO_THREAD_FRAME (thr), alloc);
+	}
+	break;
     case IDIO_A_ARITY1P:
 	{
 	    IDIO_VM_RUN_DIS ("ARITY=1?");
@@ -4191,7 +4189,7 @@ int idio_vm_run1 (IDIO thr)
 	    IDIO val = IDIO_THREAD_VAL (thr);
 	    if (idio_S_nil != val) {
 		IDIO_TYPE_ASSERT (frame, val);
-		nargs = IDIO_FRAME_NARGS (val);
+		nargs = IDIO_FRAME_NPARAMS (val) + 1;
 	    }
 	    if (1 != nargs) {
 		idio_vm_error_arity (ins, thr, nargs - 1, 0, IDIO_C_FUNC_LOCATION_S ("ARITY1P"));
@@ -4208,7 +4206,7 @@ int idio_vm_run1 (IDIO thr)
 	    IDIO val = IDIO_THREAD_VAL (thr);
 	    if (idio_S_nil != val) {
 		IDIO_TYPE_ASSERT (frame, val);
-		nargs = IDIO_FRAME_NARGS (val);
+		nargs = IDIO_FRAME_NPARAMS (val) + 1;
 	    }
 	    if (2 != nargs) {
 		idio_vm_error_arity (ins, thr, nargs - 1, 1, IDIO_C_FUNC_LOCATION_S ("ARITY2P"));
@@ -4225,7 +4223,7 @@ int idio_vm_run1 (IDIO thr)
 	    IDIO val = IDIO_THREAD_VAL (thr);
 	    if (idio_S_nil != val) {
 		IDIO_TYPE_ASSERT (frame, val);
-		nargs = IDIO_FRAME_NARGS (val);
+		nargs = IDIO_FRAME_NPARAMS (val) + 1;
 	    }
 	    if (3 != nargs) {
 		idio_vm_error_arity (ins, thr, nargs - 1, 2, IDIO_C_FUNC_LOCATION_S ("ARITY3P"));
@@ -4242,7 +4240,7 @@ int idio_vm_run1 (IDIO thr)
 	    IDIO val = IDIO_THREAD_VAL (thr);
 	    if (idio_S_nil != val) {
 		IDIO_TYPE_ASSERT (frame, val);
-		nargs = IDIO_FRAME_NARGS (val);
+		nargs = IDIO_FRAME_NPARAMS (val) + 1;
 	    }
 	    if (4 != nargs) {
 		idio_vm_error_arity (ins, thr, nargs - 1, 3, IDIO_C_FUNC_LOCATION_S ("ARITY4P"));
@@ -4260,7 +4258,7 @@ int idio_vm_run1 (IDIO thr)
 	    IDIO val = IDIO_THREAD_VAL (thr);
 	    if (idio_S_nil != val) {
 		IDIO_TYPE_ASSERT (frame, val);
-		nargs = IDIO_FRAME_NARGS (val);
+		nargs = IDIO_FRAME_NPARAMS (val) + 1;
 	    }
 	    if (arityp1 != nargs) {
 		idio_vm_error_arity (ins, thr, nargs - 1, arityp1 - 1, IDIO_C_FUNC_LOCATION_S ("ARITYEQP"));
@@ -4278,7 +4276,7 @@ int idio_vm_run1 (IDIO thr)
 	    IDIO val = IDIO_THREAD_VAL (thr);
 	    if (idio_S_nil != val) {
 		IDIO_TYPE_ASSERT (frame, val);
-		nargs = IDIO_FRAME_NARGS (val);
+		nargs = IDIO_FRAME_NPARAMS (val) + 1;
 	    }
 	    if (nargs < arityp1) {
 		idio_vm_error_arity_varargs (ins, thr, nargs - 1, arityp1 - 1, IDIO_C_FUNC_LOCATION_S ("ARITYGEP"));
@@ -5500,10 +5498,17 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_ai_t pc0, idio_ai_t pce)
 		IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), fmci);
 		idio_ai_t gci = IDIO_FIXNUM_VAL (fgci);
 
-		IDIO c = idio_vm_constants_ref (gci);
+		IDIO e = idio_vm_constants_ref (gci);
+		IDIO lo = idio_hash_ref (idio_src_properties, e);
 
 		IDIO_VM_DASM ("SRC-EXPR %td", mci);
-		idio_debug_FILE (idio_dasm_FILE, " %s", c);
+		if (idio_S_unspec == lo) {
+		    IDIO_VM_DASM (" %-25s", "<no lexobj>");
+		} else {
+		    idio_debug_FILE (idio_dasm_FILE, " %s", idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_NAME));
+		    idio_debug_FILE (idio_dasm_FILE, ":line %s", idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_LINE));
+		}
+		idio_debug_FILE (idio_dasm_FILE, " %s", e);
 	    }
 	    break;
 	case IDIO_A_POP_FUNCTION:
@@ -5549,7 +5554,7 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_ai_t pc0, idio_ai_t pce)
 		}
 		size_t size = 0;
 		char *ids = idio_display_string (ss, &size);
-		IDIO_VM_DASM (" %s", ids);
+		IDIO_VM_DASM (" args=%s", ids);
 		IDIO_GC_FREE (ids);
 
 		IDIO fdsci = idio_fixnum (dsci);
@@ -5670,7 +5675,9 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_ai_t pc0, idio_ai_t pce)
 	case IDIO_A_LINK_FRAME:
 	    {
 		uint64_t ssci = idio_vm_get_varuint (bc, pcp);
+		IDIO names = idio_vm_constants_ref (ssci);
 		IDIO_VM_DASM ("LINK-FRAME sci=%" PRId64, ssci);
+		idio_debug_FILE (idio_dasm_FILE, " %s", names);
 	    }
 	    break;
 	case IDIO_A_UNLINK_FRAME:
@@ -5689,6 +5696,16 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_ai_t pc0, idio_ai_t pce)
 		uint64_t arity = idio_vm_get_varuint (bc, pcp);
 
 		IDIO_VM_DASM ("POP-LIST-FRAME %" PRId64 "", arity);
+	    }
+	    break;
+	case IDIO_A_EXTEND_FRAME:
+	    {
+		uint64_t alloc = idio_vm_get_varuint (bc, pcp);
+		uint64_t ssci = idio_vm_get_varuint (bc, pcp);
+		IDIO names = idio_vm_constants_ref (ssci);
+
+		IDIO_VM_DASM ("EXTEND-FRAME %" PRId64 " sci=%" PRId64, alloc, ssci);
+		idio_debug_FILE (idio_dasm_FILE, " %s", names);
 	    }
 	    break;
 	case IDIO_A_ARITY1P:
@@ -6855,8 +6872,8 @@ void idio_vm_thread_state (IDIO thr)
 	IDIO names = idio_S_nil;
 	names = idio_vm_constants_ref (IDIO_FIXNUM_VAL (faci));
 
-	fprintf (stderr, "vm-thread-state: frame: %p (%p) %5td", frame, IDIO_FRAME_NEXT (frame), IDIO_FIXNUM_VAL (faci));
-	idio_debug (" - %-10s - ", names);
+	fprintf (stderr, "vm-thread-state: frame: %10p (%10p) %2zu/%2zu %5td", frame, IDIO_FRAME_NEXT (frame), IDIO_FRAME_NPARAMS (frame), IDIO_FRAME_NALLOC (frame), IDIO_FIXNUM_VAL (faci));
+	idio_debug (" - %-20s - ", names);
 	idio_debug ("%s\n", idio_frame_args_as_list (frame));
 	frame = IDIO_FRAME_NEXT (frame);
     }
@@ -7111,10 +7128,13 @@ IDIO idio_vm_frame_tree (IDIO args)
 	    idio_debug ("%s\n", names);
 	}
 
-	idio_ai_t al = IDIO_FRAME_NARGS (frame);
+	/*
+	 * formal parameters -- marked with *
+	 */
+	idio_ai_t al = IDIO_FRAME_NPARAMS (frame);
 	idio_ai_t i;
-	for (i = 0; i < al - 1; i++) {
-	    fprintf (stderr, "  %2d %td: ", depth, i);
+	for (i = 0; i < al; i++) {
+	    fprintf (stderr, "  %2d %2td* ", depth, i);
 	    if (idio_S_nil != names) {
 		idio_debug ("%15s = ", IDIO_PAIR_H (names));
 		names = IDIO_PAIR_T (names);
@@ -7123,8 +7143,35 @@ IDIO idio_vm_frame_tree (IDIO args)
 	    }
 	    idio_debug ("%s\n", IDIO_FRAME_ARGS (frame, i));
 	}
-	if (idio_S_nil != IDIO_FRAME_ARGS (frame, i)) {
-	    fprintf (stderr, "  %2d *: ", depth);
+
+	/*
+	 * varargs element -- probably named #f
+	 */
+	fprintf (stderr, "  %2d %2td  ", depth, i);
+	if (idio_S_nil != names) {
+	    if (idio_S_false == IDIO_PAIR_H (names)) {
+		fprintf (stderr, "%15s = ", "*");
+	    } else {
+		idio_debug ("%15s = ", IDIO_PAIR_H (names));
+	    }
+	    names = IDIO_PAIR_T (names);
+	} else {
+	    fprintf (stderr, "%15s = ", "?");
+	}
+	idio_debug ("%s\n", IDIO_FRAME_ARGS (frame, i));
+
+	/*
+	 * "locals"
+	 */
+	al = IDIO_FRAME_NALLOC (frame);
+	for (i++; i < al; i++) {
+	    fprintf (stderr, "  %2d %2td  ", depth, i);
+	    if (idio_S_nil != names) {
+		idio_debug ("%15s = ", IDIO_PAIR_H (names));
+		names = IDIO_PAIR_T (names);
+	    } else {
+		fprintf (stderr, "%15s = ", "?");
+	    }
 	    idio_debug ("%s\n", IDIO_FRAME_ARGS (frame, i));
 	}
 	fprintf (stderr, "\n");

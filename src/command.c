@@ -720,7 +720,7 @@ IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
 {
     IDIO val = IDIO_THREAD_VAL (thr);
 
-    IDIO last = IDIO_FRAME_ARGS (val, IDIO_FRAME_NARGS (val) - 1);
+    IDIO last = IDIO_FRAME_ARGS (val, IDIO_FRAME_NPARAMS (val));
 
     if (idio_S_nil != last) {
 	idio_error_C ("last arg != nil", last, IDIO_C_FUNC_LOCATION ());
@@ -728,7 +728,7 @@ IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
 	return idio_S_notreached;
     }
 
-    IDIO_FRAME_NARGS (val) -= 1;
+    /* IDIO_FRAME_NPARAMS (val) -= 1; */
     IDIO args = idio_frame_args_as_list (val);
 
     char **argv = idio_command_argv (args);

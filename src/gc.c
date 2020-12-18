@@ -211,7 +211,6 @@ IDIO idio_gc_get (idio_type_e type)
 
 void idio_gc_alloc (void **p, size_t size)
 {
-
     *p = idio_alloc (size);
     idio_gc->stats.nbytes += size;
     idio_gc->stats.tbytes += size;
@@ -664,7 +663,7 @@ void idio_gc_process_grey (idio_gc_t *gc, unsigned colour)
 	gc->grey = IDIO_FRAME_GREY (o);
 	idio_gc_gcc_mark (gc, IDIO_FRAME_NEXT (o), colour);
 	idio_gc_gcc_mark (gc, IDIO_FRAME_NAMES (o), colour);
-	for (i = 0; i < IDIO_FRAME_NARGS (o); i++) {
+	for (i = 0; i < IDIO_FRAME_NALLOC (o); i++) {
 	    idio_gc_gcc_mark (gc, IDIO_FRAME_ARGS (o, i), colour);
 	}
 	break;
