@@ -16,7 +16,7 @@
 ;;
 
 ;;
-;; operator.idio
+;; test-operator.idio
 ;;
 operator0 := Tests
 
@@ -48,4 +48,4 @@ test (1 and 2 and 3 or 4) 3
 test (1 or 2 or 3 and 4) 4
 
 ;; all done?
-test (operator0 + 20) Tests
+Tests? (operator0 + 20)

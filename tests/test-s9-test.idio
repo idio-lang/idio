@@ -3183,4 +3183,4 @@ test {
 } '(0 1 2)
 
 ;; all done?
-test (s9-test0 + 2222) Tests
+Tests? (s9-test0 + 2222)

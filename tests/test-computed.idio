@@ -16,7 +16,7 @@
 ;;
 
 ;;
-;; computed.idio
+;; test-computed.idio
 ;;
 computed0 := Tests
 
@@ -41,7 +41,7 @@ trap ^rt-computed-variable-no-accessor-error (function (c) {
 
 						'no-set-accessor
 }) {
-  ;; display* "using set-less computed variable"
+  ;; printf "using set-less computed variable\n"
   test (cvar-g = 3) 'no-set-accessor
 }
 
@@ -62,7 +62,7 @@ trap ^rt-computed-variable-no-accessor-error (function (c) {
 
 						'no-get-accessor
 }) {
-  ;; display* "using get-less computed variable"
+  ;; printf "using get-less computed variable\n"
   test cvar-s 'no-get-accessor
 }
 
@@ -89,4 +89,4 @@ test (cvar-gs = 105) 105
 test cvar-gs 115
 
 ;; all done?
-test (computed0 + 16) Tests
+Tests? (computed0 + 16)

@@ -80,6 +80,13 @@ define-template (test/error form result c-msg) {
   }
 }
 
+define (Tests? n) {
+  if (not (eqv? Tests n)) {
+    printf "#Tests %s != %s\n" Tests n
+    Errors = Errors + 1
+  }
+}
+
 ;; put the tests dirs on IDIOLIB
 testdir := #n
 
@@ -182,7 +189,7 @@ test-load "test-issues.idio"
 ;; that?  Erm, they've not been counted and are dynamic in number so
 ;; test we've seen at least as many as the largest number we've
 ;; seen.  Wait, some tests are OS-specific.  Drat!
-test (Tests eq 3762) #t
+Tests? 3722
 
 if (file-exists? testfile) (delete-file testfile)
 

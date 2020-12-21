@@ -16,7 +16,7 @@
 ;;
 
 ;;
-;; string-handle.idio
+;; test-string-handle.idio
 ;;
 string-handle0 := Tests
 
@@ -97,4 +97,4 @@ seek-handle ish 2
 test (handle-pos ish) 2
 
 ;; all done?
-test (string-handle0 + 29) Tests
+Tests? (string-handle0 + 29)

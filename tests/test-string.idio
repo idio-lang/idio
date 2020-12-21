@@ -16,7 +16,7 @@
 ;;
 
 ;;
-;; string.idio
+;; test-string.idio
 ;;
 string0 := Tests
 
@@ -88,4 +88,4 @@ ss-dup := copy-string sa.1
 test ss-dup sa.1
 
 ;; all done?
-test (string0 + 22) Tests
+Tests? (string0 + 22)

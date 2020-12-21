@@ -16,7 +16,7 @@
 ;;
 
 ;;
-;; command.idio
+;; test-command.idio
 ;;
 module tests/command
 import job-control libc
@@ -46,13 +46,13 @@ trap ^rt-command-status-error (function (c) {
   ;; complaining loudly and testing for something that isn't generated
   ;; (spotting an error in the summary is easier to spot)
   exit0 := function (c) {
-	     edisplay* "command tests: exit0: unexpected status error" PID 
+	     eprintf "command tests: exit0: unexpected status error for PID %s\n" PID 
 	     condition-report "command tests: exit0" c (current-error-handle)
 	     test (rt-command-status-error-status c) 'job-failed
   }
 
   exit1 := function (c) {
-	     ;edisplay* "command tests: exit1:" PID
+	     ;eprintf "command tests: exit1: PID %s\n" PID
 	     ;condition-report "command tests: exit1" c (current-error-handle)
 	     job := idio-error-location c
 	     test (job-detail job) #T{ (exit $(C/integer-> 1)) }
@@ -60,7 +60,7 @@ trap ^rt-command-status-error (function (c) {
   }
 
   killed1 := function (c) {
-	       ;edisplay* "command tests: killed1:" PID
+	       ;eprintf "command tests: killed1: PID %s\n" PID
 	       ;condition-report "command tests: killed1" c (current-error-handle)
 	       job := idio-error-location c
 	       test (job-detail job) #T{ (killed $(C/integer-> 1)) }
@@ -68,7 +68,7 @@ trap ^rt-command-status-error (function (c) {
   }
 
   killed13 := function (c) {
-		;edisplay* "command tests: killed13:" PID
+		;eprintf "command tests: killed13: PID %s\n" PID
 		;condition-report "command tests: killed13" c (current-error-handle)
 		job := idio-error-location c
 		test (job-detail job) #T{ (killed $(C/integer-> 13)) }
@@ -96,27 +96,23 @@ trap ^rt-command-status-error (function (c) {
   }
 
   define (test+0) {
-    test-cur-n := Tests
-    test (test-id + 0) test-cur-n
-    test-id = Tests
+    Tests? (test-id + 0)
+    (test=)
   }
 
   define (test+1) {
-    test-cur-n := Tests
-    test (test-id + 1) test-cur-n
-    test-id = Tests
+    Tests? (test-id + 1)
+    (test=)
   }
 
   define (test+2) {
-    test-cur-n := Tests
-    test (test-id + 2) test-cur-n
-    test-id = Tests
+    Tests? (test-id + 2)
+    (test=)
   }
 
   define (test+3) {
-    test-cur-n := Tests
-    test (test-id + 3) test-cur-n
-    test-id = Tests
+    Tests? (test-id + 3)
+    (test=)
   }
 
   rcseh = exit0
@@ -191,7 +187,7 @@ trap ^rt-command-status-error (function (c) {
   ;; pipeline with regular Idio as the writer
   rcseh = exit0
   (test=)
-  test (display* "first" | auto-exit -r 1) #t
+  test (printf "first\n" | auto-exit -r 1) #t
   (test+1)
 
   ;; pipeline with the writer not writing anything
@@ -418,4 +414,4 @@ trap ^rt-command-status-error (function (c) {
 }
 
 ;; all done?
-test (command0 + 98) Tests
+Tests? (command0 + 83)

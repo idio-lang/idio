@@ -532,8 +532,6 @@ This returns #unspec						\n\
      */
     IDIO_USER_TYPE_ASSERT (condition, c);
 
-    IDIO thr = idio_thread_current_thread ();
-
     IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (c);
 
     if (idio_struct_type_isa (sit, idio_condition_rt_command_status_error_type)) {
@@ -580,16 +578,7 @@ does not return per se						\n\
 	IDIO handler = idio_hash_ref (idio_condition_default_handler, sit);
 
 	if (idio_S_unspec != handler) {
-	    /*
-	    idio_debug ("d-c-h user-defined handler %s", handler);
-	    idio_debug (" for %s", IDIO_STRUCT_TYPE_NAME (sit));
-	    idio_debug (" for condition type %s\n", IDIO_STRUCT_TYPE_NAME (IDIO_STRUCT_INSTANCE_TYPE (c)));
-	    */
-	    IDIO r = idio_vm_invoke_C (thr, IDIO_LIST2 (handler, c));
-
-	    /* idio_debug ("d-c-h user-defined handler r=%s\n", r); */
-
-	    return r;
+	    return idio_vm_invoke_C (thr, IDIO_LIST2 (handler, c));
 	}
 
 	sit = IDIO_STRUCT_TYPE_PARENT (sit);

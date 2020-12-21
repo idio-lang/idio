@@ -192,4 +192,4 @@ test str.5 #U+FFFD
 test str.6 #\w
 
 ;; all done?
-test (utf-8-0 + 48) Tests
+Tests? (utf-8-0 + 48)

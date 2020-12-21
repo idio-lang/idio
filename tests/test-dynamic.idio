@@ -16,7 +16,7 @@
 ;;
 
 ;;
-;; dynamic.idio
+;; test-dynamic.idio
 ;;
 dynamic0 := Tests
 
@@ -64,7 +64,7 @@ trap ^rt-dynamic-variable-unbound-error (function (c) {
 					   ;; we know that test-dvar-x1 in our body was passed lex-x
 					   lex-x
 }) {
-  ;; display* "using unbound dynamic variable"
+  ;; printf "using unbound dynamic variable\n"
   test-dvar-x1 lex-x
 }
 
@@ -79,4 +79,4 @@ test dvar-x2 11
 test-dvar-x2
 
 ;; all done?
-test (dynamic0 + 9) Tests
+Tests? (dynamic0 + 9)

@@ -375,4 +375,4 @@ test (%format 'keyed "%4.3f" h)		" 010"
 test (%format 'keyed "%10.2b" h)	"    123.45"
 
 ;; all done?
-test Tests (format0 + 160)
+Tests? (format0 + 160)

@@ -16,7 +16,7 @@
 ;;
 
 ;;
-;; env.idio
+;; test-env.idio
 ;;
 env0 := Tests
 
@@ -66,4 +66,4 @@ trap ^rt-environ-variable-unbound-error (function (c) {
 }
 
 ;; all done?
-test (env0 + 10) Tests
+Tests? (env0 + 10)

@@ -16,7 +16,7 @@
 ;;
 
 ;;
-;; call-cc.idio
+;; test-call-cc.idio
 ;;
 call-cc0 := Tests
 
@@ -102,4 +102,4 @@ test {
 } '(connect talk1 disconnect connect talk2 disconnect)
 
 ;; all done?
-test (call-cc0 + 9) Tests
+Tests? (call-cc0 + 9)

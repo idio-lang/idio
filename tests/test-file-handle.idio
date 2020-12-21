@@ -16,7 +16,7 @@
 ;;
 
 ;;
-;; file-handle.idio
+;; test-file-handle.idio
 ;;
 file-handle0 := Tests
 
@@ -101,7 +101,7 @@ test (handle-pos ifh) 2
   trap ^system-error (function (c) {
 			test (C/== (system-error-errno c) (C/integer-> 24)) #t
 			if (C/== (system-error-errno c) (C/integer-> 24)) {
-                          display* "test file-handle trap: created" (array-length fds) "fds"
+                          printf "test file-handle trap: created %d\n" (array-length fds)
                         } {
                           condition-report "test file-handle trap" c (current-error-handle)
                         }
@@ -126,4 +126,4 @@ ifh := open-input-file testfile
 test (input-file-handle? ifh) #t
 
 ;; all done?
-test (file-handle0 + 31) Tests
+Tests? (file-handle0 + 31)

@@ -16,7 +16,7 @@
 ;;
 
 ;;
-;; path.idio
+;; test-path.idio
 ;;
 module tests/path
 import libc
@@ -89,4 +89,4 @@ test (sort-atime p) (list f3 f1 f2)
 rm -rf d
 
 ;; all done?
-test (path0 + 10) Tests
+Tests? (path0 + 10)

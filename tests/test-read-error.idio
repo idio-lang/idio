@@ -1,3 +1,23 @@
+;;
+;; Copyright (c) 2020 Ian Fitchet <idf(at)idio-lang.org>
+;;
+;; Licensed under the Apache License, Version 2.0 (the "License"); you
+;; may not use this file except in compliance with the License.  You
+;; may obtain a copy of the License at
+;;
+;;     http://www.apache.org/licenses/LICENSE-2.0
+;;
+;; Unless required by applicable law or agreed to in writing, software
+;; distributed under the License is distributed on an "AS IS" BASIS,
+;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+;; See the License for the specific language governing permissions and
+;; limitations under the License.
+;;
+;;
+
+;;
+;; test-read-error.idio
+;;
 
 read-error0 := Tests
 
@@ -18,9 +38,9 @@ read-error-load := {
     load-k := #n
 
     n = n + 1
-    ;edisplay* "loading #" n filename "looking for" msg "at line" linenum
+    ;eprintf "loading #%s %s looking for %s at line %s\n" n filename msg linenum
     trap (^read-error ^string-error) (function (c) {
-					;edisplay* n msg c.location c.line
+					;eprintf "%s %s %s %s\n" n msg c.location c.line
 					test c.message msg
 
 					isa-read-error := read-error? c
@@ -225,4 +245,4 @@ read-error-load "read-errors/op-eof.idio" "EOF in list" 3
 read-error-load "read-errors/op-eof-emb.idio" "EOF in list" 4
 
 ;; all done?
-test Tests (read-error0 + 214)
+Tests? (read-error0 + 214)

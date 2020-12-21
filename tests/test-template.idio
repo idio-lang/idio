@@ -16,7 +16,7 @@
 ;;
 
 ;;
-;; template.idio
+;; test-template.idio
 ;;
 template0 := Tests
 
@@ -78,4 +78,4 @@ test #T...%{ (1 + 2) } '(binary-+ 1 2)
 test #T...%{ (1 %+ 2) } '(1 \+ 2)
 
 ;; all done?
-test (template0 + 32) Tests
+Tests? (template0 + 32)

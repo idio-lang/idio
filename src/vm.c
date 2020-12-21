@@ -2940,9 +2940,9 @@ static idio_ai_t idio_vm_get_or_create_vvi (idio_ai_t mci)
 		    idio_module_set_vvi (ce, fmci, fgvi);
 		    return IDIO_FIXNUM_VAL (fgvi);
 		} else {
-		    idio_debug ("ivgoc-vvi: %-20s return 0\n", sym);
-		    idio_debug ("ce %s\n", ce);
-		    idio_debug ("ivsl: %s\n", idio_vm_source_location ());
+		    idio_debug ("iv-goc-vvi: %-20s return 0\n", sym);
+		    idio_debug ("  ce %s\n", ce);
+		    idio_debug ("  sl %s\n", idio_vm_source_location ());
 		    /* return 0; */
 		}
 
@@ -5016,10 +5016,29 @@ int idio_vm_run1 (IDIO thr)
     case IDIO_A_NON_CONT_ERR:
 	{
 	    IDIO_VM_RUN_DIS ("NON-CONT-ERROR\n");
-	    idio_raise_condition (idio_S_false, idio_struct_instance (idio_condition_idio_error_type,
-								      IDIO_LIST3 (idio_string_C ("non-cont-error"),
-										  IDIO_C_FUNC_LOCATION_S ("NON_CONT_ERR"),
-										  IDIO_THREAD_VAL (thr))));
+
+	    /*
+	     * We'll go back to krun #1, the most recent ABORT.
+	     */
+	    idio_ai_t krun_p = idio_array_size (idio_vm_krun);
+	    IDIO krun = idio_S_nil;
+	    while (krun_p > 1) {
+		krun = idio_array_pop (idio_vm_krun);
+		idio_debug ("NON-CONT-ERROR: krun: popping %s\n", IDIO_PAIR_HT (krun));
+		krun_p--;
+	    }
+
+	    if (idio_isa_pair (krun)) {
+		fprintf (stderr, "NON-CONT-ERROR: restoring krun #%td: ", krun_p);
+		idio_debug ("%s\n", IDIO_PAIR_HT (krun));
+		idio_vm_restore_continuation (IDIO_PAIR_H (krun), idio_S_unspec);
+
+		/* notreached */
+		return 0;
+	    }
+
+	    fprintf (stderr, "NON-CONT-ERROR: nothing to restore\n");
+	    idio_vm_panic (thr, "NON-CONT-ERROR");
 
 	    /* notreached */
 	    return 0;
@@ -6872,7 +6891,7 @@ void idio_vm_thread_state (IDIO thr)
 	IDIO names = idio_S_nil;
 	names = idio_vm_constants_ref (IDIO_FIXNUM_VAL (faci));
 
-	fprintf (stderr, "vm-thread-state: frame: %10p (%10p) %2zu/%2zu %5td", frame, IDIO_FRAME_NEXT (frame), IDIO_FRAME_NPARAMS (frame), IDIO_FRAME_NALLOC (frame), IDIO_FIXNUM_VAL (faci));
+	fprintf (stderr, "vm-thread-state: frame: %10p (%10p) %2u/%2u %5td", frame, IDIO_FRAME_NEXT (frame), IDIO_FRAME_NPARAMS (frame), IDIO_FRAME_NALLOC (frame), IDIO_FIXNUM_VAL (faci));
 	idio_debug (" - %-20s - ", names);
 	idio_debug ("%s\n", idio_frame_args_as_list (frame));
 	frame = IDIO_FRAME_NEXT (frame);

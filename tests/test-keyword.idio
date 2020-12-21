@@ -16,7 +16,7 @@
 ;;
 
 ;;
-;; keyword.idio
+;; test-keyword.idio
 ;;
 keyword0 := Tests
 
@@ -53,4 +53,4 @@ keyword-set! kw-table :a "apple"
 test (keyword-ref kw-table :a) "apple"
 
 ;; all done?
-test (keyword0 + 12) Tests
+Tests? (keyword0 + 12)

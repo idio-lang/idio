@@ -16,7 +16,7 @@
 ;;
 
 ;;
-;; handle.idio
+;; test-handle.idio
 ;;
 handle0 := Tests
 
@@ -114,4 +114,4 @@ multi-line-read-handle ifh
 close-handle ifh
 
 ;; all done?
-test (handle0 + 41) Tests
+Tests? (handle0 + 41)

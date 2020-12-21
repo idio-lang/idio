@@ -16,7 +16,7 @@
 ;;
 
 ;;
-;; libc.idio
+;; test-libc-wrap.idio
 ;;
 module tests/libc-wrap
 import libc
@@ -63,45 +63,45 @@ number-cmp INTMAX_MIN INTMAX_MIN+1
 
 ;; overflow conversion tests -- one beyond the C MAX/MIN
 trap ^rt-bignum-conversion-error (function (c) {
-				    ;; edisplay* "bignum INTMAX_MAX+1 conversion error" c
+				    ;; eprintf "bignum INTMAX_MAX+1 conversion error: %s\n" c
 				    test (rt-bignum-conversion-error? c) #t
 				    #f
 }) {
   INTMAX_MAX+1 := (C/integer-> ((C/->integer INTMAX_MAX) + 1))
   test INTMAX_MAX+1 #f
-  ;; display* "INTMAX_MAX+1" INTMAX_MAX INTMAX_MAX+1
+  ;; printf "INTMAX_MAX+1 %s %s\n" INTMAX_MAX INTMAX_MAX+1
 }
 
 trap ^rt-bignum-conversion-error (function (c) {
-				    ;; edisplay* "bignum INTMAX_MIN-1 conversion error" c
+				    ;; eprintf "bignum INTMAX_MIN-1 conversion error: %s\n" c
 				    test (rt-bignum-conversion-error? c) #t
 				    #f
 }) {
   INTMAX_MIN-1 := (C/integer-> ((C/->integer INTMAX_MIN) - 1))
   test INTMAX_MIN-1 #f
-  ;; display* "INTMAX_MIN-1" INTMAX_MIN INTMAX_MIN-1
+  ;; printf "INTMAX_MIN-1 %s %s\n" INTMAX_MIN INTMAX_MIN-1
 }
 
 ;; overflow conversion tests -- many beyond the C MAX/MIN
 trap ^rt-bignum-conversion-error (function (c) {
-				    ;; edisplay* "bignum INTMAX_MAX+1 conversion error" c
+				    ;; eprintf "bignum INTMAX_MAX+1 conversion error: %s\n" c
 				    test (rt-bignum-conversion-error? c) #t
 				    #f
 }) {
   INTMAX_MAX+1 := (C/integer-> ((C/->integer INTMAX_MAX) * 100000))
   test INTMAX_MAX+1 #f
-  ;; display* "INTMAX_MAX+1" INTMAX_MAX INTMAX_MAX+1
+  ;; printf "INTMAX_MAX+1 %s %s\n" INTMAX_MAX INTMAX_MAX+1
 }
 
 trap ^rt-bignum-conversion-error (function (c) {
-				    ;; edisplay* "bignum INTMAX_MIN-1 conversion error" c
+				    ;; eprintf "bignum INTMAX_MIN-1 conversion error: %s\n" c
 				    test (rt-bignum-conversion-error? c) #t
 				    #f
 }) {
   INTMAX_MIN-1 := (C/integer-> ((C/->integer INTMAX_MIN) * 100000))
   test INTMAX_MIN-1 #f
-  ;; display* "INTMAX_MIN-1" INTMAX_MIN INTMAX_MIN-1
+  ;; printf "INTMAX_MIN-1 %s %s\n" INTMAX_MIN INTMAX_MIN-1
 }
 
 ;; all done?
-test (libc-wrap0 + 58) Tests
+Tests? (libc-wrap0 + 58)

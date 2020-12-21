@@ -1,14 +1,35 @@
+;;
+;; Copyright (c) 2020 Ian Fitchet <idf(at)idio-lang.org>
+;;
+;; Licensed under the Apache License, Version 2.0 (the "License"); you
+;; may not use this file except in compliance with the License.  You
+;; may obtain a copy of the License at
+;;
+;;     http://www.apache.org/licenses/LICENSE-2.0
+;;
+;; Unless required by applicable law or agreed to in writing, software
+;; distributed under the License is distributed on an "AS IS" BASIS,
+;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+;; See the License for the specific language governing permissions and
+;; limitations under the License.
+;;
+;;
 
-display* "This is trap.idio"
+;;
+;; test-trap.idio
+;;
 
-;%%vm-dis 1
+module tests/trap
+
+trap0 := Tests
 
 trap ^rt-signal-SIGCHLD (function (c) {
-			   ;display* "trapped ^rt-signal-SIGCHLD" c
+			   ;printf "trapped ^rt-signal-SIGCHLD: %s\n" c
+			   test #t #t
 			   c
 }) {
   trap ^rt-signal-SIGHUP (function (c) {
-			    display* "trapped ^rt-signal-SIGHUP" c
+			    printf "trapped ^rt-signal-SIGHUP: %s\n" c
   }) {
     echo Hello World
   }
@@ -17,6 +38,7 @@ trap ^rt-signal-SIGCHLD (function (c) {
 ;; test out the base-condition-handler
 
 set-default-handler! ^idio-error (function (c) {
+				    test #t #t
 				    'default-idio-error
 })
 
@@ -24,7 +46,7 @@ test (raise (make-condition ^idio-error "CONT ^idio-error" "loc" "det")) 'defaul
 
 {
   f := (function (s) {
-	  edisplay* "s =" s
+	  ;eprintf "s = %s\n" s
 	  echo s
 	  raise (make-condition ^idio-error
 				(append-string "^idio-error: " s)
@@ -36,3 +58,6 @@ test (raise (make-condition ^idio-error "CONT ^idio-error" "loc" "det")) 'defaul
 }
 
 clear-default-handler! ^idio-error
+
+;; all done?
+Tests? (trap0 + 4)

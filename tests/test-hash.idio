@@ -16,7 +16,7 @@
 ;;
 
 ;;
-;; hash.idio
+;; test-hash.idio
 ;;
 hash0 := Tests
 
@@ -380,5 +380,4 @@ ht."one" = 2
 test ht."one" 2
 
 ;; all done?
-test (hash0 + 70) Tests
-
+Tests? (hash0 + 70)

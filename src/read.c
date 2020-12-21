@@ -242,7 +242,7 @@ static void idio_read_error (IDIO handle, IDIO lo, IDIO c_location, IDIO msg)
 					       detail,
 					       idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_LINE),
 					       idio_struct_instance_ref_direct (lo, IDIO_LEXOBJ_POS)));
-    idio_raise_condition (idio_S_false, c);
+    idio_raise_condition (idio_S_true, c);
 
     /* notreached */
 }

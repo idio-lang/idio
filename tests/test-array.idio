@@ -16,7 +16,7 @@
 ;;
 
 ;;
-;; array.idio
+;; test-array.idio
 ;;
 array0 := Tests
 
@@ -165,4 +165,4 @@ a.1 .1 = 40
 test (a.1 .1) 40
 
 ;; all done?
-test (array0 + 57) Tests
+Tests? (array0 + 57)

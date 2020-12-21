@@ -33,4 +33,4 @@ test (bitset-ref bs 1) #t
 test/error (bitset-ref bs 3) #f "bitset bounds error: 3 >= size 3"
 
 ;; all done?
-test (bitset0 + 6) Tests
+Tests? (bitset0 + 6)
