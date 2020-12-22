@@ -82,6 +82,9 @@
  * [pointer] bit pattern.
  */
 union idio_malloc_overhead_u {
+    /*
+     * Check o_align matches IDIO_MALLOC_ALIGN_SIZE
+     */
     uint64_t o_align;		/* 					8 bytes */
     struct {
 	uint8_t ovu_magic;	/* magic number				1 */
@@ -108,6 +111,15 @@ union idio_malloc_overhead_u {
  * room for one after the allocated block
  */
 #define IDIO_MALLOC_RSLOP		sizeof (uint16_t)
+
+/*
+ * IDIO_MALLOC_ALIGN_SIZE should match the o_align size in
+ * idio_malloc_overhead_u
+ */
+#define IDIO_MALLOC_ALIGN_SIZE	8
+#define IDIO_MALLOC_ALIGN_MASK	(IDIO_MALLOC_ALIGN_SIZE - 1)
+#define IDIO_MALLOC_ALIGN(n)	((n + IDIO_MALLOC_ALIGN_MASK) & ~ IDIO_MALLOC_ALIGN_MASK)
+#define IDIO_MALLOC_SIZE(n)	IDIO_MALLOC_ALIGN(sizeof (union idio_malloc_overhead_u) + n + IDIO_MALLOC_RSLOP)
 
 /*
  * Bash enhancement:
@@ -261,8 +273,13 @@ void *idio_malloc_malloc (size_t size)
      * stored in hash buckets which satisfies request.  Account for
      * space used per block for accounting.
      */
-    register long reqd_size = size + sizeof (union idio_malloc_overhead_u) + IDIO_MALLOC_RSLOP;
+    register long reqd_size = IDIO_MALLOC_SIZE (size);
     register int bucket;
+
+    /*
+     * We can do a tiny speed increase as rather than always searching
+     * from bucket #1 start at bucket #n if request is > pagesize
+     */
     if (reqd_size <= ((unsigned long) idio_malloc_pagesz >> 1)) {
 	bucket = 1;
     } else {
@@ -314,7 +331,7 @@ void *idio_malloc_malloc (size_t size)
     return ((char *)(op + 1));
 }
 
-void * idio_malloc_calloc (size_t num, size_t size)
+void *idio_malloc_calloc (size_t num, size_t size)
 {
     if (size != 0 && (num * size) / size != num) {
 	/* size_t overflow. */
@@ -415,7 +432,7 @@ void idio_malloc_free (void *cp)
     }
 
     IDIO_C_ASSERT(op->ov_rmagic == IDIO_MALLOC_RMAGIC);
-    /* IDIO_C_ASSERT(*(uint16_t *)((caddr_t)(op + 1) + op->ov_size) == IDIO_MALLOC_RMAGIC); */
+    IDIO_C_ASSERT(*(uint16_t *)((caddr_t)(op + 1) + op->ov_size) == IDIO_MALLOC_RMAGIC);
 
     register int bucket = op->ov_bucket;
 
@@ -426,9 +443,9 @@ void idio_malloc_free (void *cp)
      * they've done.  Not that there's *that* much we can do as any of
      * the values could have been trampled on.
      */
-    register long reqd_size = op->ov_size + sizeof (union idio_malloc_overhead_u) + IDIO_MALLOC_RSLOP;
+    register long reqd_size = IDIO_MALLOC_SIZE (op->ov_size);
     if (reqd_size > idio_malloc_bucket_sizes[bucket]) {
-	fprintf (stderr, "im-free: %ld (%d)> bucket[%2d] == %zu\n", reqd_size, op->ov_size, bucket, idio_malloc_bucket_sizes[bucket]);
+	fprintf (stderr, "im-free: %ld (%d) > bucket[%2d] == %zu\n", reqd_size, op->ov_size, bucket, idio_malloc_bucket_sizes[bucket]);
 	IDIO_C_ASSERT (0);
     }
 
@@ -490,7 +507,7 @@ void * idio_malloc_realloc (void *cp, size_t size)
     }
 
     IDIO_C_ASSERT (op->ov_rmagic == IDIO_MALLOC_RMAGIC);
-    /* IDIO_C_ASSERT(*(uint16_t *)((caddr_t)(op + 1) + op->ov_size) == IDIO_MALLOC_RMAGIC); */
+    IDIO_C_ASSERT(*(uint16_t *)((caddr_t)(op + 1) + op->ov_size) == IDIO_MALLOC_RMAGIC);
 
     register int bucket = op->ov_bucket;
 
@@ -501,7 +518,7 @@ void * idio_malloc_realloc (void *cp, size_t size)
      * they've done.  Not that there's *that* much we can do as any of
      * the values could have been trampled on.
      */
-    register long reqd_size = op->ov_size + sizeof (union idio_malloc_overhead_u) + IDIO_MALLOC_RSLOP;
+    register long reqd_size = IDIO_MALLOC_SIZE (op->ov_size);
     if (reqd_size > idio_malloc_bucket_sizes[bucket]) {
 	fprintf (stderr, "im-realloc: %ld (%d) > bucket[%2d] == %zu\n", reqd_size, op->ov_size, bucket, idio_malloc_bucket_sizes[bucket]);
 	IDIO_C_ASSERT (0);
@@ -519,10 +536,11 @@ void * idio_malloc_realloc (void *cp, size_t size)
      * bucket anyway and can we get away with just rejigging the
      * allocation's ov_size?
      */
-    reqd_size = size + sizeof (union idio_malloc_overhead_u) + IDIO_MALLOC_RSLOP;
+    reqd_size = IDIO_MALLOC_SIZE (size);
     if (IDIO_MALLOC_BUCKET_RANGE (reqd_size, bucket) ||
 	IDIO_MALLOC_BUCKET_RANGE (reqd_size, bucket - 1)) {
 	op->ov_size = size;
+	*(uint16_t *)((caddr_t)(op + 1) + op->ov_size) = IDIO_MALLOC_RMAGIC;
 	return cp;
     }
 
@@ -537,6 +555,7 @@ void * idio_malloc_realloc (void *cp, size_t size)
     }
 
     bcopy(cp, res, count);
+    *(uint16_t *)((caddr_t)(res) + op->ov_size) = IDIO_MALLOC_RMAGIC;
 
     idio_malloc_free (cp);
 
