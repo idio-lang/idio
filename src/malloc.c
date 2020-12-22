@@ -416,6 +416,22 @@ static void idio_malloc_morecore (int bucket)
 	    op = next;
 	}
 	IDIO_MALLOC_OVERHEAD_CHAIN (op) = NULL;
+    } else {
+	perror ("mmap");
+	fprintf (stderr, "im-morecore: mmap (%d) => -1\n", amt);
+	if (ENOMEM == errno) {
+	    struct rlimit rlim;
+
+	    if (getrlimit (RLIMIT_VMEM, &rlim) == -1) {
+		idio_error_system_errno ("getrlimit", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+	    }
+
+	    fprintf (stderr, "im-morecore: ENOMEM: rlimit.RLIMIT_VMEM.rlim_cur = %zu\n", (size_t) rlim.rlim_cur);
+	}
+#ifdef IDIO_DEBUG
+	idio_malloc_stats ("im-morecore: mmap fail");
+#endif
+	exit (1);
     }
 }
 
@@ -457,7 +473,7 @@ void idio_malloc_free (void *cp)
     }
 
     if (bucket >= idio_malloc_pagesz_bucket) {
-	if (munmap (op, idio_malloc_bucket_sizes[bucket]) < 0) {
+	if (munmap ((caddr_t) op, idio_malloc_bucket_sizes[bucket]) < 0) {
 	    perror ("munmap");
 	}
 #ifdef IDIO_DEBUG
@@ -608,12 +624,12 @@ void idio_malloc_stats (char *s)
 
     unsigned long long i, j, k;
     register union idio_malloc_overhead_u *p;
-    int totfree = 0;
-    int totused = 0;
-    int nfree = 0;
-    int nused = 0;
-    int mmaps = 0;
-    int munmaps = 0;
+    unsigned long totfree = 0;
+    unsigned long totused = 0;
+    unsigned long nfree = 0;
+    unsigned long nused = 0;
+    unsigned long mmaps = 0;
+    unsigned long munmaps = 0;
 
     for (i = 0; i < IDIO_MALLOC_NBUCKETS; i++) {
 	if (idio_malloc_stats_num[i] ||
@@ -672,9 +688,9 @@ void idio_malloc_stats (char *s)
 	idio_hcount (&j, &scale);
 	fprintf(fh, " %6lld%c", j, scales[scale]);
     }
-    fprintf(fh, "\n\tTotal in use: %d for %d, total free: %d for %d\n",
+    fprintf(fh, "\n\tTotal in use: %lu for %lu, total free: %lu for %lu\n",
 	    nused, totused, nfree, totfree);
-    fprintf (fh, "\t %5d mmaps, %5d munmaps\n", mmaps, munmaps);
+    fprintf (fh, "\t %5lu mmaps, %5lu munmaps\n", mmaps, munmaps);
 }
 #endif
 
