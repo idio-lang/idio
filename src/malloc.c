@@ -419,6 +419,7 @@ static void idio_malloc_morecore (int bucket)
     } else {
 	perror ("mmap");
 	fprintf (stderr, "im-morecore: mmap (%d) => -1\n", amt);
+#ifdef RLIMIT_VMEM
 	if (ENOMEM == errno) {
 	    struct rlimit rlim;
 
@@ -428,6 +429,7 @@ static void idio_malloc_morecore (int bucket)
 
 	    fprintf (stderr, "im-morecore: ENOMEM: rlimit.RLIMIT_VMEM.rlim_cur = %zu\n", (size_t) rlim.rlim_cur);
 	}
+#endif
 #ifdef IDIO_DEBUG
 	idio_malloc_stats ("im-morecore: mmap fail");
 #endif
