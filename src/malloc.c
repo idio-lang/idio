@@ -130,9 +130,13 @@ union idio_malloc_overhead_u {
  * idio_malloc_overhead_u) to describe the overhead for when the block
  * is in use, and we do not want the free-list pointer to count in
  * that.
+ *
+ * I don't understand why the CHAIN doesn't use the user-portion of
+ * the bucket all the time.  So, I've made it use the user-portion all
+ * the time!
  */
 
-#define IDIO_MALLOC_OVERHEAD_CHAIN(p)	(*(union idio_malloc_overhead_u **) ((char *) (p) + sizeof (char *)))
+#define IDIO_MALLOC_OVERHEAD_CHAIN(p)	(*(union idio_malloc_overhead_u **) ((char *) (p + 1)))
 
 #define IDIO_MALLOC_BUCKET_RANGE(sz,b)	(((sz) > idio_malloc_bucket_sizes[(b)-1]) && ((sz) <= idio_malloc_bucket_sizes[(b)]))
 
@@ -241,6 +245,9 @@ static int idio_malloc_pagealign ()
 	 */
 	register unsigned long sz = 8;
 	for (nblks = 0; nblks < IDIO_MALLOC_NBUCKETS; nblks++) {
+	    if (0 == sz) {
+		sz = (unsigned long) -1;
+	    }
 	    idio_malloc_bucket_sizes[nblks] = sz;
 	    sz <<= 1;
 	}
