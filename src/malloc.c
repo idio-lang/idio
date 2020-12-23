@@ -28,8 +28,6 @@
  * http://gee.cs.oswego.edu/dl/html/malloc.html allocator's algorithms
  * might help.
  *
- * There's a nod to Bash's reentrancy and memory guard code too.
- *
  * Unfortunately, I can't unearth a reference to the original Kingsley
  * code.
  *
@@ -43,12 +41,11 @@
  * The Bash code continues to work with the idio_malloc_bucket_sizes[]
  * bins meaning the pagepool_start/end references can go.
  *
- * The code limits you to a 32bit allocation (4GB).  That can be
- * change with adjustments to IDIO_MALLOC_NBUCKETS and the uint32_t
- * for ovu_size.  The obvious change would be to allow 64bit
- * allocations which means the header becomes 16 bytes long (because
- * of the 8 byte ovu_size field).  That may tease out some
- * assumptions...
+ * This code only uses mmap() and so the Bash sbrk()/pagealign() code
+ * can go.
+ *
+ * The code should figure out whether 32-bit or 64-bit allocations are
+ * appropriate.
  */
 
 /*
@@ -67,19 +64,38 @@
 #include <sys/mman.h>
 
 /*
+ * The Emacs/Bash code suggests IDIO_MALLOC_NBUCKETS is SIZEOF_LONG * 4 - 2,
+ * usable bins from 1..IDIO_MALLOC_NBUCKETS-1
+ */
+
+/*
+ * We can toggle between 32-bit and 64-bit accounting, here.  The
+ * knock-on effects are the size of the first bucket (2^3 or 2^4
+ * bytes) and some stats-oriented stuff which uses the same Power-of-2
+ * bit-shifting in IDIO_MALLOC_FIRST_Po2.
+ */
+
+#if PTRDIFF_MAX == 2147483647L
+#define idio_alloc_t			uint32_t
+#define IDIO_PRIa			PRIu32
+#define IDIO_MALLOC_NBUCKETS		30
+#define IDIO_MALLOC_FIRST_Po2		3
+#else
+#define idio_alloc_t			uint64_t
+#define IDIO_PRIa			PRIu64
+#define IDIO_MALLOC_NBUCKETS		62
+#define IDIO_MALLOC_FIRST_Po2		4
+#endif
+
+/*
  * The overhead on a block is at least 8 bytes using the ov_align
- * field.  When free, this space contains a pointer to the next free
- * block, and the bottom two bits must be zero.
+ * field.
  *
  * When in use, the first byte is set to IDIO_MALLOC_MAGIC_ALLOC (or
  * _FREE), and the second byte is the bucket index.
  *
- * Range checking is enabled with a uint32_t holding the size of
- * the requested block.
- *
- * The order of elements is critical: ov_magic must overlay the low
- * order bits of [the pointer], and ov_magic can not be a valid
- * [pointer] bit pattern.
+ * Range checking is always enabled and there's a idio_alloc_t holding
+ * the size of the requested block.
  */
 union idio_malloc_overhead_u {
     /*
@@ -90,7 +106,7 @@ union idio_malloc_overhead_u {
 	uint8_t ovu_magic;	/* magic number				1 */
 	uint8_t ovu_bucket;	/* bucket #				1 */
 	uint16_t ovu_rmagic;	/* range magic number			2 */
-	uint32_t ovu_size;	/* actual block size			4 */
+	idio_alloc_t ovu_size;	/* actual block size			4/8 */
     } ovu;
 #define ov_magic	ovu.ovu_magic
 #define ov_bucket	ovu.ovu_bucket
@@ -100,7 +116,6 @@ union idio_malloc_overhead_u {
 
 /*
  * Instead of a single MAGIC number, Bash uses an ISFREE/ISALLOC pair
- * -- in both cases the bottom two bits cannot be 00
  */
 #define IDIO_MALLOC_MAGIC_FREE	0xbf		/* f for free */
 #define IDIO_MALLOC_MAGIC_ALLOC	0xbb		/* b for ... blob */
@@ -140,23 +155,17 @@ union idio_malloc_overhead_u {
 
 #define IDIO_MALLOC_BUCKET_RANGE(sz,b)	(((sz) > idio_malloc_bucket_sizes[(b)-1]) && ((sz) <= idio_malloc_bucket_sizes[(b)]))
 
-static void idio_malloc_morecore (int bucket);
-static int idio_malloc_findbucket (union idio_malloc_overhead_u *freep, int srchlen);
+static void idio_malloc_morecore (uint8_t bucket);
 
-/*
- * The Emacs/Bash code suggests IDIO_MALLOC_NBUCKETS is SIZEOF_LONG * 4 - 2,
- * usable bins from 1..IDIO_MALLOC_NBUCKETS-1
- */
-#define IDIO_MALLOC_NBUCKETS	30
-
-static size_t idio_malloc_bucket_sizes[IDIO_MALLOC_NBUCKETS] = {
+static idio_alloc_t idio_malloc_bucket_sizes[IDIO_MALLOC_NBUCKETS] = {
     0
 };
 
 /*
- * idio_malloc_nextf[i] is the pointer to the next free block of size 2^(i+3).  The
- * smallest allocatable block is 8 bytes.  The idio_malloc_overhead_u information
- * precedes the data area returned to the user.
+ * idio_malloc_nextf[i] is the pointer to the next free block of size
+ * 2^(i+IDIO_MALLOC_FIRST_Po2).  The smallest allocatable block is
+ * 2^IDIO_MALLOC_FIRST_Po2 bytes.  The idio_malloc_overhead_u
+ * information precedes the data area returned to the user.
  */
 static union idio_malloc_overhead_u *idio_malloc_nextf[IDIO_MALLOC_NBUCKETS];
 
@@ -174,20 +183,7 @@ static u_int idio_malloc_stats_mmaps[IDIO_MALLOC_NBUCKETS];
 static u_int idio_malloc_stats_munmaps[IDIO_MALLOC_NBUCKETS];
 #endif
 
-/*
- * idio_malloc_pagealign () is called to grab enough memory to align
- * future allocations on a page boundary and then make use of the
- * (less than a page) allocation it just got.
- *
- * We can avoid any need to invoke any malloc initialisation function
- * because it becomes dynamic.
- */
-
-/* XXX review this choice! */
-#define IDIO_MALLOC_PREF_BUCKET	2
-#define IDIO_MALLOC_PREF_SIZE	32
-
-static int idio_malloc_pagealign ()
+static void idio_malloc_init ()
 {
     idio_malloc_pagesz = sysconf (_SC_PAGESIZE);
     if (idio_malloc_pagesz < 1024) {
@@ -195,62 +191,18 @@ static int idio_malloc_pagealign ()
 	idio_malloc_pagesz = 1024;
     }
 
-    char *curbrk = sbrk (0);
-    long sbrk_reqd = idio_malloc_pagesz - ((long) curbrk & (idio_malloc_pagesz - 1)); /* sbrk(0) % pagesz */
-    if (sbrk_reqd < 0) {
-	fprintf (stderr, "im-pagealign: sbrk_reqd < 0? curbrk %p pagesz %lx\n", curbrk, idio_malloc_pagesz);
-	sbrk_reqd += idio_malloc_pagesz;
-    }
+    register uint8_t nblks;
 
-    register int nblks;
-
-    if (sbrk_reqd) {
-	curbrk = sbrk (sbrk_reqd);
-	if ((long)curbrk == -1) {
-	    perror ("sbrk");
-	    return -1;
+    /*
+     * Starting bucket size wants to be 2^IDIO_MALLOC_FIRST_Po2
+     */
+    register idio_alloc_t sz = 1 << IDIO_MALLOC_FIRST_Po2;
+    for (nblks = 0; nblks < IDIO_MALLOC_NBUCKETS; nblks++) {
+	if (0 == sz) {
+	    sz = (idio_alloc_t) -1;
 	}
-
-	/*
-	 * put this allocation in the preferred bin
-	 */
-	curbrk += sbrk_reqd & (IDIO_MALLOC_PREF_SIZE - 1);
-	sbrk_reqd -= sbrk_reqd & (IDIO_MALLOC_PREF_SIZE - 1);
-	nblks = sbrk_reqd / IDIO_MALLOC_PREF_SIZE;
-
-	if (nblks > 0) {
-	    register union idio_malloc_overhead_u *op = (union idio_malloc_overhead_u *) curbrk;
-	    register union idio_malloc_overhead_u *next;
-
-	    idio_malloc_nextf[IDIO_MALLOC_PREF_BUCKET] = op;
-	    while (1) {
-		op->ov_magic = IDIO_MALLOC_MAGIC_FREE;
-		op->ov_bucket = IDIO_MALLOC_PREF_BUCKET;
-		nblks--;
-		if (nblks <= 0) {
-		    break;
-		}
-		next = (union idio_malloc_overhead_u *) ((char *) op + IDIO_MALLOC_PREF_SIZE);
-		IDIO_MALLOC_OVERHEAD_CHAIN (op) = next;
-		op = next;
-	    }
-	    IDIO_MALLOC_OVERHEAD_CHAIN (op) = NULL;
-	}
-    }
-
-    if (0 == idio_malloc_bucket_sizes[0]) {
-	/*
-	 * Starting bucket size wants to be sizeof (union
-	 * idio_malloc_overhead_u) + 8
-	 */
-	register unsigned long sz = 8;
-	for (nblks = 0; nblks < IDIO_MALLOC_NBUCKETS; nblks++) {
-	    if (0 == sz) {
-		sz = (unsigned long) -1;
-	    }
-	    idio_malloc_bucket_sizes[nblks] = sz;
-	    sz <<= 1;
-	}
+	idio_malloc_bucket_sizes[nblks] = sz;
+	sz <<= 1;
     }
 
     for (nblks = 7; nblks < IDIO_MALLOC_NBUCKETS; nblks++) {
@@ -259,20 +211,15 @@ static int idio_malloc_pagealign ()
 	}
     }
     idio_malloc_pagesz_bucket = nblks;
-
-    return 0;
 }
 
 void *idio_malloc_malloc (size_t size)
 {
     /*
-     * First time malloc is called, setup page size and
-     * align break pointer so all data will be page aligned.
+     * First time malloc is called, setup page size and bucket sizes
      */
     if (idio_malloc_pagesz == 0) {
-	if (idio_malloc_pagealign () < 0) {
-	    return (void *) NULL;
-	}
+	idio_malloc_init ();
     }
 
     /*
@@ -280,14 +227,14 @@ void *idio_malloc_malloc (size_t size)
      * stored in hash buckets which satisfies request.  Account for
      * space used per block for accounting.
      */
-    register long reqd_size = IDIO_MALLOC_SIZE (size);
-    register int bucket;
+    register idio_alloc_t reqd_size = IDIO_MALLOC_SIZE (size);
+    register uint8_t bucket;
 
     /*
      * We can do a tiny speed increase as rather than always searching
      * from bucket #1 start at bucket #n if request is > pagesize
      */
-    if (reqd_size <= ((unsigned long) idio_malloc_pagesz >> 1)) {
+    if (reqd_size <= ((idio_alloc_t) idio_malloc_pagesz >> 1)) {
 	bucket = 1;
     } else {
 	bucket = idio_malloc_pagesz_bucket;
@@ -311,6 +258,11 @@ void *idio_malloc_malloc (size_t size)
 	    return (NULL);
 	}
     }
+
+    /*
+     * This is a historical check when the "next" pointer in the union
+     * overlaid the structure's ovu_rmagic field
+     */
     if ((intptr_t) idio_malloc_nextf[bucket] & 0x3) {
 	fprintf (stderr, "im-malloc: nextf[%2d] %8p is not a pointer\n", bucket, op);
 	assert (0);
@@ -356,20 +308,20 @@ void *idio_malloc_calloc (size_t num, size_t size)
 /*
  * Allocate more memory to the indicated bucket.
  */
-static void idio_malloc_morecore (int bucket)
+static void idio_malloc_morecore (uint8_t bucket)
 {
-    register long sz = idio_malloc_bucket_sizes[bucket];
+    register idio_alloc_t sz = idio_malloc_bucket_sizes[bucket];
 
-    if (sz <= 0) {
-	fprintf (stderr, "im-morecore: pagesizes[%d] = %ld\n", bucket, sz);
+    if ((idio_alloc_t) -1 == sz) {
+	fprintf (stderr, "im-morecore: pagesizes[%d] = %" IDIO_PRIa " is too large\n", bucket, sz);
 	return;
     }
 
     /*
      * We want to allocate a rounded pagesize amount of memory
      */
-    int amt;
-    int nblks;
+    idio_alloc_t amt;
+    idio_alloc_t nblks;
     if (sz < idio_malloc_pagesz) {
 	amt = idio_malloc_pagesz;
 	nblks = amt / sz;
@@ -418,7 +370,7 @@ static void idio_malloc_morecore (int bucket)
 	IDIO_MALLOC_OVERHEAD_CHAIN (op) = NULL;
     } else {
 	perror ("mmap");
-	fprintf (stderr, "im-morecore: mmap (%d) => -1\n", amt);
+	fprintf (stderr, "im-morecore: mmap (%" IDIO_PRIa ") => -1\n", amt);
 #ifdef RLIMIT_VMEM
 	if (ENOMEM == errno) {
 	    struct rlimit rlim;
@@ -433,7 +385,6 @@ static void idio_malloc_morecore (int bucket)
 #ifdef IDIO_DEBUG
 	idio_malloc_stats ("im-morecore: mmap fail");
 #endif
-	exit (1);
     }
 }
 
@@ -468,9 +419,9 @@ void idio_malloc_free (void *cp)
      * they've done.  Not that there's *that* much we can do as any of
      * the values could have been trampled on.
      */
-    register long reqd_size = IDIO_MALLOC_SIZE (op->ov_size);
+    register idio_alloc_t reqd_size = IDIO_MALLOC_SIZE (op->ov_size);
     if (reqd_size > idio_malloc_bucket_sizes[bucket]) {
-	fprintf (stderr, "im-free: %ld (%d) > bucket[%2d] == %zu\n", reqd_size, op->ov_size, bucket, idio_malloc_bucket_sizes[bucket]);
+	fprintf (stderr, "im-free: %" IDIO_PRIa " (%" IDIO_PRIa ") > bucket[%2d] == %" IDIO_PRIa "\n", reqd_size, op->ov_size, bucket, idio_malloc_bucket_sizes[bucket]);
 	IDIO_C_ASSERT (0);
     }
 
@@ -534,7 +485,7 @@ void * idio_malloc_realloc (void *cp, size_t size)
     IDIO_C_ASSERT (op->ov_rmagic == IDIO_MALLOC_RMAGIC);
     IDIO_C_ASSERT(*(uint16_t *)((caddr_t)(op + 1) + op->ov_size) == IDIO_MALLOC_RMAGIC);
 
-    register int bucket = op->ov_bucket;
+    register uint8_t bucket = op->ov_bucket;
 
     IDIO_C_ASSERT (bucket < IDIO_MALLOC_NBUCKETS);
 
@@ -543,9 +494,9 @@ void * idio_malloc_realloc (void *cp, size_t size)
      * they've done.  Not that there's *that* much we can do as any of
      * the values could have been trampled on.
      */
-    register long reqd_size = IDIO_MALLOC_SIZE (op->ov_size);
+    register idio_alloc_t reqd_size = IDIO_MALLOC_SIZE (op->ov_size);
     if (reqd_size > idio_malloc_bucket_sizes[bucket]) {
-	fprintf (stderr, "im-realloc: %ld (%d) > bucket[%2d] == %zu\n", reqd_size, op->ov_size, bucket, idio_malloc_bucket_sizes[bucket]);
+	fprintf (stderr, "im-realloc: %" IDIO_PRIa " (%" IDIO_PRIa ") > bucket[%2d] == %" IDIO_PRIa "\n", reqd_size, op->ov_size, bucket, idio_malloc_bucket_sizes[bucket]);
 	IDIO_C_ASSERT (0);
     }
 
@@ -554,7 +505,7 @@ void * idio_malloc_realloc (void *cp, size_t size)
     }
 
     if (0 == bucket) {
-	fprintf (stderr, "im-realloc: BUCKET_RANGE (%ld, %d)?\n", reqd_size, bucket);
+	fprintf (stderr, "im-realloc: BUCKET_RANGE (%" IDIO_PRIa ", %d)?\n", reqd_size, bucket);
     }
     /*
      * Rework with the (actual) requested size -- do we fit in this
@@ -569,7 +520,7 @@ void * idio_malloc_realloc (void *cp, size_t size)
 	return cp;
     }
 
-    register uint32_t count = op->ov_size;
+    register idio_alloc_t count = op->ov_size;
     if (reqd_size < count) {
 	count = reqd_size;
     }
@@ -585,27 +536,6 @@ void * idio_malloc_realloc (void *cp, size_t size)
     idio_malloc_free (cp);
 
     return res;
-}
-
-/*
- * Search ``srchlen'' elements of each free list for a block whose
- * header starts at ``freep''.  If srchlen is -1 search the whole list.
- * Return bucket number, or -1 if not found.
- */
-static int idio_malloc_findbucket (union idio_malloc_overhead_u *freep, int srchlen)
-{
-    register union idio_malloc_overhead_u *p;
-    register int i, j;
-
-    for (i = 0; i < IDIO_MALLOC_NBUCKETS; i++) {
-	j = 0;
-	for (p = idio_malloc_nextf[i]; p && j != srchlen; p = IDIO_MALLOC_OVERHEAD_CHAIN (p)) {
-	    if (p == freep)
-		return (i);
-	    j++;
-	}
-    }
-    return (-1);
 }
 
 #ifdef IDIO_DEBUG
@@ -646,14 +576,14 @@ void idio_malloc_stats (char *s)
 
     fprintf(fh, "Memory allocation statistics %s\nbucket:\t", s);
     for (i = 0; i < k; i++) {
-	fprintf(fh, " %6zu%c", idio_malloc_bucket_sizes[i], (idio_malloc_pagesz_bucket == i) ? '*' : ' ');
+	fprintf(fh, " %6" IDIO_PRIa "%c", idio_malloc_bucket_sizes[i], (idio_malloc_pagesz_bucket == i) ? '*' : ' ');
     }
     fprintf (fh, "\nfree:\t");
     for (i = 0; i < k; i++) {
 	for (j = 0, p = idio_malloc_nextf[i]; p; p = IDIO_MALLOC_OVERHEAD_CHAIN (p), j++)
 	    ;
 	nfree += j;
-	totfree += j * (1 << (i + 3));
+	totfree += j * (1 << (i + IDIO_MALLOC_FIRST_Po2));
 	scale = 0;
 	idio_hcount (&j, &scale);
 	fprintf(fh, " %6lld%c", j, scales[scale]);
@@ -662,7 +592,7 @@ void idio_malloc_stats (char *s)
     for (i = 0; i < k; i++) {
 	j = idio_malloc_stats_num[i];
 	nused += j;
-	totused += j * (1 << (i + 3));
+	totused += j * (1 << (i + IDIO_MALLOC_FIRST_Po2));
 	scale = 0;
 	idio_hcount (&j, &scale);
 	fprintf(fh, " %6lld%c", j, scales[scale]);
