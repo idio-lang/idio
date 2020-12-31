@@ -1320,7 +1320,7 @@ or the current output handle				\n\
     return idio_write_char (c, h);
 }
 
-IDIO_DEFINE_PRIMITIVE0V_DS ("newline", newline, (IDIO args), "[handle", "\
+IDIO_DEFINE_PRIMITIVE0V_DS ("newline", newline, (IDIO args), "[handle]", "\
 write a UTF-8 encoded U+000A character to ``handle``	\n\
 or the current output handle				\n\
 							\n\

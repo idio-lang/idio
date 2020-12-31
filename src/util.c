@@ -325,6 +325,13 @@ test if `o` is unspecified (#unspec)		\n\
     return r;
 }
 
+IDIO_DEFINE_PRIMITIVE0_DS ("void", void, (void), "", "\
+:return: #<void>	\n\
+")
+{
+    return idio_S_void;
+}
+
 IDIO_DEFINE_PRIMITIVE1_DS ("void?", voidp, (IDIO o), "o", "\
 test if `o` is void (#void)			\n\
 						\n\
@@ -3014,152 +3021,6 @@ each element of ``list``				\n\
     return r;
 }
 
-IDIO idio_list_map_ph (IDIO l)
-{
-    IDIO_ASSERT (l);
-    IDIO_TYPE_ASSERT (list, l);
-
-    IDIO r = idio_S_nil;
-
-    while (idio_S_nil != l) {
-	IDIO e = IDIO_PAIR_H (l);
-	if (idio_isa_pair (e)) {
-	    r = idio_pair (IDIO_PAIR_H (e), r);
-	} else {
-	    r = idio_pair (idio_S_nil, r);
-	}
-	l = IDIO_PAIR_T (l);
-	IDIO_TYPE_ASSERT (list, l);
-    }
-
-    return idio_list_reverse (r);
-}
-
-IDIO idio_list_map_pt (IDIO l)
-{
-    IDIO_ASSERT (l);
-    IDIO_TYPE_ASSERT (list, l);
-
-    IDIO r = idio_S_nil;
-
-    while (idio_S_nil != l) {
-	IDIO e = IDIO_PAIR_H (l);
-	if (idio_isa_pair (e)) {
-	    r = idio_pair (IDIO_PAIR_T (e), r);
-	} else {
-	    r = idio_pair (idio_S_nil, r);
-	}
-	l = IDIO_PAIR_T (l);
-	IDIO_TYPE_ASSERT (list, l);
-    }
-
-    return idio_list_reverse (r);
-}
-
-IDIO idio_list_memq (IDIO k, IDIO l)
-{
-    IDIO_ASSERT (k);
-    IDIO_ASSERT (l);
-    IDIO_TYPE_ASSERT (list, l);
-
-    while (idio_S_nil != l) {
-	if (idio_eqp (k, IDIO_PAIR_H (l))) {
-	    return l;
-	}
-	l = IDIO_PAIR_T (l);
-    }
-
-    return idio_S_false;
-}
-
-IDIO_DEFINE_PRIMITIVE2_DS ("memq", memq, (IDIO k, IDIO l), "k l", "\
-return the remainder of the list `l` from the	\n\
-first incidence of `k` or #f if `k` is not in `l`	\n\
-						\n\
-:param k: object to search for			\n\
-:type k: any					\n\
-:param l: list to search in			\n\
-:type l: list					\n\
-						\n\
-:return: a list starting from `k`, #f if `k` is not in `l`\n\
-")
-{
-    IDIO_ASSERT (k);
-    IDIO_ASSERT (l);
-
-    IDIO_USER_TYPE_ASSERT (list, l);
-
-    return idio_list_memq (k, l);
-}
-
-IDIO idio_list_assq (IDIO k, IDIO l)
-{
-    IDIO_ASSERT (k);
-    IDIO_ASSERT (l);
-    IDIO_TYPE_ASSERT (list, l);
-
-    while (idio_S_nil != l) {
-	IDIO p = IDIO_PAIR_H (l);
-
-	if (idio_S_nil == p) {
-	    return idio_S_false;
-	}
-
-	if (! idio_isa_pair (p)) {
-	    idio_error_C ("not a pair in list", IDIO_LIST2 (p, l), IDIO_C_FUNC_LOCATION ());
-
-	    /* notreached */
-	    return NULL;
-	}
-
-	if (idio_eqp (k, IDIO_PAIR_H (p))) {
-	    return p;
-	}
-	l = IDIO_PAIR_T (l);
-    }
-
-    return idio_S_false;
-}
-
-IDIO_DEFINE_PRIMITIVE2_DS ("assq", assq, (IDIO k, IDIO l), "k l", "\
-return the first entry of association list `l`	\n\
-with the key `k` or #f if `k` is not a key in `l`	\n\
-						\n\
-:param k: object to search for			\n\
-:type k: any					\n\
-:param l: association list to search in		\n\
-:type l: list					\n\
-						\n\
-:return: the list (`k` & value), #f if `k` is not a key in `l`\n\
-")
-{
-    IDIO_ASSERT (k);
-    IDIO_ASSERT (l);
-
-    IDIO_USER_TYPE_ASSERT (list, l);
-
-    return idio_list_assq (k, l);
-}
-
-IDIO idio_list_set_difference (IDIO set1, IDIO set2)
-{
-    if (idio_isa_pair (set1)) {
-	if (idio_S_false != idio_list_memq (IDIO_PAIR_H (set1), set2)) {
-	    return idio_list_set_difference (IDIO_PAIR_T (set1), set2);
-	} else {
-	    return idio_pair (IDIO_PAIR_H (set1),
-			      idio_list_set_difference (IDIO_PAIR_T (set1), set2));
-	}
-    } else {
-	if (idio_S_nil != set1) {
-	    idio_error_C ("set1", set1, IDIO_C_FUNC_LOCATION ());
-
-	    return idio_S_notreached;
-	}
-	return idio_S_nil;
-    }
-}
-
 IDIO_DEFINE_PRIMITIVE2_DS ("value-index", value_index, (IDIO o, IDIO i), "o i", "\
 index the object `o` by `i`			\n\
 						\n\
@@ -3760,6 +3621,7 @@ void idio_util_add_primitives ()
     IDIO_ADD_PRIMITIVE (unsetp);
     IDIO_ADD_PRIMITIVE (undefp);
     IDIO_ADD_PRIMITIVE (unspecp);
+    IDIO_ADD_PRIMITIVE (void);
     IDIO_ADD_PRIMITIVE (voidp);
     IDIO_ADD_PRIMITIVE (definedp);
     IDIO_ADD_PRIMITIVE (booleanp);
@@ -3770,8 +3632,6 @@ void idio_util_add_primitives ()
     IDIO_ADD_PRIMITIVE (string);
     IDIO_ADD_PRIMITIVE (display_string);
     IDIO_ADD_PRIMITIVE (map1);
-    IDIO_ADD_PRIMITIVE (memq);
-    IDIO_ADD_PRIMITIVE (assq);
     IDIO_ADD_PRIMITIVE (value_index);
     IDIO_ADD_PRIMITIVE (set_value_index);
     IDIO_ADD_PRIMITIVE (identity);

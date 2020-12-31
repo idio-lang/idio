@@ -498,6 +498,328 @@ list ``a`` is copied, list ``b`` is untouched	\n\
     return idio_list_append2 (a, b);
 }
 
+IDIO idio_list_map_ph (IDIO l)
+{
+    IDIO_ASSERT (l);
+    IDIO_TYPE_ASSERT (list, l);
+
+    IDIO r = idio_S_nil;
+
+    while (idio_S_nil != l) {
+	IDIO e = IDIO_PAIR_H (l);
+	if (idio_isa_pair (e)) {
+	    r = idio_pair (IDIO_PAIR_H (e), r);
+	} else {
+	    r = idio_pair (idio_S_nil, r);
+	}
+	l = IDIO_PAIR_T (l);
+	IDIO_TYPE_ASSERT (list, l);
+    }
+
+    return idio_list_reverse (r);
+}
+
+IDIO idio_list_map_pt (IDIO l)
+{
+    IDIO_ASSERT (l);
+    IDIO_TYPE_ASSERT (list, l);
+
+    IDIO r = idio_S_nil;
+
+    while (idio_S_nil != l) {
+	IDIO e = IDIO_PAIR_H (l);
+	if (idio_isa_pair (e)) {
+	    r = idio_pair (IDIO_PAIR_T (e), r);
+	} else {
+	    r = idio_pair (idio_S_nil, r);
+	}
+	l = IDIO_PAIR_T (l);
+	IDIO_TYPE_ASSERT (list, l);
+    }
+
+    return idio_list_reverse (r);
+}
+
+IDIO idio_list_memq (IDIO k, IDIO l)
+{
+    IDIO_ASSERT (k);
+    IDIO_ASSERT (l);
+    IDIO_TYPE_ASSERT (list, l);
+
+    while (idio_S_nil != l) {
+	if (idio_eqp (k, IDIO_PAIR_H (l))) {
+	    return l;
+	}
+	l = IDIO_PAIR_T (l);
+    }
+
+    return idio_S_false;
+}
+
+IDIO_DEFINE_PRIMITIVE2_DS ("memq", memq, (IDIO k, IDIO l), "k l", "\
+return the remainder of the list `l` from the	\n\
+first incidence of an element eq? `k`		\n\
+or #f if `k` is not in `l`			\n\
+						\n\
+:param k: object to search for			\n\
+:type k: any					\n\
+:param l: list to search in			\n\
+:type l: list					\n\
+						\n\
+:return: a list starting from `k`, #f if `k` is not in `l`\n\
+")
+{
+    IDIO_ASSERT (k);
+    IDIO_ASSERT (l);
+
+    IDIO_USER_TYPE_ASSERT (list, l);
+
+    return idio_list_memq (k, l);
+}
+
+IDIO idio_list_memv (IDIO k, IDIO l)
+{
+    IDIO_ASSERT (k);
+    IDIO_ASSERT (l);
+    IDIO_TYPE_ASSERT (list, l);
+
+    while (idio_S_nil != l) {
+	if (idio_eqvp (k, IDIO_PAIR_H (l))) {
+	    return l;
+	}
+	l = IDIO_PAIR_T (l);
+    }
+
+    return idio_S_false;
+}
+
+IDIO_DEFINE_PRIMITIVE2_DS ("memv", memv, (IDIO k, IDIO l), "k l", "\
+return the remainder of the list `l` from the	\n\
+first incidence of an element eqv? `k`		\n\
+or #f if `k` is not in `l`			\n\
+						\n\
+:param k: object to search for			\n\
+:type k: any					\n\
+:param l: list to search in			\n\
+:type l: list					\n\
+						\n\
+:return: a list starting from `k`, #f if `k` is not in `l`\n\
+")
+{
+    IDIO_ASSERT (k);
+    IDIO_ASSERT (l);
+
+    IDIO_USER_TYPE_ASSERT (list, l);
+
+    return idio_list_memv (k, l);
+}
+
+IDIO idio_list_member (IDIO k, IDIO l)
+{
+    IDIO_ASSERT (k);
+    IDIO_ASSERT (l);
+    IDIO_TYPE_ASSERT (list, l);
+
+    while (idio_S_nil != l) {
+	if (idio_equalp (k, IDIO_PAIR_H (l))) {
+	    return l;
+	}
+	l = IDIO_PAIR_T (l);
+    }
+
+    return idio_S_false;
+}
+
+IDIO_DEFINE_PRIMITIVE2_DS ("member", member, (IDIO k, IDIO l), "k l", "\
+return the remainder of the list `l` from the	\n\
+first incidence of an element equal? `k`	\n\
+or #f if `k` is not in `l`			\n\
+						\n\
+:param k: object to search for			\n\
+:type k: any					\n\
+:param l: list to search in			\n\
+:type l: list					\n\
+						\n\
+:return: a list starting from `k`, #f if `k` is not in `l`\n\
+")
+{
+    IDIO_ASSERT (k);
+    IDIO_ASSERT (l);
+
+    IDIO_USER_TYPE_ASSERT (list, l);
+
+    return idio_list_member (k, l);
+}
+
+IDIO idio_list_assq (IDIO k, IDIO l)
+{
+    IDIO_ASSERT (k);
+    IDIO_ASSERT (l);
+    IDIO_TYPE_ASSERT (list, l);
+
+    while (idio_S_nil != l) {
+	IDIO p = IDIO_PAIR_H (l);
+
+	if (idio_S_nil == p) {
+	    return idio_S_false;
+	}
+
+	if (! idio_isa_pair (p)) {
+	    idio_error_C ("not a pair in list", IDIO_LIST2 (p, l), IDIO_C_FUNC_LOCATION ());
+
+	    /* notreached */
+	    return NULL;
+	}
+
+	if (idio_eqp (k, IDIO_PAIR_H (p))) {
+	    return p;
+	}
+	l = IDIO_PAIR_T (l);
+    }
+
+    return idio_S_false;
+}
+
+IDIO_DEFINE_PRIMITIVE2_DS ("assq", assq, (IDIO k, IDIO l), "k l", "\
+return the first entry of association list `l`	\n\
+with a key eq? `k`				\n\
+or #f if `k` is not a key in `l`		\n\
+						\n\
+:param k: object to search for			\n\
+:type k: any					\n\
+:param l: association list to search in		\n\
+:type l: list					\n\
+						\n\
+:return: the list (`k` & value), #f if `k` is not a key in `l`\n\
+")
+{
+    IDIO_ASSERT (k);
+    IDIO_ASSERT (l);
+
+    IDIO_USER_TYPE_ASSERT (list, l);
+
+    return idio_list_assq (k, l);
+}
+
+IDIO idio_list_assv (IDIO k, IDIO l)
+{
+    IDIO_ASSERT (k);
+    IDIO_ASSERT (l);
+    IDIO_TYPE_ASSERT (list, l);
+
+    while (idio_S_nil != l) {
+	IDIO p = IDIO_PAIR_H (l);
+
+	if (idio_S_nil == p) {
+	    return idio_S_false;
+	}
+
+	if (! idio_isa_pair (p)) {
+	    idio_error_C ("not a pair in list", IDIO_LIST2 (p, l), IDIO_C_FUNC_LOCATION ());
+
+	    /* notreached */
+	    return NULL;
+	}
+
+	if (idio_eqvp (k, IDIO_PAIR_H (p))) {
+	    return p;
+	}
+	l = IDIO_PAIR_T (l);
+    }
+
+    return idio_S_false;
+}
+
+IDIO_DEFINE_PRIMITIVE2_DS ("assv", assv, (IDIO k, IDIO l), "k l", "\
+return the first entry of association list `l`	\n\
+with a key eqv? `k`				\n\
+or #f if `k` is not a key in `l`		\n\
+						\n\
+:param k: object to search for			\n\
+:type k: any					\n\
+:param l: association list to search in		\n\
+:type l: list					\n\
+						\n\
+:return: the list (`k` & value), #f if `k` is not a key in `l`\n\
+")
+{
+    IDIO_ASSERT (k);
+    IDIO_ASSERT (l);
+
+    IDIO_USER_TYPE_ASSERT (list, l);
+
+    return idio_list_assv (k, l);
+}
+
+IDIO idio_list_assoc (IDIO k, IDIO l)
+{
+    IDIO_ASSERT (k);
+    IDIO_ASSERT (l);
+    IDIO_TYPE_ASSERT (list, l);
+
+    while (idio_S_nil != l) {
+	IDIO p = IDIO_PAIR_H (l);
+
+	if (idio_S_nil == p) {
+	    return idio_S_false;
+	}
+
+	if (! idio_isa_pair (p)) {
+	    idio_error_C ("not a pair in list", IDIO_LIST2 (p, l), IDIO_C_FUNC_LOCATION ());
+
+	    /* notreached */
+	    return NULL;
+	}
+
+	if (idio_equalp (k, IDIO_PAIR_H (p))) {
+	    return p;
+	}
+	l = IDIO_PAIR_T (l);
+    }
+
+    return idio_S_false;
+}
+
+IDIO_DEFINE_PRIMITIVE2_DS ("assoc", assoc, (IDIO k, IDIO l), "k l", "\
+return the first entry of association list `l`	\n\
+with a key equal? `k`				\n\
+or #f if `k` is not a key in `l`		\n\
+						\n\
+:param k: object to search for			\n\
+:type k: any					\n\
+:param l: association list to search in		\n\
+:type l: list					\n\
+						\n\
+:return: the list (`k` & value), #f if `k` is not a key in `l`\n\
+")
+{
+    IDIO_ASSERT (k);
+    IDIO_ASSERT (l);
+
+    IDIO_USER_TYPE_ASSERT (list, l);
+
+    return idio_list_assoc (k, l);
+}
+
+IDIO idio_list_set_difference (IDIO set1, IDIO set2)
+{
+    if (idio_isa_pair (set1)) {
+	if (idio_S_false != idio_list_memq (IDIO_PAIR_H (set1), set2)) {
+	    return idio_list_set_difference (IDIO_PAIR_T (set1), set2);
+	} else {
+	    return idio_pair (IDIO_PAIR_H (set1),
+			      idio_list_set_difference (IDIO_PAIR_T (set1), set2));
+	}
+    } else {
+	if (idio_S_nil != set1) {
+	    idio_error_C ("set1", set1, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	}
+	return idio_S_nil;
+    }
+}
+
 IDIO_DEFINE_PRIMITIVE1_DS ("list->array", list2array, (IDIO l), "l", "\
 convert list ``l`` to an array			\n\
 						\n\
@@ -601,6 +923,12 @@ void idio_pair_add_primitives ()
     IDIO_ADD_PRIMITIVE (list_length);
     IDIO_ADD_PRIMITIVE (list);
     IDIO_ADD_PRIMITIVE (append);
+    IDIO_ADD_PRIMITIVE (memq);
+    IDIO_ADD_PRIMITIVE (memv);
+    IDIO_ADD_PRIMITIVE (member);
+    IDIO_ADD_PRIMITIVE (assq);
+    IDIO_ADD_PRIMITIVE (assv);
+    IDIO_ADD_PRIMITIVE (assoc);
     IDIO_ADD_PRIMITIVE (list2array);
     IDIO_ADD_PRIMITIVE (nth);
 }

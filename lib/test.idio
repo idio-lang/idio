@@ -38,8 +38,6 @@ if (file-exists? testfile) {
 Errors := 0
 Tests := 0
 
-define (void) (if #f #f)
-
 define (seq) {
   n := 1
 

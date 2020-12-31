@@ -58,8 +58,6 @@ define (pht x) (ph (pt x))
 define (pth x) (pt (ph x))
 define (ptt x) (pt (pt x))
 
-define (void) (if #f #f)
-
 define (map-ph f a) "map-ph: mapph1 a r" {
   mapph1 :+ function (a r) {
 	      if (null? a) {

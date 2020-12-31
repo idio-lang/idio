@@ -39,6 +39,15 @@ size_t idio_list_length (IDIO l);
 IDIO idio_copy_pair (IDIO p, int depth);
 IDIO idio_list_copy (IDIO l);
 IDIO idio_list_append2 (IDIO l1, IDIO l2);
+IDIO idio_list_map_ph (IDIO l);
+IDIO idio_list_map_pt (IDIO l);
+IDIO idio_list_memq (IDIO k, IDIO l);
+IDIO idio_list_memv (IDIO k, IDIO l);
+IDIO idio_list_member (IDIO k, IDIO l);
+IDIO idio_list_assq (IDIO k, IDIO l);
+IDIO idio_list_assv (IDIO k, IDIO l);
+IDIO idio_list_assoc (IDIO k, IDIO l);
+IDIO idio_list_set_difference (IDIO set1, IDIO set2);
 IDIO idio_list_nth (IDIO l, IDIO I_n, IDIO args);
 
 void idio_init_pair ();

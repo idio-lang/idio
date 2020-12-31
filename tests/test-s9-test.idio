@@ -768,17 +768,17 @@ test (pair? '#[array]) #f
 test (pair? (current-input-handle)) #f
 test (pair? (current-output-handle)) #f
 
-test (port? #f) #f
-test (port? #\c) #f
-test (port? 1) #f
-test (port? 0.1) #f
-test (port? '(pair)) #f
-test (port? (function () #f)) #f
-test (port? "string") #f
-test (port? 'symbol) #f
-test (port? '#[array]) #f
-test (port? (current-input-handle)) #t
-test (port? (current-output-handle)) #t
+test (handle? #f) #f
+test (handle? #\c) #f
+test (handle? 1) #f
+test (handle? 0.1) #f
+test (handle? '(pair)) #f
+test (handle? (function () #f)) #f
+test (handle? "string") #f
+test (handle? 'symbol) #f
+test (handle? '#[array]) #f
+test (handle? (current-input-handle)) #t
+test (handle? (current-output-handle)) #t
 
 test (function? #f) #f
 test (function? #\c) #f
