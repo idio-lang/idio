@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015, 2020 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -190,8 +190,8 @@ define-condition-type-accessors-only ^rt-command-exec-error		^runtime-error			rt
 define-condition-type-accessors-only ^rt-command-status-error		^runtime-error			rt-command-status-error? \
 	(status rt-command-status-error-status)
 
-define-condition-type-accessors-only ^rt-array-bounds-error		^runtime-error			rt-array-bounds-error? \
-	(index rt-array-bounds-error-index)
+define-condition-type-accessors-only ^rt-array-error			^runtime-error			rt-array-error? \
+	(index rt-array-error-index)
 
 define-condition-type-accessors-only ^rt-hash-key-not-found-error	^runtime-error			rt-hash-key-not-found-error? \
 	(key rt-hash-key-not-found-error-key)
@@ -311,7 +311,7 @@ define (condition-report prefix c & args) "print a report on condition `c`
 	 }
 	 cr-printf "job: %s => %s" (%idio-job-pipeline job) c.status
        }) \
-       ((rt-array-bounds-error? c) {
+       ((rt-array-error? c) {
 	 cr-printf ": index %s" c.index
        }) \
        ((rt-hash-key-not-found-error? c) {

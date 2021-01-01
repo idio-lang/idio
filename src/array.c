@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet
+ * <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -48,18 +49,30 @@
 
 static IDIO idio_array_default_value = idio_S_false;
 
-void idio_array_error_length (char *m, idio_ai_t i, IDIO c_location)
+static void idio_array_length_error (char *msg, idio_ai_t size, IDIO c_location)
 {
-    IDIO_C_ASSERT (m);
     IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (string, c_location);
 
+    char em[BUFSIZ];
+
+    sprintf (em, "%s: size %td", msg, size);
+
+    IDIO sh = idio_open_output_string_handle_C ();
+    idio_display_C (em, sh);
+
     IDIO location = idio_vm_source_location ();
 
-    idio_error_printf (location, "%s: %zd", m, i);
+    IDIO c = idio_struct_instance (idio_condition_rt_array_error_type,
+				   IDIO_LIST4 (idio_get_output_string (sh),
+					       location,
+					       c_location,
+					       idio_S_nil));
+
+    idio_raise_condition (idio_S_true, c);
 }
 
-static void idio_array_error_bounds (idio_ai_t index, idio_ai_t size, IDIO c_location)
+static void idio_array_bounds_error (idio_ai_t index, idio_ai_t size, IDIO c_location)
 {
     IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (string, c_location);
@@ -73,7 +86,7 @@ static void idio_array_error_bounds (idio_ai_t index, idio_ai_t size, IDIO c_loc
 
     IDIO location = idio_vm_source_location ();
 
-    IDIO c = idio_struct_instance (idio_condition_rt_array_bounds_error_type,
+    IDIO c = idio_struct_instance (idio_condition_rt_array_error_type,
 				   IDIO_LIST4 (idio_get_output_string (sh),
 					       location,
 					       c_location,
@@ -249,13 +262,20 @@ void idio_array_insert_index (IDIO a, IDIO o, idio_ai_t index)
 
     if (index < 0) {
 	/*
-	  negative indexes cannot be larger than the size of the
-	  existing array
-	*/
+	 * XXX no C code uses negative indexes!
+	 *
+	 * negative indexes cannot be larger than the size of the
+	 * existing array
+	 */
 	index += IDIO_ARRAY_USIZE (a);
 	if (index < 0) {
+	    /*
+	     * Test Case: ??
+	     *
+	     * The primitive handles this test for user-code.
+	     */
 	    index -= IDIO_ARRAY_USIZE (a);
-	    idio_array_error_bounds (index, IDIO_ARRAY_USIZE (a), IDIO_C_FUNC_LOCATION ());
+	    idio_array_bounds_error (index, IDIO_ARRAY_USIZE (a), IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
 	    return;
@@ -264,7 +284,15 @@ void idio_array_insert_index (IDIO a, IDIO o, idio_ai_t index)
 	if (index < (IDIO_ARRAY_ASIZE (a) + 1)) {
 	    idio_resize_array (a);
 	} else {
-	    idio_array_error_bounds (index, IDIO_ARRAY_ASIZE (a), IDIO_C_FUNC_LOCATION ());
+	    /*
+	     * Test Case: ??
+	     *
+	     * The primitive handles a more restrictive case for
+	     * user-code using USIZE not ASIZE.
+	     *
+	     * Requires developer "vision" to get here otherwise.
+	     */
+	    idio_array_bounds_error (index, IDIO_ARRAY_ASIZE (a), IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
 	    return;
@@ -356,10 +384,9 @@ IDIO idio_array_pop (IDIO a)
     }
 
     /*
-     * The functions idio_array_ref_index and idio_array_delete_index
-     * are defensive in the face of a negative index etc..  We know we
-     * have a positive index that is not beyond the end of the array.
-     * So we can dive right in.
+     * The function idio_array_ref_index is defensive in the face of a
+     * negative index etc..  We know we have a positive index that is
+     * not beyond the end of the array.  So we can dive right in.
      */
     index--;
     IDIO e = IDIO_ARRAY_AE (a, index);
@@ -438,31 +465,16 @@ void idio_array_unshift (IDIO a, IDIO o)
 }
 
 /**
- * idio_array_head() - return the value at the front of an array
- * @a: array
- *
- * Return:
- * ``IDIO`` value or %idio_S_nil if the array is empty.
- */
-IDIO idio_array_head (IDIO a)
-{
-    IDIO_ASSERT (a);
-    IDIO_TYPE_ASSERT (array, a);
-
-    if (IDIO_ARRAY_USIZE (a) < 1) {
-	IDIO_ARRAY_USIZE (a) = 0;
-	return idio_S_nil;
-    }
-
-    return idio_array_ref_index (a, 0);
-}
-
-/**
  * idio_array_top() - return the value at the end of an array
  * @a: array
  *
  * Return:
  * ``IDIO`` value or %idio_S_nil if the array is empty.
+ *
+ *
+ * XXX idio_array_top() is referenced by the code in idio_as_string()
+ * to print the top-most stack entry for a thread.  So, unless you
+ * print a thread object out this code won't be called.
  */
 IDIO idio_array_top (IDIO a)
 {
@@ -493,56 +505,32 @@ IDIO idio_array_ref_index (IDIO a, idio_ai_t index)
     if (index < 0) {
 	index += IDIO_ARRAY_USIZE (a);
 	if (index < 0) {
+	    /*
+	     * Test Case: array-errors/ref-negative-bounds.idio
+	     *
+	     * a := #[ 1 2 3 ]
+	     * array-ref a -4
+	     */
 	    index -= IDIO_ARRAY_USIZE (a);
-	    idio_array_error_bounds (index, IDIO_ARRAY_USIZE (a), IDIO_C_FUNC_LOCATION ());
+	    idio_array_bounds_error (index, IDIO_ARRAY_USIZE (a), IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
     }
 
     if (index >= IDIO_ARRAY_USIZE (a)) {
-	idio_array_error_bounds (index, IDIO_ARRAY_USIZE (a), IDIO_C_FUNC_LOCATION ());
+	/*
+	 * Test Case: array-errors/ref-positive-bounds.idio
+	 *
+	 * a := #[ 1 2 3 ]
+	 * array-ref a 5
+	 */
+	idio_array_bounds_error (index, IDIO_ARRAY_USIZE (a), IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
 
     return IDIO_ARRAY_AE (a, index);
-}
-
-/**
- * idio_array_find_free_index() - return the index of the first default value element
- * @a: array
- * @index: starting index
- *
- * Return:
- * The index of the first element matching the default value or -1.
- */
-idio_ai_t idio_array_find_free_index (IDIO a, idio_ai_t index)
-{
-    IDIO_ASSERT (a);
-    IDIO_TYPE_ASSERT (array, a);
-
-    if (index < 0) {
-	idio_array_error_bounds (index, IDIO_ARRAY_USIZE (a), IDIO_C_FUNC_LOCATION ());
-
-	/* notreached */
-	return -1;
-    }
-
-    if (index >= IDIO_ARRAY_USIZE (a)) {
-	idio_array_error_bounds (index, IDIO_ARRAY_USIZE (a), IDIO_C_FUNC_LOCATION ());
-
-	/* notreached */
-	return -1;
-    }
-
-    for (; index < IDIO_ARRAY_USIZE (a); index++) {
-	if (IDIO_ARRAY_DV (a) == IDIO_ARRAY_AE (a, index)) {
-	    return index;
-	}
-    }
-
-    return -1;
 }
 
 /**
@@ -561,14 +549,24 @@ idio_ai_t idio_array_find (IDIO a, int eqp, IDIO e, idio_ai_t index)
     IDIO_TYPE_ASSERT (array, a);
 
     if (index < 0) {
-	idio_array_error_bounds (index, IDIO_ARRAY_USIZE (a), IDIO_C_FUNC_LOCATION ());
+	/*
+	 * Test Case: ??
+	 *
+	 * Used by the codegen constants lookup code
+	 */
+	idio_array_bounds_error (index, IDIO_ARRAY_USIZE (a), IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return -1;
     }
 
     if (index >= IDIO_ARRAY_USIZE (a)) {
-	idio_array_error_bounds (index, IDIO_ARRAY_USIZE (a), IDIO_C_FUNC_LOCATION ());
+	/*
+	 * Test Case: ??
+	 *
+	 * Used by the codegen constants lookup code
+	 */
+	idio_array_bounds_error (index, IDIO_ARRAY_USIZE (a), IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return -1;
@@ -615,40 +613,6 @@ idio_ai_t idio_array_find_equalp (IDIO a, IDIO e, idio_ai_t index)
     IDIO_TYPE_ASSERT (array, a);
 
     return idio_array_find (a, IDIO_EQUAL_EQUALP, e, index);
-}
-
-/**
- * idio_array_bind() - assign values from array to arglist
- * @a: array
- * @nargs: number of argument to assign
- * @...: var args
- *
- * Return:
- * void
- */
-void idio_array_bind (IDIO a, idio_ai_t nargs, ...)
-{
-    IDIO_ASSERT (a);
-    IDIO_TYPE_ASSERT (array, a);
-
-    if (IDIO_ARRAY_USIZE (a) < nargs) {
-	idio_error_C ("too many args", a, IDIO_C_FUNC_LOCATION ());
-
-	/* notreached */
-	return;
-    }
-
-    va_list ap;
-    va_start (ap, nargs);
-
-    idio_ai_t i;
-    for (i = 0; i < nargs; i++) {
-	IDIO *arg = va_arg (ap, IDIO *);
-	*arg = idio_array_ref_index (a, i);
-	IDIO_ASSERT (*arg);
-    }
-
-    va_end (ap);
 }
 
 /**
@@ -725,48 +689,7 @@ IDIO idio_array_to_list (IDIO a)
     return idio_array_to_list_from (a, 0);
 }
 
-/**
- * idio_array_delete_index() - delete an array element
- * @a: array
- * @index: the index to delete
- *
- * As you can't delete an array element it actually sets the index to
- * the default array value.
- *
- * Return:
- * 1.
- */
-int idio_array_delete_index (IDIO a, idio_ai_t index)
-{
-    IDIO_ASSERT (a);
-    IDIO_TYPE_ASSERT (array, a);
-
-    IDIO_ASSERT_NOT_CONST (array, a);
-
-    if (index < 0) {
-	index += IDIO_ARRAY_USIZE (a);
-	if (index < 0) {
-	    index -= IDIO_ARRAY_USIZE (a);
-	    idio_array_error_bounds (index, IDIO_ARRAY_USIZE (a), IDIO_C_FUNC_LOCATION ());
-
-	    /* notreached */
-	    return 0;
-	}
-    }
-
-    if (index >= IDIO_ARRAY_USIZE (a)) {
-	idio_array_error_bounds (index, IDIO_ARRAY_USIZE (a), IDIO_C_FUNC_LOCATION ());
-
-	/* notreached */
-	return 0;
-    }
-
-    IDIO_ARRAY_AE (a, index) = IDIO_ARRAY_DV (a);
-
-    return 1;
-}
-
-IDIO_DEFINE_PRIMITIVE1_DS ("array?", array_p, (IDIO o), "o", "\
+IDIO_DEFINE_PRIMITIVE1_DS ("array?", arrayp, (IDIO o), "o", "\
 test if `o` is an array				\n\
 						\n\
 :param o: object to test			\n\
@@ -783,30 +706,6 @@ test if `o` is an array				\n\
     }
 
     return r;
-}
-
-IDIO_DEFINE_PRIMITIVE0V_DS ("array", array, (IDIO args), "[args]", "\
-create an array from `args`			\n\
-						\n\
-:param args: initial elements			\n\
-:return: the new array				\n\
-:rtype: array					\n\
-						\n\
-The default value is #f.			\n\
-")
-{
-    IDIO_ASSERT (args);
-
-    IDIO_USER_TYPE_ASSERT (list, args);
-
-    IDIO a = idio_array (idio_list_length (args));
-
-    idio_ai_t ai = 0;
-    while (idio_S_nil != args) {
-	idio_array_insert_index (a, IDIO_PAIR_H (args), ai++);
-    }
-
-    return a;
 }
 
 IDIO_DEFINE_PRIMITIVE1V_DS ("make-array", make_array, (IDIO size, IDIO args), "size [default]", "\
@@ -830,10 +729,19 @@ If no default value is supplied #f is used.	\n\
 	alen = IDIO_FIXNUM_VAL (size);
     } else if (idio_isa_bignum (size)) {
 	if (IDIO_BIGNUM_INTEGER_P (size)) {
+	    /*
+	     * Code coverage: to get here we'd need to pass
+	     * FIXNUM-MAX+1 and that is to too big to allocate...
+	     */
 	    alen = idio_bignum_ptrdiff_value (size);
 	} else {
 	    IDIO size_i = idio_bignum_real_to_integer (size);
 	    if (idio_S_nil == size_i) {
+		/*
+		 * Test Case: array-errors/make-array-size-not-integer.idio
+		 *
+		 * make-array 1.1
+		 */
 		idio_error_param_type ("integer", size, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
@@ -842,6 +750,11 @@ If no default value is supplied #f is used.	\n\
 	    }
 	}
     } else {
+	/*
+	 * Test Case: array-errors/make-array-size-not-integer.idio
+	 *
+	 * make-array #t
+	 */
 	idio_error_param_type ("integer", size, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
@@ -859,7 +772,12 @@ If no default value is supplied #f is used.	\n\
     }
 
     if (alen < 0) {
-	idio_error_printf (IDIO_C_FUNC_LOCATION (), "invalid length: %zd", alen);
+	/*
+	 * Test Case: array-errors/make-array-size-negative-integer.idio
+	 *
+	 * make-array -1
+	 */
+	idio_array_length_error ("invalid length", alen, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -903,40 +821,72 @@ copy array `orig` and add an optional `extra` elements	\n\
 	    } else if (idio_S_shallow == idepth) {
 		depth = IDIO_COPY_SHALLOW;
 	    } else {
+		/*
+		 * Test Case: array-errors/copy-array-bad-depth-symbol.idio
+		 *
+		 * copy-array #[ 1 2 3 ] 'fully
+		 */
 		idio_error_param_type ("'deep or 'shallow", idepth, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    }
 	} else {
+	    /*
+	     * Test Case: array-errors/copy-array-bad-depth-type.idio
+	     *
+	     * copy-array #[ 1 2 3 ] #t
+	     */
 	    idio_error_param_type ("symbol", idepth, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
 
-	if (idio_isa_fixnum (iextra)) {
-	    extra = IDIO_FIXNUM_VAL (iextra);
-	} else if (idio_isa_bignum (iextra)) {
-	    if (IDIO_BIGNUM_INTEGER_P (iextra)) {
-		extra = idio_bignum_ptrdiff_value (iextra);
-	    } else {
-		IDIO iextra_i = idio_bignum_real_to_integer (iextra);
-		if (idio_S_nil == iextra_i) {
-		    idio_error_param_type ("integer", iextra, IDIO_C_FUNC_LOCATION ());
-
-		    return idio_S_notreached;
+	if (idio_S_nil != iextra) {
+	    if (idio_isa_fixnum (iextra)) {
+		extra = IDIO_FIXNUM_VAL (iextra);
+	    } else if (idio_isa_bignum (iextra)) {
+		if (IDIO_BIGNUM_INTEGER_P (iextra)) {
+		    /*
+		     * Code coverage: to get here we'd need to pass
+		     * FIXNUM-MAX+1 and that is to too big to
+		     * allocate...
+		     */
+		    extra = idio_bignum_ptrdiff_value (iextra);
 		} else {
-		    extra = idio_bignum_ptrdiff_value (iextra_i);
-		}
-	    }
-	} else {
-	    idio_error_param_type ("integer", iextra, IDIO_C_FUNC_LOCATION ());
+		    IDIO iextra_i = idio_bignum_real_to_integer (iextra);
+		    if (idio_S_nil == iextra_i) {
+			/*
+			 * Test Case: array-errors/copy-array-extra-float.idio
+			 *
+			 * copy-array #[ 1 2 3 ] 'deep 1.1
+			 */
+			idio_error_param_type ("integer", iextra, IDIO_C_FUNC_LOCATION ());
 
-	    return idio_S_notreached;
+			return idio_S_notreached;
+		    } else {
+			extra = idio_bignum_ptrdiff_value (iextra_i);
+		    }
+		}
+	    } else {
+		/*
+		 * Test Case: array-errors/copy-array-bad-extra-type.idio
+		 *
+		 * copy-array #[ 1 2 3 ] 'deep #t
+		 */
+		idio_error_param_type ("integer", iextra, IDIO_C_FUNC_LOCATION ());
+
+		return idio_S_notreached;
+	    }
 	}
     }
 
     if (extra < 0) {
-	idio_error_printf (IDIO_C_FUNC_LOCATION (), "invalid length: %zd", extra);
+	/*
+	 * Test Case: array-errors/copy-array-extra-negative-integer.idio
+	 *
+	 * copy-array #[ 1 2 3 ] 'deep -1
+	 */
+	idio_array_length_error ("invalid length", extra, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -1001,10 +951,20 @@ IDIO idio_array_ref (IDIO a, IDIO index)
 	i = IDIO_FIXNUM_VAL (index);
     } else if (idio_isa_bignum (index)) {
 	if (IDIO_BIGNUM_INTEGER_P (index)) {
+	    /*
+	     * Code coverage: to get here we'd need to pass
+	     * FIXNUM-MAX+1 and that is to too big to allocate...
+	     */
 	    i = idio_bignum_ptrdiff_value (index);
 	} else {
 	    IDIO index_i = idio_bignum_real_to_integer (index);
 	    if (idio_S_nil == index_i) {
+		/*
+		 * Test Case: array-errors/ref-float.idio
+		 *
+		 * a := #[ 1 2 3 ]
+		 * array-ref a 1.1
+		 */
 		idio_error_param_type ("integer", index, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
@@ -1013,23 +973,13 @@ IDIO idio_array_ref (IDIO a, IDIO index)
 	    }
 	}
     } else {
+	/*
+	 * Test Case: array-errors/ref-not-integer.idio
+	 *
+	 * a := #[ 1 2 3 ]
+	 * array-ref a #t
+	 */
 	idio_error_param_type ("integer", index, IDIO_C_FUNC_LOCATION ());
-
-	return idio_S_notreached;
-    }
-
-    idio_ai_t al = idio_array_size (a);
-
-    if (i < 0) {
-	i += al;
-	if (i < 0) {
-	    i -= al;
-	    idio_array_error_bounds (i, IDIO_ARRAY_USIZE (a), IDIO_C_FUNC_LOCATION ());
-
-	    return idio_S_notreached;
-	}
-    } else if (i >= al) {
-	idio_array_error_bounds (i, IDIO_ARRAY_USIZE (a), IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -1072,10 +1022,20 @@ IDIO idio_array_set (IDIO a, IDIO index, IDIO v)
 	i = IDIO_FIXNUM_VAL (index);
     } else if (idio_isa_bignum (index)) {
 	if (IDIO_BIGNUM_INTEGER_P (index)) {
+	    /*
+	     * Code coverage: to get here we'd need to pass
+	     * FIXNUM-MAX+1 and that is to too big to allocate...
+	     */
 	    i = idio_bignum_ptrdiff_value (index);
 	} else {
 	    IDIO index_i = idio_bignum_real_to_integer (index);
 	    if (idio_S_nil == index_i) {
+		/*
+		 * Test Case: array-errors/set-float.idio
+		 *
+		 * a := #[ 1 2 3 ]
+		 * array-set! a 1.1 0
+		 */
 		idio_error_param_type ("integer", index, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
@@ -1084,6 +1044,12 @@ IDIO idio_array_set (IDIO a, IDIO index, IDIO v)
 	    }
 	}
     } else {
+	/*
+	 * Test Case: array-errors/set-not-integer.idio
+	 *
+	 * a := #[ 1 2 3 ]
+	 * array-set! a #t 0
+	 */
 	idio_error_param_type ("integer", index, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
@@ -1094,13 +1060,28 @@ IDIO idio_array_set (IDIO a, IDIO index, IDIO v)
     if (i < 0) {
 	i += al;
 	if (i < 0) {
+	    /*
+	     * Test Case: array-errors/insert-negative-bounds.idio
+	     *
+	     * a := #[ 1 2 3 ]
+	     * array-set! a -4 4
+	     */
 	    i -= al;
-	    idio_array_error_bounds (i, IDIO_ARRAY_USIZE (a), IDIO_C_FUNC_LOCATION ());
+	    idio_array_bounds_error (i, IDIO_ARRAY_USIZE (a), IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
-    } else if (i >= al) {
-	idio_array_error_bounds (i, IDIO_ARRAY_USIZE (a), IDIO_C_FUNC_LOCATION ());
+    } else if (i >= (al + 1)) {
+	/*
+	 * Test Case: array-errors/insert-positive-bounds.idio
+	 *
+	 * a := #[ 1 2 3 ]
+	 * array-set! a 5 5
+	 *
+	 * XXX This is more restrictive as the user is limited to
+	 * USIZE+1 (for push) not ASIZE for a pre-allocated array.
+	 */
+	idio_array_bounds_error (i, IDIO_ARRAY_USIZE (a), IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -1230,8 +1211,7 @@ convert `a` to a list				\n\
 
 void idio_array_add_primitives ()
 {
-    IDIO_ADD_PRIMITIVE (array_p);
-    IDIO_ADD_PRIMITIVE (array);
+    IDIO_ADD_PRIMITIVE (arrayp);
     IDIO_ADD_PRIMITIVE (make_array);
     IDIO_ADD_PRIMITIVE (copy_array);
     IDIO_ADD_PRIMITIVE (array_fill);

@@ -18,6 +18,7 @@
 ;;
 ;; test-string.idio
 ;;
+module tests/string
 string0 := Tests
 
 ;; most regular string tests are in s9-tests.idio

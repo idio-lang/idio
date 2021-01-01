@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -157,7 +157,7 @@ extern IDIO idio_condition_rt_command_forked_error_type;
 extern IDIO idio_condition_rt_command_env_type_error_type;
 extern IDIO idio_condition_rt_command_exec_error_type;
 extern IDIO idio_condition_rt_command_status_error_type;
-extern IDIO idio_condition_rt_array_bounds_error_type;
+extern IDIO idio_condition_rt_array_error_type;
 extern IDIO idio_condition_rt_hash_key_not_found_error_type;
 extern IDIO idio_condition_rt_bignum_conversion_error_type;
 extern IDIO idio_condition_rt_fixnum_conversion_error_type;

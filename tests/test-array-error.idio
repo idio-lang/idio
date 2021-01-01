@@ -1,0 +1,85 @@
+;;
+;; Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+;;
+;; Licensed under the Apache License, Version 2.0 (the "License"); you
+;; may not use this file except in compliance with the License.  You
+;; may obtain a copy of the License at
+;;
+;;     http://www.apache.org/licenses/LICENSE-2.0
+;;
+;; Unless required by applicable law or agreed to in writing, software
+;; distributed under the License is distributed on an "AS IS" BASIS,
+;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+;; See the License for the specific language governing permissions and
+;; limitations under the License.
+;;
+;;
+
+;;
+;; test-array-error.idio
+;;
+
+array-error0 := Tests
+
+;; We have a bunch of test cases which should provoke a
+;; ^rt-array-error or ^idio-error of some kind.  So we can
+;; write a load function which will wrapper the actual load with a
+;; trap for (^rt-array-error ^*-error) and compare the message
+;; strings (and line numbers for ^rt-array-errors).
+
+;; So one or two tests per, uh, test.
+
+array-error-load := {
+  n := 0
+
+  function (filename msg) {
+    if (not (string? filename)) (error 'load "not a string" filename)
+
+    load-k := #n
+
+    n = n + 1
+    ;eprintf "loading #%s %s looking for %s\n" n filename msg
+    trap (^rt-array-error
+	  ^rt-parameter-type-error) (function (c) {
+				       ;eprintf "%s %s %s\n" n msg c.location
+				       test c.message msg
+
+				       if (not (string=? c.message msg)) {
+					 condition-report (append-string "array-error-load: " filename) c (current-error-handle)
+				       }
+				       load-k 'array-error
+	  }) {
+      call/cc (function (k) {
+		 load-k = k
+		 (symbol-value 'load 'Idio) filename
+      })
+    }
+  }
+}
+
+;; test the various possible errors in read.c including an embedded
+;; variant to check we pick up the correct line number
+
+array-error-load "array-errors/insert-negative-bounds.idio" "array bounds error: abs (-4) >= #elem 3"
+array-error-load "array-errors/insert-positive-bounds.idio" "array bounds error: abs (5) >= #elem 3"
+array-error-load "array-errors/ref-negative-bounds.idio" "array bounds error: abs (-4) >= #elem 3"
+array-error-load "array-errors/ref-positive-bounds.idio" "array bounds error: abs (5) >= #elem 3"
+
+array-error-load "array-errors/make-array-size-float.idio" "bad parameter type: '1.1e+0' a BIGNUM is not a integer"
+array-error-load "array-errors/make-array-size-not-integer.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a integer"
+array-error-load "array-errors/make-array-size-negative.idio" "invalid length: size -1"
+
+array-error-load "array-errors/copy-array-bad-depth-symbol.idio" "bad parameter type: 'fully' a SYMBOL is not a 'deep or 'shallow"
+array-error-load "array-errors/copy-array-bad-depth-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol"
+array-error-load "array-errors/copy-array-extra-float.idio" "bad parameter type: '1.1e+0' a BIGNUM is not a integer"
+array-error-load "array-errors/copy-array-bad-extra-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a integer"
+array-error-load "array-errors/copy-array-extra-negative.idio" "invalid length: size -1"
+
+; the user-facing argument tests (bounds checks are above)
+array-error-load "array-errors/ref-float.idio" "bad parameter type: '1.1e+0' a BIGNUM is not a integer"
+array-error-load "array-errors/ref-not-integer.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a integer"
+array-error-load "array-errors/set-float.idio" "bad parameter type: '1.1e+0' a BIGNUM is not a integer"
+array-error-load "array-errors/set-not-integer.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a integer"
+
+;; all done?
+Tests? (array-error0 + 16)
