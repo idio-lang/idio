@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015, 2020 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -51,7 +51,7 @@ test RES '(("a/bbb///cc" "a" "bbb" "cc") ("xxx" "xxx") ("yyy" "yyy"))
 
 ;; tripped up over this walking over DerivedCoreProperties.txt
 STR = "002B          ; Math # Sm       PLUS SIGN"
-parts := split-string s "#"
+parts := split-string STR "#"
 dcp_parts := split-string (ph parts) ";"
 range := split-string (ph dcp_parts) ".." ; boom! substring extends beyong parent string length: 111011129 002B          ; Math 
 
