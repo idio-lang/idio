@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -484,6 +484,29 @@ convert Idio integer `i` to a C integer		\n\
     return idio_S_notreached;
 }
 
+IDIO_DEFINE_PRIMITIVE1_DS ("integer->unsigned", C_integer_to_unsigned, (IDIO inum), "i", "\
+convert Idio integer `i` to a C unsigned integer\n\
+						\n\
+:param o: Idio integer to convert		\n\
+:type o: bignum or fixnum			\n\
+						\n\
+:return: C unsigned integer			\n\
+:rtype: C-uint					\n\
+")
+{
+    IDIO_ASSERT (inum);
+
+    if (idio_isa_fixnum (inum)) {
+	return idio_C_uint (IDIO_FIXNUM_VAL (inum));
+    } else if (idio_isa_bignum (inum)) {
+	return idio_C_uint (idio_bignum_intmax_value (inum));
+    } else {
+	idio_error_param_type ("fixnum|bignum", inum, IDIO_C_FUNC_LOCATION ());
+    }
+
+    return idio_S_notreached;
+}
+
 IDIO_DEFINE_PRIMITIVE1V_DS ("|", C_bw_or, (IDIO v1, IDIO args), "v1 [...]", "\
 perform a C bitwise-OR on `v1` etc.		\n\
 						\n\
@@ -594,6 +617,7 @@ void idio_c_type_add_primitives ()
 
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_to_integer);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_integer_to);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_integer_to_unsigned);
 
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_bw_or);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_bw_and);

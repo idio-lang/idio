@@ -1,0 +1,733 @@
+;;
+;; Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+;;
+;; Licensed under the Apache License, Version 2.0 (the "License"); you
+;; may not use this file except in compliance with the License.  You
+;; may obtain a copy of the License at
+;;
+;;     http://www.apache.org/licenses/LICENSE-2.0
+;;
+;; Unless required by applicable law or agreed to in writing, software
+;; distributed under the License is distributed on an "AS IS" BASIS,
+;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+;; See the License for the specific language governing permissions and
+;; limitations under the License.
+;;
+;;
+
+;;
+;; test-bignum.idio
+;;
+
+module tests/bignum
+
+import job-control
+
+bignum0 := Tests
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; regular tests
+
+test (floor  0.0)     0
+test (floor  1.0)     1
+test (floor  1.1)     1
+test (floor  1.9)     1
+test (floor -1.0)    -1
+test (floor -1.1)    -2
+test (floor -1.9)    -2
+test (floor  1.2e3)   1200
+test (floor -1.2e3)  -1200
+test (floor  1.2e-3)  0
+test (floor -1.2e-3) -1
+
+test (quotient  1234.0  123)  10
+test (quotient -1234.0  123) -10
+test (quotient  1234.0 -123) -10
+test (quotient -1234.0 -123)  10
+
+test (quotient  123.0  1234)  0
+test (quotient -123.0  1234)  0
+test (quotient  123.0 -1234)  0
+test (quotient -123.0 -1234)  0
+
+test (quotient  123.0  123)  1
+test (quotient -123.0  123) -1
+test (quotient  123.0 -123) -1
+test (quotient -123.0 -123)  1
+
+test (remainder  1234.0  123)  4
+test (remainder -1234.0  123) -4
+test (remainder  1234.0 -123)  4
+test (remainder -1234.0 -123) -4
+
+test (remainder  123.0  1234)  123
+test (remainder -123.0  1234) -123
+test (remainder  123.0 -1234)  123
+test (remainder -123.0 -1234) -123
+
+test (remainder  123.0  123)  0
+test (remainder -123.0  123)  0
+test (remainder  123.0 -123)  0
+test (remainder -123.0 -123)  0
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; comparisions
+
+; The real concern, here, is that we're read the numbers in correctly
+; which means we want to test the various reader forms.  Although
+; getting the "sums" right is a bonus.
+
+; The obvious tests are positive vs. negative variants and vs 0.0
+
+; The nominal reader forms are: 1.0 0.1 1e0 1e1 1e-1
+
+; "1.0" first
+test (lt  1.0  2.0) #t
+test (lt  1.0 -2.0) #f
+test (lt -1.0  2.0) #t
+test (lt -1.0 -2.0) #f
+; "1.0" second
+test (lt  2.0  1.0) #f
+test (lt  2.0 -1.0) #f
+test (lt -2.0  1.0) #t
+test (lt -2.0 -1.0) #t
+; vs self
+test (lt  1.0  1.0) #f
+test (lt -1.0 -1.0) #f
+; vs zero
+test (lt  1.0  0.0) #f
+test (lt  0.0  1.0) #t
+; "0.1" first
+test (lt  0.1  1.0) #t
+test (lt  0.1 -1.0) #f
+test (lt -0.1  1.0) #t
+test (lt -0.1 -1.0) #f
+; "0.1" second
+test (lt  1.0  0.1) #f
+test (lt  1.0 -0.1) #f
+test (lt -1.0  0.1) #t
+test (lt -1.0 -0.1) #t
+; vs self
+test (lt  0.1  0.1) #f
+test (lt -0.1 -0.1) #f
+; vs zero
+test (lt  0.1  0.0) #f
+test (lt  0.0  0.1) #t
+; "1e0" first
+test (lt  1e0  2.0) #t
+test (lt  1e0 -2.0) #f
+test (lt -1e0  2.0) #t
+test (lt -1e0 -2.0) #f
+; "1e0" second
+test (lt  2.0  1e0) #f
+test (lt  2.0 -1e0) #f
+test (lt -2.0  1e0) #t
+test (lt -2.0 -1e0) #t
+; vs self
+test (lt  1e0  1e0) #f
+test (lt -1e0 -1e0) #f
+; vs zero
+test (lt  1e0  0.0) #f
+test (lt  0.0  1e0) #t
+; "1e+1" first
+test (lt  1e+1  2.0) #f
+test (lt  1e+1 -2.0) #f
+test (lt -1e+1  2.0) #t
+test (lt -1e+1 -2.0) #t
+; "1e+1" second
+test (lt  2.0  1e+1) #t
+test (lt  2.0 -1e+1) #f
+test (lt -2.0  1e+1) #t
+test (lt -2.0 -1e+1) #f
+; vs self
+test (lt  1e+1  1e+1) #f
+test (lt +1e+1 +1e+1) #f
+; vs zero
+test (lt  1e+1  0.0) #f
+test (lt  0.0  1e+1) #t
+; "1e-1" first
+test (lt  1e-1  2.0) #t
+test (lt  1e-1 -2.0) #f
+test (lt -1e-1  2.0) #t
+test (lt -1e-1 -2.0) #f
+; "1e-1" second
+test (lt  2.0  1e-1) #f
+test (lt  2.0 -1e-1) #f
+test (lt -2.0  1e-1) #t
+test (lt -2.0 -1e-1) #t
+; vs self
+test (lt  1e-1  1e-1) #f
+test (lt -1e-1 -1e-1) #f
+; vs zero
+test (lt  1e-1  0.0) #f
+test (lt  0.0  1e-1) #t
+; list form
+test (lt 1.0 2 3  4) #t
+test (lt 1.0 2 3 -4) #f
+
+; "1.0" first
+test (le  1.0  2.0) #t
+test (le  1.0 -2.0) #f
+test (le -1.0  2.0) #t
+test (le -1.0 -2.0) #f
+; "1.0" second
+test (le  2.0  1.0) #f
+test (le  2.0 -1.0) #f
+test (le -2.0  1.0) #t
+test (le -2.0 -1.0) #t
+; vs self
+test (le  1.0  1.0) #t
+test (le -1.0 -1.0) #t
+; vs zero
+test (le  1.0  0.0) #f
+test (le  0.0  1.0) #t
+; "0.1" first
+test (le  0.1  1.0) #t
+test (le  0.1 -1.0) #f
+test (le -0.1  1.0) #t
+test (le -0.1 -1.0) #f
+; "0.1" second
+test (le  1.0  0.1) #f
+test (le  1.0 -0.1) #f
+test (le -1.0  0.1) #t
+test (le -1.0 -0.1) #t
+; vs self
+test (le  0.1  0.1) #t
+test (le -0.1 -0.1) #t
+; vs zero
+test (le  0.1  0.0) #f
+test (le  0.0  0.1) #t
+; "1e0" first
+test (le  1e0  2.0) #t
+test (le  1e0 -2.0) #f
+test (le -1e0  2.0) #t
+test (le -1e0 -2.0) #f
+; "1e0" second
+test (le  2.0  1e0) #f
+test (le  2.0 -1e0) #f
+test (le -2.0  1e0) #t
+test (le -2.0 -1e0) #t
+; vs self
+test (le  1e0  1e0) #t
+test (le -1e0 -1e0) #t
+; vs zero
+test (le  1e0  0.0) #f
+test (le  0.0  1e0) #t
+; "1e+1" first
+test (le  1e+1  2.0) #f
+test (le  1e+1 -2.0) #f
+test (le -1e+1  2.0) #t
+test (le -1e+1 -2.0) #t
+; "1e+1" second
+test (le  2.0  1e+1) #t
+test (le  2.0 -1e+1) #f
+test (le -2.0  1e+1) #t
+test (le -2.0 -1e+1) #f
+; vs self
+test (le  1e+1  1e+1) #t
+test (le +1e+1 +1e+1) #t
+; vs zero
+test (le  1e+1  0.0) #f
+test (le  0.0  1e+1) #t
+; "1e-1" first
+test (le  1e-1  2.0) #t
+test (le  1e-1 -2.0) #f
+test (le -1e-1  2.0) #t
+test (le -1e-1 -2.0) #f
+; "1e-1" second
+test (le  2.0  1e-1) #f
+test (le  2.0 -1e-1) #f
+test (le -2.0  1e-1) #t
+test (le -2.0 -1e-1) #t
+; vs self
+test (le  1e-1  1e-1) #t
+test (le -1e-1 -1e-1) #t
+; vs zero
+test (le  1e-1  0.0) #f
+test (le  0.0  1e-1) #t
+; list form
+test (le 1.0 2 3  4) #t
+test (le 1.0 2 3 -4) #f
+
+; "1.0" first
+test (eq  1.0  2.0) #f
+test (eq  1.0 -2.0) #f
+test (eq -1.0  2.0) #f
+test (eq -1.0 -2.0) #f
+; "1.0" second
+test (eq  2.0  1.0) #f
+test (eq  2.0 -1.0) #f
+test (eq -2.0  1.0) #f
+test (eq -2.0 -1.0) #f
+; vs self
+test (eq  1.0  1.0) #t
+test (eq -1.0 -1.0) #t
+; vs zero
+test (eq  1.0  0.0) #f
+test (eq  0.0  1.0) #f
+; "0.1" first
+test (eq  0.1  1.0) #f
+test (eq  0.1 -1.0) #f
+test (eq -0.1  1.0) #f
+test (eq -0.1 -1.0) #f
+; "0.1" second
+test (eq  1.0  0.1) #f
+test (eq  1.0 -0.1) #f
+test (eq -1.0  0.1) #f
+test (eq -1.0 -0.1) #f
+; vs self
+test (eq  0.1  0.1) #t
+test (eq -0.1 -0.1) #t
+; vs zero
+test (eq  0.1  0.0) #f
+test (eq  0.0  0.1) #f
+; "1e0" first
+test (eq  1e0  2.0) #f
+test (eq  1e0 -2.0) #f
+test (eq -1e0  2.0) #f
+test (eq -1e0 -2.0) #f
+; "1e0" second
+test (eq  2.0  1e0) #f
+test (eq  2.0 -1e0) #f
+test (eq -2.0  1e0) #f
+test (eq -2.0 -1e0) #f
+; vs self
+test (eq  1e0  1e0) #t
+test (eq -1e0 -1e0) #t
+; vs zero
+test (eq  1e0  0.0) #f
+test (eq  0.0  1e0) #f
+; "1e+1" first
+test (eq  1e+1  2.0) #f
+test (eq  1e+1 -2.0) #f
+test (eq -1e+1  2.0) #f
+test (eq -1e+1 -2.0) #f
+; "1e+1" second
+test (eq  2.0  1e+1) #f
+test (eq  2.0 -1e+1) #f
+test (eq -2.0  1e+1) #f
+test (eq -2.0 -1e+1) #f
+; vs self
+test (eq  1e+1  1e+1) #t
+test (eq +1e+1 +1e+1) #t
+; vs zero
+test (eq  1e+1  0.0) #f
+test (eq  0.0  1e+1) #f
+; "1e-1" first
+test (eq  1e-1  2.0) #f
+test (eq  1e-1 -2.0) #f
+test (eq -1e-1  2.0) #f
+test (eq -1e-1 -2.0) #f
+; "1e-1" second
+test (eq  2.0  1e-1) #f
+test (eq  2.0 -1e-1) #f
+test (eq -2.0  1e-1) #f
+test (eq -2.0 -1e-1) #f
+; vs self
+test (eq  1e-1  1e-1) #t
+test (eq -1e-1 -1e-1) #t
+; vs zero
+test (eq  1e-1  0.0) #f
+test (eq  0.0  1e-1) #f
+; list form
+test (eq 1.0 2 3  4) #f
+test (eq 1.0 2 3 -4) #f
+
+; "1.0" first
+test (ge  1.0  2.0) #f
+test (ge  1.0 -2.0) #t
+test (ge -1.0  2.0) #f
+test (ge -1.0 -2.0) #t
+; "1.0" second
+test (ge  2.0  1.0) #t
+test (ge  2.0 -1.0) #t
+test (ge -2.0  1.0) #f
+test (ge -2.0 -1.0) #f
+; vs self
+test (ge  1.0  1.0) #t
+test (ge -1.0 -1.0) #t
+; vs zero
+test (ge  1.0  0.0) #t
+test (ge  0.0  1.0) #f
+; "0.1" first
+test (ge  0.1  1.0) #f
+test (ge  0.1 -1.0) #t
+test (ge -0.1  1.0) #f
+test (ge -0.1 -1.0) #t
+; "0.1" second
+test (ge  1.0  0.1) #t
+test (ge  1.0 -0.1) #t
+test (ge -1.0  0.1) #f
+test (ge -1.0 -0.1) #f
+; vs self
+test (ge  0.1  0.1) #t
+test (ge -0.1 -0.1) #t
+; vs zero
+test (ge  0.1  0.0) #t
+test (ge  0.0  0.1) #f
+; "1e0" first
+test (ge  1e0  2.0) #f
+test (ge  1e0 -2.0) #t
+test (ge -1e0  2.0) #f
+test (ge -1e0 -2.0) #t
+; "1e0" second
+test (ge  2.0  1e0) #t
+test (ge  2.0 -1e0) #t
+test (ge -2.0  1e0) #f
+test (ge -2.0 -1e0) #f
+; vs self
+test (ge  1e0  1e0) #t
+test (ge -1e0 -1e0) #t
+; vs zero
+test (ge  1e0  0.0) #t
+test (ge  0.0  1e0) #f
+; "1e+1" first
+test (ge  1e+1  2.0) #t
+test (ge  1e+1 -2.0) #t
+test (ge -1e+1  2.0) #f
+test (ge -1e+1 -2.0) #f
+; "1e+1" second
+test (ge  2.0  1e+1) #f
+test (ge  2.0 -1e+1) #t
+test (ge -2.0  1e+1) #f
+test (ge -2.0 -1e+1) #t
+; vs self
+test (ge  1e+1  1e+1) #t
+test (ge +1e+1 +1e+1) #t
+; vs zero
+test (ge  1e+1  0.0) #t
+test (ge  0.0  1e+1) #f
+; "1e-1" first
+test (ge  1e-1  2.0) #f
+test (ge  1e-1 -2.0) #t
+test (ge -1e-1  2.0) #f
+test (ge -1e-1 -2.0) #t
+; "1e-1" second
+test (ge  2.0  1e-1) #t
+test (ge  2.0 -1e-1) #t
+test (ge -2.0  1e-1) #f
+test (ge -2.0 -1e-1) #f
+; vs self
+test (ge  1e-1  1e-1) #t
+test (ge -1e-1 -1e-1) #t
+; vs zero
+test (ge  1e-1  0.0) #t
+test (ge  0.0  1e-1) #f
+; list form
+test (ge 1.0 2 3  4) #f
+test (ge 1.0 2 3 -4) #f
+
+; "1.0" first
+test (gt  1.0  2.0) #f
+test (gt  1.0 -2.0) #t
+test (gt -1.0  2.0) #f
+test (gt -1.0 -2.0) #t
+; "1.0" second
+test (gt  2.0  1.0) #t
+test (gt  2.0 -1.0) #t
+test (gt -2.0  1.0) #f
+test (gt -2.0 -1.0) #f
+; vs self
+test (gt  1.0  1.0) #f
+test (gt -1.0 -1.0) #f
+; vs zero
+test (gt  1.0  0.0) #t
+test (gt  0.0  1.0) #f
+; "0.1" first
+test (gt  0.1  1.0) #f
+test (gt  0.1 -1.0) #t
+test (gt -0.1  1.0) #f
+test (gt -0.1 -1.0) #t
+; "0.1" second
+test (gt  1.0  0.1) #t
+test (gt  1.0 -0.1) #t
+test (gt -1.0  0.1) #f
+test (gt -1.0 -0.1) #f
+; vs self
+test (gt  0.1  0.1) #f
+test (gt -0.1 -0.1) #f
+; vs zero
+test (gt  0.1  0.0) #t
+test (gt  0.0  0.1) #f
+; "1e0" first
+test (gt  1e0  2.0) #f
+test (gt  1e0 -2.0) #t
+test (gt -1e0  2.0) #f
+test (gt -1e0 -2.0) #t
+; "1e0" second
+test (gt  2.0  1e0) #t
+test (gt  2.0 -1e0) #t
+test (gt -2.0  1e0) #f
+test (gt -2.0 -1e0) #f
+; vs self
+test (gt  1e0  1e0) #f
+test (gt -1e0 -1e0) #f
+; vs zero
+test (gt  1e0  0.0) #t
+test (gt  0.0  1e0) #f
+; "1e+1" first
+test (gt  1e+1  2.0) #t
+test (gt  1e+1 -2.0) #t
+test (gt -1e+1  2.0) #f
+test (gt -1e+1 -2.0) #f
+; "1e+1" second
+test (gt  2.0  1e+1) #f
+test (gt  2.0 -1e+1) #t
+test (gt -2.0  1e+1) #f
+test (gt -2.0 -1e+1) #t
+; vs self
+test (gt  1e+1  1e+1) #f
+test (gt +1e+1 +1e+1) #f
+; vs zero
+test (gt  1e+1  0.0) #t
+test (gt  0.0  1e+1) #f
+; "1e-1" first
+test (gt  1e-1  2.0) #f
+test (gt  1e-1 -2.0) #t
+test (gt -1e-1  2.0) #f
+test (gt -1e-1 -2.0) #t
+; "1e-1" second
+test (gt  2.0  1e-1) #t
+test (gt  2.0 -1e-1) #t
+test (gt -2.0  1e-1) #f
+test (gt -2.0 -1e-1) #f
+; vs self
+test (gt  1e-1  1e-1) #f
+test (gt -1e-1 -1e-1) #f
+; vs zero
+test (gt  1e-1  0.0) #t
+test (gt  0.0  1e-1) #f
+; list form
+test (gt 1.0 2 3  4) #f
+test (gt 1.0 2 3 -4) #f
+
+; a handly exact integer number
+ein := FIXNUM-MAX + 1
+
+test (bignum? 1.0) #t
+test (bignum? 0.1) #t
+test (bignum? 1e0) #t
+test (bignum? 1e1) #t
+test (bignum? 1e-1) #t
+test (bignum? 0.0) #t
+test (bignum? 1) #f
+test (bignum? 0) #f
+test (bignum? ein) #t
+
+test (real? 1.0) #t
+test (real? 0.1) #t
+test (real? 1e0) #t
+test (real? 1e1) #t
+test (real? 1e-1) #t
+test (real? 0.0) #t
+test (real? 1) #f
+test (real? 0) #f
+test (real? ein) #f
+
+test (exact? 0) #t
+test (exact? ein) #t
+test (exact? 1.0) #t
+test (exact? 0.1) #t
+test (exact? 1e0) #t
+test (exact? 1e1) #t
+test (exact? 1e-1) #t
+test (exact? #e0) #t
+test (exact? #e-0) #t
+test (exact? #e0.0) #t
+test (exact? #e-0.0) #t
+test (exact? #e1) #t
+test (exact? #e-1) #t
+test (exact? #e1.0) #t
+test (exact? #e-1.0) #t
+test (exact? #e0.1) #t
+test (exact? #e-0.1) #t
+test (exact? #e1e0) #t
+test (exact? #e-1e0) #t
+test (exact? #e1e+1) #t
+test (exact? #e-1e+1) #t
+test (exact? #e1e-1) #t
+test (exact? #e-1e-1) #t
+test (exact? #i0) #f
+test (exact? #i-0) #f
+test (exact? #i0.0) #f
+test (exact? #i-0.0) #f
+test (exact? #i1) #f
+test (exact? #i-1) #f
+test (exact? #i1.0) #f
+test (exact? #i-1.0) #f
+test (exact? #i0.1) #f
+test (exact? #i-0.1) #f
+test (exact? #i1e0) #f
+test (exact? #i-1e0) #f
+test (exact? #i1e+1) #f
+test (exact? #i-1e+1) #f
+test (exact? #i1e-1) #f
+test (exact? #i-1e-1) #f
+
+test (exact->inexact 0) #i0
+test (exact->inexact 1.0) #i1
+test (exact->inexact 0.1) #i0.1
+test (exact->inexact 1e0) #i1
+test (exact->inexact 1e1) #i10
+test (exact->inexact 1e-1) #i0.1
+test (exact->inexact #e0) #i0
+test (exact->inexact #e-0) #i0
+test (exact->inexact #e0.0) #i0
+test (exact->inexact #e-0.0) #i0
+test (exact->inexact #e1) #i1
+test (exact->inexact #e-1) #i-1
+test (exact->inexact #e1.0) #i1
+test (exact->inexact #e-1.0) #i-1
+test (exact->inexact #e0.1) #i0.1
+test (exact->inexact #e-0.1) #i-0.1
+test (exact->inexact #e1e0) #i1
+test (exact->inexact #e-1e0) #i-1
+test (exact->inexact #e1e+1) #i10
+test (exact->inexact #e-1e+1) #i-10
+test (exact->inexact #e1e-1) #i0.1
+test (exact->inexact #e-1e-1) #i-0.1
+
+test (inexact? 0) #f
+test (inexact? ein) #f
+test (inexact? 1.0) #f
+test (inexact? 0.1) #f
+test (inexact? 1e0) #f
+test (inexact? 1e1) #f
+test (inexact? 1e-1) #f
+test (inexact? #e0) #f
+test (inexact? #e-0) #f
+test (inexact? #e0.0) #f
+test (inexact? #e-0.0) #f
+test (inexact? #e1) #f
+test (inexact? #e-1) #f
+test (inexact? #e1.0) #f
+test (inexact? #e-1.0) #f
+test (inexact? #e0.1) #f
+test (inexact? #e-0.1) #f
+test (inexact? #e1e0) #f
+test (inexact? #e-1e0) #f
+test (inexact? #e1e+1) #f
+test (inexact? #e-1e+1) #f
+test (inexact? #e1e-1) #f
+test (inexact? #e-1e-1) #f
+test (inexact? #i0) #t
+test (inexact? #i-0) #t
+test (inexact? #i0.0) #t
+test (inexact? #i-0.0) #t
+test (inexact? #i1) #t
+test (inexact? #i-1) #t
+test (inexact? #i1.0) #t
+test (inexact? #i-1.0) #t
+test (inexact? #i0.1) #t
+test (inexact? #i-0.1) #t
+test (inexact? #i1e0) #t
+test (inexact? #i-1e0) #t
+test (inexact? #i1e+1) #t
+test (inexact? #i-1e+1) #t
+test (inexact? #i1e-1) #t
+test (inexact? #i-1e-1) #t
+
+test (inexact->exact #i0) 0
+test (inexact->exact #i-0) 0
+test (inexact->exact #i0.0) 0
+test (inexact->exact #i-0.0) 0
+test (inexact->exact #i1) 1
+test (inexact->exact #i-1) -1
+test (inexact->exact #i1.0) 1
+test (inexact->exact #i-1.0) -1
+test (inexact->exact #i0.1) 0.1
+test (inexact->exact #i-0.1) -0.1
+test (inexact->exact #i1e0) 1
+test (inexact->exact #i-1e0) -1
+test (inexact->exact #i1e+1) 10
+test (inexact->exact #i-1e+1) -10
+test (inexact->exact #i1e-1) 0.1
+test (inexact->exact #i-1e-1) -0.1
+
+test (mantissa  1)       1
+test (mantissa  ein)     ein
+test (mantissa  1.2)     12
+test (mantissa -1.2)    -12
+test (mantissa  1.2e3)   12
+test (mantissa -1.2e3)  -12
+test (mantissa  1.2e-3)  12
+test (mantissa -1.2e-3) -12
+
+test (exponent  ein)     0
+test (exponent  1.2)    -1
+test (exponent -1.2)    -1
+test (exponent  1.2e3)   2
+test (exponent -1.2e3)   2
+test (exponent  1.2e-3) -4
+test (exponent -1.2e-3) -4
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; coverage tests
+
+;; FIXNUM-MAX * 2 is enough to generate two
+;; segments on a 32-bit machine.  FIXNUM-MAX was
+;; enough on a 64-bit machine on its own
+
+bn := FIXNUM-MAX * 2
+
+;; Technically, the bignum-dump calls for for code coverage -- and
+;; print direct to stderr anyway!
+with-error-to #n (function () {
+		    bignum-dump bn
+		    bignum-dump 1.0
+		    bignum-dump -1.0
+		    bignum-dump #i1.0
+})
+
+;; Another bit of code coverage: construct a bignum from a C unsigned
+;; int -- it must be bigger than FIXNUM-MAX (otherwise we'll get a
+;; fixnum) but we want it to be big enough to trigger multiple
+;; segments (although that's not happening on 64-bit at least)
+C-uint := C/integer->unsigned bn
+b := C/->integer C-uint
+
+test (equal? b bn) #t
+
+;; 
+test (- -1.0 -1.0) 0.0
+test (exact->inexact #e1.2) #i1.2
+test (inexact->exact #i1.2) #e1.2
+test (- 0.0 1.1) -1.1
+
+; Code coverage: we need large integers
+2fnm := 2 * FIXNUM-MAX
+3fnm := 3 * FIXNUM-MAX
+
+test (lt 0.0 1.1) #t
+test (lt 2fnm 3fnm) #t
+test (lt 2fnm (- 2fnm)) #f
+test (lt (- 2fnm) 2fnm) #t
+
+test (lt 2fnm 3.0) #f
+test (lt 3.0 2fnm) #t
+test (lt (- 2fnm) 3.0) #t
+test (lt 3.0 (- 2fnm)) #f
+test (lt 2fnm 0.0) #f
+test (lt 0.0 2fnm) #t
+
+test (+ 3.0 2fnm) #i4e18		; ??
+
+test (* 0.0 1) 0
+test (* 1.0 2fnm) 2fnm
+
+test (/ 0.0 1) 0
+
+with-output-to #n (function () {
+		     printf "%.3d" 2fnm
+		     printf "%.40d" 2fnm
+
+		     printf "%s" pi
+		     printf "%d" pi
+		     printf "%e" (- pi)
+})
+
+test +123456789012345678 123456789012345678
+test +0.0 0
+
+;; all done?
+Tests? (bignum0 + 515)

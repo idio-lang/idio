@@ -27,8 +27,6 @@ array-error0 := Tests
 ;; trap for (^rt-array-error ^*-error) and compare the message
 ;; strings (and line numbers for ^rt-array-errors).
 
-;; So one or two tests per, uh, test.
-
 array-error-load := {
   n := 0
 

@@ -1,0 +1,86 @@
+;;
+;; Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+;;
+;; Licensed under the Apache License, Version 2.0 (the "License"); you
+;; may not use this file except in compliance with the License.  You
+;; may obtain a copy of the License at
+;;
+;;     http://www.apache.org/licenses/LICENSE-2.0
+;;
+;; Unless required by applicable law or agreed to in writing, software
+;; distributed under the License is distributed on an "AS IS" BASIS,
+;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+;; See the License for the specific language governing permissions and
+;; limitations under the License.
+;;
+;;
+
+;;
+;; test-bignum-error.idio
+;;
+
+bignum-error0 := Tests
+
+;; We have a bunch of test cases which should provoke a
+;; ^rt-bignum-error or ^idio-error of some kind.  So we can
+;; write a load function which will wrapper the actual load with a
+;; trap for (^rt-bignum-error ^*-error) and compare the message
+;; strings (and line numbers for ^rt-bignum-errors).
+
+bignum-error-load := {
+  n := 0
+
+  function (filename msg) {
+    if (not (string? filename)) (error 'load "not a string" filename)
+
+    load-k := #n
+
+    n = n + 1
+    ;eprintf "loading #%s %s looking for %s\n" n filename msg
+    trap (^rt-bignum-error
+	  ^rt-number-error
+	  ^rt-parameter-type-error) (function (c) {
+				       ;eprintf "%s %s %s\n" n msg c.location
+				       test c.message msg
+
+				       if (not (string=? c.message msg)) {
+					 condition-report (append-string "bignum-error-load: " filename) c (current-error-handle)
+				       }
+				       load-k 'bignum-error
+	  }) {
+      call/cc (function (k) {
+		 load-k = k
+		 (symbol-value 'load 'Idio) filename
+      })
+    }
+  }
+}
+
+;; test the various possible errors in read.c including an embedded
+;; variant to check we pick up the correct line number
+
+bignum-error-load "bignum-errors/divide-float-zero.idio" "bignum divide by zero"
+
+;; XXX If we mess with idio-print-conversion-format then we need to
+;; restore it as soon as possible
+;;
+;; Several other conversions will occur before we can restore
+;; idio-print-conversion-format so this test is deliberately commented
+;; out.
+orig-ipcf := idio-print-conversion-format
+;bignum-error-load "bignum-errors/real-format-type.idio" "bad parameter type: 'foo' a SYMBOL is not a unicode"
+idio-print-conversion-format = orig-ipcf
+
+bignum-error-load "bignum-errors/add-non-bignum.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a bignum"
+bignum-error-load "bignum-errors/subtract-non-bignum.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a bignum"
+bignum-error-load "bignum-errors/multiply-non-bignum.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a bignum"
+bignum-error-load "bignum-errors/divide-float-zero.idio" "bignum divide by zero"
+
+bignum-error-load "bignum-errors/lt-non-bignum.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a bignum"
+bignum-error-load "bignum-errors/le-non-bignum.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a bignum"
+bignum-error-load "bignum-errors/eq-non-bignum.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a bignum"
+bignum-error-load "bignum-errors/ge-non-bignum.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a bignum"
+bignum-error-load "bignum-errors/gt-non-bignum.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a bignum"
+
+;; all done?
+Tests? (bignum-error0 + 10)

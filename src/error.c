@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -351,9 +351,10 @@ void idio_error_divide_by_zero (char *msg, IDIO c_location)
     IDIO location = idio_vm_source_location ();
 
     IDIO c = idio_struct_instance (idio_condition_rt_divide_by_zero_error_type,
-				   IDIO_LIST3 (idio_get_output_string (msh),
+				   IDIO_LIST4 (idio_get_output_string (msh),
 					       location,
-					       c_location));
+					       c_location,
+					       idio_S_nil));
 
     idio_raise_condition (idio_S_true, c);
 

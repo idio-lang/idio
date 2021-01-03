@@ -154,6 +154,8 @@ test-load "test-expander-error.idio"
 ;time test-load "test-s9-test.idio"
 test-load "test-array-error.idio"
 test-load "test-array.idio"
+test-load "test-bignum-error.idio"
+test-load "test-bignum.idio"
 
 
 test-load "test-unicode.idio"

@@ -196,13 +196,18 @@ define-condition-type-accessors-only ^rt-array-error			^runtime-error			rt-array
 define-condition-type-accessors-only ^rt-hash-key-not-found-error	^runtime-error			rt-hash-key-not-found-error? \
 	(key rt-hash-key-not-found-error-key)
 
-define-condition-type-accessors-only ^rt-bignum-conversion-error	^runtime-error			rt-bignum-conversion-error? \
-	(bignum rt-bignum-conversion-error-bignum)
+define-condition-type-accessors-only ^rt-number-error			^runtime-error			rt-number-error? \
+	(number rt-number-error-number)
 
-define-condition-type-accessors-only ^rt-fixnum-conversion-error	^runtime-error			rt-fixnum-conversion-error? \
-	(fixnum rt-fixnum-conversion-error-fixnum)
+define-condition-type-accessors-only ^rt-divide-by-zero-error		^rt-number-error		rt-divide-by-zero-error?
 
-define-condition-type-accessors-only ^rt-divide-by-zero-error		^runtime-error			rt-divide-by-zero-error?
+define-condition-type-accessors-only ^rt-bignum-error			^rt-bignum-error		rt-bignum-error?
+
+define-condition-type-accessors-only ^rt-bignum-conversion-error	^rt-bignum-error		rt-bignum-conversion-error?
+
+define-condition-type-accessors-only ^rt-fixnum-error			^rt-number-error		rt-fixnum-error?
+
+define-condition-type-accessors-only ^rt-fixnum-conversion-error	^rt-fixnum-error		rt-fixnum-conversion-error?
 
 define-condition-type-accessors-only ^rt-bitset-bounds-error		^runtime-error			rt-bitset-bounds-error? \
 	(bit rt-bitset-bounds-error-bit)

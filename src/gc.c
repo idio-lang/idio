@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2018, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2018, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -1937,11 +1937,16 @@ char *idio_strcat (char *s1, size_t *s1sp, const char *s2, const size_t s2s)
      */
     char *r = realloc (s1, *s1sp + s2s + 1);
 #endif
-    if (NULL != r) {
-	memcpy (r + *s1sp, s2, s2s);
-	r[*s1sp + s2s] = '\0';
-	*s1sp += s2s;
+    if (NULL == r) {
+	idio_error_alloc ("realloc");
+
+	/* notreached */
+	return NULL;
     }
+
+    memcpy (r + *s1sp, s2, s2s);
+    r[*s1sp + s2s] = '\0';
+    *s1sp += s2s;
 
     return r;
 }

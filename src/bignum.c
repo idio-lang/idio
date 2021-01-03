@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -26,7 +26,32 @@ size_t idio_bignums = 0;
 size_t idio_bignums_max = 0;
 size_t idio_bignum_seg_max = 0;
 
-static void idio_bignum_error_conversion (char *msg, IDIO bn, IDIO c_location)
+/*
+ * Code coverage:
+ *
+ * No Idio code can reach the calls to this function.  Requires some C
+ * unit tests.
+ */
+static void idio_bignum_error (char *msg, IDIO bn, IDIO c_location)
+{
+    IDIO_C_ASSERT (msg);
+    IDIO_ASSERT (c_location);
+    IDIO_ASSERT (bn);
+    IDIO_TYPE_ASSERT (bignum, bn);
+    IDIO_TYPE_ASSERT (string, c_location);
+
+    IDIO msh = idio_open_output_string_handle_C ();
+    idio_display_C (msg, msh);
+
+    IDIO c = idio_struct_instance (idio_condition_rt_bignum_error_type,
+				   IDIO_LIST4 (idio_get_output_string (msh),
+					       c_location,
+					       idio_S_nil,
+					       bn));
+    idio_raise_condition (idio_S_true, c);
+}
+
+static void idio_bignum_conversion_error (char *msg, IDIO bn, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (c_location);
@@ -56,6 +81,9 @@ static void idio_bignum_error_divide_by_zero (IDIO c_location)
 IDIO_BSA idio_bsa (size_t n)
 {
     if (n <= 0) {
+	/*
+	 * Code coverage: C unit test??
+	 */
 	n = IDIO_BIGNUM_SIG_SEGMENTS;
     }
 
@@ -63,7 +91,6 @@ IDIO_BSA idio_bsa (size_t n)
 	idio_bignum_seg_max = n;
     }
 
-    /* fprintf (stderr, "idio_bsa: %zd\n", n); */
     IDIO_BSA bsa = idio_alloc (sizeof (idio_bsa_t));
     bsa->ae = idio_alloc (n * sizeof (IDIO_BS_T));
     bsa->avail = n;
@@ -75,7 +102,6 @@ IDIO_BSA idio_bsa (size_t n)
 	bsa->ae[i] = 0;
     }
 
-    /* fprintf (stderr, "idio_bsa %zd: %p %p\n", n, bsa, bsa->ae);   */
     idio_bignums++;
     if (idio_bignums > idio_bignums_max) {
 	idio_bignums_max = idio_bignums;
@@ -86,8 +112,6 @@ IDIO_BSA idio_bsa (size_t n)
 
 void idio_bsa_free (IDIO_BSA bsa)
 {
-    /* fprintf (stderr, "idio_bsa_free %zd: %p %p\n", bsa->size, bsa, bsa->ae);   */
-
     if (bsa->refs > 1) {
 	bsa->refs--;
     } else {
@@ -99,7 +123,6 @@ void idio_bsa_free (IDIO_BSA bsa)
 
 static void idio_bsa_resize_by (IDIO_BSA bsa, size_t n)
 {
-    /* fprintf (stderr, "idio_bsa_resize: %p from %zd by %zd\n", bsa, bsa->size, n);    */
     bsa->size += n;
     if (bsa->size > bsa->avail) {
 	bsa->ae = idio_realloc (bsa->ae, bsa->size * sizeof (IDIO_BS_T));
@@ -112,27 +135,37 @@ static void idio_bsa_resize_by (IDIO_BSA bsa, size_t n)
 IDIO_BS_T idio_bsa_get (IDIO_BSA bsa, size_t i)
 {
     if (i >= bsa->size) {
-	idio_error_printf (IDIO_C_FUNC_LOCATION (), "bignum significand array access OOB: get %zd/%zd", i, bsa->size);
+	/*
+	 * Test Case: ??
+	 *
+	 * Requires bad developer code.
+	 */
+	char em[BUFSIZ];
+	sprintf (em, "bignum significand array access OOB: get %zd/%zd", i, bsa->size);
+	idio_bignum_error (em, idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return -1;
     }
 
-    /* fprintf (stderr, "idio_bsa_get: %p %zd/%zd => %zd\n", bsa, i, bsa->size, bsa->ae[i]);  */
     return bsa->ae[i];
 }
 
 void idio_bsa_set (IDIO_BSA bsa, IDIO_BS_T v, size_t i)
 {
-    /* fprintf (stderr, "idio_bsa_set: %p %zd/%zd => %zd\n", bsa, i, bsa->size, v);    */
     if (i >= bsa->size) {
 	/* one beyond the current usage is OK */
-	/* fprintf (stderr, "idio_bsa_set: %p i >= bsa->size\n", bsa);   */
 	if (bsa->size == i) {
-	    /* fprintf (stderr, "idio_bsa_set: %p bsa->size == i\n", bsa);   */
 	    idio_bsa_resize_by (bsa, 1);
 	} else {
-	    idio_error_printf (IDIO_C_FUNC_LOCATION (), "bignum significand array access OOB: set %zd/%zd", i, bsa->size);
+	    /*
+	     * Test Case: ??
+	     *
+	     * Requires bad developer code.
+	     */
+	    char em[BUFSIZ];
+	    sprintf (em, "bignum significand array access OOB: set %zd/%zd", i, bsa->size);
+	    idio_bignum_error (em, idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
 	    return;
@@ -144,7 +177,6 @@ void idio_bsa_set (IDIO_BSA bsa, IDIO_BS_T v, size_t i)
 
 void idio_bsa_shift (IDIO_BSA bsa)
 {
-    /* fprintf (stderr, "idio_bsa_shift: %p %zd\n", bsa, bsa->size);  */
     if (bsa->size) {
 	size_t i;
 	for (i = 1; i < bsa->size ; i++) {
@@ -152,7 +184,12 @@ void idio_bsa_shift (IDIO_BSA bsa)
 	}
 	bsa->size--;
     } else {
-	idio_error_printf (IDIO_C_FUNC_LOCATION (), "bignum significand shift: zero length already");
+	/*
+	 * Test Case: ??
+	 *
+	 * Requires bad developer code.
+	 */
+	idio_bignum_error ("bignum significand shift: zero length already", idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return;
@@ -161,11 +198,15 @@ void idio_bsa_shift (IDIO_BSA bsa)
 
 void idio_bsa_pop (IDIO_BSA bsa)
 {
-    /* fprintf (stderr, "idio_bsa_pop: %p %zd\n", bsa, bsa->size);  */
     if (bsa->size) {
 	bsa->size--;
     } else {
-	idio_error_printf (IDIO_C_FUNC_LOCATION (), "bignum significand pop: zero length already");
+	/*
+	 * Test Case: ??
+	 *
+	 * Requires bad developer code.
+	 */
+	idio_bignum_error ("bignum significand pop: zero length already", idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return;
@@ -181,7 +222,6 @@ IDIO_BSA idio_bsa_copy (IDIO_BSA bsa)
 	bsac->ae[i] = bsa->ae[i];
     }
 
-    /* fprintf (stderr, "idio_bsa_copy %zd: %p -> %p\n", bsa->size, bsa, bsac);  */
     return bsac;
 }
 
@@ -213,6 +253,9 @@ void idio_bignum_dump (IDIO bn)
 	fprintf (stderr, "e");
     }
     if (IDIO_BIGNUM_NAN_P (bn)) {
+	/*
+	 * Code coverage: nothing manipulates NaN (yet?)
+	 */
 	fprintf (stderr, "!");
     }
 
@@ -229,6 +272,10 @@ void idio_bignum_dump (IDIO bn)
     ptrdiff_t i;
     for (i = segs; i >= 0; i--) {
 	if (i > al - 1) {
+	    /*
+	     * Code coverage: Bah! Can't think of a way to provoke the
+	     * use of more than one segment then down to one.
+	     */
 	    fprintf (stderr, "%*s ", IDIO_BIGNUM_DPW, "");
 	} else {
 	    char *fmt;
@@ -240,6 +287,10 @@ void idio_bignum_dump (IDIO bn)
 	    }
 
 	    if (IDIO_BSA_AE (sig_a, i) > IDIO_BIGNUM_INT_SEG_LIMIT) {
+		/*
+		 * Code coverage: Hmm, must have put this in for a
+		 * reason.
+		 */
 		fprintf (stderr, "!");
 	    }
 	    fprintf (stderr, fmt, IDIO_BIGNUM_DPW, IDIO_BSA_AE (sig_a, i));
@@ -300,6 +351,9 @@ IDIO idio_bignum_integer_intmax_t (intmax_t i)
 	    carry = 1;
 	    i = INTMAX_MAX;
 	} else {
+	    /*
+	     * Code coverage: C unit test?
+	     */
 	    i = -i;
 	}
     }
@@ -329,6 +383,9 @@ IDIO idio_bignum_integer_intmax_t (intmax_t i)
 		carry = 0;
 		v++;
 		if (v == IDIO_BIGNUM_INT_SEG_LIMIT) {
+		    /*
+		     * Code coverage: C unit test?
+		     */
 		    carry = 1;
 		    v = 0;
 		}
@@ -350,6 +407,12 @@ IDIO idio_bignum_integer_intmax_t (intmax_t i)
     return idio_bignum (IDIO_BIGNUM_FLAG_INTEGER, 0, sig_a);
 }
 
+/*
+ * Code coverage:
+ *
+ * This is called from idio_uinteger() in fixnum.c which is called
+ * from ->integer in c-type.c
+ */
 IDIO idio_bignum_integer_uintmax_t (uintmax_t ui)
 {
     IDIO_BSA sig_a = idio_bsa (1);
@@ -363,6 +426,9 @@ IDIO idio_bignum_integer_uintmax_t (uintmax_t ui)
 	    ui /= IDIO_BIGNUM_INT_SEG_LIMIT;
 	}
     } else {
+	/*
+	 * Code coverage: Not on 54-bit, maybe 32-bit??
+	 */
 	idio_bsa_set (sig_a, ui, ai++);
     }
 
@@ -389,6 +455,9 @@ int64_t idio_bignum_int64_value (IDIO bn)
 
     IDIO bn_i = idio_bignum_integer_argument (bn);
     if (idio_S_nil == bn_i) {
+	/*
+	 * Code coverage: C unit test??
+	 */
 	return 0;
     }
 
@@ -396,6 +465,9 @@ int64_t idio_bignum_int64_value (IDIO bn)
     size_t al = IDIO_BSA_SIZE (sig_a);
 
     if (al > 1) {
+	/*
+	 * Code coverage: C unit test??
+	 */
 	IDIO fn = idio_bignum_to_fixnum (bn_i);
 	if (idio_S_nil == fn) {
 	    /*
@@ -424,8 +496,6 @@ int64_t idio_bignum_int64_value (IDIO bn)
 			(a1 >= 0 &&
 			 v >= 0)) {
 
-			/* idio_debug ("b->i64: %s ", bn); */
-			/* fprintf (stderr, "%" PRId64 "\n", v); */
 			return v;
 		    }
 		}
@@ -435,7 +505,13 @@ int64_t idio_bignum_int64_value (IDIO bn)
 	    char em[BUFSIZ];
 	    sprintf (em, "%s is too large for int64_t (%" PRId64 ")", bn_is, INT64_MAX);
 	    IDIO_GC_FREE (bn_is);
-	    idio_bignum_error_conversion (em, bn, IDIO_C_FUNC_LOCATION ());
+
+	    /*
+	     * Test Case: ??
+	     *
+	     * Requires bad developer code.
+	     */
+	    idio_bignum_conversion_error (em, bn, IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
 	    return -1;
@@ -454,6 +530,9 @@ uint64_t idio_bignum_uint64_value (IDIO bn)
 
     IDIO bn_i = idio_bignum_integer_argument (bn);
     if (idio_S_nil == bn_i) {
+	/*
+	 * Code coverage: C unit test??
+	 */
 	return 0;
     }
 
@@ -485,25 +564,38 @@ uint64_t idio_bignum_uint64_value (IDIO bn)
 		     * XXX how do we tell if we've overflowed?
 		     */
 
-		    /* idio_debug ("b->ui64: %s ", bn); */
-		    /* fprintf (stderr, "%" PRIu64 "\n", v); */
 		    return v;
 		}
 	    }
+	    /*
+	     * Code coverage: C unit test??
+	     */
 	    size_t size = 0;
 	    char *bn_is = idio_bignum_as_string (bn_i, &size);
 	    char em[BUFSIZ];
 	    sprintf (em, "%s is too large for uint64_t (%" PRIu64 ")", bn_is, UINT64_MAX);
 	    IDIO_GC_FREE (bn_is);
-	    idio_bignum_error_conversion (em, bn, IDIO_C_FUNC_LOCATION ());
+
+	    /*
+	     * Test Case: ??
+	     *
+	     * Requires bad developer code.
+	     */
+	    idio_bignum_conversion_error (em, bn, IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
 	    return -1;
 	} else {
+	    /*
+	     * Code coverage: C unit test??
+	     */
 	    return IDIO_FIXNUM_VAL (fn);
 	}
     }
 
+    /*
+     * Code coverage: C unit test??
+     */
     return (uint64_t) idio_bsa_get (sig_a, al - 1);
 }
 
@@ -514,6 +606,9 @@ ptrdiff_t idio_bignum_ptrdiff_value (IDIO bn)
 
     IDIO bn_i = idio_bignum_integer_argument (bn);
     if (idio_S_nil == bn_i) {
+	/*
+	 * Code coverage: C unit test??
+	 */
 	return 0;
     }
 
@@ -553,22 +648,32 @@ ptrdiff_t idio_bignum_ptrdiff_value (IDIO bn)
 			(a1 >= 0 &&
 			 v >= 0)) {
 
-			/* idio_debug ("b->pd: %s ", bn); */
-			/* fprintf (stderr, "%tu\n", v); */
 			return v;
 		    }
 		}
 	    }
+	    /*
+	     * Code coverage: C unit test??
+	     */
 	    size_t size = 0;
 	    char *bn_is = idio_bignum_as_string (bn_i, &size);
 	    char em[BUFSIZ];
 	    sprintf (em, "%s is too large for ptrdiff_t (%td)", bn_is, (ptrdiff_t) PTRDIFF_MAX);
 	    IDIO_GC_FREE (bn_is);
-	    idio_bignum_error_conversion (em, bn, IDIO_C_FUNC_LOCATION ());
+
+	    /*
+	     * Test Case: ??
+	     *
+	     * Requires bad developer code.
+	     */
+	    idio_bignum_conversion_error (em, bn, IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
 	    return -1;
 	} else {
+	    /*
+	     * Code coverage: C unit test??
+	     */
 	    return IDIO_FIXNUM_VAL (fn);
 	}
     }
@@ -583,6 +688,9 @@ intptr_t idio_bignum_intptr_value (IDIO bn)
 
     IDIO bn_i = idio_bignum_integer_argument (bn);
     if (idio_S_nil == bn_i) {
+	/*
+	 * Code coverage: C unit test??
+	 */
 	return 0;
     }
 
@@ -590,6 +698,9 @@ intptr_t idio_bignum_intptr_value (IDIO bn)
     size_t al = IDIO_BSA_SIZE (sig_a);
 
     if (al > 1) {
+	/*
+	 * Code coverage: C unit test??
+	 */
 	IDIO fn = idio_bignum_to_fixnum (bn_i);
 	if (idio_S_nil == fn) {
 	    /*
@@ -622,8 +733,6 @@ intptr_t idio_bignum_intptr_value (IDIO bn)
 			(a1 >= 0 &&
 			 v >= 0)) {
 
-			/* idio_debug ("b->ip: %s ", bn); */
-			/* fprintf (stderr, "%" PRIdPTR "\n", v); */
 			return v;
 		    }
 		}
@@ -633,11 +742,20 @@ intptr_t idio_bignum_intptr_value (IDIO bn)
 	    char em[BUFSIZ];
 	    sprintf (em, "%s is too large for intptr_t (%" PRIdPTR ")", bn_is, (intptr_t) INTPTR_MAX);
 	    IDIO_GC_FREE (bn_is);
-	    idio_bignum_error_conversion (em, bn, IDIO_C_FUNC_LOCATION ());
+
+	    /*
+	     * Test Case: ??
+	     *
+	     * Requires bad developer code.
+	     */
+	    idio_bignum_conversion_error (em, bn, IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
 	    return -1;
 	} else {
+	    /*
+	     * Code coverage: C unit test??
+	     */
 	    return IDIO_FIXNUM_VAL (fn);
 	}
     }
@@ -652,6 +770,9 @@ intmax_t idio_bignum_intmax_value (IDIO bn)
 
     IDIO bn_i = idio_bignum_integer_argument (bn);
     if (idio_S_nil == bn_i) {
+	/*
+	 * Code coverage: C unit test??
+	 */
 	return 0;
     }
 
@@ -695,8 +816,6 @@ intmax_t idio_bignum_intmax_value (IDIO bn)
 			(a1 >= 0 &&
 			 v >= 0)) {
 
-			/* idio_debug ("b->im: %s ", bn); */
-			/* fprintf (stderr, "%jd\n", v); */
 			return v;
 		    }
 		}
@@ -706,15 +825,27 @@ intmax_t idio_bignum_intmax_value (IDIO bn)
 	    char em[BUFSIZ];
 	    sprintf (em, "%s is too large for intmax_t (%jd)", bn_is, (intmax_t) INTMAX_MAX);
 	    IDIO_GC_FREE (bn_is);
-	    idio_bignum_error_conversion (em, bn, IDIO_C_FUNC_LOCATION ());
+
+	    /*
+	     * Test Case: ??
+	     *
+	     * Requires bad developer code.
+	     */
+	    idio_bignum_conversion_error (em, bn, IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
 	    return -1;
 	} else {
+	    /*
+	     * Code coverage: C unit test??
+	     */
 	    return IDIO_FIXNUM_VAL (fn);
 	}
     }
 
+    /*
+     * Code coverage: C unit test??
+     */
     return (intmax_t) idio_bsa_get (sig_a, al - 1);
 }
 
@@ -729,6 +860,9 @@ IDIO idio_bignum_to_fixnum (IDIO bn)
 
     IDIO bn_i = idio_bignum_integer_argument (bn);
     if (idio_S_nil == bn_i) {
+	/*
+	 * Code coverage: C unit test??
+	 */
 	return idio_S_nil;
     }
 
@@ -765,6 +899,9 @@ IDIO idio_bignum_to_fixnum (IDIO bn)
 	return idio_fixnum (iv);
     }
 
+    /*
+     * Code coverage: C unit test??
+     */
     return idio_S_nil;
 }
 
@@ -928,11 +1065,23 @@ int idio_bignum_lt_p (IDIO a, IDIO b)
 
     if (na &&
 	!nb) {
+	/*
+	 * Code coverage:
+	 *
+	 * 2fnm := 2 * FIXNUM-MAX
+	 * lt (- 2fnm) 2fnm
+	 */
 	return 1;
     }
 
     if (!na &&
 	nb) {
+	/*
+	 * Code coverage:
+	 *
+	 * 2fnm := 2 * FIXNUM-MAX
+	 * lt 2fnm (- 2fnm)
+	 */
 	return 0;
     }
 
@@ -983,6 +1132,9 @@ int idio_bignum_equal_p (IDIO a, IDIO b)
     size_t bl = IDIO_BSA_SIZE (sig_ab);
 
     if (al != bl) {
+	/*
+	 * Code coverage: C unit test??
+	 */
 	return 0;
     }
 
@@ -1008,6 +1160,9 @@ IDIO idio_bignum_subtract (IDIO a, IDIO b)
 
     /* we want to avoid operations with negative numbers */
     if (idio_bignum_negative_p (a)) {
+	/*
+	 * Code coverage: C unit test??
+	 */
 	if (idio_bignum_negative_p (b)) {
 	    /* -a - -b => -a + |b| => |b| - |a| */
 	    a = idio_bignum_abs (a);
@@ -1023,6 +1178,9 @@ IDIO idio_bignum_subtract (IDIO a, IDIO b)
 	    return idio_bignum_negate (r);
 	}
     } else if (idio_bignum_negative_p (b)) {
+	/*
+	 * Code coverage: C unit test??
+	 */
 	/* a - -b => a + |b| */
 	b = idio_bignum_abs (b);
 
@@ -1048,6 +1206,9 @@ IDIO idio_bignum_subtract (IDIO a, IDIO b)
     if (al >= bl) {
 	rl = al;
     } else {
+	/*
+	 * Code coverage: C unit test??
+	 */
 	rl = bl;
     }
 
@@ -1123,7 +1284,13 @@ IDIO idio_bignum_shift_left (IDIO a, int fill)
 
 	if (ai < (al - 1) &&
 	    i < 0) {
-	    idio_error_C ("non-last bignum segment < 0", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+	    /*
+	     * Test Case: ??
+	     *
+	     * Requires bad developer code.
+	     */
+	    idio_bignum_error ("non-last bignum segment < 0", idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -1168,6 +1335,9 @@ IDIO idio_bignum_shift_right (IDIO a)
     if (al) {
 	ra = idio_bsa (al);
     } else {
+	/*
+	 * Code coverage: C unit test??
+	 */
 	al++;
 	ra = idio_bsa (al);
 
@@ -1298,6 +1468,14 @@ IDIO idio_bignum_divide (IDIO a, IDIO b)
     IDIO_TYPE_ASSERT (bignum, b);
 
     if (idio_bignum_zero_p (b)) {
+	/*
+	 * Test Case: bigum-errors/divide-float-zero.idio
+	 *
+	 * 1 / 0.0
+	 *
+	 * XXX Or would be except idio_bignum_primitive_divide()
+	 * catches this (same) test before us.
+	 */
 	idio_bignum_error_divide_by_zero (IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
@@ -1319,6 +1497,9 @@ IDIO idio_bignum_divide (IDIO a, IDIO b)
       r_mod = 12
      */
     if (idio_bignum_lt_p (aa, ab)) {
+	/*
+	 * Code coverage: ??
+	 */
 	if (na) {
 	    r_mod = a;
 
@@ -1402,10 +1583,16 @@ IDIO idio_bignum_divide (IDIO a, IDIO b)
     }
 
     if (neg) {
+	/*
+	 * Code coverage: ??
+	 */
 	r_div = idio_bignum_negate (r_div);
     }
 
     if (na) {
+	/*
+	 * Code coverage: ??
+	 */
 	r_mod = idio_bignum_negate (r_mod);
     }
 
@@ -1427,6 +1614,9 @@ IDIO idio_bignum_integer_argument (IDIO bn)
     IDIO bn_i = idio_bignum_real_to_integer (bn);
     if (idio_S_nil == bn_i ||
 	IDIO_BIGNUM_REAL_INEXACT_P (bn)) {
+	/*
+	 * Code coverage: ??
+	 */
 	return idio_S_nil;
     }
 
@@ -1450,12 +1640,18 @@ IDIO idio_bignum_real_to_integer (IDIO bn)
 	IDIO bns = idio_bignum_scale_significand (bn, 0, IDIO_BIGNUM_SIG_MAX_DIGITS);
 
 	if (idio_S_nil == bns) {
+	    /*
+	     * Code coverage: ??
+	     */
 	    return idio_S_nil;
 	}
 
 	IDIO bn_i = idio_bignum_copy_to_integer (bns);
 
 	if (IDIO_BIGNUM_REAL_NEGATIVE_P (bn)) {
+	    /*
+	     * Code coverage: ??
+	     */
 	    bn_i = idio_bignum_negate (bn_i);
 	}
 
@@ -1502,6 +1698,9 @@ IDIO idio_bignum_real_negate (IDIO bn)
     if (IDIO_BIGNUM_REAL_NEGATIVE_P (bn)) {
 	flags &= ~ IDIO_BIGNUM_FLAG_REAL_NEGATIVE;
     } else {
+	/*
+	 * Code coverage: - 0.0 1.1
+	 */
 	flags |= IDIO_BIGNUM_FLAG_REAL_NEGATIVE;
     }
 
@@ -1608,6 +1807,9 @@ IDIO idio_bignum_to_real (IDIO bn)
 
     int flags = inexact;
     if (idio_bignum_negative_p (bn)) {
+	/*
+	 * Code coverage: ??
+	 */
 	flags |= IDIO_BIGNUM_FLAG_REAL_NEGATIVE;
     }
 
@@ -1627,6 +1829,9 @@ int idio_bignum_real_zero_p (IDIO a)
     size_t al = IDIO_BSA_SIZE (sig_a);
 
     if (al > 1) {
+	/*
+	 * Code coverage: ??
+	 */
 	return 0;
     }
 
@@ -1684,6 +1889,9 @@ int idio_bignum_real_equal_p (IDIO a, IDIO b)
     size_t rbl = IDIO_BSA_SIZE (rbs);
 
     if (ral != rbl) {
+	/*
+	 * Code coverage: ??
+	 */
 	return 0;
     }
 
@@ -1718,6 +1926,9 @@ IDIO idio_bignum_scale_significand (IDIO bn, IDIO_BS_T desired_exp, size_t max_s
 
     /* is there room to scale within the desired_exp (and max_size)? */
     if ((max_size - digits) < (IDIO_BIGNUM_EXP (bn) - desired_exp)) {
+	/*
+	 * Code coverage: ??
+	 */
 	return idio_S_nil;
     }
 
@@ -1740,8 +1951,8 @@ int idio_bignum_real_lt_p (IDIO a, IDIO b)
     IDIO_TYPE_ASSERT (bignum, a);
     IDIO_TYPE_ASSERT (bignum, b);
 
-    /* idio_debug ("bignum_real_lt: %s", a);  */
-    /* idio_debug (" < %s == ", b);  */
+    /* idio_debug ("bignum_real_lt: %s", a); */
+    /* idio_debug (" < %s == ", b); */
 
     if (IDIO_BIGNUM_INTEGER_P (a) &&
 	IDIO_BIGNUM_INTEGER_P (b)) {
@@ -1751,33 +1962,69 @@ int idio_bignum_real_lt_p (IDIO a, IDIO b)
     IDIO ra = a;
 
     if (IDIO_BIGNUM_INTEGER_P (a)) {
+	/*
+	 * Code coverage:
+	 *
+	 * 2fnm := 2 * FIXNUM-MAX
+	 * lt 2fnm 3.0
+	 */
 	ra = idio_bignum_to_real (a);
     }
 
     IDIO rb = b;
 
     if (IDIO_BIGNUM_INTEGER_P (b)) {
+	/*
+	 * Code coverage:
+	 *
+	 * 2fnm := 2 * FIXNUM-MAX
+	 * lt 3.0 2fnm
+	 */
 	rb = idio_bignum_to_real (b);
     }
 
     if (IDIO_BIGNUM_REAL_NEGATIVE_P (ra) &&
 	IDIO_BIGNUM_REAL_POSITIVE_P (rb)) {
+	/*
+	 * Code coverage:
+	 *
+	 * 2fnm := 2 * FIXNUM-MAX
+	 * lt (- 2fnm) 3.0
+	 */
 	return 1;
     }
 
     if (IDIO_BIGNUM_REAL_NEGATIVE_P (rb) &&
 	IDIO_BIGNUM_REAL_POSITIVE_P (ra)) {
+	/*
+	 * Code coverage:
+	 *
+	 * 2fnm := 2 * FIXNUM-MAX
+	 * lt 3.0 (- 2fnm)
+	 */
 	return 0;
     }
 
     if (IDIO_BIGNUM_REAL_POSITIVE_P (ra) &&
 	idio_bignum_real_zero_p (rb)) {
+	/*
+	 * Code coverage:
+	 *
+	 * 2fnm := 2 * FIXNUM-MAX
+	 * lt 2fnm 0.0
+	 */
 	return 0;
     }
 
     /* XXX S9fES has real_positive_p (a) bug?? */
     if (IDIO_BIGNUM_REAL_POSITIVE_P (rb) &&
 	idio_bignum_real_zero_p (ra)) {
+	/*
+	 * Code coverage:
+	 *
+	 * 2fnm := 2 * FIXNUM-MAX
+	 * lt 0.0 2fnm
+	 */
 	return 1;
     }
 
@@ -1796,6 +2043,10 @@ int idio_bignum_real_lt_p (IDIO a, IDIO b)
     if (dpa > dpb) {
 	return neg ? 1 : 0;
     }
+
+    /*
+     * Code coverage: do we get here?
+     */
 
     if (IDIO_BIGNUM_EXP (ra) < IDIO_BIGNUM_EXP (rb)) {
 	rb = idio_bignum_scale_significand (rb, IDIO_BIGNUM_EXP (ra), IDIO_BIGNUM_SIG_MAX_DIGITS);
@@ -1864,6 +2115,12 @@ IDIO idio_bignum_real_add (IDIO a, IDIO b)
     IDIO rb = b;
 
     if (IDIO_BIGNUM_INTEGER_P (b)) {
+	/*
+	 * Code coverage:
+	 *
+	 * 2fnm := 2 * FIXNUM-MAX
+	 * + 3.0 2fnm
+	 */
 	rb = idio_bignum_to_real (b);
     }
 
@@ -1877,6 +2134,10 @@ IDIO idio_bignum_real_add (IDIO a, IDIO b)
 
     if (idio_S_nil == ra ||
 	idio_S_nil == rb) {
+
+	/*
+	 * Code coverage: ??
+	 */
 
 	if (idio_bignum_real_lt_p (a, b)) {
 	    return idio_bignum_real_to_inexact (b);
@@ -1955,12 +2216,23 @@ IDIO idio_bignum_real_multiply (IDIO a, IDIO b)
     }
 
     if (idio_bignum_real_zero_p (ra)) {
+	/*
+	 * Code coverage:
+	 *
+	 * * 0.0 1
+	 */
 	return ra;
     }
 
     IDIO rb = b;
 
     if (IDIO_BIGNUM_INTEGER_P (b)) {
+	/*
+	 * Code coverage:
+	 *
+	 * 2fnm := 2 * FIXNUM-MAX
+	 * * 1.0 2fnm
+	 */
 	rb = idio_bignum_to_real (b);
     }
 
@@ -2004,6 +2276,11 @@ IDIO idio_bignum_real_divide (IDIO a, IDIO b)
     }
 
     if (idio_bignum_real_zero_p (ra)) {
+	/*
+	 * Code coverage:
+	 *
+	 * / 0.0 1
+	 */
 	IDIO i0 = idio_bignum_integer_intmax_t (0);
 
 	IDIO r = idio_bignum_real (0, 0, IDIO_BIGNUM_SIG (i0));
@@ -2028,7 +2305,10 @@ IDIO idio_bignum_real_divide (IDIO a, IDIO b)
     IDIO rb_i = idio_bignum_copy_to_integer (rb);
 
     if (idio_bignum_zero_p (rb)) {
-
+	/*
+	 * Code coverage: ^rt-divide-by-zero-error is generated in
+	 * preference.
+	 */
 	return idio_S_NaN;
     }
 
@@ -2119,8 +2399,22 @@ char *idio_bignum_integer_as_string (IDIO bn, size_t *sizep)
 
 	if (idio_S_false != ipcp) {
 	    if (idio_isa_fixnum (ipcp)) {
+		/*
+		 * Code coverage:
+		 *
+		 * 2fnm := 2 * FIXNUM-MAX
+		 * printf "%.3d" 2fnm
+		 */
 		prec = IDIO_FIXNUM_VAL (ipcp);
 	    } else {
+		/*
+		 * Test Case: ??
+		 *
+		 * If we set idio-print-conversion-precision to
+		 * something not a fixnum (nor #f) then it affects
+		 * *everything* in the codebase that uses
+		 * idio-print-conversion-precision before we get here.
+		 */
 		idio_error_param_type ("fixnum", ipcp, IDIO_C_FUNC_LOCATION ());
 
 		/* notreached */
@@ -2141,11 +2435,20 @@ char *idio_bignum_integer_as_string (IDIO bn, size_t *sizep)
 
 	    size_t bn_digits = strlen (buf) + i * IDIO_BIGNUM_DPW;
 	    if (prec > bn_digits) {
+		/*
+		 * Code coverage:
+		 *
+		 * 2fnm := 2 * FIXNUM-MAX
+		 * printf "%.40d" 2fnm
+		 *
+		 * XXX %.40d -- rather then %.30d -- triggered a
+		 * realloc bug just below where I didn't re-assign {s}
+		 */
 		int pad = prec - bn_digits;
 		char pads[pad + 1];
 		sprintf (fmt, "%%.%dd", pad);
 		sprintf (pads, fmt, 0);
-		idio_strcat (s, sizep, pads, pad);
+		s = idio_strcat (s, sizep, pads, pad);
 	    }
 	} else {
 	    sprintf (fmt, "%%0%dzd", IDIO_BIGNUM_DPW);
@@ -2158,6 +2461,9 @@ char *idio_bignum_integer_as_string (IDIO bn, size_t *sizep)
     return s;
 }
 
+/*
+ * Code coverage: not called, see idio_bignum_real_as_string()
+ */
 char *idio_bignum_expanded_real_as_string (IDIO bn, IDIO_BS_T exp, int digits, int neg, size_t *sizep)
 {
     IDIO_ASSERT (bn);
@@ -2194,6 +2500,11 @@ char *idio_bignum_expanded_real_as_string (IDIO bn, IDIO_BS_T exp, int digits, i
 	IDIO_BS_T v = idio_bsa_get (sig_a, ai);
 	char *vs;
 	if (IDIO_ASPRINTF (&vs, "%" PRIdPTR, v) == -1) {
+	    /*
+	     * Test Case: ??
+	     *
+	     * Requires using a lot of memory.
+	     */
 	    idio_error_alloc ("asprintf");
 
 	    /* notreached */
@@ -2230,6 +2541,10 @@ char *idio_bignum_real_as_string (IDIO bn, size_t *sizep)
     IDIO_TYPE_ASSERT (bignum, bn);
 
     if (!IDIO_BIGNUM_REAL_P (bn)) {
+	/*
+	 * Code coverage: *probably* shoudn't get here as integers are
+	 * diverted in idio_bignum_as_string()
+	 */
 	return NULL;
     }
 
@@ -2239,6 +2554,10 @@ char *idio_bignum_real_as_string (IDIO bn, size_t *sizep)
 
     if (0 && (exp + digits) > -4 &&
 	(exp + digits) <= 9) {
+	/*
+	 * Code coverage: deliberately excluded for reasons I don't
+	 * recall.  Consistency in output?
+	 */
 	return idio_bignum_expanded_real_as_string (bn, exp, digits, IDIO_BIGNUM_REAL_NEGATIVE_P (bn), sizep);
     }
 
@@ -2258,16 +2577,35 @@ char *idio_bignum_real_as_string (IDIO bn, size_t *sizep)
 		    break;
 		case IDIO_BIGNUM_CONVERSION_FORMAT_s:
 		    /*
+		     * Code coverage:
+		     *
+		     * printf "%s" pi
+		     */
+		    /*
 		     * A generic: printf "%s" e
 		     */
 		    format = IDIO_BIGNUM_CONVERSION_FORMAT_e;
 		    break;
 		default:
+		    /*
+		     * Code coverage:
+		     *
+		     * printf "%d" pi
+		     */
 		    fprintf (stderr, "bignum-as-string: unexpected conversion format: %c (%#x).  Using 'e'.\n", (int) f, (int) f);
 		    format = IDIO_BIGNUM_CONVERSION_FORMAT_e;
 		    break;
 		}
 	    } else {
+		/*
+		 * Test Case: bignum-errors/real-format-type.idio
+		 *
+		 * idio-print-conversion-format = 'foo
+		 * string 4.0
+		 *
+		 * XXX the test is commented out as several other
+		 * conversions occur before we can restore the format
+		 */
 		idio_error_param_type ("unicode", ipcf, IDIO_C_FUNC_LOCATION ());
 
 		/* notreached */
@@ -2289,6 +2627,14 @@ char *idio_bignum_real_as_string (IDIO bn, size_t *sizep)
 	    if (idio_isa_fixnum (ipcp)) {
 		prec = IDIO_FIXNUM_VAL (ipcp);
 	    } else {
+		/*
+		 * Test Case: ??
+		 *
+		 * If we set idio-print-conversion-precision to
+		 * something not a fixnum (nor #f) then it affects
+		 * *everything* in the codebase that uses
+		 * idio-print-conversion-precision before we get here.
+		 */
 		idio_error_param_type ("fixnum", ipcp, IDIO_C_FUNC_LOCATION ());
 
 		/* notreached */
@@ -2305,6 +2651,11 @@ char *idio_bignum_real_as_string (IDIO bn, size_t *sizep)
     }
 
     if (IDIO_BIGNUM_REAL_NEGATIVE_P (bn)) {
+	/*
+	 * Code coverage:
+	 *
+	 * printf "%e" (- pi)
+	 */
 	IDIO_STRCAT (s, sizep, "-");
     }
 
@@ -2346,6 +2697,9 @@ char *idio_bignum_real_as_string (IDIO bn, size_t *sizep)
 	    }
 
 	    for (i--; i >= 0; i--) {
+		/*
+		 * Code coverage: ??
+		 */
 		v = idio_bsa_get (sig_a, i);
 		sprintf (vs, "%0*" PRIdPTR, IDIO_BIGNUM_DPW, v);
 		vs_size = strlen (vs);
@@ -2388,6 +2742,9 @@ char *idio_bignum_real_as_string (IDIO bn, size_t *sizep)
 	    prec -= vs_rest_prec;
 
 	    for (i--; i >= 0; i--) {
+		/*
+		 * Code coverage: ??
+		 */
 		v = idio_bsa_get (sig_a, i);
 		sprintf (vs, "%0*" PRIdPTR, IDIO_BIGNUM_DPW, v);
 		vs_size = strlen (vs);
@@ -2469,6 +2826,9 @@ char *idio_bignum_real_as_string (IDIO bn, size_t *sizep)
 		    prec -= vs_rest_prec;
 
 		    for (i--; i >= 0; i--) {
+			/*
+			 * Code coverage: ??
+			 */
 			v = idio_bsa_get (sig_a, i);
 			sprintf (vs, "%0*" PRIdPTR, IDIO_BIGNUM_DPW, v);
 			vs_size = strlen (vs);
@@ -2494,8 +2854,16 @@ char *idio_bignum_real_as_string (IDIO bn, size_t *sizep)
 	break;
     default:
 	{
+	    /*
+	     * Test Case: ??
+	     *
+	     * I don't think this code is reachable.  Unexpected
+	     * idio-print-conversion-format values should have been
+	     * handled in the value lookup above -- and set to 'e' if
+	     * unexpected.
+	     */
 	    fprintf (stderr, "bignum-as-string: unimplemented conversion format: %c (%#x)\n", (int) format, (int) format);
-	    idio_error_printf (IDIO_C_FUNC_LOCATION (), "bignum-as-string unimplemented conversion format");
+	    idio_bignum_error ("bignum-as-string unimplemented conversion format", idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
 	    return NULL;
@@ -2512,6 +2880,9 @@ char *idio_bignum_as_string (IDIO bn, size_t *sizep)
     IDIO_TYPE_ASSERT (bignum, bn);
 
     if (idio_S_NaN == bn) {
+	/*
+	 * Code coverage: no use of NaN (yet?)
+	 */
 	char *s = idio_alloc (strlen (IDIO_BIGNUM_NAN) + 1);
 	strcpy (s, IDIO_BIGNUM_NAN);
 
@@ -2581,6 +2952,15 @@ IDIO idio_bignum_integer_C (char *nums, int req_exact)
 	sign = -1;
 	s++;
     } else if ('+' == *s) {
+	/*
+	 * Code coverage:
+	 *
+	 * +123456789012345678
+	 *
+	 * Surprisingly tricky as we require an integer (so no period
+	 * or exponent character) and the reader will try consume
+	 * "small" integers with idio_fixnum_C()
+	 */
 	s++;
     }
 
@@ -2601,6 +2981,11 @@ IDIO idio_bignum_integer_C (char *nums, int req_exact)
 	      i == LLONG_MIN)) ||
 	    (errno != 0 &&
 	     i == 0)) {
+	    /*
+	     * Test Case: ??
+	     *
+	     * I need more brainpower to figure out how to get here.
+	     */
 	    IDIO_GC_FREE (buf);
 	    char em[BUFSIZ];
 	    sprintf (em, "strtoll (%s) = %lld", nums, i);
@@ -2610,6 +2995,11 @@ IDIO idio_bignum_integer_C (char *nums, int req_exact)
 	}
 
 	if (end == nums) {
+	    /*
+	     * Test Case: ??
+	     *
+	     * I need more brainpower to figure out how to get here.
+	     */
 	    IDIO_GC_FREE (buf);
 	    char em[BUFSIZ];
 	    sprintf (em, "strtoll (%s): No digits?", nums);
@@ -2619,8 +3009,15 @@ IDIO idio_bignum_integer_C (char *nums, int req_exact)
 	}
 
 	if ('\0' != *end) {
+	    /*
+	     * Test Case: ??
+	     *
+	     * I need more brainpower to figure out how to get here.
+	     */
 	    IDIO_GC_FREE (buf);
-	    idio_error_printf (IDIO_C_FUNC_LOCATION (), "strtoll (%s) = %ld", nums, i);
+	    char em[BUFSIZ];
+	    sprintf (em, "strtoll (%s) = %lld", nums, i);
+	    idio_bignum_error (em, idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -2675,6 +3072,11 @@ IDIO idio_bignum_real_C (char *nums)
     int neg = 0;
 
     if ('+' == *s) {
+	/*
+	 * Code coverage:
+	 *
+	 * +0.0
+	 */
 	s++;
     } else if ('-' == *s) {
 	neg = 1;
@@ -2733,6 +3135,9 @@ IDIO idio_bignum_real_C (char *nums)
     IDIO_BS_T ir = idio_bsa_get (ra, rl - 1);
     while (0 == ir &&
 	   rl > 1) {
+	/*
+	 * Code coverage: ??
+	 */
 	idio_bsa_pop (ra);
 	rl--;
 	ir = idio_bsa_get (ra, rl - 1);
@@ -2773,6 +3178,11 @@ IDIO idio_bignum_primitive_add (IDIO args)
 	IDIO h = IDIO_PAIR_H (args);
 
         if (! idio_isa_bignum (h)) {
+	    /*
+	     * Test Case: bignum-errors/add-non-bignum.idio
+	     *
+	     * + 1.0 #t
+	     */
 	    idio_error_param_type ("bignum", h, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
@@ -2798,6 +3208,11 @@ IDIO idio_bignum_primitive_subtract (IDIO args)
 	IDIO h = IDIO_PAIR_H (args);
 
         if (! idio_isa_bignum (h)) {
+	    /*
+	     * Test Case: bignum-errors/subtract-non-bignum.idio
+	     *
+	     * - 1.0 #t
+	     */
 	    idio_error_param_type ("bignum", h, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
@@ -2848,6 +3263,11 @@ IDIO idio_bignum_primitive_multiply (IDIO args)
 	IDIO h = IDIO_PAIR_H (args);
 
         if (! idio_isa_bignum (h)) {
+	    /*
+	     * Test Case: bignum-errors/multiply-non-bignum.idio
+	     *
+	     * * 1.0 #t
+	     */
 	    idio_error_param_type ("bignum", h, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
@@ -2874,6 +3294,12 @@ IDIO idio_bignum_primitive_divide (IDIO args)
 	IDIO h = IDIO_PAIR_H (args);
 
         if (! idio_isa_bignum (h)) {
+	    /*
+	     * Test Case: ??
+	     *
+	     * For divide the C macro in fixnum checks for "numbers"
+	     * so this code is potentially not reached.
+	     */
 	    idio_error_param_type ("bignum", h, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
@@ -2899,6 +3325,11 @@ IDIO idio_bignum_primitive_divide (IDIO args)
 	}
 
 	if (idio_bignum_zero_p (h)) {
+	    /*
+	     * Test Case: bignum-errors/divide-float-zero.idio
+	     *
+	     * / 1.0 0.0
+	     */
 	    idio_bignum_error_divide_by_zero (IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
@@ -2992,6 +3423,11 @@ IDIO idio_bignum_primitive_lt (IDIO args)
 	IDIO h = idio_list_head (args);
 
         if (! idio_isa_bignum (h)) {
+	    /*
+	     * Test Case: bignum-errors/lt-non-bignum.idio
+	     *
+	     * lt 1.0 #t
+	     */
 	    idio_error_param_type ("bignum", h, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
@@ -3021,6 +3457,11 @@ IDIO idio_bignum_primitive_le (IDIO args)
 	IDIO h = idio_list_head (args);
 
         if (! idio_isa_bignum (h)) {
+	    /*
+	     * Test Case: bignum-errors/le-non-bignum.idio
+	     *
+	     * le 1.0 #t
+	     */
 	    idio_error_param_type ("bignum", h, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
@@ -3028,64 +3469,6 @@ IDIO idio_bignum_primitive_le (IDIO args)
 
 	/* r <= h => ! h < r */
 	if (idio_bignum_real_lt_p (h, r)) {
-	    return idio_S_false;
-	}
-
-	r = h;
-        args = idio_list_tail (args);
-    }
-
-    return idio_S_true;
-}
-
-IDIO idio_bignum_primitive_gt (IDIO args)
-{
-    IDIO_ASSERT (args);
-    IDIO_TYPE_ASSERT (list, args);
-
-    IDIO r = idio_list_head (args);
-    args = idio_list_tail (args);
-
-    while (idio_S_nil != args) {
-	IDIO h = idio_list_head (args);
-
-        if (! idio_isa_bignum (h)) {
-	    idio_error_param_type ("bignum", h, IDIO_C_FUNC_LOCATION ());
-
-	    return idio_S_notreached;
-	}
-
-	/* r > h => h < r */
-	if (! idio_bignum_real_lt_p (h, r)) {
-	    return idio_S_false;
-	}
-
-	r = h;
-        args = idio_list_tail (args);
-    }
-
-    return idio_S_true;
-}
-
-IDIO idio_bignum_primitive_ge (IDIO args)
-{
-    IDIO_ASSERT (args);
-    IDIO_TYPE_ASSERT (list, args);
-
-    IDIO r = idio_list_head (args);
-    args = idio_list_tail (args);
-
-    while (idio_S_nil != args) {
-	IDIO h = idio_list_head (args);
-
-        if (! idio_isa_bignum (h)) {
-	    idio_error_param_type ("bignum", h, IDIO_C_FUNC_LOCATION ());
-
-	    return idio_S_notreached;
-	}
-
-	/* r >= h => ! r < h */
-	if (idio_bignum_real_lt_p (r, h)) {
 	    return idio_S_false;
 	}
 
@@ -3108,12 +3491,85 @@ IDIO idio_bignum_primitive_eq (IDIO args)
 	IDIO h = idio_list_head (args);
 
         if (! idio_isa_bignum (h)) {
+	    /*
+	     * Test Case: bignum-errors/eq-non-bignum.idio
+	     *
+	     * eq 1.0 #t
+	     */
 	    idio_error_param_type ("bignum", h, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
 
 	if (! idio_bignum_real_equal_p (r, h)) {
+	    return idio_S_false;
+	}
+
+	r = h;
+        args = idio_list_tail (args);
+    }
+
+    return idio_S_true;
+}
+
+IDIO idio_bignum_primitive_ge (IDIO args)
+{
+    IDIO_ASSERT (args);
+    IDIO_TYPE_ASSERT (list, args);
+
+    IDIO r = idio_list_head (args);
+    args = idio_list_tail (args);
+
+    while (idio_S_nil != args) {
+	IDIO h = idio_list_head (args);
+
+        if (! idio_isa_bignum (h)) {
+	    /*
+	     * Test Case: bignum-errors/ge-non-bignum.idio
+	     *
+	     * ge 1.0 #t
+	     */
+	    idio_error_param_type ("bignum", h, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	}
+
+	/* r >= h => ! r < h */
+	if (idio_bignum_real_lt_p (r, h)) {
+	    return idio_S_false;
+	}
+
+	r = h;
+        args = idio_list_tail (args);
+    }
+
+    return idio_S_true;
+}
+
+IDIO idio_bignum_primitive_gt (IDIO args)
+{
+    IDIO_ASSERT (args);
+    IDIO_TYPE_ASSERT (list, args);
+
+    IDIO r = idio_list_head (args);
+    args = idio_list_tail (args);
+
+    while (idio_S_nil != args) {
+	IDIO h = idio_list_head (args);
+
+        if (! idio_isa_bignum (h)) {
+	    /*
+	     * Test Case: bignum-errors/gt-non-bignum.idio
+	     *
+	     * gt 1.0 #t
+	     */
+	    idio_error_param_type ("bignum", h, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	}
+
+	/* r > h => h < r */
+	if (! idio_bignum_real_lt_p (h, r)) {
 	    return idio_S_false;
 	}
 
@@ -3201,8 +3657,18 @@ test if `n` is exact				\n\
 	IDIO_USER_TYPE_ASSERT (bignum, n);
 
 	if (IDIO_BIGNUM_INTEGER_P (n)) {
+	    /*
+	     * Code coverage:
+	     *
+	     * exact? (FIXNUM-MAX + 1)
+	     */
 	    r = idio_S_true;
 	} else if (! IDIO_BIGNUM_REAL_INEXACT_P (n)) {
+	    /*
+	     * Code coverage:
+	     *
+	     * exact? 1.2
+	     */
 	    r = idio_S_true;
 	}
     }
@@ -3285,6 +3751,10 @@ convert `n` to exact				\n\
 	IDIO_USER_TYPE_ASSERT (bignum, n);
 
 	if (IDIO_BIGNUM_INTEGER_P (n)) {
+	    /*
+	     * Code coverage: not sure we can get here (as inexact
+	     * numbers are always real?)
+	     */
 	    r = n;
 	} else {
 	    r = idio_bignum_real_to_integer (n);
@@ -3364,7 +3834,7 @@ return the exponent of `n`			\n\
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1_DS ("%bignum-dump", bignum_dump, (IDIO n), "n", "\
+IDIO_DEFINE_PRIMITIVE1_DS ("bignum-dump", bignum_dump, (IDIO n), "n", "\
 dump the bignum structure of `n`	\n\
 					\n\
 :param n: number to dump		\n\
