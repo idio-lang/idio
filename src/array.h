@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2020, 2021, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -46,6 +46,7 @@ idio_ai_t idio_array_find_eqp (IDIO a, IDIO e, idio_ai_t index);
 idio_ai_t idio_array_find_equalp (IDIO a, IDIO e, idio_ai_t index);
 void idio_array_bind (IDIO a, idio_ai_t nargs, ...);
 IDIO idio_copy_array (IDIO a, int depth, idio_ai_t extra);
+void idio_duplicate_array (IDIO a, IDIO o, int depth);
 IDIO idio_array_to_list_from (IDIO a, idio_ai_t index);
 IDIO idio_array_to_list (IDIO a);
 int idio_array_delete_index (IDIO a, idio_ai_t index);

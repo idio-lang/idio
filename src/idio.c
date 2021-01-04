@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -413,7 +413,7 @@ int main (int argc, char **argv, char **envp)
 	}
 
 	/* repl */
-	idio_load_handle (idio_thread_current_input_handle (), idio_read, idio_evaluate, idio_vm_constants);
+	idio_load_handle_C (idio_thread_current_input_handle (), idio_read, idio_evaluate, idio_vm_constants);
     }
 
     IDIO_GC_FREE (nargv);

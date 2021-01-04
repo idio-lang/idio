@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2018, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2018, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -2472,7 +2472,7 @@ void idio_vm_restore_continuation_data (IDIO k, IDIO val)
      * continuation is used again.
      */
 
-    IDIO_THREAD_STACK (thr) = idio_copy_array (IDIO_CONTINUATION_STACK (k), IDIO_COPY_SHALLOW, 0);
+    idio_duplicate_array (IDIO_THREAD_STACK (thr), IDIO_CONTINUATION_STACK (k), IDIO_COPY_SHALLOW);
 
     IDIO_THREAD_PC (thr) = IDIO_FIXNUM_VAL (IDIO_THREAD_STACK_POP ());
     if (NULL == idio_all_code) {

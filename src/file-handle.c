@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -1911,7 +1911,7 @@ IDIO idio_load_file_name (IDIO filename, IDIO cs)
 		}
 
 		/* idio_thread_set_current_module ((*fe->modulep) ()); */
-		return idio_load_handle (fh, fe->reader, fe->evaluator, cs);
+		return idio_load_handle_C (fh, fe->reader, fe->evaluator, cs);
 	    }
 
 	    if (filename_ext != filename) {
@@ -1962,7 +1962,7 @@ IDIO idio_load_file_name (IDIO filename, IDIO cs)
 	    }
 
 	    /* idio_thread_set_current_module ((*fe->modulep) ()); */
-	    return idio_load_handle (fh, reader, evaluator, cs);
+	    return idio_load_handle_C (fh, reader, evaluator, cs);
 	}
 
 	if (filename_ext != filename) {

@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet
+ * <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -683,6 +684,41 @@ IDIO idio_copy_array (IDIO a, int depth, idio_ai_t extra)
     }
 
     return na;
+}
+
+/**
+ * idio_duplicate_array() - duplicate an array
+ * @a: this array
+ * @o: that array
+ * @depth: shallow or deep
+ *
+ * Duplicate the contents of that array in this.
+ */
+void idio_duplicate_array (IDIO a, IDIO o, int depth)
+{
+    IDIO_ASSERT (a);
+    IDIO_ASSERT (o);
+    IDIO_C_ASSERT (depth);
+
+    IDIO_TYPE_ASSERT (array, a);
+    IDIO_TYPE_ASSERT (array, o);
+
+    idio_ai_t osz = IDIO_ARRAY_USIZE (o);
+    if (osz > IDIO_ARRAY_ASIZE (a)) {
+	fprintf (stderr, "dupe %td -> %td\n", IDIO_ARRAY_ASIZE (a), osz);
+	IDIO_GC_FREE (a->u.array->ae);
+	IDIO_GC_ALLOC (a->u.array->ae, osz * sizeof (IDIO));
+    }
+    IDIO_ARRAY_USIZE (a) = osz;
+
+    idio_ai_t i;
+    for (i = 0; i < osz; i++) {
+	IDIO e = idio_array_ref_index (o, i);
+	if (IDIO_COPY_DEEP == depth) {
+	    e = idio_copy (e, depth);
+	}
+	idio_array_insert_index (a, e, i);
+    }
 }
 
 /**
