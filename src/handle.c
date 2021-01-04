@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -1702,7 +1702,7 @@ in handle ``handle``					\n\
     return idio_handle_location (h);
 }
 
-IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO e, IDIO cs), IDIO cs)
+IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO e, IDIO cs), IDIO cs, int preserve)
 {
     IDIO_ASSERT (h);
     IDIO_C_ASSERT (reader);
@@ -1716,14 +1716,21 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
     }
 
     IDIO thr = idio_thread_current_thread ();
-    idio_ai_t ss0 = idio_array_size (IDIO_THREAD_STACK (thr));
+    IDIO stack = IDIO_THREAD_STACK (thr);
 
     /*
      * When we call idio_vm_run() we are at risk of the garbage
      * collector being called so we need to save the current file
      * handle and any lists we're walking over
+     *
+     * XXX This only affects calls from C -- load-handle, below, is
+     * actually perturbed by stashing the handle on the stack.
      */
-    idio_remember_file_handle (h);
+    if (preserve) {
+	idio_array_push (stack, h);
+    }
+
+    idio_ai_t ss0 = idio_array_size (IDIO_THREAD_STACK (thr));
 
     IDIO e = idio_S_nil;
     IDIO r = idio_S_nil;
@@ -1764,14 +1771,13 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
 
 	    r = idio_vm_run_C (thr, pc);
 
-	    idio_ai_t ss = idio_array_size (IDIO_THREAD_STACK (thr));
+	    idio_ai_t ss = idio_array_size (stack);
 
 	    if (ss != ss0) {
 		char *sname = idio_handle_name_as_C (h);
 		fprintf (stderr, "load-handle: %s: SS %td != %td\n", sname, ss, ss0);
 		IDIO_GC_FREE (sname);
-		idio_debug ("THR %s\n", thr);
-		idio_debug ("STK %s\n", IDIO_THREAD_STACK (thr));
+		idio_vm_thread_state (thr);
 	    }
 
 #ifdef IDIO_LOAD_TIMING
@@ -1802,9 +1808,23 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
 
     IDIO_HANDLE_M_CLOSE (h) (h);
 
-    idio_forget_file_handle (h);
-
+    if (preserve) {
+	idio_ai_t ss = idio_array_size (stack);
+	if (ss == ss0) {
+	    idio_array_pop (stack);
+	} else {
+	    fprintf (stderr, "load-handle: SS %td != %td\n", ss, ss0);
+	}
+    }
     return r;
+}
+
+/*
+ * A dumb wrapper to idio_load_handle()
+ */
+IDIO idio_load_handle_C (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO e, IDIO cs), IDIO cs)
+{
+    return idio_load_handle (h, reader, evaluator, cs, 1);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("load-handle", load_handle, (IDIO h), "handle", "\
@@ -1823,7 +1843,7 @@ This is the ``load-handle`` primitive.				\n\
     IDIO thr = idio_thread_current_thread ();
     idio_ai_t pc0 = IDIO_THREAD_PC (thr);
 
-    IDIO r = idio_load_handle (h, idio_read, idio_evaluate, idio_vm_constants);
+    IDIO r = idio_load_handle (h, idio_read, idio_evaluate, idio_vm_constants, 0);
 
     idio_ai_t pc = IDIO_THREAD_PC (thr);
     if (pc == (idio_vm_FINISH_pc + 1)) {
