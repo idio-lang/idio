@@ -1,0 +1,2 @@
+
+equal-bitset? #B{ 3 } #f

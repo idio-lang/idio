@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -2181,25 +2181,25 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 		    }
 
 		    while (offset <= end) {
-			size_t n = offset / IDIO_BITS_PER_LONG;
-			int b = (offset % IDIO_BITS_PER_LONG) / CHAR_BIT;
+			size_t n = offset / IDIO_BITSET_BITS_PER_WORD;
+			int b = (offset % IDIO_BITSET_BITS_PER_WORD) / CHAR_BIT;
 
 			    if (0 == b &&
-				(offset + IDIO_BITS_PER_LONG) < end) {
-				IDIO_BITSET_BITS (bs, n) = ULONG_MAX;
-				offset += IDIO_BITS_PER_LONG;
+				(offset + IDIO_BITSET_BITS_PER_WORD) < end) {
+				IDIO_BITSET_WORDS (bs, n) = ULONG_MAX;
+				offset += IDIO_BITSET_BITS_PER_WORD;
 			    } else {
-				unsigned long br = 0;
+				idio_bitset_word_t br = 0;
 
 				for (; offset <= end &&
-					 b < sizeof (unsigned long); b++) {
-				    unsigned long mask = UCHAR_MAX;
+					 b < sizeof (idio_bitset_word_t); b++) {
+				    idio_bitset_word_t mask = UCHAR_MAX;
 				    mask <<= (b * CHAR_BIT);
 				    br |= mask;
 
 				    offset += CHAR_BIT;
 				}
-				IDIO_BITSET_BITS (bs, n) |= br;
+				IDIO_BITSET_WORDS (bs, n) |= br;
 			    }
 		    }
 
@@ -2322,7 +2322,7 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 			return idio_S_notreached;
 		    }
 
-		    unsigned long new = 0;
+		    idio_bitset_word_t new = 0;
 		    for (unsigned int i = 0; i < bit_block_len; i++) {
 			switch (bit_block[i]) {
 			case '0':
@@ -2348,13 +2348,13 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 			}
 		    }
 
-		    size_t n = offset / IDIO_BITS_PER_LONG;
-		    size_t b = (offset % IDIO_BITS_PER_LONG) / CHAR_BIT;
-		    unsigned long ul = IDIO_BITSET_BITS (bs, n);
-		    unsigned long mask = UCHAR_MAX;
+		    size_t n = offset / IDIO_BITSET_BITS_PER_WORD;
+		    size_t b = (offset % IDIO_BITSET_BITS_PER_WORD) / CHAR_BIT;
+		    idio_bitset_word_t ul = IDIO_BITSET_WORDS (bs, n);
+		    idio_bitset_word_t mask = UCHAR_MAX;
 		    mask <<= (b * CHAR_BIT);
 		    ul = (ul & ~mask) | (new << b * CHAR_BIT);
-		    IDIO_BITSET_BITS (bs, n) = ul;
+		    IDIO_BITSET_WORDS (bs, n) = ul;
 
 		    offset += bit_block_len;
 		}

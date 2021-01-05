@@ -165,6 +165,7 @@ extern IDIO idio_condition_rt_bignum_conversion_error_type;
 extern IDIO idio_condition_rt_fixnum_error_type;
 extern IDIO idio_condition_rt_fixnum_conversion_error_type;
 extern IDIO idio_condition_rt_divide_by_zero_error_type;
+extern IDIO idio_condition_rt_bitset_error_type;
 extern IDIO idio_condition_rt_bitset_bounds_error_type;
 extern IDIO idio_condition_rt_bitset_size_mismatch_error_type;
 

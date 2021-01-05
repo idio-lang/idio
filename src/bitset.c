@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -74,12 +74,12 @@ IDIO idio_bitset (size_t size)
     IDIO bs = idio_gc_get (IDIO_TYPE_BITSET);
 
     IDIO_BITSET_SIZE (bs) = size;
-    bs->u.bitset.bits = NULL;
+    bs->u.bitset.words = NULL;
 
     if (size) {
-	size_t n = size / IDIO_BITS_PER_LONG + 1;
-	IDIO_GC_ALLOC (bs->u.bitset.bits, n * sizeof (unsigned long));
-	memset (bs->u.bitset.bits, 0UL, n * sizeof (unsigned long));
+	size_t n = size / IDIO_BITSET_BITS_PER_WORD + 1;
+	IDIO_GC_ALLOC (bs->u.bitset.words, n * sizeof (idio_bitset_word_t));
+	memset (bs->u.bitset.words, 0UL, n * sizeof (idio_bitset_word_t));
     }
 
     return bs;
@@ -97,9 +97,9 @@ void idio_free_bitset (IDIO bs)
     IDIO_ASSERT (bs);
     IDIO_TYPE_ASSERT (bitset, bs);
 
-    idio_gc_stats_free (sizeof (idio_bitset_t) + IDIO_BITSET_SIZE (bs) / sizeof (unsigned long) + 1);
+    idio_gc_stats_free (sizeof (idio_bitset_t) + IDIO_BITSET_SIZE (bs) / sizeof (idio_bitset_word_t) + 1);
 
-    IDIO_GC_FREE (bs->u.bitset.bits);
+    IDIO_GC_FREE (bs->u.bitset.words);
 }
 
 IDIO idio_bitset_set (IDIO bs, size_t bit)
@@ -109,14 +109,20 @@ IDIO idio_bitset_set (IDIO bs, size_t bit)
     IDIO_TYPE_ASSERT (bitset, bs);
 
     if (bit >= IDIO_BITSET_SIZE (bs)) {
+	/*
+	 * Test Case: bitset-errors/set-bounds.idio
+	 *
+	 * bs := #B{ 3 }
+	 * bitset-set! bs 5
+	 */
 	idio_bitset_error_bounds (bit, IDIO_BITSET_SIZE (bs), IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
 
-    size_t i = bit / IDIO_BITS_PER_LONG;
+    size_t i = bit / IDIO_BITSET_BITS_PER_WORD;
 
-    IDIO_BITSET_BITS (bs, i) |= 1UL << (bit % IDIO_BITS_PER_LONG);
+    IDIO_BITSET_WORDS (bs, i) |= 1UL << (bit % IDIO_BITSET_BITS_PER_WORD);
 
     return idio_S_unspec;
 }
@@ -128,15 +134,21 @@ IDIO idio_bitset_clear (IDIO bs, size_t bit)
     IDIO_TYPE_ASSERT (bitset, bs);
 
     if (bit >= IDIO_BITSET_SIZE (bs)) {
+	/*
+	 * Test Case: bitset-errors/set-bounds.idio
+	 *
+	 * bs := #B{ 3 }
+	 * bitset-clear! bs 5
+	 */
 	idio_bitset_error_bounds (bit, IDIO_BITSET_SIZE (bs), IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
 
-    size_t i = bit / IDIO_BITS_PER_LONG;
+    size_t i = bit / IDIO_BITSET_BITS_PER_WORD;
 
-    unsigned long mask = 1UL << (bit % IDIO_BITS_PER_LONG);
-    IDIO_BITSET_BITS (bs, i) &= ~ mask;
+    idio_bitset_word_t mask = 1UL << (bit % IDIO_BITSET_BITS_PER_WORD);
+    IDIO_BITSET_WORDS (bs, i) &= ~ mask;
 
     return idio_S_unspec;
 }
@@ -148,6 +160,12 @@ IDIO idio_bitset_ref (IDIO bs, size_t bit)
     IDIO_TYPE_ASSERT (bitset, bs);
 
     if (bit >= IDIO_BITSET_SIZE (bs)) {
+	/*
+	 * Test Case: bitset-errors/set-bounds.idio
+	 *
+	 * bs := #B{ 3 }
+	 * bitset-ref bs 5
+	 */
 	idio_bitset_error_bounds (bit, IDIO_BITSET_SIZE (bs), IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
@@ -155,9 +173,9 @@ IDIO idio_bitset_ref (IDIO bs, size_t bit)
 
     IDIO r = idio_S_false;
 
-    size_t i = bit / IDIO_BITS_PER_LONG;
+    size_t i = bit / IDIO_BITSET_BITS_PER_WORD;
 
-    if (IDIO_BITSET_BITS (bs, i) & (1UL << (bit % IDIO_BITS_PER_LONG))) {
+    if (IDIO_BITSET_WORDS (bs, i) & (1UL << (bit % IDIO_BITSET_BITS_PER_WORD))) {
 	r = idio_S_true;
     }
 
@@ -174,10 +192,10 @@ IDIO idio_copy_bitset (IDIO obs)
 
     IDIO nbs = idio_bitset (size);
 
-    size_t n = size / IDIO_BITS_PER_LONG + 1;
+    size_t n = size / IDIO_BITSET_BITS_PER_WORD + 1;
     size_t i;
     for (i = 0; i < n; i++) {
-	IDIO_BITSET_BITS (nbs, i) = IDIO_BITSET_BITS (obs, i);
+	IDIO_BITSET_WORDS (nbs, i) = IDIO_BITSET_WORDS (obs, i);
     }
 
     return nbs;
@@ -218,18 +236,36 @@ create an bitset with a size of `size`		\n\
 	bs_size = IDIO_FIXNUM_VAL (size);
     } else if (idio_isa_bignum (size)) {
 	if (IDIO_BIGNUM_INTEGER_P (size)) {
+	    /*
+	     * Code coverage: requires a large bitset
+	     */
 	    bs_size = idio_bignum_ptrdiff_value (size);
 	} else {
 	    IDIO size_i = idio_bignum_real_to_integer (size);
 	    if (idio_S_nil == size_i) {
+		/*
+		 * Test Case: bitset-errors/make-size-float.idio
+		 *
+		 * make-bitset 1.1
+		 */
 		idio_error_param_type ("integer", size, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    } else {
+		/*
+		 * Code coverage:
+		 *
+		 * make-bitset 1e1
+		 */
 		bs_size = idio_bignum_ptrdiff_value (size_i);
 	    }
 	}
     } else {
+	/*
+	 * Test Case: bitset-errors/make-size-not-integer.idio
+	 *
+	 * make-bitset #f
+	 */
 	idio_error_param_type ("integer", size, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
@@ -274,19 +310,37 @@ set bit `bit` in bitset `bs`			\n\
 	bs_bit = IDIO_FIXNUM_VAL (bit);
     } else if (idio_isa_bignum (bit)) {
 	if (IDIO_BIGNUM_INTEGER_P (bit)) {
+	    /*
+	     * Code coverage: requires a large bitset
+	     */
 	    bs_bit = idio_bignum_ptrdiff_value (bit);
 	} else {
 	    IDIO bit_i = idio_bignum_real_to_integer (bit);
 	    if (idio_S_nil == bit_i) {
-		idio_error_param_type ("unicode|integer", bit, IDIO_C_FUNC_LOCATION ());
+		/*
+		 * Test Case: bitset-errors/set-float.idio
+		 *
+		 * bitset-set! bs 1.1
+		 */
+		idio_error_param_type ("integer", bit, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    } else {
+		/*
+		 * Code coverage:
+		 *
+		 * bitset-set! 1e1
+		 */
 		bs_bit = idio_bignum_ptrdiff_value (bit_i);
 	    }
 	}
     } else {
-	idio_error_param_type ("integer", bit, IDIO_C_FUNC_LOCATION ());
+	/*
+	 * Test Case: bitset-errors/set-non-numeric.idio
+	 *
+	 * bitset-set! bs #f
+	 */
+	idio_error_param_type ("unicode|integer", bit, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -317,19 +371,37 @@ clear bit `bit` in bitset `bs`			\n\
 	bs_bit = IDIO_FIXNUM_VAL (bit);
     } else if (idio_isa_bignum (bit)) {
 	if (IDIO_BIGNUM_INTEGER_P (bit)) {
+	    /*
+	     * Code coverage: requires a large bitset
+	     */
 	    bs_bit = idio_bignum_ptrdiff_value (bit);
 	} else {
 	    IDIO bit_i = idio_bignum_real_to_integer (bit);
 	    if (idio_S_nil == bit_i) {
+		/*
+		 * Test Case: bitset-errors/clear-float.idio
+		 *
+		 * bitset-clear! bs 1.1
+		 */
 		idio_error_param_type ("integer", bit, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    } else {
+		/*
+		 * Code coverage:
+		 *
+		 * bitset-clear! 1e1
+		 */
 		bs_bit = idio_bignum_ptrdiff_value (bit_i);
 	    }
 	}
     } else {
-	idio_error_param_type ("integer", bit, IDIO_C_FUNC_LOCATION ());
+	/*
+	 * Test Case: bitset-errors/clear-non-numeric.idio
+	 *
+	 * bitset-clear! bs #f
+	 */
+	idio_error_param_type ("unicode|integer", bit, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -360,19 +432,37 @@ get bit `bit` in bitset `bs`			\n\
 	bs_bit = IDIO_FIXNUM_VAL (bit);
     } else if (idio_isa_bignum (bit)) {
 	if (IDIO_BIGNUM_INTEGER_P (bit)) {
+	    /*
+	     * Code coverage: requires a large bitset
+	     */
 	    bs_bit = idio_bignum_ptrdiff_value (bit);
 	} else {
 	    IDIO bit_i = idio_bignum_real_to_integer (bit);
 	    if (idio_S_nil == bit_i) {
+		/*
+		 * Test Case: bitset-errors/ref-float.idio
+		 *
+		 * bitset-ref bs 1.1
+		 */
 		idio_error_param_type ("integer", bit, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    } else {
+		/*
+		 * Code coverage:
+		 *
+		 * bitset-ref 1e1
+		 */
 		bs_bit = idio_bignum_ptrdiff_value (bit_i);
 	    }
 	}
     } else {
-	idio_error_param_type ("integer", bit, IDIO_C_FUNC_LOCATION ());
+	/*
+	 * Test Case: bitset-errors/ref-non-numeric.idio
+	 *
+	 * bitset-ref bs #f
+	 */
+	idio_error_param_type ("unicode|integer", bit, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -417,16 +507,27 @@ merge the bitsets				\n\
 	if (idio_S_nil == r) {
 	    r = idio_copy (bs, IDIO_COPY_SHALLOW);
 	} else {
-	    if (IDIO_BITSET_SIZE (bs) != IDIO_BITSET_SIZE (r)) {
-		idio_bitset_error_size_mismatch (IDIO_BITSET_SIZE (bs), IDIO_BITSET_SIZE (r), IDIO_C_FUNC_LOCATION ());
+	    size_t bs_size = IDIO_BITSET_SIZE (bs);
+
+	    if (bs_size != IDIO_BITSET_SIZE (r)) {
+		/*
+		 * Test Case: bitset-errors/merge-non-matching-sizes.idio
+		 *
+		 * merge-bitset #B{ 3 } #B{ 4 }
+		 */
+		idio_bitset_error_size_mismatch (bs_size, IDIO_BITSET_SIZE (r), IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    }
 
-	    size_t n_ul = IDIO_BITSET_SIZE (r) / IDIO_BITS_PER_LONG + 1;
+	    size_t n_ul = bs_size / IDIO_BITSET_BITS_PER_WORD;
+	    int excess = bs_size % IDIO_BITSET_BITS_PER_WORD;
+	    if (excess) {
+		n_ul += 1;
+	    }
 	    size_t i;
 	    for (i = 0; i < n_ul; i++) {
-		IDIO_BITSET_BITS (r, i) |= IDIO_BITSET_BITS (bs, i);
+		IDIO_BITSET_WORDS (r, i) |= IDIO_BITSET_WORDS (bs, i);
 	    }
 	}
 
@@ -458,16 +559,27 @@ logical AND the bitsets				\n\
 	if (idio_S_nil == r) {
 	    r = idio_copy (bs, IDIO_COPY_SHALLOW);
 	} else {
-	    if (IDIO_BITSET_SIZE (bs) != IDIO_BITSET_SIZE (r)) {
-		idio_bitset_error_size_mismatch (IDIO_BITSET_SIZE (bs), IDIO_BITSET_SIZE (r), IDIO_C_FUNC_LOCATION ());
+	    size_t bs_size = IDIO_BITSET_SIZE (bs);
+
+	    if (bs_size != IDIO_BITSET_SIZE (r)) {
+		/*
+		 * Test Case: bitset-errors/and-non-matching-sizes.idio
+		 *
+		 * and-bitset #B{ 3 } #B{ 4 }
+		 */
+		idio_bitset_error_size_mismatch (bs_size, IDIO_BITSET_SIZE (r), IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    }
 
-	    size_t n_ul = IDIO_BITSET_SIZE (r) / IDIO_BITS_PER_LONG + 1;
+	    size_t n_ul = bs_size / IDIO_BITSET_BITS_PER_WORD;
+	    int excess = bs_size % IDIO_BITSET_BITS_PER_WORD;
+	    if (excess) {
+		n_ul += 1;
+	    }
 	    size_t i;
 	    for (i = 0; i < n_ul; i++) {
-		IDIO_BITSET_BITS (r, i) &= IDIO_BITSET_BITS (bs, i);
+		IDIO_BITSET_WORDS (r, i) &= IDIO_BITSET_WORDS (bs, i);
 	    }
 	}
 
@@ -499,16 +611,27 @@ logical Inclusive OR the bitsets		\n\
 	if (idio_S_nil == r) {
 	    r = idio_copy (bs, IDIO_COPY_SHALLOW);
 	} else {
-	    if (IDIO_BITSET_SIZE (bs) != IDIO_BITSET_SIZE (r)) {
-		idio_bitset_error_size_mismatch (IDIO_BITSET_SIZE (bs), IDIO_BITSET_SIZE (r), IDIO_C_FUNC_LOCATION ());
+	    size_t bs_size = IDIO_BITSET_SIZE (bs);
+
+	    if (bs_size != IDIO_BITSET_SIZE (r)) {
+		/*
+		 * Test Case: bitset-errors/ior-non-matching-sizes.idio
+		 *
+		 * ior-bitset #B{ 3 } #B{ 4 }
+		 */
+		idio_bitset_error_size_mismatch (bs_size, IDIO_BITSET_SIZE (r), IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    }
 
-	    size_t n_ul = IDIO_BITSET_SIZE (r) / IDIO_BITS_PER_LONG + 1;
+	    size_t n_ul = bs_size / IDIO_BITSET_BITS_PER_WORD;
+	    int excess = bs_size % IDIO_BITSET_BITS_PER_WORD;
+	    if (excess) {
+		n_ul += 1;
+	    }
 	    size_t i;
 	    for (i = 0; i < n_ul; i++) {
-		IDIO_BITSET_BITS (r, i) |= IDIO_BITSET_BITS (bs, i);
+		IDIO_BITSET_WORDS (r, i) |= IDIO_BITSET_WORDS (bs, i);
 	    }
 	}
 
@@ -540,16 +663,27 @@ logical eXclusive OR the bitsets		\n\
 	if (idio_S_nil == r) {
 	    r = idio_copy (bs, IDIO_COPY_SHALLOW);
 	} else {
-	    if (IDIO_BITSET_SIZE (bs) != IDIO_BITSET_SIZE (r)) {
-		idio_bitset_error_size_mismatch (IDIO_BITSET_SIZE (bs), IDIO_BITSET_SIZE (r), IDIO_C_FUNC_LOCATION ());
+	    size_t bs_size = IDIO_BITSET_SIZE (bs);
+
+	    if (bs_size != IDIO_BITSET_SIZE (r)) {
+		/*
+		 * Test Case: bitset-errors/xor-non-matching-sizes.idio
+		 *
+		 * xor-bitset #B{ 3 } #B{ 4 }
+		 */
+		idio_bitset_error_size_mismatch (bs_size, IDIO_BITSET_SIZE (r), IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    }
 
-	    size_t n_ul = IDIO_BITSET_SIZE (r) / IDIO_BITS_PER_LONG + 1;
+	    size_t n_ul = bs_size / IDIO_BITSET_BITS_PER_WORD;
+	    int excess = bs_size % IDIO_BITSET_BITS_PER_WORD;
+	    if (excess) {
+		n_ul += 1;
+	    }
 	    size_t i;
 	    for (i = 0; i < n_ul; i++) {
-		IDIO_BITSET_BITS (r, i) ^= IDIO_BITSET_BITS (bs, i);
+		IDIO_BITSET_WORDS (r, i) ^= IDIO_BITSET_WORDS (bs, i);
 	    }
 	}
 
@@ -573,10 +707,16 @@ logical complement of the bitset		\n\
 
     IDIO r = idio_copy (bs, IDIO_COPY_SHALLOW);
 
-    size_t n_ul = IDIO_BITSET_SIZE (bs) / IDIO_BITS_PER_LONG + 1;
+    size_t bs_size = IDIO_BITSET_SIZE (bs);
+
+    size_t n_ul = bs_size / IDIO_BITSET_BITS_PER_WORD;
+    int excess = bs_size % IDIO_BITSET_BITS_PER_WORD;
+    if (excess) {
+	n_ul += 1;
+    }
     size_t i;
     for (i = 0; i < n_ul; i++) {
-	IDIO_BITSET_BITS (r, i) = ~ IDIO_BITSET_BITS (bs, i);
+	IDIO_BITSET_WORDS (r, i) = ~ IDIO_BITSET_WORDS (bs, i);
     }
 
     return r;
@@ -604,17 +744,28 @@ subtract the bitsets				\n\
 	if (idio_S_nil == r) {
 	    r = idio_copy (bs, IDIO_COPY_SHALLOW);
 	} else {
-	    if (IDIO_BITSET_SIZE (bs) != IDIO_BITSET_SIZE (r)) {
-		idio_bitset_error_size_mismatch (IDIO_BITSET_SIZE (bs), IDIO_BITSET_SIZE (r), IDIO_C_FUNC_LOCATION ());
+	    size_t bs_size = IDIO_BITSET_SIZE (bs);
+
+	    if (bs_size != IDIO_BITSET_SIZE (r)) {
+		/*
+		 * Test Case: bitset-errors/subtract-non-matching-sizes.idio
+		 *
+		 * subtract-bitset #B{ 3 } #B{ 4 }
+		 */
+		idio_bitset_error_size_mismatch (bs_size, IDIO_BITSET_SIZE (r), IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    }
 
-	    size_t n_ul = IDIO_BITSET_SIZE (r) / IDIO_BITS_PER_LONG + 1;
+	    size_t n_ul = bs_size / IDIO_BITSET_BITS_PER_WORD;
+	    int excess = bs_size % IDIO_BITSET_BITS_PER_WORD;
+	    if (excess) {
+		n_ul += 1;
+	    }
 	    size_t i;
 	    for (i = 0; i < n_ul; i++) {
-		if (IDIO_BITSET_BITS (bs, i)) {
-		    IDIO_BITSET_BITS (r, i) &= (~ IDIO_BITSET_BITS (bs, i));
+		if (IDIO_BITSET_WORDS (bs, i)) {
+		    IDIO_BITSET_WORDS (r, i) &= (~ IDIO_BITSET_WORDS (bs, i));
 		}
 	    }
 	}
@@ -636,6 +787,15 @@ int idio_equal_bitsetp (IDIO args)
     if (idio_S_nil != args) {
 	bs = IDIO_PAIR_H (args);
 	if (idio_isa_bitset (bs) == 0) {
+	    /*
+	     * Test Case: bitset-errors/equal-not-bitset-1.idio
+	     *
+	     * equal-bitset? #f #B{ 3 }
+	     *
+	     * equal? a b will verify that the types of a and b match
+	     * so we need to invoke the bespoke equal-bitset? function
+	     * and this clause is for the first argument
+	     */
 	    idio_error_param_type ("bitset", bs, IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
@@ -648,17 +808,58 @@ int idio_equal_bitsetp (IDIO args)
     while (idio_S_nil != args) {
 	IDIO bs2 = IDIO_PAIR_H (args);
 
+	/*
+	 * Test Case: bitset-errors/equal-not-bitset-2.idio
+	 *
+	 * equal-bitset? #B{ 3 } #f
+	 *
+	 * equal? a b will verify that the types of a and b match so
+	 * we need to invoke the bespoke equal-bitset? function and
+	 * this clause is for the second argument
+	 */
 	IDIO_USER_TYPE_ASSERT (bitset, bs2);
 
-	if (IDIO_BITSET_SIZE (bs) != IDIO_BITSET_SIZE (bs2)) {
+	size_t bs_size = IDIO_BITSET_SIZE (bs);
+
+	if (bs_size != IDIO_BITSET_SIZE (bs2)) {
 	    return 0;
 	}
 
-	size_t n_ul = IDIO_BITSET_SIZE (bs) / IDIO_BITS_PER_LONG + 1;
+	/*
+	 * We been a bit[sic] casual in our bit flipping using C's
+	 * bitwise primitives.  If the number of bits is not a
+	 * multiple of IDIO_BITSET_BITS_PER_WORD then we have no real idea
+	 * what the state of the upper bits in the last idio_bitset_word_t
+	 * are going to be.
+	 *
+	 * For example, (not-bitset #B{ 3 110 }) leaves the upper
+	 * 29/61 bits in the idio_bitset_word_t as 1 as all not-bitset did
+	 * was use C's ~ operator on the whole idio_bitset_word_t.
+	 *
+	 * The upshot of which is that we can't casually compare
+	 * against another bitset, #B{ 3 001 }, say, where the top
+	 * bits are (probably) all 0.  We need to do some masking.
+	 */
+	size_t n_ul = bs_size / IDIO_BITSET_BITS_PER_WORD;
+	int excess = bs_size % IDIO_BITSET_BITS_PER_WORD;
+	if (excess) {
+	    n_ul += 1;
+	}
 	size_t i;
 	for (i = 0; i < n_ul; i++) {
-	    if (IDIO_BITSET_BITS (bs, i) != IDIO_BITSET_BITS (bs2, i)) {
-		return 0;
+	    if (excess &&
+		i == (n_ul - 1)) {
+		idio_bitset_word_t mask = (idio_bitset_word_t) -1;
+		mask >>= (IDIO_BITSET_BITS_PER_WORD - excess);
+		if ((IDIO_BITSET_WORDS (bs, i) & mask ) !=
+		    (IDIO_BITSET_WORDS (bs2, i) & mask)) {
+		    return 0;
+		}
+	    } else {
+		if (IDIO_BITSET_WORDS (bs, i) != IDIO_BITSET_WORDS (bs2, i)) {
+		    /* fprintf (stderr, "bs-eq? %zd %d %#lx %#lx\n", i, IDIO_BITSET_BITS_PER_WORD, IDIO_BITSET_WORDS (bs, i), IDIO_BITSET_WORDS (bs2, i)); */
+		    return 0;
+		}
 	    }
 	}
 
@@ -697,15 +898,21 @@ invoke `f` on each bit in bitset `bs` that is set\n\
 
     IDIO thr = idio_thread_current_thread ();
 
-    size_t n_ul = IDIO_BITSET_SIZE (bs) / IDIO_BITS_PER_LONG + 1;
+    size_t bs_size = IDIO_BITSET_SIZE (bs);
+
+    size_t n_ul = bs_size / IDIO_BITSET_BITS_PER_WORD;
+    int excess = bs_size % IDIO_BITSET_BITS_PER_WORD;
+    if (excess) {
+	n_ul += 1;
+    }
     size_t i;
     for (i = 0; i < n_ul; i++) {
-	unsigned long ul = IDIO_BITSET_BITS (bs, i);
+	idio_bitset_word_t ul = IDIO_BITSET_WORDS (bs, i);
 	if (ul) {
 	    size_t j;
-	    for (j = 0 ; j < IDIO_BITS_PER_LONG; j++) {
+	    for (j = 0 ; j < IDIO_BITSET_BITS_PER_WORD; j++) {
 		if (ul & (1UL << j)) {
-		    IDIO cmd = IDIO_LIST2 (f, idio_fixnum (i * IDIO_BITS_PER_LONG + j));
+		    IDIO cmd = IDIO_LIST2 (f, idio_fixnum (i * IDIO_BITSET_BITS_PER_WORD + j));
 
 		    idio_vm_invoke_C (thr, cmd);
 		}
@@ -739,15 +946,21 @@ accumulating the result in `v`			\n\
 
     IDIO thr = idio_thread_current_thread ();
 
-    size_t n_ul = IDIO_BITSET_SIZE (bs) / IDIO_BITS_PER_LONG + 1;
+    size_t bs_size = IDIO_BITSET_SIZE (bs);
+
+    size_t n_ul = bs_size / IDIO_BITSET_BITS_PER_WORD;
+    int excess = bs_size % IDIO_BITSET_BITS_PER_WORD;
+    if (excess) {
+	n_ul += 1;
+    }
     size_t i;
     for (i = 0; i < n_ul; i++) {
-	unsigned long ul = IDIO_BITSET_BITS (bs, i);
+	idio_bitset_word_t ul = IDIO_BITSET_WORDS (bs, i);
 	if (ul) {
 	    size_t j;
-	    for (j = 0 ; j < IDIO_BITS_PER_LONG; j++) {
+	    for (j = 0 ; j < IDIO_BITSET_BITS_PER_WORD; j++) {
 		if (ul & (1UL << j)) {
-		    IDIO cmd = IDIO_LIST3 (f, idio_fixnum (i * IDIO_BITS_PER_LONG + j), v);
+		    IDIO cmd = IDIO_LIST3 (f, idio_fixnum (i * IDIO_BITSET_BITS_PER_WORD + j), v);
 
 		    v = idio_vm_invoke_C (thr, cmd);
 		}

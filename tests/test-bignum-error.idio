@@ -56,9 +56,6 @@ bignum-error-load := {
   }
 }
 
-;; test the various possible errors in read.c including an embedded
-;; variant to check we pick up the correct line number
-
 bignum-error-load "bignum-errors/divide-float-zero.idio" "bignum divide by zero"
 
 ;; XXX If we mess with idio-print-conversion-format then we need to

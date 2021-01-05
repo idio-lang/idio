@@ -55,9 +55,6 @@ array-error-load := {
   }
 }
 
-;; test the various possible errors in read.c including an embedded
-;; variant to check we pick up the correct line number
-
 array-error-load "array-errors/insert-negative-bounds.idio" "array bounds error: abs (-4) >= #elem 3"
 array-error-load "array-errors/insert-positive-bounds.idio" "array bounds error: abs (5) >= #elem 3"
 array-error-load "array-errors/ref-negative-bounds.idio" "array bounds error: abs (-4) >= #elem 3"

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -617,7 +617,7 @@ idio_hi_t idio_hash_default_hash_C_bitset (IDIO h)
 {
     IDIO_ASSERT (h);
 
-    return idio_hash_default_hash_C_void (h->u.bitset.bits);
+    return idio_hash_default_hash_C_void (h->u.bitset.words);
 }
 
 idio_hi_t idio_idio_hash_default_hash_C_struct_type (IDIO h)

@@ -209,10 +209,12 @@ define-condition-type-accessors-only ^rt-fixnum-error			^rt-number-error		rt-fix
 
 define-condition-type-accessors-only ^rt-fixnum-conversion-error	^rt-fixnum-error		rt-fixnum-conversion-error?
 
-define-condition-type-accessors-only ^rt-bitset-bounds-error		^runtime-error			rt-bitset-bounds-error? \
+define-condition-type-accessors-only ^rt-bitset-error			^runtime-error			rt-bitset-error?
+
+define-condition-type-accessors-only ^rt-bitset-bounds-error		^rt-bitset-error		rt-bitset-bounds-error? \
 	(bit rt-bitset-bounds-error-bit)
 
-define-condition-type-accessors-only ^rt-bitset-size-mismatch-error	^runtime-error			rt-bitset-size-mismatch-error? \
+define-condition-type-accessors-only ^rt-bitset-size-mismatch-error	^rt-bitset-error		rt-bitset-size-mismatch-error? \
 	(size1 rt-bitset-bounds-error-size1) \
 	(size2 rt-bitset-bounds-error-size2)
 
@@ -330,6 +332,9 @@ define (condition-report prefix c & args) "print a report on condition `c`
        }) \
        ((rt-bitset-bounds-error? c) {
 	 cr-printf ": bit %s" c.bit
+       }) \
+       ((rt-bitset-size-mismatch-error? c) {
+	 cr-printf ": sizes mismatch: %s != %s" c.size1 c.size2
        }) \
        ((rt-signal? c) {
           cr-printf "signal %s (%s)" c.signum (libc/signal-name c.signum)

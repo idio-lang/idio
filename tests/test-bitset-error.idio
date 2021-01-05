@@ -1,0 +1,81 @@
+;;
+;; Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+;;
+;; Licensed under the Apache License, Version 2.0 (the "License"); you
+;; may not use this file except in compliance with the License.  You
+;; may obtain a copy of the License at
+;;
+;;     http://www.apache.org/licenses/LICENSE-2.0
+;;
+;; Unless required by applicable law or agreed to in writing, software
+;; distributed under the License is distributed on an "AS IS" BASIS,
+;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+;; See the License for the specific language governing permissions and
+;; limitations under the License.
+;;
+;;
+
+;;
+;; test-bitset-error.idio
+;;
+
+bitset-error0 := Tests
+
+;; We have a bunch of test cases which should provoke a
+;; ^rt-bitset-error or ^idio-error of some kind.  So we can
+;; write a load function which will wrapper the actual load with a
+;; trap for (^rt-bitset-error ^*-error) and compare the message
+;; strings (and line numbers for ^rt-bitset-errors).
+
+bitset-error-load := {
+  n := 0
+
+  function (filename msg) {
+    if (not (string? filename)) (error 'load "not a string" filename)
+
+    load-k := #n
+
+    n = n + 1
+    ;eprintf "loading #%s %s looking for %s\n" n filename msg
+    trap (^rt-bitset-error
+	  ^rt-parameter-type-error) (function (c) {
+				       ;eprintf "%s %s %s\n" n msg c.location
+				       test c.message msg
+
+				       if (not (string=? c.message msg)) {
+					 condition-report (append-string "bitset-error-load: " filename) c (current-error-handle)
+				       }
+				       load-k 'bitset-error
+	  }) {
+      call/cc (function (k) {
+		 load-k = k
+		 (symbol-value 'load 'Idio) filename
+      })
+    }
+  }
+}
+
+bitset-error-load "bitset-errors/set-bounds.idio" "bitset bounds error: 5 >= size 3"
+bitset-error-load "bitset-errors/clear-bounds.idio" "bitset bounds error: 5 >= size 3"
+bitset-error-load "bitset-errors/ref-bounds.idio" "bitset bounds error: 5 >= size 3"
+bitset-error-load "bitset-errors/make-size-float.idio" "bad parameter type: '1.1e+0' a BIGNUM is not a integer"
+bitset-error-load "bitset-errors/make-size-not-integer.idio" "bad parameter type: '#f' a CONSTANT_IDIO is not a integer"
+
+bitset-error-load "bitset-errors/set-float.idio" "bad parameter type: '1.1e+0' a BIGNUM is not a integer"
+bitset-error-load "bitset-errors/set-non-numeric.idio" "bad parameter type: '#f' a CONSTANT_IDIO is not a unicode|integer"
+bitset-error-load "bitset-errors/clear-float.idio" "bad parameter type: '1.1e+0' a BIGNUM is not a integer"
+bitset-error-load "bitset-errors/clear-non-numeric.idio" "bad parameter type: '#f' a CONSTANT_IDIO is not a unicode|integer"
+bitset-error-load "bitset-errors/ref-float.idio" "bad parameter type: '1.1e+0' a BIGNUM is not a integer"
+bitset-error-load "bitset-errors/ref-non-numeric.idio" "bad parameter type: '#f' a CONSTANT_IDIO is not a unicode|integer"
+
+bitset-error-load "bitset-errors/merge-non-matching-sizes.idio" "bitset size mistmatch: 4 != 3"
+bitset-error-load "bitset-errors/and-non-matching-sizes.idio" "bitset size mistmatch: 4 != 3"
+bitset-error-load "bitset-errors/ior-non-matching-sizes.idio" "bitset size mistmatch: 4 != 3"
+bitset-error-load "bitset-errors/xor-non-matching-sizes.idio" "bitset size mistmatch: 4 != 3"
+bitset-error-load "bitset-errors/subtract-non-matching-sizes.idio" "bitset size mistmatch: 4 != 3"
+
+bitset-error-load "bitset-errors/equal-not-bitset-1.idio" "bad parameter type: '#f' a CONSTANT_IDIO is not a bitset"
+bitset-error-load "bitset-errors/equal-not-bitset-2.idio" "bad parameter type: '#f' a CONSTANT_IDIO is not a bitset"
+
+;; all done?
+Tests? (bitset-error0 + 18)

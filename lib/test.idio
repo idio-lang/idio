@@ -19,6 +19,51 @@
 ;; test.idio
 ;;
 
+#*
+
+The testing we're doing here is more akin to system testing than unit
+testing (which we reallly should have as well...).
+
+Suppose we want to test arithmetic addition:
+
+test (1 + 2) 3
+
+which looks straightforward enough -- except that we are also testing:
+
+* the reader's ability to read in numbers
+
+  1, 2 and 3 are pretty easy but less so when we're considering 12e0
+  and 1200e-2
+
+  In this particular case we're also testing the reader operator's
+  ability to re-arrange (X op Y) into (op-func X Y).
+
+* the evaluator's ability to reason about the expression, (1 + 2),
+  embedded inside another expression, (test expr expected), which is a
+  template meaning it will get rewritten
+
+* finally we get to test the arithmetic -- noting that in this case it
+  will be the binary-+ arithmetic function (because of the reader
+  operator) rather than the generic list form, (+ ...)
+
+  So we ought to test both forms.  And then with both fixnums and
+  bignums in various combinations and ... you end up with a lot of
+  tests.
+
+All done, we'll actually do some arithmetic -- our original goal --
+and verify the result.
+
+Whereon we realise that the C implementation is full of conditional
+expressions and sub-clauses and what we really want to be doing to
+extending our set of nominal arithmetic tests to include various
+corner cases in the form of coverage tests.
+
+I've tried to label the C course code with code coverage examples --
+or at least document when there isn't one -- which then get lost in
+the jumble of test cases in these test files.
+
+*#
+
 ;; largely ported from
 ;;
 ;; Scheme 9 from Empty Space
@@ -156,6 +201,8 @@ test-load "test-array-error.idio"
 test-load "test-array.idio"
 test-load "test-bignum-error.idio"
 test-load "test-bignum.idio"
+test-load "test-bitset-error.idio"
+test-load "test-bitset.idio"
 
 
 test-load "test-unicode.idio"
@@ -181,7 +228,6 @@ test-load "test-libc-wrap.idio"
 
 test-load "test-load-handle.idio"
 test-load "test-trap.idio"
-test-load "test-bitset.idio"
 test-load "test-utf-8.idio"
 test-load "test-format.idio"
 

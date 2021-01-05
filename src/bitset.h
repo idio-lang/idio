@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -23,7 +23,7 @@
 #ifndef BITSET_H
 #define BITSET_H
 
-#define IDIO_BITS_PER_LONG (CHAR_BIT * sizeof (unsigned long))
+#define IDIO_BITSET_BITS_PER_WORD (CHAR_BIT * sizeof (idio_bitset_word_t))
 
 IDIO idio_bitset (size_t size);
 int idio_isa_bitset (IDIO o);

@@ -1,0 +1,4 @@
+
+bs := #B{ 3 }
+
+bitset-ref bs #f

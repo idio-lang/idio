@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -2314,18 +2314,18 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 		    int print_lead = 0;
 		    int in_range = 0;
 		    size_t range_start = 0;
-		    size_t n_ul = bs_size / IDIO_BITS_PER_LONG + 1;
+		    size_t n_ul = bs_size / IDIO_BITSET_BITS_PER_WORD + 1;
 		    for (i = 0; i < n_ul; i++) {
 			/*
 			 * Native format is chunked into unsigned
 			 * longs
 			 */
-			unsigned long ul_bits = IDIO_BITSET_BITS (o, i);
+			idio_bitset_word_t ul_bits = IDIO_BITSET_WORDS (o, i);
 
 			if (ul_bits) {
 			    int b;
 			    for (b = 0; count < bs_size &&
-				     b < sizeof (unsigned long); b++) {
+				     b < sizeof (idio_bitset_word_t); b++) {
 				/*
 				 * Portable format is chunked into bytes
 				 */
@@ -2336,9 +2336,9 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 				 * assume two's complement?
 				 */
 				size_t offset = b * CHAR_BIT;
-				unsigned long mask = UCHAR_MAX;
+				idio_bitset_word_t mask = UCHAR_MAX;
 				mask <<= offset;
-				unsigned long byte_bits = ul_bits & mask;
+				idio_bitset_word_t byte_bits = ul_bits & mask;
 
 				if (byte_bits) {
 				    if (byte_bits == mask) {
@@ -2423,7 +2423,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 				in_range = 0;
 			    }
 
-			    count += IDIO_BITS_PER_LONG;
+			    count += IDIO_BITSET_BITS_PER_WORD;
 			    print_lead = 1;
 			}
 		    }
