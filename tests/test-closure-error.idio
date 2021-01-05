@@ -1,0 +1,56 @@
+;;
+;; Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+;;
+;; Licensed under the Apache License, Version 2.0 (the "License"); you
+;; may not use this file except in compliance with the License.  You
+;; may obtain a copy of the License at
+;;
+;;     http://www.apache.org/licenses/LICENSE-2.0
+;;
+;; Unless required by applicable law or agreed to in writing, software
+;; distributed under the License is distributed on an "AS IS" BASIS,
+;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+;; See the License for the specific language governing permissions and
+;; limitations under the License.
+;;
+;;
+
+;;
+;; test-closure-error.idio
+;;
+
+closure-error0 := Tests
+
+closure-error-load := {
+  n := 0
+
+  function (filename msg) {
+    if (not (string? filename)) (error 'load "not a string" filename)
+
+    load-k := #n
+
+    n = n + 1
+    ;eprintf "loading #%s %s looking for %s\n" n filename msg
+    trap (^rt-parameter-type-error
+	  ^rt-hash-key-not-found-error) (function (c) {
+					   ;eprintf "%s %s %s\n" n msg c.location
+					   test c.message msg
+
+					   if (not (string=? c.message msg)) {
+					     condition-report (append-string "closure-error-load: " filename) c (current-error-handle)
+					   }
+					   load-k 'closure-error
+	  }) {
+      call/cc (function (k) {
+		 load-k = k
+		 (symbol-value 'load 'Idio) filename
+      })
+    }
+  }
+}
+
+closure-error-load "closure-errors/not-function.idio" "bad parameter type: '#f' a CONSTANT_IDIO is not a primitive|closure"
+closure-error-load "closure-errors/not-found.idio" "key not found"
+
+;; all done?
+Tests? (closure-error0 + 2)

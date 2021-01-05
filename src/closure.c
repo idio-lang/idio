@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -135,16 +135,24 @@ return the setter of `p`			\n\
 
     if (!(idio_isa_primitive (p) ||
 	  idio_isa_closure (p))) {
+	/*
+	 * Test case: closure-errors/not-function.idio
+	 *
+	 * setter #f
+	 */
 	idio_error_param_type ("primitive|closure", p, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
 
-    IDIO setter = idio_get_property (p, idio_KW_setter, IDIO_LIST1 (idio_S_false));
-
-    if (idio_S_false == setter) {
-	idio_error_C ("no setter defined", p, IDIO_C_FUNC_LOCATION ());
-    }
+    /*
+     * Test Case: closure-errors/not-found.idio
+     *
+     * setter (function #n #t)
+     *
+     * This generates an ^rt-hash-key-not-found-error
+     */
+    IDIO setter = idio_get_property (p, idio_KW_setter, idio_S_nil);
 
     return setter;
 }
