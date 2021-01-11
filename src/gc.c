@@ -79,6 +79,9 @@ void *idio_realloc (void *p, size_t s)
     p = realloc (p, s);
 #endif
     if (NULL == p) {
+	/*
+	 * Test Case: ??
+	 */
 	idio_error_alloc ("realloc");
 
 	/* notreached */
@@ -1094,8 +1097,15 @@ void idio_gc_expose_all ()
 	idio_root_t *r = gc->roots;
 	size_t n = 0;
 	while (r) {
-	    idio_dump (r->object, 1);
-	    /* r->object = idio_S_nil; */
+	    /*
+	     * Calling idio_dump (r->object, 1); on shutdown
+	     * is...unwise.  Ultimately, you may end up dumping a
+	     * struct-instance, say, which may require running the VM
+	     * for its as-string function.
+	     *
+	     * Instead, just a quick note.
+	     */
+	    fprintf (stderr, "expose-all: %10p %s\n", r->object, idio_type2string (r->object));
 	    r = r->next;
 	    n++;
 	}

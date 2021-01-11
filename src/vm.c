@@ -1496,9 +1496,9 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
 		if (idio_S_nil != args) {
 		    invocation = idio_list_append2 (invocation, args);
 		}
-		idio_vm_error_function_invoke ("external command not found",
-					       invocation,
-					       IDIO_C_FUNC_LOCATION ());
+		idio_command_not_found_error ("external command not found",
+					      invocation,
+					      IDIO_C_FUNC_LOCATION ());
 
 		/* notreached */
 		return;
@@ -2940,10 +2940,13 @@ static idio_ai_t idio_vm_get_or_create_vvi (idio_ai_t mci)
 		    idio_module_set_vvi (ce, fmci, fgvi);
 		    return IDIO_FIXNUM_VAL (fgvi);
 		} else {
-		    idio_debug ("iv-goc-vvi: %-20s return 0\n", sym);
+#ifdef IDIO_DEBUG
+		    fprintf (stderr, "[%d] iv-goc-vvi:", getpid ());
+		    idio_debug (" %-20s return 0\n", sym);
 		    idio_debug ("  ce %s\n", ce);
 		    idio_debug ("  sl %s\n", idio_vm_source_location ());
-		    /* return 0; */
+#endif
+		    return 0;
 		}
 
 		/*

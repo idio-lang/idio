@@ -1,0 +1,197 @@
+;;
+;; Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+;;
+;; Licensed under the Apache License, Version 2.0 (the "License"); you
+;; may not use this file except in compliance with the License.  You
+;; may obtain a copy of the License at
+;;
+;;     http://www.apache.org/licenses/LICENSE-2.0
+;;
+;; Unless required by applicable law or agreed to in writing, software
+;; distributed under the License is distributed on an "AS IS" BASIS,
+;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+;; See the License for the specific language governing permissions and
+;; limitations under the License.
+;;
+;;
+
+;;
+;; test-command-error.idio
+;;
+
+module tests/command-error
+import job-control libc
+
+command-error0 := Tests
+
+#*
+
+We have a bunch of test cases which should provoke a ^rt-command-error
+or ^rt-parameter-type-error.  So we can write a load function which
+will wrapper the actual load with a trap for (^rt-command-error
+^rt-parameter-type-error) and compare the message strings.
+
+There is a complication with commands, though, in that many of the
+potential errors are going to fire in a child process, not in us. 
+
+So, first up, we need to distinguish between conditions raised in the
+parent process before we get going and then, secondly, conditions
+raised in the child process which need (somehow) signalling back to
+the parent.
+
+Parent process errors should be much like other error handling code.
+Child process errors need to be handled more carefully.  There's two
+processes in play, for a start!
+
+It so happens a default-child-handler trap should be arranged in the
+child which will exit (1) on any ^idio-error (not just
+^rt-command-error).
+
+However, since we have forked, *this* ^rt-command-error is also in
+force which, as it will successfully handle ^rt-command-error, will
+return to the top level and...carry on doing whatever the toplevel was
+doing.  That might well be to continue the REPL.  Which is confusing
+as both parent and child are toggling reads from the controlling tty.
+
+So, for child errors, we need to handle two cases:
+
+In the child we can check the specific error and exit with some
+specific N.  There's no point in using {test} as only the parent
+process cares.
+
+In the parent we can check that the "job failed" and that the exit
+code was N (and that it was 'exit and not 'killed or 'unknown).  Three
+tests per test.
+
+It is possible that our choice of N is in conflict with something
+else (in the codebase).  About all we can do is use something
+not "normal" (1, 2, 3) but not > 127 when it will get confused with
+signals.  So, 10, 11, 12, ...
+
+*#
+
+command-parent-error-load := {
+  n := 0
+
+  function (filename msg) {
+    if (not (string? filename)) (error 'load "not a string" filename)
+
+    load-k := #n
+
+    n = n + 1
+    ;eprintf "loading #%s %s looking for %s\n" n filename msg
+    trap (^rt-command-error
+	  ^rt-glob-error
+	  ^system-error
+	  ^rt-parameter-type-error) (function (c) {
+				       ;eprintf "command-parent-error #%s: %s %s\n" n msg c.location
+				       test c.message msg
+
+				       if (not (string=? c.message msg)) {
+					 condition-report (append-string "command-parent-error-load: " filename) c (current-error-handle)
+				       }
+				       load-k 'command-parent-error
+	  }) {
+	    call/cc (function (k) {
+		       load-k = k
+		       (symbol-value 'load 'Idio) filename
+	    })
+	  }
+  }
+}
+
+command-child-error-load := {
+  n := 0
+
+  function (filename msg exit-status) {
+    if (not (string? filename)) (error 'load "not a string" filename)
+
+    load-k := #n
+
+    n = n + 1
+    ;eprintf "loading #%s %s looking for %s\n" n filename msg
+    trap (^rt-command-error
+	  ^rt-parameter-type-error) (function (c) {
+				       C-exit-status := C/integer-> exit-status
+
+				       if (C/== PID (getpid)) {
+					 ;eprintf "[%d] command-error #%s: %s at %s\n" (getpid) n msg c.location
+					 if (rt-command-error? c) {
+					   test c.message "job failed"
+
+					   jd := job-detail (idio-error-location c)
+					   test (ph jd) 'exit
+					   test (pht jd) C-exit-status
+
+					   if (not (and (equal? (ph jd) 'exit)
+							(equal? (pht jd) C-exit-status))) {
+							  condition-report (append-string "command-child-error-load: " filename) c (current-error-handle)
+							}
+					 } {
+					   test c.message msg
+					   
+					   if (not (string=? c.message msg)) {
+					     condition-report (append-string "command-child-error-load: " filename) c (current-error-handle)
+					   }
+					 }
+
+					 load-k 'command-error
+				       } {
+					 ;eprintf "[%d] command-error #%s: %s at %s\n" (getpid) n msg c.location
+
+					 if (string=? c.message msg) {
+					   libc/exit exit-status
+					 } {
+					   condition-report (append-string "command-child-error-load: " filename) c (current-error-handle)
+					 }
+
+					 ;; something not 10, 11, 12, ...
+					 libc/exit 1
+				       }
+	  }) {
+	    call/cc (function (k) {
+		       load-k = k
+		       (symbol-value 'load 'Idio) filename
+	    })
+	  }
+
+    ;; we usually generate some stragglers...
+    (wait)
+  }
+}
+
+command-child-error-load "command-errors/env-format.idio" "environ 'IDIO-LIB' contains an ASCII NUL" 10
+command-child-error-load "command-errors/env-type.idio" "environment variable 'IDIO-LIB' is not a string" 11
+
+command-parent-error-load "command-errors/PATH-format.idio" "find-exe 'PATH' contains an ASCII NUL"
+
+cwd := (getcwd)
+command-parent-error-load "command-errors/getcwd-rmdir.idio" "getcwd"
+chdir cwd
+
+OPATH := PATH
+command-parent-error-load "command-errors/find-exe-not-found.idio" "command not found foo"
+PATH = OPATH
+
+command-parent-error-load "command-errors/arg-glob-format.idio" "glob contains an ASCII NUL"
+
+;; command-errors/arg-glob-aborted requires that the call to glob(3)
+;; passes the GLOB_ERR flag.  Which we don't.  If we did, this is the
+;; test case.
+;command-parent-error-load "command-errors/arg-glob-aborted.idio" "pattern glob failed"
+
+command-parent-error-load "command-errors/arg-constant-idio.idio" "can't convert a CONSTANT_IDIO to an execve argument: inconvertible value"
+command-parent-error-load "command-errors/arg-string-format.idio" "argument contains an ASCII NUL"
+command-parent-error-load "command-errors/arg-substring-format.idio" "argument contains an ASCII NUL"
+command-parent-error-load "command-errors/arg-bad-struct.idio" "can't convert a %idio-job to an execve argument: only ~path structs"
+command-parent-error-load "command-errors/arg-bad-value.idio" "can't convert a STRUCT_TYPE to an execve argument: inconvertible value"
+
+OPATH := PATH
+command-parent-error-load "command-errors/exec-not-found.idio" "command not found (foo #n)"
+PATH = OPATH
+
+;; and again, in case we still have some stragglers...
+(wait)
+
+;; all done?
+Tests? (command-error0 + 16)

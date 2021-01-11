@@ -21,11 +21,15 @@
 
 array-error0 := Tests
 
-;; We have a bunch of test cases which should provoke a
-;; ^rt-array-error or ^idio-error of some kind.  So we can
-;; write a load function which will wrapper the actual load with a
-;; trap for (^rt-array-error ^*-error) and compare the message
-;; strings (and line numbers for ^rt-array-errors).
+#*
+
+We have a bunch of test cases which should provoke a ^rt-array-error
+or ^rt-parameter-type-error.  So we can write a load function which
+will wrapper the actual load with a trap for
+(^rt-array-error ^rt-parameter-type-error) and compare the message
+strings.
+
+*#
 
 array-error-load := {
   n := 0
@@ -39,7 +43,7 @@ array-error-load := {
     ;eprintf "loading #%s %s looking for %s\n" n filename msg
     trap (^rt-array-error
 	  ^rt-parameter-type-error) (function (c) {
-				       ;eprintf "%s %s %s\n" n msg c.location
+				       ;eprintf "array-error #%s: %s %s\n" n msg c.location
 				       test c.message msg
 
 				       if (not (string=? c.message msg)) {

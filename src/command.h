@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -24,6 +24,8 @@
 #define COMMAND_H
 
 extern IDIO idio_command_module;
+
+void idio_command_not_found_error (char *msg, IDIO cmd, IDIO c_location);
 
 char **idio_command_get_envp ();
 char *idio_command_find_exe_C (char *command);

@@ -37,7 +37,7 @@ ish := open-input-string bad-expr
 rval := (gensym)
 
 set-default-handler! ^idio-error (function (c) {
-				    ;eprintf "This is the load-handle default handler for ^idio-error returning %s\n" rval
+				    eprintf "This is the load-handle default handler for ^idio-error returning %s\n" rval
 				    test #t #t
 				    rval
 })
@@ -45,6 +45,8 @@ set-default-handler! ^idio-error (function (c) {
 r := load-handle ish
 
 test r rval
+
+clear-default-handler! ^idio-error
 
 #*
 

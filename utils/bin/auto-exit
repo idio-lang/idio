@@ -1,6 +1,6 @@
 #! /usr/bin/env bash
 
-# Copyright (c) 2015, 2020 Ian Fitchet <idf@idio-lang.org>
+# Copyright (c) 2015, 2020, 2021 Ian Fitchet <idf@idio-lang.org>
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you
 # may not use this file except in compliance with the License.  You
@@ -38,12 +38,13 @@ deterministic way: a specific exit status or a simulated signal.
 
 usage: $0 [options]
 where options are:
-  -e STATUS	exit with STATUS
-  -k SIGNAL	kill self with SIGNAL
+  -E STATUS	exit with STATUS
+  -K SIGNAL	kill self with SIGNAL
   -r NUM	read NUM lines (-s N seconds apart)
   -s NUM	sleep for NUM seconds
   -t NUM	set read's timeout to NUM seconds, '' for default [${opt_timeout}]
-  -w NUM	write NUM lines (-s N seconds apart)
+  -o NUM	write NUM lines to stdout (-s N seconds apart)
+  -e NUM	write NUM lines to stderr (-s N seconds apart)
 
   -v		verbose
 EOF
@@ -55,19 +56,26 @@ opt_read=
 opt_sleep=0
 opt_timeout=
 opt_verbose=
-opt_write=
+opt_write_out=
+opt_write_err=
 
-while getopts "e:hk:r:s:t:w:v" opt ; do
+while getopts "E:e:hK:o:r:s:t:v" opt ; do
     case "${opt}" in
-    e)
+    E)
 	opt_exit=${OPTARG}
+	;;
+    e)
+	opt_write_err=${OPTARG}
 	;;
     h)
 	usage
 	exit 0
 	;;
-    k)
+    K)
 	opt_kill=${OPTARG}
+	;;
+    o)
+	opt_write_out=${OPTARG}
 	;;
     r)
 	opt_read=${OPTARG}
@@ -80,9 +88,6 @@ while getopts "e:hk:r:s:t:w:v" opt ; do
 	;;
     v)
 	opt_verbose=1
-	;;
-    w)
-	opt_write=${OPTARG}
 	;;
     *)
 	usage
@@ -99,17 +104,27 @@ if [[ ${opt_verbose} ]] ; then
 fi
 
 var_read=1
-var_write=1
+var_write_out=1
+var_write_err=1
 
-if [[ ${opt_read} || $opt_write ]] ; then
-    while [[ ${opt_read} || ${opt_write} ]] ; do
-	if [[ ${opt_write} ]] ; then
-	    if [[ ${opt_write} -gt 0 ]] ; then
-		echo "${0##*/}: $$: wrote line ${var_write}"
-		var_write=$(( var_write + 1 ))
-		opt_write=$(( opt_write - 1 ))
+if [[ ${opt_read} || $opt_write_out || $opt_write_err ]] ; then
+    while [[ ${opt_read} || ${opt_write_out} || ${opt_write_err} ]] ; do
+	if [[ ${opt_write_out} ]] ; then
+	    if [[ ${opt_write_out} -gt 0 ]] ; then
+		echo "${0##*/}: $$: wrote stdout line ${var_write_out}"
+		var_write_out=$(( var_write_out + 1 ))
+		opt_write_out=$(( opt_write_out - 1 ))
 	    else
-		opt_write=
+		opt_write_out=
+	    fi
+	fi
+	if [[ ${opt_write_err} ]] ; then
+	    if [[ ${opt_write_err} -gt 0 ]] ; then
+		echo "${0##*/}: $$: wrote stderr line ${var_write_err}" >&2
+		var_write_err=$(( var_write_err + 1 ))
+		opt_write_err=$(( opt_write_err - 1 ))
+	    else
+		opt_write_err=
 	    fi
 	fi
 	sleep $opt_sleep

@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2020 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -20,14 +20,6 @@
 ;;
 
 issues0 := Tests
-
-;; We have a bunch of test cases which should provoke a ^read-error or
-;; ^string-error of some kind.  So we can write a load function which
-;; will wrapper the actual load with a trap for (^read-error
-;; ^string-error) and compare the message strings (and line numbers
-;; for ^read-errors).
-
-;; So one or two tests per, uh, test.
 
 issues-load := {
   n := 0

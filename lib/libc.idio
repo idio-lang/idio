@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015, 2020 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -33,59 +33,65 @@ export-struct-accessors-only struct-utsname		sysname nodename release version ma
 export-struct-accessors-only struct-rlimit		rlim_cur rlim_max
 export-struct-accessors-only struct-tms			tms_rtime tms_utime tms_stime tms_cutime tms_cstime
 
-;; stdin/stdout
-;;
-;; Idio doesn't make any particular handle stdin or stdout directly.
-;; Rather, each Idio *thread* simply has stdin and stdout attributes
-;; which reference an existing handle.  All of the output directives,
-;; say, look up the current output handle and write their output
-;; there.
-;;
-;; *nix make file descriptors 0, 1 and 2 special -- STDIN_FILENO,
-;; STDOUT_FILENO and STDERR_FILENO to be precise.  Programs
-;; (blindly) write to file descriptor 1 (or the FILE* {stdout}) for
-;; output.
-;;
-;; How do we make them align?  Especially if we want to use exotic
-;; types such as string-handles for stdin or stdout.
-;;
-;; The problem is acute when we want to run a pipeline or an external
-;; process.  To prepare the external process, nominally, we start
-;; referencing STDIN_FILENO etc..  Rather than that, call a function
-;; to look at what Idio's thread thinks the current input or output is
-;; and then make a decision then.
-;;
-;; For a file-handle the decision is easy: call file-handle-fd (or,
-;; rather, fileno as we want a C "int" type).
-;;
-;; For a string-handle we can use temporary files.  For input, this is
-;; like using a "here-string" in Bash, ie. we create a temporary file,
-;; write the string into it then open the file and use it as stdin.
-;;
-;; We can't quite do the same for output as sematically it's
-;; different: ``ls -l > sym'' is saying that when we subsequently use
-;; {sym} in Idio its value should be the output of "ls -l".  That
-;; means we can't be in a subshell or anything, the parent Idio must
-;; set things up so that "ls -l" sends its output to a temporary file,
-;; the parent then reads the contents of the file back in to be the
-;; value of {sym}, creating {sym} (if necessary) in the process.
-;;
-;; Remembering to delete any temporary files, of course!
-;;
-;; That requires a slew of supporting functions.
+#*
 
+stdin/stdout
+
+Idio doesn't make any particular handle stdin or stdout directly.
+Rather, each Idio *thread* simply has stdin and stdout attributes
+which reference an existing handle.  All of the output directives,
+say, look up the current output handle and write their output there.
+
+*nix make file descriptors 0, 1 and 2 special -- STDIN_FILENO,
+STDOUT_FILENO and STDERR_FILENO to be precise.  Programs
+(blindly) write to file descriptor 1 (or the FILE* {stdout}) for
+output.
+
+How do we make them align?  Especially if we want to use exotic types
+such as string-handles for stdin or stdout.
+
+The problem is acute when we want to run a pipeline or an external
+process.  To prepare the external process, nominally, we start
+referencing STDIN_FILENO etc..  Rather than that, call a function to
+look at what Idio's thread thinks the current input or output is and
+make a decision then.
+
+For a file-handle the decision is easy: call file-handle-fd (or,
+rather, fileno as we want a C "int" type).
+
+For a string-handle we can use temporary files.  For input, this is
+like using a "here-string" in Bash, ie. we create a temporary file,
+write the string into it then open the file and use it as stdin.
+
+We can't quite do the same for output as semantically it's different:
+``ls -l > sym'' is saying that when we subsequently use {sym} in Idio
+its value should be the output of "ls -l".  That means we can't be in
+a subshell or anything, the parent Idio must set things up so that "ls
+-l" sends its output to a temporary file, the parent then reads the
+contents of the file back in to be the value of {sym}, creating
+{sym} (if necessary) in the process.
+
+Remembering to delete any temporary files, of course!
+
+That requires a slew of supporting functions.
+
+*#
 
 ;; File Permissions
 define (%file-access file mode) {
   eprintf "%file-access %s %s: not implemented\n" file mode
 }
 
-;; Temporary Files
+#*
 
-;; We can call the mkstemp(3) interface but we need a suitable
-;; directory and then a template.
+Temporary Files
 
-;; We'll follow the style of Bash .../lib/sh/tmpfile.c
+We can call the mkstemp(3) interface but we need a suitable directory
+and then a template.
+
+We'll follow the style of Bash .../lib/sh/tmpfile.c
+
+*#
 
 ;; "." is not the ideal fallback!
 %sys-tmpdirs := '("/tmp" "var/tmp" "usr/tmp" ".")
@@ -152,17 +158,22 @@ define (make-tmp-dir & args) {
   mkdtemp tmpdirname
 }
 
-;; stdin-fileno
-;;
-;; This is used where we need to know the file descriptor for stdin --
-;; nominally, for when we are about to launch a *nix process.
-;;
-;; What does Idio think the current input handle is and if the current
-;; input handle is a string then we need to convert that to a file we
-;; can have the impending *nix process read from.
-;;
-;; The temporary file code is derived from Bash's here document code
-;; (lib/sh/tmpfile.c).
+#*
+
+stdin-fileno
+
+This is used where we need to know the file descriptor for stdin --
+nominally, for when we are about to launch a *nix process.
+
+What does Idio think the current input handle is and if the current
+input handle is a string then we need to convert that to a file we can
+have the impending *nix process read from.
+
+The temporary file code is derived from Bash's here document code
+(lib/sh/tmpfile.c).
+
+*#
+
 define (stdin-fileno) {
   ih := (current-input-handle)
   cond ((input-file-handle? ih) (fileno ih)) \

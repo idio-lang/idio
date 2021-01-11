@@ -185,9 +185,21 @@ define-condition-type-accessors-only ^rt-module-symbol-unbound-error	^rt-module-
 define-condition-type-accessors-only ^rt-glob-error			^runtime-error			rt-glob-error? \
 	(pattern rt-glob-error-pattern)
 
-define-condition-type-accessors-only ^rt-command-exec-error		^runtime-error			rt-command-exec-error?
+define-condition-type-accessors-only ^rt-command-error			^runtime-error			rt-command-error?
 
-define-condition-type-accessors-only ^rt-command-status-error		^runtime-error			rt-command-status-error? \
+define-condition-type-accessors-only ^rt-command-argv-type-error	^rt-command-error		rt-command-argv-type-error? \
+													(arg rt-command-argv-type-error-arg)
+
+define-condition-type-accessors-only ^rt-command-format-error		^rt-command-error		rt-command-format-error? \
+													(name rt-command-format-error-name)
+
+define-condition-type-accessors-only ^rt-command-env-type-error		^rt-command-error		rt-command-env-type-error? \
+													(name rt-command-env-type-error-name)
+
+define-condition-type-accessors-only ^rt-command-exec-error		^rt-command-error		rt-command-exec-error? \
+													(errno rt-command-exec-error-errno)
+
+define-condition-type-accessors-only ^rt-command-status-error		^rt-command-error		rt-command-status-error? \
 	(status rt-command-status-error-status)
 
 define-condition-type-accessors-only ^rt-array-error			^runtime-error			rt-array-error? \
@@ -273,7 +285,7 @@ define (condition-report prefix c & args) "print a report on condition `c`
 	 cr-printf "%s:%s:%s" c.location c.message c.detail
        }) \
        ((system-error? c) {
-          cr-printf "errno %s (%s)" (system-error-errno c) (libc/errno-name (system-error-errno c))
+          cr-printf " errno %s (%s)" (system-error-errno c) (libc/errno-name (system-error-errno c))
         }) \
        ((st-variable-error? c) {
 	 cr-printf ": variable %s" c.variable

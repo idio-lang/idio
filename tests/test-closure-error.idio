@@ -33,7 +33,7 @@ closure-error-load := {
     ;eprintf "loading #%s %s looking for %s\n" n filename msg
     trap (^rt-parameter-type-error
 	  ^rt-hash-key-not-found-error) (function (c) {
-					   ;eprintf "%s %s %s\n" n msg c.location
+					   ;eprintf "closure-error #%s: %s %s\n" n msg c.location
 					   test c.message msg
 
 					   if (not (string=? c.message msg)) {

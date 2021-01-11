@@ -1,0 +1,19 @@
+
+module command
+import libc
+
+;; We want to provoke a command not found error which means we need a
+;; not-findable command.  We could guess at a file name but you just
+;; know that some random punter has a collection of weirdly named
+;; scripts that do unfortunate things when run unexpectedly.  I know I
+;; do.
+
+;; Instead, point PATH at somewhere that doesn't exist/has nothing in
+;; it -- or both!
+
+tmpdir := (make-tmp-dir)
+rmdir tmpdir
+
+PATH = tmpdir
+
+%exec 'foo

@@ -94,8 +94,9 @@ IDIO idio_condition_rt_bitset_error_type;
 IDIO idio_condition_rt_bitset_bounds_error_type;
 IDIO idio_condition_rt_bitset_size_mismatch_error_type;
 
+IDIO idio_condition_rt_command_error_type;
 IDIO idio_condition_rt_command_argv_type_error_type;
-IDIO idio_condition_rt_command_forked_error_type;
+IDIO idio_condition_rt_command_format_error_type;
 IDIO idio_condition_rt_command_env_type_error_type;
 IDIO idio_condition_rt_command_exec_error_type;
 IDIO idio_condition_rt_command_status_error_type;
@@ -1066,11 +1067,12 @@ void idio_init_condition ()
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_module_symbol_unbound_error_type, "^rt-module-symbol-unbound-error", idio_condition_rt_module_error_type, "symbol");
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_glob_error_type, "^rt-glob-error", idio_condition_runtime_error_type, "pattern");
 
-    IDIO_DEFINE_CONDITION1 (idio_condition_rt_command_argv_type_error_type, "^rt-command-argv-type-error", idio_condition_runtime_error_type, "arg");
-    IDIO_DEFINE_CONDITION0 (idio_condition_rt_command_forked_error_type, "^rt-command-forked-error", idio_condition_runtime_error_type);
-    IDIO_DEFINE_CONDITION1 (idio_condition_rt_command_env_type_error_type, "^rt-command-env-type-error", idio_condition_rt_command_forked_error_type, "name");
-    IDIO_DEFINE_CONDITION1 (idio_condition_rt_command_exec_error_type, "^rt-command-exec-error", idio_condition_rt_command_forked_error_type, "errno");
-    IDIO_DEFINE_CONDITION1 (idio_condition_rt_command_status_error_type, IDIO_CONDITION_RCSE_TYPE_NAME, idio_condition_runtime_error_type, "status");
+    IDIO_DEFINE_CONDITION0 (idio_condition_rt_command_error_type, "^rt-command-error", idio_condition_runtime_error_type);
+    IDIO_DEFINE_CONDITION1 (idio_condition_rt_command_argv_type_error_type, "^rt-command-argv-type-error", idio_condition_rt_command_error_type, "arg");
+    IDIO_DEFINE_CONDITION1 (idio_condition_rt_command_format_error_type, "^rt-command-format-error", idio_condition_rt_command_error_type, "name");
+    IDIO_DEFINE_CONDITION1 (idio_condition_rt_command_env_type_error_type, "^rt-command-env-type-error", idio_condition_rt_command_error_type, "name");
+    IDIO_DEFINE_CONDITION1 (idio_condition_rt_command_exec_error_type, "^rt-command-exec-error", idio_condition_rt_command_error_type, "errno");
+    IDIO_DEFINE_CONDITION1 (idio_condition_rt_command_status_error_type, IDIO_CONDITION_RCSE_TYPE_NAME, idio_condition_rt_command_error_type, "status");
 
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_array_error_type, "^rt-array-error", idio_condition_runtime_error_type, "index");
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_hash_key_not_found_error_type, "^rt-hash-key-not-found-error", idio_condition_runtime_error_type, "key");

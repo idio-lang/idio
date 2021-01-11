@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2018, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2018, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -151,6 +151,42 @@ a wrapper to libc access (2)					\n\
     IDIO_GC_FREE (pathname);
 
     return r;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("chdir", libc_chdir, (IDIO ipath), "path", "\
+in C, chdir (path)						\n\
+a wrapper to libc chdir (2)					\n\
+								\n\
+:return: 0 or raises ^system-error				\n\
+:rtype: C_int							\n\
+")
+{
+    IDIO_ASSERT (ipath);
+
+    IDIO_USER_TYPE_ASSERT (string, ipath);
+
+    size_t size = 0;
+    char *path = idio_string_as_C (ipath, &size);
+    size_t C_size = strlen (path);
+    if (C_size != size) {
+	IDIO_GC_FREE (path);
+
+	idio_libc_error_format ("chdir: path contains an ASCII NUL", ipath, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    int r = chdir (path);
+
+    IDIO_GC_FREE (path);
+
+    if (r == -1) {
+	idio_error_system_errno ("chdir", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    return idio_C_int (r);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("close", libc_close, (IDIO ifd), "fd", "\
@@ -473,6 +509,12 @@ a wrapper to libc getcwd (3)					\n\
      *
      *  warning: argument 1 is null but the corresponding size argument 2 value is 4096
      *
+     * It also helpfully reports that:
+     *
+     *  /usr/include/unistd.h:520:14: note: in a call to function ‘getcwd’ declared with attribute ‘write_only (1, 2)’
+     *
+     * See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=96832
+     *
      * If getcwd(3) returns a value that consumes all of PATH_MAX (or
      * more) then we're doomed to hit other problems in the near
      * future anyway as other parts of the system try to use the
@@ -793,6 +835,44 @@ a wrapper to libc read (2)					\n\
     }
 
     return r;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("rmdir", libc_rmdir, (IDIO ipathname), "pathname", "\
+in C, rmdir (pathname)						\n\
+a wrapper to libc rmdir (2)					\n\
+								\n\
+:param pathname: directory to rmdir				\n\
+:type pathname: string						\n\
+:return: 0 or raises ^system-error				\n\
+:rtype: C_int							\n\
+")
+{
+    IDIO_ASSERT (ipathname);
+
+    IDIO_USER_TYPE_ASSERT (string, ipathname);
+
+    size_t size = 0;
+    char *pathname = idio_string_as_C (ipathname, &size);
+    size_t C_size = strlen (pathname);
+    if (C_size != size) {
+	IDIO_GC_FREE (pathname);
+
+	idio_libc_error_format ("rmdir: pathname contains an ASCII NUL", ipathname, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    int r = rmdir (pathname);
+
+    IDIO_GC_FREE (pathname);
+
+    if (-1 == r) {
+	idio_error_system_errno ("rmdir", IDIO_LIST1 (ipathname), IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    return idio_C_int (r);
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("setpgid", libc_setpgid, (IDIO ipid, IDIO ipgid), "pid pgid", "\
@@ -3599,6 +3679,7 @@ void idio_libc_wrap_add_primitives ()
 {
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_system_error);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_access);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_chdir);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_close);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_dup);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_dup2);
@@ -3617,6 +3698,7 @@ void idio_libc_wrap_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_pipe_reader);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_pipe_writer);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_read);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_rmdir);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_setpgid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_signal);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_signal_handler);

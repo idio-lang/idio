@@ -1912,6 +1912,11 @@ IDIO idio_load_handle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*eval
 	}
 
 	IDIO eh = idio_thread_current_error_handle ();
+#ifdef IDIO_DEBUG
+	char pbuf[BUFSIZ];
+	sprintf (pbuf, "[%d] ", getpid ());
+	idio_display_C (pbuf, eh);
+#endif
 	idio_display (IDIO_MODULE_NAME (cm), eh);
 	idio_display_C ("> ", eh);
 

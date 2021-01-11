@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -20,15 +20,19 @@
 ;;
 module job-control
 
-;; Even though we import libc here in job-control (because we do a lot
-;; of libc-ish things) the templates/operators we export -- which will
-;; be expanded in the user's namespace -- will use libc values and we
-;; have no idea if the importer (of us) has imported libc.  We don't
-;; want to force them to import libc as it annoyingly duplicates many
-;; names.
-;;
-;; So the "fix" is to ensure that the templates/operators we export
-;; dutifully call the libc/X "direct" names for any libc X they use.
+#*
+
+Even though we import libc here in job-control (because we do a lot of
+libc-ish things) the templates/operators we export -- which will be
+expanded in the user's namespace -- will use libc values and we have
+no idea if the importer (of us) has imported libc.  We don't want to
+force them to import libc as it annoyingly duplicates many names.
+
+So the "fix" is to ensure that the templates/operators we export
+dutifully call the libc/X "direct" names for any libc X they use.
+
+*#
+
 import libc
 export (%idio-interactive
 	%idio-jobs
@@ -95,10 +99,12 @@ define (job-as-string job seen) {
 
 %%add-as-string %idio-job job-as-string
 
-;;
-;; These algorithms are directly from the libc info pages on Job
-;; Control: "info libc" then "Job Control" then "Implementing a Shell"
-;;
+#*
+
+These algorithms are directly from the libc info pages on Job
+Control: "info libc" then "Job Control" then "Implementing a Shell"
+
+*#
 
 define (job-is-stopped job) "test if job `job` is stopped
 
@@ -429,30 +435,33 @@ define (do-job-notification) "notify of any job status changes" {
 
   %idio-jobs = loop %idio-jobs #n
 
-  ;; This report->raise condition for failed jobs is badly positioned.
-  ;; The problem lies in that we, do-job-notification, have run on the
-  ;; back of a SIGCHLD event but will have had nothing to report (in
-  ;; the simplest case) because our call to update-status resulted in
-  ;; a pid of 0 and/or errno ECHILD.  That's because foreground-job,
-  ;; say, was blocked in wait-for-job who had (successfully) called
-  ;; waitpid but further processing has been suspended while the
-  ;; event handler runs.  Only when we return will it be able to
-  ;; continue and usefully call mark-process-status with a proper pid
-  ;; and status.
+  #*
 
-  ;; This isn't an Idio-issue, the Libc texinfo C version (from which
-  ;; this is ported) appears to suffer the same problem.
+  This report->raise condition for failed jobs is badly positioned.
+  The problem lies in that we, do-job-notification, have run on the
+  back of a SIGCHLD event but will have had nothing to report (in the
+  simplest case) because our call to update-status resulted in a pid
+  of 0 and/or errno ECHILD.  That's because foreground-job, say, was
+  blocked in wait-for-job who had (successfully) called waitpid but
+  further processing has been suspended while the event handler runs.
+  Only when we return will it be able to continue and usefully call
+  mark-process-status with a proper pid and status.
 
-  ;; Underlying that is that, perhaps, we shouldn't be calling
-  ;; do-job-notification from the signal handler.  The texinfo
-  ;; suggests SIGCHLD->do-job-notification should only enabled when
-  ;; waiting at the prompt for user input and not, say, while
-  ;; generically processing loaded files.
+  This isn't an Idio-issue, the Libc texinfo C version (from which
+  this is ported) appears to suffer the same problem.
 
-  ;; All good, but that leaves us with the question of when to raise a
-  ;; condition to alert the Idio code?  I've migrated that to
-  ;; wait-for-job itself.  It knows the job is complete and can assert
-  ;; if the job failed.
+  Underlying that is that, perhaps, we shouldn't be calling
+  do-job-notification from the signal handler.  The texinfo suggests
+  SIGCHLD->do-job-notification should only enabled when waiting at the
+  prompt for user input and not, say, while generically processing
+  loaded files.
+
+  All good, but that leaves us with the question of when to raise a
+  condition to alert the Idio code?  I've migrated that to
+  wait-for-job itself.  It knows the job is complete and can assert if
+  the job failed.
+
+  *#
 
   if (not (null? failed-jobs)) {
     report :+ function (jobs) {
@@ -607,38 +616,40 @@ define (prep-io infile outfile errfile) "prepare the IO for the current process
 
 :return: #<unspec>
 " {
-  ;; The nominal libc texinfo algorithm is:
+  #*
 
-  ;;   Switch stdin/stdout/stderr to the supplied file descriptor if
-  ;;   it isn't already stdin/stdout/stderr.  (Here, the supplied file
-  ;;   descriptor would commonly be one end or other of a pipe(2).)
+  The nominal libc texinfo algorithm is:
 
-  ;;   We can then close the supplied file descriptor if it is >
-  ;;   STDERR_FILENO (ie. > 2) and isn't one of the later ones.
+    Switch stdin/stdout/stderr to the supplied file descriptor if it
+    isn't already stdin/stdout/stderr.  (Here, the supplied file
+    descriptor would commonly be one end or other of a pipe(2).)
 
-  ;;   That latter case is for: ls > "foo" 2>& 1
+    We can then close the supplied file descriptor if it is >
+    STDERR_FILENO (ie. > 2) and isn't one of the later ones.
 
-  ;;   Here, "stdout" will be fd N, say, having opened "foo" which we
-  ;;   would close because N > 2, before we reached the "2>& 1" which
-  ;;   tries to dup2(N, 2)
+    That latter case is for: ls > "foo" 2>& 1
 
-  ;; However, we *must* set the Idio thread-specific
-  ;; input/output/error handles.  The problem lies in that this code,
-  ;; prep-io, is most likely called from the | operator in Idio-land
-  ;; in which case we are the *first* IO redirection.  However, the
-  ;; later IO redirections, (> >& etc.) reference the Idio
-  ;; thread-specific IO handles and *not* simply the STD*_FILENO file
-  ;; descriptors.  They do that because we can (seamlessly) use
-  ;; file-handles, string-handles, file descriptor numbers and
-  ;; ... instead of straight file names.  The use of string-handles
-  ;; means we have to create temporary files etc..
+    Here, "stdout" will be fd N, say, having opened "foo" which we
+    would close because N > 2, before we reached the "2>& 1" which
+    tries to dup2(N, 2)
 
-  ;; In fact they call (stdin-fileno) etc. which furtles about and
-  ;; conjures up a file descriptor which represents stdin etc..
+  However, we *must* set the Idio thread-specific input/output/error
+  handles.  The problem lies in that this code, prep-io, is most
+  likely called from the | operator in Idio-land in which case we are
+  the *first* IO redirection.  However, the later IO redirections, (>
+  >& etc.) reference the Idio thread-specific IO handles and *not*
+  simply the STD*_FILENO file descriptors.  They do that because we
+  can (seamlessly) use file-handles, string-handles, file descriptor
+  numbers and ... instead of straight file names.  The use of
+  string-handles means we have to create temporary files etc..
 
-  ;; So, leave the final resolution of handle -> *nix file descriptor
-  ;; until the last thing before execve().  Just set Idio-level
-  ;; params.
+  In fact they call (libc/stdin-fileno) etc. which furtles about and
+  conjures up a file descriptor which represents stdin etc..
+
+  So, leave the final resolution of handle -> *nix file descriptor
+  until the last thing before execve().  Just set Idio-level params.
+
+  *#
 
   if (not (C/== infile STDIN_FILENO)) {
     ;dup2 infile STDIN_FILENO
@@ -732,46 +743,50 @@ define-infix-operator | 1700 {
   ;; them
   op-args = map operator-expand op-args
 
-  ;; pgrp-pipe:
+  #*
 
-  ;; There's a little process coordination trickery ported from Bash
-  ;; -- noting that if the race condition occurs in a slick and fast
-  ;; pure C environment then our meandering and inefficient
-  ;; byte-compiled script has no hope!
-  ;;
-  ;; We need to prevent the first process in the pipeline from
-  ;; starting until all the others are in place -- otherwise you can
-  ;; have the first process, the process group leader, run and exit
-  ;; before you manage to start any of the others!  That also leaves
-  ;; the small issue of trying to call setpgid with a process group
-  ;; that no longer exists (and, worse, could have been replaced with
-  ;; a different process all together).  That's all bad for business.
-  ;;
-  ;; The trick is to open another pipe and have the first process
-  ;; block reading from the pipe just before it starts.  All the other
-  ;; processes in the pipeline simply close the pipe when they're
-  ;; about to exec/start.  When the last one has closed the pipe the
-  ;; first will have its blocking read() return (with zero bytes, ie
-  ;; EOF -- we don't care) and we're good to go.
-  ;;
-  ;; Incidentally, as we created the pipe in the main Idio process, it
-  ;; too holds the pipe open so we can be fairly confident that all
-  ;; the child processes are set up and running when the main Idio
-  ;; process closes the (last?) pipe write-end.
-  ;;
-  ;; Well, probably, there's always a race condition between closing
-  ;; the pgrp-pipe and exec()ing or starting processing the Idio code
-  ;; in which the last process can be prevented from running before
-  ;; all the previous processes have been and gone.  But we've done a
-  ;; decent job, what more can we do?
+  pgrp-pipe:
+
+  There's a little process coordination trickery ported from Bash --
+  noting that if the race condition occurs in a slick and fast pure C
+  environment then our meandering and inefficient byte-compiled script
+  has no hope!
+
+  We need to prevent the first process in the pipeline from starting
+  until all the others are in place -- otherwise you can have the
+  first process, the process group leader, run and exit before you
+  manage to start any of the others!  That also leaves the small issue
+  of trying to call setpgid with a process group that no longer
+  exists (and, worse, could have been replaced with a different
+  process all together).  That's all bad for business.
+
+  The trick is to open another pipe and have the first process block
+  reading from the pipe just before it starts.  All the other
+  processes in the pipeline simply close the pipe when they're about
+  to exec/start.  When the last one has closed the pipe the first will
+  have its blocking read() return (with zero bytes, ie EOF -- we don't
+  care) and we're good to go.
+
+  Incidentally, as we created the pipe in the main Idio process, it
+  too holds the pipe open so we can be fairly confident that all the
+  child processes are set up and running when the main Idio process
+  closes the (last?) pipe write-end.
+
+  Well, probably, there's always a race condition between closing the
+  pgrp-pipe and exec()ing or starting processing the Idio code in
+  which the last process can be prevented from running before all the
+  previous processes have been and gone.  But we've done a decent job,
+  what more can we do?
 
 
-  ;; Hygiene
+  Hygiene
 
-  ;; Looping over the list of commands prepping the children uses a
-  ;; number of variables which are at risk of polluting the called
-  ;; code (if it is Idio code -- obviously if it is an external
-  ;; command we exec()'d it wouldn't matter).  Strict hygiene, please!
+  Looping over the list of commands prepping the children uses a
+  number of variables which are at risk of polluting the called
+  code (if it is Idio code -- obviously if it is an external command
+  we exec()'d it wouldn't matter).  Strict hygiene, please!
+
+  *#
 
   stdin := (gensym)
   infile := (gensym)
@@ -1089,24 +1104,29 @@ define (wait & jobs) {
   if notify (do-job-notification)
 }
 
-;; with-handle-redir type s/d thunk
-;;
-;; wrapper functions with-input-from, with-output-to and with-error-to
-;; are identical barring some "directional" function calls.  We'll
-;; have a generic function instead.
-;;
-;; {type} is the symolic name of the handle being modified: 'input,
-;; 'output, 'error
-;;
-;; {s/d} (source/destination) can be:
-;; 1. a handle (file or string)
-;; 2. a literal string which will be interpreted as the name of the
-;;    file to open as per:
-;;      open-output-file {s/d} or
-;;      open-input-file {s/d}
-;; 3. #n as shorthand for the string "/dev/null"
-;;
-;; {thunk} is the 0-arg function to invoke
+#*
+
+with-handle-redir type s/d thunk
+
+wrapper functions with-input-from, with-output-to and with-error-to
+are identical barring some "directional" function calls.  We'll have a
+generic function instead.
+
+{type} is the symolic name of the handle being modified: 'input,
+'output, 'error
+
+{s/d} (source/destination) can be:
+1. a handle (file or string)
+2. a literal string which will be interpreted as the name of the
+   file to open as per:
+     open-output-file {s/d} or
+     open-input-file {s/d}
+3. #n as shorthand for the string "/dev/null"
+
+{thunk} is the 0-arg function to invoke
+
+*#
+
 with-handle-redir := {
   current-input-handle	:= current-input-handle
   current-output-handle := current-output-handle
@@ -1204,21 +1224,26 @@ define (with-error-to dst thunk) {
   with-handle-redir 'error dst thunk
 }
 
-;; with-handle-dup type new thunk
-;;
-;; nominal functions dup-input-from, dup-output-to and dup-error-to
-;; are identical barring some "directional" function calls.  We'll
-;; have a generic function instead.
-;;
-;; {type} is the symolic name of the handle being modified: 'input,
-;; 'output, 'error
-;;
-;; {new} can be:
-;; 1. a handle (file or string)
-;; 2. a C int or fixnum which will be interpreted as the name of the
-;;    file descriptor to call dup2(2) with
-;;
-;; {thunk} is the 0-arg function to invoke
+#*
+
+with-handle-dup type new thunk
+
+nominal functions dup-input-from, dup-output-to and dup-error-to are
+identical barring some "directional" function calls.  We'll have a
+generic function instead.
+
+{type} is the symolic name of the handle being modified: 'input,
+'output, 'error
+
+{new} can be:
+1. a handle (file or string)
+2. a C int or fixnum which will be interpreted as the name of the
+   file descriptor to call dup2(2) with
+
+{thunk} is the 0-arg function to invoke
+
+*#
+
 with-handle-dup := {
   current-input-handle  := current-input-handle
   current-output-handle := current-output-handle

@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -44,7 +44,7 @@ trap ^rt-command-status-error (function (c) {
 
   ;; for exit0 we don't expect this code to be run at all -- hence
   ;; complaining loudly and testing for something that isn't generated
-  ;; (spotting an error in the summary is easier to spot)
+  ;; (an error in the summary is easier to spot)
   exit0 := function (c) {
 	     eprintf "command tests: exit0: unexpected status error for PID %s\n" PID 
 	     condition-report "command tests: exit0" c (current-error-handle)
@@ -117,22 +117,30 @@ trap ^rt-command-status-error (function (c) {
 
   rcseh = exit0
   (test=)
-  test (auto-exit -e 0) #t
+  test (auto-exit -E 0) #t
   (test+1)
 
   rcseh = exit1
   (test=)
-  test (auto-exit -e 1) #f
+  test (auto-exit -E 1) #f
   (test+3)
 
   rcseh = killed1
   (test=)
-  test (auto-exit -k 1) #f
+  test (auto-exit -K 1) #f
   (test+3)
 
   rcseh = exit0
   (test=)
-  test (auto-exit -w 1) #t
+  test (auto-exit -o 1) #t
+  (test+1)
+
+  ;; foreground job
+  (test=)
+  auto-exit -s 1
+
+  ;; check the job didn't fail
+  test (job-failed %%last-job) #f
   (test+1)
 
   ;; backgrounded job
@@ -157,7 +165,7 @@ trap ^rt-command-status-error (function (c) {
 
   ;; pipeline
   (test=)
-  test (auto-exit -w 1 | auto-exit -r 1) #t
+  test (auto-exit -o 1 | auto-exit -r 1) #t
   (test+1)
 
   ;; In the following test the second command should finish first
@@ -181,7 +189,7 @@ trap ^rt-command-status-error (function (c) {
     rcseh = killed13
   }
   (test=)
-  test (auto-exit -w 2 -s 1 | auto-exit -r 1) #f
+  test (auto-exit -o 2 -s 1 | auto-exit -r 1) #f
   (test+3)
 
   ;; pipeline with regular Idio as the writer
@@ -193,12 +201,12 @@ trap ^rt-command-status-error (function (c) {
   ;; pipeline with the writer not writing anything
   rcseh = exit1
   (test=)
-  test (auto-exit -e 0 | auto-exit -r 1) #f
+  test (auto-exit -E 0 | auto-exit -r 1) #f
   (test+3)
 
   ;; bg-job pipeline
   (test=)
-  bg-job auto-exit -w 1 | auto-exit -r 1
+  bg-job auto-exit -o 1 | auto-exit -r 1
   ;; no sleep this time so the only safe bet is to wait for the job to
   ;; finish
   wait %%last-job
@@ -212,7 +220,7 @@ trap ^rt-command-status-error (function (c) {
   ;; bg-job pipeline fail
   rcseh = exit1
   (test=)
-  bg-job auto-exit -w 1 | auto-exit -r 2
+  bg-job auto-exit -o 1 | auto-exit -r 2
   ;; no sleep this time so the only safe bet is to wait for the job to
   ;; finish
   wait %%last-job
@@ -315,6 +323,19 @@ trap ^rt-command-status-error (function (c) {
 
   test sho-str test-str
 
+  ;; STDERR
+
+  stderrstring := (open-output-string)
+
+  ;; Test string-handle stderr
+  with-error-to stderrstring (function () {
+    auto-exit -e 1
+  })
+
+  sho-str = get-output-string stderrstring
+
+  test ((string-length sho-str) gt 0) #t
+
   ;; shell-style IO redirection: > >& etc.
   ;; check the basics before we start!  stdin & stdout and stdout and
   ;; stderr should be the same
@@ -413,5 +434,80 @@ trap ^rt-command-status-error (function (c) {
   set-error-handle! oeh
 }
 
+;; some various code coverage
+cwd := (getcwd)
+OPATH := PATH
+{
+  ;; create a temporary directory which we'll use as PATH with a
+  ;; single executable, the-real-true, which we can invoke the real
+  ;; true command with
+  tmpdir := (make-tmp-dir)
+  trt-file := append-string tmpdir "/the-real-true"
+  ofh := open-output-file trt-file
+  hprintf ofh "#! /bin/sh\n%s\n" (command/%find-exe 'true)
+  close-handle ofh
+  chmod +x trt-file
+
+  chdir tmpdir
+
+  PATH = ""
+  test (the-real-true) #t
+
+  PATH = ":"
+  test (the-real-true) #t
+
+  PATH = ":foo"
+  test (the-real-true) #t
+
+  PATH = "foo:"
+  test (the-real-true) #t
+
+  PATH = "foo::bar"
+  test (the-real-true) #t
+
+  trap ^rt-command-error (function (c) {
+			    test #t #t
+			    'command-not-found
+  }) {
+    PATH = "foo"
+    test (the-real-true) 'command-not-found
+  }
+
+  ; restore cwd/PATH for rm!
+  chdir cwd
+  PATH = OPATH
+  rm -rf tmpdir
+}
+; restore cwd/PATH in case we bugged out!
+chdir cwd
+PATH = OPATH
+
+;; code coverage: glob chars: * ? [
+test (true a*) #t
+test (true a?) #t
+test (true [a]) #t
+
+;; code coverage: arg types
+; unicode
+test (true #U+61) #t
+
+; ~path
+{
+  tmpdir := (make-tmp-dir)
+
+  ;; test no metacharacters
+  gp := make-struct-instance ~path (append-string tmpdir "/a")
+  test (true gp) #t
+
+  ;; test zero matches
+  gp := make-struct-instance ~path (append-string tmpdir "/*a")
+  test (true gp) #t
+
+  touch (append-string tmpdir "/foo-a")
+  test (true gp) #t
+
+  rm -rf tmpdir
+}
+
 ;; all done?
-Tests? (command0 + 83)
+Tests? (command0 + 99)

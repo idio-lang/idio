@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -567,7 +567,7 @@ static IDIO idio_job_control_wait_for_job (IDIO job)
 	IDIO raised = idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_RAISED);
 	if (idio_S_false == raised) {
 	    IDIO c = idio_struct_instance (idio_condition_rt_command_status_error_type,
-					   IDIO_LIST4 (idio_string_C ("job failed"),
+					   IDIO_LIST4 (idio_string_C ("C/job failed"),
 						       IDIO_C_FUNC_LOCATION (),
 						       job,
 						       idio_job_control_job_status (job)));
@@ -908,6 +908,8 @@ static void idio_job_control_hangup_job (IDIO job)
 	return;
     }
 
+    idio_job_control_format_job_info (job, "SIGHUP'ed");
+
     IDIO ipgid = idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PGID);
     pid_t job_pgid = -1;
     if (idio_isa_fixnum (ipgid)) {
@@ -970,8 +972,10 @@ IDIO idio_job_control_SIGHUP_signal_handler ()
     IDIO jobs = idio_module_symbol_value (idio_job_control_jobs_sym, idio_job_control_module, idio_S_nil);
     if (idio_S_nil != jobs) {
 	fprintf (stderr, "HUP: There are outstanding jobs\n");
+	idio_debug ("jobs %s\n", jobs);
 	while (idio_S_nil != jobs) {
 	    IDIO job = IDIO_PAIR_H (jobs);
+	    idio_debug ("job %s\n", job);
 	    idio_job_control_hangup_job (job);
 	    jobs = IDIO_PAIR_T (jobs);
 	}
@@ -1335,11 +1339,12 @@ static void idio_job_control_launch_job (IDIO job, int foreground)
 						idio_module_symbol_value (idio_job_control_default_child_handler_sym,
 									  idio_job_control_module,
 									  idio_S_nil));
+
 	    idio_job_control_prep_process (job_pgid,
-				       infile,
-				       outfile,
-				       job_stderr,
-				       foreground);
+					   infile,
+					   outfile,
+					   job_stderr,
+					   foreground);
 	    /*
 	     * In the info example, we would have execv'd a job_control in
 	     * prep_process whereas we have merely gotten everything
@@ -1470,11 +1475,12 @@ IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char **argv)
 						idio_module_symbol_value (idio_job_control_default_child_handler_sym,
 									  idio_job_control_module,
 									  idio_S_nil));
+
 	    idio_job_control_prep_process (job_pgid,
-				       job_stdin,
-				       job_stdout,
-				       job_stderr,
-				       foreground);
+					   job_stdin,
+					   job_stdout,
+					   job_stderr,
+					   foreground);
 
 	    char **envp = idio_command_get_envp ();
 
@@ -1572,8 +1578,8 @@ IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char **argv)
 	 * In a pipeline, just exec -- the %prep-process has been done
 	 */
 	idio_job_control_prep_io (job_stdin,
-			      job_stdout,
-			      job_stderr);
+				  job_stdout,
+				  job_stderr);
 
 	char **envp = idio_command_get_envp ();
 
@@ -1738,18 +1744,30 @@ void idio_job_control_set_interactive (int interactive)
 	 * Put ourselves in our own process group.
 	 */
 	idio_job_control_pgid = idio_job_control_pid;
-	/*
-	 * Triggered by rlwrap(1):
-	 *
-	 * setpgid() returns EPERM ... or to change the process group
-	 * ID of a session leader.
-	 *
-	 * That appears to be the case even if we are setting it to
-	 * ourselves.
-	 */
+
 	pid_t sid = getsid (0);
 	if (sid != idio_job_control_pgid) {
 	    if (setpgid (idio_job_control_pgid, idio_job_control_pgid) < 0) {
+		/*
+		 * Test Case: ??
+		 *
+		 * 1: Triggered by rlwrap(1):
+		 *
+		 *    setpgid() returns EPERM ... or to change the
+		 *    process group ID of a session leader.
+		 *
+		 *    That appears to be the case even if we are
+		 *    setting it to ourselves.
+		 *
+		 * 2: Also, we can get here with an ESRCH if we have
+		 *    an errant child which decides to run back
+		 *    through this loop.  It will use
+		 *    idio_job_control_pgid when it, itself, is
+		 *    $CHILD_PID (even though that should be allowed).
+		 *
+		 *    I've had a very low hit-rate when trying to
+		 *    provoke environ errors.
+		 */
 		idio_error_system_errno ("setpgid", IDIO_LIST1 (idio_C_int (idio_job_control_pgid)), IDIO_C_FUNC_LOCATION ());
 
 		/* notreached */

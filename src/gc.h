@@ -887,6 +887,7 @@ typedef struct idio_continuation_s {
 #define IDIO_CONTINUATION_STACK(T)	((T)->u.continuation->stack)
 
 typedef	uint32_t idio_bitset_word_t;
+#define IDIO_BITSET_WORD_MAX 0xffffffffUL
 
 typedef struct idio_bitset_s {
     size_t size;

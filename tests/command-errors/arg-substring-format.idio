@@ -1,0 +1,5 @@
+
+;; ostensibly the same -- and runs through the same switch/case code
+;; -- as arg-string-format.idio but just dotting the i's etc.
+str := join-string (make-string 1 #U+0) '("hello" "world")
+env (substring str 1 (string-length str))

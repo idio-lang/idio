@@ -2186,7 +2186,7 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 
 			    if (0 == b &&
 				(offset + IDIO_BITSET_BITS_PER_WORD) < end) {
-				IDIO_BITSET_WORDS (bs, n) = ULONG_MAX;
+				IDIO_BITSET_WORDS (bs, n) = IDIO_BITSET_WORD_MAX;
 				offset += IDIO_BITSET_BITS_PER_WORD;
 			    } else {
 				idio_bitset_word_t br = 0;

@@ -21,11 +21,14 @@
 
 bignum-error0 := Tests
 
-;; We have a bunch of test cases which should provoke a
-;; ^rt-bignum-error or ^idio-error of some kind.  So we can
-;; write a load function which will wrapper the actual load with a
-;; trap for (^rt-bignum-error ^*-error) and compare the message
-;; strings (and line numbers for ^rt-bignum-errors).
+#*
+
+We have a bunch of test cases which should provoke a ^rt-bignum-error,
+^rt-number-error or ^rt-parameter-type-error.  So we can write a load
+function which will wrapper the actual load with a trap
+for (^rt-bignum-error ...) and compare the message strings.
+
+*#
 
 bignum-error-load := {
   n := 0
@@ -40,7 +43,7 @@ bignum-error-load := {
     trap (^rt-bignum-error
 	  ^rt-number-error
 	  ^rt-parameter-type-error) (function (c) {
-				       ;eprintf "%s %s %s\n" n msg c.location
+				       ;eprintf "bignum-error #%s: %s %s\n" n msg c.location
 				       test c.message msg
 
 				       if (not (string=? c.message msg)) {

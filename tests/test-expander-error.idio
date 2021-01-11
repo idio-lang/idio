@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2020 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -21,17 +21,17 @@
 
 expander-error0 := Tests
 
-;; We have a bunch of test cases which should provoke an error of some
-;; kind.  So we can write a load function which will wrapper the
-;; actual load with a trap for whatever error and compare the message
-;; strings.
+#*
 
-;; One slight inconvenience is that {trap} only takes literal symbols,
-;; not values that evaluate to a symbol.  So we need a number of
-;; trap-thunks all of which do much of a muchness.  Cue the template.
+We have a bunch of test cases which should provoke an error of some
+kind.  So we can write a load function which will wrapper the actual
+load with a trap for whatever error and compare the message strings.
 
-;c := make-condition ^idio-error "msg" "loc" "det"
-;eprintf "%s\n" c.location
+One slight inconvenience is that {trap} only takes literal symbols,
+not values that evaluate to a symbol.  So we need a number of
+trap-thunks all of which do much of a muchness.  Cue the template.
+
+*#
 
 module expander
 

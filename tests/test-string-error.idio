@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2020 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -21,11 +21,14 @@
 
 string-error0 := Tests
 
-;; We have a bunch of test cases which should provoke a ^string-error
-;; or a ^rt-parameter-type-error of some kind.  So we can write a load
-;; function which will wrapper the actual load with a trap for
-;; (^string-error ^rt-parameter-type-error) and compare the message
-;; strings.
+#*
+
+We have a bunch of test cases which should provoke a ^string-error or
+a ^rt-parameter-type-error.  So we can write a load function which
+will wrapper the actual load with a trap for (^string-error
+^rt-parameter-type-error) and compare the message strings.
+
+*#
 
 string-error-load := {
   n := 0
@@ -37,15 +40,16 @@ string-error-load := {
 
     n = n + 1
     ;eprintf "loading #%s %s looking for %s at line %s\n" n filename msg linenum
-    trap (^string-error ^rt-parameter-type-error) (function (c) {
-						     ;eprintf "%s %s %s %s\n" n msg c.location c.line
-						     test c.message msg
+    trap (^string-error
+	  ^rt-parameter-type-error) (function (c) {
+				       ;eprintf "string-error #%s: %s %s %s\n" n msg c.location c.line
+				       test c.message msg
 
-						     if (not (string=? c.message msg)) {
-						       condition-report (append-string "string-error-load: " filename) c (current-error-handle)
-						     }
-						     load-k 'string-error
-    }) {
+				       if (not (string=? c.message msg)) {
+					 condition-report (append-string "string-error-load: " filename) c (current-error-handle)
+				       }
+				       load-k 'string-error
+	  }) {
       call/cc (function (k) {
 		 load-k = k
 		 (symbol-value 'load 'Idio) filename
