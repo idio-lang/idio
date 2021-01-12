@@ -117,7 +117,7 @@ debug :
 	$(MAKE) MAKE_DEBUG=1
 
 test : $(BINDIR)/idio
-	$(BINDIR)/idio test
+	PATH=$$PATH:$(BINDIR) idio test
 
 doc : 
 	rm -rf $(SRCKDOUTDIR)

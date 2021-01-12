@@ -206,7 +206,7 @@ test-load "test-bitset.idio"
 test-load "test-closure-error.idio"
 test-load "test-closure.idio"
 test-load "test-condition.idio"
-
+test-load "test-env.idio"
 
 test-load "test-unicode.idio"
 test-load "test-operator.idio"
@@ -222,7 +222,6 @@ test-load "test-struct.idio"
 test-load "test-dynamic.idio"
 test-load "test-computed.idio"
 test-load "test-call-cc.idio"
-test-load "test-env.idio"
 test-load "test-path.idio"
 test-load "test-libc-wrap.idio"
 

@@ -20,9 +20,9 @@
 ;;
 env0 := Tests
 
-;; XXX we're not guaranteed any real environment variables but the
-;; internals should have cooked up an interim PATH and IDIOLIB if
-;; there isn't anything else
+;; XXX we're not guaranteed to have any real environment variables
+;; (see "env - idio") but the internals should have cooked up an
+;; interim PATH and IDIOLIB if there isn't anything else
 test (gt (string-length PATH) 0) #t
 
 {

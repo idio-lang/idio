@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -31,15 +31,48 @@ IDIO idio_env_IDIOLIB_sym;
 IDIO idio_env_PATH_sym;
 IDIO idio_env_PWD_sym;
 
-void idio_env_error_format (char *m, IDIO s, IDIO c_location)
+/*
+ * Code coverage:
+ *
+ * This code will only get called if IDIOLIB has an ASCII NULL in it
+ * which...is unlikely.
+ */
+void idio_env_format_error (char *msg, IDIO name, IDIO c_location)
 {
-    IDIO_C_ASSERT (m);
-    IDIO_ASSERT (s);
+    IDIO_C_ASSERT (msg);
+    IDIO_ASSERT (name);
     IDIO_ASSERT (c_location);
-    IDIO_TYPE_ASSERT (string, s);
+
+    IDIO_TYPE_ASSERT (symbol, name);
     IDIO_TYPE_ASSERT (string, c_location);
 
-    idio_error_C (m, s, c_location);
+    IDIO sh = idio_open_output_string_handle_C ();
+    idio_display_C ("environment variable", sh);
+    if (idio_S_nil != name) {
+	idio_display_C (" '", sh);
+	idio_display (name, sh);
+	idio_display_C ("' ", sh);
+    } else {
+	/*
+	 * Code coverage:
+	 *
+	 * We only call this for IDIOLIB so this clause waits...
+	 */
+	idio_display_C (" ", sh);
+    }
+    idio_display_C (msg, sh);
+
+    IDIO location = idio_vm_source_location ();
+
+    IDIO c = idio_struct_instance (idio_condition_rt_environ_variable_error_type,
+				   IDIO_LIST4 (idio_get_output_string (sh),
+					       location,
+					       c_location,
+					       name));
+
+    idio_raise_condition (idio_S_true, c);
+
+    /* notreached */
 }
 
 static int idio_env_set_default (IDIO name, char *val)
@@ -50,6 +83,22 @@ static int idio_env_set_default (IDIO name, char *val)
 
     IDIO ENV = idio_module_env_symbol_value (name, IDIO_LIST1 (idio_S_false));
     if (idio_S_false == ENV) {
+	/*
+	 * Code coverage:
+	 *
+	 * Not necessarily easy to get here normally.  To get here,
+	 * one or more of PATH, PWD and IDIOLIB must be unset in the
+	 * environment -- which is easy enough itself:
+	 *
+	 * env - .../bin/idio
+	 *
+	 * PATH and PWD you'd normally expect to be set in a user's
+	 * environment but no-one (surely?) sets IDIOLIB in their
+	 * environment.  Yet!
+	 *
+	 * So, we'll get here if no-one has set IDIOLIB otherwise it's
+	 * a manual test.
+	 */
 	idio_environ_extend (name, name, idio_string_C (val), idio_vm_constants);
 	return 1;
     }
@@ -75,6 +124,18 @@ static void idio_env_add_environ ()
 
 	    val = idio_string_C (e + 1);
 	} else {
+	    /*
+	     * Code coverage:
+	     *
+	     * Hmm, can we have an environment where there is no =
+	     * sign in the environ string?  environ(7) says:
+	     *
+	     *   By convention the strings in environ have the form
+	     *   "name=value".
+	     *
+	     * We're probably in some shady territory, here.  Perhaps
+	     * we should even skip such a thing.
+	     */
 	    var = idio_string_C (*env);
 	}
 
@@ -83,11 +144,16 @@ static void idio_env_add_environ ()
 
     /*
      * Hmm.  What if we have a "difficult" environment?  A particular
-     * example is if we don't have a PATH.  We use the PATH internally
-     * at the very least and not having one is an issue.
+     * example is if we don't have a PATH.  *We* use the PATH
+     * internally at the very least and not having one is llikely to
+     * be described as an issue for a shell.
      *
-     * So we'll test for some environment variables we need and set a
-     * default if there isn't one.
+     * So we'll test for some key environment variables we need and
+     * set a default if there isn't one.
+     *
+     * PATH
+     * PWD
+     * IDIOLIB
      */
 
     idio_env_set_default (idio_env_PATH_sym, idio_env_PATH_default);
@@ -98,7 +164,20 @@ static void idio_env_add_environ ()
     char *cwd = getcwd (NULL, PATH_MAX);
 
     if (NULL == cwd) {
+	/*
+	 * Test Case: ??
+	 *
+	 * There is a similar getcwd(3) call in
+	 * idio_command_find_exe_C() which has the advantage of being
+	 * able to relocate itself in an inaccessible directory before
+	 * launching a command (or not).
+	 *
+	 * This is during bootstrap so, uh, not so easy.
+	 */
 	idio_error_system_errno ("getcwd", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
+	return;
     }
 
     if (idio_env_set_default (idio_env_PWD_sym, cwd) == 0) {
@@ -148,44 +227,102 @@ void idio_env_init_idiolib (char *argv0)
     char *dir = rindex (argv0, '/');
 
     if (NULL == dir) {
+	/*
+	 * Test Case: ??
+	 *
+	 * Actually, the problem with the test case isn't that we
+	 * can't get here, we simply need to invoke idio from a
+	 * directory on the PATH but that we can't invoke *both* an
+	 * explicit exec, ".../idio", and an inplicit one,
+	 * "PATH=... idio", in the same test suite.
+	 */
 	argv0 = idio_command_find_exe_C (argv0);
     }
 
     char resolved_path[PATH_MAX];
-    char *path = realpath (argv0, resolved_path);
+    /* a0rp => argv0_realpath */
+    char *a0rp = realpath (argv0, resolved_path);
 
-    if (NULL == path) {
+    if (NULL == a0rp) {
+	/*
+	 * Test Case: ??
+	 *
+	 * Like the getcwd(3) case, above, this is hard to emulate
+	 * during bootstrap.
+	 */
 	idio_error_system_errno ("realpath(3) => NULL", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
+	return;
     }
 
-    dir = rindex (path, '/');
+    /*
+     * a0rp	~ /a/b/c/idio
+     *
+     * dir	~ /idio
+     *
+     * pdir	~ /c/idio		parent dir (of dir)
+     *
+     * If pdir is actually /bin/idio, ie. starts with /bin, then we
+     * can make an assumption that there is a parallel /lib containing
+     * Idio stuff which become idio_env_IDIOLIB_default.
+     *
+     * Finally, if IDIOLIB is unset we can set it to
+     * idio_env_IDIOLIB_default.
+     *
+     * If IDIOLIB is already set we check to see if
+     * idio_env_IDIOLIB_default isn't already on IDIOLIB and append
+     * it.
+     */
+    dir = rindex (a0rp, '/');
 
-    if (dir != path) {
+    if (dir != a0rp) {
 	char *pdir = dir - 1;
-	while (pdir > path &&
+	while (pdir > a0rp &&
 	       '/' != *pdir) {
 	    pdir--;
 	}
 
-	if (pdir >= path) {
+	if (pdir >= a0rp) {
 	    if (strncmp (pdir, "/bin", 4) == 0) {
 		/* ... + /lib */
-		size_t ieId_len = pdir - path + 4;
+		size_t ieId_len = pdir - a0rp + 4;
 		idio_env_IDIOLIB_default = idio_alloc (ieId_len + 1);
-		strncpy (idio_env_IDIOLIB_default, path, pdir - path);
-		idio_env_IDIOLIB_default[pdir - path] = '\0';
+		strncpy (idio_env_IDIOLIB_default, a0rp, pdir - a0rp);
+		idio_env_IDIOLIB_default[pdir - a0rp] = '\0';
 		strcat (idio_env_IDIOLIB_default, "/lib");
 
 		if (! idio_env_set_default (idio_env_IDIOLIB_sym, idio_env_IDIOLIB_default)) {
+		    /*
+		     * Code coverage:
+		     *
+		     * We'll roll through here if IDIOLIB is already
+		     * in the environment when we start.
+		     */
 		    IDIO idiolib = idio_module_env_symbol_value (idio_env_IDIOLIB_sym, IDIO_LIST1 (idio_S_false));
 
 		    size_t idiolib_len = 0;
 		    char *sidiolib = idio_string_as_C (idiolib, &idiolib_len);
 		    size_t C_size = strlen (sidiolib);
 		    if (C_size != idiolib_len) {
+			/*
+			 * Test Case: ??
+			 *
+			 * This is a bit hard to conceive and, indeed,
+			 * might be a wild goose chase.
+			 *
+			 * This code is only called on startup and if
+			 * IDIOLIB is (deliberately) goosed[sic] then
+			 * everything thereafter is banjaxed as well.
+			 * Which makes the collective testing tricky.
+			 *
+			 * In the meanwhilst, how do you inject an
+			 * environment variable into idio's
+			 * environment with an ASCII NUL in it?
+			 */
 			IDIO_GC_FREE (sidiolib);
 
-			idio_env_error_format ("IDIOLIB: contains an ASCII NUL", idiolib, IDIO_C_FUNC_LOCATION ());
+			idio_env_format_error ("contains an ASCII NUL", idio_env_IDIOLIB_sym, IDIO_C_FUNC_LOCATION ());
 
 			/* notreached */
 			return;
@@ -194,11 +331,32 @@ void idio_env_init_idiolib (char *argv0)
 		    char *index = strstr (sidiolib, idio_env_IDIOLIB_default);
 		    int append = 0;
 		    if (index) {
-			if (! ('\0' == index[ieId_len + 1] ||
-			       ':' == index[ieId_len + 1])) {
+			/*
+			 * Code coverage:
+			 *
+			 * These should be picked up if a pre-existing
+			 * IDIOLIB is one of:
+			 *
+			 * .../lib
+			 * .../lib:...
+			 *
+			 * Both of which will fall into the manual
+			 * test category.
+			 *
+			 * We do these extra checks in case someone
+			 * has added .../libs -- which index will
+			 * match.
+			 */
+			if (! ('\0' == index[ieId_len] ||
+			       ':' == index[ieId_len])) {
 			    append = 1;
 			}
 		    } else {
+			/*
+			 * Code coverage:
+			 *
+			 * IDIOLIB is set but doesn't have .../lib
+			 */
 			append = 1;
 		    }
 
