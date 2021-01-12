@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2018, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2018, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -230,6 +230,9 @@ IDIO idio_vm_closure_name (IDIO c);
 #define IDIO_VM_RUN_C		0
 #define IDIO_VM_RUN_IDIO	1
 
+extern volatile sig_atomic_t idio_vm_signal_record[IDIO_LIBC_NSIG+1];
+void idio_vm_sa_signal (int signum);
+
 IDIO idio_vm_run (IDIO thr, idio_ai_t pc, int caller);
 IDIO idio_vm_run_C (IDIO thr, idio_ai_t pc);
 void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_ai_t pc0, idio_ai_t pce);
@@ -269,6 +272,7 @@ IDIO idio_vm_invoke_C (IDIO thr, IDIO command);
 IDIO idio_vm_source_location ();
 IDIO idio_vm_source_expr ();
 IDIO idio_vm_frame_tree (IDIO args);
+void idio_vm_trap_state (IDIO thr);
 
 void idio_vm_thread_init (IDIO thr);
 void idio_vm_default_pc (IDIO thr);

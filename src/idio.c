@@ -159,8 +159,6 @@ void idio_init (int argc, char **argv)
     idio_init_read ();
     idio_init_env ();
     idio_init_path ();
-    idio_init_command ();
-    idio_init_job_control ();
     idio_init_vm ();
     idio_init_codegen ();
     idio_init_continuation ();
@@ -168,6 +166,8 @@ void idio_init (int argc, char **argv)
     idio_init_libc_wrap ();
     idio_init_posix_regex ();
 
+    idio_init_command ();
+    idio_init_job_control ();
     /*
      * Arguments
      *

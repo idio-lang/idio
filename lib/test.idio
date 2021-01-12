@@ -205,6 +205,7 @@ test-load "test-bitset-error.idio"
 test-load "test-bitset.idio"
 test-load "test-closure-error.idio"
 test-load "test-closure.idio"
+test-load "test-condition.idio"
 
 
 test-load "test-unicode.idio"
@@ -218,7 +219,6 @@ test-load "test-file-handle.idio"
 test-load "test-string-handle.idio"
 test-load "test-handle.idio"
 test-load "test-struct.idio"
-test-load "test-condition.idio"
 test-load "test-dynamic.idio"
 test-load "test-computed.idio"
 test-load "test-call-cc.idio"
@@ -245,7 +245,7 @@ test-load "test-command.idio"
 ;; that?  Erm, they've not been counted and are dynamic in number so
 ;; test we've seen at least as many as the largest number we've
 ;; seen.  Wait, some tests are OS-specific.  Drat!
-Tests? 2306
+Tests? 2272
 
 if (file-exists? testfile) (delete-file testfile)
 

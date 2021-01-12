@@ -1375,6 +1375,5 @@ void idio_init_command ()
     idio_command_module = idio_module (idio_symbols_C_intern ("command"));
     IDIO_MODULE_IMPORTS (idio_command_module) = IDIO_LIST2 (IDIO_LIST1 (idio_Idio_module),
 							    IDIO_LIST1 (idio_primitives_module));
-
 }
 

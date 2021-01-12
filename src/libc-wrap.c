@@ -1617,9 +1617,10 @@ static void idio_libc_set_signal_names ()
 	}
 
 	/*
-	 * Can have an extra SIGRTMIN+n if there's an odd number --
-	 * don't forget it is SIGRTMIN -> SIGRTMAX *inclusive* so
-	 * there is an off-by-one error tempting us here...
+	 * Can have an extra SIGRTMIN+n (the plus variant rather than
+	 * SIGRTMIN-n) if there's an odd number -- don't forget it is
+	 * SIGRTMIN -> SIGRTMAX *inclusive* so there is an off-by-one
+	 * error tempting us here...
 	 */
 	if (0 == rtdiff) {
 	    sprintf (idio_libc_signal_names[rtmin + i], "SIGRTMIN+%d", i);
@@ -1660,7 +1661,7 @@ static void idio_libc_set_signal_names ()
 #endif
 
 #if defined(SIGKILL)
-    IDIO_LIBC_SIGNAL (SIGKILL)
+    IDIO_LIBC_SIGNAL_NAME (SIGKILL)
 #endif
 
 #if defined(SIGBUS)
@@ -1716,7 +1717,7 @@ static void idio_libc_set_signal_names ()
 #endif
 
 #if defined(SIGSTOP)
-    IDIO_LIBC_SIGNAL (SIGSTOP)
+    IDIO_LIBC_SIGNAL_NAME (SIGSTOP)
 #endif
 
 #if defined(SIGTSTP)
@@ -3766,6 +3767,8 @@ void idio_init_libc_wrap ()
     idio_module_table_register (idio_libc_wrap_add_primitives, idio_final_libc_wrap);
 
     idio_libc_wrap_module = idio_module (idio_symbols_C_intern ("libc"));
+    IDIO_MODULE_IMPORTS (idio_libc_wrap_module) = IDIO_LIST2 (IDIO_LIST1 (idio_Idio_module),
+							      IDIO_LIST1 (idio_primitives_module));
 
     idio_module_export_symbol_value (idio_symbols_C_intern ("0U"), idio_C_uint (0U), idio_libc_wrap_module);
 

@@ -108,7 +108,6 @@ extern IDIO idio_condition_define_condition0_dynamic_string;
 extern IDIO idio_condition_condition_type_mci;
 
 extern IDIO idio_condition_condition_type;
-extern IDIO idio_condition_message_type;
 extern IDIO idio_condition_error_type;
 extern IDIO idio_condition_io_error_type;
 extern IDIO idio_condition_io_handle_error_type;
@@ -183,7 +182,6 @@ extern IDIO idio_condition_default_handler;
 int idio_isa_condition_type (IDIO o);
 int idio_isa_condition (IDIO o);
 
-IDIO idio_condition_idio_error (IDIO message, IDIO location, IDIO detail);
 int idio_condition_isap (IDIO c, IDIO ct);
 void idio_condition_set_default_handler (IDIO ct, IDIO handler);
 

@@ -22,6 +22,20 @@
 
 #include "idio.h"
 
+/*
+ * Don't overplay our hand in a signal handler.  What's the barest
+ * minimum?  We can set (technically, not even read) a sig_atomic_t.
+ *
+ * https://www.securecoding.cert.org/confluence/display/c/SIG31-C.+Do+not+access+shared+objects+in+signal+handlers
+ *
+ * What this document doesn't say is if we can set an index in an
+ * array of sig_atomic_t.
+ *
+ * NB Make the array IDIO_LIBC_NSIG + 1 as idio_vm_run1() will be
+ * trying to access [IDIO_LIBC_NSIG] itself, not up to IDIO_LIBC_NSIG.
+ */
+volatile sig_atomic_t idio_vm_signal_record[IDIO_LIBC_NSIG+1];
+
 static IDIO idio_vm_module = idio_S_nil;
 
 /**
@@ -6215,6 +6229,11 @@ void idio_vm_default_pc (IDIO thr)
     IDIO_THREAD_PC (thr) = IDIO_IA_USIZE (idio_all_code);
 }
 
+void idio_vm_sa_signal (int signum)
+{
+    idio_vm_signal_record[signum] = 1;
+}
+
 static uintptr_t idio_vm_run_loops = 0;
 
 IDIO idio_vm_run (IDIO thr, idio_ai_t pc, int caller)
@@ -6352,8 +6371,8 @@ IDIO idio_vm_run (IDIO thr, idio_ai_t pc, int caller)
 	     */
 	    int signum;
 	    for (signum = IDIO_LIBC_FSIG; signum <= IDIO_LIBC_NSIG; signum++) {
-		if (idio_job_control_signal_record[signum]) {
-		    idio_job_control_signal_record[signum] = 0;
+		if (idio_vm_signal_record[signum]) {
+		    idio_vm_signal_record[signum] = 0;
 
 		    IDIO signal_condition = idio_array_ref_index (idio_vm_signal_handler_conditions, (idio_ai_t) signum);
 		    if (idio_S_nil != signal_condition) {
@@ -6902,50 +6921,7 @@ void idio_vm_thread_state (IDIO thr)
 
     fprintf (stderr, "\n");
 
-    idio_ai_t ss = idio_array_size (stack);
-#ifdef IDIO_VM_DYNAMIC_REGISTERS
-    IDIO_TYPE_ASSERT (fixnum, IDIO_THREAD_TRAP_SP (thr));
-    idio_ai_t tsp = IDIO_FIXNUM_VAL (IDIO_THREAD_TRAP_SP (thr));
-#else
-    idio_ai_t tsp = idio_vm_find_stack_marker (stack, idio_SM_trap, 0);
-#endif
-
-    if (tsp > ss) {
-	fprintf (stderr, "TRAP SP %td > size (stack) %td\n", tsp, ss);
-    } else {
-	while (1) {
-	    fprintf (stderr, "vm-thread-state: trap: SP %3td: ", tsp);
-	    IDIO handler = idio_array_ref_index (stack, tsp - 1);
-
-	    if (idio_isa_closure (handler)) {
-		IDIO name = idio_get_property (handler, idio_KW_name, IDIO_LIST1 (idio_S_nil));
-		if (idio_S_nil != name) {
-		    idio_debug (" %-45s", name);
-		} else {
-		    idio_debug (" %-45s", handler);
-		}
-	    } else {
-		idio_debug (" %-45s", handler);
-	    }
-
-	    IDIO ct_mci = idio_array_ref_index (stack, tsp - 2);
-
-	    IDIO ct_sym = idio_vm_constants_ref ((idio_ai_t) IDIO_FIXNUM_VAL (ct_mci));
-	    IDIO ct = idio_module_symbol_value_recurse (ct_sym, IDIO_THREAD_ENV (thr), idio_S_nil);
-
-	    if (idio_isa_struct_type (ct)) {
-		idio_debug (" %s\n", IDIO_STRUCT_TYPE_NAME (ct));
-	    } else {
-		idio_debug (" %s\n", ct);
-	    }
-
-	    idio_ai_t ntsp = IDIO_FIXNUM_VAL (idio_array_ref_index (stack, tsp - 3));
-	    if (ntsp == tsp) {
-		break;
-	    }
-	    tsp = ntsp;
-	}
-    }
+    idio_vm_trap_state (thr);
 
     int header = 1;
     IDIO dhs = idio_hash_keys_to_list (idio_condition_default_handler);
@@ -7215,6 +7191,69 @@ Show the current frame tree.					\n\
     IDIO_ASSERT (args);
 
     return idio_vm_frame_tree (args);
+}
+
+void idio_vm_trap_state (IDIO thr)
+{
+    IDIO_ASSERT (thr);
+
+    IDIO_TYPE_ASSERT (thread, thr);
+
+    IDIO stack = IDIO_THREAD_STACK (thr);
+    idio_ai_t ss = idio_array_size (stack);
+
+#ifdef IDIO_VM_DYNAMIC_REGISTERS
+    IDIO_TYPE_ASSERT (fixnum, IDIO_THREAD_TRAP_SP (thr));
+    idio_ai_t tsp = IDIO_FIXNUM_VAL (IDIO_THREAD_TRAP_SP (thr));
+#else
+    idio_ai_t tsp = idio_vm_find_stack_marker (stack, idio_SM_trap, 0);
+#endif
+
+    if (tsp > ss) {
+	fprintf (stderr, "TRAP SP %td > size (stack) %td\n", tsp, ss);
+    } else {
+	while (1) {
+	    fprintf (stderr, "vm-thread-state: trap: SP %3td: ", tsp);
+	    IDIO handler = idio_array_ref_index (stack, tsp - 1);
+
+	    if (idio_isa_closure (handler)) {
+		IDIO name = idio_get_property (handler, idio_KW_name, IDIO_LIST1 (idio_S_nil));
+		if (idio_S_nil != name) {
+		    idio_debug (" %-45s", name);
+		} else {
+		    idio_debug (" %-45s", handler);
+		}
+	    } else {
+		idio_debug (" %-45s", handler);
+	    }
+
+	    IDIO ct_mci = idio_array_ref_index (stack, tsp - 2);
+
+	    IDIO ct_sym = idio_vm_constants_ref ((idio_ai_t) IDIO_FIXNUM_VAL (ct_mci));
+	    IDIO ct = idio_module_symbol_value_recurse (ct_sym, IDIO_THREAD_ENV (thr), idio_S_nil);
+
+	    if (idio_isa_struct_type (ct)) {
+		idio_debug (" %s\n", IDIO_STRUCT_TYPE_NAME (ct));
+	    } else {
+		idio_debug (" %s\n", ct);
+	    }
+
+	    idio_ai_t ntsp = IDIO_FIXNUM_VAL (idio_array_ref_index (stack, tsp - 3));
+	    if (ntsp == tsp) {
+		break;
+	    }
+	    tsp = ntsp;
+	}
+    }
+}
+
+IDIO_DEFINE_PRIMITIVE0_DS ("%vm-trap-state", vm_trap_state, (void), "", "\
+Show the current trap tree.					\n\
+")
+{
+    idio_vm_trap_state (idio_thread_current_thread ());
+
+    return idio_S_unspec;
 }
 
 /*
@@ -7547,6 +7586,7 @@ void idio_vm_add_primitives ()
     IDIO_ADD_PRIMITIVE (exit);
     IDIO_ADD_PRIMITIVE (run_in_thread);
     IDIO_ADD_PRIMITIVE (vm_frame_tree);
+    IDIO_ADD_PRIMITIVE (vm_trap_state);
 }
 
 void idio_final_vm ()

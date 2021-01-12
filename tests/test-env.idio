@@ -65,6 +65,8 @@ trap ^rt-environ-variable-unbound-error (function (c) {
   test MYPATH test-str
 
   !* MYPATH
+
+  #t
 }
 
 ;; all done?

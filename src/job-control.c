@@ -73,20 +73,6 @@ static IDIO idio_job_control_default_child_handler_sym;
 #define IDIO_PROCESS_TYPE_STOPPED	3
 #define IDIO_PROCESS_TYPE_STATUS	4
 
-/*
- * Don't overplay our hand in a signal handler.  What's the barest
- * minimum?  We can set (technically, not even read) a sig_atomic_t.
- *
- * https://www.securecoding.cert.org/confluence/display/c/SIG31-C.+Do+not+access+shared+objects+in+signal+handlers
- *
- * What this document doesn't say is if we can set an index in an
- * array of sig_atomic_t.
- *
- * NB Make the array IDIO_LIBC_NSIG + 1 as idio_vm_run1() will be
- * trying to access [IDIO_LIBC_NSIG] itself, not up to IDIO_LIBC_NSIG.
- */
-volatile sig_atomic_t idio_job_control_signal_record[IDIO_LIBC_NSIG+1];
-
 static void idio_job_control_error_exec (char **argv, char **envp, IDIO c_location)
 {
     IDIO_ASSERT (c_location);
@@ -133,11 +119,6 @@ static void idio_job_control_error_exec (char **argv, char **envp, IDIO c_locati
 					       c_location,
 					       idio_fixnum ((intptr_t) errno)));
     idio_raise_condition (idio_S_true, c);
-}
-
-void idio_job_control_sa_signal (int signum)
-{
-    idio_job_control_signal_record[signum] = 1;
 }
 
 static int idio_job_control_job_is_stopped (IDIO job)
@@ -1881,11 +1862,11 @@ void idio_init_job_control ()
 
     int signum;
     for (signum = IDIO_LIBC_FSIG; signum <= IDIO_LIBC_NSIG; signum++) {
-	idio_job_control_signal_record[signum] = 0;
+	idio_vm_signal_record[signum] = 0;
     }
 
     struct sigaction nsa, osa;
-    nsa.sa_handler = idio_job_control_sa_signal;
+    nsa.sa_handler = idio_vm_sa_signal;
     sigemptyset (& nsa.sa_mask);
     nsa.sa_flags = SA_RESTART;
 

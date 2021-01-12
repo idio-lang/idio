@@ -37,7 +37,6 @@ IDIO idio_condition_condition_type_mci;
 
 /* SRFI-36 */
 IDIO idio_condition_condition_type;
-IDIO idio_condition_message_type;
 IDIO idio_condition_error_type;
 IDIO idio_condition_io_error_type;
 IDIO idio_condition_io_handle_error_type;
@@ -174,48 +173,6 @@ test if `o` is a condition type			\n\
     return r;
 }
 
-/* message-condition-type? */
-IDIO_DEFINE_PRIMITIVE1_DS ("message-condition?", message_conditionp, (IDIO o), "o", "\
-test if `o` is a message condition type		\n\
-						\n\
-:param o: object to test			\n\
-						\n\
-:return: #t if `o` is a message condition type #f otherwise\n\
-")
-{
-    IDIO_ASSERT (o);
-
-    IDIO r = idio_S_false;
-
-    if (idio_isa_struct_instance (o) &&
-	idio_struct_instance_isa (o, idio_condition_message_type)) {
-	r = idio_S_true;
-    }
-
-    return r;
-}
-
-/* error-condition-type? */
-IDIO_DEFINE_PRIMITIVE1_DS ("error?", errorp, (IDIO o), "o", "\
-test if `o` is an error condition type		\n\
-						\n\
-:param o: object to test			\n\
-						\n\
-:return: #t if `o` is an error condition type #f otherwise\n\
-")
-{
-    IDIO_ASSERT (o);
-
-    IDIO r = idio_S_false;
-
-    if (idio_isa_struct_instance (o) &&
-	idio_struct_instance_isa (o, idio_condition_error_type)) {
-	r = idio_S_true;
-    }
-
-    return r;
-}
-
 IDIO_DEFINE_PRIMITIVE1_DS ("allocate-condition", allocate_condition, (IDIO ct), "ct", "\
 allocate a condition of condition type `ct`	\n\
 						\n\
@@ -248,40 +205,6 @@ initialize a condition of condition type `ct` with values `values`\n\
     IDIO_USER_TYPE_ASSERT (list, values);
 
     return idio_struct_instance (ct, values);
-}
-
-IDIO idio_condition_idio_error (IDIO message, IDIO location, IDIO detail)
-{
-    IDIO_ASSERT (message);
-    IDIO_ASSERT (location);
-    IDIO_ASSERT (detail);
-
-    IDIO_TYPE_ASSERT (string, message);
-
-    if (! (idio_isa_string (location) ||
-	   idio_isa_symbol (location))) {
-	idio_error_param_type ("string|symbol", location, IDIO_C_FUNC_LOCATION ());
-    }
-
-    return idio_struct_instance (idio_condition_idio_error_type, IDIO_LIST3 (message, location, detail));
-}
-
-IDIO_DEFINE_PRIMITIVE1V_DS ("%idio-error-condition", idio_error_condition, (IDIO message, IDIO args), "message args", "\
-create an ^idio-error condition values `message` and any `args`\n\
-						\n\
-:param message: ^idio-error message		\n\
-:param args: ^idio-error localtion and details	\n\
-						\n\
-:return: allocated condition			\n\
-")
-{
-    IDIO_ASSERT (message);
-    IDIO_ASSERT (args);
-
-    IDIO_USER_TYPE_ASSERT (string, message);
-    IDIO_USER_TYPE_ASSERT (list, args);
-
-    return idio_struct_instance (idio_condition_idio_error_type, idio_list_append2 (IDIO_LIST1 (message), args));
 }
 
 int idio_isa_condition (IDIO o)
@@ -371,29 +294,6 @@ return field `field` of condition `c`		\n\
     IDIO_USER_TYPE_ASSERT (symbol, field);
 
     return idio_struct_instance_ref (c, field);
-}
-
-/* condition-ref <condition-message> message */
-IDIO_DEFINE_PRIMITIVE1_DS ("condition-message", condition_message, (IDIO c), "c", "\
-return field `message` of condition `c`		\n\
-						\n\
-:param c: condition				\n\
-						\n\
-:return: field `message` of `c`			\n\
-						\n\
-`c` must be a condition-message type		\n\
-")
-{
-    IDIO_ASSERT (c);
-
-    IDIO_USER_TYPE_ASSERT (condition, c);
-
-    if (! idio_struct_instance_isa (c, idio_condition_message_type)) {
-	idio_error_printf (IDIO_C_FUNC_LOCATION (), "not a message condition", c);
-	return idio_S_unspec;
-    }
-
-    return idio_struct_instance_ref_direct (c, 0);
 }
 
 IDIO_DEFINE_PRIMITIVE3_DS ("condition-set!", condition_set, (IDIO c, IDIO field, IDIO value), "c field value", "\
@@ -506,11 +406,28 @@ This invokes do-job-notification				\n\
 	case SIGCHLD:
 	    return idio_job_control_SIGCHLD_signal_handler ();
 	default:
+	    /*
+	     * Code coverage:
+	     *
+	     * We need to handle signals properly.  That means being
+	     * able to replace and restore signal handlers via the
+	     * stack.
+	     *
+	     * After that we can abuse default-SIGCHLD-handler as the
+	     * handler for some other signal.
+	     */
 	    fprintf (stderr, "default-SIGCHLD-handler: condition signum was %d\n", signum_C);
 	    break;
 	}
     }
 
+    /*
+     * Code coverage:
+     *
+     * trap ^rt-number-error default-SIGCHLD-handler {
+     *   1 / 0
+     * }
+     */
     idio_raise_condition (idio_S_true, c);
 
     /*
@@ -540,9 +457,26 @@ This returns #unspec						\n\
     IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (c);
 
     if (idio_struct_type_isa (sit, idio_condition_rt_command_status_error_type)) {
+	/*
+	 * NB default action on the failure of a child process is...to
+	 * ignore it.
+	 *
+	 * Like all recalcitrant children.
+	 */
+	/*
+	 * This result should align with default-condition-handler,
+	 * below
+	 */
 	return idio_S_unspec;
     }
 
+    /*
+     * Code coverage:
+     *
+     * trap ^rt-number-error default-rcse-handler {
+     *   1 / 0
+     * }
+     */
     idio_raise_condition (idio_S_true, c);
 
     /*
@@ -601,18 +535,64 @@ does not return per se						\n\
 	    /* fprintf (stderr, "default-c-h: SIGCHLD -> idio_command_SIGCHLD_signal_handler\n"); */
 	    return idio_job_control_SIGCHLD_signal_handler ();
 	case SIGHUP:
+	    /*
+	     * Code coverage:
+	     *
+	     * Testing this requires proper signal handling.
+	     * Otherwise we can quite happily send ourselves a SIGHUP:
+	     *
+	     * import libc
+	     * kill (getpid) SIGHUP
+	     *
+	     * except the default disposition is to terminate.  Which
+	     * ends the test.
+	     */
 	    return idio_job_control_SIGHUP_signal_handler ();
 	default:
+	    /*
+	     * Code coverage:
+	     *
+	     * Ditto.  (See SIGHUP above.)
+	     */
 	    break;
 	}
     } else if (idio_struct_type_isa (sit, idio_condition_rt_command_status_error_type)) {
-	/* return idio_command_rcse_handler (c); */
-	/* idio_debug ("default-c-h: rcse = %s\n", c); */
-	/* fprintf (stderr, "default-c-h: rcse?? =>> #unspec\n"); */
+	/*
+	 * Code coverage: 
+	 *
+	 * There's a separate default-rcse-handler, above, which
+	 * should capture this condition under normal circumstances.
+	 * That makes it hard to get here.
+	 *
+	 * However, we *are* here in case some has gone wrong higher
+	 * up.
+	 *
+	 * It's not easy to provoke this as something like:
+	 *
+	 * trap ^rt-command-status-error default-condition-handler {
+	 *   auto-exit -e 1
+	 * }
+	 *
+	 * has rcse fired from inside the context of the SIGCHLD
+	 * handler which is below us on the stack.  Although it might
+	 * not do anything as its update-status call is neutered by
+	 * foreground-job blocking.
+	 */
+	/*
+	 * This result should align with default-rcse-handler, above
+	 */
 	return idio_S_unspec;
     }
 
     if (idio_job_control_interactive) {
+	/*
+	 * Code coverage:
+	 *
+	 * I suppose we need a way of forging the interactive state,
+	 * like Bash's set -i.
+	 *
+	 * Until then we'll not get code coverage here.
+	 */
 	IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (c);
 
 	if (idio_struct_type_isa (sit, idio_condition_system_error_type)) {
@@ -759,8 +739,22 @@ does not return per se						\n\
 	}
     }
 
+    /*
+     * Code coverage:
+     *
+     * We can get here with something like:
+     *
+     * 1 / 0
+     *
+     * except it spews "things are going badly" messages on the screen
+     * as the restart handler ABORTs the current expression which
+     * don't make for good looking tests.
+     *
+     * "No, honestly, that's what we are expecting to see..."
+     */
 #ifdef IDIO_DEBUG
     idio_debug ("\ndefault-condition-handler: no handler re-raising %s\n", c);
+    idio_vm_trap_state (thr);
     idio_vm_frame_tree (idio_S_nil);
 #endif
     idio_raise_condition (idio_S_true, c);
@@ -784,6 +778,17 @@ does not return per se						\n\
 ")
 {
     IDIO_ASSERT (c);
+
+    /*
+     * Code coverage:
+     *
+     * Things have to be going badly wrong to get here.
+     *
+     * If this code succeeds then we will be ABORTing the current
+     * expression with appropriate verbose remarks to stderr.
+     *
+     * Not something we expect to see in the tests.
+     */
 
     if (idio_isa_condition (c)) {
 	IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (c);
@@ -902,6 +907,16 @@ Does not return.						\n\
 {
     IDIO_ASSERT (c);
 
+    /*
+     * Code coverage:
+     *
+     * Things have to be going very badly wrong to get here and
+     * experience suggests they're about to get worse as this code
+     * doesn't do a great job in failing successfully.
+     *
+     * If we do get here we're on the way out anyway.
+     */
+
     IDIO eh = idio_thread_current_error_handle ();
     idio_display_C ("\nreset-condition-handler: ", eh);
 
@@ -953,16 +968,12 @@ void idio_condition_add_primitives ()
 
     IDIO_ADD_PRIMITIVE (make_condition_type);
     IDIO_ADD_PRIMITIVE (condition_typep);
-    IDIO_ADD_PRIMITIVE (message_conditionp);
-    IDIO_ADD_PRIMITIVE (errorp);
 
     IDIO_ADD_PRIMITIVE (allocate_condition);
     IDIO_ADD_PRIMITIVE (make_condition);
-    IDIO_ADD_PRIMITIVE (idio_error_condition);
     IDIO_ADD_PRIMITIVE (conditionp);
     IDIO_ADD_PRIMITIVE (condition_isap);
     IDIO_ADD_PRIMITIVE (condition_ref);
-    IDIO_ADD_PRIMITIVE (condition_message);
     IDIO_ADD_PRIMITIVE (condition_set);
 
     IDIO_ADD_PRIMITIVE (set_default_handler);
@@ -995,7 +1006,6 @@ void idio_init_condition ()
 
     /* SRFI-35-ish */
     IDIO_DEFINE_CONDITION0 (idio_condition_condition_type, IDIO_CONDITION_CONDITION_TYPE_NAME, idio_S_nil);
-    IDIO_DEFINE_CONDITION1 (idio_condition_message_type, "^message", idio_condition_condition_type, "message");
     IDIO_DEFINE_CONDITION0 (idio_condition_error_type, "^error", idio_condition_condition_type);
 
     /*

@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -24,15 +24,9 @@ import libc
 condition0 := Tests
 
 test (condition-type? ^condition) #t
-test (message-condition? ^condition) #f
 test (condition? ^condition) #f
 
-test (condition-type? ^message) #t
-test (message-condition? ^message) #f
-test (error? ^message) #f
-
 test (condition-type? ^error) #t
-test (message-condition? ^error) #f
 test (error? ^error) #f
 
 ;; make-condition-type
@@ -45,53 +39,23 @@ test (condition? c1) #t
 test (condition-type? c1) #f
 test (condition-ref c1 'f1) 10
 
-mct2 := make-condition-type 'mct2 ^message 'f2
-test (condition-type? mct2) #t
-test (message-condition? mct2) #f
-test (error? mct2) #f
-
-c2/1 := condition mct2 (f2 20)
-test (condition? c2/1) #t
-test (condition-type? c2/1) #f
-test (message-condition? c2/1) #t
-test (condition-ref c2/1 'f2) 20
-
-msg := "bob"
-c2/2 := condition mct2 (f2 20) (message msg)
-test (condition? c2/2) #t
-test (condition-type? c2/2) #f
-test (condition-ref c2/2 'message) msg
-test (condition-message c2/2) msg
-test (condition-ref c2/2 'f2) 20
-
-c2/3 := condition mct2 (message msg) (f2 20)
-test (condition? c2/3) #t
-test (condition-type? c2/3) #f
-test (condition-ref c2/3 'message) msg
-test (condition-message c2/3) msg
-test (condition-ref c2/3 'f2) 20
-
 mct3 := make-condition-type 'mct3 ^error 'f3
 test (condition-type? mct3) #t
-test (message-condition? mct3) #f
 test (error? mct3) #f
 
 c3 := condition mct3 (f3 30)
 test (condition? c3) #t
 test (condition-type? c3) #f
-test (message-condition? c3) #f
 test (error? c3) #t
 test (condition-ref c3 'f3) 30
 
 mct4 := make-condition-type 'mct4 ^error 'f4/1 'f4/2
 test (condition-type? mct4) #t
-test (message-condition? mct4) #f
 test (error? mct4) #f
 
 c4 := condition mct4 (f4/1 41) (f4/2 42)
 test (condition? c4) #t
 test (condition-type? c4) #f
-test (message-condition? c4) #f
 test (error? c4) #t
 test (condition-ref c4 'f4/1) 41
 
@@ -117,21 +81,6 @@ test (condition? c6) #t
 test (dct6? c6) #t
 test (condition-ref c6 'f6/1) 60
 test (dct6-f6/1 c6) 60
-
-define-condition-type dct7 ^message f7
-test (condition-type? dct7) #t
-test (message-condition? dct7) #f
-test (error? dct7) #f
-
-c7 := condition dct7 (f7 70) (message msg)
-test (condition-type? c7) #f
-test (condition? c7) #t
-test (dct7? c7) #t
-test (message-condition? c7) #t
-test (condition-ref c7 'f7) 70
-test (dct7-f7 c7) 70
-test (condition-ref c7 'message) msg
-test (condition-message c7) msg
 
 ;; SRFI-36-ish
 test (condition-type? ^i/o-error) #t
@@ -379,6 +328,26 @@ test (raise (make-condition ^idio-error "continuable condition" "loc" "det")) 't
 
 clear-default-handler! ^idio-error
 
+test (condition-isa? (make-condition ^error) ^rt-command-status-error) #f
+
+;; these two tease out some code coverage when users "accidentally"
+;; use system handlers
+trap ^rt-divide-by-zero-error (function (c) {
+				 test #t #t
+}) {
+  trap ^rt-divide-by-zero-error default-SIGCHLD-handler {
+    1 / 0
+  }
+}
+
+trap ^rt-divide-by-zero-error (function (c) {
+				 test #t #t
+}) {
+  trap ^rt-divide-by-zero-error default-rcse-handler {
+    1 / 0
+  }
+}
+
 ;; all done?
-Tests? (condition0 + 101)
+Tests? (condition0 + 67)
 

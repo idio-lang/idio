@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -2547,6 +2547,10 @@ static IDIO idio_meaning_rewrite_body (IDIO src, IDIO e, IDIO nametree)
     IDIO_ASSERT (src);
     IDIO_ASSERT (e);
     IDIO_ASSERT (nametree);
+
+    if (! idio_isa_pair (e)) {
+	return e;
+    }
 
     IDIO l = e;
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -36,8 +36,6 @@ IDIO idio_job_control_SIGHUP_signal_handler ();
 IDIO idio_job_control_SIGCHLD_signal_handler ();
 void idio_job_control_set_interactive (int interactive);
 IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char **argv);
-
-extern volatile sig_atomic_t idio_job_control_signal_record[IDIO_LIBC_NSIG+1];
 
 void idio_init_job_control ();
 

@@ -60,7 +60,10 @@ void idio_error_printf (IDIO loc, char *format, ...)
     IDIO msg = idio_error_string (format, fmt_args);
     va_end (fmt_args);
 
-    IDIO c = idio_condition_idio_error (msg, loc, idio_S_nil);
+    IDIO c = idio_struct_instance (idio_condition_idio_error_type,
+				   IDIO_LIST3 (msg,
+					       loc,
+					       idio_S_nil));
     idio_raise_condition (idio_S_false, c);
 }
 
@@ -260,9 +263,10 @@ void idio_error (IDIO who, IDIO msg, IDIO args, IDIO c_location)
     }
 #endif
 
-    IDIO c = idio_condition_idio_error (idio_get_output_string (sh),
-					location,
-					who);
+    IDIO c = idio_struct_instance (idio_condition_idio_error_type,
+				   IDIO_LIST3 (idio_get_output_string (sh),
+					       location,
+					       who));
 
     idio_raise_condition (idio_S_false, c);
 }

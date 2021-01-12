@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -170,15 +170,30 @@ IDIO idio_module (IDIO name)
     IDIO_MODULE_EXPORTS (mo) = idio_S_nil;
     /*
      * IDIO_MODULE_IMPORTS (module) will result in semi-gibberish for
-     * idio_primitives_module, idio_command_module and idio_Idio_module
-     * which we patch up immediately after this call returns
+     * any modules created before idio_job_control_module:
+     *
+     *   idio_primitives_module and idio_Idio_module because
+     *   everything imports them
+     *
+     *   idio_libc_wrap_module because idio_job_control_module isn't
+     *   defined at that point
+     *
+     *   idio_command_module because idio_job_control_module isn't
+     *   defined at that point
+     *
+     *   idio_job_control_module because it imports itself?
+     *
+     * which we patch up immediately after this call returns.
+     *
+     * Which modules dun goofed depends on the order of module
+     * initialisation in idio_init().
      */
-    IDIO_MODULE_IMPORTS (mo) = IDIO_LIST3 (IDIO_LIST1 (idio_command_module),
+    IDIO_MODULE_IMPORTS (mo) = IDIO_LIST3 (IDIO_LIST1 (idio_job_control_module),
 					   IDIO_LIST1 (idio_Idio_module),
 					   IDIO_LIST1 (idio_primitives_module));
-    IDIO_MODULE_SYMBOLS (mo) = IDIO_HASH_EQP (1<<7);
-    IDIO_MODULE_VCI (mo) = IDIO_HASH_EQP (1<<10);
-    IDIO_MODULE_VVI (mo) = IDIO_HASH_EQP (1<<10);
+    IDIO_MODULE_SYMBOLS (mo) = IDIO_HASH_EQP (1<<4);
+    IDIO_MODULE_VCI (mo) = IDIO_HASH_EQP (1<<4);
+    IDIO_MODULE_VVI (mo) = IDIO_HASH_EQP (1<<4);
 
     idio_hash_put (idio_modules_hash, name, mo);
 
