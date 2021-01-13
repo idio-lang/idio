@@ -1,0 +1,2 @@
+
+open-file "bob" (join-string (make-string 1 #U+0) '("r" "w"))

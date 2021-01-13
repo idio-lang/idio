@@ -21,7 +21,8 @@
 
 module libc
 
-export (make-tmp-file-handle
+export (make-tmp-file
+	make-tmp-file-handle
 	make-tmp-dir
 	stdin-fileno
 	stdout-fileno
@@ -139,12 +140,19 @@ define (%make-tmp-fd & args) {
   mkstemp tmpfilename
 }
 
+define (make-tmp-file & prefix) {
+  fd+name := apply %make-tmp-fd prefix
+
+  close (ph fd+name)
+  pht fd+name
+}
+
 define (make-tmp-file-handle & prefix) {
-  fd-name := apply %make-tmp-fd prefix
+  fd+name := apply %make-tmp-fd prefix
 
   ;; mkstemp opens the file for reading and writing and we should
   ;; set close-on-exec
-  open-file-from-fd (ph fd-name) (pht fd-name) "rwe"
+  open-file-from-fd (ph fd+name) (pht fd+name) "rwe"
 }
 
 define (make-tmp-dir & args) {

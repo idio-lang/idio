@@ -1,0 +1,5 @@
+
+;; tmpfile should be in scope and missing!
+open-output-file (append-string tmpfile "/foo")
+
+

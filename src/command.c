@@ -388,10 +388,10 @@ char *idio_command_find_exe_C (char *command)
 	if (0 == pathlen) {
 	    if ((cwdlen + 1 + cmdlen + 1) >= PATH_MAX) {
 		/*
-		 * Test Case: ??
+		 * Test Case: command-errors/find-exe-cmd-PATH_MAX.idio
 		 *
-		 * This needs a platform independent exe-name (or cwd)
-		 * of PATH_MAX (ASCII) characters
+		 * PATH = ""
+		 * %find-exe (string->symbol (make-string (C/->integer PATH_MAX) #\A))
 		 */
 
 		if (spath) {
@@ -416,10 +416,10 @@ char *idio_command_find_exe_C (char *command)
 	    if (NULL == colon) {
 		if ((pathlen + 1 + cmdlen + 1) >= PATH_MAX) {
 		    /*
-		     * Test Case: ??
+		     * Test Case: command-errors/find-exe-dir-cmd-PATH_MAX-1.idio
 		     *
-		     * This needs a platform independent exe-name (or
-		     * PATH directory) of PATH_MAX (ASCII) characters
+		     * PATH = "foo"
+		     * %find-exe (string->symbol (make-string (C/->integer PATH_MAX) #\A))
 		     */
 
 		    if (spath) {
@@ -440,17 +440,17 @@ char *idio_command_find_exe_C (char *command)
 		if (0 == dirlen) {
 		    if ((cwdlen + 1 + cmdlen + 1) >= PATH_MAX) {
 			/*
-			 * Test Case: ??
+			 * Test Case: command-errors/find-exe-dir-cmd-PATH_MAX-2.idio
 			 *
-			 * This needs a platform independent exe-name
-			 * (or cwd) of PATH_MAX (ASCII) characters
+			 * PATH = ":"
+			 * %find-exe (string->symbol (make-string (C/->integer PATH_MAX) #\A))
 			 */
 
 			if (spath) {
 			    IDIO_GC_FREE (spath);
 			}
 
-			idio_error_system ("cwd+command exename length", IDIO_LIST2 (PATH, idio_string_C (command)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
+			idio_error_system ("dir+command exename length", IDIO_LIST2 (PATH, idio_string_C (command)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
 
 			/* notreached */
 			return NULL;
@@ -468,10 +468,10 @@ char *idio_command_find_exe_C (char *command)
 		} else {
 		    if ((dirlen + 1 + cmdlen + 1) >= PATH_MAX) {
 			/*
-			 * Test Case: ??
+			 * Test Case: command-errors/find-exe-dir-cmd-PATH_MAX-3.idio
 			 *
-			 * This needs a platform independent exe-name of
-			 * PATH_MAX (ASCII) characters
+			 * PATH = "foo:"
+			 * %find-exe (string->symbol (make-string (C/->integer PATH_MAX) #\A))
 			 */
 
 			if (spath) {

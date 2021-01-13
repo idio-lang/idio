@@ -1,0 +1,184 @@
+;;
+;; Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+;;
+;; Licensed under the Apache License, Version 2.0 (the "License"); you
+;; may not use this file except in compliance with the License.  You
+;; may obtain a copy of the License at
+;;
+;;     http://www.apache.org/licenses/LICENSE-2.0
+;;
+;; Unless required by applicable law or agreed to in writing, software
+;; distributed under the License is distributed on an "AS IS" BASIS,
+;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+;; See the License for the specific language governing permissions and
+;; limitations under the License.
+;;
+;;
+
+;;
+;; test-file-handle-error.idio
+;;
+
+file-handle-error0 := Tests
+
+file-handle-error-load := {
+  n := 0
+
+  function (filename msg) {
+    if (not (string? filename)) (error 'load "not a string" filename)
+
+    load-k := #n
+
+    n = n + 1
+    ;eprintf "loading #%s %s looking for %s\n" n filename msg
+    trap (^i/o-error
+	  ^rt-parameter-type-error
+	  ^system-error
+	  ^rt-environ-variable-error) (function (c) {
+					 ;eprintf "file-handle-error #%s: %s %s\n" n msg c.location
+					 test c.message msg
+
+					 if (not (string=? c.message msg)) {
+					   condition-report (append-string "file-handle-error-load: " filename) c (current-error-handle)
+					 }
+					 load-k 'file-handle-error
+	  }) {
+	    call/cc (function (k) {
+		       load-k = k
+		       (symbol-value 'load 'Idio) filename
+	    })
+	  }
+  }
+}
+
+file-handle-error-load "file-handle-errors/open-file-from-fd-filename-format.idio" "open-file-from-fd filename contains an ASCII NUL"
+file-handle-error-load "file-handle-errors/open-file-from-fd-filename-PATH_MAX.idio" "malformed filename: name too long"
+file-handle-error-load "file-handle-errors/open-file-from-fd-filename-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
+file-handle-error-load "file-handle-errors/open-file-from-fd-mode-format.idio" "open-file-from-fd mode contains an ASCII NUL"
+file-handle-error-load "file-handle-errors/open-file-from-fd-mode-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
+file-handle-error-load "file-handle-errors/open-file-from-fd-mode-invalid.idio" "fdopen: Invalid argument"
+
+file-handle-error-load "file-handle-errors/open-input-file-from-fd-filename-format.idio" "open-input-file-from-fd filename contains an ASCII NUL"
+file-handle-error-load "file-handle-errors/open-input-file-from-fd-filename-PATH_MAX.idio" "malformed filename: name too long"
+file-handle-error-load "file-handle-errors/open-input-file-from-fd-filename-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
+file-handle-error-load "file-handle-errors/open-input-file-from-fd-mode-format.idio" "open-input-file-from-fd mode contains an ASCII NUL"
+file-handle-error-load "file-handle-errors/open-input-file-from-fd-mode-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
+file-handle-error-load "file-handle-errors/open-input-file-from-fd-mode-invalid.idio" "fdopen: Invalid argument"
+
+file-handle-error-load "file-handle-errors/open-output-file-from-fd-filename-format.idio" "open-output-file-from-fd filename contains an ASCII NUL"
+file-handle-error-load "file-handle-errors/open-output-file-from-fd-filename-PATH_MAX.idio" "malformed filename: name too long"
+file-handle-error-load "file-handle-errors/open-output-file-from-fd-filename-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
+file-handle-error-load "file-handle-errors/open-output-file-from-fd-mode-format.idio" "open-output-file-from-fd mode contains an ASCII NUL"
+file-handle-error-load "file-handle-errors/open-output-file-from-fd-mode-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
+file-handle-error-load "file-handle-errors/open-output-file-from-fd-mode-invalid.idio" "fdopen: Invalid argument"
+
+file-handle-error-load "file-handle-errors/open-file-mode-invalid.idio" "open-file mode invalid"
+
+tmpfile := (make-tmp-file)
+
+;; ^i/o-file-protection-error
+;;
+;; NB. Nothing internally generates a ^i/o-file-is-read-only-error and
+;; read-only issues are collected under the guise of protection errors
+;; (EACCES)
+chmod \= tmpfile
+file-handle-error-load "file-handle-errors/open-file-protection.idio" "open-file: Permission denied"
+file-handle-error-load "file-handle-errors/open-input-file-protection.idio" "open-input-file: Permission denied"
+file-handle-error-load "file-handle-errors/open-output-file-protection.idio" "open-output-file: Permission denied"
+chmod +r tmpfile
+
+;; ^i/o-file-already-exists-error
+;;
+;; The code to react to EEXIST is present but to generate it requires
+;; a non-POSIX extension, the "x" mode character for fopen(3).  This
+;; is part of ISO C11.
+;;
+;; This is supported on Linux, MacOS.  Not supported on Solaris
+;; (OpenIndiana -- 1.5.1 at any rate, Hipster does).
+
+if (equal? (struct-utsname-sysname libc/idio-uname) "SunOS") {
+  ;; eprintf "Solaris: no fopen (\"x\") flag: skipping\n"
+  test #t #t
+} {
+  file-handle-error-load "file-handle-errors/open-file-exists.idio" "open-file: File exists"
+
+  ;; NB we can only pass mode flags with open-file (open-input-file
+  ;; and open-output-file used fixed flags)
+}
+
+;; ^i/o-filename-error
+;;
+;; This is slightly different to those above as it is the Operating
+;; System generating the errors not us catching overly long filenames
+;; in pre-checks.
+file-handle-error-load "file-handle-errors/open-file-filename-PATH_MAX.idio" "open-file: File name too long"
+file-handle-error-load "file-handle-errors/open-input-file-filename-PATH_MAX.idio" "open-input-file: File name too long"
+file-handle-error-load "file-handle-errors/open-output-file-filename-PATH_MAX.idio" "open-output-file: File name too long"
+
+delete-file tmpfile
+
+;; ^i/o-no-such-file-error
+;;
+;; NB fopen(3): "w" and "a" flags imply O_CREAT -- so this only works for "r" variants
+file-handle-error-load "file-handle-errors/open-file-filename-missing.idio" "open-file: No such file or directory"
+file-handle-error-load "file-handle-errors/open-input-file-filename-missing.idio" "open-input-file: No such file or directory"
+
+;; ^i/o-filename-error
+;; 
+;; ie. none of the below.  Let's try ENOTDIR.  Opening a non-existent
+;; directory name, eg.  ..../tmpfile, gets an ^i/o-no-such-file-error
+;; so you seem to need to use an existing non-dir file in the position
+;; of a directory (actually, much like the man page says...).  Here,
+;; we'll use tmpfile in a directory component as ./tmpfile/tmpfile
+file-handle-error-load "file-handle-errors/open-file-dirname-missing.idio" "open-file: No such file or directory"
+file-handle-error-load "file-handle-errors/open-input-file-dirname-missing.idio" "open-input-file: No such file or directory"
+file-handle-error-load "file-handle-errors/open-output-file-dirname-missing.idio" "open-output-file: No such file or directory"
+
+;; Technically this could fail with EMFILE or ENFILE, depending on the
+;; state of the system.
+file-handle-error-load "file-handle-errors/EMFILE.idio" "fopen (final): Too many open files"
+
+file-handle-error-load "file-handle-errors/open-file-filename-format.idio" "open-file filename contains an ASCII NUL"
+file-handle-error-load "file-handle-errors/open-file-filename-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
+file-handle-error-load "file-handle-errors/open-file-mode-format.idio" "open-file mode contains an ASCII NUL"
+file-handle-error-load "file-handle-errors/open-file-mode-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
+
+file-handle-error-load "file-handle-errors/open-input-file-filename-format.idio" "open-input-file filename contains an ASCII NUL"
+file-handle-error-load "file-handle-errors/open-input-file-filename-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
+
+file-handle-error-load "file-handle-errors/open-output-file-filename-format.idio" "open-output-file filename contains an ASCII NUL"
+file-handle-error-load "file-handle-errors/open-output-file-filename-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
+
+file-handle-error-load "file-handle-errors/close-closed-handle.idio" "handle already closed"
+file-handle-error-load "file-handle-errors/write-char-bad-handle.idio" "handle write error"
+file-handle-error-load "file-handle-errors/write-bad-handle.idio" "handle write error"
+file-handle-error-load "file-handle-errors/fflush-bad-handle.idio" "fflush: Bad file descriptor"
+
+OIDIOLIB := IDIOLIB
+file-handle-error-load "file-handle-errors/find-lib-IDIOLIB-format.idio" "libfile-find: environment variable 'IDIOLIB' contains an ASCII NUL"
+IDIOLIB = OIDIOLIB
+
+cwd := (getcwd)
+file-handle-error-load "file-handle-errors/find-lib-getcwd-rmdir.idio" "getcwd: No such file or directory"
+chdir cwd
+
+file-handle-error-load "file-handle-errors/find-lib-dir-lib-PATH_MAX-1.idio" "dir+file.idio libname length: File name too long"
+IDIOLIB = OIDIOLIB
+
+file-handle-error-load "file-handle-errors/find-lib-dir-lib-PATH_MAX-2.idio" "dir+file.idio libname length: File name too long"
+IDIOLIB = OIDIOLIB
+
+file-handle-error-load "file-handle-errors/find-lib-dir-lib-PATH_MAX-3.idio" "dir+file.idio libname length: File name too long"
+IDIOLIB = OIDIOLIB
+
+file-handle-error-load "file-handle-errors/find-lib-format.idio" "find-lib filename contains an ASCII NUL"
+
+file-handle-error-load "file-handle-errors/load-format.idio" "load filename contains an ASCII NUL"
+file-handle-error-load "file-handle-errors/load-not-found.idio" "load: No such file or directory"
+
+file-handle-error-load "file-handle-errors/file-exists-format.idio" "file-exists? filename contains an ASCII NUL"
+file-handle-error-load "file-handle-errors/delete-file-format.idio" "delete-file filename contains an ASCII NUL"
+file-handle-error-load "file-handle-errors/delete-file-EACCESS.idio" "remove: Permission denied"
+
+;; all done?
+Tests? (file-handle-error0 + 55)

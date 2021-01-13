@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -94,8 +94,8 @@ void idio_free_thread (IDIO t)
 IDIO idio_thread_current_thread ()
 {
     if (idio_S_nil == idio_running_thread) {
-	idio_error_error_message ("current_module unset");
-	IDIO_C_ASSERT (0);
+	idio_error_error_message ("idio_running_thread unset");
+	abort ();
     }
 
     return idio_running_thread;

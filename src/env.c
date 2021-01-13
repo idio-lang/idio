@@ -37,8 +37,9 @@ IDIO idio_env_PWD_sym;
  * This code will only get called if IDIOLIB has an ASCII NULL in it
  * which...is unlikely.
  */
-void idio_env_format_error (char *msg, IDIO name, IDIO c_location)
+void idio_env_format_error (char *circumstance, char *msg, IDIO name, IDIO val, IDIO c_location)
 {
+    IDIO_C_ASSERT (circumstance);
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (name);
     IDIO_ASSERT (c_location);
@@ -46,29 +47,35 @@ void idio_env_format_error (char *msg, IDIO name, IDIO c_location)
     IDIO_TYPE_ASSERT (symbol, name);
     IDIO_TYPE_ASSERT (string, c_location);
 
-    IDIO sh = idio_open_output_string_handle_C ();
-    idio_display_C ("environment variable", sh);
+    IDIO msh = idio_open_output_string_handle_C ();
+    idio_display_C (circumstance, msh);
+    idio_display_C (": environment variable", msh);
     if (idio_S_nil != name) {
-	idio_display_C (" '", sh);
-	idio_display (name, sh);
-	idio_display_C ("' ", sh);
+	idio_display_C (" '", msh);
+	idio_display (name, msh);
+	idio_display_C ("' ", msh);
     } else {
 	/*
 	 * Code coverage:
 	 *
 	 * We only call this for IDIOLIB so this clause waits...
 	 */
-	idio_display_C (" ", sh);
+	idio_display_C (" ", msh);
     }
-    idio_display_C (msg, sh);
+    idio_display_C (msg, msh);
 
     IDIO location = idio_vm_source_location ();
 
+    IDIO dsh = idio_open_output_string_handle_C ();
+#ifdef IDIO_DEBUG
+    idio_display (c_location, dsh);
+#endif
+
     IDIO c = idio_struct_instance (idio_condition_rt_environ_variable_error_type,
-				   IDIO_LIST4 (idio_get_output_string (sh),
+				   IDIO_LIST4 (idio_get_output_string (msh),
 					       location,
-					       c_location,
-					       name));
+					       idio_get_output_string (dsh),
+					       val));
 
     idio_raise_condition (idio_S_true, c);
 
@@ -322,7 +329,7 @@ void idio_env_init_idiolib (char *argv0)
 			 */
 			IDIO_GC_FREE (sidiolib);
 
-			idio_env_format_error ("contains an ASCII NUL", idio_env_IDIOLIB_sym, IDIO_C_FUNC_LOCATION ());
+			idio_env_format_error ("bootstrap", "contains an ASCII NUL", idio_env_IDIOLIB_sym, idiolib, IDIO_C_FUNC_LOCATION ());
 
 			/* notreached */
 			return;

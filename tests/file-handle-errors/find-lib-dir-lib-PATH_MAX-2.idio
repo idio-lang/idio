@@ -1,0 +1,4 @@
+{
+  IDIOLIB :* ":"
+  find-lib (make-string (C/->integer PATH_MAX) #\A)
+}

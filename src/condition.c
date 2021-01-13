@@ -44,6 +44,7 @@ IDIO idio_condition_io_read_error_type;
 IDIO idio_condition_io_write_error_type;
 IDIO idio_condition_io_closed_error_type;
 IDIO idio_condition_io_filename_error_type;
+IDIO idio_condition_io_mode_error_type;
 IDIO idio_condition_io_malformed_filename_error_type;
 IDIO idio_condition_io_file_protection_error_type;
 IDIO idio_condition_io_file_is_read_only_error_type;
@@ -1029,6 +1030,7 @@ void idio_init_condition ()
     IDIO_DEFINE_CONDITION0 (idio_condition_io_closed_error_type, "^i/o-closed-error", idio_condition_io_handle_error_type);
 
     IDIO_DEFINE_CONDITION1 (idio_condition_io_filename_error_type, "^i/o-filename-error", idio_condition_io_error_type, "filename");
+    IDIO_DEFINE_CONDITION1 (idio_condition_io_mode_error_type, "^i/o-mode-error", idio_condition_io_error_type, "mode");
     IDIO_DEFINE_CONDITION0 (idio_condition_io_malformed_filename_error_type, "^i/o-malformed-filename-error", idio_condition_io_filename_error_type);
 
     IDIO_DEFINE_CONDITION0 (idio_condition_io_file_protection_error_type, "^i/o-file-protection-error", idio_condition_io_filename_error_type);

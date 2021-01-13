@@ -166,10 +166,22 @@ command-child-error-load "command-errors/env-type.idio" "environment variable 'I
 command-parent-error-load "command-errors/PATH-format.idio" "find-exe 'PATH' contains an ASCII NUL"
 
 cwd := (getcwd)
-command-parent-error-load "command-errors/getcwd-rmdir.idio" "getcwd"
+command-parent-error-load "command-errors/find-exe-getcwd-rmdir.idio" "getcwd: No such file or directory"
 chdir cwd
 
 OPATH := PATH
+command-parent-error-load "command-errors/find-exe-cmd-PATH_MAX.idio" "cwd+command exename length: File name too long"
+PATH = OPATH
+
+command-parent-error-load "command-errors/find-exe-dir-cmd-PATH_MAX-1.idio" "dir+command exename length: File name too long"
+PATH = OPATH
+
+command-parent-error-load "command-errors/find-exe-dir-cmd-PATH_MAX-2.idio" "dir+command exename length: File name too long"
+PATH = OPATH
+
+command-parent-error-load "command-errors/find-exe-dir-cmd-PATH_MAX-3.idio" "dir+command exename length: File name too long"
+PATH = OPATH
+
 command-parent-error-load "command-errors/find-exe-not-found.idio" "command not found foo"
 PATH = OPATH
 
@@ -194,4 +206,4 @@ PATH = OPATH
 (wait)
 
 ;; all done?
-Tests? (command-error0 + 16)
+Tests? (command-error0 + 20)

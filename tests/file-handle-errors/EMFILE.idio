@@ -1,0 +1,16 @@
+
+;; This code is very similar to the loop in test-file-handle.idio.
+;; There we wanted to ensure that we could continue opening files.
+;;
+;; Here we are looking to generate the specific error
+
+{
+  fds := #[ ]
+  loop :+ function () {
+	    ish := open-input-file testfile
+	    fds =+ ish
+	    (loop)
+  }
+
+  (loop)
+}

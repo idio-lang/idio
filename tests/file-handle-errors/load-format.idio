@@ -1,0 +1,2 @@
+
+load (join-string (make-string 1 #U+0) '("hello" "world"))

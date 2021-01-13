@@ -1872,9 +1872,7 @@ void idio_gc_obj_free ()
 	idio_gc->roots = root->next;
 	if (idio_S_nil == root->object) {
 	    idio_error_error_message ("root->object is #n at %s:%d", __FILE__, __LINE__);
-
-	    /* notreached */
-	    return;
+	    abort ();
 	}
 	IDIO_GC_FREE (root);
     }

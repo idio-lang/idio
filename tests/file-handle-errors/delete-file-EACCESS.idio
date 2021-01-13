@@ -1,0 +1,11 @@
+
+tmpdir := (make-tmp-dir)
+tmpfile := append-string tmpdir "/foo"
+chmod \= tmpdir
+
+unwind-protect {
+  delete-file tmpfile
+} {
+  chmod +rwx tmpdir
+  rmdir tmpdir
+}

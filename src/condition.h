@@ -115,6 +115,7 @@ extern IDIO idio_condition_io_read_error_type;
 extern IDIO idio_condition_io_write_error_type;
 extern IDIO idio_condition_io_closed_error_type;
 extern IDIO idio_condition_io_filename_error_type;
+extern IDIO idio_condition_io_mode_error_type;
 extern IDIO idio_condition_io_malformed_filename_error_type;
 extern IDIO idio_condition_io_file_protection_error_type;
 extern IDIO idio_condition_io_file_is_read_only_error_type;

@@ -1,0 +1,13 @@
+
+;; According to fflush(3) fflush should return EBADF for a (FILE *)
+;; handle not open for writing.
+;;
+;;   file-handle-fflush (current-input-handle)
+;;
+;; suggests otherwise.
+;;
+;; So, back to basics with a not-open handle.
+
+fh := open-input-file testfile
+close-handle fh
+file-handle-fflush fh

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -32,7 +32,6 @@ IDIO idio_error_string (char *format, va_list argp);
 void idio_error_printf (IDIO loc, char *format, ...);
 void idio_error_error_message (char *format, ...);
 void idio_error_warning_message (char *format, ...);
-void idio_error_strerror (char *msg, IDIO c_location);
 void idio_error_alloc (char *m);
 void idio_error_param_nil (char *name, IDIO c_location);
 void idio_error_param_type (char *etype, IDIO who, IDIO c_location);

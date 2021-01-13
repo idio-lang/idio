@@ -26,45 +26,19 @@ static IDIO idio_S_internal;
 static IDIO idio_S_user;
 static IDIO idio_S_user_code;
 
+/*
+ * Code coverage:
+ *
+ * These first three, ultimately invoking vfprintf() with some varargs
+ * is mostly really just to remind me how fprintf() works with
+ * varargs.
+ *
+ * In practice only the error variant is called and only in times of
+ * great stress -- ie. immediately followed by abort().
+ */
 void idio_error_vfprintf (char *format, va_list argp)
 {
     vfprintf (stderr, format, argp);
-}
-
-IDIO idio_error_string (char *format, va_list argp)
-{
-    char *s;
-#ifdef IDIO_MALLOC
-    if (-1 == idio_malloc_vasprintf (&s, format, argp)) {
-#else
-    if (-1 == vasprintf (&s, format, argp)) {
-#endif
-	idio_error_alloc ("asprintf");
-    }
-
-    IDIO sh = idio_open_output_string_handle_C ();
-    idio_display_C (s, sh);
-    IDIO_GC_FREE (s);
-
-    return idio_get_output_string (sh);
-}
-
-void idio_error_printf (IDIO loc, char *format, ...)
-{
-    IDIO_ASSERT (loc);
-    IDIO_C_ASSERT (format);
-    IDIO_TYPE_ASSERT (string, loc);
-
-    va_list fmt_args;
-    va_start (fmt_args, format);
-    IDIO msg = idio_error_string (format, fmt_args);
-    va_end (fmt_args);
-
-    IDIO c = idio_struct_instance (idio_condition_idio_error_type,
-				   IDIO_LIST3 (msg,
-					       loc,
-					       idio_S_nil));
-    idio_raise_condition (idio_S_false, c);
 }
 
 void idio_error_error_message (char *format, ...)
@@ -101,13 +75,60 @@ void idio_error_warning_message (char *format, ...)
     }
 }
 
-void idio_error_strerror (char *msg, IDIO c_location)
+/*
+ * Code coverage:
+ *
+ * These two, essentially calling vasprintf() are useful for
+ * converting fprintf()-style C arguments into an Idio string.
+ *
+ * The only external call to idio_error_string() is an "impossible"
+ * clause in read.c.
+ */
+IDIO idio_error_string (char *format, va_list argp)
 {
-    IDIO_C_ASSERT (msg);
-    IDIO_ASSERT (c_location);
-    IDIO_TYPE_ASSERT (string, c_location);
+    char *s;
+#ifdef IDIO_MALLOC
+    if (-1 == idio_malloc_vasprintf (&s, format, argp)) {
+#else
+    if (-1 == vasprintf (&s, format, argp)) {
+#endif
+	idio_error_alloc ("asprintf");
+    }
 
-    idio_error_printf (c_location, "%s: %s", msg, strerror (errno));
+    IDIO sh = idio_open_output_string_handle_C ();
+    idio_display_C (s, sh);
+    IDIO_GC_FREE (s);
+
+    return idio_get_output_string (sh);
+}
+
+/*
+ * Code coverage:
+ *
+ * idio_error_printf() is called a lot but I'd like to think those
+ * calls could be migrated to an more Idio-centric mode.
+ *
+ * Possibly by calling sprintf() then some regular Idio error code
+ * with the resultant string.
+ */
+void idio_error_printf (IDIO loc, char *format, ...)
+{
+    IDIO_ASSERT (loc);
+    IDIO_C_ASSERT (format);
+    IDIO_TYPE_ASSERT (string, loc);
+
+    va_list fmt_args;
+    va_start (fmt_args, format);
+    IDIO msg = idio_error_string (format, fmt_args);
+    va_end (fmt_args);
+
+    IDIO c = idio_struct_instance (idio_condition_idio_error_type,
+				   IDIO_LIST3 (msg,
+					       loc,
+					       idio_S_nil));
+    idio_raise_condition (idio_S_false, c);
+
+    /* notreached */
 }
 
 void idio_error_alloc (char *m)
@@ -121,12 +142,22 @@ void idio_error_alloc (char *m)
      * there.
      *
      * perror(3) ought to be able to work in this situation and in the
-     * end we assert(0) and therefore abort(3).
+     * end we abort(3).
      */
     perror (m);
-    IDIO_C_ASSERT (0);
+    abort ();
 }
 
+/*
+ * Code coverage:
+ *
+ * idio_error_param_nil() is slightly anomalous as most user-facing
+ * code will check for the correct type being passed in.
+ *
+ * One place where you can pass an unchecked #n is as the key to a
+ * hash table lookup.  Any type is valid as the key to a hash table
+ * execpt #n.
+ */
 void idio_error_param_nil (char *name, IDIO c_location)
 {
     IDIO_C_ASSERT (name);
@@ -143,7 +174,10 @@ void idio_error_param_nil (char *name, IDIO c_location)
 				   IDIO_LIST3 (idio_get_output_string (sh),
 					       location,
 					       c_location));
+
     idio_raise_condition (idio_S_false, c);
+
+    /* notreached */
 }
 
 void idio_error_param_type (char *etype, IDIO who, IDIO c_location)
@@ -174,7 +208,9 @@ void idio_error_param_type (char *etype, IDIO who, IDIO c_location)
 				   IDIO_LIST3 (idio_get_output_string (msh),
 					       location,
 					       idio_get_output_string (dsh)));
+
     idio_raise_condition (idio_S_false, c);
+    /* notreached */
 }
 
 /*
@@ -211,7 +247,9 @@ void idio_error_const_param (char *type_name, IDIO who, IDIO c_location)
 				   IDIO_LIST3 (idio_get_output_string (sh),
 					       location,
 					       c_location));
+
     idio_raise_condition (idio_S_false, c);
+    /* notreached */
 }
 
 /*
@@ -228,6 +266,9 @@ void idio_error_const_param_C (char *type_name, IDIO who, char *file, const char
     idio_error_const_param (type_name, who, idio_string_C (c_location));
 }
 
+/*
+ * Should this be idio_error_idio_error() ??
+ */
 void idio_error (IDIO who, IDIO msg, IDIO args, IDIO c_location)
 {
     IDIO_ASSERT (who);
@@ -269,6 +310,7 @@ void idio_error (IDIO who, IDIO msg, IDIO args, IDIO c_location)
 					       who));
 
     idio_raise_condition (idio_S_false, c);
+    /* notreached */
 }
 
 void idio_error_C (char *msg, IDIO args, IDIO c_location)
@@ -316,20 +358,30 @@ void idio_error_system (char *msg, IDIO args, int err, IDIO c_location)
 
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C (msg, msh);
-    if (idio_S_nil != args) {
-	idio_display_C (": ", msh);
-	idio_display (args, msh);
-    }
+    idio_display_C (": ", msh);
+    idio_display_C (strerror (err), msh);
+
+    IDIO location = idio_vm_source_location ();
 
     IDIO dsh = idio_open_output_string_handle_C ();
-    idio_display_C (strerror (err), dsh);
+    if (idio_S_nil != args) {
+	idio_display (args, dsh);
+#ifdef IDIO_DEBUG
+    idio_display_C (": ", dsh);
+#endif
+    }
+#ifdef IDIO_DEBUG
+    idio_display (c_location, dsh);
+#endif
 
     IDIO c = idio_struct_instance (idio_condition_system_error_type,
 				   IDIO_LIST4 (idio_get_output_string (msh),
-					       c_location,
+					       location,
 					       idio_get_output_string (dsh),
 					       idio_C_int (err)));
+
     idio_raise_condition (idio_S_true, c);
+    /* notreached */
 }
 
 void idio_error_system_errno (char *msg, IDIO args, IDIO c_location)
@@ -361,7 +413,6 @@ void idio_error_divide_by_zero (char *msg, IDIO c_location)
 					       idio_S_nil));
 
     idio_raise_condition (idio_S_true, c);
-
     /* notreached */
 }
 

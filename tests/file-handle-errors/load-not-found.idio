@@ -1,0 +1,4 @@
+
+tmpfile := (make-tmp-file)
+delete-file tmpfile
+load tmpfile

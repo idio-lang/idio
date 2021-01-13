@@ -1,0 +1,13 @@
+
+module tests/file-handle-errors/find-lib
+import libc
+
+cwd := (getcwd)
+tmpdir := (make-tmp-dir)
+chdir tmpdir
+rmdir tmpdir
+
+find-lib "foo"
+
+;; We don't get here?
+chdir cwd
