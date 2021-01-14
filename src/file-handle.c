@@ -791,7 +791,7 @@ IDIO idio_open_file_handle_C (char *func, IDIO filename, char *pathname, int fre
 
     if (NULL == filep) {
 	/*
-	 * Test Case: file-handle-errors/ENFILE.idio
+	 * Test Case: file-handle-errors/EMFILE.idio
 	 *
 	 * loop creating files but not closing them
 	 */
@@ -802,6 +802,12 @@ IDIO idio_open_file_handle_C (char *func, IDIO filename, char *pathname, int fre
 	    IDIO_GC_FREE (pathname);
 	}
 	if (free_mode) {
+	    /*
+	     * Code coverage:
+	     *
+	     * Use open-file with a mode string (rather than
+	     * open-input-file with an fixed mode string) to get here.
+	     */
 	    IDIO_GC_FREE (mode);
 	}
 
@@ -1187,7 +1193,17 @@ int idio_readyp_file_handle (IDIO fh)
 {
     IDIO_ASSERT (fh);
 
+    if (IDIO_CLOSEDP_HANDLE (fh)) {
+	return 0;
+    }
+
     if (IDIO_FILE_HANDLE_COUNT (fh) > 0) {
+	/*
+	 * Code coverage:
+	 *
+	 * To get here we need to have read something from the file
+	 * handle but obviously(?) not everything.
+	 */
 	return 1;
     }
 
@@ -1200,7 +1216,16 @@ void idio_file_handle_read_more (IDIO fh)
 
     ssize_t nread = read (IDIO_FILE_HANDLE_FD (fh), IDIO_FILE_HANDLE_BUF (fh), IDIO_FILE_HANDLE_BUFSIZ (fh));
     if (-1 == nread) {
+	/*
+	 * Test Case: ??
+	 *
+	 * How to get a (previously good) file descriptor to fail for
+	 * read(2)?
+	 */
 	perror ("read");
+	idio_error_system_errno ("read", IDIO_LIST1 (fh), IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
     } else if (0 == nread) {
 	IDIO_FILE_HANDLE_FLAGS (fh) |= IDIO_FILE_HANDLE_FLAG_EOF;
     } else {
@@ -1275,7 +1300,6 @@ int idio_close_file_handle (IDIO fh)
 	idio_handle_error_closed (fh, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
-	errno = EBADF;
 	return EOF;
     } else {
 	if (EOF == idio_flush_file_handle (fh)) {
@@ -1508,6 +1532,8 @@ file handle `fh`				\n\
 	 * file-handle-fflush fh
 	 */
 	idio_error_system_errno ("fflush", IDIO_LIST1 (fh), IDIO_C_LOCATION ("file-handle-fflush"));
+
+	return idio_S_notreached;
     }
 
     return idio_C_int (r);

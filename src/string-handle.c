@@ -311,6 +311,10 @@ int idio_readyp_string_handle (IDIO sh)
 {
     IDIO_ASSERT (sh);
 
+    if (IDIO_CLOSEDP_HANDLE (sh)) {
+	return 0;
+    }
+
     return (idio_eofp_string_handle (sh) == 0);
 }
 

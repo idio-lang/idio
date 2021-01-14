@@ -125,5 +125,38 @@ test (handle-pos ifh) 2
 ifh := open-input-file testfile
 test (input-file-handle? ifh) #t
 
+; code coverage
+ifh = open-file testfile "r+"
+test (input-file-handle? ifh) #t
+test (output-file-handle? ifh) #t
+test (ready? ifh) #t
+close-handle ifh
+test (ready? ifh) #f
+
+ofh = open-file testfile "w+"
+test (output-file-handle? ofh) #t
+test (input-file-handle? ofh) #t
+test (ready? ofh) #t
+close-handle ofh
+test (ready? ofh) #f
+
+ofh = open-file testfile "a+"
+test (output-file-handle? ofh) #t
+test (input-file-handle? ofh) #t
+test (ready? ofh) #t
+close-handle ofh
+test (ready? ofh) #f
+
+;; ready? code coverage!
+ofh = open-file testfile "w"
+write "hello\n" ofh
+close-handle ofh
+
+ifh = open-file testfile "r"
+read-char ifh
+;; different code path!
+test (ready? ifh) #t
+close-handle ifh
+
 ;; all done?
-Tests? (file-handle0 + 31)
+Tests? (file-handle0 + 44)

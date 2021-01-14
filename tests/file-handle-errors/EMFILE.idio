@@ -4,10 +4,13 @@
 ;;
 ;; Here we are looking to generate the specific error
 
+;; FWIW open-file (with a mode string) tweaks a bit of code coverage
+;; that open-input-file (with a fixed mode string) does not.
+
 {
   fds := #[ ]
   loop :+ function () {
-	    ish := open-input-file testfile
+	    ish := open-file testfile "re"
 	    fds =+ ish
 	    (loop)
   }
