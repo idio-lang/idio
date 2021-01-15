@@ -10,4 +10,4 @@
 
 fh := open-input-file testfile
 close-handle fh
-file-handle-fflush fh
+fflush-file-handle fh

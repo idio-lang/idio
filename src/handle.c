@@ -270,6 +270,8 @@ void idio_free_handle (IDIO h)
 void idio_handle_lookahead_error (IDIO h, int c)
 {
     idio_error_printf (IDIO_C_FUNC_LOCATION (), "%s->unget => %#x (!= EOF)", idio_handle_name_as_C (h), c);
+
+    /* notreached */
 }
 
 void idio_handle_finalizer (IDIO handle)
@@ -304,13 +306,13 @@ int idio_readyp_handle (IDIO h)
 }
 
 IDIO_DEFINE_PRIMITIVE0V_DS ("ready?", readyp, (IDIO args), "[handle]", "\
-test if `handle` or the current input handle is not	\n\
-supplied is not at end-of-file				\n\
+test if `handle` or the current input handle has input	\n\
+available or is at end-of-file				\n\
 							\n\
 :param handle: handle to test				\n\
 :type handle: handle					\n\
 							\n\
-:return: #t if `handle` is not at end-of-file, #f otherwise	\n\
+:return: #t if `handle` has input available or is at end-of-file, #f otherwise	\n\
 :rtype: boolean						\n\
 ")
 {
@@ -327,6 +329,16 @@ supplied is not at end-of-file				\n\
     return r;
 }
 
+/*
+ * idio_getb_handle() is called from idio_read_character_int(), which
+ * constructs a Unicode codepoint from the UTF-8 stream, and
+ * idio_read_string(), which constructs a string byte-by-byte (for,
+ * uh, $REASONS).
+ *
+ * Everything else should be calling idio_getc_handle(), which calls
+ * idio_read_character_int() in turn, to get an idio_unicode_t
+ * (Unicode codepoint).
+ */
 int idio_getb_handle (IDIO h)
 {
     IDIO_ASSERT (h);
@@ -418,6 +430,9 @@ int idio_ungetc_handle (IDIO h, idio_unicode_t c)
     if (EOF != r) {
 	/* there already was a lookahead char */
 	idio_handle_lookahead_error (h, r);
+
+	/* notreached */
+	return EOF;
     }
 
     IDIO_HANDLE_LC (h) = c;
@@ -709,8 +724,15 @@ off_t idio_seek_handle (IDIO h, off_t offset, int whence)
 	return -1;
     }
 
+    /*
+     * fseek(3): A successful call to the fseek() function clears the
+     * end-of-file indicator for the stream and undoes any effects of
+     * the ungetc(3) function on the same stream.
+     */
+
     /* line number is invalidated unless we go to pos 0 */
-    if (0 == offset && SEEK_SET == whence) {
+    if (0 == offset &&
+	SEEK_SET == whence) {
 	IDIO_HANDLE_LINE (h) = 1;
     } else {
 	IDIO_HANDLE_LINE (h) = 0;
@@ -721,9 +743,9 @@ off_t idio_seek_handle (IDIO h, off_t offset, int whence)
 	whence = SEEK_SET;
     }
 
-    IDIO_HANDLE_LC (h) = EOF;
-
     IDIO_HANDLE_POS (h) = IDIO_HANDLE_M_SEEK (h) (h, offset, whence);
+
+    IDIO_HANDLE_LC (h) = EOF;
 
     return IDIO_HANDLE_POS (h);
 }
@@ -778,6 +800,9 @@ unless ``whence`` is 'set and position is 0 (zero)	\n\
 	whence = SEEK_SET;
     }
 
+    /*
+     * Should we be flushing here?
+     */
     idio_flush_handle (h);
 
     off_t offset;
@@ -819,8 +844,6 @@ unless ``whence`` is 'set and position is 0 (zero)	\n\
 
 	return idio_S_notreached;
     }
-
-    IDIO_HANDLE_POS (h) = n;
 
     IDIO r = idio_integer (n);
 

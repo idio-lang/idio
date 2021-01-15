@@ -149,10 +149,10 @@ file-handle-error-load "file-handle-errors/open-input-file-filename-type.idio" "
 file-handle-error-load "file-handle-errors/open-output-file-filename-format.idio" "open-output-file filename contains an ASCII NUL"
 file-handle-error-load "file-handle-errors/open-output-file-filename-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
 
+file-handle-error-load "file-handle-errors/ready-closed-handle.idio" "handle already closed"
 file-handle-error-load "file-handle-errors/close-closed-handle.idio" "handle already closed"
-file-handle-error-load "file-handle-errors/write-char-bad-handle.idio" "handle write error"
-file-handle-error-load "file-handle-errors/write-bad-handle.idio" "handle write error"
 file-handle-error-load "file-handle-errors/fflush-bad-handle.idio" "fflush: Bad file descriptor"
+file-handle-error-load "file-handle-errors/lseek-negative-offset.idio" "lseek: Invalid argument"
 
 OIDIOLIB := IDIOLIB
 file-handle-error-load "file-handle-errors/find-lib-IDIOLIB-format.idio" "libfile-find: environment variable 'IDIOLIB' contains an ASCII NUL"

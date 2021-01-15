@@ -1,2 +1,2 @@
 
-write #\a (current-input-handle)
+write "a" (current-input-handle)

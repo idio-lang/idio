@@ -18,6 +18,13 @@
 /*
  * file-handle.c
  *
+ * This code sits a-top C's standard IO functions which isn't the
+ * smartest move.
+ *
+ * In practice, it means that we, Idio, maintain buffers and state in
+ * front of C's standard IO buffers and state.
+ *
+ * This really needs to be reworked to use read(2)/write(2) direct.
  */
 
 #include "idio.h"
@@ -465,7 +472,7 @@ static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, char *func, char
 	 *
 	 * open-file-from-fd (stdin-fileno) "bob" "q"
 	 *
-	 * Curiously, the mode comes back as "������" -- which, given
+	 * Curiously, the mode comes back as "ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½" -- which, given
 	 * it's meant to be const char *, is ... odd.
 	 */
 	if (free_mode) {
@@ -1189,11 +1196,33 @@ void idio_free_file_handle (IDIO fh)
     IDIO_GC_FREE (IDIO_HANDLE_STREAM (fh));
 }
 
+/*
+ * ready? (char-ready? in Scheme) is true if there is input available
+ * (without the need to block, ie. already buffered from a previous
+ * read) or is at end of file.
+ *
+ * The general commentary is [Guile]: If char-ready? were to return #f
+ * at end of file, a port at end of file would be indistinguishable
+ * from an interactive port that has no ready characters.
+ *
+ * I've augmented this as ready? can't be true for a closed handle.
+ * Surely?
+ */
 int idio_readyp_file_handle (IDIO fh)
 {
     IDIO_ASSERT (fh);
 
     if (IDIO_CLOSEDP_HANDLE (fh)) {
+	/*
+	 * Test Case: file-handle-errors/ready-closed-handle.idio
+	 *
+	 * fh := open-file ...
+	 * close-handle fh
+	 * ready? fh
+	 */
+	idio_handle_error_closed (fh, IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
 	return 0;
     }
 
@@ -1312,6 +1341,16 @@ int idio_close_file_handle (IDIO fh)
     }
 }
 
+/*
+ * Code coverage:
+ *
+ * idio_putb_handle() is only called by idio_command_invoke() when
+ * recovering stdout/stderr handles and will NOT have happened if
+ * stdout/stderr was a file handle (see stdout-fileno/stderr-fileno in
+ * llibc.idio).
+ *
+ * So...we never get here?
+ */
 int idio_putb_file_handle (IDIO fh, uint8_t c)
 {
     IDIO_ASSERT (fh);
@@ -1360,9 +1399,13 @@ int idio_putc_file_handle (IDIO fh, idio_unicode_t c)
 
     if (! idio_output_file_handlep (fh)) {
 	/*
-	 * Test Case: file-handle-errors/write-char-bad-handle.idio
+	 * Test Case: ?? not file-handle-errors/write-char-bad-handle.idio
 	 *
 	 * write-char #\a (current-input-handle)
+	 *
+	 * XXX This doesn't get you here as write-char calls
+	 * idio_handle_or_current() which does the
+	 * idio_output_file_handlep() test before we get here.
 	 */
 	idio_handle_error_write (fh, IDIO_C_FUNC_LOCATION ());
 
@@ -1382,13 +1425,30 @@ int idio_putc_file_handle (IDIO fh, idio_unicode_t c)
 
 	    if ('\n' == c &&
 		IDIO_FILE_HANDLE_FLAGS (fh) & IDIO_FILE_HANDLE_FLAG_INTERACTIVE) {
+		/*
+		 * Code coverage:
+		 *
+		 * Requires, uh, interaction...
+		 */
 		if (EOF == idio_flush_file_handle (fh)) {
 		    return EOF;
 		}
 	    }
 	    break;
 	} else {
+	    /*
+	     * Code coverage:
+	     *
+	     * We need to have filled the buffer (BUFSIZ) and then one
+	     * more.
+	     */
 	    if (EOF == idio_flush_file_handle (fh)) {
+		/*
+		 * Code coverage:
+		 *
+		 * The fwrite(3) in idio_flush_file_handle() needs to
+		 * fail...
+		 */
 		return EOF;
 	    }
 	}
@@ -1403,9 +1463,13 @@ ptrdiff_t idio_puts_file_handle (IDIO fh, char *s, size_t slen)
 
     if (! idio_output_file_handlep (fh)) {
 	/*
-	 * Test Case: file-handle-errors/write-bad-handle.idio
+	 * Test Case: ?? not file-handle-errors/write-bad-handle.idio
 	 *
-	 * write #\a (current-input-handle)
+	 * write "a" (current-input-handle)
+	 *
+	 * XXX This doesn't get you here as write-char calls
+	 * idio_handle_or_current() which does the
+	 * idio_output_file_handlep() test before we get here.
 	 */
 	idio_handle_error_write (fh, IDIO_C_FUNC_LOCATION ());
 
@@ -1422,6 +1486,12 @@ ptrdiff_t idio_puts_file_handle (IDIO fh, char *s, size_t slen)
     if (slen > IDIO_FILE_HANDLE_BUFSIZ (fh) ||
 	slen > (IDIO_FILE_HANDLE_BUFSIZ (fh) - IDIO_FILE_HANDLE_COUNT (fh))) {
 	if (EOF == idio_flush_file_handle (fh)) {
+	    /*
+	     * Code coverage:
+	     *
+	     * The fwrite(3) in idio_flush_file_handle() needs to
+	     * fail...
+	     */
 	    return EOF;
 	}
 	r = fwrite (s, 1, slen, IDIO_FILE_HANDLE_FILEP (fh));
@@ -1447,6 +1517,11 @@ ptrdiff_t idio_puts_file_handle (IDIO fh, char *s, size_t slen)
     }
 
     if (EOF == idio_flush_file_handle (fh)) {
+	/*
+	 * Code coverage:
+	 *
+	 * The fwrite(3) in idio_flush_file_handle() needs to fail...
+	 */
 	return EOF;
     }
 
@@ -1462,6 +1537,9 @@ ptrdiff_t idio_puts_file_handle (IDIO fh, char *s, size_t slen)
     return r;
 }
 
+/*
+ * We need to return 0 on successful "flush" or EOF.
+ */
 int idio_flush_file_handle (IDIO fh)
 {
     IDIO_ASSERT (fh);
@@ -1489,14 +1567,21 @@ int idio_flush_file_handle (IDIO fh)
 	! IDIO_OUTPUTP_HANDLE (fh)) {
     }
 
-    int r = fwrite (IDIO_FILE_HANDLE_BUF (fh), 1, IDIO_FILE_HANDLE_COUNT (fh), IDIO_FILE_HANDLE_FILEP (fh));
+    int r = EOF;
+
+    int n = fwrite (IDIO_FILE_HANDLE_BUF (fh), 1, IDIO_FILE_HANDLE_COUNT (fh), IDIO_FILE_HANDLE_FILEP (fh));
+
+    if (n == IDIO_FILE_HANDLE_COUNT (fh)) {
+	r = 0;
+    }
+
     IDIO_FILE_HANDLE_PTR (fh) = IDIO_FILE_HANDLE_BUF (fh);
     IDIO_FILE_HANDLE_COUNT (fh) = 0;
 
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1_DS ("file-handle-fflush", file_handle_fflush, (IDIO fh), "fh", "\
+IDIO_DEFINE_PRIMITIVE1_DS ("fflush-file-handle", fflush_file_handle, (IDIO fh), "fh", "\
 call fflush(3) on the C `FILE *` associated with	\n\
 file handle `fh`				\n\
 						\n\
@@ -1521,7 +1606,7 @@ file handle `fh`				\n\
 	 * According to fflush(3) fflush should return EBADF for a
 	 * (FILE *) handle not open for writing.
 	 *
-	 *   file-handle-fflush (current-input-handle)
+	 *   fflush-file-handle (current-input-handle)
 	 *
 	 * suggests otherwise.
 	 *
@@ -1529,9 +1614,9 @@ file handle `fh`				\n\
 	 *
 	 * fh := open-input-file testfile
 	 * close-handle fh
-	 * file-handle-fflush fh
+	 * fflush-file-handle fh
 	 */
-	idio_error_system_errno ("fflush", IDIO_LIST1 (fh), IDIO_C_LOCATION ("file-handle-fflush"));
+	idio_error_system_errno ("fflush", IDIO_LIST1 (fh), IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -1545,15 +1630,80 @@ off_t idio_seek_file_handle (IDIO fh, off_t offset, int whence)
 
     IDIO_TYPE_ASSERT (file_handle, fh);
 
+    /*
+     * fseek(3): A successful call to the fseek() function clears the
+     * end-of-file indicator for the stream and undoes any effects of
+     * the ungetc(3) function on the same stream.
+     *
+     * If we use lseek(2) we should implement the same.
+     *
+     * NB lseek(2) uses position plus offset
+     */
+
+    off_t lseek_r = lseek (IDIO_FILE_HANDLE_FD (fh), offset, whence);
+    if (-1 == lseek_r) {
+	/*
+	 * Test Case: file-handle-errors/lseek-negative-offset.idio
+	 *
+	 * ifh := open-input-file ...
+	 * seek-handle ifh -1
+	 */
+	idio_error_system_errno ("lseek", IDIO_LIST1 (fh), IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
+	return -1;
+    }
+
     if (feof (IDIO_FILE_HANDLE_FILEP (fh))) {
+	/*
+	 * Code coverage: ??
+	 *
+	 * The feof(FILE*) doesn't match our own EOF marker...
+	 */
 	clearerr (IDIO_FILE_HANDLE_FILEP (fh));
     }
 
     IDIO_FILE_HANDLE_FLAGS (fh) &= ~IDIO_FILE_HANDLE_FLAG_EOF;
 
-    return lseek (IDIO_FILE_HANDLE_FD (fh), offset, whence);
+    return lseek_r;
+
+    /*
+     * NB fseek(3) uses offset relative to position -- is that *the
+     * same* ?
+     *
+     * Either way, this fseek(3)/ftell(3) code remains buggy -- I
+     * think it's something to do with peek-char not ungetc(3)'ing and
+     * therefore not (re-)setting the file pointer.
+     */
+    int fseek_r = fseek (IDIO_FILE_HANDLE_FILEP (fh), offset, whence);
+
+    if (-1 == fseek_r) {
+	fprintf (stderr, "off_t %" PRId64 " wh %d\n", offset, whence);
+	idio_error_system_errno ("fseek", IDIO_LIST1 (fh), IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
+	return -1;
+    }
+
+    IDIO_FILE_HANDLE_FLAGS (fh) &= ~IDIO_FILE_HANDLE_FLAG_EOF;
+
+    long ftell_r = ftell (IDIO_FILE_HANDLE_FILEP (fh));
+    if (-1 == ftell_r) {
+	idio_error_system_errno ("ftell", IDIO_LIST1 (fh), IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
+	return -1;
+    }
+    fprintf (stderr, "ftell -> %ld\n", ftell_r);
+    return ftell_r;
 }
 
+/*
+ * Code coverage:
+ *
+ * We don't expose the print method (idio_print_handle() /
+ * IDIO_HANDLE_M_PRINT()).
+ */
 void idio_print_file_handle (IDIO fh, IDIO o)
 {
     IDIO_ASSERT (fh);
@@ -1648,6 +1798,13 @@ char *idio_libfile_find_C (char *file)
     char *idiolibe;
     if (idio_S_undef == IDIOLIB ||
 	! idio_isa_string (IDIOLIB)) {
+	/*
+	 * Code coverage:
+	 *
+	 * IDIOLIB = #t
+	 * find-lib "foo"
+	 */
+	idio_error_warning_message ("IDIOLIB is not a string");
 	idiolib = idio_env_IDIOLIB_default;
 	idiolibe = idiolib + strlen (idiolib);
     } else {
@@ -1764,7 +1921,7 @@ char *idio_libfile_find_C (char *file)
 		    /*
 		     * Test Case: file-handle-errors/find-lib-dir-cmd-PATH_MAX-2.idio
 		     *
-		     * PATH = ":"
+		     * IDIOLIB = ":"
 		     * find-lib (make-string (C/->integer PATH_MAX) #\A)
 		     */
 
@@ -1784,7 +1941,7 @@ char *idio_libfile_find_C (char *file)
 		    /*
 		     * Test Case: file-handle-errors/find-lib-dir-cmd-PATH_MAX-2.idio
 		     *
-		     * PATH = "foo:"
+		     * IDIOLIB = "foo:"
 		     * find-lib (make-string (C/->integer PATH_MAX) #\A)
 		     */
 
@@ -1991,7 +2148,6 @@ IDIO idio_load_file_name (IDIO filename, IDIO cs)
     }
 
     char lfn[PATH_MAX];
-    size_t l;
 
     char *libfile = idio_libfile_find_C (filename_C);
 
@@ -2011,7 +2167,6 @@ IDIO idio_load_file_name (IDIO filename, IDIO cs)
     }
 
     strncpy (lfn, libfile, PATH_MAX - 1);
-    l = strlen (lfn);
     IDIO_GC_FREE (libfile);
 
     char *filename_slash = strrchr (filename_C, '/');
@@ -2022,119 +2177,66 @@ IDIO idio_load_file_name (IDIO filename, IDIO cs)
     char *filename_dot = strrchr (filename_slash, '.');
 
     char *lfn_slash = strrchr (lfn, '/');
-    if (NULL == lfn_slash) {
-	lfn_slash = lfn;
-    }
 
     char *lfn_dot = strrchr (lfn_slash, '.');
 
-    if (NULL == lfn_dot) {
-	lfn_dot = strrchr (lfn_slash, '\0'); /* end of string */
+    IDIO (*reader) (IDIO h) = idio_read;
+    IDIO (*evaluator) (IDIO e, IDIO cs) = idio_evaluate;
 
-	idio_file_extension_t *fe = idio_file_extensions;
+    idio_file_extension_t *fe = idio_file_extensions;
+    IDIO filename_ext = filename;
+    IDIO stack = IDIO_THREAD_STACK (idio_thread_current_thread ());
 
-	for (;NULL != fe->reader;fe++) {
-	    IDIO filename_ext = filename;
+    for (;NULL != fe->reader;fe++) {
+	if (NULL != fe->ext) {
+	    if (strncmp (lfn_dot, fe->ext, strlen (fe->ext)) == 0) {
+		reader = fe->reader;
+		evaluator = fe->evaluator;
 
-	    if (NULL != fe->ext) {
+		/*
+		 * If it's not the same extension as the user gave
+		 * us then tack it on the end
+		 */
+		if (NULL == filename_dot ||
+		    strncmp (filename_dot, fe->ext, strlen (fe->ext))) {
 
-		if ((l + strlen (fe->ext)) >= PATH_MAX) {
-		    /*
-		     * Test Case: ??
-		     *
-		     * This should have been caught in
-		     * idio_libfile_find_C()
-		     */
-		    IDIO_GC_FREE (filename_C);
+		    char *ss[] = { filename_C, fe->ext };
 
-		    idio_file_handle_malformed_filename_error ("name too long", filename, IDIO_C_FUNC_LOCATION ());
+		    filename_ext = idio_string_C_array (2, ss);
 
-		    return idio_S_notreached;
+		    idio_array_push (stack, filename_ext);
 		}
-
-		strncpy (lfn_dot, fe->ext, PATH_MAX - l - 1);
-
-		char *ss[] = { filename_C, fe->ext };
-
-		filename_ext = idio_string_C_array (2, ss);
-
-		idio_gc_protect (filename_ext);
-	    }
-
-	    if (access (lfn, R_OK) == 0) {
-		IDIO fh = idio_open_file_handle_C ("load", filename_ext, lfn, 0, "r", 0);
-
-		IDIO_GC_FREE (filename_C);
-
-		if (filename_ext != filename) {
-		    idio_gc_expose (filename_ext);
-		}
-
-		/* idio_thread_set_current_module ((*fe->modulep) ()); */
-		return idio_load_handle_C (fh, fe->reader, fe->evaluator, cs);
-	    }
-
-	    if (filename_ext != filename) {
-		idio_gc_expose (filename_ext);
-	    }
-
-	    /* reset lfn without ext */
-	    *lfn_dot = '\0';
-	}
-    } else {
-	IDIO (*reader) (IDIO h) = idio_read;
-	IDIO (*evaluator) (IDIO e, IDIO cs) = idio_evaluate;
-
-	idio_file_extension_t *fe = idio_file_extensions;
-	IDIO filename_ext = filename;
-
-	for (;NULL != fe->reader;fe++) {
-	    if (NULL != fe->ext) {
-		if (strncmp (lfn_dot, fe->ext, strlen (fe->ext)) == 0) {
-		    reader = fe->reader;
-		    evaluator = fe->evaluator;
-
-		    /*
-		     * If it's not the same extension as the user gave
-		     * us then tack it on the end
-		     */
-		    if (NULL == filename_dot ||
-			strncmp (filename_dot, fe->ext, strlen (fe->ext))) {
-
-			char *ss[] = { filename_C, fe->ext };
-
-			filename_ext = idio_string_C_array (2, ss);
-
-			idio_gc_protect (filename_ext);
-		    }
-		    break;
-		}
+		break;
 	    }
 	}
+    }
 
-	if (access (lfn, R_OK) == 0) {
-	    IDIO fh = idio_open_file_handle_C ("load", filename_ext, lfn, 0, "r", 0);
+    if (access (lfn, R_OK) == 0) {
+	IDIO fh = idio_open_file_handle_C ("load", filename_ext, lfn, 0, "r", 0);
 
-	    IDIO_GC_FREE (filename_C);
-
-	    if (filename_ext != filename) {
-		idio_gc_expose (filename_ext);
-	    }
-
-	    /* idio_thread_set_current_module ((*fe->modulep) ()); */
-	    return idio_load_handle_C (fh, reader, evaluator, cs);
-	}
+	IDIO_GC_FREE (filename_C);
 
 	if (filename_ext != filename) {
-	    idio_gc_expose (filename_ext);
+	    idio_array_pop (stack);
 	}
+
+	/* idio_thread_set_current_module ((*fe->modulep) ()); */
+	return idio_load_handle_C (fh, reader, evaluator, cs);
     }
 
     /*
      * Test Case: ??
      *
-     * Do we ever get here?
+     * It would require that a file we found via idio_libfile_find_C()
+     * which uses access(2) with R_OK now fail the same access(2)
+     * test.
+     *
+     * Race condition?
      */
+    if (filename_ext != filename) {
+	idio_array_pop (stack);
+    }
+
     IDIO_GC_FREE (filename_C);
 
     idio_file_handle_filename_not_found_error ("load", filename, IDIO_C_FUNC_LOCATION ());
@@ -2286,7 +2388,7 @@ void idio_file_handle_add_primitives ()
     IDIO_ADD_PRIMITIVE (file_handlep);
     IDIO_ADD_PRIMITIVE (input_file_handlep);
     IDIO_ADD_PRIMITIVE (output_file_handlep);
-    IDIO_ADD_PRIMITIVE (file_handle_fflush);
+    IDIO_ADD_PRIMITIVE (fflush_file_handle);
     IDIO_ADD_PRIMITIVE (file_handle_fd);
     IDIO_ADD_PRIMITIVE (find_lib);
     IDIO_ADD_PRIMITIVE (load);
@@ -2297,6 +2399,12 @@ void idio_file_handle_add_primitives ()
 
 void idio_final_file_handle ()
 {
+    /*
+     * Code coverage:
+     *
+     * Should be trying to deprecate these and using the stack
+     * instead.
+     */
     IDIO fhl = idio_hash_keys_to_list (idio_file_handles);
 
     while (idio_S_nil != fhl) {

@@ -1177,7 +1177,7 @@ with-handle-redir := {
     close-h := #f
 
     cond ((dir-file-h? s/d) {
-      file-handle-fflush s/d
+      fflush-file-handle s/d
       new-h = s/d
     }) \
 	 ((file-handle? s/d) (error 'with-handle-redir (append-string "not an " msg-h "-file-handle") s/d)) \
@@ -1287,7 +1287,7 @@ with-handle-dup := {
     new-h := #f
 
     cond ((dir-file-h? new) {
-      file-handle-fflush new
+      fflush-file-handle new
       new-h = new
     }) \
 	 ((file-handle? new) (error 'with-handle-dup (append-string "not an " msg-h "-file-handle") new)) \

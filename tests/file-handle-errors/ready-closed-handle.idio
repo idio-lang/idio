@@ -1,0 +1,4 @@
+
+fh := open-input-file testfile
+close-handle fh
+ready? fh

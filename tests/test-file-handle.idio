@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015, 2020 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -18,6 +18,9 @@
 ;;
 ;; test-file-handle.idio
 ;;
+
+module tests/file-handle
+
 file-handle0 := Tests
 
 test-str := "foo"
@@ -59,32 +62,29 @@ test (input-file-handle? ifh) #t
 test (output-file-handle? ifh) #f
 
 ;; seek to the third character of "Hello" , #\e
-ifn := seek-handle ifh 2
-test ifn 2
+test (seek-handle ifh 2) 2
 
-fhi := read-char ifh
-
-test fhi #\e
+test (read-char ifh) #\e
 test (peek-char ifh) #\l
 
 ; default is SEEK_SET
-seek-handle ifh 2
+test (seek-handle ifh 2) 2
 test (peek-char ifh) #\e
 
-seek-handle ifh -2 'cur
+test (seek-handle ifh -2 'cur) 0
 test (peek-char ifh) #\"
 
-seek-handle ifh 2 'set
+test (seek-handle ifh 2 'set) 2
 test (peek-char ifh) #\e
 
-seek-handle ifh -2 'end
+test (seek-handle ifh -2 'end) 5
 test (peek-char ifh) #\o
 
 rewind-handle ifh
 test (peek-char ifh) #\"
 
 test (handle-pos ifh) 0
-seek-handle ifh 2
+test (seek-handle ifh 2) 2
 test (handle-pos ifh) 2
 
 ;; GC and file handles
@@ -99,8 +99,8 @@ test (handle-pos ifh) 2
   fds := #[ ]
   loop-k := #n
   trap ^system-error (function (c) {
-			test (C/== (system-error-errno c) (C/integer-> 24)) #t
-			if (C/== (system-error-errno c) (C/integer-> 24)) {
+			test (C/== (system-error-errno c) libc/EMFILE) #t
+			if (C/== (system-error-errno c) libc/EMFILE) {
                           printf "test file-handle trap: created %d\n" (array-length fds)
                         } {
                           condition-report "test file-handle trap" c (current-error-handle)
@@ -125,38 +125,108 @@ test (handle-pos ifh) 2
 ifh := open-input-file testfile
 test (input-file-handle? ifh) #t
 
-; code coverage
+; code coverage: "+" modes
 ifh = open-file testfile "r+"
 test (input-file-handle? ifh) #t
 test (output-file-handle? ifh) #t
 test (ready? ifh) #t
 close-handle ifh
-test (ready? ifh) #f
 
 ofh = open-file testfile "w+"
 test (output-file-handle? ofh) #t
 test (input-file-handle? ofh) #t
 test (ready? ofh) #t
 close-handle ofh
-test (ready? ofh) #f
 
 ofh = open-file testfile "a+"
 test (output-file-handle? ofh) #t
 test (input-file-handle? ofh) #t
 test (ready? ofh) #t
 close-handle ofh
-test (ready? ofh) #f
 
 ;; ready? code coverage!
 ofh = open-file testfile "w"
-write "hello\n" ofh
+hprintf ofh "hello\n"
 close-handle ofh
 
 ifh = open-file testfile "r"
-read-char ifh
-;; different code path!
+;; buffered byte count code path!
+test (read-char ifh) #\h
+test (ready? ifh) #t
+;; feof code path!
+read-line ifh				; stops on the \n -- not yet
+					; EOF
+test (eof? ifh) #f
+test (ready? ifh) #t
+read-line ifh				; should have provoked EOF
+test (eof? ifh) #t
 test (ready? ifh) #t
 close-handle ifh
+test (eof? ifh) #t
 
+;; trigger some internal buffer (BUFSIZ) flushing with a single
+;; character -- technically only the last character counts
+ofh = open-file testfile "w"
+{
+  loop :+ (function (n) {
+	     if (n gt 0) {
+	       write-char #\A ofh
+	       loop (n - 1)
+	     } #n
+  })
+
+  loop ((C/->integer libc/BUFSIZ) + 1)
+}
+close-handle ofh
+
+;; trigger some internal buffer (BUFSIZ) flushing with a string
+ofh = open-file testfile "w"
+hprintf ofh (make-string ((C/->integer libc/BUFSIZ) + 1) #\A)
+close-handle ofh
+
+ofh = open-file testfile "w"
+hprintf ofh "hello\n"
+fflush-file-handle ofh
+close-handle ofh
+
+;; trigger a seek -> clear EOF clause
+ofh = open-file testfile "w"
+hprintf ofh "hello\n"
+close-handle ofh
+
+ifh = open-input-file testfile
+read-line ifh
+test (eof? ifh) #f
+read-line ifh				; EOF
+test (eof? ifh) #t
+test (seek-handle ifh 0) 0
+test (eof? ifh) #f
+test (string-length (read-line ifh)) 5
+close-handle ifh
+
+;; find-lib code coverage
+OIDIOLIB := IDIOLIB
+IDIOLIB = #t
+find-lib "empty"
+IDIOLIB = ""
+find-lib "empty"
+IDIOLIB = ":"
+find-lib "empty"
+IDIOLIB = OIDIOLIB
+
+find-lib "empty"
+
+;; load code coverage
+
+;; reduce IDIOLIB to the grandparent directory of a known library file
+
+;; (findlib "empty") => ".../lib/empty.idio" from which we want "..."
+parts := regexec (regcomp "(.*)/[^/]+/[^/]+$") (find-lib "empty")
+IDIOLIB = parts.1
+
+load "lib/empty.idio"
+load "lib/empty"
+
+IDIOLIB = OIDIOLIB
 ;; all done?
-Tests? (file-handle0 + 44)
+Tests? (file-handle0 + 57)
