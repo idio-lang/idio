@@ -20,6 +20,30 @@
 ;;
 closure0 := Tests
 
+;; there isn't a closure? per se so both closures and primitives pass
+;; the function? test
+
+test (function? 0)			#f ; FIXNUM
+test (function? #t)			#f ; CONSTANT
+test (function? (integer->char 1))	#f ; CHARACTER (deprecated)
+test (function? #\a)			#f ; UNICODE
+test (function? "a")			#f ; STRING
+test (function? 'a)			#f ; SYMBOL
+test (function? :a)			#f ; KEYWORD
+test (function? (pair 1 2))		#f ; PAIR
+test (function? #[])			#f ; ARRAY
+test (function? #{})			#f ; HASH
+test (function? (function #n #n))	#t ; CLOSURE
+test (function? pair)			#t ; PRIMITIVE
+test (function? 1.0)			#f ; BIGNUM
+test (function? Idio)			#f ; MODULE
+test (function? (current-input-handle))	#f ; HANDLE
+test (function? ^error)			#f ; STRUCT_TYPE
+test (function? libc/idio-uname)	#f ; STRUCT_INSTANCE
+test (function? #B{ 3 })		#f ; BITSET
+test (function? libc/INTMAX_MAX)	#f ; C_INT
+test (function? libc/UINTMAX_MAX)	#f ; C_UINT
+
 ;; setters
 
 ;; assuming no-one's changed anything
@@ -33,4 +57,4 @@ test (ph l) 3
 test (ph l) 4
 
 ;; all done?
-Tests? (closure0 + 3)
+Tests? (closure0 + 23)

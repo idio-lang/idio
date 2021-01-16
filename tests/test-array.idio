@@ -20,8 +20,26 @@
 ;;
 array0 := Tests
 
-test (array? #[ 1 2 ]) #t
-test (array? "foo") #f
+test (array? 0)				#f ; FIXNUM
+test (array? #t)			#f ; CONSTANT
+test (array? (integer->char 1))		#f ; CHARACTER (deprecated)
+test (array? #\a)			#f ; UNICODE
+test (array? "a")			#f ; STRING
+test (array? 'a)			#f ; SYMBOL
+test (array? :a)			#f ; KEYWORD
+test (array? (pair 1 2))		#f ; PAIR
+test (array? #[])			#t ; ARRAY
+test (array? #{})			#f ; HASH
+test (array? (function #n #n))		#f ; CLOSURE
+test (array? pair)			#f ; PRIMITIVE
+test (array? 1.0)			#f ; BIGNUM
+test (array? Idio)			#f ; MODULE
+test (array? (current-input-handle))	#f ; HANDLE
+test (array? ^error)			#f ; STRUCT_TYPE
+test (array? libc/idio-uname)		#f ; STRUCT_INSTANCE
+test (array? #B{ 3 })			#f ; BITSET
+test (array? libc/INTMAX_MAX)		#f ; C_INT
+test (array? libc/UINTMAX_MAX)		#f ; C_UINT
 
 a := (make-array 3)
 test (array? a) #t
@@ -205,4 +223,4 @@ a.1 .1 = 40
 test (a.1 .1) 40
 
 ;; all done?
-Tests? (array0 + 73)
+Tests? (array0 + 91)

@@ -43,10 +43,20 @@ static void idio_bignum_error (char *msg, IDIO bn, IDIO c_location)
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C (msg, msh);
 
+    IDIO location = idio_vm_source_location ();
+
+    IDIO detail = idio_S_nil;
+
+#ifdef IDIO_DEBUG
+    IDIO dsh = idio_open_output_string_handle_C ();
+    idio_display (c_location, dsh);
+    detail = idio_get_output_string (dsh);
+#endif
+
     IDIO c = idio_struct_instance (idio_condition_rt_bignum_error_type,
 				   IDIO_LIST4 (idio_get_output_string (msh),
-					       c_location,
-					       idio_S_nil,
+					       location,
+					       detail,
 					       bn));
     idio_raise_condition (idio_S_true, c);
 }
@@ -62,10 +72,20 @@ static void idio_bignum_conversion_error (char *msg, IDIO bn, IDIO c_location)
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C (msg, msh);
 
+    IDIO location = idio_vm_source_location ();
+
+    IDIO detail = idio_S_nil;
+
+#ifdef IDIO_DEBUG
+    IDIO dsh = idio_open_output_string_handle_C ();
+    idio_display (c_location, dsh);
+    detail = idio_get_output_string (dsh);
+#endif
+
     IDIO c = idio_struct_instance (idio_condition_rt_bignum_conversion_error_type,
 				   IDIO_LIST4 (idio_get_output_string (msh),
-					       c_location,
-					       idio_S_nil,
+					       location,
+					       detail,
 					       bn));
     idio_raise_condition (idio_S_true, c);
 }
@@ -427,7 +447,7 @@ IDIO idio_bignum_integer_uintmax_t (uintmax_t ui)
 	}
     } else {
 	/*
-	 * Code coverage: Not on 54-bit, maybe 32-bit??
+	 * Code coverage: Not on 64-bit, maybe 32-bit??
 	 */
 	idio_bsa_set (sig_a, ui, ai++);
     }

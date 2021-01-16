@@ -971,10 +971,11 @@ void idio_gc_protect (IDIO o)
 {
     IDIO_ASSERT (o);
 
-    if (idio_S_nil == o) {
-	idio_error_param_nil ("protect", IDIO_C_FUNC_LOCATION ());
-
-	/* notreached */
+    switch ((intptr_t) o & IDIO_TYPE_MASK) {
+    case IDIO_TYPE_POINTER_MARK:
+	break;
+    default:
+	/* nothing to protect! */
 	return;
     }
 
@@ -1036,6 +1037,14 @@ void idio_gc_protect_auto (IDIO o)
 void idio_gc_expose (IDIO o)
 {
     IDIO_ASSERT (o);
+
+    switch ((intptr_t) o & IDIO_TYPE_MASK) {
+    case IDIO_TYPE_POINTER_MARK:
+	break;
+    default:
+	/* nothing to expose! */
+	return;
+    }
 
     int seen = 0;
     idio_gc_t *gc = idio_gc;

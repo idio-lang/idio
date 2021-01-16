@@ -182,7 +182,7 @@ PATH = OPATH
 command-parent-error-load "command-errors/find-exe-dir-cmd-PATH_MAX-3.idio" "dir+command exename length: File name too long"
 PATH = OPATH
 
-command-parent-error-load "command-errors/find-exe-not-found.idio" "command not found foo"
+command-parent-error-load "command-errors/find-exe-not-found.idio" "command not found (foo)"
 PATH = OPATH
 
 command-parent-error-load "command-errors/arg-glob-format.idio" "glob contains an ASCII NUL"

@@ -406,10 +406,18 @@ void idio_error_divide_by_zero (char *msg, IDIO c_location)
 
     IDIO location = idio_vm_source_location ();
 
+    IDIO detail = idio_S_nil;
+
+#ifdef IDIO_DEBUG
+    IDIO dsh = idio_open_output_string_handle_C ();
+    idio_display (c_location, dsh);
+    detail = idio_get_output_string (dsh);
+#endif
+
     IDIO c = idio_struct_instance (idio_condition_rt_divide_by_zero_error_type,
 				   IDIO_LIST4 (idio_get_output_string (msh),
 					       location,
-					       c_location,
+					       detail,
 					       idio_S_nil));
 
     idio_raise_condition (idio_S_true, c);

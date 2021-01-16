@@ -23,10 +23,50 @@ import libc
 
 condition0 := Tests
 
-test (condition-type? ^condition) #t
-test (condition? ^condition) #f
+test (condition-type? 0)			#f ; FIXNUM
+test (condition-type? #t)			#f ; CONSTANT
+test (condition-type? (integer->char 1))	#f ; CHARACTER (deprecated)
+test (condition-type? #\a)			#f ; UNICODE
+test (condition-type? "a")			#f ; STRING
+test (condition-type? 'a)			#f ; SYMBOL
+test (condition-type? :a)			#f ; KEYWORD
+test (condition-type? (pair 1 2))		#f ; PAIR
+test (condition-type? #[])			#f ; ARRAY
+test (condition-type? #{})			#f ; HASH
+test (condition-type? (function #n #n))		#f ; CLOSURE
+test (condition-type? pair)			#f ; PRIMITIVE
+test (condition-type? 1.0)			#f ; BIGNUM
+test (condition-type? Idio)			#f ; MODULE
+test (condition-type? (current-input-handle))	#f ; HANDLE
+test (condition-type? ^error)			#t ; STRUCT_TYPE
+test (condition-type? libc/idio-uname)		#f ; STRUCT_INSTANCE
+test (condition-type? #B{ 3 })			#f ; BITSET
+test (condition-type? libc/INTMAX_MAX)		#f ; C_INT
+test (condition-type? libc/UINTMAX_MAX)		#f ; C_UINT
 
-test (condition-type? ^error) #t
+;; there is no reader form for a condition so all these tests are #f
+
+test (condition? 0)				#f ; FIXNUM
+test (condition? #t)				#f ; CONSTANT
+test (condition? (integer->char 1))		#f ; CHARACTER (deprecated)
+test (condition? #\a)				#f ; UNICODE
+test (condition? "a")				#f ; STRING
+test (condition? 'a)				#f ; SYMBOL
+test (condition? :a)				#f ; KEYWORD
+test (condition? (pair 1 2))			#f ; PAIR
+test (condition? #[])				#f ; ARRAY
+test (condition? #{})				#f ; HASH
+test (condition? (function #n #n))		#f ; CLOSURE
+test (condition? pair)				#f ; PRIMITIVE
+test (condition? 1.0)				#f ; BIGNUM
+test (condition? Idio)				#f ; MODULE
+test (condition? (current-input-handle))	#f ; HANDLE
+test (condition? ^error)			#f ; STRUCT_TYPE
+test (condition? libc/idio-uname)		#f ; STRUCT_INSTANCE
+test (condition? #B{ 3 })			#f ; BITSET
+test (condition? libc/INTMAX_MAX)		#f ; C_INT
+test (condition? libc/UINTMAX_MAX)		#f ; C_UINT
+
 test (error? ^error) #f
 
 ;; make-condition-type
@@ -220,4 +260,4 @@ trap ^rt-divide-by-zero-error (function (c) {
 }
 
 ;; all done?
-Tests? (condition0 + 62)
+Tests? (condition0 + 99)

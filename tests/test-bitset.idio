@@ -22,6 +22,27 @@ module tests/bitset
 
 bitset0 := Tests
 
+test (bitset? 0)			#f ; FIXNUM
+test (bitset? #t)			#f ; CONSTANT
+test (bitset? (integer->char 1))	#f ; CHARACTER (deprecated)
+test (bitset? #\a)			#f ; UNICODE
+test (bitset? "a")			#f ; STRING
+test (bitset? 'a)			#f ; SYMBOL
+test (bitset? :a)			#f ; KEYWORD
+test (bitset? (pair 1 2))		#f ; PAIR
+test (bitset? #[])			#f ; ARRAY
+test (bitset? #{})			#f ; HASH
+test (bitset? (function #n #n))		#f ; CLOSURE
+test (bitset? pair)			#f ; PRIMITIVE
+test (bitset? 1.0)			#f ; BIGNUM
+test (bitset? Idio)			#f ; MODULE
+test (bitset? (current-input-handle))	#f ; HANDLE
+test (bitset? ^error)			#f ; STRUCT_TYPE
+test (bitset? libc/idio-uname)		#f ; STRUCT_INSTANCE
+test (bitset? #B{ 3 })			#t ; BITSET
+test (bitset? libc/INTMAX_MAX)		#f ; C_INT
+test (bitset? libc/UINTMAX_MAX)		#f ; C_UINT
+
 bs := (make-bitset 3)
 test (bitset? bs) #t
 test (bitset-size bs) 3
@@ -327,4 +348,4 @@ test (fold-bitset     #B{ 64 30-38 } accumulator 0) 16
 test (fold-bitset     #B{ 64 38-38 } accumulator 0) 8
 
 ;; all done?
-Tests? (bitset0 + 203)
+Tests? (bitset0 + 223)

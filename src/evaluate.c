@@ -192,10 +192,9 @@ static void idio_meaning_base_error (IDIO src, IDIO c_location, IDIO msg, IDIO e
     IDIO detail = idio_S_nil;
 
 #ifdef IDIO_DEBUG
-    IDIO sh = idio_open_output_string_handle_C ();
-    idio_display (c_location, sh);
-
-    detail = idio_get_output_string (sh);
+    IDIO dsh = idio_open_output_string_handle_C ();
+    idio_display (c_location, dsh);
+    detail = idio_get_output_string (dsh);
 #endif
 
     IDIO c = idio_struct_instance (idio_condition_evaluation_error_type,

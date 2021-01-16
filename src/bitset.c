@@ -31,15 +31,23 @@ static void idio_bitset_error_bounds (size_t bit, size_t size, IDIO c_location)
 
     sprintf (em, "bitset bounds error: %zu >= size %zu", bit, size);
 
-    IDIO sh = idio_open_output_string_handle_C ();
-    idio_display_C (em, sh);
+    IDIO msh = idio_open_output_string_handle_C ();
+    idio_display_C (em, msh);
 
     IDIO location = idio_vm_source_location ();
 
+    IDIO detail = idio_S_nil;
+
+#ifdef IDIO_DEBUG
+    IDIO dsh = idio_open_output_string_handle_C ();
+    idio_display (c_location, dsh);
+    detail = idio_get_output_string (dsh);
+#endif
+
     IDIO c = idio_struct_instance (idio_condition_rt_bitset_bounds_error_type,
-				   IDIO_LIST4 (idio_get_output_string (sh),
+				   IDIO_LIST4 (idio_get_output_string (msh),
 					       location,
-					       c_location,
+					       detail,
 					       idio_integer (bit)));
 
     idio_raise_condition (idio_S_true, c);
@@ -54,15 +62,23 @@ static void idio_bitset_error_size_mismatch (size_t s1, size_t s2, IDIO c_locati
 
     sprintf (em, "bitset size mistmatch: %zu != %zu", s1, s2);
 
-    IDIO sh = idio_open_output_string_handle_C ();
-    idio_display_C (em, sh);
+    IDIO msh = idio_open_output_string_handle_C ();
+    idio_display_C (em, msh);
 
     IDIO location = idio_vm_source_location ();
 
+    IDIO detail = idio_S_nil;
+
+#ifdef IDIO_DEBUG
+    IDIO dsh = idio_open_output_string_handle_C ();
+    idio_display (c_location, dsh);
+    detail = idio_get_output_string (dsh);
+#endif
+
     IDIO c = idio_struct_instance (idio_condition_rt_bitset_size_mismatch_error_type,
-				   IDIO_LIST5 (idio_get_output_string (sh),
+				   IDIO_LIST5 (idio_get_output_string (msh),
 					       location,
-					       c_location,
+					       detail,
 					       idio_integer (s1),
 					       idio_integer (s2)));
 

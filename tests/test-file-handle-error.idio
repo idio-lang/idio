@@ -124,7 +124,7 @@ file-handle-error-load "file-handle-errors/open-file-filename-missing.idio" "ope
 file-handle-error-load "file-handle-errors/open-input-file-filename-missing.idio" "open-input-file: No such file or directory"
 
 ;; ^i/o-filename-error
-;; 
+;;
 ;; ie. none of the below.  Let's try ENOTDIR.  Opening a non-existent
 ;; directory name, eg.  ..../tmpfile, gets an ^i/o-no-such-file-error
 ;; so you seem to need to use an existing non-dir file in the position
