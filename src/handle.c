@@ -22,7 +22,7 @@
 
 #include "idio.h"
 
-void idio_handle_error_read (IDIO h, IDIO c_location)
+void idio_handle_read_error (IDIO h, IDIO c_location)
 {
     IDIO_ASSERT (h);
     IDIO_ASSERT (c_location);
@@ -48,9 +48,11 @@ void idio_handle_error_read (IDIO h, IDIO c_location)
 					       detail,
 					       IDIO_HANDLE_PATHNAME (h)));
     idio_raise_condition (idio_S_true, c);
+
+    /* notreached */
 }
 
-void idio_handle_error_write (IDIO h, IDIO c_location)
+void idio_handle_write_error (IDIO h, IDIO c_location)
 {
     IDIO_ASSERT (h);
     IDIO_ASSERT (c_location);
@@ -76,9 +78,11 @@ void idio_handle_error_write (IDIO h, IDIO c_location)
 					       detail,
 					       IDIO_HANDLE_PATHNAME (h)));
     idio_raise_condition (idio_S_true, c);
+
+    /* notreached */
 }
 
-void idio_handle_error_closed (IDIO h, IDIO c_location)
+void idio_handle_closed_error (IDIO h, IDIO c_location)
 {
     IDIO_ASSERT (h);
     IDIO_ASSERT (c_location);
@@ -104,33 +108,72 @@ void idio_handle_error_closed (IDIO h, IDIO c_location)
 					       detail,
 					       IDIO_HANDLE_PATHNAME (h)));
     idio_raise_condition (idio_S_true, c);
+
+    /* notreached */
 }
 
-static void idio_handle_error_bad (IDIO h, IDIO c_location)
+static void idio_handle_type_error (IDIO h, IDIO c_location)
 {
     IDIO_ASSERT (h);
     IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (string, c_location);
 
     idio_error_param_type ("handle", h, c_location);
+
+    /* notreached */
 }
 
-static void idio_handle_error_bad_input (IDIO h, IDIO c_location)
+static void idio_handle_bad_input_error (IDIO h, IDIO c_location)
 {
     IDIO_ASSERT (h);
     IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (string, c_location);
 
-    idio_error_param_type ("input handle", h, c_location);
+    if (idio_isa_handle (h)) {
+	char em[BUFSIZ];
+	size_t hn_size;
+	char *hn = idio_string_as_C (IDIO_HANDLE_FILENAME (h), &hn_size);
+	sprintf (em, "handle '%s' is not a input handle", hn);
+	IDIO_GC_FREE (hn);
+	idio_error_param_type_msg (em, c_location);
+    } else {
+	idio_error_param_type ("input handle", h, c_location);
+    }
+
+    /* notreached */
 }
 
-static void idio_handle_error_bad_output (IDIO h, IDIO c_location)
+static void idio_handle_bad_output_error (IDIO h, IDIO c_location)
 {
     IDIO_ASSERT (h);
     IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (string, c_location);
 
-    idio_error_param_type ("output handle", h, c_location);
+    if (idio_isa_handle (h)) {
+	char em[BUFSIZ];
+	size_t hn_size;
+	char *hn = idio_string_as_C (IDIO_HANDLE_FILENAME (h), &hn_size);
+	sprintf (em, "handle '%s' is not a output handle", hn);
+	IDIO_GC_FREE (hn);
+	idio_error_param_type_msg (em, c_location);
+    } else {
+	idio_error_param_type ("output handle", h, c_location);
+    }
+
+    /* notreached */
+}
+
+/*
+ * Code coverage:
+ *
+ * This is called from idio_ungetc_handle() and requires some coding
+ * error.
+ */
+void idio_handle_lookahead_error (IDIO h, int c)
+{
+    idio_error_printf (IDIO_C_FUNC_LOCATION (), "%s->unget => %#x (!= EOF)", idio_handle_name_as_C (h), c);
+
+    /* notreached */
 }
 
 /*
@@ -171,6 +214,12 @@ int idio_isa_handle (IDIO h)
     return idio_isa (h, IDIO_TYPE_HANDLE);
 }
 
+/*
+ * Code coverage:
+ *
+ * There's no direct user call to here but handle-location does use
+ * idio_handle_name_as_C().
+ */
 char *idio_handle_name_as_C (IDIO h)
 {
     IDIO_ASSERT (h);
@@ -182,13 +231,8 @@ char *idio_handle_name_as_C (IDIO h)
     }
     char *name = "n/a";
     size_t size = strlen (name);
-    if (hname->type) {
-	if (idio_isa_string (hname)) {
-	    name = idio_string_as_C (hname, &size);
-	} else if (idio_isa_symbol (hname)) {
-	    name = IDIO_SYMBOL_S (hname);
-	    size = strlen (name);
-	}
+    if (idio_isa_string (hname)) {
+	name = idio_string_as_C (hname, &size);
     } else {
 	/*
 	 * I need to stop myself printing things out
@@ -276,22 +320,6 @@ void idio_free_handle (IDIO h)
     IDIO_GC_FREE (h->u.handle);
 }
 
-void idio_handle_lookahead_error (IDIO h, int c)
-{
-    idio_error_printf (IDIO_C_FUNC_LOCATION (), "%s->unget => %#x (!= EOF)", idio_handle_name_as_C (h), c);
-
-    /* notreached */
-}
-
-void idio_handle_finalizer (IDIO handle)
-{
-    IDIO_ASSERT (handle);
-
-    if (! idio_isa_handle (handle)) {
-	idio_error_param_type ("handle", handle, IDIO_C_FUNC_LOCATION ());
-    }
-}
-
 /*
  * Basic IO on handles
  */
@@ -301,13 +329,26 @@ int idio_readyp_handle (IDIO h)
     IDIO_ASSERT (h);
 
     if (! idio_isa_handle (h)) {
-	idio_handle_error_bad (h, IDIO_C_FUNC_LOCATION ());
+	/*
+	 * Test Case: ??
+	 *
+	 * The problem, here, is that ready? has invoked
+	 * idio_handle_or_current() which does this test for us.
+	 *
+	 * Otherwise a coding error?
+	 */
+	idio_handle_type_error (h, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return 0;
     }
 
     if (EOF != IDIO_HANDLE_LC (h)) {
+	/*
+	 * Code coverage:
+	 *
+	 * IDIO_HANDLE_LC() will be set after a peek-char
+	 */
 	return 1;
     }
 
@@ -353,7 +394,12 @@ int idio_getb_handle (IDIO h)
     IDIO_ASSERT (h);
 
     if (! idio_isa_handle (h)) {
-	idio_handle_error_bad (h, IDIO_C_FUNC_LOCATION ());
+	/*
+	 * Test Case: ??
+	 *
+	 * Coding error
+	 */
+	idio_handle_type_error (h, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return EOF;
@@ -393,7 +439,15 @@ idio_unicode_t idio_getc_handle (IDIO h)
     IDIO_ASSERT (h);
 
     if (! idio_isa_handle (h)) {
-	idio_handle_error_bad (h, IDIO_C_FUNC_LOCATION ());
+	/*
+	 * Test Case: ??
+	 *
+	 * All user interfaces to this call idio_handle_or_current()
+	 * which does this test for us.
+	 *
+	 * Otherwise a coding error.
+	 */
+	idio_handle_type_error (h, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return EOF;
@@ -428,7 +482,15 @@ int idio_ungetc_handle (IDIO h, idio_unicode_t c)
     IDIO_ASSERT (h);
 
     if (! idio_isa_handle (h)) {
-	idio_handle_error_bad (h, IDIO_C_FUNC_LOCATION ());
+	/*
+	 * Test Case: ??
+	 *
+	 * The user interface to this calls idio_handle_or_current()
+	 * which does this test for us.
+	 *
+	 * Otherwise a coding error.
+	 */
+	idio_handle_type_error (h, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return EOF;
@@ -437,6 +499,12 @@ int idio_ungetc_handle (IDIO h, idio_unicode_t c)
     int r = IDIO_HANDLE_LC (h);
 
     if (EOF != r) {
+	/*
+	 * Test Case: ??
+	 *
+	 * Coding error.
+	 */
+
 	/* there already was a lookahead char */
 	idio_handle_lookahead_error (h, r);
 
@@ -467,7 +535,15 @@ int idio_peek_handle (IDIO h)
     IDIO_ASSERT (h);
 
     if (! idio_isa_handle (h)) {
-	idio_handle_error_bad (h, IDIO_C_FUNC_LOCATION ());
+	/*
+	 * Test Case: ??
+	 *
+	 * The user interface to this calls idio_handle_or_current()
+	 * which does this test for us.
+	 *
+	 * Otherwise a coding error.
+	 */
+	idio_handle_type_error (h, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return EOF;
@@ -504,7 +580,15 @@ int idio_eofp_handle (IDIO h)
     IDIO_ASSERT (h);
 
     if (! idio_isa_handle (h)) {
-	idio_handle_error_bad (h, IDIO_C_FUNC_LOCATION ());
+	/*
+	 * Test Case: ??
+	 *
+	 * The user interface to this calls idio_handle_or_current()
+	 * which does this test for us.
+	 *
+	 * Otherwise a coding error.
+	 */
+	idio_handle_type_error (h, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return EOF;
@@ -537,12 +621,26 @@ supplied is at end-of-file				\n\
     return r;
 }
 
+/*
+ * Code coverage:
+ *
+ * This code isn't called but I guess we should leave it in for a
+ * C-level requests to close a handle.
+ */
 int idio_close_handle (IDIO h)
 {
     IDIO_ASSERT (h);
 
     if (! idio_isa_handle (h)) {
-	idio_handle_error_bad (h, IDIO_C_FUNC_LOCATION ());
+	/*
+	 * Test Case: ??
+	 *
+	 * The user interface to this calls idio_isa_handle() which
+	 * does this test for us.
+	 *
+	 * Otherwise a coding error.
+	 */
+	idio_handle_type_error (h, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return 0;
@@ -554,12 +652,128 @@ int idio_close_handle (IDIO h)
     return r;
 }
 
+IDIO_DEFINE_PRIMITIVE1_DS ("close-handle", close_handle, (IDIO h), "handle", "\
+Close the handle `handle`				\n\
+							\n\
+:param handle: handle to close				\n\
+:type handle: handle					\n\
+:return: <unspec>					\n\
+")
+{
+    IDIO_ASSERT (h);
+
+    if (! idio_isa_handle (h)) {
+	/*
+	 * Test Case: handle-errors/close-bad-type.idio
+	 *
+	 * close-handle #t
+	 */
+	idio_handle_type_error (h, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    IDIO_HANDLE_M_CLOSE (h) (h);
+
+    return idio_S_unspec;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("close-input-handle", close_input_handle, (IDIO h), "handle", "\
+Close the input handle `handle`				\n\
+							\n\
+:param handle: handle to close				\n\
+:type handle: input handle				\n\
+:return: <unspec>					\n\
+")
+{
+    IDIO_ASSERT (h);
+
+    if (! (idio_isa_handle (h) &&
+	   IDIO_INPUTP_HANDLE (h))) {
+	/*
+	 * Test Case: handle-errors/close-input-bad-type.idio
+	 *
+	 * close-input-handle (current-output-handle)
+	 */
+	idio_handle_bad_input_error (h, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    IDIO_HANDLE_M_CLOSE (h) (h);
+
+    return idio_S_unspec;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("close-output-handle", close_output_handle, (IDIO h), "handle", "\
+Close the output handle `handle`				\n\
+							\n\
+:param handle: handle to close				\n\
+:type handle: output handle				\n\
+:return: <unspec>					\n\
+")
+{
+    IDIO_ASSERT (h);
+
+    if (! (idio_isa_handle (h) &&
+	   IDIO_OUTPUTP_HANDLE (h))) {
+	/*
+	 * Test Case: handle-errors/close-output-bad-type.idio
+	 *
+	 * close-output-handle (current-input-handle)
+	 */
+	idio_handle_bad_output_error (h, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    IDIO_HANDLE_M_CLOSE (h) (h);
+
+    return idio_S_unspec;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("closed-handle?", closedp_handle, (IDIO h), "handle", "\
+Is handle `handle` closed?				\n\
+							\n\
+:param handle: handle to test				\n\
+:type handle: handle					\n\
+:return: #t if handle is closed, #f otherwise		\n\
+:rtype: boolean						\n\
+")
+{
+    IDIO_ASSERT (h);
+
+    if (! idio_isa_handle (h)) {
+	/*
+	 * Test Case: handle-errors/closed-handle-bad-type.idio
+	 *
+	 * closed-handle? #t
+	 */
+	idio_handle_type_error (h, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    IDIO r = idio_S_false;
+
+    if (IDIO_CLOSEDP_HANDLE (h)) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
 int idio_putb_handle (IDIO h, uint8_t c)
 {
     IDIO_ASSERT (h);
 
     if (! idio_isa_handle (h)) {
-	idio_handle_error_bad (h, IDIO_C_FUNC_LOCATION ());
+	/*
+	 * Test Case: ??
+	 *
+	 * Coding error.
+	 */
+	idio_handle_type_error (h, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return EOF;
@@ -603,7 +817,16 @@ int idio_putc_handle (IDIO h, idio_unicode_t c)
     IDIO_ASSERT (h);
 
     if (! idio_isa_handle (h)) {
-	idio_handle_error_bad (h, IDIO_C_FUNC_LOCATION ());
+	/*
+	 * Test Case: ??
+	 *
+	 * The user interfaces to this call
+	 * idio_isa_handle()/idio_handle_or_current() which do this
+	 * test for us.
+	 *
+	 * Otherwise a coding error.
+	 */
+	idio_handle_type_error (h, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return EOF;
@@ -648,7 +871,15 @@ ptrdiff_t idio_puts_handle (IDIO h, char *s, size_t slen)
     IDIO_C_ASSERT (s);
 
     if (! idio_isa_handle (h)) {
-	idio_handle_error_bad (h, IDIO_C_FUNC_LOCATION ());
+	/*
+	 * Test Case: ??
+	 *
+	 * The user interface to this calls idio_handle_or_current()
+	 * which does this test for us.
+	 *
+	 * Otherwise a coding error.
+	 */
+	idio_handle_type_error (h, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return 0;
@@ -693,7 +924,15 @@ int idio_flush_handle (IDIO h)
     IDIO_ASSERT (h);
 
     if (! idio_isa_handle (h)) {
-	idio_handle_error_bad (h, IDIO_C_FUNC_LOCATION ());
+	/*
+	 * Test Case: ??
+	 *
+	 * The user interface to this calls idio_isa_handle() which
+	 * does this test for us.
+	 *
+	 * Otherwise a coding error.
+	 */
+	idio_handle_type_error (h, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return -1;
@@ -727,7 +966,15 @@ off_t idio_seek_handle (IDIO h, off_t offset, int whence)
     IDIO_ASSERT (h);
 
     if (! idio_isa_handle (h)) {
-	idio_handle_error_bad (h, IDIO_C_FUNC_LOCATION ());
+	/*
+	 * Test Case: ??
+	 *
+	 * The user interface to this call idio_isa_handle() which
+	 * does this test for us.
+	 *
+	 * Otherwise a coding error.
+	 */
+	idio_handle_type_error (h, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return -1;
@@ -801,7 +1048,14 @@ unless ``whence`` is 'set and position is 0 (zero)	\n\
 	} else if (IDIO_STREQP (IDIO_SYMBOL_S (w), "cur")) {
 	    whence = SEEK_CUR;
 	} else {
-	    idio_error_printf (IDIO_C_FUNC_LOCATION (), "bad seek request: %s", IDIO_SYMBOL_S (w));
+	    /*
+	     * Test Case: handle-errors/seek-whence-bad-type.idio
+	     *
+	     * seek-handle (current-input-handle) 0 'maybe
+	     */
+	    char em[BUFSIZ];
+	    sprintf (em, "'%s' is invalid: 'set, 'end or 'cur", IDIO_SYMBOL_S (w));
+	    idio_error_param_value ("whence", em, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -811,6 +1065,8 @@ unless ``whence`` is 'set and position is 0 (zero)	\n\
 
     /*
      * Should we be flushing here?
+     *
+     * XXX "fixes" some lseek(2) FILE* mismatches.
      */
     idio_flush_handle (h);
 
@@ -834,26 +1090,6 @@ unless ``whence`` is 'set and position is 0 (zero)	\n\
     }
     off_t n = idio_seek_handle (h, offset, whence);
 
-    if (n < 0) {
-	idio_debug ("seek-handle %s", h);
-	idio_debug (" %s", pos);
-	if (idio_S_nil != args) {
-	    idio_debug (" %s", IDIO_PAIR_H (args));
-	}
-	fprintf (stderr, "\n");
-
-	char *ws;
-	switch (whence) {
-	case SEEK_SET: ws = "SEEK_SET"; break;
-	case SEEK_END: ws = "SEEK_END"; break;
-	case SEEK_CUR: ws = "SEEK_CUR"; break;
-	default: ws = "u/k"; break;
-	}
-	idio_error_printf (IDIO_C_FUNC_LOCATION (), "cannot seek (%" PRId64 ", %s)", offset, ws);
-
-	return idio_S_notreached;
-    }
-
     IDIO r = idio_integer (n);
 
     return r;
@@ -864,7 +1100,15 @@ void idio_rewind_handle (IDIO h)
     IDIO_ASSERT (h);
 
     if (! idio_isa_handle (h)) {
-	idio_handle_error_bad (h, IDIO_C_FUNC_LOCATION ());
+	/*
+	 * Test Case: ??
+	 *
+	 * The user interface to this call idio_isa_handle() which
+	 * does this test for us.
+	 *
+	 * Otherwise a coding error.
+	 */
+	idio_handle_type_error (h, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return;
@@ -893,57 +1137,27 @@ the handle's line number to 1				\n\
     return idio_S_unspec;
 }
 
+/*
+ * idio_handle_tell() is called from the bitset reader format code to
+ * verify range markers
+ */
 off_t idio_handle_tell (IDIO h)
 {
     IDIO_ASSERT (h);
 
     if (! idio_isa_handle (h)) {
-	idio_handle_error_bad (h, IDIO_C_FUNC_LOCATION ());
+	/*
+	 * Test Case: ??
+	 *
+	 * Coding error.
+	 */
+	idio_handle_type_error (h, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return -1;
     }
 
     return IDIO_HANDLE_POS (h);
-}
-
-void idio_print_handle (IDIO h, IDIO o)
-{
-    IDIO_ASSERT (h);
-    IDIO_ASSERT (o);
-
-    if (! idio_isa_handle (h)) {
-	idio_handle_error_bad (h, IDIO_C_FUNC_LOCATION ());
-
-	/* notreached */
-	return;
-    }
-
-    return IDIO_HANDLE_M_PRINT (h) (h, o);
-}
-
-int idio_print_handlef (IDIO h, char *format, ...)
-{
-    IDIO_ASSERT (h);
-    IDIO_C_ASSERT (format);
-
-    char *buf;
-
-    va_list fmt_args;
-    va_start (fmt_args, format);
-    if (-1 == vasprintf (&buf, format, fmt_args)) {
-	idio_error_alloc ("vasprintf");
-
-	/* notreached */
-	return 0;
-    }
-    va_end (fmt_args);
-
-    int n = idio_puts_handle (h, buf, strlen (buf));
-
-    IDIO_GC_FREE (buf);
-
-    return n;
 }
 
 /*
@@ -1031,93 +1245,6 @@ Set the current error handle to `handle`		\n\
     return idio_S_unspec;
 }
 
-IDIO_DEFINE_PRIMITIVE1_DS ("close-handle", close_handle, (IDIO h), "handle", "\
-Close the handle `handle`				\n\
-							\n\
-:param handle: handle to close				\n\
-:type handle: handle					\n\
-:return: <unspec>					\n\
-")
-{
-    IDIO_ASSERT (h);
-
-    if (! idio_isa_handle (h)) {
-	idio_handle_error_bad (h, IDIO_C_FUNC_LOCATION ());
-    }
-
-    IDIO_HANDLE_M_CLOSE (h) (h);
-
-    return idio_S_unspec;
-}
-
-IDIO_DEFINE_PRIMITIVE1_DS ("close-input-handle", close_input_handle, (IDIO h), "handle", "\
-Close the input handle `handle`				\n\
-							\n\
-:param handle: handle to close				\n\
-:type handle: input handle				\n\
-:return: <unspec>					\n\
-")
-{
-    IDIO_ASSERT (h);
-
-    if (! (idio_isa_handle (h) &&
-	   IDIO_INPUTP_HANDLE (h))) {
-	idio_handle_error_bad (h, IDIO_C_FUNC_LOCATION ());
-    }
-
-    IDIO_HANDLE_M_CLOSE (h) (h);
-
-    return idio_S_unspec;
-}
-
-IDIO_DEFINE_PRIMITIVE1_DS ("close-output-handle", close_output_handle, (IDIO h), "handle", "\
-Close the output handle `handle`				\n\
-							\n\
-:param handle: handle to close				\n\
-:type handle: output handle				\n\
-:return: <unspec>					\n\
-")
-{
-    IDIO_ASSERT (h);
-
-    if (! (idio_isa_handle (h) &&
-	   IDIO_OUTPUTP_HANDLE (h))) {
-	idio_handle_error_bad (h, IDIO_C_FUNC_LOCATION ());
-
-	return idio_S_notreached;
-    }
-
-    IDIO_HANDLE_M_CLOSE (h) (h);
-
-    return idio_S_unspec;
-}
-
-IDIO_DEFINE_PRIMITIVE1_DS ("closed-handle?", closedp_handle, (IDIO h), "handle", "\
-Is handle `handle` closed?				\n\
-							\n\
-:param handle: handle to test				\n\
-:type handle: handle					\n\
-:return: #t if handle is closed, #f otherwise		\n\
-:rtype: boolean						\n\
-")
-{
-    IDIO_ASSERT (h);
-
-    if (! idio_isa_handle (h)) {
-	idio_handle_error_bad (h, IDIO_C_FUNC_LOCATION ());
-
-	return idio_S_notreached;
-    }
-
-    IDIO r = idio_S_false;
-
-    if (IDIO_CLOSEDP_HANDLE (h)) {
-	r = idio_S_true;
-    }
-
-    return r;
-}
-
 IDIO_DEFINE_PRIMITIVE1_DS ("eof-object?", eof_objectp, (IDIO o), "o", "\
 Is `o` the end-of-file value?				\n\
 							\n\
@@ -1143,30 +1270,63 @@ IDIO idio_handle_or_current (IDIO h, unsigned mode)
     case IDIO_HANDLE_FLAG_READ:
 	if (idio_S_nil == h) {
 	    return idio_thread_current_input_handle ();
-	} else {
+	} else if (idio_isa_handle (h)) {
 	    if (! IDIO_INPUTP_HANDLE (h)) {
-		idio_handle_error_read (h, IDIO_C_FUNC_LOCATION ());
+		/*
+		 * Test Case: handle-errors/read-char-bad-handle.idio
+		 *
+		 * read-char (current-output-handle)
+		 */
+		idio_handle_read_error (h, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    } else {
 		return h;
 	    }
+	} else {
+	    /*
+	     * Test Case: handle-errors/read-char-bad-type.idio
+	     *
+	     * read-char #t
+	     */
+	    idio_error_param_type ("input handle", h, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
 	}
 	break;
     case IDIO_HANDLE_FLAG_WRITE:
 	if (idio_S_nil == h) {
 	    return idio_thread_current_output_handle ();
-	} else {
+	} else if (idio_isa_handle (h)) {
 	    if (! IDIO_OUTPUTP_HANDLE (h)) {
-		idio_handle_error_write (h, IDIO_C_FUNC_LOCATION ());
+		/*
+		 * Test Case: handle-errors/display-bad-handle.idio
+		 *
+		 * display "foo" (current-input-handle)
+		 */
+		idio_handle_write_error (h, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    } else {
 		return h;
 	    }
+	} else {
+	    /*
+	     * Test Case: handle-errors/display-bad-type.idio
+	     *
+	     * display "foo" #t
+	     */
+	    idio_error_param_type ("output handle", h, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
 	}
 	break;
     default:
+	/*
+	 * Test Case: ??
+	 *
+	 * Coding error.
+	 */
 	idio_error_printf (IDIO_C_FUNC_LOCATION (), "unexpected mode %d", mode);
 
 	return idio_S_notreached;
@@ -1194,7 +1354,7 @@ read an Idio statement from ``handle`` or the current input handle	\n\
 }
 
 IDIO_DEFINE_PRIMITIVE0V_DS ("read-expr", read_expr, (IDIO args), "[handle]", "\
-read a sinfle Idio expression from ``handle`` or the	\n\
+read a single Idio expression from ``handle`` or the	\n\
 current input handle					\n\
 							\n\
 :param handle: handle to read from			\n\
@@ -1440,6 +1600,12 @@ display ``o`` to ``handle`` or the current output handle	\n\
     return idio_display (o, h);
 }
 
+/*
+ * Code coverage:
+ *
+ * %printf is deprecated in favour of printf/eprintf/hprintf/sprintf
+ * and friends
+ */
 IDIO_DEFINE_PRIMITIVE2V_DS ("%printf", printf, (IDIO h, IDIO fmt, IDIO args), "handle fmt [args]", "\
 printf ``fmt`` to ``handle`` using ``args`` as required	\n\
 							\n\
@@ -1762,6 +1928,11 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
     IDIO_TYPE_ASSERT (array, cs);
 
     if (IDIO_FILE_HANDLE_FLAGS (h) & IDIO_FILE_HANDLE_FLAG_INTERACTIVE) {
+	/*
+	 * Code coverage:
+	 *
+	 * Requires an interactive session.
+	 */
 	return idio_load_handle_interactive (h, reader, evaluator, cs);
     }
 
@@ -1903,6 +2074,12 @@ This is the ``load-handle`` primitive.				\n\
     return r;
 }
 
+/*
+ * Code coverage:
+ *
+ * idio_load_handle_interactive() isn't tested by the automation
+ * scripts
+ */
 IDIO idio_load_handle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO e, IDIO cs), IDIO cs)
 {
     IDIO_ASSERT (fh);

@@ -157,9 +157,11 @@ define-condition-type-accessors-only ^st-function-arity-error		^st-function-erro
 
 define-condition-type-accessors-only ^runtime-error			^idio-error			runtime-error?
 
-define-condition-type-accessors-only ^rt-parameter-type-error		^runtime-error			rt-parameter-type-error?
-define-condition-type-accessors-only ^rt-const-parameter-error		^rt-parameter-type-error	rt-const-parameter-error?
-define-condition-type-accessors-only ^rt-parameter-nil-error		^rt-parameter-type-error	rt-parameter-nil-error?
+define-condition-type-accessors-only ^rt-parameter-error		^runtime-error			rt-parameter-error?
+define-condition-type-accessors-only ^rt-parameter-type-error		^rt-parameter-error		rt-parameter-type-error?
+define-condition-type-accessors-only ^rt-const-parameter-error		^rt-parameter-error		rt-const-parameter-error?
+define-condition-type-accessors-only ^rt-parameter-value-error		^rt-parameter-error		rt-parameter-value-error?
+define-condition-type-accessors-only ^rt-parameter-nil-error		^rt-parameter-value-error	rt-parameter-nil-error?
 
 define-condition-type-accessors-only ^rt-variable-error			^runtime-error			rt-variable-error? \
 	(name rt-variable-error-name)

@@ -65,8 +65,10 @@ IDIO idio_condition_st_function_error_type;
 IDIO idio_condition_st_function_arity_error_type;
 
 IDIO idio_condition_runtime_error_type;
+IDIO idio_condition_rt_parameter_error_type;
 IDIO idio_condition_rt_parameter_type_error_type;
 IDIO idio_condition_rt_const_parameter_error_type;
+IDIO idio_condition_rt_parameter_value_error_type;
 IDIO idio_condition_rt_parameter_nil_error_type;
 IDIO idio_condition_rt_variable_error_type;
 IDIO idio_condition_rt_variable_unbound_error_type;
@@ -1056,9 +1058,11 @@ void idio_init_condition ()
 
     IDIO_DEFINE_CONDITION0 (idio_condition_runtime_error_type, "^runtime-error", idio_condition_idio_error_type);
 
-    IDIO_DEFINE_CONDITION0 (idio_condition_rt_parameter_type_error_type, "^rt-parameter-type-error", idio_condition_runtime_error_type);
-    IDIO_DEFINE_CONDITION0 (idio_condition_rt_const_parameter_error_type, "^rt-const-parameter-error", idio_condition_rt_parameter_type_error_type);
-    IDIO_DEFINE_CONDITION0 (idio_condition_rt_parameter_nil_error_type, "^rt-parameter-nil-error", idio_condition_rt_parameter_type_error_type);
+    IDIO_DEFINE_CONDITION0 (idio_condition_rt_parameter_error_type, "^rt-parameter-error", idio_condition_runtime_error_type);
+    IDIO_DEFINE_CONDITION0 (idio_condition_rt_parameter_type_error_type, "^rt-parameter-type-error", idio_condition_rt_parameter_error_type);
+    IDIO_DEFINE_CONDITION0 (idio_condition_rt_const_parameter_error_type, "^rt-const-parameter-error", idio_condition_rt_parameter_error_type);
+    IDIO_DEFINE_CONDITION0 (idio_condition_rt_parameter_value_error_type, "^rt-parameter-value-error", idio_condition_rt_parameter_error_type);
+    IDIO_DEFINE_CONDITION0 (idio_condition_rt_parameter_nil_error_type, "^rt-parameter-nil-error", idio_condition_rt_parameter_value_error_type);
 
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_variable_error_type, "^rt-variable-error", idio_condition_runtime_error_type, "name");
     IDIO_DEFINE_CONDITION0 (idio_condition_rt_variable_unbound_error_type, "^rt-variable-unbound-error", idio_condition_rt_variable_error_type);

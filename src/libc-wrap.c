@@ -1846,7 +1846,7 @@ char *idio_libc_signal_name (int signum)
 {
     if (signum < IDIO_LIBC_FSIG ||
 	signum > IDIO_LIBC_NSIG) {
-	idio_error_param_type ("int < NSIG (or SIGRTMAX)", idio_C_int (signum), IDIO_C_FUNC_LOCATION ());
+	idio_error_param_value ("signum", "should be an int < NSIG (or SIGRTMAX)", IDIO_C_FUNC_LOCATION ());
     }
 
     return idio_libc_signal_names[signum];
@@ -2844,7 +2844,7 @@ char *idio_libc_errno_name (int errnum)
 {
     if (errnum < 0 ||
 	errnum > IDIO_LIBC_NERRNO) {
-	idio_error_param_type ("int < 0 (or > NERRNO)", idio_C_int (errnum), IDIO_C_FUNC_LOCATION ());
+	idio_error_param_value ("errnum", "should be an int < 0 (or > NERRNO)", IDIO_C_FUNC_LOCATION ());
     }
 
     return idio_libc_errno_names[errnum];
@@ -3071,7 +3071,7 @@ char *idio_libc_rlimit_name (int rlim)
 {
     if (rlim < IDIO_LIBC_FRLIMIT ||
 	rlim > IDIO_LIBC_NRLIMIT) {
-	idio_error_param_type ("int < FRLIMIT (or > NRLIMIT)", idio_C_int (rlim), IDIO_C_FUNC_LOCATION ());
+	idio_error_param_value ("rlim", "should be an int < FRLIMIT (or > NRLIMIT)", IDIO_C_FUNC_LOCATION ());
     }
 
     return idio_libc_rlimit_names[rlim];

@@ -148,38 +148,6 @@ void idio_error_alloc (char *m)
     abort ();
 }
 
-/*
- * Code coverage:
- *
- * idio_error_param_nil() is slightly anomalous as most user-facing
- * code will check for the correct type being passed in.
- *
- * One place where you can pass an unchecked #n is as the key to a
- * hash table lookup.  Any type is valid as the key to a hash table
- * execpt #n.
- */
-void idio_error_param_nil (char *name, IDIO c_location)
-{
-    IDIO_C_ASSERT (name);
-    IDIO_ASSERT (c_location);
-    IDIO_TYPE_ASSERT (string, c_location);
-
-    IDIO sh = idio_open_output_string_handle_C ();
-    idio_display_C (name, sh);
-    idio_display_C (" is nil", sh);
-
-    IDIO location = idio_vm_source_location ();
-
-    IDIO c = idio_struct_instance (idio_condition_rt_parameter_nil_error_type,
-				   IDIO_LIST3 (idio_get_output_string (sh),
-					       location,
-					       c_location));
-
-    idio_raise_condition (idio_S_false, c);
-
-    /* notreached */
-}
-
 void idio_error_param_type (char *etype, IDIO who, IDIO c_location)
 {
     IDIO_C_ASSERT (etype);
@@ -197,17 +165,51 @@ void idio_error_param_type (char *etype, IDIO who, IDIO c_location)
 
     IDIO location = idio_vm_source_location ();
 
-    IDIO dsh = idio_open_output_string_handle_C ();
+    IDIO detail = idio_S_nil;
 
 #ifdef IDIO_DEBUG
-    idio_display_C (": ", dsh);
+    IDIO dsh = idio_open_output_string_handle_C ();
     idio_display (c_location, dsh);
+    detail = idio_get_output_string (dsh);
 #endif
 
     IDIO c = idio_struct_instance (idio_condition_rt_parameter_type_error_type,
 				   IDIO_LIST3 (idio_get_output_string (msh),
 					       location,
-					       idio_get_output_string (dsh)));
+					       detail));
+
+    idio_raise_condition (idio_S_false, c);
+    /* notreached */
+}
+
+/*
+ * A variation on idio_error_param_type() where the message is
+ * supplied -- notably so we don't print the value
+ */
+void idio_error_param_type_msg (char *msg, IDIO c_location)
+{
+    IDIO_C_ASSERT (msg);
+    IDIO_ASSERT (c_location);
+
+    IDIO_TYPE_ASSERT (string, c_location);
+
+    IDIO msh = idio_open_output_string_handle_C ();
+    idio_display_C (msg, msh);
+
+    IDIO location = idio_vm_source_location ();
+
+    IDIO detail = idio_S_nil;
+
+#ifdef IDIO_DEBUG
+    IDIO dsh = idio_open_output_string_handle_C ();
+    idio_display (c_location, dsh);
+    detail = idio_get_output_string (dsh);
+#endif
+
+    IDIO c = idio_struct_instance (idio_condition_rt_parameter_type_error_type,
+				   IDIO_LIST3 (idio_get_output_string (msh),
+					       location,
+					       detail));
 
     idio_raise_condition (idio_S_false, c);
     /* notreached */
@@ -264,6 +266,59 @@ void idio_error_const_param_C (char *type_name, IDIO who, char *file, const char
     sprintf (c_location, "%s:%s:%d", func, file, line);
 
     idio_error_const_param (type_name, who, idio_string_C (c_location));
+}
+
+void idio_error_param_value (char *name, char *msg, IDIO c_location)
+{
+    IDIO_C_ASSERT (name);
+    IDIO_C_ASSERT (msg);
+    IDIO_ASSERT (c_location);
+
+    IDIO_TYPE_ASSERT (string, c_location);
+
+    IDIO msh = idio_open_output_string_handle_C ();
+    idio_display_C (name, msh);
+    idio_display_C (" ", msh);
+    idio_display_C (msg, msh);
+
+    IDIO location = idio_vm_source_location ();
+
+    IDIO detail = idio_S_nil;
+
+#ifdef IDIO_DEBUG
+    IDIO dsh = idio_open_output_string_handle_C ();
+    idio_display (c_location, dsh);
+    detail = idio_get_output_string (dsh);
+#endif
+
+    IDIO c = idio_struct_instance (idio_condition_rt_parameter_value_error_type,
+				   IDIO_LIST3 (idio_get_output_string (msh),
+					       location,
+					       detail));
+
+    idio_raise_condition (idio_S_false, c);
+    /* notreached */
+}
+
+/*
+ * Code coverage:
+ *
+ * idio_error_param_nil() is slightly anomalous as most user-facing
+ * code will check for the correct type being passed in.
+ *
+ * One place where you can pass an unchecked #n is as the key to a
+ * hash table lookup.  Any type is valid as the key to a hash table
+ * execpt #n.
+ */
+void idio_error_param_nil (char *name, IDIO c_location)
+{
+    IDIO_C_ASSERT (name);
+    IDIO_ASSERT (c_location);
+    IDIO_TYPE_ASSERT (string, c_location);
+
+    idio_error_param_value (name, "is nil", c_location);
+
+    /* notreached */
 }
 
 /*

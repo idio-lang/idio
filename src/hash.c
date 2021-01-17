@@ -1884,7 +1884,7 @@ copy hash table `orig`					\n\
 	    } else if (idio_S_shallow == idepth) {
 		depth = IDIO_COPY_SHALLOW;
 	    } else {
-		idio_error_param_type ("'deep or 'shallow", idepth, IDIO_C_FUNC_LOCATION ());
+		idio_error_param_value ("depth", "should be 'deep or 'shallow", IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    }

@@ -3724,7 +3724,7 @@ read a number from ``src``				\n\
 	    handle = idio_open_input_string_handle_C (ssrc);
 	    IDIO_GC_FREE (ssrc);
 	} else {
-	    idio_error_param_type ("handle or string", src, IDIO_C_FUNC_LOCATION ());
+	    idio_error_param_type ("handle|string", src, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}

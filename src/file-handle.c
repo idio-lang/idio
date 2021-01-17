@@ -1251,7 +1251,7 @@ int idio_readyp_file_handle (IDIO fh)
 	 * close-handle fh
 	 * ready? fh
 	 */
-	idio_handle_error_closed (fh, IDIO_C_FUNC_LOCATION ());
+	idio_handle_closed_error (fh, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return 0;
@@ -1307,7 +1307,7 @@ int idio_getb_file_handle (IDIO fh)
 	 *
 	 * handle-getb (current-output-handle)
 	 */
-	idio_handle_error_read (fh, IDIO_C_FUNC_LOCATION ());
+	idio_handle_read_error (fh, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return EOF;
@@ -1357,7 +1357,7 @@ int idio_close_file_handle (IDIO fh)
 	 * close-handle fh
 	 * close-handle fh
 	 */
-	idio_handle_error_closed (fh, IDIO_C_FUNC_LOCATION ());
+	idio_handle_closed_error (fh, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return EOF;
@@ -1395,7 +1395,7 @@ int idio_putb_file_handle (IDIO fh, uint8_t c)
 	 *
 	 * handle-putb (current-input-handle)
 	 */
-	idio_handle_error_write (fh, IDIO_C_FUNC_LOCATION ());
+	idio_handle_write_error (fh, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return EOF;
@@ -1438,7 +1438,7 @@ int idio_putc_file_handle (IDIO fh, idio_unicode_t c)
 	 * idio_handle_or_current() which does the
 	 * idio_output_file_handlep() test before we get here.
 	 */
-	idio_handle_error_write (fh, IDIO_C_FUNC_LOCATION ());
+	idio_handle_write_error (fh, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return EOF;
@@ -1502,7 +1502,7 @@ ptrdiff_t idio_puts_file_handle (IDIO fh, char *s, size_t slen)
 	 * idio_handle_or_current() which does the
 	 * idio_output_file_handlep() test before we get here.
 	 */
-	idio_handle_error_write (fh, IDIO_C_FUNC_LOCATION ());
+	idio_handle_write_error (fh, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return EOF;
@@ -1725,7 +1725,7 @@ off_t idio_seek_file_handle (IDIO fh, off_t offset, int whence)
 	/* notreached */
 	return -1;
     }
-    fprintf (stderr, "ftell -> %ld\n", ftell_r);
+
     return ftell_r;
 }
 
@@ -1748,7 +1748,7 @@ void idio_print_file_handle (IDIO fh, IDIO o)
 	 *
 	 * handle-print (current-input-handle)
 	 */
-	idio_handle_error_write (fh, IDIO_C_FUNC_LOCATION ());
+	idio_handle_write_error (fh, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
     }

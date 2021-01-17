@@ -312,7 +312,7 @@ int idio_readyp_string_handle (IDIO sh)
     IDIO_ASSERT (sh);
 
     if (IDIO_CLOSEDP_HANDLE (sh)) {
-	idio_handle_error_closed (sh, IDIO_C_FUNC_LOCATION ());
+	idio_handle_closed_error (sh, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return 0;
@@ -326,7 +326,7 @@ int idio_getb_string_handle (IDIO sh)
     IDIO_ASSERT (sh);
 
     if (! idio_input_string_handlep (sh)) {
-	idio_handle_error_read (sh, IDIO_C_FUNC_LOCATION ());
+	idio_handle_read_error (sh, IDIO_C_FUNC_LOCATION ());
     }
 
     if (IDIO_STRING_HANDLE_PTR (sh) < IDIO_STRING_HANDLE_END (sh)) {
@@ -364,7 +364,7 @@ int idio_putb_string_handle (IDIO sh, uint8_t c)
     IDIO_ASSERT (sh);
 
     if (! idio_output_string_handlep (sh)) {
-	idio_handle_error_write (sh, IDIO_C_FUNC_LOCATION ());
+	idio_handle_write_error (sh, IDIO_C_FUNC_LOCATION ());
     }
 
     if (IDIO_STRING_HANDLE_PTR (sh) >= IDIO_STRING_HANDLE_END (sh)) {
@@ -396,7 +396,7 @@ int idio_putc_string_handle (IDIO sh, idio_unicode_t c)
     IDIO_ASSERT (sh);
 
     if (! idio_output_string_handlep (sh)) {
-	idio_handle_error_write (sh, IDIO_C_FUNC_LOCATION ());
+	idio_handle_write_error (sh, IDIO_C_FUNC_LOCATION ());
     }
 
     char buf[4];
@@ -437,7 +437,7 @@ ptrdiff_t idio_puts_string_handle (IDIO sh, char *s, size_t slen)
     IDIO_ASSERT (sh);
 
     if (! idio_output_string_handlep (sh)) {
-	idio_handle_error_write (sh, IDIO_C_FUNC_LOCATION ());
+	idio_handle_write_error (sh, IDIO_C_FUNC_LOCATION ());
     }
 
     if ((IDIO_STRING_HANDLE_PTR (sh) + slen) >= (IDIO_STRING_HANDLE_BUF (sh) + IDIO_STRING_HANDLE_BLEN (sh))) {
@@ -522,7 +522,7 @@ void idio_print_string_handle (IDIO sh, IDIO o)
     IDIO_ASSERT (sh);
 
     if (! idio_output_string_handlep (sh)) {
-	idio_handle_error_write (sh, IDIO_C_FUNC_LOCATION ());
+	idio_handle_write_error (sh, IDIO_C_FUNC_LOCATION ());
     }
 
     size_t size = 0;

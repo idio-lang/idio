@@ -41,14 +41,14 @@ string-error-load := {
     n = n + 1
     ;eprintf "loading #%s %s looking for %s at line %s\n" n filename msg linenum
     trap (^string-error
-	  ^rt-parameter-type-error) (function (c) {
-				       ;eprintf "string-error #%s: %s %s %s\n" n msg c.location c.line
-				       test c.message msg
+	  ^rt-parameter-error) (function (c) {
+				  ;eprintf "string-error #%s: %s %s %s\n" n msg c.location c.line
+				  test c.message msg
 
-				       if (not (string=? c.message msg)) {
-					 condition-report (append-string "string-error-load: " filename) c (current-error-handle)
-				       }
-				       load-k 'string-error
+				  if (not (string=? c.message msg)) {
+				    condition-report (append-string "string-error-load: " filename) c (current-error-handle)
+				  }
+				  load-k 'string-error
 	  }) {
       call/cc (function (k) {
 		 load-k = k

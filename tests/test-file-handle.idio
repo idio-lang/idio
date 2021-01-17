@@ -61,7 +61,9 @@ test (file-handle? ifh) #t
 test (input-file-handle? ifh) #t
 test (output-file-handle? ifh) #f
 
-;; seek to the third character of "Hello" , #\e
+;; XXX this is all wrong -- need to remove FILE*
+
+;; seek to the second character of "Hello" , #\e
 test (seek-handle ifh 2) 2
 
 test (read-char ifh) #\e
