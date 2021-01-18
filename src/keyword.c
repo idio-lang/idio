@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -37,31 +37,61 @@ void idio_keyword_error_key_not_found (IDIO key, IDIO c_location)
 {
     IDIO_ASSERT (key);
     IDIO_ASSERT (c_location);
+
     IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO msh = idio_open_output_string_handle_C ();
-    idio_display_C ("key not found", msh);
+    idio_display_C ("keyword not found", msh);
 
     IDIO location = idio_vm_source_location ();
 
-    IDIO c = idio_struct_instance (idio_condition_rt_hash_key_not_found_error_type,
+    IDIO detail = idio_S_nil;
+
+#ifdef IDIO_DEBUG
+    IDIO dsh = idio_open_output_string_handle_C ();
+    idio_display (c_location, dsh);
+    detail = idio_get_output_string (dsh);
+#endif
+
+    IDIO c = idio_struct_instance (idio_condition_rt_keyword_error_type,
 				   IDIO_LIST4 (idio_get_output_string (msh),
 					       location,
-					       c_location,
+					       detail,
 					       key));
 
     idio_raise_condition (idio_S_true, c);
 }
 
-void idio_keyword_error_format (char *m, IDIO s, IDIO c_location)
+void idio_keyword_error_format (char *msg, IDIO kw, IDIO c_location)
 {
-    IDIO_C_ASSERT (m);
-    IDIO_ASSERT (s);
+    IDIO_C_ASSERT (msg);
+    IDIO_ASSERT (kw);
     IDIO_ASSERT (c_location);
-    IDIO_TYPE_ASSERT (string, s);
+
     IDIO_TYPE_ASSERT (string, c_location);
 
-    idio_error_C (m, s, c_location);
+    IDIO msh = idio_open_output_string_handle_C ();
+    idio_display_C (msg, msh);
+
+    IDIO location = idio_vm_source_location ();
+
+    IDIO detail = idio_S_nil;
+
+#ifdef IDIO_DEBUG
+    IDIO dsh = idio_open_output_string_handle_C ();
+    idio_display (c_location, dsh);
+    detail = idio_get_output_string (dsh);
+#endif
+
+    IDIO c = idio_struct_instance (idio_condition_rt_keyword_error_type,
+				   IDIO_LIST4 (idio_get_output_string (msh),
+					       location,
+					       detail,
+					       kw));
+
+    idio_raise_condition (idio_S_true, c);
+
+    /* notreached */
 }
 
 int idio_keyword_C_eqp (void *s1, void *s2)
@@ -125,6 +155,11 @@ create a keyword from `s`			\n\
 
 	size_t C_size = strlen (sC);
 	if (C_size != size) {
+	    /*
+	     * Test Case: keyword-errors/make-bad-format.idio
+	     *
+	     * make-keyword (join-string (make-string 1 #U+0) '("hello" "world"))
+	     */
 	    IDIO_GC_FREE (sC);
 
 	    idio_keyword_error_format ("keyword contains an ASCII NUL", s, IDIO_C_FUNC_LOCATION ());
@@ -140,6 +175,11 @@ create a keyword from `s`			\n\
     } else if (idio_isa_symbol (s)) {
 	return idio_keywords_C_intern (IDIO_SYMBOL_S (s));
     } else {
+	/*
+	 * Test Case: keyword-errors/make-bad-type.idio
+	 *
+	 * make-keyword #t
+	 */
 	idio_error_param_type ("string|symbol", s, IDIO_C_FUNC_LOCATION ());
     }
 
@@ -173,30 +213,6 @@ IDIO idio_keywords_C_intern (char *s)
     }
 
     return sym;
-}
-
-IDIO idio_keywords_string_intern (IDIO str)
-{
-    IDIO_ASSERT (str);
-    IDIO_TYPE_ASSERT (string, str);
-
-    size_t size = 0;
-    char *sC = idio_string_as_C (str, &size);
-
-    size_t C_size = strlen (sC);
-    if (C_size != size) {
-	IDIO_GC_FREE (sC);
-
-	idio_keyword_error_format ("keyword contains an ASCII NUL", str, IDIO_C_FUNC_LOCATION ());
-
-	return idio_S_notreached;
-    }
-
-    IDIO r = idio_keywords_C_intern (sC);
-
-    IDIO_GC_FREE (sC);
-
-    return r;
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("keyword?", keyword_p, (IDIO o), "o", "\
@@ -272,16 +288,10 @@ IDIO idio_keyword_ref (IDIO ht, IDIO kw, IDIO args)
     IDIO_ASSERT (ht);
     IDIO_ASSERT (kw);
     IDIO_ASSERT (args);
-    IDIO_TYPE_ASSERT (keyword, kw);
-    IDIO_TYPE_ASSERT (list, args);
-
-    if (idio_S_nil == ht) {
-	idio_error_param_nil ("keyword table", IDIO_C_FUNC_LOCATION ());
-
-	return idio_S_notreached;
-    }
 
     IDIO_TYPE_ASSERT (hash, ht);
+    IDIO_TYPE_ASSERT (keyword, kw);
+    IDIO_TYPE_ASSERT (list, args);
 
     IDIO v = idio_hash_ref (ht, kw);
 
@@ -290,6 +300,12 @@ IDIO idio_keyword_ref (IDIO ht, IDIO kw, IDIO args)
     }
 
     if (idio_S_nil == args) {
+	/*
+	 * Test Case: keyword-errors/key-not-found.idio
+	 *
+	 * kwt := (make-keyword-table)
+	 * keyword-ref kwt :foo
+	 */
 	idio_keyword_error_key_not_found (kw, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
@@ -300,7 +316,7 @@ IDIO idio_keyword_ref (IDIO ht, IDIO kw, IDIO args)
 
 IDIO_DEFINE_PRIMITIVE2V_DS ("keyword-ref", keyword_ref, (IDIO ht, IDIO kw, IDIO args), "kt kw [default]", "\
 return the value indexed by keyword ``kw` in keyword	\n\
- able ``ht``						\n\
+table ``ht``						\n\
 							\n\
 :param ht: hash table					\n\
 :type ht: hash table					\n\
@@ -317,6 +333,7 @@ return the value indexed by keyword ``kw` in keyword	\n\
     IDIO_ASSERT (kw);
     IDIO_ASSERT (args);
 
+    IDIO_USER_TYPE_ASSERT (hash, ht);
     IDIO_USER_TYPE_ASSERT (keyword, kw);
     IDIO_USER_TYPE_ASSERT (list, args);
 
@@ -328,15 +345,9 @@ IDIO idio_keyword_set (IDIO ht, IDIO kw, IDIO v)
     IDIO_ASSERT (ht);
     IDIO_ASSERT (kw);
     IDIO_ASSERT (v);
-    IDIO_TYPE_ASSERT (keyword, kw);
-
-    if (idio_S_nil == ht) {
-	idio_error_param_nil ("keyword table", IDIO_C_FUNC_LOCATION ());
-
-	return idio_S_notreached;
-    }
 
     IDIO_TYPE_ASSERT (hash, ht);
+    IDIO_TYPE_ASSERT (keyword, kw);
 
     idio_hash_put (ht, kw, v);
 
@@ -359,6 +370,7 @@ set the index of ``kw` in hash table ``ht`` to ``v``	\n\
     IDIO_ASSERT (kw);
     IDIO_ASSERT (v);
 
+    IDIO_USER_TYPE_ASSERT (hash, ht);
     IDIO_USER_TYPE_ASSERT (keyword, kw);
 
     return idio_keyword_set (ht, kw, v);

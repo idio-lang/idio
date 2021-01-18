@@ -1,0 +1,6 @@
+
+module test/keyword
+
+kwt := (make-keyword-table)
+
+keyword-ref kwt :foo

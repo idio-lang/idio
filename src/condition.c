@@ -96,6 +96,7 @@ IDIO idio_condition_rt_divide_by_zero_error_type;
 IDIO idio_condition_rt_bitset_error_type;
 IDIO idio_condition_rt_bitset_bounds_error_type;
 IDIO idio_condition_rt_bitset_size_mismatch_error_type;
+IDIO idio_condition_rt_keyword_error_type;
 
 IDIO idio_condition_rt_command_error_type;
 IDIO idio_condition_rt_command_argv_type_error_type;
@@ -1108,6 +1109,8 @@ void idio_init_condition ()
     IDIO_DEFINE_CONDITION0 (idio_condition_rt_bitset_error_type, "^rt-bitset-error", idio_condition_runtime_error_type);
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_bitset_bounds_error_type, "^rt-bitset-bounds-error", idio_condition_rt_bitset_error_type, "bit");
     IDIO_DEFINE_CONDITION2 (idio_condition_rt_bitset_size_mismatch_error_type, "^rt-bitset-size-mismatch-error", idio_condition_rt_bitset_error_type, "size1", "size2");
+
+    IDIO_DEFINE_CONDITION0 (idio_condition_rt_keyword_error_type, "^rt-keyword-error", idio_condition_runtime_error_type);
 
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_signal_type, IDIO_CONDITION_RT_SIGNAL_TYPE_NAME, idio_condition_error_type, "signum");
 }

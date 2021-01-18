@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -40,7 +40,6 @@ IDIO idio_tag_C (const char *s_C);
 void idio_free_keyword (IDIO s);
 int idio_isa_keyword (IDIO s);
 IDIO idio_keywords_C_intern (char *s);
-IDIO idio_keywords_string_intern (IDIO str);
 IDIO idio_hash_make_keyword_table (IDIO args);
 IDIO idio_keyword_ref (IDIO ht, IDIO kw, IDIO args);
 IDIO idio_keyword_set (IDIO ht, IDIO kw, IDIO v);

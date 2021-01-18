@@ -172,6 +172,7 @@ extern IDIO idio_condition_rt_divide_by_zero_error_type;
 extern IDIO idio_condition_rt_bitset_error_type;
 extern IDIO idio_condition_rt_bitset_bounds_error_type;
 extern IDIO idio_condition_rt_bitset_size_mismatch_error_type;
+extern IDIO idio_condition_rt_keyword_error_type;
 
 extern IDIO idio_condition_rt_signal_type;
 

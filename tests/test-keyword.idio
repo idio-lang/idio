@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -42,15 +42,18 @@ kw-table := (make-keyword-table)
 
 test (keyword-ref kw-table :a #f) #f
 
-trap ^rt-hash-key-not-found-error (function (c) {
-			       test (rt-hash-key-not-found-error? c) #t
-			       #f
+trap ^rt-keyword-error (function (c) {
+			  test (rt-keyword-error? c) #t
+			  #f
 }) {
   test (keyword-ref kw-table :a) #f
 }
 
 keyword-set! kw-table :a "apple"
 test (keyword-ref kw-table :a) "apple"
+
+;; code coverage
+kw := (keywords)
 
 ;; all done?
 Tests? (keyword0 + 12)
