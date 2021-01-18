@@ -339,6 +339,26 @@ int idio_isa_bignum (IDIO bn)
     return idio_isa (bn, IDIO_TYPE_BIGNUM);
 }
 
+int idio_isa_integer_bignum (IDIO bn)
+{
+    IDIO_ASSERT (bn);
+
+    int r = 0;
+
+    if (idio_isa_bignum (bn)) {
+	if (IDIO_BIGNUM_INTEGER_P (bn)) {
+	    r = 1;
+	} else {
+	    IDIO i = idio_bignum_real_to_integer (bn);
+	    if (idio_S_nil != i) {
+		r = 1;
+	    }
+	}
+    }
+
+    return r;
+}
+
 void idio_free_bignum (IDIO bn)
 {
     IDIO_ASSERT (bn);

@@ -85,6 +85,7 @@ IDIO idio_condition_rt_module_unbound_error_type;
 IDIO idio_condition_rt_module_symbol_unbound_error_type;
 IDIO idio_condition_rt_glob_error_type;
 IDIO idio_condition_rt_array_error_type;
+IDIO idio_condition_rt_hash_error_type;
 IDIO idio_condition_rt_hash_key_not_found_error_type;
 IDIO idio_condition_rt_number_error_type;
 IDIO idio_condition_rt_bignum_error_type;
@@ -1091,7 +1092,10 @@ void idio_init_condition ()
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_command_status_error_type, IDIO_CONDITION_RCSE_TYPE_NAME, idio_condition_rt_command_error_type, "status");
 
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_array_error_type, "^rt-array-error", idio_condition_runtime_error_type, "index");
-    IDIO_DEFINE_CONDITION1 (idio_condition_rt_hash_key_not_found_error_type, "^rt-hash-key-not-found-error", idio_condition_runtime_error_type, "key");
+
+    IDIO_DEFINE_CONDITION0 (idio_condition_rt_hash_error_type, "^rt-hash-error", idio_condition_runtime_error_type);
+
+    IDIO_DEFINE_CONDITION1 (idio_condition_rt_hash_key_not_found_error_type, "^rt-hash-key-not-found-error", idio_condition_rt_hash_error_type, "key");
 
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_number_error_type, "^rt-number-error", idio_condition_runtime_error_type, "number");
     IDIO_DEFINE_CONDITION0 (idio_condition_rt_divide_by_zero_error_type, "^rt-divide-by-zero-error", idio_condition_rt_number_error_type);

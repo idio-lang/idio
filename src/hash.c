@@ -29,13 +29,37 @@
 
 IDIO idio_hash_weak_tables = idio_S_nil;
 
-void idio_hash_error (char *m, IDIO c_location)
+/*
+ * Code coverage:
+ *
+ * The callees require coding errors.
+ */
+void idio_hash_error (char *msg, IDIO c_location)
 {
-    IDIO_C_ASSERT (m);
+    IDIO_C_ASSERT (msg);
     IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (string, c_location);
 
-    idio_error_printf (c_location, "%s", m);
+    IDIO msh = idio_open_output_string_handle_C ();
+    idio_display_C (msg, msh);
+
+    IDIO location = idio_vm_source_location ();
+
+    IDIO detail = idio_S_nil;
+
+#ifdef IDIO_DEBUG
+    IDIO dsh = idio_open_output_string_handle_C ();
+    idio_display (c_location, dsh);
+    detail = idio_get_output_string (dsh);
+#endif
+
+    IDIO c = idio_struct_instance (idio_condition_rt_hash_error_type,
+				   IDIO_LIST3 (idio_get_output_string (msh),
+					       location,
+					       detail));
+    idio_raise_condition (idio_S_true, c);
+
+    /* notreached */
 }
 
 void idio_hash_error_key_not_found (IDIO key, IDIO c_location)
@@ -49,10 +73,18 @@ void idio_hash_error_key_not_found (IDIO key, IDIO c_location)
 
     IDIO location = idio_vm_source_location ();
 
+    IDIO detail = idio_S_nil;
+
+#ifdef IDIO_DEBUG
+    IDIO dsh = idio_open_output_string_handle_C ();
+    idio_display (c_location, dsh);
+    detail = idio_get_output_string (dsh);
+#endif
+
     IDIO c = idio_struct_instance (idio_condition_rt_hash_key_not_found_error_type,
 				   IDIO_LIST4 (idio_get_output_string (msh),
 					       location,
-					       c_location,
+					       detail,
 					       key));
     idio_raise_condition (idio_S_true, c);
 
@@ -138,11 +170,21 @@ IDIO idio_hash (idio_hi_t size, int (*comp_C) (void *k1, void *k2), idio_hi_t (*
 
     if (NULL == comp_C) {
 	if (idio_S_nil == comp) {
+	    /*
+	     * Test Case: ??
+	     *
+	     * Coding error.
+	     */
 	    idio_hash_error ("no comparator supplied", IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
     } else if (idio_S_nil != comp) {
+	/*
+	 * Test Case: ??
+	 *
+	 * Coding error.
+	 */
 	idio_hash_error ("two comparators supplied", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
@@ -150,11 +192,21 @@ IDIO idio_hash (idio_hi_t size, int (*comp_C) (void *k1, void *k2), idio_hi_t (*
 
     if (NULL == hash_C) {
 	if (idio_S_nil == hash) {
+	    /*
+	     * Test Case: ??
+	     *
+	     * Coding error.
+	     */
 	    idio_hash_error ("no hashing function supplied", IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
     } else if (idio_S_nil != hash) {
+	/*
+	 * Test Case: ??
+	 *
+	 * Coding error.
+	 */
 	idio_hash_error ("two hashing functions supplied", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
@@ -218,10 +270,15 @@ static IDIO idio_hash_he_key (IDIO h, idio_hi_t hv, idio_hash_entry_t *he)
 		break;
 	    default:
 		/* inconceivable! */
-		idio_error_printf (IDIO_C_FUNC_LOCATION (), "type: unexpected object type %#x", k);
+		{
+		    char em[BUFSIZ];
+		    sprintf (em, "type: unexpected object type %s", idio_type2string (k));
+		    idio_hash_error (em, IDIO_C_FUNC_LOCATION ());
 
-		/* notreached */
-		return idio_S_notreached;
+		    /* notreached */
+		    return idio_S_notreached;
+		}
+		break;
 	    }
 
 	} else {
@@ -265,9 +322,14 @@ IDIO idio_copy_hash (IDIO orig, int depth)
 	for ( ; NULL != he; he = IDIO_HASH_HE_NEXT (he)) {
 	    IDIO k = idio_hash_he_key (orig, i, he);
 	    if (! k) {
+		/*
+		 * Test Case:
+		 *
+		 * Coding error ultimately.
+		 */
 		char em[BUFSIZ];
 		sprintf (em, "copy-hash: key #%zd is NULL", i);
-		idio_error_C (em, orig, IDIO_C_FUNC_LOCATION ());
+		idio_hash_error (em, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    }
@@ -303,9 +365,14 @@ IDIO idio_merge_hash (IDIO ht1, IDIO ht2)
 	for ( ; NULL != he; he = IDIO_HASH_HE_NEXT (he)) {
 	    IDIO k = idio_hash_he_key (ht2, i, he);
 	    if (! k) {
+		/*
+		 * Test Case:
+		 *
+		 * Coding error ultimately.
+		 */
 		char em[BUFSIZ];
 		sprintf (em, "merge-hash: key #%zd is NULL", i);
-		idio_error_C (em, ht2, IDIO_C_FUNC_LOCATION ());
+		idio_hash_error (em, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    }
@@ -324,6 +391,25 @@ int idio_isa_hash (IDIO h)
     IDIO_ASSERT (h);
 
     return idio_isa (h, IDIO_TYPE_HASH);
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("hash?", hash_p, (IDIO o), "o", "\
+test if `o` is an hash				\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is an hash, #f otherwise	\n\
+")
+{
+    IDIO_ASSERT (o);
+
+    IDIO r = idio_S_false;
+
+    if (idio_isa_hash (o)) {
+	r = idio_S_true;
+    }
+
+    return r;
 }
 
 void idio_free_hash (IDIO h)
@@ -411,6 +497,11 @@ void idio_hash_resize (IDIO h, int larger)
     }
 
     if (nsize == osize) {
+	/*
+	 * Code coverage:
+	 *
+	 * Erm...not sure how to provoke this.
+	 */
 	return;
     }
 
@@ -430,18 +521,33 @@ void idio_hash_resize (IDIO h, int larger)
 		c++;
 		idio_hash_put (h, IDIO_HASH_HE_KEY (he), IDIO_HASH_HE_VALUE (he));
 	    } else {
+		/*
+		 * Code coverage:
+		 *
+		 * Coding error?
+		 */
 		fprintf (stderr, "hash-resize: #n key?\n");
 	    }
 	}
     }
 
     if (hcount != c) {
+	/*
+	 * Code coverage:
+	 *
+	 * Coding error.
+	 */
 	fprintf (stderr, "LOST HASH ENTRIES (c): %3zu != %3zu\n", IDIO_HASH_COUNT (h), hcount);
 	idio_dump (h, 2);
 	exit (2);
     }
 
     if (hcount != IDIO_HASH_COUNT (h)) {
+	/*
+	 * Code coverage:
+	 *
+	 * Coding error.
+	 */
 	fprintf (stderr, "LOST HASH ENTRIES (count): %3zu != %3zu\n", IDIO_HASH_COUNT (h), hcount);
 	idio_dump (h, 2);
 	exit (3);
@@ -454,7 +560,7 @@ void idio_hash_resize (IDIO h, int larger)
 }
 
 /*
- * idio_hash_default_hash_C_* are variations on a theme to caluclate a
+ * idio_hash_default_hash_C_* are variations on a theme to calculate a
  * hash value for a given C type of thing -- where lots of Idio types
  * map onto similar C types.
  */
@@ -478,13 +584,6 @@ idio_hi_t idio_hash_default_hash_C_void (void *p)
     */
     idio_hi_t hv = idio_hash_default_hash_C_uintmax_t (ul ^ (ul >> 5));
     return hv;
-}
-
-idio_hi_t idio_hash_default_hash_C_character (IDIO c)
-{
-    IDIO_ASSERT (c);
-
-    return idio_hash_default_hash_C_uintmax_t (IDIO_CHARACTER_VAL (c));
 }
 
 idio_hi_t idio_hash_default_hash_C_string_C (idio_hi_t blen, const char *s_C)
@@ -520,17 +619,6 @@ idio_hi_t idio_hash_default_hash_C_string_C (idio_hi_t blen, const char *s_C)
     }
 
     return hv;
-}
-
-idio_hi_t idio_hash_default_hash_C_string (IDIO s)
-{
-    IDIO_ASSERT (s);
-
-    size_t size = 0;
-    char *Cs = idio_string_as_C (s, &size);
-    idio_hi_t r = idio_hash_default_hash_C_string_C (strlen (Cs), Cs);
-    IDIO_GC_FREE (Cs);
-    return r;
 }
 
 idio_hi_t idio_hash_default_hash_C_symbol (IDIO h)
@@ -590,13 +678,6 @@ idio_hi_t idio_idio_hash_default_hash_C_module (IDIO h)
     IDIO_ASSERT (h);
 
     return idio_hash_default_hash_C_void (IDIO_MODULE_NAME (h));
-}
-
-idio_hi_t idio_idio_hash_default_hash_C_frame (IDIO h)
-{
-    IDIO_ASSERT (h);
-
-    return idio_hash_default_hash_C_void (h->u.frame);
 }
 
 idio_hi_t idio_idio_hash_default_hash_C_bignum (IDIO h)
@@ -661,10 +742,6 @@ idio_hi_t idio_hash_default_hash_C_C_FFI (IDIO h)
  * hash table ``ht`` for the key ``kv``.
  *
  * This is, the result will be modulo IDIO_HASH_MASK (ht) + 1.
- *
- * Note that a pre-computed IDIO_HASHVAL(k) is the untempered
- * idio_hi_t result of the hashing function and is suitable to be used
- * module IDIO_HASH_MASK (ht).
  */
 idio_hi_t idio_hash_default_hash_C (IDIO h, void *kv)
 {
@@ -679,10 +756,19 @@ idio_hi_t idio_hash_default_hash_C (IDIO h, void *kv)
     switch (type) {
     case IDIO_TYPE_NONE:
     case IDIO_TYPE_PLACEHOLDER:
-	idio_error_printf (IDIO_C_FUNC_LOCATION_S ("PLACEHOLDER"), "type: unexpected object type %#x", k);
+	/*
+	 * Test Case:
+	 *
+	 * Coding error.
+	 */
+	{
+	    char em[BUFSIZ];
+	    sprintf (em, "type: unexpected object type %s", idio_type2string (k));
+	    idio_hash_error (em, IDIO_C_FUNC_LOCATION_S ("PLACEHOLDER"));
 
-	/* notreached */
-	return -1;
+	    /* notreached */
+	    return -1;
+	}
     }
 
     /*
@@ -696,17 +782,6 @@ idio_hi_t idio_hash_default_hash_C (IDIO h, void *kv)
     case IDIO_TYPE_CONSTANT_CHARACTER:
     case IDIO_TYPE_CONSTANT_UNICODE:
     return (idio_hash_default_hash_C_uintmax_t ((uintptr_t) k) & IDIO_HASH_MASK (h));
-    }
-
-    /*
-     * 0 is the sentinel value for a hashval.  Of course a hash value
-     * could be 0 in which case for a small number of objects we
-     * re-compute the hash.
-     */
-    if (0 != IDIO_HASHVAL (k)) {
-	idio_hi_t hv = (IDIO_HASHVAL (k) & IDIO_HASH_MASK (h));
-	/* fprintf (stderr, "ih_hv return with pre-comp %p %8tx %8td\n", k, IDIO_HASHVAL (k), hv); */
-	return hv;
     }
 
     switch (type) {
@@ -750,9 +825,6 @@ idio_hi_t idio_hash_default_hash_C (IDIO h, void *kv)
     case IDIO_TYPE_MODULE:
 	hv = idio_idio_hash_default_hash_C_module (k);
 	break;
-    case IDIO_TYPE_FRAME:
-	hv = idio_idio_hash_default_hash_C_frame (k);
-	break;
     case IDIO_TYPE_BIGNUM:
 	hv = idio_idio_hash_default_hash_C_bignum (k);
 	break;
@@ -793,21 +865,29 @@ idio_hi_t idio_hash_default_hash_C (IDIO h, void *kv)
 	hv = idio_hash_default_hash_C_C_FFI (k);
 	break;
     default:
-	fprintf (stderr, "idio_hash_default_hash_C default type = %d==%s\n", type, idio_type_enum2string (type));
-	idio_error_C ("idio_hash_default_hash_C: unexpected type", k, IDIO_C_FUNC_LOCATION ());
+	/*
+	 * Test Case:
+	 *
+	 * Coding error.
+	 */
+	{
+	    char em[BUFSIZ];
+	    sprintf (em, "unexpected type = %d==%s\n", type, idio_type_enum2string (type));
+	    idio_hash_error (em, IDIO_C_FUNC_LOCATION ());
 
-	/* notreached */
-	return -1;
+	    /* notreached */
+	    return -1;
+	}
+	break;
     }
 
-    IDIO_HASHVAL (k) = hv;
-    hv = IDIO_HASHVAL (k) & IDIO_HASH_MASK (h);
-    /* fprintf (stderr, "ih_hv return with     comp %p %8tx %8td\n", k, IDIO_HASHVAL (k), hv); */
+    hv = hv & IDIO_HASH_MASK (h);
+
     return hv;
 }
 
 /*
- * idio_hash_index() will return an index into the hash table
+ * idio_hash_index() will return an integer index into the hash table
  * ``ht`` for the key ``kv``.
  *
  * This is, the result will be modulo IDIO_HASH_MASK (ht).
@@ -816,10 +896,6 @@ idio_hi_t idio_hash_default_hash_C (IDIO h, void *kv)
  * hashing function.
  *
  * ``kv`` is a generic "key value" as we can have C strings as keys.
- *
- * Note that a pre-computed IDIO_HASHVAL(k) is the untempered
- * idio_hi_t result of the hashing function and is suitable to be used
- * module IDIO_HASH_MASK (ht).
  */
 idio_hi_t idio_hash_index (IDIO ht, void *kv)
 {
@@ -832,26 +908,22 @@ idio_hi_t idio_hash_index (IDIO ht, void *kv)
 	IDIO k = (IDIO) kv;
 
 	/*
-	 * Use a saved computed value if we can
+	 * NB we'll use ptrdiff_t here, not because we use that in the
+	 * bignum conversion but because we want a (large) *signed*
+	 * type to catch hashing functions returning negative
+	 * integers.
 	 *
-	 * Anything that truly hashes to 0 will just have to get
-	 * re-computed each time round.
+	 * We could just convert them to (large) unsigned integers and
+	 * mask them but I think we want to be explicit about the
+	 * hashing code being semantically wrong.
 	 */
-	switch ((intptr_t) kv & IDIO_TYPE_MASK) {
-	case IDIO_TYPE_POINTER_MARK:
-	    if (0 != IDIO_HASHVAL (k)) {
-		return (IDIO_HASHVAL (k) & IDIO_HASH_MASK (ht));
-	    }
-	    break;
-	}
-
-	idio_hi_t hvi = 0;
+	ptrdiff_t hvi = 0;
 
 	IDIO ihvi = idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST2 (IDIO_HASH_HASH (ht), k));
 
 	if (idio_isa_fixnum (ihvi)) {
 	    hvi = IDIO_FIXNUM_VAL (ihvi);
-	} else if (idio_isa_bignum (ihvi)) {
+	} else if (idio_isa_integer_bignum (ihvi)) {
 	    /*
 	     * idio_ht_t is a size_t so the fact that ptrdiff_t &
 	     * size_t on non-segmented architectures are *the same
@@ -862,19 +934,30 @@ idio_hi_t idio_hash_index (IDIO ht, void *kv)
 	     */
 	    hvi = idio_bignum_ptrdiff_value (ihvi);
 	} else {
-	    idio_error_param_type ("fixnum|bignum", ihvi, IDIO_C_FUNC_LOCATION ());
+	    /*
+	     * Test Cases:
+	     *
+	     *   hash-errors/hashing-bad-return-type.idio
+	     *   hash-errors/hashing-bad-return-float.idio
+	     *
+	     * Define a hashing function that returns a non-integer
+	     * type.
+	     *
+	     * Careful with the "key", here, as it must be one where
+	     * we avoid the saved value, above.  An integer is such a
+	     * key.
+	     */
+	    idio_error_param_type ("integer", ihvi, IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
 	    return -1;
 	}
 
-	/*
-	 * Save this computed value if we can
-	 */
-	switch ((intptr_t) kv & IDIO_TYPE_MASK) {
-	case IDIO_TYPE_POINTER_MARK:
-	    IDIO_HASHVAL (k) = hvi;
-	    break;
+	if (hvi < 0) {
+	    idio_hash_error ("hashing function has returned a negative value", IDIO_C_FUNC_LOCATION ());
+
+	    /* notreached */
+	    return -1;
 	}
 
 	return (hvi & IDIO_HASH_MASK (ht));
@@ -919,6 +1002,11 @@ IDIO idio_hash_put (IDIO h, void *kv, IDIO v)
     IDIO_ASSERT_NOT_CONST (hash, h);
 
     if (idio_S_nil == kv) {
+	/*
+	 * Test Case: hash-errors/set-nil-key.idio
+	 *
+	 * hash-set! ht #n #t
+	 */
 	idio_error_param_nil ("key", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
@@ -954,17 +1042,67 @@ IDIO idio_hash_put (IDIO h, void *kv, IDIO v)
     return kv;
 }
 
+IDIO idio_hash_set (IDIO ht, IDIO key, IDIO v)
+{
+    IDIO_ASSERT (ht);
+    IDIO_ASSERT (key);
+    IDIO_ASSERT (v);
+    IDIO_TYPE_ASSERT (hash, ht);
+
+    IDIO_ASSERT_NOT_CONST (hash, ht);
+
+    idio_hash_put (ht, key, v);
+
+    return idio_S_unspec;
+}
+
+IDIO_DEFINE_PRIMITIVE3_DS ("hash-set!", hash_set, (IDIO ht, IDIO key, IDIO v), "ht key v", "\
+set the index of ``key` in hash table ``ht`` to ``v``	\n\
+							\n\
+:param ht: hash table					\n\
+:type ht: hash table					\n\
+:param key: non-#n value				\n\
+:type key: any non-#n					\n\
+:param v: value						\n\
+:type v: a value					\n\
+							\n\
+:return: #unspec					\n\
+")
+{
+    IDIO_ASSERT (ht);
+    IDIO_ASSERT (key);
+    IDIO_ASSERT (v);
+
+    IDIO_USER_TYPE_ASSERT (hash, ht);
+
+    return idio_hash_set (ht, key, v);
+}
+
 idio_hash_entry_t *idio_hash_he (IDIO h, void *kv)
 {
     IDIO_ASSERT (h);
 
     if (idio_S_nil == h) {
+	/*
+	 * Code coverage:
+	 *
+	 * Coding error.  User interfaces are all protected with
+	 * IDIO_USER_TYPE_ASSERT (hash, h).
+	 *
+	 * Semantically, should this be an explicit error?
+	 */
 	return NULL;
     }
 
     IDIO_TYPE_ASSERT (hash, h);
 
     if (idio_S_nil == kv) {
+	/*
+	 * Test Case: ??
+	 *
+	 * User interfaces are protected multiple times so probably a
+	 * coding error.
+	 */
 	idio_error_param_nil ("key", IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
@@ -988,12 +1126,26 @@ int idio_hash_exists_key (IDIO h, void *kv)
     IDIO_ASSERT (h);
 
     if (idio_S_nil == h) {
+	/*
+	 * Code coverage:
+	 *
+	 * Coding error.  The user interface is protected with
+	 * IDIO_USER_TYPE_ASSERT (hash, h).
+	 *
+	 * Semantically, should this be an explicit error?
+	 */
 	return 0;
     }
 
     IDIO_TYPE_ASSERT (hash, h);
 
     if (idio_S_nil == kv) {
+	/*
+	 * Test Case: ??
+	 *
+	 * User interfaces are protected multiple times so probably a
+	 * coding error.
+	 */
 	idio_error_param_nil ("key", IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
@@ -1007,11 +1159,22 @@ int idio_hash_exists_key (IDIO h, void *kv)
     }
 }
 
+/*
+ * Code coverage:
+ *
+ * Notionally called from idio_C_typedefs_exists() in c-struct.c --
+ * code that is "in flux."
+ */
 IDIO idio_hash_exists (IDIO h, void *kv)
 {
     IDIO_ASSERT (h);
 
     if (idio_S_nil == kv) {
+	/*
+	 * Test Case: hash-errors/exists-nil-key.idio
+	 *
+	 * hash-exists? ht #n
+	 */
 	idio_error_param_nil ("key", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
@@ -1026,11 +1189,42 @@ IDIO idio_hash_exists (IDIO h, void *kv)
     }
 }
 
+IDIO_DEFINE_PRIMITIVE2_DS ("hash-exists?", hash_existsp, (IDIO ht, IDIO key), "ht key", "\
+assert whether index of ``key` in hash table ``ht`` has	\n\
+a value							\n\
+							\n\
+:param ht: hash table					\n\
+:type ht: hash table					\n\
+:param key: non-#n value				\n\
+:type key: any non-#n					\n\
+							\n\
+:return: #t or #f					\n\
+")
+{
+    IDIO_ASSERT (ht);
+    IDIO_ASSERT (key);
+
+    IDIO_USER_TYPE_ASSERT (hash, ht);
+
+    IDIO r = idio_S_false;
+
+    if (idio_hash_exists_key (ht, key)) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
 IDIO idio_hash_ref (IDIO h, void *kv)
 {
     IDIO_ASSERT (h);
 
     if (idio_S_nil == kv) {
+	/*
+	 * Test Case: hash-errors/ref-nil-key.idio
+	 *
+	 * hash-ref ht #n
+	 */
 	idio_error_param_nil ("key", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
@@ -1047,6 +1241,65 @@ IDIO idio_hash_ref (IDIO h, void *kv)
     return IDIO_HASH_HE_VALUE (he);
 }
 
+IDIO idio_hash_reference (IDIO ht, IDIO key, IDIO args)
+{
+    IDIO_ASSERT (ht);
+    IDIO_ASSERT (key);
+    IDIO_ASSERT (args);
+
+    IDIO_USER_TYPE_ASSERT (hash, ht);
+    IDIO_USER_TYPE_ASSERT (list, args);
+
+    IDIO r = idio_hash_ref (ht, key);
+
+    if (idio_S_unspec == r) {
+	if (idio_S_nil != args) {
+	    IDIO dv = IDIO_PAIR_H (args);
+	    if (idio_isa_procedure (dv)) {
+		r = idio_vm_invoke_C (idio_thread_current_thread (), dv);
+	    } else {
+		r = dv;
+	    }
+	} else {
+	    /*
+	     * Test Case: hash-errors/ref-non-existent-key.idio
+	     *
+	     * ht := (make-hash)
+	     * hash-ref ht 1
+	     */
+	    idio_hash_error_key_not_found (key, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	}
+    }
+
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE2V_DS ("hash-ref", hash_ref, (IDIO ht, IDIO key, IDIO args), "ht key [default]", "\
+return the value indexed by ``key` in hash table ``ht``	\n\
+							\n\
+:param ht: hash table					\n\
+:type ht: hash table					\n\
+:param key: non-#n value				\n\
+:type key: any non-#n					\n\
+:param default: a default value if ``key`` not found	\n\
+:type default: a thunk or a simple value		\n\
+							\n\
+:return: value (#unspec if ``key`` not found and no	\n\
+	 ``default`` supplied)				\n\
+")
+{
+    IDIO_ASSERT (ht);
+    IDIO_ASSERT (key);
+    IDIO_ASSERT (args);
+
+    IDIO_USER_TYPE_ASSERT (hash, ht);
+    IDIO_USER_TYPE_ASSERT (list, args);
+
+    return idio_hash_reference (ht, key, args);
+}
+
 /*
  * It is quite possible we may be asked to delete a key that doesn't
  * exist.
@@ -1056,6 +1309,14 @@ int idio_hash_delete (IDIO h, void *kv)
     IDIO_ASSERT (h);
 
     if (idio_S_nil == h) {
+	/*
+	 * Code coverage:
+	 *
+	 * Coding error.  The user interface is protected with
+	 * IDIO_USER_TYPE_ASSERT (hash, h).
+	 *
+	 * Semantically, should this be an explicit error?
+	 */
 	return 0;
     }
 
@@ -1064,6 +1325,11 @@ int idio_hash_delete (IDIO h, void *kv)
     IDIO_ASSERT_NOT_CONST (hash, h);
 
     if (idio_S_nil == kv) {
+	/*
+	 * Test Case: hash-errors/delete-nil-key.idio
+	 *
+	 * hash-delete! ht #n
+	 */
 	idio_error_param_nil ("key", IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
@@ -1090,7 +1356,11 @@ int idio_hash_delete (IDIO h, void *kv)
 	    hel = IDIO_HASH_HE_NEXT (hel);
 	}
 	he = IDIO_HASH_HE_NEXT (hel);
-	IDIO_HASH_HE_NEXT (hel) = IDIO_HASH_HE_NEXT (he);
+	if (NULL == he) {
+	    IDIO_HASH_HE_NEXT (hel) = NULL;
+	} else {
+	    IDIO_HASH_HE_NEXT (hel) = IDIO_HASH_HE_NEXT (he);
+	}
     }
 
     if (NULL == he) {
@@ -1108,6 +1378,31 @@ int idio_hash_delete (IDIO h, void *kv)
     }
 
     return 1;
+}
+
+/*
+ * SRFI 69 -- not an error to delete a non-existent key
+ */
+IDIO_DEFINE_PRIMITIVE2_DS ("hash-delete!", hash_delete, (IDIO ht, IDIO key), "ht key", "\
+delete the value associated with index of ``key` in	\n\
+hash table ``ht``					\n\
+							\n\
+:param ht: hash table					\n\
+:type ht: hash table					\n\
+:param key: non-#n value				\n\
+:type key: any non-#n					\n\
+							\n\
+:return: #unspec					\n\
+")
+{
+    IDIO_ASSERT (ht);
+    IDIO_ASSERT (key);
+
+    IDIO_USER_TYPE_ASSERT (hash, ht);
+
+    idio_hash_delete (ht, key);
+
+    return idio_S_unspec;
 }
 
 void idio_hash_tidy_weak_references (void)
@@ -1147,10 +1442,14 @@ void idio_hash_tidy_weak_references (void)
 			break;
 		    default:
 			/* inconceivable! */
-			idio_error_printf (IDIO_C_FUNC_LOCATION (), "unexpected object mark type %#x", k);
+			{
+			    char em[BUFSIZ];
+			    sprintf (em, "unexpected object mark type %s", idio_type2string (k));
+			    idio_hash_error (em, IDIO_C_FUNC_LOCATION ());
 
-			/* notreached */
-			return;
+			    /* notreached */
+			    return;
+			}
 		    }
 		}
 	    }
@@ -1226,14 +1525,24 @@ IDIO idio_hash_keys_to_list (IDIO h)
 	for ( ; NULL != he; he = IDIO_HASH_HE_NEXT (he)) {
 	    IDIO k = IDIO_HASH_HE_KEY (he);
 	    if (! k) {
+		/*
+		 * Test Case: ??
+		 *
+		 * Coding error ultimately.
+		 */
 		char em[BUFSIZ];
 		sprintf (em, "key #%zd is NULL", i);
-		idio_error_C (em, h, IDIO_C_FUNC_LOCATION ());
+		idio_hash_error (em, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    }
 	    if (idio_S_nil != k) {
 		if (IDIO_HASH_FLAGS (h) & IDIO_HASH_FLAG_STRING_KEYS) {
+		    /*
+		     * Code coverage:
+		     *
+		     * (symbols)
+		     */
 		    r = idio_pair (idio_string_C ((char *) k), r);
 		} else {
 		    IDIO_ASSERT (k);
@@ -1244,6 +1553,24 @@ IDIO idio_hash_keys_to_list (IDIO h)
     }
 
     return r;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("hash-keys", hash_keys, (IDIO ht), "ht", "\
+return a list of the keys of the hash table ``ht``	\n\
+							\n\
+no order can be presumed				\n\
+							\n\
+:param ht: hash table					\n\
+:type ht: hash table					\n\
+							\n\
+:return: #unspec					\n\
+")
+{
+    IDIO_ASSERT (ht);
+
+    IDIO_USER_TYPE_ASSERT (hash, ht);
+
+    return idio_hash_keys_to_list (ht);
 }
 
 IDIO idio_hash_values_to_list (IDIO h)
@@ -1259,9 +1586,14 @@ IDIO idio_hash_values_to_list (IDIO h)
 	for ( ; NULL != he; he = IDIO_HASH_HE_NEXT (he)) {
 	    IDIO k = IDIO_HASH_HE_KEY (he);
 	    if (! k) {
+		/*
+		 * Test Case: ??
+		 *
+		 * Coding error ultimately.
+		 */
 		char em[BUFSIZ];
 		sprintf (em, "hash-values-to-list: key #%zd is NULL", i);
-		idio_error_C (em, h, IDIO_C_FUNC_LOCATION ());
+		idio_hash_error (em, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    }
@@ -1274,23 +1606,22 @@ IDIO idio_hash_values_to_list (IDIO h)
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1_DS ("hash?", hash_p, (IDIO o), "o", "\
-test if `o` is an hash				\n\
-						\n\
-:param o: object to test			\n\
-						\n\
-:return: #t if `o` is an hash, #f otherwise	\n\
+IDIO_DEFINE_PRIMITIVE1_DS ("hash-values", hash_values, (IDIO ht), "ht", "\
+return a list of the values of the hash table ``ht``	\n\
+							\n\
+no order can be presumed				\n\
+							\n\
+:param ht: hash table					\n\
+:type ht: hash table					\n\
+							\n\
+:return: #unspec					\n\
 ")
 {
-    IDIO_ASSERT (o);
+    IDIO_ASSERT (ht);
 
-    IDIO r = idio_S_false;
+    IDIO_USER_TYPE_ASSERT (hash, ht);
 
-    if (idio_isa_hash (o)) {
-	r = idio_S_true;
-    }
-
-    return r;
+    return idio_hash_values_to_list (ht);
 }
 
 /*
@@ -1362,6 +1693,11 @@ IDIO idio_hash_make_hash (IDIO args)
 	if (idio_isa_fixnum (isize)) {
 	    size = IDIO_FIXNUM_VAL (isize);
 	} else {
+	    /*
+	     * Test Case: hash-errors/make-size-float.idio
+	     *
+	     * make-hash #n #n 1e1
+	     */
 	    idio_error_param_type ("fixnum", isize, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
@@ -1427,6 +1763,11 @@ IDIO idio_hash_alist_to_hash (IDIO alist, IDIO args)
 		idio_hash_put (ht, k, IDIO_PAIR_T (p));
 	    }
 	} else {
+	    /*
+	     * Test Case: hash-errors/alist-hash-bad-alist.idio
+	     *
+	     * alist->hash '((#\a "apple") #\b)
+	     */
 	    idio_error_param_type ("not a pair in alist", p, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
@@ -1537,145 +1878,6 @@ return the key count of ``h``				\n\
     return idio_integer (IDIO_HASH_COUNT (ht));
 }
 
-IDIO idio_hash_reference (IDIO ht, IDIO key, IDIO args)
-{
-    IDIO_ASSERT (ht);
-    IDIO_ASSERT (key);
-    IDIO_ASSERT (args);
-    IDIO_USER_TYPE_ASSERT (hash, ht);
-    IDIO_USER_TYPE_ASSERT (list, args);
-
-    IDIO r = idio_hash_ref (ht, key);
-
-    if (idio_S_unspec == r) {
-	if (idio_S_nil != args) {
-	    IDIO dv = IDIO_PAIR_H (args);
-	    if (idio_isa_procedure (dv)) {
-		r = idio_vm_invoke_C (idio_thread_current_thread (), dv);
-	    } else {
-		r = dv;
-	    }
-	} else {
-	    idio_hash_error_key_not_found (key, IDIO_C_FUNC_LOCATION ());
-
-	    return idio_S_notreached;
-	}
-    }
-
-    return r;
-}
-
-IDIO_DEFINE_PRIMITIVE2V_DS ("hash-ref", hash_ref, (IDIO ht, IDIO key, IDIO args), "ht key [default]", "\
-return the value indexed by ``key` in hash table ``ht``	\n\
-							\n\
-:param ht: hash table					\n\
-:type ht: hash table					\n\
-:param key: non-#n value				\n\
-:type key: any non-#n					\n\
-:param default: a default value if ``key`` not found	\n\
-:type default: a thunk or a simple value		\n\
-							\n\
-:return: value (#unspec if ``key`` not found and no	\n\
-	 ``default`` supplied)				\n\
-")
-{
-    IDIO_ASSERT (ht);
-    IDIO_ASSERT (key);
-    IDIO_ASSERT (args);
-
-    IDIO_USER_TYPE_ASSERT (hash, ht);
-    IDIO_USER_TYPE_ASSERT (list, args);
-
-    return idio_hash_reference (ht, key, args);
-}
-
-IDIO idio_hash_set (IDIO ht, IDIO key, IDIO v)
-{
-    IDIO_ASSERT (ht);
-    IDIO_ASSERT (key);
-    IDIO_ASSERT (v);
-    IDIO_TYPE_ASSERT (hash, ht);
-
-    IDIO_ASSERT_NOT_CONST (hash, ht);
-
-    idio_hash_put (ht, key, v);
-
-    return idio_S_unspec;
-}
-
-IDIO_DEFINE_PRIMITIVE3_DS ("hash-set!", hash_set, (IDIO ht, IDIO key, IDIO v), "ht key v", "\
-set the index of ``key` in hash table ``ht`` to ``v``	\n\
-							\n\
-:param ht: hash table					\n\
-:type ht: hash table					\n\
-:param key: non-#n value				\n\
-:type key: any non-#n					\n\
-:param v: value						\n\
-:type v: a value					\n\
-							\n\
-:return: #unspec					\n\
-")
-{
-    IDIO_ASSERT (ht);
-    IDIO_ASSERT (key);
-    IDIO_ASSERT (v);
-
-    IDIO_USER_TYPE_ASSERT (hash, ht);
-
-    return idio_hash_set (ht, key, v);
-}
-
-/*
- * SRFI 69 -- not an error to delete a non-existent key
- */
-IDIO_DEFINE_PRIMITIVE2_DS ("hash-delete!", hash_delete, (IDIO ht, IDIO key), "ht key", "\
-delete the value associated with index of ``key` in	\n\
-hash table ``ht``					\n\
-							\n\
-:param ht: hash table					\n\
-:type ht: hash table					\n\
-:param key: non-#n value				\n\
-:type key: any non-#n					\n\
-							\n\
-:return: #unspec					\n\
-")
-{
-    IDIO_ASSERT (ht);
-    IDIO_ASSERT (key);
-
-    IDIO_USER_TYPE_ASSERT (hash, ht);
-
-    idio_hash_delete (ht, key);
-
-    return idio_S_unspec;
-}
-
-IDIO_DEFINE_PRIMITIVE2_DS ("hash-exists?", hash_existsp, (IDIO ht, IDIO key), "ht key", "\
-assert whether index of ``key` in hash table ``ht`` has	\n\
-a value							\n\
-							\n\
-:param ht: hash table					\n\
-:type ht: hash table					\n\
-:param key: non-#n value				\n\
-:type key: any non-#n					\n\
-							\n\
-:return: #t or #f					\n\
-")
-{
-    IDIO_ASSERT (ht);
-    IDIO_ASSERT (key);
-
-    IDIO_USER_TYPE_ASSERT (hash, ht);
-
-    IDIO r = idio_S_false;
-
-    if (idio_hash_exists_key (ht, key)) {
-	r = idio_S_true;
-    }
-
-    return r;
-}
-
 /*
  * SRFI 69:
  *
@@ -1731,42 +1933,6 @@ key to the returned value					\n\
     idio_hash_put (ht, key, nv);
 
     return idio_S_unspec;
-}
-
-IDIO_DEFINE_PRIMITIVE1_DS ("hash-keys", hash_keys, (IDIO ht), "ht", "\
-return a list of the keys of the hash table ``ht``	\n\
-							\n\
-no order can be presumed				\n\
-							\n\
-:param ht: hash table					\n\
-:type ht: hash table					\n\
-							\n\
-:return: #unspec					\n\
-")
-{
-    IDIO_ASSERT (ht);
-
-    IDIO_USER_TYPE_ASSERT (hash, ht);
-
-    return idio_hash_keys_to_list (ht);
-}
-
-IDIO_DEFINE_PRIMITIVE1_DS ("hash-values", hash_values, (IDIO ht), "ht", "\
-return a list of the values of the hash table ``ht``	\n\
-							\n\
-no order can be presumed				\n\
-							\n\
-:param ht: hash table					\n\
-:type ht: hash table					\n\
-							\n\
-:return: #unspec					\n\
-")
-{
-    IDIO_ASSERT (ht);
-
-    IDIO_USER_TYPE_ASSERT (hash, ht);
-
-    return idio_hash_values_to_list (ht);
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("hash-walk", hash_walk, (IDIO ht, IDIO func), "ht func", "\
@@ -1884,11 +2050,21 @@ copy hash table `orig`					\n\
 	    } else if (idio_S_shallow == idepth) {
 		depth = IDIO_COPY_SHALLOW;
 	    } else {
+		/*
+		 * Test Case: hash-errors/copy-bad-depth-value.idio
+		 *
+		 * copy-hash ht 'completely
+		 */
 		idio_error_param_value ("depth", "should be 'deep or 'shallow", IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    }
 	} else {
+	    /*
+	     * Test Case: hash-errors/copy-bad-depth-type.idio
+	     *
+	     * copy-hash ht #t
+	     */
 	    idio_error_param_type ("symbol", idepth, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;

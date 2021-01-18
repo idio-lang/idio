@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -379,5 +379,38 @@ ht."one" = 2
 
 test ht."one" 2
 
+;; code coverage: substring
+ss := substring "hello world" 0 5
+hash-set! ht ss 2
+test (hash-ref ht ss) 2
+
+;; code coverage: module
+m := find-module 'Idio
+hash-set! ht m 3
+test (hash-ref ht m) 3
+
+;; code coverage: C-int
+hash-set! ht libc/INTMAX_MAX 4
+test (hash-ref ht libc/INTMAX_MAX) 4
+
+;; code coverage: C-uint
+hash-set! ht libc/UINTMAX_MAX 4
+test (hash-ref ht libc/UINTMAX_MAX) 4
+
+;; code coverage: delete non-existent thing
+hash-delete! ht "bob"
+
+;; code coverage: the symbol table is a hash table with string keys
+st := (symbols)
+
+;; code coverage: an eqv? hash -- although they're nearly impossible
+;; to use
+ht := make-hash 'eqv?
+test (hash-equivalence-function ht) 'eqv?
+
+;; code coverage: copy depth
+test (hash-equivalence-function (copy-hash ht 'deep)) 'eqv?
+test (hash-equivalence-function (copy-hash ht 'shallow)) 'eqv?
+
 ;; all done?
-Tests? (hash0 + 70)
+Tests? (hash0 + 77)

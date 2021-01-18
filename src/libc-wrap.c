@@ -3497,12 +3497,12 @@ setegid (2).							\n\
 
     if (idio_isa_fixnum (iegid)) {
 	egid = IDIO_FIXNUM_VAL (iegid);
-    } else if (idio_isa_bignum (iegid)) {
+    } else if (idio_isa_integer_bignum (iegid)) {
 	egid = idio_bignum_intmax_value (iegid);
     } else if (idio_isa_C_int (iegid)) {
 	egid = IDIO_C_TYPE_INT (iegid);
     } else {
-	idio_error_param_type ("fixnum|bignum|C_int", iegid, IDIO_C_LOCATION ("EGID/set"));
+	idio_error_param_type ("integer|C_int", iegid, IDIO_C_LOCATION ("EGID/set"));
     }
 
     int r = setegid (egid);
@@ -3541,12 +3541,12 @@ seteuid (2).							\n\
 
     if (idio_isa_fixnum (ieuid)) {
 	euid = IDIO_FIXNUM_VAL (ieuid);
-    } else if (idio_isa_bignum (ieuid)) {
+    } else if (idio_isa_integer_bignum (ieuid)) {
 	euid = idio_bignum_intmax_value (ieuid);
     } else if (idio_isa_C_int (ieuid)) {
 	euid = IDIO_C_TYPE_INT (ieuid);
     } else {
-	idio_error_param_type ("fixnum|bignum|C_int", ieuid, IDIO_C_LOCATION ("EUID/set"));
+	idio_error_param_type ("integer|C_int", ieuid, IDIO_C_LOCATION ("EUID/set"));
     }
 
     int r = seteuid (euid);
@@ -3585,12 +3585,12 @@ setgid (2).							\n\
 
     if (idio_isa_fixnum (igid)) {
 	gid = IDIO_FIXNUM_VAL (igid);
-    } else if (idio_isa_bignum (igid)) {
+    } else if (idio_isa_integer_bignum (igid)) {
 	gid = idio_bignum_intmax_value (igid);
     } else if (idio_isa_C_int (igid)) {
 	gid = IDIO_C_TYPE_INT (igid);
     } else {
-	idio_error_param_type ("fixnum|bignum|C_int", igid, IDIO_C_LOCATION ("GID/set"));
+	idio_error_param_type ("integer|C_int", igid, IDIO_C_LOCATION ("GID/set"));
     }
 
     int r = setgid (gid);
@@ -3629,12 +3629,12 @@ setuid (2).							\n\
 
     if (idio_isa_fixnum (iuid)) {
 	uid = IDIO_FIXNUM_VAL (iuid);
-    } else if (idio_isa_bignum (iuid)) {
+    } else if (idio_isa_integer_bignum (iuid)) {
 	uid = idio_bignum_intmax_value (iuid);
     } else if (idio_isa_C_int (iuid)) {
 	uid = IDIO_C_TYPE_INT (iuid);
     } else {
-	idio_error_param_type ("fixnum|bignum|C_int", iuid, IDIO_C_LOCATION ("UID/set"));
+	idio_error_param_type ("integer|C_int", iuid, IDIO_C_LOCATION ("UID/set"));
     }
 
     int r = setuid (uid);

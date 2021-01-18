@@ -1,0 +1,6 @@
+
+module tests/hash
+
+ht := (make-hash)
+
+hash-ref ht #n

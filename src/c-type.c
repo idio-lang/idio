@@ -475,10 +475,10 @@ convert Idio integer `i` to a C integer		\n\
 
     if (idio_isa_fixnum (inum)) {
 	return idio_C_int (IDIO_FIXNUM_VAL (inum));
-    } else if (idio_isa_bignum (inum)) {
+    } else if (idio_isa_integer_bignum (inum)) {
 	return idio_C_int (idio_bignum_intmax_value (inum));
     } else {
-	idio_error_param_type ("fixnum|bignum", inum, IDIO_C_FUNC_LOCATION ());
+	idio_error_param_type ("integer", inum, IDIO_C_FUNC_LOCATION ());
     }
 
     return idio_S_notreached;
@@ -498,10 +498,10 @@ convert Idio integer `i` to a C unsigned integer\n\
 
     if (idio_isa_fixnum (inum)) {
 	return idio_C_uint (IDIO_FIXNUM_VAL (inum));
-    } else if (idio_isa_bignum (inum)) {
+    } else if (idio_isa_integer_bignum (inum)) {
 	return idio_C_uint (idio_bignum_intmax_value (inum));
     } else {
-	idio_error_param_type ("fixnum|bignum", inum, IDIO_C_FUNC_LOCATION ());
+	idio_error_param_type ("integer", inum, IDIO_C_FUNC_LOCATION ());
     }
 
     return idio_S_notreached;

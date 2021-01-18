@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -189,6 +189,7 @@
 
 IDIO idio_bignum (int flags, IDIO_BS_T exp, IDIO_BSA sig_a);
 int idio_isa_bignum (IDIO bn);
+int idio_isa_integer_bignum (IDIO bn);
 void idio_free_bignum (IDIO bn);
 IDIO idio_bignum_copy (IDIO bn);
 IDIO idio_bignum_integer_intmax_t (intmax_t i);

@@ -1,0 +1,6 @@
+
+module tests/hash
+
+ht := (make-hash)
+
+hash-exists? ht #n

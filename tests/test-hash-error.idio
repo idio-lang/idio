@@ -1,0 +1,81 @@
+;;
+;; Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+;;
+;; Licensed under the Apache License, Version 2.0 (the "License"); you
+;; may not use this file except in compliance with the License.  You
+;; may obtain a copy of the License at
+;;
+;;     http://www.apache.org/licenses/LICENSE-2.0
+;;
+;; Unless required by applicable law or agreed to in writing, software
+;; distributed under the License is distributed on an "AS IS" BASIS,
+;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+;; See the License for the specific language governing permissions and
+;; limitations under the License.
+;;
+;;
+
+;;
+;; test-hash-error.idio
+;;
+
+hash-error0 := Tests
+
+#*
+
+We have a bunch of test cases which should provoke a ^rt-hash-error or
+^rt-parameter-type-error.  So we can write a load function which will
+wrapper the actual load with a trap for
+(^rt-hash-error ^rt-parameter-type-error) and compare the message
+strings.
+
+*#
+
+hash-error-load := {
+  n := 0
+
+  function (filename msg) {
+    if (not (string? filename)) (error 'load "not a string" filename)
+
+    load-k := #n
+
+    n = n + 1
+    ;eprintf "loading #%s %s looking for %s\n" n filename msg
+    trap (^rt-hash-error
+	  ^rt-parameter-error) (function (c) {
+				  ;eprintf "hash-error #%s: %s %s\n" n msg c.location
+				  test c.message msg
+
+				  if (not (string=? c.message msg)) {
+				    condition-report (append-string "hash-error-load: " filename) c (current-error-handle)
+				  }
+				  load-k 'hash-error
+	  }) {
+      call/cc (function (k) {
+		 load-k = k
+		 (symbol-value 'load 'Idio) filename
+      })
+    }
+  }
+}
+
+hash-error-load "hash-errors/hashing-return-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a integer"
+hash-error-load "hash-errors/hashing-return-float.idio" "bad parameter type: '1.1e+0' a BIGNUM is not a integer"
+hash-error-load "hash-errors/hashing-return-negative-fixnum.idio" "hashing function has returned a negative value"
+hash-error-load "hash-errors/hashing-return-negative-bignum.idio" "hashing function has returned a negative value"
+
+hash-error-load "hash-errors/set-nil-key.idio" "key is nil"
+hash-error-load "hash-errors/exists-nil-key.idio" "key is nil"
+hash-error-load "hash-errors/ref-nil-key.idio" "key is nil"
+hash-error-load "hash-errors/ref-non-existent-key.idio" "key not found"
+hash-error-load "hash-errors/delete-nil-key.idio" "key is nil"
+
+hash-error-load "hash-errors/make-size-float.idio" "bad parameter type: '1.0e+1' a BIGNUM is not a fixnum"
+
+hash-error-load "hash-errors/alist-hash-bad-alist.idio" "bad parameter type: 'b' a CONSTANT_UNICODE is not a not a pair in alist"
+
+hash-error-load "hash-errors/copy-bad-depth-value.idio" "depth should be 'deep or 'shallow"
+hash-error-load "hash-errors/copy-bad-depth-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol"
+
+;; all done?
+Tests? (hash-error0 + 13)

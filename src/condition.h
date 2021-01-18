@@ -161,6 +161,7 @@ extern IDIO idio_condition_rt_command_env_type_error_type;
 extern IDIO idio_condition_rt_command_exec_error_type;
 extern IDIO idio_condition_rt_command_status_error_type;
 extern IDIO idio_condition_rt_array_error_type;
+extern IDIO idio_condition_rt_hash_error_type;
 extern IDIO idio_condition_rt_hash_key_not_found_error_type;
 extern IDIO idio_condition_rt_number_error_type;
 extern IDIO idio_condition_rt_bignum_error_type;

@@ -1,0 +1,11 @@
+
+module tests/hash/hashing
+
+define (ht-bad-hash v) {
+  ;; not a fixnum or integer bignum
+  1.1
+}
+
+ht := make-hash #n ht-bad-hash
+
+hash-ref ht 1

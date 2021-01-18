@@ -468,9 +468,7 @@ typedef struct idio_array_s idio_array_t;
 #define IDIO_ARRAY_FLAGS(A)	((A)->tflags)
 
 /*
- * idio_hi_t must be a size_t as, though we may only create an
- * array of 2**(n-1)-1, we need a size+1 marker to indicate out of
- * bounds.
+ * idio_hi_t should be be an unsigned type, hence size_t.
  *
  *   As a real-world example, on an OpenSolaris 4GB/32bit machine:
  *
@@ -1112,14 +1110,11 @@ struct idio_s {
 	idio_continuation_t    *continuation;
 	idio_bitset_t	       bitset;
     } u;
-
-    idio_hi_t hashval;		/* time/space tradeoff */
 };
 
 typedef struct idio_s idio_t;
 
 #define IDIO_FLAGS(I)	((I)->flags)
-#define IDIO_HASHVAL(I)	((I)->hashval)
 
 /**
  * typedef IDIO - Idio *value*

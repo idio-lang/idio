@@ -207,7 +207,9 @@ define-condition-type-accessors-only ^rt-command-status-error		^rt-command-error
 define-condition-type-accessors-only ^rt-array-error			^runtime-error			rt-array-error? \
 	(index rt-array-error-index)
 
-define-condition-type-accessors-only ^rt-hash-key-not-found-error	^runtime-error			rt-hash-key-not-found-error? \
+define-condition-type-accessors-only ^rt-hash-error			^runtime-error			rt-hash-error?
+
+define-condition-type-accessors-only ^rt-hash-key-not-found-error	^rt-hash-error			rt-hash-key-not-found-error? \
 	(key rt-hash-key-not-found-error-key)
 
 define-condition-type-accessors-only ^rt-number-error			^runtime-error			rt-number-error? \
