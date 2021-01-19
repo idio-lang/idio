@@ -1,0 +1,11 @@
+
+module tests/libc-wrap
+import libc
+
+cwd := (getcwd)
+tmpdir := (make-tmp-dir)
+chdir tmpdir
+rmdir tmpdir
+(getcwd)
+
+chdir cwd

@@ -59,15 +59,37 @@ static long idio_SC_CLK_TCK = 0;
 #define IDIO_STRUCT_TMS_CUTIME			3
 #define IDIO_STRUCT_TMS_CSTIME			4
 
-void idio_libc_error_format (char *m, IDIO s, IDIO c_location)
+void idio_libc_error_format (char *msg, IDIO name, IDIO c_location)
 {
-    IDIO_C_ASSERT (m);
-    IDIO_ASSERT (s);
+    IDIO_C_ASSERT (msg);
+    IDIO_ASSERT (name);
     IDIO_ASSERT (c_location);
-    IDIO_TYPE_ASSERT (string, s);
+
+    IDIO_TYPE_ASSERT (string, name);
     IDIO_TYPE_ASSERT (string, c_location);
 
-    idio_error_C (m, s, c_location);
+    IDIO msh = idio_open_output_string_handle_C ();
+    idio_display_C (msg, msh);
+
+    IDIO location = idio_vm_source_location ();
+
+    IDIO detail = idio_S_nil;
+
+#ifdef IDIO_DEBUG
+    IDIO dsh = idio_open_output_string_handle_C ();
+    idio_display (c_location, dsh);
+    detail = idio_get_output_string (dsh);
+#endif
+
+    IDIO c = idio_struct_instance (idio_condition_rt_libc_wrap_format_error_type,
+				   IDIO_LIST4 (idio_get_output_string (msh),
+					       location,
+					       detail,
+					       name));
+
+    idio_raise_condition (idio_S_true, c);
+
+    /* notreached */
 }
 
 IDIO idio_libc_export_symbol_value (IDIO symbol, IDIO value)
@@ -79,6 +101,13 @@ IDIO idio_libc_export_symbol_value (IDIO symbol, IDIO value)
     return idio_module_export_symbol_value (symbol, value, idio_libc_wrap_module);
 }
 
+/*
+ * Code coverage:
+ *
+ * Added as a system equivalent of error.  I think.
+ *
+ * Not used.
+ */
 IDIO_DEFINE_PRIMITIVE0V_DS ("system-error", libc_system_error, (IDIO args), "[name [args]]", "\
 raise a ^system-error						\n\
 								\n\
@@ -111,11 +140,220 @@ raise a ^system-error						\n\
     return idio_S_notreached;
 }
 
+IDIO_DEFINE_PRIMITIVE1_DS ("struct-rusage-ru_utime", libc_struct_rusage_ru_utime, (IDIO rusage), "rusage", "\
+in C, rusage.ru_utime						\n\
+								\n\
+:param rusage: C struct rusage					\n\
+:type rusage: C_pointer						\n\
+:return: C struct timeval					\n\
+:rtype: C_pointer						\n\
+								\n\
+See `getrusage` for a C struct rusage object.			\n\
+								\n\
+This function returns a copy of the ru_utime field.		\n\
+")
+{
+    IDIO_ASSERT (rusage);
+
+    IDIO_USER_TYPE_ASSERT (C_pointer, rusage);
+
+    struct rusage *rup = IDIO_C_TYPE_POINTER_P (rusage);
+
+    struct timeval *tvp = (struct timeval *) idio_alloc (sizeof (struct timeval));
+
+    tvp->tv_sec = rup->ru_utime.tv_sec;
+    tvp->tv_usec = rup->ru_utime.tv_usec;
+
+    return idio_C_pointer_free_me (tvp);
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("struct-rusage-ru_stime", libc_struct_rusage_ru_stime, (IDIO rusage), "rusage", "\
+in C, rusage.ru_stime						\n\
+								\n\
+:param rusage: C struct rusage					\n\
+:type rusage: C_pointer						\n\
+:return: C struct timeval					\n\
+:rtype: C_pointer						\n\
+								\n\
+See `getrusage` for a C struct rusage object.			\n\
+								\n\
+This function returns a copy of the ru_stime field.		\n\
+")
+{
+    IDIO_ASSERT (rusage);
+
+    IDIO_USER_TYPE_ASSERT (C_pointer, rusage);
+
+    struct rusage *rup = IDIO_C_TYPE_POINTER_P (rusage);
+
+    struct timeval *tvp = (struct timeval *) idio_alloc (sizeof (struct timeval));
+
+    tvp->tv_sec = rup->ru_stime.tv_sec;
+    tvp->tv_usec = rup->ru_stime.tv_usec;
+
+    return idio_C_pointer_free_me (tvp);
+}
+
+char *idio_libc_struct_timeval_as_string (IDIO tv)
+{
+    IDIO_ASSERT (tv);
+
+    IDIO_TYPE_ASSERT (C_pointer, tv);
+
+    struct timeval *tvp = IDIO_C_TYPE_POINTER_P (tv);
+
+    int prec = 6;
+    if (idio_S_nil != idio_print_conversion_precision_sym) {
+	IDIO ipcp = idio_module_symbol_value (idio_print_conversion_precision_sym,
+					      idio_Idio_module,
+					      IDIO_LIST1 (idio_S_false));
+
+	if (idio_S_false != ipcp) {
+	    if (idio_isa_fixnum (ipcp)) {
+		prec = IDIO_FIXNUM_VAL (ipcp);
+	    } else {
+		/*
+		 * Test Case: ??
+		 *
+		 * See test-bignum-error.idio -- messing with
+		 * idio-print-conversion-* is "unwise."
+		 */
+		idio_error_param_type ("fixnum", ipcp, IDIO_C_FUNC_LOCATION ());
+
+		/* notreached */
+		return NULL;
+	    }
+	}
+    }
+
+    char us[BUFSIZ];
+    sprintf (us, "%06ld", tvp->tv_usec);
+    char fmt[BUFSIZ];
+    sprintf (fmt, "%%ld.%%.%ds", prec);
+    char *buf;
+    if (IDIO_ASPRINTF (&buf, fmt, tvp->tv_sec, us) == -1) {
+	/*
+	 * Test Case: ??
+	 */
+	idio_error_alloc ("asprintf");
+
+	/* notreached */
+	return NULL;
+    }
+
+    return buf;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("struct-timeval-as-string", libc_struct_timeval_as_string, (IDIO tv), "tv", "\
+Return a C struct timeval as a string				\n\
+								\n\
+:param tv: C struct timeval					\n\
+:type tv: C_pointer						\n\
+:return: string							\n\
+:rtype: string							\n\
+")
+{
+    IDIO_ASSERT (tv);
+
+    IDIO_USER_TYPE_ASSERT (C_pointer, tv);
+
+    IDIO osh = idio_open_output_string_handle_C ();
+
+    char *tvs = idio_libc_struct_timeval_as_string (tv);
+
+    idio_display_C (tvs, osh);
+
+    IDIO_GC_FREE (tvs);
+
+    return idio_get_output_string (osh);
+}
+
+IDIO idio_libc_struct_timeval_pointer (struct timeval *tvp)
+{
+    IDIO_C_ASSERT (tvp);
+
+    IDIO r = idio_C_pointer_free_me (tvp);
+    IDIO_C_TYPE_POINTER_PRINTER (r)  = idio_libc_struct_timeval_as_string;
+
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE2_DS ("subtract-struct-timeval", libc_subtract_struct_timeval, (IDIO tv1, IDIO tv2), "tv1 tv2", "\
+A simple function to calculate the difference between two C	\n\
+struct timevals							\n\
+								\n\
+tv1 - tv2							\n\
+								\n\
+:param tv1: first timeval					\n\
+:type tv1: C_pointer						\n\
+:param tv2: second timeval					\n\
+:type tv2: C_pointer						\n\
+:return: C struct timeval or raises ^system-error		\n\
+:rtype: C_pointer						\n\
+")
+{
+    IDIO_ASSERT (tv1);
+    IDIO_ASSERT (tv2);
+
+    IDIO_USER_TYPE_ASSERT (C_pointer, tv1);
+    IDIO_USER_TYPE_ASSERT (C_pointer, tv2);
+
+    struct timeval *tv1p = IDIO_C_TYPE_POINTER_P (tv1);
+    struct timeval *tv2p = IDIO_C_TYPE_POINTER_P (tv2);
+
+    struct timeval *tvp = (struct timeval *) idio_alloc (sizeof (struct timeval));
+
+    tvp->tv_sec = tv1p->tv_sec - tv2p->tv_sec;
+    tvp->tv_usec = tv1p->tv_usec - tv2p->tv_usec;
+
+    if (tvp->tv_usec < 0) {
+	tvp->tv_usec += 1000000;
+	tvp->tv_sec -= 1;
+    }
+
+    return idio_libc_struct_timeval_pointer (tvp);
+}
+
+IDIO_DEFINE_PRIMITIVE2_DS ("add-struct-timeval", libc_add_struct_timeval, (IDIO tv1, IDIO tv2), "tv1 tv2", "\
+A simple function to calculate the sum of two C struct timevals \n\
+								\n\
+tv1 + tv2							\n\
+								\n\
+:param tv1: first timeval					\n\
+:type tv1: C_pointer						\n\
+:param tv2: second timeval					\n\
+:type tv2: C_pointer						\n\
+:return: C struct timeval or raises ^system-error		\n\
+:rtype: C_pointer						\n\
+")
+{
+    IDIO_ASSERT (tv1);
+    IDIO_ASSERT (tv2);
+
+    IDIO_USER_TYPE_ASSERT (C_pointer, tv1);
+    IDIO_USER_TYPE_ASSERT (C_pointer, tv2);
+
+    struct timeval *tv1p = IDIO_C_TYPE_POINTER_P (tv1);
+    struct timeval *tv2p = IDIO_C_TYPE_POINTER_P (tv2);
+
+    struct timeval *tvp = (struct timeval *) idio_alloc (sizeof (struct timeval));
+
+    tvp->tv_sec = tv1p->tv_sec + tv2p->tv_sec;
+    tvp->tv_usec = tv1p->tv_usec + tv2p->tv_usec;
+
+    if (tvp->tv_usec > 1000000) {
+	tvp->tv_usec -= 1000000;
+	tvp->tv_sec += 1;
+    }
+
+    return idio_libc_struct_timeval_pointer (tvp);
+}
+
 IDIO_DEFINE_PRIMITIVE2_DS ("access", libc_access, (IDIO ipathname, IDIO imode), "pathname mode", "\
 in C, access (pathname, mode)					\n\
 a wrapper to libc access (2)					\n\
 								\n\
-:param pathname: file name						\n\
+:param pathname: file name					\n\
 :type pathname: string						\n\
 :param mode: accessibility check(s)				\n\
 :type mode: C_int						\n\
@@ -133,6 +371,11 @@ a wrapper to libc access (2)					\n\
     char *pathname = idio_string_as_C (ipathname, &size);
     size_t C_size = strlen (pathname);
     if (C_size != size) {
+	/*
+	 * Test Case: libc-wrap-errors/access-bad-format.idio
+	 *
+	 * access (join-string (make-string 1 #U+0) '("hello" "world")) libc/R_OK
+	 */
 	IDIO_GC_FREE (pathname);
 
 	idio_libc_error_format ("access: pathname contains an ASCII NUL", ipathname, IDIO_C_FUNC_LOCATION ());
@@ -169,6 +412,11 @@ a wrapper to libc chdir (2)					\n\
     char *path = idio_string_as_C (ipath, &size);
     size_t C_size = strlen (path);
     if (C_size != size) {
+	/*
+	 * Test Case: libc-wrap-errors/chdir-bad-format.idio
+	 *
+	 * chdir (join-string (make-string 1 #U+0) '("hello" "world"))
+	 */
 	IDIO_GC_FREE (path);
 
 	idio_libc_error_format ("chdir: path contains an ASCII NUL", ipath, IDIO_C_FUNC_LOCATION ());
@@ -180,7 +428,14 @@ a wrapper to libc chdir (2)					\n\
 
     IDIO_GC_FREE (path);
 
-    if (r == -1) {
+    if (-1 == r) {
+	/*
+	 * Test Case: libc-wrap-errors/chdir-non-existent.idio
+	 *
+	 * tmpdir := (make-tmp-dir)
+	 * rmdir tmpdir
+	 * chdir tmpdir
+	 */
 	idio_error_system_errno ("chdir", idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
@@ -208,7 +463,15 @@ a wrapper to libc close (2)					\n\
     int r = close (fd);
 
     if (-1 == r) {
-	idio_error_system_errno ("close", IDIO_LIST1 (ifd), IDIO_C_FUNC_LOCATION ());
+	/*
+	 * Test Case: libc-wrap-errors/close-bad-fd.idio
+	 *
+	 * fd+name := mkstemp tmpfilename
+	 * close (ph fd+name)
+	 * delete-file (pht fd+name)
+	 * close (ph fd+name)
+	 */
+	idio_error_system_errno ("close", ifd, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -234,13 +497,30 @@ a wrapper to libc dup (2)					\n\
     } else if (idio_isa_C_int (ioldfd)) {
 	oldfd = IDIO_C_TYPE_INT (ioldfd);
     } else {
-	idio_error_param_type ("fixnum|C_int ioldfd", ioldfd, IDIO_C_FUNC_LOCATION ());
+	/*
+	 * Test Case: libc-wrap-errors/dup-bad-type.idio
+	 *
+	 * dup #t
+	 */
+	idio_error_param_type ("fixnum|C_int oldfd", ioldfd, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
     }
 
     int r = dup (oldfd);
 
     if (-1 == r) {
-	idio_error_system_errno ("dup", IDIO_LIST1 (ioldfd), IDIO_C_FUNC_LOCATION ());
+	/*
+	 * Test Case: libc-wrap-errors/dup-bad-fd.idio
+	 *
+	 * fd+name := mkstemp tmpfilename
+	 * close (ph fd+name)
+	 * delete-file (pht fd+name)
+	 * dup (ph fd+name)
+	 */
+	idio_error_system_errno ("dup", ioldfd, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
     }
 
     return idio_C_int (r);
@@ -267,7 +547,14 @@ a wrapper to libc dup2 (2)					\n\
     } else if (idio_isa_C_int (ioldfd)) {
 	oldfd = IDIO_C_TYPE_INT (ioldfd);
     } else {
-	idio_error_param_type ("fixnum|C_int ioldfd", ioldfd, IDIO_C_FUNC_LOCATION ());
+	/*
+	 * Test Case: libc-wrap-errors/dup2-bad-type.idio
+	 *
+	 * dup2 #t 99
+	 */
+	idio_error_param_type ("fixnum|C_int oldfd", ioldfd, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
     }
 
     int newfd = -1;
@@ -276,14 +563,31 @@ a wrapper to libc dup2 (2)					\n\
     } else if (idio_isa_C_int (inewfd)) {
 	newfd = IDIO_C_TYPE_INT (inewfd);
     } else {
-	idio_error_param_type ("fixnum|C_int inewfd", inewfd, IDIO_C_FUNC_LOCATION ());
+	/*
+	 * Test Case: libc-wrap-errors/dup2-bad-type.idio
+	 *
+	 * dup2 99 #t
+	 */
+	idio_error_param_type ("fixnum|C_int newfd", inewfd, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
     }
 
 
     int r = dup2 (oldfd, newfd);
 
     if (-1 == r) {
+	/*
+	 * Test Case: libc-wrap-errors/dup2-bad-fd.idio
+	 *
+	 * fd+name := mkstemp tmpfilename
+	 * close (ph fd+name)
+	 * delete-file (pht fd+name)
+	 * dup2 (ph fd+name) 99
+	 */
 	idio_error_system_errno ("dup2", IDIO_LIST2 (ioldfd, inewfd), IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
     }
 
     return idio_C_int (r);
@@ -305,7 +609,14 @@ DOES NOT RETURN :)						\n\
     if (idio_isa_fixnum (istatus)) {
 	status = IDIO_FIXNUM_VAL (istatus);
     } else {
+	/*
+	 * Test Case: libc-wrap-errors/exit-bad-type.idio
+	 *
+	 * exit #t
+	 */
 	idio_error_param_type ("fixnum", istatus, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
     }
 
     exit (status);
@@ -343,14 +654,24 @@ F_SETFD								\n\
     } else if (idio_isa_C_int (ifd)) {
 	fd = IDIO_C_TYPE_INT (ifd);
     } else {
-	idio_error_param_type ("fixnum|C_int ifd", ifd, IDIO_C_FUNC_LOCATION ());
+	/*
+	 * Test Case: libc-wrap-errors/fcntl-bad-fd-type.idio
+	 *
+	 * fcntl #t F_DUPFD
+	 */
+	idio_error_param_type ("fixnum|C_int fd", ifd, IDIO_C_FUNC_LOCATION ());
     }
 
     int cmd = 0;
     if (idio_isa_C_int (icmd)) {
 	cmd = IDIO_C_TYPE_INT (icmd);
     } else {
-	idio_error_param_type ("C_int icmd", icmd, IDIO_C_FUNC_LOCATION ());
+	/*
+	 * Test Case: libc-wrap-errors/fcntl-bad-cmd-type.idio
+	 *
+	 * fcntl 0 1
+	 */
+	idio_error_param_type ("C_int cmd", icmd, IDIO_C_FUNC_LOCATION ());
     }
 
     IDIO iarg = idio_list_head (args);
@@ -370,6 +691,11 @@ F_SETFD								\n\
 	    } else if (idio_isa_C_int (iarg)) {
 		arg = IDIO_C_TYPE_INT (iarg);
 	    } else {
+		/*
+		 * Test Case: libc-wrap-errors/fcntl-F_DUPFD-bad-arg-type.idio
+		 *
+		 * fcntl 0 F_DUPFD #t
+		 */
 		idio_error_param_type ("fixnum|C_int", iarg, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
@@ -390,6 +716,11 @@ F_SETFD								\n\
 	    } else if (idio_isa_C_int (iarg)) {
 		arg = IDIO_C_TYPE_INT (iarg);
 	    } else {
+		/*
+		 * Test Case: libc-wrap-errors/fcntl-F_DUPFD_CLOEXEC-bad-arg-type.idio
+		 *
+		 * fcntl 0 F_DUPFD_CLOEXEC #t
+		 */
 		idio_error_param_type ("fixnum|C_int", iarg, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
@@ -409,6 +740,11 @@ F_SETFD								\n\
 	    if (idio_isa_C_int (iarg)) {
 		arg = IDIO_C_TYPE_INT (iarg);
 	    } else {
+		/*
+		 * Test Case: libc-wrap-errors/fcntl-F_SETFD-bad-arg-type.idio
+		 *
+		 * fcntl 0 F_SETFD #t
+		 */
 		idio_error_param_type ("C_int", iarg, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
@@ -417,7 +753,26 @@ F_SETFD								\n\
 	}
 	break;
     default:
-	idio_error_C ("unexpected cmd", IDIO_LIST2 (ifd, icmd), IDIO_C_FUNC_LOCATION ());
+	/*
+	 * Test Case: libc-wrap-errors/fcntl-unknown-cmd.idio
+	 *
+	 * fcntl 0 (C/integer-> 98765)
+	 */
+	idio_error_param_value ("fcntl", "unexpected cmd", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    if (-1 == r) {
+	/*
+	 * Test Case: libc-wrap-errors/fcntl-F_DUPFD-bad-fd.idio
+	 *
+	 * fd+name := mkstemp "XXXXXX"
+	 * close (ph fd+name)
+	 * delete-file (pht fd+name)
+	 * fcntl (ph fd+name) F_DUPFD 0
+	 */
+	idio_error_system_errno ("fcntl", IDIO_LIST3 (ifd, icmd, args), IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -441,6 +796,11 @@ a wrapper to libc fileno (3)					\n\
     if (idio_isa_file_handle (ifilep)) {
 	fd = idio_file_handle_fd (ifilep);
     } else {
+	/*
+	 * Test Case: libc-wrap-errors/fileno-bad-type.idio
+	 *
+	 * fileno #t
+	 */
 	idio_error_param_type ("file-handle", ifilep, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
@@ -460,6 +820,11 @@ a wrapper to libc fork (2)					\n\
     pid_t pid = fork ();
 
     if (-1 == pid) {
+	/*
+	 * Test Case: ??
+	 *
+	 * How do you make fork(2) fail?
+	 */
 	idio_error_system_errno ("fork", idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
@@ -523,7 +888,17 @@ a wrapper to libc getcwd (3)					\n\
     char *cwd = getcwd (NULL, PATH_MAX);
 
     if (NULL == cwd) {
+	/*
+	 * Test Case: libc-wrap-errors/getcwd-no-access.idio
+	 *
+	 * tmpdir := (make-tmp-dir)
+	 * chdir tmpdir
+	 * chmod -rx tmpdir
+	 * (getcwd)
+	 */
 	idio_error_system_errno ("getcwd", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
     }
 
     IDIO r = idio_string_C (cwd);
@@ -546,7 +921,15 @@ a wrapper to libc getpgrp (2)					\n\
     pid_t pid = getpgrp ();
 
     if (-1 == pid) {
+	/*
+	 * Test Case: ??
+	 *
+	 * Not sure this POSIX.1 variant getpgrp(2) can fail...here's
+	 * hoping!
+	 */
 	idio_error_system_errno ("getpgrp", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
     }
 
     return idio_C_int (pid);
@@ -560,13 +943,123 @@ a wrapper to libc getpid (2)					\n\
 :rtype: C_int							\n\
 ")
 {
-    pid_t pid = getpid ();
+    /*
+     * XXX getpid(2) is always successful.
+     */
+    return idio_C_int (getpid ());
+}
 
-    if (-1 == pid) {
-	idio_error_system_errno ("getpid", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+IDIO idio_libc_getrlimit (int resource)
+{
+    struct rlimit rlim;
+
+    if (getrlimit (resource, &rlim) == -1) {
+	/*
+	 * Test Case:  libc-wrap-errors/getrlimit-bad-rlim.idio
+	 *
+	 * getrlimit (C/integer-> -1)
+	 */
+	idio_error_system_errno ("getrlimit", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
     }
 
-    return idio_C_int (pid);
+    /*
+     * XXX
+     *
+     * rlim_t not ints!
+     */
+    return idio_struct_instance (idio_libc_struct_rlimit, IDIO_LIST2 (idio_C_int (rlim.rlim_cur),
+								      idio_C_int (rlim.rlim_max)));
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("getrlimit", libc_getrlimit, (IDIO iresource), "resource", "\
+in C, getrlimit (resource)					\n\
+a wrapper to libc getrlimit (2)					\n\
+								\n\
+:param resource: resource, see below				\n\
+:type resource: C_int						\n\
+:return: struct-rlimit or raises ^system-error			\n\
+:rtype: struct instance						\n\
+								\n\
+The resource names follow C conventions such as ``RLIMIT_AS``	\n\
+and ``RLIMIT_NOFILE``.						\n\
+")
+{
+    IDIO_ASSERT (iresource);
+
+    IDIO_USER_TYPE_ASSERT (C_int, iresource);
+
+    return idio_libc_getrlimit (IDIO_C_TYPE_INT (iresource));
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("getrusage", libc_getrusage, (IDIO who), "who", "\
+in C, getrusage (who)						\n\
+a wrapper to libc getrusage (2)					\n\
+								\n\
+:param who: who, see below					\n\
+:type who: C_int						\n\
+:return: struct-rusage or raises ^system-error			\n\
+:rtype: struct-rusage						\n\
+								\n\
+The parameter `who` refers to RUSAGE_SELF or RUSAGE_CHILDREN	\n\
+")
+{
+    IDIO_ASSERT (who);
+
+    IDIO_USER_TYPE_ASSERT (C_int, who);
+
+    struct rusage *rup = (struct rusage *) idio_alloc (sizeof (struct rusage));
+
+    if (-1 == getrusage (IDIO_C_TYPE_INT (who), rup)) {
+	/*
+	 * Test Case:  libc-wrap-errors/getrusage-bad-who.idio
+	 *
+	 * On Linux:
+	 *
+	 * #define RUSAGE_SELF     0
+	 * #define RUSAGE_CHILDREN (-1)
+	 * #define RUSAGE_BOTH     (-2)
+	 * #define RUSAGE_THREAD   1
+	 *
+	 * Is that positive/negative, a bit-mask?  15 seems to provoke
+	 * EINVAL...
+	 *
+	 * getrusage (C/integer-> 15)
+	 */
+	idio_error_system_errno ("getrusage", who, IDIO_C_FUNC_LOCATION ());
+    }
+
+    return idio_C_pointer_free_me (rup);
+}
+
+IDIO idio_libc_struct_timeval_pointer (struct timeval *tvp);
+
+IDIO_DEFINE_PRIMITIVE0_DS ("gettimeofday", libc_gettimeofday, (void), "", "\
+in C, gettimeofday ()						\n\
+a wrapper to libc gettimeofday (2)				\n\
+								\n\
+:return: struct-timeval or raises ^system-error			\n\
+:rtype: struct-timeval						\n\
+								\n\
+The struct timezone parameter is not used.			\n\
+")
+{
+    struct timeval *tvp = (struct timeval *) idio_alloc (sizeof (struct timeval));
+
+    if (-1 == gettimeofday (tvp, NULL)) {
+	/*
+	 * Test Case: ??
+	 *
+	 * EFAULT One of tv or tz pointed outside the accessible
+	 * address space.
+	 */
+	idio_error_system_errno ("gettimeofday", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    return idio_libc_struct_timeval_pointer (tvp);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("isatty", libc_isatty, (IDIO ifd), "fd", "\
@@ -588,7 +1081,16 @@ a wrapper to libc isatty (3)					\n\
     int r = isatty (fd);
 
     if (0 == r) {
-	idio_error_system_errno ("isatty", IDIO_LIST1 (ifd), IDIO_C_FUNC_LOCATION ());
+	/*
+	 * Test Case: libc-wrap-errors/isatty-not-tty.idio
+	 *
+	 * fd+name := mkstemp "XXXXXX"
+	 * delete-file (pht fd+name)
+	 * isatty (ph fd+name)
+	 */
+	idio_error_system_errno ("isatty", ifd, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
     }
 
     return idio_C_int (r);
@@ -618,7 +1120,70 @@ a wrapper to libc kill (2)					\n\
     int r = kill (pid, sig);
 
     if (-1 == r) {
+	/*
+	 * Test Case: libc-wrap-errors/kill-invalid-signal.idio
+	 *
+	 * ;; technically risky as 98765 could be a valid signal...
+	 * kill (C/integer-> PID) (C/integer-> 98765)
+	 */
 	idio_error_system_errno ("kill", IDIO_LIST2 (ipid, isig), IDIO_C_FUNC_LOCATION ());
+    }
+
+    return idio_C_int (r);
+}
+
+IDIO_DEFINE_PRIMITIVE2_DS ("mkdir", libc_mkdir, (IDIO ipathname, IDIO imode), "pathname mode", "\
+in C, mkdir (pathname, mode)					\n\
+a wrapper to libc mkdir (2)					\n\
+								\n\
+:param pathname: file name					\n\
+:type pathname: string						\n\
+:param mode: mkdiribility check(s)				\n\
+:type mode: C_int						\n\
+:return: #t or #f						\n\
+:rtype: boolean							\n\
+")
+{
+    IDIO_ASSERT (ipathname);
+    IDIO_ASSERT (imode);
+
+    IDIO_USER_TYPE_ASSERT (string, ipathname);
+    IDIO_USER_TYPE_ASSERT (C_int, imode);
+
+    size_t size = 0;
+    char *pathname = idio_string_as_C (ipathname, &size);
+    size_t C_size = strlen (pathname);
+    if (C_size != size) {
+	/*
+	 * Test Case: libc-wrap-errors/mkdir-bad-format.idio
+	 *
+	 * mkdir (join-string (make-string 1 #U+0) '("hello" "world")) (C/integer-> #o555)
+	 */
+	IDIO_GC_FREE (pathname);
+
+	idio_libc_error_format ("mkdir: pathname contains an ASCII NUL", ipathname, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    int mode = IDIO_C_TYPE_INT (imode);
+
+    int r = mkdir (pathname, mode);
+
+    if (-1 == r) {
+	/*
+	 * Test Case: libc-wrap-errors/mkdir-pathname-exists.idio
+	 *
+	 * fd+name := mkstemp "XXXXXX"
+	 * close (ph fd+name)
+	 * mkdir (pht fd+name) (C/integer-> #o555)
+	 *
+	 * XXX You'll want an unwind-protect to actually delete the
+	 * file!
+	 */
+	idio_error_system_errno ("mkdir", IDIO_LIST2 (ipathname, imode), IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
     }
 
     return idio_C_int (r);
@@ -646,6 +1211,11 @@ a wrapper to libc mkdtemp (3)					\n\
     char *template = idio_string_as_C (itemplate, &size);
     size_t C_size = strlen (template);
     if (C_size != size) {
+	/*
+	 * Test Case: libc-wrap-errors/mkdtemp-bad-format.idio
+	 *
+	 * mkdtemp (join-string (make-string 1 #U+0) '("hello" "world"))
+	 */
 	IDIO_GC_FREE (template);
 
 	idio_libc_error_format ("mkdtemp: template contains an ASCII NUL", itemplate, IDIO_C_FUNC_LOCATION ());
@@ -656,9 +1226,14 @@ a wrapper to libc mkdtemp (3)					\n\
     char *d = mkdtemp (template);
 
     if (NULL == d) {
+	/*
+	 * Test Case: libc-wrap-errors/mkdtemp-bad-template.idio
+	 *
+	 * mkdtemp "XXX"
+	 */
 	IDIO_GC_FREE (template);
 
-	idio_error_system_errno ("mkdtemp", IDIO_LIST1 (itemplate), IDIO_C_FUNC_LOCATION ());
+	idio_error_system_errno ("mkdtemp", itemplate, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -692,6 +1267,11 @@ a wrapper to libc mkstemp (3)					\n\
     char *template = idio_string_as_C (itemplate, &size);
     size_t C_size = strlen (template);
     if (C_size != size) {
+	/*
+	 * Test Case: libc-wrap-errors/mkstemp-bad-format.idio
+	 *
+	 * mkstemp (join-string (make-string 1 #U+0) '("hello" "world"))
+	 */
 	IDIO_GC_FREE (template);
 
 	idio_libc_error_format ("mkstemp: template contains an ASCII NUL", itemplate, IDIO_C_FUNC_LOCATION ());
@@ -702,9 +1282,14 @@ a wrapper to libc mkstemp (3)					\n\
     int r = mkstemp (template);
 
     if (-1 == r) {
+	/*
+	 * Test Case: libc-wrap-errors/mkstemp-bad-template.idio
+	 *
+	 * mkstemp "XXX"
+	 */
 	IDIO_GC_FREE (template);
 
-	idio_error_system_errno ("mkstemp", IDIO_LIST1 (itemplate), IDIO_C_FUNC_LOCATION ());
+	idio_error_system_errno ("mkstemp", itemplate, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -744,7 +1329,14 @@ the pipe array.							\n\
     int r = pipe (pipefd);
 
     if (-1 == r) {
+	/*
+	 * Test Case: ??
+	 *
+	 * Short of reaching EMFILE/ENFILE there's not much we can do.
+	 */
 	idio_error_system_errno ("pipe", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
     }
 
     return idio_C_pointer_free_me (pipefd);
@@ -790,6 +1382,21 @@ See ``pipe`` for a constructor ofthe pipe array.		\n\
     return idio_C_int (pipefd[1]);
 }
 
+/*
+ * XXX
+ *
+ * ssize_t read(int fd, void *buf, size_t count);
+ *
+ * The nominal limit for count is ssize_t in POSIX (noting that count
+ * itself is size_t).
+ *
+ * Linux suggests it will limit read(2) to 0x7ffff000 (2,147,479,552)
+ * bytes on both 32-bit and 64-bit systems.
+ *
+ * We allow a fixnum (2 bits short of an intptr_t) or a C_int -- while
+ * we figure out the C FFI for typedefs -- which is a subset of
+ * size_t.  Probably.
+ */
 IDIO_DEFINE_PRIMITIVE1V_DS ("read", libc_read, (IDIO ifd, IDIO icount), "fd [count]", "\
 in C, read (fd[, count])					\n\
 a wrapper to libc read (2)					\n\
@@ -818,11 +1425,18 @@ a wrapper to libc read (2)					\n\
 	} else if (idio_isa_C_int (icount)) {
 	    count = IDIO_C_TYPE_INT (icount);
 	} else {
+	    /*
+	     * Test Case: libc-wrap-errors/read-bad-count-type.idio
+	     *
+	     * read (C/integer-> 0) #t
+	     */
 	    idio_error_param_type ("fixnum|C_int", icount, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
 	}
     }
 
-    char buf[count];
+    char *buf = idio_alloc (count);
 
     ssize_t n = read (fd, buf, count);
 
@@ -833,6 +1447,8 @@ a wrapper to libc read (2)					\n\
     } else {
 	r = idio_S_eof;
     }
+
+    IDIO_GC_FREE (buf);
 
     return r;
 }
@@ -855,6 +1471,11 @@ a wrapper to libc rmdir (2)					\n\
     char *pathname = idio_string_as_C (ipathname, &size);
     size_t C_size = strlen (pathname);
     if (C_size != size) {
+	/*
+	 * Test Case: libc-wrap-errors/rmdir-bad-format.idio
+	 *
+	 * rmdir (join-string (make-string 1 #U+0) '("hello" "world"))
+	 */
 	IDIO_GC_FREE (pathname);
 
 	idio_libc_error_format ("rmdir: pathname contains an ASCII NUL", ipathname, IDIO_C_FUNC_LOCATION ());
@@ -867,7 +1488,14 @@ a wrapper to libc rmdir (2)					\n\
     IDIO_GC_FREE (pathname);
 
     if (-1 == r) {
-	idio_error_system_errno ("rmdir", IDIO_LIST1 (ipathname), IDIO_C_FUNC_LOCATION ());
+	/*
+	 * Test Case: libc-wrap-errors/rmdir-non-existent.idio
+	 *
+	 * tmpdir := (make-tmp-dir)
+	 * rmdir tmpdir
+	 * rmdir tmpdir
+	 */
+	idio_error_system_errno ("rmdir", ipathname, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -909,11 +1537,68 @@ a wrapper to libc setpgid (2)					\n\
 	     */
 	    r = 0;
 	} else {
+	    /*
+	     * Test Case: libc-wrap-errors/setpgid-negative-pgid.idio
+	     *
+	     * setpgid (C/integer-> PID) (C/integer-> -1)
+	     */
 	    idio_error_system_errno ("setpgid", IDIO_LIST2 (ipid, ipgid), IDIO_C_FUNC_LOCATION ());
 	}
     }
 
     return idio_C_int (r);
+}
+
+void idio_libc_setrlimit (int resource, struct rlimit *rlimp)
+{
+    if (setrlimit (resource, rlimp) == -1) {
+	/*
+	 * Test Case:  libc-wrap-errors/setrlimit-bad-rlim.idio
+	 *
+	 * setrlimit (C/integer-> -1) (getrlimit RLIMIT_CPU)
+	 */
+	idio_error_system_errno ("setrlimit", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+    }
+}
+
+IDIO_DEFINE_PRIMITIVE2_DS ("setrlimit", libc_setrlimit, (IDIO iresource, IDIO irlim), "resource rlim", "\
+in C, setrlimit (resource, rlim)				\n\
+a wrapper to libc setrlimit (2)					\n\
+								\n\
+:param resource: resource, see below				\n\
+:type resource: C_int						\n\
+:param rlim: struct-rlimit					\n\
+:type rlim: struct instance					\n\
+:return: 0 or raises ^system-error				\n\
+:rtype: C_int							\n\
+								\n\
+The resource names follow C conventions such as ``RLIMIT_AS``	\n\
+and ``RLIMIT_NOFILE``.						\n\
+								\n\
+See ``getrlimit`` to obtain a struct-rlimit.			\n\
+")
+{
+    IDIO_ASSERT (iresource);
+    IDIO_ASSERT (irlim);
+
+    IDIO_USER_TYPE_ASSERT (C_int, iresource);
+    IDIO_USER_TYPE_ASSERT (struct_instance, irlim);
+
+    IDIO cur = idio_struct_instance_ref_direct (irlim, IDIO_STRUCT_RLIMIT_RLIM_CUR);
+    IDIO max = idio_struct_instance_ref_direct (irlim, IDIO_STRUCT_RLIMIT_RLIM_MAX);
+
+    struct rlimit rlim;
+    /*
+     * XXX
+     *
+     * rlim_t not ints!
+     */
+    rlim.rlim_cur = (rlim_t) idio_C_int_get (cur);
+    rlim.rlim_max = (rlim_t) idio_C_int_get (max);
+
+    idio_libc_setrlimit (IDIO_C_TYPE_INT (iresource), &rlim);
+
+    return idio_S_unspec;
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("signal", libc_signal, (IDIO isig, IDIO ifunc), "sig func", "\
@@ -944,7 +1629,14 @@ SIG_DFL								\n\
     void (*r) (int) = signal (sig, func);
 
     if (SIG_ERR == r) {
+	/*
+	 * Test Case: libc-wrap-errors/signal-bad-signal.idio
+	 *
+	 * signal (C/integer-> -1) SIG_DFL
+	 */
 	idio_error_system_errno ("signal", IDIO_LIST2 (isig, ifunc), IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
     }
 
     return idio_C_pointer (r);
@@ -982,7 +1674,14 @@ given signal.							\n\
     struct sigaction osa;
 
     if (sigaction (sig, NULL, &osa) < 0) {
+	/*
+	 * Test Case: libc-wrap-errors/signal-handler-bad-signal.idio
+	 *
+	 * signal-handler (C/integer-> -1)
+	 */
 	idio_error_system_errno ("sigaction", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
     }
 
     /*
@@ -996,6 +1695,11 @@ given signal.							\n\
     void (*r) ();
 
     if (osa.sa_flags & SA_SIGINFO) {
+	/*
+	 * Code coverage:
+	 *
+	 * Not sure...
+	 */
 	r = osa.sa_sigaction;
     } else {
 	r = osa.sa_handler;
@@ -1023,6 +1727,11 @@ a wrapper to libc sleep (3)					\n\
     } else if (idio_isa_C_uint (iseconds)) {
 	seconds = IDIO_C_TYPE_UINT (iseconds);
     } else {
+	/*
+	 * Test Case: libc-wrap-errors/sleep-bad-type.idio
+	 *
+	 * sleep #t
+	 */
 	idio_error_param_type ("unsigned fixnum|C_uint", iseconds, IDIO_C_FUNC_LOCATION ());
     }
 
@@ -1040,6 +1749,11 @@ IDIO idio_libc_stat (IDIO pathname)
     char *pathname_C = idio_string_as_C (pathname, &size);
     size_t C_size = strlen (pathname_C);
     if (C_size != size) {
+	/*
+	 * Test Case: libc-wrap-errors/access-bad-format.idio
+	 *
+	 * stat (join-string (make-string 1 #U+0) '("hello" "world"))
+	 */
 	IDIO_GC_FREE (pathname_C);
 
 	idio_libc_error_format ("stat: pathname contains an ASCII NUL", pathname, IDIO_C_FUNC_LOCATION ());
@@ -1050,15 +1764,41 @@ IDIO idio_libc_stat (IDIO pathname)
     struct stat sb;
 
     if (stat (pathname_C, &sb) == -1) {
+	/*
+	 * Test Case: libc-wrap-errors/stat-empty-pathname.idio
+	 *
+	 * stat ""
+	 */
 	IDIO_GC_FREE (pathname_C);
 
-	idio_error_system_errno ("stat", IDIO_LIST1 (pathname), IDIO_C_FUNC_LOCATION ());
+	idio_error_system_errno ("stat", pathname, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
 
     /*
-     * XXX idio_C_uint for everything?  We should know more.
+     * XXX
+     *
+     * idio_C_uint for everything?  We should know more about these
+     * typedefs.
+     *
+     * dev_t		st_dev;
+     * ino_t		st_ino
+     * mode_t		st_mode
+     * nlink_t		st_nlink
+     * uid_t		st_uid
+     * gid_t		st_gid
+     * dev_t		st_rdev
+     * off_t		st_size
+     * blksize_t	st_blksize
+     * blkcnt_t		st_blocks
+     * struct timespec	st_atim
+     * struct timespec	st_mtim
+     * struct timespec	st_ctim
+     *
+     * #define	st_atime st_atim.tv_sec
+     * #define	st_mtime st_mtim.tv_sec
+     * #define	st_ctime st_ctim.tv_sec
      */
     IDIO r = idio_struct_instance (idio_libc_struct_stat,
 				   idio_pair (idio_C_uint (sb.st_dev),
@@ -1116,10 +1856,34 @@ a wrapper to libc strerror (3)					\n\
     } else if (idio_isa_C_int (ierrnum)) {
 	errnum = IDIO_C_TYPE_INT (ierrnum);
     } else {
-	idio_error_param_type ("unsigned fixnum|C_int", ierrnum, IDIO_C_FUNC_LOCATION ());
+	/*
+	 * Test Case: libc-wrap-errors/strerror-bad-type.idio
+	 *
+	 * strerror #t
+	 */
+	idio_error_param_type ("fixnum|C_int", ierrnum, IDIO_C_FUNC_LOCATION ());
     }
 
+    /*
+     * Arguably we could make a 0 < errnum < IDIO_LIBC_NERRNO check
+     * ourselves, here.
+     */
+
+    errno = 0;
     char *r = strerror (errnum);
+
+    if (0 != errno) {
+	/*
+	 * Test Case: ?? libc-wrap-errors/strerror-bad-errnum.idio
+	 *
+	 * strerror -1
+	 *
+	 * XXX this generates "Unknown error -1" which means, I guess, all ints are covered.
+	 */
+	idio_error_system_errno ("strerror", ierrnum, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
 
     return idio_string_C (r);
 }
@@ -1132,6 +1896,9 @@ a wrapper to libc strsignal (3)					\n\
 :type sig : fixnum or C_int					\n\
 :return: string describing errnum				\n\
 :rtype: string							\n\
+								\n\
+On some systems (Solaris) #n may be returned for an invalid	\n\
+signal number.							\n\
 ")
 {
     IDIO_ASSERT (isignum);
@@ -1142,12 +1909,26 @@ a wrapper to libc strsignal (3)					\n\
     } else if (idio_isa_C_int (isignum)) {
 	signum = IDIO_C_TYPE_INT (isignum);
     } else {
-	idio_error_param_type ("unsigned fixnum|C_int", isignum, IDIO_C_FUNC_LOCATION ());
+	/*
+	 * Test Case: libc-wrap-errors/strsignal-bad-type.idio
+	 *
+	 * strsignal #t
+	 */
+	idio_error_param_type ("fixnum|C_int", isignum, IDIO_C_FUNC_LOCATION ());
     }
 
     char *r = strsignal (signum);
 
-    return idio_string_C (r);
+    if (NULL == r) {
+	/*
+	 * Code coverage: SunOS
+	 *
+	 * strsignal -1		; #n
+	 */
+	return idio_S_nil;
+    } else {
+	return idio_string_C (r);
+    }
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("tcgetattr", libc_tcgetattr, (IDIO ifd), "fd", "\
@@ -1170,7 +1951,14 @@ a wrapper to libc tcgetattr (3)					\n\
     int r = tcgetattr (fd, tcattrs);
 
     if (-1 == r) {
-	idio_error_system_errno ("tcgetattr", IDIO_LIST1 (ifd), IDIO_C_FUNC_LOCATION ());
+	/*
+	 * Test Case: libc-wrap-errors/tcgetattr-bad-fd.idio
+	 *
+	 * tcgetattr (C/integer-> -1)
+	 */
+	idio_error_system_errno ("tcgetattr", ifd, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
     }
 
     return idio_C_pointer_free_me (tcattrs);
@@ -1195,7 +1983,14 @@ a wrapper to libc tcgetpgrp (3)					\n\
     pid_t pid = tcgetpgrp (fd);
 
     if (-1 == pid) {
-	idio_error_system_errno ("tcgetpgrp", IDIO_LIST1 (ifd), IDIO_C_FUNC_LOCATION ());
+	/*
+	 * Test Case: libc-wrap-errors/tcgetpgrp-bad-fd.idio
+	 *
+	 * tcgetpgrp (C/integer-> -1)
+	 */
+	idio_error_system_errno ("tcgetpgrp", ifd, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
     }
 
     return idio_C_int (pid);
@@ -1236,7 +2031,16 @@ See ``tcgetattr`` for obtaining a struct termios.		\n\
     int r = tcsetattr (fd, options, tcattrs);
 
     if (-1 == r) {
+	/*
+	 * Test Case: libc-wrap-errors/tcsetattr-bad-fd.idio
+	 *
+	 * get the attributes of stdin and assign them to fd -1
+	 *
+	 * tcsetattr (C/integer-> -1) (C/integer-> 0) (tcgetattr (C/integer-> 0))
+	 */
 	idio_error_system_errno ("tcsetattr", IDIO_LIST3 (ifd, ioptions, itcattrs), IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
     }
 
     return idio_C_int (r);
@@ -1267,10 +2071,62 @@ a wrapper to libc tcsetpgrp (3)					\n\
     int r = tcsetpgrp (fd, pgrp);
 
     if (-1 == r) {
+	/*
+	 * Test Case: libc-wrap-errors/tcsetpgrp-bad-fd.idio
+	 *
+	 * tcsetpgrp (C/integer-> -1) (C/integer-> PID)
+	 */
 	idio_error_system_errno ("tcsetpgrp", IDIO_LIST2 (ifd, ipgrp), IDIO_C_FUNC_LOCATION ());
     }
 
     return idio_C_int (r);
+}
+
+IDIO_DEFINE_PRIMITIVE0_DS ("times", libc_times, (void), "", "\
+in C, times ()							\n\
+a wrapper to libc times (3)					\n\
+								\n\
+:return: struct-tms or raises ^system-error			\n\
+:rtype: struct							\n\
+								\n\
+times(3) is complicated because we need to return the struct tms\n\
+that the user would have passed in as a pointer and the clock_t,\n\
+elapsed real time that times(3) returns.			\n\
+								\n\
+The elapsed real time appears as a new field, tms_rtime in the	\n\
+structure.							\n\
+								\n\
+All fields are in clock ticks for which sysconf(_SC_CLK_TCK) is	\n\
+available for reference as the exported symbol CLK_TCK.		\n\
+								\n\
+The fields are Idio numbers, not C_int types.			\n\
+")
+{
+    struct tms tms_buf;
+
+    clock_t ert = times (&tms_buf);
+
+    if (-1 == ert) {
+	/*
+	 * Test Case: ??
+	 *
+	 * EFAULT tms points outside the process's address space.
+	 */
+	idio_error_system_errno ("times", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    /*
+     * XXX
+     *
+     * clock_t not integers!
+     */
+    return idio_struct_instance (idio_libc_struct_tms, IDIO_LIST5 (idio_integer (ert),
+								   idio_integer (tms_buf.tms_utime),
+								   idio_integer (tms_buf.tms_stime),
+								   idio_integer (tms_buf.tms_cutime),
+								   idio_integer (tms_buf.tms_cstime)));
 }
 
 /*
@@ -1286,7 +2142,14 @@ IDIO idio_libc_uname ()
     struct utsname u;
 
     if (uname (&u) == -1) {
+	/*
+	 * Test Case: ??
+	 *
+	 * EFAULT buf is not valid.
+	 */
 	idio_error_system_errno ("uname", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
     }
 
     return idio_struct_instance (idio_libc_struct_utsname, IDIO_LIST5 (idio_string_C (u.sysname),
@@ -1315,7 +2178,14 @@ instead.							\n\
     up = idio_alloc (sizeof (struct utsname));
 
     if (uname (up) == -1) {
+	/*
+	 * Test Case: ??
+	 *
+	 * EFAULT buf is not valid.
+	 */
 	idio_error_system_errno ("uname", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
     }
 
     return idio_C_pointer_free_me (up);
@@ -1339,6 +2209,11 @@ a wrapper to libc unlink (2)					\n\
     char *pathname = idio_string_as_C (ipathname, &size);
     size_t C_size = strlen (pathname);
     if (C_size != size) {
+	/*
+	 * Test Case: libc-wrap-errors/access-bad-format.idio
+	 *
+	 * unlink (join-string (make-string 1 #U+0) '("hello" "world"))
+	 */
 	IDIO_GC_FREE (pathname);
 
 	idio_libc_error_format ("unlink: pathname contains an ASCII NUL", ipathname, IDIO_C_FUNC_LOCATION ());
@@ -1351,7 +2226,15 @@ a wrapper to libc unlink (2)					\n\
     IDIO_GC_FREE (pathname);
 
     if (-1 == r) {
-	idio_error_system_errno ("unlink", IDIO_LIST1 (ipathname), IDIO_C_FUNC_LOCATION ());
+	/*
+	 * Test Case: libc-wrap-errors/unlink-non-existent.idio
+	 *
+	 * fd+name := mkstemp "XXXXXX"
+	 * close (ph fd+name)
+	 * delete-file (pht fd+name)
+	 * unlink (pht fd+name)
+	 */
+	idio_error_system_errno ("unlink", ipathname, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -1399,6 +2282,12 @@ for functions to manipulate ``status``.				\n\
 	if (ECHILD == errno) {
 	    return IDIO_LIST2 (idio_C_int (0), idio_S_nil);
 	}
+
+	/*
+	 * Test Case: libc-wrap-errors/unlink-bad-options.idio
+	 *
+	 * waitpid (C/integer-> 0) (C/integer-> -1)
+	 */
 	idio_error_system_errno ("waitpid", IDIO_LIST2 (ipid, ioptions), IDIO_C_FUNC_LOCATION ());
     }
 
@@ -1544,7 +2433,14 @@ a wrapper to libc write (2)					\n\
     ssize_t n = write (fd, str, blen);
 
     if (-1 == n) {
+	/*
+	 * Test Case: libc-wrap-errors/write-bad-fd.idio
+	 *
+	 * write (C/integer-> -1) "hello\n"
+	 */
 	idio_error_system_errno ("write", IDIO_LIST2 (ifd, istr), IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
     }
 
     IDIO_GC_FREE (str);
@@ -1846,7 +2742,14 @@ char *idio_libc_signal_name (int signum)
 {
     if (signum < IDIO_LIBC_FSIG ||
 	signum > IDIO_LIBC_NSIG) {
-	idio_error_param_value ("signum", "should be an int < NSIG (or SIGRTMAX)", IDIO_C_FUNC_LOCATION ());
+	/*
+	 * Test Case:  libc-wrap-errors/signal-name-bad-signum.idio
+	 *
+	 * signal-name (C/integer-> -1)
+	 */
+	idio_error_param_value ("signum", "should be 0 < int < NSIG (OS dependent)", IDIO_C_FUNC_LOCATION ());
+
+	return NULL;
     }
 
     return idio_libc_signal_names[signum];
@@ -2844,7 +3747,14 @@ char *idio_libc_errno_name (int errnum)
 {
     if (errnum < 0 ||
 	errnum > IDIO_LIBC_NERRNO) {
-	idio_error_param_value ("errnum", "should be an int < 0 (or > NERRNO)", IDIO_C_FUNC_LOCATION ());
+	/*
+	 * Test Case:  libc-wrap-errors/errno-name-bad-errnum.idio
+	 *
+	 * errno-name (C/integer-> -1)
+	 */
+	idio_error_param_value ("errnum", "should be 0 < int < NERRNO (OS dependent)", IDIO_C_FUNC_LOCATION ());
+
+	return NULL;
     }
 
     return idio_libc_errno_names[errnum];
@@ -3071,7 +3981,14 @@ char *idio_libc_rlimit_name (int rlim)
 {
     if (rlim < IDIO_LIBC_FRLIMIT ||
 	rlim > IDIO_LIBC_NRLIMIT) {
-	idio_error_param_value ("rlim", "should be an int < FRLIMIT (or > NRLIMIT)", IDIO_C_FUNC_LOCATION ());
+	/*
+	 * Test Case:  libc-wrap-errors/rlimit-name-bad-rlim.idio
+	 *
+	 * rlimit-name (C/integer-> -1)
+	 */
+	idio_error_param_value ("rlim", "should be an 0 <= int < RLIM_NLIMITS", IDIO_C_FUNC_LOCATION ());
+
+	return NULL;
     }
 
     return idio_libc_rlimit_names[rlim];
@@ -3115,370 +4032,20 @@ of the macro					\n\
     return idio_list_reverse (r);
 }
 
-IDIO idio_libc_getrlimit (int resource)
-{
-    struct rlimit rlim;
-
-    if (getrlimit (resource, &rlim) == -1) {
-	idio_error_system_errno ("getrlimit", idio_S_nil, IDIO_C_FUNC_LOCATION ());
-    }
-
-    return idio_struct_instance (idio_libc_struct_rlimit, IDIO_LIST2 (idio_C_int (rlim.rlim_cur),
-								      idio_C_int (rlim.rlim_max)));
-}
-
-IDIO_DEFINE_PRIMITIVE1_DS ("getrlimit", libc_getrlimit, (IDIO iresource), "resource", "\
-in C, getrlimit (resource)					\n\
-a wrapper to libc getrlimit (2)					\n\
-								\n\
-:param resource: resource, see below				\n\
-:type resource: C_int						\n\
-:return: struct-rlimit or raises ^system-error			\n\
-:rtype: struct instance						\n\
-								\n\
-The resource names follow C conventions such as ``RLIMIT_AS``	\n\
-and ``RLIMIT_NOFILE``.						\n\
-")
-{
-    IDIO_ASSERT (iresource);
-
-    IDIO_USER_TYPE_ASSERT (C_int, iresource);
-
-    return idio_libc_getrlimit (IDIO_C_TYPE_INT (iresource));
-}
-
-void idio_libc_setrlimit (int resource, struct rlimit *rlimp)
-{
-    if (setrlimit (resource, rlimp) == -1) {
-	idio_error_system_errno ("setrlimit", idio_S_nil, IDIO_C_FUNC_LOCATION ());
-    }
-}
-
-IDIO_DEFINE_PRIMITIVE2_DS ("setrlimit", libc_setrlimit, (IDIO iresource, IDIO irlim), "resource rlim", "\
-in C, setrlimit (resource, rlim)				\n\
-a wrapper to libc setrlimit (2)					\n\
-								\n\
-:param resource: resource, see below				\n\
-:type resource: C_int						\n\
-:param rlim: struct-rlimit					\n\
-:type rlim: struct instance					\n\
-:return: 0 or raises ^system-error				\n\
-:rtype: C_int							\n\
-								\n\
-The resource names follow C conventions such as ``RLIMIT_AS``	\n\
-and ``RLIMIT_NOFILE``.						\n\
-								\n\
-See ``getrlimit`` to obtain a struct-rlimit.			\n\
-")
-{
-    IDIO_ASSERT (iresource);
-    IDIO_ASSERT (irlim);
-
-    IDIO_USER_TYPE_ASSERT (C_int, iresource);
-    IDIO_USER_TYPE_ASSERT (struct_instance, irlim);
-
-    IDIO cur = idio_struct_instance_ref_direct (irlim, IDIO_STRUCT_RLIMIT_RLIM_CUR);
-    IDIO max = idio_struct_instance_ref_direct (irlim, IDIO_STRUCT_RLIMIT_RLIM_MAX);
-
-    struct rlimit rlim;
-    rlim.rlim_cur = (rlim_t) idio_C_int_get (cur);
-    rlim.rlim_max = (rlim_t) idio_C_int_get (max);
-
-    idio_libc_setrlimit (IDIO_C_TYPE_INT (iresource), &rlim);
-
-    return idio_S_unspec;
-}
-
-IDIO_DEFINE_PRIMITIVE0_DS ("times", libc_times, (void), "", "\
-in C, times ()							\n\
-a wrapper to libc times (3)					\n\
-								\n\
-:return: struct-tms or raises ^system-error			\n\
-:rtype: struct							\n\
-								\n\
-times(3) is complicated because we need to return the struct tms\n\
-that the user would have passed in as a pointer and the clock_t,\n\
-elapsed real time that times(3) returns.			\n\
-								\n\
-The elapsed real time appears as a new field, tms_rtime in the	\n\
-structure.							\n\
-								\n\
-All fields are in clock ticks for which sysconf(_SC_CLK_TCK) is	\n\
-available for reference as the exported symbol CLK_TCK.		\n\
-								\n\
-The fields are Idio numbers, not C_int types.			\n\
-")
-{
-    struct tms tms_buf;
-
-    clock_t ert = times (&tms_buf);
-
-    if (-1 == ert) {
-	idio_error_system_errno ("times", idio_S_nil, IDIO_C_FUNC_LOCATION ());
-    }
-
-    return idio_struct_instance (idio_libc_struct_tms, IDIO_LIST5 (idio_integer (ert),
-								   idio_integer (tms_buf.tms_utime),
-								   idio_integer (tms_buf.tms_stime),
-								   idio_integer (tms_buf.tms_cutime),
-								   idio_integer (tms_buf.tms_cstime)));
-}
-
-IDIO idio_libc_struct_timeval_pointer (struct timeval *tvp);
-
-IDIO_DEFINE_PRIMITIVE0_DS ("gettimeofday", libc_gettimeofday, (void), "", "\
-in C, gettimeofday ()						\n\
-a wrapper to libc gettimeofday (2)				\n\
-								\n\
-:return: struct-timeval or raises ^system-error			\n\
-:rtype: struct-timeval						\n\
-								\n\
-The struct timezone parameter is not used.			\n\
-")
-{
-    struct timeval *tvp = (struct timeval *) idio_alloc (sizeof (struct timeval));
-
-    if (-1 == gettimeofday (tvp, NULL)) {
-	idio_error_system_errno ("gettimeofday", idio_S_nil, IDIO_C_FUNC_LOCATION ());
-    }
-
-    return idio_libc_struct_timeval_pointer (tvp);
-}
-
-char *idio_libc_struct_timeval_as_string (IDIO tv)
-{
-    IDIO_ASSERT (tv);
-
-    IDIO_TYPE_ASSERT (C_pointer, tv);
-
-    struct timeval *tvp = IDIO_C_TYPE_POINTER_P (tv);
-
-    int prec = 6;
-    if (idio_S_nil != idio_print_conversion_precision_sym) {
-	IDIO ipcp = idio_module_symbol_value (idio_print_conversion_precision_sym,
-					      idio_Idio_module,
-					      IDIO_LIST1 (idio_S_false));
-
-	if (idio_S_false != ipcp) {
-	    if (idio_isa_fixnum (ipcp)) {
-		prec = IDIO_FIXNUM_VAL (ipcp);
-	    } else {
-		idio_error_param_type ("fixnum", ipcp, IDIO_C_FUNC_LOCATION ());
-
-		/* notreached */
-		return NULL;
-	    }
-	}
-    }
-
-    char us[BUFSIZ];
-    sprintf (us, "%06ld", tvp->tv_usec);
-    char fmt[BUFSIZ];
-    sprintf (fmt, "%%ld.%%.%ds", prec);
-    char *buf;
-    if (IDIO_ASPRINTF (&buf, fmt, tvp->tv_sec, us) == -1) {
-	idio_error_alloc ("asprintf");
-
-	/* notreached */
-	return NULL;
-    }
-
-    return buf;
-}
-
-IDIO_DEFINE_PRIMITIVE1_DS ("struct-timeval-as-string", libc_struct_timeval_as_string, (IDIO tv), "tv", "\
-Return a C struct timeval as a string				\n\
-								\n\
-:param tv: C struct timeval					\n\
-:type tv: C_pointer						\n\
-:return: string							\n\
-:rtype: string							\n\
-")
-{
-    IDIO_ASSERT (tv);
-
-    IDIO_USER_TYPE_ASSERT (C_pointer, tv);
-
-    IDIO osh = idio_open_output_string_handle_C ();
-
-    char *tvs = idio_libc_struct_timeval_as_string (tv);
-
-    idio_display_C (tvs, osh);
-
-    IDIO_GC_FREE (tvs);
-
-    return idio_get_output_string (osh);
-}
-
-IDIO idio_libc_struct_timeval_pointer (struct timeval *tvp)
-{
-    IDIO_C_ASSERT (tvp);
-
-    IDIO r = idio_C_pointer_free_me (tvp);
-    IDIO_C_TYPE_POINTER_PRINTER (r)  = idio_libc_struct_timeval_as_string;
-
-    return r;
-}
-
-IDIO_DEFINE_PRIMITIVE2_DS ("subtract-struct-timeval", libc_subtract_struct_timeval, (IDIO tv1, IDIO tv2), "tv1 tv2", "\
-A simple function to calculate the difference between two C	\n\
-struct timevals							\n\
-								\n\
-tv1 - tv2							\n\
-								\n\
-:param tv1: first timeval					\n\
-:type tv1: C_pointer						\n\
-:param tv2: second timeval					\n\
-:type tv2: C_pointer						\n\
-:return: C struct timeval or raises ^system-error		\n\
-:rtype: C_pointer						\n\
-")
-{
-    IDIO_ASSERT (tv1);
-    IDIO_ASSERT (tv2);
-
-    IDIO_USER_TYPE_ASSERT (C_pointer, tv1);
-    IDIO_USER_TYPE_ASSERT (C_pointer, tv2);
-
-    struct timeval *tv1p = IDIO_C_TYPE_POINTER_P (tv1);
-    struct timeval *tv2p = IDIO_C_TYPE_POINTER_P (tv2);
-
-    struct timeval *tvp = (struct timeval *) idio_alloc (sizeof (struct timeval));
-
-    tvp->tv_sec = tv1p->tv_sec - tv2p->tv_sec;
-    tvp->tv_usec = tv1p->tv_usec - tv2p->tv_usec;
-
-    if (tvp->tv_usec < 0) {
-	tvp->tv_usec += 1000000;
-	tvp->tv_sec -= 1;
-    }
-
-    return idio_libc_struct_timeval_pointer (tvp);
-}
-
-IDIO_DEFINE_PRIMITIVE2_DS ("add-struct-timeval", libc_add_struct_timeval, (IDIO tv1, IDIO tv2), "tv1 tv2", "\
-A simple function to calculate the sum of two C struct timevals \n\
-								\n\
-tv1 + tv2							\n\
-								\n\
-:param tv1: first timeval					\n\
-:type tv1: C_pointer						\n\
-:param tv2: second timeval					\n\
-:type tv2: C_pointer						\n\
-:return: C struct timeval or raises ^system-error		\n\
-:rtype: C_pointer						\n\
-")
-{
-    IDIO_ASSERT (tv1);
-    IDIO_ASSERT (tv2);
-
-    IDIO_USER_TYPE_ASSERT (C_pointer, tv1);
-    IDIO_USER_TYPE_ASSERT (C_pointer, tv2);
-
-    struct timeval *tv1p = IDIO_C_TYPE_POINTER_P (tv1);
-    struct timeval *tv2p = IDIO_C_TYPE_POINTER_P (tv2);
-
-    struct timeval *tvp = (struct timeval *) idio_alloc (sizeof (struct timeval));
-
-    tvp->tv_sec = tv1p->tv_sec + tv2p->tv_sec;
-    tvp->tv_usec = tv1p->tv_usec + tv2p->tv_usec;
-
-    if (tvp->tv_usec > 1000000) {
-	tvp->tv_usec -= 1000000;
-	tvp->tv_sec += 1;
-    }
-
-    return idio_libc_struct_timeval_pointer (tvp);
-}
-
-IDIO_DEFINE_PRIMITIVE1_DS ("getrusage", libc_getrusage, (IDIO who), "who", "\
-in C, getrusage (who)						\n\
-a wrapper to libc getrusage (2)					\n\
-								\n\
-:param who: who, see below					\n\
-:type who: C_int						\n\
-:return: struct-rusage or raises ^system-error			\n\
-:rtype: struct-rusage						\n\
-								\n\
-The parameter `who` refers to RUSAGE_SELF or RUSAGE_CHILDREN	\n\
-")
-{
-    IDIO_ASSERT (who);
-
-    IDIO_USER_TYPE_ASSERT (C_int, who);
-
-    struct rusage *rup = (struct rusage *) idio_alloc (sizeof (struct rusage));
-
-    if (-1 == getrusage (IDIO_C_TYPE_INT (who), rup)) {
-	idio_error_system_errno ("getrusage", who, IDIO_C_FUNC_LOCATION ());
-    }
-
-    return idio_C_pointer_free_me (rup);
-}
-
-IDIO_DEFINE_PRIMITIVE1_DS ("struct-rusage-ru_utime", libc_struct_rusage_ru_utime, (IDIO rusage), "rusage", "\
-in C, rusage.ru_utime						\n\
-								\n\
-:param rusage: C struct rusage					\n\
-:type rusage: C_pointer						\n\
-:return: C struct timeval					\n\
-:rtype: C_pointer						\n\
-								\n\
-See `getrusage` for a C struct rusage object.			\n\
-								\n\
-This function returns a copy of the ru_utime field.		\n\
-")
-{
-    IDIO_ASSERT (rusage);
-
-    IDIO_USER_TYPE_ASSERT (C_pointer, rusage);
-
-    struct rusage *rup = IDIO_C_TYPE_POINTER_P (rusage);
-
-    struct timeval *tvp = (struct timeval *) idio_alloc (sizeof (struct timeval));
-
-    tvp->tv_sec = rup->ru_utime.tv_sec;
-    tvp->tv_usec = rup->ru_utime.tv_usec;
-
-    return idio_C_pointer_free_me (tvp);
-}
-
-IDIO_DEFINE_PRIMITIVE1_DS ("struct-rusage-ru_stime", libc_struct_rusage_ru_stime, (IDIO rusage), "rusage", "\
-in C, rusage.ru_stime						\n\
-								\n\
-:param rusage: C struct rusage					\n\
-:type rusage: C_pointer						\n\
-:return: C struct timeval					\n\
-:rtype: C_pointer						\n\
-								\n\
-See `getrusage` for a C struct rusage object.			\n\
-								\n\
-This function returns a copy of the ru_stime field.		\n\
-")
-{
-    IDIO_ASSERT (rusage);
-
-    IDIO_USER_TYPE_ASSERT (C_pointer, rusage);
-
-    struct rusage *rup = IDIO_C_TYPE_POINTER_P (rusage);
-
-    struct timeval *tvp = (struct timeval *) idio_alloc (sizeof (struct timeval));
-
-    tvp->tv_sec = rup->ru_stime.tv_sec;
-    tvp->tv_usec = rup->ru_stime.tv_usec;
-
-    return idio_C_pointer_free_me (tvp);
-}
-
 IDIO_DEFINE_PRIMITIVE0_DS ("EGID/get", EGID_get, (void), "", "\
 getter for the computed value ``EGID`` which is a call to	\n\
 getegid (2).							\n\
 								\n\
 :return: effective group ID					\n\
-:rtype: integer							\n\
+:rtype: C-int							\n\
 ")
 {
-    return idio_integer (getegid ());
+    /*
+     * XXX
+     *
+     * gid_t not C-int!
+     */
+    return idio_C_int (getegid ());
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("EGID/set", EGID_set, (IDIO iegid), "egid", "\
@@ -3486,7 +4053,7 @@ setter for the computed value ``EGID`` which is a call to	\n\
 setegid (2).							\n\
 								\n\
 :param egid: effective group ID					\n\
-:type egid: fixnum or C_int					\n\
+:type egid: fixnum or C-int					\n\
 :return: 0 or raises ^system-error				\n\
 :rtype: fixnum							\n\
 ")
@@ -3495,20 +4062,38 @@ setegid (2).							\n\
 
     gid_t egid = -1;
 
+    /*
+     * XXX
+     *
+     * gid_t not fixnum/C-int!
+     */
     if (idio_isa_fixnum (iegid)) {
 	egid = IDIO_FIXNUM_VAL (iegid);
-    } else if (idio_isa_integer_bignum (iegid)) {
-	egid = idio_bignum_intmax_value (iegid);
     } else if (idio_isa_C_int (iegid)) {
 	egid = IDIO_C_TYPE_INT (iegid);
     } else {
+	/*
+	 * Test Case: libc-wrap-errors/EGID-set-bad-type.idio
+	 *
+	 * EGID = #t
+	 */
 	idio_error_param_type ("integer|C_int", iegid, IDIO_C_LOCATION ("EGID/set"));
+
+	return idio_S_notreached;
     }
 
     int r = setegid (egid);
 
     if (-1 == r) {
+	/*
+	 * Test Case: libc-wrap-errors/EGID-set-invalid-gid.idio
+	 *
+	 * ;; probably a fail...
+	 * EGID = -1
+	 */
 	idio_error_system_errno ("setegid", iegid, IDIO_C_LOCATION ("EGID/set"));
+
+	return idio_S_notreached;
     }
 
     return idio_fixnum (r);
@@ -3519,10 +4104,15 @@ getter for the computed value ``EUID`` which is a call to	\n\
 geteuid (2).							\n\
 								\n\
 :return: effective user ID					\n\
-:rtype: integer							\n\
+:rtype: C-int							\n\
 ")
 {
-    return idio_integer (geteuid ());
+    /*
+     * XXX
+     *
+     * uid_t not C-int!
+     */
+    return idio_C_int (geteuid ());
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("EUID/set", EUID_set, (IDIO ieuid), "euid", "\
@@ -3530,7 +4120,7 @@ setter for the computed value ``EUID`` which is a call to	\n\
 seteuid (2).							\n\
 								\n\
 :param euid: effective user ID					\n\
-:type euid: fixnum or C_int					\n\
+:type euid: fixnum or C-int					\n\
 :return: 0 or raises ^system-error				\n\
 :rtype: fixnum							\n\
 ")
@@ -3539,20 +4129,38 @@ seteuid (2).							\n\
 
     uid_t euid = -1;
 
+    /*
+     * XXX
+     *
+     * uid_t not fixnum/C-int!
+     */
     if (idio_isa_fixnum (ieuid)) {
 	euid = IDIO_FIXNUM_VAL (ieuid);
-    } else if (idio_isa_integer_bignum (ieuid)) {
-	euid = idio_bignum_intmax_value (ieuid);
     } else if (idio_isa_C_int (ieuid)) {
 	euid = IDIO_C_TYPE_INT (ieuid);
     } else {
+	/*
+	 * Test Case: libc-wrap-errors/EUID-set-bad-type.idio
+	 *
+	 * EUID = #t
+	 */
 	idio_error_param_type ("integer|C_int", ieuid, IDIO_C_LOCATION ("EUID/set"));
+
+	return idio_S_notreached;
     }
 
     int r = seteuid (euid);
 
     if (-1 == r) {
+	/*
+	 * Test Case: libc-wrap-errors/EUID-set-invalid-gid.idio
+	 *
+	 * ;; probably a fail...
+	 * EUID = -1
+	 */
 	idio_error_system_errno ("seteuid", ieuid, IDIO_C_LOCATION ("EUID/set"));
+
+	return idio_S_notreached;
     }
 
     return idio_fixnum (r);
@@ -3563,10 +4171,15 @@ getter for the computed value ``GID`` which is a call to	\n\
 getgid (2).							\n\
 								\n\
 :return: real group ID						\n\
-:rtype: integer							\n\
+:rtype: C-int							\n\
 ")
 {
-    return idio_integer (getgid ());
+    /*
+     * XXX
+     *
+     * gid_t not C-int!
+     */
+    return idio_C_int (getgid ());
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("GID/set", GID_set, (IDIO igid), "gid", "\
@@ -3574,7 +4187,7 @@ setter for the computed value ``GID`` which is a call to	\n\
 setgid (2).							\n\
 								\n\
 :param gid: real group ID					\n\
-:type gid: fixnum or C_int					\n\
+:type gid: fixnum or C-int					\n\
 :return: 0 or raises ^system-error				\n\
 :rtype: fixnum							\n\
 ")
@@ -3583,20 +4196,38 @@ setgid (2).							\n\
 
     gid_t gid = -1;
 
+    /*
+     * XXX
+     *
+     * gid_t not fixnum/C-int!
+     */
     if (idio_isa_fixnum (igid)) {
 	gid = IDIO_FIXNUM_VAL (igid);
-    } else if (idio_isa_integer_bignum (igid)) {
-	gid = idio_bignum_intmax_value (igid);
     } else if (idio_isa_C_int (igid)) {
 	gid = IDIO_C_TYPE_INT (igid);
     } else {
+	/*
+	 * Test Case: libc-wrap-errors/GID-set-bad-type.idio
+	 *
+	 * GID = #t
+	 */
 	idio_error_param_type ("integer|C_int", igid, IDIO_C_LOCATION ("GID/set"));
+
+	return idio_S_notreached;
     }
 
     int r = setgid (gid);
 
     if (-1 == r) {
+	/*
+	 * Test Case: libc-wrap-errors/GID-set-invalid-gid.idio
+	 *
+	 * ;; probably a fail...
+	 * GID = -1
+	 */
 	idio_error_system_errno ("setgid", igid, IDIO_C_LOCATION ("GID/set"));
+
+	return idio_S_notreached;
     }
 
     return idio_fixnum (r);
@@ -3607,10 +4238,15 @@ getter for the computed value ``UID`` which is a call to	\n\
 getuid (2).							\n\
 								\n\
 :return: real user ID						\n\
-:rtype: integer							\n\
+:rtype: C-int							\n\
 ")
 {
-    return idio_integer (getuid ());
+    /*
+     * XXX
+     *
+     * uid_t not C-int!
+     */
+    return idio_C_int (getuid ());
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("UID/set", UID_set, (IDIO iuid), "uid", "\
@@ -3618,7 +4254,7 @@ setter for the computed value ``UID`` which is a call to	\n\
 setuid (2).							\n\
 								\n\
 :param uid: real user ID					\n\
-:type uid: fixnum or C_int					\n\
+:type uid: fixnum or C-int					\n\
 :return: 0 or raises ^system-error				\n\
 :rtype: fixnum							\n\
 ")
@@ -3627,20 +4263,38 @@ setuid (2).							\n\
 
     uid_t uid = -1;
 
+    /*
+     * XXX
+     *
+     * uid_t not fixnum/C-int!
+     */
     if (idio_isa_fixnum (iuid)) {
 	uid = IDIO_FIXNUM_VAL (iuid);
-    } else if (idio_isa_integer_bignum (iuid)) {
-	uid = idio_bignum_intmax_value (iuid);
     } else if (idio_isa_C_int (iuid)) {
 	uid = IDIO_C_TYPE_INT (iuid);
     } else {
+	/*
+	 * Test Case: libc-wrap-errors/UID-set-bad-type.idio
+	 *
+	 * UID = #t
+	 */
 	idio_error_param_type ("integer|C_int", iuid, IDIO_C_LOCATION ("UID/set"));
+
+	return idio_S_notreached;
     }
 
     int r = setuid (uid);
 
     if (-1 == r) {
+	/*
+	 * Test Case: libc-wrap-errors/UID-set-invalid-uid.idio
+	 *
+	 * ;; probably a fail...
+	 * UID = -1
+	 */
 	idio_error_system_errno ("setuid", iuid, IDIO_C_LOCATION ("UID/set"));
+
+	return idio_S_notreached;
     }
 
     return idio_fixnum (r);
@@ -3678,6 +4332,12 @@ return the current error handle					\n\
 
 void idio_libc_wrap_add_primitives ()
 {
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_struct_rusage_ru_utime);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_struct_rusage_ru_stime);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_struct_timeval_as_string);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_subtract_struct_timeval);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_add_struct_timeval);
+
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_system_error);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_access);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_chdir);
@@ -3691,8 +4351,12 @@ void idio_libc_wrap_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_getcwd);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_getpgrp);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_getpid);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_getrlimit);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_getrusage);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_gettimeofday);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_isatty);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_kill);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_mkdir);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_mkdtemp);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_mkstemp);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_pipe);
@@ -3701,6 +4365,7 @@ void idio_libc_wrap_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_read);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_rmdir);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_setpgid);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_setrlimit);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_signal);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_signal_handler);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_sleep);
@@ -3711,6 +4376,7 @@ void idio_libc_wrap_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_tcgetpgrp);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_tcsetattr);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_tcsetpgrp);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_times);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_uname);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_unlink);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_waitpid);
@@ -3730,16 +4396,6 @@ void idio_libc_wrap_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_strerrno);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_rlimit_name);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_rlimit_names);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_getrlimit);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_setrlimit);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_times);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_gettimeofday);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_struct_timeval_as_string);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_subtract_struct_timeval);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_add_struct_timeval);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_getrusage);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_struct_rusage_ru_utime);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_struct_rusage_ru_stime);
 }
 
 void idio_final_libc_wrap ()
@@ -3776,6 +4432,7 @@ void idio_init_libc_wrap ()
     idio_module_export_symbol_value (idio_symbols_C_intern ("FD_CLOEXEC"), idio_C_int (FD_CLOEXEC), idio_libc_wrap_module);
     idio_module_export_symbol_value (idio_symbols_C_intern ("F_DUPFD"), idio_C_int (F_DUPFD), idio_libc_wrap_module);
 #if defined (F_DUPFD_CLOEXEC)
+    idio_add_feature (idio_symbols_C_intern ("F_DUPFD_CLOEXEC"));
     idio_module_export_symbol_value (idio_symbols_C_intern ("F_DUPFD_CLOEXEC"), idio_C_int (F_DUPFD_CLOEXEC), idio_libc_wrap_module);
 #endif
     idio_module_export_symbol_value (idio_symbols_C_intern ("F_GETFD"), idio_C_int (F_GETFD), idio_libc_wrap_module);
@@ -3906,7 +4563,15 @@ void idio_init_libc_wrap ()
 
     struct utsname u;
     if (uname (&u) == -1) {
+	/*
+	 * Test Case: ??
+	 *
+	 * EFAULT buf is not valid.
+	 */
 	idio_error_system_errno ("uname", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
+	return;
     }
 
     if (getenv ("HOSTNAME") == NULL) {
@@ -3989,21 +4654,42 @@ void idio_init_libc_wrap ()
     int ngroups = getgroups (0, (gid_t *) NULL);
 
     if (-1 == ngroups) {
+	/*
+	 * Test Case: ??
+	 *
+	 * Can getgroups(2) fail with 0/NULL args?
+	 */
 	idio_error_system_errno ("getgroups", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
+	return;
     }
 
-    gid_t grp_list[ngroups];
+    gid_t *grp_list = idio_alloc (ngroups * sizeof (gid_t));
 
     int ng = getgroups (ngroups, grp_list);
     if (-1 == ng) {
+	/*
+	 * Test Case: ??
+	 *
+	 * Can getgroups(2) fail with 0/NULL args?
+	 */
 	idio_error_system_errno ("getgroups", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
+	return;
     }
 
-    /*
-     * Could this ever happen?
-     */
     if (ngroups != ng) {
+	/*
+	 * Test Case: ??
+	 *
+	 * Could this ever happen?
+	 */
 	idio_error_C ("getgroups", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
+	return;
     }
 
     IDIO GROUPS = idio_array (ngroups);
@@ -4011,6 +4697,8 @@ void idio_init_libc_wrap ()
     for (ng = 0; ng < ngroups ; ng++) {
 	idio_array_insert_index (GROUPS, idio_integer (grp_list[ng]), ng);
     }
+    IDIO_GC_FREE (grp_list);
+
     idio_module_set_symbol_value (idio_symbols_C_intern ("GROUPS"), GROUPS, main_module);
 
     idio_module_set_symbol_value (idio_symbols_C_intern ("PID"), idio_integer (getpid ()), main_module);
@@ -4021,9 +4709,15 @@ void idio_init_libc_wrap ()
      */
     idio_SC_CLK_TCK = sysconf (_SC_CLK_TCK);
     if (-1 == idio_SC_CLK_TCK){
+	/*
+	 * Test Case: ??
+	 *
+	 * _SC_CLK_TCK is wrong?
+	 */
 	idio_error_system_errno ("sysconf (_SC_CLK_TCK)", idio_integer (idio_SC_CLK_TCK), IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
+	return;
     }
     /*
      * We can use an idio_integer () for CLK_TCK as it is a usage-only

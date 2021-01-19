@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -103,5 +103,140 @@ trap ^rt-bignum-conversion-error (function (c) {
   ;; printf "INTMAX_MIN-1 %s %s\n" INTMAX_MIN INTMAX_MIN-1
 }
 
+;; code coverage
+rus := (getrusage RUSAGE_SELF)
+ru-ut := struct-rusage-ru_utime rus
+ru-st := struct-rusage-ru_stime rus
+
+struct-timeval-as-string ru-ut
+
+;; time tickles the struct-timeval adding/subtracting code
+OTIMEFORMAT := TIMEFORMAT
+TIMEFORMAT = ""
+;; while we're here, sleep return a C-uint which is a code coverage
+;; issue itself
+time sleep (sleep 0)
+TIMEFORMAT = OTIMEFORMAT
+
+;; NB 0 is a fixnum for code coverage
+nfd := dup 0
+close nfd
+
+;; Sorry, fd 99
+;; NB 99 is a C-int for code coverage
+nfd := dup2 0 (C/integer-> 99)
+close nfd
+
+;; NB 99 is a C-int for code coverage
+nfd := fcntl 0 F_DUPFD (C/integer-> 99)
+close nfd
+
+(cond-expand
+ (F_DUPFD_CLOEXEC {
+   ;; NB 99 is a fixnum for code coverage
+   nfd := fcntl 0 F_DUPFD_CLOEXEC 99
+   close nfd
+
+   ;; NB 99 is a C-int for code coverage
+   nfd := fcntl 0 F_DUPFD_CLOEXEC (C/integer-> 99)
+   close nfd
+ })
+ (else {
+   printf "no F_DUPFD_CLOEXEC on this system, skipping\n"
+ }))
+
+;; get the file descriptor flags -- CLOEXEC?
+fd-flags := fcntl 0 F_GETFD
+
+fcntl 0 F_SETFD fd-flags
+
+(getpgrp)
+
+;; I sometimes run the tests with redirected I/O
+trap ^system-error (function (c) {
+		      #t
+}) {
+  isatty (C/integer-> 0)
+}
+
+kill (C/integer-> PID) (C/integer-> 0)
+
+;; test mkdir(2) for which we need a directory we can mkdir safely --
+;; how about a random one we just deleted?
+tmpdir := (make-tmp-dir)
+rmdir tmpdir
+mkdir tmpdir (C/integer-> #o555)
+rmdir tmpdir
+
+;; test read with a C-int count -- a lot of work for code coverage!
+ofh := open-output-file testfile
+hprintf ofh "hello\n"
+close-handle ofh
+
+ifh := open-input-file testfile
+test (read (fileno ofh) (C/integer-> 2)) "he"
+close-handle ifh
+
+;; should be safe...
+setpgid (getpid) (getpgrp)
+
+;; should be safe...
+signal SIGUSR1 (signal-handler SIGUSR1)
+
+strerror EPERM
+strerror (C/->integer EPERM)
+
+strsignal SIGHUP
+
+;; should be safe...
+tcsetattr (C/integer-> 0) (C/integer-> 0) (tcgetattr (C/integer-> 0))
+
+;; should be safe...
+tcsetpgrp (C/integer-> 0) (tcgetpgrp (C/integer-> 0))
+
+(times)
+
+(uname)
+
+ofh := open-output-file testfile
+test (write (fileno ofh) "hello\n") 6
+close-handle ofh
+
+sig-name SIGHUP
+
+(sig-names)
+(signal-names)
+
+errno-name EPERM
+(errno-names)
+strerrno EPERM
+
+sprintf "%s" errno
+
+(rlimit-names)
+
+EGID = (C/->integer EGID)		; fixnum
+EGID = EGID				; C-int
+
+EUID = (C/->integer EUID)		; fixnum
+EUID = EUID				; C-int
+
+GID = (C/->integer GID)			; fixnum
+GID = GID				; C-int
+
+UID = (C/->integer UID)			; fixnum
+UID = UID				; C-int
+
+
+;; STDIN/STDOUT/STDERR are computed values in libc (not exported)
+module libc
+
+test STDIN (current-input-handle)
+test STDOUT (current-output-handle)
+test STDERR (current-error-handle)
+
+;; go back otherwise libc-wrap0 doesn't exist!
+module tests/libc-wrap
+
 ;; all done?
-Tests? (libc-wrap0 + 58)
+Tests? (libc-wrap0 + 63)

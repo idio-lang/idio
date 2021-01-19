@@ -373,6 +373,7 @@ void idio_error_C (char *msg, IDIO args, IDIO c_location)
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (args);
     IDIO_ASSERT (c_location);
+
     IDIO_TYPE_ASSERT (string, c_location);
 
     idio_error (idio_S_internal, idio_string_C (msg), args, c_location);
@@ -394,9 +395,9 @@ This does not return!				\n\
     IDIO_ASSERT (loc);
     IDIO_ASSERT (msg);
     IDIO_ASSERT (args);
+
     IDIO_USER_TYPE_ASSERT (symbol, loc);
     IDIO_USER_TYPE_ASSERT (string, msg);
-    IDIO_USER_TYPE_ASSERT (list, args);
 
     idio_error (loc, msg, args, loc);
 
@@ -408,7 +409,7 @@ void idio_error_system (char *msg, IDIO args, int err, IDIO c_location)
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (args);
     IDIO_ASSERT (c_location);
-    IDIO_TYPE_ASSERT (list, args);
+
     IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO msh = idio_open_output_string_handle_C ();
@@ -444,7 +445,7 @@ void idio_error_system_errno (char *msg, IDIO args, IDIO c_location)
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (args);
     IDIO_ASSERT (c_location);
-    IDIO_TYPE_ASSERT (list, args);
+
     IDIO_TYPE_ASSERT (string, c_location);
 
     idio_error_system (msg, args, errno, c_location);

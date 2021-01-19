@@ -817,7 +817,7 @@ IDIO idio_open_file_handle_C (char *func, IDIO filename, char *pathname, int fre
 			IDIO_GC_FREE (mode);
 		    }
 
-		    idio_error_system_errno ("fopen", IDIO_LIST1 (pn), IDIO_C_FUNC_LOCATION ());
+		    idio_error_system_errno ("fopen", pn, IDIO_C_FUNC_LOCATION ());
 
 		    return idio_S_notreached;
 		}
@@ -1283,7 +1283,7 @@ void idio_file_handle_read_more (IDIO fh)
 	 * read(2)?
 	 */
 	perror ("read");
-	idio_error_system_errno ("read", IDIO_LIST1 (fh), IDIO_C_FUNC_LOCATION ());
+	idio_error_system_errno ("read", fh, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
     } else if (0 == nread) {
@@ -1647,7 +1647,7 @@ file handle `fh`				\n\
 	 * close-handle fh
 	 * fflush-file-handle fh
 	 */
-	idio_error_system_errno ("fflush", IDIO_LIST1 (fh), IDIO_C_FUNC_LOCATION ());
+	idio_error_system_errno ("fflush", fh, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -1679,7 +1679,7 @@ off_t idio_seek_file_handle (IDIO fh, off_t offset, int whence)
 	 * ifh := open-input-file ...
 	 * seek-handle ifh -1
 	 */
-	idio_error_system_errno ("lseek", IDIO_LIST1 (fh), IDIO_C_FUNC_LOCATION ());
+	idio_error_system_errno ("lseek", fh, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return -1;
@@ -1710,7 +1710,7 @@ off_t idio_seek_file_handle (IDIO fh, off_t offset, int whence)
 
     if (-1 == fseek_r) {
 	fprintf (stderr, "off_t %" PRId64 " wh %d\n", offset, whence);
-	idio_error_system_errno ("fseek", IDIO_LIST1 (fh), IDIO_C_FUNC_LOCATION ());
+	idio_error_system_errno ("fseek", fh, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return -1;
@@ -1720,7 +1720,7 @@ off_t idio_seek_file_handle (IDIO fh, off_t offset, int whence)
 
     long ftell_r = ftell (IDIO_FILE_HANDLE_FILEP (fh));
     if (-1 == ftell_r) {
-	idio_error_system_errno ("ftell", IDIO_LIST1 (fh), IDIO_C_FUNC_LOCATION ());
+	idio_error_system_errno ("ftell", fh, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return -1;
@@ -1785,7 +1785,7 @@ file handle `fh` with `F_SETFD` and `FD_CLOEXEC` arguments	\n\
 	 *
 	 * Not sure how to provoke this...
 	 */
-	idio_error_system_errno ("fcntl F_SETFD FD_CLOEXEC", IDIO_LIST1 (fh), IDIO_C_FUNC_LOCATION ());
+	idio_error_system_errno ("fcntl F_SETFD FD_CLOEXEC", fh, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }

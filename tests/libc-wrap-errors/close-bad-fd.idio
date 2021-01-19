@@ -1,0 +1,10 @@
+
+module tests/libc-wrap/close
+import libc
+
+fd+name := mkstemp "XXXXXX"
+close (ph fd+name)
+delete-file (pht fd+name)
+
+;; EBADF
+close (ph fd+name)

@@ -720,13 +720,13 @@ static IDIO idio_job_control_foreground_job (IDIO job, int cont)
 	struct termios *tcattrsp = IDIO_C_TYPE_POINTER_P (job_tcattrs);
 
 	if (tcsetattr (idio_job_control_terminal, TCSADRAIN, tcattrsp) < 0) {
-	    idio_error_system_errno ("tcsetattr", IDIO_LIST1 (idio_C_int (idio_job_control_terminal)), IDIO_C_FUNC_LOCATION ());
+	    idio_error_system_errno ("tcsetattr", idio_C_int (idio_job_control_terminal), IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
 
 	if (kill (-job_pgid, SIGCONT) < 0) {
-	    idio_error_system_errno ("kill SIGCONT", IDIO_LIST1 (idio_C_int (-job_pgid)), IDIO_C_FUNC_LOCATION ());
+	    idio_error_system_errno ("kill SIGCONT", idio_C_int (-job_pgid), IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -766,7 +766,7 @@ static IDIO idio_job_control_foreground_job (IDIO job, int cont)
     }
 
     if (tcgetattr (idio_job_control_terminal, tcattrsp) < 0) {
-	idio_error_system_errno ("tcgetattr", IDIO_LIST1 (idio_C_int (idio_job_control_terminal)), IDIO_C_FUNC_LOCATION ());
+	idio_error_system_errno ("tcgetattr", idio_C_int (idio_job_control_terminal), IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -776,7 +776,7 @@ static IDIO idio_job_control_foreground_job (IDIO job, int cont)
      */
     tcattrsp = IDIO_C_TYPE_POINTER_P (idio_job_control_tcattrs);
     if (tcsetattr (idio_job_control_terminal, TCSADRAIN, tcattrsp) < 0) {
-	idio_error_system_errno ("tcgetattr", IDIO_LIST1 (idio_C_int (idio_job_control_terminal)), IDIO_C_FUNC_LOCATION ());
+	idio_error_system_errno ("tcgetattr", idio_C_int (idio_job_control_terminal), IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -831,7 +831,7 @@ static IDIO idio_job_control_background_job (IDIO job, int cont)
 	int job_pgid = IDIO_C_TYPE_INT (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PGID));
 
 	if (kill (-job_pgid, SIGCONT) < 0) {
-	    idio_error_system_errno ("kill SIGCONT", IDIO_LIST1 (idio_C_int (-job_pgid)), IDIO_C_FUNC_LOCATION ());
+	    idio_error_system_errno ("kill SIGCONT", idio_C_int (-job_pgid), IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -906,7 +906,7 @@ static void idio_job_control_hangup_job (IDIO job)
 
     if (kill (-job_pgid, SIGCONT) < 0) {
 	if (ESRCH != errno) {
-	    idio_error_system_errno ("kill SIGCONT", IDIO_LIST1 (idio_C_int (-job_pgid)), IDIO_C_FUNC_LOCATION ());
+	    idio_error_system_errno ("kill SIGCONT", idio_C_int (-job_pgid), IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
 	    return;
@@ -915,7 +915,7 @@ static void idio_job_control_hangup_job (IDIO job)
 
     if (kill (-job_pgid, SIGHUP) < 0) {
 	if (ESRCH != errno) {
-	    idio_error_system_errno ("kill SIGHUP", IDIO_LIST1 (idio_C_int (-job_pgid)), IDIO_C_FUNC_LOCATION ());
+	    idio_error_system_errno ("kill SIGHUP", idio_C_int (-job_pgid), IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
 	    return;
@@ -1466,7 +1466,7 @@ IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char **argv)
 	    char **envp = idio_command_get_envp ();
 
 	    if (close (pgrp_pipe[1]) < 0) {
-		idio_error_system_errno ("close", IDIO_LIST1 (idio_fixnum (pgrp_pipe[1])), IDIO_C_FUNC_LOCATION ());
+		idio_error_system_errno ("close", idio_fixnum (pgrp_pipe[1]), IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    }
@@ -1477,7 +1477,7 @@ IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char **argv)
 	    char buf[BUFSIZ];
 	    read (pgrp_pipe[0], buf, 1);
 	    if (close (pgrp_pipe[0]) < 0) {
-		idio_error_system_errno ("close", IDIO_LIST1 (idio_fixnum (pgrp_pipe[0])), IDIO_C_FUNC_LOCATION ());
+		idio_error_system_errno ("close", idio_fixnum (pgrp_pipe[0]), IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    }
@@ -1517,12 +1517,12 @@ IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char **argv)
 	     * synchronise!
 	     */
 	    if (close (pgrp_pipe[0]) < 0) {
-		idio_error_system_errno ("close", IDIO_LIST1 (idio_fixnum (pgrp_pipe[0])), IDIO_C_FUNC_LOCATION ());
+		idio_error_system_errno ("close", idio_fixnum (pgrp_pipe[0]), IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    }
 	    if (close (pgrp_pipe[1]) < 0) {
-		idio_error_system_errno ("close", IDIO_LIST1 (idio_fixnum (pgrp_pipe[1])), IDIO_C_FUNC_LOCATION ());
+		idio_error_system_errno ("close", idio_fixnum (pgrp_pipe[1]), IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    }
@@ -1675,7 +1675,7 @@ get the current interactiveness			\n\
 void idio_job_control_set_interactive (int interactive)
 {
     if (interactive < 0) {
-	idio_error_system_errno ("isatty", IDIO_LIST1 (idio_C_int (idio_job_control_terminal)), IDIO_C_FUNC_LOCATION ());
+	idio_error_system_errno ("isatty", idio_C_int (idio_job_control_terminal), IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return;
@@ -1699,7 +1699,7 @@ void idio_job_control_set_interactive (int interactive)
 		exit (128 + 15);
 	    }
 	    if (kill (-idio_job_control_pgid, SIGTTIN) < 0) {
-		idio_error_system_errno ("kill SIGTTIN", IDIO_LIST1 (idio_C_int (-idio_job_control_pgid)), IDIO_C_FUNC_LOCATION ());
+		idio_error_system_errno ("kill SIGTTIN", idio_C_int (-idio_job_control_pgid), IDIO_C_FUNC_LOCATION ());
 
 		/* notreached */
 		return;
@@ -1749,7 +1749,7 @@ void idio_job_control_set_interactive (int interactive)
 		 *    I've had a very low hit-rate when trying to
 		 *    provoke environ errors.
 		 */
-		idio_error_system_errno ("setpgid", IDIO_LIST1 (idio_C_int (idio_job_control_pgid)), IDIO_C_FUNC_LOCATION ());
+		idio_error_system_errno ("setpgid", idio_C_int (idio_job_control_pgid), IDIO_C_FUNC_LOCATION ());
 
 		/* notreached */
 		return;
@@ -1779,7 +1779,7 @@ void idio_job_control_set_interactive (int interactive)
 	 */
 	struct termios *tcattrsp = IDIO_C_TYPE_POINTER_P (idio_job_control_tcattrs);
 	if (tcgetattr (idio_job_control_terminal, tcattrsp) < 0) {
-	    idio_error_system_errno ("tcgetattr", IDIO_LIST1 (idio_C_int (idio_job_control_terminal)), IDIO_C_FUNC_LOCATION ());
+	    idio_error_system_errno ("tcgetattr", idio_C_int (idio_job_control_terminal), IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
 	    return;

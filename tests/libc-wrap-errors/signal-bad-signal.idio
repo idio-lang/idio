@@ -1,0 +1,2 @@
+
+signal (C/integer-> -1) SIG_DFL

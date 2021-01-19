@@ -1,0 +1,9 @@
+
+module tests/libc-wrap
+import libc
+
+fd+name := mkstemp "XXXXXX"
+delete-file (pht fd+name)
+
+;; ENOTTY
+isatty (ph fd+name)

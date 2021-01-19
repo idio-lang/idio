@@ -1,0 +1,2 @@
+
+tcsetpgrp (C/integer-> -1) (C/integer-> PID)
