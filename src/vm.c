@@ -4744,7 +4744,8 @@ int idio_vm_run1 (IDIO thr)
 	    if (idio_vm_tracing) {
 		idio_vm_primitive_call_trace ("set-head!", thr, 2);
 	    }
-	    IDIO_THREAD_VAL (thr) = idio_pair_set_head (IDIO_THREAD_REG1 (thr), IDIO_THREAD_VAL (thr));
+	    IDIO_PAIR_H (IDIO_THREAD_REG1 (thr)) = IDIO_THREAD_VAL (thr);
+	    IDIO_THREAD_VAL (thr) = idio_S_unspec;
 	    if (idio_vm_tracing) {
 		idio_vm_primitive_result_trace (thr);
 	    }
@@ -4756,7 +4757,8 @@ int idio_vm_run1 (IDIO thr)
 	    if (idio_vm_tracing) {
 		idio_vm_primitive_call_trace ("set-tail!", thr, 2);
 	    }
-	    IDIO_THREAD_VAL (thr) = idio_pair_set_tail (IDIO_THREAD_REG1 (thr), IDIO_THREAD_VAL (thr));
+	    IDIO_PAIR_T (IDIO_THREAD_REG1 (thr)) = IDIO_THREAD_VAL (thr);
+	    IDIO_THREAD_VAL (thr) = idio_S_unspec;
 	    if (idio_vm_tracing) {
 		idio_vm_primitive_result_trace (thr);
 	    }

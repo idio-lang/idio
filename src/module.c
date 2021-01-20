@@ -45,7 +45,7 @@ static IDIO idio_module_set_symbol_value_string = idio_S_nil;
 static IDIO idio_module_add_computed_symbol_string = idio_S_nil;
 static IDIO idio_module_init_string = idio_S_nil;
 
-void idio_module_base_name_error (IDIO msg, IDIO name, IDIO c_location)
+static void idio_module_base_name_error (IDIO msg, IDIO name, IDIO c_location)
 {
     IDIO_ASSERT (msg);
     IDIO_ASSERT (name);

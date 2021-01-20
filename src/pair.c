@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -72,6 +72,20 @@ test if `o` is a pair				\n\
     return r;
 }
 
+IDIO_DEFINE_PRIMITIVE0V_DS ("list", list, (IDIO args), "args", "\
+return ``args`` as a list			\n\
+						\n\
+:param args: arguments to convert		\n\
+						\n\
+:return: list of ``args``			\n\
+:rtype: list					\n\
+")
+{
+    IDIO_ASSERT (args);
+
+    return args;
+}
+
 int idio_isa_list (IDIO p)
 {
     IDIO_ASSERT (p);
@@ -90,26 +104,9 @@ void idio_free_pair (IDIO p)
     /* IDIO_GC_FREE (p->u.pair); */
 }
 
-IDIO idio_pair_set_head (IDIO p, IDIO v)
-{
-    IDIO_ASSERT (p);
-    IDIO_ASSERT (v);
-    IDIO_TYPE_ASSERT (pair, p);
-
-    IDIO_PAIR_H (p) = v;
-    return idio_S_unspec;
-}
-
-IDIO idio_pair_set_tail (IDIO p, IDIO v)
-{
-    IDIO_ASSERT (p);
-    IDIO_ASSERT (v);
-    IDIO_TYPE_ASSERT (pair, p);
-
-    IDIO_PAIR_T (p) = v;
-    return idio_S_unspec;
-}
-
+/*
+ * idio_list_head() is slightly more lenient when passed #n
+ */
 IDIO idio_list_head (IDIO p)
 {
     IDIO_ASSERT (p);
@@ -134,13 +131,9 @@ return the head of pair `p`			\n\
 {
     IDIO_ASSERT (p);
 
-    if (idio_S_nil == p) {
-	return idio_S_nil;
-    }
-
     IDIO_USER_TYPE_ASSERT (pair, p);
 
-    return idio_list_head (p);
+    return IDIO_PAIR_H (p);
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("set-ph!", set_pair_head, (IDIO p, IDIO v), "p v", "\
@@ -164,11 +157,19 @@ set the head of pair `p` to ``v``		\n\
     return idio_S_unspec;
 }
 
+/*
+ * idio_list_tail() is slightly more lenient when passed #n
+ */
 IDIO idio_list_tail (IDIO p)
 {
     IDIO_ASSERT (p);
 
     if (idio_S_nil == p) {
+	/*
+	 * Code coverage:
+	 *
+	 * Seemingly, nobody calls idio_list_tail (idio_S_nil).
+	 */
 	return idio_S_nil;
     }
 
@@ -188,13 +189,9 @@ return the tail of pair `p`			\n\
 {
     IDIO_ASSERT (p);
 
-    if (idio_S_nil == p) {
-	return idio_S_nil;
-    }
-
     IDIO_USER_TYPE_ASSERT (pair, p);
 
-    return idio_list_tail (p);
+    return IDIO_PAIR_T (p);
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("set-pt!", set_pair_tail, (IDIO p, IDIO v), "p v", "\
@@ -218,6 +215,12 @@ set the tail of pair `p` to ``v``		\n\
     return idio_S_unspec;
 }
 
+/*
+ * Code coverage:
+ *
+ * I did use this for some dubious task which I now forget.  However,
+ * it feels suitably dubious that I'm leaving it in as a reminder.
+ */
 void idio_list_bind (IDIO *list, size_t nargs, ...)
 {
     IDIO_ASSERT (*list);
@@ -310,6 +313,23 @@ IDIO idio_list_to_array (IDIO l)
     return r;
 }
 
+IDIO_DEFINE_PRIMITIVE1_DS ("list->array", list2array, (IDIO l), "l", "\
+convert list ``l`` to an array			\n\
+						\n\
+:param l: list to be converted			\n\
+:type l: list					\n\
+						\n\
+:return: array					\n\
+:rtype: array					\n\
+")
+{
+    IDIO_ASSERT (l);
+
+    IDIO_USER_TYPE_ASSERT (list, l);
+
+    return idio_list_to_array (l);
+}
+
 size_t idio_list_length (IDIO l)
 {
     IDIO_ASSERT (l);
@@ -354,69 +374,43 @@ IDIO idio_copy_pair (IDIO p, int depth)
     IDIO_ASSERT (p);
     IDIO_C_ASSERT (depth);
 
-    if (idio_S_nil == p) {
-	return idio_S_nil;
-    }
-
     IDIO_TYPE_ASSERT (pair, p);
 
     if (IDIO_COPY_SHALLOW == depth) {
 	return idio_pair (IDIO_PAIR_H (p), IDIO_PAIR_T (p));
     } else {
-	return idio_pair (idio_copy (IDIO_PAIR_H (p), depth), idio_copy (IDIO_PAIR_T (p), depth));
+	/*
+	 * Uncomfortably similar to idio_list_append2() below but will
+	 * handle improper lists
+	 */
+	IDIO l1 = p;
+
+	IDIO r = idio_S_nil;
+	IDIO p = idio_S_nil;
+
+	while (idio_isa_pair (l1)) {
+	    IDIO t = idio_pair (IDIO_PAIR_H (l1), idio_S_nil);
+
+	    if (idio_S_nil == r) {
+		r = t;
+	    } else {
+		IDIO_PAIR_T (p) = t;
+	    }
+	    p = t;
+
+	    l1 = IDIO_PAIR_T (l1);
+	}
+
+	IDIO_PAIR_T (p) = l1;
+
+	return r;
     }
 }
 
-IDIO idio_list_copy (IDIO l)
-{
-    IDIO_ASSERT (l);
-
-    if (idio_S_nil == l) {
-	return idio_S_nil;
-    }
-
-    IDIO_TYPE_ASSERT (pair, l);
-
-    /*
-     * Building a copy as you walk it then reversing gets too messy
-     * for the reverse function if the list is improper.
-     *
-     * Let's do the modify-in-place variant
-     */
-
-    IDIO p = idio_pair (idio_S_nil, idio_S_nil);
-    IDIO r = p;
-
-    while (idio_S_nil != l) {
-	IDIO h = IDIO_PAIR_H (l);
-	IDIO t = IDIO_PAIR_T (l);
-
-	if (0 && idio_S_nil == h &&
-	    idio_S_nil == t) {
-	    /* (1 2 3 #nil) */
-	    break;
-	}
-
-	IDIO_PAIR_H (p) = h;
-
-	if (idio_S_nil == t) {
-	    break;
-	}
-
-	if (idio_isa_pair (t)) {
-	    IDIO np = idio_pair (idio_S_nil, idio_S_nil);
-	    IDIO_PAIR_T (p) = np;
-	    p = np;
-	    l = t;
-	} else {
-	    IDIO_PAIR_T (p) = t;
-	    break;
-	}
-    }
-
-    return r;
-}
-
+/*
+ * idio_list_append2() is useful for C code but doesn't handle
+ * improper lists.
+ */
 IDIO idio_list_append2 (IDIO l1, IDIO l2)
 {
     IDIO_ASSERT (l1);
@@ -426,19 +420,10 @@ IDIO idio_list_append2 (IDIO l1, IDIO l2)
 	return l2;
     }
 
-    IDIO_TYPE_ASSERT (pair, l1);
-
     IDIO r = idio_S_nil;
     IDIO p = idio_S_nil;
 
-    for (;;l1 = IDIO_PAIR_T (l1)) {
-	if (idio_S_nil == l1) {
-	    break;
-	}
-	if (! idio_isa_pair (l1)) {
-	    idio_error_C ("not a list:", l1, IDIO_C_FUNC_LOCATION ());
-	}
-
+    while (idio_isa_pair (l1)) {
 	IDIO t = idio_pair (IDIO_PAIR_H (l1), idio_S_nil);
 
 	if (idio_S_nil == r) {
@@ -447,25 +432,23 @@ IDIO idio_list_append2 (IDIO l1, IDIO l2)
 	    IDIO_PAIR_T (p) = t;
 	}
 	p = t;
+
+	l1 = IDIO_PAIR_T (l1);
+    }
+
+    if (idio_S_nil != l1) {
+	/*
+	 * Code coverage:
+	 *
+	 * Coding error, probably.  The primitive, below, is
+	 * overridden quite early on.
+	 */
+	fprintf (stderr, "append2: improper list\n");
     }
 
     IDIO_PAIR_T (p) = l2;
 
     return r;
-}
-
-IDIO_DEFINE_PRIMITIVE0V_DS ("list", list, (IDIO args), "args", "\
-return ``args`` as a list			\n\
-						\n\
-:param args: arguments to convert		\n\
-						\n\
-:return: list of ``args``			\n\
-:rtype: list					\n\
-")
-{
-    IDIO_ASSERT (args);
-
-    return args;
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("append", append, (IDIO a, IDIO b), "a b", "\
@@ -665,15 +648,20 @@ IDIO idio_list_assq (IDIO k, IDIO l)
 	}
 
 	if (! idio_isa_pair (p)) {
-	    idio_error_C ("not a pair in list", IDIO_LIST2 (p, l), IDIO_C_FUNC_LOCATION ());
+	    /*
+	     * Test Case: pair-errors/assq-bad-pair.idio
+	     *
+	     * assq 3 '((1 2) 3)
+	     */
+	    idio_error_param_type ("pair", p, IDIO_C_FUNC_LOCATION ());
 
-	    /* notreached */
-	    return NULL;
+	    return idio_S_notreached;
 	}
 
 	if (idio_eqp (k, IDIO_PAIR_H (p))) {
 	    return p;
 	}
+
 	l = IDIO_PAIR_T (l);
     }
 
@@ -715,7 +703,12 @@ IDIO idio_list_assv (IDIO k, IDIO l)
 	}
 
 	if (! idio_isa_pair (p)) {
-	    idio_error_C ("not a pair in list", IDIO_LIST2 (p, l), IDIO_C_FUNC_LOCATION ());
+	    /*
+	     * Test Case: pair-errors/assv-bad-pair.idio
+	     *
+	     * assv 3 '((1 2) 3)
+	     */
+	    idio_error_param_type ("pair", p, IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
 	    return NULL;
@@ -765,7 +758,12 @@ IDIO idio_list_assoc (IDIO k, IDIO l)
 	}
 
 	if (! idio_isa_pair (p)) {
-	    idio_error_C ("not a pair in list", IDIO_LIST2 (p, l), IDIO_C_FUNC_LOCATION ());
+	    /*
+	     * Test Case: pair-errors/assoc-bad-pair.idio
+	     *
+	     * assoc 3 '((1 2) 3)
+	     */
+	    idio_error_param_type ("pair", p, IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
 	    return NULL;
@@ -801,42 +799,6 @@ or #f if `k` is not a key in `l`		\n\
     return idio_list_assoc (k, l);
 }
 
-IDIO idio_list_set_difference (IDIO set1, IDIO set2)
-{
-    if (idio_isa_pair (set1)) {
-	if (idio_S_false != idio_list_memq (IDIO_PAIR_H (set1), set2)) {
-	    return idio_list_set_difference (IDIO_PAIR_T (set1), set2);
-	} else {
-	    return idio_pair (IDIO_PAIR_H (set1),
-			      idio_list_set_difference (IDIO_PAIR_T (set1), set2));
-	}
-    } else {
-	if (idio_S_nil != set1) {
-	    idio_error_C ("set1", set1, IDIO_C_FUNC_LOCATION ());
-
-	    return idio_S_notreached;
-	}
-	return idio_S_nil;
-    }
-}
-
-IDIO_DEFINE_PRIMITIVE1_DS ("list->array", list2array, (IDIO l), "l", "\
-convert list ``l`` to an array			\n\
-						\n\
-:param l: list to be converted			\n\
-:type l: list					\n\
-						\n\
-:return: array					\n\
-:rtype: array					\n\
-")
-{
-    IDIO_ASSERT (l);
-
-    IDIO_USER_TYPE_ASSERT (list, l);
-
-    return idio_list_to_array (l);
-}
-
 IDIO idio_list_nth (IDIO l, IDIO I_n, IDIO args)
 {
     IDIO_ASSERT (l);
@@ -849,20 +811,14 @@ IDIO idio_list_nth (IDIO l, IDIO I_n, IDIO args)
 
     if (idio_isa_fixnum (I_n)) {
 	C_n = IDIO_FIXNUM_VAL (I_n);
-    } else if (idio_isa_bignum (I_n)) {
-	if (IDIO_BIGNUM_INTEGER_P (I_n)) {
-	    C_n = idio_bignum_ptrdiff_value (I_n);
-	} else {
-	    IDIO bit_i = idio_bignum_real_to_integer (I_n);
-	    if (idio_S_nil == bit_i) {
-		idio_error_param_type ("integer", I_n, IDIO_C_FUNC_LOCATION ());
-
-		return idio_S_notreached;
-	    } else {
-		C_n = idio_bignum_ptrdiff_value (bit_i);
-	    }
-	}
+    } else if (idio_isa_integer_bignum (I_n)) {
+	C_n = idio_bignum_ptrdiff_value (I_n);
     } else {
+	/*
+	 * Test Case: pair-errors/nth-bad-index-type.idio
+	 *
+	 * nth '(1 2 3) #t
+	 */
 	idio_error_param_type ("integer", I_n, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -27,8 +27,6 @@ IDIO idio_pair (IDIO h, IDIO t);
 int idio_isa_pair (IDIO p);
 int idio_isa_list (IDIO p);
 void idio_free_pair (IDIO p);
-IDIO idio_pair_set_head (IDIO p, IDIO v);
-IDIO idio_pair_set_tail (IDIO p, IDIO v);
 IDIO idio_list_head (IDIO p);
 IDIO idio_list_tail (IDIO p);
 
@@ -37,7 +35,6 @@ IDIO idio_list_reverse (IDIO l);
 IDIO idio_list_to_array (IDIO l);
 size_t idio_list_length (IDIO l);
 IDIO idio_copy_pair (IDIO p, int depth);
-IDIO idio_list_copy (IDIO l);
 IDIO idio_list_append2 (IDIO l1, IDIO l2);
 IDIO idio_list_map_ph (IDIO l);
 IDIO idio_list_map_pt (IDIO l);
@@ -47,7 +44,6 @@ IDIO idio_list_member (IDIO k, IDIO l);
 IDIO idio_list_assq (IDIO k, IDIO l);
 IDIO idio_list_assv (IDIO k, IDIO l);
 IDIO idio_list_assoc (IDIO k, IDIO l);
-IDIO idio_list_set_difference (IDIO set1, IDIO set2);
 IDIO idio_list_nth (IDIO l, IDIO I_n, IDIO args);
 
 void idio_init_pair ();

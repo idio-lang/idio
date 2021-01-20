@@ -1,0 +1,61 @@
+;;
+;; Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+;;
+;; Licensed under the Apache License, Version 2.0 (the "License"); you
+;; may not use this file except in compliance with the License.  You
+;; may obtain a copy of the License at
+;;
+;;     http://www.apache.org/licenses/LICENSE-2.0
+;;
+;; Unless required by applicable law or agreed to in writing, software
+;; distributed under the License is distributed on an "AS IS" BASIS,
+;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+;; See the License for the specific language governing permissions and
+;; limitations under the License.
+;;
+;;
+
+;;
+;; test-pair.idio
+;;
+pair0 := Tests
+
+test (pair? 0)				#f ; FIXNUM
+test (pair? #t)				#f ; CONSTANT
+test (pair? (integer->char 1))		#f ; CHARACTER (deprecated)
+test (pair? #\a)			#f ; UNICODE
+test (pair? "a")			#f ; STRING
+test (pair? 'a)				#f ; SYMBOL
+test (pair? :a)				#f ; KEYWORD
+test (pair? (pair 1 2))			#t ; PAIR
+test (pair? #[])			#f ; ARRAY
+test (pair? #{})			#f ; HASH
+test (pair? (function #n #n))		#f ; CLOSURE
+test (pair? pair)			#f ; PRIMITIVE
+test (pair? 1.0)			#f ; BIGNUM
+test (pair? (find-module 'Idio))	#f ; MODULE
+test (pair? (current-input-handle))	#f ; HANDLE
+test (pair? ^error)			#f ; STRUCT_TYPE
+test (pair? libc/idio-uname)		#f ; STRUCT_INSTANCE
+test (pair? #B{ 3 })			#f ; BITSET
+test (pair? libc/INTMAX_MAX)		#f ; C_INT
+test (pair? libc/UINTMAX_MAX)		#f ; C_UINT
+
+;; code coverage
+test (copy-value '(1 2 3) 'shallow) '(1 2 3)
+test (member 3 '(1 2 3 4)) '(3 4)
+test (member 5 '(1 2 3 4)) #f
+test (assq 3 '((1 2) #n (3 4))) #f
+test (assv 3 '((1 2) #n (3 4))) #f
+test (assv 3 '((1 2) (3 4))) '(3 4)
+test (assv 5 '((1 2) (3 4))) #f
+test (assoc 3 '((1 2) #n (3 4))) #f
+test (assoc 3 '((1 2) (3 4))) '(3 4)
+test (assoc 5 '((1 2) (3 4))) #f
+
+test (nth '(1 2 3) 1.0) 1
+test (nth '(1 2 3) 1 #t) 1
+test (nth '(1 2 3) 4 #t) #t
+
+;; all done?
+Tests? (pair0 + 33)
