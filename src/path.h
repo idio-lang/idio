@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -30,8 +30,6 @@
 
 extern IDIO idio_path_type;
 
-char **idio_path_env_split (const char *path_env);
-char *idio_find_file (const char *file);
 IDIO idio_path_expand (IDIO p);
 
 void idio_init_path ();

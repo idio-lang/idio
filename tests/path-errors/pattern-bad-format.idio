@@ -1,0 +1,5 @@
+
+; "hello[NUL]world"
+p := make-struct-instance ~path (join-string (make-string 1 #U+0) '("hello" "world"))
+length p
+

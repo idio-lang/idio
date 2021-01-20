@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015, 2020 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -71,6 +71,10 @@ test (length p) 1
 p = make-struct-instance ~path (append-string d "/[a-b]")
 test (length p) 2
 
+; code coverage -- no match
+p = make-struct-instance ~path (append-string d "/ZZZ")
+test (length p) 0
+
 ;; The use of POSIX character classes is not well supported.  In fact
 ;; only CentOS 7 supports them.
 
@@ -89,4 +93,4 @@ test (sort-atime p) (list f3 f1 f2)
 rm -rf d
 
 ;; all done?
-Tests? (path0 + 10)
+Tests? (path0 + 11)

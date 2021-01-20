@@ -16,23 +16,24 @@
 ;;
 
 ;;
-;; test-pair-error.idio
+;; test-path-error.idio
 ;;
 
-module tests/pair
+module tests/path
 
-pair-error0 := Tests
+path-error0 := Tests
 
 #*
 
-We have a bunch of test cases which should provoke an
-^rt-parameter-type-error.  So we can write a load function which will
-wrapper the actual load with a trap for ^rt-parameter-type-error and
-compare the message strings.
+We have a bunch of test cases which should provoke a ^rt-glob-error
+or ^rt-parameter-type-error.  So we can write a load function which
+will wrapper the actual load with a trap for
+(^rt-glob-error ^rt-parameter-type-error) and compare the message
+strings.
 
 *#
 
-pair-error-load := {
+path-error-load := {
   n := 0
 
   function (filename msg) {
@@ -42,15 +43,16 @@ pair-error-load := {
 
     n = n + 1
     ;eprintf "loading #%s %s looking for %s\n" n filename msg
-    trap (^rt-parameter-error) (function (c) {
-				  ;eprintf "pair-error #%s: %s %s\n" n msg c.location
+    trap (^rt-glob-error
+	  ^rt-parameter-error) (function (c) {
+				  ;eprintf "path-error #%s: %s %s\n" n msg c.location
 				  test c.message msg
 
 				  if (not (string=? c.message msg)) {
-				    condition-report (append-string "pair-error-load: " filename) c (current-error-handle)
+				    condition-report (append-string "path-error-load: " filename) c (current-error-handle)
 				  }
 
-				  load-k 'pair-error
+				  load-k 'path-error
     }) {
       call/cc (function (k) {
 		 load-k = k
@@ -60,10 +62,7 @@ pair-error-load := {
   }
 }
 
-pair-error-load "pair-errors/assq-bad-pair.idio" "bad parameter type: '3' a FIXNUM is not a pair"
-pair-error-load "pair-errors/assv-bad-pair.idio" "bad parameter type: '3' a FIXNUM is not a pair"
-pair-error-load "pair-errors/assoc-bad-pair.idio" "bad parameter type: '3' a FIXNUM is not a pair"
-pair-error-load "pair-errors/nth-bad-index-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a integer"
+path-error-load "path-errors/pattern-bad-format.idio" "pattern contains an ASCII NUL"
 
 ;; all done?
-Tests? (pair-error0 + 4)
+Tests? (path-error0 + 1)
