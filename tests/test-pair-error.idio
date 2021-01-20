@@ -26,8 +26,8 @@ pair-error0 := Tests
 #*
 
 We have a bunch of test cases which should provoke an
-^rt-parameter-type-error.  So we can write a load function which will
-wrapper the actual load with a trap for ^rt-parameter-type-error and
+^rt-parameter-error.  So we can write a load function which will
+wrapper the actual load with a trap for ^rt-parameter-error and
 compare the message strings.
 
 *#

@@ -173,8 +173,9 @@ extern IDIO idio_condition_rt_bitset_error_type;
 extern IDIO idio_condition_rt_bitset_bounds_error_type;
 extern IDIO idio_condition_rt_bitset_size_mismatch_error_type;
 extern IDIO idio_condition_rt_keyword_error_type;
-extern IDIO idio_condition_rt_libc_wrap_error_type;
-extern IDIO idio_condition_rt_libc_wrap_format_error_type;
+extern IDIO idio_condition_rt_libc_error_type;
+extern IDIO idio_condition_rt_libc_format_error_type;
+extern IDIO idio_condition_rt_regex_error_type;
 
 extern IDIO idio_condition_rt_signal_type;
 

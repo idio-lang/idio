@@ -239,6 +239,7 @@ define-condition-type-accessors-only ^rt-keyword-error			^runtime-error			rt-key
 define-condition-type-accessors-only ^rt-libc-error			^runtime-error			rt-libc-error?
 define-condition-type-accessors-only ^rt-libc-format-error		^rt-libc-error			rt-libc-format-error? \
 	(name rt-libc-format-error-name)
+define-condition-type-accessors-only ^rt-regex-error			^rt-libc-error			rt-regex-error?
 
 define-condition-type-accessors-only ^rt-signal				^error				rt-signal? \
 	(signal rt-signal-signal)

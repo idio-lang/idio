@@ -73,5 +73,59 @@ test-pre '("c" "") \
 	"(k*)c" \
 	str
 
+;; "basic" regular expressions -- deprecated
+bcrx := regcomp "a+" 'REG_BASIC
+test (regexec bcrx "aaa") #f
+test (not (regexec bcrx "aa+")) #f
+
+;; "regular" regular expressions -- checking flags
+crx := regcomp "a+" 'REG_BASIC 'REG_EXTENDED
+test (not (regexec crx "aaa")) #f
+
+;; "case insensitive" regular expressions -- checking flags
+icrx := regcomp "a+" 'REG_ICASE
+test (not (regexec icrx "AAA")) #f
+
+;; "no matches report" is ignored -- checking flags
+crx := regcomp "(a+)" 'REG_NOSUB
+;; regexec could match any of the (a+) -- it appears to match the
+;; first -- but no others as the regex doesn't include the b or c.
+;; The result is the overall match and the submatch
+test (array-length (regexec crx "aaabaaca")) 2
+
+;; "newline" regular expressions -- checking flags
+crx := regcomp "(.+)"
+test (array->list (regexec crx "aaa\nbbb")) '("aaa\nbbb" "aaa\nbbb")
+crx := regcomp "(.+)" 'REG_NEWLINE
+test (array->list (regexec crx "aaa\nbbb")) '("aaa" "aaa")
+
+;; regexec -- testing flags
+; first up, ^ matches at start of line (duh!)
+crx := regcomp "^(a.)"
+test (array->list (regexec crx "abc")) '("ab" "ab")
+test (regexec crx "bcd") #f
+
+; crx has ^ so will always fail with REG_NOTBOL...
+crx := regcomp "^(a.)"
+test (regexec crx "a1b\na2c" 'REG_NOTBOL) #f
+; ...unless we used REG_NEWLINE
+crx := regcomp "^(a.)" 'REG_NEWLINE
+test (array->list (regexec crx "a1b\na2c" 'REG_NOTBOL)) '("a2" "a2")
+
+; first up, $ matches at end of line (duh!)
+crx := regcomp "(b.)$"
+test (array->list (regexec crx "abc")) '("bc" "bc")
+test (regexec crx "abcd") #f
+
+; crx has $ so will always fail with REG_NOTEOL...
+crx := regcomp "(b.)$"
+test (regexec crx "ab1\nab2" 'REG_NOTEOL) #f
+; ...unless we used REG_NEWLINE
+crx := regcomp "(b.)$" 'REG_NEWLINE
+test (array->list (regexec crx "ab1\nab2" 'REG_NOTEOL)) '("b1" "b1")
+
+; REG_STARTEND is silently ignored
+regexec crx "" 'REG_STARTEND
+
 ;; all done?
-Tests? (posix-regex-0 + 6)
+Tests? (posix-regex-0 + 21)

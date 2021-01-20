@@ -81,7 +81,7 @@ void idio_libc_error_format (char *msg, IDIO name, IDIO c_location)
     detail = idio_get_output_string (dsh);
 #endif
 
-    IDIO c = idio_struct_instance (idio_condition_rt_libc_wrap_format_error_type,
+    IDIO c = idio_struct_instance (idio_condition_rt_libc_format_error_type,
 				   IDIO_LIST4 (idio_get_output_string (msh),
 					       location,
 					       detail,

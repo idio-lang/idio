@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -49,11 +49,39 @@ static IDIO idio_posix_regex_error (int errcode, regex_t *preg, char *C_func, ID
 	char *errbuf;
 	IDIO_GC_ALLOC (errbuf, errbufsiz);
 	regerror (errcode, preg, errbuf, errbufsiz);
+
+	IDIO msh = idio_open_output_string_handle_C ();
+	idio_display_C (C_func, msh);
+	idio_display_C (" failure: ", msh);
+	idio_display_C (errbuf, msh);
+
 	IDIO_GC_FREE (errbuf);
-	idio_error_printf (c_location, "%s failure", C_func);
+
+	IDIO location = idio_vm_source_location ();
+
+	IDIO detail = idio_S_nil;
+
+#ifdef IDIO_DEBUG
+	IDIO dsh = idio_open_output_string_handle_C ();
+	idio_display (c_location, dsh);
+	detail = idio_get_output_string (dsh);
+#endif
+
+	IDIO c = idio_struct_instance (idio_condition_rt_regex_error_type,
+				       IDIO_LIST4 (idio_get_output_string (msh),
+						   location,
+						   detail,
+						   idio_S_nil));
+
+	idio_raise_condition (idio_S_true, c);
 
 	return idio_S_notreached;
     } else {
+	/*
+	 * Code coverage:
+	 *
+	 * First get regerror() to fail...
+	 */
 	idio_error_printf (c_location, "%s failure: regerror() failed processing errcode %d", C_func, errcode);
 
 	return idio_S_notreached;
@@ -86,11 +114,21 @@ IDIO idio_posix_regex_regcomp (IDIO rx, IDIO flags)
 	    } else if (idio_posix_regex_REG_NEWLINE_sym == flag) {
 		cflags |= REG_NEWLINE;
 	    } else {
-		idio_error (flag, idio_string_C ("regcomp(): unexpected flag"), flag, IDIO_C_FUNC_LOCATION ());
+		/*
+		 * Test Case: posix-regex-errors/regcomp-bad-flag.idio
+		 *
+		 * regcomp "" 'REG_PCRE
+		 */
+		idio_error_param_value ("regcomp", "unexpected flag", IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    }
 	} else {
+	    /*
+	     * Test Case: posix-regex-errors/regcomp-bad-flag-type.idio
+	     *
+	     * regcomp "" #t
+	     */
 	    idio_error_param_type ("symbol", flag, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
@@ -109,7 +147,14 @@ IDIO idio_posix_regex_regcomp (IDIO rx, IDIO flags)
     idio_gc_free (Crx);
 
     if (errcode) {
-	idio_debug ("ERROR: regcomp (%s): ", rx);
+	/*
+	 * Test Case: posix-regex-errors/regcomp-bad-pattern.idio
+	 *
+	 * regcomp "*"
+	 *
+	 * REG_BADRPT -- according to the manpage, "Invalid preceding
+	 * regular expression" from regerror()
+	 */
 	idio_posix_regex_error (errcode, preg, "regcomp", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
@@ -197,14 +242,28 @@ IDIO idio_posix_regex_regexec (IDIO rx, IDIO s, IDIO flags)
 		eflags |= REG_NOTEOL;
 #ifdef REG_STARTEND
 	    } else if (idio_posix_regex_REG_STARTEND_sym == flag) {
-		eflags |= REG_STARTEND;
+		/*
+		 * We don't support this anyway as we're not in a
+		 * position to pre-set pmatch[0]
+		 */
+		/* eflags |= REG_STARTEND; */
 #endif
 	    } else {
-		idio_error (flag, idio_string_C ("regexec(): unexpected flag"), flag, IDIO_C_FUNC_LOCATION ());
+		/*
+		 * Test Case: posix-regex-errors/regexec-bad-flag.idio
+		 *
+		 * regexec (regcomp "") "" 'REG_BOTH
+		 */
+		idio_error_param_value ("regexec", "unexpected flag", IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    }
 	} else {
+	    /*
+	     * Test Case: posix-regex-errors/regexec-bad-flag-type.idio
+	     *
+	     * regexec (regcomp "") "" #t
+	     */
 	    idio_error_param_type ("symbol", flag, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
@@ -232,9 +291,6 @@ IDIO idio_posix_regex_regexec (IDIO rx, IDIO s, IDIO flags)
 
 	if (REG_NOMATCH == errcode) {
 	    return idio_S_false;
-	} else {
-	    idio_debug ("regexec (rx, %s): ", s);
-	    idio_posix_regex_error (errcode, preg, "regexec", IDIO_C_FUNC_LOCATION ());
 	}
     }
 
