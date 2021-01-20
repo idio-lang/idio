@@ -33,7 +33,7 @@ test (array? #{})			#f ; HASH
 test (array? (function #n #n))		#f ; CLOSURE
 test (array? pair)			#f ; PRIMITIVE
 test (array? 1.0)			#f ; BIGNUM
-test (array? Idio)			#f ; MODULE
+test (array? (find-module 'Idio))	#f ; MODULE
 test (array? (current-input-handle))	#f ; HANDLE
 test (array? ^error)			#f ; STRUCT_TYPE
 test (array? libc/idio-uname)		#f ; STRUCT_INSTANCE

@@ -838,7 +838,7 @@ test (bignum? #{})			#f ; HASH
 test (bignum? (function #n #n))		#f ; CLOSURE
 test (bignum? pair)			#f ; PRIMITIVE
 test (bignum? 1.0)			#t ; BIGNUM
-test (bignum? Idio)			#f ; MODULE
+test (bignum? (find-module 'Idio))	#f ; MODULE
 test (bignum? (current-input-handle))	#f ; HANDLE
 test (bignum? ^error)			#f ; STRUCT_TYPE
 test (bignum? libc/idio-uname)		#f ; STRUCT_INSTANCE

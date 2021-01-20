@@ -312,6 +312,35 @@ void idio_vm_panic (IDIO thr, char *m)
     }
 }
 
+void idio_vm_error (char *msg, IDIO args, IDIO c_location)
+{
+    IDIO_C_ASSERT (msg);
+    IDIO_ASSERT (args);
+    IDIO_ASSERT (c_location);
+    IDIO_TYPE_ASSERT (list, args);
+    IDIO_TYPE_ASSERT (string, c_location);
+
+    IDIO msh = idio_open_output_string_handle_C ();
+    idio_display_C (msg, msh);
+
+    IDIO location = idio_vm_source_location ();
+
+    IDIO dsh = idio_open_output_string_handle_C ();
+    idio_display (args, dsh);
+
+#ifdef IDIO_DEBUG
+    idio_display_C (": ", dsh);
+    idio_display (c_location, dsh);
+#endif
+
+    IDIO c = idio_struct_instance (idio_condition_rt_function_error_type,
+				   IDIO_LIST3 (idio_get_output_string (msh),
+					       location,
+					       idio_get_output_string (dsh)));
+
+    idio_raise_condition (idio_S_true, c);
+}
+
 static void idio_vm_error_function_invoke (char *msg, IDIO args, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
@@ -1578,7 +1607,6 @@ IDIO idio_vm_invoke_C (IDIO thr, IDIO command)
 		args = IDIO_PAIR_T (args);
 	    }
 	    IDIO_THREAD_VAL (thr) = vs;
-	    /* IDIO func = idio_module_current_symbol_value (IDIO_PAIR_H (command)); */
 
 	    idio_vm_invoke (thr, IDIO_PAIR_H (command), IDIO_VM_INVOKE_TAIL_CALL);
 

@@ -36,7 +36,7 @@ test (function? #{})			#f ; HASH
 test (function? (function #n #n))	#t ; CLOSURE
 test (function? pair)			#t ; PRIMITIVE
 test (function? 1.0)			#f ; BIGNUM
-test (function? Idio)			#f ; MODULE
+test (function? (find-module 'Idio))	#f ; MODULE
 test (function? (current-input-handle))	#f ; HANDLE
 test (function? ^error)			#f ; STRUCT_TYPE
 test (function? libc/idio-uname)	#f ; STRUCT_INSTANCE

@@ -35,7 +35,7 @@ test (bitset? #{})			#f ; HASH
 test (bitset? (function #n #n))		#f ; CLOSURE
 test (bitset? pair)			#f ; PRIMITIVE
 test (bitset? 1.0)			#f ; BIGNUM
-test (bitset? Idio)			#f ; MODULE
+test (bitset? (find-module 'Idio))	#f ; MODULE
 test (bitset? (current-input-handle))	#f ; HANDLE
 test (bitset? ^error)			#f ; STRUCT_TYPE
 test (bitset? libc/idio-uname)		#f ; STRUCT_INSTANCE

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -41,35 +41,18 @@ IDIO idio_Idio_module_instance ();
 IDIO idio_primitives_module_instance ();
 IDIO idio_thread_current_module ();
 IDIO idio_thread_current_env ();
-IDIO idio_module_extend_imports (IDIO module, IDIO syms);
-IDIO idio_module_extend_exports (IDIO module, IDIO syms);
 IDIO idio_module_symbols (IDIO module);
-IDIO idio_module_current_symbols ();
-IDIO idio_module_primitive_symbols ();
 IDIO idio_module_visible_symbols (IDIO module, IDIO type);
 IDIO idio_module_direct_reference (IDIO name);
 IDIO idio_module_find_symbol_recurse (IDIO symbol, IDIO module, int recurse);
-IDIO idio_module_primitive_symbol_recurse (IDIO symbol);
-IDIO idio_module_current_symbol_recurse (IDIO symbol);
 IDIO idio_module_env_symbol_recurse (IDIO symbol);
 IDIO idio_module_find_symbol (IDIO symbol, IDIO module);
-IDIO idio_module_primitive_symbol (IDIO symbol);
-IDIO idio_module_current_symbol (IDIO symbol);
 IDIO idio_module_symbol_value (IDIO symbol, IDIO module, IDIO args);
-IDIO idio_module_primitive_symbol_value (IDIO symbol, IDIO args);
-IDIO idio_module_current_symbol_value (IDIO symbol, IDIO args);
 IDIO idio_module_env_symbol_value (IDIO symbol, IDIO args);
-IDIO idio_module_toplevel_symbol_value (IDIO symbol, IDIO args);
 IDIO idio_module_symbol_value_recurse (IDIO symbol, IDIO module, IDIO args);
-IDIO idio_module_primitive_symbol_value_recurse (IDIO symbol, IDIO args);
 IDIO idio_module_current_symbol_value_recurse (IDIO symbol, IDIO args);
 IDIO idio_module_env_symbol_value_recurse (IDIO symbol, IDIO args);
-IDIO idio_module_toplevel_symbol_value_recurse (IDIO symbol, IDIO args);
 IDIO idio_module_set_symbol (IDIO symbol, IDIO value, IDIO module);
-IDIO idio_module_primitive_set_symbol (IDIO symbol, IDIO value);
-IDIO idio_module_current_set_symbol (IDIO symbol, IDIO value);
-IDIO idio_module_env_set_symbol (IDIO symbol, IDIO value);
-IDIO idio_module_toplevel_set_symbol (IDIO symbol, IDIO value);
 IDIO idio_module_set_symbol_value (IDIO symbol, IDIO value, IDIO module);
 IDIO idio_module_export_symbol_value (IDIO symbol, IDIO value, IDIO module);
 IDIO idio_module_primitive_set_symbol_value (IDIO symbol, IDIO value);

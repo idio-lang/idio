@@ -20,6 +20,27 @@
 ;;
 hash0 := Tests
 
+test (hash? 0)				#f ; FIXNUM
+test (hash? #t)				#f ; CONSTANT
+test (hash? (integer->char 1))		#f ; CHARACTER (deprecated)
+test (hash? #\a)			#f ; UNICODE
+test (hash? "a")			#f ; STRING
+test (hash? 'a)				#f ; SYMBOL
+test (hash? :a)				#f ; KEYWORD
+test (hash? (pair 1 2))			#f ; PAIR
+test (hash? #[])			#f ; ARRAY
+test (hash? #{})			#t ; HASH
+test (hash? (function #n #n))		#f ; CLOSURE
+test (hash? pair)			#f ; PRIMITIVE
+test (hash? 1.0)			#f ; BIGNUM
+test (hash? (find-module 'Idio))	#f ; MODULE
+test (hash? (current-input-handle))	#f ; HANDLE
+test (hash? ^error)			#f ; STRUCT_TYPE
+test (hash? libc/idio-uname)		#f ; STRUCT_INSTANCE
+test (hash? #B{ 3 })			#f ; BITSET
+test (hash? libc/INTMAX_MAX)		#f ; C_INT
+test (hash? libc/UINTMAX_MAX)		#f ; C_UINT
+
 ;; hash operator tests
 ht := (make-hash)
 
@@ -413,4 +434,4 @@ test (hash-equivalence-function (copy-hash ht 'deep)) 'eqv?
 test (hash-equivalence-function (copy-hash ht 'shallow)) 'eqv?
 
 ;; all done?
-Tests? (hash0 + 77)
+Tests? (hash0 + 97)

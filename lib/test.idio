@@ -221,6 +221,8 @@ test-load "test-keyword-error.idio"
 test-load "test-keyword.idio"
 test-load "test-libc-wrap-error.idio"
 test-load "test-libc-wrap.idio"
+test-load "test-module-error.idio"
+test-load "test-module.idio"
 
 test-load "test-unicode.idio"
 test-load "test-operator.idio"
@@ -253,7 +255,7 @@ test-load "test-command.idio"
 ;; that?  Erm, they've not been counted and are dynamic in number so
 ;; test we've seen at least as many as the largest number we've
 ;; seen.  Wait, some tests are OS-specific.  Drat!
-Tests? 3045
+Tests? 3181
 
 if (file-exists? testfile) (delete-file testfile)
 

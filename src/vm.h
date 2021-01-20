@@ -225,6 +225,7 @@ extern int idio_vm_exit;
 #define IDIO_VM_US	1000000L
 
 void idio_vm_panic (IDIO thr, char *m);
+void idio_vm_error (char *msg, IDIO args, IDIO c_location);
 IDIO idio_vm_closure_name (IDIO c);
 
 #define IDIO_VM_RUN_C		0

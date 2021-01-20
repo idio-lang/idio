@@ -36,7 +36,7 @@ test (fixnum? #{})			#f ; HASH
 test (fixnum? (function #n #n))		#f ; CLOSURE
 test (fixnum? pair)			#f ; PRIMITIVE
 test (fixnum? 1.0)			#f ; BIGNUM
-test (fixnum? Idio)			#f ; MODULE
+test (fixnum? (find-module 'Idio))	#f ; MODULE
 test (fixnum? (current-input-handle))	#f ; HANDLE
 test (fixnum? ^error)			#f ; STRUCT_TYPE
 test (fixnum? libc/idio-uname)		#f ; STRUCT_INSTANCE

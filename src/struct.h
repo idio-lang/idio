@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -27,28 +27,28 @@
 	IDIO sym = idio_symbols_C_intern (n);			\
 	v = idio_struct_type (sym, p, idio_S_nil);		\
 	idio_gc_protect_auto (v);				\
-	idio_module_toplevel_set_symbol_value (sym, v);		\
+	idio_module_set_symbol_value (sym, v, idio_Idio_module); \
     }
 
 #define IDIO_DEFINE_STRUCT1(v,n,p,f1) {					\
 	IDIO sym = idio_symbols_C_intern (n);				\
 	v = idio_struct_type (sym, p, IDIO_LIST1 (idio_symbols_C_intern (f1)));	\
 	idio_gc_protect_auto (v);					\
-	idio_module_toplevel_set_symbol_value (sym, v);			\
+	idio_module_set_symbol_value (sym, v, idio_Idio_module);	\
     }
 
 #define IDIO_DEFINE_STRUCT2(v,n,p,f1,f2) {				\
 	IDIO sym = idio_symbols_C_intern (n);				\
 	v = idio_struct_type (sym, p, IDIO_LIST2 (idio_symbols_C_intern (f1), idio_symbols_C_intern (f2))); \
 	idio_gc_protect_auto (v);					\
-	idio_module_toplevel_set_symbol_value (sym, v);			\
+	idio_module_set_symbol_value (sym, v, idio_Idio_module);	\
     }
 
 #define IDIO_DEFINE_STRUCT3(v,n,p,f1,f2,f3) {				\
 	IDIO sym = idio_symbols_C_intern (n);				\
 	v = idio_struct_type (sym, p, IDIO_LIST3 (idio_symbols_C_intern (f1), idio_symbols_C_intern (f2), idio_symbols_C_intern (f3))); \
 	idio_gc_protect_auto (v);					\
-	idio_module_toplevel_set_symbol_value (sym, v);			\
+	idio_module_set_symbol_value (sym, v, idio_Idio_module);	\
     }
 
     /*

@@ -153,6 +153,7 @@ void idio_error_param_type (char *etype, IDIO who, IDIO c_location)
     IDIO_C_ASSERT (etype);
     IDIO_ASSERT (who);
     IDIO_ASSERT (c_location);
+
     IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO msh = idio_open_output_string_handle_C ();

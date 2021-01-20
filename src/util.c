@@ -1541,7 +1541,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 	    switch (type) {
 	    case IDIO_TYPE_NONE:
 		fprintf (stderr, "TYPE_NONE in flight :(\n");
-		if (IDIO_ASPRINTF (&r, "#<!! -none- %10p>", o) == -1) {
+		if (IDIO_ASPRINTF (&r, "#<NONE!! -none- %10p>", o) == -1) {
 		    idio_error_alloc ("asprintf");
 
 		    /* notreached */
@@ -1862,7 +1862,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 		}
 	    case IDIO_TYPE_MODULE:
 		{
-		    if (IDIO_ASPRINTF (&r, "#<module ") == -1) {
+		    if (IDIO_ASPRINTF (&r, "#<MOD ") == -1) {
 			idio_error_alloc ("asprintf");
 
 			/* notreached */
@@ -2153,7 +2153,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 		{
 		    seen = idio_pair (o, seen);
 		    idio_ai_t sp = idio_array_size (IDIO_THREAD_STACK (o));
-		    if (IDIO_ASPRINTF (&r, "#<THREAD %10p\n  pc=%6zd\n  sp/top=%2zd/",
+		    if (IDIO_ASPRINTF (&r, "#<THR %10p\n  pc=%6zd\n  sp/top=%2zd/",
 				  o,
 				  IDIO_THREAD_PC (o),
 				  sp - 1) == -1) {

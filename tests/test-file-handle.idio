@@ -23,6 +23,27 @@ module tests/file-handle
 
 file-handle0 := Tests
 
+test (file-handle? 0)				#f ; FIXNUM
+test (file-handle? #t)				#f ; CONSTANT
+test (file-handle? (integer->char 1))		#f ; CHARACTER (deprecated)
+test (file-handle? #\a)				#f ; UNICODE
+test (file-handle? "a")				#f ; STRING
+test (file-handle? 'a)				#f ; SYMBOL
+test (file-handle? :a)				#f ; KEYWORD
+test (file-handle? (pair 1 2))			#f ; PAIR
+test (file-handle? #[])				#f ; ARRAY
+test (file-handle? #{})				#f ; HASH
+test (file-handle? (function #n #n))		#f ; CLOSURE
+test (file-handle? pair)			#f ; PRIMITIVE
+test (file-handle? 1.0)				#f ; BIGNUM
+test (file-handle? (find-module 'Idio))		#f ; MODULE
+test (file-handle? (current-input-handle))	#t ; HANDLE
+test (file-handle? ^error)			#f ; STRUCT_TYPE
+test (file-handle? libc/idio-uname)		#f ; STRUCT_INSTANCE
+test (file-handle? #B{ 3 })			#f ; BITSET
+test (file-handle? libc/INTMAX_MAX)		#f ; C_INT
+test (file-handle? libc/UINTMAX_MAX)		#f ; C_UINT
+
 test-str := "foo"
 test (file-handle? test-str) #f
 test (input-file-handle? test-str) #f
@@ -231,4 +252,4 @@ load "lib/empty"
 
 IDIOLIB = OIDIOLIB
 ;; all done?
-Tests? (file-handle0 + 57)
+Tests? (file-handle0 + 77)
