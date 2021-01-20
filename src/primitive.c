@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -22,6 +22,10 @@
 
 #include "idio.h"
 
+/*
+ * idio_primitive() exists in case anyone wants to create a primitive
+ * dynamically -- as opposed to via the usual C macro methods.
+ */
 IDIO idio_primitive (IDIO (*func) (IDIO args), const char *name_C, size_t arity, char varargs, const char *sigstr_C, const char *docstr_C)
 {
     IDIO_C_ASSERT (func);
@@ -120,10 +124,20 @@ void idio_primitive_set_property_C (IDIO p, IDIO kw, const char *str_C)
     IDIO str = idio_S_nil;
 
     if (NULL == str_C) {
+	/*
+	 * Code coverage:
+	 *
+	 * Coding error.
+	 */
 	return;
     } else {
 	size_t l = strlen (str_C);
 	if (0 == l) {
+	    /*
+	     * Code coverage:
+	     *
+	     * Coding error.
+	     */
 	    str = idio_S_nil;
 	} else {
 	    str = idio_string_C (str_C);
