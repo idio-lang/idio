@@ -1,4 +1,2 @@
 
-s := "hello"
-
-string-ref s -1
+string-ref "hello world" -1

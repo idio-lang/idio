@@ -1,4 +1,2 @@
 
-str := "hello world"
-
-substring str #\a 2
+substring "hello world" #\a 2

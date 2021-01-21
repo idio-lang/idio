@@ -1,4 +1,2 @@
 
-str := "hello world"
-
-substring str 2 1.5
+substring "hello world" 2 1.5

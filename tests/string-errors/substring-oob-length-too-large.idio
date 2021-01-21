@@ -1,2 +1,2 @@
-str := "hello"
-ss := substring str 2 20
+
+ss := substring "hello" 2 20

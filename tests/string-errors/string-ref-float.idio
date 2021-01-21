@@ -1,4 +1,2 @@
 
-str := "hello world"
-
-string-ref str 1.5
+string-ref "hello world" 1.5

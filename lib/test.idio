@@ -230,12 +230,12 @@ test-load "test-path.idio"
 test-load "test-posix-regex-error.idio"
 test-load "test-posix-regex.idio"
 test-load "test-primitive.idio"
+test-load "test-string-error.idio"
+test-load "test-string.idio"
 
 test-load "test-unicode.idio"
 test-load "test-operator.idio"
 test-load "test-template.idio"
-test-load "test-string.idio"
-test-load "test-string-error.idio"
 test-load "test-string-handle.idio"
 test-load "test-handle.idio"
 test-load "test-struct.idio"
@@ -260,7 +260,7 @@ test-load "test-command.idio"
 ;; that?  Erm, they've not been counted and are dynamic in number so
 ;; test we've seen at least as many as the largest number we've
 ;; seen.  Wait, some tests are OS-specific.  Drat!
-Tests? 3263
+Tests? 3562
 
 if (file-exists? testfile) (delete-file testfile)
 

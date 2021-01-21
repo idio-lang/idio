@@ -1,4 +1,2 @@
 
-str := copy-string "hello world"
-
-string-set! str 1.5 #\a
+string-set! (copy-string "hello") 1.5 #\a

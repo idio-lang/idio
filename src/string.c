@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -33,14 +33,14 @@ static void idio_string_error (IDIO msg, IDIO detail, IDIO c_location)
     IDIO_TYPE_ASSERT (string, c_location);
 
 #ifdef IDIO_DEBUG
-    IDIO sh = idio_open_output_string_handle_C ();
+    IDIO dsh = idio_open_output_string_handle_C ();
     if (idio_S_nil != detail) {
-	idio_display (detail, sh);
-	idio_display_C (": ", sh);
+	idio_display (detail, dsh);
+	idio_display_C (": ", dsh);
     }
-    idio_display (c_location, sh);
+    idio_display (c_location, dsh);
 
-    detail = idio_get_output_string (sh);
+    detail = idio_get_output_string (dsh);
 #endif
 
     IDIO c = idio_struct_instance (idio_condition_string_error_type,
@@ -53,7 +53,12 @@ static void idio_string_error (IDIO msg, IDIO detail, IDIO c_location)
     /* notreached */
 }
 
-static void idio_string_error_utf8_decode (char *msg, char *det, IDIO c_location)
+/*
+ * Code coverage:
+ *
+ * Coding error?
+ */
+static void idio_string_utf8_decode_error (char *msg, char *det, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (c_location);
@@ -72,7 +77,7 @@ static void idio_string_error_utf8_decode (char *msg, char *det, IDIO c_location
     /* notreached */
 }
 
-void idio_string_error_size (char *msg, ptrdiff_t size, IDIO c_location)
+void idio_string_size_error (char *msg, ptrdiff_t size, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (c_location);
@@ -93,11 +98,12 @@ void idio_string_error_size (char *msg, ptrdiff_t size, IDIO c_location)
     /* notreached */
 }
 
-void idio_string_error_length (char *msg, IDIO str, ptrdiff_t index, IDIO c_location)
+void idio_string_length_error (char *msg, IDIO str, ptrdiff_t index, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (str);
     IDIO_ASSERT (c_location);
+
     IDIO_TYPE_ASSERT (string, c_location);
 
     char em[BUFSIZ];
@@ -120,11 +126,17 @@ void idio_string_error_length (char *msg, IDIO str, ptrdiff_t index, IDIO c_loca
     /* notreached */
 }
 
-void idio_substring_error_length (char *msg, IDIO str, ptrdiff_t index, IDIO c_location)
+/*
+ * Code coverage:
+ *
+ * Not triggered as I can't provoke the clauses!
+ */
+void idio_substring_length_error (char *msg, IDIO str, ptrdiff_t index, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (str);
     IDIO_ASSERT (c_location);
+
     IDIO_TYPE_ASSERT (string, c_location);
 
     char em[BUFSIZ];
@@ -147,11 +159,12 @@ void idio_substring_error_length (char *msg, IDIO str, ptrdiff_t index, IDIO c_l
     /* notreached */
 }
 
-void idio_substring_error_index (char *msg, IDIO str, ptrdiff_t ip0, ptrdiff_t ipn, IDIO c_location)
+void idio_substring_index_error (char *msg, IDIO str, ptrdiff_t ip0, ptrdiff_t ipn, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (str);
     IDIO_ASSERT (c_location);
+
     IDIO_TYPE_ASSERT (string, str);
     IDIO_TYPE_ASSERT (string, c_location);
 
@@ -170,11 +183,12 @@ void idio_substring_error_index (char *msg, IDIO str, ptrdiff_t ip0, ptrdiff_t i
     /* notreached */
 }
 
-void idio_string_error_format (char *msg, IDIO str, IDIO c_location)
+void idio_string_format_error (char *msg, IDIO str, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (str);
     IDIO_ASSERT (c_location);
+
     IDIO_TYPE_ASSERT (string, str);
     IDIO_TYPE_ASSERT (string, c_location);
 
@@ -187,12 +201,13 @@ void idio_string_error_format (char *msg, IDIO str, IDIO c_location)
     /* notreached */
 }
 
-void idio_string_error_width (char *msg, IDIO str, IDIO rc, IDIO c_location)
+void idio_string_width_error (char *msg, IDIO str, IDIO rc, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (str);
     IDIO_ASSERT (rc);
     IDIO_ASSERT (c_location);
+
     IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO msh = idio_open_output_string_handle_C ();
@@ -240,12 +255,14 @@ size_t idio_string_storage_size (IDIO s)
     default:
 	{
 	    /*
-	     * Coding error?
+	     * Test Case: ??
+	     *
+	     * Coding error.
 	     */
 	    char em[BUFSIZ];
 	    sprintf (em, "%#x", flags);
 
-	    idio_string_error_utf8_decode ("unexpected flag", em, IDIO_C_FUNC_LOCATION ());
+	    idio_string_utf8_decode_error ("unexpected flag", em, IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
 	    return 0;
@@ -312,12 +329,14 @@ IDIO idio_string_C_len (const char *s_C, size_t blen)
     default:
 	{
 	    /*
-	     * Coding error?
+	     * Test Case: ??
+	     *
+	     * Coding error.
 	     */
 	    char em[BUFSIZ];
 	    sprintf (em, "%#x", flags);
 
-	    idio_string_error_utf8_decode ("unexpected flag", em, IDIO_C_FUNC_LOCATION ());
+	    idio_string_utf8_decode_error ("unexpected flag", em, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -361,12 +380,14 @@ IDIO idio_string_C_len (const char *s_C, size_t blen)
 	default:
 	    {
 		/*
-		 * Coding error?  Caught above?
+		 * Test Case: ??
+		 *
+		 * Coding error.  Should have been caught above.
 		 */
 		char em[BUFSIZ];
 		sprintf (em, "%#x", flags);
 
-		idio_string_error_utf8_decode ("unexpected flag", em, IDIO_C_FUNC_LOCATION ());
+		idio_string_utf8_decode_error ("unexpected flag", em, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    }
@@ -441,7 +462,9 @@ IDIO idio_string_C_array_lens (size_t ns, char *a_C[], size_t lens[])
 		     * Callers to here from idio_string_array () will
 		     * be feeding in C strings.
 		     */
-		    /* fprintf (stderr, "The (UTF-8) string is not well-formed with %#02X at byte %zu/%zu\n", *ua_C, i, blen); */
+#ifdef IDIO_DEBUG
+		    fprintf (stderr, "The (UTF-8) string is not well-formed with %#02X at byte %zu/%zu\n", *ua_C, i, blen);
+#endif
 		    codepoint = 0xFFFD;
 		    break;
 		}
@@ -477,12 +500,14 @@ IDIO idio_string_C_array_lens (size_t ns, char *a_C[], size_t lens[])
     default:
 	{
 	    /*
-	     * Coding error?
+	     * Test Case: ??
+	     *
+	     * Coding error.
 	     */
 	    char em[BUFSIZ];
 	    sprintf (em, "%#x", flags);
 
-	    idio_string_error_utf8_decode ("unexpected flag", em, IDIO_C_FUNC_LOCATION ());
+	    idio_string_utf8_decode_error ("unexpected flag", em, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -532,12 +557,14 @@ IDIO idio_string_C_array_lens (size_t ns, char *a_C[], size_t lens[])
 	    default:
 		{
 		    /*
-		     * Coding error?  Caught above?
+		     * Test Case: ??
+		     *
+		     * Coding error.  Should have been caught above.
 		     */
 		    char em[BUFSIZ];
 		    sprintf (em, "%#x", flags);
 
-		    idio_string_error_utf8_decode ("unexpected flag", em, IDIO_C_FUNC_LOCATION ());
+		    idio_string_utf8_decode_error ("unexpected flag", em, IDIO_C_FUNC_LOCATION ());
 
 		    return idio_S_notreached;
 		}
@@ -649,7 +676,7 @@ IDIO idio_substring_offset_len (IDIO str, size_t offset, size_t len)
 	     * Not sure how to provoke this as there are guards on
 	     * most callers
 	     */
-	    idio_substring_error_length ("starts beyond parent string", parent, offset, IDIO_C_FUNC_LOCATION ());
+	    idio_substring_length_error ("starts beyond parent string", parent, offset, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -663,7 +690,7 @@ IDIO idio_substring_offset_len (IDIO str, size_t offset, size_t len)
 	     * Not sure how to provoke this as there are guards on
 	     * most callers
 	     */
-	    idio_substring_error_length ("extends beyond parent substring", parent, prospective_len, IDIO_C_FUNC_LOCATION ());
+	    idio_substring_length_error ("extends beyond parent substring", parent, prospective_len, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -675,7 +702,7 @@ IDIO idio_substring_offset_len (IDIO str, size_t offset, size_t len)
 	     * Not sure how to provoke this as there are guards on
 	     * most callers
 	     */
-	    idio_substring_error_length ("starts beyond parent string", str, offset, IDIO_C_FUNC_LOCATION ());
+	    idio_substring_length_error ("starts beyond parent string", str, offset, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -688,7 +715,7 @@ IDIO idio_substring_offset_len (IDIO str, size_t offset, size_t len)
 	     * Not sure how to provoke this as there are guards on
 	     * most callers
 	     */
-	    idio_substring_error_length ("extends beyond parent string", str, prospective_len, IDIO_C_FUNC_LOCATION ());
+	    idio_substring_length_error ("extends beyond parent string", str, prospective_len, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -806,17 +833,26 @@ If no default value is supplied #\{space} is used.	\n\
 	    if (idio_S_nil == size_i) {
 		/*
 		 * Test Case: string-errors/make-string-float.idio
+		 *
+		 * make-string 1.5
 		 */
 		idio_error_param_type ("integer", size, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    } else {
+		/*
+		 * Code coverage:
+		 *
+		 * make-string 1e1
+		 */
 		cp_count = idio_bignum_ptrdiff_value (size_i);
 	    }
 	}
     } else {
 	/*
 	 * Test Case: string-errors/make-string-unicode.idio
+	 *
+	 * make-string #\a
 	 */
 	idio_error_param_type ("integer", size, IDIO_C_FUNC_LOCATION ());
 
@@ -826,21 +862,31 @@ If no default value is supplied #\{space} is used.	\n\
     if (cp_count < 0) {
 	/*
 	 * Test Case: string-errors/make-string-negative.idio
+	 *
+	 * make-string -10
 	 */
-	idio_string_error_size ("invalid", cp_count, IDIO_C_FUNC_LOCATION ());
+	idio_string_size_error ("invalid", cp_count, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
 
+    /*
+     * Test Case: n/a
+     *
+     * args is the varargs parameter -- should always be a list
+     */
     IDIO_USER_TYPE_ASSERT (list, args);
-
-    IDIO so = idio_gc_get (IDIO_TYPE_STRING);
 
     idio_unicode_t fillc = ' ';
     IDIO_FLAGS_T flags = IDIO_STRING_FLAG_1BYTE;
 
     if (idio_S_nil != args) {
 	IDIO fill = IDIO_PAIR_H (args);
+	/*
+	 * Test Case: string-errors/make-string-bad-fill-type.idio
+	 *
+	 * make-string 5 #t
+	 */
 	IDIO_USER_TYPE_ASSERT (unicode, fill);
 
 	fillc = IDIO_UNICODE_VAL (fill);
@@ -873,16 +919,20 @@ If no default value is supplied #\{space} is used.	\n\
     default:
 	{
 	    /*
-	     * Coding error?
+	     * Test Case: ??
+	     *
+	     * Coding error.
 	     */
 	    char em[BUFSIZ];
 	    sprintf (em, "%#x", flags);
 
-	    idio_string_error_utf8_decode ("unexpected flag", em, IDIO_C_FUNC_LOCATION ());
+	    idio_string_utf8_decode_error ("unexpected flag", em, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
     }
+
+    IDIO so = idio_gc_get (IDIO_TYPE_STRING);
 
     IDIO_GC_ALLOC (IDIO_STRING_S (so), reqd_bytes + 1);
     IDIO_STRING_BLEN (so) = reqd_bytes;
@@ -906,12 +956,14 @@ If no default value is supplied #\{space} is used.	\n\
 	default:
 	    {
 		/*
-		 * Coding error?  Caught above?
+		 * Test Case: ??
+		 *
+		 * Coding error.  Should have been caught above.
 		 */
 		char em[BUFSIZ];
 		sprintf (em, "%#x", flags);
 
-		idio_string_error_utf8_decode ("unexpected flag", em, IDIO_C_FUNC_LOCATION ());
+		idio_string_utf8_decode_error ("unexpected flag", em, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    }
@@ -937,6 +989,11 @@ return a list of the Unicode code points in `s`\n\
 {
     IDIO_ASSERT (s);
 
+    /*
+     * Test Case: string-errors/string2list-bad-type.idio
+     *
+     * string->list #t
+     */
     IDIO_USER_TYPE_ASSERT (string, s);
 
     uint8_t *s8 = NULL;
@@ -996,9 +1053,8 @@ return a list of the Unicode code points in `s`\n\
 IDIO idio_list_list2string (IDIO l)
 {
     IDIO_ASSERT (l);
-    IDIO_TYPE_ASSERT (list, l);
 
-    IDIO so = idio_gc_get (IDIO_TYPE_STRING);
+    IDIO_TYPE_ASSERT (list, l);
 
     IDIO_FLAGS_T flags = IDIO_STRING_FLAG_1BYTE;
 
@@ -1019,8 +1075,14 @@ IDIO idio_list_list2string (IDIO l)
 	    }
 	    cp_count++;
 	} else {
+	    /*
+	     * Test Case: string-errors/list2string-bad-value.idio
+	     *
+	     * list->string '(#\a #\b c)
+	     */
 	    idio_error_param_type ("unicode", h, IDIO_C_FUNC_LOCATION ());
-	    return idio_S_unspec;
+
+	    return idio_S_notreached;
 	}
 
 	l = IDIO_PAIR_T (l);
@@ -1044,16 +1106,20 @@ IDIO idio_list_list2string (IDIO l)
     default:
 	{
 	    /*
-	     * Coding error?
+	     * Test Case: ??
+	     *
+	     * Coding error.
 	     */
 	    char em[BUFSIZ];
 	    sprintf (em, "%#x", flags);
 
-	    idio_string_error_utf8_decode ("unexpected flag", em, IDIO_C_FUNC_LOCATION ());
+	    idio_string_utf8_decode_error ("unexpected flag", em, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
     }
+
+    IDIO so = idio_gc_get (IDIO_TYPE_STRING);
 
     IDIO_GC_ALLOC (IDIO_STRING_S (so), reqd_bytes + 1);
     IDIO_STRING_BLEN (so) = reqd_bytes;
@@ -1083,12 +1149,14 @@ IDIO idio_list_list2string (IDIO l)
 	default:
 	    {
 		/*
-		 * Coding error?  Caught above?
+		 * Test Case: ??
+		 *
+		 * Coding error.  Should have been caught above.
 		 */
 		char em[BUFSIZ];
 		sprintf (em, "%#x", flags);
 
-		idio_string_error_utf8_decode ("unexpected flag", em, IDIO_C_FUNC_LOCATION ());
+		idio_string_utf8_decode_error ("unexpected flag", em, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    }
@@ -1110,6 +1178,11 @@ IDIO_DEFINE_PRIMITIVE1 ("list->string", list2string, (IDIO l))
 {
     IDIO_ASSERT (l);
 
+    /*
+     * Test Case: string-errors/list2string-bad-type.idio
+     *
+     * list->string #t
+     */
     IDIO_USER_TYPE_ASSERT (list, l);
 
     return idio_list_list2string (l);
@@ -1126,6 +1199,11 @@ return a symbol derived from `s`		\n\
 {
     IDIO_ASSERT (s);
 
+    /*
+     * Test Case: string-errors/string2symbol-bad-type.idio
+     *
+     * string->symbol #t
+     */
     IDIO_USER_TYPE_ASSERT (string, s);
 
     size_t size = 0;
@@ -1134,11 +1212,13 @@ return a symbol derived from `s`		\n\
     size_t C_size = strlen (sC);
     if (C_size != size) {
 	/*
-	 * Test Case: string-errors/string-symbol-format.idio
+	 * Test Case: string-errors/string2symbol-format.idio
+	 *
+	 * string->symbol (join-string (make-string 1 #U+0) '("hello" "world"))
 	 */
 	IDIO_GC_FREE (sC);
 
-	idio_string_error_format ("string contains an ASCII NUL", s, IDIO_C_FUNC_LOCATION ());
+	idio_string_format_error ("string contains an ASCII NUL", s, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -1166,6 +1246,11 @@ which is a list of strings.						\n\
 {
     IDIO_ASSERT (args);
 
+    /*
+     * Test Case: n/a
+     *
+     * args is the varargs parameter -- should always be a list
+     */
     IDIO_USER_TYPE_ASSERT (list, args);
 
     IDIO r = idio_S_nil;
@@ -1178,6 +1263,11 @@ which is a list of strings.						\n\
 	ptrdiff_t i = 0;
 
 	for (; idio_S_nil != args; i++) {
+	    /*
+	     * Test Case: string-errors/append-string-bad-arg-type.idio
+	     *
+	     * append-string #t
+	     */
 	    IDIO_USER_TYPE_ASSERT (string, IDIO_PAIR_H (args));
 
 	    size_t size = 0;
@@ -1217,6 +1307,11 @@ a string.								\n\
 {
     IDIO_ASSERT (args);
 
+    /*
+     * Test Case: string-errors/concatenate-string-bad-type.idio
+     *
+     * concatenate-string #t
+     */
     IDIO_USER_TYPE_ASSERT (list, args);
 
     IDIO r = idio_S_nil;
@@ -1228,6 +1323,11 @@ a string.								\n\
 	ptrdiff_t i = 0;
 
 	for (; idio_S_nil != args; i++) {
+	    /*
+	     * Test Case: string-errors/concatenate-string-bad-arg-type.idio
+	     *
+	     * concatenate-string '(#t)
+	     */
 	    IDIO_USER_TYPE_ASSERT (string, IDIO_PAIR_H (args));
 
 	    size_t size = 0;
@@ -1259,6 +1359,11 @@ return a copy of `s` which is not eq? to `s`	\n\
 {
     IDIO_ASSERT (s);
 
+    /*
+     * Test Case: string-errors/copy-string-bad-type.idio
+     *
+     * copy-string #t
+     */
     IDIO_USER_TYPE_ASSERT (string, s);
 
     return idio_copy_string (s);
@@ -1275,6 +1380,11 @@ return the number of code points in `s`		\n\
 {
     IDIO_ASSERT (s);
 
+    /*
+     * Test Case: string-errors/string-length-bad-type.idio
+     *
+     * string-length #t
+     */
     IDIO_USER_TYPE_ASSERT (string, s);
 
     return idio_integer (idio_string_len (s));
@@ -1284,6 +1394,7 @@ IDIO idio_string_ref (IDIO s, IDIO index)
 {
     IDIO_ASSERT (s);
     IDIO_ASSERT (index);
+
     IDIO_TYPE_ASSERT (string, s);
 
     ptrdiff_t i = -1;
@@ -1304,6 +1415,8 @@ IDIO idio_string_ref (IDIO s, IDIO index)
 	    if (idio_S_nil == index_i) {
 		/*
 		 * Test Case: string-errors/string-ref-float.idio
+		 *
+		 * string-ref "hello world" 1.5
 		 */
 		idio_error_param_type ("integer", index, IDIO_C_FUNC_LOCATION ());
 
@@ -1315,6 +1428,8 @@ IDIO idio_string_ref (IDIO s, IDIO index)
     } else {
 	/*
 	 * Test Case: string-errors/string-ref-unicode.idio
+	 *
+	 * string-ref "hello world" #\a
 	 */
 	idio_error_param_type ("integer", index, IDIO_C_FUNC_LOCATION ());
 
@@ -1358,10 +1473,17 @@ IDIO idio_string_ref (IDIO s, IDIO index)
     if (i < 0 ||
 	i >= slen) {
 	/*
-	 * Test Cases: string-errors/string-ref-negative.idio
-	 * Test Cases: string-errors/string-ref-too-large.idio
+	 * Test Cases:
+	 *
+	 *   string-errors/string-ref-negative.idio
+	 *   string-errors/string-ref-too-large.idio
+	 *   string-errors/string-ref-bignum.idio
+	 *
+	 * string-ref "hello world" -1
+	 * string-ref "hello world" 100
+	 * string-ref "hello world" #x2000000000000000
 	 */
-	idio_string_error_length ("out of bounds", s, i, IDIO_C_FUNC_LOCATION ());
+	idio_string_length_error ("out of bounds", s, i, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -1398,6 +1520,11 @@ positions start at 0				\n\
     IDIO_ASSERT (s);
     IDIO_ASSERT (index);
 
+    /*
+     * Test Case: string-errors/string-ref-bad-type.idio
+     *
+     * string-ref #t 0
+     */
     IDIO_USER_TYPE_ASSERT (string, s);
 
     return idio_string_ref (s, index);
@@ -1408,9 +1535,15 @@ IDIO idio_string_set (IDIO s, IDIO index, IDIO c)
     IDIO_ASSERT (s);
     IDIO_ASSERT (index);
     IDIO_ASSERT (c);
+
     IDIO_TYPE_ASSERT (string, s);
     IDIO_TYPE_ASSERT (unicode, c);
 
+    /*
+     * Test Case: string-errors/string-set-constant.idio
+     *
+     * string-set! "hello" 1.5 #\a
+     */
     IDIO_ASSERT_NOT_CONST (string, s);
 
     ptrdiff_t i = -1;
@@ -1422,6 +1555,8 @@ IDIO idio_string_set (IDIO s, IDIO index, IDIO c)
 	    /*
 	     * Test Case: string-errors/string-set-bignum.idio
 	     *
+	     * string-set! (copy-string "hello") #x2000000000000000
+	     *
 	     * This is a code coverage case which will (probably)
 	     * provoke the out of bounds error below.
 	     */
@@ -1431,6 +1566,8 @@ IDIO idio_string_set (IDIO s, IDIO index, IDIO c)
 	    if (idio_S_nil == index_i) {
 		/*
 		 * Test Case: string-errors/string-set-float.idio
+		 *
+		 * string-set! (copy-string "hello") 1.5 #\a
 		 */
 		idio_error_param_type ("integer", index, IDIO_C_FUNC_LOCATION ());
 
@@ -1442,6 +1579,8 @@ IDIO idio_string_set (IDIO s, IDIO index, IDIO c)
     } else {
 	/*
 	 * Test Case: string-errors/string-set-unicode.idio
+	 *
+	 * string-set! (copy-string "hello") #\a #\a
 	 */
 	idio_error_param_type ("integer", index, IDIO_C_FUNC_LOCATION ());
 
@@ -1498,7 +1637,12 @@ IDIO idio_string_set (IDIO s, IDIO index, IDIO c)
     }
 
     if (cwidth > width) {
-	idio_string_error_width ("replacement char too wide", s, c, IDIO_C_FUNC_LOCATION ());
+	/*
+	 * Test Case: string-errors/string-set-too-wide.idio
+	 *
+	 * string-set! (copy-string "hello") 0 #U+127
+	 */
+	idio_string_width_error ("replacement char too wide", s, c, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -1509,7 +1653,7 @@ IDIO idio_string_set (IDIO s, IDIO index, IDIO c)
 	 * Test Cases: string-errors/string-set-negative.idio
 	 * Test Cases: string-errors/string-set-too-large.idio
 	 */
-	idio_string_error_length ("out of bounds", s, i, IDIO_C_FUNC_LOCATION ());
+	idio_string_length_error ("out of bounds", s, i, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -1526,7 +1670,7 @@ IDIO idio_string_set (IDIO s, IDIO index, IDIO c)
 	break;
     }
 
-    return s;
+    return idio_S_unspec;
 }
 
 IDIO_DEFINE_PRIMITIVE3_DS ("string-set!", string_set, (IDIO s, IDIO index, IDIO c), "s index c", "\
@@ -1550,7 +1694,17 @@ existing storage allocation for `s`		\n\
     IDIO_ASSERT (index);
     IDIO_ASSERT (c);
 
+    /*
+     * Test Case: string-errors/string-set-bad-type.idio
+     *
+     * string-set! #t 0 #U+0
+     */
     IDIO_USER_TYPE_ASSERT (string, s);
+    /*
+     * Test Case: string-errors/string-set-bad-value-type.idio
+     *
+     * string-set! (make-string 5) 0 #t
+     */
     IDIO_USER_TYPE_ASSERT (unicode, c);
 
     return idio_string_set (s, index, c);
@@ -1572,9 +1726,24 @@ existing storage allocation for `s`		\n\
     IDIO_ASSERT (s);
     IDIO_ASSERT (fill);
 
+    /*
+     * Test Case: string-errors/string-fill-bad-type.idio
+     *
+     * string-fill! #t #U+0
+     */
     IDIO_USER_TYPE_ASSERT (string, s);
+    /*
+     * Test Case: string-errors/string-fill-bad-value-type.idio
+     *
+     * string-fill! (make-string 5) #t
+     */
     IDIO_USER_TYPE_ASSERT (unicode, fill);
 
+    /*
+     * Test Case: string-errors/string-fill-constant.idio
+     *
+     * string-fill! "hello" #\a
+     */
     IDIO_ASSERT_NOT_CONST (string, s);
 
     /*
@@ -1618,13 +1787,18 @@ through to but excluuding position `pn`		\n\
 :type p0: integer				\n\
 :param pn: position				\n\
 :type pn: integer				\n\
-:return: #unspec				\n\
+:return: string					\n\
 ")
 {
     IDIO_ASSERT (s);
     IDIO_ASSERT (p0);
     IDIO_ASSERT (pn);
 
+    /*
+     * Test Case: string-errors/substring-bad-type.idio
+     *
+     * substring #t 0 1
+     */
     IDIO_USER_TYPE_ASSERT (string, s);
 
     ptrdiff_t ip0 = -1;
@@ -1637,6 +1811,8 @@ through to but excluuding position `pn`		\n\
 	    /*
 	     * Test Case: string-errors/substring-offset-bignum.idio
 	     *
+	     * substring "hello" #x2000000000000000
+	     *
 	     * This is a code coverage case which will (probably)
 	     * provoke the out of bounds error below.
 	     */
@@ -1646,6 +1822,8 @@ through to but excluuding position `pn`		\n\
 	    if (idio_S_nil == p0_i) {
 		/*
 		 * Test Case: string-errors/substring-offset-float.idio
+		 *
+		 * substring "hello world" 1.5 2
 		 */
 		idio_error_param_type ("integer", p0, IDIO_C_FUNC_LOCATION ());
 
@@ -1657,6 +1835,8 @@ through to but excluuding position `pn`		\n\
     } else {
 	/*
 	 * Test Case: string-errors/substring-offset-unicode.idio
+	 *
+	 * substring "hello world" #\a 2
 	 */
 	idio_error_param_type ("integer", p0, IDIO_C_FUNC_LOCATION ());
 
@@ -1670,6 +1850,8 @@ through to but excluuding position `pn`		\n\
 	    /*
 	     * Test Case: string-errors/substring-length-bignum.idio
 	     *
+	     * substring "hello" 0 #x2000000000000000
+	     *
 	     * This is a code coverage case which will (probably)
 	     * provoke the out of bounds error below.
 	     */
@@ -1679,6 +1861,8 @@ through to but excluuding position `pn`		\n\
 	    if (idio_S_nil == pn_i) {
 		/*
 		 * Test Case: string-errors/substring-length-float.idio
+		 *
+		 * substring "hello world" 2 1.5
 		 */
 		idio_error_param_type ("integer", pn, IDIO_C_FUNC_LOCATION ());
 
@@ -1690,6 +1874,8 @@ through to but excluuding position `pn`		\n\
     } else {
 	/*
 	 * Test Case: string-errors/substring-length-unicode.idio
+	 *
+	 * substring "hello world" 0 #\a
 	 */
 	idio_error_param_type ("integer", pn, IDIO_C_FUNC_LOCATION ());
 
@@ -1710,9 +1896,9 @@ through to but excluuding position `pn`		\n\
 	 * Test Case: string-errors/substring-oob-length-too-large.idio
 	 * Test Case: string-errors/substring-oob-start-after-end.idio
 	 */
-	idio_substring_error_index ("out of bounds", s, ip0, ipn, IDIO_C_FUNC_LOCATION ());
+	idio_substring_index_error ("out of bounds", s, ip0, ipn, IDIO_C_FUNC_LOCATION ());
 
-	return idio_S_unspec;
+	return idio_S_notreached;
     }
 
     IDIO r = idio_S_unspec;
@@ -1857,6 +2043,17 @@ int idio_string_equal (IDIO s1, IDIO s2)
  * than the longer string.
  *
  */
+/*
+ * Test Cases:
+ *
+ *   string-errors/string=-bad-first-type.idio
+ *   string-errors/string=-bad-second-type.idio
+ *   string-errors/string=-bad-remainder-type.idio
+ *
+ * string=? #t "hello"
+ * string=? "hello" #t
+ * string=? "hello" "hello" #t
+ */
 #define IDIO_DEFINE_STRING_PRIMITIVE2V(name,cname,cmp,scmp)		\
     IDIO_DEFINE_PRIMITIVE2V (name, cname, (IDIO s1, IDIO s2, IDIO args)) \
     {									\
@@ -1873,6 +2070,7 @@ int idio_string_equal (IDIO s1, IDIO s2)
 									\
 	while (idio_S_nil != args) {					\
 	    s2 = IDIO_PAIR_H (args);					\
+	    IDIO_USER_TYPE_ASSERT (string, s2);				\
 	    size_t l2 = 0;						\
 	    char *C2 = idio_string_as_C (s2, &l2);			\
 									\
@@ -1891,18 +2089,18 @@ int idio_string_equal (IDIO s1, IDIO s2)
 	    }								\
 									\
 	    if (0 == cr) {						\
-		IDIO_GC_FREE (C1);						\
-		IDIO_GC_FREE (C2);						\
+		IDIO_GC_FREE (C1);					\
+		IDIO_GC_FREE (C2);					\
 		return idio_S_false;					\
 	    }								\
 									\
-	    IDIO_GC_FREE (C1);							\
+	    IDIO_GC_FREE (C1);						\
 	    C1 = C2;							\
 	    l1 = l2;							\
 	    args = IDIO_PAIR_T (args);					\
 	}								\
 									\
-	IDIO_GC_FREE (C1);							\
+	IDIO_GC_FREE (C1);						\
 	return idio_S_true;						\
     }
 
@@ -1912,17 +2110,17 @@ int idio_string_equal (IDIO s1, IDIO s2)
 #define IDIO_DEFINE_STRING_CI_PRIMITIVE2V(name,cname,cmp)		\
     IDIO_DEFINE_STRING_PRIMITIVE2V (name, string_ ## cname ## _p, cmp, strncasecmp)
 
-IDIO_DEFINE_STRING_CI_PRIMITIVE2V ("string-ci<=?", le, <=)
-IDIO_DEFINE_STRING_CI_PRIMITIVE2V ("string-ci<?", lt, <)
-IDIO_DEFINE_STRING_CI_PRIMITIVE2V ("string-ci=?", eq, ==)
-IDIO_DEFINE_STRING_CI_PRIMITIVE2V ("string-ci>=?", ge, >=)
-IDIO_DEFINE_STRING_CI_PRIMITIVE2V ("string-ci>?", gt, >)
-
 IDIO_DEFINE_STRING_CS_PRIMITIVE2V ("string<=?", le, <=)
 IDIO_DEFINE_STRING_CS_PRIMITIVE2V ("string<?", lt, <)
 IDIO_DEFINE_STRING_CS_PRIMITIVE2V ("string=?", eq, ==)
 IDIO_DEFINE_STRING_CS_PRIMITIVE2V ("string>=?", ge, >=)
 IDIO_DEFINE_STRING_CS_PRIMITIVE2V ("string>?", gt, >)
+
+IDIO_DEFINE_STRING_CI_PRIMITIVE2V ("string-ci<=?", le, <=)
+IDIO_DEFINE_STRING_CI_PRIMITIVE2V ("string-ci<?", lt, <)
+IDIO_DEFINE_STRING_CI_PRIMITIVE2V ("string-ci=?", eq, ==)
+IDIO_DEFINE_STRING_CI_PRIMITIVE2V ("string-ci>=?", ge, >=)
+IDIO_DEFINE_STRING_CI_PRIMITIVE2V ("string-ci>?", gt, >)
 
 /*
  * Tokenizing Strings
@@ -2251,6 +2449,7 @@ IDIO idio_split_string (IDIO in, IDIO delim, int flags)
 {
     IDIO_ASSERT (in);
     IDIO_ASSERT (delim);
+
     IDIO_TYPE_ASSERT (string, in);
     IDIO_TYPE_ASSERT (string, delim);
 
@@ -2348,7 +2547,17 @@ into a list of strings					\n\
     IDIO_ASSERT (in);
     IDIO_ASSERT (delim);
 
+    /*
+     * Test Case: string-errors/split-string-bad-type.idio
+     *
+     * split-string #t "abc"
+     */
     IDIO_USER_TYPE_ASSERT (string, in);
+    /*
+     * Test Case: string-errors/split-string-bad-type.idio
+     *
+     * split-string "abc" #t
+     */
     IDIO_USER_TYPE_ASSERT (string, delim);
 
     return idio_split_string (in, delim, IDIO_STRING_TOKEN_FLAG_NONE);
@@ -2368,7 +2577,17 @@ into a list	 of strings				\n\
     IDIO_ASSERT (in);
     IDIO_ASSERT (delim);
 
+    /*
+     * Test Case: string-errors/split-string-exactly-bad-type.idio
+     *
+     * split-string-exactly #t "abc"
+     */
     IDIO_USER_TYPE_ASSERT (string, in);
+    /*
+     * Test Case: string-errors/split-string-exactly-bad-type.idio
+     *
+     * split-string-exactly "abc" #t
+     */
     IDIO_USER_TYPE_ASSERT (string, delim);
 
     return idio_split_string (in, delim, IDIO_STRING_TOKEN_FLAG_EXACT);
@@ -2395,6 +2614,11 @@ IDIO idio_join_string (IDIO delim, IDIO args)
 
     ptrdiff_t i;
     for (i = 0; idio_S_nil != args; i += 2) {
+	/*
+	 * Test Case: string-errors/join-string-bad-arg-type.idio
+	 *
+	 * join-string "abc" '(#t)
+	 */
 	IDIO_USER_TYPE_ASSERT (string, IDIO_PAIR_H (args));
 
 	copies[i] = idio_string_as_C (IDIO_PAIR_H (args), &lens[i]);
@@ -2415,20 +2639,30 @@ IDIO idio_join_string (IDIO delim, IDIO args)
 }
 
 
-IDIO_DEFINE_PRIMITIVE2_DS ("join-string", join_string, (IDIO delim, IDIO args), "delim args", "\
+IDIO_DEFINE_PRIMITIVE2_DS ("join-string", join_string, (IDIO delim, IDIO args), "delim [args]", "\
 return a string of `args` interspersed with `delim`	\n\
 						\n\
 :param delim: string				\n\
 :type delim: string				\n\
-:param args: string to be joined		\n\
+:param args: string(s) to be joined		\n\
 :type args: list				\n\
-:return: #unspec				\n\
+:return: string	(\"\" if no ``args`` supplied)	\n\
 ")
 {
     IDIO_ASSERT (delim);
     IDIO_ASSERT (args);
 
+    /*
+     * Test Case: string-errors/join-string-bad-delim-type.idio
+     *
+     * join-string #t '("abc")
+     */
     IDIO_USER_TYPE_ASSERT (string, delim);
+    /*
+     * Test Case: string-errors/join-string-bad-args-type.idio
+     *
+     * join-string "abc" #t
+     */
     IDIO_USER_TYPE_ASSERT (list, args);
 
     return idio_join_string (delim, args);

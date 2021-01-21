@@ -1,4 +1,2 @@
 
-str := "hello"
-
-string-set! str 1 #\a
+string-set! "hello" 1 #\a

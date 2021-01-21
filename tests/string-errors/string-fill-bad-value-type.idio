@@ -1,0 +1,2 @@
+
+string-fill! (make-string 5) #t

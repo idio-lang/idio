@@ -1,8 +1,6 @@
 
-; str is 1-byte code points
-str := copy-string "hello"
+; "hello" is 1-byte code points
 
 ; U+0127 LATIN SMALL LETTER H WITH STROKE is 2-bytes
-c = #U+0127
 
-string-set! str 0 c
+string-set! (copy-string "hello") 0 #U+0127

@@ -1,2 +1,2 @@
-str := "hello"
-ss := substring str 3 2
+
+ss := substring "hello" 3 2

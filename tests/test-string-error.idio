@@ -61,26 +61,51 @@ string-error-load := {
 ;; test the various possible errors in string.c including an embedded
 ;; variant to check we pick up the correct line number
 
-string-error-load "string-errors/string-symbol-format.idio" "string format: string contains an ASCII NUL"
-
 string-error-load "string-errors/make-string-float.idio" "bad parameter type: '1.5e+0' a BIGNUM is not a integer"
 string-error-load "string-errors/make-string-unicode.idio" "bad parameter type: 'a' a CONSTANT_UNICODE is not a integer"
 string-error-load "string-errors/make-string-negative.idio" "string size: invalid"
+string-error-load "string-errors/make-string-bad-fill-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a unicode"
 
+string-error-load "string-errors/string2list-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
+
+string-error-load "string-errors/list2string-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a list"
+string-error-load "string-errors/list2string-bad-value.idio" "bad parameter type: 'c' a SYMBOL is not a unicode"
+
+string-error-load "string-errors/string2symbol-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
+string-error-load "string-errors/string2symbol-format.idio" "string format: string contains an ASCII NUL"
+
+string-error-load "string-errors/append-string-bad-arg-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
+
+string-error-load "string-errors/concatenate-string-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a list"
+string-error-load "string-errors/concatenate-string-bad-arg-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
+
+string-error-load "string-errors/copy-string-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
+
+string-error-load "string-errors/string-length-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
+
+string-error-load "string-errors/string-ref-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
 string-error-load "string-errors/string-ref-float.idio" "bad parameter type: '1.5e+0' a BIGNUM is not a integer"
 string-error-load "string-errors/string-ref-unicode.idio" "bad parameter type: 'a' a CONSTANT_UNICODE is not a integer"
 string-error-load "string-errors/string-ref-negative.idio" "string length: out of bounds"
 string-error-load "string-errors/string-ref-too-large.idio" "string length: out of bounds"
 string-error-load "string-errors/string-ref-bignum.idio" "string length: out of bounds"
 
+string-error-load "string-errors/string-set-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
+string-error-load "string-errors/string-set-bad-value-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a unicode"
 string-error-load "string-errors/string-set-constant.idio" "bad parameter: string (\"hello\") is constant"
 string-error-load "string-errors/string-set-float.idio" "bad parameter type: '1.5e+0' a BIGNUM is not a integer"
 string-error-load "string-errors/string-set-unicode.idio" "bad parameter type: 'a' a CONSTANT_UNICODE is not a integer"
+string-error-load "string-errors/string-set-too-wide.idio" "string width: replacement char too wide"
 string-error-load "string-errors/string-set-negative.idio" "string length: out of bounds"
 string-error-load "string-errors/string-set-too-large.idio" "string length: out of bounds"
 string-error-load "string-errors/string-set-bignum.idio" "string length: out of bounds"
 string-error-load "string-errors/string-set-too-wide.idio" "string width: replacement char too wide"
 
+string-error-load "string-errors/string-fill-constant.idio" "bad parameter: string (\"hello\") is constant"
+string-error-load "string-errors/string-fill-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
+string-error-load "string-errors/string-fill-bad-value-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a unicode"
+
+string-error-load "string-errors/substring-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
 string-error-load "string-errors/substring-offset-float.idio" "bad parameter type: '1.5e+0' a BIGNUM is not a integer"
 string-error-load "string-errors/substring-offset-unicode.idio" "bad parameter type: 'a' a CONSTANT_UNICODE is not a integer"
 string-error-load "string-errors/substring-offset-bignum.idio" "substring index: out of bounds"
@@ -94,5 +119,19 @@ string-error-load "string-errors/substring-oob-length-negative.idio" "substring 
 string-error-load "string-errors/substring-oob-length-too-large.idio" "substring index: out of bounds"
 string-error-load "string-errors/substring-oob-start-beyond-end.idio" "substring index: out of bounds"
 
+string-error-load "string-errors/string=-bad-first-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
+string-error-load "string-errors/string=-bad-second-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
+string-error-load "string-errors/string=-bad-remainder-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
+
+string-error-load "string-errors/split-string-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
+string-error-load "string-errors/split-string-bad-delim-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
+
+string-error-load "string-errors/split-string-exactly-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
+string-error-load "string-errors/split-string-exactly-bad-delim-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
+
+string-error-load "string-errors/join-string-bad-arg-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
+string-error-load "string-errors/join-string-bad-delim-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
+string-error-load "string-errors/join-string-bad-args-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a list"
+
 ;; all done?
-Tests? (string-error0 + 27)
+Tests? (string-error0 + 55)

@@ -1,4 +1,2 @@
 
-str := "hello world"
-
-string-ref str #\a
+string-ref "hello world" #\a

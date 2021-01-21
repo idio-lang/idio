@@ -21,7 +21,334 @@
 module tests/string
 string0 := Tests
 
-;; most regular string tests are in s9-tests.idio
+test (string? 0)			#f ; FIXNUM
+test (string? #t)			#f ; CONSTANT
+test (string? (integer->char 1))	#f ; CHARACTER (deprecated)
+test (string? #\a)			#f ; UNICODE
+test (string? "a")			#t ; STRING
+test (string? 'a)			#f ; SYMBOL
+test (string? :a)			#f ; KEYWORD
+test (string? (pair 1 2))		#f ; PAIR
+test (string? #[])			#f ; ARRAY
+test (string? #{})			#f ; HASH
+test (string? (function #n #n))		#f ; CLOSURE
+test (string? pair)			#f ; PRIMITIVE
+test (string? 1.0)			#f ; BIGNUM
+test (string? (find-module 'Idio))	#f ; MODULE
+test (string? (current-input-handle))	#f ; HANDLE
+test (string? ^error)			#f ; STRUCT_TYPE
+test (string? libc/idio-uname)		#f ; STRUCT_INSTANCE
+test (string? #B{ 3 })			#f ; BITSET
+test (string? libc/INTMAX_MAX)		#f ; C_INT
+test (string? libc/UINTMAX_MAX)		#f ; C_UINT
+
+test "hello" "hello"
+test "Hello" "Hello"
+test "Hello
+World" "Hello\nWorld"
+
+test (make-string 0)        ""
+test (make-string 1)        " "
+test (make-string 0 #\a)    ""
+test (make-string 1 #\a)    "a"
+test (make-string 1 #U+127) "ħ"
+test (make-string 1.0 #\a)  "a"
+test (make-string 3 #\a)    "aaa"
+
+test (string->list "")    #n
+test (string->list "abc") '(#\a #\b #\c)
+
+test (list->string '()) ""
+test (list->string '(#\a #\b #\c)) "abc"
+
+test (string->symbol "abc") 'abc
+
+test (append-string)             ""
+test (append-string "a")         "a"
+test (append-string "a" "h")     "ah"
+test (append-string "a" "ħ")     "aħ"
+test (append-string "ħ" "a")     "ħa"
+test (append-string "a" "b" "c") "abc"
+
+test (concatenate-string '())             ""
+test (concatenate-string '("a"))         "a"
+test (concatenate-string '("a" "h"))     "ah"
+test (concatenate-string '("a" "ħ"))     "aħ"
+test (concatenate-string '("ħ" "a"))     "ħa"
+test (concatenate-string '("a" "b" "c")) "abc"
+
+test (copy-string "")  ""
+test (copy-string "a") "a"
+
+test (string-length "")   0
+test (string-length "a")  1
+test (string-length "ah") 2
+test (string-length "aħ") 2
+test (string-length "ħa") 2
+
+test (string-ref "ah" 0)   #\a
+test (string-ref "ah" 1)   #\h
+test (string-ref "ah" 0.0) #\a
+test (string-ref "ah" 1.0) #\h
+test (string-ref "aħ" 0)   #\a
+test (string-ref "aħ" 1)   #U+127	; #\ħ
+
+str := (copy-string "hello")
+string-set! str 1   #\a
+test str "hallo"
+string-set! str 4.0 #\e
+test str "halle"
+
+;; XXX str is only 1 byte wide -- we need more
+str = join-string (make-string 1 #U+127) '("a" "b")
+test str "aħb"
+string-set! str 1   #\h
+test str "ahb"
+string-set! str 1   #U+127
+test str "aħb"
+
+string-fill! str #\a
+test str "aaa"
+string-fill! str #U+127
+test str "ħħħ"
+
+str = (make-string 0)
+string-fill! str #\a
+test str ""
+
+test (substring "" 0 0) ""
+test (substring "abc" 0 0) ""
+test (substring "abc" 0 1) "a"
+test (substring "abc" 0 2) "ab"
+test (substring "abc" 0 3) "abc"
+test (substring "abc" 1 1) ""
+test (substring "abc" 1 2) "b"
+test (substring "abc" 1 3) "bc"
+test (substring "abc" 2 2) ""
+test (substring "abc" 2 3) "c"
+test (substring "abc" 3 3) ""
+test (substring "abc" 0.0 3.0) "abc"
+
+;; XXX string*? are not Unicode/locale-aware -- they are calling
+;; strncmp(3).  UTF-8 means it probably works as there is an absolute
+;; order?
+
+s107 := make-string 1 #U+107		; LATIN SMALL LETTER C WITH ACUTE
+s117 := make-string 1 #U+117		; LATIN SMALL LETTER E WITH DOT ABOVE
+s127 := make-string 1 #U+127		; LATIN SMALL LETTER H WITH STROKE
+
+c106 := make-string 1 #U+106		; LATIN CAPITAL LETTER C WITH ACUTE
+c116 := make-string 1 #U+116		; LATIN CAPITAL LETTER E WITH DOT ABOVE
+c126 := make-string 1 #U+126		; LATIN CAPITAL LETTER H WITH STROKE
+
+test (string<? "ab1" "ab1")		#f
+test (string<? "ab1" "ab2")		#t
+test (string<? "ab2" "ab1")		#f
+test (string<? "ab1" "ab1" "ab1")	#f
+test (string<? "ab1" "ab2" "ab2")	#f
+test (string<? "ab1" "ab2" "ab3")	#t
+test (string<? "ab1" "ab3" "ab2")	#f
+test (string<? "ab3" "ab2" "ab1")	#f
+test (string<? s107 s107)		#f
+test (string<? s107 s117)		#t
+test (string<? s117 s107)		#f
+test (string<? s107 s107 s107)		#f
+test (string<? s107 s117 s117)		#f
+test (string<? s107 s117 s127)		#t
+test (string<? s107 s127 s117)		#f
+test (string<? s127 s117 s107)		#f
+
+test (string<=? "ab1" "ab1")		#t
+test (string<=? "ab1" "ab2")		#t
+test (string<=? "ab2" "ab1")		#f
+test (string<=? "ab1" "ab1" "ab1")	#t
+test (string<=? "ab1" "ab2" "ab2")	#t
+test (string<=? "ab1" "ab2" "ab3")	#t
+test (string<=? "ab1" "ab3" "ab2")	#f
+test (string<=? "ab3" "ab2" "ab1")	#f
+test (string<=? s107 s107)		#t
+test (string<=? s107 s117)		#t
+test (string<=? s117 s107)		#f
+test (string<=? s107 s107 s107)		#t
+test (string<=? s107 s117 s117)		#t
+test (string<=? s107 s117 s127)		#t
+test (string<=? s107 s127 s117)		#f
+test (string<=? s127 s117 s107)		#f
+
+test (string=? "ab1" "ab1")		#t
+test (string=? "ab1" "ab2")		#f
+test (string=? "ab2" "ab1")		#f
+test (string=? "ab1" "ab1" "ab1")	#t
+test (string=? "ab1" "ab2" "ab2")	#f
+test (string=? "ab1" "ab2" "ab3")	#f
+test (string=? "ab1" "ab3" "ab2")	#f
+test (string=? "ab3" "ab2" "ab1")	#f
+test (string=? s107 s107)		#t
+test (string=? s107 s117)		#f
+test (string=? s117 s107)		#f
+test (string=? s107 s107 s107)		#t
+test (string=? s107 s117 s117)		#f
+test (string=? s107 s117 s127)		#f
+test (string=? s107 s127 s117)		#f
+test (string=? s127 s117 s107)		#f
+
+test (string>=? "ab1" "ab1")		#t
+test (string>=? "ab1" "ab2")		#f
+test (string>=? "ab2" "ab1")		#t
+test (string>=? "ab1" "ab1" "ab1")	#t
+test (string>=? "ab1" "ab2" "ab2")	#f
+test (string>=? "ab1" "ab2" "ab3")	#f
+test (string>=? "ab1" "ab3" "ab2")	#f
+test (string>=? "ab3" "ab2" "ab1")	#t
+test (string>=? s107 s107)		#t
+test (string>=? s107 s117)		#f
+test (string>=? s117 s107)		#t
+test (string>=? s107 s107 s107)		#t
+test (string>=? s107 s117 s117)		#f
+test (string>=? s107 s117 s127)		#f
+test (string>=? s107 s127 s117)		#f
+test (string>=? s127 s117 s107)		#t
+
+test (string>? "ab1" "ab1")		#f
+test (string>? "ab1" "ab2")		#f
+test (string>? "ab2" "ab1")		#t
+test (string>? "ab1" "ab1" "ab1")	#f
+test (string>? "ab1" "ab2" "ab2")	#f
+test (string>? "ab1" "ab2" "ab3")	#f
+test (string>? "ab1" "ab3" "ab2")	#f
+test (string>? "ab3" "ab2" "ab1")	#t
+test (string>? s107 s107)		#f
+test (string>? s107 s117)		#f
+test (string>? s117 s107)		#t
+test (string>? s107 s107 s107)		#f
+test (string>? s107 s117 s117)		#f
+test (string>? s107 s117 s127)		#f
+test (string>? s107 s127 s117)		#f
+test (string>? s127 s117 s107)		#t
+
+;; XXX string-ci*? are not Unicode/locale-aware -- they are calling
+;; strncasecmp(3)
+
+test (string-ci<? "ab1" "ab1")		#f
+test (string-ci<? "ab1" "ab2")		#t
+test (string-ci<? "ab2" "ab1")		#f
+test (string-ci<? "ab1" "ab1" "ab1")	#f
+test (string-ci<? "ab1" "ab2" "ab2")	#f
+test (string-ci<? "ab1" "ab2" "ab3")	#t
+test (string-ci<? "ab1" "ab3" "ab2")	#f
+test (string-ci<? "ab3" "ab2" "ab1")	#f
+test (string-ci<? s107 s107)		#f
+test (string-ci<? s107 s117)		#t
+test (string-ci<? s117 s107)		#f
+test (string-ci<? s107 s107 s107)	#f
+test (string-ci<? s107 s117 s117)	#f
+test (string-ci<? s107 s117 s127)	#t
+test (string-ci<? s107 s127 s117)	#f
+test (string-ci<? s127 s117 s107)	#f
+
+;; case-insensitive
+test (string-ci<? "a" "A")		#f
+test (string-ci<? "A" "a")		#f
+test (string-ci<? "a" "B")		#t
+test (string-ci<? "B" "a")		#f
+;; but not Unicode-aware
+test (string-ci<? s107 c106)		#f
+test (string-ci<? c106 s107)		#t
+
+test (string-ci<=? "ab1" "ab1")		#t
+test (string-ci<=? "ab1" "ab2")		#t
+test (string-ci<=? "ab2" "ab1")		#f
+test (string-ci<=? "ab1" "ab1" "ab1")	#t
+test (string-ci<=? "ab1" "ab2" "ab2")	#t
+test (string-ci<=? "ab1" "ab2" "ab3")	#t
+test (string-ci<=? "ab1" "ab3" "ab2")	#f
+test (string-ci<=? "ab3" "ab2" "ab1")	#f
+test (string-ci<=? s107 s107)		#t
+test (string-ci<=? s107 s117)		#t
+test (string-ci<=? s117 s107)		#f
+test (string-ci<=? s107 s107 s107)	#t
+test (string-ci<=? s107 s117 s117)	#t
+test (string-ci<=? s107 s117 s127)	#t
+test (string-ci<=? s107 s127 s117)	#f
+test (string-ci<=? s127 s117 s107)	#f
+
+;; case-insensitive
+test (string-ci<=? "a" "A")		#t
+test (string-ci<=? "A" "a")		#t
+test (string-ci<=? "a" "B")		#t
+test (string-ci<=? "B" "a")		#f
+;; but not Unicode-aware
+test (string-ci<=? s107 c106)		#f
+test (string-ci<=? c106 s107)		#t
+
+test (string-ci=? "ab1" "ab1")		#t
+test (string-ci=? "ab1" "ab2")		#f
+test (string-ci=? "ab2" "ab1")		#f
+test (string-ci=? "ab1" "ab1" "ab1")	#t
+test (string-ci=? "ab1" "ab2" "ab2")	#f
+test (string-ci=? "ab1" "ab2" "ab3")	#f
+test (string-ci=? "ab1" "ab3" "ab2")	#f
+test (string-ci=? "ab3" "ab2" "ab1")	#f
+test (string-ci=? s107 s107)		#t
+test (string-ci=? s107 s117)		#f
+test (string-ci=? s117 s107)		#f
+test (string-ci=? s107 s107 s107)	#t
+test (string-ci=? s107 s117 s117)	#f
+test (string-ci=? s107 s117 s127)	#f
+test (string-ci=? s107 s127 s117)	#f
+test (string-ci=? s127 s117 s107)	#f
+
+test (string-ci>=? "ab1" "ab1")		#t
+test (string-ci>=? "ab1" "ab2")		#f
+test (string-ci>=? "ab2" "ab1")		#t
+test (string-ci>=? "ab1" "ab1" "ab1")	#t
+test (string-ci>=? "ab1" "ab2" "ab2")	#f
+test (string-ci>=? "ab1" "ab2" "ab3")	#f
+test (string-ci>=? "ab1" "ab3" "ab2")	#f
+test (string-ci>=? "ab3" "ab2" "ab1")	#t
+test (string-ci>=? s107 s107)		#t
+test (string-ci>=? s107 s117)		#f
+test (string-ci>=? s117 s107)		#t
+test (string-ci>=? s107 s107 s107)	#t
+test (string-ci>=? s107 s117 s117)	#f
+test (string-ci>=? s107 s117 s127)	#f
+test (string-ci>=? s107 s127 s117)	#f
+test (string-ci>=? s127 s117 s107)	#t
+
+;; case-insensitive
+test (string-ci>=? "a" "A")		#t
+test (string-ci>=? "A" "a")		#t
+test (string-ci>=? "a" "B")		#f
+test (string-ci>=? "B" "a")		#t
+;; but not Unicode-aware
+test (string-ci>=? s107 c106)		#t
+test (string-ci>=? c106 s107)		#f
+
+test (string-ci>? "ab1" "ab1")		#f
+test (string-ci>? "ab1" "ab2")		#f
+test (string-ci>? "ab2" "ab1")		#t
+test (string-ci>? "ab1" "ab1" "ab1")	#f
+test (string-ci>? "ab1" "ab2" "ab2")	#f
+test (string-ci>? "ab1" "ab2" "ab3")	#f
+test (string-ci>? "ab1" "ab3" "ab2")	#f
+test (string-ci>? "ab3" "ab2" "ab1")	#t
+test (string-ci>? s107 s107)		#f
+test (string-ci>? s107 s117)		#f
+test (string-ci>? s117 s107)		#t
+test (string-ci>? s107 s107 s107)	#f
+test (string-ci>? s107 s117 s117)	#f
+test (string-ci>? s107 s117 s127)	#f
+test (string-ci>? s107 s127 s117)	#f
+test (string-ci>? s127 s117 s107)	#t
+
+;; case-insensitive
+test (string-ci>? "a" "A")		#f
+test (string-ci>? "A" "a")		#f
+test (string-ci>? "a" "B")		#f
+test (string-ci>? "B" "a")		#t
+;; but not Unicode-aware
+test (string-ci>? s107 c106)		#t
+test (string-ci>? c106 s107)		#f
 
 ;; split
 test (split-string "abc" "b") '("a" "c")
@@ -88,5 +415,25 @@ sa := split-string s " "
 ss-dup := copy-string sa.1
 test ss-dup sa.1
 
+test (string-length (make-string 1e1)) 10
+
+test (string-length (list->string '(#U+100))) 1
+test (string-length (list->string '(#U+10000))) 1
+
+test (concatenate-string #n) ""
+
+test (string-ref "hello" 1.0) #\e
+
+string-set! (copy-string "hello") 1.0 #\a
+
+test (string-fill! (make-string 3) #\a) "aaa"
+
+test (substring "hello world" 0.0 5.0) "hello"
+
 ;; all done?
-Tests? (string0 + 22)
+Tests? (string0 + 293)
+
+;Local Variables:
+;mode: Idio
+;buffer-file-coding-system: utf-8-unix
+;End:
