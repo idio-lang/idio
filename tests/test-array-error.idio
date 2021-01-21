@@ -59,26 +59,39 @@ array-error-load := {
   }
 }
 
-array-error-load "array-errors/insert-negative-bounds.idio" "array bounds error: abs (-4) >= #elem 3"
-array-error-load "array-errors/insert-positive-bounds.idio" "array bounds error: abs (5) >= #elem 3"
-array-error-load "array-errors/ref-negative-bounds.idio" "array bounds error: abs (-4) >= #elem 3"
-array-error-load "array-errors/ref-positive-bounds.idio" "array bounds error: abs (5) >= #elem 3"
+array-error-load "array-errors/array-ref-negative-bounds.idio" "array bounds error: abs (-4) >= #elem 3"
+array-error-load "array-errors/array-ref-positive-bounds.idio" "array bounds error: abs (5) >= #elem 3"
 
 array-error-load "array-errors/make-array-size-float.idio" "bad parameter type: '1.1e+0' a BIGNUM is not a integer"
 array-error-load "array-errors/make-array-size-not-integer.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a integer"
 array-error-load "array-errors/make-array-size-negative.idio" "invalid length: size -1"
 
+array-error-load "array-errors/copy-array-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a array"
 array-error-load "array-errors/copy-array-bad-depth-symbol.idio" "bad parameter type: 'fully' a SYMBOL is not a 'deep or 'shallow"
 array-error-load "array-errors/copy-array-bad-depth-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol"
 array-error-load "array-errors/copy-array-extra-float.idio" "bad parameter type: '1.1e+0' a BIGNUM is not a integer"
 array-error-load "array-errors/copy-array-bad-extra-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a integer"
 array-error-load "array-errors/copy-array-extra-negative.idio" "invalid length: size -1"
 
-; the user-facing argument tests (bounds checks are above)
-array-error-load "array-errors/ref-float.idio" "bad parameter type: '1.1e+0' a BIGNUM is not a integer"
-array-error-load "array-errors/ref-not-integer.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a integer"
-array-error-load "array-errors/set-float.idio" "bad parameter type: '1.1e+0' a BIGNUM is not a integer"
-array-error-load "array-errors/set-not-integer.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a integer"
+array-error-load "array-errors/array-fill-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a array"
+
+array-error-load "array-errors/array-length-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a array"
+
+array-error-load "array-errors/array-ref-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a array"
+array-error-load "array-errors/array-ref-float.idio" "bad parameter type: '1.1e+0' a BIGNUM is not a integer"
+array-error-load "array-errors/array-ref-not-integer.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a integer"
+
+array-error-load "array-errors/array-set-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a array"
+array-error-load "array-errors/array-set-float.idio" "bad parameter type: '1.1e+0' a BIGNUM is not a integer"
+array-error-load "array-errors/array-set-not-integer.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a integer"
+array-error-load "array-errors/array-set-negative-bounds.idio" "array bounds error: abs (-4) >= #elem 3"
+array-error-load "array-errors/array-set-positive-bounds.idio" "array bounds error: abs (5) >= #elem 3"
+
+array-error-load "array-errors/array-push-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a array"
+array-error-load "array-errors/array-pop-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a array"
+array-error-load "array-errors/array-unshift-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a array"
+array-error-load "array-errors/array-shift-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a array"
+array-error-load "array-errors/array2list-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a array"
 
 ;; all done?
-Tests? (array-error0 + 16)
+Tests? (array-error0 + 26)

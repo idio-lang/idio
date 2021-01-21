@@ -522,7 +522,7 @@ IDIO idio_array_ref_index (IDIO a, idio_ai_t index)
 	index += IDIO_ARRAY_USIZE (a);
 	if (index < 0) {
 	    /*
-	     * Test Case: array-errors/ref-negative-bounds.idio
+	     * Test Case: array-errors/array-ref-negative-bounds.idio
 	     *
 	     * a := #[ 1 2 3 ]
 	     * array-ref a -4
@@ -536,7 +536,7 @@ IDIO idio_array_ref_index (IDIO a, idio_ai_t index)
 
     if (index >= IDIO_ARRAY_USIZE (a)) {
 	/*
-	 * Test Case: array-errors/ref-positive-bounds.idio
+	 * Test Case: array-errors/array-ref-positive-bounds.idio
 	 *
 	 * a := #[ 1 2 3 ]
 	 * array-ref a 5
@@ -811,6 +811,11 @@ If no default value is supplied #f is used.	\n\
 	return idio_S_notreached;
     }
 
+    /*
+     * Test Case: n/a
+     *
+     * args is the varargs parameter -- should always be a list
+     */
     IDIO_USER_TYPE_ASSERT (list, args);
 
     /*
@@ -853,7 +858,17 @@ copy array `orig` and add an optional `extra` elements	\n\
     IDIO_ASSERT (orig);
     IDIO_ASSERT (args);
 
+    /*
+     * Test Case: array-errors/copy-array-bad-type.idio
+     *
+     * copy-array #t
+     */
     IDIO_USER_TYPE_ASSERT (array, orig);
+    /*
+     * Test Case: n/a
+     *
+     * args is the varargs parameter -- should always be a list
+     */
     IDIO_USER_TYPE_ASSERT (list, args);
 
     idio_ai_t extra = 0;
@@ -959,7 +974,17 @@ set all the elements of `a` to `fill`		\n\
     IDIO_ASSERT (a);
     IDIO_ASSERT (fill);
 
+    /*
+     * Test Case: array-errors/array-fill!-bad-type.idio
+     *
+     * array-fill! #t #t
+     */
     IDIO_USER_TYPE_ASSERT (array, a);
+    /*
+     * Test Case: n/a
+     *
+     * The VM returns a copy of any constant array when referenced.
+     */
     IDIO_ASSERT_NOT_CONST (array, a);
 
     idio_ai_t al = idio_array_size (a);
@@ -985,6 +1010,11 @@ The used length is the highest accessed index plus one\n\
 {
     IDIO_ASSERT (a);
 
+    /*
+     * Test Case: array-errors/array-length-bad-type.idio
+     *
+     * array-length #t
+     */
     IDIO_USER_TYPE_ASSERT (array, a);
 
     return idio_fixnum (idio_array_size (a));
@@ -1011,7 +1041,7 @@ IDIO idio_array_ref (IDIO a, IDIO index)
 	    IDIO index_i = idio_bignum_real_to_integer (index);
 	    if (idio_S_nil == index_i) {
 		/*
-		 * Test Case: array-errors/ref-float.idio
+		 * Test Case: array-errors/array-ref-float.idio
 		 *
 		 * a := #[ 1 2 3 ]
 		 * array-ref a 1.1
@@ -1025,7 +1055,7 @@ IDIO idio_array_ref (IDIO a, IDIO index)
 	}
     } else {
 	/*
-	 * Test Case: array-errors/ref-not-integer.idio
+	 * Test Case: array-errors/array-ref-not-integer.idio
 	 *
 	 * a := #[ 1 2 3 ]
 	 * array-ref a #t
@@ -1053,6 +1083,11 @@ return the value at `index` of `a`		\n\
     IDIO_ASSERT (a);
     IDIO_ASSERT (index);
 
+    /*
+     * Test Case: array-errors/array-ref-bad-type.idio
+     *
+     * array-ref #t 0
+     */
     IDIO_USER_TYPE_ASSERT (array, a);
 
     return idio_array_ref (a, index);
@@ -1082,7 +1117,7 @@ IDIO idio_array_set (IDIO a, IDIO index, IDIO v)
 	    IDIO index_i = idio_bignum_real_to_integer (index);
 	    if (idio_S_nil == index_i) {
 		/*
-		 * Test Case: array-errors/set-float.idio
+		 * Test Case: array-errors/array-set-float.idio
 		 *
 		 * a := #[ 1 2 3 ]
 		 * array-set! a 1.1 0
@@ -1096,7 +1131,7 @@ IDIO idio_array_set (IDIO a, IDIO index, IDIO v)
 	}
     } else {
 	/*
-	 * Test Case: array-errors/set-not-integer.idio
+	 * Test Case: array-errors/array-set-not-integer.idio
 	 *
 	 * a := #[ 1 2 3 ]
 	 * array-set! a #t 0
@@ -1112,7 +1147,7 @@ IDIO idio_array_set (IDIO a, IDIO index, IDIO v)
 	i += al;
 	if (i < 0) {
 	    /*
-	     * Test Case: array-errors/insert-negative-bounds.idio
+	     * Test Case: array-errors/array-set-negative-bounds.idio
 	     *
 	     * a := #[ 1 2 3 ]
 	     * array-set! a -4 4
@@ -1124,7 +1159,7 @@ IDIO idio_array_set (IDIO a, IDIO index, IDIO v)
 	}
     } else if (i >= (al + 1)) {
 	/*
-	 * Test Case: array-errors/insert-positive-bounds.idio
+	 * Test Case: array-errors/array-set-positive-bounds.idio
 	 *
 	 * a := #[ 1 2 3 ]
 	 * array-set! a 5 5
@@ -1158,6 +1193,11 @@ set the `index` of `a` to `v`			\n\
     IDIO_ASSERT (index);
     IDIO_ASSERT (v);
 
+    /*
+     * Test Case: array-errors/array-set!-bad-type.idio
+     *
+     * array-set! #t 0 0
+     */
     IDIO_USER_TYPE_ASSERT (array, a);
 
     return idio_array_set (a, index, v);
@@ -1178,6 +1218,11 @@ Treats `a` as a stack and appends `v` to the end\n\
     IDIO_ASSERT (a);
     IDIO_ASSERT (v);
 
+    /*
+     * Test Case: array-errors/array-push!-bad-type.idio
+     *
+     * array-push! #t 0
+     */
     IDIO_USER_TYPE_ASSERT (array, a);
 
     idio_array_push (a, v);
@@ -1198,6 +1243,11 @@ Treats `a` as a stack and pops a value off the end\n\
 {
     IDIO_ASSERT (a);
 
+    /*
+     * Test Case: array-errors/array-pop!-bad-type.idio
+     *
+     * array-pop! #t
+     */
     IDIO_USER_TYPE_ASSERT (array, a);
 
     IDIO v = idio_array_pop (a);
@@ -1219,6 +1269,11 @@ Treats `a` as a stack and unshifts (prepends) `v` to the start\n\
     IDIO_ASSERT (a);
     IDIO_ASSERT (v);
 
+    /*
+     * Test Case: array-errors/array-unshift!-bad-type.idio
+     *
+     * array-unshift! #t 0
+     */
     IDIO_USER_TYPE_ASSERT (array, a);
 
     idio_array_unshift (a, v);
@@ -1238,6 +1293,11 @@ Treats `a` as a stack and shifts a value off the start\n\
 {
     IDIO_ASSERT (a);
 
+    /*
+     * Test Case: array-errors/array-shift!-bad-type.idio
+     *
+     * array-shift! #t
+     */
     IDIO_USER_TYPE_ASSERT (array, a);
 
     IDIO v = idio_array_shift (a);
@@ -1255,6 +1315,11 @@ convert `a` to a list				\n\
 {
     IDIO_ASSERT (a);
 
+    /*
+     * Test Case: array-errors/array->list-bad-type.idio
+     *
+     * array->list #t
+     */
     IDIO_USER_TYPE_ASSERT (array, a);
 
     return idio_array_to_list (a);
