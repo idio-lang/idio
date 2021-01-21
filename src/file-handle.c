@@ -375,7 +375,21 @@ static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, char *func, char
     IDIO_ASSERT (ifd);
     IDIO_ASSERT (args);
 
+    /*
+     * Test Cases:
+     *
+     *   file-handle-errors/open-file-from-fd-bad-fd-type.idio
+     *   file-handle-errors/open-input-file-from-fd-bad-fd-type.idio
+     *   file-handle-errors/open-output-file-from-fd-bad-fd-type.idio
+     *
+     * open-file-from-fd #t
+     */
     IDIO_USER_TYPE_ASSERT (C_int, ifd);
+    /*
+     * Test Case: n/a
+     *
+     * args is the varargs parameter -- should always be a list
+     */
     IDIO_USER_TYPE_ASSERT (list, args);
 
     int fd = IDIO_C_TYPE_INT (ifd);
@@ -544,9 +558,6 @@ the optional mode `mode` instead of ``re``		\n\
     IDIO_ASSERT (ifd);
     IDIO_ASSERT (args);
 
-    IDIO_USER_TYPE_ASSERT (C_int, ifd);
-    IDIO_USER_TYPE_ASSERT (list, args);
-
     return idio_file_handle_open_from_fd (ifd, args, "open-file-from-fd", "re", IDIO_HANDLE_FLAG_READ, IDIO_HANDLE_FLAG_WRITE);
 }
 
@@ -569,9 +580,6 @@ the optional mode `mode` instead of ``re``		\n\
     IDIO_ASSERT (ifd);
     IDIO_ASSERT (args);
 
-    IDIO_USER_TYPE_ASSERT (C_int, ifd);
-    IDIO_USER_TYPE_ASSERT (list, args);
-
     return idio_file_handle_open_from_fd (ifd, args, "open-input-file-from-fd", "re", IDIO_HANDLE_FLAG_READ, IDIO_HANDLE_FLAG_WRITE);
 }
 
@@ -593,9 +601,6 @@ the optional mode `mode` instead of ``re``		\n\
 {
     IDIO_ASSERT (ifd);
     IDIO_ASSERT (args);
-
-    IDIO_USER_TYPE_ASSERT (C_int, ifd);
-    IDIO_USER_TYPE_ASSERT (list, args);
 
     return idio_file_handle_open_from_fd (ifd, args, "open-output-file-from-fd", "we", IDIO_HANDLE_FLAG_WRITE, IDIO_HANDLE_FLAG_READ);
 }
@@ -1190,6 +1195,11 @@ file handle `fh`				\n\
 {
     IDIO_ASSERT (fh);
 
+    /*
+     * Test Case: file-handle-errors/file-handle-fd-bad-type.idio
+     *
+     * file-handle-fd #t
+     */
     IDIO_USER_TYPE_ASSERT (file_handle, fh);
 
     return idio_fixnum (IDIO_FILE_HANDLE_FD (fh));
@@ -1625,6 +1635,11 @@ file handle `fh`				\n\
 {
     IDIO_ASSERT (fh);
 
+    /*
+     * Test Case: file-handle-errors/fflush-file-handle-bad-type.idio
+     *
+     * fflush-file-handle #t
+     */
     IDIO_USER_TYPE_ASSERT (file_handle, fh);
 
     idio_flush_file_handle (fh);
@@ -1773,6 +1788,11 @@ file handle `fh` with `F_SETFD` and `FD_CLOEXEC` arguments	\n\
 {
     IDIO_ASSERT (fh);
 
+    /*
+     * Test Case: file-handle-errors/close-file-handle-on-exec-bad-type.idio
+     *
+     * close-file-handle-on-exec #t
+     */
     IDIO_USER_TYPE_ASSERT (file_handle, fh);
 
     int fd = IDIO_FILE_HANDLE_FD (fh);
@@ -2129,6 +2149,11 @@ possible file name extensions			\n\
 {
     IDIO_ASSERT (file);
 
+    /*
+     * Test Case: file-handle-errors/find-lib-bad-type.idio
+     *
+     * find-lib #t
+     */
     IDIO_USER_TYPE_ASSERT (string, file);
 
     char *r_C = idio_libfile_find (file);
@@ -2289,6 +2314,13 @@ This is the ``load`` primitive.					\n\
 {
     IDIO_ASSERT (filename);
 
+    /*
+     * Test Case: ??
+     *
+     * load is overridden (more than once) but this would be:
+     *
+     * load #t
+     */
     IDIO_USER_TYPE_ASSERT (string, filename);
 
     IDIO thr = idio_thread_current_thread ();
@@ -2322,6 +2354,11 @@ does `filename` pass `access (filename, R_OK)`?	\n\
 {
     IDIO_ASSERT (filename);
 
+    /*
+     * Test Case: file-handle-errors/file-exists-bad-type.idio
+     *
+     * file-exists? #t
+     */
     IDIO_USER_TYPE_ASSERT (string, filename);
 
     size_t size = 0;
@@ -2362,6 +2399,11 @@ does `remove (filename)` succeed?		\n\
 {
     IDIO_ASSERT (filename);
 
+    /*
+     * Test Case: file-handle-errors/delete-file-bad-type.idio
+     *
+     * delete-file #t
+     */
     IDIO_USER_TYPE_ASSERT (string, filename);
 
     size_t size = 0;

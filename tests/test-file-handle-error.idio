@@ -51,6 +51,7 @@ file-handle-error-load := {
   }
 }
 
+file-handle-error-load "file-handle-errors/open-file-from-fd-bad-fd-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_int"
 file-handle-error-load "file-handle-errors/open-file-from-fd-filename-format.idio" "open-file-from-fd filename contains an ASCII NUL"
 file-handle-error-load "file-handle-errors/open-file-from-fd-filename-PATH_MAX.idio" "malformed filename: name too long"
 file-handle-error-load "file-handle-errors/open-file-from-fd-filename-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
@@ -58,6 +59,7 @@ file-handle-error-load "file-handle-errors/open-file-from-fd-mode-format.idio" "
 file-handle-error-load "file-handle-errors/open-file-from-fd-mode-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
 file-handle-error-load "file-handle-errors/open-file-from-fd-mode-invalid.idio" "fdopen: Invalid argument"
 
+file-handle-error-load "file-handle-errors/open-input-file-from-fd-bad-fd-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_int"
 file-handle-error-load "file-handle-errors/open-input-file-from-fd-filename-format.idio" "open-input-file-from-fd filename contains an ASCII NUL"
 file-handle-error-load "file-handle-errors/open-input-file-from-fd-filename-PATH_MAX.idio" "malformed filename: name too long"
 file-handle-error-load "file-handle-errors/open-input-file-from-fd-filename-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
@@ -65,6 +67,7 @@ file-handle-error-load "file-handle-errors/open-input-file-from-fd-mode-format.i
 file-handle-error-load "file-handle-errors/open-input-file-from-fd-mode-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
 file-handle-error-load "file-handle-errors/open-input-file-from-fd-mode-invalid.idio" "fdopen: Invalid argument"
 
+file-handle-error-load "file-handle-errors/open-output-file-from-fd-bad-fd-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_int"
 file-handle-error-load "file-handle-errors/open-output-file-from-fd-filename-format.idio" "open-output-file-from-fd filename contains an ASCII NUL"
 file-handle-error-load "file-handle-errors/open-output-file-from-fd-filename-PATH_MAX.idio" "malformed filename: name too long"
 file-handle-error-load "file-handle-errors/open-output-file-from-fd-filename-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
@@ -73,6 +76,8 @@ file-handle-error-load "file-handle-errors/open-output-file-from-fd-mode-type.id
 file-handle-error-load "file-handle-errors/open-output-file-from-fd-mode-invalid.idio" "fdopen: Invalid argument"
 
 file-handle-error-load "file-handle-errors/open-file-mode-invalid.idio" "open-file mode invalid"
+
+file-handle-error-load "file-handle-errors/file-handle-fd-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a file_handle"
 
 tmpfile := (make-tmp-file)
 
@@ -151,12 +156,19 @@ file-handle-error-load "file-handle-errors/open-output-file-filename-type.idio" 
 
 file-handle-error-load "file-handle-errors/ready-closed-handle.idio" "handle already closed"
 file-handle-error-load "file-handle-errors/close-closed-handle.idio" "handle already closed"
+
+file-handle-error-load "file-handle-errors/fflush-file-handle-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a file_handle"
 file-handle-error-load "file-handle-errors/fflush-bad-handle.idio" "fflush: Bad file descriptor"
+
 file-handle-error-load "file-handle-errors/lseek-negative-offset.idio" "lseek: Invalid argument"
+
+file-handle-error-load "file-handle-errors/close-file-handle-on-exec-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a file_handle"
 
 OIDIOLIB := IDIOLIB
 file-handle-error-load "file-handle-errors/find-lib-IDIOLIB-format.idio" "libfile-find: environment variable 'IDIOLIB' contains an ASCII NUL"
 IDIOLIB = OIDIOLIB
+
+file-handle-error-load "file-handle-errors/find-lib-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
 
 cwd := (getcwd)
 file-handle-error-load "file-handle-errors/find-lib-getcwd-rmdir.idio" "getcwd: No such file or directory"
@@ -176,9 +188,12 @@ file-handle-error-load "file-handle-errors/find-lib-format.idio" "find-lib filen
 file-handle-error-load "file-handle-errors/load-format.idio" "load filename contains an ASCII NUL"
 file-handle-error-load "file-handle-errors/load-not-found.idio" "load: No such file or directory"
 
+file-handle-error-load "file-handle-errors/file-exists-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
 file-handle-error-load "file-handle-errors/file-exists-format.idio" "file-exists? filename contains an ASCII NUL"
+
+file-handle-error-load "file-handle-errors/delete-file-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
 file-handle-error-load "file-handle-errors/delete-file-format.idio" "delete-file filename contains an ASCII NUL"
 file-handle-error-load "file-handle-errors/delete-file-EACCESS.idio" "remove: Permission denied"
 
 ;; all done?
-Tests? (file-handle-error0 + 55)
+Tests? (file-handle-error0 + 64)
