@@ -1,0 +1,2 @@
+
+condition-isa? (make-condition ^error) #t

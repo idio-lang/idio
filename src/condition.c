@@ -140,11 +140,26 @@ make a new condition type based on existing condition `parent` with fields `fiel
     IDIO_ASSERT (parent);
     IDIO_ASSERT (fields);
 
+    /*
+     * Test Case: condition-errors/make-condition-type-bad-name-type.idio
+     *
+     * make-condition-type #t #t
+     */
     IDIO_USER_TYPE_ASSERT (symbol, name);
 
     if (idio_S_nil != parent) {
+	/*
+	 * Test Case: condition-errors/make-condition-type-bad-parent-type.idio
+	 *
+	 * make-condition-type 'foo #t
+	 */
 	IDIO_USER_TYPE_ASSERT (condition_type, parent);
     }
+    /*
+     * Test Case: n/a
+     *
+     * fields is the varargs parameter -- should always be a list
+     */
     IDIO_USER_TYPE_ASSERT (list, fields);
 
     return idio_struct_type (name, parent, fields);
@@ -193,6 +208,11 @@ The allocated condition will have fields set to #n\n\
 {
     IDIO_ASSERT (ct);
 
+    /*
+     * Test Case: condition-errors/allocate-condition-bad-type.idio
+     *
+     * allocate-condition #t
+     */
     IDIO_USER_TYPE_ASSERT (condition_type, ct);
 
     return idio_allocate_struct_instance (ct, 1);
@@ -209,7 +229,18 @@ initialize a condition of condition type `ct` with values `values`\n\
 {
     IDIO_ASSERT (ct);
     IDIO_ASSERT (values);
+
+    /*
+     * Test Case: condition-errors/make-condition-bad-type.idio
+     *
+     * make-condition #t
+     */
     IDIO_USER_TYPE_ASSERT (condition_type, ct);
+    /*
+     * Test Case: n/a
+     *
+     * values is the varargs parameter -- should always be a list
+     */
     IDIO_USER_TYPE_ASSERT (list, values);
 
     return idio_struct_instance (ct, values);
@@ -250,8 +281,9 @@ int idio_condition_isap (IDIO c, IDIO ct)
 {
     IDIO_ASSERT (c);
     IDIO_ASSERT (ct);
-    IDIO_USER_TYPE_ASSERT (condition, c);
-    IDIO_USER_TYPE_ASSERT (condition_type, ct);
+
+    IDIO_TYPE_ASSERT (condition, c);
+    IDIO_TYPE_ASSERT (condition_type, ct);
 
     if (idio_struct_instance_isa (c, ct)) {
 	return 1;
@@ -274,7 +306,17 @@ test if condition `c` is a condition type `ct`	\n\
     IDIO_ASSERT (c);
     IDIO_ASSERT (ct);
 
+    /*
+     * Test Case: condition-errors/condition-isa-bad-condition-type.idio
+     *
+     * condition-isa? #t #t
+     */
     IDIO_USER_TYPE_ASSERT (condition, c);
+    /*
+     * Test Case: condition-errors/condition-isa-bad-condition-type-type.idio
+     *
+     * condition-isa? (make-condition ^error) #t
+     */
     IDIO_USER_TYPE_ASSERT (condition_type, ct);
 
     IDIO r = idio_S_false;
@@ -298,7 +340,17 @@ return field `field` of condition `c`		\n\
     IDIO_ASSERT (c);
     IDIO_ASSERT (field);
 
+    /*
+     * Test Case: condition-errors/condition-ref-bad-condition-type.idio
+     *
+     * condition-ref #t #t
+     */
     IDIO_USER_TYPE_ASSERT (condition, c);
+    /*
+     * Test Case: condition-errors/condition-ref-bad-field-type.idio
+     *
+     * condition-ref (make-condition ^error) #t
+     */
     IDIO_USER_TYPE_ASSERT (symbol, field);
 
     return idio_struct_instance_ref (c, field);
@@ -318,7 +370,17 @@ set field `field` of condition `c` to value `value`\n\
     IDIO_ASSERT (field);
     IDIO_ASSERT (value);
 
+    /*
+     * Test Case: condition-errors/condition-set-bad-condition-type.idio
+     *
+     * condition-set! #t #t #t
+     */
     IDIO_USER_TYPE_ASSERT (condition, c);
+    /*
+     * Test Case: condition-errors/condition-set-bad-field-type.idio
+     *
+     * condition-set! (make-condition ^error) #t #t
+     */
     IDIO_USER_TYPE_ASSERT (symbol, field);
 
     return idio_struct_instance_set (c, field, value);
@@ -328,7 +390,9 @@ void idio_condition_set_default_handler (IDIO ct, IDIO handler)
 {
     IDIO_ASSERT (ct);
     IDIO_ASSERT (handler);
-    IDIO_USER_TYPE_ASSERT (condition_type, ct);
+
+    IDIO_TYPE_ASSERT (condition_type, ct);
+    IDIO_TYPE_ASSERT (procedure, handler);
 
     idio_hash_put (idio_condition_default_handler, ct, handler);
 }
@@ -351,7 +415,18 @@ then ``handler`` will be invoked with the continuation.	\n\
     IDIO_ASSERT (ct);
     IDIO_ASSERT (handler);
 
+    /*
+     * Test Case: condition-errors/set-condition-handler-bad-condition-type-type.idio
+     *
+     * set-condition-handler! #t #t
+     */
     IDIO_USER_TYPE_ASSERT (condition_type, ct);
+    /*
+     * Test Case: condition-errors/set-condition-handler-bad-handler-type.idio
+     *
+     * set-condition-handler! ^error #t
+     */
+    IDIO_USER_TYPE_ASSERT (procedure, handler);
 
     idio_condition_set_default_handler (ct, handler);
 
@@ -362,7 +437,7 @@ void idio_condition_clear_default_handler (IDIO ct)
 {
     IDIO_ASSERT (ct);
 
-    IDIO_USER_TYPE_ASSERT (condition_type, ct);
+    IDIO_TYPE_ASSERT (condition_type, ct);
 
     idio_hash_delete (idio_condition_default_handler, ct);
 }
@@ -381,6 +456,11 @@ resume.							\n\
 {
     IDIO_ASSERT (ct);
 
+    /*
+     * Test Case: condition-errors/clear-condition-handler-bad-condition-type-type.idio
+     *
+     * clear-condition-handler! #t
+     */
     IDIO_USER_TYPE_ASSERT (condition_type, ct);
 
     idio_condition_clear_default_handler (ct);
@@ -400,7 +480,7 @@ This invokes do-job-notification				\n\
     IDIO_ASSERT (c);
 
     /*
-     * XXX IDIO_TYPE_ASSERT() will raise a condition if it fails!
+     * XXX IDIO_USER_TYPE_ASSERT() will raise a condition if it fails!
      */
     IDIO_USER_TYPE_ASSERT (condition, c);
 
@@ -458,7 +538,7 @@ This returns #unspec						\n\
     IDIO_ASSERT (c);
 
     /*
-     * XXX IDIO_TYPE_ASSERT() will raise a condition if it fails!
+     * XXX IDIO_USER_TYPE_ASSERT() will raise a condition if it fails!
      */
     IDIO_USER_TYPE_ASSERT (condition, c);
 
@@ -510,7 +590,7 @@ does not return per se						\n\
     IDIO_ASSERT (c);
 
     /*
-     * XXX IDIO_TYPE_ASSERT() will raise a condition if it fails!
+     * XXX IDIO_USER_TYPE_ASSERT() will raise a condition if it fails!
      */
     IDIO_USER_TYPE_ASSERT (condition, c);
 

@@ -1,0 +1,82 @@
+;;
+;; Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+;;
+;; Licensed under the Apache License, Version 2.0 (the "License"); you
+;; may not use this file except in compliance with the License.  You
+;; may obtain a copy of the License at
+;;
+;;     http://www.apache.org/licenses/LICENSE-2.0
+;;
+;; Unless required by applicable law or agreed to in writing, software
+;; distributed under the License is distributed on an "AS IS" BASIS,
+;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+;; See the License for the specific language governing permissions and
+;; limitations under the License.
+;;
+;;
+
+;;
+;; test-condition-error.idio
+;;
+
+condition-error0 := Tests
+
+#*
+
+We have a bunch of test cases which should provoke a
+^rt-parameter-type-error.  So we can write a load function which will
+wrapper the actual load with a trap for ^rt-parameter-type-error and
+compare the message strings.
+
+*#
+
+condition-error-load := {
+  n := 0
+
+  function (filename msg) {
+    if (not (string? filename)) (error 'load "not a string" filename)
+
+    load-k := #n
+
+    n = n + 1
+    ;eprintf "loading #%s %s looking for %s\n" n filename msg
+    trap (^rt-parameter-type-error) (function (c) {
+				       ;eprintf "condition-error #%s: %s %s\n" n msg c.location
+				       test c.message msg
+
+				       if (not (string=? c.message msg)) {
+					 condition-report (append-string "condition-error-load: " filename) c (current-error-handle)
+				       }
+				       load-k 'condition-error
+	  }) {
+      call/cc (function (k) {
+		 load-k = k
+		 (symbol-value 'load 'Idio) filename
+      })
+    }
+  }
+}
+
+condition-error-load "condition-errors/make-condition-type-bad-name-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol"
+condition-error-load "condition-errors/make-condition-type-bad-parent-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a condition_type"
+
+condition-error-load "condition-errors/allocate-condition-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a condition_type"
+
+condition-error-load "condition-errors/make-condition-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a condition_type"
+
+condition-error-load "condition-errors/condition-isa-bad-condition-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a condition"
+condition-error-load "condition-errors/condition-isa-bad-condition-type-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a condition_type"
+
+condition-error-load "condition-errors/condition-ref-bad-condition-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a condition"
+condition-error-load "condition-errors/condition-ref-bad-field-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol"
+
+condition-error-load "condition-errors/condition-set-bad-condition-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a condition"
+condition-error-load "condition-errors/condition-set-bad-field-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol"
+
+condition-error-load "condition-errors/set-default-handler-bad-condition-type-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a condition_type"
+condition-error-load "condition-errors/set-default-handler-bad-handler-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a procedure"
+
+condition-error-load "condition-errors/clear-default-handler-bad-condition-type-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a condition_type"
+
+;; all done?
+Tests? (condition-error0 + 13)
