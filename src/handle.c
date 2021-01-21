@@ -954,6 +954,11 @@ implementation is buffered.				\n\
 {
     IDIO_ASSERT (h);
 
+    /*
+     * Test Case: file-handle-errors/flush-handle-bad-type.idio
+     *
+     * flush-handle #t
+     */
     IDIO_USER_TYPE_ASSERT (handle, h);
 
     idio_flush_handle (h);
@@ -1032,13 +1037,28 @@ unless ``whence`` is 'set and position is 0 (zero)	\n\
     IDIO_ASSERT (pos);
     IDIO_ASSERT (args);
 
+    /*
+     * Test Case: file-handle-errors/seek-handle-bad-handle-type.idio
+     *
+     * seek-handle #t #t
+     */
     IDIO_USER_TYPE_ASSERT (handle, h);
+    /*
+     * Test Case: file-handle-errors/seek-handle-bad-pos-type.idio
+     *
+     * seek-handle (current-input-handle) #t
+     */
     IDIO_USER_TYPE_ASSERT (integer, pos);
 
     int whence = -1;
 
     if (idio_S_nil != args) {
 	IDIO w = idio_list_head (args);
+	/*
+	 * Test Case: file-handle-errors/seek-handle-bad-whence-type.idio
+	 *
+	 * seek-handle (current-input-handle) 0 #t
+	 */
 	IDIO_USER_TYPE_ASSERT (symbol, w);
 
 	if (IDIO_STREQP (IDIO_SYMBOL_S (w), "set")) {
@@ -1049,7 +1069,7 @@ unless ``whence`` is 'set and position is 0 (zero)	\n\
 	    whence = SEEK_CUR;
 	} else {
 	    /*
-	     * Test Case: handle-errors/seek-whence-bad-type.idio
+	     * Test Case: handle-errors/seek-handle-bad-whence-value.idio
 	     *
 	     * seek-handle (current-input-handle) 0 'maybe
 	     */
@@ -1130,6 +1150,11 @@ the handle's line number to 1				\n\
 {
     IDIO_ASSERT (h);
 
+    /*
+     * Test Case: file-handle-errors/rewind-handle-bad-type.idio
+     *
+     * rewind-handle #t
+     */
     IDIO_USER_TYPE_ASSERT (handle, h);
 
     idio_rewind_handle (h);
@@ -1204,6 +1229,11 @@ Set the current input handle to `handle`		\n\
 {
     IDIO_ASSERT (h);
 
+    /*
+     * Test Case: file-handle-errors/set-input-handle-bad-type.idio
+     *
+     * set-input-handle! #t
+     */
     IDIO_USER_TYPE_ASSERT (handle, h);
 
     idio_thread_set_current_input_handle (h);
@@ -1221,6 +1251,11 @@ Set the current output handle to `handle`		\n\
 {
     IDIO_ASSERT (h);
 
+    /*
+     * Test Case: file-handle-errors/set-output-handle-bad-type.idio
+     *
+     * set-output-handle! #t
+     */
     IDIO_USER_TYPE_ASSERT (handle, h);
 
     idio_thread_set_current_output_handle (h);
@@ -1238,6 +1273,11 @@ Set the current error handle to `handle`		\n\
 {
     IDIO_ASSERT (h);
 
+    /*
+     * Test Case: file-handle-errors/set-error-handle-bad-type.idio
+     *
+     * set-error-handle! #t
+     */
     IDIO_USER_TYPE_ASSERT (handle, h);
 
     idio_thread_set_current_error_handle (h);
@@ -1523,6 +1563,11 @@ or the current output handle				\n\
     IDIO_ASSERT (c);
     IDIO_ASSERT (args);
 
+    /*
+     * Test Case: file-handle-errors/write-char-bad-type.idio
+     *
+     * write-char #t
+     */
     IDIO_USER_TYPE_ASSERT (unicode, c);
 
     IDIO h = idio_handle_or_current (idio_list_head (args), IDIO_HANDLE_FLAG_WRITE);
@@ -1913,6 +1958,11 @@ in handle ``handle``					\n\
 {
     IDIO_ASSERT (h);
 
+    /*
+     * Test Case: file-handle-errors/handle-location-bad-type.idio
+     *
+     * handle-location #t
+     */
     IDIO_USER_TYPE_ASSERT (handle, h);
 
     return idio_handle_location (h);
@@ -2059,6 +2109,11 @@ This is the ``load-handle`` primitive.				\n\
 {
     IDIO_ASSERT (h);
 
+    /*
+     * Test Case: ??
+     *
+     * load-handle is overriden elsewhere
+     */
     IDIO_USER_TYPE_ASSERT (handle, h);
 
     IDIO thr = idio_thread_current_thread ();

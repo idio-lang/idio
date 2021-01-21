@@ -134,5 +134,40 @@ ifh = open-input-file testfile
 multi-line-read-handle ifh
 close-handle ifh
 
+;; code coverage
+handle-location (current-input-handle)
+
+;; ready? after a peek-char
+ish := open-input-string "hello"
+test (peek-char ish) #\h
+test (ready? ish) #t
+
+test (closed-handle? ish) #f
+close-handle ish
+test (closed-handle? ish) #t
+
+delete-file testfile
+ofh := open-output-file testfile
+puts "(pair 1 2)\n" ofh
+close-handle ofh
+
+ifh := open-input-file testfile
+test (read-expr ifh) '(pair 1 2)
+close-handle ifh
+
+
+ofh := open-output-file testfile
+puts (make-string (2 * (C/->integer libc/BUFSIZ)) #\A) ofh
+
+;; code coverage
+flush-handle ofh
+
+;; code coverage: seek bignum
+seek-handle ofh 4e1
+
+newline ofh
+
+close-handle ofh
+
 ;; all done?
-Tests? (handle0 + 61)
+Tests? (handle0 + 66)

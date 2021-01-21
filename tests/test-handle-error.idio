@@ -61,45 +61,25 @@ handle-error-load "handle-errors/close-output-bad-handle.idio" "handle '*stdin*'
 
 handle-error-load "handle-errors/closed-handle-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a handle"
 
-handle-error-load "handle-errors/seek-whence-bad-type.idio" "whence 'maybe' is invalid: 'set, 'end or 'cur"
+handle-error-load "handle-errors/flush-handle-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a handle"
+
+handle-error-load "handle-errors/seek-handle-bad-handle-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a handle"
+handle-error-load "handle-errors/seek-handle-bad-pos-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a integer"
+handle-error-load "handle-errors/seek-handle-bad-whence-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol"
+handle-error-load "handle-errors/seek-handle-bad-whence-value.idio" "whence 'maybe' is invalid: 'set, 'end or 'cur"
+
+handle-error-load "handle-errors/rewind-handle-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a handle"
+
+handle-error-load "handle-errors/set-input-handle-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a handle"
+handle-error-load "handle-errors/set-output-handle-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a handle"
+handle-error-load "handle-errors/set-error-handle-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a handle"
+
+handle-error-load "handle-errors/write-char-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a unicode"
 
 handle-error-load "handle-errors/display-bad-handle.idio" "handle write error"
 handle-error-load "handle-errors/display-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a output handle"
 
-;; code coverage
-handle-location (current-input-handle)
-
-;; ready? after a peek-char
-ish := open-input-string "hello"
-test (peek-char ish) #\h
-test (ready? ish) #t
-
-test (closed-handle? ish) #f
-close-handle ish
-test (closed-handle? ish) #t
-
-delete-file testfile
-ofh := open-output-file testfile
-puts "(pair 1 2)\n" ofh
-close-handle ofh
-
-ifh := open-input-file testfile
-test (read-expr ifh) '(pair 1 2)
-close-handle ifh
-
-
-ofh := open-output-file testfile
-puts (make-string (2 * (C/->integer libc/BUFSIZ)) #\A) ofh
-
-;; code coverage
-flush-handle ofh
-
-;; code coverage: seek bignum
-seek-handle ofh 4e1
-
-newline ofh
-
-close-handle ofh
+handle-error-load "handle-errors/handle-location-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a handle"
 
 ;; all done?
-Tests? (handle-error0 + 16)
+Tests? (handle-error0 + 21)
