@@ -3694,6 +3694,11 @@ test if `n` is exact				\n\
     if (idio_isa_fixnum (n)) {
 	r = idio_S_true;
     } else {
+	/*
+	 * Test Case: bignum-errors/exact-bad-type.idio
+	 *
+	 * exact? #t
+	 */
 	IDIO_USER_TYPE_ASSERT (bignum, n);
 
 	if (IDIO_BIGNUM_INTEGER_P (n)) {
@@ -3731,6 +3736,11 @@ test if `n` is inexact				\n\
 	return idio_S_false;
     }
 
+    /*
+     * Test Case: bignum-errors/exact-bad-type.idio
+     *
+     * inexact? #t
+     */
     IDIO_USER_TYPE_ASSERT (bignum, n);
 
     IDIO r = idio_S_false;
@@ -3755,6 +3765,11 @@ convert `n` to inexact				\n\
 {
     IDIO_ASSERT (n);
 
+    /*
+     * Test Case: bignum-errors/exact2inexact-bad-type.idio
+     *
+     * exact->inexact #t
+     */
     IDIO_BIGNUM_FIXNUM_TYPE (n);
 
     IDIO r = idio_S_unspec;
@@ -3788,6 +3803,11 @@ convert `n` to exact				\n\
     if (idio_isa_fixnum (n)) {
 	return n;
     } else {
+	/*
+	 * Test Case: bignum-errors/inexact2exact-bad-type.idio
+	 *
+	 * inexact->exact #t
+	 */
 	IDIO_USER_TYPE_ASSERT (bignum, n);
 
 	if (IDIO_BIGNUM_INTEGER_P (n)) {
@@ -3827,6 +3847,11 @@ return the mantissa of `n`			\n\
 	return n;
     }
 
+    /*
+     * Test Case: bignum-errors/mantissa-bad-type.idio
+     *
+     * mantissa #t
+     */
     IDIO_USER_TYPE_ASSERT (bignum, n);
 
     IDIO r = idio_S_unspec;
@@ -3860,6 +3885,11 @@ return the exponent of `n`			\n\
 {
     IDIO_ASSERT (n);
 
+    /*
+     * Test Case: bignum-errors/exponent-bad-type.idio
+     *
+     * exponent #t
+     */
     IDIO_USER_TYPE_ASSERT (bignum, n);
 
     IDIO r = idio_S_unspec;
@@ -3885,6 +3915,11 @@ dump the bignum structure of `n`	\n\
 {
     IDIO_ASSERT (n);
 
+    /*
+     * Test Case: bignum-errors/bignum-dump-bad-type.idio
+     *
+     * bignum-dump #t
+     */
     IDIO_USER_TYPE_ASSERT (bignum, n);
 
     idio_bignum_dump (n);

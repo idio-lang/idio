@@ -82,5 +82,13 @@ bignum-error-load "bignum-errors/eq-non-bignum.idio" "bad parameter type: '#t' a
 bignum-error-load "bignum-errors/ge-non-bignum.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a bignum"
 bignum-error-load "bignum-errors/gt-non-bignum.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a bignum"
 
+bignum-error-load "bignum-errors/exact-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a bignum"
+bignum-error-load "bignum-errors/inexact-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a bignum"
+bignum-error-load "bignum-errors/inexact2exact-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a bignum"
+bignum-error-load "bignum-errors/exact2inexact-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a bignum"
+bignum-error-load "bignum-errors/mantissa-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a bignum"
+bignum-error-load "bignum-errors/exponent-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a bignum"
+bignum-error-load "bignum-errors/bignum-dump-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a bignum"
+
 ;; all done?
-Tests? (bignum-error0 + 10)
+Tests? (bignum-error0 + 17)
