@@ -63,18 +63,45 @@ hash-error-load "hash-errors/hashing-return-float.idio" "bad parameter type: '1.
 hash-error-load "hash-errors/hashing-return-negative-fixnum.idio" "hashing function has returned a negative value"
 hash-error-load "hash-errors/hashing-return-negative-bignum.idio" "hashing function has returned a negative value"
 
-hash-error-load "hash-errors/set-nil-key.idio" "key is nil"
-hash-error-load "hash-errors/exists-nil-key.idio" "key is nil"
-hash-error-load "hash-errors/ref-nil-key.idio" "key is nil"
-hash-error-load "hash-errors/ref-non-existent-key.idio" "key not found"
-hash-error-load "hash-errors/delete-nil-key.idio" "key is nil"
+hash-error-load "hash-errors/hash-set-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a hash"
+hash-error-load "hash-errors/hash-set-nil-key.idio" "key is nil"
 
-hash-error-load "hash-errors/make-size-float.idio" "bad parameter type: '1.0e+1' a BIGNUM is not a fixnum"
+hash-error-load "hash-errors/hash-exists-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a hash"
+hash-error-load "hash-errors/hash-exists-nil-key.idio" "key is nil"
 
-hash-error-load "hash-errors/alist-hash-bad-alist.idio" "bad parameter type: 'b' a CONSTANT_UNICODE is not a not a pair in alist"
+hash-error-load "hash-errors/hash-ref-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a hash"
+hash-error-load "hash-errors/hash-ref-nil-key.idio" "key is nil"
+hash-error-load "hash-errors/hash-ref-non-existent-key.idio" "key not found"
 
-hash-error-load "hash-errors/copy-bad-depth-value.idio" "depth should be 'deep or 'shallow"
-hash-error-load "hash-errors/copy-bad-depth-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol"
+hash-error-load "hash-errors/hash-delete-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a hash"
+hash-error-load "hash-errors/hash-delete-nil-key.idio" "key is nil"
+
+hash-error-load "hash-errors/hash-keys-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a hash"
+hash-error-load "hash-errors/hash-values-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a hash"
+
+hash-error-load "hash-errors/make-hash-size-float.idio" "bad parameter type: '1.0e+1' a BIGNUM is not a fixnum"
+
+hash-error-load "hash-errors/alist2hash-bad-alist.idio" "bad parameter type: 'b' a CONSTANT_UNICODE is not a not a pair in alist"
+hash-error-load "hash-errors/alist2hash-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a list"
+
+hash-error-load "hash-errors/hash-equivalence-function-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a hash"
+hash-error-load "hash-errors/hash-hash-function-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a hash"
+hash-error-load "hash-errors/hash-size-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a hash"
+
+hash-error-load "hash-errors/hash-update-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a hash"
+
+hash-error-load "hash-errors/hash-walk-bad-hash-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a hash"
+hash-error-load "hash-errors/hash-walk-bad-func-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a procedure"
+
+hash-error-load "hash-errors/hash-fold-bad-hash-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a hash"
+hash-error-load "hash-errors/hash-fold-bad-func-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a procedure"
+
+hash-error-load "hash-errors/copy-hash-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a hash"
+hash-error-load "hash-errors/copy-hash-bad-depth-value.idio" "depth should be 'deep or 'shallow"
+hash-error-load "hash-errors/copy-hash-bad-depth-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol"
+
+hash-error-load "hash-errors/merge-hash-bad-first-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a hash"
+hash-error-load "hash-errors/merge-hash-bad-second-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a hash"
 
 ;; all done?
-Tests? (hash-error0 + 13)
+Tests? (hash-error0 + 31)

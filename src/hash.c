@@ -1003,7 +1003,7 @@ IDIO idio_hash_put (IDIO h, void *kv, IDIO v)
 
     if (idio_S_nil == kv) {
 	/*
-	 * Test Case: hash-errors/set-nil-key.idio
+	 * Test Case: hash-errors/hash-set-nil-key.idio
 	 *
 	 * hash-set! ht #n #t
 	 */
@@ -1073,6 +1073,11 @@ set the index of ``key` in hash table ``ht`` to ``v``	\n\
     IDIO_ASSERT (key);
     IDIO_ASSERT (v);
 
+    /*
+     * Test Case: hash-errors/hash-set-bad-type.idio
+     *
+     * hash-set! #t #t #t
+     */
     IDIO_USER_TYPE_ASSERT (hash, ht);
 
     return idio_hash_set (ht, key, v);
@@ -1171,7 +1176,7 @@ IDIO idio_hash_exists (IDIO h, void *kv)
 
     if (idio_S_nil == kv) {
 	/*
-	 * Test Case: hash-errors/exists-nil-key.idio
+	 * Test Case: hash-errors/hash-exists-nil-key.idio
 	 *
 	 * hash-exists? ht #n
 	 */
@@ -1204,6 +1209,11 @@ a value							\n\
     IDIO_ASSERT (ht);
     IDIO_ASSERT (key);
 
+    /*
+     * Test Case: hash-errors/hash-exists-bad-type.idio
+     *
+     * hash-exists? #t #t
+     */
     IDIO_USER_TYPE_ASSERT (hash, ht);
 
     IDIO r = idio_S_false;
@@ -1221,7 +1231,7 @@ IDIO idio_hash_ref (IDIO h, void *kv)
 
     if (idio_S_nil == kv) {
 	/*
-	 * Test Case: hash-errors/ref-nil-key.idio
+	 * Test Case: hash-errors/hash-ref-nil-key.idio
 	 *
 	 * hash-ref ht #n
 	 */
@@ -1247,8 +1257,8 @@ IDIO idio_hash_reference (IDIO ht, IDIO key, IDIO args)
     IDIO_ASSERT (key);
     IDIO_ASSERT (args);
 
-    IDIO_USER_TYPE_ASSERT (hash, ht);
-    IDIO_USER_TYPE_ASSERT (list, args);
+    IDIO_TYPE_ASSERT (hash, ht);
+    IDIO_TYPE_ASSERT (list, args);
 
     IDIO r = idio_hash_ref (ht, key);
 
@@ -1262,7 +1272,7 @@ IDIO idio_hash_reference (IDIO ht, IDIO key, IDIO args)
 	    }
 	} else {
 	    /*
-	     * Test Case: hash-errors/ref-non-existent-key.idio
+	     * Test Case: hash-errors/hash-ref-non-existent-key.idio
 	     *
 	     * ht := (make-hash)
 	     * hash-ref ht 1
@@ -1294,7 +1304,17 @@ return the value indexed by ``key` in hash table ``ht``	\n\
     IDIO_ASSERT (key);
     IDIO_ASSERT (args);
 
+    /*
+     * Test Case: hash-errors/hash-ref-bad-type.idio
+     *
+     * hash-ref #t #t
+     */
     IDIO_USER_TYPE_ASSERT (hash, ht);
+    /*
+     * Test Case: n/a
+     *
+     * args is the varargs parameter -- should always be a list
+     */
     IDIO_USER_TYPE_ASSERT (list, args);
 
     return idio_hash_reference (ht, key, args);
@@ -1326,7 +1346,7 @@ int idio_hash_delete (IDIO h, void *kv)
 
     if (idio_S_nil == kv) {
 	/*
-	 * Test Case: hash-errors/delete-nil-key.idio
+	 * Test Case: hash-errors/hash-delete-nil-key.idio
 	 *
 	 * hash-delete! ht #n
 	 */
@@ -1398,6 +1418,11 @@ hash table ``ht``					\n\
     IDIO_ASSERT (ht);
     IDIO_ASSERT (key);
 
+    /*
+     * Test Case: hash-errors/hash-delete-bad-type.idio
+     *
+     * hash-delete! #t #t
+     */
     IDIO_USER_TYPE_ASSERT (hash, ht);
 
     idio_hash_delete (ht, key);
@@ -1568,6 +1593,11 @@ no order can be presumed				\n\
 {
     IDIO_ASSERT (ht);
 
+    /*
+     * Test Case: hash-errors/hash-keys-bad-type.idio
+     *
+     * hash-keys #t
+     */
     IDIO_USER_TYPE_ASSERT (hash, ht);
 
     return idio_hash_keys_to_list (ht);
@@ -1619,6 +1649,11 @@ no order can be presumed				\n\
 {
     IDIO_ASSERT (ht);
 
+    /*
+     * Test Case: hash-errors/hash-values-bad-type.idio
+     *
+     * hash-values #t
+     */
     IDIO_USER_TYPE_ASSERT (hash, ht);
 
     return idio_hash_values_to_list (ht);
@@ -1646,7 +1681,8 @@ no order can be presumed				\n\
 IDIO idio_hash_make_hash (IDIO args)
 {
     IDIO_ASSERT (args);
-    IDIO_USER_TYPE_ASSERT (list, args);
+
+    IDIO_TYPE_ASSERT (list, args);
 
     idio_hi_t size = 32;
     int (*equal) (void *k1, void *k2) = idio_equalp;
@@ -1694,7 +1730,7 @@ IDIO idio_hash_make_hash (IDIO args)
 	    size = IDIO_FIXNUM_VAL (isize);
 	} else {
 	    /*
-	     * Test Case: hash-errors/make-size-float.idio
+	     * Test Case: hash-errors/make-hash-size-float.idio
 	     *
 	     * make-hash #n #n 1e1
 	     */
@@ -1734,6 +1770,11 @@ underlying C function.					\n\
 {
     IDIO_ASSERT (args);
 
+    /*
+     * Test Case: n/a
+     *
+     * args is the varargs parameter -- should always be a list
+     */
     IDIO_USER_TYPE_ASSERT (list, args);
 
     return idio_hash_make_hash (args);
@@ -1743,8 +1784,9 @@ IDIO idio_hash_alist_to_hash (IDIO alist, IDIO args)
 {
     IDIO_ASSERT (alist);
     IDIO_ASSERT (args);
-    IDIO_USER_TYPE_ASSERT (list, alist);
-    IDIO_USER_TYPE_ASSERT (list, args);
+
+    IDIO_TYPE_ASSERT (list, alist);
+    IDIO_TYPE_ASSERT (list, args);
 
     IDIO ht = idio_hash_make_hash (args);
 
@@ -1764,7 +1806,7 @@ IDIO idio_hash_alist_to_hash (IDIO alist, IDIO args)
 	    }
 	} else {
 	    /*
-	     * Test Case: hash-errors/alist-hash-bad-alist.idio
+	     * Test Case: hash-errors/alist2hash-bad-alist.idio
 	     *
 	     * alist->hash '((#\a "apple") #\b)
 	     */
@@ -1793,7 +1835,17 @@ convert association list ``al`` into a hash table	\n\
     IDIO_ASSERT (alist);
     IDIO_ASSERT (args);
 
+    /*
+     * Test Case: hash-errors/alist2hash-bad-type.idio
+     *
+     * alist->hash #t
+     */
     IDIO_USER_TYPE_ASSERT (list, alist);
+    /*
+     * Test Case: n/a
+     *
+     * args is the varargs parameter -- should always be a list
+     */
     IDIO_USER_TYPE_ASSERT (list, args);
 
     return idio_hash_alist_to_hash (alist, args);
@@ -1810,6 +1862,11 @@ return the ``equiv-func`` of ``h``			\n\
 {
     IDIO_ASSERT (ht);
 
+    /*
+     * Test Case: hash-errors/hash-equivalence-function-bad-type.idio
+     *
+     * hash-equivalence-function #t
+     */
     IDIO_USER_TYPE_ASSERT (hash, ht);
 
     IDIO r = idio_S_unspec;
@@ -1840,6 +1897,11 @@ return the ``hash-func`` of ``h``			\n\
 {
     IDIO_ASSERT (ht);
 
+    /*
+     * Test Case: hash-errors/hash-hash-function-bad-type.idio
+     *
+     * hash-hash-function #t
+     */
     IDIO_USER_TYPE_ASSERT (hash, ht);
 
     IDIO r = idio_S_unspec;
@@ -1866,6 +1928,11 @@ return the key count of ``h``				\n\
 {
     IDIO_ASSERT (ht);
 
+    /*
+     * Test Case: hash-errors/hash-size-bad-type.idio
+     *
+     * hash-size #t
+     */
     IDIO_USER_TYPE_ASSERT (hash, ht);
 
     /*
@@ -1921,7 +1988,17 @@ key to the returned value					\n\
     IDIO_ASSERT (func);
     IDIO_ASSERT (args);
 
+    /*
+     * Test Case: hash-errors/hash-update-bad-type.idio
+     *
+     * hash-update! #t #t #t
+     */
     IDIO_USER_TYPE_ASSERT (hash, ht);
+    /*
+     * Test Case: n/a
+     *
+     * args is the varargs parameter -- should always be a list
+     */
     IDIO_USER_TYPE_ASSERT (list, args);
 
     IDIO_ASSERT_NOT_CONST (hash, ht);
@@ -1949,7 +2026,18 @@ call ``func`` for each ``key` in hash table ``ht``		\n\
     IDIO_ASSERT (ht);
     IDIO_ASSERT (func);
 
+    /*
+     * Test Case: hash-errors/hash-walk-bad-hash-type.idio
+     *
+     * hash-walk #t #t
+     */
     IDIO_USER_TYPE_ASSERT (hash, ht);
+    /*
+     * Test Case: hash-errors/hash-walk-bad-func-type.idio
+     *
+     * hash-walk #{} #t
+     */
+    IDIO_USER_TYPE_ASSERT (procedure, func);
 
     /*
      * Careful of the old chestnut, the invocation of the function
@@ -1998,7 +2086,18 @@ The final value of ``val`` is returned				\n\
     IDIO_ASSERT (func);
     IDIO_ASSERT (val);
 
+    /*
+     * Test Case: hash-errors/hash-fold-bad-hash-type.idio
+     *
+     * hash-fold #t #t #t
+     */
     IDIO_USER_TYPE_ASSERT (hash, ht);
+    /*
+     * Test Case: hash-errors/hash-fold-bad-func-type.idio
+     *
+     * hash-fold #{} #t #t
+     */
+    IDIO_USER_TYPE_ASSERT (procedure, func);
 
     /*
      * Careful of the old chestnut, the invocation of the function
@@ -2037,6 +2136,11 @@ copy hash table `orig`					\n\
 {
     IDIO_ASSERT (ht);
 
+    /*
+     * Test Case: hash-errors/copy-hash-bad-type.idio
+     *
+     * copy-hash #t
+     */
     IDIO_USER_TYPE_ASSERT (hash, ht);
 
     int depth = IDIO_COPY_DEEP;
@@ -2051,7 +2155,7 @@ copy hash table `orig`					\n\
 		depth = IDIO_COPY_SHALLOW;
 	    } else {
 		/*
-		 * Test Case: hash-errors/copy-bad-depth-value.idio
+		 * Test Case: hash-errors/copy-hash-bad-depth-value.idio
 		 *
 		 * copy-hash ht 'completely
 		 */
@@ -2061,7 +2165,7 @@ copy hash table `orig`					\n\
 	    }
 	} else {
 	    /*
-	     * Test Case: hash-errors/copy-bad-depth-type.idio
+	     * Test Case: hash-errors/copy-hash-bad-depth-type.idio
 	     *
 	     * copy-hash ht #t
 	     */
@@ -2091,7 +2195,17 @@ duplicate keys in ``ht2`` will overwrite keys in `ht1``		\n\
     IDIO_ASSERT (ht1);
     IDIO_ASSERT (ht2);
 
+    /*
+     * Test Case: hash-errors/merge-hash-bad-first-type.idio
+     *
+     * merge-hash! #t #t
+     */
     IDIO_USER_TYPE_ASSERT (hash, ht1);
+    /*
+     * Test Case: hash-errors/merge-hash-bad-second-type.idio
+     *
+     * merge-hash! #{} #t
+     */
     IDIO_USER_TYPE_ASSERT (hash, ht2);
 
     return idio_merge_hash (ht1, ht2);
