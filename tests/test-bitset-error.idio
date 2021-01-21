@@ -59,27 +59,54 @@ bitset-error-load := {
   }
 }
 
-bitset-error-load "bitset-errors/set-bounds.idio" "bitset bounds error: 5 >= size 3"
-bitset-error-load "bitset-errors/clear-bounds.idio" "bitset bounds error: 5 >= size 3"
-bitset-error-load "bitset-errors/ref-bounds.idio" "bitset bounds error: 5 >= size 3"
-bitset-error-load "bitset-errors/make-size-float.idio" "bad parameter type: '1.1e+0' a BIGNUM is not a integer"
-bitset-error-load "bitset-errors/make-size-not-integer.idio" "bad parameter type: '#f' a CONSTANT_IDIO is not a integer"
+bitset-error-load "bitset-errors/bitset-set-bounds.idio" "bitset bounds error: 5 >= size 3"
+bitset-error-load "bitset-errors/bitset-clear-bounds.idio" "bitset bounds error: 5 >= size 3"
+bitset-error-load "bitset-errors/bitset-ref-bounds.idio" "bitset bounds error: 5 >= size 3"
 
-bitset-error-load "bitset-errors/set-float.idio" "bad parameter type: '1.1e+0' a BIGNUM is not a integer"
-bitset-error-load "bitset-errors/set-non-numeric.idio" "bad parameter type: '#f' a CONSTANT_IDIO is not a unicode|integer"
-bitset-error-load "bitset-errors/clear-float.idio" "bad parameter type: '1.1e+0' a BIGNUM is not a integer"
-bitset-error-load "bitset-errors/clear-non-numeric.idio" "bad parameter type: '#f' a CONSTANT_IDIO is not a unicode|integer"
-bitset-error-load "bitset-errors/ref-float.idio" "bad parameter type: '1.1e+0' a BIGNUM is not a integer"
-bitset-error-load "bitset-errors/ref-non-numeric.idio" "bad parameter type: '#f' a CONSTANT_IDIO is not a unicode|integer"
+bitset-error-load "bitset-errors/make-bitset-size-float.idio" "bad parameter type: '1.1e+0' a BIGNUM is not a integer"
+bitset-error-load "bitset-errors/make-bitset-size-not-integer.idio" "bad parameter type: '#f' a CONSTANT_IDIO is not a integer"
 
-bitset-error-load "bitset-errors/merge-non-matching-sizes.idio" "bitset size mistmatch: 4 != 3"
-bitset-error-load "bitset-errors/and-non-matching-sizes.idio" "bitset size mistmatch: 4 != 3"
-bitset-error-load "bitset-errors/ior-non-matching-sizes.idio" "bitset size mistmatch: 4 != 3"
-bitset-error-load "bitset-errors/xor-non-matching-sizes.idio" "bitset size mistmatch: 4 != 3"
-bitset-error-load "bitset-errors/subtract-non-matching-sizes.idio" "bitset size mistmatch: 4 != 3"
+bitset-error-load "bitset-errors/bitset-size-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a bitset"
 
-bitset-error-load "bitset-errors/equal-not-bitset-1.idio" "bad parameter type: '#f' a CONSTANT_IDIO is not a bitset"
-bitset-error-load "bitset-errors/equal-not-bitset-2.idio" "bad parameter type: '#f' a CONSTANT_IDIO is not a bitset"
+bitset-error-load "bitset-errors/bitset-set-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a bitset"
+bitset-error-load "bitset-errors/bitset-set-float.idio" "bad parameter type: '1.1e+0' a BIGNUM is not a integer"
+bitset-error-load "bitset-errors/bitset-set-non-numeric.idio" "bad parameter type: '#f' a CONSTANT_IDIO is not a unicode|integer"
+
+bitset-error-load "bitset-errors/bitset-clear-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a bitset"
+bitset-error-load "bitset-errors/bitset-clear-float.idio" "bad parameter type: '1.1e+0' a BIGNUM is not a integer"
+bitset-error-load "bitset-errors/bitset-clear-non-numeric.idio" "bad parameter type: '#f' a CONSTANT_IDIO is not a unicode|integer"
+
+bitset-error-load "bitset-errors/bitset-ref-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a bitset"
+bitset-error-load "bitset-errors/bitset-ref-float.idio" "bad parameter type: '1.1e+0' a BIGNUM is not a integer"
+bitset-error-load "bitset-errors/bitset-ref-non-numeric.idio" "bad parameter type: '#f' a CONSTANT_IDIO is not a unicode|integer"
+
+bitset-error-load "bitset-errors/copy-bitset-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a bitset"
+
+bitset-error-load "bitset-errors/merge-bitset-bad-arg-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a bitset"
+bitset-error-load "bitset-errors/merge-bitset-non-matching-sizes.idio" "bitset size mistmatch: 4 != 3"
+
+bitset-error-load "bitset-errors/and-bitset-bad-arg-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a bitset"
+bitset-error-load "bitset-errors/and-bitset-non-matching-sizes.idio" "bitset size mistmatch: 4 != 3"
+
+bitset-error-load "bitset-errors/ior-bitset-bad-arg-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a bitset"
+bitset-error-load "bitset-errors/ior-bitset-non-matching-sizes.idio" "bitset size mistmatch: 4 != 3"
+
+bitset-error-load "bitset-errors/xor-bitset-bad-arg-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a bitset"
+bitset-error-load "bitset-errors/xor-bitset-non-matching-sizes.idio" "bitset size mistmatch: 4 != 3"
+
+bitset-error-load "bitset-errors/not-bitset-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a bitset"
+
+bitset-error-load "bitset-errors/subtract-bitset-bad-arg-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a bitset"
+bitset-error-load "bitset-errors/subtract-bitset-non-matching-sizes.idio" "bitset size mistmatch: 4 != 3"
+
+bitset-error-load "bitset-errors/equal-bitset-not-bitset-1.idio" "bad parameter type: '#f' a CONSTANT_IDIO is not a bitset"
+bitset-error-load "bitset-errors/equal-bitset-not-bitset-2.idio" "bad parameter type: '#f' a CONSTANT_IDIO is not a bitset"
+
+bitset-error-load "bitset-errors/bitset-for-each-set-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a bitset"
+bitset-error-load "bitset-errors/bitset-for-each-set-bad-func-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a procedure"
+
+bitset-error-load "bitset-errors/fold-bitset-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a bitset"
+bitset-error-load "bitset-errors/fold-bitset-bad-func-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a procedure"
 
 ;; all done?
-Tests? (bitset-error0 + 18)
+Tests? (bitset-error0 + 33)

@@ -126,7 +126,7 @@ IDIO idio_bitset_set (IDIO bs, size_t bit)
 
     if (bit >= IDIO_BITSET_SIZE (bs)) {
 	/*
-	 * Test Case: bitset-errors/set-bounds.idio
+	 * Test Case: bitset-errors/bitset-set-bounds.idio
 	 *
 	 * bs := #B{ 3 }
 	 * bitset-set! bs 5
@@ -151,7 +151,7 @@ IDIO idio_bitset_clear (IDIO bs, size_t bit)
 
     if (bit >= IDIO_BITSET_SIZE (bs)) {
 	/*
-	 * Test Case: bitset-errors/set-bounds.idio
+	 * Test Case: bitset-errors/bitset-set-bounds.idio
 	 *
 	 * bs := #B{ 3 }
 	 * bitset-clear! bs 5
@@ -177,7 +177,7 @@ IDIO idio_bitset_ref (IDIO bs, size_t bit)
 
     if (bit >= IDIO_BITSET_SIZE (bs)) {
 	/*
-	 * Test Case: bitset-errors/set-bounds.idio
+	 * Test Case: bitset-errors/bitset-set-bounds.idio
 	 *
 	 * bs := #B{ 3 }
 	 * bitset-ref bs 5
@@ -260,7 +260,7 @@ create an bitset with a size of `size`		\n\
 	    IDIO size_i = idio_bignum_real_to_integer (size);
 	    if (idio_S_nil == size_i) {
 		/*
-		 * Test Case: bitset-errors/make-size-float.idio
+		 * Test Case: bitset-errors/make-bitset-size-float.idio
 		 *
 		 * make-bitset 1.1
 		 */
@@ -278,7 +278,7 @@ create an bitset with a size of `size`		\n\
 	}
     } else {
 	/*
-	 * Test Case: bitset-errors/make-size-not-integer.idio
+	 * Test Case: bitset-errors/make-bitset-size-not-integer.idio
 	 *
 	 * make-bitset #f
 	 */
@@ -298,6 +298,11 @@ return the size of bitset `bs`			\n\
 {
     IDIO_ASSERT (bs);
 
+    /*
+     * Test Case: bitset-errors/bitset-size-bad-type.idio
+     *
+     * bitset-size #t
+     */
     IDIO_USER_TYPE_ASSERT (bitset, bs);
 
     return idio_integer (IDIO_BITSET_SIZE (bs));
@@ -316,6 +321,11 @@ set bit `bit` in bitset `bs`			\n\
     IDIO_ASSERT (bs);
     IDIO_ASSERT (bit);
 
+    /*
+     * Test Case: bitset-errors/bitset-set-bad-type.idio
+     *
+     * bitset-set #t 0
+     */
     IDIO_USER_TYPE_ASSERT (bitset, bs);
 
     ptrdiff_t bs_bit = -1;
@@ -334,7 +344,7 @@ set bit `bit` in bitset `bs`			\n\
 	    IDIO bit_i = idio_bignum_real_to_integer (bit);
 	    if (idio_S_nil == bit_i) {
 		/*
-		 * Test Case: bitset-errors/set-float.idio
+		 * Test Case: bitset-errors/bitset-set-float.idio
 		 *
 		 * bitset-set! bs 1.1
 		 */
@@ -352,7 +362,7 @@ set bit `bit` in bitset `bs`			\n\
 	}
     } else {
 	/*
-	 * Test Case: bitset-errors/set-non-numeric.idio
+	 * Test Case: bitset-errors/bitset-set-non-numeric.idio
 	 *
 	 * bitset-set! bs #f
 	 */
@@ -377,6 +387,11 @@ clear bit `bit` in bitset `bs`			\n\
     IDIO_ASSERT (bs);
     IDIO_ASSERT (bit);
 
+    /*
+     * Test Case: bitset-errors/bitset-clear-bad-type.idio
+     *
+     * bitset-clear #t 0
+     */
     IDIO_USER_TYPE_ASSERT (bitset, bs);
 
     ptrdiff_t bs_bit = -1;
@@ -395,7 +410,7 @@ clear bit `bit` in bitset `bs`			\n\
 	    IDIO bit_i = idio_bignum_real_to_integer (bit);
 	    if (idio_S_nil == bit_i) {
 		/*
-		 * Test Case: bitset-errors/clear-float.idio
+		 * Test Case: bitset-errors/bitset-clear-float.idio
 		 *
 		 * bitset-clear! bs 1.1
 		 */
@@ -413,7 +428,7 @@ clear bit `bit` in bitset `bs`			\n\
 	}
     } else {
 	/*
-	 * Test Case: bitset-errors/clear-non-numeric.idio
+	 * Test Case: bitset-errors/bitset-clear-non-numeric.idio
 	 *
 	 * bitset-clear! bs #f
 	 */
@@ -438,6 +453,11 @@ get bit `bit` in bitset `bs`			\n\
     IDIO_ASSERT (bs);
     IDIO_ASSERT (bit);
 
+    /*
+     * Test Case: bitset-errors/bitset-ref-bad-type.idio
+     *
+     * bitset-ref #t 0
+     */
     IDIO_USER_TYPE_ASSERT (bitset, bs);
 
     ptrdiff_t bs_bit = -1;
@@ -456,7 +476,7 @@ get bit `bit` in bitset `bs`			\n\
 	    IDIO bit_i = idio_bignum_real_to_integer (bit);
 	    if (idio_S_nil == bit_i) {
 		/*
-		 * Test Case: bitset-errors/ref-float.idio
+		 * Test Case: bitset-errors/bitset-ref-float.idio
 		 *
 		 * bitset-ref bs 1.1
 		 */
@@ -474,7 +494,7 @@ get bit `bit` in bitset `bs`			\n\
 	}
     } else {
 	/*
-	 * Test Case: bitset-errors/ref-non-numeric.idio
+	 * Test Case: bitset-errors/bitset-ref-non-numeric.idio
 	 *
 	 * bitset-ref bs #f
 	 */
@@ -496,6 +516,11 @@ copy the bitset					\n\
 {
     IDIO_ASSERT (bs);
 
+    /*
+     * Test Case: bitset-errors/copy-bitset-bad-type.idio
+     *
+     * copy-bitset #t
+     */
     IDIO_USER_TYPE_ASSERT (bitset, bs);
 
     return idio_copy (bs, IDIO_COPY_SHALLOW);
@@ -511,6 +536,11 @@ merge the bitsets				\n\
 {
     IDIO_ASSERT (args);
 
+    /*
+     * Test Case: n/a
+     *
+     * args is the varargs parameter -- should always be a list
+     */
     IDIO_USER_TYPE_ASSERT (list, args);
 
     IDIO r = idio_S_nil;
@@ -518,6 +548,11 @@ merge the bitsets				\n\
     while (idio_S_nil != args) {
 	IDIO bs = IDIO_PAIR_H (args);
 
+	/*
+	 * Test Case: bitset-errors/merge-bitset-bad-arg-type.idio
+	 *
+	 * merge-bitset #t
+	 */
 	IDIO_USER_TYPE_ASSERT (bitset, bs);
 
 	if (idio_S_nil == r) {
@@ -527,7 +562,7 @@ merge the bitsets				\n\
 
 	    if (bs_size != IDIO_BITSET_SIZE (r)) {
 		/*
-		 * Test Case: bitset-errors/merge-non-matching-sizes.idio
+		 * Test Case: bitset-errors/merge-bitset-non-matching-sizes.idio
 		 *
 		 * merge-bitset #B{ 3 } #B{ 4 }
 		 */
@@ -563,6 +598,11 @@ logical AND the bitsets				\n\
 {
     IDIO_ASSERT (args);
 
+    /*
+     * Test Case: n/a
+     *
+     * args is the varargs parameter -- should always be a list
+     */
     IDIO_USER_TYPE_ASSERT (list, args);
 
     IDIO r = idio_S_nil;
@@ -570,6 +610,11 @@ logical AND the bitsets				\n\
     while (idio_S_nil != args) {
 	IDIO bs = IDIO_PAIR_H (args);
 
+	/*
+	 * Test Case: bitset-errors/and-bitset-bad-arg-type.idio
+	 *
+	 * and-bitset #t
+	 */
 	IDIO_USER_TYPE_ASSERT (bitset, bs);
 
 	if (idio_S_nil == r) {
@@ -579,7 +624,7 @@ logical AND the bitsets				\n\
 
 	    if (bs_size != IDIO_BITSET_SIZE (r)) {
 		/*
-		 * Test Case: bitset-errors/and-non-matching-sizes.idio
+		 * Test Case: bitset-errors/and-bitset-non-matching-sizes.idio
 		 *
 		 * and-bitset #B{ 3 } #B{ 4 }
 		 */
@@ -615,6 +660,11 @@ logical Inclusive OR the bitsets		\n\
 {
     IDIO_ASSERT (args);
 
+    /*
+     * Test Case: n/a
+     *
+     * args is the varargs parameter -- should always be a list
+     */
     IDIO_USER_TYPE_ASSERT (list, args);
 
     IDIO r = idio_S_nil;
@@ -622,6 +672,11 @@ logical Inclusive OR the bitsets		\n\
     while (idio_S_nil != args) {
 	IDIO bs = IDIO_PAIR_H (args);
 
+	/*
+	 * Test Case: bitset-errors/ior-bitset-bad-arg-type.idio
+	 *
+	 * ior-bitset #t
+	 */
 	IDIO_USER_TYPE_ASSERT (bitset, bs);
 
 	if (idio_S_nil == r) {
@@ -631,7 +686,7 @@ logical Inclusive OR the bitsets		\n\
 
 	    if (bs_size != IDIO_BITSET_SIZE (r)) {
 		/*
-		 * Test Case: bitset-errors/ior-non-matching-sizes.idio
+		 * Test Case: bitset-errors/ior-bitset-non-matching-sizes.idio
 		 *
 		 * ior-bitset #B{ 3 } #B{ 4 }
 		 */
@@ -667,6 +722,11 @@ logical eXclusive OR the bitsets		\n\
 {
     IDIO_ASSERT (args);
 
+    /*
+     * Test Case: n/a
+     *
+     * args is the varargs parameter -- should always be a list
+     */
     IDIO_USER_TYPE_ASSERT (list, args);
 
     IDIO r = idio_S_nil;
@@ -674,6 +734,11 @@ logical eXclusive OR the bitsets		\n\
     while (idio_S_nil != args) {
 	IDIO bs = IDIO_PAIR_H (args);
 
+	/*
+	 * Test Case: bitset-errors/xor-bitset-bad-arg-type.idio
+	 *
+	 * xor-bitset #t
+	 */
 	IDIO_USER_TYPE_ASSERT (bitset, bs);
 
 	if (idio_S_nil == r) {
@@ -683,7 +748,7 @@ logical eXclusive OR the bitsets		\n\
 
 	    if (bs_size != IDIO_BITSET_SIZE (r)) {
 		/*
-		 * Test Case: bitset-errors/xor-non-matching-sizes.idio
+		 * Test Case: bitset-errors/xor-bitset-non-matching-sizes.idio
 		 *
 		 * xor-bitset #B{ 3 } #B{ 4 }
 		 */
@@ -719,6 +784,11 @@ logical complement of the bitset		\n\
 {
     IDIO_ASSERT (bs);
 
+    /*
+     * Test Case: bitset-errors/not-bitset-bad-arg-type.idio
+     *
+     * not-bitset #t
+     */
     IDIO_USER_TYPE_ASSERT (bitset, bs);
 
     IDIO r = idio_copy (bs, IDIO_COPY_SHALLOW);
@@ -748,6 +818,11 @@ subtract the bitsets				\n\
 {
     IDIO_ASSERT (args);
 
+    /*
+     * Test Case: n/a
+     *
+     * args is the varargs parameter -- should always be a list
+     */
     IDIO_USER_TYPE_ASSERT (list, args);
 
     IDIO r = idio_S_nil;
@@ -755,6 +830,11 @@ subtract the bitsets				\n\
     while (idio_S_nil != args) {
 	IDIO bs = IDIO_PAIR_H (args);
 
+	/*
+	 * Test Case: bitset-errors/subtract-bitset-bad-arg-type.idio
+	 *
+	 * subtract-bitset #t
+	 */
 	IDIO_USER_TYPE_ASSERT (bitset, bs);
 
 	if (idio_S_nil == r) {
@@ -764,7 +844,7 @@ subtract the bitsets				\n\
 
 	    if (bs_size != IDIO_BITSET_SIZE (r)) {
 		/*
-		 * Test Case: bitset-errors/subtract-non-matching-sizes.idio
+		 * Test Case: bitset-errors/subtract-bitset-non-matching-sizes.idio
 		 *
 		 * subtract-bitset #B{ 3 } #B{ 4 }
 		 */
@@ -796,6 +876,13 @@ int idio_equal_bitsetp (IDIO args)
 {
     IDIO_ASSERT (args);
 
+    /*
+     * Test Case: ??
+     *
+     * The user interface passed its varargs argument as {args},
+     * ie. always a list, but idio_equal_bitsetp() is also called from
+     * idio_equal() leading to a coding error.
+     */
     IDIO_USER_TYPE_ASSERT (list, args);
 
     IDIO bs = idio_S_nil;
@@ -804,7 +891,7 @@ int idio_equal_bitsetp (IDIO args)
 	bs = IDIO_PAIR_H (args);
 	if (idio_isa_bitset (bs) == 0) {
 	    /*
-	     * Test Case: bitset-errors/equal-not-bitset-1.idio
+	     * Test Case: bitset-errors/bitset-equal-not-bitset-1.idio
 	     *
 	     * equal-bitset? #f #B{ 3 }
 	     *
@@ -825,7 +912,7 @@ int idio_equal_bitsetp (IDIO args)
 	IDIO bs2 = IDIO_PAIR_H (args);
 
 	/*
-	 * Test Case: bitset-errors/equal-not-bitset-2.idio
+	 * Test Case: bitset-errors/bitset-equal-not-bitset-2.idio
 	 *
 	 * equal-bitset? #B{ 3 } #f
 	 *
@@ -909,7 +996,17 @@ invoke `f` on each bit in bitset `bs` that is set\n\
     IDIO_ASSERT (bs);
     IDIO_ASSERT (f);
 
+    /*
+     * Test Case: bitset-errors/bitset-for-each-set-bad-type.idio
+     *
+     * bitset-for-each-set #t #t
+     */
     IDIO_USER_TYPE_ASSERT (bitset, bs);
+    /*
+     * Test Case: bitset-errors/bitset-for-each-set-bad-func-type.idio
+     *
+     * bitset-for-each-set #B{ 1 } #t
+     */
     IDIO_USER_TYPE_ASSERT (procedure, f);
 
     IDIO thr = idio_thread_current_thread ();
@@ -957,8 +1054,18 @@ accumulating the result in `v`			\n\
     IDIO_ASSERT (f);
     IDIO_ASSERT (v);
 
-    IDIO_TYPE_ASSERT (bitset, bs);
-    IDIO_TYPE_ASSERT (procedure, f);
+    /*
+     * Test Case: bitset-errors/fold-bitset-bad-type.idio
+     *
+     * fold-bitset #t #t #t
+     */
+    IDIO_USER_TYPE_ASSERT (bitset, bs);
+    /*
+     * Test Case: bitset-errors/fold-bitset-bad-func-type.idio
+     *
+     * fold-bitset #B{ 1 } #t #t
+     */
+    IDIO_USER_TYPE_ASSERT (procedure, f);
 
     IDIO thr = idio_thread_current_thread ();
 
