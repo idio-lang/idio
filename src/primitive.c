@@ -195,6 +195,11 @@ Return the arity of `p`				\n\
 {
     IDIO_ASSERT (p);
 
+    /*
+     * Test Case: primitive-errors/primitive-arity-bad-type.idio
+     *
+     * primitive-arity #t
+     */
     IDIO_USER_TYPE_ASSERT (primitive, p);
 
     return idio_integer (IDIO_PRIMITIVE_ARITY (p));
@@ -211,6 +216,11 @@ Return the name of `p`				\n\
 {
     IDIO_ASSERT (p);
 
+    /*
+     * Test Case: primitive-errors/primitive-name-bad-type.idio
+     *
+     * primitive-name #t
+     */
     IDIO_USER_TYPE_ASSERT (primitive, p);
 
     return idio_string_C (IDIO_PRIMITIVE_NAME (p));
@@ -227,6 +237,11 @@ Return #t if `p` is varargs			\n\
 {
     IDIO_ASSERT (p);
 
+    /*
+     * Test Case: primitive-errors/primitive-varargs-bad-type.idio
+     *
+     * primitive-varargs? #t
+     */
     IDIO_USER_TYPE_ASSERT (primitive, p);
 
     IDIO r = idio_S_false;
