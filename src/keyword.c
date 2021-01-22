@@ -156,7 +156,7 @@ create a keyword from `s`			\n\
 	size_t C_size = strlen (sC);
 	if (C_size != size) {
 	    /*
-	     * Test Case: keyword-errors/make-bad-format.idio
+	     * Test Case: keyword-errors/make-keyword-bad-format.idio
 	     *
 	     * make-keyword (join-string (make-string 1 #U+0) '("hello" "world"))
 	     */
@@ -176,7 +176,7 @@ create a keyword from `s`			\n\
 	return idio_keywords_C_intern (IDIO_SYMBOL_S (s));
     } else {
 	/*
-	 * Test Case: keyword-errors/make-bad-type.idio
+	 * Test Case: keyword-errors/make-keyword-bad-type.idio
 	 *
 	 * make-keyword #t
 	 */
@@ -245,6 +245,11 @@ convert keyword `kw` to a string		\n\
 {
     IDIO_ASSERT (kw);
 
+    /*
+     * Test Case: keyword-errors/keyword2string-bad-type.idio
+     *
+     * keyword->string #t
+     */
     IDIO_USER_TYPE_ASSERT (keyword, kw);
 
     return idio_string_C (IDIO_KEYWORD_S (kw));
@@ -262,7 +267,8 @@ return a list of all keywords			\n\
 IDIO idio_hash_make_keyword_table (IDIO args)
 {
     IDIO_ASSERT (args);
-    IDIO_USER_TYPE_ASSERT (list, args);
+
+    IDIO_TYPE_ASSERT (list, args);
 
     return idio_hash_make_hash (idio_list_append2 (IDIO_LIST2 (idio_S_eqp, idio_S_nil), args));
 }
@@ -278,6 +284,11 @@ used for constructing property tables		\n\
 {
     IDIO_ASSERT (args);
 
+    /*
+     * Test Case: n/a
+     *
+     * args is the varargs parameter -- should always be a list
+     */
     IDIO_USER_TYPE_ASSERT (list, args);
 
     return idio_hash_make_keyword_table (args);
@@ -301,7 +312,7 @@ IDIO idio_keyword_ref (IDIO ht, IDIO kw, IDIO args)
 
     if (idio_S_nil == args) {
 	/*
-	 * Test Case: keyword-errors/key-not-found.idio
+	 * Test Case: keyword-errors/keyword-ref-not-found.idio
 	 *
 	 * kwt := (make-keyword-table)
 	 * keyword-ref kwt :foo
@@ -333,8 +344,23 @@ table ``ht``						\n\
     IDIO_ASSERT (kw);
     IDIO_ASSERT (args);
 
+    /*
+     * Test Case: keyword-errors/keyword-ref-bad-type.idio
+     *
+     * keyword-ref #t #t
+     */
     IDIO_USER_TYPE_ASSERT (hash, ht);
+    /*
+     * Test Case: keyword-errors/keyword-ref-bad-keyword-type.idio
+     *
+     * keyword-ref (make-keyword-table) #t
+     */
     IDIO_USER_TYPE_ASSERT (keyword, kw);
+    /*
+     * Test Case: n/a
+     *
+     * args is the varargs parameter -- should always be a list
+     */
     IDIO_USER_TYPE_ASSERT (list, args);
 
     return idio_keyword_ref (ht, kw, args);
@@ -370,7 +396,17 @@ set the index of ``kw` in hash table ``ht`` to ``v``	\n\
     IDIO_ASSERT (kw);
     IDIO_ASSERT (v);
 
+    /*
+     * Test Case: keyword-errors/keyword-set-bad-type.idio
+     *
+     * keyword-set! #t #t #t
+     */
     IDIO_USER_TYPE_ASSERT (hash, ht);
+    /*
+     * Test Case: keyword-errors/keyword-set-bad-keyword-type.idio
+     *
+     * keyword-set! (make-keyword-table) #t #t
+     */
     IDIO_USER_TYPE_ASSERT (keyword, kw);
 
     return idio_keyword_set (ht, kw, v);

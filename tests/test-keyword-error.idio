@@ -59,10 +59,17 @@ keyword-error-load := {
   }
 }
 
-keyword-error-load "keyword-errors/make-bad-format.idio" "keyword contains an ASCII NUL"
-keyword-error-load "keyword-errors/make-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string|symbol"
+keyword-error-load "keyword-errors/make-keyword-bad-format.idio" "keyword contains an ASCII NUL"
+keyword-error-load "keyword-errors/make-keyword-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string|symbol"
 
-keyword-error-load "keyword-errors/key-not-found.idio" "keyword not found"
+keyword-error-load "keyword-errors/keyword2string-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a keyword"
+
+keyword-error-load "keyword-errors/keyword-ref-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a hash"
+keyword-error-load "keyword-errors/keyword-ref-bad-keyword-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a keyword"
+keyword-error-load "keyword-errors/keyword-ref-not-found.idio" "keyword not found"
+
+keyword-error-load "keyword-errors/keyword-set-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a hash"
+keyword-error-load "keyword-errors/keyword-set-bad-keyword-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a keyword"
 
 ;; all done?
-Tests? (keyword-error0 + 3)
+Tests? (keyword-error0 + 8)
