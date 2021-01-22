@@ -1,0 +1,2 @@
+
+regexec (regcomp "") #t

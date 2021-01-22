@@ -207,7 +207,17 @@ an extra REG_BASIC flag to disable REG_EXTENDED	\n\
     IDIO_ASSERT (rx);
     IDIO_ASSERT (flags);
 
+    /*
+     * Test Case: posix-regex-errors/regcomp-bad-rx-type.idio
+     *
+     * regcomp #t
+     */
     IDIO_USER_TYPE_ASSERT (string, rx);
+    /*
+     * Test Case: n/a
+     *
+     * flags is the varargs parameter -- should always be a list
+     */
     IDIO_USER_TYPE_ASSERT (list, flags);
 
     return idio_posix_regex_regcomp (rx, flags);
@@ -348,8 +358,23 @@ corresponding array element will be #f	.	\n\
     IDIO_ASSERT (str);
     IDIO_ASSERT (flags);
 
+    /*
+     * Test Case: posix-regex-errors/regexec-bad-rx-type.idio
+     *
+     * regexec #t #t
+     */
     IDIO_USER_TYPE_ASSERT (C_pointer, rx);
+    /*
+     * Test Case: posix-regex-errors/regexec-bad-str-type.idio
+     *
+     * regexec (regcomp "") #t
+     */
     IDIO_USER_TYPE_ASSERT (string, str);
+    /*
+     * Test Case: n/a
+     *
+     * flags is the varargs parameter -- should always be a list
+     */
     IDIO_USER_TYPE_ASSERT (list, flags);
 
     return idio_posix_regex_regexec (rx, str, flags);
