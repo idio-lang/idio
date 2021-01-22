@@ -1,0 +1,5 @@
+
+module tests/struct/make-struct-instance
+
+define-struct foo x y
+make-struct-instance foo 1

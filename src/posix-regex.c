@@ -68,10 +68,9 @@ static IDIO idio_posix_regex_error (int errcode, regex_t *preg, char *C_func, ID
 #endif
 
 	IDIO c = idio_struct_instance (idio_condition_rt_regex_error_type,
-				       IDIO_LIST4 (idio_get_output_string (msh),
+				       IDIO_LIST3 (idio_get_output_string (msh),
 						   location,
-						   detail,
-						   idio_S_nil));
+						   detail));
 
 	idio_raise_condition (idio_S_true, c);
 

@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015, 2020 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -92,10 +92,10 @@ define-template (define-struct-accessors-only name & fields) {
     }
 
     ;; define (bar? g/7) {
-    ;;   and (struct-instance? g/7) (struct-instance-isa g/7 bar)
+    ;;   and (struct-instance? g/7) (struct-instance-isa? g/7 bar)
     ;; }
     define ($pred-fname $arg) {
-      and (struct-instance? $arg) (struct-instance-isa $arg $name)
+      and (struct-instance? $arg) (struct-instance-isa? $arg $name)
     }
 
     ;; define (bar-x g/7) {

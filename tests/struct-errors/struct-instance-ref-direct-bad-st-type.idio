@@ -1,0 +1,2 @@
+
+%struct-instance-ref-direct (make-struct-instance ^error) #t #t

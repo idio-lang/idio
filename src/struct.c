@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -32,18 +32,19 @@ static void idio_struct_error (IDIO msg, IDIO c_location)
 
     IDIO location = idio_vm_source_location ();
 
-    IDIO dsh = idio_open_output_string_handle_C ();
-    idio_display (c_location, dsh);
+    IDIO detail = idio_S_nil;
 
 #ifdef IDIO_DEBUG
-    idio_display_C (": ", dsh);
+    IDIO dsh = idio_open_output_string_handle_C ();
     idio_display (c_location, dsh);
+    detail = idio_get_output_string (dsh);
 #endif
 
-    IDIO c = idio_struct_instance (idio_condition_idio_error_type,
+    IDIO c = idio_struct_instance (idio_condition_rt_struct_error_type,
 				   IDIO_LIST3 (msg,
 					       location,
-					       idio_get_output_string (dsh)));
+					       detail));
+
     idio_raise_condition (idio_S_false, c);
 
     /* notreached */
@@ -59,11 +60,25 @@ static void idio_struct_instance_error_field_not_found (IDIO field, IDIO c_locat
     idio_display_C ("field '", sh);
     idio_display (field, sh);
     idio_display_C ("' not found", sh);
-    IDIO c = idio_struct_instance (idio_condition_runtime_error_type,
+
+    IDIO location = idio_vm_source_location ();
+
+    IDIO detail = idio_S_nil;
+
+#ifdef IDIO_DEBUG
+    IDIO dsh = idio_open_output_string_handle_C ();
+    idio_display (c_location, dsh);
+    detail = idio_get_output_string (dsh);
+#endif
+
+    IDIO c = idio_struct_instance (idio_condition_rt_struct_error_type,
 				   IDIO_LIST3 (idio_get_output_string (sh),
-					       c_location,
-					       idio_S_nil));
+					       location,
+					       detail));
+
     idio_raise_condition (idio_S_true, c);
+
+    /* notreached */
 }
 
 static void idio_struct_instance_error_bounds (char *em, idio_ai_t index, IDIO c_location)
@@ -84,12 +99,14 @@ static void idio_struct_instance_error_bounds (char *em, idio_ai_t index, IDIO c
     idio_display (c_location, dsh);
 #endif
 
-    IDIO c = idio_struct_instance (idio_condition_runtime_error_type,
+    IDIO c = idio_struct_instance (idio_condition_rt_struct_error_type,
 				   IDIO_LIST3 (idio_get_output_string (msh),
 					       location,
 					       idio_get_output_string (dsh)));
 
     idio_raise_condition (idio_S_true, c);
+
+    /* notreached */
 }
 
 IDIO idio_struct_type (IDIO name, IDIO parent, IDIO fields)
@@ -104,23 +121,18 @@ IDIO idio_struct_type (IDIO name, IDIO parent, IDIO fields)
     }
     IDIO_TYPE_ASSERT (list, fields);
 
-    IDIO st = idio_gc_get (IDIO_TYPE_STRUCT_TYPE);
-
-    IDIO_GC_ALLOC (st->u.struct_type, sizeof (idio_struct_type_t));
-
-    IDIO_STRUCT_TYPE_GREY (st) = NULL;
-    IDIO_STRUCT_TYPE_NAME (st) = name;
-    IDIO_STRUCT_TYPE_PARENT (st) = parent;
-
     size_t nfields = 0;
     IDIO fs = fields;
     while (idio_S_nil != fs) {
 	IDIO f = IDIO_PAIR_H (fs);
-	if (! idio_isa_symbol (f)) {
-	    idio_error_printf (IDIO_C_FUNC_LOCATION (), "struct-type name parent fs: fs must be symbols");
 
-	    return idio_S_notreached;
-	}
+	/*
+	 * Test Case: struct-errors/make-struct-type-bad-field-type.idio
+	 *
+	 * make-struct-type (gensym) #n '(#t)
+	 */
+	IDIO_USER_TYPE_ASSERT (symbol, f);
+
 	nfields++;
 	fs = IDIO_PAIR_T (fs);
     }
@@ -131,6 +143,15 @@ IDIO idio_struct_type (IDIO name, IDIO parent, IDIO fields)
     }
 
     size_t size = pfields + nfields;
+
+    IDIO st = idio_gc_get (IDIO_TYPE_STRUCT_TYPE);
+
+    IDIO_GC_ALLOC (st->u.struct_type, sizeof (idio_struct_type_t));
+
+    IDIO_STRUCT_TYPE_GREY (st) = NULL;
+    IDIO_STRUCT_TYPE_NAME (st) = name;
+    IDIO_STRUCT_TYPE_PARENT (st) = parent;
+
     IDIO_STRUCT_TYPE_SIZE (st) = size;
     IDIO_GC_ALLOC (st->u.struct_type->fields, size * sizeof (IDIO));
 
@@ -164,12 +185,27 @@ create a struct type				\n\
     IDIO_ASSERT (parent);
     IDIO_ASSERT (fields);
 
+    /*
+     * Test Case: struct-errors/make-struct-type-bad-name-type.idio
+     *
+     * make-struct-type #t #t #t
+     */
     IDIO_USER_TYPE_ASSERT (symbol, name);
 
     if (idio_S_nil != parent) {
+	/*
+	 * Test Case: struct-errors/make-struct-type-bad-parent-type.idio
+	 *
+	 * make-struct-type (gensym) #t #t
+	 */
 	IDIO_USER_TYPE_ASSERT (struct_type, parent);
     }
 
+    /*
+     * Test Case: struct-errors/make-struct-type-bad-fields-type.idio
+     *
+     * make-struct-type (gensym) #n #t
+     */
     IDIO_USER_TYPE_ASSERT (list, fields);
 
     return idio_struct_type (name, parent, fields);
@@ -226,10 +262,11 @@ return the name of struct type ``st``		\n\
 {
     IDIO_ASSERT (st);
 
-    if (idio_isa_struct_instance (st)) {
-	st = IDIO_STRUCT_INSTANCE_TYPE (st);
-    }
-
+    /*
+     * Test Case: struct-errors/struct-type-name-bad-type.idio
+     *
+     * struct-type-name #t
+     */
     IDIO_USER_TYPE_ASSERT (struct_type, st);
 
     return IDIO_STRUCT_TYPE_NAME (st);
@@ -247,10 +284,11 @@ return the parent of struct type ``st``		\n\
 {
     IDIO_ASSERT (st);
 
-    if (idio_isa_struct_instance (st)) {
-	st = IDIO_STRUCT_INSTANCE_TYPE (st);
-    }
-
+    /*
+     * Test Case: struct-errors/struct-type-parent-bad-type.idio
+     *
+     * struct-type-parent #t
+     */
     IDIO_USER_TYPE_ASSERT (struct_type, st);
 
     return IDIO_STRUCT_TYPE_PARENT (st);
@@ -268,10 +306,11 @@ return the fields of struct type ``st``		\n\
 {
     IDIO_ASSERT (st);
 
-    if (idio_isa_struct_instance (st)) {
-	st = IDIO_STRUCT_INSTANCE_TYPE (st);
-    }
-
+    /*
+     * Test Case: struct-errors/struct-type-fields-bad-type.idio
+     *
+     * struct-type-fields #t
+     */
     IDIO_USER_TYPE_ASSERT (struct_type, st);
 
     IDIO r = idio_S_nil;
@@ -290,10 +329,16 @@ int idio_struct_type_isa (IDIO st, IDIO type)
     IDIO_ASSERT (type);
 
     if (idio_S_nil == st) {
+	/*
+	 * Code coverage:
+	 *
+	 * This is protected against from user-land therefore requires
+	 * a C unit test.
+	 */
 	return 0;
     }
 
-    IDIO_USER_TYPE_ASSERT (struct_type, st);
+    IDIO_TYPE_ASSERT (struct_type, st);
 
     if (st == type) {
 	return 1;
@@ -306,7 +351,7 @@ int idio_struct_type_isa (IDIO st, IDIO type)
     return 0;
 }
 
-IDIO_DEFINE_PRIMITIVE2_DS ("struct-type-isa", struct_type_isa, (IDIO st, IDIO type), "st type", "\
+IDIO_DEFINE_PRIMITIVE2_DS ("struct-type-isa?", struct_type_isa, (IDIO st, IDIO type), "st type", "\
 assert that struct type ``st`` isa a derivative	\n\
 of struct type ``type``				\n\
 						\n\
@@ -321,7 +366,17 @@ of struct type ``type``				\n\
     IDIO_ASSERT (st);
     IDIO_ASSERT (type);
 
+    /*
+     * Test Case: struct-errors/struct-type-isa-bad-st-type.idio
+     *
+     * struct-type-isa? #t #t
+     */
     IDIO_USER_TYPE_ASSERT (struct_type, st);
+    /*
+     * Test Case: struct-errors/struct-type-isa-bad-type-type.idio
+     *
+     * struct-type-isa? ^error #t
+     */
     IDIO_USER_TYPE_ASSERT (struct_type, type);
 
     IDIO r = idio_S_false;
@@ -366,28 +421,43 @@ IDIO idio_struct_instance (IDIO st, IDIO values)
 
     IDIO si = idio_allocate_struct_instance (st, 0);
 
-    idio_ai_t i = 0;
+    idio_ai_t i = idio_list_length (values);
+    idio_ai_t size = IDIO_STRUCT_TYPE_SIZE (st);
+
+    if (i < size) {
+	/*
+	 * Test Case: struct-errors/make-struct-instance-too-few-values.idio
+	 *
+	 * define-struct foo x y
+	 * make-struct-instance foo 1
+	 */
+	char em[BUFSIZ];
+	sprintf (em, "make-struct-instance: not enough values: %" PRIdPTR " < %" PRIdPTR, i, size);
+	idio_struct_error (idio_string_C (em), IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    if (i > size) {
+	/*
+	 * Test Case: struct-errors/make-struct-instance-too-many-values.idio
+	 *
+	 * define-struct foo x y
+	 * make-struct-instance foo 1 2 3
+	 */
+	char em[BUFSIZ];
+	sprintf (em, "make-struct-instance: too many values: %" PRIdPTR " > %" PRIdPTR, i, size);
+	idio_struct_error (idio_string_C (em), IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
     IDIO value = values;
+    i = 0;
     while (idio_S_nil != value) {
 	IDIO_STRUCT_INSTANCE_FIELDS (si, i) = IDIO_PAIR_H (value);
 	i++;
 	value = IDIO_PAIR_T (value);
-    }
-
-    idio_ai_t size = IDIO_STRUCT_TYPE_SIZE (st);
-
-    if (i < size) {
-	idio_debug ("fields: %s\n", st);
-	idio_debug ("values: %s\n", values);
-	idio_error_printf (IDIO_C_FUNC_LOCATION (), "make-struct-instance: not enough values: %" PRIdPTR " < %" PRIdPTR, i, size);
-
-	return idio_S_notreached;
-    }
-
-    if (idio_S_nil != value) {
-	idio_error_C ("make-struct-instance: too many values: the following are left over:", values, IDIO_C_FUNC_LOCATION ());
-
-	return idio_S_notreached;
     }
 
     return si;
@@ -425,7 +495,17 @@ values to the struct type's fields			\n\
     IDIO_ASSERT (st);
     IDIO_ASSERT (values);
 
+    /*
+     * Test Case: struct-errors/make-struct-instance-bad-st-type.idio
+     *
+     * make-struct-instance #t
+     */
     IDIO_USER_TYPE_ASSERT (struct_type, st);
+    /*
+     * Test Case: n/a
+     *
+     * values is the varargs parameter -- should always be a list
+     */
     IDIO_USER_TYPE_ASSERT (list, values);
 
     return idio_struct_instance (st, values);
@@ -480,6 +560,11 @@ return the struct type of struct instance ``si``\n\
 {
     IDIO_ASSERT (si);
 
+    /*
+     * Test Case: struct-errors/struct-instance-type-bad-type.idio
+     *
+     * struct-instance-type #t
+     */
     IDIO_USER_TYPE_ASSERT (struct_instance, si);
 
     return IDIO_STRUCT_INSTANCE_TYPE (si);
@@ -497,6 +582,11 @@ return the struct type fields of struct instance ``si``\n\
 {
     IDIO_ASSERT (si);
 
+    /*
+     * Test Case: struct-errors/struct-instance-fields-bad-type.idio
+     *
+     * struct-instance-fields #t
+     */
     IDIO_USER_TYPE_ASSERT (struct_instance, si);
 
     IDIO r = idio_S_nil;
@@ -525,10 +615,20 @@ idio_ai_t idio_struct_type_find_eqp (IDIO st, IDIO e, idio_ai_t index)
     IDIO_TYPE_ASSERT (struct_type, st);
 
     if (index < 0) {
+	/*
+	 * Code coverage:
+	 *
+	 * Coding error.
+	 */
 	return -1;
     }
 
     if (index >= IDIO_STRUCT_TYPE_SIZE (st)) {
+	/*
+	 * Code coverage:
+	 *
+	 * Coding error
+	 */
 	return -1;
     }
 
@@ -553,10 +653,13 @@ IDIO idio_struct_instance_ref (IDIO si, IDIO field)
     idio_ai_t i = idio_struct_type_find_eqp (sit, field, 0);
 
     if (-1 == i) {
-	fprintf (stderr, "\nERROR: struct-instance-ref: field not found\n");
-	idio_debug ("si=%s\n", si);
-	idio_debug ("fi=%s\n", field);
-	idio_debug ("sit=%s\n", sit);
+	/*
+	 * Test Case: struct-errors/struct-instance-ref-non-existent.idio
+	 *
+	 * define-struct foo x y
+	 * f := make-struct-instance foo 1 2
+	 * struct-instance-ref f 'z
+	 */
 	idio_struct_instance_error_field_not_found (field, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
@@ -579,7 +682,17 @@ return field ``field`` of struct instance ``si``\n\
     IDIO_ASSERT (si);
     IDIO_ASSERT (field);
 
+    /*
+     * Test Case: struct-errors/struct-instance-ref-bad-si-type.idio
+     *
+     * struct-instance-ref #t #t
+     */
     IDIO_USER_TYPE_ASSERT (struct_instance, si);
+    /*
+     * Test Case: struct-errors/struct-instance-ref-bad-field-type.idio
+     *
+     * struct-instance-ref (make-struct-instance ^error) #t
+     */
     IDIO_USER_TYPE_ASSERT (symbol, field);
 
     return idio_struct_instance_ref (si, field);
@@ -592,6 +705,13 @@ IDIO idio_struct_instance_ref_direct (IDIO si, idio_ai_t index)
     IDIO_TYPE_ASSERT (struct_instance, si);
 
     if (index < 0) {
+	/*
+	 * Test Case: struct-errors/struct-instance-ref-direct-negative.idio
+	 *
+	 * define-struct foo x y
+	 * f := make-struct-instance foo 1 2
+	 * %struct-instance-ref-direct f foo -1
+	 */
 	char em[BUFSIZ];
 	sprintf (em, "%%struct-instance-ref-direct bounds error: %td < 0", index);
 	idio_struct_instance_error_bounds (em, index, IDIO_C_FUNC_LOCATION ());
@@ -600,6 +720,13 @@ IDIO idio_struct_instance_ref_direct (IDIO si, idio_ai_t index)
     }
 
     if (index >= IDIO_STRUCT_INSTANCE_SIZE (si)) {
+	/*
+	 * Test Case: struct-errors/struct-instance-ref-direct-non-existent.idio
+	 *
+	 * define-struct foo x y
+	 * f := make-struct-instance foo 1 2
+	 * %struct-instance-ref-direct f foo 3
+	 */
 	char em[BUFSIZ];
 	sprintf (em, "%%struct-instance-ref-direct bounds error: %td >= %zu", index, IDIO_STRUCT_INSTANCE_SIZE (si));
 	idio_struct_instance_error_bounds (em, index, IDIO_C_FUNC_LOCATION ());
@@ -631,11 +758,33 @@ instance of struct type ``st``			\n\
     IDIO_ASSERT (st);
     IDIO_ASSERT (index);
 
+    /*
+     * Test Case: struct-errors/struct-instance-ref-direct-bad-si-type.idio
+     *
+     * %struct-instance-ref-direct #t #t #t
+     */
     IDIO_USER_TYPE_ASSERT (struct_instance, si);
+    /*
+     * Test Case: struct-errors/struct-instance-ref-direct-bad-st-type.idio
+     *
+     * %struct-instance-ref-direct (make-struct-instance ^error) #t #t
+     */
     IDIO_USER_TYPE_ASSERT (struct_type, st);
+    /*
+     * Test Case: struct-errors/struct-instance-ref-direct-bad-st-type.idio
+     *
+     * %struct-instance-ref-direct (make-struct-instance ^error) ^error #t
+     */
     IDIO_USER_TYPE_ASSERT (fixnum, index);
 
     if (st != IDIO_STRUCT_INSTANCE_TYPE (si)) {
+	/*
+	 * Test Case: struct-errors/struct-instance-ref-direct-wrong-type.idio
+	 *
+	 * define-struct foo x y
+	 * f := make-struct-instance foo 1 2
+	 * %struct-instance-ref-direct f ^error 0
+	 */
 	IDIO msh = idio_open_output_string_handle_C ();
 	idio_display_C ("%struct-instance-ref-direct: a '", msh);
 	idio_display (IDIO_STRUCT_TYPE_NAME (IDIO_STRUCT_INSTANCE_TYPE (si)), msh);
@@ -663,11 +812,13 @@ IDIO idio_struct_instance_set (IDIO si, IDIO field, IDIO v)
     idio_ai_t i = idio_struct_type_find_eqp (sit, field, 0);
 
     if (-1 == i) {
-	fprintf (stderr, "\nERROR: struct-instance-set!: field not found\n");
-	idio_debug ("struct-instance-set!: sit=%s\n", sit);
-	idio_debug ("si=%s\n", si);
-	idio_debug ("fi=%s\n", field);
-	idio_debug ("sit=%s\n", sit);
+	/*
+	 * Test Case: struct-errors/struct-instance-set-non-existent.idio
+	 *
+	 * define-struct foo x y
+	 * f := make-struct-instance foo 1 2
+	 * struct-instance-set! f 'z #t
+	 */
 	idio_struct_instance_error_field_not_found (field, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
@@ -695,7 +846,17 @@ set field ``field`` of struct instance ``si`` to ``v``	\n\
     IDIO_ASSERT (field);
     IDIO_ASSERT (v);
 
+    /*
+     * Test Case: struct-errors/struct-instance-set-bad-si-type.idio
+     *
+     * struct-instance-set! #t #t #t
+     */
     IDIO_USER_TYPE_ASSERT (struct_instance, si);
+    /*
+     * Test Case: struct-errors/struct-instance-set-bad-field-type.idio
+     *
+     * struct-instance-set! (make-struct-instance ^error) #t #t
+     */
     IDIO_USER_TYPE_ASSERT (symbol, field);
 
     return idio_struct_instance_set (si, field, v);
@@ -709,6 +870,13 @@ IDIO idio_struct_instance_set_direct (IDIO si, idio_ai_t index, IDIO v)
     IDIO_TYPE_ASSERT (struct_instance, si);
 
     if (index < 0) {
+	/*
+	 * Test Case: struct-errors/struct-instance-set-direct-negative.idio
+	 *
+	 * define-struct foo x y
+	 * f := make-struct-instance foo 1 2
+	 * %struct-instance-set-direct! f foo -1 #t
+	 */
 	char em[BUFSIZ];
 	sprintf (em, "%%struct-instance-set-direct! bounds error: %td < 0", index);
 	idio_struct_instance_error_bounds (em, index, IDIO_C_FUNC_LOCATION ());
@@ -717,6 +885,13 @@ IDIO idio_struct_instance_set_direct (IDIO si, idio_ai_t index, IDIO v)
     }
 
     if (index >= IDIO_STRUCT_INSTANCE_SIZE (si)) {
+	/*
+	 * Test Case: struct-errors/struct-instance-set-direct-non-existent.idio
+	 *
+	 * define-struct foo x y
+	 * f := make-struct-instance foo 1 2
+	 * %struct-instance-set-direct f foo 3 #t
+	 */
 	char em[BUFSIZ];
 	sprintf (em, "%%struct-instance-set-direct! bounds error: %td >= %zu", index, IDIO_STRUCT_INSTANCE_SIZE (si));
 	idio_struct_instance_error_bounds (em, index, IDIO_C_FUNC_LOCATION ());
@@ -753,12 +928,42 @@ instance of struct type ``st``			\n\
     IDIO_ASSERT (index);
     IDIO_ASSERT (v);
 
+    /*
+     * Test Case: struct-errors/struct-instance-set-direct-bad-si-type.idio
+     *
+     * %struct-instance-set-direct! #t #t #t #t
+     */
     IDIO_USER_TYPE_ASSERT (struct_instance, si);
+    /*
+     * Test Case: struct-errors/struct-instance-set-direct-bad-st-type.idio
+     *
+     * %struct-instance-set-direct! (make-struct-instance ^error) #t #t #t
+     */
     IDIO_USER_TYPE_ASSERT (struct_type, st);
+    /*
+     * Test Case: struct-errors/struct-instance-set-direct-bad-index-type.idio
+     *
+     * %struct-instance-set-direct! (make-struct-instance ^error) ^error #t #t
+     */
     IDIO_USER_TYPE_ASSERT (fixnum, index);
 
     if (st != IDIO_STRUCT_INSTANCE_TYPE (si)) {
-	idio_error_printf (IDIO_C_FUNC_LOCATION (), "bad structure set");
+	/*
+	 * Test Case: struct-errors/struct-instance-set-direct-wrong-type.idio
+	 *
+	 * define-struct foo x y
+	 * f := make-struct-instance foo 1 2
+	 * %struct-instance-set-direct! f ^error 0 #t
+	 */
+	IDIO msh = idio_open_output_string_handle_C ();
+	idio_display_C ("%struct-instance-set-direct!: a '", msh);
+	idio_display (IDIO_STRUCT_TYPE_NAME (IDIO_STRUCT_INSTANCE_TYPE (si)), msh);
+	idio_display_C ("' is not a '", msh);
+	idio_display (IDIO_STRUCT_TYPE_NAME (st), msh);
+	idio_display_C ("'", msh);
+	idio_struct_error (idio_get_output_string (msh), IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
     }
 
     return idio_struct_instance_set_direct (si, IDIO_FIXNUM_VAL (index), v);
@@ -774,7 +979,7 @@ int idio_struct_instance_isa (IDIO si, IDIO st)
     return idio_struct_type_isa (IDIO_STRUCT_INSTANCE_TYPE (si), st);
 }
 
-IDIO_DEFINE_PRIMITIVE2_DS ("struct-instance-isa", struct_instance_isa, (IDIO si, IDIO st), "si st", "\
+IDIO_DEFINE_PRIMITIVE2_DS ("struct-instance-isa?", struct_instance_isa, (IDIO si, IDIO st), "si st", "\
 assert that struct instance ``si`` isa a derivative	\n\
 of struct type ``st``				\n\
 						\n\
@@ -789,7 +994,17 @@ of struct type ``st``				\n\
     IDIO_ASSERT (si);
     IDIO_ASSERT (st);
 
+    /*
+     * Test Case: struct-errors/struct-instance-isa-bad-si-type.idio
+     *
+     * struct-instance-isa? #t #t
+     */
     IDIO_USER_TYPE_ASSERT (struct_instance, si);
+    /*
+     * Test Case: struct-errors/struct-instance-isa-bad-st-type.idio
+     *
+     * struct-instance-isa? (make-struct-instance ^error) #t
+     */
     IDIO_USER_TYPE_ASSERT (struct_type, st);
 
     IDIO r = idio_S_false;

@@ -1,0 +1,2 @@
+
+struct-instance-isa? (make-struct-instance ^error) #t
