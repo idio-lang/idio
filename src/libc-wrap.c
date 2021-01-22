@@ -119,6 +119,11 @@ raise a ^system-error						\n\
 {
     IDIO_ASSERT (args);
 
+    /*
+     * Test Case: n/a
+     *
+     * args is the varargs parameter -- should always be a list
+     */
     IDIO_USER_TYPE_ASSERT (list, args);
 
     char *name = "n/k";
@@ -155,6 +160,11 @@ This function returns a copy of the ru_utime field.		\n\
 {
     IDIO_ASSERT (rusage);
 
+    /*
+     * Test Case: libc-wrap-errors/struct-rusage-ru_utime-bad-type.idio
+     *
+     * struct-rusage-ru_utime #t
+     */
     IDIO_USER_TYPE_ASSERT (C_pointer, rusage);
 
     struct rusage *rup = IDIO_C_TYPE_POINTER_P (rusage);
@@ -182,6 +192,11 @@ This function returns a copy of the ru_stime field.		\n\
 {
     IDIO_ASSERT (rusage);
 
+    /*
+     * Test Case: libc-wrap-errors/struct-rusage-ru_stime-bad-type.idio
+     *
+     * struct-rusage-ru_stime #t
+     */
     IDIO_USER_TYPE_ASSERT (C_pointer, rusage);
 
     struct rusage *rup = IDIO_C_TYPE_POINTER_P (rusage);
@@ -255,6 +270,11 @@ Return a C struct timeval as a string				\n\
 {
     IDIO_ASSERT (tv);
 
+    /*
+     * Test Case: libc-wrap-errors/struct-timeval-as-string-bad-type.idio
+     *
+     * struct-timeval-as-string #t
+     */
     IDIO_USER_TYPE_ASSERT (C_pointer, tv);
 
     IDIO osh = idio_open_output_string_handle_C ();
@@ -278,6 +298,51 @@ IDIO idio_libc_struct_timeval_pointer (struct timeval *tvp)
     return r;
 }
 
+IDIO_DEFINE_PRIMITIVE2_DS ("add-struct-timeval", libc_add_struct_timeval, (IDIO tv1, IDIO tv2), "tv1 tv2", "\
+A simple function to calculate the sum of two C struct timevals \n\
+								\n\
+tv1 + tv2							\n\
+								\n\
+:param tv1: first timeval					\n\
+:type tv1: C_pointer						\n\
+:param tv2: second timeval					\n\
+:type tv2: C_pointer						\n\
+:return: C struct timeval or raises ^system-error		\n\
+:rtype: C_pointer						\n\
+")
+{
+    IDIO_ASSERT (tv1);
+    IDIO_ASSERT (tv2);
+
+    /*
+     * Test Case: libc-wrap-errors/add-struct-timeval-bad-first-type.idio
+     *
+     * add-struct-timeval #t #t
+     */
+    IDIO_USER_TYPE_ASSERT (C_pointer, tv1);
+    /*
+     * Test Case: libc-wrap-errors/add-struct-timeval-bad-second-type.idio
+     *
+     * add-struct-timeval (gettimeofday) #t
+     */
+    IDIO_USER_TYPE_ASSERT (C_pointer, tv2);
+
+    struct timeval *tv1p = IDIO_C_TYPE_POINTER_P (tv1);
+    struct timeval *tv2p = IDIO_C_TYPE_POINTER_P (tv2);
+
+    struct timeval *tvp = (struct timeval *) idio_alloc (sizeof (struct timeval));
+
+    tvp->tv_sec = tv1p->tv_sec + tv2p->tv_sec;
+    tvp->tv_usec = tv1p->tv_usec + tv2p->tv_usec;
+
+    if (tvp->tv_usec > 1000000) {
+	tvp->tv_usec -= 1000000;
+	tvp->tv_sec += 1;
+    }
+
+    return idio_libc_struct_timeval_pointer (tvp);
+}
+
 IDIO_DEFINE_PRIMITIVE2_DS ("subtract-struct-timeval", libc_subtract_struct_timeval, (IDIO tv1, IDIO tv2), "tv1 tv2", "\
 A simple function to calculate the difference between two C	\n\
 struct timevals							\n\
@@ -295,7 +360,17 @@ tv1 - tv2							\n\
     IDIO_ASSERT (tv1);
     IDIO_ASSERT (tv2);
 
+    /*
+     * Test Case: libc-wrap-errors/subtract-struct-timeval-bad-first-type.idio
+     *
+     * subtract-struct-timeval #t #t
+     */
     IDIO_USER_TYPE_ASSERT (C_pointer, tv1);
+    /*
+     * Test Case: libc-wrap-errors/subtract-struct-timeval-bad-second-type.idio
+     *
+     * subtract-struct-timeval (gettimeofday) #t
+     */
     IDIO_USER_TYPE_ASSERT (C_pointer, tv2);
 
     struct timeval *tv1p = IDIO_C_TYPE_POINTER_P (tv1);
@@ -309,41 +384,6 @@ tv1 - tv2							\n\
     if (tvp->tv_usec < 0) {
 	tvp->tv_usec += 1000000;
 	tvp->tv_sec -= 1;
-    }
-
-    return idio_libc_struct_timeval_pointer (tvp);
-}
-
-IDIO_DEFINE_PRIMITIVE2_DS ("add-struct-timeval", libc_add_struct_timeval, (IDIO tv1, IDIO tv2), "tv1 tv2", "\
-A simple function to calculate the sum of two C struct timevals \n\
-								\n\
-tv1 + tv2							\n\
-								\n\
-:param tv1: first timeval					\n\
-:type tv1: C_pointer						\n\
-:param tv2: second timeval					\n\
-:type tv2: C_pointer						\n\
-:return: C struct timeval or raises ^system-error		\n\
-:rtype: C_pointer						\n\
-")
-{
-    IDIO_ASSERT (tv1);
-    IDIO_ASSERT (tv2);
-
-    IDIO_USER_TYPE_ASSERT (C_pointer, tv1);
-    IDIO_USER_TYPE_ASSERT (C_pointer, tv2);
-
-    struct timeval *tv1p = IDIO_C_TYPE_POINTER_P (tv1);
-    struct timeval *tv2p = IDIO_C_TYPE_POINTER_P (tv2);
-
-    struct timeval *tvp = (struct timeval *) idio_alloc (sizeof (struct timeval));
-
-    tvp->tv_sec = tv1p->tv_sec + tv2p->tv_sec;
-    tvp->tv_usec = tv1p->tv_usec + tv2p->tv_usec;
-
-    if (tvp->tv_usec > 1000000) {
-	tvp->tv_usec -= 1000000;
-	tvp->tv_sec += 1;
     }
 
     return idio_libc_struct_timeval_pointer (tvp);
@@ -364,7 +404,17 @@ a wrapper to libc access (2)					\n\
     IDIO_ASSERT (ipathname);
     IDIO_ASSERT (imode);
 
+    /*
+     * Test Case: libc-wrap-errors/access-bad-pathname-type.idio
+     *
+     * access #t #t
+     */
     IDIO_USER_TYPE_ASSERT (string, ipathname);
+    /*
+     * Test Case: libc-wrap-errors/access-bad-mode-type.idio
+     *
+     * access "." #t
+     */
     IDIO_USER_TYPE_ASSERT (C_int, imode);
 
     size_t size = 0;
@@ -406,6 +456,11 @@ a wrapper to libc chdir (2)					\n\
 {
     IDIO_ASSERT (ipath);
 
+    /*
+     * Test Case: libc-wrap-errors/chdir-bad-type.idio
+     *
+     * chdir #t
+     */
     IDIO_USER_TYPE_ASSERT (string, ipath);
 
     size_t size = 0;
@@ -456,6 +511,11 @@ a wrapper to libc close (2)					\n\
 {
     IDIO_ASSERT (ifd);
 
+    /*
+     * Test Case: libc-wrap-errors/close-bad-type.idio
+     *
+     * close #t
+     */
     IDIO_USER_TYPE_ASSERT (C_int, ifd);
 
     int fd = IDIO_C_TYPE_INT (ifd);
@@ -988,6 +1048,12 @@ and ``RLIMIT_NOFILE``.						\n\
 {
     IDIO_ASSERT (iresource);
 
+    /*
+     * Test Case: ??
+     *
+     * getrlimit's resource is overridden in the pursuit of
+     * convenience
+     */
     IDIO_USER_TYPE_ASSERT (C_int, iresource);
 
     return idio_libc_getrlimit (IDIO_C_TYPE_INT (iresource));
@@ -1007,6 +1073,11 @@ The parameter `who` refers to RUSAGE_SELF or RUSAGE_CHILDREN	\n\
 {
     IDIO_ASSERT (who);
 
+    /*
+     * Test Case: libc-wrap-errors/getrusage-bad-type.idio
+     *
+     * getrusage #t
+     */
     IDIO_USER_TYPE_ASSERT (C_int, who);
 
     struct rusage *rup = (struct rusage *) idio_alloc (sizeof (struct rusage));
@@ -1074,6 +1145,11 @@ a wrapper to libc isatty (3)					\n\
 {
     IDIO_ASSERT (ifd);
 
+    /*
+     * Test Case: libc-wrap-errors/isatty-bad-type.idio
+     *
+     * isatty #t
+     */
     IDIO_USER_TYPE_ASSERT (C_int, ifd);
 
     int fd = IDIO_C_TYPE_INT (ifd);
@@ -1111,7 +1187,17 @@ a wrapper to libc kill (2)					\n\
     IDIO_ASSERT (ipid);
     IDIO_ASSERT (isig);
 
+    /*
+     * Test Case: libc-wrap-errors/kill-bad-pid-type.idio
+     *
+     * kill #t #t
+     */
     IDIO_USER_TYPE_ASSERT (C_int, ipid);
+    /*
+     * Test Case: libc-wrap-errors/kill-bad-sig-type.idio
+     *
+     * kill (C/integer-> PID) #t
+     */
     IDIO_USER_TYPE_ASSERT (C_int, isig);
 
     pid_t pid = IDIO_C_TYPE_INT (ipid);
@@ -1147,7 +1233,17 @@ a wrapper to libc mkdir (2)					\n\
     IDIO_ASSERT (ipathname);
     IDIO_ASSERT (imode);
 
+    /*
+     * Test Case: libc-wrap-errors/mkdir-bad-pathname-type.idio
+     *
+     * mkdir #t #t
+     */
     IDIO_USER_TYPE_ASSERT (string, ipathname);
+    /*
+     * Test Case: libc-wrap-errors/mkdir-bad-mode-type.idio
+     *
+     * mkdir "." #t
+     */
     IDIO_USER_TYPE_ASSERT (C_int, imode);
 
     size_t size = 0;
@@ -1201,6 +1297,11 @@ a wrapper to libc mkdtemp (3)					\n\
 {
     IDIO_ASSERT (itemplate);
 
+    /*
+     * Test Case: libc-wrap-errors/mkdtemp-bad-type.idio
+     *
+     * mkdtemp #t
+     */
     IDIO_USER_TYPE_ASSERT (string, itemplate);
 
     /*
@@ -1257,6 +1358,11 @@ a wrapper to libc mkstemp (3)					\n\
 {
     IDIO_ASSERT (itemplate);
 
+    /*
+     * Test Case: libc-wrap-errors/mkstemp-bad-type.idio
+     *
+     * mkstemp #t
+     */
     IDIO_USER_TYPE_ASSERT (string, itemplate);
 
     /*
@@ -1355,6 +1461,11 @@ See ``pipe`` for a constructor ofthe pipe array.		\n\
 {
     IDIO_ASSERT (ipipefd);
 
+    /*
+     * Test Case: libc-wrap-errors/pipe-reader-bad-type.idio
+     *
+     * pipe-reader #t
+     */
     IDIO_USER_TYPE_ASSERT (C_pointer, ipipefd);
 
     int *pipefd = IDIO_C_TYPE_POINTER_P (ipipefd);
@@ -1375,6 +1486,11 @@ See ``pipe`` for a constructor ofthe pipe array.		\n\
 {
     IDIO_ASSERT (ipipefd);
 
+    /*
+     * Test Case: libc-wrap-errors/pipe-writer-bad-type.idio
+     *
+     * pipe-writer #t
+     */
     IDIO_USER_TYPE_ASSERT (C_pointer, ipipefd);
 
     int *pipefd = IDIO_C_TYPE_POINTER_P (ipipefd);
@@ -1411,6 +1527,11 @@ a wrapper to libc read (2)					\n\
 {
     IDIO_ASSERT (ifd);
 
+    /*
+     * Test Case: libc-wrap-errors/read-bad-type.idio
+     *
+     * read #t
+     */
     IDIO_USER_TYPE_ASSERT (C_int, ifd);
 
     int fd = IDIO_C_TYPE_INT (ifd);
@@ -1465,6 +1586,11 @@ a wrapper to libc rmdir (2)					\n\
 {
     IDIO_ASSERT (ipathname);
 
+    /*
+     * Test Case: libc-wrap-errors/rmdir-bad-type.idio
+     *
+     * rmdir #t
+     */
     IDIO_USER_TYPE_ASSERT (string, ipathname);
 
     size_t size = 0;
@@ -1518,7 +1644,17 @@ a wrapper to libc setpgid (2)					\n\
     IDIO_ASSERT (ipid);
     IDIO_ASSERT (ipgid);
 
+    /*
+     * Test Case: libc-wrap-errors/setpgid-bad-pid-type.idio
+     *
+     * setpgid #t #t
+     */
     IDIO_USER_TYPE_ASSERT (C_int, ipid);
+    /*
+     * Test Case: libc-wrap-errors/setpgid-bad-pgid-type.idio
+     *
+     * setpgid (C/integer-> PID) #t
+     */
     IDIO_USER_TYPE_ASSERT (C_int, ipgid);
 
     pid_t pid = IDIO_C_TYPE_INT (ipid);
@@ -1581,7 +1717,18 @@ See ``getrlimit`` to obtain a struct-rlimit.			\n\
     IDIO_ASSERT (iresource);
     IDIO_ASSERT (irlim);
 
+    /*
+     * Test Case: ??
+     *
+     * setrlimit's resource is overridden in the pursuit of
+     * convenience
+     */
     IDIO_USER_TYPE_ASSERT (C_int, iresource);
+    /*
+     * Test Case: libc-wrap-errors/setrlimit-bad-rlim-type.idio
+     *
+     * setrlimit (C/integer-> 0) #t
+     */
     IDIO_USER_TYPE_ASSERT (struct_instance, irlim);
 
     IDIO cur = idio_struct_instance_ref_direct (irlim, IDIO_STRUCT_RLIMIT_RLIM_CUR);
@@ -1601,14 +1748,14 @@ See ``getrlimit`` to obtain a struct-rlimit.			\n\
     return idio_S_unspec;
 }
 
-IDIO_DEFINE_PRIMITIVE2_DS ("signal", libc_signal, (IDIO isig, IDIO ifunc), "sig func", "\
-in C, signal (sig, func)					\n\
+IDIO_DEFINE_PRIMITIVE2_DS ("signal", libc_signal, (IDIO isig, IDIO ihandler), "sig handler", "\
+in C, signal (sig, handler)					\n\
 a wrapper to libc signal (2)					\n\
 								\n\
 :param sig: signal						\n\
 :type sig: C_int						\n\
-:param func: signal disposition					\n\
-:type func: C_pointer						\n\
+:param handler: signal disposition					\n\
+:type handler: C_pointer						\n\
 :return: previous disposition or raises ^system-error		\n\
 :rtype: C_pointer						\n\
 								\n\
@@ -1618,15 +1765,25 @@ SIG_DFL								\n\
 ")
 {
     IDIO_ASSERT (isig);
-    IDIO_ASSERT (ifunc);
+    IDIO_ASSERT (ihandler);
 
+    /*
+     * Test Case: libc-wrap-errors/signal-bad-sig-type.idio
+     *
+     * signal #t #t
+     */
     IDIO_USER_TYPE_ASSERT (C_int, isig);
-    IDIO_USER_TYPE_ASSERT (C_pointer, ifunc);
+    /*
+     * Test Case: libc-wrap-errors/signal-bad-handler-type.idio
+     *
+     * signal (C/integer-> 0) #t
+     */
+    IDIO_USER_TYPE_ASSERT (C_pointer, ihandler);
 
     int sig = IDIO_C_TYPE_INT (isig);
-    void (*func) (int) = IDIO_C_TYPE_POINTER_P (ifunc);
+    void (*handler) (int) = IDIO_C_TYPE_POINTER_P (ihandler);
 
-    void (*r) (int) = signal (sig, func);
+    void (*r) (int) = signal (sig, handler);
 
     if (SIG_ERR == r) {
 	/*
@@ -1634,7 +1791,7 @@ SIG_DFL								\n\
 	 *
 	 * signal (C/integer-> -1) SIG_DFL
 	 */
-	idio_error_system_errno ("signal", IDIO_LIST2 (isig, ifunc), IDIO_C_FUNC_LOCATION ());
+	idio_error_system_errno ("signal", IDIO_LIST2 (isig, ihandler), IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -1667,6 +1824,11 @@ given signal.							\n\
 {
     IDIO_ASSERT (isig);
 
+    /*
+     * Test Case: libc-wrap-errors/signal-handler-bad-type.idio
+     *
+     * signal-handler #t
+     */
     IDIO_USER_TYPE_ASSERT (C_int, isig);
 
     int sig = IDIO_C_TYPE_INT (isig);
@@ -1833,6 +1995,11 @@ a wrapper to libc stat (2)					\n\
 {
     IDIO_ASSERT (pathname);
 
+    /*
+     * Test Case: libc-wrap-errors/stat-bad-type.idio
+     *
+     * stat #t
+     */
     IDIO_USER_TYPE_ASSERT (string, pathname);
 
     return idio_libc_stat (pathname);
@@ -1943,6 +2110,11 @@ a wrapper to libc tcgetattr (3)					\n\
 {
     IDIO_ASSERT (ifd);
 
+    /*
+     * Test Case: libc-wrap-errors/tcgetattr-bad-type.idio
+     *
+     * tcgetattr #t
+     */
     IDIO_USER_TYPE_ASSERT (C_int, ifd);
 
     int fd = IDIO_C_TYPE_INT (ifd);
@@ -1976,6 +2148,11 @@ a wrapper to libc tcgetpgrp (3)					\n\
 {
     IDIO_ASSERT (ifd);
 
+    /*
+     * Test Case: libc-wrap-errors/tcgetpgrp-bad-type.idio
+     *
+     * tcgetpgrp #t
+     */
     IDIO_USER_TYPE_ASSERT (C_int, ifd);
 
     int fd = IDIO_C_TYPE_INT (ifd);
@@ -2020,8 +2197,23 @@ See ``tcgetattr`` for obtaining a struct termios.		\n\
     IDIO_ASSERT (ioptions);
     IDIO_ASSERT (itcattrs);
 
+    /*
+     * Test Case: libc-wrap-errors/tcsetattr-bad-fd-type.idio
+     *
+     * tcsetattr #t #t #t
+     */
     IDIO_USER_TYPE_ASSERT (C_int, ifd);
+    /*
+     * Test Case: libc-wrap-errors/tcsetattr-bad-options-type.idio
+     *
+     * tcsetattr (C/integer-> 0) #t #t
+     */
     IDIO_USER_TYPE_ASSERT (C_int, ioptions);
+    /*
+     * Test Case: libc-wrap-errors/tcsetattr-bad-tcattrs-type.idio
+     *
+     * tcsetattr (C/integer-> 0) (C/integer-> 0) #t
+     */
     IDIO_USER_TYPE_ASSERT (C_pointer, itcattrs);
 
     int fd = IDIO_C_TYPE_INT (ifd);
@@ -2061,7 +2253,17 @@ a wrapper to libc tcsetpgrp (3)					\n\
     IDIO_ASSERT (ifd);
     IDIO_ASSERT (ipgrp);
 
+    /*
+     * Test Case: libc-wrap-errors/tcsetpgrp-bad-fd-type.idio
+     *
+     * tcsetpgrp #t #t
+     */
     IDIO_USER_TYPE_ASSERT (C_int, ifd);
+    /*
+     * Test Case: libc-wrap-errors/tcsetpgrp-bad-pgrp-type.idio
+     *
+     * tcsetpgrp (C/integer-> 0) #t
+     */
     IDIO_USER_TYPE_ASSERT (C_int, ipgrp);
 
     int fd = IDIO_C_TYPE_INT (ifd);
@@ -2203,6 +2405,11 @@ a wrapper to libc unlink (2)					\n\
 {
     IDIO_ASSERT (ipathname);
 
+    /*
+     * Test Case: libc-wrap-errors/unlink-bad-type.idio
+     *
+     * unlink #t
+     */
     IDIO_USER_TYPE_ASSERT (string, ipathname);
 
     size_t size = 0;
@@ -2267,7 +2474,17 @@ for functions to manipulate ``status``.				\n\
     IDIO_ASSERT (ipid);
     IDIO_ASSERT (ioptions);
 
+    /*
+     * Test Case: libc-wrap-errors/waitpid-bad-pid-type.idio
+     *
+     * waitpid #t #t
+     */
     IDIO_USER_TYPE_ASSERT (C_int, ipid);
+    /*
+     * Test Case: libc-wrap-errors/waitpid-bad-options-type.idio
+     *
+     * waitpid (C/integer-> 0) #t
+     */
     IDIO_USER_TYPE_ASSERT (C_int, ioptions);
 
     pid_t pid = IDIO_C_TYPE_INT (ipid);
@@ -2306,6 +2523,11 @@ a wrapper to libc macro WEXITSTATUS, see waitpid (2)		\n\
 {
     IDIO_ASSERT (istatus);
 
+    /*
+     * Test Case: libc-wrap-errors/WEXITSTATUS-bad-type.idio
+     *
+     * WEXITSTATUS #t
+     */
     IDIO_USER_TYPE_ASSERT (C_pointer, istatus);
 
     int *statusp = IDIO_C_TYPE_POINTER_P (istatus);
@@ -2325,6 +2547,11 @@ a wrapper to libc macro WIFEXITED, see waitpid (2)		\n\
 {
     IDIO_ASSERT (istatus);
 
+    /*
+     * Test Case: libc-wrap-errors/WIFEXITED-bad-type.idio
+     *
+     * WIFEXITED #t
+     */
     IDIO_USER_TYPE_ASSERT (C_pointer, istatus);
 
     int *statusp = IDIO_C_TYPE_POINTER_P (istatus);
@@ -2339,8 +2566,8 @@ a wrapper to libc macro WIFEXITED, see waitpid (2)		\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("WIFSIGNALED", libc_WIFSIGNALED, (IDIO istatus), "status", "\
-in C, WIFSIGNALLED (status)					\n\
-a wrapper to libc macro WIFSIGNALLED, see waitpid (2)		\n\
+in C, WIFSIGNALED (status)					\n\
+a wrapper to libc macro WIFSIGNALED, see waitpid (2)		\n\
 								\n\
 :param status: process status					\n\
 :type status: C_pointer						\n\
@@ -2350,6 +2577,11 @@ a wrapper to libc macro WIFSIGNALLED, see waitpid (2)		\n\
 {
     IDIO_ASSERT (istatus);
 
+    /*
+     * Test Case: libc-wrap-errors/WIFSIGNALED-bad-type.idio
+     *
+     * WIFSIGNALED #t
+     */
     IDIO_USER_TYPE_ASSERT (C_pointer, istatus);
 
     int *statusp = IDIO_C_TYPE_POINTER_P (istatus);
@@ -2375,6 +2607,11 @@ a wrapper to libc macro WIFSTOPPED, see waitpid (2)		\n\
 {
     IDIO_ASSERT (istatus);
 
+    /*
+     * Test Case: libc-wrap-errors/WIFSTOPPED-bad-type.idio
+     *
+     * WIFSTOPPED #t
+     */
     IDIO_USER_TYPE_ASSERT (C_pointer, istatus);
 
     int *statusp = IDIO_C_TYPE_POINTER_P (istatus);
@@ -2400,6 +2637,11 @@ a wrapper to libc macro WTERMSIG, see waitpid (2)		\n\
 {
     IDIO_ASSERT (istatus);
 
+    /*
+     * Test Case: libc-wrap-errors/WTERMSIG-bad-type.idio
+     *
+     * WTERMSIG #t
+     */
     IDIO_USER_TYPE_ASSERT (C_pointer, istatus);
 
     int *statusp = IDIO_C_TYPE_POINTER_P (istatus);
@@ -2422,7 +2664,17 @@ a wrapper to libc write (2)					\n\
     IDIO_ASSERT (ifd);
     IDIO_ASSERT (istr);
 
+    /*
+     * Test Case: libc-wrap-errors/write-bad-fd-type.idio
+     *
+     * write #t #t
+     */
     IDIO_USER_TYPE_ASSERT (C_int, ifd);
+    /*
+     * Test Case: libc-wrap-errors/write-bad-str-type.idio
+     *
+     * write (C/integer-> 0) #t
+     */
     IDIO_USER_TYPE_ASSERT (string, istr);
 
     int fd = IDIO_C_TYPE_INT (ifd);
@@ -2781,6 +3033,11 @@ See ``signal-name`` for long versions.				\n\
 {
     IDIO_ASSERT (isignum);
 
+    /*
+     * Test Case: libc-wrap-errors/sig-name-bad-type.idio
+     *
+     * sig-name #t
+     */
     IDIO_USER_TYPE_ASSERT (C_int, isignum);
 
     return idio_string_C (idio_libc_sig_name (IDIO_C_TYPE_INT (isignum)));
@@ -2822,6 +3079,11 @@ See ``sig-name`` for short versions.				\n\
 {
     IDIO_ASSERT (isignum);
 
+    /*
+     * Test Case: libc-wrap-errors/signal-name-bad-type.idio
+     *
+     * signal-name #t
+     */
     IDIO_USER_TYPE_ASSERT (C_int, isignum);
 
     return idio_string_C (idio_libc_signal_name (IDIO_C_TYPE_INT (isignum)));
@@ -3771,6 +4033,11 @@ return the error name of ``errnum``				\n\
 {
     IDIO_ASSERT (ierrnum);
 
+    /*
+     * Test Case: libc-wrap-errors/errno-name-bad-type.idio
+     *
+     * errno-name #t
+     */
     IDIO_USER_TYPE_ASSERT (C_int, ierrnum);
 
     return idio_string_C (idio_libc_errno_name (IDIO_C_TYPE_INT (ierrnum)));
@@ -3809,6 +4076,11 @@ Identical to ``errno-name``.					\n\
 {
     IDIO_ASSERT (ierrnum);
 
+    /*
+     * Test Case: libc-wrap-errors/strerrno-bad-type.idio
+     *
+     * strerrno #t
+     */
     IDIO_USER_TYPE_ASSERT (C_int, ierrnum);
 
     return idio_string_C (idio_libc_errno_name (IDIO_C_TYPE_INT (ierrnum)));
@@ -4007,6 +4279,11 @@ C macro						\n\
 {
     IDIO_ASSERT (irlim);
 
+    /*
+     * Test Case: libc-wrap-errors/rlimit-name-bad-type.idio
+     *
+     * rlimit-name #t
+     */
     IDIO_USER_TYPE_ASSERT (C_int, irlim);
 
     return idio_string_C (idio_libc_rlimit_name (IDIO_C_TYPE_INT (irlim)));
@@ -4335,8 +4612,8 @@ void idio_libc_wrap_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_struct_rusage_ru_utime);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_struct_rusage_ru_stime);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_struct_timeval_as_string);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_subtract_struct_timeval);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_add_struct_timeval);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_subtract_struct_timeval);
 
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_system_error);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_access);
