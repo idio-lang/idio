@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -186,7 +186,7 @@ void idio_property_error_key_not_found (IDIO key, IDIO c_location)
     idio_raise_condition (idio_S_true, c);
 }
 
-void idio_symbol_error_format (char *m, IDIO s, IDIO c_location)
+void idio_symbol_format_error (char *m, IDIO s, IDIO c_location)
 {
     IDIO_C_ASSERT (m);
     IDIO_ASSERT (s);
@@ -291,7 +291,7 @@ IDIO idio_symbols_string_intern (IDIO str)
     if (C_size != size) {
 	IDIO_GC_FREE (sC);
 
-	idio_symbol_error_format ("symbol: contains an ASCII NUL", str, IDIO_C_FUNC_LOCATION ());
+	idio_symbol_format_error ("symbol: contains an ASCII NUL", str, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -366,7 +366,7 @@ Such *gensyms* are not guaranteed to be unique if saved.\n\
 	    if (C_size != size) {
 		IDIO_GC_FREE (prefix);
 
-		idio_symbol_error_format ("gensym: prefix contains an ASCII NUL", iprefix, IDIO_C_FUNC_LOCATION ());
+		idio_symbol_format_error ("gensym: prefix contains an ASCII NUL", iprefix, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    }

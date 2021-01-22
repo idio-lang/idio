@@ -50,7 +50,7 @@ static void idio_struct_error (IDIO msg, IDIO c_location)
     /* notreached */
 }
 
-static void idio_struct_instance_error_field_not_found (IDIO field, IDIO c_location)
+static void idio_struct_instance_field_not_found_error (IDIO field, IDIO c_location)
 {
     IDIO_ASSERT (field);
     IDIO_ASSERT (c_location);
@@ -81,7 +81,7 @@ static void idio_struct_instance_error_field_not_found (IDIO field, IDIO c_locat
     /* notreached */
 }
 
-static void idio_struct_instance_error_bounds (char *em, idio_ai_t index, IDIO c_location)
+static void idio_struct_instance_bounds_error (char *em, idio_ai_t index, IDIO c_location)
 {
     IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (string, c_location);
@@ -660,7 +660,7 @@ IDIO idio_struct_instance_ref (IDIO si, IDIO field)
 	 * f := make-struct-instance foo 1 2
 	 * struct-instance-ref f 'z
 	 */
-	idio_struct_instance_error_field_not_found (field, IDIO_C_FUNC_LOCATION ());
+	idio_struct_instance_field_not_found_error (field, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -714,7 +714,7 @@ IDIO idio_struct_instance_ref_direct (IDIO si, idio_ai_t index)
 	 */
 	char em[BUFSIZ];
 	sprintf (em, "%%struct-instance-ref-direct bounds error: %td < 0", index);
-	idio_struct_instance_error_bounds (em, index, IDIO_C_FUNC_LOCATION ());
+	idio_struct_instance_bounds_error (em, index, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -729,7 +729,7 @@ IDIO idio_struct_instance_ref_direct (IDIO si, idio_ai_t index)
 	 */
 	char em[BUFSIZ];
 	sprintf (em, "%%struct-instance-ref-direct bounds error: %td >= %zu", index, IDIO_STRUCT_INSTANCE_SIZE (si));
-	idio_struct_instance_error_bounds (em, index, IDIO_C_FUNC_LOCATION ());
+	idio_struct_instance_bounds_error (em, index, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -819,7 +819,7 @@ IDIO idio_struct_instance_set (IDIO si, IDIO field, IDIO v)
 	 * f := make-struct-instance foo 1 2
 	 * struct-instance-set! f 'z #t
 	 */
-	idio_struct_instance_error_field_not_found (field, IDIO_C_FUNC_LOCATION ());
+	idio_struct_instance_field_not_found_error (field, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -879,7 +879,7 @@ IDIO idio_struct_instance_set_direct (IDIO si, idio_ai_t index, IDIO v)
 	 */
 	char em[BUFSIZ];
 	sprintf (em, "%%struct-instance-set-direct! bounds error: %td < 0", index);
-	idio_struct_instance_error_bounds (em, index, IDIO_C_FUNC_LOCATION ());
+	idio_struct_instance_bounds_error (em, index, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -894,7 +894,7 @@ IDIO idio_struct_instance_set_direct (IDIO si, idio_ai_t index, IDIO v)
 	 */
 	char em[BUFSIZ];
 	sprintf (em, "%%struct-instance-set-direct! bounds error: %td >= %zu", index, IDIO_STRUCT_INSTANCE_SIZE (si));
-	idio_struct_instance_error_bounds (em, index, IDIO_C_FUNC_LOCATION ());
+	idio_struct_instance_bounds_error (em, index, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }

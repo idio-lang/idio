@@ -59,7 +59,7 @@ static long idio_SC_CLK_TCK = 0;
 #define IDIO_STRUCT_TMS_CUTIME			3
 #define IDIO_STRUCT_TMS_CSTIME			4
 
-void idio_libc_error_format (char *msg, IDIO name, IDIO c_location)
+void idio_libc_format_error (char *msg, IDIO name, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (name);
@@ -428,7 +428,7 @@ a wrapper to libc access (2)					\n\
 	 */
 	IDIO_GC_FREE (pathname);
 
-	idio_libc_error_format ("access: pathname contains an ASCII NUL", ipathname, IDIO_C_FUNC_LOCATION ());
+	idio_libc_format_error ("access: pathname contains an ASCII NUL", ipathname, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -474,7 +474,7 @@ a wrapper to libc chdir (2)					\n\
 	 */
 	IDIO_GC_FREE (path);
 
-	idio_libc_error_format ("chdir: path contains an ASCII NUL", ipath, IDIO_C_FUNC_LOCATION ());
+	idio_libc_format_error ("chdir: path contains an ASCII NUL", ipath, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -1257,7 +1257,7 @@ a wrapper to libc mkdir (2)					\n\
 	 */
 	IDIO_GC_FREE (pathname);
 
-	idio_libc_error_format ("mkdir: pathname contains an ASCII NUL", ipathname, IDIO_C_FUNC_LOCATION ());
+	idio_libc_format_error ("mkdir: pathname contains an ASCII NUL", ipathname, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -1319,7 +1319,7 @@ a wrapper to libc mkdtemp (3)					\n\
 	 */
 	IDIO_GC_FREE (template);
 
-	idio_libc_error_format ("mkdtemp: template contains an ASCII NUL", itemplate, IDIO_C_FUNC_LOCATION ());
+	idio_libc_format_error ("mkdtemp: template contains an ASCII NUL", itemplate, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -1380,7 +1380,7 @@ a wrapper to libc mkstemp (3)					\n\
 	 */
 	IDIO_GC_FREE (template);
 
-	idio_libc_error_format ("mkstemp: template contains an ASCII NUL", itemplate, IDIO_C_FUNC_LOCATION ());
+	idio_libc_format_error ("mkstemp: template contains an ASCII NUL", itemplate, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -1604,7 +1604,7 @@ a wrapper to libc rmdir (2)					\n\
 	 */
 	IDIO_GC_FREE (pathname);
 
-	idio_libc_error_format ("rmdir: pathname contains an ASCII NUL", ipathname, IDIO_C_FUNC_LOCATION ());
+	idio_libc_format_error ("rmdir: pathname contains an ASCII NUL", ipathname, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -1918,7 +1918,7 @@ IDIO idio_libc_stat (IDIO pathname)
 	 */
 	IDIO_GC_FREE (pathname_C);
 
-	idio_libc_error_format ("stat: pathname contains an ASCII NUL", pathname, IDIO_C_FUNC_LOCATION ());
+	idio_libc_format_error ("stat: pathname contains an ASCII NUL", pathname, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -2423,7 +2423,7 @@ a wrapper to libc unlink (2)					\n\
 	 */
 	IDIO_GC_FREE (pathname);
 
-	idio_libc_error_format ("unlink: pathname contains an ASCII NUL", ipathname, IDIO_C_FUNC_LOCATION ());
+	idio_libc_format_error ("unlink: pathname contains an ASCII NUL", ipathname, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }

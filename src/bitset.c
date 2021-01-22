@@ -22,7 +22,7 @@
 
 #include "idio.h"
 
-static void idio_bitset_error_bounds (size_t bit, size_t size, IDIO c_location)
+static void idio_bitset_bounds_error (size_t bit, size_t size, IDIO c_location)
 {
     IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (string, c_location);
@@ -53,7 +53,7 @@ static void idio_bitset_error_bounds (size_t bit, size_t size, IDIO c_location)
     idio_raise_condition (idio_S_true, c);
 }
 
-static void idio_bitset_error_size_mismatch (size_t s1, size_t s2, IDIO c_location)
+static void idio_bitset_size_mismatch_error (size_t s1, size_t s2, IDIO c_location)
 {
     IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (string, c_location);
@@ -131,7 +131,7 @@ IDIO idio_bitset_set (IDIO bs, size_t bit)
 	 * bs := #B{ 3 }
 	 * bitset-set! bs 5
 	 */
-	idio_bitset_error_bounds (bit, IDIO_BITSET_SIZE (bs), IDIO_C_FUNC_LOCATION ());
+	idio_bitset_bounds_error (bit, IDIO_BITSET_SIZE (bs), IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -156,7 +156,7 @@ IDIO idio_bitset_clear (IDIO bs, size_t bit)
 	 * bs := #B{ 3 }
 	 * bitset-clear! bs 5
 	 */
-	idio_bitset_error_bounds (bit, IDIO_BITSET_SIZE (bs), IDIO_C_FUNC_LOCATION ());
+	idio_bitset_bounds_error (bit, IDIO_BITSET_SIZE (bs), IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -182,7 +182,7 @@ IDIO idio_bitset_ref (IDIO bs, size_t bit)
 	 * bs := #B{ 3 }
 	 * bitset-ref bs 5
 	 */
-	idio_bitset_error_bounds (bit, IDIO_BITSET_SIZE (bs), IDIO_C_FUNC_LOCATION ());
+	idio_bitset_bounds_error (bit, IDIO_BITSET_SIZE (bs), IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -566,7 +566,7 @@ merge the bitsets				\n\
 		 *
 		 * merge-bitset #B{ 3 } #B{ 4 }
 		 */
-		idio_bitset_error_size_mismatch (bs_size, IDIO_BITSET_SIZE (r), IDIO_C_FUNC_LOCATION ());
+		idio_bitset_size_mismatch_error (bs_size, IDIO_BITSET_SIZE (r), IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    }
@@ -628,7 +628,7 @@ logical AND the bitsets				\n\
 		 *
 		 * and-bitset #B{ 3 } #B{ 4 }
 		 */
-		idio_bitset_error_size_mismatch (bs_size, IDIO_BITSET_SIZE (r), IDIO_C_FUNC_LOCATION ());
+		idio_bitset_size_mismatch_error (bs_size, IDIO_BITSET_SIZE (r), IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    }
@@ -690,7 +690,7 @@ logical Inclusive OR the bitsets		\n\
 		 *
 		 * ior-bitset #B{ 3 } #B{ 4 }
 		 */
-		idio_bitset_error_size_mismatch (bs_size, IDIO_BITSET_SIZE (r), IDIO_C_FUNC_LOCATION ());
+		idio_bitset_size_mismatch_error (bs_size, IDIO_BITSET_SIZE (r), IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    }
@@ -752,7 +752,7 @@ logical eXclusive OR the bitsets		\n\
 		 *
 		 * xor-bitset #B{ 3 } #B{ 4 }
 		 */
-		idio_bitset_error_size_mismatch (bs_size, IDIO_BITSET_SIZE (r), IDIO_C_FUNC_LOCATION ());
+		idio_bitset_size_mismatch_error (bs_size, IDIO_BITSET_SIZE (r), IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    }
@@ -848,7 +848,7 @@ subtract the bitsets				\n\
 		 *
 		 * subtract-bitset #B{ 3 } #B{ 4 }
 		 */
-		idio_bitset_error_size_mismatch (bs_size, IDIO_BITSET_SIZE (r), IDIO_C_FUNC_LOCATION ());
+		idio_bitset_size_mismatch_error (bs_size, IDIO_BITSET_SIZE (r), IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    }

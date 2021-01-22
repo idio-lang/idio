@@ -33,7 +33,7 @@ IDIO_KEYWORD_DECL (setter);
 IDIO_KEYWORD_DECL (sigstr);
 IDIO_KEYWORD_DECL (source);
 
-void idio_keyword_error_key_not_found (IDIO key, IDIO c_location)
+void idio_keyword_key_not_found_error (IDIO key, IDIO c_location)
 {
     IDIO_ASSERT (key);
     IDIO_ASSERT (c_location);
@@ -62,7 +62,7 @@ void idio_keyword_error_key_not_found (IDIO key, IDIO c_location)
     idio_raise_condition (idio_S_true, c);
 }
 
-void idio_keyword_error_format (char *msg, IDIO kw, IDIO c_location)
+void idio_keyword_format_error (char *msg, IDIO kw, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (kw);
@@ -162,7 +162,7 @@ create a keyword from `s`			\n\
 	     */
 	    IDIO_GC_FREE (sC);
 
-	    idio_keyword_error_format ("keyword contains an ASCII NUL", s, IDIO_C_FUNC_LOCATION ());
+	    idio_keyword_format_error ("keyword contains an ASCII NUL", s, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -317,7 +317,7 @@ IDIO idio_keyword_ref (IDIO ht, IDIO kw, IDIO args)
 	 * kwt := (make-keyword-table)
 	 * keyword-ref kwt :foo
 	 */
-	idio_keyword_error_key_not_found (kw, IDIO_C_FUNC_LOCATION ());
+	idio_keyword_key_not_found_error (kw, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     } else {

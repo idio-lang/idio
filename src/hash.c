@@ -62,7 +62,7 @@ void idio_hash_error (char *msg, IDIO c_location)
     /* notreached */
 }
 
-void idio_hash_error_key_not_found (IDIO key, IDIO c_location)
+void idio_hash_key_not_found_error (IDIO key, IDIO c_location)
 {
     IDIO_ASSERT (key);
     IDIO_ASSERT (c_location);
@@ -1277,7 +1277,7 @@ IDIO idio_hash_reference (IDIO ht, IDIO key, IDIO args)
 	     * ht := (make-hash)
 	     * hash-ref ht 1
 	     */
-	    idio_hash_error_key_not_found (key, IDIO_C_FUNC_LOCATION ());
+	    idio_hash_key_not_found_error (key, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}

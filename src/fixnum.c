@@ -22,7 +22,7 @@
 
 #include "idio.h"
 
-static void idio_fixnum_error_divide_by_zero (IDIO c_location)
+static void idio_fixnum_divide_by_zero_error (IDIO c_location)
 {
     IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (string, c_location);
@@ -32,7 +32,7 @@ static void idio_fixnum_error_divide_by_zero (IDIO c_location)
     /* notreached */
 }
 
-static void idio_fixnum_error_conversion (char *msg, IDIO num, IDIO c_location)
+static void idio_fixnum_conversion_error (char *msg, IDIO num, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (num);
@@ -138,7 +138,7 @@ IDIO idio_fixnum (intptr_t i)
 
 	sprintf (em, "%" PRIdPTR " too large", i);
 	IDIO_C_ASSERT (0);
-	idio_fixnum_error_conversion (em, idio_S_nil, IDIO_C_FUNC_LOCATION ());
+	idio_fixnum_conversion_error (em, idio_S_nil, IDIO_C_FUNC_LOCATION ());
     }
 
     return idio_S_notreached;
@@ -162,7 +162,7 @@ IDIO idio_fixnum_C (char *str, int base)
 	 */
 	char em[BUFSIZ];
 	sprintf (em, "idio_fixnum_C: strtoll (%s) = %lld", str, val);
-	idio_fixnum_error_conversion (em, idio_S_nil, IDIO_C_FUNC_LOCATION ());
+	idio_fixnum_conversion_error (em, idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -175,7 +175,7 @@ IDIO idio_fixnum_C (char *str, int base)
 	 */
 	char em[BUFSIZ];
 	sprintf (em, "idio_fixnum_C: strtoll (%s): No digits?", str);
-	idio_fixnum_error_conversion (em, idio_S_nil, IDIO_C_FUNC_LOCATION ());
+	idio_fixnum_conversion_error (em, idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -191,7 +191,7 @@ IDIO idio_fixnum_C (char *str, int base)
 	 */
 	char em[BUFSIZ];
 	sprintf (em, "idio_fixnum_C: strtoll (%s) = %lld", str, val);
-	idio_fixnum_error_conversion (em, idio_S_nil, IDIO_C_FUNC_LOCATION ());
+	idio_fixnum_conversion_error (em, idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -618,7 +618,7 @@ IDIO idio_fixnum_primitive_remainder (IDIO a, IDIO b)
 	 *
 	 * remainder 1 0
 	 */
-	idio_fixnum_error_divide_by_zero (IDIO_C_FUNC_LOCATION ());
+	idio_fixnum_divide_by_zero_error (IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -708,7 +708,7 @@ IDIO idio_fixnum_primitive_quotient (IDIO a, IDIO b)
 	 *
 	 * quotient 1 0
 	 */
-	idio_fixnum_error_divide_by_zero (IDIO_C_FUNC_LOCATION ());
+	idio_fixnum_divide_by_zero_error (IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }

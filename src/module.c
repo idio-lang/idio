@@ -81,7 +81,7 @@ static void idio_module_base_name_error (IDIO msg, IDIO name, IDIO c_location)
  *
  * Requires a coding error to trigger.
  */
-static void idio_module_error_duplicate_name (IDIO name, IDIO c_location)
+static void idio_module_duplicate_name_error (IDIO name, IDIO c_location)
 {
     IDIO_ASSERT (name);
     IDIO_ASSERT (c_location);
@@ -97,7 +97,7 @@ static void idio_module_error_duplicate_name (IDIO name, IDIO c_location)
     /* notreached */
 }
 
-static void idio_module_error_unbound (IDIO name, IDIO c_location)
+static void idio_module_unbound_error (IDIO name, IDIO c_location)
 {
     IDIO_ASSERT (name);
     IDIO_ASSERT (c_location);
@@ -118,7 +118,7 @@ static void idio_module_error_unbound (IDIO name, IDIO c_location)
  *
  * Requires a coding error to trigger.
  */
-static void idio_module_error_unbound_name (IDIO symbol, IDIO module, IDIO c_location)
+static void idio_module_unbound_name_error (IDIO symbol, IDIO module, IDIO c_location)
 {
     IDIO_ASSERT (symbol);
     IDIO_ASSERT (module);
@@ -167,7 +167,7 @@ IDIO idio_module (IDIO name)
 	 *
 	 * Coding error.
 	 */
-	idio_module_error_duplicate_name (name, IDIO_C_FUNC_LOCATION ());
+	idio_module_duplicate_name_error (name, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -302,7 +302,7 @@ Associate ``mci`` with ``gci`` in ``module``		\n\
 	     *
 	     * set-module-vci! (gensym) 1 1
 	     */
-	    idio_module_error_unbound (m_or_n, IDIO_C_FUNC_LOCATION ());
+	    idio_module_unbound_error (m_or_n, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -410,7 +410,7 @@ Assoviate ``mci`` with ``gvi`` in ``module``		\n\
 	     *
 	     * set-module-vvi! (gensym) 1 1
 	     */
-	    idio_module_error_unbound (m_or_n, IDIO_C_FUNC_LOCATION ());
+	    idio_module_unbound_error (m_or_n, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -476,7 +476,7 @@ or #unspec if `default` is not supplied				\n\
 	     *
 	     * find-module (gensym)
 	     */
-	    idio_module_error_unbound (name, IDIO_C_FUNC_LOCATION ());
+	    idio_module_unbound_error (name, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -709,7 +709,7 @@ Return the imports of `mod`			\n\
 	     *
 	     * module-imports (gensym)
 	     */
-	    idio_module_error_unbound (m_or_n, IDIO_C_FUNC_LOCATION ());
+	    idio_module_unbound_error (m_or_n, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -751,7 +751,7 @@ Return the exports of `mod`			\n\
 	     *
 	     * module-exports (gensym)
 	     */
-	    idio_module_error_unbound (m_or_n, IDIO_C_FUNC_LOCATION ());
+	    idio_module_unbound_error (m_or_n, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -796,7 +796,7 @@ IDIO idio_module_symbols (IDIO m_or_n)
 	     * The user interface does this test leaving a coding
 	     * error.
 	     */
-	    idio_module_error_unbound (m_or_n, IDIO_C_FUNC_LOCATION ());
+	    idio_module_unbound_error (m_or_n, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -842,7 +842,7 @@ or the current module if no ``module`` supplied		\n\
 		 *
 		 * module-symbols (gensym)
 		 */
-		idio_module_error_unbound (m_or_n, IDIO_C_FUNC_LOCATION ());
+		idio_module_unbound_error (m_or_n, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    }
@@ -884,7 +884,7 @@ IDIO idio_module_symbols_match_type (IDIO module, IDIO symbols, IDIO type)
 		 *
 		 * Coding error.
 		 */
-		idio_module_error_unbound_name (sym, module, IDIO_C_FUNC_LOCATION ());
+		idio_module_unbound_name_error (sym, module, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    } else if (! idio_isa_pair (sv)) {
@@ -1166,7 +1166,7 @@ IDIO idio_module_find_symbol_recurse (IDIO symbol, IDIO m_or_n, int recurse)
 	     *
 	     * find-symbol 'read (gensym)
 	     */
-	    idio_module_error_unbound (m_or_n, IDIO_C_FUNC_LOCATION ());
+	    idio_module_unbound_error (m_or_n, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -1350,7 +1350,7 @@ IDIO idio_module_symbol_value (IDIO symbol, IDIO m_or_n, IDIO args)
 	     *
 	     * symbol-value 'read (gensym)
 	     */
-	    idio_module_error_unbound (m_or_n, IDIO_C_FUNC_LOCATION ());
+	    idio_module_unbound_error (m_or_n, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -1476,7 +1476,7 @@ IDIO idio_module_symbol_value_recurse (IDIO symbol, IDIO m_or_n, IDIO args)
 	     *
 	     * symbol-value-recurse 'read (gensym)
 	     */
-	    idio_module_error_unbound (m_or_n, IDIO_C_FUNC_LOCATION ());
+	    idio_module_unbound_error (m_or_n, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
