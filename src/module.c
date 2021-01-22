@@ -277,13 +277,13 @@ Associate ``mci`` with ``gci`` in ``module``		\n\
     IDIO_ASSERT (gci);
 
     /*
-     * Test Case: libc-wrap-errors/set-module-vci-bad-mci-type.idio
+     * Test Case: module-errors/set-module-vci-bad-mci-type.idio
      *
      * set-module-vci! #t #t #t
      */
     IDIO_USER_TYPE_ASSERT (fixnum, mci);
     /*
-     * Test Case: libc-wrap-errors/set-module-vci-bad-gci-type.idio
+     * Test Case: module-errors/set-module-vci-bad-gci-type.idio
      *
      * set-module-vci! #t 1 #t
      */
@@ -385,13 +385,13 @@ Assoviate ``mci`` with ``gvi`` in ``module``		\n\
     IDIO_ASSERT (gvi);
 
     /*
-     * Test Case: libc-wrap-errors/set-module-vvi-bad-mci-type.idio
+     * Test Case: module-errors/set-module-vvi-bad-mci-type.idio
      *
      * set-module-vvi! #t #t #t
      */
     IDIO_USER_TYPE_ASSERT (fixnum, mci);
     /*
-     * Test Case: libc-wrap-errors/set-module-vvi-bad-gvi-type.idio
+     * Test Case: module-errors/set-module-vvi-bad-gvi-type.idio
      *
      * set-module-vvi! #t 1 #t
      */
@@ -453,7 +453,7 @@ or #unspec if `default` is not supplied				\n\
     IDIO_ASSERT (args);
 
     /*
-     * Test Case: libc-wrap-errors/find-module-bad-name-type.idio
+     * Test Case: module-errors/find-module-bad-name-type.idio
      *
      * find-module #t
      */
@@ -522,7 +522,7 @@ Find the module called `name` or create one	\n\
     IDIO_ASSERT (name);
 
     /*
-     * Test Case: libc-wrap-errors/find-or-create-module-bad-name-type.idio
+     * Test Case: module-errors/find-or-create-module-bad-name-type.idio
      *
      * %find-or-create-module #t
      */
@@ -552,7 +552,7 @@ Set the current module to `module`		\n\
     IDIO_ASSERT (module);
 
     /*
-     * Test Case: libc-wrap-errors/set-current-module-bad-module-type.idio
+     * Test Case: module-errors/set-current-module-bad-module-type.idio
      *
      * %set-current-module! #t
      */
@@ -577,7 +577,7 @@ Set the imports of `module` to `imports`	\n\
     IDIO_ASSERT (imports);
 
     /*
-     * Test Case: libc-wrap-errors/set-module-imports-bad-module-type.idio
+     * Test Case: module-errors/set-module-imports-bad-module-type.idio
      *
      * %set-module-imports! #t #t
      */
@@ -613,7 +613,7 @@ Set the exports of `module` to `exports`	\n\
     IDIO_ASSERT (exports);
 
     /*
-     * Test Case: libc-wrap-errors/set-module-exports-bad-module-type.idio
+     * Test Case: module-errors/set-module-exports-bad-module-type.idio
      *
      * %set-module-exports! #t #t
      */
@@ -624,7 +624,7 @@ Set the exports of `module` to `exports`	\n\
 	while (idio_S_nil != el) {
 	    IDIO e = IDIO_PAIR_H (el);
 	    /*
-	     * Test Case: libc-wrap-errors/set-module-exports-bad-exports-arg-type.idio
+	     * Test Case: module-errors/set-module-exports-bad-exports-arg-type.idio
 	     *
 	     * %set-module-exports! (find-moudle 'Idio) '(#t)
 	     */
@@ -676,7 +676,7 @@ Return the name of `module`			\n\
     IDIO_ASSERT (module);
 
     /*
-     * Test Case: libc-wrap-errors/module-name-bad-module-type.idio
+     * Test Case: module-errors/module-name-bad-module-type.idio
      *
      * module-name #t
      */
@@ -1099,7 +1099,7 @@ find evaluator details for ``symbol``				\n\
     IDIO_ASSERT (symbol);
 
     /*
-     * Test Case: libc-wrap-errors/symbol-direct-reference-bad-type.idio
+     * Test Case: module-errors/symbol-direct-reference-bad-type.idio
      *
      * symbol-direct-reference #t
      */
@@ -1306,7 +1306,7 @@ This does not recurse into imported modules.			\n\
     IDIO_ASSERT (args);
 
     /*
-     * Test Case: libc-wrap-errors/find-symbol-bad-type.idio
+     * Test Case: module-errors/find-symbol-bad-type.idio
      *
      * find-symbol #t
      */
@@ -1439,7 +1439,7 @@ Return the value of `sym` in `mod` or `default` if supplied	\n\
     IDIO_ASSERT (args);
 
     /*
-     * Test Case: libc-wrap-errors/symbol-value-bad-symbol-type.idio
+     * Test Case: module-errors/symbol-value-bad-symbol-type.idio
      *
      * symbol-value #t #t
      */
@@ -1586,7 +1586,7 @@ value or ``default`` if no value found					\n\
     IDIO_ASSERT (args);
 
     /*
-     * Test Case: libc-wrap-errors/symbol-value-recurse-bad-symbol-type.idio
+     * Test Case: module-errors/symbol-value-recurse-bad-symbol-type.idio
      *
      * symbol-value-recurse #t
      */
@@ -1642,13 +1642,13 @@ set the information associated with ``symbol`` in ``mod`` to ``v``	\n\
     IDIO_ASSERT (mod);
 
     /*
-     * Test Case: libc-wrap-errors/set-symbol-bad-symbol-type.idio
+     * Test Case: module-errors/set-symbol-bad-symbol-type.idio
      *
      * set-symbol! #t #t #t
      */
     IDIO_USER_TYPE_ASSERT (symbol, symbol);
     /*
-     * Test Case: libc-wrap-errors/set-symbol-bad-v-type.idio
+     * Test Case: module-errors/set-symbol-bad-v-type.idio
      *
      * set-symbol! 'read #t #t
      */
@@ -1815,13 +1815,13 @@ set the value associated with ``symbol`` in ``mod`` to ``val``		\n\
     IDIO_ASSERT (module);
 
     /*
-     * Test Case: libc-wrap-errors/set-symbol-value-bad-symbol-type.idio
+     * Test Case: module-errors/set-symbol-value-bad-symbol-type.idio
      *
      * set-symbol-value! #t #t #t
      */
     IDIO_USER_TYPE_ASSERT (symbol, symbol);
     /*
-     * Test Case: libc-wrap-errors/set-symbol-value-bad-module-type.idio
+     * Test Case: module-errors/set-symbol-value-bad-module-type.idio
      *
      * set-symbol-value! 'read #t #t
      */

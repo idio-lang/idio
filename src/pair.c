@@ -131,6 +131,11 @@ return the head of pair `p`			\n\
 {
     IDIO_ASSERT (p);
 
+    /*
+     * Test Case: pair-errors/ph-bad-type.idio
+     *
+     * ph #t
+     */
     IDIO_USER_TYPE_ASSERT (pair, p);
 
     return IDIO_PAIR_H (p);
@@ -150,6 +155,11 @@ set the head of pair `p` to ``v``		\n\
     IDIO_ASSERT (p);
     IDIO_ASSERT (v);
 
+    /*
+     * Test Case: pair-errors/set-ph-bad-type.idio
+     *
+     * set-ph! #t #t
+     */
     IDIO_USER_TYPE_ASSERT (pair, p);
 
     IDIO_PAIR_H (p) = v;
@@ -189,6 +199,11 @@ return the tail of pair `p`			\n\
 {
     IDIO_ASSERT (p);
 
+    /*
+     * Test Case: pair-errors/pt-bad-type.idio
+     *
+     * pt #t
+     */
     IDIO_USER_TYPE_ASSERT (pair, p);
 
     return IDIO_PAIR_T (p);
@@ -208,6 +223,11 @@ set the tail of pair `p` to ``v``		\n\
     IDIO_ASSERT (p);
     IDIO_ASSERT (v);
 
+    /*
+     * Test Case: pair-errors/set-pt-bad-type.idio
+     *
+     * set-pt! #t #t
+     */
     IDIO_USER_TYPE_ASSERT (pair, p);
 
     IDIO_PAIR_T (p) = v;
@@ -288,6 +308,11 @@ reverse the list ``l``				\n\
 {
     IDIO_ASSERT (l);
 
+    /*
+     * Test Case: pair-errors/reverse-bad-type.idio
+     *
+     * reverse #t
+     */
     IDIO_USER_TYPE_ASSERT (list, l);
 
     return idio_list_reverse (l);
@@ -325,6 +350,11 @@ convert list ``l`` to an array			\n\
 {
     IDIO_ASSERT (l);
 
+    /*
+     * Test Case: pair-errors/list2array-bad-type.idio
+     *
+     * list->array #t
+     */
     IDIO_USER_TYPE_ASSERT (list, l);
 
     return idio_list_to_array (l);
@@ -362,6 +392,11 @@ return the number of elements in list ``l``	\n\
 {
     IDIO_ASSERT (l);
 
+    /*
+     * Test Case: pair-errors/length-bad-type.idio
+     *
+     * length #t
+     */
     IDIO_USER_TYPE_ASSERT (list, l);
 
     size_t len = idio_list_length (l);
@@ -472,6 +507,11 @@ list ``a`` is copied, list ``b`` is untouched	\n\
 	return b;
     }
 
+    /*
+     * Test Case: pair-errors/append-bad-type.idio
+     *
+     * append #t
+     */
     IDIO_USER_TYPE_ASSERT (list, a);
 
     if (idio_S_nil == b) {
@@ -555,6 +595,11 @@ or #f if `k` is not in `l`			\n\
     IDIO_ASSERT (k);
     IDIO_ASSERT (l);
 
+    /*
+     * Test Case: pair-errors/memq-bad-list-type.idio
+     *
+     * memq #t #t
+     */
     IDIO_USER_TYPE_ASSERT (list, l);
 
     return idio_list_memq (k, l);
@@ -592,6 +637,11 @@ or #f if `k` is not in `l`			\n\
     IDIO_ASSERT (k);
     IDIO_ASSERT (l);
 
+    /*
+     * Test Case: pair-errors/memv-bad-list-type.idio
+     *
+     * memv #t #t
+     */
     IDIO_USER_TYPE_ASSERT (list, l);
 
     return idio_list_memv (k, l);
@@ -629,6 +679,11 @@ or #f if `k` is not in `l`			\n\
     IDIO_ASSERT (k);
     IDIO_ASSERT (l);
 
+    /*
+     * Test Case: pair-errors/member-bad-list-type.idio
+     *
+     * member #t #t
+     */
     IDIO_USER_TYPE_ASSERT (list, l);
 
     return idio_list_member (k, l);
@@ -684,6 +739,11 @@ or #f if `k` is not a key in `l`		\n\
     IDIO_ASSERT (k);
     IDIO_ASSERT (l);
 
+    /*
+     * Test Case: pair-errors/assq-bad-list-type.idio
+     *
+     * assq #t #t
+     */
     IDIO_USER_TYPE_ASSERT (list, l);
 
     return idio_list_assq (k, l);
@@ -739,6 +799,11 @@ or #f if `k` is not a key in `l`		\n\
     IDIO_ASSERT (k);
     IDIO_ASSERT (l);
 
+    /*
+     * Test Case: pair-errors/assv-bad-list-type.idio
+     *
+     * assv #t #t
+     */
     IDIO_USER_TYPE_ASSERT (list, l);
 
     return idio_list_assv (k, l);
@@ -794,6 +859,11 @@ or #f if `k` is not a key in `l`		\n\
     IDIO_ASSERT (k);
     IDIO_ASSERT (l);
 
+    /*
+     * Test Case: pair-errors/assoc-bad-list-type.idio
+     *
+     * assoc #t #t
+     */
     IDIO_USER_TYPE_ASSERT (list, l);
 
     return idio_list_assoc (k, l);
@@ -861,6 +931,11 @@ return the nth (`n`) element from list `l`		\n\
     IDIO_ASSERT (I_n);
     IDIO_ASSERT (args);
 
+    /*
+     * Test Case: pair-errors/nth-bad-list-type.idio
+     *
+     * nth #t #t
+     */
     IDIO_USER_TYPE_ASSERT (list, l);
 
     return idio_list_nth (l, I_n, args);
