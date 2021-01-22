@@ -1,0 +1,71 @@
+;;
+;; Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+;;
+;; Licensed under the Apache License, Version 2.0 (the "License"); you
+;; may not use this file except in compliance with the License.  You
+;; may obtain a copy of the License at
+;;
+;;     http://www.apache.org/licenses/LICENSE-2.0
+;;
+;; Unless required by applicable law or agreed to in writing, software
+;; distributed under the License is distributed on an "AS IS" BASIS,
+;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+;; See the License for the specific language governing permissions and
+;; limitations under the License.
+;;
+;;
+
+;;
+;; test-string-handle-error.idio
+;;
+
+module tests/string-handle
+
+string-handle-error0 := Tests
+
+#*
+
+We have a bunch of test cases which should provoke an ^i/o-error or
+^rt-parameter-error.  So we can write a load function which will
+wrapper the actual load with a trap for (^i/o-error
+^rt-parameter-error) and compare the message strings.
+
+*#
+
+string-handle-error-load := {
+  n := 0
+
+  function (filename msg) {
+    if (not (string? filename)) (error 'load "not a string" filename)
+
+    load-k := #n
+
+    n = n + 1
+    ;eprintf "loading #%s %s looking for %s\n" n filename msg
+    trap (^i/o-error
+	  ^rt-parameter-error) (function (c) {
+				  ;eprintf "string-handle-error #%s: %s %s\n" n msg c.location
+				  test c.message msg
+
+				  if (not (string=? c.message msg)) {
+				    condition-report (append-string "string-handle-error-load: " filename) c (current-error-handle)
+				  }
+
+				  load-k 'string-handle-error
+    }) {
+      call/cc (function (k) {
+		 load-k = k
+		 (symbol-value 'load 'Idio) filename
+      })
+    }
+  }
+}
+
+string-handle-error-load "string-handle-errors/open-input-string-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
+
+string-handle-error-load "string-handle-errors/ready-closed-handle.idio" "handle already closed"
+
+string-handle-error-load "string-handle-errors/get-output-string-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string_handle"
+
+;; all done?
+Tests? (string-handle-error0 + 3)

@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015, 2020 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -19,6 +19,28 @@
 ;; test-string-handle.idio
 ;;
 string-handle0 := Tests
+
+; none of these are string handles
+test (string-handle? 0)				#f ; FIXNUM
+test (string-handle? #t)			#f ; CONSTANT
+test (string-handle? (integer->char 1))		#f ; CHARACTER (deprecated)
+test (string-handle? #\a)			#f ; UNICODE
+test (string-handle? "a")			#f ; STRING
+test (string-handle? 'a)			#f ; SYMBOL
+test (string-handle? :a)			#f ; KEYWORD
+test (string-handle? (pair 1 2))		#f ; PAIR
+test (string-handle? #[])			#f ; ARRAY
+test (string-handle? #{})			#f ; HASH
+test (string-handle? (function #n #n))		#f ; CLOSURE
+test (string-handle? pair)			#f ; PRIMITIVE
+test (string-handle? 1.0)			#f ; BIGNUM
+test (string-handle? (find-module 'Idio))	#f ; MODULE
+test (string-handle? (current-input-handle))	#f ; HANDLE
+test (string-handle? ^error)			#f ; STRUCT_TYPE
+test (string-handle? libc/idio-uname)		#f ; STRUCT_INSTANCE
+test (string-handle? #B{ 3 })			#f ; BITSET
+test (string-handle? libc/INTMAX_MAX)		#f ; C_INT
+test (string-handle? libc/UINTMAX_MAX)		#f ; C_UINT
 
 ;; check predicates fail for non-string-handle
 test-str := "foo"
@@ -96,5 +118,21 @@ test (handle-pos ish) 0
 seek-handle ish 2
 test (handle-pos ish) 2
 
+;; code coverage
+ish := open-input-string "hello"
+test (ready? ish) #t
+
+;; trigger some internal (putb) buffer resizing which is only possible
+;; when redirecting IO.  NB. BUFSIZ is *probably* bigger than the
+;; default output string handle size.
+osh := (open-output-string)
+echo (make-string (C/->integer libc/BUFSIZ)) > osh
+close-handle osh
+
+ish := open-input-string "hello"
+seek-handle ish 0 'set
+seek-handle ish 0 'cur
+seek-handle ish 20
+
 ;; all done?
-Tests? (string-handle0 + 29)
+Tests? (string-handle0 + 50)

@@ -1315,7 +1315,7 @@ int idio_getb_file_handle (IDIO fh)
 	 * We don't expose the getb method otherwise it would be
 	 * something like:
 	 *
-	 * handle-getb (current-output-handle)
+	 * getb-handle (current-output-handle)
 	 */
 	idio_handle_read_error (fh, IDIO_C_FUNC_LOCATION ());
 
@@ -1761,7 +1761,7 @@ void idio_print_file_handle (IDIO fh, IDIO o)
 	 * We don't expose the print method otherwise it would be
 	 * something like:
 	 *
-	 * handle-print (current-input-handle)
+	 * print-handle (current-input-handle)
 	 */
 	idio_handle_write_error (fh, IDIO_C_FUNC_LOCATION ());
 

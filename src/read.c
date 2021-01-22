@@ -3732,6 +3732,11 @@ read a number from ``src``				\n\
 
     IDIO lo = idio_read_lexobj_from_handle (handle);
 
+    /*
+     * Test Case: n/a
+     *
+     * args is the varargs parameter -- should always be a list
+     */
     IDIO_USER_TYPE_ASSERT (list, args);
 
     unsigned int radix = 10;

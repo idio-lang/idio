@@ -91,6 +91,11 @@ static IDIO idio_open_string_handle (char *str, size_t blen, int sflags)
     if (sflags & IDIO_HANDLE_FLAG_READ) {
 	strcat (name, "input");
 	if (sflags & IDIO_HANDLE_FLAG_WRITE) {
+	    /*
+	     * Code coverage:
+	     *
+	     * This can't be called from Idio.
+	     */
 	    strcat (name, "/");
 	} else {
 	    strcat (name, " ");
@@ -190,6 +195,12 @@ IDIO idio_reopen_input_string_handle_C (IDIO sh, char *str)
 
     int sflags = IDIO_HANDLE_FLAGS (sh);
     if (sflags & IDIO_HANDLE_FLAG_WRITE) {
+	/*
+	 * Code coverage:
+	 *
+	 * This requires re-opening a writable string handle.  Hmm,
+	 * not sure why I'd want to do that.
+	 */
 	IDIO_STRING_HANDLE_STREAM_END (shsp) = str_copy;
     } else {
 	IDIO_STRING_HANDLE_STREAM_END (shsp) = str_copy + blen;
@@ -220,7 +231,14 @@ IDIO_DEFINE_PRIMITIVE1 ("open-input-string", open_input_string_handle, (IDIO str
 	str_C = idio_string_as_C (str, &size);
 	break;
     default:
+	/*
+	 * Test Case: string-handle-errors/open-input-string-bad-type.idio
+	 *
+	 * open-input-string #t
+	 */
 	idio_error_param_type ("string", str, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
 	break;
     }
 
@@ -312,6 +330,13 @@ int idio_readyp_string_handle (IDIO sh)
     IDIO_ASSERT (sh);
 
     if (IDIO_CLOSEDP_HANDLE (sh)) {
+	/*
+	 * Test Case: string-handle-errors/ready-closed-handle.idio
+	 *
+	 * sh := open-input-string ""
+	 * close-handle sh
+	 * ready? sh
+	 */
 	idio_handle_closed_error (sh, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
@@ -326,7 +351,18 @@ int idio_getb_string_handle (IDIO sh)
     IDIO_ASSERT (sh);
 
     if (! idio_input_string_handlep (sh)) {
+	/*
+	 * Test Case: ??
+	 *
+	 * We don't expose the getb method otherwise it would be
+	 * something like:
+	 *
+	 * getb-handle (open-input-string "hello")
+	 */
 	idio_handle_read_error (sh, IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
+	return EOF;
     }
 
     if (IDIO_STRING_HANDLE_PTR (sh) < IDIO_STRING_HANDLE_END (sh)) {
@@ -359,12 +395,29 @@ int idio_close_string_handle (IDIO sh)
     return 0;
 }
 
+/*
+ * Code coverage:
+ *
+ * idio_putb_handle() is only called by idio_command_invoke() when
+ * recovering stdout/stderr handles.
+ */
 int idio_putb_string_handle (IDIO sh, uint8_t c)
 {
     IDIO_ASSERT (sh);
 
     if (! idio_output_string_handlep (sh)) {
+	/*
+	 * Test Case: ??
+	 *
+	 * We don't expose the putb method otherwise it would be
+	 * something like:
+	 *
+	 * putb-handle (open-output-string)
+	 */
 	idio_handle_write_error (sh, IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
+	return EOF;
     }
 
     if (IDIO_STRING_HANDLE_PTR (sh) >= IDIO_STRING_HANDLE_END (sh)) {
@@ -396,7 +449,19 @@ int idio_putc_string_handle (IDIO sh, idio_unicode_t c)
     IDIO_ASSERT (sh);
 
     if (! idio_output_string_handlep (sh)) {
+	/*
+	 * Test Case: ??
+	 *
+	 * write-char #\a (current-input-handle)
+	 *
+	 * XXX This doesn't get you here as write-char calls
+	 * idio_handle_or_current() which does the
+	 * idio_output_file_handlep() test before we get here.
+	 */
 	idio_handle_write_error (sh, IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
+	return EOF;
     }
 
     char buf[4];
@@ -426,6 +491,11 @@ int idio_putc_string_handle (IDIO sh, idio_unicode_t c)
     }
 
     if (IDIO_STRING_HANDLE_PTR (sh) > IDIO_STRING_HANDLE_END (sh)) {
+	/*
+	 * Code coverage:
+	 *
+	 * Is this redundant?  It doesn't seem to get called.
+	 */
 	IDIO_STRING_HANDLE_END (sh) = IDIO_STRING_HANDLE_PTR (sh);
     }
 
@@ -437,7 +507,19 @@ ptrdiff_t idio_puts_string_handle (IDIO sh, char *s, size_t slen)
     IDIO_ASSERT (sh);
 
     if (! idio_output_string_handlep (sh)) {
+	/*
+	 * Test Case: ??
+	 *
+	 * write "a" (current-input-handle)
+	 *
+	 * XXX This doesn't get you here as write-char calls
+	 * idio_handle_or_current() which does the
+	 * idio_output_file_handlep() test before we get here.
+	 */
 	idio_handle_write_error (sh, IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
+	return EOF;
     }
 
     if ((IDIO_STRING_HANDLE_PTR (sh) + slen) >= (IDIO_STRING_HANDLE_BUF (sh) + IDIO_STRING_HANDLE_BLEN (sh))) {
@@ -494,12 +576,23 @@ off_t idio_seek_string_handle (IDIO sh, off_t offset, int whence)
 	ptr = IDIO_STRING_HANDLE_BUF (sh) + offset;
 	break;
     case SEEK_CUR:
+	/*
+	 * Code coverage:
+	 *
+	 * seek-handle will rewrite SEEK_CUR into a SEEK_SET.  This
+	 * clause requires a C call.
+	 */
 	ptr = IDIO_STRING_HANDLE_PTR (sh) + offset;
 	break;
     case SEEK_END:
 	ptr = IDIO_STRING_HANDLE_END (sh) + offset;
 	break;
     default:
+	/*
+	 * Test Case: ??
+	 *
+	 * seek-handle should have protected us leaving a coding error
+	 */
 	idio_error_printf (IDIO_C_FUNC_LOCATION (), "idio_seek_string_handle: unexpected whence %d", whence);
 	return -1;
     }
@@ -517,12 +610,28 @@ off_t idio_seek_string_handle (IDIO sh, off_t offset, int whence)
     }
 }
 
+/*
+ * Code coverage:
+ *
+ * We don't expose the print method (idio_print_handle() /
+ * IDIO_HANDLE_M_PRINT()).
+ */
 void idio_print_string_handle (IDIO sh, IDIO o)
 {
     IDIO_ASSERT (sh);
 
     if (! idio_output_string_handlep (sh)) {
+	/*
+	 * Test Case: ??
+	 *
+	 * We don't expose the print method otherwise it would be
+	 * something like:
+	 *
+	 * print-handle (open-output-string)
+	 */
 	idio_handle_write_error (sh, IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
     }
 
     size_t size = 0;
@@ -545,6 +654,11 @@ IDIO_DEFINE_PRIMITIVE1 ("get-output-string", get_output_string, (IDIO sh))
 {
     IDIO_ASSERT (sh);
 
+    /*
+     * Test Case: string-handle-errors/get-output-string-bad-type.idio
+     *
+     * get-output-string #t
+     */
     IDIO_USER_TYPE_ASSERT (string_handle, sh);
 
     return idio_get_output_string (sh);
