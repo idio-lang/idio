@@ -27,13 +27,6 @@
 
 #include "idio.h"
 
-IDIO idio_hash_weak_tables = idio_S_nil;
-
-/*
- * Code coverage:
- *
- * The callees require coding errors.
- */
 void idio_hash_error (char *msg, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
@@ -227,68 +220,6 @@ IDIO idio_hash (idio_hi_t size, int (*comp_C) (void *k1, void *k2), idio_hi_t (*
     return h;
 }
 
-/*
- * Naive use of IDIO_HASH_HE_KEY (h, hv) is getting us burnt.  There
- * are a few special cases we need to handle and put them all
- * centrally.
- *
- * In particular, IDIO_HASH_FLAG_WEAK_KEYS where the key can be GC'd
- * from under our feet.
- *
- * If it has disappeared then we set the key and value to idio_S_nil
- * and return idio_S_nil, signalling the entry is free.
- */
-static IDIO idio_hash_he_key (IDIO h, idio_hi_t hv, idio_hash_entry_t *he)
-{
-    IDIO k = IDIO_HASH_HE_KEY (he);
-
-    if (idio_S_nil != k) {
-	if (IDIO_HASH_FLAGS (h) & IDIO_HASH_FLAG_STRING_KEYS) {
-	} else if (IDIO_HASH_FLAGS (h) & IDIO_HASH_FLAG_WEAK_KEYS) {
-	    switch ((intptr_t) k & IDIO_TYPE_MASK) {
-	    case IDIO_TYPE_FIXNUM_MARK:
-	    case IDIO_TYPE_CONSTANT_MARK:
-	    case IDIO_TYPE_PLACEHOLDER_MARK:
-		break;
-	    case IDIO_TYPE_POINTER_MARK:
-		if (0 == k->type) {
-		    idio_hash_entry_t *hel = IDIO_HASH_HA (h, hv);
-		    if (he == hel) {
-			IDIO_HASH_HA (h, hv) = IDIO_HASH_HE_NEXT (he);
-		    } else {
-			while (he != IDIO_HASH_HE_NEXT (hel)) {
-			    hel = IDIO_HASH_HE_NEXT (hel);
-			}
-			IDIO_HASH_HE_NEXT (hel) = IDIO_HASH_HE_NEXT (he);
-		    }
-		    IDIO_GC_FREE (he);
-		    IDIO_HASH_COUNT (h) -= 1;
-		    k = idio_S_nil;
-		} else {
-		    IDIO_ASSERT (k);
-		}
-		break;
-	    default:
-		/* inconceivable! */
-		{
-		    char em[BUFSIZ];
-		    sprintf (em, "type: unexpected object type %s", idio_type2string (k));
-		    idio_hash_error (em, IDIO_C_FUNC_LOCATION ());
-
-		    /* notreached */
-		    return idio_S_notreached;
-		}
-		break;
-	    }
-
-	} else {
-	    IDIO_ASSERT (k);
-	}
-    }
-
-    return k;
-}
-
 IDIO idio_copy_hash (IDIO orig, int depth)
 {
     IDIO_ASSERT (orig);
@@ -320,7 +251,7 @@ IDIO idio_copy_hash (IDIO orig, int depth)
     for (i = 0; i < IDIO_HASH_SIZE (orig); i++) {
 	idio_hash_entry_t *he = IDIO_HASH_HA (orig, i);
 	for ( ; NULL != he; he = IDIO_HASH_HE_NEXT (he)) {
-	    IDIO k = idio_hash_he_key (orig, i, he);
+	    IDIO k = IDIO_HASH_HE_KEY (he);
 	    if (! k) {
 		/*
 		 * Test Case:
@@ -363,7 +294,7 @@ IDIO idio_merge_hash (IDIO ht1, IDIO ht2)
     for (i = 0; i < IDIO_HASH_SIZE (ht2); i++) {
 	idio_hash_entry_t *he = IDIO_HASH_HA (ht2, i);
 	for ( ; NULL != he; he = IDIO_HASH_HE_NEXT (he)) {
-	    IDIO k = idio_hash_he_key (ht2, i, he);
+	    IDIO k = IDIO_HASH_HE_KEY (he);
 	    if (! k) {
 		/*
 		 * Test Case:
@@ -425,7 +356,7 @@ void idio_free_hash (IDIO h)
 	for (i = 0; i < IDIO_HASH_SIZE (h); i++) {
 	    idio_hash_entry_t *he = IDIO_HASH_HA (h, i);
 	    for ( ; NULL != he; he = IDIO_HASH_HE_NEXT (he)) {
-		void *kv = idio_hash_he_key (h, i, he);
+		void *kv = IDIO_HASH_HE_KEY (he);
 		if (idio_S_nil != kv) {
 		    IDIO_GC_FREE (kv);
 		}
@@ -1398,143 +1329,6 @@ int idio_hash_delete (IDIO h, void *kv)
     }
 
     return 1;
-}
-
-/*
- * SRFI 69 -- not an error to delete a non-existent key
- */
-IDIO_DEFINE_PRIMITIVE2_DS ("hash-delete!", hash_delete, (IDIO ht, IDIO key), "ht key", "\
-delete the value associated with index of ``key` in	\n\
-hash table ``ht``					\n\
-							\n\
-:param ht: hash table					\n\
-:type ht: hash table					\n\
-:param key: non-#n value				\n\
-:type key: any non-#n					\n\
-							\n\
-:return: #unspec					\n\
-")
-{
-    IDIO_ASSERT (ht);
-    IDIO_ASSERT (key);
-
-    /*
-     * Test Case: hash-errors/hash-delete-bad-type.idio
-     *
-     * hash-delete! #t #t
-     */
-    IDIO_USER_TYPE_ASSERT (hash, ht);
-
-    idio_hash_delete (ht, key);
-
-    return idio_S_unspec;
-}
-
-void idio_hash_tidy_weak_references (void)
-{
-    IDIO hwts = IDIO_PAIR_H (idio_hash_weak_tables);
-
-    while (idio_S_nil != hwts) {
-	IDIO h = IDIO_PAIR_H (hwts);
-
-	if (IDIO_HASH_FLAGS (h) & IDIO_HASH_FLAG_WEAK_KEYS) {
-	    idio_hi_t i;
-	    for (i = 0; i < IDIO_HASH_SIZE (h); i++) {
-		idio_hash_entry_t *he = IDIO_HASH_HA (h, i);
-		for (; NULL != he; he = IDIO_HASH_HE_NEXT (he)) {
-		    IDIO k = IDIO_HASH_HE_KEY (he);
-		    switch ((uintptr_t) k & IDIO_TYPE_MASK) {
-		    case IDIO_TYPE_FIXNUM_MARK:
-		    case IDIO_TYPE_CONSTANT_MARK:
-		    case IDIO_TYPE_PLACEHOLDER_MARK:
-			break;
-		    case IDIO_TYPE_POINTER_MARK:
-			if (IDIO_TYPE_NONE == k->type) {
-			    fprintf (stderr, "ih_twr %p @%zu\n", h, i);
-
-			    idio_hash_entry_t *hel = IDIO_HASH_HA (h, i);
-			    if (he == hel) {
-				IDIO_HASH_HA (h, i) = IDIO_HASH_HE_NEXT (he);
-			    } else {
-				while (he != IDIO_HASH_HE_NEXT (hel)) {
-				    hel = IDIO_HASH_HE_NEXT (hel);
-				}
-				IDIO_HASH_HE_NEXT (hel) = IDIO_HASH_HE_NEXT (he);
-			    }
-			    IDIO_GC_FREE (he);
-			    IDIO_HASH_COUNT (h) -= 1;
-			}
-			break;
-		    default:
-			/* inconceivable! */
-			{
-			    char em[BUFSIZ];
-			    sprintf (em, "unexpected object mark type %s", idio_type2string (k));
-			    idio_hash_error (em, IDIO_C_FUNC_LOCATION ());
-
-			    /* notreached */
-			    return;
-			}
-		    }
-		}
-	    }
-	} else {
-	    fprintf (stderr, "how is %p on the weak table list?\n", h);
-	    idio_dump (h, 4);
-	}
-
-	hwts = IDIO_PAIR_T (hwts);
-    }
-}
-
-void idio_hash_add_weak_table (IDIO h)
-{
-    IDIO_ASSERT (h);
-
-    IDIO_TYPE_ASSERT (hash, h);
-
-    IDIO_HASH_FLAGS (h) |= IDIO_HASH_FLAG_WEAK_KEYS;
-
-    /*
-     * Annoyingly, initialising the GC requires a weak-keyed table for
-     * the finalizers
-     */
-    if (idio_S_nil == idio_hash_weak_tables) {
-	idio_hash_weak_tables = idio_pair (idio_S_nil, idio_S_nil);
-	idio_gc_protect_auto (idio_hash_weak_tables);
-    }
-
-    IDIO_PAIR_H (idio_hash_weak_tables) = idio_pair (h, IDIO_PAIR_H (idio_hash_weak_tables));
-}
-
-void idio_hash_remove_weak_table (IDIO h)
-{
-    IDIO_ASSERT (h);
-
-    IDIO_TYPE_ASSERT (hash, h);
-
-    IDIO hwts = IDIO_PAIR_H (idio_hash_weak_tables);
-
-    if (IDIO_PAIR_H (hwts) == h) {
-	IDIO_PAIR_H (idio_hash_weak_tables) = IDIO_PAIR_T (hwts);
-    } else {
-	int removed = 0;
-	IDIO p = hwts;
-	hwts = IDIO_PAIR_T (hwts);
-	while (idio_S_nil != hwts) {
-	    if (IDIO_PAIR_H (hwts) == h) {
-		removed = 1;
-		IDIO_PAIR_T (p) = IDIO_PAIR_T (hwts);
-		break;
-	    }
-	    p = hwts;
-	    hwts = IDIO_PAIR_T (hwts);
-	}
-
-	if (! removed) {
-	    fprintf (stderr, "ih_rwt: failed to remove weak table %p\n", h);
-	}
-    }
 }
 
 IDIO idio_hash_keys_to_list (IDIO h)

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -49,9 +49,6 @@ int idio_hash_exists_key (IDIO h, void *kv);
 IDIO idio_hash_exists (IDIO h, void *k);
 IDIO idio_hash_ref (IDIO h, void *k);
 int idio_hash_delete (IDIO h, void *k);
-void idio_hash_tidy_weak_references (void);
-void idio_hash_add_weak_table (IDIO h);
-void idio_hash_remove_weak_table (IDIO h);
 IDIO idio_hash_keys_to_list (IDIO h);
 IDIO idio_hash_make_hash (IDIO args);
 IDIO idio_hash_reference (IDIO ht, IDIO key, IDIO args);

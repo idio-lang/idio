@@ -549,6 +549,11 @@ set the properties table of `o` to ``properties``	\n\
     IDIO_ASSERT (o);
     IDIO_ASSERT (properties);
 
+    /*
+     * This restriction on o being a procedure is because the GC only
+     * calls the idio_properties_delete() for procedures.
+     */
+    IDIO_USER_TYPE_ASSERT (procedure, o);
     IDIO_USER_TYPE_ASSERT (hash, properties);
 
     idio_properties_set (o, properties);
@@ -693,7 +698,7 @@ void idio_symbol_add_primitives ()
 
 void idio_final_symbol ()
 {
-    idio_hash_remove_weak_table (idio_properties_hash);
+    idio_gc_remove_weak_object (idio_properties_hash);
 }
 
 void idio_init_symbol ()
@@ -802,7 +807,7 @@ void idio_init_symbol ()
      * prevents it being freed!
      */
     idio_properties_hash = IDIO_HASH_EQP (4 * 1024);
-    idio_hash_add_weak_table (idio_properties_hash);
+    idio_gc_add_weak_object (idio_properties_hash);
     idio_gc_protect_auto (idio_properties_hash);
 }
 
