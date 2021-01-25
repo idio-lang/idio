@@ -66,7 +66,7 @@ IDIO idio_closure (size_t code_pc, size_t code_len, IDIO frame, IDIO env, IDIO s
     IDIO_CLOSURE_RU_STIME (c).tv_usec = 0;
 #endif
 
-    idio_properties_create (c);
+    idio_create_properties (c);
     if (idio_S_nil != sigstr) {
 	idio_set_property (c, idio_KW_sigstr, sigstr);
     }
@@ -152,7 +152,7 @@ return the setter of `p`			\n\
      *
      * This generates an ^rt-hash-key-not-found-error
      */
-    IDIO setter = idio_get_property (p, idio_KW_setter, idio_S_nil);
+    IDIO setter = idio_ref_property (p, idio_KW_setter, idio_S_nil);
 
     return setter;
 }
@@ -167,7 +167,7 @@ void idio_closure_add_primitives ()
      * primitive
      */
     IDIO setter = idio_module_symbol_value_recurse (idio_S_setter, idio_Idio_module_instance (), idio_S_nil);
-    idio_properties_create (setter);
+    idio_create_properties (setter);
 }
 
 void idio_init_closure ()

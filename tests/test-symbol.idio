@@ -1,0 +1,56 @@
+;;
+;; Copyright (c) 2015, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
+;;
+;; Licensed under the Apache License, Version 2.0 (the "License"); you
+;; may not use this file except in compliance with the License.  You
+;; may obtain a copy of the License at
+;;
+;;     http://www.apache.org/licenses/LICENSE-2.0
+;;
+;; Unless required by applicable law or agreed to in writing, software
+;; distributed under the License is distributed on an "AS IS" BASIS,
+;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+;; See the License for the specific language governing permissions and
+;; limitations under the License.
+;;
+;;
+
+;;
+;; test-symbol.idio
+;;
+symbol0 := Tests
+
+test (symbol? 0)			#f ; FIXNUM
+test (symbol? #t)			#f ; CONSTANT
+test (symbol? (integer->char 1))	#f ; CHARACTER (deprecated)
+test (symbol? #\a)			#f ; UNICODE
+test (symbol? "a")			#f ; STRING
+test (symbol? 'a)			#t ; SYMBOL
+test (symbol? :a)			#f ; KEYWORD
+test (symbol? (pair 1 2))		#f ; PAIR
+test (symbol? #[])			#f ; ARRAY
+test (symbol? #{})			#f ; HASH
+test (symbol? (function #n #n))		#f ; CLOSURE
+test (symbol? pair)			#f ; PRIMITIVE
+test (symbol? 1.0)			#f ; BIGNUM
+test (symbol? (find-module 'Idio))	#f ; MODULE
+test (symbol? (current-input-handle))	#f ; HANDLE
+test (symbol? ^error)			#f ; STRUCT_TYPE
+test (symbol? libc/idio-uname)		#f ; STRUCT_INSTANCE
+test (symbol? #B{ 3 })			#f ; BITSET
+test (symbol? libc/INTMAX_MAX)		#f ; C_INT
+test (symbol? libc/UINTMAX_MAX)		#f ; C_UINT
+
+;; code coverage
+sym := gensym "bob"
+
+test (%properties sym #f) #f
+
+; default value returned if properties are missing too
+test (%property sym :name #f) #f
+
+; auto-vivify properties
+%set-property! sym :name 'bob
+
+;; all done?
+Tests? (symbol0 + 22)

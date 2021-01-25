@@ -1414,13 +1414,13 @@ void idio_gc_sweep_free_value (IDIO vo)
 	break;
     case IDIO_TYPE_CLOSURE:
 	if (0 == (IDIO_GC_FLAGS (idio_gc) & IDIO_GC_FLAG_FINISH)) {
-	    idio_properties_delete (vo);
+	    idio_delete_properties (vo);
 	}
 	idio_free_closure (vo);
 	break;
     case IDIO_TYPE_PRIMITIVE:
 	if (0 == (IDIO_GC_FLAGS (idio_gc) & IDIO_GC_FLAG_FINISH)) {
-	    idio_properties_delete (vo);
+	    idio_delete_properties (vo);
 	}
 	idio_free_primitive (vo);
 	break;

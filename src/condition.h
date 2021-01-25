@@ -177,6 +177,7 @@ extern IDIO idio_condition_rt_libc_error_type;
 extern IDIO idio_condition_rt_libc_format_error_type;
 extern IDIO idio_condition_rt_regex_error_type;
 extern IDIO idio_condition_rt_struct_error_type;
+extern IDIO idio_condition_rt_symbol_error_type;
 
 extern IDIO idio_condition_rt_signal_type;
 

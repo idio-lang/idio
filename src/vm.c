@@ -386,8 +386,8 @@ static void idio_vm_error_arity (IDIO_I ins, IDIO thr, size_t given, size_t arit
 
     IDIO val = IDIO_THREAD_VAL (thr);
     if (idio_isa_closure (func)) {
-	IDIO name = idio_get_property (func, idio_KW_name, IDIO_LIST1 (idio_S_nil));
-	IDIO sigstr = idio_get_property (func, idio_KW_sigstr, IDIO_LIST1 (idio_S_nil));
+	IDIO name = idio_ref_property (func, idio_KW_name, IDIO_LIST1 (idio_S_nil));
+	IDIO sigstr = idio_ref_property (func, idio_KW_sigstr, IDIO_LIST1 (idio_S_nil));
 
 	sprintf (em, "ARITY != %zd%s; closure (", arity, "");
 	idio_display_C (em, dsh);
@@ -2740,7 +2740,7 @@ IDIO idio_vm_closure_name (IDIO c)
     IDIO_ASSERT (c);
     IDIO_TYPE_ASSERT (closure, c);
 
-    return idio_get_property (c, idio_KW_name, IDIO_LIST1 (idio_S_nil));
+    return idio_ref_property (c, idio_KW_name, IDIO_LIST1 (idio_S_nil));
 }
 
 static void idio_vm_function_trace (IDIO_I ins, IDIO thr)
@@ -2803,8 +2803,8 @@ static void idio_vm_function_trace (IDIO_I ins, IDIO thr)
     int isa_closure = idio_isa_closure (func);
 
     if (isa_closure) {
-	IDIO name = idio_get_property (func, idio_KW_name, IDIO_LIST1 (idio_S_nil));
-	IDIO sigstr = idio_get_property (func, idio_KW_sigstr, IDIO_LIST1 (idio_S_nil));
+	IDIO name = idio_ref_property (func, idio_KW_name, IDIO_LIST1 (idio_S_nil));
+	IDIO sigstr = idio_ref_property (func, idio_KW_sigstr, IDIO_LIST1 (idio_S_nil));
 
 	if (idio_S_nil != name) {
 	    size_t size = 0;
@@ -3407,7 +3407,7 @@ int idio_vm_run1 (IDIO thr)
 		    case IDIO_TYPE_PRIMITIVE:
 		    case IDIO_TYPE_CLOSURE:
 			idio_debug ("idio_vm_run1/CONSTANT-SYM-REF: you should NOT be reifying %s", c);
-			IDIO name = idio_get_property (c, idio_KW_name, idio_S_unspec);
+			IDIO name = idio_ref_property (c, idio_KW_name, idio_S_unspec);
 			if (idio_S_unspec != name) {
 			    idio_debug (" %s", name);
 			}
@@ -3503,15 +3503,15 @@ int idio_vm_run1 (IDIO thr)
 		idio_vm_values_set (gvi, val);
 
 		if (idio_isa_closure (val)) {
-		    IDIO name = idio_get_property (val, idio_KW_name, IDIO_LIST1 (idio_S_false));
+		    IDIO name = idio_ref_property (val, idio_KW_name, IDIO_LIST1 (idio_S_false));
 		    if (idio_S_false == name) {
 			idio_set_property (val, idio_KW_name, sym);
 			idio_set_property (val, idio_KW_source, idio_vm_GLOBAL_SYM_SET_string);
-			IDIO str = idio_get_property (val, idio_KW_sigstr, IDIO_LIST1 (idio_S_nil));
+			IDIO str = idio_ref_property (val, idio_KW_sigstr, IDIO_LIST1 (idio_S_nil));
 			if (idio_S_nil != str) {
 			    idio_set_property (val, idio_KW_sigstr, str);
 			}
-			str = idio_get_property (val, idio_KW_docstr, IDIO_LIST1 (idio_S_nil));
+			str = idio_ref_property (val, idio_KW_docstr, IDIO_LIST1 (idio_S_nil));
 			if (idio_S_nil != str) {
 			    idio_set_property (val, idio_KW_docstr, str);
 			}
@@ -3694,7 +3694,7 @@ int idio_vm_run1 (IDIO thr)
 		    case IDIO_TYPE_PRIMITIVE:
 		    case IDIO_TYPE_CLOSURE:
 			idio_debug ("idio_vm_run1/CONSTANT-VAL-REF: you should NOT be reifying %s", c);
-			IDIO name = idio_get_property (c, idio_KW_name, idio_S_unspec);
+			IDIO name = idio_ref_property (c, idio_KW_name, idio_S_unspec);
 			if (idio_S_unspec != name) {
 			    idio_debug (" %s", name);
 			}
@@ -4907,7 +4907,7 @@ int idio_vm_run1 (IDIO thr)
 	    }
 
 	    IDIO val = IDIO_THREAD_VAL (thr);
-	    IDIO cname = idio_get_property (val, idio_KW_name, IDIO_LIST1 (idio_S_false));
+	    IDIO cname = idio_ref_property (val, idio_KW_name, IDIO_LIST1 (idio_S_false));
 	    if (idio_S_false == cname) {
 		idio_set_property (val, idio_KW_name, sym);
 	    }
@@ -4941,7 +4941,7 @@ int idio_vm_run1 (IDIO thr)
 	    }
 
 	    IDIO val = IDIO_THREAD_VAL (thr);
-	    IDIO cname = idio_get_property (val, idio_KW_name, IDIO_LIST1 (idio_S_false));
+	    IDIO cname = idio_ref_property (val, idio_KW_name, IDIO_LIST1 (idio_S_false));
 	    if (idio_S_false == cname) {
 		idio_set_property (val, idio_KW_name, sym);
 	    }
@@ -4975,7 +4975,7 @@ int idio_vm_run1 (IDIO thr)
 	    }
 
 	    IDIO val = IDIO_THREAD_VAL (thr);
-	    IDIO cname = idio_get_property (val, idio_KW_name, IDIO_LIST1 (idio_S_false));
+	    IDIO cname = idio_ref_property (val, idio_KW_name, IDIO_LIST1 (idio_S_false));
 	    if (idio_S_false == cname) {
 		idio_set_property (val, idio_KW_name, sym);
 	    }
@@ -7247,7 +7247,7 @@ void idio_vm_trap_state (IDIO thr)
 	    IDIO handler = idio_array_ref_index (stack, tsp - 1);
 
 	    if (idio_isa_closure (handler)) {
-		IDIO name = idio_get_property (handler, idio_KW_name, IDIO_LIST1 (idio_S_nil));
+		IDIO name = idio_ref_property (handler, idio_KW_name, IDIO_LIST1 (idio_S_nil));
 		if (idio_S_nil != name) {
 		    idio_debug (" %-45s", name);
 		} else {

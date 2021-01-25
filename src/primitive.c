@@ -61,7 +61,7 @@ IDIO idio_primitive (IDIO (*func) (IDIO args), const char *name_C, size_t arity,
     IDIO_PRIMITIVE_RU_STIME (o).tv_usec = 0;
 #endif
 
-    idio_properties_create (o);
+    idio_create_properties (o);
     if (NULL != sigstr_C) {
 	idio_set_property (o, idio_KW_sigstr, idio_string_C (sigstr_C));
     }
@@ -102,7 +102,7 @@ IDIO idio_primitive_data (idio_primitive_desc_t *desc)
     IDIO_PRIMITIVE_RU_STIME (o).tv_usec = 0;
 #endif
 
-    idio_properties_create (o);
+    idio_create_properties (o);
     if (NULL != desc->name) {
 	idio_set_property (o, idio_KW_name, idio_symbols_C_intern (desc->name));
     }

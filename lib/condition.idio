@@ -246,6 +246,8 @@ define-condition-type-accessors-only ^rt-regex-error			^rt-libc-error			rt-regex
 
 define-condition-type-accessors-only ^rt-struct-error			^runtime-error			rt-struct-error?
 
+define-condition-type-accessors-only ^rt-symbol-error			^runtime-error			rt-symbol-error?
+
 define-condition-type-accessors-only ^rt-signal				^error				rt-signal? \
 	(signal rt-signal-signal)
 

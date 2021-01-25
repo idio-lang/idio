@@ -20,6 +20,48 @@
 ;;
 struct0 := Tests
 
+test (struct-type? 0)				#f ; FIXNUM
+test (struct-type? #t)				#f ; CONSTANT
+test (struct-type? (integer->char 1))		#f ; CHARACTER (deprecated)
+test (struct-type? #\a)				#f ; UNICODE
+test (struct-type? "a")				#f ; STRING
+test (struct-type? 'a)				#f ; SYMBOL
+test (struct-type? :a)				#f ; KEYWORD
+test (struct-type? (pair 1 2))			#f ; PAIR
+test (struct-type? #[])				#f ; ARRAY
+test (struct-type? #{})				#f ; HASH
+test (struct-type? (function #n #n))		#f ; CLOSURE
+test (struct-type? pair)			#f ; PRIMITIVE
+test (struct-type? 1.0)				#f ; BIGNUM
+test (struct-type? (find-module 'Idio))		#f ; MODULE
+test (struct-type? (current-input-handle))	#f ; HANDLE
+test (struct-type? ^error)			#t ; STRUCT_TYPE
+test (struct-type? libc/idio-uname)		#f ; STRUCT_INSTANCE
+test (struct-type? #B{ 3 })			#f ; BITSET
+test (struct-type? libc/INTMAX_MAX)		#f ; C_INT
+test (struct-type? libc/UINTMAX_MAX)		#f ; C_UINT
+
+test (struct-instance? 0)			#f ; FIXNUM
+test (struct-instance? #t)			#f ; CONSTANT
+test (struct-instance? (integer->char 1))	#f ; CHARACTER (deprecated)
+test (struct-instance? #\a)			#f ; UNICODE
+test (struct-instance? "a")			#f ; STRING
+test (struct-instance? 'a)			#f ; SYMBOL
+test (struct-instance? :a)			#f ; KEYWORD
+test (struct-instance? (pair 1 2))		#f ; PAIR
+test (struct-instance? #[])			#f ; ARRAY
+test (struct-instance? #{})			#f ; HASH
+test (struct-instance? (function #n #n))	#f ; CLOSURE
+test (struct-instance? pair)			#f ; PRIMITIVE
+test (struct-instance? 1.0)			#f ; BIGNUM
+test (struct-instance? (find-module 'Idio))	#f ; MODULE
+test (struct-instance? (current-input-handle))	#f ; HANDLE
+test (struct-instance? ^error)			#f ; STRUCT_TYPE
+test (struct-instance? libc/idio-uname)		#t ; STRUCT_INSTANCE
+test (struct-instance? #B{ 3 })			#f ; BITSET
+test (struct-instance? libc/INTMAX_MAX)		#f ; C_INT
+test (struct-instance? libc/UINTMAX_MAX)	#f ; C_UINT
+
 define-struct foo a b
 test (struct-type? foo) #t
 test (struct-instance? foo) #f
@@ -55,4 +97,4 @@ test (fooi.sym) 30
 test (struct-type-isa? ^idio-error ^error) #t
 
 ;; all done?
-Tests? (struct0 + 19)
+Tests? (struct0 + 59)

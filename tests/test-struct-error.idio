@@ -26,7 +26,7 @@ struct-error0 := Tests
 We have a bunch of test cases which should provoke a ^rt-struct-error
 or a ^rt-parameter-type-error.  So we can write a load function which
 will wrapper the actual load with a trap for (^rt-struct-error
-^rt-parameter-type-error) and compare the message structs.
+^rt-parameter-type-error) and compare the message strings.
 
 *#
 
@@ -34,7 +34,7 @@ struct-error-load := {
   n := 0
 
   function (filename msg) {
-    if (not (string? filename)) (error 'load "not a struct" filename)
+    if (not (string? filename)) (error 'load "not a string" filename)
 
     load-k := #n
 

@@ -1813,7 +1813,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 		    }
 		    *sizep = strlen (r);
 
-		    IDIO name = idio_get_property (o, idio_KW_name, IDIO_LIST1 (idio_S_nil));
+		    IDIO name = idio_ref_property (o, idio_KW_name, IDIO_LIST1 (idio_S_nil));
 		    if (idio_S_nil != name) {
 			char *name_C;
 			if (IDIO_ASPRINTF (&name_C, "%s ", IDIO_SYMBOL_S (name)) == -1) {

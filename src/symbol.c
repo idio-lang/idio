@@ -111,8 +111,9 @@ IDIO_SYMBOL_DECL (unquote);
 IDIO_SYMBOL_DECL (unquotesplicing);
 IDIO_SYMBOL_DECL (unset);
 
-void idio_property_error_nil_object (char *msg, IDIO c_location)
+static void idio_symbol_error (char *msg, IDIO c_location)
 {
+    IDIO_C_ASSERT (msg);
     IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (string, c_location);
 
@@ -120,17 +121,70 @@ void idio_property_error_nil_object (char *msg, IDIO c_location)
     idio_display_C (msg, msh);
 
     IDIO location = idio_vm_source_location ();
+
+    IDIO detail = idio_S_nil;
+
+#ifdef IDIO_DEBUG
+    IDIO dsh = idio_open_output_string_handle_C ();
+    idio_display (c_location, dsh);
+    detail = idio_get_output_string (dsh);
+#endif
+
+    IDIO c = idio_struct_instance (idio_condition_rt_symbol_error_type,
+				   IDIO_LIST3 (idio_get_output_string (msh),
+					       location,
+					       detail));
+
+    idio_raise_condition (idio_S_true, c);
+
+    /* notreached */
+}
+
+static void idio_symbol_format_error (char *msg, IDIO s, IDIO c_location)
+{
+    IDIO_C_ASSERT (msg);
+    IDIO_ASSERT (s);
+    IDIO_ASSERT (c_location);
+    IDIO_TYPE_ASSERT (string, s);
+    IDIO_TYPE_ASSERT (string, c_location);
+
+    idio_symbol_error (msg, c_location);
+
+    /* notreached */
+}
+
+static void idio_property_nil_object_error (char *msg, IDIO c_location)
+{
+    IDIO_C_ASSERT (msg);
+    IDIO_ASSERT (c_location);
+    IDIO_TYPE_ASSERT (string, c_location);
+
+    IDIO msh = idio_open_output_string_handle_C ();
+    idio_display_C (msg, msh);
+
+    IDIO location = idio_vm_source_location ();
+
+    IDIO detail = idio_S_nil;
+
+#ifdef IDIO_DEBUG
+    IDIO dsh = idio_open_output_string_handle_C ();
+    idio_display (c_location, dsh);
+    detail = idio_get_output_string (dsh);
+#endif
 
     IDIO c = idio_struct_instance (idio_condition_rt_parameter_nil_error_type,
 				   IDIO_LIST3 (idio_get_output_string (msh),
 					       location,
-					       c_location));
+					       detail));
 
     idio_raise_condition (idio_S_true, c);
+
+    /* notreached */
 }
 
-void idio_properties_error_not_found (char *msg, IDIO o, IDIO c_location)
+static void idio_properties_not_found_error (char *msg, IDIO o, IDIO c_location)
 {
+    IDIO_C_ASSERT (msg);
     IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (string, c_location);
 
@@ -138,35 +192,27 @@ void idio_properties_error_not_found (char *msg, IDIO o, IDIO c_location)
     idio_display_C (msg, msh);
 
     IDIO location = idio_vm_source_location ();
+
+    IDIO detail = idio_S_nil;
+
+#ifdef IDIO_DEBUG
+    IDIO dsh = idio_open_output_string_handle_C ();
+    idio_display (c_location, dsh);
+    detail = idio_get_output_string (dsh);
+#endif
 
     IDIO c = idio_struct_instance (idio_condition_rt_hash_key_not_found_error_type,
 				   IDIO_LIST4 (idio_get_output_string (msh),
 					       location,
-					       c_location,
+					       detail,
 					       o));
 
     idio_raise_condition (idio_S_true, c);
+
+    /* notreached */
 }
 
-void idio_property_error_no_properties (char *msg, IDIO c_location)
-{
-    IDIO_ASSERT (c_location);
-    IDIO_TYPE_ASSERT (string, c_location);
-
-    IDIO msh = idio_open_output_string_handle_C ();
-    idio_display_C (msg, msh);
-
-    IDIO location = idio_vm_source_location ();
-
-    IDIO c = idio_struct_instance (idio_condition_rt_hash_key_not_found_error_type,
-				   IDIO_LIST3 (idio_get_output_string (msh),
-					       location,
-					       c_location));
-
-    idio_raise_condition (idio_S_true, c);
-}
-
-void idio_property_error_key_not_found (IDIO key, IDIO c_location)
+static void idio_property_key_not_found_error (IDIO key, IDIO c_location)
 {
     IDIO_ASSERT (key);
     IDIO_ASSERT (c_location);
@@ -177,24 +223,23 @@ void idio_property_error_key_not_found (IDIO key, IDIO c_location)
 
     IDIO location = idio_vm_source_location ();
 
+    IDIO detail = idio_S_nil;
+
+#ifdef IDIO_DEBUG
+    IDIO dsh = idio_open_output_string_handle_C ();
+    idio_display (c_location, dsh);
+    detail = idio_get_output_string (dsh);
+#endif
+
     IDIO c = idio_struct_instance (idio_condition_rt_hash_key_not_found_error_type,
 				   IDIO_LIST4 (idio_get_output_string (msh),
 					       location,
-					       c_location,
+					       detail,
 					       key));
 
     idio_raise_condition (idio_S_true, c);
-}
 
-void idio_symbol_format_error (char *m, IDIO s, IDIO c_location)
-{
-    IDIO_C_ASSERT (m);
-    IDIO_ASSERT (s);
-    IDIO_ASSERT (c_location);
-    IDIO_TYPE_ASSERT (string, s);
-    IDIO_TYPE_ASSERT (string, c_location);
-
-    idio_error_C (m, s, c_location);
+    /* notreached */
 }
 
 int idio_symbol_C_eqp (void *s1, void *s2)
@@ -289,6 +334,12 @@ IDIO idio_symbols_string_intern (IDIO str)
     char *sC = idio_string_as_C (str, &size);
     size_t C_size = strlen (sC);
     if (C_size != size) {
+	/*
+	 * Test Case: ??
+	 *
+	 * Coding error.  idio_symbols_string_intern() is called from
+	 * the primitive {symbols} and uses already existing symbols.
+	 */
 	IDIO_GC_FREE (sC);
 
 	idio_symbol_format_error ("symbol: contains an ASCII NUL", str, IDIO_C_FUNC_LOCATION ());
@@ -334,7 +385,17 @@ IDIO idio_gensym (char *pref_prefix)
 	}
     }
 
-    idio_error_printf (IDIO_C_FUNC_LOCATION (), "looped!");
+    /*
+     * Test Case: ??
+     *
+     * We've looped over a uintmax_t and not found a free symbol which
+     * is an impressive combination of size and that to have found all
+     * those symbols you've used any number of times the amount of
+     * addressable memory on the system.
+     *
+     * There should be a prize, I think.  Well done.
+     */
+    idio_error_printf (IDIO_C_FUNC_LOCATION (), "You've used all the symbols!");
 
     return idio_S_notreached;
 }
@@ -364,6 +425,11 @@ Such *gensyms* are not guaranteed to be unique if saved.\n\
 	    prefix = idio_string_as_C (iprefix, &size);
 	    size_t C_size = strlen (prefix);
 	    if (C_size != size) {
+		/*
+		 * Test Case: symbol-errors/gensym-prefix-bad-format.idio
+		 *
+		 * gensym (join-string (make-string 1 U+0) '("hello" "world"))
+		 */
 		IDIO_GC_FREE (prefix);
 
 		idio_symbol_format_error ("gensym: prefix contains an ASCII NUL", iprefix, IDIO_C_FUNC_LOCATION ());
@@ -375,6 +441,11 @@ Such *gensyms* are not guaranteed to be unique if saved.\n\
 	} else if (idio_isa_symbol (iprefix)) {
 	    prefix = IDIO_SYMBOL_S (iprefix);
 	} else {
+	    /*
+	     * Test Case: symbol-errors/gensym-prefix-bad-type.idio
+	     *
+	     * gensym #t
+	     */
 	    idio_error_param_type ("string|symbol", iprefix, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
@@ -421,6 +492,11 @@ convert symbol `s` into a string		\n\
 {
     IDIO_ASSERT (s);
 
+    /*
+     * Test Case: symbol-errors/symbol2string-bad-type.idio
+     *
+     * symbol->string #t
+     */
     IDIO_USER_TYPE_ASSERT (symbol, s);
 
     return idio_string_C (IDIO_SYMBOL_S (s));
@@ -446,13 +522,18 @@ return all known symbols			\n\
     return r;
 }
 
-IDIO idio_properties_ref (IDIO o, IDIO args)
+IDIO idio_ref_properties (IDIO o, IDIO args)
 {
     IDIO_ASSERT (o);
     IDIO_ASSERT (args);
 
     if (idio_S_nil == o) {
-	idio_property_error_nil_object ("object is #n", IDIO_C_FUNC_LOCATION ());
+	/*
+	 * Test Case: symbol-errors/properties-nil.idio
+	 *
+	 * %properties #n
+	 */
+	idio_property_nil_object_error ("value is #n", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -463,7 +544,12 @@ IDIO idio_properties_ref (IDIO o, IDIO args)
 	if (idio_isa_pair (args)) {
 	    return IDIO_PAIR_H (args);
 	} else {
-	    idio_properties_error_not_found ("no properties ever existed", o, IDIO_C_FUNC_LOCATION ());
+	    /*
+	     * Test Case: symbol-errors/properties-non-existent.idio
+	     *
+	     * %properties (gensym)
+	     */
+	    idio_properties_not_found_error ("no properties exist", o, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -488,51 +574,28 @@ return the properties table of `o` or		\n\
     IDIO_ASSERT (o);
     IDIO_ASSERT (args);
 
-    return idio_properties_ref (o, args);
+    return idio_ref_properties (o, args);
 }
 
-void idio_properties_set (IDIO o, IDIO properties)
+void idio_set_properties (IDIO o, IDIO properties)
 {
     IDIO_ASSERT (o);
     IDIO_ASSERT (properties);
     IDIO_TYPE_ASSERT (hash, properties);
 
     if (idio_S_nil == o) {
-	idio_property_error_nil_object ("object is #n", IDIO_C_FUNC_LOCATION ());
+	/*
+	 * Test Case: ??
+	 *
+	 * Coding error.  The user interface is protected.
+	 */
+	idio_property_nil_object_error ("value is #n", IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return;
     }
 
     idio_hash_set (idio_properties_hash, o, properties);
-}
-
-void idio_properties_create (IDIO o)
-{
-    IDIO_ASSERT (o);
-
-    if (idio_S_nil == o) {
-	idio_property_error_nil_object ("object is #n", IDIO_C_FUNC_LOCATION ());
-
-	/* notreached */
-	return;
-    }
-
-    idio_hash_set (idio_properties_hash, o, idio_hash_make_keyword_table (IDIO_LIST1 (idio_fixnum (8))));
-}
-
-void idio_properties_delete (IDIO o)
-{
-    IDIO_ASSERT (o);
-
-    if (idio_S_nil == o) {
-	idio_property_error_nil_object ("object is #n", IDIO_C_FUNC_LOCATION ());
-
-	/* notreached */
-	return;
-    }
-
-    idio_hash_delete (idio_properties_hash, o);
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("%set-properties!", properties_set, (IDIO o, IDIO properties), "o properties", "\
@@ -550,18 +613,56 @@ set the properties table of `o` to ``properties``	\n\
     IDIO_ASSERT (properties);
 
     /*
-     * This restriction on o being a procedure is because the GC only
-     * calls the idio_properties_delete() for procedures.
+     * Test Case: symbol-errors/set-properties-bad-properties-type.idio
+     *
+     * %set-properties! #t #t
      */
-    IDIO_USER_TYPE_ASSERT (procedure, o);
     IDIO_USER_TYPE_ASSERT (hash, properties);
 
-    idio_properties_set (o, properties);
+    idio_set_properties (o, properties);
 
     return idio_S_unspec;
 }
 
-IDIO idio_get_property (IDIO o, IDIO property, IDIO args)
+void idio_create_properties (IDIO o)
+{
+    IDIO_ASSERT (o);
+
+    if (idio_S_nil == o) {
+	/*
+	 * Test Case: ??
+	 *
+	 * Coding error.  There is no user interface to this.
+	 */
+	idio_property_nil_object_error ("object is #n", IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
+	return;
+    }
+
+    idio_hash_set (idio_properties_hash, o, idio_hash_make_keyword_table (IDIO_LIST1 (idio_fixnum (8))));
+}
+
+void idio_delete_properties (IDIO o)
+{
+    IDIO_ASSERT (o);
+
+    if (idio_S_nil == o) {
+	/*
+	 * Test Case: ??
+	 *
+	 * Coding error.  There is no user interface to this.
+	 */
+	idio_property_nil_object_error ("object is #n", IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
+	return;
+    }
+
+    idio_hash_delete (idio_properties_hash, o);
+}
+
+IDIO idio_ref_property (IDIO o, IDIO property, IDIO args)
 {
     IDIO_ASSERT (o);
     IDIO_ASSERT (property);
@@ -569,7 +670,12 @@ IDIO idio_get_property (IDIO o, IDIO property, IDIO args)
     IDIO_TYPE_ASSERT (keyword, property);
 
     if (idio_S_nil == o) {
-	idio_property_error_nil_object ("object is #n", IDIO_C_FUNC_LOCATION ());
+	/*
+	 * Test Case: symbol-errors/property-nil.idio
+	 *
+	 * %property #n :name
+	 */
+	idio_property_nil_object_error ("value is #n", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -580,20 +686,26 @@ IDIO idio_get_property (IDIO o, IDIO property, IDIO args)
 	if (idio_isa_pair (args)) {
 	    return IDIO_PAIR_H (args);
 	} else {
-	    idio_properties_error_not_found ("no properties ever existed", o, IDIO_C_FUNC_LOCATION ());
+	    /*
+	     * Test Case: symbol-errors/property-properties-non-existent.idio
+	     *
+	     * %property (gensym) :name
+	     */
+	    idio_properties_not_found_error ("no properties exist", o, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
     }
 
     if (idio_S_nil == properties) {
-	if (idio_isa_pair (args)) {
-	    return IDIO_PAIR_H (args);
-	} else {
-	    idio_property_error_no_properties ("properties is #n", IDIO_C_FUNC_LOCATION ());
+	/*
+	 * Test Case: ??
+	 *
+	 * Coding error?
+	 */
+	idio_properties_not_found_error ("properties is #n", o, IDIO_C_FUNC_LOCATION ());
 
-	    return idio_S_notreached;
-	}
+	return idio_S_notreached;
     }
 
     IDIO value = idio_hash_ref (properties, property);
@@ -602,7 +714,14 @@ IDIO idio_get_property (IDIO o, IDIO property, IDIO args)
 	if (idio_isa_pair (args)) {
 	    return IDIO_PAIR_H (args);
 	} else {
-	    idio_property_error_key_not_found (property, IDIO_C_FUNC_LOCATION ());
+	    /*
+	     * Test Case: symbol-errors/property-non-existent.idio
+	     *
+	     * s := (gensym)
+	     * %set-properties! s (make-keyword-table)
+	     * %property s :name
+	     */
+	    idio_property_key_not_found_error (property, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -630,9 +749,14 @@ return the property `kw` for `o` or		\n\
     IDIO_ASSERT (property);
     IDIO_ASSERT (args);
 
+    /*
+     * Test Case: symbol-errors/property-bad-keyword-type.idio
+     *
+     * %property #n #t
+     */
     IDIO_USER_TYPE_ASSERT (keyword, property);
 
-    return idio_get_property (o, property, args);
+    return idio_ref_property (o, property, args);
 }
 
 void idio_set_property (IDIO o, IDIO property, IDIO value)
@@ -643,15 +767,34 @@ void idio_set_property (IDIO o, IDIO property, IDIO value)
     IDIO_TYPE_ASSERT (keyword, property);
 
     if (idio_S_nil == o) {
-	idio_property_error_nil_object ("object is #n", IDIO_C_FUNC_LOCATION ());
+	/*
+	 * Test Case: symbol-errors/set-property-nil.idio
+	 *
+	 * %set-property! #n :name #t
+	 */
+	idio_property_nil_object_error ("value is #n", IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
+	return;
     }
 
     IDIO properties = idio_hash_ref (idio_properties_hash, o);
 
     if (idio_S_nil == properties) {
-	idio_property_error_no_properties ("properties is #n", IDIO_C_FUNC_LOCATION ());
+	/*
+	 * Test Case: ??
+	 *
+	 * Coding error?
+	 */
+	idio_properties_not_found_error ("properties is #n", o, IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
+	return;
     }
 
+    /*
+     * Auto-vivify properties when setting a property
+     */
     if (idio_S_unspec == properties) {
 	properties = idio_hash_make_keyword_table (IDIO_LIST1 (idio_fixnum (4)));
 	idio_hash_put (idio_properties_hash, o, properties);
@@ -677,6 +820,11 @@ set the property `kw` for `o` to ``v``		\n\
     IDIO_ASSERT (property);
     IDIO_ASSERT (value);
 
+    /*
+     * Test Case: symbol-errors/set-property-bad-keyword-type.idio
+     *
+     * %set-property! #n #t #t
+     */
     IDIO_USER_TYPE_ASSERT (keyword, property);
 
     idio_set_property (o, property, value);

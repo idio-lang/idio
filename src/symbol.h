@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -126,11 +126,11 @@ IDIO idio_symbols_string_intern (IDIO str);
 
 IDIO idio_gensym (char *pref_prefix);
 
-IDIO idio_properties_ref (IDIO o, IDIO args);
-void idio_properties_set (IDIO o, IDIO properties);
-void idio_properties_create (IDIO o);
-void idio_properties_delete (IDIO o);
-IDIO idio_get_property (IDIO o, IDIO property, IDIO args);
+IDIO idio_ref_properties (IDIO o, IDIO args);
+void idio_set_properties (IDIO o, IDIO properties);
+void idio_create_properties (IDIO o);
+void idio_delete_properties (IDIO o);
+IDIO idio_ref_property (IDIO o, IDIO property, IDIO args);
 void idio_set_property (IDIO o, IDIO property, IDIO value);
 
 void idio_init_symbol (void);
