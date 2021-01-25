@@ -466,4 +466,4 @@ test (unicode-safe "foo") "foo"
 test (unicode-safe "ħ") "ħ"
 
 ;; all done?
-Tests? (unicode-test0 + 212)
+Tests? (unicode-test0 + 210)
