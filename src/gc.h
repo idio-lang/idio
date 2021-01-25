@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -495,7 +495,6 @@ typedef struct idio_hash_entry_s {
 
 #define IDIO_HASH_FLAG_NONE		0
 #define IDIO_HASH_FLAG_STRING_KEYS	(1<<0)
-#define IDIO_HASH_FLAG_WEAK_KEYS	(1<<1)
 
 typedef struct idio_hash_s {
     struct idio_s *grey;
@@ -1142,6 +1141,7 @@ typedef struct idio_gc_s {
     IDIO free;
     IDIO used;
     IDIO grey;
+    IDIO weak;
     unsigned int pause;
     unsigned char verbose;
     unsigned char inst;
@@ -1437,6 +1437,8 @@ void idio_gc_protect (IDIO o);
 void idio_gc_protect_auto (IDIO o);
 void idio_gc_expose (IDIO o);
 void idio_gc_expose_all ();
+void idio_gc_add_weak_object (IDIO o);
+void idio_gc_remove_weak_object (IDIO o);
 void idio_gc_mark (idio_gc_t *idio_gc);
 void idio_gc_sweep (idio_gc_t *idio_gc);
 void idio_gc_possibly_collect ();

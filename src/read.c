@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -3774,7 +3774,7 @@ void idio_final_read ()
 
     fprintf (fh, "src-properties: %zu/%zu\n", IDIO_HASH_COUNT (idio_src_properties), IDIO_HASH_SIZE (idio_src_properties));
 #endif
-    idio_hash_remove_weak_table (idio_src_properties);
+    idio_gc_remove_weak_object (idio_src_properties);
 }
 
 void idio_init_read ()
@@ -3792,7 +3792,7 @@ void idio_init_read ()
     idio_module_set_symbol_value (name, idio_lexobj_type, idio_Idio_module);
 
     idio_src_properties = IDIO_HASH_EQP (1024);
-    idio_hash_add_weak_table (idio_src_properties);
+    idio_gc_add_weak_object (idio_src_properties);
     name = idio_symbols_C_intern ("%idio-src-properties");
     idio_module_set_symbol_value (name, idio_src_properties, idio_Idio_module);
 

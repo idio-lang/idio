@@ -1093,7 +1093,7 @@ IDIO idio_handle_or_current (IDIO h, unsigned mode)
     case IDIO_HANDLE_FLAG_READ:
 	if (idio_S_nil == h) {
 	    return idio_thread_current_input_handle ();
-	} else {
+	} else if (idio_isa_handle (h)) {
 	    if (! IDIO_INPUTP_HANDLE (h)) {
 		idio_handle_error_read (h, IDIO_C_FUNC_LOCATION ());
 
@@ -1101,12 +1101,21 @@ IDIO idio_handle_or_current (IDIO h, unsigned mode)
 	    } else {
 		return h;
 	    }
+	} else {
+	    /*
+	     * Test Case: handle-errors/read-char-bad-type.idio
+	     *
+	     * read-char #t
+	     */
+	    idio_error_param_type ("input handle", h, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
 	}
 	break;
     case IDIO_HANDLE_FLAG_WRITE:
 	if (idio_S_nil == h) {
 	    return idio_thread_current_output_handle ();
-	} else {
+	} else if (idio_isa_handle (h)) {
 	    if (! IDIO_OUTPUTP_HANDLE (h)) {
 		idio_handle_error_write (h, IDIO_C_FUNC_LOCATION ());
 
@@ -1114,6 +1123,15 @@ IDIO idio_handle_or_current (IDIO h, unsigned mode)
 	    } else {
 		return h;
 	    }
+	} else {
+	    /*
+	     * Test Case: handle-errors/display-bad-type.idio
+	     *
+	     * display "foo" #t
+	     */
+	    idio_error_param_type ("output handle", h, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
 	}
 	break;
     default:
