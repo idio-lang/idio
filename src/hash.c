@@ -1331,6 +1331,36 @@ int idio_hash_delete (IDIO h, void *kv)
     return 1;
 }
 
+/*
+ * SRFI 69 -- not an error to delete a non-existent key
+ */
+IDIO_DEFINE_PRIMITIVE2_DS ("hash-delete!", hash_delete, (IDIO ht, IDIO key), "ht key", "\
+delete the value associated with index of ``key` in	\n\
+hash table ``ht``					\n\
+							\n\
+:param ht: hash table					\n\
+:type ht: hash table					\n\
+:param key: non-#n value				\n\
+:type key: any non-#n					\n\
+							\n\
+:return: #unspec					\n\
+")
+{
+    IDIO_ASSERT (ht);
+    IDIO_ASSERT (key);
+
+    /*
+     * Test Case: hash-errors/hash-delete-bad-type.idio
+     *
+     * hash-delete! #t #t
+     */
+    IDIO_USER_TYPE_ASSERT (hash, ht);
+
+    idio_hash_delete (ht, key);
+
+    return idio_S_unspec;
+}
+
 IDIO idio_hash_keys_to_list (IDIO h)
 {
     IDIO_ASSERT (h);
