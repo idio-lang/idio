@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -122,45 +122,63 @@ test if `o` is a unicode value				\n\
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("unicode->plane",  unicode2plane, (IDIO c), "c", "\
-convert `c` to an integer				\n\
-						\n\
-:param c: unicode to convert			\n\
-						\n\
-:return: integer (fixnum) conversion of `c`	\n\
+return the Unicode plane of `c`		\n\
+					\n\
+:param c: unicode to analyse		\n\
+					\n\
+:return: Unicode plane `c`		\n\
+:rtype: fixnum				\n\
 ")
 {
     IDIO_ASSERT (c);
 
+    /*
+     * Test Case: unicode-errors/unicode2plane-bad-type.idio
+     *
+     * unicode->plane #t
+     */
     IDIO_USER_TYPE_ASSERT (unicode, c);
 
     return idio_fixnum (IDIO_UNICODE_VAL (c) >> 16);
 }
 
-IDIO_DEFINE_PRIMITIVE1_DS ("unicode->plane-cp",  unicode2plane_cp, (IDIO c), "c", "\
-convert `c` to an integer				\n\
-						\n\
-:param c: unicode to convert			\n\
-						\n\
-:return: integer (fixnum) conversion of `c`	\n\
+IDIO_DEFINE_PRIMITIVE1_DS ("unicode->plane-codepoint",  unicode2plane_codepoint, (IDIO c), "c", "\
+return the lower 16 bits of `c`		\n\
+					\n\
+:param c: unicode to convert		\n\
+					\n\
+:return: lower 16 bits of of `c`	\n\
+:rtype: fixnum				\n\
 ")
 {
     IDIO_ASSERT (c);
 
+    /*
+     * Test Case: unicode-errors/unicode2plane-codepoint-bad-type.idio
+     *
+     * unicode->plane-codepoint #t
+     */
     IDIO_USER_TYPE_ASSERT (unicode, c);
 
     return idio_fixnum (IDIO_UNICODE_VAL (c) & 0xffff);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("unicode->integer",  unicode2integer, (IDIO c), "c", "\
-convert `c` to an integer				\n\
-						\n\
-:param c: unicode to convert			\n\
-						\n\
-:return: integer (fixnum) conversion of `c`	\n\
+convert `c` to an integer		\n\
+					\n\
+:param c: unicode to convert		\n\
+					\n\
+:return: integer conversion of `c`	\n\
+:rtype: fixnum				\n\
 ")
 {
     IDIO_ASSERT (c);
 
+    /*
+     * Test Case: unicode-errors/unicode2integer-bad-type.idio
+     *
+     * unicode->integer #t
+     */
     IDIO_USER_TYPE_ASSERT (unicode, c);
 
     return idio_fixnum (IDIO_UNICODE_VAL (c));
@@ -193,6 +211,14 @@ char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted)
 	    if (idio_isa_fixnum (ipcp)) {
 		prec = IDIO_FIXNUM_VAL (ipcp);
 	    } else {
+		/*
+		 * Test Case: ??
+		 *
+		 * If we set idio-print-conversion-precision to
+		 * something not a fixnum (nor #f) then it affects
+		 * *everything* in the codebase that uses
+		 * idio-print-conversion-precision before we get here.
+		 */
 		idio_error_param_type ("fixnum", ipcp, IDIO_C_FUNC_LOCATION ());
 
 		/* notreached */
@@ -316,9 +342,18 @@ char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted)
 	} else {
 	    if (c > 0x10ffff) {
 		/*
+		 * Test Case: ??
+		 *
+		 * Coding error.
+		 */
+		/*
 		 * Hopefully, this is guarded against elsewhere
 		 */
 		fprintf (stderr, "utf8-string: oops c=%x > 0x10ffff\n", c);
+		idio_error_param_value ("codepoint", "out of bounds", IDIO_C_FUNC_LOCATION ());
+
+		/* notreached */
+		return NULL;
 	    } else if (c >= 0x10000) {
 		r[n++] = 0xf0 | ((c & (0x07 << 18)) >> 18);
 		r[n++] = 0x80 | ((c & (0x3f << 12)) >> 12);
@@ -359,9 +394,18 @@ void idio_utf8_code_point (idio_unicode_t c, char *buf, int *sizep)
 
     if (c > 0x10ffff) {
 	/*
+	 * Test Case: ??
+	 *
+	 * Coding error.
+	 */
+	/*
 	 * Hopefully, this is guarded against elsewhere
 	 */
 	fprintf (stderr, "utf8-code-point: oops c=%x > 0x10ffff\n", c);
+	idio_error_param_value ("codepoint", "out of bounds", IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
+	return;
     } else if (c >= 0x10000) {
 	buf[n++] = 0xf0 | ((c & (0x07 << 18)) >> 18);
 	buf[n++] = 0x80 | ((c & (0x3f << 12)) >> 12);
@@ -441,6 +485,19 @@ IDIO idio_unicode_lookup (char *s)
 /*
  * All the unicode-*? are essentially identical
  */
+/*
+ * Test Cases:
+ *
+ *   unicode-errors/unicode-eq-bad-first-type.idio
+ *   unicode-errors/unicode-eq-bad-second-type.idio
+ *   unicode-errors/unicode-eq-bad-args-type.idio
+ *   unicode-errors/unicode-eq-bad-arg-type.idio
+ *
+ * unicode=? #t #t
+ * unicode=? #U+1 #t
+ * unicode=? #U+1 #U+1 #t
+ * unicode=? #U+1 #U+1 '(#t)
+ */
 #define IDIO_DEFINE_UNICODE_PRIMITIVE2V(name,cname,cmp,accessor)	\
     IDIO_DEFINE_PRIMITIVE2V (name, cname, (IDIO c1, IDIO c2, IDIO args)) \
     {									\
@@ -473,9 +530,6 @@ IDIO idio_unicode_lookup (char *s)
 #define IDIO_DEFINE_UNICODE_CS_PRIMITIVE2V(name,cname,cmp)		\
     IDIO_DEFINE_UNICODE_PRIMITIVE2V (name, unicode_ ## cname ## _p, cmp, IDIO_UNICODE_VAL)
 
-#define IDIO_DEFINE_UNICODE_CI_PRIMITIVE2V(name,cname,cmp)		\
-    IDIO_DEFINE_UNICODE_PRIMITIVE2V (name, unicode_ci_ ## cname ## _p, cmp, idio_unicode_ival)
-
 IDIO_DEFINE_UNICODE_CS_PRIMITIVE2V ("unicode=?", eq, ==)
 
 #define IDIO_UNICODE_INTERN_C(name,c)	(idio_unicode_C_intern (name, IDIO_UNICODE (c)))
@@ -483,9 +537,9 @@ IDIO_DEFINE_UNICODE_CS_PRIMITIVE2V ("unicode=?", eq, ==)
 void idio_unicode_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (unicode_p);
-    IDIO_ADD_PRIMITIVE (unicode2integer);
     IDIO_ADD_PRIMITIVE (unicode2plane);
-    IDIO_ADD_PRIMITIVE (unicode2plane_cp);
+    IDIO_ADD_PRIMITIVE (unicode2plane_codepoint);
+    IDIO_ADD_PRIMITIVE (unicode2integer);
 
     /*
      * The unicode_* functions were autogenerated but we still need to

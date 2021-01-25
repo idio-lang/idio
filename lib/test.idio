@@ -240,8 +240,9 @@ test-load "test-struct-error.idio"
 test-load "test-struct.idio"
 test-load "test-symbol-error.idio"
 test-load "test-symbol.idio"
-
+test-load "test-unicode-error.idio"
 test-load "test-unicode.idio"
+
 test-load "test-operator.idio"
 test-load "test-template.idio"
 test-load "test-dynamic.idio"

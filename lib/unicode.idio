@@ -1,6 +1,6 @@
 #*
 
-Copyright (c) 2020 Ian Fitchet <idf(at)idio-lang.org>
+Copyright (c) 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
 
 Licensed under the Apache License, Version 2.0 (the "License"); you
 may not use this file except in compliance with the License.  You
@@ -103,7 +103,7 @@ Property Uppercase
   char-set-ref char-set:upper-case cp
 }
 
-define (unicode-downcase cp) "
+define (unicode-downcase cp & args) "
 If `cp` is uppercase return the lowercase variant from
 char-set:simple-lower-case-map.
 
@@ -112,6 +112,8 @@ have the Unicode Property Uppercase, then return `cp`.
 
 :param cp: Unicode code point
 :type cp: integer or unicode
+:param args: (optional) skip upper-case check
+:type args: boolean
 :return: lowercase variant or `cp`
 :rtype: same as `cp`
 " {
@@ -119,13 +121,15 @@ have the Unicode Property Uppercase, then return `cp`.
   if (unicode? cp) {
     cp-i = unicode->integer cp
   }
-  if (char-set-ref char-set:upper-case cp-i) {
+  if (or (and (pair? args)
+	      (ph args))
+      (char-set-ref char-set:upper-case cp-i)) {
     lc := hash-ref char-set:simple-lower-case-map cp #f
     if lc lc cp
   } cp
 }
 
-define (unicode-upcase cp) "
+define (unicode-upcase cp & args) "
 If `cp` is lowercase return the uppercase variant from
 char-set:simple-upper-case-map.
 
@@ -134,6 +138,8 @@ have the Unicode Property Lowercase, then return `cp`.
 
 :param cp: Unicode code point
 :type cp: integer or unicode
+:param args: (optional) skip lower-case check
+:type args: boolean
 :return: uppercase variant or `cp`
 :rtype: same as `cp`
 " {
@@ -141,7 +147,9 @@ have the Unicode Property Lowercase, then return `cp`.
   if (unicode? cp) {
     cp-i = unicode->integer cp
   }
-  if (char-set-ref char-set:lower-case cp-i) {
+  if (or (and (pair? args)
+	      (ph args))
+      (char-set-ref char-set:lower-case cp-i)) {
     uc := hash-ref char-set:simple-upper-case-map cp #f
     if uc uc cp
   } cp

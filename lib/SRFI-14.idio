@@ -1,6 +1,6 @@
 #*
 
-Copyright (c) 2020 Ian Fitchet <idf(at)idio-lang.org>
+Copyright (c) 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
 
 Licensed under the Apache License, Version 2.0 (the "License"); you
 may not use this file except in compliance with the License.  You
@@ -575,7 +575,7 @@ Add the code point to character set cs.
       array-set! cs.planes plane bs
     }
 
-    bitset-set! bs (unicode->plane-cp cp)
+    bitset-set! bs (unicode->plane-codepoint cp)
   }) \
        (else (error 'char-set-set! "not a char-set" cs))
 }
@@ -592,7 +592,7 @@ Remove the code point from character set cs.
 
     bs := array-ref cs.planes (unicode->plane cp)
     if bs {
-      bitset-clear! bs (unicode->plane-cp cp)
+      bitset-clear! bs (unicode->plane-codepoint cp)
     } {
       ;; we're clearing a bit in a non-existent plane.  NOP
       bs
