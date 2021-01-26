@@ -51,11 +51,13 @@ bitset-error-load := {
 				       }
 				       load-k 'bitset-error
 	  }) {
-      call/cc (function (k) {
-		 load-k = k
-		 (symbol-value 'load 'Idio) filename
-      })
-    }
+	    call/cc (function (k) {
+		       load-k = k
+		       t0 := Tests
+		       (symbol-value 'load 'Idio) filename
+		       Tests? (t0 + 1)
+	    })
+	  }
   }
 }
 

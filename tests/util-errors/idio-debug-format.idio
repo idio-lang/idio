@@ -1,0 +1,2 @@
+
+idio-debug (join-string (make-string 1 #U+0) '("hello" "%s")) 1

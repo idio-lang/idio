@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2020 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -33,7 +33,208 @@ rounding.
 
 *#
 
+module tests/util
+
 format0 := Tests
+
+test (type->string 0)				"FIXNUM"
+test (type->string #t)				"CONSTANT_IDIO"
+test (type->string (integer->char 1))		"CONSTANT_CHARACTER"
+test (type->string #\a)				"CONSTANT_UNICODE"
+test (type->string "a")				"STRING"
+test (type->string 'a)				"SYMBOL"
+test (type->string :a)				"KEYWORD"
+test (type->string (pair 1 2))			"PAIR"
+test (type->string #[])				"ARRAY"
+test (type->string #{})				"HASH"
+test (type->string (function #n #n))		"CLOSURE"
+test (type->string pair)			"PRIMITIVE"
+test (type->string 1.0)				"BIGNUM"
+test (type->string (find-module 'Idio))		"MODULE"
+test (type->string (current-input-handle))	"HANDLE"
+test (type->string ^error)			"STRUCT_TYPE"
+test (type->string libc/idio-uname)		"STRUCT_INSTANCE"
+test (type->string #B{ 3 })			"BITSET"
+test (type->string libc/INTMAX_MAX)		"C_INT"
+test (type->string libc/UINTMAX_MAX)		"C_UINT"
+
+test (zero? 0)   #t
+test (zero? 0.0) #t
+
+test (void)         (void)
+test (void? (void)) #t
+test (void? #t)     #f
+
+test (boolean? 0)			#f ; FIXNUM
+test (boolean? #t)			#t ; CONSTANT
+test (boolean? (integer->char 1))	#f ; CHARACTER (deprecated)
+test (boolean? #\a)			#f ; UNICODE
+test (boolean? "a")			#f ; STRING
+test (boolean? 'a)			#f ; SYMBOL
+test (boolean? :a)			#f ; KEYWORD
+test (boolean? (pair 1 2))		#f ; PAIR
+test (boolean? #[])			#f ; ARRAY
+test (boolean? #{})			#f ; HASH
+test (boolean? (function #n #n))	#f ; CLOSURE
+test (boolean? pair)			#f ; PRIMITIVE
+test (boolean? 1.0)			#f ; BIGNUM
+test (boolean? (find-module 'Idio))	#f ; MODULE
+test (boolean? (current-input-handle))	#f ; HANDLE
+test (boolean? ^error)			#f ; STRUCT_TYPE
+test (boolean? libc/idio-uname)		#f ; STRUCT_INSTANCE
+test (boolean? #B{ 3 })			#f ; BITSET
+test (boolean? libc/INTMAX_MAX)		#f ; C_INT
+test (boolean? libc/UINTMAX_MAX)	#f ; C_UINT
+
+test (boolean? #f)			#t
+test (boolean? (void))			#f
+
+; code coverage of squirelly corners of idio_equal()
+str := "hello"
+sub1 := substring str 0 1
+sub2 := substring str 0 2
+
+test (equal? str sub1)  #f
+test (eq? sub1 sub2)    #f
+test (equal? sub1 sub2) #f
+
+; while we're here, exercise the printer
+test (format "%s" sub2) "he"
+
+ht1 := (make-hash)
+hash-set! ht1 #\a "apple"
+hash-set! ht1 #\p "pear"
+ht2 := copy-value ht1
+
+test (eq? ht1 ht2)    #f
+test (equal? ht1 ht2) #t
+
+hash-set! ht1 #\b "berry"
+hash-set! ht2 #\b "banana"
+test (equal? ht1 ht2) #f
+
+test (eq? 0.0 0.0) #f
+test (equal? libc/0U libc/UINTMAX_MAX) #f
+test (eqv? ^error ^idio-error) #f
+test (equal? ^error ^idio-error) #f
+
+st1 := make-struct-type 'st1 #n '(x y)
+st2 := st1
+st1 := make-struct-type 'st1 #n '(x y)
+test (equal? st1 st2) #t
+st1 := make-struct-type 'st1 #n '(x y z)
+test (equal? st1 st2) #f
+st1 := make-struct-type 'st1 #n '(x z)
+test (equal? st1 st2) #f
+
+; we didn't create an accessor so make the struct instance the hard
+; way
+si1 := make-struct-instance st1 1 2
+si2 := make-struct-instance st2 1 2
+test (equal? si1 si2) #f
+si2 := make-struct-instance st1 1 3
+test (equal? si1 si2) #f
+si2 := make-struct-instance st1 1 2
+test (equal? si1 si2) #t
+
+; while we're here, exercise the printer
+format "%s" st1
+
+format "%s" si1
+
+%%add-as-string st1 (function (v s) {
+		       "printing"
+})
+
+test (format "%s" si1) "printing"
+
+; continuations
+k1 := #f
+k2 := #f
+
+; call/cc has been improved in call-cc.idio -- if we want an actual
+; continuation object we need to go deeper.  Not recommended.
+%%call/cc (function (k) {
+	     k1 = k
+})
+%%call/cc (function (k) {
+	     k2 = k
+})
+
+test (equal? k1 k1) #t
+test (equal? k1 k2) #f
+
+; while we're here, exercise the printer
+format "%s" k1
+
+test (eqv? #B{ 3 } #B{ 3 }) #f
+
+; while we're here, exercise the printer
+test (format "%s" #B{ 3 1 }) "#B{ 3 100 }"
+test (format "%s" #B{ 254 1 10:1 18-18 28-30 38:1 60-78 F8-F8 }) "#B{ 254 10000000 10:10000000 18-18 28-30 10000000 60-78 f8-f8 }"
+
+osh := (open-output-string)
+hprintf osh "void: %s\n" (void)
+
+;; printing is a little tricky because there isn't a direct
+;; user-interface to the idio_as_string() code.  All the printf
+;; functions use the display style -- not so good for characters and
+;; strings.  {string} returns the printed form...in a string!  Hence
+;; some of the weird expected results.
+
+;; characters are deprecated but let's tickle the deprecated code --
+;; remember there is no character reader format so characters are
+;; printed in their Unicode form.
+ch := integer->char 32
+test (string ch) "#U+0020"
+test (format "%s" ch) " "
+ch := integer->char #x61
+test (string ch) "#\\a"
+test (format "%s" ch) "a"
+
+;; unicode
+test (string #\{space}) "#U+0020"
+test (format "%s" #\{space}) " "
+test (string #U+61) "#\\a"
+test (format "%s" #U+61) "a"
+test (format "%s" #U+A4) "¤"		; >= 0x80 will be two bytes - 00A4;CURRENCY SIGN
+test (format "%s" #U+B87) "இ"		; >= 0x800 will be three bytes - 0B87;TAMIL LETTER I
+test (format "%s" #U+10053) "𐁓"	; >= 0x10000 will be four bytes - 10053;LINEAR B SYMBOL B034
+
+test (string (substring "hello" 2 4)) "\"ll\""
+
+x := '#T{ a $b $@c 'd}
+test (format "%s" x) "#T{ (a $b $@c 'd) }"
+
+; printing arrays of greater than 40 elements creates a break after
+; the first twenty and before the final 20
+test (format "%s" (make-array 41)) "#[ #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f ..[21] #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f ]"
+
+;; no guarantee about ordering of the output -- so this is just code
+;; coverage
+format "%s" ht1
+
+format "%s" load
+; call/cc has "-" for name
+format "%s" call/cc
+
+format "%s" pair
+
+format "%s" (find-module 'Idio)
+
+format "%s" osh
+
+; raise the not-CLOEXEC "!" indicator
+fh := open-file testfile "r"
+format "%s" fh
+close-handle fh
+
+format "%s" libc/UINTMAX_MAX
+
+; A C-pointer with a printer
+format "%s" (libc/gettimeofday)
+
+copy-value "hello" 'deep
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -117,6 +318,9 @@ test (format "%2.3x" n)	"00a"
 test (format "%2.3X" n)	"00A"
 test (format "%2.3o" n)	"012"
 test (format "%4.6b" n)	"001010"
+
+; unexpected conversion - replaced with %d
+test (format "%4q" n) "  10"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -375,4 +579,9 @@ test (%format 'keyed "%4.3f" h)		" 010"
 test (%format 'keyed "%10.2b" h)	"    123.45"
 
 ;; all done?
-Tests? (format0 + 160)
+Tests? (format0 + 245)
+
+;Local Variables:
+;mode: Idio
+;buffer-file-coding-system: utf-8-unix
+;End:

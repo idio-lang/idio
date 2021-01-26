@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -37,7 +37,6 @@ int idio_type (IDIO o);
 const char *idio_type2string (IDIO o);
 const char *idio_type_enum2string (idio_type_e type);
 int idio_isa_fixnum (IDIO o);
-int idio_isa_nil (IDIO o);
 int idio_isa_boolean (IDIO o);
 int idio_eqp (void *o1, void *o2);
 int idio_eqvp (void *o1, void *o2);

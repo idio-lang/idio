@@ -109,7 +109,6 @@ IDIO_SYMBOL_DECL (toplevel);
 IDIO_SYMBOL_DECL (trap);
 IDIO_SYMBOL_DECL (unquote);
 IDIO_SYMBOL_DECL (unquotesplicing);
-IDIO_SYMBOL_DECL (unset);
 
 static void idio_symbol_error (char *msg, IDIO c_location)
 {
@@ -944,7 +943,6 @@ void idio_init_symbol ()
     IDIO_SYMBOL_DEF ("trap", trap);
     IDIO_SYMBOL_DEF ("unquote", unquote);
     IDIO_SYMBOL_DEF ("unquotesplicing", unquotesplicing);
-    IDIO_SYMBOL_DEF ("unset", unset);
 
     /*
      * idio_properties_hash doesn't really live in symbol.c but we

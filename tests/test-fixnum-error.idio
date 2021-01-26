@@ -44,7 +44,9 @@ fixnum-error-load := {
 	  }) {
 	    call/cc (function (k) {
 		       load-k = k
+		       t0 := Tests
 		       (symbol-value 'load 'Idio) filename
+		       Tests? (t0 + 1)
 	    })
 	  }
   }

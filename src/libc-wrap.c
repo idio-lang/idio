@@ -246,15 +246,7 @@ char *idio_libc_struct_timeval_as_string (IDIO tv)
     char fmt[BUFSIZ];
     sprintf (fmt, "%%ld.%%.%ds", prec);
     char *buf;
-    if (IDIO_ASPRINTF (&buf, fmt, tvp->tv_sec, us) == -1) {
-	/*
-	 * Test Case: ??
-	 */
-	idio_error_alloc ("asprintf");
-
-	/* notreached */
-	return NULL;
-    }
+    idio_asprintf (&buf, fmt, tvp->tv_sec, us);
 
     return buf;
 }
@@ -1103,8 +1095,6 @@ The parameter `who` refers to RUSAGE_SELF or RUSAGE_CHILDREN	\n\
 
     return idio_C_pointer_free_me (rup);
 }
-
-IDIO idio_libc_struct_timeval_pointer (struct timeval *tvp);
 
 IDIO_DEFINE_PRIMITIVE0_DS ("gettimeofday", libc_gettimeofday, (void), "", "\
 in C, gettimeofday ()						\n\

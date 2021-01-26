@@ -48,10 +48,12 @@ condition-error-load := {
 					 condition-report (append-string "condition-error-load: " filename) c (current-error-handle)
 				       }
 				       load-k 'condition-error
-	  }) {
+    }) {
       call/cc (function (k) {
 		 load-k = k
+		 t0 := Tests
 		 (symbol-value 'load 'Idio) filename
+		 Tests? (t0 + 1)
       })
     }
   }

@@ -110,7 +110,6 @@ extern IDIO_SYMBOL_DECL (toplevel);
 extern IDIO_SYMBOL_DECL (trap);
 extern IDIO_SYMBOL_DECL (unquote);
 extern IDIO_SYMBOL_DECL (unquotesplicing);
-extern IDIO_SYMBOL_DECL (unset);
 
 extern IDIO idio_properties_hash;
 

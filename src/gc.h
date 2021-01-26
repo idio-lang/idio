@@ -1356,11 +1356,11 @@ typedef struct idio_gc_s {
 #define IDIO_CONSTANT_I_CODE_VAL(x)	(((intptr_t) x) >> IDIO_TYPE_CONSTANT_BITS_SHIFT)
 #define IDIO_CONSTANT_I_CODE(x)	((const IDIO) (((intptr_t) x) << IDIO_TYPE_CONSTANT_BITS_SHIFT | IDIO_TYPE_CONSTANT_I_CODE_MARK))
 
-#define IDIO_CHARACTER_VAL(x)	(((intptr_t) x) >> IDIO_TYPE_CONSTANT_BITS_SHIFT)
+#define IDIO_CHARACTER_VAL(x)		(((intptr_t) x) >> IDIO_TYPE_CONSTANT_BITS_SHIFT)
 /* #define IDIO_CHARACTER_IVAL(x)	(tolower (IDIO_CHARACTER_VAL (x))) */
-#define IDIO_CHARACTER(x)	((const IDIO) (((intptr_t) x) << IDIO_TYPE_CONSTANT_BITS_SHIFT | IDIO_TYPE_CONSTANT_CHARACTER_MARK))
-#define IDIO_UNICODE_VAL(x)	(((intptr_t) x) >> IDIO_TYPE_CONSTANT_BITS_SHIFT)
-#define IDIO_UNICODE(x)		((const IDIO) (((intptr_t) x) << IDIO_TYPE_CONSTANT_BITS_SHIFT | IDIO_TYPE_CONSTANT_UNICODE_MARK))
+#define IDIO_CHARACTER(x)		((const IDIO) (((intptr_t) x) << IDIO_TYPE_CONSTANT_BITS_SHIFT | IDIO_TYPE_CONSTANT_CHARACTER_MARK))
+#define IDIO_UNICODE_VAL(x)		(((intptr_t) x) >> IDIO_TYPE_CONSTANT_BITS_SHIFT)
+#define IDIO_UNICODE(x)			((const IDIO) (((intptr_t) x) << IDIO_TYPE_CONSTANT_BITS_SHIFT | IDIO_TYPE_CONSTANT_UNICODE_MARK))
 
 /*
  * Idio instruction arrays.
@@ -1407,11 +1407,6 @@ void idio_gc_alloc (void **p, size_t size);
  */
 #define IDIO_GC_ALLOC(p,s)	(idio_gc_alloc ((void **)&(p), s))
 #define IDIO_GC_FREE(p)		(idio_gc_free ((void *)(p)))
-#ifdef IDIO_MALLOC
-#define IDIO_ASPRINTF(strp,fmt,...) idio_malloc_asprintf (strp,fmt, ##__VA_ARGS__)
-#else
-#define IDIO_ASPRINTF(strp,fmt,...) asprintf (strp,fmt, ##__VA_ARGS__)
-#endif
 
 IDIO idio_clone_base (IDIO o);
 int idio_isa (IDIO o, idio_type_e type);
@@ -1452,6 +1447,7 @@ void idio_gc_resume (char *caller);
 void idio_gc_reset (char *caller, int pause);
 void idio_gc_free ();
 
+int idio_asprintf(char **strp, const char *fmt, ...);
 char *idio_strcat (char *s1, size_t *s1sp, const char *s2, const size_t s2s);
 char *idio_strcat_free (char *s1, size_t *s1sp, char *s2, const size_t s2s);
 

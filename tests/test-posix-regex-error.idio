@@ -52,12 +52,14 @@ posix-regex-error-load := {
 				  }
 
 				  load-k 'posix-regex-error
-    }) {
-      call/cc (function (k) {
-		 load-k = k
-		 (symbol-value 'load 'Idio) filename
-      })
-    }
+	  }) {
+	    call/cc (function (k) {
+		       load-k = k
+		       t0 := Tests
+		       (symbol-value 'load 'Idio) filename
+		       Tests? (t0 + 1)
+	    })
+	  }
   }
 }
 

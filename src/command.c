@@ -891,15 +891,7 @@ char **idio_command_argv (IDIO args)
 			    /*
 			     * Consider Bash-like nullglob, errglob
 			     */
-			    if (IDIO_ASPRINTF (&argv[i++], "%s", IDIO_SYMBOL_S (arg)) == -1) {
-				/*
-				 * Test Case: ??
-				 */
-				idio_error_alloc ("asprintf");
-
-				/* notreached */
-				return NULL;
-			    }
+			    idio_asprintf (&argv[i++], "%s", IDIO_SYMBOL_S (arg));
 			} else {
 			    /*
 			     * NB "gl_pathc - 1" as we reserved a slot

@@ -2539,17 +2539,7 @@ char *idio_bignum_expanded_real_as_string (IDIO bn, IDIO_BS_T exp, int digits, i
     for (ai = al - 1; ai >= 0; ai--) {
 	IDIO_BS_T v = idio_bsa_get (sig_a, ai);
 	char *vs;
-	if (IDIO_ASPRINTF (&vs, "%" PRIdPTR, v) == -1) {
-	    /*
-	     * Test Case: ??
-	     *
-	     * Requires using a lot of memory.
-	     */
-	    idio_error_alloc ("asprintf");
-
-	    /* notreached */
-	    return NULL;
-	}
+	idio_asprintf (&vs, "%" PRIdPTR, v);
 	size_t vs_size = strlen (vs);
 	IDIO_STRCAT_FREE (s, sizep, vs, vs_size);
     }

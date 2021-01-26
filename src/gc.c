@@ -2120,6 +2120,33 @@ void idio_gc_obj_free ()
     }
 }
 
+/*
+ * idio_asprintf() exists as a convenience function to abstract the
+ * error check from dozens of calls to asprintf()
+ */
+int idio_asprintf(char **strp, const char *fmt, ...)
+{
+    int r;
+    va_list ap;
+
+    va_start (ap, fmt);
+#ifdef IDIO_MALLOC
+    r = idio_malloc_vasprintf (strp, fmt, ap);
+#else
+    r = vasprintf (strp, fmt, ap)
+#endif
+    va_end (ap);
+
+    if (-1 == r) {
+	idio_error_alloc ("asprintf");
+
+	/* notreached */
+	return NULL;
+    }
+
+    return r;
+}
+
 /**
  * idio_strcat() - concatenate two (non-static) length defined strings
  * @s1: first string

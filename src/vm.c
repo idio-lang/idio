@@ -2592,7 +2592,7 @@ This is the ``call/cc`` primitive.				\n\
 
     /* idio_debug ("%%%%call/cc: %s\n", k); */
 
-    IDIO_THREAD_VAL (thr) = idio_frame (IDIO_THREAD_VAL (thr), IDIO_LIST1 (k));
+    IDIO_THREAD_VAL (thr) = idio_frame (IDIO_THREAD_FRAME (thr), IDIO_LIST1 (k));
 
     idio_vm_invoke (thr, proc, IDIO_VM_INVOKE_REGULAR_CALL);
 
