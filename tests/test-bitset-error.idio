@@ -105,10 +105,10 @@ bitset-error-load "bitset-errors/equal-bitset-not-bitset-1.idio" "bad parameter 
 bitset-error-load "bitset-errors/equal-bitset-not-bitset-2.idio" "bad parameter type: '#f' a CONSTANT_IDIO is not a bitset"
 
 bitset-error-load "bitset-errors/bitset-for-each-set-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a bitset"
-bitset-error-load "bitset-errors/bitset-for-each-set-bad-func-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a procedure"
+bitset-error-load "bitset-errors/bitset-for-each-set-bad-func-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a function"
 
 bitset-error-load "bitset-errors/fold-bitset-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a bitset"
-bitset-error-load "bitset-errors/fold-bitset-bad-func-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a procedure"
+bitset-error-load "bitset-errors/fold-bitset-bad-func-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a function"
 
 ;; all done?
 Tests? (bitset-error0 + 33)

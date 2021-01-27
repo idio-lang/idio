@@ -3517,7 +3517,7 @@ static IDIO idio_meaning_application (IDIO src, IDIO fe, IDIO aes, IDIO nametree
 			 * Redefining a primitive doesn't get us here.
 			 * Hmm.
 			 */
-			idio_debug ("BAD application: ! primitive|closure\npd %s\n", p);
+			idio_debug ("BAD application: ! function\npd %s\n", p);
 			idio_debug ("si %s\n", si);
 			idio_debug ("e %s\n", fe);
 			idio_debug ("ivvr %s\n", idio_vm_values_ref (IDIO_FIXNUM_VAL (IDIO_PAIR_HTT (si))));

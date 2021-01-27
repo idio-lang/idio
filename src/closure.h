@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -25,7 +25,7 @@
 
 IDIO idio_closure (size_t code_pc, size_t code_len, IDIO frame, IDIO env, IDIO sigstr, IDIO docstr);
 int idio_isa_closure (IDIO o);
-int idio_isa_procedure (IDIO o);
+int idio_isa_function (IDIO o);
 void idio_free_closure (IDIO c);
 
 void idio_init_closure ();

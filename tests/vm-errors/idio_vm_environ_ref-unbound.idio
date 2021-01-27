@@ -1,0 +1,13 @@
+
+module tests/vm/environ-ref
+
+{
+  ;; tell the VM about env-var
+  env-var :* "foo"
+
+  ;; do something with it to avoid complaints
+  string-length env-var
+}
+
+; env-var should have gone out of scope
+string-length env-var

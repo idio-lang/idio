@@ -51,7 +51,7 @@ closure-error-load := {
   }
 }
 
-closure-error-load "closure-errors/not-function.idio" "bad parameter type: '#f' a CONSTANT_IDIO is not a primitive|closure"
+closure-error-load "closure-errors/not-function.idio" "bad parameter type: '#f' a CONSTANT_IDIO is not a function"
 closure-error-load "closure-errors/not-found.idio" "key not found"
 
 ;; all done?

@@ -1,0 +1,6 @@
+
+module tests/vm/IDIO-A-ARITYEQP
+
+define (fn a b c d) #t
+
+fn 1 2 3

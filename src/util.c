@@ -2687,33 +2687,8 @@ const char *idio_vm_bytecode2string (int code)
 
     case IDIO_A_NOP:				r = "A-NOP";				break;
     case IDIO_A_PRIMCALL0:			r = "A-PRIMCALL0";			break;
-    case IDIO_A_PRIMCALL0_NEWLINE:		r = "A-PRIMCALL0-NEWLINE";		break;
-    case IDIO_A_PRIMCALL0_READ:			r = "A-PRIMCALL0-READ";			break;
     case IDIO_A_PRIMCALL1:			r = "A-PRIMCALL1";			break;
-    case IDIO_A_PRIMCALL1_HEAD:			r = "A-PRIMCALL1-HEAD";			break;
-    case IDIO_A_PRIMCALL1_TAIL:			r = "A-PRIMCALL1-TAIL";			break;
-    case IDIO_A_PRIMCALL1_PAIRP:		r = "A-PRIMCALL1-PAIRP";		break;
-    case IDIO_A_PRIMCALL1_SYMBOLP:		r = "A-PRIMCALL1-SYMBOLP";		break;
-    case IDIO_A_PRIMCALL1_DISPLAY:		r = "A-PRIMCALL1-DISPLAY";		break;
-    case IDIO_A_PRIMCALL1_PRIMITIVEP:		r = "A-PRIMCALL1-PRIMITIVEP";		break;
-    case IDIO_A_PRIMCALL1_NULLP:		r = "A-PRIMCALL1-NULLP";		break;
-    case IDIO_A_PRIMCALL1_CONTINUATIONP:	r = "A-PRIMCALL1-CONTINUATIONP";	break;
-    case IDIO_A_PRIMCALL1_EOFP:			r = "A-PRIMCALL1-EOFP";			break;
-    case IDIO_A_PRIMCALL1_SET_CUR_MOD:		r = "A-PRIMCALL1-SET-CUR-MOD";		break;
     case IDIO_A_PRIMCALL2:			r = "A-PRIMCALL2";			break;
-    case IDIO_A_PRIMCALL2_PAIR:			r = "A-PRIMCALL2-PAIR";			break;
-    case IDIO_A_PRIMCALL2_EQP:			r = "A-PRIMCALL2-EQP";			break;
-    case IDIO_A_PRIMCALL2_SET_HEAD:		r = "A-PRIMCALL2-SET-HEAD";		break;
-    case IDIO_A_PRIMCALL2_SET_TAIL:		r = "A-PRIMCALL2-SET-TAIL";		break;
-    case IDIO_A_PRIMCALL2_ADD:			r = "A-PRIMCALL2-ADD";			break;
-    case IDIO_A_PRIMCALL2_SUBTRACT:		r = "A-PRIMCALL2-SUBTRACT";		break;
-    case IDIO_A_PRIMCALL2_EQ:			r = "A-PRIMCALL2-EQ";			break;
-    case IDIO_A_PRIMCALL2_LT:			r = "A-PRIMCALL2-LT";			break;
-    case IDIO_A_PRIMCALL2_GT:			r = "A-PRIMCALL2-GT";			break;
-    case IDIO_A_PRIMCALL2_MULTIPLY:		r = "A-PRIMCALL2-MULTIPLY";		break;
-    case IDIO_A_PRIMCALL2_LE:			r = "A-PRIMCALL2-LE";			break;
-    case IDIO_A_PRIMCALL2_GE:			r = "A-PRIMCALL2-GE";			break;
-    case IDIO_A_PRIMCALL2_REMAINDER:		r = "A-PRIMCALL2-REMAINDER";		break;
 
     case IDIO_A_PRIMCALL3:			r = "A-PRIMCALL3";			break;
     case IDIO_A_PRIMCALL:			r = "A-PRIMCALL";			break;

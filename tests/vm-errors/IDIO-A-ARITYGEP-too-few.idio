@@ -1,0 +1,6 @@
+
+module tests/vm/IDIO-A-ARITYGEP
+
+define (fn a & b) #t
+
+(fn)

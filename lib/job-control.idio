@@ -78,15 +78,17 @@ define (job-as-string job seen) {
 
     procs-first := #t
     procs-loop :+ function (procs) {
-		    proc := ph procs
-		    if (null? proc) #t {
-		      if procs-first {
-			procs-first = #f
-		      } {
-			hprintf r "| "
+		    if (null? procs) #n {
+		      proc := ph procs
+		      if (null? proc) #t {
+			if procs-first {
+			  procs-first = #f
+			} {
+			  hprintf r "| "
+			}
+			hprintf r "[PID=%s C?=%s S?%s: %s] " proc.pid proc.completed proc.stopped proc.argv
+			procs-loop (pt procs)
 		      }
-		      hprintf r "[PID=%s C?=%s S?%s: %s] " proc.pid proc.completed proc.stopped proc.argv
-		      procs-loop (pt procs)
 		    }
     }
 

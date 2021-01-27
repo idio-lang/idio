@@ -100,7 +100,7 @@ libc-wrap-error-load "libc-wrap-errors/dup2-bad-old-type.idio" "bad parameter ty
 libc-wrap-error-load "libc-wrap-errors/dup2-bad-new-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a fixnum|C_int newfd"
 libc-wrap-error-load "libc-wrap-errors/dup2-bad-fd.idio" "dup2: Bad file descriptor" EBADF
 
-libc-wrap-error-load "libc-wrap-errors/exit-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a fixnum"
+libc-wrap-error-load "libc-wrap-errors/exit-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a fixnum|C_int"
 
 libc-wrap-error-load "libc-wrap-errors/fcntl-bad-fd-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a fixnum|C_int fd"
 libc-wrap-error-load "libc-wrap-errors/fcntl-bad-cmd-type.idio" "bad parameter type: '1' a FIXNUM is not a C_int cmd"

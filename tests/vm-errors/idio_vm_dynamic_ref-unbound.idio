@@ -1,0 +1,16 @@
+
+module tests/vm/dynamic-ref
+
+;; tell the VM about dyn-var
+dynamic-let (dyn-var 5) {
+  dynamic? dyn-var			; #t
+  (dynamic dyn-var) + 10		; 15
+}
+
+define (use-dyn-var v) {
+  ;; {dyn-var} should be a dynamic variable in scope when we try to use
+  ;; it.  It obviously(?) isn't anymore.
+  (dynamic dyn-var) + v
+}
+
+use-dyn-var 10

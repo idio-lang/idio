@@ -113,10 +113,18 @@ static void idio_job_control_error_exec (char **argv, char **envp, IDIO c_locati
     }
     IDIO location = idio_vm_source_location ();
 
+    IDIO detail = idio_S_nil;
+
+#ifdef IDIO_DEBUG
+    IDIO dsh = idio_open_output_string_handle_C ();
+    idio_display (c_location, dsh);
+    detail = idio_get_output_string (dsh);
+#endif
+
     IDIO c = idio_struct_instance (idio_condition_rt_command_exec_error_type,
 				   IDIO_LIST4 (idio_get_output_string (sh),
 					       location,
-					       c_location,
+					       detail,
 					       idio_fixnum ((intptr_t) errno)));
     idio_raise_condition (idio_S_true, c);
 }

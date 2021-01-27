@@ -49,16 +49,6 @@ test (gt (string-length PATH) 0) #t
 
 }
 
-;; outside of the frame using our environ variable should generate an
-;; ^rt-environ-variable-unbound-error
-trap ^rt-environ-variable-unbound-error (function (c) {
-					   test (rt-environ-variable-unbound-error? c) #t
-					   ;; return #t to test
-					   #t
-}) {
-  test MYPATH #t
-}
-
 {
   test-str := "bob"
   MYPATH = test-str
@@ -70,4 +60,4 @@ trap ^rt-environ-variable-unbound-error (function (c) {
 }
 
 ;; all done?
-Tests? (env0 + 10)
+Tests? (env0 + 8)

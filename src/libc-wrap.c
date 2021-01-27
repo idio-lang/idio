@@ -660,13 +660,18 @@ DOES NOT RETURN :)						\n\
     int status = 0;
     if (idio_isa_fixnum (istatus)) {
 	status = IDIO_FIXNUM_VAL (istatus);
+    } else if (idio_isa_C_int (istatus)) {
+	status = IDIO_C_TYPE_INT (istatus);
     } else {
 	/*
 	 * Test Case: libc-wrap-errors/exit-bad-type.idio
 	 *
-	 * exit #t
+	 * libc/exit #t
+	 *
+	 * NB watch out for *primitives* /exit (without the SPACE)
+	 * which performs a more Idio-ordered exit.
 	 */
-	idio_error_param_type ("fixnum", istatus, IDIO_C_FUNC_LOCATION ());
+	idio_error_param_type ("fixnum|C_int", istatus, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }

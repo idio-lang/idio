@@ -394,7 +394,7 @@ void idio_condition_set_default_handler (IDIO ct, IDIO handler)
     IDIO_ASSERT (handler);
 
     IDIO_TYPE_ASSERT (condition_type, ct);
-    IDIO_TYPE_ASSERT (procedure, handler);
+    IDIO_TYPE_ASSERT (function, handler);
 
     idio_hash_put (idio_condition_default_handler, ct, handler);
 }
@@ -409,7 +409,7 @@ then ``handler`` will be invoked with the continuation.	\n\
 :param ct: condition type				\n\
 :type ct: condition type				\n\
 :param handler: handler for the condition type		\n\
-:type handler: procedure				\n\
+:type handler: function				\n\
 							\n\
 :return: #<unspec>					\n\
 ")
@@ -428,7 +428,7 @@ then ``handler`` will be invoked with the continuation.	\n\
      *
      * set-condition-handler! ^error #t
      */
-    IDIO_USER_TYPE_ASSERT (procedure, handler);
+    IDIO_USER_TYPE_ASSERT (function, handler);
 
     idio_condition_set_default_handler (ct, handler);
 
@@ -1162,7 +1162,7 @@ void idio_init_condition ()
     IDIO_DEFINE_CONDITION0 (idio_condition_rt_computed_variable_error_type, "^rt-computed-variable-error", idio_condition_rt_variable_error_type);
     IDIO_DEFINE_CONDITION0 (idio_condition_rt_computed_variable_no_accessor_error_type, "^rt-computed-variable-no-accessor-error", idio_condition_rt_computed_variable_error_type);
 
-    IDIO_DEFINE_CONDITION0 (idio_condition_rt_function_error_type, "^rt-function-error", idio_condition_static_error_type);
+    IDIO_DEFINE_CONDITION0 (idio_condition_rt_function_error_type, "^rt-function-error", idio_condition_runtime_error_type);
     IDIO_DEFINE_CONDITION0 (idio_condition_rt_function_arity_error_type, "^rt-function-arity-error", idio_condition_rt_function_error_type);
 
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_module_error_type, "^rt-module-error", idio_condition_runtime_error_type, "module");

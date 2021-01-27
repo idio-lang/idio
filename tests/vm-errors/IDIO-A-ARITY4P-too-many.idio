@@ -1,0 +1,6 @@
+
+module tests/vm/IDIO-A-ARITY4P
+
+define (fn a b c) #t
+
+fn 1 2 3 4

@@ -1,0 +1,128 @@
+;;
+;; Copyright (c) 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
+;;
+;; Licensed under the Apache License, Version 2.0 (the "License"); you
+;; may not use this file except in compliance with the License.  You
+;; may obtain a copy of the License at
+;;
+;;     http://www.apache.org/licenses/LICENSE-2.0
+;;
+;; Unless required by applicable law or agreed to in writing, software
+;; distributed under the License is distributed on an "AS IS" BASIS,
+;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+;; See the License for the specific language governing permissions and
+;; limitations under the License.
+;;
+;;
+
+;;
+;; test-vm-error.idio
+;;
+
+vm-error0 := Tests
+
+#*
+
+We have a bunch of test cases which should provoke a ^runtime-error.
+So we can write a load function which will wrapper the actual load
+with a trap for ^runtime-error and compare the message strings.
+
+^runtime-error is a bit vague as it covers virtually every other kind
+of error -- including, for example, ^runtime-parameter-error for
+catching type issues -- but, hey, testing the runtime results in
+^runtime errors!  Go figure!
+
+Maybe we can give the checker a hint.
+
+*#
+
+vm-error-load := {
+  n := 0
+
+  function (filename msg & args) {
+    if (not (string? filename)) (error 'load "not a string" filename)
+
+    load-k := #n
+
+    n = n + 1
+    ;eprintf "loading #%s %s looking for %s\n" n filename msg
+    trap (^runtime-error
+	  ^rt-command-error) (function (c) {
+				;eprintf "vm-error #%s: %s %s\n" n msg c.location
+				test c.message msg
+
+				if (or (not (string=? c.message msg))
+				       (and (pair? args)
+					    (not (equal? (ph args) (struct-instance-type c))))) {
+					      condition-report (append-string "vm-error-load: " filename) c (current-error-handle)
+					    }
+				load-k 'vm-error
+	  }) {
+      call/cc (function (k) {
+		 load-k = k
+		 t0 := Tests
+		 (symbol-value 'load 'Idio) filename
+		 Tests? (t0 + 1)
+      })
+    }
+  }
+}
+
+vm-error-load "vm-errors/idio_vm_invoke-constant.idio" "cannot invoke constant type" ^rt-function-error
+vm-error-load "vm-errors/idio_vm_invoke-continuation-num-args.idio" "unary continuation" ^rt-function-error
+
+OPATH := PATH
+vm-error-load "vm-errors/idio_vm_invoke-command-not-found.idio" "external command not found (foo 1 2)" ^rt-command-error
+PATH = OPATH
+
+vm-error-load "vm-errors/idio_vm_invoke-bad-type.idio" "cannot invoke" ^rt-function-error
+
+vm-error-load "vm-errors/idio_vm_dynamic_ref-unbound.idio" "no such dynamic binding" ^rt-dynamic-variable-unbound-error
+
+vm-error-load "vm-errors/idio_vm_environ_ref-unbound.idio" "no such environ binding" ^rt-environ-variable-unbound-error
+
+vm-error-load "vm-errors/idio_vm_computed_ref-no-get-accessor.idio" "no computed get accessor" ^rt-computed-variable-no-accessor-error
+
+vm-error-load "vm-errors/idio_vm_computed_set-no-set-accessor.idio" "no computed set accessor" ^rt-computed-variable-no-accessor-error
+
+vm-error-load "vm-errors/idio_vm_push_trap-bad-handler-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a function" ^rt-parameter-type-error
+
+vm-error-load "vm-errors/raise-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a condition" ^rt-parameter-type-error
+
+vm-error-load "vm-errors/reraise-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a condition" ^rt-parameter-type-error
+
+vm-error-load "vm-errors/call-cc-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a closure" ^rt-parameter-type-error
+
+vm-error-load "vm-errors/vm-trace-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a fixnum" ^rt-parameter-type-error
+
+vm-error-load "vm-errors/IDIO-A-ARITY1P-too-many.idio" "incorrect arity: 1 args for an arity-0 function" ^rt-function-arity-error
+
+vm-error-load "vm-errors/IDIO-A-ARITY2P-too-few.idio" "incorrect arity: 0 args for an arity-1 function" ^rt-function-arity-error
+vm-error-load "vm-errors/IDIO-A-ARITY2P-too-many.idio" "incorrect arity: 2 args for an arity-1 function" ^rt-function-arity-error
+
+vm-error-load "vm-errors/IDIO-A-ARITY3P-too-few.idio" "incorrect arity: 1 args for an arity-2 function" ^rt-function-arity-error
+vm-error-load "vm-errors/IDIO-A-ARITY3P-too-many.idio" "incorrect arity: 3 args for an arity-2 function" ^rt-function-arity-error
+
+vm-error-load "vm-errors/IDIO-A-ARITY4P-too-few.idio" "incorrect arity: 2 args for an arity-3 function" ^rt-function-arity-error
+vm-error-load "vm-errors/IDIO-A-ARITY4P-too-many.idio" "incorrect arity: 4 args for an arity-3 function" ^rt-function-arity-error
+
+vm-error-load "vm-errors/IDIO-A-ARITYEQP-too-few.idio" "incorrect arity: 3 args for an arity-4 function" ^rt-function-arity-error
+vm-error-load "vm-errors/IDIO-A-ARITYEQP-too-many.idio" "incorrect arity: 5 args for an arity-4 function" ^rt-function-arity-error
+
+vm-error-load "vm-errors/IDIO-A-ARITYGEP-too-few.idio" "incorrect arity: 0 args for an arity-1+ function" ^rt-function-arity-error
+
+vm-error-load "vm-errors/idio-dasm-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a closure" ^rt-parameter-type-error
+
+vm-error-load "vm-errors/vm-run-bad-thread-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a thread" ^rt-parameter-type-error
+vm-error-load "vm-errors/vm-run-bad-PC-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a fixnum" ^rt-parameter-type-error
+
+vm-error-load "vm-errors/vm-values-ref-bignum-float.idio" "bad parameter type: '1.1e+0' a BIGNUM is not a integer" ^rt-parameter-type-error
+vm-error-load "vm-errors/vm-values-ref-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a integer" ^rt-parameter-type-error
+
+vm-error-load "vm-errors/exit-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a fixnum|C_int" ^rt-parameter-type-error
+
+vm-error-load "vm-errors/run-in-thread-bad-thread-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a thread" ^rt-parameter-type-error
+vm-error-load "vm-errors/run-in-thread-bad-func-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a function" ^rt-parameter-type-error
+
+;; all done?
+Tests? (vm-error0 + 31)

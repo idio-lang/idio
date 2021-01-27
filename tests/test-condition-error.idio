@@ -76,7 +76,7 @@ condition-error-load "condition-errors/condition-set-bad-condition-type.idio" "b
 condition-error-load "condition-errors/condition-set-bad-field-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol"
 
 condition-error-load "condition-errors/set-default-handler-bad-condition-type-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a condition_type"
-condition-error-load "condition-errors/set-default-handler-bad-handler-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a procedure"
+condition-error-load "condition-errors/set-default-handler-bad-handler-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a function"
 
 condition-error-load "condition-errors/clear-default-handler-bad-condition-type-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a condition_type"
 

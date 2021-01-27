@@ -1,0 +1,4 @@
+
+%%call/cc (function (k) {
+	     k 1 2
+})

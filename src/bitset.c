@@ -1007,7 +1007,7 @@ invoke `f` on each bit in bitset `bs` that is set\n\
      *
      * bitset-for-each-set #B{ 1 } #t
      */
-    IDIO_USER_TYPE_ASSERT (procedure, f);
+    IDIO_USER_TYPE_ASSERT (function, f);
 
     IDIO thr = idio_thread_current_thread ();
 
@@ -1065,7 +1065,7 @@ accumulating the result in `v`			\n\
      *
      * fold-bitset #B{ 1 } #t #t
      */
-    IDIO_USER_TYPE_ASSERT (procedure, f);
+    IDIO_USER_TYPE_ASSERT (function, f);
 
     IDIO thr = idio_thread_current_thread ();
 

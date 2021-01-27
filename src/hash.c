@@ -1196,7 +1196,7 @@ IDIO idio_hash_reference (IDIO ht, IDIO key, IDIO args)
     if (idio_S_unspec == r) {
 	if (idio_S_nil != args) {
 	    IDIO dv = IDIO_PAIR_H (args);
-	    if (idio_isa_procedure (dv)) {
+	    if (idio_isa_function (dv)) {
 		r = idio_vm_invoke_C (idio_thread_current_thread (), dv);
 	    } else {
 		r = dv;
@@ -1861,7 +1861,7 @@ call ``func`` for each ``key` in hash table ``ht``		\n\
      *
      * hash-walk #{} #t
      */
-    IDIO_USER_TYPE_ASSERT (procedure, func);
+    IDIO_USER_TYPE_ASSERT (function, func);
 
     /*
      * Careful of the old chestnut, the invocation of the function
@@ -1921,7 +1921,7 @@ The final value of ``val`` is returned				\n\
      *
      * hash-fold #{} #t #t
      */
-    IDIO_USER_TYPE_ASSERT (procedure, func);
+    IDIO_USER_TYPE_ASSERT (function, func);
 
     /*
      * Careful of the old chestnut, the invocation of the function

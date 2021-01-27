@@ -39,9 +39,9 @@ unicode-error-load := {
     load-k := #n
 
     n = n + 1
-    ;eprintf "loading #%s %s looking for %s at line %s\n" n filename msg linenum
+    ;eprintf "loading #%s %s looking for %s\n" n filename msg
     trap (^rt-parameter-error) (function (c) {
-				  ;eprintf "unicode-error #%s: %s %s %s\n" n msg c.location c.line
+				  ;eprintf "unicode-error #%s: %s %s\n" n msg c.location
 				  test c.message msg
 
 				  if (not (string=? c.message msg)) {

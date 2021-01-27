@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -55,28 +55,16 @@ dynamic-let (dvar-x1 lex-x) {
   test-dvar-x1 lex-x
 }
 
-;; ^rt-dynamic-variable-unbound-error is raised when calling a
-;; function where no such variable is in scope
-trap ^rt-dynamic-variable-unbound-error (function (c) {
-					   test (rt-dynamic-variable-unbound-error? c) #t
-					   name := condition-ref c 'name
-
-					   ;; we know that test-dvar-x1 in our body was passed lex-x
-					   lex-x
-}) {
-  ;; printf "using unbound dynamic variable\n"
-  test-dvar-x1 lex-x
-}
-
 ;; create a toplevel dynamic variable
 dvar-x2 :~ 11
 test (dynamic? 'dvar-x2) #t
 
-;; test it here
+;; test it here, inline
 test dvar-x2 11
 
+dvar-x2 = lex-x
 ;; test it in a prepared function
-test-dvar-x2
+test-dvar-x2 lex-x
 
 ;; all done?
-Tests? (dynamic0 + 9)
+Tests? (dynamic0 + 8)

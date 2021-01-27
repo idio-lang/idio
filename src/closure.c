@@ -84,7 +84,7 @@ int idio_isa_closure (IDIO o)
     return idio_isa (o, IDIO_TYPE_CLOSURE);
 }
 
-int idio_isa_procedure (IDIO o)
+int idio_isa_function (IDIO o)
 {
     IDIO_ASSERT (o);
 
@@ -116,7 +116,7 @@ A procedure can be either an Idio (closure) or C (primitive) defined function\n\
 
     IDIO r = idio_S_false;
 
-    if (idio_isa_procedure (o)) {
+    if (idio_isa_function (o)) {
 	r = idio_S_true;
     }
 
@@ -140,7 +140,7 @@ return the setter of `p`			\n\
 	 *
 	 * setter #f
 	 */
-	idio_error_param_type ("primitive|closure", p, IDIO_C_FUNC_LOCATION ());
+	idio_error_param_type ("function", p, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
