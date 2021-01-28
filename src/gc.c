@@ -2141,7 +2141,7 @@ int idio_asprintf(char **strp, const char *fmt, ...)
 	idio_error_alloc ("asprintf");
 
 	/* notreached */
-	return NULL;
+	return -1;
     }
 
     return r;

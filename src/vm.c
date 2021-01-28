@@ -618,8 +618,6 @@ static void idio_vm_error_computed (char *msg, idio_ai_t mci, idio_ai_t gvi, IDI
 	sym = idio_vm_constants_ref (IDIO_FIXNUM_VAL (fgci));
     }
 
-    IDIO detail = idio_S_nil;
-
 #ifdef IDIO_DEBUG
     idio_display_C (": ", dsh);
     idio_display (c_location, dsh);
@@ -660,8 +658,6 @@ static void idio_vm_error_computed_no_accessor (char *msg, idio_ai_t mci, idio_a
     if (idio_S_unspec != fgci) {
 	sym = idio_vm_constants_ref (IDIO_FIXNUM_VAL (fgci));
     }
-
-    IDIO detail = idio_S_nil;
 
 #ifdef IDIO_DEBUG
     idio_display_C (": ", dsh);
