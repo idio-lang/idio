@@ -45,6 +45,9 @@ vm-error-load := {
     load-k := #n
 
     n = n + 1
+
+    exp-tests := 1
+
     ;eprintf "loading #%s %s looking for %s\n" n filename msg
     trap (^runtime-error
 	  ^rt-command-error) (function (c) {
@@ -56,15 +59,20 @@ vm-error-load := {
 					    (not (equal? (ph args) (struct-instance-type c))))) {
 					      condition-report (append-string "vm-error-load: " filename) c (current-error-handle)
 					    }
+				
 				load-k 'vm-error
 	  }) {
-      call/cc (function (k) {
-		 load-k = k
-		 t0 := Tests
-		 (symbol-value 'load 'Idio) filename
-		 Tests? (t0 + 1)
-      })
-    }
+	    call/cc (function (k) {
+		       load-k = k
+		       t0 := Tests
+		       (symbol-value 'load 'Idio) filename
+		       if (not (equal? Tests (t0 + exp-tests))) {
+			 eprintf "vm-error #%s: %s did not generate \"%s\"\n" n filename msg
+			 Errors = Errors + 1
+			 Tests = t0 + exp-tests
+		       }
+	    })
+	  }
   }
 }
 

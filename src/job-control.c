@@ -712,12 +712,11 @@ static IDIO idio_job_control_foreground_job (IDIO job, int cont)
      * Put the job in the foreground
      */
     if (tcsetpgrp (idio_job_control_terminal, job_pgid) < 0) {
-	idio_error_system ("icfg tcsetpgrp",
-			   IDIO_LIST3 (idio_C_int (idio_job_control_terminal),
-				       idio_C_int (job_pgid),
-				       job),
-			   errno,
-			   IDIO_C_FUNC_LOCATION ());
+	idio_error_system_errno ("tcsetpgrp",
+				 IDIO_LIST3 (idio_C_int (idio_job_control_terminal),
+					     idio_C_int (job_pgid),
+					     job),
+				 IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -734,7 +733,7 @@ static IDIO idio_job_control_foreground_job (IDIO job, int cont)
 	}
 
 	if (kill (-job_pgid, SIGCONT) < 0) {
-	    idio_error_system_errno ("kill SIGCONT", idio_C_int (-job_pgid), IDIO_C_FUNC_LOCATION ());
+	    idio_error_system_errno_msg ("kill", "SIGCONT", idio_C_int (-job_pgid), IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -751,12 +750,11 @@ static IDIO idio_job_control_foreground_job (IDIO job, int cont)
      * Put the shell back in the foreground.
      */
     if (tcsetpgrp (idio_job_control_terminal, idio_job_control_pgid) < 0) {
-	idio_error_system ("tcsetpgrp",
-			   IDIO_LIST3 (idio_C_int (idio_job_control_terminal),
-				       idio_C_int (idio_job_control_pgid),
-				       job),
-			   errno,
-			   IDIO_C_FUNC_LOCATION ());
+	idio_error_system_errno ("tcsetpgrp",
+				 IDIO_LIST3 (idio_C_int (idio_job_control_terminal),
+					     idio_C_int (idio_job_control_pgid),
+					     job),
+				 IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -839,7 +837,7 @@ static IDIO idio_job_control_background_job (IDIO job, int cont)
 	int job_pgid = IDIO_C_TYPE_INT (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PGID));
 
 	if (kill (-job_pgid, SIGCONT) < 0) {
-	    idio_error_system_errno ("kill SIGCONT", idio_C_int (-job_pgid), IDIO_C_FUNC_LOCATION ());
+	    idio_error_system_errno_msg ("kill", "SIGCONT", idio_C_int (-job_pgid), IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -914,7 +912,7 @@ static void idio_job_control_hangup_job (IDIO job)
 
     if (kill (-job_pgid, SIGCONT) < 0) {
 	if (ESRCH != errno) {
-	    idio_error_system_errno ("kill SIGCONT", idio_C_int (-job_pgid), IDIO_C_FUNC_LOCATION ());
+	    idio_error_system_errno_msg ("kill", "SIGCONT", idio_C_int (-job_pgid), IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
 	    return;
@@ -923,7 +921,7 @@ static void idio_job_control_hangup_job (IDIO job)
 
     if (kill (-job_pgid, SIGHUP) < 0) {
 	if (ESRCH != errno) {
-	    idio_error_system_errno ("kill SIGHUP", idio_C_int (-job_pgid), IDIO_C_FUNC_LOCATION ());
+	    idio_error_system_errno_msg ("kill", "SIGHUP", idio_C_int (-job_pgid), IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
 	    return;
@@ -1109,10 +1107,10 @@ static void idio_job_control_prep_io (int infile, int outfile, int errfile)
      */
     if (infile != STDIN_FILENO) {
 	if (dup2 (infile, STDIN_FILENO) < 0) {
-	    idio_error_system ("dup2", IDIO_LIST2 (idio_C_int (infile),
-						   idio_C_int (STDIN_FILENO)),
-			       errno,
-			       IDIO_C_FUNC_LOCATION ());
+	    idio_error_system_errno ("dup2",
+				     IDIO_LIST2 (idio_C_int (infile),
+						 idio_C_int (STDIN_FILENO)),
+				     IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
 	    return;
@@ -1122,17 +1120,17 @@ static void idio_job_control_prep_io (int infile, int outfile, int errfile)
 	/*     (infile != outfile && */
 	/*      infile != errfile)) { */
 	/*     if (close (infile) < 0) { */
-	/* 	idio_error_system ("close", IDIO_LIST1 (idio_C_int (infile)), errno, IDIO_C_FUNC_LOCATION ()); */
+	/* 	idio_error_system_errno ("close", IDIO_LIST1 (idio_C_int (infile)), IDIO_C_FUNC_LOCATION ()); */
 	/*     } */
 	/* } */
     }
 
     if (outfile != STDOUT_FILENO) {
 	if (dup2 (outfile, STDOUT_FILENO) < 0) {
-	    idio_error_system ("dup2", IDIO_LIST2 (idio_C_int (outfile),
-						   idio_C_int (STDOUT_FILENO)),
-			       errno,
-			       IDIO_C_FUNC_LOCATION ());
+	    idio_error_system_errno ("dup2",
+				     IDIO_LIST2 (idio_C_int (outfile),
+						 idio_C_int (STDOUT_FILENO)),
+				     IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
 	    return;
@@ -1141,17 +1139,17 @@ static void idio_job_control_prep_io (int infile, int outfile, int errfile)
 	/* if (outfile > STDERR_FILENO && */
 	/*     outfile != errfile) { */
 	/*     if (close (outfile) < 0) { */
-	/* 	idio_error_system ("close", IDIO_LIST1 (idio_C_int (outfile)), errno, IDIO_C_FUNC_LOCATION ()); */
+	/* 	idio_error_system_errno ("close", IDIO_LIST1 (idio_C_int (outfile)), IDIO_C_FUNC_LOCATION ()); */
 	/*     } */
 	/* } */
     }
 
     if (errfile != STDERR_FILENO) {
 	if (dup2 (errfile, STDERR_FILENO) < 0) {
-	    idio_error_system ("dup2", IDIO_LIST2 (idio_C_int (errfile),
-						   idio_C_int (STDERR_FILENO)),
-			       errno,
-			       IDIO_C_FUNC_LOCATION ());
+	    idio_error_system_errno ("dup2",
+				     IDIO_LIST2 (idio_C_int (errfile),
+						 idio_C_int (STDERR_FILENO)),
+				     IDIO_C_FUNC_LOCATION ());
 
 
 	    /* notreached */
@@ -1160,7 +1158,7 @@ static void idio_job_control_prep_io (int infile, int outfile, int errfile)
 
 	/* if (errfile > STDERR_FILENO) { */
 	/*     if (close (errfile) < 0) { */
-	/* 	idio_error_system ("close", IDIO_LIST1 (idio_C_int (errfile)), errno, IDIO_C_FUNC_LOCATION ()); */
+	/* 	idio_error_system_errno ("close", IDIO_LIST1 (idio_C_int (errfile)), IDIO_C_FUNC_LOCATION ()); */
 	/*     } */
 	/* } */
     }
@@ -1181,7 +1179,10 @@ static void idio_job_control_prep_process (pid_t job_pgid, int infile, int outfi
 	 * avoid race conditions.
 	 */
 	if (setpgid (pid, job_pgid) < 0) {
-	    idio_error_system_errno ("setpgid", IDIO_LIST2 (idio_C_int (pid), idio_C_int (job_pgid)), IDIO_C_FUNC_LOCATION ());
+	    idio_error_system_errno ("setpgid",
+				     IDIO_LIST2 (idio_C_int (pid),
+						 idio_C_int (job_pgid)),
+				     IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
 	    return;
@@ -1193,11 +1194,10 @@ static void idio_job_control_prep_process (pid_t job_pgid, int infile, int outfi
 	     * to avoid race conditions.
 	     */
 	    if (tcsetpgrp (idio_job_control_terminal, job_pgid) < 0) {
-		idio_error_system ("icpp tcsetpgrp",
-				   IDIO_LIST2 (idio_C_int (idio_job_control_terminal),
-					       idio_C_int (job_pgid)),
-				   errno,
-				   IDIO_C_FUNC_LOCATION ());
+		idio_error_system_errno ("icpp tcsetpgrp",
+					 IDIO_LIST2 (idio_C_int (idio_job_control_terminal),
+						     idio_C_int (job_pgid)),
+					 IDIO_C_FUNC_LOCATION ());
 
 		/* notreached */
 		return;
@@ -1354,13 +1354,12 @@ static void idio_job_control_launch_job (IDIO job, int foreground)
 		    idio_struct_instance_set_direct (job, IDIO_JOB_TYPE_PGID, idio_C_int (job_pgid));
 		}
 		if (setpgid (pid, job_pgid) < 0) {
-		    idio_error_system ("setpgid",
-				       IDIO_LIST4 (idio_C_int (pid),
-						   idio_C_int (job_pgid),
-						   proc,
-						   job),
-				       errno,
-				       IDIO_C_FUNC_LOCATION ());
+		    idio_error_system_errno ("setpgid",
+					     IDIO_LIST4 (idio_C_int (pid),
+							 idio_C_int (job_pgid),
+							 proc,
+							 job),
+					     IDIO_C_FUNC_LOCATION ());
 
 		    /* notreached */
 		    return;
@@ -1508,13 +1507,12 @@ IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char **argv)
 		     * Duplicate check as per c/setpgid in libc-wrap.c
 		     */
 		    if (EACCES != errno) {
-			idio_error_system ("setpgid",
-					   IDIO_LIST4 (idio_C_int (pid),
-						       idio_C_int (job_pgid),
-						       proc,
-						       job),
-					   errno,
-					   IDIO_C_FUNC_LOCATION ());
+			idio_error_system_errno ("setpgid",
+						 IDIO_LIST4 (idio_C_int (pid),
+							     idio_C_int (job_pgid),
+							     proc,
+							     job),
+						 IDIO_C_FUNC_LOCATION ());
 
 			return idio_S_notreached;
 		    }
@@ -1707,7 +1705,7 @@ void idio_job_control_set_interactive (int interactive)
 		exit (128 + 15);
 	    }
 	    if (kill (-idio_job_control_pgid, SIGTTIN) < 0) {
-		idio_error_system_errno ("kill SIGTTIN", idio_C_int (-idio_job_control_pgid), IDIO_C_FUNC_LOCATION ());
+		idio_error_system_errno_msg ("kill", "SIGTTIN", idio_C_int (-idio_job_control_pgid), IDIO_C_FUNC_LOCATION ());
 
 		/* notreached */
 		return;
@@ -1772,11 +1770,10 @@ void idio_job_control_set_interactive (int interactive)
 	 * Grab control of the terminal.
 	 */
 	if (tcsetpgrp (idio_job_control_terminal, idio_job_control_pgid) < 0) {
-	    idio_error_system ("tcsetpgrp",
-			       IDIO_LIST2 (idio_C_int (idio_job_control_terminal),
-					   idio_C_int (idio_job_control_pgid)),
-			       errno,
-			       IDIO_C_FUNC_LOCATION ());
+	    idio_error_system_errno ("tcsetpgrp",
+				     IDIO_LIST2 (idio_C_int (idio_job_control_terminal),
+						 idio_C_int (idio_job_control_pgid)),
+				     IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
 	    return;

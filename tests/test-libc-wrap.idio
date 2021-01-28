@@ -188,8 +188,14 @@ strerror (C/->integer EPERM)
 
 strsignal SIGHUP
 
-;; should be safe...
-tcsetattr (C/integer-> 0) (C/integer-> 0) (tcgetattr (C/integer-> 0))
+;; should be safe to set the termios of stdin to stdin...
+(cond-expand
+ (uname/sysname/SunOS {
+   eprintf "SunOS: skipping tcsetattr *stdin* test\n"
+ })
+ (else {
+   tcsetattr (C/integer-> 0) (C/integer-> 0) (tcgetattr (C/integer-> 0))
+ }))
 
 ;; should be safe...
 tcsetpgrp (C/integer-> 0) (tcgetpgrp (C/integer-> 0))

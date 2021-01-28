@@ -30,6 +30,9 @@ closure-error-load := {
     load-k := #n
 
     n = n + 1
+
+    exp-tests := 1
+
     ;eprintf "loading #%s %s looking for %s\n" n filename msg
     trap (^rt-parameter-type-error
 	  ^rt-hash-key-not-found-error) (function (c) {
@@ -39,13 +42,18 @@ closure-error-load := {
 					   if (not (string=? c.message msg)) {
 					     condition-report (append-string "closure-error-load: " filename) c (current-error-handle)
 					   }
+					   
 					   load-k 'closure-error
 	  }) {
 	    call/cc (function (k) {
 		       load-k = k
 		       t0 := Tests
 		       (symbol-value 'load 'Idio) filename
-		       Tests? (t0 + 1)
+		       if (not (equal? Tests (t0 + exp-tests))) {
+			 eprintf "closure-error #%s: %s did not generate \"%s\"\n" n filename msg
+			 Errors = Errors + 1
+			 Tests = t0 + exp-tests
+		       }
 	    })
 	  }
   }

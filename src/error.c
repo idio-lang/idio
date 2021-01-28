@@ -405,17 +405,19 @@ This does not return!				\n\
     return idio_S_notreached;
 }
 
-void idio_error_system (char *msg, IDIO args, int err, IDIO c_location)
+void idio_error_system (char *func, char *msg, IDIO args, int err, IDIO c_location)
 {
-    IDIO_C_ASSERT (msg);
+    IDIO_C_ASSERT (func);
     IDIO_ASSERT (args);
     IDIO_ASSERT (c_location);
 
     IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO msh = idio_open_output_string_handle_C ();
-    idio_display_C (msg, msh);
-    idio_display_C (": ", msh);
+    if (NULL != msg) {
+	idio_display_C (msg, msh);
+	idio_display_C (": ", msh);
+    }
     idio_display_C (strerror (err), msh);
 
     IDIO location = idio_vm_source_location ();
@@ -432,24 +434,36 @@ void idio_error_system (char *msg, IDIO args, int err, IDIO c_location)
 #endif
 
     IDIO c = idio_struct_instance (idio_condition_system_error_type,
-				   IDIO_LIST4 (idio_get_output_string (msh),
+				   IDIO_LIST5 (idio_get_output_string (msh),
 					       location,
 					       idio_get_output_string (dsh),
-					       idio_C_int (err)));
+					       idio_C_int (err),
+					       idio_string_C (func)));
 
     idio_raise_condition (idio_S_true, c);
     /* notreached */
 }
 
-void idio_error_system_errno (char *msg, IDIO args, IDIO c_location)
+void idio_error_system_errno_msg (char *func, char *msg, IDIO args, IDIO c_location)
 {
-    IDIO_C_ASSERT (msg);
+    IDIO_C_ASSERT (func);
     IDIO_ASSERT (args);
     IDIO_ASSERT (c_location);
 
     IDIO_TYPE_ASSERT (string, c_location);
 
-    idio_error_system (msg, args, errno, c_location);
+    idio_error_system (func, msg, args, errno, c_location);
+}
+
+void idio_error_system_errno (char *func, IDIO args, IDIO c_location)
+{
+    IDIO_C_ASSERT (func);
+    IDIO_ASSERT (args);
+    IDIO_ASSERT (c_location);
+
+    IDIO_TYPE_ASSERT (string, c_location);
+
+    idio_error_system_errno_msg (func, NULL, args, c_location);
 }
 
 void idio_error_divide_by_zero (char *msg, IDIO c_location)

@@ -67,10 +67,20 @@ test (fixnum? +1)			#t
 test (fixnum? -1)			#t
 test (fixnum? FIXNUM-MAX)		#t
 test (fixnum? (FIXNUM-MAX + 1))		#f
-test (fixnum? ((FIXNUM-MAX + 1) - 1))	#f
 test (fixnum? FIXNUM-MIN)		#t
 test (fixnum? (FIXNUM-MIN - 1))		#f
-test (fixnum? ((FIXNUM-MIN - 1) + 1))	#f
+
+;; The heuristics for fixnum limits conversions are..."suboptimal"
+(cond-expand
+ (sizeof/pointer/32 {
+   test (fixnum? ((FIXNUM-MAX + 1) - 1))	#t
+   test (fixnum? ((FIXNUM-MIN - 1) + 1))	#t
+ })
+ (else {
+   test (fixnum? ((FIXNUM-MAX + 1) - 1))	#f
+   test (fixnum? ((FIXNUM-MIN - 1) + 1))	#f
+ }))
+
 test (fixnum? (unicode->integer #\a))   #t
 
 ;; things that failed the fixnum? test are still integers

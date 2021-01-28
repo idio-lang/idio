@@ -73,12 +73,18 @@ signals.  So, 10, 11, 12, ...
 command-parent-error-load := {
   n := 0
 
-  function (filename msg) {
+  function (filename msg & args) {
     if (not (string? filename)) (error 'load "not a string" filename)
 
     load-k := #n
 
     n = n + 1
+
+    exp-tests := 1
+    if (pair? args) {
+      exp-tests = 2
+    }
+
     ;eprintf "loading #%s %s looking for %s\n" n filename msg
     trap (^rt-command-error
 	  ^rt-glob-error
@@ -90,13 +96,30 @@ command-parent-error-load := {
 				       if (not (string=? c.message msg)) {
 					 condition-report (append-string "command-parent-error-load: " filename) c (current-error-handle)
 				       }
+
+				       if (system-error? c) {
+					 tested := #f
+					 if (pair? args) {
+					   test c.function (ph args)
+					   tested = #t
+					 }
+
+					 if (not tested) {
+					   condition-report (append-string "command-error-load: " filename) c (current-error-handle)
+					 }
+				       }
+
 				       load-k 'command-parent-error
 	  }) {
 	    call/cc (function (k) {
 		       load-k = k
 		       t0 := Tests
 		       (symbol-value 'load 'Idio) filename
-		       Tests? (t0 + 1)
+		       if (not (equal? Tests (t0 + exp-tests))) {
+			 eprintf "command-error #%s: %s did not generate \"%s\"\n" n filename msg
+			 Errors = Errors + 1
+			 Tests = t0 + exp-tests
+		       }
 	    })
 	  }
   }
@@ -167,21 +190,29 @@ command-child-error-load "command-errors/env-type.idio" "environment variable 'I
 
 command-parent-error-load "command-errors/PATH-format.idio" "find-exe 'PATH' contains an ASCII NUL"
 
-cwd := (getcwd)
-command-parent-error-load "command-errors/find-exe-getcwd-rmdir.idio" "getcwd: No such file or directory"
-chdir cwd
+(cond-expand
+ (uname/sysname/SunOS {
+   ;; SunOS won't let you rmdir "." or any equivalent => EINVAL
+   eprintf "SunOS: skipping test using rmdir .\n"
+   Tests = Tests + 2
+ })
+ (else {
+   cwd := (getcwd)
+   command-parent-error-load "command-errors/find-exe-getcwd-rmdir.idio" "No such file or directory" "getcwd"
+   chdir cwd
+ }))
 
 OPATH := PATH
-command-parent-error-load "command-errors/find-exe-cmd-PATH_MAX.idio" "cwd+command exename length: File name too long"
+command-parent-error-load "command-errors/find-exe-cmd-PATH_MAX.idio" "File name too long" "cwd+command exename length"
 PATH = OPATH
 
-command-parent-error-load "command-errors/find-exe-dir-cmd-PATH_MAX-1.idio" "dir+command exename length: File name too long"
+command-parent-error-load "command-errors/find-exe-dir-cmd-PATH_MAX-1.idio" "File name too long" "PATH+command exename length"
 PATH = OPATH
 
-command-parent-error-load "command-errors/find-exe-dir-cmd-PATH_MAX-2.idio" "dir+command exename length: File name too long"
+command-parent-error-load "command-errors/find-exe-dir-cmd-PATH_MAX-2.idio" "File name too long" "cwd+command exename length"
 PATH = OPATH
 
-command-parent-error-load "command-errors/find-exe-dir-cmd-PATH_MAX-3.idio" "dir+command exename length: File name too long"
+command-parent-error-load "command-errors/find-exe-dir-cmd-PATH_MAX-3.idio" "File name too long" "dir+command exename length"
 PATH = OPATH
 
 command-parent-error-load "command-errors/find-exe-not-found.idio" "command not found (foo)"
@@ -208,4 +239,4 @@ PATH = OPATH
 (wait)
 
 ;; all done?
-Tests? (command-error0 + 20)
+Tests? (command-error0 + 25)

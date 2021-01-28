@@ -33,27 +33,46 @@
 
   - an int64_t exponent (allowing n * 10^(+/- 2^63) which is quite
     large and probably covers enough of the number-space for our
-    purposes)
+    purposes).
+
+    An int64_t might seem excessive but the layout of a C struct means
+    we have a architecture-dependent word as a minimum -- if we don't
+    use a whole word, say uint16_t for exponent, then the rest of the
+    word is wasted space.
+
+    In this case, we'll use 64 bits (and therefore two words on 32-bit
+    systems) for consistency across platforms.
 
   - up to IDIO_BIGNUM_SIG_MAX_DIGITS significant decimal digits spread
     across several machine words.
 
-  Those words are organized as a dynamically sized (reference
-  counted!) array of IDIO_BS_T.
+    Those words are organized as a dynamically sized (reference
+    counted!) array of IDIO_BS_T.
 
-  The first word in the array represents the least significant word of
-  the bignum meaning that index zero remains the LSS as the bignum
-  grows.  This is the opposite of S9fES' linked lists of MSS->...->LSS.
+    The first word in the array represents the least significant word
+    of the bignum meaning that index zero remains the LSS as the
+    bignum grows.  This is the opposite of S9fES' linked lists of
+    MSS->...->LSS.
 
   Sign: For a real the sign is in a distinct flag.  For an integer,
   the most significant segment is signed.
+
+  Technically, the exponent range isn't 10^(+/- 2^63) because it is
+  modified by the number of significant digits (which is dynamic).
+  The point being that the significant digits are always without a
+  decimal place and that is modified by the exponent.  So 123 and
+  0.123 have identical significant digits, 123, but different
+  exponents, 0 and -3.  The point being that the int64_t exponent
+  allows for "quite large" or "quite small" numbers.  Bigger/smaller
+  than is practically useful.  (Unless you can think if a practical
+  use.)
 
 
   How many decimal digits can fit in a machine word?  log2(10) is
   3.322, ie each base10 digit uses 3.322 binary bits.  19 of those
   would be 63.12 bits which means we'd not be able to store the sign
   of the value (which only applies to the MSS of an integer).  So 18
-  decimal digits in 64 bits.  Ditto, 9 in 32.
+  decimal digits in 64 bits.  Similarly, 9 in 32.
 
   IDIO_BIGNUM_INT_SEG_LIMIT is the decimal representation of one more
   than IDIO_BIGNUM_DPW (digits per word), ie. if DPW was 3 then
@@ -86,9 +105,14 @@
   The S9fES bignum tests work well with 18 significant digits.
 
   In addition, we have occasion to convert back into a C integer.  C's
-  *_MAX are generally represent by significand arrays which are
+  *_MAX are generally represented by significand arrays which are
   greater than one, eg. INT64_MAX is 9223372036854775807, 19 digits
-  long, so two or three segments depending on OS+ARCH.
+  long, UINT_MAX is 18446744073709551616, 20 digits, so two or three
+  segments depending on OS+ARCH.
+
+  In the case of UINT_MAX the significant digits in each segment will
+  be 18, 446744073 and 709551616 on a 32-bit system and 18 and
+  446744073709551616 on 64-bit systems.
 
   That means we need to know how many segments will be used to
   represent such a number and what the first digit of that number is

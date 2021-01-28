@@ -499,9 +499,9 @@ convert Idio integer `i` to a C unsigned integer\n\
     if (idio_isa_fixnum (inum)) {
 	return idio_C_uint (IDIO_FIXNUM_VAL (inum));
     } else if (idio_isa_integer_bignum (inum)) {
-	return idio_C_uint (idio_bignum_intmax_value (inum));
+	return idio_C_uint (idio_bignum_uint64_value (inum));
     } else {
-	idio_error_param_type ("integer", inum, IDIO_C_FUNC_LOCATION ());
+	idio_error_param_type ("positive integer", inum, IDIO_C_FUNC_LOCATION ());
     }
 
     return idio_S_notreached;

@@ -40,6 +40,9 @@ array-error-load := {
     load-k := #n
 
     n = n + 1
+
+    exp-tests := 1
+
     ;eprintf "loading #%s %s looking for %s\n" n filename msg
     trap (^rt-array-error
 	  ^rt-parameter-type-error) (function (c) {
@@ -49,13 +52,18 @@ array-error-load := {
 				       if (not (string=? c.message msg)) {
 					 condition-report (append-string "array-error-load: " filename) c (current-error-handle)
 				       }
+				       
 				       load-k 'array-error
 	  }) {
 	    call/cc (function (k) {
 		       load-k = k
 		       t0 := Tests
 		       (symbol-value 'load 'Idio) filename
-		       Tests? (t0 + 1)
+		       if (not (equal? Tests (t0 + exp-tests))) {
+			 eprintf "array-error #%s: %s did not generate \"%s\"\n" n filename msg
+			 Errors = Errors + 1
+			 Tests = t0 + exp-tests
+		       }
 	    })
 	  }
   }

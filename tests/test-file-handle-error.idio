@@ -24,12 +24,18 @@ file-handle-error0 := Tests
 file-handle-error-load := {
   n := 0
 
-  function (filename msg) {
+  function (filename msg & args) {
     if (not (string? filename)) (error 'load "not a string" filename)
 
     load-k := #n
 
     n = n + 1
+
+    exp-tests := 1
+    if (pair? args) {
+      exp-tests = 2
+    }
+
     ;eprintf "loading #%s %s looking for %s\n" n filename msg
     trap (^i/o-error
 	  ^rt-parameter-type-error
@@ -41,13 +47,30 @@ file-handle-error-load := {
 					 if (not (string=? c.message msg)) {
 					   condition-report (append-string "file-handle-error-load: " filename) c (current-error-handle)
 					 }
+
+					 if (system-error? c) {
+					   tested := #f
+					   if (pair? args) {
+					     test c.function (ph args)
+					     tested = #t
+					   }
+
+					   if (not tested) {
+					     condition-report (append-string "file-handle-error-load: " filename) c (current-error-handle)
+					   }
+					 }
+
 					 load-k 'file-handle-error
 	  }) {
 	    call/cc (function (k) {
 		       load-k = k
 		       t0 := Tests
 		       (symbol-value 'load 'Idio) filename
-		       Tests? (t0 + 1)
+		       if (not (equal? Tests (t0 + exp-tests))) {
+			 eprintf "file-handle-error #%s: %s did not generate \"%s\"\n" n filename msg
+			 Errors = Errors + 1
+			 Tests = t0 + exp-tests
+		       }
 	    })
 	  }
   }
@@ -59,7 +82,7 @@ file-handle-error-load "file-handle-errors/open-file-from-fd-filename-PATH_MAX.i
 file-handle-error-load "file-handle-errors/open-file-from-fd-filename-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
 file-handle-error-load "file-handle-errors/open-file-from-fd-mode-format.idio" "open-file-from-fd mode contains an ASCII NUL"
 file-handle-error-load "file-handle-errors/open-file-from-fd-mode-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
-file-handle-error-load "file-handle-errors/open-file-from-fd-mode-invalid.idio" "fdopen: Invalid argument"
+file-handle-error-load "file-handle-errors/open-file-from-fd-mode-invalid.idio" "Invalid argument" "fdopen"
 
 file-handle-error-load "file-handle-errors/open-input-file-from-fd-bad-fd-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_int"
 file-handle-error-load "file-handle-errors/open-input-file-from-fd-filename-format.idio" "open-input-file-from-fd filename contains an ASCII NUL"
@@ -67,7 +90,7 @@ file-handle-error-load "file-handle-errors/open-input-file-from-fd-filename-PATH
 file-handle-error-load "file-handle-errors/open-input-file-from-fd-filename-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
 file-handle-error-load "file-handle-errors/open-input-file-from-fd-mode-format.idio" "open-input-file-from-fd mode contains an ASCII NUL"
 file-handle-error-load "file-handle-errors/open-input-file-from-fd-mode-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
-file-handle-error-load "file-handle-errors/open-input-file-from-fd-mode-invalid.idio" "fdopen: Invalid argument"
+file-handle-error-load "file-handle-errors/open-input-file-from-fd-mode-invalid.idio" "Invalid argument" "fdopen"
 
 file-handle-error-load "file-handle-errors/open-output-file-from-fd-bad-fd-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_int"
 file-handle-error-load "file-handle-errors/open-output-file-from-fd-filename-format.idio" "open-output-file-from-fd filename contains an ASCII NUL"
@@ -75,7 +98,7 @@ file-handle-error-load "file-handle-errors/open-output-file-from-fd-filename-PAT
 file-handle-error-load "file-handle-errors/open-output-file-from-fd-filename-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
 file-handle-error-load "file-handle-errors/open-output-file-from-fd-mode-format.idio" "open-output-file-from-fd mode contains an ASCII NUL"
 file-handle-error-load "file-handle-errors/open-output-file-from-fd-mode-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
-file-handle-error-load "file-handle-errors/open-output-file-from-fd-mode-invalid.idio" "fdopen: Invalid argument"
+file-handle-error-load "file-handle-errors/open-output-file-from-fd-mode-invalid.idio" "Invalid argument" "fdopen"
 
 file-handle-error-load "file-handle-errors/open-file-mode-invalid.idio" "open-file mode invalid"
 
@@ -103,15 +126,16 @@ chmod +r tmpfile
 ;; This is supported on Linux, MacOS.  Not supported on Solaris
 ;; (OpenIndiana -- 1.5.1 at any rate, Hipster does).
 
-if (equal? (struct-utsname-sysname libc/idio-uname) "SunOS") {
-  ;; eprintf "Solaris: no fopen (\"x\") flag: skipping\n"
-  test #t #t
-} {
-  file-handle-error-load "file-handle-errors/open-file-exists.idio" "open-file: File exists"
-
-  ;; NB we can only pass mode flags with open-file (open-input-file
-  ;; and open-output-file used fixed flags)
-}
+(cond-expand
+ (uname/sysname/SunOS {
+   eprintf "SunOS: skipping fopen with mode \"x\" test\n"
+   Tests = Tests + 1
+ })
+ (else {
+   ;; NB we can only pass mode flags with open-file (open-input-file
+   ;; and open-output-file used fixed flags)
+   file-handle-error-load "file-handle-errors/open-file-exists.idio" "open-file: File exists"
+ }))
 
 ;; ^i/o-filename-error
 ;;
@@ -143,7 +167,7 @@ file-handle-error-load "file-handle-errors/open-output-file-dirname-missing.idio
 
 ;; Technically this could fail with EMFILE or ENFILE, depending on the
 ;; state of the system.
-file-handle-error-load "file-handle-errors/EMFILE.idio" "fopen (final): Too many open files"
+file-handle-error-load "file-handle-errors/EMFILE.idio" "Too many open files" "fopen (final)"
 
 file-handle-error-load "file-handle-errors/open-file-filename-format.idio" "open-file filename contains an ASCII NUL"
 file-handle-error-load "file-handle-errors/open-file-filename-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
@@ -160,9 +184,9 @@ file-handle-error-load "file-handle-errors/ready-closed-handle.idio" "handle alr
 file-handle-error-load "file-handle-errors/close-closed-handle.idio" "handle already closed"
 
 file-handle-error-load "file-handle-errors/fflush-file-handle-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a file_handle"
-file-handle-error-load "file-handle-errors/fflush-bad-handle.idio" "fflush: Bad file descriptor"
+file-handle-error-load "file-handle-errors/fflush-bad-handle.idio" "Bad file descriptor" "fflush"
 
-file-handle-error-load "file-handle-errors/lseek-negative-offset.idio" "lseek: Invalid argument"
+file-handle-error-load "file-handle-errors/lseek-negative-offset.idio" "Invalid argument" "lseek"
 
 file-handle-error-load "file-handle-errors/close-file-handle-on-exec-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a file_handle"
 
@@ -172,17 +196,25 @@ IDIOLIB = OIDIOLIB
 
 file-handle-error-load "file-handle-errors/find-lib-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
 
-cwd := (getcwd)
-file-handle-error-load "file-handle-errors/find-lib-getcwd-rmdir.idio" "getcwd: No such file or directory"
-chdir cwd
+(cond-expand
+ (uname/sysname/SunOS {
+   ;; SunOS won't let you rmdir "." or any equivalent => EINVAL
+   eprintf "SunOS: skipping test using rmdir .\n"
+   Tests = Tests + 2
+ })
+ (else {
+   cwd := (getcwd)
+   file-handle-error-load "file-handle-errors/find-lib-getcwd-rmdir.idio" "No such file or directory" "getcwd"
+   chdir cwd
+ }))
 
-file-handle-error-load "file-handle-errors/find-lib-dir-lib-PATH_MAX-1.idio" "dir+file.idio libname length: File name too long"
+file-handle-error-load "file-handle-errors/find-lib-dir-lib-PATH_MAX-1.idio" "File name too long" "IDIOLIB+file.idio libname length"
 IDIOLIB = OIDIOLIB
 
-file-handle-error-load "file-handle-errors/find-lib-dir-lib-PATH_MAX-2.idio" "dir+file.idio libname length: File name too long"
+file-handle-error-load "file-handle-errors/find-lib-dir-lib-PATH_MAX-2.idio" "File name too long" "cwd+file.idio libname length"
 IDIOLIB = OIDIOLIB
 
-file-handle-error-load "file-handle-errors/find-lib-dir-lib-PATH_MAX-3.idio" "dir+file.idio libname length: File name too long"
+file-handle-error-load "file-handle-errors/find-lib-dir-lib-PATH_MAX-3.idio" "File name too long" "dir+file.idio libname length"
 IDIOLIB = OIDIOLIB
 
 file-handle-error-load "file-handle-errors/find-lib-format.idio" "find-lib filename contains an ASCII NUL"
@@ -198,4 +230,4 @@ file-handle-error-load "file-handle-errors/delete-file-format.idio" "delete-file
 file-handle-error-load "file-handle-errors/delete-file-EACCESS.idio" "remove: Permission denied"
 
 ;; all done?
-Tests? (file-handle-error0 + 64)
+Tests? (file-handle-error0 + 74)

@@ -1,2 +1,3 @@
 
-regexec (regcomp "") "" #t
+; SunOS regcomp() doesn't like an empty string!
+regexec (regcomp "a") "" #t

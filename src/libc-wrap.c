@@ -4986,7 +4986,7 @@ void idio_init_libc_wrap ()
 	 *
 	 * _SC_CLK_TCK is wrong?
 	 */
-	idio_error_system_errno ("sysconf (_SC_CLK_TCK)", idio_integer (idio_SC_CLK_TCK), IDIO_C_FUNC_LOCATION ());
+	idio_error_system_errno_msg ("sysconf", "(_SC_CLK_TCK)", idio_integer (idio_SC_CLK_TCK), IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return;

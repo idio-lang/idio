@@ -46,6 +46,7 @@
 
 /* ^system-error = ^idio_error plus */
 #define IDIO_SI_SYSTEM_ERROR_TYPE_ERRNO		3
+#define IDIO_SI_SYSTEM_ERROR_TYPE_FUNCTION	4
 
 /* ^rt-variable-error = ^idio_error plus */
 #define IDIO_SI_RT_VARIABLE_ERROR_TYPE_NAME	3

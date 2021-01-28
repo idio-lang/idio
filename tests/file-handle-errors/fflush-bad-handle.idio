@@ -7,6 +7,8 @@
 ;; suggests otherwise.
 ;;
 ;; So, back to basics with a not-open handle.
+;;
+;; And even that appears to fail under OpenIndiana oi_151.1.8.
 
 fh := open-input-file testfile
 close-handle fh

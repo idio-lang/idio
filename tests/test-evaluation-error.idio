@@ -39,20 +39,29 @@ evaluation-error-load := {
     load-k := #n
 
     n = n + 1
+
+    exp-tests := 1
+
     ;eprintf "loading #%s %s\n" n filename
     trap ^evaluation-error (function (c) {
 			      ;eprintf "evaluation-error #%s: %s %s\n" n msg c
 			      test c.message msg
+			      
 			      if (not (string=? c.message msg)) {
 				condition-report (append-string "evaluation-error-load: " filename) c (current-error-handle)
 			      }
+			      
 			      load-k c
     }) {
       call/cc (function (k) {
 		 load-k = k
 		 t0 := Tests
 		 (symbol-value 'load 'Idio) filename
-		 Tests? (t0 + 1)
+		 if (not (equal? Tests (t0 + exp-tests))) {
+		   eprintf "evaluation-error #%s: %s did not generate \"%s\"\n" n filename msg
+		   Errors = Errors + 1
+		   Tests = t0 + exp-tests
+		 }
       })
     }
   }

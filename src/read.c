@@ -3001,7 +3001,7 @@ static IDIO idio_read_1_expr_nl (IDIO handle, idio_unicode_t *ic, int depth, int
 		    /*
 		     * Test Case: read-errors/interpc-quasiquote-eof.idio
 		     *
-		     * $
+		     * #T{ $
 		     */
 		    idio_read_error_parse (handle, lo, IDIO_C_FUNC_LOCATION (), "EOF in quasiquote");
 

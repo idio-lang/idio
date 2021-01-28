@@ -447,7 +447,7 @@ char *idio_command_find_exe_C (char *command)
 		    IDIO_GC_FREE (spath);
 		}
 
-		idio_error_system ("cwd+command exename length", IDIO_LIST2 (PATH, idio_string_C (command)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
+		idio_error_system ("cwd+command exename length", NULL, IDIO_LIST2 (PATH, idio_string_C (command)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
 
 		/* notreached */
 		return NULL;
@@ -475,7 +475,7 @@ char *idio_command_find_exe_C (char *command)
 			IDIO_GC_FREE (spath);
 		    }
 
-		    idio_error_system ("dir+command exename length", IDIO_LIST2 (PATH, idio_string_C (command)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
+		    idio_error_system ("PATH+command exename length", NULL, IDIO_LIST2 (PATH, idio_string_C (command)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
 
 		    /* notreached */
 		    return NULL;
@@ -499,7 +499,7 @@ char *idio_command_find_exe_C (char *command)
 			    IDIO_GC_FREE (spath);
 			}
 
-			idio_error_system ("dir+command exename length", IDIO_LIST2 (PATH, idio_string_C (command)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
+			idio_error_system ("cwd+command exename length", NULL, IDIO_LIST2 (PATH, idio_string_C (command)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
 
 			/* notreached */
 			return NULL;
@@ -527,7 +527,7 @@ char *idio_command_find_exe_C (char *command)
 			    IDIO_GC_FREE (spath);
 			}
 
-			idio_error_system ("dir+command exename length", IDIO_LIST2 (PATH, idio_string_C (command)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
+			idio_error_system ("dir+command exename length", NULL, IDIO_LIST2 (PATH, idio_string_C (command)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
 
 			/* notreached */
 			return NULL;
@@ -1239,7 +1239,7 @@ IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
 	     */
 	    idio_command_free_argv1 (argv);
 
-	    idio_error_system_errno ("fseek 0 SEEK_SET", job_stdout, IDIO_C_FUNC_LOCATION ());
+	    idio_error_system_errno_msg ("fseek", "0 SEEK_SET", job_stdout, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -1267,7 +1267,7 @@ IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
 	     */
 	    idio_command_free_argv1 (argv);
 
-	    idio_error_system_errno ("fclose <job stdout>", job_stdout, IDIO_C_FUNC_LOCATION ());
+	    idio_error_system_errno_msg ("fclose", "<job stdout>", job_stdout, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -1302,7 +1302,7 @@ IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
 	     *
 	     * See above.
 	     */
-	    idio_error_system_errno ("fseek 0 SEEK_SET", job_stderr, IDIO_C_FUNC_LOCATION ());
+	    idio_error_system_errno_msg ("fseek", "0 SEEK_SET", job_stderr, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -1330,7 +1330,7 @@ IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
 	     *
 	     * See above.
 	     */
-	    idio_error_system_errno ("fclose <job stderr>", job_stdout, IDIO_C_FUNC_LOCATION ());
+	    idio_error_system_errno_msg ("fclose", "<job stderr>", job_stdout, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}

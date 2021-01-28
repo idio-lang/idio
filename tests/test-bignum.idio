@@ -1032,7 +1032,7 @@ test (exponent -1.2e-3) -4
 
 bn := FIXNUM-MAX * 2
 
-;; Technically, the bignum-dump calls for for code coverage -- and
+;; Technically, the bignum-dump calls are for code coverage -- and
 ;; print direct to stderr anyway!
 with-error-to #n (function () {
 		    bignum-dump bn
@@ -1072,7 +1072,23 @@ test (lt 3.0 (- 2fnm)) #f
 test (lt 2fnm 0.0) #f
 test (lt 0.0 2fnm) #t
 
-test (+ 3.0 2fnm) #i4e18		; ??
+(cond-expand
+ (sizeof/pointer/32 {
+   ;; 32-bit systems use two 9-digit segments.  2fnm, 1073741822, at
+   ;; 10 digits is using less than two segments worth of significant
+   ;; digits so there is no normalisation
+
+   test (+ 3.0 2fnm) 1.073741825e+9
+ })
+ (else {
+   ;; 64-bit systems use one 18-digit segment.  2fnm,
+   ;; 4611686018427387902, at 19 digits is using more than one
+   ;; segments worth of significant digits so the result is normalised
+   ;; to an inexect number
+
+   test (+ 3.0 2fnm) #i4e18
+ })
+)
 
 test (* 0.0 1) 0
 test (* 1.0 2fnm) 2fnm

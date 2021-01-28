@@ -115,7 +115,7 @@ extern IDIO idio_libc_struct_stat;
 	sprintf (idio_libc_errno_names[n], "%s", IDIO_SYMBOL_S (err_sym)); \
 	IDIO err_ct;							\
 	IDIO_DEFINE_CONDITION0_DYNAMIC (err_ct, "^system-error-" #n, idio_condition_system_error_type);	\
-	IDIO err_cond = idio_struct_instance (err_ct, IDIO_LIST4 (idio_S_nil, idio_S_nil, idio_S_nil, idio_C_int (n))); \
+	IDIO err_cond = idio_struct_instance (err_ct, IDIO_LIST5 (idio_S_nil, idio_S_nil, idio_S_nil, idio_C_int (n), idio_S_nil)); \
 	idio_array_insert_index (idio_vm_errno_conditions, err_cond, n); \
     }
 

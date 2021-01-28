@@ -23,13 +23,17 @@ read-error0 := Tests
 
 #*
 
-We have a bunch of test cases which should provoke a ^read-error or
-^string-error of some kind.  So we can write a load function which
-will wrapper the actual load with a trap for (^read-error
-^string-error) and compare the message strings (and line numbers for
+We have a bunch of test cases which should provoke a ^read-error (or
+^string-error) of some kind.  So we can write a load function which
+will wrapper the actual load with a trap for ^read-error or
+^string-error and compare the message strings (and line numbers for
 ^read-errors).
 
 So one or two tests per, uh, test.
+
+In fact the only thing that might have generated a ^string-error in
+fact, doesn't.  Invalid UTF-8 sequences are replaced with U+FFFD
+(REPLACEMENT CHARACTER).
 
 *#
 
@@ -42,29 +46,71 @@ read-error-load := {
     load-k := #n
 
     n = n + 1
+
+    exp-tests := 2
+
     ;eprintf "loading #%s %s looking for %s at line %s\n" n filename msg linenum
-    trap (^read-error
-	  ^string-error) (function (c) {
-			    ;eprintf "read-error #%s: %s %s %s\n" n msg c.location c.line
+    trap (^read-error) (function (c) {
+			  ;eprintf "read-error #%s: %s %s %s\n" n msg c.location c.line
+			  test c.message msg
+
+			  test c.line linenum
+
+			  if (or (not (string=? c.message msg))
+				 (not (eq? c.line linenum))) {
+				   condition-report (append-string "read-error-load: " filename) c (current-error-handle)
+				 }
+			  
+			  load-k 'read-error
+    }) {
+      call/cc (function (k) {
+		 load-k = k
+		 t0 := Tests
+		 (symbol-value 'load 'Idio) filename
+		 if (not (equal? Tests (t0 + exp-tests))) {
+		   eprintf "read-error #%s: %s did not generate \"%s\"\n" n filename msg
+		   Errors = Errors + 1
+		   Tests = t0 + exp-tests
+		 }
+      })
+    }
+  }
+}
+
+string-error-load := {
+  n := 0
+
+  function (filename msg linenum) {
+    if (not (string? filename)) (error 'load "not a string" filename)
+
+    load-k := #n
+
+    n = n + 1
+
+    exp-tests := 1
+
+    ;eprintf "loading #%s %s looking for %s at line %s\n" n filename msg linenum
+    trap (^string-error) (function (c) {
+			    ;eprintf "string-error #%s: %s %s %s\n" n msg c.location c.line
 			    test c.message msg
 
-			    isa-read-error := read-error? c
-
-			    if isa-read-error (test c.line linenum)
-
-			    if (or (not (string=? c.message msg))
-				   (and isa-read-error
-					(not (eq? c.line linenum)))) {
-					  condition-report (append-string "read-error-load: " filename) c (current-error-handle)
-					}
-			    load-k 'read-error
-	  }) {
-	    call/cc (function (k) {
-		       load-k = k
-		       t0 := Tests
-		       (symbol-value 'load 'Idio) filename
-	    })
-	  }
+			    if (not (string=? c.message msg)) {
+			      condition-report (append-string "string-error-load: " filename) c (current-error-handle)
+			    }
+			    
+			    load-k 'string-error
+    }) {
+      call/cc (function (k) {
+		 load-k = k
+		 t0 := Tests
+		 (symbol-value 'load 'Idio) filename
+		 if (not (equal? Tests (t0 + exp-tests))) {
+		   eprintf "string-error #%s: %s did not generate \"%s\"\n" n filename msg
+		   Errors = Errors + 1
+		   Tests = t0 + exp-tests
+		 }
+      })
+    }
   }
 }
 
@@ -108,7 +154,9 @@ read-error-load "read-errors/nested-block-comment-pipe-eof-2.idio" "comment: unt
 
 read-error-load "read-errors/string-eof.idio" "string: EOF" 1
 read-error-load "read-errors/string-eof-emb.idio" "string: EOF" 2
-read-error-load "read-errors/string-invalid-utf8.idio" "string UTF-8 decode: not well-formed" 1
+
+; invalid UTF-8 sequences are replaced with U+FFFD (REPLACEMENT CHARACTER)
+;string-error-load "read-errors/string-invalid-utf8.idio" "string UTF-8 decode: not well-formed" 1
 
 read-error-load "read-errors/character-eof.idio" "UTF-8 decode: EOF" 1
 read-error-load "read-errors/character-incomplete-eof.idio" "UTF-8 decode: EOF" 1
@@ -251,4 +299,4 @@ read-error-load "read-errors/op-eof.idio" "EOF in list" 3
 read-error-load "read-errors/op-eof-emb.idio" "EOF in list" 4
 
 ;; all done?
-Tests? (read-error0 + 214)
+Tests? (read-error0 + 216)

@@ -41,6 +41,9 @@ posix-regex-error-load := {
     load-k := #n
 
     n = n + 1
+
+    exp-tests := 1
+
     ;eprintf "loading #%s %s looking for %s\n" n filename msg
     trap (^rt-regex-error
 	  ^rt-parameter-error) (function (c) {
@@ -57,7 +60,11 @@ posix-regex-error-load := {
 		       load-k = k
 		       t0 := Tests
 		       (symbol-value 'load 'Idio) filename
-		       Tests? (t0 + 1)
+		       if (not (equal? Tests (t0 + exp-tests))) {
+			 eprintf "posix-regex-error #%s: %s did not generate \"%s\"\n" n filename msg
+			 Errors = Errors + 1
+			 Tests = t0 + exp-tests
+		       }
 	    })
 	  }
   }
@@ -66,7 +73,13 @@ posix-regex-error-load := {
 posix-regex-error-load "posix-regex-errors/regcomp-bad-rx-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
 posix-regex-error-load "posix-regex-errors/regcomp-bad-flag.idio" "regcomp unexpected flag"
 posix-regex-error-load "posix-regex-errors/regcomp-bad-flag-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol"
-posix-regex-error-load "posix-regex-errors/regcomp-bad-pattern.idio" "regcomp failure: Invalid preceding regular expression"
+(cond-expand
+ (uname/sysname/SunOS {
+   posix-regex-error-load "posix-regex-errors/regcomp-bad-pattern.idio" "regcomp failure: repetition-operator operand invalid"
+ })
+ (else {
+   posix-regex-error-load "posix-regex-errors/regcomp-bad-pattern.idio" "regcomp failure: Invalid preceding regular expression"
+ }))
 
 posix-regex-error-load "posix-regex-errors/regexec-bad-rx-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_pointer"
 posix-regex-error-load "posix-regex-errors/regexec-bad-str-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"

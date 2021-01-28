@@ -260,7 +260,7 @@ void idio_env_init_idiolib (char *argv0)
 	 * Like the getcwd(3) case, above, this is hard to emulate
 	 * during bootstrap.
 	 */
-	idio_error_system_errno ("realpath(3) => NULL", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+	idio_error_system_errno_msg ("realpath", "=> NULL", idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return;

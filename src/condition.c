@@ -713,12 +713,12 @@ does not return per se						\n\
 	    idio_display (IDIO_STRUCT_TYPE_NAME (sit), eh);
 	    idio_display_C (": ", eh);
 
-	    IDIO m = IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_IDIO_ERROR_TYPE_MESSAGE);
-	    if (idio_S_nil != m) {
+	    IDIO f = IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_SYSTEM_ERROR_TYPE_FUNCTION);
+	    if (idio_S_nil != f) {
 		if (printed) {
 		    idio_display_C (": ", eh);
 		}
-		idio_display (m, eh);
+		idio_display (f, eh);
 		printed = 1;
 	    }
 	    IDIO e = IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_SYSTEM_ERROR_TYPE_ERRNO);
@@ -726,6 +726,14 @@ does not return per se						\n\
 		idio_display_C (" => ", eh);
 		int er = IDIO_C_TYPE_INT (e);
 		idio_display_C (idio_libc_errno_name (er), eh);
+		printed = 1;
+	    }
+	    IDIO m = IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_IDIO_ERROR_TYPE_MESSAGE);
+	    if (idio_S_nil != m) {
+		if (printed) {
+		    idio_display_C (": ", eh);
+		}
+		idio_display (m, eh);
 		printed = 1;
 	    }
 	    IDIO d = IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_IDIO_ERROR_TYPE_DETAIL);
@@ -1134,7 +1142,7 @@ void idio_init_condition ()
     IDIO_DEFINE_CONDITION0 (idio_condition_string_error_type, "^string-error", idio_condition_idio_error_type);
 
     /* Idio */
-    IDIO_DEFINE_CONDITION1 (idio_condition_system_error_type, "^system-error", idio_condition_idio_error_type, "errno");
+    IDIO_DEFINE_CONDITION2 (idio_condition_system_error_type, "^system-error", idio_condition_idio_error_type, "errno", "function");
 
     IDIO_DEFINE_CONDITION0 (idio_condition_static_error_type, "^static-error", idio_condition_idio_error_type);
     IDIO_DEFINE_CONDITION1 (idio_condition_st_variable_error_type, "^st-variable-error", idio_condition_static_error_type, "name");

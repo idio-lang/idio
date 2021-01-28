@@ -889,7 +889,7 @@ IDIO idio_open_file_handle_C (char *func, IDIO filename, char *pathname, int fre
 		IDIO_GC_FREE (mode);
 	    }
 
-	    idio_error_system_errno ("fcntl F_SETFD FD_CLOEXEC", IDIO_LIST3 (pn, m, idio_C_int (fd)), IDIO_C_FUNC_LOCATION ());
+	    idio_error_system_errno_msg ("fcntl", "F_SETFD FD_CLOEXEC", IDIO_LIST3 (pn, m, idio_C_int (fd)), IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -1805,7 +1805,7 @@ file handle `fh` with `F_SETFD` and `FD_CLOEXEC` arguments	\n\
 	 *
 	 * Not sure how to provoke this...
 	 */
-	idio_error_system_errno ("fcntl F_SETFD FD_CLOEXEC", fh, IDIO_C_FUNC_LOCATION ());
+	idio_error_system_errno_msg ("fcntl", "F_SETFD FD_CLOEXEC", fh, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -1950,7 +1950,7 @@ char *idio_libfile_find_C (char *file)
 		    IDIO_GC_FREE (idiolib_copy);
 		}
 
-		idio_error_system ("dir+file.idio libname length", IDIO_LIST2 (IDIOLIB, idio_string_C (file)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
+		idio_error_system ("IDIOLIB+file.idio libname length", NULL, IDIO_LIST2 (IDIOLIB, idio_string_C (file)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
 
 		/* notreached */
 		return NULL;
@@ -1980,7 +1980,7 @@ char *idio_libfile_find_C (char *file)
 			IDIO_GC_FREE (idiolib_copy);
 		    }
 
-		    idio_error_system ("dir+file.idio libname length", IDIO_LIST2 (IDIOLIB, idio_string_C (file)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
+		    idio_error_system ("cwd+file.idio libname length", NULL, IDIO_LIST2 (IDIOLIB, idio_string_C (file)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
 
 		    /* notreached */
 		    return NULL;
@@ -2000,7 +2000,7 @@ char *idio_libfile_find_C (char *file)
 			IDIO_GC_FREE (idiolib_copy);
 		    }
 
-		    idio_error_system ("dir+file.idio libname length", IDIO_LIST2 (IDIOLIB, idio_string_C (file)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
+		    idio_error_system ("dir+file.idio libname length", NULL, IDIO_LIST2 (IDIOLIB, idio_string_C (file)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
 
 		    /* notreached */
 		    return NULL;

@@ -517,7 +517,7 @@ int64_t idio_bignum_int64_value (IDIO bn)
 	     * over the 64bit DPW yet small enough to fit into an
 	     * int64_t -- and well over the 32bit DPW
 	     */
-	    if (IDIO_BIGNUM_INT64_WORDS == al) {
+	    if (al <= IDIO_BIGNUM_INT64_WORDS) {
 		IDIO_BS_T a1 = idio_bsa_get (sig_a, al - 1);
 
 		if (a1 <= 9 &&
@@ -589,7 +589,7 @@ uint64_t idio_bignum_uint64_value (IDIO bn)
 	     * just over the default DPW yet small enough to fit into
 	     * a uint64_t -- and well over the 32bit DPW
 	     */
-	    if (IDIO_BIGNUM_INT64_WORDS == al) {
+	    if (al <= IDIO_BIGNUM_INT64_WORDS) {
 		IDIO_BS_T a1 = idio_bsa_get (sig_a, al - 1);
 
 		if (a1 <= 18 &&
@@ -611,7 +611,7 @@ uint64_t idio_bignum_uint64_value (IDIO bn)
 	     * Code coverage: C unit test??
 	     */
 	    size_t size = 0;
-	    char *bn_is = idio_bignum_as_string (bn_i, &size);
+	    char *bn_is = idio_bignum_as_string (bn, &size);
 	    char em[BUFSIZ];
 	    sprintf (em, "%s is too large for uint64_t (%" PRIu64 ")", bn_is, UINT64_MAX);
 	    IDIO_GC_FREE (bn_is);
@@ -669,7 +669,7 @@ ptrdiff_t idio_bignum_ptrdiff_value (IDIO bn)
 	     * over the default DPW yet small enough to fit into an
 	     * ptrdiff_t.
 	     */
-	    if (IDIO_BIGNUM_PTRDIFF_WORDS == al) {
+	    if (al <= IDIO_BIGNUM_PTRDIFF_WORDS) {
 		IDIO_BS_T a1 = idio_bsa_get (sig_a, al - 1);
 
 		if (a1 <= IDIO_BIGNUM_PTRDIFF_FIRST &&
@@ -754,7 +754,7 @@ intptr_t idio_bignum_intptr_value (IDIO bn)
 	     * over the default DPW yet small enough to fit into an
 	     * intptr_t.
 	     */
-	    if (IDIO_BIGNUM_INTPTR_WORDS == al) {
+	    if (al <= IDIO_BIGNUM_INTPTR_WORDS) {
 		IDIO_BS_T a1 = idio_bsa_get (sig_a, al - 1);
 
 		if (a1 <= IDIO_BIGNUM_INTPTR_FIRST &&
@@ -833,7 +833,7 @@ intmax_t idio_bignum_intmax_value (IDIO bn)
 	     * over the default DPW yet small enough to fit into an
 	     * intmax_t.
 	     */
-	    if (IDIO_BIGNUM_INTMAX_WORDS == al) {
+	    if (al <= IDIO_BIGNUM_INTMAX_WORDS) {
 		IDIO_BS_T a1 = idio_bsa_get (sig_a, al - 1);
 
 		if (a1 <= IDIO_BIGNUM_INTMAX_FIRST &&
@@ -3018,8 +3018,8 @@ IDIO idio_bignum_integer_C (char *nums, int req_exact)
 	     */
 	    IDIO_GC_FREE (buf);
 	    char em[BUFSIZ];
-	    sprintf (em, "strtoll (%s) = %lld", nums, i);
-	    idio_error_system_errno (em, idio_S_nil, IDIO_C_FUNC_LOCATION ());
+	    sprintf (em, "(%s) = %lld", nums, i);
+	    idio_error_system_errno_msg ("strtoll", em, idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -3032,8 +3032,8 @@ IDIO idio_bignum_integer_C (char *nums, int req_exact)
 	     */
 	    IDIO_GC_FREE (buf);
 	    char em[BUFSIZ];
-	    sprintf (em, "strtoll (%s): No digits?", nums);
-	    idio_error_system_errno (em, idio_S_nil, IDIO_C_FUNC_LOCATION ());
+	    sprintf (em, "(%s): No digits?", nums);
+	    idio_error_system_errno_msg ("strtoll", em, idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
