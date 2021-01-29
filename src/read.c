@@ -3336,6 +3336,26 @@ static IDIO idio_read_1_expr_nl (IDIO handle, idio_unicode_t *ic, int depth, int
 		    case IDIO_CHAR_SEMICOLON:
 			idio_read_expr (handle);
 			break;
+		    case IDIO_CHAR_EXCLAMATION:
+			if (1 == IDIO_HANDLE_LINE (handle) &&
+			    2 == IDIO_HANDLE_POS (handle)) {
+			    idio_read_line_comment (handle, lo, depth);
+			    moved = 1;
+			} else {
+			    /*
+			     * Test Case: read-errors/unexpected-hash-bang.idio
+			     *
+			     *  #! /usr/bin/env idio
+			     *
+			     * XXX First character of first line
+			     */
+			    char em[BUFSIZ];
+			    sprintf (em, "unexpected '#%c' format (# then %#02x)", c, c);
+			    idio_read_error_parse (handle, lo, IDIO_C_FUNC_LOCATION (), em);
+
+			    return idio_S_notreached;
+			}
+			break;
 		    default:
 			{
 			    /*

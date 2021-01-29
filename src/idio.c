@@ -111,7 +111,7 @@ void idio_module_table_final ()
     }
 }
 
-void idio_init (int argc, char **argv)
+void idio_init (void)
 {
 
 #ifdef IDIO_VM_PROF
@@ -168,22 +168,6 @@ void idio_init (int argc, char **argv)
 
     idio_init_command ();
     idio_init_job_control ();
-    /*
-     * Arguments
-     *
-     * We'll have a separate ARGV0, a la Bash then remaining args in
-     * ARGC/ARGV
-     */
-    idio_module_set_symbol_value (idio_symbols_C_intern ("ARGV0"), idio_string_C (argv[0]), idio_Idio_module_instance ());
-
-    IDIO args = idio_array (argc - 1);
-    size_t i;
-    for (i = 1; i < argc; i++) {
-	idio_array_insert_index (args, idio_string_C (argv[i]), i - 1);
-    }
-
-    idio_module_set_symbol_value (idio_symbols_C_intern ("ARGC"), idio_integer (argc - 1), idio_Idio_module_instance ());
-    idio_module_set_symbol_value (idio_symbols_C_intern ("ARGV"), args, idio_Idio_module_instance ());
 
     idio_add_primitives ();
 }
@@ -221,24 +205,39 @@ void idio_final ()
 
 int main (int argc, char **argv, char **envp)
 {
-    int nargc = 0;
-    char **nargv = (char **) idio_alloc ((argc + 1) * sizeof (char *));
-    nargv[nargc++] = argv[0];
-
-    int i;
-    for (i = 1; i < argc; i++) {
-	if (strcmp (argv[i], "--vm-reports") == 0) {
-	    idio_vm_reports = 1;
-	} else {
-	    nargv[nargc++] = argv[i];
-	}
-    }
-    nargv[nargc] = NULL;
+    /*
+     * Argument processing for any interpreter is a mixed bag.
+     *
+     * There'll be arguments to Idio and arguments to the script Idio
+     * is running -- which we'll denote sargc, sargv.
+     *
+     * Nominally, we process arguments as for Idio until we hit a
+     * non-option argument (or "--") whereon the remaining arguments
+     * are deemed to be for the script.
+     *
+     * In the very first instance we'll allocate enough room for a
+     * full copy (reference!) of argv and copy argv[0] for two
+     * reasons:
+     *
+     * 1. idio_env_init_idiolib(argv[0]) wants some clue as to reverse
+     * engineer a default IDIOLIB.  (Not always successful.)
+     *
+     * 2. the calls to siglongjmp() wants to free() sargv so we need
+     * to have set it up before hand.
+     *
+     * After all that, run the bootstrap so we have a sentient system
+     * and then we can process any option arguments that load
+     * libraries etc..
+     */
+    int sargc = 0;
+    char **sargv = (char **) idio_alloc ((argc + 1) * sizeof (char *));
+    sargv[0] = argv[0];
+    sargv[1] = NULL;	/* just in case */
 
     idio_module_table_init ();
-    idio_init (nargc, nargv);
+    idio_init ();
 
-    idio_env_init_idiolib (nargv[0]);
+    idio_env_init_idiolib (argv[0]);
 
     IDIO thr = idio_thread_current_thread ();
 
@@ -267,13 +266,13 @@ int main (int argc, char **argv, char **envp)
 	break;
     case IDIO_VM_SIGLONGJMP_EXIT:
 	fprintf (stderr, "NOTICE: bootstrap/exit (%d) for PID %d\n", idio_exit_status, getpid ());
-	IDIO_GC_FREE (nargv);
+	IDIO_GC_FREE (sargv);
 	idio_final ();
 	exit (idio_exit_status);
 	break;
     default:
 	fprintf (stderr, "sigsetjmp: bootstrap failed with sjv %d: exit (%d)\n", sjv, idio_exit_status);
-	IDIO_GC_FREE (nargv);
+	IDIO_GC_FREE (sargv);
 	idio_final ();
 	exit (idio_exit_status);
 	break;
@@ -296,7 +295,140 @@ int main (int argc, char **argv, char **envp)
     idio_bootstrap_complete = 1;
     idio_gc_collect_all ("post-bootstrap");
 
-    if (nargc > 1) {
+    /*
+     * Dig out the (post-bootstrap) definition of "load" which will
+     * now be continuation and module aware.
+     */
+    IDIO load = idio_module_symbol_value (idio_S_load, idio_Idio_module_instance (), IDIO_LIST1 (idio_S_false));
+    if (idio_S_false == load) {
+	IDIO_GC_FREE (sargv);
+	idio_error_C ("cannot lookup 'load'", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
+	exit (3);
+    }
+
+    enum options {
+	OPTION_NONE,
+	OPTION_LOAD,
+    };
+    int in_options = 1;
+    enum options option = OPTION_NONE;
+    int i;
+    for (i = 1; i < argc; i++) {
+	fprintf (stderr, "opt: %d: in=%d opt=%d argv=%s\n", i, in_options, option, argv[i]);
+	if (in_options) {
+	    if (OPTION_NONE != option) {
+		switch (option) {
+		case OPTION_LOAD:
+		    {
+			fprintf (stderr, "--load %s\n", argv[i]);
+
+			IDIO filename = idio_string_C (argv[i]);
+
+			/*
+			 * If we're given an option to load a file
+			 * then any conditions raised (prior to the
+			 * idio_vm_run() sigsetjmp being invoked)
+			 * should bring us back here and we can bail.
+			 *
+			 * What might that be?  Well, we try to invoke
+			 * the Idio function "load" which has several
+			 * variants: a primitive (file-handle.c); a
+			 * basic continuation error catcher
+			 * (common.idio); a module/load variant
+			 * (module.idio).
+			 *
+			 * It's entirely possible a condition can be
+			 * raised in that code for which we need a
+			 * suitable sigsetjmp for the condition to
+			 * siglongjmp to.
+			 *
+			 * Given that all we do is bail we could have
+			 * just left it with the "bootstrap" sigsetjmp
+			 * outside of this condition/loop but at least
+			 * here we can print the offending filename in
+			 * case no-one else did.
+			 */
+			sigjmp_buf sjb;
+			IDIO_THREAD_JMP_BUF (thr) = &sjb;
+			sjv = sigsetjmp (*(IDIO_THREAD_JMP_BUF (thr)), 1);
+
+			switch (sjv) {
+			case 0:
+			    idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST2 (load, filename));
+			    break;
+			case IDIO_VM_SIGLONGJMP_CONTINUATION:
+			    fprintf (stderr, "load %s: continuation was invoked => pending exit (1)\n", argv[i]);
+			    idio_exit_status = 1;
+			    break;
+			case IDIO_VM_SIGLONGJMP_EXIT:
+			    fprintf (stderr, "load/exit (%d)\n", idio_exit_status);
+			    IDIO_GC_FREE (sargv);
+			    idio_final ();
+			    exit (idio_exit_status);
+			    break;
+			default:
+			    fprintf (stderr, "sigsetjmp: load %s: failed with sjv %d\n", argv[i], sjv);
+			    IDIO_GC_FREE (sargv);
+			    idio_final ();
+			    exit (1);
+			    break;
+			}
+		    }
+		    break;
+		default:
+		    fprintf (stderr, "option handling: unexpected option %d\n", option);
+		    break;
+		}
+		
+		option = OPTION_NONE;
+	    } else if (strncmp (argv[i], "--", 2) == 0) {
+		if (strncmp (argv[i], "--vm-reports", 12) == 0) {
+		    idio_vm_reports = 1;
+		} else if (strncmp (argv[i], "--load", 6) == 0) {
+		    option = OPTION_LOAD;
+		}
+	    } else {
+		fprintf (stderr, "script option %d %s\n", sargc, argv[i]);
+		if (in_options) {
+		    /*
+		     * Rewrite sargv[0] from the name of the
+		     * executable (from argv[0]) to the name of the
+		     * script we are going to run.
+		     */
+		    sargv[0] = argv[i];
+		} else {
+		    sargv[sargc] = argv[i];
+		}
+		sargc++;
+		in_options = 0;
+	    }
+	} else {
+	    sargv[sargc++] = argv[i];
+	}
+    }
+    fprintf (stderr, "collected %d args\n", sargc);
+    
+    /*
+     * Script Arguments
+     *
+     * We'll have a separate ARGV0, a la Bash, then remaining args in
+     * ARGC/ARGV
+     */
+    idio_module_set_symbol_value (idio_symbols_C_intern ("ARGV0"), idio_string_C (sargv[0]), idio_Idio_module_instance ());
+
+    IDIO args = idio_array (sargc);
+    if (sargc) {
+	for (i = 1; i < sargc; i++) {
+	    idio_array_insert_index (args, idio_string_C (sargv[i]), i - 1);
+	}
+    }
+
+    idio_module_set_symbol_value (idio_symbols_C_intern ("ARGC"), idio_integer (sargc - 1), idio_Idio_module_instance ());
+    idio_module_set_symbol_value (idio_symbols_C_intern ("ARGV"), args, idio_Idio_module_instance ());
+
+    if (sargc) {
 	/*
 	 * idio_job_control_interactive is set to 1 if isatty (0) is
 	 * true however we are about to loop over files in a
@@ -304,70 +436,53 @@ int main (int argc, char **argv, char **envp)
 	 */
 	idio_job_control_set_interactive (0);
 
+	fprintf (stderr, "load %s\n", sargv[0]);
+
+	IDIO filename = idio_string_C (sargv[0]);
+
 	/*
-	 * Dig out the (post-bootstrap) definition of "load" which
-	 * will now be continuation and module aware.
+	 * If we're given a sequence of files to load then any
+	 * conditions raised (prior to the idio_vm_run() sigsetjmp
+	 * being invoked) should bring us back here and we can bail.
+	 *
+	 * What might that be?  Well, we try to invoke the Idio
+	 * function "load" which has several variants: a primitive
+	 * (file-handle.c); a basic continuation error catcher
+	 * (common.idio); a module/load variant (module.idio).
+	 *
+	 * It's entirely possible a condition can be raised in that
+	 * code for which we need a suitable sigsetjmp for the
+	 * condition to siglongjmp to.
+	 *
+	 * Given that all we do is bail we could have just left it
+	 * with the "bootstrap" sigsetjmp outside of this
+	 * condition/loop but at least here we can print the offending
+	 * filename in case no-one else did.
 	 */
-	IDIO load = idio_module_symbol_value (idio_S_load, idio_Idio_module_instance (), IDIO_LIST1 (idio_S_false));
-	if (idio_S_false == load) {
-	    IDIO_GC_FREE (nargv);
-	    idio_error_C ("cannot lookup 'load'", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+	sigjmp_buf sjb;
+	IDIO_THREAD_JMP_BUF (thr) = &sjb;
+	sjv = sigsetjmp (*(IDIO_THREAD_JMP_BUF (thr)), 1);
 
-	    /* notreached */
-	    exit (3);
-	}
-
-	int i;
-	for (i = 1 ; i < nargc; i++) {
-	    fprintf (stderr, "load %s\n", nargv[i]);
-
-	    IDIO filename = idio_string_C (nargv[i]);
-
-	    /*
-	     * If we're given a sequence of files to load then any
-	     * conditions raised (prior to the idio_vm_run() sigsetjmp
-	     * being invoked) should bring us back here and we can
-	     * bail.
-	     *
-	     * What might that be?  Well, we try to invoke the Idio
-	     * function "load" which has several variants: a primitive
-	     * (file-handle.c); a basic continuation error catcher
-	     * (common.idio); a module/load variant (module.idio).
-	     *
-	     * It's entirely possible a condition can be raised in
-	     * that code for which we need a suitable sigsetjmp for
-	     * the condition to siglongjmp to.
-	     *
-	     * Given that all we do is bail we could have just left it
-	     * with the "bootstrap" sigsetjmp outside of this
-	     * condition/loop but at least here we can print the
-	     * offending filename in case no-one else did.
-	     */
-	    sigjmp_buf sjb;
-	    IDIO_THREAD_JMP_BUF (thr) = &sjb;
-	    sjv = sigsetjmp (*(IDIO_THREAD_JMP_BUF (thr)), 1);
-
-	    switch (sjv) {
-	    case 0:
-		idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST2 (load, filename));
-		break;
-	    case IDIO_VM_SIGLONGJMP_CONTINUATION:
-		fprintf (stderr, "load %s: continuation was invoked => pending exit (1)\n", nargv[i]);
-		idio_exit_status = 1;
-		break;
-	    case IDIO_VM_SIGLONGJMP_EXIT:
-		fprintf (stderr, "load/exit (%d)\n", idio_exit_status);
-		IDIO_GC_FREE (nargv);
-		idio_final ();
-		exit (idio_exit_status);
-		break;
-	    default:
-		fprintf (stderr, "sigsetjmp: load %s: failed with sjv %d\n", nargv[i], sjv);
-		IDIO_GC_FREE (nargv);
-		idio_final ();
-		exit (1);
-		break;
-	    }
+	switch (sjv) {
+	case 0:
+	    idio_vm_invoke_C (idio_thread_current_thread (), IDIO_LIST2 (load, filename));
+	    break;
+	case IDIO_VM_SIGLONGJMP_CONTINUATION:
+	    fprintf (stderr, "load %s: continuation was invoked => pending exit (1)\n", sargv[0]);
+	    idio_exit_status = 1;
+	    break;
+	case IDIO_VM_SIGLONGJMP_EXIT:
+	    fprintf (stderr, "load/exit (%d)\n", idio_exit_status);
+	    IDIO_GC_FREE (sargv);
+	    idio_final ();
+	    exit (idio_exit_status);
+	    break;
+	default:
+	    fprintf (stderr, "sigsetjmp: load %s: failed with sjv %d\n", sargv[0], sjv);
+	    IDIO_GC_FREE (sargv);
+	    idio_final ();
+	    exit (1);
+	    break;
 	}
     } else {
 	/*
@@ -402,12 +517,12 @@ int main (int argc, char **argv, char **envp)
 	    break;
 	case IDIO_VM_SIGLONGJMP_EXIT:
 	    idio_gc_reset ("REPL/exit", gc_pause);
-	    IDIO_GC_FREE (nargv);
+	    IDIO_GC_FREE (sargv);
 	    idio_final ();
 	    exit (idio_exit_status);
 	default:
 	    fprintf (stderr, "sigsetjmp: repl failed with sjv %d\n", sjv);
-	    IDIO_GC_FREE (nargv);
+	    IDIO_GC_FREE (sargv);
 	    exit (1);
 	    break;
 	}
@@ -416,7 +531,7 @@ int main (int argc, char **argv, char **envp)
 	idio_load_handle_C (idio_thread_current_input_handle (), idio_read, idio_evaluate, idio_vm_constants);
     }
 
-    IDIO_GC_FREE (nargv);
+    IDIO_GC_FREE (sargv);
     idio_final ();
 
     return idio_exit_status;

@@ -2243,26 +2243,28 @@ IDIO idio_load_file_name (IDIO filename, IDIO cs)
     IDIO filename_ext = filename;
     IDIO stack = IDIO_THREAD_STACK (idio_thread_current_thread ());
 
-    for (;NULL != fe->reader;fe++) {
-	if (NULL != fe->ext) {
-	    if (strncmp (lfn_dot, fe->ext, strlen (fe->ext)) == 0) {
-		reader = fe->reader;
-		evaluator = fe->evaluator;
+    if (NULL != lfn_dot) {
+	for (;NULL != fe->reader;fe++) {
+	    if (NULL != fe->ext) {
+		if (strncmp (lfn_dot, fe->ext, strlen (fe->ext)) == 0) {
+		    reader = fe->reader;
+		    evaluator = fe->evaluator;
 
-		/*
-		 * If it's not the same extension as the user gave
-		 * us then tack it on the end
-		 */
-		if (NULL == filename_dot ||
-		    strncmp (filename_dot, fe->ext, strlen (fe->ext))) {
+		    /*
+		     * If it's not the same extension as the user gave
+		     * us then tack it on the end
+		     */
+		    if (NULL == filename_dot ||
+			strncmp (filename_dot, fe->ext, strlen (fe->ext))) {
 
-		    char *ss[] = { filename_C, fe->ext };
+			char *ss[] = { filename_C, fe->ext };
 
-		    filename_ext = idio_string_C_array (2, ss);
+			filename_ext = idio_string_C_array (2, ss);
 
-		    idio_array_push (stack, filename_ext);
+			idio_array_push (stack, filename_ext);
+		    }
+		    break;
 		}
-		break;
 	    }
 	}
     }

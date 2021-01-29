@@ -234,6 +234,7 @@ read-error-load "read-errors/inexact-expected-number-emb.idio" "number expected 
 read-error-load "read-errors/not-ready-for-hash-format.idio" "not ready for '#<' format" 1
 read-error-load "read-errors/not-ready-for-hash-format-emb.idio" "not ready for '#<' format" 2
 
+read-error-load "read-errors/unexpected-hash-bang.idio" "unexpected '#!' format (# then 0x21)" 1
 read-error-load "read-errors/unexpected-hash-format.idio" "unexpected '#^' format (# then 0x5e)" 1
 read-error-load "read-errors/unexpected-hash-format-emb.idio" "unexpected '#^' format (# then 0x5e)" 2
 
@@ -299,4 +300,4 @@ read-error-load "read-errors/op-eof.idio" "EOF in list" 3
 read-error-load "read-errors/op-eof-emb.idio" "EOF in list" 4
 
 ;; all done?
-Tests? (read-error0 + 216)
+Tests? (read-error0 + 218)
