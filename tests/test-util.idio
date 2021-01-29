@@ -58,8 +58,32 @@ test (type->string #B{ 3 })			"BITSET"
 test (type->string libc/INTMAX_MAX)		"C_INT"
 test (type->string libc/UINTMAX_MAX)		"C_UINT"
 
-test (zero? 0)   #t
-test (zero? 0.0) #t
+test (zero? 0)				#t ; FIXNUM
+test (zero? #t)				#f ; CONSTANT
+test (zero? (integer->char 1))		#f ; CHARACTER (deprecated)
+test (zero? #\a)			#f ; UNICODE
+test (zero? "a")			#f ; STRING
+test (zero? 'a)				#f ; SYMBOL
+test (zero? :a)				#f ; KEYWORD
+test (zero? (pair 1 2))			#f ; PAIR
+test (zero? #[])			#f ; ARRAY
+test (zero? #{})			#f ; HASH
+test (zero? (function #n #n))		#f ; CLOSURE
+test (zero? pair)			#f ; PRIMITIVE
+test (zero? 1.0)			#f ; BIGNUM
+test (zero? (find-module 'Idio))	#f ; MODULE
+test (zero? (current-input-handle))	#f ; HANDLE
+test (zero? ^error)			#f ; STRUCT_TYPE
+test (zero? libc/idio-uname)		#f ; STRUCT_INSTANCE
+test (zero? #B{ 3 })			#f ; BITSET
+test (zero? libc/INTMAX_MAX)		#f ; C_INT
+test (zero? libc/UINTMAX_MAX)		#f ; C_UINT
+
+test (zero?  0.0) #t
+test (zero?  1)   #f
+test (zero? -1)   #f
+test (zero?  1.0) #f
+test (zero? -1.0) #f
 
 test (void)         (void)
 test (void? (void)) #t
@@ -88,6 +112,219 @@ test (boolean? libc/UINTMAX_MAX)	#f ; C_UINT
 
 test (boolean? #f)			#t
 test (boolean? (void))			#f
+
+; equality -- we need some values to test with: X1a and X1b are
+; constructed from the same parts, X2 is different
+ch1a := integer->char 1
+ch1b := integer->char 1
+ch2  := integer->char 2
+
+str1a := make-string 1 #\a
+str1b := make-string 1 #\a
+str2  := make-string 1 #\b
+
+sym1a := 'a
+sym1b := 'a
+sym2  := 'b
+
+kw1a  := make-keyword sym1a
+kw1b  := make-keyword sym1b
+kw2   := make-keyword sym2
+
+p1a   := pair 1 2
+p1b   := pair 1 2
+p2    := pair 2 1
+
+arr1a := list->array '(1 2)
+arr1b := list->array '(1 2)
+arr2  := list->array '(2 1)
+
+ht1a  := alist->hash '((#\a "apple") (#\p "pear"))
+ht1b  := alist->hash '((#\a "apple") (#\p "pear"))
+ht2   := alist->hash '((#\c "carrot") (#\p "potato"))
+
+fn1a  := (function (a b) #n)
+fn1b  := (function (a b) #n)
+fn2   := (function (a & b) #n)
+
+bn1a  := 1.0
+bn1b  := 1.0
+bn2   := 2.0
+
+fh1a  := open-input-file testfile
+fh1b  := open-input-file testfile
+fh2   := open-output-file testfile
+
+bs1a  := #B{ 3 }
+bs1b  := #B{ 3 }
+bs2   := #B{ 5 }
+
+ci1a  := C/integer-> 1
+ci1b  := C/integer-> 1
+ci2   := C/integer-> 2
+
+cui1a  := C/integer->unsigned 1
+cui1b  := C/integer->unsigned 1
+cui2   := C/integer->unsigned 2
+
+;
+test (eq?    0 0)	#t
+test (eqv?   0 0)	#t
+test (equal? 0 0)	#t
+test (eq?    0 1)	#f
+test (eqv?   0 1)	#f
+test (equal? 0 1)	#f
+test (eq?    0 0.0)	#f
+test (eqv?   0 0.0)	#t
+test (equal? 0 0.0)	#t
+
+test (eq?    #t #t)	#t
+test (eqv?   #t #t)	#t
+test (equal? #t #t)	#t
+test (eq?    #t #f)	#f
+test (eqv?   #t #f)	#f
+test (equal? #t #f)	#f
+test (eq?    #t 1)	#f
+test (eqv?   #t 1)	#f
+test (equal? #t 1)	#f
+
+; characters are deprecated
+test (eq?    ch1a ch1a)	#t
+test (eqv?   ch1a ch1a)	#t
+test (equal? ch1a ch1a)	#t
+test (eq?    ch1a ch1b)	#t
+test (eqv?   ch1a ch1b)	#t
+test (equal? ch1a ch1b)	#t
+test (eq?    ch1a ch2)	#f
+test (eqv?   ch1a ch2)	#f
+test (equal? ch1a ch2)	#f
+
+test (eq?    #\a #\a)	#t
+test (eqv?   #\a #\a)	#t
+test (equal? #\a #\a)	#t
+test (eq?    #\a #\b)	#f
+test (eqv?   #\a #\b)	#f
+test (equal? #\a #\b)	#f
+
+test (eq?    str1a str1a)	#t
+test (eqv?   str1a str1a)	#t
+test (equal? str1a str1a)	#t
+test (eq?    str1a str1b)	#f
+test (eqv?   str1a str1b)	#t
+test (equal? str1a str1b)	#t
+test (eq?    str1a str2)	#f
+test (eqv?   str1a str2)	#f
+test (equal? str1a str2)	#f
+
+test (eq?    sym1a sym1a)	#t
+test (eqv?   sym1a sym1a)	#t
+test (equal? sym1a sym1a)	#t
+test (eq?    sym1a sym1b)	#t
+test (eqv?   sym1a sym1b)	#t
+test (equal? sym1a sym1b)	#t
+test (eq?    sym1a sym2)	#f
+test (eqv?   sym1a sym2)	#f
+test (equal? sym1a sym2)	#f
+
+test (eq?    kw1a kw1a)		#t
+test (eqv?   kw1a kw1a)		#t
+test (equal? kw1a kw1a)		#t
+test (eq?    kw1a kw1b)		#t
+test (eqv?   kw1a kw1b)		#t
+test (equal? kw1a kw1b)		#t
+test (eq?    kw1a kw2)		#f
+test (eqv?   kw1a kw2)		#f
+test (equal? kw1a kw2)		#f
+
+test (eq?    p1a p1a)		#t
+test (eqv?   p1a p1a)		#t
+test (equal? p1a p1a)		#t
+test (eq?    p1a p1b)		#f
+test (eqv?   p1a p1b)		#f
+test (equal? p1a p1b)		#t
+test (eq?    p1a p2)		#f
+test (eqv?   p1a p2)		#f
+test (equal? p1a p2)		#f
+
+test (eq?    arr1a arr1a)	#t
+test (eqv?   arr1a arr1a)	#t
+test (equal? arr1a arr1a)	#t
+test (eq?    arr1a arr1b)	#f
+test (eqv?   arr1a arr1b)	#f
+test (equal? arr1a arr1b)	#t
+test (eq?    arr1a arr2)	#f
+test (eqv?   arr1a arr2)	#f
+test (equal? arr1a arr2)	#f
+
+test (eq?    ht1a ht1a)		#t
+test (eqv?   ht1a ht1a)		#t
+test (equal? ht1a ht1a)		#t
+test (eq?    ht1a ht1b)		#f
+test (eqv?   ht1a ht1b)		#f
+test (equal? ht1a ht1b)		#t
+test (eq?    ht1a ht2)		#f
+test (eqv?   ht1a ht2)		#f
+test (equal? ht1a ht2)		#f
+
+test (eq?    fn1a fn1a)	#t
+test (eqv?   fn1a fn1a)	#t
+test (equal? fn1a fn1a)	#t
+test (eq?    fn1a fn1b)	#f
+test (eqv?   fn1a fn1b)	#f
+test (equal? fn1a fn1b)	#f
+test (eq?    fn1a fn2)	#f
+test (eqv?   fn1a fn2)	#f
+test (equal? fn1a fn2)	#f
+
+test (eq?    bn1a bn1a)	#t
+test (eqv?   bn1a bn1a)	#t
+test (equal? bn1a bn1a)	#t
+test (eq?    bn1a bn1b)	#f
+test (eqv?   bn1a bn1b)	#t
+test (equal? bn1a bn1b)	#t
+test (eq?    bn1a bn2)	#f
+test (eqv?   bn1a bn2)	#f
+test (equal? bn1a bn2)	#f
+
+test (eq?    fh1a fh1a)	#t
+test (eqv?   fh1a fh1a)	#t
+test (equal? fh1a fh1a)	#t
+test (eq?    fh1a fh1b)	#f
+test (eqv?   fh1a fh1b)	#f
+test (equal? fh1a fh1b)	#f
+test (eq?    fh1a fh2)	#f
+test (eqv?   fh1a fh2)	#f
+test (equal? fh1a fh2)	#f
+
+test (eq?    bs1a bs1a)	#t
+test (eqv?   bs1a bs1a)	#t
+test (equal? bs1a bs1a)	#t
+test (eq?    bs1a bs1b)	#f
+test (eqv?   bs1a bs1b)	#f
+test (equal? bs1a bs1b)	#t
+test (eq?    bs1a bs2)	#f
+test (eqv?   bs1a bs2)	#f
+test (equal? bs1a bs2)	#f
+
+test (eq?    ci1a ci1a)	#t
+test (eqv?   ci1a ci1a)	#t
+test (equal? ci1a ci1a)	#t
+test (eq?    ci1a ci1b)	#t
+test (eqv?   ci1a ci1b)	#t
+test (equal? ci1a ci1b)	#t
+test (eq?    ci1a ci2)	#f
+test (eqv?   ci1a ci2)	#f
+test (equal? ci1a ci2)	#f
+
+test (eq?    cui1a cui1a)	#t
+test (eqv?   cui1a cui1a)	#t
+test (equal? cui1a cui1a)	#t
+test (eq?    cui1a cui1b)	#t
+test (eqv?   cui1a cui1b)	#t
+test (equal? cui1a cui1b)	#t
+test (eq?    cui1a cui2)	#f
+test (eqv?   cui1a cui2)	#f
+test (equal? cui1a cui2)	#f
 
 ; code coverage of squirelly corners of idio_equal()
 str := "hello"
@@ -579,7 +816,7 @@ test (%format 'keyed "%4.3f" h)		" 010"
 test (%format 'keyed "%10.2b" h)	"    123.45"
 
 ;; all done?
-Tests? (format0 + 245)
+Tests? (format0 + 409)
 
 ;Local Variables:
 ;mode: Idio

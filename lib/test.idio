@@ -248,6 +248,8 @@ test-load "test-util-error.idio"
 test-load "test-util.idio"
 test-load "test-vm-error.idio"
 
+test-load "test-s9.idio"
+
 test-load "test-operator.idio"
 test-load "test-template.idio"
 test-load "test-dynamic.idio"
@@ -269,7 +271,7 @@ test-load "test-command.idio"
 ;; that?  Erm, they've not been counted and are dynamic in number so
 ;; test we've seen at least as many as the largest number we've
 ;; seen.  Wait, some tests are OS-specific.  Drat!
-Tests? 4008
+Tests? 4800
 
 if (file-exists? testfile) (delete-file testfile)
 

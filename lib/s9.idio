@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015, 2017, 2018, 2020 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2017, 2018, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -502,8 +502,6 @@ define (sqrt square) {
 
 ;; String procedures
 
-define (s9/string & x) (list->string x)
-
 ; Used by NUMBER->STRING and STRING->NUMBER
 define (number-of-digits n r) {
   if (zero? n) {
@@ -812,39 +810,6 @@ with-output-to-file := {
     set-output-handle! outer-handle
   }
 }
-
-;;----- Quasi-quote-expander -----
-
-define-template (s9/quasiquote form) {
-  qq-pair :+ function (a b) {
-	       cond ((and (pair? a)
-			  (eq? 'unquote-splicing (ph a))) {
-			    if (and (pair? b)
-				    (eq? 'quote (ph b))
-				    (null? (pht b))) {
-				      pht a
-				    } {
-				      list 'append (pht a) b
-				    }
-			  }) \
-		    (else (list 'pair a b))
-  }
-  qq-expand :+ function (x) {
-		 cond ((array? x) (list 'list->array (qq-expand (array->list x)))) \
-		      ((not (pair? x)) (list 'quote x)) \
-		      ((and (eq? 'unquote (ph x))
-			    (pair? (pt x))) (pht x)) \
-		      ((and (eq? 'unquote-splicing (ph x))
-			    (pair? (pt x))) (list 'unquote-splicing (pht x))) \
-		      ((and (eq? 'quasiquote (ph x))
-			    (pair? (pt x))) (error 'quasiquote "may not be nested")) \
-		      (else (qq-pair (qq-expand (ph x))
-				     (qq-expand (pt x))))
-  }
-
-  qq-expand form
-}
-
 
 ;;----- Library -----
 
