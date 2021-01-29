@@ -316,14 +316,11 @@ int main (int argc, char **argv, char **envp)
     enum options option = OPTION_NONE;
     int i;
     for (i = 1; i < argc; i++) {
-	fprintf (stderr, "opt: %d: in=%d opt=%d argv=%s\n", i, in_options, option, argv[i]);
 	if (in_options) {
 	    if (OPTION_NONE != option) {
 		switch (option) {
 		case OPTION_LOAD:
 		    {
-			fprintf (stderr, "--load %s\n", argv[i]);
-
 			IDIO filename = idio_string_C (argv[i]);
 
 			/*
@@ -390,7 +387,6 @@ int main (int argc, char **argv, char **envp)
 		    option = OPTION_LOAD;
 		}
 	    } else {
-		fprintf (stderr, "script option %d %s\n", sargc, argv[i]);
 		if (in_options) {
 		    /*
 		     * Rewrite sargv[0] from the name of the
@@ -408,7 +404,6 @@ int main (int argc, char **argv, char **envp)
 	    sargv[sargc++] = argv[i];
 	}
     }
-    fprintf (stderr, "collected %d args\n", sargc);
     
     /*
      * Script Arguments
@@ -435,8 +430,6 @@ int main (int argc, char **argv, char **envp)
 	 * non-interactive way.  So turn it off.
 	 */
 	idio_job_control_set_interactive (0);
-
-	fprintf (stderr, "load %s\n", sargv[0]);
 
 	IDIO filename = idio_string_C (sargv[0]);
 
