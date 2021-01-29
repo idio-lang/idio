@@ -1836,7 +1836,7 @@ given signal.							\n\
 	 *
 	 * signal-handler (C/integer-> -1)
 	 */
-	idio_error_system_errno ("sigaction", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+	idio_error_system_errno ("sigaction", isig, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
