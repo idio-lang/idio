@@ -261,7 +261,14 @@ test (f? ".")	     #f
 test (f? testfile)   #t
 test (f? linkfile)   #t
 
-test (l? "/dev/tty") #f
+(cond-expand
+ (uname/sysname/SunOS {
+   ;; symlink on SunOS
+   test (l? "/dev/tty") #t
+ })
+ (else {
+   test (l? "/dev/tty") #f
+ }))
 test (l? ".")	     #f
 test (l? testfile)   #f
 test (l? linkfile)   #t
@@ -286,7 +293,15 @@ test (w? ".")	     #t
 test (w? testfile)   #t
 test (w? linkfile)   #t
 
-test (x? "/dev/tty") #f
+(cond-expand
+ (uname/sysname/FreeBSD {
+   ;; crw--w----  1 idf  tty  0x5a Jan 30 13:10 /dev/tty
+   ;; tests for X_OK
+   test (x? "/dev/tty") #t
+ })
+ (else {
+   test (x? "/dev/tty") #f
+ }))
 test (x? ".")	     #t
 test (x? testfile)   #f
 test (x? linkfile)   #f
