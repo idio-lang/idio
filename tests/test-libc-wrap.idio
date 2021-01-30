@@ -233,6 +233,68 @@ GID = GID				; C-int
 UID = (C/->integer UID)			; fixnum
 UID = UID				; C-int
 
+linkfile := "__link__"
+ln -s testfile linkfile
+; block special devices?
+test (b? "/dev/tty") #f
+test (b? ".")        #f
+test (b? testfile)   #f
+test (b? linkfile)   #f
+
+test (c? "/dev/tty") #t
+test (c? ".")	     #f
+test (c? testfile)   #f
+test (c? linkfile)   #f
+
+test (d? "/dev/tty") #f
+test (d? ".")	     #t
+test (d? testfile)   #f
+test (d? linkfile)   #f
+
+test (e? "/dev/tty") #t
+test (e? ".")	     #t
+test (e? testfile)   #t
+test (e? linkfile)   #t
+
+test (f? "/dev/tty") #f
+test (f? ".")	     #f
+test (f? testfile)   #t
+test (f? linkfile)   #t
+
+test (l? "/dev/tty") #f
+test (l? ".")	     #f
+test (l? testfile)   #f
+test (l? linkfile)   #t
+
+test (p? "/dev/tty") #f
+test (p? ".")	     #f
+test (p? testfile)   #f
+test (p? linkfile)   #f
+
+test (r? "/dev/tty") #t
+test (r? ".")	     #t
+test (r? testfile)   #t
+test (r? linkfile)   #t
+
+test (s? "/dev/tty") #f
+test (s? ".")	     #f
+test (s? testfile)   #f
+test (s? linkfile)   #f
+
+test (w? "/dev/tty") #t
+test (w? ".")	     #t
+test (w? testfile)   #t
+test (w? linkfile)   #t
+
+test (x? "/dev/tty") #f
+test (x? ".")	     #t
+test (x? testfile)   #f
+test (x? linkfile)   #f
+
+;; if someone has redirected stdin...
+t? (stdin-fileno)
+
+rm -f linkfile
 
 ;; STDIN/STDOUT/STDERR are computed values in libc (not exported)
 module libc
@@ -245,4 +307,4 @@ test STDERR (current-error-handle)
 module tests/libc-wrap
 
 ;; all done?
-Tests? (libc-wrap0 + 63)
+Tests? (libc-wrap0 + 107)

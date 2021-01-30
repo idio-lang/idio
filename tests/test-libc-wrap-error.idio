@@ -353,5 +353,40 @@ libc-wrap-error-load "libc-wrap-errors/UID-set-bad-type.idio" "bad parameter typ
  })
 )
 
+libc-wrap-error-load "libc-wrap-errors/b-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
+libc-wrap-error-load "libc-wrap-errors/b-bad-format.idio" "b?: pathname contains an ASCII NUL"
+
+libc-wrap-error-load "libc-wrap-errors/c-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
+libc-wrap-error-load "libc-wrap-errors/c-bad-format.idio" "c?: pathname contains an ASCII NUL"
+
+libc-wrap-error-load "libc-wrap-errors/d-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
+libc-wrap-error-load "libc-wrap-errors/d-bad-format.idio" "d?: pathname contains an ASCII NUL"
+
+libc-wrap-error-load "libc-wrap-errors/e-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
+libc-wrap-error-load "libc-wrap-errors/e-bad-format.idio" "e?: pathname contains an ASCII NUL"
+
+libc-wrap-error-load "libc-wrap-errors/f-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
+libc-wrap-error-load "libc-wrap-errors/f-bad-format.idio" "f?: pathname contains an ASCII NUL"
+
+libc-wrap-error-load "libc-wrap-errors/l-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
+libc-wrap-error-load "libc-wrap-errors/l-bad-format.idio" "l?: pathname contains an ASCII NUL"
+
+libc-wrap-error-load "libc-wrap-errors/p-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
+libc-wrap-error-load "libc-wrap-errors/p-bad-format.idio" "p?: pathname contains an ASCII NUL"
+
+libc-wrap-error-load "libc-wrap-errors/r-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
+libc-wrap-error-load "libc-wrap-errors/r-bad-format.idio" "r?: pathname contains an ASCII NUL"
+
+libc-wrap-error-load "libc-wrap-errors/s-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
+libc-wrap-error-load "libc-wrap-errors/s-bad-format.idio" "s?: pathname contains an ASCII NUL"
+
+libc-wrap-error-load "libc-wrap-errors/t-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_int"
+
+libc-wrap-error-load "libc-wrap-errors/w-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
+libc-wrap-error-load "libc-wrap-errors/w-bad-format.idio" "w?: pathname contains an ASCII NUL"
+
+libc-wrap-error-load "libc-wrap-errors/x-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
+libc-wrap-error-load "libc-wrap-errors/x-bad-format.idio" "x?: pathname contains an ASCII NUL"
+
 ;; all done?
-Tests? (libc-wrap-error0 + 173)
+Tests? (libc-wrap-error0 + 196)

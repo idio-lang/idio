@@ -2365,7 +2365,7 @@ does `filename` pass `access (filename, R_OK)`?	\n\
 :param filename: file to test			\n\
 :type filename: string				\n\
 						\n\
-:return: #t / # f				\n\
+:return: #t or #f				\n\
 :rtype: boolean					\n\
 ")
 {
