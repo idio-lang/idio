@@ -1642,12 +1642,30 @@ file handle `fh`				\n\
      */
     IDIO_USER_TYPE_ASSERT (file_handle, fh);
 
+    if (IDIO_HANDLE_FLAGS (fh) & IDIO_HANDLE_FLAG_CLOSED) {
+	/*
+	 * Test Case: file-handle-errors/fflush-closed-handle.idio
+	 *
+	 * fh := open-input-file testfile
+	 * close-handle fh
+	 * fflush-file-handle fh
+	 *
+	 * XXX This was the test case for fflush(3) failing below
+	 * until I realised that valgrind was moaning that the FILE*
+	 * had been free()'d because I didn't do the closed? test
+	 * above.
+	 */
+	idio_handle_closed_error (fh, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
     idio_flush_file_handle (fh);
     int r = fflush (IDIO_FILE_HANDLE_FILEP (fh));
 
     if (EOF == r) {
 	/*
-	 * Test Case: file-handle-errors/fflush-bad-handle.idio
+	 * Test Case: ??
 	 *
 	 * According to fflush(3) fflush should return EBADF for a
 	 * (FILE *) handle not open for writing.
@@ -1656,11 +1674,8 @@ file handle `fh`				\n\
 	 *
 	 * suggests otherwise.
 	 *
-	 * So, back to basics with a not-open handle.
-	 *
-	 * fh := open-input-file testfile
-	 * close-handle fh
-	 * fflush-file-handle fh
+	 * The case with a closed handle was being shouted about by
+	 * valgrind, hence the check above leaving us with...nothing.
 	 */
 	idio_error_system_errno ("fflush", fh, IDIO_C_FUNC_LOCATION ());
 

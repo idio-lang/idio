@@ -189,15 +189,7 @@ file-handle-error-load "file-handle-errors/ready-closed-handle.idio" "handle alr
 file-handle-error-load "file-handle-errors/close-closed-handle.idio" "handle already closed"
 
 file-handle-error-load "file-handle-errors/fflush-file-handle-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a file_handle"
-(cond-expand
- ((or uname/sysname/SunOS
-      uname/sysname/Darwin) {
-	eprintf "XXX: SunOS/Darwin: fflush(3) behaviour\n"
-	Tests = Tests + 2
-      })
- (else {
-   file-handle-error-load "file-handle-errors/fflush-bad-handle.idio" "Bad file descriptor" "fflush"
- }))
+file-handle-error-load "file-handle-errors/fflush-closed-handle.idio" "handle already closed"
 
 file-handle-error-load "file-handle-errors/lseek-negative-offset.idio" "Invalid argument" "lseek"
 
@@ -243,4 +235,4 @@ file-handle-error-load "file-handle-errors/delete-file-format.idio" "delete-file
 file-handle-error-load "file-handle-errors/delete-file-EACCESS.idio" "remove: Permission denied"
 
 ;; all done?
-Tests? (file-handle-error0 + 74)
+Tests? (file-handle-error0 + 73)
