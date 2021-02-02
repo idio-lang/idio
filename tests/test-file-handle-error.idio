@@ -76,13 +76,19 @@ file-handle-error-load := {
   }
 }
 
+fd := #f
+
 file-handle-error-load "file-handle-errors/open-file-from-fd-bad-fd-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_int"
 file-handle-error-load "file-handle-errors/open-file-from-fd-filename-format.idio" "open-file-from-fd filename contains an ASCII NUL"
 file-handle-error-load "file-handle-errors/open-file-from-fd-filename-PATH_MAX.idio" "malformed filename: name too long"
 file-handle-error-load "file-handle-errors/open-file-from-fd-filename-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
 file-handle-error-load "file-handle-errors/open-file-from-fd-mode-format.idio" "open-file-from-fd mode contains an ASCII NUL"
 file-handle-error-load "file-handle-errors/open-file-from-fd-mode-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
-file-handle-error-load "file-handle-errors/open-file-from-fd-mode-invalid.idio" "Invalid argument" "fdopen"
+file-handle-error-load "file-handle-errors/open-file-from-fd-mode-invalid.idio" "open-file-from-fd mode invalid"
+file-handle-error-load "file-handle-errors/open-file-from-fd-mode-letter-invalid-1.idio" "open-file-from-fd mode invalid"
+file-handle-error-load "file-handle-errors/open-file-from-fd-mode-letter-invalid-2.idio" "open-file-from-fd mode invalid"
+file-handle-error-load "file-handle-errors/open-file-from-fd-mode-letter-inconsistent.idio" "open-file-from-fd mode inconsistent"
+close fd
 
 file-handle-error-load "file-handle-errors/open-input-file-from-fd-bad-fd-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_int"
 file-handle-error-load "file-handle-errors/open-input-file-from-fd-filename-format.idio" "open-input-file-from-fd filename contains an ASCII NUL"
@@ -90,7 +96,11 @@ file-handle-error-load "file-handle-errors/open-input-file-from-fd-filename-PATH
 file-handle-error-load "file-handle-errors/open-input-file-from-fd-filename-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
 file-handle-error-load "file-handle-errors/open-input-file-from-fd-mode-format.idio" "open-input-file-from-fd mode contains an ASCII NUL"
 file-handle-error-load "file-handle-errors/open-input-file-from-fd-mode-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
-file-handle-error-load "file-handle-errors/open-input-file-from-fd-mode-invalid.idio" "Invalid argument" "fdopen"
+file-handle-error-load "file-handle-errors/open-input-file-from-fd-mode-invalid.idio" "open-input-file-from-fd mode invalid"
+file-handle-error-load "file-handle-errors/open-input-file-from-fd-mode-letter-invalid-1.idio" "open-input-file-from-fd mode invalid"
+file-handle-error-load "file-handle-errors/open-input-file-from-fd-mode-letter-invalid-2.idio" "open-input-file-from-fd mode invalid"
+file-handle-error-load "file-handle-errors/open-input-file-from-fd-mode-letter-inconsistent.idio" "open-input-file-from-fd mode inconsistent"
+close fd
 
 file-handle-error-load "file-handle-errors/open-output-file-from-fd-bad-fd-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_int"
 file-handle-error-load "file-handle-errors/open-output-file-from-fd-filename-format.idio" "open-output-file-from-fd filename contains an ASCII NUL"
@@ -98,9 +108,15 @@ file-handle-error-load "file-handle-errors/open-output-file-from-fd-filename-PAT
 file-handle-error-load "file-handle-errors/open-output-file-from-fd-filename-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
 file-handle-error-load "file-handle-errors/open-output-file-from-fd-mode-format.idio" "open-output-file-from-fd mode contains an ASCII NUL"
 file-handle-error-load "file-handle-errors/open-output-file-from-fd-mode-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
-file-handle-error-load "file-handle-errors/open-output-file-from-fd-mode-invalid.idio" "Invalid argument" "fdopen"
+file-handle-error-load "file-handle-errors/open-output-file-from-fd-mode-invalid.idio" "open-output-file-from-fd mode invalid"
+file-handle-error-load "file-handle-errors/open-output-file-from-fd-mode-letter-invalid-1.idio" "open-output-file-from-fd mode invalid"
+file-handle-error-load "file-handle-errors/open-output-file-from-fd-mode-letter-invalid-2.idio" "open-output-file-from-fd mode invalid"
+file-handle-error-load "file-handle-errors/open-output-file-from-fd-mode-letter-inconsistent.idio" "open-output-file-from-fd mode inconsistent"
+close fd
 
 file-handle-error-load "file-handle-errors/open-file-mode-invalid.idio" "open-file mode invalid"
+file-handle-error-load "file-handle-errors/open-file-mode-letter-invalid-1.idio" "open-file mode invalid"
+file-handle-error-load "file-handle-errors/open-file-mode-letter-invalid-2.idio" "open-file mode invalid"
 
 file-handle-error-load "file-handle-errors/file-handle-fd-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a file_handle"
 
@@ -146,6 +162,17 @@ file-handle-error-load "file-handle-errors/open-file-filename-PATH_MAX.idio" "op
 file-handle-error-load "file-handle-errors/open-input-file-filename-PATH_MAX.idio" "open-input-file: File name too long"
 file-handle-error-load "file-handle-errors/open-output-file-filename-PATH_MAX.idio" "open-output-file: File name too long"
 
+;; ^i/o-filename-error
+;;
+;; ie. none of the below.  Let's try ENOTDIR.  Opening a non-existent
+;; directory name, eg.  ..../tmpfile, gets an ^i/o-no-such-file-error
+;; so you seem to need to use an existing non-dir file in the position
+;; of a directory (actually, much like the man page says...).  Here,
+;; we'll use tmpfile in a directory component as ./tmpfile/tmpfile
+file-handle-error-load "file-handle-errors/open-file-dirname-missing.idio" "open-file: Not a directory"
+file-handle-error-load "file-handle-errors/open-input-file-dirname-missing.idio" "open-input-file: Not a directory"
+file-handle-error-load "file-handle-errors/open-output-file-dirname-missing.idio" "open-output-file: Not a directory"
+
 delete-file tmpfile
 
 ;; ^i/o-no-such-file-error
@@ -154,20 +181,9 @@ delete-file tmpfile
 file-handle-error-load "file-handle-errors/open-file-filename-missing.idio" "open-file: No such file or directory"
 file-handle-error-load "file-handle-errors/open-input-file-filename-missing.idio" "open-input-file: No such file or directory"
 
-;; ^i/o-filename-error
-;;
-;; ie. none of the below.  Let's try ENOTDIR.  Opening a non-existent
-;; directory name, eg.  ..../tmpfile, gets an ^i/o-no-such-file-error
-;; so you seem to need to use an existing non-dir file in the position
-;; of a directory (actually, much like the man page says...).  Here,
-;; we'll use tmpfile in a directory component as ./tmpfile/tmpfile
-file-handle-error-load "file-handle-errors/open-file-dirname-missing.idio" "open-file: No such file or directory"
-file-handle-error-load "file-handle-errors/open-input-file-dirname-missing.idio" "open-input-file: No such file or directory"
-file-handle-error-load "file-handle-errors/open-output-file-dirname-missing.idio" "open-output-file: No such file or directory"
-
 ;; Technically this could fail with EMFILE or ENFILE, depending on the
 ;; state of the system.
-file-handle-error-load "file-handle-errors/EMFILE.idio" "Too many open files" "fopen (final)"
+file-handle-error-load "file-handle-errors/EMFILE.idio" "Too many open files" "open (final)"
 (cond-expand
  (uname/sysname/Darwin {
    eprintf "XXX: Darwin: requiring extra GC collection\n"
@@ -186,10 +202,9 @@ file-handle-error-load "file-handle-errors/open-output-file-filename-format.idio
 file-handle-error-load "file-handle-errors/open-output-file-filename-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
 
 file-handle-error-load "file-handle-errors/ready-closed-handle.idio" "handle already closed"
-file-handle-error-load "file-handle-errors/close-closed-handle.idio" "handle already closed"
+file-handle-error-load "file-handle-errors/ready-bad-handle.idio" "handle read error"
 
-file-handle-error-load "file-handle-errors/fflush-file-handle-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a file_handle"
-file-handle-error-load "file-handle-errors/fflush-closed-handle.idio" "handle already closed"
+file-handle-error-load "file-handle-errors/close-closed-handle.idio" "handle already closed"
 
 file-handle-error-load "file-handle-errors/lseek-negative-offset.idio" "Invalid argument" "lseek"
 
@@ -227,12 +242,9 @@ file-handle-error-load "file-handle-errors/find-lib-format.idio" "find-lib filen
 file-handle-error-load "file-handle-errors/load-format.idio" "load filename contains an ASCII NUL"
 file-handle-error-load "file-handle-errors/load-not-found.idio" "load: No such file or directory"
 
-file-handle-error-load "file-handle-errors/file-exists-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
-file-handle-error-load "file-handle-errors/file-exists-format.idio" "file-exists? filename contains an ASCII NUL"
-
 file-handle-error-load "file-handle-errors/delete-file-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
 file-handle-error-load "file-handle-errors/delete-file-format.idio" "delete-file filename contains an ASCII NUL"
 file-handle-error-load "file-handle-errors/delete-file-EACCESS.idio" "remove: Permission denied"
 
 ;; all done?
-Tests? (file-handle-error0 + 73)
+Tests? (file-handle-error0 + 78)

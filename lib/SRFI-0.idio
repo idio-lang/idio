@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2020 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -213,7 +213,7 @@ define-template (cond-expand & clause*) {
    loop :+ function (fn*) {
 	     if (null? fn*) #n {
 	       fn := ph fn*
-	       if (file-exists? fn) {
+	       if (e? fn) {
 		 fh := open-input-file fn
 		 comment-rx := regcomp "^#"
 		 kv-rx := regcomp "([[:alnum:]_]+)=(.*)"
@@ -249,7 +249,7 @@ define-template (cond-expand & clause*) {
    loop :+ function (fn*) {
 	     if (null? fn*) #n {
 	       fn := ph fn*
-	       if (file-exists? fn) {
+	       if (e? fn) {
 		 fh := open-input-file fn
 		 loop :+ function () {
 			   if (eof? fh) #n {

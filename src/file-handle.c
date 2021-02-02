@@ -330,24 +330,20 @@ void idio_file_handle_mode_format_error (char *circumstance, char *msg, IDIO mod
     /* notreached */
 }
 
-static IDIO idio_open_file_handle (IDIO filename, char *pathname, FILE *filep, int h_flags, int s_flags)
+static IDIO idio_open_file_handle (IDIO filename, char *pathname, int fd, int h_flags, int s_flags)
 {
     IDIO_ASSERT (filename);
     IDIO_C_ASSERT (pathname);
-    IDIO_C_ASSERT (filep);
 
     IDIO_TYPE_ASSERT (string, filename);
 
     idio_file_handle_stream_t *fhsp = idio_alloc (sizeof (idio_file_handle_stream_t));
     int bufsiz = BUFSIZ;
 
-    int fd = fileno (filep);
-
     if (isatty (fd)) {
 	s_flags |= IDIO_FILE_HANDLE_FLAG_INTERACTIVE;
     }
 
-    IDIO_FILE_HANDLE_STREAM_FILEP (fhsp) = filep;
     IDIO_FILE_HANDLE_STREAM_FD (fhsp) = fd;
     IDIO_FILE_HANDLE_STREAM_FLAGS (fhsp) = s_flags;
     IDIO_FILE_HANDLE_STREAM_BUF (fhsp) = idio_alloc (bufsiz);
@@ -368,6 +364,68 @@ static IDIO idio_open_file_handle (IDIO filename, char *pathname, FILE *filep, i
     }
 
     return fh;
+}
+
+/*
+ * Must be:
+ *
+ * 1. a string of at least one character
+ *
+ * 2. start with r, w or a
+ *
+ * 3. be of a limited set of subsequent mode characters
+ *
+ * Can we be fooled by an extremely long mode string?  The glibc
+ * fopen(3) implementation deliberately limits the mode string to 5
+ * (or 6 or 7) characters.
+ */
+static int idio_file_handle_validate_mode_flags (char *mode_str, int *sflagsp, int *flagsp)
+{
+    if (strnlen (mode_str, 1) < 1) {
+	return -1;
+    }
+
+    switch (mode_str[0]) {
+    case 'r':
+	*flagsp = O_RDONLY;
+	break;
+    case 'w':
+	*flagsp = O_WRONLY | O_CREAT | O_TRUNC;
+	break;
+    case 'a':
+	*flagsp = O_WRONLY | O_CREAT | O_APPEND;
+	break;
+    default:
+	return -1;
+    }
+
+    for (size_t i = 1; i < strlen (mode_str); i++) {
+	switch (mode_str[i]) {
+	case 'b':
+	    /*
+	     * ISO C89 compatibility - ignored for POSIX conforming systems
+	     */
+	    break;
+	case '+':
+	    /*
+	     * Careful, other flags could have been applied by now:
+	     * "re+"
+	     */
+	    *flagsp = (*flagsp & ~ O_ACCMODE) | O_RDWR;
+	    break;
+	case 'e':
+	    *flagsp |= O_CLOEXEC;
+	    *sflagsp |= IDIO_FILE_HANDLE_FLAG_CLOEXEC;
+	    break;
+	case 'x':
+	    *flagsp |= O_EXCL;
+	    break;
+	default:
+	    return -1;
+	}
+    }
+
+    return 0;
 }
 
 static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, char *func, char *def_mode_str, int def_mode, int plus_mode)
@@ -458,15 +516,15 @@ static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, char *func, char
 	}
     }
 
-    int free_mode = 0;
-    char *mode = def_mode_str;
+    int free_mode_str = 0;
+    char *mode_str = def_mode_str;
 
     if (idio_S_nil != args) {
 	IDIO imode = IDIO_PAIR_H (args);
 	if (idio_isa_string (imode)) {
 	    size_t size = 0;
-	    mode = idio_string_as_C (imode, &size);
-	    size_t C_size = strlen (mode);
+	    mode_str = idio_string_as_C (imode, &size);
+	    size_t C_size = strlen (mode_str);
 	    if (C_size != size) {
 		/*
 		 * Test Cases:
@@ -477,14 +535,14 @@ static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, char *func, char
 		 *
 		 * open-file-from-fd (stdin-fileno) "bob" (join-string (make-string 1 #U+0) '("r" "w"))
 		 */
-		IDIO_GC_FREE (mode);
+		IDIO_GC_FREE (mode_str);
 
 		idio_file_handle_mode_format_error (func, "contains an ASCII NUL", imode, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    }
 
-	    free_mode = 1;
+	    free_mode_str = 1;
 	    args = IDIO_PAIR_T (args);
 	} else {
 	    /*
@@ -502,41 +560,216 @@ static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, char *func, char
 	}
     }
 
-    FILE *filep = fdopen (fd, mode);
-    if (NULL == filep) {
+    /*
+     * This is the moral equivalent of fdopen(3) and we've been passed
+     * some mode flags in a string.
+     *
+     * That said, there's not much we can do if someone specifies a
+     * mode that is not true of the fd itself as the fd is already
+     * open.
+     *
+     * We can validate they've passed recognised mode letters and we
+     * will call fcntl(2) with the resultant flags but all we're
+     * really interested in is setting the handle's read/write flags.
+     *
+     * We can query the current access mode and validate:
+     *
+     *   open-file-from-fd (stdin-fileno) "bob" "w"
+     *
+     * for consistency.  fcntl() will ignore use if we try to change
+     * access modes anyway.
+     *
+     * The only useful file status flag that can be changed is
+     * O_APPEND (as the mode string doesn't support the other mutable
+     * flags) and the only file descriptor flag we can change is
+     * O_CLOEXEC.
+     */
+    int s_flags = IDIO_FILE_HANDLE_FLAG_NONE;
+    int req_flags = 0;
+    if (-1 == idio_file_handle_validate_mode_flags (mode_str, &s_flags, &req_flags)) {
 	/*
 	 * Test Cases:
 	 *
-	 *   file-handle-errors/open-file-from-fd-mode-invalid.idio
-	 *   file-handle-errors/open-input-file-from-fd-mode-invalid.idio
-	 *   file-handle-errors/open-output-file-from-fd-mode-invalid.idio
+	 *   file-handle-errors/open-file-from-fd-mode-letter-invalid-[12].idio
+	 *   file-handle-errors/open-input-file-from-fd-mode-letter-invalid-[12].idio
+	 *   file-handle-errors/open-output-file-from-fd-mode-letter-invalid-[12].idio
 	 *
-	 * open-file-from-fd (stdin-fileno) "bob" "q"
+	 * open-file-from-fd (stdin-fileno) "bob" "rr"
+	 * open-file-from-fd (stdin-fileno) "bob" "rq"
 	 *
-	 * Curiously, the mode comes back as gibberish -- which, given
-	 * it's meant to be const char *, is ... odd.
+	 * NB r, w and a can only appear as the first letter and q
+	 * isn't a valid mode character.
 	 */
-
-	IDIO imode = idio_string_C (mode);
-	if (free_mode) {
-	    IDIO_GC_FREE (mode);
+	IDIO imode = idio_string_C (mode_str);
+	if (free_mode_str) {
+	    IDIO_GC_FREE (mode_str);
 	}
 
-	idio_error_system_errno ("fdopen", IDIO_LIST2 (idio_string_C (name), imode), IDIO_C_FUNC_LOCATION ());
+	idio_file_handle_mode_format_error (func, "invalid", imode, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
 
-    int mflag = def_mode;
-    if (strchr (mode, '+') != NULL) {
-	mflag |= plus_mode;
+    /*
+     * File status flags include file access mode.
+     */
+    int fs_flags = fcntl (fd, F_GETFL);
+
+    if (-1 == fs_flags) {
+	/*
+	 * Test Case: ??
+	 */
+	idio_error_system_errno_msg ("fcntl", "F_GETFL", ifd, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
     }
 
-    if (free_mode) {
-	IDIO_GC_FREE (mode);
+    /*
+     * What is mode inconsistency anyway?
+     */
+    int inconsistent = 0;
+    int fs_flags_mode = fs_flags & O_ACCMODE;
+    int req_flags_mode = req_flags & O_ACCMODE;
+    switch (fs_flags_mode) {
+    case O_RDONLY:
+	switch (req_flags_mode) {
+	case O_WRONLY:
+	    inconsistent = 1;
+	    break;
+	}
+	break;
+    case O_WRONLY:
+	switch (req_flags_mode) {
+	case O_RDONLY:
+	    inconsistent = 1;
+	    break;
+	}
+	break;
     }
 
-    return idio_open_file_handle (idio_string_C (name), name, filep, mflag, IDIO_FILE_HANDLE_FLAG_NONE);
+    if (inconsistent) {
+	/*
+	 * Test Cases:
+	 *
+	 *   file-handle-errors/open-file-from-fd-mode-letter-inconsistent.idio
+	 *   file-handle-errors/open-input-file-from-fd-mode-letter-inconsistent.idio
+	 *   file-handle-errors/open-output-file-from-fd-mode-letter-inconsistent.idio
+	 *
+	 * rm testfile
+	 * touch testfile
+	 * fh := open-input-file testfile
+	 * fd = libc/dup (file-handle-fd fh)
+	 * open-input-file-from-fd fd "bob" "w"
+	 *
+	 * XXX be careful of the mode the file is in initially,
+	 * without the rm and touch I was getting mode O_RDWR back
+	 * from fctnl (F_GETFL) -- even though the file was opened as
+	 * "r".
+	 *
+	 * Also note that {fd} remains open so it is up to you to
+	 * ensure it is closed.
+	 */
+	IDIO imode = idio_string_C (mode_str);
+	if (free_mode_str) {
+	    IDIO_GC_FREE (mode_str);
+	}
+
+	idio_file_handle_mode_format_error (func, "inconsistent", imode, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    /*
+     * fcntl (F_SETFL) is only usefully going to affect O_APPEND as
+     * the other fcntl() mutable file status flags are not mode string
+     * options.
+     *
+     * In particular, file access and creation modes are ignored.
+     */
+    int r = fcntl (fd, F_SETFL, req_flags);
+
+    if (-1 == r) {
+	/*
+	 * Test Case: ??
+	 */
+	idio_error_system_errno_msg ("fcntl", "F_SETFL", ifd, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    /*
+     * We're wrappering a file handle around an existing file
+     * descriptor.
+     *
+     * File descriptor flags fcntl(F_GETFD) include (are only?)
+     * O_CLOEXEC.
+     *
+     * Most people won't bother with it and assume the file will be
+     * closed on exec.  However, if they pass "r", rather than "re",
+     * then a naïve implementation might remove O_CLOEXEC from a file
+     * descriptor that was opened with it.
+     *
+     * When users are opening files, it should be their call but what
+     * do we do with an existing fd?
+     *
+     * In the short term...do what they ask and don't try to second
+     * guess their motives.
+     *
+     * TBD
+     */
+#ifdef IDIO_FILE_DESCRIPTOR_FLAGS
+    int fd_flags = fcntl (fd, F_GETFD);
+
+    if (-1 == fd_flags) {
+	/*
+	 * Test Case: ??
+	 */
+	idio_error_system_errno_msg ("fcntl", "F_GETFD", ifd, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    if ((fd_flags & O_CLOEXEC) != (req_flags & O_CLOEXEC)) {
+	fprintf (stderr, "fcntl (%d, F_GETFD) => %#x: wants %s\n", fd, fd_flags, mode_str);
+	/*
+	 * Test Cases: ??
+	 */
+	IDIO imode = idio_string_C (mode_str);
+	if (free_mode_str) {
+	    IDIO_GC_FREE (mode_str);
+	}
+
+	idio_file_handle_mode_format_error (func, "flags inconsistent", imode, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+#endif
+
+    /*
+     * fcntl (F_SETFD) is only going to affect O_CLOEXEC (and any
+     * other file descriptor flags).
+     */
+    r = fcntl (fd, F_SETFD, req_flags);
+
+    if (-1 == r) {
+	/*
+	 * Test Case: ??
+	 */
+	idio_error_system_errno_msg ("fcntl", "F_SETFD", ifd, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    int hflags = def_mode;
+    if (strchr (mode_str, '+') != NULL) {
+	hflags |= plus_mode;
+    }
+
+    if (free_mode_str) {
+	IDIO_GC_FREE (mode_str);
+    }
+
+    return idio_open_file_handle (idio_string_C (name), name, fd, hflags, IDIO_FILE_HANDLE_FLAG_NONE);
 }
 
 IDIO_DEFINE_PRIMITIVE1V_DS ("open-file-from-fd", open_file_handle_from_fd, (IDIO ifd, IDIO args), "fd [name [mode]]", "\
@@ -605,34 +838,38 @@ the optional mode `mode` instead of ``re``		\n\
     return idio_file_handle_open_from_fd (ifd, args, "open-output-file-from-fd", "we", IDIO_HANDLE_FLAG_WRITE, IDIO_HANDLE_FLAG_READ);
 }
 
-IDIO idio_open_file_handle_C (char *func, IDIO filename, char *pathname, int free_pathname, char *mode, int free_mode)
+IDIO idio_open_file_handle_C (char *func, IDIO filename, char *pathname, int free_pathname, char *mode_str, int free_mode_str)
 {
     IDIO_C_ASSERT (func);
     IDIO_ASSERT (filename);	/* the user supplied name */
     IDIO_C_ASSERT (pathname);
-    IDIO_C_ASSERT (mode);
+    IDIO_C_ASSERT (mode_str);
 
     IDIO_TYPE_ASSERT (string, filename);
 
     int h_flags = 0;
 
-    switch (mode[0]) {
+    switch (mode_str[0]) {
     case 'r':
 	h_flags = IDIO_HANDLE_FLAG_READ;
-	if (strchr (mode, '+') != NULL) {
+	if (strchr (mode_str, '+') != NULL) {
 	    h_flags |= IDIO_HANDLE_FLAG_WRITE;
 	}
 	break;
     case 'a':
     case 'w':
 	h_flags = IDIO_HANDLE_FLAG_WRITE;
-	if (strchr (mode, '+') != NULL) {
+	if (strchr (mode_str, '+') != NULL) {
 	    h_flags |= IDIO_HANDLE_FLAG_READ;
 	}
 	break;
     default:
 	/*
-	 * Test Case: file-handle-errors/open-file-mode-invalid.idio
+	 * Test Cases:
+	 *
+	 *   file-handle-errors/open-file-mode-invalid.idio
+	 *   file-handle-errors/open-input-file-mode-invalid.idio
+	 *   file-handle-errors/open-output-file-mode-invalid.idio
 	 *
 	 * open-file "bob" "q"
 	 */
@@ -640,9 +877,9 @@ IDIO idio_open_file_handle_C (char *func, IDIO filename, char *pathname, int fre
 	    IDIO_GC_FREE (pathname);
 	}
 
-	IDIO imode = idio_string_C (mode);
-	if (free_mode) {
-	    IDIO_GC_FREE (mode);
+	IDIO imode = idio_string_C (mode_str);
+	if (free_mode_str) {
+	    IDIO_GC_FREE (mode_str);
 	}
 
 	idio_file_handle_mode_format_error (func, "invalid", imode, IDIO_C_FUNC_LOCATION ());
@@ -651,23 +888,39 @@ IDIO idio_open_file_handle_C (char *func, IDIO filename, char *pathname, int fre
 	break;
     }
 
-    /*
-     * XXX
-     *
-     * Solaris (OpenIndiana 0.151.1.8) does not support the "x" (ie.
-     * O_EXCL) mode flag.
-     *
-     * To fix that would require we change fopen() to open() changing
-     * all the character string mode flags to fcntl O_* flags (and
-     * with "x" mapping to O_EXCL) followed by fdopen() to get the
-     * FILE*.
-     */
+    int s_flags = IDIO_FILE_HANDLE_FLAG_NONE;
+    int flags = 0;
+    if (-1 == idio_file_handle_validate_mode_flags (mode_str, &s_flags, &flags)) {
+	/*
+	 * Test Cases:
+	 *
+	 *   file-handle-errors/open-file-mode-letter-invalid-1.idio
+	 *   file-handle-errors/open-file-mode-letter-invalid-2.idio
+	 *
+	 * open-file "bob" "rr"
+	 * open-file "bob" "rq"
+	 */
+	if (free_pathname) {
+	    IDIO_GC_FREE (pathname);
+	}
 
-    FILE *filep;
+	IDIO imode = idio_string_C (mode_str);
+	if (free_mode_str) {
+	    IDIO_GC_FREE (mode_str);
+	}
+
+	idio_file_handle_mode_format_error (func, "invalid", imode, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
+
+    int fd;
     int tries;
     for (tries = 2; tries > 0 ; tries--) {
-	filep = fopen (pathname, mode);
-	if (NULL == filep) {
+	fd = open (pathname, flags, mode);
+	if (-1 == fd) {
 	    switch (errno) {
 	    case EMFILE:	/* process max */
 	    case ENFILE:	/* system max */
@@ -691,8 +944,8 @@ IDIO idio_open_file_handle_C (char *func, IDIO filename, char *pathname, int fre
 		    if (free_pathname) {
 			IDIO_GC_FREE (pathname);
 		    }
-		    if (free_mode) {
-			IDIO_GC_FREE (mode);
+		    if (free_mode_str) {
+			IDIO_GC_FREE (mode_str);
 		    }
 
 		    idio_file_handle_file_protection_error (func, pn, IDIO_C_FUNC_LOCATION ());
@@ -714,8 +967,8 @@ IDIO idio_open_file_handle_C (char *func, IDIO filename, char *pathname, int fre
 		    if (free_pathname) {
 			IDIO_GC_FREE (pathname);
 		    }
-		    if (free_mode) {
-			IDIO_GC_FREE (mode);
+		    if (free_mode_str) {
+			IDIO_GC_FREE (mode_str);
 		    }
 
 		    idio_file_handle_filename_already_exists_error (func, pn, IDIO_C_FUNC_LOCATION ());
@@ -738,8 +991,8 @@ IDIO idio_open_file_handle_C (char *func, IDIO filename, char *pathname, int fre
 		    if (free_pathname) {
 			IDIO_GC_FREE (pathname);
 		    }
-		    if (free_mode) {
-			IDIO_GC_FREE (mode);
+		    if (free_mode_str) {
+			IDIO_GC_FREE (mode_str);
 		    }
 
 		    idio_file_handle_filename_system_error (func, pn, IDIO_C_FUNC_LOCATION ());
@@ -765,8 +1018,8 @@ IDIO idio_open_file_handle_C (char *func, IDIO filename, char *pathname, int fre
 		    if (free_pathname) {
 			IDIO_GC_FREE (pathname);
 		    }
-		    if (free_mode) {
-			IDIO_GC_FREE (mode);
+		    if (free_mode_str) {
+			IDIO_GC_FREE (mode_str);
 		    }
 
 		    idio_file_handle_filename_not_found_error (func, pn, IDIO_C_FUNC_LOCATION ());
@@ -791,8 +1044,8 @@ IDIO idio_open_file_handle_C (char *func, IDIO filename, char *pathname, int fre
 		    if (free_pathname) {
 			IDIO_GC_FREE (pathname);
 		    }
-		    if (free_mode) {
-			IDIO_GC_FREE (mode);
+		    if (free_mode_str) {
+			IDIO_GC_FREE (mode_str);
 		    }
 
 		    idio_file_handle_filename_system_error (func, pn, IDIO_C_FUNC_LOCATION ());
@@ -804,22 +1057,15 @@ IDIO idio_open_file_handle_C (char *func, IDIO filename, char *pathname, int fre
 		    /*
 		     * Test Case: ??
 		     *
-		     * fopen(3) can fail for any reason in open(2).
-		     *
-		     * Can we generate any of those and be sure
-		     * they're not issues picked up by fopen(3) --
-		     * assuming the fopen(3) man page lists errno
-		     * errors there specifically because it will
-		     * return those errors itself, rather than defer
-		     * them to open(2).
+		     * What can we reasonably generate?  ELOOP, maybe?
 		     */
 		    IDIO pn = idio_string_C (pathname);
 
 		    if (free_pathname) {
 			IDIO_GC_FREE (pathname);
 		    }
-		    if (free_mode) {
-			IDIO_GC_FREE (mode);
+		    if (free_mode_str) {
+			IDIO_GC_FREE (mode_str);
 		    }
 
 		    idio_error_system_errno ("fopen", pn, IDIO_C_FUNC_LOCATION ());
@@ -832,71 +1078,34 @@ IDIO idio_open_file_handle_C (char *func, IDIO filename, char *pathname, int fre
 	}
     }
 
-    if (NULL == filep) {
+    if (-1 == fd) {
 	/*
 	 * Test Case: file-handle-errors/EMFILE.idio
 	 *
 	 * loop creating files but not closing them
 	 */
 	IDIO pn = idio_string_C (pathname);
-	IDIO m = idio_string_C (mode);
+	IDIO m = idio_string_C (mode_str);
 
 	if (free_pathname) {
 	    IDIO_GC_FREE (pathname);
 	}
-	if (free_mode) {
+	if (free_mode_str) {
 	    /*
 	     * Code coverage:
 	     *
 	     * Use open-file with a mode string (rather than
 	     * open-input-file with an fixed mode string) to get here.
 	     */
-	    IDIO_GC_FREE (mode);
+	    IDIO_GC_FREE (mode_str);
 	}
 
-	idio_error_system_errno ("fopen (final)", IDIO_LIST2 (pn, m), IDIO_C_FUNC_LOCATION ());
+	idio_error_system_errno ("open (final)", IDIO_LIST2 (pn, m), IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
 
-    int s_flags = IDIO_FILE_HANDLE_FLAG_NONE;
-    if (strchr (mode, 'e') != NULL) {
-	s_flags |= IDIO_FILE_HANDLE_FLAG_CLOEXEC;
-
-	/*
-	 * Some systems don't support the "e" (close-on-exec) mode
-	 * character for fopen(3) -- on the plus side they don't
-	 * complain either!
-	 *
-	 * We'll have to set the close-on-exec flag ourselves, if
-	 * required
-	 */
-#if (defined (__APPLE__) && defined (__MACH__))
-	int fd = fileno (filep);
-	if (fcntl (fd, F_SETFD, FD_CLOEXEC) == -1) {
-	    /*
-	     * Test Case: ??
-	     *
-	     * Not sure how to provoke this...
-	     */
-	    IDIO pn = idio_string_C (pathname);
-	    IDIO m = idio_string_C (mode);
-
-	    if (free_pathname) {
-		IDIO_GC_FREE (pathname);
-	    }
-	    if (free_mode) {
-		IDIO_GC_FREE (mode);
-	    }
-
-	    idio_error_system_errno_msg ("fcntl", "F_SETFD FD_CLOEXEC", IDIO_LIST3 (pn, m, idio_C_int (fd)), IDIO_C_FUNC_LOCATION ());
-
-	    return idio_S_notreached;
-	}
-#endif
-    }
-
-    return idio_open_file_handle (filename, pathname, filep, h_flags, s_flags);
+    return idio_open_file_handle (filename, pathname, fd, h_flags, s_flags);
 }
 
 /*
@@ -1048,17 +1257,17 @@ static IDIO idio_open_std_file_handle (FILE *filep)
 {
     IDIO_C_ASSERT (filep);
 
-    int mflag = IDIO_HANDLE_FLAG_NONE;
+    int hflags = IDIO_HANDLE_FLAG_NONE;
     char *name = NULL;
 
     if (filep == stdin) {
-	mflag = IDIO_HANDLE_FLAG_READ;
+	hflags = IDIO_HANDLE_FLAG_READ;
 	name = "*stdin*";
     } else if (filep == stdout) {
-	mflag = IDIO_HANDLE_FLAG_WRITE;
+	hflags = IDIO_HANDLE_FLAG_WRITE;
 	name = "*stdout*";
     } else if (filep == stderr) {
-	mflag = IDIO_HANDLE_FLAG_WRITE;
+	hflags = IDIO_HANDLE_FLAG_WRITE;
 	name = "*stderr*";
     } else {
 	/*
@@ -1071,7 +1280,7 @@ static IDIO idio_open_std_file_handle (FILE *filep)
 	return idio_S_notreached;
     }
 
-    return idio_open_file_handle (idio_string_C (name), name, filep, mflag, IDIO_FILE_HANDLE_FLAG_STDIO);
+    return idio_open_file_handle (idio_string_C (name), name, fileno (filep), hflags, IDIO_FILE_HANDLE_FLAG_STDIO);
 }
 
 IDIO idio_stdin_file_handle ()
@@ -1215,6 +1424,11 @@ void idio_file_handle_finalizer (IDIO fh)
     }
 }
 
+/*
+ * Code coverage:
+ *
+ * XXX I need to remove the final references to this.
+ */
 void idio_remember_file_handle (IDIO fh)
 {
     IDIO_ASSERT (fh);
@@ -1222,6 +1436,11 @@ void idio_remember_file_handle (IDIO fh)
     idio_hash_put (idio_file_handles, fh, idio_S_nil);
 }
 
+/*
+ * Code coverage:
+ *
+ * XXX I need to remove the final references to this.
+ */
 void idio_forget_file_handle (IDIO fh)
 {
     IDIO_ASSERT (fh);
@@ -1238,9 +1457,12 @@ void idio_free_file_handle (IDIO fh)
 }
 
 /*
- * ready? (char-ready? in Scheme) is true if there is input available
- * (without the need to block, ie. already buffered from a previous
- * read) or is at end of file.
+ * ready? (char-ready? in Scheme) is true if
+ *
+ * 1. there is input available (without the need to block, ie. already
+ *    buffered from a previous read) or
+ *
+ * 2. is at end of file.
  *
  * The general commentary is [Guile]: If char-ready? were to return #f
  * at end of file, a port at end of file would be indistinguishable
@@ -1267,6 +1489,18 @@ int idio_readyp_file_handle (IDIO fh)
 	return 0;
     }
 
+    if (! idio_input_file_handlep (fh)) {
+	/*
+	 * Test Case: file-handle-errors/ready-bad-handle.idio
+	 *
+	 * ready? (current-output-handle)
+	 */
+	idio_handle_read_error (fh, IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
+	return EOF;
+    }
+
     if (IDIO_FILE_HANDLE_COUNT (fh) > 0) {
 	/*
 	 * Code coverage:
@@ -1277,7 +1511,7 @@ int idio_readyp_file_handle (IDIO fh)
 	return 1;
     }
 
-    return (feof (IDIO_FILE_HANDLE_FILEP (fh)) == 0);
+    return (IDIO_FILE_HANDLE_FLAGS (fh) & IDIO_FILE_HANDLE_FLAG_EOF);
 }
 
 void idio_file_handle_read_more (IDIO fh)
@@ -1378,7 +1612,13 @@ int idio_close_file_handle (IDIO fh)
 
 	IDIO_HANDLE_FLAGS (fh) |= IDIO_HANDLE_FLAG_CLOSED;
 	idio_gc_deregister_finalizer (fh);
-	return fclose (IDIO_FILE_HANDLE_FILEP (fh));
+
+	/*
+	 * XXX we don't error if close(2) fails.  This function is
+	 * called from idio_file_handle_finalizer() and so needs to
+	 * disregard failures.
+	 */
+	return close (IDIO_FILE_HANDLE_FD (fh));
     }
 }
 
@@ -1535,14 +1775,14 @@ ptrdiff_t idio_puts_file_handle (IDIO fh, char *s, size_t slen)
 	     */
 	    return EOF;
 	}
-	r = fwrite (s, 1, slen, IDIO_FILE_HANDLE_FILEP (fh));
+	r = write (IDIO_FILE_HANDLE_FD (fh), s, slen);
 	if (r < slen) {
 	    /*
 	     * Test Case: ??
 	     *
 	     * Hmm, not sure...
 	     */
-	    idio_error_printf (IDIO_C_FUNC_LOCATION (), "fwrite (%s) => %zd / %zd", idio_handle_name_as_C (fh), r, slen);
+	    idio_error_printf (IDIO_C_FUNC_LOCATION (), "write (%s) => %zd / %zd", idio_handle_name_as_C (fh), r, slen);
 
 	    /* notreached */
 	    return EOF;
@@ -1606,14 +1846,30 @@ int idio_flush_file_handle (IDIO fh)
      */
     if (IDIO_INPUTP_HANDLE (fh) &&
 	! IDIO_OUTPUTP_HANDLE (fh)) {
+	IDIO_FILE_HANDLE_PTR (fh) = IDIO_FILE_HANDLE_BUF (fh);
+	IDIO_FILE_HANDLE_COUNT (fh) = 0;
+
+	return 0;
     }
 
     int r = EOF;
 
-    int n = fwrite (IDIO_FILE_HANDLE_BUF (fh), 1, IDIO_FILE_HANDLE_COUNT (fh), IDIO_FILE_HANDLE_FILEP (fh));
+    int n = write (IDIO_FILE_HANDLE_FD (fh), IDIO_FILE_HANDLE_BUF (fh), IDIO_FILE_HANDLE_COUNT (fh));
+
+    if (-1 == n) {
+	fprintf (stderr, "flush %d bytes failed for fd=%3d\n", IDIO_FILE_HANDLE_COUNT (fh), IDIO_FILE_HANDLE_FD (fh));
+	fprintf (stderr, "hflags=%#x\n", IDIO_HANDLE_FLAGS (fh));
+	idio_debug ("fh=%s\n", fh);
+	idio_error_system_errno ("write", fh, IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
+	return r;
+    }
 
     if (n == IDIO_FILE_HANDLE_COUNT (fh)) {
 	r = 0;
+    } else {
+	fprintf (stderr, "flush: %4d / %4d\n", n, IDIO_FILE_HANDLE_COUNT (fh));
     }
 
     IDIO_FILE_HANDLE_PTR (fh) = IDIO_FILE_HANDLE_BUF (fh);
@@ -1622,84 +1878,11 @@ int idio_flush_file_handle (IDIO fh)
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1_DS ("fflush-file-handle", fflush_file_handle, (IDIO fh), "fh", "\
-call fflush(3) on the C `FILE *` associated with	\n\
-file handle `fh`				\n\
-						\n\
-:param fh: file handle to flush			\n\
-:type fh: file handle				\n\
-						\n\
-:return: 0 or raises ^system-error		\n\
-:rtype: C-int					\n\
-")
-{
-    IDIO_ASSERT (fh);
-
-    /*
-     * Test Case: file-handle-errors/fflush-file-handle-bad-type.idio
-     *
-     * fflush-file-handle #t
-     */
-    IDIO_USER_TYPE_ASSERT (file_handle, fh);
-
-    if (IDIO_HANDLE_FLAGS (fh) & IDIO_HANDLE_FLAG_CLOSED) {
-	/*
-	 * Test Case: file-handle-errors/fflush-closed-handle.idio
-	 *
-	 * fh := open-input-file testfile
-	 * close-handle fh
-	 * fflush-file-handle fh
-	 *
-	 * XXX This was the test case for fflush(3) failing below
-	 * until I realised that valgrind was moaning that the FILE*
-	 * had been free()'d because I didn't do the closed? test
-	 * above.
-	 */
-	idio_handle_closed_error (fh, IDIO_C_FUNC_LOCATION ());
-
-	return idio_S_notreached;
-    }
-
-    idio_flush_file_handle (fh);
-    int r = fflush (IDIO_FILE_HANDLE_FILEP (fh));
-
-    if (EOF == r) {
-	/*
-	 * Test Case: ??
-	 *
-	 * According to fflush(3) fflush should return EBADF for a
-	 * (FILE *) handle not open for writing.
-	 *
-	 *   fflush-file-handle (current-input-handle)
-	 *
-	 * suggests otherwise.
-	 *
-	 * The case with a closed handle was being shouted about by
-	 * valgrind, hence the check above leaving us with...nothing.
-	 */
-	idio_error_system_errno ("fflush", fh, IDIO_C_FUNC_LOCATION ());
-
-	return idio_S_notreached;
-    }
-
-    return idio_C_int (r);
-}
-
 off_t idio_seek_file_handle (IDIO fh, off_t offset, int whence)
 {
     IDIO_ASSERT (fh);
 
     IDIO_TYPE_ASSERT (file_handle, fh);
-
-    /*
-     * fseek(3): A successful call to the fseek() function clears the
-     * end-of-file indicator for the stream and undoes any effects of
-     * the ungetc(3) function on the same stream.
-     *
-     * If we use lseek(2) we should implement the same.
-     *
-     * NB lseek(2) uses position plus offset
-     */
 
     off_t lseek_r = lseek (IDIO_FILE_HANDLE_FD (fh), offset, whence);
     if (-1 == lseek_r) {
@@ -1715,48 +1898,105 @@ off_t idio_seek_file_handle (IDIO fh, off_t offset, int whence)
 	return -1;
     }
 
-    if (feof (IDIO_FILE_HANDLE_FILEP (fh))) {
-	/*
-	 * Code coverage: ??
-	 *
-	 * The feof(FILE*) doesn't match our own EOF marker...
-	 */
-	clearerr (IDIO_FILE_HANDLE_FILEP (fh));
-    }
-
+    /*
+     * fseek(3): A successful call to the fseek() function clears the
+     * end-of-file indicator for the stream and undoes any effects of
+     * the ungetc(3) function on the same stream.
+     *
+     * If we use lseek(2) we should implement the same.
+     *
+     * Our caller will clear the lookahead character leaving us to
+     * handle EOF.
+     */
     IDIO_FILE_HANDLE_FLAGS (fh) &= ~IDIO_FILE_HANDLE_FLAG_EOF;
+
+    if (IDIO_FILE_HANDLE_COUNT (fh)) {
+	/*
+	 * We need to be careful about what we have buffered as the
+	 * seek may well have invalidated it.
+	 *
+	 * But it might not have invalidated it saving us a
+	 * re-buffering!
+	 *
+	 * The buffer PTR range is: BUF <= PTR < BUF+BUFSIZ
+	 *
+	 * We can invalidate the buffer by setting COUNT, the number
+	 * of bytes remaining in the current buffer, to 0.
+	 *
+	 * If we haven't invalidated the buffer we need to adjust PTR
+	 * and COUNT.
+	 *
+	 * There's potential for off-by-one errors:
+	 *
+	 * 1. If the lookahead char is not EOF then PTR is one more
+	 *    than POS thinks it should be.
+	 */
+
+	int invalid = 0;
+	switch (whence) {
+	case SEEK_SET:
+	    {
+		if (IDIO_HANDLE_LC (fh) != EOF) {
+		    IDIO_FILE_HANDLE_PTR (fh)--;
+		}
+		ptrdiff_t seek_pos = offset - IDIO_HANDLE_POS (fh);
+		if (seek_pos < 0) {
+		    if (IDIO_FILE_HANDLE_PTR (fh) - IDIO_FILE_HANDLE_BUF (fh) + seek_pos < 0) {
+			invalid = 1;
+		    } else {
+			IDIO_FILE_HANDLE_PTR (fh) += seek_pos;
+			IDIO_FILE_HANDLE_COUNT (fh) -= seek_pos;
+		    }
+		} else {
+		    if (seek_pos >= (IDIO_FILE_HANDLE_COUNT (fh))) {
+			invalid = 1;
+		    } else {
+			IDIO_FILE_HANDLE_PTR (fh) += seek_pos;
+			IDIO_FILE_HANDLE_COUNT (fh) -= seek_pos;
+		    }
+		}
+	    }
+	    break;
+	case SEEK_END:
+	    /*
+	     * XXX need to do the maths in case BUF overlaps the end
+	     * of the file!
+	     */
+	    invalid = 1;
+	    break;
+	case SEEK_CUR:
+	    /*
+	     * Code coverage:
+	     *
+	     * Should not occur as SEEK_CUR was transformed into a
+	     * SEEK_SET.
+	     */
+	    if (offset) {
+		invalid = 1;
+	    }
+	    break;
+	default:
+	    {
+		/*
+		 * Test Case: ??
+		 *
+		 * Coding error.
+		 */
+		char em[BUFSIZ];
+		sprintf (em, "'%#x' is invalid", whence);
+		idio_error_param_value ("whence", em, IDIO_C_FUNC_LOCATION ());
+
+		/* notreached */
+		return -1;
+	    }
+	}
+
+	if (invalid) {
+	    IDIO_FILE_HANDLE_COUNT (fh) = 0;
+	}
+    }
 
     return lseek_r;
-
-    /*
-     * NB fseek(3) uses offset relative to position -- is that *the
-     * same* ?
-     *
-     * Either way, this fseek(3)/ftell(3) code remains buggy -- I
-     * think it's something to do with peek-char not ungetc(3)'ing and
-     * therefore not (re-)setting the file pointer.
-     */
-    int fseek_r = fseek (IDIO_FILE_HANDLE_FILEP (fh), offset, whence);
-
-    if (-1 == fseek_r) {
-	fprintf (stderr, "off_t %" PRId64 " wh %d\n", offset, whence);
-	idio_error_system_errno ("fseek", fh, IDIO_C_FUNC_LOCATION ());
-
-	/* notreached */
-	return -1;
-    }
-
-    IDIO_FILE_HANDLE_FLAGS (fh) &= ~IDIO_FILE_HANDLE_FLAG_EOF;
-
-    long ftell_r = ftell (IDIO_FILE_HANDLE_FILEP (fh));
-    if (-1 == ftell_r) {
-	idio_error_system_errno ("ftell", fh, IDIO_C_FUNC_LOCATION ());
-
-	/* notreached */
-	return -1;
-    }
-
-    return ftell_r;
 }
 
 /*
@@ -2359,52 +2599,6 @@ This is the ``load`` primitive.					\n\
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1_DS ("file-exists?", file_exists_p, (IDIO filename), "filename", "\
-does `filename` pass `access (filename, R_OK)`?	\n\
-						\n\
-:param filename: file to test			\n\
-:type filename: string				\n\
-						\n\
-:return: #t or #f				\n\
-:rtype: boolean					\n\
-")
-{
-    IDIO_ASSERT (filename);
-
-    /*
-     * Test Case: file-handle-errors/file-exists-bad-type.idio
-     *
-     * file-exists? #t
-     */
-    IDIO_USER_TYPE_ASSERT (string, filename);
-
-    size_t size = 0;
-    char *filename_C = idio_string_as_C (filename, &size);
-    size_t C_size = strlen (filename_C);
-    if (C_size != size) {
-	/*
-	 * Test Case: file-handle-errors/file-exists-format.idio
-	 *
-	 * file-exists? (join-string (make-string 1 #U+0) '("hello" "world"))
-	 */
-	IDIO_GC_FREE (filename_C);
-
-	idio_file_handle_filename_format_error ("file-exists?", "contains an ASCII NUL", filename, IDIO_C_FUNC_LOCATION ());
-
-	return idio_S_notreached;
-    }
-
-    IDIO r = idio_S_false;
-
-    if (access (filename_C, R_OK) == 0) {
-	r = idio_S_true;
-    }
-
-    IDIO_GC_FREE (filename_C);
-
-    return r;
-}
-
 IDIO_DEFINE_PRIMITIVE1_DS ("delete-file", delete_file, (IDIO filename), "filename", "\
 does `remove (filename)` succeed?		\n\
 						\n\
@@ -2478,11 +2672,9 @@ void idio_file_handle_add_primitives ()
     IDIO_ADD_PRIMITIVE (file_handlep);
     IDIO_ADD_PRIMITIVE (input_file_handlep);
     IDIO_ADD_PRIMITIVE (output_file_handlep);
-    IDIO_ADD_PRIMITIVE (fflush_file_handle);
     IDIO_ADD_PRIMITIVE (file_handle_fd);
     IDIO_ADD_PRIMITIVE (find_lib);
     IDIO_ADD_PRIMITIVE (load);
-    IDIO_ADD_PRIMITIVE (file_exists_p);
     IDIO_ADD_PRIMITIVE (delete_file);
     IDIO_ADD_PRIMITIVE (close_file_handle_on_exec);
 }
@@ -2516,7 +2708,10 @@ void idio_init_file_handle ()
     idio_gc_protect_auto (idio_file_handles);
 
     idio_stdin = idio_open_std_file_handle (stdin);
+    idio_gc_protect_auto (idio_stdin);
     idio_stdout = idio_open_std_file_handle (stdout);
+    idio_gc_protect_auto (idio_stdout);
     idio_stderr = idio_open_std_file_handle (stderr);
+    idio_gc_protect_auto (idio_stderr);
 }
 

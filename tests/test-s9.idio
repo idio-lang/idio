@@ -1060,7 +1060,7 @@ test (truncate -1.9) -1.0
 
 ; --- I/O ---
 
-if (file-exists? testfile) (delete-file testfile)
+if (e? testfile) (delete-file testfile)
 
 ;; (test (call-with-output-file testfile
 ;;          (lambda (out)

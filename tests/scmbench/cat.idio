@@ -25,7 +25,7 @@ outport := #f
 testin := "testin"
 testout := "testout"
 
-if (not (file-exists? testin)) {
+if (not (e? testin)) {
   edisplay* "creating" testin
   ;; use /dev/zero -- /dev/urandom causes CONSTANT_CHARACTER issues
   dd if=/dev/zero of=testin bs=1K count=512
@@ -54,7 +54,7 @@ if (not (file-exists? testin)) {
      (go)
 }
 
-if (file-exists? testin) {
+if (e? testin) {
   edisplay* "removing" testin "and" testout
    rm testin testout
 }

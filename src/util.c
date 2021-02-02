@@ -1832,9 +1832,18 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 
 			IDIO_FLAGS_T s_flags = IDIO_FILE_HANDLE_FLAGS (o);
 			if (s_flags & IDIO_FILE_HANDLE_FLAG_CLOEXEC) {
-			    IDIO_STRCAT (r, sizep, "E");
+			    IDIO_STRCAT (r, sizep, "e"); /* same as mode string */
 			} else {
 			    IDIO_STRCAT (r, sizep, "!");
+			}
+			if (s_flags & IDIO_FILE_HANDLE_FLAG_INTERACTIVE) {
+			    IDIO_STRCAT (r, sizep, "i");
+			}
+			if (s_flags & IDIO_FILE_HANDLE_FLAG_STDIO) {
+			    IDIO_STRCAT (r, sizep, "F"); /* F for FILE* */
+			}
+			if (s_flags & IDIO_FILE_HANDLE_FLAG_EOF) {
+			    IDIO_STRCAT (r, sizep, "E");
 			}
 
 			char *fds;

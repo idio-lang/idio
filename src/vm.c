@@ -7085,15 +7085,9 @@ Does not return						\n\
      */
     IDIO oh = idio_thread_current_output_handle ();
     idio_flush_handle (oh);
-    if (idio_isa_file_handle (oh)) {
-	fflush (IDIO_FILE_HANDLE_FILEP (oh));
-    }
 
     IDIO eh = idio_thread_current_error_handle ();
     idio_flush_handle (eh);
-    if (idio_isa_file_handle (eh)) {
-	fflush (IDIO_FILE_HANDLE_FILEP (eh));
-    }
 
     idio_exit_status = status;
 

@@ -229,21 +229,21 @@ define (stdout-fileno) {
 
 ;;
 define (stderr-fileno) {
-  oh := (current-error-handle)
-  cond ((output-file-handle? oh) (fileno oh)) \
-       ((file-handle? oh) (error 'stderr-fileno "not an output-file-handle" oh)) \
-       ((output-string-handle? oh) {
+  eh := (current-error-handle)
+  cond ((output-file-handle? eh) (fileno eh)) \
+       ((file-handle? eh) (error 'stderr-fileno "not an output-file-handle" eh)) \
+       ((output-string-handle? eh) {
 	 ;; 1. create a temporary file
 	 fd+name := %make-tmp-fd "idio-esh"
 	 ;; 2. unlink the tmpfile
 	 unlink (pht fd+name)
 	 ;; 3. set the close-on-exec flag
 	 fcntl (ph fd+name) F_SETFD FD_CLOEXEC
-	 ;; 4. return the tuple {fd,oh} of "stderr" -- as a list to
+	 ;; 4. return the tuple {fd,eh} of "stderr" -- as a list to
 	 ;; mark it special
-	 list (ph fd+name) oh
+	 list (ph fd+name) eh
        }) \
-       (else (error 'stderr-fileno "unexpected current-error-handle" oh))
+       (else (error 'stderr-fileno "unexpected current-error-handle" eh))
 }
 
 

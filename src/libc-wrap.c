@@ -697,9 +697,10 @@ a wrapper to libc fcntl (2)					\n\
 Supported commands include:					\n\
 F_DUPFD								\n\
 F_DUPFD_CLOEXEC (if supported)					\n\
-F_GETFD								\n\
-F_SETFD								\n\
-")
+F_GETFL								\n\
+F_SETFL								\n\
+"
+)
 {
     IDIO_ASSERT (ifd);
     IDIO_ASSERT (icmd);
@@ -801,6 +802,29 @@ F_SETFD								\n\
 		 * Test Case: libc-wrap-errors/fcntl-F_SETFD-bad-arg-type.idio
 		 *
 		 * fcntl 0 F_SETFD #t
+		 */
+		idio_error_param_type ("C_int", iarg, IDIO_C_FUNC_LOCATION ());
+
+		return idio_S_notreached;
+	    }
+	    r = fcntl (fd, cmd, arg);
+	}
+	break;
+    case F_GETFL:
+	{
+	    r = fcntl (fd, cmd);
+	}
+	break;
+    case F_SETFL:
+	{
+	    int arg;
+	    if (idio_isa_C_int (iarg)) {
+		arg = IDIO_C_TYPE_INT (iarg);
+	    } else {
+		/*
+		 * Test Case: libc-wrap-errors/fcntl-F_SETFL-bad-arg-type.idio
+		 *
+		 * fcntl 0 F_SETFL #t
 		 */
 		idio_error_param_type ("C_int", iarg, IDIO_C_FUNC_LOCATION ());
 
@@ -5257,6 +5281,8 @@ void idio_init_libc_wrap ()
 #endif
     idio_module_export_symbol_value (idio_symbols_C_intern ("F_GETFD"), idio_C_int (F_GETFD), idio_libc_wrap_module);
     idio_module_export_symbol_value (idio_symbols_C_intern ("F_SETFD"), idio_C_int (F_SETFD), idio_libc_wrap_module);
+    idio_module_export_symbol_value (idio_symbols_C_intern ("F_GETFL"), idio_C_int (F_GETFL), idio_libc_wrap_module);
+    idio_module_export_symbol_value (idio_symbols_C_intern ("F_SETFL"), idio_C_int (F_SETFL), idio_libc_wrap_module);
 
     /* signal.h */
     idio_module_export_symbol_value (idio_symbols_C_intern ("SIG_DFL"), idio_C_pointer (SIG_DFL), idio_libc_wrap_module);

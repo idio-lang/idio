@@ -1,0 +1,10 @@
+
+module tests/file-handle/open-from-fd
+
+rm testfile
+touch testfile
+fh := open-file testfile "r"
+
+; XXX use {fd} so it is closed on our return
+fd = libc/dup (file-handle-fd fh)
+open-file-from-fd fd "bob" "w"

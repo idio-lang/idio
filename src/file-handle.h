@@ -30,7 +30,6 @@
 #define IDIO_FILE_HANDLE_FLAG_CLOEXEC	  (1<<3)
 
 typedef struct idio_file_handle_stream_s {
-    FILE *filep;
     int fd;
     IDIO_FLAGS_T flags;		/* IDIO_FILE_HANDLE_FLAG_* */
     char *buf;			/* buffer */
@@ -39,7 +38,6 @@ typedef struct idio_file_handle_stream_s {
     int count;			/* bytes in buffer */
 } idio_file_handle_stream_t;
 
-#define IDIO_FILE_HANDLE_STREAM_FILEP(S)  ((S)->filep)
 #define IDIO_FILE_HANDLE_STREAM_FD(S)     ((S)->fd)
 #define IDIO_FILE_HANDLE_STREAM_FLAGS(S)  ((S)->flags)
 #define IDIO_FILE_HANDLE_STREAM_BUF(S)    ((S)->buf)
@@ -47,7 +45,6 @@ typedef struct idio_file_handle_stream_s {
 #define IDIO_FILE_HANDLE_STREAM_PTR(S)    ((S)->ptr)
 #define IDIO_FILE_HANDLE_STREAM_COUNT(S)  ((S)->count)
 
-#define IDIO_FILE_HANDLE_FILEP(H)  IDIO_FILE_HANDLE_STREAM_FILEP((idio_file_handle_stream_t *) IDIO_HANDLE_STREAM(H))
 #define IDIO_FILE_HANDLE_FD(H)     IDIO_FILE_HANDLE_STREAM_FD((idio_file_handle_stream_t *) IDIO_HANDLE_STREAM(H))
 #define IDIO_FILE_HANDLE_FLAGS(H)  IDIO_FILE_HANDLE_STREAM_FLAGS((idio_file_handle_stream_t *) IDIO_HANDLE_STREAM(H))
 #define IDIO_FILE_HANDLE_BUF(H)    IDIO_FILE_HANDLE_STREAM_BUF((idio_file_handle_stream_t *) IDIO_HANDLE_STREAM(H))

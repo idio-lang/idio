@@ -45,70 +45,94 @@ test (file-handle? libc/INTMAX_MAX)		#f ; C_INT
 test (file-handle? libc/UINTMAX_MAX)		#f ; C_UINT
 
 test-str := "foo"
-test (file-handle? test-str) #f
-test (input-file-handle? test-str) #f
-test (output-file-handle? test-str) #f
+test (file-handle? test-str)		#f
+test (input-file-handle? test-str)	#f
+test (output-file-handle? test-str)	#f
 
 ofh := open-output-file testfile
-test (file-handle? ofh) #t
-test (output-file-handle? ofh) #t
-test (input-file-handle? ofh) #f
+test (file-handle? ofh)			#t
+test (output-file-handle? ofh)		#t
+test (input-file-handle? ofh)		#f
 
-fho := "Hello"
-write fho ofh
+; XXX write will include the "s !
+fho := "0123456789"
+display fho ofh
 close-handle ofh
 
-test (file-handle? ofh) #t
-test (output-file-handle? ofh) #t
-test (input-file-handle? ofh) #f
+test (file-handle? ofh)			#t
+test (output-file-handle? ofh)		#t
+test (input-file-handle? ofh)		#f
 
 ifh := open-input-file testfile
-test (file-handle? ifh) #t
-test (input-file-handle? ifh) #t
-test (output-file-handle? ifh) #f
+test (file-handle? ifh)			#t
+test (input-file-handle? ifh)		#t
+test (output-file-handle? ifh)		#f
 
 fhi := *primitives*/read ifh
 close-handle ifh
 
-test (file-handle? ifh) #t
-test (input-file-handle? ifh) #t
-test (output-file-handle? ifh) #f
+test (file-handle? ifh)			#t
+test (input-file-handle? ifh)		#t
+test (output-file-handle? ifh)		#f
 
-test fhi fho
+test fhi 123456789			; 0nnn => nnn
 
 ;; use the text read in again
 ifh := open-input-file testfile
-test (file-handle? ifh) #t
-test (input-file-handle? ifh) #t
-test (output-file-handle? ifh) #f
+test (file-handle? ifh)			#t
+test (input-file-handle? ifh)		#t
+test (output-file-handle? ifh)		#f
 
-;; XXX this is all wrong -- need to remove FILE*
-
-;; seek to the second character of "Hello" , #\e
+;; seek to the third character of 0123456789 , #\2
 test (seek-handle ifh 2) 2
 
-test (read-char ifh) #\e
-test (peek-char ifh) #\l
+test (read-char ifh)		 #\2
+test (peek-char ifh)		 #\3
 
 ; default is SEEK_SET
-test (seek-handle ifh 2) 2
-test (peek-char ifh) #\e
+test (seek-handle ifh 2)	 2
+test (peek-char ifh)		 #\2
 
-test (seek-handle ifh -2 'cur) 0
-test (peek-char ifh) #\"
+test (seek-handle ifh -2 'cur)	 0
+test (peek-char ifh)		 #\0
 
-test (seek-handle ifh 2 'set) 2
-test (peek-char ifh) #\e
+test (seek-handle ifh 2 'set)	 2
+test (peek-char ifh)		 #\2
 
-test (seek-handle ifh -2 'end) 5
-test (peek-char ifh) #\o
+test (seek-handle ifh -2 'end)	 8
+test (peek-char ifh)		 #\8
 
-rewind-handle ifh
-test (peek-char ifh) #\"
+rewind-handle			 ifh
+test (peek-char ifh)		 #\0
 
-test (handle-pos ifh) 0
-test (seek-handle ifh 2) 2
-test (handle-pos ifh) 2
+test (handle-pos ifh)		 0
+test (seek-handle ifh 2)	 2
+test (handle-pos ifh)		 2
+close-handle ifh
+
+;; code coverage of buffers and seek -- we happen to know that the
+;; buffer is libc/BUFSIZ in size
+bufsiz := (C/->integer libc/BUFSIZ)
+ofh := open-output-file testfile
+display (make-string (2 * bufsiz) #\a) ofh
+close-handle ofh
+
+ifh := open-input-file testfile
+seek-handle ifh bufsiz
+read-char ifh			     ; buffer the next BUFSIZ bytes
+				     ; and read one
+seek-handle ifh 9 'cur		     ; shouldn't invalidate the buffer
+seek-handle ifh -10 'cur	     ; shouldn't invalidate the buffer
+seek-handle ifh 0		     ; should invalidate the buffer
+
+read-char ifh			     ; buffer the next BUFSIZ bytes
+				     ; and read one
+seek-handle ifh bufsiz 'cur	     ; should invalidate the buffer
+
+read-char ifh			     ; buffer the next BUFSIZ bytes
+				     ; and read one
+seek-handle ifh 0 'end		     ; 'end will invalidate the buffer
+close-handle ifh
 
 ;; GC and file handles
 
@@ -148,44 +172,49 @@ test (handle-pos ifh) 2
 ifh := open-input-file testfile
 test (input-file-handle? ifh) #t
 
-; code coverage: "+" modes
-ifh = open-file testfile "r+"
-test (input-file-handle? ifh) #t
-test (output-file-handle? ifh) #t
-test (ready? ifh) #t
-close-handle ifh
-
-ofh = open-file testfile "w+"
-test (output-file-handle? ofh) #t
-test (input-file-handle? ofh) #t
-test (ready? ofh) #t
-close-handle ofh
-
-ofh = open-file testfile "a+"
-test (output-file-handle? ofh) #t
-test (input-file-handle? ofh) #t
-test (ready? ofh) #t
-close-handle ofh
-
 ;; ready? code coverage!
 ofh = open-file testfile "w"
 hprintf ofh "hello\n"
 close-handle ofh
 
 ifh = open-file testfile "r"
+test (ready? ifh)	#f	     ; not buffered anything
 ;; buffered byte count code path!
-test (read-char ifh) #\h
-test (ready? ifh) #t
-;; feof code path!
-read-line ifh				; stops on the \n -- not yet
-					; EOF
-test (eof? ifh) #f
-test (ready? ifh) #t
+test (read-char ifh)	#\h
+test (ready? ifh)	#t
+read-line ifh				; stops having read the \n but
+					; not yet EOF
+test (eof? ifh)		#f
+test (ready? ifh)	#f		; nothing left in the buffer,
+					; though
 read-line ifh				; should have provoked EOF
-test (eof? ifh) #t
-test (ready? ifh) #t
+test (eof? ifh)		#t
+test (ready? ifh)	#t
 close-handle ifh
-test (eof? ifh) #t
+test (eof? ifh)		#t
+
+; code coverage: "+" modes
+r+-fh := open-file testfile "r+"
+test (input-file-handle? r+-fh)		#t
+test (output-file-handle? r+-fh)	#t
+test (ready? r+-fh)			#f ; not buffered anything
+test (read-char r+-fh)			#\h
+test (ready? r+-fh)			#t
+close-handle r+-fh
+
+a+-fh := open-file testfile "a+"
+test (output-file-handle? a+-fh)	#t
+test (input-file-handle? a+-fh)		#t
+test (ready? a+-fh)			#f ; not buffered anything
+test (read-char a+-fh)			#\h
+test (ready? a+-fh)			#t
+close-handle a+-fh
+
+w+-fh := open-file testfile "w+"	; testfile now truncated
+test (output-file-handle? w+-fh)	#t
+test (input-file-handle? w+-fh)		#t
+test (ready? w+-fh)			#f ; not buffered anything
+close-handle w+-fh
 
 ;; trigger some internal buffer (BUFSIZ) flushing with a single
 ;; character -- technically only the last character counts
@@ -209,7 +238,6 @@ close-handle ofh
 
 ofh = open-file testfile "w"
 hprintf ofh "hello\n"
-fflush-file-handle ofh
 close-handle ofh
 
 ;; trigger a seek -> clear EOF clause
@@ -252,4 +280,4 @@ load "lib/empty"
 
 IDIOLIB = OIDIOLIB
 ;; all done?
-Tests? (file-handle0 + 77)
+Tests? (file-handle0 + 82)

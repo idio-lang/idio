@@ -135,6 +135,7 @@ libc-wrap-error-load "libc-wrap-errors/fcntl-F_DUPFD-bad-arg-type.idio" "bad par
    test #t #t
  }))
 libc-wrap-error-load "libc-wrap-errors/fcntl-F_SETFD-bad-arg-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_int"
+libc-wrap-error-load "libc-wrap-errors/fcntl-F_SETFL-bad-arg-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_int"
 libc-wrap-error-load "libc-wrap-errors/fcntl-unknown-cmd.idio" "fcntl unexpected cmd"
 
 libc-wrap-error-load "libc-wrap-errors/fcntl-F_DUPFD-bad-fd.idio" strerror-EBADF EBADF "fcntl"
@@ -389,4 +390,4 @@ libc-wrap-error-load "libc-wrap-errors/x-bad-type.idio" "bad parameter type: '#t
 libc-wrap-error-load "libc-wrap-errors/x-bad-format.idio" "x?: pathname contains an ASCII NUL"
 
 ;; all done?
-Tests? (libc-wrap-error0 + 196)
+Tests? (libc-wrap-error0 + 197)

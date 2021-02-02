@@ -1,5 +1,5 @@
 
-;; tmpfile should be in scope and missing!
+;; tmpfile should be in scope and exist to get ENOTDIR
 open-output-file (append-string tmpfile "/foo")
 
 

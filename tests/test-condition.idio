@@ -226,7 +226,7 @@ trap ^i/o-closed-error (function (c) {
 }
 
 
-if (file-exists? test_filename) (delete-file test_filename)
+if (e? test_filename) (delete-file test_filename)
 
 ;; A continuable error, we set a default-condition-handler to
 ;; specifically return a magic symbol, 'default-idio-error, something

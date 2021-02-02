@@ -397,9 +397,9 @@ trap ^rt-command-status-error (function (c) {
     ;; stdout & stderr to a pipe
     test (io-check -o "pipe" -e "pipe" 2>& 1 | cat > #n) #t
 
-    if (file-exists? redir-infile) (delete-file redir-infile)
-    if (file-exists? redir-outfile) (delete-file redir-outfile)
-    if (file-exists? redir-errfile) (delete-file redir-errfile)
+    if (e? redir-infile) (delete-file redir-infile)
+    if (e? redir-outfile) (delete-file redir-outfile)
+    if (e? redir-errfile) (delete-file redir-errfile)
   }
 
   ;; stock tests
@@ -425,9 +425,9 @@ trap ^rt-command-status-error (function (c) {
     (io-redir-tests)
   })
 
-  if (file-exists? stdinfile) (delete-file stdinfile)
-  if (file-exists? stdoutfile) (delete-file stdoutfile)
-  if (file-exists? stderrfile) (delete-file stderrfile)
+  if (e? stdinfile) (delete-file stdinfile)
+  if (e? stdoutfile) (delete-file stdoutfile)
+  if (e? stderrfile) (delete-file stderrfile)
 
   set-input-handle! oih
   set-output-handle! ooh

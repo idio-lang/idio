@@ -44,79 +44,79 @@ test (string-handle? libc/UINTMAX_MAX)		#f ; C_UINT
 
 ;; check predicates fail for non-string-handle
 test-str := "foo"
-test (string-handle? test-str) #f
-test (input-string-handle? test-str) #f
-test (output-string-handle? test-str) #f
+test (string-handle? test-str)		#f
+test (input-string-handle? test-str)	#f
+test (output-string-handle? test-str)	#f
 
 ;; write to a string-handle
 osh := (open-output-string)
-test (string-handle? osh) #t
-test (output-string-handle? osh) #t
-test (input-string-handle? osh) #f
+test (string-handle? osh)		#t
+test (output-string-handle? osh)	#t
+test (input-string-handle? osh)		#f
 
-sho := "Hello"
-write sho osh
+sho := "0123456789"
+display sho osh
 close-handle osh
 
-test (string-handle? osh) #t
-test (output-string-handle? osh) #t
-test (input-string-handle? osh) #f
+test (string-handle? osh)		#t
+test (output-string-handle? osh)	#t
+test (input-string-handle? osh)		#f
 
 ;; get the text written to the test-str
 shis := (get-output-string osh)
 
 ; shis = "Hello"; sho = Hello
-;test (equal? shis sho) #t
+;test (equal? shis sho)			#t
 
 ;; use the text read in as (read) will consume the "s
 ish := open-input-string shis
-test (string-handle? ish) #t
-test (input-string-handle? ish) #t
-test (output-string-handle? ish) #f
+test (string-handle? ish)		#t
+test (input-string-handle? ish)		#t
+test (output-string-handle? ish)	#f
 
 shi := *primitives*/read ish
 close-handle ish
 
-test (string-handle? ish) #t
-test (input-string-handle? ish) #t
-test (output-string-handle? ish) #f
+test (string-handle? ish)		#t
+test (input-string-handle? ish)		#t
+test (output-string-handle? ish)	#f
 
-test shi sho
+test shi 123456789			; 0nnn => nnn
 
 ;; use the text read in again
 ish := open-input-string shis
-test (string-handle? ish) #t
-test (input-string-handle? ish) #t
-test (output-string-handle? ish) #f
+test (string-handle? ish)		#t
+test (input-string-handle? ish)		#t
+test (output-string-handle? ish)	#f
 
-;; seek to the third character of "Hello" , #\e
-isn := seek-handle ish 2
+;; seek to the third character of 0123456789 , #\2
+isn := seek-handle ish  2
 test isn 2
 
 shi := read-char ish
 
-test shi #\e
-test (peek-char ish) #\l
+test shi		#\2
+test (peek-char ish)	#\3
 
 ; default is SEEK_SET
 seek-handle ish 2
-test (peek-char ish) #\e
+test (peek-char ish)	#\2
 
 seek-handle ish -2 'cur
-test (peek-char ish) #\"
+test (peek-char ish)	#\0
 
 seek-handle ish 2 'set
-test (peek-char ish) #\e
+test (peek-char ish)	#\2
 
 seek-handle ish -2 'end
-test (peek-char ish) #\o
+test (peek-char ish)	#\8
 
 rewind-handle ish
-test (peek-char ish) #\"
+test (peek-char ish)	#\0
 
-test (handle-pos ish) 0
+test (handle-pos ish)   0
 seek-handle ish 2
-test (handle-pos ish) 2
+test (handle-pos ish)   2
 
 ;; code coverage
 ish := open-input-string "hello"

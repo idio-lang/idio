@@ -985,12 +985,6 @@ off_t idio_seek_handle (IDIO h, off_t offset, int whence)
 	return -1;
     }
 
-    /*
-     * fseek(3): A successful call to the fseek() function clears the
-     * end-of-file indicator for the stream and undoes any effects of
-     * the ungetc(3) function on the same stream.
-     */
-
     /* line number is invalidated unless we go to pos 0 */
     if (0 == offset &&
 	SEEK_SET == whence) {
@@ -1006,6 +1000,14 @@ off_t idio_seek_handle (IDIO h, off_t offset, int whence)
 
     IDIO_HANDLE_POS (h) = IDIO_HANDLE_M_SEEK (h) (h, offset, whence);
 
+    /*
+     * fseek(3): A successful call to the fseek() function clears the
+     * end-of-file indicator for the stream and undoes any effects of
+     * the ungetc(3) function on the same stream.
+     *
+     * EOF is handle implementation specific but we can clear any
+     * lookahead character here.
+     */
     IDIO_HANDLE_LC (h) = EOF;
 
     return IDIO_HANDLE_POS (h);
@@ -1082,13 +1084,6 @@ unless ``whence`` is 'set and position is 0 (zero)	\n\
     } else {
 	whence = SEEK_SET;
     }
-
-    /*
-     * Should we be flushing here?
-     *
-     * XXX "fixes" some lseek(2) FILE* mismatches.
-     */
-    idio_flush_handle (h);
 
     off_t offset;
     if (idio_isa_fixnum (pos)) {
@@ -1977,7 +1972,8 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
     IDIO_TYPE_ASSERT (handle, h);
     IDIO_TYPE_ASSERT (array, cs);
 
-    if (IDIO_FILE_HANDLE_FLAGS (h) & IDIO_FILE_HANDLE_FLAG_INTERACTIVE) {
+    if (idio_isa_file_handle (h) &&
+	IDIO_FILE_HANDLE_FLAGS (h) & IDIO_FILE_HANDLE_FLAG_INTERACTIVE) {
 	/*
 	 * Code coverage:
 	 *
@@ -2187,11 +2183,7 @@ IDIO idio_load_handle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*eval
 	 */
 	idio_job_control_set_interactive (isatty (idio_job_control_terminal));
 
-	if (idio_isa_file_handle (oh)) {
-	    fflush (IDIO_FILE_HANDLE_FILEP (oh));
-	} else {
-	    idio_flush_handle (oh);
-	}
+	idio_flush_handle (oh);
 
 	IDIO eh = idio_thread_current_error_handle ();
 #ifdef IDIO_DEBUG

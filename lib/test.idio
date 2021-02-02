@@ -73,7 +73,7 @@ require init
 
 testfile := "__testfile__"
 
-if (file-exists? testfile) {
+if (e? testfile) {
   delete-file testfile
 }
     ;; (error (append-string "Please delete the file \""
@@ -137,7 +137,7 @@ map (function (d) {
        t-p := join-string "/" (reverse (pt (reverse (split-string d "/"))))
        t-d := append-string "/" t-p "/tests"
        r-e := append-string t-d "/test-operator.idio"
-       if (file-exists? r-e) {
+       if (e? r-e) {
 	 testdir = t-d
        }
 }) (split-string IDIOLIB ":")
@@ -271,9 +271,9 @@ test-load "test-command.idio"
 ;; that?  Erm, they've not been counted and are dynamic in number so
 ;; test we've seen at least as many as the largest number we've
 ;; seen.  Wait, some tests are OS-specific.  Drat!
-Tests? 4868
+Tests? 4879
 
-if (file-exists? testfile) (delete-file testfile)
+if (e? testfile) (delete-file testfile)
 
 printf "[%s/%d] %3ds test.idio\n" (getpid) PID SECONDS
 printf "# src-props %d\n" (length (hash-keys %idio-src-properties))
