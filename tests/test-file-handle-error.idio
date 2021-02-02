@@ -135,23 +135,10 @@ chmod +r tmpfile
 
 ;; ^i/o-file-already-exists-error
 ;;
-;; The code to react to EEXIST is present but to generate it requires
-;; a non-POSIX extension, the "x" mode character for fopen(3).  This
-;; is part of ISO C11.
-;;
-;; This is supported on Linux, MacOS.  Not supported on Solaris
-;; (OpenIndiana -- 1.5.1 at any rate, Hipster does).
-
-(cond-expand
- (uname/sysname/SunOS {
-   eprintf "SunOS: skipping fopen with mode \"x\" test\n"
-   Tests = Tests + 1
- })
- (else {
-   ;; NB we can only pass mode flags with open-file (open-input-file
-   ;; and open-output-file used fixed flags)
-   file-handle-error-load "file-handle-errors/open-file-exists.idio" "open-file: File exists"
- }))
+;; Here we're calling open(2) with O_EXCL which is supported on all
+;; platforms.  fopen(3) with the "x" mode flag is not supported on
+;; OpenIndiana 1.5.1.
+file-handle-error-load "file-handle-errors/open-file-exists.idio" "open-file: File exists"
 
 ;; ^i/o-filename-error
 ;;
