@@ -69,7 +69,6 @@ debug := #n
 			    printf "ft		show the tree of frames\n"
 			    printf "t		show the thread state\n"
 			    printf "debug> "
-			    fflush-file-handle (current-output-handle)
 
 			    line := (read-line)
 			    lsh := open-input-string line
