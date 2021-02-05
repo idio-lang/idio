@@ -35,7 +35,6 @@ module SRFI-0
 export (
 	 cond-expand
 )
-import posix-regex
 
 #*
 

@@ -25,8 +25,9 @@ module job-control
 Even though we import libc here in job-control (because we do a lot of
 libc-ish things) the templates/operators we export -- which will be
 expanded in the user's namespace -- will use libc values and we have
-no idea if the importer (of us) has imported libc.  We don't want to
-force them to import libc as it annoyingly duplicates many names.
+no idea if they, the importer (of us), has imported libc themselves.
+We don't want to force them to import libc as it annoyingly duplicates
+many names.
 
 So the "fix" is to ensure that the templates/operators we export
 dutifully call the libc/X "direct" names for any libc X they use.
@@ -1093,7 +1094,7 @@ define-infix-operator | 700 {
   }
 }
 
-define-template (fork-command foreground use-r-pipe use-w-pipe & cmd) {
+define-template (fork-command foreground use-w-pipe use-r-pipe & cmd) {
   cmd-r-ph	   := (gensym)
   cmd-w-ph	   := (gensym)
 

@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2020 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -19,14 +19,90 @@
 ;; posix-regex.idio
 ;;
 
-module posix-regex
-export (
-	 regexp-matches
-)
-import libc
-
-define (regexp-matches rx str) {
+define (regex-matches rx str) {
   regexec (regcomp rx) str
 }
 
-provide posix-regex
+#*
+
+When we run regex-case the chances are we'll be looping over the same
+regex-case expression repeatedly.  In which case what we really want
+to be doing is pre-computing the regcomp and referring back to it.
+Store those references in an array.
+
+The array is external to any loop, ie global.  That means the regcomp
+results live forever.  Not ideal.
+
+*#
+
+*regcomp-array* := make-array 64
+
+define-template (regex-case e & clauses) {
+  ;; regex-strings want to extract the regex strings
+  regex-strings :+ function (c* r) {
+		     (cond
+		      ((null? c*) (reverse r))
+		      ((or (not (pair? c*))
+			   (not (pair? (ph c*)))
+			   (not (pair? (pth c*)))) (error 'regex-case "invalid syntax" c*))
+		      ((null? (pt c*)) {
+			if (eq? 'else (phh c*)) {
+			  reverse r
+			} {
+			  reverse (pair (phh c*) r)
+			}
+		      })
+		      (else {
+			regex-strings (pt c*) (pair (phh c*) r)
+		      }))
+
+  }
+
+  ;; put {key} in scope of gen-clauses to save passing it as an
+  ;; argument
+  key := (gensym 'key)
+
+  gen-clauses :+ function (i c*) {
+		   cond ((null? c*) '#n) \
+			((or (not (pair? c*))
+			     (not (pair? (ph c*)))
+			     (not (pair? (pth c*)))) (error 'case "invalid syntax" c*)) \
+			((null? (pt c*)) {
+			  if (eq? 'else (phh c*)) {
+			    #T{
+			      ((else ((function (r) {
+					 $@(pth c*)
+			      }) $key)))
+			    }
+			  } {
+			    #T{
+			      (((regexec (array-ref *regcomp-array* $i) $key) => (function (r) {
+										    $@(pth c*)
+			      })))
+			    }
+			  }
+			}) \
+			(else {
+			  #T{
+			    (((regexec (array-ref *regcomp-array* $i) $key) => (function (r) {
+										  $@(pth c*)
+			    })) $@(gen-clauses (i + 1) (pt c*)))
+			  }
+			})
+
+  }
+
+  i := array-length *regcomp-array*
+  map (function (s) {
+	 array-push! *regcomp-array* (regcomp s)
+  }) (regex-strings clauses #n)
+
+  #T{
+    {
+      ;; evaluate {e} (once!)
+      $key := $e
+
+      cond $@(gen-clauses i clauses)
+    }
+  }
+}
