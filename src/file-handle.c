@@ -2089,17 +2089,67 @@ ptrdiff_t idio_puts_file_handle (IDIO fh, char *s, size_t slen)
 	     */
 	    return EOF;
 	}
-	r = write (IDIO_FILE_HANDLE_FD (fh), s, slen);
-	if (r < slen) {
-	    /*
-	     * Test Case: ??
-	     *
-	     * Hmm, not sure...
-	     */
-	    idio_error_printf (IDIO_C_FUNC_LOCATION (), "write (%s) => %zd / %zd", idio_handle_name_as_C (fh), r, slen);
 
-	    /* notreached */
-	    return EOF;
+	struct sigaction nsa;
+	struct sigaction osa;
+
+	if (! idio_isa_file_handle (fh)) {
+	     nsa.sa_handler = SIG_IGN;
+	     sigemptyset (&nsa.sa_mask);
+	     nsa.sa_flags = 0;
+
+	     if (sigaction (SIGPIPE, &nsa, &osa) == -1) {
+		  /*
+		   * Test Case: ??
+		   *
+		   * Hmm, not sure...
+		   */
+		  idio_error_system_errno ("sigaction", fh, IDIO_C_FUNC_LOCATION ());
+
+		  /* notreached */
+		  return r;
+	     }
+	}
+
+	r = write (IDIO_FILE_HANDLE_FD (fh), s, slen);
+
+	if (! idio_isa_file_handle (fh)) {
+	     if (sigaction (SIGPIPE, &osa, NULL) == -1) {
+		  /*
+		   * Test Case: ??
+		   *
+		   * Hmm, not sure...
+		   */
+		  idio_error_system_errno ("sigaction", fh, IDIO_C_FUNC_LOCATION ());
+
+		  /* notreached */
+		  return r;
+	     }
+	}
+
+	if (-1 == r) {
+	     if (! idio_isa_file_handle (fh) &&
+		 EPIPE == errno) {
+#ifdef IDIO_DEBUG
+		  fprintf (stderr, "Ceci n'est pas une pipe.\n");
+#endif
+	     } else {
+		  /*
+		   * Test Case: ??
+		   *
+		   * Hmm, not sure...
+		   */
+		  idio_error_system_errno ("write", fh, IDIO_C_FUNC_LOCATION ());
+
+		  /* notreached */
+		  return r;
+	     }
+	} else {
+	     if (r != slen) {
+#ifdef IDIO_DEBUG
+		  fprintf (stderr, "write: %4d / %4d\n", n, IDIO_FILE_HANDLE_COUNT (fh));
+#endif
+	     }
 	}
 
 	IDIO_FILE_HANDLE_PTR (fh) = IDIO_FILE_HANDLE_BUF (fh);
@@ -2168,22 +2218,72 @@ int idio_flush_file_handle (IDIO fh)
 
     int r = EOF;
 
-    int n = write (IDIO_FILE_HANDLE_FD (fh), IDIO_FILE_HANDLE_BUF (fh), IDIO_FILE_HANDLE_COUNT (fh));
+    struct sigaction nsa;
+    struct sigaction osa;
 
-    if (-1 == n) {
-	fprintf (stderr, "flush %d bytes failed for fd=%3d\n", IDIO_FILE_HANDLE_COUNT (fh), IDIO_FILE_HANDLE_FD (fh));
-	fprintf (stderr, "hflags=%#x\n", IDIO_HANDLE_FLAGS (fh));
-	idio_debug ("fh=%s\n", fh);
-	idio_error_system_errno ("write", fh, IDIO_C_FUNC_LOCATION ());
+    if (! idio_isa_file_handle (fh)) {
+	 nsa.sa_handler = SIG_IGN;
+	 sigemptyset (&nsa.sa_mask);
+	 nsa.sa_flags = 0;
 
-	/* notreached */
-	return r;
+	 if (sigaction (SIGPIPE, &nsa, &osa) == -1) {
+	      /*
+	       * Test Case: ??
+	       *
+	       * Hmm, not sure...
+	       */
+	      idio_error_system_errno ("sigaction", fh, IDIO_C_FUNC_LOCATION ());
+
+	      /* notreached */
+	      return r;
+	 }
     }
 
-    if (n == IDIO_FILE_HANDLE_COUNT (fh)) {
-	r = 0;
+    int n = write (IDIO_FILE_HANDLE_FD (fh), IDIO_FILE_HANDLE_BUF (fh), IDIO_FILE_HANDLE_COUNT (fh));
+
+    if (! idio_isa_file_handle (fh)) {
+	 if (sigaction (SIGPIPE, &osa, NULL) == -1) {
+	      /*
+	       * Test Case: ??
+	       *
+	       * Hmm, not sure...
+	       */
+	      idio_error_system_errno ("sigaction", fh, IDIO_C_FUNC_LOCATION ());
+
+	      /* notreached */
+	      return r;
+	 }
+    }
+
+    if (-1 == n) {
+	 if (! idio_isa_file_handle (fh) &&
+	     EPIPE == errno) {
+#ifdef IDIO_DEBUG
+	      fprintf (stderr, "Ceci n'est pas une pipe.\n");
+#endif
+	 } else {
+	      /*
+	       * Test Case: ??
+	       *
+	       * Hmm, not sure...
+	       */
+
+	      fprintf (stderr, "flush %d bytes failed for fd=%3d\n", IDIO_FILE_HANDLE_COUNT (fh), IDIO_FILE_HANDLE_FD (fh));
+	      fprintf (stderr, "hflags=%#x\n", IDIO_HANDLE_FLAGS (fh));
+	      idio_debug ("fh=%s\n", fh);
+	      idio_error_system_errno ("write", fh, IDIO_C_FUNC_LOCATION ());
+
+	      /* notreached */
+	      return r;
+	 }
     } else {
-	fprintf (stderr, "flush: %4d / %4d\n", n, IDIO_FILE_HANDLE_COUNT (fh));
+	 if (n == IDIO_FILE_HANDLE_COUNT (fh)) {
+	      r = 0;
+	 } else {
+#ifdef IDIO_DEBUG
+	      fprintf (stderr, "write: %4d / %4d\n", n, IDIO_FILE_HANDLE_COUNT (fh));
+#endif
+	 }
     }
 
     IDIO_FILE_HANDLE_PTR (fh) = IDIO_FILE_HANDLE_BUF (fh);
