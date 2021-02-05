@@ -1048,6 +1048,9 @@ define-infix-operator | 700 {
 	 libc/close $pipeline-w-fd
        }))
 
+      %idio-jobs = pair $job %idio-jobs
+      %%last-job = $job
+
       ;; finally let the first process go
       libc/close (libc/pipe-reader $pgrp-pipe)
       libc/close (libc/pipe-writer $pgrp-pipe)
@@ -1060,9 +1063,6 @@ define-infix-operator | 700 {
 	 $pipeline-r-ph
        })
        (else {
-	 %idio-jobs = pair $job %idio-jobs
-	 %%last-job = $job
-
 	 $status := #f
 	 (cond
 	  ((not job-control/%idio-interactive) {
@@ -1093,116 +1093,169 @@ define-infix-operator | 700 {
   }
 }
 
-define-template (fork-command foreground & cmd) {
-  stdin          := (gensym)
-  close-stdin    := (gensym)
-  stdout         := (gensym)
-  recover-stdout := (gensym)
-  stderr         := (gensym)
-  recover-stderr := (gensym)
-  pgid           := (gensym)
-  proc           := (gensym)
-  job            := (gensym)
-  pid            := (gensym)
-  status         := (gensym)
+define-template (fork-command foreground use-r-pipe use-w-pipe & cmd) {
+  cmd-r-ph	   := (gensym)
+  cmd-w-ph	   := (gensym)
+
+  cmd-r-fd	   := (gensym)
+  close-cmd-r-fd   := (gensym)
+
+  cmd-w-fd	   := (gensym)
+  recover-cmd-w-fd := (gensym)
+
+  cmd-e-fd	   := (gensym)
+  recover-cmd-e-fd := (gensym)
+
+  pgid		   := (gensym)
+  proc		   := (gensym)
+  job		   := (gensym)
+  pid		   := (gensym)
+  status	   := (gensym)
 
   #T{
     {
-      $stdin       := (libc/stdin-fileno) ; STDIN_FILENO
-      $close-stdin := #f
-      if (pair? $stdin) {
-	$stdin       = ph $stdin
-	$close-stdin = $stdin
+      $cmd-r-fd		:= #f
+      $close-cmd-r-fd	:= #f
+      $cmd-w-ph		:= #f
+      if $use-w-pipe {
+	w-pipe := (libc/pipe)
+	$cmd-w-ph = open-output-pipe (libc/pipe-writer w-pipe)
+	$cmd-r-fd = libc/pipe-reader w-pipe
+      } {
+	$cmd-r-fd       = (libc/stdin-fileno) ; STDIN_FILENO
+	$close-cmd-r-fd = #f
+	if (pair? $cmd-r-fd) {
+	  $cmd-r-fd       = ph $cmd-r-fd
+	  $close-cmd-r-fd = $cmd-r-fd
+	}
       }
 
-      $stdout         := (libc/stdout-fileno) ; STDOUT_FILENO
-      $recover-stdout := #f
-      if (pair? $stdout) {
-	$recover-stdout = pht $stdout
-	$stdout         = ph $stdout
+      $cmd-w-fd		:= #f
+      $close-cmd-w-fd	:= #f
+      $cmd-r-ph		:= #f
+      $recover-cmd-w-fd := #f
+      if $use-r-pipe {
+	r-pipe := (libc/pipe)
+	$cmd-r-ph = open-input-pipe (libc/pipe-reader r-pipe)
+	$cmd-w-fd = libc/pipe-writer r-pipe
+      } {
+	$cmd-w-fd         = (libc/stdout-fileno) ; STDOUT_FILENO
+	$recover-cmd-w-fd = #f
+	if (pair? $cmd-w-fd) {
+	  $recover-cmd-w-fd = pht $cmd-w-fd
+	  $cmd-w-fd         = ph $cmd-w-fd
+	}
       }
 
-      $stderr         := (libc/stderr-fileno) ; STDERR_FILENO
-      $recover-stderr := #f
-      if (pair? $stderr) {
-	$recover-stderr = pht $stderr
-	$stderr         = ph $stderr
+      $cmd-e-fd         := (libc/stderr-fileno) ; STDERR_FILENO
+      $recover-cmd-e-fd := #f
+      if (pair? $cmd-e-fd) {
+	$recover-cmd-e-fd = pht $cmd-e-fd
+	$cmd-e-fd         = ph $cmd-e-fd
       }
       $pgid := 0
       $proc := make-%idio-process '$cmd -1 #f #f #n
-      $job := make-%idio-job '$cmd (list $proc) $pgid #f #f #n $stdin $stdout $stderr
+      $job := make-%idio-job '$cmd (list $proc) $pgid #f #f #n $cmd-r-fd $cmd-w-fd $cmd-e-fd
 
       $pid := (libc/fork)
-      cond ((C/== $pid 0) {
-	set-default-handler! ^idio-error default-child-handler
-	%prep-process $pgid $stdin $stdout $stderr $foreground
-	cond ((pair? (ph '$cmd)) {
-	  $@cmd
-	}) \
-	     (else $cmd)
+      (cond
+       ((C/== $pid 0) {
+	 set-default-handler! ^idio-error default-child-handler
+	 %prep-process $pgid $cmd-r-fd $cmd-w-fd $cmd-e-fd $foreground
+	 cond ((pair? (ph '$cmd)) {
+	   $@cmd
+	 }) \
+	      (else $cmd)
 
-	exit 0
-      }) \
-	   (else {
-	     set-%idio-process-pid! $proc $pid
-	     if job-control/%idio-interactive {
-	       $pgid = $pid
-	       set-%idio-job-pgid! $job $pgid
-	       suppress-errors ^idio-error setpgid $pid $pgid
-	     }
-	   })
+	 exit 0
+       })
+       (else {
+	 set-%idio-process-pid! $proc $pid
+	 if job-control/%idio-interactive {
+	   $pgid = $pid
+	   set-%idio-job-pgid! $job $pgid
+	   suppress-errors ^idio-error setpgid $pid $pgid
+	 }
+       }))
+
+      (cond
+       ($use-w-pipe {
+	 ;; parent should not hold the read end of the pipe-into pipe open
+	 libc/close $cmd-r-fd
+       })
+       ($use-r-pipe {
+	 ;; parent should not hold the write end of the pipe-from pipe open
+	 libc/close $cmd-w-fd
+       }))
 
       %idio-jobs = pair $job %idio-jobs
       %%last-job = $job
 
-      $status := #f
-      cond ((not job-control/%idio-interactive) {
-	$status = wait-for-job $job
-      })\
-	   ($foreground {
-	     $status = foreground-job $job #f
-	   }) \
-	   (else {
-	     $status = background-job $job #f
-	   })
+      (cond
+       ($use-w-pipe {
+	 $cmd-w-ph
+       })
+       ($use-r-pipe {
+	 $cmd-r-ph
+       })
+       (else {
+	 $status := #f
+	 cond ((not job-control/%idio-interactive) {
+	   $status = wait-for-job $job
+	 })\
+	      ($foreground {
+		$status = foreground-job $job #f
+	      }) \
+	      (else {
+		$status = background-job $job #f
+	      })
 
-      if $close-stdin {
-	libc/close $close-stdin
-      }
+	 if $close-cmd-r-fd {
+	   libc/close $close-cmd-r-fd
+	 }
 
-      if $recover-stdout {
-        ih := open-input-file-from-fd $stdout
+	 if $recover-cmd-w-fd {
+	   ih := open-input-file-from-fd $cmd-w-fd
 
-	;; NB the temporary file has just been written to so the file
-	;; pointer is currently at the end, we need to set it back to
-	;; the start to be able to read anything!
-	seek-handle ih 0 'set
-        display (read-lines ih) $recover-stdout
-	close-handle ih
-      }
+	   ;; NB the temporary file has just been written to so the file
+	   ;; pointer is currently at the end, we need to set it back to
+	   ;; the start to be able to read anything!
+	   seek-handle ih 0 'set
+	   display (read-lines ih) $recover-cmd-w-fd
+	   close-handle ih
+	 }
 
-      if $recover-stderr {
-        ih := open-input-file-from-fd $stderr
+	 if $recover-cmd-e-fd {
+	   ih := open-input-file-from-fd $cmd-e-fd
 
-	;; NB the temporary file has just been written to so the file
-	;; pointer is currently at the end, we need to set it back to
-	;; the start to be able to read anything!
-	seek-handle ih 0 'set
-        display (read-lines ih) $recover-stderr
-	close-handle ih
-      }
+	   ;; NB the temporary file has just been written to so the file
+	   ;; pointer is currently at the end, we need to set it back to
+	   ;; the start to be able to read anything!
+	   seek-handle ih 0 'set
+	   display (read-lines ih) $recover-cmd-e-fd
+	   close-handle ih
+	 }
 
-      $status
+	 $status
+       }))
     }
   }
 }
 
 define-template (fg-job & cmd) {
-  #T{ fork-command #t $@cmd }
+  #T{ fork-command #t #f #f $@cmd }
 }
 
 define-template (bg-job & cmd) {
-  #T{ fork-command #f $@cmd }
+  #T{ fork-command #f #f #f $@cmd }
+}
+
+define-template (pipe-into & cmd) {
+  #T{ fork-command #f #t #f $@cmd }
+}
+
+define-template (pipe-from & cmd) {
+  #T{ fork-command #f #f #t $@cmd }
 }
 
 define (wait & jobs) {
