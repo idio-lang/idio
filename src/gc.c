@@ -2133,7 +2133,7 @@ int idio_asprintf(char **strp, const char *fmt, ...)
 #ifdef IDIO_MALLOC
     r = idio_malloc_vasprintf (strp, fmt, ap);
 #else
-    r = vasprintf (strp, fmt, ap)
+    r = vasprintf (strp, fmt, ap);
 #endif
     va_end (ap);
 

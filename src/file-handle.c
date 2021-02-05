@@ -2072,7 +2072,7 @@ ptrdiff_t idio_puts_file_handle (IDIO fh, char *s, size_t slen)
 	return EOF;
     }
 
-    size_t r;
+    ssize_t r = EOF;
 
     /*
      * If the string is going to cause a flush then flush and write
@@ -2147,7 +2147,7 @@ ptrdiff_t idio_puts_file_handle (IDIO fh, char *s, size_t slen)
 	} else {
 	     if (r != slen) {
 #ifdef IDIO_DEBUG
-		  fprintf (stderr, "write: %4d / %4d\n", n, IDIO_FILE_HANDLE_COUNT (fh));
+		 fprintf (stderr, "write: %4td / %4zu\n", r, slen);
 #endif
 	     }
 	}
@@ -2239,7 +2239,7 @@ int idio_flush_file_handle (IDIO fh)
 	 }
     }
 
-    int n = write (IDIO_FILE_HANDLE_FD (fh), IDIO_FILE_HANDLE_BUF (fh), IDIO_FILE_HANDLE_COUNT (fh));
+    ssize_t n = write (IDIO_FILE_HANDLE_FD (fh), IDIO_FILE_HANDLE_BUF (fh), IDIO_FILE_HANDLE_COUNT (fh));
 
     if (! idio_isa_file_handle (fh)) {
 	 if (sigaction (SIGPIPE, &osa, NULL) == -1) {
@@ -2281,7 +2281,7 @@ int idio_flush_file_handle (IDIO fh)
 	      r = 0;
 	 } else {
 #ifdef IDIO_DEBUG
-	      fprintf (stderr, "write: %4d / %4d\n", n, IDIO_FILE_HANDLE_COUNT (fh));
+	      fprintf (stderr, "write: %4td / %4d\n", n, IDIO_FILE_HANDLE_COUNT (fh));
 #endif
 	 }
     }

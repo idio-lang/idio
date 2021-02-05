@@ -108,7 +108,7 @@ coverage :
 	$(MAKE) COVFLAGS="-fprofile-arcs -ftest-coverage"
 
 sanitize-address :
-	$(MAKE) SAN_CFLAGS="-fsanitize=address" SAN_LDFLAGS=-lasan
+	$(MAKE) SAN_CFLAGS="-fsanitize=address -DIDIO_DEBUG -UIDIO_MALLOC" SAN_LDFLAGS=-lasan
 
 lean :
 	$(MAKE) MAKE_LEAN=1
@@ -118,6 +118,18 @@ debug :
 
 test : $(BINDIR)/idio
 	PATH=$$PATH:$(BINDIR) idio test
+
+# ASAN only (really) works with libc malloc which then blows up with a
+# list as long as your arm about leaked memory.  I can't identify
+# where the libc malloc behaviour differs from IDIO_MALLOC.
+#
+# In the meanwhile, rely on valgrind and IDIO_MALLOC
+verify:
+	$(MAKE) clean all test
+	#-ASAN_OPTIONS=log_path=idio-asan $(MAKE) clean sanitize-address test
+	$(MAKE) clean debug test
+	valgrind --leak-check=full --show-leak-kinds=all --child-silent-after-fork=yes --log-file=idio-valgrind.%p $(BINDIR)/idio test
+	ls -l idio-valgrind.*
 
 doc : 
 	rm -rf $(SRCKDOUTDIR)
@@ -134,19 +146,21 @@ $(BINDIR)/idio : $(objects) | $(BINDIR)
 lib%.so : %.o
 	$(CC) -shared -o $@ $^
 
-scm1-c-structs.scm1 : scm1-c-structs
-	./scm1-c-structs > $@
+clean : build-clean run-clean edit-clean
 
-clean : tidy
-	rm -f *.o *.d $(BINDIR)/idio scm1-c-structs *.so scm1-c-structs.scm1 o e TAGS map vm-*
+build-clean:
+	rm -f *.o *.d $(BINDIR)/idio *.so TAGS map
 
-tidy :
-	rm -f vgcore.* core.* core *~ $(LIBDIR)/*~ $(TESTSDIR)/*~ *.gcda *.gcno *.gcov gmon.out
+run-clean :
+	rm -f vgcore.* core.* core *.gcda *.gcno *.gcov gmon.out idio-asan.* idio-valgrind.* o e vm-*
 ifeq ($(OS),Darwin)
 	rm -f /cores/*
 else ifeq ($(OS),FreeBSD)
 	rm -f idio.core
 endif
+
+edit-clean :
+	rm -f *~ $(LIBDIR)/*~ $(TESTSDIR)/*~
 
 tags : TAGS
 
@@ -163,7 +177,7 @@ $(BINDIR):
 	@mkdir -p $(BINDIR)
 
 valgrind: $(BINDIR)/idio
-	valgrind --leak-check=full --show-leak-kinds=all --child-silent-after-fork=yes $(BINDIR)/idio # 2>&1 | less +/^==
+	valgrind --leak-check=full --show-leak-kinds=all --child-silent-after-fork=yes --log-file=idio-valgrind.%p $(BINDIR)/idio # 2>&1 | less +/^==
 
 	valgrind --tool=callgrind ../bin/idio counter
 	qcachegrind
