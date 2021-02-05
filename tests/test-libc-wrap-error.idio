@@ -160,7 +160,14 @@ libc-wrap-error-load "libc-wrap-errors/getrusage-bad-type.idio" "bad parameter t
 libc-wrap-error-load "libc-wrap-errors/getrusage-bad-who.idio" "Invalid argument" EINVAL "getrusage"
 
 libc-wrap-error-load "libc-wrap-errors/getsid-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a fixnum|C_int"
-libc-wrap-error-load "libc-wrap-errors/getsid-invalid-pid.idio" "No such process" ESRCH "getsid"
+(cond-expand
+ (uname/sysname/SunOS {
+   ;; OpenIndiana returns EIVAL which isn't even listed on the man page
+   libc-wrap-error-load "libc-wrap-errors/getsid-invalid-pid.idio" "Invalid argument" EINVAL "getsid"
+ })
+ (else {
+   libc-wrap-error-load "libc-wrap-errors/getsid-invalid-pid.idio" "No such process" ESRCH "getsid"
+ }))
 
 libc-wrap-error-load "libc-wrap-errors/isatty-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_int"
 (cond-expand
