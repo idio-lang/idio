@@ -1817,9 +1817,11 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 			IDIO_STRCAT (r, sizep, "o");
 		    }
 		    if (h_flags & IDIO_HANDLE_FLAG_STRING) {
-			IDIO_STRCAT (r, sizep, "s");
+			IDIO_STRCAT (r, sizep, "S"); /* s? is for S_ISSOCK */
 		    } else if (h_flags & IDIO_HANDLE_FLAG_FILE) {
-			IDIO_STRCAT (r, sizep, "f");
+			IDIO_STRCAT (r, sizep, "f"); /* cf. f? */
+		    } else if (h_flags & IDIO_HANDLE_FLAG_PIPE) {
+			IDIO_STRCAT (r, sizep, "p"); /* cf. p? */
 		    }
 
 		    if (h_flags & IDIO_HANDLE_FLAG_READ) {
@@ -1828,7 +1830,8 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 		    if (h_flags & IDIO_HANDLE_FLAG_WRITE) {
 			IDIO_STRCAT (r, sizep, "w");
 		    }
-		    if (h_flags & IDIO_HANDLE_FLAG_FILE) {
+		    if (h_flags & IDIO_HANDLE_FLAG_FILE ||
+			h_flags & IDIO_HANDLE_FLAG_PIPE) {
 
 			IDIO_FLAGS_T s_flags = IDIO_FILE_HANDLE_FLAGS (o);
 			if (s_flags & IDIO_FILE_HANDLE_FLAG_CLOEXEC) {
@@ -1847,7 +1850,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 			}
 
 			char *fds;
-			idio_asprintf (&fds, "%4d", idio_file_handle_fd (o));
+			idio_asprintf (&fds, "%4d", IDIO_FILE_HANDLE_FD (o));
 			size_t fds_size = strlen (fds);
 			IDIO_STRCAT_FREE (r, sizep, fds, fds_size);
 		    }

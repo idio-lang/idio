@@ -465,7 +465,9 @@ static int idio_job_control_mark_process_status (pid_t pid, int status)
 	    jobs = IDIO_PAIR_T (jobs);
 	}
 
-	fprintf (stderr, "No child process %d.\n", (int) pid);
+	if (idio_job_control_interactive) {
+	    fprintf (stderr, "No child process %d.\n", (int) pid);
+	}
 	return -1;
     } else if (0 == pid ||
 	       ECHILD == errno) {
@@ -958,11 +960,25 @@ IDIO idio_job_control_SIGHUP_signal_handler ()
 {
     IDIO jobs = idio_module_symbol_value (idio_job_control_jobs_sym, idio_job_control_module, idio_S_nil);
     if (idio_S_nil != jobs) {
-	fprintf (stderr, "HUP: There are outstanding jobs\n");
-	idio_debug ("jobs %s\n", jobs);
+	if (idio_job_control_interactive) {
+	    fprintf (stderr, "HUP: outstanding jobs: ");
+	    idio_debug ("%s\n", jobs);
+	}
+	/*
+	 * NB
+	 *
+	 * Take a copy of the jobs list as the list may be perturbed
+	 * by jobs finishing (naturally or by our hand, here).
+	 *
+	 * Under the highly transient error conditions that we get
+	 * here I've found the processes have gone away even as I walk
+	 * the (copied) list.
+	 *
+	 * YMMV
+	 */
+	jobs = idio_copy (jobs, IDIO_COPY_SHALLOW);
 	while (idio_S_nil != jobs) {
 	    IDIO job = IDIO_PAIR_H (jobs);
-	    idio_debug ("job %s\n", job);
 	    idio_job_control_hangup_job (job);
 	    jobs = IDIO_PAIR_T (jobs);
 	}

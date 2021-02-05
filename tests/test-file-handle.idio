@@ -44,6 +44,50 @@ test (file-handle? #B{ 3 })			#f ; BITSET
 test (file-handle? libc/INTMAX_MAX)		#f ; C_INT
 test (file-handle? libc/UINTMAX_MAX)		#f ; C_UINT
 
+; fd-handle is a subset of file-handle so identical
+test (fd-handle? 0)				#f ; FIXNUM
+test (fd-handle? #t)				#f ; CONSTANT
+test (fd-handle? (integer->char 1))		#f ; CHARACTER (deprecated)
+test (fd-handle? #\a)				#f ; UNICODE
+test (fd-handle? "a")				#f ; STRING
+test (fd-handle? 'a)				#f ; SYMBOL
+test (fd-handle? :a)				#f ; KEYWORD
+test (fd-handle? (pair 1 2))			#f ; PAIR
+test (fd-handle? #[])				#f ; ARRAY
+test (fd-handle? #{})				#f ; HASH
+test (fd-handle? (function #n #n))		#f ; CLOSURE
+test (fd-handle? pair)				#f ; PRIMITIVE
+test (fd-handle? 1.0)				#f ; BIGNUM
+test (fd-handle? (find-module 'Idio))		#f ; MODULE
+test (fd-handle? (current-input-handle))	#t ; HANDLE
+test (fd-handle? ^error)			#f ; STRUCT_TYPE
+test (fd-handle? libc/idio-uname)		#f ; STRUCT_INSTANCE
+test (fd-handle? #B{ 3 })			#f ; BITSET
+test (fd-handle? libc/INTMAX_MAX)		#f ; C_INT
+test (fd-handle? libc/UINTMAX_MAX)		#f ; C_UINT
+
+; pipe-handle != file-handle so none of the examples
+test (pipe-handle? 0)				#f ; FIXNUM
+test (pipe-handle? #t)				#f ; CONSTANT
+test (pipe-handle? (integer->char 1))		#f ; CHARACTER (deprecated)
+test (pipe-handle? #\a)				#f ; UNICODE
+test (pipe-handle? "a")				#f ; STRING
+test (pipe-handle? 'a)				#f ; SYMBOL
+test (pipe-handle? :a)				#f ; KEYWORD
+test (pipe-handle? (pair 1 2))			#f ; PAIR
+test (pipe-handle? #[])				#f ; ARRAY
+test (pipe-handle? #{})				#f ; HASH
+test (pipe-handle? (function #n #n))		#f ; CLOSURE
+test (pipe-handle? pair)			#f ; PRIMITIVE
+test (pipe-handle? 1.0)				#f ; BIGNUM
+test (pipe-handle? (find-module 'Idio))		#f ; MODULE
+test (pipe-handle? (current-input-handle))	#f ; HANDLE
+test (pipe-handle? ^error)			#f ; STRUCT_TYPE
+test (pipe-handle? libc/idio-uname)		#f ; STRUCT_INSTANCE
+test (pipe-handle? #B{ 3 })			#f ; BITSET
+test (pipe-handle? libc/INTMAX_MAX)		#f ; C_INT
+test (pipe-handle? libc/UINTMAX_MAX)		#f ; C_UINT
+
 test-str := "foo"
 test (file-handle? test-str)		#f
 test (input-file-handle? test-str)	#f
@@ -109,6 +153,34 @@ test (handle-pos ifh)		 0
 test (seek-handle ifh 2)	 2
 test (handle-pos ifh)		 2
 close-handle ifh
+
+;; my-pipe has, internally, two open file descriptors
+my-pipe := (libc/pipe)
+
+;; rph and wph wrapper those file descriptors which will get closed
+;; when we close the handles
+rph := open-input-pipe (libc/pipe-reader my-pipe)
+wph := open-output-pipe (libc/pipe-writer my-pipe)
+
+test (file-handle? rph) #f
+test (file-handle? wph) #f
+test (fd-handle? rph)   #t
+test (fd-handle? wph)   #t
+test (pipe-handle? rph) #t
+test (pipe-handle? wph) #t
+
+test (input-fd-handle? rph)    #t
+test (input-fd-handle? wph)    #f
+test (output-fd-handle? rph)   #f
+test (output-fd-handle? wph)   #t
+test (input-pipe-handle? rph)  #t
+test (input-pipe-handle? wph)  #f
+test (output-pipe-handle? rph) #f
+test (output-pipe-handle? wph) #t
+
+test (equal? (fd-handle-fd rph) (pipe-handle-fd rph)) #t
+close-handle rph
+close-handle wph
 
 ;; code coverage of buffers and seek -- we happen to know that the
 ;; buffer is libc/BUFSIZ in size
@@ -280,4 +352,4 @@ load "lib/empty"
 
 IDIOLIB = OIDIOLIB
 ;; all done?
-Tests? (file-handle0 + 82)
+Tests? (file-handle0 + 137)

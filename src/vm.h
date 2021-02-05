@@ -208,6 +208,7 @@ IDIO idio_vm_closure_name (IDIO c);
 
 extern volatile sig_atomic_t idio_vm_signal_record[IDIO_LIBC_NSIG+1];
 void idio_vm_sa_signal (int signum);
+void idio_vm_signal_report ();
 
 IDIO idio_vm_run (IDIO thr, idio_ai_t pc, int caller);
 IDIO idio_vm_run_C (IDIO thr, idio_ai_t pc);

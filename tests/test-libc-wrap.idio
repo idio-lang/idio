@@ -174,11 +174,16 @@ hprintf ofh "hello\n"
 close-handle ofh
 
 ifh := open-input-file testfile
-test (read (fileno ofh) (C/integer-> 2)) "he"
+test (read (fileno ifh) (C/integer-> 2)) "he"
 close-handle ifh
 
-;; should be safe...
-setpgid (getpid) (getpgrp)
+;; should be safe...except if running under, say, rlwrap which has
+;; made us a session leader and so we'll get an EPERM from setpgid
+if (C/== (getsid 0) (getpid)) {
+  eprintf "WARNING: I am a session leader?: skipping setpgid test\n"
+} {
+  setpgid (getpid) (getpgrp)
+}
 
 ;; should be safe...
 signal SIGUSR1 (signal-handler SIGUSR1)

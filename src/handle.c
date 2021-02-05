@@ -191,6 +191,17 @@ void idio_handle_lookahead_error (IDIO h, int c)
  * comparison any more!
  */
 
+static void idio_handle_method_error (char *msg, IDIO c_location)
+{
+    IDIO_C_ASSERT (msg);
+    IDIO_ASSERT (c_location);
+    IDIO_TYPE_ASSERT (string, c_location);
+
+    idio_error_param_value ("handle method", msg, c_location);
+
+    /* notreached */
+}
+
 IDIO idio_handle ()
 {
     IDIO h = idio_gc_get (IDIO_TYPE_HANDLE);
@@ -998,7 +1009,14 @@ off_t idio_seek_handle (IDIO h, off_t offset, int whence)
 	whence = SEEK_SET;
     }
 
-    IDIO_HANDLE_POS (h) = IDIO_HANDLE_M_SEEK (h) (h, offset, whence);
+    if (NULL == IDIO_HANDLE_M_SEEK (h)) {
+	idio_handle_method_error ("seek not available", IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
+	return -1;
+    } else {
+	IDIO_HANDLE_POS (h) = IDIO_HANDLE_M_SEEK (h) (h, offset, whence);
+    }
 
     /*
      * fseek(3): A successful call to the fseek() function clears the

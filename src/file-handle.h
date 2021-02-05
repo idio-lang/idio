@@ -53,7 +53,8 @@ typedef struct idio_file_handle_stream_s {
 #define IDIO_FILE_HANDLE_COUNT(H)  IDIO_FILE_HANDLE_STREAM_COUNT((idio_file_handle_stream_t *) IDIO_HANDLE_STREAM(H))
 
 int idio_isa_file_handle (IDIO fh);
-int idio_file_handle_fd (IDIO fh);
+int idio_isa_fd_handle (IDIO fh);
+int idio_isa_pipe_handle (IDIO fh);
 void idio_file_handle_finalizer (IDIO fh);
 void idio_gc_register_file_handle (IDIO fh);
 void idio_gc_deregister_file_handle (IDIO fh);

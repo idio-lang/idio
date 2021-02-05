@@ -34,7 +34,7 @@ static IDIO idio_stdin = idio_S_nil;
 static IDIO idio_stdout = idio_S_nil;
 static IDIO idio_stderr = idio_S_nil;
 
-static idio_handle_methods_t idio_file_handle_methods = {
+static idio_handle_methods_t idio_file_handle_file_methods = {
     idio_free_file_handle,
     idio_readyp_file_handle,
     idio_getb_file_handle,
@@ -45,6 +45,20 @@ static idio_handle_methods_t idio_file_handle_methods = {
     idio_puts_file_handle,
     idio_flush_file_handle,
     idio_seek_file_handle,
+    idio_print_file_handle
+};
+
+static idio_handle_methods_t idio_file_handle_pipe_methods = {
+    idio_free_file_handle,
+    idio_readyp_file_handle,
+    idio_getb_file_handle,
+    idio_eofp_file_handle,
+    idio_close_file_handle,
+    idio_putb_file_handle,
+    idio_putc_file_handle,
+    idio_puts_file_handle,
+    idio_flush_file_handle,
+    NULL,
     idio_print_file_handle
 };
 
@@ -330,7 +344,7 @@ void idio_file_handle_mode_format_error (char *circumstance, char *msg, IDIO mod
     /* notreached */
 }
 
-static IDIO idio_open_file_handle (IDIO filename, char *pathname, int fd, int h_flags, int s_flags)
+static IDIO idio_open_file_handle (IDIO filename, char *pathname, int fd, int h_type, int h_flags, int s_flags)
 {
     IDIO_ASSERT (filename);
     IDIO_C_ASSERT (pathname);
@@ -353,11 +367,32 @@ static IDIO idio_open_file_handle (IDIO filename, char *pathname, int fd, int h_
 
     IDIO fh = idio_handle ();
 
-    IDIO_HANDLE_FLAGS (fh) |= h_flags | IDIO_HANDLE_FLAG_FILE;
+    IDIO_HANDLE_FLAGS (fh) |= h_type | h_flags;
     IDIO_HANDLE_FILENAME (fh) = filename;
     IDIO_HANDLE_PATHNAME (fh) = idio_string_C (pathname);
     IDIO_HANDLE_STREAM (fh) = fhsp;
-    IDIO_HANDLE_METHODS (fh) = &idio_file_handle_methods;
+    switch (h_type) {
+    case IDIO_HANDLE_FLAG_FILE:
+	IDIO_HANDLE_METHODS (fh) = &idio_file_handle_file_methods;
+	break;
+    case IDIO_HANDLE_FLAG_PIPE:
+	IDIO_HANDLE_METHODS (fh) = &idio_file_handle_pipe_methods;
+	break;
+    default:
+	{
+	    /*
+	     * Test Case: ??
+	     *
+	     * Coding error.
+	     */
+	    char em[BUFSIZ];
+	    sprintf (em, "unexpected handle type %#x", h_type);
+	    idio_error_C (em, idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	}
+	break;
+    }
 
     if ((s_flags & IDIO_FILE_HANDLE_FLAG_STDIO) == 0) {
 	idio_gc_register_finalizer (fh, idio_file_handle_finalizer);
@@ -428,7 +463,7 @@ static int idio_file_handle_validate_mode_flags (char *mode_str, int *sflagsp, i
     return 0;
 }
 
-static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, char *func, char *def_mode_str, int def_mode, int plus_mode)
+static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, int h_type, char *func, char *def_mode_str, int def_mode, int plus_mode)
 {
     IDIO_ASSERT (ifd);
     IDIO_ASSERT (args);
@@ -619,6 +654,7 @@ static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, char *func, char
 	/*
 	 * Test Case: ??
 	 */
+	fprintf (stderr, "[%d]fcntl %d (%s) => %d\n", getpid (), fd, idio_type2string (ifd), errno);
 	idio_error_system_errno_msg ("fcntl", "F_GETFL", ifd, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
@@ -769,7 +805,7 @@ static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, char *func, char
 	IDIO_GC_FREE (mode_str);
     }
 
-    return idio_open_file_handle (idio_string_C (name), name, fd, hflags, IDIO_FILE_HANDLE_FLAG_NONE);
+    return idio_open_file_handle (idio_string_C (name), name, fd, h_type, hflags, IDIO_FILE_HANDLE_FLAG_NONE);
 }
 
 IDIO_DEFINE_PRIMITIVE1V_DS ("open-file-from-fd", open_file_handle_from_fd, (IDIO ifd, IDIO args), "fd [name [mode]]", "\
@@ -791,7 +827,7 @@ the optional mode `mode` instead of ``re``		\n\
     IDIO_ASSERT (ifd);
     IDIO_ASSERT (args);
 
-    return idio_file_handle_open_from_fd (ifd, args, "open-file-from-fd", "re", IDIO_HANDLE_FLAG_READ, IDIO_HANDLE_FLAG_WRITE);
+    return idio_file_handle_open_from_fd (ifd, args, IDIO_HANDLE_FLAG_FILE, "open-file-from-fd", "re", IDIO_HANDLE_FLAG_READ, IDIO_HANDLE_FLAG_WRITE);
 }
 
 IDIO_DEFINE_PRIMITIVE1V_DS ("open-input-file-from-fd", open_input_file_handle_from_fd, (IDIO ifd, IDIO args), "fd [name [mode]]", "\
@@ -813,13 +849,13 @@ the optional mode `mode` instead of ``re``		\n\
     IDIO_ASSERT (ifd);
     IDIO_ASSERT (args);
 
-    return idio_file_handle_open_from_fd (ifd, args, "open-input-file-from-fd", "re", IDIO_HANDLE_FLAG_READ, IDIO_HANDLE_FLAG_WRITE);
+    return idio_file_handle_open_from_fd (ifd, args, IDIO_HANDLE_FLAG_FILE, "open-input-file-from-fd", "re", IDIO_HANDLE_FLAG_READ, IDIO_HANDLE_FLAG_WRITE);
 }
 
 IDIO_DEFINE_PRIMITIVE1V_DS ("open-output-file-from-fd", open_output_file_handle_from_fd, (IDIO ifd, IDIO args), "fd [name [mode]]", "\
 construct an output file handle from `fd` using the optional	\n\
 `name` instead of the default `/dev/fd/{fd}` and	\n\
-the optional mode `mode` instead of ``re``		\n\
+the optional mode `mode` instead of ``we``		\n\
 							\n\
 :param fd: file descriptor				\n\
 :type fd: C-int						\n\
@@ -835,7 +871,61 @@ the optional mode `mode` instead of ``re``		\n\
     IDIO_ASSERT (ifd);
     IDIO_ASSERT (args);
 
-    return idio_file_handle_open_from_fd (ifd, args, "open-output-file-from-fd", "we", IDIO_HANDLE_FLAG_WRITE, IDIO_HANDLE_FLAG_READ);
+    return idio_file_handle_open_from_fd (ifd, args, IDIO_HANDLE_FLAG_FILE, "open-output-file-from-fd", "we", IDIO_HANDLE_FLAG_WRITE, IDIO_HANDLE_FLAG_READ);
+}
+
+IDIO_DEFINE_PRIMITIVE1V_DS ("open-input-pipe", open_input_pipe_handle, (IDIO ifd, IDIO args), "fd [name]", "\
+construct an input pipe handle from `fd` using the optional	\n\
+`name` instead of the default `/dev/fd/{fd}` and	\n\
+the optional mode `mode` instead of ``re``		\n\
+							\n\
+The key difference from a regular *-from-fd is that a	\n\
+pipe file handle is not seekable.			\n\
+							\n\
+:param fd: file descriptor				\n\
+:type fd: C-int						\n\
+:param name: (optional) file name for display		\n\
+:type fd: string					\n\
+:param name: (optional) file mode for opening		\n\
+:type fd: string					\n\
+							\n\
+:return: pipe file handle				\n\
+:rtype: handle						\n\
+")
+{
+    IDIO_ASSERT (ifd);
+    IDIO_ASSERT (args);
+
+    IDIO ph = idio_file_handle_open_from_fd (ifd, args, IDIO_HANDLE_FLAG_PIPE, "open-input-pipe", "re", IDIO_HANDLE_FLAG_READ, IDIO_HANDLE_FLAG_NONE);
+
+    return ph;
+}
+
+IDIO_DEFINE_PRIMITIVE1V_DS ("open-output-pipe", open_output_pipe_handle, (IDIO ifd, IDIO args), "fd [name [mode]]", "\
+construct an output pipe handle from `fd` using the optional	\n\
+`name` instead of the default `/dev/fd/{fd}` and	\n\
+the optional mode `mode` instead of ``we``		\n\
+							\n\
+The key difference from a regular *-from-fd is that a	\n\
+pipe file handle is not seekable.			\n\
+							\n\
+:param fd: file descriptor				\n\
+:type fd: C-int						\n\
+:param name: (optional) file name for display		\n\
+:type fd: string					\n\
+:param name: (optional) file mode for opening		\n\
+:type fd: string					\n\
+							\n\
+:return: pipe file handle				\n\
+:rtype: handle						\n\
+")
+{
+    IDIO_ASSERT (ifd);
+    IDIO_ASSERT (args);
+
+    IDIO ph = idio_file_handle_open_from_fd (ifd, args, IDIO_HANDLE_FLAG_PIPE, "open-output-pipe", "we", IDIO_HANDLE_FLAG_WRITE, IDIO_HANDLE_FLAG_NONE);
+
+    return ph;
 }
 
 IDIO idio_open_file_handle_C (char *func, IDIO filename, char *pathname, int free_pathname, char *mode_str, int free_mode_str)
@@ -1105,7 +1195,7 @@ IDIO idio_open_file_handle_C (char *func, IDIO filename, char *pathname, int fre
 	return idio_S_notreached;
     }
 
-    return idio_open_file_handle (filename, pathname, fd, h_flags, s_flags);
+    return idio_open_file_handle (filename, pathname, fd, IDIO_HANDLE_FLAG_FILE, h_flags, s_flags);
 }
 
 /*
@@ -1280,7 +1370,7 @@ static IDIO idio_open_std_file_handle (FILE *filep)
 	return idio_S_notreached;
     }
 
-    return idio_open_file_handle (idio_string_C (name), name, fileno (filep), hflags, IDIO_FILE_HANDLE_FLAG_STDIO);
+    return idio_open_file_handle (idio_string_C (name), name, fileno (filep), IDIO_HANDLE_FLAG_FILE, hflags, IDIO_FILE_HANDLE_FLAG_STDIO);
 }
 
 IDIO idio_stdin_file_handle ()
@@ -1383,14 +1473,6 @@ test if `o` is an output file handle		\n\
     return r;
 }
 
-int idio_file_handle_fd (IDIO fh)
-{
-    IDIO_ASSERT (fh);
-    IDIO_TYPE_ASSERT (file_handle, fh);
-
-    return IDIO_FILE_HANDLE_FD (fh);
-}
-
 IDIO_DEFINE_PRIMITIVE1_DS ("file-handle-fd", file_handle_fd, (IDIO fh), "fh", "\
 return the file descriptor associated with	\n\
 file handle `fh`				\n\
@@ -1410,6 +1492,231 @@ file handle `fh`				\n\
      * file-handle-fd #t
      */
     IDIO_USER_TYPE_ASSERT (file_handle, fh);
+
+    return idio_fixnum (IDIO_FILE_HANDLE_FD (fh));
+}
+
+/*
+ * Grr!  Having split the difference between a file and a pipe handle
+ * (important for some things) by using separate type flags we really
+ * could do with making them indistinct for other things.
+ *
+ * So a testable type of "fd" handle -- a handle wrappering a C file
+ * descriptor
+ */
+int idio_isa_fd_handle (IDIO o)
+{
+    IDIO_ASSERT (o);
+
+    if (idio_isa_handle (o) &&
+	IDIO_HANDLE_FLAGS (o) & (IDIO_HANDLE_FLAG_FILE |
+				 IDIO_HANDLE_FLAG_PIPE)) {
+	return 1;
+    }
+
+    return 0;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("fd-handle?", fd_handlep, (IDIO o), "o", "\
+test if `o` is a fd handle			\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is a fd handle, #f otherwise	\n\
+")
+{
+    IDIO_ASSERT (o);
+
+    IDIO r = idio_S_false;
+
+    if (idio_isa_fd_handle (o)) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
+int idio_input_fd_handlep (IDIO o)
+{
+    IDIO_ASSERT (o);
+
+    return (idio_isa_fd_handle (o) &&
+	    IDIO_INPUTP_HANDLE (o));
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("input-fd-handle?", input_fd_handlep, (IDIO o), "o", "\
+test if `o` is an input fd handle		\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is an input fd handle, #f otherwise	\n\
+")
+{
+    IDIO_ASSERT (o);
+
+    IDIO r = idio_S_false;
+
+    if (idio_input_fd_handlep (o)) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
+int idio_output_fd_handlep (IDIO o)
+{
+    IDIO_ASSERT (o);
+
+    return (idio_isa_fd_handle (o) &&
+	    IDIO_OUTPUTP_HANDLE (o));
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("output-fd-handle?", output_fd_handlep, (IDIO o), "o", "\
+test if `o` is an output fd handle		\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is an output fd handle, #f otherwise	\n\
+")
+{
+    IDIO_ASSERT (o);
+
+    IDIO r = idio_S_false;
+
+    if (idio_output_fd_handlep (o)) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("fd-handle-fd", fd_handle_fd, (IDIO fh), "fh", "\
+return the file descriptor associated with	\n\
+fd handle `fh`					\n\
+						\n\
+:param fh: fd handle to query			\n\
+:type fh: fd handle				\n\
+						\n\
+:return: file descriptor			\n\
+:rtype: fixnum					\n\
+")
+{
+    IDIO_ASSERT (fh);
+
+    /*
+     * Test Case: file-handle-errors/fd-handle-fd-bad-type.idio
+     *
+     * fd-handle-fd #t
+     */
+    IDIO_USER_TYPE_ASSERT (fd_handle, fh);
+
+    return idio_fixnum (IDIO_FILE_HANDLE_FD (fh));
+}
+
+int idio_isa_pipe_handle (IDIO o)
+{
+    IDIO_ASSERT (o);
+
+    if (idio_isa_handle (o) &&
+	IDIO_HANDLE_FLAGS (o) & IDIO_HANDLE_FLAG_PIPE) {
+	return 1;
+    }
+
+    return 0;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("pipe-handle?", pipe_handlep, (IDIO o), "o", "\
+test if `o` is a pipe handle			\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is a pipe handle, #f otherwise	\n\
+")
+{
+    IDIO_ASSERT (o);
+
+    IDIO r = idio_S_false;
+
+    if (idio_isa_pipe_handle (o)) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
+int idio_input_pipe_handlep (IDIO o)
+{
+    IDIO_ASSERT (o);
+
+    return (idio_isa_pipe_handle (o) &&
+	    IDIO_INPUTP_HANDLE (o));
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("input-pipe-handle?", input_pipe_handlep, (IDIO o), "o", "\
+test if `o` is an input pipe handle		\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is an input pipe handle, #f otherwise	\n\
+")
+{
+    IDIO_ASSERT (o);
+
+    IDIO r = idio_S_false;
+
+    if (idio_input_pipe_handlep (o)) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
+int idio_output_pipe_handlep (IDIO o)
+{
+    IDIO_ASSERT (o);
+
+    return (idio_isa_pipe_handle (o) &&
+	    IDIO_OUTPUTP_HANDLE (o));
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("output-pipe-handle?", output_pipe_handlep, (IDIO o), "o", "\
+test if `o` is an output pipe handle		\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is an output pipe handle, #f otherwise	\n\
+")
+{
+    IDIO_ASSERT (o);
+
+    IDIO r = idio_S_false;
+
+    if (idio_output_pipe_handlep (o)) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("pipe-handle-fd", pipe_handle_fd, (IDIO fh), "fh", "\
+return the file descriptor associated with	\n\
+pipe handle `fh`				\n\
+						\n\
+:param fh: pipe handle to query			\n\
+:type fh: pipe handle				\n\
+						\n\
+:return: file descriptor			\n\
+:rtype: fixnum					\n\
+")
+{
+    IDIO_ASSERT (fh);
+
+    /*
+     * Test Case: pipe-handle-errors/pipe-handle-fd-bad-type.idio
+     *
+     * pipe-handle-fd #t
+     */
+    IDIO_USER_TYPE_ASSERT (pipe_handle, fh);
 
     return idio_fixnum (IDIO_FILE_HANDLE_FD (fh));
 }
@@ -1489,11 +1796,14 @@ int idio_readyp_file_handle (IDIO fh)
 	return 0;
     }
 
-    if (! idio_input_file_handlep (fh)) {
+    if (! idio_input_fd_handlep (fh)) {
 	/*
-	 * Test Case: file-handle-errors/ready-bad-handle.idio
+	 * Test Case: ?? not file-handle-errors/ready-bad-handle.idio
 	 *
 	 * ready? (current-output-handle)
+	 *
+	 * The ready? function has called idio_handle_or_current()
+	 * which has done the IDIO_HANDLE_INPUTP() check for us
 	 */
 	idio_handle_read_error (fh, IDIO_C_FUNC_LOCATION ());
 
@@ -1526,7 +1836,6 @@ void idio_file_handle_read_more (IDIO fh)
 	 * How to get a (previously good) file descriptor to fail for
 	 * read(2)?
 	 */
-	perror ("read");
 	idio_error_system_errno ("read", fh, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
@@ -1542,7 +1851,7 @@ int idio_getb_file_handle (IDIO fh)
 {
     IDIO_ASSERT (fh);
 
-    if (! idio_input_file_handlep (fh)) {
+    if (! idio_input_fd_handlep (fh)) {
 	/*
 	 * Test Case: ??
 	 *
@@ -1569,6 +1878,11 @@ int idio_getb_file_handle (IDIO fh)
 		return EOF;
 	    }
 	    if (IDIO_FILE_HANDLE_FLAGS (fh) & IDIO_FILE_HANDLE_FLAG_INTERACTIVE) {
+		/*
+		 * Code coverage:
+		 *
+		 * Clearly needs to be interactive!
+		 */
 		IDIO_FILE_HANDLE_COUNT (fh) -= 1;
 		int c = (int) *(IDIO_FILE_HANDLE_PTR (fh));
 		IDIO_FILE_HANDLE_PTR (fh) += 1;
@@ -1582,7 +1896,7 @@ int idio_eofp_file_handle (IDIO fh)
 {
     IDIO_ASSERT (fh);
 
-    IDIO_TYPE_ASSERT (file_handle, fh);
+    IDIO_TYPE_ASSERT (fd_handle, fh);
 
     return (IDIO_FILE_HANDLE_FLAGS (fh) & IDIO_FILE_HANDLE_FLAG_EOF);
 }
@@ -1591,7 +1905,7 @@ int idio_close_file_handle (IDIO fh)
 {
     IDIO_ASSERT (fh);
 
-    IDIO_TYPE_ASSERT (file_handle, fh);
+    IDIO_TYPE_ASSERT (fd_handle, fh);
 
     if (IDIO_HANDLE_FLAGS (fh) & IDIO_HANDLE_FLAG_CLOSED) {
 	/*
@@ -1636,7 +1950,7 @@ int idio_putb_file_handle (IDIO fh, uint8_t c)
 {
     IDIO_ASSERT (fh);
 
-    if (! idio_output_file_handlep (fh)) {
+    if (! idio_output_fd_handlep (fh)) {
 	/*
 	 * Test Case: ??
 	 *
@@ -1678,7 +1992,7 @@ int idio_putc_file_handle (IDIO fh, idio_unicode_t c)
 {
     IDIO_ASSERT (fh);
 
-    if (! idio_output_file_handlep (fh)) {
+    if (! idio_output_fd_handlep (fh)) {
 	/*
 	 * Test Case: ?? not file-handle-errors/write-char-bad-handle.idio
 	 *
@@ -1686,7 +2000,7 @@ int idio_putc_file_handle (IDIO fh, idio_unicode_t c)
 	 *
 	 * XXX This doesn't get you here as write-char calls
 	 * idio_handle_or_current() which does the
-	 * idio_output_file_handlep() test before we get here.
+	 * IDIO_HANDLE_OUTPUTP() test before we get here.
 	 */
 	idio_handle_write_error (fh, IDIO_C_FUNC_LOCATION ());
 
@@ -1742,7 +2056,7 @@ ptrdiff_t idio_puts_file_handle (IDIO fh, char *s, size_t slen)
 {
     IDIO_ASSERT (fh);
 
-    if (! idio_output_file_handlep (fh)) {
+    if (! idio_output_fd_handlep (fh)) {
 	/*
 	 * Test Case: ?? not file-handle-errors/write-bad-handle.idio
 	 *
@@ -1750,7 +2064,7 @@ ptrdiff_t idio_puts_file_handle (IDIO fh, char *s, size_t slen)
 	 *
 	 * XXX This doesn't get you here as write-char calls
 	 * idio_handle_or_current() which does the
-	 * idio_output_file_handlep() test before we get here.
+	 * IDIO_HANDLE_OUTPUTP() test before we get here.
 	 */
 	idio_handle_write_error (fh, IDIO_C_FUNC_LOCATION ());
 
@@ -1825,7 +2139,7 @@ int idio_flush_file_handle (IDIO fh)
 {
     IDIO_ASSERT (fh);
 
-    IDIO_TYPE_ASSERT (file_handle, fh);
+    IDIO_TYPE_ASSERT (fd_handle, fh);
 
     /*
      * What does it mean to flush a file open for reading?  fflush(3)
@@ -2009,7 +2323,7 @@ void idio_print_file_handle (IDIO fh, IDIO o)
 {
     IDIO_ASSERT (fh);
 
-    if (! idio_output_file_handlep (fh)) {
+    if (! idio_output_fd_handlep (fh)) {
 	/*
 	 * Test Case: ??
 	 *
@@ -2048,7 +2362,7 @@ file handle `fh` with `F_SETFD` and `FD_CLOEXEC` arguments	\n\
      *
      * close-file-handle-on-exec #t
      */
-    IDIO_USER_TYPE_ASSERT (file_handle, fh);
+    IDIO_USER_TYPE_ASSERT (fd_handle, fh);
 
     int fd = IDIO_FILE_HANDLE_FD (fh);
 
@@ -2666,6 +2980,8 @@ void idio_file_handle_add_primitives ()
     IDIO_ADD_PRIMITIVE (open_file_handle_from_fd);
     IDIO_ADD_PRIMITIVE (open_input_file_handle_from_fd);
     IDIO_ADD_PRIMITIVE (open_output_file_handle_from_fd);
+    IDIO_ADD_PRIMITIVE (open_input_pipe_handle);
+    IDIO_ADD_PRIMITIVE (open_output_pipe_handle);
     IDIO_ADD_PRIMITIVE (open_file_handle);
     IDIO_ADD_PRIMITIVE (open_input_file_handle);
     IDIO_ADD_PRIMITIVE (open_output_file_handle);
@@ -2673,6 +2989,14 @@ void idio_file_handle_add_primitives ()
     IDIO_ADD_PRIMITIVE (input_file_handlep);
     IDIO_ADD_PRIMITIVE (output_file_handlep);
     IDIO_ADD_PRIMITIVE (file_handle_fd);
+    IDIO_ADD_PRIMITIVE (fd_handlep);
+    IDIO_ADD_PRIMITIVE (input_fd_handlep);
+    IDIO_ADD_PRIMITIVE (output_fd_handlep);
+    IDIO_ADD_PRIMITIVE (fd_handle_fd);
+    IDIO_ADD_PRIMITIVE (pipe_handlep);
+    IDIO_ADD_PRIMITIVE (input_pipe_handlep);
+    IDIO_ADD_PRIMITIVE (output_pipe_handlep);
+    IDIO_ADD_PRIMITIVE (pipe_handle_fd);
     IDIO_ADD_PRIMITIVE (find_lib);
     IDIO_ADD_PRIMITIVE (load);
     IDIO_ADD_PRIMITIVE (delete_file);

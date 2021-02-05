@@ -874,8 +874,8 @@ a wrapper to libc fileno (3)					\n\
     IDIO_ASSERT (ifilep);
 
     int fd = 0;
-    if (idio_isa_file_handle (ifilep)) {
-	fd = idio_file_handle_fd (ifilep);
+    if (idio_isa_fd_handle (ifilep)) {
+	fd = IDIO_FILE_HANDLE_FD (ifilep);
     } else {
 	/*
 	 * Test Case: libc-wrap-errors/fileno-bad-type.idio
@@ -1123,6 +1123,54 @@ The parameter `who` refers to RUSAGE_SELF or RUSAGE_CHILDREN	\n\
     }
 
     return idio_C_pointer_free_me (rup);
+}
+
+/*
+ * Code coverage:
+ *
+ * This is primarily for catching when someone else has made us a
+ * session leader (hint: rlwrap).
+ */
+IDIO_DEFINE_PRIMITIVE1_DS ("getsid", libc_getsid, (IDIO ipid), "pid", "\
+in C, getsid (pid)						\n\
+a wrapper to libc getsid (2)					\n\
+								\n\
+:param pid: getsid pid						\n\
+:type pid: C_int						\n\
+")
+{
+    IDIO_ASSERT (ipid);
+
+    pid_t pid = 0;
+    if (idio_isa_fixnum (ipid)) {
+	pid = IDIO_FIXNUM_VAL (ipid);
+    } else if (idio_isa_C_int (ipid)) {
+	pid = IDIO_C_TYPE_INT (ipid);
+    } else {
+	/*
+	 * Test Case: libc-wrap-errors/getsid-bad-type.idio
+	 *
+	 * libc/getsid #t
+	 */
+	idio_error_param_type ("fixnum|C_int", ipid, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    pid_t r = getsid (pid);
+
+    if (-1 == r) {
+	/*
+	 * Test Case: libc-wrap-errors/getsid-bad-type.idio
+	 *
+	 * getsid FIXNUM-MAX
+	 *
+	 * XXX Probably!
+	 */
+	idio_error_system_errno ("getsid", ipid, IDIO_C_FUNC_LOCATION ());
+    }
+
+    return idio_C_int (r);
 }
 
 IDIO_DEFINE_PRIMITIVE0_DS ("gettimeofday", libc_gettimeofday, (void), "", "\
@@ -5184,6 +5232,7 @@ void idio_libc_wrap_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_getpid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_getrlimit);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_getrusage);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_getsid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_gettimeofday);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_isatty);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_wrap_module, libc_kill);

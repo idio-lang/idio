@@ -159,6 +159,9 @@ libc-wrap-error-load "libc-wrap-errors/getrlimit-bad-rlim.idio" "Invalid argumen
 libc-wrap-error-load "libc-wrap-errors/getrusage-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_int"
 libc-wrap-error-load "libc-wrap-errors/getrusage-bad-who.idio" "Invalid argument" EINVAL "getrusage"
 
+libc-wrap-error-load "libc-wrap-errors/getsid-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a fixnum|C_int"
+libc-wrap-error-load "libc-wrap-errors/getsid-invalid-pid.idio" "No such process" ESRCH "getsid"
+
 libc-wrap-error-load "libc-wrap-errors/isatty-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_int"
 (cond-expand
  (uname/sysname/SunOS {
@@ -390,4 +393,4 @@ libc-wrap-error-load "libc-wrap-errors/x-bad-type.idio" "bad parameter type: '#t
 libc-wrap-error-load "libc-wrap-errors/x-bad-format.idio" "x?: pathname contains an ASCII NUL"
 
 ;; all done?
-Tests? (libc-wrap-error0 + 197)
+Tests? (libc-wrap-error0 + 201)

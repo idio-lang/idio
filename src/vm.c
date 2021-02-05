@@ -6246,6 +6246,26 @@ void idio_vm_sa_signal (int signum)
     idio_vm_signal_record[signum] = 1;
 }
 
+void idio_vm_signal_report ()
+{
+    int printed = 0;
+    int signum;
+    for (signum = IDIO_LIBC_FSIG; signum <= IDIO_LIBC_NSIG; signum++) {
+	if (idio_vm_signal_record[signum]) {
+	    if (printed) {
+		fprintf (stderr, " ");
+	    } else {
+		fprintf (stderr, "Pending signals: ");
+	    }
+	    fprintf (stderr, "%s", idio_libc_signal_name (signum));
+	    printed = 1;
+	}
+    }
+    if (printed) {
+	fprintf (stderr, "\n");
+    }
+}
+
 static uintptr_t idio_vm_run_loops = 0;
 
 IDIO idio_vm_run (IDIO thr, idio_ai_t pc, int caller)

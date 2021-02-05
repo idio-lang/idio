@@ -605,7 +605,7 @@ The default condition handler set in child processes.
 
 It will report the condition and exit (1).
 " {
-  condition-report "child exec issue" c (current-error-handle)
+  condition-report "child-error-handler" c (current-error-handle)
   eprintf "child process %s will exit (1)\n" (libc/getpid)
   libc/exit 1
 }
@@ -722,14 +722,28 @@ define (%prep-process pgid infile outfile errfile foreground) "prepare the curre
   prep-io infile outfile errfile
 }
 
-define-infix-operator | 1700 {
+define-infix-operator | 700 {
   foreground := #t
-  if (eq? 'bg-job (ph before)) {
-    before = pt before
-    foreground = #f
-  }
+  use-w-pipe := #f
+  use-r-pipe := #f
 
-  pipeline := append before (append (list op) after)
+  (case (ph before)
+	((bg-job) {
+	  before = pt before
+	  foreground = #f
+	})
+	((pipe-into) {
+	  before = pt before
+	  use-w-pipe = #t
+	  foreground = #f
+	})
+	((pipe-from) {
+	  before = pt before
+	  use-r-pipe = #t
+	  foreground = #f
+	}))
+
+  orig-pipeline := append before (append (list op) after)
 
   ;; we want a list of lists -- a list of the |-separated commands
   split :+ function (op op-args expr after) {
@@ -772,7 +786,7 @@ define-infix-operator | 1700 {
   Incidentally, as we created the pipe in the main Idio process, it
   too holds the pipe open so we can be fairly confident that all the
   child processes are set up and running when the main Idio process
-  closes the (last?) pipe write-end.
+  closes the (last?) pgrp-pipe write-end.
 
   Well, probably, there's always a race condition between closing the
   pgrp-pipe and exec()ing or starting processing the Idio code in
@@ -788,19 +802,71 @@ define-infix-operator | 1700 {
   code (if it is Idio code -- obviously if it is an external command
   we exec()'d it wouldn't matter).  Strict hygiene, please!
 
+  Variables
+
+  Most of the work in a pipeline is done with file descriptors whereas
+  the caller is dealing with handles.
+
+  There is an overall $pipeline-r-fd and $pipeline-w-fd -- which the
+  first and last commands use (indirectly via the per-command
+  $cmd-r-fd and $cmd-w-fd).
+
+  If the caller passed 'pipe-into or 'pipe-from as the first argument
+  of the pipeline then $pipeline-*-fd are real pipes and the other
+  ends of these are returned as pipe handles, $pipeline-w-ph and
+  $pipeline-r-ph, for the caller to write into and read from the
+  pipeline.
+
+  $cmd-pipe is the inter-cmd pipe, created by the left hand command to
+  generate its own output file descriptor and then to leave trailing
+  around the loop an input file descriptor for the next command.
+
+  For each command there is a per-cmd input file descriptor,
+  $cmd-r-fd, and output file descriptor, $cmd-w-fd.
+
+  The $cmd-r-fd is normally the pipe-reader of the previous command's
+  $cmd-pipe except, of course, the first command whose $cmd-r-fd is
+  $pipeline-r-fd.
+
+  The $cmd-w-fd is normally the pipe-writer of of $cmd-pipe except, of
+  course, the last command whose $cmd-w-fd is $pipeline-w-fd.
+
+  The $pipeline-*-fd, the overarching input and output of the entire
+  pipeline, could be:
+
+  1. entities figured out by (stdin-fileno):
+
+     a. regular C STDIN_FILENO and STDOUT_FILENO
+
+     b. whatever (current-input-handle) and (current-output-handle)
+        actually are
+
+     c. either of which which could be string-handles (necessitating
+        temporary files and some post-pipeline content recovery)
+
+  2. actual pipes!
+
+  3. future *stuff* (sockets are the obvious missing contender)
+
   *#
 
-  stdin := (gensym)
-  infile := (gensym)
-  close-stdin := (gensym)
-  stdout := (gensym)
-  outfile := (gensym)
-  recover-stdout := (gensym)
+  pipeline-r-ph := (gensym)
+  pipeline-w-ph := (gensym)
+
+  pipeline-r-fd := (gensym)
+  cmd-r-fd := (gensym)
+  close-pipeline-r-fd := (gensym)
+
+  pipeline-w-fd := (gensym)
+  cmd-w-fd := (gensym)
+  recover-pipeline-w-fd := (gensym)
+
   stderr := (gensym)
+
   pgid := (gensym)
   job := (gensym)
   proc-id := (gensym)
-  pipe := (gensym)
+  cmd-pipe := (gensym)
   pgrp-pipe := (gensym)
   proc := (gensym)
   pid := (gensym)
@@ -809,26 +875,50 @@ define-infix-operator | 1700 {
   nprocs := length op-args
   #T{
     {
-      $stdin := (libc/stdin-fileno) ; STDIN_FILENO
-      $close-stdin := #f
-      if (pair? $stdin) {
-	$stdin = ph $stdin
-	$close-stdin = $stdin
+      $pipeline-r-fd := #f
+      $close-pipeline-r-fd := #f
+      $pipeline-w-ph := #f
+      if $use-w-pipe {
+	w-pipe := (libc/pipe)
+	$pipeline-w-ph = open-output-pipe (libc/pipe-writer w-pipe)
+	$pipeline-r-fd = libc/pipe-reader w-pipe
+      } {
+	$pipeline-r-fd = (libc/stdin-fileno) ; STDIN_FILENO
+	if (pair? $pipeline-r-fd) {
+	  $pipeline-r-fd = ph $pipeline-r-fd
+	  $close-pipeline-r-fd = $pipeline-r-fd
+	}
       }
-      $infile := $stdin
-      $stdout := (libc/stdout-fileno) ; STDOUT_FILENO
-      $recover-stdout := #f
-      if (pair? $stdout) {
-	$recover-stdout = pht $stdout
-	$stdout = ph $stdout
+      ;; set $cmd-r-fd now as it is used immediately in the loop
+      $cmd-r-fd := $pipeline-r-fd
+
+      $pipeline-w-fd := #f
+      $close-pipeline-w-fd := #f
+      $pipeline-r-ph := #f
+      $recover-pipeline-w-fd := #f
+      if $use-r-pipe {
+	r-pipe := (libc/pipe)
+	$pipeline-r-ph = open-input-pipe (libc/pipe-reader r-pipe)
+	$pipeline-w-fd = libc/pipe-writer r-pipe
+      } {
+	$pipeline-w-fd = (libc/stdout-fileno) ; STDOUT_FILENO
+	if (pair? $pipeline-w-fd) {
+	  $recover-pipeline-w-fd = pht $pipeline-w-fd
+	  $pipeline-w-fd = ph $pipeline-w-fd
+	}
       }
-      $outfile := $stdout
+      ;; $cmd-w-fd is (re-)set each time round the loop but needs to
+      ;; exist in the first place
+      $cmd-w-fd := #f
+
+      ;; everyone gets the same stderr!
       $stderr := (libc/stderr-fileno) ; STDERR_FILENO
+
       $pgid := 0
-      $job := make-%idio-job '$pipeline #n $pgid #f #f #n $stdin $stdout $stderr
+      $job := make-%idio-job '$orig-pipeline #n $pgid #f #f #n $pipeline-r-fd $pipeline-w-fd $stderr
 
       $proc-id := 1
-      $pipe := #n
+      $cmd-pipe := #n
       $pgrp-pipe := (libc/pipe)
 
       $@(map (function (cmd) {
@@ -845,46 +935,48 @@ define-infix-operator | 1700 {
 		    set-%idio-job-procs! $job (pair $proc (%idio-job-procs $job))
 
 		    if ($proc-id lt $nprocs) {
-		      $pipe = (libc/pipe)
-		      $outfile = (libc/pipe-writer $pipe)
+		      $cmd-pipe = (libc/pipe)
+		      $cmd-w-fd = (libc/pipe-writer $cmd-pipe)
 		    } {
-		      $outfile = $stdout
+		      $cmd-w-fd = $pipeline-w-fd
 		    }
 		    $pid := (libc/fork)
 		    if (C/== $pid 0) {
 		      set-default-handler! ^idio-error default-child-handler
-		      %prep-process $pgid $infile $outfile $stderr $foreground
+		      %prep-process $pgid $cmd-r-fd $cmd-w-fd $stderr $foreground
 
 		      ;; The Libc texinfo page seems to have missed
-		      ;; this.  On the basis that a $pipe is owned
+		      ;; this.  On the basis that a $cmd-pipe is owned
 		      ;; (created?) by the left hand process of the
-		      ;; two being connected, then *infile* is the
-		      ;; (pipe-reader $pipe) of the left-hand
+		      ;; two being connected, then $cmd-r-fd is the
+		      ;; (pipe-reader $cmd-pipe) of the left-hand
 		      ;; process and will have been closed in
-		      ;; %prep-process, above (unless it was $stdin).
+		      ;; %prep-process, above (unless it was
+		      ;; $pipeline-r-fd).
 
-		      ;; In turn, the current (pipe-reader $pipe)
-		      ;; will become the $infile of the right-hand
+		      ;; In turn, the current (pipe-reader $cmd-pipe)
+		      ;; will become the $cmd-r-fd of the right-hand
 		      ;; process (as the parent Idio also has it open
 		      ;; and will pass it on).  But what of us?  Who
-		      ;; closes (pipe-reader $pipe) in us?
+		      ;; closes (pipe-reader $cmd-pipe) in us?
 
 		      ;; Ah, OK.  We do.
 		      if ($proc-id lt $nprocs) {
-			libc/close (libc/pipe-reader $pipe)
+			libc/close (libc/pipe-reader $cmd-pipe)
 		      }
 
 		      ;; We don't have the same problem with
-		      ;; (pipe-writer $pipe) because we only create
-		      ;; the $pipe when we know there is another
-		      ;; process in the pipeline and $outfile
-		      ;; immediately becomes (pipe-writer $pipe).
+		      ;; (pipe-writer $cmd-pipe) because we only
+		      ;; create the $cmd-pipe when we know there is
+		      ;; another process in the pipeline and
+		      ;; $cmd-w-fd immediately becomes (pipe-writer
+		      ;; $cmd-pipe).
 
-		      ;; $infile is a left-over from the pipe of the
-		      ;; left hand process and we are suffering an
+		      ;; $cmd-r-fd is a left-over from the pipe of
+		      ;; the left hand process and we are suffering an
 		      ;; off-by-one error and the left-over one is the
-		      ;; current (pipe-reader $pipe) we have in our
-		      ;; hands.
+		      ;; current (pipe-reader $cmd-pipe) we have in
+		      ;; our hands.
 
 		      if (C/== $pgid 0) {
 			libc/close (libc/pipe-writer $pgrp-pipe)
@@ -899,6 +991,13 @@ define-infix-operator | 1700 {
 			libc/close (libc/pipe-writer $pgrp-pipe)
 		      }
 
+		      ;; tidy up any trailing $pipeline-*-fd ends
+		      if (not (C/== $cmd-r-fd $pipeline-r-fd)) {
+			libc/close $pipeline-r-fd
+		      }
+		      if (not (C/== $cmd-w-fd $pipeline-w-fd)) {
+			libc/close $pipeline-w-fd
+		      }
 
 		      cond ((pair? (ph '$cmd)) {
 			$@cmd
@@ -909,8 +1008,8 @@ define-infix-operator | 1700 {
 		      ;; child will have exec()'d it otherwise it is
 		      ;; some Idio scripting whereon it will do its
 		      ;; thing and continue onto here.  So we ought to
-		      ;; stop before this child continues back into
-		      ;; the main Idio engine.
+		      ;; definitively stop before this child continues
+		      ;; back into the main Idio engine.
 
 		      exit 0
 		    } {
@@ -924,52 +1023,72 @@ define-infix-operator | 1700 {
 		      }
 		    }
 
-		    ;; tidy up any trailing pipes
-		    if (not (C/== $infile $stdin)) {
-		      libc/close $infile
+		    ;; tidy up any trailing $cmd-pipe ends
+		    if (not (C/== $cmd-r-fd $pipeline-r-fd)) {
+		      libc/close $cmd-r-fd
 		    }
-		    if (not (C/== $outfile $stdout)) {
-		      libc/close $outfile
+		    if (not (C/== $cmd-w-fd $pipeline-w-fd)) {
+		      libc/close $cmd-w-fd
 		    }
 
-		    $infile = (libc/pipe-reader $pipe)
+		    $cmd-r-fd = (libc/pipe-reader $cmd-pipe)
 		    $proc-id = $proc-id + 1
 		  }
 	        }
       })
 	 op-args)
 
+      (cond
+       ($use-w-pipe {
+	 ;; parent should not hold the read end of the pipe-into pipe open
+	 libc/close $pipeline-r-fd
+       })
+       ($use-r-pipe {
+	 ;; parent should not hold the write end of the pipe-from pipe open
+	 libc/close $pipeline-w-fd
+       }))
+
       ;; finally let the first process go
       libc/close (libc/pipe-reader $pgrp-pipe)
       libc/close (libc/pipe-writer $pgrp-pipe)
 
-      %idio-jobs = pair $job %idio-jobs
-      %%last-job = $job
+      (cond
+       ($use-w-pipe {
+	 $pipeline-w-ph
+       })
+       ($use-r-pipe {
+	 $pipeline-r-ph
+       })
+       (else {
+	 %idio-jobs = pair $job %idio-jobs
+	 %%last-job = $job
 
-      $status := #f
-      cond ((not job-control/%idio-interactive) {
-	$status = wait-for-job $job
-      }) \
-	   ($foreground {
-	     $status = foreground-job $job #f
-	   }) \
-	   (else {
-	     $status = background-job $job #f
-	   })
+	 $status := #f
+	 (cond
+	  ((not job-control/%idio-interactive) {
+	    $status = wait-for-job $job
+	  })
+	  ($foreground {
+	    $status = foreground-job $job #f
+	  })
+	  (else {
+	    $status = background-job $job #f
+	  }))
 
-      if $close-stdin {
-	libc/close $close-stdin
-      }
+	 if $close-pipeline-r-fd {
+	   libc/close $close-pipeline-r-fd
+	 }
 
-      if $recover-stdout {
-	;; if the job was backgrounded then this won't do much!
-        ih := open-input-file-from-fd $stdout
-	seek-handle ih 0 'set
-        display (read-lines ih) $recover-stdout
-	close-handle ih
-      }
+	 if $recover-pipeline-w-fd {
+	   ;; if the job was backgrounded then this won't do much!
+	   ih := open-input-file-from-fd $pipeline-w-fd
+	   seek-handle ih 0 'set
+	   display (read-lines ih) $recover-pipeline-w-fd
+	   close-handle ih
+	 }
 
-      $status
+	 $status
+       }))
     }
   }
 }
@@ -1326,7 +1445,7 @@ with-handle-dup := {
 ;; ... < e1 ...
 ;; ... > e1 ...
 ;; ... 2> e1 ...
-define-infix-operator > 1600 {
+define-infix-operator > 600 {
   suffix := #n
 
   if (and (pair? after)
@@ -1365,13 +1484,13 @@ define-infix-operator > 1600 {
   result
 }
 
-define-infix-operator < 1600 \>
-define-infix-operator 2> 1600 \>
+define-infix-operator < 600 \>
+define-infix-operator 2> 600 \>
 
 ;; ... <& e1 ...
 ;; ... >& e1 ...
 ;; ... 2>& e1 ...
-define-infix-operator >& 1600 {
+define-infix-operator >& 600 {
   suffix := #n
 
   if (and (pair? after)
@@ -1410,8 +1529,8 @@ define-infix-operator >& 1600 {
   result
 }
 
-define-infix-operator <& 1600 \>&
-define-infix-operator 2>& 1600 \>&
+define-infix-operator <& 600 \>&
+define-infix-operator 2>& 600 \>&
 
 define (jobs) "display the state of outstanding jobs" {
   first-j := #t

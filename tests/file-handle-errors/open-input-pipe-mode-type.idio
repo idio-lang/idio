@@ -1,0 +1,2 @@
+
+open-input-pipe (stdin-fileno) "bob" #t

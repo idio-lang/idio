@@ -1,0 +1,2 @@
+
+open-output-pipe (stdin-fileno) "bob" "rq"

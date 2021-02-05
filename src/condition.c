@@ -576,6 +576,60 @@ This returns #unspec						\n\
     return idio_S_void;
 }
 
+/*
+ * Let's try to be consistent with condition-report
+ */
+void idio_condition_format_system_error (char *prefix, IDIO c)
+{
+    IDIO_C_ASSERT (prefix);
+    IDIO_ASSERT (c);
+
+    IDIO_TYPE_ASSERT (condition, c);
+
+    IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (c);
+
+    if (idio_struct_type_isa (sit, idio_condition_system_error_type)) {
+	IDIO eh = idio_thread_current_error_handle ();
+
+	IDIO osh = idio_open_output_string_handle_C ();
+
+	idio_display_C ("\n", osh);
+	idio_display_C (prefix, osh);
+	idio_display_C (":", osh);
+
+	IDIO m = IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_IDIO_ERROR_TYPE_MESSAGE);
+	IDIO l = IDIO_STRUCT_INSTANCE_FIELDS (c, IDIO_SI_IDIO_ERROR_TYPE_LOCATION);
+	IDIO d = IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_IDIO_ERROR_TYPE_DETAIL);
+	IDIO f = IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_SYSTEM_ERROR_TYPE_FUNCTION);
+	IDIO e = IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_SYSTEM_ERROR_TYPE_ERRNO);
+
+	idio_display (l, osh);
+	idio_display_C (":", osh);
+
+	idio_display (IDIO_STRUCT_TYPE_NAME (sit), osh);
+	idio_display_C (":", osh);
+
+	idio_display (f, osh);
+	idio_display_C (" (", osh);
+	idio_display (d, osh);
+	idio_display_C (") => ", osh);
+
+	int er = IDIO_C_TYPE_INT (e);
+	idio_display_C (idio_libc_errno_name (er), osh);
+
+	idio_display_C (" (", osh);
+	idio_display (m, osh);
+	idio_display_C ("/", osh);
+	idio_display_C ("errno ", osh);
+
+	idio_display (e, osh);
+	idio_display_C (")", osh);
+	idio_display_C ("\n", osh);
+
+	idio_display (idio_get_output_string (osh), eh);
+    }
+}
+
 IDIO_DEFINE_PRIMITIVE1_DS ("default-condition-handler", default_condition_handler, (IDIO c), "c", "\
 Invoke the default handler for condition `c`			\n\
 								\n\
@@ -648,7 +702,7 @@ does not return per se						\n\
 	}
     } else if (idio_struct_type_isa (sit, idio_condition_rt_command_status_error_type)) {
 	/*
-	 * Code coverage: 
+	 * Code coverage:
 	 *
 	 * There's a separate default-rcse-handler, above, which
 	 * should capture this condition under normal circumstances.
@@ -686,65 +740,7 @@ does not return per se						\n\
 	IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (c);
 
 	if (idio_struct_type_isa (sit, idio_condition_system_error_type)) {
-	    IDIO eh = idio_thread_current_error_handle ();
-	    int printed = 0;
-
-	    idio_display_C ("\ndefault-condition-handler: system-error: ", eh);
-
-	    IDIO l = IDIO_STRUCT_INSTANCE_FIELDS (c, IDIO_SI_IDIO_ERROR_TYPE_LOCATION);
-	    if (idio_S_nil != l) {
-		idio_display (l, eh);
-		printed = 1;
-
-		if (idio_struct_type_isa (sit, idio_condition_read_error_type)) {
-		    idio_display_C (":", eh);
-		    idio_display (IDIO_STRUCT_INSTANCE_FIELDS (c, IDIO_SI_READ_ERROR_TYPE_LINE), eh);
-		    idio_display_C (":", eh);
-		    idio_display (IDIO_STRUCT_INSTANCE_FIELDS (c, IDIO_SI_READ_ERROR_TYPE_POSITION), eh);
-		} else if (idio_struct_type_isa (sit, idio_condition_evaluation_error_type)) {
-		    idio_display_C (":", eh);
-		    idio_display (IDIO_STRUCT_INSTANCE_FIELDS (c, IDIO_SI_EVALUATION_ERROR_TYPE_EXPR), eh);
-		}
-	    }
-
-	    if (printed) {
-		idio_display_C (": ", eh);
-	    }
-	    idio_display (IDIO_STRUCT_TYPE_NAME (sit), eh);
-	    idio_display_C (": ", eh);
-
-	    IDIO f = IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_SYSTEM_ERROR_TYPE_FUNCTION);
-	    if (idio_S_nil != f) {
-		if (printed) {
-		    idio_display_C (": ", eh);
-		}
-		idio_display (f, eh);
-		printed = 1;
-	    }
-	    IDIO e = IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_SYSTEM_ERROR_TYPE_ERRNO);
-	    if (idio_S_nil != e) {
-		idio_display_C (" => ", eh);
-		int er = IDIO_C_TYPE_INT (e);
-		idio_display_C (idio_libc_errno_name (er), eh);
-		printed = 1;
-	    }
-	    IDIO m = IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_IDIO_ERROR_TYPE_MESSAGE);
-	    if (idio_S_nil != m) {
-		if (printed) {
-		    idio_display_C (": ", eh);
-		}
-		idio_display (m, eh);
-		printed = 1;
-	    }
-	    IDIO d = IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_IDIO_ERROR_TYPE_DETAIL);
-	    if (idio_S_nil != d) {
-		if (printed) {
-		    idio_display_C (": ", eh);
-		}
-		idio_display (d, eh);
-		printed = 1;
-	    }
-	    idio_display_C ("\n", eh);
+	    idio_condition_format_system_error ("default-condition-handler", c);
 	} else if (idio_struct_type_isa (sit, idio_condition_idio_error_type)) {
 	    IDIO eh = idio_thread_current_error_handle ();
 	    int printed = 0;
@@ -915,6 +911,9 @@ does not return per se						\n\
 	    /* return idio_command_rcse_handler (c); */
 	    idio_debug ("restart-c-h: rcse = %s\n", c);
 	    fprintf (stderr, "restart-c-h: rcse?? =>> #unspec\n");
+	    return idio_S_unspec;
+	} else if (idio_struct_type_isa (sit, idio_condition_system_error_type)) {
+	    idio_condition_format_system_error ("restart-condition-handler", c);
 	    return idio_S_unspec;
 	} else if (idio_struct_type_isa (sit, idio_condition_idio_error_type)) {
 	    IDIO eh = idio_thread_current_error_handle ();
