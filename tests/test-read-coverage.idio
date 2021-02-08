@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2020 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -42,6 +42,8 @@ read-coverage-load "read-coverage/block-comment-pipe-esc.idio"
 read-coverage-load "read-coverage/block-comment-mixed.idio"
 read-coverage-load "read-coverage/exp-comment.idio"
 read-coverage-load "read-coverage/string-escaped-chars.idio"
+read-coverage-load "read-coverage/istring-bracketing.idio"
+read-coverage-load "read-coverage/istring-expression.idio"
 read-coverage-load "read-coverage/template-bracketing.idio"
 read-coverage-load "read-coverage/pathname.idio"
 read-coverage-load "read-coverage/bignum-radix-sep-eof.idio"

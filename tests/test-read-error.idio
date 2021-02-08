@@ -169,6 +169,13 @@ read-error-load "read-errors/named-character-no-name.idio" "named character: no 
 read-error-load "read-errors/named-character-unknown.idio" "unknown named character: caveat" 2
 read-error-load "read-errors/named-character-unknown-emb.idio" "unknown named character: caveat" 3
 
+read-error-load "read-errors/istring-too-many-ic.idio" "string: too many interpolation characters: #3: ^ (0x5e)" 1
+read-error-load "read-errors/istring-too-many-ic-emb.idio" "string: too many interpolation characters: #3: ^ (0x5e)" 2
+read-error-load "read-errors/istring-bad-delim.idio" "string: unexpected interpolation delimiter '(' (0x28)" 2
+
+read-error-load "read-errors/istring-eof.idio" "string: EOF" 1
+read-error-load "read-errors/istring-eof-emb.idio" "string: EOF" 2
+
 read-error-load "read-errors/template-too-many-ic.idio" "template: too many interpolation characters: #5: $ (0x24)" 1
 read-error-load "read-errors/template-too-many-ic-emb.idio" "template: too many interpolation characters: #5: $ (0x24)" 2
 
@@ -180,8 +187,8 @@ read-error-load "read-errors/template-eof-emb.idio" "template: EOF" 2
 
 ;read-error-load "read-errors/template-delimiter.idio" "template: unexpected delimiter: ) (0xdd)"
 
-read-error-load "read-errors/pathname-too-many-ic.idio" "pathname: too many interpolation characters: #5: $ (0x24)" 1
-read-error-load "read-errors/pathname-too-many-ic-emb.idio" "pathname: too many interpolation characters: #5: $ (0x24)" 2
+read-error-load "read-errors/pathname-too-many-ic.idio" "pathname: too many interpolation characters: #3: ^ (0x5e)" 1
+read-error-load "read-errors/pathname-too-many-ic-emb.idio" "pathname: too many interpolation characters: #3: ^ (0x5e)" 2
 
 read-error-load "read-errors/pathname-eof.idio" "pathname: EOF" 1
 read-error-load "read-errors/pathname-eof-emb.idio" "pathname: EOF" 2
@@ -300,4 +307,4 @@ read-error-load "read-errors/op-eof.idio" "EOF in list" 3
 read-error-load "read-errors/op-eof-emb.idio" "EOF in list" 4
 
 ;; all done?
-Tests? (read-error0 + 218)
+Tests? (read-error0 + 228)

@@ -2534,6 +2534,18 @@ char *idio_display_string (IDIO o, size_t *sizep)
     return r;
 }
 
+IDIO idio_util_string (IDIO o)
+{
+    IDIO_ASSERT (o);
+
+    size_t size = 0;
+    char *str = idio_as_string_safe (o, &size, 40, 1);
+    IDIO r = idio_string_C_len (str, size);
+    idio_gc_free (str);
+
+    return r;
+}
+
 IDIO_DEFINE_PRIMITIVE1_DS ("string", string, (IDIO o), "o", "\
 convert `o` to a string				\n\
 						\n\
@@ -2544,12 +2556,25 @@ convert `o` to a string				\n\
 {
     IDIO_ASSERT (o);
 
-    size_t size = 0;
-    char *str = idio_as_string_safe (o, &size, 40, 1);
-    IDIO r = idio_string_C_len (str, size);
-    idio_gc_free (str);
+    return idio_util_string (o);
+}
 
-    return r;
+IDIO_DEFINE_PRIMITIVE1_DS ("->string", 2string, (IDIO o), "o", "\
+convert `o` to a string unless it already is	\n\
+a string					\n\
+						\n\
+:param o: object to convert			\n\
+						\n\
+:return: a string representation of `o`		\n\
+")
+{
+    IDIO_ASSERT (o);
+
+    if (idio_isa_string (o)) {
+	return o;
+    } else {
+	return idio_util_string (o);
+    }
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("display-string", display_string, (IDIO o), "o", "\
@@ -3414,6 +3439,7 @@ void idio_util_add_primitives ()
     IDIO_ADD_PRIMITIVE (eqvp);
     IDIO_ADD_PRIMITIVE (equalp);
     IDIO_ADD_PRIMITIVE (string);
+    IDIO_ADD_PRIMITIVE (2string);
     IDIO_ADD_PRIMITIVE (display_string);
     IDIO_ADD_PRIMITIVE (value_index);
     IDIO_ADD_PRIMITIVE (set_value_index);
