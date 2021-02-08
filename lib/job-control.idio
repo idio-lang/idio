@@ -1359,12 +1359,12 @@ with-handle-redir := {
 	 ((string-handle? s/d) (error 'with-handle-redir (append-string "not an " msg-h "-string-handle") s/d)) \
 	 ((string? s/d) {
 	   new-h = open-file-h s/d
-	   close-file-handle-on-exec new-h
+	   close-fd-handle-on-exec new-h
 	   close-h = #t
 	 }) \
 	 ((null? s/d) {
 	   new-h = open-file-h "/dev/null"
-	   close-file-handle-on-exec new-h
+	   close-fd-handle-on-exec new-h
 	   close-h = #t
 	 }) \
 	 (else (error 'with-handle-redir (append-string "unexpected " msg-h) s/d))

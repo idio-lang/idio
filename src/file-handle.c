@@ -2444,12 +2444,12 @@ void idio_print_file_handle (IDIO fh, IDIO o)
     IDIO_GC_FREE (os);
 }
 
-IDIO_DEFINE_PRIMITIVE1_DS ("close-file-handle-on-exec", close_file_handle_on_exec, (IDIO fh), "fh", "\
+IDIO_DEFINE_PRIMITIVE1_DS ("close-fd-handle-on-exec", close_fd_handle_on_exec, (IDIO fh), "fh", "\
 call fcntl(3) on the C file descriptor associated with		\n\
-file handle `fh` with `F_SETFD` and `FD_CLOEXEC` arguments	\n\
+fd handle `fh` with `F_SETFD` and `FD_CLOEXEC` arguments	\n\
 						\n\
-:param fh: file handle to cloexec		\n\
-:type fh: file handle				\n\
+:param fh: fd handle to cloexec			\n\
+:type fh: fd handle				\n\
 						\n\
 :return: 0 or raises ^system-error		\n\
 :rtype: C-int					\n\
@@ -3100,7 +3100,7 @@ void idio_file_handle_add_primitives ()
     IDIO_ADD_PRIMITIVE (find_lib);
     IDIO_ADD_PRIMITIVE (load);
     IDIO_ADD_PRIMITIVE (delete_file);
-    IDIO_ADD_PRIMITIVE (close_file_handle_on_exec);
+    IDIO_ADD_PRIMITIVE (close_fd_handle_on_exec);
 }
 
 void idio_final_file_handle ()

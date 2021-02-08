@@ -225,7 +225,7 @@ file-handle-error-load "file-handle-errors/close-closed-handle.idio" "handle alr
 
 file-handle-error-load "file-handle-errors/lseek-negative-offset.idio" "Invalid argument" "lseek"
 
-file-handle-error-load "file-handle-errors/close-file-handle-on-exec-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a fd_handle"
+file-handle-error-load "file-handle-errors/close-fd-handle-on-exec-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a fd_handle"
 
 OIDIOLIB := IDIOLIB
 file-handle-error-load "file-handle-errors/find-lib-IDIOLIB-format.idio" "libfile-find: environment variable 'IDIOLIB' contains an ASCII NUL"
