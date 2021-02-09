@@ -252,23 +252,21 @@ define-template (cond-expand & clause*) {
 		 fh := open-input-file fn
 		 loop :+ function () {
 			   if (eof? fh) #n {
-			     line := read-line fh
-			     (cond
-			      (
-				; OpenIndiana Development oi_151.1.8 X86 (powered by illumos)
-				; OpenIndiana Hipster 2020.04 (powered by illumos)
-				; ...and from the Intertubes...
-				; Solaris 9 9/04 s9s_u7wos_09 SPARC
-				; Solaris 10 5/08 s10x_u5wos_10 X86
-				; Oracle Solaris 11.4 X86
-				; OpenSolaris 2009.06 snv_111b X86
-				; annoyingly different is:
-				; Oracle Solaris 11 Express snv_151a X86
-				(regexp-matches "(Solaris|OpenSolaris|OpenIndiana|Oracle) " line)
-				=> (function (res) {
-				      %add-feature (append-string "release/" (array-ref res 1))
-				      ; skip the remaining lines
-				}))
+			     (regex-case
+			      (read-line fh)
+			      ; OpenIndiana Development oi_151.1.8 X86 (powered by illumos)
+			      ; OpenIndiana Hipster 2020.04 (powered by illumos)
+			      ; ...and from the Intertubes...
+			      ; Solaris 9 9/04 s9s_u7wos_09 SPARC
+			      ; Solaris 10 5/08 s10x_u5wos_10 X86
+			      ; Oracle Solaris 11.4 X86
+			      ; OpenSolaris 2009.06 snv_111b X86
+			      ; annoyingly different is:
+			      ; Oracle Solaris 11 Express snv_151a X86
+			      ("(Solaris|OpenSolaris|OpenIndiana|Oracle) " {
+				%add-feature (append-string "release/" (array-ref r 1))
+				; skip the remaining lines
+			      })
 			      (else
 			       (loop)))
 			   }
