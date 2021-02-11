@@ -1291,11 +1291,11 @@ generic function instead.
 'output, 'error
 
 {s/d} (source/destination) can be:
-1. a handle (file or string)
+1. a handle (fd or string)
 2. a literal string which will be interpreted as the name of the
-   file to open as per:
-     open-output-file {s/d} or
-     open-input-file {s/d}
+   fd to open as per:
+     open-output-fd {s/d} or
+     open-input-fd {s/d}
 3. #n as shorthand for the string "/dev/null"
 
 {thunk} is the 0-arg function to invoke
@@ -1312,35 +1312,39 @@ with-handle-redir := {
 
   function (type s/d thunk) {
     ;; handle-oriented indirection function/variables
-    get-current-h := #f
-    open-file-h   := #f
-    set-h!        := #f
-    dir-file-h?   := #f
-    dir-string-h? := #f
-    msg-h         := #f
+    get-current-h	:= #f
+    open-fd-h		:= #f
+    open-file-h		:= #f
+    set-h!		:= #f
+    dir-fd-h?		:= #f
+    dir-string-h?	:= #f
+    msg-h		:= #f
     cond ((eq? type 'input) {
-      get-current-h = current-input-handle
-      open-file-h   = open-input-file
-      set-h!        = set-input-handle!
-      dir-file-h?   = input-file-handle?
-      dir-string-h? = input-string-handle?
-      msg-h         = "input"
+      get-current-h	= current-input-handle
+      open-fd-h		= open-input-fd
+      open-file-h	= open-input-file
+      set-h!		= set-input-handle!
+      dir-fd-h?		= input-fd-handle?
+      dir-string-h?	= input-string-handle?
+      msg-h		= "input"
     }) \
 	 ((eq? type 'output) {
-	   get-current-h = current-output-handle
-	   open-file-h   = open-output-file
-	   set-h!        = set-output-handle!
-	   dir-file-h?   = output-file-handle?
-	   dir-string-h? = output-string-handle?
-	   msg-h         = "output"
+	   get-current-h	= current-output-handle
+	   open-fd-h		= open-output-fd
+	   open-file-h		= open-output-file
+	   set-h!		= set-output-handle!
+	   dir-fd-h?		= output-fd-handle?
+	   dir-string-h?	= output-string-handle?
+	   msg-h		= "output"
 	 }) \
 	 ((eq? type 'error) {
-	   get-current-h = current-error-handle
-	   open-file-h   = open-output-file
-	   set-h!        = set-error-handle!
-	   dir-file-h?   = output-file-handle?
-	   dir-string-h? = output-string-handle?
-	   msg-h         = "output"
+	   get-current-h	= current-error-handle
+	   open-fd-h		= open-output-fd
+	   open-file-h		= open-output-file
+	   set-h!		= set-error-handle!
+	   dir-fd-h?		= output-fd-handle?
+	   dir-string-h?	= output-string-handle?
+	   msg-h		= "output"
 	 }) \
 	 (else (error 'with-handle-redir "unexpected handle type" type))
 
@@ -1351,10 +1355,10 @@ with-handle-redir := {
     ;; if we create a new handle we need to close it afterwards
     close-h := #f
 
-    cond ((dir-file-h? s/d) {
+    cond ((dir-fd-h? s/d) {
       new-h = s/d
     }) \
-	 ((file-handle? s/d) (error 'with-handle-redir (append-string "not an " msg-h "-file-handle") s/d)) \
+	 ((fd-handle? s/d) (error 'with-handle-redir (append-string "not an " msg-h "-fd-handle") s/d)) \
 	 ((dir-string-h? s/d) (new-h = s/d)) \
 	 ((string-handle? s/d) (error 'with-handle-redir (append-string "not an " msg-h "-string-handle") s/d)) \
 	 ((string? s/d) {
@@ -1396,6 +1400,17 @@ define (with-output-to dst thunk) {
 
 define (with-error-to dst thunk) {
   with-handle-redir 'error dst thunk
+}
+
+define-template (collect-output & cmd) {
+  osh := (gensym)
+  #T{
+    $osh := (open-output-string)
+    with-output-to $osh (function #n {
+			   fg-job $@cmd
+    })
+    strip-string (get-output-string $osh) "\n"
+  }
 }
 
 #*

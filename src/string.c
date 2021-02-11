@@ -1775,7 +1775,7 @@ existing storage allocation for `s`		\n\
  *
  * where {end} is *not* included in the substring.
  *
- * The (nost common) alternative is: substring str offset len
+ * The (most common) alternative is: substring str offset len
  */
 IDIO_DEFINE_PRIMITIVE3_DS ("substring", substring, (IDIO s, IDIO p0, IDIO pn), "s p0 pn", "\
 return a substring of `s` from position `p0`	\n\
@@ -2668,6 +2668,270 @@ return a string of `args` interspersed with `delim`	\n\
     return idio_join_string (delim, args);
 }
 
+IDIO idio_strip_string (IDIO str, IDIO discard, IDIO ends)
+{
+    IDIO_ASSERT (str);
+    IDIO_ASSERT (discard);
+    IDIO_ASSERT (ends);
+
+    IDIO_TYPE_ASSERT (string, str);
+    IDIO_TYPE_ASSERT (string, discard);
+    IDIO_TYPE_ASSERT (list, ends);
+
+    char *ss;
+    size_t slen = -1;
+    size_t sw = idio_string_storage_size (str);
+
+    if (idio_isa_substring (str)) {
+	ss = IDIO_SUBSTRING_S (str);
+	slen = IDIO_SUBSTRING_LEN (str);
+    } else {
+	ss = IDIO_STRING_S (str);
+	slen = IDIO_STRING_LEN (str);
+    }
+
+    if (0 == slen) {
+	/*
+	 * strip-string "" discard
+	 */
+
+	return str;
+    }
+
+    char *ds;
+    size_t dlen = -1;
+    size_t dw = idio_string_storage_size (discard);
+
+    if (idio_isa_substring (discard)) {
+	ds = IDIO_SUBSTRING_S (discard);
+	dlen = IDIO_SUBSTRING_LEN (discard);
+    } else {
+	ds = IDIO_STRING_S (discard);
+	dlen = IDIO_STRING_LEN (discard);
+    }
+
+    if (0 == dlen) {
+	/*
+	 * strip-string str ""
+	 */
+	return str;
+    }
+
+#define IDIO_STRING_STRIP_LEFT	(1<<0)
+#define IDIO_STRING_STRIP_RIGHT	(1<<1)
+
+    int ends_bits = IDIO_STRING_STRIP_RIGHT;
+
+    if (idio_S_nil != ends) {
+	IDIO end = IDIO_PAIR_H (ends);
+	if (idio_S_left == end) {
+	    ends_bits = IDIO_STRING_STRIP_LEFT;
+	} else if (idio_S_right == end) {
+	    ends_bits = IDIO_STRING_STRIP_RIGHT;
+	} else if (idio_S_both == end) {
+	    ends_bits = IDIO_STRING_STRIP_LEFT | IDIO_STRING_STRIP_RIGHT;
+	} else if (idio_S_none == end) {
+	    return str;
+	} else {
+	    /*
+	     * Test Case: string-errors/strip-string-bad-ends.idio
+	     *
+	     * strip-string "abc" "a" 'neither
+	     */
+	    idio_error_param_value ("ends", "should be 'left, 'right, 'both or 'none", IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	}
+    }
+
+    uint8_t *ss8 = NULL;
+    uint16_t *ss16 = NULL;
+    uint32_t *ss32 = NULL;
+
+    switch (sw) {
+    case 1:
+	ss8 = (uint8_t *) ss;
+	break;
+    case 2:
+	ss16 = (uint16_t *) ss;
+	break;
+    case 4:
+	ss32 = (uint32_t *) ss;
+	break;
+    }
+
+    uint8_t *ds8 = NULL;
+    uint16_t *ds16 = NULL;
+    uint32_t *ds32 = NULL;
+
+    switch (dw) {
+    case 1:
+	ds8 = (uint8_t *) ds;
+	break;
+    case 2:
+	ds16 = (uint16_t *) ds;
+	break;
+    case 4:
+	ds32 = (uint32_t *) ds;
+	break;
+    }
+
+    size_t rso = 0;
+    if (ends_bits & IDIO_STRING_STRIP_LEFT) {
+	for (;rso < slen; rso++) {
+	    idio_unicode_t scp = 0;
+	    switch (sw) {
+	    case 1:
+		scp = ss8[rso];
+		break;
+	    case 2:
+		scp = ss16[rso];
+		break;
+	    case 4:
+		scp = ss32[rso];
+		break;
+	    }
+
+	    size_t di;
+	    for (di = 0; di < dlen; di++) {
+		idio_unicode_t dcp = 0;
+		switch (dw) {
+		case 1:
+		    dcp = ds8[di];
+		    break;
+		case 2:
+		    dcp = ds16[di];
+		    break;
+		case 4:
+		    dcp = ds32[di];
+		    break;
+		}
+
+		if (scp == dcp) {
+		    /* leave the discard for loop */
+		    break;
+		}
+	    }
+
+	    if (di == dlen) {
+		/* leave the left strip loop */
+		break;
+	    }
+	}
+
+	if (rso == slen) {
+	    /* stripped the lot */
+	    return idio_substring_offset_len (str, 0, 0);
+	}
+    }
+
+    /* cheeky!  but we're decrementing */
+    ssize_t reo = slen - 1;
+
+    /*
+     * There is at least one non-discard character at the
+     * start of the string therefore the reo decrement will never
+     * (probably) reach zero and be decremented -- which is never good
+     * for a size_t.
+     */
+    if (rso < slen &&
+	ends_bits & IDIO_STRING_STRIP_RIGHT) {
+	for (;reo >= rso; reo--) {
+	    if (reo < 0) {
+		break;
+	    }
+	    idio_unicode_t scp = 0;
+	    switch (sw) {
+	    case 1:
+		scp = ss8[reo];
+		break;
+	    case 2:
+		scp = ss16[reo];
+		break;
+	    case 4:
+		scp = ss32[reo];
+		break;
+	    }
+
+	    size_t di;
+	    for (di = 0; di < dlen; di++) {
+		idio_unicode_t dcp = 0;
+		switch (dw) {
+		case 1:
+		    dcp = ds8[di];
+		    break;
+		case 2:
+		    dcp = ds16[di];
+		    break;
+		case 4:
+		    dcp = ds32[di];
+		    break;
+		}
+
+		if (scp == dcp) {
+		    /* leave the discard for loop */
+		    break;
+		}
+	    }
+
+	    if (di == dlen) {
+		/* leave the right strip loop */
+		break;
+	    }
+	}
+    }
+
+    if (0 == rso &&
+	slen == reo) {
+	return str;
+    } else {
+	return idio_substring_offset_len (str, rso, reo - rso + 1);
+    }
+}
+
+
+IDIO_DEFINE_PRIMITIVE2V_DS ("strip-string", strip_string, (IDIO str, IDIO discard, IDIO ends), "str discard [ends]", "\
+return a string which is `str` with leading,	\n\
+trailing (or both) `discard` characters		\n\
+						\n\
+:param str: string				\n\
+:type str: string				\n\
+:param discard: string				\n\
+:type discard: string				\n\
+:param ends: 'left, 'right (default), 'both or 'none	\n\
+:type ends: symbol				\n\
+:return: string					\n\
+						\n\
+The returned value could be `str` or a substring\n\
+of `str`					\n\
+")
+{
+    IDIO_ASSERT (str);
+    IDIO_ASSERT (discard);
+    IDIO_ASSERT (ends);
+
+    /*
+     * Test Case: string-errors/strip-string-bad-str-type.idio
+     *
+     * strip-string #t #t
+     */
+    IDIO_USER_TYPE_ASSERT (string, str);
+    /*
+     * Test Case: string-errors/strip-string-bad-discard-type.idio
+     *
+     * strip-string "abc" #t
+     */
+    IDIO_USER_TYPE_ASSERT (string, discard);
+    /*
+     * Test Case: n/a
+     *
+     * ends is the varargs parameter -- should always be a list
+     */
+    IDIO_USER_TYPE_ASSERT (list, ends);
+
+    return idio_strip_string (str, discard, ends);
+}
+
 void idio_string_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (string_p);
@@ -2698,6 +2962,7 @@ void idio_string_add_primitives ()
     IDIO_ADD_PRIMITIVE (split_string);
     IDIO_ADD_PRIMITIVE (split_string_exactly);
     IDIO_ADD_PRIMITIVE (join_string);
+    IDIO_ADD_PRIMITIVE (strip_string);
 }
 
 void idio_init_string ()

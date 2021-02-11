@@ -1,0 +1,2 @@
+
+strip-string "abc" "a" 'neither
