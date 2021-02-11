@@ -647,7 +647,7 @@ a wrapper to libc dup2 (2)					\n\
 
 IDIO_DEFINE_PRIMITIVE1_DS ("exit", libc_exit, (IDIO istatus), "status", "\
 in C, close (status)						\n\
-a wrapper to libc exit (2)					\n\
+a wrapper to libc exit (3)					\n\
 								\n\
 :param status: exit status					\n\
 :type status: fixnum						\n\

@@ -182,8 +182,9 @@ idio_unicode_t idio_default_template_ic[] = { IDIO_CHAR_DOLLARS, IDIO_CHAR_AT, I
  * 4. escape char
  */
 idio_unicode_t idio_default_string_ic[] = { IDIO_CHAR_NUL, IDIO_CHAR_BACKSLASH };
-idio_unicode_t idio_default_istring_ic[] = { IDIO_CHAR_DOLLARS, IDIO_CHAR_BACKSLASH };
 #define IDIO_STRING_IC 2
+idio_unicode_t idio_default_istring_ic[] = { IDIO_CHAR_DOLLARS, IDIO_CHAR_BACKSLASH };
+#define IDIO_ISTRING_IC 2
 
 /*
  * In the case of named characters, eg. #\newline (as opposed to #\a,
@@ -2506,15 +2507,16 @@ static IDIO idio_read_pathname (IDIO handle, IDIO lo, int depth)
 /*
  * interpolated strings
  *
- * an append-string variation on a template's append
+ * an append-string variation on a template's append -- albeit using
+ * concatenate-string (and map and ...)
  */
 static IDIO idio_read_istring (IDIO handle, IDIO lo, int depth)
 {
     IDIO_ASSERT (handle);
 
     int i;
-    idio_unicode_t is_ic[IDIO_STRING_IC];
-    for (i = 0; i < IDIO_STRING_IC; i++) {
+    idio_unicode_t is_ic[IDIO_ISTRING_IC];
+    for (i = 0; i < IDIO_ISTRING_IC; i++) {
 	is_ic[i] = idio_default_istring_ic[i];
     }
     i = 0;
@@ -2522,11 +2524,11 @@ static IDIO idio_read_istring (IDIO handle, IDIO lo, int depth)
     idio_unicode_t c = idio_getc_handle (handle);
 
     while (! IDIO_OPEN_DELIMITER (c)) {
-	if (i >= IDIO_STRING_IC) {
+	if (i >= IDIO_ISTRING_IC) {
 	    /*
 	     * Test Case: read-errors/istring-too-many-ic.idio
 	     *
-	     * #S*&^{ 1 }
+	     * #S*&^%${ 1 }
 	     */
 	    char em[BUFSIZ];
 	    sprintf (em, "too many interpolation characters: #%d: %c (%#x)", i + 1, c, c);

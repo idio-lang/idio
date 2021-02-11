@@ -430,8 +430,55 @@ test (string-fill! (make-string 3) #\a) "aaa"
 
 test (substring "hello world" 0.0 5.0) "hello"
 
+;; strip-string: basics
+test (strip-string "abc" "a")        "abc"
+test (strip-string "abc" "a" 'left)  "bc"
+test (strip-string "abc" "a" 'right) "abc"
+test (strip-string "abc" "a" 'both)  "bc"
+test (strip-string "abc" "a" 'none)  "abc"
+
+test (strip-string "abca" "ac")        "ab"
+test (strip-string "abca" "ac" 'left)  "bca"
+test (strip-string "abca" "ac" 'right) "ab"
+test (strip-string "abca" "ac" 'both)  "b"
+test (strip-string "abca" "ac" 'none)  "abca"
+
+;; code coverage: empty strings
+test (strip-string "abc" "")         "abc"
+test (strip-string "" "a")           ""
+
+;; code coverage: strip the lot
+test (strip-string "abc" "abc")	      ""
+test (strip-string "abc" "abc" 'left) ""
+
+;; code coverage: strip...nothing!
+test (strip-string "abc" "x")	      "abc"
+
+;; code coverage: substrings
+str := "abca"
+sub := substring str 2 4		; "ca"
+test (strip-string str sub) "ab"
+test (strip-string sub str) ""
+
+;; code coverage: different string codepoint widths
+;; 2-byte string
+;; U+0127 LATIN SMALL LETTER H WITH STROKE
+s := make-string 1 #U+0127
+test (strip-string s "h")       s
+test (strip-string s "h" 'left) s
+test (strip-string "h" s)       "h"
+test (strip-string "h" s 'left) "h"
+
+;; 4-byte string
+;; U+1FBF8 SEGMENTED DIGIT 8
+s := make-string 1 #U+1FBF8
+test (strip-string s "h")       s
+test (strip-string s "h" 'left) s
+test (strip-string "h" s)       "h"
+test (strip-string "h" s 'left) "h"
+
 ;; all done?
-Tests? (string0 + 293)
+Tests? (string0 + 318)
 
 ;Local Variables:
 ;mode: Idio

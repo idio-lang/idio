@@ -509,5 +509,7 @@ test (true #U+61) #t
   rm -rf tmpdir
 }
 
+test (collect-output hostname) HOSTNAME
+
 ;; all done?
-Tests? (command0 + 99)
+Tests? (command0 + 100)
