@@ -256,7 +256,7 @@ libc-wrap-error-load "libc-wrap-errors/strerror-bad-type.idio" "bad parameter ty
 libc-wrap-error-load "libc-wrap-errors/strsignal-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/int"
 (cond-expand
  (uname/sysname/SunOS {
-   test (strsignal -1) #n
+   test (strsignal (C/integer-> -1)) #n
  })
  ((or uname/sysname/FreeBSD
       uname/sysname/Darwin) {
