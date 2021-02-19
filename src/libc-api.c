@@ -997,7 +997,7 @@ for functions to manipulate ``statusp``.			\n\
     /*
      * Test Case: libc-wrap-errors/waitpid-bad-options-type.idio
      *
-     * waitpid (C/integer-> 0) #t
+     * waitpid (C/integer-> 0 libc/pid_t) #t
      */
     IDIO_USER_C_TYPE_ASSERT (int, options);
     int C_options = IDIO_C_TYPE_int (options);
@@ -1009,13 +1009,13 @@ for functions to manipulate ``statusp``.			\n\
 
     if (-1 == waitpid_r) {
 	if (ECHILD == errno) {
-	    return IDIO_LIST2 (idio_C_int (0), idio_S_nil);
+	    return IDIO_LIST2 (idio_libc_pid_t (0), idio_S_nil);
 	}
 
 	/*
-	 * Test Case: libc-wrap-errors/unlink-bad-options.idio
+	 * Test Case: libc-wrap-errors/waitpid-bad-options.idio
 	 *
-	 * waitpid (C/integer-> 0) (C/integer-> -1)
+	 * waitpid (C/integer-> 0 libc/pid_t) (C/integer-> -1)
 	 */
 	idio_error_system_errno ("waitpid", IDIO_LIST2 (pid, options), IDIO_C_FUNC_LOCATION ());
     }
@@ -1181,7 +1181,7 @@ a wrapper to libc tcsetpgrp(3)					\n\
 	/*
 	 * Test Case: libc-wrap-errors/tcsetpgrp-bad-fd.idio
 	 *
-	 * tcsetpgrp (C/integer-> -1) (C/integer-> PID)
+	 * tcsetpgrp (C/integer-> -1) (C/integer-> PID libc/pid_t)
 	 */
 	idio_error_system_errno ("tcsetpgrp", IDIO_LIST2 (fd, pgrp), IDIO_C_FUNC_LOCATION ());
     }
@@ -1565,7 +1565,7 @@ a wrapper to libc setpgid(2)					\n\
     /*
      * Test Case: libc-wrap-errors/setpgid-bad-pgid-type.idio
      *
-     * setpgid (C/integer-> PID) #t
+     * setpgid (C/integer-> PID libc/pid_t) #t
      */
     IDIO_USER_libc_TYPE_ASSERT (pid_t, pgid);
     pid_t C_pgid = IDIO_C_TYPE_libc_pid_t (pgid);
@@ -1586,7 +1586,7 @@ a wrapper to libc setpgid(2)					\n\
 	    /*
 	     * Test Case: libc-wrap-errors/setpgid-negative-pgid.idio
 	     *
-	     * setpgid (C/integer-> PID) (C/integer-> -1)
+	     * setpgid (C/integer-> PID libc/pid_t) (C/integer-> -1 libc/pid_t)
 	     */
 	    idio_error_system_errno ("setpgid", IDIO_LIST2 (pid, pgid), IDIO_C_FUNC_LOCATION ());
 	}
@@ -2237,24 +2237,24 @@ a wrapper to libc kill(2)					\n\
     /*
      * Test Case: libc-wrap-errors/kill-bad-sig-type.idio
      *
-     * kill (C/integer-> PID) #t
+     * kill (C/integer-> PID libc/pid_t) #t
      */
     IDIO_USER_C_TYPE_ASSERT (int, sig);
     int C_sig = IDIO_C_TYPE_int (sig);
 
-    int r = kill (C_pid, C_sig);
+    int kill_r = kill (C_pid, C_sig);
 
-    if (-1 == r) {
+    if (-1 == kill_r) {
 	/*
 	 * Test Case: libc-wrap-errors/kill-invalid-signal.idio
 	 *
 	 * ;; technically risky as 98765 could be a valid signal...
-	 * kill (C/integer-> PID) (C/integer-> 98765)
+	 * kill (C/integer-> PID libc/pid_T) (C/integer-> 98765)
 	 */
 	idio_error_system_errno ("kill", IDIO_LIST2 (pid, sig), IDIO_C_FUNC_LOCATION ());
     }
 
-    return idio_C_int (r);
+    return idio_C_int (kill_r);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("isatty", libc_isatty, (IDIO fd), "fd", "\
@@ -2394,7 +2394,7 @@ in C, getpid ()							\n\
 a wrapper to libc getpid(2)					\n\
 								\n\
 :return: PID or raises ^system-error				\n\
-:rtype: C/int							\n\
+:rtype: libc/pid_t						\n\
 ")
 {
     /*
@@ -2408,7 +2408,7 @@ in C, getpgrp ()						\n\
 a wrapper to libc getpgrp(2)					\n\
 								\n\
 :return: PGID or raises ^system-error				\n\
-:rtype: C/int							\n\
+:rtype: libc/pid_t						\n\
 ")
 {
     pid_t pid = getpgrp ();
@@ -2510,7 +2510,7 @@ in C, fork ()							\n\
 a wrapper to libc fork(2)					\n\
 								\n\
 :return: 0 or PID						\n\
-:rtype: C/int							\n\
+:rtype: libc/pid_t						\n\
 ")
 {
     pid_t C_pid = fork ();

@@ -159,7 +159,7 @@ trap ^system-error (function (c) {
   isatty (C/integer-> 0)
 }
 
-kill (C/integer-> PID) (C/integer-> 0)
+kill (C/integer-> PID libc/pid_t) (C/integer-> 0)
 
 ;; test mkdir(2) for which we need a directory we can mkdir safely --
 ;; how about a random one we just deleted?
@@ -225,17 +225,17 @@ sprintf "%s" errno
 
 (rlimit-names)
 
-EGID = (C/->integer EGID)		; fixnum
-EGID = EGID				; C/int
+egid := (C/->integer EGID)		; fixnum
+EGID = (C/integer-> egid libc/gid_t)	; C/int
 
-EUID = (C/->integer EUID)		; fixnum
-EUID = EUID				; C/int
+euid := (C/->integer EUID)		; fixnum
+EUID = (C/integer-> euid libc/uid_t)	; C/int
 
-GID = (C/->integer GID)			; fixnum
-GID = GID				; C/int
+gid := (C/->integer GID)	        ; fixnum
+GID = (C/integer-> gid libc/gid_t)	; C/int
 
-UID = (C/->integer UID)			; fixnum
-UID = UID				; C/int
+uid := (C/->integer UID)	        ; fixnum
+UID = (C/integer-> uid libc/uid_t)	; C/int
 
 linkfile := "__link__"
 ln -s testfile linkfile

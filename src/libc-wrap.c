@@ -2608,15 +2608,10 @@ getter for the computed value ``EGID`` which is a call to	\n\
 getegid (2).							\n\
 								\n\
 :return: effective group ID					\n\
-:rtype: C/int							\n\
+:rtype: libc/gid_t						\n\
 ")
 {
-    /*
-     * XXX
-     *
-     * gid_t not C/int!
-     */
-    return idio_C_int (getegid ());
+    return idio_libc_gid_t (getegid ());
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("EGID/set", EGID_set, (IDIO iegid), "egid", "\
@@ -2626,29 +2621,22 @@ setegid (2).							\n\
 :param egid: effective group ID					\n\
 :type egid: fixnum or C/int					\n\
 :return: 0 or raises ^system-error				\n\
-:rtype: fixnum							\n\
+:rtype: C/int							\n\
 ")
 {
     IDIO_ASSERT (iegid);
 
     gid_t egid = -1;
 
-    /*
-     * XXX
-     *
-     * gid_t not fixnum/C/int!
-     */
-    if (idio_isa_fixnum (iegid)) {
-	egid = IDIO_FIXNUM_VAL (iegid);
-    } else if (idio_isa_C_int (iegid)) {
-	egid = IDIO_C_TYPE_int (iegid);
+    if (idio_isa_libc_gid_t (iegid)) {
+	egid = IDIO_C_TYPE_libc_gid_t (iegid);
     } else {
 	/*
 	 * Test Case: libc-wrap-errors/EGID-set-bad-type.idio
 	 *
 	 * EGID = #t
 	 */
-	idio_error_param_type ("integer|C/int", iegid, IDIO_C_LOCATION ("EGID/set"));
+	idio_error_param_type ("libc/gid_t", iegid, IDIO_C_LOCATION ("EGID/set"));
 
 	return idio_S_notreached;
     }
@@ -2660,14 +2648,14 @@ setegid (2).							\n\
 	 * Test Case: libc-wrap-errors/EGID-set-invalid-gid.idio
 	 *
 	 * ;; probably a fail...
-	 * EGID = -1
+	 * EGID = (C/integer-> -1 libc/gid_t)
 	 */
 	idio_error_system_errno ("setegid", iegid, IDIO_C_LOCATION ("EGID/set"));
 
 	return idio_S_notreached;
     }
 
-    return idio_fixnum (r);
+    return idio_C_int (r);
 }
 
 IDIO_DEFINE_PRIMITIVE0_DS ("EUID/get", EUID_get, (void), "", "\
@@ -2675,15 +2663,10 @@ getter for the computed value ``EUID`` which is a call to	\n\
 geteuid (2).							\n\
 								\n\
 :return: effective user ID					\n\
-:rtype: C/int							\n\
+:rtype: libc/uid_t						\n\
 ")
 {
-    /*
-     * XXX
-     *
-     * uid_t not C/int!
-     */
-    return idio_C_int (geteuid ());
+    return idio_libc_uid_t (geteuid ());
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("EUID/set", EUID_set, (IDIO ieuid), "euid", "\
@@ -2693,29 +2676,22 @@ seteuid (2).							\n\
 :param euid: effective user ID					\n\
 :type euid: fixnum or C/int					\n\
 :return: 0 or raises ^system-error				\n\
-:rtype: fixnum							\n\
+:rtype: C/int							\n\
 ")
 {
     IDIO_ASSERT (ieuid);
 
     uid_t euid = -1;
 
-    /*
-     * XXX
-     *
-     * uid_t not fixnum/C/int!
-     */
-    if (idio_isa_fixnum (ieuid)) {
-	euid = IDIO_FIXNUM_VAL (ieuid);
-    } else if (idio_isa_C_int (ieuid)) {
-	euid = IDIO_C_TYPE_int (ieuid);
+    if (idio_isa_libc_uid_t (ieuid)) {
+	euid = IDIO_C_TYPE_libc_uid_t (ieuid);
     } else {
 	/*
 	 * Test Case: libc-wrap-errors/EUID-set-bad-type.idio
 	 *
 	 * EUID = #t
 	 */
-	idio_error_param_type ("integer|C/int", ieuid, IDIO_C_LOCATION ("EUID/set"));
+	idio_error_param_type ("libc/uid_t", ieuid, IDIO_C_LOCATION ("EUID/set"));
 
 	return idio_S_notreached;
     }
@@ -2727,14 +2703,14 @@ seteuid (2).							\n\
 	 * Test Case: libc-wrap-errors/EUID-set-invalid-gid.idio
 	 *
 	 * ;; probably a fail...
-	 * EUID = -1
+	 * EUID = (C/integer-> -1 libc/uid_t)
 	 */
 	idio_error_system_errno ("seteuid", ieuid, IDIO_C_LOCATION ("EUID/set"));
 
 	return idio_S_notreached;
     }
 
-    return idio_fixnum (r);
+    return idio_C_int (r);
 }
 
 IDIO_DEFINE_PRIMITIVE0_DS ("GID/get", GID_get, (void), "", "\
@@ -2742,15 +2718,10 @@ getter for the computed value ``GID`` which is a call to	\n\
 getgid (2).							\n\
 								\n\
 :return: real group ID						\n\
-:rtype: C/int							\n\
+:rtype: libc/gid_t						\n\
 ")
 {
-    /*
-     * XXX
-     *
-     * gid_t not C/int!
-     */
-    return idio_C_int (getgid ());
+    return idio_libc_gid_t (getgid ());
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("GID/set", GID_set, (IDIO igid), "gid", "\
@@ -2760,29 +2731,22 @@ setgid (2).							\n\
 :param gid: real group ID					\n\
 :type gid: fixnum or C/int					\n\
 :return: 0 or raises ^system-error				\n\
-:rtype: fixnum							\n\
+:rtype: C/int							\n\
 ")
 {
     IDIO_ASSERT (igid);
 
     gid_t gid = -1;
 
-    /*
-     * XXX
-     *
-     * gid_t not fixnum/C/int!
-     */
-    if (idio_isa_fixnum (igid)) {
-	gid = IDIO_FIXNUM_VAL (igid);
-    } else if (idio_isa_C_int (igid)) {
-	gid = IDIO_C_TYPE_int (igid);
+    if (idio_isa_libc_gid_t (igid)) {
+	gid = IDIO_C_TYPE_libc_gid_t (igid);
     } else {
 	/*
 	 * Test Case: libc-wrap-errors/GID-set-bad-type.idio
 	 *
 	 * GID = #t
 	 */
-	idio_error_param_type ("integer|C/int", igid, IDIO_C_LOCATION ("GID/set"));
+	idio_error_param_type ("libc/gid_t", igid, IDIO_C_LOCATION ("GID/set"));
 
 	return idio_S_notreached;
     }
@@ -2794,14 +2758,14 @@ setgid (2).							\n\
 	 * Test Case: libc-wrap-errors/GID-set-invalid-gid.idio
 	 *
 	 * ;; probably a fail...
-	 * GID = -1
+	 * GID = (C/integer-> -1 libc/gid_t)
 	 */
 	idio_error_system_errno ("setgid", igid, IDIO_C_LOCATION ("GID/set"));
 
 	return idio_S_notreached;
     }
 
-    return idio_fixnum (r);
+    return idio_C_int (r);
 }
 
 IDIO_DEFINE_PRIMITIVE0_DS ("UID/get", UID_get, (void), "", "\
@@ -2809,15 +2773,10 @@ getter for the computed value ``UID`` which is a call to	\n\
 getuid (2).							\n\
 								\n\
 :return: real user ID						\n\
-:rtype: C/int							\n\
+:rtype: libc/uid_t						\n\
 ")
 {
-    /*
-     * XXX
-     *
-     * uid_t not C/int!
-     */
-    return idio_C_int (getuid ());
+    return idio_libc_uid_t (getuid ());
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("UID/set", UID_set, (IDIO iuid), "uid", "\
@@ -2827,29 +2786,22 @@ setuid (2).							\n\
 :param uid: real user ID					\n\
 :type uid: fixnum or C/int					\n\
 :return: 0 or raises ^system-error				\n\
-:rtype: fixnum							\n\
+:rtype: C/int							\n\
 ")
 {
     IDIO_ASSERT (iuid);
 
     uid_t uid = -1;
 
-    /*
-     * XXX
-     *
-     * uid_t not fixnum/C/int!
-     */
-    if (idio_isa_fixnum (iuid)) {
-	uid = IDIO_FIXNUM_VAL (iuid);
-    } else if (idio_isa_C_int (iuid)) {
-	uid = IDIO_C_TYPE_int (iuid);
+    if (idio_isa_libc_uid_t (iuid)) {
+	uid = IDIO_C_TYPE_libc_uid_t (iuid);
     } else {
 	/*
 	 * Test Case: libc-wrap-errors/UID-set-bad-type.idio
 	 *
 	 * UID = #t
 	 */
-	idio_error_param_type ("integer|C/int", iuid, IDIO_C_LOCATION ("UID/set"));
+	idio_error_param_type ("libc/uid_t", iuid, IDIO_C_LOCATION ("UID/set"));
 
 	return idio_S_notreached;
     }
@@ -2861,14 +2813,14 @@ setuid (2).							\n\
 	 * Test Case: libc-wrap-errors/UID-set-invalid-uid.idio
 	 *
 	 * ;; probably a fail...
-	 * UID = -1
+	 * UID = (C/integer-> -1 libc/uid_t)
 	 */
 	idio_error_system_errno ("setuid", iuid, IDIO_C_LOCATION ("UID/set"));
 
 	return idio_S_notreached;
     }
 
-    return idio_fixnum (r);
+    return idio_C_int (r);
 }
 
 IDIO_DEFINE_PRIMITIVE0_DS ("STDIN/get", libc_STDIN_get, (void), "", "\

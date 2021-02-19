@@ -1,2 +1,2 @@
 
-waitpid (C/integer-> 0) #t
+waitpid (C/integer-> 0 libc/pid_t) #t

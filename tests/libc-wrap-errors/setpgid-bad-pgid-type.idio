@@ -1,2 +1,2 @@
 
-setpgid (C/integer-> PID) #t
+setpgid (C/integer-> PID libc/pid_t) #t

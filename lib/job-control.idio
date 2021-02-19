@@ -700,7 +700,7 @@ define (%prep-process pgid infile outfile errfile foreground) "prepare the curre
 " {
   if %idio-interactive {
     pid := (libc/getpid)
-    if (C/== pgid libc/0gid_t) {
+    if (C/== pgid libc/0pid_t) {
       pgid = pid
     }
 
@@ -1004,7 +1004,7 @@ define-infix-operator | 700 {
 		      ;; current (pipe-reader $cmd-pipe) we have in
 		      ;; our hands.
 
-		      if (C/== $pgid libc/0gid_t) {
+		      if (C/== $pgid libc/0pid_t) {
 			libc/close (libc/pipe-writer $pgrp-pipe)
 
 			;; $pgid is 0 so we must be the first in the
@@ -1041,7 +1041,7 @@ define-infix-operator | 700 {
 		    } {
 		      set-%idio-process-pid! $proc $pid
 		      if job-control/%idio-interactive {
-			if (C/== $pgid libc/0gid_t) {
+			if (C/== $pgid libc/0pid_t) {
 			  $pgid = $pid
 			  set-%idio-job-pgid! $job $pgid
 			}

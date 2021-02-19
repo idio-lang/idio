@@ -1,2 +1,2 @@
 
-kill (C/integer-> PID) #t
+kill (C/integer-> PID libc/pid_t) #t

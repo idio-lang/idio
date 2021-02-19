@@ -1,2 +1,2 @@
 
-tcsetpgrp (C/integer-> -1) (C/integer-> PID)
+tcsetpgrp (C/integer-> -1) (C/integer-> PID libc/pid_t)
