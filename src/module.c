@@ -186,7 +186,7 @@ IDIO idio_module (IDIO name)
      *   idio_primitives_module and idio_Idio_module because
      *   everything imports them
      *
-     *   idio_libc_wrap_module because idio_job_control_module isn't
+     *   idio_libc_module because idio_job_control_module isn't
      *   defined at that point
      *
      *   idio_command_module because idio_job_control_module isn't

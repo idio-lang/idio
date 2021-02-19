@@ -1026,9 +1026,9 @@ test (exponent -1.2e-3) -4
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; coverage tests
 
-;; FIXNUM-MAX * 2 is enough to generate two
-;; segments on a 32-bit machine.  FIXNUM-MAX was
-;; enough on a 64-bit machine on its own
+;; FIXNUM-MAX * 2 is enough to generate two segments on a 32-bit
+;; machine.  FIXNUM-MAX was enough for two segments on a 64-bit
+;; machine on its own
 
 bn := FIXNUM-MAX * 2
 
@@ -1045,8 +1045,8 @@ with-error-to #n (function () {
 ;; int -- it must be bigger than FIXNUM-MAX (otherwise we'll get a
 ;; fixnum) but we want it to be big enough to trigger multiple
 ;; segments (although that's not happening on 64-bit at least)
-C-uint := C/integer->unsigned bn
-b := C/->integer C-uint
+C-uinteger := C/integer->unsigned bn
+b := C/->integer C-uinteger
 
 test (equal? b bn) #t
 

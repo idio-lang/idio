@@ -45,21 +45,21 @@ define (number-cmp low high) {
 
 ;; quick type tests of the primitively-definied INTMAX_MAX and the
 ;; locally defined intmax-max
-test (C/int? INTMAX_MAX) #t
+test (libc/intmax_t? INTMAX_MAX) #t
 intmax-max := INTMAX_MAX
-test (C/int? intmax-max) #t
+test (libc/intmax_t? intmax-max) #t
 
 ;; comparison tests vs. 0
-number-cmp (C/integer-> 0) INTMAX_MAX
-number-cmp INTMAX_MIN (C/integer-> 0)
+number-cmp (C/integer-> 0 intmax_t) INTMAX_MAX
+number-cmp INTMAX_MIN (C/integer-> 0 intmax_t)
 
 ;; comparison tests vs lim-1
-INTMAX_MAX-1 := C/integer-> ((C/->integer INTMAX_MAX) - 1)
-number-cmp INTMAX_MAX-1 INTMAX_MAX
+intmax-max-1 := C/integer-> ((C/->integer INTMAX_MAX) - 1) intmax_t
+number-cmp intmax-max-1 INTMAX_MAX
 
 ;; comparison tests vs lim+1
-INTMAX_MIN+1 := C/integer-> ((C/->integer INTMAX_MIN) + 1)
-number-cmp INTMAX_MIN INTMAX_MIN+1
+intmax-min+1 := C/integer-> ((C/->integer INTMAX_MIN) + 1) intmax_t
+number-cmp INTMAX_MIN intmax-min+1
 
 ;; overflow conversion tests -- one beyond the C MAX/MIN
 trap ^rt-bignum-conversion-error (function (c) {
@@ -113,7 +113,7 @@ struct-timeval-as-string ru-ut
 ;; time tickles the struct-timeval adding/subtracting code
 OTIMEFORMAT := TIMEFORMAT
 TIMEFORMAT = ""
-;; while we're here, sleep return a C-uint which is a code coverage
+;; while we're here, sleep return a C/uint which is a code coverage
 ;; issue itself
 time sleep (sleep 0)
 TIMEFORMAT = OTIMEFORMAT
@@ -123,11 +123,11 @@ nfd := dup 0
 close nfd
 
 ;; Sorry, fd 99
-;; NB 99 is a C-int for code coverage
+;; NB 99 is a C/int for code coverage
 nfd := dup2 0 (C/integer-> 99)
 close nfd
 
-;; NB 99 is a C-int for code coverage
+;; NB 99 is a C/int for code coverage
 nfd := fcntl 0 F_DUPFD (C/integer-> 99)
 close nfd
 
@@ -137,7 +137,7 @@ close nfd
    nfd := fcntl 0 F_DUPFD_CLOEXEC 99
    close nfd
 
-   ;; NB 99 is a C-int for code coverage
+   ;; NB 99 is a C/int for code coverage
    nfd := fcntl 0 F_DUPFD_CLOEXEC (C/integer-> 99)
    close nfd
  })
@@ -165,21 +165,21 @@ kill (C/integer-> PID) (C/integer-> 0)
 ;; how about a random one we just deleted?
 tmpdir := (make-tmp-dir)
 rmdir tmpdir
-mkdir tmpdir (C/integer-> #o555)
+mkdir tmpdir (C/integer-> #o555 libc/mode_t)
 rmdir tmpdir
 
-;; test read with a C-int count -- a lot of work for code coverage!
+;; test read with a C/int count -- a lot of work for code coverage!
 ofh := open-output-file testfile
 hprintf ofh "hello\n"
 close-handle ofh
 
 ifh := open-input-file testfile
-test (read (fileno ifh) (C/integer-> 2)) "he"
+test (read (fd-handle-fd ifh) (C/integer-> 2 libc/size_t)) "he"
 close-handle ifh
 
 ;; should be safe...except if running under, say, rlwrap which has
 ;; made us a session leader and so we'll get an EPERM from setpgid
-if (C/== (getsid 0) (getpid)) {
+if (C/== (getsid (C/integer-> 0 libc/pid_t)) (getpid)) {
   eprintf "WARNING: I am a session leader?: skipping setpgid test\n"
 } {
   setpgid (getpid) (getpgrp)
@@ -189,7 +189,6 @@ if (C/== (getsid 0) (getpid)) {
 signal SIGUSR1 (signal-handler SIGUSR1)
 
 strerror EPERM
-strerror (C/->integer EPERM)
 
 strsignal SIGHUP
 
@@ -210,7 +209,7 @@ tcsetpgrp (C/integer-> 0) (tcgetpgrp (C/integer-> 0))
 (uname)
 
 ofh := open-output-file testfile
-test (write (fileno ofh) "hello\n") 6
+test (write (fd-handle-fd ofh) "hello\n") (C/integer-> 6 libc/ssize_t)
 close-handle ofh
 
 sig-name SIGHUP
@@ -227,16 +226,16 @@ sprintf "%s" errno
 (rlimit-names)
 
 EGID = (C/->integer EGID)		; fixnum
-EGID = EGID				; C-int
+EGID = EGID				; C/int
 
 EUID = (C/->integer EUID)		; fixnum
-EUID = EUID				; C-int
+EUID = EUID				; C/int
 
 GID = (C/->integer GID)			; fixnum
-GID = GID				; C-int
+GID = GID				; C/int
 
 UID = (C/->integer UID)			; fixnum
-UID = UID				; C-int
+UID = UID				; C/int
 
 linkfile := "__link__"
 ln -s testfile linkfile

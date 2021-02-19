@@ -917,10 +917,20 @@ char **idio_command_argv (IDIO args)
 		case IDIO_TYPE_ARRAY:
 		case IDIO_TYPE_HASH:
 		case IDIO_TYPE_BIGNUM:
+		case IDIO_TYPE_C_CHAR:
+		case IDIO_TYPE_C_SCHAR:
+		case IDIO_TYPE_C_UCHAR:
+		case IDIO_TYPE_C_SHORT:
+		case IDIO_TYPE_C_USHORT:
 		case IDIO_TYPE_C_INT:
 		case IDIO_TYPE_C_UINT:
+		case IDIO_TYPE_C_LONG:
+		case IDIO_TYPE_C_ULONG:
+		case IDIO_TYPE_C_LONGLONG:
+		case IDIO_TYPE_C_ULONGLONG:
 		case IDIO_TYPE_C_FLOAT:
 		case IDIO_TYPE_C_DOUBLE:
+		case IDIO_TYPE_C_LONGDOUBLE:
 		case IDIO_TYPE_C_POINTER:
 		    {
 			size_t size = 0;
@@ -1109,7 +1119,7 @@ IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
     idio_array_push (protected, proc);
 
     IDIO cmd_sym;
-    cmd_sym = idio_module_symbol_value (idio_S_stdin_fileno, idio_libc_wrap_module, idio_S_nil);
+    cmd_sym = idio_module_symbol_value (idio_S_stdin_fileno, idio_libc_module, idio_S_nil);
     IDIO job_stdin = idio_vm_invoke_C (thr, IDIO_LIST1 (cmd_sym));
     IDIO close_stdin = idio_S_false;
     if (idio_isa_pair (job_stdin)) {
@@ -1119,7 +1129,7 @@ IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
     idio_array_push (protected, job_stdin);
     idio_array_push (protected, close_stdin);
 
-    cmd_sym = idio_module_symbol_value (idio_S_stdout_fileno, idio_libc_wrap_module, idio_S_nil);
+    cmd_sym = idio_module_symbol_value (idio_S_stdout_fileno, idio_libc_module, idio_S_nil);
     IDIO job_stdout = idio_vm_invoke_C (thr, IDIO_LIST1 (cmd_sym));
     IDIO recover_stdout = idio_S_false;
     if (idio_isa_pair (job_stdout)) {
@@ -1129,7 +1139,7 @@ IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
     idio_array_push (protected, job_stdout);
     idio_array_push (protected, recover_stdout);
 
-    cmd_sym = idio_module_symbol_value (idio_S_stderr_fileno, idio_libc_wrap_module, idio_S_nil);
+    cmd_sym = idio_module_symbol_value (idio_S_stderr_fileno, idio_libc_module, idio_S_nil);
     IDIO job_stderr = idio_vm_invoke_C (thr, IDIO_LIST1 (cmd_sym));
     IDIO recover_stderr = idio_S_false;
     if (idio_isa_pair (job_stderr)) {
@@ -1192,7 +1202,7 @@ IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
      */
 
     if (idio_S_false != close_stdin) {
-	if (close (IDIO_C_TYPE_INT (close_stdin)) < 0) {
+	if (close (IDIO_C_TYPE_int (close_stdin)) < 0) {
 	    /*
 	     * Test Case: ??
 	     *
@@ -1211,7 +1221,7 @@ IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
     }
 
     if (idio_S_false != recover_stdout) {
-	FILE *filep = fdopen (IDIO_C_TYPE_INT (job_stdout), "r");
+	FILE *filep = fdopen (IDIO_C_TYPE_int (job_stdout), "r");
 
 	if (NULL == filep) {
 	    /*
@@ -1274,7 +1284,7 @@ IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
     }
 
     if (idio_S_false != recover_stderr) {
-	FILE *filep = fdopen (IDIO_C_TYPE_INT (job_stderr), "r");
+	FILE *filep = fdopen (IDIO_C_TYPE_int (job_stderr), "r");
 
 	if (NULL == filep) {
 	    idio_command_free_argv1 (argv);

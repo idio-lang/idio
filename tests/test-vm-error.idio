@@ -1,4 +1,4 @@
-;;
+i;;
 ;; Copyright (c) 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
@@ -127,7 +127,7 @@ vm-error-load "vm-errors/vm-run-bad-PC-type.idio" "bad parameter type: '#t' a CO
 vm-error-load "vm-errors/vm-values-ref-bignum-float.idio" "bad parameter type: '1.1e+0' a BIGNUM is not a integer" ^rt-parameter-type-error
 vm-error-load "vm-errors/vm-values-ref-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a integer" ^rt-parameter-type-error
 
-vm-error-load "vm-errors/exit-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a fixnum|C_int" ^rt-parameter-type-error
+vm-error-load "vm-errors/exit-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a fixnum|C/int" ^rt-parameter-type-error
 
 vm-error-load "vm-errors/run-in-thread-bad-thread-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a thread" ^rt-parameter-type-error
 vm-error-load "vm-errors/run-in-thread-bad-func-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a function" ^rt-parameter-type-error

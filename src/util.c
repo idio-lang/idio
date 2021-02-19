@@ -151,17 +151,27 @@ const char *idio_type_enum2string (idio_type_e type)
     case IDIO_TYPE_CONTINUATION:	return "CONTINUATION";
     case IDIO_TYPE_BITSET:		return "BITSET";
 
-    case IDIO_TYPE_C_INT:		return "C_INT";
-    case IDIO_TYPE_C_UINT:		return "C_UINT";
-    case IDIO_TYPE_C_FLOAT:		return "C_FLOAT";
-    case IDIO_TYPE_C_DOUBLE:		return "C_DOUBLE";
-    case IDIO_TYPE_C_POINTER:		return "C_POINTER";
-    case IDIO_TYPE_C_VOID:		return "C_VOID";
+    case IDIO_TYPE_C_CHAR:		return "C/char";
+    case IDIO_TYPE_C_SCHAR:		return "C/schar";
+    case IDIO_TYPE_C_UCHAR:		return "C/uchar";
+    case IDIO_TYPE_C_SHORT:		return "C/short";
+    case IDIO_TYPE_C_USHORT:		return "C/ushort";
+    case IDIO_TYPE_C_INT:		return "C/int";
+    case IDIO_TYPE_C_UINT:		return "C/uint";
+    case IDIO_TYPE_C_LONG:		return "C/long";
+    case IDIO_TYPE_C_ULONG:		return "C/ulong";
+    case IDIO_TYPE_C_LONGLONG:		return "C/longlong";
+    case IDIO_TYPE_C_ULONGLONG:		return "C/ulonglong";
+    case IDIO_TYPE_C_FLOAT:		return "C/float";
+    case IDIO_TYPE_C_DOUBLE:		return "C/double";
+    case IDIO_TYPE_C_LONGDOUBLE:	return "C/longdouble";
+    case IDIO_TYPE_C_POINTER:		return "C/pointer";
+    case IDIO_TYPE_C_VOID:		return "C/void";
 
     case IDIO_TYPE_C_TYPEDEF:		return "TAG";
-    case IDIO_TYPE_C_STRUCT:		return "C_STRUCT";
-    case IDIO_TYPE_C_INSTANCE:		return "C_INSTANCE";
-    case IDIO_TYPE_C_FFI:		return "C_FFI";
+    case IDIO_TYPE_C_STRUCT:		return "C/struct";
+    case IDIO_TYPE_C_INSTANCE:		return "C/instance";
+    case IDIO_TYPE_C_FFI:		return "C/FFI";
     case IDIO_TYPE_OPAQUE:		return "OPAQUE";
     default:
 	return "NOT KNOWN";
@@ -870,14 +880,34 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		return (o1 == o2);
 	    case IDIO_TYPE_HANDLE:
 		return (o1->u.handle == o2->u.handle);
+	    case IDIO_TYPE_C_CHAR:
+		return (IDIO_C_TYPE_char (o1) == IDIO_C_TYPE_char (o2));
+	    case IDIO_TYPE_C_SCHAR:
+		return (IDIO_C_TYPE_schar (o1) == IDIO_C_TYPE_schar (o2));
+	    case IDIO_TYPE_C_UCHAR:
+		return (IDIO_C_TYPE_uchar (o1) == IDIO_C_TYPE_uchar (o2));
+	    case IDIO_TYPE_C_SHORT:
+		return (IDIO_C_TYPE_short (o1) == IDIO_C_TYPE_short (o2));
+	    case IDIO_TYPE_C_USHORT:
+		return (IDIO_C_TYPE_ushort (o1) == IDIO_C_TYPE_ushort (o2));
 	    case IDIO_TYPE_C_INT:
-		return (IDIO_C_TYPE_INT (o1) == IDIO_C_TYPE_INT (o2));
+		return (IDIO_C_TYPE_int (o1) == IDIO_C_TYPE_int (o2));
 	    case IDIO_TYPE_C_UINT:
-		return (IDIO_C_TYPE_UINT (o1) == IDIO_C_TYPE_UINT (o2));
+		return (IDIO_C_TYPE_uint (o1) == IDIO_C_TYPE_uint (o2));
+	    case IDIO_TYPE_C_LONG:
+		return (IDIO_C_TYPE_long (o1) == IDIO_C_TYPE_long (o2));
+	    case IDIO_TYPE_C_ULONG:
+		return (IDIO_C_TYPE_ulong (o1) == IDIO_C_TYPE_ulong (o2));
+	    case IDIO_TYPE_C_LONGLONG:
+		return (IDIO_C_TYPE_longlong (o1) == IDIO_C_TYPE_longlong (o2));
+	    case IDIO_TYPE_C_ULONGLONG:
+		return (IDIO_C_TYPE_ulonglong (o1) == IDIO_C_TYPE_ulonglong (o2));
 	    case IDIO_TYPE_C_FLOAT:
-		return (IDIO_C_TYPE_FLOAT (o1) == IDIO_C_TYPE_FLOAT (o2));
+		return (IDIO_C_TYPE_float (o1) == IDIO_C_TYPE_float (o2));
 	    case IDIO_TYPE_C_DOUBLE:
-		return (IDIO_C_TYPE_DOUBLE (o1) == IDIO_C_TYPE_DOUBLE (o2));
+		return (IDIO_C_TYPE_double (o1) == IDIO_C_TYPE_double (o2));
+	    case IDIO_TYPE_C_LONGDOUBLE:
+		return (IDIO_C_TYPE_longdouble (o1) == IDIO_C_TYPE_longdouble (o2));
 	    case IDIO_TYPE_C_POINTER:
 		return (IDIO_C_TYPE_POINTER_P (o1) == IDIO_C_TYPE_POINTER_P (o2));
 	    case IDIO_TYPE_STRUCT_TYPE:
@@ -1866,20 +1896,60 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 		    IDIO_STRCAT_FREE (r, sizep, info, info_size);
 		}
 		break;
+	    case IDIO_TYPE_C_CHAR:
+		idio_asprintf (&r, "%c", IDIO_C_TYPE_char (o));
+		*sizep = strlen (r);
+		break;
+	    case IDIO_TYPE_C_SCHAR:
+		idio_asprintf (&r, "%hhi", IDIO_C_TYPE_schar (o));
+		*sizep = strlen (r);
+		break;
+	    case IDIO_TYPE_C_UCHAR:
+		idio_asprintf (&r, "%hhu", IDIO_C_TYPE_uchar (o));
+		*sizep = strlen (r);
+		break;
+	    case IDIO_TYPE_C_SHORT:
+		idio_asprintf (&r, "%hd", IDIO_C_TYPE_short (o));
+		*sizep = strlen (r);
+		break;
+	    case IDIO_TYPE_C_USHORT:
+		idio_asprintf (&r, "%hu", IDIO_C_TYPE_ushort (o));
+		*sizep = strlen (r);
+		break;
 	    case IDIO_TYPE_C_INT:
-		idio_asprintf (&r, "%jd", IDIO_C_TYPE_INT (o));
+		idio_asprintf (&r, "%d", IDIO_C_TYPE_int (o));
 		*sizep = strlen (r);
 		break;
 	    case IDIO_TYPE_C_UINT:
-		idio_asprintf (&r, "%ju", IDIO_C_TYPE_UINT (o));
+		idio_asprintf (&r, "%u", IDIO_C_TYPE_uint (o));
+		*sizep = strlen (r);
+		break;
+	    case IDIO_TYPE_C_LONG:
+		idio_asprintf (&r, "%ld", IDIO_C_TYPE_long (o));
+		*sizep = strlen (r);
+		break;
+	    case IDIO_TYPE_C_ULONG:
+		idio_asprintf (&r, "%lu", IDIO_C_TYPE_ulong (o));
+		*sizep = strlen (r);
+		break;
+	    case IDIO_TYPE_C_LONGLONG:
+		idio_asprintf (&r, "%lld", IDIO_C_TYPE_longlong (o));
+		*sizep = strlen (r);
+		break;
+	    case IDIO_TYPE_C_ULONGLONG:
+		idio_asprintf (&r, "%llu", IDIO_C_TYPE_ulonglong (o));
 		*sizep = strlen (r);
 		break;
 	    case IDIO_TYPE_C_FLOAT:
-		idio_asprintf (&r, "%g", IDIO_C_TYPE_FLOAT (o));
+		idio_asprintf (&r, "%g", IDIO_C_TYPE_float (o));
 		*sizep = strlen (r);
 		break;
 	    case IDIO_TYPE_C_DOUBLE:
-		idio_asprintf (&r, "%g", IDIO_C_TYPE_DOUBLE (o));
+		idio_asprintf (&r, "%lg", IDIO_C_TYPE_double (o));
+		*sizep = strlen (r);
+		break;
+	    case IDIO_TYPE_C_LONGDOUBLE:
+		idio_asprintf (&r, "%Lg", IDIO_C_TYPE_longdouble (o));
 		*sizep = strlen (r);
 		break;
 	    case IDIO_TYPE_C_POINTER:
@@ -2957,10 +3027,20 @@ IDIO idio_copy (IDIO o, int depth)
 	    case IDIO_TYPE_STRUCT_TYPE:
 	    case IDIO_TYPE_THREAD:
 	    case IDIO_TYPE_CONTINUATION:
+	    case IDIO_TYPE_C_CHAR:
+	    case IDIO_TYPE_C_SCHAR:
+	    case IDIO_TYPE_C_UCHAR:
+	    case IDIO_TYPE_C_SHORT:
+	    case IDIO_TYPE_C_USHORT:
 	    case IDIO_TYPE_C_INT:
 	    case IDIO_TYPE_C_UINT:
+	    case IDIO_TYPE_C_LONG:
+	    case IDIO_TYPE_C_ULONG:
+	    case IDIO_TYPE_C_LONGLONG:
+	    case IDIO_TYPE_C_ULONGLONG:
 	    case IDIO_TYPE_C_FLOAT:
 	    case IDIO_TYPE_C_DOUBLE:
+	    case IDIO_TYPE_C_LONGDOUBLE:
 	    case IDIO_TYPE_C_POINTER:
 	    case IDIO_TYPE_C_TYPEDEF:
 	    case IDIO_TYPE_C_STRUCT:
@@ -3196,10 +3276,20 @@ void idio_dump (IDIO o, int detail)
 	    case IDIO_TYPE_THREAD:
 	    case IDIO_TYPE_CONTINUATION:
 	    case IDIO_TYPE_BITSET:
+	    case IDIO_TYPE_C_CHAR:
+	    case IDIO_TYPE_C_SCHAR:
+	    case IDIO_TYPE_C_UCHAR:
+	    case IDIO_TYPE_C_SHORT:
+	    case IDIO_TYPE_C_USHORT:
 	    case IDIO_TYPE_C_INT:
 	    case IDIO_TYPE_C_UINT:
+	    case IDIO_TYPE_C_LONG:
+	    case IDIO_TYPE_C_ULONG:
+	    case IDIO_TYPE_C_LONGLONG:
+	    case IDIO_TYPE_C_ULONGLONG:
 	    case IDIO_TYPE_C_FLOAT:
 	    case IDIO_TYPE_C_DOUBLE:
+	    case IDIO_TYPE_C_LONGDOUBLE:
 	    case IDIO_TYPE_C_POINTER:
 	    case IDIO_TYPE_C_TYPEDEF:
 	    case IDIO_TYPE_C_STRUCT:

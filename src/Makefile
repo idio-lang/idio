@@ -1,80 +1,4 @@
-HOSTNAME	:= $(shell uname -n)
-OS		:= $(shell uname -s)
-REV		:= $(shell uname -r)
-ARCH		:= $(shell uname -m)
-SHELL		:= bash
-
-TOPDIR		?= $(abspath $(PWD)/..)
-BINDIR		?= $(TOPDIR)/bin
-LIBDIR		?= $(TOPDIR)/lib
-TESTSDIR	?= $(TOPDIR)/tests
-DOCDIR		?= $(TOPDIR)/doc
-SRCDOCDIR	:= $(DOCDIR)/src
-SRCKDOUTDIR	:= $(SRCDOCDIR)/kernel-autodoc-out
-
-ifeq ($(OS),Darwin)
-
-LIBFFI_INCDIR	:= /usr/include/ffi
-ifeq ($(REV),9.8.0)
-LIBFFI_INCDIR	:= /Developer//SDKs/MacOSX10.5.sdk/usr/include/ffi
-else
-LIBFFI_INCDIR	:= /Library/Developer/CommandLineTools/SDKs/MacOSX10.15.sdk/usr/include/ffi
-endif
-LDFLAGS		:= -rdynamic
-LIBS		:= -ldl
-
-else ifeq ($(OS),Linux)
-
-LIBFFI_INCDIR	= $(wildcard /usr/lib*/libffi-*/include)
-LDFLAGS		:= -rdynamic
-LIBS		:= -ldl
-ifeq ($(ARCH),x86_64)
-CFLAGS		:= -m64 $(CFLAGS) # -fsanitize=undefined
-LDFLAGS		:= -m64 -Wl,-Map=map $(LDFLAGS)
-endif
-
-ifneq (,$(findstring centos-6,$(HOSTNAME)))
-LIBS		:= -lrt $(LIBS)
-endif
-
-ifneq (,$(findstring debian-,$(HOSTNAME)))
-CC		:= gcc-8
-endif
-
-ifneq (,$(findstring ubuntu-,$(HOSTNAME)))
-CC		:= gcc-8
-endif
-
-else ifeq ($(OS),SunOS)
-
-CC		:= gcc
-LIBFFI_INCDIR	= $(wildcard /usr/lib/$(shell isainfo -k | grep -v i386)/libffi-*/include)
-LDFLAGS		:= -L/usr/local/lib -R/usr/local/lib
-LIBS		:= -ldl
-CFLAGS		:= -D__EXTENSIONS__
-M64		:= $(filter %64, $(shell isainfo))
-ifeq ($(M64),amd64)
-CFLAGS		:= -m64 $(CFLAGS)
-LDFLAGS		:= -m64 $(LDFLAGS)
-endif
-
-else ifeq ($(OS),FreeBSD)
-
-CC		:= $(wildcard /usr/local/bin/gcc4?)
-LIBFFI_INCDIR	:= /usr/local/include
-LDFLAGS		:= -L/usr/local/lib
-
-endif
-
-ifndef LIBFFI_INCDIR
-$(error LIBFFI_INCDIR is unset)
-else
-ifeq "$(LIBFFI_INCDIR)" ""
-LIBFFI_INC	:=
-else
-LIBFFI_INC	:= -I$(LIBFFI_INCDIR)
-endif
-endif
+include Makefile.common
 
 ifdef MAKE_LEAN
 CDEBUG		:= -O3 -UIDIO_DEBUG -UIDIO_VM_PROF
@@ -98,7 +22,7 @@ ifneq ($(OS),Darwin)
 DLIBS		:= libos.so libposix-regex.so
 endif
 
-all : tags $(BINDIR)/idio
+all : $(BINDIR)/idio
 #all : idio scm1-c-structs.scm1 $(DLIBS) tags
 
 profiled :
@@ -138,9 +62,9 @@ doc :
 	diff -w <(grep _[ch] $(SRCKDOUTDIR)/index.rst) <(grep _[ch] $(SRCDOCDIR)/index.rst | sed -e 's!.*/!!')
 	make -C $(SRCDOCDIR) html text
 
-include $(subst .c,.d,$(sources))
+#-include $(subst .c,.d,$(sources))
 
-$(BINDIR)/idio : $(objects) | $(BINDIR)
+$(BINDIR)/idio : $(objects)
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 lib%.so : %.o
@@ -162,6 +86,10 @@ endif
 edit-clean :
 	rm -f *~ $(LIBDIR)/*~ $(TESTSDIR)/*~
 
+dist-clean : clean
+	rm -f $(PWD)/libc-api.h
+	rm -f $(LIBDIR)/libc-api.idio
+
 tags : TAGS
 
 TAGS : *.[ch] $(LIBDIR)/*.idio $(TESTSDIR)/*.idio
@@ -171,10 +99,7 @@ TAGS : *.[ch] $(LIBDIR)/*.idio $(TESTSDIR)/*.idio
 %.o : %.d
 
 %.d: %.c
-	$(CC) -MM -MP -MF $@ $(CFLAGS) $< -MT $*.o -MT $@
-
-$(BINDIR):
-	@mkdir -p $(BINDIR)
+	$(CC) -MM -MP -MF $@ $(CFLAGS) -I$(PWD) -I$(PWD)/build-bootstrap $< -MT $*.o -MT $@
 
 valgrind: $(BINDIR)/idio
 	valgrind --leak-check=full --show-leak-kinds=all --child-silent-after-fork=yes --log-file=idio-valgrind.%p $(BINDIR)/idio # 2>&1 | less +/^==
@@ -184,3 +109,16 @@ valgrind: $(BINDIR)/idio
 
 cppcheck:
 	cppcheck --force --enable=all .
+
+# Bootstrap
+#
+# This $(objects) dependent on libc-api.h serves two purposes: firstly
+# it forces the actual creation in the specific rule below (using some
+# probably wrong but at least consistently wrong values in
+# build-bootstrap) and secondly, as we'll have just created a new
+# libc-api.h file, we'll force the recompilation of everything again
+# using the correct values.
+$(objects) : libc-api.h
+
+libc-api.h :
+	$(MAKE) -f Makefile.bootstrap $@

@@ -59,6 +59,9 @@ export (%idio-interactive
 	with-input-from
 	with-output-to
 	with-error-to
+
+	collect-output
+
 	with-handle-dup
 	with-handle-redir
 
@@ -161,7 +164,7 @@ define (job-failed job) "test if job `job` has failed
 		loop (pt procs)
 	      }) \
 		   ((WIFEXITED status) {
-		     if (not (C/== (WEXITSTATUS status) 0)) #t {
+		     if (not (C/== (WEXITSTATUS status) C/0i)) #t {
 		       loop (pt procs)
 		     }
 		   }) \
@@ -195,7 +198,7 @@ Note that this is the inverse behaviour you might expect.
 		loop (pt procs)
 	      }) \
 		   ((WIFEXITED status) {
-		     if (not (C/== (WEXITSTATUS status) 0)) #f {
+		     if (not (C/== (WEXITSTATUS status) C/0i)) #f {
 		       loop (pt procs)
 		     }
 		   }) \
@@ -234,7 +237,7 @@ value can be: exit status for 'exit or signal number for 'killed
 		loop (pt procs)
 	      }) \
 		   ((WIFEXITED status) {
-		     if (not (C/== (WEXITSTATUS status) 0)) (list 'exit (WEXITSTATUS status)) {
+		     if (not (C/== (WEXITSTATUS status) C/0i)) (list 'exit (WEXITSTATUS status)) {
 		       loop (pt procs)
 		     }
 		   }) \
@@ -339,7 +342,7 @@ for the benefit of the do loops in update-status_ and wait-for-job_.
 
     jobs-loop %idio-jobs
   })\
-       ((or (C/== pid 0)
+       ((or (C/== pid libc/0pid_t)
 	    (C/== libc/errno ECHILD)) {
 	      ;; We can get here if foreground-job was blocked in
 	      ;; wait-for-job then a SIGCHLD event fired and the
@@ -400,7 +403,7 @@ define (format-job-info job msg) "display to stderr `msg` alongside job `job` de
 " {
   if %idio-interactive {
     jd := job-detail job
-    if (not (equal? (list 'exit (C/integer-> 0)) jd)) {
+    if (not (equal? (list 'exit C/0i) jd)) {
       eprintf "job %5s: %s: %s: %s\n" (%idio-job-pgid job) (%idio-job-pipeline job) msg jd
     }
   }
@@ -697,7 +700,7 @@ define (%prep-process pgid infile outfile errfile foreground) "prepare the curre
 " {
   if %idio-interactive {
     pid := (libc/getpid)
-    if (C/== pgid 0) {
+    if (C/== pgid libc/0gid_t) {
       pgid = pid
     }
 
@@ -727,8 +730,25 @@ define-infix-operator | 700 {
   foreground := #t
   use-w-pipe := #f
   use-r-pipe := #f
+  collect := #f
+
+  ;; Slightly annoyingly, some meta-instructions to the pipeline are
+  ;; consumed by the reader operator (us!) so we should look out for
+  ;; them.
+  ;;
+  ;; Obvious candidates are 'pipe-into and 'pipe-from but also fg-job,
+  ;; bg-job and collect-output are auto-consumed.
 
   (case (ph before)
+	((collect-output) {
+	  before = pt before
+	  collect = #t
+	  foreground = #t
+	})
+	((fg-job) {
+	  before = pt before
+	  foreground = #t
+	})
 	((bg-job) {
 	  before = pt before
 	  foreground = #f
@@ -803,7 +823,7 @@ define-infix-operator | 700 {
   code (if it is Idio code -- obviously if it is an external command
   we exec()'d it wouldn't matter).  Strict hygiene, please!
 
-  Variables
+  Pipeline Bookkeeping
 
   Most of the work in a pipeline is done with file descriptors whereas
   the caller is dealing with handles.
@@ -897,17 +917,22 @@ define-infix-operator | 700 {
       $close-pipeline-w-fd := #f
       $pipeline-r-ph := #f
       $recover-pipeline-w-fd := #f
-      if $use-r-pipe {
-	r-pipe := (libc/pipe)
-	$pipeline-r-ph = open-input-pipe (libc/pipe-reader r-pipe)
-	$pipeline-w-fd = libc/pipe-writer r-pipe
-      } {
-	$pipeline-w-fd = (libc/stdout-fileno) ; STDOUT_FILENO
-	if (pair? $pipeline-w-fd) {
-	  $recover-pipeline-w-fd = pht $pipeline-w-fd
-	  $pipeline-w-fd = ph $pipeline-w-fd
-	}
-      }
+      (cond
+       ($use-r-pipe {
+	 r-pipe := (libc/pipe)
+	 $pipeline-r-ph = open-input-pipe (libc/pipe-reader r-pipe)
+	 $pipeline-w-fd = libc/pipe-writer r-pipe
+       })
+       ($collect {
+	 $pipeline-w-fd = (libc/make-tmp-fd)
+       })
+       (else {
+	 $pipeline-w-fd = (libc/stdout-fileno) ; STDOUT_FILENO
+	 if (pair? $pipeline-w-fd) {
+	   $recover-pipeline-w-fd = pht $pipeline-w-fd
+	   $pipeline-w-fd = ph $pipeline-w-fd
+	 }
+       }))
       ;; $cmd-w-fd is (re-)set each time round the loop but needs to
       ;; exist in the first place
       $cmd-w-fd := #f
@@ -942,7 +967,7 @@ define-infix-operator | 700 {
 		      $cmd-w-fd = $pipeline-w-fd
 		    }
 		    $pid := (libc/fork)
-		    if (C/== $pid 0) {
+		    if (C/== $pid libc/0pid_t) {
 		      set-default-handler! ^idio-error default-child-handler
 		      %prep-process $pgid $cmd-r-fd $cmd-w-fd $stderr $foreground
 
@@ -979,7 +1004,7 @@ define-infix-operator | 700 {
 		      ;; current (pipe-reader $cmd-pipe) we have in
 		      ;; our hands.
 
-		      if (C/== $pgid 0) {
+		      if (C/== $pgid libc/0gid_t) {
 			libc/close (libc/pipe-writer $pgrp-pipe)
 
 			;; $pgid is 0 so we must be the first in the
@@ -1016,7 +1041,7 @@ define-infix-operator | 700 {
 		    } {
 		      set-%idio-process-pid! $proc $pid
 		      if job-control/%idio-interactive {
-			if (C/== $pgid 0) {
+			if (C/== $pgid libc/0gid_t) {
 			  $pgid = $pid
 			  set-%idio-job-pgid! $job $pgid
 			}
@@ -1062,6 +1087,22 @@ define-infix-operator | 700 {
        })
        ($use-r-pipe {
 	 $pipeline-r-ph
+       })
+       ($collect {
+	 ;; wait for it!
+	 if (not job-control/%idio-interactive) {
+	   wait-for-job $job
+	 } {
+	   foreground-job $job #f
+	 }
+
+	 ;; OK, now recover the output
+	 ih := open-input-file-from-fd $pipeline-w-fd
+	 seek-handle ih 0 'set
+	 os := (open-output-string)
+	 display (read-lines ih) os
+	 close-handle ih
+	 strip-string (get-output-string os) "\n"
        })
        (else {
 	 $status := #f
@@ -1160,7 +1201,7 @@ define-template (fork-command foreground use-w-pipe use-r-pipe & cmd) {
 
       $pid := (libc/fork)
       (cond
-       ((C/== $pid 0) {
+       ((C/== $pid libc/0pid_t) {
 	 set-default-handler! ^idio-error default-child-handler
 	 %prep-process $pgid $cmd-r-fd $cmd-w-fd $cmd-e-fd $foreground
 	 cond ((pair? (ph '$cmd)) {
@@ -1402,6 +1443,9 @@ define (with-error-to dst thunk) {
   with-handle-redir 'error dst thunk
 }
 
+;; collect-output works fine for standalone commands, (collect-output
+;; uname -n), but is caught up in a pipeline by the reader operator.
+;; See above.
 define-template (collect-output & cmd) {
   osh := (gensym)
   #T{

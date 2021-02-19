@@ -410,11 +410,11 @@ m := find-module 'Idio
 hash-set! ht m 3
 test (hash-ref ht m) 3
 
-;; code coverage: C-int
+;; code coverage: C/int
 hash-set! ht libc/INTMAX_MAX 4
 test (hash-ref ht libc/INTMAX_MAX) 4
 
-;; code coverage: C-uint
+;; code coverage: C/uint
 hash-set! ht libc/UINTMAX_MAX 4
 test (hash-ref ht libc/UINTMAX_MAX) 4
 

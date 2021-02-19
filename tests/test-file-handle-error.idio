@@ -78,7 +78,7 @@ file-handle-error-load := {
 
 fd := #f
 
-file-handle-error-load "file-handle-errors/open-file-from-fd-bad-fd-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_int"
+file-handle-error-load "file-handle-errors/open-file-from-fd-bad-fd-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/int"
 file-handle-error-load "file-handle-errors/open-file-from-fd-filename-format.idio" "open-file-from-fd filename contains an ASCII NUL"
 file-handle-error-load "file-handle-errors/open-file-from-fd-filename-PATH_MAX.idio" "malformed filename: name too long"
 file-handle-error-load "file-handle-errors/open-file-from-fd-filename-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
@@ -90,7 +90,7 @@ file-handle-error-load "file-handle-errors/open-file-from-fd-mode-letter-invalid
 file-handle-error-load "file-handle-errors/open-file-from-fd-mode-letter-inconsistent.idio" "open-file-from-fd mode inconsistent"
 close fd
 
-file-handle-error-load "file-handle-errors/open-input-file-from-fd-bad-fd-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_int"
+file-handle-error-load "file-handle-errors/open-input-file-from-fd-bad-fd-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/int"
 file-handle-error-load "file-handle-errors/open-input-file-from-fd-filename-format.idio" "open-input-file-from-fd filename contains an ASCII NUL"
 file-handle-error-load "file-handle-errors/open-input-file-from-fd-filename-PATH_MAX.idio" "malformed filename: name too long"
 file-handle-error-load "file-handle-errors/open-input-file-from-fd-filename-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
@@ -102,7 +102,7 @@ file-handle-error-load "file-handle-errors/open-input-file-from-fd-mode-letter-i
 file-handle-error-load "file-handle-errors/open-input-file-from-fd-mode-letter-inconsistent.idio" "open-input-file-from-fd mode inconsistent"
 close fd
 
-file-handle-error-load "file-handle-errors/open-output-file-from-fd-bad-fd-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_int"
+file-handle-error-load "file-handle-errors/open-output-file-from-fd-bad-fd-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/int"
 file-handle-error-load "file-handle-errors/open-output-file-from-fd-filename-format.idio" "open-output-file-from-fd filename contains an ASCII NUL"
 file-handle-error-load "file-handle-errors/open-output-file-from-fd-filename-PATH_MAX.idio" "malformed filename: name too long"
 file-handle-error-load "file-handle-errors/open-output-file-from-fd-filename-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
@@ -114,7 +114,7 @@ file-handle-error-load "file-handle-errors/open-output-file-from-fd-mode-letter-
 file-handle-error-load "file-handle-errors/open-output-file-from-fd-mode-letter-inconsistent.idio" "open-output-file-from-fd mode inconsistent"
 close fd
 
-file-handle-error-load "file-handle-errors/open-input-pipe-bad-fd-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_int"
+file-handle-error-load "file-handle-errors/open-input-pipe-bad-fd-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/int"
 file-handle-error-load "file-handle-errors/open-input-pipe-filename-format.idio" "open-input-pipe filename contains an ASCII NUL"
 file-handle-error-load "file-handle-errors/open-input-pipe-filename-PATH_MAX.idio" "malformed filename: name too long"
 file-handle-error-load "file-handle-errors/open-input-pipe-filename-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
@@ -126,7 +126,7 @@ file-handle-error-load "file-handle-errors/open-input-pipe-mode-letter-invalid-2
 file-handle-error-load "file-handle-errors/open-input-pipe-mode-letter-inconsistent.idio" "open-input-pipe mode inconsistent"
 close fd
 
-file-handle-error-load "file-handle-errors/open-output-pipe-bad-fd-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_int"
+file-handle-error-load "file-handle-errors/open-output-pipe-bad-fd-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/int"
 file-handle-error-load "file-handle-errors/open-output-pipe-filename-format.idio" "open-output-pipe filename contains an ASCII NUL"
 file-handle-error-load "file-handle-errors/open-output-pipe-filename-PATH_MAX.idio" "malformed filename: name too long"
 file-handle-error-load "file-handle-errors/open-output-pipe-filename-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"

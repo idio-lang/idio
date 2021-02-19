@@ -209,29 +209,28 @@ define-template (cond-expand & clause*) {
 
 (cond-expand
  (uname/sysname/Linux {
+   found := #f
+
    loop :+ function (fn*) {
 	     if (null? fn*) #n {
 	       fn := ph fn*
 	       if (e? fn) {
 		 fh := open-input-file fn
-		 comment-rx := regcomp "^#"
-		 kv-rx := regcomp "([[:alnum:]_]+)=(.*)"
 		 loop :+ function () {
 			   if (eof? fh) #n {
-			     line := read-line fh
-			     (cond
-			      ((regexec comment-rx line) {
+			     (regex-case
+			      (read-line fh)
+			      ("^#" {
 				(loop)
 			      })
-			      ((regexec kv-rx line)
-			       => (function (res) {
-				     k := array-ref res 1
-				     (case k
-					   (("ID" "VERSION_ID") {
-					     %add-feature (append-string "os-release/" k "/" (array-ref res 2))
-					   }))
-				     (loop)
-			       })))
+			      ("([[:alnum:]_]+)=(.*)" {
+				(case r.1
+				      (("ID" "VERSION_ID") {
+					%add-feature (append-string "os-release/" r.1 "/" r.2)
+					found = #t
+				      }))
+				(loop)
+			      }))
 			     (loop)
 			   }
 		 }
@@ -243,6 +242,19 @@ define-template (cond-expand & clause*) {
    }
 
    loop '("/etc/os-release" "/usr/lib/os-release")
+
+   ;; CentOS 6 uses /etc/system-release: CentOS release 6.10 (Final)
+   if (not found) {
+     rf := "/etc/system-release"
+     if (f? rf) {
+       (regex-case
+	(collect-output cat rf)
+	("([^[:space:]]+) release ([[:digit:]]+)" {
+	  %add-feature (append-string "os-release/ID/" r.1)
+	  %add-feature (append-string "os-release/VERSION_ID/" r.2)
+	}))
+     }
+   }
  })
  (uname/sysname/SunOS {
    loop :+ function (fn*) {

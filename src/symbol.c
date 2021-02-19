@@ -118,6 +118,21 @@ IDIO_SYMBOL_DECL (trap);
 IDIO_SYMBOL_DECL (unquote);
 IDIO_SYMBOL_DECL (unquotesplicing);
 
+IDIO_SYMBOL_DECL (char);
+IDIO_SYMBOL_DECL (schar);
+IDIO_SYMBOL_DECL (uchar);
+IDIO_SYMBOL_DECL (short);
+IDIO_SYMBOL_DECL (ushort);
+IDIO_SYMBOL_DECL (int);
+IDIO_SYMBOL_DECL (uint);
+IDIO_SYMBOL_DECL (long);
+IDIO_SYMBOL_DECL (ulong);
+IDIO_SYMBOL_DECL (longlong);
+IDIO_SYMBOL_DECL (ulonglong);
+IDIO_SYMBOL_DECL (float);
+IDIO_SYMBOL_DECL (double);
+IDIO_SYMBOL_DECL (longdouble);
+
 static void idio_symbol_error (char *msg, IDIO c_location)
 {
     IDIO_C_ASSERT (msg);
@@ -556,6 +571,7 @@ IDIO idio_ref_properties (IDIO o, IDIO args)
 	     *
 	     * %properties (gensym)
 	     */
+	    idio_debug ("o=%s\n", o);
 	    idio_properties_not_found_error ("no properties exist", o, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
@@ -959,6 +975,21 @@ void idio_init_symbol ()
     IDIO_SYMBOL_DEF ("trap", trap);
     IDIO_SYMBOL_DEF ("unquote", unquote);
     IDIO_SYMBOL_DEF ("unquotesplicing", unquotesplicing);
+
+    IDIO_SYMBOL_DEF ("char", char);
+    IDIO_SYMBOL_DEF ("schar", schar);
+    IDIO_SYMBOL_DEF ("uchar", uchar);
+    IDIO_SYMBOL_DEF ("short", short);
+    IDIO_SYMBOL_DEF ("ushort", ushort);
+    IDIO_SYMBOL_DEF ("int", int);
+    IDIO_SYMBOL_DEF ("uint", uint);
+    IDIO_SYMBOL_DEF ("long", long);
+    IDIO_SYMBOL_DEF ("ulong", ulong);
+    IDIO_SYMBOL_DEF ("longlong", longlong);
+    IDIO_SYMBOL_DEF ("ulonglong", ulonglong);
+    IDIO_SYMBOL_DEF ("float", float);
+    IDIO_SYMBOL_DEF ("double", double);
+    IDIO_SYMBOL_DEF ("longdouble", longdouble);
 
     /*
      * idio_properties_hash doesn't really live in symbol.c but we

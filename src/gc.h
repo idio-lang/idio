@@ -171,38 +171,40 @@
 #define IDIO_TYPE_CONTINUATION		27
 #define IDIO_TYPE_BITSET		28
 
-#define IDIO_TYPE_C_INT         	30
-#define IDIO_TYPE_C_UINT        	31
-#define IDIO_TYPE_C_FLOAT       	32
-#define IDIO_TYPE_C_DOUBLE      	33
-#define IDIO_TYPE_C_POINTER     	34
-#define IDIO_TYPE_C_VOID        	35
+#define IDIO_TYPE_C_CHAR        	29
+#define IDIO_TYPE_C_SCHAR       	30
+#define IDIO_TYPE_C_UCHAR       	31
+#define IDIO_TYPE_C_SHORT       	32
+#define IDIO_TYPE_C_USHORT      	33
+#define IDIO_TYPE_C_INT         	34
+#define IDIO_TYPE_C_UINT        	35
+#define IDIO_TYPE_C_LONG         	36
+#define IDIO_TYPE_C_ULONG        	37
+#define IDIO_TYPE_C_LONGLONG         	38
+#define IDIO_TYPE_C_ULONGLONG        	39
+#define IDIO_TYPE_C_FLOAT       	40
+#define IDIO_TYPE_C_DOUBLE      	41
+#define IDIO_TYPE_C_LONGDOUBLE      	42
+#define IDIO_TYPE_C_POINTER     	43
+#define IDIO_TYPE_C_VOID        	44
 
-#define IDIO_TYPE_C_INT8_T      	36
-#define IDIO_TYPE_C_UINT8_T     	37
-#define IDIO_TYPE_C_INT16_T     	38
-#define IDIO_TYPE_C_UINT16_T    	39
-#define IDIO_TYPE_C_INT32_T     	40
-#define IDIO_TYPE_C_UINT32_T    	41
-#define IDIO_TYPE_C_INT64_T     	42
-#define IDIO_TYPE_C_UINT64_T    	43
-/*
-#define IDIO_TYPE_C_CHAR        	28
-#define IDIO_TYPE_C_UCHAR       	29
-#define IDIO_TYPE_C_SHORT       	30
-#define IDIO_TYPE_C_USHORT      	31
-#define IDIO_TYPE_C_INT         	32
-#define IDIO_TYPE_C_UINT        	33
-#define IDIO_TYPE_C_LONG        	34
-#define IDIO_TYPE_C_ULONG       	35
-*/
-#define IDIO_TYPE_CTD           	50
-#define IDIO_TYPE_C_TYPEDEF     	51
-#define IDIO_TYPE_C_STRUCT      	52
-#define IDIO_TYPE_C_INSTANCE    	53
-#define IDIO_TYPE_C_FFI         	54
-#define IDIO_TYPE_OPAQUE        	55
-#define IDIO_TYPE_MAX           	56
+/* these should disappear */
+#define IDIO_TYPE_C_INT8_T      	45
+#define IDIO_TYPE_C_UINT8_T     	46
+#define IDIO_TYPE_C_INT16_T     	47
+#define IDIO_TYPE_C_UINT16_T    	48
+#define IDIO_TYPE_C_INT32_T     	49
+#define IDIO_TYPE_C_UINT32_T    	50
+#define IDIO_TYPE_C_INT64_T     	51
+#define IDIO_TYPE_C_UINT64_T    	52
+
+#define IDIO_TYPE_CTD           	53
+#define IDIO_TYPE_C_TYPEDEF     	54
+#define IDIO_TYPE_C_STRUCT      	55
+#define IDIO_TYPE_C_INSTANCE    	56
+#define IDIO_TYPE_C_FFI         	57
+#define IDIO_TYPE_OPAQUE        	58
+#define IDIO_TYPE_MAX           	59
 
 /**
  * typedef idio_type_e - Idio type discriminator
@@ -911,54 +913,43 @@ typedef struct idio_C_pointer_s {
 
 typedef struct idio_C_type_s {
     union {
-	intmax_t          C_int;
-	uintmax_t         C_uint;
-/*
-	int8_t            C_int8;
-	uint8_t           C_uint8;
-	int16_t           C_int16;
-	uint16_t          C_uint16;
-	int32_t           C_int32;
-	uint32_t          C_uint32;
-	int64_t           C_int64;
-	uint64_t          C_uint64;
-	char              C_char;
-	unsigned char     C_uchar;
-	short             C_short;
-	unsigned short    C_ushort;
-	int               C_int;
-	unsigned int      C_uint;
-	long              C_long;
-	unsigned long     C_ulong;
-*/
-	float             C_float;
-	double            C_double;
-	idio_C_pointer_t *C_pointer;
+	char			C_char;
+	signed char		C_schar;
+	unsigned char		C_uchar;
+	short int		C_short;
+	unsigned short int	C_ushort;
+	int			C_int;
+	unsigned int		C_uint;
+	long int		C_long;
+	unsigned long int	C_ulong;
+	long long int		C_longlong;
+	unsigned long long int	C_ulonglong;
+	float			C_float;
+	double			C_double;
+	long double		C_longdouble;
+	idio_C_pointer_t       *C_pointer;
     } u;
 } idio_C_type_t;
 
-#define IDIO_C_TYPE_INT(C)           ((C)->u.C_type.u.C_int)
-#define IDIO_C_TYPE_UINT(C)          ((C)->u.C_type.u.C_uint)
 /*
-#define IDIO_C_TYPE_INT8(C)          ((C)->u.C_type->u.C_int8)
-#define IDIO_C_TYPE_UINT8(C)         ((C)->u.C_type->u.C_uint8)
-#define IDIO_C_TYPE_INT16(C)         ((C)->u.C_type->u.C_int16)
-#define IDIO_C_TYPE_UINT16(C)        ((C)->u.C_type->u.C_uint16)
-#define IDIO_C_TYPE_INT32(C)         ((C)->u.C_type->u.C_int32)
-#define IDIO_C_TYPE_UINT32(C)        ((C)->u.C_type->u.C_uint32)
-#define IDIO_C_TYPE_INT64(C)         ((C)->u.C_type->u.C_int64)
-#define IDIO_C_TYPE_UINT64(C)        ((C)->u.C_type->u.C_uint64)
-#define IDIO_C_TYPE_CHAR(C)          ((C)->u.C_type->u.C_char)
-#define IDIO_C_TYPE_UCHAR(C)         ((C)->u.C_type->u.C_uchar)
-#define IDIO_C_TYPE_SHORT(C)         ((C)->u.C_type->u.C_short)
-#define IDIO_C_TYPE_USHORT(C)        ((C)->u.C_type->u.C_ushort)
-#define IDIO_C_TYPE_INT(C)           ((C)->u.C_type->u.C_int)
-#define IDIO_C_TYPE_UINT(C)          ((C)->u.C_type->u.C_uint)
-#define IDIO_C_TYPE_LONG(C)          ((C)->u.C_type->u.C_long)
-#define IDIO_C_TYPE_ULONG(C)         ((C)->u.C_type->u.C_ulong)
-*/
-#define IDIO_C_TYPE_FLOAT(C)         ((C)->u.C_type.u.C_float)
-#define IDIO_C_TYPE_DOUBLE(C)        ((C)->u.C_type.u.C_double)
+ * The names of the following macros have a lower-case base_type part
+ * to be in line with the c-api-gen code which re-uses the typedef'd
+ * names rather than upper-case them.
+ */
+#define IDIO_C_TYPE_char(C)          ((C)->u.C_type.u.C_char)
+#define IDIO_C_TYPE_schar(C)         ((C)->u.C_type.u.C_schar)
+#define IDIO_C_TYPE_uchar(C)         ((C)->u.C_type.u.C_uchar)
+#define IDIO_C_TYPE_short(C)         ((C)->u.C_type.u.C_short)
+#define IDIO_C_TYPE_ushort(C)        ((C)->u.C_type.u.C_ushort)
+#define IDIO_C_TYPE_int(C)           ((C)->u.C_type.u.C_int)
+#define IDIO_C_TYPE_uint(C)          ((C)->u.C_type.u.C_uint)
+#define IDIO_C_TYPE_long(C)          ((C)->u.C_type.u.C_long)
+#define IDIO_C_TYPE_ulong(C)         ((C)->u.C_type.u.C_ulong)
+#define IDIO_C_TYPE_longlong(C)      ((C)->u.C_type.u.C_longlong)
+#define IDIO_C_TYPE_ulonglong(C)     ((C)->u.C_type.u.C_ulonglong)
+#define IDIO_C_TYPE_float(C)         ((C)->u.C_type.u.C_float)
+#define IDIO_C_TYPE_double(C)        ((C)->u.C_type.u.C_double)
+#define IDIO_C_TYPE_longdouble(C)    ((C)->u.C_type.u.C_longdouble)
 /*
 #define IDIO_C_TYPE_POINTER(C)       ((C)->u.C_type->u.C_pointer)
 */

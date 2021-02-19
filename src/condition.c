@@ -490,7 +490,7 @@ This invokes do-job-notification				\n\
 
     if (idio_struct_type_isa (sit, idio_condition_rt_signal_type)) {
 	IDIO signum_I = IDIO_STRUCT_INSTANCE_FIELDS (c, IDIO_SI_RT_SIGNAL_TYPE_SIGNUM);
-	int signum_C = IDIO_C_TYPE_INT (signum_I);
+	int signum_C = IDIO_C_TYPE_int (signum_I);
 
 	switch (signum_C) {
 	case SIGCHLD:
@@ -614,7 +614,7 @@ void idio_condition_format_system_error (char *prefix, IDIO c)
 	idio_display (d, osh);
 	idio_display_C (") => ", osh);
 
-	int er = IDIO_C_TYPE_INT (e);
+	int er = IDIO_C_TYPE_int (e);
 	idio_display_C (idio_libc_errno_name (er), osh);
 
 	idio_display_C (" (", osh);
@@ -672,7 +672,7 @@ does not return per se						\n\
 
     if (idio_struct_type_isa (sit, idio_condition_rt_signal_type)) {
 	IDIO signum_I = IDIO_STRUCT_INSTANCE_FIELDS (c, IDIO_SI_RT_SIGNAL_TYPE_SIGNUM);
-	int signum_C = IDIO_C_TYPE_INT (signum_I);
+	int signum_C = IDIO_C_TYPE_int (signum_I);
 
 	switch (signum_C) {
 	case SIGCHLD:
@@ -893,7 +893,7 @@ does not return per se						\n\
 	 */
 	if (idio_struct_type_isa (sit, idio_condition_rt_signal_type)) {
 	    IDIO signum_I = IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_RT_SIGNAL_TYPE_SIGNUM);
-	    int signum_C = IDIO_C_TYPE_INT (signum_I);
+	    int signum_C = IDIO_C_TYPE_int (signum_I);
 
 	    switch (signum_C) {
 	    case SIGCHLD:

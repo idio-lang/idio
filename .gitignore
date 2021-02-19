@@ -21,7 +21,7 @@ vgcore.*
 vm-perf.log
 src/map
 
-bin
+bin/idio
 main
 scm1-c-structs
 scm1-c-structs.scm1

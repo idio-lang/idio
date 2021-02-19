@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -131,8 +131,6 @@ extern FILE *idio_vm_perf_FILE;
 	}								\
     }
 
-#define IDIO_USER_TYPE_ASSERT(t,x) IDIO_TYPE_ASSERT(t,x)
-
 #define IDIO_ASSERT_NOT_CONST(t,x) {					\
 	if (IDIO_FLAGS (x) & IDIO_FLAG_CONST) {				\
 	    idio_error_const_param_C (#t, x, __FILE__, __func__, __LINE__); \
@@ -166,12 +164,6 @@ extern FILE *idio_vm_perf_FILE;
 #define IDIO_C_ASSERT(x)
 #define IDIO_TYPE_ASSERT(t,x)
 
-#define IDIO_USER_TYPE_ASSERT(t,x)	{				\
-	if (! idio_isa_ ## t (x)) {					\
-	    idio_error_param_type_C (#t, x, __FILE__, __func__, __LINE__); \
-	}								\
-    }
-
 #define IDIO_ASSERT_NOT_CONST(t,x) {					\
 	if (IDIO_FLAGS (x) & IDIO_FLAG_CONST) {				\
 	    idio_error_const_param_C (#t, x, __FILE__, __func__, __LINE__); \
@@ -188,6 +180,18 @@ extern FILE *idio_vm_perf_FILE;
 #define IDIO_C_FUNC_LOCATION_S(s)	IDIO_C_LOCATION(__func__)
 
 #endif
+
+#define IDIO_USER_TYPE_ASSERT(t,x)	{				\
+	if (! idio_isa_ ## t (x)) {					\
+	    idio_error_param_type_C (#t, x, __FILE__, __func__, __LINE__); \
+	}								\
+    }
+
+#define IDIO_USER_C_TYPE_ASSERT(t,x)	{				\
+	if (! idio_isa_C_ ## t (x)) {					\
+	    idio_error_param_type_C ("C/" #t, x, __FILE__, __func__, __LINE__); \
+	}								\
+    }
 
 #define IDIO_GC_FLAG_FREE_SET(x) ((((x)->gc_flags & IDIO_GC_FLAG_FREE_MASK) == IDIO_GC_FLAG_FREE))
 /*
@@ -416,7 +420,7 @@ extern FILE *idio_vm_perf_FILE;
 #include "primitive.h"
 #include "read.h"
 #include "string-handle.h"
-#include "string.h"
+#include "idio-string.h"
 #include "struct.h"
 #include "symbol.h"
 #include "thread.h"
@@ -424,6 +428,7 @@ extern FILE *idio_vm_perf_FILE;
 #include "util.h"
 #include "vm.h"
 
+#include "libc-api.h"
 #include "libc-wrap.h"
 
 /*

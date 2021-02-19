@@ -7073,7 +7073,7 @@ IDIO_DEFINE_PRIMITIVE1_DS ("exit", exit, (IDIO istatus), "status", "\
 attempt to exit with status ``status``			\n\
 							\n\
 :param status: exit status				\n\
-:type status: fixnum or C-int				\n\
+:type status: fixnum or C/int				\n\
 							\n\
 Does not return						\n\
 ")
@@ -7084,7 +7084,7 @@ Does not return						\n\
     if (idio_isa_fixnum (istatus)) {
 	status = IDIO_FIXNUM_VAL (istatus);
     } else if (idio_isa_C_int (istatus)) {
-	status = IDIO_C_TYPE_INT (istatus);
+	status = IDIO_C_TYPE_int (istatus);
     } else {
 	/*
 	 * Test Case: vm-errors/exit-bad-type.idio
@@ -7095,7 +7095,7 @@ Does not return						\n\
 	 * end-of-comment in C.  Otherwise, with vanilla "exit", we
 	 * pick up the libc/exit.
 	 */
-	idio_error_param_type ("fixnum|C_int", istatus, IDIO_C_FUNC_LOCATION ());
+	idio_error_param_type ("fixnum|C/int", istatus, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }

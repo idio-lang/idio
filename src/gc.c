@@ -1437,10 +1437,20 @@ void idio_gc_sweep_free_value (IDIO vo)
     case IDIO_TYPE_HANDLE:
 	idio_free_handle (vo);
 	break;
+    case IDIO_TYPE_C_CHAR:
+    case IDIO_TYPE_C_SCHAR:
+    case IDIO_TYPE_C_UCHAR:
+    case IDIO_TYPE_C_SHORT:
+    case IDIO_TYPE_C_USHORT:
     case IDIO_TYPE_C_INT:
     case IDIO_TYPE_C_UINT:
+    case IDIO_TYPE_C_LONG:
+    case IDIO_TYPE_C_ULONG:
+    case IDIO_TYPE_C_LONGLONG:
+    case IDIO_TYPE_C_ULONGLONG:
     case IDIO_TYPE_C_FLOAT:
     case IDIO_TYPE_C_DOUBLE:
+    case IDIO_TYPE_C_LONGDOUBLE:
 	break;
     case IDIO_TYPE_C_POINTER:
 	idio_free_C_pointer (vo);

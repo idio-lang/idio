@@ -23,7 +23,7 @@
 #ifndef LIBC_WRAP_H
 #define LIBC_WRAP_H
 
-extern IDIO idio_libc_wrap_module;
+extern IDIO idio_libc_module;
 extern IDIO idio_libc_struct_stat;
 
 #define IDIO_STRUCT_STAT_DEV		0
@@ -127,6 +127,7 @@ extern IDIO idio_libc_struct_stat;
 
 extern IDIO idio_vm_signal_handler_conditions;
 extern char **idio_libc_signal_names;
+void idio_libc_format_error (char *msg, IDIO name, IDIO c_location);
 char *idio_libc_signal_name (int signum);
 extern IDIO idio_vm_errno_conditions;
 extern char **idio_libc_errno_names;

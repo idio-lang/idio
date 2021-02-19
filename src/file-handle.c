@@ -477,7 +477,7 @@ static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, int h_type, char
      *
      * open-file-from-fd #t
      */
-    IDIO_USER_TYPE_ASSERT (C_int, ifd);
+    IDIO_USER_C_TYPE_ASSERT (int, ifd);
     /*
      * Test Case: n/a
      *
@@ -485,7 +485,7 @@ static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, int h_type, char
      */
     IDIO_USER_TYPE_ASSERT (list, args);
 
-    int fd = IDIO_C_TYPE_INT (ifd);
+    int fd = IDIO_C_TYPE_int (ifd);
 
     char name[PATH_MAX];
     sprintf (name, "/dev/fd/%d", fd);
@@ -814,7 +814,7 @@ construct an input file handle from `fd` using the optional	\n\
 the optional mode `mode` instead of ``re``		\n\
 							\n\
 :param fd: file descriptor				\n\
-:type fd: C-int						\n\
+:type fd: C/int						\n\
 :param name: (optional) file name for display		\n\
 :type fd: string					\n\
 :param name: (optional) file mode for opening		\n\
@@ -836,7 +836,7 @@ construct an input file handle from `fd` using the optional	\n\
 the optional mode `mode` instead of ``re``		\n\
 							\n\
 :param fd: file descriptor				\n\
-:type fd: C-int						\n\
+:type fd: C/int						\n\
 :param name: (optional) file name for display		\n\
 :type fd: string					\n\
 :param name: (optional) file mode for opening		\n\
@@ -858,7 +858,7 @@ construct an output file handle from `fd` using the optional	\n\
 the optional mode `mode` instead of ``we``		\n\
 							\n\
 :param fd: file descriptor				\n\
-:type fd: C-int						\n\
+:type fd: C/int						\n\
 :param name: (optional) file name for display		\n\
 :type fd: string					\n\
 :param name: (optional) file mode for opening		\n\
@@ -883,7 +883,7 @@ The key difference from a regular *-from-fd is that a	\n\
 pipe file handle is not seekable.			\n\
 							\n\
 :param fd: file descriptor				\n\
-:type fd: C-int						\n\
+:type fd: C/int						\n\
 :param name: (optional) file name for display		\n\
 :type fd: string					\n\
 :param name: (optional) file mode for opening		\n\
@@ -910,7 +910,7 @@ The key difference from a regular *-from-fd is that a	\n\
 pipe file handle is not seekable.			\n\
 							\n\
 :param fd: file descriptor				\n\
-:type fd: C-int						\n\
+:type fd: C/int						\n\
 :param name: (optional) file name for display		\n\
 :type fd: string					\n\
 :param name: (optional) file mode for opening		\n\
@@ -1481,7 +1481,7 @@ file handle `fh`				\n\
 :type fh: file handle				\n\
 						\n\
 :return: file descriptor			\n\
-:rtype: fixnum					\n\
+:rtype: C/int					\n\
 ")
 {
     IDIO_ASSERT (fh);
@@ -1493,7 +1493,7 @@ file handle `fh`				\n\
      */
     IDIO_USER_TYPE_ASSERT (file_handle, fh);
 
-    return idio_fixnum (IDIO_FILE_HANDLE_FD (fh));
+    return idio_C_int (IDIO_FILE_HANDLE_FD (fh));
 }
 
 /*
@@ -1598,7 +1598,7 @@ fd handle `fh`					\n\
 :type fh: fd handle				\n\
 						\n\
 :return: file descriptor			\n\
-:rtype: fixnum					\n\
+:rtype: C/int					\n\
 ")
 {
     IDIO_ASSERT (fh);
@@ -1610,7 +1610,7 @@ fd handle `fh`					\n\
      */
     IDIO_USER_TYPE_ASSERT (fd_handle, fh);
 
-    return idio_fixnum (IDIO_FILE_HANDLE_FD (fh));
+    return idio_C_int (IDIO_FILE_HANDLE_FD (fh));
 }
 
 int idio_isa_pipe_handle (IDIO o)
@@ -1706,7 +1706,7 @@ pipe handle `fh`				\n\
 :type fh: pipe handle				\n\
 						\n\
 :return: file descriptor			\n\
-:rtype: fixnum					\n\
+:rtype: C/int					\n\
 ")
 {
     IDIO_ASSERT (fh);
@@ -1718,7 +1718,7 @@ pipe handle `fh`				\n\
      */
     IDIO_USER_TYPE_ASSERT (pipe_handle, fh);
 
-    return idio_fixnum (IDIO_FILE_HANDLE_FD (fh));
+    return idio_C_int (IDIO_FILE_HANDLE_FD (fh));
 }
 
 void idio_file_handle_finalizer (IDIO fh)
@@ -2452,7 +2452,7 @@ fd handle `fh` with `F_SETFD` and `FD_CLOEXEC` arguments	\n\
 :type fh: fd handle				\n\
 						\n\
 :return: 0 or raises ^system-error		\n\
-:rtype: C-int					\n\
+:rtype: C/int					\n\
 ")
 {
     IDIO_ASSERT (fh);
@@ -2591,57 +2591,30 @@ char *idio_libfile_find_C (char *file)
     }
     size_t cwdlen = strlen (cwd);
 
-    int done = 0;
-    while (! done) {
-	size_t idioliblen = idiolibe - idiolib;
-	char * colon = NULL;
+    if ('/' == file[0]) {
+	strcpy (libname, file);
+    } else {
+	int done = 0;
+	while (! done) {
+	    size_t idioliblen = idiolibe - idiolib;
+	    char * colon = NULL;
 
-	if (0 == idioliblen) {
-	    if (idiolib_copy) {
-		IDIO_GC_FREE (idiolib_copy);
-	    }
-
-	    return NULL;
-	}
-
-	colon = memchr (idiolib, ':', idioliblen);
-
-	if (NULL == colon) {
-	    if ((idioliblen + 1 + filelen + max_ext_len + 1) >= PATH_MAX) {
-		/*
-		 * Test Case: file-handle-errors/find-lib-dir-lib-PATH_MAX-1.idio
-		 *
-		 * IDIOLIB = "foo"
-		 * find-lib (make-string (C/->integer PATH_MAX) #\A)
-		 */
-
+	    if (0 == idioliblen) {
 		if (idiolib_copy) {
 		    IDIO_GC_FREE (idiolib_copy);
 		}
 
-		idio_error_system ("IDIOLIB+file.idio libname length", NULL, IDIO_LIST2 (IDIOLIB, idio_string_C (file)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
-
-		/* notreached */
 		return NULL;
 	    }
 
-	    memcpy (libname, idiolib, idioliblen);
-	    libname[idioliblen] = '\0';
-	} else {
-	    size_t dirlen = colon - idiolib;
+	    colon = memchr (idiolib, ':', idioliblen);
 
-	    if (0 == dirlen) {
-		/*
-		 * An empty value, eg. ::, in IDIOLIB means PWD.  This
-		 * is a hangover behaviour from the shell's PATH.
-		 *
-		 * Is that a good thing?
-		 */
-		if ((cwdlen + 1 + filelen + max_ext_len + 1) >= PATH_MAX) {
+	    if (NULL == colon) {
+		if ((idioliblen + 1 + filelen + max_ext_len + 1) >= PATH_MAX) {
 		    /*
-		     * Test Case: file-handle-errors/find-lib-dir-cmd-PATH_MAX-2.idio
+		     * Test Case: file-handle-errors/find-lib-dir-lib-PATH_MAX-1.idio
 		     *
-		     * IDIOLIB = ":"
+		     * IDIOLIB = "foo"
 		     * find-lib (make-string (C/->integer PATH_MAX) #\A)
 		     */
 
@@ -2649,117 +2622,148 @@ char *idio_libfile_find_C (char *file)
 			IDIO_GC_FREE (idiolib_copy);
 		    }
 
-		    idio_error_system ("cwd+file.idio libname length", NULL, IDIO_LIST2 (IDIOLIB, idio_string_C (file)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
+		    idio_error_system ("IDIOLIB+file.idio libname length", NULL, IDIO_LIST2 (IDIOLIB, idio_string_C (file)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
 
 		    /* notreached */
 		    return NULL;
 		}
 
-		strcpy (libname, cwd);
+		memcpy (libname, idiolib, idioliblen);
+		libname[idioliblen] = '\0';
 	    } else {
-		if ((dirlen + 1 + filelen + max_ext_len + 1) >= PATH_MAX) {
-		    /*
-		     * Test Case: file-handle-errors/find-lib-dir-cmd-PATH_MAX-2.idio
-		     *
-		     * IDIOLIB = "foo:"
-		     * find-lib (make-string (C/->integer PATH_MAX) #\A)
-		     */
+		size_t dirlen = colon - idiolib;
 
-		    if (idiolib_copy) {
-			IDIO_GC_FREE (idiolib_copy);
+		if (0 == dirlen) {
+		    /*
+		     * An empty value, eg. ::, in IDIOLIB means PWD.  This
+		     * is a hangover behaviour from the shell's PATH.
+		     *
+		     * Is that a good thing?
+		     */
+		    if ((cwdlen + 1 + filelen + max_ext_len + 1) >= PATH_MAX) {
+			/*
+			 * Test Case: file-handle-errors/find-lib-dir-cmd-PATH_MAX-2.idio
+			 *
+			 * IDIOLIB = ":"
+			 * find-lib (make-string (C/->integer PATH_MAX) #\A)
+			 */
+
+			if (idiolib_copy) {
+			    IDIO_GC_FREE (idiolib_copy);
+			}
+
+			idio_error_system ("cwd+file.idio libname length", NULL, IDIO_LIST2 (IDIOLIB, idio_string_C (file)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
+
+			/* notreached */
+			return NULL;
 		    }
 
-		    idio_error_system ("dir+file.idio libname length", NULL, IDIO_LIST2 (IDIOLIB, idio_string_C (file)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
+		    strcpy (libname, cwd);
+		} else {
+		    if ((dirlen + 1 + filelen + max_ext_len + 1) >= PATH_MAX) {
+			/*
+			 * Test Case: file-handle-errors/find-lib-dir-cmd-PATH_MAX-2.idio
+			 *
+			 * IDIOLIB = "foo:"
+			 * find-lib (make-string (C/->integer PATH_MAX) #\A)
+			 */
 
-		    /* notreached */
-		    return NULL;
-		}
+			if (idiolib_copy) {
+			    IDIO_GC_FREE (idiolib_copy);
+			}
 
-		memcpy (libname, idiolib, dirlen);
-		libname[dirlen] = '\0';
-	    }
-	}
+			idio_error_system ("dir+file.idio libname length", NULL, IDIO_LIST2 (IDIOLIB, idio_string_C (file)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
 
-	strcat (libname, "/");
-	strcat (libname, file);
-
-	/*
-	 * libname now contains "/path/to/file".
-	 *
-	 * We now try each extension in turn by maintaining lne which
-	 * points at the end of the current value of libname.  That
-	 * is, it points at the '\0' at the end of "/path/to/file".
-	 */
-	size_t lnlen = strlen (libname);
-	char *lne = strrchr (libname, '\0');
-
-	fe = idio_file_extensions;
-
-	for (;NULL != fe->reader;fe++) {
-	    if (NULL != fe->ext) {
-
-		if ((lnlen + strlen (fe->ext)) >= PATH_MAX) {
-		    /*
-		     * Test Case: ??
-		     *
-		     * Can we get here if we checked with max_ext_len
-		     * in the above cases?
-		     */
-		    if (idiolib_copy) {
-			IDIO_GC_FREE (idiolib_copy);
+			/* notreached */
+			return NULL;
 		    }
 
-		    idio_file_handle_malformed_filename_error ("name too long", idio_string_C (libname), IDIO_C_FUNC_LOCATION ());
-
-		    /* notreached */
-		    return NULL;
+		    memcpy (libname, idiolib, dirlen);
+		    libname[dirlen] = '\0';
 		}
-
-		strncpy (lne, fe->ext, PATH_MAX - lnlen - 1);
 	    }
 
-	    if (access (libname, R_OK) == 0) {
-		done = 1;
-		break;
-	    }
+	    strcat (libname, "/");
+	    strcat (libname, file);
 
-	    /* reset libname without ext */
-	    *lne = '\0';
-	}
-
-	/*
-	 * Sadly we can't do a double break without a GOTO -- which is
-	 * considered harmful.  So we need to check and break again,
-	 * here.
-	 *
-	 * No GOTOs in C, even though we've implemented continuations
-	 * in Idio...
-	 */
-	if (done) {
-	    break;
-	}
-
-	if (NULL == colon) {
 	    /*
-	     * Nothing left to try in IDIOLIB so as a final throw of
-	     * the dice, let's try idio_env_IDIOLIB_default.
+	     * libname now contains "/path/to/file".
 	     *
-	     * Unless that was the last thing we tried.
+	     * We now try each extension in turn by maintaining lne which
+	     * points at the end of the current value of libname.  That
+	     * is, it points at the '\0' at the end of "/path/to/file".
 	     */
-	    size_t dl = strlen (idio_env_IDIOLIB_default);
-	    if (strncmp (libname, idio_env_IDIOLIB_default, dl) == 0 &&
-		'/' == libname[dl]) {
-		done = 1;
-		libname[0] = '\0';
-		break;
-	    } else {
-		idiolib = idio_env_IDIOLIB_default;
-		idiolibe = idiolib + strlen (idiolib);
-		colon = idiolib - 1;
-	    }
-	}
+	    size_t lnlen = strlen (libname);
+	    char *lne = strrchr (libname, '\0');
 
-	idiolib = colon + 1;
+	    fe = idio_file_extensions;
+
+	    for (;NULL != fe->reader;fe++) {
+		if (NULL != fe->ext) {
+
+		    if ((lnlen + strlen (fe->ext)) >= PATH_MAX) {
+			/*
+			 * Test Case: ??
+			 *
+			 * Can we get here if we checked with max_ext_len
+			 * in the above cases?
+			 */
+			if (idiolib_copy) {
+			    IDIO_GC_FREE (idiolib_copy);
+			}
+
+			idio_file_handle_malformed_filename_error ("name too long", idio_string_C (libname), IDIO_C_FUNC_LOCATION ());
+
+			/* notreached */
+			return NULL;
+		    }
+
+		    strncpy (lne, fe->ext, PATH_MAX - lnlen - 1);
+		}
+
+		if (access (libname, R_OK) == 0) {
+		    done = 1;
+		    break;
+		}
+
+		/* reset libname without ext */
+		*lne = '\0';
+	    }
+
+	    /*
+	     * Sadly we can't do a double break without a GOTO -- which is
+	     * considered harmful.  So we need to check and break again,
+	     * here.
+	     *
+	     * No GOTOs in C, even though we've implemented continuations
+	     * in Idio...
+	     */
+	    if (done) {
+		break;
+	    }
+
+	    if (NULL == colon) {
+		/*
+		 * Nothing left to try in IDIOLIB so as a final throw of
+		 * the dice, let's try idio_env_IDIOLIB_default.
+		 *
+		 * Unless that was the last thing we tried.
+		 */
+		size_t dl = strlen (idio_env_IDIOLIB_default);
+		if (strncmp (libname, idio_env_IDIOLIB_default, dl) == 0 &&
+		    '/' == libname[dl]) {
+		    done = 1;
+		    libname[0] = '\0';
+		    break;
+		} else {
+		    idiolib = idio_env_IDIOLIB_default;
+		    idiolibe = idiolib + strlen (idiolib);
+		    colon = idiolib - 1;
+		}
+	    }
+
+	    idiolib = colon + 1;
+	}
     }
 
     char *idiolibname = NULL;

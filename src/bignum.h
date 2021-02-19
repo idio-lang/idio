@@ -151,6 +151,28 @@
 
 #define IDIO_BIGNUM_SIG_MAX_DIGITS	  (IDIO_BIGNUM_SIG_SEGMENTS * IDIO_BIGNUM_DPW)
 
+/*
+ * We can use some accelerators when converting a bignum into a C
+ * type.  In particular, for large integers near to the limits of a C
+ * type, we can look at the value of the first (most significant)
+ * segment which will contain a small integer (with the bulk of the
+ * digits in subsequent segments).
+ *
+ * INT64_MAX is 9223372036854775807 which, at 19 digits, is a segment
+ * of one digit, 9, and a segment of 18 digits, 223372036854775807.
+ *
+ * If the number of segments is at the limit and this first segement
+ * is <= 9 then we're OK to continue.
+ *
+ * Clearly, the number could have been 93nnn... so we have a safety
+ * check that we haven't overflowed.
+ *
+ * In all cases, the first digit(s) of a signed integer segment is -D
+ * so we only need one macro.
+ *
+ * The lower limit for an unsigned quantity is 0.
+ */
+
 #if PTRDIFF_MAX == 9223372036854775807LL
 #if __LP64__
 #define IDIO_BIGNUM_PTRDIFF_WORDS 2
@@ -169,11 +191,11 @@
 
 #if INTPTR_MAX == 9223372036854775807LL
 #define IDIO_BIGNUM_INTPTR_WORDS 2
-#define IDIO_BIGNUM_INTPTR_FIRST 9
+#define IDIO_BIGNUM_INTPTR_FIRST 9  /*  9 223372036854775807 */
 #else
 #if INTPTR_MAX == 2147483647L
 #define IDIO_BIGNUM_INTPTR_WORDS 2
-#define IDIO_BIGNUM_INTPTR_FIRST 2
+#define IDIO_BIGNUM_INTPTR_FIRST 2 /* 2 147483647 */
 #else
 #error unexpected INTPTR_MAX
 #endif
@@ -181,19 +203,27 @@
 
 #if INTMAX_MAX == 9223372036854775807LL
 #if __LP64__
-#define IDIO_BIGNUM_INTMAX_WORDS 2
+#define IDIO_BIGNUM_INTMAX_WORDS  2
+#define IDIO_BIGNUM_UINTMAX_WORDS 2
 #else
-#define IDIO_BIGNUM_INTMAX_WORDS 3
+#define IDIO_BIGNUM_INTMAX_WORDS  3
+#define IDIO_BIGNUM_UINTMAX_WORDS 3
 #endif
-#define IDIO_BIGNUM_INTMAX_FIRST 9
+#define IDIO_BIGNUM_INTMAX_FIRST  9  /*  9 223372036854775807 */
+#define IDIO_BIGNUM_UINTMAX_FIRST 18 /* 18 446744073709551615 */
 #else
 #if INTMAX_MAX == 2147483647L
-#define IDIO_BIGNUM_INTMAX_WORDS 2
-#define IDIO_BIGNUM_INTMAX_FIRST 2
+#define IDIO_BIGNUM_INTMAX_WORDS  2
+#define IDIO_BIGNUM_UINTMAX_WORDS 2
+#define IDIO_BIGNUM_INTMAX_FIRST  2 /* 2 147483647 */
+#define IDIO_BIGNUM_UINTMAX_FIRST 4 /* 4 294967295 */
 #else
 #error unexpected INTMAX_MAX
 #endif
 #endif
+
+#define IDIO_BIGNUM_INT64_FIRST  9  /*  9 223372036854775807 */
+#define IDIO_BIGNUM_UINT64_FIRST 18 /* 18 446744073709551615 */
 
 #define IDIO_BIGNUM_EXP_CHAR(c)	('d' == c || 'D' == c ||	 \
 				 'e' == c || 'E' == c ||	 \
@@ -228,6 +258,7 @@ uint64_t idio_bignum_uint64_value (IDIO bn);
 ptrdiff_t idio_bignum_ptrdiff_value (IDIO bn);
 intptr_t idio_bignum_intptr_value (IDIO bn);
 intmax_t idio_bignum_intmax_value (IDIO bn);
+uintmax_t idio_bignum_uintmax_value (IDIO bn);
 IDIO idio_bignum_to_fixnum (IDIO bn);
 IDIO idio_bignum_abs (IDIO bn);
 int idio_bignum_negative_p (IDIO bn);

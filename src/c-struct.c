@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -194,7 +194,7 @@ IDIO idio_C_fields_array (IDIO C_typedefs)
 	if (idio_isa_pair (C_typedef)) {
 	    IDIO v1 = idio_list_head (idio_list_tail (C_typedef));
 	    IDIO v2 = idio_C_number_cast (v1, IDIO_TYPE_C_UINT);
-	    nelem = IDIO_C_TYPE_UINT (v2);
+	    nelem = IDIO_C_TYPE_uint (v2);
 
 	    C_typedef = idio_list_head (C_typedef);
 	}
@@ -290,7 +290,7 @@ size_t idio_sizeof_C_struct (IDIO fields_array)
     IDIO offset = idio_array_ref_index (field_data, IDIO_C_FIELD_DATA_OFFSET);
     IDIO size = idio_array_ref_index (field_data, IDIO_C_FIELD_DATA_SIZE);
 
-    r = IDIO_C_TYPE_INT (offset) + IDIO_C_TYPE_UINT (size);
+    r = IDIO_C_TYPE_int (offset) + IDIO_C_TYPE_uint (size);
 
     return r;
 }

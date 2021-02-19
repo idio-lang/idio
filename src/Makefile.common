@@ -1,0 +1,82 @@
+HOSTNAME	:= $(shell uname -n)
+OS		:= $(shell uname -s)
+REV		:= $(shell uname -r)
+ARCH		:= $(shell uname -m)
+SHELL		:= bash
+
+TOPDIR		?= $(abspath $(PWD)/..)
+BINDIR		?= $(TOPDIR)/bin
+LIBDIR		?= $(TOPDIR)/lib
+EXTDIR		?= $(TOPDIR)/ext
+TESTSDIR	?= $(TOPDIR)/tests
+DOCDIR		?= $(TOPDIR)/doc
+SRCDOCDIR	:= $(DOCDIR)/src
+SRCKDOUTDIR	:= $(SRCDOCDIR)/kernel-autodoc-out
+
+ifeq ($(OS),Darwin)
+
+LIBFFI_INCDIR	:= /usr/include/ffi
+ifeq ($(REV),9.8.0)
+LIBFFI_INCDIR	:= /Developer//SDKs/MacOSX10.5.sdk/usr/include/ffi
+else
+LIBFFI_INCDIR	:= /Library/Developer/CommandLineTools/SDKs/MacOSX10.15.sdk/usr/include/ffi
+endif
+
+# Yes, I know there's an arithmetic shift left of a signed variable!
+CFLAGS		:= -Wno-shift-negative-value
+LDFLAGS		:= -rdynamic
+LIBS		:= -ldl
+
+else ifeq ($(OS),Linux)
+
+LIBFFI_INCDIR	= $(wildcard /usr/lib*/libffi-*/include)
+LDFLAGS		:= -rdynamic
+LIBS		:= -ldl
+ifeq ($(ARCH),x86_64)
+CFLAGS		:= -m64 $(CFLAGS) # -fsanitize=undefined
+LDFLAGS		:= -m64 -Wl,-Map=map $(LDFLAGS)
+endif
+
+ifneq (,$(findstring centos-6,$(HOSTNAME)))
+LIBS		:= -lrt $(LIBS)
+endif
+
+ifneq (,$(findstring debian-,$(HOSTNAME)))
+CC		:= gcc-8
+endif
+
+ifneq (,$(findstring ubuntu-,$(HOSTNAME)))
+CC		:= gcc-8
+endif
+
+else ifeq ($(OS),SunOS)
+
+CC		:= gcc
+LIBFFI_INCDIR	= $(wildcard /usr/lib/$(shell isainfo -k | grep -v i386)/libffi-*/include)
+LDFLAGS		:= -L/usr/local/lib -R/usr/local/lib
+LIBS		:= -ldl
+CFLAGS		:= -D__EXTENSIONS__
+M64		:= $(filter %64, $(shell isainfo))
+ifeq ($(M64),amd64)
+CFLAGS		:= -m64 $(CFLAGS)
+LDFLAGS		:= -m64 $(LDFLAGS)
+endif
+
+else ifeq ($(OS),FreeBSD)
+
+CC		:= $(wildcard /usr/local/bin/gcc4?)
+LIBFFI_INCDIR	:= /usr/local/include
+LDFLAGS		:= -L/usr/local/lib
+
+endif
+
+ifndef LIBFFI_INCDIR
+$(error LIBFFI_INCDIR is unset)
+else
+ifeq "$(LIBFFI_INCDIR)" ""
+LIBFFI_INC	:=
+else
+LIBFFI_INC	:= -I$(LIBFFI_INCDIR)
+endif
+endif
+

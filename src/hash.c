@@ -771,17 +771,47 @@ idio_hi_t idio_hash_default_hash_C (IDIO h, void *kv)
     case IDIO_TYPE_STRUCT_INSTANCE:
 	hv = idio_idio_hash_default_hash_C_struct_instance (k);
 	break;
+    case IDIO_TYPE_C_CHAR:
+	hv = idio_hash_default_hash_C_uintmax_t ((uintmax_t) IDIO_C_TYPE_char (k));
+	break;
+    case IDIO_TYPE_C_SCHAR:
+	hv = idio_hash_default_hash_C_uintmax_t ((uintmax_t) IDIO_C_TYPE_schar (k));
+	break;
+    case IDIO_TYPE_C_UCHAR:
+	hv = idio_hash_default_hash_C_uintmax_t ((uintmax_t) IDIO_C_TYPE_uchar (k));
+	break;
+    case IDIO_TYPE_C_SHORT:
+	hv = idio_hash_default_hash_C_uintmax_t ((uintmax_t) IDIO_C_TYPE_short (k));
+	break;
+    case IDIO_TYPE_C_USHORT:
+	hv = idio_hash_default_hash_C_uintmax_t ((uintmax_t) IDIO_C_TYPE_ushort (k));
+	break;
     case IDIO_TYPE_C_INT:
-	hv = idio_hash_default_hash_C_uintmax_t ((uintmax_t) IDIO_C_TYPE_INT (k));
+	hv = idio_hash_default_hash_C_uintmax_t ((uintmax_t) IDIO_C_TYPE_int (k));
 	break;
     case IDIO_TYPE_C_UINT:
-	hv = idio_hash_default_hash_C_uintmax_t ((uintmax_t) IDIO_C_TYPE_UINT (k));
+	hv = idio_hash_default_hash_C_uintmax_t ((uintmax_t) IDIO_C_TYPE_uint (k));
+	break;
+    case IDIO_TYPE_C_LONG:
+	hv = idio_hash_default_hash_C_uintmax_t ((uintmax_t) IDIO_C_TYPE_long (k));
+	break;
+    case IDIO_TYPE_C_ULONG:
+	hv = idio_hash_default_hash_C_uintmax_t ((uintmax_t) IDIO_C_TYPE_ulong (k));
+	break;
+    case IDIO_TYPE_C_LONGLONG:
+	hv = idio_hash_default_hash_C_uintmax_t ((uintmax_t) IDIO_C_TYPE_longlong (k));
+	break;
+    case IDIO_TYPE_C_ULONGLONG:
+	hv = idio_hash_default_hash_C_uintmax_t ((uintmax_t) IDIO_C_TYPE_ulonglong (k));
 	break;
     case IDIO_TYPE_C_FLOAT:
-	hv = idio_hash_default_hash_C_uintmax_t ((uintmax_t) IDIO_C_TYPE_FLOAT (k));
+	hv = idio_hash_default_hash_C_uintmax_t ((uintmax_t) IDIO_C_TYPE_float (k));
 	break;
     case IDIO_TYPE_C_DOUBLE:
-	hv = idio_hash_default_hash_C_uintmax_t ((uintmax_t) IDIO_C_TYPE_DOUBLE (k));
+	hv = idio_hash_default_hash_C_uintmax_t ((uintmax_t) IDIO_C_TYPE_double (k));
+	break;
+    case IDIO_TYPE_C_LONGDOUBLE:
+	hv = idio_hash_default_hash_C_uintmax_t ((uintmax_t) IDIO_C_TYPE_longdouble (k));
 	break;
     case IDIO_TYPE_C_POINTER:
 	hv = idio_hash_default_hash_C_void (IDIO_C_TYPE_POINTER_P (k));

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -30,7 +30,7 @@ ffi_type *idio_C_FFI_type (IDIO field_data)
 	return &ffi_type_void;
     }
 
-    switch (IDIO_C_TYPE_UINT (type)) {
+    switch (IDIO_C_TYPE_uint (type)) {
     case IDIO_TYPE_C_INT8_T:
 	return &ffi_type_sint8;
     case IDIO_TYPE_C_UINT8_T:
@@ -58,7 +58,7 @@ ffi_type *idio_C_FFI_type (IDIO field_data)
     default:
 	{
 	    char em[BUFSIZ];
-	    sprintf (em, "unexpected C_FFI type %ju: %s", IDIO_C_TYPE_UINT (type), idio_type2string (type));
+	    sprintf (em, "unexpected C_FFI type %u: %s", IDIO_C_TYPE_uint (type), idio_type2string (type));
 	    idio_error_printf (IDIO_C_FUNC_LOCATION (), em);
 
 	    /* notreached */

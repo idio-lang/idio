@@ -433,7 +433,7 @@ static int idio_job_control_mark_process_status (pid_t pid, int status)
 		    return -4;
 		}
 
-		int proc_pid = IDIO_C_TYPE_INT (idio_struct_instance_ref_direct (proc, IDIO_PROCESS_TYPE_PID));
+		int proc_pid = IDIO_C_TYPE_int (idio_struct_instance_ref_direct (proc, IDIO_PROCESS_TYPE_PID));
 
 		if (proc_pid == pid) {
 		    IDIO proc_status = idio_struct_instance_ref_direct (proc, IDIO_PROCESS_TYPE_STATUS);
@@ -497,10 +497,10 @@ update the process status of pid `pid` with `status`\n\
     IDIO_ASSERT (ipid);
     IDIO_ASSERT (istatus);
 
-    IDIO_USER_TYPE_ASSERT (C_int, ipid);
-    IDIO_USER_TYPE_ASSERT (C_pointer, istatus);
+    IDIO_USER_C_TYPE_ASSERT (int, ipid);
+    IDIO_USER_C_TYPE_ASSERT (pointer, istatus);
 
-    int pid = IDIO_C_TYPE_INT (ipid);
+    int pid = IDIO_C_TYPE_int (ipid);
     int *statusp = IDIO_C_TYPE_POINTER_P (istatus);
 
     IDIO r = idio_S_false;
@@ -611,7 +611,7 @@ static void idio_job_control_format_job_info (IDIO job, char *msg)
 	return;
     }
 
-    pid_t job_pgid = IDIO_C_TYPE_INT (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PGID));
+    pid_t job_pgid = IDIO_C_TYPE_int (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PGID));
 
     fprintf (stderr, "job %5ld (%s)", (long) job_pgid, msg);
     idio_debug (": %s\n", idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PIPELINE));
@@ -708,7 +708,7 @@ static IDIO idio_job_control_foreground_job (IDIO job, int cont)
 	return idio_S_notreached;
     }
 
-    pid_t job_pgid = IDIO_C_TYPE_INT (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PGID));
+    pid_t job_pgid = IDIO_C_TYPE_int (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PGID));
 
     /*
      * Put the job in the foreground
@@ -836,7 +836,7 @@ static IDIO idio_job_control_background_job (IDIO job, int cont)
     }
 
     if (cont) {
-	int job_pgid = IDIO_C_TYPE_INT (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PGID));
+	int job_pgid = IDIO_C_TYPE_int (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PGID));
 
 	if (kill (-job_pgid, SIGCONT) < 0) {
 	    idio_error_system_errno_msg ("kill", "SIGCONT", idio_C_int (-job_pgid), IDIO_C_FUNC_LOCATION ());
@@ -904,9 +904,9 @@ static void idio_job_control_hangup_job (IDIO job)
     if (idio_isa_fixnum (ipgid)) {
 	job_pgid = IDIO_FIXNUM_VAL (ipgid);
     } else if (idio_isa_C_int (ipgid)) {
-	job_pgid = IDIO_C_TYPE_INT (ipgid);
+	job_pgid = IDIO_C_TYPE_int (ipgid);
     } else {
-	idio_error_param_type ("fixnum|C_int", ipgid, IDIO_C_FUNC_LOCATION ());
+	idio_error_param_type ("fixnum|C/int", ipgid, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return;
@@ -1257,25 +1257,25 @@ File descriptors are C integers.		\n\
     IDIO_ASSERT (ierrfile);
     IDIO_ASSERT (iforeground);
 
-    IDIO_USER_TYPE_ASSERT (C_int, iinfile);
-    IDIO_USER_TYPE_ASSERT (C_int, ioutfile);
-    IDIO_USER_TYPE_ASSERT (C_int, ierrfile);
+    IDIO_USER_C_TYPE_ASSERT (int, iinfile);
+    IDIO_USER_C_TYPE_ASSERT (int, ioutfile);
+    IDIO_USER_C_TYPE_ASSERT (int, ierrfile);
     IDIO_USER_TYPE_ASSERT (boolean, iforeground);
 
     pid_t pgid = 0;
     if (idio_isa_fixnum (ipgid)) {
 	pgid = IDIO_FIXNUM_VAL (ipgid);
     } else if (idio_isa_C_int (ipgid)) {
-	pgid = IDIO_C_TYPE_INT (ipgid);
+	pgid = IDIO_C_TYPE_int (ipgid);
     } else {
-	idio_error_param_type ("fixnum|C_int", ipgid, IDIO_C_FUNC_LOCATION ());
+	idio_error_param_type ("fixnum|C/int", ipgid, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
 
-    int infile = IDIO_C_TYPE_INT (iinfile);
-    int outfile = IDIO_C_TYPE_INT (ioutfile);
-    int errfile = IDIO_C_TYPE_INT (ierrfile);
+    int infile = IDIO_C_TYPE_int (iinfile);
+    int outfile = IDIO_C_TYPE_int (ioutfile);
+    int errfile = IDIO_C_TYPE_int (ierrfile);
 
     int foreground = 0;
 
@@ -1301,10 +1301,10 @@ static void idio_job_control_launch_job (IDIO job, int foreground)
     }
 
     IDIO procs = idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PROCS);
-    pid_t job_pgid = IDIO_C_TYPE_INT (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PGID));
-    int job_stdin = IDIO_C_TYPE_INT (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_STDIN));
-    int job_stdout = IDIO_C_TYPE_INT (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_STDOUT));
-    int job_stderr = IDIO_C_TYPE_INT (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_STDERR));
+    pid_t job_pgid = IDIO_C_TYPE_int (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PGID));
+    int job_stdin = IDIO_C_TYPE_int (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_STDIN));
+    int job_stdout = IDIO_C_TYPE_int (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_STDOUT));
+    int job_stderr = IDIO_C_TYPE_int (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_STDERR));
     int infile = job_stdin;
     int outfile;
     int proc_pipe[2];
@@ -1330,7 +1330,7 @@ static void idio_job_control_launch_job (IDIO job, int foreground)
 	    }
 	    outfile = proc_pipe[1];
 	} else {
-	    outfile = IDIO_C_TYPE_INT (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_STDOUT));
+	    outfile = IDIO_C_TYPE_int (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_STDOUT));
 	}
 
 	pid_t pid = fork ();
@@ -1435,10 +1435,10 @@ IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char **argv)
 	return idio_S_notreached;
     }
 
-    pid_t job_pgid = IDIO_C_TYPE_INT (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PGID));
-    int job_stdin = IDIO_C_TYPE_INT (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_STDIN));
-    int job_stdout = IDIO_C_TYPE_INT (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_STDOUT));
-    int job_stderr = IDIO_C_TYPE_INT (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_STDERR));
+    pid_t job_pgid = IDIO_C_TYPE_int (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PGID));
+    int job_stdin = IDIO_C_TYPE_int (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_STDIN));
+    int job_stdout = IDIO_C_TYPE_int (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_STDOUT));
+    int job_stderr = IDIO_C_TYPE_int (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_STDERR));
 
     /*
      * We're here because the VM saw a symbol in functional position
@@ -1938,7 +1938,7 @@ void idio_init_job_control ()
      * Not noted in the Job Control docs is that if we are launched
      * non-interactively then we never set
      * idio_job_control_pgid/%idio-pgid with a later complaint about a
-     * symbol not being a C_int when the variable is accessed in
+     * symbol not being a C/int when the variable is accessed in
      * foreground-job in job_control.idio.
      *
      * More specifically, idio_job_control_pgid is set to 0 (as a C

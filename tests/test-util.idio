@@ -55,8 +55,8 @@ test (type->string (current-input-handle))	"HANDLE"
 test (type->string ^error)			"STRUCT_TYPE"
 test (type->string libc/idio-uname)		"STRUCT_INSTANCE"
 test (type->string #B{ 3 })			"BITSET"
-test (type->string libc/INTMAX_MAX)		"C_INT"
-test (type->string libc/UINTMAX_MAX)		"C_UINT"
+test (type->string libc/INT_MAX)		"C/int"
+test (type->string libc/UINT_MAX)		"C/uint"
 
 test (zero? 0)				#t ; FIXNUM
 test (zero? #t)				#f ; CONSTANT
@@ -351,7 +351,7 @@ hash-set! ht2 #\b "banana"
 test (equal? ht1 ht2) #f
 
 test (eq? 0.0 0.0) #f
-test (equal? libc/0U libc/UINTMAX_MAX) #f
+test (equal? C/0u libc/UINTMAX_MAX) #f
 test (eqv? ^error ^idio-error) #f
 test (equal? ^error ^idio-error) #f
 

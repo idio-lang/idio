@@ -22,11 +22,14 @@
 module libc
 
 export (make-tmp-file
+	make-tmp-fd
 	make-tmp-file-handle
 	make-tmp-dir
 	stdin-fileno
 	stdout-fileno
 	stderr-fileno)
+
+include "libc-api.idio"
 
 ;; define structure accessors
 export-struct-accessors-only struct-sigaction		sa-handler sa-sigaction sa-mask sa-flags
@@ -57,8 +60,8 @@ referencing STDIN_FILENO etc..  Rather than that, call a function to
 look at what Idio's thread thinks the current input or output is and
 make a decision then.
 
-For a file-handle the decision is easy: call file-handle-fd (or,
-rather, fileno as we want a C "int" type).
+For a fd-handle (file, pipe, etc.) the decision is easy: call
+fd-handle-fd.
 
 For a string-handle we can use temporary files.  For input, this is
 like using a "here-string" in Bash, ie. we create a temporary file,
@@ -147,6 +150,13 @@ define (make-tmp-file & prefix) {
   pht fd+name
 }
 
+define (make-tmp-fd & prefix) {
+  fd+name := apply %make-tmp-fd prefix
+
+  unlink (pht fd+name)
+  ph fd+name
+}
+
 define (make-tmp-file-handle & prefix) {
   fd+name := apply %make-tmp-fd prefix
 
@@ -184,7 +194,7 @@ The temporary file code is derived from Bash's here document code
 
 define (stdin-fileno) {
   ih := (current-input-handle)
-  cond ((input-file-handle? ih) (fileno ih)) \
+  cond ((input-file-handle? ih) (fd-handle-fd ih)) \
        ((file-handle? ih) (error 'stdin-fileno "not an input-file-handle" ih)) \
        ((input-string-handle? ih) {
 	 ;; 1. create and open a temporary file
@@ -194,7 +204,7 @@ define (stdin-fileno) {
 	 display (get-output-string ih) handle
 	 ;; 3. *before* we unlink or close the original fd, open as
 	 ;; the input file
-	 fd := fileno (open-input-file (pht fd+name))
+	 fd := fd-handle-fd (open-input-file (pht fd+name))
 	 ;; 4. unlink and close the original -- this flushes any
 	 ;; output!
 	 unlink (pht fd+name)
@@ -211,7 +221,7 @@ define (stdin-fileno) {
 ;;
 define (stdout-fileno) {
   oh := (current-output-handle)
-  cond ((output-file-handle? oh) (fileno oh)) \
+  cond ((output-file-handle? oh) (fd-handle-fd oh)) \
        ((file-handle? oh) (error 'stdout-fileno "not an output-file-handle" oh)) \
        ((output-string-handle? oh) {
 	 ;; 1. create a temporary file
@@ -230,7 +240,7 @@ define (stdout-fileno) {
 ;;
 define (stderr-fileno) {
   eh := (current-error-handle)
-  cond ((output-file-handle? eh) (fileno eh)) \
+  cond ((output-file-handle? eh) (fd-handle-fd eh)) \
        ((file-handle? eh) (error 'stderr-fileno "not an output-file-handle" eh)) \
        ((output-string-handle? eh) {
 	 ;; 1. create a temporary file

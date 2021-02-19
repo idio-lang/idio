@@ -83,7 +83,7 @@ posix-regex-error-load "posix-regex-errors/regcomp-bad-flag-type.idio" "bad para
    posix-regex-error-load "posix-regex-errors/regcomp-bad-pattern.idio" "regcomp failure: Invalid preceding regular expression"
  }))
 
-posix-regex-error-load "posix-regex-errors/regexec-bad-rx-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_pointer"
+posix-regex-error-load "posix-regex-errors/regexec-bad-rx-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"
 posix-regex-error-load "posix-regex-errors/regexec-bad-str-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
 posix-regex-error-load "posix-regex-errors/regexec-bad-flag.idio" "regexec unexpected flag"
 posix-regex-error-load "posix-regex-errors/regexec-bad-flag-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol"

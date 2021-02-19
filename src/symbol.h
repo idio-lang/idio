@@ -119,6 +119,21 @@ extern IDIO_SYMBOL_DECL (trap);
 extern IDIO_SYMBOL_DECL (unquote);
 extern IDIO_SYMBOL_DECL (unquotesplicing);
 
+extern IDIO_SYMBOL_DECL (char);
+extern IDIO_SYMBOL_DECL (schar);
+extern IDIO_SYMBOL_DECL (uchar);
+extern IDIO_SYMBOL_DECL (short);
+extern IDIO_SYMBOL_DECL (ushort);
+extern IDIO_SYMBOL_DECL (int);
+extern IDIO_SYMBOL_DECL (uint);
+extern IDIO_SYMBOL_DECL (long);
+extern IDIO_SYMBOL_DECL (ulong);
+extern IDIO_SYMBOL_DECL (longlong);
+extern IDIO_SYMBOL_DECL (ulonglong);
+extern IDIO_SYMBOL_DECL (float);
+extern IDIO_SYMBOL_DECL (double);
+extern IDIO_SYMBOL_DECL (longdouble);
+
 extern IDIO idio_properties_hash;
 
 void idio_property_error_nil_object (char *msg, IDIO c_location);

@@ -520,8 +520,8 @@ int64_t idio_bignum_int64_value (IDIO bn)
 	    if (al <= IDIO_BIGNUM_INT64_WORDS) {
 		IDIO_BS_T a1 = idio_bsa_get (sig_a, al - 1);
 
-		if (a1 <= 9 &&
-		    a1 >= -9) {
+		if (a1 <= IDIO_BIGNUM_INT64_FIRST &&
+		    a1 >= -IDIO_BIGNUM_INT64_FIRST) {
 		    int64_t v = 0;
 		    for (; al > 0 ; al--) {
 		      v *= IDIO_BIGNUM_INT_SEG_LIMIT;
@@ -592,7 +592,7 @@ uint64_t idio_bignum_uint64_value (IDIO bn)
 	    if (al <= IDIO_BIGNUM_INT64_WORDS) {
 		IDIO_BS_T a1 = idio_bsa_get (sig_a, al - 1);
 
-		if (a1 <= 18 &&
+		if (a1 <= IDIO_BIGNUM_UINT64_FIRST &&
 		    a1 >= 0) {
 		    uint64_t v = 0;
 		    for (; al > 0 ; al--) {
@@ -887,6 +887,92 @@ intmax_t idio_bignum_intmax_value (IDIO bn)
      * Code coverage: C unit test??
      */
     return (intmax_t) idio_bsa_get (sig_a, al - 1);
+}
+
+uintmax_t idio_bignum_uintmax_value (IDIO bn)
+{
+    IDIO_ASSERT (bn);
+    IDIO_TYPE_ASSERT (bignum, bn);
+
+    IDIO bn_i = idio_bignum_integer_argument (bn);
+    if (idio_S_nil == bn_i) {
+	/*
+	 * Code coverage: C unit test??
+	 */
+	return 0;
+    }
+
+    IDIO_BSA sig_a = IDIO_BIGNUM_SIG (bn_i);
+    size_t al = IDIO_BSA_SIZE (sig_a);
+
+    if (al > 1) {
+	IDIO fn = idio_bignum_to_fixnum (bn_i);
+	if (idio_S_nil == fn) {
+	    /*
+	     * Grr! *shakes fist*
+	     *
+	     * LP64 UINTMAX_MAX is 18446744073709551615, 20 digits
+	     * long -- just over the default DPW yet small enough to
+	     * fit into an uintmax_t.
+	     *
+	     * LP32 UINTMAX_MAX is (should be!) 4294967295, 10 digits
+	     * long, just over the default DPW yet small enough to fit
+	     * into an uintmax_t.
+	     */
+	    if (al <= IDIO_BIGNUM_UINTMAX_WORDS) {
+		IDIO_BS_T a1 = idio_bsa_get (sig_a, al - 1);
+
+		if (a1 <= IDIO_BIGNUM_UINTMAX_FIRST &&
+		    a1 >= 0) {
+		    uintmax_t v = 0;
+		    for (; al > 0 ; al--) {
+		      v *= IDIO_BIGNUM_INT_SEG_LIMIT;
+			if (v < 0) {
+			    v -= idio_bsa_get (sig_a, al - 1);
+			} else {
+			    v += idio_bsa_get (sig_a, al - 1);
+			}
+		    }
+
+		    /*
+		     * Check we haven't overflowed the C uintmax_t
+		     */
+		    if ((a1 < 0 &&
+			 v < 0) ||
+			(a1 >= 0 &&
+			 v >= 0)) {
+
+			return v;
+		    }
+		}
+	    }
+	    size_t size = 0;
+	    char *bn_is = idio_bignum_as_string (bn_i, &size);
+	    char em[BUFSIZ];
+	    sprintf (em, "%s is too large for uintmax_t (%jd)", bn_is, (uintmax_t) UINTMAX_MAX);
+	    IDIO_GC_FREE (bn_is);
+
+	    /*
+	     * Test Case: ??
+	     *
+	     * Requires bad developer code.
+	     */
+	    idio_bignum_conversion_error (em, bn, IDIO_C_FUNC_LOCATION ());
+
+	    /* notreached */
+	    return -1;
+	} else {
+	    /*
+	     * Code coverage: C unit test??
+	     */
+	    return IDIO_FIXNUM_VAL (fn);
+	}
+    }
+
+    /*
+     * Code coverage: C unit test??
+     */
+    return (uintmax_t) idio_bsa_get (sig_a, al - 1);
 }
 
 IDIO idio_bignum_to_fixnum (IDIO bn)

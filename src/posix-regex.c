@@ -200,7 +200,7 @@ an extra REG_BASIC flag to disable REG_EXTENDED	\n\
 :type flags: list of symbols			\n\
 						\n\
 :return: compiled regex(3)			\n\
-:rtype: C-pointer				\n\
+:rtype: C/pointer				\n\
 ")
 {
     IDIO_ASSERT (rx);
@@ -343,7 +343,7 @@ If a subexpression in ``rx`` did not match the 	\n\
 corresponding array element will be #f	.	\n\
 						\n\
 :param rx: compiled regular expression		\n\
-:type rx: C-pointer				\n\
+:type rx: C/pointer				\n\
 :param str: string to match against		\n\
 :type rx: string				\n\
 :param flags: regexec flags			\n\
@@ -362,7 +362,7 @@ corresponding array element will be #f	.	\n\
      *
      * regexec #t #t
      */
-    IDIO_USER_TYPE_ASSERT (C_pointer, rx);
+    IDIO_USER_C_TYPE_ASSERT (pointer, rx);
     /*
      * Test Case: posix-regex-errors/regexec-bad-str-type.idio
      *

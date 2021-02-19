@@ -93,54 +93,52 @@ libc-wrap-error-load := {
 ;; EBADF's strerror(3) form differs across systems
 strerror-EBADF := strerror EBADF
 
-libc-wrap-error-load "libc-wrap-errors/struct-rusage-ru_utime-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_pointer"
-libc-wrap-error-load "libc-wrap-errors/struct-rusage-ru_stime-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_pointer"
-libc-wrap-error-load "libc-wrap-errors/struct-timeval-as-string-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_pointer"
+libc-wrap-error-load "libc-wrap-errors/struct-rusage-ru_utime-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"
+libc-wrap-error-load "libc-wrap-errors/struct-rusage-ru_stime-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"
+libc-wrap-error-load "libc-wrap-errors/struct-timeval-as-string-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"
 
-libc-wrap-error-load "libc-wrap-errors/add-struct-timeval-bad-first-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_pointer"
-libc-wrap-error-load "libc-wrap-errors/add-struct-timeval-bad-second-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_pointer"
+libc-wrap-error-load "libc-wrap-errors/add-struct-timeval-bad-first-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"
+libc-wrap-error-load "libc-wrap-errors/add-struct-timeval-bad-second-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"
 
-libc-wrap-error-load "libc-wrap-errors/subtract-struct-timeval-bad-first-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_pointer"
-libc-wrap-error-load "libc-wrap-errors/subtract-struct-timeval-bad-second-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_pointer"
+libc-wrap-error-load "libc-wrap-errors/subtract-struct-timeval-bad-first-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"
+libc-wrap-error-load "libc-wrap-errors/subtract-struct-timeval-bad-second-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"
 
 libc-wrap-error-load "libc-wrap-errors/access-bad-pathname-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
-libc-wrap-error-load "libc-wrap-errors/access-bad-mode-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_int"
+libc-wrap-error-load "libc-wrap-errors/access-bad-mode-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/access-bad-format.idio" "access: pathname contains an ASCII NUL"
 
 libc-wrap-error-load "libc-wrap-errors/chdir-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
 libc-wrap-error-load "libc-wrap-errors/chdir-bad-format.idio" "chdir: path contains an ASCII NUL"
 libc-wrap-error-load "libc-wrap-errors/chdir-non-existent.idio" "No such file or directory" ENOENT "chdir"
 
-libc-wrap-error-load "libc-wrap-errors/close-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_int"
+libc-wrap-error-load "libc-wrap-errors/close-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/close-bad-fd.idio" strerror-EBADF EBADF "close"
 
-libc-wrap-error-load "libc-wrap-errors/dup-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a fixnum|C_int oldfd"
+libc-wrap-error-load "libc-wrap-errors/dup-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a fixnum|C/int oldfd"
 libc-wrap-error-load "libc-wrap-errors/dup-bad-fd.idio" strerror-EBADF EBADF "dup"
 
-libc-wrap-error-load "libc-wrap-errors/dup2-bad-old-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a fixnum|C_int oldfd"
-libc-wrap-error-load "libc-wrap-errors/dup2-bad-new-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a fixnum|C_int newfd"
+libc-wrap-error-load "libc-wrap-errors/dup2-bad-old-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a fixnum|C/int oldfd"
+libc-wrap-error-load "libc-wrap-errors/dup2-bad-new-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a fixnum|C/int newfd"
 libc-wrap-error-load "libc-wrap-errors/dup2-bad-fd.idio" strerror-EBADF EBADF "dup2"
 
-libc-wrap-error-load "libc-wrap-errors/exit-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a fixnum|C_int"
+libc-wrap-error-load "libc-wrap-errors/exit-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a fixnum|C/int"
 
-libc-wrap-error-load "libc-wrap-errors/fcntl-bad-fd-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a fixnum|C_int fd"
-libc-wrap-error-load "libc-wrap-errors/fcntl-bad-cmd-type.idio" "bad parameter type: '1' a FIXNUM is not a C_int cmd"
-libc-wrap-error-load "libc-wrap-errors/fcntl-F_DUPFD-bad-arg-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a fixnum|C_int"
+libc-wrap-error-load "libc-wrap-errors/fcntl-bad-fd-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a fixnum|C/int fd"
+libc-wrap-error-load "libc-wrap-errors/fcntl-bad-cmd-type.idio" "bad parameter type: '1' a FIXNUM is not a C/int cmd"
+libc-wrap-error-load "libc-wrap-errors/fcntl-F_DUPFD-bad-arg-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a fixnum|C/int"
 (cond-expand
  (F_DUPFD_CLOEXEC {
-   libc-wrap-error-load "libc-wrap-errors/fcntl-F_DUPFD_CLOEXEC-bad-arg-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a fixnum|C_int"
+   libc-wrap-error-load "libc-wrap-errors/fcntl-F_DUPFD_CLOEXEC-bad-arg-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a fixnum|C/int"
  })
  (else {
    printf "no F_DUPFD_CLOEXEC on this system, skipping\n"
    test #t #t
  }))
-libc-wrap-error-load "libc-wrap-errors/fcntl-F_SETFD-bad-arg-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_int"
-libc-wrap-error-load "libc-wrap-errors/fcntl-F_SETFL-bad-arg-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_int"
+libc-wrap-error-load "libc-wrap-errors/fcntl-F_SETFD-bad-arg-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/int"
+libc-wrap-error-load "libc-wrap-errors/fcntl-F_SETFL-bad-arg-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/fcntl-unknown-cmd.idio" "fcntl unexpected cmd"
 
 libc-wrap-error-load "libc-wrap-errors/fcntl-F_DUPFD-bad-fd.idio" strerror-EBADF EBADF "fcntl"
-
-libc-wrap-error-load "libc-wrap-errors/fileno-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a file-handle"
 
 (cond-expand
  (uname/sysname/SunOS {
@@ -156,10 +154,10 @@ libc-wrap-error-load "libc-wrap-errors/fileno-bad-type.idio" "bad parameter type
 
 libc-wrap-error-load "libc-wrap-errors/getrlimit-bad-rlim.idio" "Invalid argument" EINVAL "getrlimit"
 
-libc-wrap-error-load "libc-wrap-errors/getrusage-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_int"
+libc-wrap-error-load "libc-wrap-errors/getrusage-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/getrusage-bad-who.idio" "Invalid argument" EINVAL "getrusage"
 
-libc-wrap-error-load "libc-wrap-errors/getsid-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a fixnum|C_int"
+libc-wrap-error-load "libc-wrap-errors/getsid-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a libc/pid_t"
 (cond-expand
  (uname/sysname/SunOS {
    ;; OpenIndiana returns EIVAL which isn't even listed on the man page
@@ -169,7 +167,7 @@ libc-wrap-error-load "libc-wrap-errors/getsid-bad-type.idio" "bad parameter type
    libc-wrap-error-load "libc-wrap-errors/getsid-invalid-pid.idio" "No such process" ESRCH "getsid"
  }))
 
-libc-wrap-error-load "libc-wrap-errors/isatty-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_int"
+libc-wrap-error-load "libc-wrap-errors/isatty-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/int"
 (cond-expand
  (uname/sysname/SunOS {
    ;; OpenIndiana oi_151.1.8 returns ENOENT which isn't even listed on the man page
@@ -182,12 +180,12 @@ libc-wrap-error-load "libc-wrap-errors/isatty-bad-type.idio" "bad parameter type
    libc-wrap-error-load "libc-wrap-errors/isatty-not-tty.idio" "Inappropriate ioctl for device" ENOTTY "isatty"
  }))
 
-libc-wrap-error-load "libc-wrap-errors/kill-bad-pid-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_int"
-libc-wrap-error-load "libc-wrap-errors/kill-bad-sig-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_int"
+libc-wrap-error-load "libc-wrap-errors/kill-bad-pid-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a libc/pid_t"
+libc-wrap-error-load "libc-wrap-errors/kill-bad-sig-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/kill-invalid-signal.idio" "Invalid argument" EINVAL "kill"
 
 libc-wrap-error-load "libc-wrap-errors/mkdir-bad-pathname-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
-libc-wrap-error-load "libc-wrap-errors/mkdir-bad-mode-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_int"
+libc-wrap-error-load "libc-wrap-errors/mkdir-bad-mode-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a libc/mode_t"
 libc-wrap-error-load "libc-wrap-errors/mkdir-bad-format.idio" "mkdir: pathname contains an ASCII NUL"
 libc-wrap-error-load "libc-wrap-errors/mkdir-pathname-exists.idio" "File exists" EEXIST "mkdir"
 
@@ -219,28 +217,28 @@ libc-wrap-error-load "libc-wrap-errors/mkstemp-bad-format.idio" "mkstemp: templa
    libc-wrap-error-load "libc-wrap-errors/mkstemp-bad-template.idio" "Invalid argument" EINVAL "mkstemp"
  }))
 
-libc-wrap-error-load "libc-wrap-errors/pipe-reader-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_pointer"
-libc-wrap-error-load "libc-wrap-errors/pipe-writer-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_pointer"
+libc-wrap-error-load "libc-wrap-errors/pipe-reader-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"
+libc-wrap-error-load "libc-wrap-errors/pipe-writer-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"
 
-libc-wrap-error-load "libc-wrap-errors/read-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_int"
-libc-wrap-error-load "libc-wrap-errors/read-bad-count-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a fixnum|C_int"
+libc-wrap-error-load "libc-wrap-errors/read-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/int"
+libc-wrap-error-load "libc-wrap-errors/read-bad-count-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a fixnum|libc/size_t"
 
 libc-wrap-error-load "libc-wrap-errors/rmdir-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
 libc-wrap-error-load "libc-wrap-errors/rmdir-bad-format.idio" "rmdir: pathname contains an ASCII NUL"
 libc-wrap-error-load "libc-wrap-errors/rmdir-non-existent.idio" "No such file or directory" ENOENT "rmdir"
 
-libc-wrap-error-load "libc-wrap-errors/setpgid-bad-pid-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_int"
-libc-wrap-error-load "libc-wrap-errors/setpgid-bad-pgid-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_int"
+libc-wrap-error-load "libc-wrap-errors/setpgid-bad-pid-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a libc/pid_t"
+libc-wrap-error-load "libc-wrap-errors/setpgid-bad-pgid-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a libc/pid_t"
 libc-wrap-error-load "libc-wrap-errors/setpgid-negative-pgid.idio" "Invalid argument" EINVAL "setpgid"
 
 libc-wrap-error-load "libc-wrap-errors/setrlimit-bad-rlim-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a struct_instance"
 libc-wrap-error-load "libc-wrap-errors/setrlimit-bad-rlim.idio" "Invalid argument" EINVAL "setrlimit"
 
-libc-wrap-error-load "libc-wrap-errors/signal-bad-sig-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_int"
-libc-wrap-error-load "libc-wrap-errors/signal-bad-handler-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_pointer"
+libc-wrap-error-load "libc-wrap-errors/signal-bad-sig-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/int"
+libc-wrap-error-load "libc-wrap-errors/signal-bad-handler-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"
 libc-wrap-error-load "libc-wrap-errors/signal-bad-signal.idio" "Invalid argument" EINVAL "signal"
 
-libc-wrap-error-load "libc-wrap-errors/signal-handler-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_int"
+libc-wrap-error-load "libc-wrap-errors/signal-handler-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/signal-handler-bad-signal.idio" "Invalid argument" EINVAL "sigaction"
 
 libc-wrap-error-load "libc-wrap-errors/sleep-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a unsigned fixnum|C_uint"
@@ -249,34 +247,34 @@ libc-wrap-error-load "libc-wrap-errors/stat-bad-type.idio" "bad parameter type: 
 libc-wrap-error-load "libc-wrap-errors/stat-bad-format.idio" "stat: pathname contains an ASCII NUL"
 libc-wrap-error-load "libc-wrap-errors/stat-empty-pathname.idio" "No such file or directory" ENOENT "stat"
 
-libc-wrap-error-load "libc-wrap-errors/strerror-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a fixnum|C_int"
+libc-wrap-error-load "libc-wrap-errors/strerror-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/int"
 
 ; strerror -1 => "Unknown error -1" => all ints are "valid" as in not
 ; EINVAL
 ;libc-wrap-error-load "libc-wrap-errors/strerror-bad-errnum.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a unsigned fixnum|C_uint" EINVAL
 
-libc-wrap-error-load "libc-wrap-errors/strsignal-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a fixnum|C_int"
+libc-wrap-error-load "libc-wrap-errors/strsignal-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/int"
 (cond-expand
  (uname/sysname/SunOS {
    test (strsignal -1) #n
  })
  ((or uname/sysname/FreeBSD
       uname/sysname/Darwin) {
-   test (strsignal -1) "Unknown signal: -1"
+   test (strsignal (C/integer-> -1)) "Unknown signal: -1"
  })
  (else {
-   test (strsignal -1) "Unknown signal -1"
+   test (strsignal (C/integer-> -1)) "Unknown signal -1"
  }))
 
-libc-wrap-error-load "libc-wrap-errors/tcgetattr-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_int"
+libc-wrap-error-load "libc-wrap-errors/tcgetattr-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/tcgetattr-bad-fd.idio" strerror-EBADF EBADF "tcgetattr"
 
-libc-wrap-error-load "libc-wrap-errors/tcgetpgrp-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_int"
+libc-wrap-error-load "libc-wrap-errors/tcgetpgrp-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/tcgetpgrp-bad-fd.idio" strerror-EBADF EBADF "tcgetpgrp"
 
-libc-wrap-error-load "libc-wrap-errors/tcsetattr-bad-fd-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_int"
-libc-wrap-error-load "libc-wrap-errors/tcsetattr-bad-options-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_int"
-libc-wrap-error-load "libc-wrap-errors/tcsetattr-bad-tcattrs-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_pointer"
+libc-wrap-error-load "libc-wrap-errors/tcsetattr-bad-fd-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/int"
+libc-wrap-error-load "libc-wrap-errors/tcsetattr-bad-options-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/int"
+libc-wrap-error-load "libc-wrap-errors/tcsetattr-bad-tcattrs-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"
 (cond-expand
  (uname/sysname/SunOS {
    libc-wrap-error-load "libc-wrap-errors/tcsetattr-bad-fd.idio" "Invalid argument" EINVAL "tcsetattr"
@@ -285,42 +283,42 @@ libc-wrap-error-load "libc-wrap-errors/tcsetattr-bad-tcattrs-type.idio" "bad par
    libc-wrap-error-load "libc-wrap-errors/tcsetattr-bad-fd.idio" strerror-EBADF EBADF "tcsetattr"
  }))
 
-libc-wrap-error-load "libc-wrap-errors/tcsetpgrp-bad-fd-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_int"
-libc-wrap-error-load "libc-wrap-errors/tcsetpgrp-bad-pgrp-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_int"
+libc-wrap-error-load "libc-wrap-errors/tcsetpgrp-bad-fd-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/int"
+libc-wrap-error-load "libc-wrap-errors/tcsetpgrp-bad-pgrp-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a libc/pid_t"
 libc-wrap-error-load "libc-wrap-errors/tcsetpgrp-bad-fd.idio" strerror-EBADF EBADF "tcsetpgrp"
 
 libc-wrap-error-load "libc-wrap-errors/unlink-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
 libc-wrap-error-load "libc-wrap-errors/unlink-bad-format.idio" "unlink: pathname contains an ASCII NUL"
 libc-wrap-error-load "libc-wrap-errors/unlink-non-existent.idio" "No such file or directory" ENOENT "unlink"
 
-libc-wrap-error-load "libc-wrap-errors/waitpid-bad-pid-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_int"
-libc-wrap-error-load "libc-wrap-errors/waitpid-bad-options-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_int"
+libc-wrap-error-load "libc-wrap-errors/waitpid-bad-pid-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a libc/pid_t"
+libc-wrap-error-load "libc-wrap-errors/waitpid-bad-options-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/waitpid-bad-options.idio" "Invalid argument" EINVAL "waitpid"
 
-libc-wrap-error-load "libc-wrap-errors/WEXITSTATUS-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_pointer"
-libc-wrap-error-load "libc-wrap-errors/WIFEXITED-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_pointer"
-libc-wrap-error-load "libc-wrap-errors/WIFSIGNALED-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_pointer"
-libc-wrap-error-load "libc-wrap-errors/WIFSTOPPED-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_pointer"
-libc-wrap-error-load "libc-wrap-errors/WTERMSIG-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_pointer"
+libc-wrap-error-load "libc-wrap-errors/WEXITSTATUS-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"
+libc-wrap-error-load "libc-wrap-errors/WIFEXITED-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"
+libc-wrap-error-load "libc-wrap-errors/WIFSIGNALED-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"
+libc-wrap-error-load "libc-wrap-errors/WIFSTOPPED-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"
+libc-wrap-error-load "libc-wrap-errors/WTERMSIG-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"
 
-libc-wrap-error-load "libc-wrap-errors/write-bad-fd-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_int"
+libc-wrap-error-load "libc-wrap-errors/write-bad-fd-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/write-bad-str-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
 libc-wrap-error-load "libc-wrap-errors/write-bad-fd.idio" strerror-EBADF EBADF "write"
 
-libc-wrap-error-load "libc-wrap-errors/sig-name-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_int"
+libc-wrap-error-load "libc-wrap-errors/sig-name-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/int"
 
-libc-wrap-error-load "libc-wrap-errors/signal-name-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_int"
+libc-wrap-error-load "libc-wrap-errors/signal-name-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/signal-name-bad-signum.idio" "signum should be 0 < int < NSIG (OS dependent)"
 
-libc-wrap-error-load "libc-wrap-errors/errno-name-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_int"
+libc-wrap-error-load "libc-wrap-errors/errno-name-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/errno-name-bad-errnum.idio" "errnum should be 0 < int < NERRNO (OS dependent)"
 
-libc-wrap-error-load "libc-wrap-errors/strerrno-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_int"
+libc-wrap-error-load "libc-wrap-errors/strerrno-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/int"
 
-libc-wrap-error-load "libc-wrap-errors/rlimit-name-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_int"
+libc-wrap-error-load "libc-wrap-errors/rlimit-name-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/rlimit-name-bad-rlim.idio" "rlim should be an 0 <= int < RLIM_NLIMITS"
 
-libc-wrap-error-load "libc-wrap-errors/EGID-set-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a integer|C_int"
+libc-wrap-error-load "libc-wrap-errors/EGID-set-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a integer|C/int"
 (cond-expand
  ((or uname/sysname/FreeBSD
       uname/sysname/Darwin) {
@@ -331,7 +329,7 @@ libc-wrap-error-load "libc-wrap-errors/EGID-set-bad-type.idio" "bad parameter ty
  })
 )
 
-libc-wrap-error-load "libc-wrap-errors/EUID-set-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a integer|C_int"
+libc-wrap-error-load "libc-wrap-errors/EUID-set-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a integer|C/int"
 (cond-expand
  ((or uname/sysname/FreeBSD
       uname/sysname/Darwin) {
@@ -342,10 +340,12 @@ libc-wrap-error-load "libc-wrap-errors/EUID-set-bad-type.idio" "bad parameter ty
  })
 )
 
-libc-wrap-error-load "libc-wrap-errors/GID-set-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a integer|C_int"
+libc-wrap-error-load "libc-wrap-errors/GID-set-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a integer|C/int"
 (cond-expand
  ((or uname/sysname/FreeBSD
-      uname/sysname/Darwin) {
+      uname/sysname/Darwin
+      (and os-release/ID/CentOS
+	   os-release/VERSION_ID/6)) {
    libc-wrap-error-load "libc-wrap-errors/GID-set-invalid-gid.idio" "Operation not permitted" EPERM "setgid"
  })
  (else {
@@ -353,10 +353,12 @@ libc-wrap-error-load "libc-wrap-errors/GID-set-bad-type.idio" "bad parameter typ
  })
 )
 
-libc-wrap-error-load "libc-wrap-errors/UID-set-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a integer|C_int"
+libc-wrap-error-load "libc-wrap-errors/UID-set-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a integer|C/int"
 (cond-expand
  ((or uname/sysname/FreeBSD
-      uname/sysname/Darwin) {
+      uname/sysname/Darwin
+      (and os-release/ID/CentOS
+	   os-release/VERSION_ID/6)) {
    libc-wrap-error-load "libc-wrap-errors/UID-set-invalid-uid.idio" "Operation not permitted" EPERM "setuid"
  })
  (else {
@@ -391,7 +393,7 @@ libc-wrap-error-load "libc-wrap-errors/r-bad-format.idio" "r?: pathname contains
 libc-wrap-error-load "libc-wrap-errors/s-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
 libc-wrap-error-load "libc-wrap-errors/s-bad-format.idio" "s?: pathname contains an ASCII NUL"
 
-libc-wrap-error-load "libc-wrap-errors/t-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C_int"
+libc-wrap-error-load "libc-wrap-errors/t-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/int"
 
 libc-wrap-error-load "libc-wrap-errors/w-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
 libc-wrap-error-load "libc-wrap-errors/w-bad-format.idio" "w?: pathname contains an ASCII NUL"
@@ -400,4 +402,4 @@ libc-wrap-error-load "libc-wrap-errors/x-bad-type.idio" "bad parameter type: '#t
 libc-wrap-error-load "libc-wrap-errors/x-bad-format.idio" "x?: pathname contains an ASCII NUL"
 
 ;; all done?
-Tests? (libc-wrap-error0 + 201)
+Tests? (libc-wrap-error0 + 200)
