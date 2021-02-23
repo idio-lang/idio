@@ -1,11 +1,8 @@
 include Makefile.common
 
-CFLAGS		:= -std=c99 -Wall -Wno-unused-function -fPIC -DIDIO_MALLOC -I$(PWD) -I$(PWD)/build-bootstrap $(CFLAGS) $(LIBFFI_INC)
+CFLAGS		:= -std=c99 -Wall -Wno-unused-function -fPIC -DIDIO_MALLOC -I$(SRCDIR) -I$(SRCDIR)/build-bootstrap $(CFLAGS) $(LIBFFI_INC)
 LDFLAGS		:= $(LDFLAGS)
 LIBS		:= -lffi $(LIBS)
-
-sources		:= $(wildcard *.c)
-objects		:= $(patsubst %.c,%.o,$(sources))
 
 ifneq ($(OS),Darwin)
 DLIBS		:= libos.so libposix-regex.so
@@ -21,5 +18,6 @@ $(BINDIR):
 
 libc-api.h : $(BINDIR)/idio
 	PATH=$(PATH):$(BINDIR) IDIOLIB=$(LIBDIR):$(LIBDIR)/build-bootstrap:$(EXTDIR) idio-c-api-gen libc
-	cp $(EXTDIR)/libc/gen/libc-api.h $(PWD)
+	cp $(EXTDIR)/libc/gen/libc-api.h $(SRCDIR)
 	cp $(EXTDIR)/libc/gen/libc-api.idio $(LIBDIR)
+	rm -f $(deps)

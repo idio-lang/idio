@@ -6,10 +6,6 @@ LIBDIR		= $(TOPDIR)/lib
 TESTSDIR	= $(TOPDIR)/tests
 DOCDIR		= $(TOPDIR)/doc
 
-all clean lean debug tags dist-clean:
+all clean lean debug tags dist-clean test:
 	$(MAKE) -C src $@
 
-test : $(BINDIR)/idio
-	@PATH=${PATH}:${BINDIR} IDIOLIB=${LIBDIR} idio test
-
-$(BINDIR)/idio : all

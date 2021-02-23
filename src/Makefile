@@ -15,9 +15,6 @@ CFLAGS		:= -std=c99 -Wall -Wno-unused-function -fPIC -DIDIO_MALLOC $(CFLAGS) $(P
 LDFLAGS		:= $(PROFLAGS) $(COVFLAGS) $(SAN_LDFLAGS) $(LDFLAGS)
 LIBS		:= -lffi $(LIBS)
 
-sources		:= $(wildcard *.c)
-objects		:= $(patsubst %.c,%.o,$(sources))
-
 ifneq ($(OS),Darwin)
 DLIBS		:= libos.so libposix-regex.so
 endif
@@ -40,7 +37,7 @@ lean :
 debug :
 	$(MAKE) MAKE_DEBUG=1
 
-test : $(BINDIR)/idio
+test : all
 	PATH=$$PATH:$(BINDIR) idio test
 
 # ASAN only (really) works with libc malloc which then blows up with a
@@ -63,9 +60,7 @@ doc :
 	diff -w <(grep _[ch] $(SRCKDOUTDIR)/index.rst) <(grep _[ch] $(SRCDOCDIR)/index.rst | sed -e 's!.*/!!')
 	make -C $(SRCDOCDIR) html text
 
-#-include $(subst .c,.d,$(sources))
-
-$(BINDIR)/idio : $(objects)
+$(BINDIR)/idio : $(objects) | libc-api.h $(deps)
 	$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 
 lib%.so : %.o
@@ -88,7 +83,7 @@ edit-clean :
 	rm -f *~ $(LIBDIR)/*~ $(TESTSDIR)/*~
 
 dist-clean : clean
-	rm -f $(PWD)/libc-api.h
+	rm -f $(SRCDIR)/libc-api.h
 	rm -f $(LIBDIR)/libc-api.idio
 
 tags : TAGS
@@ -96,11 +91,6 @@ tags : TAGS
 TAGS : *.[ch] $(LIBDIR)/*.idio $(TESTSDIR)/*.idio
 	@echo TAGS: $?
 	@etags *.[ch] --language=none --regex=@idio.tags $(LIBDIR)/*.idio $(TESTSDIR)/*.idio
-
-%.o : %.d
-
-%.d: %.c
-	$(CC) -MM -MP -MF $@ $(CFLAGS) -I$(PWD) -I$(PWD)/build-bootstrap $< -MT $*.o -MT $@
 
 valgrind: $(BINDIR)/idio
 	valgrind --leak-check=full --show-leak-kinds=all --child-silent-after-fork=yes --log-file=idio-valgrind.%p $(BINDIR)/idio # 2>&1 | less +/^==
@@ -111,14 +101,18 @@ valgrind: $(BINDIR)/idio
 cppcheck:
 	cppcheck --force --enable=all .
 
+%.o : %.d
+
+-include $(deps)
+
 # Bootstrap
 #
 # This $(objects) dependent on libc-api.h serves two purposes: firstly
 # it forces the actual creation in the specific rule below (using some
 # probably wrong but at least consistently wrong values in
-# build-bootstrap) and secondly, as we'll have just created a new
-# libc-api.h file, we'll force the recompilation of everything again
-# using the correct values.
+# build-bootstrap/libc-api.h) and secondly, as we'll have just created
+# a new libc-api.h file, we'll force the recompilation of everything
+# again using the correct values.
 $(objects) : libc-api.h
 
 libc-api.h :

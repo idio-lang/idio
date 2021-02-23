@@ -5,6 +5,7 @@ ARCH		:= $(shell uname -m)
 SHELL		:= bash
 
 TOPDIR		?= $(abspath $(PWD)/..)
+SRCDIR		?= $(TOPDIR)/src
 BINDIR		?= $(TOPDIR)/bin
 LIBDIR		?= $(TOPDIR)/lib
 EXTDIR		?= $(TOPDIR)/ext
@@ -12,6 +13,10 @@ TESTSDIR	?= $(TOPDIR)/tests
 DOCDIR		?= $(TOPDIR)/doc
 SRCDOCDIR	:= $(DOCDIR)/src
 SRCKDOUTDIR	:= $(SRCDOCDIR)/kernel-autodoc-out
+
+sources		:= $(wildcard *.c)
+objects		:= $(patsubst %.c,%.o,$(sources))
+deps		:= $(patsubst %.c,%.d,$(sources))
 
 ifeq ($(OS),Darwin)
 
@@ -79,4 +84,7 @@ else
 LIBFFI_INC	:= -I$(LIBFFI_INCDIR)
 endif
 endif
+
+%.d: %.c
+	$(CC) -MM -MP -MF $@ $(CFLAGS) -I$(SRCDIR) -I$(SRCDIR)/build-bootstrap $< -MT $*.o -MT $@
 
