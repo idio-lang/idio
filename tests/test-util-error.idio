@@ -69,6 +69,8 @@ util-error-load := {
 
 util-error-load "util-errors/defined-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol"
 
+util-error-load "util-errors/equal-c-long-double.idio" "equality for C long double is not supported"
+
 util-error-load "util-errors/value-index-bad-type.idio" "value is non-indexable"
 
 util-error-load "util-errors/set-value-index-bad-type.idio" "value is non-indexable"
@@ -85,4 +87,4 @@ util-error-load "util-errors/idio-debug-format.idio" "fmt contains an ASCII NUL"
 util-error-load "util-errors/add-feature-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol|string"
 
 ;; all done?
-Tests? (util-error0 + 10)
+Tests? (util-error0 + 11)

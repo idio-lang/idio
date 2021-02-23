@@ -784,7 +784,7 @@ If no default value is supplied #f is used.	\n\
 	     * Code coverage: to get here we'd need to pass
 	     * FIXNUM-MAX+1 and that is to too big to allocate...
 	     */
-	    alen = idio_bignum_ptrdiff_value (size);
+	    alen = idio_bignum_ptrdiff_t_value (size);
 	} else {
 	    IDIO size_i = idio_bignum_real_to_integer (size);
 	    if (idio_S_nil == size_i) {
@@ -797,7 +797,7 @@ If no default value is supplied #f is used.	\n\
 
 		return idio_S_notreached;
 	    } else {
-		alen = idio_bignum_ptrdiff_value (size_i);
+		alen = idio_bignum_ptrdiff_t_value (size_i);
 	    }
 	}
     } else {
@@ -917,7 +917,7 @@ copy array `orig` and add an optional `extra` elements	\n\
 		     * FIXNUM-MAX+1 and that is to too big to
 		     * allocate...
 		     */
-		    extra = idio_bignum_ptrdiff_value (iextra);
+		    extra = idio_bignum_ptrdiff_t_value (iextra);
 		} else {
 		    IDIO iextra_i = idio_bignum_real_to_integer (iextra);
 		    if (idio_S_nil == iextra_i) {
@@ -930,7 +930,7 @@ copy array `orig` and add an optional `extra` elements	\n\
 
 			return idio_S_notreached;
 		    } else {
-			extra = idio_bignum_ptrdiff_value (iextra_i);
+			extra = idio_bignum_ptrdiff_t_value (iextra_i);
 		    }
 		}
 	    } else {
@@ -1036,7 +1036,7 @@ IDIO idio_array_ref (IDIO a, IDIO index)
 	     * Code coverage: to get here we'd need to pass
 	     * FIXNUM-MAX+1 and that is to too big to allocate...
 	     */
-	    i = idio_bignum_ptrdiff_value (index);
+	    i = idio_bignum_ptrdiff_t_value (index);
 	} else {
 	    IDIO index_i = idio_bignum_real_to_integer (index);
 	    if (idio_S_nil == index_i) {
@@ -1050,7 +1050,7 @@ IDIO idio_array_ref (IDIO a, IDIO index)
 
 		return idio_S_notreached;
 	    } else {
-		i = idio_bignum_ptrdiff_value (index_i);
+		i = idio_bignum_ptrdiff_t_value (index_i);
 	    }
 	}
     } else {
@@ -1112,7 +1112,7 @@ IDIO idio_array_set (IDIO a, IDIO index, IDIO v)
 	     * Code coverage: to get here we'd need to pass
 	     * FIXNUM-MAX+1 and that is to too big to allocate...
 	     */
-	    i = idio_bignum_ptrdiff_value (index);
+	    i = idio_bignum_ptrdiff_t_value (index);
 	} else {
 	    IDIO index_i = idio_bignum_real_to_integer (index);
 	    if (idio_S_nil == index_i) {
@@ -1126,7 +1126,7 @@ IDIO idio_array_set (IDIO a, IDIO index, IDIO v)
 
 		return idio_S_notreached;
 	    } else {
-		i = idio_bignum_ptrdiff_value (index_i);
+		i = idio_bignum_ptrdiff_t_value (index_i);
 	    }
 	}
     } else {

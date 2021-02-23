@@ -86,6 +86,16 @@ bignum-error-load "bignum-errors/subtract-non-bignum.idio" "bad parameter type: 
 bignum-error-load "bignum-errors/multiply-non-bignum.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a bignum"
 bignum-error-load "bignum-errors/divide-float-zero.idio" "bignum divide by zero"
 
+bignum-error-load "bignum-errors/bignum-normalise-digits-overflow.idio" "exponent overflow"
+bignum-error-load "bignum-errors/bignum-normalise-overflow.idio" "exponent overflow"
+bignum-error-load "bignum-errors/bignum-multiply-underflow.idio" "exponent underflow"
+bignum-error-load "bignum-errors/bignum-multiply-overflow.idio" "exponent overflow"
+bignum-error-load "bignum-errors/bignum-divide-digits-underflow.idio" "exponent underflow"
+bignum-error-load "bignum-errors/bignum-divide-underflow.idio" "exponent underflow"
+bignum-error-load "bignum-errors/bignum-divide-overflow.idio" "exponent overflow"
+bignum-error-load "bignum-errors/read-bignum-underflow.idio" "exponent underflow"
+bignum-error-load "bignum-errors/read-bignum-overflow.idio" "exponent overflow"
+
 bignum-error-load "bignum-errors/lt-non-bignum.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a bignum"
 bignum-error-load "bignum-errors/le-non-bignum.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a bignum"
 bignum-error-load "bignum-errors/eq-non-bignum.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a bignum"
@@ -101,4 +111,4 @@ bignum-error-load "bignum-errors/exponent-bad-type.idio" "bad parameter type: '#
 bignum-error-load "bignum-errors/bignum-dump-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a bignum"
 
 ;; all done?
-Tests? (bignum-error0 + 17)
+Tests? (bignum-error0 + 26)

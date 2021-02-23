@@ -1,0 +1,2 @@
+
+C/integer-> ((C/->number libc/CHAR_MAX) + 1) 'char

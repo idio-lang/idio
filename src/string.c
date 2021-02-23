@@ -827,7 +827,7 @@ If no default value is supplied #\{space} is used.	\n\
 	     *
 	     * Not sure we want to create a enormous string for test.
 	     */
-	    cp_count = idio_bignum_ptrdiff_value (size);
+	    cp_count = idio_bignum_ptrdiff_t_value (size);
 	} else {
 	    IDIO size_i = idio_bignum_real_to_integer (size);
 	    if (idio_S_nil == size_i) {
@@ -845,7 +845,7 @@ If no default value is supplied #\{space} is used.	\n\
 		 *
 		 * make-string 1e1
 		 */
-		cp_count = idio_bignum_ptrdiff_value (size_i);
+		cp_count = idio_bignum_ptrdiff_t_value (size_i);
 	    }
 	}
     } else {
@@ -1409,7 +1409,7 @@ IDIO idio_string_ref (IDIO s, IDIO index)
 	     * This is a code coverage case which will (probably)
 	     * provoke the out of bounds error below.
 	     */
-	    i = idio_bignum_ptrdiff_value (index);
+	    i = idio_bignum_ptrdiff_t_value (index);
 	} else {
 	    IDIO index_i = idio_bignum_real_to_integer (index);
 	    if (idio_S_nil == index_i) {
@@ -1422,7 +1422,7 @@ IDIO idio_string_ref (IDIO s, IDIO index)
 
 		return idio_S_notreached;
 	    } else {
-		i = idio_bignum_ptrdiff_value (index_i);
+		i = idio_bignum_ptrdiff_t_value (index_i);
 	    }
 	}
     } else {
@@ -1560,7 +1560,7 @@ IDIO idio_string_set (IDIO s, IDIO index, IDIO c)
 	     * This is a code coverage case which will (probably)
 	     * provoke the out of bounds error below.
 	     */
-	    i = idio_bignum_ptrdiff_value (index);
+	    i = idio_bignum_ptrdiff_t_value (index);
 	} else {
 	    IDIO index_i = idio_bignum_real_to_integer (index);
 	    if (idio_S_nil == index_i) {
@@ -1573,7 +1573,7 @@ IDIO idio_string_set (IDIO s, IDIO index, IDIO c)
 
 		return idio_S_notreached;
 	    } else {
-		i = idio_bignum_ptrdiff_value (index_i);
+		i = idio_bignum_ptrdiff_t_value (index_i);
 	    }
 	}
     } else {
@@ -1816,7 +1816,7 @@ through to but excluuding position `pn`		\n\
 	     * This is a code coverage case which will (probably)
 	     * provoke the out of bounds error below.
 	     */
-	    ip0 = idio_bignum_ptrdiff_value (p0);
+	    ip0 = idio_bignum_ptrdiff_t_value (p0);
 	} else {
 	    IDIO p0_i = idio_bignum_real_to_integer (p0);
 	    if (idio_S_nil == p0_i) {
@@ -1829,7 +1829,7 @@ through to but excluuding position `pn`		\n\
 
 		return idio_S_notreached;
 	    } else {
-		ip0 = idio_bignum_ptrdiff_value (p0_i);
+		ip0 = idio_bignum_ptrdiff_t_value (p0_i);
 	    }
 	}
     } else {
@@ -1855,7 +1855,7 @@ through to but excluuding position `pn`		\n\
 	     * This is a code coverage case which will (probably)
 	     * provoke the out of bounds error below.
 	     */
-	    ipn = idio_bignum_ptrdiff_value (pn);
+	    ipn = idio_bignum_ptrdiff_t_value (pn);
 	} else {
 	    IDIO pn_i = idio_bignum_real_to_integer (pn);
 	    if (idio_S_nil == pn_i) {
@@ -1868,7 +1868,7 @@ through to but excluuding position `pn`		\n\
 
 		return idio_S_notreached;
 	    } else {
-		ipn = idio_bignum_ptrdiff_value (pn_i);
+		ipn = idio_bignum_ptrdiff_t_value (pn_i);
 	    }
 	}
     } else {

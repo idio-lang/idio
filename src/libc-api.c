@@ -2326,11 +2326,18 @@ a wrapper to libc getsid(2)					\n\
 
     if (-1 == getsid_r) {
 	/*
-	 * Test Case: libc-wrap-errors/getsid-bad-type.idio
+	 * Test Case: libc-wrap-errors/getsid-invalid-pid.idio
 	 *
-	 * getsid (C/integer-> FIXNUM-MAX libc/pid_t)
+	 * int-max := C/->number INT_MAX
+	 * getsid (C/integer-> int-max libc/pid_t)
 	 *
 	 * XXX Probably!
+	 *
+	 * We're assuming that 1) INT_MAX isn't a valid pid (to
+	 * generate the error) and 2) that INT_MAX (a C/int) is less
+	 * than or equal to the maximum value in the range of a
+	 * libc/pid_t (which is probably a C/int or a C/long but you
+	 * never know)
 	 */
 	idio_error_system_errno ("getsid", pid, IDIO_C_FUNC_LOCATION ());
     }

@@ -666,6 +666,13 @@ typedef struct idio_frame_s {
 
 typedef intptr_t IDIO_BS_T;
 
+/*
+ * int8_t is too small for the exponent for calls into expt!
+ *
+ * Not sure why.
+ */
+typedef int32_t IDIO_BE_T;
+
 typedef struct idio_bsa_s {
     size_t refs;
     size_t avail;
@@ -680,7 +687,7 @@ typedef idio_bsa_t* IDIO_BSA;
 #define IDIO_BSA_AE(BSA,i)	((BSA)->ae[i])
 
 typedef struct idio_bignum_s {
-    IDIO_BS_T exp;
+    IDIO_BE_T exp;
     IDIO_BSA sig;
 } idio_bignum_t;
 

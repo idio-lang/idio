@@ -1,0 +1,2 @@
+
+C/integer->unsigned ((C/->number libc/UCHAR_MAX) + 1) 'uchar

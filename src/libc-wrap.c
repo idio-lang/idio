@@ -599,8 +599,8 @@ See ``getrlimit`` to obtain a struct-rlimit.			\n\
      *
      * rlim_t not ints!
      */
-    rlim.rlim_cur = (rlim_t) idio_C_int_get (cur);
-    rlim.rlim_max = (rlim_t) idio_C_int_get (max);
+    rlim.rlim_cur = (rlim_t) IDIO_C_TYPE_int (cur);
+    rlim.rlim_max = (rlim_t) IDIO_C_TYPE_int (max);
 
     idio_libc_setrlimit (IDIO_C_TYPE_int (iresource), &rlim);
 
@@ -3489,9 +3489,22 @@ void idio_init_libc_wrap ()
     idio_module_export_symbol_value (idio_symbols_C_intern ("F_SETFL"), idio_C_int (F_SETFL), idio_libc_module);
 
     /* limits.h */
+    idio_module_export_symbol_value (idio_symbols_C_intern ("CHAR_MAX"), idio_C_char (CHAR_MAX), idio_libc_module);
+    idio_module_export_symbol_value (idio_symbols_C_intern ("SCHAR_MIN"), idio_C_schar (SCHAR_MIN), idio_libc_module);
+    idio_module_export_symbol_value (idio_symbols_C_intern ("SCHAR_MAX"), idio_C_schar (SCHAR_MAX), idio_libc_module);
+    idio_module_export_symbol_value (idio_symbols_C_intern ("UCHAR_MAX"), idio_C_uchar (UCHAR_MAX), idio_libc_module);
+    idio_module_export_symbol_value (idio_symbols_C_intern ("SHRT_MIN"), idio_C_short (SHRT_MIN), idio_libc_module);
+    idio_module_export_symbol_value (idio_symbols_C_intern ("SHRT_MAX"), idio_C_short (SHRT_MAX), idio_libc_module);
+    idio_module_export_symbol_value (idio_symbols_C_intern ("USHRT_MAX"), idio_C_ushort (USHRT_MAX), idio_libc_module);
     idio_module_export_symbol_value (idio_symbols_C_intern ("INT_MIN"), idio_C_int (INT_MIN), idio_libc_module);
     idio_module_export_symbol_value (idio_symbols_C_intern ("INT_MAX"), idio_C_int (INT_MAX), idio_libc_module);
     idio_module_export_symbol_value (idio_symbols_C_intern ("UINT_MAX"), idio_C_uint (UINT_MAX), idio_libc_module);
+    idio_module_export_symbol_value (idio_symbols_C_intern ("LONG_MIN"), idio_C_long (LONG_MIN), idio_libc_module);
+    idio_module_export_symbol_value (idio_symbols_C_intern ("LONG_MAX"), idio_C_long (LONG_MAX), idio_libc_module);
+    idio_module_export_symbol_value (idio_symbols_C_intern ("ULONG_MAX"), idio_C_ulong (ULONG_MAX), idio_libc_module);
+    idio_module_export_symbol_value (idio_symbols_C_intern ("LLONG_MIN"), idio_C_longlong (LLONG_MIN), idio_libc_module);
+    idio_module_export_symbol_value (idio_symbols_C_intern ("LLONG_MAX"), idio_C_longlong (LLONG_MAX), idio_libc_module);
+    idio_module_export_symbol_value (idio_symbols_C_intern ("ULLONG_MAX"), idio_C_ulonglong (ULLONG_MAX), idio_libc_module);
 
 
     /* signal.h */

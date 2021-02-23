@@ -22,6 +22,8 @@ vm-perf.log
 src/map
 
 bin/idio
+src/libc-api.h
+lib/libc-api.idio
 main
 scm1-c-structs
 scm1-c-structs.scm1

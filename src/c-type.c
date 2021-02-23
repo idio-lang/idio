@@ -58,6 +58,35 @@
 
 static IDIO idio_C_module = idio_S_nil;
 
+static void idio_C_conversion_error (char *msg, IDIO n, IDIO c_location)
+{
+    IDIO_C_ASSERT (msg);
+    IDIO_ASSERT (c_location);
+    IDIO_ASSERT (n);
+
+    IDIO_TYPE_ASSERT (string, c_location);
+
+    IDIO msh = idio_open_output_string_handle_C ();
+    idio_display_C (msg, msh);
+
+    IDIO location = idio_vm_source_location ();
+
+    IDIO detail = idio_S_nil;
+
+#ifdef IDIO_DEBUG
+    IDIO dsh = idio_open_output_string_handle_C ();
+    idio_display (c_location, dsh);
+    detail = idio_get_output_string (dsh);
+#endif
+
+    IDIO c = idio_struct_instance (idio_condition_rt_C_conversion_error_type,
+				   IDIO_LIST4 (idio_get_output_string (msh),
+					       location,
+					       detail,
+					       n));
+    idio_raise_condition (idio_S_true, c);
+}
+
 IDIO idio_C_char (char v)
 {
     IDIO co = idio_gc_get (IDIO_TYPE_C_CHAR);
@@ -91,14 +120,6 @@ test if `o` is an C/char				\n\
     }
 
     return r;
-}
-
-char idio_C_char_get (IDIO co)
-{
-    IDIO_ASSERT (co);
-    IDIO_TYPE_ASSERT (C_char, co);
-
-    return IDIO_C_TYPE_char (co);
 }
 
 IDIO idio_C_schar (signed char v)
@@ -136,14 +157,6 @@ test if `o` is an C/schar				\n\
     return r;
 }
 
-signed char idio_C_schar_get (IDIO co)
-{
-    IDIO_ASSERT (co);
-    IDIO_TYPE_ASSERT (C_schar, co);
-
-    return IDIO_C_TYPE_schar (co);
-}
-
 IDIO idio_C_uchar (unsigned char v)
 {
     IDIO co = idio_gc_get (IDIO_TYPE_C_UCHAR);
@@ -177,14 +190,6 @@ test if `o` is an C/uchar				\n\
     }
 
     return r;
-}
-
-unsigned char idio_C_uchar_get (IDIO co)
-{
-    IDIO_ASSERT (co);
-    IDIO_TYPE_ASSERT (C_uchar, co);
-
-    return IDIO_C_TYPE_uchar (co);
 }
 
 IDIO idio_C_short (short v)
@@ -222,14 +227,6 @@ test if `o` is an C/short				\n\
     return r;
 }
 
-short idio_C_short_get (IDIO co)
-{
-    IDIO_ASSERT (co);
-    IDIO_TYPE_ASSERT (C_short, co);
-
-    return IDIO_C_TYPE_short (co);
-}
-
 IDIO idio_C_ushort (unsigned short v)
 {
     IDIO co = idio_gc_get (IDIO_TYPE_C_USHORT);
@@ -263,14 +260,6 @@ test if `o` is an C/ushort			\n\
     }
 
     return r;
-}
-
-unsigned short idio_C_ushort_get (IDIO co)
-{
-    IDIO_ASSERT (co);
-    IDIO_TYPE_ASSERT (C_ushort, co);
-
-    return IDIO_C_TYPE_ushort (co);
 }
 
 IDIO idio_C_int (int v)
@@ -308,14 +297,6 @@ test if `o` is an C/int				\n\
     return r;
 }
 
-int idio_C_int_get (IDIO co)
-{
-    IDIO_ASSERT (co);
-    IDIO_TYPE_ASSERT (C_int, co);
-
-    return IDIO_C_TYPE_int (co);
-}
-
 IDIO idio_C_uint (unsigned int v)
 {
     IDIO co = idio_gc_get (IDIO_TYPE_C_UINT);
@@ -349,14 +330,6 @@ test if `o` is an C/uint			\n\
     }
 
     return r;
-}
-
-unsigned int idio_C_uint_get (IDIO co)
-{
-    IDIO_ASSERT (co);
-    IDIO_TYPE_ASSERT (C_uint, co);
-
-    return IDIO_C_TYPE_uint (co);
 }
 
 IDIO idio_C_long (long v)
@@ -394,14 +367,6 @@ test if `o` is an C/long				\n\
     return r;
 }
 
-long idio_C_long_get (IDIO co)
-{
-    IDIO_ASSERT (co);
-    IDIO_TYPE_ASSERT (C_long, co);
-
-    return IDIO_C_TYPE_long (co);
-}
-
 IDIO idio_C_ulong (unsigned long v)
 {
     IDIO co = idio_gc_get (IDIO_TYPE_C_ULONG);
@@ -435,14 +400,6 @@ test if `o` is an C/ulong			\n\
     }
 
     return r;
-}
-
-unsigned long idio_C_ulong_get (IDIO co)
-{
-    IDIO_ASSERT (co);
-    IDIO_TYPE_ASSERT (C_ulong, co);
-
-    return IDIO_C_TYPE_ulong (co);
 }
 
 IDIO idio_C_longlong (long long v)
@@ -480,14 +437,6 @@ test if `o` is an C/longlong				\n\
     return r;
 }
 
-long long idio_C_longlong_get (IDIO co)
-{
-    IDIO_ASSERT (co);
-    IDIO_TYPE_ASSERT (C_longlong, co);
-
-    return IDIO_C_TYPE_longlong (co);
-}
-
 IDIO idio_C_ulonglong (unsigned long long v)
 {
     IDIO co = idio_gc_get (IDIO_TYPE_C_ULONGLONG);
@@ -521,14 +470,6 @@ test if `o` is an C/ulonglong			\n\
     }
 
     return r;
-}
-
-unsigned long long idio_C_ulonglong_get (IDIO co)
-{
-    IDIO_ASSERT (co);
-    IDIO_TYPE_ASSERT (C_ulonglong, co);
-
-    return IDIO_C_TYPE_ulonglong (co);
 }
 
 IDIO idio_C_float (float v)
@@ -566,14 +507,6 @@ test if `o` is an C/float			\n\
     return r;
 }
 
-float idio_C_float_get (IDIO co)
-{
-    IDIO_ASSERT (co);
-    IDIO_TYPE_ASSERT (C_float, co);
-
-    return IDIO_C_TYPE_float (co);
-}
-
 IDIO idio_C_double (double v)
 {
     IDIO co = idio_gc_get (IDIO_TYPE_C_DOUBLE);
@@ -609,14 +542,6 @@ test if `o` is an C/double			\n\
     return r;
 }
 
-double idio_C_double_get (IDIO co)
-{
-    IDIO_ASSERT (co);
-    IDIO_TYPE_ASSERT (C_double, co);
-
-    return IDIO_C_TYPE_double (co);
-}
-
 IDIO idio_C_longdouble (long double v)
 {
     IDIO co = idio_gc_get (IDIO_TYPE_C_LONGDOUBLE);
@@ -650,14 +575,6 @@ test if `o` is an C/longdouble			\n\
     }
 
     return r;
-}
-
-long double idio_C_longdouble_get (IDIO co)
-{
-    IDIO_ASSERT (co);
-    IDIO_TYPE_ASSERT (C_longdouble, co);
-
-    return IDIO_C_TYPE_longdouble (co);
 }
 
 IDIO idio_C_pointer (void * v)
@@ -718,14 +635,6 @@ test if `o` is an C/pointer			\n\
     return r;
 }
 
-void * idio_C_pointer_get (IDIO co)
-{
-    IDIO_ASSERT (co);
-    IDIO_TYPE_ASSERT (C_pointer, co);
-
-    return IDIO_C_TYPE_POINTER_P (co);
-}
-
 void idio_free_C_pointer (IDIO co)
 {
     IDIO_ASSERT (co);
@@ -737,10 +646,8 @@ void idio_free_C_pointer (IDIO co)
     IDIO_GC_FREE (co->u.C_type.u.C_pointer);
 }
 
-int idio_isa_c_type (IDIO o)
+int idio_isa_C_type (IDIO o)
 {
-    IDIO_ASSERT (o);
-
     switch (idio_type (o)) {
     case IDIO_TYPE_C_CHAR:
     case IDIO_TYPE_C_SCHAR:
@@ -763,10 +670,8 @@ int idio_isa_c_type (IDIO o)
     }
 }
 
-int idio_isa_c_numeric_type (IDIO o)
+int idio_isa_C_number (IDIO o)
 {
-    IDIO_ASSERT (o);
-
     switch (idio_type (o)) {
     case IDIO_TYPE_C_CHAR:
     case IDIO_TYPE_C_SCHAR:
@@ -788,26 +693,28 @@ int idio_isa_c_numeric_type (IDIO o)
     }
 }
 
-int idio_isa_c_signed_integral_type (IDIO o)
+int idio_isa_C_integral (IDIO o)
 {
-    IDIO_ASSERT (o);
-
     switch (idio_type (o)) {
+    case IDIO_TYPE_C_CHAR:
     case IDIO_TYPE_C_SCHAR:
+    case IDIO_TYPE_C_UCHAR:
     case IDIO_TYPE_C_SHORT:
+    case IDIO_TYPE_C_USHORT:
     case IDIO_TYPE_C_INT:
+    case IDIO_TYPE_C_UINT:
     case IDIO_TYPE_C_LONG:
+    case IDIO_TYPE_C_ULONG:
     case IDIO_TYPE_C_LONGLONG:
+    case IDIO_TYPE_C_ULONGLONG:
 	return 1;
     default:
 	return 0;
     }
 }
 
-int idio_isa_c_unsigned_integral_type (IDIO o)
+int idio_isa_C_unsigned (IDIO o)
 {
-    IDIO_ASSERT (o);
-
     switch (idio_type (o)) {
     case IDIO_TYPE_C_UCHAR:
     case IDIO_TYPE_C_USHORT:
@@ -820,6 +727,160 @@ int idio_isa_c_unsigned_integral_type (IDIO o)
     }
 }
 
+/*
+ * Comparing IEEE 754 numbers is not easy.  See
+ * https://floating-point-gui.de/errors/comparison/ and
+ * https://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/
+ *
+ * These often fall back to the Units in Last Place (ULP) comparisons.
+ */
+int idio_C_float_equal_ULP (float o1, float o2, unsigned int max)
+{
+    idio_C_float_ULP_t uo1;
+    uo1.f = o1;
+    idio_C_float_ULP_t uo2;
+    uo2.f = o2;
+
+    if ((uo1.i < 0) != (uo2.i < 0)) {
+	/*
+	 * This == is for picking up +0 == -0
+	 */
+	if (o1 == o2) {
+	    return 1;
+	} else {
+	    return 0;
+	}
+    }
+
+    int32_t diff = uo1.i - uo2.i;
+    if (diff < 0) {
+	diff = -diff;
+    }
+
+    if (diff <= max) {
+	return 1;
+    } else {
+	return 0;
+    }
+}
+
+int idio_C_double_equal_ULP (double o1, double o2, unsigned int max)
+{
+    idio_C_double_ULP_t uo1;
+    uo1.i = 0;
+    uo1.d = o1;
+    idio_C_double_ULP_t uo2;
+    uo2.i = 0;
+    uo2.d = o2;
+
+    if ((uo1.i < 0) != (uo2.i < 0)) {
+	/*
+	 * This == is for picking up +0 == -0
+	 */
+	if (o1 == o2) {
+	    return 1;
+	} else {
+	    return 0;
+	}
+    }
+
+    int64_t diff = uo1.i - uo2.i;
+    if (diff < 0) {
+	diff = -diff;
+    }
+
+    if (diff <= max) {
+	return 1;
+    } else {
+	return 0;
+    }
+}
+
+/*
+ * XXX I'm pretty convinced this long double comparison is entirely
+ * wrong.  And if Paul Dirac was conducting code review: not even
+ * wrong.
+ *
+ * The problems are:
+ *
+ * 1. A long double will not always use 16 bytes.  It might only use
+ *    twelve -- it might even be just a double.  Hopefully by
+ *    assigning 0 to bit int64_t parts we zero out the differences.
+ *
+ * 2. I'm guessing at the use of i1 and i2.  That if the most
+ *    significant one has any differences then they are definitively
+ *    not the same and that we can do something useful with the diff
+ *    of i2.
+ *
+ *    Except we can't, of course, if the implementation has only used
+ *    a partial word -- what should be a diff of 1 bit is now a diff
+ *    of 1 followed by 32 0s.  We could compare the mantissa elements
+ *    of the parts struct but given there are two variants of long
+ *    doubles and we don't know which one we're using then that's off
+ *    as well.
+ *
+ * I think I'm saying don't try to compare long doubles!
+ */
+/*
+ * Code coverage:
+ *
+ * The call in idio_equal() is guarded by the same message.
+ */
+int idio_C_longdouble_equal_ULP (long double o1, long double o2, unsigned int max)
+{
+    /*
+     * Test Case: ??
+     *
+     * The call in idio_equal() is guarded by the same message.
+     */
+    idio_error_param_type_msg ("equality for C long double is not supported", IDIO_C_FUNC_LOCATION ());
+
+    /* notreached */
+    return 0;
+
+    idio_C_longdouble_ULP_t uo1;
+    uo1.i.i1 = 0;
+    uo1.i.i2 = 0;
+    uo1.ld = o1;
+    idio_C_longdouble_ULP_t uo2;
+    uo2.i.i1 = 0;
+    uo2.i.i2 = 0;
+    uo2.ld = o2;
+
+    if ((uo1.i.i1 < 0) != (uo2.i.i1 < 0)) {
+	/*
+	 * This == is for picking up +0 == -0
+	 */
+	if (o1 == o2) {
+	    return 1;
+	} else {
+	    return 0;
+	}
+    }
+
+    int64_t diff1 = uo1.i.i1 - uo2.i.i1;
+    if (diff1) {
+	return 0;
+    }
+
+    int64_t diff2 = uo1.i.i2 - uo2.i.i2;
+    if (diff2 < 0) {
+	diff2 = -diff2;
+    }
+
+    if (diff2 <= max) {
+	return 1;
+    } else {
+	return 0;
+    }
+}
+
+/*
+ * Code coverage:
+ *
+ * Called from idio_C_fields_array() in c-struct.c ... which isn't
+ * used.
+ */
 IDIO idio_C_number_cast (IDIO co, idio_type_e type)
 {
     IDIO_ASSERT (co);
@@ -1113,7 +1174,14 @@ convert C integer `i` to an Idio integer	\n\
     } else if (idio_isa_C_ulonglong (inum)) {
 	return idio_uinteger (IDIO_C_TYPE_ulonglong (inum));
     } else {
+	/*
+	 * Test Case: c-type-errors/c-type-2integer-bad-type.idio
+	 *
+	 * C/->integer #t
+	 */
 	idio_error_param_type ("C integral type", inum, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
     }
 
     return idio_S_notreached;
@@ -1154,46 +1222,246 @@ or an alias thereof, eg. libc/pid_t		\n\
 {
     IDIO_ASSERT (inum);
 
+    if (idio_isa_C_integral (inum)) {
+	return inum;
+    }
+
     IDIO t = idio_S_int;
 
     if (idio_S_nil != args) {
 	t = IDIO_PAIR_H (args);
     }
 
-    if (idio_isa_fixnum (inum)) {
-	if (idio_S_char == t) {
-	    return idio_C_char ((char) IDIO_FIXNUM_VAL (inum));
-	} else 	if (idio_S_schar == t) {
-	    return idio_C_schar ((signed char) IDIO_FIXNUM_VAL (inum));
-	} else 	if (idio_S_uchar == t) {
-	    return idio_C_uchar ((unsigned char) IDIO_FIXNUM_VAL (inum));
-	} else 	if (idio_S_short == t) {
-	    return idio_C_short ((short) IDIO_FIXNUM_VAL (inum));
-	} else 	if (idio_S_ushort == t) {
-	    return idio_C_ushort ((unsigned short) IDIO_FIXNUM_VAL (inum));
-	} else 	if (idio_S_int == t) {
-	    return idio_C_int ((int) IDIO_FIXNUM_VAL (inum));
-	} else 	if (idio_S_uint == t) {
-	    return idio_C_uint ((unsigned int) IDIO_FIXNUM_VAL (inum));
-	} else 	if (idio_S_long == t) {
-	    return idio_C_long ((long) IDIO_FIXNUM_VAL (inum));
-	} else 	if (idio_S_ulong == t) {
-	    return idio_C_ulong ((unsigned long) IDIO_FIXNUM_VAL (inum));
-	} else 	if (idio_S_longlong == t) {
-	    return idio_C_longlong ((long long) IDIO_FIXNUM_VAL (inum));
-	} else 	if (idio_S_ulonglong == t) {
-	    return idio_C_ulonglong ((unsigned long long) IDIO_FIXNUM_VAL (inum));
-	} else {
-	    idio_error_param_value ("type", "C integral type", IDIO_C_FUNC_LOCATION ());
+    intmax_t i;
 
-	    return idio_S_notreached;
-	}
+    if (idio_isa_fixnum (inum)) {
+	i = IDIO_FIXNUM_VAL (inum);
     } else if (idio_isa_integer_bignum (inum)) {
-	return idio_libc_intmax_t (idio_bignum_intmax_value (inum));
+	if (! IDIO_BIGNUM_INTEGER_P (inum)) {
+	    /*
+	     * Annoyingly, idio_isa_integer_bignum() has probably just
+	     * run idio_bignum_real_to_integer()...
+	     */
+	    inum = idio_bignum_real_to_integer (inum);
+	}
+	/*
+	 * ALERT ALERT
+	 *
+	 * We'll get a ^rt-bignum-conversion-error from
+	 * idio_bignum_intmax_t_value() before several of the following
+	 * tests fire!
+	 *
+	 * Indeed, by definition, for the (u)long (64-bit systems) and
+	 * (u)longlong (all systems?) tests, we cannot represent a
+	 * testable value in an intmax_t.
+	 *
+	 * I've tried to annotate them below.
+	 */
+	i = idio_bignum_intmax_t_value (inum);
     } else {
+	/*
+	 * Test Case: c-type-errors/c-type-integer2-bad-type.idio
+	 *
+	 * C/integer-> #t
+	 */
 	idio_error_param_type ("integer", inum, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
     }
 
+    if (idio_S_char == t) {
+	if (i > CHAR_MAX) {
+	    /*
+	     * Test Case: c-type-errors/c-type-integer2-char-range.idio
+	     *
+	     * C/integer-> ((C/->number libc/CHAR_MAX) + 1) 'char
+	     */
+	    idio_C_conversion_error ("char: range error", inum, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	} else {
+	    return idio_C_char ((char) i);
+	}
+    } else 	if (idio_S_schar == t) {
+	if (i > SCHAR_MAX ||
+	    i < SCHAR_MIN) {
+	    /*
+	     * Test Case(s):
+	     *
+	     *  c-type-errors/c-type-integer2-schar-range-min.idio
+	     *  c-type-errors/c-type-integer2-schar-range-max.idio
+	     *
+	     * C/integer-> ((C/->number libc/SCHAR_MIN) - 1) 'schar
+	     * C/integer-> ((C/->number libc/SCHAR_MAX) + 1) 'schar
+	     */
+	    idio_C_conversion_error ("schar: range error", inum, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	} else {
+	    return idio_C_schar ((signed char) i);
+	}
+    } else 	if (idio_S_uchar == t) {
+	if (i > UCHAR_MAX) {
+	    /*
+	     * Test Case: c-type-errors/c-type-integer2-uchar-range.idio
+	     *
+	     * C/integer-> ((C/->number libc/UCHAR_MAX) + 1) 'uchar
+	     */
+	    idio_C_conversion_error ("uchar: range error", inum, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	} else {
+	    return idio_C_uchar ((unsigned char) i);
+	}
+    } else 	if (idio_S_short == t) {
+	if (i > SHRT_MAX ||
+	    i < SHRT_MIN) {
+	    /*
+	     * Test Case(s):
+	     *
+	     *  c-type-errors/c-type-integer2-short-range-min.idio
+	     *  c-type-errors/c-type-integer2-short-range-max.idio
+	     *
+	     * C/integer-> ((C/->number libc/SHRT_MIN) - 1) 'short
+	     * C/integer-> ((C/->number libc/SHRT_MAX) + 1) 'short
+	     */
+	    idio_C_conversion_error ("short: range error", inum, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	} else {
+	    return idio_C_short ((short) i);
+	}
+    } else 	if (idio_S_ushort == t) {
+	if (i > USHRT_MAX) {
+	    /*
+	     * Test Case: c-type-errors/c-type-integer2-ushort-range.idio
+	     *
+	     * C/integer-> ((C/->number libc/USHRT_MAX) + 1) 'ushort
+	     */
+	    idio_C_conversion_error ("ushort: range error", inum, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	} else {
+	    return idio_C_ushort ((unsigned short) i);
+	}
+    } else 	if (idio_S_int == t) {
+	if (i > INT_MAX ||
+	    i < INT_MIN) {
+	    /*
+	     * Test Case(s):
+	     *
+	     *  c-type-errors/c-type-integer2-int-range-min.idio
+	     *  c-type-errors/c-type-integer2-int-range-max.idio
+	     *
+	     * C/integer-> ((C/->number libc/INT_MIN) - 1) 'int
+	     * C/integer-> ((C/->number libc/INT_MAX) + 1) 'int
+	     */
+	    idio_C_conversion_error ("int: range error", inum, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	} else {
+	    return idio_C_int ((int) i);
+	}
+    } else 	if (idio_S_uint == t) {
+	if (i > UINT_MAX) {
+	    /*
+	     * Test Case: c-type-errors/c-type-integer2-uint-range.idio
+	     *
+	     * C/integer-> ((C/->number libc/UINT_MAX) + 1) 'uint
+	     */
+	    idio_C_conversion_error ("uint: range error", inum, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	} else {
+	    return idio_C_uint ((unsigned int) i);
+	}
+    } else 	if (idio_S_long == t) {
+	if (i > LONG_MAX ||
+	    i < LONG_MIN) {
+	    /*
+	     * Test Case(s): maybe on 32-bit
+	     *
+	     *  Technically:
+	     *
+	     *  c-type-errors/c-type-integer2-long-range-min.idio
+	     *  c-type-errors/c-type-integer2-long-range-max.idio
+	     *
+	     * C/integer-> ((C/->number libc/LONG_MIN) - 1) 'long
+	     * C/integer-> ((C/->number libc/LONG_MAX) + 1) 'long
+	     *
+	     * But in practice an intmax_t is a long on 64-bit systems
+	     * and therefore we cannot test this.
+	     */
+	    idio_C_conversion_error ("long: range error", inum, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	} else {
+	    return idio_C_long ((long) i);
+	}
+    } else 	if (idio_S_ulong == t) {
+	if (i > ULONG_MAX) {
+	    /*
+	     * Test Case: maybe on 32-bit -- c-type-errors/c-type-integer2-ulong-range.idio
+	     *
+	     * C/integer-> ((C/->number libc/ULONG_MAX) + 1) 'ulong
+	     *
+	     * See note above.
+	     */
+	    idio_C_conversion_error ("ulong: range error", inum, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	} else {
+	    return idio_C_ulong ((unsigned long) i);
+	}
+    } else 	if (idio_S_longlong == t) {
+	if (i > LLONG_MAX ||
+	    i < LLONG_MIN) {
+	    /*
+	     * Test Case(s): ??
+	     *
+	     * Not possible as an intmax_t is a long long int
+	     * therefore we will have triggered the
+	     * ^rt-bignum-conversion-error above.
+	     *
+	     * However, for reference.
+	     *
+	     *  c-type-errors/c-type-integer2-longlong-range-min.idio
+	     *  c-type-errors/c-type-integer2-longlong-range-max.idio
+	     *
+	     * C/integer-> ((C/->number libc/LLONG_MIN) - 1) 'longlong
+	     * C/integer-> ((C/->number libc/LLONG_MAX) + 1) 'longlong
+	     */
+	    idio_C_conversion_error ("longlong: range error", inum, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	} else {
+	    return idio_C_longlong ((long long) i);
+	}
+    } else 	if (idio_S_ulonglong == t) {
+	if (i > ULLONG_MAX) {
+	    /*
+	     * Test Case: ?? -- not c-type-errors/c-type-integer2-ulonglong-range.idio
+	     *
+	     * See above.
+	     *
+	     * C/integer-> ((C/->number libc/ULLONG_MAX) + 1) 'ulonglong
+	     */
+	    idio_C_conversion_error ("ulonglong: range error", inum, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	} else {
+	    return idio_C_ulonglong ((unsigned long long) i);
+	}
+    } else {
+	/*
+	 * Test Case: c-type-errors/c-type-integer2-bad-fixnum-c-type.idio
+	 *
+	 * C/integer-> 1 'float
+	 */
+	idio_error_param_value ("type", "should be a C integral type", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
     return idio_S_notreached;
 }
 
@@ -1223,32 +1491,336 @@ ulonglong					\n\
 {
     IDIO_ASSERT (inum);
 
+    if (idio_isa_C_unsigned (inum)) {
+	return inum;
+    }
+
     IDIO t = idio_S_uint;
 
     if (idio_S_nil != args) {
 	t = IDIO_PAIR_H (args);
     }
 
+    uintmax_t u;
+
     if (idio_isa_fixnum (inum)) {
-	if (idio_S_uchar == t) {
-	    return idio_C_uchar ((unsigned char) IDIO_FIXNUM_VAL (inum));
-	} else 	if (idio_S_ushort == t) {
-	    return idio_C_ushort ((unsigned short) IDIO_FIXNUM_VAL (inum));
-	} else 	if (idio_S_uint == t) {
-	    return idio_C_uint ((unsigned int) IDIO_FIXNUM_VAL (inum));
-	} else 	if (idio_S_ulong == t) {
-	    return idio_C_ulong ((unsigned long) IDIO_FIXNUM_VAL (inum));
-	} else 	if (idio_S_ulonglong == t) {
-	    return idio_C_ulonglong ((unsigned long long) IDIO_FIXNUM_VAL (inum));
-	} else {
-	    idio_error_param_value ("type", "C unsigned integral type", IDIO_C_FUNC_LOCATION ());
+	intmax_t i = IDIO_FIXNUM_VAL (inum);
+	if (i < 0) {
+	    /*
+	     * Test Case: c-type-errors/c-type-integer2unsigned-fixnum-negative.idio
+	     *
+	     * C/integer-> -1
+	     */
+	    idio_error_param_value ("i", "should be a positive integer", IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
+	u = i;
     } else if (idio_isa_integer_bignum (inum)) {
-	return idio_libc_uintmax_t (idio_bignum_uintmax_value (inum));
+	if (! IDIO_BIGNUM_INTEGER_P (inum)) {
+	    /*
+	     * Annoyingly, idio_isa_integer_bignum() has probably just
+	     * run idio_bignum_real_to_integer()...
+	     */
+	    inum = idio_bignum_real_to_integer (inum);
+	}
+	if (idio_bignum_negative_p (inum)) {
+	    /*
+	     * Test Case: c-type-errors/c-type-integer2unsigned-bignum-negative.idio
+	     *
+	     * C/integer-> -1.0
+	     */
+	    idio_error_param_value ("i", "should be a positive integer", IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	}
+	/*
+	 * ALERT ALERT
+	 *
+	 * We'll get a ^rt-bignum-conversion-error from
+	 * idio_bignum_uintmax_t_value() before several of the following
+	 * tests fire!
+	 *
+	 * Indeed, by definition, for the ulong (64-bit systems) and
+	 * ulonglong (all systems?) tests, we cannot represent a
+	 * testable value in an uintmax_t.
+	 *
+	 * I've tried to annotate them below.
+	 */
+	u = idio_bignum_uintmax_t_value (inum);
     } else {
+	/*
+	 * Test Case: c-type-errors/c-type-integer2unsigned-bad-type.idio
+	 *
+	 * C/integer-> #t
+	 */
 	idio_error_param_type ("positive integer", inum, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    if (idio_S_uchar == t) {
+	if (u > UCHAR_MAX) {
+	    /*
+	     * Test Case: c-type-errors/c-type-integer2unsigned-uchar-range.idio
+	     *
+	     * C/integer-> ((C/->number libc/UCHAR_MAX) + 1) 'uchar
+	     */
+	    idio_C_conversion_error ("uchar: range error", inum, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	} else {
+	    return idio_C_uchar ((unsigned char) u);
+	}
+    } else 	if (idio_S_ushort == t) {
+	if (u > USHRT_MAX) {
+	    /*
+	     * Test Case: c-type-errors/c-type-integer2unsigned-ushort-range.idio
+	     *
+	     * C/integer-> ((C/->number libc/USHRT_MAX) + 1) 'ushort
+	     */
+	    idio_C_conversion_error ("ushort: range error", inum, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	} else {
+	    return idio_C_ushort ((unsigned short) u);
+	}
+    } else 	if (idio_S_uint == t) {
+	if (u > UINT_MAX) {
+	    /*
+	     * Test Case: c-type-errors/c-type-integer2unsigned-uint-range.idio
+	     *
+	     * C/integer-> ((C/->number libc/UINT_MAX) + 1) 'uint
+	     */
+	    idio_C_conversion_error ("uint: range error", inum, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	} else {
+	    return idio_C_uint ((unsigned int) u);
+	}
+    } else 	if (idio_S_ulong == t) {
+	if (u > ULONG_MAX) {
+	    /*
+	     * Test Case: maybe on 32-bit -- c-type-errors/c-type-integer2unsigned-ulong-range.idio
+	     *
+	     * C/integer-> ((C/->number libc/ULONG_MAX) + 1) 'ulong
+	     *
+	     * See note above.
+	     */
+	    idio_C_conversion_error ("ulong: range error", inum, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	} else {
+	    return idio_C_ulong ((unsigned long) u);
+	}
+    } else 	if (idio_S_ulonglong == t) {
+	if (u > ULLONG_MAX) {
+	    /*
+	     * Test Case: ?? -- not c-type-errors/c-type-integer2unsigned-ulonglong-range.idio
+	     *
+	     * See above.
+	     *
+	     * C/integer-> ((C/->number libc/ULLONG_MAX) + 1) 'ulonglong
+	     */
+	    idio_C_conversion_error ("ulonglong: range error", inum, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	} else {
+	    return idio_C_ulonglong ((unsigned long long) u);
+	}
+    } else {
+	/*
+	 * Test Case: c-type-errors/c-type-integer2unsigned-bad-fixnum-c-type.idio
+	 *
+	 * C/integer-> 1 'float
+	 */
+	idio_error_param_value ("type", "should be a C unsigned integral type", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    return idio_S_notreached;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("->number", C_to_number, (IDIO inum), "i", "\
+convert C number `i` to an Idio number	\n\
+						\n\
+:param o: C number to convert			\n\
+:type o: C/int, C/uint				\n\
+						\n\
+supported C types are:				\n\
+char						\n\
+schar						\n\
+uchar						\n\
+short						\n\
+ushort						\n\
+int						\n\
+uint						\n\
+long						\n\
+ulong						\n\
+longlong					\n\
+ulonglong					\n\
+float						\n\
+double						\n\
+						\n\
+the following types are NOT supported:		\n\
+longdouble					\n\
+						\n\
+:return: Idio number				\n\
+:rtype: number					\n\
+")
+{
+    IDIO_ASSERT (inum);
+
+    if (idio_isa_C_char (inum)) {
+	return idio_integer (IDIO_C_TYPE_char (inum));
+    } else if (idio_isa_C_schar (inum)) {
+	return idio_integer (IDIO_C_TYPE_schar (inum));
+    } else if (idio_isa_C_uchar (inum)) {
+	return idio_uinteger (IDIO_C_TYPE_uchar (inum));
+    } else if (idio_isa_C_short (inum)) {
+	return idio_integer (IDIO_C_TYPE_short (inum));
+    } else if (idio_isa_C_ushort (inum)) {
+	return idio_uinteger (IDIO_C_TYPE_ushort (inum));
+    } else if (idio_isa_C_int (inum)) {
+	return idio_integer (IDIO_C_TYPE_int (inum));
+    } else if (idio_isa_C_uint (inum)) {
+	return idio_uinteger (IDIO_C_TYPE_uint (inum));
+    } else if (idio_isa_C_long (inum)) {
+	return idio_integer (IDIO_C_TYPE_long (inum));
+    } else if (idio_isa_C_ulong (inum)) {
+	return idio_uinteger (IDIO_C_TYPE_ulong (inum));
+    } else if (idio_isa_C_longlong (inum)) {
+	return idio_integer (IDIO_C_TYPE_longlong (inum));
+    } else if (idio_isa_C_ulonglong (inum)) {
+	return idio_uinteger (IDIO_C_TYPE_ulonglong (inum));
+    } else if (idio_isa_C_float (inum)) {
+	return idio_bignum_float (IDIO_C_TYPE_float (inum));
+    } else if (idio_isa_C_double (inum)) {
+	return idio_bignum_double (IDIO_C_TYPE_double (inum));
+    } else if (idio_isa_C_longdouble (inum)) {
+	/*
+	 * Test Case: c-type-errors/c-type-2number-long-double.idio
+	 *
+	 * C/->number (C/number-> 123.456 'longdouble)
+	 */
+	idio_error_param_type_msg ("C/->number for C long double is not supported", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+	return idio_bignum_longdouble (IDIO_C_TYPE_longdouble (inum));
+    } else {
+	/*
+	 * Test Case: c-type-errors/c-type-2number-bad-type.idio
+	 *
+	 * C/->number #t
+	 */
+	idio_error_param_type ("C number type", inum, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    return idio_S_notreached;
+}
+
+IDIO_DEFINE_PRIMITIVE2_DS ("number->", C_number_to, (IDIO inum, IDIO t), "n type", "\
+convert Idio number `n` to a C number using `type`	\n\
+for the specific C type.				\n\
+						\n\
+bignums must be to a C floating type		\n\
+						\n\
+:param n: Idio number to convert		\n\
+:type n: fixnum or bignum			\n\
+:param type: C type to use			\n\
+:type type: symbol				\n\
+						\n\
+`type` can be one of:				\n\
+char						\n\
+schar						\n\
+uchar						\n\
+short						\n\
+ushort						\n\
+int						\n\
+uint						\n\
+long						\n\
+ulong						\n\
+longlong					\n\
+ulonglong					\n\
+float						\n\
+double						\n\
+longdouble					\n\
+						\n\
+:return: C number				\n\
+:rtype: C/int etc.				\n\
+")
+{
+    IDIO_ASSERT (inum);
+    IDIO_ASSERT (t);
+
+    IDIO_USER_TYPE_ASSERT (symbol, t);
+
+    if (idio_isa_fixnum (inum)) {
+	if (idio_S_char == t) {
+	    return idio_C_char ((char) IDIO_FIXNUM_VAL (inum));
+	} else 	if (idio_S_schar == t) {
+	    return idio_C_schar ((signed char) IDIO_FIXNUM_VAL (inum));
+	} else 	if (idio_S_uchar == t) {
+	    return idio_C_uchar ((unsigned char) IDIO_FIXNUM_VAL (inum));
+	} else 	if (idio_S_short == t) {
+	    return idio_C_short ((short) IDIO_FIXNUM_VAL (inum));
+	} else 	if (idio_S_ushort == t) {
+	    return idio_C_ushort ((unsigned short) IDIO_FIXNUM_VAL (inum));
+	} else 	if (idio_S_int == t) {
+	    return idio_C_int ((int) IDIO_FIXNUM_VAL (inum));
+	} else 	if (idio_S_uint == t) {
+	    return idio_C_uint ((unsigned int) IDIO_FIXNUM_VAL (inum));
+	} else 	if (idio_S_long == t) {
+	    return idio_C_long ((long) IDIO_FIXNUM_VAL (inum));
+	} else 	if (idio_S_ulong == t) {
+	    return idio_C_ulong ((unsigned long) IDIO_FIXNUM_VAL (inum));
+	} else 	if (idio_S_longlong == t) {
+	    return idio_C_longlong ((long long) IDIO_FIXNUM_VAL (inum));
+	} else 	if (idio_S_ulonglong == t) {
+	    return idio_C_ulonglong ((unsigned long long) IDIO_FIXNUM_VAL (inum));
+	} else 	if (idio_S_float == t) {
+	    return idio_C_float ((float) IDIO_FIXNUM_VAL (inum));
+	} else 	if (idio_S_double == t) {
+	    return idio_C_double ((double) IDIO_FIXNUM_VAL (inum));
+	} else 	if (idio_S_longdouble == t) {
+	    return idio_C_longdouble ((long double) IDIO_FIXNUM_VAL (inum));
+	} else {
+	    /*
+	     * Test Case: c-type-errors/c-type-number2-bad-fixnum-c-type.idio
+	     *
+	     * C/number-> 1 'number
+	     */
+	    idio_error_param_value ("type", "should be a C integral type", IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	}
+    } else if (idio_isa_bignum (inum)) {
+	if (idio_S_float == t) {
+	    return idio_C_float (idio_bignum_float_value (inum));
+	} else 	if (idio_S_double == t) {
+	    return idio_C_double (idio_bignum_double_value (inum));
+	} else 	if (idio_S_longdouble == t) {
+	    return idio_C_longdouble (idio_bignum_longdouble_value (inum));
+	} else {
+	    /*
+	     * Test Case: c-type-errors/c-type-number2-bad-bignum-c-type.idio
+	     *
+	     * C/number-> 1.0 'int
+	     */
+	    idio_error_param_value ("type", "should be a C floating type", IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	}
+    } else {
+	/*
+	 * Test Case: c-type-errors/c-type-number2-bad-type.idio
+	 *
+	 * C/number-> #t 'int
+	 */
+	idio_error_param_type ("number", inum, IDIO_C_FUNC_LOCATION ());
     }
 
     return idio_S_notreached;
@@ -1375,6 +1947,8 @@ void idio_c_type_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_to_integer);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_integer_to);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_integer_to_unsigned);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_to_number);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_number_to);
 
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_bw_ior);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_C_module, C_bw_and);

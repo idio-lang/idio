@@ -1236,7 +1236,7 @@ convert integer `i` to a character		\n\
     if (idio_isa_fixnum (i)) {
 	c = IDIO_CHARACTER (IDIO_FIXNUM_VAL (i));
     } else if (idio_isa_bignum (i)) {
-	intptr_t iv = idio_bignum_intptr_value (i);
+	intptr_t iv = idio_bignum_intptr_t_value (i);
 
 	if (iv >= 0 &&
 	    iv <= IDIO_FIXNUM_MAX) {
@@ -1289,7 +1289,7 @@ convert integer `i` to a Unicode code point	\n\
 	    u = IDIO_UNICODE (iv);
 	}
     } else if (idio_isa_bignum (i)) {
-	intptr_t iv = idio_bignum_intptr_value (i);
+	intptr_t iv = idio_bignum_intptr_t_value (i);
 
 	if (iv >= 0 &&
 	    iv <= 0x10ffff) {

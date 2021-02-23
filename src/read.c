@@ -636,7 +636,7 @@ IDIO idio_read_unicode (IDIO handle, IDIO lo)
     if (idio_isa_fixnum (I_cp)) {
 	cp = IDIO_FIXNUM_VAL (I_cp);
     } else if (idio_isa_bignum (I_cp)) {
-	cp = idio_bignum_uint64_value (I_cp);
+	cp = idio_bignum_uint64_t_value (I_cp);
     } else {
 	/*
 	 * Test Case: read-errors/??
@@ -2034,7 +2034,7 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 		     * want to create a bitset that big for
 		     * testing...
 		     */
-		    bs_size = idio_bignum_uint64_value (I_size);
+		    bs_size = idio_bignum_uint64_t_value (I_size);
 		} else {
 		    /*
 		     * Test Case: read-errors/bitset-size-non-integer.idio
@@ -2097,7 +2097,7 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 			 *
 			 * Technically a code coverage issue but causes the too big error
 			 */
-			offset = idio_bignum_uint64_value (I_offset);
+			offset = idio_bignum_uint64_t_value (I_offset);
 		    } else {
 			/*
 			 * Test Case: read-errors/bitset-range-start-non-integer.idio
@@ -2204,7 +2204,7 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 			 *
 			 * Technically a code coverage issue but causes the too big error
 			 */
-			end = idio_bignum_uint64_value (I_end);
+			end = idio_bignum_uint64_t_value (I_end);
 		    }
 
 		    if (idio_handle_tell (idio_read_bitset_end_sh) != strlen (bit_range)) {
@@ -2328,7 +2328,7 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 			     *
 			     * Technically a code coverage issue but causes the too big error
 			     */
-			    offset = idio_bignum_uint64_value (I_offset);
+			    offset = idio_bignum_uint64_t_value (I_offset);
 			} else {
 			    /*
 			     * Test Case: read-errors/bitset-offset-non-integer.idio

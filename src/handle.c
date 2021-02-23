@@ -1119,7 +1119,7 @@ unless ``whence`` is 'set and position is 0 (zero)	\n\
 	 * That means there's a risk our intmax_t could overflow off_t
 	 * with "hilarious" results.
 	 */
-	offset = idio_bignum_intmax_value (pos);
+	offset = idio_bignum_intmax_t_value (pos);
     }
     off_t n = idio_seek_handle (h, offset, whence);
 

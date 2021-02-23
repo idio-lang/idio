@@ -1045,7 +1045,7 @@ with-error-to #n (function () {
 ;; int -- it must be bigger than FIXNUM-MAX (otherwise we'll get a
 ;; fixnum) but we want it to be big enough to trigger multiple
 ;; segments (although that's not happening on 64-bit at least)
-C-uinteger := C/integer->unsigned bn
+C-uinteger := C/integer->unsigned bn 'ulong
 b := C/->integer C-uinteger
 
 test (equal? b bn) #t

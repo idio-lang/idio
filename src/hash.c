@@ -893,7 +893,7 @@ idio_hi_t idio_hash_index (IDIO ht, void *kv)
 	     *
 	     * Technically wrong is the worst kind of wrong.
 	     */
-	    hvi = idio_bignum_ptrdiff_value (ihvi);
+	    hvi = idio_bignum_ptrdiff_t_value (ihvi);
 	} else {
 	    /*
 	     * Test Cases:

@@ -159,13 +159,76 @@ bs1a  := #B{ 3 }
 bs1b  := #B{ 3 }
 bs2   := #B{ 5 }
 
-ci1a  := C/integer-> 1
-ci1b  := C/integer-> 1
-ci2   := C/integer-> 2
+cchar1a  := C/number-> 1 'char
+cchar1b  := C/number-> 1 'char
+cchar2   := C/number-> 2 'char
+test (C/->integer cchar1a) 1
 
-cui1a  := C/integer->unsigned 1
-cui1b  := C/integer->unsigned 1
-cui2   := C/integer->unsigned 2
+cschar1a  := C/number-> 1 'schar
+cschar1b  := C/number-> 1 'schar
+cschar2   := C/number-> 2 'schar
+test (C/->integer cschar1a) 1
+
+cuchar1a  := C/number-> 1 'uchar
+cuchar1b  := C/number-> 1 'uchar
+cuchar2   := C/number-> 2 'uchar
+test (C/->integer cuchar1a) 1
+
+cshort1a  := C/number-> 1 'short
+cshort1b  := C/number-> 1 'short
+cshort2   := C/number-> 2 'short
+test (C/->integer cshort1a) 1
+
+cushort1a  := C/number-> 1 'ushort
+cushort1b  := C/number-> 1 'ushort
+cushort2   := C/number-> 2 'ushort
+test (C/->integer cushort1a) 1
+
+cint1a  := C/number-> 1 'int
+cint1b  := C/number-> 1 'int
+cint2   := C/number-> 2 'int
+test (C/->integer cint1a) 1
+
+cuint1a  := C/number-> 1 'uint
+cuint1b  := C/number-> 1 'uint
+cuint2   := C/number-> 2 'uint
+test (C/->integer cuint1a) 1
+
+clong1a  := C/number-> 1 'long
+clong1b  := C/number-> 1 'long
+clong2   := C/number-> 2 'long
+test (C/->integer clong1a) 1
+
+culong1a  := C/number-> 1 'ulong
+culong1b  := C/number-> 1 'ulong
+culong2   := C/number-> 2 'ulong
+test (C/->integer culong1a) 1
+
+clonglong1a  := C/number-> 1 'longlong
+clonglong1b  := C/number-> 1 'longlong
+clonglong2   := C/number-> 2 'longlong
+test (C/->integer clonglong1a) 1
+
+culonglong1a  := C/number-> 1 'ulonglong
+culonglong1b  := C/number-> 1 'ulonglong
+culonglong2   := C/number-> 2 'ulonglong
+test (C/->integer culonglong1a) 1
+
+cfloat1a  := C/number-> 123.456 'float
+cfloat1b  := C/number-> 123.456 'float
+cfloat2   := C/number-> 234.567 'float
+test (C/->number cfloat1a) 123.456008911132812
+
+cdouble1a  := C/number-> 123.456 'double
+cdouble1b  := C/number-> 123.456 'double
+cdouble2   := C/number-> 234.567 'double
+test (C/->number cdouble1a) 123.456000000000031
+
+clongdouble1a  := C/number-> 123.456 'longdouble
+clongdouble1b  := C/number-> 123.456 'longdouble
+clongdouble2   := C/number-> 234.567 'longdouble
+;; C/->number for long double is not supported
+;; test (C/->number clongdouble1a) 123.456000000000029
 
 ;
 test (eq?    0 0)	#t
@@ -306,25 +369,155 @@ test (eq?    bs1a bs2)	#f
 test (eqv?   bs1a bs2)	#f
 test (equal? bs1a bs2)	#f
 
-test (eq?    ci1a ci1a)	#t
-test (eqv?   ci1a ci1a)	#t
-test (equal? ci1a ci1a)	#t
-test (eq?    ci1a ci1b)	#t
-test (eqv?   ci1a ci1b)	#t
-test (equal? ci1a ci1b)	#t
-test (eq?    ci1a ci2)	#f
-test (eqv?   ci1a ci2)	#f
-test (equal? ci1a ci2)	#f
+test (eq?    cchar1a cchar1a)	#t
+test (eqv?   cchar1a cchar1a)	#t
+test (equal? cchar1a cchar1a)	#t
+test (eq?    cchar1a cchar1b)	#t
+test (eqv?   cchar1a cchar1b)	#t
+test (equal? cchar1a cchar1b)	#t
+test (eq?    cchar1a cchar2)	#f
+test (eqv?   cchar1a cchar2)	#f
+test (equal? cchar1a cchar2)	#f
 
-test (eq?    cui1a cui1a)	#t
-test (eqv?   cui1a cui1a)	#t
-test (equal? cui1a cui1a)	#t
-test (eq?    cui1a cui1b)	#t
-test (eqv?   cui1a cui1b)	#t
-test (equal? cui1a cui1b)	#t
-test (eq?    cui1a cui2)	#f
-test (eqv?   cui1a cui2)	#f
-test (equal? cui1a cui2)	#f
+test (eq?    cschar1a cschar1a)	#t
+test (eqv?   cschar1a cschar1a)	#t
+test (equal? cschar1a cschar1a)	#t
+test (eq?    cschar1a cschar1b)	#t
+test (eqv?   cschar1a cschar1b)	#t
+test (equal? cschar1a cschar1b)	#t
+test (eq?    cschar1a cschar2)	#f
+test (eqv?   cschar1a cschar2)	#f
+test (equal? cschar1a cschar2)	#f
+
+test (eq?    cuchar1a cuchar1a)	#t
+test (eqv?   cuchar1a cuchar1a)	#t
+test (equal? cuchar1a cuchar1a)	#t
+test (eq?    cuchar1a cuchar1b)	#t
+test (eqv?   cuchar1a cuchar1b)	#t
+test (equal? cuchar1a cuchar1b)	#t
+test (eq?    cuchar1a cuchar2)	#f
+test (eqv?   cuchar1a cuchar2)	#f
+test (equal? cuchar1a cuchar2)	#f
+
+test (eq?    cshort1a cshort1a)	#t
+test (eqv?   cshort1a cshort1a)	#t
+test (equal? cshort1a cshort1a)	#t
+test (eq?    cshort1a cshort1b)	#t
+test (eqv?   cshort1a cshort1b)	#t
+test (equal? cshort1a cshort1b)	#t
+test (eq?    cshort1a cshort2)	#f
+test (eqv?   cshort1a cshort2)	#f
+test (equal? cshort1a cshort2)	#f
+
+test (eq?    cushort1a cushort1a)	#t
+test (eqv?   cushort1a cushort1a)	#t
+test (equal? cushort1a cushort1a)	#t
+test (eq?    cushort1a cushort1b)	#t
+test (eqv?   cushort1a cushort1b)	#t
+test (equal? cushort1a cushort1b)	#t
+test (eq?    cushort1a cushort2)	#f
+test (eqv?   cushort1a cushort2)	#f
+test (equal? cushort1a cushort2)	#f
+
+test (eq?    cint1a cint1a)	#t
+test (eqv?   cint1a cint1a)	#t
+test (equal? cint1a cint1a)	#t
+test (eq?    cint1a cint1b)	#t
+test (eqv?   cint1a cint1b)	#t
+test (equal? cint1a cint1b)	#t
+test (eq?    cint1a cint2)	#f
+test (eqv?   cint1a cint2)	#f
+test (equal? cint1a cint2)	#f
+
+test (eq?    cuint1a cuint1a)	#t
+test (eqv?   cuint1a cuint1a)	#t
+test (equal? cuint1a cuint1a)	#t
+test (eq?    cuint1a cuint1b)	#t
+test (eqv?   cuint1a cuint1b)	#t
+test (equal? cuint1a cuint1b)	#t
+test (eq?    cuint1a cuint2)	#f
+test (eqv?   cuint1a cuint2)	#f
+test (equal? cuint1a cuint2)	#f
+
+test (eq?    clong1a clong1a)	#t
+test (eqv?   clong1a clong1a)	#t
+test (equal? clong1a clong1a)	#t
+test (eq?    clong1a clong1b)	#t
+test (eqv?   clong1a clong1b)	#t
+test (equal? clong1a clong1b)	#t
+test (eq?    clong1a clong2)	#f
+test (eqv?   clong1a clong2)	#f
+test (equal? clong1a clong2)	#f
+
+test (eq?    culong1a culong1a)	#t
+test (eqv?   culong1a culong1a)	#t
+test (equal? culong1a culong1a)	#t
+test (eq?    culong1a culong1b)	#t
+test (eqv?   culong1a culong1b)	#t
+test (equal? culong1a culong1b)	#t
+test (eq?    culong1a culong2)	#f
+test (eqv?   culong1a culong2)	#f
+test (equal? culong1a culong2)	#f
+
+test (eq?    clonglong1a clonglong1a)	#t
+test (eqv?   clonglong1a clonglong1a)	#t
+test (equal? clonglong1a clonglong1a)	#t
+test (eq?    clonglong1a clonglong1b)	#t
+test (eqv?   clonglong1a clonglong1b)	#t
+test (equal? clonglong1a clonglong1b)	#t
+test (eq?    clonglong1a clonglong2)	#f
+test (eqv?   clonglong1a clonglong2)	#f
+test (equal? clonglong1a clonglong2)	#f
+
+test (eq?    culonglong1a culonglong1a)	#t
+test (eqv?   culonglong1a culonglong1a)	#t
+test (equal? culonglong1a culonglong1a)	#t
+test (eq?    culonglong1a culonglong1b)	#t
+test (eqv?   culonglong1a culonglong1b)	#t
+test (equal? culonglong1a culonglong1b)	#t
+test (eq?    culonglong1a culonglong2)	#f
+test (eqv?   culonglong1a culonglong2)	#f
+test (equal? culonglong1a culonglong2)	#f
+
+test (eq?    cfloat1a cfloat1a)	#t
+test (eqv?   cfloat1a cfloat1a)	#t
+test (equal? cfloat1a cfloat1a)	#t
+test (eq?    cfloat1a cfloat1b)	#t
+test (eqv?   cfloat1a cfloat1b)	#t
+test (equal? cfloat1a cfloat1b)	#t
+test (eq?    cfloat1a cfloat2)	#f
+test (eqv?   cfloat1a cfloat2)	#f
+test (equal? cfloat1a cfloat2)	#f
+
+test (eq?    cdouble1a cdouble1a)	#t
+test (eqv?   cdouble1a cdouble1a)	#t
+test (equal? cdouble1a cdouble1a)	#t
+test (eq?    cdouble1a cdouble1b)	#t
+test (eqv?   cdouble1a cdouble1b)	#t
+test (equal? cdouble1a cdouble1b)	#t
+test (eq?    cdouble1a cdouble2)	#f
+test (eqv?   cdouble1a cdouble2)	#f
+test (equal? cdouble1a cdouble2)	#f
+
+;; equality of C long double is not implemented
+;; test (eq?    clongdouble1a clongdouble1a)	#t
+;; test (eqv?   clongdouble1a clongdouble1a)	#t
+;; test (equal? clongdouble1a clongdouble1a)	#t
+;; test (eq?    clongdouble1a clongdouble1b)	#t
+;; test (eqv?   clongdouble1a clongdouble1b)	#t
+;; test (equal? clongdouble1a clongdouble1b)	#t
+;; test (eq?    clongdouble1a clongdouble2)	#f
+;; test (eqv?   clongdouble1a clongdouble2)	#f
+;; test (equal? clongdouble1a clongdouble2)	#f
+
+;; the converters should return the same kind of thing
+; C/integer-> default is an int
+test (equal? (C/integer-> 1) (C/integer-> 1 'int))			#t
+test (equal? (C/integer-> 1) (C/number-> 1 'int))			#t
+; C/integer->unsigned default is a uint
+test (equal? (C/integer->unsigned 1) (C/integer->unsigned 1 'uint))	#t
+test (equal? (C/integer->unsigned 1) (C/integer-> 1 'uint))		#t
+test (equal? (C/integer->unsigned 1) (C/number-> 1 'uint))		#t
 
 ; code coverage of squirelly corners of idio_equal()
 str := "hello"
@@ -773,6 +966,127 @@ test (format "%-15.2f" n)	"3.14           "
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+;; C base_types
+;;
+;; (too) many variants
+
+;; char -- only ever printf(3) %c
+c-char := (C/integer-> #x61 'char)
+test (format "%c" c-char) "a"
+test (format "%s" c-char) "a"
+test (format "%p" c-char) "a"
+
+n = 10
+;; signed char -- only %d
+c-schar := (C/integer-> n 'schar)
+test (format "%d" c-schar) "10"
+test (format "%s" c-schar) "10"
+test (format "%p" c-schar) "10"
+
+;; unsigned char -- %X %o %u %x, default %u
+c-uchar := (C/integer-> n 'uchar)
+test (format "%X" c-uchar) "A"
+test (format "%o" c-uchar) "12"
+test (format "%u" c-uchar) "10"
+test (format "%x" c-uchar) "a"
+test (format "%s" c-uchar) "10"
+test (format "%p" c-uchar) "10"
+
+;; short -- only %d
+c-short := (C/integer-> n 'short)
+test (format "%d" c-short) "10"
+test (format "%s" c-short) "10"
+test (format "%p" c-short) "10"
+
+;; unsigned short -- %X %o %u %x, default %u
+c-ushort := (C/integer-> n 'ushort)
+test (format "%X" c-ushort) "A"
+test (format "%o" c-ushort) "12"
+test (format "%u" c-ushort) "10"
+test (format "%x" c-ushort) "a"
+test (format "%s" c-ushort) "10"
+test (format "%p" c-ushort) "10"
+
+;; int -- only %d
+c-int := (C/integer-> n 'int)
+test (format "%d" c-int) "10"
+test (format "%s" c-int) "10"
+test (format "%p" c-int) "10"
+
+;; unsigned int -- %X %o %u %x, default %u
+c-uint := (C/integer-> n 'uint)
+test (format "%X" c-uint) "A"
+test (format "%o" c-uint) "12"
+test (format "%u" c-uint) "10"
+test (format "%x" c-uint) "a"
+test (format "%s" c-uint) "10"
+test (format "%p" c-uint) "10"
+
+;; signed long -- only %d
+c-long := (C/integer-> n 'long)
+test (format "%d" c-long) "10"
+test (format "%s" c-long) "10"
+test (format "%p" c-long) "10"
+
+;; unsigned long -- %X %o %u %x, default %u
+c-ulong := (C/integer-> n 'ulong)
+test (format "%X" c-ulong) "A"
+test (format "%o" c-ulong) "12"
+test (format "%u" c-ulong) "10"
+test (format "%x" c-ulong) "a"
+test (format "%s" c-ulong) "10"
+test (format "%p" c-ulong) "10"
+
+;; long long -- only %d
+c-longlong := (C/integer-> n 'longlong)
+test (format "%d" c-longlong) "10"
+test (format "%s" c-longlong) "10"
+test (format "%p" c-longlong) "10"
+
+;; unsigned long long -- %X %o %u %x, default %u
+c-ulonglong := (C/integer-> n 'ulonglong)
+test (format "%X" c-ulonglong) "A"
+test (format "%o" c-ulonglong) "12"
+test (format "%u" c-ulonglong) "10"
+test (format "%x" c-ulonglong) "a"
+test (format "%s" c-ulonglong) "10"
+test (format "%p" c-ulonglong) "10"
+
+n = 123.456789012
+;; float -- %e %f %g, default %g
+c-float := (C/number-> n 'float)
+test (format "%e" c-float) "1.234568e+02"
+(cond-expand
+ (sizeof/pointer/32 {
+   ;; ?? why is this different on 32-bit machines
+   test (format "%f" c-float) "123.456779"
+ })
+ (else {
+   test (format "%f" c-float) "123.456787"
+ }))
+test (format "%g" c-float) "123.457"
+test (format "%s" c-float) "123.457"
+test (format "%p" c-float) "123.457"
+
+;; double -- %e %f %g, default %g
+c-double := (C/number-> n 'double)
+test (format "%e" c-double) "1.234568e+02"
+test (format "%f" c-double) "123.456789"
+test (format "%g" c-double) "123.457"
+test (format "%s" c-double) "123.457"
+test (format "%p" c-double) "123.457"
+
+;; long double -- %e %f %g, default %g
+c-longdouble := (C/number-> n 'longdouble)
+test (format "%e" c-longdouble) "1.234568e+02"
+test (format "%f" c-longdouble) "123.456789"
+test (format "%g" c-longdouble) "123.457"
+test (format "%s" c-longdouble) "123.457"
+test (format "%p" c-longdouble) "123.457"
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 ;; strings
 
 s := "hello world"
@@ -816,7 +1130,7 @@ test (%format 'keyed "%4.3f" h)		" 010"
 test (%format 'keyed "%10.2b" h)	"    123.45"
 
 ;; all done?
-Tests? (format0 + 409)
+Tests? (format0 + 589)
 
 ;Local Variables:
 ;mode: Idio

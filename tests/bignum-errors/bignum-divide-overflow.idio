@@ -1,0 +1,11 @@
+
+module tests/bignum
+
+;; assuming a 32 bit exponent
+
+;; NB the twenty digits in the numerator mean its exponent is twenty
+;; bigger than the number below -- notice it is ...27 and not ...47,
+;; the limit -- which means we need to divide by at least a power of
+;; minus twenty
+12345678901234567890e2147483627 / 1e-100
+

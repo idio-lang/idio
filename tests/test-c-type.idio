@@ -1,0 +1,340 @@
+;;
+;; Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+;;
+;; Licensed under the Apache License, Version 2.0 (the "License"); you
+;; may not use this file except in compliance with the License.  You
+;; may obtain a copy of the License at
+;;
+;;     http://www.apache.org/licenses/LICENSE-2.0
+;;
+;; Unless required by applicable law or agreed to in writing, software
+;; distributed under the License is distributed on an "AS IS" BASIS,
+;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+;; See the License for the specific language governing permissions and
+;; limitations under the License.
+;;
+;;
+
+;;
+;; test-c-type.idio
+;;
+module tests/c-type
+
+c-type0 := Tests
+
+test (C/uint? 0)			#f ; FIXNUM
+test (C/uint? #t)			#f ; CONSTANT
+test (C/uint? (integer->char 1))	#f ; CHARACTER (deprecated)
+test (C/uint? #\a)			#f ; UNICODE
+test (C/uint? "a")			#f ; STRING
+test (C/uint? 'a)			#f ; SYMBOL
+test (C/uint? :a)			#f ; KEYWORD
+test (C/uint? (pair 1 2))		#f ; PAIR
+test (C/uint? #[])			#f ; ARRAY
+test (C/uint? #{})			#f ; HASH
+test (C/uint? (function #n #n))		#f ; CLOSURE
+test (C/uint? pair)			#f ; PRIMITIVE
+test (C/uint? 1.0)			#f ; BIGNUM
+test (C/uint? (find-module 'Idio))	#f ; MODULE
+test (C/uint? (current-input-handle))	#f ; HANDLE
+test (C/uint? ^error)			#f ; STRUCT_TYPE
+test (C/uint? libc/idio-uname)		#f ; STRUCT_INSTANCE
+test (C/uint? #B{ 3 })			#f ; BITSET
+test (C/uint? libc/INTMAX_MAX)		#f ; C_INT
+test (C/uint? libc/UINTMAX_MAX)		#f ; C_UINT	- probably!
+
+;; cross test the fourteen (and pointer) base_types
+v := C/integer-> 0 'char
+test (C/char? v)	#t
+test (C/schar? v)	#f
+test (C/uchar? v)	#f
+test (C/short? v)	#f
+test (C/ushort? v)	#f
+test (C/int? v)		#f
+test (C/uint? v)	#f
+test (C/long? v)	#f
+test (C/ulong? v)	#f
+test (C/longlong? v)	#f
+test (C/ulonglong? v)	#f
+test (C/float? v)	#f
+test (C/double? v)	#f
+test (C/longdouble? v)	#f
+test (C/pointer? v)	#f
+
+v := C/integer-> 0 'schar
+test (C/char? v)	#f
+test (C/schar? v)	#t
+test (C/uchar? v)	#f
+test (C/short? v)	#f
+test (C/ushort? v)	#f
+test (C/int? v)		#f
+test (C/uint? v)	#f
+test (C/long? v)	#f
+test (C/ulong? v)	#f
+test (C/longlong? v)	#f
+test (C/ulonglong? v)	#f
+test (C/float? v)	#f
+test (C/double? v)	#f
+test (C/longdouble? v)	#f
+test (C/pointer? v)	#f
+
+v := C/integer-> 0 'uchar
+test (C/char? v)	#f
+test (C/schar? v)	#f
+test (C/uchar? v)	#t
+test (C/short? v)	#f
+test (C/ushort? v)	#f
+test (C/int? v)		#f
+test (C/uint? v)	#f
+test (C/long? v)	#f
+test (C/ulong? v)	#f
+test (C/longlong? v)	#f
+test (C/ulonglong? v)	#f
+test (C/float? v)	#f
+test (C/double? v)	#f
+test (C/longdouble? v)	#f
+test (C/pointer? v)	#f
+
+v := C/integer-> 0 'short
+test (C/char? v)	#f
+test (C/schar? v)	#f
+test (C/uchar? v)	#f
+test (C/short? v)	#t
+test (C/ushort? v)	#f
+test (C/int? v)		#f
+test (C/uint? v)	#f
+test (C/long? v)	#f
+test (C/ulong? v)	#f
+test (C/longlong? v)	#f
+test (C/ulonglong? v)	#f
+test (C/float? v)	#f
+test (C/double? v)	#f
+test (C/longdouble? v)	#f
+test (C/pointer? v)	#f
+
+v := C/integer-> 0 'ushort
+test (C/char? v)	#f
+test (C/schar? v)	#f
+test (C/uchar? v)	#f
+test (C/short? v)	#f
+test (C/ushort? v)	#t
+test (C/int? v)		#f
+test (C/uint? v)	#f
+test (C/long? v)	#f
+test (C/ulong? v)	#f
+test (C/longlong? v)	#f
+test (C/ulonglong? v)	#f
+test (C/float? v)	#f
+test (C/double? v)	#f
+test (C/longdouble? v)	#f
+test (C/pointer? v)	#f
+
+v := C/integer-> 0 'int
+test (C/char? v)	#f
+test (C/schar? v)	#f
+test (C/uchar? v)	#f
+test (C/short? v)	#f
+test (C/ushort? v)	#f
+test (C/int? v)		#t
+test (C/uint? v)	#f
+test (C/long? v)	#f
+test (C/ulong? v)	#f
+test (C/longlong? v)	#f
+test (C/ulonglong? v)	#f
+test (C/float? v)	#f
+test (C/double? v)	#f
+test (C/longdouble? v)	#f
+test (C/pointer? v)	#f
+
+v := C/integer-> 0 'uint
+test (C/char? v)	#f
+test (C/schar? v)	#f
+test (C/uchar? v)	#f
+test (C/short? v)	#f
+test (C/ushort? v)	#f
+test (C/int? v)		#f
+test (C/uint? v)	#t
+test (C/long? v)	#f
+test (C/ulong? v)	#f
+test (C/longlong? v)	#f
+test (C/ulonglong? v)	#f
+test (C/float? v)	#f
+test (C/double? v)	#f
+test (C/longdouble? v)	#f
+test (C/pointer? v)	#f
+
+v := C/integer-> 0 'long
+test (C/char? v)	#f
+test (C/schar? v)	#f
+test (C/uchar? v)	#f
+test (C/short? v)	#f
+test (C/ushort? v)	#f
+test (C/int? v)		#f
+test (C/uint? v)	#f
+test (C/long? v)	#t
+test (C/ulong? v)	#f
+test (C/longlong? v)	#f
+test (C/ulonglong? v)	#f
+test (C/float? v)	#f
+test (C/double? v)	#f
+test (C/longdouble? v)	#f
+test (C/pointer? v)	#f
+
+v := C/integer-> 0 'ulong
+test (C/char? v)	#f
+test (C/schar? v)	#f
+test (C/uchar? v)	#f
+test (C/short? v)	#f
+test (C/ushort? v)	#f
+test (C/int? v)		#f
+test (C/uint? v)	#f
+test (C/long? v)	#f
+test (C/ulong? v)	#t
+test (C/longlong? v)	#f
+test (C/ulonglong? v)	#f
+test (C/float? v)	#f
+test (C/double? v)	#f
+test (C/longdouble? v)	#f
+test (C/pointer? v)	#f
+
+v := C/integer-> 0 'longlong
+test (C/char? v)	#f
+test (C/schar? v)	#f
+test (C/uchar? v)	#f
+test (C/short? v)	#f
+test (C/ushort? v)	#f
+test (C/int? v)		#f
+test (C/uint? v)	#f
+test (C/long? v)	#f
+test (C/ulong? v)	#f
+test (C/longlong? v)	#t
+test (C/ulonglong? v)	#f
+test (C/float? v)	#f
+test (C/double? v)	#f
+test (C/longdouble? v)	#f
+test (C/pointer? v)	#f
+
+v := C/integer-> 0 'ulonglong
+test (C/char? v)	#f
+test (C/schar? v)	#f
+test (C/uchar? v)	#f
+test (C/short? v)	#f
+test (C/ushort? v)	#f
+test (C/int? v)		#f
+test (C/uint? v)	#f
+test (C/long? v)	#f
+test (C/ulong? v)	#f
+test (C/longlong? v)	#f
+test (C/ulonglong? v)	#t
+test (C/float? v)	#f
+test (C/double? v)	#f
+test (C/longdouble? v)	#f
+test (C/pointer? v)	#f
+
+v := C/number-> 0 'float
+test (C/char? v)	#f
+test (C/schar? v)	#f
+test (C/uchar? v)	#f
+test (C/short? v)	#f
+test (C/ushort? v)	#f
+test (C/int? v)		#f
+test (C/uint? v)	#f
+test (C/long? v)	#f
+test (C/ulong? v)	#f
+test (C/longlong? v)	#f
+test (C/ulonglong? v)	#f
+test (C/float? v)	#t
+test (C/double? v)	#f
+test (C/longdouble? v)	#f
+test (C/pointer? v)	#f
+
+v := C/number-> 0 'double
+test (C/char? v)	#f
+test (C/schar? v)	#f
+test (C/uchar? v)	#f
+test (C/short? v)	#f
+test (C/ushort? v)	#f
+test (C/int? v)		#f
+test (C/uint? v)	#f
+test (C/long? v)	#f
+test (C/ulong? v)	#f
+test (C/longlong? v)	#f
+test (C/ulonglong? v)	#f
+test (C/float? v)	#f
+test (C/double? v)	#t
+test (C/longdouble? v)	#f
+test (C/pointer? v)	#f
+
+v := C/number-> 0 'longdouble
+test (C/char? v)	#f
+test (C/schar? v)	#f
+test (C/uchar? v)	#f
+test (C/short? v)	#f
+test (C/ushort? v)	#f
+test (C/int? v)		#f
+test (C/uint? v)	#f
+test (C/long? v)	#f
+test (C/ulong? v)	#f
+test (C/longlong? v)	#f
+test (C/ulonglong? v)	#f
+test (C/float? v)	#f
+test (C/double? v)	#f
+test (C/longdouble? v)	#t
+test (C/pointer? v)	#f
+
+v := libc/NULL
+test (C/char? v)	#f
+test (C/schar? v)	#f
+test (C/uchar? v)	#f
+test (C/short? v)	#f
+test (C/ushort? v)	#f
+test (C/int? v)		#f
+test (C/uint? v)	#f
+test (C/long? v)	#f
+test (C/ulong? v)	#f
+test (C/longlong? v)	#f
+test (C/ulonglong? v)	#f
+test (C/float? v)	#f
+test (C/double? v)	#f
+test (C/longdouble? v)	#f
+test (C/pointer? v)	#t
+
+; float inf / -inf
+test (equal? (C/number->  1e40 'float) (C/number->  1e40 'float)) #t
+test (equal? (C/number->  1e40 'float) (C/number-> -1e40 'float)) #f
+test (equal? (C/number-> -1e40 'float) (C/number-> -1e40 'float)) #t
+
+; double inf / -inf
+test (equal? (C/number->  1e400 'double) (C/number->  1e400 'double)) #t
+test (equal? (C/number->  1e400 'double) (C/number-> -1e400 'double)) #f
+test (equal? (C/number-> -1e400 'double) (C/number-> -1e400 'double)) #t
+
+; equality for long double not supported
+; longdouble inf / -inf
+;test (equal? (C/number->  1e40000 'longdouble) (C/number->  1e40000 'longdouble)) #t
+;test (equal? (C/number->  1e40000 'longdouble) (C/number-> -1e40000 'longdouble)) #f
+;test (equal? (C/number-> -1e40000 'longdouble) (C/number-> -1e40000 'longdouble)) #t
+
+test (C/->number (C/integer->  1 'char))      1
+test (C/->number (C/integer-> -1 'schar))    -1
+test (C/->number (C/integer->  1 'uchar))     1
+test (C/->number (C/integer-> -1 'short))    -1
+test (C/->number (C/integer->  1 'ushort))    1
+test (C/->number (C/integer-> -1 'int))      -1
+test (C/->number (C/integer->  1 'uint))      1
+test (C/->number (C/integer-> -1 'long))     -1
+test (C/->number (C/integer->  1 'ulong))     1
+test (C/->number (C/integer-> -1 'longlong)) -1
+test (C/->number (C/integer->  1 'ulonglong)) 1
+
+test (C/->number (C/integer->unsigned 1 'uchar))     1
+test (C/->number (C/integer->unsigned 1 'ushort))    1
+test (C/->number (C/integer->unsigned 1 'uint))      1
+test (C/->number (C/integer->unsigned 1 'ulong))     1
+test (C/->number (C/integer->unsigned 1 'ulonglong)) 1
+
+c-uintmax-max := C/->number libc/UINTMAX_MAX
+test (C/->number (C/integer->unsigned c-uintmax-max libc/uintmax_t)) c-uintmax-max
+
+;; all done?
+Tests? (c-type0 + 268)

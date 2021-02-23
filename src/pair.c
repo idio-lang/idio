@@ -882,7 +882,7 @@ IDIO idio_list_nth (IDIO l, IDIO I_n, IDIO args)
     if (idio_isa_fixnum (I_n)) {
 	C_n = IDIO_FIXNUM_VAL (I_n);
     } else if (idio_isa_integer_bignum (I_n)) {
-	C_n = idio_bignum_ptrdiff_value (I_n);
+	C_n = idio_bignum_ptrdiff_t_value (I_n);
     } else {
 	/*
 	 * Test Case: pair-errors/nth-bad-index-type.idio

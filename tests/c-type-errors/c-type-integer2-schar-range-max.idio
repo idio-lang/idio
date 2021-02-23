@@ -1,0 +1,2 @@
+
+C/integer-> ((C/->number libc/SCHAR_MAX) + 1) 'schar

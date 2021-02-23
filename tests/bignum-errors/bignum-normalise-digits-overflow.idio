@@ -1,0 +1,9 @@
+
+module tests/bignum
+
+;; assuming a 32 bit exponent
+
+;; NB this provokes the first trigger in idio_bignum_normalize() as
+;; digits in excess of IDIO_BIGNUM_SIG_MAX_DIGITS push the exponent
+;; into overflow
+100000000000000000000e2147483647

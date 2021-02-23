@@ -1,0 +1,121 @@
+;;
+;; Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+;;
+;; Licensed under the Apache License, Version 2.0 (the "License"); you
+;; may not use this file except in compliance with the License.  You
+;; may obtain a copy of the License at
+;;
+;;     http://www.apache.org/licenses/LICENSE-2.0
+;;
+;; Unless required by applicable law or agreed to in writing, software
+;; distributed under the License is distributed on an "AS IS" BASIS,
+;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+;; See the License for the specific language governing permissions and
+;; limitations under the License.
+;;
+;;
+
+;;
+;; test-c-type-error.idio
+;;
+
+c-type-error0 := Tests
+
+#*
+
+We have a bunch of test cases which should provoke a
+^rt-C-conversion-error or ^rt-parameter-error.  So we can write a load
+function which will wrapper the actual load with a trap
+for (^rt-C-conversion-error ^rt-parameter-error) and compare the
+message strings.
+
+*#
+
+c-type-error-load := {
+  n := 0
+
+  function (filename msg) {
+    if (not (string? filename)) (error 'load "not a string" filename)
+
+    load-k := #n
+
+    n = n + 1
+
+    exp-tests := 1
+
+    ;eprintf "loading #%s %s looking for %s\n" n filename msg
+    trap (^rt-C-conversion-error
+	  ^rt-parameter-error) (function (c) {
+				  ;eprintf "c-type-error #%s: %s %s\n" n msg c.location
+				  test c.message msg
+
+				  if (not (string=? c.message msg)) {
+				    condition-report (append-string "c-type-error-load: " filename) c (current-error-handle)
+				  }
+				  
+				  load-k 'c-type-error
+	  }) {
+      call/cc (function (k) {
+		 load-k = k
+		 t0 := Tests
+		 (symbol-value 'load 'Idio) filename
+		 if (not (equal? Tests (t0 + exp-tests))) {
+		   eprintf "c-type-error #%s: %s did not generate \"%s\"\n" n filename msg
+		   Errors = Errors + 1
+		   Tests = t0 + exp-tests
+		 }
+      })
+    }
+  }
+}
+
+c-type-error-load "c-type-errors/c-type-2integer-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C integral type"
+
+c-type-error-load "c-type-errors/c-type-integer2-char-range.idio" "char: range error"
+c-type-error-load "c-type-errors/c-type-integer2-schar-range-min.idio" "schar: range error"
+c-type-error-load "c-type-errors/c-type-integer2-schar-range-max.idio" "schar: range error"
+c-type-error-load "c-type-errors/c-type-integer2-uchar-range.idio" "uchar: range error"
+c-type-error-load "c-type-errors/c-type-integer2-short-range-min.idio" "short: range error"
+c-type-error-load "c-type-errors/c-type-integer2-short-range-max.idio" "short: range error"
+c-type-error-load "c-type-errors/c-type-integer2-ushort-range.idio" "ushort: range error"
+c-type-error-load "c-type-errors/c-type-integer2-int-range-min.idio" "int: range error"
+c-type-error-load "c-type-errors/c-type-integer2-int-range-max.idio" "int: range error"
+c-type-error-load "c-type-errors/c-type-integer2-uint-range.idio" "uint: range error"
+(cond-expand
+ (system/pointer/128 {
+   ;; the test values we use are bigger than the C type can support
+   c-type-error-load "c-type-errors/c-type-integer2-long-range-min.idio" "long: range error"
+   c-type-error-load "c-type-errors/c-type-integer2-long-range-max.idio" "long: range error"
+   c-type-error-load "c-type-errors/c-type-integer2-ulong-range.idio" "ulong: range error"
+   c-type-error-load "c-type-errors/c-type-integer2-longlong-range-min.idio" "longlong: range error"
+   c-type-error-load "c-type-errors/c-type-integer2-longlong-range-max.idio" "longlong: range error"
+   c-type-error-load "c-type-errors/c-type-integer2-ulonglong-range.idio" "ulonglong: range error"
+ }))
+c-type-error-load "c-type-errors/c-type-integer2-bad-fixnum-c-type.idio" "type should be a C integral type"
+c-type-error-load "c-type-errors/c-type-integer2-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a integer"
+
+c-type-error-load "c-type-errors/c-type-integer2unsigned-fixnum-negative.idio" "i should be a positive integer"
+c-type-error-load "c-type-errors/c-type-integer2unsigned-bad-fixnum-c-type.idio" "type should be a C unsigned integral type"
+c-type-error-load "c-type-errors/c-type-integer2unsigned-bignum-negative.idio" "i should be a positive integer"
+c-type-error-load "c-type-errors/c-type-integer2unsigned-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a positive integer"
+
+c-type-error-load "c-type-errors/c-type-integer2unsigned-uchar-range.idio" "uchar: range error"
+c-type-error-load "c-type-errors/c-type-integer2unsigned-ushort-range.idio" "ushort: range error"
+c-type-error-load "c-type-errors/c-type-integer2unsigned-uint-range.idio" "uint: range error"
+(cond-expand
+ (system/pointer/128 {
+   ;; the test values we use are bigger than the C type can support
+   c-type-error-load "c-type-errors/c-type-integer2unsigned-ulong-range.idio" "ulong: range error"
+   c-type-error-load "c-type-errors/c-type-integer2unsigned-ulonglong-range.idio" "ulonglong: range error"
+ }))
+
+c-type-error-load "c-type-errors/c-type-2number-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C number type"
+
+c-type-error-load "c-type-errors/c-type-2number-long-double.idio" "C/->number for C long double is not supported"
+
+c-type-error-load "c-type-errors/c-type-number2-bad-fixnum-c-type.idio" "type should be a C integral type"
+c-type-error-load "c-type-errors/c-type-number2-bad-bignum-c-type.idio" "type should be a C floating type"
+c-type-error-load "c-type-errors/c-type-number2-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a number"
+
+;; all done?
+Tests? (c-type-error0 + 25)

@@ -1,0 +1,2 @@
+
+C/integer->unsigned ((C/->number libc/UINT_MAX) + 1) 'uint

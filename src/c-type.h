@@ -23,71 +23,164 @@
 #ifndef C_TYPE_H
 #define C_TYPE_H
 
+/*
+ * Comparing IEEE 754 numbers is not easy.  See
+ * https://floating-point-gui.de/errors/comparison/ and
+ * https://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/
+ *
+ * These often fall back to the Units in Last Place (ULP) comparisons.
+ */
+typedef union idio_C_float_ULP_u {
+    int32_t i;
+    float f;
+    struct {
+#if BYTE_ORDER == BIG_ENDIAN
+	unsigned int sign:1;
+	unsigned int exponent:8;
+	unsigned int mantissa:23;
+#else
+	unsigned int mantissa:23;
+	unsigned int exponent:8;
+	unsigned int sign:1;
+#endif
+    } parts;
+} idio_C_float_ULP_t;
+#define IDIO_C_FLOAT_EXP_BIAS 127U
+#define IDIO_C_FLOAT_MAN_BITS 23
+
+typedef union idio_C_double_ULP_u {
+    double d;
+    int64_t i;
+    struct {
+#if BYTE_ORDER == BIG_ENDIAN
+	unsigned int sign:1;
+	unsigned int exponent:11;
+	unsigned long long int mantissa:52;
+#else
+	unsigned long long int mantissa:52;
+	unsigned int exponent:11;
+	unsigned int sign:1;
+#endif
+    } parts;
+} idio_C_double_ULP_t;
+#define IDIO_C_DOUBLE_EXP_BIAS 1023U
+#define IDIO_C_DOUBLE_MAN_BITS 52
+
+/*
+ * XXX this is a bit (read: extremely) ropey.
+ *
+ * I don't know how big a long double is.  In fact, I'm not sure it's
+ * terribly clear, see https://en.wikipedia.org/wiki/Long_double for a
+ * lack of clarity.
+ *
+ * About all we have is that it is (usually) more than the 8 bytes of
+ * a double.  So, let's aim for 128 bits which we can emulate with a
+ * pair of int64_t (albeit the second could be a uint64_t as it's
+ * probably just mantissa bits).
+ *
+ * This assumes that the compiler packs a 10 byte (I saw a reference
+ * to somewhere) or 12 byte (several 32-bit operating systems) or 14
+ * byte (maybe, who knows) implementation at the front of any word
+ * aligned implementation (because those numbers are the storage
+ * allocation not necessarily the IEEE 754 implementation width) and
+ * therefore the sign bit of i.i1 overlaps the sign bit of the long
+ * double.  If not we're totally goosed.
+ *
+ * And rightly so.
+ */
+typedef union idio_C_longdouble_ULP_u {
+    long double ld;
+    struct {
+#if BYTE_ORDER == BIG_ENDIAN
+	int64_t i1;
+	int64_t i2;
+#else
+	int64_t i2;
+	int64_t i1;
+#endif
+    } i;
+    struct {
+#if BYTE_ORDER == BIG_ENDIAN
+	unsigned int sign:1;
+	unsigned int exponent:15;
+	unsigned long long int mantissa:64;
+#else
+	unsigned long long int mantissa:64;
+	unsigned int exponent:15;
+	unsigned int sign:1;
+#endif
+    } parts_80bit;
+    struct {
+#if BYTE_ORDER == BIG_ENDIAN
+	unsigned int sign:1;
+	unsigned int exponent:15;
+	unsigned int pad:16;
+	unsigned long long int mantissa:64;
+#else
+	unsigned long long int mantissa:64;
+	unsigned int pad:16;
+	unsigned int exponent:15;
+	unsigned int sign:1;
+#endif
+    } parts_96bit;
+} idio_C_longdouble_ULP_t;
+#define IDIO_C_LONGDOUBLE_EXP_BIAS 16383U
+#define IDIO_C_LONGDOUBLE_MAN_BITS 64
+
 void idio_free_C_type (IDIO co);
 
 IDIO idio_C_char (char v);
 int idio_isa_C_char (IDIO co);
-char idio_C_char_get (IDIO co);
 
 IDIO idio_C_schar (signed char v);
 int idio_isa_C_schar (IDIO co);
-signed char idio_C_schar_get (IDIO co);
 
 IDIO idio_C_uchar (unsigned char v);
 int idio_isa_C_uchar (IDIO co);
-unsigned char idio_C_uchar_get (IDIO co);
 
 IDIO idio_C_short (short v);
 int idio_isa_C_short (IDIO co);
-short idio_C_short_get (IDIO co);
 
 IDIO idio_C_ushort (unsigned short v);
 int idio_isa_C_ushort (IDIO co);
-unsigned short idio_C_ushort_get (IDIO co);
 
 IDIO idio_C_int (int v);
 int idio_isa_C_int (IDIO co);
-int idio_C_int_get (IDIO co);
 
 IDIO idio_C_uint (unsigned int v);
 int idio_isa_C_uint (IDIO co);
-unsigned int idio_C_uint_get (IDIO co);
 
 IDIO idio_C_long (long v);
 int idio_isa_C_long (IDIO co);
-long idio_C_long_get (IDIO co);
 
 IDIO idio_C_ulong (unsigned long v);
 int idio_isa_C_ulong (IDIO co);
-unsigned long idio_C_ulong_get (IDIO co);
 
 IDIO idio_C_longlong (long long v);
 int idio_isa_C_longlong (IDIO co);
-long long idio_C_longlong_get (IDIO co);
 
 IDIO idio_C_ulonglong (unsigned long long v);
 int idio_isa_C_ulonglong (IDIO co);
-unsigned long long idio_C_ulonglong_get (IDIO co);
 
 IDIO idio_C_float (float v);
 int idio_isa_C_float (IDIO co);
-float idio_C_float_get (IDIO co);
 
 IDIO idio_C_double (double v);
 int idio_isa_C_double (IDIO co);
-double idio_C_double_get (IDIO co);
 
 IDIO idio_C_longdouble (long double v);
 int idio_isa_C_longdouble (IDIO co);
-long double idio_C_longdouble_get (IDIO co);
 
 IDIO idio_C_pointer (void * v);
 int idio_isa_C_pointer (IDIO co);
-void * idio_C_pointer_get (IDIO co);
 
 IDIO idio_C_pointer_free_me (void * v);
 void idio_free_C_pointer (IDIO co);
 IDIO idio_C_number_cast (IDIO co, idio_type_e type);
+
+int idio_C_float_equal_ULP (float o1, float o2, unsigned int max);
+int idio_C_double_equal_ULP (double o1, double o2, unsigned int max);
+int idio_C_longdouble_equal_ULP (long double o1, long double o2, unsigned int max);
 
 void idio_init_c_type ();
 

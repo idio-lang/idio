@@ -90,6 +90,7 @@ IDIO idio_condition_rt_hash_key_not_found_error_type;
 IDIO idio_condition_rt_number_error_type;
 IDIO idio_condition_rt_bignum_error_type;
 IDIO idio_condition_rt_bignum_conversion_error_type;
+IDIO idio_condition_rt_C_conversion_error_type;
 IDIO idio_condition_rt_fixnum_error_type;
 IDIO idio_condition_rt_fixnum_conversion_error_type;
 IDIO idio_condition_rt_divide_by_zero_error_type;
@@ -1195,6 +1196,7 @@ void idio_init_condition ()
 
     IDIO_DEFINE_CONDITION0 (idio_condition_rt_bignum_error_type, "^rt-bignum-error", idio_condition_rt_number_error_type);
     IDIO_DEFINE_CONDITION0 (idio_condition_rt_bignum_conversion_error_type, "^rt-bignum-conversion-error", idio_condition_rt_bignum_error_type);
+    IDIO_DEFINE_CONDITION0 (idio_condition_rt_C_conversion_error_type, "^rt-C-conversion-error", idio_condition_rt_number_error_type);
     IDIO_DEFINE_CONDITION0 (idio_condition_rt_fixnum_error_type, "^rt-fixnum-error", idio_condition_rt_number_error_type);
     IDIO_DEFINE_CONDITION0 (idio_condition_rt_fixnum_conversion_error_type, "^rt-fixnum-conversion-error", idio_condition_rt_fixnum_error_type);
 

@@ -218,9 +218,11 @@ define-condition-type-accessors-only ^rt-number-error			^runtime-error			rt-numb
 
 define-condition-type-accessors-only ^rt-divide-by-zero-error		^rt-number-error		rt-divide-by-zero-error?
 
-define-condition-type-accessors-only ^rt-bignum-error			^rt-bignum-error		rt-bignum-error?
+define-condition-type-accessors-only ^rt-bignum-error			^rt-number-error		rt-bignum-error?
 
 define-condition-type-accessors-only ^rt-bignum-conversion-error	^rt-bignum-error		rt-bignum-conversion-error?
+
+define-condition-type-accessors-only ^rt-C-conversion-error		^rt-number-error		rt-C-conversion-error?
 
 define-condition-type-accessors-only ^rt-fixnum-error			^rt-number-error		rt-fixnum-error?
 
@@ -362,7 +364,7 @@ define (condition-report prefix c & args) "print a report on condition `c`
 	 cr-printf ": key %s" c.key
        }) \
        ((rt-bignum-conversion-error? c) {
-	 cr-printf ": bignum %s" c.bignum
+	 cr-printf ": bignum %s" c.number
        }) \
        ((rt-fixnum-conversion-error? c) {
 	 cr-printf ": fixnum %d" c.fixnum

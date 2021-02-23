@@ -37,6 +37,7 @@ static void idio_bignum_error (char *msg, IDIO bn, IDIO c_location)
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (c_location);
     IDIO_ASSERT (bn);
+
     IDIO_TYPE_ASSERT (bignum, bn);
     IDIO_TYPE_ASSERT (string, c_location);
 
@@ -66,6 +67,7 @@ static void idio_bignum_conversion_error (char *msg, IDIO bn, IDIO c_location)
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (c_location);
     IDIO_ASSERT (bn);
+
     IDIO_TYPE_ASSERT (bignum, bn);
     IDIO_TYPE_ASSERT (string, c_location);
 
@@ -93,6 +95,7 @@ static void idio_bignum_conversion_error (char *msg, IDIO bn, IDIO c_location)
 static void idio_bignum_error_divide_by_zero (IDIO c_location)
 {
     IDIO_ASSERT (c_location);
+
     IDIO_TYPE_ASSERT (string, c_location);
 
     idio_error_divide_by_zero ("bignum divide by zero", c_location);
@@ -251,7 +254,7 @@ void idio_bignum_dump (IDIO bn)
     IDIO_ASSERT (bn);
     IDIO_TYPE_ASSERT (bignum, bn);
 
-    int64_t exp = IDIO_BIGNUM_EXP (bn);
+    IDIO_BE_T exp = IDIO_BIGNUM_EXP (bn);
     IDIO_BSA sig_a = IDIO_BIGNUM_SIG (bn);
     size_t al = IDIO_BSA_SIZE (sig_a);
 
@@ -316,11 +319,11 @@ void idio_bignum_dump (IDIO bn)
 	    fprintf (stderr, fmt, IDIO_BIGNUM_DPW, IDIO_BSA_AE (sig_a, i));
 	}
     }
-    fprintf (stderr, "e%" PRId64 "\n", exp);
+    fprintf (stderr, "e%" PRId32 "\n", exp);
 }
 
 /* bignum code from S9fES */
-IDIO idio_bignum (int flags, IDIO_BS_T exp, IDIO_BSA sig_a)
+IDIO idio_bignum (int flags, IDIO_BE_T exp, IDIO_BSA sig_a)
 {
     IDIO o = idio_gc_get (IDIO_TYPE_BIGNUM);
 
@@ -488,491 +491,401 @@ IDIO idio_bignum_copy_to_integer (IDIO bn)
     return idio_bignum_integer (idio_bsa_copy (IDIO_BIGNUM_SIG (bn)));
 }
 
-int64_t idio_bignum_int64_value (IDIO bn)
-{
-    IDIO_ASSERT (bn);
-    IDIO_TYPE_ASSERT (bignum, bn);
-
-    IDIO bn_i = idio_bignum_integer_argument (bn);
-    if (idio_S_nil == bn_i) {
-	/*
-	 * Code coverage: C unit test??
-	 */
-	return 0;
+#define IDIO_BIGNUM_C_TYPE_VALUE(T,P,M)					\
+    T idio_bignum_ ## T ## _value (IDIO bn)				\
+    {									\
+	IDIO_ASSERT (bn);						\
+	IDIO_TYPE_ASSERT (bignum, bn);					\
+	IDIO bn_i = idio_bignum_integer_argument (bn);			\
+	if (idio_S_nil == bn_i) {					\
+	    return 0;							\
+	}								\
+	IDIO_BSA sig_a = IDIO_BIGNUM_SIG (bn_i);			\
+	size_t al = IDIO_BSA_SIZE (sig_a);				\
+	if (al > 1) {							\
+	    IDIO fn = idio_bignum_to_fixnum (bn_i);			\
+	    if (idio_S_nil == fn) {					\
+		IDIO_BS_T a1 = idio_bsa_get (sig_a, al - 1);		\
+		if (al < IDIO_BIGNUM_ ## T ## _WORDS ||			\
+		    (al == IDIO_BIGNUM_ ## T ## _WORDS &&		\
+		     (a1 <= IDIO_BIGNUM_ ## T ## _FIRST &&		\
+		      a1 >= -IDIO_BIGNUM_ ## T ## _FIRST))) {		\
+		    int neg = (a1 < 0);					\
+		    T v = a1;						\
+		    if (a1 < 0) {					\
+			v = -a1;					\
+		    }							\
+		    for (al--; al > 0 ; al--) {				\
+			v *= IDIO_BIGNUM_INT_SEG_LIMIT;			\
+			T sig = idio_bsa_get (sig_a, al - 1);		\
+			v += sig;					\
+		    }							\
+		    if (neg) {						\
+			v = -v;						\
+		    }							\
+		    if ((a1 < 0 &&					\
+			 v < 0) ||					\
+			(a1 >= 0 &&					\
+			 v >= 0)) {					\
+			return v;					\
+		    }							\
+		}							\
+		size_t size = 0;					\
+		char *bn_is = idio_bignum_as_string (bn_i, &size);	\
+		char em[BUFSIZ];					\
+		sprintf (em, "%s is too large for " #T " (%" P ")", bn_is, M); \
+		IDIO_GC_FREE (bn_is);					\
+		idio_bignum_conversion_error (em, bn, IDIO_C_FUNC_LOCATION ());	\
+		return -1;						\
+	    } else {							\
+		return IDIO_FIXNUM_VAL (fn);				\
+	    }								\
+	}								\
+	return (T) idio_bsa_get (sig_a, al - 1);			\
     }
 
-    IDIO_BSA sig_a = IDIO_BIGNUM_SIG (bn_i);
-    size_t al = IDIO_BSA_SIZE (sig_a);
+#define IDIO_BIGNUM_C_TYPE_UVALUE(T,P,M)				\
+    T idio_bignum_ ## T ## _value (IDIO bn)				\
+    {									\
+	IDIO_ASSERT (bn);						\
+	IDIO_TYPE_ASSERT (bignum, bn);					\
+	IDIO bn_i = idio_bignum_integer_argument (bn);			\
+	if (idio_S_nil == bn_i) {					\
+	    return 0;							\
+	}								\
+	IDIO_BSA sig_a = IDIO_BIGNUM_SIG (bn_i);			\
+	size_t al = IDIO_BSA_SIZE (sig_a);				\
+	if (al > 1) {							\
+	    IDIO fn = idio_bignum_to_fixnum (bn_i);			\
+	    if (idio_S_nil == fn) {					\
+		IDIO_BS_T a1 = idio_bsa_get (sig_a, al - 1);		\
+		if (al < IDIO_BIGNUM_ ## T ## _WORDS ||			\
+		    (al == IDIO_BIGNUM_ ## T ## _WORDS &&		\
+		     (a1 <= IDIO_BIGNUM_ ## T ## _FIRST &&		\
+		      a1 >= 0))) {					\
+		    T v = a1;						\
+		    for (al--; al > 0 ; al--) {				\
+			v *= IDIO_BIGNUM_INT_SEG_LIMIT;			\
+			T sig = idio_bsa_get (sig_a, al - 1);		\
+			v += sig;					\
+		    }							\
+		    return v;						\
+		}							\
+		size_t size = 0;					\
+		char *bn_is = idio_bignum_as_string (bn_i, &size);	\
+		char em[BUFSIZ];					\
+		sprintf (em, "%s is too large for " #T " (%" P ")", bn_is, M); \
+		IDIO_GC_FREE (bn_is);					\
+		idio_bignum_conversion_error (em, bn, IDIO_C_FUNC_LOCATION ());	\
+		return -1;						\
+	    } else {							\
+		return IDIO_FIXNUM_VAL (fn);				\
+	    }								\
+	}								\
+	return (T) idio_bsa_get (sig_a, al - 1);			\
+    }
 
-    if (al > 1) {
-	/*
-	 * Code coverage: C unit test??
-	 */
-	IDIO fn = idio_bignum_to_fixnum (bn_i);
-	if (idio_S_nil == fn) {
-	    /*
-	     * Grr! *shakes fist*
-	     *
-	     * INT64_MAX is 9223372036854775807, 19 digits long, just
-	     * over the 64bit DPW yet small enough to fit into an
-	     * int64_t -- and well over the 32bit DPW
-	     */
-	    if (al <= IDIO_BIGNUM_INT64_WORDS) {
-		IDIO_BS_T a1 = idio_bsa_get (sig_a, al - 1);
+IDIO_BIGNUM_C_TYPE_VALUE (int64_t, PRId64, INT64_MAX)
+IDIO_BIGNUM_C_TYPE_UVALUE (uint64_t, PRIu64, UINT64_MAX)
+IDIO_BIGNUM_C_TYPE_VALUE (ptrdiff_t, PRIdPTR, PTRDIFF_MAX)
+IDIO_BIGNUM_C_TYPE_VALUE (intptr_t, PRIdPTR, INTPTR_MAX)
+IDIO_BIGNUM_C_TYPE_VALUE (intmax_t, PRIdMAX, INTMAX_MAX)
+IDIO_BIGNUM_C_TYPE_UVALUE (uintmax_t, PRIuMAX, UINTMAX_MAX)
 
-		if (a1 <= IDIO_BIGNUM_INT64_FIRST &&
-		    a1 >= -IDIO_BIGNUM_INT64_FIRST) {
-		    int64_t v = 0;
-		    for (; al > 0 ; al--) {
-		      v *= IDIO_BIGNUM_INT_SEG_LIMIT;
-		      v += idio_bsa_get (sig_a, al - 1);
-		    }
+/*
+ * bignums from C floating point
+ *
+ * IEEE 754 is hard and there's plenty of information on the
+ * Intertubes to help you come to that conclusion.
+ *
+ * Ultimately, what we want is to derive the base-10 significant
+ * figures and base-10 exponent from a base-2 floating number in order
+ * that we can construct a bignum.
+ *
+ * I'm not smart enough to do that and looking at printf_fp.c from
+ * glibc I'm not about to get all GMP'd up here either.
+ *
+ * Of interest, in
+ * https://randomascii.wordpress.com/2012/03/08/float-precisionfrom-zero-to-100-digits-2/,
+ * Bruce Dawson notes that a C float can be reworked as a 128.149
+ * bitfield: 128 bits before the binary point -- because of the
+ * possible +127 exponent and the implied leading 1; and 149 bits
+ * after the binary point -- because of the possible -126 exponent
+ * plus the 23 post-point bits in the mantissa anyway.
+ *
+ * He's trying to generate the complete printed decimal string (which
+ * can run to over 100 digits) whereas we are only looking for the
+ * IDIO_BIGNUM_SIG_MAX_DIGITS.
+ *
+ * We don't have arbitrary bit-length objects to do maths on either
+ * (although, coincidentally, we have arbitrary length
+ * coded-decimals).
+ *
+ * Ultimately, whatever we do we're going to end up indirecting
+ * through a string of some kind so in deference to my limited
+ * abilities let's combine an efficient IEEE 754 to string
+ * implementation from libc together with our own trusty bignum reader
+ * code.
+ *
+ * It's not Art but it gets us out of an implementation pickle.
+ *
+ * Of note, the precision used here, IDIO_BIGNUM_SIG_MAX_DIGITS - 1,
+ * is because with %e there is always an additional digit before the
+ * decimal point.  Avoiding a extra segment prevents the normalisation
+ * of the number becoming inexact.
+ *
+ * You will immediately discover the frailties of IEEE 754:
+ *
+ * C/->number (C/number-> 123.456 'float)
+ * 1.23456001281738281e+2
+ *
+ * The complete value is 123.45600128173828125 as seen at
+ * https://www.h-schmidt.net/FloatConverter/IEEE754.html and others.
+ * We, of course, have rounded to IDIO_BIGNUM_SIG_MAX_DIGITS digits.
+ */
+IDIO idio_bignum_float (float f)
+{
+    idio_C_float_ULP_t uf;
+    uf.f = f;
 
-		    /*
-		     * Check we haven't overflowed the C int64_t
-		     */
-		    if ((a1 < 0 &&
-			 v < 0) ||
-			(a1 >= 0 &&
-			 v >= 0)) {
+    if (255 == uf.parts.exponent) {
+	if (uf.parts.mantissa) {
+	    char em[30];
+	    sprintf (em, "NaN %07x", uf.parts.mantissa);
+	    idio_error_param_value (em, "non-special float", IDIO_C_FUNC_LOCATION ());
 
-			return v;
-		    }
-		}
-	    }
-	    size_t size = 0;
-	    char *bn_is = idio_bignum_as_string (bn_i, &size);
-	    char em[BUFSIZ];
-	    sprintf (em, "%s is too large for int64_t (%" PRId64 ")", bn_is, INT64_MAX);
-	    IDIO_GC_FREE (bn_is);
-
-	    /*
-	     * Test Case: ??
-	     *
-	     * Requires bad developer code.
-	     */
-	    idio_bignum_conversion_error (em, bn, IDIO_C_FUNC_LOCATION ());
-
-	    /* notreached */
-	    return -1;
+	    return idio_S_notreached;
 	} else {
-	    return IDIO_FIXNUM_VAL (fn);
+	    char em[30];
+	    sprintf (em, "%cinf", uf.parts.sign ? '-' : '+');
+	    idio_error_param_value (em, "non-special float", IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
 	}
     }
 
-    return (int64_t) idio_bsa_get (sig_a, al - 1);
+    char fs[30];
+    sprintf (fs, "%.*e", IDIO_BIGNUM_SIG_MAX_DIGITS - 1, f);
+    return idio_bignum_real_C (fs);
 }
 
-uint64_t idio_bignum_uint64_value (IDIO bn)
+IDIO idio_bignum_double (double d)
 {
-    IDIO_ASSERT (bn);
-    IDIO_TYPE_ASSERT (bignum, bn);
+    idio_C_double_ULP_t ud;
+    ud.d = d;
 
-    IDIO bn_i = idio_bignum_integer_argument (bn);
-    if (idio_S_nil == bn_i) {
-	/*
-	 * Code coverage: C unit test??
-	 */
-	return 0;
-    }
+    if (2047 == ud.parts.exponent) {
+	if (ud.parts.mantissa) {
+	    char em[30];
+	    sprintf (em, "NaN %016llx", (unsigned long long int) ud.parts.mantissa);
+	    idio_error_param_value (em, "non-special double", IDIO_C_FUNC_LOCATION ());
 
-    IDIO_BSA sig_a = IDIO_BIGNUM_SIG (bn_i);
-    size_t al = IDIO_BSA_SIZE (sig_a);
-
-    if (al > 1) {
-	IDIO fn = idio_bignum_to_fixnum (bn_i);
-	if (idio_S_nil == fn) {
-	    /*
-	     * Grr! *shakes fist*
-	     *
-	     * UINT64_MAX is 18446744073709551615, 20 digits long,
-	     * just over the default DPW yet small enough to fit into
-	     * a uint64_t -- and well over the 32bit DPW
-	     */
-	    if (al <= IDIO_BIGNUM_INT64_WORDS) {
-		IDIO_BS_T a1 = idio_bsa_get (sig_a, al - 1);
-
-		if (a1 <= IDIO_BIGNUM_UINT64_FIRST &&
-		    a1 >= 0) {
-		    uint64_t v = 0;
-		    for (; al > 0 ; al--) {
-		      v *= IDIO_BIGNUM_INT_SEG_LIMIT;
-		      v += idio_bsa_get (sig_a, al - 1);
-		    }
-
-		    /*
-		     * XXX how do we tell if we've overflowed?
-		     */
-
-		    return v;
-		}
-	    }
-	    /*
-	     * Code coverage: C unit test??
-	     */
-	    size_t size = 0;
-	    char *bn_is = idio_bignum_as_string (bn, &size);
-	    char em[BUFSIZ];
-	    sprintf (em, "%s is too large for uint64_t (%" PRIu64 ")", bn_is, UINT64_MAX);
-	    IDIO_GC_FREE (bn_is);
-
-	    /*
-	     * Test Case: ??
-	     *
-	     * Requires bad developer code.
-	     */
-	    idio_bignum_conversion_error (em, bn, IDIO_C_FUNC_LOCATION ());
-
-	    /* notreached */
-	    return -1;
+	    return idio_S_notreached;
 	} else {
-	    /*
-	     * Code coverage: C unit test??
-	     */
-	    return IDIO_FIXNUM_VAL (fn);
+	    char em[30];
+	    sprintf (em, "%cinf", ud.parts.sign ? '-' : '+');
+	    idio_error_param_value (em, "non-special double", IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
 	}
     }
+
+    char fs[30];
+    sprintf (fs, "%.*le", IDIO_BIGNUM_SIG_MAX_DIGITS - 1, d);
+    return idio_bignum_real_C (fs);
+}
+
+IDIO idio_bignum_longdouble (long double ld)
+{
+    /*
+     * Test Case: ??
+     *
+     * The call from ->number is guarded by a similar message
+     */
+    idio_error_param_type_msg ("bignum from C long double is not supported", IDIO_C_FUNC_LOCATION ());
+
+    return idio_S_notreached;
+    idio_C_longdouble_ULP_t uld;
+    uld.ld = ld;
 
     /*
-     * Code coverage: C unit test??
+     * XXX How do I know this is a 96bit and not an 80bit long double?
      */
-    return (uint64_t) idio_bsa_get (sig_a, al - 1);
+    if (32767 == uld.parts_96bit.exponent) {
+	if (uld.parts_96bit.mantissa) {
+	    char em[30];
+	    sprintf (em, "NaN %020llx", uld.parts_96bit.mantissa);
+	    idio_error_param_value (em, "non-special double", IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	} else {
+	    char em[30];
+	    sprintf (em, "%cinf", uld.parts_96bit.sign ? '-' : '+');
+	    idio_error_param_value (em, "non-special double", IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	}
+    }
+
+    char fs[30];
+    sprintf (fs, "%.*Le", IDIO_BIGNUM_SIG_MAX_DIGITS - 1, ld);
+    return idio_bignum_real_C (fs);
 }
 
-ptrdiff_t idio_bignum_ptrdiff_value (IDIO bn)
+/*
+ * Until there's a pressing need I'm extremely reluctant to load in
+ * math.h and libm just for pow().
+ *
+ * wikipedia suggests
+ * https://en.wikipedia.org/wiki/Exponentiation_by_squaring
+ *
+ * This is the iterative version
+ */
+double idio_bignum_pow (double x, IDIO_BE_T y)
+{
+    if (y < 0) {
+	x = 1 / x;
+	y = -y;
+    }
+    if (0 == y) {
+	return 1;
+    }
+    double n = 1;
+    while (y > 1) {
+	if (y % 2) {
+	    n = x * n;
+	    x = x * x;
+	    y = (y - 1) / 2;
+	} else {
+	    x = x * x;
+	    y = y / 2;
+	}
+    }
+
+    return x * n;
+}
+
+float idio_bignum_float_value (IDIO bn)
 {
     IDIO_ASSERT (bn);
     IDIO_TYPE_ASSERT (bignum, bn);
 
-    IDIO bn_i = idio_bignum_integer_argument (bn);
-    if (idio_S_nil == bn_i) {
-	/*
-	 * Code coverage: C unit test??
-	 */
-	return 0;
-    }
+    float r = 0;
 
-    IDIO_BSA sig_a = IDIO_BIGNUM_SIG (bn_i);
+    IDIO_BSA sig_a = IDIO_BIGNUM_SIG (bn);
     size_t al = IDIO_BSA_SIZE (sig_a);
 
-    if (al > 1) {
-	IDIO fn = idio_bignum_to_fixnum (bn_i);
-	if (idio_S_nil == fn) {
-	    /*
-	     * Grr! *shakes fist*
-	     *
-	     * LP64 PTRDIFF_MAX is 9223372036854775807, 19 digits
-	     * long, just over the default DPW yet small enough to fit
-	     * into an ptrdiff_t.
-	     *
-	     * LP32 PTRDIFF_MAX is 2147483647, 10 digits long, just
-	     * over the default DPW yet small enough to fit into an
-	     * ptrdiff_t.
-	     */
-	    if (al <= IDIO_BIGNUM_PTRDIFF_WORDS) {
-		IDIO_BS_T a1 = idio_bsa_get (sig_a, al - 1);
-
-		if (a1 <= IDIO_BIGNUM_PTRDIFF_FIRST &&
-		    a1 >= -IDIO_BIGNUM_PTRDIFF_FIRST) {
-		    ptrdiff_t v = 0;
-		    for (; al > 0 ; al--) {
-		      v *= IDIO_BIGNUM_INT_SEG_LIMIT;
-		      v += idio_bsa_get (sig_a, al - 1);
-		    }
-
-		    /*
-		     * Check we haven't overflowed the C ptrdiff_t
-		     */
-		    if ((a1 < 0 &&
-			 v < 0) ||
-			(a1 >= 0 &&
-			 v >= 0)) {
-
-			return v;
-		    }
-		}
-	    }
-	    /*
-	     * Code coverage: C unit test??
-	     */
-	    size_t size = 0;
-	    char *bn_is = idio_bignum_as_string (bn_i, &size);
-	    char em[BUFSIZ];
-	    sprintf (em, "%s is too large for ptrdiff_t (%td)", bn_is, (ptrdiff_t) PTRDIFF_MAX);
-	    IDIO_GC_FREE (bn_is);
-
-	    /*
-	     * Test Case: ??
-	     *
-	     * Requires bad developer code.
-	     */
-	    idio_bignum_conversion_error (em, bn, IDIO_C_FUNC_LOCATION ());
-
-	    /* notreached */
-	    return -1;
+    for (; al > 0 ; al--) {
+	r *= IDIO_BIGNUM_INT_SEG_LIMIT;
+	if (r < 0) {
+	    r -= idio_bsa_get (sig_a, al - 1);
 	} else {
-	    /*
-	     * Code coverage: C unit test??
-	     */
-	    return IDIO_FIXNUM_VAL (fn);
+	    r += idio_bsa_get (sig_a, al - 1);
 	}
     }
 
-    return (ptrdiff_t) idio_bsa_get (sig_a, al - 1);
-}
-
-intptr_t idio_bignum_intptr_value (IDIO bn)
-{
-    IDIO_ASSERT (bn);
-    IDIO_TYPE_ASSERT (bignum, bn);
-
-    IDIO bn_i = idio_bignum_integer_argument (bn);
-    if (idio_S_nil == bn_i) {
-	/*
-	 * Code coverage: C unit test??
-	 */
-	return 0;
-    }
-
-    IDIO_BSA sig_a = IDIO_BIGNUM_SIG (bn_i);
-    size_t al = IDIO_BSA_SIZE (sig_a);
-
-    if (al > 1) {
-	/*
-	 * Code coverage: C unit test??
-	 */
-	IDIO fn = idio_bignum_to_fixnum (bn_i);
-	if (idio_S_nil == fn) {
-	    /*
-	     * Grr! *shakes fist*
-	     *
-	     * LP64 INTPTR_MAX is 9223372036854775807, 19 digits long
-	     * -- just over the default 64bit DPW yet small enough to
-	     * fit into an intptr_t.
-	     *
-	     * LP32 INTPTR_MAX is 2147483647, 10 digits long, just
-	     * over the default DPW yet small enough to fit into an
-	     * intptr_t.
-	     */
-	    if (al <= IDIO_BIGNUM_INTPTR_WORDS) {
-		IDIO_BS_T a1 = idio_bsa_get (sig_a, al - 1);
-
-		if (a1 <= IDIO_BIGNUM_INTPTR_FIRST &&
-		    a1 >= -IDIO_BIGNUM_INTPTR_FIRST) {
-		    intptr_t v = 0;
-		    for (; al > 0 ; al--) {
-		      v *= IDIO_BIGNUM_INT_SEG_LIMIT;
-		      v += idio_bsa_get (sig_a, al - 1);
-		    }
-
-		    /*
-		     * Check we haven't overflowed the C intptr_t
-		     */
-		    if ((a1 < 0 &&
-			 v < 0) ||
-			(a1 >= 0 &&
-			 v >= 0)) {
-
-			return v;
-		    }
-		}
-	    }
-	    size_t size = 0;
-	    char *bn_is = idio_bignum_as_string (bn_i, &size);
-	    char em[BUFSIZ];
-	    sprintf (em, "%s is too large for intptr_t (%" PRIdPTR ")", bn_is, (intptr_t) INTPTR_MAX);
-	    IDIO_GC_FREE (bn_is);
-
-	    /*
-	     * Test Case: ??
-	     *
-	     * Requires bad developer code.
-	     */
-	    idio_bignum_conversion_error (em, bn, IDIO_C_FUNC_LOCATION ());
-
-	    /* notreached */
-	    return -1;
-	} else {
-	    /*
-	     * Code coverage: C unit test??
-	     */
-	    return IDIO_FIXNUM_VAL (fn);
-	}
-    }
-
-    return (intptr_t) idio_bsa_get (sig_a, al - 1);
-}
-
-intmax_t idio_bignum_intmax_value (IDIO bn)
-{
-    IDIO_ASSERT (bn);
-    IDIO_TYPE_ASSERT (bignum, bn);
-
-    IDIO bn_i = idio_bignum_integer_argument (bn);
-    if (idio_S_nil == bn_i) {
-	/*
-	 * Code coverage: C unit test??
-	 */
-	return 0;
-    }
-
-    IDIO_BSA sig_a = IDIO_BIGNUM_SIG (bn_i);
-    size_t al = IDIO_BSA_SIZE (sig_a);
-
-    if (al > 1) {
-	IDIO fn = idio_bignum_to_fixnum (bn_i);
-	if (idio_S_nil == fn) {
-	    /*
-	     * Grr! *shakes fist*
-	     *
-	     * LP64 INTMAX_MAX is 9223372036854775807, 19 digits long
-	     * -- just over the default DPW yet small enough to fit
-	     * into an intmax_t.
-	     *
-	     * LP32 INTMAX_MAX is 2147483647, 10 digits long, just
-	     * over the default DPW yet small enough to fit into an
-	     * intmax_t.
-	     */
-	    if (al <= IDIO_BIGNUM_INTMAX_WORDS) {
-		IDIO_BS_T a1 = idio_bsa_get (sig_a, al - 1);
-
-		if (a1 <= IDIO_BIGNUM_INTMAX_FIRST &&
-		    a1 >= -IDIO_BIGNUM_INTMAX_FIRST) {
-		    intmax_t v = 0;
-		    for (; al > 0 ; al--) {
-		      v *= IDIO_BIGNUM_INT_SEG_LIMIT;
-			if (v < 0) {
-			    v -= idio_bsa_get (sig_a, al - 1);
-			} else {
-			    v += idio_bsa_get (sig_a, al - 1);
-			}
-		    }
-
-		    /*
-		     * Check we haven't overflowed the C intmax_t
-		     */
-		    if ((a1 < 0 &&
-			 v < 0) ||
-			(a1 >= 0 &&
-			 v >= 0)) {
-
-			return v;
-		    }
-		}
-	    }
-	    size_t size = 0;
-	    char *bn_is = idio_bignum_as_string (bn_i, &size);
-	    char em[BUFSIZ];
-	    sprintf (em, "%s is too large for intmax_t (%jd)", bn_is, (intmax_t) INTMAX_MAX);
-	    IDIO_GC_FREE (bn_is);
-
-	    /*
-	     * Test Case: ??
-	     *
-	     * Requires bad developer code.
-	     */
-	    idio_bignum_conversion_error (em, bn, IDIO_C_FUNC_LOCATION ());
-
-	    /* notreached */
-	    return -1;
-	} else {
-	    /*
-	     * Code coverage: C unit test??
-	     */
-	    return IDIO_FIXNUM_VAL (fn);
-	}
-    }
+    IDIO_BE_T exp = IDIO_BIGNUM_EXP (bn);
 
     /*
-     * Code coverage: C unit test??
+     * We should range check at this point (to avoid pow()) for
+     * extreme exp as the chances are we're using IEEE 754 floating
+     * point and those have exponent limits (2^+/-126 or roughly
+     * 10^+/-38)
      */
-    return (intmax_t) idio_bsa_get (sig_a, al - 1);
+    if (exp > 38 ||
+	exp < -38) {
+#ifdef IDIO_DEBUG
+	fprintf (stderr, "C float range conversion issue pending? exp=%" PRId32 " exceeds (+/-38)\n", exp);
+#endif
+    }
+
+    if (IDIO_BIGNUM_REAL_NEGATIVE_P (bn)) {
+	r = -r;
+    }
+
+    return r * (float) idio_bignum_pow (10, exp);
 }
 
-uintmax_t idio_bignum_uintmax_value (IDIO bn)
+double idio_bignum_double_value (IDIO bn)
 {
     IDIO_ASSERT (bn);
     IDIO_TYPE_ASSERT (bignum, bn);
 
-    IDIO bn_i = idio_bignum_integer_argument (bn);
-    if (idio_S_nil == bn_i) {
-	/*
-	 * Code coverage: C unit test??
-	 */
-	return 0;
-    }
+    double r = 0;
 
-    IDIO_BSA sig_a = IDIO_BIGNUM_SIG (bn_i);
+    IDIO_BSA sig_a = IDIO_BIGNUM_SIG (bn);
     size_t al = IDIO_BSA_SIZE (sig_a);
 
-    if (al > 1) {
-	IDIO fn = idio_bignum_to_fixnum (bn_i);
-	if (idio_S_nil == fn) {
-	    /*
-	     * Grr! *shakes fist*
-	     *
-	     * LP64 UINTMAX_MAX is 18446744073709551615, 20 digits
-	     * long -- just over the default DPW yet small enough to
-	     * fit into an uintmax_t.
-	     *
-	     * LP32 UINTMAX_MAX is (should be!) 4294967295, 10 digits
-	     * long, just over the default DPW yet small enough to fit
-	     * into an uintmax_t.
-	     */
-	    if (al <= IDIO_BIGNUM_UINTMAX_WORDS) {
-		IDIO_BS_T a1 = idio_bsa_get (sig_a, al - 1);
-
-		if (a1 <= IDIO_BIGNUM_UINTMAX_FIRST &&
-		    a1 >= 0) {
-		    uintmax_t v = 0;
-		    for (; al > 0 ; al--) {
-		      v *= IDIO_BIGNUM_INT_SEG_LIMIT;
-			if (v < 0) {
-			    v -= idio_bsa_get (sig_a, al - 1);
-			} else {
-			    v += idio_bsa_get (sig_a, al - 1);
-			}
-		    }
-
-		    /*
-		     * Check we haven't overflowed the C uintmax_t
-		     */
-		    if ((a1 < 0 &&
-			 v < 0) ||
-			(a1 >= 0 &&
-			 v >= 0)) {
-
-			return v;
-		    }
-		}
-	    }
-	    size_t size = 0;
-	    char *bn_is = idio_bignum_as_string (bn_i, &size);
-	    char em[BUFSIZ];
-	    sprintf (em, "%s is too large for uintmax_t (%jd)", bn_is, (uintmax_t) UINTMAX_MAX);
-	    IDIO_GC_FREE (bn_is);
-
-	    /*
-	     * Test Case: ??
-	     *
-	     * Requires bad developer code.
-	     */
-	    idio_bignum_conversion_error (em, bn, IDIO_C_FUNC_LOCATION ());
-
-	    /* notreached */
-	    return -1;
+    for (; al > 0 ; al--) {
+	r *= IDIO_BIGNUM_INT_SEG_LIMIT;
+	if (r < 0) {
+	    r -= idio_bsa_get (sig_a, al - 1);
 	} else {
-	    /*
-	     * Code coverage: C unit test??
-	     */
-	    return IDIO_FIXNUM_VAL (fn);
+	    r += idio_bsa_get (sig_a, al - 1);
 	}
     }
 
+    IDIO_BE_T exp = IDIO_BIGNUM_EXP (bn);
+
     /*
-     * Code coverage: C unit test??
+     * We should range check at this point (to avoid pow()) for
+     * extreme exp as the chances are we're using IEEE 754 floating
+     * point and those have exponent limits (2^+/-1022 or roughly
+     * 10^+/-308)
      */
-    return (uintmax_t) idio_bsa_get (sig_a, al - 1);
+    if (exp > 308 ||
+	exp < -308) {
+#ifdef IDIO_DEBUG
+	fprintf (stderr, "double range conversion issue pending? exp=%" PRId32 " exceeds (+/-308)\n", exp);
+#endif
+    }
+
+    if (IDIO_BIGNUM_REAL_NEGATIVE_P (bn)) {
+	r = -r;
+    }
+
+    return r * idio_bignum_pow (10, exp);
+}
+
+long double idio_bignum_longdouble_value (IDIO bn)
+{
+    IDIO_ASSERT (bn);
+    IDIO_TYPE_ASSERT (bignum, bn);
+
+    long double r = 0;
+
+    IDIO_BSA sig_a = IDIO_BIGNUM_SIG (bn);
+    size_t al = IDIO_BSA_SIZE (sig_a);
+
+    for (; al > 0 ; al--) {
+	r *= IDIO_BIGNUM_INT_SEG_LIMIT;
+	if (r < 0) {
+	    r -= idio_bsa_get (sig_a, al - 1);
+	} else {
+	    r += idio_bsa_get (sig_a, al - 1);
+	}
+    }
+
+    IDIO_BE_T exp = IDIO_BIGNUM_EXP (bn);
+
+    /*
+     * We should range check at this point (to avoid pow()) for
+     * extreme exp as the chances are we're using IEEE 754 floating
+     * point and those have exponent limits (2^+/-16382 or roughly
+     * 10^+/-4934)
+     */
+    if (exp > 4934 ||
+	exp < -4934) {
+#ifdef IDIO_DEBUG
+	fprintf (stderr, "long double range conversion issue pending? exp=%" PRId32 " exceeds (+/-4934)\n", exp);
+#endif
+    }
+
+    if (IDIO_BIGNUM_REAL_NEGATIVE_P (bn)) {
+	r = -r;
+    }
+
+    return r * idio_bignum_pow (10, exp);
 }
 
 IDIO idio_bignum_to_fixnum (IDIO bn)
@@ -1749,7 +1662,7 @@ IDIO idio_bignum_integer_argument (IDIO bn)
     return bn_i;
 }
 
-IDIO idio_bignum_real (int flags, IDIO_BS_T exp, IDIO_BSA sig_a)
+IDIO idio_bignum_real (int flags, IDIO_BE_T exp, IDIO_BSA sig_a)
 {
     flags &= ~IDIO_BIGNUM_FLAG_INTEGER;
 
@@ -1848,7 +1761,7 @@ IDIO idio_bignum_normalize (IDIO bn)
 
     IDIO_TYPE_ASSERT (bignum, bn);
 
-    IDIO_BS_T exp = IDIO_BIGNUM_EXP (bn);
+    IDIO_BE_T exp = IDIO_BIGNUM_EXP (bn);
     IDIO_BSA sig_a = IDIO_BIGNUM_SIG (bn);
 
     /* significand-only part */
@@ -1868,7 +1781,25 @@ IDIO idio_bignum_normalize (IDIO bn)
 
 	bn_s = IDIO_PAIR_H (ibsr);
 	digits--;
+	IDIO_BE_T exp0 = exp;
 	exp++;
+	if (exp < exp0) {
+	    /*
+	     * Test Case: bignum-errors/bignum-normalise-digits-overflow.idio
+	     *
+	     * 100000000000000000000e2147483647
+	     *
+	     * NB Here, it is because there are more digits than
+	     * IDIO_BIGNUM_SIG_MAX_DIGITS that trigger the overflow
+	     */
+#ifdef IDIO_DEBUG
+	    idio_debug ("bnn %s", bn);
+	    fprintf (stderr, " exp0=%d exp=%d digits=%zu\n", exp0, exp, digits);
+#endif
+	    idio_bignum_conversion_error ("exponent overflow", bn, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	}
     }
 
     while (! idio_bignum_zero_p (bn_s)) {
@@ -1879,7 +1810,21 @@ IDIO idio_bignum_normalize (IDIO bn)
 	}
 
 	bn_s = IDIO_PAIR_H (ibsr);
+	IDIO_BE_T exp0 = exp;
 	exp++;
+	if (exp < exp0) {
+	    /*
+	     * Test Case: bignum-errors/bignum-normalise-overflow.idio
+	     *
+	     * 10e2147483647
+	     *
+	     * NB Here, it is because there are trailing zeroes
+	     * triggering the overflow
+	     */
+	    idio_bignum_conversion_error ("exponent overflow", bn, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	}
     }
 
     if (idio_bignum_zero_p (bn_s)) {
@@ -1928,7 +1873,29 @@ IDIO idio_bignum_to_real (IDIO bn)
 	    }
 	    idio_bsa_shift (sig_a);
 	}
+	IDIO_BE_T exp0 = exp;
 	exp = nshift * IDIO_BIGNUM_DPW;
+	if (exp0 < 0 &&
+	    exp > exp0) {
+	    /*
+	     * Test Case: ??
+	     *
+	     * Hmm, not sure how to provoke this from Idio
+	     */
+	    idio_bignum_conversion_error ("exponent underflow", bn, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	} else if(exp0 >= 0 &&
+		  exp < exp0) {
+	    /*
+	     * Test Case: ??
+	     *
+	     * Hmm, not sure how to provoke this from Idio
+	     */
+	    idio_bignum_conversion_error ("exponent overflow", bn, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	}
     }
 
     int flags = inexact;
@@ -2042,7 +2009,7 @@ int idio_bignum_real_equal_p (IDIO a, IDIO b)
 
   100.0e-2
  */
-IDIO idio_bignum_scale_significand (IDIO bn, IDIO_BS_T desired_exp, size_t max_size)
+IDIO idio_bignum_scale_significand (IDIO bn, IDIO_BE_T desired_exp, size_t max_size)
 {
     IDIO_ASSERT (bn);
 
@@ -2060,10 +2027,21 @@ IDIO idio_bignum_scale_significand (IDIO bn, IDIO_BS_T desired_exp, size_t max_s
 
     IDIO bnc = idio_bignum_copy (bn);
 
-    IDIO_BS_T exp = IDIO_BIGNUM_EXP (bn);
+    IDIO_BE_T exp = IDIO_BIGNUM_EXP (bn);
     while (exp > desired_exp) {
 	bnc = idio_bignum_shift_left (bnc, 0);
+	IDIO_BE_T exp0 = exp;
 	exp--;
+	if (exp > exp0) {
+	    /*
+	     * Test Case: ??
+	     *
+	     * Hmm, not sure how to provoke this from Idio
+	     */
+	    idio_bignum_conversion_error ("exponent underflow", bn, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	}
     }
 
     return idio_bignum_real (IDIO_BIGNUM_FLAGS(bn), exp, IDIO_BIGNUM_SIG (bnc));
@@ -2272,7 +2250,7 @@ IDIO idio_bignum_real_add (IDIO a, IDIO b)
 	}
     }
 
-    IDIO_BS_T exp = IDIO_BIGNUM_EXP (ra);
+    IDIO_BE_T exp = IDIO_BIGNUM_EXP (ra);
     int na = IDIO_BIGNUM_REAL_NEGATIVE_P (ra);
     int nb = IDIO_BIGNUM_REAL_NEGATIVE_P (rb);
 
@@ -2370,14 +2348,35 @@ IDIO idio_bignum_real_multiply (IDIO a, IDIO b)
 
     int neg = IDIO_BIGNUM_REAL_NEGATIVE_P (ra) != IDIO_BIGNUM_REAL_NEGATIVE_P (rb);
 
-    IDIO_BS_T expa = IDIO_BIGNUM_EXP (ra);
-    IDIO_BS_T expb = IDIO_BIGNUM_EXP (rb);
+    IDIO_BE_T expa = IDIO_BIGNUM_EXP (ra);
+    IDIO_BE_T expb = IDIO_BIGNUM_EXP (rb);
 
     IDIO ra_i = idio_bignum_copy_to_integer (ra);
 
     IDIO rb_i = idio_bignum_copy_to_integer (rb);
 
-    IDIO_BS_T exp = expa + expb;
+    IDIO_BE_T exp = expa + expb;
+    if (expb < 0 &&
+	exp > expa) {
+	/*
+	 * Test Case: bignum-errors/bignum-multiply-underflow.idio
+	 *
+	 * 1e-2147483648 * 0.1
+	 */
+	idio_bignum_conversion_error ("exponent underflow", a, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    } else if (expb >= 0 &&
+	       exp < expa) {
+	/*
+	 * Test Case: bignum-errors/bignum-multiply-overflow.idio
+	 *
+	 * 1e2147483647 * 10
+	 */
+	idio_bignum_conversion_error ("exponent overflow", a, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
 
     IDIO r_i = idio_bignum_multiply (ra_i, rb_i);
 
@@ -2424,8 +2423,8 @@ IDIO idio_bignum_real_divide (IDIO a, IDIO b)
 
     int neg = IDIO_BIGNUM_REAL_NEGATIVE_P (ra) != IDIO_BIGNUM_REAL_NEGATIVE_P (rb);
 
-    IDIO_BS_T expa = IDIO_BIGNUM_EXP (ra);
-    IDIO_BS_T expb = IDIO_BIGNUM_EXP (rb);
+    IDIO_BE_T expa = IDIO_BIGNUM_EXP (ra);
+    IDIO_BE_T expb = IDIO_BIGNUM_EXP (rb);
 
     IDIO ra_i = idio_bignum_copy_to_integer (ra);
     IDIO rb_i = idio_bignum_copy_to_integer (rb);
@@ -2471,10 +2470,55 @@ IDIO idio_bignum_real_divide (IDIO a, IDIO b)
 	ra_i = idio_bignum_shift_left (ra_i, 0);
 
 	nd++;
+	IDIO_BE_T expa0 = expa;
 	expa--;
+	if (expa > expa0) {
+	    /*
+	     * Test Case: bignum-errors/bignum-divide-digits-underflow.idio
+	     *
+	     * 1e-2147483648 / 10
+	     *
+	     * Careful, this should be because the number of digits in
+	     * the numerator is less than the number of digits in the
+	     * denominator
+	     */
+	    idio_bignum_conversion_error ("exponent underflow", ra, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	}
     }
 
-    IDIO_BS_T exp = expa - expb;
+    IDIO_BE_T exp = expa - expb;
+    if (expb > 0 &&
+	exp > expa) {
+	/*
+	 * Test Case: bignum-errors/bignum-divide-underflow.idio
+	 *
+	 * 12345678901234567890e-2147483648 / 1e100
+	 *
+	 * NB the twenty digits in the numerator mean its exponent is
+	 * twenty bigger than the number below which means we need to
+	 * divide by at least a power of twenty
+	 */
+	idio_bignum_conversion_error ("exponent underflow", ra, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    } else if (expb < 0 &&
+	       exp < expa) {
+	/*
+	 * Test Case: bignum-errors/bignum-divide-overflow.idio
+	 *
+	 * 12345678901234567890e2147483627 / 1e-100
+	 *
+	 * NB the twenty digits in the numerator mean its exponent is
+	 * twenty bigger than the number above -- notice it is ...27
+	 * and not ...47, the limit -- which means we need to divide
+	 * by at least a power of minus twenty
+	 */
+	idio_bignum_conversion_error ("exponent overflow", ra, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
     IDIO ibd = idio_bignum_divide (ra_i, rb_i);
     IDIO r_i = IDIO_PAIR_H (ibd);
 
@@ -2590,7 +2634,7 @@ char *idio_bignum_integer_as_string (IDIO bn, size_t *sizep)
 /*
  * Code coverage: not called, see idio_bignum_real_as_string()
  */
-char *idio_bignum_expanded_real_as_string (IDIO bn, IDIO_BS_T exp, int digits, int neg, size_t *sizep)
+char *idio_bignum_expanded_real_as_string (IDIO bn, IDIO_BE_T exp, int digits, int neg, size_t *sizep)
 {
     IDIO_ASSERT (bn);
     IDIO_TYPE_ASSERT (bignum, bn);
@@ -2602,7 +2646,14 @@ char *idio_bignum_expanded_real_as_string (IDIO bn, IDIO_BS_T exp, int digits, i
 	IDIO_STRCAT (s, sizep, "-");
     }
 
-    IDIO_BS_T dp_offset = exp + digits;
+    IDIO_BE_T exp0 = exp;
+    IDIO_BE_T dp_offset = exp + digits;
+    if (dp_offset < exp0) {
+	idio_bignum_conversion_error ("exponent overflow", bn, IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
+	return NULL;
+    }
 
     if (dp_offset <= 0) {
 	IDIO_STRCAT (s, sizep, "0");
@@ -2666,7 +2717,7 @@ char *idio_bignum_real_as_string (IDIO bn, size_t *sizep)
 
     IDIO_BSA sig_a = IDIO_BIGNUM_SIG (bn);
     size_t digits = idio_bignum_count_digits (sig_a);
-    IDIO_BS_T exp = IDIO_BIGNUM_EXP (bn);
+    IDIO_BE_T exp = IDIO_BIGNUM_EXP (bn);
 
     if (0 && (exp + digits) > -4 &&
 	(exp + digits) <= 9) {
@@ -2823,8 +2874,8 @@ char *idio_bignum_real_as_string (IDIO bn, size_t *sizep)
 	    }
 
 	    IDIO_STRCAT (s, sizep, "e");
-	    v = exp + digits - 1;
-	    sprintf (vs, "%+" PRIdPTR, v);
+	    IDIO_BE_T e = exp + digits - 1;
+	    sprintf (vs, "%+" PRId32, e);
 	    vs_size = strlen (vs);
 	    s = idio_strcat (s, sizep, vs, vs_size);
 	}
@@ -2881,8 +2932,8 @@ char *idio_bignum_real_as_string (IDIO bn, size_t *sizep)
 	    }
 
 	    IDIO_STRCAT (s, sizep, "e");
-	    v = exp + digits - 1;
-	    sprintf (vs, "%+03" PRIdPTR, v);
+	    IDIO_BE_T e = exp + digits - 1;
+	    sprintf (vs, "%+03" PRId32, e);
 	    vs_size = strlen (vs);
 	    s = idio_strcat (s, sizep, vs, vs_size);
 	}
@@ -2893,6 +2944,7 @@ char *idio_bignum_real_as_string (IDIO bn, size_t *sizep)
 	    sprintf (vs, "%" PRIdPTR, v);
 	    size_t vs_size = strlen (vs);
 	    int pre_dp_digits = digits + exp;
+	    /* we should have detected over/underflow by now! */
 
 	    if (exp >= 0) {
 		s = idio_strcat (s, sizep, vs, vs_size);
@@ -3183,7 +3235,7 @@ IDIO idio_bignum_real_C (char *nums)
 
     IDIO sig_bn = idio_bignum_integer_intmax_t (0);
 
-    IDIO_BS_T exp = 0;
+    IDIO_BE_T exp = 0;
     char *s = nums;
     int neg = 0;
 
@@ -3242,7 +3294,36 @@ IDIO idio_bignum_real_C (char *nums)
     if (IDIO_BIGNUM_EXP_CHAR (*s)) {
 	s++;
 	IDIO n = idio_bignum_integer_C (s, 1);
-	exp += idio_bignum_int64_value (n);
+	int64_t exp_v = idio_bignum_int64_t_value (n);
+	IDIO_BE_T exp0 = exp;
+	exp += exp_v;
+	if (exp_v < 0 &&
+	    exp > exp0) {
+	    /*
+	     * Test Case: bignum-errors/read-bignum-underflow.idio
+	     *
+	     * 1e-2147483649
+	     */
+#ifdef IDIO_DEBUG
+	    fprintf (stderr, "bn: %s exp0=%d exp=%d exp_v=%" PRId64 "\n", nums, exp0, exp, exp_v);
+#endif
+	    idio_bignum_conversion_error ("exponent underflow", n, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	} else if (exp_v >= 0 &&
+		   exp < exp0) {
+	    /*
+	     * Test Case: bignum-errors/read-bignum-overflow.idio
+	     *
+	     * 1e2147483648
+	     */
+#ifdef IDIO_DEBUG
+	    fprintf (stderr, "bn: %s exp0=%d exp=%d exp_v=%" PRId64 "\n", nums, exp0, exp, exp_v);
+#endif
+	    idio_bignum_conversion_error ("exponent overflow", n, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	}
     }
 
     /* remove leading zeroes */
@@ -3466,16 +3547,42 @@ IDIO idio_bignum_primitive_floor (IDIO bn)
 
     IDIO r;
 
-    IDIO_BS_T exp = IDIO_BIGNUM_EXP (bn);
+    IDIO_BE_T exp = IDIO_BIGNUM_EXP (bn);
 
     if (exp >= 0) {
 	r = bn;
     } else {
-	IDIO bn_i = idio_bignum_integer (IDIO_BIGNUM_SIG (bn));
+	IDIO_BSA sig = IDIO_BIGNUM_SIG (bn);
+	IDIO bn_i = idio_bignum_integer (sig);
+
+	/*
+	 * For very large (negative) exp the idio_bignum_shift_right()
+	 * calls in the loop below will generate large numbers of
+	 * bignums even though the value is zero and the machine will
+	 * run out of memory (it transpires).  We can shortcut that by
+	 * noting that the post-normalised digit count is
+	 * IDIO_BIGNUM_SIG_MAX_DIGITS and if that number plus exp is
+	 * still below zero then we would have shifted below 1 (one)
+	 * anyway.
+	 *
+	 * We'll still allow floor 123456789012345678e-17 (for
+	 * MAX_DIGITS of 18) to be 1.0e+0.
+	 */
+	if ((IDIO_BIGNUM_SIG_MAX_DIGITS + exp) < 0) {
+	    IDIO i0 = idio_bignum_integer_intmax_t (0);
+
+	    IDIO r = idio_bignum_real (0, 0, IDIO_BIGNUM_SIG (i0));
+
+	    return r;
+	}
 
 	while (exp < 0) {
 	    IDIO ibsr = idio_bignum_shift_right (bn_i);
 	    bn_i = idio_list_head (ibsr);
+	    /*
+	     * NB we're incrementing a negative number up to zero.  We
+	     * shouldn't have any overflow issues...
+	     */
 	    exp++;
 	}
 
@@ -3973,7 +4080,7 @@ return the exponent of `n`			\n\
     if (IDIO_BIGNUM_INTEGER_P (n)) {
         r = idio_fixnum (0);
     } else {
-	intptr_t exp = IDIO_BIGNUM_EXP (n);
+	IDIO_BE_T exp = IDIO_BIGNUM_EXP (n);
 	r = idio_integer (exp);
     }
 

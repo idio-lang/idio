@@ -31,17 +31,32 @@
 
   - some flags (integer/real/inexact/real-negative)
 
-  - an int64_t exponent (allowing n * 10^(+/- 2^63) which is quite
-    large and probably covers enough of the number-space for our
-    purposes).
+  - an int32_t exponent (allowing n * 10^(+/- 2^31) which is "quite
+    large" and probably covers enough of the number-space for our
+    shell-orientated purposes).
 
-    An int64_t might seem excessive but the layout of a C struct means
-    we have a architecture-dependent word as a minimum -- if we don't
+    An int32_t might seem excessive but the layout of a C struct means
+    we have an architecture-dependent word to play with -- if we don't
     use a whole word, say uint16_t for exponent, then the rest of the
     word is wasted space.
 
-    In this case, we'll use 64 bits (and therefore two words on 32-bit
-    systems) for consistency across platforms.
+    In this case, we'll use 32 bits (and therefore waste 32 bits on
+    64-bit systems) for consistency across platforms.
+
+        Using an int8_t for exponent seems to provoke some issues so
+        the exponent should be at least int16_t (until the issue is
+        figured out).
+
+    For comparison, https://en.wikipedia.org/wiki/IEEE_754 suggests
+    the number of bits in IEEE 754 exponents are:
+
+     binary32	8	~ 10^+/-38	float
+     binary64	11	~ 10^+/-308	double
+     binary128	15	~ 10^+/-4934	long double(*)
+     binary256	19	~ 10^+/-78958	?
+
+     (*) See https://en.wikipedia.org/wiki/Long_double for your
+     likelihood of getting a binary128 implementation.
 
   - up to IDIO_BIGNUM_SIG_MAX_DIGITS significant decimal digits spread
     across several machine words.
@@ -57,12 +72,12 @@
   Sign: For a real the sign is in a distinct flag.  For an integer,
   the most significant segment is signed.
 
-  Technically, the exponent range isn't 10^(+/- 2^63) because it is
+  Technically, the exponent range isn't 10^(+/- 2^31) because it is
   modified by the number of significant digits (which is dynamic).
   The point being that the significant digits are always without a
   decimal place and that is modified by the exponent.  So 123 and
   0.123 have identical significant digits, 123, but different
-  exponents, 0 and -3.  The point being that the int64_t exponent
+  exponents, 0 and -3.  The point being that the int32_t exponent
   allows for "quite large" or "quite small" numbers.  Bigger/smaller
   than is practically useful.  (Unless you can think if a practical
   use.)
@@ -134,6 +149,7 @@
 
 #define IDIO_BIGNUM_WORD_OFFSET	  1
 #define IDIO_BIGNUM_INT64_WORDS   2
+#define IDIO_BIGNUM_int64_t_WORDS 2
 /*
 #define IDIO_BIGNUM_DPW           1
 #define IDIO_BIGNUM_INT_SEG_LIMIT 10LL
@@ -147,6 +163,7 @@
 
 #define IDIO_BIGNUM_WORD_OFFSET	  2
 #define IDIO_BIGNUM_INT64_WORDS   3
+#define IDIO_BIGNUM_int64_t_WORDS 3
 #endif
 
 #define IDIO_BIGNUM_SIG_MAX_DIGITS	  (IDIO_BIGNUM_SIG_SEGMENTS * IDIO_BIGNUM_DPW)
@@ -175,27 +192,27 @@
 
 #if PTRDIFF_MAX == 9223372036854775807LL
 #if __LP64__
-#define IDIO_BIGNUM_PTRDIFF_WORDS 2
+#define IDIO_BIGNUM_ptrdiff_t_WORDS 2
 #else
-#define IDIO_BIGNUM_PTRDIFF_WORDS 3
+#define IDIO_BIGNUM_ptrdiff_t_WORDS 3
 #endif
-#define IDIO_BIGNUM_PTRDIFF_FIRST 9
+#define IDIO_BIGNUM_ptrdiff_t_FIRST 9
 #else
 #if PTRDIFF_MAX == 2147483647L
-#define IDIO_BIGNUM_PTRDIFF_WORDS 2
-#define IDIO_BIGNUM_PTRDIFF_FIRST 2
+#define IDIO_BIGNUM_ptrdiff_t_WORDS 2
+#define IDIO_BIGNUM_ptrdiff_t_FIRST 2
 #else
 #error unexpected PTRDIFF_MAX
 #endif
 #endif
 
 #if INTPTR_MAX == 9223372036854775807LL
-#define IDIO_BIGNUM_INTPTR_WORDS 2
-#define IDIO_BIGNUM_INTPTR_FIRST 9  /*  9 223372036854775807 */
+#define IDIO_BIGNUM_intptr_t_WORDS 2
+#define IDIO_BIGNUM_intptr_t_FIRST 9  /*  9 223372036854775807 */
 #else
 #if INTPTR_MAX == 2147483647L
-#define IDIO_BIGNUM_INTPTR_WORDS 2
-#define IDIO_BIGNUM_INTPTR_FIRST 2 /* 2 147483647 */
+#define IDIO_BIGNUM_intptr_t_WORDS 2
+#define IDIO_BIGNUM_intptr_t_FIRST 2 /* 2 147483647 */
 #else
 #error unexpected INTPTR_MAX
 #endif
@@ -203,27 +220,29 @@
 
 #if INTMAX_MAX == 9223372036854775807LL
 #if __LP64__
-#define IDIO_BIGNUM_INTMAX_WORDS  2
-#define IDIO_BIGNUM_UINTMAX_WORDS 2
+#define IDIO_BIGNUM_intmax_t_WORDS  2
+#define IDIO_BIGNUM_uintmax_t_WORDS 2
 #else
-#define IDIO_BIGNUM_INTMAX_WORDS  3
-#define IDIO_BIGNUM_UINTMAX_WORDS 3
+#define IDIO_BIGNUM_intmax_t_WORDS  3
+#define IDIO_BIGNUM_uintmax_t_WORDS 3
 #endif
-#define IDIO_BIGNUM_INTMAX_FIRST  9  /*  9 223372036854775807 */
-#define IDIO_BIGNUM_UINTMAX_FIRST 18 /* 18 446744073709551615 */
+#define IDIO_BIGNUM_intmax_t_FIRST  9  /*  9 223372036854775807 */
+#define IDIO_BIGNUM_uintmax_t_FIRST 18 /* 18 446744073709551615 */
 #else
 #if INTMAX_MAX == 2147483647L
-#define IDIO_BIGNUM_INTMAX_WORDS  2
-#define IDIO_BIGNUM_UINTMAX_WORDS 2
-#define IDIO_BIGNUM_INTMAX_FIRST  2 /* 2 147483647 */
-#define IDIO_BIGNUM_UINTMAX_FIRST 4 /* 4 294967295 */
+#define IDIO_BIGNUM_intmax_t_WORDS  2
+#define IDIO_BIGNUM_uintmax_t_WORDS 2
+#define IDIO_BIGNUM_intmax_t_FIRST  2 /* 2 147483647 */
+#define IDIO_BIGNUM_uintmax_t_FIRST 4 /* 4 294967295 */
 #else
 #error unexpected INTMAX_MAX
 #endif
 #endif
 
-#define IDIO_BIGNUM_INT64_FIRST  9  /*  9 223372036854775807 */
-#define IDIO_BIGNUM_UINT64_FIRST 18 /* 18 446744073709551615 */
+#define IDIO_BIGNUM_int64_t_FIRST	9  /*  9 223372036854775807 */
+
+#define IDIO_BIGNUM_uint64_t_WORDS	IDIO_BIGNUM_int64_t_WORDS
+#define IDIO_BIGNUM_uint64_t_FIRST	18 /* 18 446744073709551615 */
 
 #define IDIO_BIGNUM_EXP_CHAR(c)	('d' == c || 'D' == c ||	 \
 				 'e' == c || 'E' == c ||	 \
@@ -241,7 +260,7 @@
 
 #define IDIO_BIGNUM_NAN			"NaN"
 
-IDIO idio_bignum (int flags, IDIO_BS_T exp, IDIO_BSA sig_a);
+IDIO idio_bignum (int flags, IDIO_BE_T exp, IDIO_BSA sig_a);
 int idio_isa_bignum (IDIO bn);
 int idio_isa_integer_bignum (IDIO bn);
 void idio_free_bignum (IDIO bn);
@@ -251,14 +270,20 @@ IDIO idio_bignum_integer_uintmax_t (uintmax_t ui);
 IDIO idio_bignum_integer (IDIO_BSA sig_a);
 int idio_bignum_real_zero_p (IDIO a);
 int idio_bignum_real_equal_p (IDIO a, IDIO b);
-IDIO idio_bignum_scale_significand (IDIO bn, IDIO_BS_T desired_exp, size_t max_size);
+IDIO idio_bignum_scale_significand (IDIO bn, IDIO_BE_T desired_exp, size_t max_size);
 IDIO idio_bignum_integer_argument (IDIO bn);
-int64_t idio_bignum_int64_value (IDIO bn);
-uint64_t idio_bignum_uint64_value (IDIO bn);
-ptrdiff_t idio_bignum_ptrdiff_value (IDIO bn);
-intptr_t idio_bignum_intptr_value (IDIO bn);
-intmax_t idio_bignum_intmax_value (IDIO bn);
-uintmax_t idio_bignum_uintmax_value (IDIO bn);
+int64_t idio_bignum_int64_t_value (IDIO bn);
+uint64_t idio_bignum_uint64_t_value (IDIO bn);
+ptrdiff_t idio_bignum_ptrdiff_t_value (IDIO bn);
+intptr_t idio_bignum_intptr_t_value (IDIO bn);
+intmax_t idio_bignum_intmax_t_value (IDIO bn);
+uintmax_t idio_bignum_uintmax_t_value (IDIO bn);
+IDIO idio_bignum_float (float f);
+IDIO idio_bignum_double (double d);
+IDIO idio_bignum_longdouble (long double ld);
+float idio_bignum_float_value (IDIO bn);
+double idio_bignum_double_value (IDIO bn);
+long double idio_bignum_longdouble_value (IDIO bn);
 IDIO idio_bignum_to_fixnum (IDIO bn);
 IDIO idio_bignum_abs (IDIO bn);
 int idio_bignum_negative_p (IDIO bn);
@@ -273,7 +298,7 @@ IDIO idio_bignum_shift_right (IDIO a);
 IDIO idio_bignum_multiply (IDIO a, IDIO b);
 IDIO idio_bignum_equalize (IDIO a, IDIO b);
 IDIO idio_bignum_divide (IDIO a, IDIO b);
-IDIO idio_bignum_real (int flags, IDIO_BS_T exp, IDIO_BSA sig_a);
+IDIO idio_bignum_real (int flags, IDIO_BE_T exp, IDIO_BSA sig_a);
 IDIO idio_bignum_real_to_integer (IDIO bn);
 IDIO idio_bignum_real_to_inexact (IDIO bn);
 IDIO idio_bignum_real_to_exact (IDIO bn);

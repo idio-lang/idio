@@ -255,7 +255,7 @@ create an bitset with a size of `size`		\n\
 	    /*
 	     * Code coverage: requires a large bitset
 	     */
-	    bs_size = idio_bignum_ptrdiff_value (size);
+	    bs_size = idio_bignum_ptrdiff_t_value (size);
 	} else {
 	    IDIO size_i = idio_bignum_real_to_integer (size);
 	    if (idio_S_nil == size_i) {
@@ -273,7 +273,7 @@ create an bitset with a size of `size`		\n\
 		 *
 		 * make-bitset 1e1
 		 */
-		bs_size = idio_bignum_ptrdiff_value (size_i);
+		bs_size = idio_bignum_ptrdiff_t_value (size_i);
 	    }
 	}
     } else {
@@ -339,7 +339,7 @@ set bit `bit` in bitset `bs`			\n\
 	    /*
 	     * Code coverage: requires a large bitset
 	     */
-	    bs_bit = idio_bignum_ptrdiff_value (bit);
+	    bs_bit = idio_bignum_ptrdiff_t_value (bit);
 	} else {
 	    IDIO bit_i = idio_bignum_real_to_integer (bit);
 	    if (idio_S_nil == bit_i) {
@@ -357,7 +357,7 @@ set bit `bit` in bitset `bs`			\n\
 		 *
 		 * bitset-set! 1e1
 		 */
-		bs_bit = idio_bignum_ptrdiff_value (bit_i);
+		bs_bit = idio_bignum_ptrdiff_t_value (bit_i);
 	    }
 	}
     } else {
@@ -405,7 +405,7 @@ clear bit `bit` in bitset `bs`			\n\
 	    /*
 	     * Code coverage: requires a large bitset
 	     */
-	    bs_bit = idio_bignum_ptrdiff_value (bit);
+	    bs_bit = idio_bignum_ptrdiff_t_value (bit);
 	} else {
 	    IDIO bit_i = idio_bignum_real_to_integer (bit);
 	    if (idio_S_nil == bit_i) {
@@ -423,7 +423,7 @@ clear bit `bit` in bitset `bs`			\n\
 		 *
 		 * bitset-clear! 1e1
 		 */
-		bs_bit = idio_bignum_ptrdiff_value (bit_i);
+		bs_bit = idio_bignum_ptrdiff_t_value (bit_i);
 	    }
 	}
     } else {
@@ -471,7 +471,7 @@ get bit `bit` in bitset `bs`			\n\
 	    /*
 	     * Code coverage: requires a large bitset
 	     */
-	    bs_bit = idio_bignum_ptrdiff_value (bit);
+	    bs_bit = idio_bignum_ptrdiff_t_value (bit);
 	} else {
 	    IDIO bit_i = idio_bignum_real_to_integer (bit);
 	    if (idio_S_nil == bit_i) {
@@ -489,7 +489,7 @@ get bit `bit` in bitset `bs`			\n\
 		 *
 		 * bitset-ref 1e1
 		 */
-		bs_bit = idio_bignum_ptrdiff_value (bit_i);
+		bs_bit = idio_bignum_ptrdiff_t_value (bit_i);
 	    }
 	}
     } else {

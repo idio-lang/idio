@@ -2858,7 +2858,7 @@ The function does not return.					\n\
 	n_C = IDIO_FIXNUM_VAL (n);
     } else if (idio_isa_bignum (n)) {
 	if (IDIO_BIGNUM_INTEGER_P (n)) {
-	    n_C = idio_bignum_ptrdiff_value (n);
+	    n_C = idio_bignum_ptrdiff_t_value (n);
 	} else {
 	    IDIO n_i = idio_bignum_real_to_integer (n);
 	    if (idio_S_nil == n_i) {
@@ -2866,7 +2866,7 @@ The function does not return.					\n\
 
 		return idio_S_notreached;
 	    } else {
-		n_C = idio_bignum_ptrdiff_value (n_i);
+		n_C = idio_bignum_ptrdiff_t_value (n_i);
 	    }
 	}
     } else {
@@ -6862,7 +6862,7 @@ Return the VM's values array entry at ``index``	\n\
 	gvi = IDIO_FIXNUM_VAL (index);
     } else if (idio_isa_bignum (index)) {
 	if (IDIO_BIGNUM_INTEGER_P (index)) {
-	    gvi = idio_bignum_ptrdiff_value (index);
+	    gvi = idio_bignum_ptrdiff_t_value (index);
 	} else {
 	    IDIO ii = idio_bignum_real_to_integer (index);
 	    if (idio_S_nil == ii) {
@@ -6875,7 +6875,7 @@ Return the VM's values array entry at ``index``	\n\
 
 		return idio_S_notreached;
 	    } else {
-		gvi = idio_bignum_ptrdiff_value (ii);
+		gvi = idio_bignum_ptrdiff_t_value (ii);
 	    }
 	}
     } else {
