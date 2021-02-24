@@ -39,7 +39,7 @@ test (fixnum? 1.0)			#f ; BIGNUM
 test (fixnum? (find-module 'Idio))	#f ; MODULE
 test (fixnum? (current-input-handle))	#f ; HANDLE
 test (fixnum? ^error)			#f ; STRUCT_TYPE
-test (fixnum? libc/idio-uname)		#f ; STRUCT_INSTANCE
+test (fixnum? char-set:letter)		#f ; STRUCT_INSTANCE
 test (fixnum? #B{ 3 })			#f ; BITSET
 test (fixnum? libc/INTMAX_MAX)		#f ; C_INT
 test (fixnum? libc/UINTMAX_MAX)		#f ; C_UINT

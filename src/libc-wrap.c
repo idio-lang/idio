@@ -28,35 +28,15 @@ char **idio_libc_signal_names = NULL;
 IDIO idio_vm_errno_conditions;
 char **idio_libc_errno_names = NULL;
 char **idio_libc_rlimit_names = NULL;
-static IDIO idio_libc_struct_sigaction = NULL;
-static IDIO idio_libc_struct_utsname = NULL;
 static IDIO idio_libc_struct_rlimit = NULL;
-static IDIO idio_libc_struct_tms = NULL;
 
 static long idio_SC_CLK_TCK = 0;
 
 /*
  * Indexes into structures for direct references
  */
-#define IDIO_STRUCT_SIGACTION_SA_HANDLER	0
-#define IDIO_STRUCT_SIGACTION_SA_SIGACTION	1
-#define IDIO_STRUCT_SIGACTION_SA_MASK		2
-#define IDIO_STRUCT_SIGACTION_SA_FLAGS		3
-
-#define IDIO_STRUCT_UTSNAME_SYSNAME		0
-#define IDIO_STRUCT_UTSNAME_NODENAME		1
-#define IDIO_STRUCT_UTSNAME_RELEASE		2
-#define IDIO_STRUCT_UTSNAME_VERSION		3
-#define IDIO_STRUCT_UTSNAME_MACHINE		4
-
 #define IDIO_STRUCT_RLIMIT_RLIM_CUR		0
 #define IDIO_STRUCT_RLIMIT_RLIM_MAX		1
-
-#define IDIO_STRUCT_TMS_RTIME			0
-#define IDIO_STRUCT_TMS_UTIME			1
-#define IDIO_STRUCT_TMS_STIME			2
-#define IDIO_STRUCT_TMS_CUTIME			3
-#define IDIO_STRUCT_TMS_CSTIME			4
 
 void idio_libc_format_error (char *msg, IDIO name, IDIO c_location)
 {
@@ -615,36 +595,6 @@ given signal.							\n\
     }
 
     return idio_C_pointer (r);
-}
-
-/*
- * This function is only used to create a struct utsname instance
- * called libc/idio-uname so that you can invoke
- * libc/idio-uname.nodename in code.
- *
- * Should probably be migrated there and not confuse matters by being
- * a distinct function.
- */
-IDIO idio_libc_uname ()
-{
-    struct utsname u;
-
-    if (uname (&u) == -1) {
-	/*
-	 * Test Case: ??
-	 *
-	 * EFAULT buf is not valid.
-	 */
-	idio_error_system_errno ("uname", idio_S_nil, IDIO_C_FUNC_LOCATION ());
-
-	return idio_S_notreached;
-    }
-
-    return idio_struct_instance (idio_libc_struct_utsname, IDIO_LIST5 (idio_string_C (u.sysname),
-								       idio_string_C (u.nodename),
-								       idio_string_C (u.release),
-								       idio_string_C (u.version),
-								       idio_string_C (u.machine)));
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("WEXITSTATUS", libc_WEXITSTATUS, (IDIO istatus), "status", "\
@@ -3363,33 +3313,6 @@ void idio_init_libc_wrap ()
     idio_module_add_computed_symbol (idio_symbols_C_intern ("STDERR"), idio_vm_values_ref (IDIO_FIXNUM_VAL (geti)), idio_S_nil, idio_libc_module);
 
     IDIO name;
-    name = idio_symbols_C_intern ("struct-sigaction");
-    idio_libc_struct_sigaction = idio_struct_type (name,
-						   idio_S_nil,
-						   idio_pair (idio_symbols_C_intern ("sa_handler"),
-						   idio_pair (idio_symbols_C_intern ("sa_sigaction"),
-						   idio_pair (idio_symbols_C_intern ("sa_mask"),
-						   idio_pair (idio_symbols_C_intern ("sa_flags"),
-						   idio_S_nil)))));
-    idio_module_export_symbol_value (name, idio_libc_struct_sigaction, idio_libc_module);
-
-    name = idio_symbols_C_intern ("struct-utsname");
-    idio_libc_struct_utsname = idio_struct_type (name,
-						 idio_S_nil,
-						 idio_pair (idio_symbols_C_intern ("sysname"),
-						 idio_pair (idio_symbols_C_intern ("nodename"),
-						 idio_pair (idio_symbols_C_intern ("release"),
-						 idio_pair (idio_symbols_C_intern ("version"),
-						 idio_pair (idio_symbols_C_intern ("machine"),
-						 idio_S_nil))))));
-    idio_module_export_symbol_value (name, idio_libc_struct_utsname, idio_libc_module);
-
-    name = idio_symbols_C_intern ("idio-uname");
-    /*
-     * XXX Here we actually invoke idio_libc_uname() to return a
-     * struct instance of a struct type utsname
-     */
-    idio_module_export_symbol_value (name, idio_libc_uname (), idio_libc_module);
 
     name = idio_symbols_C_intern ("struct-rlimit");
     idio_libc_struct_rlimit = idio_struct_type (name,
@@ -3421,8 +3344,8 @@ void idio_init_libc_wrap ()
      */
     IDIO main_module = idio_Idio_module_instance ();
 
-    struct utsname u;
-    if (uname (&u) == -1) {
+    struct utsname *up = idio_alloc (sizeof (struct utsname));
+    if (uname (up) == -1) {
 	/*
 	 * Test Case: ??
 	 *
@@ -3433,16 +3356,19 @@ void idio_init_libc_wrap ()
 	/* notreached */
 	return;
     }
+    name = idio_symbols_C_intern ("idio-uname");
+    idio_module_export_symbol_value (name, idio_C_pointer_type (idio_CSI_libc_struct_utsname, up), idio_libc_module);
+
 
     if (getenv ("HOSTNAME") == NULL) {
-	idio_module_set_symbol_value (idio_symbols_C_intern ("HOSTNAME"), idio_string_C (u.nodename), main_module);
+	idio_module_set_symbol_value (idio_symbols_C_intern ("HOSTNAME"), idio_string_C (up->nodename), main_module);
     }
 
-    idio_add_feature_ps ("uname/sysname/", u.sysname);
-    idio_add_feature_ps ("uname/nodename/", u.nodename);
-    idio_add_feature_ps ("uname/release/", u.release);
-    /* idio_add_feature (idio_string_C (u.version)); */
-    idio_add_feature_ps ("uname/machine/", u.machine);
+    idio_add_feature_ps ("uname/sysname/", up->sysname);
+    idio_add_feature_ps ("uname/nodename/", up->nodename);
+    idio_add_feature_ps ("uname/release/", up->release);
+    /* idio_add_feature (idio_string_C (up->version)); */
+    idio_add_feature_ps ("uname/machine/", up->machine);
     idio_add_feature_pi ("sizeof/pointer/", sizeof (void *) * CHAR_BIT);
 
     /*
@@ -3565,7 +3491,8 @@ void idio_init_libc_wrap ()
     idio_module_set_symbol_value (idio_symbols_C_intern ("PPID"), idio_libc_pid_t (getppid ()), main_module);
 
     /*
-     * POSIX times(3) and struct tms
+     * POSIX times(3) uses clock_t which is measured in terms of the
+     * number of clock ticks used.
      */
     idio_SC_CLK_TCK = sysconf (_SC_CLK_TCK);
     if (-1 == idio_SC_CLK_TCK){
@@ -3580,16 +3507,6 @@ void idio_init_libc_wrap ()
 	return;
     }
     idio_module_export_symbol_value (idio_symbols_C_intern ("CLK_TCK"), idio_C_long (idio_SC_CLK_TCK), idio_libc_module);
-    name = idio_symbols_C_intern ("struct-tms");
-    idio_libc_struct_tms = idio_struct_type (name,
-					     idio_S_nil,
-					     idio_pair (idio_symbols_C_intern ("tms_rtime"),
-					     idio_pair (idio_symbols_C_intern ("tms_utime"),
-					     idio_pair (idio_symbols_C_intern ("tms_stime"),
-					     idio_pair (idio_symbols_C_intern ("tms_cutime"),
-					     idio_pair (idio_symbols_C_intern ("tms_cstime"),
-					     idio_S_nil))))));
-    idio_module_export_symbol_value (name, idio_libc_struct_tms, idio_libc_module);
 
     idio_module_export_symbol_value (idio_symbols_C_intern ("RUSAGE_SELF"), idio_C_int (RUSAGE_SELF), idio_libc_module);
     idio_module_export_symbol_value (idio_symbols_C_intern ("RUSAGE_CHILDREN"), idio_C_int (RUSAGE_CHILDREN), idio_libc_module);

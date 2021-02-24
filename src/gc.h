@@ -981,7 +981,7 @@ typedef struct idio_C_struct_s {
 } idio_C_struct_t;
 
 #define IDIO_C_STRUCT_GREY(C)    ((C)->u.C_struct->grey)
-#define IDIO_C_STRUCT_FIELDS(C)   ((C)->u.C_struct->fields)
+#define IDIO_C_STRUCT_FIELDS(C)  ((C)->u.C_struct->fields)
 #define IDIO_C_STRUCT_METHODS(C) ((C)->u.C_struct->methods)
 #define IDIO_C_STRUCT_FRAME(C)   ((C)->u.C_struct->frame)
 #define IDIO_C_STRUCT_SIZE(C)    ((C)->u.C_struct->size)

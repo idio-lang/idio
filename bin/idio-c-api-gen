@@ -749,6 +749,25 @@ for-each (function (lib-n) {
 		    } #f
 		}
 
+		define (structure-type? id) {
+		  if id {
+		    name := 'void		; implied default?
+		    DIE := hash-ref all-ids id #f
+		    if DIE {
+		      (case (hash-ref DIE 'tag #f)
+			    ((restrict_type const_type) {
+			      structure-type? (hash-ref DIE 'type #f)
+			    })
+			    ((structure_type) {
+			      #t
+			    })
+			    (else #f))
+		    } {
+		      sprintf "structure-DIE-0x%s" id
+		    }
+		    } #f
+		}
+
 		define (alloc-required? id) {
 		  if id {
 		    name := 'void		; implied default?
@@ -1616,7 +1635,6 @@ in C, ${var}->member			\\n\\
         size_t alen = sizeof (${varp}->${member-name});
         ${r.1} *rp = (${r.1} *) idio_alloc (alen);
         memcpy ((void *) rp, (void *) &${varp}->${member-name}, alen);
-        return idio_C_pointer_free_me (rp);
     \}}
 								  })
 								  (".*\\*" {
@@ -1632,14 +1650,22 @@ in C, ${var}->member			\\n\\
         size_t slen = sizeof (${varp}->${member-name});
         ${member-alloc-name} rp = (${member-alloc-name}) idio_alloc (slen);
         memcpy ((void *) rp, (void *) &${varp}->${member-name}, slen);
-        return idio_C_pointer_free_me (rp);
     \}}
 								  })
 								  (else {
 								    hprintf api-c-fh #S{if (idio_S_${member-name} == member) \{
         ${member-c-type-name} *rp = (${member-c-type-name} *) idio_alloc (sizeof (${member-c-type-name}));
-        memcpy ((void *) rp, (void *) &${varp}->${member-name}, sizeof (${member-c-type-name}));
+        memcpy ((void *) rp, (void *) &${varp}->${member-name}, sizeof (${member-c-type-name}));}
+								    if (structure-type? member-type-id) {
+								      hprintf api-c-fh #S{
+        return idio_C_pointer_type (idio_CSI_${c-module-name}_${C-identifier member-c-type-name}, rp);
+}
+								    } {
+								      hprintf api-c-fh #S{
         return idio_C_pointer_free_me (rp);
+}
+								    }
+								    hprintf api-c-fh #S{
     \}}
 								  }))
 						    } {
@@ -1742,7 +1768,7 @@ in C, ${var}->member = val		\\n\\
 								  ("(.*)\\[]" {
 								    hprintf api-c-fh #S{if (idio_S_${member-name} == member) \{
        /*
-	* Test Case: ${i-module-name}-errors/${struct-idio-id}-set-bad-value-type.idio
+	* Test Case: ${i-module-name}-errors/${struct-idio-id}-set-${member-name}-bad-value-type.idio
 	*
 	* ${struct-idio-id}-set! v '${member-name} #t
 	*/
@@ -1765,7 +1791,7 @@ in C, ${var}->member = val		\\n\\
 								  ("(.*)\\*" {
 								    hprintf api-c-fh #S{if (idio_S_${member-name} == member) \{
        /*
-	* Test Case: ${i-module-name}-errors/${struct-idio-id}-set-bad-value-type.idio
+	* Test Case: ${i-module-name}-errors/${struct-idio-id}-set-${member-name}-bad-value-type.idio
 	*
 	* ${struct-idio-id}-set! v '${member-name} #t
 	*/
@@ -1788,7 +1814,7 @@ in C, ${var}->member = val		\\n\\
 								  (else {
 								    hprintf api-c-fh #S{if (idio_S_${member-name} == member) \{
        /*
-	* Test Case: ${i-module-name}-errors/${struct-idio-id}-set-bad-value-type.idio
+	* Test Case: ${i-module-name}-errors/${struct-idio-id}-set-${member-name}-bad-value-type.idio
 	*
 	* ${struct-idio-id}-set! v '${member-name} #t
 	*/
@@ -1808,7 +1834,7 @@ in C, ${var}->member = val		\\n\\
 						    accessor := get/create member-type-DIE 'c-type-accessor
 						    hprintf api-c-fh #S{if (idio_S_${member-name} == member) \{
        /*
-	* Test Case: ${i-module-name}-errors/${struct-idio-id}-set-bad-value-type.idio
+	* Test Case: ${i-module-name}-errors/${struct-idio-id}-set-${member-name}-bad-value-type.idio
 	*
 	* ${struct-idio-id}-set! v '${member-name} #t
 	*/

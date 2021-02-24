@@ -841,7 +841,7 @@ test (bignum? 1.0)			#t ; BIGNUM
 test (bignum? (find-module 'Idio))	#f ; MODULE
 test (bignum? (current-input-handle))	#f ; HANDLE
 test (bignum? ^error)			#f ; STRUCT_TYPE
-test (bignum? libc/idio-uname)		#f ; STRUCT_INSTANCE
+test (bignum? char-set:letter)		#f ; STRUCT_INSTANCE
 test (bignum? #B{ 3 })			#f ; BITSET
 test (bignum? libc/INTMAX_MAX)		#f ; C_INT
 test (bignum? libc/UINTMAX_MAX)		#f ; C_UINT

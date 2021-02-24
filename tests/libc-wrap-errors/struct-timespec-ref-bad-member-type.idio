@@ -1,0 +1,3 @@
+
+statbuf := libc/stat "."
+struct-timespec-ref statbuf.st_atim #t

@@ -36,7 +36,7 @@ test (struct-type? 1.0)				#f ; BIGNUM
 test (struct-type? (find-module 'Idio))		#f ; MODULE
 test (struct-type? (current-input-handle))	#f ; HANDLE
 test (struct-type? ^error)			#t ; STRUCT_TYPE
-test (struct-type? libc/idio-uname)		#f ; STRUCT_INSTANCE
+test (struct-type? char-set:letter)		#f ; STRUCT_INSTANCE
 test (struct-type? #B{ 3 })			#f ; BITSET
 test (struct-type? libc/INTMAX_MAX)		#f ; C_INT
 test (struct-type? libc/UINTMAX_MAX)		#f ; C_UINT
@@ -57,7 +57,7 @@ test (struct-instance? 1.0)			#f ; BIGNUM
 test (struct-instance? (find-module 'Idio))	#f ; MODULE
 test (struct-instance? (current-input-handle))	#f ; HANDLE
 test (struct-instance? ^error)			#f ; STRUCT_TYPE
-test (struct-instance? libc/idio-uname)		#t ; STRUCT_INSTANCE
+test (struct-instance? char-set:letter)		#t ; STRUCT_INSTANCE
 test (struct-instance? #B{ 3 })			#f ; BITSET
 test (struct-instance? libc/INTMAX_MAX)		#f ; C_INT
 test (struct-instance? libc/UINTMAX_MAX)	#f ; C_UINT

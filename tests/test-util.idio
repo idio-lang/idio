@@ -53,7 +53,7 @@ test (type->string 1.0)				"BIGNUM"
 test (type->string (find-module 'Idio))		"MODULE"
 test (type->string (current-input-handle))	"HANDLE"
 test (type->string ^error)			"STRUCT_TYPE"
-test (type->string libc/idio-uname)		"STRUCT_INSTANCE"
+test (type->string char-set:letter)		"STRUCT_INSTANCE"
 test (type->string #B{ 3 })			"BITSET"
 test (type->string libc/INT_MAX)		"C/int"
 test (type->string libc/UINT_MAX)		"C/uint"
@@ -74,7 +74,7 @@ test (zero? 1.0)			#f ; BIGNUM
 test (zero? (find-module 'Idio))	#f ; MODULE
 test (zero? (current-input-handle))	#f ; HANDLE
 test (zero? ^error)			#f ; STRUCT_TYPE
-test (zero? libc/idio-uname)		#f ; STRUCT_INSTANCE
+test (zero? char-set:letter)		#f ; STRUCT_INSTANCE
 test (zero? #B{ 3 })			#f ; BITSET
 test (zero? libc/INTMAX_MAX)		#f ; C_INT
 test (zero? libc/UINTMAX_MAX)		#f ; C_UINT
@@ -105,7 +105,7 @@ test (boolean? 1.0)			#f ; BIGNUM
 test (boolean? (find-module 'Idio))	#f ; MODULE
 test (boolean? (current-input-handle))	#f ; HANDLE
 test (boolean? ^error)			#f ; STRUCT_TYPE
-test (boolean? libc/idio-uname)		#f ; STRUCT_INSTANCE
+test (boolean? char-set:letter)		#f ; STRUCT_INSTANCE
 test (boolean? #B{ 3 })			#f ; BITSET
 test (boolean? libc/INTMAX_MAX)		#f ; C_INT
 test (boolean? libc/UINTMAX_MAX)	#f ; C_UINT

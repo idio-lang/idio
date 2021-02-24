@@ -642,6 +642,9 @@ void idio_gc_process_grey (idio_gc_t *gc, unsigned colour)
 	gc->grey = IDIO_CONTINUATION_GREY (o);
 	idio_gc_gcc_mark (gc, IDIO_CONTINUATION_STACK (o), colour);
 	break;
+    case IDIO_TYPE_C_POINTER:
+	idio_gc_gcc_mark (gc, IDIO_C_TYPE_POINTER_PTYPE (o), colour);
+	break;
     case IDIO_TYPE_C_TYPEDEF:
 	IDIO_C_ASSERT (gc->grey != IDIO_C_TYPEDEF_GREY (o));
 	gc->grey = IDIO_C_TYPEDEF_GREY (o);

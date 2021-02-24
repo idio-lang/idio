@@ -41,7 +41,7 @@ test (continuation? 1.0)			#f ; BIGNUM
 test (continuation? (find-module 'Idio))	#f ; MODULE
 test (continuation? (current-input-handle))	#f ; HANDLE
 test (continuation? ^error)			#f ; STRUCT_TYPE
-test (continuation? libc/idio-uname)		#f ; STRUCT_INSTANCE
+test (continuation? char-set:letter)		#f ; STRUCT_INSTANCE
 test (continuation? #B{ 3 })			#f ; BITSET
 test (continuation? libc/INTMAX_MAX)		#f ; C_INT
 test (continuation? libc/UINTMAX_MAX)		#f ; C_UINT

@@ -36,7 +36,7 @@ test (module? 1.0)			#f ; BIGNUM
 test (module? (find-module 'Idio))	#t ; MODULE
 test (module? (current-input-handle))	#f ; HANDLE
 test (module? ^error)			#f ; STRUCT_TYPE
-test (module? libc/idio-uname)		#f ; STRUCT_INSTANCE
+test (module? char-set:letter)		#f ; STRUCT_INSTANCE
 test (module? #B{ 3 })			#f ; BITSET
 test (module? libc/INTMAX_MAX)		#f ; C_INT
 test (module? libc/UINTMAX_MAX)		#f ; C_UINT

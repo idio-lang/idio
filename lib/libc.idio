@@ -32,10 +32,7 @@ export (make-tmp-file
 include "libc-api.idio"
 
 ;; define structure accessors
-export-struct-accessors-only struct-sigaction		sa-handler sa-sigaction sa-mask sa-flags
-export-struct-accessors-only struct-utsname		sysname nodename release version machine
 export-struct-accessors-only struct-rlimit		rlim_cur rlim_max
-export-struct-accessors-only struct-tms			tms_rtime tms_utime tms_stime tms_cutime tms_cstime
 
 #*
 

@@ -39,7 +39,7 @@ test (condition-type? 1.0)			#f ; BIGNUM
 test (condition-type? (find-module 'Idio))	#f ; MODULE
 test (condition-type? (current-input-handle))	#f ; HANDLE
 test (condition-type? ^error)			#t ; STRUCT_TYPE
-test (condition-type? libc/idio-uname)		#f ; STRUCT_INSTANCE
+test (condition-type? char-set:letter)		#f ; STRUCT_INSTANCE
 test (condition-type? #B{ 3 })			#f ; BITSET
 test (condition-type? libc/INTMAX_MAX)		#f ; C_INT
 test (condition-type? libc/UINTMAX_MAX)		#f ; C_UINT
@@ -62,7 +62,7 @@ test (condition? 1.0)				#f ; BIGNUM
 test (condition? (find-module 'Idio))		#f ; MODULE
 test (condition? (current-input-handle))	#f ; HANDLE
 test (condition? ^error)			#f ; STRUCT_TYPE
-test (condition? libc/idio-uname)		#f ; STRUCT_INSTANCE
+test (condition? char-set:letter)		#f ; STRUCT_INSTANCE
 test (condition? #B{ 3 })			#f ; BITSET
 test (condition? libc/INTMAX_MAX)		#f ; C_INT
 test (condition? libc/UINTMAX_MAX)		#f ; C_UINT
