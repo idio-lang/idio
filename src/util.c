@@ -3220,6 +3220,35 @@ value-index is not efficient			\n\
 		return idio_hash_set (o, i, v);
 	    case IDIO_TYPE_STRUCT_INSTANCE:
 		return idio_struct_instance_set (o, i, v);
+	    case IDIO_TYPE_C_POINTER:
+		{
+		    IDIO t = IDIO_C_TYPE_POINTER_PTYPE (o);
+		    if (idio_S_nil != t) {
+			/*
+			 * We want: (setter ref) o i v
+			 *
+			 * but we have to invoke by stage:
+			 */
+			IDIO setter_cmd = IDIO_LIST2 (idio_module_symbol_value (idio_S_setter,
+										idio_Idio_module,
+										idio_S_nil),
+						      IDIO_PAIR_HT (t));
+
+			IDIO setter_r = idio_vm_invoke_C (idio_thread_current_thread (), setter_cmd);
+
+			if (! idio_isa_function (setter_r)) {
+			    idio_debug ("(setter %s) did not yield a function\n", IDIO_PAIR_HT (t));
+			    break;
+			}
+
+			IDIO set_cmd = IDIO_LIST4 (setter_r, o, i, v);
+
+			IDIO set_r = idio_vm_invoke_C (idio_thread_current_thread (), set_cmd);
+
+			return set_r;
+		    }
+		}
+		break;
 	    default:
 		break;
 	    }

@@ -1684,6 +1684,11 @@ in C, ${var}->member			\\n\\
 				  }) member*
 
 				  hprintf api-c-fh #S{ else \{
+	/*
+	 * Test Case: ${i-module-name}-errors/struct-${struct-idio-id}-ref-invalid-member.idio
+	 *
+	 * struct-${struct-idio-id}-ref v 'not-likely
+	 */
         idio_error_param_value ("member", "struct ${struct-name} member", IDIO_C_FUNC_LOCATION());
 
         return idio_S_notreached;
@@ -1849,7 +1854,12 @@ in C, ${var}->member = val		\\n\\
 				  }) member*
 
 				  hprintf api-c-fh #S{ else \{
-        idio_error_param_value ("member", "struct ${struct-name} member", IDIO_C_FUNC_LOCATION());
+	/*
+	 * Test Case: ${i-module-name}-errors/struct-${struct-idio-id}-set-invalid-member.idio
+	 *
+	 * struct-${struct-idio-id}-ref v 'not-likely #t
+	 */
+        idio_error_param_value ("member", "should be a struct ${struct-name} member", IDIO_C_FUNC_LOCATION());
 
         return idio_S_notreached;
     \}}

@@ -96,38 +96,57 @@ strerror-EBADF := strerror EBADF
 libc-wrap-error-load "libc-wrap-errors/struct-utsname-ref-bad-pointer-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"
 libc-wrap-error-load "libc-wrap-errors/struct-utsname-ref-invalid-pointer-type.idio" "utsname should be a struct utsname"
 libc-wrap-error-load "libc-wrap-errors/struct-utsname-ref-bad-member-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol"
+libc-wrap-error-load "libc-wrap-errors/struct-utsname-ref-invalid-member.idio" "member should be a struct utsname member"
 
 libc-wrap-error-load "libc-wrap-errors/struct-tms-ref-bad-pointer-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"
 libc-wrap-error-load "libc-wrap-errors/struct-tms-ref-invalid-pointer-type.idio" "tms should be a struct tms"
 libc-wrap-error-load "libc-wrap-errors/struct-tms-ref-bad-member-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol"
+libc-wrap-error-load "libc-wrap-errors/struct-tms-ref-invalid-member.idio" "member should be a struct tms member"
 
 libc-wrap-error-load "libc-wrap-errors/struct-termios-ref-bad-pointer-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"
 libc-wrap-error-load "libc-wrap-errors/struct-termios-ref-invalid-pointer-type.idio" "termios should be a struct termios"
 libc-wrap-error-load "libc-wrap-errors/struct-termios-ref-bad-member-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol"
+libc-wrap-error-load "libc-wrap-errors/struct-termios-ref-invalid-member.idio" "member should be a struct termios member"
 
 libc-wrap-error-load "libc-wrap-errors/struct-termios-set-bad-pointer-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"
 libc-wrap-error-load "libc-wrap-errors/struct-termios-set-invalid-pointer-type.idio" "termios should be a struct termios"
 libc-wrap-error-load "libc-wrap-errors/struct-termios-set-bad-member-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol"
+libc-wrap-error-load "libc-wrap-errors/struct-termios-set-invalid-member.idio" "member should be a struct termios member"
 
 libc-wrap-error-load "libc-wrap-errors/struct-stat-ref-bad-pointer-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"
 libc-wrap-error-load "libc-wrap-errors/struct-stat-ref-invalid-pointer-type.idio" "stat should be a struct stat"
 libc-wrap-error-load "libc-wrap-errors/struct-stat-ref-bad-member-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol"
+libc-wrap-error-load "libc-wrap-errors/struct-stat-ref-invalid-member.idio" "member should be a struct stat member"
 
 libc-wrap-error-load "libc-wrap-errors/struct-timespec-ref-bad-pointer-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"
 libc-wrap-error-load "libc-wrap-errors/struct-timespec-ref-invalid-pointer-type.idio" "timespec should be a struct timespec"
 libc-wrap-error-load "libc-wrap-errors/struct-timespec-ref-bad-member-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol"
+libc-wrap-error-load "libc-wrap-errors/struct-timespec-ref-invalid-member.idio" "member should be a struct timespec member"
 
 libc-wrap-error-load "libc-wrap-errors/struct-timespec-set-bad-pointer-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"
 libc-wrap-error-load "libc-wrap-errors/struct-timespec-set-invalid-pointer-type.idio" "timespec should be a struct timespec"
 libc-wrap-error-load "libc-wrap-errors/struct-timespec-set-bad-member-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol"
+libc-wrap-error-load "libc-wrap-errors/struct-timespec-set-invalid-member.idio" "member should be a struct timespec member"
+
+libc-wrap-error-load "libc-wrap-errors/struct-rlimit-ref-bad-pointer-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"
+libc-wrap-error-load "libc-wrap-errors/struct-rlimit-ref-invalid-pointer-type.idio" "rlimit should be a struct rlimit"
+libc-wrap-error-load "libc-wrap-errors/struct-rlimit-ref-bad-member-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol"
+libc-wrap-error-load "libc-wrap-errors/struct-rlimit-ref-invalid-member.idio" "member should be a struct rlimit member"
+
+libc-wrap-error-load "libc-wrap-errors/struct-rlimit-set-bad-pointer-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"
+libc-wrap-error-load "libc-wrap-errors/struct-rlimit-set-invalid-pointer-type.idio" "rlimit should be a struct rlimit"
+libc-wrap-error-load "libc-wrap-errors/struct-rlimit-set-bad-member-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol"
+libc-wrap-error-load "libc-wrap-errors/struct-rlimit-set-invalid-member.idio" "member should be a struct rlimit member"
 
 libc-wrap-error-load "libc-wrap-errors/struct-timeval-ref-bad-pointer-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"
 libc-wrap-error-load "libc-wrap-errors/struct-timeval-ref-invalid-pointer-type.idio" "timeval should be a struct timeval"
 libc-wrap-error-load "libc-wrap-errors/struct-timeval-ref-bad-member-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol"
+libc-wrap-error-load "libc-wrap-errors/struct-timeval-ref-invalid-member.idio" "member should be a struct timeval member"
 
 libc-wrap-error-load "libc-wrap-errors/struct-timeval-set-bad-pointer-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"
 libc-wrap-error-load "libc-wrap-errors/struct-timeval-set-invalid-pointer-type.idio" "timeval should be a struct timeval"
 libc-wrap-error-load "libc-wrap-errors/struct-timeval-set-bad-member-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol"
+libc-wrap-error-load "libc-wrap-errors/struct-timeval-set-invalid-member.idio" "member should be a struct timeval member"
 
 libc-wrap-error-load "libc-wrap-errors/struct-timeval-as-string-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"
 
@@ -140,6 +159,7 @@ libc-wrap-error-load "libc-wrap-errors/subtract-struct-timeval-bad-second-type.i
 libc-wrap-error-load "libc-wrap-errors/struct-rusage-ref-bad-pointer-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"
 libc-wrap-error-load "libc-wrap-errors/struct-rusage-ref-invalid-pointer-type.idio" "rusage should be a struct rusage"
 libc-wrap-error-load "libc-wrap-errors/struct-rusage-ref-bad-member-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol"
+libc-wrap-error-load "libc-wrap-errors/struct-rusage-ref-invalid-member.idio" "member should be a struct rusage member"
 
 libc-wrap-error-load "libc-wrap-errors/access-bad-pathname-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
 libc-wrap-error-load "libc-wrap-errors/access-bad-mode-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/int"
@@ -269,7 +289,7 @@ libc-wrap-error-load "libc-wrap-errors/setpgid-bad-pid-type.idio" "bad parameter
 libc-wrap-error-load "libc-wrap-errors/setpgid-bad-pgid-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a libc/pid_t"
 libc-wrap-error-load "libc-wrap-errors/setpgid-negative-pgid.idio" "Invalid argument" EINVAL "setpgid"
 
-libc-wrap-error-load "libc-wrap-errors/setrlimit-bad-rlim-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a struct_instance"
+libc-wrap-error-load "libc-wrap-errors/setrlimit-bad-rlim-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"
 libc-wrap-error-load "libc-wrap-errors/setrlimit-bad-rlim.idio" "Invalid argument" EINVAL "setrlimit"
 
 libc-wrap-error-load "libc-wrap-errors/signal-bad-sig-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/int"
@@ -440,4 +460,4 @@ libc-wrap-error-load "libc-wrap-errors/x-bad-type.idio" "bad parameter type: '#t
 libc-wrap-error-load "libc-wrap-errors/x-bad-format.idio" "x?: pathname contains an ASCII NUL"
 
 ;; all done?
-Tests? (libc-wrap-error0 + 228)
+Tests? (libc-wrap-error0 + 246)

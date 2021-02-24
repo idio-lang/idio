@@ -1,0 +1,2 @@
+
+struct-timeval-ref (libc/gettimeofday) 'not-likely

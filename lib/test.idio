@@ -169,7 +169,7 @@ IDIOLIB = append-string IDIOLIB ":" PWD
 ;; effects
 
 nofiles_lim := 256
-C_nofiles_lim := C/integer-> nofiles_lim
+C_nofiles_lim := C/integer-> nofiles_lim libc/rlim_t
 rl := libc/getrlimit libc/RLIMIT_NOFILE
 if (C/> rl.rlim_cur C_nofiles_lim) {
   rl.rlim_cur = C_nofiles_lim
@@ -273,7 +273,7 @@ test-load "test-command.idio"
 ;; that?  Erm, they've not been counted and are dynamic in number so
 ;; test we've seen at least as many as the largest number we've
 ;; seen.  Wait, some tests are OS-specific.  Drat!
-Tests? 5510
+Tests? 5528
 
 if (e? testfile) (delete-file testfile)
 

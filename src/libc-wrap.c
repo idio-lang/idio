@@ -28,15 +28,8 @@ char **idio_libc_signal_names = NULL;
 IDIO idio_vm_errno_conditions;
 char **idio_libc_errno_names = NULL;
 char **idio_libc_rlimit_names = NULL;
-static IDIO idio_libc_struct_rlimit = NULL;
 
 static long idio_SC_CLK_TCK = 0;
-
-/*
- * Indexes into structures for direct references
- */
-#define IDIO_STRUCT_RLIMIT_RLIM_CUR		0
-#define IDIO_STRUCT_RLIMIT_RLIM_MAX		1
 
 void idio_libc_format_error (char *msg, IDIO name, IDIO c_location)
 {
@@ -336,56 +329,6 @@ DOES NOT RETURN :)						\n\
     return idio_S_notreached;
 }
 
-IDIO idio_libc_getrlimit (int resource)
-{
-    struct rlimit rlim;
-
-    if (getrlimit (resource, &rlim) == -1) {
-	/*
-	 * Test Case:  libc-wrap-errors/getrlimit-bad-rlim.idio
-	 *
-	 * getrlimit (C/integer-> -1)
-	 */
-	idio_error_system_errno ("getrlimit", idio_S_nil, IDIO_C_FUNC_LOCATION ());
-
-	return idio_S_notreached;
-    }
-
-    /*
-     * XXX
-     *
-     * rlim_t not ints!
-     */
-    return idio_struct_instance (idio_libc_struct_rlimit, IDIO_LIST2 (idio_C_int (rlim.rlim_cur),
-								      idio_C_int (rlim.rlim_max)));
-}
-
-IDIO_DEFINE_PRIMITIVE1_DS ("getrlimit", libc_getrlimit, (IDIO iresource), "resource", "\
-in C, getrlimit (resource)					\n\
-a wrapper to libc getrlimit (2)					\n\
-								\n\
-:param resource: resource, see below				\n\
-:type resource: C/int						\n\
-:return: struct-rlimit or raises ^system-error			\n\
-:rtype: struct instance						\n\
-								\n\
-The resource names follow C conventions such as ``RLIMIT_AS``	\n\
-and ``RLIMIT_NOFILE``.						\n\
-")
-{
-    IDIO_ASSERT (iresource);
-
-    /*
-     * Test Case: ??
-     *
-     * getrlimit's resource is overridden in the pursuit of
-     * convenience
-     */
-    IDIO_USER_C_TYPE_ASSERT (int, iresource);
-
-    return idio_libc_getrlimit (IDIO_C_TYPE_int (iresource));
-}
-
 IDIO_DEFINE_PRIMITIVE0_DS ("gettimeofday", libc_gettimeofday, (void), "", "\
 in C, gettimeofday ()						\n\
 a wrapper to libc gettimeofday (2)				\n\
@@ -461,69 +404,6 @@ See ``pipe`` for a constructor ofthe pipe array.		\n\
     int *pipefd = IDIO_C_TYPE_POINTER_P (ipipefd);
 
     return idio_C_int (pipefd[1]);
-}
-
-void idio_libc_setrlimit (int resource, struct rlimit *rlimp)
-{
-    if (setrlimit (resource, rlimp) == -1) {
-	/*
-	 * Test Case:  libc-wrap-errors/setrlimit-bad-rlim.idio
-	 *
-	 * setrlimit (C/integer-> -1) (getrlimit RLIMIT_CPU)
-	 */
-	idio_error_system_errno ("setrlimit", idio_S_nil, IDIO_C_FUNC_LOCATION ());
-    }
-}
-
-IDIO_DEFINE_PRIMITIVE2_DS ("setrlimit", libc_setrlimit, (IDIO iresource, IDIO irlim), "resource rlim", "\
-in C, setrlimit (resource, rlim)				\n\
-a wrapper to libc setrlimit (2)					\n\
-								\n\
-:param resource: resource, see below				\n\
-:type resource: C/int						\n\
-:param rlim: struct-rlimit					\n\
-:type rlim: struct instance					\n\
-:return: 0 or raises ^system-error				\n\
-:rtype: C/int							\n\
-								\n\
-The resource names follow C conventions such as ``RLIMIT_AS``	\n\
-and ``RLIMIT_NOFILE``.						\n\
-								\n\
-See ``getrlimit`` to obtain a struct-rlimit.			\n\
-")
-{
-    IDIO_ASSERT (iresource);
-    IDIO_ASSERT (irlim);
-
-    /*
-     * Test Case: ??
-     *
-     * setrlimit's resource is overridden in the pursuit of
-     * convenience
-     */
-    IDIO_USER_C_TYPE_ASSERT (int, iresource);
-    /*
-     * Test Case: libc-wrap-errors/setrlimit-bad-rlim-type.idio
-     *
-     * setrlimit (C/integer-> 0) #t
-     */
-    IDIO_USER_TYPE_ASSERT (struct_instance, irlim);
-
-    IDIO cur = idio_struct_instance_ref_direct (irlim, IDIO_STRUCT_RLIMIT_RLIM_CUR);
-    IDIO max = idio_struct_instance_ref_direct (irlim, IDIO_STRUCT_RLIMIT_RLIM_MAX);
-
-    struct rlimit rlim;
-    /*
-     * XXX
-     *
-     * rlim_t not ints!
-     */
-    rlim.rlim_cur = (rlim_t) IDIO_C_TYPE_int (cur);
-    rlim.rlim_max = (rlim_t) IDIO_C_TYPE_int (max);
-
-    idio_libc_setrlimit (IDIO_C_TYPE_int (iresource), &rlim);
-
-    return idio_S_unspec;
 }
 
 /*
@@ -3147,11 +3027,9 @@ void idio_libc_wrap_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_system_error);
 
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_exit);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getrlimit);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_gettimeofday);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_pipe_reader);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_pipe_writer);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_setrlimit);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_signal_handler);
 
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_WEXITSTATUS);
@@ -3312,16 +3190,6 @@ void idio_init_libc_wrap ()
     geti = IDIO_ADD_MODULE_PRIMITIVE (idio_libc_module, libc_STDERR_get);
     idio_module_add_computed_symbol (idio_symbols_C_intern ("STDERR"), idio_vm_values_ref (IDIO_FIXNUM_VAL (geti)), idio_S_nil, idio_libc_module);
 
-    IDIO name;
-
-    name = idio_symbols_C_intern ("struct-rlimit");
-    idio_libc_struct_rlimit = idio_struct_type (name,
-						idio_S_nil,
-						idio_pair (idio_symbols_C_intern ("rlim_cur"),
-						idio_pair (idio_symbols_C_intern ("rlim_max"),
-						idio_S_nil)));
-    idio_module_export_symbol_value (name, idio_libc_struct_rlimit, idio_libc_module);
-
     idio_vm_signal_handler_conditions = idio_array (IDIO_LIBC_NSIG + 1);
     idio_gc_protect_auto (idio_vm_signal_handler_conditions);
     /*
@@ -3356,8 +3224,7 @@ void idio_init_libc_wrap ()
 	/* notreached */
 	return;
     }
-    name = idio_symbols_C_intern ("idio-uname");
-    idio_module_export_symbol_value (name, idio_C_pointer_type (idio_CSI_libc_struct_utsname, up), idio_libc_module);
+    idio_module_export_symbol_value (idio_symbols_C_intern ("idio-uname"), idio_C_pointer_type (idio_CSI_libc_struct_utsname, up), idio_libc_module);
 
 
     if (getenv ("HOSTNAME") == NULL) {

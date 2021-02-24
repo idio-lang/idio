@@ -82,7 +82,12 @@ in C, utsname->member			\n\
     } else if (idio_S_machine == member) {
 	return idio_string_C (utsnamep->machine);
     } else {
-        idio_error_param_value ("member", "struct utsname member", IDIO_C_FUNC_LOCATION());
+	/*
+	 * Test Case: libc-errors/struct-utsname-ref-invalid-member.idio
+	 *
+	 * struct-utsname-ref (libc/uname) 'not-likely
+	 */
+        idio_error_param_value ("member", "should be a struct utsname member", IDIO_C_FUNC_LOCATION());
 
         return idio_S_notreached;
     }
@@ -156,7 +161,12 @@ in C, tms->member			\n\
     } else if (idio_S_tms_cstime == member) {
         return idio_libc_clock_t (tmsp->tms_cstime);
     } else {
-        idio_error_param_value ("member", "struct tms member", IDIO_C_FUNC_LOCATION());
+	/*
+	 * Test Case: libc-errors/struct-tms-ref-invalid-member.idio
+	 *
+	 * struct-tms-ref (pht (libc/times)) 'not-likely
+	 */
+        idio_error_param_value ("member", "should be a struct tms member", IDIO_C_FUNC_LOCATION());
 
         return idio_S_notreached;
     }
@@ -251,7 +261,12 @@ in C, termios->member			\n\
         memcpy ((void *) rp, (void *) &termiosp->c_cc, alen);
         return idio_C_pointer_free_me (rp);
     } else {
-        idio_error_param_value ("member", "struct termios member", IDIO_C_FUNC_LOCATION());
+	/*
+	 * Test Case: libc-errors/struct-termios-ref-invalid-member.idio
+	 *
+	 * struct-termios-ref (libc/tcgetattr libc/STDIN_FILENO) 'not-likely
+	 */
+        idio_error_param_value ("member", "should be a struct termios member", IDIO_C_FUNC_LOCATION());
 
         return idio_S_notreached;
     }
@@ -362,7 +377,12 @@ in C, termios->member = val		\n\
         memcpy ((void *) &termiosp->c_cc, (void *) valp, alen);
         return idio_S_unspec;
     } else {
-        idio_error_param_value ("member", "struct termios member", IDIO_C_FUNC_LOCATION());
+	/*
+	 * Test Case: libc-errors/struct-termios-set-invalid-member.idio
+	 *
+	 * struct-termios-set! (libc/uname) 'not-likely
+	 */
+        idio_error_param_value ("member", "should be a struct termios member", IDIO_C_FUNC_LOCATION());
 
         return idio_S_notreached;
     }
@@ -515,7 +535,12 @@ in C, stat->member			\n\
         return idio_libc_time_t (statp->st_ctim.tv_sec);
 #endif
     } else {
-        idio_error_param_value ("member", "struct stat member", IDIO_C_FUNC_LOCATION());
+	/*
+	 * Test Case: libc-errors/struct-stat-ref-invalid-member.idio
+	 *
+	 * struct-stat-ref (libc/stat ".") 'not-likely
+	 */
+        idio_error_param_value ("member", "should be a struct stat member", IDIO_C_FUNC_LOCATION());
 
         return idio_S_notreached;
     }
@@ -583,7 +608,13 @@ in C, timespec->member			\n\
     } else if (idio_S_tv_nsec == member) {
         return idio_C_long (timespecp->tv_nsec);
     } else {
-        idio_error_param_value ("member", "struct timespec member", IDIO_C_FUNC_LOCATION());
+	/*
+	 * Test Case: libc-errors/struct-timespec-ref-invalid-member.idio
+	 *
+	 * statbuf := libc/stat "."
+	 * struct-timespec-ref statbuf.st_atim 'not-likely
+	 */
+        idio_error_param_value ("member", "should be a struct timespec member", IDIO_C_FUNC_LOCATION());
 
         return idio_S_notreached;
     }
@@ -655,7 +686,13 @@ in C, timespec->member = val		\n\
         timespecp->tv_nsec = IDIO_C_TYPE_long (val);
         return idio_S_unspec;
     } else {
-        idio_error_param_value ("member", "struct timespec member", IDIO_C_FUNC_LOCATION());
+	/*
+	 * Test Case: libc-errors/struct-timespec-set-invalid-member.idio
+	 *
+	 * statbuf := libc/stat "."
+	 * struct-timespec-set! statbuf.st_atim 'not-likely
+	 */
+        idio_error_param_value ("member", "should be a struct timespec member", IDIO_C_FUNC_LOCATION());
 
         return idio_S_notreached;
     }
@@ -692,21 +729,26 @@ in C, rlimit->member			\n\
     IDIO_ASSERT (member);
 
     /*
-     * Test Case: libc-errors/rlimit-ref-bad-pointer-type.idio
+     * Test Case: libc-errors/struct-rlimit-ref-bad-pointer-type.idio
      *
-     * rlimit-ref #t #t
+     * struct-rlimit-ref #t #t
      */
     IDIO_USER_C_TYPE_ASSERT (pointer, rlimit);
     if (idio_CSI_libc_struct_rlimit != IDIO_C_TYPE_POINTER_PTYPE (rlimit)) {
+	/*
+	 * Test Case: libc-errors/struct-rlimit-ref-invalid-pointer-type.idio
+	 *
+	 * struct-rlimit-ref libc/NULL #t
+	 */
 	idio_error_param_value ("rlimit", "should be a struct rlimit", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
 
     /*
-     * Test Case: libc-errors/rlimit-ref-bad-member-type.idio
+     * Test Case: libc-errors/struct-rlimit-ref-bad-member-type.idio
      *
-     * rlimit-ref v #t
+     * struct-rlimit-ref (libc/getrlimit libc/RLIMIT_NOFILE) #t
      */
     IDIO_USER_TYPE_ASSERT (symbol, member);
 
@@ -716,7 +758,12 @@ in C, rlimit->member			\n\
     } else if (idio_S_rlim_max == member) {
         return idio_libc_rlim_t (rlimitp->rlim_max);
     } else {
-        idio_error_param_value ("member", "struct rlimit member", IDIO_C_FUNC_LOCATION());
+	/*
+	 * Test Case: libc-errors/struct-rlimit-ref-invalid-member.idio
+	 *
+	 * struct-rlimit-ref (libc/getrlimit libc/RLIMIT_NOFILE) 'not-likely
+	 */
+        idio_error_param_value ("member", "should be a struct rlimit member", IDIO_C_FUNC_LOCATION());
 
         return idio_S_notreached;
     }
@@ -742,21 +789,26 @@ in C, rlimit->member = val		\n\
     IDIO_ASSERT (val);
 
     /*
-     * Test Case: libc-errors/rlimit-set-bad-pointer-type.idio
+     * Test Case: libc-errors/struct-rlimit-set-bad-pointer-type.idio
      *
-     * rlimit-set! #t #t #t
+     * struct-rlimit-set! #t #t #t
      */
     IDIO_USER_C_TYPE_ASSERT (pointer, rlimit);
     if (idio_CSI_libc_struct_rlimit != IDIO_C_TYPE_POINTER_PTYPE (rlimit)) {
+	/*
+	 * Test Case: libc-errors/struct-rlimit-set-invalid-pointer-type.idio
+	 *
+	 * struct-rlimit-set! libc/NULL #t #t
+	 */
 	idio_error_param_value ("rlimit", "should be a struct rlimit", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
 
     /*
-     * Test Case: libc-errors/rlimit-set-bad-member-type.idio
+     * Test Case: libc-errors/struct-rlimit-set-bad-member-type.idio
      *
-     * rlimit-set! v #t #t
+     * struct-rlimit-set! (libc/getrlimit libc/RLIMIT_NOFILE) #t #t
      */
     IDIO_USER_TYPE_ASSERT (symbol, member);
 
@@ -782,7 +834,12 @@ in C, rlimit->member = val		\n\
         rlimitp->rlim_max = IDIO_C_TYPE_libc_rlim_t (val);
         return idio_S_unspec;
     } else {
-        idio_error_param_value ("member", "struct rlimit member", IDIO_C_FUNC_LOCATION());
+	/*
+	 * Test Case: libc-errors/struct-rlimit-set-invalid-member.idio
+	 *
+	 * struct-rlimit-set! (libc/getrlimit libc/RLIMIT_NOFILE) 'not-likely
+	 */
+        idio_error_param_value ("member", "should be a struct rlimit member", IDIO_C_FUNC_LOCATION());
 
         return idio_S_notreached;
     }
@@ -848,7 +905,12 @@ in C, timeval->member			\n\
     } else if (idio_S_tv_usec == member) {
         return idio_libc_suseconds_t (timevalp->tv_usec);
     } else {
-        idio_error_param_value ("member", "struct timeval member", IDIO_C_FUNC_LOCATION());
+	/*
+	 * Test Case: libc-errors/struct-timeval-ref-invalid-member.idio
+	 *
+	 * struct-timeval-ref (gettimeofday) 'not-likely
+	 */
+        idio_error_param_value ("member", "should be a struct timeval member", IDIO_C_FUNC_LOCATION());
 
         return idio_S_notreached;
     }
@@ -919,7 +981,12 @@ in C, timeval->member = val		\n\
         timevalp->tv_usec = IDIO_C_TYPE_libc_suseconds_t (val);
         return idio_S_unspec;
     } else {
-        idio_error_param_value ("member", "struct timeval member", IDIO_C_FUNC_LOCATION());
+	/*
+	 * Test Case: libc-errors/struct-timeval-set-invalid-member.idio
+	 *
+	 * struct-timeval-set! (gettimeofday) 'not-likely
+	 */
+        idio_error_param_value ("member", "should be a struct timeval member", IDIO_C_FUNC_LOCATION());
 
         return idio_S_notreached;
     }
@@ -1003,7 +1070,12 @@ in C, rusage->member			\n\
         memcpy ((void *) rp, (void *) &rusagep->ru_stime, sizeof (struct timeval));
         return idio_C_pointer_type (idio_CSI_libc_struct_timeval, rp);
     } else {
-        idio_error_param_value ("member", "struct rusage member", IDIO_C_FUNC_LOCATION());
+	/*
+	 * Test Case: libc-errors/struct-rusage-ref-invalid-member.idio
+	 *
+	 * struct-rusage-ref (libc/getrusage libc/RUSAGE_SELF) 'not-likely
+	 */
+        idio_error_param_value ("member", "should be a struct rusage member", IDIO_C_FUNC_LOCATION());
 
         return idio_S_notreached;
     }
@@ -1652,6 +1724,70 @@ SIG_DFL								\n\
     }
 
     return idio_C_pointer (signal_r);
+}
+
+IDIO_DEFINE_PRIMITIVE2_DS ("setrlimit", libc_setrlimit, (IDIO resource, IDIO rlim), "resource rlim", "\
+in C, setrlimit (resource, rlim)				\n\
+a wrapper to libc setrlimit (2)					\n\
+								\n\
+:param resource: resource, see below				\n\
+:type resource: C/int						\n\
+:param rlim: struct-rlimit					\n\
+:type rlim: struct instance					\n\
+:return: 0 or raises ^system-error				\n\
+:rtype: C/int							\n\
+								\n\
+The resource names follow C conventions such as ``RLIMIT_AS``	\n\
+and ``RLIMIT_NOFILE``.						\n\
+								\n\
+See ``getrlimit`` to obtain a struct-rlimit.			\n\
+")
+{
+    IDIO_ASSERT (resource);
+    IDIO_ASSERT (rlim);
+
+    /*
+     * Test Case: setrlimit-bad-resource-type.idio
+     *
+     * setrlimit #t #t
+     *
+     * NB Fedora uses an unsigned int enum whereas the
+     * IDIO_LIBC_RLIMIT(n) macro defines the names as idio_C_int.
+     */
+    IDIO_USER_C_TYPE_ASSERT (int, resource);
+    int C_resource = IDIO_C_TYPE_int (resource);
+
+    /*
+     * Test Case: libc-wrap-errors/setrlimit-bad-rlim-type.idio
+     *
+     * setrlimit (C/integer-> 0) #t
+     */
+    IDIO_USER_C_TYPE_ASSERT (pointer, rlim);
+    if (idio_CSI_libc_struct_rlimit != IDIO_C_TYPE_POINTER_PTYPE (rlim)) {
+	/*
+	 * Test Case: libc-errors/setrlimit-invalid-pointer-type.idio
+	 *
+	 * setrlimit-ref (C/integer-> 0) libc/NULL
+	 */
+	idio_error_param_value ("rlim", "should be a struct rlimit", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    struct rlimit *C_rlim = IDIO_C_TYPE_POINTER_P (rlim);
+
+    if (setrlimit (C_resource, C_rlim) == -1) {
+	/*
+	 * Test Case:  libc-wrap-errors/setrlimit-bad-rlim.idio
+	 *
+	 * setrlimit (C/integer-> -1) (getrlimit RLIMIT_CPU)
+	 */
+	idio_error_system_errno ("setrlimit", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    return idio_S_unspec;
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("setpgid", libc_setpgid, (IDIO pid, IDIO pgid), "pid pgid", "\
@@ -2511,6 +2647,48 @@ The parameter `who` refers to RUSAGE_SELF or RUSAGE_CHILDREN	\n\
     return idio_C_pointer_type (idio_CSI_libc_struct_rusage, rusagep);
 }
 
+IDIO_DEFINE_PRIMITIVE1_DS ("getrlimit", libc_getrlimit, (IDIO resource), "resource", "\
+in C, getrlimit (resource)					\n\
+a wrapper to libc getrlimit (2)					\n\
+								\n\
+:param resource: resource, see below				\n\
+:type resource: C/int						\n\
+:return: struct-rlimit or raises ^system-error			\n\
+:rtype: struct instance						\n\
+								\n\
+The resource names follow C conventions such as ``RLIMIT_AS``	\n\
+and ``RLIMIT_NOFILE``.						\n\
+")
+{
+    IDIO_ASSERT (resource);
+
+    /*
+     * Test Case: libc-wrap-errors/getrlimit-bad-resource-type.idio
+     *
+     * getrlimit #t
+     *
+     * NB Fedora uses an unsigned int enum whereas the
+     * IDIO_LIBC_RLIMIT(n) macro defines the names as idio_C_int.
+     */
+    IDIO_USER_C_TYPE_ASSERT (int, resource);
+    int C_resource = IDIO_C_TYPE_int (resource);
+
+    struct rlimit *rlimp = idio_alloc (sizeof (struct rlimit));
+
+    if (getrlimit (C_resource, rlimp) == -1) {
+	/*
+	 * Test Case:  libc-wrap-errors/getrlimit-bad-rlim.idio
+	 *
+	 * getrlimit (C/integer-> -1)
+	 */
+	idio_error_system_errno ("getrlimit", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    return idio_C_pointer_type (idio_CSI_libc_struct_rlimit, rlimp);
+}
+
 IDIO_DEFINE_PRIMITIVE0_DS ("getpid", libc_getpid, (void), "", "\
 in C, getpid ()							\n\
 a wrapper to libc getpid(2)					\n\
@@ -3111,6 +3289,7 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_stat);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_sleep);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_signal);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_setrlimit);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_setpgid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getpgid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_rmdir);
@@ -3127,6 +3306,7 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_isatty);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getsid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getrusage);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getrlimit);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getpid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getpgrp);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getcwd);

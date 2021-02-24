@@ -1,0 +1,2 @@
+
+struct-rusage-ref (libc/getrusage libc/RUSAGE_SELF) 'not-likely

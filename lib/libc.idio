@@ -31,9 +31,6 @@ export (make-tmp-file
 
 include "libc-api.idio"
 
-;; define structure accessors
-export-struct-accessors-only struct-rlimit		rlim_cur rlim_max
-
 #*
 
 stdin/stdout
@@ -332,7 +329,5 @@ keyword, eg. ``:NOFILE`` for ``libc/RLIMIT_NOFILE``
     orig-setrlimit resource rlim
   }
 }
-
-%%add-as-string struct-timeval struct-timeval-as-string
 
 provide libc
