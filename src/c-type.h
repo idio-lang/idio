@@ -175,7 +175,19 @@ IDIO idio_C_pointer (void * v);
 int idio_isa_C_pointer (IDIO co);
 
 IDIO idio_C_pointer_free_me (void * v);
+IDIO idio_C_pointer_type (IDIO t, void * v);
 void idio_free_C_pointer (IDIO co);
+
+int idio_isa_C_type (IDIO o);
+int idio_isa_C_number (IDIO o);
+int idio_isa_C_integral (IDIO o);
+int idio_isa_C_unsigned (IDIO o);
+
+IDIO idio_C_primitive_binary_add (IDIO n1, IDIO n2);
+IDIO idio_C_primitive_binary_subtract (IDIO n1, IDIO n2);
+IDIO idio_C_primitive_binary_multiply (IDIO n1, IDIO n2);
+IDIO idio_C_primitive_binary_divide (IDIO n1, IDIO n2);
+
 IDIO idio_C_number_cast (IDIO co, idio_type_e type);
 
 int idio_C_float_equal_ULP (float o1, float o2, unsigned int max);

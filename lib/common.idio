@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -132,12 +132,17 @@ The second argument can be used for any subsequent purpose but might
 normally be used to maintain a set of previously seen values to handle
 circular data structures.
 
-This is currently only used for struct instances where a struct type
-was associated with a printer.  When we come to print a struct
-instance we check to see if a printer exists for its type.
+This is currently only used for:
+
+- struct instances where a struct type was associated with a printer.
+  When we come to print a struct instance we check to see if a printer
+  exists for its type.
+
+- C pointer types where an IDIO_C_STRUCT_IDENT has been set up and
+  assigned to the pointer
 
 " {
-  %%value-as-string = pair (list o f) %%value-as-string
+  hash-set! %%value-as-string o f
 }
 
 #*
@@ -533,7 +538,12 @@ proc [args]
   r := apply proc args
   end := (libc/times)
 
-  printf "Real %d\nUser %d\nSyst %d\n" (end.tms_rtime - start.tms_rtime) (end.tms_utime - start.tms_utime) (end.tms_stime - start.tms_stime)
+  start-ert := ph start
+  start-tms := pht start
+  end-ert := ph end
+  end-tms := pht end
+
+  printf "Real %d\nUser %d\nSyst %d\n" (end-ert - start-ert) (end-tms.tms_utime - start-tms.tms_utime) (end-tms.tms_stime - start-tms.tms_stime)
   r
 }
 
@@ -565,16 +575,16 @@ This takes after Bash's time_command
 
   tv-real := libc/subtract-struct-timeval tv-after tv-before
   tv-utime := (libc/add-struct-timeval
-	       (libc/subtract-struct-timeval (libc/struct-rusage-ru_utime rus-after)
-					     (libc/struct-rusage-ru_utime rus-before))
-	       (libc/subtract-struct-timeval (libc/struct-rusage-ru_utime ruk-after)
-					     (libc/struct-rusage-ru_utime ruk-before)))
+	       (libc/subtract-struct-timeval (rus-after.ru_utime)
+					     (rus-before.ru_utime))
+	       (libc/subtract-struct-timeval (ruk-after.ru_utime)
+					     (ruk-before.ru_utime)))
 
   tv-stime := (libc/add-struct-timeval
-	       (libc/subtract-struct-timeval (libc/struct-rusage-ru_stime rus-after)
-					     (libc/struct-rusage-ru_stime rus-before))
-	       (libc/subtract-struct-timeval (libc/struct-rusage-ru_stime ruk-after)
-					     (libc/struct-rusage-ru_stime ruk-before)))
+	       (libc/subtract-struct-timeval (rus-after.ru_stime)
+					     (rus-before.ru_stime))
+	       (libc/subtract-struct-timeval (ruk-after.ru_stime)
+					     (ruk-before.ru_stime)))
 
   list r tv-real tv-utime tv-stime
 }

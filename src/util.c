@@ -22,7 +22,7 @@
 
 #include "idio.h"
 
-static IDIO idio_util_value_as_string;
+IDIO idio_util_value_as_string;
 IDIO idio_print_conversion_format_sym = idio_S_nil;
 IDIO idio_print_conversion_precision_sym = idio_S_nil;
 static IDIO idio_features;
@@ -2167,14 +2167,60 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 		}
 		break;
 	    case IDIO_TYPE_C_POINTER:
-		if (NULL != IDIO_C_TYPE_POINTER_PRINTER (o)) {
-		    char *s = IDIO_C_TYPE_POINTER_PRINTER (o) (o);
-		    *sizep = strlen (s);
-		    return s;
-		} else {
-		    idio_asprintf (&r, "#<C/* %p%s>", IDIO_C_TYPE_POINTER_P (o), IDIO_C_TYPE_POINTER_FREEP (o) ? " free" : "");
+		{
+		    IDIO pt = IDIO_C_TYPE_POINTER_PTYPE (o);
+		    if (idio_S_nil != pt) {
+			IDIO value_as_string = idio_module_symbol_value (idio_util_value_as_string, idio_Idio_module, idio_S_nil);
+
+			if (idio_S_nil != value_as_string) {
+			    IDIO s = idio_S_nil;
+			    IDIO pr = idio_hash_ref (value_as_string, pt);
+			    if (idio_S_unspec != pr) {
+				IDIO thr = idio_thread_current_thread ();
+
+				IDIO cmd = IDIO_LIST3 (pr, o, idio_S_nil);
+
+				s = idio_vm_invoke_C (thr, cmd);
+			    }
+
+			    if (idio_S_nil != s) {
+				/*
+				 * NB call the display_string variant
+				 * at this point as {s} is now a
+				 * string and returning as_string
+				 * ({s}) => "..." (ie. with
+				 * double-quotes) rather than the
+				 * ... we expect from a printed C
+				 * pointer.
+				 *
+				 * It confused me...
+				 */
+				return idio_display_string (s, sizep);
+			    }
+			}
+		    }
+
+		    idio_asprintf (&r, "#<C/*");
+		    *sizep = strlen (r);
+
+		    if (idio_S_nil != pt) {
+			size_t n_size = 0;
+			char *n = idio_as_string (IDIO_PAIR_H (pt), &n_size, depth - 1, seen, 0);
+			IDIO_STRCAT (r, sizep, " ");
+			IDIO_STRCAT_FREE (r, sizep, n, n_size);
+		    }
+
+#ifdef IDIO_DEBUG
+		    char *p;
+		    idio_asprintf (&p, " %p", IDIO_C_TYPE_POINTER_P (o));
+		    size_t p_size = strlen (p);
+		    IDIO_STRCAT_FREE (r, sizep, p, p_size);
+#endif
+
+		    IDIO_STRCAT (r, sizep, IDIO_C_TYPE_POINTER_FREEP (o) ? " free" : "");
+
+		    IDIO_STRCAT (r, sizep, ">");
 		}
-		*sizep = strlen (r);
 		break;
 	    case IDIO_TYPE_STRUCT_TYPE:
 		{
@@ -2214,11 +2260,11 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 
 		    if (idio_S_nil != value_as_string) {
 			IDIO s = idio_S_nil;
-			IDIO l = idio_list_assq (sit, value_as_string);
-			if (idio_S_false != l) {
+			IDIO l = idio_hash_ref (value_as_string, sit);
+			if (idio_S_unspec != l) {
 			    IDIO thr = idio_thread_current_thread ();
 
-			    IDIO cmd = IDIO_LIST3 (IDIO_PAIR_HT (l), o, idio_S_nil);
+			    IDIO cmd = IDIO_LIST3 (l, o, idio_S_nil);
 
 			    s = idio_vm_invoke_C (thr, cmd);
 			}
@@ -3095,6 +3141,18 @@ value-index is not efficient			\n\
 		return idio_hash_reference (o, i, idio_S_nil);
 	    case IDIO_TYPE_STRUCT_INSTANCE:
 		return idio_struct_instance_ref (o, i);
+	    case IDIO_TYPE_C_POINTER:
+		{
+		    IDIO t = IDIO_C_TYPE_POINTER_PTYPE (o);
+		    if (idio_S_nil != t) {
+			IDIO cmd = IDIO_LIST3 (IDIO_PAIR_HT (t), o, i);
+
+			IDIO r = idio_vm_invoke_C (idio_thread_current_thread (), cmd);
+
+			return r;
+		    }
+		}
+		break;
 	    default:
 		break;
 	    }
@@ -3769,7 +3827,8 @@ void idio_init_util ()
     idio_module_table_register (idio_util_add_primitives, idio_final_util);
 
     idio_util_value_as_string = idio_symbols_C_intern ("%%value-as-string");
-    idio_module_set_symbol_value (idio_util_value_as_string, idio_S_nil, idio_Idio_module);
+    idio_module_set_symbol_value (idio_util_value_as_string, IDIO_HASH_EQP (32), idio_Idio_module);
+
     idio_print_conversion_format_sym = idio_symbols_C_intern ("idio-print-conversion-format");
     idio_print_conversion_precision_sym = idio_symbols_C_intern ("idio-print-conversion-precision");
 

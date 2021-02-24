@@ -93,8 +93,9 @@ libc-wrap-error-load := {
 ;; EBADF's strerror(3) form differs across systems
 strerror-EBADF := strerror EBADF
 
-libc-wrap-error-load "libc-wrap-errors/struct-rusage-ru_utime-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"
-libc-wrap-error-load "libc-wrap-errors/struct-rusage-ru_stime-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"
+libc-wrap-error-load "libc-wrap-errors/struct-rusage-ref-bad-pointer-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"
+libc-wrap-error-load "libc-wrap-errors/struct-rusage-ref-invalid-pointer-type.idio" "rusage should be a struct rusage"
+libc-wrap-error-load "libc-wrap-errors/struct-rusage-ref-bad-member-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol"
 libc-wrap-error-load "libc-wrap-errors/struct-timeval-as-string-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"
 
 libc-wrap-error-load "libc-wrap-errors/add-struct-timeval-bad-first-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"
@@ -402,4 +403,4 @@ libc-wrap-error-load "libc-wrap-errors/x-bad-type.idio" "bad parameter type: '#t
 libc-wrap-error-load "libc-wrap-errors/x-bad-format.idio" "x?: pathname contains an ASCII NUL"
 
 ;; all done?
-Tests? (libc-wrap-error0 + 200)
+Tests? (libc-wrap-error0 + 201)

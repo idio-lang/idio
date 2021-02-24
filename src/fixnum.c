@@ -272,6 +272,8 @@ int idio_isa_number (IDIO o)
 	return 1;
     } else if (idio_isa_bignum (o)) {
 	return 1;
+    } else if (idio_isa_C_number (o)) {
+	return 1;
     }
 
     return 0;
@@ -817,8 +819,8 @@ IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(ge, >=)
 IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(gt, >)
 
 /*
- * Second, define some generic primitives that look out for bignum
- * arguments
+ * Second, define some generic primitives that look out for bignum and
+ * C type arguments
  */
 #define IDIO_DEFINE_ARITHMETIC_PRIMITIVE0V(name,cname)			\
     IDIO_DEFINE_PRIMITIVE0V (name, cname, (IDIO args))			\
@@ -944,8 +946,8 @@ IDIO_DEFINE_FIXNUM_CMP_PRIMITIVE_(gt, >)
     }
 
 /*
- * For divide we should always convert to bignums: 1 / 3 is 0; 9 / 2
- * is 4 in fixnums; 10 / 2 will be converted back to a fixnum.
+ * For divide we should always convert fixnums to bignums: 1 / 3 is 0;
+ * 9 / 2 is 4 in fixnums; 10 / 2 will be converted back to a fixnum.
  */
 #define IDIO_DEFINE_ARITHMETIC_BIGNUM_PRIMITIVE1V(name,cname)		\
     IDIO_DEFINE_PRIMITIVE1V (name, cname, (IDIO n1, IDIO args))		\
@@ -1076,6 +1078,10 @@ IDIO_DEFINE_ARITHMETIC_CMP_PRIMITIVE1V ("gt", gt)
 	IDIO_ASSERT (n1);						\
 	IDIO_ASSERT (n2);						\
 									\
+	if (idio_isa_C_number (n1)) {					\
+	    return idio_C_primitive_ ## cname (n1, n2);			\
+	}								\
+									\
 	IDIO args = IDIO_LIST2 (n1, n2);				\
 									\
 	int ibn = 0;							\
@@ -1125,6 +1131,9 @@ IDIO_DEFINE_ARITHMETIC_CMP_PRIMITIVE1V ("gt", gt)
 	IDIO_ASSERT (n1);						\
 	IDIO_ASSERT (n2);						\
 									\
+	if (idio_isa_C_number (n1)) {					\
+	    return idio_C_primitive_ ## cname (n1, n2);			\
+	}								\
 	int ibn = 0;							\
 	if (idio_isa_bignum (n1)) {					\
 	    ibn |= 1;							\

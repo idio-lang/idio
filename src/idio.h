@@ -384,8 +384,8 @@ extern FILE *idio_vm_perf_FILE;
 
 #define IDIO_STREQP(s,cs)	(strlen (s) == strlen (cs) && strncmp (s, cs, strlen (cs)) == 0)
 
-#define IDIO_KEYWORD_DECL(n)		IDIO idio_KW_ ## n
-#define IDIO_KEYWORD_DEF(iname,cname)	idio_KW_ ## cname = idio_keywords_C_intern (iname);
+#define IDIO_C_STRUCT_IDENT_DECL(n)			IDIO idio_CSI_ ## n
+#define IDIO_C_STRUCT_IDENT_DEF(iname,cname,fvi)	idio_CSI_ ## cname = IDIO_LIST2 (idio_string_C (iname), idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi)));  idio_gc_protect_auto (idio_CSI_ ## cname);
 
 #include "gc.h"
 

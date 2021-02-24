@@ -234,6 +234,7 @@
 
 
 /* /usr/include/sys/utsname.h */
+extern IDIO_C_STRUCT_IDENT_DECL (libc_struct_utsname);
 extern IDIO_SYMBOL_DECL (sysname);
 extern IDIO_SYMBOL_DECL (nodename);
 extern IDIO_SYMBOL_DECL (release);
@@ -243,6 +244,7 @@ extern IDIO_SYMBOL_DECL (domainname);
 
 
 /* /usr/include/sys/times.h */
+extern IDIO_C_STRUCT_IDENT_DECL (libc_struct_tms);
 extern IDIO_SYMBOL_DECL (tms_utime);
 extern IDIO_SYMBOL_DECL (tms_stime);
 extern IDIO_SYMBOL_DECL (tms_cutime);
@@ -250,6 +252,7 @@ extern IDIO_SYMBOL_DECL (tms_cstime);
 
 
 /* /usr/include/bits/termios-struct.h */
+extern IDIO_C_STRUCT_IDENT_DECL (libc_struct_termios);
 extern IDIO_SYMBOL_DECL (c_iflag);
 extern IDIO_SYMBOL_DECL (c_oflag);
 extern IDIO_SYMBOL_DECL (c_cflag);
@@ -261,6 +264,7 @@ extern IDIO_SYMBOL_DECL (c_ospeed);
 
 
 /* /usr/include/bits/stat.h */
+extern IDIO_C_STRUCT_IDENT_DECL (libc_struct_stat);
 extern IDIO_SYMBOL_DECL (st_dev);
 extern IDIO_SYMBOL_DECL (st_ino);
 extern IDIO_SYMBOL_DECL (st_nlink);
@@ -277,11 +281,13 @@ extern IDIO_SYMBOL_DECL (st_ctim);
 
 
 /* /usr/include/bits/types/struct_timespec.h */
+extern IDIO_C_STRUCT_IDENT_DECL (libc_struct_timespec);
 extern IDIO_SYMBOL_DECL (tv_sec);
 extern IDIO_SYMBOL_DECL (tv_nsec);
 
 
 /* /usr/include/bits/sigaction.h */
+extern IDIO_C_STRUCT_IDENT_DECL (libc_struct_sigaction);
 extern IDIO_SYMBOL_DECL (__sigaction_handler);
 extern IDIO_SYMBOL_DECL (sa_mask);
 extern IDIO_SYMBOL_DECL (sa_flags);
@@ -289,16 +295,19 @@ extern IDIO_SYMBOL_DECL (sa_restorer);
 
 
 /* /usr/include/bits/resource.h */
+extern IDIO_C_STRUCT_IDENT_DECL (libc_struct_rlimit);
 extern IDIO_SYMBOL_DECL (rlim_cur);
 extern IDIO_SYMBOL_DECL (rlim_max);
 
 
 /* /usr/include/bits/types/struct_timeval.h */
+extern IDIO_C_STRUCT_IDENT_DECL (libc_struct_timeval);
 /* tv_sec already declared */
 extern IDIO_SYMBOL_DECL (tv_usec);
 
 
 /* /usr/include/bits/types/struct_rusage.h */
+extern IDIO_C_STRUCT_IDENT_DECL (libc_struct_rusage);
 extern IDIO_SYMBOL_DECL (ru_utime);
 extern IDIO_SYMBOL_DECL (ru_stime);
 

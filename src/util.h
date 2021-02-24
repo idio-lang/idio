@@ -30,6 +30,7 @@
 #define IDIO_COPY_DEEP		1
 #define IDIO_COPY_SHALLOW	2
 
+extern IDIO idio_util_value_as_string;
 extern IDIO idio_print_conversion_format_sym;
 extern IDIO idio_print_conversion_precision_sym;
 

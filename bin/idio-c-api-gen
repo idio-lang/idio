@@ -1509,12 +1509,17 @@ export \(
 
 
 			      if struct-name {
+				struct-idio-id := Idio-identifier struct-name
+				struct-c-id := sprintf "%s_struct_%s" c-module-name struct-name
+
 				;; symbols for accessors
 
 				if (pair? member*) {
 				  if decl-file {
 				    hprintf api-h-fh "\n\n/* %s */\n" (filename decl-file)
 				  }
+				  hprintf api-h-fh "extern IDIO_C_STRUCT_IDENT_DECL (%s);\n" struct-c-id
+				  hprintf api-c-fh "IDIO_C_STRUCT_IDENT_DECL (%s);\n" struct-c-id
 				  for-each (function (member) {
 					      member-type-id := hash-ref member 'type #f
 					      member-type-name := idio-c-type-name member-type-id
@@ -1534,13 +1539,12 @@ export \(
 					      }
 				  }) member*
 
-				  struct-idio-id := Idio-identifier struct-name
 				  var := sprintf "%s" struct-name
 				  varp := sprintf "%sp" var
 
 				  ;; -ref
 				  hprintf api-c-fh #S{
-IDIO_DEFINE_PRIMITIVE2_DS ("${struct-idio-id}-ref", ${c-module-name}_struct_${struct-name}_ref, (IDIO ${var}, IDIO member), "${var} member", "\\
+IDIO_DEFINE_PRIMITIVE2_DS ("struct-${struct-idio-id}-ref", ${c-module-name}_struct_${struct-name}_ref, (IDIO ${var}, IDIO member), "${var} member", "\\
 in C, ${var}->member			\\n\\
 					\\n\\
 :param ${var}: C struct ${struct-name}	\\n\\
@@ -1554,18 +1558,28 @@ in C, ${var}->member			\\n\\
     IDIO_ASSERT (${var});
     IDIO_ASSERT (member);
 
-   /*
-    * Test Case: ${i-module-name}-errors/${struct-idio-id}-ref-bad-pointer-type.idio
-    *
-    * ${struct-idio-id}-ref #t #t
-    */
+    /*
+     * Test Case: ${i-module-name}-errors/struct-${struct-idio-id}-ref-bad-pointer-type.idio
+     *
+     * struct-${struct-idio-id}-ref #t #t
+     */
     IDIO_USER_C_TYPE_ASSERT (pointer, ${var});
-   /*
-    * Test Case: ${i-module-name}-errors/${struct-idio-id}-ref-bad-member-type.idio
-    *
-    * ${struct-idio-id}-ref v #t
-    */
+    /*
+     * Test Case: ${i-module-name}-errors/struct-${struct-idio-id}-ref-bad-member-type.idio
+     *
+     * struct-${struct-idio-id}-ref v #t
+     */
     IDIO_USER_TYPE_ASSERT (symbol, member);
+    if (idio_CSI_${struct-c-id} != IDIO_C_TYPE_POINTER_PTYPE (${struct-name})) {
+	/*
+	 * Test Case: ${i-module-name}-errors/struct-${struct-idio-id}-ref-invalid-pointer-type.idio
+	 *
+	 * struct-${struct-idio-id}-ref libc/NULL #t
+	 */
+	idio_error_param_value ("${struct-name}", "should be a struct ${struct-name}", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    \}
 
     struct ${struct-name} *${varp} = IDIO_C_TYPE_POINTER_P (${var});
 }
@@ -1657,7 +1671,7 @@ in C, ${var}->member			\\n\\
 
 				  ;; -set!
 				  hprintf api-c-fh #S{
-IDIO_DEFINE_PRIMITIVE3_DS ("${struct-idio-id}-set!", ${c-module-name}_struct_${struct-name}_set, (IDIO ${var}, IDIO member, IDIO val), "${var} member val", "\\
+IDIO_DEFINE_PRIMITIVE3_DS ("struct-${struct-idio-id}-set!", ${c-module-name}_struct_${struct-name}_set, (IDIO ${var}, IDIO member, IDIO val), "${var} member val", "\\
 in C, ${var}->member = val		\\n\\
 					\\n\\
 :param ${var}: C struct ${struct-name}	\\n\\
@@ -1674,17 +1688,28 @@ in C, ${var}->member = val		\\n\\
     IDIO_ASSERT (member);
     IDIO_ASSERT (val);
 
-   /*
-    * Test Case: ${i-module-name}-errors/${struct-idio-id}-set-bad-pointer-type.idio
-    *
-    * ${struct-idio-id}-set! #t #t #t
-    */
+    /*
+     * Test Case: ${i-module-name}-errors/struct-${struct-idio-id}-set-bad-pointer-type.idio
+     *
+     * struct-${struct-idio-id}-set! #t #t #t
+     */
     IDIO_USER_C_TYPE_ASSERT (pointer, ${var});
-   /*
-    * Test Case: ${i-module-name}-errors/${struct-idio-id}-set-bad-member-type.idio
-    *
-    * ${struct-idio-id}-set! v #t #t
-    */
+    if (idio_CSI_${struct-c-id} != IDIO_C_TYPE_POINTER_PTYPE (${struct-name})) {
+	/*
+	 * Test Case: ${i-module-name}-errors/struct-${struct-idio-id}-set-invalid-pointer-type.idio
+	 *
+	 * struct-${struct-idio-id}-set! libc/NULL #t #t
+	 */
+	idio_error_param_value ("${struct-name}", "should be a struct ${struct-name}", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    \}
+
+    /*
+     * Test Case: ${i-module-name}-errors/struct-${struct-idio-id}-set-bad-member-type.idio
+     *
+     * struct-${struct-idio-id}-set! v #t #t
+     */
     IDIO_USER_TYPE_ASSERT (symbol, member);
 
     struct ${struct-name} *${varp} = IDIO_C_TYPE_POINTER_P (${var});
@@ -1811,9 +1836,9 @@ in C, ${var}->member = val		\\n\\
 
 				  ;; setter
 				  hprintf api-i-fh #S{
-if (and (function? ${struct-idio-id}-ref)
-        (function? ${struct-idio-id}-set!)) {
-  set! (setter ${struct-idio-id}-ref)	${struct-idio-id}-set!
+if (and (function? struct-${struct-idio-id}-ref)
+        (function? struct-${struct-idio-id}-set!)) {
+  set! (setter struct-${struct-idio-id}-ref)	struct-${struct-idio-id}-set!
 \}
 }
 				}
@@ -2075,10 +2100,12 @@ void idio_init_${c-module-name}_api ()
 		}
 
 		if used-structure-types {
+		  hprintf api-c-fh "\n    IDIO fgvi;\n" struct-c-id
 		  for-each (function (struct) {
 			      struct-name := hash-ref struct 'name #f
 
 			      if struct-name {
+				struct-c-id := sprintf "%s_struct_%s" c-module-name struct-name
 				members := hash-ref struct 'member #f
 				if members {
 				  decl-file := hash-ref struct 'decl_file #f
@@ -2098,7 +2125,8 @@ void idio_init_${c-module-name}_api ()
 				  }) (array->list members)
 				}
 				hprintf api-c-fh #S{
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_${c-module-name}_module, ${c-module-name}_struct_${struct-name}_ref);
+    fgvi = IDIO_EXPORT_MODULE_PRIMITIVE (idio_${c-module-name}_module, ${c-module-name}_struct_${struct-name}_ref);
+    IDIO_C_STRUCT_IDENT_DEF ("struct ${struct-name}", fgvi);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_${c-module-name}_module, ${c-module-name}_struct_${struct-name}_set);
 }
 			      }

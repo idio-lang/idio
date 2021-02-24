@@ -105,8 +105,8 @@ trap ^rt-bignum-conversion-error (function (c) {
 
 ;; code coverage
 rus := (getrusage RUSAGE_SELF)
-ru-ut := struct-rusage-ru_utime rus
-ru-st := struct-rusage-ru_stime rus
+ru-ut := rus.ru_utime
+ru-st := rus.ru_stime
 
 struct-timeval-as-string ru-ut
 

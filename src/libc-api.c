@@ -25,13 +25,14 @@
 	};
 */
 
+IDIO_C_STRUCT_IDENT_DECL(libc_struct_utsname);
 IDIO_SYMBOL_DECL (sysname);
 IDIO_SYMBOL_DECL (nodename);
 IDIO_SYMBOL_DECL (release);
 IDIO_SYMBOL_DECL (version);
 IDIO_SYMBOL_DECL (machine);
 
-IDIO_DEFINE_PRIMITIVE2_DS ("utsname-ref", libc_struct_utsname_ref, (IDIO utsname, IDIO member), "utsname member", "\
+IDIO_DEFINE_PRIMITIVE2_DS ("struct-utsname-ref", libc_struct_utsname_ref, (IDIO utsname, IDIO member), "utsname member", "\
 in C, utsname->member			\n\
 					\n\
 :param utsname: C struct utsname	\n\
@@ -45,17 +46,23 @@ in C, utsname->member			\n\
     IDIO_ASSERT (utsname);
     IDIO_ASSERT (member);
 
-   /*
-    * Test Case: libc-errors/utsname-ref-bad-pointer-type.idio
-    *
-    * utsname-ref #t #t
-    */
+    /*
+     * Test Case: libc-errors/utsname-ref-bad-pointer-type.idio
+     *
+     * utsname-ref #t #t
+     */
     IDIO_USER_C_TYPE_ASSERT (pointer, utsname);
-   /*
-    * Test Case: libc-errors/utsname-ref-bad-member-type.idio
-    *
-    * utsname-ref v #t
-    */
+    if (idio_CSI_libc_struct_utsname != IDIO_C_TYPE_POINTER_PTYPE (utsname)) {
+	idio_error_param_value ("utsname", "should be a struct utsname", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    /*
+     * Test Case: libc-errors/utsname-ref-bad-member-type.idio
+     *
+     * utsname-ref v #t
+     */
     IDIO_USER_TYPE_ASSERT (symbol, member);
 
     struct utsname *utsnamep = IDIO_C_TYPE_POINTER_P (utsname);
@@ -145,12 +152,13 @@ in C, utsname->member			\n\
 	};
 */
 
+IDIO_C_STRUCT_IDENT_DECL(libc_struct_tms);
 IDIO_SYMBOL_DECL (tms_utime);
 IDIO_SYMBOL_DECL (tms_stime);
 IDIO_SYMBOL_DECL (tms_cutime);
 IDIO_SYMBOL_DECL (tms_cstime);
 
-IDIO_DEFINE_PRIMITIVE2_DS ("tms-ref", libc_struct_tms_ref, (IDIO tms, IDIO member), "tms member", "\
+IDIO_DEFINE_PRIMITIVE2_DS ("struct-tms-ref", libc_struct_tms_ref, (IDIO tms, IDIO member), "tms member", "\
 in C, tms->member			\n\
 					\n\
 :param tms: C struct tms	\n\
@@ -164,17 +172,23 @@ in C, tms->member			\n\
     IDIO_ASSERT (tms);
     IDIO_ASSERT (member);
 
-   /*
-    * Test Case: libc-errors/tms-ref-bad-pointer-type.idio
-    *
-    * tms-ref #t #t
-    */
+    /*
+     * Test Case: libc-errors/tms-ref-bad-pointer-type.idio
+     *
+     * tms-ref #t #t
+     */
     IDIO_USER_C_TYPE_ASSERT (pointer, tms);
-   /*
-    * Test Case: libc-errors/tms-ref-bad-member-type.idio
-    *
-    * tms-ref v #t
-    */
+    if (idio_CSI_libc_struct_tms != IDIO_C_TYPE_POINTER_PTYPE (tms)) {
+	idio_error_param_value ("tms", "should be a struct tms", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    /*
+     * Test Case: libc-errors/tms-ref-bad-member-type.idio
+     *
+     * tms-ref v #t
+     */
     IDIO_USER_TYPE_ASSERT (symbol, member);
 
     struct tms *tmsp = IDIO_C_TYPE_POINTER_P (tms);
@@ -211,6 +225,7 @@ in C, tms->member			\n\
 	};
 */
 
+IDIO_C_STRUCT_IDENT_DECL(libc_struct_termios);
 IDIO_SYMBOL_DECL (c_iflag);
 IDIO_SYMBOL_DECL (c_oflag);
 IDIO_SYMBOL_DECL (c_cflag);
@@ -220,7 +235,7 @@ IDIO_SYMBOL_DECL (c_cc);
 IDIO_SYMBOL_DECL (c_ispeed);
 IDIO_SYMBOL_DECL (c_ospeed);
 
-IDIO_DEFINE_PRIMITIVE2_DS ("termios-ref", libc_struct_termios_ref, (IDIO termios, IDIO member), "termios member", "\
+IDIO_DEFINE_PRIMITIVE2_DS ("struct-termios-ref", libc_struct_termios_ref, (IDIO termios, IDIO member), "termios member", "\
 in C, termios->member			\n\
 					\n\
 :param termios: C struct termios	\n\
@@ -234,17 +249,23 @@ in C, termios->member			\n\
     IDIO_ASSERT (termios);
     IDIO_ASSERT (member);
 
-   /*
-    * Test Case: libc-errors/termios-ref-bad-pointer-type.idio
-    *
-    * termios-ref #t #t
-    */
+    /*
+     * Test Case: libc-errors/termios-ref-bad-pointer-type.idio
+     *
+     * termios-ref #t #t
+     */
     IDIO_USER_C_TYPE_ASSERT (pointer, termios);
-   /*
-    * Test Case: libc-errors/termios-ref-bad-member-type.idio
-    *
-    * termios-ref v #t
-    */
+    if (idio_CSI_libc_struct_termios != IDIO_C_TYPE_POINTER_PTYPE (termios)) {
+	idio_error_param_value ("termios", "should be a struct termios", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    /*
+     * Test Case: libc-errors/termios-ref-bad-member-type.idio
+     *
+     * termios-ref v #t
+     */
     IDIO_USER_TYPE_ASSERT (symbol, member);
 
     struct termios *termiosp = IDIO_C_TYPE_POINTER_P (termios);
@@ -278,7 +299,7 @@ in C, termios->member			\n\
     return idio_S_notreached;
 }
 
-IDIO_DEFINE_PRIMITIVE3_DS ("termios-set!", libc_struct_termios_set, (IDIO termios, IDIO member, IDIO val), "termios member val", "\
+IDIO_DEFINE_PRIMITIVE3_DS ("struct-termios-set!", libc_struct_termios_set, (IDIO termios, IDIO member, IDIO val), "termios member val", "\
 in C, termios->member = val		\n\
 					\n\
 :param termios: C struct termios	\n\
@@ -295,17 +316,23 @@ in C, termios->member = val		\n\
     IDIO_ASSERT (member);
     IDIO_ASSERT (val);
 
-   /*
-    * Test Case: libc-errors/termios-set-bad-pointer-type.idio
-    *
-    * termios-set! #t #t #t
-    */
+    /*
+     * Test Case: libc-errors/termios-set-bad-pointer-type.idio
+     *
+     * termios-set! #t #t #t
+     */
     IDIO_USER_C_TYPE_ASSERT (pointer, termios);
-   /*
-    * Test Case: libc-errors/termios-set-bad-member-type.idio
-    *
-    * termios-set! v #t #t
-    */
+    if (idio_CSI_libc_struct_termios != IDIO_C_TYPE_POINTER_PTYPE (termios)) {
+	idio_error_param_value ("termios", "should be a struct termios", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    /*
+     * Test Case: libc-errors/termios-set-bad-member-type.idio
+     *
+     * termios-set! v #t #t
+     */
     IDIO_USER_TYPE_ASSERT (symbol, member);
 
     struct termios *termiosp = IDIO_C_TYPE_POINTER_P (termios);
@@ -401,6 +428,7 @@ in C, termios->member = val		\n\
 	};
 */
 
+IDIO_C_STRUCT_IDENT_DECL(libc_struct_stat);
 IDIO_SYMBOL_DECL (st_dev);
 IDIO_SYMBOL_DECL (st_ino);
 IDIO_SYMBOL_DECL (st_nlink);
@@ -415,7 +443,12 @@ IDIO_SYMBOL_DECL (st_atim);
 IDIO_SYMBOL_DECL (st_mtim);
 IDIO_SYMBOL_DECL (st_ctim);
 
-IDIO_DEFINE_PRIMITIVE2_DS ("stat-ref", libc_struct_stat_ref, (IDIO stat, IDIO member), "stat member", "\
+/* specials */
+IDIO_SYMBOL_DECL (st_atime);
+IDIO_SYMBOL_DECL (st_mtime);
+IDIO_SYMBOL_DECL (st_ctime);
+
+IDIO_DEFINE_PRIMITIVE2_DS ("struct-stat-ref", libc_struct_stat_ref, (IDIO stat, IDIO member), "stat member", "\
 in C, stat->member			\n\
 					\n\
 :param stat: C struct stat	\n\
@@ -429,17 +462,23 @@ in C, stat->member			\n\
     IDIO_ASSERT (stat);
     IDIO_ASSERT (member);
 
-   /*
-    * Test Case: libc-errors/stat-ref-bad-pointer-type.idio
-    *
-    * stat-ref #t #t
-    */
+    /*
+     * Test Case: libc-errors/stat-ref-bad-pointer-type.idio
+     *
+     * stat-ref #t #t
+     */
     IDIO_USER_C_TYPE_ASSERT (pointer, stat);
-   /*
-    * Test Case: libc-errors/stat-ref-bad-member-type.idio
-    *
-    * stat-ref v #t
-    */
+    if (idio_CSI_libc_struct_stat != IDIO_C_TYPE_POINTER_PTYPE (stat)) {
+	idio_error_param_value ("stat", "should be a struct stat", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    /*
+     * Test Case: libc-errors/stat-ref-bad-member-type.idio
+     *
+     * stat-ref v #t
+     */
     IDIO_USER_TYPE_ASSERT (symbol, member);
 
     struct stat *statp = IDIO_C_TYPE_POINTER_P (stat);
@@ -471,6 +510,12 @@ in C, stat->member			\n\
         memcpy ((void *) rp, (void *) &statp->st_atim, sizeof (struct timespec));
 #endif
         return idio_C_pointer_free_me (rp);
+    } else if (idio_S_st_atime == member) {
+#if defined (__APPLE__) && defined (__MACH__)
+        return idio_libc_time_t(statp->st_atimespec.tv_sec);
+#else
+        return idio_libc_time_t(statp->st_atim.tv_sec);
+#endif
     } else if (idio_S_st_mtim == member) {
         struct timespec *rp = (struct timespec *) idio_alloc (sizeof (struct timespec));
 #if defined (__APPLE__) && defined (__MACH__)
@@ -479,6 +524,12 @@ in C, stat->member			\n\
         memcpy ((void *) rp, (void *) &statp->st_mtim, sizeof (struct timespec));
 #endif
         return idio_C_pointer_free_me (rp);
+    } else if (idio_S_st_mtime == member) {
+#if defined (__APPLE__) && defined (__MACH__)
+        return idio_libc_time_t (statp->st_mtimespec.tv_sec);
+#else
+        return idio_libc_time_t (statp->st_mtim.tv_sec);
+#endif
     } else if (idio_S_st_ctim == member) {
         struct timespec *rp = (struct timespec *) idio_alloc (sizeof (struct timespec));
 #if defined (__APPLE__) && defined (__MACH__)
@@ -487,6 +538,12 @@ in C, stat->member			\n\
         memcpy ((void *) rp, (void *) &statp->st_ctim, sizeof (struct timespec));
 #endif
         return idio_C_pointer_free_me (rp);
+    } else if (idio_S_st_ctime == member) {
+#if defined (__APPLE__) && defined (__MACH__)
+        return idio_libc_time_t (statp->st_ctimespec.tv_sec);
+#else
+        return idio_libc_time_t (statp->st_ctim.tv_sec);
+#endif
     } else {
         idio_error_param_value ("member", "struct stat member", IDIO_C_FUNC_LOCATION());
 
@@ -506,10 +563,11 @@ in C, stat->member			\n\
 	};
 */
 
+IDIO_C_STRUCT_IDENT_DECL(libc_struct_timespec);
 IDIO_SYMBOL_DECL (tv_sec);
 IDIO_SYMBOL_DECL (tv_nsec);
 
-IDIO_DEFINE_PRIMITIVE2_DS ("timespec-ref", libc_struct_timespec_ref, (IDIO timespec, IDIO member), "timespec member", "\
+IDIO_DEFINE_PRIMITIVE2_DS ("struct-timespec-ref", libc_struct_timespec_ref, (IDIO timespec, IDIO member), "timespec member", "\
 in C, timespec->member			\n\
 					\n\
 :param timespec: C struct timespec	\n\
@@ -523,17 +581,24 @@ in C, timespec->member			\n\
     IDIO_ASSERT (timespec);
     IDIO_ASSERT (member);
 
-   /*
-    * Test Case: libc-errors/timespec-ref-bad-pointer-type.idio
-    *
-    * timespec-ref #t #t
-    */
+    /*
+     * Test Case: libc-errors/timespec-ref-bad-pointer-type.idio
+     *
+     * timespec-ref #t #t
+     */
     IDIO_USER_C_TYPE_ASSERT (pointer, timespec);
-   /*
-    * Test Case: libc-errors/timespec-ref-bad-member-type.idio
-    *
-    * timespec-ref v #t
-    */
+    if (idio_CSI_libc_struct_timespec != IDIO_C_TYPE_POINTER_PTYPE (timespec)) {
+	idio_error_param_value ("timespec", "should be a struct timespec", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+
+    /*
+     * Test Case: libc-errors/timespec-ref-bad-member-type.idio
+     *
+     * timespec-ref v #t
+     */
     IDIO_USER_TYPE_ASSERT (symbol, member);
 
     struct timespec *timespecp = IDIO_C_TYPE_POINTER_P (timespec);
@@ -550,7 +615,7 @@ in C, timespec->member			\n\
     return idio_S_notreached;
 }
 
-IDIO_DEFINE_PRIMITIVE3_DS ("timespec-set!", libc_struct_timespec_set, (IDIO timespec, IDIO member, IDIO val), "timespec member val", "\
+IDIO_DEFINE_PRIMITIVE3_DS ("struct-timespec-set!", libc_struct_timespec_set, (IDIO timespec, IDIO member, IDIO val), "timespec member val", "\
 in C, timespec->member = val		\n\
 					\n\
 :param timespec: C struct timespec	\n\
@@ -567,17 +632,23 @@ in C, timespec->member = val		\n\
     IDIO_ASSERT (member);
     IDIO_ASSERT (val);
 
-   /*
-    * Test Case: libc-errors/timespec-set-bad-pointer-type.idio
-    *
-    * timespec-set! #t #t #t
-    */
+    /*
+     * Test Case: libc-errors/timespec-set-bad-pointer-type.idio
+     *
+     * timespec-set! #t #t #t
+     */
     IDIO_USER_C_TYPE_ASSERT (pointer, timespec);
-   /*
-    * Test Case: libc-errors/timespec-set-bad-member-type.idio
-    *
-    * timespec-set! v #t #t
-    */
+    if (idio_CSI_libc_struct_timespec != IDIO_C_TYPE_POINTER_PTYPE (timespec)) {
+	idio_error_param_value ("timespec", "should be a struct timespec", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    /*
+     * Test Case: libc-errors/timespec-set-bad-member-type.idio
+     *
+     * timespec-set! v #t #t
+     */
     IDIO_USER_TYPE_ASSERT (symbol, member);
 
     struct timespec *timespecp = IDIO_C_TYPE_POINTER_P (timespec);
@@ -620,10 +691,11 @@ in C, timespec->member = val		\n\
 	};
 */
 
+IDIO_C_STRUCT_IDENT_DECL(libc_struct_rlimit);
 IDIO_SYMBOL_DECL (rlim_cur);
 IDIO_SYMBOL_DECL (rlim_max);
 
-IDIO_DEFINE_PRIMITIVE2_DS ("rlimit-ref", libc_struct_rlimit_ref, (IDIO rlimit, IDIO member), "rlimit member", "\
+IDIO_DEFINE_PRIMITIVE2_DS ("struct-rlimit-ref", libc_struct_rlimit_ref, (IDIO rlimit, IDIO member), "rlimit member", "\
 in C, rlimit->member			\n\
 					\n\
 :param rlimit: C struct rlimit	\n\
@@ -637,17 +709,23 @@ in C, rlimit->member			\n\
     IDIO_ASSERT (rlimit);
     IDIO_ASSERT (member);
 
-   /*
-    * Test Case: libc-errors/rlimit-ref-bad-pointer-type.idio
-    *
-    * rlimit-ref #t #t
-    */
+    /*
+     * Test Case: libc-errors/rlimit-ref-bad-pointer-type.idio
+     *
+     * rlimit-ref #t #t
+     */
     IDIO_USER_C_TYPE_ASSERT (pointer, rlimit);
-   /*
-    * Test Case: libc-errors/rlimit-ref-bad-member-type.idio
-    *
-    * rlimit-ref v #t
-    */
+    if (idio_CSI_libc_struct_rlimit != IDIO_C_TYPE_POINTER_PTYPE (rlimit)) {
+	idio_error_param_value ("rlimit", "should be a struct rlimit", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    /*
+     * Test Case: libc-errors/rlimit-ref-bad-member-type.idio
+     *
+     * rlimit-ref v #t
+     */
     IDIO_USER_TYPE_ASSERT (symbol, member);
 
     struct rlimit *rlimitp = IDIO_C_TYPE_POINTER_P (rlimit);
@@ -664,7 +742,7 @@ in C, rlimit->member			\n\
     return idio_S_notreached;
 }
 
-IDIO_DEFINE_PRIMITIVE3_DS ("rlimit-set!", libc_struct_rlimit_set, (IDIO rlimit, IDIO member, IDIO val), "rlimit member val", "\
+IDIO_DEFINE_PRIMITIVE3_DS ("struct-rlimit-set!", libc_struct_rlimit_set, (IDIO rlimit, IDIO member, IDIO val), "rlimit member val", "\
 in C, rlimit->member = val		\n\
 					\n\
 :param rlimit: C struct rlimit	\n\
@@ -681,17 +759,23 @@ in C, rlimit->member = val		\n\
     IDIO_ASSERT (member);
     IDIO_ASSERT (val);
 
-   /*
-    * Test Case: libc-errors/rlimit-set-bad-pointer-type.idio
-    *
-    * rlimit-set! #t #t #t
-    */
+    /*
+     * Test Case: libc-errors/rlimit-set-bad-pointer-type.idio
+     *
+     * rlimit-set! #t #t #t
+     */
     IDIO_USER_C_TYPE_ASSERT (pointer, rlimit);
-   /*
-    * Test Case: libc-errors/rlimit-set-bad-member-type.idio
-    *
-    * rlimit-set! v #t #t
-    */
+    if (idio_CSI_libc_struct_rlimit != IDIO_C_TYPE_POINTER_PTYPE (rlimit)) {
+	idio_error_param_value ("rlimit", "should be a struct rlimit", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    /*
+     * Test Case: libc-errors/rlimit-set-bad-member-type.idio
+     *
+     * rlimit-set! v #t #t
+     */
     IDIO_USER_TYPE_ASSERT (symbol, member);
 
     struct rlimit *rlimitp = IDIO_C_TYPE_POINTER_P (rlimit);
@@ -734,10 +818,11 @@ in C, rlimit->member = val		\n\
 	};
 */
 
+IDIO_C_STRUCT_IDENT_DECL(libc_struct_timeval);
 /* tv_sec already declared */
 IDIO_SYMBOL_DECL (tv_usec);
 
-IDIO_DEFINE_PRIMITIVE2_DS ("timeval-ref", libc_struct_timeval_ref, (IDIO timeval, IDIO member), "timeval member", "\
+IDIO_DEFINE_PRIMITIVE2_DS ("struct-timeval-ref", libc_struct_timeval_ref, (IDIO timeval, IDIO member), "timeval member", "\
 in C, timeval->member			\n\
 					\n\
 :param timeval: C struct timeval	\n\
@@ -751,17 +836,23 @@ in C, timeval->member			\n\
     IDIO_ASSERT (timeval);
     IDIO_ASSERT (member);
 
-   /*
-    * Test Case: libc-errors/timeval-ref-bad-pointer-type.idio
-    *
-    * timeval-ref #t #t
-    */
+    /*
+     * Test Case: libc-errors/timeval-ref-bad-pointer-type.idio
+     *
+     * timeval-ref #t #t
+     */
     IDIO_USER_C_TYPE_ASSERT (pointer, timeval);
-   /*
-    * Test Case: libc-errors/timeval-ref-bad-member-type.idio
-    *
-    * timeval-ref v #t
-    */
+    if (idio_CSI_libc_struct_timeval != IDIO_C_TYPE_POINTER_PTYPE (timeval)) {
+	idio_error_param_value ("timeval", "should be a struct timeval", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    /*
+     * Test Case: libc-errors/timeval-ref-bad-member-type.idio
+     *
+     * timeval-ref v #t
+     */
     IDIO_USER_TYPE_ASSERT (symbol, member);
 
     struct timeval *timevalp = IDIO_C_TYPE_POINTER_P (timeval);
@@ -778,7 +869,7 @@ in C, timeval->member			\n\
     return idio_S_notreached;
 }
 
-IDIO_DEFINE_PRIMITIVE3_DS ("timeval-set!", libc_struct_timeval_set, (IDIO timeval, IDIO member, IDIO val), "timeval member val", "\
+IDIO_DEFINE_PRIMITIVE3_DS ("struct-timeval-set!", libc_struct_timeval_set, (IDIO timeval, IDIO member, IDIO val), "timeval member val", "\
 in C, timeval->member = val		\n\
 					\n\
 :param timeval: C struct timeval	\n\
@@ -795,17 +886,23 @@ in C, timeval->member = val		\n\
     IDIO_ASSERT (member);
     IDIO_ASSERT (val);
 
-   /*
-    * Test Case: libc-errors/timeval-set-bad-pointer-type.idio
-    *
-    * timeval-set! #t #t #t
-    */
+    /*
+     * Test Case: libc-errors/timeval-set-bad-pointer-type.idio
+     *
+     * timeval-set! #t #t #t
+     */
     IDIO_USER_C_TYPE_ASSERT (pointer, timeval);
-   /*
-    * Test Case: libc-errors/timeval-set-bad-member-type.idio
-    *
-    * timeval-set! v #t #t
-    */
+    if (idio_CSI_libc_struct_timeval != IDIO_C_TYPE_POINTER_PTYPE (timeval)) {
+	idio_error_param_value ("timeval", "should be a struct timeval", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    /*
+     * Test Case: libc-errors/timeval-set-bad-member-type.idio
+     *
+     * timeval-set! v #t #t
+     */
     IDIO_USER_TYPE_ASSERT (symbol, member);
 
     struct timeval *timevalp = IDIO_C_TYPE_POINTER_P (timeval);
@@ -862,10 +959,11 @@ in C, timeval->member = val		\n\
 	};
 */
 
+IDIO_C_STRUCT_IDENT_DECL(libc_struct_rusage);
 IDIO_SYMBOL_DECL (ru_utime);
 IDIO_SYMBOL_DECL (ru_stime);
 
-IDIO_DEFINE_PRIMITIVE2_DS ("rusage-ref", libc_struct_rusage_ref, (IDIO rusage, IDIO member), "rusage member", "\
+IDIO_DEFINE_PRIMITIVE2_DS ("struct-rusage-ref", libc_struct_rusage_ref, (IDIO rusage, IDIO member), "rusage member", "\
 in C, rusage->member			\n\
 					\n\
 :param rusage: C struct rusage	\n\
@@ -879,28 +977,39 @@ in C, rusage->member			\n\
     IDIO_ASSERT (rusage);
     IDIO_ASSERT (member);
 
-   /*
-    * Test Case: libc-errors/rusage-ref-bad-pointer-type.idio
-    *
-    * rusage-ref #t #t
-    */
+    /*
+     * Test Case: libc-errors/struct-rusage-ref-bad-pointer-type.idio
+     *
+     * struct-rusage-ref #t #t
+     */
     IDIO_USER_C_TYPE_ASSERT (pointer, rusage);
-   /*
-    * Test Case: libc-errors/rusage-ref-bad-member-type.idio
-    *
-    * rusage-ref v #t
-    */
+    if (idio_CSI_libc_struct_rusage != IDIO_C_TYPE_POINTER_PTYPE (rusage)) {
+	/*
+	 * Test Case: libc-errors/struct-rusage-ref-invalid-pointer-type.idio
+	 *
+	 * rusage-ref libc/NULL #t
+	 */
+	idio_error_param_value ("rusage", "should be a struct rusage", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    /*
+     * Test Case: libc-errors/struct-rusage-ref-bad-member-type.idio
+     *
+     * rusage-ref (libc/getrusage libc/RUSAGE_SELF) #t
+     */
     IDIO_USER_TYPE_ASSERT (symbol, member);
 
     struct rusage *rusagep = IDIO_C_TYPE_POINTER_P (rusage);
     if (idio_S_ru_utime == member) {
         struct timeval *rp = (struct timeval *) idio_alloc (sizeof (struct timeval));
         memcpy ((void *) rp, (void *) &rusagep->ru_utime, sizeof (struct timeval));
-        return idio_C_pointer_free_me (rp);
+        return idio_C_pointer_type (idio_CSI_libc_struct_timeval, rp);
     } else if (idio_S_ru_stime == member) {
         struct timeval *rp = (struct timeval *) idio_alloc (sizeof (struct timeval));
         memcpy ((void *) rp, (void *) &rusagep->ru_stime, sizeof (struct timeval));
-        return idio_C_pointer_free_me (rp);
+        return idio_C_pointer_type (idio_CSI_libc_struct_timeval, rp);
     } else {
         idio_error_param_value ("member", "struct rusage member", IDIO_C_FUNC_LOCATION());
 
@@ -1109,39 +1218,38 @@ instead.							\n\
     return idio_C_pointer_free_me (utsnamep);
 }
 
-IDIO_DEFINE_PRIMITIVE1_DS ("times_", libc_times_, (IDIO arg1), "arg1", "\
-in C: times (arg1)			\n\
-a wrapper to libc times(2)		\n\
-					\n\
-:param arg1: 				\n\
-:type arg1: C/pointer			\n\
+IDIO_DEFINE_PRIMITIVE0_DS ("times", libc_times, (void), "", "\
+in C: times ()							\n\
+a wrapper to libc times(3)					\n\
+								\n\
+:return: (clock_t, struct-tms) or raises ^system-error		\n\
+:rtype: list							\n\
+								\n\
+times(3) is complicated because we need to return the struct tms\n\
+that the user would have passed in as a pointer and the clock_t,\n\
+elapsed real time that times(3) returns.			\n\
+								\n\
+All fields are in clock ticks for which sysconf(_SC_CLK_TCK) is	\n\
+available for reference as the exported symbol CLK_TCK.		\n\
 ")
 {
-    IDIO_ASSERT (arg1);
+    struct tms* tmsp = idio_alloc (sizeof (struct tms));
 
-   /*
-    * Test Case: libc-errors/times-bad-arg1-type.idio
-    *
-    * times #t #t
-    */
-    IDIO_USER_C_TYPE_ASSERT (pointer, arg1);
-    struct tms* carg1 = IDIO_C_TYPE_POINTER_P (arg1);
-
-    clock_t times_r = times (carg1);
+    clock_t times_r = times (tmsp);
 
     /* check for errors */
     if (-1 == times_r) {
+	/*
+	 * Test Case: ??
+	 *
+	 * EFAULT tmsp points outside the process's address space.
+	 */
         idio_error_system_errno ("times", idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
         return idio_S_notreached;
     }
 
-
-    /*
-     * WARNING: this is probably an incorrect return
-     */
-    return idio_libc_clock_t (times_r);
-
+    return IDIO_LIST2 (idio_libc_clock_t (times_r), idio_C_pointer_type (idio_CSI_libc_struct_tms, tmsp));
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("tcsetpgrp", libc_tcsetpgrp, (IDIO fd, IDIO pgrp), "fd pgrp", "\
@@ -1410,50 +1518,65 @@ a wrapper to libc strerror(3)					\n\
     return idio_string_C (strerror_r);
 }
 
-IDIO_DEFINE_PRIMITIVE2_DS ("stat_", libc_stat_, (IDIO arg1, IDIO arg2), "arg1 arg2", "\
-in C: stat (arg1, arg2)		\n\
-a wrapper to libc stat(2)		\n\
-					\n\
-:param arg1: 				\n\
-:type arg1: C/pointer			\n\
-:param arg2: 				\n\
-:type arg2: C/pointer			\n\
+IDIO_DEFINE_PRIMITIVE1_DS ("stat", libc_stat, (IDIO pathname), "pathname", "\
+in C: stat (pathname)				\n\
+a wrapper to libc stat(2)			\n\
+						\n\
+:param pathname:				\n\
+:type pathname: C/pointer			\n\
+:return: struct-stat or raises ^system-error	\n\
+:rtype: struct instance				\n\
 ")
 {
-    IDIO_ASSERT (arg1);
-    IDIO_ASSERT (arg2);
+    IDIO_ASSERT (pathname);
 
-   /*
-    * Test Case: libc-errors/stat-bad-arg1-type.idio
-    *
-    * stat #t #t
-    */
-    IDIO_USER_C_TYPE_ASSERT (pointer, arg1);
-    char* carg1 = IDIO_C_TYPE_POINTER_P (arg1);
+    /*
+     * Test Case: libc-wrap-errors/stat-bad-type.idio
+     *
+     * stat #t
+     */
+    IDIO_USER_TYPE_ASSERT (string, pathname);
 
-   /*
-    * Test Case: libc-errors/stat-bad-arg2-type.idio
-    *
-    * stat #t #t
-    */
-    IDIO_USER_C_TYPE_ASSERT (pointer, arg2);
-    struct stat* carg2 = IDIO_C_TYPE_POINTER_P (arg2);
+    size_t size = 0;
+    char *cpathname = idio_string_as_C (pathname, &size);
+    size_t C_size = strlen (cpathname);
+    if (C_size != size) {
+	/*
+	 * Test Case: libc-wrap-errors/access-bad-format.idio
+	 *
+	 * stat (join-string (make-string 1 #U+0) '("hello" "world"))
+	 */
+	IDIO_GC_FREE (cpathname);
 
-    int stat_r = stat (carg1, carg2);
+	idio_libc_format_error ("stat: pathname contains an ASCII NUL", pathname, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    struct stat* statp = idio_alloc (sizeof (struct stat));
+
+    int stat_r = stat (cpathname, statp);
 
     /* check for errors */
     if (-1 == stat_r) {
-        idio_error_system_errno ("stat", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+	/*
+	 * Test Case: libc-wrap-errors/stat-empty-pathname.idio
+	 *
+	 * stat ""
+	 */
+	IDIO_GC_FREE (cpathname);
+
+        idio_error_system_errno ("stat", pathname, IDIO_C_FUNC_LOCATION ());
 
         return idio_S_notreached;
     }
 
+    IDIO_GC_FREE (cpathname);
 
     /*
      * WARNING: this is probably an incorrect return
      */
-    return idio_C_int (stat_r);
-
+    return idio_C_pointer_type (idio_CSI_libc_struct_stat, statp);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("sleep", libc_sleep, (IDIO seconds), "seconds", "\
@@ -2393,7 +2516,7 @@ The parameter `who` refers to RUSAGE_SELF or RUSAGE_CHILDREN	\n\
 	return idio_S_notreached;
     }
 
-    return idio_C_pointer_free_me (rusagep);
+    return idio_C_pointer_type (idio_CSI_libc_struct_rusage, rusagep);
 }
 
 IDIO_DEFINE_PRIMITIVE0_DS ("getpid", libc_getpid, (void), "", "\
@@ -2986,14 +3109,14 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_waitpid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_unlink);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_uname);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_times_);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_times);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_tcsetpgrp);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_tcsetattr);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_tcgetpgrp);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_tcgetattr);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_strsignal);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_strerror);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_stat_);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_stat);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_sleep);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_signal);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_setpgid);
@@ -3065,6 +3188,8 @@ void idio_init_libc_api ()
     idio_module_export_symbol_value (idio_symbols_C_intern ("RUSAGE_THREAD"), idio_C_int (RUSAGE_THREAD), idio_libc_module);
 #endif  /* __rusage_who */
 
+    IDIO fgvi;
+
     /* /usr/include/sys/utsname.h */
     IDIO_SYMBOL_DEF ("sysname", sysname);
     IDIO_SYMBOL_DEF ("nodename", nodename);
@@ -3072,7 +3197,8 @@ void idio_init_libc_api ()
     IDIO_SYMBOL_DEF ("version", version);
     IDIO_SYMBOL_DEF ("machine", machine);
 
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_utsname_ref);
+    fgvi = IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_utsname_ref);
+    IDIO_C_STRUCT_IDENT_DEF("struct utsname", libc_struct_utsname, fgvi);
 
     /* /usr/include/sys/times.h */
     IDIO_SYMBOL_DEF ("tms_utime", tms_utime);
@@ -3080,7 +3206,8 @@ void idio_init_libc_api ()
     IDIO_SYMBOL_DEF ("tms_cutime", tms_cutime);
     IDIO_SYMBOL_DEF ("tms_cstime", tms_cstime);
 
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_tms_ref);
+    fgvi = IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_tms_ref);
+    IDIO_C_STRUCT_IDENT_DEF("struct tms", libc_struct_tms, fgvi);
 
     /* /usr/include/bits/termios-struct.h */
     IDIO_SYMBOL_DEF ("c_iflag", c_iflag);
@@ -3092,7 +3219,8 @@ void idio_init_libc_api ()
     IDIO_SYMBOL_DEF ("c_ispeed", c_ispeed);
     IDIO_SYMBOL_DEF ("c_ospeed", c_ospeed);
 
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_termios_ref);
+    fgvi = IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_termios_ref);
+    IDIO_C_STRUCT_IDENT_DEF("struct termios", libc_struct_termios, fgvi);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_termios_set);
 
     /* /usr/include/bits/stat.h */
@@ -3110,33 +3238,43 @@ void idio_init_libc_api ()
     IDIO_SYMBOL_DEF ("st_mtim", st_mtim);
     IDIO_SYMBOL_DEF ("st_ctim", st_ctim);
 
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_stat_ref);
+    /* specials */
+    IDIO_SYMBOL_DEF ("st_atime", st_atime);
+    IDIO_SYMBOL_DEF ("st_mtime", st_mtime);
+    IDIO_SYMBOL_DEF ("st_ctime", st_ctime);
+
+    fgvi = IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_stat_ref);
+    IDIO_C_STRUCT_IDENT_DEF("struct stat", libc_struct_stat, fgvi);
 
     /* /usr/include/bits/types/struct_timespec.h */
     IDIO_SYMBOL_DEF ("tv_sec", tv_sec);
     IDIO_SYMBOL_DEF ("tv_nsec", tv_nsec);
 
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_timespec_ref);
+    fgvi = IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_timespec_ref);
+    IDIO_C_STRUCT_IDENT_DEF("struct timespec", libc_struct_timespec, fgvi);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_timespec_set);
 
     /* /usr/include/bits/resource.h */
     IDIO_SYMBOL_DEF ("rlim_cur", rlim_cur);
     IDIO_SYMBOL_DEF ("rlim_max", rlim_max);
 
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_rlimit_ref);
+    fgvi = IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_rlimit_ref);
+    IDIO_C_STRUCT_IDENT_DEF("struct rlimit", libc_struct_rlimit, fgvi);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_rlimit_set);
 
     /* /usr/include/bits/types/struct_timeval.h */
     /* tv_sec already declared */
     IDIO_SYMBOL_DEF ("tv_usec", tv_usec);
 
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_timeval_ref);
+    fgvi = IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_timeval_ref);
+    IDIO_C_STRUCT_IDENT_DEF("struct timeval", libc_struct_timeval, fgvi);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_timeval_set);
 
     /* /usr/include/bits/types/struct_rusage.h */
     IDIO_SYMBOL_DEF ("ru_utime", ru_utime);
     IDIO_SYMBOL_DEF ("ru_stime", ru_stime);
 
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_rusage_ref);
+    fgvi = IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_rusage_ref);
+    IDIO_C_STRUCT_IDENT_DEF("struct rusage", libc_struct_rusage, fgvi);
 
 }

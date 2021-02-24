@@ -588,8 +588,8 @@ IDIO idio_C_pointer (void * v)
 
     IDIO_GC_ALLOC (co->u.C_type.u.C_pointer, sizeof (idio_C_pointer_t));
 
+    IDIO_C_TYPE_POINTER_PTYPE (co) = idio_S_nil;
     IDIO_C_TYPE_POINTER_P (co) = v;
-    IDIO_C_TYPE_POINTER_PRINTER (co) = NULL;
     IDIO_C_TYPE_POINTER_FREEP (co) = 0;
 
     return co;
@@ -605,6 +605,23 @@ IDIO idio_C_pointer_free_me (void * v)
     IDIO co = idio_C_pointer (v);
 
     IDIO_C_TYPE_POINTER_FREEP (co) = 1;
+
+    return co;
+}
+
+IDIO idio_C_pointer_type (IDIO t, void * v)
+{
+    IDIO_ASSERT (t);
+
+    IDIO_TYPE_ASSERT (list, t);
+    /*
+     * NB We must IDIO_C_ASSERT (v) as we will be trying to free v
+     */
+    IDIO_C_ASSERT (v);
+
+    IDIO co = idio_C_pointer_free_me (v);
+
+    IDIO_C_TYPE_POINTER_PTYPE (co) = t;
 
     return co;
 }
@@ -670,10 +687,12 @@ int idio_isa_C_type (IDIO o)
     }
 }
 
+/*
+ * XXX a char is not a number -- try using a signed char!
+ */
 int idio_isa_C_number (IDIO o)
 {
     switch (idio_type (o)) {
-    case IDIO_TYPE_C_CHAR:
     case IDIO_TYPE_C_SCHAR:
     case IDIO_TYPE_C_UCHAR:
     case IDIO_TYPE_C_SHORT:
@@ -696,7 +715,6 @@ int idio_isa_C_number (IDIO o)
 int idio_isa_C_integral (IDIO o)
 {
     switch (idio_type (o)) {
-    case IDIO_TYPE_C_CHAR:
     case IDIO_TYPE_C_SCHAR:
     case IDIO_TYPE_C_UCHAR:
     case IDIO_TYPE_C_SHORT:
@@ -874,6 +892,64 @@ int idio_C_longdouble_equal_ULP (long double o1, long double o2, unsigned int ma
 	return 0;
     }
 }
+
+#define IDIO_DEFINE_C_ARITHMETIC_PRIMITIVE(cname,op)			\
+    IDIO idio_C_primitive_binary_ ## cname (IDIO n1, IDIO n2)		\
+    {									\
+	IDIO_ASSERT (n1);						\
+	IDIO_ASSERT (n2);						\
+									\
+	if (! idio_isa_C_number (n1)) {					\
+	    idio_error_param_value ("C/" #cname " arg", "should be a C numeric", IDIO_C_FUNC_LOCATION ()); \
+	    return idio_S_notreached;					\
+	}								\
+	if (! idio_isa_C_number (n2)) {					\
+	    idio_error_param_value ("C/" #cname " arg", "should be a C numeric", IDIO_C_FUNC_LOCATION ()); \
+	    return idio_S_notreached;					\
+	}								\
+	int t1 = idio_type (n1);					\
+	int t2 = idio_type (n2);					\
+	if (t1 != t2) {							\
+	    idio_error_param_value ("C/" #cname " arg", "should be the same C numeric", IDIO_C_FUNC_LOCATION ()); \
+	    return idio_S_notreached;					\
+	}								\
+	switch (t1) {							\
+	case IDIO_TYPE_C_SCHAR:						\
+	    return idio_C_schar (IDIO_C_TYPE_schar (n1) op IDIO_C_TYPE_schar (n2)); \
+	case IDIO_TYPE_C_UCHAR:						\
+	    return idio_C_uchar (IDIO_C_TYPE_uchar (n1) op IDIO_C_TYPE_uchar (n2)); \
+	case IDIO_TYPE_C_SHORT:						\
+	    return idio_C_short (IDIO_C_TYPE_short (n1) op IDIO_C_TYPE_short (n2)); \
+	case IDIO_TYPE_C_USHORT:					\
+	    return idio_C_ushort (IDIO_C_TYPE_ushort (n1) op IDIO_C_TYPE_ushort (n2)); \
+	case IDIO_TYPE_C_INT:						\
+	    return idio_C_int (IDIO_C_TYPE_int (n1) op IDIO_C_TYPE_int (n2)); \
+	case IDIO_TYPE_C_UINT:						\
+	    return idio_C_uint (IDIO_C_TYPE_uint (n1) op IDIO_C_TYPE_uint (n2)); \
+	case IDIO_TYPE_C_LONG:						\
+	    return idio_C_long (IDIO_C_TYPE_long (n1) op IDIO_C_TYPE_long (n2)); \
+	case IDIO_TYPE_C_ULONG:						\
+	    return idio_C_ulong (IDIO_C_TYPE_ulong (n1) op IDIO_C_TYPE_ulong (n2)); \
+	case IDIO_TYPE_C_LONGLONG:					\
+	    return idio_C_longlong (IDIO_C_TYPE_longlong (n1) op IDIO_C_TYPE_longlong (n2)); \
+	case IDIO_TYPE_C_ULONGLONG:					\
+	    return idio_C_ulonglong (IDIO_C_TYPE_ulonglong (n1) op IDIO_C_TYPE_ulonglong (n2)); \
+	case IDIO_TYPE_C_FLOAT:						\
+	    return idio_C_float (IDIO_C_TYPE_float (n1) op IDIO_C_TYPE_float (n2)); \
+	case IDIO_TYPE_C_DOUBLE:					\
+	    return idio_C_double (IDIO_C_TYPE_double (n1) op IDIO_C_TYPE_double (n2)); \
+	case IDIO_TYPE_C_LONGDOUBLE:					\
+	    return idio_C_longdouble (IDIO_C_TYPE_longdouble (n1) op IDIO_C_TYPE_longdouble (n2)); \
+	default:							\
+	    return 0;							\
+	}								\
+	return idio_S_notreached;					\
+    }
+
+IDIO_DEFINE_C_ARITHMETIC_PRIMITIVE(add,+)
+IDIO_DEFINE_C_ARITHMETIC_PRIMITIVE(subtract,-)
+IDIO_DEFINE_C_ARITHMETIC_PRIMITIVE(multiply,*)
+IDIO_DEFINE_C_ARITHMETIC_PRIMITIVE(divide,/)
 
 /*
  * Code coverage:

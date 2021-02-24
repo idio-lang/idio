@@ -32,7 +32,6 @@ static IDIO idio_libc_struct_sigaction = NULL;
 static IDIO idio_libc_struct_utsname = NULL;
 static IDIO idio_libc_struct_rlimit = NULL;
 static IDIO idio_libc_struct_tms = NULL;
-IDIO idio_libc_struct_stat = NULL;
 
 static long idio_SC_CLK_TCK = 0;
 
@@ -145,70 +144,6 @@ raise a ^system-error						\n\
     return idio_S_notreached;
 }
 
-IDIO_DEFINE_PRIMITIVE1_DS ("struct-rusage-ru_utime", libc_struct_rusage_ru_utime, (IDIO rusage), "rusage", "\
-in C, rusage.ru_utime						\n\
-								\n\
-:param rusage: C struct rusage					\n\
-:type rusage: C/pointer						\n\
-:return: C struct timeval					\n\
-:rtype: C/pointer						\n\
-								\n\
-See `getrusage` for a C struct rusage object.			\n\
-								\n\
-This function returns a copy of the ru_utime field.		\n\
-")
-{
-    IDIO_ASSERT (rusage);
-
-    /*
-     * Test Case: libc-wrap-errors/struct-rusage-ru_utime-bad-type.idio
-     *
-     * struct-rusage-ru_utime #t
-     */
-    IDIO_USER_C_TYPE_ASSERT (pointer, rusage);
-
-    struct rusage *rup = IDIO_C_TYPE_POINTER_P (rusage);
-
-    struct timeval *tvp = (struct timeval *) idio_alloc (sizeof (struct timeval));
-
-    tvp->tv_sec = rup->ru_utime.tv_sec;
-    tvp->tv_usec = rup->ru_utime.tv_usec;
-
-    return idio_C_pointer_free_me (tvp);
-}
-
-IDIO_DEFINE_PRIMITIVE1_DS ("struct-rusage-ru_stime", libc_struct_rusage_ru_stime, (IDIO rusage), "rusage", "\
-in C, rusage.ru_stime						\n\
-								\n\
-:param rusage: C struct rusage					\n\
-:type rusage: C/pointer						\n\
-:return: C struct timeval					\n\
-:rtype: C/pointer						\n\
-								\n\
-See `getrusage` for a C struct rusage object.			\n\
-								\n\
-This function returns a copy of the ru_stime field.		\n\
-")
-{
-    IDIO_ASSERT (rusage);
-
-    /*
-     * Test Case: libc-wrap-errors/struct-rusage-ru_stime-bad-type.idio
-     *
-     * struct-rusage-ru_stime #t
-     */
-    IDIO_USER_C_TYPE_ASSERT (pointer, rusage);
-
-    struct rusage *rup = IDIO_C_TYPE_POINTER_P (rusage);
-
-    struct timeval *tvp = (struct timeval *) idio_alloc (sizeof (struct timeval));
-
-    tvp->tv_sec = rup->ru_stime.tv_sec;
-    tvp->tv_usec = rup->ru_stime.tv_usec;
-
-    return idio_C_pointer_free_me (tvp);
-}
-
 char *idio_libc_struct_timeval_as_string (IDIO tv)
 {
     IDIO_ASSERT (tv);
@@ -251,31 +186,36 @@ char *idio_libc_struct_timeval_as_string (IDIO tv)
     return buf;
 }
 
-IDIO_DEFINE_PRIMITIVE1_DS ("struct-timeval-as-string", libc_struct_timeval_as_string, (IDIO tv), "tv", "\
-Return a C struct timeval as a string				\n\
-								\n\
-:param tv: C struct timeval					\n\
-:type tv: C/pointer						\n\
-:return: string							\n\
-:rtype: string							\n\
+IDIO_DEFINE_PRIMITIVE1_DS ("struct-timeval-as-string", libc_struct_timeval_as_string, (IDIO timeval), "timeval", "\
+Return a C struct timeval as a string	\n\
+					\n\
+:param timeval: C struct timeval	\n\
+:type timeval: C/pointer		\n\
+:return: string				\n\
+:rtype: string				\n\
 ")
 {
-    IDIO_ASSERT (tv);
+    IDIO_ASSERT (timeval);
 
     /*
      * Test Case: libc-wrap-errors/struct-timeval-as-string-bad-type.idio
      *
      * struct-timeval-as-string #t
      */
-    IDIO_USER_C_TYPE_ASSERT (pointer, tv);
+    IDIO_USER_C_TYPE_ASSERT (pointer, timeval);
+    if (idio_CSI_libc_struct_timeval != IDIO_C_TYPE_POINTER_PTYPE (timeval)) {
+	idio_error_param_value ("timeval", "should be a struct timeval", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
 
     IDIO osh = idio_open_output_string_handle_C ();
 
-    char *tvs = idio_libc_struct_timeval_as_string (tv);
+    char *timevals = idio_libc_struct_timeval_as_string (timeval);
 
-    idio_display_C (tvs, osh);
+    idio_display_C (timevals, osh);
 
-    IDIO_GC_FREE (tvs);
+    IDIO_GC_FREE (timevals);
 
     return idio_get_output_string (osh);
 }
@@ -284,8 +224,7 @@ IDIO idio_libc_struct_timeval_pointer (struct timeval *tvp)
 {
     IDIO_C_ASSERT (tvp);
 
-    IDIO r = idio_C_pointer_free_me (tvp);
-    IDIO_C_TYPE_POINTER_PRINTER (r)  = idio_libc_struct_timeval_as_string;
+    IDIO r = idio_C_pointer_type (idio_CSI_libc_struct_timeval, tvp);
 
     return r;
 }
@@ -676,156 +615,6 @@ given signal.							\n\
     }
 
     return idio_C_pointer (r);
-}
-
-IDIO idio_libc_stat (IDIO pathname)
-{
-    IDIO_ASSERT (pathname);
-    IDIO_TYPE_ASSERT (string, pathname);
-
-    size_t size = 0;
-    char *pathname_C = idio_string_as_C (pathname, &size);
-    size_t C_size = strlen (pathname_C);
-    if (C_size != size) {
-	/*
-	 * Test Case: libc-wrap-errors/access-bad-format.idio
-	 *
-	 * stat (join-string (make-string 1 #U+0) '("hello" "world"))
-	 */
-	IDIO_GC_FREE (pathname_C);
-
-	idio_libc_format_error ("stat: pathname contains an ASCII NUL", pathname, IDIO_C_FUNC_LOCATION ());
-
-	return idio_S_notreached;
-    }
-
-    struct stat sb;
-
-    if (stat (pathname_C, &sb) == -1) {
-	/*
-	 * Test Case: libc-wrap-errors/stat-empty-pathname.idio
-	 *
-	 * stat ""
-	 */
-	IDIO_GC_FREE (pathname_C);
-
-	idio_error_system_errno ("stat", pathname, IDIO_C_FUNC_LOCATION ());
-
-	return idio_S_notreached;
-    }
-
-    /*
-     * XXX
-     *
-     * idio_C_uint for everything?  We should know more about these
-     * typedefs.
-     *
-     * dev_t		st_dev;
-     * ino_t		st_ino
-     * mode_t		st_mode
-     * nlink_t		st_nlink
-     * uid_t		st_uid
-     * gid_t		st_gid
-     * dev_t		st_rdev
-     * off_t		st_size
-     * blksize_t	st_blksize
-     * blkcnt_t		st_blocks
-     * struct timespec	st_atim
-     * struct timespec	st_mtim
-     * struct timespec	st_ctim
-     *
-     * #define	st_atime st_atim.tv_sec
-     * #define	st_mtime st_mtim.tv_sec
-     * #define	st_ctime st_ctim.tv_sec
-     */
-    IDIO r = idio_struct_instance (idio_libc_struct_stat,
-				   idio_pair (idio_C_uint (sb.st_dev),
-				   idio_pair (idio_C_uint (sb.st_ino),
-				   idio_pair (idio_C_uint (sb.st_mode),
-				   idio_pair (idio_C_uint (sb.st_nlink),
-				   idio_pair (idio_C_uint (sb.st_uid),
-				   idio_pair (idio_C_uint (sb.st_gid),
-				   idio_pair (idio_C_uint (sb.st_rdev),
-				   idio_pair (idio_C_uint (sb.st_size),
-				   idio_pair (idio_C_uint (sb.st_blksize),
-				   idio_pair (idio_C_uint (sb.st_blocks),
-				   idio_pair (idio_C_uint (sb.st_atime),
-				   idio_pair (idio_C_uint (sb.st_mtime),
-				   idio_pair (idio_C_uint (sb.st_ctime),
-				   idio_S_nil))))))))))))));
-
-    IDIO_GC_FREE (pathname_C);
-
-    return r;
-}
-
-IDIO_DEFINE_PRIMITIVE1_DS ("stat", libc_stat, (IDIO pathname), "pathname", "\
-in C, stat (pathname)						\n\
-a wrapper to libc stat (2)					\n\
-								\n\
-:param pathname: pathname to stat				\n\
-:type pathname: string						\n\
-:return: struct-stat or raises ^system-error			\n\
-:rtype: struct instance						\n\
-")
-{
-    IDIO_ASSERT (pathname);
-
-    /*
-     * Test Case: libc-wrap-errors/stat-bad-type.idio
-     *
-     * stat #t
-     */
-    IDIO_USER_TYPE_ASSERT (string, pathname);
-
-    return idio_libc_stat (pathname);
-}
-
-IDIO_DEFINE_PRIMITIVE0_DS ("times", libc_times, (void), "", "\
-in C, times ()							\n\
-a wrapper to libc times (3)					\n\
-								\n\
-:return: struct-tms or raises ^system-error			\n\
-:rtype: struct							\n\
-								\n\
-times(3) is complicated because we need to return the struct tms\n\
-that the user would have passed in as a pointer and the clock_t,\n\
-elapsed real time that times(3) returns.			\n\
-								\n\
-The elapsed real time appears as a new field, tms_rtime in the	\n\
-structure.							\n\
-								\n\
-All fields are in clock ticks for which sysconf(_SC_CLK_TCK) is	\n\
-available for reference as the exported symbol CLK_TCK.		\n\
-								\n\
-The fields are Idio numbers, not C/int types.			\n\
-")
-{
-    struct tms tms_buf;
-
-    clock_t ert = times (&tms_buf);
-
-    if (-1 == ert) {
-	/*
-	 * Test Case: ??
-	 *
-	 * EFAULT tms points outside the process's address space.
-	 */
-	idio_error_system_errno ("times", idio_S_nil, IDIO_C_FUNC_LOCATION ());
-
-	return idio_S_notreached;
-    }
-
-    /*
-     * XXX
-     *
-     * clock_t not integers!
-     */
-    return idio_struct_instance (idio_libc_struct_tms, IDIO_LIST5 (idio_integer (ert),
-								   idio_integer (tms_buf.tms_utime),
-								   idio_integer (tms_buf.tms_stime),
-								   idio_integer (tms_buf.tms_cutime),
-								   idio_integer (tms_buf.tms_cstime)));
 }
 
 /*
@@ -3392,9 +3181,16 @@ void idio_libc_wrap_add_primitives ()
 {
     idio_libc_api_add_primitives ();
 
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_rusage_ru_utime);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_rusage_ru_stime);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_timeval_as_string);
+
+    idio_hash_put (idio_module_symbol_value (idio_util_value_as_string,
+					     idio_Idio_module,
+					     idio_S_nil),
+		   idio_CSI_libc_struct_timeval,
+		   idio_module_symbol_value (idio_symbols_C_intern ("struct-timeval-as-string"),
+					     idio_libc_module,
+					     idio_S_nil));
+
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_add_struct_timeval);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_subtract_struct_timeval);
 
@@ -3407,8 +3203,6 @@ void idio_libc_wrap_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_pipe_writer);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_setrlimit);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_signal_handler);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_stat);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_times);
 
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_WEXITSTATUS);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_WIFEXITED);
@@ -3590,11 +3384,6 @@ void idio_init_libc_wrap ()
 						 idio_S_nil))))));
     idio_module_export_symbol_value (name, idio_libc_struct_utsname, idio_libc_module);
 
-    {
-	char *field_names[] = { "sb_dev", "sb_ino", "sb_mode", "sb_nlink", "sb_uid", "sb_gid", "sb_rdev", "sb_size", "sb_blksize", "sb_blocks", "sb_atime", "sb_mtime", "sb_ctime", NULL };
-	IDIO_DEFINE_MODULE_STRUCTn (idio_libc_module, idio_libc_struct_stat, "struct-stat", idio_S_nil);
-    }
-
     name = idio_symbols_C_intern ("idio-uname");
     /*
      * XXX Here we actually invoke idio_libc_uname() to return a
@@ -3766,14 +3555,14 @@ void idio_init_libc_wrap ()
     IDIO GROUPS = idio_array (ngroups);
 
     for (ng = 0; ng < ngroups ; ng++) {
-	idio_array_insert_index (GROUPS, idio_integer (grp_list[ng]), ng);
+	idio_array_insert_index (GROUPS, idio_libc_gid_t (grp_list[ng]), ng);
     }
     IDIO_GC_FREE (grp_list);
 
     idio_module_set_symbol_value (idio_symbols_C_intern ("GROUPS"), GROUPS, main_module);
 
-    idio_module_set_symbol_value (idio_symbols_C_intern ("PID"), idio_integer (getpid ()), main_module);
-    idio_module_set_symbol_value (idio_symbols_C_intern ("PPID"), idio_integer (getppid ()), main_module);
+    idio_module_set_symbol_value (idio_symbols_C_intern ("PID"), idio_libc_pid_t (getpid ()), main_module);
+    idio_module_set_symbol_value (idio_symbols_C_intern ("PPID"), idio_libc_pid_t (getppid ()), main_module);
 
     /*
      * POSIX times(3) and struct tms
@@ -3785,16 +3574,12 @@ void idio_init_libc_wrap ()
 	 *
 	 * _SC_CLK_TCK is wrong?
 	 */
-	idio_error_system_errno_msg ("sysconf", "(_SC_CLK_TCK)", idio_integer (idio_SC_CLK_TCK), IDIO_C_FUNC_LOCATION ());
+	idio_error_system_errno_msg ("sysconf", "(_SC_CLK_TCK)", idio_C_long (idio_SC_CLK_TCK), IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return;
     }
-    /*
-     * We can use an idio_integer () for CLK_TCK as it is a usage-only
-     * value -- ie we use it in Idio but don't pass it back to C
-     */
-    idio_module_export_symbol_value (idio_symbols_C_intern ("CLK_TCK"), idio_integer (idio_SC_CLK_TCK), idio_libc_module);
+    idio_module_export_symbol_value (idio_symbols_C_intern ("CLK_TCK"), idio_C_long (idio_SC_CLK_TCK), idio_libc_module);
     name = idio_symbols_C_intern ("struct-tms");
     idio_libc_struct_tms = idio_struct_type (name,
 					     idio_S_nil,
