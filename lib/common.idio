@@ -341,7 +341,10 @@ The default padding character is #\{space}
 				 vs-len = 1
 			       }) \
 				    ((unicode=? k #\@) {
-				      if (null? args) (error '%format "not enough args for %" k)
+				      if (null? args) {
+					eprintf "not enough args for %%%s at .%d in %s\n" k i fmt
+					error '%format "not enough args for %" k
+				      }
 
 				      v = ph args
 				      args = pt args
@@ -362,7 +365,10 @@ The default padding character is #\{space}
 				      vs-len = string-length vs
 				    }) \
 				    (else {
-				      if (null? args) (error '%format "not enough args for %" k)
+				      if (null? args) {
+					eprintf "not enough args for %%%s at .%d in %s\n" k i fmt
+					error '%format "not enough args for %" k
+				      }
 
 				      v = ph args
 				      args = pt args

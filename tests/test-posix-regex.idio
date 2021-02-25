@@ -127,5 +127,32 @@ test (array->list (regexec crx "ab1\nab2" 'REG_NOTEOL)) '("b1" "b1")
 ; REG_STARTEND is silently ignored
 regexec crx "" 'REG_STARTEND
 
+define (rc s) {
+  (regex-case s
+	      ("^foo(.*)" (list 'foo r.1))
+	      ("(.*)foo$" (list r.1 'foo))
+	      (else 'unknown))
+}
+
+test (rc "foobar") '(foo "bar")
+test (rc "prefoo") '("pre" foo)
+test (rc "prefoobar") 'unknown
+
+define (pc s) {
+  (pattern-case s
+		("foo*" 'foo-before)
+		("*foo" 'foo-after)
+		("bar?" '1-after-bar)
+		("?bar" '1-before-bar)
+		(else 'unknown))
+}
+
+test (pc "foobar")	'foo-before
+test (pc "prefoo")	'foo-before	; .* matches empty string
+test (pc "prefoobar")	'foo-before	; tested for first!
+test (pc "prebar")	'1-before-bar
+test (pc "barpost")	'1-after-bar
+test (pc "bar")		'unknown
+
 ;; all done?
-Tests? (posix-regex-0 + 21)
+Tests? (posix-regex-0 + 30)
