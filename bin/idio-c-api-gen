@@ -702,12 +702,99 @@ for-each (function (lib-n) {
 		}
 
 		gen-dn := sprintf "%s/gen" lib-dn
-		if (not (d? gen-dn)) {
-		  mkdir gen-dn
-		}
+		rm -rf gen-dn
+		mkdir gen-dn
 
 		i-module-name := lib-n
 		c-module-name := C-identifier lib-n
+
+		errors-dn := sprintf "%s/%s-errors" gen-dn i-module-name
+		if (not (d? errors-dn)) {
+		  mkdir errors-dn
+		}
+
+		tc-count := 0
+		errors-fn := sprintf "%s/test-%s-error.idio" gen-dn i-module-name
+		errors-fh := open-output-file errors-fn
+		hprintf errors-fh #S{
+;;
+;; test-${i-module-name}-error.idio
+;;
+
+module tests/${i-module-name}
+import ${i-module-name}
+
+${i-module-name}-error0 := Tests
+
+#*
+
+We have a bunch of test cases which should provoke a
+^rt-${i-module-name}-error, ^system-error or ^rt-parameter-error.
+
+So we can write a load function which will wrapper the actual load
+with a trap for (^rt-${i-module-name}-error ...) and compare the
+message strings.
+
+*#
+
+${i-module-name}-error-load := {
+  n := 0
+
+  function (filename msg & args) {
+    if (not (string? filename)) (error 'load "not a string" filename)
+
+    load-k := #n
+
+    n = n + 1
+
+    exp-tests := 1
+    if (pair? args) {
+      exp-tests = 3
+    \}
+
+    ;eprintf "loading #%%s %%s looking for %%s\\n" n filename msg
+    trap (^rt-${i-module-name}-error
+	  ^system-error
+	  ^rt-parameter-error) (function (c) {
+				  ;eprintf "${i-module-name}-error #%%s: %%s %%s\\n" n msg c.location
+				  test c.message msg
+
+				  if (not (string=? c.message msg)) {
+				    condition-report (append-string "${i-module-name}-error-load: " filename) c (current-error-handle)
+				  \}
+
+				  if (system-error? c) {
+				    tested := #f
+				    if (pair? args) {
+				      test (system-error-errno c) (ph args)
+				      if (pair? (pt args)) {
+					test (system-error-function c) (pht args)
+					tested = #t
+				      \}
+				    \}
+
+				    if (not tested) {
+				      condition-report (append-string "${i-module-name}-error-load: " filename) c (current-error-handle)
+				    \}
+				  \}
+
+				  load-k '${i-module-name}-error
+	  \}) {
+	    call/cc (function (k) {
+		       load-k = k
+		       t0 := Tests
+		       (symbol-value 'load 'Idio) filename
+		       if (not (equal? Tests (t0 + exp-tests))) {
+			 eprintf "${i-module-name}-error #%%s: %%s did not generate \\"%%s\\"\\n" n filename msg
+			 Errors = Errors + 1
+			 Tests = t0 + exp-tests
+		       \}
+	    \})
+	  \}
+  \}
+\}
+
+}
 
 		define (base-type? id) {
 		  if id {
@@ -1577,31 +1664,79 @@ in C, ${var}->member			\\n\\
     IDIO_ASSERT (${var});
     IDIO_ASSERT (member);
 
+}
+
+				  tc-count = tc-count + 1
+				  tc-bn := sprintf "%s-errors/struct-%s-ref-bad-pointer-type.idio" i-module-name struct-idio-id
+				  tc-fn := sprintf "%s/%s" gen-dn tc-bn
+				  tc-fh := open-output-file tc-fn
+				  tc-test := #S{struct-${struct-idio-id}-ref #t #t}
+				  hprintf tc-fh #S{
+${tc-test}
+}
+				  close-handle tc-fh
+
+				  hprintf errors-fh #S{
+${i-module-name}-error-load "${tc-bn}" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"}
+
+				  hprintf api-c-fh #S{
     /*
-     * Test Case: ${i-module-name}-errors/struct-${struct-idio-id}-ref-bad-pointer-type.idio
+     * Test Case: ${tc-bn}
      *
-     * struct-${struct-idio-id}-ref #t #t
+     * ${tc-test}
      */
     IDIO_USER_C_TYPE_ASSERT (pointer, ${var});
-    /*
-     * Test Case: ${i-module-name}-errors/struct-${struct-idio-id}-ref-bad-member-type.idio
-     *
-     * struct-${struct-idio-id}-ref v #t
-     */
-    IDIO_USER_TYPE_ASSERT (symbol, member);
-    if (idio_CSI_${struct-c-id} != IDIO_C_TYPE_POINTER_PTYPE (${struct-name})) {
+    if (idio_CSI_${struct-c-id} != IDIO_C_TYPE_POINTER_PTYPE (${struct-name})) \{}
+
+				  tc-count = tc-count + 1
+				  tc-bn := sprintf "%s-errors/struct-%s-ref-invalid-pointer-type.idio" i-module-name struct-idio-id
+				  tc-fn := sprintf "%s/%s" gen-dn tc-bn
+				  tc-fh := open-output-file tc-fn
+				  tc-test := #S{struct-${struct-idio-id}-ref libc/NULL #t}
+				  hprintf tc-fh #S{
+${tc-test}
+}
+				  close-handle tc-fh
+
+				  hprintf errors-fh #S{
+${i-module-name}-error-load "${tc-bn}" "${struct-name} should be a struct ${struct-name}"}
+
+				  hprintf api-c-fh #S{
 	/*
-	 * Test Case: ${i-module-name}-errors/struct-${struct-idio-id}-ref-invalid-pointer-type.idio
+	 * Test Case: ${tc-bn}
 	 *
-	 * struct-${struct-idio-id}-ref libc/NULL #t
+	 * ${tc-test}
 	 */
 	idio_error_param_value ("${struct-name}", "should be a struct ${struct-name}", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
-    \}
+    \}}
+
+				  tc-count = tc-count + 1
+				  tc-bn := sprintf "%s-errors/struct-%s-ref-bad-member-type.idio" i-module-name struct-idio-id
+				  tc-fn := sprintf "%s/%s" gen-dn tc-bn
+				  tc-fh := open-output-file tc-fn
+				  tc-test := #S{struct-${struct-idio-id}-ref v #t}
+				  hprintf tc-fh #S{
+${tc-test}
+}
+				  close-handle tc-fh
+
+				  hprintf errors-fh #S{
+${i-module-name}-error-load "${tc-bn}" "member should be a symbol"}
+
+				  hprintf api-c-fh #S{
+
+    /*
+     * Test Case: ${tc-bn}
+     *
+     * ${tc-test}
+     */
+    IDIO_USER_TYPE_ASSERT (symbol, member);
 
     struct ${struct-name} *${varp} = IDIO_C_TYPE_POINTER_P (${var});
 }
+
 
 				  first := #t
 				  for-each (function (member) {
@@ -1683,16 +1818,30 @@ in C, ${var}->member			\\n\\
 					      }
 				  }) member*
 
+				  tc-count = tc-count + 1
+				  tc-bn := sprintf "%s-errors/struct-%s-ref-invalid-member.idio" i-module-name struct-idio-id
+				  tc-fn := sprintf "%s/%s" gen-dn tc-bn
+				  tc-fh := open-output-file tc-fn
+				  tc-test := #S{struct-${struct-idio-id}-ref v 'not-likely}
+				  hprintf tc-fh #S{
+${tc-test}
+}
+				  close-handle tc-fh
+
+				  hprintf errors-fh #S{
+${i-module-name}-error-load "${tc-bn}" "member should be a struct ${struct-name} member"}
+
 				  hprintf api-c-fh #S{ else \{
 	/*
-	 * Test Case: ${i-module-name}-errors/struct-${struct-idio-id}-ref-invalid-member.idio
+	 * Test Case: ${tc-bn}
 	 *
-	 * struct-${struct-idio-id}-ref v 'not-likely
+	 * ${tc-test}
 	 */
-        idio_error_param_value ("member", "struct ${struct-name} member", IDIO_C_FUNC_LOCATION());
+        idio_error_param_value ("member", "should be a struct ${struct-name} member", IDIO_C_FUNC_LOCATION());
 
         return idio_S_notreached;
     \}}
+
 
 				  hprintf api-c-fh #S{
 
@@ -1714,37 +1863,85 @@ in C, ${var}->member = val		\\n\\
 :return: ${struct-name}->member		\\n\\
 :rtype:	varies on member		\\n\\
 ")
-\{
+{
     IDIO_ASSERT (${var});
     IDIO_ASSERT (member);
     IDIO_ASSERT (val);
 
+}
+
+				  tc-count = tc-count + 1
+				  tc-bn := sprintf "%s-errors/struct-%s-set-bad-pointer-type.idio" i-module-name struct-idio-id
+				  tc-fn := sprintf "%s/%s" gen-dn tc-bn
+				  tc-fh := open-output-file tc-fn
+				  tc-test := #S{struct-${struct-idio-id}-set! #t #t #t}
+				  hprintf tc-fh #S{
+${tc-test}
+}
+				  close-handle tc-fh
+
+				  hprintf errors-fh #S{
+${i-module-name}-error-load "${tc-bn}" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"}
+
+				  hprintf api-c-fh #S{
     /*
-     * Test Case: ${i-module-name}-errors/struct-${struct-idio-id}-set-bad-pointer-type.idio
+     * Test Case: ${tc-bn}
      *
-     * struct-${struct-idio-id}-set! #t #t #t
+     * ${tc-test}
      */
     IDIO_USER_C_TYPE_ASSERT (pointer, ${var});
-    if (idio_CSI_${struct-c-id} != IDIO_C_TYPE_POINTER_PTYPE (${struct-name})) {
+    if (idio_CSI_${struct-c-id} != IDIO_C_TYPE_POINTER_PTYPE (${struct-name})) {}
+
+				  tc-count = tc-count + 1
+				  tc-bn := sprintf "%s-errors/struct-%s-set-invalid-pointer-type.idio" i-module-name struct-idio-id
+				  tc-fn := sprintf "%s/%s" gen-dn tc-bn
+				  tc-fh := open-output-file tc-fn
+				  tc-test := #S{struct-${struct-idio-id}-set! libc/NULL #t #t}
+				  hprintf tc-fh #S{
+${tc-test}
+}
+				  close-handle tc-fh
+
+				  hprintf errors-fh #S{
+${i-module-name}-error-load "${tc-bn}" "${struct-name} should be a struct ${struct-name}"}
+
+				  hprintf api-c-fh #S{
 	/*
-	 * Test Case: ${i-module-name}-errors/struct-${struct-idio-id}-set-invalid-pointer-type.idio
+	 * Test Case: ${tc-bn}
 	 *
-	 * struct-${struct-idio-id}-set! libc/NULL #t #t
+	 * ${tc-test}
 	 */
 	idio_error_param_value ("${struct-name}", "should be a struct ${struct-name}", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     \}
+}
 
+				  tc-count = tc-count + 1
+				  tc-bn := sprintf "%s-errors/struct-%s-set-bad-member-type.idio" i-module-name struct-idio-id
+				  tc-fn := sprintf "%s/%s" gen-dn tc-bn
+				  tc-fh := open-output-file tc-fn
+				  tc-test := #S{struct-${struct-idio-id}-set! v #t #t}
+				  hprintf tc-fh #S{
+${tc-test}
+}
+				  close-handle tc-fh
+
+				  hprintf errors-fh #S{
+${i-module-name}-error-load "${tc-bn}" "member should be a symbol"}
+
+				  hprintf api-c-fh #S{
     /*
-     * Test Case: ${i-module-name}-errors/struct-${struct-idio-id}-set-bad-member-type.idio
+     * Test Case: ${tc-bn}
      *
-     * struct-${struct-idio-id}-set! v #t #t
+     * ${tc-test}
      */
     IDIO_USER_TYPE_ASSERT (symbol, member);
 
     struct ${struct-name} *${varp} = IDIO_C_TYPE_POINTER_P (${var});
 }
+
+				  hprintf errors-fh "\n"
 
 				  first := #t
 				  for-each (function (member) {
@@ -1766,24 +1963,41 @@ in C, ${var}->member = val		\\n\\
 						  if (base-type? member-type-id) {
 						    mod-name = "C"
 						  }
+
+						  tc-count = tc-count + 1
+						  tc-bn := sprintf "%s-errors/struct-%s-set-%s-bad-value-type.idio" i-module-name struct-idio-id member-name
+						  tc-fn := sprintf "%s/%s" gen-dn tc-bn
+						  tc-fh := open-output-file tc-fn
+						  tc-test := #S{struct-${struct-idio-id}-set! v '${member-name} #t}
+						  hprintf tc-fh #S{
+${tc-test}
+}
+						  close-handle tc-fh
+
+						  hprintf api-c-fh #S{if (idio_S_${member-name} == member) \{
+       /*
+	* Test Case: ${tc-bn}
+	*
+	* ${tc-test}
+	*/}
+
 						  if (alloc-required? member-type-id) {
 						    member-alloc-name := get/create member-type-DIE 'c-alloc-type-name
 						    if member-alloc-name {
+
 						      (regex-case member-alloc-name
 								  ("(.*)\\[]" {
-								    hprintf api-c-fh #S{if (idio_S_${member-name} == member) \{
-       /*
-	* Test Case: ${i-module-name}-errors/${struct-idio-id}-set-${member-name}-bad-value-type.idio
-	*
-	* ${struct-idio-id}-set! v '${member-name} #t
-	*/
+								    hprintf errors-fh #S{
+${i-module-name}-error-load "${tc-bn}" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"}
+
+								    hprintf api-c-fh #S{
 	IDIO_USER_C_TYPE_ASSERT (pointer, val);
 
         /*
          * WARNING:
          * ${member-c-type-name} ${member-name}
          *
-         * sizeof (${varp}->${member-name}) is probably incorrect
+         * sizeof (${varp}->${member-name}) is possibly incorrect
          *
          * check the API
          */
@@ -1794,12 +2008,10 @@ in C, ${var}->member = val		\\n\\
     \}}
 								  })
 								  ("(.*)\\*" {
-								    hprintf api-c-fh #S{if (idio_S_${member-name} == member) \{
-       /*
-	* Test Case: ${i-module-name}-errors/${struct-idio-id}-set-${member-name}-bad-value-type.idio
-	*
-	* ${struct-idio-id}-set! v '${member-name} #t
-	*/
+								    hprintf errors-fh #S{
+${i-module-name}-error-load "${tc-bn}" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"}
+
+								    hprintf api-c-fh #S{
 	IDIO_USER_C_TYPE_ASSERT (pointer, val);
 
         /*
@@ -1817,12 +2029,10 @@ in C, ${var}->member = val		\\n\\
     \}}
 								  })
 								  (else {
-								    hprintf api-c-fh #S{if (idio_S_${member-name} == member) \{
-       /*
-	* Test Case: ${i-module-name}-errors/${struct-idio-id}-set-${member-name}-bad-value-type.idio
-	*
-	* ${struct-idio-id}-set! v '${member-name} #t
-	*/
+								    hprintf errors-fh #S{
+${i-module-name}-error-load "${tc-bn}" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"}
+
+								    hprintf api-c-fh #S{
 	IDIO_USER_C_TYPE_ASSERT (pointer, val);
 
         ${member-c-type-name} *valp = IDIO_C_TYPE_POINTER_P (${val});
@@ -1831,18 +2041,16 @@ in C, ${var}->member = val		\\n\\
     \}}
 								  }))
 						    } {
-						      hprintf api-c-fh #S{if (idio_S_${member-name} == member) \{
+						      hprintf api-c-fh #S{
 #error ${member-c-type-name} ${member-name} is not handled
     \}}
 						    }
 						  } {
 						    accessor := get/create member-type-DIE 'c-type-accessor
-						    hprintf api-c-fh #S{if (idio_S_${member-name} == member) \{
-       /*
-	* Test Case: ${i-module-name}-errors/${struct-idio-id}-set-${member-name}-bad-value-type.idio
-	*
-	* ${struct-idio-id}-set! v '${member-name} #t
-	*/
+								    hprintf errors-fh #S{
+${i-module-name}-error-load "${tc-bn}" "bad parameter type: '#t' a CONSTANT_IDIO is not a ${mod-name}/${member-i-c-type-name}"}
+
+						    hprintf api-c-fh #S{
 	IDIO_USER_${mod-name}_TYPE_ASSERT (${member-i-c-type-name}, val);
 
         ${varp}->${member-name} = ${accessor} (val);
@@ -1853,11 +2061,24 @@ in C, ${var}->member = val		\\n\\
 					      }
 				  }) member*
 
+				  tc-count = tc-count + 1
+				  tc-bn := sprintf "%s-errors/struct-%s-set-invalid-member.idio" i-module-name struct-idio-id
+				  tc-fn := sprintf "%s/%s" gen-dn tc-bn
+				  tc-fh := open-output-file tc-fn
+				  tc-test := #S{struct-${struct-idio-id}-set! v 'not-likely #t}
+				  hprintf tc-fh #S{
+${tc-test}
+}
+				  close-handle tc-fh
+
+				    hprintf errors-fh #S{
+${i-module-name}-error-load "${tc-bn}" "member should be a struct ${struct-name} member"}
+
 				  hprintf api-c-fh #S{ else \{
 	/*
-	 * Test Case: ${i-module-name}-errors/struct-${struct-idio-id}-set-invalid-member.idio
+	 * Test Case: ${tc-bn}
 	 *
-	 * struct-${struct-idio-id}-ref v 'not-likely #t
+	 * ${tc-test}
 	 */
         idio_error_param_value ("member", "should be a struct ${struct-name} member", IDIO_C_FUNC_LOCATION());
 
@@ -1879,6 +2100,9 @@ if (and (function? struct-${struct-idio-id}-ref)
 }
 				}
 			      }
+
+
+				    hprintf errors-fh "\n"
 
 		  }) (array->list used-structure-types)
 		} {
@@ -1983,6 +2207,12 @@ in C: ${sp-name} \(${comma-sep-arg*})		\\n\\
 }
 				}) i-arg-name*
 
+				dummy-args := ""
+				for-each (function (i-arg-name) {
+					    dummy-args = append-string dummy-args "#t "
+				}) i-arg-name*
+				dummy-args = strip-string dummy-args " " 'right
+
 				pc := 1
 				for-each (function (fp) {
 					    fp-type-id := hash-ref fp 'type #f
@@ -1996,23 +2226,37 @@ in C: ${sp-name} \(${comma-sep-arg*})		\\n\\
 					      if (base-type? fp-type-id) {
 						mod-name = "C"
 					      }
-					      if (alloc-required? fp-type-id) {
-						hprintf api-c-fh #S{
+
+					      tc-count = tc-count + 1
+					      tc-bn := sprintf "%s-errors/%s-bad-%s-type.idio" i-module-name sp-name fp-name
+					      tc-fn := sprintf "%s/%s" gen-dn tc-bn
+					      tc-fh := open-output-file tc-fn
+					      tc-test := #S{${sp-name} ${dummy-args}}
+					      hprintf tc-fh #S{
+${tc-test}
+}
+					      close-handle tc-fh
+
+					      hprintf api-c-fh #S{
    /*
-    * Test Case: ${i-module-name}-errors/${sp-name}-bad-${fp-name}-type.idio
+    * Test Case: ${tc-bn}
     *
-    * ${sp-name} #t #t
-    */
+    * ${tc-test}
+    */}
+
+					      if (alloc-required? fp-type-id) {
+					      hprintf errors-fh #S{
+${i-module-name}-error-load "${tc-bn}" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"}
+
+						hprintf api-c-fh #S{
     IDIO_USER_C_TYPE_ASSERT (pointer, ${fp-name});
     ${fp-c-type-name} C_${fp-name} = IDIO_C_TYPE_POINTER_P (${fp-name});
 }
 					      } {
+					      hprintf errors-fh #S{
+${i-module-name}-error-load "${tc-bn}" "bad parameter type: '#t' a CONSTANT_IDIO is not a ${mod-name}/${fp-i-c-type-name}"}
+
 						hprintf api-c-fh #S{
-   /*
-    * Test Case: ${i-module-name}-errors/${sp-name}-bad-${fp-name}-type.idio
-    *
-    * ${sp-name} #t #t
-    */
     IDIO_USER_${mod-name}_TYPE_ASSERT (${fp-i-c-type-name}, ${fp-name});
     ${fp-c-type-name} C_${fp-name} = ${fp-c-type-accessor} (${fp-name});
 }
@@ -2066,6 +2310,9 @@ in C: ${sp-name} \(${comma-sep-arg*})		\\n\\
 \}
 }
 			      }
+
+			      hprintf errors-fh "\n"
+
 		  }) (array->list subprograms)
 
 		  ;; C add_primitives
@@ -2182,6 +2429,12 @@ void idio_init_${c-module-name}_api ()
 
 		hprintf api-h-fh #S{
 #endif /* ${api-h-define} */
+}
+
+		hprintf errors-fh #S{
+
+;; all done?
+Tests? (${i-module-name}-error0 + ${tc-count})
 }
 
 		close-handle api-c-fh
