@@ -116,6 +116,7 @@ c-type-error-load "c-type-errors/c-type-2number-long-double.idio" "C/->number fo
 c-type-error-load "c-type-errors/c-type-number2-bad-fixnum-c-type.idio" "type should be a C integral type"
 c-type-error-load "c-type-errors/c-type-number2-bad-bignum-c-type.idio" "type should be a C floating type"
 c-type-error-load "c-type-errors/c-type-number2-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a number"
+c-type-error-load "c-type-errors/c-type-number2-bad-type-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol"
 
 ;; all done?
-Tests? (c-type-error0 + 25)
+Tests? (c-type-error0 + 26)

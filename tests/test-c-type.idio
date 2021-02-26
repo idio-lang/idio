@@ -299,6 +299,39 @@ test (C/double? v)	#f
 test (C/longdouble? v)	#f
 test (C/pointer? v)	#t
 
+test (C/char?       (C/integer-> 1 'char))		#t
+test (C/schar?      (C/integer-> 1 'schar))		#t
+test (C/uchar?      (C/integer-> 1 'uchar))		#t
+test (C/short?      (C/integer-> 1 'short))		#t
+test (C/ushort?     (C/integer-> 1 'ushort))		#t
+test (C/int?        (C/integer-> 1 'int))		#t
+test (C/uint?       (C/integer-> 1 'uint))		#t
+test (C/long?       (C/integer-> 1 'long))		#t
+test (C/ulong?      (C/integer-> 1 'ulong))		#t
+test (C/longlong?   (C/integer-> 1 'longlong))		#t
+test (C/ulonglong?  (C/integer-> 1 'ulonglong))		#t
+
+test (C/uchar?      (C/integer->unsigned 1 'uchar))	#t
+test (C/ushort?     (C/integer->unsigned 1 'ushort))	#t
+test (C/uint?       (C/integer->unsigned 1 'uint))	#t
+test (C/ulong?      (C/integer->unsigned 1 'ulong))	#t
+test (C/ulonglong?  (C/integer->unsigned 1 'ulonglong))	#t
+
+test (C/char?       (C/number-> 1 'char))		#t
+test (C/schar?      (C/number-> 1 'schar))		#t
+test (C/uchar?      (C/number-> 1 'uchar))		#t
+test (C/short?      (C/number-> 1 'short))		#t
+test (C/ushort?     (C/number-> 1 'ushort))		#t
+test (C/int?        (C/number-> 1 'int))		#t
+test (C/uint?       (C/number-> 1 'uint))		#t
+test (C/long?       (C/number-> 1 'long))		#t
+test (C/ulong?      (C/number-> 1 'ulong))		#t
+test (C/longlong?   (C/number-> 1 'longlong))		#t
+test (C/ulonglong?  (C/number-> 1 'ulonglong))		#t
+test (C/float?      (C/number-> 1 'float))		#t
+test (C/double?     (C/number-> 1 'double))		#t
+test (C/longdouble? (C/number-> 1 'longdouble))		#t
+
 ; float inf / -inf
 test (equal? (C/number->  1e40 'float) (C/number->  1e40 'float)) #t
 test (equal? (C/number->  1e40 'float) (C/number-> -1e40 'float)) #f
@@ -337,4 +370,4 @@ c-uintmax-max := C/->number libc/UINTMAX_MAX
 test (C/->number (C/integer->unsigned c-uintmax-max libc/uintmax_t)) c-uintmax-max
 
 ;; all done?
-Tests? (c-type0 + 268)
+Tests? (c-type0 + 298)
