@@ -263,7 +263,7 @@ static void idio_command_exec_error (char **argv, char **envp, IDIO c_location)
 				   IDIO_LIST4 (idio_get_output_string (msh),
 					       location,
 					       detail,
-					       idio_fixnum ((intptr_t) errno)));
+					       idio_C_int (errno)));
 
     idio_raise_condition (idio_S_true, c);
 

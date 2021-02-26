@@ -298,7 +298,7 @@ in C, close (status)						\n\
 a wrapper to libc exit (3)					\n\
 								\n\
 :param status: exit status					\n\
-:type status: fixnum						\n\
+:type status: fixnum or C/int					\n\
 								\n\
 DOES NOT RETURN :)						\n\
 ")
@@ -2238,7 +2238,7 @@ setter for the computed value ``EGID`` which is a call to	\n\
 setegid (2).							\n\
 								\n\
 :param egid: effective group ID					\n\
-:type egid: fixnum or C/int					\n\
+:type egid: libc/gid_t						\n\
 :return: 0 or raises ^system-error				\n\
 :rtype: C/int							\n\
 ")
@@ -2293,7 +2293,7 @@ setter for the computed value ``EUID`` which is a call to	\n\
 seteuid (2).							\n\
 								\n\
 :param euid: effective user ID					\n\
-:type euid: fixnum or C/int					\n\
+:type euid: libc/uid_t						\n\
 :return: 0 or raises ^system-error				\n\
 :rtype: C/int							\n\
 ")
@@ -2348,7 +2348,7 @@ setter for the computed value ``GID`` which is a call to	\n\
 setgid (2).							\n\
 								\n\
 :param gid: real group ID					\n\
-:type gid: fixnum or C/int					\n\
+:type gid: libc/gid_t						\n\
 :return: 0 or raises ^system-error				\n\
 :rtype: C/int							\n\
 ")
@@ -2403,7 +2403,7 @@ setter for the computed value ``UID`` which is a call to	\n\
 setuid (2).							\n\
 								\n\
 :param uid: real user ID					\n\
-:type uid: fixnum or C/int					\n\
+:type uid: libc/uid_t						\n\
 :return: 0 or raises ^system-error				\n\
 :rtype: C/int							\n\
 ")

@@ -303,7 +303,7 @@ waitpid(2).  Return #f if all went well, some true value otherwise.
 This (inverted) convention follows the Libc texinfo algorithm and is
 for the benefit of the do loops in update-status_ and wait-for-job_.
 " {
-  cond ((C/> pid 0) {
+  cond ((C/> pid C/0i) {
     jobs-loop :+ function (jobs) {
 		   cond ((null? jobs) {
 		     if %idio-interactive {
@@ -940,7 +940,7 @@ define-infix-operator | 700 {
       ;; everyone gets the same stderr!
       $stderr := (libc/stderr-fileno) ; STDERR_FILENO
 
-      $pgid := 0
+      $pgid := C/0i
       $job := make-%idio-job '$orig-pipeline #n $pgid #f #f #n $pipeline-r-fd $pipeline-w-fd $stderr
 
       $proc-id := 1
@@ -1195,7 +1195,7 @@ define-template (fork-command foreground use-w-pipe use-r-pipe & cmd) {
 	$recover-cmd-e-fd = pht $cmd-e-fd
 	$cmd-e-fd         = ph $cmd-e-fd
       }
-      $pgid := 0
+      $pgid := C/0i
       $proc := make-%idio-process '$cmd -1 #f #f #n
       $job := make-%idio-job '$cmd (list $proc) $pgid #f #f #n $cmd-r-fd $cmd-w-fd $cmd-e-fd
 

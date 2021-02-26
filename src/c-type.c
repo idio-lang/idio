@@ -1029,6 +1029,9 @@ IDIO idio_C_number_cast (IDIO co, idio_type_e type)
     return r;
 }
 
+/*
+ * For < and > the comparison operators work for all types
+ */
 #define IDIO_DEFINE_C_ARITHMETIC_CMP_PRIMITIVE(name,cname,cmp)		\
     IDIO_DEFINE_PRIMITIVE2 (name, cname, (IDIO n1, IDIO n2))		\
     {									\
@@ -1037,111 +1040,7 @@ IDIO idio_C_number_cast (IDIO co, idio_type_e type)
 									\
 	int result;							\
 									\
-	if (idio_isa_fixnum (n1)) {					\
-	    if (idio_isa_fixnum (n2)) {					\
-		result = idio_eqp (n1, n2);				\
-	    } else {							\
-		intptr_t v1 = IDIO_FIXNUM_VAL (n1);			\
-		switch (idio_type (n2)) {				\
-		case IDIO_TYPE_C_CHAR:					\
-		    result = (v1 cmp IDIO_C_TYPE_char (n2));		\
-		    break;						\
-		case IDIO_TYPE_C_SCHAR:					\
-		    result = (v1 cmp IDIO_C_TYPE_schar (n2));		\
-		    break;						\
-		case IDIO_TYPE_C_UCHAR:					\
-		    result = (v1 cmp IDIO_C_TYPE_uchar (n2));		\
-		    break;						\
-		case IDIO_TYPE_C_SHORT:					\
-		    result = (v1 cmp IDIO_C_TYPE_short (n2));		\
-		    break;						\
-		case IDIO_TYPE_C_USHORT:				\
-		    result = (v1 cmp IDIO_C_TYPE_ushort (n2));		\
-		    break;						\
-		case IDIO_TYPE_C_INT:					\
-		    result = (v1 cmp IDIO_C_TYPE_int (n2));		\
-		    break;						\
-		case IDIO_TYPE_C_UINT:					\
-		    result = (v1 cmp IDIO_C_TYPE_uint (n2));		\
-		    break;						\
-		case IDIO_TYPE_C_LONG:					\
-		    result = (v1 cmp IDIO_C_TYPE_long (n2)); \
-		    break;						\
-		case IDIO_TYPE_C_ULONG:					\
-		    result = (v1 cmp IDIO_C_TYPE_ulong (n2));		\
-		    break;						\
-		case IDIO_TYPE_C_LONGLONG:				\
-		    result = (v1 cmp IDIO_C_TYPE_longlong (n2));	\
-		    break;						\
-		case IDIO_TYPE_C_ULONGLONG:				\
-		    result = (v1 cmp IDIO_C_TYPE_ulonglong (n2));	\
-		    break;						\
-		case IDIO_TYPE_C_FLOAT:					\
-		    result = (v1 cmp IDIO_C_TYPE_float (n2));		\
-		    break;						\
-		case IDIO_TYPE_C_DOUBLE:				\
-		    result = (v1 cmp IDIO_C_TYPE_double (n2));		\
-		    break;						\
-		case IDIO_TYPE_C_LONGDOUBLE:				\
-		    result = (v1 cmp IDIO_C_TYPE_longdouble (n2));	\
-		    break;						\
-		default:						\
-		    idio_error_C ("C/" name ": n2->type unexpected", IDIO_LIST2 (n1, n2), idio_string_C ("C arithmetic cmp " name)); \
-									\
-		    return idio_S_notreached;				\
-		}							\
-	    }								\
-	} else if (idio_isa_fixnum (n2)) {				\
-	    intptr_t v2 = IDIO_FIXNUM_VAL (n2);				\
-	    switch (idio_type (n1)) {					\
-	    case IDIO_TYPE_C_CHAR:					\
-		result = (IDIO_C_TYPE_char (n1) cmp v2);		\
-		break;							\
-	    case IDIO_TYPE_C_SCHAR:					\
-		result = (IDIO_C_TYPE_schar (n1) cmp v2);		\
-		break;							\
-	    case IDIO_TYPE_C_UCHAR:					\
-		result = (IDIO_C_TYPE_uchar (n1) cmp v2);		\
-		break;							\
-	    case IDIO_TYPE_C_SHORT:					\
-		result = (IDIO_C_TYPE_short (n1) cmp v2);		\
-		break;							\
-	    case IDIO_TYPE_C_USHORT:					\
-		result = (IDIO_C_TYPE_ushort (n1) cmp v2);		\
-		break;							\
-	    case IDIO_TYPE_C_INT:					\
-		result = (IDIO_C_TYPE_int (n1) cmp v2);			\
-		break;							\
-	    case IDIO_TYPE_C_UINT:					\
-		result = (IDIO_C_TYPE_uint (n1) cmp v2);		\
-		break;							\
-	    case IDIO_TYPE_C_LONG:					\
-		result = (IDIO_C_TYPE_long (n1) cmp v2);		\
-		break;							\
-	    case IDIO_TYPE_C_ULONG:					\
-		result = (IDIO_C_TYPE_ulong (n1) cmp v2);		\
-		break;							\
-	    case IDIO_TYPE_C_LONGLONG:					\
-		result = (IDIO_C_TYPE_longlong (n1) cmp v2);		\
-		break;							\
-	    case IDIO_TYPE_C_ULONGLONG:					\
-		result = (IDIO_C_TYPE_ulonglong (n1) cmp v2);		\
-		break;							\
-	    case IDIO_TYPE_C_FLOAT:					\
-		result = (IDIO_C_TYPE_float (n1) cmp v2);		\
-		break;							\
-	    case IDIO_TYPE_C_DOUBLE:					\
-		result = (IDIO_C_TYPE_double (n1) cmp v2);		\
-		break;							\
-	    case IDIO_TYPE_C_LONGDOUBLE:				\
-		result = (IDIO_C_TYPE_longdouble (n1) cmp v2);		\
-		break;							\
-	    default:							\
-		idio_error_C ("C/" name ": n1->type unexpected (n2:fixnum)", IDIO_LIST2 (n1, n2), idio_string_C ("C arithmetic cmp " name)); \
-									\
-		return idio_S_notreached;				\
-	    }								\
-	} else if (idio_type (n1) != idio_type (n2)) {			\
+	if (idio_type (n1) != idio_type (n2)) {				\
 	    idio_error_C ("C/" name ": n1->type != n2->type", IDIO_LIST2 (idio_string_C (idio_type2string (n1)), idio_string_C (idio_type2string (n2))), idio_string_C ("C arithmetic cmp " name)); \
 									\
 	    return idio_S_notreached;					\
@@ -1208,11 +1107,173 @@ IDIO idio_C_number_cast (IDIO co, idio_type_e type)
 	return r;							\
     }
 
+/*
+ * For the equality operator we need to be careful with floating point
+ * types
+ */
+#define IDIO_DEFINE_C_ARITHMETIC_EQ_PRIMITIVE(name,cname,cmp)		\
+    IDIO_DEFINE_PRIMITIVE2 (name, cname, (IDIO n1, IDIO n2))		\
+    {									\
+	IDIO_ASSERT (n1);						\
+	IDIO_ASSERT (n2);						\
+									\
+	int result;							\
+									\
+	if (idio_type (n1) != idio_type (n2)) {				\
+	    idio_error_C ("C/" name ": n1->type != n2->type", IDIO_LIST2 (idio_string_C (idio_type2string (n1)), idio_string_C (idio_type2string (n2))), idio_string_C ("C arithmetic cmp " name)); \
+									\
+	    return idio_S_notreached;					\
+	} else {							\
+	    switch (idio_type (n1)) {					\
+	    case IDIO_TYPE_C_CHAR:					\
+		result = (IDIO_C_TYPE_char (n1) cmp IDIO_C_TYPE_char (n2)); \
+		break;							\
+	    case IDIO_TYPE_C_SCHAR:					\
+		result = (IDIO_C_TYPE_schar (n1) cmp IDIO_C_TYPE_schar (n2)); \
+		break;							\
+	    case IDIO_TYPE_C_UCHAR:					\
+		result = (IDIO_C_TYPE_uchar (n1) cmp IDIO_C_TYPE_uchar (n2)); \
+		break;							\
+	    case IDIO_TYPE_C_SHORT:					\
+		result = (IDIO_C_TYPE_short (n1) cmp IDIO_C_TYPE_short (n2)); \
+		break;							\
+	    case IDIO_TYPE_C_USHORT:					\
+		result = (IDIO_C_TYPE_ushort (n1) cmp IDIO_C_TYPE_ushort (n2)); \
+		break;							\
+	    case IDIO_TYPE_C_INT:					\
+		result = (IDIO_C_TYPE_int (n1) cmp IDIO_C_TYPE_int (n2)); \
+		break;							\
+	    case IDIO_TYPE_C_UINT:					\
+		result = (IDIO_C_TYPE_uint (n1) cmp IDIO_C_TYPE_uint (n2)); \
+		break;							\
+	    case IDIO_TYPE_C_LONG:					\
+		result = (IDIO_C_TYPE_long (n1) cmp IDIO_C_TYPE_long (n2)); \
+		break;							\
+	    case IDIO_TYPE_C_ULONG:					\
+		result = (IDIO_C_TYPE_ulong (n1) cmp IDIO_C_TYPE_ulong (n2)); \
+		break;							\
+	    case IDIO_TYPE_C_LONGLONG:					\
+		result = (IDIO_C_TYPE_longlong (n1) cmp IDIO_C_TYPE_longlong (n2)); \
+		break;							\
+	    case IDIO_TYPE_C_ULONGLONG:					\
+		result = (IDIO_C_TYPE_ulonglong (n1) cmp IDIO_C_TYPE_ulonglong (n2)); \
+		break;							\
+	    case IDIO_TYPE_C_FLOAT:					\
+		result = idio_C_float_equal_ULP (IDIO_C_TYPE_float (n1), IDIO_C_TYPE_float (n2), 1); \
+		break;							\
+	    case IDIO_TYPE_C_DOUBLE:					\
+		result = idio_C_double_equal_ULP (IDIO_C_TYPE_double (n1), IDIO_C_TYPE_double (n2), 1); \
+		break;							\
+	    case IDIO_TYPE_C_LONGDOUBLE:				\
+		result = idio_C_longdouble_equal_ULP (IDIO_C_TYPE_longdouble (n1), IDIO_C_TYPE_longdouble (n2), 1); \
+		break;							\
+	    case IDIO_TYPE_C_POINTER:					\
+		result = (IDIO_C_TYPE_POINTER_P (n1) cmp IDIO_C_TYPE_POINTER_P (n2)); \
+		break;							\
+	    default:							\
+		idio_error_C ("C/" name ": n1->type unexpected", IDIO_LIST2 (n1, n2), idio_string_C ("C arithmetic cmp " name)); \
+									\
+		return idio_S_notreached;				\
+	    }								\
+	}								\
+									\
+	IDIO r = idio_S_false;						\
+									\
+	if (result) {							\
+	    r = idio_S_true;						\
+	}								\
+									\
+	return r;							\
+    }
 
-IDIO_DEFINE_C_ARITHMETIC_CMP_PRIMITIVE ("<=", C_le, <=)
+/*
+ * Finally for the alternate comparision operators <=, >= we, again,
+ * need to be careful with floating point types -- and pass the < or >
+ * operator so we can distinguish the tests
+ */
+#define IDIO_DEFINE_C_ARITHMETIC_CMP_EQ_PRIMITIVE(name,cname,cmp,op1)	\
+    IDIO_DEFINE_PRIMITIVE2 (name, cname, (IDIO n1, IDIO n2))		\
+    {									\
+	IDIO_ASSERT (n1);						\
+	IDIO_ASSERT (n2);						\
+									\
+	int result;							\
+									\
+	if (idio_type (n1) != idio_type (n2)) {				\
+	    idio_error_C ("C/" name ": n1->type != n2->type", IDIO_LIST2 (idio_string_C (idio_type2string (n1)), idio_string_C (idio_type2string (n2))), idio_string_C ("C arithmetic cmp " name)); \
+									\
+	    return idio_S_notreached;					\
+	} else {							\
+	    switch (idio_type (n1)) {					\
+	    case IDIO_TYPE_C_CHAR:					\
+		result = (IDIO_C_TYPE_char (n1) cmp IDIO_C_TYPE_char (n2)); \
+		break;							\
+	    case IDIO_TYPE_C_SCHAR:					\
+		result = (IDIO_C_TYPE_schar (n1) cmp IDIO_C_TYPE_schar (n2)); \
+		break;							\
+	    case IDIO_TYPE_C_UCHAR:					\
+		result = (IDIO_C_TYPE_uchar (n1) cmp IDIO_C_TYPE_uchar (n2)); \
+		break;							\
+	    case IDIO_TYPE_C_SHORT:					\
+		result = (IDIO_C_TYPE_short (n1) cmp IDIO_C_TYPE_short (n2)); \
+		break;							\
+	    case IDIO_TYPE_C_USHORT:					\
+		result = (IDIO_C_TYPE_ushort (n1) cmp IDIO_C_TYPE_ushort (n2)); \
+		break;							\
+	    case IDIO_TYPE_C_INT:					\
+		result = (IDIO_C_TYPE_int (n1) cmp IDIO_C_TYPE_int (n2)); \
+		break;							\
+	    case IDIO_TYPE_C_UINT:					\
+		result = (IDIO_C_TYPE_uint (n1) cmp IDIO_C_TYPE_uint (n2)); \
+		break;							\
+	    case IDIO_TYPE_C_LONG:					\
+		result = (IDIO_C_TYPE_long (n1) cmp IDIO_C_TYPE_long (n2)); \
+		break;							\
+	    case IDIO_TYPE_C_ULONG:					\
+		result = (IDIO_C_TYPE_ulong (n1) cmp IDIO_C_TYPE_ulong (n2)); \
+		break;							\
+	    case IDIO_TYPE_C_LONGLONG:					\
+		result = (IDIO_C_TYPE_longlong (n1) cmp IDIO_C_TYPE_longlong (n2)); \
+		break;							\
+	    case IDIO_TYPE_C_ULONGLONG:					\
+		result = (IDIO_C_TYPE_ulonglong (n1) cmp IDIO_C_TYPE_ulonglong (n2)); \
+		break;							\
+	    case IDIO_TYPE_C_FLOAT:					\
+		result = ((IDIO_C_TYPE_float (n1) op1 IDIO_C_TYPE_float (n2)) || \
+			  idio_C_float_equal_ULP (IDIO_C_TYPE_float (n1), IDIO_C_TYPE_float (n2), 1)); \
+		break;							\
+	    case IDIO_TYPE_C_DOUBLE:					\
+		result = ((IDIO_C_TYPE_double (n1) op1 IDIO_C_TYPE_double (n2)) || \
+			  idio_C_double_equal_ULP (IDIO_C_TYPE_double (n1), IDIO_C_TYPE_double (n2), 1)); \
+		break;							\
+	    case IDIO_TYPE_C_LONGDOUBLE:					\
+		result = ((IDIO_C_TYPE_longdouble (n1) op1 IDIO_C_TYPE_longdouble (n2)) || \
+			  idio_C_longdouble_equal_ULP (IDIO_C_TYPE_longdouble (n1), IDIO_C_TYPE_longdouble (n2), 1)); \
+		break;							\
+	    case IDIO_TYPE_C_POINTER:					\
+		result = (IDIO_C_TYPE_POINTER_P (n1) cmp IDIO_C_TYPE_POINTER_P (n2)); \
+		break;							\
+	    default:							\
+		idio_error_C ("C/" name ": n1->type unexpected", IDIO_LIST2 (n1, n2), idio_string_C ("C arithmetic cmp " name)); \
+									\
+		return idio_S_notreached;				\
+	    }								\
+	}								\
+									\
+	IDIO r = idio_S_false;						\
+									\
+	if (result) {							\
+	    r = idio_S_true;						\
+	}								\
+									\
+	return r;							\
+    }
+
+
+IDIO_DEFINE_C_ARITHMETIC_CMP_EQ_PRIMITIVE ("<=", C_le, <=, <)
 IDIO_DEFINE_C_ARITHMETIC_CMP_PRIMITIVE ("<", C_lt, <)
-IDIO_DEFINE_C_ARITHMETIC_CMP_PRIMITIVE ("==", C_eq, ==)
-IDIO_DEFINE_C_ARITHMETIC_CMP_PRIMITIVE (">=", C_ge, >=)
+IDIO_DEFINE_C_ARITHMETIC_EQ_PRIMITIVE ("==", C_eq, ==)
+IDIO_DEFINE_C_ARITHMETIC_CMP_EQ_PRIMITIVE (">=", C_ge, >=, >)
 IDIO_DEFINE_C_ARITHMETIC_CMP_PRIMITIVE (">", C_gt, >)
 
 IDIO_DEFINE_PRIMITIVE1_DS ("->integer", C_to_integer, (IDIO inum), "i", "\

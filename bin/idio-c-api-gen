@@ -2162,7 +2162,7 @@ void idio_init_${c-module-name}_api ()
 				}
 				hprintf api-c-fh #S{
     fgvi = IDIO_EXPORT_MODULE_PRIMITIVE (idio_${c-module-name}_module, ${c-module-name}_struct_${struct-name}_ref);
-    IDIO_C_STRUCT_IDENT_DEF ("struct ${struct-name}", fgvi);
+    IDIO_C_STRUCT_IDENT_DEF ("struct ${struct-name}", ${c-module-name}_struct_${struct-name}, fgvi);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_${c-module-name}_module, ${c-module-name}_struct_${struct-name}_set);
 }
 			      }

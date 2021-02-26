@@ -1506,7 +1506,7 @@ in C, strsignal (sig)						\n\
 a wrapper to libc strsignal(3)					\n\
 								\n\
 :param sig: signal number to describe				\n\
-:type sig : fixnum or C/int					\n\
+:type sig : C/int						\n\
 :return: string describing errnum				\n\
 :rtype: string							\n\
 								\n\
