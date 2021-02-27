@@ -2993,8 +2993,7 @@ F_SETFL								\n\
     }
 
     if (-1 == fcntl_r) {
-        if ((EBADF == errno ||
-	     EINVAL == errno) &&
+        if (EINVAL == errno &&
 	    F_SETFD == C_cmd &&
 	    idio_vm_virtualisation_WSL) {
 	    perror ("fcntl F_SETFD");
