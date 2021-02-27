@@ -98,6 +98,7 @@ idio_ai_t idio_vm_AR_pc;
 size_t idio_prologue_len;
 
 int idio_vm_exit = 0;
+int idio_vm_virtualisation_WSL = 0;
 
 /**
  * DOC: Some VM tables:

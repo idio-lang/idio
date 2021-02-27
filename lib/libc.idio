@@ -223,7 +223,7 @@ define (stdout-fileno) {
 	 ;; 2. unlink the tmpfile
 	 unlink (pht fd+name)
 	 ;; 3. set the close-on-exec flag
-	 fcntl (ph fd+name) F_SETFD FD_CLOEXEC
+	 fcntl fd F_SETFD FD_CLOEXEC
 	 ;; 4. return the tuple {fd,oh} of "stdout" -- as a list to
 	 ;; mark it special
 	 list (ph fd+name) oh
@@ -242,7 +242,7 @@ define (stderr-fileno) {
 	 ;; 2. unlink the tmpfile
 	 unlink (pht fd+name)
 	 ;; 3. set the close-on-exec flag
-	 fcntl (ph fd+name) F_SETFD FD_CLOEXEC
+	 fcntl fd F_SETFD FD_CLOEXEC
 	 ;; 4. return the tuple {fd,eh} of "stderr" -- as a list to
 	 ;; mark it special
 	 list (ph fd+name) eh

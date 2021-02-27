@@ -195,6 +195,7 @@ extern idio_ai_t idio_vm_IHR_pc;
 extern idio_ai_t idio_vm_AR_pc;
 extern size_t idio_prologue_len;
 extern int idio_vm_exit;
+extern int idio_vm_virtualisation_WSL;
 
 #define IDIO_VM_NS	1000000000L
 #define IDIO_VM_US	1000000L

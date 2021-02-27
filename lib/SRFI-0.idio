@@ -57,6 +57,8 @@ Linux
 os-release/ID/$ID			os-release(5)
 os-release/VERSION_ID/$VERSION_ID	os-release(5)
 
+virtualisation/WSL			if running under Windows Subsystem for Linux
+
 SunOS:
 release/${1st word of /etc/release}	release/OpenIndiana
 
@@ -211,37 +213,37 @@ define-template (cond-expand & clause*) {
  (uname/sysname/Linux {
    found := #f
 
-   loop :+ function (fn*) {
-	     if (null? fn*) #n {
-	       fn := ph fn*
-	       if (e? fn) {
-		 fh := open-input-file fn
-		 loop :+ function () {
-			   if (eof? fh) #n {
-			     (regex-case
-			      (read-line fh)
-			      ("^#" {
-				(loop)
-			      })
-			      ("([[:alnum:]_]+)=(.*)" {
-				(case r.1
-				      (("ID" "VERSION_ID") {
-					%add-feature (append-string "os-release/" r.1 "/" r.2)
-					found = #t
-				      }))
-				(loop)
-			      }))
-			     (loop)
-			   }
-		 }
-		 (loop)
-	       } {
-		 loop (pt fn*)
-	       }
-	     }
+   file-loop :+ function (fn*) {
+		  if (null? fn*) #n {
+		    fn := ph fn*
+		    if (e? fn) {
+		      fh := open-input-file fn
+		      line-loop :+ function () {
+				     if (eof? fh) #n {
+				       (regex-case
+					(read-line fh)
+					("^#" {
+					  (line-loop)
+					})
+					("([[:alnum:]_]+)=(.*)" {
+					  (case r.1
+						(("ID" "VERSION_ID") {
+						  %add-feature (append-string "os-release/" r.1 "/" r.2)
+						  found = #t
+						}))
+					  (line-loop)
+					}))
+				       (line-loop)
+				     }
+		      }
+		      (line-loop)
+		    } {
+		      file-loop (pt fn*)
+		    }
+		  }
    }
 
-   loop '("/etc/os-release" "/usr/lib/os-release")
+   file-loop '("/etc/os-release" "/usr/lib/os-release")
 
    ;; CentOS 6 uses /etc/system-release: CentOS release 6.10 (Final)
    if (not found) {
@@ -255,42 +257,59 @@ define-template (cond-expand & clause*) {
 	}))
      }
    }
+
+   ;; WSL? https://stackoverflow.com/questions/38086185/how-to-check-if-a-program-is-run-in-bash-on-ubuntu-on-windows-and-not-just-plain
+   pv := "/proc/version"
+   if (f? pv) {
+     ;; XXX do not use collect-output (or pipe-from) as under WSL.1
+     ;; they will invoke fcntl F_SETFD on the pipe-handle which it
+     ;; doesn't like.
+     ;;
+     ;; We can't override that until we've been through here!
+     fh := open-input-file pv
+     rl := read-lines fh
+     close-handle fh
+     rc := regcomp "Microsoft|WSL" 'REG_ICASE
+     if (regexec rc rl) {
+       %add-feature 'virtualisation/WSL
+     }
+   }
  })
  (uname/sysname/SunOS {
-   loop :+ function (fn*) {
-	     if (null? fn*) #n {
-	       fn := ph fn*
-	       if (e? fn) {
-		 fh := open-input-file fn
-		 loop :+ function () {
-			   if (eof? fh) #n {
-			     (regex-case
-			      (read-line fh)
-			      ; OpenIndiana Development oi_151.1.8 X86 (powered by illumos)
-			      ; OpenIndiana Hipster 2020.04 (powered by illumos)
-			      ; ...and from the Intertubes...
-			      ; Solaris 9 9/04 s9s_u7wos_09 SPARC
-			      ; Solaris 10 5/08 s10x_u5wos_10 X86
-			      ; Oracle Solaris 11.4 X86
-			      ; OpenSolaris 2009.06 snv_111b X86
-			      ; annoyingly different is:
-			      ; Oracle Solaris 11 Express snv_151a X86
-			      ("(Solaris|OpenSolaris|OpenIndiana|Oracle) " {
-				%add-feature (append-string "release/" (array-ref r 1))
-				; skip the remaining lines
-			      })
-			      (else
-			       (loop)))
-			   }
-		 }
-		 (loop)
-	       } {
-		 loop (pt fn*)
-	       }
-	     }
+   file-loop :+ function (fn*) {
+		  if (null? fn*) #n {
+		    fn := ph fn*
+		    if (e? fn) {
+		      fh := open-input-file fn
+		      line-loop :+ function () {
+				     if (eof? fh) #n {
+				       (regex-case
+					(read-line fh)
+					; OpenIndiana Development oi_151.1.8 X86 (powered by illumos)
+					; OpenIndiana Hipster 2020.04 (powered by illumos)
+					; ...and from the Intertubes...
+					; Solaris 9 9/04 s9s_u7wos_09 SPARC
+					; Solaris 10 5/08 s10x_u5wos_10 X86
+					; Oracle Solaris 11.4 X86
+					; OpenSolaris 2009.06 snv_111b X86
+					; annoyingly different is:
+					; Oracle Solaris 11 Express snv_151a X86
+					("(Solaris|OpenSolaris|OpenIndiana|Oracle) " {
+					  %add-feature (append-string "release/" (array-ref r 1))
+					  ; skip the remaining lines
+					})
+					(else
+					 (line-loop)))
+				     }
+		      }
+		      (line-loop)
+		    } {
+		      file-loop (pt fn*)
+		    }
+		  }
    }
 
-   loop '("/etc/release")
+   file-loop '("/etc/release")
  }))
 
 provide SRFI-0

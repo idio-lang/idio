@@ -118,6 +118,7 @@ extern IDIO_SYMBOL_DECL (toplevel);
 extern IDIO_SYMBOL_DECL (trap);
 extern IDIO_SYMBOL_DECL (unquote);
 extern IDIO_SYMBOL_DECL (unquotesplicing);
+extern IDIO_SYMBOL_DECL (virtualisation_WSL);
 
 extern IDIO_SYMBOL_DECL (char);
 extern IDIO_SYMBOL_DECL (schar);

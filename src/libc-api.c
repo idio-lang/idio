@@ -2993,17 +2993,24 @@ F_SETFL								\n\
     }
 
     if (-1 == fcntl_r) {
-	/*
-	 * Test Case: libc-wrap-errors/fcntl-F_DUPFD-bad-fd.idio
-	 *
-	 * fd+name := mkstemp "XXXXXX"
-	 * close (ph fd+name)
-	 * delete-file (pht fd+name)
-	 * fcntl (ph fd+name) F_DUPFD 0
-	 */
-	idio_error_system_errno ("fcntl", IDIO_LIST3 (fd, cmd, args), IDIO_C_FUNC_LOCATION ());
+        if ((EBADF == errno ||
+	     EINVAL == errno) &&
+	    F_SETFD == C_cmd &&
+	    idio_vm_virtualisation_WSL) {
+	    perror ("fcntl F_SETFD");
+	} else {
+	    /*
+	     * Test Case: libc-wrap-errors/fcntl-F_DUPFD-bad-fd.idio
+	     *
+	     * fd+name := mkstemp "XXXXXX"
+	     * close (ph fd+name)
+	     * delete-file (pht fd+name)
+	     * fcntl (ph fd+name) F_DUPFD 0
+	     */
+	    idio_error_system_errno ("fcntl", IDIO_LIST3 (fd, cmd, args), IDIO_C_FUNC_LOCATION ());
 
-	return idio_S_notreached;
+	    return idio_S_notreached;
+	}
     }
 
     return idio_C_int (fcntl_r);

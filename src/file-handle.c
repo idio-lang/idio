@@ -791,9 +791,15 @@ static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, int h_type, char
 	/*
 	 * Test Case: ??
 	 */
-	idio_error_system_errno_msg ("fcntl", "F_SETFD", ifd, IDIO_C_FUNC_LOCATION ());
 
-	return idio_S_notreached;
+	if (EINVAL == errno &&
+	    idio_vm_virtualisation_WSL) {
+	    perror ("fcntl F_SETFD");
+	} else {
+	    idio_error_system_errno_msg ("fcntl", "F_SETFD", ifd, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	}
     }
 
     int hflags = def_mode;

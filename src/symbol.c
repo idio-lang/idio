@@ -117,6 +117,7 @@ IDIO_SYMBOL_DECL (toplevel);
 IDIO_SYMBOL_DECL (trap);
 IDIO_SYMBOL_DECL (unquote);
 IDIO_SYMBOL_DECL (unquotesplicing);
+IDIO_SYMBOL_DECL (virtualisation_WSL);
 
 IDIO_SYMBOL_DECL (char);
 IDIO_SYMBOL_DECL (schar);
@@ -975,6 +976,7 @@ void idio_init_symbol ()
     IDIO_SYMBOL_DEF ("trap", trap);
     IDIO_SYMBOL_DEF ("unquote", unquote);
     IDIO_SYMBOL_DEF ("unquotesplicing", unquotesplicing);
+    IDIO_SYMBOL_DEF ("virtualisation/WSL", virtualisation_WSL);
 
     IDIO_SYMBOL_DEF ("char", char);
     IDIO_SYMBOL_DEF ("schar", schar);

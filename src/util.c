@@ -3743,6 +3743,13 @@ IDIO idio_add_feature (IDIO f)
 	f = idio_symbols_C_intern (idio_display_string (f, &size));
     }
 
+    /*
+     * Not Art but SRFI-0 has done the grep for us
+     */
+    if (idio_S_virtualisation_WSL == f) {
+	idio_vm_virtualisation_WSL = 1;
+    }
+
     IDIO fs = idio_module_symbol_value (idio_features, idio_Idio_module, idio_S_nil);
 
     return idio_module_set_symbol_value (idio_features, idio_pair (f, fs), idio_Idio_module);
