@@ -1,0 +1,17 @@
+
+module util-errors/printers
+
+define (bad-printer o s) {
+  #t
+}
+
+;; struct-timeval uses struct-timeval-as-string
+
+tv := (libc/gettimeofday)
+
+unwind-protect {
+  add-as-string tv bad-printer
+  format "%s" tv
+} {
+  add-as-string tv libc/struct-timeval-as-string
+}

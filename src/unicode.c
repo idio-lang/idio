@@ -195,14 +195,15 @@ convert `c` to an integer		\n\
  * caller must IDIO_GC_FREE() this string
  *
  */
-char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted)
+char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted, int use_prec)
 {
     IDIO_ASSERT (str);
 
     IDIO_TYPE_ASSERT (string, str);
 
     int prec = 0;
-    if (idio_S_nil != idio_print_conversion_precision_sym) {
+    if (use_prec &&
+	idio_S_nil != idio_print_conversion_precision_sym) {
 	IDIO ipcp = idio_module_symbol_value (idio_print_conversion_precision_sym,
 					      idio_Idio_module,
 					      IDIO_LIST1 (idio_S_false));

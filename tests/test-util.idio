@@ -572,8 +572,8 @@ format "%s" st1
 
 format "%s" si1
 
-%%add-as-string st1 (function (v s) {
-		       "printing"
+add-as-string st1 (function (v s) {
+		     "printing"
 })
 
 test (format "%s" si1) "printing"
@@ -969,6 +969,164 @@ test (format "%-15.2f" n)	"3.14           "
 ;; C base_types
 ;;
 ;; (too) many variants
+;;
+;; The two (broad) types, integrals and floating points do much of a
+;; muchness for each type.  We can test one (of each) thoroughly and
+;; waft some interest at their siblings to show willing.
+
+;; Unlike printf(2) we mandate that the "unsigned int" conversion
+;; specifiers, o u x X, must be unsigned (char, short, int, long or
+;; long long) and are not available for signed integrals.
+
+;; So let's be thorough with uint and double and then come back to the
+;; others.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; int - a copy of the fixnum tests, above
+
+n := C/integer-> 10 'uint
+
+; basic conversion
+test (format "%d" n)	"10"
+test (format "%x" n)	"a"
+test (format "%X" n)	"A"
+test (format "%o" n)	"12"
+test (format "%b" n)	"1010"
+
+; min width (no change)
+test (format "%1d" n)	"10"
+test (format "%1x" n)	"a"
+test (format "%1X" n)	"A"
+test (format "%1o" n)	"12"
+test (format "%1b" n)	"1010"
+
+; min width (change)
+test (format "%4d" n)	"  10"
+test (format "%4x" n)	"   a"
+test (format "%4X" n)	"   A"
+test (format "%4o" n)	"  12"
+test (format "%6b" n)	"  1010"
+
+; min width (change) ; left aligned
+test (format "%-4d" n)	"10  "
+test (format "%-4x" n)	"a   "
+test (format "%-4X" n)	"A   "
+test (format "%-4o" n)	"12  "
+test (format "%-6b" n)	"1010  "
+
+; min width (no change) ; zero padded
+test (format "%01d" n)	"10"
+test (format "%01x" n)	"a"
+test (format "%01X" n)	"A"
+test (format "%01o" n)	"12"
+test (format "%01b" n)	"1010"
+
+; min width (change) ; zero padded
+test (format "%04d" n)	"0010"
+test (format "%04x" n)	"000a"
+test (format "%04X" n)	"000A"
+test (format "%04o" n)	"0012"
+test (format "%06b" n)	"001010"
+
+; min precision (no change)
+test (format "%.1d" n)	"10"
+test (format "%.1x" n)	"a"
+test (format "%.1X" n)	"A"
+test (format "%.1o" n)	"12"
+test (format "%.1b" n)	"1010"
+
+; min precision (change)
+test (format "%.3d" n)	"010"
+test (format "%.3x" n)	"00a"
+test (format "%.3X" n)	"00A"
+test (format "%.3o" n)	"012"
+test (format "%.6b" n)	"001010"
+
+; min width > min precision
+test (format "%4.3d" n)	" 010"
+test (format "%4.3x" n)	" 00a"
+test (format "%4.3X" n)	" 00A"
+test (format "%4.3o" n)	" 012"
+test (format "%8.6b" n)	"  001010"
+
+; min width > min precision ; left aligned
+test (format "%-4.3d" n)	"010 "
+test (format "%-4.3x" n)	"00a "
+test (format "%-4.3X" n)	"00A "
+test (format "%-4.3o" n)	"012 "
+test (format "%-8.6b" n)	"001010  "
+
+; min width < min precision
+test (format "%2.3d" n)	"010"
+test (format "%2.3x" n)	"00a"
+test (format "%2.3X" n)	"00A"
+test (format "%2.3o" n)	"012"
+test (format "%4.6b" n)	"001010"
+
+; unexpected conversion - replaced with %d
+test (format "%4q" n) "  10"
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; double - a copy of the initial bignum tests extended with %g
+
+n := C/number-> 1e6 'double
+
+test (string n)		"1e+06"
+
+; default formats - precision is 6
+test (format "%e" n)	"1.000000e+06"
+test (format "%f" n)	"1000000.000000"
+test (format "%g" n)	"1e+06"
+
+; min width (no change)
+test (format "%1e" n)	"1.000000e+06"
+test (format "%1f" n)	"1000000.000000"
+test (format "%1g" n)	"1e+06"
+
+; min width (change)
+test (format "%15e" n)	"   1.000000e+06"
+test (format "%15f" n)	" 1000000.000000"
+test (format "%15g" n)	"          1e+06"
+
+; min width (change) ; left aligned
+test (format "%-15e" n)	"1.000000e+06   "
+test (format "%-15f" n)	"1000000.000000 "
+test (format "%-15g" n)	"1e+06          "
+
+; min width (no change) ; zero padded
+test (format "%01e" n)	"1.000000e+06"
+test (format "%01f" n)	"1000000.000000"
+test (format "%01g" n)	"1e+06"
+
+; min width (change) ; zero padded
+test (format "%015e" n)	"0001.000000e+06"
+test (format "%015f" n)	"01000000.000000"
+test (format "%015g" n)	"00000000001e+06"
+
+; min precision
+test (format "%.2e" n)	"1.00e+06"
+test (format "%.2f" n)	"1000000.00"
+test (format "%.2g" n)	"1e+06"
+
+; zero precision
+test (format "%.0e" n)	"1e+06"
+test (format "%.0f" n)	"1000000"
+test (format "%.0g" n)	"1e+06"
+
+; min width ; min precision
+test (format "%15.2e" n)	"       1.00e+06"
+test (format "%15.2f" n)	"     1000000.00"
+test (format "%15.2g" n)	"          1e+06"
+
+; min width ; min precision ; left aligned
+test (format "%-15.2e" n)	"1.00e+06       "
+test (format "%-15.2f" n)	"1000000.00     "
+test (format "%-15.2g" n)	"1e+06          "
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 
 ;; char -- only ever printf(3) %c
 c-char := (C/integer-> #x61 'char)
@@ -1130,7 +1288,7 @@ test (%format 'keyed "%4.3f" h)		" 010"
 test (%format 'keyed "%10.2b" h)	"    123.45"
 
 ;; all done?
-Tests? (format0 + 589)
+Tests? (format0 + 676)
 
 ;Local Variables:
 ;mode: Idio

@@ -778,7 +778,7 @@ char *idio_string_as_C (IDIO so, size_t *sizep)
 
     IDIO_TYPE_ASSERT (string, so);
 
-    return idio_utf8_string (so, sizep, IDIO_UTF8_STRING_VERBATIM, IDIO_UTF8_STRING_UNQUOTED);
+    return idio_utf8_string (so, sizep, IDIO_UTF8_STRING_VERBATIM, IDIO_UTF8_STRING_UNQUOTED, IDIO_UTF8_STRING_USEPREC);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("string?", string_p, (IDIO o), "o", "\

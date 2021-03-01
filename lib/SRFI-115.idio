@@ -1,6 +1,6 @@
 #*
 
-Copyright (c) 2020 Ian Fitchet <idf(at)idio-lang.org>
+Copyright (c) 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
 
 Licensed under the Apache License, Version 2.0 (the "License"); you
 may not use this file except in compliance with the License.  You
@@ -74,7 +74,7 @@ define (Rx-as-string rx seen-rxs) {
   } #n
 }
 
-%%add-as-string Rx Rx-as-string
+add-as-string Rx Rx-as-string
 
 ;; Syntactic sugar.
 define-syntax rx \
@@ -121,7 +121,7 @@ define (state-as-string st seen-ids) {
   } #n
 }
 
-%%add-as-string state state-as-string
+add-as-string state state-as-string
 
 make-state = {
   orig-make-state := make-state
@@ -195,7 +195,7 @@ define (regexp-match-as-string rm seen-rms & o) {
   } #n
 }
 
-%%add-as-string regexp-match regexp-match-as-string
+add-as-string regexp-match regexp-match-as-string
 
 define (regexp-match-rules md) {
   Rx-match-rules (regexp-match-rx md)
@@ -403,7 +403,7 @@ define (searcher-as-string sr seen-searchers & o) {
   } #n
 }
 
-%%add-as-string searcher searcher-as-string
+add-as-string searcher searcher-as-string
 
 ;; Merge two regexp-matches, preferring the leftmost-longest of their
 ;; matches, or shortest for non-greedy matches.

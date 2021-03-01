@@ -103,7 +103,7 @@ define (job-as-string job seen) {
   } #n
 }
 
-%%add-as-string %idio-job job-as-string
+add-as-string %idio-job job-as-string
 
 #*
 

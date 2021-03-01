@@ -149,9 +149,9 @@ char *idio_libc_struct_timeval_as_string (IDIO tv)
 	}
     }
 
-    char us[BUFSIZ];
+    char us[30];
     sprintf (us, "%06ld", tvp->tv_usec);
-    char fmt[BUFSIZ];
+    char fmt[30];
     sprintf (fmt, "%%ld.%%.%ds", prec);
     char *buf;
     idio_asprintf (&buf, fmt, tvp->tv_sec, us);
@@ -182,15 +182,13 @@ Return a C struct timeval as a string	\n\
 	return idio_S_notreached;
     }
 
-    IDIO osh = idio_open_output_string_handle_C ();
-
     char *timevals = idio_libc_struct_timeval_as_string (timeval);
 
-    idio_display_C (timevals, osh);
+    IDIO r = idio_string_C (timevals);
 
     IDIO_GC_FREE (timevals);
 
-    return idio_get_output_string (osh);
+    return r;
 }
 
 IDIO idio_libc_struct_timeval_pointer (struct timeval *tvp)

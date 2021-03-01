@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -38,10 +38,13 @@
 #define IDIO_UTF8_STRING_UNQUOTED	0
 #define IDIO_UTF8_STRING_QUOTED		1
 
+#define IDIO_UTF8_STRING_NOPREC		0
+#define IDIO_UTF8_STRING_USEPREC	1
+
 int idio_isa_unicode (IDIO o);
 idio_unicode_t idio_utf8_decode (idio_unicode_t* state, idio_unicode_t* codep, idio_unicode_t byte);
 void idio_utf8_code_point (idio_unicode_t c, char *buf, int *sizep);
-char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted);
+char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted, int use_prec);
 IDIO idio_unicode_lookup (char *name);
 
 void idio_init_unicode ();
