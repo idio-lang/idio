@@ -69,6 +69,8 @@ IDIO_SYMBOL_DECL (equalp);
 IDIO_SYMBOL_DECL (eqvp);
 IDIO_SYMBOL_DECL (error);
 IDIO_SYMBOL_DECL (escape);
+IDIO_SYMBOL_DECL (escape_block);
+IDIO_SYMBOL_DECL (escape_from);
 IDIO_SYMBOL_DECL (excl_star);
 IDIO_SYMBOL_DECL (excl_tilde);
 IDIO_SYMBOL_DECL (fixed_template);
@@ -931,6 +933,8 @@ void idio_init_symbol ()
     IDIO_SYMBOL_DEF ("eqv?", eqvp);
     IDIO_SYMBOL_DEF ("error", error);
     IDIO_SYMBOL_DEF ("escape", escape);
+    IDIO_SYMBOL_DEF ("escape-block", escape_block);
+    IDIO_SYMBOL_DEF ("escape-from", escape_from);
     IDIO_SYMBOL_DEF ("fixed_template", fixed_template);
     IDIO_SYMBOL_DEF ("function", function);
     IDIO_SYMBOL_DEF ("function+", functionp);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -22,7 +22,7 @@
 
 #include "idio.h"
 
-IDIO idio_continuation (IDIO thr)
+IDIO idio_continuation (IDIO thr, int kind)
 {
     IDIO_ASSERT (thr);
     IDIO_TYPE_ASSERT (thread, thr);
@@ -32,35 +32,41 @@ IDIO idio_continuation (IDIO thr)
     IDIO_GC_ALLOC (k->u.continuation, sizeof (idio_continuation_t));
 
     IDIO_CONTINUATION_GREY (k) = NULL;
+    IDIO_CONTINUATION_FLAGS (k) = IDIO_CONTINUATION_FLAG_NONE;
     IDIO_CONTINUATION_JMP_BUF (k) = IDIO_THREAD_JMP_BUF (thr);
-    IDIO_CONTINUATION_STACK (k) = idio_copy_array (IDIO_THREAD_STACK (thr), IDIO_COPY_SHALLOW, 9);
+    if (IDIO_CONTINUATION_CALL_DC == kind) {
+	IDIO_CONTINUATION_STACK (k) = idio_S_nil;
+	IDIO_CONTINUATION_FLAGS (k) = IDIO_CONTINUATION_FLAG_DELIMITED;
+    } else {
+	IDIO_CONTINUATION_STACK (k) = idio_copy_array (IDIO_THREAD_STACK (thr), IDIO_COPY_SHALLOW, 9);
 
-    /*
-     * XXX same order as idio_vm_preserve_state() !!!
-     */
+	/*
+	 * XXX same order as idio_vm_preserve_state() !!!
+	 */
 #ifdef IDIO_VM_DYNAMIC_REGISTERS
-    idio_array_push (IDIO_CONTINUATION_STACK (k), IDIO_THREAD_ENVIRON_SP (thr));
-    idio_array_push (IDIO_CONTINUATION_STACK (k), IDIO_THREAD_DYNAMIC_SP (thr));
-    idio_array_push (IDIO_CONTINUATION_STACK (k), IDIO_THREAD_TRAP_SP (thr));
+	idio_array_push (IDIO_CONTINUATION_STACK (k), IDIO_THREAD_ENVIRON_SP (thr));
+	idio_array_push (IDIO_CONTINUATION_STACK (k), IDIO_THREAD_DYNAMIC_SP (thr));
+	idio_array_push (IDIO_CONTINUATION_STACK (k), IDIO_THREAD_TRAP_SP (thr));
 #endif
-    idio_array_push (IDIO_CONTINUATION_STACK (k), IDIO_THREAD_FRAME (thr));
-    idio_array_push (IDIO_CONTINUATION_STACK (k), IDIO_THREAD_ENV (thr));
-    idio_array_push (IDIO_CONTINUATION_STACK (k), idio_SM_preserve_state);
+	idio_array_push (IDIO_CONTINUATION_STACK (k), IDIO_THREAD_FRAME (thr));
+	idio_array_push (IDIO_CONTINUATION_STACK (k), IDIO_THREAD_ENV (thr));
+	idio_array_push (IDIO_CONTINUATION_STACK (k), idio_SM_preserve_state);
 
-    idio_ai_t pc = IDIO_THREAD_PC (thr);
+	idio_ai_t pc = IDIO_THREAD_PC (thr);
 
-    /*
-     * XXX check the use of PC in
-     *
-     * 1. IDIO_A_ABORT in idio_vm_run1()
-     *
-     * 2. printing a continuation in util.c
-     */
-    idio_array_push (IDIO_CONTINUATION_STACK (k), idio_fixnum (pc));
+	/*
+	 * XXX check the use of PC in
+	 *
+	 * 1. IDIO_A_ABORT in idio_vm_run1()
+	 *
+	 * 2. printing a continuation in util.c
+	 */
+	idio_array_push (IDIO_CONTINUATION_STACK (k), idio_fixnum (pc));
 
-    idio_array_push (IDIO_CONTINUATION_STACK (k), thr);
+	idio_array_push (IDIO_CONTINUATION_STACK (k), thr);
 
-    idio_array_push (IDIO_CONTINUATION_STACK (k), idio_SM_preserve_continuation);
+	idio_array_push (IDIO_CONTINUATION_STACK (k), idio_SM_preserve_continuation);
+    }
 
     return k;
 }

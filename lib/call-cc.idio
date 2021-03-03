@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -20,70 +20,75 @@
 ;;
 ;;
 
-;; We're going to redefine call/cc (at least) twice.  call/cc is
-;; normally used like this:
+#*
 
-;; call/cc (function (k) {
-;;            ...do something with k...
-;;	      ; you *could* invoke it with a value
-;;            k value
-;;	      ; but more likely you store it
-;;            thing = k
-;;            ; then invoke some risky function
-;;            risky job
-;;            })
+As if call/cc is not tricksome enough, we're going to redefine
+call/cc (at least) twice.  call/cc is normally used like this:
 
-;; (risky job) will normally just run, return a value which call/cc
-;; will return in turn.  If risky job has gone a bit haywire then
-;; either it or some other mechanism (a trap?) can now invoke (thing
-;; value) -- assuming {thing} is in scope! -- and call/cc will return
-;; {value} as if (risky job) has returned it.
+call/cc (function (k) {
+           ;; do something with k
 
-;; If you want a "<k is here>" marker then invoking {k} is a mechanism
-;; to return from the call to call/cc -- from anywhere the stashed
-;; value of {k} is in scope!
+	   ;; you *could* invoke it with a value
+           k value
 
-;; So call/cc, a function, expects as its only argument a function
-;; which in turn expects a single argument, the continuation.  The
-;; continuation itself can be stored or invoked with a single value,
-;; the value to continue the continuation with.
+	   ;; but more likely you store it
+           thing = k
 
-;; The continuation of call/cc, k, is, as noted above, a mechanism to
-;; return from the call to call/cc -- potentially a second or third
-;; time.
+           ;; then invoke some risky function
+           risky job
+           })
 
-;; With that in mind, invoking the continuation *inside* the function
-;; passed to call/cc is a bit pointless in the sense that you return
-;; from call/cc just as you would have anyway.  However, you would
-;; normally store the continuation in a variable that is in scope for
-;; some other part of the code to call as part of some recovery
-;; process.
+(risky job) will normally just run, return a value which call/cc will
+return in turn.  If risky job has gone a bit haywire then either it or
+some other mechanism (a trap?) can now invoke (thing value) --
+assuming {thing} is in scope! -- and call/cc will return {value} as
+if (risky job) has returned it.
 
-;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+If you want a "<k is here>" marker then invoking {k} is a mechanism to
+return from the call to call/cc -- from *anywhere* the stashed value
+of {k} is in scope!
 
-;; Below, when we're redefining call/cc, we're using k-proc to
-;; represent the 1-ary function that call/cc expects and k to
-;; represent the continuation.
+So call/cc, a function, expects as its only argument a function which
+in turn expects a single argument, the continuation.  The continuation
+itself can be stored or invoked with a single value, the value to
+continue the continuation with.
 
-;; In that light, we could have written the original usage as:
+The continuation of call/cc, k, is, as noted above, a mechanism to
+return from the call to call/cc -- potentially a second or third time.
 
-;; k-proc := function (k) {
-;;             ...do something with k...
-;;	       ; store it
-;;             thing = k
-;;	       ; invoke it with a value
-;;             k value
-;; }
-;;
-;; call/cc k-proc
+With that in mind, invoking the continuation *inside* the function
+passed to call/cc is a bit pointless in the sense that you return from
+call/cc just as you would have anyway.  However, you would normally
+store the continuation in a variable that is in scope for some other
+part of the code to call as part of some recovery process.
 
-;; except we'd be filling the top-level namespace with junk names --
-;; is this {k-proc} my k-proc or your k-proc?
+---
 
-;; In all redefinitions we can use the current/original call/cc
-;; (whether that is one of these redefinitions or the original
-;; primitive) to carry out the actual dirty business of implementing
-;; the continuation.
+Below, when we're redefining call/cc, we're using k-proc to
+represent the 1-ary function that call/cc expects and k to
+represent the continuation.
+
+In that light, we could have written the original usage as:
+
+k-proc := function (k) {
+            ;; do something with k
+	    ;; store it
+            thing = k
+	    ;; invoke it with a value
+            k value
+}
+
+call/cc k-proc
+
+except we'd be filling the top-level namespace with junk names -- is
+this {k-proc} my k-proc or your k-proc?
+
+In all redefinitions we can use the current/original call/cc
+(whether that is one of these redefinitions or the original
+primitive) to carry out the actual dirty business of implementing
+the continuation.
+
+*#
 
 ;; Clearly, something needs to exists to bootstrap everything and that
 ;; is the primitive %%call/cc, defined in vm.c.
@@ -106,8 +111,8 @@ call-with-values := #f
   magic := pair 'multiple 'values
 
   magic? := function (x) {
-	      and (pair? x) \
-		  (eq? (ph x) magic)
+	      (and (pair? x)
+		   (eq? (ph x) magic))
   }
 
   ;; Ordinarily orig-call/cc could live inside the block defining
@@ -119,23 +124,26 @@ call-with-values := #f
     function (k-proc) "
 This is the call-with-values call/cc variant which calls:
 
-" {
+    " {
       orig-call/cc (function (k) {
 
-		      ;; Dirty trick time!  k-proc should be a 1-ary
-		      ;; function -- but what if it was passed more
-		      ;; than one arg?  Being given more than one arg
-		      ;; isn't a problem except that the continuation
-		      ;; we're about to call only accepts 1 argument.
+		      #*
 
-		      ;; Here we solve that problem by transforming
-		      ;; the n args into a single value where for 2 or
-		      ;; more args the 1-ary arg becomes '(magic args)
-		      ;; through applying the function {values} to
-		      ;; {args}.
+		      Dirty trick time!  k-proc should be a 1-ary
+		      function -- but what if it was passed more than
+		      one arg?  Being given more than one arg isn't a
+		      problem except that the continuation we're about
+		      to call only accepts 1 argument.
 
-		      ;; We can now call the continuation with our
-		      ;; faked single value.
+		      Here we solve that problem by transforming the n
+		      args into a single value where for 2 or more
+		      args the 1-ary arg becomes '(magic args) through
+		      applying the function {values} to {args}.
+
+		      We can now call the continuation with our faked
+		      single value.
+
+		      *#
 
 		      k-proc (function args {
 				k (apply values args)
@@ -174,65 +182,74 @@ This is the call-with-values call/cc variant which calls:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; This is derived from implementations as described in R5RS
-;; documentation.
+#*
 
-;; dynamic-wind and call/cc are concomitant
+DYNAMIC-WIND
 
-;; From the R5RS report
+This is derived from implementations as described in R5RS
+documentation.
 
-;; A state space is a tree with the current state at the root. Each
-;; node other than the root is a triple <before,after,parent>,
-;; represented in this implementation as two pairs:
+dynamic-wind and call/cc are concomitant
 
-;; ((before . after) . parent)
+From the R5RS report:
 
-;; Navigating between states requires re-rooting the tree by reversing
-;; parent-child links.
+  A state space is a tree with the current state at the root. Each
+  node other than the root is a triple <before,after,parent>,
+  represented in this implementation as two pairs:
+
+  ((before . after) . parent)
+
+  Navigating between states requires re-rooting the tree by reversing
+  parent-child links.
+
+*#
 
 ;call/cc := call/cc
 dynamic-wind := #f
 
 {
+  #*
+
+  reroot! is playing a very dirty trick.  It is modifying the
+  *contents* of {*here*} and {there} and then changing what {*here*}
+  refers to which is critical because the callers of reroot! have
+  generally taken a reference to {*here*} (as it was when they
+  started).
+
+  The important part about reroot! modifying the *contents* is because
+  of the eq? test.  eq? will be testing the address in memory of the
+  pairs and not the contents of the pairs.  It is obviously true that
+  if the two variables refer to the same address then they are the
+  same.  However, they no longer have the contents you first thought
+  of.
+
+  The callers' reference to {*here*} (usually called {here}) started
+  as, probably, (#f . #n) but will become
+
+  ((after . before) . orig-there)
+
+  and {orig-there} was itself ((before . after) . orig-*here*)
+
+  which means when the caller subsequently calls reroot! again with
+  {here} they're actually calling it with ((after . before)
+  . orig-there) which means the first thing reroot! does is call
+  itself with (pt there), ie. {orig-there}.
+
+  But wait!  {orig-there} was *also* modified by reroot! to be (#f
+  . #n) which now eq? {*here*} because reroot! changed what {*here*}
+  referred to as well (to {orig-there} in fact).
+
+  Don't forget, if you're remotely following, that any modification to
+  {there} will affect all those who were referencing it as part of
+  another data structure!
+
+  A neat side-effect of toggling the (after . before) pair is that
+  reroot!  will now blindly call ({before}) as previously but now
+  {before} -- (phh there) -- is actually {after}.
+
+  *#
+
   *here* := list #f
-  original-call/cc := call/cc
-
-  ;; reroot! is playing a very dirty trick.  It is modifying the
-  ;; *contents* of {*here*} and {there} and then changing what
-  ;; {*here*} refers to which is critical because the callers of
-  ;; reroot! have generally taken a reference to {*here*} (as it was
-  ;; when they started).
-
-  ;; The important part about reroot! modifying the *contents* is
-  ;; because of the eq? test.  eq? will be testing the address in
-  ;; memory of the pairs and not the contents of the pairs.  It is
-  ;; obviously true that if the two variables refer to the same
-  ;; address then they are the same.  However, they no longer have the
-  ;; contents you first thought of.
-
-  ;; The callers' reference to {*here*} (usually called {here})
-  ;; started as, probably, (#f . #n) but will become
-
-  ;; ((after . before) . orig-there)
-
-  ;; and {orig-there} was itself ((before . after) . orig-*here*)
-
-  ;; which means when the caller subsequently calls reroot! again with
-  ;; {here} they're actually calling it with ((after . before)
-  ;; . orig-there) which means the first thing reroot! does is call
-  ;; itself with (pt there), ie. {orig-there}.
-
-  ;; But wait!  {orig-there} was *also* modified by reroot! to be (#f
-  ;; . #n) which now eq? {*here*} because reroot! changed what
-  ;; {*here*} referred to as well (to {orig-there} in fact).
-
-  ;; Don't forget, if you're remotely following, that any modification
-  ;; to {there} will affect all those who were referencing it as part
-  ;; of another data structure!
-
-  ;; A neat side-effect of toggling the (after . before) pair is that
-  ;; reroot!  will now blindly call ({before}) as previously but now
-  ;; {before} -- (phh there) -- is actually {after}.
 
   define (reroot! there) {
     if (not (eq? *here* there)) {
@@ -254,17 +271,19 @@ dynamic-wind := #f
   ;; with {here} (whatever value it actually has by then) and
   ;; ultimately call {after} before calling the continuation.
 
+  original-call/cc := call/cc
+
   call/cc = function (k-proc) "
 This is the dynamic-wind call/cc variant which calls:
 
-" {
-	      here := *here*
-	      original-call/cc (function (k) {
-				  k-proc (function results {
-					    reroot! here
-					    apply k results
-				  })
-	      })
+  " {
+    here := *here*
+    original-call/cc (function (k) {
+			k-proc (function results {
+				  reroot! here
+				  apply k results
+			})
+    })
   }
 
   %set-property! call/cc :docstr-raw (append-string (%property call/cc :docstr-raw) (%property original-call/cc :docstr-raw))

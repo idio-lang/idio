@@ -881,15 +881,19 @@ typedef struct idio_thread_s {
  * copying the stack so once we've done that we can push everything
  * else idio_vm_restore_state() needs onto that copy of the stack.
  */
+#define IDIO_CONTINUATION_FLAG_NONE		0
+#define IDIO_CONTINUATION_FLAG_DELIMITED	(1<<0)
+
 typedef struct idio_continuation_s {
     struct idio_s *grey;
     sigjmp_buf *jmp_buf;
     struct idio_s *stack;
 } idio_continuation_t;
 
-#define IDIO_CONTINUATION_GREY(T)	((T)->u.continuation->grey)
-#define IDIO_CONTINUATION_JMP_BUF(T)	((T)->u.continuation->jmp_buf)
-#define IDIO_CONTINUATION_STACK(T)	((T)->u.continuation->stack)
+#define IDIO_CONTINUATION_GREY(K)	((K)->u.continuation->grey)
+#define IDIO_CONTINUATION_JMP_BUF(K)	((K)->u.continuation->jmp_buf)
+#define IDIO_CONTINUATION_STACK(K)	((K)->u.continuation->stack)
+#define IDIO_CONTINUATION_FLAGS(K)	((K)->tflags)
 
 typedef	uint32_t idio_bitset_word_t;
 #define IDIO_BITSET_WORD_MAX 0xffffffffUL

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -91,6 +91,9 @@
 
 #define IDIO_I_CODE_PUSH_TRAP				120
 #define IDIO_I_CODE_POP_TRAP				121
+#define IDIO_I_CODE_PUSH_ESCAPER			122
+#define IDIO_I_CODE_POP_ESCAPER				123
+#define IDIO_I_CODE_ESCAPER_LABEL_REF			124
 
 #define IDIO_I_CODE_AND					130
 #define IDIO_I_CODE_OR					131
@@ -175,6 +178,9 @@
 
 #define IDIO_I_PUSH_TRAP			((const IDIO) IDIO_CONSTANT_I_CODE (IDIO_I_CODE_PUSH_TRAP))
 #define IDIO_I_POP_TRAP				((const IDIO) IDIO_CONSTANT_I_CODE (IDIO_I_CODE_POP_TRAP))
+#define IDIO_I_PUSH_ESCAPER			((const IDIO) IDIO_CONSTANT_I_CODE (IDIO_I_CODE_PUSH_ESCAPER))
+#define IDIO_I_POP_ESCAPER			((const IDIO) IDIO_CONSTANT_I_CODE (IDIO_I_CODE_POP_ESCAPER))
+#define IDIO_I_ESCAPER_LABEL_REF		((const IDIO) IDIO_CONSTANT_I_CODE (IDIO_I_CODE_ESCAPER_LABEL_REF))
 
 #define IDIO_I_AND				((const IDIO) IDIO_CONSTANT_I_CODE (IDIO_I_CODE_AND))
 #define IDIO_I_OR				((const IDIO) IDIO_CONSTANT_I_CODE (IDIO_I_CODE_OR))

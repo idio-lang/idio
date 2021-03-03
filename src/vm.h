@@ -180,8 +180,9 @@
 #define IDIO_A_POP_TRAP				242
 #define IDIO_A_RESTORE_TRAP			243
 
-#define IDIO_A_PUSH_ESCAPER			250 /* not implemented */
-#define IDIO_A_POP_ESCAPER			251 /* not implemented */
+#define IDIO_A_PUSH_ESCAPER			250
+#define IDIO_A_POP_ESCAPER			251
+#define IDIO_A_ESCAPER_LABEL_REF		252
 
 extern IDIO idio_vm_constants;
 extern IDIO idio_vm_constants_hash;

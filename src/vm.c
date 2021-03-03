@@ -2316,6 +2316,80 @@ static void idio_vm_restore_trap (IDIO thr)
 #endif
 }
 
+void idio_vm_push_escaper (IDIO thr, IDIO fmci, idio_ai_t offset)
+{
+    IDIO_ASSERT (thr);
+    IDIO_ASSERT (fmci);
+
+    IDIO_TYPE_ASSERT (thread, thr);
+    IDIO_TYPE_ASSERT (fixnum, fmci);
+
+    IDIO stack = IDIO_THREAD_STACK (thr);
+
+    /*
+     * stack order:
+     *
+     * n   idio_SM_escaper
+     * n-1 label
+     * n-2 (absolute) PC to resume(*)
+     *
+     * (*) PC after the POP-ESCAPER
+     */
+
+    idio_array_push (stack, idio_fixnum (IDIO_THREAD_PC (thr) + offset + 1));
+    idio_array_push (stack, fmci);
+    idio_array_push (stack, idio_SM_escaper);
+}
+
+static void idio_vm_pop_escaper (IDIO thr)
+{
+    IDIO_ASSERT (thr);
+    IDIO_TYPE_ASSERT (thread, thr);
+
+    IDIO marker = IDIO_THREAD_STACK_POP ();
+    if (idio_SM_escaper != marker) {
+	idio_debug ("iv-pop-escaper: marker: expected idio_SM_escaper not %s\n", marker);
+	idio_vm_panic (thr, "iv-pop-escaper: unexpected stack marker");
+    }
+    IDIO_THREAD_STACK_POP ();	/* fmci */
+    IDIO_THREAD_STACK_POP ();	/* offset */
+}
+
+void idio_vm_escaper_label_ref (IDIO thr, IDIO fmci)
+{
+    IDIO_ASSERT (thr);
+    IDIO_ASSERT (fmci);
+
+    IDIO_TYPE_ASSERT (thread, thr);
+    IDIO_TYPE_ASSERT (fixnum, fmci);
+
+    IDIO stack = IDIO_THREAD_STACK (thr);
+
+    idio_ai_t escaper_sp = idio_vm_find_stack_marker (stack, idio_SM_escaper, 0);
+
+    /*
+     * stack order:
+     *
+     * n   idio_SM_escaper
+     * n-1 label
+     * n-2 (absolute) PC to resume(*)
+     *
+     * (*) PC after the POP-ESCAPER
+     */
+
+    IDIO offset = idio_array_ref_index (stack, escaper_sp - 2);
+    IDIO_THREAD_PC (thr) = IDIO_FIXNUM_VAL (offset);
+
+    /*
+     * Remove references above us for good house-keeping
+     */
+    idio_ai_t ai = idio_array_size (stack);
+    for (ai--; ai >= escaper_sp - 2; ai--) {
+	idio_array_insert_index (stack, idio_S_nil, ai);
+    }
+    IDIO_ARRAY_USIZE (stack) = escaper_sp - 2;
+}
+
 void idio_vm_raise_condition (IDIO continuablep, IDIO condition, int IHR, int reraise)
 {
     IDIO_ASSERT (continuablep);
@@ -2775,27 +2849,15 @@ void idio_vm_restore_exit (IDIO k, IDIO val)
     }
 }
 
-IDIO_DEFINE_PRIMITIVE1_DS ("%%call/cc", call_cc, (IDIO proc), "proc", "\
-call ``proc`` with the current continuation			\n\
-								\n\
-:param proc:							\n\
-:type proc: a closure of 1 argument				\n\
-								\n\
-This is the ``call/cc`` primitive.				\n\
-")
+IDIO idio_vm_call_cc (IDIO proc, int kind)
 {
     IDIO_ASSERT (proc);
 
-    /*
-     * Test Case: vm-errors/call-cc-bad-type.idio
-     *
-     * %%call/cc #t
-     */
-    IDIO_USER_TYPE_ASSERT (closure, proc);
+    IDIO_TYPE_ASSERT (closure, proc);
 
     IDIO thr = idio_thread_current_thread ();
 
-    IDIO k = idio_continuation (thr);
+    IDIO k = idio_continuation (thr, kind);
 
     /* idio_debug ("%%%%call/cc: %s\n", k); */
 
@@ -2816,6 +2878,27 @@ This is the ``call/cc`` primitive.				\n\
     IDIO_C_ASSERT (0);
 
     return idio_S_notreached;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("%%call/cc", call_cc, (IDIO proc), "proc", "\
+call ``proc`` with the current continuation			\n\
+								\n\
+:param proc:							\n\
+:type proc: a closure of 1 argument				\n\
+								\n\
+This is the ``call/cc`` primitive.				\n\
+")
+{
+    IDIO_ASSERT (proc);
+
+    /*
+     * Test Case: vm-errors/call-cc-bad-type.idio
+     *
+     * %%call/cc #t
+     */
+    IDIO_USER_TYPE_ASSERT (closure, proc);
+
+    return idio_vm_call_cc (proc, IDIO_CONTINUATION_CALL_CC);
 }
 
 /*
@@ -4385,7 +4468,7 @@ int idio_vm_run1 (IDIO thr)
 	     * this errant code.  We want to massage the
 	     * continuation's PC to be offset by {o}.
 	     */
-	    IDIO k = idio_continuation (thr);
+	    IDIO k = idio_continuation (thr, IDIO_CONTINUATION_CALL_CC);
 	    IDIO k_stk = IDIO_CONTINUATION_STACK (k);
 
 	    /*
@@ -5202,6 +5285,29 @@ int idio_vm_run1 (IDIO thr)
 	{
 	    IDIO_VM_RUN_DIS ("RESTORE-TRAP");
 	    idio_vm_restore_trap (thr);
+	}
+	break;
+    case IDIO_A_PUSH_ESCAPER:
+	{
+	    uint64_t mci = IDIO_VM_FETCH_REF (thr, bc);
+	    uint64_t offset = idio_vm_fetch_varuint (thr);
+
+	    IDIO_VM_RUN_DIS ("PUSH-ESCAPER %" PRId64 "", mci);
+	    idio_vm_push_escaper (thr, idio_fixnum (mci), offset);
+	}
+	break;
+    case IDIO_A_POP_ESCAPER:
+	{
+	    IDIO_VM_RUN_DIS ("POP-ESCAPER");
+	    idio_vm_pop_escaper (thr);
+	}
+	break;
+    case IDIO_A_ESCAPER_LABEL_REF:
+	{
+	    uint64_t mci = IDIO_VM_FETCH_REF (thr, bc);
+
+	    IDIO_VM_RUN_DIS ("ESCAPER-LABEL_REF %" PRId64 "", mci);
+	    idio_vm_escaper_label_ref (thr, idio_fixnum (mci));
 	}
 	break;
     default:
@@ -6088,6 +6194,26 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_ai_t pc0, idio_ai_t pce)
 	case IDIO_A_RESTORE_TRAP:
 	    {
 		IDIO_VM_DASM ("RESTORE-TRAP");
+	    }
+	    break;
+	case IDIO_A_PUSH_ESCAPER:
+	    {
+		uint64_t mci = IDIO_VM_GET_REF (bc, pcp);
+		uint64_t offset = idio_vm_get_varuint (bc, pcp);
+
+		IDIO_VM_DASM ("PUSH-ESCAPER %" PRIu64 " -> %" PRIu64, mci, pc + offset + 1);
+	    }
+	    break;
+	case IDIO_A_POP_ESCAPER:
+	    {
+		IDIO_VM_DASM ("POP-ESCAPER");
+	    }
+	    break;
+	case IDIO_A_ESCAPER_LABEL_REF:
+	    {
+		uint64_t mci = IDIO_VM_GET_REF (bc, pcp);
+
+		IDIO_VM_DASM ("ESCAPER-LABEL-REF %" PRIu64, mci);
 	    }
 	    break;
 	default:
@@ -7450,6 +7576,15 @@ void idio_vm_decode_stack (IDIO stack)
 	    idio_debug ("%-20s ", idio_vm_constants_ref (IDIO_FIXNUM_VAL (fgci)));
 	    idio_ai_t tsp = IDIO_FIXNUM_VAL (sv3);
 	    fprintf (stderr, "next t/h @%td", tsp);
+	    sp -= 4;
+	} else if (idio_SM_escaper == sv0 &&
+		   sp >= 2 &&
+		   idio_isa_fixnum (sv1) &&
+		   idio_isa_fixnum (sv2)) {
+	    fprintf (stderr, "%-20s ", "ESCAPER");
+	    IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), sv1);
+	    idio_debug ("%-20s ", idio_vm_constants_ref (IDIO_FIXNUM_VAL (fgci)));
+	    fprintf (stderr, "PC -> %td", IDIO_FIXNUM_VAL (sv2));
 	    sp -= 4;
 	} else if (idio_SM_dynamic == sv0 &&
 		   sp >= 3) {

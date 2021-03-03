@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -23,7 +23,10 @@
 #ifndef CONTINUATION_H
 #define CONTINUATION_H
 
-IDIO idio_continuation (IDIO thr);
+#define IDIO_CONTINUATION_CALL_CC	0
+#define IDIO_CONTINUATION_CALL_DC	1
+
+IDIO idio_continuation (IDIO thr, int kind);
 int idio_isa_continuation (IDIO o);
 void idio_free_continuation (IDIO k);
 

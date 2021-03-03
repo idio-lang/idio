@@ -281,7 +281,7 @@ int main (int argc, char **argv, char **envp)
     /*
      * Save a continuation for exit.
      */
-    idio_k_exit = idio_continuation (thr);
+    idio_k_exit = idio_continuation (thr, IDIO_CONTINUATION_CALL_CC);
     idio_gc_protect_auto (idio_k_exit);
 
     IDIO dosh = idio_open_output_string_handle_C ();

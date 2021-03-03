@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -2247,6 +2247,83 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	    }
 
 	    IDIO_IA_PUSH1 (IDIO_A_POP_TRAP);
+	}
+	break;
+    case IDIO_I_CODE_PUSH_ESCAPER:
+	{
+	    if (! idio_isa_pair (mt) ||
+		idio_list_length (mt) != 2) {
+		idio_codegen_error_param_args ("PUSH-ESCAPER mci m+", mt, IDIO_C_FUNC_LOCATION_S ("PUSH-ESCAPER"));
+
+		/* notreached */
+		return;
+	    }
+
+	    IDIO mci = IDIO_PAIR_H (mt);
+	    IDIO mp = IDIO_PAIR_HT (mt);
+
+	    if (! idio_isa_fixnum (mci)) {
+		idio_codegen_error_param_type ("fixnum", mci, IDIO_C_FUNC_LOCATION_S ("PUSH-ESCAPER"));
+
+		/* notreached */
+		return;
+	    }
+
+	    IDIO_IA_T iab = idio_ia (200);
+	    idio_codegen_compile (thr, iab, cs, mp, depth + 1);
+
+	    /*
+	     * This is an "absolute" offset -- which feels wrong.
+	     *
+	     * However, we don't know what the PC is at the time an
+	     * escape is invoked so we'll have to live with an
+	     * absolute value rather than a relative one.
+	     */
+	    IDIO_IA_PUSH1 (IDIO_A_PUSH_ESCAPER);
+	    IDIO_IA_PUSH_REF (IDIO_FIXNUM_VAL (mci));
+	    IDIO_IA_PUSH_VARUINT (IDIO_IA_USIZE (iab));
+
+	    idio_ia_append (ia, iab);
+
+	    idio_ia_free (iab);
+	}
+	break;
+    case IDIO_I_CODE_POP_ESCAPER:
+	{
+	    if (idio_S_nil != mt) {
+		idio_codegen_error_param_args ("POP-ESCAPER", mt, IDIO_C_FUNC_LOCATION_S ("POP-ESCAPER"));
+
+		/* notreached */
+		return;
+	    }
+
+	    IDIO_IA_PUSH1 (IDIO_A_POP_ESCAPER);
+	}
+	break;
+    case IDIO_I_CODE_ESCAPER_LABEL_REF:
+	{
+	    if (! idio_isa_pair (mt) ||
+		idio_list_length (mt) != 2) {
+		idio_codegen_error_param_args ("ESCAPER-LABEL_REF mci m+", mt, IDIO_C_FUNC_LOCATION_S ("ESCAPER-LABEL_REF"));
+
+		/* notreached */
+		return;
+	    }
+
+	    IDIO mci = IDIO_PAIR_H (mt);
+	    IDIO mp = IDIO_PAIR_HT (mt);
+
+	    if (! idio_isa_fixnum (mci)) {
+		idio_codegen_error_param_type ("fixnum", mci, IDIO_C_FUNC_LOCATION_S ("ESCAPER-LABEL_REF"));
+
+		/* notreached */
+		return;
+	    }
+
+	    idio_codegen_compile (thr, ia, cs, mp, depth + 1);
+
+	    IDIO_IA_PUSH1 (IDIO_A_ESCAPER_LABEL_REF);
+	    IDIO_IA_PUSH_REF (IDIO_FIXNUM_VAL (mci));
 	}
 	break;
     case IDIO_I_CODE_AND:

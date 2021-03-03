@@ -70,6 +70,8 @@ extern IDIO_SYMBOL_DECL (equalp);
 extern IDIO_SYMBOL_DECL (eqvp);
 extern IDIO_SYMBOL_DECL (error);
 extern IDIO_SYMBOL_DECL (escape);
+extern IDIO_SYMBOL_DECL (escape_block);
+extern IDIO_SYMBOL_DECL (escape_from);
 extern IDIO_SYMBOL_DECL (excl_star);
 extern IDIO_SYMBOL_DECL (excl_tilde);
 extern IDIO_SYMBOL_DECL (fixed_template);
