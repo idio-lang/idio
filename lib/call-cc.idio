@@ -202,6 +202,11 @@ From the R5RS report:
   Navigating between states requires re-rooting the tree by reversing
   parent-child links.
 
+---
+
+I see a suggestion that this is the Hanson-Lamping algorithm (see
+http://arclang.org/item?id=15536) from an unpublished 1984(?) paper.
+
 *#
 
 ;call/cc := call/cc

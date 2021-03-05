@@ -1532,28 +1532,25 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
     case IDIO_I_CODE_PRIMCALL0:
 	{
 	    if (! idio_isa_pair (mt) ||
-		(idio_list_length (mt) != 1 &&
-		 idio_list_length (mt) != 2)) {
-		idio_codegen_error_param_args ("CALL0 ins [pd]", mt, IDIO_C_FUNC_LOCATION_S ("CALL0"));
+		(idio_list_length (mt) != 2)) {
+		idio_codegen_error_param_args ("CALL0 ins pd", mt, IDIO_C_FUNC_LOCATION_S ("CALL0"));
 
 		/* notreached */
 		return;
 	    }
 
 	    IDIO ins = IDIO_PAIR_H (mt);
+	    IDIO pd = IDIO_PAIR_HT (mt);
 
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (ins));
-	    if (idio_list_length (mt) == 2) {
-		IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (IDIO_PAIR_HT (mt)));
-	    }
+	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (pd));
 	}
 	break;
     case IDIO_I_CODE_PRIMCALL1:
 	{
 	    if (! idio_isa_pair (mt) ||
-		(idio_list_length (mt) != 2 &&
-		 idio_list_length (mt) != 3)) {
-		idio_codegen_error_param_args ("CALL1 ins m1 [pd]", mt, IDIO_C_FUNC_LOCATION_S ("CALL1"));
+		(idio_list_length (mt) != 3)) {
+		idio_codegen_error_param_args ("CALL1 ins m1 pd", mt, IDIO_C_FUNC_LOCATION_S ("CALL1"));
 
 		/* notreached */
 		return;
@@ -1561,20 +1558,18 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 
 	    IDIO ins = IDIO_PAIR_H (mt);
 	    IDIO m1 = IDIO_PAIR_HT (mt);
+	    IDIO pd = IDIO_PAIR_HTT (mt);
 
 	    idio_codegen_compile (thr, ia, cs, m1, depth + 1);
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (ins));
-	    if (idio_list_length (mt) == 3) {
-		IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (IDIO_PAIR_HTT (mt)));
-	    }
+	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (pd));
 	}
 	break;
     case IDIO_I_CODE_PRIMCALL2:
 	{
 	    if (! idio_isa_pair (mt) ||
-		(idio_list_length (mt) != 3 &&
-		 idio_list_length (mt) != 4)) {
-		idio_codegen_error_param_args ("CALL2 ins m1 m2 [pd]", mt, IDIO_C_FUNC_LOCATION_S ("CALL2"));
+		(idio_list_length (mt) != 4)) {
+		idio_codegen_error_param_args ("CALL2 ins m1 m2 pd", mt, IDIO_C_FUNC_LOCATION_S ("CALL2"));
 
 		/* notreached */
 		return;
@@ -1584,19 +1579,21 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 
 	    IDIO m1 = IDIO_PAIR_HT (mt);
 	    IDIO m2 = IDIO_PAIR_HTT (mt);
+	    IDIO pd = IDIO_PAIR_HTTT (mt);
 
 	    idio_codegen_compile (thr, ia, cs, m1, depth + 1);
 	    IDIO_IA_PUSH1 (IDIO_A_PUSH_VALUE);
 	    idio_codegen_compile (thr, ia, cs, m2, depth + 1);
 	    IDIO_IA_PUSH1 (IDIO_A_POP_REG1);
 	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (ins));
-	    if (idio_list_length (mt) == 4) {
-		IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (IDIO_PAIR_HTTT (mt)));
-	    }
+	    IDIO_IA_PUSH_VARUINT (IDIO_FIXNUM_VAL (pd));
 	}
 	break;
     case IDIO_I_CODE_PRIMCALL3:
 	{
+	    /*
+	     * XXX not implemented
+	     */
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 4) {
 		idio_codegen_error_param_args ("CALL3 ins m1 m2 m3", mt, IDIO_C_FUNC_LOCATION_S ("CALL3"));
@@ -2253,6 +2250,7 @@ void idio_codegen_compile (IDIO thr, IDIO_IA_T ia, IDIO cs, IDIO m, int depth)
 	{
 	    if (! idio_isa_pair (mt) ||
 		idio_list_length (mt) != 2) {
+		fprintf (stderr, "ll mt=%zu\n", idio_list_length (mt));
 		idio_codegen_error_param_args ("PUSH-ESCAPER mci m+", mt, IDIO_C_FUNC_LOCATION_S ("PUSH-ESCAPER"));
 
 		/* notreached */
@@ -2862,6 +2860,10 @@ static idio_codegen_symbol_t idio_codegen_symbols[] = {
 
     { "I-PUSH-TRAP",				IDIO_I_PUSH_TRAP },
     { "I-POP-TRAP",				IDIO_I_POP_TRAP },
+
+    { "I-PUSH-ESCAPER",				IDIO_I_PUSH_ESCAPER },
+    { "I-POP-ESCAPER",				IDIO_I_POP_ESCAPER },
+    { "I-ESCAPER-LABEL-REF",			IDIO_I_ESCAPER_LABEL_REF },
 
     { "I-AND",					IDIO_I_AND },
     { "I-OR",					IDIO_I_OR },

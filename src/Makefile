@@ -29,7 +29,7 @@ coverage :
 	$(MAKE) COVFLAGS="-fprofile-arcs -ftest-coverage"
 
 sanitize-address :
-	$(MAKE) SAN_CFLAGS="-fsanitize=address -DIDIO_DEBUG -UIDIO_MALLOC" SAN_LDFLAGS=-lasan
+	$(MAKE) SAN_CFLAGS="-fsanitize=address -g -DIDIO_DEBUG -UIDIO_MALLOC" SAN_LDFLAGS=-lasan
 
 lean :
 	$(MAKE) MAKE_LEAN=1

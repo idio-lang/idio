@@ -3085,8 +3085,6 @@ void idio_init_libc_wrap ()
     idio_module_table_register (idio_libc_wrap_add_primitives, idio_final_libc_wrap);
 
     idio_libc_module = idio_module (idio_symbols_C_intern ("libc"));
-    IDIO_MODULE_IMPORTS (idio_libc_module) = IDIO_LIST2 (IDIO_LIST1 (idio_Idio_module),
-							      IDIO_LIST1 (idio_primitives_module));
 
     /*
      * XXX *after* creating the module!

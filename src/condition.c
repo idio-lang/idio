@@ -587,48 +587,14 @@ void idio_condition_format_system_error (char *prefix, IDIO c)
 
     IDIO_TYPE_ASSERT (condition, c);
 
-    IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (c);
+    IDIO cr_cmd = IDIO_LIST4 (idio_module_symbol_value (idio_symbols_C_intern ("condition-report"),
+							idio_Idio_module,
+							idio_S_nil),
+			      idio_string_C (prefix),
+			      c,
+			      idio_thread_current_error_handle ());
 
-    if (idio_struct_type_isa (sit, idio_condition_system_error_type)) {
-	IDIO eh = idio_thread_current_error_handle ();
-
-	IDIO osh = idio_open_output_string_handle_C ();
-
-	idio_display_C ("\n", osh);
-	idio_display_C (prefix, osh);
-	idio_display_C (":", osh);
-
-	IDIO m = IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_IDIO_ERROR_TYPE_MESSAGE);
-	IDIO l = IDIO_STRUCT_INSTANCE_FIELDS (c, IDIO_SI_IDIO_ERROR_TYPE_LOCATION);
-	IDIO d = IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_IDIO_ERROR_TYPE_DETAIL);
-	IDIO f = IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_SYSTEM_ERROR_TYPE_FUNCTION);
-	IDIO e = IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_SYSTEM_ERROR_TYPE_ERRNO);
-
-	idio_display (l, osh);
-	idio_display_C (":", osh);
-
-	idio_display (IDIO_STRUCT_TYPE_NAME (sit), osh);
-	idio_display_C (":", osh);
-
-	idio_display (f, osh);
-	idio_display_C (" (", osh);
-	idio_display (d, osh);
-	idio_display_C (") => ", osh);
-
-	int er = IDIO_C_TYPE_int (e);
-	idio_display_C (idio_libc_errno_name (er), osh);
-
-	idio_display_C (" (", osh);
-	idio_display (m, osh);
-	idio_display_C ("/", osh);
-	idio_display_C ("errno ", osh);
-
-	idio_display (e, osh);
-	idio_display_C (")", osh);
-	idio_display_C ("\n", osh);
-
-	idio_display (idio_get_output_string (osh), eh);
-    }
+    idio_vm_invoke_C (idio_thread_current_thread (), cr_cmd);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("default-condition-handler", default_condition_handler, (IDIO c), "c", "\
@@ -849,8 +815,6 @@ does not return per se						\n\
      */
 #ifdef IDIO_DEBUG
     idio_debug ("\ndefault-condition-handler: no handler re-raising %s\n", c);
-    idio_vm_trap_state (thr);
-    idio_vm_frame_tree (idio_S_nil);
 #endif
     idio_raise_condition (idio_S_true, c);
 
@@ -916,54 +880,10 @@ does not return per se						\n\
 	} else if (idio_struct_type_isa (sit, idio_condition_system_error_type)) {
 	    idio_condition_format_system_error ("restart-condition-handler", c);
 	    return idio_S_unspec;
-	} else if (idio_struct_type_isa (sit, idio_condition_idio_error_type)) {
-	    IDIO eh = idio_thread_current_error_handle ();
-	    int printed = 0;
-
-	    idio_display_C ("\nrestart-condition-handler: ", eh);
-
-	    IDIO l = IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_IDIO_ERROR_TYPE_LOCATION);
-	    if (idio_S_nil != l) {
-		if (printed) {
-		    idio_display_C (": ", eh);
-		}
-		idio_display (l, eh);
-		printed = 1;
-
-		if (idio_struct_type_isa (sit, idio_condition_read_error_type)) {
-		    idio_display_C (":", eh);
-		    idio_display (IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_READ_ERROR_TYPE_LINE), eh);
-		    idio_display_C (":", eh);
-		    idio_display (IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_READ_ERROR_TYPE_POSITION), eh);
-		} else if (idio_struct_type_isa (sit, idio_condition_evaluation_error_type)) {
-		    idio_display_C (":", eh);
-		    idio_display (IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_EVALUATION_ERROR_TYPE_EXPR), eh);
-		}
-	    }
-
-	    if (printed) {
-		idio_display_C (": ", eh);
-	    }
-	    idio_display (IDIO_STRUCT_TYPE_NAME (sit), eh);
-	    idio_display_C (": ", eh);
-
-	    IDIO m = IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_IDIO_ERROR_TYPE_MESSAGE);
-	    if (idio_S_nil != m) {
-		idio_display (m, eh);
-		printed = 1;
-	    }
-	    IDIO d = IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_IDIO_ERROR_TYPE_DETAIL);
-	    if (idio_S_nil != d) {
-		if (printed) {
-		    idio_display_C (": ", eh);
-		}
-		idio_display (d, eh);
-	    }
-	    idio_display_C ("\n", eh);
-	} else {
-	    idio_debug ("restart-condition-handler: other: %s\n", c);
 	}
     }
+
+    idio_condition_format_system_error ("restart-condition-handler", c);
 
     /*
      * As the restart-condition-handler we'll go back to #1, the most
@@ -980,12 +900,17 @@ does not return per se						\n\
     if (idio_isa_pair (krun)) {
 	fprintf (stderr, "restart-condition-handler: restoring krun #%td: ", krun_p);
 	idio_debug ("%s\n", IDIO_PAIR_HT (krun));
+	idio_vm_thread_state (idio_thread_current_thread ());
 	idio_vm_restore_continuation (IDIO_PAIR_H (krun), idio_S_unspec);
-
 	return idio_S_notreached;
     }
 
     fprintf (stderr, "restart-condition-handler: nothing to restore\n");
+#ifdef IDIO_DEBUG
+    idio_debug ("\nrestart-condition-handler: re-raising %s\n", c);
+    idio_vm_trap_state (idio_thread_current_thread ());
+    idio_vm_frame_tree (idio_S_nil);
+#endif
     idio_raise_condition (idio_S_true, c);
 
     /* notreached */

@@ -199,9 +199,13 @@ IDIO idio_module (IDIO name)
      * Which modules dun goofed depends on the order of module
      * initialisation in idio_init().
      */
-    IDIO_MODULE_IMPORTS (mo) = IDIO_LIST3 (IDIO_LIST1 (idio_job_control_module),
-					   IDIO_LIST1 (idio_Idio_module),
-					   IDIO_LIST1 (idio_primitives_module));
+    IDIO imports = IDIO_LIST2 (IDIO_LIST1 (idio_Idio_module),
+			       IDIO_LIST1 (idio_primitives_module));
+    if (idio_S_nil != idio_job_control_module) {
+	imports = idio_pair (IDIO_LIST1 (idio_job_control_module),
+			     imports);
+    }
+    IDIO_MODULE_IMPORTS (mo) = imports;
     IDIO_MODULE_SYMBOLS (mo) = IDIO_HASH_EQP (1<<4);
     IDIO_MODULE_VCI (mo) = IDIO_HASH_EQP (1<<4);
     IDIO_MODULE_VVI (mo) = IDIO_HASH_EQP (1<<4);

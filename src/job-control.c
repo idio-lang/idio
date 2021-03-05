@@ -1858,8 +1858,6 @@ void idio_init_job_control ()
     idio_module_table_register (idio_job_control_add_primitives, idio_final_job_control);
 
     idio_job_control_module = idio_module (idio_symbols_C_intern ("job-control"));
-    IDIO_MODULE_IMPORTS (idio_job_control_module) = IDIO_LIST2 (IDIO_LIST1 (idio_Idio_module),
-								IDIO_LIST1 (idio_primitives_module));
 
     idio_S_background_job = idio_symbols_C_intern ("background-job");
     idio_S_exit = idio_symbols_C_intern ("exit");

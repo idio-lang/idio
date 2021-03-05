@@ -221,9 +221,6 @@ void idio_init_thread ()
     idio_gc_protect_auto (idio_running_threads);
 
     idio_threading_module = idio_module (idio_symbols_C_intern ("threading"));
-    IDIO_MODULE_IMPORTS (idio_threading_module) = IDIO_LIST2 (IDIO_LIST1 (idio_Idio_module),
-							      IDIO_LIST1 (idio_primitives_module));
-
 }
 
 void idio_init_first_thread ()

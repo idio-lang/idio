@@ -4171,7 +4171,7 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, IDIO escapes, int fla
 		return idio_S_notreached;
 	    }
 	} else if (idio_S_functionp == eh) {
-	    /* (functionp var val body ...) */
+	    /* (function+ var val body ...) */
 	    if (idio_isa_pair (et)) {
 		IDIO ett = IDIO_PAIR_T (et);
 		if (idio_isa_pair (ett)) {
@@ -5135,13 +5135,6 @@ void idio_init_evaluate ()
     idio_module_table_register (idio_evaluate_add_primitives, NULL);
 
     idio_evaluation_module = idio_module (idio_symbols_C_intern ("evaluate"));
-    /*
-     * Yuk!  imports defaults to idio_command_module ('job-control),
-     * idio_Idio_module ('Idio) and idio_primitives_module
-     * ('*primitives*) but idio_command_module hasn't been defined
-     * (yet) so is #n which breaks stuff later.
-     */
-    IDIO_MODULE_IMPORTS (idio_evaluation_module) = IDIO_PAIR_T (IDIO_MODULE_IMPORTS (idio_evaluation_module));
 
 #define IDIO_MEANING_STRING(c,s) idio_meaning_ ## c ## _string = idio_string_C (s); idio_gc_protect_auto (idio_meaning_ ## c ## _string);
 

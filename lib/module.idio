@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -28,22 +28,26 @@
 ;;
 ;; We'll use a stack while processing (nested) define-module
 ;; statements which we can unwind if there's an error
-%module-stack := #n
+%module-push := #f
+%module-pop := #f
 
-define (%module-push name) {
-  %module-stack = pair (current-module) %module-stack
-  %find-or-create-module name
-}
+{
+  %module-stack := #n
 
-define (%module-pop) {
-  prev := ph %module-stack
-  %module-stack = pt %module-stack
-  prev
+  %module-push = function (name) {
+		   %module-stack = pair (current-module) %module-stack
+		   %find-or-create-module name
+  }
+
+  %module-pop = function () {
+		  prev := ph %module-stack
+		  %module-stack = pt %module-stack
+		  prev
+  }
 }
 
 define (%module-handler c) {
-  mod := (%module-pop)
-  %set-current-module! mod
+  %set-current-module! (%module-pop)
   raise c
 }
 
@@ -64,9 +68,11 @@ Control will revert to the current module on exit or any ^condition" {
   #T{
     with-condition-handler ^condition %module-handler {
       %set-current-module! (%module-push $name)
-      $@body
+      r := {
+	$@body
+      }
       %set-current-module! (%module-pop)
-      (void)
+      r
     }
   }
 }

@@ -275,115 +275,131 @@ define (condition-report prefix c & args) "print a report on condition `c`
     msgs  = pair (apply sprintf fmt args*) msgs
   }
 
+  ;; standard ^idio-error has location message detail
+  define (iem c) {
+    cr-printf "%s:" c.location
+    cr-printf "%s:" (struct-type-name (struct-instance-type c))
+    cr-printf "%s" c.message
+    if (not (null? c.detail)) {
+      cr-printf ": detail %s" c.detail
+    }
+  }
+
   if (not (null? prefix)) {
     cr-printf (append-string prefix ":")
   }
 
-  if (and (idio-error? c)
-	  (not (or (read-error? c)
-		   (evaluation-error? c)
-		   (string-error? c)
-		   (system-error? c)
-		   (rt-command-status-error? c)))) {
-		     cr-printf "%s:" c.location
-		     cr-printf "%s:" (struct-type-name (struct-instance-type c))
-		     cr-printf "%s" c.message
-		     if (not (null? c.detail)) {
-		       cr-printf ": detail %s" c.detail
-		     }
-  }
+  (cond
+   ((i/o-handle-error? c) {
+     iem c
+     cr-printf ": handle '%s'" c.handle
+   })
+   ((i/o-filename-error? c) {
+     iem c
+     cr-printf ": filename '%s'" c.filename
+   })
+   ((read-error? c) {
+     iem c
+     cr-printf " line %d" c.line
+   })
+   ((evaluation-error? c) {
+     iem c
+     cr-printf ": expr '%s'" c.expr
+   })
+   ((string-error? c) {
+     cr-printf "%s:%s:%s" c.location c.message c.detail
+   })
+   ((system-error? c) {
+     ;; cf. idio_condition_format_system_error()
+     cr-printf "%s:" c.location
+     cr-printf "%s:" (struct-type-name (struct-instance-type c))
+     cr-printf "%s (%s) => %s (%s/errno %s)" (system-error-function c) (idio-error-detail c) (libc/errno-name (system-error-errno c)) c.message (system-error-errno c)
+   })
+   ((st-variable-error? c) {
+     iem c
+     cr-printf ": variable '%s'" c.name
+   })
+   ((rt-variable-error? c) {
+     iem c
+     cr-printf ": variable '%s'" c.name
+   })
+   ((rt-module-symbol-unbound-error? c) {
+     iem c
+     ; annoyingly c.module resolves module to #undef
+     cr-printf ": '%s/%s'" (module-name (rt-module-error-module c)) c.symbol
+   })
+   ((rt-module-error? c) {
+     iem c
+     ; annoyingly c.module resolves module to #undef
+     cr-printf ": module '%s'" (module-name (rt-module-error-module c))
+   })
+   ((rt-glob-error? c) {
+     iem c
+     cr-printf ": pattern '%s'" c.pattern
+   })
+   ((rt-command-status-error? c) {
+     iem c
+     job := idio-error-location c
+     header := #t
+     printed := #f
+     loop :+ function (procs details) {
+	       cond ((null? procs) #t) \
+		    (else {
+		      if header {
+			header = #f
+			cr-printf "  proc: %6s %-3s %-12s %s\n" "PID" "fl" "status" "cmd"
+		      }
+		      proc := ph procs
+		      cr-printf "  proc: %6s %2s%s %-12s %s\n" proc.pid (if proc.completed " C" "!C") (if proc.stopped "S" " ") (ph details) proc.argv
+		      printed = #t
+		      loop (pt procs) (pt details)
+		    })
+     }
 
-  cond ((i/o-handle-error? c) {
-    cr-printf ": handle %s " c.handle
-  }) \
-       ((i/o-filename-error? c) {
-	 cr-printf ": filename %s " c.filename
-       }) \
-       ((read-error? c) {
-	 cr-printf "%s:%d:%s" c.location c.line c.message
-       }) \
-       ((evaluation-error? c) {
-	 cr-printf "%s:%s:%s" c.location c.expr c.message
-       }) \
-       ((string-error? c) {
-	 cr-printf "%s:%s:%s" c.location c.message c.detail
-       }) \
-       ((system-error? c) {
-	 ;; cf. idio_condition_format_system_error()
-	 cr-printf "%s:" c.location
-	 cr-printf "%s:" (struct-type-name (struct-instance-type c))
-	 cr-printf "%s (%s) => %s (%s/errno %s)" (system-error-function c) (idio-error-detail c) (libc/errno-name (system-error-errno c)) c.message (system-error-errno c)
-        }) \
-       ((st-variable-error? c) {
-	 cr-printf ": variable %s" c.variable
-       }) \
-       ((rt-variable-error? c) {
-	 cr-printf ": variable %s" c.variable
-       }) \
-       ((rt-module-symbol-unbound-error? c) {
-	 ; annoyingly c.module resolves module to #undef
-	 cr-printf ": %s/%s" (module-name (rt-module-error-module c)) c.symbol
-       }) \
-       ((rt-module-error? c) {
-	 ; annoyingly c.module resolves module to #undef
-	 cr-printf ": module %s" (module-name (rt-module-error-module c))
-       }) \
-       ((rt-glob-error? c) {
-	 cr-printf ": pattern %s" c.pattern
-       }) \
-       ((rt-command-status-error? c) {
-	 cr-printf " %s" c.message
-	 job := idio-error-location c
-	 header := #t
-	 printed := #f
-	 loop :+ function (procs details) {
-		   cond ((null? procs) #t) \
-			(else {
-			  if header {
-			    header = #f
-			    cr-printf "  proc: %6s %-3s %-12s %s\n" "PID" "fl" "status" "cmd"
-			  }
-			  proc := ph procs
-			  cr-printf "  proc: %6s %2s%s %-12s %s\n" proc.pid (if proc.completed " C" "!C") (if proc.stopped "S" " ") (ph details) proc.argv
-			  printed = #t
-			  loop (pt procs) (pt details)
-			})
-	 }
-
-	 cr-printf "\n"
-	 loop (reverse (%idio-job-procs job)) (reverse (pipeline-detail job))
-	 if printed {
-	   cr-printf "  flags: C - completed; !C - not completed; S - stopped\n"
-	 }
-	 cr-printf "job: %s => %s" (%idio-job-pipeline job) c.status
-       }) \
-       ((rt-array-error? c) {
-	 cr-printf ": index %s" c.index
-       }) \
-       ((rt-hash-key-not-found-error? c) {
-	 cr-printf ": key %s" c.key
-       }) \
-       ((rt-bignum-conversion-error? c) {
-	 cr-printf ": bignum %s" c.number
-       }) \
-       ((rt-fixnum-conversion-error? c) {
-	 cr-printf ": fixnum %d" c.fixnum
-       }) \
-       ((rt-bitset-bounds-error? c) {
-	 cr-printf ": bit %s" c.bit
-       }) \
-       ((rt-bitset-size-mismatch-error? c) {
-	 cr-printf ": sizes mismatch: %s != %s" c.size1 c.size2
-       }) \
-       ((rt-signal? c) {
-          cr-printf "signal %s (%s)" c.signum (libc/signal-name c.signum)
-       }) \
-       ((error? c) {
-          cr-printf " %s" (struct-type-name (struct-instance-type c))
-       }) \
-       (else {
-          cr-printf " %s" c
-        })
+     cr-printf "\n"
+     loop (reverse (%idio-job-procs job)) (reverse (pipeline-detail job))
+     if printed {
+       cr-printf "  flags: C - completed; !C - not completed; S - stopped\n"
+     }
+     cr-printf "job: %s => %s" (%idio-job-pipeline job) c.status
+   })
+   ((rt-array-error? c) {
+     iem c
+     cr-printf ": index '%s'" c.index
+   })
+   ((rt-hash-key-not-found-error? c) {
+     iem c
+     cr-printf ": key '%s'" c.key
+   })
+   ((rt-bignum-conversion-error? c) {
+     iem c
+     cr-printf ": bignum %s" c.number
+   })
+   ((rt-fixnum-conversion-error? c) {
+     iem c
+     cr-printf ": fixnum %d" c.fixnum
+   })
+   ((rt-bitset-bounds-error? c) {
+     iem c
+     cr-printf ": bit %s" c.bit
+   })
+   ((rt-bitset-size-mismatch-error? c) {
+     iem c
+     cr-printf ": sizes mismatch: %s != %s" c.size1 c.size2
+   })
+   ((rt-signal? c) {
+     iem c
+     cr-printf "signal %s (%s)" c.signum (libc/signal-name c.signum)
+   })
+   ((idio-error? c) {
+     iem c
+   })
+   ((error? c) {
+     cr-printf " %s" (struct-type-name (struct-instance-type c))
+   })
+   (else {
+     cr-printf " %s" c
+   }))
 
   msgs = pair "\n" msgs
   display (join-string "" (reverse msgs)) oh

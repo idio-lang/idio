@@ -694,6 +694,7 @@ void idio_install_expander (IDIO id, IDIO proc)
 {
     IDIO_ASSERT (id);
     IDIO_ASSERT (proc);
+
     IDIO_TYPE_ASSERT (symbol, id);
 
     IDIO el = idio_module_symbol_value (idio_expander_list, idio_expander_module, idio_S_nil);
@@ -1411,8 +1412,6 @@ void idio_init_expander ()
     idio_module_table_register (idio_expander_add_primitives, NULL);
 
     idio_expander_module = idio_module (idio_symbols_C_intern ("expander"));
-    IDIO_MODULE_IMPORTS (idio_expander_module) = IDIO_LIST2 (IDIO_LIST1 (idio_Idio_module),
-							     IDIO_LIST1 (idio_primitives_module));
 
     idio_expander_list = idio_symbols_C_intern ("*expander-list*");
     idio_module_set_symbol_value (idio_expander_list, idio_S_nil, idio_expander_module);
@@ -1421,8 +1420,6 @@ void idio_init_expander ()
     idio_module_set_symbol_value (idio_expander_list_src, idio_S_nil, idio_expander_module);
 
     idio_operator_module = idio_module (idio_symbols_C_intern ("operator"));
-    IDIO_MODULE_IMPORTS (idio_operator_module) = IDIO_LIST2 (IDIO_LIST1 (idio_Idio_module),
-							     IDIO_LIST1 (idio_primitives_module));
 
     idio_infix_operator_list = idio_symbols_C_intern ("*infix-operator-list*");
     idio_module_set_symbol_value (idio_infix_operator_list, idio_S_nil, idio_operator_module);
