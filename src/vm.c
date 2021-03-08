@@ -2807,7 +2807,10 @@ void idio_vm_restore_continuation_data (IDIO k, IDIO val)
     IDIO_ASSERT (val);
     IDIO_TYPE_ASSERT (continuation, k);
 
-    IDIO marker = idio_array_pop (IDIO_CONTINUATION_STACK (k));
+    IDIO k_stack = IDIO_CONTINUATION_STACK (k);
+    idio_ai_t al = idio_array_size (k_stack);
+
+    IDIO marker = idio_array_ref_index (k_stack, al - 1);
     if (idio_SM_preserve_continuation != marker) {
 	idio_debug ("iv_rest_k_data: marker: expected idio_SM_preserve_continuation not %s\n", marker);
 	idio_vm_panic (idio_thread_current_thread (), "iv_rest_cont_data: unexpected stack marker");
@@ -2815,7 +2818,7 @@ void idio_vm_restore_continuation_data (IDIO k, IDIO val)
 	/* notreached */
     }
 
-    IDIO thr = idio_array_pop (IDIO_CONTINUATION_STACK (k));
+    IDIO thr = idio_array_ref_index (k_stack, al - 2);
     if (!idio_isa_thread (thr)) {
 	idio_debug ("iv_rest_k_data: thr: expected a thread not %s\n", thr);
 	idio_vm_panic (thr, "iv_rest_k_data: unexpected value");
@@ -2830,7 +2833,7 @@ void idio_vm_restore_continuation_data (IDIO k, IDIO val)
      * continuation is used again.
      */
 
-    idio_duplicate_array (IDIO_THREAD_STACK (thr), IDIO_CONTINUATION_STACK (k), IDIO_COPY_SHALLOW);
+    idio_duplicate_array (IDIO_THREAD_STACK (thr), k_stack, al - 2, IDIO_COPY_SHALLOW);
 
     IDIO_THREAD_PC (thr) = IDIO_FIXNUM_VAL (IDIO_THREAD_STACK_POP ());
     if (NULL == idio_all_code) {

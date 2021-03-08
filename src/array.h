@@ -43,7 +43,7 @@ IDIO idio_array_ref_index (IDIO a, idio_ai_t index);
 idio_ai_t idio_array_find_eqp (IDIO a, IDIO e, idio_ai_t index);
 idio_ai_t idio_array_find_equalp (IDIO a, IDIO e, idio_ai_t index);
 IDIO idio_copy_array (IDIO a, int depth, idio_ai_t extra);
-void idio_duplicate_array (IDIO a, IDIO o, int depth);
+void idio_duplicate_array (IDIO a, IDIO o, idio_ai_t n, int depth);
 IDIO idio_array_to_list_from (IDIO a, idio_ai_t index);
 IDIO idio_array_to_list (IDIO a);
 IDIO idio_array_ref (IDIO a, IDIO index);

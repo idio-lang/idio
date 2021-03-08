@@ -669,11 +669,12 @@ IDIO idio_copy_array (IDIO a, int depth, idio_ai_t extra)
  * idio_duplicate_array() - duplicate an array
  * @a: this array
  * @o: that array
+ * @n: this many
  * @depth: shallow or deep
  *
  * Duplicate the contents of that array in this.
  */
-void idio_duplicate_array (IDIO a, IDIO o, int depth)
+void idio_duplicate_array (IDIO a, IDIO o, idio_ai_t n, int depth)
 {
     IDIO_ASSERT (a);
     IDIO_ASSERT (o);
@@ -683,6 +684,20 @@ void idio_duplicate_array (IDIO a, IDIO o, int depth)
     IDIO_TYPE_ASSERT (array, o);
 
     idio_ai_t osz = IDIO_ARRAY_USIZE (o);
+    if (n) {
+	if (n < 0) {
+	    /*
+	     * Test Case: ??
+	     *
+	     * coding error
+	     */
+	    idio_error_param_value ("duplicate n elements", "should be > 0", IDIO_C_FUNC_LOCATION ());
+
+	    /* notreached */
+	    return;
+	}
+	osz = n;
+    }
     if (osz > IDIO_ARRAY_ASIZE (a)) {
 	fprintf (stderr, "dupe %td -> %td\n", IDIO_ARRAY_ASIZE (a), osz);
 	IDIO_GC_FREE (a->u.array->ae);
