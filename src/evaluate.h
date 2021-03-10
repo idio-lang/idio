@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -30,7 +30,7 @@
 #define IDIO_MEANING_FLAG_ENVIRON_SCOPE		(1<<3)
 #define IDIO_MEANING_FLAG_COMPUTED_SCOPE	(1<<4)
 #define IDIO_MEANING_FLAG_DEFINE		(1<<5)
-#define IDIO_MEANING_FLAG_FRAME_REUSE		(1<<6)
+#define IDIO_MEANING_FLAG_ESCAPE		(1<<6)
 
 #define IDIO_MEANING_IS_TAILP(f)		((f) & IDIO_MEANING_FLAG_TAILP)
 #define IDIO_MEANING_SET_TAILP(f)		((f) | IDIO_MEANING_FLAG_TAILP)
@@ -51,9 +51,9 @@
 #define IDIO_MEANING_DEFINE(f)			((f) | IDIO_MEANING_FLAG_DEFINE)
 #define IDIO_MEANING_NO_DEFINE(f)		(((f) & (~ IDIO_MEANING_FLAG_DEFINE)) == 0)
 
-#define IDIO_MEANING_IS_FRAME_REUSE(f)		((f) & IDIO_MEANING_FLAG_FRAME_REUSE)
-#define IDIO_MEANING_FRAME_REUSE(f)		((f) | IDIO_MEANING_FLAG_FRAME_REUSE)
-#define IDIO_MEANING_NO_FRAME_REUSE(f)		(((f) & (~ IDIO_MEANING_FLAG_FRAME_REUSE)) == 0)
+#define IDIO_MEANING_IS_ESCAPE(f)		((f) & IDIO_MEANING_FLAG_ESCAPE)
+#define IDIO_MEANING_ESCAPE(f)			((f) | IDIO_MEANING_FLAG_ESCAPE)
+#define IDIO_MEANING_NO_ESCAPE(f)		(((f) & (~ IDIO_MEANING_FLAG_ESCAPE)) == 0)
 
 extern IDIO idio_evaluation_module;
 

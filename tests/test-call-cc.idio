@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015, 2020 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -24,11 +24,11 @@ call-cc0 := Tests
 ;; http://www.scheme.com/tspl3/control.html#./control:s53
 
 member := function (x ls) {
-  call/cc (function (break) {
+  call/cc (function (brk) {
     do ((ls ls (pt ls))) \
        ((null? ls) #f) \
        (if (equal? x (ph ls))
-	   (break ls))
+	   (brk ls))
   })
 }
 
@@ -55,12 +55,12 @@ test (call/cc
 	 #t)) -3
 
 define (list-length obj) {
-  call/cc (function (return) {
+  call/cc (function (rtn) {
 	     r :+ (function (obj)
 		     (cond ((null? obj) 0)
 			   ((pair? obj)
 			    (+ (r (pt obj)) 1))
-			   (else (return #f))))
+			   (else (rtn #f))))
 	     r obj
   })
 }

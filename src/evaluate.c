@@ -1605,7 +1605,26 @@ static IDIO idio_meaning_assignment (IDIO src, IDIO name, IDIO e, IDIO nametree,
      * Normal assignment to a symbol
      */
 
-    IDIO m = idio_meaning (IDIO_MPP (e, src), e, nametree, escapes, IDIO_MEANING_NO_DEFINE (IDIO_MEANING_NOT_TAILP (flags)), cs, cm);
+    int mflags = IDIO_MEANING_NO_DEFINE (IDIO_MEANING_NOT_TAILP (flags));
+    if (idio_isa_pair (e) &&
+	idio_S_function == IDIO_PAIR_H (e)) {
+	int docstr = 0;
+	IDIO body = IDIO_PAIR_HTT (e);
+	if (idio_isa_string (body) &&
+	    idio_isa_pair (IDIO_PAIR_TTT (e))) {
+	    body = IDIO_PAIR_HTTT (e);
+	    docstr = 1;
+	}
+	body = idio_list_append2 (IDIO_LIST2 (idio_S_escape_block, idio_S_return), IDIO_LIST1 (body));
+	body = idio_list_append2 (IDIO_LIST2 (idio_S_escape_block, name), IDIO_LIST1 (body));
+	if (docstr) {
+	    IDIO_PAIR_HTTT (e) = body;
+	} else {
+	    IDIO_PAIR_HTT (e) = body;
+	}
+    }
+
+    IDIO m = idio_meaning (IDIO_MPP (e, src), e, nametree, escapes, mflags, cs, cm);
 
     IDIO si = idio_meaning_variable_info (src, nametree, name, flags, cs, cm);
 
@@ -2470,6 +2489,8 @@ static IDIO idio_meaning_sequence (IDIO src, IDIO ep, IDIO nametree, IDIO escape
     }
 }
 
+static IDIO idio_meaning_escape_block (IDIO src, IDIO label, IDIO be, IDIO nametree, IDIO escapes, int flags, IDIO cs, IDIO cm);
+
 static IDIO idio_meaning_fix_abstraction (IDIO src, IDIO ns, IDIO formals, IDIO docstr, IDIO ep, IDIO nametree, IDIO escapes, int flags, IDIO cs, IDIO cm)
 {
     IDIO_ASSERT (src);
@@ -2490,6 +2511,7 @@ static IDIO idio_meaning_fix_abstraction (IDIO src, IDIO ns, IDIO formals, IDIO 
     size_t arity = idio_list_length (ns);
 
     IDIO ent = idio_meaning_nametree_extend_params (nametree, ns);
+
     IDIO mp = idio_meaning_sequence (src, ep, ent, escapes, IDIO_MEANING_SET_TAILP (flags), idio_S_begin, cs, cm);
 
     return IDIO_LIST5 (IDIO_I_FIX_CLOSURE, mp, idio_fixnum (arity), idio_meaning_nametree_to_list (ent), docstr);
@@ -2517,6 +2539,7 @@ static IDIO idio_meaning_dotted_abstraction (IDIO src, IDIO ns, IDIO n, IDIO for
     IDIO fix_formals = idio_list_append2 (ns, IDIO_LIST1 (n));
 
     IDIO ent = idio_meaning_nametree_extend_vparams (nametree, fix_formals);
+
     IDIO mp = idio_meaning_sequence (src, ep, ent, escapes, IDIO_MEANING_SET_TAILP (flags), idio_S_begin, cs, cm);
 
     return IDIO_LIST5 (IDIO_I_NARY_CLOSURE, mp, idio_fixnum (arity), idio_meaning_nametree_to_list (ent), docstr);
@@ -3117,11 +3140,7 @@ static IDIO idio_meaning_no_argument (IDIO src, IDIO nametree, IDIO escapes, siz
     IDIO_TYPE_ASSERT (list, nametree);
     IDIO_TYPE_ASSERT (list, escapes);
 
-    if (IDIO_MEANING_IS_FRAME_REUSE (flags)) {
-	return IDIO_LIST2 (IDIO_I_REUSE_FRAME, idio_fixnum (arity));
-    } else {
-	return IDIO_LIST2 (IDIO_I_ALLOCATE_FRAME, idio_fixnum (arity));
-    }
+    return IDIO_LIST2 (IDIO_I_ALLOCATE_FRAME, idio_fixnum (arity));
 }
 
 static IDIO idio_meaning_arguments (IDIO src, IDIO aes, IDIO nametree, IDIO escapes, size_t arity, int flags, IDIO cs, IDIO cm)
@@ -3212,11 +3231,7 @@ static IDIO idio_meaning_no_dotted_argument (IDIO src, IDIO nametree, IDIO escap
     IDIO_TYPE_ASSERT (list, nametree);
     IDIO_TYPE_ASSERT (list, escapes);
 
-    if (IDIO_MEANING_IS_FRAME_REUSE (flags)) {
-	return IDIO_LIST2 (IDIO_I_REUSE_FRAME, idio_fixnum (arity));
-    } else {
-	return IDIO_LIST2 (IDIO_I_ALLOCATE_FRAME, idio_fixnum (arity));
-    }
+    return IDIO_LIST2 (IDIO_I_ALLOCATE_FRAME, idio_fixnum (arity));
 }
 
 static IDIO idio_meaning_dotted_arguments (IDIO src, IDIO aes, IDIO nametree, IDIO escapes, size_t nargs, size_t arity, int flags, IDIO cs, IDIO cm)
@@ -3515,9 +3530,6 @@ static IDIO idio_meaning_regular_application (IDIO src, IDIO fe, IDIO aes, IDIO 
     }
 
     int ams_flags = IDIO_MEANING_NOT_TAILP (flags);
-    if (IDIO_MEANING_IS_TAILP (flags)) {
-	ams_flags = IDIO_MEANING_FRAME_REUSE (ams_flags);
-    }
 
     IDIO ams = idio_meaning_arguments (src, aes, nametree, escapes, idio_list_length (aes), ams_flags, cs, cm);
 
@@ -3962,6 +3974,51 @@ static IDIO idio_meaning_escape_from (IDIO src, IDIO label, IDIO ve, IDIO nametr
 
     idio_ai_t mci = idio_codegen_constants_lookup_or_extend (cs, label);
     IDIO fmci = idio_fixnum (mci);
+
+    IDIO vm = idio_meaning (IDIO_MPP (ve, src), ve, nametree, escapes, IDIO_MEANING_NOT_TAILP (flags), cs, cm);
+
+    IDIO r = IDIO_LIST3 (IDIO_I_ESCAPER_LABEL_REF, fmci, vm);
+
+    return r;
+}
+
+static IDIO idio_meaning_escape_label (IDIO src, IDIO label, IDIO ve, IDIO nametree, IDIO escapes, int flags, IDIO cs, IDIO cm)
+{
+    IDIO_ASSERT (src);
+    IDIO_ASSERT (label);
+    IDIO_ASSERT (ve);
+    IDIO_ASSERT (nametree);
+    IDIO_ASSERT (escapes);
+    IDIO_ASSERT (cs);
+    IDIO_ASSERT (cm);
+
+    IDIO_TYPE_ASSERT (symbol, label);
+    IDIO_TYPE_ASSERT (list, nametree);
+    IDIO_TYPE_ASSERT (list, escapes);
+    IDIO_TYPE_ASSERT (array, cs);
+    IDIO_TYPE_ASSERT (module, cm);
+
+    IDIO esc = idio_list_memq (label, escapes);
+
+    if (idio_S_false == esc) {
+	/*
+	 * Test Case: evaluation-errors/return-unbound.idio
+	 *
+	 * return #t
+	 */
+	idio_meaning_error_static_unbound (src, IDIO_C_FUNC_LOCATION (), label);
+
+	return idio_S_notreached;
+    }
+
+    idio_ai_t mci = idio_codegen_constants_lookup_or_extend (cs, label);
+    IDIO fmci = idio_fixnum (mci);
+
+    if (idio_isa_pair (ve)) {
+	ve = IDIO_PAIR_H (ve);
+    } else {
+	ve = idio_S_void;
+    }
 
     IDIO vm = idio_meaning (IDIO_MPP (ve, src), ve, nametree, escapes, IDIO_MEANING_NOT_TAILP (flags), cs, cm);
 
@@ -4912,7 +4969,13 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, IDIO escapes, int fla
 	    {
 		switch (e->type) {
 		case IDIO_TYPE_SYMBOL:
-		    return idio_meaning_reference (src, e, nametree, escapes, IDIO_MEANING_TOPLEVEL_SCOPE (flags), cs, cm);
+		    if (idio_S_return == e ||
+			idio_S_break == e ||
+			idio_S_continue == e) {
+			return idio_meaning_escape_from (src, e, idio_S_void, nametree, escapes, flags, cs, cm);
+		    } else {
+			return idio_meaning_reference (src, e, nametree, escapes, IDIO_MEANING_TOPLEVEL_SCOPE (flags), cs, cm);
+		    }
 
 		case IDIO_TYPE_STRING:
 		case IDIO_TYPE_KEYWORD:

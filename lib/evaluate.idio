@@ -241,26 +241,30 @@ define (meaning-lexical-lookup src nametree name) {
 }
 
 define (meaning-nametree->list nametree) {
-  loop :+ function (nt r done) {
-	    if done r {
-	      loop2 :+ function (names r2) {
-			 if (null? names) (reverse r2) {
-			   name-info := ph names
-			   if (and (not done)
-				   (pair? name-info)
-				   (pair? (pt name-info))
-				   (eq? 'param (pht name-info))) {
-			     done = #t
-			   }
-			   loop2 (pt names) (pair (ph name-info) r2)
-			 }
-	      }
+  r := #n
+  loop-nametree :+ function (nt done) {
+		     if done #n {
+		       loop-names :+ function (names) {
+				       if (null? names) #n {
+					 name-info := ph names
+					 if (and (not done)
+						 (pair? name-info)
+						 (pair? (pt name-info))
+						 (eq? 'param (pht name-info))) {
+						   done = #t
+						 }
+					 r = pair (ph name-info) r
+					 loop-names (pt names)
+				       }
+		       }
+		       loop-names (ph nt)
 
-	      loop (pt nt) (loop2 (ph nt) #n) done
-	    }
+		       loop-nametree (pt nt) done
+		     }
   }
 
-  loop nametree #n #f
+  loop-nametree nametree #f
+  r
 }
 
 define (meaning-nametree-extend-vparams nametree name*) {
@@ -318,6 +322,9 @@ define (meaning-nametree-extend-locals nametree name*) {
 	    }
   }
 
+  ;; we don't have the i++ feature from C so we need to decrement i
+  ;; first
+  i = i - 1
   pair (loop name* alist) nametree
 }
 
@@ -708,21 +715,43 @@ define (meaning-rewrite-cond prev src clause*) {
 }
 
 define (meaning-assignment src name e nametree escapes flags cs cm) {
-  (cond ((pair? name) {
-    ;; setter
+  (cond
+   ((pair? name) {
+     ;; setter
 
-    ;; append will deconstruct the (setter name) construct so we need
-    ;; extra levels of list
-    args := pt name
+     ;; append will deconstruct the (setter name) construct so we need
+     ;; extra levels of list
+     args := pt name
 
-    setter := list 'setter (ph name)
+     setter := list 'setter (ph name)
 
-    se := append (list setter) args (list e)
+     se := append (list setter) args (list e)
 
-    meaning src se nametree escapes (clear-define flags) cs cm
-  })
+     meaning src se nametree escapes (clear-define flags) cs cm
+   })
    ((symbol? name) {
-     m := meaning (mpp e src) e nametree escapes (make-eval-flags #f flags.scope #f) cs cm
+     mflags := make-eval-flags #f flags.scope #f
+
+     if (and (pair? e)
+	     (eq? (ph e) 'function)) {
+	       docstr := #f
+	       body := phtt e
+	       if (and (string? body)
+		       (pair? (pttt e))) {
+			 body = phttt e
+			 docstr = #t
+		       }
+	       body = append (list 'escape-block 'return) (list body)
+	       body = append (list 'escape-block name) (list body)
+
+	       if docstr {
+		 set-ph! (pttt e) body
+	       } {
+		 set-ph! (ptt e) body
+	       }
+	     }
+
+     m := meaning (mpp e src) e nametree escapes mflags cs cm
 
      si := meaning-variable-info src nametree name flags cs cm
 
@@ -768,9 +797,9 @@ define (meaning-assignment src name e nametree escapes flags cs cm) {
 	     if flags.define {
 	       i-code = (list (list I-GLOBAL-SYM-DEF name scope ci)
 			      (list I-COMPUTED-SYM-DEF ci m))
-	       } {
-		 i-code = list I-COMPUTED-SYM-SET ci m
-	       }
+	     } {
+	       i-code = list I-COMPUTED-SYM-SET ci m
+	     }
 	   })
 	   ((predef) {
 	     new-ci := meaning-toplevel-extend src name (define-scope 'toplevel flags) cs cm
@@ -2042,6 +2071,24 @@ define (meaning-escape-from src label ve nametree escapes flags cs cm) {
   list I-ESCAPER-LABEL-REF ci vm
 }
 
+define (meaning-escape-label src label ve nametree escapes flags cs cm) {
+  if (not (memq label escapes)) {
+    meaning-error-static-unbound src label
+  }
+
+  ci := codegen-constants-lookup-or-extend cs label
+
+  if (pair? ve) {
+    ve = ph ve
+  } {
+    ve = (void)
+  }
+
+  vm := meaning (mpp ve src) ve nametree escapes (clear-tailp flags) cs cm
+
+  list I-ESCAPER-LABEL-REF ci vm
+}
+
 define (evaluate-include-file fh cs) {
   c := *primitives*/read fh
   if (not (eof? fh)) {
@@ -2711,7 +2758,15 @@ define (meaning src e nametree escapes flags cs cm) {
 	       (struct-instance? e)
 	       (void? e))
 	    (meaning-quotation src e nametree escapes flags))
-     ((symbol? e) (meaning-reference src e nametree escapes (set-scope 'toplevel flags) cs cm))
+     ((symbol? e) {
+       (case e
+	     ((return break continue) {
+	       meaning-escape-from src e (void) nametree escapes flags cs cm
+	     })
+	     (else {
+	       meaning-reference src e nametree escapes (set-scope 'toplevel flags) cs cm
+	     }))
+     })
      (else
       ;; anything else is something the user shouldn't be dealing
       ;; with!

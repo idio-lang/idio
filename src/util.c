@@ -1424,6 +1424,9 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 
 		    case IDIO_I_CODE_PUSH_TRAP:				t = "I-PUSH-TRAP";			break;
 		    case IDIO_I_CODE_POP_TRAP:				t = "I-POP-TRAP";			break;
+		    case IDIO_I_CODE_PUSH_ESCAPER:			t = "I-PUSH-ESCAPER";			break;
+		    case IDIO_I_CODE_POP_ESCAPER:			t = "I-POP-ESCAPER";			break;
+		    case IDIO_I_CODE_ESCAPER_LABEL_REF:			t = "I-ESCAPER-LABEL-REF";		break;
 
 		    case IDIO_I_CODE_AND:				t = "I-AND";				break;
 		    case IDIO_I_CODE_OR:				t = "I-OR";				break;

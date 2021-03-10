@@ -626,3 +626,83 @@ This takes after Bash's time_command
   printf "%s" (%format 'timeformat TIMEFORMAT h)
   ph rusage-data
 }
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; loops
+
+define-template (for var-clauses test & body) {
+  split :+ function (clauses vars inits steps) {
+	     cond ((null? clauses) (list vars inits steps)) \
+		  ((or (not (pair? clauses))
+		       (not (pair? (ph clauses)))
+		       (not (symbol? (phh clauses)))
+		       (not (pair? (pth clauses)))) (error 'for "invalid syntax" clauses)) \
+		  (else (split (pt clauses)
+			       (pair (phh clauses) vars)
+			       (pair (phth clauses) inits)
+			       (if (null? (ptth clauses))
+				   (pair (phh clauses) steps)
+				   (pair (phtth clauses) steps))))
+  }
+
+  loop := (gensym "loop")
+  var+init+step := split var-clauses '#n '#n '#n
+  v := ph var+init+step
+  i := pht var+init+step
+  s := phtt var+init+step
+
+  #T{
+    {
+      $loop :+ function $v {
+		 (escape-block break
+			       (if $test {
+				 (escape-block continue {
+				   $@body
+				 })
+				 ($loop $@s)
+			       }))
+      }
+      $loop $@i
+    }
+  }
+}
+
+define-template (while test & body) {
+  #T{
+    for #n $test $@body
+  }
+}
+
+define-template (return & args) {
+  val := (void)
+  if (pair? args) {
+    val = ph args
+  }
+
+  #T{
+    escape-from return $val
+  }
+}
+
+define-template (break & args) {
+  val := (void)
+  if (pair? args) {
+    val = ph args
+  }
+
+  #T{
+    escape-from break $val
+  }
+}
+
+define-template (continue & args) {
+  val := (void)
+  if (pair? args) {
+    val = ph args
+  }
+
+  #T{
+    escape-from continue $val
+  }
+}
