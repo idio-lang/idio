@@ -49,7 +49,7 @@ verify:
 	$(MAKE) clean all test
 	#-ASAN_OPTIONS=log_path=idio-asan $(MAKE) clean sanitize-address test
 	$(MAKE) clean debug test
-	# do the valgrind against the debug version as the output is ore useful
+	# run valgrind with the debug version as the output is more useful
 	valgrind --leak-check=full --show-leak-kinds=all --child-silent-after-fork=yes --log-file=idio-valgrind.%p $(BINDIR)/idio test
 	ls -l idio-valgrind.*
 

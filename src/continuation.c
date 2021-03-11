@@ -38,34 +38,16 @@ IDIO idio_continuation (IDIO thr, int kind)
 	IDIO_CONTINUATION_STACK (k) = idio_S_nil;
 	IDIO_CONTINUATION_FLAGS (k) = IDIO_CONTINUATION_FLAG_DELIMITED;
     } else {
-	IDIO_CONTINUATION_STACK (k) = idio_copy_array (IDIO_THREAD_STACK (thr), IDIO_COPY_SHALLOW, 9);
-
-	/*
-	 * XXX same order as idio_vm_preserve_state() !!!
-	 */
+	IDIO_CONTINUATION_STACK (k) = idio_copy_array (IDIO_THREAD_STACK (thr), IDIO_COPY_SHALLOW, 0);
 #ifdef IDIO_VM_DYNAMIC_REGISTERS
-	idio_array_push (IDIO_CONTINUATION_STACK (k), IDIO_THREAD_ENVIRON_SP (thr));
-	idio_array_push (IDIO_CONTINUATION_STACK (k), IDIO_THREAD_DYNAMIC_SP (thr));
-	idio_array_push (IDIO_CONTINUATION_STACK (k), IDIO_THREAD_TRAP_SP (thr));
+	IDIO_CONTINUATION_ENVIRON_SP (k) = IDIO_THREAD_ENVIRON_SP (thr);
+	IDIO_CONTINUATION_DYNAMIC_SP (k) = IDIO_THREAD_DYNAMIC_SP (thr);
+	IDIO_CONTINUATION_TRAP_SP (k) = IDIO_THREAD_TRAP_SP (thr);
 #endif
-	idio_array_push (IDIO_CONTINUATION_STACK (k), IDIO_THREAD_FRAME (thr));
-	idio_array_push (IDIO_CONTINUATION_STACK (k), IDIO_THREAD_ENV (thr));
-	idio_array_push (IDIO_CONTINUATION_STACK (k), idio_SM_preserve_state);
-
-	idio_ai_t pc = IDIO_THREAD_PC (thr);
-
-	/*
-	 * XXX check the use of PC in
-	 *
-	 * 1. IDIO_A_ABORT in idio_vm_run1()
-	 *
-	 * 2. printing a continuation in util.c
-	 */
-	idio_array_push (IDIO_CONTINUATION_STACK (k), idio_fixnum (pc));
-
-	idio_array_push (IDIO_CONTINUATION_STACK (k), thr);
-
-	idio_array_push (IDIO_CONTINUATION_STACK (k), idio_SM_preserve_continuation);
+	IDIO_CONTINUATION_FRAME (k) = IDIO_THREAD_FRAME (thr);
+	IDIO_CONTINUATION_ENV (k) = IDIO_THREAD_ENV (thr);
+	IDIO_CONTINUATION_PC (k) = IDIO_THREAD_PC (thr);
+	IDIO_CONTINUATION_THR (k) = thr;
     }
 
     return k;

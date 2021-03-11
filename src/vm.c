@@ -2810,22 +2810,7 @@ void idio_vm_restore_continuation_data (IDIO k, IDIO val)
     IDIO k_stack = IDIO_CONTINUATION_STACK (k);
     idio_ai_t al = idio_array_size (k_stack);
 
-    IDIO marker = idio_array_ref_index (k_stack, al - 1);
-    if (idio_SM_preserve_continuation != marker) {
-	idio_debug ("iv_rest_k_data: marker: expected idio_SM_preserve_continuation not %s\n", marker);
-	idio_vm_panic (idio_thread_current_thread (), "iv_rest_cont_data: unexpected stack marker");
-
-	/* notreached */
-    }
-
-    IDIO thr = idio_array_ref_index (k_stack, al - 2);
-    if (!idio_isa_thread (thr)) {
-	idio_debug ("iv_rest_k_data: thr: expected a thread not %s\n", thr);
-	idio_vm_panic (thr, "iv_rest_k_data: unexpected value");
-
-	/* notreached */
-    }
-
+    IDIO thr = IDIO_CONTINUATION_THR (k);
     /*
      * WARNING:
      *
@@ -2833,21 +2818,16 @@ void idio_vm_restore_continuation_data (IDIO k, IDIO val)
      * continuation is used again.
      */
 
-    idio_duplicate_array (IDIO_THREAD_STACK (thr), k_stack, al - 2, IDIO_COPY_SHALLOW);
+    idio_duplicate_array (IDIO_THREAD_STACK (thr), k_stack, al, IDIO_COPY_SHALLOW);
 
-    IDIO_THREAD_PC (thr) = IDIO_FIXNUM_VAL (IDIO_THREAD_STACK_POP ());
-    if (NULL == idio_all_code) {
-	idio_vm_panic (thr, "iv_rest_k_data: idio_all_code freed?");
-
-	/* notreached */
-    } else if (IDIO_THREAD_PC (thr) >= IDIO_IA_USIZE (idio_all_code)) {
-	fprintf (stderr, "iv_rest_k_data: thr-PC %td >= size (code) %td\n", IDIO_THREAD_PC (thr), IDIO_IA_USIZE (idio_all_code));
-	idio_vm_panic (thr, "iv_rest_k_data: PC outsized");
-
-	/* notreached */
-    }
-
-    idio_vm_restore_state (thr);
+#ifdef IDIO_VM_DYNAMIC_REGISTERS
+    IDIO_THREAD_ENVIRON_SP (thr) = IDIO_CONTINUATION_ENVIRON_SP (k);
+    IDIO_THREAD_DYNAMIC_SP (thr) = IDIO_CONTINUATION_DYNAMIC_SP (k);
+    IDIO_THREAD_TRAP_SP (thr) = IDIO_CONTINUATION_TRAP_SP (k);
+#endif
+    IDIO_THREAD_FRAME (thr) = IDIO_CONTINUATION_FRAME (k);
+    IDIO_THREAD_ENV (thr) = IDIO_CONTINUATION_ENV (k);
+    IDIO_THREAD_PC (thr) = IDIO_CONTINUATION_PC (k);
 
     IDIO_THREAD_VAL (thr) = val;
     IDIO_THREAD_JMP_BUF (thr) = IDIO_CONTINUATION_JMP_BUF (k);

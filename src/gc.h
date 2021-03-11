@@ -888,11 +888,29 @@ typedef struct idio_continuation_s {
     struct idio_s *grey;
     sigjmp_buf *jmp_buf;
     struct idio_s *stack;
+#ifdef IDIO_VM_DYNAMIC_REGISTERS
+    struct idio_s *trap_sp;
+    struct idio_s *dynamic_sp;
+    struct idio_s *environ_sp;
+#endif
+    struct idio_s *frame;
+    struct idio_s *env;
+    idio_ai_t pc;
+    struct idio_s *thr;
 } idio_continuation_t;
 
 #define IDIO_CONTINUATION_GREY(K)	((K)->u.continuation->grey)
 #define IDIO_CONTINUATION_JMP_BUF(K)	((K)->u.continuation->jmp_buf)
 #define IDIO_CONTINUATION_STACK(K)	((K)->u.continuation->stack)
+#ifdef IDIO_VM_DYNAMIC_REGISTERS
+#define IDIO_CONTINUATION_TRAP_SP(K)	((K)->u.continuation->trap_sp)
+#define IDIO_CONTINUATION_DYNAMIC_SP(K)	((K)->u.continuation->dynamic_sp)
+#define IDIO_CONTINUATION_ENVIRON_SP(K)	((K)->u.continuation->environ_sp)
+#endif
+#define IDIO_CONTINUATION_FRAME(K)	((K)->u.continuation->frame)
+#define IDIO_CONTINUATION_ENV(K)	((K)->u.continuation->env)
+#define IDIO_CONTINUATION_PC(K)		((K)->u.continuation->pc)
+#define IDIO_CONTINUATION_THR(K)	((K)->u.continuation->thr)
 #define IDIO_CONTINUATION_FLAGS(K)	((K)->tflags)
 
 typedef	uint32_t idio_bitset_word_t;
