@@ -798,12 +798,7 @@ typedef struct idio_thread_s {
      */
     struct idio_s *env;
 
-    /*
-     * jmp_buf is used to clear the C-stack
-     *
-     * NB it is a pointer to a C stack variable
-     */
-    sigjmp_buf *jmp_buf;
+    sigjmp_buf jmp_buf;
 
 #ifdef IDIO_VM_DYNAMIC_REGISTERS
     /*
@@ -886,7 +881,7 @@ typedef struct idio_thread_s {
 
 typedef struct idio_continuation_s {
     struct idio_s *grey;
-    sigjmp_buf *jmp_buf;
+    sigjmp_buf jmp_buf;
     struct idio_s *stack;
 #ifdef IDIO_VM_DYNAMIC_REGISTERS
     struct idio_s *trap_sp;

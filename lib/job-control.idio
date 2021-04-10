@@ -871,27 +871,27 @@ define-infix-operator | 700 {
 
   *#
 
-  pipeline-r-ph := (gensym)
-  pipeline-w-ph := (gensym)
+  pipeline-r-ph		:= gensym 'pl-r-h
+  pipeline-w-ph		:= gensym 'pl-w-h
 
-  pipeline-r-fd := (gensym)
-  cmd-r-fd := (gensym)
-  close-pipeline-r-fd := (gensym)
+  pipeline-r-fd		:= gensym 'pl-r-fd
+  cmd-r-fd		:= gensym 'cmd-r-fd
+  close-pipeline-r-fd	:= gensym 'close-pl-r-fd
 
-  pipeline-w-fd := (gensym)
-  cmd-w-fd := (gensym)
-  recover-pipeline-w-fd := (gensym)
+  pipeline-w-fd		:= gensym 'pl-w-fd
+  cmd-w-fd		:= gensym 'cmd-w-fd
+  recover-pipeline-w-fd := gensym 'rcvr-pl-w-fd
 
-  stderr := (gensym)
+  stderr		:= gensym 'stderr
 
-  pgid := (gensym)
-  job := (gensym)
-  proc-id := (gensym)
-  cmd-pipe := (gensym)
-  pgrp-pipe := (gensym)
-  proc := (gensym)
-  pid := (gensym)
-  status := (gensym)
+  pgid			:= gensym 'pgid
+  job			:= gensym 'job
+  proc-id		:= gensym 'proc-id
+  cmd-pipe		:= gensym 'cmd-pipe
+  pgrp-pipe		:= gensym 'pgrp-pipe
+  proc			:= gensym 'proc
+  pid			:= gensym 'pid
+  status		:= gensym 'status
 
   nprocs := length op-args
   #T{
@@ -1136,23 +1136,23 @@ define-infix-operator | 700 {
 }
 
 define-template (fork-command foreground use-w-pipe use-r-pipe & cmd) {
-  cmd-r-ph	   := (gensym)
-  cmd-w-ph	   := (gensym)
+  cmd-r-ph	   := gensym 'cmd-r-ph
+  cmd-w-ph	   := gensym 'cmd-w-ph
 
-  cmd-r-fd	   := (gensym)
-  close-cmd-r-fd   := (gensym)
+  cmd-r-fd	   := gensym 'cmd-r-fd
+  close-cmd-r-fd   := gensym 'close-cmd-r-fd
 
-  cmd-w-fd	   := (gensym)
-  recover-cmd-w-fd := (gensym)
+  cmd-w-fd	   := gensym 'cmd-w-fd
+  recover-cmd-w-fd := gensym 'rcvr-cmd-w-fd
 
-  cmd-e-fd	   := (gensym)
-  recover-cmd-e-fd := (gensym)
+  cmd-e-fd	   := gensym 'cmd-e-fd
+  recover-cmd-e-fd := gensym 'rcvr-cmd-e-fd
 
-  pgid		   := (gensym)
-  proc		   := (gensym)
-  job		   := (gensym)
-  pid		   := (gensym)
-  status	   := (gensym)
+  pgid		   := gensym 'pgid
+  proc		   := gensym 'proc
+  job		   := gensym 'job
+  pid		   := gensym 'pid
+  status	   := gensym 'status
 
   #T{
     {
@@ -1447,7 +1447,7 @@ define (with-error-to dst thunk) {
 ;; uname -n), but is caught up in a pipeline by the reader operator.
 ;; See above.
 define-template (collect-output & cmd) {
-  osh := (gensym)
+  osh := gensym 'osh
   #T{
     $osh := (open-output-string)
     with-output-to $osh (function #n {

@@ -22,6 +22,7 @@
 
 #include "idio.h"
 
+static int idio_thread_id = 0;
 static IDIO idio_running_threads;
 static IDIO idio_running_thread = idio_S_nil;
 IDIO idio_threading_module = idio_S_nil;
@@ -52,7 +53,12 @@ IDIO idio_thread_base (idio_ai_t stack_size)
     IDIO_THREAD_DYNAMIC_SP (t) = idio_fixnum (-1);
     IDIO_THREAD_ENVIRON_SP (t) = idio_fixnum (-1);
 #endif
-    IDIO_THREAD_JMP_BUF (t) = NULL;
+    if (sigsetjmp (IDIO_THREAD_JMP_BUF (t), 1)) {
+	fprintf (stderr, "idio_thread: C stack reverted to init\n");
+	idio_vm_panic (t, "thread reverted to init");
+
+	return idio_S_notreached;
+    }
     IDIO_THREAD_FUNC (t) = idio_S_unspec;
     IDIO_THREAD_REG1 (t) = idio_S_unspec;
     IDIO_THREAD_REG2 (t) = idio_S_unspec;

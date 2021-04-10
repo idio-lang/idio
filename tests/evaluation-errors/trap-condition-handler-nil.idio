@@ -1,4 +1,4 @@
 module tests/evaluation/trap
 
-trap condition handler
+%trap condition handler
 

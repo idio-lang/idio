@@ -91,9 +91,9 @@ the continuation.
 *#
 
 ;; Clearly, something needs to exists to bootstrap everything and that
-;; is the primitive %%call/cc, defined in vm.c.
+;; is the primitive %%call/uc, defined in vm.c.
 
-call/cc := %%call/cc
+call/cc := %%call/uc
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -276,14 +276,14 @@ dynamic-wind := #f
   ;; with {here} (whatever value it actually has by then) and
   ;; ultimately call {after} before calling the continuation.
 
-  original-call/cc := call/cc
+  orig-call/cc := call/cc
 
-  call/cc = function (k-proc) "
+  dw-call/cc := function (k-proc) "
 This is the dynamic-wind call/cc variant which calls:
 
   " {
     here := *here*
-    original-call/cc (function (k) {
+    orig-call/cc (function (k) {
 			k-proc (function results {
 				  reroot! here
 				  apply k results
@@ -291,7 +291,7 @@ This is the dynamic-wind call/cc variant which calls:
     })
   }
 
-  %set-property! call/cc :docstr-raw (append-string (%property call/cc :docstr-raw) (%property original-call/cc :docstr-raw))
+  %set-property! call/cc :docstr-raw (append-string (%property call/cc :docstr-raw) (%property orig-call/cc :docstr-raw))
 
   dynamic-wind = function (before during after) {
 		   here := *here*
@@ -303,55 +303,3 @@ This is the dynamic-wind call/cc variant which calls:
   }
 }
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;call-with-current-continuation := call/cc
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Now we have a dynamic-wind, unwind-protect is a specialisation
-
-define-syntax unwind-protect (syntax-rules ()
-    ((_ body cleanup ...)
-     (dynamic-wind
-       (function () #f)
-       (function () body)
-       (function () cleanup ...))))
-
-;; {with-condition-handler} will invoke {handler} and then
-;; automatically invoke the continuation of {with-condition-handler}
-;; with the result.
-;;
-;; The continuation is in scope of both {handler} and {body} as
-;; {return/handler}.
-define-template (with-condition-handler condition handler & body) {
-  #T{
-    return/handler := #n
-
-    trap $condition (function (c) {
-		       return/handler ($handler c)
-    }) {
-      call/cc (function (k) {
-		 return/handler = k
-		 $@body
-      })
-    }
-  }
-}
-
-;; {trap*} is similar to {with-condition-handler} but allows the user
-;; to determine if they should return a result from {handler} or
-;; invoke the continuation, {return/trap}, inside either {handler} or
-;; {body}.
-define-template (trap* condition handler & body) {
-  #T{
-    return/trap := #n
-
-    trap $condition $handler {
-      call/cc (function (k) {
-		 return/trap = k
-		 $@body
-      })
-    }
-  }
-}

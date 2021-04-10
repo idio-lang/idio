@@ -107,6 +107,8 @@
  */
 
 IDIO idio_evaluation_module = idio_S_nil;
+IDIO idio_evaluation_function_return_tag = idio_S_nil;
+IDIO idio_evaluation_trap_return_tag = idio_S_nil;
 static IDIO idio_meaning_predef_extend_string = idio_S_nil;
 static IDIO idio_meaning_toplevel_extend_string = idio_S_nil;
 static IDIO idio_meaning_environ_extend_string = idio_S_nil;
@@ -1606,8 +1608,13 @@ static IDIO idio_meaning_assignment (IDIO src, IDIO name, IDIO e, IDIO nametree,
      */
 
     int mflags = IDIO_MEANING_NO_DEFINE (IDIO_MEANING_NOT_TAILP (flags));
-    if (idio_isa_pair (e) &&
-	idio_S_function == IDIO_PAIR_H (e)) {
+    if (1 &&
+	idio_bootstrap_complete &&
+	IDIO_MEANING_IS_TEMPLATE (flags) == 0 &&
+	IDIO_MEANING_IS_TAILP (flags) == 0 &&
+	idio_isa_pair (e) &&
+	idio_S_function == IDIO_PAIR_H (e) &&
+	idio_expanderp (idio_S_prompt_at) != idio_S_false) {
 	int docstr = 0;
 	IDIO body = IDIO_PAIR_HTT (e);
 	if (idio_isa_string (body) &&
@@ -1615,8 +1622,10 @@ static IDIO idio_meaning_assignment (IDIO src, IDIO name, IDIO e, IDIO nametree,
 	    body = IDIO_PAIR_HTTT (e);
 	    docstr = 1;
 	}
-	body = idio_list_append2 (IDIO_LIST2 (idio_S_escape_block, idio_S_return), IDIO_LIST1 (body));
-	body = idio_list_append2 (IDIO_LIST2 (idio_S_escape_block, name), IDIO_LIST1 (body));
+	/*
+	body = idio_list_append2 (IDIO_LIST2 (idio_S_prompt_at, idio_evaluation_function_return_tag), IDIO_LIST1 (body));
+	body = idio_list_append2 (IDIO_LIST2 (idio_S_prompt_at, IDIO_LIST2 (idio_S_quote, name)), IDIO_LIST1 (body));
+	*/
 	if (docstr) {
 	    IDIO_PAIR_HTTT (e) = body;
 	} else {
@@ -1981,8 +1990,9 @@ static IDIO idio_meaning_define_template (IDIO src, IDIO name, IDIO e, IDIO name
      * users.
      */
 
+    int mflags = IDIO_MEANING_NOT_TAILP (IDIO_MEANING_TEMPLATE (IDIO_MEANING_DEFINE (IDIO_MEANING_TOPLEVEL_SCOPE (flags))));
     IDIO m_a = idio_meaning_assignment (expander, name, expander, nametree, escapes,
-					IDIO_MEANING_NOT_TAILP (IDIO_MEANING_DEFINE (IDIO_MEANING_TOPLEVEL_SCOPE (flags))),
+					mflags,
 					cs, cm);
 
     idio_install_expander_source (name, expander, expander);
@@ -4817,62 +4827,6 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, IDIO escapes, int fla
 
 		return idio_S_notreached;
 	    }
-	} else if (idio_S_escape_block == eh) {
-	    /*
-	     * (escape-block label body ...)
-	     */
-	    if (idio_isa_pair (et)) {
-		IDIO ett = IDIO_PAIR_T (et);
-		if (idio_isa_pair (ett)) {
-		    return idio_meaning_escape_block (src, IDIO_PAIR_H (et), ett, nametree, escapes, flags, cs, cm);
-		} else {
-		    /*
-		     * Test Case: evaluation-errors/escape-block-label-nil.idio
-		     *
-		     * escape-block label
-		     */
-		    idio_meaning_error_param (src, IDIO_C_FUNC_LOCATION_S ("escape-block"), "no body", e);
-
-		    return idio_S_notreached;
-		}
-	    } else {
-		/*
-		 * Test Case: evaluation-errors/escape-block-nil.idio
-		 *
-		 * (escape-block)
-		 */
-		idio_meaning_error_param (src, IDIO_C_FUNC_LOCATION_S ("escape-block"), "no arguments", eh);
-
-		return idio_S_notreached;
-	    }
-	} else if (idio_S_escape_from == eh) {
-	    /*
-	     * (escape-from label val)
-	     */
-	    if (idio_isa_pair (et)) {
-		IDIO ett = IDIO_PAIR_T (et);
-		if (idio_isa_pair (ett)) {
-		    return idio_meaning_escape_from (src, IDIO_PAIR_H (et), IDIO_PAIR_H (ett), nametree, escapes, flags, cs, cm);
-		} else {
-		    /*
-		     * Test Case: evaluation-errors/escape-from-label-nil.idio
-		     *
-		     * escape-from label
-		     */
-		    idio_meaning_error_param (src, IDIO_C_FUNC_LOCATION_S ("escape-from"), "no value", e);
-
-		    return idio_S_notreached;
-		}
-	    } else {
-		/*
-		 * Test Case: evaluation-errors/escape-from-nil.idio
-		 *
-		 * (escape-from)
-		 */
-		idio_meaning_error_param (src, IDIO_C_FUNC_LOCATION_S ("escape-from"), "no arguments", eh);
-
-		return idio_S_notreached;
-	    }
 	} else if (idio_S_include == eh) {
 	    /* (include filename) */
 	    if (idio_isa_pair (et)) {
@@ -4969,14 +4923,7 @@ static IDIO idio_meaning (IDIO src, IDIO e, IDIO nametree, IDIO escapes, int fla
 	    {
 		switch (e->type) {
 		case IDIO_TYPE_SYMBOL:
-		    if (idio_S_return == e ||
-			idio_S_break == e ||
-			idio_S_continue == e) {
-			return idio_meaning_escape_from (src, e, idio_S_void, nametree, escapes, flags, cs, cm);
-		    } else {
-			return idio_meaning_reference (src, e, nametree, escapes, IDIO_MEANING_TOPLEVEL_SCOPE (flags), cs, cm);
-		    }
-
+		    return idio_meaning_reference (src, e, nametree, escapes, IDIO_MEANING_TOPLEVEL_SCOPE (flags), cs, cm);
 		case IDIO_TYPE_STRING:
 		case IDIO_TYPE_KEYWORD:
 		case IDIO_TYPE_ARRAY:
@@ -5198,6 +5145,9 @@ void idio_init_evaluate ()
     idio_module_table_register (idio_evaluate_add_primitives, NULL);
 
     idio_evaluation_module = idio_module (idio_symbols_C_intern ("evaluate"));
+
+    idio_evaluation_function_return_tag = idio_symbols_C_intern ("function-return-tag");
+    idio_evaluation_trap_return_tag = idio_symbols_C_intern ("trap-return-tag");
 
 #define IDIO_MEANING_STRING(c,s) idio_meaning_ ## c ## _string = idio_string_C (s); idio_gc_protect_auto (idio_meaning_ ## c ## _string);
 

@@ -45,8 +45,6 @@ define-template (expander-trap type) {
       function (filename msg) {
 	if (not (string? filename)) (error '$loader-sym "not a string" filename)
 
-	load-k := #n
-
 	thunk := function () {
 		   trap $condition-name (function (c) {
 					   ;eprintf "caught %s at %s\n" msg c.location
@@ -54,13 +52,9 @@ define-template (expander-trap type) {
 					   if (not (string=? c.message msg)) {
 					     condition-report (append-string $loader-name " " filename) c (current-error-handle)
 					   }
-					   load-k c
+					   trap-return c
 		   }) {
-		     call/cc (function (k) {
-				load-k = k
-				;eprintf "loading #%s looking for %s\n" filename msg
-				(symbol-value 'load 'Idio) filename
-		     })
+		     (symbol-value 'load 'Idio) filename
 		   }
 	}
 

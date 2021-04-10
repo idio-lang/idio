@@ -48,7 +48,7 @@ test (continuation? libc/UINTMAX_MAX)		#f ; C_UINT
 
 ; call/cc has been improved in call-cc.idio -- if we want an actual
 ; continuation object we need to go deeper.  Not recommended.
-(%%call/cc (function (k) {
+(%%call/uc (function (k) {
 	      test (continuation? k) #t
 }))
 

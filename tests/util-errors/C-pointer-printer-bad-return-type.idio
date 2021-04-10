@@ -2,10 +2,11 @@
 module util-errors/printers
 
 define (bad-printer o s) {
+  ;; not returning a string
   #t
 }
 
-;; struct-timeval uses struct-timeval-as-string
+;; struct-timeval uses libc/struct-timeval-as-string
 
 tv := (libc/gettimeofday)
 

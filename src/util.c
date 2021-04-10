@@ -2311,8 +2311,12 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 				     *
 				     * ... return #t
 				     */
+#ifdef IDIO_DEBUG
+				    idio_debug ("C/pointer printer => %s (not a STRING)\n", s);
+#endif
 				    idio_error_param_value ("C/pointer printer", "should return a string", IDIO_C_FUNC_LOCATION ());
 
+				    /* notreached */
 				    return NULL;
 				}
 			    }
@@ -2397,8 +2401,12 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 				 *
 				 * ... return #t
 				 */
+#ifdef IDIO_DEBUG
+				idio_debug ("bad printer for SI type %s\n", sit);
+#endif
 				idio_error_param_value ("struct instance printer", "should return a string", IDIO_C_FUNC_LOCATION ());
 
+				/* notreached */
 				return NULL;
 			    }
 			}
@@ -2553,20 +2561,19 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 		{
 		    seen = idio_pair (o, seen);
 		    IDIO ks = IDIO_CONTINUATION_STACK (o);
-		    idio_ai_t kss = idio_array_size (ks);
-		    IDIO pc_I = idio_array_ref_index (ks, kss - 3);
+		    idio_ai_t kss;
+		    char *kind = "";
+		    if (IDIO_CONTINUATION_FLAGS (o) & IDIO_CONTINUATION_FLAG_DELIMITED) {
+			kind = "D";
+			kss = IDIO_FIXNUM_VAL (ks);
+		    } else {
+			kss = idio_array_size (ks);
+		    }
 
-		    /*
-		     * We preserved some of the continuation state on
-		     * the continuation stack so the actual
-		     * continuation stack size is kss minus eight.
-		     *
-		     * Check idio_continuation() for pc_I above.
-		     */
 #ifdef IDIO_DEBUG
-		    idio_asprintf (&r, "#<K %10p ss=%zu PC=%td>", o, kss - 8, IDIO_FIXNUM_VAL (pc_I));
+		    idio_asprintf (&r, "#<K%s %10p ss=%zu PC=%td>", kind, o, kss, IDIO_CONTINUATION_PC (o));
 #else
-		    idio_asprintf (&r, "#<K ss=%zu PC=%td>", kss - 8, IDIO_FIXNUM_VAL (pc_I));
+		    idio_asprintf (&r, "#<K%s ss=%zu PC=%td>", kind, kss, IDIO_CONTINUATION_PC (o));
 #endif
 		    *sizep = strlen (r);
 		}
@@ -3490,6 +3497,9 @@ IDIO idio_copy (IDIO o, int depth)
 		     * si := make-struct-instance (define-struct foo x y) 1 2
 		     * copy-value si
 		     */
+#ifdef IDIO_DEBUG
+		    idio_debug ("idio_copy: unexpected ST: %s\n", o);
+#endif
 		    idio_error_param_value ("struct instance", "not of a valid struct type", IDIO_C_FUNC_LOCATION ());
 
 		    return idio_S_notreached;
@@ -3528,6 +3538,10 @@ IDIO idio_copy (IDIO o, int depth)
 		 *
 		 * copy-value list
 		 */
+#ifdef IDIO_DEBUG
+		fprintf (stderr, "idio-copy: cannot copy a %s\n", idio_type2string (o));
+		idio_debug ("%s\n", o);
+#endif
 		idio_error_param_value ("value", "invalid type", IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;

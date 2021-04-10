@@ -42,7 +42,7 @@ define-template (define-condition-type/accessors name parent pred-fname & fields
 ;; distinct objects with the same name.  Which is generally considered
 ;; to be "an issue."
 define-template (define-condition-type-accessors-only name parent pred-fname & fields) {
-  arg := (gensym)
+  arg := gensym 'arg
 
   #T{
     define ($pred-fname $arg) {
@@ -88,7 +88,7 @@ define-template (define-condition-type name parent & fields) {
 ;; use a sequence of condition-set! expressions rather than than
 ;; anything more direct to allow for multi-type conditions
 define-template (condition type & field-bindings) {
-  c := (gensym)
+  c := gensym 'c
 
   #T{
     $c := allocate-condition $type

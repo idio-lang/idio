@@ -27,8 +27,6 @@ handle-error-load := {
   function (filename msg) {
     if (not (string? filename)) (error 'load "not a string" filename)
 
-    load-k := #n
-
     n = n + 1
 
     exp-tests := 1
@@ -45,18 +43,15 @@ handle-error-load := {
 					   condition-report (append-string "handle-error-load: " filename) c (current-error-handle)
 					 }
 					 
-					 load-k 'handle-error
+					 trap-return 'handle-error
 	  }) {
-	    call/cc (function (k) {
-		       load-k = k
-		       t0 := Tests
-		       (symbol-value 'load 'Idio) filename
-		       if (not (equal? Tests (t0 + exp-tests))) {
-			 eprintf "handle-error #%s: %s did not generate \"%s\"\n" n filename msg
-			 Errors = Errors + 1
-			 Tests = t0 + exp-tests
-		       }
-	    })
+	    t0 := Tests
+	    (symbol-value 'load 'Idio) filename
+	    if (not (equal? Tests (t0 + exp-tests))) {
+	      eprintf "handle-error #%s: %s did not generate \"%s\"\n" n filename msg
+	      Errors = Errors + 1
+	      Tests = t0 + exp-tests
+	    }
 	  }
   }
 }

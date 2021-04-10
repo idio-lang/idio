@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2020 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -24,8 +24,9 @@
 define-template (help x) {
   #T{
     cond ((function? $x) {
-      sigstr := %property $x :sigstr #n
-      docstr := %property $x :docstr-raw #n
+      sigstr := %property $x :sigstr #f
+      docstr := %property $x :docstr-raw #f
+      source := %property $x :source #f
       details := evaluate/find-symbol '$x
 
       display '$x
@@ -34,14 +35,17 @@ define-template (help x) {
 	display " from module "
 	display (module-name (phttt details))
       }
+      if source {
+	display* " source:" source
+      }
       display "\n"
       display "SYNOPSIS: "
-      if (null? sigstr) {
+      if sigstr {
 	display* '$x
       } {
 	display* '$x sigstr
       }
-      if (not (null? docstr)) {
+      if docstr {
 	display* "DESCRIPTION:"
 	display docstr
       }
@@ -141,10 +145,10 @@ define (autodoc) {
   define (print-docstr mod sym) {
     val := symbol-value sym mod
     cond ((function? val) {
-      sigstr := %property val :sigstr #n
-      docstr := %property val :docstr-raw #n
-      display* ".. idio:function::" sym (if (not (null? sigstr)) sigstr "") "\n"
-      if (not (null? docstr)) {
+      sigstr := %property val :sigstr #f
+      docstr := %property val :docstr-raw #f
+      display* ".. idio:function::" sym (if sigstr sigstr "") "\n"
+      if docstr {
 	display_indented docstr "   "
       }
       display "\n"

@@ -42,8 +42,6 @@ vm-error-load := {
   function (filename msg & args) {
     if (not (string? filename)) (error 'load "not a string" filename)
 
-    load-k := #n
-
     n = n + 1
 
     exp-tests := 1
@@ -60,18 +58,15 @@ vm-error-load := {
 					      condition-report (append-string "vm-error-load: " filename) c (current-error-handle)
 					    }
 				
-				load-k 'vm-error
+				trap-return 'vm-error
 	  }) {
-	    call/cc (function (k) {
-		       load-k = k
-		       t0 := Tests
-		       (symbol-value 'load 'Idio) filename
-		       if (not (equal? Tests (t0 + exp-tests))) {
-			 eprintf "vm-error #%s: %s did not generate \"%s\"\n" n filename msg
-			 Errors = Errors + 1
-			 Tests = t0 + exp-tests
-		       }
-	    })
+	    t0 := Tests
+	    (symbol-value 'load 'Idio) filename
+	    if (not (equal? Tests (t0 + exp-tests))) {
+	      eprintf "vm-error #%s: %s did not generate \"%s\"\n" n filename msg
+	      Errors = Errors + 1
+	      Tests = t0 + exp-tests
+	    }
 	  }
   }
 }
@@ -99,7 +94,13 @@ vm-error-load "vm-errors/raise-bad-type.idio" "bad parameter type: '#t' a CONSTA
 
 vm-error-load "vm-errors/reraise-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a condition" ^rt-parameter-type-error
 
-vm-error-load "vm-errors/call-cc-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a closure" ^rt-parameter-type-error
+vm-error-load "vm-errors/make-prompt-tag-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol" ^rt-parameter-type-error
+
+vm-error-load "vm-errors/hole-push-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a pair" ^rt-parameter-type-error
+
+vm-error-load "vm-errors/call-uc-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a closure" ^rt-parameter-type-error
+
+vm-error-load "vm-errors/call-dc-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a closure" ^rt-parameter-type-error
 
 vm-error-load "vm-errors/vm-trace-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a fixnum" ^rt-parameter-type-error
 
@@ -133,4 +134,4 @@ vm-error-load "vm-errors/run-in-thread-bad-thread-type.idio" "bad parameter type
 vm-error-load "vm-errors/run-in-thread-bad-func-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a function" ^rt-parameter-type-error
 
 ;; all done?
-Tests? (vm-error0 + 31)
+Tests? (vm-error0 + 34)

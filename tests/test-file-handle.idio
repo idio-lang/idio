@@ -216,7 +216,7 @@ close-handle ifh
 ;; go again.
 {
   fds := #[ ]
-  loop-k := #n
+
   trap ^system-error (function (c) {
 			test (C/== (system-error-errno c) libc/EMFILE) #t
 			if (C/== (system-error-errno c) libc/EMFILE) {
@@ -224,18 +224,16 @@ close-handle ifh
                         } {
                           condition-report "test file-handle trap" c (current-error-handle)
                         }
-			loop-k 'too-many-open-files
+			edisplay* "about to trap-return"
+			trap-return 'too-many-open-files
   }) {
-    call/cc (function (k) {
-	       loop-k = k
-	       loop :+ function () {
-			 ish := open-input-file testfile
-			 fds =+ ish
-			 (loop)
-	       }
+    loop :+ function () {
+	      ish := open-input-file testfile
+	      fds =+ ish
+	      (loop)
+    }
 
-	       (loop)
-    })
+    (loop)
   }
 }
 
