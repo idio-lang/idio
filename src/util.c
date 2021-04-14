@@ -2552,6 +2552,11 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 			    t_size = 0;
 			    t = idio_as_string (IDIO_THREAD_MODULE (o), &t_size, 1, seen, 0);
 			    IDIO_STRCAT_FREE (r, sizep, t, t_size);
+
+			    IDIO_STRCAT (r, sizep, "\n  holes=");
+			    t_size = 0;
+			    t = idio_as_string (IDIO_THREAD_HOLES (o), &t_size, 1, seen, 0);
+			    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 			}
 		    }
 		    IDIO_STRCAT (r, sizep, ">");

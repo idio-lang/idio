@@ -224,7 +224,6 @@ close-handle ifh
                         } {
                           condition-report "test file-handle trap" c (current-error-handle)
                         }
-			edisplay* "about to trap-return"
 			trap-return 'too-many-open-files
   }) {
     loop :+ function () {
@@ -290,12 +289,12 @@ close-handle w+-fh
 ;; character -- technically only the last character counts
 ofh = open-file testfile "w"
 {
-  loop :+ (function (n) {
-	     if (n gt 0) {
-	       write-char #\A ofh
-	       loop (n - 1)
-	     } #n
-  })
+  loop :+ function (n) {
+	    if (n gt 0) {
+	      write-char #\A ofh
+	      loop (n - 1)
+	    } #n
+  }
 
   loop ((C/->integer libc/BUFSIZ) + 1)
 }

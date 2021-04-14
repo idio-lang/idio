@@ -1359,35 +1359,37 @@ with-handle-redir := {
     set-h!		:= #f
     dir-fd-h?		:= #f
     dir-string-h?	:= #f
-    msg-h		:= #f
-    cond ((eq? type 'input) {
-      get-current-h	= current-input-handle
-      open-fd-h		= open-input-fd
-      open-file-h	= open-input-file
-      set-h!		= set-input-handle!
-      dir-fd-h?		= input-fd-handle?
-      dir-string-h?	= input-string-handle?
-      msg-h		= "input"
-    }) \
-	 ((eq? type 'output) {
-	   get-current-h	= current-output-handle
-	   open-fd-h		= open-output-fd
-	   open-file-h		= open-output-file
-	   set-h!		= set-output-handle!
-	   dir-fd-h?		= output-fd-handle?
-	   dir-string-h?	= output-string-handle?
-	   msg-h		= "output"
-	 }) \
-	 ((eq? type 'error) {
-	   get-current-h	= current-error-handle
-	   open-fd-h		= open-output-fd
-	   open-file-h		= open-output-file
-	   set-h!		= set-error-handle!
-	   dir-fd-h?		= output-fd-handle?
-	   dir-string-h?	= output-string-handle?
-	   msg-h		= "output"
-	 }) \
-	 (else (error 'with-handle-redir "unexpected handle type" type))
+    dir-msg		:= #f
+
+    (cond
+     ((eq? type 'input) {
+       get-current-h	= current-input-handle
+       open-fd-h	= open-input-fd
+       open-file-h	= open-input-file
+       set-h!		= set-input-handle!
+       dir-fd-h?	= input-fd-handle?
+       dir-string-h?	= input-string-handle?
+       dir-msg		= "input"
+     })
+     ((eq? type 'output) {
+       get-current-h	= current-output-handle
+       open-fd-h	= open-output-fd
+       open-file-h	= open-output-file
+       set-h!		= set-output-handle!
+       dir-fd-h?	= output-fd-handle?
+       dir-string-h?	= output-string-handle?
+       dir-msg		= "output"
+     })
+     ((eq? type 'error) {
+       get-current-h	= current-error-handle
+       open-fd-h	= open-output-fd
+       open-file-h	= open-output-file
+       set-h!		= set-error-handle!
+       dir-fd-h?	= output-fd-handle?
+       dir-string-h?	= output-string-handle?
+       dir-msg		= "output"
+     })
+     (else (error 'with-handle-redir "unexpected handle type" type)))
 
     ;; old and new handles
     old-h := (get-current-h)
@@ -1396,28 +1398,27 @@ with-handle-redir := {
     ;; if we create a new handle we need to close it afterwards
     close-h := #f
 
-    cond ((dir-fd-h? s/d) {
-      new-h = s/d
-    }) \
-	 ((fd-handle? s/d) (error 'with-handle-redir (append-string "not an " msg-h "-fd-handle") s/d)) \
-	 ((dir-string-h? s/d) (new-h = s/d)) \
-	 ((string-handle? s/d) (error 'with-handle-redir (append-string "not an " msg-h "-string-handle") s/d)) \
-	 ((string? s/d) {
-	   new-h = open-file-h s/d
-	   close-fd-handle-on-exec new-h
-	   close-h = #t
-	 }) \
-	 ((null? s/d) {
-	   new-h = open-file-h "/dev/null"
-	   close-fd-handle-on-exec new-h
-	   close-h = #t
-	 }) \
-	 (else (error 'with-handle-redir (append-string "unexpected " msg-h) s/d))
+    (cond
+     ((dir-fd-h? s/d)      (new-h = s/d))
+     ((fd-handle? s/d)     (error 'with-handle-redir (append-string "not an " dir-msg "-fd-handle") s/d))
+     ((dir-string-h? s/d)  (new-h = s/d))
+     ((string-handle? s/d) (error 'with-handle-redir (append-string "not an " dir-msg "-string-handle") s/d))
+     ((string? s/d) {
+       new-h = open-file-h s/d
+       close-fd-handle-on-exec new-h
+       close-h = #t
+     })
+     ((null? s/d) {
+       new-h = open-file-h "/dev/null"
+       close-fd-handle-on-exec new-h
+       close-h = #t
+     })
+     (else (error 'with-handle-redir (append-string "unexpected " dir-msg) s/d)))
 
     if new-h {
       set-h! new-h
     } {
-      error 'with-handle-redir (append-string "unexpected " msg-h) s/d
+      error 'with-handle-redir (append-string "unexpected " dir-msg) s/d
     }
 
     unwind-protect {

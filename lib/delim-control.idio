@@ -107,7 +107,7 @@ define (tag-exists? hole* tag) {
 }
 
 define (unwind-till-tagged! tag) {
-  if (tag-exists? vm/holes tag) {
+  if (tag-exists? (vm/holes) tag) {
     hole := (vm/hole-pop!)
     if (hole-tagged? hole tag) { ; if tagged and marked, it's prompt's hole
       vm/hole-push! hole	 ; put it back
@@ -170,7 +170,7 @@ protection blocks and be able to run those when we're looking to
 escape from a trap expression (usually from the handler!).
 
 When unwind-protect is run we'll get default-reset and unwind-protect
-prompt-tags on vm/holes.  The continuation in the default-reset tag
+prompt-tags on (vm/holes).  The continuation in the default-reset tag
 represents the protecting block.  The continuation in the
 unwind-protect tag is for the forms after the unwind-protect
 expression -- the rest of the program, notionally.
@@ -178,7 +178,7 @@ expression -- the rest of the program, notionally.
 So, much like control-shift-at*, above, we can get the holes-prefix,
 reversed, then walk down it looking for the unwind-protect tags and
 extract the tag (and therefore continuation) after it and push those
-tags back onto vm/holes.
+tags back onto (vm/holes).
 
 We can then call abort-top! and we'll get just the protect blocks
 running.

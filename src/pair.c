@@ -409,6 +409,10 @@ IDIO idio_copy_pair (IDIO p, int depth)
     IDIO_ASSERT (p);
     IDIO_C_ASSERT (depth);
 
+    if (idio_S_nil == p) {
+	return p;
+    }
+
     IDIO_TYPE_ASSERT (pair, p);
 
     if (IDIO_COPY_SHALLOW == depth) {

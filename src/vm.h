@@ -188,7 +188,6 @@ extern IDIO idio_vm_module;
 extern IDIO idio_vm_constants;
 extern IDIO idio_vm_constants_hash;
 extern IDIO idio_vm_krun;
-extern IDIO idio_vm_dc_holes_sym;
 extern int idio_vm_reports;
 extern IDIO_IA_T idio_all_code;
 extern idio_ai_t idio_vm_FINISH_pc;

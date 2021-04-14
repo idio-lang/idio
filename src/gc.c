@@ -636,18 +636,26 @@ void idio_gc_process_grey (idio_gc_t *gc, unsigned colour)
 	idio_gc_gcc_mark (gc, IDIO_THREAD_OUTPUT_HANDLE (o), colour);
 	idio_gc_gcc_mark (gc, IDIO_THREAD_ERROR_HANDLE (o), colour);
 	idio_gc_gcc_mark (gc, IDIO_THREAD_MODULE (o), colour);
+	idio_gc_gcc_mark (gc, IDIO_THREAD_HOLES (o), colour);
 	break;
     case IDIO_TYPE_CONTINUATION:
 	IDIO_C_ASSERT (gc->grey != IDIO_CONTINUATION_GREY (o));
 	gc->grey = IDIO_CONTINUATION_GREY (o);
 	idio_gc_gcc_mark (gc, IDIO_CONTINUATION_STACK (o), colour);
+	idio_gc_gcc_mark (gc, IDIO_CONTINUATION_FRAME (o), colour);
+	idio_gc_gcc_mark (gc, IDIO_CONTINUATION_ENV (o), colour);
 #ifdef IDIO_VM_DYNAMIC_REGISTERS
 	idio_gc_gcc_mark (gc, IDIO_CONTINUATION_TRAP_SP (o), colour);
 	idio_gc_gcc_mark (gc, IDIO_CONTINUATION_DYNAMIC_SP (o), colour);
 	idio_gc_gcc_mark (gc, IDIO_CONTINUATION_ENVIRON_SP (o), colour);
 #endif
-	idio_gc_gcc_mark (gc, IDIO_CONTINUATION_FRAME (o), colour);
-	idio_gc_gcc_mark (gc, IDIO_CONTINUATION_ENV (o), colour);
+#ifdef IDIO_CONTINUATION_HANDLES
+	idio_gc_gcc_mark (gc, IDIO_CONTINUATION_INPUT_HANDLE (o), colour);
+	idio_gc_gcc_mark (gc, IDIO_CONTINUATION_OUTPUT_HANDLE (o), colour);
+	idio_gc_gcc_mark (gc, IDIO_CONTINUATION_ERROR_HANDLE (o), colour);
+#endif
+	idio_gc_gcc_mark (gc, IDIO_CONTINUATION_MODULE (o), colour);
+	idio_gc_gcc_mark (gc, IDIO_CONTINUATION_HOLES (o), colour);
 	idio_gc_gcc_mark (gc, IDIO_CONTINUATION_THR (o), colour);
 	break;
     case IDIO_TYPE_C_POINTER:

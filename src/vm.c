@@ -258,12 +258,6 @@ IDIO idio_vm_krun;
 static IDIO idio_vm_signal_handler_name;
 
 static IDIO idio_vm_prompt_tag_type;
-/*
- * delimited control
- *
- * This is one single global mutable cell
- */
-IDIO idio_vm_dc_holes_sym;
 
 static time_t idio_vm_t0;
 
@@ -722,6 +716,7 @@ void idio_vm_debug (IDIO thr, char *prefix, idio_ai_t stack_start)
     idio_debug ("    out=%s\n", IDIO_THREAD_OUTPUT_HANDLE (thr));
     idio_debug ("    err=%s\n", IDIO_THREAD_ERROR_HANDLE (thr));
     idio_debug ("    mod=%s\n", IDIO_THREAD_MODULE (thr));
+    idio_debug ("  holes=%s\n", IDIO_THREAD_HOLES (thr));
     fprintf (stderr, "jmp_buf=%p\n", IDIO_THREAD_JMP_BUF (thr));
     fprintf (stderr, "\n");
 
@@ -2836,15 +2831,25 @@ create a prompt tag from `name`		\n\
     return idio_struct_instance (idio_vm_prompt_tag_type, IDIO_LIST1 (name));
 }
 
+IDIO_DEFINE_PRIMITIVE0_DS ("holes", vm_dc_holes, (void), "", "\
+return the current list of holes	\n\
+					\n\
+:return: list				\n\
+					\n\
+see make-hole				\n\
+")
+{
+    return IDIO_THREAD_HOLES (idio_thread_current_thread ());
+}
+
 void idio_vm_dc_hole_push (IDIO hole)
 {
     IDIO_ASSERT (hole);
 
     IDIO_TYPE_ASSERT (pair, hole);
 
-    IDIO holes = idio_module_symbol_value (idio_vm_dc_holes_sym, idio_vm_module, idio_S_nil);
-    holes = idio_pair (hole, holes);
-    idio_module_set_symbol_value (idio_vm_dc_holes_sym, holes, idio_vm_module);
+    IDIO thr = idio_thread_current_thread ();
+    IDIO_THREAD_HOLES (thr) = idio_pair (hole, IDIO_THREAD_HOLES (thr));
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("hole-push!", vm_dc_hole_push, (IDIO hole), "hole", "\
@@ -2873,11 +2878,11 @@ see make-hole							\n\
 
 IDIO idio_vm_dc_hole_pop (void)
 {
-    IDIO holes = idio_module_symbol_value (idio_vm_dc_holes_sym, idio_vm_module, idio_S_nil);
+    IDIO thr = idio_thread_current_thread ();
+    IDIO holes = IDIO_THREAD_HOLES (thr);
     IDIO r = IDIO_PAIR_H (holes);
 
-    holes = IDIO_PAIR_T (holes);
-    idio_module_set_symbol_value (idio_vm_dc_holes_sym, holes, idio_vm_module);
+    IDIO_THREAD_HOLES (thr) = IDIO_PAIR_T (holes);
 
     return r;
 }
@@ -2925,8 +2930,10 @@ IDIO idio_vm_restore_continuation_data (IDIO k, IDIO val)
     IDIO_ASSERT (val);
     IDIO_TYPE_ASSERT (continuation, k);
 
-    IDIO k_stack = IDIO_CONTINUATION_STACK (k);
     IDIO thr = IDIO_CONTINUATION_THR (k);
+
+    IDIO_THREAD_PC (thr)		= IDIO_CONTINUATION_PC (k);
+    IDIO k_stack = IDIO_CONTINUATION_STACK (k);
     if (IDIO_CONTINUATION_FLAGS (k) & IDIO_CONTINUATION_FLAG_DELIMITED) {
 	fprintf (stderr, "KD ss->%td\n", IDIO_FIXNUM_VAL (k_stack));
 	if (IDIO_ARRAY_USIZE (IDIO_THREAD_STACK (thr)) < IDIO_FIXNUM_VAL (k_stack)) {
@@ -2947,18 +2954,37 @@ IDIO idio_vm_restore_continuation_data (IDIO k, IDIO val)
 
 	idio_duplicate_array (IDIO_THREAD_STACK (thr), k_stack, al, IDIO_COPY_SHALLOW);
     }
-
-#ifdef IDIO_VM_DYNAMIC_REGISTERS
-    IDIO_THREAD_ENVIRON_SP (thr) = IDIO_CONTINUATION_ENVIRON_SP (k);
-    IDIO_THREAD_DYNAMIC_SP (thr) = IDIO_CONTINUATION_DYNAMIC_SP (k);
-    IDIO_THREAD_TRAP_SP (thr) = IDIO_CONTINUATION_TRAP_SP (k);
-#endif
-    IDIO_THREAD_FRAME (thr) = IDIO_CONTINUATION_FRAME (k);
-    IDIO_THREAD_ENV (thr) = IDIO_CONTINUATION_ENV (k);
-    IDIO_THREAD_PC (thr) = IDIO_CONTINUATION_PC (k);
-
-    IDIO_THREAD_VAL (thr) = val;
+    IDIO_THREAD_FRAME (thr)		= IDIO_CONTINUATION_FRAME (k);
+    IDIO_THREAD_ENV (thr)		= IDIO_CONTINUATION_ENV (k);
     memcpy (IDIO_THREAD_JMP_BUF (thr), IDIO_CONTINUATION_JMP_BUF (k), sizeof (sigjmp_buf));
+#ifdef IDIO_VM_DYNAMIC_REGISTERS
+    IDIO_THREAD_ENVIRON_SP (thr)	= IDIO_CONTINUATION_ENVIRON_SP (k);
+    IDIO_THREAD_DYNAMIC_SP (thr)	= IDIO_CONTINUATION_DYNAMIC_SP (k);
+    IDIO_THREAD_TRAP_SP (thr)		= IDIO_CONTINUATION_TRAP_SP (k);
+#endif
+#ifdef IDIO_CONTINUATION_HANDLES
+    /*
+     * Hmm, slight complication.  Auto-restoring file descriptors
+     * means that any work done in with-handle-redir in
+     * job-control.idio is immediately undone and as the thing that
+     * the continuation restores is something that has just been
+     * closed by with-handle-redir then "hilarity" ensues.
+     *
+     * By hilarity I mean a core dump as the code does manage to
+     * identify an error but can't write to a closed file descriptor
+     * (stderr).
+     *
+     * TBD
+     */
+    IDIO_THREAD_INPUT_HANDLE (thr)	= IDIO_CONTINUATION_INPUT_HANDLE (k);
+    IDIO_THREAD_OUTPUT_HANDLE (thr)	= IDIO_CONTINUATION_OUTPUT_HANDLE (k);
+    IDIO_THREAD_ERROR_HANDLE (thr)	= IDIO_CONTINUATION_ERROR_HANDLE (k);
+#endif
+    IDIO_THREAD_MODULE (thr)		= IDIO_CONTINUATION_MODULE (k);
+    IDIO_THREAD_HOLES (thr)		= idio_copy_pair (IDIO_CONTINUATION_HOLES (k), IDIO_COPY_DEEP);
+
+    IDIO_THREAD_VAL (thr)		= val;
+
     idio_thread_set_current_thread (thr);
     return thr;
 }
@@ -7927,6 +7953,7 @@ void idio_vm_add_primitives ()
     IDIO_ADD_PRIMITIVE (reraise);
     IDIO_ADD_PRIMITIVE (apply);
     IDIO_ADD_PRIMITIVE (make_prompt_tag);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_vm_module, vm_dc_holes);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_vm_module, vm_dc_hole_push);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_vm_module, vm_dc_hole_pop);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_vm_module, vm_dc_make_hole);
@@ -8153,7 +8180,5 @@ void idio_init_vm ()
     }
 
     idio_vm_prompt_tag_type = idio_struct_type (idio_symbols_C_intern ("prompt-tag"), idio_S_nil, IDIO_LIST1 (idio_symbols_C_intern ("name")));
-    idio_vm_dc_holes_sym = idio_symbols_C_intern ("holes");
-    idio_module_export_symbol_value (idio_vm_dc_holes_sym, idio_S_nil, idio_vm_module);
 }
 

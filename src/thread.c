@@ -22,7 +22,6 @@
 
 #include "idio.h"
 
-static int idio_thread_id = 0;
 static IDIO idio_running_threads;
 static IDIO idio_running_thread = idio_S_nil;
 IDIO idio_threading_module = idio_S_nil;
@@ -67,6 +66,7 @@ IDIO idio_thread_base (idio_ai_t stack_size)
     IDIO_THREAD_OUTPUT_HANDLE (t) = idio_stdout_file_handle ();
     IDIO_THREAD_ERROR_HANDLE (t) = idio_stderr_file_handle ();
     IDIO_THREAD_MODULE (t) = main_module;
+    IDIO_THREAD_HOLES (t) = idio_S_nil;
 
     return t;
 }
@@ -153,6 +153,10 @@ void idio_thread_set_current_input_handle (IDIO h)
     IDIO_ASSERT (h);
     IDIO_TYPE_ASSERT (handle, h);
 
+    if (IDIO_HANDLE_FLAGS (h) & IDIO_HANDLE_FLAG_CLOSED) {
+	idio_debug ("set-input-handle! closed handle? %s\n", h);
+    }
+
     IDIO thr = idio_thread_current_thread ();
     IDIO_THREAD_INPUT_HANDLE (thr) = h;
 }
@@ -168,6 +172,10 @@ void idio_thread_set_current_output_handle (IDIO h)
     IDIO_ASSERT (h);
     IDIO_TYPE_ASSERT (handle, h);
 
+    if (IDIO_HANDLE_FLAGS (h) & IDIO_HANDLE_FLAG_CLOSED) {
+	idio_debug ("set-output-handle! closed handle? %s\n", h);
+    }
+
     IDIO thr = idio_thread_current_thread ();
     IDIO_THREAD_OUTPUT_HANDLE (thr) = h;
 }
@@ -182,6 +190,10 @@ void idio_thread_set_current_error_handle (IDIO h)
 {
     IDIO_ASSERT (h);
     IDIO_TYPE_ASSERT (handle, h);
+
+    if (IDIO_HANDLE_FLAGS (h) & IDIO_HANDLE_FLAG_CLOSED) {
+	idio_debug ("set-error-handle! closed handle? %s\n", h);
+    }
 
     IDIO thr = idio_thread_current_thread ();
     IDIO_THREAD_ERROR_HANDLE (thr) = h;

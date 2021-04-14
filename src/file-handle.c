@@ -2197,6 +2197,17 @@ int idio_flush_file_handle (IDIO fh)
 
     IDIO_TYPE_ASSERT (fd_handle, fh);
 
+    if (IDIO_HANDLE_FLAGS (fh) & IDIO_HANDLE_FLAG_CLOSED) {
+	/*
+	 * Test Case: ??
+	 */
+	idio_debug ("flushing a closed handle: %s\n", fh);
+	idio_handle_closed_error (fh, IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
+	return EOF;
+    }
+
     /*
      * What does it mean to flush a file open for reading?  fflush(3)
      * "discards any buffered data that has been fetched from the
@@ -2204,15 +2215,8 @@ int idio_flush_file_handle (IDIO fh)
      *
      * ??
      *
-     * Anyway, all we do here is fwrite(3) the contents of *our*
-     * buffer to the FILE* stream.
-     *
-     * Of course the FILE* stream is itself buffered (probably) so we
-     * may not have achieved very much as far as a third party
-     * process/observer is concerned.
-     *
-     * There's the file-handle-specific file-handle-fflush, below, if
-     * needed.
+     * Anyway, all we do here is write(2) the contents of *our* buffer
+     * to the underlying file descriptor.
      */
     if (IDIO_INPUTP_HANDLE (fh) &&
 	! IDIO_OUTPUTP_HANDLE (fh)) {
