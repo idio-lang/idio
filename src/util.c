@@ -2305,7 +2305,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 			    if (idio_S_nil != s) {
 				if (idio_isa_string (s)) {
 				    return idio_utf8_string (s, sizep, IDIO_UTF8_STRING_VERBATIM, IDIO_UTF8_STRING_UNQUOTED, IDIO_UTF8_STRING_NOPREC);
-				} else {
+				} else if (0 == idio_vm_reporting) {
 				    /*
 				     * Test Case: util-errors/C-pointer-printer-bad-return-type.idio
 				     *
@@ -2395,7 +2395,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 			if (idio_S_nil != s) {
 			    if (idio_isa_string (s)) {
 				return idio_utf8_string (s, sizep, IDIO_UTF8_STRING_VERBATIM, IDIO_UTF8_STRING_UNQUOTED, IDIO_UTF8_STRING_NOPREC);
-			    } else {
+			    } else if (0 == idio_vm_reporting) {
 				/*
 				 * Test Case: util-errors/struct-instance-printer-bad-return-type.idio
 				 *

@@ -189,8 +189,6 @@ unwind-protect-tag := make-prompt-tag 'unwind-protect
 define (unwind-to* tag v) {
   holes-prefix := unwind-till-tagged! tag
 
-  n := 0
-  next := #f
   loop :+ function (h*) {
 	    if (null? h*) #n {
 	      if (and (hole-tagged? (ph h*) unwind-protect-tag)
@@ -311,7 +309,7 @@ define (yield v) {
 
 ; Now we implement dynamic-wind, with the standard interface
 
-define (dyn-wind-yield3 before-thunk thunk after-thunk) {
+define (dyn-wind-yield before-thunk thunk after-thunk) {
   dwy-loop :+ function (th) {
 		prompt-at unwind-protect-tag {
 		  (function (res) {
@@ -338,7 +336,7 @@ define (dyn-wind-yield3 before-thunk thunk after-thunk) {
   })
 }
 
-dynamic-wind := dyn-wind-yield3
+dynamic-wind := dyn-wind-yield
 
 ;; Now we have a dynamic-wind, unwind-protect is a specialisation
 

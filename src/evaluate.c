@@ -3844,9 +3844,9 @@ static IDIO idio_meaning_computed_reference (IDIO src, IDIO name, IDIO nametree,
  * This is a bit complicated as condition can be a list.  For each
  * condition in the list we want to use *the same* handler code.  So
  * our intermediate code wants to leave the closure for the handler in
- * *val* then have a sequence of "PUSH_TRAP n" statements all re-using
+ * *val* then have a sequence of "PUSH-TRAP n" statements all re-using
  * the handler in *val* then the body code then a matching sequence of
- * POP_TRAP statements.
+ * POP-TRAP statements.
  */
 static IDIO idio_meaning_trap (IDIO src, IDIO ce, IDIO he, IDIO be, IDIO nametree, IDIO escapes, int flags, IDIO cs, IDIO cm)
 {

@@ -68,6 +68,7 @@ static int idio_vm_dis = 0;
 #endif
 FILE *idio_dasm_FILE;
 int idio_vm_reports = 0;
+int idio_vm_reporting = 0;
 
 /**
  * DOC:
@@ -7816,7 +7817,7 @@ void idio_vm_decode_stack (IDIO stack)
 	    } else if  (idio_vm_FINISH_pc == pc) {
 		fprintf (stderr, "-- FINISH");
 	    } else if (idio_vm_CHR_pc == pc) {
-		fprintf (stderr, "-- condition handler return (TRAP SP + STATE + RETURN following?)");
+		fprintf (stderr, "-- condition handler return (TRAP + STATE + RETURN following?)");
 	    } else if (idio_vm_AR_pc ==  pc) {
 		fprintf (stderr, "-- apply return");
 	    } else if (idio_vm_IHR_pc == pc) {
@@ -8009,6 +8010,31 @@ void idio_final_vm ()
 		idio_vm_dasm (thr, idio_all_code, 0, 0);
 		fclose (idio_dasm_FILE);
 	    }
+
+	    /*
+	     * We deliberately test that broken struct instance and
+	     * C/pointer printers generate ^rt-parameter-value-errors.
+	     *
+	     * Unfortunately, those values still exist which, as we're
+	     * about to try to print them out again, here, is going to
+	     * be a slight problem.
+	     *
+	     * Obviously, the same could be true for regular usage.
+	     *
+	     * We *could* establish a trap, right now, for
+	     * ^rt-parameter-values-error and revel in some #<bad
+	     * printer> messages or, alternatively, we could engineer
+	     * the code to fall back on the default struct instance
+	     * and C/pointer printers.
+	     *
+	     * The flag, idio_vm_reports is, clearly, toggled on the
+	     * presence of the --vm-reports argument but we don't want
+	     * this alternate behaviour to prevent
+	     * ^rt-parameter-value-error being raised during run-time.
+	     *
+	     * So we need yet another flag for during VM reporting.
+	     */
+	    idio_vm_reporting = 1;
 	    idio_vm_dump_constants ();
 	    idio_vm_dump_values ();
 
