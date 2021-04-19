@@ -3216,6 +3216,7 @@ const char *idio_vm_bytecode2string (int code)
     case IDIO_A_UNLINK_FRAME:			r = "A-UNLINK-FRAME";			break;
     case IDIO_A_PACK_FRAME:			r = "A-PACK-FRAME";			break;
     case IDIO_A_POP_LIST_FRAME:			r = "A-POP-LIST-FRAME";			break;
+    case IDIO_A_EXTEND_FRAME:			r = "A-EXTEND-FRAME";			break;
 
     case IDIO_A_ARITY1P:			r = "A-ARITY1P";			break;
     case IDIO_A_ARITY2P:			r = "A-ARITY2P";			break;

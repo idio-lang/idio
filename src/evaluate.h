@@ -55,9 +55,7 @@
 #define IDIO_MEANING_TEMPLATE(f)		((f) | IDIO_MEANING_FLAG_TEMPLATE)
 #define IDIO_MEANING_NO_TEMPLATE(f)		(((f) & (~ IDIO_MEANING_FLAG_TEMPLATE)) == 0)
 
-extern IDIO idio_evaluation_module;
-extern IDIO idio_evaluation_function_return_tag;
-extern IDIO idio_evaluation_trap_return_tag;
+extern IDIO idio_evaluate_module;
 
 void idio_meaning_dump_src_properties (const char *prefix, const char*name, IDIO e);
 void idio_meaning_error_param_type (IDIO src, IDIO c_location, char *msg, IDIO expr);

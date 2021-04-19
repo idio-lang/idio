@@ -1928,18 +1928,18 @@ void idio_module_add_primitives ()
     IDIO_ADD_PRIMITIVE (module_symbols);
     IDIO_ADD_PRIMITIVE (all_modules);
 
-    IDIO_ADD_MODULE_PRIMITIVE (idio_evaluation_module, symbol_direct_reference);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_evaluation_module, set_module_vci);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_evaluation_module, set_module_vvi);
+    IDIO_ADD_MODULE_PRIMITIVE (idio_evaluate_module, symbol_direct_reference);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_evaluate_module, set_module_vci);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_evaluate_module, set_module_vvi);
     /*
      * find-symbol is used in doc.idio which can access it through
      * evaluate/find-symbol
      */
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_evaluation_module, find_symbol);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_evaluate_module, find_symbol);
     IDIO_ADD_PRIMITIVE (symbol_value);
-    IDIO_ADD_MODULE_PRIMITIVE (idio_evaluation_module, symbol_value_recurse);
-    IDIO_ADD_MODULE_PRIMITIVE (idio_evaluation_module, set_symbol);
-    IDIO_ADD_MODULE_PRIMITIVE (idio_evaluation_module, set_symbol_value);
+    IDIO_ADD_MODULE_PRIMITIVE (idio_evaluate_module, symbol_value_recurse);
+    IDIO_ADD_MODULE_PRIMITIVE (idio_evaluate_module, set_symbol);
+    IDIO_ADD_MODULE_PRIMITIVE (idio_evaluate_module, set_symbol_value);
 
 #ifdef IDIO_DEBUG
     IDIO_ADD_PRIMITIVE (dump_module);

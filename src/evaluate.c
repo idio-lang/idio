@@ -106,9 +106,7 @@
  *
  */
 
-IDIO idio_evaluation_module = idio_S_nil;
-IDIO idio_evaluation_function_return_tag = idio_S_nil;
-IDIO idio_evaluation_trap_return_tag = idio_S_nil;
+IDIO idio_evaluate_module = idio_S_nil;
 static IDIO idio_meaning_predef_extend_string = idio_S_nil;
 static IDIO idio_meaning_toplevel_extend_string = idio_S_nil;
 static IDIO idio_meaning_environ_extend_string = idio_S_nil;
@@ -1608,30 +1606,6 @@ static IDIO idio_meaning_assignment (IDIO src, IDIO name, IDIO e, IDIO nametree,
      */
 
     int mflags = IDIO_MEANING_NO_DEFINE (IDIO_MEANING_NOT_TAILP (flags));
-    if (1 &&
-	idio_bootstrap_complete &&
-	IDIO_MEANING_IS_TEMPLATE (flags) == 0 &&
-	IDIO_MEANING_IS_TAILP (flags) == 0 &&
-	idio_isa_pair (e) &&
-	idio_S_function == IDIO_PAIR_H (e) &&
-	idio_expanderp (idio_S_prompt_at) != idio_S_false) {
-	int docstr = 0;
-	IDIO body = IDIO_PAIR_HTT (e);
-	if (idio_isa_string (body) &&
-	    idio_isa_pair (IDIO_PAIR_TTT (e))) {
-	    body = IDIO_PAIR_HTTT (e);
-	    docstr = 1;
-	}
-	/*
-	body = idio_list_append2 (IDIO_LIST2 (idio_S_prompt_at, idio_evaluation_function_return_tag), IDIO_LIST1 (body));
-	body = idio_list_append2 (IDIO_LIST2 (idio_S_prompt_at, IDIO_LIST2 (idio_S_quote, name)), IDIO_LIST1 (body));
-	*/
-	if (docstr) {
-	    IDIO_PAIR_HTTT (e) = body;
-	} else {
-	    IDIO_PAIR_HTT (e) = body;
-	}
-    }
 
     IDIO m = idio_meaning (IDIO_MPP (e, src), e, nametree, escapes, mflags, cs, cm);
 
@@ -5144,10 +5118,7 @@ void idio_init_evaluate ()
 {
     idio_module_table_register (idio_evaluate_add_primitives, NULL);
 
-    idio_evaluation_module = idio_module (idio_symbols_C_intern ("evaluate"));
-
-    idio_evaluation_function_return_tag = idio_symbols_C_intern ("function-return-tag");
-    idio_evaluation_trap_return_tag = idio_symbols_C_intern ("trap-return-tag");
+    idio_evaluate_module = idio_module (idio_symbols_C_intern ("evaluate"));
 
 #define IDIO_MEANING_STRING(c,s) idio_meaning_ ## c ## _string = idio_string_C (s); idio_gc_protect_auto (idio_meaning_ ## c ## _string);
 

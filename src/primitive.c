@@ -260,9 +260,9 @@ void idio_primitive_add_primitives ()
     /*
      * Export these into *evaluation* for the evaluator to use
      */
-    IDIO_ADD_MODULE_PRIMITIVE (idio_evaluation_module, primitive_arity);
-    IDIO_ADD_MODULE_PRIMITIVE (idio_evaluation_module, primitive_name);
-    IDIO_ADD_MODULE_PRIMITIVE (idio_evaluation_module, primitive_varargsp);
+    IDIO_ADD_MODULE_PRIMITIVE (idio_evaluate_module, primitive_arity);
+    IDIO_ADD_MODULE_PRIMITIVE (idio_evaluate_module, primitive_name);
+    IDIO_ADD_MODULE_PRIMITIVE (idio_evaluate_module, primitive_varargsp);
 }
 
 void idio_init_primitive ()
