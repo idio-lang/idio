@@ -85,12 +85,22 @@ default-reset-tag := make-prompt-tag 'default-reset
 define (hole-k h) {
   pt h
 }
-define (hole-tagged? h tag) {
-  (and (eq? (phh h) tag)
-       (pth h))
-}
+
 define (hole-marked? h) {
   pth h
+}
+
+define (hole-tagged? h tag) {
+  (and (eq? (phh h) tag)
+       (hole-marked? h))
+}
+
+;; pretty-printer -- useful for debug
+define (pp-holes h*) {
+  if (not (null? h*)) {
+    display* "  " (ph h*)
+    pp-holes (pt h*)
+  }
 }
 
 ; Essentially this is the ``return from the function''
@@ -116,7 +126,7 @@ define (unwind-till-tagged! tag) {
       pair hole (unwind-till-tagged! tag)
     }
   } {
-    c := make-condition ^rt-variable-unbound-error "tag unbound" 'control-at tag 'tag
+    c := make-condition ^rt-variable-unbound-error "tag unbound" 'unwind-to* tag 'tag
     raise c
   }
 }
@@ -169,11 +179,11 @@ We want trap-return (and others) to honour the unwind-protect
 protection blocks and be able to run those when we're looking to
 escape from a trap expression (usually from the handler!).
 
-When unwind-protect is run we'll get default-reset and unwind-protect
-prompt-tags on (vm/holes).  The continuation in the default-reset tag
-represents the protecting block.  The continuation in the
-unwind-protect tag is for the forms after the unwind-protect
-expression -- the rest of the program, notionally.
+When unwind-protect is run we'll get a default-reset/yield and a
+unwind-protect prompt-tags on (vm/holes).  The continuation in the
+default-reset/yield tag represents the protecting block.  The
+continuation in the unwind-protect tag is for the forms after the
+unwind-protect expression -- the rest of the program, notionally.
 
 So, much like control-shift-at*, above, we can get the holes-prefix,
 reversed, then walk down it looking for the unwind-protect tags and
@@ -243,10 +253,6 @@ define (abort v) {
   (syntax-rules ()
     ((control-at tag f e) (control-at* tag (function (f) e)))))
 
-;------------------------------------------------------------------------
-;			Shift tests
-;(display "shift tests") (newline)
-
 ; introduce convenient synonyms
 
 (define-syntax reset
@@ -283,6 +289,7 @@ http://okmij.org/ftp/continuations/implementations.html#dynamic-wind
 ; First we define a record yield-record, which pairs a yielded
 ; value with the return continuation.
 
+yield-tag := make-prompt-tag 'yield
 yield-record-tag := make-prompt-tag 'yield-record
 define (make-yield-record v k) {
   list yield-record-tag v k
@@ -303,13 +310,19 @@ define (make-yield-record v k) {
 	      }
     })))
 
-define (yield v) {
+define (yield/shift v) {
   shift k (make-yield-record v k)
 }
 
+define (yield/control-at v) {
+  control-at yield-tag k (make-yield-record v k)
+}
+
+yield := yield/control-at
+
 ; Now we implement dynamic-wind, with the standard interface
 
-define (dyn-wind-yield before-thunk thunk after-thunk) {
+define (dyn-wind-yield/reset before-thunk thunk after-thunk) {
   dwy-loop :+ function (th) {
 		prompt-at unwind-protect-tag {
 		  (function (res) {
@@ -336,7 +349,34 @@ define (dyn-wind-yield before-thunk thunk after-thunk) {
   })
 }
 
-dynamic-wind := dyn-wind-yield
+define (dyn-wind-yield/prompt-at before-thunk thunk after-thunk) {
+  dwy-loop :+ function (th) {
+		prompt-at unwind-protect-tag {
+		  (function (res) {
+		     (after-thunk)
+		     res
+		  }) (control-at unwind-protect-tag dwy-k {
+		    (before-thunk)
+		    res := (th)
+		    dwy-k res
+		    (try-yield res
+			       (r r)				; return the result
+			       (v k {
+				 reenter := yield v
+				 dwy-loop (function () {
+					     k reenter
+				 })
+			       }))
+		  })
+		}
+  }
+
+  dwy-loop (function () {
+	      prompt-at yield-tag (thunk)
+  })
+}
+
+dynamic-wind := dyn-wind-yield/prompt-at
 
 ;; Now we have a dynamic-wind, unwind-protect is a specialisation
 
@@ -349,16 +389,52 @@ define-syntax unwind-protect (syntax-rules ()
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; traps
+;; function return -- not supported in general
 ;;
+;; This requires that the evaluator identify that {return} is used in
+;; the function to rewrite the function with an appropriate prompt.
+;;
+;; However, you could use an explicit form, function/return, that
+;; explicitly includes the prompt.
 
-
-;; function-return-tag is defined in C for the evaluator to use
 function-return-tag := make-prompt-tag 'function-return
-(define-syntax return2
+function-return-hole := vm/make-hole function-return-tag #t #n
+(define-syntax return
   (syntax-rules ()
     ((return)   (return (void)))
-    ((return v) (control-at function-return-tag k v))))
+    ((return v) (unwind-to* function-return-tag v))))
+
+(define-syntax function/return
+  (syntax-rules ()
+    ((function/return fp ds body)
+     (function fp ds {
+       prompt-at function-return-tag {
+	 body
+       }
+     }))
+   ((function/return fp body)
+    (function fp {
+       display* "function/return" fp
+       prompt-at function-return-tag {
+	 body
+       }
+    }))))
+
+(define-syntax define/return
+  (syntax-rules ()
+   ((define/return (name fp ...) body)
+    (define name (function/return (fp ...) body)))
+   ((define/return (name) body)
+    (define name (function/return #n body)))
+   ((define/return (name fp ...) ds body)
+    (define name (function/return (fp ...) ds body)))
+   ((define/return (name) ds body)
+    (define name (function/return #n ds body)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; traps
+;;
 
 trap-return-tag := make-prompt-tag 'trap-return
 (define-syntax trap-return
@@ -407,18 +483,18 @@ define-template (trap* condition handler & body) {
 ;;
 
 for-loop-break-tag := make-prompt-tag 'for-loop-break
-(define-syntax break2
+(define-syntax break
   (syntax-rules ()
     ((break)   (break (void)))
-    ((break v) (control-at for-loop-break-tag k v))))
+    ((break v) (unwind-to* for-loop-break-tag v))))
 
 for-loop-continue-tag := make-prompt-tag 'for-loop-continue
-(define-syntax continue2
+(define-syntax continue
   (syntax-rules ()
     ((continue)   (continue (void)))
-    ((continue v) (control-at for-loop-continue-tag k v))))
+    ((continue v) (unwind-to* for-loop-continue-tag v))))
 
-define-template (for2 var-clauses test & body) {
+define-template (for var-clauses test & body) {
   split :+ function (clauses vars inits steps) {
 	     cond ((null? clauses) (list vars inits steps)) \
 		  ((or (not (pair? clauses))
@@ -456,7 +532,7 @@ define-template (for2 var-clauses test & body) {
   }
 }
 
-define-template (while2 test & body) {
+define-template (while test & body) {
   #T{
     for #n $test $@body
   }

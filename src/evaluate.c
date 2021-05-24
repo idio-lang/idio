@@ -2880,8 +2880,12 @@ static IDIO idio_meaning_rewrite_body_letrec (IDIO src, IDIO e, IDIO nametree)
 	     */
 	    if (idio_isa_pair (src)) {
 		idio_meaning_evaluation_error (IDIO_PAIR_H (src), IDIO_C_FUNC_LOCATION (), "letrec: empty body", l);
+
+		return idio_S_notreached;
 	    } else {
 		idio_meaning_evaluation_error (src, IDIO_C_FUNC_LOCATION (), "letrec: empty body", l);
+
+		return idio_S_notreached;
 	    }
 
 	    return idio_S_notreached;

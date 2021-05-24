@@ -2982,8 +2982,14 @@ IDIO idio_vm_restore_continuation_data (IDIO k, IDIO val)
     IDIO_THREAD_ERROR_HANDLE (thr)	= IDIO_CONTINUATION_ERROR_HANDLE (k);
 #endif
     IDIO_THREAD_MODULE (thr)		= IDIO_CONTINUATION_MODULE (k);
+    /*
+     * In the same vein, restoring IDIO_THREAD_HOLES also messes with
+     * trap-return as it will restore the [outer-k] that runs the code
+     * after the unwind-protect and still in the body of the trap.
+     */
+    /*
     IDIO_THREAD_HOLES (thr)		= idio_copy_pair (IDIO_CONTINUATION_HOLES (k), IDIO_COPY_DEEP);
-
+    */
     IDIO_THREAD_VAL (thr)		= val;
 
     idio_thread_set_current_thread (thr);
