@@ -36,7 +36,7 @@
  */
 volatile sig_atomic_t idio_vm_signal_record[IDIO_LIBC_NSIG+1];
 
-static IDIO idio_vm_module = idio_S_nil;
+IDIO idio_vm_module = idio_S_nil;
 
 /**
  * DOC: Some debugging aids.
@@ -68,6 +68,7 @@ static int idio_vm_dis = 0;
 #endif
 FILE *idio_dasm_FILE;
 int idio_vm_reports = 0;
+int idio_vm_reporting = 0;
 
 /**
  * DOC:
@@ -256,6 +257,8 @@ static IDIO idio_vm_values;
 IDIO idio_vm_krun;
 
 static IDIO idio_vm_signal_handler_name;
+
+static IDIO idio_vm_prompt_tag_type;
 
 static time_t idio_vm_t0;
 
@@ -714,6 +717,7 @@ void idio_vm_debug (IDIO thr, char *prefix, idio_ai_t stack_start)
     idio_debug ("    out=%s\n", IDIO_THREAD_OUTPUT_HANDLE (thr));
     idio_debug ("    err=%s\n", IDIO_THREAD_ERROR_HANDLE (thr));
     idio_debug ("    mod=%s\n", IDIO_THREAD_MODULE (thr));
+    idio_debug ("  holes=%s\n", IDIO_THREAD_HOLES (thr));
     fprintf (stderr, "jmp_buf=%p\n", IDIO_THREAD_JMP_BUF (thr));
     fprintf (stderr, "\n");
 
@@ -1615,15 +1619,27 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
 		return;
 	    }
 
+	    /*
+	     * I mis-read/didn't read
+	     * https://www.scheme.com/tspl3/control.html#./control:s53
+	     * carefully enough:
+	     *
+	     *   In the context of multiple values, a continuation may
+	     *   actually accept zero or more than one argument
+	     *
+	     * That *should* only affect where a closure is being used
+	     * as a continuation such that this unary test is still
+	     * valid for a continuation object.
+	     */
 	    if (IDIO_FRAME_NPARAMS (val) != 1) {
 		/*
 		 * Test Case: vm-errors/idio_vm_invoke-continuation-num-args.idio
 		 *
-		 * %%call/cc (function (k) {
+		 * %%call/uc (function (k) {
 		 *              k 1 2
 		 * })
 		 *
-		 * NB We need to call the %%call/cc primitive as
+		 * NB We need to call the %%call/uc primitive as
 		 * call/cc is wrappered and handles multiple
 		 * arguments!  Oh, the irony!
 		 */
@@ -2637,14 +2653,7 @@ void idio_vm_raise_condition (IDIO continuablep, IDIO condition, int IHR, int re
      * something clever...well?...er, still waiting...
      */
 
-    if (NULL != IDIO_THREAD_JMP_BUF (thr)) {
-	siglongjmp (*(IDIO_THREAD_JMP_BUF (thr)), IDIO_VM_SIGLONGJMP_CONDITION);
-    } else {
-	fprintf (stderr, "WARNING: raise-condition: unable to use jmp_buf==NULL\n");
-	idio_vm_debug (thr, "raise-condition unable to use jmp_buf==NULL", 0);
-	idio_vm_panic (thr, "raise-condition unable to use jmp_buf==NULL");
-	return;
-    }
+    siglongjmp (IDIO_THREAD_JMP_BUF (thr), IDIO_VM_SIGLONGJMP_CONDITION);
 
     /* not reached */
     IDIO_C_ASSERT (0);
@@ -2801,36 +2810,184 @@ apply \\+ 1 2 3 '(4 5)			\n\
     return idio_apply (fn, args);
 }
 
-void idio_vm_restore_continuation_data (IDIO k, IDIO val)
+IDIO_DEFINE_PRIMITIVE1_DS ("make-prompt-tag", make_prompt_tag, (IDIO name), "name", "\
+create a prompt tag from `name`		\n\
+					\n\
+:param name: prompt tag name		\n\
+:type name: symbol			\n\
+					\n\
+:return: prompt tag			\n\
+:rtype: struct instance			\n\
+")
+{
+    IDIO_ASSERT (name);
+
+    /*
+     * Test Case: vm-errors/make-prompt-tag-bad-type.idio
+     *
+     * make-prompt-tag #t
+     */
+    IDIO_USER_TYPE_ASSERT (symbol, name);
+
+    return idio_struct_instance (idio_vm_prompt_tag_type, IDIO_LIST1 (name));
+}
+
+IDIO_DEFINE_PRIMITIVE0_DS ("holes", vm_dc_holes, (void), "", "\
+return the current list of holes	\n\
+					\n\
+:return: list				\n\
+					\n\
+see make-hole				\n\
+")
+{
+    return IDIO_THREAD_HOLES (idio_thread_current_thread ());
+}
+
+void idio_vm_dc_hole_push (IDIO hole)
+{
+    IDIO_ASSERT (hole);
+
+    IDIO_TYPE_ASSERT (pair, hole);
+
+    IDIO thr = idio_thread_current_thread ();
+    IDIO_THREAD_HOLES (thr) = idio_pair (hole, IDIO_THREAD_HOLES (thr));
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("hole-push!", vm_dc_hole_push, (IDIO hole), "hole", "\
+push ``hole`` onto the VM-wide list of holes			\n\
+								\n\
+:param hole:							\n\
+:type hole: a hole						\n\
+:return: unspec							\n\
+								\n\
+see make-hole							\n\
+")
+{
+    IDIO_ASSERT (hole);
+
+    /*
+     * Test Case: vm-errors/hole-push-bad-type.idio
+     *
+     * hole-push! #t
+     */
+    IDIO_USER_TYPE_ASSERT (pair, hole);
+
+    idio_vm_dc_hole_push (hole);
+
+    return idio_S_unspec;
+}
+
+IDIO idio_vm_dc_hole_pop (void)
+{
+    IDIO thr = idio_thread_current_thread ();
+    IDIO holes = IDIO_THREAD_HOLES (thr);
+    IDIO r = IDIO_PAIR_H (holes);
+
+    IDIO_THREAD_HOLES (thr) = IDIO_PAIR_T (holes);
+
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE0_DS ("hole-pop!", vm_dc_hole_pop, (void), "", "\
+pop a ``hole`` from the VM-wide list of holes			\n\
+								\n\
+:return: a cell							\n\
+")
+{
+    return idio_vm_dc_hole_pop ();
+}
+
+IDIO idio_vm_dc_make_hole (IDIO tag, IDIO mark, IDIO k)
+{
+    IDIO_ASSERT (tag);
+    IDIO_ASSERT (mark);
+    IDIO_ASSERT (k);
+
+    return idio_pair (idio_pair (tag, mark), k);
+}
+
+IDIO_DEFINE_PRIMITIVE3_DS ("make-hole", vm_dc_make_hole, (IDIO tag, IDIO mark, IDIO k), "tag mark k", "\
+create a hole				\n\
+					\n\
+:param tag: prompt-tag to unwind to	\n\
+:type tag: any testable by eq?		\n\
+:param mark: shift or prompt		\n\
+:type mark: boolean			\n\
+:param k: continuation			\n\
+:type k: continuation/function		\n\
+:return: hole				\n\
+")
+{
+    IDIO_ASSERT (tag);
+    IDIO_ASSERT (mark);
+    IDIO_ASSERT (k);
+
+    return idio_vm_dc_make_hole (tag, mark, k);
+}
+
+IDIO idio_vm_restore_continuation_data (IDIO k, IDIO val)
 {
     IDIO_ASSERT (k);
     IDIO_ASSERT (val);
     IDIO_TYPE_ASSERT (continuation, k);
 
-    IDIO k_stack = IDIO_CONTINUATION_STACK (k);
-    idio_ai_t al = idio_array_size (k_stack);
-
     IDIO thr = IDIO_CONTINUATION_THR (k);
-    /*
-     * WARNING:
-     *
-     * Make sure you *copy* the continuation's stack -- in case this
-     * continuation is used again.
-     */
 
-    idio_duplicate_array (IDIO_THREAD_STACK (thr), k_stack, al, IDIO_COPY_SHALLOW);
+    IDIO_THREAD_PC (thr)		= IDIO_CONTINUATION_PC (k);
+    IDIO k_stack = IDIO_CONTINUATION_STACK (k);
+    if (IDIO_CONTINUATION_FLAGS (k) & IDIO_CONTINUATION_FLAG_DELIMITED) {
+	fprintf (stderr, "KD ss->%td\n", IDIO_FIXNUM_VAL (k_stack));
+	if (IDIO_ARRAY_USIZE (IDIO_THREAD_STACK (thr)) < IDIO_FIXNUM_VAL (k_stack)) {
+	    fprintf (stderr, "KD >%td\n", IDIO_ARRAY_USIZE (IDIO_THREAD_STACK (thr)));
+	    idio_vm_thread_state (thr);
+	    IDIO_C_ASSERT (0);
+	}
+	IDIO_ARRAY_USIZE (IDIO_THREAD_STACK (thr)) = IDIO_FIXNUM_VAL (k_stack);
+    } else {
+	idio_ai_t al = idio_array_size (k_stack);
 
+	/*
+	 * WARNING:
+	 *
+	 * Make sure you *copy* the continuation's stack -- in case this
+	 * continuation is used again.
+	 */
+
+	idio_duplicate_array (IDIO_THREAD_STACK (thr), k_stack, al, IDIO_COPY_SHALLOW);
+    }
+    IDIO_THREAD_FRAME (thr)		= IDIO_CONTINUATION_FRAME (k);
+    IDIO_THREAD_ENV (thr)		= IDIO_CONTINUATION_ENV (k);
+    memcpy (IDIO_THREAD_JMP_BUF (thr), IDIO_CONTINUATION_JMP_BUF (k), sizeof (sigjmp_buf));
 #ifdef IDIO_VM_DYNAMIC_REGISTERS
-    IDIO_THREAD_ENVIRON_SP (thr) = IDIO_CONTINUATION_ENVIRON_SP (k);
-    IDIO_THREAD_DYNAMIC_SP (thr) = IDIO_CONTINUATION_DYNAMIC_SP (k);
-    IDIO_THREAD_TRAP_SP (thr) = IDIO_CONTINUATION_TRAP_SP (k);
+    IDIO_THREAD_ENVIRON_SP (thr)	= IDIO_CONTINUATION_ENVIRON_SP (k);
+    IDIO_THREAD_DYNAMIC_SP (thr)	= IDIO_CONTINUATION_DYNAMIC_SP (k);
+    IDIO_THREAD_TRAP_SP (thr)		= IDIO_CONTINUATION_TRAP_SP (k);
 #endif
-    IDIO_THREAD_FRAME (thr) = IDIO_CONTINUATION_FRAME (k);
-    IDIO_THREAD_ENV (thr) = IDIO_CONTINUATION_ENV (k);
-    IDIO_THREAD_PC (thr) = IDIO_CONTINUATION_PC (k);
+#ifdef IDIO_CONTINUATION_HANDLES
+    /*
+     * Hmm, slight complication.  Auto-restoring file descriptors
+     * means that any work done in with-handle-redir in
+     * job-control.idio is immediately undone and as the thing that
+     * the continuation restores is something that has just been
+     * closed by with-handle-redir then "hilarity" ensues.
+     *
+     * By hilarity I mean a core dump as the code does manage to
+     * identify an error but can't write to a closed file descriptor
+     * (stderr).
+     *
+     * TBD
+     */
+    IDIO_THREAD_INPUT_HANDLE (thr)	= IDIO_CONTINUATION_INPUT_HANDLE (k);
+    IDIO_THREAD_OUTPUT_HANDLE (thr)	= IDIO_CONTINUATION_OUTPUT_HANDLE (k);
+    IDIO_THREAD_ERROR_HANDLE (thr)	= IDIO_CONTINUATION_ERROR_HANDLE (k);
+#endif
+    IDIO_THREAD_MODULE (thr)		= IDIO_CONTINUATION_MODULE (k);
+    IDIO_THREAD_HOLES (thr)		= idio_copy_pair (IDIO_CONTINUATION_HOLES (k), IDIO_COPY_DEEP);
 
-    IDIO_THREAD_VAL (thr) = val;
-    IDIO_THREAD_JMP_BUF (thr) = IDIO_CONTINUATION_JMP_BUF (k);
+    IDIO_THREAD_VAL (thr)		= val;
+
+    idio_thread_set_current_thread (thr);
+    return thr;
 }
 
 void idio_vm_restore_continuation (IDIO k, IDIO val)
@@ -2839,17 +2996,12 @@ void idio_vm_restore_continuation (IDIO k, IDIO val)
     IDIO_ASSERT (val);
     IDIO_TYPE_ASSERT (continuation, k);
 
-    idio_vm_restore_continuation_data (k, val);
-    IDIO thr = idio_thread_current_thread ();
+    IDIO thr = idio_vm_restore_continuation_data (k, val);
 
-    if (NULL != IDIO_THREAD_JMP_BUF (thr)) {
-	siglongjmp (*(IDIO_THREAD_JMP_BUF (thr)), IDIO_VM_SIGLONGJMP_CONTINUATION);
-    } else {
-	fprintf (stderr, "WARNING: restore-continuation: unable to use jmp_buf==NULL\n");
-	idio_vm_debug (thr, "iv_rest_k unable to use jmp_buf==NULL", 0);
-	idio_vm_panic (thr, "iv_rest_k unable to use jmp_buf==NULL");
-	return;
-    }
+    siglongjmp (IDIO_THREAD_JMP_BUF (thr), IDIO_VM_SIGLONGJMP_CONTINUATION);
+
+    /* notreached */
+    IDIO_C_ASSERT (0);
 }
 
 void idio_vm_restore_exit (IDIO k, IDIO val)
@@ -2862,14 +3014,10 @@ void idio_vm_restore_exit (IDIO k, IDIO val)
 
     IDIO thr = idio_thread_current_thread ();
 
-    if (NULL != IDIO_THREAD_JMP_BUF (thr)) {
-	siglongjmp (*(IDIO_THREAD_JMP_BUF (thr)), IDIO_VM_SIGLONGJMP_EXIT);
-    } else {
-	fprintf (stderr, "WARNING: restore-exit: unable to use jmp_buf==NULL\n");
-	idio_vm_debug (thr, "iv_rest_exit unable to use jmp_buf==NULL", 0);
-	idio_vm_panic (thr, "iv_rest_exit unable to use jmp_buf==NULL");
-	return;
-    }
+    siglongjmp (IDIO_THREAD_JMP_BUF (thr), IDIO_VM_SIGLONGJMP_EXIT);
+
+    /* notreached */
+    IDIO_C_ASSERT (0);
 }
 
 IDIO idio_vm_call_cc (IDIO proc, int kind)
@@ -2882,20 +3030,11 @@ IDIO idio_vm_call_cc (IDIO proc, int kind)
 
     IDIO k = idio_continuation (thr, kind);
 
-    /* idio_debug ("%%%%call/cc: %s\n", k); */
-
     IDIO_THREAD_VAL (thr) = idio_frame (IDIO_THREAD_FRAME (thr), IDIO_LIST1 (k));
 
     idio_vm_invoke (thr, proc, IDIO_VM_INVOKE_REGULAR_CALL);
 
-    if (NULL != IDIO_THREAD_JMP_BUF (thr)) {
-	siglongjmp (*(IDIO_THREAD_JMP_BUF (thr)), IDIO_VM_SIGLONGJMP_CALLCC);
-    } else {
-	fprintf (stderr, "WARNING: %%call/cc: unable to use jmp_buf==NULL\n");
-	idio_vm_debug (thr, "%%call/cc unable to use jmp_buf==NULL", 0);
-	idio_vm_panic (thr, "%%call/cc unable to use jmp_buf==NULL");
-	return idio_S_unspec;
-    }
+    siglongjmp (IDIO_THREAD_JMP_BUF (thr), IDIO_VM_SIGLONGJMP_CALLCC);
 
     /* not reached */
     IDIO_C_ASSERT (0);
@@ -2903,25 +3042,46 @@ IDIO idio_vm_call_cc (IDIO proc, int kind)
     return idio_S_notreached;
 }
 
-IDIO_DEFINE_PRIMITIVE1_DS ("%%call/cc", call_cc, (IDIO proc), "proc", "\
-call ``proc`` with the current continuation			\n\
+IDIO_DEFINE_PRIMITIVE1_DS ("%%call/uc", call_uc, (IDIO proc), "proc", "\
+call ``proc`` with the current (undelimited) continuation	\n\
 								\n\
 :param proc:							\n\
 :type proc: a closure of 1 argument				\n\
 								\n\
-This is the ``call/cc`` primitive.				\n\
+This is the ``%%call/uc`` primitive.				\n\
 ")
 {
     IDIO_ASSERT (proc);
 
     /*
-     * Test Case: vm-errors/call-cc-bad-type.idio
+     * Test Case: vm-errors/call-uc-bad-type.idio
      *
-     * %%call/cc #t
+     * %%call/uc #t
      */
     IDIO_USER_TYPE_ASSERT (closure, proc);
 
     return idio_vm_call_cc (proc, IDIO_CONTINUATION_CALL_CC);
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("%%call/dc", call_dc, (IDIO proc), "proc", "\
+call ``proc`` with the current (delimited) continuation		\n\
+								\n\
+:param proc:							\n\
+:type proc: a closure of 1 argument				\n\
+								\n\
+This is the ``%%call/dc`` primitive.				\n\
+")
+{
+    IDIO_ASSERT (proc);
+
+    /*
+     * Test Case: vm-errors/call-dc-bad-type.idio
+     *
+     * %%call/dc #t
+     */
+    IDIO_USER_TYPE_ASSERT (closure, proc);
+
+    return idio_vm_call_cc (proc, IDIO_CONTINUATION_CALL_DC);
 }
 
 /*
@@ -3921,7 +4081,6 @@ int idio_vm_run1 (IDIO thr)
 		    IDIO name = idio_ref_property (val, idio_KW_name, IDIO_LIST1 (idio_S_false));
 		    if (idio_S_false == name) {
 			idio_set_property (val, idio_KW_name, sym);
-			idio_set_property (val, idio_KW_source, idio_vm_GLOBAL_SYM_SET_string);
 			IDIO str = idio_ref_property (val, idio_KW_sigstr, IDIO_LIST1 (idio_S_nil));
 			if (idio_S_nil != str) {
 			    idio_set_property (val, idio_KW_sigstr, str);
@@ -4492,21 +4651,12 @@ int idio_vm_run1 (IDIO thr)
 	     * continuation's PC to be offset by {o}.
 	     */
 	    IDIO k = idio_continuation (thr, IDIO_CONTINUATION_CALL_CC);
-	    IDIO k_stk = IDIO_CONTINUATION_STACK (k);
 
-	    /*
-	     * continuation PC is 3rd from top arg
-	     *
-	     * Check with idio_continuation()
-	     */
-	    idio_ai_t al = idio_array_size (k_stk);
-	    IDIO I_PC = idio_array_ref_index (k_stk, al - 3);
-	    I_PC = idio_fixnum (IDIO_FIXNUM_VAL (I_PC) + o);
-	    idio_array_insert_index (k_stk, I_PC, al - 3);
+	    IDIO_CONTINUATION_PC (k) += o;
 
 	    IDIO dosh = idio_open_output_string_handle_C ();
 	    idio_display_C ("ABORT to toplevel (PC ", dosh);
-	    idio_display (I_PC, dosh);
+	    idio_display (idio_fixnum (IDIO_CONTINUATION_PC (k)), dosh);
 	    idio_display_C (")", dosh);
 
 	    /* ABORT to main should be in slot #0 */
@@ -6468,9 +6618,8 @@ IDIO idio_vm_run (IDIO thr, idio_ai_t pc, int caller)
 
     int gc_pause = idio_gc_get_pause ("idio_vm_run");
 
-    sigjmp_buf sjb;
-    sigjmp_buf *osjb = IDIO_THREAD_JMP_BUF (thr);
-    IDIO_THREAD_JMP_BUF (thr) = &sjb;
+    sigjmp_buf osjb;
+    memcpy (osjb, IDIO_THREAD_JMP_BUF (thr), sizeof (sigjmp_buf));
 
     /*
      * Ready ourselves for idio_raise_condition/continuations to
@@ -6479,7 +6628,7 @@ IDIO idio_vm_run (IDIO thr, idio_ai_t pc, int caller)
      * NB Keep counters/timers above this sigsetjmp (otherwise they
      * get reset -- duh)
      */
-    int sjv = sigsetjmp (*(IDIO_THREAD_JMP_BUF (thr)), 1);
+    int sjv = sigsetjmp (IDIO_THREAD_JMP_BUF (thr), 1);
 
     /*
      * Hmm, we really should consider caring whether we got here from
@@ -6646,13 +6795,10 @@ IDIO idio_vm_run (IDIO thr, idio_ai_t pc, int caller)
 			IDIO_THREAD_VAL (thr) = vs;
 			idio_vm_invoke (thr, idio_vm_signal_handler, IDIO_VM_INVOKE_REGULAR_CALL);
 
-			if (NULL != IDIO_THREAD_JMP_BUF (thr)) {
-			    siglongjmp (*(IDIO_THREAD_JMP_BUF (thr)), IDIO_VM_SIGLONGJMP_EVENT);
-			} else {
-			    fprintf (stderr, "iv-run: WARNING: SIGCHLD: unable to use jmp_buf==NULL in thr %10p\n", thr);
-			    idio_vm_debug (thr, "SIGCHLD unable to use jmp_buf==NULL", 0);
-			    idio_vm_panic (thr, "SIGCHLD unable to use jmp_buf==NULL");
-			}
+			siglongjmp (IDIO_THREAD_JMP_BUF (thr), IDIO_VM_SIGLONGJMP_EVENT);
+
+			/* notreached */
+			IDIO_C_ASSERT (0);
 		    } else {
 			idio_debug ("iv-run: signal_handler_name=%s\n", signal_handler_name);
 			idio_debug ("iv-run: idio_vm_signal_handler_name=%s\n", idio_vm_signal_handler_name);
@@ -6670,7 +6816,7 @@ IDIO idio_vm_run (IDIO thr, idio_ai_t pc, int caller)
 	}
     }
 
-    IDIO_THREAD_JMP_BUF (thr) = osjb;
+    memcpy (IDIO_THREAD_JMP_BUF (thr), osjb, sizeof (sigjmp_buf));
 
 #ifdef IDIO_DEBUG
     struct timeval tr;
@@ -7671,7 +7817,7 @@ void idio_vm_decode_stack (IDIO stack)
 	    } else if  (idio_vm_FINISH_pc == pc) {
 		fprintf (stderr, "-- FINISH");
 	    } else if (idio_vm_CHR_pc == pc) {
-		fprintf (stderr, "-- condition handler return (TRAP SP + STATE + RETURN following?)");
+		fprintf (stderr, "-- condition handler return (TRAP + STATE + RETURN following?)");
 	    } else if (idio_vm_AR_pc ==  pc) {
 		fprintf (stderr, "-- apply return");
 	    } else if (idio_vm_IHR_pc == pc) {
@@ -7807,7 +7953,13 @@ void idio_vm_add_primitives ()
     IDIO_ADD_PRIMITIVE (raise);
     IDIO_ADD_PRIMITIVE (reraise);
     IDIO_ADD_PRIMITIVE (apply);
-    IDIO_ADD_PRIMITIVE (call_cc);
+    IDIO_ADD_PRIMITIVE (make_prompt_tag);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_vm_module, vm_dc_holes);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_vm_module, vm_dc_hole_push);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_vm_module, vm_dc_hole_pop);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_vm_module, vm_dc_make_hole);
+    IDIO_ADD_PRIMITIVE (call_uc);
+    IDIO_ADD_PRIMITIVE (call_dc);
     IDIO_ADD_PRIMITIVE (vm_continuations);
     IDIO_ADD_PRIMITIVE (vm_apply_continuation);
     IDIO_ADD_PRIMITIVE (vm_trace);
@@ -7858,6 +8010,31 @@ void idio_final_vm ()
 		idio_vm_dasm (thr, idio_all_code, 0, 0);
 		fclose (idio_dasm_FILE);
 	    }
+
+	    /*
+	     * We deliberately test that broken struct instance and
+	     * C/pointer printers generate ^rt-parameter-value-errors.
+	     *
+	     * Unfortunately, those values still exist which, as we're
+	     * about to try to print them out again, here, is going to
+	     * be a slight problem.
+	     *
+	     * Obviously, the same could be true for regular usage.
+	     *
+	     * We *could* establish a trap, right now, for
+	     * ^rt-parameter-values-error and revel in some #<bad
+	     * printer> messages or, alternatively, we could engineer
+	     * the code to fall back on the default struct instance
+	     * and C/pointer printers.
+	     *
+	     * The flag, idio_vm_reports is, clearly, toggled on the
+	     * presence of the --vm-reports argument but we don't want
+	     * this alternate behaviour to prevent
+	     * ^rt-parameter-value-error being raised during run-time.
+	     *
+	     * So we need yet another flag for during VM reporting.
+	     */
+	    idio_vm_reporting = 1;
 	    idio_vm_dump_constants ();
 	    idio_vm_dump_values ();
 
@@ -8028,5 +8205,6 @@ void idio_init_vm ()
 	idio_module_export_symbol_value (sym, idio_fixnum (cs->value), idio_vm_module);
     }
 
+    idio_vm_prompt_tag_type = idio_struct_type (idio_symbols_C_intern ("prompt-tag"), idio_S_nil, IDIO_LIST1 (idio_symbols_C_intern ("name")));
 }
 

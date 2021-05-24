@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015, 2017, 2018, 2020 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2017, 2018, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -90,8 +90,8 @@ any-null? := {
   map-ph := map-ph
 
   function (a*) {
-    and (memq #t (map-ph null? a*)) \
-	#t
+    (and (memq #t (map-ph null? a*))
+	 #t)
   }
 }
 
@@ -162,30 +162,33 @@ define (for-each f & a*) {
 ;
 define (syntax-match form pattern keywords env) {
   match :+ function (form pattern keywords env) {
-	     cond ((pair? pattern) {
-	       cond ((and (pair? (pt pattern))
-			  (eq? '... (pht pattern))) {
-			    e* := map (function (x)
-					 (match x (ph pattern) keywords '#n)) \
-				      form
-			    pair (pair '... e*) env
-			  }) \
-		    ((pair? form) {
-		      e := match (ph form) (ph pattern) keywords env
-		      and e \
-			  (match (pt form) (pt pattern) keywords e)
-		    }) \
-		    (else #f)
-	     }) \
-		  ((memq pattern keywords) {
-		    if (eq? pattern form) env #f
-		  }) \
-		  ((symbol? pattern) {
-		    pair (pair pattern form) env
-		  }) \
-		  (else {
-		    if (equal? pattern form) env #f
-		  })
+	     (cond
+	      ((pair? pattern) {
+		(cond
+		 ((and (pair? (pt pattern))
+		       (eq? '... (pht pattern))) {
+			 e* := (map
+				(function (x)
+				   (match x (ph pattern) keywords '#n))
+				form)
+			 pair (pair '... e*) env
+		       })
+		 ((pair? form) {
+		   e := match (ph form) (ph pattern) keywords env
+		   (and e
+		       (match (pt form) (pt pattern) keywords e))
+		 })
+		 (else #f))
+	      })
+	      ((memq pattern keywords) {
+		if (eq? pattern form) env #f
+	      })
+	      ((symbol? pattern) {
+		pair (pair pattern form) env
+	      })
+	      (else {
+		if (equal? pattern form) env #f
+	      }))
   }
 
   e := match form pattern keywords env
@@ -200,57 +203,63 @@ define (syntax-match form pattern keywords env) {
 ;
 define (alpha-conv form bound) {
   subst :+ function (x env) {
-	     cond ((assq x env) => pt) \
-		  (else x)
+	     (cond
+	      ((assq x env) => pt)
+	      (else x))
   }
   map-improper :+ function (f a r) {
-		    cond ((null? a) (reverse r)) \
-			 ((not (pair? a)) (append (reverse r) (f a))) \
-			 (else (map-improper f (pt a) (pair (f (ph a)) r)))
+		    (cond
+		     ((null? a) (reverse r))
+		     ((not (pair? a)) (append (reverse r) (f a)))
+		     (else (map-improper f (pt a) (pair (f (ph a)) r))))
   }
   remove-bound :+ function (env bound) {
-		    cond ((null? env) '#n) \
-			 ((memq (phh env) bound) (remove-bound (pt env) bound)) \
-			 (else (pair (ph env) (remove-bound (pt env) bound)))
+		    (cond
+		     ((null? env) '#n)
+		     ((memq (phh env) bound) (remove-bound (pt env) bound))
+		     (else (pair (ph env) (remove-bound (pt env) bound))))
   }
   conv :+ function (form env) {
-	    cond ((symbol? form) (subst form env)) \
-		 ((not (pair? form)) form) \
-		 ((and (eq? 'quote (ph form))
-		       (pair? (pt form))
-		       (null? (ptt form))) form) \
-		 ((and (eq? 'function (ph form))
-		       (pair? (pt form))
-		       (pair? (ptt form))) {
-			 e := map-improper (function (x) (pair x (gensym))) \
-					   (pht form) \
-					   '#n
-
-			 #T{ (function $@(conv (pt form)
-					       (append (remove-bound e bound)
-						       env))) }
-		       }) \
-		 ((and (or (eq? (ph form) 'let)
-			   (eq? (ph form) 'letrec)
-			   (eq? (ph form) 'let*))
+	    (cond
+	     ((symbol? form) (subst form env))
+	     ((not (pair? form)) form)
+	     ((and (eq? 'quote (ph form))
 		   (pair? (pt form))
-		   (pair? (pht form))
-		   (pair? (phht form))
+		   (null? (ptt form))) form)
+	     ((and (eq? 'function (ph form))
+		   (pair? (pt form))
 		   (pair? (ptt form))) {
-		     e := map-improper (function (x)
-					  (pair x (gensym))) \
-				       (map (function (x)
-					       (if (pair? x) (ph x) #f))
-					(pht form)) \
-				       '#n
+		     e := (map-improper
+			   (function (x) (pair x (gensym)))
+			   (pht form)
+			   #n)
 
-		     #T{ ($(ph form) $@(conv (pt form)
-					     (append (remove-bound e bound)
-						     env))) }
-		   }) \
-		 (else (map-improper (function (x) (conv x env))
-				     form
-				     '#n))
+		     #T{ (function $@(conv (pt form)
+					   (append (remove-bound e bound)
+						   env))) }
+		   })
+	     ((and (or (eq? (ph form) 'let)
+		       (eq? (ph form) 'letrec)
+		       (eq? (ph form) 'let*))
+	       (pair? (pt form))
+	       (pair? (pht form))
+	       (pair? (phht form))
+	       (pair? (ptt form))) {
+		 e := (map-improper
+		       (function (x)
+			  (pair x (gensym)))
+		       (map (function (x)
+			       (if (pair? x) (ph x) #f))
+			(pht form))
+		       #n)
+
+		 #T{ ($(ph form) $@(conv (pt form)
+					 (append (remove-bound e bound)
+						 env))) }
+	       })
+	     (else (map-improper (function (x) (conv x env))
+				 form
+				 #n)))
   }
 
   conv form '#n
@@ -261,28 +270,30 @@ define (alpha-conv form bound) {
 define (syntax-expand bound tmpl env) {
   alpha-conv := alpha-conv
   expand :+ function (tmpl env) {
-	      cond ((not (pair? tmpl)) {
-		cond ((assq tmpl env) => pt) \
-		     (else tmpl)
-	      }) \
-		   ((and (pair? tmpl)
-			 (pair? (pt tmpl))
-			 (eq? (pht tmpl) '...)) {
-			   eenv := assq '... env
+	      (cond
+	       ((not (pair? tmpl)) {
+		 (cond
+		  ((assq tmpl env) => pt)
+		  (else tmpl))
+	       })
+	       ((and (pair? tmpl)
+		     (pair? (pt tmpl))
+		     (eq? (pht tmpl) '...)) {
+		       eenv := assq '... env
 
-			   if (not eenv) {
-			     error 'syntax-rules "template without matching ... in pattern" tmpl env
-			   } {
-			     set-ph! eenv '(#f)
-			     map (function (x)
-				    (expand (ph tmpl) x)) \
-				 (pt eenv)
-			   }
-			 }) \
-		   (else {
-		     pair (expand (ph tmpl) env) \
-			  (expand (pt tmpl) env)
-		   })
+		       if (not eenv) {
+			 error 'syntax-rules "template without matching ... in pattern" tmpl env
+		       } {
+			 set-ph! eenv '(#f)
+			 (map (function (x)
+				 (expand (ph tmpl) x))
+			  (pt eenv))
+		       }
+		     })
+	       (else {
+		 (pair (expand (ph tmpl) env)
+		       (expand (pt tmpl) env))
+	       }))
   }
 
   e := expand tmpl env
@@ -294,27 +305,28 @@ define (syntax-expand bound tmpl env) {
 ;
 define-template define-syntax {
   flatten :+ function (x r) {
-	       cond ((null? x) r) \
-		    ((pair? x) (flatten (ph x)
-					(flatten (pt x)
-						 r))) \
-		    (else (pair x r))
+	       (cond
+		((null? x) r)
+		((pair? x) (flatten (ph x)
+				    (flatten (pt x) r)))
+		(else (pair x r)))
   }
   list-of? :+ function (p a) {
-		or (null? a) \
-		   (and (p (ph a)) \
-		   (list-of? p (pt a)))
+		(or (null? a)
+		    (and (p (ph a))
+			 (list-of? p (pt a))))
   }
   keywords-ok? :+ function (x) {
 		    list-of? symbol? x
   }
   rules-ok? :+ function (x) {
-		 list-of? (function (x)
-			     (and (pair? x) \
-				  (pair? (ph x)) \
-				  (pair? (pt x)) \
-				  (null? (ptt x)))) \
-				  x
+		 (list-of?
+		  (function (x)
+		     (and (pair? x)
+			  (pair? (ph x))
+			  (pair? (pt x))
+			  (null? (ptt x))))
+		  x)
   }
   pattern := phh
   template := phth
@@ -333,37 +345,35 @@ define-template define-syntax {
 						  env)))
 		       } rules-out
 
-		       rewrite-rules app \
-				     keywords \
-				     (pt rules-in) \
-				     r
+		       rewrite-rules app keywords (pt rules-in) r
 		     }
   }
 
   function (name rules) {
-    cond ((not (symbol? name)) (error 'define-syntax "expected symbol" name)) \
-	 ((or (not (pair? rules))
-	      (not (eq? 'syntax-rules (ph rules)))) (error 'define-syntax "expected syntax-rules, got" rules)) \
-	 ((or (not (pair? (pt rules)))
-	      (not (pair? (ptt rules)))) (error 'define-syntax "syntax-rules: too few arguments" rules)) \
-	 ((not (keywords-ok? (pht rules))) (error 'define-syntax "syntax-rules: malformed keyword list" (pht rules))) \
-	 ((not (rules-ok? (ptt rules))) (error 'define-syntax "syntax-rules: invalid clause in rules" (ptt rules))) \
-	 (else {
-	   app := (gensym)
-	   default := #T{ ((else (error 'define-syntax "invalid syntax" $app))) }
+    (cond
+     ((not (symbol? name))			(error 'define-syntax "expected symbol" name))
+     ((or (not (pair? rules))
+	  (not (eq? 'syntax-rules (ph rules)))) (error name "expected syntax-rules, got" rules))
+     ((or (not (pair? (pt rules)))
+	  (not (pair? (ptt rules))))		(error name "syntax-rules: too few arguments" rules))
+     ((not (keywords-ok? (pht rules)))		(error name "syntax-rules: malformed keyword list" (pht rules)))
+     ((not (rules-ok? (ptt rules)))		(error name "syntax-rules: invalid clause in rules" (ptt rules)))
+     (else {
+       app := (gensym args)
+       default := #T{ ((else (error '$name "invalid syntax" $app))) }
 
-	   #T{
-	     define-template $(pair name app) {
-	       $app := pair '$name $app
+       #T{
+	 define-template $(pair name app) {
+	   $app := pair '$name $app
 
-	       cond $@(append (rewrite-rules app
-					     (pht rules)
-					     (ptt rules)
-					     '#n)
-		       default)
-	     }
-	   }
-	 })
+	   cond $@(append (rewrite-rules app
+					 (pht rules)
+					 (ptt rules)
+					 '#n)
+		   default)
+	 }
+       }
+     }))
   }
 }
 

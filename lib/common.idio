@@ -162,6 +162,25 @@ conditional form.
 idio-print-conversion-format :~ #f
 idio-print-conversion-precision :~ #f
 
+#*
+
+If the bootsrap fails, we need a couple of auxilliary functions which
+will be overwritten in due course
+
+*#
+
+define (ASCII-numeric? x) {
+  if (or (eqv? x #\0)
+	 (eqv? x #\1)
+	 (eqv? x #\2)
+	 (eqv? x #\3)
+	 (eqv? x #\4)
+	 (eqv? x #\5)
+	 (eqv? x #\6)
+	 (eqv? x #\7)
+	 (eqv? x #\8)
+	 (eqv? x #\9)) #t #f
+}
 
 define (%format type fmt & args) "
 
@@ -627,82 +646,3 @@ This takes after Bash's time_command
   ph rusage-data
 }
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;; loops
-
-define-template (for var-clauses test & body) {
-  split :+ function (clauses vars inits steps) {
-	     cond ((null? clauses) (list vars inits steps)) \
-		  ((or (not (pair? clauses))
-		       (not (pair? (ph clauses)))
-		       (not (symbol? (phh clauses)))
-		       (not (pair? (pth clauses)))) (error 'for "invalid syntax" clauses)) \
-		  (else (split (pt clauses)
-			       (pair (phh clauses) vars)
-			       (pair (phth clauses) inits)
-			       (if (null? (ptth clauses))
-				   (pair (phh clauses) steps)
-				   (pair (phtth clauses) steps))))
-  }
-
-  loop := (gensym "loop")
-  var+init+step := split var-clauses '#n '#n '#n
-  v := ph var+init+step
-  i := pht var+init+step
-  s := phtt var+init+step
-
-  #T{
-    {
-      $loop :+ function $v {
-		 (escape-block break
-			       (if $test {
-				 (escape-block continue {
-				   $@body
-				 })
-				 ($loop $@s)
-			       }))
-      }
-      $loop $@i
-    }
-  }
-}
-
-define-template (while test & body) {
-  #T{
-    for #n $test $@body
-  }
-}
-
-define-template (return & args) {
-  val := (void)
-  if (pair? args) {
-    val = ph args
-  }
-
-  #T{
-    escape-from return $val
-  }
-}
-
-define-template (break & args) {
-  val := (void)
-  if (pair? args) {
-    val = ph args
-  }
-
-  #T{
-    escape-from break $val
-  }
-}
-
-define-template (continue & args) {
-  val := (void)
-  if (pair? args) {
-    val = ph args
-  }
-
-  #T{
-    escape-from continue $val
-  }
-}

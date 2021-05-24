@@ -1,4 +1,3 @@
-
 fd+name := mkstemp "XXXXXX"
 close (ph fd+name)
 
@@ -8,4 +7,3 @@ unwind-protect {
 } {
   delete-file (pht fd+name)
 }
-

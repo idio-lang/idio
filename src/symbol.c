@@ -105,6 +105,7 @@ IDIO_SYMBOL_DECL (ph);
 IDIO_SYMBOL_DECL (pipe);
 IDIO_SYMBOL_DECL (predef);
 IDIO_SYMBOL_DECL (profile);
+IDIO_SYMBOL_DECL (prompt_at);
 IDIO_SYMBOL_DECL (pt);
 IDIO_SYMBOL_DECL (quasiquote);
 IDIO_SYMBOL_DECL (quote);
@@ -970,6 +971,7 @@ void idio_init_symbol ()
     IDIO_SYMBOL_DEF ("|", pipe);
     IDIO_SYMBOL_DEF ("predef", predef);
     IDIO_SYMBOL_DEF ("profile", profile);
+    IDIO_SYMBOL_DEF ("prompt-at", prompt_at);
     IDIO_SYMBOL_DEF ("pt", pt);
     IDIO_SYMBOL_DEF ("quasiquote", quasiquote);
     IDIO_SYMBOL_DEF ("quote", quote);
@@ -984,7 +986,7 @@ void idio_init_symbol ()
     IDIO_SYMBOL_DEF ("template-expand", template_expand);
     IDIO_SYMBOL_DEF ("this", this);
     IDIO_SYMBOL_DEF ("toplevel", toplevel);
-    IDIO_SYMBOL_DEF ("trap", trap);
+    IDIO_SYMBOL_DEF ("%trap", trap);
     IDIO_SYMBOL_DEF ("unquote", unquote);
     IDIO_SYMBOL_DEF ("unquotesplicing", unquotesplicing);
     IDIO_SYMBOL_DEF ("virtualisation/WSL", virtualisation_WSL);

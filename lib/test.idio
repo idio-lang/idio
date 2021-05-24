@@ -117,6 +117,7 @@ define-template (test/error form result c-msg) {
   #T{
     with-condition-handler ^idio-error (function (c) {
 					  test c.message $c-msg
+					  trap-return #f
     }) {
       test3 '$form $form $result
     }
@@ -125,7 +126,13 @@ define-template (test/error form result c-msg) {
 
 define (Tests? n) {
   if (not (eqv? Tests n)) {
-    printf "#Tests %s != %s\n" Tests n
+    d := n - Tests
+    phr := "fewer"
+    if (d lt 0) {
+      d = Tests - n
+      phr = "more"
+    }
+    printf "WARNING: #Tests %s != %s: %d %s than expected\n" Tests n d phr
     Errors = Errors + 1
   }
 }
@@ -182,8 +189,13 @@ test-load := {
   function (filename) {
     if (not (string? filename)) (error 'load "not a string" filename)
 
-    printf "[%s/%d] %3ds %s\n" (getpid) PID SECONDS filename
+    tests0 := Tests
+    tv-before := (libc/gettimeofday)
     load filename
+    tv-after := (libc/gettimeofday)
+    tv-delta := libc/subtract-struct-timeval tv-after tv-before
+    delta := (C/->integer tv-delta.tv_sec) + ((C/->integer tv-delta.tv_usec) / 1000000)
+    printf "[%s/%d] %3ds %4d tests in %5.2fs %s\n" (getpid) PID SECONDS (Tests - tests0) delta filename
 
     ; clean up lost file descriptors
     (gc/collect)
@@ -256,7 +268,7 @@ test-load "test-operator.idio"
 test-load "test-template.idio"
 test-load "test-dynamic.idio"
 test-load "test-computed.idio"
-test-load "test-call-cc.idio"
+;test-load "test-call-cc.idio"
 
 test-load "test-trap.idio"
 
@@ -273,7 +285,7 @@ test-load "test-command.idio"
 ;; that?  Erm, they've not been counted and are dynamic in number so
 ;; test we've seen at least as many as the largest number we've
 ;; seen.  Wait, some tests are OS-specific.  Drat!
-Tests? 5657
+Tests? 5650
 
 if (e? testfile) (delete-file testfile)
 

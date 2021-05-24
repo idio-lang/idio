@@ -16,7 +16,7 @@
 ;;
 
 ;;
-;; test-format.idio
+;; test-util.idio
 ;;
 
 #*
@@ -584,10 +584,10 @@ k2 := #f
 
 ; call/cc has been improved in call-cc.idio -- if we want an actual
 ; continuation object we need to go deeper.  Not recommended.
-%%call/cc (function (k) {
+%%call/uc (function (k) {
 	     k1 = k
 })
-%%call/cc (function (k) {
+%%call/uc (function (k) {
 	     k2 = k
 })
 

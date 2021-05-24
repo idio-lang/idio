@@ -798,12 +798,7 @@ typedef struct idio_thread_s {
      */
     struct idio_s *env;
 
-    /*
-     * jmp_buf is used to clear the C-stack
-     *
-     * NB it is a pointer to a C stack variable
-     */
-    sigjmp_buf *jmp_buf;
+    sigjmp_buf jmp_buf;
 
 #ifdef IDIO_VM_DYNAMIC_REGISTERS
     /*
@@ -842,6 +837,11 @@ typedef struct idio_thread_s {
      * module is the current module -- distinct from env, above
      */
     struct idio_s *module;
+
+    /*
+     * holes is the extant set of holes as per delim-control.idio
+     */
+    struct idio_s *holes;
 } idio_thread_t;
 
 #define IDIO_THREAD_GREY(T)           ((T)->u.thread->grey)
@@ -864,12 +864,15 @@ typedef struct idio_thread_s {
 #define IDIO_THREAD_OUTPUT_HANDLE(T)  ((T)->u.thread->output_handle)
 #define IDIO_THREAD_ERROR_HANDLE(T)   ((T)->u.thread->error_handle)
 #define IDIO_THREAD_MODULE(T)	      ((T)->u.thread->module)
+#define IDIO_THREAD_HOLES(T)	      ((T)->u.thread->holes)
 #define IDIO_THREAD_FLAGS(T)          ((T)->tflags)
 
 /*
  * A continuation needs to save everything important about the state
- * of the current thread.  So all the SPs, the current frame and the
- * stack itself.
+ * of the current thread.  Essentially everything except the *val*
+ * register and function-oriented registers (*func*, *reg1* and
+ * *reg2*).  *expr* will be picked up in due course from the byte
+ * code.
  *
  * Also, the current jmp_buf.  In a single span of code the jmp_buf is
  * unchanged, however when we "load" a file we get a new, nested
@@ -877,41 +880,68 @@ typedef struct idio_thread_s {
  * invoked then we must use its contextually correct jmp_buf.
  *
  * We'll be duplicating the efforts of idio_vm_preserve_state() but we
- * can't call that as it modifies the stack.  That said, we'll be
- * copying the stack so once we've done that we can push everything
- * else idio_vm_restore_state() needs onto that copy of the stack.
+ * can't call that as it modifies the stack.
+ *
+ * Notably, we'll also preserve the thread itself -- which seems a bit
+ * non-intuitive.  Here, we are looking to restore the current-thread
+ * itself -- rather than, necessarily, the state of the objects it
+ * references.  We can then reset those objects to the values we have
+ * separately preserved.  We could create a new thread value and
+ * restore everything into that.  An extra pointer saves the malloc
+ * (then free of the original) in an object of which only two may
+ * exist.
+ *
+ * One element #define'd out whilst the problem is mused over are the
+ * current handles.  We get into a mess if the continuation restores
+ * (temporary) handles that were closed in with-handle-redir in
+ * job-control.idio.
  */
 #define IDIO_CONTINUATION_FLAG_NONE		0
 #define IDIO_CONTINUATION_FLAG_DELIMITED	(1<<0)
 
 typedef struct idio_continuation_s {
     struct idio_s *grey;
-    sigjmp_buf *jmp_buf;
+    idio_ai_t pc;
     struct idio_s *stack;
+    struct idio_s *frame;
+    struct idio_s *env;
+    sigjmp_buf jmp_buf;
 #ifdef IDIO_VM_DYNAMIC_REGISTERS
     struct idio_s *trap_sp;
     struct idio_s *dynamic_sp;
     struct idio_s *environ_sp;
 #endif
-    struct idio_s *frame;
-    struct idio_s *env;
-    idio_ai_t pc;
+#ifdef IDIO_CONTINUATION_HANDLES
+    struct idio_s *input_handle;
+    struct idio_s *output_handle;
+    struct idio_s *error_handle;
+#endif
+    struct idio_s *module;
+    struct idio_s *holes;
+
     struct idio_s *thr;
 } idio_continuation_t;
 
-#define IDIO_CONTINUATION_GREY(K)	((K)->u.continuation->grey)
-#define IDIO_CONTINUATION_JMP_BUF(K)	((K)->u.continuation->jmp_buf)
-#define IDIO_CONTINUATION_STACK(K)	((K)->u.continuation->stack)
+#define IDIO_CONTINUATION_GREY(K)		((K)->u.continuation->grey)
+#define IDIO_CONTINUATION_PC(K)			((K)->u.continuation->pc)
+#define IDIO_CONTINUATION_STACK(K)		((K)->u.continuation->stack)
+#define IDIO_CONTINUATION_FRAME(K)		((K)->u.continuation->frame)
+#define IDIO_CONTINUATION_ENV(K)		((K)->u.continuation->env)
+#define IDIO_CONTINUATION_JMP_BUF(K)		((K)->u.continuation->jmp_buf)
 #ifdef IDIO_VM_DYNAMIC_REGISTERS
-#define IDIO_CONTINUATION_TRAP_SP(K)	((K)->u.continuation->trap_sp)
-#define IDIO_CONTINUATION_DYNAMIC_SP(K)	((K)->u.continuation->dynamic_sp)
-#define IDIO_CONTINUATION_ENVIRON_SP(K)	((K)->u.continuation->environ_sp)
+#define IDIO_CONTINUATION_TRAP_SP(K)		((K)->u.continuation->trap_sp)
+#define IDIO_CONTINUATION_DYNAMIC_SP(K)		((K)->u.continuation->dynamic_sp)
+#define IDIO_CONTINUATION_ENVIRON_SP(K)		((K)->u.continuation->environ_sp)
 #endif
-#define IDIO_CONTINUATION_FRAME(K)	((K)->u.continuation->frame)
-#define IDIO_CONTINUATION_ENV(K)	((K)->u.continuation->env)
-#define IDIO_CONTINUATION_PC(K)		((K)->u.continuation->pc)
-#define IDIO_CONTINUATION_THR(K)	((K)->u.continuation->thr)
-#define IDIO_CONTINUATION_FLAGS(K)	((K)->tflags)
+#ifdef IDIO_CONTINUATION_HANDLES
+#define IDIO_CONTINUATION_INPUT_HANDLE(T)	((T)->u.continuation->input_handle)
+#define IDIO_CONTINUATION_OUTPUT_HANDLE(T)	((T)->u.continuation->output_handle)
+#define IDIO_CONTINUATION_ERROR_HANDLE(T)	((T)->u.continuation->error_handle)
+#endif
+#define IDIO_CONTINUATION_MODULE(T)		((T)->u.continuation->module)
+#define IDIO_CONTINUATION_HOLES(T)		((T)->u.continuation->holes)
+#define IDIO_CONTINUATION_THR(K)		((K)->u.continuation->thr)
+#define IDIO_CONTINUATION_FLAGS(K)		((K)->tflags)
 
 typedef	uint32_t idio_bitset_word_t;
 #define IDIO_BITSET_WORD_MAX 0xffffffffUL

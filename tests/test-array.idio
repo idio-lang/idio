@@ -118,6 +118,8 @@ trap ^rt-array-error (function (c) {
 
   ; we should be able to set the first, cf. push
   array-set! a 0 "woo"
+
+  123456789
 }
 
 ;; fill

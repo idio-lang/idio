@@ -2305,14 +2305,18 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 			    if (idio_S_nil != s) {
 				if (idio_isa_string (s)) {
 				    return idio_utf8_string (s, sizep, IDIO_UTF8_STRING_VERBATIM, IDIO_UTF8_STRING_UNQUOTED, IDIO_UTF8_STRING_NOPREC);
-				} else {
+				} else if (0 == idio_vm_reporting) {
 				    /*
 				     * Test Case: util-errors/C-pointer-printer-bad-return-type.idio
 				     *
 				     * ... return #t
 				     */
+#ifdef IDIO_DEBUG
+				    idio_debug ("C/pointer printer => %s (not a STRING)\n", s);
+#endif
 				    idio_error_param_value ("C/pointer printer", "should return a string", IDIO_C_FUNC_LOCATION ());
 
+				    /* notreached */
 				    return NULL;
 				}
 			    }
@@ -2391,14 +2395,18 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 			if (idio_S_nil != s) {
 			    if (idio_isa_string (s)) {
 				return idio_utf8_string (s, sizep, IDIO_UTF8_STRING_VERBATIM, IDIO_UTF8_STRING_UNQUOTED, IDIO_UTF8_STRING_NOPREC);
-			    } else {
+			    } else if (0 == idio_vm_reporting) {
 				/*
 				 * Test Case: util-errors/struct-instance-printer-bad-return-type.idio
 				 *
 				 * ... return #t
 				 */
+#ifdef IDIO_DEBUG
+				idio_debug ("bad printer for SI type %s\n", sit);
+#endif
 				idio_error_param_value ("struct instance printer", "should return a string", IDIO_C_FUNC_LOCATION ());
 
+				/* notreached */
 				return NULL;
 			    }
 			}
@@ -2544,6 +2552,11 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 			    t_size = 0;
 			    t = idio_as_string (IDIO_THREAD_MODULE (o), &t_size, 1, seen, 0);
 			    IDIO_STRCAT_FREE (r, sizep, t, t_size);
+
+			    IDIO_STRCAT (r, sizep, "\n  holes=");
+			    t_size = 0;
+			    t = idio_as_string (IDIO_THREAD_HOLES (o), &t_size, 1, seen, 0);
+			    IDIO_STRCAT_FREE (r, sizep, t, t_size);
 			}
 		    }
 		    IDIO_STRCAT (r, sizep, ">");
@@ -2553,20 +2566,19 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 		{
 		    seen = idio_pair (o, seen);
 		    IDIO ks = IDIO_CONTINUATION_STACK (o);
-		    idio_ai_t kss = idio_array_size (ks);
-		    IDIO pc_I = idio_array_ref_index (ks, kss - 3);
+		    idio_ai_t kss;
+		    char *kind = "";
+		    if (IDIO_CONTINUATION_FLAGS (o) & IDIO_CONTINUATION_FLAG_DELIMITED) {
+			kind = "D";
+			kss = IDIO_FIXNUM_VAL (ks);
+		    } else {
+			kss = idio_array_size (ks);
+		    }
 
-		    /*
-		     * We preserved some of the continuation state on
-		     * the continuation stack so the actual
-		     * continuation stack size is kss minus eight.
-		     *
-		     * Check idio_continuation() for pc_I above.
-		     */
 #ifdef IDIO_DEBUG
-		    idio_asprintf (&r, "#<K %10p ss=%zu PC=%td>", o, kss - 8, IDIO_FIXNUM_VAL (pc_I));
+		    idio_asprintf (&r, "#<K%s %10p ss=%zu PC=%td>", kind, o, kss, IDIO_CONTINUATION_PC (o));
 #else
-		    idio_asprintf (&r, "#<K ss=%zu PC=%td>", kss - 8, IDIO_FIXNUM_VAL (pc_I));
+		    idio_asprintf (&r, "#<K%s ss=%zu PC=%td>", kind, kss, IDIO_CONTINUATION_PC (o));
 #endif
 		    *sizep = strlen (r);
 		}
@@ -3204,6 +3216,7 @@ const char *idio_vm_bytecode2string (int code)
     case IDIO_A_UNLINK_FRAME:			r = "A-UNLINK-FRAME";			break;
     case IDIO_A_PACK_FRAME:			r = "A-PACK-FRAME";			break;
     case IDIO_A_POP_LIST_FRAME:			r = "A-POP-LIST-FRAME";			break;
+    case IDIO_A_EXTEND_FRAME:			r = "A-EXTEND-FRAME";			break;
 
     case IDIO_A_ARITY1P:			r = "A-ARITY1P";			break;
     case IDIO_A_ARITY2P:			r = "A-ARITY2P";			break;
@@ -3490,6 +3503,9 @@ IDIO idio_copy (IDIO o, int depth)
 		     * si := make-struct-instance (define-struct foo x y) 1 2
 		     * copy-value si
 		     */
+#ifdef IDIO_DEBUG
+		    idio_debug ("idio_copy: unexpected ST: %s\n", o);
+#endif
 		    idio_error_param_value ("struct instance", "not of a valid struct type", IDIO_C_FUNC_LOCATION ());
 
 		    return idio_S_notreached;
@@ -3528,6 +3544,10 @@ IDIO idio_copy (IDIO o, int depth)
 		 *
 		 * copy-value list
 		 */
+#ifdef IDIO_DEBUG
+		fprintf (stderr, "idio-copy: cannot copy a %s\n", idio_type2string (o));
+		idio_debug ("%s\n", o);
+#endif
 		idio_error_param_value ("value", "invalid type", IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;

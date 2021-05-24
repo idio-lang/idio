@@ -184,10 +184,12 @@
 #define IDIO_A_POP_ESCAPER			251
 #define IDIO_A_ESCAPER_LABEL_REF		252
 
+extern IDIO idio_vm_module;
 extern IDIO idio_vm_constants;
 extern IDIO idio_vm_constants_hash;
 extern IDIO idio_vm_krun;
 extern int idio_vm_reports;
+extern int idio_vm_reporting;
 extern IDIO_IA_T idio_all_code;
 extern idio_ai_t idio_vm_FINISH_pc;
 extern idio_ai_t idio_vm_NCE_pc;

@@ -19,13 +19,27 @@
 ;; bootstrap.idio
 ;;
 
+#*
+
+One problem with meta-programming functionality into a language is
+that anything defined before such functionality is added doesn't get
+to use it.  Duh!  That might be things like "module" or
+even (infix) "+".
+
+So we need to carefully stagger things into life noting that if you
+author any bootstrap code you might need to go back to basics.
+
+*#
+
 ;display "This is bootstrap.idio\n"
 
 include "s9-syntax.idio"
 include "call-cc.idio"
-include "module.idio"
-
 include "standard-operators.idio"
+
+; delim-control may use infix + from standard-operators
+include "delim-control.idio"
+
 include "closure.idio"
 include "common.idio"
 include "struct.idio"
@@ -33,6 +47,8 @@ include "condition.idio"
 include "path.idio"
 include "posix-regex.idio"
 include "debug.idio"
+
+include "module.idio"
 
 include "s9.idio"
 

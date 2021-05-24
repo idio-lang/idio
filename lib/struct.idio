@@ -73,8 +73,8 @@ define-template (export-struct name & fields) {
 ;; cf. condition.idio
 define-template (define-struct-accessors-only name & fields) {
   ;; handy parameters
-  arg := (gensym)
-  val := (gensym)
+  arg := gensym 'arg
+  val := gensym 'val
   field-index := function (field fields) {
 		   mq := memq field fields
 		   (length fields) - (length mq)
@@ -144,8 +144,8 @@ define-template (define-struct-accessors-only name & fields) {
 
 define-template (export-struct-accessors-only name & fields) {
   ;; handy parameters
-  arg := (gensym)
-  val := (gensym)
+  arg := gensym 'arg
+  val := gensym 'val
   field-index := function (field fields) {
 		   mq := memq field fields
 		   (length fields) - (length mq)

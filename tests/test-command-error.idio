@@ -76,8 +76,6 @@ command-parent-error-load := {
   function (filename msg & args) {
     if (not (string? filename)) (error 'load "not a string" filename)
 
-    load-k := #n
-
     n = n + 1
 
     exp-tests := 1
@@ -109,18 +107,15 @@ command-parent-error-load := {
 					 }
 				       }
 
-				       load-k 'command-parent-error
+				       trap-return 'command-parent-error
 	  }) {
-	    call/cc (function (k) {
-		       load-k = k
-		       t0 := Tests
-		       (symbol-value 'load 'Idio) filename
-		       if (not (equal? Tests (t0 + exp-tests))) {
-			 eprintf "command-error #%s: %s did not generate \"%s\"\n" n filename msg
-			 Errors = Errors + 1
-			 Tests = t0 + exp-tests
-		       }
-	    })
+	    t0 := Tests
+	    (symbol-value 'load 'Idio) filename
+	    if (not (equal? Tests (t0 + exp-tests))) {
+	      eprintf "command-error #%s: %s did not generate \"%s\"\n" n filename msg
+	      Errors = Errors + 1
+	      Tests = t0 + exp-tests
+	    }
 	  }
   }
 }
@@ -130,8 +125,6 @@ command-child-error-load := {
 
   function (filename msg exit-status) {
     if (not (string? filename)) (error 'load "not a string" filename)
-
-    load-k := #n
 
     n = n + 1
     ;eprintf "loading #%s %s looking for %s\n" n filename msg
@@ -160,7 +153,7 @@ command-child-error-load := {
 					   }
 					 }
 
-					 load-k 'command-error
+					 trap-return 'command-error
 				       } {
 					 ;eprintf "[%d] command-error #%s: %s at %s\n" (getpid) n msg c.location
 
@@ -174,10 +167,7 @@ command-child-error-load := {
 					 libc/exit 1
 				       }
 	  }) {
-	    call/cc (function (k) {
-		       load-k = k
-		       (symbol-value 'load 'Idio) filename
-	    })
+	    (symbol-value 'load 'Idio) filename
 	  }
 
     ;; we usually generate some stragglers...

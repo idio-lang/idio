@@ -409,6 +409,10 @@ IDIO idio_copy_pair (IDIO p, int depth)
     IDIO_ASSERT (p);
     IDIO_C_ASSERT (depth);
 
+    if (idio_S_nil == p) {
+	return p;
+    }
+
     IDIO_TYPE_ASSERT (pair, p);
 
     if (IDIO_COPY_SHALLOW == depth) {
@@ -510,7 +514,9 @@ list ``a`` is copied, list ``b`` is untouched	\n\
     /*
      * Test Case: pair-errors/append-bad-type.idio
      *
-     * append #t
+     * *primitives*\/append #t #t
+     *
+     * NB append is redefined to be more list-y
      */
     IDIO_USER_TYPE_ASSERT (list, a);
 

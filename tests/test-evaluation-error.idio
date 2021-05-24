@@ -36,8 +36,6 @@ evaluation-error-load := {
   function (filename msg) {
     if (not (string? filename)) (error 'load "not a string" filename)
 
-    load-k := #n
-
     n = n + 1
 
     exp-tests := 1
@@ -51,18 +49,15 @@ evaluation-error-load := {
 				condition-report (append-string "evaluation-error-load: " filename) c (current-error-handle)
 			      }
 			      
-			      load-k c
+			      trap-return c
     }) {
-      call/cc (function (k) {
-		 load-k = k
-		 t0 := Tests
-		 (symbol-value 'load 'Idio) filename
-		 if (not (equal? Tests (t0 + exp-tests))) {
-		   eprintf "evaluation-error #%s: %s did not generate \"%s\"\n" n filename msg
-		   Errors = Errors + 1
-		   Tests = t0 + exp-tests
-		 }
-      })
+      t0 := Tests
+      (symbol-value 'load 'Idio) filename
+      if (not (equal? Tests (t0 + exp-tests))) {
+	eprintf "evaluation-error #%s: %s did not generate \"%s\"\n" n filename msg
+	Errors = Errors + 1
+	Tests = t0 + exp-tests
+      }
     }
   }
 }
@@ -135,11 +130,9 @@ evaluation-error-load "evaluation-errors/environ-let-bindings-not-pair.idio" "(e
 evaluation-error-load "evaluation-errors/environ-let-nil.idio" "environ-let: no arguments"
 evaluation-error-load "evaluation-errors/environ-unset-non-sym.idio" "(environ-unset 1): not a symbol"
 evaluation-error-load "evaluation-errors/environ-unset-nil.idio" "environ-unset: no argument"
-evaluation-error-load "evaluation-errors/trap-condition-handler-nil.idio" "(trap condition handler): no body"
-evaluation-error-load "evaluation-errors/trap-condition-nil.idio" "(trap condition): no handler"
-evaluation-error-load "evaluation-errors/trap-nil.idio" "trap: no arguments"
+evaluation-error-load "evaluation-errors/trap-condition-handler-nil.idio" "(%trap condition handler): no body"
 evaluation-error-load "evaluation-errors/include-nil.idio" "include: no argument"
 evaluation-error-load "evaluation-errors/template-expand-nil.idio" "template-expand: no argument"
 
 ;; all done?
-Tests? (evaluation-error0 + 65)
+Tests? (evaluation-error0 + 63)

@@ -361,9 +361,19 @@ for-each (function (lib-n) {
 		filenames := make-array 1
 
 		define (filename df) {
-		  if (string? df) df {
-		    array-ref filenames df
-		  }
+		  (cond
+		   ((string? df) df)
+		   ((integer? df) {
+		     if (df lt (array-length filenames)) {
+		       array-ref filenames df
+		     } {
+		       sprintf "!!! filename #%s !!!" df
+		     }
+		   })
+		   (else {
+		     eprintf "df is not expected: %s\n" df
+		     sprintf "!!! unexpected filename %s !!!" df
+		   }))
 		}
 
 		;; We want the .debug_info and .debug_line sections
@@ -518,7 +528,6 @@ for-each (function (lib-n) {
 				     dwarfdump-loop depth DIE
 				   })
 				   (else {
-				     ;printf "? %s\n" r
 				     dwarfdump-loop depth DIE
 				   }))
 		     }
@@ -661,13 +670,50 @@ for-each (function (lib-n) {
 				     objdump-loop depth DIE
 				   })
 				   (
-				     ;;   3     3       0       0       types.h
-				     ;;   5     4       0       0       types.h
-				     "[[:digit:]]+[[:space:]]+([[:digit:]]+)[[:space:]]+[[:digit:]]+[[:space:]]+[[:digit:]]+[[:space:]]+(.+)$" {
+				     ;; objdump 2.35.1 fc34?
+				     ;;  Entry Dir     Name
+				     ;;  2     2       (indirect line string, offset: 0x15d): types.h
+				     ;;  3     3       (indirect line string, offset: 0x165): types.h
+
+				     "[[:digit:]]+[[:space:]]+([[:digit:]]+)[[:space:]]+\\([^\\)]+\\):[[:space:]]+(.+)$" {
 				       if (eq? lnt 'file) {
 					 dir-n :=
 					 array-push! file-a r.2
 					 array-push! filenames (append-string (array-ref dir-a (read-number r.1))
+									      "/"
+									      r.2)
+				       }
+				       objdump-loop depth DIE
+				     })
+				   (
+				     ;; objdump 2.35.1 fc34?
+				     ;;  3     (indirect line string, offset: 0xbd): /usr/include/sys
+
+				     "[[:digit:]]+[[:space:]]+\\([^\\)]+\\):[[:space:]]+(/.+)$" {
+				       if (eq? lnt 'dir) {
+					 array-push! dir-a r.1
+				       }
+				       objdump-loop depth DIE
+				     })
+				   (
+				     ;;   Entry Dir     Time    Size    Name
+				     ;;   3     3       0       0       types.h
+				     ;;   5     4       0       0       types.h
+				     "[[:digit:]]+[[:space:]]+([[:digit:]]+)[[:space:]]+[[:digit:]]+[[:space:]]+[[:digit:]]+[[:space:]]+(.+)$" {
+				       if (eq? lnt 'file) {
+					 array-push! file-a r.2
+
+					 ; FreeBSD clang version 11
+					 ; generates a directory table
+                                         ; entry of 0 (which
+                                         ; obviously(?) doesn't
+                                         ; exist).
+					 dir-n := "."
+					 dir-i := read-number r.1
+					 if (dir-i gt 0) {
+					   dir-n = array-ref dir-a dir-i
+					 }
+					 array-push! filenames (append-string dir-n
 									      "/"
 									      r.2)
 				       }
@@ -1026,7 +1072,7 @@ ${i-module-name}-error-load := {
 				    (("char")			 "char")
 				    (("signed char")		 "schar")
 				    (("unsigned char")		 "uchar")
-				    (("short int")		 "short")
+				    (("short int" "short")	 "short")
 				    (("short unsigned int" "unsigned short")	 "ushort")
 				    (("int")			 "int")
 				    (("unsigned int")		 "uint")

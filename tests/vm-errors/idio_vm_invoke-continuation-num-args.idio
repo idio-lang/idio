@@ -1,4 +1,4 @@
 
-%%call/cc (function (k) {
+%%call/uc (function (k) {
 	     k 1 2
 })

@@ -30,7 +30,7 @@
 #define IDIO_MEANING_FLAG_ENVIRON_SCOPE		(1<<3)
 #define IDIO_MEANING_FLAG_COMPUTED_SCOPE	(1<<4)
 #define IDIO_MEANING_FLAG_DEFINE		(1<<5)
-#define IDIO_MEANING_FLAG_ESCAPE		(1<<6)
+#define IDIO_MEANING_FLAG_TEMPLATE		(1<<6)
 
 #define IDIO_MEANING_IS_TAILP(f)		((f) & IDIO_MEANING_FLAG_TAILP)
 #define IDIO_MEANING_SET_TAILP(f)		((f) | IDIO_MEANING_FLAG_TAILP)
@@ -51,11 +51,11 @@
 #define IDIO_MEANING_DEFINE(f)			((f) | IDIO_MEANING_FLAG_DEFINE)
 #define IDIO_MEANING_NO_DEFINE(f)		(((f) & (~ IDIO_MEANING_FLAG_DEFINE)) == 0)
 
-#define IDIO_MEANING_IS_ESCAPE(f)		((f) & IDIO_MEANING_FLAG_ESCAPE)
-#define IDIO_MEANING_ESCAPE(f)			((f) | IDIO_MEANING_FLAG_ESCAPE)
-#define IDIO_MEANING_NO_ESCAPE(f)		(((f) & (~ IDIO_MEANING_FLAG_ESCAPE)) == 0)
+#define IDIO_MEANING_IS_TEMPLATE(f)		((f) & IDIO_MEANING_FLAG_TEMPLATE)
+#define IDIO_MEANING_TEMPLATE(f)		((f) | IDIO_MEANING_FLAG_TEMPLATE)
+#define IDIO_MEANING_NO_TEMPLATE(f)		(((f) & (~ IDIO_MEANING_FLAG_TEMPLATE)) == 0)
 
-extern IDIO idio_evaluation_module;
+extern IDIO idio_evaluate_module;
 
 void idio_meaning_dump_src_properties (const char *prefix, const char*name, IDIO e);
 void idio_meaning_error_param_type (IDIO src, IDIO c_location, char *msg, IDIO expr);

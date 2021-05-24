@@ -871,27 +871,27 @@ define-infix-operator | 700 {
 
   *#
 
-  pipeline-r-ph := (gensym)
-  pipeline-w-ph := (gensym)
+  pipeline-r-ph		:= gensym 'pl-r-h
+  pipeline-w-ph		:= gensym 'pl-w-h
 
-  pipeline-r-fd := (gensym)
-  cmd-r-fd := (gensym)
-  close-pipeline-r-fd := (gensym)
+  pipeline-r-fd		:= gensym 'pl-r-fd
+  cmd-r-fd		:= gensym 'cmd-r-fd
+  close-pipeline-r-fd	:= gensym 'close-pl-r-fd
 
-  pipeline-w-fd := (gensym)
-  cmd-w-fd := (gensym)
-  recover-pipeline-w-fd := (gensym)
+  pipeline-w-fd		:= gensym 'pl-w-fd
+  cmd-w-fd		:= gensym 'cmd-w-fd
+  recover-pipeline-w-fd := gensym 'rcvr-pl-w-fd
 
-  stderr := (gensym)
+  stderr		:= gensym 'stderr
 
-  pgid := (gensym)
-  job := (gensym)
-  proc-id := (gensym)
-  cmd-pipe := (gensym)
-  pgrp-pipe := (gensym)
-  proc := (gensym)
-  pid := (gensym)
-  status := (gensym)
+  pgid			:= gensym 'pgid
+  job			:= gensym 'job
+  proc-id		:= gensym 'proc-id
+  cmd-pipe		:= gensym 'cmd-pipe
+  pgrp-pipe		:= gensym 'pgrp-pipe
+  proc			:= gensym 'proc
+  pid			:= gensym 'pid
+  status		:= gensym 'status
 
   nprocs := length op-args
   #T{
@@ -1136,23 +1136,23 @@ define-infix-operator | 700 {
 }
 
 define-template (fork-command foreground use-w-pipe use-r-pipe & cmd) {
-  cmd-r-ph	   := (gensym)
-  cmd-w-ph	   := (gensym)
+  cmd-r-ph	   := gensym 'cmd-r-ph
+  cmd-w-ph	   := gensym 'cmd-w-ph
 
-  cmd-r-fd	   := (gensym)
-  close-cmd-r-fd   := (gensym)
+  cmd-r-fd	   := gensym 'cmd-r-fd
+  close-cmd-r-fd   := gensym 'close-cmd-r-fd
 
-  cmd-w-fd	   := (gensym)
-  recover-cmd-w-fd := (gensym)
+  cmd-w-fd	   := gensym 'cmd-w-fd
+  recover-cmd-w-fd := gensym 'rcvr-cmd-w-fd
 
-  cmd-e-fd	   := (gensym)
-  recover-cmd-e-fd := (gensym)
+  cmd-e-fd	   := gensym 'cmd-e-fd
+  recover-cmd-e-fd := gensym 'rcvr-cmd-e-fd
 
-  pgid		   := (gensym)
-  proc		   := (gensym)
-  job		   := (gensym)
-  pid		   := (gensym)
-  status	   := (gensym)
+  pgid		   := gensym 'pgid
+  proc		   := gensym 'proc
+  job		   := gensym 'job
+  pid		   := gensym 'pid
+  status	   := gensym 'status
 
   #T{
     {
@@ -1359,35 +1359,37 @@ with-handle-redir := {
     set-h!		:= #f
     dir-fd-h?		:= #f
     dir-string-h?	:= #f
-    msg-h		:= #f
-    cond ((eq? type 'input) {
-      get-current-h	= current-input-handle
-      open-fd-h		= open-input-fd
-      open-file-h	= open-input-file
-      set-h!		= set-input-handle!
-      dir-fd-h?		= input-fd-handle?
-      dir-string-h?	= input-string-handle?
-      msg-h		= "input"
-    }) \
-	 ((eq? type 'output) {
-	   get-current-h	= current-output-handle
-	   open-fd-h		= open-output-fd
-	   open-file-h		= open-output-file
-	   set-h!		= set-output-handle!
-	   dir-fd-h?		= output-fd-handle?
-	   dir-string-h?	= output-string-handle?
-	   msg-h		= "output"
-	 }) \
-	 ((eq? type 'error) {
-	   get-current-h	= current-error-handle
-	   open-fd-h		= open-output-fd
-	   open-file-h		= open-output-file
-	   set-h!		= set-error-handle!
-	   dir-fd-h?		= output-fd-handle?
-	   dir-string-h?	= output-string-handle?
-	   msg-h		= "output"
-	 }) \
-	 (else (error 'with-handle-redir "unexpected handle type" type))
+    dir-msg		:= #f
+
+    (cond
+     ((eq? type 'input) {
+       get-current-h	= current-input-handle
+       open-fd-h	= open-input-fd
+       open-file-h	= open-input-file
+       set-h!		= set-input-handle!
+       dir-fd-h?	= input-fd-handle?
+       dir-string-h?	= input-string-handle?
+       dir-msg		= "input"
+     })
+     ((eq? type 'output) {
+       get-current-h	= current-output-handle
+       open-fd-h	= open-output-fd
+       open-file-h	= open-output-file
+       set-h!		= set-output-handle!
+       dir-fd-h?	= output-fd-handle?
+       dir-string-h?	= output-string-handle?
+       dir-msg		= "output"
+     })
+     ((eq? type 'error) {
+       get-current-h	= current-error-handle
+       open-fd-h	= open-output-fd
+       open-file-h	= open-output-file
+       set-h!		= set-error-handle!
+       dir-fd-h?	= output-fd-handle?
+       dir-string-h?	= output-string-handle?
+       dir-msg		= "output"
+     })
+     (else (error 'with-handle-redir "unexpected handle type" type)))
 
     ;; old and new handles
     old-h := (get-current-h)
@@ -1396,28 +1398,27 @@ with-handle-redir := {
     ;; if we create a new handle we need to close it afterwards
     close-h := #f
 
-    cond ((dir-fd-h? s/d) {
-      new-h = s/d
-    }) \
-	 ((fd-handle? s/d) (error 'with-handle-redir (append-string "not an " msg-h "-fd-handle") s/d)) \
-	 ((dir-string-h? s/d) (new-h = s/d)) \
-	 ((string-handle? s/d) (error 'with-handle-redir (append-string "not an " msg-h "-string-handle") s/d)) \
-	 ((string? s/d) {
-	   new-h = open-file-h s/d
-	   close-fd-handle-on-exec new-h
-	   close-h = #t
-	 }) \
-	 ((null? s/d) {
-	   new-h = open-file-h "/dev/null"
-	   close-fd-handle-on-exec new-h
-	   close-h = #t
-	 }) \
-	 (else (error 'with-handle-redir (append-string "unexpected " msg-h) s/d))
+    (cond
+     ((dir-fd-h? s/d)      (new-h = s/d))
+     ((fd-handle? s/d)     (error 'with-handle-redir (append-string "not an " dir-msg "-fd-handle") s/d))
+     ((dir-string-h? s/d)  (new-h = s/d))
+     ((string-handle? s/d) (error 'with-handle-redir (append-string "not an " dir-msg "-string-handle") s/d))
+     ((string? s/d) {
+       new-h = open-file-h s/d
+       close-fd-handle-on-exec new-h
+       close-h = #t
+     })
+     ((null? s/d) {
+       new-h = open-file-h "/dev/null"
+       close-fd-handle-on-exec new-h
+       close-h = #t
+     })
+     (else (error 'with-handle-redir (append-string "unexpected " dir-msg) s/d)))
 
     if new-h {
       set-h! new-h
     } {
-      error 'with-handle-redir (append-string "unexpected " msg-h) s/d
+      error 'with-handle-redir (append-string "unexpected " dir-msg) s/d
     }
 
     unwind-protect {
@@ -1447,7 +1448,7 @@ define (with-error-to dst thunk) {
 ;; uname -n), but is caught up in a pipeline by the reader operator.
 ;; See above.
 define-template (collect-output & cmd) {
-  osh := (gensym)
+  osh := gensym 'osh
   #T{
     $osh := (open-output-string)
     with-output-to $osh (function #n {

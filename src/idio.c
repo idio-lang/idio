@@ -256,10 +256,7 @@ int main (int argc, char **argv, char **envp)
      * idio_vm_run() then we'll get a per-run sigsetjmp which will
      * override this.
      */
-    sigjmp_buf sjb;
-    IDIO_THREAD_JMP_BUF (thr) = &sjb;
-
-    int sjv = sigsetjmp (*(IDIO_THREAD_JMP_BUF (thr)), 1);
+    int sjv = sigsetjmp (IDIO_THREAD_JMP_BUF (thr), 1);
 
     switch (sjv) {
     case 0:
@@ -347,9 +344,7 @@ int main (int argc, char **argv, char **envp)
 			 * here we can print the offending filename in
 			 * case no-one else did.
 			 */
-			sigjmp_buf sjb;
-			IDIO_THREAD_JMP_BUF (thr) = &sjb;
-			sjv = sigsetjmp (*(IDIO_THREAD_JMP_BUF (thr)), 1);
+			sjv = sigsetjmp (IDIO_THREAD_JMP_BUF (thr), 1);
 
 			switch (sjv) {
 			case 0:
@@ -452,9 +447,7 @@ int main (int argc, char **argv, char **envp)
 	 * condition/loop but at least here we can print the offending
 	 * filename in case no-one else did.
 	 */
-	sigjmp_buf sjb;
-	IDIO_THREAD_JMP_BUF (thr) = &sjb;
-	sjv = sigsetjmp (*(IDIO_THREAD_JMP_BUF (thr)), 1);
+	sjv = sigsetjmp (IDIO_THREAD_JMP_BUF (thr), 1);
 
 	switch (sjv) {
 	case 0:
@@ -489,9 +482,7 @@ int main (int argc, char **argv, char **envp)
 	/*
 	 * See commentary above re: sigsetjmp.
 	 */
-	sigjmp_buf sjb;
-	IDIO_THREAD_JMP_BUF (thr) = &sjb;
-	sjv = sigsetjmp (*(IDIO_THREAD_JMP_BUF (thr)), 1);
+	sjv = sigsetjmp (IDIO_THREAD_JMP_BUF (thr), 1);
 
 	switch (sjv) {
 	case 0:

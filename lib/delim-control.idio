@@ -1,0 +1,463 @@
+;;
+;; Copyright (c) 2021 Ian Fitchet <idf(at)idio-lang.org>
+;;
+;; Licensed under the Apache License, Version 2.0 (the "License"); you
+;; may not use this file except in compliance with the License.  You
+;; may obtain a copy of the License at
+;;
+;;     http://www.apache.org/licenses/LICENSE-2.0
+;;
+;; Unless required by applicable law or agreed to in writing, software
+;; distributed under the License is distributed on an "AS IS" BASIS,
+;; WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+;; See the License for the specific language governing permissions and
+;; limitations under the License.
+;;
+;;
+
+;;
+;; delim-control.idio
+;;
+;;
+
+#*
+
+This starts with a port of delim-control-n.scm by Oleg Kiselyov
+referenced as http://okmij.org/ftp/Scheme/delim-control-n.scm.
+
+See also Ken Shan's Shift to Control paper,
+https://github.com/stchang/NEU_HOPL_Spring2010/blob/master/Delimited%20Control/Ken%20Shan-Shift%20To%20Control%20(2004%20Scheme%20Workshop).pdf
+
+Following that is a port of the dynamic-wind (using yield) from
+http://okmij.org/ftp/continuations/implementations.html#dynamic-wind
+and http://okmij.org/ftp/continuations/dyn-wind.scm
+
+*#
+
+; Generic implementation of all four delimited control operators
+;    shift/reset, prompt/control, shift0/reset0 and prompt0/control0
+;                   aka. -F- through +F+
+;
+; The code below is parameterized by two boolean flags:
+; is-shift and keep-delimiter-upon-effect.
+; Each flag is present in the code exactly once, in a trivial
+; context. In particular, the difference between shift and control is
+; one statement: (hole-push! (cell-new k-return is-shift))
+; which tells whether the created hole is delimiting or not.
+; All four combinations of the two flags correspond to four
+; delimited control operators,  -F- through +F+
+;
+; The code relies on call/cc for capturing undelimited
+; continuations, and uses one global mutable cell. It turns out, this
+; is sufficient for implementing not only shift/reset (Danvy/Filinski)
+; but also for control/prompt and the other F operators. That has not
+; been known before. In particular, the implementation of
+; control/prompt needs no eq? operations.
+;
+; This implementation immediately leads to a CPS transform for
+; control/prompt (which has not been known before either). That
+; transform turns almost identical to the one discussed in the
+; forth-coming paper ``A Monadic Framework for Delimited
+; Continuations'' by R. Kent Dybvig, Simon Peyton Jones and Amr Sabry
+;
+; This code is inspired by CC_Ref.hs -- contexts with holes, while reading
+; Dorai Sitaram and Matthias Felleisen paper (Lisp and symbolic computation,
+; 1990)
+; A hole has a continuation and a mark. The mark, if #t, says if the hole
+; is a delimiting hole.
+; Non-delimiting hole is just like the return from a regular function.
+;
+; $Id: delim-control-n.scm 815 2005-09-05 23:02:12Z oleg $
+
+; Two parameterizing boolean flags. We can change them at run-time
+; and so mutate shift into control at run-time! The regression test code below
+; does exactly that, so it can test all four *F* operators.
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; is-shift and keep-delimiter-upon-effect are encoded explicitly in
+; the code below and no longer flags
+
+default-prompt-tag := make-prompt-tag 'default-prompt
+default-reset-tag := make-prompt-tag 'default-reset
+
+; a hole is ((tag & mark) & k))
+define (hole-k h) {
+  pt h
+}
+define (hole-tagged? h tag) {
+  (and (eq? (phh h) tag)
+       (pth h))
+}
+define (hole-marked? h) {
+  pth h
+}
+
+; Essentially this is the ``return from the function''
+define (abort-top! v) {
+  hole := (vm/hole-pop!)
+  (hole-k hole) v
+}
+
+define (tag-exists? hole* tag) {
+  (cond
+   ((null? hole*) #f)
+   ((eq? (phhh hole*) tag) #t)
+   (else (tag-exists? (pt hole*) tag)))
+}
+
+define (unwind-till-tagged! tag) {
+  if (tag-exists? (vm/holes) tag) {
+    hole := (vm/hole-pop!)
+    if (hole-tagged? hole tag) { ; if tagged and marked, it's prompt's hole
+      vm/hole-push! hole	 ; put it back
+      '()
+    } {
+      pair hole (unwind-till-tagged! tag)
+    }
+  } {
+    c := make-condition ^rt-variable-unbound-error "tag unbound" 'control-at tag 'tag
+    raise c
+  }
+}
+
+define (unwind-till-marked!) {
+  hole := (vm/hole-pop!)
+  if (hole-marked? hole) { ; if marked and marked, it's prompt's hole
+    (vm/hole-push! hole)		 ; put it back
+    '()
+  } {
+    pair hole (unwind-till-marked!)
+  }
+}
+
+define (prompt-at* tag thunk) {
+  r := call/cc (function (prompt-k) {
+		  vm/hole-push! (vm/make-hole tag #t prompt-k) ; it's prompt's hole
+		  abort-top! (thunk)
+  })
+  r
+}
+
+define (prompt* thunk) {
+  prompt-at* default-prompt-tag thunk
+}
+
+define (reset* thunk) {
+  prompt-at* default-reset-tag thunk
+}
+
+define (control-shift-at* shift? tag f) {
+  call/cc (function (control-k) {
+	     holes-prefix := reverse (unwind-till-marked!)
+	     invoke-subcont := function (v) {
+				 call/cc (function (return-k) {
+					    vm/hole-push! (vm/make-hole tag shift? return-k)
+					    for-each vm/hole-push! holes-prefix
+					    control-k v
+				 })
+	     }
+	     abort-top! (f invoke-subcont)
+  })
+}
+
+#*
+
+unwind-to* is a bit questionable.  Perhaps a better name for a start.
+
+We want trap-return (and others) to honour the unwind-protect
+protection blocks and be able to run those when we're looking to
+escape from a trap expression (usually from the handler!).
+
+When unwind-protect is run we'll get default-reset and unwind-protect
+prompt-tags on (vm/holes).  The continuation in the default-reset tag
+represents the protecting block.  The continuation in the
+unwind-protect tag is for the forms after the unwind-protect
+expression -- the rest of the program, notionally.
+
+So, much like control-shift-at*, above, we can get the holes-prefix,
+reversed, then walk down it looking for the unwind-protect tags and
+extract the tag (and therefore continuation) after it and push those
+tags back onto (vm/holes).
+
+We can then call abort-top! and we'll get just the protect blocks
+running.
+
+*#
+
+unwind-protect-tag := make-prompt-tag 'unwind-protect
+define (unwind-to* tag v) {
+  holes-prefix := unwind-till-tagged! tag
+
+  loop :+ function (h*) {
+	    if (null? h*) #n {
+	      if (and (hole-tagged? (ph h*) unwind-protect-tag)
+		      (pair? (pt h*))) {
+			vm/hole-push! (pht h*)
+			loop (ptt h*)
+	      } {
+		loop (pt h*)
+	      }
+	    }
+  }
+
+  loop (reverse holes-prefix)
+
+  abort-top! v
+}
+
+define (control-at* tag f) {
+  control-shift-at* #f tag f
+}
+
+define (control* f) {
+  control-at* default-prompt-tag f
+}
+
+define (shift-at* tag f) {
+  control-shift-at* #t tag f
+}
+
+define (shift* f) {
+  shift-at* default-reset-tag f
+}
+
+define (abort v) {
+  control* (function (k) v)
+}
+
+; Some syntactic sugar
+(define-syntax prompt
+  (syntax-rules ()
+    ((prompt e) (prompt* (function () e)))))
+
+(define-syntax prompt-at
+  (syntax-rules ()
+    ((prompt-at tag e) (prompt-at* tag (function () e)))))
+
+(define-syntax control
+  (syntax-rules ()
+    ((control f e) (control* (function (f) e)))))
+
+(define-syntax control-at
+  (syntax-rules ()
+    ((control-at tag f e) (control-at* tag (function (f) e)))))
+
+;------------------------------------------------------------------------
+;			Shift tests
+;(display "shift tests") (newline)
+
+; introduce convenient synonyms
+
+(define-syntax reset
+  (syntax-rules ()
+    ((reset e) (reset* (function () e)))))
+
+(define-syntax reset-at
+  (syntax-rules ()
+    ((reset-at tag e) (prompt-at* tag (function () e)))))
+
+(define-syntax shift
+  (syntax-rules ()
+    ((shift f e) (shift* (function (f) e)))))
+
+(define-syntax shift-at
+  (syntax-rules ()
+    ((shift-at tag f e) (shift-at* tag (function (f) e)))))
+
+#*
+
+yield to dynamic-wind
+
+http://okmij.org/ftp/continuations/implementations.html#dynamic-wind
+
+*#
+
+; First, we write a different, and wholly equivalent version of shift
+; called yield. The name should sound familiar.
+; Our examples will be using co-routines, for which yield is very
+; appropriate. Many practical uses of shift actually use yield defined
+; below.
+; (Since shift can be written in terms of yield, no expressivity is lost.)
+
+; First we define a record yield-record, which pairs a yielded
+; value with the return continuation.
+
+yield-record-tag := make-prompt-tag 'yield-record
+define (make-yield-record v k) {
+  list yield-record-tag v k
+}
+
+(define-syntax try-yield
+  (syntax-rules ()
+    ((try-yield exp (r on-r) (v k on-y)) {
+      exp-r := exp
+      if (and (pair? exp-r)
+	      (eq? (ph exp-r) yield-record-tag)) {
+		v := pht exp-r
+		k := phtt exp-r
+		on-y
+	      } {
+		r := exp-r
+		on-r
+	      }
+    })))
+
+define (yield v) {
+  shift k (make-yield-record v k)
+}
+
+; Now we implement dynamic-wind, with the standard interface
+
+define (dyn-wind-yield before-thunk thunk after-thunk) {
+  dwy-loop :+ function (th) {
+		prompt-at unwind-protect-tag {
+		  (function (res) {
+		     (after-thunk)
+		     res
+		  }) (control-at unwind-protect-tag dwy-k {
+		    (before-thunk)
+		    res := (th)
+		    dwy-k res
+		    (try-yield res
+			       (r r)				; return the result
+			       (v k {
+				 reenter := yield v
+				 dwy-loop (function () {
+					     k reenter
+				 })
+			       }))
+		  })
+		}
+  }
+
+  dwy-loop (function () {
+	      reset (thunk)
+  })
+}
+
+dynamic-wind := dyn-wind-yield
+
+;; Now we have a dynamic-wind, unwind-protect is a specialisation
+
+define-syntax unwind-protect (syntax-rules ()
+    ((_ body cleanup ...)
+     (dynamic-wind
+       (function () #f)
+       (function () body)
+       (function () cleanup ...))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; traps
+;;
+
+
+;; function-return-tag is defined in C for the evaluator to use
+function-return-tag := make-prompt-tag 'function-return
+(define-syntax return2
+  (syntax-rules ()
+    ((return)   (return (void)))
+    ((return v) (control-at function-return-tag k v))))
+
+trap-return-tag := make-prompt-tag 'trap-return
+(define-syntax trap-return
+  (syntax-rules ()
+    ((trap-return)   (trap-return (void)))
+    ((trap-return v) (unwind-to* trap-return-tag v))))
+
+(define-syntax trap
+  (syntax-rules ()
+   ((trap conds handler body ...)  {
+     prompt-at trap-return-tag {
+       %trap conds handler {
+	 (begin body ...)
+       }
+     }
+   })))
+
+;; {with-condition-handler} will invoke {handler} and then
+;; automatically invoke the continuation of {with-condition-handler}
+;; with the result.
+define-template (with-condition-handler condition handler & body) {
+  #T{
+    trap $condition (function (c) {
+		       $handler c
+    }) {
+      $@body
+    }
+  }
+}
+
+;; {trap*} is similar to {with-condition-handler} but allows the user
+;; to determine if they should return a result from {handler} or
+;; invoke the continuation, {trap-return}, inside either {handler} or
+;; {body}.
+define-template (trap* condition handler & body) {
+  #T{
+    trap $condition $handler {
+      $@body
+    }
+  }
+}
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; loops
+;;
+
+for-loop-break-tag := make-prompt-tag 'for-loop-break
+(define-syntax break2
+  (syntax-rules ()
+    ((break)   (break (void)))
+    ((break v) (control-at for-loop-break-tag k v))))
+
+for-loop-continue-tag := make-prompt-tag 'for-loop-continue
+(define-syntax continue2
+  (syntax-rules ()
+    ((continue)   (continue (void)))
+    ((continue v) (control-at for-loop-continue-tag k v))))
+
+define-template (for2 var-clauses test & body) {
+  split :+ function (clauses vars inits steps) {
+	     cond ((null? clauses) (list vars inits steps)) \
+		  ((or (not (pair? clauses))
+		       (not (pair? (ph clauses)))
+		       (not (symbol? (phh clauses)))
+		       (not (pair? (pth clauses)))) (error 'for "invalid syntax" clauses)) \
+		  (else (split (pt clauses)
+			       (pair (phh clauses) vars)
+			       (pair (phth clauses) inits)
+			       (if (null? (ptth clauses))
+				   (pair (phh clauses) steps)
+				   (pair (phtth clauses) steps))))
+  }
+
+  for-loop := gensym 'for-loop
+  var+init+step := split var-clauses '#n '#n '#n
+  v := ph var+init+step
+  i := pht var+init+step
+  s := phtt var+init+step
+
+  #T{
+    {
+      $for-loop :+ function $v {
+		     prompt-at for-loop-break-tag {
+		       (if $test {
+			 prompt-at for-loop-continue-tag {
+			   $@body
+			 }
+			 $for-loop $@s
+		       })
+		     }
+      }
+      $for-loop $@i
+    }
+  }
+}
+
+define-template (while2 test & body) {
+  #T{
+    for #n $test $@body
+  }
+}

@@ -60,7 +60,7 @@ define-template (regex-case e & clauses) {
 
   ;; put {key} in scope of gen-clauses to save passing it as an
   ;; argument
-  key := (gensym 'key)
+  key := gensym 'key
 
   gen-clauses :+ function (i c*) {
 		   cond ((null? c*) '#n) \

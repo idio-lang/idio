@@ -106,6 +106,7 @@ extern IDIO_SYMBOL_DECL (ph);
 extern IDIO_SYMBOL_DECL (pipe);
 extern IDIO_SYMBOL_DECL (predef);
 extern IDIO_SYMBOL_DECL (profile);
+extern IDIO_SYMBOL_DECL (prompt_at);
 extern IDIO_SYMBOL_DECL (pt);
 extern IDIO_SYMBOL_DECL (quasiquote);
 extern IDIO_SYMBOL_DECL (quote);

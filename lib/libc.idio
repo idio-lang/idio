@@ -92,7 +92,7 @@ We'll follow the style of Bash .../lib/sh/tmpfile.c
 *#
 
 ;; "." is not the ideal fallback!
-%sys-tmpdirs := '("/tmp" "var/tmp" "usr/tmp" ".")
+%sys-tmpdirs := '("/tmp" "/var/tmp" "/usr/tmp" ".")
 
 %sys-tmpdir := #f
 %default-tmpname-prefix := "idio-tmp-"
@@ -102,7 +102,8 @@ define (%get-sys-tmpdir) {
   loop :+ function (dirs) {
 	    if (null? dirs) (error '%get-sys-tmpdir "no remaining %sys-tmpdirs" %sys-tmpdirs) {
 	      dir := ph dirs
-	      if (access dir W_OK) dir {
+	      if (and (d? dir)
+		      (w? dir)) dir {
 		loop (pt dirs)
 	      }
 	    }
@@ -116,8 +117,9 @@ define (%get-sys-tmpdir) {
 define (%get-tmpdir) {
   tmpdir := #f
 
-  if ((environ? 'TMPDIR) and
-      (access TMPDIR W_OK)) {
+  if (and (environ? 'TMPDIR)
+	  (d? TMPDIR)
+	  (w? TMPDIR)) {
 	tmpdir = TMPDIR
       } {
 	tmpdir = (%get-sys-tmpdir)
