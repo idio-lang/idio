@@ -50,7 +50,7 @@ ifneq (,$(findstring debian-,$(HOSTNAME)))
 CC		:= gcc-8
 endif
 
-ifneq (,$(findstring ubuntu-,$(HOSTNAME)))
+ifneq (,$(findstring ubuntu-18,$(HOSTNAME)))
 CC		:= gcc-8
 endif
 
