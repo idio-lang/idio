@@ -878,7 +878,7 @@ static void idio_libc_set_signal_names ()
 	    if (first) {
 		first = 0;
 		fprintf (stderr, "Unmapped signal numbers:\n");
-		fprintf (stderr, " %3.3s %-*.*s %s\n", "id", IDIO_LIBC_SIGNAMELEN, IDIO_LIBC_SIGNAMELEN, "Idio name", "strsignal()");
+		fprintf (stderr, " %3s %-*s %s\n", "id", IDIO_LIBC_SIGNAMELEN, "Idio name", "strsignal()");
 	    }
 	    /*
 	     * strsignal() leaks memory?
@@ -1904,7 +1904,7 @@ static void idio_libc_set_errno_names ()
 	    if (first) {
 		first = 0;
 		fprintf (stderr, "Unmapped errno numbers:\n");
-		fprintf (stderr, " %3.3s %-*.*s %s\n", "id", IDIO_LIBC_ERRNAMELEN, IDIO_LIBC_ERRNAMELEN, "Idio name", "strerror ()");
+		fprintf (stderr, " %3s %-*s %s\n", "id", IDIO_LIBC_ERRNAMELEN, "Idio name", "strerror ()");
 	    }
 	    /*
 	     * strerror() leaks memory?
@@ -2149,7 +2149,7 @@ static void idio_libc_set_rlimit_names ()
 	    if (first) {
 		first = 0;
 		fprintf (stderr, "Unmapped rlimit numbers:\n");
-		fprintf (stderr, " %3.3s %-*.*s %s\n", "id", IDIO_LIBC_RLIMITNAMELEN, IDIO_LIBC_RLIMITNAMELEN, "Idio name", "strerror ()");
+		fprintf (stderr, " %3s %-*s %s\n", "id", IDIO_LIBC_RLIMITNAMELEN, "Idio name", "strerror ()");
 	    }
 	    fprintf (stderr, " %3d %-*s %s\n", i, IDIO_LIBC_RLIMITNAMELEN, err_name, strerror (i));
 	}

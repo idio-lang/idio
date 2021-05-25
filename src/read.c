@@ -2137,7 +2137,12 @@ static IDIO idio_read_bitset (IDIO handle, IDIO lo, int depth)
 			 * 32 should cover the potential textual
 			 * content of {em}.
 			 */
-			sprintf (em, "range start %#zx from \"%.*s\"", offset, BUFSIZ - 32, buf);
+			int buflen = (int) strlen (buf);
+			int len = BUFSIZ - 32;
+			if (buflen < len) {
+			  len = buflen;
+			}
+			sprintf (em, "range start %#zx from \"%.*s\"", offset, len, buf);
 			idio_read_error_bitset (idio_read_bitset_buf_sh, lo, IDIO_C_FUNC_LOCATION (), em);
 
 			return idio_S_notreached;
