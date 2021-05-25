@@ -701,9 +701,19 @@ for-each (function (lib-n) {
 				     ;;   5     4       0       0       types.h
 				     "[[:digit:]]+[[:space:]]+([[:digit:]]+)[[:space:]]+[[:digit:]]+[[:space:]]+[[:digit:]]+[[:space:]]+(.+)$" {
 				       if (eq? lnt 'file) {
-					 dir-n :=
 					 array-push! file-a r.2
-					 array-push! filenames (append-string (array-ref dir-a (read-number r.1))
+
+					 ; FreeBSD clang version 11
+					 ; generates a directory table
+                                         ; entry of 0 (which
+                                         ; obviously(?) doesn't
+                                         ; exist).
+					 dir-n := "."
+					 dir-i := read-number r.1
+					 if (dir-i gt 0) {
+					   dir-n = array-ref dir-a dir-i
+					 }
+					 array-push! filenames (append-string dir-n
 									      "/"
 									      r.2)
 				       }
@@ -1062,7 +1072,7 @@ ${i-module-name}-error-load := {
 				    (("char")			 "char")
 				    (("signed char")		 "schar")
 				    (("unsigned char")		 "uchar")
-				    (("short int")		 "short")
+				    (("short int" "short")	 "short")
 				    (("short unsigned int" "unsigned short")	 "ushort")
 				    (("int")			 "int")
 				    (("unsigned int")		 "uint")

@@ -50,7 +50,7 @@ ifneq (,$(findstring debian-,$(HOSTNAME)))
 CC		:= gcc-8
 endif
 
-ifneq (,$(findstring ubuntu-,$(HOSTNAME)))
+ifneq (,$(findstring ubuntu-18,$(HOSTNAME)))
 CC		:= gcc-8
 endif
 
@@ -69,9 +69,18 @@ endif
 
 else ifeq ($(OS),FreeBSD)
 
+ifeq ($(REV),10.0-RELEASE)
 CC		:= $(wildcard /usr/local/bin/gcc4?)
+else
+CC		:= gcc
+CC		:= cc		# clang
+endif
+
 LIBFFI_INCDIR	:= /usr/local/include
 LDFLAGS		:= -L/usr/local/lib
+
+# Yes, I know there's an arithmetic shift left of a signed variable!
+CFLAGS		:= -Wno-shift-negative-value
 
 endif
 
