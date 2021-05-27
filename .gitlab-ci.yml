@@ -3,6 +3,9 @@ build-regular:
   script:
     - make clean
     - make
+  artifacts:
+    paths:
+    - bin/idio
 
 test-regular:
   stage: test
@@ -15,6 +18,10 @@ build-coverage:
   script:
     - make clean
     - make coverage
+  artifacts:
+    paths:
+    - bin/idio
+  needs: [test-regular]
 
 test-coverage:
   stage: test
