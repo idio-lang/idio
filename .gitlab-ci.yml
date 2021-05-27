@@ -6,6 +6,7 @@ build-regular:
   artifacts:
     paths:
     - bin/idio
+    - lib/libc-api.idio
 
 test-regular:
   stage: test
@@ -21,6 +22,7 @@ build-coverage:
   artifacts:
     paths:
     - bin/idio
+    - lib/libc-api.idio
   
 test-coverage:
   stage: test
