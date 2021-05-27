@@ -1,0 +1,27 @@
+#! /bin/bash
+
+# This utility exists because we want GitLab to manage code coverage
+# results and gitlab-runner runs as a daemon without a tty.
+#
+# The tests should be able to handle running without a tty but the
+# code coverage needs to run the tty-oriented tests.
+
+if [[ $# -eq 0 ]] ; then
+    echo "ERROR: no arguments"
+    exit 1
+fi
+
+expect - <<EOF
+
+spawn "$@"
+
+set timeout 60
+expect {
+  \n {
+    exp_continue
+  }
+  eof
+}
+
+wait
+EOF
