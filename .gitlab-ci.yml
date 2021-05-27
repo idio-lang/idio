@@ -7,7 +7,7 @@ build-regular:
 test-regular:
   stage: test
   script:
-    - ./util/forced-tty-session ./bin/idio test
+    - ./utils/forced-tty-session ./bin/idio test
   needs: [build-regular]
 
 build-coverage:
@@ -19,7 +19,7 @@ build-coverage:
 test-coverage:
   stage: test
   script:
-    - ./util/forced-tty-session ./bin/idio test
+    - ./utils/forced-tty-session ./bin/idio test
     - gcovr --xml-pretty --exclude-unreachable-branches --print-summary -o coverage.xml --root ${CI_PROJECT_DIR}
   coverage: /^\s*lines:\s*\d+.\d+\%/
   artifacts:
