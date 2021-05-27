@@ -1,23 +1,23 @@
 build-regular:
-  stage: build-regular
+  stage: build
   script:
     - make clean
     - make
 
 test-regular:
-  stage: test-regular
+  stage: test
   script:
     - make test
   needs: [build-regular]
 
 build-coverage:
-  stage: build-coverage
+  stage: build
   script:
     - make clean
     - make coverage
 
 test-coverage:
-  stage: test-coverage
+  stage: test
   script:
     - make test
     - gcovr --xml-pretty --exclude-unreachable-branches --print-summary -o coverage.xml --root ${CI_PROJECT_DIR}
