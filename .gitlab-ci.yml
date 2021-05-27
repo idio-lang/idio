@@ -1,0 +1,24 @@
+build-regular:
+  stage: build-regular
+  script:
+    - make clean
+    - make
+
+test-regular:
+  stage: test-regular
+  script:
+    - make test
+  needs: [build-regular]
+
+build-coverage:
+  stage: build-coverage
+  script:
+    - make clean
+    - make coverage
+
+test-coverage:
+  stage: test-coverage
+  script:
+    - make test
+  needs: [build-coverage]
+
