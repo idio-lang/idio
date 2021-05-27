@@ -21,8 +21,7 @@ build-coverage:
   artifacts:
     paths:
     - bin/idio
-  needs: [test-regular]
-
+  
 test-coverage:
   stage: test
   script:
