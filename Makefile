@@ -6,6 +6,6 @@ LIBDIR		= $(TOPDIR)/lib
 TESTSDIR	= $(TOPDIR)/tests
 DOCDIR		= $(TOPDIR)/doc
 
-all clean lean debug tags dist-clean test:
+all clean lean debug tags dist-clean test coverage:
 	$(MAKE) -C src $@
 
