@@ -13,7 +13,7 @@ fi
 
 expect - <<EOF
 
-spawn "$@"
+spawn $@
 
 set timeout 60
 expect {
