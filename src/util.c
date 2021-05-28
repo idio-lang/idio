@@ -3282,7 +3282,9 @@ const char *idio_vm_bytecode2string (int code)
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("value-index", value_index, (IDIO o, IDIO i), "o i", "\
-index the object `o` by `i`			\n\
+if `i` is a function then invoke (`i` `o`)	\n\
+						\n\
+otherwise index the object `o` by `i`		\n\
 						\n\
 indexable object types are:			\n\
 pair:			(nth o i)		\n\
@@ -3309,6 +3311,14 @@ value-index is not efficient			\n\
 {
     IDIO_ASSERT (o);
     IDIO_ASSERT (i);
+
+    if (idio_isa_function (i)) {
+	IDIO cmd = IDIO_LIST2 (i, o);
+
+	IDIO r = idio_vm_invoke_C (idio_thread_current_thread (), cmd);
+
+	return r;
+    }
 
     switch ((intptr_t) o & IDIO_TYPE_MASK) {
     case IDIO_TYPE_FIXNUM_MARK:
