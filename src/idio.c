@@ -157,6 +157,7 @@ void idio_init (void)
     idio_init_error ();
     idio_init_keyword ();
     idio_init_read ();
+    idio_init_vars ();
     idio_init_env ();
     idio_init_path ();
     idio_init_vm ();

@@ -53,6 +53,22 @@ static void idio_string_error (IDIO msg, IDIO detail, IDIO c_location)
     /* notreached */
 }
 
+static void idio_string_error_C (char *msg, IDIO detail, IDIO c_location)
+{
+    IDIO_C_ASSERT (msg);
+    IDIO_ASSERT (detail);
+    IDIO_ASSERT (c_location);
+
+    IDIO_TYPE_ASSERT (string, c_location);
+
+    IDIO msh = idio_open_output_string_handle_C ();
+    idio_display_C (msg, msh);
+
+    idio_string_error (idio_get_output_string (msh), detail, c_location);
+
+    /* notreached */
+}
+
 /*
  * Code coverage:
  *
@@ -2137,10 +2153,10 @@ IDIO_DEFINE_STRING_CI_PRIMITIVE2V ("string-ci>?", gt, >)
  * Clearly we can't run around destroying the original string as
  * anyone referencing it will be "disappointed."  Hence, we need to
  * have a tokenizer that will return both start and end (preferably
- * length) of the token.  Clearly we can't return two things in C so
- * we'll have to pass in a modifyable length parameter.  Noting the
+ * length) of the token.  As usual we can't return two things in C so
+ * we'll have to pass in a modifiable length parameter.  Noting the
  * re-entrancy issues with strtok (and presumably strsep) we should
- * presumably pass in a modifyable "saved" parameter too.
+ * presumably pass in a modifiable "saved" parameter too.
  *
  * We can pass a flag to indicate how aggressive we should be in
  * tokenizing -- primarily whether adjacent delimiters generate
@@ -2533,19 +2549,21 @@ IDIO idio_split_string (IDIO in, IDIO delim, int flags)
     return idio_list_reverse (r);
 }
 
-IDIO_DEFINE_PRIMITIVE2_DS ("split-string", split_string, (IDIO in, IDIO delim), "in delim", "\
+IDIO_DEFINE_PRIMITIVE1V_DS ("split-string", split_string, (IDIO in, IDIO args), "in [delim]", "\
 split string ``in`` using characters from ``delim``	\n\
 into a list of strings					\n\
 							\n\
 :param in: string to split				\n\
 :type in: string					\n\
-:param delim: string containing delimiter characters	\n\
+:param delim: (optional) string containing delimiter characters	\n\
 :type delim: string					\n\
 :return: list (of strings)				\n\
+							\n\
+`delim` defaults to `IFS` which default to SPACE TAB NL	\n\
 ")
 {
     IDIO_ASSERT (in);
-    IDIO_ASSERT (delim);
+    IDIO_ASSERT (args);
 
     /*
      * Test Case: string-errors/split-string-bad-type.idio
@@ -2553,8 +2571,28 @@ into a list of strings					\n\
      * split-string #t "abc"
      */
     IDIO_USER_TYPE_ASSERT (string, in);
+
+    IDIO delim;
+    if (idio_S_nil == args) {
+	delim = idio_module_current_symbol_value_recurse (idio_vars_IFS_sym, IDIO_LIST1 (idio_S_unspec));
+
+	if (idio_S_unspec == delim) {
+	    /*
+	     * Code coverage: not sure we can get here.  Developer
+	     * error?
+	     */
+	    idio_string_error_C ("IFS undefined", idio_vars_IFS_sym, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	}
+    } else {
+	delim = IDIO_PAIR_H (args);
+    }
+
     /*
-     * Test Case: string-errors/split-string-bad-type.idio
+     * Test Cases:
+     *   string-errors/split-string-bad-delim-type.idio
+     *   string-errors/split-string-bad-IFS-type.idio
      *
      * split-string "abc" #t
      */
@@ -2563,19 +2601,21 @@ into a list of strings					\n\
     return idio_split_string (in, delim, IDIO_STRING_TOKEN_FLAG_NONE);
 }
 
-IDIO_DEFINE_PRIMITIVE2_DS ("split-string-exactly", split_string_exactly, (IDIO in, IDIO delim), "in delim", "\
+IDIO_DEFINE_PRIMITIVE1V_DS ("split-string-exactly", split_string_exactly, (IDIO in, IDIO args), "in [delim]", "\
 split string ``in`` using characters from ``delim``	\n\
 into a list	 of strings				\n\
 							\n\
 :param in: string to split				\n\
 :type in: string					\n\
-:param delim: string containing delimiter characters	\n\
+:param delim: (optional) string containing delimiter characters	\n\
 :type delim: string					\n\
 :return: list (of strings)				\n\
+							\n\
+`delim` defaults to `IFS` which default to SPACE TAB NL	\n\
 ")
 {
     IDIO_ASSERT (in);
-    IDIO_ASSERT (delim);
+    IDIO_ASSERT (args);
 
     /*
      * Test Case: string-errors/split-string-exactly-bad-type.idio
@@ -2583,8 +2623,28 @@ into a list	 of strings				\n\
      * split-string-exactly #t "abc"
      */
     IDIO_USER_TYPE_ASSERT (string, in);
+
+    IDIO delim;
+    if (idio_S_nil == args) {
+	delim = idio_module_current_symbol_value_recurse (idio_vars_IFS_sym, IDIO_LIST1 (idio_S_unspec));
+
+	if (idio_S_unspec == delim) {
+	    /*
+	     * Code coverage: not sure we can get here.  Developer
+	     * error?
+	     */
+	    idio_string_error_C ("IFS undefined", idio_vars_IFS_sym, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	}
+    } else {
+	delim = IDIO_PAIR_H (args);
+    }
+
     /*
-     * Test Case: string-errors/split-string-exactly-bad-type.idio
+     * Test Cases:
+     *   string-errors/split-string-exactly-bad-delim-type.idio
+     *   string-errors/split-string-exactly-bad-IFS-type.idio
      *
      * split-string-exactly "abc" #t
      */

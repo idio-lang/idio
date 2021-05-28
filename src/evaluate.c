@@ -109,6 +109,7 @@
 IDIO idio_evaluate_module = idio_S_nil;
 static IDIO idio_meaning_predef_extend_string = idio_S_nil;
 static IDIO idio_meaning_toplevel_extend_string = idio_S_nil;
+static IDIO idio_meaning_dynamic_extend_string = idio_S_nil;
 static IDIO idio_meaning_environ_extend_string = idio_S_nil;
 static IDIO idio_meaning_define_gvi0_string = idio_S_nil;
 static IDIO idio_meaning_define_infix_operator_string = idio_S_nil;
@@ -633,6 +634,53 @@ IDIO idio_toplevel_extend (IDIO src, IDIO name, int flags, IDIO cs, IDIO cm)
     return fmci;
 }
 
+IDIO idio_dynamic_extend (IDIO src, IDIO name, IDIO val, IDIO cs)
+{
+    IDIO_ASSERT (src);
+    IDIO_ASSERT (name);
+    IDIO_ASSERT (val);
+    IDIO_ASSERT (cs);
+
+    IDIO_TYPE_ASSERT (symbol, name);
+    IDIO_TYPE_ASSERT (array, cs);
+
+    IDIO im = idio_Idio_module_instance ();
+
+    IDIO si = idio_module_find_symbol (name, im);
+
+    if (idio_S_false != si) {
+	IDIO scope = IDIO_PAIR_H (si);
+	IDIO fmci = IDIO_PAIR_HT (si);
+
+	if (idio_S_dynamic != scope) {
+	    /*
+	     * I'm not sure we can get here as once the name exists in
+	     * a toplevel then it we be found again before we can
+	     * re-extend the toplevel.
+	     *
+	     * One to look out for.
+	     */
+	    idio_meaning_error_static_redefine (src, IDIO_C_FUNC_LOCATION (), "dynamic-extend: type change", name, si, scope);
+
+	    return idio_S_notreached;
+	} else {
+	    return fmci;
+	}
+    }
+
+    idio_ai_t mci = idio_codegen_constants_lookup_or_extend (cs, name);
+    IDIO fmci = idio_fixnum (mci);
+
+    idio_ai_t gvi = idio_vm_extend_values ();
+    IDIO fgvi = idio_fixnum (gvi);
+
+    si = idio_vm_add_dynamic (im, fmci, fgvi, idio_meaning_dynamic_extend_string);
+    idio_module_set_symbol (name, si, im);
+    idio_module_set_symbol_value (name, val, im);
+
+    return fmci;
+}
+
 IDIO idio_environ_extend (IDIO src, IDIO name, IDIO val, IDIO cs)
 {
     IDIO_ASSERT (src);
@@ -673,14 +721,7 @@ IDIO idio_environ_extend (IDIO src, IDIO name, IDIO val, IDIO cs)
     idio_ai_t gvi = idio_vm_extend_values ();
     IDIO fgvi = idio_fixnum (gvi);
 
-    /*
-     * I don't like these two statements.  They should be the concern
-     * of the VM but there's no explicit instruction to the VM to
-     * create an environ variable.  Perhaps there should be?
-     */
-    idio_module_set_vci (im, fmci, fmci);
-    idio_module_set_vvi (im, fmci, fgvi);
-    si = IDIO_LIST5 (idio_S_environ, fmci, fgvi, im, idio_meaning_environ_extend_string);
+    si = idio_vm_add_environ (im, fmci, fgvi, idio_meaning_environ_extend_string);
     idio_module_set_symbol (name, si, im);
     idio_module_set_symbol_value (name, val, im);
 
@@ -5128,6 +5169,7 @@ void idio_init_evaluate ()
 
     IDIO_MEANING_STRING (predef_extend, "idio_predef_extend");
     IDIO_MEANING_STRING (toplevel_extend, "idio_toplevel_extend");
+    IDIO_MEANING_STRING (dynamic_extend, "idio_dynamic_extend");
     IDIO_MEANING_STRING (environ_extend, "idio_environ_extend");
     IDIO_MEANING_STRING (define_gvi0, "idio-meaning-define/gvi=0");
     IDIO_MEANING_STRING (define_infix_operator, "idio-meaning-define-infix-operator");

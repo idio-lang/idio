@@ -426,6 +426,7 @@ extern FILE *idio_vm_perf_FILE;
 #include "thread.h"
 #include "unicode.h"
 #include "util.h"
+#include "vars.h"
 #include "vm.h"
 
 #include "libc-api.h"

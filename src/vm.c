@@ -1885,6 +1885,23 @@ static idio_ai_t idio_vm_find_stack_marker (IDIO stack, IDIO mark, idio_ai_t fro
     }
 }
 
+IDIO idio_vm_add_dynamic (IDIO m, IDIO ci, IDIO vi, IDIO note)
+{
+    IDIO_ASSERT (m);
+    IDIO_ASSERT (ci);
+    IDIO_ASSERT (vi);
+    IDIO_ASSERT (note);
+
+    IDIO_TYPE_ASSERT (module, m);
+    IDIO_TYPE_ASSERT (fixnum, ci);
+    IDIO_TYPE_ASSERT (fixnum, vi);
+    IDIO_TYPE_ASSERT (string, note);
+
+    idio_module_set_vci (m, ci, ci);
+    idio_module_set_vvi (m, ci, vi);
+    return IDIO_LIST5 (idio_S_dynamic, ci, vi, m, note);
+}
+
 static void idio_vm_push_dynamic (IDIO thr, idio_ai_t gvi, IDIO val)
 {
     IDIO_ASSERT (thr);
@@ -2022,6 +2039,23 @@ void idio_vm_dynamic_set (IDIO thr, idio_ai_t mci, idio_ai_t gvi, IDIO v)
 	    break;
 	}
     }
+}
+
+IDIO idio_vm_add_environ (IDIO m, IDIO ci, IDIO vi, IDIO note)
+{
+    IDIO_ASSERT (m);
+    IDIO_ASSERT (ci);
+    IDIO_ASSERT (vi);
+    IDIO_ASSERT (note);
+
+    IDIO_TYPE_ASSERT (module, m);
+    IDIO_TYPE_ASSERT (fixnum, ci);
+    IDIO_TYPE_ASSERT (fixnum, vi);
+    IDIO_TYPE_ASSERT (string, note);
+
+    idio_module_set_vci (m, ci, ci);
+    idio_module_set_vvi (m, ci, vi);
+    return IDIO_LIST5 (idio_S_environ, ci, vi, m, note);
 }
 
 static void idio_vm_push_environ (IDIO thr, idio_ai_t mci, idio_ai_t gvi, IDIO val)
@@ -6311,7 +6345,10 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_ai_t pc0, idio_ai_t pce)
 	    {
 		uint64_t mci = IDIO_VM_GET_REF (bc, pcp);
 
-		IDIO_VM_DASM ("PUSH-DYNAMIC %" PRId64, mci);
+		IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), idio_fixnum (mci));
+		IDIO sym = idio_vm_constants_ref (IDIO_FIXNUM_VAL (fgci));
+
+		IDIO_VM_DASM ("PUSH-DYNAMIC %" PRId64 " %s", mci, IDIO_SYMBOL_S (sym));
 	    }
 	    break;
 	case IDIO_A_POP_DYNAMIC:
@@ -6323,21 +6360,30 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_ai_t pc0, idio_ai_t pce)
 	    {
 		uint64_t mci = IDIO_VM_GET_REF (bc, pcp);
 
-		IDIO_VM_DASM ("DYNAMIC-SYM-REF %" PRId64 "", mci);
+		IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), idio_fixnum (mci));
+		IDIO sym = idio_vm_constants_ref (IDIO_FIXNUM_VAL (fgci));
+
+		IDIO_VM_DASM ("DYNAMIC-SYM-REF %" PRId64 " %s", mci, IDIO_SYMBOL_S (sym));
 	    }
 	    break;
 	case IDIO_A_DYNAMIC_FUNCTION_SYM_REF:
 	    {
 		uint64_t mci = IDIO_VM_GET_REF (bc, pcp);
 
-		IDIO_VM_DASM ("DYNAMIC-FUNCTION-SYM-REF %" PRId64 "", mci);
+		IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), idio_fixnum (mci));
+		IDIO sym = idio_vm_constants_ref (IDIO_FIXNUM_VAL (fgci));
+
+		IDIO_VM_DASM ("DYNAMIC-FUNCTION-SYM-REF %" PRId64 " %s", mci, IDIO_SYMBOL_S (sym));
 	    }
 	    break;
 	case IDIO_A_PUSH_ENVIRON:
 	    {
 		uint64_t mci = IDIO_VM_GET_REF (bc, pcp);
 
-		IDIO_VM_DASM ("PUSH-ENVIRON %" PRId64, mci);
+		IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), idio_fixnum (mci));
+		IDIO sym = idio_vm_constants_ref (IDIO_FIXNUM_VAL (fgci));
+
+		IDIO_VM_DASM ("PUSH-ENVIRON %" PRId64 " %s", mci, IDIO_SYMBOL_S (sym));
 	    }
 	    break;
 	case IDIO_A_POP_ENVIRON:
@@ -6349,7 +6395,10 @@ void idio_vm_dasm (IDIO thr, IDIO_IA_T bc, idio_ai_t pc0, idio_ai_t pce)
 	    {
 		uint64_t mci = IDIO_VM_GET_REF (bc, pcp);
 
-		IDIO_VM_DASM ("ENVIRON-SYM-REF %" PRIu64, mci);
+		IDIO fgci = idio_module_get_or_set_vci (idio_thread_current_env (), idio_fixnum (mci));
+		IDIO sym = idio_vm_constants_ref (IDIO_FIXNUM_VAL (fgci));
+
+		IDIO_VM_DASM ("ENVIRON-SYM-REF %" PRIu64 " %s", mci, IDIO_SYMBOL_S (sym));
 	    }
 	    break;
 	case IDIO_A_NON_CONT_ERR:
@@ -7424,18 +7473,6 @@ time_t idio_vm_elapsed (void)
     return (time ((time_t *) NULL) - idio_vm_t0);
 }
 
-IDIO_DEFINE_PRIMITIVE0_DS ("SECONDS/get", SECONDS_get, (void), "", "\
-Return the VM's elapsed running time in seconds	\n\
-						\n\
-Normally accessed as the variable SECONDS	\n\
-						\n\
-:return: elapsed VM running time		\n\
-:rtype: integer					\n\
-")
-{
-    return idio_integer (idio_vm_elapsed ());
-}
-
 IDIO_DEFINE_PRIMITIVE2_DS ("run-in-thread", run_in_thread, (IDIO thr, IDIO func, IDIO args), "thr func [args]", "\
 Run ``func [args]`` in thread ``thr``.				\n\
 								\n\
@@ -8192,10 +8229,6 @@ void idio_init_vm ()
      * by putting a value in index NSIG.
      */
     idio_array_insert_index (idio_vm_signal_handler_name, idio_S_nil, (idio_ai_t) IDIO_LIBC_NSIG);
-
-    IDIO geti;
-    geti = IDIO_ADD_PRIMITIVE (SECONDS_get);
-    idio_module_add_computed_symbol (idio_symbols_C_intern ("SECONDS"), idio_vm_values_ref (IDIO_FIXNUM_VAL (geti)), idio_S_nil, idio_Idio_module_instance ());
 
 #ifdef IDIO_VM_PROF
     for (IDIO_I i = 1; i < IDIO_I_MAX; i++) {

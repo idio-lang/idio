@@ -130,9 +130,11 @@ string-error-load "string-errors/string=-bad-remainder-type.idio" "bad parameter
 
 string-error-load "string-errors/split-string-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
 string-error-load "string-errors/split-string-bad-delim-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
+string-error-load "string-errors/split-string-bad-IFS-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
 
 string-error-load "string-errors/split-string-exactly-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
 string-error-load "string-errors/split-string-exactly-bad-delim-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
+string-error-load "string-errors/split-string-exactly-bad-IFS-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
 
 string-error-load "string-errors/join-string-bad-arg-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
 string-error-load "string-errors/join-string-bad-delim-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
@@ -143,4 +145,4 @@ string-error-load "string-errors/strip-string-bad-str-type.idio" "bad parameter 
 string-error-load "string-errors/strip-string-bad-discard-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
 
 ;; all done?
-Tests? (string-error0 + 58)
+Tests? (string-error0 + 60)

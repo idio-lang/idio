@@ -70,6 +70,7 @@ IDIO idio_export_module_primitive (IDIO module, idio_primitive_desc_t *d, IDIO c
 IDIO idio_add_primitive (idio_primitive_desc_t *d, IDIO cs, const char *cpp__FILE__, int cpp__LINE__);
 
 IDIO idio_toplevel_extend (IDIO lo, IDIO name, int variant, IDIO cs, IDIO cm);
+IDIO idio_dynamic_extend (IDIO src, IDIO name, IDIO val, IDIO cs);
 IDIO idio_environ_extend (IDIO lo, IDIO name, IDIO val, IDIO cs);
 
 void idio_meaning_copy_src_properties (IDIO src, IDIO dst);

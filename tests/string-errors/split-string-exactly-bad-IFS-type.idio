@@ -1,0 +1,6 @@
+
+{
+  IFS :~ #t
+  
+  split-string-exactly "abc"
+}

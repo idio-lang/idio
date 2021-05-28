@@ -155,8 +155,8 @@ static void idio_env_add_environ ()
     /*
      * Hmm.  What if we have a "difficult" environment?  A particular
      * example is if we don't have a PATH.  *We* use the PATH
-     * internally at the very least and not having one is llikely to
-     * be described as an issue for a shell.
+     * internally at the very least and not having one is likely to be
+     * described as "an issue" for a shell.
      *
      * So we'll test for some key environment variables we need and
      * set a default if there isn't one.
