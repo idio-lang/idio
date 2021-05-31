@@ -127,7 +127,7 @@ IDIO idio_keyword_C_len (const char *s_C, size_t blen)
 
     IDIO_GC_ALLOC (IDIO_KEYWORD_S (o), blen + 1);
 
-    strncpy (IDIO_KEYWORD_S (o), s_C, blen);
+    strncpy (IDIO_KEYWORD_S (o), s_C, blen + 1);
     IDIO_KEYWORD_S (o)[blen] = '\0';
 
     return o;

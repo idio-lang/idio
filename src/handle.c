@@ -1812,7 +1812,7 @@ num	specifies a maximum limit on the output		\n\
 			{
 			    char fmt[BUFSIZ];
 			    strncpy (fmt, s, ss - s + 1);
-			    fmt[ss - s + 1] = '\0';
+			    fmt[ss - s] = '\0';
 			    if (idio_S_nil != args) {
 				IDIO arg = IDIO_PAIR_H (args);
 				args = IDIO_PAIR_T (args);

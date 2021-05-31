@@ -2728,7 +2728,8 @@ char *idio_libfile_find_C (char *file)
 			return NULL;
 		    }
 
-		    strncpy (lne, fe->ext, PATH_MAX - lnlen - 1);
+		    strncpy (lne, fe->ext, PATH_MAX - lnlen);
+		    lne[PATH_MAX - lnlen - 1] = '\0';
 		}
 
 		if (access (libname, R_OK) == 0) {
@@ -2905,7 +2906,8 @@ IDIO idio_load_file_name (IDIO filename, IDIO cs)
 	return idio_S_notreached;
     }
 
-    strncpy (lfn, libfile, PATH_MAX - 1);
+    strncpy (lfn, libfile, PATH_MAX);
+    lfn[PATH_MAX - 1] = '\0';
     IDIO_GC_FREE (libfile);
 
     char *filename_slash = strrchr (filename_C, '/');

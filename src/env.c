@@ -127,7 +127,7 @@ static void idio_env_add_environ ()
 
 	if (NULL != e) {
 	    char *name = idio_alloc (e - *env + 1);
-	    strncpy (name, *env, e - *env);
+	    strncpy (name, *env, e - *env + 1);
 	    name[e - *env] = '\0';
 	    var = idio_symbols_C_intern (name);
 	    IDIO_GC_FREE (name);
@@ -425,7 +425,7 @@ void idio_env_init_idiolib (char *argv0)
 	    /* ... + /lib */
 	    size_t ieId_len = pdir - a0rp + 4;
 	    char *idiolib_exe = idio_alloc (ieId_len + 1);
-	    strncpy (idiolib_exe, a0rp, pdir - a0rp);
+	    strncpy (idiolib_exe, a0rp, pdir - a0rp + 1);
 	    idiolib_exe[pdir - a0rp] = '\0';
 	    strcat (idiolib_exe, "/lib");
 
