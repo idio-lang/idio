@@ -38,7 +38,7 @@ debug :
 	$(MAKE) MAKE_DEBUG=1
 
 test : all
-	PATH=$$PATH:$(BINDIR) idio test
+	$(BINDIR)/idio test
 
 # ASAN only (really) works with libc malloc which then blows up with a
 # list as long as your arm about leaked memory.  I can't identify

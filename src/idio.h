@@ -83,6 +83,15 @@
  */
 #endif
 
+/*
+ * We need sysctl(3) for discovering the FreeBSD exe pathname
+ */
+#if defined (BSD)
+#include <sys/sysctl.h>
+#elif defined (__APPLE__) && defined (__MACH__)
+#include <mach-o/dyld.h>
+#endif
+
 /* Solaris doesn't define WAIT_ANY */
 #ifndef WAIT_ANY
 #define WAIT_ANY (-1)

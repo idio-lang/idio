@@ -219,6 +219,138 @@ static void idio_env_add_environ ()
 }
 
 /*
+ * Figure out the pathname of the currently running executable.
+ *
+ * We should prefer to use kernel interfaces -- which are, of course,
+ * operating system-bespoke -- before falling back to figuring
+ * something out from argv[0].
+ *
+ * argv[0] has issues in that no-one is obliged to use the executable
+ * pathname for argv[0] in exec*(2) calls.  Hence our preference for
+ * kernel interfaces which, presumably, are not fooled by such, er,
+ * tomfoolery.
+ *
+ * - argv0 is argv[0]
+ *
+ * - a0rp (argv0_realpath) is a buffer of PATH_MAX characters which we
+ *   copy the result into
+ */
+void idio_env_exe_pathname (char *argv0, char *a0rp)
+{
+    IDIO_C_ASSERT (argv0);
+
+    /*
+     * These operating system-bespoke sections are from
+     * https://stackoverflow.com/questions/1023306/finding-current-executables-path-without-proc-self-exe.
+     * I guess there are more.
+     */
+
+    a0rp[0] = '\0';
+    int r = 0;
+#if defined (BSD)
+    /*
+     * FreeBSD may or may not have procfs, the alternative is
+     * sysctl(3)
+     */
+    int names[] = { CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, -1 };
+    size_t pm = PATH_MAX;
+    r = sysctl (names, 4, a0rp, &pm, NULL, 0);
+    if (0 == r) {
+	return;
+    } else {
+	perror ("sysctl CTL_KERN KERN_PROC KERN_PROC_PATHNAME");
+    }
+#elif defined (__linux__)
+    ssize_t r = readlink ("/proc/self/exe", a0rp, PATH_MAX);
+    if (r > 0) {
+	/*
+	 * 1. Can a link be zero length?
+	 *
+	 * 2. readlink(2) hasn't added a NUL byte and could have
+	 * truncated the symlink's value.
+	 */
+	if (PATH_MAX == r) {
+	    /*
+	     * Hmm, we're truncating our own name, which gives the
+	     * feeling we should be failing.
+	     *
+	     * Quite how the kernel managed to run a command whose
+	     * name is longer than PATH_MAX is the right question.
+	     */
+	    a0rp[r] = '\0';
+	} else {
+	    a0rp[r + 1] = '\0';
+	}
+	return;
+    } else {
+	perror ("readlink /proc/self/exe");
+    }
+#elif defined (__APPLE__) && defined (__MACH__)
+    uint32_t bufsiz = PATH_MAX;
+    int r = _NSGetExecutablePath (a0rp, &bufsiz);
+    if (0 == r) {
+	return;
+    } else {
+	perror ("_NSGetExecutablePath");
+    }
+#elif defined (__sun) && defined (__SVR4)
+    char *r = getexecname ();
+    if (NULL != r) {
+	if ('/' == r[0]) {
+	    /* absolute pathname */
+	    strcpy (a0rp, r);
+	    return;
+	} else {
+	    /*
+	     * relative
+	     *
+	     * We're about to do the right thing with argv0, below,
+	     * but have a better value (hopefully) in r, now.  Rather
+	     * than duplicate code have argv0 be r.
+	     */
+	    argv0 = r;
+	}
+    }
+#else
+#error No OS-bespoke exec pathname variant
+#endif
+
+    /*
+     * Fallback to looking for argv0 either relative to us or on the
+     * PATH
+     */
+    char *dir = rindex (argv0, '/');
+
+    if (NULL == dir) {
+	/*
+	 * Test Case: ??
+	 *
+	 * Actually, the problem with the test case isn't that we
+	 * can't get here, we simply need to invoke idio from a
+	 * directory on the PATH but that we can't invoke *both* an
+	 * explicit exec, ".../idio", and an implicit one,
+	 * "PATH=... idio", in the same test suite.
+	 */
+	argv0 = idio_command_find_exe_C (argv0);
+    }
+
+    char *rp = realpath (argv0, a0rp);
+
+    if (NULL == rp) {
+	/*
+	 * Test Case: ??
+	 *
+	 * Like the getcwd(3) case, above, this is hard to emulate
+	 * during bootstrap.
+	 */
+	idio_error_system_errno_msg ("realpath", "=> NULL", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
+	return;
+    }
+}
+
+/*
  * We want to generate a nominal IDIOLIB based on the path to the
  * running executable.  If argv0 is simply "idio" then we need to
  * discover where on the PATH it was found, otherwise we can normalize
@@ -234,35 +366,32 @@ void idio_env_init_idiolib (char *argv0)
 {
     IDIO_C_ASSERT (argv0);
 
-    char *dir = rindex (argv0, '/');
+    char a0rp[PATH_MAX];
+    idio_env_exe_pathname (argv0, a0rp);
 
-    if (NULL == dir) {
+    /*
+     * While we are here, set IDIO_CMD and IDIO_EXE.
+     */
+    idio_module_set_symbol_value (idio_symbols_C_intern ("IDIO_CMD"), idio_string_C (argv0), idio_Idio_module_instance ());
+    idio_module_set_symbol_value (idio_symbols_C_intern ("IDIO_EXE"), idio_string_C (a0rp), idio_Idio_module_instance ());
+
+    /*
+     * If there's no existing IDIOLIB environment variable then set
+     * one now
+     */
+    idio_env_set_default (idio_env_IDIOLIB_sym, idio_env_IDIOLIB_default);
+
+    /*
+     * Were we launched with a specific executable name (absolute or
+     * relative)?  We use argv0, here, rather than the computed a0rp.
+     */
+    char *rel = rindex (argv0, '/');
+
+    if (NULL == rel) {
 	/*
-	 * Test Case: ??
-	 *
-	 * Actually, the problem with the test case isn't that we
-	 * can't get here, we simply need to invoke idio from a
-	 * directory on the PATH but that we can't invoke *both* an
-	 * explicit exec, ".../idio", and an inplicit one,
-	 * "PATH=... idio", in the same test suite.
+	 * Found on the PATH so we are happy with IDIOLIB
+	 * (user-supplied or system default).
 	 */
-	argv0 = idio_command_find_exe_C (argv0);
-    }
-
-    char resolved_path[PATH_MAX];
-    /* a0rp => argv0_realpath */
-    char *a0rp = realpath (argv0, resolved_path);
-
-    if (NULL == a0rp) {
-	/*
-	 * Test Case: ??
-	 *
-	 * Like the getcwd(3) case, above, this is hard to emulate
-	 * during bootstrap.
-	 */
-	idio_error_system_errno_msg ("realpath", "=> NULL", idio_S_nil, IDIO_C_FUNC_LOCATION ());
-
-	/* notreached */
 	return;
     }
 
@@ -284,112 +413,102 @@ void idio_env_init_idiolib (char *argv0)
      * idio_env_IDIOLIB_default isn't already on IDIOLIB and append
      * it.
      */
-    dir = rindex (a0rp, '/');
+    char *dir = rindex (a0rp, '/');
 
-    if (dir != a0rp) {
-	char *pdir = dir - 1;
-	while (pdir > a0rp &&
-	       '/' != *pdir) {
-	    pdir--;
-	}
+    char *pdir = dir - 1;
+    while (pdir > a0rp &&
+	   '/' != *pdir) {
+	pdir--;
+    }
 
-	if (pdir >= a0rp) {
-	    if (strncmp (pdir, "/bin", 4) == 0) {
-		/* ... + /lib */
-		size_t ieId_len = pdir - a0rp + 4;
-		idio_env_IDIOLIB_default = idio_alloc (ieId_len + 1);
-		strncpy (idio_env_IDIOLIB_default, a0rp, pdir - a0rp);
-		idio_env_IDIOLIB_default[pdir - a0rp] = '\0';
-		strcat (idio_env_IDIOLIB_default, "/lib");
+    if (pdir >= a0rp) {
+	if (strncmp (pdir, "/bin", 4) == 0) {
+	    /* ... + /lib */
+	    size_t ieId_len = pdir - a0rp + 4;
+	    char *idiolib_exe = idio_alloc (ieId_len + 1);
+	    strncpy (idiolib_exe, a0rp, pdir - a0rp);
+	    idiolib_exe[pdir - a0rp] = '\0';
+	    strcat (idiolib_exe, "/lib");
 
-		if (! idio_env_set_default (idio_env_IDIOLIB_sym, idio_env_IDIOLIB_default)) {
-		    /*
-		     * Code coverage:
-		     *
-		     * We'll roll through here if IDIOLIB is already
-		     * in the environment when we start.
-		     */
-		    IDIO idiolib = idio_module_env_symbol_value (idio_env_IDIOLIB_sym, IDIO_LIST1 (idio_S_false));
+	    IDIO idiolib = idio_module_env_symbol_value (idio_env_IDIOLIB_sym, IDIO_LIST1 (idio_S_false));
 
-		    size_t idiolib_len = 0;
-		    char *sidiolib = idio_string_as_C (idiolib, &idiolib_len);
-		    size_t C_size = strlen (sidiolib);
-		    if (C_size != idiolib_len) {
-			/*
-			 * Test Case: ??
-			 *
-			 * This is a bit hard to conceive and, indeed,
-			 * might be a wild goose chase.
-			 *
-			 * This code is only called on startup and if
-			 * IDIOLIB is (deliberately) goosed[sic] then
-			 * everything thereafter is banjaxed as well.
-			 * Which makes the collective testing tricky.
-			 *
-			 * In the meanwhilst, how do you inject an
-			 * environment variable into idio's
-			 * environment with an ASCII NUL in it?
-			 */
-			IDIO_GC_FREE (sidiolib);
+	    size_t idiolib_len = 0;
+	    char *idiolib_C = idio_string_as_C (idiolib, &idiolib_len);
+	    size_t C_size = strlen (idiolib_C);
+	    if (C_size != idiolib_len) {
+		/*
+		 * Test Case: ??
+		 *
+		 * This is a bit hard to conceive and, indeed,
+		 * might be a wild goose chase.
+		 *
+		 * This code is only called on startup and if
+		 * IDIOLIB is (deliberately) goosed[sic] then
+		 * everything thereafter is banjaxed as well.
+		 * Which makes the collective testing tricky.
+		 *
+		 * In the meanwhilst, how do you inject an
+		 * environment variable into idio's
+		 * environment with an ASCII NUL in it?
+		 */
+		IDIO_GC_FREE (idiolib_C);
 
-			idio_env_format_error ("bootstrap", "contains an ASCII NUL", idio_env_IDIOLIB_sym, idiolib, IDIO_C_FUNC_LOCATION ());
+		idio_env_format_error ("bootstrap", "contains an ASCII NUL", idio_env_IDIOLIB_sym, idiolib, IDIO_C_FUNC_LOCATION ());
 
-			/* notreached */
-			return;
-		    }
-
-		    char *index = strstr (sidiolib, idio_env_IDIOLIB_default);
-		    int append = 0;
-		    if (index) {
-			/*
-			 * Code coverage:
-			 *
-			 * These should be picked up if a pre-existing
-			 * IDIOLIB is one of:
-			 *
-			 * .../lib
-			 * .../lib:...
-			 *
-			 * Both of which will fall into the manual
-			 * test category.
-			 *
-			 * We do these extra checks in case someone
-			 * has added .../libs -- which index will
-			 * match.
-			 */
-			if (! ('\0' == index[ieId_len] ||
-			       ':' == index[ieId_len])) {
-			    append = 1;
-			}
-		    } else {
-			/*
-			 * Code coverage:
-			 *
-			 * IDIOLIB is set but doesn't have .../lib
-			 */
-			append = 1;
-		    }
-
-		    if (append) {
-			size_t ni_len = idiolib_len + 1 + ieId_len + 1;
-			if (0 == idiolib_len) {
-			    ni_len = ieId_len + 1;
-			}
-			char *ni = idio_alloc (ni_len + 1);
-			ni[0] = '\0';
-			if (idiolib_len) {
-			    strcpy (ni, sidiolib);
-			    strcat (ni, ":");
-			}
-			strcat (ni, idio_env_IDIOLIB_default);
-			ni[ni_len] = '\0';
-			idio_module_env_set_symbol_value (idio_env_IDIOLIB_sym, idio_string_C (ni));
-			IDIO_GC_FREE (ni);
-		    }
-
-		    IDIO_GC_FREE (sidiolib);
-		}
+		/* notreached */
+		return;
 	    }
+
+	    char *index = strstr (idiolib_C, idiolib_exe);
+	    int prepend = 0;
+	    if (index) {
+		/*
+		 * Code coverage:
+		 *
+		 * These should be picked up if a pre-existing
+		 * IDIOLIB is one of:
+		 *
+		 * .../lib
+		 * .../lib:...
+		 *
+		 * Both of which will fall into the manual
+		 * test category.
+		 *
+		 * We do these extra checks in case someone
+		 * has added .../libs -- which index will
+		 * match.
+		 */
+		if (! ('\0' == index[ieId_len] ||
+		       ':' == index[ieId_len])) {
+		    prepend = 1;
+		}
+	    } else {
+		/*
+		 * Code coverage:
+		 *
+		 * IDIOLIB is set but doesn't have .../lib
+		 */
+		prepend = 1;
+	    }
+
+	    if (prepend) {
+		size_t ni_len = idiolib_len + 1 + ieId_len + 1;
+		if (0 == idiolib_len) {
+		    ni_len = ieId_len + 1;
+		}
+		char *ni = idio_alloc (ni_len + 1);
+		ni[0] = '\0';
+		strcpy (ni, idiolib_exe);
+		strcat (ni, ":");
+		if (idiolib_len) {
+		    strcat (ni, idiolib_C);
+		}
+		ni[ni_len] = '\0';
+		idio_module_env_set_symbol_value (idio_env_IDIOLIB_sym, idio_string_C (ni));
+		IDIO_GC_FREE (ni);
+	    }
+
+	    IDIO_GC_FREE (idiolib_C);
 	}
     }
 }
@@ -411,5 +530,14 @@ void idio_init_env ()
     idio_env_IDIOLIB_sym = idio_symbols_C_intern ("IDIOLIB");
     idio_env_PATH_sym = idio_symbols_C_intern ("PATH");
     idio_env_PWD_sym = idio_symbols_C_intern ("PWD");
+
+    /*
+     * /usr/lib/{pkg} seems pretty universal -- but it might not be.
+     * Hence the use of idiolib_default which might be different on
+     * some systems before copying that into idio_env_IDIOLIB_default.
+     */
+    char *idiolib_default = "/usr/lib/idio";
+    idio_env_IDIOLIB_default = idio_alloc (strlen (idiolib_default) + 1);
+    strcpy (idio_env_IDIOLIB_default, idiolib_default);
 }
 

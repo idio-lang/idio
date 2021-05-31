@@ -400,12 +400,15 @@ int main (int argc, char **argv, char **envp)
 	    sargv[sargc++] = argv[i];
 	}
     }
-    
+
     /*
      * Script Arguments
      *
-     * We'll have a separate ARGV0, a la Bash, then remaining args in
-     * ARGC/ARGV
+     * We'll have a separate ARGV0, a la Bash's BASH_ARGV0, then
+     * remaining args in ARGC/ARGV.
+     *
+     * Remember, sargv started out pointing at argv so if there were
+     * no arguments sargv[0] is argv[0].
      */
     idio_module_set_symbol_value (idio_symbols_C_intern ("ARGV0"), idio_string_C (sargv[0]), idio_Idio_module_instance ());
 

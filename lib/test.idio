@@ -158,9 +158,20 @@ if (null? testdir) {
 printf "[%s/%d] %3ds test.idio using IDIOLIB=%s\n" (getpid) PID SECONDS IDIOLIB
 
 ;; put the testing utilities on the PATH
-OPATH := PATH
-PWD-last := ph (reverse (split-string PWD "/"))
-PATH = append-string PATH ":" (append-string PWD "/" (if (equal? PWD-last "src") ".." ".") "/utils/bin")
+utils-bin := (regex-case IDIO_EXE
+			 ("(.*)/bin/idio" {
+			   append-string r.1 "/utils/bin"
+			 })
+			 ("(.*)/idio" {
+			   append-string r.1 "/../utils/bin"
+			 }))
+if (d? utils-bin) {
+  PATH = append-string PATH ":" utils-bin
+  printf "[%s/%d] %3ds test.idio using PATH=%s\n" (getpid) PID SECONDS PATH
+} {
+  printf "[%s/%d] %3ds test.idio WARNING cannot determine .../utils/bin from IDIO_EXE=%s\n" (getpid) PID SECONDS IDIO_EXE
+  exit 1
+}
 
 ;; at least one test creates a local file then tries to "load" it --
 ;; so we need PWD on IDIOLIB
