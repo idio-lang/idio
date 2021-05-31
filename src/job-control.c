@@ -1850,7 +1850,7 @@ void idio_final_job_control ()
      */
     idio_job_control_do_job_notification ();
 
-    idio_job_control_SIGHUP_signal_handler (idio_C_int (SIGHUP));
+    idio_job_control_SIGHUP_signal_handler ();
 }
 
 void idio_init_job_control ()

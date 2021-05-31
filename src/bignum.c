@@ -776,7 +776,17 @@ float idio_bignum_float_value (IDIO bn)
     size_t al = IDIO_BSA_SIZE (sig_a);
 
     for (; al > 0 ; al--) {
-	r *= IDIO_BIGNUM_INT_SEG_LIMIT;
+	/*
+	 * clang warns: implicit conversion from 'long long' to
+	 * 'float' changes value from 1000000000000000000 to
+	 * 999999984306749440
+	 *
+	 * Those numbers don't look The Same which casting to float
+	 * only hides.
+	 *
+	 * gcc-11 doesn't warn, mind.
+	 */
+	r *= (float) IDIO_BIGNUM_INT_SEG_LIMIT;
 	if (r < 0) {
 	    r -= idio_bsa_get (sig_a, al - 1);
 	} else {
