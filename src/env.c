@@ -246,7 +246,6 @@ void idio_env_exe_pathname (char *argv0, char *a0rp)
      */
 
     a0rp[0] = '\0';
-    int r = 0;
 #if defined (BSD)
     /*
      * FreeBSD may or may not have procfs, the alternative is
@@ -254,7 +253,7 @@ void idio_env_exe_pathname (char *argv0, char *a0rp)
      */
     int names[] = { CTL_KERN, KERN_PROC, KERN_PROC_PATHNAME, -1 };
     size_t pm = PATH_MAX;
-    r = sysctl (names, 4, a0rp, &pm, NULL, 0);
+    int r = sysctl (names, 4, a0rp, &pm, NULL, 0);
     if (0 == r) {
 	return;
     } else {
