@@ -1,4 +1,4 @@
-#! /bin/bash
+#! /usr/bin/env bash
 
 # This utility exists because we want GitLab to manage code coverage
 # results and gitlab-runner runs as a daemon without a tty.
