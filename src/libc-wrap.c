@@ -3309,6 +3309,95 @@ void idio_init_libc_wrap ()
     idio_module_export_symbol_value (idio_symbols_C_intern ("F_GETFL"), idio_C_int (F_GETFL), idio_libc_module);
     idio_module_export_symbol_value (idio_symbols_C_intern ("F_SETFL"), idio_C_int (F_SETFL), idio_libc_module);
 
+    idio_module_export_symbol_value (idio_symbols_C_intern ("O_RDONLY"), idio_C_int (O_RDONLY), idio_libc_module);
+    idio_module_export_symbol_value (idio_symbols_C_intern ("O_WRONLY"), idio_C_int (O_WRONLY), idio_libc_module);
+    idio_module_export_symbol_value (idio_symbols_C_intern ("O_RDWR"), idio_C_int (O_RDWR), idio_libc_module);
+
+    /* available on all platforms */
+    idio_module_export_symbol_value (idio_symbols_C_intern ("O_APPEND"), idio_C_int (O_APPEND), idio_libc_module);
+    idio_module_export_symbol_value (idio_symbols_C_intern ("O_CLOEXEC"), idio_C_int (O_CLOEXEC), idio_libc_module);
+    idio_module_export_symbol_value (idio_symbols_C_intern ("O_CREAT"), idio_C_int (O_CREAT), idio_libc_module);
+    idio_module_export_symbol_value (idio_symbols_C_intern ("O_EXCL"), idio_C_int (O_EXCL), idio_libc_module);
+    idio_module_export_symbol_value (idio_symbols_C_intern ("O_NDELAY"), idio_C_int (O_NDELAY), idio_libc_module);
+    idio_module_export_symbol_value (idio_symbols_C_intern ("O_NOFOLLOW"), idio_C_int (O_NOFOLLOW), idio_libc_module);
+    idio_module_export_symbol_value (idio_symbols_C_intern ("O_NONBLOCK"), idio_C_int (O_NONBLOCK), idio_libc_module);
+    idio_module_export_symbol_value (idio_symbols_C_intern ("O_TRUNC"), idio_C_int (O_TRUNC), idio_libc_module);
+
+    /* available on some platforms */
+#if defined(O_ASYNC)
+    idio_module_export_symbol_value (idio_symbols_C_intern ("O_ASYNC"), idio_C_int (O_ASYNC), idio_libc_module);
+#endif
+#if defined(O_DIRECT)
+    idio_module_export_symbol_value (idio_symbols_C_intern ("O_DIRECT"), idio_C_int (O_DIRECT), idio_libc_module);
+#endif
+#if defined(O_DIRECTORY)
+    idio_module_export_symbol_value (idio_symbols_C_intern ("O_DIRECTORY"), idio_C_int (O_DIRECTORY), idio_libc_module);
+#endif
+#if defined(O_DSYNC)
+    idio_module_export_symbol_value (idio_symbols_C_intern ("O_DSYNC"), idio_C_int (O_DSYNC), idio_libc_module);
+#endif
+#if defined(O_EXEC)
+    idio_module_export_symbol_value (idio_symbols_C_intern ("O_EXEC"), idio_C_int (O_EXEC), idio_libc_module);
+#endif
+#if defined(O_EXLOCK)
+    idio_module_export_symbol_value (idio_symbols_C_intern ("O_EXLOCK"), idio_C_int (O_EXLOCK), idio_libc_module);
+#endif
+#if defined(O_FSYNC)
+    idio_module_export_symbol_value (idio_symbols_C_intern ("O_FSYNC"), idio_C_int (O_FSYNC), idio_libc_module);
+#endif
+#if defined(O_LARGEFILE)
+    idio_module_export_symbol_value (idio_symbols_C_intern ("O_LARGEFILE"), idio_C_int (O_LARGEFILE), idio_libc_module);
+#endif
+#if defined(O_NOATIME)
+    idio_module_export_symbol_value (idio_symbols_C_intern ("O_NOATIME"), idio_C_int (O_NOATIME), idio_libc_module);
+#endif
+#if defined(O_NOCTTY)
+    idio_module_export_symbol_value (idio_symbols_C_intern ("O_NOCTTY"), idio_C_int (O_NOCTTY), idio_libc_module);
+#endif
+#if defined(O_PATH)
+    idio_module_export_symbol_value (idio_symbols_C_intern ("O_PATH"), idio_C_int (O_PATH), idio_libc_module);
+#endif
+#if defined(O_SEARCH)
+    idio_module_export_symbol_value (idio_symbols_C_intern ("O_SEARCH"), idio_C_int (O_SEARCH), idio_libc_module);
+#endif
+#if defined(O_SHLOCK)
+    idio_module_export_symbol_value (idio_symbols_C_intern ("O_SHLOCK"), idio_C_int (O_SHLOCK), idio_libc_module);
+#endif
+#if defined(O_SYNC)
+    idio_module_export_symbol_value (idio_symbols_C_intern ("O_SYNC"), idio_C_int (O_SYNC), idio_libc_module);
+#endif
+#if defined(O_TMPFILE)
+    idio_module_export_symbol_value (idio_symbols_C_intern ("O_TMPFILE"), idio_C_int (O_TMPFILE), idio_libc_module);
+#endif
+
+    /*
+     * The following are single platform only:
+     *
+     * FreeBSD: O_VERIFY O_RESOLVE_BENEATH
+     *
+     * SunOS: O_NOLINKS O_RSYNC O_XATTR
+     *
+     * Mac OS: O_EVTONLY
+     */
+#if defined(O_VERIFY)
+    idio_module_export_symbol_value (idio_symbols_C_intern ("O_VERIFY"), idio_C_int (O_VERIFY), idio_libc_module);
+#endif
+#if defined(O_RESOLVE_BENEATH)
+    idio_module_export_symbol_value (idio_symbols_C_intern ("O_RESOLVE_BENEATH"), idio_C_int (O_RESOLVE_BENEATH), idio_libc_module);
+#endif
+#if defined(O_NOLINNKS)
+    idio_module_export_symbol_value (idio_symbols_C_intern ("O_NOLINNKS"), idio_C_int (O_NOLINNKS), idio_libc_module);
+#endif
+#if defined(O_RSYNC)
+    idio_module_export_symbol_value (idio_symbols_C_intern ("O_RSYNC"), idio_C_int (O_RSYNC), idio_libc_module);
+#endif
+#if defined(O_XATTR)
+    idio_module_export_symbol_value (idio_symbols_C_intern ("O_XATTR"), idio_C_int (O_XATTR), idio_libc_module);
+#endif
+#if defined(O_EVTONLY)
+    idio_module_export_symbol_value (idio_symbols_C_intern ("O_EVTONLY"), idio_C_int (O_EVTONLY), idio_libc_module);
+#endif
+
     /* limits.h */
     idio_module_export_symbol_value (idio_symbols_C_intern ("CHAR_MAX"), idio_C_char (CHAR_MAX), idio_libc_module);
     idio_module_export_symbol_value (idio_symbols_C_intern ("SCHAR_MIN"), idio_C_schar (SCHAR_MIN), idio_libc_module);
