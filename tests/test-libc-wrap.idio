@@ -240,15 +240,23 @@ test (b? ".")        #f
 test (b? testfile)   #f
 test (b? linkfile)   #f
 
+test (S_ISBLK (stat ".").st_mode)        #f
+
 test (c? "/dev/tty") #t
 test (c? ".")	     #f
 test (c? testfile)   #f
 test (c? linkfile)   #f
 
+test (S_ISCHR (stat "/dev/tty").st_mode)	#t
+test (S_ISCHR (stat ".").st_mode)		#f
+
 test (d? "/dev/tty") #f
 test (d? ".")	     #t
 test (d? testfile)   #f
 test (d? linkfile)   #f
+
+test (S_ISDIR (stat "/dev/tty").st_mode)	#f
+test (S_ISDIR (stat ".").st_mode)		#t
 
 test (e? "/dev/tty") #t
 test (e? ".")	     #t
@@ -259,6 +267,9 @@ test (f? "/dev/tty") #f
 test (f? ".")	     #f
 test (f? testfile)   #t
 test (f? linkfile)   #t
+
+test (S_ISREG (stat testfile).st_mode)		#t
+test (S_ISREG (stat ".").st_mode)		#f
 
 (cond-expand
  (uname/sysname/SunOS {
@@ -272,10 +283,16 @@ test (l? ".")	     #f
 test (l? testfile)   #f
 test (l? linkfile)   #t
 
+test (S_ISLNK (lstat testfile).st_mode)		#f
+test (S_ISLNK (lstat linkfile).st_mode)		#t
+
 test (p? "/dev/tty") #f
 test (p? ".")	     #f
 test (p? testfile)   #f
 test (p? linkfile)   #f
+
+test (S_ISFIFO (stat testfile).st_mode)		#f
+test (S_ISFIFO (stat linkfile).st_mode)		#f
 
 test (r? "/dev/tty") #t
 test (r? ".")	     #t
@@ -286,6 +303,9 @@ test (s? "/dev/tty") #f
 test (s? ".")	     #f
 test (s? testfile)   #f
 test (s? linkfile)   #f
+
+test (S_ISSOCK (stat testfile).st_mode)		#f
+test (S_ISSOCK (stat linkfile).st_mode)		#f
 
 test (w? "/dev/tty") #t
 test (w? ".")	     #t
@@ -321,4 +341,4 @@ test STDERR (current-error-handle)
 module tests/libc-wrap
 
 ;; all done?
-Tests? (libc-wrap0 + 107)
+Tests? (libc-wrap0 + 120)

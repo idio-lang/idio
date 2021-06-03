@@ -1220,7 +1220,7 @@ a wrapper to libc unlink(2)			\n\
     size_t C_size = strlen (C_pathname);
     if (C_size != size) {
 	/*
-	 * Test Case: libc-wrap-errors/access-bad-format.idio
+	 * Test Case: libc-wrap-errors/unlink-bad-format.idio
 	 *
 	 * unlink (join-string (make-string 1 #U+0) '("hello" "world"))
 	 */
@@ -1607,7 +1607,7 @@ a wrapper to libc stat(2)			\n\
     size_t C_size = strlen (cpathname);
     if (C_size != size) {
 	/*
-	 * Test Case: libc-wrap-errors/access-bad-format.idio
+	 * Test Case: libc-wrap-errors/stat-bad-format.idio
 	 *
 	 * stat (join-string (make-string 1 #U+0) '("hello" "world"))
 	 */
@@ -2236,6 +2236,67 @@ a wrapper to libc mkdir(2)					\n\
     return idio_C_int (mkdir_r);
 }
 
+IDIO_DEFINE_PRIMITIVE1_DS ("lstat", libc_lstat, (IDIO pathname), "pathname", "\
+in C: lstat (pathname)				\n\
+a wrapper to libc lstat(2)			\n\
+						\n\
+:param pathname:				\n\
+:type pathname: C/pointer			\n\
+:return: struct-stat or raises ^system-error	\n\
+:rtype: struct instance				\n\
+")
+{
+    IDIO_ASSERT (pathname);
+
+    /*
+     * Test Case: libc-wrap-errors/lstat-bad-type.idio
+     *
+     * lstat #t
+     */
+    IDIO_USER_TYPE_ASSERT (string, pathname);
+
+    size_t size = 0;
+    char *cpathname = idio_string_as_C (pathname, &size);
+    size_t C_size = strlen (cpathname);
+    if (C_size != size) {
+	/*
+	 * Test Case: libc-wrap-errors/lstat-bad-format.idio
+	 *
+	 * lstat (join-string (make-string 1 #U+0) '("hello" "world"))
+	 */
+	IDIO_GC_FREE (cpathname);
+
+	idio_libc_format_error ("lstat: pathname contains an ASCII NUL", pathname, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    struct stat* statp = idio_alloc (sizeof (struct stat));
+
+    int lstat_r = lstat (cpathname, statp);
+
+    /* check for errors */
+    if (-1 == lstat_r) {
+	/*
+	 * Test Case: libc-wrap-errors/lstat-empty-pathname.idio
+	 *
+	 * lstat ""
+	 */
+	IDIO_GC_FREE (cpathname);
+
+        idio_error_system_errno ("lstat", pathname, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    IDIO_GC_FREE (cpathname);
+
+    /*
+     * WARNING: this is probably an incorrect return
+     */
+    return idio_C_pointer_type (idio_CSI_libc_struct_stat, statp);
+}
+
 IDIO_DEFINE_PRIMITIVE2_DS ("kill", libc_kill, (IDIO pid, IDIO sig), "pid sig", "\
 in C, kill (pid, sig)						\n\
 a wrapper to libc kill(2)					\n\
@@ -2577,6 +2638,48 @@ a wrapper to libc getcwd(3)					\n\
     free (cwd);
 
     return r;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("fstat", libc_fstat, (IDIO fd), "fd", "\
+in C: fstat (fd)				\n\
+a wrapper to libc fstat(2)			\n\
+						\n\
+:param fd:					\n\
+:type fd: C/int					\n\
+:return: struct-stat or raises ^system-error	\n\
+:rtype: struct instance				\n\
+")
+{
+    IDIO_ASSERT (fd);
+
+    /*
+     * Test Case: libc-wrap-errors/fstat-bad-type.idio
+     *
+     * fstat #t
+     */
+    IDIO_USER_C_TYPE_ASSERT (int, fd);
+    int C_fd = IDIO_C_TYPE_int (fd);
+
+    struct stat* statp = idio_alloc (sizeof (struct stat));
+
+    int fstat_r = fstat (C_fd, statp);
+
+    /* check for errors */
+    if (-1 == fstat_r) {
+	/*
+	 * Test Case: libc-wrap-errors/fstat-empty-fd.idio
+	 *
+	 * fstat ""
+	 */
+        idio_error_system_errno ("fstat", fd, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    /*
+     * WARNING: this is probably an incorrect return
+     */
+    return idio_C_pointer_type (idio_CSI_libc_struct_stat, statp);
 }
 
 IDIO_DEFINE_PRIMITIVE0_DS ("fork", libc_fork, (void), "", "\
@@ -2974,6 +3077,7 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_mkstemp);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_mkdtemp);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_mkdir);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_lstat);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_kill);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_isatty);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getsid);
@@ -2982,6 +3086,7 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getpid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getpgrp);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getcwd);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fstat);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fork);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fcntl);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_dup2);

@@ -108,6 +108,15 @@ int main (int argc, char **argv)
 	pid_t fork_r = fork ();
     }
 
+    /* fstat(2) */
+    {
+	int stat_r = fstat (0, &statbuf);
+
+	/*
+	 * struct stat is expanded in stat(2)
+	 */
+    }
+
     /* getcwd(3) */
     {
 	char *getcwd_r = getcwd (NULL, PATH_MAX);
@@ -160,6 +169,17 @@ int main (int argc, char **argv)
 	pid_t pid = getpid ();
 	int sig = SIGINT;
 	int kill_r = kill (pid, sig);
+    }
+
+    /* lstat(2) */
+    {
+	char *pathname = ".";
+	struct stat statbuf;
+	int stat_r = lstat (pathname, &statbuf);
+
+	/*
+	 * struct stat is expanded in stat(2)
+	 */
     }
 
     /* mkdir(2) */

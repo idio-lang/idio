@@ -2516,6 +2516,34 @@ is `pathname` a block special device?	\n\
     return r;
 }
 
+IDIO_DEFINE_PRIMITIVE1_DS ("S_ISBLK", libc_S_ISBLK, (IDIO mode), "mode", "\
+does `mode` represent a block device?	\n\
+					\n\
+:param mode: mode from stat(2)		\n\
+:type mode: libc/mode_t			\n\
+:return: #t or #f			\n\
+:rtype: boolean				\n\
+")
+{
+    IDIO_ASSERT (mode);
+
+    /*
+     * Test Case: libc-wrap-errors/S_ISBLK-bad-type.idio
+     *
+     * S_ISBLK #t
+     */
+    IDIO_USER_libc_TYPE_ASSERT (mode_t, mode);
+    int C_mode = IDIO_C_TYPE_libc_mode_t (mode);
+
+    IDIO r = idio_S_false;
+
+    if (S_ISBLK (C_mode)) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
 IDIO_DEFINE_PRIMITIVE1_DS ("c?", libc_cp, (IDIO pathname), "pathname", "\
 is `pathname` a character special device?	\n\
 						\n\
@@ -2562,6 +2590,34 @@ is `pathname` a character special device?	\n\
     return r;
 }
 
+IDIO_DEFINE_PRIMITIVE1_DS ("S_ISCHR", libc_S_ISCHR, (IDIO mode), "mode", "\
+does `mode` represent a character device?	\n\
+					\n\
+:param mode: mode from stat(2)		\n\
+:type mode: libc/mode_t			\n\
+:return: #t or #f			\n\
+:rtype: boolean				\n\
+")
+{
+    IDIO_ASSERT (mode);
+
+    /*
+     * Test Case: libc-wrap-errors/S_ISCHR-bad-type.idio
+     *
+     * S_ISCHR #t
+     */
+    IDIO_USER_libc_TYPE_ASSERT (mode_t, mode);
+    int C_mode = IDIO_C_TYPE_libc_mode_t (mode);
+
+    IDIO r = idio_S_false;
+
+    if (S_ISCHR (C_mode)) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
 IDIO_DEFINE_PRIMITIVE1_DS ("d?", libc_dp, (IDIO pathname), "pathname", "\
 is `pathname` a directory?		\n\
 					\n\
@@ -2602,6 +2658,34 @@ is `pathname` a directory?		\n\
 
     if (stat (pathname_C, &sb) == 0 &&
 	S_ISDIR (sb.st_mode)) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("S_ISDIR", libc_S_ISDIR, (IDIO mode), "mode", "\
+does `mode` represent a directory?	\n\
+					\n\
+:param mode: mode from stat(2)		\n\
+:type mode: libc/mode_t			\n\
+:return: #t or #f			\n\
+:rtype: boolean				\n\
+")
+{
+    IDIO_ASSERT (mode);
+
+    /*
+     * Test Case: libc-wrap-errors/S_ISDIR-bad-type.idio
+     *
+     * S_ISDIR #t
+     */
+    IDIO_USER_libc_TYPE_ASSERT (mode_t, mode);
+    int C_mode = IDIO_C_TYPE_libc_mode_t (mode);
+
+    IDIO r = idio_S_false;
+
+    if (S_ISDIR (C_mode)) {
 	r = idio_S_true;
     }
 
@@ -2702,6 +2786,34 @@ is `pathname` a regular file?		\n\
     return r;
 }
 
+IDIO_DEFINE_PRIMITIVE1_DS ("S_ISREG", libc_S_ISREG, (IDIO mode), "mode", "\
+does `mode` represent a regular file?	\n\
+					\n\
+:param mode: mode from stat(2)		\n\
+:type mode: libc/mode_t			\n\
+:return: #t or #f			\n\
+:rtype: boolean				\n\
+")
+{
+    IDIO_ASSERT (mode);
+
+    /*
+     * Test Case: libc-wrap-errors/S_ISREG-bad-type.idio
+     *
+     * S_ISREG #t
+     */
+    IDIO_USER_libc_TYPE_ASSERT (mode_t, mode);
+    int C_mode = IDIO_C_TYPE_libc_mode_t (mode);
+
+    IDIO r = idio_S_false;
+
+    if (S_ISREG (C_mode)) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
 IDIO_DEFINE_PRIMITIVE1_DS ("l?", libc_lp, (IDIO pathname), "pathname", "\
 is `pathname` a symlink?		\n\
 					\n\
@@ -2748,6 +2860,34 @@ is `pathname` a symlink?		\n\
     return r;
 }
 
+IDIO_DEFINE_PRIMITIVE1_DS ("S_ISLNK", libc_S_ISLNK, (IDIO mode), "mode", "\
+does `mode` represent a symbolic link?	\n\
+					\n\
+:param mode: mode from stat(2)		\n\
+:type mode: libc/mode_t			\n\
+:return: #t or #f			\n\
+:rtype: boolean				\n\
+")
+{
+    IDIO_ASSERT (mode);
+
+    /*
+     * Test Case: libc-wrap-errors/S_ISLNK-bad-type.idio
+     *
+     * S_ISLNK #t
+     */
+    IDIO_USER_libc_TYPE_ASSERT (mode_t, mode);
+    int C_mode = IDIO_C_TYPE_libc_mode_t (mode);
+
+    IDIO r = idio_S_false;
+
+    if (S_ISLNK (C_mode)) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
 IDIO_DEFINE_PRIMITIVE1_DS ("p?", libc_pp, (IDIO pathname), "pathname", "\
 is `pathname` a FIFO?			\n\
 					\n\
@@ -2788,6 +2928,34 @@ is `pathname` a FIFO?			\n\
 
     if (stat (pathname_C, &sb) == 0 &&
 	S_ISFIFO (sb.st_mode)) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("S_ISFIFO", libc_S_ISFIFO, (IDIO mode), "mode", "\
+does `mode` represent a FIFO?	\n\
+					\n\
+:param mode: mode from stat(2)		\n\
+:type mode: libc/mode_t			\n\
+:return: #t or #f			\n\
+:rtype: boolean				\n\
+")
+{
+    IDIO_ASSERT (mode);
+
+    /*
+     * Test Case: libc-wrap-errors/S_ISFIFO-bad-type.idio
+     *
+     * S_ISFIFO #t
+     */
+    IDIO_USER_libc_TYPE_ASSERT (mode_t, mode);
+    int C_mode = IDIO_C_TYPE_libc_mode_t (mode);
+
+    IDIO r = idio_S_false;
+
+    if (S_ISFIFO (C_mode)) {
 	r = idio_S_true;
     }
 
@@ -2880,6 +3048,34 @@ is `pathname` a socket?			\n\
 
     if (stat (pathname_C, &sb) == 0 &&
 	S_ISSOCK (sb.st_mode)) {
+	r = idio_S_true;
+    }
+
+    return r;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("S_ISSOCK", libc_S_ISSOCK, (IDIO mode), "mode", "\
+does `mode` represent a socket?		\n\
+					\n\
+:param mode: mode from stat(2)		\n\
+:type mode: libc/mode_t			\n\
+:return: #t or #f			\n\
+:rtype: boolean				\n\
+")
+{
+    IDIO_ASSERT (mode);
+
+    /*
+     * Test Case: libc-wrap-errors/S_ISSOCK-bad-type.idio
+     *
+     * S_ISSOCK #t
+     */
+    IDIO_USER_libc_TYPE_ASSERT (mode_t, mode);
+    int C_mode = IDIO_C_TYPE_libc_mode_t (mode);
+
+    IDIO r = idio_S_false;
+
+    if (S_ISSOCK (C_mode)) {
 	r = idio_S_true;
     }
 
@@ -3047,14 +3243,21 @@ void idio_libc_wrap_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_rlimit_names);
 
     IDIO_ADD_PRIMITIVE (libc_bp);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_S_ISBLK);
     IDIO_ADD_PRIMITIVE (libc_cp);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_S_ISCHR);
     IDIO_ADD_PRIMITIVE (libc_dp);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_S_ISDIR);
     IDIO_ADD_PRIMITIVE (libc_ep);
     IDIO_ADD_PRIMITIVE (libc_fp);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_S_ISREG);
     IDIO_ADD_PRIMITIVE (libc_lp);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_S_ISLNK);
     IDIO_ADD_PRIMITIVE (libc_pp);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_S_ISFIFO);
     IDIO_ADD_PRIMITIVE (libc_rp);
     IDIO_ADD_PRIMITIVE (libc_sp);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_S_ISSOCK);
     IDIO_ADD_PRIMITIVE (libc_Tp);
     IDIO_ADD_PRIMITIVE (libc_wp);
     IDIO_ADD_PRIMITIVE (libc_xp);
