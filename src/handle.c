@@ -2232,6 +2232,7 @@ IDIO idio_load_handle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*eval
 	char *rs = idio_as_string_safe (r, &r_size, 40, 1);
 	idio_puts_handle (oh, rs, r_size);
 	IDIO_GC_FREE (rs);
+	idio_display_C ("\n", oh);
     }
 
     IDIO_HANDLE_M_CLOSE (fh) (fh);

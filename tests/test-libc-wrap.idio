@@ -118,27 +118,22 @@ TIMEFORMAT = ""
 time sleep (sleep 0)
 TIMEFORMAT = OTIMEFORMAT
 
-;; NB 0 is a fixnum for code coverage
-nfd := dup 0
+nfd := dup C/0i
 close nfd
 
-;; Sorry, fd 99
-;; NB 99 is a C/int for code coverage
-nfd := dup2 0 (C/integer-> 99)
+;; Sorry, fd 99, you're about to get squelched
+nfd := dup2 C/0i (C/integer-> 99)
 close nfd
 
-;; NB 99 is a C/int for code coverage
-nfd := fcntl 0 F_DUPFD (C/integer-> 99)
+nfd := fcntl C/0i F_DUPFD (C/integer-> 99)
 close nfd
 
 (cond-expand
  (F_DUPFD_CLOEXEC {
-   ;; NB 99 is a fixnum for code coverage
-   nfd := fcntl 0 F_DUPFD_CLOEXEC 99
+   nfd := fcntl C/0i F_DUPFD_CLOEXEC (C/integer-> 99)
    close nfd
 
-   ;; NB 99 is a C/int for code coverage
-   nfd := fcntl 0 F_DUPFD_CLOEXEC (C/integer-> 99)
+   nfd := fcntl C/0i F_DUPFD_CLOEXEC (C/integer-> 99)
    close nfd
  })
  (else {
@@ -146,9 +141,9 @@ close nfd
  }))
 
 ;; get the file descriptor flags -- CLOEXEC?
-fd-flags := fcntl 0 F_GETFD
+fd-flags := fcntl C/0i F_GETFD
 
-fcntl 0 F_SETFD fd-flags
+fcntl C/0i F_SETFD fd-flags
 
 (getpgrp)
 
@@ -311,7 +306,7 @@ test (x? testfile)   #f
 test (x? linkfile)   #f
 
 ;; if someone has redirected stdin...
-t? (stdin-fileno)
+T? (stdin-fileno)
 
 rm -f linkfile
 

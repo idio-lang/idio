@@ -7,4 +7,4 @@ close (ph fd+name)
 delete-file (pht fd+name)
 
 ;; EBADF
-fcntl (ph fd+name) F_DUPFD 0
+fcntl (ph fd+name) F_DUPFD C/0i

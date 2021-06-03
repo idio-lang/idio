@@ -77,11 +77,11 @@ define-template (help x) {
       ;; make symbol? one of the last as it (fore-)shadows dynamic?,
       ;; expander? etc.
 
-      module := find-module $x #f
+      module := find-module '$x #f
       if module {
 	display* "module:" '$x "\n"
 	display* "imports" (module-imports module)
-	exports := (module-exports module)
+	exports := sort-symbol (module-exports module)
 	display* "exports:" ;exports
 	exports_loop :+ function (exports) {
 			  if (null? exports) #t {

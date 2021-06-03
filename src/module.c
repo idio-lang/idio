@@ -457,11 +457,20 @@ or #unspec if `default` is not supplied				\n\
     IDIO_ASSERT (args);
 
     /*
-     * Test Case: module-errors/find-module-bad-name-type.idio
+     * Test Cases: module-errors/find-module-bad-name-type.idio
      *
      * find-module #t
      */
-    IDIO_USER_TYPE_ASSERT (symbol, name);
+    if (! idio_isa_symbol (name)) {
+	if (idio_S_nil != args) {
+	    return IDIO_PAIR_H (args);
+	} else {
+	    idio_error_param_type ("symbol", name, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	}
+    }
+
     /*
      * Test Case: n/a
      *

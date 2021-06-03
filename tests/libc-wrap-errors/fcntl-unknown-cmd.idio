@@ -2,4 +2,4 @@
 module tests/libc-wrap
 import libc
 
-fcntl 0 (C/integer-> 98765)
+fcntl C/0i (C/integer-> 98765)

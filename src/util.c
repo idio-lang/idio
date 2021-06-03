@@ -326,13 +326,27 @@ test if `o` is a boolean			\n\
     return r;
 }
 
+IDIO_DEFINE_PRIMITIVE1_DS ("identity", identity, (IDIO e), "e", "\
+return `e`					\n\
+						\n\
+:param e: expression to return			\n\
+:type e: any					\n\
+						\n\
+:return: `e`					\n\
+")
+{
+    IDIO_ASSERT (e);
+
+    return e;
+}
+
 IDIO_DEFINE_PRIMITIVE1_DS ("not", not, (IDIO e), "e", "\
 return the boolean inverse of `e`		\n\
 						\n\
 :param e: expression to invert			\n\
 :type e: any					\n\
 						\n\
-:return: #t if `s` is #f, #f otherwise		\n\
+:return: #t if `e` is #f, #f otherwise		\n\
 ")
 {
     IDIO_ASSERT (e);
@@ -4037,6 +4051,7 @@ void idio_util_add_primitives ()
     IDIO_ADD_PRIMITIVE (voidp);
     IDIO_ADD_PRIMITIVE (definedp);
     IDIO_ADD_PRIMITIVE (booleanp);
+    IDIO_ADD_PRIMITIVE (identity);
     IDIO_ADD_PRIMITIVE (not);
     IDIO_ADD_PRIMITIVE (eqp);
     IDIO_ADD_PRIMITIVE (eqvp);

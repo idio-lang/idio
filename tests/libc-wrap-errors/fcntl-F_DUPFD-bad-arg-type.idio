@@ -2,4 +2,4 @@
 module tests/libc-wrap
 import libc
 
-fcntl 0 F_DUPFD #t
+fcntl C/0i F_DUPFD #t

@@ -48,7 +48,7 @@ typedef __darwin_suseconds_t    suseconds_t;
 #elif defined (_SUSECONDS_T_DECLARED)
 typedef        __suseconds_t   suseconds_t;
 #else
-typedef long seseconds_t;
+typedef long suseconds_t;
 #endif
 #endif
 

@@ -7,4 +7,4 @@ close (ph fd+name)
 delete-file (pht fd+name)
 
 ;; EBADF
-dup2 (ph fd+name) 99
+dup2 (ph fd+name) (C/integer-> 99)

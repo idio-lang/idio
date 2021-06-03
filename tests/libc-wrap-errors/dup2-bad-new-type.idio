@@ -2,4 +2,4 @@
 module tests/libc-wrap
 import libc
 
-dup2 99 #t
+dup2 C/0i #t

@@ -2,4 +2,4 @@
 module tests/libc-wrap
 import libc
 
-fcntl 0 1
+fcntl C/0i 1

@@ -2886,7 +2886,7 @@ is `pathname` a socket?			\n\
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1_DS ("t?", libc_tp, (IDIO fd), "fd", "\
+IDIO_DEFINE_PRIMITIVE1_DS ("T?", libc_Tp, (IDIO fd), "fd", "\
 is `fd` a terminal?			\n\
 					\n\
 :param fd: file descriptor to stat	\n\
@@ -2900,7 +2900,7 @@ is `fd` a terminal?			\n\
     /*
      * Test Case: libc-wrap-errors/t-bad-type.idio
      *
-     * t? #t
+     * T? #t
      */
     IDIO_USER_C_TYPE_ASSERT (int, fd);
 
@@ -3055,7 +3055,7 @@ void idio_libc_wrap_add_primitives ()
     IDIO_ADD_PRIMITIVE (libc_pp);
     IDIO_ADD_PRIMITIVE (libc_rp);
     IDIO_ADD_PRIMITIVE (libc_sp);
-    IDIO_ADD_PRIMITIVE (libc_tp);
+    IDIO_ADD_PRIMITIVE (libc_Tp);
     IDIO_ADD_PRIMITIVE (libc_wp);
     IDIO_ADD_PRIMITIVE (libc_xp);
 }
