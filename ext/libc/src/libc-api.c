@@ -110,6 +110,7 @@ int main (int argc, char **argv)
 
     /* fstat(2) */
     {
+	struct stat statbuf;
 	int stat_r = fstat (0, &statbuf);
 
 	/*
