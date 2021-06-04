@@ -2840,8 +2840,8 @@ a wrapper to libc dup2(2)					\n\
 :rtype: C/int							\n\
 ")
 {
-    IDIO_ASSERT (ioldfd);
-    IDIO_ASSERT (inewfd);
+    IDIO_ASSERT (oldfd);
+    IDIO_ASSERT (newfd);
 
     IDIO_USER_C_TYPE_ASSERT (int, oldfd);
     int C_oldfd = IDIO_C_TYPE_int (oldfd);
