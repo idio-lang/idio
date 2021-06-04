@@ -164,6 +164,8 @@ static void idio_env_add_environ ()
      * PATH
      * PWD
      * IDIOLIB
+     * HOME
+     * SHELL
      */
 
     idio_env_set_default (idio_env_PATH_sym, idio_env_PATH_default);
@@ -216,6 +218,64 @@ static void idio_env_add_environ ()
      * XXX getcwd() used system allocator
      */
     free (cwd);
+
+    /*
+     * From getpwuid(3) on CentOS
+     */
+
+    struct passwd pwd;
+    struct passwd *pwd_result;
+    char *pwd_buf;
+    size_t pwd_bufsize;
+    int pwd_s;
+
+    pwd_bufsize = sysconf (_SC_GETPW_R_SIZE_MAX);
+    if (pwd_bufsize == -1) {
+	pwd_bufsize = 16384;
+    }
+
+    pwd_buf = idio_alloc (pwd_bufsize);
+
+    int pwd_exists = 1;
+    pwd_s = getpwuid_r (getuid (), &pwd, pwd_buf, pwd_bufsize, &pwd_result);
+    if (pwd_result == NULL) {
+	if (pwd_s) {
+	    errno = pwd_s;
+	    idio_error_warning_message ("user ID %d is not in the passwd database\n", getuid ());
+	}
+	pwd_exists = 0;
+    }
+
+    /*
+     * POSIX is a bit free with environment variables:
+     * https://pubs.opengroup.org/onlinepubs/9699919799/ which appears
+     * to be someone typing "env | sort" and adding them to the
+     * specification as known environment variables.
+     *
+     * Why would SECONDS or RANDOM be in the environment?
+     */
+    char *LOGNAME = "";
+    char *HOME = "";
+    char *SHELL = "";
+    if (pwd_exists) {
+	LOGNAME = pwd.pw_name;
+	HOME = pwd.pw_dir;
+	SHELL = pwd.pw_shell;
+    }
+
+#define IDIO_ENV_EXPORT(name)						\
+    if (getenv (#name) == NULL) {					\
+	IDIO sym = idio_symbols_C_intern (#name);			\
+	if (idio_env_set_default (sym, name) == 0) {			\
+	    idio_module_env_set_symbol_value (sym, idio_string_C (name)); \
+	}								\
+    }
+
+    IDIO_ENV_EXPORT (LOGNAME);
+    IDIO_ENV_EXPORT (HOME);
+    IDIO_ENV_EXPORT (SHELL);
+
+    IDIO_GC_FREE (pwd_buf);
 }
 
 /*

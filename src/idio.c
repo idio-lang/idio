@@ -214,7 +214,7 @@ int main (int argc, char **argv, char **envp)
      *
      * Nominally, we process arguments as for Idio until we hit a
      * non-option argument (or "--") whereon the remaining arguments
-     * are deemed to be for the script.
+     * are deemed to be the script and its arguments.
      *
      * In the very first instance we'll allocate enough room for a
      * full copy (reference!) of argv and copy argv[0] for two
@@ -310,11 +310,11 @@ int main (int argc, char **argv, char **envp)
 	OPTION_NONE,
 	OPTION_LOAD,
     };
-    int in_options = 1;
+    int in_idio_options = 1;
     enum options option = OPTION_NONE;
     int i;
     for (i = 1; i < argc; i++) {
-	if (in_options) {
+	if (in_idio_options) {
 	    if (OPTION_NONE != option) {
 		switch (option) {
 		case OPTION_LOAD:
@@ -381,9 +381,11 @@ int main (int argc, char **argv, char **envp)
 		    idio_vm_reports = 1;
 		} else if (strncmp (argv[i], "--load", 6) == 0) {
 		    option = OPTION_LOAD;
+		} else if (strlen (argv[i]) == 2) {
+		    in_idio_options = 0;
 		}
 	    } else {
-		if (in_options) {
+		if (in_idio_options) {
 		    /*
 		     * Rewrite sargv[0] from the name of the
 		     * executable (from argv[0]) to the name of the
@@ -394,7 +396,7 @@ int main (int argc, char **argv, char **envp)
 		    sargv[sargc] = argv[i];
 		}
 		sargc++;
-		in_options = 0;
+		in_idio_options = 0;
 	    }
 	} else {
 	    sargv[sargc++] = argv[i];

@@ -3526,56 +3526,6 @@ void idio_init_libc_wrap ()
     idio_add_feature_ps ("uname/machine/", up->machine);
     idio_add_feature_pi ("sizeof/pointer/", sizeof (void *) * CHAR_BIT);
 
-    /*
-     * From getpwuid(3) on CentOS
-     */
-
-    /*
-    struct passwd pwd;
-    struct passwd *pwd_result;
-    char *pwd_buf;
-    size_t pwd_bufsize;
-    int pwd_s;
-
-    pwd_bufsize = sysconf (_SC_GETPW_R_SIZE_MAX);
-    if (pwd_bufsize == -1)
-	pwd_bufsize = 16384;
-
-    pwd_buf = idio_alloc (pwd_bufsize);
-
-    int pwd_exists = 1;
-    pwd_s = getpwuid_r (getuid (), &pwd, pwd_buf, pwd_bufsize, &pwd_result);
-    if (pwd_result == NULL) {
-	if (pwd_s) {
-	    errno = pwd_s;
-	    idio_error_system_errno ("getpwnam_r", idio_integer (getuid ()), IDIO_C_FUNC_LOCATION ());
-	}
-	pwd_exists = 0;
-    }
-
-    IDIO blank = idio_string_C ("");
-    IDIO HOME = blank;
-    IDIO SHELL = blank;
-    if (pwd_exists) {
-	HOME = idio_string_C (pwd.pw_dir);
-	SHELL = idio_string_C (pwd.pw_shell);
-    }
-
-    if (getenv ("HOME") == NULL) {
-	IDIO name = idio_symbols_C_intern ("HOME");
-	idio_toplevel_extend (name, IDIO_MEANING_ENVIRON_SCOPE (0));
-	idio_module_export_symbol_value (name, HOME, idio_libc_module);
-    }
-
-    if (getenv ("SHELL") == NULL) {
-	IDIO name = idio_symbols_C_intern ("SHELL");
-	idio_toplevel_extend (name, IDIO_MEANING_ENVIRON_SCOPE (0));
-	idio_module_export_symbol_value (name, SHELL, idio_libc_module);
-    }
-
-    IDIO_GC_FREE (pwd_buf);
-    */
-
     geti = IDIO_ADD_MODULE_PRIMITIVE (idio_libc_module, UID_get);
     seti = IDIO_ADD_MODULE_PRIMITIVE (idio_libc_module, UID_set);
     idio_module_add_computed_symbol (idio_symbols_C_intern ("UID"), idio_vm_values_ref (IDIO_FIXNUM_VAL (geti)), idio_vm_values_ref (IDIO_FIXNUM_VAL (seti)), main_module);
