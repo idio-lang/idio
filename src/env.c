@@ -298,6 +298,7 @@ static void idio_env_add_environ ()
 void idio_env_exe_pathname (char *argv0, char *a0rp)
 {
     IDIO_C_ASSERT (argv0);
+    IDIO_C_ASSERT (a0rp);
 
     /*
      * These operating system-bespoke sections are from
@@ -338,7 +339,7 @@ void idio_env_exe_pathname (char *argv0, char *a0rp)
 	     */
 	    a0rp[r] = '\0';
 	} else {
-	    a0rp[r + 1] = '\0';
+	    a0rp[r] = '\0';
 	}
 	return;
     } else {
@@ -473,6 +474,13 @@ void idio_env_init_idiolib (char *argv0)
      * it.
      */
     char *dir = rindex (a0rp, '/');
+
+    if (NULL == dir) {
+	/*
+	 * Possible if idio_env_exe_pathname() dun goofed.
+	 */
+	return;
+    }
 
     char *pdir = dir - 1;
     while (pdir > a0rp &&

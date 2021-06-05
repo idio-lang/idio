@@ -596,7 +596,13 @@ char *idio_command_find_exe (IDIO func)
     IDIO_ASSERT (func);
     IDIO_TYPE_ASSERT (symbol, func);
 
-    return idio_command_find_exe_C (IDIO_SYMBOL_S (func));
+    char * command = IDIO_SYMBOL_S (func);
+
+    if (strchr (command, '/') == NULL) {
+	return idio_command_find_exe_C (command);
+    } else {
+	return command;
+    }
 }
 
 IDIO_DEFINE_PRIMITIVE1V_DS ("%find-exe", find_exe, (IDIO command), "command", "\

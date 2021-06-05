@@ -44,6 +44,7 @@ IDIO idio_src_properties;
 #define IDIO_CHAR_COMMA		','
 #define IDIO_CHAR_BACKQUOTE	'`'
 #define IDIO_CHAR_DOT		'.'
+#define IDIO_CHAR_SLASH		'/'
 #define IDIO_CHAR_COLON		':'
 #define IDIO_CHAR_SEMICOLON	';'
 #define IDIO_CHAR_DQUOTE	'"'
@@ -3334,21 +3335,28 @@ static IDIO idio_read_1_expr_nl (IDIO handle, idio_unicode_t *ic, int depth, int
 	    case IDIO_CHAR_DOT:
 		{
 		    /*
-		     * We could be looking at the ... symbol for
-		     * syntax-rules.  certainly, multiple consecutive
-		     * DOTs are not an indexing operation
+		     * We could be looking at
+		     *
+		     * - the ... symbol for syntax-rules.  certainly,
+		     *   multiple consecutive DOTs are not an indexing
+		     *   operation
+		     *
+		     * - ./ccc where we're unlikely to indexing
+                     *   something by /ccc and probably mean a
+                     *   filename, particularly a command name
 		     */
-		    idio_unicode_t c = idio_getc_handle (handle);
-		    switch (c) {
+		    idio_unicode_t c2 = idio_getc_handle (handle);
+		    switch (c2) {
 		    case IDIO_CHAR_DOT:
+		    case IDIO_CHAR_SLASH:
 			{
-			    idio_ungetc_handle (handle, c);
-			    idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_word (handle, lo, IDIO_CHAR_DOT, ic));
+			    idio_ungetc_handle (handle, c2);
+			    idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_word (handle, lo, c, ic));
 			    return lo;
 			}
 			break;
 		    default:
-			idio_ungetc_handle (handle, c);
+			idio_ungetc_handle (handle, c2);
 			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_T_dot);
 			return lo;
 		    }
