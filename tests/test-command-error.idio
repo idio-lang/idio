@@ -205,6 +205,8 @@ PATH = OPATH
 command-parent-error-load "command-errors/find-exe-dir-cmd-PATH_MAX-3.idio" "File name too long" "dir+command exename length"
 PATH = OPATH
 
+command-parent-error-load "command-errors/find-exe-bad-format.idio" "command contains an ASCII NUL"
+command-parent-error-load "command-errors/find-exe-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol|string"
 command-parent-error-load "command-errors/find-exe-not-found.idio" "command not found (foo)"
 PATH = OPATH
 
@@ -229,4 +231,4 @@ PATH = OPATH
 (wait)
 
 ;; all done?
-Tests? (command-error0 + 25)
+Tests? (command-error0 + 27)

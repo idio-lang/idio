@@ -511,5 +511,24 @@ test (true #U+61) #t
 
 test (collect-output hostname) HOSTNAME
 
+;; execute a relative path command -- which means figuring one out!
+;; Where is auto-exe, relative to us?  We must be somewhere in the
+;; hierarchy.  Probably.
+a-e-str := (regex-case PWD
+		       ("(.*)/src" {
+			   "../utils/bin/auto-exit"
+		       })
+		       (else {
+			 "./utils/bin/auto-exit"
+		       }))
+
+if (x? a-e-str) {
+  ; 1. execute as a symbol
+  test ((string->symbol a-e-str) -E 0) #t
+
+  ; 2. execute as a string
+  test (a-e-str -E 0) #t
+}
+
 ;; all done?
-Tests? (command0 + 100)
+Tests? (command0 + 102)

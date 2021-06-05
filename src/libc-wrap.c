@@ -2470,16 +2470,51 @@ return the current error handle					\n\
     return idio_thread_current_error_handle ();
 }
 
-IDIO_DEFINE_PRIMITIVE1_DS ("b?", libc_bp, (IDIO pathname), "pathname", "\
-is `pathname` a block special device?	\n\
-					\n\
-:param pathname: pathname to stat	\n\
-:type pathname: string			\n\
-:return: #t or #f			\n\
-:rtype: boolean				\n\
-")
+IDIO idio_libc_wrap_access_predicate (IDIO pathname, char *pred_C, int mode)
 {
     IDIO_ASSERT (pathname);
+    IDIO_C_ASSERT (pred_C);
+
+    /*
+     * Test Case: libc-wrap-errors/r-bad-type.idio
+     *
+     * r? #t
+     */
+    IDIO_USER_TYPE_ASSERT (string, pathname);
+
+    size_t size = 0;
+    char *pathname_C = idio_string_as_C (pathname, &size);
+    size_t C_size = strlen (pathname_C);
+    if (C_size != size) {
+	/*
+	 * Test Case: libc-wrap-errors/r-bad-format.idio
+	 *
+	 * r? (join-string (make-string 1 #U+0) '("hello" "world"))
+	 */
+	IDIO_GC_FREE (pathname_C);
+
+	char em[BUFSIZ];
+	sprintf (em, "%s: pathname contains an ASCII NUL", pred_C);
+	idio_libc_format_error (em, pathname, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    IDIO r = idio_S_false;
+
+    if (access (pathname_C, mode) == 0) {
+	r = idio_S_true;
+    }
+
+    IDIO_GC_FREE (pathname_C);
+
+    return r;
+}
+
+IDIO idio_libc_wrap_stat_predicate (IDIO pathname, char *pred_C, int mask)
+{
+    IDIO_ASSERT (pathname);
+    IDIO_C_ASSERT (pred_C);
 
     /*
      * Test Case: libc-wrap-errors/b-bad-type.idio
@@ -2499,7 +2534,9 @@ is `pathname` a block special device?	\n\
 	 */
 	IDIO_GC_FREE (pathname_C);
 
-	idio_libc_format_error ("b?: pathname contains an ASCII NUL", pathname, IDIO_C_FUNC_LOCATION ());
+	char em[BUFSIZ];
+	sprintf (em, "%s: pathname contains an ASCII NUL", pred_C);
+	idio_libc_format_error (em, pathname, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -2509,21 +2546,14 @@ is `pathname` a block special device?	\n\
     IDIO r = idio_S_false;
 
     if (stat (pathname_C, &sb) == 0 &&
-	S_ISBLK (sb.st_mode)) {
+	(sb.st_mode & S_IFMT) == mask) {
 	r = idio_S_true;
     }
 
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1_DS ("S_ISBLK", libc_S_ISBLK, (IDIO mode), "mode", "\
-does `mode` represent a block device?	\n\
-					\n\
-:param mode: mode from stat(2)		\n\
-:type mode: libc/mode_t			\n\
-:return: #t or #f			\n\
-:rtype: boolean				\n\
-")
+IDIO idio_libc_wrap_mode_predicate (IDIO mode, int mask)
 {
     IDIO_ASSERT (mode);
 
@@ -2537,11 +2567,39 @@ does `mode` represent a block device?	\n\
 
     IDIO r = idio_S_false;
 
-    if (S_ISBLK (C_mode)) {
+    if ((C_mode & S_IFMT) == mask) {
 	r = idio_S_true;
     }
 
     return r;
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("b?", libc_bp, (IDIO pathname), "pathname", "\
+is `pathname` a block special device?	\n\
+					\n\
+:param pathname: pathname to stat	\n\
+:type pathname: string			\n\
+:return: #t or #f			\n\
+:rtype: boolean				\n\
+")
+{
+    IDIO_ASSERT (pathname);
+
+    return idio_libc_wrap_stat_predicate (pathname, "b?", S_IFBLK);
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("S_ISBLK", libc_S_ISBLK, (IDIO mode), "mode", "\
+does `mode` represent a block device?	\n\
+					\n\
+:param mode: mode from stat(2)		\n\
+:type mode: libc/mode_t			\n\
+:return: #t or #f			\n\
+:rtype: boolean				\n\
+")
+{
+    IDIO_ASSERT (mode);
+
+    return idio_libc_wrap_mode_predicate (mode, S_IFBLK);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("c?", libc_cp, (IDIO pathname), "pathname", "\
@@ -2555,39 +2613,7 @@ is `pathname` a character special device?	\n\
 {
     IDIO_ASSERT (pathname);
 
-    /*
-     * Test Case: libc-wrap-errors/c-bad-type.idio
-     *
-     * c? #t
-     */
-    IDIO_USER_TYPE_ASSERT (string, pathname);
-
-    size_t size = 0;
-    char *pathname_C = idio_string_as_C (pathname, &size);
-    size_t C_size = strlen (pathname_C);
-    if (C_size != size) {
-	/*
-	 * Test Case: libc-wrap-errors/c-bad-format.idio
-	 *
-	 * c? (join-string (make-string 1 #U+0) '("hello" "world"))
-	 */
-	IDIO_GC_FREE (pathname_C);
-
-	idio_libc_format_error ("c?: pathname contains an ASCII NUL", pathname, IDIO_C_FUNC_LOCATION ());
-
-	return idio_S_notreached;
-    }
-
-    struct stat sb;
-
-    IDIO r = idio_S_false;
-
-    if (stat (pathname_C, &sb) == 0 &&
-	S_ISCHR (sb.st_mode)) {
-	r = idio_S_true;
-    }
-
-    return r;
+    return idio_libc_wrap_stat_predicate (pathname, "c?", S_IFCHR);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("S_ISCHR", libc_S_ISCHR, (IDIO mode), "mode", "\
@@ -2601,21 +2627,7 @@ does `mode` represent a character device?	\n\
 {
     IDIO_ASSERT (mode);
 
-    /*
-     * Test Case: libc-wrap-errors/S_ISCHR-bad-type.idio
-     *
-     * S_ISCHR #t
-     */
-    IDIO_USER_libc_TYPE_ASSERT (mode_t, mode);
-    int C_mode = IDIO_C_TYPE_libc_mode_t (mode);
-
-    IDIO r = idio_S_false;
-
-    if (S_ISCHR (C_mode)) {
-	r = idio_S_true;
-    }
-
-    return r;
+    return idio_libc_wrap_mode_predicate (mode, S_IFCHR);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("d?", libc_dp, (IDIO pathname), "pathname", "\
@@ -2629,39 +2641,7 @@ is `pathname` a directory?		\n\
 {
     IDIO_ASSERT (pathname);
 
-    /*
-     * Test Case: libc-wrap-errors/d-bad-type.idio
-     *
-     * d? #t
-     */
-    IDIO_USER_TYPE_ASSERT (string, pathname);
-
-    size_t size = 0;
-    char *pathname_C = idio_string_as_C (pathname, &size);
-    size_t C_size = strlen (pathname_C);
-    if (C_size != size) {
-	/*
-	 * Test Case: libc-wrap-errors/d-bad-format.idio
-	 *
-	 * d? (join-string (make-string 1 #U+0) '("hello" "world"))
-	 */
-	IDIO_GC_FREE (pathname_C);
-
-	idio_libc_format_error ("d?: pathname contains an ASCII NUL", pathname, IDIO_C_FUNC_LOCATION ());
-
-	return idio_S_notreached;
-    }
-
-    struct stat sb;
-
-    IDIO r = idio_S_false;
-
-    if (stat (pathname_C, &sb) == 0 &&
-	S_ISDIR (sb.st_mode)) {
-	r = idio_S_true;
-    }
-
-    return r;
+    return idio_libc_wrap_stat_predicate (pathname, "d?", S_IFDIR);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("S_ISDIR", libc_S_ISDIR, (IDIO mode), "mode", "\
@@ -2675,26 +2655,9 @@ does `mode` represent a directory?	\n\
 {
     IDIO_ASSERT (mode);
 
-    /*
-     * Test Case: libc-wrap-errors/S_ISDIR-bad-type.idio
-     *
-     * S_ISDIR #t
-     */
-    IDIO_USER_libc_TYPE_ASSERT (mode_t, mode);
-    int C_mode = IDIO_C_TYPE_libc_mode_t (mode);
-
-    IDIO r = idio_S_false;
-
-    if (S_ISDIR (C_mode)) {
-	r = idio_S_true;
-    }
-
-    return r;
+    return idio_libc_wrap_mode_predicate (mode, S_IFDIR);
 }
 
-/*
- * This could have been access (pathname, F_OK)
- */
 IDIO_DEFINE_PRIMITIVE1_DS ("e?", libc_ep, (IDIO pathname), "pathname", "\
 does `pathname` exist?			\n\
 					\n\
@@ -2706,38 +2669,7 @@ does `pathname` exist?			\n\
 {
     IDIO_ASSERT (pathname);
 
-    /*
-     * Test Case: libc-wrap-errors/e-bad-type.idio
-     *
-     * e? #t
-     */
-    IDIO_USER_TYPE_ASSERT (string, pathname);
-
-    size_t size = 0;
-    char *pathname_C = idio_string_as_C (pathname, &size);
-    size_t C_size = strlen (pathname_C);
-    if (C_size != size) {
-	/*
-	 * Test Case: libc-wrap-errors/e-bad-format.idio
-	 *
-	 * e? (join-string (make-string 1 #U+0) '("hello" "world"))
-	 */
-	IDIO_GC_FREE (pathname_C);
-
-	idio_libc_format_error ("e?: pathname contains an ASCII NUL", pathname, IDIO_C_FUNC_LOCATION ());
-
-	return idio_S_notreached;
-    }
-
-    struct stat sb;
-
-    IDIO r = idio_S_false;
-
-    if (stat (pathname_C, &sb) == 0) {
-	r = idio_S_true;
-    }
-
-    return r;
+    return idio_libc_wrap_access_predicate (pathname, "e?", F_OK);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("f?", libc_fp, (IDIO pathname), "pathname", "\
@@ -2751,39 +2683,7 @@ is `pathname` a regular file?		\n\
 {
     IDIO_ASSERT (pathname);
 
-    /*
-     * Test Case: libc-wrap-errors/f-bad-type.idio
-     *
-     * f? #t
-     */
-    IDIO_USER_TYPE_ASSERT (string, pathname);
-
-    size_t size = 0;
-    char *pathname_C = idio_string_as_C (pathname, &size);
-    size_t C_size = strlen (pathname_C);
-    if (C_size != size) {
-	/*
-	 * Test Case: libc-wrap-errors/f-bad-format.idio
-	 *
-	 * f? (join-string (make-string 1 #U+0) '("hello" "world"))
-	 */
-	IDIO_GC_FREE (pathname_C);
-
-	idio_libc_format_error ("f?: pathname contains an ASCII NUL", pathname, IDIO_C_FUNC_LOCATION ());
-
-	return idio_S_notreached;
-    }
-
-    struct stat sb;
-
-    IDIO r = idio_S_false;
-
-    if (stat (pathname_C, &sb) == 0 &&
-	S_ISREG (sb.st_mode)) {
-	r = idio_S_true;
-    }
-
-    return r;
+    return idio_libc_wrap_stat_predicate (pathname, "f?", S_IFREG);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("S_ISREG", libc_S_ISREG, (IDIO mode), "mode", "\
@@ -2797,21 +2697,7 @@ does `mode` represent a regular file?	\n\
 {
     IDIO_ASSERT (mode);
 
-    /*
-     * Test Case: libc-wrap-errors/S_ISREG-bad-type.idio
-     *
-     * S_ISREG #t
-     */
-    IDIO_USER_libc_TYPE_ASSERT (mode_t, mode);
-    int C_mode = IDIO_C_TYPE_libc_mode_t (mode);
-
-    IDIO r = idio_S_false;
-
-    if (S_ISREG (C_mode)) {
-	r = idio_S_true;
-    }
-
-    return r;
+    return idio_libc_wrap_mode_predicate (mode, S_IFREG);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("l?", libc_lp, (IDIO pathname), "pathname", "\
@@ -2871,21 +2757,7 @@ does `mode` represent a symbolic link?	\n\
 {
     IDIO_ASSERT (mode);
 
-    /*
-     * Test Case: libc-wrap-errors/S_ISLNK-bad-type.idio
-     *
-     * S_ISLNK #t
-     */
-    IDIO_USER_libc_TYPE_ASSERT (mode_t, mode);
-    int C_mode = IDIO_C_TYPE_libc_mode_t (mode);
-
-    IDIO r = idio_S_false;
-
-    if (S_ISLNK (C_mode)) {
-	r = idio_S_true;
-    }
-
-    return r;
+    return idio_libc_wrap_mode_predicate (mode, S_IFLNK);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("p?", libc_pp, (IDIO pathname), "pathname", "\
@@ -2899,39 +2771,7 @@ is `pathname` a FIFO?			\n\
 {
     IDIO_ASSERT (pathname);
 
-    /*
-     * Test Case: libc-wrap-errors/p-bad-type.idio
-     *
-     * p? #t
-     */
-    IDIO_USER_TYPE_ASSERT (string, pathname);
-
-    size_t size = 0;
-    char *pathname_C = idio_string_as_C (pathname, &size);
-    size_t C_size = strlen (pathname_C);
-    if (C_size != size) {
-	/*
-	 * Test Case: libc-wrap-errors/p-bad-format.idio
-	 *
-	 * p? (join-string (make-string 1 #U+0) '("hello" "world"))
-	 */
-	IDIO_GC_FREE (pathname_C);
-
-	idio_libc_format_error ("p?: pathname contains an ASCII NUL", pathname, IDIO_C_FUNC_LOCATION ());
-
-	return idio_S_notreached;
-    }
-
-    struct stat sb;
-
-    IDIO r = idio_S_false;
-
-    if (stat (pathname_C, &sb) == 0 &&
-	S_ISFIFO (sb.st_mode)) {
-	r = idio_S_true;
-    }
-
-    return r;
+    return idio_libc_wrap_stat_predicate (pathname, "p?", S_IFIFO);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("S_ISFIFO", libc_S_ISFIFO, (IDIO mode), "mode", "\
@@ -2945,21 +2785,7 @@ does `mode` represent a FIFO?	\n\
 {
     IDIO_ASSERT (mode);
 
-    /*
-     * Test Case: libc-wrap-errors/S_ISFIFO-bad-type.idio
-     *
-     * S_ISFIFO #t
-     */
-    IDIO_USER_libc_TYPE_ASSERT (mode_t, mode);
-    int C_mode = IDIO_C_TYPE_libc_mode_t (mode);
-
-    IDIO r = idio_S_false;
-
-    if (S_ISFIFO (C_mode)) {
-	r = idio_S_true;
-    }
-
-    return r;
+    return idio_libc_wrap_mode_predicate (mode, S_IFIFO);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("r?", libc_rp, (IDIO pathname), "pathname", "\
@@ -2974,38 +2800,7 @@ does `pathname` pass `access (pathname, R_OK)`?	\n\
 {
     IDIO_ASSERT (pathname);
 
-    /*
-     * Test Case: libc-wrap-errors/r-bad-type.idio
-     *
-     * r? #t
-     */
-    IDIO_USER_TYPE_ASSERT (string, pathname);
-
-    size_t size = 0;
-    char *pathname_C = idio_string_as_C (pathname, &size);
-    size_t C_size = strlen (pathname_C);
-    if (C_size != size) {
-	/*
-	 * Test Case: libc-wrap-errors/r-bad-format.idio
-	 *
-	 * r? (join-string (make-string 1 #U+0) '("hello" "world"))
-	 */
-	IDIO_GC_FREE (pathname_C);
-
-	idio_libc_format_error ("r?: pathname contains an ASCII NUL", pathname, IDIO_C_FUNC_LOCATION ());
-
-	return idio_S_notreached;
-    }
-
-    IDIO r = idio_S_false;
-
-    if (access (pathname_C, R_OK) == 0) {
-	r = idio_S_true;
-    }
-
-    IDIO_GC_FREE (pathname_C);
-
-    return r;
+    return idio_libc_wrap_access_predicate (pathname, "r?", R_OK);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("s?", libc_sp, (IDIO pathname), "pathname", "\
@@ -3019,39 +2814,7 @@ is `pathname` a socket?			\n\
 {
     IDIO_ASSERT (pathname);
 
-    /*
-     * Test Case: libc-wrap-errors/s-bad-type.idio
-     *
-     * s? #t
-     */
-    IDIO_USER_TYPE_ASSERT (string, pathname);
-
-    size_t size = 0;
-    char *pathname_C = idio_string_as_C (pathname, &size);
-    size_t C_size = strlen (pathname_C);
-    if (C_size != size) {
-	/*
-	 * Test Case: libc-wrap-errors/s-bad-format.idio
-	 *
-	 * s? (join-string (make-string 1 #U+0) '("hello" "world"))
-	 */
-	IDIO_GC_FREE (pathname_C);
-
-	idio_libc_format_error ("s?: pathname contains an ASCII NUL", pathname, IDIO_C_FUNC_LOCATION ());
-
-	return idio_S_notreached;
-    }
-
-    struct stat sb;
-
-    IDIO r = idio_S_false;
-
-    if (stat (pathname_C, &sb) == 0 &&
-	S_ISSOCK (sb.st_mode)) {
-	r = idio_S_true;
-    }
-
-    return r;
+    return idio_libc_wrap_stat_predicate (pathname, "s?", S_IFSOCK);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("S_ISSOCK", libc_S_ISSOCK, (IDIO mode), "mode", "\
@@ -3065,21 +2828,7 @@ does `mode` represent a socket?		\n\
 {
     IDIO_ASSERT (mode);
 
-    /*
-     * Test Case: libc-wrap-errors/S_ISSOCK-bad-type.idio
-     *
-     * S_ISSOCK #t
-     */
-    IDIO_USER_libc_TYPE_ASSERT (mode_t, mode);
-    int C_mode = IDIO_C_TYPE_libc_mode_t (mode);
-
-    IDIO r = idio_S_false;
-
-    if (S_ISSOCK (C_mode)) {
-	r = idio_S_true;
-    }
-
-    return r;
+    return idio_libc_wrap_mode_predicate (mode, S_IFSOCK);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("T?", libc_Tp, (IDIO fd), "fd", "\
@@ -3121,38 +2870,7 @@ does `pathname` pass `access (pathname, W_OK)`?	\n\
 {
     IDIO_ASSERT (pathname);
 
-    /*
-     * Test Case: libc-wrap-errors/w-bad-type.idio
-     *
-     * w? #t
-     */
-    IDIO_USER_TYPE_ASSERT (string, pathname);
-
-    size_t size = 0;
-    char *pathname_C = idio_string_as_C (pathname, &size);
-    size_t C_size = strlen (pathname_C);
-    if (C_size != size) {
-	/*
-	 * Test Case: libc-wrap-errors/w-bad-format.idio
-	 *
-	 * w? (join-string (make-string 1 #U+0) '("hello" "world"))
-	 */
-	IDIO_GC_FREE (pathname_C);
-
-	idio_libc_format_error ("w?: pathname contains an ASCII NUL", pathname, IDIO_C_FUNC_LOCATION ());
-
-	return idio_S_notreached;
-    }
-
-    IDIO r = idio_S_false;
-
-    if (access (pathname_C, W_OK) == 0) {
-	r = idio_S_true;
-    }
-
-    IDIO_GC_FREE (pathname_C);
-
-    return r;
+    return idio_libc_wrap_access_predicate (pathname, "w?", W_OK);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("x?", libc_xp, (IDIO pathname), "pathname", "\
@@ -3167,38 +2885,7 @@ does `pathname` pass `access (pathname, X_OK)`?	\n\
 {
     IDIO_ASSERT (pathname);
 
-    /*
-     * Test Case: libc-wrap-errors/x-bad-type.idio
-     *
-     * x? #t
-     */
-    IDIO_USER_TYPE_ASSERT (string, pathname);
-
-    size_t size = 0;
-    char *pathname_C = idio_string_as_C (pathname, &size);
-    size_t C_size = strlen (pathname_C);
-    if (C_size != size) {
-	/*
-	 * Test Case: libc-wrap-errors/x-bad-format.idio
-	 *
-	 * x? (join-string (make-string 1 #U+0) '("hello" "world"))
-	 */
-	IDIO_GC_FREE (pathname_C);
-
-	idio_libc_format_error ("x?: pathname contains an ASCII NUL", pathname, IDIO_C_FUNC_LOCATION ());
-
-	return idio_S_notreached;
-    }
-
-    IDIO r = idio_S_false;
-
-    if (access (pathname_C, X_OK) == 0) {
-	r = idio_S_true;
-    }
-
-    IDIO_GC_FREE (pathname_C);
-
-    return r;
+    return idio_libc_wrap_access_predicate (pathname, "x?", X_OK);
 }
 
 void idio_libc_wrap_add_primitives ()

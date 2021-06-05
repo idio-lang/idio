@@ -594,14 +594,68 @@ char *idio_command_find_exe_C (char *command)
 char *idio_command_find_exe (IDIO func)
 {
     IDIO_ASSERT (func);
-    IDIO_TYPE_ASSERT (symbol, func);
 
-    char * command = IDIO_SYMBOL_S (func);
+    char *command = NULL;
+    int free_me = 0;
+    if (idio_isa_symbol (func)) {
+	command = IDIO_SYMBOL_S (func);
+    } else if (idio_isa_string (func)) {
+	size_t size = 0;
+	command = idio_string_as_C (func, &size);
+	size_t C_size = strlen (command);
+	if (C_size != size) {
+	    /*
+	     * Test Case: command-errors/find-exe-bad-format.idio
+	     *
+	     * %find-exe (join-string (make-string 1 #U+0) '("hello" "world"))
+	     */
+	    IDIO_GC_FREE (command);
+
+	    idio_command_format_error ("command", "contains an ASCII NUL", idio_S_nil, func, IDIO_C_FUNC_LOCATION ());
+
+	    /* notreached */
+	    return NULL;
+	}
+	free_me = 1;
+    } else {
+	/*
+	 * Test Case: command-errors/find-exe-bad-type.idio
+	 *
+	 * %find-exe #t 2 3
+	 */
+	idio_error_param_type ("symbol|string", func, IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
+	return NULL;
+    }
 
     if (strchr (command, '/') == NULL) {
-	return idio_command_find_exe_C (command);
+	char *r = idio_command_find_exe_C (command);
+
+	if (free_me) {
+	    IDIO_GC_FREE (command);
+	}
+
+	return r;
     } else {
-	return command;
+	/*
+	 * Looks slightly pointless but our caller is going to free
+	 * the value returned and we don't want to free command
+	 * prematurely.
+	 *
+	 * The test was "../bin/idio empty" which runs fine but *we*
+	 * accidentally returned command, the symbol ../bin/idio which
+	 * ourr caller frees.  We then get a second attempt to free it
+	 * (from the symbol table) when the VM shuts down.
+	 */
+	char *cmdname = idio_alloc (strlen (command) + 1);
+	strcpy (cmdname, command);
+
+	if (free_me) {
+	    IDIO_GC_FREE (command);
+	}
+
+	return cmdname;
     }
 }
 
@@ -614,8 +668,6 @@ find `command` on PATH				\n\
 ")
 {
     IDIO_ASSERT (command);
-
-    IDIO_USER_TYPE_ASSERT (symbol, command);
 
     char *pathname = idio_command_find_exe (command);
     if (NULL == pathname) {

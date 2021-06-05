@@ -1043,6 +1043,7 @@ static void idio_vm_restore_all_state (IDIO thr)
      * idio_vm_invoke() allows
      */
     if (! (idio_isa_function (IDIO_THREAD_FUNC (thr)) ||
+	   idio_isa_string (IDIO_THREAD_FUNC (thr)) ||
 	   idio_isa_symbol (IDIO_THREAD_FUNC (thr)) ||
 	   idio_isa_continuation (IDIO_THREAD_FUNC (thr)))) {
 	/* idio_debug ("iv-ras: func is not invokable: %s\n", IDIO_THREAD_FUNC (thr)); */
@@ -1652,6 +1653,7 @@ static void idio_vm_invoke (IDIO thr, IDIO func, int tailp)
 	    idio_vm_restore_continuation (func, IDIO_FRAME_ARGS (val, 0));
 	}
 	break;
+    case IDIO_TYPE_STRING:
     case IDIO_TYPE_SYMBOL:
 	{
 	    char *pathname = idio_command_find_exe (func);
