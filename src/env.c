@@ -227,7 +227,6 @@ static void idio_env_add_environ ()
     struct passwd *pwd_result;
     char *pwd_buf;
     size_t pwd_bufsize;
-    int pwd_s;
 
     pwd_bufsize = sysconf (_SC_GETPW_R_SIZE_MAX);
     if (pwd_bufsize == -1) {
@@ -237,7 +236,17 @@ static void idio_env_add_environ ()
     pwd_buf = idio_alloc (pwd_bufsize);
 
     int pwd_exists = 1;
-    pwd_s = getpwuid_r (getuid (), &pwd, pwd_buf, pwd_bufsize, &pwd_result);
+#if defined (__sun) && defined (__SVR4)
+    errno = 0;
+    pwd_result = getpwuid_r (getuid (), &pwd, pwd_buf, pwd_bufsize);
+    if (pwd_result == NULL) {
+	if (errno) {
+	    idio_error_warning_message ("user ID %d is not in the passwd database\n", getuid ());
+	}
+	pwd_exists = 0;
+    }
+#else
+    int pwd_s = getpwuid_r (getuid (), &pwd, pwd_buf, pwd_bufsize, &pwd_result);
     if (pwd_result == NULL) {
 	if (pwd_s) {
 	    errno = pwd_s;
@@ -245,6 +254,7 @@ static void idio_env_add_environ ()
 	}
 	pwd_exists = 0;
     }
+#endif
 
     /*
      * POSIX is a bit free with environment variables:
