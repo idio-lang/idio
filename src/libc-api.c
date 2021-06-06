@@ -1215,25 +1215,20 @@ a wrapper to libc unlink(2)			\n\
      * unlink #t
      */
     IDIO_USER_TYPE_ASSERT (string, pathname);
-    size_t size = 0;
-    char *C_pathname = idio_string_as_C (pathname, &size);
-    size_t C_size = strlen (C_pathname);
-    if (C_size != size) {
-	/*
-	 * Test Case: libc-wrap-errors/unlink-bad-format.idio
-	 *
-	 * unlink (join-string (make-string 1 #U+0) '("hello" "world"))
-	 */
-	IDIO_GC_FREE (C_pathname);
 
-	idio_libc_format_error ("unlink: pathname contains an ASCII NUL", pathname, IDIO_C_FUNC_LOCATION ());
+    int free_pathname_C = 0;
+    /*
+     * Test Case: libc-wrap-errors/unlink-bad-format.idio
+     *
+     * unlink (join-string (make-string 1 #U+0) '("hello" "world"))
+     */
+    char *pathname_C = idio_libc_string_C (pathname, "unlink", &free_pathname_C, IDIO_C_FUNC_LOCATION ());
 
-	return idio_S_notreached;
+    int unlink_r = unlink (pathname_C);
+
+    if (free_pathname_C) {
+	IDIO_GC_FREE (pathname_C);
     }
-
-    int unlink_r = unlink (C_pathname);
-
-    IDIO_GC_FREE (C_pathname);
 
     if (-1 == unlink_r) {
 	/*
@@ -1602,25 +1597,17 @@ a wrapper to libc stat(2)			\n\
      */
     IDIO_USER_TYPE_ASSERT (string, pathname);
 
-    size_t size = 0;
-    char *cpathname = idio_string_as_C (pathname, &size);
-    size_t C_size = strlen (cpathname);
-    if (C_size != size) {
-	/*
-	 * Test Case: libc-wrap-errors/stat-bad-format.idio
-	 *
-	 * stat (join-string (make-string 1 #U+0) '("hello" "world"))
-	 */
-	IDIO_GC_FREE (cpathname);
-
-	idio_libc_format_error ("stat: pathname contains an ASCII NUL", pathname, IDIO_C_FUNC_LOCATION ());
-
-	return idio_S_notreached;
-    }
+    int free_pathname_C = 0;
+    /*
+     * Test Case: libc-wrap-errors/stat-bad-format.idio
+     *
+     * stat (join-string (make-string 1 #U+0) '("hello" "world"))
+     */
+    char *pathname_C = idio_libc_string_C (pathname, "stat", &free_pathname_C, IDIO_C_FUNC_LOCATION ());
 
     struct stat* statp = idio_alloc (sizeof (struct stat));
 
-    int stat_r = stat (cpathname, statp);
+    int stat_r = stat (pathname_C, statp);
 
     /* check for errors */
     if (-1 == stat_r) {
@@ -1629,14 +1616,18 @@ a wrapper to libc stat(2)			\n\
 	 *
 	 * stat ""
 	 */
-	IDIO_GC_FREE (cpathname);
+	if (free_pathname_C) {
+	    IDIO_GC_FREE (pathname_C);
+	}
 
         idio_error_system_errno ("stat", pathname, IDIO_C_FUNC_LOCATION ());
 
         return idio_S_notreached;
     }
 
-    IDIO_GC_FREE (cpathname);
+    if (free_pathname_C) {
+	IDIO_GC_FREE (pathname_C);
+    }
 
     /*
      * WARNING: this is probably an incorrect return
@@ -1896,25 +1887,19 @@ a wrapper to libc rmdir(2)					\n\
      */
     IDIO_USER_TYPE_ASSERT (string, pathname);
 
-    size_t size = 0;
-    char *C_pathname = idio_string_as_C (pathname, &size);
-    size_t C_size = strlen (C_pathname);
-    if (C_size != size) {
-	/*
-	 * Test Case: libc-wrap-errors/rmdir-bad-format.idio
-	 *
-	 * rmdir (join-string (make-string 1 #U+0) '("hello" "world"))
-	 */
-	IDIO_GC_FREE (C_pathname);
+    int free_pathname_C = 0;
+    /*
+     * Test Case: libc-wrap-errors/rmdir-bad-format.idio
+     *
+     * rmdir (join-string (make-string 1 #U+0) '("hello" "world"))
+     */
+    char *pathname_C = idio_libc_string_C (pathname, "rmdir", &free_pathname_C, IDIO_C_FUNC_LOCATION ());
 
-	idio_libc_format_error ("rmdir: pathname contains an ASCII NUL", pathname, IDIO_C_FUNC_LOCATION ());
+    int rmdir_r = rmdir (pathname_C);
 
-	return idio_S_notreached;
+    if (free_pathname_C) {
+	IDIO_GC_FREE (pathname_C);
     }
-
-    int rmdir_r = rmdir (C_pathname);
-
-    IDIO_GC_FREE (C_pathname);
 
     if (-1 == rmdir_r) {
 	/*
@@ -2059,23 +2044,16 @@ a wrapper to libc mkstemp(3)					\n\
      * XXX mkstemp() requires a NUL-terminated C string and it will
      * modify the template part.
      */
-    size_t size = 0;
-    char *C_template = idio_string_as_C (template, &size);
-    size_t C_size = strlen (C_template);
-    if (C_size != size) {
-	/*
-	 * Test Case: libc-wrap-errors/mkstemp-bad-format.idio
-	 *
-	 * mkstemp (join-string (make-string 1 #U+0) '("hello" "world"))
-	 */
-	IDIO_GC_FREE (C_template);
 
-	idio_libc_format_error ("mkstemp: template contains an ASCII NUL", template, IDIO_C_FUNC_LOCATION ());
+    int free_template_C = 0;
+    /*
+     * Test Case: libc-wrap-errors/mkstemp-bad-format.idio
+     *
+     * mkstemp (join-string (make-string 1 #U+0) '("hello" "world"))
+     */
+    char *template_C = idio_libc_string_C (template, "mkstemp", &free_template_C, IDIO_C_FUNC_LOCATION ());
 
-	return idio_S_notreached;
-    }
-
-    int mkstemp_r = mkstemp (C_template);
+    int mkstemp_r = mkstemp (template_C);
 
     if (-1 == mkstemp_r) {
 	/*
@@ -2083,7 +2061,9 @@ a wrapper to libc mkstemp(3)					\n\
 	 *
 	 * mkstemp "XXX"
 	 */
-	IDIO_GC_FREE (C_template);
+	if (free_template_C) {
+	    IDIO_GC_FREE (template_C);
+	}
 
 	idio_error_system_errno ("mkstemp", template, IDIO_C_FUNC_LOCATION ());
 
@@ -2102,9 +2082,11 @@ a wrapper to libc mkstemp(3)					\n\
      * Therefore, we need to return a tuple of the file descriptor and
      * a string of the created file name.
      */
-    IDIO filename = idio_string_C (C_template);
+    IDIO filename = idio_string_C (template_C);
 
-    IDIO_GC_FREE (C_template);
+    if (free_template_C) {
+	IDIO_GC_FREE (template_C);
+    }
 
     return IDIO_LIST2 (idio_C_int (mkstemp_r), filename);
 }
@@ -2132,23 +2114,17 @@ a wrapper to libc mkdtemp(3)					\n\
      * XXX mkdtemp() requires a NUL-terminated C string and it will
      * modify the template part.
      */
-    size_t size = 0;
-    char *C_template = idio_string_as_C (template, &size);
-    size_t C_size = strlen (C_template);
-    if (C_size != size) {
-	/*
-	 * Test Case: libc-wrap-errors/mkdtemp-bad-format.idio
-	 *
-	 * mkdtemp (join-string (make-string 1 #U+0) '("hello" "world"))
-	 */
-	IDIO_GC_FREE (C_template);
 
-	idio_libc_format_error ("mkdtemp: template contains an ASCII NUL", template, IDIO_C_FUNC_LOCATION ());
+    int free_template_C = 0;
 
-	return idio_S_notreached;
-    }
+    /*
+     * Test Case: libc-wrap-errors/mkdtemp-bad-format.idio
+     *
+     * mkdtemp (join-string (make-string 1 #U+0) '("hello" "world"))
+     */
+    char *template_C = idio_libc_string_C (template, "mkdtemp", &free_template_C, IDIO_C_FUNC_LOCATION ());
 
-    char *mkdtemp_r = mkdtemp (C_template);
+    char *mkdtemp_r = mkdtemp (template_C);
 
     if (NULL == mkdtemp_r) {
 	/*
@@ -2156,7 +2132,9 @@ a wrapper to libc mkdtemp(3)					\n\
 	 *
 	 * mkdtemp "XXX"
 	 */
-	IDIO_GC_FREE (C_template);
+	if (free_template_C) {
+	    IDIO_GC_FREE (template_C);
+	}
 
 	idio_error_system_errno ("mkdtemp", template, IDIO_C_FUNC_LOCATION ());
 
@@ -2165,7 +2143,9 @@ a wrapper to libc mkdtemp(3)					\n\
 
     IDIO r = idio_string_C (mkdtemp_r);
 
-    IDIO_GC_FREE (C_template);
+    if (free_template_C) {
+	IDIO_GC_FREE (template_C);
+    }
 
     return r;
 }
@@ -2191,21 +2171,14 @@ a wrapper to libc mkdir(2)					\n\
      * mkdir #t #t
      */
     IDIO_USER_TYPE_ASSERT (string, pathname);
-    size_t size = 0;
-    char *C_pathname = idio_string_as_C (pathname, &size);
-    size_t C_size = strlen (C_pathname);
-    if (C_size != size) {
-	/*
-	 * Test Case: libc-wrap-errors/mkdir-bad-format.idio
-	 *
-	 * mkdir (join-string (make-string 1 #U+0) '("hello" "world")) (C/integer-> #o555)
-	 */
-	IDIO_GC_FREE (C_pathname);
 
-	idio_libc_format_error ("mkdir: pathname contains an ASCII NUL", pathname, IDIO_C_FUNC_LOCATION ());
-
-	return idio_S_notreached;
-    }
+    int free_pathname_C = 0;
+    /*
+     * Test Case: libc-wrap-errors/mkdir-bad-format.idio
+     *
+     * mkdir (join-string (make-string 1 #U+0) '("hello" "world")) (C/integer-> #o555)
+     */
+    char *pathname_C = idio_libc_string_C (pathname, "mkdir", &free_pathname_C, IDIO_C_FUNC_LOCATION ());
 
     /*
      * Test Case: libc-wrap-errors/mkdir-bad-mode-type.idio
@@ -2215,7 +2188,7 @@ a wrapper to libc mkdir(2)					\n\
     IDIO_USER_libc_TYPE_ASSERT (mode_t, mode);
     int C_mode = IDIO_C_TYPE_libc_mode_t (mode);
 
-    int mkdir_r = mkdir (C_pathname, C_mode);
+    int mkdir_r = mkdir (pathname_C, C_mode);
 
     if (-1 == mkdir_r) {
 	/*
@@ -2255,25 +2228,18 @@ a wrapper to libc lstat(2)			\n\
      */
     IDIO_USER_TYPE_ASSERT (string, pathname);
 
-    size_t size = 0;
-    char *cpathname = idio_string_as_C (pathname, &size);
-    size_t C_size = strlen (cpathname);
-    if (C_size != size) {
-	/*
-	 * Test Case: libc-wrap-errors/lstat-bad-format.idio
-	 *
-	 * lstat (join-string (make-string 1 #U+0) '("hello" "world"))
-	 */
-	IDIO_GC_FREE (cpathname);
+    int free_pathname_C = 0;
 
-	idio_libc_format_error ("lstat: pathname contains an ASCII NUL", pathname, IDIO_C_FUNC_LOCATION ());
-
-	return idio_S_notreached;
-    }
+    /*
+     * Test Case: libc-wrap-errors/lstat-bad-format.idio
+     *
+     * lstat (join-string (make-string 1 #U+0) '("hello" "world"))
+     */
+    char *pathname_C = idio_libc_string_C (pathname, "lstat", &free_pathname_C, IDIO_C_FUNC_LOCATION ());
 
     struct stat* statp = idio_alloc (sizeof (struct stat));
 
-    int lstat_r = lstat (cpathname, statp);
+    int lstat_r = lstat (pathname_C, statp);
 
     /* check for errors */
     if (-1 == lstat_r) {
@@ -2282,18 +2248,19 @@ a wrapper to libc lstat(2)			\n\
 	 *
 	 * lstat ""
 	 */
-	IDIO_GC_FREE (cpathname);
+	if (free_pathname_C) {
+	    IDIO_GC_FREE (pathname_C);
+	}
 
         idio_error_system_errno ("lstat", pathname, IDIO_C_FUNC_LOCATION ());
 
         return idio_S_notreached;
     }
 
-    IDIO_GC_FREE (cpathname);
+    if (free_pathname_C) {
+	IDIO_GC_FREE (pathname_C);
+    }
 
-    /*
-     * WARNING: this is probably an incorrect return
-     */
     return idio_C_pointer_type (idio_CSI_libc_struct_stat, statp);
 }
 
@@ -2959,25 +2926,21 @@ a wrapper to libc chdir(2)					\n\
      * chdir #t
      */
     IDIO_USER_TYPE_ASSERT (string, path);
-    size_t size = 0;
-    char *C_path = idio_string_as_C (path, &size);
-    size_t C_size = strlen (C_path);
-    if (C_size != size) {
-	/*
-	 * Test Case: libc-wrap-errors/chdir-bad-format.idio
-	 *
-	 * chdir (join-string (make-string 1 #U+0) '("hello" "world"))
-	 */
-	IDIO_GC_FREE (C_path);
 
-	idio_libc_format_error ("chdir: path contains an ASCII NUL", path, IDIO_C_FUNC_LOCATION ());
+    int free_path_C = 0;
 
-	return idio_S_notreached;
+    /*
+     * Test Case: libc-wrap-errors/chdir-bad-format.idio
+     *
+     * chdir (join-string (make-string 1 #U+0) '("hello" "world"))
+     */
+    char *path_C = idio_libc_string_C (path, "chdir", &free_path_C, IDIO_C_FUNC_LOCATION ());
+
+    int chdir_r = chdir (path_C);
+
+    if (free_path_C) {
+	IDIO_GC_FREE (path_C);
     }
-
-    int chdir_r = chdir (C_path);
-
-    IDIO_GC_FREE (C_path);
 
     if (-1 == chdir_r) {
 	/*
@@ -3017,21 +2980,14 @@ a wrapper to libc access(2)					\n\
      */
     IDIO_USER_TYPE_ASSERT (string, pathname);
 
-    size_t size = 0;
-    char *C_pathname = idio_string_as_C (pathname, &size);
-    size_t C_size = strlen (C_pathname);
-    if (C_size != size) {
-	/*
-	 * Test Case: libc-wrap-errors/access-bad-format.idio
-	 *
-	 * access (join-string (make-string 1 #U+0) '("hello" "world")) libc/R_OK
-	 */
-	IDIO_GC_FREE (C_pathname);
+    int free_pathname_C = 0;
 
-	idio_libc_format_error ("access: pathname contains an ASCII NUL", pathname, IDIO_C_FUNC_LOCATION ());
-
-	return idio_S_notreached;
-    }
+    /*
+     * Test Case: libc-wrap-errors/access-bad-format.idio
+     *
+     * access (join-string (make-string 1 #U+0) '("hello" "world")) libc/R_OK
+     */
+    char *pathname_C = idio_libc_string_C (pathname, "access", &free_pathname_C, IDIO_C_FUNC_LOCATION ());
 
     /*
      * Test Case: libc-wrap-errors/access-bad-mode-type.idio
@@ -3043,11 +2999,13 @@ a wrapper to libc access(2)					\n\
 
     IDIO access_r = idio_S_false;
 
-    if (0 == access (C_pathname, C_mode)) {
+    if (0 == access (pathname_C, C_mode)) {
 	access_r = idio_S_true;
     }
 
-    IDIO_GC_FREE (C_pathname);
+    if (free_pathname_C) {
+	IDIO_GC_FREE (pathname_C);
+    }
 
     return access_r;
 }

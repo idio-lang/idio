@@ -129,10 +129,11 @@ static void idio_command_env_type_error (IDIO name, IDIO c_location)
     /* notreached */
 }
 
-static void idio_command_format_error (char *circumstance, char *msg, IDIO name, IDIO val, IDIO c_location)
+static void idio_command_format_error (char *circumstance, char *msg, IDIO var, IDIO val, IDIO c_location)
 {
     IDIO_C_ASSERT (circumstance);
     IDIO_C_ASSERT (msg);
+    IDIO_ASSERT (var);
     IDIO_ASSERT (val);
     IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (string, val);
@@ -140,9 +141,9 @@ static void idio_command_format_error (char *circumstance, char *msg, IDIO name,
 
     IDIO msh = idio_open_output_string_handle_C ();
     idio_display_C (circumstance, msh);
-    if (idio_S_nil != name) {
+    if (idio_S_nil != var) {
 	idio_display_C (" '", msh);
-	idio_display (name, msh);
+	idio_display (var, msh);
 	idio_display_C ("' ", msh);
     } else {
 	idio_display_C (" ", msh);
@@ -270,6 +271,43 @@ static void idio_command_exec_error (char **argv, char **envp, IDIO c_location)
     /* notreached */
 }
 
+char *idio_command_string_C (IDIO var, IDIO val, char *op_C, int *free_me_p, IDIO c_location)
+{
+    IDIO_ASSERT (var);
+    IDIO_ASSERT (val);
+    IDIO_C_ASSERT (op_C);
+    IDIO_C_ASSERT (free_me_p);
+
+    *free_me_p = 0;
+
+    if (idio_isa_symbol (val)) {
+	return IDIO_SYMBOL_S (val);
+    } else if (idio_isa_string (val)) {
+	size_t size = 0;
+	char *val_C = idio_string_as_C (val, &size);
+	size_t C_size = strlen (val_C);
+	if (C_size != size) {
+	    IDIO_GC_FREE (val_C);
+
+	    idio_command_format_error (op_C, "contains an ASCII NUL", var, val, c_location);
+
+	    /* notreached */
+	    return NULL;
+	}
+	*free_me_p = 1;
+
+	return val_C;
+    } else {
+	/*
+	 * Code coverage: coding error
+	 */
+	idio_error_param_type ("symbol|string", val, c_location);
+
+	/* notreached */
+	return NULL;
+    }
+}
+
 char **idio_command_get_envp ()
 {
     IDIO symbols = idio_module_visible_symbols (idio_thread_env_module (), idio_S_environ);
@@ -304,32 +342,27 @@ char **idio_command_get_envp ()
 
 	if (idio_S_false != val) {
 	    if (idio_isa_string (val)) {
-		size_t vlen  = 0;
-		char *sval = idio_string_as_C (val, &vlen);
-		size_t C_size = strlen (sval);
-		if (C_size != vlen) {
-		    IDIO_GC_FREE (sval);
+		int free_val_C = 0;
 
-		    /*
-		     * Test Case: command-errors/env-format.idio
-		     *
-		     * IDIO-LIB :* join-string (make-string 1 #U+0) '("hello" "world")
-		     * (env)
-		     */
-		    idio_command_format_error ("environ", "contains an ASCII NUL", symbol, val, IDIO_C_FUNC_LOCATION ());
-
-		    /* notreached */
-		    return NULL;
-		}
+		/*
+		 * Test Case: command-errors/env-format.idio
+		 *
+		 * IDIO-LIB :* join-string (make-string 1 #U+0) '("hello" "world")
+		 * (env)
+		 */
+		char *val_C = idio_command_string_C (symbol, val, "environ", &free_val_C, IDIO_C_FUNC_LOCATION ());
+		size_t vlen  = strlen (val_C);
 
 		envp[n] = idio_alloc (slen + 1 + vlen + 1);
 		strcpy (envp[n], IDIO_SYMBOL_S (symbol));
 		strcat (envp[n], "=");
-		strncat (envp[n], sval, vlen);
+		strncat (envp[n], val_C, vlen);
 		envp[n][slen + 1 + vlen] = '\0';
 		n++;
 
-		IDIO_GC_FREE (sval);
+		if (free_val_C) {
+		    IDIO_GC_FREE (val_C);
+		}
 	    } else {
 		/*
 		 * Test Case: command-errors/env-format.idio
@@ -359,7 +392,8 @@ char *idio_command_find_exe_C (char *command)
 
     IDIO PATH = idio_module_current_symbol_value_recurse (idio_env_PATH_sym, idio_S_nil);
 
-    char *spath = NULL;
+    int free_path_C = 0;
+    char *path_C = NULL;
     char *path;
     char *pathe;
     if (idio_S_undef == PATH ||
@@ -382,25 +416,15 @@ char *idio_command_find_exe_C (char *command)
 	path = idio_env_PATH_default;
 	pathe = path + strlen (path);
     } else {
-	size_t size = 0;
-	spath = idio_string_as_C (PATH, &size);
-	size_t C_size = strlen (spath);
-	if (C_size != size) {
-	    IDIO_GC_FREE (spath);
+	/*
+	 * Test Case: command-errors/PATH-format.idio
+	 *
+	 * PATH :* join-string (make-string 1 #U+0) '("hello" "world")
+	 * (env)
+	 */
+	path_C = idio_command_string_C (idio_env_PATH_sym, PATH, "find-exe", &free_path_C, IDIO_C_FUNC_LOCATION ());
 
-	    /*
-	     * Test Case: command-errors/PATH-format.idio
-	     *
-	     * PATH :* join-string (make-string 1 #U+0) '("hello" "world")
-	     * (env)
-	     */
-	    idio_command_format_error ("find-exe", "contains an ASCII NUL", idio_env_PATH_sym, PATH, IDIO_C_FUNC_LOCATION ());
-
-	    /* notreached */
-	    return NULL;
-	}
-
-	path = spath;
+	path = path_C;
 	pathe = path + idio_string_len (PATH);
     }
 
@@ -410,8 +434,8 @@ char *idio_command_find_exe_C (char *command)
     char exename[PATH_MAX];
     char cwd[PATH_MAX];
     if (getcwd (cwd, PATH_MAX) == NULL) {
-	if (spath){
-	    IDIO_GC_FREE (spath);
+	if (free_path_C){
+	    IDIO_GC_FREE (path_C);
 	}
 
 	/*
@@ -443,8 +467,8 @@ char *idio_command_find_exe_C (char *command)
 		 * %find-exe (string->symbol (make-string (C/->integer PATH_MAX) #\A))
 		 */
 
-		if (spath) {
-		    IDIO_GC_FREE (spath);
+		if (free_path_C) {
+		    IDIO_GC_FREE (path_C);
 		}
 
 		idio_error_system ("cwd+command exename length", NULL, IDIO_LIST2 (PATH, idio_string_C (command)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
@@ -471,8 +495,8 @@ char *idio_command_find_exe_C (char *command)
 		     * %find-exe (string->symbol (make-string (C/->integer PATH_MAX) #\A))
 		     */
 
-		    if (spath) {
-			IDIO_GC_FREE (spath);
+		    if (free_path_C) {
+			IDIO_GC_FREE (path_C);
 		    }
 
 		    idio_error_system ("PATH+command exename length", NULL, IDIO_LIST2 (PATH, idio_string_C (command)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
@@ -495,8 +519,8 @@ char *idio_command_find_exe_C (char *command)
 			 * %find-exe (string->symbol (make-string (C/->integer PATH_MAX) #\A))
 			 */
 
-			if (spath) {
-			    IDIO_GC_FREE (spath);
+			if (free_path_C) {
+			    IDIO_GC_FREE (path_C);
 			}
 
 			idio_error_system ("cwd+command exename length", NULL, IDIO_LIST2 (PATH, idio_string_C (command)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
@@ -523,8 +547,8 @@ char *idio_command_find_exe_C (char *command)
 			 * %find-exe (string->symbol (make-string (C/->integer PATH_MAX) #\A))
 			 */
 
-			if (spath) {
-			    IDIO_GC_FREE (spath);
+			if (free_path_C) {
+			    IDIO_GC_FREE (path_C);
 			}
 
 			idio_error_system ("dir+command exename length", NULL, IDIO_LIST2 (PATH, idio_string_C (command)), ENAMETOOLONG, IDIO_C_FUNC_LOCATION ());
@@ -552,8 +576,8 @@ char *idio_command_find_exe_C (char *command)
 		 * Can this fail if access(2) just above has succeeded?
 		 */
 
-		if (spath) {
-		    IDIO_GC_FREE (spath);
+		if (free_path_C) {
+		    IDIO_GC_FREE (path_C);
 		}
 
 		idio_error_system_errno ("stat", idio_string_C (exename), IDIO_C_FUNC_LOCATION ());
@@ -584,8 +608,8 @@ char *idio_command_find_exe_C (char *command)
 	strcpy (pathname, exename);
     }
 
-    if (spath) {
-	IDIO_GC_FREE (spath);
+    if (free_path_C) {
+	IDIO_GC_FREE (path_C);
     }
 
     return pathname;
@@ -595,45 +619,23 @@ char *idio_command_find_exe (IDIO func)
 {
     IDIO_ASSERT (func);
 
-    char *command = NULL;
-    int free_me = 0;
-    if (idio_isa_symbol (func)) {
-	command = IDIO_SYMBOL_S (func);
-    } else if (idio_isa_string (func)) {
-	size_t size = 0;
-	command = idio_string_as_C (func, &size);
-	size_t C_size = strlen (command);
-	if (C_size != size) {
-	    /*
-	     * Test Case: command-errors/find-exe-bad-format.idio
-	     *
-	     * %find-exe (join-string (make-string 1 #U+0) '("hello" "world"))
-	     */
-	    IDIO_GC_FREE (command);
+    int free_func_C = 0;
 
-	    idio_command_format_error ("command", "contains an ASCII NUL", idio_S_nil, func, IDIO_C_FUNC_LOCATION ());
+    /*
+     * Test Cases:
+     *   command-errors/find-exe-bad-format.idio
+     *   command-errors/find-exe-bad-type.idio
+     *
+     * %find-exe (join-string (make-string 1 #U+0) '("hello" "world"))
+     % %find-exe #t 2 3
+     */
+    char *func_C = idio_command_string_C (idio_S_nil, func, "command", &free_func_C, IDIO_C_FUNC_LOCATION ());
 
-	    /* notreached */
-	    return NULL;
-	}
-	free_me = 1;
-    } else {
-	/*
-	 * Test Case: command-errors/find-exe-bad-type.idio
-	 *
-	 * %find-exe #t 2 3
-	 */
-	idio_error_param_type ("symbol|string", func, IDIO_C_FUNC_LOCATION ());
+    if (strchr (func_C, '/') == NULL) {
+	char *r = idio_command_find_exe_C (func_C);
 
-	/* notreached */
-	return NULL;
-    }
-
-    if (strchr (command, '/') == NULL) {
-	char *r = idio_command_find_exe_C (command);
-
-	if (free_me) {
-	    IDIO_GC_FREE (command);
+	if (free_func_C) {
+	    IDIO_GC_FREE (func_C);
 	}
 
 	return r;
@@ -648,11 +650,11 @@ char *idio_command_find_exe (IDIO func)
 	 * ourr caller frees.  We then get a second attempt to free it
 	 * (from the symbol table) when the VM shuts down.
 	 */
-	char *cmdname = idio_alloc (strlen (command) + 1);
-	strcpy (cmdname, command);
+	char *cmdname = idio_alloc (strlen (func_C) + 1);
+	strcpy (cmdname, func_C);
 
-	if (free_me) {
-	    IDIO_GC_FREE (command);
+	if (free_func_C) {
+	    IDIO_GC_FREE (func_C);
 	}
 
 	return cmdname;
@@ -746,47 +748,16 @@ static ssize_t idio_command_possible_filename_glob (IDIO arg, glob_t *gp)
 {
     IDIO_ASSERT (arg);
 
-    int free_me = 0;
-    char *glob_C;
+    int free_glob_C = 0;
 
-    if (idio_isa_symbol (arg)) {
-	glob_C = IDIO_SYMBOL_S (arg);
-    } else if (idio_isa_string (arg)) {
-	size_t size = 0;
-	glob_C = idio_string_as_C (arg, &size);
-	size_t C_size = strlen (glob_C);
-	if (C_size != size) {
-	    /*
-	     * Test Case: command-errors/glob-format.idio
-	     *
-	     * str := join-string (make-string 1 #U+0) '("hello" "world")
-	     * path-glob := make-struct-instance ~path str
-	     * env path-glob
-	     */
-	    IDIO_GC_FREE (glob_C);
-
-	    idio_command_format_error ("glob", "contains an ASCII NUL", idio_S_nil, arg, IDIO_C_FUNC_LOCATION ());
-
-	    /* notreached */
-	    return 0;
-	}
-
-	free_me = 1;
-    } else {
-	/*
-	 * Test Case: ??
-	 *
-	 * The two calls to this function come from
-	 * idio_command_argv() which has determined they are either
-	 * string or the pattern part of the ~path struct type.
-	 *
-	 * Coding error?
-	 */
-	idio_error_param_type ("symbol|string", arg, IDIO_C_FUNC_LOCATION ());
-
-	/* notreached */
-	return -1;
-    }
+    /*
+     * Test Case: command-errors/glob-format.idio
+     *
+     * str := join-string (make-string 1 #U+0) '("hello" "world")
+     * path-glob := make-struct-instance ~path str
+     * env path-glob
+     */
+    char *glob_C = idio_command_string_C (idio_S_nil, arg, "glob", &free_glob_C, IDIO_C_FUNC_LOCATION ());
 
     char *match = idio_command_glob_charp (glob_C);
 
@@ -831,7 +802,7 @@ static ssize_t idio_command_possible_filename_glob (IDIO arg, glob_t *gp)
 	     * But we don't pass GLOB_ERR and the test is commented
 	     * out so we don't get here.
 	     */
-	    if (free_me) {
+	    if (free_glob_C) {
 		IDIO_GC_FREE (glob_C);
 	    }
 
@@ -842,7 +813,7 @@ static ssize_t idio_command_possible_filename_glob (IDIO arg, glob_t *gp)
 	}
     }
 
-    if (free_me) {
+    if (free_glob_C) {
 	IDIO_GC_FREE (glob_C);
     }
 
@@ -921,22 +892,14 @@ char **idio_command_argv (IDIO args)
 		case IDIO_TYPE_STRING:
 		case IDIO_TYPE_SUBSTRING:
 		    {
-			size_t size = 0;
-			argv[i] = idio_string_as_C (arg, &size);
-			size_t C_size = strlen (argv[i]);
-			if (C_size != size) {
-			    IDIO_GC_FREE (argv[i]);
+			int free_argv_i = 0;
 
-			    /*
-			     * Test Case: command-errors/arg-string-format.idio
-			     *
-			     * env (join-string (make-string 1 #U+0) '("hello" "world"))
-			     */
-			    idio_command_format_error ("argument", "contains an ASCII NUL", idio_S_nil, arg, IDIO_C_FUNC_LOCATION ());
-
-			    /* notreached */
-			    return NULL;
-			}
+			/*
+			 * Test Case: command-errors/arg-string-format.idio
+			 *
+			 * env (join-string (make-string 1 #U+0) '("hello" "world"))
+			 */
+			argv[i] = idio_command_string_C (idio_S_nil, arg, "argument", &free_argv_i, IDIO_C_FUNC_LOCATION ());
 			i++;
 		    }
 		    break;
