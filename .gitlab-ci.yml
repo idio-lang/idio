@@ -19,3 +19,6 @@ test-coverage:
     reports:
       cobertura: coverage.xml
 
+include:
+  - template: Security/SAST.gitlab-ci.yml
+
