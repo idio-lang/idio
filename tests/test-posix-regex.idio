@@ -148,11 +148,14 @@ define (pc s) {
 }
 
 test (pc "foobar")	'foo-before
-test (pc "prefoo")	'foo-before	; .* matches empty string
-test (pc "prefoobar")	'foo-before	; tested for first!
-test (pc "prebar")	'1-before-bar
-test (pc "barpost")	'1-after-bar
+test (pc "prefoo")	'foo-after	; .* matches empty string
+test (pc "foo")		'foo-before	; tested first
+test (pc "prefoobar")	'unknown
+test (pc "prebar")	'unknown
+test (pc "pbar")	'1-before-bar
+test (pc "barpost")	'unknown
+test (pc "barp")	'1-after-bar
 test (pc "bar")		'unknown
 
 ;; all done?
-Tests? (posix-regex-0 + 30)
+Tests? (posix-regex-0 + 33)

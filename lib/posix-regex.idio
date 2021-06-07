@@ -175,7 +175,7 @@ define-template (pattern-case e & clauses) {
 			       (else r))
 	 }
 
-	 s = loop s
+	 s = sprintf "^%s$" (loop s)
 	 array-push! *regcomp-array* (regcomp s)
   }) (regex-strings clauses #n)
 
