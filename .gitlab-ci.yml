@@ -1,4 +1,6 @@
 test-regular:
+  tags:
+    - shell
   stage: test
   script:
     - make clean
@@ -6,6 +8,8 @@ test-regular:
     - ./utils/forced-tty-session ./bin/idio test
 
 test-coverage:
+  tags:
+    - shell
   stage: test
   script:
     - make clean
