@@ -513,10 +513,12 @@ test (collect-output hostname) HOSTNAME
 
 ;; execute a relative path command -- which means figuring one out!
 ;; Where is auto-exit, relative to us?  We must be somewhere in the
-;; hierarchy.  Probably.
-a-e-str := (regex-case PWD
-		       ("(.*)/src" {
-			   "../utils/bin/auto-exit"
+;; hierarchy.  Probably, GitLab CI shell puts us in
+;; .../builds/<RUNNER>/0/idio/idio and gitlab-runner exec shell in
+;; .../builds/0/project-0.
+a-e-str := (regex-case IDIO_EXE
+		       ("(.*)/bin/idio" {
+			 append-string r.1 "/utils/bin/auto-exit"
 		       })
 		       (else {
 			 "./utils/bin/auto-exit"
@@ -529,7 +531,7 @@ if (x? a-e-str) {
   ; 2. execute as a string
   test (a-e-str -E 0) #t
 } {
-  eprintf "x? %s in %s: failed\n" a-e-str PWD
+  eprintf "x? %s in %s with\nIDIO_EXE=%s\nPATH=%s: failed\n" a-e-str PWD IDIO_EXE PATH
 }
 
 ;; all done?
