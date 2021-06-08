@@ -262,9 +262,11 @@ file-handle-error-load "file-handle-errors/load-not-found.idio" "load: No such f
 
 file-handle-error-load "file-handle-errors/delete-file-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
 file-handle-error-load "file-handle-errors/delete-file-format.idio" "delete-file filename contains an ASCII NUL"
-if (environ? 'GITLAB_CI) {
-  ;; XXX -- no idea, something to do with Docker?
-  file-handle-error-load "file-handle-errors/delete-file-EACCESS.idio" "remove: No such file or directory"
+if (and (environ? 'GITLAB_CI)
+	(not (environ? 'GITLAB_USER_LOGIN))) {
+	  ;; XXX -- no idea, something to do with Docker?
+	  ;; sudo gitlab-runner exec shell test-regular
+	  file-handle-error-load "file-handle-errors/delete-file-EACCESS.idio" "remove: No such file or directory"
 } {
   file-handle-error-load "file-handle-errors/delete-file-EACCESS.idio" "remove: Permission denied"
 }
