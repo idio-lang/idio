@@ -23,13 +23,6 @@
 # -e should only apply to read (write?) and broken pipes
 set -ue
 
-# Grr.  GitLab CI in/with docker causes lsof to whine about nsfs file
-# systems which occludes the actual errors
-lsof ()
-{
-    command lsof ${GITLAB_CI:+-e /run/docker/netns} ${1+"$@"}
-}
-
 usage ()
 {
     (
@@ -141,7 +134,11 @@ lsof_data ()
 
     tmpfile=/tmp/${0##*/}.$$
 
-    lsof -a -p ${pid} -d 0-2 -F ftnri > ${tmpfile}
+    # Grr.  GitLab CI (requiring Docker) causes lsof to whine about
+    # nsfs file systems which occludes the actual errors
+    #
+    # /run/docker is only readable by root so add -w
+    lsof -w -a -p ${pid} -d 0-2 -F ftnri > ${tmpfile}
 
     while read line ; do
 	case "${line}" in
@@ -239,6 +236,12 @@ lsof_data ()
 		esac
 		;;
 	    esac
+
+	    case "${file}" in
+	    ${tmpfile})
+		error "WARNING: stdio[${fd}]=${file} == tmpfile==${tmpfile} ??"
+		;;
+	    esac
 	    stdio[fd]="${file}"
 	    ;;
 	esac
@@ -263,7 +266,7 @@ if [[ ${opt_input} ]] ; then
 	;;
     [0-2])
 	if [[ ${stdio[0]} != ${stdio[opt_input]} ]] ; then
-	    error "stdin: ${stdio[0]} != ${stdio[${opt_input}]}"
+	    error "stdin: stdio[0]=${stdio[0]} != stdio[${opt_input}]=${stdio[${opt_input}]}"
 	fi
 	;;
     /*)
@@ -297,7 +300,7 @@ if [[ ${opt_output} ]] ; then
 	;;
     [0-2])
 	if [[ ${stdio[1]} != ${stdio[opt_output]} ]] ; then
-	    error "stdout: ${stdio[1]} != ${stdio[${opt_output}]}"
+	    error "stdout: stdio[1]=${stdio[1]} != stdio[${opt_output}]=${stdio[${opt_output}]}"
 	fi
 	;;
     /*)
@@ -325,7 +328,7 @@ if [[ ${opt_error} ]] ; then
 	;;
     [0-2])
 	if [[ ${stdio[2]} != ${stdio[opt_error]} ]] ; then
-	    error "stderr: ${stdio[2]} != ${stdio[${opt_error}]}"
+	    error "stderr: stdio[2]=${stdio[2]} != stdio[${opt_error}]=${stdio[${opt_error}]}"
 	fi
 	;;
     /*)
