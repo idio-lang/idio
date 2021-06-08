@@ -528,6 +528,8 @@ if (x? a-e-str) {
 
   ; 2. execute as a string
   test (a-e-str -E 0) #t
+} {
+  eprintf "x? %s in %s: failed\n" a-e-str PWD
 }
 
 ;; all done?

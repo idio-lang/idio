@@ -153,14 +153,14 @@ tmpfile := (make-tmp-file)
 ;; read-only issues are collected under the guise of protection errors
 ;; (EACCES)
 chmod \= tmpfile
-protection-Tests0 := Tests
+protection-Errors0 := Errors
 file-handle-error-load "file-handle-errors/open-file-protection.idio" "open-file: Permission denied"
 file-handle-error-load "file-handle-errors/open-input-file-protection.idio" "open-input-file: Permission denied"
 file-handle-error-load "file-handle-errors/open-output-file-protection.idio" "open-output-file: Permission denied"
 if (and (environ? 'GITLAB_CI)
-	(Tests lt (protection-Tests0 + 3))) {
+	(Errors eq (protection-Errors0 + 3))) {
 	  eprintf "GITLAB_CI/Docker: permission tests fakery\n"
-	  Tests = protection-Tests0 + 3
+	  Errors = protection-Errors0
 }
 chmod +r tmpfile
 
