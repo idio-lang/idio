@@ -16,21 +16,28 @@
 #
 #
 
-# 
+#
 # io-check -- verify the stdin/out/err are what they should be
 #
 
 # -e should only apply to read (write?) and broken pipes
 set -ue
 
-usage () 
+# Grr.  GitLab CI in/with docker causes lsof to whine about nsfs file
+# systems which occludes the actual errors
+lsof ()
+{
+    command lsof ${GITLAB_CI:+-e /run/docker/netns} ${1+"$@"}
+}
+
+usage ()
 {
     (
-	echo "usage: $0 [options]" 
-	echo "where options are:" 
-	echo "	-i S		stdin is from S" 
-	echo "	-o D		stdout is to D" 	
-	echo "	-e D		stderr is to D" 	
+	echo "usage: $0 [options]"
+	echo "where options are:"
+	echo "	-i S		stdin is from S"
+	echo "	-o D		stdout is to D"
+	echo "	-e D		stderr is to D"
 	echo
 	echo "S/D can be:"
 	echo "  null		/dev/null"
@@ -159,7 +166,7 @@ lsof_data ()
 	n*)
 	    file="${line#n}"
 
-	    # Normalise the output of lsof.  
+	    # Normalise the output of lsof.
 	    #
 	    # pipe: On CentOS it reports "pipe" for a pipe 'device'.
 	    # On FreeBSD/Darwin it reports "->0x..." with a 64bit hex
@@ -244,12 +251,12 @@ lsof_data
 
 if [[ ${opt_input} ]] ; then
     case "${opt_input}" in
-    null) 
+    null)
 	if [[ ${stdio[0]} != /dev/null ]] ; then
 	    error "stdin: != /dev/null"
 	fi
 	;;
-    pipe) 
+    pipe)
 	if [[ ${ftype[0]} != PIPE ]] ; then
 	    error "stdin: != pipe"
 	fi
@@ -278,12 +285,12 @@ fi
 
 if [[ ${opt_output} ]] ; then
     case "${opt_output}" in
-    null) 
+    null)
 	if [[ ${stdio[1]} != /dev/null ]] ; then
 	    error "stdout: != /dev/null"
 	fi
 	;;
-    pipe) 
+    pipe)
 	if [[ ${ftype[1]} != PIPE ]] ; then
 	    error "stdout: != pipe"
 	fi
@@ -306,12 +313,12 @@ fi
 
 if [[ ${opt_error} ]] ; then
     case "${opt_error}" in
-    null) 
+    null)
 	if [[ ${stdio[2]} != /dev/null ]] ; then
 	    error "stderr: != /dev/null"
 	fi
 	;;
-    pipe) 
+    pipe)
 	if [[ ${ftype[2]} != PIPE ]] ; then
 	    error "stderr: != pipe"
 	fi

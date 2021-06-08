@@ -153,6 +153,7 @@ tmpfile := (make-tmp-file)
 ;; read-only issues are collected under the guise of protection errors
 ;; (EACCES)
 chmod \= tmpfile
+ls -la tmpfile
 file-handle-error-load "file-handle-errors/open-file-protection.idio" "open-file: Permission denied"
 file-handle-error-load "file-handle-errors/open-input-file-protection.idio" "open-input-file: Permission denied"
 file-handle-error-load "file-handle-errors/open-output-file-protection.idio" "open-output-file: Permission denied"

@@ -3,6 +3,7 @@ test-regular:
     - shell
   stage: test
   script:
+    - env | sort
     - make clean
     - make
     - ./utils/forced-tty-session ./bin/idio test
@@ -26,3 +27,9 @@ test-coverage:
 include:
   - template: Security/SAST.gitlab-ci.yml
 
+stages:
+- test
+sast:
+  tags:
+  - docker
+  stage: test

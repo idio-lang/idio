@@ -4,6 +4,7 @@ tmpfile := append-string tmpdir "/foo"
 chmod 0 tmpdir
 
 unwind-protect {
+  ls -la tmpdir
   delete-file tmpfile
 } {
   chmod +rwx tmpdir

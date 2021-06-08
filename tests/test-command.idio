@@ -512,7 +512,7 @@ test (true #U+61) #t
 test (collect-output hostname) HOSTNAME
 
 ;; execute a relative path command -- which means figuring one out!
-;; Where is auto-exe, relative to us?  We must be somewhere in the
+;; Where is auto-exit, relative to us?  We must be somewhere in the
 ;; hierarchy.  Probably.
 a-e-str := (regex-case PWD
 		       ("(.*)/src" {
