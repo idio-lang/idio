@@ -79,6 +79,8 @@ static const uint8_t idio_utf8d[] = {
     12,36,12,12,12,12,12,12,12,12,12,12,
 };
 
+static const char *hex_DIGITS = "0123456789ABCDEF";
+
 idio_unicode_t inline idio_utf8_decode (idio_unicode_t* state, idio_unicode_t* codep, idio_unicode_t byte)
 {
     idio_unicode_t type = idio_utf8d[byte];
@@ -256,6 +258,11 @@ char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted, int us
      * sequences
      */
     int is_pathname = 0;
+    switch (flags) {
+    case IDIO_STRING_FLAG_PATHNAME:
+	is_pathname = 1;
+	break;
+    }
     size_t i;
     size_t n = 0;
     for (i = 0; i < len; i++) {
@@ -271,7 +278,6 @@ char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted, int us
 	    c = s32[i];
 	    break;
 	case IDIO_STRING_FLAG_PATHNAME:
-	    is_pathname = 1;
 	    c = s8[i];
 	    break;
 	}
@@ -298,6 +304,12 @@ char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted, int us
 	    case '\v': n++; break;
 	    case '"': n++; break;
 	    case '\\': n++; break;
+	    default:
+		if (is_pathname &&
+		    ! isprint (c)) {
+		    /* c (1 char) -> \xhh (4 chars) */
+		    n += 3;
+		}
 	    }
 	}
     }
@@ -338,6 +350,7 @@ char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted, int us
 	}
 
 	char ec = 0;
+	char hex = 0;
 	if (escapes) {
 	    switch (c) {
 	    case '\a': ec = 'a'; break;
@@ -350,12 +363,23 @@ char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted, int us
 	    case '\v': ec = 'v'; break;
 	    case '"': ec = '"'; break;
 	    case '\\': ec = '\\'; break;
+	    default:
+		if (is_pathname &&
+		    ! isprint (c)) {
+		    hex = 1;
+		}
+
 	    }
 	}
 
 	if (ec) {
 	    r[n++] = '\\';
 	    r[n++] = ec;
+	} else if (hex) {
+	    r[n++] = '\\';
+	    r[n++] = 'x';
+	    r[n++] = hex_DIGITS[(c & 0xf0) >> 4];
+	    r[n++] = hex_DIGITS[(c & 0x0f)];
 	} else {
 	    if (is_pathname) {
 		r[n++] = c;

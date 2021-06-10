@@ -31,6 +31,10 @@ f1 := append-string d "/a"
 f2 := append-string d "/b"
 f3 := append-string d "/c"
 
+p1 := string->pathname f1
+p2 := string->pathname f2
+p3 := string->pathname f3
+
 with-output-to-file f1 (function () {
   display "123"
 })
@@ -89,9 +93,9 @@ p = make-struct-instance ~path (append-string d "/[a-z]")
 
 ;; The stat() sorts use "C/<" as a comparator, so numerically smallest
 ;; first
-test (sort-size p) (list f3 f2 f1)
-test (sort-mtime p) (list f1 f2 f3)
-test (sort-atime p) (list f3 f1 f2)
+test (sort-size p) (list p3 p2 p1)
+test (sort-mtime p) (list p1 p2 p3)
+test (sort-atime p) (list p3 p1 p2)
 
 rm -rf d
 

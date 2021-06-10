@@ -118,8 +118,7 @@ IDIO idio_src_properties;
 
 #define IDIO_OPEN_DELIMITER(c)	(IDIO_CHAR_LPAREN == (c) ||		\
 				 IDIO_CHAR_LBRACE == (c) ||		\
-				 IDIO_CHAR_LBRACKET == (c) ||		\
-				 IDIO_CHAR_LANGLE == (c))
+				 IDIO_CHAR_LBRACKET == (c))
 
 /*
  * IDIO_LIST_X are counters (up to 0xffff) for depths of various kinds
@@ -2586,7 +2585,8 @@ static IDIO idio_read_pathname (IDIO handle, IDIO lo, int depth)
 
     idio_unicode_t c = idio_getc_handle (handle);
 
-    while (IDIO_CHAR_DQUOTE != c) {
+    while (!(IDIO_OPEN_DELIMITER (c) ||
+	     IDIO_CHAR_DQUOTE == c)) {
 	if (i >= IDIO_STRING_IC) {
 	    /*
 	     * Test Case: read-errors/pathname-too-many-ic.idio
@@ -2620,11 +2620,47 @@ static IDIO idio_read_pathname (IDIO handle, IDIO lo, int depth)
     }
 
     /*
+     * Test Case: read-coverage/pathname-bracketing.idio
+     *
+     * #P" ({[ "
+     * #P( "{[ )
+     * #P{ "([ }
+     * #P[ "({ ]
+     */
+    char closedel = 0;
+    switch (c) {
+    case IDIO_CHAR_DQUOTE:
+	closedel = IDIO_CHAR_DQUOTE;
+	break;
+    case IDIO_CHAR_LPAREN:
+	closedel = IDIO_CHAR_RPAREN;
+	break;
+    case IDIO_CHAR_LBRACE:
+	closedel = IDIO_CHAR_RBRACE;
+	break;
+    case IDIO_CHAR_LBRACKET:
+	closedel = IDIO_CHAR_RBRACKET;
+	break;
+    default:
+	{
+	    /*
+	     * Can only get here if IDIO_OPEN_DELIMITER() doesn't
+	     * match the case entries above
+	     */
+	    char em[BUFSIZ];
+	    sprintf (em, "unexpected delimiter: %c (%#x)", c, c);
+	    idio_read_error_pathname (handle, lo, IDIO_C_FUNC_LOCATION (), em);
+
+	    return idio_S_notreached;
+	}
+    }
+
+    /*
      * Test Case: read-coverage/pathname.idio
      *
      * struct-instance? #P" *.c "
      */
-    IDIO e = idio_read_utf8_string (handle, lo, IDIO_CHAR_DQUOTE, idio_default_string_ic);
+    IDIO e = idio_read_path_string (handle, lo, closedel, idio_default_string_ic);
 
     return idio_struct_instance (idio_path_type, IDIO_LIST1 (e));
 }

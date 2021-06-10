@@ -236,7 +236,7 @@ IDIO idio_path_expand (IDIO p)
 	{
 	    size_t i;
 	    for (i = 0; i < g.gl_pathc; i++) {
-		r = idio_pair (idio_string_C (g.gl_pathv[i]), r);
+		r = idio_pair (idio_pathname_C (g.gl_pathv[i]), r);
 	    }
 	}
 	break;
