@@ -997,6 +997,36 @@ If no default value is supplied #\{space} is used.	\n\
     return so;
 }
 
+IDIO_DEFINE_PRIMITIVE1_DS ("string->pathname", string2pathname, (IDIO s), "s", "\
+return a pathname of the UTF-8 encoding of `s`\n\
+						\n\
+:param s: string				\n\
+:type s: string					\n\
+:return: pathname				\n\
+:rtype: pathname				\n\
+")
+{
+    IDIO_ASSERT (s);
+
+    /*
+     * Test Case: string-errors/string2pathname-bad-type.idio
+     *
+     * string->pathname #t
+     */
+    IDIO_USER_TYPE_ASSERT (string, s);
+
+    size_t size = 0;
+    char *s_C = NULL;
+
+    s_C = idio_string_as_C (s, &size);
+
+    IDIO r = idio_pathname_C_len (s_C, size);
+
+    IDIO_GC_FREE (s_C);
+
+    return r;
+}
+
 IDIO_DEFINE_PRIMITIVE1_DS ("string->list", string2list, (IDIO s), "s", "\
 return a list of the Unicode code points in `s`\n\
 						\n\
@@ -2999,6 +3029,7 @@ void idio_string_add_primitives ()
 {
     IDIO_ADD_PRIMITIVE (string_p);
     IDIO_ADD_PRIMITIVE (make_string);
+    IDIO_ADD_PRIMITIVE (string2pathname);
     IDIO_ADD_PRIMITIVE (string2list);
     IDIO_ADD_PRIMITIVE (list2string);
     IDIO_ADD_PRIMITIVE (string2symbol);

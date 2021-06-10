@@ -477,8 +477,12 @@ test (strip-string s "h" 'left) s
 test (strip-string "h" s)       "h"
 test (strip-string "h" s 'left) "h"
 
+; code coverage
+test (equal? (string->pathname "hello")   "hello")	#f
+test (equal? (string->pathname "hello") %P"hello")	#t
+
 ;; all done?
-Tests? (string0 + 318)
+Tests? (string0 + 320)
 
 ;Local Variables:
 ;mode: Idio

@@ -71,6 +71,8 @@ string-error-load "string-errors/make-string-unicode.idio" "bad parameter type: 
 string-error-load "string-errors/make-string-negative.idio" "string size: invalid"
 string-error-load "string-errors/make-string-bad-fill-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a unicode"
 
+string-error-load "string-errors/string2pathname-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
+
 string-error-load "string-errors/string2list-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
 
 string-error-load "string-errors/list2string-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a list"
@@ -145,4 +147,4 @@ string-error-load "string-errors/strip-string-bad-str-type.idio" "bad parameter 
 string-error-load "string-errors/strip-string-bad-discard-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
 
 ;; all done?
-Tests? (string-error0 + 60)
+Tests? (string-error0 + 61)
