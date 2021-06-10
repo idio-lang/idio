@@ -154,6 +154,7 @@ extern IDIO idio_condition_rt_function_arity_error_type;
 extern IDIO idio_condition_rt_module_error_type;
 extern IDIO idio_condition_rt_module_unbound_error_type;
 extern IDIO idio_condition_rt_module_symbol_unbound_error_type;
+extern IDIO idio_condition_rt_path_error_type;
 extern IDIO idio_condition_rt_glob_error_type;
 extern IDIO idio_condition_rt_command_error_type;
 extern IDIO idio_condition_rt_command_argv_type_error_type;

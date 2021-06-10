@@ -18,6 +18,22 @@
 ;;
 ;; test-unicode.idio
 ;;
+
+#*
+
+As a reminder, UTF-8 is, in effect, a run-length encoding where
+Unicode has mandated that the maximum length is four bytes.
+
+On the other hand, in this file, we refer to the internal Idio
+encoding of strings as arrays of Unicode code points which we maintain
+as arrays of 1 or 2 or 4 bytes depending on the width of the largest
+code point we see.
+
+So a UTF-8 encoding of code points between U+0800 and U+FFFF will be 3
+bytes but will go into a 4-byte array.
+
+*#
+
 unicode-test0 := Tests
 import unicode
 
@@ -323,6 +339,21 @@ string->list str
 string-set! str 0 #\i
 test str "ih"
 
+; we'll test end and not-end escapes -- a "short" (ie. not two hex
+; digit) \x escape is tricky to actually test as the exemplar string
+; is just as hard to generate!  Remember, #\a is a possible hex digit
+; and #\z is not.
+test "\x69a" "ia"
+test "\x6z" (append-string (make-string 1 #U+6) "z")
+test "a\x69" "ai"
+test "a\x6" (append-string "a" (make-string 1 #U+6))
+test "\u0069a" "ia"
+test "\u69z" "iz"
+test "a\u69" "ai"
+test "\U00000069a" "ia"
+test "\U69z" "iz"
+test "a\U69" "ai"
+
 ss := substring str 0 1
 string->list ss
 string-set! ss 0 #\j
@@ -344,6 +375,19 @@ string->list str
 string-set! str 0 #U+129		; LATIN SMALL LETTER I WITH TILDE
 test (string-ref str 0) #U+129
 
+; after the end/not-end including \x tests above we now want to do
+; code coverage of the possible 2-byte Unicode code points
+test "\u0135a" "ĵa"			; LATIN SMALL LETTER J WITH CIRCUMFLEX
+test "\u135z" "ĵz"
+test "a\u135" "aĵ"
+test "\U00000135a" "ĵa"
+test "\U135z" "ĵz"
+test "a\U135" "aĵ"
+
+; test case insensitivity while we're here
+test "\uF06z" "༆z"			; TIBETAN MARK CARET YIG MGO PHUR SHAD MA
+test "a\Uf06" "a༆"
+
 ss := substring str 0 1
 string->list ss
 string-set! ss 0 #U+135			; LATIN SMALL LETTER J WITH CIRCUMFLEX
@@ -356,6 +400,7 @@ test str "ĵħ"
 ; coverage: 2-byte substring copy
 copy-string ss
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; 4-byte code points
 c = #U+1FBF8
 str = make-string 2 c
@@ -363,6 +408,10 @@ string->list str
 string-set! str 0 #U+1FBF1		; SEGMENTED DIGIT 1
 test (string-ref str 0) #U+1FBF1
 test str "🯱🯸"				; "18"
+
+; cannot use \u for 5 hex digits
+test "\U1fbf7z" "🯷z"
+test "a\U1fbf7" "a🯷"
 
 ss := substring str 0 1
 string->list ss
@@ -466,4 +515,4 @@ test (unicode-safe "foo") "foo"
 test (unicode-safe "ħ") "ħ"
 
 ;; all done?
-Tests? (unicode-test0 + 210)
+Tests? (unicode-test0 + 230)

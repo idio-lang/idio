@@ -185,6 +185,9 @@ define-condition-type-accessors-only ^rt-module-unbound-error		^rt-module-error	
 define-condition-type-accessors-only ^rt-module-symbol-unbound-error	^rt-module-error		rt-module-symbol-unbound-error? \
 	(symbol rt-module-symbol-unbound-error-symbol)
 
+define-condition-type-accessors-only ^rt-path-error			^runtime-error			rt-path-error? \
+	(pattern rt-path-error-pathname)
+
 define-condition-type-accessors-only ^rt-glob-error			^runtime-error			rt-glob-error? \
 	(pattern rt-glob-error-pattern)
 
@@ -332,6 +335,10 @@ define (condition-report prefix c & args) "print a report on condition `c`
      iem c
      ; annoyingly c.module resolves module to #undef
      cr-printf ": module '%s'" (module-name (rt-module-error-module c))
+   })
+   ((rt-path-error? c) {
+     iem c
+     cr-printf ": pathname '%s'" c.pathname
    })
    ((rt-glob-error? c) {
      iem c

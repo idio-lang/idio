@@ -516,6 +516,26 @@ static void idio_read_error_pathname (IDIO handle, IDIO lo, IDIO c_location, cha
     /* notreached */
 }
 
+static void idio_read_error_integer (IDIO handle, IDIO lo, IDIO c_location, char *msg)
+{
+    IDIO_ASSERT (handle);
+    IDIO_ASSERT (lo);
+    IDIO_ASSERT (c_location);
+    IDIO_C_ASSERT (msg);
+
+    IDIO_TYPE_ASSERT (handle, handle);
+    IDIO_TYPE_ASSERT (struct_instance, lo);
+    IDIO_TYPE_ASSERT (string, c_location);
+
+    IDIO sh = idio_open_output_string_handle_C ();
+    idio_display_C ("integer: ", sh);
+    idio_display_C (msg, sh);
+
+    idio_read_error (handle, lo, c_location, idio_get_output_string (sh));
+
+    /* notreached */
+}
+
 static void idio_read_error_bignum (IDIO handle, IDIO lo, IDIO c_location, char *msg)
 {
     IDIO_ASSERT (handle);
@@ -579,6 +599,7 @@ static void idio_read_error_unicode_decode (IDIO handle, IDIO lo, IDIO c_locatio
 static IDIO idio_read_1_expr (IDIO handle, idio_unicode_t *ic, int depth);
 static IDIO idio_read_block (IDIO handle, IDIO lo, IDIO closedel, idio_unicode_t *ic, int depth);
 static IDIO idio_read_number_C (IDIO handle, char *str);
+static uintmax_t idio_read_uintmax_radix (IDIO handle, IDIO lo, char basec, int radix, int lim);
 static IDIO idio_read_bignum_radix (IDIO handle, IDIO lo, char basec, int radix);
 static IDIO idio_read_unescape (IDIO ls);
 static IDIO idio_read_named_character (IDIO handle, IDIO lo);
@@ -1525,9 +1546,13 @@ static void idio_read_sl_block_comment (IDIO handle, IDIO lo, int depth)
  *    valid prefix expecting another byte then it will fail UTF-8
  *    decoding
  */
-static IDIO idio_read_string (IDIO handle, IDIO lo, idio_unicode_t delim, idio_unicode_t *ic)
+
+#define IDIO_READ_STRING_UTF8	(1<<0)
+#define IDIO_READ_STRING_PATH	(1<<1)
+static IDIO idio_read_string (IDIO handle, IDIO lo, idio_unicode_t delim, idio_unicode_t *ic, int flag)
 {
     IDIO_ASSERT (handle);
+    IDIO_C_ASSERT (ic);
 
     /*
      * In a feeble attempt to reduce fragmentation we can imagine
@@ -1627,6 +1652,7 @@ static IDIO idio_read_string (IDIO handle, IDIO lo, idio_unicode_t delim, idio_u
 		continue;
 	    }
 	} else {
+	    int use_c = 1;
 	    if (esc) {
 		switch (c) {
 		    /*
@@ -1651,10 +1677,81 @@ static IDIO idio_read_string (IDIO handle, IDIO lo, idio_unicode_t delim, idio_u
 		    /* \NL (line continuation) - ignored => NL (newline) */
 
 		case 'x':
-		    /* idio_read_hex2 */
+		    c = idio_read_uintmax_radix (handle, lo, c, 16, 2);
 		    break;
 
-		    /* \u hhhh UTF-16 */
+		case 'u':
+		case 'U':
+		    {
+			/*
+			 * Our goal here is to reproduce what would
+			 * have been the UTF-8 representation of the
+			 * code point identified by the hex digits
+			 * we're about to read in.
+			 *
+			 * idio_string_C_len() will recompose them
+			 * into an Idio internal 1/2/4 bytes width
+			 * string.
+			 *
+			 * idio_pathname_C_len() will take the string
+			 * verbatim -- which primarily affects \x
+			 * above.
+			 */
+			int lim = 8;
+			switch (c) {
+			case 'u': lim = 4; break;
+			}
+			uintmax_t u = idio_read_uintmax_radix (handle, lo, c, 16, lim);
+
+			char b[4];
+			int n;
+			if (u > 0x10ffff) {
+			    /*
+			     * Test Case: ??
+			     *
+			     * Coding error.
+			     */
+			    /*
+			     * Hopefully, this is guarded against elsewhere
+			     */
+			    fprintf (stderr, "integer: oops u=%jx > 0x10ffff\n", u);
+			    idio_error_param_value ("codepoint", "out of bounds", IDIO_C_FUNC_LOCATION ());
+
+			    /* notreached */
+			    return NULL;
+			} else if (u >= 0x10000) {
+			    b[0] = 0xf0 | ((u & (0x07 << 18)) >> 18);
+			    b[1] = 0x80 | ((u & (0x3f << 12)) >> 12);
+			    b[2] = 0x80 | ((u & (0x3f << 6)) >> 6);
+			    b[3] = 0x80 | ((u & (0x3f << 0)) >> 0);
+			    n = 4;
+			} else if (u >= 0x0800) {
+			    b[0] = 0xe0 | ((u & (0x0f << 12)) >> 12);
+			    b[1] = 0x80 | ((u & (0x3f << 6)) >> 6);
+			    b[2] = 0x80 | ((u & (0x3f << 0)) >> 0);
+			    n = 3;
+			} else if (u >= 0x0080) {
+			    b[0] = 0xc0 | ((u & (0x1f << 6)) >> 6);
+			    b[1] = 0x80 | ((u & (0x3f << 0)) >> 0);
+			    n = 2;
+			} else {
+			    b[0] = u & 0x7f;
+			    n = 1;
+			}
+
+			if ((slen + n) >= alen) {
+			    alen += IDIO_STRING_CHUNK_LEN;
+			    abuf = idio_realloc (abuf, alen);
+			}
+
+			for (int i = 0; i < n; i++) {
+			    abuf[slen++] = b[i];
+			}
+
+			use_c = 0;
+		    }
+		    break;
+
 		    /* \e ESC (\x1B) GCC extension */
 
 		default:
@@ -1662,7 +1759,10 @@ static IDIO idio_read_string (IDIO handle, IDIO lo, idio_unicode_t delim, idio_u
 		    break;
 		}
 	    }
-	    abuf[slen++] = c;
+
+	    if (use_c) {
+		abuf[slen++] = c;
+	    }
 	}
 
 	if (esc) {
@@ -1677,23 +1777,42 @@ static IDIO idio_read_string (IDIO handle, IDIO lo, idio_unicode_t delim, idio_u
 
     abuf[slen] = '\0';
 
-    IDIO s = idio_string_C_len (abuf, slen);
-    IDIO_FLAGS (s) |= IDIO_FLAG_CONST;
+    switch (flag) {
+    case IDIO_READ_STRING_UTF8:
+	{
+	    IDIO s = idio_string_C_len (abuf, slen);
+	    IDIO_FLAGS (s) |= IDIO_FLAG_CONST;
 
-    if (ic[0]) {
-	r = idio_pair (s, r);
-	r = idio_list_reverse (r);
-	r = IDIO_LIST2 (idio_S_concatenate_string,
-			IDIO_LIST3 (idio_S_map,
-				    idio_S_2string,
-				    idio_list_append2 (IDIO_LIST1 (idio_S_list),
-						       r)));
-    } else {
-	r = s;
+	    if (ic[0]) {
+		r = idio_pair (s, r);
+		r = idio_list_reverse (r);
+		r = IDIO_LIST2 (idio_S_concatenate_string,
+				IDIO_LIST3 (idio_S_map,
+					    idio_S_2string,
+					    idio_list_append2 (IDIO_LIST1 (idio_S_list),
+							       r)));
+	    } else {
+		r = s;
+	    }
+	}
+	break;
+    case IDIO_READ_STRING_PATH:
+	r = idio_pathname_C_len (abuf, slen);
+	break;
     }
 
     IDIO_GC_FREE (abuf);
     return r;
+}
+
+static IDIO idio_read_utf8_string (IDIO handle, IDIO lo, idio_unicode_t delim, idio_unicode_t *ic)
+{
+    return idio_read_string (handle, lo, delim, ic, IDIO_READ_STRING_UTF8);
+}
+
+static IDIO idio_read_path_string (IDIO handle, IDIO lo, idio_unicode_t delim, idio_unicode_t *ic)
+{
+    return idio_read_string (handle, lo, delim, ic, IDIO_READ_STRING_PATH);
 }
 
 /*
@@ -2505,7 +2624,7 @@ static IDIO idio_read_pathname (IDIO handle, IDIO lo, int depth)
      *
      * struct-instance? #P" *.c "
      */
-    IDIO e = idio_read_string (handle, lo, IDIO_CHAR_DQUOTE, idio_default_string_ic);
+    IDIO e = idio_read_utf8_string (handle, lo, IDIO_CHAR_DQUOTE, idio_default_string_ic);
 
     return idio_struct_instance (idio_path_type, IDIO_LIST1 (e));
 }
@@ -2599,7 +2718,7 @@ static IDIO idio_read_istring (IDIO handle, IDIO lo, int depth)
 	}
     }
 
-    IDIO r = idio_read_string (handle, lo, closedel, is_ic);
+    IDIO r = idio_read_utf8_string (handle, lo, closedel, is_ic);
 
     return r;
 }
@@ -2669,18 +2788,6 @@ static IDIO idio_read_template (IDIO handle, IDIO lo, int depth)
 	closedel = idio_T_rbracket;
 	depth = IDIO_LIST_BRACKET (depth + 1);
 	break;
-    case IDIO_CHAR_LANGLE:
-	/*
-	 * Test Case: read-coverage/template-bracketing.idio
-	 *
-	 * #T< 1 >
-	 *
-	 * XXX This case has been removed as the > is interpreted as
-	 * an operator and we get an EOF error
-	 */
-	closedel = idio_T_rangle;
-	depth = IDIO_LIST_ANGLE (depth + 1);
-	break;
     default:
 	{
 	    /*
@@ -2718,6 +2825,98 @@ static IDIO idio_read_template (IDIO handle, IDIO lo, int depth)
 
 	return r;
     }
+}
+
+/*
+ * Annoyingly similar to reading in bignums, see
+ * idio_read_bignum_radix, but used for escape sequences inside
+ * strings where we (usually) limit the number of characters read in
+ *
+ * XXX How do we avoid, say, base=16 and lim=9 which will overflow a
+ * uintmax_t?
+ */
+static uintmax_t idio_read_uintmax_radix (IDIO handle, IDIO lo, char basec, int radix, int lim)
+{
+    IDIO_ASSERT (handle);
+
+    idio_unicode_t c = idio_getc_handle (handle);
+
+    /*
+     * EOF will be caught as no digits below which is a clearer error
+     * message and handles more case
+     */
+
+    char digits[] = "0123456789abcdefghijklmnopqrstuvwxyz"; /* base 36 is possible */
+    char DIGITS[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"; /* base 36 is possible */
+    int max_base = strlen (digits);
+
+    if (radix > max_base) {
+	/*
+	 * Shouldn't get here unless someone changes the parser to
+	 * allow non-canonical radices, "\q1", say.
+	 */
+	char em[BUFSIZ];
+	sprintf (em, "base #%c (%d) > max base %d", basec, radix, max_base);
+	idio_read_error_integer (handle, lo, IDIO_C_FUNC_LOCATION (), em);
+
+	/* notreached */
+	return 0;
+    }
+
+    uintmax_t base = radix;
+    uintmax_t ui = 0;
+
+    int ndigits = 0;
+    while (! (IDIO_SEPARATOR (c) ||
+	       (lim &&
+		ndigits >= lim))) {
+	if (idio_eofp_handle (handle)) {
+	    /*
+	     * Hmm, this gets picked up by EOF in a string
+	     */
+	    break;
+	}
+
+	int di = 0;
+	while (digits[di] &&
+	       (digits[di] != c &&
+		DIGITS[di] != c)) {
+	    di++;
+	}
+
+	if (di >= radix) {
+	    break;
+	}
+
+	ui *= base;
+	ui += di;
+	ndigits++;
+
+	c = idio_getc_handle (handle);
+    }
+
+    if (0 == ndigits) {
+	/*
+	 * Test Case: read-errors/integer-no-digits.idio
+	 *
+	 * "\x"
+	 */
+	char em[BUFSIZ];
+	sprintf (em, "no digits after integer base #%c", basec);
+	idio_read_error_integer (handle, lo, IDIO_C_FUNC_LOCATION (), em);
+
+	/* notreached */
+	return 0;
+    }
+
+    /*
+     * We were ungetc'ing in EOF conditions -- which is confusing
+     */
+    if (idio_eofp_handle (handle) == 0) {
+	idio_ungetc_handle (handle, c);
+    }
+
+    return ui;
 }
 
 static IDIO idio_read_bignum_radix (IDIO handle, IDIO lo, char basec, int radix)
@@ -2768,7 +2967,6 @@ static IDIO idio_read_bignum_radix (IDIO handle, IDIO lo, char basec, int radix)
     IDIO bn = idio_bignum_integer_intmax_t (0);
 
     int ndigits = 0;
-    int i;
     while (! IDIO_SEPARATOR (c)) {
 	if (idio_eofp_handle (handle)) {
 	    /*
@@ -2781,14 +2979,14 @@ static IDIO idio_read_bignum_radix (IDIO handle, IDIO lo, char basec, int radix)
 	    break;
 	}
 
-	i = 0;
-	while (digits[i] &&
-	       (digits[i] != c &&
-		DIGITS[i] != c)) {
-	    i++;
+	int di = 0;
+	while (digits[di] &&
+	       (digits[di] != c &&
+		DIGITS[di] != c)) {
+	    di++;
 	}
 
-	if (i >= radix) {
+	if (di >= radix) {
 	    /*
 	     * Test Case: read-errors/bignum-invalid-digit.idio
 	     *
@@ -2806,7 +3004,7 @@ static IDIO idio_read_bignum_radix (IDIO handle, IDIO lo, char basec, int radix)
 	    return idio_S_notreached;
 	}
 
-	IDIO bn_i = idio_bignum_integer_intmax_t (i);
+	IDIO bn_i = idio_bignum_integer_intmax_t (di);
 
 	bn = idio_bignum_multiply (bn, base);
 	bn = idio_bignum_add (bn, bn_i);
@@ -3584,6 +3782,47 @@ static IDIO idio_read_1_expr_nl (IDIO handle, idio_unicode_t *ic, int depth, int
 		    }
 		}
 		break;
+	    case IDIO_CHAR_PERCENT:
+		{
+		    idio_unicode_t c2 = idio_getc_handle (handle);
+		    if (idio_eofp_handle (handle)) {
+			/*
+			 * Test Case: read-errors/percent-format-eof.idio
+			 *
+			 * %
+			 */
+			idio_read_error_parse (handle, lo, IDIO_C_FUNC_LOCATION (), "%-format EOF");
+
+			return idio_S_notreached;
+		    }
+
+		    switch (c2) {
+			/* structured forms */
+		    case 'P':
+			{
+			    idio_unicode_t odelim = idio_getc_handle (handle);
+			    idio_unicode_t cdelim = odelim;
+			    switch (odelim) {
+			    case IDIO_CHAR_LBRACE:
+				cdelim = IDIO_CHAR_RBRACE;
+				break;
+			    case IDIO_CHAR_LBRACKET:
+				cdelim = IDIO_CHAR_RBRACKET;
+				break;
+			    default:
+				/* use odelim */
+				break;
+			    }
+			    idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_path_string (handle, lo, cdelim, idio_default_string_ic));
+			    return lo;
+			}
+		    default:
+			idio_ungetc_handle (handle, c2);
+			idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_word (handle, lo, c, ic));
+			return lo;
+		    }
+		}
+		break;
 	    case IDIO_PAIR_SEPARATOR:
 		{
 		    int cp = idio_peek_handle (handle);
@@ -3614,7 +3853,7 @@ static IDIO idio_read_1_expr_nl (IDIO handle, idio_unicode_t *ic, int depth, int
 		moved = 1;
 		break;
 	    case IDIO_CHAR_DQUOTE:
-		idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_string (handle, lo, IDIO_CHAR_DQUOTE, idio_default_string_ic));
+		idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_utf8_string (handle, lo, IDIO_CHAR_DQUOTE, idio_default_string_ic));
 		return lo;
 	    default:
 		idio_struct_instance_set_direct (lo, IDIO_LEXOBJ_EXPR, idio_read_word (handle, lo, c, ic));

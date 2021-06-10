@@ -198,6 +198,7 @@ convert `c` to an integer		\n\
 char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted, int use_prec)
 {
     IDIO_ASSERT (str);
+    IDIO_C_ASSERT (sizep);
 
     IDIO_TYPE_ASSERT (string, str);
 
@@ -254,6 +255,7 @@ char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted, int us
      * Figure out the number of bytes required including escape
      * sequences
      */
+    int is_pathname = 0;
     size_t i;
     size_t n = 0;
     for (i = 0; i < len; i++) {
@@ -267,6 +269,10 @@ char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted, int us
 	    break;
 	case IDIO_STRING_FLAG_4BYTE:
 	    c = s32[i];
+	    break;
+	case IDIO_STRING_FLAG_PATHNAME:
+	    is_pathname = 1;
+	    c = s8[i];
 	    break;
 	}
 
@@ -298,13 +304,20 @@ char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted, int us
 
     size_t bytes = n + 1;
     if (IDIO_UTF8_STRING_QUOTED == quoted) {
-	bytes += 2;
+	bytes += 2;		/* leading and trailing "s */
+	if (is_pathname) {
+	    bytes += 2;		/* leading %P */
+	}
     }
 
     char *r = idio_alloc (bytes);
 
     n = 0;
     if (IDIO_UTF8_STRING_QUOTED == quoted) {
+	if (is_pathname) {
+	    r[n++] = '%';
+	    r[n++] = 'P';
+	}
 	r[n++] = '"';
     }
     for (i = 0; i < len; i++) {
@@ -318,6 +331,9 @@ char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted, int us
 	    break;
 	case IDIO_STRING_FLAG_4BYTE:
 	    c = s32[i];
+	    break;
+	case IDIO_STRING_FLAG_PATHNAME:
+	    c = s8[i];
 	    break;
 	}
 
@@ -341,34 +357,38 @@ char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted, int us
 	    r[n++] = '\\';
 	    r[n++] = ec;
 	} else {
-	    if (c > 0x10ffff) {
-		/*
-		 * Test Case: ??
-		 *
-		 * Coding error.
-		 */
-		/*
-		 * Hopefully, this is guarded against elsewhere
-		 */
-		fprintf (stderr, "utf8-string: oops c=%x > 0x10ffff\n", c);
-		idio_error_param_value ("codepoint", "out of bounds", IDIO_C_FUNC_LOCATION ());
-
-		/* notreached */
-		return NULL;
-	    } else if (c >= 0x10000) {
-		r[n++] = 0xf0 | ((c & (0x07 << 18)) >> 18);
-		r[n++] = 0x80 | ((c & (0x3f << 12)) >> 12);
-		r[n++] = 0x80 | ((c & (0x3f << 6)) >> 6);
-		r[n++] = 0x80 | ((c & (0x3f << 0)) >> 0);
-	    } else if (c >= 0x0800) {
-		r[n++] = 0xe0 | ((c & (0x0f << 12)) >> 12);
-		r[n++] = 0x80 | ((c & (0x3f << 6)) >> 6);
-		r[n++] = 0x80 | ((c & (0x3f << 0)) >> 0);
-	    } else if (c >= 0x0080) {
-		r[n++] = 0xc0 | ((c & (0x1f << 6)) >> 6);
-		r[n++] = 0x80 | ((c & (0x3f << 0)) >> 0);
+	    if (is_pathname) {
+		r[n++] = c;
 	    } else {
-		r[n++] = c & 0x7f;
+		if (c > 0x10ffff) {
+		    /*
+		     * Test Case: ??
+		     *
+		     * Coding error.
+		     */
+		    /*
+		     * Hopefully, this is guarded against elsewhere
+		     */
+		    fprintf (stderr, "utf8-string: oops c=%x > 0x10ffff\n", c);
+		    idio_error_param_value ("codepoint", "out of bounds", IDIO_C_FUNC_LOCATION ());
+
+		    /* notreached */
+		    return NULL;
+		} else if (c >= 0x10000) {
+		    r[n++] = 0xf0 | ((c & (0x07 << 18)) >> 18);
+		    r[n++] = 0x80 | ((c & (0x3f << 12)) >> 12);
+		    r[n++] = 0x80 | ((c & (0x3f << 6)) >> 6);
+		    r[n++] = 0x80 | ((c & (0x3f << 0)) >> 0);
+		} else if (c >= 0x0800) {
+		    r[n++] = 0xe0 | ((c & (0x0f << 12)) >> 12);
+		    r[n++] = 0x80 | ((c & (0x3f << 6)) >> 6);
+		    r[n++] = 0x80 | ((c & (0x3f << 0)) >> 0);
+		} else if (c >= 0x0080) {
+		    r[n++] = 0xc0 | ((c & (0x1f << 6)) >> 6);
+		    r[n++] = 0x80 | ((c & (0x3f << 0)) >> 0);
+		} else {
+		    r[n++] = c & 0x7f;
+		}
 	    }
 	}
     }

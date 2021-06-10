@@ -191,6 +191,8 @@ read-error-load "read-errors/pathname-eof-emb.idio" "pathname: EOF" 2
 read-error-load "read-errors/bignum-invalid-digit.idio" "bignum: invalid digit 'a' in bignum base #d" 2
 read-error-load "read-errors/bignum-invalid-digit-emb.idio" "bignum: invalid digit 'a' in bignum base #d" 3
 
+read-error-load "read-errors/integer-no-digits.idio" "integer: no digits after integer base #x" 1
+
 read-error-load "read-errors/bignum-no-digits.idio" "bignum: no digits after bignum base #d" 1
 read-error-load "read-errors/bignum-no-digits-emb.idio" "bignum: no digits after bignum base #d" 2
 
@@ -297,4 +299,4 @@ read-error-load "read-errors/op-eof.idio" "EOF in list" 3
 read-error-load "read-errors/op-eof-emb.idio" "EOF in list" 4
 
 ;; all done?
-Tests? (read-error0 + 228)
+Tests? (read-error0 + 230)

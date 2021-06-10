@@ -24,6 +24,38 @@
 
 IDIO idio_path_type;
 
+static void idio_pathname_error (IDIO msg, IDIO detail, IDIO c_location)
+{
+    IDIO_ASSERT (msg);
+    IDIO_ASSERT (detail);
+    IDIO_ASSERT (c_location);
+
+    IDIO_TYPE_ASSERT (string, msg);
+    IDIO_TYPE_ASSERT (string, detail);
+    IDIO_TYPE_ASSERT (string, c_location);
+
+#ifdef IDIO_DEBUG
+    IDIO dsh = idio_open_output_string_handle_C ();
+    if (idio_S_nil != detail) {
+	idio_display (detail, dsh);
+	idio_display_C (": ", dsh);
+    }
+    idio_display (c_location, dsh);
+
+    detail = idio_get_output_string (dsh);
+#endif
+
+    IDIO c = idio_struct_instance (idio_condition_rt_path_error_type,
+				   IDIO_LIST4 (msg,
+					       idio_S_nil,
+					       detail,
+					       detail));
+
+    idio_raise_condition (idio_S_false, c);
+
+    /* notreached */
+}
+
 static void idio_path_base_error (IDIO msg, IDIO pattern, IDIO c_location)
 {
     IDIO_ASSERT (msg);
@@ -69,6 +101,88 @@ static void idio_path_error_C (char *msg, IDIO pattern, IDIO c_location)
     idio_path_base_error (idio_get_output_string (msh), pattern, c_location);
 
     /* notreached */
+}
+
+void idio_pathname_format_error (char *msg, IDIO str, IDIO c_location)
+{
+    IDIO_C_ASSERT (msg);
+    IDIO_ASSERT (str);
+    IDIO_ASSERT (c_location);
+
+    IDIO_TYPE_ASSERT (string, str);
+    IDIO_TYPE_ASSERT (string, c_location);
+
+    IDIO msh = idio_open_output_string_handle_C ();
+    idio_display_C ("pathname format: ", msh);
+    idio_display_C (msg, msh);
+
+    idio_pathname_error (idio_get_output_string (msh), str, c_location);
+
+    /* notreached */
+}
+
+IDIO idio_pathname_C_len (const char *s_C, size_t blen)
+{
+    IDIO_C_ASSERT (s_C);
+
+    IDIO so = idio_gc_get (IDIO_TYPE_STRING);
+
+    IDIO_GC_ALLOC (IDIO_STRING_S (so), blen + 1);
+    IDIO_STRING_BLEN (so) = blen;
+
+    uint8_t *us8 = (uint8_t *) IDIO_STRING_S (so);
+
+    uint8_t *us_C = (unsigned char *) s_C;
+    size_t i;
+    for (i = 0; i < blen; i++) {
+	if (0 == us_C[i]) {
+	    /*
+	     * Test Case: path-errors/pathname-bad-format.idio
+	     *
+	     * %P{hello\x0world}
+	     */
+	    char em[BUFSIZ];
+	    sprintf (em, "contains an ASCII NUL at %zd/%zd", i + 1, blen);
+	    idio_pathname_format_error (em, idio_string_C_len (s_C, blen), IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	}
+	us8[i] = (uint8_t) us_C[i];
+    }
+
+    IDIO_STRING_S (so)[i] = '\0';
+
+    IDIO_STRING_LEN (so) = blen;
+    IDIO_STRING_FLAGS (so) = IDIO_STRING_FLAG_PATHNAME;
+
+    return so;
+}
+
+IDIO idio_pathname_C (const char *s_C)
+{
+    IDIO_C_ASSERT (s_C);
+
+    return idio_pathname_C_len (s_C, strlen (s_C));
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("pathname?", pathname_p, (IDIO o), "o", "\
+test if `o` is an pathname				\n\
+						\n\
+:param o: object to test			\n\
+						\n\
+:return: #t if `o` is an pathname, #f otherwise	\n\
+")
+{
+    IDIO_ASSERT (o);
+
+    IDIO r = idio_S_false;
+
+    if (idio_isa_string (o) &&
+	(IDIO_STRING_FLAGS (o) & IDIO_STRING_FLAG_PATHNAME)) {
+	r = idio_S_true;
+    }
+
+    return r;
 }
 
 IDIO idio_path_expand (IDIO p)
@@ -148,12 +262,14 @@ IDIO idio_path_expand (IDIO p)
     return idio_list_reverse (r);
 }
 
+void idio_path_add_primitives ()
+{
+    IDIO_ADD_PRIMITIVE (pathname_p);
+}
+
 void idio_init_path ()
 {
-    /*
-     * Nothing to do here...
-     */
-    idio_module_table_register (NULL, NULL);
+    idio_module_table_register (idio_path_add_primitives, NULL);
 
     IDIO_DEFINE_STRUCT1 (idio_path_type, "~path", idio_S_nil, "pattern");
 }

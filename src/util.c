@@ -701,6 +701,24 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		    return 0;
 		}
 
+		/*
+		 * string flags is a bit squireely.  We've tacked
+		 * pathnames on the back of strings but strings can
+		 * have different widths and be The Same.
+		 *
+		 * So really we want to verify that if one os a
+		 * pathname then the other is too.
+		 */
+		if ((IDIO_STRING_FLAGS (o1) & IDIO_STRING_FLAG_PATHNAME) !=
+		    (IDIO_STRING_FLAGS (o2) & IDIO_STRING_FLAG_PATHNAME)) {
+		    /*
+		     * Code coverage:
+		     *
+		     * eq? "hello" %P"hello"
+		     */
+		    return 0;
+		}
+
 #ifdef IDIO_EQUAL_DEBUG
 		idio_equal_stat_increment (o1, o2, t0);
 #endif

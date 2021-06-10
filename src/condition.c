@@ -83,6 +83,7 @@ IDIO idio_condition_rt_function_arity_error_type;
 IDIO idio_condition_rt_module_error_type;
 IDIO idio_condition_rt_module_unbound_error_type;
 IDIO idio_condition_rt_module_symbol_unbound_error_type;
+IDIO idio_condition_rt_path_error_type;
 IDIO idio_condition_rt_glob_error_type;
 IDIO idio_condition_rt_array_error_type;
 IDIO idio_condition_rt_hash_error_type;
@@ -1101,6 +1102,7 @@ void idio_init_condition ()
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_module_error_type, "^rt-module-error", idio_condition_runtime_error_type, "module");
     IDIO_DEFINE_CONDITION0 (idio_condition_rt_module_unbound_error_type, "^rt-module-unbound-error", idio_condition_rt_module_error_type);
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_module_symbol_unbound_error_type, "^rt-module-symbol-unbound-error", idio_condition_rt_module_error_type, "symbol");
+    IDIO_DEFINE_CONDITION1 (idio_condition_rt_path_error_type, "^rt-path-error", idio_condition_runtime_error_type, "pathname");
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_glob_error_type, "^rt-glob-error", idio_condition_runtime_error_type, "pattern");
 
     IDIO_DEFINE_CONDITION0 (idio_condition_rt_command_error_type, "^rt-command-error", idio_condition_runtime_error_type);

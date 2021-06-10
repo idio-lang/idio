@@ -1,1 +1,7 @@
 struct-instance? #P" *.c "
+
+%P{ one }
+%P[ one ]
+%P" one "
+
+eq? "hello" %P"hello"

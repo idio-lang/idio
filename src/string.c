@@ -268,6 +268,9 @@ size_t idio_string_storage_size (IDIO s)
     case IDIO_STRING_FLAG_4BYTE:
 	width = 4;
 	break;
+    case IDIO_STRING_FLAG_PATHNAME:
+	width = 1;
+	break;
     default:
 	{
 	    /*

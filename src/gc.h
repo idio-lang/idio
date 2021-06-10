@@ -263,6 +263,7 @@ typedef uint8_t IDIO_I;
 #define IDIO_STRING_FLAG_1BYTE		(1<<0)
 #define IDIO_STRING_FLAG_2BYTE		(1<<1)
 #define IDIO_STRING_FLAG_4BYTE		(1<<2)
+#define IDIO_STRING_FLAG_PATHNAME	(1<<3)
 
 struct idio_string_s {
     /**

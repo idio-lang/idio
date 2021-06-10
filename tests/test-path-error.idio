@@ -44,7 +44,8 @@ path-error-load := {
     exp-tests := 1
 
     ;eprintf "loading #%s %s looking for %s\n" n filename msg
-    trap (^rt-glob-error
+    trap (^rt-path-error
+	  ^rt-glob-error
 	  ^rt-parameter-error) (function (c) {
 				  ;eprintf "path-error #%s: %s %s\n" n msg c.location
 				  test c.message msg
@@ -66,7 +67,8 @@ path-error-load := {
   }
 }
 
+path-error-load "path-errors/pathname-bad-format.idio" "pathname format: contains an ASCII NUL at 6/11"
 path-error-load "path-errors/pattern-bad-format.idio" "pattern contains an ASCII NUL"
 
 ;; all done?
-Tests? (path-error0 + 1)
+Tests? (path-error0 + 2)

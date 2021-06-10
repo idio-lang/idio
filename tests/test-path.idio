@@ -23,6 +23,9 @@ import libc
 
 path0 := Tests
 
+test (pathname? "hello")	#f
+test (pathname? %P"hello")	#t
+
 d := make-tmp-dir "idio-test-"
 f1 := append-string d "/a"
 f2 := append-string d "/b"
@@ -93,4 +96,4 @@ test (sort-atime p) (list f3 f1 f2)
 rm -rf d
 
 ;; all done?
-Tests? (path0 + 11)
+Tests? (path0 + 13)
