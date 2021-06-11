@@ -642,13 +642,13 @@ char *idio_command_find_exe (IDIO func)
     } else {
 	/*
 	 * Looks slightly pointless but our caller is going to free
-	 * the value returned and we don't want to free command
+	 * the value returned and we don't want to free {command}
 	 * prematurely.
 	 *
 	 * The test was "../bin/idio empty" which runs fine but *we*
-	 * accidentally returned command, the symbol ../bin/idio which
-	 * ourr caller frees.  We then get a second attempt to free it
-	 * (from the symbol table) when the VM shuts down.
+	 * accidentally returned {command}, the symbol ../bin/idio,
+	 * which our caller frees.  We then get a second attempt to
+	 * free it (from the symbol table) when the VM shuts down.
 	 */
 	char *cmdname = idio_alloc (strlen (func_C) + 1);
 	strcpy (cmdname, func_C);
@@ -685,7 +685,7 @@ find `command` on PATH				\n\
 	return idio_S_notreached;
     }
 
-    IDIO r = idio_string_C (pathname);
+    IDIO r = idio_pathname_C (pathname);
 
     IDIO_GC_FREE (pathname);
 

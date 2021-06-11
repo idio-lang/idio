@@ -34,15 +34,15 @@ fixnum-error-load := {
     ;eprintf "loading #%s %s looking for %s\n" n filename msg
     trap (^rt-fixnum-error
 	  ^rt-divide-by-zero-error
-	  ^rt-parameter-type-error) (function (c) {
-				       ;eprintf "fixnum-error #%s: %s %s\n" n msg c.location
-				       test c.message msg
+	  ^rt-parameter-error) (function (c) {
+				  ;eprintf "fixnum-error #%s: %s %s\n" n msg c.location
+				  test c.message msg
 
-				       if (not (string=? c.message msg)) {
-					 condition-report (append-string "fixnum-error-load: " filename) c (current-error-handle)
-				       }
-				       
-				       trap-return 'fixnum-error
+				  if (not (string=? c.message msg)) {
+				    condition-report (append-string "fixnum-error-load: " filename) c (current-error-handle)
+				  }
+
+				  trap-return 'fixnum-error
 	  }) {
 	    t0 := Tests
 	    (symbol-value 'load 'Idio) filename
@@ -100,9 +100,11 @@ fixnum-error-load "fixnum-errors/infix-eq-bad-type-2.idio" "bad parameter type: 
 fixnum-error-load "fixnum-errors/integer2char-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a integer"
 fixnum-error-load "fixnum-errors/integer2char-bignum-range.idio" "invalid integer"
 
+fixnum-error-load "fixnum-errors/integer2unicode-fixnum-invalid-code-point.idio" "Unicode code point U+D800 is invalid"
+fixnum-error-load "fixnum-errors/integer2unicode-bignum-invalid-code-point.idio" "Unicode code point U+D800 is invalid"
 fixnum-error-load "fixnum-errors/integer2unicode-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a integer"
-fixnum-error-load "fixnum-errors/integer2unicode-fixnum-range.idio" "invalid integer"
-fixnum-error-load "fixnum-errors/integer2unicode-bignum-range.idio" "invalid integer"
+fixnum-error-load "fixnum-errors/integer2unicode-fixnum-range.idio" "Unicode code point U+-1: cannot be negative"
+fixnum-error-load "fixnum-errors/integer2unicode-bignum-range.idio" "Unicode code point U+-1: cannot be negative"
 
 ;; all done?
-Tests? (fixnum-error0 + 26)
+Tests? (fixnum-error0 + 28)

@@ -80,6 +80,7 @@ handle-error-load "handle-errors/set-output-handle-bad-type.idio" "bad parameter
 handle-error-load "handle-errors/set-error-handle-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a handle"
 
 handle-error-load "handle-errors/write-char-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a unicode"
+handle-error-load "handle-errors/write-char-noncharacter.idio" "Unicode code point U+FDD0 is not a character"
 
 handle-error-load "handle-errors/display-bad-handle.idio" "handle write error"
 handle-error-load "handle-errors/display-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a output handle"
@@ -87,4 +88,4 @@ handle-error-load "handle-errors/display-bad-type.idio" "bad parameter type: '#t
 handle-error-load "handle-errors/handle-location-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a handle"
 
 ;; all done?
-Tests? (handle-error0 + 21)
+Tests? (handle-error0 + 22)

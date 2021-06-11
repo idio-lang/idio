@@ -93,6 +93,40 @@ idio_unicode_t inline idio_utf8_decode (idio_unicode_t* state, idio_unicode_t* c
     return *state;
 }
 
+int idio_unicode_valid_code_point (idio_unicode_t cp)
+{
+    if (/* too big */
+	cp > 0x10FFFF ||
+	/* too small */
+	cp < 0 ||
+	/* high-surrogate & low-surrogate */
+	(cp >= 0xD800 &&
+	 cp <= 0xDFFF)) {
+	return 0;
+    }
+
+    return 1;
+}
+
+/*
+ * Called by write-char -- if you want to write out noncharacter
+ * Unicode code points use a string with a \xhh escape.
+ */
+int idio_unicode_character_code_point (idio_unicode_t cp)
+{
+    if (idio_unicode_valid_code_point (cp) == 0 ||
+	/* non-characters */
+	(cp >= 0xFDD0 &&
+	 cp <= 0xFDEF) ||
+	/* 0xFFFE (byte-order) & 0xFFFF in any plane */
+	((cp & 0xFFFF) == 0xFFFE) ||
+	((cp & 0xFFFF) == 0xFFFF)) {
+	return 0;
+    }
+
+    return 1;
+}
+
 int idio_isa_unicode (IDIO o)
 {
     IDIO_ASSERT (o);
@@ -384,7 +418,23 @@ char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted, int us
 	    if (is_pathname) {
 		r[n++] = c;
 	    } else {
-		if (c > 0x10ffff) {
+		if (idio_unicode_valid_code_point (c)) {
+		    if (c >= 0x10000) {
+			r[n++] = 0xf0 | ((c & (0x07 << 18)) >> 18);
+			r[n++] = 0x80 | ((c & (0x3f << 12)) >> 12);
+			r[n++] = 0x80 | ((c & (0x3f << 6)) >> 6);
+			r[n++] = 0x80 | ((c & (0x3f << 0)) >> 0);
+		    } else if (c >= 0x0800) {
+			r[n++] = 0xe0 | ((c & (0x0f << 12)) >> 12);
+			r[n++] = 0x80 | ((c & (0x3f << 6)) >> 6);
+			r[n++] = 0x80 | ((c & (0x3f << 0)) >> 0);
+		    } else if (c >= 0x0080) {
+			r[n++] = 0xc0 | ((c & (0x1f << 6)) >> 6);
+			r[n++] = 0x80 | ((c & (0x3f << 0)) >> 0);
+		    } else {
+			r[n++] = c & 0x7f;
+		    }
+		} else {
 		    /*
 		     * Test Case: ??
 		     *
@@ -393,25 +443,12 @@ char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted, int us
 		    /*
 		     * Hopefully, this is guarded against elsewhere
 		     */
-		    fprintf (stderr, "utf8-string: oops c=%x > 0x10ffff\n", c);
-		    idio_error_param_value ("codepoint", "out of bounds", IDIO_C_FUNC_LOCATION ());
+		    char em[BUFSIZ];
+		    sprintf (em, "U+%04" PRIX32 " is invalid", c);
+		    idio_error_param_value ("utf8-string: Unicode code point", em, IDIO_C_FUNC_LOCATION ());
 
 		    /* notreached */
 		    return NULL;
-		} else if (c >= 0x10000) {
-		    r[n++] = 0xf0 | ((c & (0x07 << 18)) >> 18);
-		    r[n++] = 0x80 | ((c & (0x3f << 12)) >> 12);
-		    r[n++] = 0x80 | ((c & (0x3f << 6)) >> 6);
-		    r[n++] = 0x80 | ((c & (0x3f << 0)) >> 0);
-		} else if (c >= 0x0800) {
-		    r[n++] = 0xe0 | ((c & (0x0f << 12)) >> 12);
-		    r[n++] = 0x80 | ((c & (0x3f << 6)) >> 6);
-		    r[n++] = 0x80 | ((c & (0x3f << 0)) >> 0);
-		} else if (c >= 0x0080) {
-		    r[n++] = 0xc0 | ((c & (0x1f << 6)) >> 6);
-		    r[n++] = 0x80 | ((c & (0x3f << 0)) >> 0);
-		} else {
-		    r[n++] = c & 0x7f;
 		}
 	    }
 	}
@@ -427,7 +464,7 @@ char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted, int us
 }
 
 /*
- * construct a UTF-8 sequence from an Unicode code point
+ * construct a UTF-8 sequence from a Unicode code point
  *
  * caller must supply a char* (of at least 4 bytes) and an int* which
  * will be set to the number of bytes written to the char*
@@ -437,7 +474,23 @@ void idio_utf8_code_point (idio_unicode_t c, char *buf, int *sizep)
 {
     int n = 0;
 
-    if (c > 0x10ffff) {
+    if (idio_unicode_valid_code_point (c)) {
+	if (c >= 0x10000) {
+	    buf[n++] = 0xf0 | ((c & (0x07 << 18)) >> 18);
+	    buf[n++] = 0x80 | ((c & (0x3f << 12)) >> 12);
+	    buf[n++] = 0x80 | ((c & (0x3f << 6)) >> 6);
+	    buf[n++] = 0x80 | ((c & (0x3f << 0)) >> 0);
+	} else if (c >= 0x0800) {
+	    buf[n++] = 0xe0 | ((c & (0x0f << 12)) >> 12);
+	    buf[n++] = 0x80 | ((c & (0x3f << 6)) >> 6);
+	    buf[n++] = 0x80 | ((c & (0x3f << 0)) >> 0);
+	} else if (c >= 0x0080) {
+	    buf[n++] = 0xc0 | ((c & (0x1f << 6)) >> 6);
+	    buf[n++] = 0x80 | ((c & (0x3f << 0)) >> 0);
+	} else {
+	    buf[n++] = c & 0x7f;
+	}
+    } else {
 	/*
 	 * Test Case: ??
 	 *
@@ -446,25 +499,12 @@ void idio_utf8_code_point (idio_unicode_t c, char *buf, int *sizep)
 	/*
 	 * Hopefully, this is guarded against elsewhere
 	 */
-	fprintf (stderr, "utf8-code-point: oops c=%x > 0x10ffff\n", c);
-	idio_error_param_value ("codepoint", "out of bounds", IDIO_C_FUNC_LOCATION ());
+	char em[BUFSIZ];
+	sprintf (em, "U+%04" PRIX32 " is invalid", c);
+	idio_error_param_value ("utf-8: Unicode code point", em, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return;
-    } else if (c >= 0x10000) {
-	buf[n++] = 0xf0 | ((c & (0x07 << 18)) >> 18);
-	buf[n++] = 0x80 | ((c & (0x3f << 12)) >> 12);
-	buf[n++] = 0x80 | ((c & (0x3f << 6)) >> 6);
-	buf[n++] = 0x80 | ((c & (0x3f << 0)) >> 0);
-    } else if (c >= 0x0800) {
-	buf[n++] = 0xe0 | ((c & (0x0f << 12)) >> 12);
-	buf[n++] = 0x80 | ((c & (0x3f << 6)) >> 6);
-	buf[n++] = 0x80 | ((c & (0x3f << 0)) >> 0);
-    } else if (c >= 0x0080) {
-	buf[n++] = 0xc0 | ((c & (0x1f << 6)) >> 6);
-	buf[n++] = 0x80 | ((c & (0x3f << 0)) >> 0);
-    } else {
-	buf[n++] = c & 0x7f;
     }
 
     *sizep = n;

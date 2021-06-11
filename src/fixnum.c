@@ -1293,16 +1293,54 @@ convert integer `i` to a Unicode code point	\n\
     if (idio_isa_fixnum (i)) {
 	intptr_t iv = IDIO_FIXNUM_VAL (i);
 
-	if (iv >= 0 &&
-	    iv <= 0x10ffff) {
+	if (idio_unicode_valid_code_point (iv)) {
 	    u = IDIO_UNICODE (iv);
+	} else {
+	    char em[BUFSIZ];
+	    if (iv < 0) {
+		/*
+		 * Test Case: fixnum-errors/integer2unicode-fixnum-range.idio
+		 *
+		 * integer->unicode -1
+		 */
+		sprintf (em, "U+%" PRIdPTR ": cannot be negative", iv);
+	    } else {
+		/*
+		 * Test Case: fixnum-errors/integer2unicode-fixnum-invalid-code-point.idio
+		 *
+		 * integer->unicode #xd800
+		 */
+		sprintf (em, "U+%04" PRIXPTR " is invalid", iv);
+	    }
+	    idio_error_param_value ("Unicode code point", em, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
 	}
     } else if (idio_isa_bignum (i)) {
 	intptr_t iv = idio_bignum_intptr_t_value (i);
 
-	if (iv >= 0 &&
-	    iv <= 0x10ffff) {
+	if (idio_unicode_valid_code_point (iv)) {
 	    u = IDIO_UNICODE (iv);
+	} else {
+	    char em[BUFSIZ];
+	    if (iv < 0) {
+		/*
+		 * Test Case: fixnum-errors/integer2unicode-bignum-range.idio
+		 *
+		 * integer->unicode -1.0
+		 */
+		sprintf (em, "U+%" PRIdPTR ": cannot be negative", iv);
+	    } else {
+		/*
+		 * Test Case: fixnum-errors/integer2unicode-bignum-invalid-code-point.idio
+		 *
+		 * integer->unicode 55296e0
+		 */
+		sprintf (em, "U+%04" PRIXPTR " is invalid", iv);
+	    }
+	    idio_error_param_value ("Unicode code point", em, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
 	}
     } else {
 	/*
@@ -1311,17 +1349,6 @@ convert integer `i` to a Unicode code point	\n\
 	 * integer->unicode #t
 	 */
 	idio_error_param_type ("integer", i, IDIO_C_FUNC_LOCATION ());
-
-	return idio_S_notreached;
-    }
-
-    if (! idio_isa_unicode (u)) {
-	/*
-	 * Test Case: fixnum-errors/integer2unicode-bignum-range.idio
-	 *
-	 * integer->unicode -1.0
-	 */
-	idio_fixnum_number_error ("invalid integer", i, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }

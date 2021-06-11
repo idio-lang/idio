@@ -909,15 +909,17 @@ If no default value is supplied #\{space} is used.	\n\
 	IDIO_USER_TYPE_ASSERT (unicode, fill);
 
 	fillc = IDIO_UNICODE_VAL (fill);
-	if (fillc > 0x10ffff) {
+	if (idio_unicode_valid_code_point (fillc)) {
+	    if (fillc > 0xffff) {
+		flags = IDIO_STRING_FLAG_4BYTE;
+	    } else if (fillc > 0xff) {
+		flags = IDIO_STRING_FLAG_2BYTE;
+	    }
+	} else {
 	    /*
 	     * Hopefully, this is guarded against elsewhere
 	     */
-	    fprintf (stderr, "make-string: oops fillc=%#x > 0x10ffff\n", fillc);
-	} else if (fillc > 0xffff) {
-	    flags = IDIO_STRING_FLAG_4BYTE;
-	} else if (fillc > 0xff) {
-	    flags = IDIO_STRING_FLAG_2BYTE;
+	    fprintf (stderr, "make-string: oops fillc=%#x is invalid\n", fillc);
 	}
     }
 
@@ -1638,17 +1640,19 @@ IDIO idio_string_set (IDIO s, IDIO index, IDIO c)
 
     size_t cwidth = 0;
     idio_unicode_t uc = IDIO_UNICODE_VAL (c);
-    if (uc <= 0xff) {
-	cwidth = 1;
-    } else if (uc <= 0xffff) {
-	cwidth = 2;
-    } else if (uc > 0x10ffff) {
+    if (idio_unicode_valid_code_point (uc)) {
+	if (uc <= 0xff) {
+	    cwidth = 1;
+	} else if (uc <= 0xffff) {
+	    cwidth = 2;
+	} else {
+	    cwidth = 4;
+	}
+    } else {
 	/*
 	 * Hopefully, this is guarded against elsewhere
 	 */
-	fprintf (stderr, "string-set: oops c=%#x > 0x10ffff\n", uc);
-    } else {
-	cwidth = 4;
+	fprintf (stderr, "string-set: oops c=%#x is invalid\n", uc);
     }
 
     uint8_t *s8 = NULL;

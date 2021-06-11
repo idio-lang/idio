@@ -2956,7 +2956,27 @@ char *idio_display_string (IDIO o, size_t *sizep)
 	    case IDIO_TYPE_CONSTANT_UNICODE_MARK:
 		{
 		    idio_unicode_t u = IDIO_UNICODE_VAL (o);
-		    if (u > 0x10ffff) {
+		    if (idio_unicode_valid_code_point (u)) {
+			if (u >= 0x10000) {
+			    idio_asprintf (&r, "%c%c%c%c",
+					   0xf0 | ((u & (0x07 << 18)) >> 18),
+					   0x80 | ((u & (0x3f << 12)) >> 12),
+					   0x80 | ((u & (0x3f << 6)) >> 6),
+					   0x80 | ((u & (0x3f << 0)) >> 0));
+			} else if (u >= 0x0800) {
+			    idio_asprintf (&r, "%c%c%c",
+					   0xe0 | ((u & (0x0f << 12)) >> 12),
+					   0x80 | ((u & (0x3f << 6)) >> 6),
+					   0x80 | ((u & (0x3f << 0)) >> 0));
+			} else if (u >= 0x0080) {
+			    idio_asprintf (&r, "%c%c",
+					   0xc0 | ((u & (0x1f << 6)) >> 6),
+					   0x80 | ((u & (0x3f << 0)) >> 0));
+			} else {
+			    idio_asprintf (&r, "%c",
+					   u & 0x7f);
+			}
+		    } else {
 			/*
 			 * Test Case: ??
 			 *
@@ -2965,29 +2985,11 @@ char *idio_display_string (IDIO o, size_t *sizep)
 			/*
 			 * Hopefully, this is guarded against elsewhere
 			 */
-			fprintf (stderr, "display-string: oops u=%x > 0x10ffff\n", u);
+			fprintf (stderr, "display-string: oops u=%x is invalid\n", u);
 			idio_error_param_value ("codepoint", "out of bounds", IDIO_C_FUNC_LOCATION ());
 
 			/* notreached */
 			return NULL;
-		    } else if (u >= 0x10000) {
-			idio_asprintf (&r, "%c%c%c%c",
-				       0xf0 | ((u & (0x07 << 18)) >> 18),
-				       0x80 | ((u & (0x3f << 12)) >> 12),
-				       0x80 | ((u & (0x3f << 6)) >> 6),
-				       0x80 | ((u & (0x3f << 0)) >> 0));
-		    } else if (u >= 0x0800) {
-			idio_asprintf (&r, "%c%c%c",
-				       0xe0 | ((u & (0x0f << 12)) >> 12),
-				       0x80 | ((u & (0x3f << 6)) >> 6),
-				       0x80 | ((u & (0x3f << 0)) >> 0));
-		    } else if (u >= 0x0080) {
-			idio_asprintf (&r, "%c%c",
-				       0xc0 | ((u & (0x1f << 6)) >> 6),
-				       0x80 | ((u & (0x3f << 0)) >> 0));
-		    } else {
-			idio_asprintf (&r, "%c",
-				       u & 0x7f);
 		    }
 		    *sizep = strlen (r);
 		}

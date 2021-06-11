@@ -41,6 +41,8 @@
 #define IDIO_UTF8_STRING_NOPREC		0
 #define IDIO_UTF8_STRING_USEPREC	1
 
+int idio_unicode_valid_code_point (idio_unicode_t cp);
+int idio_unicode_character_code_point (idio_unicode_t cp);
 int idio_isa_unicode (IDIO o);
 idio_unicode_t idio_utf8_decode (idio_unicode_t* state, idio_unicode_t* codep, idio_unicode_t byte);
 void idio_utf8_code_point (idio_unicode_t c, char *buf, int *sizep);

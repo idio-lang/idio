@@ -99,5 +99,13 @@ test (sort-atime p) (list p3 p1 p2)
 
 rm -rf d
 
+; tickle the code for reading and printing a pathname string including
+; "exotic" characters
+osh := (open-output-string)
+pn := %P{\xA9 Ian}
+; grr, libc/write is found first
+*primitives*/write pn osh
+close-handle osh
+
 ;; all done?
 Tests? (path0 + 13)

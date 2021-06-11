@@ -1583,9 +1583,28 @@ or the current output handle				\n\
      */
     IDIO_USER_TYPE_ASSERT (unicode, c);
 
-    IDIO h = idio_handle_or_current (idio_list_head (args), IDIO_HANDLE_FLAG_WRITE);
+    /*
+     * If you want to write out noncharacter Unicode code points use a
+     * string with a \xhh escape.
+     */
+    idio_unicode_t c_C = IDIO_UNICODE_VAL (c);
+    if (idio_unicode_character_code_point (c_C)) {
+	IDIO h = idio_handle_or_current (idio_list_head (args), IDIO_HANDLE_FLAG_WRITE);
 
-    return idio_write_char (c, h);
+	return idio_write_char (c, h);
+    } else {
+	/*
+	 * Test Case: handle-errors/write-char-noncharacter.idio
+	 *
+	 * write-char (integer->unicode #xFDD0)
+	 */
+	char em[BUFSIZ];
+	sprintf (em, "U+%04" PRIX32 " is not a character", c_C);
+	idio_error_param_value ("Unicode code point", em, IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
+	return NULL;
+    }
 }
 
 IDIO_DEFINE_PRIMITIVE0V_DS ("newline", newline, (IDIO args), "[handle]", "\

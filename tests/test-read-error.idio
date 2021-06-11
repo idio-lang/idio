@@ -49,18 +49,18 @@ read-error-load := {
 
     ;eprintf "loading #%s %s looking for %s at line %s\n" n filename msg linenum
     trap (^read-error) (function (c) {
-			  ;eprintf "read-error #%s: %s %s %s\n" n msg c.location c.line
-			  test c.message msg
+				    ;eprintf "read-error #%s: %s %s %s\n" n msg c.location c.line
+				    test c.message msg
 
-			  test c.line linenum
+				    test c.line linenum
 
-			  if (or (not (string=? c.message msg))
-				 (not (eq? c.line linenum))) {
-				   condition-report (append-string "read-error-load: " filename) c (current-error-handle)
-				 }
-			  
-			  trap-return 'read-error
-    }) {
+				    if (or (not (string=? c.message msg))
+					   (not (eq? c.line linenum))) {
+					     condition-report (append-string "read-error-load: " filename) c (current-error-handle)
+					   }
+
+				    trap-return 'read-error
+	  }) {
       t0 := Tests
       (symbol-value 'load 'Idio) filename
       if (not (equal? Tests (t0 + exp-tests))) {
@@ -90,7 +90,7 @@ string-error-load := {
 			    if (not (string=? c.message msg)) {
 			      condition-report (append-string "string-error-load: " filename) c (current-error-handle)
 			    }
-			    
+
 			    trap-return 'string-error
     }) {
       t0 := Tests
@@ -147,6 +147,9 @@ read-error-load "read-errors/string-eof-emb.idio" "string: EOF" 2
 
 ; invalid UTF-8 sequences are replaced with U+FFFD (REPLACEMENT CHARACTER)
 ;string-error-load "read-errors/string-invalid-utf8.idio" "string UTF-8 decode: not well-formed" 1
+
+read-error-load "read-errors/string-unicode-invalid-code-point-1.idio" "string: Unicode code point U+D800 is invalid" 1
+read-error-load "read-errors/string-unicode-invalid-code-point-2.idio" "string: Unicode code point U+A92021 is invalid" 1
 
 read-error-load "read-errors/character-eof.idio" "UTF-8 decode: EOF" 1
 read-error-load "read-errors/character-incomplete-eof.idio" "UTF-8 decode: EOF" 1
@@ -299,4 +302,4 @@ read-error-load "read-errors/op-eof.idio" "EOF in list" 3
 read-error-load "read-errors/op-eof-emb.idio" "EOF in list" 4
 
 ;; all done?
-Tests? (read-error0 + 230)
+Tests? (read-error0 + 234)

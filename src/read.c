@@ -673,7 +673,7 @@ IDIO idio_read_unicode (IDIO handle, IDIO lo)
     /*
      * cp is unsigned to negative code points are now too big
      */
-    if (cp > 0x10ffff) {
+    if (idio_unicode_valid_code_point (cp) == 0) {
 	/*
 	 * Test Case: read-errors/unicode-too-big.idio
 	 *
@@ -1704,38 +1704,45 @@ static IDIO idio_read_string (IDIO handle, IDIO lo, idio_unicode_t delim, idio_u
 
 			char b[4];
 			int n;
-			if (u > 0x10ffff) {
+			if (idio_unicode_valid_code_point (u)) {
+			    if (u >= 0x10000) {
+				b[0] = 0xf0 | ((u & (0x07 << 18)) >> 18);
+				b[1] = 0x80 | ((u & (0x3f << 12)) >> 12);
+				b[2] = 0x80 | ((u & (0x3f << 6)) >> 6);
+				b[3] = 0x80 | ((u & (0x3f << 0)) >> 0);
+				n = 4;
+			    } else if (u >= 0x0800) {
+				b[0] = 0xe0 | ((u & (0x0f << 12)) >> 12);
+				b[1] = 0x80 | ((u & (0x3f << 6)) >> 6);
+				b[2] = 0x80 | ((u & (0x3f << 0)) >> 0);
+				n = 3;
+			    } else if (u >= 0x0080) {
+				b[0] = 0xc0 | ((u & (0x1f << 6)) >> 6);
+				b[1] = 0x80 | ((u & (0x3f << 0)) >> 0);
+				n = 2;
+			    } else {
+				b[0] = u & 0x7f;
+				n = 1;
+			    }
+			} else {
 			    /*
-			     * Test Case: ??
+			     * Test Cases:
 			     *
-			     * Coding error.
+			     *   read-errors/string-unicode-invalid-code-point-1.idio
+			     *   read-errors/string-unicode-invalid-code-point-2.idio
+			     *
+			     * "\uD800"
+			     * "\U00A92021"
+			     *
+			     * presumably meant to be "\u00A92021" for "©2021"
 			     */
-			    /*
-			     * Hopefully, this is guarded against elsewhere
-			     */
-			    fprintf (stderr, "integer: oops u=%jx > 0x10ffff\n", u);
-			    idio_error_param_value ("codepoint", "out of bounds", IDIO_C_FUNC_LOCATION ());
+			    char em[BUFSIZ];
+			    sprintf (em, "Unicode code point U+%04tX is invalid", u);
+
+			    idio_read_error_string (handle, lo, IDIO_C_FUNC_LOCATION (), em);
 
 			    /* notreached */
 			    return NULL;
-			} else if (u >= 0x10000) {
-			    b[0] = 0xf0 | ((u & (0x07 << 18)) >> 18);
-			    b[1] = 0x80 | ((u & (0x3f << 12)) >> 12);
-			    b[2] = 0x80 | ((u & (0x3f << 6)) >> 6);
-			    b[3] = 0x80 | ((u & (0x3f << 0)) >> 0);
-			    n = 4;
-			} else if (u >= 0x0800) {
-			    b[0] = 0xe0 | ((u & (0x0f << 12)) >> 12);
-			    b[1] = 0x80 | ((u & (0x3f << 6)) >> 6);
-			    b[2] = 0x80 | ((u & (0x3f << 0)) >> 0);
-			    n = 3;
-			} else if (u >= 0x0080) {
-			    b[0] = 0xc0 | ((u & (0x1f << 6)) >> 6);
-			    b[1] = 0x80 | ((u & (0x3f << 0)) >> 0);
-			    n = 2;
-			} else {
-			    b[0] = u & 0x7f;
-			    n = 1;
 			}
 
 			if ((slen + n) >= alen) {

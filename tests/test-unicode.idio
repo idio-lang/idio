@@ -425,6 +425,12 @@ test str "🯷🯸"				; "78"
 ; coverage: 4-byte substring copy
 test (copy-string ss) ss
 
+; Hmm, somehow a call using putc and a 4-byte UTF-8 sequence has
+; escaped us
+osh := (open-output-string)
+write-char #U+10000 osh
+close-handle osh
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; append-string returns the empty string if supplied with no args
 test (append-string) ""
