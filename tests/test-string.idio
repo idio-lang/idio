@@ -362,6 +362,31 @@ test (split-string "abcc" "c") '("ab")
 test (split-string "abc" "z") '("abc")
 test (split-string "" "z") '("")
 
+;; multiple characters in the delimiter
+test (split-string "abcd" "bc")  '("a" "d")
+test (split-string "abcd" "xbc") '("a" "d")
+test (split-string "abcd" "bxc") '("a" "d")
+test (split-string "abcd" "bcx") '("a" "d")
+test (split-string "abcd" "ax")  '("bcd")
+test (split-string "abcd" "xa")  '("bcd")
+test (split-string "abcd" "dx")  '("abc")
+test (split-string "abcd" "xd")  '("abc")
+
+test (split-string "abcd" "xy")  '("abcd")
+
+;; default to IFS
+;; IFS itself defaults to SPACE TAB NEWLINE
+test (split-string "hello world")     '("hello" "world")
+test (split-string "hello \t world")  '("hello" "world")
+test (split-string "hello
+world")  '("hello" "world")
+
+;; bespoke IFS
+{
+  IFS :~ "bc"
+  test (split-string "abcd")  '("a" "d")
+}
+
 ;; split-string will produce substrings so can we split those?
 ;; strtok(3) man page:
 
@@ -482,7 +507,7 @@ test (equal? (string->pathname "hello")   "hello")	#f
 test (equal? (string->pathname "hello") %P"hello")	#t
 
 ;; all done?
-Tests? (string0 + 320)
+Tests? (string0 + 333)
 
 ;Local Variables:
 ;mode: Idio

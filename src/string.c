@@ -2217,13 +2217,18 @@ IDIO_DEFINE_STRING_CI_PRIMITIVE2V ("string-ci>?", gt, >)
  */
 
 /*
+ * idio_strspn()
+ *
  * cf. size_t strspn(const char *s, const char *accept);
  *
- * The strspn() function calculates the length (in bytes) of the
- * initial segment of s which consists entirely of bytes in accept.
+ *   The strspn() function calculates the length (in bytes) of the
+ *   initial segment of s which consists entirely of bytes in accept.
  *
- * The strspn() function returns the number of bytes in the initial
- * segment of s which consist only of bytes from accept.
+ *   The strspn() function returns the number of bytes in the initial
+ *   segment of s which consist only of bytes from accept.
+ *
+ * Of course, we're returning the number of Unicode code points of the
+ * initial segment ...
  */
 static size_t idio_strspn (ptrdiff_t i, char *is, size_t ilen, size_t iw, char *as, size_t alen, size_t aw)
 {
@@ -2275,6 +2280,7 @@ static size_t idio_strspn (ptrdiff_t i, char *is, size_t ilen, size_t iw, char *
 	    break;
 	}
 
+	int seen = 0;
 	for (size_t ai = 0; ai < alen ; ai++) {
 	    idio_unicode_t acp = 0;
 	    switch (aw) {
@@ -2289,9 +2295,14 @@ static size_t idio_strspn (ptrdiff_t i, char *is, size_t ilen, size_t iw, char *
 		break;
 	    }
 
-	    if (icp != acp) {
-		return r;
+	    if (icp == acp) {
+		seen = 1;
+		break;
 	    }
+	}
+
+	if (0 == seen) {
+	    return r;
 	}
     }
 
@@ -2299,16 +2310,26 @@ static size_t idio_strspn (ptrdiff_t i, char *is, size_t ilen, size_t iw, char *
 }
 
 /*
+ * idio_strpbrk()
+ *
  * cf. char *strpbrk(const char *s, const char *accept);
  *
- * The strpbrk() function locates the first occurrence in the string s
- * of any of the bytes in the string accept.
+ *   The strpbrk() function locates the first occurrence in the string
+ *   s of any of the bytes in the string accept.
  *
- * The strpbrk() function returns a pointer to the byte in s that
- * matches one of the bytes in accept, or NULL if no such byte is
- * found.
+ *   The strpbrk() function returns a pointer to the byte in s that
+ *   matches one of the bytes in accept, or NULL if no such byte is
+ *   found.
+ *
+ *
+ * Note that the C string version of idio_strpbrk, using 'char *'s
+ * rather than offsets, can use NULL as a sentinel value -- which is
+ * outside of the string.  We're using offsets so must return an
+ * invalid offset such as -1.
  */
-static size_t idio_strpbrk (ptrdiff_t i, char *is, size_t ilen, size_t iw, char *as, size_t alen, size_t aw)
+#define IDIO_STRING_STRPBRK_SENTINEL	-1
+
+static ptrdiff_t idio_strpbrk (ptrdiff_t i, char *is, size_t ilen, size_t iw, char *as, size_t alen, size_t aw)
 {
     uint8_t *is8 = NULL;
     uint16_t *is16 = NULL;
@@ -2342,7 +2363,7 @@ static size_t idio_strpbrk (ptrdiff_t i, char *is, size_t ilen, size_t iw, char 
 	break;
     }
 
-    size_t r;
+    ptrdiff_t r;
     for (r = i; r < ilen; r++) {
 	idio_unicode_t icp = 0;
 	switch (iw) {
@@ -2377,18 +2398,18 @@ static size_t idio_strpbrk (ptrdiff_t i, char *is, size_t ilen, size_t iw, char 
 	}
     }
 
-    return 0;
+    return IDIO_STRING_STRPBRK_SENTINEL;
 }
 
 /*
- * Note that the C string version of this, using 'char *'s rather than
- * offsets, can use NULL as a sentinel value -- which is outside of
- * the string.  We'll have to use -1 (and ptrdiff_t rather than
- * size_t) to do something similar.
+ * Note that the C string version of idio_string_token, using 'char
+ * *'s rather than offsets, can use NULL as a sentinel value -- which
+ * is outside of the string.  We'll have to use -1 (and ptrdiff_t
+ * rather than size_t) to do something similar.
  */
 #define IDIO_STRING_TOKEN_SENTINEL	-1
 
-static size_t idio_string_token (ptrdiff_t i, char *is, size_t ilen, size_t iw, char *ds, size_t dlen, size_t dw, int flags, ptrdiff_t *saved, size_t *len)
+static ptrdiff_t idio_string_token (ptrdiff_t i, char *is, size_t ilen, size_t iw, char *ds, size_t dlen, size_t dw, int flags, ptrdiff_t *saved, size_t *len)
 {
     /*
      * U+FFFF is specifically not a valid Unicode character so it's a
@@ -2441,8 +2462,8 @@ static size_t idio_string_token (ptrdiff_t i, char *is, size_t ilen, size_t iw, 
 	i += idio_strspn (i, is, ilen, iw, ds, dlen, dw);
     } else if (0 &&
 	       0xFFFF != prev_delim) {
-	size_t start = i;
-	size_t end = i + idio_strspn (i, is, ilen, iw, ds, dlen, dw);
+	ptrdiff_t start = i;
+	ptrdiff_t end = i + idio_strspn (i, is, ilen, iw, ds, dlen, dw);
 	for (; i < end; i++) {
 	    idio_unicode_t icp = 0;
 	    switch (iw) {
@@ -2477,9 +2498,9 @@ static size_t idio_string_token (ptrdiff_t i, char *is, size_t ilen, size_t iw, 
     /*
      * Walk forward until we find a delimiter
      */
-    size_t start = idio_strpbrk (i, is, ilen, iw, ds, dlen, dw);
+    ptrdiff_t start = idio_strpbrk (i, is, ilen, iw, ds, dlen, dw);
 
-    if (0 == start) {
+    if (IDIO_STRING_STRPBRK_SENTINEL == start) {
 	*saved = IDIO_STRING_TOKEN_SENTINEL;
 	*len = ilen - i;
     } else {
@@ -2568,7 +2589,7 @@ IDIO idio_split_string (IDIO in, IDIO delim, int flags)
     IDIO r = idio_S_nil;
 
     for (; ; i = IDIO_STRING_TOKEN_SENTINEL) {
-	size_t start = idio_string_token (i, is, ilen, iw, ds, dlen, dw, flags, &saved, &len);
+	ptrdiff_t start = idio_string_token (i, is, ilen, iw, ds, dlen, dw, flags, &saved, &len);
 
 	if (IDIO_STRING_TOKEN_SENTINEL == start) {
 	    break;
