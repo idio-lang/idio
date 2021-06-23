@@ -401,6 +401,11 @@ libc-wrap-error-load "libc-wrap-errors/EUID-set-bad-type.idio" "bad parameter ty
 
 libc-wrap-error-load "libc-wrap-errors/GID-set-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a libc/gid_t"
 (cond-expand
+ (virtualisation/WSL {
+   ;; WSL doesn't generate an error...
+   eprintf "WSL: skipping GID assignment test\n"
+   Tests = Tests + 3
+ })
  ((or uname/sysname/FreeBSD
       uname/sysname/Darwin
       (and os-release/ID/CentOS
@@ -414,6 +419,11 @@ libc-wrap-error-load "libc-wrap-errors/GID-set-bad-type.idio" "bad parameter typ
 
 libc-wrap-error-load "libc-wrap-errors/UID-set-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a libc/uid_t"
 (cond-expand
+ (virtualisation/WSL {
+   ;; WSL doesn't generate an error...
+   eprintf "WSL: skipping UID assignment test\n"
+   Tests = Tests + 3
+ })
  ((or uname/sysname/FreeBSD
       uname/sysname/Darwin
       (and os-release/ID/CentOS
