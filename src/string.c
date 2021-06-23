@@ -2587,6 +2587,12 @@ IDIO idio_split_string (IDIO in, IDIO delim, int flags)
 
     ptrdiff_t i = 0;
     IDIO r = idio_S_nil;
+    int wants_array = 0;
+    if (IDIO_STRING_TOKEN_ARRAY (flags)) {
+	 wants_array = 1;
+	 r = idio_array (4);
+	 idio_array_push (r, in);
+    }
 
     for (; ; i = IDIO_STRING_TOKEN_SENTINEL) {
 	ptrdiff_t start = idio_string_token (i, is, ilen, iw, ds, dlen, dw, flags, &saved, &len);
@@ -2601,10 +2607,18 @@ IDIO idio_split_string (IDIO in, IDIO delim, int flags)
 	}
 
 	IDIO subs = idio_substring_offset_len (in, start, len);
-	r = idio_pair (subs, r);
+	if (wants_array) {
+	     idio_array_push (r, subs);
+	} else {
+	     r = idio_pair (subs, r);
+	}
     }
 
-    return idio_list_reverse (r);
+    if (wants_array) {
+	 return r;
+    } else {
+	 return idio_list_reverse (r);
+    }
 }
 
 IDIO_DEFINE_PRIMITIVE1V_DS ("split-string", split_string, (IDIO in, IDIO args), "in [delim]", "\
@@ -2617,7 +2631,7 @@ into a list of strings					\n\
 :type delim: string					\n\
 :return: list (of strings)				\n\
 							\n\
-`delim` defaults to `IFS` which default to SPACE TAB NL	\n\
+`delim` defaults to `IFS` which defaults to SPACE TAB NL\n\
 ")
 {
     IDIO_ASSERT (in);
@@ -2669,7 +2683,7 @@ into a list	 of strings				\n\
 :type delim: string					\n\
 :return: list (of strings)				\n\
 							\n\
-`delim` defaults to `IFS` which default to SPACE TAB NL	\n\
+`delim` defaults to `IFS` which defaults to SPACE TAB NL\n\
 ")
 {
     IDIO_ASSERT (in);
@@ -2709,6 +2723,47 @@ into a list	 of strings				\n\
     IDIO_USER_TYPE_ASSERT (string, delim);
 
     return idio_split_string (in, delim, IDIO_STRING_TOKEN_FLAG_EXACT);
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("fields", fields, (IDIO in), "in", "\
+split string ``in`` using characters from ``IFS``	\n\
+into an array with the first element the original string\n\
+							\n\
+:param in: string to split				\n\
+:type in: string					\n\
+:return: array (of strings)				\n\
+")
+{
+    IDIO_ASSERT (in);
+
+    /*
+     * Test Case: string-errors/fields-bad-type.idio
+     *
+     * fields #t
+     */
+    IDIO_USER_TYPE_ASSERT (string, in);
+
+    IDIO delim = idio_module_current_symbol_value_recurse (idio_vars_IFS_sym, IDIO_LIST1 (idio_S_unspec));
+
+    if (idio_S_unspec == delim) {
+      /*
+       * Code coverage: not sure we can get here.  Developer
+       * error?
+       */
+      idio_string_error_C ("IFS undefined", idio_vars_IFS_sym, IDIO_C_FUNC_LOCATION ());
+
+      return idio_S_notreached;
+    }
+
+    /*
+     * Test Case: string-errors/fields-bad-IFS-type.idio
+     *
+     * IFS :~ #t
+     * fields "abc"
+     */
+    IDIO_USER_TYPE_ASSERT (string, delim);
+
+    return idio_split_string (in, delim, IDIO_STRING_TOKEN_FLAG_ARRAY);
 }
 
 IDIO idio_join_string (IDIO delim, IDIO args)
@@ -3080,6 +3135,7 @@ void idio_string_add_primitives ()
 
     IDIO_ADD_PRIMITIVE (split_string);
     IDIO_ADD_PRIMITIVE (split_string_exactly);
+    IDIO_ADD_PRIMITIVE (fields);
     IDIO_ADD_PRIMITIVE (join_string);
     IDIO_ADD_PRIMITIVE (strip_string);
 }

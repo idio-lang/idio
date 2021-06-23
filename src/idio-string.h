@@ -27,9 +27,11 @@
 
 #define IDIO_STRING_TOKEN_FLAG_NONE		0
 #define IDIO_STRING_TOKEN_FLAG_EXACT		(1<<0)
+#define IDIO_STRING_TOKEN_FLAG_ARRAY		(1<<1)
 
 #define IDIO_STRING_TOKEN_EXACT(f)		((f) & IDIO_STRING_TOKEN_FLAG_EXACT)
 #define IDIO_STRING_TOKEN_INEXACT(f)		(IDIO_STRING_TOKEN_EXACT (f) == 0)
+#define IDIO_STRING_TOKEN_ARRAY(f)		((f) & IDIO_STRING_TOKEN_FLAG_ARRAY)
 
 int idio_assign_string_C (IDIO so, const char *s_C);
 IDIO idio_string_C_len (const char *s_C, size_t blen);

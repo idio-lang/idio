@@ -138,6 +138,9 @@ string-error-load "string-errors/split-string-exactly-bad-type.idio" "bad parame
 string-error-load "string-errors/split-string-exactly-bad-delim-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
 string-error-load "string-errors/split-string-exactly-bad-IFS-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
 
+string-error-load "string-errors/fields-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
+string-error-load "string-errors/fields-bad-IFS-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
+
 string-error-load "string-errors/join-string-bad-arg-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
 string-error-load "string-errors/join-string-bad-delim-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
 string-error-load "string-errors/join-string-bad-args-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a list"
@@ -147,4 +150,4 @@ string-error-load "string-errors/strip-string-bad-str-type.idio" "bad parameter 
 string-error-load "string-errors/strip-string-bad-discard-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
 
 ;; all done?
-Tests? (string-error0 + 61)
+Tests? (string-error0 + 63)

@@ -408,6 +408,11 @@ parts := split-string STR "#"
 dcp_parts := split-string (ph parts) ";"
 range := split-string (ph dcp_parts) ".." ; boom! substring extends beyong parent string length: 111011129 002B          ; Math 
 
+;; fields
+test (fields "hello world") #[ "hello world" "hello" "world"]
+test "hello world".fields.0 "hello world"
+test "hello world".fields.1 "hello"
+
 ;; join
 test (join-string "b" '("a" "c")) "abc"
 test (join-string "b" '("a")) "a"
@@ -507,7 +512,7 @@ test (equal? (string->pathname "hello")   "hello")	#f
 test (equal? (string->pathname "hello") %P"hello")	#t
 
 ;; all done?
-Tests? (string0 + 333)
+Tests? (string0 + 336)
 
 ;Local Variables:
 ;mode: Idio
