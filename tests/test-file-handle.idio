@@ -93,10 +93,14 @@ test (file-handle? test-str)		#f
 test (input-file-handle? test-str)	#f
 test (output-file-handle? test-str)	#f
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ofh := open-output-file testfile
 test (file-handle? ofh)			#t
 test (output-file-handle? ofh)		#t
 test (input-file-handle? ofh)		#f
+
+test (handle-name ofh)			testfile
 
 ; XXX write will include the "s !
 fho := "0123456789"
@@ -107,10 +111,14 @@ test (file-handle? ofh)			#t
 test (output-file-handle? ofh)		#t
 test (input-file-handle? ofh)		#f
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ifh := open-input-file testfile
 test (file-handle? ifh)			#t
 test (input-file-handle? ifh)		#t
 test (output-file-handle? ifh)		#f
+
+test (handle-name ifh)			testfile
 
 fhi := *primitives*/read ifh
 close-handle ifh
@@ -153,6 +161,101 @@ test (handle-pos ifh)		 0
 test (seek-handle ifh 2)	 2
 test (handle-pos ifh)		 2
 close-handle ifh
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+ofh := open-output-file testfile
+
+;; code coverage of name/name&mode/mode-only open-output-file-from-fd
+ofd2 := libc/dup (file-handle-fd ofh)
+ofh2 := open-output-file-from-fd ofd2 "bob"
+
+; include checks that O_APPEND and FD_CLOEXEC are unset
+test (handle-name ofh2)			"bob"
+test (C/& (libc/fcntl (file-handle-fd ofh2) libc/F_GETFL) libc/O_APPEND) C/0i
+test (libc/fcntl (file-handle-fd ofh2) libc/F_GETFD) C/0i
+close-handle ofh2
+
+; one of the few file status flags we can change is O_APPEND
+ofd2 := libc/dup (file-handle-fd ofh)
+ofh2 := open-output-file-from-fd ofd2 "bob" "a"
+
+test (handle-name ofh2)			"bob"
+test (C/& (libc/fcntl (file-handle-fd ofh2) libc/F_GETFL) libc/O_APPEND) libc/O_APPEND
+close-handle ofh2
+
+; the only file descriptor flags we can change is FD_CLOEXEC
+ofd2 := libc/dup (file-handle-fd ofh)
+ofh2 := open-output-file-from-fd ofd2 "bob" "we"
+
+test (handle-name ofh2)			"bob"
+test (libc/fcntl (file-handle-fd ofh2) libc/F_GETFD) libc/FD_CLOEXEC
+close-handle ofh2
+
+; use default name
+ofd2 := libc/dup (file-handle-fd ofh)
+ofh2 := open-output-file-from-fd ofd2 #n "we"
+
+; name will be /dev/fd/n -- could do a prefix match, I suppose
+test (libc/fcntl (file-handle-fd ofh2) libc/F_GETFD) libc/FD_CLOEXEC
+close-handle ofh2
+
+close-handle ofh
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; slight variation, open in append mode then remove O_APPEND
+
+ofh := open-file testfile "a"
+test (file-handle? ofh)			#t
+test (output-file-handle? ofh)		#t
+test (input-file-handle? ofh)		#f
+
+; check that O_APPEND is set
+test (C/& (libc/fcntl (file-handle-fd ofh) libc/F_GETFL) libc/O_APPEND) libc/O_APPEND
+
+; one of the few file status flags we can change is O_APPEND
+ofd2 := libc/dup (file-handle-fd ofh)
+ofh2 := open-output-file-from-fd ofd2 "bob" "w"
+
+test (handle-name ofh2)			"bob"
+test (C/& (libc/fcntl (file-handle-fd ofh2) libc/F_GETFL) libc/O_APPEND) C/0i
+close-handle ofh2
+
+close-handle ofh
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+ifh := open-input-file testfile
+
+;; code coverage of name/name&mode/mode-only open-input-file-from-fd
+ifd2 := libc/dup (file-handle-fd ifh)
+ifh2 := open-input-file-from-fd ifd2 "bob"
+
+; check that FD_CLOEXEC is unset
+test (handle-name ifh2)			"bob"
+test (libc/fcntl (file-handle-fd ifh2) libc/F_GETFD) C/0i
+close-handle ifh2
+
+; the only file descriptor flags we can change is FD_CLOEXEC
+ifd2 := libc/dup (file-handle-fd ifh)
+ifh2 := open-input-file-from-fd ifd2 "bob" "re"
+
+test (handle-name ifh2)			"bob"
+test (libc/fcntl (file-handle-fd ifh2) libc/F_GETFD) libc/FD_CLOEXEC
+close-handle ifh2
+
+; use default name
+ifd2 := libc/dup (file-handle-fd ifh)
+ifh2 := open-input-file-from-fd ifd2 #n "re"
+
+; name will be /dev/fd/n -- could do a prefix match, I suppose
+test (libc/fcntl (file-handle-fd ifh2) libc/F_GETFD) libc/FD_CLOEXEC
+close-handle ifh2
+
+close-handle ifh
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; my-pipe has, internally, two open file descriptors
 my-pipe := (libc/pipe)
@@ -349,4 +452,4 @@ load "lib/empty"
 
 IDIOLIB = OIDIOLIB
 ;; all done?
-Tests? (file-handle0 + 137)
+Tests? (file-handle0 + 158)

@@ -86,6 +86,7 @@ handle-error-load "handle-errors/display-bad-handle.idio" "handle write error"
 handle-error-load "handle-errors/display-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a output handle"
 
 handle-error-load "handle-errors/handle-location-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a handle"
+handle-error-load "handle-errors/handle-name-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a handle"
 
 ;; all done?
-Tests? (handle-error0 + 22)
+Tests? (handle-error0 + 23)

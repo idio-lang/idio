@@ -302,7 +302,7 @@ void idio_file_handle_format_error (char *circumstance, char *kind, char *msg, I
     detail = idio_get_output_string (dsh);
 #endif
 
-    IDIO c = idio_struct_instance (idio_condition_io_no_such_file_error_type,
+    IDIO c = idio_struct_instance (idio_condition_io_filename_error_type,
 				   IDIO_LIST4 (idio_get_output_string (msh),
 					       location,
 					       detail,
@@ -337,7 +337,7 @@ void idio_file_handle_filename_format_error (char *circumstance, char *msg, IDIO
     detail = idio_get_output_string (dsh);
 #endif
 
-    IDIO c = idio_struct_instance (idio_condition_io_no_such_file_error_type,
+    IDIO c = idio_struct_instance (idio_condition_io_filename_error_type,
 				   IDIO_LIST4 (idio_get_output_string (msh),
 					       location,
 					       detail,
@@ -372,7 +372,7 @@ void idio_file_handle_mode_format_error (char *circumstance, char *msg, IDIO mod
     detail = idio_get_output_string (dsh);
 #endif
 
-    IDIO c = idio_struct_instance (idio_condition_io_no_such_file_error_type,
+    IDIO c = idio_struct_instance (idio_condition_io_filename_error_type,
 				   IDIO_LIST4 (idio_get_output_string (msh),
 					       location,
 					       detail,
@@ -508,7 +508,7 @@ static IDIO idio_open_file_handle (IDIO filename, char *pathname, int fd, int h_
  * fopen(3) implementation deliberately limits the mode string to 5
  * (or 6 or 7) characters.
  */
-static int idio_file_handle_validate_mode_flags (char *mode_str, int *sflagsp, int *flagsp)
+static int idio_file_handle_validate_mode_flags (char *mode_str, int *sflagsp, int *fs_flagsp, int *fd_flagsp)
 {
     if (strnlen (mode_str, 1) < 1) {
 	return -1;
@@ -516,13 +516,13 @@ static int idio_file_handle_validate_mode_flags (char *mode_str, int *sflagsp, i
 
     switch (mode_str[0]) {
     case 'r':
-	*flagsp = O_RDONLY;
+	*fs_flagsp = O_RDONLY;
 	break;
     case 'w':
-	*flagsp = O_WRONLY | O_CREAT | O_TRUNC;
+	*fs_flagsp = O_WRONLY | O_CREAT | O_TRUNC;
 	break;
     case 'a':
-	*flagsp = O_WRONLY | O_CREAT | O_APPEND;
+	*fs_flagsp = O_WRONLY | O_CREAT | O_APPEND;
 	break;
     default:
 	return -1;
@@ -540,14 +540,14 @@ static int idio_file_handle_validate_mode_flags (char *mode_str, int *sflagsp, i
 	     * Careful, other flags could have been applied by now:
 	     * "re+"
 	     */
-	    *flagsp = (*flagsp & ~ O_ACCMODE) | O_RDWR;
+	    *fs_flagsp = (*fs_flagsp & ~ O_ACCMODE) | O_RDWR;
 	    break;
 	case 'e':
-	    *flagsp |= O_CLOEXEC;
+	    *fd_flagsp |= FD_CLOEXEC;
 	    *sflagsp |= IDIO_FILE_HANDLE_FLAG_CLOEXEC;
 	    break;
 	case 'x':
-	    *flagsp |= O_EXCL;
+	    *fs_flagsp |= O_EXCL;
 	    break;
 	default:
 	    return -1;
@@ -586,7 +586,11 @@ static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, int h_type, char
 
     if (idio_S_nil != args) {
 	IDIO name = IDIO_PAIR_H (args);
-	if (idio_isa_string (name)) {
+	if (idio_S_nil == name) {
+	    /*
+	     * use /dev/fd/
+	     */
+	} else if (idio_isa_string (name)) {
 	    int free_name_C = 0;
 
 	    /*
@@ -624,8 +628,6 @@ static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, int h_type, char
 	    if (free_name_C) {
 		IDIO_GC_FREE (name_C);
 	    }
-
-	    args = IDIO_PAIR_T (args);
 	} else {
 	    /*
 	     * Test Cases:
@@ -640,6 +642,8 @@ static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, int h_type, char
 
 	    return idio_S_notreached;
 	}
+
+	args = IDIO_PAIR_T (args);
     }
 
     int free_mode_C = 0;
@@ -658,7 +662,6 @@ static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, int h_type, char
 	     * open-file-from-fd (stdin-fileno) "bob" (join-string (make-string 1 #U+0) '("r" "w"))
 	     */
 	    mode_C = idio_file_handle_mode_string_C (mode, func, &free_mode_C, IDIO_C_FUNC_LOCATION ());
-	    args = IDIO_PAIR_T (args);
 	} else {
 	    /*
 	     * Test Cases:
@@ -673,6 +676,8 @@ static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, int h_type, char
 
 	    return idio_S_notreached;
 	}
+
+	args = IDIO_PAIR_T (args);
     }
 
     /*
@@ -700,8 +705,9 @@ static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, int h_type, char
      * O_CLOEXEC.
      */
     int s_flags = IDIO_FILE_HANDLE_FLAG_NONE;
-    int req_flags = 0;
-    if (-1 == idio_file_handle_validate_mode_flags (mode_C, &s_flags, &req_flags)) {
+    int req_fs_flags = 0;
+    int req_fd_flags = 0;
+    if (-1 == idio_file_handle_validate_mode_flags (mode_C, &s_flags, &req_fs_flags, &req_fd_flags)) {
 	/*
 	 * Test Cases:
 	 *
@@ -741,21 +747,30 @@ static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, int h_type, char
     }
 
     /*
-     * What is mode inconsistency anyway?
+     * What is inconsistency anyway?
+     *
+     * For a start, many systems ignore access mode and creation flags
+     * leaving in, say, Linux: O_APPEND, O_ASYNC, O_DIRECT, O_NOATIME,
+     * and O_NONBLOCK.
+     *
+     * So this inconsistency check creates a condition for something
+     * that would have been ignored by the OS anyway.
+     *
+     * Discuss.
      */
     int inconsistent = 0;
     int fs_flags_mode = fs_flags & O_ACCMODE;
-    int req_flags_mode = req_flags & O_ACCMODE;
+    int req_fs_flags_mode = req_fs_flags & O_ACCMODE;
     switch (fs_flags_mode) {
     case O_RDONLY:
-	switch (req_flags_mode) {
+	switch (req_fs_flags_mode) {
 	case O_WRONLY:
 	    inconsistent = 1;
 	    break;
 	}
 	break;
     case O_WRONLY:
-	switch (req_flags_mode) {
+	switch (req_fs_flags_mode) {
 	case O_RDONLY:
 	    inconsistent = 1;
 	    break;
@@ -790,7 +805,7 @@ static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, int h_type, char
 	    IDIO_GC_FREE (mode_C);
 	}
 
-	idio_file_handle_mode_format_error (func, "inconsistent", imode, IDIO_C_FUNC_LOCATION ());
+	idio_file_handle_mode_format_error (func, "file status flags inconsistent", imode, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -802,7 +817,7 @@ static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, int h_type, char
      *
      * In particular, file access and creation modes are ignored.
      */
-    int r = fcntl (fd, F_SETFL, req_flags);
+    int r = fcntl (fd, F_SETFL, req_fs_flags);
 
     if (-1 == r) {
 	/*
@@ -820,10 +835,9 @@ static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, int h_type, char
      * File descriptor flags fcntl(F_GETFD) include (are only?)
      * O_CLOEXEC.
      *
-     * Most people won't bother with it and assume the file will be
-     * closed on exec.  However, if they pass "r", rather than "re",
-     * then a naïve implementation might remove O_CLOEXEC from a file
-     * descriptor that was opened with it.
+     * Most people won't concern themselves with it.  However, if they
+     * pass "r" then an implementation might remove O_CLOEXEC from a
+     * file descriptor that was opened with it.
      *
      * When users are opening files, it should be their call but what
      * do we do with an existing fd?
@@ -833,7 +847,6 @@ static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, int h_type, char
      *
      * TBD
      */
-#ifdef IDIO_FILE_DESCRIPTOR_FLAGS
     int fd_flags = fcntl (fd, F_GETFD);
 
     if (-1 == fd_flags) {
@@ -845,35 +858,42 @@ static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, int h_type, char
 	return idio_S_notreached;
     }
 
-    if ((fd_flags & O_CLOEXEC) != (req_flags & O_CLOEXEC)) {
-	fprintf (stderr, "fcntl (%d, F_GETFD) => %#x: wants %s\n", fd, fd_flags, mode_C);
-	/*
-	 * Test Cases: ??
-	 */
-	IDIO imode = idio_string_C (mode_C);
-	if (free_mode_C) {
-	    IDIO_GC_FREE (mode_C);
+    if ((fd_flags & O_CLOEXEC) != (req_fd_flags & O_CLOEXEC)) {
+	idio_error_warning_message ("file descriptor flags inconsistent: fcntl (%d, F_GETFD) => %#x: wants %#x from %s\n", fd, fd_flags, req_fd_flags, mode_C);
+	if (0) {
+	    /*
+	     * Test Cases: ??
+	     */
+	    IDIO imode = idio_string_C (mode_C);
+	    if (free_mode_C) {
+		IDIO_GC_FREE (mode_C);
+	    }
+
+	    idio_file_handle_mode_format_error (func, "file descriptor flags inconsistent", imode, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
 	}
-
-	idio_file_handle_mode_format_error (func, "flags inconsistent", imode, IDIO_C_FUNC_LOCATION ());
-
-	return idio_S_notreached;
     }
-#endif
 
     /*
      * fcntl (F_SETFD) is only going to affect O_CLOEXEC (and any
      * other file descriptor flags).
      */
-    r = fcntl (fd, F_SETFD, req_flags);
+    r = fcntl (fd, F_SETFD, req_fd_flags);
 
     if (-1 == r) {
 	/*
 	 * Test Case: ??
 	 */
 
+	/*
+	 * WSL doesn't like F_SETFD however the system can't set
+	 * idio_vm_virtualisation_WSL until we've rolled through here
+	 * a few times.
+	 */
 	if (EINVAL == errno &&
-	    idio_vm_virtualisation_WSL) {
+	    (idio_vm_virtualisation_WSL ||
+	     0 == idio_bootstrap_complete)) {
 	    perror ("fcntl F_SETFD");
 	} else {
 	    idio_error_system_errno_msg ("fcntl", "F_SETFD", ifd, IDIO_C_FUNC_LOCATION ());
@@ -897,7 +917,7 @@ static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, int h_type, char
 IDIO_DEFINE_PRIMITIVE1V_DS ("open-file-from-fd", open_file_handle_from_fd, (IDIO ifd, IDIO args), "fd [name [mode]]", "\
 construct an input file handle from `fd` using the optional	\n\
 `name` instead of the default `/dev/fd/{fd}` and	\n\
-the optional mode `mode` instead of ``re``		\n\
+the optional mode `mode` instead of ``r``		\n\
 							\n\
 :param fd: file descriptor				\n\
 :type fd: C/int						\n\
@@ -908,18 +928,20 @@ the optional mode `mode` instead of ``re``		\n\
 							\n\
 :return: file handle					\n\
 :rtype: handle						\n\
+							\n\
+Use #n for ``name`` if you only want to set ``mode``	\n\
 ")
 {
     IDIO_ASSERT (ifd);
     IDIO_ASSERT (args);
 
-    return idio_file_handle_open_from_fd (ifd, args, IDIO_HANDLE_FLAG_FILE, "open-file-from-fd", "re", IDIO_HANDLE_FLAG_READ, IDIO_HANDLE_FLAG_WRITE);
+    return idio_file_handle_open_from_fd (ifd, args, IDIO_HANDLE_FLAG_FILE, "open-file-from-fd", "r", IDIO_HANDLE_FLAG_READ, IDIO_HANDLE_FLAG_WRITE);
 }
 
 IDIO_DEFINE_PRIMITIVE1V_DS ("open-input-file-from-fd", open_input_file_handle_from_fd, (IDIO ifd, IDIO args), "fd [name [mode]]", "\
 construct an input file handle from `fd` using the optional	\n\
 `name` instead of the default `/dev/fd/{fd}` and	\n\
-the optional mode `mode` instead of ``re``		\n\
+the optional mode `mode` instead of ``r``		\n\
 							\n\
 :param fd: file descriptor				\n\
 :type fd: C/int						\n\
@@ -930,18 +952,20 @@ the optional mode `mode` instead of ``re``		\n\
 							\n\
 :return: file handle					\n\
 :rtype: handle						\n\
+							\n\
+Use #n for ``name`` if you only want to set ``mode``	\n\
 ")
 {
     IDIO_ASSERT (ifd);
     IDIO_ASSERT (args);
 
-    return idio_file_handle_open_from_fd (ifd, args, IDIO_HANDLE_FLAG_FILE, "open-input-file-from-fd", "re", IDIO_HANDLE_FLAG_READ, IDIO_HANDLE_FLAG_WRITE);
+    return idio_file_handle_open_from_fd (ifd, args, IDIO_HANDLE_FLAG_FILE, "open-input-file-from-fd", "r", IDIO_HANDLE_FLAG_READ, IDIO_HANDLE_FLAG_WRITE);
 }
 
 IDIO_DEFINE_PRIMITIVE1V_DS ("open-output-file-from-fd", open_output_file_handle_from_fd, (IDIO ifd, IDIO args), "fd [name [mode]]", "\
 construct an output file handle from `fd` using the optional	\n\
 `name` instead of the default `/dev/fd/{fd}` and	\n\
-the optional mode `mode` instead of ``we``		\n\
+the optional mode `mode` instead of ``w``		\n\
 							\n\
 :param fd: file descriptor				\n\
 :type fd: C/int						\n\
@@ -952,18 +976,20 @@ the optional mode `mode` instead of ``we``		\n\
 							\n\
 :return: file handle					\n\
 :rtype: handle						\n\
+							\n\
+Use #n for ``name`` if you only want to set ``mode``	\n\
 ")
 {
     IDIO_ASSERT (ifd);
     IDIO_ASSERT (args);
 
-    return idio_file_handle_open_from_fd (ifd, args, IDIO_HANDLE_FLAG_FILE, "open-output-file-from-fd", "we", IDIO_HANDLE_FLAG_WRITE, IDIO_HANDLE_FLAG_READ);
+    return idio_file_handle_open_from_fd (ifd, args, IDIO_HANDLE_FLAG_FILE, "open-output-file-from-fd", "w", IDIO_HANDLE_FLAG_WRITE, IDIO_HANDLE_FLAG_READ);
 }
 
 IDIO_DEFINE_PRIMITIVE1V_DS ("open-input-pipe", open_input_pipe_handle, (IDIO ifd, IDIO args), "fd [name]", "\
 construct an input pipe handle from `fd` using the optional	\n\
 `name` instead of the default `/dev/fd/{fd}` and	\n\
-the optional mode `mode` instead of ``re``		\n\
+the optional mode `mode` instead of ``r``		\n\
 							\n\
 The key difference from a regular *-from-fd is that a	\n\
 pipe file handle is not seekable.			\n\
@@ -977,12 +1003,14 @@ pipe file handle is not seekable.			\n\
 							\n\
 :return: pipe file handle				\n\
 :rtype: handle						\n\
+							\n\
+Use #n for ``name`` if you only want to set ``mode``	\n\
 ")
 {
     IDIO_ASSERT (ifd);
     IDIO_ASSERT (args);
 
-    IDIO ph = idio_file_handle_open_from_fd (ifd, args, IDIO_HANDLE_FLAG_PIPE, "open-input-pipe", "re", IDIO_HANDLE_FLAG_READ, IDIO_HANDLE_FLAG_NONE);
+    IDIO ph = idio_file_handle_open_from_fd (ifd, args, IDIO_HANDLE_FLAG_PIPE, "open-input-pipe", "r", IDIO_HANDLE_FLAG_READ, IDIO_HANDLE_FLAG_NONE);
 
     return ph;
 }
@@ -990,7 +1018,7 @@ pipe file handle is not seekable.			\n\
 IDIO_DEFINE_PRIMITIVE1V_DS ("open-output-pipe", open_output_pipe_handle, (IDIO ifd, IDIO args), "fd [name [mode]]", "\
 construct an output pipe handle from `fd` using the optional	\n\
 `name` instead of the default `/dev/fd/{fd}` and	\n\
-the optional mode `mode` instead of ``we``		\n\
+the optional mode `mode` instead of ``w``		\n\
 							\n\
 The key difference from a regular *-from-fd is that a	\n\
 pipe file handle is not seekable.			\n\
@@ -1004,12 +1032,14 @@ pipe file handle is not seekable.			\n\
 							\n\
 :return: pipe file handle				\n\
 :rtype: handle						\n\
+							\n\
+Use #n for ``name`` if you only want to set ``mode``	\n\
 ")
 {
     IDIO_ASSERT (ifd);
     IDIO_ASSERT (args);
 
-    IDIO ph = idio_file_handle_open_from_fd (ifd, args, IDIO_HANDLE_FLAG_PIPE, "open-output-pipe", "we", IDIO_HANDLE_FLAG_WRITE, IDIO_HANDLE_FLAG_NONE);
+    IDIO ph = idio_file_handle_open_from_fd (ifd, args, IDIO_HANDLE_FLAG_PIPE, "open-output-pipe", "w", IDIO_HANDLE_FLAG_WRITE, IDIO_HANDLE_FLAG_NONE);
 
     return ph;
 }
@@ -1065,8 +1095,9 @@ IDIO idio_open_file_handle_C (char *func, IDIO filename, char *pathname, int fre
     }
 
     int s_flags = IDIO_FILE_HANDLE_FLAG_NONE;
-    int flags = 0;
-    if (-1 == idio_file_handle_validate_mode_flags (mode_str, &s_flags, &flags)) {
+    int req_fs_flags = 0;
+    int req_fd_flags = 0;
+    if (-1 == idio_file_handle_validate_mode_flags (mode_str, &s_flags, &req_fs_flags, &req_fd_flags)) {
 	/*
 	 * Test Cases:
 	 *
@@ -1095,7 +1126,7 @@ IDIO idio_open_file_handle_C (char *func, IDIO filename, char *pathname, int fre
     int fd;
     int tries;
     for (tries = 2; tries > 0 ; tries--) {
-	fd = open (pathname, flags, mode);
+	fd = open (pathname, req_fs_flags, mode);
 	if (-1 == fd) {
 	    switch (errno) {
 	    case EMFILE:	/* process max */
@@ -1244,7 +1275,7 @@ IDIO idio_open_file_handle_C (char *func, IDIO filename, char *pathname, int fre
 			IDIO_GC_FREE (mode_str);
 		    }
 
-		    idio_error_system_errno ("fopen", pn, IDIO_C_FUNC_LOCATION ());
+		    idio_error_system_errno ("open", pn, IDIO_C_FUNC_LOCATION ());
 
 		    return idio_S_notreached;
 		}
@@ -1280,6 +1311,33 @@ IDIO idio_open_file_handle_C (char *func, IDIO filename, char *pathname, int fre
 	idio_error_system_errno ("open (final)", IDIO_LIST2 (pn, m), IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
+    }
+
+    /*
+     * fcntl (F_SETFD) is only going to affect O_CLOEXEC (and any
+     * other file descriptor flags).
+     */
+    int fcntl_r = fcntl (fd, F_SETFD, req_fd_flags);
+
+    if (-1 == fcntl_r) {
+	/*
+	 * Test Case: ??
+	 */
+
+	/*
+	 * WSL doesn't like F_SETFD however the system can't set
+	 * idio_vm_virtualisation_WSL until we've rolled through here
+	 * a few times.
+	 */
+	if (EINVAL == errno &&
+	    (idio_vm_virtualisation_WSL ||
+	     0 == idio_bootstrap_complete)) {
+	    perror ("fcntl F_SETFD");
+	} else {
+	    idio_error_system_errno_msg ("fcntl", "F_SETFD", idio_C_int (fd), IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	}
     }
 
     return idio_open_file_handle (filename, pathname, fd, IDIO_HANDLE_FLAG_FILE, h_flags, s_flags);
@@ -2540,13 +2598,23 @@ fd handle `fh` with `F_SETFD` and `FD_CLOEXEC` arguments	\n\
 
     if (-1 == r) {
 	/*
-	 * Test Case: ??
-	 *
-	 * Not sure how to provoke this...
+	 * WSL doesn't like F_SETFD however the system can't set
+	 * idio_vm_virtualisation_WSL until we've rolled through here
+	 * a few times.
 	 */
-	idio_error_system_errno_msg ("fcntl", "F_SETFD FD_CLOEXEC", fh, IDIO_C_FUNC_LOCATION ());
+	if (EINVAL == errno &&
+	    idio_vm_virtualisation_WSL) {
+	    perror ("fcntl F_SETFD");
+	} else {
+	    /*
+	     * Test Case: ??
+	     *
+	     * Not sure how to provoke this...
+	     */
+	    idio_error_system_errno_msg ("fcntl", "F_SETFD FD_CLOEXEC", fh, IDIO_C_FUNC_LOCATION ());
 
-	return idio_S_notreached;
+	    return idio_S_notreached;
+	}
     }
 
     IDIO_FILE_HANDLE_FLAGS (fh) |= IDIO_FILE_HANDLE_FLAG_CLOEXEC;

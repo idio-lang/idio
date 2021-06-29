@@ -3119,6 +3119,8 @@ void idio_init_libc_wrap ()
     idio_module_export_symbol_value (idio_symbols_C_intern ("O_NONBLOCK"), idio_C_int (O_NONBLOCK), idio_libc_module);
     idio_module_export_symbol_value (idio_symbols_C_intern ("O_TRUNC"), idio_C_int (O_TRUNC), idio_libc_module);
 
+    idio_module_export_symbol_value (idio_symbols_C_intern ("FD_CLOEXEC"), idio_C_int (FD_CLOEXEC), idio_libc_module);
+
     /* available on some platforms */
 #if defined(O_ASYNC)
     idio_module_export_symbol_value (idio_symbols_C_intern ("O_ASYNC"), idio_C_int (O_ASYNC), idio_libc_module);

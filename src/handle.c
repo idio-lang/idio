@@ -2000,6 +2000,28 @@ in handle ``handle``					\n\
     return idio_handle_location (h);
 }
 
+IDIO_DEFINE_PRIMITIVE1_DS ("handle-name", handle_name, (IDIO h), "h", "\
+return the name associated with handle `h`	\n\
+						\n\
+:param fh: handle to query			\n\
+:type fh: handle				\n\
+						\n\
+:return: name					\n\
+:rtype: string					\n\
+")
+{
+    IDIO_ASSERT (h);
+
+    /*
+     * Test Case: handle-errors/handle-name-bad-type.idio
+     *
+     * handle-name #t
+     */
+    IDIO_USER_TYPE_ASSERT (handle, h);
+
+    return IDIO_HANDLE_FILENAME (h);
+}
+
 IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO e, IDIO cs), IDIO cs, int preserve)
 {
     IDIO_ASSERT (h);
@@ -2311,6 +2333,7 @@ void idio_handle_add_primitives ()
     IDIO_ADD_PRIMITIVE (handle_line);
     IDIO_ADD_PRIMITIVE (handle_pos);
     IDIO_ADD_PRIMITIVE (handle_location);
+    IDIO_ADD_PRIMITIVE (handle_name);
     IDIO_ADD_PRIMITIVE (puts);
     IDIO_ADD_PRIMITIVE (flush_handle);
     IDIO_ADD_PRIMITIVE (seek_handle);

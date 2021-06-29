@@ -82,7 +82,7 @@ file-handle-error-load "file-handle-errors/open-file-from-fd-mode-type.idio" "ba
 file-handle-error-load "file-handle-errors/open-file-from-fd-mode-invalid.idio" "open-file-from-fd mode invalid"
 file-handle-error-load "file-handle-errors/open-file-from-fd-mode-letter-invalid-1.idio" "open-file-from-fd mode invalid"
 file-handle-error-load "file-handle-errors/open-file-from-fd-mode-letter-invalid-2.idio" "open-file-from-fd mode invalid"
-file-handle-error-load "file-handle-errors/open-file-from-fd-mode-letter-inconsistent.idio" "open-file-from-fd mode inconsistent"
+file-handle-error-load "file-handle-errors/open-file-from-fd-mode-letter-inconsistent.idio" "open-file-from-fd mode file status flags inconsistent"
 close fd
 
 file-handle-error-load "file-handle-errors/open-input-file-from-fd-bad-fd-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/int"
@@ -94,7 +94,7 @@ file-handle-error-load "file-handle-errors/open-input-file-from-fd-mode-type.idi
 file-handle-error-load "file-handle-errors/open-input-file-from-fd-mode-invalid.idio" "open-input-file-from-fd mode invalid"
 file-handle-error-load "file-handle-errors/open-input-file-from-fd-mode-letter-invalid-1.idio" "open-input-file-from-fd mode invalid"
 file-handle-error-load "file-handle-errors/open-input-file-from-fd-mode-letter-invalid-2.idio" "open-input-file-from-fd mode invalid"
-file-handle-error-load "file-handle-errors/open-input-file-from-fd-mode-letter-inconsistent.idio" "open-input-file-from-fd mode inconsistent"
+file-handle-error-load "file-handle-errors/open-input-file-from-fd-mode-letter-inconsistent.idio" "open-input-file-from-fd mode file status flags inconsistent"
 close fd
 
 file-handle-error-load "file-handle-errors/open-output-file-from-fd-bad-fd-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/int"
@@ -106,7 +106,7 @@ file-handle-error-load "file-handle-errors/open-output-file-from-fd-mode-type.id
 file-handle-error-load "file-handle-errors/open-output-file-from-fd-mode-invalid.idio" "open-output-file-from-fd mode invalid"
 file-handle-error-load "file-handle-errors/open-output-file-from-fd-mode-letter-invalid-1.idio" "open-output-file-from-fd mode invalid"
 file-handle-error-load "file-handle-errors/open-output-file-from-fd-mode-letter-invalid-2.idio" "open-output-file-from-fd mode invalid"
-file-handle-error-load "file-handle-errors/open-output-file-from-fd-mode-letter-inconsistent.idio" "open-output-file-from-fd mode inconsistent"
+file-handle-error-load "file-handle-errors/open-output-file-from-fd-mode-letter-inconsistent.idio" "open-output-file-from-fd mode file status flags inconsistent"
 close fd
 
 file-handle-error-load "file-handle-errors/open-input-pipe-bad-fd-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/int"
@@ -118,7 +118,7 @@ file-handle-error-load "file-handle-errors/open-input-pipe-mode-type.idio" "bad 
 file-handle-error-load "file-handle-errors/open-input-pipe-mode-invalid.idio" "open-input-pipe mode invalid"
 file-handle-error-load "file-handle-errors/open-input-pipe-mode-letter-invalid-1.idio" "open-input-pipe mode invalid"
 file-handle-error-load "file-handle-errors/open-input-pipe-mode-letter-invalid-2.idio" "open-input-pipe mode invalid"
-file-handle-error-load "file-handle-errors/open-input-pipe-mode-letter-inconsistent.idio" "open-input-pipe mode inconsistent"
+file-handle-error-load "file-handle-errors/open-input-pipe-mode-letter-inconsistent.idio" "open-input-pipe mode file status flags inconsistent"
 close fd
 
 file-handle-error-load "file-handle-errors/open-output-pipe-bad-fd-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/int"
@@ -130,7 +130,7 @@ file-handle-error-load "file-handle-errors/open-output-pipe-mode-type.idio" "bad
 file-handle-error-load "file-handle-errors/open-output-pipe-mode-invalid.idio" "open-output-pipe mode invalid"
 file-handle-error-load "file-handle-errors/open-output-pipe-mode-letter-invalid-1.idio" "open-output-pipe mode invalid"
 file-handle-error-load "file-handle-errors/open-output-pipe-mode-letter-invalid-2.idio" "open-output-pipe mode invalid"
-file-handle-error-load "file-handle-errors/open-output-pipe-mode-letter-inconsistent.idio" "open-output-pipe mode inconsistent"
+file-handle-error-load "file-handle-errors/open-output-pipe-mode-letter-inconsistent.idio" "open-output-pipe mode file status flags inconsistent"
 close fd
 
 file-handle-error-load "file-handle-errors/open-file-mode-invalid.idio" "open-file mode invalid"
