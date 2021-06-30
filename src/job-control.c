@@ -38,15 +38,15 @@ static IDIO idio_job_control_tcattrs;
 int idio_job_control_terminal;
 int idio_job_control_interactive;
 
+pid_t idio_job_control_cmd_pid;
+
 IDIO idio_job_control_process_type;
 IDIO idio_job_control_job_type;
 static IDIO idio_job_control_jobs_sym;
 static IDIO idio_job_control_last_job;
 
 static IDIO idio_S_background_job;
-static IDIO idio_S_exit;
 static IDIO idio_S_foreground_job;
-static IDIO idio_S_killed;
 static IDIO idio_S_wait_for_job;
 IDIO idio_S_stdin_fileno;
 IDIO idio_S_stdout_fileno;
@@ -962,6 +962,7 @@ IDIO idio_job_control_SIGHUP_signal_handler ()
 	    fprintf (stderr, "HUP: outstanding jobs: ");
 	    idio_debug ("%s\n", jobs);
 	}
+
 	/*
 	 * NB
 	 *
@@ -996,6 +997,50 @@ IDIO idio_job_control_SIGCHLD_signal_handler ()
 							 idio_S_nil));
 
     return r;
+}
+
+IDIO idio_job_control_SIGTERM_stopped_jobs ()
+{
+    IDIO jobs = idio_module_symbol_value (idio_job_control_jobs_sym, idio_job_control_module, idio_S_nil);
+    if (idio_S_nil != jobs) {
+	if (idio_job_control_interactive) {
+	    fprintf (stderr, "TERM: outstanding jobs: ");
+	    idio_debug ("%s\n", jobs);
+	}
+
+	/*
+	 * NB
+	 *
+	 * Take a copy of the jobs list as the list may be perturbed
+	 * by jobs finishing (naturally or by our hand, here).
+	 *
+	 * Under the highly transient error conditions that we get
+	 * here I've found the processes have gone away even as I walk
+	 * the (copied) list.
+	 *
+	 * YMMV
+	 */
+	jobs = idio_copy (jobs, IDIO_COPY_SHALLOW);
+	while (idio_S_nil != jobs) {
+	    IDIO job = IDIO_PAIR_H (jobs);
+	    if (idio_job_control_job_is_stopped (job)) {
+		pid_t job_pgid = IDIO_C_TYPE_libc_pid_t (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PGID));
+
+		/*
+		 * Following in the style of Bash's
+		 * terminate_stopped_jobs(), issue the SIGTERM before
+		 * the SIGCONT.
+		 *
+		 * Ignore errors, we're shutting down.
+		 */
+		killpg (job_pgid, SIGTERM);
+		killpg (job_pgid, SIGCONT);
+	    }
+	    jobs = IDIO_PAIR_T (jobs);
+	}
+    }
+
+    return idio_S_unspec;
 }
 
 static void idio_job_control_mark_job_as_running (IDIO job)
@@ -1109,15 +1154,8 @@ mark job `job` as running and foreground it if required\n\
 
 static void idio_job_control_prep_io (int infile, int outfile, int errfile)
 {
-    /* fprintf (stderr, "idio_job_control_prep_io: %d %d %d\n", infile, outfile, errfile); */
     /*
      * Use the supplied stdin/stdout/stderr
-     *
-     * Unlike the equivalent code in Idio-land, prep-io, we really
-     * must dup2() otherwise no-one will!
-     *
-     * By and large, the FD_CLOEXEC flag (close-on-exec) will have
-     * been set on any file descriptors > STDERR_FILENO.
      */
     if (infile != STDIN_FILENO) {
 	if (dup2 (infile, STDIN_FILENO) < 0) {
@@ -1130,13 +1168,16 @@ static void idio_job_control_prep_io (int infile, int outfile, int errfile)
 	    return;
 	}
 
-	/* if (infile > STDERR_FILENO  && */
-	/*     (infile != outfile && */
-	/*      infile != errfile)) { */
-	/*     if (close (infile) < 0) { */
-	/* 	idio_error_system_errno ("close", IDIO_LIST1 (idio_C_int (infile)), IDIO_C_FUNC_LOCATION ()); */
-	/*     } */
-	/* } */
+	if (infile > STDERR_FILENO  &&
+	    (infile != outfile &&
+	     infile != errfile)) {
+	    if (close (infile) < 0) {
+		idio_error_system_errno ("close", IDIO_LIST1 (idio_C_int (infile)), IDIO_C_FUNC_LOCATION ());
+
+		/* notreached */
+		return;
+	    }
+	}
     }
 
     if (outfile != STDOUT_FILENO) {
@@ -1150,12 +1191,15 @@ static void idio_job_control_prep_io (int infile, int outfile, int errfile)
 	    return;
 	}
 
-	/* if (outfile > STDERR_FILENO && */
-	/*     outfile != errfile) { */
-	/*     if (close (outfile) < 0) { */
-	/* 	idio_error_system_errno ("close", IDIO_LIST1 (idio_C_int (outfile)), IDIO_C_FUNC_LOCATION ()); */
-	/*     } */
-	/* } */
+	if (outfile > STDERR_FILENO &&
+	    outfile != errfile) {
+	    if (close (outfile) < 0) {
+		idio_error_system_errno ("close", IDIO_LIST1 (idio_C_int (outfile)), IDIO_C_FUNC_LOCATION ());
+
+		/* notreached */
+		return;
+	    }
+	}
     }
 
     if (errfile != STDERR_FILENO) {
@@ -1165,16 +1209,18 @@ static void idio_job_control_prep_io (int infile, int outfile, int errfile)
 						 idio_C_int (STDERR_FILENO)),
 				     IDIO_C_FUNC_LOCATION ());
 
-
 	    /* notreached */
 	    return;
 	}
 
-	/* if (errfile > STDERR_FILENO) { */
-	/*     if (close (errfile) < 0) { */
-	/* 	idio_error_system_errno ("close", IDIO_LIST1 (idio_C_int (errfile)), IDIO_C_FUNC_LOCATION ()); */
-	/*     } */
-	/* } */
+	if (errfile > STDERR_FILENO) {
+	    if (close (errfile) < 0) {
+		idio_error_system_errno ("close", IDIO_LIST1 (idio_C_int (errfile)), IDIO_C_FUNC_LOCATION ());
+
+		/* notreached */
+		return;
+	    }
+	}
     }
 }
 
@@ -1208,7 +1254,7 @@ static void idio_job_control_prep_process (pid_t job_pgid, int infile, int outfi
 	     * to avoid race conditions.
 	     */
 	    if (tcsetpgrp (idio_job_control_terminal, job_pgid) < 0) {
-		idio_error_system_errno ("icpp tcsetpgrp",
+		idio_error_system_errno ("ijc-pp tcsetpgrp",
 					 IDIO_LIST2 (idio_C_int (idio_job_control_terminal),
 						     idio_libc_pid_t (job_pgid)),
 					 IDIO_C_FUNC_LOCATION ());
@@ -1445,7 +1491,8 @@ IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char **argv)
      * If we're in a pipeline then our pid will be different to the
      * original Idio's pid.
      */
-    if (getpid () == idio_job_control_pid) {
+
+    if (getpid () == idio_job_control_cmd_pid) {
 	IDIO jobs = idio_module_symbol_value (idio_job_control_jobs_sym, idio_job_control_module, idio_S_nil);
 	idio_module_set_symbol_value (idio_job_control_jobs_sym, idio_pair (job, jobs), idio_job_control_module);
 
@@ -1493,8 +1540,9 @@ IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char **argv)
 	    /*
 	     * Block reading the pgrp_pipe
 	     */
-	    char buf[BUFSIZ];
+	    char buf[1];
 	    read (pgrp_pipe[0], buf, 1);
+
 	    if (close (pgrp_pipe[0]) < 0) {
 		idio_error_system_errno ("close", idio_fixnum (pgrp_pipe[0]), IDIO_C_FUNC_LOCATION ());
 
@@ -1850,7 +1898,7 @@ void idio_final_job_control ()
      */
     idio_job_control_do_job_notification ();
 
-    idio_job_control_SIGHUP_signal_handler ();
+    idio_job_control_SIGTERM_stopped_jobs ();
 }
 
 void idio_init_job_control ()
@@ -1914,6 +1962,8 @@ void idio_init_job_control ()
 				       idio_job_control_module,
 				       idio_S_nil);
     IDIO_FLAGS (v) |= IDIO_FLAG_CONST;
+
+    idio_job_control_cmd_pid = idio_job_control_pid;
 
     /*
      * The Idio-visible %idio-interactive should be read-only.

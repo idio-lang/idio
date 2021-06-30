@@ -1609,6 +1609,10 @@ a wrapper to libc stat(2)			\n\
 
     int stat_r = stat (pathname_C, statp);
 
+    if (free_pathname_C) {
+	IDIO_GC_FREE (pathname_C);
+    }
+
     /* check for errors */
     if (-1 == stat_r) {
 	/*
@@ -1616,22 +1620,11 @@ a wrapper to libc stat(2)			\n\
 	 *
 	 * stat ""
 	 */
-	if (free_pathname_C) {
-	    IDIO_GC_FREE (pathname_C);
-	}
-
         idio_error_system_errno ("stat", pathname, IDIO_C_FUNC_LOCATION ());
 
         return idio_S_notreached;
     }
 
-    if (free_pathname_C) {
-	IDIO_GC_FREE (pathname_C);
-    }
-
-    /*
-     * WARNING: this is probably an incorrect return
-     */
     return idio_C_pointer_type (idio_CSI_libc_struct_stat, statp);
 }
 
@@ -2082,13 +2075,69 @@ a wrapper to libc mkstemp(3)					\n\
      * Therefore, we need to return a tuple of the file descriptor and
      * a string of the created file name.
      */
-    IDIO filename = idio_string_C (template_C);
+    IDIO filename = idio_pathname_C (template_C);
 
     if (free_template_C) {
 	IDIO_GC_FREE (template_C);
     }
 
     return IDIO_LIST2 (idio_C_int (mkstemp_r), filename);
+}
+
+IDIO_DEFINE_PRIMITIVE2_DS ("mkfifo", libc_mkfifo, (IDIO path, IDIO mode), "path mode", "\
+in C: mkfifo (path, mode)		\n\
+a wrapper to libc mkfifo()		\n\
+					\n\
+:param path: 				\n\
+:type path: string			\n\
+:param mode: 				\n\
+:type mode: libc/mode_t			\n\
+:return:				\n\
+:rtype: C/int				\n\
+")
+{
+    IDIO_ASSERT (path);
+    IDIO_ASSERT (mode);
+
+   /*
+    * Test Case: libc-errors/mkfifo-bad-path-type.idio
+    *
+    * mkfifo #t #t
+    */
+    IDIO_USER_TYPE_ASSERT (string, path);
+
+    int free_path_C = 0;
+
+    /*
+     * Test Case: libc-wrap-errors/mkfifo-bad-path-format.idio
+     *
+     * mkfifo (join-string (make-string 1 #U+0) '("hello" "world"))
+     */
+    char *path_C = idio_libc_string_C (path, "mkfifo", &free_path_C, IDIO_C_FUNC_LOCATION ());
+
+   /*
+    * Test Case: libc-errors/mkfifo-bad-mode-type.idio
+    *
+    * mkfifo "." #t
+    */
+    IDIO_USER_libc_TYPE_ASSERT (mode_t, mode);
+    mode_t C_mode = IDIO_C_TYPE_libc_mode_t (mode);
+
+    int mkfifo_r = mkfifo (path_C, C_mode);
+
+    if (free_path_C) {
+	IDIO_GC_FREE (path_C);
+    }
+
+    /* check for errors */
+    if (-1 == mkfifo_r) {
+        idio_error_system_errno ("mkfifo", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_C_int (mkfifo_r);
+
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("mkdtemp", libc_mkdtemp, (IDIO template), "template", "\
@@ -2141,8 +2190,11 @@ a wrapper to libc mkdtemp(3)					\n\
 	return idio_S_notreached;
     }
 
-    IDIO r = idio_string_C (mkdtemp_r);
+    IDIO r = idio_pathname_C (mkdtemp_r);
 
+    /*
+     * XXX free this after using mkdtemp_r
+     */
     if (free_template_C) {
 	IDIO_GC_FREE (template_C);
     }
@@ -2189,6 +2241,10 @@ a wrapper to libc mkdir(2)					\n\
     int C_mode = IDIO_C_TYPE_libc_mode_t (mode);
 
     int mkdir_r = mkdir (pathname_C, C_mode);
+
+    if (free_pathname_C) {
+	IDIO_GC_FREE (pathname_C);
+    }
 
     if (-1 == mkdir_r) {
 	/*
@@ -2241,6 +2297,10 @@ a wrapper to libc lstat(2)			\n\
 
     int lstat_r = lstat (pathname_C, statp);
 
+    if (free_pathname_C) {
+	IDIO_GC_FREE (pathname_C);
+    }
+
     /* check for errors */
     if (-1 == lstat_r) {
 	/*
@@ -2248,17 +2308,9 @@ a wrapper to libc lstat(2)			\n\
 	 *
 	 * lstat ""
 	 */
-	if (free_pathname_C) {
-	    IDIO_GC_FREE (pathname_C);
-	}
-
         idio_error_system_errno ("lstat", pathname, IDIO_C_FUNC_LOCATION ());
 
         return idio_S_notreached;
-    }
-
-    if (free_pathname_C) {
-	IDIO_GC_FREE (pathname_C);
     }
 
     return idio_C_pointer_type (idio_CSI_libc_struct_stat, statp);
@@ -2491,6 +2543,20 @@ and ``RLIMIT_NOFILE``.						\n\
     return idio_C_pointer_type (idio_CSI_libc_struct_rlimit, rlimp);
 }
 
+IDIO_DEFINE_PRIMITIVE0_DS ("getppid", libc_getppid, (void), "", "\
+in C, getppid ()						\n\
+a wrapper to libc getppid(2)					\n\
+								\n\
+:return: PPID or raises ^system-error				\n\
+:rtype: libc/pid_t						\n\
+")
+{
+    /*
+     * XXX getppid(2) is always successful.
+     */
+    return idio_libc_pid_t (getppid ());
+}
+
 IDIO_DEFINE_PRIMITIVE0_DS ("getpid", libc_getpid, (void), "", "\
 in C, getpid ()							\n\
 a wrapper to libc getpid(2)					\n\
@@ -2598,7 +2664,7 @@ a wrapper to libc getcwd(3)					\n\
 	return idio_S_notreached;
     }
 
-    IDIO r = idio_string_C (cwd);
+    IDIO r = idio_pathname_C (cwd);
     /*
      * XXX getcwd() used system allocator
      */
@@ -2643,9 +2709,6 @@ a wrapper to libc fstat(2)			\n\
         return idio_S_notreached;
     }
 
-    /*
-     * WARNING: this is probably an incorrect return
-     */
     return idio_C_pointer_type (idio_CSI_libc_struct_stat, statp);
 }
 
@@ -2668,6 +2731,13 @@ a wrapper to libc fork(2)					\n\
 	idio_error_system_errno ("fork", idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
+    }
+
+    if (0 == C_pid) {
+	idio_job_control_cmd_pid = getpid ();
+	idio_job_control_interactive = 0;
+	idio_module_set_symbol_value (idio_symbols_C_intern ("PID"), idio_libc_pid_t (getpid ()), idio_Idio_module);
+	idio_module_set_symbol_value (idio_symbols_C_intern ("PPID"), idio_libc_pid_t (getppid ()), idio_Idio_module);
     }
 
     return idio_libc_pid_t (C_pid);
@@ -3033,6 +3103,7 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_read);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_pipe);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_mkstemp);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_mkfifo);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_mkdtemp);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_mkdir);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_lstat);
@@ -3041,6 +3112,7 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getsid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getrusage);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getrlimit);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getppid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getpid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getpgrp);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getcwd);

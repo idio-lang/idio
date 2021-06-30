@@ -3390,6 +3390,7 @@ void idio_init_libc_wrap ()
 
     idio_module_set_symbol_value (idio_symbols_C_intern ("GROUPS"), GROUPS, main_module);
 
+    idio_module_set_symbol_value (idio_symbols_C_intern ("IDIO_PID"), idio_libc_pid_t (getpid ()), main_module);
     idio_module_set_symbol_value (idio_symbols_C_intern ("PID"), idio_libc_pid_t (getpid ()), main_module);
     idio_module_set_symbol_value (idio_symbols_C_intern ("PPID"), idio_libc_pid_t (getppid ()), main_module);
 

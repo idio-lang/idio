@@ -743,7 +743,7 @@ for-each (function (lib-n) {
 		   }))
 
 		if (not base-id) {
-		  eprintf "no base-id in %s?\n" api-o-fn
+		  eprintf "ERROR: %s: no DW_TAG_compile_unit in %s?\n" ARGV0 api-o-fn
 		  exit 1
 		}
 
@@ -1073,7 +1073,8 @@ ${i-module-name}-error-load := {
 				    (("signed char")		 "schar")
 				    (("unsigned char")		 "uchar")
 				    (("short int" "short")	 "short")
-				    (("short unsigned int" "unsigned short")	 "ushort")
+				    (("short unsigned int"
+				      "unsigned short")		 "ushort")
 				    (("int")			 "int")
 				    (("unsigned int")		 "uint")
 				    (("long int")		 "long")
@@ -2242,8 +2243,8 @@ in C: ${sp-name} \(${comma-sep-arg*})		\\n\\
 				}) fp*
 
 				hprintf api-c-fh #S{
-:return:
-:rtype: ${sp-i-direct-type-name}
+:return:				\\n\\
+:rtype: ${sp-i-direct-type-name}	\\n\\
 \"\)
 \{
 }

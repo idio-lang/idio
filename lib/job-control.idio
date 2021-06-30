@@ -47,6 +47,8 @@ export (%idio-interactive
 	default-child-handler
 	wait-for-job
 
+	format-job-detail
+
 	; default SIGCHLD handler via SIGCHLD clause in
 	; default-condition-handler (condition.c) and
 	; idio_command_SIGCHLD_signal_handler (command.c) which has
@@ -78,7 +80,7 @@ define (job-as-string job seen) {
     r := (open-output-string)
     hprintf r "#<SI %%idio-job "
 
-    hprintf r "%s %s " job.pgid job.pipeline
+    hprintf r "%s %s " (%idio-job-pgid job) (%idio-job-pipeline job)
 
     procs-first := #t
     procs-loop :+ function (procs) {
@@ -90,7 +92,18 @@ define (job-as-string job seen) {
 			} {
 			  hprintf r "| "
 			}
-			hprintf r "[PID=%s C?=%s S?%s: %s] " proc.pid proc.completed proc.stopped proc.argv
+			hprintf r "[PID=%s C?=%s S?%s: " (%idio-process-pid proc) (%idio-process-completed proc) (%idio-process-stopped proc)
+			if (%idio-process-completed proc) {
+			  status := %idio-process-status proc
+			  (cond
+			   ((WIFEXITED status) {
+			     hprintf r " exit %d: " (WEXITSTATUS status)
+			   })
+			   ((WIFSIGNALED status) {
+			     hprintf r " kill -%d: " (WTERMSIG status)
+			   }))
+			}
+			hprintf r "%s] " (%idio-process-argv proc)
 			procs-loop (pt procs)
 		      }
 		    }
@@ -121,10 +134,11 @@ define (job-is-stopped job) "test if job `job` is stopped
   if (null? job) (error 'job-is-stopped "null job" job)
 
   loop :+ function (procs) {
-	    cond ((null? procs) #t) \
-		 ((and (not (%idio-process-completed (ph procs)))
-		       (not (%idio-process-stopped (ph procs)))) #f) \
-		 (else (loop (pt procs)))
+	    (cond
+	     ((null? procs) #t)
+	     ((and (not (%idio-process-completed (ph procs)))
+		   (not (%idio-process-stopped (ph procs)))) #f)
+	     (else (loop (pt procs))))
   }
 
   loop (%idio-job-procs job)
@@ -139,11 +153,12 @@ define (job-is-completed job) "test if job `job` has completed
   if (null? job) (error 'job-is-completed "null job" job)
 
   loop :+ function (procs) {
-	    cond ((null? procs) #t) \
-		 ((not (%idio-process-completed (ph procs))) #f) \
-		 (else {
-		   loop (pt procs)
-		 })
+	    (cond
+	     ((null? procs) #t)
+	     ((not (%idio-process-completed (ph procs))) #f)
+	     (else {
+	       loop (pt procs)
+	     }))
   }
 
   loop (%idio-job-procs job)
@@ -160,18 +175,19 @@ define (job-failed job) "test if job `job` has failed
   loop :+ function (procs) {
 	    if (null? procs) #f {
 	      status := %idio-process-status (ph procs)
-	      cond ((null? status) {
-		loop (pt procs)
-	      }) \
-		   ((WIFEXITED status) {
-		     if (not (C/== (WEXITSTATUS status) C/0i)) #t {
-		       loop (pt procs)
-		     }
-		   }) \
-		   ((WIFSIGNALED status) #t) \
-		   (else {
-		     loop (pt procs)
-		   })
+	      (cond
+	       ((null? status) {
+		 loop (pt procs)
+	       })
+	       ((WIFEXITED status) {
+		 if (not (C/== (WEXITSTATUS status) C/0i)) #t {
+		   loop (pt procs)
+		 }
+	       })
+	       ((WIFSIGNALED status) #t)
+	       (else {
+		 loop (pt procs)
+	       }))
 	    }
   }
 
@@ -194,18 +210,19 @@ Note that this is the inverse behaviour you might expect.
   loop :+ function (procs) {
 	    if (null? procs) #t {
 	      status := %idio-process-status (ph procs)
-	      cond ((null? status) {
-		loop (pt procs)
-	      }) \
-		   ((WIFEXITED status) {
-		     if (not (C/== (WEXITSTATUS status) C/0i)) #f {
-		       loop (pt procs)
-		     }
-		   }) \
-		   ((WIFSIGNALED status) #f) \
-		   (else {
-		     loop (pt procs)
-		   })
+	      (cond
+	       ((null? status) {
+		 loop (pt procs)
+	       })
+	       ((WIFEXITED status) {
+		 if (not (C/== (WEXITSTATUS status) C/0i)) #f {
+		   loop (pt procs)
+		 }
+	       })
+	       ((WIFSIGNALED status) #f)
+	       (else {
+		 loop (pt procs)
+	       }))
 	    }
   }
 
@@ -233,18 +250,19 @@ value can be: exit status for 'exit or signal number for 'killed
   loop :+ function (procs) {
 	    if (null? procs) #f {
 	      status := %idio-process-status (ph procs)
-	      cond ((null? status) {
-		loop (pt procs)
-	      }) \
-		   ((WIFEXITED status) {
-		     if (not (C/== (WEXITSTATUS status) C/0i)) (list 'exit (WEXITSTATUS status)) {
-		       loop (pt procs)
-		     }
-		   }) \
-		   ((WIFSIGNALED status) (list 'killed (WTERMSIG status))) \
-		   (else {
-		     loop (pt procs)
-		   })
+	      (cond
+	       ((null? status) {
+		 loop (pt procs)
+	       })
+	       ((WIFEXITED status) {
+		 if (not (C/== (WEXITSTATUS status) C/0i)) (list 'exit (WEXITSTATUS status)) {
+		   loop (pt procs)
+		 }
+	       })
+	       ((WIFSIGNALED status) (list 'killed (WTERMSIG status)))
+	       (else {
+		 loop (pt procs)
+	       }))
 	    }
   }
 
@@ -270,20 +288,21 @@ value can be: exit status for 'exit or signal number for 'killed
   if (null? job) (error 'pipeline-detail "null job" job)
 
   loop :+ function (procs st) {
-	    if (null? procs) st {
+	    if (null? procs) (reverse st) {
 	      status := %idio-process-status (ph procs)
-	      cond ((null? status) {
-		loop (pt procs) (pair (list 'no-status) st)
-	      }) \
-		   ((WIFEXITED status) {
-		     loop (pt procs) (pair (list 'exit (WEXITSTATUS status)) st)
-		   }) \
-		   ((WIFSIGNALED status) {
-		     loop (pt procs) (pair (list 'killed (WTERMSIG status)) st)
-		   }) \
-		   (else {
-		     loop (pt procs) (pair (list 'unknown) st)
-		   })
+	      (cond
+	       ((null? status) {
+		 loop (pt procs) (pair (list 'no-status) st)
+	       })
+	       ((WIFEXITED status) {
+		 loop (pt procs) (pair (list 'exit (WEXITSTATUS status)) st)
+	       })
+	       ((WIFSIGNALED status) {
+		 loop (pt procs) (pair (list 'killed (WTERMSIG status)) st)
+	       })
+	       (else {
+		 loop (pt procs) (pair (list 'unknown) st)
+	       }))
 	    }
   }
 
@@ -303,56 +322,59 @@ waitpid(2).  Return #f if all went well, some true value otherwise.
 This (inverted) convention follows the Libc texinfo algorithm and is
 for the benefit of the do loops in update-status_ and wait-for-job_.
 " {
-  cond ((C/> pid libc/0pid_t) {
-    jobs-loop :+ function (jobs) {
-		   cond ((null? jobs) {
-		     if %idio-interactive {
-		       eprintf "no child process %d\n" pid
-		     }
-		     #t
-		   }) \
-			(else {
-			  ;; procs-loop follows the same convention as the outer
-			  ;; jobs-loop as returning success (#f!) will be the return
-			  ;; value of jobs-loop
-			  procs-loop :+ function (procs) {
-					  cond ((null? procs) #t) \
-					       ((C/== pid (%idio-process-pid (ph procs))) {
-						 set-%idio-process-status! (ph procs) status
-						 if (WIFSTOPPED status) {
-						   set-%idio-process-stopped! (ph procs) #t
-						 } {
-						   set-%idio-process-completed! (ph procs) #t
-						   if (and %idio-interactive
-							   (WIFSIGNALED status)) {
-						     eprintf "Job Terminated: kill -%s %d\n" (signal-name (WTERMSIG status)) pid
-						   }
-						 }
-						 #f
-					       }) \
-					       (else {
-						 procs-loop (pt procs)
-					       })
-			  }
+  (cond
+   ((C/> pid libc/0pid_t) {
+     jobs-loop :+ function (jobs) {
+		    (cond
+		     ((null? jobs) {
+		       if %idio-interactive {
+			 eprintf "no child process %d\n" pid
+		       }
+		       #t
+		     })
+		     (else {
+		       ;; procs-loop follows the same convention as the outer
+		       ;; jobs-loop as returning success (#f!) will be the return
+		       ;; value of jobs-loop
+		       procs-loop :+ function (procs) {
+				       (cond
+					((null? procs) #t)
+					((C/== pid (%idio-process-pid (ph procs))) {
+					  set-%idio-process-status! (ph procs) status
+					  if (WIFSTOPPED status) {
+					    set-%idio-process-stopped! (ph procs) #t
+					  } {
+					    set-%idio-process-completed! (ph procs) #t
+					    if (and %idio-interactive
+						    (WIFSIGNALED status)) {
+						      eprintf "Job Terminated: kill -%s %d\n" (signal-name (WTERMSIG status)) pid
+						    }
+					  }
+					  #f
+					})
+					(else {
+					  procs-loop (pt procs)
+					}))
+		       }
 
-			  (and (procs-loop (%idio-job-procs (ph jobs)))
-			       (jobs-loop (pt jobs)))
-			})
-    }
+		       (and (procs-loop (%idio-job-procs (ph jobs)))
+			    (jobs-loop (pt jobs)))
+		     }))
+     }
 
-    jobs-loop %idio-jobs
-  })\
-       ((or (C/== pid libc/0pid_t)
-	    (C/== libc/errno ECHILD)) {
-	      ;; We can get here if foreground-job was blocked in
-	      ;; wait-for-job then a SIGCHLD event fired and the
-	      ;; (default) handler calls do-job-notification.
-	      #t
-	    }) \
-       (else {
-	 ;; an error in waitpid would have been signalled there
-	 error 'mark-process-status "inconceivable!" pid status
-       })
+     jobs-loop %idio-jobs
+   })
+   ((or (C/== pid libc/0pid_t)
+	(C/== libc/errno ECHILD)) {
+	  ;; We can get here if foreground-job was blocked in
+	  ;; wait-for-job then a SIGCHLD event fired and the
+	  ;; (default) handler calls do-job-notification.
+	  #t
+	})
+   (else {
+     ;; an error in waitpid would have been signalled there
+     error 'mark-process-status "inconceivable!" pid status
+   }))
 }
 
 define (update-status) "update the process status of any outstanding pids
@@ -386,8 +408,8 @@ define (wait-for-job job) "wait for job `job` to be stopped or completed
   if (job-failed job) {
     if (not (%idio-job-raised job)) {
       c := make-condition ^rt-command-status-error "job failed" job (pipeline-detail job) (job-detail job)
-      reraise c
       set-%idio-job-raised! job #t
+      reraise c
     }
   }
 
@@ -409,34 +431,68 @@ define (format-job-info job msg) "display to stderr `msg` alongside job `job` de
   }
 }
 
+define (format-job-detail job & args) {
+  oh := (current-output-handle)
+  if (pair? args) {
+    oh = ph args
+  }
+
+  ;; cf. condition-report
+  header := #t
+  printed := #f
+  loop :+ function (procs details) {
+	    (cond
+	     ((null? procs) #t)
+	     (else {
+	       if header {
+		 header = #f
+		 hprintf oh "        %6s %-3s %-12s %s\n" "PID" "fl" "status" "cmd"
+	       }
+	       proc := ph procs
+	       hprintf oh "  proc: %6s %2s%s %-12s %s\n" proc.pid (if proc.completed " C" "!C") (if proc.stopped "S" " ") (ph details) proc.argv
+	       printed = #t
+	       loop (pt procs) (pt details)
+	     }))
+  }
+
+  hprintf oh "\n"
+  loop (reverse (%idio-job-procs job)) (reverse (pipeline-detail job))
+  if printed {
+    hprintf oh "  flags: C - completed; !C - not completed; S - stopped\n"
+  }
+}
+
 define (do-job-notification) "notify of any job status changes" {
   (update-status)
 
   failed-jobs := #n
 
   loop :+ function (jobs njobs) {
-	    cond ((null? jobs) (reverse njobs)) \
-		 (else {
-		   job := ph jobs
-		   cond ((job-is-completed job) {
-		     format-job-info job "completed"
-		     if (job-failed job) {
-		       failed-jobs = pair job failed-jobs
-		     }
-		     ;; remove job from list (by not including it!)
-		     loop (pt jobs) njobs
-		   }) \
-			((job-is-stopped job) {
-			  if (not (%idio-job-notified job)) {
-			    format-job-info job "stopped"
-			    set-%idio-job-notified! job #t
-			  }
-			  loop (pt jobs) (pair job njobs)
-			}) \
-			(else {
-			  loop (pt jobs) (pair job njobs)
-			})
-		 })
+	    (cond
+	     ((null? jobs) (reverse njobs))
+	     (else {
+	       job := ph jobs
+	       (cond
+		((job-is-completed job) {
+
+		  format-job-info job "completed"
+		  if (job-failed job) {
+		    failed-jobs = pair job failed-jobs
+		  }
+		  ;; remove job from list (by not including it!)
+		  loop (pt jobs) njobs
+		})
+		((job-is-stopped job) {
+		  if (not (%idio-job-notified job)) {
+		    format-job-info job "stopped"
+		    set-%idio-job-notified! job #t
+		  }
+		  loop (pt jobs) (pair job njobs)
+		})
+		(else {
+		  loop (pt jobs) (pair job njobs)
+		}))
+	     }))
   }
 
   %idio-jobs = loop %idio-jobs #n
@@ -471,19 +527,20 @@ define (do-job-notification) "notify of any job status changes" {
 
   if (not (null? failed-jobs)) {
     report :+ function (jobs) {
-		cond ((null? jobs) #n) \
-		     (else {
-		       job := ph jobs
-		       if (not (%idio-job-raised job)) {
-			 c := make-condition ^rt-command-status-error "job failed" job (pipeline-detail job) (job-detail job)
-			 reraise c
-			 set-%idio-job-raised! job #t
-		       }
+		(cond
+		 ((null? jobs) #n)
+		 (else {
+		   job := ph jobs
+		   if (not (%idio-job-raised job)) {
+		     c := make-condition ^rt-command-status-error "job failed" job (pipeline-detail job) (job-detail job)
+		     set-%idio-job-raised! job #t
+		     reraise c
+		   }
 
-		       ;; if someone handled that error and returned (anything)
-		       ;; then we can loop onto the next
-		       report (pt jobs)
-		     })
+		   ;; if someone handled that error and returned (anything)
+		   ;; then we can loop onto the next
+		   report (pt jobs)
+		 }))
     }
 
     report failed-jobs
@@ -578,11 +635,12 @@ define (mark-job-as-running job) "mark job `job` as running
 In particular, mark job `job` as not stopped.
 " {
   loop :+ function (procs) {
-	    cond ((null? procs) #n) \
-		 (else {
-		   set-%idio-process-stopped! (ph procs) #f
-		   loop (pt procs)
-		 })
+	    (cond
+	     ((null? procs) #n)
+	     (else {
+	       set-%idio-process-stopped! (ph procs) #f
+	       loop (pt procs)
+	     }))
   }
 
   loop (%idio-job-procs job)
@@ -609,8 +667,8 @@ The default condition handler set in child processes.
 
 It will report the condition and exit (1).
 " {
-  condition-report "child-error-handler" c (current-error-handle)
-  eprintf "child process %s will exit (1)\n" (libc/getpid)
+  condition-report (sprintf "[%d] child-error-handler" (libc/getpid)) c (current-error-handle)
+  eprintf "[%d] child process will exit (1)\n" (libc/getpid)
   libc/exit 1
 }
 
@@ -657,35 +715,35 @@ define (prep-io infile outfile errfile) "prepare the IO for the current process
 
   *#
 
-  if (not (C/== infile STDIN_FILENO)) {
-    ;dup2 infile STDIN_FILENO
-    set-input-handle! (open-input-file-from-fd infile)
+  (cond
+   ((C/int? infile) {
+     if (not (C/== infile STDIN_FILENO)) {
+       dup2 infile STDIN_FILENO
+       close infile
+       set-input-handle! (open-input-file-from-fd STDIN_FILENO)
+     }
+   })
+   (else (error 'prep-io "unexpected infile format" infile)))
 
-    ;; if ((C/> infile STDERR_FILENO) and
-    ;; 	(not ((C/== infile outfile) or
-    ;; 	      (C/== infile errfile)))) {
-    ;;   close infile
-    ;; }
-  }
+  (cond
+   ((C/int? outfile) {
+     if (not (C/== outfile STDOUT_FILENO)) {
+       dup2 outfile STDOUT_FILENO
+       close outfile
+       set-output-handle! (open-output-file-from-fd STDOUT_FILENO)
+     }
+   })
+   (else (error 'prep-io "unexpected outfile format" outfile)))
 
-  if (not (C/== outfile STDOUT_FILENO)) {
-    ;dup2 outfile STDOUT_FILENO
-    set-output-handle! (open-output-file-from-fd outfile)
-
-    ;; if ((C/> outfile STDERR_FILENO) and
-    ;; 	(not (C/== outfile errfile))) {
-    ;;   close outfile
-    ;; }
-  }
-
-  if (not (C/== errfile STDERR_FILENO)) {
-    ;dup2 errfile STDERR_FILENO
-    set-error-handle! (open-output-file-from-fd errfile)
-
-    ;; if (C/> errfile STDOUT_FILENO) {
-    ;;   close errfile
-    ;; }
-  }
+  (cond
+   ((C/int? errfile) {
+     if (not (C/== errfile STDERR_FILENO)) {
+       dup2 errfile STDERR_FILENO
+       close errfile
+       set-error-handle! (open-output-file-from-fd errfile)
+     }
+   })
+   (else (error 'prep-io "unexpected errfile format" errfile)))
 }
 
 define (%prep-process pgid infile outfile errfile foreground) "prepare the current process
@@ -768,10 +826,11 @@ define-infix-operator | 700 {
 
   ;; we want a list of lists -- a list of the |-separated commands
   split :+ function (op op-args expr after) {
-    cond ((null? after)		(reverse (pair (reverse expr) op-args))) \
-         ((not (pair? after))	(error '| "bad syntax" op (reverse op-args) after)) \
-	 ((eq? op (ph after))	(split op (pair (reverse expr) op-args) #n (pt after))) \
-	 (else			(split op op-args (pair (ph after) expr) (pt after)))
+	     (cond
+	      ((null? after)		(reverse (pair (reverse expr) op-args)))
+	      ((not (pair? after))	(error '| "bad syntax" op (reverse op-args) after))
+	      ((eq? op (ph after))	(split op (pair (reverse expr) op-args) #n (pt after)))
+	      (else			(split op op-args (pair (ph after) expr) (pt after))))
   }
 
   op-args := split op (list before) #n after
@@ -1018,17 +1077,22 @@ define-infix-operator | 700 {
 		      }
 
 		      ;; tidy up any trailing $pipeline-*-fd ends
-		      if (not (C/== $cmd-r-fd $pipeline-r-fd)) {
-			libc/close $pipeline-r-fd
+		      if (and (not (C/== $cmd-r-fd $pipeline-r-fd))
+			      (not (C/== $pipeline-r-fd libc/STDIN_FILENO))) {
+				libc/close $pipeline-r-fd
 		      }
-		      if (not (C/== $cmd-w-fd $pipeline-w-fd)) {
-			libc/close $pipeline-w-fd
+		      if (and (not (C/== $cmd-w-fd $pipeline-w-fd))
+			      (not (C/== $pipeline-w-fd libc/STDOUT_FILENO))) {
+				libc/close $pipeline-w-fd
 		      }
 
-		      cond ((pair? (ph '$cmd)) {
-			$@cmd
-		      }) \
-			   (else $cmd)
+		      (cond
+		       ((pair? (ph '$cmd)) {
+			 $@cmd
+		       })
+		       (else {
+			 $cmd
+		       }))
 
 		      ;; If {cmd} was an external command then this
 		      ;; child will have exec()'d it otherwise it is
@@ -1037,7 +1101,7 @@ define-infix-operator | 700 {
 		      ;; definitively stop before this child continues
 		      ;; back into the main Idio engine.
 
-		      exit 0
+		      libc/exit 0
 		    } {
 		      set-%idio-process-pid! $proc $pid
 		      if job-control/%idio-interactive {
@@ -1204,12 +1268,13 @@ define-template (fork-command foreground use-w-pipe use-r-pipe & cmd) {
        ((C/== $pid libc/0pid_t) {
 	 set-default-handler! ^idio-error default-child-handler
 	 %prep-process $pgid $cmd-r-fd $cmd-w-fd $cmd-e-fd $foreground
-	 cond ((pair? (ph '$cmd)) {
-	   $@cmd
-	 }) \
-	      (else $cmd)
+	 (cond
+	  ((pair? (ph '$cmd)) {
+	    $@cmd
+	  })
+	  (else $cmd))
 
-	 exit 0
+	 libc/exit 0
        })
        (else {
 	 set-%idio-process-pid! $proc $pid
@@ -1242,15 +1307,16 @@ define-template (fork-command foreground use-w-pipe use-r-pipe & cmd) {
        })
        (else {
 	 $status := #f
-	 cond ((not job-control/%idio-interactive) {
-	   $status = wait-for-job $job
-	 })\
-	      ($foreground {
-		$status = foreground-job $job #f
-	      }) \
-	      (else {
-		$status = background-job $job #f
-	      })
+	 (cond
+	  ((not job-control/%idio-interactive) {
+	    $status = wait-for-job $job
+	  })
+	  ($foreground {
+	    $status = foreground-job $job #f
+	  })
+	  (else {
+	    $status = background-job $job #f
+	  }))
 
 	 if $close-cmd-r-fd {
 	   libc/close $close-cmd-r-fd
@@ -1493,60 +1559,64 @@ with-handle-dup := {
     dir-file-h?   := #f
     dir-string-h? := #f
     msg-h         := #f
-    cond ((eq? type 'input) {
-      get-current-h = current-input-handle
-      set-h!        = set-input-handle!
-      dir-file-h?   = input-file-handle?
-      dir-string-h? = input-string-handle?
-      msg-h         = "input"
-    }) \
-	 ((eq? type 'output) {
-	   get-current-h = current-output-handle
-	   set-h!        = set-output-handle!
-	   dir-file-h?   = output-file-handle?
-	   dir-string-h? = output-string-handle?
-	   msg-h         = "output"
-	 }) \
-	 ((eq? type 'error) {
-	   get-current-h = current-error-handle
-	   set-h!        = set-error-handle!
-	   dir-file-h?   = output-file-handle?
-	   dir-string-h? = output-string-handle?
-	   msg-h         = "output"
-	 }) \
-	 (else (error 'with-handle-dup "unexpected handle type" type))
+    (cond
+     ((eq? type 'input) {
+       get-current-h = current-input-handle
+       set-h!        = set-input-handle!
+       dir-file-h?   = input-file-handle?
+       dir-string-h? = input-string-handle?
+       msg-h         = "input"
+     })
+     ((eq? type 'output) {
+       get-current-h = current-output-handle
+       set-h!        = set-output-handle!
+       dir-file-h?   = output-file-handle?
+       dir-string-h? = output-string-handle?
+       msg-h         = "output"
+     })
+     ((eq? type 'error) {
+       get-current-h = current-error-handle
+       set-h!        = set-error-handle!
+       dir-file-h?   = output-file-handle?
+       dir-string-h? = output-string-handle?
+       msg-h         = "output"
+     })
+     (else (error 'with-handle-dup "unexpected handle type" type)))
 
     ;; old and new handles
     old-h := (get-current-h)
     new-h := #f
 
-    cond ((dir-file-h? new) {
-      new-h = new
-    }) \
-	 ((file-handle? new) (error 'with-handle-dup (append-string "not an " msg-h "-file-handle") new)) \
-	 ((dir-string-h? new) (new-h = new)) \
-	 ((string-handle? new) (error 'with-handle-dup (append-string "not an " msg-h "-string-handle") new)) \
-	 ((or (C/int? new)
-	      (fixnum? new)) {
-		if (C/int? new) (new = C/->integer new)
-		cond ((eq? new 0) {
-		  new-h = (current-input-handle)
-		}) \
-		     ((eq? new 1) {
-		       new-h = (current-output-handle)
-		     }) \
-		     ((eq? new 2) {
-		       new-h = (current-error-handle)
-		     })
-	      }) \
-	 (else (error 'with-handle-dup (append-string "unexpected " msg-h) new))
+    (cond
+     ((dir-file-h? new) {
+       new-h = new
+     })
+     ((file-handle? new) (error 'with-handle-dup (append-string "not an " msg-h "-file-handle") new))
+     ((dir-string-h? new) (new-h = new))
+     ((string-handle? new) (error 'with-handle-dup (append-string "not an " msg-h "-string-handle") new))
+     ((or (C/int? new)
+	  (fixnum? new)) {
+	    if (C/int? new) (new = C/->integer new)
+	    (cond
+	     ((eq? new 0) {
+	       new-h = (current-input-handle)
+	     })
+	     ((eq? new 1) {
+	       new-h = (current-output-handle)
+	     })
+	     ((eq? new 2) {
+	       new-h = (current-error-handle)
+	     }))
+	  })
+     (else (error 'with-handle-dup (append-string "unexpected " msg-h) new)))
 
-    cond (new-h {
-      set-h! new-h
-    })\
-	 (else {
-	   error 'with-handle-dup (append-string "unexpected " msg-h) new
-	 })
+    (cond
+     (new-h {
+       set-h! new-h
+     })
+     (else {
+       error 'with-handle-dup (append-string "unexpected " msg-h) new
+     }))
 
     unwind-protect {
       (thunk)
@@ -1570,16 +1640,17 @@ define-infix-operator > 600 {
   }
 
   type := #f
-  cond ((eq? op '<) {
-         type = 'input
-       }) \
-       ((eq? op '>) {
-         type = 'output
-       }) \
-       ((eq? op '2>) {
-         type = 'error
-       }) \
-       (else (error op "unexpected op" op))
+  (cond
+   ((eq? op '<) {
+     type = 'input
+   })
+   ((eq? op '>) {
+     type = 'output
+   })
+   ((eq? op '2>) {
+     type = 'error
+   })
+   (else (error op "unexpected op" op)))
 
   result := #n
 
@@ -1615,16 +1686,17 @@ define-infix-operator >& 600 {
   }
 
   type := #f
-  cond ((eq? op '<&) {
-	 type = 'input
-       }) \
-       ((eq? op '>&) {
-	 type = 'output
-       }) \
-       ((eq? op '2>&) {
-	 type = 'error
-       }) \
-       (else (error op "unexpected op" op))
+  (cond
+   ((eq? op '<&) {
+     type = 'input
+   })
+   ((eq? op '>&) {
+     type = 'output
+   })
+   ((eq? op '2>&) {
+     type = 'error
+   })
+   (else (error op "unexpected op" op)))
 
   result := #n
 
@@ -1649,34 +1721,35 @@ define-infix-operator 2>& 600 \>&
 define (jobs) "display the state of outstanding jobs" {
   first-j := #t
   jobs-loop :+ function (jobs) {
-		 cond ((null? jobs) {
-		   #t
-		 }) \
-		      (else {
-			job := ph jobs
-			if first-j {
-			  first-j = #f
-			  printf "%5s %s\n" "pgid" "job-pipeline"
-			}
-			printf "%5s %s\n" job.pgid job.pipeline
+		 (cond
+		  ((null? jobs) {
+		    #t
+		  })
+		  (else {
+		    job := ph jobs
+		    if first-j {
+		      first-j = #f
+		      printf "%5s %s\n" "pgid" "job-pipeline"
+		    }
+		    printf "%5s %s\n" (%idio-job-pgid job) (%idio-job-pipeline job)
 
-			first-p := #t
+		    first-p := #t
 
-			procs-loop :+ function (procs) {
-					proc := ph procs
-					if (null? proc) #t {
-					  if first-p {
-					    first-p = #f
-					    printf "  %5s %2s %2s %s\n" "pid" "C?" "S?" "argv"
-					  }
-					  printf "  %5s %s %s %s\n" proc.pid proc.completed proc.stopped proc.argv
-					  procs-loop (pt procs)
-					}
-			}
+		    procs-loop :+ function (procs) {
+				    proc := ph procs
+				    if (null? proc) #t {
+				      if first-p {
+					first-p = #f
+					printf "  %5s %2s %2s %s\n" "pid" "C?" "S?" "argv"
+				      }
+				      printf "  %5s %s %s %s\n" (%idio-process-pid proc) (%idio-process-completed proc) (%idio-process-stopped proc) (%idio-process-argv proc)
+				      procs-loop (pt procs)
+				    }
+		    }
 
-			(and (procs-loop (reverse (%idio-job-procs job)))
-			     (jobs-loop (pt jobs)))
-		      })
+		    (and (procs-loop (reverse (%idio-job-procs job)))
+			 (jobs-loop (pt jobs)))
+		  }))
   }
 
   jobs-loop %idio-jobs

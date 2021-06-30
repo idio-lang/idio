@@ -262,6 +262,10 @@ libc-wrap-error-load "libc-wrap-errors/mkdtemp-bad-format.idio" "mkdtemp: contai
    libc-wrap-error-load "libc-wrap-errors/mkdtemp-bad-template.idio" "Invalid argument" EINVAL "mkdtemp"
  }))
 
+libc-wrap-error-load "libc-wrap-errors/mkfifo-bad-path-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
+libc-wrap-error-load "libc-wrap-errors/mkfifo-bad-path-format.idio" "mkfifo: contains an ASCII NUL"
+libc-wrap-error-load "libc-wrap-errors/mkfifo-bad-mode-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a libc/mode_t"
+
 libc-wrap-error-load "libc-wrap-errors/mkstemp-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
 libc-wrap-error-load "libc-wrap-errors/mkstemp-bad-format.idio" "mkstemp: contains an ASCII NUL"
 (cond-expand
@@ -485,4 +489,4 @@ libc-wrap-error-load "libc-wrap-errors/x-bad-type.idio" "bad parameter type: '#t
 libc-wrap-error-load "libc-wrap-errors/x-bad-format.idio" "x?: contains an ASCII NUL"
 
 ;; all done?
-Tests? (libc-wrap-error0 + 259)
+Tests? (libc-wrap-error0 + 262)

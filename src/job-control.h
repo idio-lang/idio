@@ -26,6 +26,7 @@
 extern IDIO idio_job_control_module;
 extern int idio_job_control_terminal;
 extern int idio_job_control_interactive;
+extern pid_t idio_job_control_cmd_pid;
 extern IDIO idio_job_control_process_type;
 extern IDIO idio_job_control_job_type;
 extern IDIO idio_S_stdin_fileno;

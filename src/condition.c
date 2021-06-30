@@ -529,6 +529,69 @@ This invokes do-job-notification				\n\
     return idio_S_void;
 }
 
+/*
+ * Some common code.
+ *
+ * The basic premise is to fall on our sword in the same way the child
+ * did thus propgating the exit status up the process tree.
+ */
+IDIO idio_condition_exit_on_error (IDIO c)
+{
+    IDIO_ASSERT (c);
+
+    /*
+     * XXX IDIO_USER_TYPE_ASSERT() will raise a condition if it fails!
+     */
+    IDIO_USER_TYPE_ASSERT (condition, c);
+
+    /*
+     * Erm, we just happen to know that ^rt-command-status-error is
+     * derived from ^idio-error and therefore status is the fourth
+     * element after location, message and detail.
+     *
+     * status is the list (exit x) or (killed y)
+     *
+     * Should it be the C/pointer?
+     */
+    IDIO sl = idio_struct_instance_ref_direct (c, 3);
+
+    if (idio_isa_pair (sl)) {
+	if (idio_S_exit == IDIO_PAIR_H (sl)) {
+	    IDIO st = IDIO_PAIR_HT (sl);
+	    if (idio_isa_C_int (st)) {
+		int st_C = IDIO_C_TYPE_int (st);
+
+		if (st_C) {
+		    exit (st_C);
+		}
+	    } else {
+		idio_debug ("default rcse: status = %s (exit not a C/int)\n", sl);
+		fprintf (stderr, "isa %s\n", idio_type2string (st));
+		exit (1);
+	    }
+	} else if (idio_S_killed == IDIO_PAIR_H (sl)) {
+	    IDIO sig = IDIO_PAIR_HT (sl);
+	    if (idio_isa_C_int (sig)) {
+		int sig_C = IDIO_C_TYPE_int (sig);
+
+		kill (getpid (), sig_C);
+	    } else {
+		idio_debug ("default rcse: status = %s (killed not a C/int)\n", sl);
+		exit (1);
+	    }
+	} else {
+	    idio_debug ("default rcse: status = %s\n", sl);
+	    exit (1);
+	}
+    }
+
+    /*
+     * This is the default value for (exit 0) -- other conditions will
+     * have called exit (x) or kill -y $self
+     */
+    return idio_S_unspec;
+}
+
 IDIO_DEFINE_PRIMITIVE1_DS ("default-rcse-handler", default_rcse_handler, (IDIO c), "c", "\
 The default handler for an ^rt-command-status-error condition	\n\
 								\n\
@@ -549,17 +612,7 @@ This returns #unspec						\n\
     IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (c);
 
     if (idio_struct_type_isa (sit, idio_condition_rt_command_status_error_type)) {
-	/*
-	 * NB default action on the failure of a child process is...to
-	 * ignore it.
-	 *
-	 * Like all recalcitrant children.
-	 */
-	/*
-	 * This result should align with default-condition-handler,
-	 * below
-	 */
-	return idio_S_unspec;
+	return idio_condition_exit_on_error (c);
     }
 
     /*
@@ -676,8 +729,8 @@ does not return per se						\n\
 	 * should capture this condition under normal circumstances.
 	 * That makes it hard to get here.
 	 *
-	 * However, we *are* here in case some has gone wrong higher
-	 * up.
+	 * However, we *are* here in case something has gone wrong
+	 * higher up.
 	 *
 	 * It's not easy to provoke this as something like:
 	 *
@@ -690,10 +743,7 @@ does not return per se						\n\
 	 * not do anything as its update-status call is neutered by
 	 * foreground-job blocking.
 	 */
-	/*
-	 * This result should align with default-rcse-handler, above
-	 */
-	return idio_S_unspec;
+	return idio_condition_exit_on_error (c);
     }
 
     if (idio_job_control_interactive) {
@@ -877,7 +927,7 @@ does not return per se						\n\
 	    /* return idio_command_rcse_handler (c); */
 	    idio_debug ("restart-c-h: rcse = %s\n", c);
 	    fprintf (stderr, "restart-c-h: rcse?? =>> #unspec\n");
-	    return idio_S_unspec;
+	    return idio_condition_exit_on_error (c);
 	} else if (idio_struct_type_isa (sit, idio_condition_system_error_type)) {
 	    idio_condition_format_system_error ("restart-condition-handler", c);
 	    return idio_S_unspec;

@@ -133,6 +133,11 @@ int main (int argc, char **argv)
 	pid_t getpid_r = getpid ();
     }
 
+    /* getppid(2) */
+    {
+	pid_t getppid_r = getppid ();
+    }
+
     /* getrlimit(2) */
     {
 	struct rlimit rlim;
@@ -194,6 +199,13 @@ int main (int argc, char **argv)
     {
 	char *template = "XXXXXX";
 	char *mkdtemp_r = mkdtemp (template);
+    }
+
+    /* mkfifo(3) */
+    {
+	char *path = "idio-np";
+	mode_t mode = S_IRWXU;
+	int mkfifo_r = mkfifo (path, mode);
     }
 
     /* mkstemp(3) */

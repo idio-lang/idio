@@ -36,6 +36,14 @@ trap ^rt-command-status-error (function (c) {
 				 ;condition-report "test-command: ^rt-command-status-error" c (current-error-handle)
 				 test (rt-command-status-error? c) #t
 				 rcseh c
+
+				 ;; If we are a child Idio (from a |
+				 ;; operator) then we should invoke
+				 ;; the default-rcse handler which
+				 ;; will exit/kill us as it sees fit.
+				 if (not (C/== IDIO_PID (getpid))) {
+				   raise c
+				 }
 }) {
 
   ;; define some rt-command-status-error-handlers for the conditions
@@ -168,8 +176,9 @@ trap ^rt-command-status-error (function (c) {
   test (auto-exit -o 1 | auto-exit -r 1) #t
   (test+1)
 
-  ;; In the following test the second command should finish first
-  ;; causing a SIGPIPE in the first command.
+  ;; In the following test, auto-exit -o 2 -s 1 | auto-exit -r 1, the
+  ;; second command should finish first causing a SIGPIPE in the first
+  ;; command.
 
   ;; However, the likes of gdb conspire to have SIGPIPE sigignore()d
   ;; by children and ultimately auto-exit.  Rather than auto-exit's
