@@ -31,7 +31,7 @@ define (meaning-error-location src) {
   }
 
   if lo {
-    sprintf "%s:line %d" lo.name lo.line
+    sprintf "%s:line %d" (%idio-lexical-object-name lo) (%idio-lexical-object-line lo)
   } {
     sprintf "<no lexobj>"
   }
@@ -101,29 +101,29 @@ define-struct eval-flags tailp scope define
 no-flags := make-eval-flags #f #n #f
 
 define (set-tailp flags) {
-  make-eval-flags #t flags.scope flags.define
+  make-eval-flags #t (eval-flags-scope flags) (eval-flags-define flags)
 }
 
 define (clear-tailp flags) {
-  make-eval-flags #f flags.scope flags.define
+  make-eval-flags #f (eval-flags-scope flags) (eval-flags-define flags)
 }
 
 define (clear-define flags) {
-  make-eval-flags flags.tailp flags.scope #f
+  make-eval-flags (eval-flags-tailp flags) (eval-flags-scope flags) #f
 }
 
 define (set-scope scope flags) {
-  make-eval-flags flags.tailp scope flags.define
+  make-eval-flags (eval-flags-tailp flags) scope (eval-flags-define flags)
 }
 
 define (define-scope scope flags) {
-  make-eval-flags flags.tailp scope #t
+  make-eval-flags (eval-flags-tailp flags) scope #t
 }
 
 ;; symbol-info is a tuple: (scope ci vi mod creator)
 
 define (meaning-toplevel-extend src name flags cs cm) {
-  flag-scope := flags.scope
+  flag-scope := (eval-flags-scope flags)
 
   si := find-symbol name cm
 
@@ -137,7 +137,7 @@ define (meaning-toplevel-extend src name flags cs cm) {
     }
   } {
     if (and (eq? flag-scope 'toplevel)
-	    (not flags.define)) {
+	    (not (eval-flags-define flags))) {
 	      eprintf "toplevel-extend: forward reference: %s at %s\n" name (meaning-error-location src)
 	      if (not (hash-ref %idio-src-properties src #f)) {
 		eprintf "src=%s\n" src
@@ -375,7 +375,7 @@ define (meaning-copy-src-properties src dst) {
 	src-lo := hash-ref %idio-src-properties src #f
 	if src-lo {
 	  dst-lo = copy-value src-lo 'shallow
-	  dst-lo.expr = dst
+	  set-%idio-lexical-object-expr! dst-lo dst
 	  hash-set! %idio-src-properties dst dst-lo
 	}
       }
@@ -730,7 +730,7 @@ define (meaning-assignment src name e nametree escapes flags cs cm) {
      meaning src se nametree escapes (clear-define flags) cs cm
    })
    ((symbol? name) {
-     mflags := make-eval-flags #f flags.scope #f
+     mflags := make-eval-flags #f (eval-flags-scope flags) #f
 
      if (and (pair? e)
 	     (eq? (ph e) 'function)) {
@@ -794,7 +794,7 @@ define (meaning-assignment src name e nametree escapes flags cs cm) {
 	     assign = list I-GLOBAL-SYM-SET ci m
 	   })
 	   ((computed) {
-	     if flags.define {
+	     if (eval-flags-define flags) {
 	       i-code = (list (list I-GLOBAL-SYM-DEF name scope ci)
 			      (list I-COMPUTED-SYM-DEF ci m))
 	     } {
@@ -816,7 +816,7 @@ define (meaning-assignment src name e nametree escapes flags cs cm) {
 	   }))
 
      (cond (i-code i-code)
-	   (flags.define {
+	   ((eval-flags-define flags) {
 	     (list (list I-GLOBAL-SYM-DEF name scope ci)
 		   assign)
 	   })
@@ -844,7 +844,7 @@ define (meaning-define src name e nametree escapes flags cs cm) {
     }
   }
 
-  define-flags := make-eval-flags flags.tailp 'toplevel #t
+  define-flags := make-eval-flags (eval-flags-tailp flags) 'toplevel #t
   si := meaning-variable-info src nametree name define-flags cs cm
 
   ;; if the act of looking the variable up auto-created it then
@@ -1667,7 +1667,7 @@ define (meaning-fix-closed-application src formal* body ae* nametree escapes fla
 
   mbody := meaning-sequence (mpp body src) body nt+ escapes flags 'begin cs cm
 
-  if flags.tailp {
+  if (eval-flags-tailp flags) {
     list I-TR-FIX-LET am* mbody (meaning-nametree->list nt+)
   } {
     list I-FIX-LET am* mbody (meaning-nametree->list nt+)
@@ -1709,7 +1709,7 @@ define (meaning-dotted-closed-application src formal* vararg body ae* nametree e
 
   mbody := meaning-sequence (mpp body src) body nt+ escapes flags 'begin cs cm
 
-  if flags.tailp {
+  if (eval-flags-tailp flags) {
     list I-TR-FIX-LET am* mbody (meaning-nametree->list nt+)
   } {
     list I-FIX-LET am* mbody (meaning-nametree->list nt+)
@@ -1864,7 +1864,7 @@ define (meaning-regular-application src fe ae* nametree escapes flags cs cm) {
 
   am* := meaning-arguments src ae* nametree escapes (length ae*) (clear-tailp flags) cs cm
 
-  if flags.tailp {
+  if (eval-flags-tailp flags) {
     list I-TR-REGULAR-CALL src fm am*
   } {
     list I-REGULAR-CALL src fm am*

@@ -63,32 +63,33 @@ define-template (regex-case e & clauses) {
   key := gensym 'key
 
   gen-clauses :+ function (i c*) {
-		   cond ((null? c*) '#n) \
-			((or (not (pair? c*))
-			     (not (pair? (ph c*)))
-			     (not (pair? (pth c*)))) (error 'case "invalid syntax" c*)) \
-			((null? (pt c*)) {
-			  if (eq? 'else (phh c*)) {
-			    #T{
-			      ((else ((function (r) {
-					 $@(pth c*)
-			      }) $key)))
-			    }
-			  } {
-			    #T{
-			      (((regexec (array-ref *regcomp-array* $i) $key) => (function (r) {
-										    $@(pth c*)
-			      })))
-			    }
-			  }
-			}) \
-			(else {
-			  #T{
-			    (((regexec (array-ref *regcomp-array* $i) $key) => (function (r) {
-										  $@(pth c*)
-			    })) $@(gen-clauses (i + 1) (pt c*)))
-			  }
-			})
+		   (cond
+		    ((null? c*) '#n)
+		    ((or (not (pair? c*))
+			 (not (pair? (ph c*)))
+			 (not (pair? (pth c*)))) (error 'case "invalid syntax" c*))
+		    ((null? (pt c*)) {
+		      if (eq? 'else (phh c*)) {
+			#T{
+			  ((else ((function (r) {
+				     $@(pth c*)
+			  }) $key)))
+			}
+		      } {
+			#T{
+			  (((regexec (array-ref *regcomp-array* $i) $key) => (function (r) {
+										$@(pth c*)
+			  })))
+			}
+		      }
+		    })
+		    (else {
+		      #T{
+			(((regexec (array-ref *regcomp-array* $i) $key) => (function (r) {
+									      $@(pth c*)
+			})) $@(gen-clauses (i + 1) (pt c*)))
+		      }
+		    }))
 
   }
 
@@ -133,32 +134,33 @@ define-template (pattern-case e & clauses) {
   key := (gensym 'key)
 
   gen-clauses :+ function (i c*) {
-		   cond ((null? c*) '#n) \
-			((or (not (pair? c*))
-			     (not (pair? (ph c*)))
-			     (not (pair? (pth c*)))) (error 'case "invalid syntax" c*)) \
-			((null? (pt c*)) {
-			  if (eq? 'else (phh c*)) {
-			    #T{
-			      ((else ((function (r) {
-					 $@(pth c*)
-			      }) $key)))
-			    }
-			  } {
-			    #T{
-			      (((regexec (array-ref *regcomp-array* $i) $key) => (function (r) {
-										    $@(pth c*)
-			      })))
-			    }
-			  }
-			}) \
-			(else {
-			  #T{
-			    (((regexec (array-ref *regcomp-array* $i) $key) => (function (r) {
-										  $@(pth c*)
-			    })) $@(gen-clauses (i + 1) (pt c*)))
-			  }
-			})
+		   (cond
+		    ((null? c*) '#n)
+		    ((or (not (pair? c*))
+			 (not (pair? (ph c*)))
+			 (not (pair? (pth c*)))) (error 'case "invalid syntax" c*))
+		    ((null? (pt c*)) {
+		      if (eq? 'else (phh c*)) {
+			#T{
+			  ((else ((function (r) {
+				     $@(pth c*)
+			  }) $key)))
+			}
+		      } {
+			#T{
+			  (((regexec (array-ref *regcomp-array* $i) $key) => (function (r) {
+										$@(pth c*)
+			  })))
+			}
+		      }
+		    })
+		    (else {
+		      #T{
+			(((regexec (array-ref *regcomp-array* $i) $key) => (function (r) {
+									      $@(pth c*)
+			})) $@(gen-clauses (i + 1) (pt c*)))
+		      }
+		    }))
 
   }
 

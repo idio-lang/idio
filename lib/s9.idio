@@ -59,17 +59,18 @@ define (map f a b) {
 
 define (list? x) {
   l? :+ function (x y) {
-	  cond ((eq? x y) #f) \
-	       ((null? x) #t) \
-	       ((pair? x) (or (null? (pt x))
-			      (and (pair? (pt x))
-				   (l? (ptt x) (pt y))))) \
-	       (else #f)
+	  (cond
+	   ((eq? x y) #f)
+	   ((null? x) #t)
+	   ((pair? x) (or (null? (pt x))
+			  (and (pair? (pt x))
+			       (l? (ptt x) (pt y)))))
+	   (else #f))
   }
 
-  or (null? x) \
-     (and (pair? x)
-	  (l? (pt x) x))
+  (or (null? x)
+      (and (pair? x)
+	   (l? (pt x) x)))
 }
 
 fold-left := {
@@ -134,9 +135,10 @@ append := {
 }
 
 define (list-tail x n) {
-  cond ((zero? n) x) \
-       ((null? x) (error 'list-tail "index out of range" n)) \
-       (else (list-tail (pt x) (- n 1)))
+  (cond
+   ((zero? n) x)
+   ((null? x) (error 'list-tail "index out of range" n))
+   (else (list-tail (pt x) (- n 1))))
 }
 
 define (list-ref x n) {
@@ -175,14 +177,16 @@ define (even? x) (zero? (remainder x 2))
 define (expt x y) {
   square :+ function (x) (* x x)
   expt2 :+ function (x y) {
-	     cond ((zero? y) 1) \
-		  ((even? y) (square (expt2 x (quotient y 2)))) \
-		  (else      (x * (square (expt2 x (quotient y 2)))))
+	     (cond
+	      ((zero? y) 1)
+	      ((even? y) (square (expt2 x (quotient y 2))))
+	      (else      (x * (square (expt2 x (quotient y 2))))))
   }
 
-  cond ((negative? y) (/ (expt2 (0.0 + x) y))) \
-       ((integer? y) (expt2 x y)) \
-       (else (exp (y * (log x))))
+  (cond
+   ((negative? y) (/ (expt2 (0.0 + x) y)))
+   ((integer? y) (expt2 x y))
+   (else (exp (y * (log x)))))
 }
 
 gcd := {
@@ -190,10 +194,11 @@ gcd := {
 
   function a {
     gcd2 :+ function (a b) {
-	      cond ((zero? b) a) \
-		   ((zero? a) b) \
-		   ((a lt b) (gcd2 a (remainder b a))) \
-		   (else (gcd2 b (remainder a b)))
+	      (cond
+	       ((zero? b) a)
+	       ((zero? a) b)
+	       ((a lt b) (gcd2 a (remainder b a)))
+	       (else (gcd2 b (remainder a b))))
     }
 
     fold-left gcd2 0 (map abs a)
@@ -246,9 +251,10 @@ min := {
 define (modulo a b) {
   rem := remainder a b
 
-  cond ((zero? rem) 0) \
-       ((eq? (negative? a) (negative? b)) rem) \
-       (else (+ b rem))
+  (cond
+   ((zero? rem) 0)
+   ((eq? (negative? a) (negative? b)) rem)
+   (else (+ b rem)))
 }
 
 define (negative? x) (x lt 0)
@@ -286,11 +292,11 @@ exp := {
   function (x) {
     e-series :+ function (x y r last) {
 		  if (r eq last) r {
-		    e-series x \
-			     (1 + y) \
-			     (r + ((expt x y) /
-					      (fact2 y 1))) \
-			     r
+		    (e-series x
+			      (1 + y)
+			      (r + ((expt x y) /
+					       (fact2 y 1)))
+			      r)
 		  }
     }
 
@@ -312,29 +318,31 @@ exp := {
 
 define (log x) {
   l-series :+ function (x y r last lim) {
-		cond ((and lim (zero? lim)) r) \
-		     ((r eq last) (2 * r)) \
-		     (else (l-series x
-				     (2 + y)
-				     (r + ((expt ((x - 1) / (x + 1))
-						 y)
-					    /
-					    y))
-				     r
-				     (if lim (lim - 1) lim)))
+		(cond
+		 ((and lim (zero? lim)) r)
+		 ((r eq last) (2 * r))
+		 (else (l-series x
+				 (2 + y)
+				 (r + ((expt ((x - 1) / (x + 1))
+					     y)
+					/
+					y))
+				 r
+				 (if lim (lim - 1) lim))))
   }
 
-  cond ((negative? x) (1.0 / 0)) \
-       ((lt 0.1 x 5) (l-series x
-			       1
-			       0.0
-			       1.0
-			       #f)) \
-       (else {
-	 approx := l-series x 1 0.0 1.0 5
-	 a := x / (exp approx)
-	 approx + (log a)
-       })
+  (cond
+   ((negative? x) (1.0 / 0))
+   ((lt 0.1 x 5) (l-series x
+			   1
+			   0.0
+			   1.0
+			   #f))
+   (else {
+     approx := l-series x 1 0.0 1.0 5
+     a := x / (exp approx)
+     approx + (log a)
+   }))
 }
 
 ; auxilary definitions for SIN, COS, TAN
@@ -367,11 +375,11 @@ p-series  := {
 
   function (x y r add last) {
     if (r eq last) r {
-      p-series x \
-	       (2 + y) \
-	       ((if add \+ \-) r ((expt x y) / (fact2 y 1))) \
-	       (not add) \
-	       r
+      (p-series x
+		(2 + y)
+		((if add \+ \-) r ((expt x y) / (fact2 y 1)))
+		(not add)
+		r)
     }
   }
 }
@@ -387,14 +395,15 @@ cos := {
   function (x) {
     x := ->circle x
 
-    cond ((0 eq     x)       (if (inexact? x)  #i1.0  1.0)) \
-	 ((pi/2 eq  x)       (if (inexact? x)  #i0.0  0.0)) \
-	 ((pi eq    x)       (if (inexact? x) #i-1.0 -1.0)) \
-	 ((3pi/2 eq x)       (if (inexact? x)  #i0.0  0.0)) \
-	 ((le 0     x pi/2)  (p-series    x         2 1.0 #f 0)) \
-	 ((le pi/2  x pi)    (- (p-series (- pi x)  2 1.0 #f 0))) \
-	 ((le pi    x 3pi/2) (- (p-series (- x pi)  2 1.0 #f 0))) \
-	 (else               (p-series    (- 2pi x) 2 1.0 #f 0))
+    (cond
+     ((0 eq     x)       (if (inexact? x)  #i1.0  1.0))
+     ((pi/2 eq  x)       (if (inexact? x)  #i0.0  0.0))
+     ((pi eq    x)       (if (inexact? x) #i-1.0 -1.0))
+     ((3pi/2 eq x)       (if (inexact? x)  #i0.0  0.0))
+     ((le 0     x pi/2)  (p-series    x         2 1.0 #f 0))
+     ((le pi/2  x pi)    (- (p-series (- pi x)  2 1.0 #f 0)))
+     ((le pi    x 3pi/2) (- (p-series (- x pi)  2 1.0 #f 0)))
+     (else               (p-series    (- 2pi x) 2 1.0 #f 0)))
   }
 }
 
@@ -409,22 +418,24 @@ sin := {
   function (x) {
     x := ->circle x
 
-    cond ((0     eq x) (if (inexact? x)  #i0.0  0.0)) \
-	 ((pi/2  eq x) (if (inexact? x)  #i1.0  1.0)) \
-	 ((pi    eq x) (if (inexact? x)  #i0.0  0.0)) \
-	 ((3pi/2 eq x) (if (inexact? x) #i-1.0 -1.0)) \
-	 (else {
-	   z := cond ((le 0    x  pi/2) x) \
-		     ((le pi/2 x  pi)   (- pi x)) \
-		     ((le pi   x 3pi/2) (- x pi)) \
-		     (else              (- 2pi x))
+    (cond
+     ((0     eq x) (if (inexact? x)  #i0.0  0.0))
+     ((pi/2  eq x) (if (inexact? x)  #i1.0  1.0))
+     ((pi    eq x) (if (inexact? x)  #i0.0  0.0))
+     ((3pi/2 eq x) (if (inexact? x) #i-1.0 -1.0))
+     (else {
+       z := (cond
+	     ((le 0    x  pi/2) x)
+	     ((le pi/2 x  pi)   (- pi x))
+	     ((le pi   x 3pi/2) (- x pi))
+	     (else              (- 2pi x)))
 
-	   if (x gt pi) {
-	     - (p-series z 3 z #f 0)
-	   } {
-	     p-series z 3 z #f 0
-	   }
-	 })
+       if (x gt pi) {
+	 - (p-series z 3 z #f 0)
+       } {
+	 p-series z 3 z #f 0
+       }
+     }))
   }
 }
 
@@ -438,10 +449,11 @@ tan := {
 
   function (x) {
     x := ->circle x
-    cond ((or (x eq 0)     (x eq  pi))   (if (inexact? x)  #i0.0  0.0)) \
-	 ((or (x eq  pi/4) (x eq 5pi/4)) (if (inexact? x)  #i1.0  1.0)) \
-	 ((or (x eq 3pi/4) (x eq 7pi/4)) (if (inexact? x) #i-1.0 -1.0)) \
-	 (else                           ((sin x) / (cos x)))
+    (cond
+     ((or (x eq 0)     (x eq  pi))   (if (inexact? x)  #i0.0  0.0))
+     ((or (x eq  pi/4) (x eq 5pi/4)) (if (inexact? x)  #i1.0  1.0))
+     ((or (x eq 3pi/4) (x eq 7pi/4)) (if (inexact? x) #i-1.0 -1.0))
+     (else                           ((sin x) / (cos x))))
   }
 }
 
@@ -449,27 +461,29 @@ atan := {
   pi/2 := pi/2
   at-series :+ function (x y r last) {
 		 if (r eq last) r {
-		   at-series x \
-			     (1 + y) \
-			     (r + ((((expt 2 (y + y)) * (expt (fact2 y 1) 2)) /
-									      (fact2 (y + y + 1) 1)) *
-				    ((expt x (y + y + 1)) /
-							  (expt (1 + (x * x)) (1 + y))))) \
-			     r
+		   (at-series x
+			      (1 + y)
+			      (r + ((((expt 2 (y + y)) * (expt (fact2 y 1) 2)) /
+									       (fact2 (y + y + 1) 1)) *
+				     ((expt x (y + y + 1)) /
+							   (expt (1 + (x * x)) (1 + y)))))
+			      r)
 		 }
   }
 
   function (x) {
-    cond ((negative? x) (- (at-series (- x) 0.0 0 1))) \
-	 ((x gt 1) (pi/2 - (atan (/ x)))) \
-	 (else (at-series x 0.0 0 1))
+    (cond
+     ((negative? x) (- (at-series (- x) 0.0 0 1)))
+     ((x gt 1) (pi/2 - (atan (/ x))))
+     (else (at-series x 0.0 0 1)))
   }
 }
 
 define (asin x) {
-  cond ((1 eq x) (2 * (atan x))) \
-       ((negative? x) (- (asin (- x)))) \
-       (else (atan (x / (sqrt (1 - (x * x))))))
+  (cond
+   ((1 eq x) (2 * (atan x)))
+   ((negative? x) (- (asin (- x))))
+   (else (atan (x / (sqrt (1 - (x * x)))))))
 }
 
 acos := {
@@ -477,9 +491,10 @@ acos := {
   pi/2 := pi/2
 
   function (x) {
-    cond ((-1 eq x) pi) \
-	 ((1  eq x) 0) \
-	 (else (pi/2 - (asin x)))
+    (cond
+     ((-1 eq x) pi)
+     ((1  eq x) 0)
+     (else (pi/2 - (asin x))))
   }
 }
 
@@ -520,10 +535,10 @@ define number->string {
 	      if (zero? n) {
 		if (null? res) '(#\0) res
 	      } {
-		conv (quotient n rdx) \
-		     rdx \
-		     (pair (array-ref digits (remainder n rdx))
-			   res)
+		(conv (quotient n rdx)
+		      rdx
+		      (pair (array-ref digits (remainder n rdx))
+			    res))
 	      }
     }
     conv-int :+ function (n rdx) {
@@ -538,12 +553,12 @@ define number->string {
 		       es := conv-int e 10
 		       i := if (negative? m) 2 1
 		       k := string-length ms
-		       append-string (substring ms 0 i) \
-				     "." \
-				     (if (k eq i) "0" (substring ms i k)) \
-				     "e" \
-				     (if (0 le e) "+" "") \
-				     es
+		       (append-string (substring ms 0 i)
+				      "."
+				      (if (k eq i) "0" (substring ms i k))
+				      "e"
+				      (if (0 le e) "+" "")
+				      es)
     }
     zeroes :+ function (n) {
 		loop :+ function (n z) {
@@ -557,22 +572,23 @@ define number->string {
     }
     conv-expanded-real :+ function (n offset) {
 			    m := abs n
-			    append-string (if (negative? n) "-" "") \
-					  (cond ((negative? offset) "0.")
-						((zero? offset)     "0")
-						(else               "")) \
-					  (zeroes (- offset)) \
-					  {
-					    ms := conv-int m 10
-					    k := string-length ms
-					    if (le 0 offset k){
-					      append-string (substring ms 0 offset) \
-							    "." \
-							    (substring ms offset k)
-					    } {
-					      ms
-					    }
-					  }
+			    (append-string (if (negative? n) "-" "")
+					   (cond
+					    ((negative? offset) "0.")
+					    ((zero? offset)     "0")
+					    (else               ""))
+					   (zeroes (- offset))
+					   {
+					     ms := conv-int m 10
+					     k := string-length ms
+					     if (le 0 offset k){
+					       (append-string (substring ms 0 offset)
+							      "."
+							      (substring ms offset k))
+					     } {
+					       ms
+					     }
+					   })
     }
     conv-real :+ function (n) {
 		   m := mantissa n
@@ -586,17 +602,19 @@ define number->string {
 		   }
     }
     get-radix :+ function () {
-		   cond ((null? radix) 10) \
-			((le 2 (ph radix) 36) (ph radix)) \
-			(else (error 'number->string "invalid radix"
-						     (ph radix)))
+		   (cond
+		    ((null? radix) 10)
+		    ((le 2 (ph radix) 36) (ph radix))
+		    (else (error 'number->string "invalid radix"
+						 (ph radix))))
     }
 
     r := (get-radix)
-    cond ((not (or (integer? n) (10 eq r)))
-	  (error 'number->string "real number needs a radix of 10" n)) \
-	 ((integer? n) (conv-int (inexact->exact n) r)) \
-	 (else (conv-real n))
+    (cond
+     ((not (or (integer? n) (10 eq r)))
+      (error 'number->string "real number needs a radix of 10" n))
+     ((integer? n) (conv-int (inexact->exact n) r))
+     (else (conv-real n)))
   }
 }
 
@@ -608,9 +626,10 @@ string->number := {
     digits :+ string->list "0123456789abcdefghijklmnopqrstuvwxyz"
     value-of-digit :+ function (x) {
 			v :+ function (x d n) {
-			       cond ((null? d) 36) \
-				    ((unicode=? (ph d) x) n) \
-				    (else (v x (pt d) (n + 1)))
+			       (cond
+				((null? d) 36)
+				((unicode=? (ph d) x) n)
+				(else (v x (pt d) (n + 1))))
 			}
 			v (unicode-downcase x) digits 0
     }
@@ -629,9 +648,9 @@ string->number := {
 	       } {
 		 dval := value-of-digit (ph lst)
 		 if (dval lt rdx) {
-		   conv3 (pt lst) \
-			 ((value-of-digit (ph lst)) + (val * rdx)) \
-			 rdx
+		   (conv3 (pt lst)
+			  ((value-of-digit (ph lst)) + (val * rdx))
+			  rdx)
 		 } {
 		   result val lst
 		 }
@@ -643,15 +662,16 @@ string->number := {
 	      }
     }
     conv-int :+ function (lst rdx) {
-		  cond ((null? lst) FAIL) \
-		       ((unicode=? (ph lst) #\+) (conv (pt lst) rdx)) \
-		       ((unicode=? (ph lst) #\-) {
-			 r := conv (pt lst) rdx
-			 if (ok? r) {
-			   result (- (value r)) (rest r)
-			 } FAIL
-		       }) \
-		       (else (conv lst rdx))
+		  (cond
+		   ((null? lst) FAIL)
+		   ((unicode=? (ph lst) #\+) (conv (pt lst) rdx))
+		   ((unicode=? (ph lst) #\-) {
+		     r := conv (pt lst) rdx
+		     if (ok? r) {
+		       result (- (value r)) (rest r)
+		     } FAIL
+		   })
+		   (else (conv lst rdx)))
     }
     make-frag :+ function (x) {
 		   d := number-of-digits x -1
@@ -670,16 +690,17 @@ string->number := {
 		       }
     }
     conv-decimals :+ function (int lst) {
-		       cond ((null? lst) (result (0.0 + int) '#n)) \
-			    ((find-exponent-mark (ph lst)) (conv-exponent int 10 (pt lst))) \
-			    (else {
-			      frag-part := conv3 lst 1 10
-			      if (null? (rest frag-part)) {
-				result (make-real int (value frag-part) 0) '#n
-			      } {
-				conv-exponent int (value frag-part) (pt (rest frag-part))
-			      }
-			    })
+		       (cond
+			((null? lst) (result (0.0 + int) '#n))
+			((find-exponent-mark (ph lst)) (conv-exponent int 10 (pt lst)))
+			(else {
+			  frag-part := conv3 lst 1 10
+			  if (null? (rest frag-part)) {
+			    result (make-real int (value frag-part) 0) '#n
+			  } {
+			    conv-exponent int (value frag-part) (pt (rest frag-part))
+			  }
+			}))
     }
     radix-ten? :+ function (rdx) {
 		    if (not (10 eq rdx)) {
@@ -687,44 +708,48 @@ string->number := {
 		    } #t
     }
     mantissa-digits? :+ function (x) {
-			  cond ((null? x)                    #f) \
-			       ((unicode-numeric? (ph x))      #t) \
-			       ((find-exponent-mark (ph x)) #f) \
-			       (else (mantissa-digits? (pt x)))
+			  (cond
+			   ((null? x)                    #f)
+			   ((unicode-numeric? (ph x))      #t)
+			   ((find-exponent-mark (ph x)) #f)
+			   (else (mantissa-digits? (pt x))))
     }
     conv-real :+ function (lst rdx) {
 		   int-part := conv-int lst rdx
-		   cond ((failed? int-part) FAIL) \
-			((and (zero? (value int-part))
-			      (not (mantissa-digits? lst))) FAIL) \
-			((null? (rest int-part)) int-part) \
-			((find-exponent-mark (ph (rest int-part))) {
-			  if (radix-ten? rdx) {
-			    conv-exponent (value int-part) \
-					  10 \
-					  (pt (rest int-part))
-			  } FAIL
-			}) \
-			((unicode=? #\. (ph (rest int-part))) {
-			  if (radix-ten? rdx) {
-			    conv-decimals (value int-part) (pt (rest int-part))
-			  } FAIL
-			}) \
-			(else int-part)
+		   (cond
+		    ((failed? int-part) FAIL)
+		    ((and (zero? (value int-part))
+			  (not (mantissa-digits? lst))) FAIL)
+		    ((null? (rest int-part)) int-part)
+		    ((find-exponent-mark (ph (rest int-part))) {
+		      if (radix-ten? rdx) {
+			(conv-exponent (value int-part)
+				       10
+				       (pt (rest int-part)))
+		      } FAIL
+		    })
+		    ((unicode=? #\. (ph (rest int-part))) {
+		      if (radix-ten? rdx) {
+			conv-decimals (value int-part) (pt (rest int-part))
+		      } FAIL
+		    })
+		    (else int-part))
     }
     replace-inexact-digits! :+ function (a) {
-				 cond ((null? a) #f) \
-				      ((unicode=? #\# (ph a)) {
-					set-ph! a #\5
-					set! inexact #t
-					replace-inexact-digits! (pt a)
-				      }) \
-				      (else (replace-inexact-digits! (pt a)))
+				 (cond
+				  ((null? a) #f)
+				  ((unicode=? #\# (ph a)) {
+				    set-ph! a #\5
+				    set! inexact #t
+				    replace-inexact-digits! (pt a)
+				  })
+				  (else (replace-inexact-digits! (pt a))))
     }
     get-radix :+ function () {
-		   cond ((null? radix) 10) \
-			((le 2 (ph radix) 36) (ph radix)) \
-			(else (error 'string->number "invalid radix" (ph radix)))
+		   (cond
+		    ((null? radix) 10)
+		    ((le 2 (ph radix) 36) (ph radix))
+		    (else (error 'string->number "invalid radix" (ph radix))))
     }
 
     set! inexact #f
@@ -735,13 +760,14 @@ string->number := {
 	    (unicode=? #\# (ph lst))) {
 	      mod := pht lst
 	      set! lst (ptt lst)
-	      cond ((unicode=? mod #\e) (void)) \
-		   ((unicode=? mod #\d) (void)) \
-		   ((unicode=? mod #\i) (set! inexact #t)) \
-		   ((unicode=? mod #\b) (set! radix 2)) \
-		   ((unicode=? mod #\o) (set! radix 8)) \
-		   ((unicode=? mod #\x) (set! radix 16)) \
-		   (else             (set! lst '#n))
+	      (cond
+	       ((unicode=? mod #\e) (void))
+	       ((unicode=? mod #\d) (void))
+	       ((unicode=? mod #\i) (set! inexact #t))
+	       ((unicode=? mod #\b) (set! radix 2))
+	       ((unicode=? mod #\o) (set! radix 8))
+	       ((unicode=? mod #\x) (set! radix 16))
+	       (else             (set! lst '#n)))
 	    }
     if (or (null? lst)
 	   (memv (ph lst) '(#\+ #\- #\.))
@@ -749,9 +775,10 @@ string->number := {
 	     replace-inexact-digits! lst
 	   }
 
-    r := cond ((null? lst) FAIL) \
-	      ((unicode=? #\- (ph lst)) (conv-real (pt lst) radix)) \
-	      (else (conv-real lst radix))
+    r := (cond
+	  ((null? lst) FAIL)
+	  ((unicode=? #\- (ph lst)) (conv-real (pt lst) radix))
+	  (else (conv-real lst radix)))
 
     if (null? (rest r)) {
       v := if (unicode=? #\- (ph lst)) {
@@ -815,13 +842,14 @@ with-output-to-file := {
 
 ; LET/LET*/LETREC helper
 define (check-bindings b who) {
-  cond ((null? b) #t) \
-       ((or (not (pair? b))
-	    (not (pair? (ph b)))
-	    (not (symbol? (phh b)))
-	    (not (pair? (pth b)))
-	    (not (null? (ptth b)))) (error 'check-bindings (append-string who ": invalid syntax") b)) \
-       (else (check-bindings (pt b) who))
+  (cond
+   ((null? b) #t)
+   ((or (not (pair? b))
+	(not (pair? (ph b)))
+	(not (symbol? (phh b)))
+	(not (pair? (pth b)))
+	(not (null? (ptth b)))) (error 'check-bindings (append-string who ": invalid syntax") b))
+   (else (check-bindings (pt b) who)))
 }
 
 ; Now that the QQ expander is here, define a
@@ -835,9 +863,9 @@ define-template %ext-let {
 	       if (null? bind*) {
 		 pair vars args
 	       } {
-		 split (pt bind*) \
-		       (pair (phh bind*) vars) \
-		       (pair (phth bind*) args)
+		 (split (pt bind*)
+			(pair (phh bind*) vars)
+			(pair (phth bind*) args))
 	       }
     }
 
@@ -868,20 +896,21 @@ define-template %ext-let {
 
 define-template (case key & clauses) {
   gen-clauses :+ function (k c*) {
-		   cond ((null? c*) '#n) \
-			((or (not (pair? c*))
-			     (not (pair? (ph c*)))
-			     (not (pair? (pth c*)))) (error 'case "invalid syntax" c*)) \
-			((null? (pt c*)) {
-			  if (eq? 'else (phh c*)) {
-			    #T{ ((else $@(pth c*))) }
-			  } {
-			    #T{ (((memv $k '$(phh c*)) $@(pth c*))) }
-			  }
-			}) \
-			(else {
-			  #T{ (((memv $k '$(phh c*)) $@(pth c*)) $@(gen-clauses k (pt c*))) }
-			})
+		   (cond
+		    ((null? c*) '#n)
+		    ((or (not (pair? c*))
+			 (not (pair? (ph c*)))
+			 (not (pair? (pth c*)))) (error 'case "invalid syntax" c*))
+		    ((null? (pt c*)) {
+		      if (eq? 'else (phh c*)) {
+			#T{ ((else $@(pth c*))) }
+		      } {
+			#T{ (((memv $k '$(phh c*)) $@(pth c*))) }
+		      }
+		    })
+		    (else {
+		      #T{ (((memv $k '$(phh c*)) $@(pth c*)) $@(gen-clauses k (pt c*))) }
+		    }))
 
   }
 
@@ -896,17 +925,18 @@ define-template (case key & clauses) {
 
 define-template (do var-clauses test & body) {
   split :+ function (clauses vars inits steps) {
-	     cond ((null? clauses) (list vars inits steps)) \
-		  ((or (not (pair? clauses))
-		       (not (pair? (ph clauses)))
-		       (not (symbol? (phh clauses)))
-		       (not (pair? (pth clauses)))) (error 'do "invalid syntax" clauses)) \
-		  (else (split (pt clauses)
-			       (pair (phh clauses) vars)
-			       (pair (phth clauses) inits)
-			       (if (null? (ptth clauses))
-				   (pair (phh clauses) steps)
-				   (pair (phtth clauses) steps))))
+	     (cond
+	      ((null? clauses) (list vars inits steps))
+	      ((or (not (pair? clauses))
+		   (not (pair? (ph clauses)))
+		   (not (symbol? (phh clauses)))
+		   (not (pair? (pth clauses)))) (error 'do "invalid syntax" clauses))
+	      (else (split (pt clauses)
+			   (pair (phh clauses) vars)
+			   (pair (phth clauses) inits)
+			   (if (null? (ptth clauses))
+			       (pair (phh clauses) steps)
+			       (pair (phtth clauses) steps)))))
   }
 
   if (or (not (pair? test))

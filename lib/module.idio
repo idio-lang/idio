@@ -221,32 +221,33 @@ define-template (provide feature) {
 
 define (%module-import importer module*) {
   loop :+ function (m* r) {
-	    cond ((null? m*) {
-	      %set-module-imports! importer (append (reverse r) (module-imports importer))
-	    }) \
-		 (else {
-		   mod-name := ph m*
-		   subfeatures := #n
-		   if (pair? mod-name) {
-		     subfeatures = pt mod-name
-		     mod-name = ph mod-name
-		   }
-		   mod := find-module mod-name #f
-		   if mod {
-		     loop (pt m*) (if (or (eq? mod importer)
-					  (assq mod r))
-				   r {
-				     apply require (module-name mod) subfeatures
-				     pair (list mod) r
-				   })
-		   } {
-		     apply require mod-name subfeatures
-		     mod := find-module mod-name #f
-		     if mod {
-		       loop (pt m*) (pair (list mod) r)
-		     } (error '%module-import "failed to instantiate module" mod-name)
-		   }
-		 })
+	    (cond
+	     ((null? m*) {
+	       %set-module-imports! importer (append (reverse r) (module-imports importer))
+	     })
+	     (else {
+	       mod-name := ph m*
+	       subfeatures := #n
+	       if (pair? mod-name) {
+		 subfeatures = pt mod-name
+		 mod-name = ph mod-name
+	       }
+	       mod := find-module mod-name #f
+	       if mod {
+		 loop (pt m*) (if (or (eq? mod importer)
+				      (assq mod r))
+			       r {
+				 apply require (module-name mod) subfeatures
+				 pair (list mod) r
+			       })
+	       } {
+		 apply require mod-name subfeatures
+		 mod := find-module mod-name #f
+		 if mod {
+		   loop (pt m*) (pair (list mod) r)
+		 } (error '%module-import "failed to instantiate module" mod-name)
+	       }
+	     }))
   }
 
   if (null? module*) #n {
@@ -282,15 +283,16 @@ define (%module-export exporter symbols) {
 ;; export (sym
 ;;	   ...)
 define-template (export & symbols) {
-  cond ((null? symbols) #n) \
-       ((pair? (ph symbols)) {
-	 #T{
-	   %module-export (current-module) '$(ph symbols)
-	 }
-       }) \
-       (else {
-	 #T{
-	   %module-export (current-module) '$symbols
-	 }
-       })
+  (cond
+   ((null? symbols) #n)
+   ((pair? (ph symbols)) {
+     #T{
+       %module-export (current-module) '$(ph symbols)
+     }
+   })
+   (else {
+     #T{
+       %module-export (current-module) '$symbols
+     }
+   }))
 }

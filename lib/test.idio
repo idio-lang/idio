@@ -116,7 +116,7 @@ define-template (test form result) {
 define-template (test/error form result c-msg) {
   #T{
     with-condition-handler ^idio-error (function (c) {
-					  test c.message $c-msg
+					  test (idio-error-message c) $c-msg
 					  trap-return #f
     }) {
       test3 '$form $form $result
@@ -189,8 +189,8 @@ IDIOLIB = append-string IDIOLIB ":" PWD
 nofiles_lim := 256
 C_nofiles_lim := C/integer-> nofiles_lim libc/rlim_t
 rl := libc/getrlimit libc/RLIMIT_NOFILE
-if (C/> rl.rlim_cur C_nofiles_lim) {
-  rl.rlim_cur = C_nofiles_lim
+if (C/> (libc/struct-rlimit-ref rl 'rlim_cur) C_nofiles_lim) {
+  libc/struct-rlimit-set! rl 'rlim_cur C_nofiles_lim
   libc/setrlimit libc/RLIMIT_NOFILE rl
 }
 
@@ -205,7 +205,7 @@ test-load := {
     load filename
     tv-after := (libc/gettimeofday)
     tv-delta := libc/subtract-struct-timeval tv-after tv-before
-    delta := (C/->integer tv-delta.tv_sec) + ((C/->integer tv-delta.tv_usec) / 1000000)
+    delta := (C/->integer (libc/struct-timeval-ref tv-delta 'tv_sec)) + ((C/->integer (libc/struct-timeval-ref tv-delta 'tv_usec)) / 1000000)
     printf "[%s/%d] %3ds %4d tests in %5.2fs %s\n" (getpid) PID SECONDS (Tests - tests0) delta filename
 
     ; clean up lost file descriptors
@@ -302,13 +302,13 @@ if (e? testfile) (delete-file testfile)
 
 printf "[%s/%d] %3ds test.idio\n" (getpid) PID SECONDS
 printf "# src-props %d\n" (length (hash-keys %idio-src-properties))
-if (zero? Errors) (printf "All %d tests passed!\n" Tests) \
+(if (zero? Errors) (printf "All %d tests passed!\n" Tests)
    {
      printf "%d error%s in %d tests.\n" Errors (if (Errors gt 1) "s" "") Tests
      if (not %idio-interactive) {
        exit 1
      }
-   }
+   })
 
 IDIOLIB = OIDIOLIB
 PATH = OPATH

@@ -1,5 +1,5 @@
 ;;
-;; Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
+;; Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
 ;;
 ;; Licensed under the Apache License, Version 2.0 (the "License"); you
 ;; may not use this file except in compliance with the License.  You
@@ -47,17 +47,18 @@ define-infix-operator + 1100 {
   if (not (null? (pt before))) {
     prefix = before
     loop :+ function (before) {
-	      cond ((null? (pt before)) {
-		before
-	      }) \
-		   ((null? (pt (pt before))) {
-		     r := pt before
-		     set-pt! before #n
-		     r
-		   }) \
-		   (else {
-		     loop (pt before)
-		   })
+	      (cond
+	       ((null? (pt before)) {
+		 before
+	       })
+	       ((null? (pt (pt before))) {
+		 r := pt before
+		 set-pt! before #n
+		 r
+	       })
+	       (else {
+		 loop (pt before)
+	       }))
     }
 
     ;; before must be a list of at least one (as an operator cannot be
@@ -124,17 +125,18 @@ define-infix-operator and 1000 {
   if (not (null? (pt before))) {
     prefix = before
     loop :+ function (before) {
-	      cond ((null? (pt before)) {
-		before
-	      }) \
-		   ((null? (pt (pt before))) {
-		     r := pt before
-		     set-pt! before #n
-		     r
-		   }) \
-		   (else {
-		     loop (pt before)
-		   })
+	      (cond
+	       ((null? (pt before)) {
+		 before
+	       })
+	       ((null? (pt (pt before))) {
+		 r := pt before
+		 set-pt! before #n
+		 r
+	       })
+	       (else {
+		 loop (pt before)
+	       }))
     }
 
     ;; before must be a list of at least one (as an operator cannot be
@@ -145,13 +147,14 @@ define-infix-operator and 1000 {
   ;; split - we want to consume (into op-args) the set of expressions
   ;; that successive {op}s are operating on
   split :+ function (op op-args after) {
-	     cond ((null? after) (error 'operator-and "not enough args after" op (reverse op-args))) \
-		  ((not (pair? after)) (error 'operator-and "bad syntax" op (reverse op-args) after)) \
-		  ((null? (pt after)) (list (reverse (pair (ph after) op-args)) #n)) \
-		  ((and (pair? after)
-			(pair? (pt after))
-			(eq? op (ph (pt after)))) (split op (pair (ph after) op-args) (pt (pt after)))) \
-		  (else (list (reverse op-args) after))
+	     (cond
+	      ((null? after) (error 'operator-and "not enough args after" op (reverse op-args)))
+	      ((not (pair? after)) (error 'operator-and "bad syntax" op (reverse op-args) after))
+	      ((null? (pt after)) (list (reverse (pair (ph after) op-args)) #n))
+	      ((and (pair? after)
+		    (pair? (pt after))
+		    (eq? op (ph (pt after)))) (split op (pair (ph after) op-args) (pt (pt after))))
+	      (else (list (reverse op-args) after)))
   }
 
   dis := split op before after
@@ -209,17 +212,18 @@ define-infix-operator =+ 1300 {
   if (not (null? (pt before))) {
     prefix = before
     loop :+ function (before) {
-	      cond ((null? (pt before)) {
-		before
-	      }) \
-		   ((null? (pt (pt before))) {
-		     r := pt before
-		     set-pt! before #n
-		     r
-		   }) \
-		   (else {
-		     loop (pt before)
-		   })
+	      (cond
+	       ((null? (pt before)) {
+		 before
+	       })
+	       ((null? (pt (pt before))) {
+		 r := pt before
+		 set-pt! before #n
+		 r
+	       })
+	       (else {
+		 loop (pt before)
+	       }))
     }
 
     ;; before must be a list of at least one (as an operator cannot be
@@ -242,9 +246,10 @@ define-infix-operator =+ 1300 {
   }
 
   op-func := #f
-  cond ((eq? op '=+) (op-func = 'array-push!)) \
-       ((eq? op '+=) (op-func = 'array-unshift!)) \
-       (else (error op "unexpected array extend operator" op))
+  (cond
+   ((eq? op '=+) (op-func = 'array-push!))
+   ((eq? op '+=) (op-func = 'array-unshift!))
+   (else (error op "unexpected array extend operator" op)))
 
   op+args := list op-func (ph before) (ph after)
 
@@ -275,17 +280,18 @@ define-postfix-operator =- 1300 {
   if (not (null? (pt before))) {
     prefix = before
     loop :+ function (before) {
-	      cond ((null? (pt before)) {
-		before
-	      }) \
-		   ((null? (pt (pt before))) {
-		     r := pt before
-		     set-pt! before #n
-		     r
-		   }) \
-		   (else {
-		     loop (pt before)
-		   })
+	      (cond
+	       ((null? (pt before)) {
+		 before
+	       })
+	       ((null? (pt (pt before))) {
+		 r := pt before
+		 set-pt! before #n
+		 r
+	       })
+	       (else {
+		 loop (pt before)
+	       }))
     }
 
     ;; before must be a list of at least one (as an operator cannot be
@@ -300,9 +306,10 @@ define-postfix-operator =- 1300 {
   }
 
   op-func := #f
-  cond ((eq? op '=-) (op-func = 'array-pop!)) \
-       ((eq? op '-=) (op-func = 'array-shift!)) \
-       (else (error op "unexpected array reduce operator" op))
+  (cond
+   ((eq? op '=-) (op-func = 'array-pop!))
+   ((eq? op '-=) (op-func = 'array-shift!))
+   (else (error op "unexpected array reduce operator" op)))
 
   op+args := list op-func (ph before)
 
@@ -332,17 +339,18 @@ define-infix-operator . 1200 {
   if (not (null? (pt before))) {
     prefix = before
     loop :+ function (before) {
-	      cond ((null? (pt before)) {
-		before
-	      }) \
-		   ((null? (pt (pt before))) {
-		     r := pt before
-		     set-pt! before #n
-		     r
-		   }) \
-		   (else {
-		     loop (pt before)
-		   })
+	      (cond
+	       ((null? (pt before)) {
+		 before
+	       })
+	       ((null? (pt (pt before))) {
+		 r := pt before
+		 set-pt! before #n
+		 r
+	       })
+	       (else {
+		 loop (pt before)
+	       }))
     }
 
     ;; before must be a list of at least one (as an operator cannot be
@@ -353,13 +361,14 @@ define-infix-operator . 1200 {
   ;; split - we want to consume (into indices) the set of expressions
   ;; that successive {op}s are operating on
   split :+ function (op indices after) {
-	     cond ((null? after) (error 'operator-dot "not enough args after" op (reverse indices))) \
-		  ((not (pair? after)) (error 'operator-dot "bad syntax" op (reverse indices) after)) \
-		  ((null? (pt after)) (list (reverse (pair (ph after) indices)) #n)) \
-		  ((and (pair? after)
-			(pair? (pt after))
-			(eq? op (ph (pt after)))) (split op (pair (ph after) indices) (pt (pt after)))) \
-		  (else (list (reverse (pair (ph after) indices)) (pt after)))
+	     (cond
+	      ((null? after) (error 'operator-dot "not enough args after" op (reverse indices)))
+	      ((not (pair? after)) (error 'operator-dot "bad syntax" op (reverse indices) after))
+	      ((null? (pt after)) (list (reverse (pair (ph after) indices)) #n))
+	      ((and (pair? after)
+		    (pair? (pt after))
+		    (eq? op (ph (pt after)))) (split op (pair (ph after) indices) (pt (pt after))))
+	      (else (list (reverse (pair (ph after) indices)) (pt after))))
   }
 
   dis := split op #n after

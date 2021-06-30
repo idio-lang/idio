@@ -272,8 +272,8 @@ value can be: exit status for 'exit or signal number for 'killed
   ;; NB. the procs were pushed onto the list in reverse order so
   ;; walking down the list we encounter the rightmost first
   procs := %idio-job-procs job
-  or (loop procs) \
-     (list 'exit (WEXITSTATUS (%idio-process-status (ph procs))))
+  (or (loop procs)
+      (list 'exit (WEXITSTATUS (%idio-process-status (ph procs)))))
 }
 
 define (pipeline-detail job) "return the process status of each process in the pipeline `job`
@@ -449,7 +449,7 @@ define (format-job-detail job & args) {
 		 hprintf oh "        %6s %-3s %-12s %s\n" "PID" "fl" "status" "cmd"
 	       }
 	       proc := ph procs
-	       hprintf oh "  proc: %6s %2s%s %-12s %s\n" proc.pid (if proc.completed " C" "!C") (if proc.stopped "S" " ") (ph details) proc.argv
+	       hprintf oh "  proc: %6s %2s%s %-12s %s\n" (%idio-process-pid proc) (if (%idio-process-completed proc) " C" "!C") (if (%idio-process-stopped proc) "S" " ") (ph details) (%idio-process-argv proc)
 	       printed = #t
 	       loop (pt procs) (pt details)
 	     }))

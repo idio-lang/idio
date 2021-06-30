@@ -563,21 +563,47 @@ Invoke the ``hprintf`` function on an output string handle with
 
 TIMEFORMAT :~ "Real %.3R\nUser %.3U\nSyst %.3S\n"
 
-define (times proc & args) "
-Report the Real/User and System time for the invocation of
-proc [args]
+define (hms t) {
+  s := t
+  m := 0
+  h := 0
+
+  if (s ge 60) {
+    m = mantissa (floor (s / 60))
+    s = s - (m * 60)
+  }
+
+  if (m ge 60) {
+    h = mantissa (floor (m / 60))
+    m = m - (h * 60)
+  }
+
+  (cond
+   ((h gt 0) {
+     sprintf "%d:%02d:%02.3f" h m s
+   })
+   ((m gt 0) {
+     sprintf "%d:%02.3f" m s
+   })
+   (else {
+     sprintf "%02.3f" s
+   }))
+}
+
+define (times) "
+Report the User and System time for the shell and its children
 " {
-  start := (libc/times)
-  r := apply proc args
-  end := (libc/times)
+  t := (libc/times)
+  tms := pht t
 
-  start-ert := ph start
-  start-tms := pht start
-  end-ert := ph end
-  end-tms := pht end
+  CT := C/->integer libc/CLK_TCK
 
-  printf "Real %d\nUser %d\nSyst %d\n" (end-ert - start-ert) (end-tms.tms_utime - start-tms.tms_utime) (end-tms.tms_stime - start-tms.tms_stime)
-  r
+  utime := (C/->integer (libc/struct-tms-ref tms 'tms_utime)) / CT
+  stime := (C/->integer (libc/struct-tms-ref tms 'tms_stime)) / CT
+  cutime := (C/->integer (libc/struct-tms-ref tms 'tms_cutime)) / CT
+  cstime := (C/->integer (libc/struct-tms-ref tms 'tms_cstime)) / CT
+
+  printf "U=%s S=%s CU=%s CS=%s\n" (hms utime) (hms stime) (hms cutime) (hms cstime)
 }
 
 define (time-command proc & args) "
@@ -608,16 +634,16 @@ This takes after Bash's time_command
 
   tv-real := libc/subtract-struct-timeval tv-after tv-before
   tv-utime := (libc/add-struct-timeval
-	       (libc/subtract-struct-timeval (rus-after.ru_utime)
-					     (rus-before.ru_utime))
-	       (libc/subtract-struct-timeval (ruk-after.ru_utime)
-					     (ruk-before.ru_utime)))
+	       (libc/subtract-struct-timeval (libc/struct-rusage-ref rus-after  'ru_utime)
+					     (libc/struct-rusage-ref rus-before 'ru_utime))
+	       (libc/subtract-struct-timeval (libc/struct-rusage-ref ruk-after  'ru_utime)
+					     (libc/struct-rusage-ref ruk-before 'ru_utime)))
 
   tv-stime := (libc/add-struct-timeval
-	       (libc/subtract-struct-timeval (rus-after.ru_stime)
-					     (rus-before.ru_stime))
-	       (libc/subtract-struct-timeval (ruk-after.ru_stime)
-					     (ruk-before.ru_stime)))
+	       (libc/subtract-struct-timeval (libc/struct-rusage-ref rus-after  'ru_stime)
+					     (libc/struct-rusage-ref rus-before 'ru_stime))
+	       (libc/subtract-struct-timeval (libc/struct-rusage-ref ruk-after  'ru_stime)
+					     (libc/struct-rusage-ref ruk-before 'ru_stime)))
 
   list r tv-real tv-utime tv-stime
 }
@@ -633,14 +659,10 @@ This takes after Bash's time_command
 " {
   rusage-data := apply time-command proc args
 
-  R := pht rusage-data
-  U := phtt rusage-data
-  S := phtt rusage-data
-
   h := (make-hash)
-  hash-set! h #\R R
-  hash-set! h #\U U
-  hash-set! h #\S S
+  hash-set! h #\R (pht rusage-data)
+  hash-set! h #\U (phtt rusage-data)
+  hash-set! h #\S (phtt rusage-data)
 
   printf "%s" (%format 'timeformat TIMEFORMAT h)
   ph rusage-data

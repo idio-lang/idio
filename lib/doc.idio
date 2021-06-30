@@ -23,106 +23,117 @@
 
 define-template (help x) {
   #T{
-    cond ((function? $x) {
-      sigstr := %property $x :sigstr #f
-      docstr := %property $x :docstr-raw #f
-      source := %property $x :source #f
-      details := evaluate/find-symbol '$x
+    (cond
+     ((function? $x) {
+       sigstr := %property $x :sigstr #f
+       docstr := %property $x :docstr-raw #f
+       source := %property $x :source #f
+       details := evaluate/find-symbol '$x
 
-      display '$x
-      display " is a function"
-      if (list? details) {
-	display " from module "
-	display (module-name (phttt details))
-      }
-      if source {
-	display* " source:" source
-      }
-      display "\n"
-      display "SYNOPSIS: "
-      if sigstr {
-	display* '$x
-      } {
-	display* '$x sigstr
-      }
-      if docstr {
-	display* "DESCRIPTION:"
-	display docstr
-      }
-      #t
-    })   ((struct-type? $x) {
-      loop-isa :+ function (type) {
-		    if (null? type) "" {
-		      append-string " > " (symbol->string (struct-type-name type)) (loop-isa (struct-type-parent type))
-		    }
-      }
+       display '$x
+       display " is a function"
+       if (list? details) {
+	 display " from module "
+	 display (module-name (phttt details))
+       }
+       if source {
+	 display* " source:" source
+       }
+       display "\n"
+       display "SYNOPSIS: "
+       if sigstr {
+	 display* '$x
+       } {
+	 display* '$x sigstr
+       }
+       if docstr {
+	 display* "DESCRIPTION:"
+	 display docstr
+       }
+       #t
+     })
+     ((struct-type? $x) {
+       loop-isa :+ function (type) {
+		     if (null? type) "" {
+		       append-string " > " (symbol->string (struct-type-name type)) (loop-isa (struct-type-parent type))
+		     }
+       }
 
-      display* "struct-type:" (struct-type-name $x) (loop-isa (struct-type-parent $x))"\n"
-      display* "fields" (struct-type-fields $x)
-    })   ((struct-instance? $x) {
-      display* "struct-instance:" '$x "\n"
-      t := (struct-instance-type $x)
-      display* "struct-type:" (struct-type-name t) "\n"
-      display* "fields" (struct-type-fields t)
-    })   ((dynamic? '$x) {
-      display* "dynamic:" '$x
-    })   ((environ? '$x) {
-      display* "environ:" '$x
-    })   ((computed? '$x) {
-      display* "computed:" '$x
-    })   ((operator? '$x) {
-      display* "operator:" '$x
-    })   ((symbol? '$x) {
+       display* "struct-type:" (struct-type-name $x) (loop-isa (struct-type-parent $x))"\n"
+       display* "fields" (struct-type-fields $x)
+     })
+     ((struct-instance? $x) {
+       display* "struct-instance:" '$x "\n"
+       t := (struct-instance-type $x)
+       display* "struct-type:" (struct-type-name t) "\n"
+       display* "fields" (struct-type-fields t)
+     })
+     ((dynamic? '$x) {
+       display* "dynamic:" '$x
+     })
+     ((environ? '$x) {
+       display* "environ:" '$x
+     })
+     ((computed? '$x) {
+       display* "computed:" '$x
+     })
+     ((operator? '$x) {
+       display* "operator:" '$x
+     })
+     ((symbol? '$x) {
 
-      ;; make symbol? one of the last as it (fore-)shadows dynamic?,
-      ;; expander? etc.
+       ;; make symbol? one of the last as it (fore-)shadows dynamic?,
+       ;; expander? etc.
 
-      module := find-module '$x #f
-      if module {
-	display* "module:" '$x "\n"
-	display* "imports" (module-imports module)
-	exports := sort-symbol (module-exports module)
-	display* "exports:" ;exports
-	exports_loop :+ function (exports) {
-			  if (null? exports) #t {
-			    export := ph exports
-			    display* " " export
-			    exports_loop (pt exports)
-			  }
-	}
-	exports_loop exports
-      } {
-	cond ((expander? '$x) {
-	  sigstr := %property $x :sigstr #n
-	  docstr := %property $x :docstr-raw #n
-	  details := evaluate/find-symbol '$x
+       module := find-module '$x #f
+       if module {
+	 display* "module:" '$x "\n"
+	 display* "imports" (module-imports module)
+	 exports := sort-symbol (module-exports module)
+	 display* "exports:" ;exports
+	 exports_loop :+ function (exports) {
+			   if (null? exports) #t {
+			     export := ph exports
+			     display* " " export
+			     exports_loop (pt exports)
+			   }
+	 }
+	 exports_loop exports
+       } {
+	 (cond
+	  ((expander? '$x) {
+	    sigstr := %property $x :sigstr #n
+	    docstr := %property $x :docstr-raw #n
+	    details := evaluate/find-symbol '$x
 
-	  display '$x
-	  display " is an expander"
-	  if (list? details) {
-	    display " from module "
-	    display (module-name (phttt details))
-	  }
-	  display "\n"
-	  display "SYNOPSIS: "
-	  if (null? sigstr) {
-	    display* '$x
-	  } {
-	    display* '$x sigstr
-	  }
-	  if (not (null? docstr)) {
-	    display* "DESCRIPTION:"
-	    display docstr
-	  }
-	})   (else {
-	  display* "symbol:" '$x
-	})
-      }
-      #t
-    })  (else {
-      edisplay* "help: " '$x ": not helped" $x
-      #f
-    })
+	    display '$x
+	    display " is an expander"
+	    if (list? details) {
+	      display " from module "
+	      display (module-name (phttt details))
+	    }
+	    display "\n"
+	    display "SYNOPSIS: "
+	    if (null? sigstr) {
+	      display* '$x
+	    } {
+	      display* '$x sigstr
+	    }
+	    if (not (null? docstr)) {
+	      display* "DESCRIPTION:"
+	      display docstr
+	    }
+	  })
+	  (else {
+	    display* "symbol:" '$x
+	  }))
+       }
+       #t
+     })
+     (else {
+       edisplay* "help: " '$x ": not helped" $x
+       #f
+     }))
   }
 }
 
@@ -144,25 +155,28 @@ define (autodoc) {
 
   define (print-docstr mod sym) {
     val := symbol-value sym mod
-    cond ((function? val) {
-      sigstr := %property val :sigstr #f
-      docstr := %property val :docstr-raw #f
-      display* ".. idio:function::" sym (if sigstr sigstr "") "\n"
-      if docstr {
-	display_indented docstr "   "
-      }
-      display "\n"
-    }) ((symbol? val) {
-      module := find-module val #f
-      if module {
-	display* "module:" sym
-      } {
-	display* "symbol:" sym
-      }
-    }) (else {
-      ;edisplay* "autodoc/print-docstr: " mod sym ": not a function/symbol"
-      #f
-    })
+    (cond
+     ((function? val) {
+       sigstr := %property val :sigstr #f
+       docstr := %property val :docstr-raw #f
+       display* ".. idio:function::" sym (if sigstr sigstr "") "\n"
+       if docstr {
+	 display_indented docstr "   "
+       }
+       display "\n"
+     })
+     ((symbol? val) {
+       module := find-module val #f
+       if module {
+	 display* "module:" sym
+       } {
+	 display* "symbol:" sym
+       }
+     })
+     (else {
+       ;edisplay* "autodoc/print-docstr: " mod sym ": not a function/symbol"
+       #f
+     }))
   }
 
   symbol_loop :+ function (module symbols) {

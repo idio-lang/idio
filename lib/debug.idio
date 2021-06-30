@@ -74,26 +74,27 @@ debug := #n
 			    lsh := open-input-string line
 			    cmd := read-expr lsh
 
-			    cond ((and (eqv? "" line)
-				       (eof? (current-input-handle))) {
-					 debug-k 'debugger-eof
-				       }) \
-				 ((eq? 'c cmd) {
-				   n := read-expr lsh
-				   v := read-expr lsh
-				   debug-c n v
-				 }) \
-				 ((eqv? 'v cmd) {
-				   v := read-expr lsh
-				   debug-k v
-				 }) \
-				 ((eqv? 'ft cmd) {
-				   (%vm-frame-tree)
-				 }) \
-				 ((eqv? 't cmd) {
-				   (idio-thread-state)
-				 }) \
-				 (else (printf "unrecognised line %s\n" line))
+			    (cond
+			     ((and (eqv? "" line)
+				   (eof? (current-input-handle))) {
+				     debug-k 'debugger-eof
+				   })
+			     ((eq? 'c cmd) {
+			       n := read-expr lsh
+			       v := read-expr lsh
+			       debug-c n v
+			     })
+			     ((eqv? 'v cmd) {
+			       v := read-expr lsh
+			       debug-k v
+			     })
+			     ((eqv? 'ft cmd) {
+			       (%vm-frame-tree)
+			     })
+			     ((eqv? 't cmd) {
+			       (idio-thread-state)
+			     })
+			     (else (printf "unrecognised line %s\n" line)))
 
 			    (debug-loop)
 	    }

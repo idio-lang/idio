@@ -190,66 +190,69 @@ The temporary file code is derived from Bash's here document code
 
 define (stdin-fileno) {
   ih := (current-input-handle)
-  cond ((input-file-handle? ih) (fd-handle-fd ih)) \
-       ((file-handle? ih) (error 'stdin-fileno "not an input-file-handle" ih)) \
-       ((input-string-handle? ih) {
-	 ;; 1. create and open a temporary file
-	 fd+name := %make-tmp-fd "idio-ish"
-	 handle := open-input-file-from-fd (ph fd+name) (pht fd+name) "r+"
-	 ;; 2. write the string to it
-	 display (get-output-string ih) handle
-	 ;; 3. *before* we unlink or close the original fd, open as
-	 ;; the input file
-	 fd := fd-handle-fd (open-input-file (pht fd+name))
-	 ;; 4. unlink and close the original -- this flushes any
-	 ;; output!
-	 unlink (pht fd+name)
-	 close-handle handle
-	 ;; 5. set the close-on-exec flag
-	 fcntl fd F_SETFD FD_CLOEXEC
-	 ;; 6. return the fd of "stdin" -- as a list to mark it
-	 ;; special
-	 list fd
-       }) \
-       (else (error 'stdin-fileno "unexpected current-input-handle" ih))
+  (cond
+   ((input-file-handle? ih) (fd-handle-fd ih))
+   ((file-handle? ih) (error 'stdin-fileno "not an input-file-handle" ih))
+   ((input-string-handle? ih) {
+     ;; 1. create and open a temporary file
+     fd+name := %make-tmp-fd "idio-ish"
+     handle := open-input-file-from-fd (ph fd+name) (pht fd+name) "r+"
+     ;; 2. write the string to it
+     display (get-output-string ih) handle
+     ;; 3. *before* we unlink or close the original fd, open as
+     ;; the input file
+     fd := fd-handle-fd (open-input-file (pht fd+name))
+     ;; 4. unlink and close the original -- this flushes any
+     ;; output!
+     unlink (pht fd+name)
+     close-handle handle
+     ;; 5. set the close-on-exec flag
+     fcntl fd F_SETFD FD_CLOEXEC
+     ;; 6. return the fd of "stdin" -- as a list to mark it
+     ;; special
+     list fd
+   })
+   (else (error 'stdin-fileno "unexpected current-input-handle" ih)))
 }
 
 ;;
 define (stdout-fileno) {
   oh := (current-output-handle)
-  cond ((output-file-handle? oh) (fd-handle-fd oh)) \
-       ((file-handle? oh) (error 'stdout-fileno "not an output-file-handle" oh)) \
-       ((output-string-handle? oh) {
-	 ;; 1. create a temporary file
-	 fd+name := %make-tmp-fd "idio-osh"
-	 ;; 2. unlink the tmpfile
-	 unlink (pht fd+name)
-	 ;; 3. set the close-on-exec flag
-	 fcntl (ph fd+name) F_SETFD FD_CLOEXEC
-	 ;; 4. return the tuple {fd,oh} of "stdout" -- as a list to
-	 ;; mark it special
-	 list (ph fd+name) oh
-       }) \
-       (else (error 'stdout-fileno "unexpected current-output-handle" oh))
+  (cond
+   ((output-file-handle? oh) (fd-handle-fd oh))
+   ((file-handle? oh) (error 'stdout-fileno "not an output-file-handle" oh))
+   ((output-string-handle? oh) {
+     ;; 1. create a temporary file
+     fd+name := %make-tmp-fd "idio-osh"
+     ;; 2. unlink the tmpfile
+     unlink (pht fd+name)
+     ;; 3. set the close-on-exec flag
+     fcntl (ph fd+name) F_SETFD FD_CLOEXEC
+     ;; 4. return the tuple {fd,oh} of "stdout" -- as a list to
+     ;; mark it special
+     list (ph fd+name) oh
+   })
+   (else (error 'stdout-fileno "unexpected current-output-handle" oh)))
 }
 
 ;;
 define (stderr-fileno) {
   eh := (current-error-handle)
-  cond ((output-file-handle? eh) (fd-handle-fd eh)) \
-       ((file-handle? eh) (error 'stderr-fileno "not an output-file-handle" eh)) \
-       ((output-string-handle? eh) {
-	 ;; 1. create a temporary file
-	 fd+name := %make-tmp-fd "idio-esh"
-	 ;; 2. unlink the tmpfile
-	 unlink (pht fd+name)
-	 ;; 3. set the close-on-exec flag
-	 fcntl (ph fd+name) F_SETFD FD_CLOEXEC
-	 ;; 4. return the tuple {fd,eh} of "stderr" -- as a list to
-	 ;; mark it special
-	 list (ph fd+name) eh
-       }) \
-       (else (error 'stderr-fileno "unexpected current-error-handle" eh))
+  (cond
+   ((output-file-handle? eh) (fd-handle-fd eh))
+   ((file-handle? eh) (error 'stderr-fileno "not an output-file-handle" eh))
+   ((output-string-handle? eh) {
+     ;; 1. create a temporary file
+     fd+name := %make-tmp-fd "idio-esh"
+     ;; 2. unlink the tmpfile
+     unlink (pht fd+name)
+     ;; 3. set the close-on-exec flag
+     fcntl (ph fd+name) F_SETFD FD_CLOEXEC
+     ;; 4. return the tuple {fd,eh} of "stderr" -- as a list to
+     ;; mark it special
+     list (ph fd+name) eh
+   })
+   (else (error 'stderr-fileno "unexpected current-error-handle" eh)))
 }
 
 
@@ -269,26 +272,27 @@ keyword, eg. ``:NOFILE`` for ``libc/RLIMIT_NOFILE``
 :return: struct-rlimit
   " {
     resource := #n
-    cond ((C/int? res) (resource = res)) \
-         ((symbol? res) (resource = res)) \
-	 ((keyword? res) {
+    (cond
+     ((C/int? res) (resource = res))
+     ((symbol? res) (resource = res))
+     ((keyword? res) {
 
-	   ;; each OS has a different set of (valid) RLIMIT_* macros so our
-	   ;; set of :nickname tests has to be dynamic
+       ;; each OS has a different set of (valid) RLIMIT_* macros so our
+       ;; set of :nickname tests has to be dynamic
 
-	   map (function (np) "map over `libc/rlimit-names`" {
-	     ln := pt np
-	     n := pht (split-string ln "_")
-	     k := make-keyword n
-	     s := string->symbol ln
+       map (function (np) "map over `libc/rlimit-names`" {
+	 ln := pt np
+	 n := pht (split-string ln "_")
+	 k := make-keyword n
+	 s := string->symbol ln
 
-	     if (eq? res k) {
-	       resource = symbol-value s 'libc
-	     }
-	   }) (libc/rlimit-names)
+	 if (eq? res k) {
+	   resource = symbol-value s 'libc
+	 }
+       }) (libc/rlimit-names)
 
-	   if (null? resource) (error 'getrlimit "bad resource" resource "from" res)
-	 })
+       if (null? resource) (error 'getrlimit "bad resource" resource "from" res)
+     }))
 
     orig-getrlimit resource
   }
@@ -307,26 +311,27 @@ keyword, eg. ``:NOFILE`` for ``libc/RLIMIT_NOFILE``
 :return: #unspec
   " {
     resource := #n
-    cond ((C/int? res) (resource = res)) \
-         ((symbol? res) (resource = res)) \
-	 ((keyword? res) {
+    (cond
+     ((C/int? res) (resource = res))
+     ((symbol? res) (resource = res))
+     ((keyword? res) {
 
-	   ;; each OS has a different set of (valid) RLIMIT_* macros so our
-	   ;; set of :nickname tests has to be dynamic
+       ;; each OS has a different set of (valid) RLIMIT_* macros so our
+       ;; set of :nickname tests has to be dynamic
 
-	   map (function (np) "map over `libc/rlimit-names`" {
-	     ln := pt np
-	     n := pht (split-string ln "_")
-	     k := make-keyword n
-	     s := string->symbol ln
+       map (function (np) "map over `libc/rlimit-names`" {
+	 ln := pt np
+	 n := pht (split-string ln "_")
+	 k := make-keyword n
+	 s := string->symbol ln
 
-	     if (eq? res k) {
-	       resource = symbol-value s 'libc
-	     }
-	   }) (libc/rlimit-names)
+	 if (eq? res k) {
+	   resource = symbol-value s 'libc
+	 }
+       }) (libc/rlimit-names)
 
-	   if (null? resource) (error 'setrlimit "bad resource" resource "from" res)
-	 })
+       if (null? resource) (error 'setrlimit "bad resource" resource "from" res)
+     }))
 
     orig-setrlimit resource rlim
   }

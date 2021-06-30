@@ -496,17 +496,18 @@ for-loop-continue-tag := make-prompt-tag 'for-loop-continue
 
 define-template (for var-clauses test & body) {
   split :+ function (clauses vars inits steps) {
-	     cond ((null? clauses) (list vars inits steps)) \
-		  ((or (not (pair? clauses))
-		       (not (pair? (ph clauses)))
-		       (not (symbol? (phh clauses)))
-		       (not (pair? (pth clauses)))) (error 'for "invalid syntax" clauses)) \
-		  (else (split (pt clauses)
-			       (pair (phh clauses) vars)
-			       (pair (phth clauses) inits)
-			       (if (null? (ptth clauses))
-				   (pair (phh clauses) steps)
-				   (pair (phtth clauses) steps))))
+	     (cond
+	      ((null? clauses) (list vars inits steps))
+	      ((or (not (pair? clauses))
+		   (not (pair? (ph clauses)))
+		   (not (symbol? (phh clauses)))
+		   (not (pair? (pth clauses)))) (error 'for "invalid syntax" clauses))
+	      (else (split (pt clauses)
+			   (pair (phh clauses) vars)
+			   (pair (phth clauses) inits)
+			   (if (null? (ptth clauses))
+			       (pair (phh clauses) steps)
+			       (pair (phtth clauses) steps)))))
   }
 
   for-loop := gensym 'for-loop

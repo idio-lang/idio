@@ -1,6 +1,6 @@
 #*
 
-Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
+Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
 
 Licensed under the Apache License, Version 2.0 (the "License"); you
 may not use this file except in compliance with the License.  You
@@ -87,12 +87,13 @@ define-template (function* formals & body) {
     }
 
     define (duplicates? lst) {
-      cond ((null? lst)
-	    #f) \
-	   ((memq (ph lst) (pt lst))
-	    #t) \
-	   (else
-	    (duplicates? (pt lst)))
+      (cond
+       ((null? lst)
+	#f)
+       ((memq (ph lst) (pt lst))
+	#t)
+       (else
+	(duplicates? (pt lst))))
     }
 
     define (parse-positional-section lst cont) {
@@ -146,13 +147,14 @@ define-template (function* formals & body) {
       vars := append positional-reqs (map ph positional-opts) (map pht named) (if rest (list rest) #n)
       keys := map ph named
 
-      cond ((duplicates? vars)
-	    error 'parse-end "duplicate variable in formal parameter list" vars) \
-	   ((duplicates? keys)
-	    error 'parse-end "duplicate keyword in formal parameter list" vars) \
-	   (else {
-	     list positional-before-named? positional-reqs positional-opts named rest
-	   })
+      (cond
+       ((duplicates? vars)
+	error 'parse-end "duplicate variable in formal parameter list" vars)
+       ((duplicates? keys)
+	error 'parse-end "duplicate keyword in formal parameter list" vars)
+       (else {
+	 list positional-before-named? positional-reqs positional-opts named rest
+       }))
     }
 
     define (parse lst) {
@@ -291,12 +293,12 @@ define-template (function* formals & body) {
 		  }
 		}
 
-		bindings := append (if positional-before-named? {
+		bindings := (append (if positional-before-named? {
 		  append utility-fns positional-bindings named-bindings
 		} {
 		  append named-bindings utility-fns positional-bindings
-		}) \
-				   rest-binding
+		})
+			     rest-binding)
 
 		#T{
 		  function $(append (if positional-before-named? positional-reqs #n) '&args) {
@@ -346,9 +348,10 @@ define-template (function* formals & body) {
     str := keyword->string key
     loop :+ function (h i) {
       if (i lt (string-length str)) {
-	loop (modulo ((h * 65536) + (unicode->integer (string-ref str i)))
-		     n) \
-	     (i + 1)
+	(loop
+	 (modulo ((h * 65536) + (unicode->integer (string-ref str i)))
+		 n)
+	 (i + 1))
       } h
     }
     loop 0 0
@@ -367,9 +370,10 @@ define (&hash-keyword key n) {
   str := keyword->string key
   loop :+ function (h i) {
     if (i lt (string-length str)) {
-      loop (modulo ((h * 65536) + (unicode->integer (string-ref str i)))
-                        n) \
-	   (i + 1)
+      (loop
+       (modulo ((h * 65536) + (unicode->integer (string-ref str i)))
+	       n)
+       (i + 1))
       } h
   }
   loop 0 0
