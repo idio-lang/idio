@@ -104,158 +104,318 @@ define-template (condition type & field-bindings) {
   }
 }
 
-define-condition-type-accessors-only ^error				^condition			error?
+(define-condition-type-accessors-only ^error
+				      ^condition
+				      error?)
 
-define-condition-type-accessors-only ^idio-error			^error				idio-error? \
-	(message idio-error-message) \
-	(location idio-error-location) \
-	(detail idio-error-detail)
+(define-condition-type-accessors-only ^idio-error
+				      ^error
+				      idio-error?
+				      (message idio-error-message)
+				      (location idio-error-location)
+				      (detail idio-error-detail))
 
 ;; SRFI-36-ish standard conditions
-define-condition-type-accessors-only ^i/o-error				^idio-error			i/o-error?
+(define-condition-type-accessors-only ^i/o-error
+				      ^idio-error
+				      i/o-error?)
 
-define-condition-type-accessors-only ^i/o-handle-error			^i/o-error			i/o-handle-error? \
-	(handle i/o-error-handle)
+(define-condition-type-accessors-only ^i/o-handle-error
+				      ^i/o-error
+				      i/o-handle-error?
+				      (handle i/o-error-handle))
 
-define-condition-type-accessors-only ^i/o-read-error			^i/o-handle-error		i/o-read-error?
-define-condition-type-accessors-only ^i/o-write-error			^i/o-handle-error		i/o-write-error?
-define-condition-type-accessors-only ^i/o-closed-error			^i/o-handle-error		i/o-closed-error?
+(define-condition-type-accessors-only ^i/o-read-error
+				      ^i/o-handle-error
+				      i/o-read-error?)
 
-define-condition-type-accessors-only ^i/o-filename-error		^i/o-error			i/o-filename-error? \
-	(filename i/o-filename-error-filename)
+(define-condition-type-accessors-only ^i/o-write-error
+				      ^i/o-handle-error
+				      i/o-write-error?)
 
-define-condition-type-accessors-only ^i/o-malformed-filename-error	^i/o-filename-error		i/o-malformed-filename-error?
+(define-condition-type-accessors-only ^i/o-closed-error
+				      ^i/o-handle-error
+				      i/o-closed-error?)
 
-define-condition-type-accessors-only ^i/o-file-protection-error		^i/o-filename-error		i/o-file-protection-error?
+(define-condition-type-accessors-only ^i/o-filename-error
+				      ^i/o-error
+				      i/o-filename-error?
+				      (filename i/o-filename-error-filename))
 
-define-condition-type-accessors-only ^i/o-file-is-read-only-error	^i/o-file-protection-error	i/o-file-is-read-only-error?
+(define-condition-type-accessors-only ^i/o-mode-error
+				      ^i/o-error
+				      i/o-mode-error?
+				      (mode i/o-mode-error-mode))
 
-define-condition-type-accessors-only ^i/o-file-already-exists-error	^i/o-filename-error		i/o-file-already-exists-error?
+(define-condition-type-accessors-only ^i/o-malformed-filename-error
+				      ^i/o-filename-error
+				      i/o-malformed-filename-error?)
 
-define-condition-type-accessors-only ^i/o-no-such-file-error		^i/o-filename-error		i/o-no-such-file-error?
+(define-condition-type-accessors-only ^i/o-file-protection-error
+				      ^i/o-filename-error
+				      i/o-file-protection-error?)
 
-define-condition-type-accessors-only ^read-error			^idio-error			read-error? \
-	(line read-error-line) \
-	(position read-error-position)
+(define-condition-type-accessors-only ^i/o-file-is-read-only-error
+				      ^i/o-file-protection-error
+				      i/o-file-is-read-only-error?)
 
-define-condition-type-accessors-only ^evaluation-error			^idio-error			evaluation-error? \
-	(expr evaluation-error-expr)
+(define-condition-type-accessors-only ^i/o-file-already-exists-error
+				      ^i/o-filename-error
+				      i/o-file-already-exists-error?)
 
-define-condition-type-accessors-only ^string-error			^idio-error			string-error?
+(define-condition-type-accessors-only ^i/o-no-such-file-error
+				      ^i/o-filename-error
+				      i/o-no-such-file-error?)
+
+(define-condition-type-accessors-only ^read-error
+				      ^idio-error
+				      read-error?
+				      (line read-error-line)
+				      (position read-error-position))
+
+(define-condition-type-accessors-only ^evaluation-error
+				      ^idio-error
+				      evaluation-error?
+				      (expr evaluation-error-expr))
+
+(define-condition-type-accessors-only ^string-error
+				      ^idio-error
+				      string-error?)
 
 ;; Idio generated conditions
-define-condition-type-accessors-only ^system-error			^idio-error			system-error? \
-	(errno system-error-errno) \
-	(function system-error-function)
+(define-condition-type-accessors-only ^system-error
+				      ^idio-error
+				      system-error?
+				      (errno system-error-errno)
+				      (function system-error-function))
 
-define-condition-type-accessors-only ^static-error			^idio-error			static-error?
-define-condition-type-accessors-only ^st-variable-error			^static-error			st-variable-error? \
-	(name st-variable-error-name)
-define-condition-type-accessors-only ^st-variable-type-error		^st-variable-error		st-variable-type-error?
+(define-condition-type-accessors-only ^static-error
+				      ^idio-error
+				      static-error?)
 
-define-condition-type-accessors-only ^st-function-error			^static-error			st-function-error?
-define-condition-type-accessors-only ^st-function-arity-error		^st-function-error		st-function-arity-error?
+(define-condition-type-accessors-only ^st-variable-error
+				      ^static-error
+				      st-variable-error?
+				      (name st-variable-error-name))
 
-define-condition-type-accessors-only ^runtime-error			^idio-error			runtime-error?
+(define-condition-type-accessors-only ^st-variable-type-error
+				      ^st-variable-error
+				      st-variable-type-error?)
 
-define-condition-type-accessors-only ^rt-parameter-error		^runtime-error			rt-parameter-error?
-define-condition-type-accessors-only ^rt-parameter-type-error		^rt-parameter-error		rt-parameter-type-error?
-define-condition-type-accessors-only ^rt-const-parameter-error		^rt-parameter-error		rt-const-parameter-error?
-define-condition-type-accessors-only ^rt-parameter-value-error		^rt-parameter-error		rt-parameter-value-error?
-define-condition-type-accessors-only ^rt-parameter-nil-error		^rt-parameter-value-error	rt-parameter-nil-error?
+(define-condition-type-accessors-only ^st-function-error
+				      ^static-error
+				      st-function-error?)
 
-define-condition-type-accessors-only ^rt-variable-error			^runtime-error			rt-variable-error? \
-	(name rt-variable-error-name)
-define-condition-type-accessors-only ^rt-variable-unbound-error		^rt-variable-error		rt-variable-unbound-error?
-define-condition-type-accessors-only ^rt-dynamic-variable-error         ^rt-variable-error		rt-dynamic-variable-error?
-define-condition-type-accessors-only ^rt-dynamic-variable-unbound-error ^rt-dynamic-variable-error	rt-dynamic-variable-unbound-error?
+(define-condition-type-accessors-only ^st-function-arity-error
+				      ^st-function-error
+				      st-function-arity-error?)
 
-define-condition-type-accessors-only ^rt-environ-variable-error         ^rt-variable-error		rt-environ-variable-error?
-define-condition-type-accessors-only ^rt-environ-variable-unbound-error ^rt-environ-variable-error	rt-environ-variable-unbound-error?
+(define-condition-type-accessors-only ^runtime-error
+				      ^idio-error
+				      runtime-error?)
 
-define-condition-type-accessors-only ^rt-computed-variable-error         ^rt-variable-error		rt-computed-variable-error?
-define-condition-type-accessors-only ^rt-computed-variable-no-accessor-error ^rt-computed-variable-error	rt-computed-variable-no-accessor-error?
+(define-condition-type-accessors-only ^rt-parameter-error
+				      ^runtime-error
+				      rt-parameter-error?)
 
-define-condition-type-accessors-only ^rt-function-error			^runtime-error			rt-function-error?
-define-condition-type-accessors-only ^rt-function-arity-error		^rt-function-error		rt-function-arity-error?
+(define-condition-type-accessors-only ^rt-parameter-type-error
+				      ^rt-parameter-error
+				      rt-parameter-type-error?)
 
-define-condition-type-accessors-only ^rt-module-error			^runtime-error			rt-module-error? \
-	(module rt-module-error-module)
-define-condition-type-accessors-only ^rt-module-unbound-error		^rt-module-error		rt-module-unbound-error?
-define-condition-type-accessors-only ^rt-module-symbol-unbound-error	^rt-module-error		rt-module-symbol-unbound-error? \
-	(symbol rt-module-symbol-unbound-error-symbol)
+(define-condition-type-accessors-only ^rt-const-parameter-error
+				      ^rt-parameter-error
+				      rt-const-parameter-error?)
 
-define-condition-type-accessors-only ^rt-path-error			^runtime-error			rt-path-error? \
-	(pattern rt-path-error-pathname)
+(define-condition-type-accessors-only ^rt-parameter-value-error
+				      ^rt-parameter-error
+				      rt-parameter-value-error?)
 
-define-condition-type-accessors-only ^rt-glob-error			^runtime-error			rt-glob-error? \
-	(pattern rt-glob-error-pattern)
+(define-condition-type-accessors-only ^rt-parameter-nil-error
+				      ^rt-parameter-value-error
+				      rt-parameter-nil-error?)
 
-define-condition-type-accessors-only ^rt-command-error			^runtime-error			rt-command-error?
+(define-condition-type-accessors-only ^rt-variable-error
+				      ^runtime-error
+				      rt-variable-error?
+				      (name rt-variable-error-name))
 
-define-condition-type-accessors-only ^rt-command-argv-type-error	^rt-command-error		rt-command-argv-type-error? \
-													(arg rt-command-argv-type-error-arg)
+(define-condition-type-accessors-only ^rt-variable-unbound-error
+				      ^rt-variable-error
+				      rt-variable-unbound-error?)
 
-define-condition-type-accessors-only ^rt-command-format-error		^rt-command-error		rt-command-format-error? \
-													(name rt-command-format-error-name)
+(define-condition-type-accessors-only ^rt-dynamic-variable-error
+				      ^rt-variable-error
+				      rt-dynamic-variable-error?)
 
-define-condition-type-accessors-only ^rt-command-env-type-error		^rt-command-error		rt-command-env-type-error? \
-													(name rt-command-env-type-error-name)
+(define-condition-type-accessors-only ^rt-dynamic-variable-unbound-error
+				      ^rt-dynamic-variable-error
+				      rt-dynamic-variable-unbound-error?)
 
-define-condition-type-accessors-only ^rt-command-exec-error		^rt-command-error		rt-command-exec-error? \
-													(errno rt-command-exec-error-errno)
+(define-condition-type-accessors-only ^rt-environ-variable-error
+				      ^rt-variable-error
+				      rt-environ-variable-error?)
 
-define-condition-type-accessors-only ^rt-command-status-error		^rt-command-error		rt-command-status-error? \
-	(status rt-command-status-error-status)
+(define-condition-type-accessors-only ^rt-environ-variable-unbound-error
+				      ^rt-environ-variable-error
+				      rt-environ-variable-unbound-error?)
 
-define-condition-type-accessors-only ^rt-array-error			^runtime-error			rt-array-error? \
-	(index rt-array-error-index)
+(define-condition-type-accessors-only ^rt-computed-variable-error
+				      ^rt-variable-error
+				      rt-computed-variable-error?)
 
-define-condition-type-accessors-only ^rt-hash-error			^runtime-error			rt-hash-error?
+(define-condition-type-accessors-only ^rt-computed-variable-no-accessor-error
+				      ^rt-computed-variable-error
+				      rt-computed-variable-no-accessor-error?)
 
-define-condition-type-accessors-only ^rt-hash-key-not-found-error	^rt-hash-error			rt-hash-key-not-found-error? \
-	(key rt-hash-key-not-found-error-key)
+(define-condition-type-accessors-only ^rt-function-error
+				      ^runtime-error
+				      rt-function-error?)
 
-define-condition-type-accessors-only ^rt-number-error			^runtime-error			rt-number-error? \
-	(number rt-number-error-number)
+(define-condition-type-accessors-only ^rt-function-arity-error
+				      ^rt-function-error
+				      rt-function-arity-error?)
 
-define-condition-type-accessors-only ^rt-divide-by-zero-error		^rt-number-error		rt-divide-by-zero-error?
+(define-condition-type-accessors-only ^rt-module-error
+				      ^runtime-error
+				      rt-module-error?
+				      (module rt-module-error-module))
 
-define-condition-type-accessors-only ^rt-bignum-error			^rt-number-error		rt-bignum-error?
+(define-condition-type-accessors-only ^rt-module-unbound-error
+				      ^rt-module-error
+				      rt-module-unbound-error?)
 
-define-condition-type-accessors-only ^rt-bignum-conversion-error	^rt-bignum-error		rt-bignum-conversion-error?
+(define-condition-type-accessors-only ^rt-module-symbol-unbound-error
+				      ^rt-module-error
+				      rt-module-symbol-unbound-error?
+				      (symbol rt-module-symbol-unbound-error-symbol))
 
-define-condition-type-accessors-only ^rt-C-conversion-error		^rt-number-error		rt-C-conversion-error?
+(define-condition-type-accessors-only ^rt-path-error
+				      ^runtime-error
+				      rt-path-error?
+				      (pattern rt-path-error-pathname))
 
-define-condition-type-accessors-only ^rt-fixnum-error			^rt-number-error		rt-fixnum-error?
+(define-condition-type-accessors-only ^rt-glob-error
+				      ^runtime-error
+				      rt-glob-error?
+				      (pattern rt-glob-error-pattern))
 
-define-condition-type-accessors-only ^rt-fixnum-conversion-error	^rt-fixnum-error		rt-fixnum-conversion-error?
+(define-condition-type-accessors-only ^rt-command-error
+				      ^runtime-error
+				      rt-command-error?)
 
-define-condition-type-accessors-only ^rt-bitset-error			^runtime-error			rt-bitset-error?
+(define-condition-type-accessors-only ^rt-command-argv-type-error
+				      ^rt-command-error
+				      rt-command-argv-type-error?
+				      (arg rt-command-argv-type-error-arg))
 
-define-condition-type-accessors-only ^rt-bitset-bounds-error		^rt-bitset-error		rt-bitset-bounds-error? \
-	(bit rt-bitset-bounds-error-bit)
+(define-condition-type-accessors-only ^rt-command-format-error
+				      ^rt-command-error
+				      rt-command-format-error?
+				      (name rt-command-format-error-name))
 
-define-condition-type-accessors-only ^rt-bitset-size-mismatch-error	^rt-bitset-error		rt-bitset-size-mismatch-error? \
-	(size1 rt-bitset-bounds-error-size1) \
-	(size2 rt-bitset-bounds-error-size2)
+(define-condition-type-accessors-only ^rt-command-env-type-error
+				      ^rt-command-error
+				      rt-command-env-type-error?
+				      (name rt-command-env-type-error-name))
 
-define-condition-type-accessors-only ^rt-keyword-error			^runtime-error			rt-keyword-error? \
-	(keyword rt-keyword-error-keyword)
+(define-condition-type-accessors-only ^rt-command-exec-error
+				      ^rt-command-error
+				      rt-command-exec-error?
+				      (errno rt-command-exec-error-errno))
 
+(define-condition-type-accessors-only ^rt-command-status-error
+				      ^rt-command-error
+				      rt-command-status-error?
+				      (status rt-command-status-error-status))
 
-define-condition-type-accessors-only ^rt-libc-error			^runtime-error			rt-libc-error?
-define-condition-type-accessors-only ^rt-libc-format-error		^rt-libc-error			rt-libc-format-error? \
-	(name rt-libc-format-error-name)
+(define-condition-type-accessors-only ^rt-array-error
+				      ^runtime-error
+				      rt-array-error?
+				      (index rt-array-error-index))
 
-define-condition-type-accessors-only ^rt-regex-error			^rt-libc-error			rt-regex-error?
+(define-condition-type-accessors-only ^rt-hash-error
+				      ^runtime-error
+				      rt-hash-error?)
 
-define-condition-type-accessors-only ^rt-struct-error			^runtime-error			rt-struct-error?
+(define-condition-type-accessors-only ^rt-hash-key-not-found-error
+				      ^rt-hash-error
+				      rt-hash-key-not-found-error?
+				      (key rt-hash-key-not-found-error-key))
 
-define-condition-type-accessors-only ^rt-symbol-error			^runtime-error			rt-symbol-error?
+(define-condition-type-accessors-only ^rt-number-error
+				      ^runtime-error
+				      rt-number-error?
+				      (number rt-number-error-number))
 
-define-condition-type-accessors-only ^rt-signal				^error				rt-signal? \
-	(signal rt-signal-signal)
+(define-condition-type-accessors-only ^rt-divide-by-zero-error
+				      ^rt-number-error
+				      rt-divide-by-zero-error?)
+
+(define-condition-type-accessors-only ^rt-bignum-error
+				      ^rt-number-error
+				      rt-bignum-error?)
+
+(define-condition-type-accessors-only ^rt-bignum-conversion-error
+				      ^rt-bignum-error
+				      rt-bignum-conversion-error?)
+
+(define-condition-type-accessors-only ^rt-C-conversion-error
+				      ^rt-number-error
+				      rt-C-conversion-error?)
+
+(define-condition-type-accessors-only ^rt-fixnum-error
+				      ^rt-number-error
+				      rt-fixnum-error?)
+
+(define-condition-type-accessors-only ^rt-fixnum-conversion-error
+				      ^rt-fixnum-error
+				      rt-fixnum-conversion-error?)
+
+(define-condition-type-accessors-only ^rt-bitset-error
+				      ^runtime-error
+				      rt-bitset-error?)
+
+(define-condition-type-accessors-only ^rt-bitset-bounds-error
+				      ^rt-bitset-error
+				      rt-bitset-bounds-error?
+				      (bit rt-bitset-bounds-error-bit))
+
+(define-condition-type-accessors-only ^rt-bitset-size-mismatch-error
+				      ^rt-bitset-error
+				      rt-bitset-size-mismatch-error?
+				      (size1 rt-bitset-bounds-error-size1)
+				      (size2 rt-bitset-bounds-error-size2))
+
+(define-condition-type-accessors-only ^rt-keyword-error
+				      ^runtime-error
+				      rt-keyword-error?
+				      (keyword rt-keyword-error-keyword))
+
+(define-condition-type-accessors-only ^rt-libc-error
+				      ^runtime-error
+				      rt-libc-error?)
+
+(define-condition-type-accessors-only ^rt-libc-format-error
+				      ^rt-libc-error
+				      rt-libc-format-error?
+				      (name rt-libc-format-error-name))
+
+(define-condition-type-accessors-only ^rt-regex-error
+				      ^rt-libc-error
+				      rt-regex-error?)
+
+(define-condition-type-accessors-only ^rt-struct-error
+				      ^runtime-error
+				      rt-struct-error?)
+
+(define-condition-type-accessors-only ^rt-symbol-error
+				      ^runtime-error
+				      rt-symbol-error?)
+
+(define-condition-type-accessors-only ^rt-signal
+				      ^error
+				      rt-signal?
+				      (signal rt-signal-signal))
 
 ;; have a common method for reporting on a condition
 define (condition-report prefix c & args) "print a report on condition `c`
@@ -292,57 +452,127 @@ define (condition-report prefix c & args) "print a report on condition `c`
     cr-printf (append-string prefix ":")
   }
 
+  ;; The ordering of these is slightly about face.  Ostensibly it is
+  ;; the same as the definition order with the generic form last.
+  ;;
+  ;; So, if the ^i/o-* conditions, the ^i/o-handle-error,
+  ;; ^i/o-filename-error and ^i/o-mode-error have extra attributes so
+  ;; we have specific clauses for them.  All of the rest are otherwise
+  ;; undistinguished from ^i/o-error so can be picked up by that.
+  ;;
+  ;; We pick up ^i/o-error itself because even though it is
+  ;; undistinguished from ^idio-error it means we can identify any
+  ;; missed condition groups in the trailing clause for ^idio-error.
+
   (cond
+   ;; ^i/o-error
    ((i/o-handle-error? c) {
      iem c
-     cr-printf ": handle '%s'" (idio-error-handle c)
+     cr-printf ": handle '%s'" (i/o-handle-error-handle c)
    })
    ((i/o-filename-error? c) {
      iem c
-     cr-printf ": filename '%s'" (idio-error-filename c)
+     cr-printf ": filename '%s'" (i/o-filename-error-filename c)
    })
+   ((i/o-mode-error? c) {
+     iem c
+     cr-printf ": mode '%s'" (i/o-mode-error-mode c)
+   })
+   ((i/o-error? c) {
+     iem c
+   })
+
+   ;; ^read-error
    ((read-error? c) {
      iem c
      cr-printf " line %d" (idio-error-line c)
    })
+
+   ;; ^evaluation-error
    ((evaluation-error? c) {
      iem c
      cr-printf ": expr '%s'" (evaluation-error-expr c)
    })
+
+   ;; ^string-error
    ((string-error? c) {
      cr-printf "%s:%s:%s" (idio-error-location c) (idio-error-message c) (idio-error-detail c)
    })
+
+   ;; ^system-error
    ((system-error? c) {
-     ;; cf. idio_condition_format_system_error()
      cr-printf "%s:" (idio-error-location c)
      cr-printf "%s:" (struct-type-name (struct-instance-type c))
      cr-printf "%s (%s) => %s (%s/errno %s)" (system-error-function c) (idio-error-detail c) (libc/errno-name (system-error-errno c)) (idio-error-message c) (system-error-errno c)
    })
+
+   ;; ^static-error
    ((st-variable-error? c) {
      iem c
      cr-printf ": variable '%s'" (st-variable-error-name c)
    })
+   ((static-error? c) {
+     iem c
+   })
+
+   ;; ^runtime-error (lots!)
+
+   ;; ^rt-parameter-error
+   ((rt-parameter-error? c) {
+     iem c
+   })
+
+   ;; ^rt-variable-error (incl. dynamic environ computed)
    ((rt-variable-error? c) {
      iem c
-     cr-printf ": variable '%s'" (rt-variable-error-name c)
+     cr-printf ": name '%s'" (rt-variable-error-name c)
    })
+
+   ;; ^rt-function-error
+   ((rt-function-error? c) {
+     iem c
+   })
+
+   ;; ^rt-module-error
    ((rt-module-symbol-unbound-error? c) {
      iem c
      ; annoyingly (idio-error-module c) resolves module to #undef
-     cr-printf ": '%s/%s'" (module-name (rt-module-error-module c)) (rt-module-error-symbol c)
+     cr-printf ": symbol '%s/%s'" (module-name (rt-module-error-module c)) (rt-module-error-symbol c)
    })
    ((rt-module-error? c) {
      iem c
      ; annoyingly (idio-error-module c) resolves module to #undef
      cr-printf ": module '%s'" (module-name (rt-module-error-module c))
    })
+
+   ;; ^rt-path-error
    ((rt-path-error? c) {
      iem c
      cr-printf ": pathname '%s'" (rt-path-error-pathname c)
    })
+
+   ;; ^rt-glob-error
    ((rt-glob-error? c) {
      iem c
      cr-printf ": pattern '%s'" (rt-glob-error-pattern c)
+   })
+
+   ;; ^rt-command-error
+   ((rt-command-argv-type-error? c) {
+     iem c
+     cr-printf ": arg '%s'" (rt-command-argv-type-error-arg c)
+   })
+   ((rt-command-format-error? c) {
+     iem c
+     cr-printf ": name '%s'" (rt-command-format-error-name c)
+   })
+   ((rt-command-env-type-error? c) {
+     iem c
+     cr-printf ": name '%s'" (rt-command-env-type-error-name c)
+   })
+   ((rt-command-exec-error? c) {
+     iem c
+     cr-printf ": errno '%s'" (rt-command-exec-error-errno c)
    })
    ((rt-command-status-error? c) {
      iem c
@@ -371,42 +601,99 @@ define (condition-report prefix c & args) "print a report on condition `c`
      }
      cr-printf "job: %s => %s" (%idio-job-pipeline job) (rt-command-status-error-status c)
    })
+   ((rt-command-error? c) {
+     iem c
+   })
+
+   ;; ^rt-array-error
    ((rt-array-error? c) {
      iem c
      cr-printf ": index '%s'" (rt-array-error-index c)
    })
+
+   ;; ^rt-hash-error
    ((rt-hash-key-not-found-error? c) {
      iem c
-     cr-printf ": key '%s'" (rt-hash-error-key c)
+     cr-printf ": key '%s'" (rt-hash-key-not-found-error-key c)
    })
-   ((rt-bignum-conversion-error? c) {
+   ((rt-hash-error? c) {
      iem c
-     cr-printf ": bignum %s" (rt-bignum-conversion-error-number c)
    })
-   ((rt-fixnum-conversion-error? c) {
+
+   ;; ^rt-number-error (bignum fixnum)
+   ((rt-bignum-error? c) {
      iem c
-     cr-printf ": fixnum %d" (rt-fixnum-conversion-error-fixnum c)
+     cr-printf ": bignum %s" (rt-number-error-number c)
    })
+   ((rt-fixnum-error? c) {
+     iem c
+     cr-printf ": fixnum %d" (rt-number-error-number c)
+   })
+   ((rt-number-error? c) {
+     iem c
+     cr-printf ": number '%s'" (rt-number-error-number c)
+   })
+
+   ;; ^rt-bitset-error
    ((rt-bitset-bounds-error? c) {
      iem c
      cr-printf ": bit %s" (rt-bitset-bounds-error-bit c)
    })
    ((rt-bitset-size-mismatch-error? c) {
      iem c
-     cr-printf ": sizes mismatch: %s != %s" (rt-bitset-size-mismatch-error-size1 c) (rt-bitset-size-mismatch-error-size2 c)
+     cr-printf ": size mismatch: %s != %s" (rt-bitset-size-mismatch-error-size1 c) (rt-bitset-size-mismatch-error-size2 c)
    })
+   ((rt-bitset-error? c) {
+     iem c
+   })
+
+   ;; ^rt-keyword-error
+   ((rt-keyword-error? c) {
+     iem c
+     cr-printf ": keyword %s" (rt-keyword-error-keyword c)
+   })
+
+   ;; ^rt-libc-error
+   ((rt-libc-format-error? c) {
+     iem c
+     cr-printf ": name %s" (rt-libc-format-error-name c)
+   })
+   ((rt-libc-error? c) {
+     iem c
+   })
+
+   ;; ^rt-struct-error
+   ((rt-struct-error? c) {
+     iem c
+   })
+
+   ;; ^rt-symbol-error
+   ((rt-symbol-error? c) {
+     iem c
+   })
+
+   ;; ^rt-signal
    ((rt-signal? c) {
      iem c
      cr-printf "signal %s (%s)" (rt-signal-error-signum c) (libc/signal-name (rt-signal-error-signum c))
    })
+
+   ;; ^runtime-error fallback
+   ((runtime-error? c) {
+     iem c
+     cr-printf ": unhandled runtime-error %s" c
+   })
+
+   ;; fallbacks
    ((idio-error? c) {
      iem c
+     cr-printf ": unhandled ^idio-error %s" c
    })
    ((error? c) {
-     cr-printf " %s" (struct-type-name (struct-instance-type c))
+     cr-printf ": unhandled ^error %s" (struct-type-name (struct-instance-type c))
    })
    (else {
-     cr-printf " %s" c
+     cr-printf ": unhandled ^condition %s" c
    }))
 
   msgs = pair "\n" msgs

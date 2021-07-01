@@ -634,7 +634,7 @@ This returns #unspec						\n\
 /*
  * Let's try to be consistent with condition-report
  */
-void idio_condition_format_system_error (char *prefix, IDIO c)
+void idio_condition_report (char *prefix, IDIO c)
 {
     IDIO_C_ASSERT (prefix);
     IDIO_ASSERT (c);
@@ -757,75 +757,7 @@ does not return per se						\n\
 	 */
 	IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (c);
 
-	if (idio_struct_type_isa (sit, idio_condition_system_error_type)) {
-	    idio_condition_format_system_error ("default-condition-handler", c);
-	} else if (idio_struct_type_isa (sit, idio_condition_idio_error_type)) {
-	    IDIO eh = idio_thread_current_error_handle ();
-	    int printed = 0;
-
-	    idio_display_C ("\ndefault-condition-handler: idio-error: ", eh);
-
-	    IDIO l = IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_IDIO_ERROR_TYPE_LOCATION);
-	    if (idio_S_nil != l) {
-		printed = 1;
-
-		idio_display_C ("'", eh);
-		idio_display (idio_vm_source_expr (), eh);
-		idio_display_C ("' at ", eh);
-		idio_display (l, eh);
-
-		if (idio_struct_type_isa (sit, idio_condition_read_error_type)) {
-		    idio_display_C (":", eh);
-		    idio_display (IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_READ_ERROR_TYPE_LINE), eh);
-		    idio_display_C (":", eh);
-		    idio_display (IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_READ_ERROR_TYPE_POSITION), eh);
-		} else if (idio_struct_type_isa (sit, idio_condition_evaluation_error_type)) {
-		    idio_display_C (":", eh);
-		    idio_display (IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_EVALUATION_ERROR_TYPE_EXPR), eh);
-		}
-	    }
-
-	    if (printed) {
-		idio_display_C (": ", eh);
-	    }
-	    idio_display (IDIO_STRUCT_TYPE_NAME (sit), eh);
-	    idio_display_C (": ", eh);
-
-	    if (idio_struct_type_isa (sit, idio_condition_rt_variable_error_type)) {
-		IDIO name = IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_RT_VARIABLE_ERROR_TYPE_NAME);
-		if (idio_S_nil != name) {
-		    if (printed) {
-			idio_display_C (": ", eh);
-		    }
-		    idio_display (name, eh);
-		    idio_display_C (": ", eh);
-		    printed = 1;
-		}
-	    }
-
-	    IDIO m = IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_IDIO_ERROR_TYPE_MESSAGE);
-	    if (idio_S_nil != m) {
-		idio_display (m, eh);
-		printed = 1;
-	    }
-	    IDIO d = IDIO_STRUCT_INSTANCE_FIELDS(c, IDIO_SI_IDIO_ERROR_TYPE_DETAIL);
-	    if (idio_S_nil != d) {
-		if (printed) {
-		    idio_display_C (": ", eh);
-		}
-		idio_display (d, eh);
-		printed = 1;
-	    }
-	    idio_display_C ("\n", eh);
-	} else if (idio_struct_type_isa (sit, idio_condition_error_type)) {
-	    IDIO eh = idio_thread_current_error_handle ();
-
-	    idio_display_C ("\ndefault-condition-handler: error: ", eh);
-	    idio_display (IDIO_STRUCT_TYPE_NAME (sit), eh);
-	    idio_display_C ("\n", eh);
-	} else {
-	    idio_debug ("\ndefault-condition-handler: no clause for %s\n", c);
-	}
+	idio_condition_report ("default-condition-handler", c);
 
 	if (idio_bootstrap_complete) {
 	    IDIO cmd = IDIO_LIST1 (idio_module_symbol_value (idio_symbols_C_intern ("debug"),
@@ -903,6 +835,8 @@ does not return per se						\n\
     if (idio_isa_condition (c)) {
 	IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (c);
 
+	idio_condition_report ("restart-condition-handler", c);
+
 	/*
 	 * Hmm, a timing issue with SIGCHLD?  Should have been caught
 	 * in default-condition-handler.
@@ -929,12 +863,9 @@ does not return per se						\n\
 	    fprintf (stderr, "restart-c-h: rcse?? =>> #unspec\n");
 	    return idio_condition_exit_on_error (c);
 	} else if (idio_struct_type_isa (sit, idio_condition_system_error_type)) {
-	    idio_condition_format_system_error ("restart-condition-handler", c);
 	    return idio_S_unspec;
 	}
     }
-
-    idio_condition_format_system_error ("restart-condition-handler", c);
 
     /*
      * As the restart-condition-handler we'll go back to #1, the most
@@ -951,7 +882,9 @@ does not return per se						\n\
     if (idio_isa_pair (krun)) {
 	fprintf (stderr, "restart-condition-handler: restoring krun #%td: ", krun_p);
 	idio_debug ("%s\n", IDIO_PAIR_HT (krun));
+#ifdef IDIO_DEBUG
 	idio_vm_thread_state (idio_thread_current_thread ());
+#endif
 	idio_vm_restore_continuation (IDIO_PAIR_H (krun), idio_S_unspec);
 	return idio_S_notreached;
     }
@@ -1152,6 +1085,7 @@ void idio_init_condition ()
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_module_error_type, "^rt-module-error", idio_condition_runtime_error_type, "module");
     IDIO_DEFINE_CONDITION0 (idio_condition_rt_module_unbound_error_type, "^rt-module-unbound-error", idio_condition_rt_module_error_type);
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_module_symbol_unbound_error_type, "^rt-module-symbol-unbound-error", idio_condition_rt_module_error_type, "symbol");
+
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_path_error_type, "^rt-path-error", idio_condition_runtime_error_type, "pathname");
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_glob_error_type, "^rt-glob-error", idio_condition_runtime_error_type, "pattern");
 
