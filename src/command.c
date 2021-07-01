@@ -867,7 +867,7 @@ char **idio_command_argv (IDIO args)
 		     *
 		     * env #t
 		     */
-		    idio_command_arg_type_error (arg, "inconvertible value", IDIO_C_FUNC_LOCATION ());
+		    idio_command_arg_type_error (arg, "inconvertible constant", IDIO_C_FUNC_LOCATION ());
 
 		    /* notreached */
 		    return NULL;
@@ -1034,7 +1034,7 @@ char **idio_command_argv (IDIO args)
 		     *
 		     * env ^condition
 		     */
-		    idio_command_arg_type_error (arg, "inconvertible value", IDIO_C_FUNC_LOCATION ());
+		    idio_command_arg_type_error (arg, "inconvertible type", IDIO_C_FUNC_LOCATION ());
 
 		    /* notreached */
 		    return NULL;
@@ -1372,7 +1372,7 @@ IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
     return r;
 }
 
-IDIO_DEFINE_PRIMITIVE1V_DS ("%exec", exec, (IDIO command, IDIO args), "command [", "\
+IDIO_DEFINE_PRIMITIVE1V_DS ("%exec", exec, (IDIO command, IDIO args), "command [args]", "\
 exec `command` `args`				\n\
 						\n\
 :param command: command name			\n\
@@ -1437,7 +1437,7 @@ exec `command` `args`				\n\
 void idio_command_add_primitives ()
 {
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_command_module, find_exe);
-    IDIO_ADD_MODULE_PRIMITIVE (idio_command_module, exec);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_command_module, exec);
 }
 
 void idio_init_command ()
