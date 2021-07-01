@@ -497,8 +497,12 @@ extern FILE *idio_vm_perf_FILE;
 
 #define idio_S_notreached	((const IDIO) IDIO_CONSTANT_IDIO (IDIO_CONSTANT_NOTREACHED))
 
+#define IDIO_STATE_BOOTSTRAP	0
+#define IDIO_STATE_RUNNING	1
+#define IDIO_STATE_SHUTDOWN	2
+
+extern int idio_state;
 extern pid_t idio_pid;
-extern int idio_bootstrap_complete;
 extern int idio_exit_status;
 extern IDIO idio_k_exit;
 

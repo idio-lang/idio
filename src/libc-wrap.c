@@ -444,6 +444,134 @@ See ``pipe`` for a constructor ofthe pipe array.		\n\
 }
 
 /*
+ * Named Pipes (for Process Substitution).
+ *
+ * Tricky because of platform inconsistency.  We prefer /dev/fd/n but
+ * FreeBSD doesn't support it above /dev/fd/2 so we need to utilise a
+ * real named pipe.
+ *
+ * For /dev/fd systems we can call pipe(2) and generate two /dev/fd
+ * pathnames.
+ *
+ * Otherwise we need to wash through mkdtemp(3)[1] and mkfifo(2).  We
+ * do NOT open(2) (twice) otherwise we block!  You need two seaprate
+ * processes to open each end.  This means we won't be able to return
+ * file descriptors as per pipe(2).
+ *
+ * What should we return?  I suppose the full quartet of:
+ *
+ * * read fd or #f
+ *
+ * * write fd or #f
+ *
+ * * read pathname
+ *
+ * * write pathname
+ *
+ * pipe() will have returned two (open) file descriptors so we need to
+ * return two /dev/fd pathnames whereas the named pipe's pathname will
+ * obviously(?) be the same for both ends.
+ *
+ * We also want to return the temporary directory for a named pipe (as
+ * we're using mkdtemp()) so save a bit of time chopping strings up.
+ *
+ *
+ * [1] We're using mkdtemp(3) rather than Bash's mktemp(3) as modern
+ * linkers are prone to whinging about the resultant filename not
+ * being safe to use.  Correct and irritating.  It means we need to
+ * both unlink(2) the (named) pipe and rmdir(2) the directory when
+ * we're done.
+ */
+IDIO idio_libc_proc_subst_named_pipe ()
+{
+#if defined (BSD)
+    /*
+     * I wrote the %get-tmpdir in libc.idio in the style of Bash and
+     * now I need it again here...  Poor FreeBSD, we'll need to go the
+     * long way round.
+     */
+    IDIO mtd_cmd = IDIO_LIST2 (idio_module_symbol_value (idio_symbols_C_intern ("make-tmp-dir"),
+							idio_libc_module,
+							 idio_S_nil),
+			       idio_string_C ("idio-np-"));
+
+    IDIO td = idio_vm_invoke_C (idio_thread_current_thread (), mtd_cmd);
+
+    /*
+     * make-tmp-dir/mkdtemp should have barfed if it failed to create
+     * a temporary directory
+     */
+    if (idio_isa_pathname (td)) {
+	size_t blen = 0;
+	char *td_C = idio_string_as_C (td, &blen);
+
+	char np_name_C[PATH_MAX];
+	sprintf (np_name_C, "%s/the-pipe", td_C);
+
+	IDIO_GC_FREE (td_C);
+
+	IDIO np_name = idio_pathname_C (np_name_C);
+
+	int mkfifo_r = mkfifo (np_name_C, S_IRUSR | S_IWUSR);
+
+	if (-1 == mkfifo_r) {
+	    idio_error_system_errno ("mkfifo", np_name, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	}
+
+	return IDIO_LIST5 (idio_S_false, idio_S_false, np_name, np_name, td);
+    } else {
+	idio_error_param_value ("tmpdir", "should be a pathname", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+#else  /* BSD */
+    int pipefd[2];
+
+    int pipe_r = pipe (pipefd);
+
+    if (-1 == pipe_r) {
+	/*
+	 * Test Case: ??
+	 *
+	 * Short of reaching EMFILE/ENFILE there's not much we can do.
+	 */
+	idio_error_system_errno ("pipe", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    char fd_name_C[PATH_MAX];
+    sprintf (fd_name_C, "/dev/fd/%d", pipefd[0]);
+
+    IDIO rfd_name = idio_pathname_C (fd_name_C);
+
+    sprintf (fd_name_C, "/dev/fd/%d", pipefd[1]);
+
+    IDIO wfd_name = idio_pathname_C (fd_name_C);
+
+    return IDIO_LIST4 (idio_C_int (pipefd[0]), idio_C_int (pipefd[1]), rfd_name, wfd_name);
+#endif /* BSD */
+}
+
+IDIO_DEFINE_PRIMITIVE0_DS ("proc-subst-named-pipe", proc_subst_named_pipe, (void), "", "\
+return a (possibly named) pipe with pathnames for each end	\n\
+								\n\
+:return: see below						\n\
+:rtype: list							\n\
+								\n\
+On /dev/fd supporting systems the return value is:		\n\
+(rfd, wfd, rname, wname)					\n\
+								\n\
+Otherwise the return value is:					\n\
+(#f, #f, pipe-name, pipe-name, tmpdir)				\n\
+")
+{
+    return idio_libc_proc_subst_named_pipe ();
+}
+
+/*
  * signal-handler isn't a real libc function.  It has been added in
  * to aid spotting if a parent process has kindly sigignored()d
  * SIGPIPE for us:
@@ -3020,6 +3148,7 @@ void idio_libc_wrap_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_gettimeofday);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_pipe_reader);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_pipe_writer);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, proc_subst_named_pipe);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_signal_handler);
 
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_WEXITSTATUS);

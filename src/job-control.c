@@ -646,12 +646,20 @@ display to stderr `msg` alongside job `job` details\n\
     return idio_S_unspec;
 }
 
+/*
+ * idio_job_control_do_job_notification() is called from the primitive
+ * do-job-notification which should be overwritten when
+ * job-control.idio is loaded and during shutdown.
+ */
+
 void idio_job_control_do_job_notification ()
 {
     /*
      * Get up to date info
      */
     idio_job_control_update_status ();
+
+    IDIO ps_jobs = idio_module_symbol_value (idio_symbols_C_intern ("%%process-substitution-jobs"), idio_job_control_module, idio_S_nil);
 
     IDIO jobs = idio_module_symbol_value (idio_job_control_jobs_sym, idio_job_control_module, idio_S_nil);
     IDIO njobs = idio_S_nil;
@@ -674,7 +682,51 @@ void idio_job_control_do_job_notification ()
 
 	/*
 	 * else: no need to say anything about running jobs
+	 *
+	 * However, take the opportunity during shutdown to clean up
+	 * any extant true named pipes.
+	 *
+	 * Remember, we're on the way out, don't care so much about
+	 * errors
+	 *
 	 */
+	if (IDIO_STATE_SHUTDOWN == idio_state &&
+	    idio_S_nil != ps_jobs) {
+	    IDIO psj = idio_hash_ref (ps_jobs, job);
+
+	    if (idio_S_unspec != psj) {
+		idio_debug ("unlink/rm %s\n", psj);
+		IDIO psj_path = idio_struct_instance_ref_direct (psj, 1);
+		if (idio_S_false != psj_path) {
+		    size_t size = 0;
+		    char *path_C = idio_string_as_C (psj_path, &size);
+		    size_t C_size = strlen (path_C);
+		    if (C_size != size) {
+			fprintf (stderr, "ERROR: named-pipe: path contains an ASCII NUL: %s\n", path_C);
+		    } else {
+			if (unlink (path_C) < 0) {
+			    perror ("unlink");
+			} else {
+			    IDIO psj_dir = idio_struct_instance_ref_direct (psj, 2);
+			    size = 0;
+			    char *dir_C = idio_string_as_C (psj_dir, &size);
+			    size_t C_size = strlen (dir_C);
+			    if (C_size != size) {
+				fprintf (stderr, "ERROR: named-pipe: dir: contains an ASCII NUL: %s\n", dir_C);
+			    } else {
+				if (rmdir (dir_C) < 0) {
+				    perror ("unlink");
+				}
+			    }
+
+			    IDIO_GC_FREE (dir_C);
+			}
+		    }
+
+		    IDIO_GC_FREE (path_C);
+		}
+	    }
+	}
 
 	jobs = IDIO_PAIR_T (jobs);
     }

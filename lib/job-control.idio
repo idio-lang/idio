@@ -24,13 +24,19 @@ module job-control
 
 Even though we import libc here in job-control (because we do a lot of
 libc-ish things) the templates/operators we export -- which will be
-expanded in the user's namespace -- will use libc values and we have
-no idea if they, the importer (of us), has imported libc themselves.
-We don't want to force them to import libc as it annoyingly duplicates
-many names.
+expanded in the user's namespace -- will try to use those libc values
+and we have no idea if they, the importer (of us), has imported libc
+themselves.  We don't want to force them to import libc as it
+annoyingly duplicates many names.
 
 So the "fix" is to ensure that the templates/operators we export
-dutifully call the libc/X "direct" names for any libc X they use.
+dutifully call the libc/X "direct" names for any libc X they use and
+that we export X here.
+
+There's nominally no such problem with our own names,
+eg. add-process-substitution-job, as bootstrap imports job-control.
+However, templates/operators should probably use direct names
+regardless.
 
 *#
 
@@ -45,6 +51,8 @@ export (%idio-interactive
 	background-job
 	foreground-job
 	default-child-handler
+	process-substitution-jobs
+	add-process-substitution-job
 	wait-for-job
 
 	format-job-detail
@@ -117,6 +125,57 @@ define (job-as-string job seen) {
 }
 
 add-as-string %idio-job job-as-string
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+#*
+
+%process-substitution-job describes the two alternatives for handling
+process substitution pathnames using either the /dev/fd format (most
+systems) or true named pipes (FreeBSD).
+
+For /dev/fd systems we'll have used a pipe(2) and created the /dev/fd/
+pathnames based on the pipe's file descriptors.  We only need close
+the file descriptor {fd} so {path} and {dir} are #f.
+
+For true named pipes we need to call mkfifo(2).  mktemp(3) is frowned
+upon so we mkdtemp(3) for {dir} and append "/the-pipe" to get {path}.
+There is no associated file descriptor so {fd} is #f.
+
+On removal we can unlink(2) {path} then rmdir(2) {dir}.
+
+{dir} is saving us having to split {path} to find the directory
+component when we had it in our hands to begin with.
+
+*#
+
+export-struct %process-substitution-job		fd path dir
+
+%%process-substitution-jobs := make-hash #n #n 4
+
+define (process-substitution-jobs) {
+  %%process-substitution-jobs
+}
+
+define (add-process-substitution-job job psj) {
+  hash-set! %%process-substitution-jobs job psj
+}
+
+define (tidy-process-substitution-job job) {
+  if (hash-exists? %%process-substitution-jobs job) {
+    psj := hash-ref %%process-substitution-jobs job
+    hash-delete! %%process-substitution-jobs job
+    if (C/int? (%process-substitution-job-fd psj)) {
+      libc/close (%process-substitution-job-fd psj)
+    }
+    if (%process-substitution-job-path psj) {
+      libc/unlink (%process-substitution-job-path psj)
+      libc/rmdir (%process-substitution-job-dir psj)
+    }
+  }
+}
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 #*
 
@@ -405,6 +464,8 @@ define (wait-for-job job) "wait for job `job` to be stopped or completed
 
   ;eprintf "wfj: %5s C=%s S=%s %s %s\n" (%idio-job-pgid job) (job-is-completed job) (job-is-stopped job) (if (job-failed job) "failed" "succeeded") (pipeline-detail job)
 
+  tidy-process-substitution-job job
+
   if (job-failed job) {
     if (not (%idio-job-raised job)) {
       c := make-condition ^rt-command-status-error "job failed" job (pipeline-detail job) (job-detail job)
@@ -474,6 +535,8 @@ define (do-job-notification) "notify of any job status changes" {
 	       job := ph jobs
 	       (cond
 		((job-is-completed job) {
+
+		  tidy-process-substitution-job job
 
 		  format-job-info job "completed"
 		  if (job-failed job) {
@@ -713,9 +776,26 @@ define (prep-io infile outfile errfile) "prepare the IO for the current process
   So, leave the final resolution of handle -> *nix file descriptor
   until the last thing before execve().  Just set Idio-level params.
 
+  ---
+
+  Named pipes complicate the issue.  Well, true named pipes at any
+  rate.  /dev/fd systems are fine because in practice we are just
+  using the file descriptors from pipe(2) but if we have to use a true
+  named pipe (FreeBSD) then we need separate processes to open each
+  end -- otherwise we block.  In other words
+  libc/proc-subst-named-pipe cannot (pre-)open the named pipe for us,
+  we need to delay opening until we're in a separate process.
+
+  So we need to test if *file is a pathname and set the appropriate
+  handle using that.  We're safe doing it here because %prep-process &
+  prep-io are run in the child.
+
   *#
 
   (cond
+   ((pathname? infile) {
+     set-input-handle! (open-input-file infile)
+   })
    ((C/int? infile) {
      if (not (C/== infile STDIN_FILENO)) {
        dup2 infile STDIN_FILENO
@@ -726,6 +806,9 @@ define (prep-io infile outfile errfile) "prepare the IO for the current process
    (else (error 'prep-io "unexpected infile format" infile)))
 
   (cond
+   ((pathname? outfile) {
+     set-output-handle! (open-output-file outfile)
+   })
    ((C/int? outfile) {
      if (not (C/== outfile STDOUT_FILENO)) {
        dup2 outfile STDOUT_FILENO
@@ -736,6 +819,9 @@ define (prep-io infile outfile errfile) "prepare the IO for the current process
    (else (error 'prep-io "unexpected outfile format" outfile)))
 
   (cond
+   ((pathname? errfile) {
+     set-error-handle! (open-output-file errfile)
+   })
    ((C/int? errfile) {
      if (not (C/== errfile STDERR_FILENO)) {
        dup2 errfile STDERR_FILENO
@@ -1199,14 +1285,42 @@ define-infix-operator | 700 {
   }
 }
 
-define-template (fork-command foreground use-w-pipe use-r-pipe & cmd) {
-  cmd-r-ph	   := gensym 'cmd-r-ph
-  cmd-w-ph	   := gensym 'cmd-w-ph
+#*
 
-  cmd-r-fd	   := gensym 'cmd-r-fd
+fork-command started life as per the Job Control info pages as taking
+a foreground boolean.
+
+It was extended to take use-[rw]-pipe booleans for whether it should
+return write/read pipe handles for pipe-into and pipe-from.
+
+We can (ab)use those pipe "booleans" by testing if they are the 'named
+symbol to return a (named) pipe pathname for Process Substitution.  We
+can do this because we can't ask for both a pipe handle and a named
+pipe pathname to be returned at the same time:
+
+use-[rw]-pipe:
+
+* #f		do nothing
+
+* 'named	return a (named) pipe pathname
+
+* any		return a pipe handle
+
+The only complication is that we can't open the true named pipe now,
+we must open it in the child process otherwise we block waiting for
+the other guy to open their end.  Which they can't because we've just
+blocked ourselves from starting them.
+
+*#
+
+define-template (fork-command foreground use-w-pipe use-r-pipe & cmd) {
+  cmd-r-phn	   := gensym 'cmd-r-phn
+  cmd-w-phn	   := gensym 'cmd-w-phn
+
+  cmd-r-fdn	   := gensym 'cmd-r-fdn
   close-cmd-r-fd   := gensym 'close-cmd-r-fd
 
-  cmd-w-fd	   := gensym 'cmd-w-fd
+  cmd-w-fdn	   := gensym 'cmd-w-fdn
   recover-cmd-w-fd := gensym 'rcvr-cmd-w-fd
 
   cmd-e-fd	   := gensym 'cmd-e-fd
@@ -1218,40 +1332,77 @@ define-template (fork-command foreground use-w-pipe use-r-pipe & cmd) {
   pid		   := gensym 'pid
   status	   := gensym 'status
 
+  proc-subst-job   := gensym 'psj
+
   #T{
     {
-      $cmd-r-fd		:= #f
+      $cmd-r-fdn	:= #f
       $close-cmd-r-fd	:= #f
-      $cmd-w-ph		:= #f
-      if $use-w-pipe {
-	w-pipe := (libc/pipe)
-	$cmd-w-ph = open-output-pipe (libc/pipe-writer w-pipe)
-	$cmd-r-fd = libc/pipe-reader w-pipe
-      } {
-	$cmd-r-fd       = (libc/stdin-fileno) ; STDIN_FILENO
-	$close-cmd-r-fd = #f
-	if (pair? $cmd-r-fd) {
-	  $cmd-r-fd       = ph $cmd-r-fd
-	  $close-cmd-r-fd = $cmd-r-fd
-	}
-      }
+      $cmd-w-phn	:= #f
+      $proc-subst-job   := #f
+      (cond
+       ((eq? $use-w-pipe 'named) {
+	 named-pipe := (libc/proc-subst-named-pipe)
+	 $cmd-w-phn = (nth named-pipe 4)
+	 ;; true named pipes will not have opened an fd so substitute the name
+	 $cmd-r-fdn = (or (nth named-pipe 1)
+			  (nth named-pipe 3))
 
-      $cmd-w-fd		:= #f
+	 (cond
+	  ((nth named-pipe 2) {
+	    $proc-subst-job = job-control/make-%process-substitution-job (nth named-pipe 2) #f #f
+	  })
+	  (else {
+	    $proc-subst-job = job-control/make-%process-substitution-job #f (nth named-pipe 4) (nth named-pipe 5)
+	  }))
+       })
+       ($use-w-pipe {
+	 w-pipe := (libc/pipe)
+	 $cmd-w-phn = open-output-pipe (libc/pipe-writer w-pipe)
+	 $cmd-r-fdn = libc/pipe-reader w-pipe
+       })
+       (else {
+	 $cmd-r-fdn       = (libc/stdin-fileno) ; STDIN_FILENO
+	 $close-cmd-r-fd = #f
+	 if (pair? $cmd-r-fdn) {
+	   $cmd-r-fdn       = ph $cmd-r-fdn
+	   $close-cmd-r-fd = $cmd-r-fdn
+	 }
+       }))
+
+      $cmd-w-fdn	:= #f
       $close-cmd-w-fd	:= #f
-      $cmd-r-ph		:= #f
+      $cmd-r-phn	:= #f
       $recover-cmd-w-fd := #f
-      if $use-r-pipe {
-	r-pipe := (libc/pipe)
-	$cmd-r-ph = open-input-pipe (libc/pipe-reader r-pipe)
-	$cmd-w-fd = libc/pipe-writer r-pipe
-      } {
-	$cmd-w-fd         = (libc/stdout-fileno) ; STDOUT_FILENO
-	$recover-cmd-w-fd = #f
-	if (pair? $cmd-w-fd) {
-	  $recover-cmd-w-fd = pht $cmd-w-fd
-	  $cmd-w-fd         = ph $cmd-w-fd
-	}
-      }
+      (cond
+       ((eq? $use-r-pipe 'named) {
+	 named-pipe := (libc/proc-subst-named-pipe)
+	 $cmd-r-phn = (nth named-pipe 3)
+	 ;; true named pipes will not have opened an fd so substitute the name
+	 $cmd-w-fdn = (or (nth named-pipe 2)
+			  (nth named-pipe 4))
+
+	 (cond
+	  ((nth named-pipe 1) {
+	    $proc-subst-job = job-control/make-%process-substitution-job (nth named-pipe 1) #f #f
+	  })
+	  (else {
+	    $proc-subst-job = job-control/make-%process-substitution-job #f (nth named-pipe 3) (nth named-pipe 5)
+	  }))
+       })
+       ($use-r-pipe {
+	 r-pipe := (libc/pipe)
+	 $cmd-r-phn = open-input-pipe (libc/pipe-reader r-pipe)
+	 $cmd-w-fdn = libc/pipe-writer r-pipe
+       })
+       (else {
+	 $cmd-w-fdn         = (libc/stdout-fileno) ; STDOUT_FILENO
+	 $recover-cmd-w-fd = #f
+	 if (pair? $cmd-w-fdn) {
+	   $recover-cmd-w-fd = pht $cmd-w-fdn
+	   $cmd-w-fdn         = ph $cmd-w-fdn
+	 }
+       }))
 
       $cmd-e-fd         := (libc/stderr-fileno) ; STDERR_FILENO
       $recover-cmd-e-fd := #f
@@ -1261,13 +1412,18 @@ define-template (fork-command foreground use-w-pipe use-r-pipe & cmd) {
       }
       $pgid := libc/0pid_t
       $proc := make-%idio-process '$cmd -1 #f #f #n
-      $job := make-%idio-job '$cmd (list $proc) $pgid #f #f #n $cmd-r-fd $cmd-w-fd $cmd-e-fd
+      $job := make-%idio-job '$cmd (list $proc) $pgid #f #f #n $cmd-r-fdn $cmd-w-fdn $cmd-e-fd
 
       $pid := (libc/fork)
       (cond
        ((C/== $pid libc/0pid_t) {
 	 set-default-handler! ^idio-error default-child-handler
-	 %prep-process $pgid $cmd-r-fd $cmd-w-fd $cmd-e-fd $foreground
+	 %prep-process $pgid $cmd-r-fdn $cmd-w-fdn $cmd-e-fd $foreground
+	 if (or $use-r-pipe
+		$use-w-pipe) {
+		  ;; async process
+		  libc/setpgid (libc/getpid) (libc/getpid)
+		}
 	 (cond
 	  ((pair? (ph '$cmd)) {
 	    $@cmd
@@ -1288,11 +1444,25 @@ define-template (fork-command foreground use-w-pipe use-r-pipe & cmd) {
       (cond
        ($use-w-pipe {
 	 ;; parent should not hold the read end of the pipe-into pipe open
-	 libc/close $cmd-r-fd
+	 if (eq? $use-w-pipe 'named) {
+	   job-control/add-process-substitution-job $job $proc-subst-job
+	   if (C/int? $cmd-r-fdn) {
+	     libc/close $cmd-r-fdn
+	   }
+	 } {
+	   libc/close $cmd-r-fdn
+	 }
        })
        ($use-r-pipe {
 	 ;; parent should not hold the write end of the pipe-from pipe open
-	 libc/close $cmd-w-fd
+	 if (eq? $use-r-pipe 'named) {
+	   job-control/add-process-substitution-job $job $proc-subst-job
+	   if (C/int? $cmd-w-fdn) {
+	     libc/close $cmd-w-fdn
+	   }
+	 } {
+	   libc/close $cmd-w-fdn
+	 }
        }))
 
       %idio-jobs = pair $job %idio-jobs
@@ -1300,10 +1470,10 @@ define-template (fork-command foreground use-w-pipe use-r-pipe & cmd) {
 
       (cond
        ($use-w-pipe {
-	 $cmd-w-ph
+	 $cmd-w-phn
        })
        ($use-r-pipe {
-	 $cmd-r-ph
+	 $cmd-r-phn
        })
        (else {
 	 $status := #f
@@ -1323,7 +1493,7 @@ define-template (fork-command foreground use-w-pipe use-r-pipe & cmd) {
 	 }
 
 	 if $recover-cmd-w-fd {
-	   ih := open-input-file-from-fd $cmd-w-fd
+	   ih := open-input-file-from-fd $cmd-w-fdn
 
 	   ;; NB the temporary file has just been written to so the file
 	   ;; pointer is currently at the end, we need to set it back to
@@ -1362,8 +1532,16 @@ define-template (pipe-into & cmd) {
   #T{ fork-command #f #t #f $@cmd }
 }
 
+define-template (named-pipe-into & cmd) {
+  #T{ fork-command #f 'named #f $@cmd }
+}
+
 define-template (pipe-from & cmd) {
   #T{ fork-command #f #f #t $@cmd }
+}
+
+define-template (named-pipe-from & cmd) {
+  #T{ fork-command #f #f 'named $@cmd }
 }
 
 define (wait & jobs) {

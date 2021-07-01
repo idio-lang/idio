@@ -893,7 +893,7 @@ static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, int h_type, char
 	 */
 	if (EINVAL == errno &&
 	    (idio_vm_virtualisation_WSL ||
-	     0 == idio_bootstrap_complete)) {
+	     IDIO_STATE_BOOTSTRAP == idio_state)) {
 	    perror ("fcntl F_SETFD");
 	} else {
 	    idio_error_system_errno_msg ("fcntl", "F_SETFD", ifd, IDIO_C_FUNC_LOCATION ());
@@ -1331,7 +1331,7 @@ IDIO idio_open_file_handle_C (char *func, IDIO filename, char *pathname, int fre
 	 */
 	if (EINVAL == errno &&
 	    (idio_vm_virtualisation_WSL ||
-	     0 == idio_bootstrap_complete)) {
+	     IDIO_STATE_BOOTSTRAP == idio_state)) {
 	    perror ("fcntl F_SETFD");
 	} else {
 	    idio_error_system_errno_msg ("fcntl", "F_SETFD", idio_C_int (fd), IDIO_C_FUNC_LOCATION ());

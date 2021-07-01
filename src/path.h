@@ -32,6 +32,7 @@ extern IDIO idio_path_type;
 
 IDIO idio_pathname_C_len (const char *s_C, size_t blen);
 IDIO idio_pathname_C (const char *s_C);
+int idio_isa_pathname (IDIO o);
 IDIO idio_path_expand (IDIO p);
 
 void idio_path_add_primitives ();

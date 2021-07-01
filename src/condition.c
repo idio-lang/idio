@@ -759,7 +759,7 @@ does not return per se						\n\
 
 	idio_condition_report ("default-condition-handler", c);
 
-	if (idio_bootstrap_complete) {
+	if (IDIO_STATE_RUNNING == idio_state) {
 	    IDIO cmd = IDIO_LIST1 (idio_module_symbol_value (idio_symbols_C_intern ("debug"),
 							     idio_Idio_module,
 							     idio_S_nil));
