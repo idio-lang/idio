@@ -135,6 +135,7 @@ extern char **idio_libc_errno_names;
 char *idio_libc_errno_name (int errnum);
 extern char **idio_libc_rlimit_names;
 char *idio_libc_rlimit_name (int errnum);
+IDIO idio_libc_struct_timeval_pointer (struct timeval *tvp);
 
 void idio_init_libc_wrap ();
 

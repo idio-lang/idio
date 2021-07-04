@@ -1080,20 +1080,6 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 
   We can escape that with a first tag.
  */
-#define IDIO_PRINT_CONVERSION_FORMAT_X		0x58
-#define IDIO_PRINT_CONVERSION_FORMAT_b		0x62
-#define IDIO_PRINT_CONVERSION_FORMAT_c		0x63
-#define IDIO_PRINT_CONVERSION_FORMAT_d		0x64
-#define IDIO_PRINT_CONVERSION_FORMAT_e		0x65
-#define IDIO_PRINT_CONVERSION_FORMAT_f		0x66
-#define IDIO_PRINT_CONVERSION_FORMAT_g		0x67
-#define IDIO_PRINT_CONVERSION_FORMAT_o		0x6F
-#define IDIO_PRINT_CONVERSION_FORMAT_p		0x70
-#define IDIO_PRINT_CONVERSION_FORMAT_u		0x75
-#define IDIO_PRINT_CONVERSION_FORMAT_x		0x78
-
-#define IDIO_PRINT_CONVERSION_FORMAT_s		0x73
-
 char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 {
     char *r = NULL;

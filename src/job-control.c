@@ -57,21 +57,24 @@ static IDIO idio_job_control_default_child_handler_sym;
 /*
  * Indexes into structures for direct references
  */
-#define IDIO_JOB_TYPE_PIPELINE		0
-#define IDIO_JOB_TYPE_PROCS		1
-#define IDIO_JOB_TYPE_PGID		2
-#define IDIO_JOB_TYPE_NOTIFIED		3
-#define IDIO_JOB_TYPE_RAISED		4
-#define IDIO_JOB_TYPE_TCATTRS		5
-#define IDIO_JOB_TYPE_STDIN		6
-#define IDIO_JOB_TYPE_STDOUT		7
-#define IDIO_JOB_TYPE_STDERR		8
+#define IDIO_JOB_ST_PIPELINE		0
+#define IDIO_JOB_ST_PROCS		1
+#define IDIO_JOB_ST_PGID		2
+#define IDIO_JOB_ST_NOTIFIED		3
+#define IDIO_JOB_ST_RAISED		4
+#define IDIO_JOB_ST_TCATTRS		5
+#define IDIO_JOB_ST_STDIN		6
+#define IDIO_JOB_ST_STDOUT		7
+#define IDIO_JOB_ST_STDERR		8
+#define IDIO_JOB_ST_REPORT_TIMING	9
+#define IDIO_JOB_ST_TIMING_START	10
+#define IDIO_JOB_ST_TIMING_END		11
 
-#define IDIO_PROCESS_TYPE_ARGV		0
-#define IDIO_PROCESS_TYPE_PID		1
-#define IDIO_PROCESS_TYPE_COMPLETED	2
-#define IDIO_PROCESS_TYPE_STOPPED	3
-#define IDIO_PROCESS_TYPE_STATUS	4
+#define IDIO_PROCESS_ST_ARGV		0
+#define IDIO_PROCESS_ST_PID		1
+#define IDIO_PROCESS_ST_COMPLETED	2
+#define IDIO_PROCESS_ST_STOPPED		3
+#define IDIO_PROCESS_ST_STATUS		4
 
 static void idio_job_control_error_exec (char **argv, char **envp, IDIO c_location)
 {
@@ -141,13 +144,13 @@ static int idio_job_control_job_is_stopped (IDIO job)
 	return -1;
     }
 
-    IDIO procs = idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PROCS);
+    IDIO procs = idio_struct_instance_ref_direct (job, IDIO_JOB_ST_PROCS);
     while (idio_S_nil != procs) {
 	IDIO proc = IDIO_PAIR_H (procs);
 	procs = IDIO_PAIR_T (procs);
 
-	if (idio_S_false == idio_struct_instance_ref_direct (proc, IDIO_PROCESS_TYPE_COMPLETED) &&
-	    idio_S_false == idio_struct_instance_ref_direct (proc, IDIO_PROCESS_TYPE_STOPPED)) {
+	if (idio_S_false == idio_struct_instance_ref_direct (proc, IDIO_PROCESS_ST_COMPLETED) &&
+	    idio_S_false == idio_struct_instance_ref_direct (proc, IDIO_PROCESS_ST_STOPPED)) {
 	    return 0;
 	}
     }
@@ -194,10 +197,10 @@ static int idio_job_control_job_is_completed (IDIO job)
 	return -1;
     }
 
-    IDIO procs = idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PROCS);
+    IDIO procs = idio_struct_instance_ref_direct (job, IDIO_JOB_ST_PROCS);
     while (idio_S_nil != procs) {
 	IDIO proc = IDIO_PAIR_H (procs);
-	if (idio_S_false == idio_struct_instance_ref_direct (proc, IDIO_PROCESS_TYPE_COMPLETED)) {
+	if (idio_S_false == idio_struct_instance_ref_direct (proc, IDIO_PROCESS_ST_COMPLETED)) {
 	    return 0;
 	}
 
@@ -247,10 +250,10 @@ static int idio_job_control_job_failed (IDIO job)
     }
 
     if (idio_job_control_job_is_completed (job)) {
-	IDIO procs = idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PROCS);
+	IDIO procs = idio_struct_instance_ref_direct (job, IDIO_JOB_ST_PROCS);
 	while (idio_S_nil != procs) {
 	    IDIO proc = IDIO_PAIR_H (procs);
-	    IDIO istatus = idio_struct_instance_ref_direct (proc, IDIO_PROCESS_TYPE_STATUS);
+	    IDIO istatus = idio_struct_instance_ref_direct (proc, IDIO_PROCESS_ST_STATUS);
 	    int *statusp = IDIO_C_TYPE_POINTER_P (istatus);
 
 	    if (WIFEXITED (*statusp)) {
@@ -306,10 +309,10 @@ static IDIO idio_job_control_job_status (IDIO job)
 	return idio_S_notreached;
     }
 
-    IDIO procs = idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PROCS);
+    IDIO procs = idio_struct_instance_ref_direct (job, IDIO_JOB_ST_PROCS);
     while (idio_S_nil != procs) {
 	IDIO proc = IDIO_PAIR_H (procs);
-	IDIO istatus = idio_struct_instance_ref_direct (proc, IDIO_PROCESS_TYPE_STATUS);
+	IDIO istatus = idio_struct_instance_ref_direct (proc, IDIO_PROCESS_ST_STATUS);
 	int *statusp = IDIO_C_TYPE_POINTER_P (istatus);
 
 	if (WIFEXITED (*statusp)) {
@@ -360,10 +363,10 @@ static IDIO idio_job_control_job_detail (IDIO job)
 	return idio_S_notreached;
     }
 
-    IDIO procs = idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PROCS);
+    IDIO procs = idio_struct_instance_ref_direct (job, IDIO_JOB_ST_PROCS);
     while (idio_S_nil != procs) {
 	IDIO proc = IDIO_PAIR_H (procs);
-	IDIO istatus = idio_struct_instance_ref_direct (proc, IDIO_PROCESS_TYPE_STATUS);
+	IDIO istatus = idio_struct_instance_ref_direct (proc, IDIO_PROCESS_ST_STATUS);
 	int *statusp = IDIO_C_TYPE_POINTER_P (istatus);
 
 	if (WIFEXITED (*statusp)) {
@@ -422,7 +425,7 @@ static int idio_job_control_mark_process_status (pid_t pid, int status)
 		return -3;
 	    }
 
-	    IDIO procs = idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PROCS);
+	    IDIO procs = idio_struct_instance_ref_direct (job, IDIO_JOB_ST_PROCS);
 	    while (idio_S_nil != procs) {
 		IDIO proc = IDIO_PAIR_H (procs);
 
@@ -433,26 +436,26 @@ static int idio_job_control_mark_process_status (pid_t pid, int status)
 		    return -4;
 		}
 
-		int proc_pid = IDIO_C_TYPE_libc_pid_t (idio_struct_instance_ref_direct (proc, IDIO_PROCESS_TYPE_PID));
+		int proc_pid = IDIO_C_TYPE_libc_pid_t (idio_struct_instance_ref_direct (proc, IDIO_PROCESS_ST_PID));
 
 		if (proc_pid == pid) {
-		    IDIO proc_status = idio_struct_instance_ref_direct (proc, IDIO_PROCESS_TYPE_STATUS);
+		    IDIO proc_status = idio_struct_instance_ref_direct (proc, IDIO_PROCESS_ST_STATUS);
 		    if (idio_S_nil == proc_status) {
 			int *statusp = idio_alloc (sizeof (int));
 			*statusp = status;
-			idio_struct_instance_set_direct (proc, IDIO_PROCESS_TYPE_STATUS, idio_C_pointer_free_me (statusp));
+			idio_struct_instance_set_direct (proc, IDIO_PROCESS_ST_STATUS, idio_C_pointer_free_me (statusp));
 		    } else {
 			int *statusp = IDIO_C_TYPE_POINTER_P (proc_status);
 			*statusp = status;
 		    }
 
 		    if (WIFSTOPPED (status)) {
-			idio_struct_instance_set_direct (proc, IDIO_PROCESS_TYPE_STOPPED, idio_S_true);
+			idio_struct_instance_set_direct (proc, IDIO_PROCESS_ST_STOPPED, idio_S_true);
 		    } else {
-			idio_struct_instance_set_direct (proc, IDIO_PROCESS_TYPE_COMPLETED, idio_S_true);
+			idio_struct_instance_set_direct (proc, IDIO_PROCESS_ST_COMPLETED, idio_S_true);
 			if (WIFSIGNALED (status)) {
 			    fprintf (stderr, "Job Terminated: kill -%s %ld: ", idio_libc_signal_name (WTERMSIG (status)), (long) pid);
-			    idio_debug ("%s\n", idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PIPELINE));
+			    idio_debug ("%s\n", idio_struct_instance_ref_direct (job, IDIO_JOB_ST_PIPELINE));
 			}
 		    }
 
@@ -555,7 +558,7 @@ static IDIO idio_job_control_wait_for_job (IDIO job)
 	   !idio_job_control_job_is_completed (job));
 
     if (idio_job_control_job_failed (job)) {
-	IDIO raised = idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_RAISED);
+	IDIO raised = idio_struct_instance_ref_direct (job, IDIO_JOB_ST_RAISED);
 	if (idio_S_false == raised) {
 	    IDIO c = idio_struct_instance (idio_condition_rt_command_status_error_type,
 					   IDIO_LIST4 (idio_string_C ("C/job failed"),
@@ -563,7 +566,7 @@ static IDIO idio_job_control_wait_for_job (IDIO job)
 						       job,
 						       idio_job_control_job_status (job)));
 
-	    idio_struct_instance_set_direct (job, IDIO_JOB_TYPE_RAISED, idio_S_true);
+	    idio_struct_instance_set_direct (job, IDIO_JOB_ST_RAISED, idio_S_true);
 	    idio_reraise_condition (idio_S_true, c);
 
 	    return idio_S_notreached;
@@ -611,10 +614,10 @@ static void idio_job_control_format_job_info (IDIO job, char *msg)
 	return;
     }
 
-    pid_t job_pgid = IDIO_C_TYPE_libc_pid_t (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PGID));
+    pid_t job_pgid = IDIO_C_TYPE_libc_pid_t (idio_struct_instance_ref_direct (job, IDIO_JOB_ST_PGID));
 
     fprintf (stderr, "job %5ld (%s)", (long) job_pgid, msg);
-    idio_debug (": %s\n", idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PIPELINE));
+    idio_debug (": %s\n", idio_struct_instance_ref_direct (job, IDIO_JOB_ST_PIPELINE));
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("format-job-info", format_job_info, (IDIO job, IDIO msg), "job msg", "\
@@ -670,10 +673,10 @@ void idio_job_control_do_job_notification ()
 	if (idio_job_control_job_is_completed (job)) {
 	    idio_job_control_format_job_info (job, "completed");
 	} else if (idio_job_control_job_is_stopped (job)) {
-	    IDIO ntfy = idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_NOTIFIED);
+	    IDIO ntfy = idio_struct_instance_ref_direct (job, IDIO_JOB_ST_NOTIFIED);
 	    if (idio_S_false == ntfy) {
 		idio_job_control_format_job_info (job, "stopped");
-		idio_struct_instance_set_direct (job, IDIO_JOB_TYPE_NOTIFIED, idio_S_true);
+		idio_struct_instance_set_direct (job, IDIO_JOB_ST_NOTIFIED, idio_S_true);
 	    }
 	    njobs = idio_pair (job, njobs);
 	} else {
@@ -760,7 +763,7 @@ static IDIO idio_job_control_foreground_job (IDIO job, int cont)
 	return idio_S_notreached;
     }
 
-    pid_t job_pgid = IDIO_C_TYPE_libc_pid_t (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PGID));
+    pid_t job_pgid = IDIO_C_TYPE_libc_pid_t (idio_struct_instance_ref_direct (job, IDIO_JOB_ST_PGID));
 
     /*
      * Put the job in the foreground
@@ -776,7 +779,7 @@ static IDIO idio_job_control_foreground_job (IDIO job, int cont)
     }
 
     if (cont) {
-	IDIO job_tcattrs = idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_TCATTRS);
+	IDIO job_tcattrs = idio_struct_instance_ref_direct (job, IDIO_JOB_ST_TCATTRS);
 	IDIO_TYPE_ASSERT (C_pointer, job_tcattrs);
 	struct termios *tcattrsp = IDIO_C_TYPE_POINTER_P (job_tcattrs);
 
@@ -817,12 +820,12 @@ static IDIO idio_job_control_foreground_job (IDIO job, int cont)
      * Save the job's current terminal state -- creating a struct
      * termios if necessary
      */
-    IDIO job_tcattrs = idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_TCATTRS);
+    IDIO job_tcattrs = idio_struct_instance_ref_direct (job, IDIO_JOB_ST_TCATTRS);
     struct termios *tcattrsp = NULL;
     if (idio_S_nil == job_tcattrs) {
 	tcattrsp = idio_alloc (sizeof (struct termios));
 	job_tcattrs = idio_C_pointer_free_me (tcattrsp);
-	idio_struct_instance_set_direct (job, IDIO_JOB_TYPE_TCATTRS, job_tcattrs);
+	idio_struct_instance_set_direct (job, IDIO_JOB_ST_TCATTRS, job_tcattrs);
     }
 
     if (tcgetattr (idio_job_control_terminal, tcattrsp) < 0) {
@@ -888,7 +891,7 @@ static IDIO idio_job_control_background_job (IDIO job, int cont)
     }
 
     if (cont) {
-	int job_pgid = IDIO_C_TYPE_libc_pid_t (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PGID));
+	int job_pgid = IDIO_C_TYPE_libc_pid_t (idio_struct_instance_ref_direct (job, IDIO_JOB_ST_PGID));
 
 	if (kill (-job_pgid, SIGCONT) < 0) {
 	    idio_error_system_errno_msg ("kill", "SIGCONT", idio_libc_pid_t (-job_pgid), IDIO_C_FUNC_LOCATION ());
@@ -951,7 +954,7 @@ static void idio_job_control_hangup_job (IDIO job)
 
     idio_job_control_format_job_info (job, "SIGHUP'ed");
 
-    IDIO ipgid = idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PGID);
+    IDIO ipgid = idio_struct_instance_ref_direct (job, IDIO_JOB_ST_PGID);
     pid_t job_pgid = -1;
     if (idio_isa_libc_pid_t (ipgid)) {
 	job_pgid = IDIO_C_TYPE_libc_pid_t (ipgid);
@@ -1076,7 +1079,7 @@ IDIO idio_job_control_SIGTERM_stopped_jobs ()
 	while (idio_S_nil != jobs) {
 	    IDIO job = IDIO_PAIR_H (jobs);
 	    if (idio_job_control_job_is_stopped (job)) {
-		pid_t job_pgid = IDIO_C_TYPE_libc_pid_t (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PGID));
+		pid_t job_pgid = IDIO_C_TYPE_libc_pid_t (idio_struct_instance_ref_direct (job, IDIO_JOB_ST_PGID));
 
 		/*
 		 * Following in the style of Bash's
@@ -1107,7 +1110,7 @@ static void idio_job_control_mark_job_as_running (IDIO job)
 	return;
     }
 
-    IDIO procs = idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PROCS);
+    IDIO procs = idio_struct_instance_ref_direct (job, IDIO_JOB_ST_PROCS);
     while (idio_S_nil != procs) {
 	IDIO proc = IDIO_PAIR_H (procs);
 
@@ -1118,12 +1121,12 @@ static void idio_job_control_mark_job_as_running (IDIO job)
 	    return;
 	}
 
-	idio_struct_instance_set_direct (proc, IDIO_PROCESS_TYPE_STOPPED, idio_S_false);
+	idio_struct_instance_set_direct (proc, IDIO_PROCESS_ST_STOPPED, idio_S_false);
 
 	procs = IDIO_PAIR_T (procs);
     }
 
-    idio_struct_instance_set_direct (job, IDIO_JOB_TYPE_NOTIFIED, idio_S_false);
+    idio_struct_instance_set_direct (job, IDIO_JOB_ST_NOTIFIED, idio_S_false);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("mark-job-as-running", mark_job_as_running, (IDIO job), "job", "\
@@ -1394,11 +1397,11 @@ static void idio_job_control_launch_job (IDIO job, int foreground)
 	return;
     }
 
-    IDIO procs = idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PROCS);
-    pid_t job_pgid = IDIO_C_TYPE_libc_pid_t (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PGID));
-    int job_stdin = IDIO_C_TYPE_int (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_STDIN));
-    int job_stdout = IDIO_C_TYPE_int (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_STDOUT));
-    int job_stderr = IDIO_C_TYPE_int (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_STDERR));
+    IDIO procs = idio_struct_instance_ref_direct (job, IDIO_JOB_ST_PROCS);
+    pid_t job_pgid = IDIO_C_TYPE_libc_pid_t (idio_struct_instance_ref_direct (job, IDIO_JOB_ST_PGID));
+    int job_stdin = IDIO_C_TYPE_int (idio_struct_instance_ref_direct (job, IDIO_JOB_ST_STDIN));
+    int job_stdout = IDIO_C_TYPE_int (idio_struct_instance_ref_direct (job, IDIO_JOB_ST_STDOUT));
+    int job_stderr = IDIO_C_TYPE_int (idio_struct_instance_ref_direct (job, IDIO_JOB_ST_STDERR));
     int infile = job_stdin;
     int outfile;
     int proc_pipe[2];
@@ -1424,7 +1427,7 @@ static void idio_job_control_launch_job (IDIO job, int foreground)
 	    }
 	    outfile = proc_pipe[1];
 	} else {
-	    outfile = IDIO_C_TYPE_int (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_STDOUT));
+	    outfile = IDIO_C_TYPE_int (idio_struct_instance_ref_direct (job, IDIO_JOB_ST_STDOUT));
 	}
 
 	pid_t pid = fork ();
@@ -1457,11 +1460,11 @@ static void idio_job_control_launch_job (IDIO job, int foreground)
 	     */
 	    return;
 	} else {
-	    idio_struct_instance_set_direct (proc, IDIO_PROCESS_TYPE_PID, idio_libc_pid_t (pid));
+	    idio_struct_instance_set_direct (proc, IDIO_PROCESS_ST_PID, idio_libc_pid_t (pid));
 	    if (idio_job_control_interactive) {
 		if (0 == job_pgid) {
 		    job_pgid = pid;
-		    idio_struct_instance_set_direct (job, IDIO_JOB_TYPE_PGID, idio_libc_pid_t (job_pgid));
+		    idio_struct_instance_set_direct (job, IDIO_JOB_ST_PGID, idio_libc_pid_t (job_pgid));
 		}
 		if (setpgid (pid, job_pgid) < 0) {
 		    idio_error_system_errno ("setpgid",
@@ -1520,7 +1523,7 @@ IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char **argv)
 	return idio_S_notreached;
     }
 
-    IDIO procs = idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PROCS);
+    IDIO procs = idio_struct_instance_ref_direct (job, IDIO_JOB_ST_PROCS);
     IDIO proc = IDIO_PAIR_H (procs);
 
     if (! idio_struct_instance_isa (proc, idio_job_control_process_type)) {
@@ -1529,10 +1532,10 @@ IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char **argv)
 	return idio_S_notreached;
     }
 
-    pid_t job_pgid = IDIO_C_TYPE_libc_pid_t (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_PGID));
-    int job_stdin = IDIO_C_TYPE_int (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_STDIN));
-    int job_stdout = IDIO_C_TYPE_int (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_STDOUT));
-    int job_stderr = IDIO_C_TYPE_int (idio_struct_instance_ref_direct (job, IDIO_JOB_TYPE_STDERR));
+    pid_t job_pgid = IDIO_C_TYPE_libc_pid_t (idio_struct_instance_ref_direct (job, IDIO_JOB_ST_PGID));
+    int job_stdin = IDIO_C_TYPE_int (idio_struct_instance_ref_direct (job, IDIO_JOB_ST_STDIN));
+    int job_stdout = IDIO_C_TYPE_int (idio_struct_instance_ref_direct (job, IDIO_JOB_ST_STDOUT));
+    int job_stderr = IDIO_C_TYPE_int (idio_struct_instance_ref_direct (job, IDIO_JOB_ST_STDERR));
 
     /*
      * We're here because the VM saw a symbol in functional position
@@ -1608,11 +1611,11 @@ IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char **argv)
 	    exit (33);
 	    return idio_S_notreached;
 	} else {
-	    idio_struct_instance_set_direct (proc, IDIO_PROCESS_TYPE_PID, idio_libc_pid_t (pid));
+	    idio_struct_instance_set_direct (proc, IDIO_PROCESS_ST_PID, idio_libc_pid_t (pid));
 	    if (idio_job_control_interactive) {
 		if (0 == job_pgid) {
 		    job_pgid = pid;
-		    idio_struct_instance_set_direct (job, IDIO_JOB_TYPE_PGID, idio_libc_pid_t (job_pgid));
+		    idio_struct_instance_set_direct (job, IDIO_JOB_ST_PGID, idio_libc_pid_t (job_pgid));
 		}
 		if (setpgid (pid, job_pgid) < 0) {
 		    /*
@@ -1769,7 +1772,10 @@ launch a pipeline of `job_controls`			\n\
 				     idio_pair (job_stdin,
 				     idio_pair (job_stdout,
 				     idio_pair (job_stderr,
-				     idio_S_nil)))))))));
+				     idio_pair (idio_S_false,
+				     idio_pair (idio_S_false,
+				     idio_pair (idio_S_false,
+				     idio_S_nil))))))))))));
 
     idio_job_control_launch_job (job, 1);
     return idio_S_unspec;
@@ -2084,7 +2090,10 @@ void idio_init_job_control ()
 						  idio_pair (idio_symbols_C_intern ("stdin"),
 						  idio_pair (idio_symbols_C_intern ("stdout"),
 						  idio_pair (idio_symbols_C_intern ("stderr"),
-						  idio_S_nil))))))))));
+						  idio_pair (idio_symbols_C_intern ("report-timing"),
+						  idio_pair (idio_symbols_C_intern ("timing-start"),
+						  idio_pair (idio_symbols_C_intern ("timing-end"),
+						  idio_S_nil)))))))))))));
     idio_module_set_symbol_value (sym, idio_job_control_job_type, idio_job_control_module);
 
     idio_job_control_default_child_handler_sym = idio_symbols_C_intern ("default-child-handler");

@@ -30,6 +30,20 @@
 #define IDIO_COPY_DEEP		1
 #define IDIO_COPY_SHALLOW	2
 
+#define IDIO_PRINT_CONVERSION_FORMAT_X		0x58
+#define IDIO_PRINT_CONVERSION_FORMAT_b		0x62
+#define IDIO_PRINT_CONVERSION_FORMAT_c		0x63
+#define IDIO_PRINT_CONVERSION_FORMAT_d		0x64
+#define IDIO_PRINT_CONVERSION_FORMAT_e		0x65
+#define IDIO_PRINT_CONVERSION_FORMAT_f		0x66
+#define IDIO_PRINT_CONVERSION_FORMAT_g		0x67
+#define IDIO_PRINT_CONVERSION_FORMAT_o		0x6F
+#define IDIO_PRINT_CONVERSION_FORMAT_p		0x70
+#define IDIO_PRINT_CONVERSION_FORMAT_u		0x75
+#define IDIO_PRINT_CONVERSION_FORMAT_x		0x78
+
+#define IDIO_PRINT_CONVERSION_FORMAT_s		0x73
+
 extern IDIO idio_util_value_as_string;
 extern IDIO idio_print_conversion_format_sym;
 extern IDIO idio_print_conversion_precision_sym;

@@ -20,14 +20,14 @@ they are at least usable verbatim without further editing.
 In case you are wondering, there is a build-bootstrap version of the
 generated files for libc (from some sample platform) which can be used
 to create a nominal instance of an Idio executable -- yes, the sizes
-of many typedef'd entities will be slightly wrong, as they probably
+of several typedef'd entities will be slightly wrong, as they probably
 have been before this code was written!  There will be some compiler
 warnings about implicit constant conversions.
 
-That nominal executable can
-be used to run this script to generate files for libc with correct
-mappings for this platform which can be used in a recompile of the
-Idio executable with a corrected set of typedef mappings.
+That nominal executable can be used to run this script to generate
+files for libc with correct mappings for this platform which can be
+used in a recompile of the Idio executable with a corrected set of
+typedef mappings.
 
 Output Ordering
 
@@ -86,8 +86,9 @@ Many system calls request that a struct is allocated and passed to the
 call to be filled in.  Here, we cannot expect the user to have created
 such a structure (certainly, *we* provide no mechanism) however the
 semantic of many of those calls is subtle.  Barring errors, the
-expectation is that the structure is created on behalf of the caller
-and returned (the fields of which to be accessed later).
+Idio-to-C semantic expectation is that the structure is created on
+behalf of the caller and returned (the fields of which to be accessed
+later).
 
 Here, then, although the C API requires a struct to be passed, the
 Idio interface would not.  The generated code will need to be altered
@@ -102,13 +103,13 @@ to identify that.
 Missing typdefs
 
 Many C APIs use an internal/intermediate type.  The more common
-effects of this are that, unless you explicitly create variables using
-the types, you might only see, say, __pid_t rather than pid_t.  That's
-because the C API's implementation is defined using __pid_t and pid_t
-is typedef'd as a convenience for the user -- irrespective of the
-nominal C API.
+effects of this are that, unless you explicitly create C variables
+using the types, you might only see, say, __pid_t rather than pid_t.
+That's because the C API's implementation is defined using __pid_t and
+pid_t is typedef'd as a convenience for the user -- irrespective of
+the nominal C API.
 
-Idio Re-orientation
+Idio Re-imagining of C
 
 In some cases, for example, write(2), the third argument, size_t
 count, is redundant as all Idio elements know their own size.
@@ -120,7 +121,7 @@ Many C APIs use parameters which are constants (F_SETFD) or the
 bitwise inclusive-or of several constants (O_WRONLY | O_CREAT |
 O_TRUNC).  It may be more idiosyncratic to pass symbols or lists of
 symbols.  Calling C bitwise operators is possible but assumptions are
-made about the underlying C base_type (C/uint) .
+made about the underlying C base_type (C/uint).
 
 #define
 
@@ -150,7 +151,7 @@ There are portability issues as well.  Fedora defines an enumerated
 type for getrlimit(2) resources, RLIMIT_CPU etc. from which we can
 create and export Idio values.  However, a portable set of RLIMIT_*
 values probably requires continued use if #ifdef CPP wrappers around a
-cross-platform set of possible names.
+cross-platform super-set of possible names.
 
 (Again, for libc bootstrap we have a problem.)
 
@@ -229,14 +230,15 @@ various names -- here, the variable elements are in {}s:
 {pid_t}				i-type-alias
 {pid_t}?			i-pred-name
 
-    i-type-alias is a symbol (ultimately) mapping to 'int, 'long,
-    etc. can be used to construct a C integral type from an Idio
-    integer: (C/integer-> 1 pid_t)
+    i-type-alias is a symbol (ultimately) mapping to a C base_type,
+    'int, 'long, etc., and can be used to construct a C integral type
+    from an Idio integer: (C/integer-> 1 pid_t)
 
 {libc}/{pid_t}			i-direct-type-name	- used in comments
 {libc}/{pid_t}?			i-direct-pred-name
 
 {pid_t}				c-type-name
+IDIO_TYPE_C_{libc}_{pid_t}	idio-c-macro-type
 idio_{libc}_{pid_t}		c-type-constructor
 IDIO_C_TYPE_{libc}_{pid_t}	c-type-accessor		- starts in upper-case!
 idio_isa_{libc}_{pid_t}		c-type-predicate
@@ -250,6 +252,7 @@ C/{int}				i-direct-type-name	- used in comments
 C/{int}?			i-direct-pred-name
 
 {int}				c-type-name
+IDIO_TYPE_C_TYPE_{INT}		idio-c-macro-type
 idio_C_{int}			c-type-constructor
 IDIO_C_TYPE_{int}		c-type-accessor		- starts in upper-case!
 idio_isa_C_{int}		c-type-predicate
@@ -675,13 +678,14 @@ for-each (function (lib-n) {
 				     ;;  2     2       (indirect line string, offset: 0x15d): types.h
 				     ;;  3     3       (indirect line string, offset: 0x165): types.h
 
-				     "[[:digit:]]+[[:space:]]+([[:digit:]]+)[[:space:]]+\\([^\\)]+\\):[[:space:]]+(.+)$" {
+				     "([[:digit:]]+)[[:space:]]+([[:digit:]]+)[[:space:]]+\\([^\\)]+\\):[[:space:]]+(.+)$" {
 				       if (eq? lnt 'file) {
-					 dir-n :=
-					 array-push! file-a r.2
-					 array-push! filenames (append-string (array-ref dir-a (read-number r.1))
-									      "/"
-									      r.2)
+					 file-n := read-number r.1
+					 dir-n := read-number r.2
+					 array-set! file-a file-n r.3
+					 array-set! filenames file-n (append-string (array-ref dir-a dir-n)
+										    "/"
+										    r.3)
 				       }
 				       objdump-loop depth DIE
 				     })
@@ -689,9 +693,9 @@ for-each (function (lib-n) {
 				     ;; objdump 2.35.1 fc34?
 				     ;;  3     (indirect line string, offset: 0xbd): /usr/include/sys
 
-				     "[[:digit:]]+[[:space:]]+\\([^\\)]+\\):[[:space:]]+(/.+)$" {
+				     "([[:digit:]]+)[[:space:]]+\\([^\\)]+\\):[[:space:]]+(/.+)$" {
 				       if (eq? lnt 'dir) {
-					 array-push! dir-a r.1
+					 array-set! dir-a (read-number r.1) r.2
 				       }
 				       objdump-loop depth DIE
 				     })
@@ -1102,6 +1106,73 @@ ${i-module-name}-error-load := {
 		  }
 		}
 
+		;; we're looking to generate the likes of
+		;; IDIO_TYPE_C_INT from gc.h
+		define (idio-c-type-MACRO-NAME id) {
+		  if id {
+		    name := "VOID"	; might cause a crash...
+		    DIE := hash-ref all-ids id #f
+		    if DIE {
+		      (case (hash-ref DIE 'tag #f)
+			    ((restrict_type const_type) {
+			      idio-c-type-name (hash-ref DIE 'type #f)
+			    })
+			    ((pointer_type) {
+			      append-string (idio-c-type-name (hash-ref DIE 'type #f)) "*"
+			    })
+			    ((subroutine_type) {
+			      "(*)"
+			    })
+			    ((array_type) {
+			      append-string (idio-c-type-name (hash-ref DIE 'type #f)) "[]"
+			    })
+			    ((structure_type) {
+			      "pointer"
+			    })
+			    ((union_type) {
+			      "pointer"
+			    })
+			    ((enumeration_type) {
+			      idio-c-type-name (hash-ref DIE 'type #f)
+			    })
+			    ((typedef) {
+			      hash-ref DIE 'name #f
+			    })
+			    ((base_type) {
+			      (case (hash-ref DIE 'name "base_type-name")
+				    (("char")			 "CHAR")
+				    (("signed char")		 "SCHAR")
+				    (("unsigned char")		 "UCHAR")
+				    (("short int" "short")	 "SHORT")
+				    (("short unsigned int"
+				      "unsigned short")		 "USHORT")
+				    (("int")			 "INT")
+				    (("unsigned int")		 "UINT")
+				    (("long int")		 "LONG")
+				    (("long unsigned int")	 "ULONG")
+				    (("long long int")		 "LONGLONG")
+				    (("long long unsigned int")	 "ULONGLONG")
+				    (("float")			 "FLOAT")
+				    (("double")			 "DOUBLE")
+				    (("long double")		 "LONGDOUBLE")
+				    (else {
+				      eprintf "unexpected base type: %s\n" (hash-ref DIE 'name "base_type-name")
+				      exit 1
+				    }))
+			    })
+			    (else {
+			      eprintf "idio-c-type-MACRO-NAME 0x%s: base_types only!\n" id
+			      exit 1
+			    }))
+		    } {
+		      eprintf "idio-c-type-MACRO_NAME no DIE 0x%s!\n" id
+		      exit 1
+		    }
+		  } {
+		    "void"
+		  }
+		}
+
 		define (get/create DIE elem & alt) {
 		  if DIE {
 		    v := hash-ref DIE elem #f
@@ -1177,6 +1248,22 @@ ${i-module-name}-error-load := {
 			      if (not v) {
 				v = "void" ; __sigaction_handler
 			      }
+			    })
+			    ((idio-c-macro-type) {
+			      ;; IDIO_TYPE_C_libc_pid_t
+			      ;; IDIO_TYPE_C_uint
+			      (cond
+			       ((alloc-required? id) {
+				 v = "IDIO_TYPE_C_POINTER"
+			       })
+			       ((base-type? id) {
+				 v = append-string "IDIO_TYPE_C_" (idio-c-type-MACRO-NAME id)
+			       })
+			       (else {
+				 if name {
+				   v = append-string "IDIO_TYPE_C_" c-module-name "_" name
+				 }
+			       }))
 			    })
 			    ((c-type-constructor) {
 			      ;; idio_libc_pid_t
@@ -1593,10 +1680,12 @@ export \(
 				  hprintf api-i-fh "\n"
 
 				  ;; C header
-				  ; constructor
 				  if printing {
 				    hprintf api-h-fh "/* %s */\n" (filename decl-file)
 				  }
+				  ; Idio C MACRO TYPE
+				  hprintf api-h-fh "#define %-35s %s\n" (get/create DIE 'idio-c-macro-type) (get/create DIE-type-DIE 'idio-c-macro-type)
+				  ; constructor
 				  hprintf api-h-fh "#define %-35s %s\n" (get/create DIE 'c-type-constructor) (get/create DIE-type-DIE 'c-type-constructor)
 				  ; accessor
 				  hprintf api-h-fh "#define %-35s %s\n" (get/create DIE 'c-type-accessor) (get/create DIE-type-DIE 'c-type-accessor)
@@ -1669,7 +1758,7 @@ export \(
 
 				if (pair? member*) {
 				  if decl-file {
-				    hprintf api-h-fh "\n\n/* %s */\n" (filename decl-file)
+				    hprintf api-h-fh "\n/* %s */\n" (filename decl-file)
 				  }
 				  hprintf api-h-fh "extern IDIO_C_STRUCT_IDENT_DECL (%s);\n" struct-c-id
 				  hprintf api-c-fh "IDIO_C_STRUCT_IDENT_DECL (%s);\n" struct-c-id
@@ -1710,7 +1799,6 @@ in C, ${var}->member			\\n\\
 \{
     IDIO_ASSERT (${var});
     IDIO_ASSERT (member);
-
 }
 
 				  tc-count = tc-count + 1
@@ -1837,7 +1925,8 @@ ${i-module-name}-error-load "${tc-bn}" "member should be a symbol"}
 								  (else {
 								    hprintf api-c-fh #S{if (idio_S_${member-name} == member) \{
         ${member-c-type-name} *rp = (${member-c-type-name} *) idio_alloc (sizeof (${member-c-type-name}));
-        memcpy ((void *) rp, (void *) &${varp}->${member-name}, sizeof (${member-c-type-name}));}
+        memcpy ((void *) rp, (void *) &${varp}->${member-name}, sizeof (${member-c-type-name}));
+}
 								    if (structure-type? member-type-id) {
 								      hprintf api-c-fh #S{
         return idio_C_pointer_type (idio_CSI_${c-module-name}_${C-identifier member-c-type-name}, rp);
@@ -1910,7 +1999,7 @@ in C, ${var}->member = val		\\n\\
 :return: ${struct-name}->member		\\n\\
 :rtype:	varies on member		\\n\\
 ")
-{
+\{
     IDIO_ASSERT (${var});
     IDIO_ASSERT (member);
     IDIO_ASSERT (val);
@@ -1937,7 +2026,7 @@ ${i-module-name}-error-load "${tc-bn}" "bad parameter type: '#t' a CONSTANT_IDIO
      * ${tc-test}
      */
     IDIO_USER_C_TYPE_ASSERT (pointer, ${var});
-    if (idio_CSI_${struct-c-id} != IDIO_C_TYPE_POINTER_PTYPE (${struct-name})) {}
+    if (idio_CSI_${struct-c-id} != IDIO_C_TYPE_POINTER_PTYPE (${struct-name})) \{}
 
 				  tc-count = tc-count + 1
 				  tc-bn := sprintf "%s-errors/struct-%s-set-invalid-pointer-type.idio" i-module-name struct-idio-id
@@ -2138,6 +2227,191 @@ ${i-module-name}-error-load "${tc-bn}" "member should be a struct ${struct-name}
 \}
 }
 
+				  ;; C _as_string
+				  hprintf api-h-fh #S{
+IDIO idio_${struct-c-id}_as_string (struct ${struct-name} *${varp});
+}
+				  hprintf api-c-fh #S{
+IDIO idio_${struct-c-id}_as_string (struct ${struct-name} *${varp})
+\{
+    IDIO_C_ASSERT (${varp});
+}
+
+				  hprintf api-c-fh #S{
+    IDIO CSI_sh = idio_open_output_string_handle_C ();
+    idio_display_C ("#<CSI ${c-module-name}/struct-${struct-idio-id}", CSI_sh);
+}
+
+
+				  first := #t
+				  for-each (function (member) {
+					      member-type-id := hash-ref member 'type #f
+					      member-type-DIE := hash-ref all-ids member-type-id #f
+					      member-c-type-name := get/create member-type-DIE 'c-type-name
+					      if member-c-type-name {
+						member-name := hash-ref member 'name #f
+						if member-name {
+						  if first {
+						    first = #f
+						  hprintf api-c-fh #S{
+    char buf[BUFSIZ];
+    char *fmt;
+}
+						  }
+
+						  hprintf api-c-fh #S{
+    idio_display_C (" ${member-name}:", CSI_sh);
+}
+
+						  if (alloc-required? member-type-id) {
+						    member-type-id := hash-ref member 'type #f
+						    member-alloc-name := get/create member-type-DIE 'c-alloc-type-name
+						    if member-alloc-name {
+						      (regex-case member-alloc-name
+								  ("(.*)\\[]" {
+								    (case member-alloc-name
+									  (("char[]") {
+									    hprintf api-c-fh #S{
+    idio_display_C (${varp}->${member-name}, CSI_sh);
+}
+									  })
+									  (else {
+									    hprintf api-c-fh #S{
+    idio_display_C ("<<1${member-c-type-name}>>", CSI_sh);
+}
+									  }))
+								  })
+								  (".*\\*" {
+								    (case member-alloc-name
+									  (("char*") {
+									    hprintf api-c-fh #S{
+    idio_display_C (${varp}->${member-name}, CSI_sh);
+}
+									  })
+									  (else {
+									    hprintf api-c-fh #S{
+    idio_display_C ("<<2${member-c-type-name}>>", CSI_sh);
+}
+									  }))
+								  })
+								  (else {
+								    (case member-alloc-name
+									  (("XXX") {
+									    hprintf api-c-fh #S{
+    idio_display_C (${varp}->${member-name}, CSI_sh);
+}
+									  })
+									  (else {
+									    (cond
+									     ((structure-type? member-type-id) {
+									       hprintf api-c-fh #S{
+    idio_display (idio_${c-module-name}_${C-identifier member-c-type-name}_as_string (&(${varp}->${member-name})), CSI_sh);
+}
+									     })
+									     (else {
+									       hprintf api-c-fh #S{
+    idio_display (idio_${c-module-name}_${C-identifier member-c-type-name}_as_string (${varp}->${member-name}), CSI_sh);
+}
+									     }))
+									  }))
+								  }))
+						    } {
+						      hprintf api-c-fh #S{if (idio_S_${member-name} == member) \{
+#error ${member-c-type-name} ${member-name} is not handled
+    \}}
+						    }
+						  } {
+						    (case member-alloc-name
+							  (("XXX") {
+							    hprintf api-c-fh #S{
+    idio_display_C (${varp}->${member-name}, CSI_sh);
+}
+							  })
+							  (else {
+							    member-idio-c-macro-type := get/create member-type-DIE 'idio-c-macro-type
+							    hprintf api-c-fh #S{
+    fmt = idio_C_type_format_string (${member-idio-c-macro-type});
+    sprintf (buf, fmt, ${varp}->${member-name});
+    idio_display_C (buf, CSI_sh);
+    IDIO_GC_FREE (fmt);
+}
+							  }))
+						  }
+						}
+					      }
+				  }) member*
+
+				  hprintf api-c-fh #S{
+    idio_display_C (">", CSI_sh);
+
+    return idio_get_output_string (CSI_sh);
+\}
+}
+
+				  ;; Idio -as-string
+				  hprintf api-c-fh #S{
+IDIO_DEFINE_PRIMITIVE1_DS ("struct-${struct-idio-id}-as-string", ${c-module-name}_struct_${struct-name}_as_string, (IDIO ${var}), "${var}", "\\
+:param ${var}: C struct ${struct-name}	\\n\\
+:type ${var}: C/pointer			\\n\\
+:return: string				\\n\\
+:rtype:	string				\\n\\
+")
+\{
+    IDIO_ASSERT (${var});
+}
+
+				  tc-count = tc-count + 1
+				  tc-bn := sprintf "%s-errors/struct-%s-as-string-bad-pointer-type.idio" i-module-name struct-idio-id
+				  tc-fn := sprintf "%s/%s" gen-dn tc-bn
+				  tc-fh := open-output-file tc-fn
+				  tc-test := #S{struct-${struct-idio-id}-as-string #t}
+				  hprintf tc-fh #S{
+${tc-test}
+}
+				  close-handle tc-fh
+
+				  hprintf errors-fh #S{
+${i-module-name}-error-load "${tc-bn}" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"}
+
+				  hprintf api-c-fh #S{
+    /*
+     * Test Case: ${tc-bn}
+     *
+     * ${tc-test}
+     */
+    IDIO_USER_C_TYPE_ASSERT (pointer, ${var});
+    if (idio_CSI_${struct-c-id} != IDIO_C_TYPE_POINTER_PTYPE (${struct-name})) \{}
+
+				  tc-count = tc-count + 1
+				  tc-bn := sprintf "%s-errors/struct-%s-as-string-invalid-pointer-type.idio" i-module-name struct-idio-id
+				  tc-fn := sprintf "%s/%s" gen-dn tc-bn
+				  tc-fh := open-output-file tc-fn
+				  tc-test := #S{struct-${struct-idio-id}-as-string libc/NULL}
+				  hprintf tc-fh #S{
+${tc-test}
+}
+				  close-handle tc-fh
+
+				  hprintf errors-fh #S{
+${i-module-name}-error-load "${tc-bn}" "${struct-name} should be a struct ${struct-name}"}
+
+				  hprintf api-c-fh #S{
+	/*
+	 * Test Case: ${tc-bn}
+	 *
+	 * ${tc-test}
+	 */
+	idio_error_param_value ("${struct-name}", "should be a struct ${struct-name}", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    \}
+}
+
+				  hprintf api-c-fh #S{
+    return idio_${c-module-name}_struct_${struct-name}_as_string (IDIO_C_TYPE_POINTER_P (${var}));
+\}
+}
+
 				  ;; setter
 				  hprintf api-i-fh #S{
 if (and (function? struct-${struct-idio-id}-ref)
@@ -2151,7 +2425,10 @@ if (and (function? struct-${struct-idio-id}-ref)
 
 				    hprintf errors-fh "\n"
 
-		  }) (array->list used-structure-types)
+		  }
+
+
+					    ) (array->list used-structure-types)
 		} {
 		  printf "no structure_types\n"
 		}
@@ -2371,6 +2648,29 @@ void idio_${c-module-name}_api_add_primitives ();
 void idio_${c-module-name}_api_add_primitives ()
 \{
 }
+
+		  if used-structure-types {
+		    hprintf api-c-fh #S{    IDIO iuvas = idio_module_symbol_value (idio_util_value_as_string,
+					   idio_Idio_module,
+					   idio_S_nil);
+}
+
+		    for-each (function (struct) {
+				struct-name := "struct"
+
+				struct-name := hash-ref struct 'name #f
+				if struct-name {
+				  hprintf api-c-fh #S{
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_${c-module-name}_module, ${c-module-name}_struct_${struct-name}_as_string);
+    idio_hash_put (iuvas,
+		   idio_CSI_${c-module-name}_struct_${struct-name},
+		   idio_module_symbol_value (idio_symbols_C_intern ("struct-${struct-name}-as-string"),
+								   idio_${c-module-name}_module,
+								   idio_S_nil));
+}
+				}
+		    }) (array->list used-structure-types)
+		  }
 
 		  for-each (function (sp) {
 			      sp-name := hash-ref sp 'name #f

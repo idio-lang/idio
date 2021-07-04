@@ -79,7 +79,7 @@ export (%idio-interactive
 
 
 export-struct-accessors-only %idio-process	argv pid completed stopped status
-export-struct-accessors-only %idio-job		pipeline procs pgid notified raised tcattrs stdin stdout stderr
+export-struct-accessors-only %idio-job		pipeline procs pgid notified raised tcattrs stdin stdout stderr report-timing timing-start timing-end
 
 %%last-job := #n
 
@@ -88,7 +88,7 @@ define (job-as-string job seen) {
     r := (open-output-string)
     hprintf r "#<SI %%idio-job "
 
-    hprintf r "%s %s " (%idio-job-pgid job) (%idio-job-pipeline job)
+    hprintf r "pgid=%d %s " (%idio-job-pgid job) (%idio-job-pipeline job)
 
     procs-first := #t
     procs-loop :+ function (procs) {
@@ -118,6 +118,8 @@ define (job-as-string job seen) {
     }
 
     procs-loop (reverse (%idio-job-procs job))
+
+    hprintf r "rt?%s %s %s" (%idio-job-report-timing job) (%idio-job-timing-start job) (%idio-job-timing-end job)
 
     hprintf r ">"
     get-output-string r
@@ -213,7 +215,10 @@ define (job-is-completed job) "test if job `job` has completed
 
   loop :+ function (procs) {
 	    (cond
-	     ((null? procs) #t)
+	     ((null? procs) {
+	       set-%idio-job-timing-end! job (list (libc/gettimeofday) (libc/getrusage libc/RUSAGE_SELF) (libc/getrusage libc/RUSAGE_CHILDREN))
+	       #t
+	     })
 	     ((not (%idio-process-completed (ph procs))) #f)
 	     (else {
 	       loop (pt procs)
@@ -539,9 +544,39 @@ define (do-job-notification) "notify of any job status changes" {
 		  tidy-process-substitution-job job
 
 		  format-job-info job "completed"
+
+		  ;; cf. time/time-command in common.idio
+		  if (%idio-job-report-timing job) {
+		    timing-start	:= %idio-job-timing-start job
+		    tv-before		:= ph timing-start
+		    rus-before		:= pht timing-start
+		    ruk-before		:= phtt timing-start
+		    timing-end		:= %idio-job-timing-end job
+		    tv-end		:= ph timing-end
+		    rus-end		:= pht timing-end
+		    ruk-end		:= phtt timing-end
+
+		    h := (make-hash)
+		    hash-set! h #\R (libc/subtract-struct-timeval tv-end tv-before)
+		    hash-set! h #\U (libc/add-struct-timeval
+				     (libc/subtract-struct-timeval (libc/struct-rusage-ref rus-end    'ru_utime)
+								   (libc/struct-rusage-ref rus-before 'ru_utime))
+				     (libc/subtract-struct-timeval (libc/struct-rusage-ref ruk-end    'ru_utime)
+								   (libc/struct-rusage-ref ruk-before 'ru_utime)))
+
+		    hash-set! h #\S (libc/add-struct-timeval
+				     (libc/subtract-struct-timeval (libc/struct-rusage-ref rus-end    'ru_stime)
+								   (libc/struct-rusage-ref rus-before 'ru_stime))
+				     (libc/subtract-struct-timeval (libc/struct-rusage-ref ruk-end    'ru_stime)
+								   (libc/struct-rusage-ref ruk-before 'ru_stime)))
+
+		    printf "%s" (%format 'timeformat TIMEFORMAT h)
+		  }
+
 		  if (job-failed job) {
 		    failed-jobs = pair job failed-jobs
 		  }
+
 		  ;; remove job from list (by not including it!)
 		  loop (pt jobs) njobs
 		})
@@ -871,42 +906,54 @@ define (%prep-process pgid infile outfile errfile foreground) "prepare the curre
 }
 
 define-infix-operator | 700 {
-  foreground := #t
-  use-w-pipe := #f
-  use-r-pipe := #f
-  collect := #f
+  foreground	:= #t
+  use-w-pipe	:= #f
+  use-r-pipe	:= #f
+  collect	:= #f
+  report-time	:= #f
 
   ;; Slightly annoyingly, some meta-instructions to the pipeline are
   ;; consumed by the reader operator (us!) so we should look out for
   ;; them.
-  ;;
-  ;; Obvious candidates are 'pipe-into and 'pipe-from but also fg-job,
-  ;; bg-job and collect-output are auto-consumed.
 
-  (case (ph before)
-	((collect-output) {
-	  before = pt before
-	  collect = #t
-	  foreground = #t
-	})
-	((fg-job) {
-	  before = pt before
-	  foreground = #t
-	})
-	((bg-job) {
-	  before = pt before
-	  foreground = #f
-	})
-	((pipe-into) {
-	  before = pt before
-	  use-w-pipe = #t
-	  foreground = #f
-	})
-	((pipe-from) {
-	  before = pt before
-	  use-r-pipe = #t
-	  foreground = #f
-	}))
+  meta-loop :+ function () {
+		 (case (ph before)
+		       ((collect-output) {
+			 before = pt before
+			 collect = #t
+			 foreground = #t
+			 (meta-loop)
+		       })
+		       ((fg-job) {
+			 before = pt before
+			 foreground = #t
+			 (meta-loop)
+		       })
+		       ((bg-job) {
+			 before = pt before
+			 foreground = #f
+			 (meta-loop)
+		       })
+		       ((pipe-into) {
+			 before = pt before
+			 use-w-pipe = #t
+			 foreground = #f
+			 (meta-loop)
+		       })
+		       ((pipe-from) {
+			 before = pt before
+			 use-r-pipe = #t
+			 foreground = #f
+			 (meta-loop)
+		       })
+		       ((time) {
+			 before = pt before
+			 report-time = #t
+			 (meta-loop)
+		       }))
+  }
+
+  (meta-loop)
 
   orig-pipeline := append before (append (list op) after)
 
@@ -1038,9 +1085,16 @@ define-infix-operator | 700 {
   pid			:= gensym 'pid
   status		:= gensym 'status
 
+  ;; of minor interest, should the accumulated time include setup?  I
+  ;; guess so as it reflects the cost of running the pipeline
+  timing-data		:= gensym 'timing-data
+
   nprocs := length op-args
+
   #T{
     {
+      $timing-data := list (libc/gettimeofday) (libc/getrusage libc/RUSAGE_SELF) (libc/getrusage libc/RUSAGE_CHILDREN)
+
       $pipeline-r-fd := #f
       $close-pipeline-r-fd := #f
       $pipeline-w-ph := #f
@@ -1086,7 +1140,7 @@ define-infix-operator | 700 {
       $stderr := (libc/stderr-fileno) ; STDERR_FILENO
 
       $pgid := libc/0pid_t
-      $job := make-%idio-job '$orig-pipeline #n $pgid #f #f #n $pipeline-r-fd $pipeline-w-fd $stderr
+      $job := make-%idio-job '$orig-pipeline #n $pgid #f #f #n $pipeline-r-fd $pipeline-w-fd $stderr $report-time $timing-data #f
 
       $proc-id := 1
       $cmd-pipe := #n
@@ -1231,6 +1285,7 @@ define-infix-operator | 700 {
       libc/close (libc/pipe-reader $pgrp-pipe)
       libc/close (libc/pipe-writer $pgrp-pipe)
 
+      ;; OK, how do we, the parent, finish up?
       (cond
        ($use-w-pipe {
 	 $pipeline-w-ph
@@ -1412,7 +1467,7 @@ define-template (fork-command foreground use-w-pipe use-r-pipe & cmd) {
       }
       $pgid := libc/0pid_t
       $proc := make-%idio-process '$cmd -1 #f #f #n
-      $job := make-%idio-job '$cmd (list $proc) $pgid #f #f #n $cmd-r-fdn $cmd-w-fdn $cmd-e-fd
+      $job := make-%idio-job '$cmd (list $proc) $pgid #f #f #n $cmd-r-fdn $cmd-w-fdn $cmd-e-fd #f #f #f
 
       $pid := (libc/fork)
       (cond

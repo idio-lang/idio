@@ -183,6 +183,8 @@ int idio_isa_C_number (IDIO o);
 int idio_isa_C_integral (IDIO o);
 int idio_isa_C_unsigned (IDIO o);
 
+char *idio_C_type_format_string (int type);
+
 IDIO idio_C_primitive_binary_add (IDIO n1, IDIO n2);
 IDIO idio_C_primitive_binary_subtract (IDIO n1, IDIO n2);
 IDIO idio_C_primitive_binary_multiply (IDIO n1, IDIO n2);

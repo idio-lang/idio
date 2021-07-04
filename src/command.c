@@ -1186,7 +1186,10 @@ IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
 				     idio_pair (job_stdin,
 				     idio_pair (job_stdout,
 				     idio_pair (job_stderr,
-				     idio_S_nil))))))))));
+				     idio_pair (idio_S_false,
+				     idio_pair (idio_S_false,
+				     idio_pair (idio_S_false,
+				     idio_S_nil)))))))))))));
     idio_array_push (protected, job);
 
     IDIO r = idio_job_control_launch_1proc_job (job, 1, argv);

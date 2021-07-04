@@ -156,80 +156,6 @@ raise a ^system-error						\n\
     return idio_S_notreached;
 }
 
-char *idio_libc_struct_timeval_as_string (IDIO tv)
-{
-    IDIO_ASSERT (tv);
-
-    IDIO_TYPE_ASSERT (C_pointer, tv);
-
-    struct timeval *tvp = IDIO_C_TYPE_POINTER_P (tv);
-
-    int prec = 6;
-    if (idio_S_nil != idio_print_conversion_precision_sym) {
-	IDIO ipcp = idio_module_symbol_value (idio_print_conversion_precision_sym,
-					      idio_Idio_module,
-					      IDIO_LIST1 (idio_S_false));
-
-	if (idio_S_false != ipcp) {
-	    if (idio_isa_fixnum (ipcp)) {
-		prec = IDIO_FIXNUM_VAL (ipcp);
-	    } else {
-		/*
-		 * Test Case: ??
-		 *
-		 * See test-bignum-error.idio -- messing with
-		 * idio-print-conversion-* is "unwise."
-		 */
-		idio_error_param_type ("fixnum", ipcp, IDIO_C_FUNC_LOCATION ());
-
-		/* notreached */
-		return NULL;
-	    }
-	}
-    }
-
-    char us[30];
-    sprintf (us, "%06ld", tvp->tv_usec);
-    char fmt[30];
-    sprintf (fmt, "%%ld.%%.%ds", prec);
-    char *buf;
-    idio_asprintf (&buf, fmt, tvp->tv_sec, us);
-
-    return buf;
-}
-
-IDIO_DEFINE_PRIMITIVE1_DS ("struct-timeval-as-string", libc_struct_timeval_as_string, (IDIO timeval), "timeval", "\
-Return a C struct timeval as a string	\n\
-					\n\
-:param timeval: C struct timeval	\n\
-:type timeval: C/pointer		\n\
-:return: string				\n\
-:rtype: string				\n\
-")
-{
-    IDIO_ASSERT (timeval);
-
-    /*
-     * Test Case: libc-wrap-errors/struct-timeval-as-string-bad-type.idio
-     *
-     * struct-timeval-as-string #t
-     */
-    IDIO_USER_C_TYPE_ASSERT (pointer, timeval);
-    if (idio_CSI_libc_struct_timeval != IDIO_C_TYPE_POINTER_PTYPE (timeval)) {
-	idio_error_param_value ("timeval", "should be a struct timeval", IDIO_C_FUNC_LOCATION ());
-
-	return idio_S_notreached;
-    }
-
-    char *timevals = idio_libc_struct_timeval_as_string (timeval);
-
-    IDIO r = idio_string_C (timevals);
-
-    IDIO_GC_FREE (timevals);
-
-    return r;
-}
-
 IDIO idio_libc_struct_timeval_pointer (struct timeval *tvp)
 {
     IDIO_C_ASSERT (tvp);
@@ -364,33 +290,6 @@ DOES NOT RETURN :)						\n\
     exit (status);
 
     return idio_S_notreached;
-}
-
-IDIO_DEFINE_PRIMITIVE0_DS ("gettimeofday", libc_gettimeofday, (void), "", "\
-in C, gettimeofday ()						\n\
-a wrapper to libc gettimeofday (2)				\n\
-								\n\
-:return: struct-timeval or raises ^system-error			\n\
-:rtype: struct-timeval						\n\
-								\n\
-The struct timezone parameter is not used.			\n\
-")
-{
-    struct timeval *tvp = (struct timeval *) idio_alloc (sizeof (struct timeval));
-
-    if (-1 == gettimeofday (tvp, NULL)) {
-	/*
-	 * Test Case: ??
-	 *
-	 * EFAULT One of tv or tz pointed outside the accessible
-	 * address space.
-	 */
-	idio_error_system_errno ("gettimeofday", idio_S_nil, IDIO_C_FUNC_LOCATION ());
-
-	return idio_S_notreached;
-    }
-
-    return idio_libc_struct_timeval_pointer (tvp);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("pipe-reader", libc_pipe_reader, (IDIO ipipefd), "pipefd", "\
@@ -3129,23 +3028,12 @@ void idio_libc_wrap_add_primitives ()
 {
     idio_libc_api_add_primitives ();
 
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_timeval_as_string);
-
-    idio_hash_put (idio_module_symbol_value (idio_util_value_as_string,
-					     idio_Idio_module,
-					     idio_S_nil),
-		   idio_CSI_libc_struct_timeval,
-		   idio_module_symbol_value (idio_symbols_C_intern ("struct-timeval-as-string"),
-					     idio_libc_module,
-					     idio_S_nil));
-
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_add_struct_timeval);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_subtract_struct_timeval);
 
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_system_error);
 
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_exit);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_gettimeofday);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_pipe_reader);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_pipe_writer);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, proc_subst_named_pipe);
