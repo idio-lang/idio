@@ -840,15 +840,27 @@ IDIO idio_libc_struct_stat_as_string (struct stat *statp)
 
     idio_display_C (" st_atim:", CSI_sh);
 
+#if defined (__APPLE__) && defined (__MACH__)
+    idio_display (idio_libc_struct_timespec_as_string (&(statp->st_atimespec)), CSI_sh);
+#else
     idio_display (idio_libc_struct_timespec_as_string (&(statp->st_atim)), CSI_sh);
+#endif
 
     idio_display_C (" st_mtim:", CSI_sh);
 
+#if defined (__APPLE__) && defined (__MACH__)
+    idio_display (idio_libc_struct_timespec_as_string (&(statp->st_mtimespec)), CSI_sh);
+#else
     idio_display (idio_libc_struct_timespec_as_string (&(statp->st_mtim)), CSI_sh);
+#endif
 
     idio_display_C (" st_ctim:", CSI_sh);
 
+#if defined (__APPLE__) && defined (__MACH__)
+    idio_display (idio_libc_struct_timespec_as_string (&(statp->st_ctimespec)), CSI_sh);
+#else
     idio_display (idio_libc_struct_timespec_as_string (&(statp->st_ctim)), CSI_sh);
+#endif
 
     idio_display_C (">", CSI_sh);
 
