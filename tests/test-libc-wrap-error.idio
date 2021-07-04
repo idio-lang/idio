@@ -233,8 +233,13 @@ libc-wrap-error-load "libc-wrap-errors/fstat-bad-fd.idio" strerror-EBADF EBADF "
  }))
 
 libc-wrap-error-load "libc-wrap-errors/getpgid-bad-pid-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a libc/pid_t"
-libc-wrap-error-load "libc-wrap-errors/getpgid-bad-pid.idio" "No such process" ESRCH "getpgid"
-
+(cond-expand
+ (uname/sysname/SunOS {
+   libc-wrap-error-load "libc-wrap-errors/getpgid-bad-pid.idio" "Invalid argument" EINVAL "getpgid"
+ })
+ (else {
+   libc-wrap-error-load "libc-wrap-errors/getpgid-bad-pid.idio" "No such process" ESRCH "getpgid"
+ }))
 libc-wrap-error-load "libc-wrap-errors/getrlimit-bad-resource-type.idio" "bad parameter type: '#n' a CONSTANT_IDIO is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/getrlimit-bad-rlim.idio" "Invalid argument" EINVAL "getrlimit"
 
