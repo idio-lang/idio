@@ -123,10 +123,6 @@ IDIO idio_libc_struct_utsname_as_string (struct utsname *utsnamep)
 
     idio_display_C (utsnamep->machine, CSI_sh);
 
-    idio_display_C (" domainname:", CSI_sh);
-
-    idio_display_C (utsnamep->domainname, CSI_sh);
-
     idio_display_C (">", CSI_sh);
 
     return idio_get_output_string (CSI_sh);
@@ -566,30 +562,9 @@ IDIO idio_libc_struct_termios_as_string (struct termios *termiosp)
     idio_display_C (buf, CSI_sh);
     IDIO_GC_FREE (fmt);
 
-    idio_display_C (" c_line:", CSI_sh);
-
-    fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_cc_t);
-    sprintf (buf, fmt, termiosp->c_line);
-    idio_display_C (buf, CSI_sh);
-    IDIO_GC_FREE (fmt);
-
     idio_display_C (" c_cc:", CSI_sh);
 
     idio_display_C ("<<1cc_t[]>>", CSI_sh);
-
-    idio_display_C (" c_ispeed:", CSI_sh);
-
-    fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_speed_t);
-    sprintf (buf, fmt, termiosp->c_ispeed);
-    idio_display_C (buf, CSI_sh);
-    IDIO_GC_FREE (fmt);
-
-    idio_display_C (" c_ospeed:", CSI_sh);
-
-    fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_speed_t);
-    sprintf (buf, fmt, termiosp->c_ospeed);
-    idio_display_C (buf, CSI_sh);
-    IDIO_GC_FREE (fmt);
 
     idio_display_C (">", CSI_sh);
 
