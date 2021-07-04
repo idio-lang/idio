@@ -1080,7 +1080,8 @@ IDIO idio_libc_struct_timespec_as_string (struct timespec *timespecp)
 
     idio_display_C (" tv_nsec:", CSI_sh);
 
-    fmt = idio_C_type_format_string (IDIO_TYPE_C_libc___syscall_slong_t);
+    /* should be IDIO_TYPE_C_libc___syscall_slong_t */
+    fmt = idio_C_type_format_string (IDIO_TYPE_C_LONG);
     sprintf (buf, fmt, timespecp->tv_nsec);
     idio_display_C (buf, CSI_sh);
     IDIO_GC_FREE (fmt);
