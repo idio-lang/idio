@@ -618,32 +618,54 @@ This takes after Bash's time_command
 " {
   tv-before := (libc/gettimeofday)
   rus-before := libc/getrusage libc/RUSAGE_SELF
-  ruk-before := libc/getrusage libc/RUSAGE_CHILDREN
+  ruc-before := libc/getrusage libc/RUSAGE_CHILDREN
 
   r := apply proc args
 
   tv-after := (libc/gettimeofday)
   rus-after := libc/getrusage libc/RUSAGE_SELF
-  ruk-after := libc/getrusage libc/RUSAGE_CHILDREN
+  ruc-after := libc/getrusage libc/RUSAGE_CHILDREN
 
-  ; now we have real time in tv-before/after and user and system time
-  ; spread across the SELF and CHILDREN rusage data both before and
-  ; after...
+  #*
 
-  ; the add/subtract -struct-timeval functions do what they say on the tin
+  This is the same calculation as Bash uses, for better or for worse.
+  I'm not sure how accurate it is other than being broadly indicative.
+
+  The problem is that RUSAGE_CHILDREN represents all descendent
+  processes that have terminated and been waited on.  (It does not
+  include any not yet terminated and waited on descendents.)
+
+  So, here at least, we assume it was the job we just ran with the
+  apply clause above but maybe it was also the other jobs that just
+  finished and wait-for-job has run for off the back of a SIGCHLD.
+
+  Confusing the issue, wait-for-job also has the responsibility of
+  reporting on any pipelined jobs' usage.
+
+  Dunno.  I guess if you're pretty confident that you only had one
+  thing running (and now completed) then this usage is probably fairly
+  accurate.
+
+  If you'd fired off a dozen jobs in the background that completed
+  whilst this job was running then you can be less confident (as can
+  wait-for-job if it is reporting on those jobs).
+
+  On the plus side, tv-real (elapsed real time) should be accurate.
+
+  *#
 
   tv-real := libc/subtract-struct-timeval tv-after tv-before
   tv-utime := (libc/add-struct-timeval
 	       (libc/subtract-struct-timeval (libc/struct-rusage-ref rus-after  'ru_utime)
 					     (libc/struct-rusage-ref rus-before 'ru_utime))
-	       (libc/subtract-struct-timeval (libc/struct-rusage-ref ruk-after  'ru_utime)
-					     (libc/struct-rusage-ref ruk-before 'ru_utime)))
+	       (libc/subtract-struct-timeval (libc/struct-rusage-ref ruc-after  'ru_utime)
+					     (libc/struct-rusage-ref ruc-before 'ru_utime)))
 
   tv-stime := (libc/add-struct-timeval
 	       (libc/subtract-struct-timeval (libc/struct-rusage-ref rus-after  'ru_stime)
 					     (libc/struct-rusage-ref rus-before 'ru_stime))
-	       (libc/subtract-struct-timeval (libc/struct-rusage-ref ruk-after  'ru_stime)
-					     (libc/struct-rusage-ref ruk-before 'ru_stime)))
+	       (libc/subtract-struct-timeval (libc/struct-rusage-ref ruc-after  'ru_stime)
+					     (libc/struct-rusage-ref ruc-before 'ru_stime)))
 
   list r tv-real tv-utime tv-stime
 }

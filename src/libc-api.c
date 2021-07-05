@@ -1066,26 +1066,68 @@ IDIO idio_libc_struct_timespec_as_string (struct timespec *timespecp)
     IDIO_C_ASSERT (timespecp);
 
     IDIO CSI_sh = idio_open_output_string_handle_C ();
-    idio_display_C ("#<CSI libc/struct-timespec", CSI_sh);
-
     char buf[BUFSIZ];
     char *fmt;
 
-    idio_display_C (" tv_sec:", CSI_sh);
+    /*
+     * In the style of timeval (using micro-seconds) lets ensure the
+     * timespec's nanoseconds are length-limited.
+     *
+     * The printing of a timespec is a %ld.%09ld style with the even
+     * more correct form of %ld.%.*ld using some precision
+     */
+    int prec = 9;
+    if (idio_S_nil != idio_print_conversion_precision_sym) {
+	IDIO ipcp = idio_module_symbol_value (idio_print_conversion_precision_sym,
+					      idio_Idio_module,
+					      IDIO_LIST1 (idio_S_false));
+
+	if (idio_S_false != ipcp) {
+	    if (idio_isa_fixnum (ipcp)) {
+		prec = IDIO_FIXNUM_VAL (ipcp);
+	    } else {
+		/*
+		 * Test Case: ??
+		 *
+		 * If we set idio-print-conversion-precision to
+		 * something not a fixnum (nor #f) then it affects
+		 * *everything* in the codebase that uses
+		 * idio-print-conversion-precision before we get here.
+		 */
+		idio_error_param_type ("fixnum", ipcp, IDIO_C_FUNC_LOCATION ());
+
+		/* notreached */
+		return NULL;
+	    }
+	}
+    }
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_time_t);
     sprintf (buf, fmt, timespecp->tv_sec);
     idio_display_C (buf, CSI_sh);
     IDIO_GC_FREE (fmt);
 
-    idio_display_C (" tv_nsec:", CSI_sh);
+    idio_display_C (".", CSI_sh);
 
-    fmt = idio_C_type_format_string (IDIO_TYPE_C_libc___syscall_slong_t);
-    sprintf (buf, fmt, timespecp->tv_nsec);
+    /*
+     * __syscall_slong_t **must** be 9 digits -- it is nano-seconds,
+     * not micro-seconds or anything else.
+     *
+     * prec, therefore cannot be greater than 9
+     *
+     * However, we need to apply the prec to the leading-0-padded
+     * string.  That's because 1ns -> ".000000001" and a prec of 3 =>
+     * ".000"
+     */
+    char us[30];
+    sprintf (us, "%09ld", timespecp->tv_nsec);
+    char sfmt[30];
+    if (prec > 9) {
+	prec = 9;
+    }
+    sprintf (sfmt, "%%.%ds", prec);
+    sprintf (buf, sfmt, us);
     idio_display_C (buf, CSI_sh);
-    IDIO_GC_FREE (fmt);
-
-    idio_display_C (">", CSI_sh);
 
     return idio_get_output_string (CSI_sh);
 }
@@ -1476,26 +1518,66 @@ IDIO idio_libc_struct_timeval_as_string (struct timeval *timevalp)
     IDIO_C_ASSERT (timevalp);
 
     IDIO CSI_sh = idio_open_output_string_handle_C ();
-    idio_display_C ("#<CSI libc/struct-timeval", CSI_sh);
-
     char buf[BUFSIZ];
     char *fmt;
 
-    idio_display_C (" tv_sec:", CSI_sh);
+    /*
+     * The more common (shell) printing of a timeval is a %ld.%06ld
+     * style with the even more correct form of %ld.%.*ld using some
+     * precision
+     */
+    int prec = 6;
+    if (idio_S_nil != idio_print_conversion_precision_sym) {
+	IDIO ipcp = idio_module_symbol_value (idio_print_conversion_precision_sym,
+					      idio_Idio_module,
+					      IDIO_LIST1 (idio_S_false));
+
+	if (idio_S_false != ipcp) {
+	    if (idio_isa_fixnum (ipcp)) {
+		prec = IDIO_FIXNUM_VAL (ipcp);
+	    } else {
+		/*
+		 * Test Case: ??
+		 *
+		 * If we set idio-print-conversion-precision to
+		 * something not a fixnum (nor #f) then it affects
+		 * *everything* in the codebase that uses
+		 * idio-print-conversion-precision before we get here.
+		 */
+		idio_error_param_type ("fixnum", ipcp, IDIO_C_FUNC_LOCATION ());
+
+		/* notreached */
+		return NULL;
+	    }
+	}
+    }
 
     fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_time_t);
     sprintf (buf, fmt, timevalp->tv_sec);
     idio_display_C (buf, CSI_sh);
     IDIO_GC_FREE (fmt);
 
-    idio_display_C (" tv_usec:", CSI_sh);
+    idio_display_C (".", CSI_sh);
 
-    fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_suseconds_t);
-    sprintf (buf, fmt, timevalp->tv_usec);
+    /*
+     * suseconds_t **must** be 6 digits -- it is micro-seconds, not
+     * nano-seconds or anything else.
+     *
+     * prec, therefore cannot be greater than 6
+     *
+     * However, we need to apply the prec to the leading-0-padded
+     * string.  That's because 1us -> ".000001" and a prec of 3 =>
+     * ".000"
+     */
+    char us[30];
+    sprintf (us, "%06ld", timevalp->tv_usec);
+    char sfmt[30];
+    if (prec > 6) {
+	prec = 6;
+    }
+    sprintf (sfmt, "%%.%ds", prec);
+    sprintf (buf, sfmt, us);
     idio_display_C (buf, CSI_sh);
-    IDIO_GC_FREE (fmt);
-
-    idio_display_C (">", CSI_sh);
 
     return idio_get_output_string (CSI_sh);
 }

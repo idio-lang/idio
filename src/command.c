@@ -1176,6 +1176,37 @@ IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
      * idio_vm_invoke_C() so keep protecting objects!
      */
 
+    /*
+     * some job accounting
+     */
+    struct timeval *tvp = (struct timeval *) idio_alloc (sizeof (struct timeval));
+
+    if (-1 == gettimeofday (tvp, NULL)) {
+	idio_error_system_errno ("gettimeofday", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    struct rusage *rusage_selfp = (struct rusage *) idio_alloc (sizeof (struct rusage));
+
+    if (-1 == getrusage (RUSAGE_SELF, rusage_selfp)) {
+	idio_error_system_errno ("getrusage", idio_C_int (RUSAGE_SELF), IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    struct rusage *rusage_childrenp = (struct rusage *) idio_alloc (sizeof (struct rusage));
+
+    if (-1 == getrusage (RUSAGE_CHILDREN, rusage_childrenp)) {
+	idio_error_system_errno ("getrusage", idio_C_int (RUSAGE_CHILDREN), IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    IDIO timing_start = IDIO_LIST3 (idio_C_pointer_type (idio_CSI_libc_struct_timeval, tvp),
+				    idio_C_pointer_type (idio_CSI_libc_struct_rusage, rusage_selfp),
+				    idio_C_pointer_type (idio_CSI_libc_struct_rusage, rusage_childrenp));
+
     IDIO job = idio_struct_instance (idio_job_control_job_type,
 				     idio_pair (command,
 				     idio_pair (IDIO_LIST1 (proc),
@@ -1187,7 +1218,7 @@ IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
 				     idio_pair (job_stdout,
 				     idio_pair (job_stderr,
 				     idio_pair (idio_S_false,
-				     idio_pair (idio_S_false,
+				     idio_pair (timing_start,
 				     idio_pair (idio_S_false,
 				     idio_S_nil)))))))))))));
     idio_array_push (protected, job);

@@ -550,25 +550,27 @@ define (do-job-notification) "notify of any job status changes" {
 		    timing-start	:= %idio-job-timing-start job
 		    tv-before		:= ph timing-start
 		    rus-before		:= pht timing-start
-		    ruk-before		:= phtt timing-start
+		    ruc-before		:= phtt timing-start
 		    timing-end		:= %idio-job-timing-end job
 		    tv-end		:= ph timing-end
 		    rus-end		:= pht timing-end
-		    ruk-end		:= phtt timing-end
+		    ruc-end		:= phtt timing-end
 
+		    ;; See the commentary for time-command in
+		    ;; common.idio about this algorithm
 		    h := (make-hash)
 		    hash-set! h #\R (libc/subtract-struct-timeval tv-end tv-before)
 		    hash-set! h #\U (libc/add-struct-timeval
 				     (libc/subtract-struct-timeval (libc/struct-rusage-ref rus-end    'ru_utime)
 								   (libc/struct-rusage-ref rus-before 'ru_utime))
-				     (libc/subtract-struct-timeval (libc/struct-rusage-ref ruk-end    'ru_utime)
-								   (libc/struct-rusage-ref ruk-before 'ru_utime)))
+				     (libc/subtract-struct-timeval (libc/struct-rusage-ref ruc-end    'ru_utime)
+								   (libc/struct-rusage-ref ruc-before 'ru_utime)))
 
 		    hash-set! h #\S (libc/add-struct-timeval
 				     (libc/subtract-struct-timeval (libc/struct-rusage-ref rus-end    'ru_stime)
 								   (libc/struct-rusage-ref rus-before 'ru_stime))
-				     (libc/subtract-struct-timeval (libc/struct-rusage-ref ruk-end    'ru_stime)
-								   (libc/struct-rusage-ref ruk-before 'ru_stime)))
+				     (libc/subtract-struct-timeval (libc/struct-rusage-ref ruc-end    'ru_stime)
+								   (libc/struct-rusage-ref ruc-before 'ru_stime)))
 
 		    printf "%s" (%format 'timeformat TIMEFORMAT h)
 		  }
@@ -1085,16 +1087,10 @@ define-infix-operator | 700 {
   pid			:= gensym 'pid
   status		:= gensym 'status
 
-  ;; of minor interest, should the accumulated time include setup?  I
-  ;; guess so as it reflects the cost of running the pipeline
-  timing-data		:= gensym 'timing-data
-
   nprocs := length op-args
 
   #T{
     {
-      $timing-data := list (libc/gettimeofday) (libc/getrusage libc/RUSAGE_SELF) (libc/getrusage libc/RUSAGE_CHILDREN)
-
       $pipeline-r-fd := #f
       $close-pipeline-r-fd := #f
       $pipeline-w-ph := #f
@@ -1140,7 +1136,7 @@ define-infix-operator | 700 {
       $stderr := (libc/stderr-fileno) ; STDERR_FILENO
 
       $pgid := libc/0pid_t
-      $job := make-%idio-job '$orig-pipeline #n $pgid #f #f #n $pipeline-r-fd $pipeline-w-fd $stderr $report-time $timing-data #f
+      $job := make-%idio-job '$orig-pipeline #n $pgid #f #f #n $pipeline-r-fd $pipeline-w-fd $stderr $report-time (list (libc/gettimeofday) (libc/getrusage libc/RUSAGE_SELF) (libc/getrusage libc/RUSAGE_CHILDREN)) #f
 
       $proc-id := 1
       $cmd-pipe := #n
@@ -1467,7 +1463,7 @@ define-template (fork-command foreground use-w-pipe use-r-pipe & cmd) {
       }
       $pgid := libc/0pid_t
       $proc := make-%idio-process '$cmd -1 #f #f #n
-      $job := make-%idio-job '$cmd (list $proc) $pgid #f #f #n $cmd-r-fdn $cmd-w-fdn $cmd-e-fd #f #f #f
+      $job := make-%idio-job '$cmd (list $proc) $pgid #f #f #n $cmd-r-fdn $cmd-w-fdn $cmd-e-fd #f (list (libc/gettimeofday) (libc/getrusage libc/RUSAGE_SELF) (libc/getrusage libc/RUSAGE_CHILDREN)) #f
 
       $pid := (libc/fork)
       (cond
