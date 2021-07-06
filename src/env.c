@@ -34,6 +34,15 @@
 #include <string.h>
 #include <unistd.h>
 
+/*
+ * We need sysctl(3) for discovering the FreeBSD exe pathname
+ */
+#if defined (BSD)
+#include <sys/sysctl.h>
+#elif defined (__APPLE__) && defined (__MACH__)
+#include <mach-o/dyld.h>
+#endif
+
 #include "gc.h"
 #include "idio.h"
 

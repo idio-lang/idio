@@ -1598,7 +1598,12 @@ IDIO idio_libc_struct_timeval_as_string (struct timeval *timevalp)
      * ".000"
      */
     char us[30];
+#if defined (__APPLE__) && defined (__MACH__)
+    /* technically it's a __darwin_suseconds_t => __int32_t */
+    sprintf (us, "%06d", timevalp->tv_usec);
+#else
     sprintf (us, "%06ld", timevalp->tv_usec);
+#endif
     char sfmt[30];
     if (prec > 6) {
 	prec = 6;

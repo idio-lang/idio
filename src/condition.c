@@ -787,8 +787,6 @@ does not return per se						\n\
 	 *
 	 * Until then we'll not get code coverage here.
 	 */
-	IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (c);
-
 	idio_condition_report ("default-condition-handler", c);
 
 	if (IDIO_STATE_RUNNING == idio_state) {

@@ -23,6 +23,37 @@
 #ifndef IDIO_H
 #define IDIO_H
 
+/*
+ * BSD markers
+ */
+#if defined (__unix__)
+#include <sys/param.h>
+/*
+ * Now test for
+ *
+ * #if defined(BSD)
+ * ...
+ * #endif
+ */
+#endif
+
+/*
+ * Solaris, Mac OS X don't define RLIMIT_NLIMITS
+ *
+ * We should only have this test where <sys/resource.h> is included
+ * but that's at least five files and the rest will fault unless we
+ * test whether <sys/resource.h> has been included.
+ */
+#if defined(_SYS_RESOURCE_H) || defined(_SYS_RESOURCE_H_)
+#ifndef RLIMIT_NLIMITS
+#ifdef RLIM_NLIMITS
+#define RLIMIT_NLIMITS RLIM_NLIMITS
+#else
+#error wither RLIMIT_NLIMITS?
+#endif
+#endif
+#endif
+
 /* #define IDIO_DEBUG	1 */
 /* #undef IDIO_DEBUG   */
 
