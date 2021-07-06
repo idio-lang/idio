@@ -146,6 +146,7 @@ IDIO idio_condition_rt_command_format_error_type;
 IDIO idio_condition_rt_command_env_type_error_type;
 IDIO idio_condition_rt_command_exec_error_type;
 IDIO idio_condition_rt_command_status_error_type;
+IDIO idio_condition_rt_async_command_status_error_type;
 
 IDIO idio_condition_rt_signal_type;
 
@@ -153,6 +154,7 @@ IDIO idio_condition_reset_condition_handler;
 IDIO idio_condition_restart_condition_handler;
 IDIO idio_condition_default_condition_handler;
 IDIO idio_condition_default_rcse_handler;
+IDIO idio_condition_default_racse_handler;
 IDIO idio_condition_default_SIGCHLD_handler;
 
 IDIO idio_condition_default_handler;
@@ -627,14 +629,40 @@ IDIO idio_condition_exit_on_error (IDIO c)
     return idio_S_unspec;
 }
 
+/*
+ * Let's try to be consistent with condition-report by, uh, calling
+ * condition-report
+ */
+void idio_condition_report (char *prefix, IDIO c)
+{
+    IDIO_C_ASSERT (prefix);
+    IDIO_ASSERT (c);
+
+    IDIO_TYPE_ASSERT (condition, c);
+
+    IDIO cr_cmd = IDIO_LIST4 (idio_module_symbol_value (idio_symbols_C_intern ("condition-report"),
+							idio_Idio_module,
+							idio_S_nil),
+			      idio_string_C (prefix),
+			      c,
+			      idio_thread_current_error_handle ());
+
+    idio_vm_invoke_C (idio_thread_current_thread (), cr_cmd);
+}
+
 IDIO_DEFINE_PRIMITIVE1_DS ("default-rcse-handler", default_rcse_handler, (IDIO c), "c", "\
 The default handler for an ^rt-command-status-error condition	\n\
 								\n\
-This returns #unspec						\n\
+This effects an exit-on-error					\n\
 								\n\
 :param c: the condition						\n\
 :type c: condition instance					\n\
-:return: #unspec						\n\
+:return: as below						\n\
+								\n\
+If the command exits with a non-zero status (from exit(3) or	\n\
+by signal) then we exit the same way.				\n\
+								\n\
+Otherwise #unspec						\n\
 ")
 {
     IDIO_ASSERT (c);
@@ -666,24 +694,46 @@ This returns #unspec						\n\
     return idio_S_void;
 }
 
-/*
- * Let's try to be consistent with condition-report
- */
-void idio_condition_report (char *prefix, IDIO c)
+IDIO_DEFINE_PRIMITIVE1_DS ("default-racse-handler", default_racse_handler, (IDIO c), "c", "\
+The default handler for an ^rt-async-command-status-error condition	\n\
+								\n\
+This returns #unspec						\n\
+								\n\
+:param c: the condition						\n\
+:type c: condition instance					\n\
+:return: #unspec						\n\
+								\n\
+The default behaviour is to ignore failed asynchronous processes\n\
+")
 {
-    IDIO_C_ASSERT (prefix);
     IDIO_ASSERT (c);
 
-    IDIO_TYPE_ASSERT (condition, c);
+    /*
+     * XXX IDIO_USER_TYPE_ASSERT() will raise a condition if it fails!
+     */
+    IDIO_USER_TYPE_ASSERT (condition, c);
 
-    IDIO cr_cmd = IDIO_LIST4 (idio_module_symbol_value (idio_symbols_C_intern ("condition-report"),
-							idio_Idio_module,
-							idio_S_nil),
-			      idio_string_C (prefix),
-			      c,
-			      idio_thread_current_error_handle ());
+    IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (c);
 
-    idio_vm_invoke_C (idio_thread_current_thread (), cr_cmd);
+    if (idio_struct_type_isa (sit, idio_condition_rt_async_command_status_error_type)) {
+	idio_condition_report ("default-racse-handler: this async job result has been ignored", c);
+	return idio_S_unspec;
+    }
+
+    /*
+     * Code coverage:
+     *
+     * trap ^rt-number-error default-racse-handler {
+     *   1 / 0
+     * }
+     */
+    idio_raise_condition (idio_S_true, c);
+
+    /*
+     * For a continuable continuation, if it gets here, we'll
+     * return void because...
+     */
+    return idio_S_void;
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("default-condition-handler", default_condition_handler, (IDIO c), "c", "\
@@ -756,6 +806,30 @@ does not return per se						\n\
 	     */
 	    break;
 	}
+    } else if (idio_struct_type_isa (sit, idio_condition_rt_async_command_status_error_type)) {
+	/*
+	 * Code coverage:
+	 *
+	 * There's a separate default-racse-handler, above, which
+	 * should capture this condition under normal circumstances.
+	 * That makes it hard to get here.
+	 *
+	 * However, we *are* here in case something has gone wrong
+	 * higher up.
+	 *
+	 * It's not easy to provoke this as something like:
+	 *
+	 * trap ^rt-async-command-status-error default-condition-handler {
+	 *   auto-exit -e 1
+	 * }
+	 *
+	 * has racse fired from inside the context of the SIGCHLD
+	 * handler which is below us on the stack.  Although it might
+	 * not do anything as its update-status call is neutered by
+	 * foreground-job blocking.
+	 */
+	idio_debug ("default-c-h: ignoring %s\n", c);
+	return idio_S_unspec;
     } else if (idio_struct_type_isa (sit, idio_condition_rt_command_status_error_type)) {
 	/*
 	 * Code coverage:
@@ -890,10 +964,15 @@ does not return per se						\n\
 	    default:
 		break;
 	    }
+	} else if (idio_struct_type_isa (sit, idio_condition_rt_async_command_status_error_type)) {
+	    /* return idio_command_rcse_handler (c); */
+	    idio_debug ("restart-c-h: racse = %s\n", c);
+	    fprintf (stderr, "restart-c-h: racse?? =>> #unspec\n");
+	    return idio_S_unspec;
 	} else if (idio_struct_type_isa (sit, idio_condition_rt_command_status_error_type)) {
 	    /* return idio_command_rcse_handler (c); */
 	    idio_debug ("restart-c-h: rcse = %s\n", c);
-	    fprintf (stderr, "restart-c-h: rcse?? =>> #unspec\n");
+	    fprintf (stderr, "restart-c-h: rcse?? =>> exit-on-error\n");
 	    return idio_condition_exit_on_error (c);
 	} else if (idio_struct_type_isa (sit, idio_condition_system_error_type)) {
 	    return idio_S_unspec;
@@ -1028,6 +1107,8 @@ void idio_condition_add_primitives ()
     idio_condition_default_condition_handler = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
     fvi = IDIO_ADD_MODULE_PRIMITIVE (idio_Idio_module, default_rcse_handler);
     idio_condition_default_rcse_handler = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
+    fvi = IDIO_ADD_MODULE_PRIMITIVE (idio_Idio_module, default_racse_handler);
+    idio_condition_default_racse_handler = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
     fvi = IDIO_ADD_MODULE_PRIMITIVE (idio_Idio_module, default_SIGCHLD_handler);
     idio_condition_default_SIGCHLD_handler = idio_vm_values_ref (IDIO_FIXNUM_VAL (fvi));
 }
@@ -1128,6 +1209,7 @@ void idio_init_condition ()
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_command_env_type_error_type, "^rt-command-env-type-error", idio_condition_rt_command_error_type, "name");
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_command_exec_error_type, "^rt-command-exec-error", idio_condition_rt_command_error_type, "errno");
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_command_status_error_type, IDIO_CONDITION_RCSE_TYPE_NAME, idio_condition_rt_command_error_type, "status");
+    IDIO_DEFINE_CONDITION0 (idio_condition_rt_async_command_status_error_type, IDIO_CONDITION_RACSE_TYPE_NAME, idio_condition_rt_command_status_error_type);
 
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_array_error_type, "^rt-array-error", idio_condition_runtime_error_type, "index");
 

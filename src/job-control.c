@@ -112,6 +112,7 @@ static IDIO idio_job_control_default_child_handler_sym;
 #define IDIO_JOB_ST_REPORT_TIMING	9
 #define IDIO_JOB_ST_TIMING_START	10
 #define IDIO_JOB_ST_TIMING_END		11
+#define IDIO_JOB_ST_ASYNC		12
 
 #define IDIO_PROCESS_ST_ARGV		0
 #define IDIO_PROCESS_ST_PID		1
@@ -1842,6 +1843,7 @@ launch a pipeline of `job_controls`			\n\
 				     idio_pair (procs,
 				     idio_pair (idio_libc_pid_t (0),
 				     idio_pair (idio_S_false,
+				     idio_pair (idio_S_false,
 				     idio_pair (idio_S_nil,
 				     idio_pair (job_stdin,
 				     idio_pair (job_stdout,
@@ -1849,7 +1851,8 @@ launch a pipeline of `job_controls`			\n\
 				     idio_pair (idio_S_false,
 				     idio_pair (timing_start,
 				     idio_pair (idio_S_false,
-				     idio_S_nil))))))))))));
+				     idio_pair (idio_S_false,
+				     idio_S_nil))))))))))))));
 
     idio_job_control_launch_job (job, 1);
     return idio_S_unspec;
@@ -2167,7 +2170,8 @@ void idio_init_job_control ()
 						  idio_pair (idio_symbols_C_intern ("report-timing"),
 						  idio_pair (idio_symbols_C_intern ("timing-start"),
 						  idio_pair (idio_symbols_C_intern ("timing-end"),
-						  idio_S_nil)))))))))))));
+						  idio_pair (idio_symbols_C_intern ("async"),
+						  idio_S_nil))))))))))))));
     idio_module_set_symbol_value (sym, idio_job_control_job_type, idio_job_control_module);
 
     idio_job_control_default_child_handler_sym = idio_symbols_C_intern ("default-child-handler");

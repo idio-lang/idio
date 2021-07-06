@@ -328,6 +328,10 @@ define-template (condition type & field-bindings) {
 				      rt-command-status-error?
 				      (status rt-command-status-error-status))
 
+(define-condition-type-accessors-only ^rt-async-command-status-error
+				      ^rt-command-status-error
+				      rt-async-command-status-error?)
+
 (define-condition-type-accessors-only ^rt-array-error
 				      ^runtime-error
 				      rt-array-error?
@@ -575,31 +579,13 @@ define (condition-report prefix c & args) "print a report on condition `c`
      cr-printf ": errno '%s'" (rt-command-exec-error-errno c)
    })
    ((rt-command-status-error? c) {
-     iem c
+     ;iem c
      job := idio-error-location c
-     header := #t
-     printed := #f
-     loop :+ function (procs details) {
-	       (cond
-		((null? procs) #t)
-		(else {
-		  if header {
-		    header = #f
-		    cr-printf "  proc: %6s %-3s %-12s %s\n" "PID" "fl" "status" "cmd"
-		  }
-		  proc := ph procs
-		  cr-printf "  proc: %6s %2s%s %-12s %s\n" (%idio-process-pid proc) (if (%idio-process-completed proc) " C" "!C") (if (%idio-process-stopped proc) "S" " ") (ph details) (%idio-process-argv proc)
-		  printed = #t
-		  loop (pt procs) (pt details)
-		}))
-     }
-
-     cr-printf "\n"
-     loop (reverse (%idio-job-procs job)) (reverse (pipeline-detail job))
-     if printed {
-       cr-printf "  flags: C - completed; !C - not completed; S - stopped\n"
-     }
-     cr-printf "job: %s => %s" (%idio-job-pipeline job) (rt-command-status-error-status c)
+     osh := (open-output-string)
+     format-job-detail job osh
+     cr-printf (get-output-string osh)
+     close-handle osh
+     ;cr-printf "job: %s => %s" (%idio-job-pipeline job) (rt-command-status-error-status c)
    })
    ((rt-command-error? c) {
      iem c

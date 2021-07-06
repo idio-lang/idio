@@ -6621,6 +6621,8 @@ void idio_vm_thread_init (IDIO thr)
     idio_vm_push_trap (thr, idio_condition_default_condition_handler, idio_condition_condition_type_mci, 0);
     IDIO fvci = idio_fixnum (idio_vm_constants_lookup (idio_symbols_C_intern (IDIO_CONDITION_RCSE_TYPE_NAME)));
     idio_vm_push_trap (thr, idio_condition_default_rcse_handler, fvci, 0);
+    fvci = idio_fixnum (idio_vm_constants_lookup (idio_symbols_C_intern (IDIO_CONDITION_RACSE_TYPE_NAME)));
+    idio_vm_push_trap (thr, idio_condition_default_racse_handler, fvci, 0);
     fvci = idio_fixnum (idio_vm_constants_lookup (idio_symbols_C_intern (IDIO_CONDITION_RT_SIGCHLD_TYPE_NAME)));
     idio_vm_push_trap (thr, idio_condition_default_SIGCHLD_handler, fvci, 0);
 }

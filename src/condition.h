@@ -27,6 +27,7 @@
 #define IDIO_CONDITION_RT_SIGNAL_TYPE_NAME	"^rt-signal"
 #define IDIO_CONDITION_RT_SIGCHLD_TYPE_NAME	"^rt-signal-SIGCHLD"
 #define IDIO_CONDITION_RCSE_TYPE_NAME		"^rt-command-status-error"
+#define IDIO_CONDITION_RACSE_TYPE_NAME		"^rt-async-command-status-error"
 
 /*
  * Indexes into structures for direct references -- not all are
@@ -162,6 +163,7 @@ extern IDIO idio_condition_rt_command_format_error_type;
 extern IDIO idio_condition_rt_command_env_type_error_type;
 extern IDIO idio_condition_rt_command_exec_error_type;
 extern IDIO idio_condition_rt_command_status_error_type;
+extern IDIO idio_condition_rt_async_command_status_error_type;
 extern IDIO idio_condition_rt_array_error_type;
 extern IDIO idio_condition_rt_hash_error_type;
 extern IDIO idio_condition_rt_hash_key_not_found_error_type;
@@ -188,6 +190,7 @@ extern IDIO idio_condition_reset_condition_handler;
 extern IDIO idio_condition_restart_condition_handler;
 extern IDIO idio_condition_default_condition_handler;
 extern IDIO idio_condition_default_rcse_handler;
+extern IDIO idio_condition_default_racse_handler;
 extern IDIO idio_condition_default_SIGCHLD_handler;
 
 extern IDIO idio_condition_default_handler;

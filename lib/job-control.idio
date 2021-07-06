@@ -79,7 +79,7 @@ export (%idio-interactive
 
 
 export-struct-accessors-only %idio-process	argv pid completed stopped status
-export-struct-accessors-only %idio-job		pipeline procs pgid notified raised tcattrs stdin stdout stderr report-timing timing-start timing-end
+export-struct-accessors-only %idio-job		pipeline procs pgid notified raised tcattrs stdin stdout stderr report-timing timing-start timing-end async
 
 %%last-job := #n
 
@@ -119,7 +119,7 @@ define (job-as-string job seen) {
 
     procs-loop (reverse (%idio-job-procs job))
 
-    hprintf r "rt?%s %s %s" (%idio-job-report-timing job) (%idio-job-timing-start job) (%idio-job-timing-end job)
+    hprintf r "rt?%s %s %s a?=%s" (%idio-job-report-timing job) (%idio-job-timing-start job) (%idio-job-timing-end job) (%idio-job-async job)
 
     hprintf r ">"
     get-output-string r
@@ -473,7 +473,11 @@ define (wait-for-job job) "wait for job `job` to be stopped or completed
 
   if (job-failed job) {
     if (not (%idio-job-raised job)) {
-      c := make-condition ^rt-command-status-error "job failed" job (pipeline-detail job) (job-detail job)
+      ct := ^rt-command-status-error
+      if (%idio-job-async job) {
+	ct = ^rt-async-command-status-error
+      }
+      c := make-condition ct "job failed" job (pipeline-detail job) (job-detail job)
       set-%idio-job-raised! job #t
       reraise c
     }
@@ -492,7 +496,7 @@ define (format-job-info job msg) "display to stderr `msg` alongside job `job` de
   if %idio-interactive {
     jd := job-detail job
     if (not (equal? (list 'exit C/0i) jd)) {
-      eprintf "job %5s: %s: %s: %s\n" (%idio-job-pgid job) (%idio-job-pipeline job) msg jd
+      eprintf "job %6s: %s: %s: %s\n" (%idio-job-pgid job) (%idio-job-pipeline job) msg jd
     }
   }
 }
@@ -522,6 +526,7 @@ define (format-job-detail job & args) {
   }
 
   hprintf oh "\n"
+  hprintf oh "job %6s: %s: a?=%s\n" (%idio-job-pgid job) (%idio-job-pipeline job) (%idio-job-async job)
   loop (reverse (%idio-job-procs job)) (reverse (pipeline-detail job))
   if printed {
     hprintf oh "  flags: C - completed; !C - not completed; S - stopped\n"
@@ -553,7 +558,7 @@ define (format-job-detail job & args) {
 		   (libc/subtract-struct-timeval (libc/struct-rusage-ref ruc-end    'ru_stime)
 						 (libc/struct-rusage-ref ruc-before 'ru_stime)))
 
-  printf "%s" (%format 'timeformat TIMEFORMAT h)
+  hprintf oh "%s" (%format 'timeformat TIMEFORMAT h)
 }
 
 define (do-job-notification) "notify of any job status changes" {
@@ -660,7 +665,11 @@ define (do-job-notification) "notify of any job status changes" {
 		 (else {
 		   job := ph jobs
 		   if (not (%idio-job-raised job)) {
-		     c := make-condition ^rt-command-status-error "job failed" job (pipeline-detail job) (job-detail job)
+		     ct := ^rt-command-status-error
+		     if (%idio-job-async job) {
+		       ct = ^rt-async-command-status-error
+		     }
+		     c := make-condition ct "job failed" job (pipeline-detail job) (job-detail job)
 		     set-%idio-job-raised! job #t
 		     reraise c
 		   }
@@ -941,6 +950,7 @@ define-infix-operator | 700 {
   use-r-pipe	:= #f
   collect	:= #f
   report-time	:= #f
+  async-job	:= #f
 
   ;; Slightly annoyingly, some meta-instructions to the pipeline are
   ;; consumed by the reader operator (us!) so we should look out for
@@ -952,6 +962,7 @@ define-infix-operator | 700 {
 			 before = pt before
 			 collect = #t
 			 foreground = #t
+			 async-job = #t
 			 (meta-loop)
 		       })
 		       ((fg-job) {
@@ -968,24 +979,28 @@ define-infix-operator | 700 {
 			 before = pt before
 			 use-w-pipe = 'named
 			 foreground = #f
+			 async-job = #t
 			 (meta-loop)
 		       })
 		       ((pipe-into) {
 			 before = pt before
 			 use-w-pipe = #t
 			 foreground = #f
+			 async-job = #t
 			 (meta-loop)
 		       })
 		       ((named-pipe-from) {
 			 before = pt before
 			 use-r-pipe = 'named
 			 foreground = #f
+			 async-job = #t
 			 (meta-loop)
 		       })
 		       ((pipe-from) {
 			 before = pt before
 			 use-r-pipe = #t
 			 foreground = #f
+			 async-job = #t
 			 (meta-loop)
 		       })
 		       ((time) {
@@ -1226,7 +1241,7 @@ define-infix-operator | 700 {
       $stderr := (libc/stderr-fileno) ; STDERR_FILENO
 
       $pgid := libc/0pid_t
-      $job := make-%idio-job '$orig-pipeline #n $pgid #f #f #n $pipeline-r-fdn $pipeline-w-fdn $stderr $report-time (list (libc/gettimeofday) (libc/getrusage libc/RUSAGE_SELF) (libc/getrusage libc/RUSAGE_CHILDREN)) #f
+      $job := make-%idio-job '$orig-pipeline #n $pgid #f #f #n $pipeline-r-fdn $pipeline-w-fdn $stderr $report-time (list (libc/gettimeofday) (libc/getrusage libc/RUSAGE_SELF) (libc/getrusage libc/RUSAGE_CHILDREN)) #f $async-job
 
       $proc-id := 1
       $cmd-pipe := #n
@@ -1468,7 +1483,7 @@ blocked ourselves from starting them.
 
 *#
 
-define-template (fork-command foreground use-w-pipe use-r-pipe & cmd) {
+define-template (fork-command foreground use-w-pipe use-r-pipe async-job & cmd) {
   cmd-r-phn	   := gensym 'cmd-r-phn
   cmd-w-phn	   := gensym 'cmd-w-phn
 
@@ -1567,7 +1582,7 @@ define-template (fork-command foreground use-w-pipe use-r-pipe & cmd) {
       }
       $pgid := libc/0pid_t
       $proc := make-%idio-process '$cmd -1 #f #f #n
-      $job := make-%idio-job '$cmd (list $proc) $pgid #f #f #n $cmd-r-fdn $cmd-w-fdn $cmd-e-fd #f (list (libc/gettimeofday) (libc/getrusage libc/RUSAGE_SELF) (libc/getrusage libc/RUSAGE_CHILDREN)) #f
+      $job := make-%idio-job '$cmd (list $proc) $pgid #f #f #n $cmd-r-fdn $cmd-w-fdn $cmd-e-fd #f (list (libc/gettimeofday) (libc/getrusage libc/RUSAGE_SELF) (libc/getrusage libc/RUSAGE_CHILDREN)) #f $async-job
 
       $pid := (libc/fork)
       (cond
@@ -1676,27 +1691,27 @@ define-template (fork-command foreground use-w-pipe use-r-pipe & cmd) {
 }
 
 define-template (fg-job & cmd) {
-  #T{ fork-command #t #f #f $@cmd }
+  #T{ fork-command #t #f #f #f $@cmd }
 }
 
 define-template (bg-job & cmd) {
-  #T{ fork-command #f #f #f $@cmd }
+  #T{ fork-command #f #f #f #f $@cmd }
 }
 
 define-template (pipe-into & cmd) {
-  #T{ fork-command #f #t #f $@cmd }
+  #T{ fork-command #f #t #f #t $@cmd }
 }
 
 define-template (named-pipe-into & cmd) {
-  #T{ fork-command #f 'named #f $@cmd }
+  #T{ fork-command #f 'named #f #t $@cmd }
 }
 
 define-template (pipe-from & cmd) {
-  #T{ fork-command #f #f #t $@cmd }
+  #T{ fork-command #f #f #t #t $@cmd }
 }
 
 define-template (named-pipe-from & cmd) {
-  #T{ fork-command #f #f 'named $@cmd }
+  #T{ fork-command #f #f 'named #t $@cmd }
 }
 
 define (wait & jobs) {
@@ -2062,21 +2077,23 @@ define (jobs) "display the state of outstanding jobs" {
 		    job := ph jobs
 		    if first-j {
 		      first-j = #f
-		      printf "%5s %s\n" "pgid" "job-pipeline"
+		      printf "%6s %s\n" "pgid" "job-pipeline"
 		    }
-		    printf "%5s %s\n" (%idio-job-pgid job) (%idio-job-pipeline job)
+		    printf "%6d %s\n" (%idio-job-pgid job) (%idio-job-pipeline job)
 
 		    first-p := #t
 
 		    procs-loop :+ function (procs) {
-				    proc := ph procs
-				    if (null? proc) #t {
-				      if first-p {
-					first-p = #f
-					printf "  %5s %2s %2s %s\n" "pid" "C?" "S?" "argv"
+				    if (null? procs) #t {
+				      proc := ph procs
+				      if (null? proc) #t {
+					if first-p {
+					  first-p = #f
+					  printf "  %6s %2s %2s %s\n" "pid" "C?" "S?" "argv"
+					}
+					printf "  %6d %s %s %s\n" (%idio-process-pid proc) (%idio-process-completed proc) (%idio-process-stopped proc) (%idio-process-argv proc)
+					procs-loop (pt procs)
 				      }
-				      printf "  %5s %s %s %s\n" (%idio-process-pid proc) (%idio-process-completed proc) (%idio-process-stopped proc) (%idio-process-argv proc)
-				      procs-loop (pt procs)
 				    }
 		    }
 
