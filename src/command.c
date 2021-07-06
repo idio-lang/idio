@@ -24,6 +24,8 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/time.h>
+#include <sys/resource.h>
 
 #include <errno.h>
 #include <ffi.h>
@@ -58,6 +60,8 @@
 #include "thread.h"
 #include "util.h"
 #include "vm.h"
+
+#include "libc-api.h"
 
 IDIO idio_command_module = idio_S_nil;
 
