@@ -23,6 +23,24 @@
 #ifndef VM_H
 #define VM_H
 
+#include <signal.h>
+
+/*
+ * How many signals are there?
+ *
+ * Linux, OpenSolaris and Mac OS X all seem to define NSIG as the
+ * highest signal number.  On FreeBSD, NSIG is the "number of old
+ * signals".  SIGRT* are in a range of their own.
+ */
+
+#define IDIO_LIBC_FSIG 1
+
+#if defined (BSD)
+#define IDIO_LIBC_NSIG (SIGRTMAX + 1)
+#else
+#define IDIO_LIBC_NSIG NSIG
+#endif
+
 /*
  * Idio VM Assembly code: IDIO_A_*
  *

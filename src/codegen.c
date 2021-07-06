@@ -20,7 +20,32 @@
  *
  */
 
+#define _GNU_SOURCE
+
+#include <sys/types.h>
+
+#include <ffi.h>
+#include <setjmp.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <unistd.h>
+
+#include "gc.h"
 #include "idio.h"
+
+#include "array.h"
+#include "codegen.h"
+#include "error.h"
+#include "evaluate.h"
+#include "fixnum.h"
+#include "hash.h"
+#include "idio-string.h"
+#include "module.h"
+#include "pair.h"
+#include "symbol.h"
+#include "thread.h"
+#include "util.h"
+#include "vm.h"
 
 static IDIO idio_codegen_module = idio_S_nil;
 

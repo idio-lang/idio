@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -45,7 +45,30 @@
  *     display #\newline
  */
 
+#define _GNU_SOURCE
+
+#include <sys/types.h>
+
+#include <ctype.h>
+#include <ffi.h>
+#include <setjmp.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+
+#include "gc.h"
 #include "idio.h"
+
+#include "closure.h"
+#include "error.h"
+#include "evaluate.h"
+#include "fixnum.h"
+#include "hash.h"
+#include "keyword.h"
+#include "pair.h"
+#include "primitive.h"
+#include "vm.h"
 
 /**
  * static idio_characters_hash - table of known character names to values

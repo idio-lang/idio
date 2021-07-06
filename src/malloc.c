@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -59,9 +59,23 @@
  * This is designed for use in a virtual memory environment.
  */
 
-#include "idio.h"
+#define _GNU_SOURCE
 
 #include <sys/mman.h>
+#include <sys/types.h>
+
+#include <assert.h>
+#include <ffi.h>
+#include <inttypes.h>
+#include <setjmp.h>
+#include <stdarg.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+
+#include "gc.h"
+#include "idio.h"
 
 /*
  * The Emacs/Bash code suggests IDIO_MALLOC_NBUCKETS is SIZEOF_LONG * 4 - 2,

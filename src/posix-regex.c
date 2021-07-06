@@ -24,7 +24,34 @@
  *
  */
 
+#define _GNU_SOURCE
+
+#include <sys/types.h>
+
+#include <ffi.h>
+#include <regex.h>
+#include <setjmp.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <unistd.h>
+
+#include "gc.h"
 #include "idio.h"
+
+#include "array.h"
+#include "c-type.h"
+#include "condition.h"
+#include "error.h"
+#include "evaluate.h"
+#include "handle.h"
+#include "idio-string.h"
+#include "pair.h"
+#include "posix-regex.h"
+#include "string-handle.h"
+#include "struct.h"
+#include "symbol.h"
+#include "util.h"
+#include "vm.h"
 
 IDIO idio_posix_regex_REG_BASIC_sym;
 IDIO idio_posix_regex_REG_EXTENDED_sym;

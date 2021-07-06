@@ -20,7 +20,27 @@
  *
  */
 
+#define _GNU_SOURCE
+
+#include <sys/types.h>
+
+#include <ffi.h>
+#include <setjmp.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <unistd.h>
+
+#include "gc.h"
 #include "idio.h"
+
+#include "error.h"
+#include "evaluate.h"
+#include "idio-string.h"
+#include "keyword.h"
+#include "module.h"
+#include "primitive.h"
+#include "symbol.h"
+#include "vm.h"
 
 /**
  * idio_array() - closure constructor

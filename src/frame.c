@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2017, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2017, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -20,7 +20,25 @@
  *
  */
 
+#define _GNU_SOURCE
+
+#include <sys/types.h>
+
+#include <ffi.h>
+#include <setjmp.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <unistd.h>
+
+#include "gc.h"
 #include "idio.h"
+
+#include "error.h"
+#include "frame.h"
+#include "idio-string.h"
+#include "pair.h"
+#include "thread.h"
+#include "vm.h"
 
 IDIO idio_G_frame;
 

@@ -20,7 +20,25 @@
  *
  */
 
+#define _GNU_SOURCE
+
+#include <sys/types.h>
+
+#include <ffi.h>
+#include <setjmp.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <unistd.h>
+
+#include "gc.h"
 #include "idio.h"
+
+#include "array.h"
+#include "c-struct.h"
+#include "error.h"
+#include "idio-string.h"
+#include "pair.h"
+#include "util.h"
 
 ffi_type *idio_C_FFI_type (IDIO field_data)
 {

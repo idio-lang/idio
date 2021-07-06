@@ -20,7 +20,28 @@
  *
  */
 
+#define _GNU_SOURCE
+
+#include <sys/types.h>
+
+#include <ffi.h>
+#include <setjmp.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+
+#include "gc.h"
 #include "idio.h"
+
+#include "error.h"
+#include "evaluate.h"
+#include "handle.h"
+#include "idio-string.h"
+#include "string-handle.h"
+#include "unicode.h"
+#include "util.h"
+#include "vm.h"
 
 static size_t idio_string_handle_instance = 1;
 

@@ -29,7 +29,44 @@
  *
  */
 
+#define _GNU_SOURCE
+
+#include <sys/types.h>
+#include <sys/wait.h>
+
+#include <errno.h>
+#include <ffi.h>
+#include <setjmp.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <termios.h>
+#include <unistd.h>
+
+#include "gc.h"
 #include "idio.h"
+
+#include "c-type.h"
+#include "command.h"
+#include "condition.h"
+#include "error.h"
+#include "evaluate.h"
+#include "fixnum.h"
+#include "handle.h"
+#include "hash.h"
+#include "idio-string.h"
+#include "libc-wrap.h"
+#include "module.h"
+#include "pair.h"
+#include "string-handle.h"
+#include "struct.h"
+#include "symbol.h"
+#include "thread.h"
+#include "util.h"
+#include "vm.h"
+
+#include "libc-api.h"
 
 IDIO idio_job_control_module = idio_S_nil;
 static pid_t idio_job_control_pid;

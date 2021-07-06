@@ -20,7 +20,26 @@
  *
  */
 
+#define _GNU_SOURCE
+
+#include <sys/types.h>
+
+#include <ffi.h>
+#include <setjmp.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <unistd.h>
+
+#include "gc.h"
 #include "idio.h"
+
+#include "evaluate.h"
+#include "fixnum.h"
+#include "idio-string.h"
+#include "module.h"
+#include "pair.h"
+#include "symbol.h"
+#include "vm.h"
 
 char *idio_vars_IFS_default = " \t\n";
 IDIO idio_vars_IFS_sym;

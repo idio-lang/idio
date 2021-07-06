@@ -20,7 +20,42 @@
  *
  */
 
+#define _GNU_SOURCE
+
+#include <sys/types.h>
+
+#include <ctype.h>
+#include <ffi.h>
+#include <setjmp.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+
+#include "gc.h"
 #include "idio.h"
+
+#include "bignum.h"
+#include "bitset.h"
+#include "condition.h"
+#include "error.h"
+#include "evaluate.h"
+#include "expander.h"
+#include "fixnum.h"
+#include "handle.h"
+#include "hash.h"
+#include "idio-string.h"
+#include "keyword.h"
+#include "module.h"
+#include "pair.h"
+#include "path.h"
+#include "read.h"
+#include "string-handle.h"
+#include "struct.h"
+#include "symbol.h"
+#include "unicode.h"
+#include "util.h"
+#include "vm.h"
 
 IDIO idio_lexobj_type;
 IDIO idio_src_properties;
