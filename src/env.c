@@ -32,6 +32,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <unistd.h>
 
 /*
@@ -401,7 +402,7 @@ void idio_env_exe_pathname (char *argv0, char *a0rp)
 	perror ("_NSGetExecutablePath");
     }
 #elif defined (__sun) && defined (__SVR4)
-    char *r = getexecname ();
+    const char *r = getexecname ();
     if (NULL != r) {
 	if ('/' == r[0]) {
 	    /* absolute pathname */
@@ -415,7 +416,7 @@ void idio_env_exe_pathname (char *argv0, char *a0rp)
 	     * but have a better value (hopefully) in r, now.  Rather
 	     * than duplicate code have argv0 be r.
 	     */
-	    argv0 = r;
+	    argv0 = (char *) r;
 	}
     }
 #else

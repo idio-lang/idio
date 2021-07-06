@@ -38,6 +38,15 @@
 #endif
 
 /*
+ * Solaris doesn't define WAIT_ANY
+ *
+ * There are three files that use WAIT_ANY
+ */
+#ifndef WAIT_ANY
+#define WAIT_ANY (-1)
+#endif
+
+/*
  * Solaris, Mac OS X don't define RLIMIT_NLIMITS
  *
  * We should only have this test where <sys/resource.h> is included
