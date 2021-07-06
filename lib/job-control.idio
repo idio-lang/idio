@@ -526,6 +526,34 @@ define (format-job-detail job & args) {
   if printed {
     hprintf oh "  flags: C - completed; !C - not completed; S - stopped\n"
   }
+
+  ;; cf. time/time-command in common.idio
+  timing-start	:= %idio-job-timing-start job
+  tv-before		:= ph timing-start
+  rus-before		:= pht timing-start
+  ruc-before		:= phtt timing-start
+  timing-end		:= %idio-job-timing-end job
+  tv-end		:= ph timing-end
+  rus-end		:= pht timing-end
+  ruc-end		:= phtt timing-end
+
+  ;; See the commentary for time-command in
+  ;; common.idio about this algorithm
+  h := (make-hash)
+  hash-set! h #\R (libc/subtract-struct-timeval tv-end tv-before)
+  hash-set! h #\U (libc/add-struct-timeval
+		   (libc/subtract-struct-timeval (libc/struct-rusage-ref rus-end    'ru_utime)
+						 (libc/struct-rusage-ref rus-before 'ru_utime))
+		   (libc/subtract-struct-timeval (libc/struct-rusage-ref ruc-end    'ru_utime)
+						 (libc/struct-rusage-ref ruc-before 'ru_utime)))
+
+  hash-set! h #\S (libc/add-struct-timeval
+		   (libc/subtract-struct-timeval (libc/struct-rusage-ref rus-end    'ru_stime)
+						 (libc/struct-rusage-ref rus-before 'ru_stime))
+		   (libc/subtract-struct-timeval (libc/struct-rusage-ref ruc-end    'ru_stime)
+						 (libc/struct-rusage-ref ruc-before 'ru_stime)))
+
+  printf "%s" (%format 'timeformat TIMEFORMAT h)
 }
 
 define (do-job-notification) "notify of any job status changes" {
@@ -936,9 +964,21 @@ define-infix-operator | 700 {
 			 foreground = #f
 			 (meta-loop)
 		       })
+		       ((named-pipe-into) {
+			 before = pt before
+			 use-w-pipe = 'named
+			 foreground = #f
+			 (meta-loop)
+		       })
 		       ((pipe-into) {
 			 before = pt before
 			 use-w-pipe = #t
+			 foreground = #f
+			 (meta-loop)
+		       })
+		       ((named-pipe-from) {
+			 before = pt before
+			 use-r-pipe = 'named
 			 foreground = #f
 			 (meta-loop)
 		       })
@@ -1022,31 +1062,44 @@ define-infix-operator | 700 {
   Most of the work in a pipeline is done with file descriptors whereas
   the caller is dealing with handles.
 
-  There is an overall $pipeline-r-fd and $pipeline-w-fd -- which the
+  With named-pipe variants the result we return will be a pathname and
+  not a handle.  Accordingly, various elements are named -fdn because
+  they could be a file descriptor or a pathname.
+
+  There is an overall $pipeline-r-fdn and $pipeline-w-fdn -- which the
   first and last commands use (indirectly via the per-command
   $cmd-r-fd and $cmd-w-fd).
 
+  If the caller passed 'named-pipe-into or 'named-pipe-from as the
+  first argument of the pipeline then $pipeline-*-fdn are pathnames:
+
+  * /dev/fd/n for real pipes (most systems) or
+
+  * /tmp/idio-np-xxxxxx for true named pipes (FreeBSD)
+
+  for the caller to open and write into or read from the pipeline.
+
   If the caller passed 'pipe-into or 'pipe-from as the first argument
-  of the pipeline then $pipeline-*-fd are real pipes and the other
-  ends of these are returned as pipe handles, $pipeline-w-ph and
-  $pipeline-r-ph, for the caller to write into and read from the
+  of the pipeline then $pipeline-*-fdn are real pipes and the other
+  ends of these are returned as pipe handles, $pipeline-w-phn and
+  $pipeline-r-phn, for the caller to write into or read from the
   pipeline.
 
   $cmd-pipe is the inter-cmd pipe, created by the left hand command to
-  generate its own output file descriptor and then to leave trailing
-  around the loop an input file descriptor for the next command.
+  generate its own output file descriptor and then to leave (trailing
+  around the loop) an input file descriptor for the next command.
 
   For each command there is a per-cmd input file descriptor,
   $cmd-r-fd, and output file descriptor, $cmd-w-fd.
 
   The $cmd-r-fd is normally the pipe-reader of the previous command's
   $cmd-pipe except, of course, the first command whose $cmd-r-fd is
-  $pipeline-r-fd.
+  $pipeline-r-fdn.
 
   The $cmd-w-fd is normally the pipe-writer of of $cmd-pipe except, of
-  course, the last command whose $cmd-w-fd is $pipeline-w-fd.
+  course, the last command whose $cmd-w-fd is $pipeline-w-fdn.
 
-  The $pipeline-*-fd, the overarching input and output of the entire
+  The $pipeline-*-fdn, the overarching input and output of the entire
   pipeline, could be:
 
   1. entities figured out by (stdin-fileno):
@@ -1059,73 +1112,110 @@ define-infix-operator | 700 {
      c. either of which which could be string-handles (necessitating
         temporary files and some post-pipeline content recovery)
 
-  2. actual pipes!
+  2. pathnames for either actual pipes or named pipes
 
-  3. future *stuff* (sockets are the obvious missing contender)
+  3. actual pipes!
+
+  4. future *stuff* (sockets are the obvious missing contender)
 
   *#
 
-  pipeline-r-ph		:= gensym 'pl-r-h
-  pipeline-w-ph		:= gensym 'pl-w-h
+  pipeline-r-phn		:= gensym 'pl-r-h
+  pipeline-w-phn		:= gensym 'pl-w-h
 
-  pipeline-r-fd		:= gensym 'pl-r-fd
-  cmd-r-fd		:= gensym 'cmd-r-fd
-  close-pipeline-r-fd	:= gensym 'close-pl-r-fd
+  pipeline-r-fdn		:= gensym 'pl-r-fd
+  cmd-r-fd			:= gensym 'cmd-r-fd
+  close-pipeline-r-fdn		:= gensym 'close-pl-r-fd
 
-  pipeline-w-fd		:= gensym 'pl-w-fd
-  cmd-w-fd		:= gensym 'cmd-w-fd
-  recover-pipeline-w-fd := gensym 'rcvr-pl-w-fd
+  pipeline-w-fdn		:= gensym 'pl-w-fd
+  cmd-w-fd			:= gensym 'cmd-w-fd
+  recover-pipeline-w-fdn	:= gensym 'rcvr-pl-w-fd
 
-  stderr		:= gensym 'stderr
+  stderr			:= gensym 'stderr
 
-  pgid			:= gensym 'pgid
-  job			:= gensym 'job
-  proc-id		:= gensym 'proc-id
-  cmd-pipe		:= gensym 'cmd-pipe
-  pgrp-pipe		:= gensym 'pgrp-pipe
-  proc			:= gensym 'proc
-  pid			:= gensym 'pid
-  status		:= gensym 'status
+  pgid				:= gensym 'pgid
+  job				:= gensym 'job
+  proc-id			:= gensym 'proc-id
+  cmd-pipe			:= gensym 'cmd-pipe
+  pgrp-pipe			:= gensym 'pgrp-pipe
+  proc				:= gensym 'proc
+  pid				:= gensym 'pid
+  status			:= gensym 'status
+
+  proc-subst-job		:= gensym 'psj
 
   nprocs := length op-args
 
   #T{
     {
-      $pipeline-r-fd := #f
-      $close-pipeline-r-fd := #f
-      $pipeline-w-ph := #f
-      if $use-w-pipe {
-	w-pipe := (libc/pipe)
-	$pipeline-w-ph = open-output-pipe (libc/pipe-writer w-pipe)
-	$pipeline-r-fd = libc/pipe-reader w-pipe
-      } {
-	$pipeline-r-fd = (libc/stdin-fileno) ; STDIN_FILENO
-	if (pair? $pipeline-r-fd) {
-	  $pipeline-r-fd = ph $pipeline-r-fd
-	  $close-pipeline-r-fd = $pipeline-r-fd
-	}
-      }
-      ;; set $cmd-r-fd now as it is used immediately in the loop
-      $cmd-r-fd := $pipeline-r-fd
-
-      $pipeline-w-fd := #f
-      $close-pipeline-w-fd := #f
-      $pipeline-r-ph := #f
-      $recover-pipeline-w-fd := #f
+      $pipeline-r-fdn		:= #f
+      $close-pipeline-r-fdn	:= #f
+      $pipeline-w-phn		:= #f
+      $proc-subst-job		:= #f
       (cond
-       ($use-r-pipe {
-	 r-pipe := (libc/pipe)
-	 $pipeline-r-ph = open-input-pipe (libc/pipe-reader r-pipe)
-	 $pipeline-w-fd = libc/pipe-writer r-pipe
+       ((eq? $use-w-pipe 'named) {
+	 named-pipe := (libc/proc-subst-named-pipe)
+	 $pipeline-w-phn = (nth named-pipe 4)
+	 ;; true named pipes will not have opened an fd so substitute the name
+	 $pipeline-r-fdn = (or (nth named-pipe 1)
+			       (nth named-pipe 3))
+
+	 (cond
+	  ((nth named-pipe 2) {
+	    $proc-subst-job = job-control/make-%process-substitution-job (nth named-pipe 2) #f #f
+	  })
+	  (else {
+	    $proc-subst-job = job-control/make-%process-substitution-job #f (nth named-pipe 4) (nth named-pipe 5)
+	  }))
        })
-       ($collect {
-	 $pipeline-w-fd = (libc/make-tmp-fd)
+       ($use-w-pipe {
+	 w-pipe := (libc/pipe)
+	 $pipeline-w-phn = open-output-pipe (libc/pipe-writer w-pipe)
+	 $pipeline-r-fdn = libc/pipe-reader w-pipe
        })
        (else {
-	 $pipeline-w-fd = (libc/stdout-fileno) ; STDOUT_FILENO
-	 if (pair? $pipeline-w-fd) {
-	   $recover-pipeline-w-fd = pht $pipeline-w-fd
-	   $pipeline-w-fd = ph $pipeline-w-fd
+	 $pipeline-r-fdn = (libc/stdin-fileno) ; STDIN_FILENO
+	 if (pair? $pipeline-r-fdn) {
+	   $pipeline-r-fdn = ph $pipeline-r-fdn
+	   $close-pipeline-r-fdn = $pipeline-r-fdn
+	 }
+       }))
+      ;; set $cmd-r-fd now as it is used immediately in the loop
+      $cmd-r-fd := $pipeline-r-fdn
+
+      $pipeline-w-fdn		:= #f
+      $close-pipeline-w-fdn	:= #f
+      $pipeline-r-phn		:= #f
+      $recover-pipeline-w-fdn	:= #f
+      (cond
+       ((eq? $use-r-pipe 'named) {
+	 named-pipe := (libc/proc-subst-named-pipe)
+	 $pipeline-r-phn = (nth named-pipe 3)
+	 ;; true named pipes will not have opened an fd so substitute the name
+	 $pipeline-w-fdn = (or (nth named-pipe 2)
+			       (nth named-pipe 4))
+
+	 (cond
+	  ((nth named-pipe 1) {
+	    $proc-subst-job = job-control/make-%process-substitution-job (nth named-pipe 1) #f #f
+	  })
+	  (else {
+	    $proc-subst-job = job-control/make-%process-substitution-job #f (nth named-pipe 3) (nth named-pipe 5)
+	  }))
+       })
+       ($use-r-pipe {
+	 r-pipe := (libc/pipe)
+	 $pipeline-r-phn = open-input-pipe (libc/pipe-reader r-pipe)
+	 $pipeline-w-fdn = libc/pipe-writer r-pipe
+       })
+       ($collect {
+	 $pipeline-w-fdn = (libc/make-tmp-fd)
+       })
+       (else {
+	 $pipeline-w-fdn = (libc/stdout-fileno) ; STDOUT_FILENO
+	 if (pair? $pipeline-w-fdn) {
+	   $recover-pipeline-w-fdn = pht $pipeline-w-fdn
+	   $pipeline-w-fdn = ph $pipeline-w-fdn
 	 }
        }))
       ;; $cmd-w-fd is (re-)set each time round the loop but needs to
@@ -1136,7 +1226,7 @@ define-infix-operator | 700 {
       $stderr := (libc/stderr-fileno) ; STDERR_FILENO
 
       $pgid := libc/0pid_t
-      $job := make-%idio-job '$orig-pipeline #n $pgid #f #f #n $pipeline-r-fd $pipeline-w-fd $stderr $report-time (list (libc/gettimeofday) (libc/getrusage libc/RUSAGE_SELF) (libc/getrusage libc/RUSAGE_CHILDREN)) #f
+      $job := make-%idio-job '$orig-pipeline #n $pgid #f #f #n $pipeline-r-fdn $pipeline-w-fdn $stderr $report-time (list (libc/gettimeofday) (libc/getrusage libc/RUSAGE_SELF) (libc/getrusage libc/RUSAGE_CHILDREN)) #f
 
       $proc-id := 1
       $cmd-pipe := #n
@@ -1159,7 +1249,7 @@ define-infix-operator | 700 {
 		      $cmd-pipe = (libc/pipe)
 		      $cmd-w-fd = (libc/pipe-writer $cmd-pipe)
 		    } {
-		      $cmd-w-fd = $pipeline-w-fd
+		      $cmd-w-fd = $pipeline-w-fdn
 		    }
 		    $pid := (libc/fork)
 		    if (C/== $pid libc/0pid_t) {
@@ -1173,7 +1263,7 @@ define-infix-operator | 700 {
 		      ;; (pipe-reader $cmd-pipe) of the left-hand
 		      ;; process and will have been closed in
 		      ;; %prep-process, above (unless it was
-		      ;; $pipeline-r-fd).
+		      ;; $pipeline-r-fdn).
 
 		      ;; In turn, the current (pipe-reader $cmd-pipe)
 		      ;; will become the $cmd-r-fd of the right-hand
@@ -1213,13 +1303,13 @@ define-infix-operator | 700 {
 		      }
 
 		      ;; tidy up any trailing $pipeline-*-fd ends
-		      if (and (not (C/== $cmd-r-fd $pipeline-r-fd))
-			      (not (C/== $pipeline-r-fd libc/STDIN_FILENO))) {
-				libc/close $pipeline-r-fd
+		      if (and (not (C/== $cmd-r-fd $pipeline-r-fdn))
+			      (not (C/== $pipeline-r-fdn libc/STDIN_FILENO))) {
+				libc/close $pipeline-r-fdn
 		      }
-		      if (and (not (C/== $cmd-w-fd $pipeline-w-fd))
-			      (not (C/== $pipeline-w-fd libc/STDOUT_FILENO))) {
-				libc/close $pipeline-w-fd
+		      if (and (not (C/== $cmd-w-fd $pipeline-w-fdn))
+			      (not (C/== $pipeline-w-fdn libc/STDOUT_FILENO))) {
+				libc/close $pipeline-w-fdn
 		      }
 
 		      (cond
@@ -1250,10 +1340,10 @@ define-infix-operator | 700 {
 		    }
 
 		    ;; tidy up any trailing $cmd-pipe ends
-		    if (not (C/== $cmd-r-fd $pipeline-r-fd)) {
+		    if (not (C/== $cmd-r-fd $pipeline-r-fdn)) {
 		      libc/close $cmd-r-fd
 		    }
-		    if (not (C/== $cmd-w-fd $pipeline-w-fd)) {
+		    if (not (C/== $cmd-w-fd $pipeline-w-fdn)) {
 		      libc/close $cmd-w-fd
 		    }
 
@@ -1267,11 +1357,25 @@ define-infix-operator | 700 {
       (cond
        ($use-w-pipe {
 	 ;; parent should not hold the read end of the pipe-into pipe open
-	 libc/close $pipeline-r-fd
+	 if (eq? $use-w-pipe 'named) {
+	   job-control/add-process-substitution-job $job $proc-subst-job
+	   if (C/int? $pipeline-r-fdn) {
+	     libc/close $pipeline-r-fdn
+	   }
+	 } {
+	   libc/close $pipeline-r-fdn
+	 }
        })
        ($use-r-pipe {
 	 ;; parent should not hold the write end of the pipe-from pipe open
-	 libc/close $pipeline-w-fd
+	 if (eq? $use-r-pipe 'named) {
+	   job-control/add-process-substitution-job $job $proc-subst-job
+	   if (C/int? $pipeline-w-fdn) {
+	     libc/close $pipeline-w-fdn
+	   }
+	 } {
+	   libc/close $pipeline-w-fdn
+	 }
        }))
 
       %idio-jobs = pair $job %idio-jobs
@@ -1284,10 +1388,10 @@ define-infix-operator | 700 {
       ;; OK, how do we, the parent, finish up?
       (cond
        ($use-w-pipe {
-	 $pipeline-w-ph
+	 $pipeline-w-phn
        })
        ($use-r-pipe {
-	 $pipeline-r-ph
+	 $pipeline-r-phn
        })
        ($collect {
 	 ;; wait for it!
@@ -1298,7 +1402,7 @@ define-infix-operator | 700 {
 	 }
 
 	 ;; OK, now recover the output
-	 ih := open-input-file-from-fd $pipeline-w-fd
+	 ih := open-input-file-from-fd $pipeline-w-fdn
 	 seek-handle ih 0 'set
 	 os := (open-output-string)
 	 display (read-lines ih) os
@@ -1318,15 +1422,15 @@ define-infix-operator | 700 {
 	    $status = background-job $job #f
 	  }))
 
-	 if $close-pipeline-r-fd {
-	   libc/close $close-pipeline-r-fd
+	 if $close-pipeline-r-fdn {
+	   libc/close $close-pipeline-r-fdn
 	 }
 
-	 if $recover-pipeline-w-fd {
+	 if $recover-pipeline-w-fdn {
 	   ;; if the job was backgrounded then this won't do much!
-	   ih := open-input-file-from-fd $pipeline-w-fd
+	   ih := open-input-file-from-fd $pipeline-w-fdn
 	   seek-handle ih 0 'set
-	   display (read-lines ih) $recover-pipeline-w-fd
+	   display (read-lines ih) $recover-pipeline-w-fdn
 	   close-handle ih
 	 }
 
