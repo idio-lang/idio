@@ -23,7 +23,10 @@
 #define _GNU_SOURCE
 
 #include <sys/types.h>
+#include <sys/time.h>
+#include <sys/resource.h>
 
+#include <assert.h>
 #include <ctype.h>
 #include <ffi.h>
 #include <inttypes.h>

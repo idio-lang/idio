@@ -24,6 +24,7 @@
 
 #include <sys/types.h>
 
+#include <assert.h>
 #include <ffi.h>
 #include <setjmp.h>
 #include <stdint.h>

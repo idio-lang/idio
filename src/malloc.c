@@ -77,6 +77,7 @@
 
 #include "gc.h"
 #include "idio.h"
+#include "malloc.h"
 
 /*
  * The Emacs/Bash code suggests IDIO_MALLOC_NBUCKETS is SIZEOF_LONG * 4 - 2,

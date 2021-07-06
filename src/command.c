@@ -29,6 +29,7 @@
 #include <sys/times.h>
 #include <sys/utsname.h>
 
+#include <assert.h>
 #include <errno.h>
 #include <ffi.h>
 #include <glob.h>
