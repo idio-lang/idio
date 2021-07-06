@@ -35,15 +35,6 @@
 #include <strings.h>
 #include <unistd.h>
 
-/*
- * We need sysctl(3) for discovering the FreeBSD exe pathname
- */
-#if defined (BSD)
-#include <sys/sysctl.h>
-#elif defined (__APPLE__) && defined (__MACH__)
-#include <mach-o/dyld.h>
-#endif
-
 #include "gc.h"
 #include "idio.h"
 
@@ -59,6 +50,16 @@
 #include "struct.h"
 #include "symbol.h"
 #include "vm.h"
+
+/*
+ * We need sysctl(3) for discovering the FreeBSD exe pathname and
+ * _NSGetExecutablePath for Mac OS X
+ */
+#if defined (BSD)
+#include <sys/sysctl.h>
+#elif defined (__APPLE__) && defined (__MACH__)
+#include <mach-o/dyld.h>
+#endif
 
 /* MacOS & Solaris doesn't have environ in unistd.h */
 extern char **environ;
