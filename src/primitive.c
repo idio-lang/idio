@@ -23,7 +23,10 @@
 #define _GNU_SOURCE
 
 #include <sys/types.h>
+#include <sys/time.h>
+#include <sys/resource.h>
 
+#include <assert.h>
 #include <ffi.h>
 #include <setjmp.h>
 #include <stdint.h>
@@ -39,6 +42,7 @@
 #include "fixnum.h"
 #include "idio-string.h"
 #include "keyword.h"
+#include "primitive.h"
 #include "symbol.h"
 #include "vm.h"
 

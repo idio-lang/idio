@@ -39,6 +39,7 @@
 #include <sys/utsname.h>
 #include <sys/wait.h>
 
+#include <assert.h>
 #include <errno.h>
 #include <ffi.h>
 #include <setjmp.h>

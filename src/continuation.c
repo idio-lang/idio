@@ -23,7 +23,10 @@
 #define _GNU_SOURCE
 
 #include <sys/types.h>
+#include <sys/time.h>
+#include <sys/resource.h>
 
+#include <assert.h>
 #include <ffi.h>
 #include <setjmp.h>
 #include <stdint.h>
@@ -36,9 +39,11 @@
 
 #include "array.h"
 #include "continuation.h"
+#include "error.h"
 #include "evaluate.h"
 #include "fixnum.h"
 #include "pair.h"
+#include "thread.h"
 #include "util.h"
 #include "vm.h"
 

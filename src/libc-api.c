@@ -19,6 +19,7 @@
 #include <sys/utsname.h>
 #include <sys/wait.h>
 
+#include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <ffi.h>
