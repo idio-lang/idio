@@ -20,7 +20,37 @@
  *
  */
 
+#define _GNU_SOURCE
+
+#include <sys/types.h>
+
+#include <errno.h>
+#include <ffi.h>
+#include <inttypes.h>
+#include <setjmp.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+#include "gc.h"
 #include "idio.h"
+
+#include "bignum.h"
+#include "c-type.h"
+#include "character.h"
+#include "condition.h"
+#include "error.h"
+#include "evaluate.h"
+#include "handle.h"
+#include "idio-string.h"
+#include "module.h"
+#include "pair.h"
+#include "string-handle.h"
+#include "struct.h"
+#include "symbol.h"
+#include "unicode.h"
+#include "vm.h"
 
 static void idio_fixnum_divide_by_zero_error (IDIO c_location)
 {

@@ -25,7 +25,37 @@
  * Back to basics.
  */
 
+#define _GNU_SOURCE
+
+#include <sys/types.h>
+
+#include <ffi.h>
+#include <setjmp.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+#include "gc.h"
 #include "idio.h"
+
+#include "bignum.h"
+#include "closure.h"
+#include "condition.h"
+#include "error.h"
+#include "evaluate.h"
+#include "fixnum.h"
+#include "handle.h"
+#include "hash.h"
+#include "idio-string.h"
+#include "pair.h"
+#include "string-handle.h"
+#include "struct.h"
+#include "symbol.h"
+#include "thread.h"
+#include "util.h"
+#include "vm.h"
 
 void idio_hash_error (char *msg, IDIO c_location)
 {

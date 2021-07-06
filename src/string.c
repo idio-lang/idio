@@ -20,7 +20,38 @@
  *
  */
 
+#define _GNU_SOURCE
+
+#include <sys/types.h>
+
+#include <ffi.h>
+#include <setjmp.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+
+#include "gc.h"
 #include "idio.h"
+
+#include "array.h"
+#include "bignum.h"
+#include "condition.h"
+#include "error.h"
+#include "evaluate.h"
+#include "fixnum.h"
+#include "handle.h"
+#include "idio-string.h"
+#include "module.h"
+#include "pair.h"
+#include "path.h"
+#include "string-handle.h"
+#include "struct.h"
+#include "symbol.h"
+#include "unicode.h"
+#include "util.h"
+#include "vars.h"
+#include "vm.h"
 
 static void idio_string_error (IDIO msg, IDIO detail, IDIO c_location)
 {

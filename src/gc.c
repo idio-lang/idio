@@ -20,7 +20,48 @@
  *
  */
 
+#define _GNU_SOURCE
+
+#include <sys/types.h>
+#include <sys/time.h>
+#include <sys/resource.h>
+
+#include <ffi.h>
+#include <inttypes.h>
+#include <setjmp.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+#include "gc.h"
 #include "idio.h"
+
+#include "array.h"
+#include "bignum.h"
+#include "bitset.h"
+#include "c-ffi.h"
+#include "c-struct.h"
+#include "c-type.h"
+#include "closure.h"
+#include "continuation.h"
+#include "error.h"
+#include "evaluate.h"
+#include "frame.h"
+#include "handle.h"
+#include "hash.h"
+#include "idio-string.h"
+#include "keyword.h"
+#include "malloc.h"
+#include "module.h"
+#include "pair.h"
+#include "primitive.h"
+#include "struct.h"
+#include "symbol.h"
+#include "thread.h"
+#include "util.h"
+#include "vm.h"
 
 static idio_gc_t *idio_gc;
 static IDIO idio_gc_finalizer_hash = idio_S_nil;

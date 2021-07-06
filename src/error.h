@@ -23,6 +23,8 @@
 #ifndef ERROR_H
 #define ERROR_H
 
+#include <stdarg.h>
+
 extern IDIO idio_io_read_exception;
 
 void idio_raise_exception (IDIO e);

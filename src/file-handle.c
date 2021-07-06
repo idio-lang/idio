@@ -27,7 +27,44 @@
  * This really needs to be reworked to use read(2)/write(2) direct.
  */
 
+#define _GNU_SOURCE
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
+#include <errno.h>
+#include <ffi.h>
+#include <setjmp.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+
+#include "gc.h"
 #include "idio.h"
+
+#include "array.h"
+#include "c-type.h"
+#include "condition.h"
+#include "env.h"
+#include "error.h"
+#include "evaluate.h"
+#include "file-handle.h"
+#include "handle.h"
+#include "hash.h"
+#include "idio-string.h"
+#include "job-control.h"
+#include "module.h"
+#include "pair.h"
+#include "read.h"
+#include "string-handle.h"
+#include "struct.h"
+#include "symbol.h"
+#include "thread.h"
+#include "unicode.h"
+#include "util.h"
+#include "vm.h"
 
 static IDIO idio_file_handles = idio_S_nil;
 static IDIO idio_stdin = idio_S_nil;

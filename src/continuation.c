@@ -20,7 +20,27 @@
  *
  */
 
+#define _GNU_SOURCE
+
+#include <sys/types.h>
+
+#include <ffi.h>
+#include <setjmp.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+
+#include "gc.h"
 #include "idio.h"
+
+#include "array.h"
+#include "continuation.h"
+#include "evaluate.h"
+#include "fixnum.h"
+#include "pair.h"
+#include "util.h"
+#include "vm.h"
 
 IDIO idio_continuation (IDIO thr, int kind)
 {

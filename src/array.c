@@ -45,7 +45,33 @@
  * indexed element back to the default value.
  */
 
+#define _GNU_SOURCE
+
+#include <sys/types.h>
+
+#include <ffi.h>
+#include <setjmp.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <unistd.h>
+
+#include "gc.h"
 #include "idio.h"
+
+#include "array.h"
+#include "bignum.h"
+#include "condition.h"
+#include "error.h"
+#include "evaluate.h"
+#include "fixnum.h"
+#include "handle.h"
+#include "idio-string.h"
+#include "pair.h"
+#include "string-handle.h"
+#include "struct.h"
+#include "symbol.h"
+#include "util.h"
+#include "vm.h"
 
 static IDIO idio_array_default_value = idio_S_false;
 

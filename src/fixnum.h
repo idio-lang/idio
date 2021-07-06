@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -27,6 +27,7 @@ IDIO idio_integer (intmax_t i);
 IDIO idio_uinteger (uintmax_t ui);
 IDIO idio_fixnum (intptr_t i);
 IDIO idio_fixnum_C (char *str, int base);
+int idio_isa_fixnum (IDIO o);
 int idio_isa_integer (IDIO o);
 int idio_isa_number (IDIO o);
 IDIO idio_fixnum_primitive_add (IDIO args);

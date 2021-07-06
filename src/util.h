@@ -51,7 +51,6 @@ extern IDIO idio_print_conversion_precision_sym;
 int idio_type (IDIO o);
 const char *idio_type2string (IDIO o);
 const char *idio_type_enum2string (idio_type_e type);
-int idio_isa_fixnum (IDIO o);
 int idio_isa_boolean (IDIO o);
 int idio_eqp (void *o1, void *o2);
 int idio_eqvp (void *o1, void *o2);

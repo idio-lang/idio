@@ -27,7 +27,39 @@
  * SRFI 35/36
  */
 
+#define _GNU_SOURCE
+
+#include <sys/types.h>
+
+#include <ffi.h>
+#include <setjmp.h>
+#include <signal.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+#include "gc.h"
 #include "idio.h"
+
+#include "array.h"
+#include "c-type.h"
+#include "closure.h"
+#include "condition.h"
+#include "error.h"
+#include "evaluate.h"
+#include "fixnum.h"
+#include "handle.h"
+#include "hash.h"
+#include "idio-string.h"
+#include "job-control.h"
+#include "module.h"
+#include "pair.h"
+#include "struct.h"
+#include "symbol.h"
+#include "thread.h"
+#include "util.h"
+#include "vm.h"
 
 /*
  * We use these *_condition_type_mci in idio_vm_init_thread() to

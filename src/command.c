@@ -20,7 +20,44 @@
  *
  */
 
+#define _GNU_SOURCE
+
+#include <sys/types.h>
+#include <sys/stat.h>
+
+#include <errno.h>
+#include <ffi.h>
+#include <glob.h>
+#include <setjmp.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+#include "gc.h"
 #include "idio.h"
+
+#include "array.h"
+#include "c-type.h"
+#include "condition.h"
+#include "env.h"
+#include "error.h"
+#include "evaluate.h"
+#include "frame.h"
+#include "handle.h"
+#include "idio-string.h"
+#include "job-control.h"
+#include "libc-wrap.h"
+#include "module.h"
+#include "pair.h"
+#include "path.h"
+#include "string-handle.h"
+#include "struct.h"
+#include "symbol.h"
+#include "thread.h"
+#include "util.h"
+#include "vm.h"
 
 IDIO idio_command_module = idio_S_nil;
 

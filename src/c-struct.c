@@ -20,7 +20,28 @@
  *
  */
 
+#define _GNU_SOURCE
+
+#include <sys/types.h>
+
+#include <ffi.h>
+#include <setjmp.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <unistd.h>
+
+#include "gc.h"
 #include "idio.h"
+
+#include "array.h"
+#include "c-struct.h"
+#include "c-type.h"
+#include "error.h"
+#include "hash.h"
+#include "idio-string.h"
+#include "pair.h"
+#include "symbol.h"
+#include "util.h"
 
 IDIO idio_CTD_int8 = NULL;
 IDIO idio_CTD_uint8 = NULL;

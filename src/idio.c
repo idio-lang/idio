@@ -20,7 +20,59 @@
  *
  */
 
+#define _GNU_SOURCE
+
+#include <sys/types.h>
+
+#include <ffi.h>
+#include <setjmp.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+#include "gc.h"
 #include "idio.h"
+
+#include "array.h"
+#include "bignum.h"
+#include "bitset.h"
+#include "c-struct.h"
+#include "c-type.h"
+#include "character.h"
+#include "closure.h"
+#include "codegen.h"
+#include "command.h"
+#include "condition.h"
+#include "continuation.h"
+#include "env.h"
+#include "error.h"
+#include "evaluate.h"
+#include "expander.h"
+#include "file-handle.h"
+#include "fixnum.h"
+#include "frame.h"
+#include "handle.h"
+#include "hash.h"
+#include "idio-string.h"
+#include "job-control.h"
+#include "keyword.h"
+#include "libc-wrap.h"
+#include "module.h"
+#include "pair.h"
+#include "path.h"
+#include "posix-regex.h"
+#include "primitive.h"
+#include "read.h"
+#include "string-handle.h"
+#include "struct.h"
+#include "symbol.h"
+#include "thread.h"
+#include "unicode.h"
+#include "util.h"
+#include "vars.h"
+#include "vm.h"
 
 pid_t idio_pid = 0;
 int idio_state = IDIO_STATE_BOOTSTRAP;

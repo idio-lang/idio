@@ -20,7 +20,33 @@
  *
  */
 
+#define _GNU_SOURCE
+
+#include <sys/types.h>
+
+#include <ffi.h>
+#include <glob.h>
+#include <setjmp.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+
+#include "gc.h"
 #include "idio.h"
+
+#include "condition.h"
+#include "error.h"
+#include "evaluate.h"
+#include "handle.h"
+#include "idio-string.h"
+#include "module.h"
+#include "pair.h"
+#include "path.h"
+#include "string-handle.h"
+#include "struct.h"
+#include "symbol.h"
+#include "vm.h"
 
 IDIO idio_path_type;
 

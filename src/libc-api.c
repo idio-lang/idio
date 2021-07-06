@@ -9,8 +9,49 @@
  * (__pid_t to pid_t, etc.).
  */
 
+#define _GNU_SOURCE
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/time.h>
+#include <sys/resource.h>
+#include <sys/times.h>
+#include <sys/utsname.h>
+#include <sys/wait.h>
+
+#include <errno.h>
+#include <fcntl.h>
+#include <ffi.h>
+#include <setjmp.h>
+#include <signal.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <termios.h>
+#include <unistd.h>
+
+#include "gc.h"
 #include "idio.h"
 
+#include "c-type.h"
+#include "error.h"
+#include "evaluate.h"
+#include "fixnum.h"
+#include "handle.h"
+#include "hash.h"
+#include "idio-string.h"
+#include "job-control.h"
+#include "libc-wrap.h"
+#include "module.h"
+#include "pair.h"
+#include "path.h"
+#include "string-handle.h"
+#include "symbol.h"
+#include "util.h"
+#include "vm.h"
+
+#include "libc-api.h"
 
 /*
 	/usr/include/sys/utsname.h
@@ -122,10 +163,6 @@ IDIO idio_libc_struct_utsname_as_string (struct utsname *utsnamep)
     idio_display_C (" machine:", CSI_sh);
 
     idio_display_C (utsnamep->machine, CSI_sh);
-
-    idio_display_C (" domainname:", CSI_sh);
-
-    idio_display_C (utsnamep->domainname, CSI_sh);
 
     idio_display_C (">", CSI_sh);
 
@@ -566,30 +603,9 @@ IDIO idio_libc_struct_termios_as_string (struct termios *termiosp)
     idio_display_C (buf, CSI_sh);
     IDIO_GC_FREE (fmt);
 
-    idio_display_C (" c_line:", CSI_sh);
-
-    fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_cc_t);
-    sprintf (buf, fmt, termiosp->c_line);
-    idio_display_C (buf, CSI_sh);
-    IDIO_GC_FREE (fmt);
-
     idio_display_C (" c_cc:", CSI_sh);
 
     idio_display_C ("<<1cc_t[]>>", CSI_sh);
-
-    idio_display_C (" c_ispeed:", CSI_sh);
-
-    fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_speed_t);
-    sprintf (buf, fmt, termiosp->c_ispeed);
-    idio_display_C (buf, CSI_sh);
-    IDIO_GC_FREE (fmt);
-
-    idio_display_C (" c_ospeed:", CSI_sh);
-
-    fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_speed_t);
-    sprintf (buf, fmt, termiosp->c_ospeed);
-    idio_display_C (buf, CSI_sh);
-    IDIO_GC_FREE (fmt);
 
     idio_display_C (">", CSI_sh);
 
@@ -865,15 +881,27 @@ IDIO idio_libc_struct_stat_as_string (struct stat *statp)
 
     idio_display_C (" st_atim:", CSI_sh);
 
+#if defined (__APPLE__) && defined (__MACH__)
+    idio_display (idio_libc_struct_timespec_as_string (&(statp->st_atimespec)), CSI_sh);
+#else
     idio_display (idio_libc_struct_timespec_as_string (&(statp->st_atim)), CSI_sh);
+#endif
 
     idio_display_C (" st_mtim:", CSI_sh);
 
+#if defined (__APPLE__) && defined (__MACH__)
+    idio_display (idio_libc_struct_timespec_as_string (&(statp->st_mtimespec)), CSI_sh);
+#else
     idio_display (idio_libc_struct_timespec_as_string (&(statp->st_mtim)), CSI_sh);
+#endif
 
     idio_display_C (" st_ctim:", CSI_sh);
 
+#if defined (__APPLE__) && defined (__MACH__)
+    idio_display (idio_libc_struct_timespec_as_string (&(statp->st_ctimespec)), CSI_sh);
+#else
     idio_display (idio_libc_struct_timespec_as_string (&(statp->st_ctim)), CSI_sh);
+#endif
 
     idio_display_C (">", CSI_sh);
 

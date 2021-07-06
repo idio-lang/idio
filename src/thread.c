@@ -20,7 +20,31 @@
  *
  */
 
+#define _GNU_SOURCE
+
+#include <sys/types.h>
+
+#include <ffi.h>
+#include <setjmp.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+#include "gc.h"
 #include "idio.h"
+
+#include "array.h"
+#include "error.h"
+#include "evaluate.h"
+#include "expander.h"
+#include "file-handle.h"
+#include "idio-string.h"
+#include "module.h"
+#include "symbol.h"
+#include "thread.h"
+#include "util.h"
+#include "vm.h"
 
 static IDIO idio_running_threads;
 static IDIO idio_running_thread = idio_S_nil;

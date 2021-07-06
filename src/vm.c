@@ -20,7 +20,53 @@
  *
  */
 
+#define _GNU_SOURCE
+
+#include <sys/types.h>
+
+#include <ffi.h>
+#include <inttypes.h>
+#include <setjmp.h>
+#include <signal.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include <unistd.h>
+
+#include "gc.h"
 #include "idio.h"
+
+#include "array.h"
+#include "bignum.h"
+#include "c-type.h"
+#include "closure.h"
+#include "codegen.h"
+#include "command.h"
+#include "condition.h"
+#include "continuation.h"
+#include "error.h"
+#include "evaluate.h"
+#include "expander.h"
+#include "fixnum.h"
+#include "frame.h"
+#include "handle.h"
+#include "hash.h"
+#include "idio-string.h"
+#include "keyword.h"
+#include "libc-wrap.h"
+#include "module.h"
+#include "pair.h"
+#include "path.h"
+#include "primitive.h"
+#include "read.h"
+#include "string-handle.h"
+#include "struct.h"
+#include "symbol.h"
+#include "thread.h"
+#include "util.h"
+#include "vm.h"
 
 /*
  * Don't overplay our hand in a signal handler.  What's the barest

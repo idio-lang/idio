@@ -23,8 +23,6 @@
 #ifndef ARRAY_H
 #define ARRAY_H
 
-#include "idio.h"
-
 void idio_assign_array (IDIO a, idio_ai_t size, IDIO dv);
 IDIO idio_array_dv (idio_ai_t size, IDIO dv);
 IDIO idio_array (idio_ai_t size);
