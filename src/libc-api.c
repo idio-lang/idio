@@ -1882,22 +1882,41 @@ for functions to manipulate ``statusp``.			\n\
     int *statusp = idio_alloc (sizeof (int));
     IDIO istatus = idio_C_pointer_free_me (statusp);
 
-    pid_t waitpid_r = waitpid (C_pid, statusp, C_options);
+    while (1) {
+	pid_t waitpid_r = waitpid (C_pid, statusp, C_options);
 
-    if (-1 == waitpid_r) {
-	if (ECHILD == errno) {
-	    return IDIO_LIST2 (idio_libc_pid_t (0), idio_S_nil);
+	if (-1 == waitpid_r) {
+	    if (ECHILD == errno) {
+		/*
+		 * Either pid isn't one of ours or we somehow have
+		 * SIGCHLD set to SIG_IGN!
+		 *
+		 * Either way it feels like we're in the wrong, not
+		 * erroring.
+		 */
+		return IDIO_LIST2 (idio_libc_pid_t (0), idio_S_nil);
+	    } else if (EINTR != errno) {
+		/*
+		 * Test Case: libc-wrap-errors/waitpid-bad-options.idio
+		 *
+		 * waitpid (C/integer-> 0 libc/pid_t) (C/integer-> -1)
+		 */
+		idio_error_system_errno ("waitpid", IDIO_LIST2 (pid, options), IDIO_C_FUNC_LOCATION ());
+
+		return idio_S_notreached;
+	    }
+
+	    /*
+	     * That should leave EINTR for which we go round the loop
+	     */
+	} else {
+	    /*
+	     * waitpid_r > 0: there is some status for pid
+	     * waitpid_r == 0: no status for pid (caller to handle!)
+	     */
+	    return IDIO_LIST2 (idio_libc_pid_t (waitpid_r), istatus);
 	}
-
-	/*
-	 * Test Case: libc-wrap-errors/waitpid-bad-options.idio
-	 *
-	 * waitpid (C/integer-> 0 libc/pid_t) (C/integer-> -1)
-	 */
-	idio_error_system_errno ("waitpid", IDIO_LIST2 (pid, options), IDIO_C_FUNC_LOCATION ());
     }
-
-    return IDIO_LIST2 (idio_libc_pid_t (waitpid_r), istatus);
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("unlink", libc_unlink, (IDIO pathname), "pathname", "\
@@ -3024,6 +3043,49 @@ a wrapper to libc lstat(2)			\n\
     return idio_C_pointer_type (idio_CSI_libc_struct_stat, statp);
 }
 
+IDIO_DEFINE_PRIMITIVE2_DS ("killpg", libc_killpg, (IDIO pgrp, IDIO sig), "pgrp sig", "\
+in C: killpg (pgrp, sig)		\n\
+a wrapper to libc killpg()		\n\
+					\n\
+:param pgrp: 				\n\
+:type pgrp: libc/pid_t			\n\
+:param sig: 				\n\
+:type sig: C/int			\n\
+:return:				\n\
+:rtype: C/int				\n\
+")
+{
+    IDIO_ASSERT (pgrp);
+    IDIO_ASSERT (sig);
+
+   /*
+    * Test Case: libc-errors/killpg-bad-pgrp-type.idio
+    *
+    * killpg #t #t
+    */
+    IDIO_USER_libc_TYPE_ASSERT (pid_t, pgrp);
+    pid_t C_pgrp = IDIO_C_TYPE_libc_pid_t (pgrp);
+
+   /*
+    * Test Case: libc-errors/killpg-bad-sig-type.idio
+    *
+    * killpg libc/0pid_t #t
+    */
+    IDIO_USER_C_TYPE_ASSERT (int, sig);
+    int C_sig = IDIO_C_TYPE_int (sig);
+
+    int killpg_r = killpg (C_pgrp, C_sig);
+
+    /* check for errors */
+    if (-1 == killpg_r) {
+        idio_error_system_errno ("killpg", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_C_int (killpg_r);
+}
+
 IDIO_DEFINE_PRIMITIVE2_DS ("kill", libc_kill, (IDIO pid, IDIO sig), "pid sig", "\
 in C, kill (pid, sig)						\n\
 a wrapper to libc kill(2)					\n\
@@ -3904,6 +3966,7 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_mkdtemp);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_mkdir);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_lstat);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_killpg);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_kill);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_isatty);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_gettimeofday);

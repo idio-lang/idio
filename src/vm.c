@@ -8085,8 +8085,6 @@ void idio_final_vm ()
     idio_gc_collect_all ("final-vm");
     IDIO thr = idio_thread_current_thread ();
 
-    idio_state = IDIO_STATE_SHUTDOWN;
-
     if (getpid () == idio_pid) {
 #ifdef IDIO_DEBUG
 	fprintf (stderr, "final-vm: ");

@@ -51,6 +51,7 @@ IDIO idio_module_symbol_value (IDIO symbol, IDIO module, IDIO args);
 IDIO idio_module_env_symbol_value (IDIO symbol, IDIO args);
 IDIO idio_module_symbol_value_recurse (IDIO symbol, IDIO module, IDIO args);
 IDIO idio_module_current_symbol_value_recurse (IDIO symbol, IDIO args);
+IDIO idio_module_current_symbol_value_recurse_defined (IDIO symbol);
 IDIO idio_module_env_symbol_value_recurse (IDIO symbol, IDIO args);
 IDIO idio_module_set_symbol (IDIO symbol, IDIO value, IDIO module);
 IDIO idio_module_set_symbol_value (IDIO symbol, IDIO value, IDIO module);

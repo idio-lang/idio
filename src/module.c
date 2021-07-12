@@ -1601,6 +1601,23 @@ IDIO idio_module_current_symbol_value_recurse (IDIO symbol, IDIO args)
     return idio_module_symbol_value_recurse (symbol, idio_thread_current_module (), args);
 }
 
+IDIO idio_module_current_symbol_value_recurse_defined (IDIO symbol)
+{
+    IDIO_ASSERT (symbol);
+
+    IDIO_TYPE_ASSERT (symbol, symbol);
+
+    IDIO val = idio_module_symbol_value_recurse (symbol, idio_thread_current_module (), IDIO_LIST1 (idio_S_unspec));
+
+    if (idio_S_unspec == val) {
+	idio_error_param_undefined (symbol, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    return val;
+}
+
 IDIO idio_module_env_symbol_value_recurse (IDIO symbol, IDIO args)
 {
     IDIO_ASSERT (symbol);

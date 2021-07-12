@@ -29,6 +29,7 @@
 #include <assert.h>
 #include <ffi.h>
 #include <setjmp.h>
+#include <signal.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -249,6 +250,8 @@ void idio_add_primitives ()
 
 void idio_final ()
 {
+    idio_state = IDIO_STATE_SHUTDOWN;
+
     idio_module_table_final ();
 
 #ifdef IDIO_VM_PROF
@@ -257,6 +260,124 @@ void idio_final ()
     }
     idio_vm_perf_FILE = stderr;
 #endif
+}
+
+void idio_sigaddset (sigset_t *ssp, int signum)
+{
+    int r = sigaddset (ssp, signum);
+
+    if (-1 == r) {
+	char em[BUFSIZ];
+	sprintf (em, "sigaddset %s", idio_libc_signal_name (signum));
+	idio_error_system_errno (em, idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
+	return;
+    }
+}
+
+void idio_terminal_signal_handler (int sig)
+{
+    /*
+     * It turns out, when you get a SIGTERM, we get a nice tight loop
+     * of SIGTERMs -- if nothing else, thanks to the kill() at the
+     * bottom.
+     *
+     * Following Bash, we'll avoiding repeating on ourselves.
+     */
+    static int terminating = 0;
+    if (terminating) {
+	return;
+    }
+    terminating = 1;
+
+    idio_state = IDIO_STATE_SHUTDOWN;
+
+    /*
+     * restore the terminal state
+     */
+    if (idio_job_control_interactive) {
+	idio_job_control_restore_terminal ();
+    }
+
+    if (SIGHUP == sig) {
+	idio_job_control_SIGHUP_signal_handler ();
+    }
+
+    idio_job_control_SIGTERM_stopped_jobs ();
+
+    /*
+     * Fall on our sword in the same way for clarity to our parent.
+     *
+     * Note: disable the signal handler pointing here, first...
+     */
+    struct sigaction nsa;
+
+    nsa.sa_handler = SIG_DFL;
+    nsa.sa_flags = 0;
+    sigemptyset (&nsa.sa_mask);
+
+    idio_sigaddset (&nsa.sa_mask, sig);
+
+    if (sigaction (sig, &nsa, (struct sigaction *) NULL) == -1) {
+	perror ("sigaction SIG_DFL");
+
+	/*
+	 * Desperate times call for desperate measures!
+	 */
+	exit (128 + sig);
+    }
+
+    kill (getpid (), sig);
+}
+
+void idio_add_terminal_signal (int sig)
+{
+    struct sigaction nsa;
+    struct sigaction osa;
+
+    nsa.sa_handler = idio_terminal_signal_handler;
+    nsa.sa_flags = 0;
+    sigemptyset (&nsa.sa_mask);
+
+    idio_sigaddset (&nsa.sa_mask, sig);
+
+    if (sigaction (sig, &nsa, &osa) == -1) {
+	/*
+	 * Test Case: ??
+	 */
+	char em[BUFSIZ];
+	sprintf (em, "sigaction %s", idio_libc_signal_name (sig));
+	idio_error_system_errno (em, idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
+	return;
+    }
+
+    /*
+     * For non-interactive shells, check if we were ignoring the
+     * signal and undo our terminal_signal handling!
+     */
+    if (0 == idio_job_control_interactive &&
+	SIG_IGN == osa.sa_handler) {
+	if (sigaction (sig, &osa, &nsa) == -1) {
+	    /*
+	     * Test Case: ??
+	     */
+	    char em[BUFSIZ];
+	    sprintf (em, "sigaction %s", idio_libc_signal_name (sig));
+	    idio_error_system_errno (em, idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+	    /* notreached */
+	    return;
+	}
+    }
+}
+
+void idio_add_terminal_signals ()
+{
+    idio_add_terminal_signal (SIGHUP);
+    idio_add_terminal_signal (SIGTERM);
 }
 
 int main (int argc, char **argv, char **envp)
@@ -348,6 +469,7 @@ int main (int argc, char **argv, char **envp)
     idio_state = IDIO_STATE_RUNNING;
     idio_gc_collect_all ("post-bootstrap");
 
+    idio_add_terminal_signals ();
     /*
      * Dig out the (post-bootstrap) definition of "load" which will
      * now be continuation and module aware.
@@ -429,7 +551,7 @@ int main (int argc, char **argv, char **envp)
 		    fprintf (stderr, "option handling: unexpected option %d\n", option);
 		    break;
 		}
-		
+
 		option = OPTION_NONE;
 	    } else if (strncmp (argv[i], "--", 2) == 0) {
 		if (strncmp (argv[i], "--vm-reports", 12) == 0) {

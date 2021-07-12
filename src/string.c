@@ -2680,17 +2680,7 @@ into a list of strings					\n\
 
     IDIO delim;
     if (idio_S_nil == args) {
-	delim = idio_module_current_symbol_value_recurse (idio_vars_IFS_sym, IDIO_LIST1 (idio_S_unspec));
-
-	if (idio_S_unspec == delim) {
-	    /*
-	     * Code coverage: not sure we can get here.  Developer
-	     * error?
-	     */
-	    idio_string_error_C ("IFS undefined", idio_vars_IFS_sym, IDIO_C_FUNC_LOCATION ());
-
-	    return idio_S_notreached;
-	}
+	delim = idio_module_current_symbol_value_recurse_defined (idio_vars_IFS_sym);
     } else {
 	delim = IDIO_PAIR_H (args);
     }
@@ -2732,17 +2722,7 @@ into a list	 of strings				\n\
 
     IDIO delim;
     if (idio_S_nil == args) {
-	delim = idio_module_current_symbol_value_recurse (idio_vars_IFS_sym, IDIO_LIST1 (idio_S_unspec));
-
-	if (idio_S_unspec == delim) {
-	    /*
-	     * Code coverage: not sure we can get here.  Developer
-	     * error?
-	     */
-	    idio_string_error_C ("IFS undefined", idio_vars_IFS_sym, IDIO_C_FUNC_LOCATION ());
-
-	    return idio_S_notreached;
-	}
+	delim = idio_module_current_symbol_value_recurse_defined (idio_vars_IFS_sym);
     } else {
 	delim = IDIO_PAIR_H (args);
     }
@@ -2777,17 +2757,7 @@ into an array with the first element the original string\n\
      */
     IDIO_USER_TYPE_ASSERT (string, in);
 
-    IDIO delim = idio_module_current_symbol_value_recurse (idio_vars_IFS_sym, IDIO_LIST1 (idio_S_unspec));
-
-    if (idio_S_unspec == delim) {
-      /*
-       * Code coverage: not sure we can get here.  Developer
-       * error?
-       */
-      idio_string_error_C ("IFS undefined", idio_vars_IFS_sym, IDIO_C_FUNC_LOCATION ());
-
-      return idio_S_notreached;
-    }
+    IDIO delim = idio_module_current_symbol_value_recurse_defined (idio_vars_IFS_sym);
 
     /*
      * Test Case: string-errors/fields-bad-IFS-type.idio

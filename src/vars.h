@@ -23,8 +23,10 @@
 #ifndef VARS_H
 #define VARS_H
 
-extern char *idio_vars_IFS_default;
 extern IDIO idio_vars_IFS_sym;
+extern IDIO idio_vars_suppress_exit_on_error_sym;
+extern IDIO idio_vars_suppress_pipefail_sym;
+extern IDIO idio_vars_suppress_async_command_report_sym;
 
 void idio_init_vars ();
 

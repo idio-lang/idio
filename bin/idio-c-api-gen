@@ -2612,7 +2612,7 @@ ${tc-test}
     */}
 
 					      if (alloc-required? fp-type-id) {
-					      hprintf errors-fh #S{
+						hprintf errors-fh #S{
 ${i-module-name}-error-load "${tc-bn}" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"}
 
 						hprintf api-c-fh #S{
@@ -2620,7 +2620,7 @@ ${i-module-name}-error-load "${tc-bn}" "bad parameter type: '#t' a CONSTANT_IDIO
     ${fp-c-type-name} C_${fp-name} = IDIO_C_TYPE_POINTER_P (${fp-name});
 }
 					      } {
-					      hprintf errors-fh #S{
+						hprintf errors-fh #S{
 ${i-module-name}-error-load "${tc-bn}" "bad parameter type: '#t' a CONSTANT_IDIO is not a ${mod-name}/${fp-i-c-type-name}"}
 
 						hprintf api-c-fh #S{

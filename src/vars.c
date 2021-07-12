@@ -45,18 +45,23 @@
 #include "symbol.h"
 #include "vm.h"
 
-char *idio_vars_IFS_default = " \t\n";
 IDIO idio_vars_IFS_sym;
+static char *idio_vars_IFS_default = " \t\n";
 
-static int idio_vars_set_default (IDIO name, char *val)
+IDIO idio_vars_suppress_exit_on_error_sym;
+IDIO idio_vars_suppress_pipefail_sym;
+IDIO idio_vars_suppress_async_command_report_sym;
+
+static int idio_vars_set_dynamic_default (IDIO name, IDIO val)
 {
     IDIO_ASSERT (name);
-    IDIO_C_ASSERT (val);
+    IDIO_ASSERT (val);
+
     IDIO_TYPE_ASSERT (symbol, name);
 
     IDIO VARS = idio_module_current_symbol_value_recurse (name, IDIO_LIST1 (idio_S_false));
     if (idio_S_false == VARS) {
-	idio_dynamic_extend (name, name, idio_string_C (val), idio_vm_constants);
+	idio_dynamic_extend (name, name, val, idio_vm_constants);
 	return 1;
     }
 
@@ -81,7 +86,10 @@ void idio_vars_add_primitives ()
     geti = IDIO_ADD_PRIMITIVE (SECONDS_get);
     idio_module_add_computed_symbol (idio_symbols_C_intern ("SECONDS"), idio_vm_values_ref (IDIO_FIXNUM_VAL (geti)), idio_S_nil, idio_Idio_module);
 
-    idio_vars_set_default (idio_vars_IFS_sym, idio_vars_IFS_default);
+    idio_vars_set_dynamic_default (idio_vars_IFS_sym, idio_string_C (idio_vars_IFS_default));
+    idio_vars_set_dynamic_default (idio_vars_suppress_exit_on_error_sym, idio_S_false);
+    idio_vars_set_dynamic_default (idio_vars_suppress_pipefail_sym, idio_S_false);
+    idio_vars_set_dynamic_default (idio_vars_suppress_async_command_report_sym, idio_S_false);
 }
 
 void idio_final_vars ()
@@ -92,6 +100,9 @@ void idio_init_vars ()
 {
     idio_module_table_register (idio_vars_add_primitives, idio_final_vars);
 
-    idio_vars_IFS_sym = idio_symbols_C_intern ("IFS");
+    idio_vars_IFS_sym                           = idio_symbols_C_intern ("IFS");
+    idio_vars_suppress_exit_on_error_sym        = idio_symbols_C_intern ("suppress-exit-on-error!");
+    idio_vars_suppress_pipefail_sym             = idio_symbols_C_intern ("suppress-pipefail!");
+    idio_vars_suppress_async_command_report_sym = idio_symbols_C_intern ("suppress-async-command-report!");
 }
 

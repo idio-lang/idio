@@ -202,6 +202,25 @@ static int idio_job_control_job_is_stopped (IDIO job)
     return 1;
 }
 
+static int idio_job_control_job_is_async (IDIO job)
+{
+    IDIO_ASSERT (job);
+    IDIO_TYPE_ASSERT (struct_instance, job);
+
+    if (! idio_struct_instance_isa (job, idio_job_control_job_type)) {
+	idio_error_param_type ("%idio-job", job, IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
+	return -1;
+    }
+
+    if (idio_S_true == idio_struct_instance_ref_direct (job, IDIO_JOB_ST_ASYNC)) {
+	return 1;
+    }
+
+    return 0;
+}
+
 IDIO_DEFINE_PRIMITIVE1_DS ("job-is-stopped", job_is_stopped, (IDIO job), "job", "\
 test if job `job` is stopped			\n\
 						\n\
@@ -586,6 +605,8 @@ static IDIO idio_job_control_wait_for_job (IDIO job)
     IDIO_ASSERT (job);
     IDIO_TYPE_ASSERT (struct_instance, job);
 
+    idio_debug ("ijc-wfj: %s\n", job);
+
     if (! idio_struct_instance_isa (job, idio_job_control_job_type)) {
 	idio_error_param_type ("%idio-job", job, IDIO_C_FUNC_LOCATION ());
 
@@ -694,9 +715,15 @@ display to stderr `msg` alongside job `job` details\n\
 }
 
 /*
- * idio_job_control_do_job_notification() is called from the primitive
- * do-job-notification which should be overwritten when
- * job-control.idio is loaded and during shutdown.
+ * idio_job_control_do_job_notification() is called:
+ *
+ * * from the primitive do-job-notification which should be
+     overwritten when job-control.idio is loaded
+ *
+ * * during shutdown
+ *
+ * Notice we don't do any fancy asynchronous process handling.  We're
+ * shutting down!
  */
 
 void idio_job_control_do_job_notification ()
@@ -796,6 +823,27 @@ notify of any job status changes		\n\
     return idio_S_unspec;
 }
 
+void idio_job_control_restore_terminal ()
+{
+    struct termios *tcattrsp = IDIO_C_TYPE_POINTER_P (idio_job_control_tcattrs);
+    if (tcsetattr (idio_job_control_terminal, TCSADRAIN, tcattrsp) < 0) {
+	/*
+	 * If the interactive user has typed ^D then read(2) gets EOL
+	 * and closes the file descriptor.
+	 *
+	 * If we're running from a tty then calling tcsetattr(0, ...)
+	 * as we shutdown *after* that gets EBADF.
+	 */
+	if (! (IDIO_STATE_SHUTDOWN == idio_state &&
+	       EBADF == errno)) {
+	    idio_error_system_errno ("tcsetattr", idio_C_int (idio_job_control_terminal), IDIO_C_FUNC_LOCATION ());
+
+	    /* notreached */
+	    return;
+	}
+    }
+}
+
 static IDIO idio_job_control_foreground_job (IDIO job, int cont)
 {
     IDIO_ASSERT (job);
@@ -809,31 +857,35 @@ static IDIO idio_job_control_foreground_job (IDIO job, int cont)
 
     pid_t job_pgid = IDIO_C_TYPE_libc_pid_t (idio_struct_instance_ref_direct (job, IDIO_JOB_ST_PGID));
 
-    /*
-     * Put the job in the foreground
-     */
-    if (tcsetpgrp (idio_job_control_terminal, job_pgid) < 0) {
-	idio_error_system_errno ("tcsetpgrp",
-				 IDIO_LIST3 (idio_C_int (idio_job_control_terminal),
-					     idio_libc_pid_t (job_pgid),
-					     job),
-				 IDIO_C_FUNC_LOCATION ());
-
-	return idio_S_notreached;
-    }
-
-    if (cont) {
-	IDIO job_tcattrs = idio_struct_instance_ref_direct (job, IDIO_JOB_ST_TCATTRS);
-	IDIO_TYPE_ASSERT (C_pointer, job_tcattrs);
-	struct termios *tcattrsp = IDIO_C_TYPE_POINTER_P (job_tcattrs);
-
-	if (tcsetattr (idio_job_control_terminal, TCSADRAIN, tcattrsp) < 0) {
-	    idio_error_system_errno ("tcsetattr", idio_C_int (idio_job_control_terminal), IDIO_C_FUNC_LOCATION ());
+    if (idio_job_control_interactive) {
+	/*
+	 * Put the job in the foreground
+	 */
+	if (tcsetpgrp (idio_job_control_terminal, job_pgid) < 0) {
+	    idio_error_system_errno ("tcsetpgrp",
+				     IDIO_LIST3 (idio_C_int (idio_job_control_terminal),
+						 idio_libc_pid_t (job_pgid),
+						 job),
+				     IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
+    }
 
-	if (kill (-job_pgid, SIGCONT) < 0) {
+    if (cont) {
+	if (idio_job_control_interactive) {
+	    IDIO job_tcattrs = idio_struct_instance_ref_direct (job, IDIO_JOB_ST_TCATTRS);
+	    IDIO_TYPE_ASSERT (C_pointer, job_tcattrs);
+	    struct termios *tcattrsp = IDIO_C_TYPE_POINTER_P (job_tcattrs);
+
+	    if (tcsetattr (idio_job_control_terminal, TCSADRAIN, tcattrsp) < 0) {
+		idio_error_system_errno ("tcsetattr", idio_C_int (idio_job_control_terminal), IDIO_C_FUNC_LOCATION ());
+
+		return idio_S_notreached;
+	    }
+	}
+
+	if (killpg (job_pgid, SIGCONT) < 0) {
 	    idio_error_system_errno_msg ("kill", "SIGCONT", idio_libc_pid_t (-job_pgid), IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
@@ -845,47 +897,43 @@ static IDIO idio_job_control_foreground_job (IDIO job, int cont)
 								     idio_job_control_module,
 								     idio_S_nil),
 					   job));
-    /* IDIO r = idio_job_control_wait_for_job (job); */
 
-    /*
-     * Put the shell back in the foreground.
-     */
-    if (tcsetpgrp (idio_job_control_terminal, idio_job_control_pgid) < 0) {
-	idio_error_system_errno ("tcsetpgrp",
-				 IDIO_LIST3 (idio_C_int (idio_job_control_terminal),
-					     idio_libc_pid_t (idio_job_control_pgid),
-					     job),
-				 IDIO_C_FUNC_LOCATION ());
+    if (idio_job_control_interactive) {
+	/*
+	 * Put the shell back in the foreground.
+	 */
+	if (tcsetpgrp (idio_job_control_terminal, idio_job_control_pgid) < 0) {
+	    idio_error_system_errno ("tcsetpgrp",
+				     IDIO_LIST3 (idio_C_int (idio_job_control_terminal),
+						 idio_libc_pid_t (idio_job_control_pgid),
+						 job),
+				     IDIO_C_FUNC_LOCATION ());
 
-	return idio_S_notreached;
-    }
+	    return idio_S_notreached;
+	}
 
-    /*
-     * Save the job's current terminal state -- creating a struct
-     * termios if necessary
-     */
-    IDIO job_tcattrs = idio_struct_instance_ref_direct (job, IDIO_JOB_ST_TCATTRS);
-    struct termios *tcattrsp = NULL;
-    if (idio_S_nil == job_tcattrs) {
-	tcattrsp = idio_alloc (sizeof (struct termios));
-	job_tcattrs = idio_C_pointer_free_me (tcattrsp);
-	idio_struct_instance_set_direct (job, IDIO_JOB_ST_TCATTRS, job_tcattrs);
-    }
+	/*
+	 * Save the job's current terminal state -- creating a struct
+	 * termios if necessary
+	 */
+	IDIO job_tcattrs = idio_struct_instance_ref_direct (job, IDIO_JOB_ST_TCATTRS);
+	struct termios *tcattrsp = NULL;
+	if (idio_S_nil == job_tcattrs) {
+	    tcattrsp = idio_alloc (sizeof (struct termios));
+	    job_tcattrs = idio_C_pointer_free_me (tcattrsp);
+	    idio_struct_instance_set_direct (job, IDIO_JOB_ST_TCATTRS, job_tcattrs);
+	}
 
-    if (tcgetattr (idio_job_control_terminal, tcattrsp) < 0) {
-	idio_error_system_errno ("tcgetattr", idio_C_int (idio_job_control_terminal), IDIO_C_FUNC_LOCATION ());
+	if (tcgetattr (idio_job_control_terminal, tcattrsp) < 0) {
+	    idio_error_system_errno ("tcgetattr", idio_C_int (idio_job_control_terminal), IDIO_C_FUNC_LOCATION ());
 
-	return idio_S_notreached;
-    }
+	    return idio_S_notreached;
+	}
 
-    /*
-     * Restore the shell's terminal state
-     */
-    tcattrsp = IDIO_C_TYPE_POINTER_P (idio_job_control_tcattrs);
-    if (tcsetattr (idio_job_control_terminal, TCSADRAIN, tcattrsp) < 0) {
-	idio_error_system_errno ("tcgetattr", idio_C_int (idio_job_control_terminal), IDIO_C_FUNC_LOCATION ());
-
-	return idio_S_notreached;
+	/*
+	 * Restore the shell's terminal state
+	 */
+	idio_job_control_restore_terminal ();
     }
 
     return r;
@@ -937,10 +985,15 @@ static IDIO idio_job_control_background_job (IDIO job, int cont)
     if (cont) {
 	int job_pgid = IDIO_C_TYPE_libc_pid_t (idio_struct_instance_ref_direct (job, IDIO_JOB_ST_PGID));
 
-	if (kill (-job_pgid, SIGCONT) < 0) {
-	    idio_error_system_errno_msg ("kill", "SIGCONT", idio_libc_pid_t (-job_pgid), IDIO_C_FUNC_LOCATION ());
+	if (job_pgid > 0) {
+	    if (killpg (job_pgid, SIGCONT) < 0) {
+		idio_error_system_errno_msg ("kill", "SIGCONT", idio_libc_pid_t (-job_pgid), IDIO_C_FUNC_LOCATION ());
 
-	    return idio_S_notreached;
+		return idio_S_notreached;
+	    }
+	} else {
+	    fprintf (stderr, "SIGCONT -> pgid %d ??\n", job_pgid);
+	    idio_debug ("job %s\n", job);
 	}
     }
 
@@ -996,6 +1049,7 @@ static void idio_job_control_hangup_job (IDIO job)
 	return;
     }
 
+    idio_debug ("ijc-HUP: %s\n", job);
     idio_job_control_format_job_info (job, "SIGHUP'ed");
 
     IDIO ipgid = idio_struct_instance_ref_direct (job, IDIO_JOB_ST_PGID);
@@ -1009,22 +1063,27 @@ static void idio_job_control_hangup_job (IDIO job)
 	return;
     }
 
-    if (kill (-job_pgid, SIGCONT) < 0) {
-	if (ESRCH != errno) {
-	    idio_error_system_errno_msg ("kill", "SIGCONT", idio_libc_pid_t (-job_pgid), IDIO_C_FUNC_LOCATION ());
+    if (job_pgid > 0) {
+	if (killpg (job_pgid, SIGCONT) < 0) {
+	    if (ESRCH != errno) {
+		idio_error_system_errno_msg ("kill", "SIGCONT", idio_libc_pid_t (-job_pgid), IDIO_C_FUNC_LOCATION ());
 
-	    /* notreached */
-	    return;
+		/* notreached */
+		return;
+	    }
 	}
-    }
 
-    if (kill (-job_pgid, SIGHUP) < 0) {
-	if (ESRCH != errno) {
-	    idio_error_system_errno_msg ("kill", "SIGHUP", idio_libc_pid_t (-job_pgid), IDIO_C_FUNC_LOCATION ());
+	if (killpg (job_pgid, SIGHUP) < 0) {
+	    if (ESRCH != errno) {
+		idio_error_system_errno_msg ("kill", "SIGHUP", idio_libc_pid_t (-job_pgid), IDIO_C_FUNC_LOCATION ());
 
-	    /* notreached */
-	    return;
+		/* notreached */
+		return;
+	    }
 	}
+    } else {
+	fprintf (stderr, "SIGHUP -> pgid %d ??\n", job_pgid);
+	idio_debug ("job %s\n", job);
     }
 }
 
@@ -1085,19 +1144,6 @@ IDIO idio_job_control_SIGHUP_signal_handler ()
     return idio_S_unspec;
 }
 
-IDIO idio_job_control_SIGCHLD_signal_handler ()
-{
-    /*
-     * do-job-notification is a thunk so we can call it direct
-     */
-    IDIO r = idio_vm_invoke_C (idio_thread_current_thread (),
-			       idio_module_symbol_value (idio_symbols_C_intern ("do-job-notification"),
-							 idio_job_control_module,
-							 idio_S_nil));
-
-    return r;
-}
-
 IDIO idio_job_control_SIGTERM_stopped_jobs ()
 {
     IDIO jobs = idio_module_symbol_value (idio_job_control_jobs_sym, idio_job_control_module, idio_S_nil);
@@ -1122,24 +1168,50 @@ IDIO idio_job_control_SIGTERM_stopped_jobs ()
 	jobs = idio_copy (jobs, IDIO_COPY_SHALLOW);
 	while (idio_S_nil != jobs) {
 	    IDIO job = IDIO_PAIR_H (jobs);
-	    if (idio_job_control_job_is_stopped (job)) {
+	    if (idio_job_control_job_is_stopped (job) ||
+		idio_job_control_job_is_async (job)) {
 		pid_t job_pgid = IDIO_C_TYPE_libc_pid_t (idio_struct_instance_ref_direct (job, IDIO_JOB_ST_PGID));
 
-		/*
-		 * Following in the style of Bash's
-		 * terminate_stopped_jobs(), issue the SIGTERM before
-		 * the SIGCONT.
-		 *
-		 * Ignore errors, we're shutting down.
-		 */
-		killpg (job_pgid, SIGTERM);
-		killpg (job_pgid, SIGCONT);
+		if (job_pgid > 0) {
+		    fprintf (stderr, "%6d: SIGTERM -> pgid %d\n", getpid (), job_pgid);
+		    /*
+		     * Following in the style of Bash's
+		     * terminate_stopped_jobs(), issue the SIGTERM before
+		     * the SIGCONT.
+		     *
+		     * Ignore errors, we're shutting down.
+		     */
+		    killpg (job_pgid, SIGTERM);
+		    killpg (job_pgid, SIGCONT);
+		} else {
+		    /*
+		     * Hmm.  The PGID is 0 but all all the cases I've
+		     * seen have the job being neither stopped nor
+		     * async.  Always completed.  Transient timing
+		     * issue?
+		     */
+		    fprintf (stderr, "SIGTERM -> pgid %d ??\n", job_pgid);
+		    idio_debug ("job %s\n", job);
+		}
 	    }
 	    jobs = IDIO_PAIR_T (jobs);
 	}
     }
 
     return idio_S_unspec;
+}
+
+IDIO idio_job_control_SIGCHLD_signal_handler ()
+{
+    /*
+     * do-job-notification is a thunk so we can call it direct
+     */
+    IDIO r = idio_vm_invoke_C (idio_thread_current_thread (),
+			       idio_module_symbol_value (idio_symbols_C_intern ("do-job-notification"),
+							 idio_job_control_module,
+							 idio_S_nil));
+
+    return r;
 }
 
 static void idio_job_control_mark_job_as_running (IDIO job)
@@ -1547,9 +1619,12 @@ static void idio_job_control_launch_job (IDIO job, int foreground)
 	infile = proc_pipe[0];
     }
 
+    /*
     if (! idio_job_control_interactive) {
 	idio_job_control_wait_for_job (job);
-    } else if (foreground) {
+    } else
+    */
+    if (foreground) {
 	idio_job_control_foreground_job (job, 0);
     } else {
 	idio_job_control_background_job (job, 0);
@@ -1702,10 +1777,13 @@ IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char **argv)
 	     */
 
 	    IDIO cmd = idio_S_nil;
+	    /*
 	    if (! idio_job_control_interactive) {
 		IDIO wfj = idio_module_symbol_value (idio_S_wait_for_job, idio_job_control_module, idio_S_nil);
 		cmd = IDIO_LIST2 (wfj, job);
-	    } else if (foreground) {
+	    } else
+	    */
+	    if (foreground) {
 		IDIO fj = idio_module_symbol_value (idio_S_foreground_job, idio_job_control_module, idio_S_nil);
 		cmd = IDIO_LIST3 (fj, job, idio_S_false);
 	    } else {
@@ -1899,7 +1977,7 @@ void idio_job_control_set_interactive (int interactive)
 	    if (c > 2) {
 		exit (128 + 15);
 	    }
-	    if (kill (-idio_job_control_pgid, SIGTTIN) < 0) {
+	    if (killpg (idio_job_control_pgid, SIGTTIN) < 0) {
 		idio_error_system_errno_msg ("kill", "SIGTTIN", idio_libc_pid_t (-idio_job_control_pgid), IDIO_C_FUNC_LOCATION ());
 
 		/* notreached */
@@ -2016,12 +2094,11 @@ void idio_final_job_control ()
      * restore the terminal state
      */
     if (idio_job_control_interactive) {
-	struct termios *tcattrsp = IDIO_C_TYPE_POINTER_P (idio_job_control_tcattrs);
-	tcsetattr (idio_job_control_terminal, TCSADRAIN, tcattrsp);
+	idio_job_control_restore_terminal ();
     }
 
     /*
-     * Be a good citizen and tidy up.  This will reported completed
+     * Be a good citizen and tidy up.  This will report completed
      * jobs, though.  Maybe we should suppress the reports.
      */
     idio_job_control_set_interactive (0);
@@ -2050,13 +2127,6 @@ void idio_init_job_control ()
     idio_S_stdin_fileno = idio_symbols_C_intern ("stdin-fileno");
     idio_S_stdout_fileno = idio_symbols_C_intern ("stdout-fileno");
     idio_S_stderr_fileno = idio_symbols_C_intern ("stderr-fileno");
-
-    struct termios *tcattrsp = idio_alloc (sizeof (struct termios));
-    idio_job_control_tcattrs = idio_C_pointer_free_me (tcattrsp);
-
-    idio_module_set_symbol_value (idio_symbols_C_intern ("%idio-tcattrs"),
-				  idio_job_control_tcattrs,
-				  idio_job_control_module);
 
     int signum;
     for (signum = IDIO_LIBC_FSIG; signum <= IDIO_LIBC_NSIG; signum++) {
@@ -2097,6 +2167,24 @@ void idio_init_job_control ()
 				       idio_job_control_module,
 				       idio_S_nil);
     IDIO_FLAGS (v) |= IDIO_FLAG_CONST;
+
+    struct termios *tcattrsp = idio_alloc (sizeof (struct termios));
+    idio_job_control_tcattrs = idio_C_pointer_free_me (tcattrsp);
+
+    /*
+     * The info pages only set shell_attrs when the shell is
+     * interactive.
+     */
+    if (tcgetattr (idio_job_control_terminal, tcattrsp) < 0) {
+	idio_error_system_errno ("tcgetattr", idio_C_int (idio_job_control_terminal), IDIO_C_FUNC_LOCATION ());
+
+	/* notreached */
+	return;
+    }
+
+    idio_module_set_symbol_value (idio_symbols_C_intern ("%idio-tcattrs"),
+				  idio_job_control_tcattrs,
+				  idio_job_control_module);
 
     idio_job_control_cmd_pid = idio_job_control_pid;
 

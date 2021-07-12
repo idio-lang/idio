@@ -47,7 +47,7 @@ define-syntax-rule (unless test body ...) (
   if (not test) (begin body ...)
 )
 
-define-template (suppress-errors conds & cmd) {
+define-template (suppress-errors! conds & cmd) {
   #T{
     trap $conds (function (c) {
 		   ;; What should we return?  Something hard to mistake for a
@@ -650,7 +650,9 @@ This takes after Bash's time_command
   whilst this job was running then you can be less confident (as can
   wait-for-job if it is reporting on those jobs).
 
-  On the plus side, tv-real (elapsed real time) should be accurate.
+  On the plus side, tv-real (elapsed real time) should be
+  accurate. Erm, except that the *end* time is dependent on when
+  wait-for-job wakes up.
 
   *#
 

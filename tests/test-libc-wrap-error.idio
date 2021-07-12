@@ -273,6 +273,9 @@ libc-wrap-error-load "libc-wrap-errors/kill-bad-pid-type.idio" "bad parameter ty
 libc-wrap-error-load "libc-wrap-errors/kill-bad-sig-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/kill-invalid-signal.idio" "Invalid argument" EINVAL "kill"
 
+libc-wrap-error-load "libc-wrap-errors/killpg-bad-pgrp-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a libc/pid_t"
+libc-wrap-error-load "libc-wrap-errors/killpg-bad-sig-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/int"
+
 libc-wrap-error-load "libc-wrap-errors/lstat-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
 libc-wrap-error-load "libc-wrap-errors/lstat-bad-format.idio" "lstat: contains an ASCII NUL"
 libc-wrap-error-load "libc-wrap-errors/lstat-empty-pathname.idio" "No such file or directory" ENOENT "lstat"
@@ -523,4 +526,4 @@ libc-wrap-error-load "libc-wrap-errors/x-bad-type.idio" "bad parameter type: '#t
 libc-wrap-error-load "libc-wrap-errors/x-bad-format.idio" "x?: contains an ASCII NUL"
 
 ;; all done?
-Tests? (libc-wrap-error0 + 287)
+Tests? (libc-wrap-error0 + 289)

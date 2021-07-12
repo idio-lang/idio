@@ -40,6 +40,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 #include "gc.h"
@@ -62,6 +63,7 @@
 #include "symbol.h"
 #include "thread.h"
 #include "util.h"
+#include "vars.h"
 #include "vm.h"
 
 /*
@@ -599,7 +601,11 @@ IDIO idio_condition_exit_on_error (IDIO c)
 		int st_C = IDIO_C_TYPE_int (st);
 
 		if (st_C) {
-		    exit (st_C);
+		    IDIO seoe = idio_module_current_symbol_value_recurse_defined (idio_vars_suppress_exit_on_error_sym);
+
+		    if (idio_S_false == seoe) {
+			exit (st_C);
+		    }
 		}
 	    } else {
 		idio_debug ("default rcse: status = %s (exit not a C/int)\n", sl);
@@ -611,7 +617,11 @@ IDIO idio_condition_exit_on_error (IDIO c)
 	    if (idio_isa_C_int (sig)) {
 		int sig_C = IDIO_C_TYPE_int (sig);
 
-		kill (getpid (), sig_C);
+		IDIO seoe = idio_module_current_symbol_value_recurse_defined (idio_vars_suppress_exit_on_error_sym);
+
+		if (idio_S_false == seoe) {
+		    kill (getpid (), sig_C);
+		}
 	    } else {
 		idio_debug ("default rcse: status = %s (killed not a C/int)\n", sl);
 		exit (1);
@@ -640,10 +650,34 @@ void idio_condition_report (char *prefix, IDIO c)
 
     IDIO_TYPE_ASSERT (condition, c);
 
+    /*
+     * The PID part requires an nnn up to 18 digits (intmax?) plus
+     * five
+     *
+     * :[-nnn]\0
+     *
+     * 30 should cover us.
+     *
+     * Technically, getpid() can't fail but that doesn't mean the
+     * pid_t can't be negative (it is a signed value).
+     */
+    char pid[30];
+    sprintf (pid, ":[%d]", getpid ());
+
+    char pid_prefix[BUFSIZ];
+    size_t plen = strlen (prefix);
+    if (plen < (BUFSIZ - 30)) {
+	strcpy (pid_prefix, prefix);
+    } else {
+	strncpy (pid_prefix, prefix, BUFSIZ - 30);
+	pid_prefix[BUFSIZ - 30] = '\0';
+    }
+    strcat (pid_prefix, pid);
+
     IDIO cr_cmd = IDIO_LIST4 (idio_module_symbol_value (idio_symbols_C_intern ("condition-report"),
 							idio_Idio_module,
 							idio_S_nil),
-			      idio_string_C (prefix),
+			      idio_string_C (pid_prefix),
 			      c,
 			      idio_thread_current_error_handle ());
 
@@ -716,7 +750,11 @@ The default behaviour is to ignore failed asynchronous processes\n\
     IDIO sit = IDIO_STRUCT_INSTANCE_TYPE (c);
 
     if (idio_struct_type_isa (sit, idio_condition_rt_async_command_status_error_type)) {
-	idio_condition_report ("default-racse-handler: this async job result has been ignored", c);
+	IDIO sacr = idio_module_current_symbol_value_recurse_defined (idio_vars_suppress_async_command_report_sym);
+
+	if (idio_S_false == sacr) {
+	    idio_condition_report ("default-racse-handler: this async job result has been ignored", c);
+	}
 	return idio_S_unspec;
     }
 
@@ -781,9 +819,6 @@ does not return per se						\n\
 	int signum_C = IDIO_C_TYPE_int (signum_I);
 
 	switch (signum_C) {
-	case SIGCHLD:
-	    /* fprintf (stderr, "default-c-h: SIGCHLD -> idio_command_SIGCHLD_signal_handler\n"); */
-	    return idio_job_control_SIGCHLD_signal_handler ();
 	case SIGHUP:
 	    /*
 	     * Code coverage:
@@ -797,7 +832,12 @@ does not return per se						\n\
 	     * except the default disposition is to terminate.  Which
 	     * ends the test.
 	     */
+	    idio_debug ("default-c-h: SIGHUP: %s\n", c);
+	    fprintf (stderr, "default-c-h: SIGHUP -> idio_job_control_SIGHUP_signal_handler\n");
 	    return idio_job_control_SIGHUP_signal_handler ();
+	case SIGCHLD:
+	    /* fprintf (stderr, "default-c-h: SIGCHLD -> idio_job_control_SIGCHLD_signal_handler\n"); */
+	    return idio_job_control_SIGCHLD_signal_handler ();
 	default:
 	    /*
 	     * Code coverage:
@@ -1064,6 +1104,13 @@ Does not return.						\n\
 
 	return idio_S_notreached;
     }
+
+    static int resetting = 0;
+    if (resetting) {
+	fprintf (stderr, "reset-condition-handler: looping?\n");
+	exit (3);
+    }
+    resetting = 1;
 
     fprintf (stderr, "reset-condition-handler: nothing to restore\n");
 

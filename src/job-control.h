@@ -35,6 +35,8 @@ extern IDIO idio_S_stderr_fileno;
 
 IDIO idio_job_control_SIGHUP_signal_handler ();
 IDIO idio_job_control_SIGCHLD_signal_handler ();
+IDIO idio_job_control_SIGTERM_stopped_jobs ();
+void idio_job_control_restore_terminal ();
 void idio_job_control_set_interactive (int interactive);
 IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char **argv);
 

@@ -154,8 +154,8 @@
     ;; Brackets and braces balance for editing convenience.
     (modify-syntax-entry ?\[ "(]  " st)
     (modify-syntax-entry ?\] ")[  " st)
-    (modify-syntax-entry ?{ "(}  " st)
-    (modify-syntax-entry ?} "){  " st)
+    (modify-syntax-entry ?{  "(}  " st)
+    (modify-syntax-entry ?}  "){  " st)
     (modify-syntax-entry ?\| "_   " st)
     (modify-syntax-entry ?\! "_   " st)
 
@@ -165,14 +165,14 @@
     ;; It's used for single-line comments as well as for #;(...) sexp-comments.
     (modify-syntax-entry ?\; "<"    st)
     (modify-syntax-entry ?\" "\"   " st)
-    (modify-syntax-entry ?' "'   " st)
-    (modify-syntax-entry ?` "'   " st)
+    (modify-syntax-entry ?'  "'   " st)
+    (modify-syntax-entry ?`  "'   " st)
     (modify-syntax-entry ?\$ "'   " st)
 
     ;; Special characters
-    (modify-syntax-entry ?, "'   " st)
-    (modify-syntax-entry ?@ "'   " st)
-    (modify-syntax-entry ?# "' 14" st)
+    (modify-syntax-entry ?,  "'   " st)
+    (modify-syntax-entry ?@  "'   " st)
+    (modify-syntax-entry ?#  "' 14" st)
     (modify-syntax-entry ?\| "_ 23bn" st)
     (modify-syntax-entry ?\* "_ 23bn" st)
     (modify-syntax-entry ?\\ "\\   " st)

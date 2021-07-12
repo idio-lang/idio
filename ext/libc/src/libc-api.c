@@ -177,6 +177,13 @@ int main (int argc, char **argv)
 	int kill_r = kill (pid, sig);
     }
 
+    /* killpg(2) */
+    {
+	int pgrp = getpgid (0);
+	int sig = SIGINT;
+	int killpg_r = killpg (pgrp, sig);
+    }
+
     /* lstat(2) */
     {
 	char *pathname = ".";

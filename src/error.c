@@ -333,6 +333,36 @@ void idio_error_param_value (char *name, char *msg, IDIO c_location)
     /* notreached */
 }
 
+void idio_error_param_undefined (IDIO name, IDIO c_location)
+{
+    IDIO_ASSERT (name);
+    IDIO_ASSERT (c_location);
+
+    IDIO_TYPE_ASSERT (string, c_location);
+
+    IDIO msh = idio_open_output_string_handle_C ();
+    idio_display (name, msh);
+    idio_display_C (" is undefined", msh);
+
+    IDIO location = idio_vm_source_location ();
+
+    IDIO detail = idio_S_nil;
+
+#ifdef IDIO_DEBUG
+    IDIO dsh = idio_open_output_string_handle_C ();
+    idio_display (c_location, dsh);
+    detail = idio_get_output_string (dsh);
+#endif
+
+    IDIO c = idio_struct_instance (idio_condition_rt_parameter_value_error_type,
+				   IDIO_LIST3 (idio_get_output_string (msh),
+					       location,
+					       detail));
+
+    idio_raise_condition (idio_S_false, c);
+    /* notreached */
+}
+
 /*
  * Code coverage:
  *
