@@ -5005,8 +5005,11 @@ void idio_init_libc_api ()
     IDIO_SYMBOL_DEF ("tm_wday", tm_wday);
     IDIO_SYMBOL_DEF ("tm_yday", tm_yday);
     IDIO_SYMBOL_DEF ("tm_isdst", tm_isdst);
+#if defined (__sun) && defined (__SVR4)
+#else
     IDIO_SYMBOL_DEF ("tm_gmtoff", tm_gmtoff);
     IDIO_SYMBOL_DEF ("tm_zone", tm_zone);
+#endif
 
     fgvi = IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_tm_ref);
     IDIO_C_STRUCT_IDENT_DEF ("struct tm", libc_struct_tm, fgvi);
