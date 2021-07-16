@@ -2216,7 +2216,7 @@ int idio_putc_file_handle (IDIO fh, idio_unicode_t c)
     return size;
 }
 
-ptrdiff_t idio_puts_file_handle (IDIO fh, char *s, size_t slen)
+ptrdiff_t idio_puts_file_handle (IDIO fh, const char *s, size_t slen)
 {
     IDIO_ASSERT (fh);
 

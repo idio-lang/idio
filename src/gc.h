@@ -705,7 +705,7 @@ typedef struct idio_handle_methods_s {
     int (*close) (struct idio_s *h);
     int (*putb) (struct idio_s *h, uint8_t c);
     int (*putc) (struct idio_s *h, idio_unicode_t c);
-    ptrdiff_t (*puts) (struct idio_s *h, char *s, size_t slen);
+    ptrdiff_t (*puts) (struct idio_s *h, const char *s, size_t slen);
     int (*flush) (struct idio_s *h);
     off_t (*seek) (struct idio_s *h, off_t offset, int whence);
     void (*print) (struct idio_s *h, struct idio_s *o);

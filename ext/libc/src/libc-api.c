@@ -61,6 +61,13 @@ int main (int argc, char **argv)
 	int access_r = access (pathname, mode);
     }
 
+    /* asctime(3) */
+    {
+	time_t t = time (NULL);
+	struct tm *tmp = localtime (&t);
+	char *asctime_r = asctime (tmp);
+    }
+
     /* chdir(2) */
     {
 	char *path = ".";
@@ -71,6 +78,12 @@ int main (int argc, char **argv)
     {
 	int fd = STDIN_FILENO;
 	int close_r = close (fd);
+    }
+
+    /* ctime(3) */
+    {
+	time_t t = time (NULL);
+	char *ctime_r = ctime (&t);
     }
 
     /* dup(2) */
@@ -164,6 +177,12 @@ int main (int argc, char **argv)
 	suseconds_t usec = tv.tv_usec;
     }
 
+    /* gmtime(3) */
+    {
+	time_t t = time (NULL);
+	struct tm *gmtime_r = gmtime (&t);
+    }
+
     /* isatty(3) */
     {
 	int fd = STDIN_FILENO;
@@ -183,6 +202,8 @@ int main (int argc, char **argv)
 	int sig = SIGINT;
 	int killpg_r = killpg (pgrp, sig);
     }
+
+    /* localtime(3) is pulled in by strftime(3) et el. */
 
     /* lstat(2) */
     {
@@ -219,6 +240,13 @@ int main (int argc, char **argv)
     {
 	char *template = "XXXXXX";
 	int mkstemp_r = mkstemp (template);
+    }
+
+    /* mktime(3) */
+    {
+	time_t t = time (NULL);
+	struct tm *tmp = localtime (&t);
+	time_t mktime_r = mktime (tmp);
     }
 
     /* pipe(2) */
@@ -307,6 +335,23 @@ int main (int argc, char **argv)
 	char *strerror_r = strerror (EBADF);
     }
 
+    /* strftime(3) */
+    {
+	char s[BUFSIZ];
+	char *format = "%c";
+	time_t t = time (NULL);
+	struct tm *tmp = localtime (&t);
+	size_t strftime_r = strftime (s, sizeof (s), format, tmp);
+    }
+
+    /* strptime(3) */
+    {
+	char *s = "1999";
+	char *format = "%Y";
+	struct tm tm;
+	char *strptime_r = strptime (s, format, &tm);
+    }
+
     /* strsignal(3) */
     {
 	char *strsignal_r = strsignal (SIGINT);
@@ -338,6 +383,8 @@ int main (int argc, char **argv)
 	pid_t pgrp = getpgrp ();
 	pid_t tcsetpgrp_r = tcsetpgrp (fd, pgrp);
     }
+
+    /* time(2) is pulled in by strftime(3) et al. */
 
     /* times(3) */
     {

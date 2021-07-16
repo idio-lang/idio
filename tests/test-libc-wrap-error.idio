@@ -117,6 +117,19 @@ libc-wrap-error-load "libc-wrap-errors/struct-termios-set-invalid-member.idio" "
 libc-wrap-error-load "libc-wrap-errors/struct-termios-as-string-bad-pointer-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"
 libc-wrap-error-load "libc-wrap-errors/struct-termios-as-string-invalid-pointer-type.idio" "termios should be a struct termios"
 
+libc-wrap-error-load "libc-wrap-errors/struct-tm-ref-bad-pointer-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"
+libc-wrap-error-load "libc-wrap-errors/struct-tm-ref-invalid-pointer-type.idio" "tm should be a struct tm"
+libc-wrap-error-load "libc-wrap-errors/struct-tm-ref-bad-member-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol"
+libc-wrap-error-load "libc-wrap-errors/struct-tm-ref-invalid-member.idio" "member should be a struct tm member"
+
+libc-wrap-error-load "libc-wrap-errors/struct-tm-set-bad-pointer-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"
+libc-wrap-error-load "libc-wrap-errors/struct-tm-set-invalid-pointer-type.idio" "tm should be a struct tm"
+libc-wrap-error-load "libc-wrap-errors/struct-tm-set-bad-member-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol"
+libc-wrap-error-load "libc-wrap-errors/struct-tm-set-invalid-member.idio" "member should be a struct tm member"
+
+libc-wrap-error-load "libc-wrap-errors/struct-tm-as-string-bad-pointer-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"
+libc-wrap-error-load "libc-wrap-errors/struct-tm-as-string-invalid-pointer-type.idio" "tm should be a struct tm"
+
 libc-wrap-error-load "libc-wrap-errors/struct-stat-ref-bad-pointer-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"
 libc-wrap-error-load "libc-wrap-errors/struct-stat-ref-invalid-pointer-type.idio" "stat should be a struct stat"
 libc-wrap-error-load "libc-wrap-errors/struct-stat-ref-bad-member-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol"
@@ -184,12 +197,17 @@ libc-wrap-error-load "libc-wrap-errors/access-bad-pathname-type.idio" "bad param
 libc-wrap-error-load "libc-wrap-errors/access-bad-mode-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/access-bad-format.idio" "access: contains an ASCII NUL"
 
+libc-wrap-error-load "libc-wrap-errors/asctime-bad-tm-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"
+libc-wrap-error-load "libc-wrap-errors/asctime-tm-invalid-pointer-type.idio" "tm should be a struct tm"
+
 libc-wrap-error-load "libc-wrap-errors/chdir-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
 libc-wrap-error-load "libc-wrap-errors/chdir-bad-format.idio" "chdir: contains an ASCII NUL"
 libc-wrap-error-load "libc-wrap-errors/chdir-non-existent.idio" "No such file or directory" ENOENT "chdir"
 
 libc-wrap-error-load "libc-wrap-errors/close-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/close-bad-fd.idio" strerror-EBADF EBADF "close"
+
+libc-wrap-error-load "libc-wrap-errors/ctime-bad-t-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a libc/time_t"
 
 libc-wrap-error-load "libc-wrap-errors/dup-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/dup-bad-fd.idio" strerror-EBADF EBADF "dup"
@@ -256,6 +274,8 @@ libc-wrap-error-load "libc-wrap-errors/getsid-bad-type.idio" "bad parameter type
    libc-wrap-error-load "libc-wrap-errors/getsid-invalid-pid.idio" "No such process" ESRCH "getsid"
  }))
 
+libc-wrap-error-load "libc-wrap-errors/gmtime-bad-t-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a libc/time_t"
+
 libc-wrap-error-load "libc-wrap-errors/isatty-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/int"
 (cond-expand
  (uname/sysname/SunOS {
@@ -272,6 +292,8 @@ libc-wrap-error-load "libc-wrap-errors/isatty-bad-type.idio" "bad parameter type
 libc-wrap-error-load "libc-wrap-errors/kill-bad-pid-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a libc/pid_t"
 libc-wrap-error-load "libc-wrap-errors/kill-bad-sig-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/int"
 libc-wrap-error-load "libc-wrap-errors/kill-invalid-signal.idio" "Invalid argument" EINVAL "kill"
+
+libc-wrap-error-load "libc-wrap-errors/localtime-bad-t-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a libc/time_t"
 
 libc-wrap-error-load "libc-wrap-errors/killpg-bad-pgrp-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a libc/pid_t"
 libc-wrap-error-load "libc-wrap-errors/killpg-bad-sig-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/int"
@@ -317,6 +339,9 @@ libc-wrap-error-load "libc-wrap-errors/mkstemp-bad-format.idio" "mkstemp: contai
    libc-wrap-error-load "libc-wrap-errors/mkstemp-bad-template.idio" "Invalid argument" EINVAL "mkstemp"
  }))
 
+libc-wrap-error-load "libc-wrap-errors/mktime-bad-tm-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"
+libc-wrap-error-load "libc-wrap-errors/mktime-tm-invalid-pointer-type.idio" "tm should be a struct tm"
+
 libc-wrap-error-load "libc-wrap-errors/pipe-reader-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"
 libc-wrap-error-load "libc-wrap-errors/pipe-writer-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"
 
@@ -352,6 +377,16 @@ libc-wrap-error-load "libc-wrap-errors/strerror-bad-type.idio" "bad parameter ty
 ; strerror -1 => "Unknown error -1" => all ints are "valid" as in not
 ; EINVAL
 ;libc-wrap-error-load "libc-wrap-errors/strerror-bad-errnum.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a unsigned fixnum|C_uint" EINVAL
+
+libc-wrap-error-load "libc-wrap-errors/strftime-bad-format-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
+libc-wrap-error-load "libc-wrap-errors/strftime-bad-format-format.idio" "strftime: contains an ASCII NUL"
+libc-wrap-error-load "libc-wrap-errors/strftime-bad-tm-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"
+libc-wrap-error-load "libc-wrap-errors/strftime-tm-invalid-pointer-type.idio" "tm should be a struct tm"
+
+libc-wrap-error-load "libc-wrap-errors/strptime-bad-s-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
+libc-wrap-error-load "libc-wrap-errors/strptime-bad-s-format.idio" "strptime: contains an ASCII NUL"
+libc-wrap-error-load "libc-wrap-errors/strptime-bad-format-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
+libc-wrap-error-load "libc-wrap-errors/strptime-bad-format-format.idio" "strptime: contains an ASCII NUL"
 
 libc-wrap-error-load "libc-wrap-errors/strsignal-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/int"
 (cond-expand
@@ -526,4 +561,4 @@ libc-wrap-error-load "libc-wrap-errors/x-bad-type.idio" "bad parameter type: '#t
 libc-wrap-error-load "libc-wrap-errors/x-bad-format.idio" "x?: contains an ASCII NUL"
 
 ;; all done?
-Tests? (libc-wrap-error0 + 289)
+Tests? (libc-wrap-error0 + 314)

@@ -52,6 +52,7 @@
 #include "frame.h"
 #include "handle.h"
 #include "hash.h"
+#include "idio.h"
 #include "idio-string.h"
 #include "keyword.h"
 #include "malloc.h"

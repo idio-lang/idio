@@ -30,6 +30,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <termios.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "gc.h"
@@ -552,7 +553,32 @@ in C, termios->member = val		\n\
         size_t alen = sizeof (termiosp->c_cc);
         memcpy ((void *) &termiosp->c_cc, (void *) valp, alen);
         return idio_S_unspec;
-    } else {
+    }
+#if defined (__sun) && defined (__SVR4)
+#else
+    else if (idio_S_c_ispeed == member) {
+       /*
+	* Test Case: libc-errors/struct-termios-set-c_ispeed-bad-value-type.idio
+	*
+	* struct-termios-set! v 'c_ispeed #t
+	*/
+	IDIO_USER_libc_TYPE_ASSERT (speed_t, val);
+
+        termiosp->c_ispeed = IDIO_C_TYPE_libc_speed_t (val);
+        return idio_S_unspec;
+    } else if (idio_S_c_ospeed == member) {
+       /*
+	* Test Case: libc-errors/struct-termios-set-c_ospeed-bad-value-type.idio
+	*
+	* struct-termios-set! v 'c_ospeed #t
+	*/
+	IDIO_USER_libc_TYPE_ASSERT (speed_t, val);
+
+        termiosp->c_ospeed = IDIO_C_TYPE_libc_speed_t (val);
+        return idio_S_unspec;
+    }
+#endif
+    else {
 	/*
 	 * Test Case: libc-errors/struct-termios-set-invalid-member.idio
 	 *
@@ -608,6 +634,23 @@ IDIO idio_libc_struct_termios_as_string (struct termios *termiosp)
 
     idio_display_C ("<<1cc_t[]>>", CSI_sh);
 
+#if defined (__sun) && defined (__SVR4)
+#else
+    idio_display_C (" c_ispeed:", CSI_sh);
+
+    fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_speed_t);
+    sprintf (buf, fmt, termiosp->c_ispeed);
+    idio_display_C (buf, CSI_sh);
+    IDIO_GC_FREE (fmt);
+
+    idio_display_C (" c_ospeed:", CSI_sh);
+
+    fmt = idio_C_type_format_string (IDIO_TYPE_C_libc_speed_t);
+    sprintf (buf, fmt, termiosp->c_ospeed);
+    idio_display_C (buf, CSI_sh);
+    IDIO_GC_FREE (fmt);
+#endif
+
     idio_display_C (">", CSI_sh);
 
     return idio_get_output_string (CSI_sh);
@@ -640,6 +683,438 @@ IDIO_DEFINE_PRIMITIVE1_DS ("struct-termios-as-string", libc_struct_termios_as_st
     }
 
     return idio_libc_struct_termios_as_string (IDIO_C_TYPE_POINTER_P (termios));
+}
+
+/*
+	/usr/include/bits/types/struct_tm.h
+
+	struct tm
+	{
+	  int                  tm_sec;
+	  int                  tm_min;
+	  int                  tm_hour;
+	  int                  tm_mday;
+	  int                  tm_mon;
+	  int                  tm_year;
+	  int                  tm_wday;
+	  int                  tm_yday;
+	  int                  tm_isdst;
+	  long int             tm_gmtoff;	not SunOS
+	  char*                tm_zone;		not SunOS
+	};
+*/
+
+IDIO_C_STRUCT_IDENT_DECL (libc_struct_tm);
+IDIO_SYMBOL_DECL (tm_sec);
+IDIO_SYMBOL_DECL (tm_min);
+IDIO_SYMBOL_DECL (tm_hour);
+IDIO_SYMBOL_DECL (tm_mday);
+IDIO_SYMBOL_DECL (tm_mon);
+IDIO_SYMBOL_DECL (tm_year);
+IDIO_SYMBOL_DECL (tm_wday);
+IDIO_SYMBOL_DECL (tm_yday);
+IDIO_SYMBOL_DECL (tm_isdst);
+#if defined (__sun) && defined (__SVR4)
+#else
+IDIO_SYMBOL_DECL (tm_gmtoff);
+IDIO_SYMBOL_DECL (tm_zone);
+#endif
+
+IDIO_DEFINE_PRIMITIVE2_DS ("struct-tm-ref", libc_struct_tm_ref, (IDIO tm, IDIO member), "tm member", "\
+in C, tm->member			\n\
+					\n\
+:param tm: C struct tm	\n\
+:type tm: C/pointer		\n\
+:param member: C struct member		\n\
+:type member: symbol			\n\
+:return: tm->member		\n\
+:rtype:	varies on member		\n\
+")
+{
+    IDIO_ASSERT (tm);
+    IDIO_ASSERT (member);
+
+    /*
+     * Test Case: libc-errors/struct-tm-ref-bad-pointer-type.idio
+     *
+     * struct-tm-ref #t #t
+     */
+    IDIO_USER_C_TYPE_ASSERT (pointer, tm);
+    if (idio_CSI_libc_struct_tm != IDIO_C_TYPE_POINTER_PTYPE (tm)) {
+	/*
+	 * Test Case: libc-errors/struct-tm-ref-invalid-pointer-type.idio
+	 *
+	 * struct-tm-ref libc/NULL #t
+	 */
+	idio_error_param_value ("tm", "should be a struct tm", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    /*
+     * Test Case: libc-errors/struct-tm-ref-bad-member-type.idio
+     *
+     * struct-tm-ref v #t
+     */
+    IDIO_USER_TYPE_ASSERT (symbol, member);
+
+    struct tm *tmp = IDIO_C_TYPE_POINTER_P (tm);
+    if (idio_S_tm_sec == member) {
+        return idio_C_int (tmp->tm_sec);
+    } else if (idio_S_tm_min == member) {
+        return idio_C_int (tmp->tm_min);
+    } else if (idio_S_tm_hour == member) {
+        return idio_C_int (tmp->tm_hour);
+    } else if (idio_S_tm_mday == member) {
+        return idio_C_int (tmp->tm_mday);
+    } else if (idio_S_tm_mon == member) {
+        return idio_C_int (tmp->tm_mon);
+    } else if (idio_S_tm_year == member) {
+        return idio_C_int (tmp->tm_year);
+    } else if (idio_S_tm_wday == member) {
+        return idio_C_int (tmp->tm_wday);
+    } else if (idio_S_tm_yday == member) {
+        return idio_C_int (tmp->tm_yday);
+    } else if (idio_S_tm_isdst == member) {
+        return idio_C_int (tmp->tm_isdst);
+    }
+#if defined (__sun) && defined (__SVR4)
+#else
+    else if (idio_S_tm_gmtoff == member) {
+        return idio_C_long (tmp->tm_gmtoff);
+    } else if (idio_S_tm_zone == member) {
+        /*
+         * WARNING:
+         * char* tm_zone
+         *
+         * sizeof (tmp->tm_zone) is dubious
+         *
+         * check the API
+         */
+        size_t slen = sizeof (tmp->tm_zone);
+        char* rp = (char*) idio_alloc (slen);
+        memcpy ((void *) rp, (void *) &tmp->tm_zone, slen);
+    }
+#endif
+    else {
+	/*
+	 * Test Case: libc-errors/struct-tm-ref-invalid-member.idio
+	 *
+	 * struct-tm-ref v 'not-likely
+	 */
+        idio_error_param_value ("member", "should be a struct tm member", IDIO_C_FUNC_LOCATION());
+
+        return idio_S_notreached;
+    }
+
+    return idio_S_notreached;
+}
+
+IDIO_DEFINE_PRIMITIVE3_DS ("struct-tm-set!", libc_struct_tm_set, (IDIO tm, IDIO member, IDIO val), "tm member val", "\
+in C, tm->member = val		\n\
+					\n\
+:param tm: C struct tm	\n\
+:type tm: C/pointer		\n\
+:param member: C struct member		\n\
+:type member: symbol			\n\
+:param val: C/type val			\n\
+:type val: varies on member		\n\
+:return: tm->member		\n\
+:rtype:	varies on member		\n\
+")
+{
+    IDIO_ASSERT (tm);
+    IDIO_ASSERT (member);
+    IDIO_ASSERT (val);
+
+
+    /*
+     * Test Case: libc-errors/struct-tm-set-bad-pointer-type.idio
+     *
+     * struct-tm-set! #t #t #t
+     */
+    IDIO_USER_C_TYPE_ASSERT (pointer, tm);
+    if (idio_CSI_libc_struct_tm != IDIO_C_TYPE_POINTER_PTYPE (tm)) {
+	/*
+	 * Test Case: libc-errors/struct-tm-set-invalid-pointer-type.idio
+	 *
+	 * struct-tm-set! libc/NULL #t #t
+	 */
+	idio_error_param_value ("tm", "should be a struct tm", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    /*
+     * Test Case: libc-errors/struct-tm-set-bad-member-type.idio
+     *
+     * struct-tm-set! v #t #t
+     */
+    IDIO_USER_TYPE_ASSERT (symbol, member);
+
+    struct tm *tmp = IDIO_C_TYPE_POINTER_P (tm);
+    if (idio_S_tm_sec == member) {
+       /*
+	* Test Case: libc-errors/struct-tm-set-tm_sec-bad-value-type.idio
+	*
+	* struct-tm-set! v 'tm_sec #t
+	*/
+	IDIO_USER_C_TYPE_ASSERT (int, val);
+
+        tmp->tm_sec = IDIO_C_TYPE_int (val);
+        return idio_S_unspec;
+    } else if (idio_S_tm_min == member) {
+       /*
+	* Test Case: libc-errors/struct-tm-set-tm_min-bad-value-type.idio
+	*
+	* struct-tm-set! v 'tm_min #t
+	*/
+	IDIO_USER_C_TYPE_ASSERT (int, val);
+
+        tmp->tm_min = IDIO_C_TYPE_int (val);
+        return idio_S_unspec;
+    } else if (idio_S_tm_hour == member) {
+       /*
+	* Test Case: libc-errors/struct-tm-set-tm_hour-bad-value-type.idio
+	*
+	* struct-tm-set! v 'tm_hour #t
+	*/
+	IDIO_USER_C_TYPE_ASSERT (int, val);
+
+        tmp->tm_hour = IDIO_C_TYPE_int (val);
+        return idio_S_unspec;
+    } else if (idio_S_tm_mday == member) {
+       /*
+	* Test Case: libc-errors/struct-tm-set-tm_mday-bad-value-type.idio
+	*
+	* struct-tm-set! v 'tm_mday #t
+	*/
+	IDIO_USER_C_TYPE_ASSERT (int, val);
+
+        tmp->tm_mday = IDIO_C_TYPE_int (val);
+        return idio_S_unspec;
+    } else if (idio_S_tm_mon == member) {
+       /*
+	* Test Case: libc-errors/struct-tm-set-tm_mon-bad-value-type.idio
+	*
+	* struct-tm-set! v 'tm_mon #t
+	*/
+	IDIO_USER_C_TYPE_ASSERT (int, val);
+
+        tmp->tm_mon = IDIO_C_TYPE_int (val);
+        return idio_S_unspec;
+    } else if (idio_S_tm_year == member) {
+       /*
+	* Test Case: libc-errors/struct-tm-set-tm_year-bad-value-type.idio
+	*
+	* struct-tm-set! v 'tm_year #t
+	*/
+	IDIO_USER_C_TYPE_ASSERT (int, val);
+
+        tmp->tm_year = IDIO_C_TYPE_int (val);
+        return idio_S_unspec;
+    } else if (idio_S_tm_wday == member) {
+       /*
+	* Test Case: libc-errors/struct-tm-set-tm_wday-bad-value-type.idio
+	*
+	* struct-tm-set! v 'tm_wday #t
+	*/
+	IDIO_USER_C_TYPE_ASSERT (int, val);
+
+        tmp->tm_wday = IDIO_C_TYPE_int (val);
+        return idio_S_unspec;
+    } else if (idio_S_tm_yday == member) {
+       /*
+	* Test Case: libc-errors/struct-tm-set-tm_yday-bad-value-type.idio
+	*
+	* struct-tm-set! v 'tm_yday #t
+	*/
+	IDIO_USER_C_TYPE_ASSERT (int, val);
+
+        tmp->tm_yday = IDIO_C_TYPE_int (val);
+        return idio_S_unspec;
+    } else if (idio_S_tm_isdst == member) {
+       /*
+	* Test Case: libc-errors/struct-tm-set-tm_isdst-bad-value-type.idio
+	*
+	* struct-tm-set! v 'tm_isdst #t
+	*/
+	IDIO_USER_C_TYPE_ASSERT (int, val);
+
+        tmp->tm_isdst = IDIO_C_TYPE_int (val);
+        return idio_S_unspec;
+    }
+#if defined (__sun) && defined (__SVR4)
+#else    
+    else if (idio_S_tm_gmtoff == member) {
+       /*
+	* Test Case: libc-errors/struct-tm-set-tm_gmtoff-bad-value-type.idio
+	*
+	* struct-tm-set! v 'tm_gmtoff #t
+	*/
+	IDIO_USER_C_TYPE_ASSERT (long, val);
+
+        tmp->tm_gmtoff = IDIO_C_TYPE_long (val);
+        return idio_S_unspec;
+    } else if (idio_S_tm_zone == member) {
+       /*
+	* Test Case: libc-errors/struct-tm-set-tm_zone-bad-value-type.idio
+	*
+	* struct-tm-set! v 'tm_zone #t
+	*/
+	IDIO_USER_C_TYPE_ASSERT (pointer, val);
+
+        /*
+         * WARNING:
+         * char* tm_zone
+         *
+         * sizeof (tmp->tm_zone) is dubious
+         *
+         * check the API
+         */
+        char* valp = IDIO_C_TYPE_POINTER_P (val);
+        size_t slen = sizeof (tmp->tm_zone);
+        memcpy ((void *) &tmp->tm_zone, (void *) valp, slen);
+        return idio_S_unspec;
+    }
+#endif
+    else {
+	/*
+	 * Test Case: libc-errors/struct-tm-set-invalid-member.idio
+	 *
+	 * struct-tm-set! v 'not-likely #t
+	 */
+        idio_error_param_value ("member", "should be a struct tm member", IDIO_C_FUNC_LOCATION());
+
+        return idio_S_notreached;
+    }
+
+    return idio_S_notreached;
+}
+
+IDIO idio_libc_struct_tm_as_string (struct tm *tmp)
+{
+    IDIO_C_ASSERT (tmp);
+
+    IDIO CSI_sh = idio_open_output_string_handle_C ();
+    idio_display_C ("#<CSI libc/struct-tm", CSI_sh);
+
+    char buf[BUFSIZ];
+    char *fmt;
+
+    idio_display_C (" tm_sec:", CSI_sh);
+
+    fmt = idio_C_type_format_string (IDIO_TYPE_C_INT);
+    sprintf (buf, fmt, tmp->tm_sec);
+    idio_display_C (buf, CSI_sh);
+    IDIO_GC_FREE (fmt);
+
+    idio_display_C (" tm_min:", CSI_sh);
+
+    fmt = idio_C_type_format_string (IDIO_TYPE_C_INT);
+    sprintf (buf, fmt, tmp->tm_min);
+    idio_display_C (buf, CSI_sh);
+    IDIO_GC_FREE (fmt);
+
+    idio_display_C (" tm_hour:", CSI_sh);
+
+    fmt = idio_C_type_format_string (IDIO_TYPE_C_INT);
+    sprintf (buf, fmt, tmp->tm_hour);
+    idio_display_C (buf, CSI_sh);
+    IDIO_GC_FREE (fmt);
+
+    idio_display_C (" tm_mday:", CSI_sh);
+
+    fmt = idio_C_type_format_string (IDIO_TYPE_C_INT);
+    sprintf (buf, fmt, tmp->tm_mday);
+    idio_display_C (buf, CSI_sh);
+    IDIO_GC_FREE (fmt);
+
+    idio_display_C (" tm_mon:", CSI_sh);
+
+    fmt = idio_C_type_format_string (IDIO_TYPE_C_INT);
+    sprintf (buf, fmt, tmp->tm_mon);
+    idio_display_C (buf, CSI_sh);
+    IDIO_GC_FREE (fmt);
+
+    idio_display_C (" tm_year:", CSI_sh);
+
+    fmt = idio_C_type_format_string (IDIO_TYPE_C_INT);
+    sprintf (buf, fmt, tmp->tm_year);
+    idio_display_C (buf, CSI_sh);
+    IDIO_GC_FREE (fmt);
+
+    idio_display_C (" tm_wday:", CSI_sh);
+
+    fmt = idio_C_type_format_string (IDIO_TYPE_C_INT);
+    sprintf (buf, fmt, tmp->tm_wday);
+    idio_display_C (buf, CSI_sh);
+    IDIO_GC_FREE (fmt);
+
+    idio_display_C (" tm_yday:", CSI_sh);
+
+    fmt = idio_C_type_format_string (IDIO_TYPE_C_INT);
+    sprintf (buf, fmt, tmp->tm_yday);
+    idio_display_C (buf, CSI_sh);
+    IDIO_GC_FREE (fmt);
+
+    idio_display_C (" tm_isdst:", CSI_sh);
+
+    fmt = idio_C_type_format_string (IDIO_TYPE_C_INT);
+    sprintf (buf, fmt, tmp->tm_isdst);
+    idio_display_C (buf, CSI_sh);
+    IDIO_GC_FREE (fmt);
+
+#if defined (__sun) && defined (__SVR4)
+#else
+    idio_display_C (" tm_gmtoff:", CSI_sh);
+
+    fmt = idio_C_type_format_string (IDIO_TYPE_C_LONG);
+    sprintf (buf, fmt, tmp->tm_gmtoff);
+    idio_display_C (buf, CSI_sh);
+    IDIO_GC_FREE (fmt);
+
+    idio_display_C (" tm_zone:", CSI_sh);
+
+    if (tmp->tm_zone) {
+	idio_display_C (tmp->tm_zone, CSI_sh);
+    } else {
+	idio_display_C ("(nil)", CSI_sh);
+    }
+#endif
+
+    idio_display_C (">", CSI_sh);
+
+    return idio_get_output_string (CSI_sh);
+}
+
+IDIO_DEFINE_PRIMITIVE1_DS ("struct-tm-as-string", libc_struct_tm_as_string, (IDIO tm), "tm", "\
+:param tm: C struct tm	\n\
+:type tm: C/pointer			\n\
+:return: string				\n\
+:rtype:	string				\n\
+")
+{
+    IDIO_ASSERT (tm);
+
+    /*
+     * Test Case: libc-errors/struct-tm-as-string-bad-pointer-type.idio
+     *
+     * struct-tm-as-string #t
+     */
+    IDIO_USER_C_TYPE_ASSERT (pointer, tm);
+    if (idio_CSI_libc_struct_tm != IDIO_C_TYPE_POINTER_PTYPE (tm)) {
+	/*
+	 * Test Case: libc-errors/struct-tm-as-string-invalid-pointer-type.idio
+	 *
+	 * struct-tm-as-string libc/NULL
+	 */
+	idio_error_param_value ("tm", "should be a struct tm", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    return idio_libc_struct_tm_as_string (IDIO_C_TYPE_POINTER_P (tm));
 }
 
 /*
@@ -2256,6 +2731,158 @@ signal number.							\n\
     }
 }
 
+IDIO_DEFINE_PRIMITIVE2_DS ("strptime", libc_strptime, (IDIO s, IDIO format), "s format", "\
+in C: strptime (s, format)		\n\
+a wrapper to libc strptime(3)		\n\
+					\n\
+:param s: time string			\n\
+:type s: string				\n\
+:param format: 				\n\
+:type format: string			\n\
+:return:				\n\
+:rtype: C struct tm			\n\
+")
+{
+    IDIO_ASSERT (s);
+    IDIO_ASSERT (format);
+
+    /*
+     * Test Case: libc-errors/strptime-bad-s-type.idio
+     *
+     * strptime #t #t
+     */
+    IDIO_USER_TYPE_ASSERT (string, s);
+    
+    int free_C_s = 0;
+    /*
+     * Test Case: libc-wrap-errors/strptime-bad-s-format.idio
+     *
+     * strptime "hello\x00world" #t
+     */
+    char *C_s = idio_libc_string_C (s, "strptime", &free_C_s, IDIO_C_FUNC_LOCATION ());
+
+    /*
+     * Test Case: libc-errors/strptime-bad-format-type.idio
+     *
+     * strptime #t #t
+     */
+    IDIO_USER_TYPE_ASSERT (string, format);
+
+    int free_C_format = 0;
+    /*
+     * Test Case: libc-wrap-errors/strptime-bad-s-format.idio
+     *
+     * strptime "hello\x00world" #t
+     */
+    char *C_format = idio_libc_string_C (format, "strptime", &free_C_format, IDIO_C_FUNC_LOCATION ());
+
+    /*
+     * strptime does not initialize {tm}.
+     */
+    struct tm *tmp = idio_alloc (sizeof (struct tm));;
+    memset (tmp, 0, sizeof (struct tm));
+
+    char* strptime_r = strptime (C_s, C_format, tmp);
+
+    if (free_C_s) {
+	IDIO_GC_FREE (C_s);
+    }
+
+    if (free_C_format) {
+	IDIO_GC_FREE (C_format);
+    }
+
+    /* check for errors */
+    if (NULL == strptime_r) {
+	IDIO_GC_FREE (tmp);
+
+        idio_error_C ("strptime", IDIO_LIST2 (s, format), IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    /*
+     * XXX We don't indicate if strptime consumed the whole of {s}.
+     * If we want to do that we'd need to return something like:
+     *
+     * (list tmp idio_string_C (strptime_r))
+     */
+
+    return idio_C_pointer_type (idio_CSI_libc_struct_tm, tmp);
+}
+
+IDIO_DEFINE_PRIMITIVE2_DS ("strftime", libc_strftime, (IDIO format, IDIO tm), "format tm", "\
+in C: strftime (format, tm)		\n\
+a wrapper to libc strftime(3)		\n\
+					\n\
+:param format: 				\n\
+:type format: string			\n\
+:param tm: 				\n\
+:type tm: C struct tm			\n\
+:return:				\n\
+:rtype: string				\n\
+					\n\
+Internally, libc/BUFSIZ is used for the	\n\
+maximum string size			\n\
+")
+{
+    IDIO_ASSERT (format);
+    IDIO_ASSERT (tm);
+
+    /*
+     * Test Case: libc-errors/strftime-bad-format-type.idio
+     *
+     * strftime #t #t
+     */
+    IDIO_USER_TYPE_ASSERT (string, format);
+
+    int free_C_format = 0;
+    /*
+     * Test Case: libc-wrap-errors/strftime-bad-s-format.idio
+     *
+     * strftime "hello\x00world" #t
+     */
+    char *C_format = idio_libc_string_C (format, "strftime", &free_C_format, IDIO_C_FUNC_LOCATION ());
+
+    /*
+     * Test Case: libc-errors/strftime-bad-tm-type.idio
+     *
+     * strftime "%c" #t
+     */
+    IDIO_USER_C_TYPE_ASSERT (pointer, tm);
+    if (idio_CSI_libc_struct_tm != IDIO_C_TYPE_POINTER_PTYPE (tm)) {
+	/*
+	 * Test Case: libc-errors/strftime-tm-invalid-pointer-type.idio
+	 *
+	 * struct-tm-ref "%c" libc/NULL
+	 */
+	idio_error_param_value ("tm", "should be a struct tm", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    struct tm *C_tm = IDIO_C_TYPE_POINTER_P (tm);
+
+    char *s = idio_alloc (BUFSIZ);
+
+    size_t strftime_r = strftime (s, BUFSIZ, C_format, C_tm);
+
+    /* check for errors */
+    if (0 == strftime_r) {
+	IDIO_GC_FREE (s);
+
+        idio_error_system_errno ("strftime", IDIO_LIST2 (format, tm), IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    IDIO r = idio_string_C_len (s, strftime_r);
+
+    IDIO_GC_FREE (s);
+
+    return r;
+}
+
 IDIO_DEFINE_PRIMITIVE1_DS ("strerror", libc_strerror, (IDIO errnum), "errnum", "\
 in C, strerror (errnum)						\n\
 a wrapper to libc strerror(3)					\n\
@@ -2741,6 +3368,49 @@ the pipe array.							\n\
     return idio_C_pointer_free_me (pipefd);
 }
 
+IDIO_DEFINE_PRIMITIVE1_DS ("mktime", libc_mktime, (IDIO tm), "tm", "\
+in C: mktime (tm)		\n\
+a wrapper to libc mktime(3)		\n\
+					\n\
+:param tm: 				\n\
+:type tm: C struct tm			\n\
+:return:				\n\
+:rtype: libc/time_t			\n\
+")
+{
+    IDIO_ASSERT (tm);
+
+    /*
+     * Test Case: libc-errors/mktime-bad-tm-type.idio
+     *
+     * mktime #t
+     */
+    IDIO_USER_C_TYPE_ASSERT (pointer, tm);
+    if (idio_CSI_libc_struct_tm != IDIO_C_TYPE_POINTER_PTYPE (tm)) {
+	/*
+	 * Test Case: libc-errors/mktime-tm-invalid-pointer-type.idio
+	 *
+	 * struct-tm-ref libc/NULL
+	 */
+	idio_error_param_value ("tm", "should be a struct tm", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    struct tm *C_tm = IDIO_C_TYPE_POINTER_P (tm);
+
+    time_t mktime_r = mktime (C_tm);
+
+    /* check for errors */
+    if (-1 == mktime_r) {
+        idio_error_system_errno ("mktime", tm, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_libc_time_t (mktime_r);
+}
+
 IDIO_DEFINE_PRIMITIVE1_DS ("mkstemp", libc_mkstemp, (IDIO template), "template", "\
 in C, mkstemp (template)						\n\
 a wrapper to libc mkstemp(3)					\n\
@@ -3169,6 +3839,60 @@ a wrapper to libc isatty(3)					\n\
     }
 
     return idio_C_int (isatty_r);
+}
+
+IDIO_DEFINE_PRIMITIVE0V_DS ("gmtime", libc_gmtime, (IDIO args), "[t]", "\
+in C: gmtime (t)			\n\
+a wrapper to libc gmtime(3)		\n\
+					\n\
+:param t: time in seconds since epoch	\n\
+:type t: libc/time_t			\n\
+:return:				\n\
+:rtype: C struct tm			\n\
+					\n\
+``t`` defaults to the result of time(2)	\n\
+")
+{
+    IDIO_ASSERT (args);
+
+    time_t C_t = 0;
+
+    if (idio_isa_pair (args)) {
+	IDIO t = IDIO_PAIR_H (args);
+
+	/*
+	 * Test Case: libc-errors/gmtime-bad-t-type.idio
+	 *
+	 * gmtime #t
+	 */
+	IDIO_USER_libc_TYPE_ASSERT (time_t, t);
+	C_t = IDIO_C_TYPE_libc_time_t (t);
+    } else {
+	C_t = time (NULL);
+    }
+
+    /*
+     * gmtime() uses static buffers *and* we need to allocate the
+     * result anyway so we'll use gmtime_r().
+     *
+     * In the NOTES on Linux: "For portable code, tzset(3) should be
+     * called before gmtime_r()."
+     */
+    tzset ();
+    struct tm *result = idio_alloc (sizeof (struct tm));
+
+    struct tm* gmtime_r_r = gmtime_r (&C_t, result);
+
+    /* check for errors */
+    if (NULL == gmtime_r_r) {
+	IDIO_GC_FREE (result);
+
+        idio_error_system_errno ("gmtime_r", idio_libc_time_t (C_t), IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_C_pointer_type (idio_CSI_libc_struct_tm, result);
 }
 
 IDIO_DEFINE_PRIMITIVE0_DS ("gettimeofday", libc_gettimeofday, (void), "", "\
@@ -3739,6 +4463,65 @@ a wrapper to libc dup(2)					\n\
     return idio_C_int (dup_r);
 }
 
+IDIO_DEFINE_PRIMITIVE0V_DS ("ctime", libc_ctime, (IDIO args), "[t]", "\
+in C: ctime (t)				\n\
+a wrapper to libc ctime(3)		\n\
+					\n\
+:param t: time in seconds since epoch	\n\
+:type t: libc/time_t			\n\
+:return:				\n\
+:rtype: string				\n\
+					\n\
+``t`` defaults to the result of time(2)	\n\
+")
+{
+    IDIO_ASSERT (args);
+
+    time_t C_t = 0;
+
+    if (idio_isa_pair (args)) {
+	IDIO t = IDIO_PAIR_H (args);
+
+	/*
+	 * Test Case: libc-errors/ctime-bad-t-type.idio
+	 *
+	 * ctime #t
+	 */
+	IDIO_USER_libc_TYPE_ASSERT (time_t, t);
+	C_t = IDIO_C_TYPE_libc_time_t (t);
+    } else {
+	C_t = time (NULL);
+    }
+
+    /*
+     * ctime() uses static buffers and it's no real effort to use
+     * ctime_r().
+     *
+     * How big can {buf} get?  Linux and SunOS suggest at least 26
+     * bytes, so let's double that.
+     *
+     * SunOS in non _POSIX_PTHREAD_SEMANTICS mode (ie. default) also
+     * wants to pass buflen.
+     */
+#define IDIO_CTIME_BUFLEN 52
+    char buf[IDIO_CTIME_BUFLEN];
+
+#if defined (__sun) && defined (__SVR4)
+    char* ctime_r_r = ctime_r (&C_t, buf, IDIO_CTIME_BUFLEN);
+#else
+    char* ctime_r_r = ctime_r (&C_t, buf);
+#endif
+
+    /* check for errors */
+    if (NULL == ctime_r_r) {
+        idio_error_system_errno ("ctime_r", idio_libc_time_t (C_t), IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_string_C (buf);
+}
+
 IDIO_DEFINE_PRIMITIVE1_DS ("close", libc_close, (IDIO ifd), "fd", "\
 in C, close (fd)						\n\
 a wrapper to libc close(2)					\n\
@@ -3828,6 +4611,140 @@ a wrapper to libc chdir(2)					\n\
     return idio_C_int (chdir_r);
 }
 
+IDIO_DEFINE_PRIMITIVE1_DS ("asctime", libc_asctime, (IDIO tm), "tm", "\
+in C: asctime (tm)			\n\
+a wrapper to libc asctime(3)		\n\
+					\n\
+:param tm: 				\n\
+:type tm: C struct tm			\n\
+:return:				\n\
+:rtype: string				\n\
+")
+{
+    IDIO_ASSERT (tm);
+
+    /*
+     * Test Case: libc-errors/asctime-bad-tm-type.idio
+     *
+     * asctime "%c" #t
+     */
+    IDIO_USER_C_TYPE_ASSERT (pointer, tm);
+    if (idio_CSI_libc_struct_tm != IDIO_C_TYPE_POINTER_PTYPE (tm)) {
+	/*
+	 * Test Case: libc-errors/asctime-tm-invalid-pointer-type.idio
+	 *
+	 * struct-tm-ref "%c" libc/NULL
+	 */
+	idio_error_param_value ("tm", "should be a struct tm", IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    struct tm *C_tm = IDIO_C_TYPE_POINTER_P (tm);
+
+    /*
+     * asctime() uses static buffers and it's no real effort to use
+     * asctime_r().
+     *
+     * How big can {buf} get?  Linux and SunOS suggest at least 26
+     * bytes, so let's double that.
+     *
+     * SunOS in non _POSIX_PTHREAD_SEMANTICS mode (ie. default) also
+     * wants to pass buflen.
+     */
+#define IDIO_ASCTIME_BUFLEN 52
+    char buf[IDIO_ASCTIME_BUFLEN];
+
+#if defined (__sun) && defined (__SVR4)
+    char* asctime_r_r = asctime_r (C_tm, buf, IDIO_ASCTIME_BUFLEN);
+#else
+    char* asctime_r_r = asctime_r (C_tm, buf);
+#endif
+
+    /* check for errors */
+    if (NULL == asctime_r_r) {
+        idio_error_system_errno ("asctime_r", tm, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_string_C (buf);
+}
+
+IDIO_DEFINE_PRIMITIVE0V_DS ("localtime", libc_localtime, (IDIO args), "[t]", "\
+in C: localtime (t)			\n\
+a wrapper to libc localtime(3)		\n\
+					\n\
+:param t: time in seconds since epoch	\n\
+:type t: libc/time_t			\n\
+:return:				\n\
+:rtype: C struct tm			\n\
+					\n\
+``t`` defaults to the result of time(2)	\n\
+")
+{
+    IDIO_ASSERT (args);
+
+    time_t C_t = 0;
+
+    if (idio_isa_pair (args)) {
+	IDIO t = IDIO_PAIR_H (args);
+
+	/*
+	 * Test Case: libc-errors/localtime-bad-t-type.idio
+	 *
+	 * localtime #t
+	 */
+	IDIO_USER_libc_TYPE_ASSERT (time_t, t);
+	C_t = IDIO_C_TYPE_libc_time_t (t);
+    } else {
+	C_t = time (NULL);
+    }
+
+    /*
+     * localtime() uses static buffers *and* we need to allocate the
+     * result anyway so we'll use localtime_r().
+     *
+     * In the NOTES on Linux: "For portable code, tzset(3) should be
+     * called before localtime_r()."
+     */
+    tzset ();
+    struct tm *result = idio_alloc (sizeof (struct tm));
+
+    struct tm* localtime_r_r = localtime_r (&C_t, result);
+
+    /* check for errors */
+    if (NULL == localtime_r_r) {
+	IDIO_GC_FREE (result);
+
+        idio_error_system_errno ("localtime_r", idio_libc_time_t (C_t), IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_C_pointer_type (idio_CSI_libc_struct_tm, result);
+}
+
+IDIO_DEFINE_PRIMITIVE0_DS ("time", libc_time, (void), "", "\
+in C: time ()				\n\
+a wrapper to libc time(2)		\n\
+					\n\
+:return:				\n\
+:rtype: libc/time_t			\n\
+")
+{
+    time_t time_r = time (NULL);
+
+    /* check for errors */
+    if (-1 == time_r) {
+        idio_error_system_errno ("time", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+        return idio_S_notreached;
+    }
+
+    return idio_libc_time_t (time_r);
+}
+
 IDIO_DEFINE_PRIMITIVE2_DS ("access", libc_access, (IDIO pathname, IDIO mode), "pathname mode", "\
 in C, access (pathname, mode)					\n\
 a wrapper to libc access(2)					\n\
@@ -3907,6 +4824,13 @@ void idio_libc_api_add_primitives ()
 								   idio_libc_module,
 								   idio_S_nil));
 
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_tm_as_string);
+    idio_hash_put (iuvas,
+		   idio_CSI_libc_struct_tm,
+		   idio_module_symbol_value (idio_symbols_C_intern ("struct-tm-as-string"),
+								   idio_libc_module,
+								   idio_S_nil));
+
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_stat_as_string);
     idio_hash_put (iuvas,
 		   idio_CSI_libc_struct_stat,
@@ -3951,24 +4875,28 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_tcgetpgrp);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_tcgetattr);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_strsignal);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_strptime);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_strftime);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_strerror);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_stat);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_sleep);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_signal);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_setrlimit);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_setpgid);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getpgid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_rmdir);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_read);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_pipe);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_mktime);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_mkstemp);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_mkfifo);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_mkdtemp);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_mkdir);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_lstat);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_killpg);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getpgid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_kill);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_isatty);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_gmtime);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_gettimeofday);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getsid);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_getrusage);
@@ -3982,8 +4910,12 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_fcntl);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_dup2);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_dup);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_ctime);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_close);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_chdir);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_asctime);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_localtime);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_time);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_access);
 
 }
@@ -4062,6 +4994,23 @@ void idio_init_libc_api ()
     fgvi = IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_termios_ref);
     IDIO_C_STRUCT_IDENT_DEF ("struct termios", libc_struct_termios, fgvi);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_termios_set);
+
+    /* /usr/include/bits/types/struct_tm.h */
+    IDIO_SYMBOL_DEF ("tm_sec", tm_sec);
+    IDIO_SYMBOL_DEF ("tm_min", tm_min);
+    IDIO_SYMBOL_DEF ("tm_hour", tm_hour);
+    IDIO_SYMBOL_DEF ("tm_mday", tm_mday);
+    IDIO_SYMBOL_DEF ("tm_mon", tm_mon);
+    IDIO_SYMBOL_DEF ("tm_year", tm_year);
+    IDIO_SYMBOL_DEF ("tm_wday", tm_wday);
+    IDIO_SYMBOL_DEF ("tm_yday", tm_yday);
+    IDIO_SYMBOL_DEF ("tm_isdst", tm_isdst);
+    IDIO_SYMBOL_DEF ("tm_gmtoff", tm_gmtoff);
+    IDIO_SYMBOL_DEF ("tm_zone", tm_zone);
+
+    fgvi = IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_tm_ref);
+    IDIO_C_STRUCT_IDENT_DEF ("struct tm", libc_struct_tm, fgvi);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_struct_tm_set);
 
     /* /usr/include/bits/struct_stat.h */
     IDIO_SYMBOL_DEF ("st_dev", st_dev);

@@ -526,7 +526,7 @@ int idio_putc_string_handle (IDIO sh, idio_unicode_t c)
     return size;
 }
 
-ptrdiff_t idio_puts_string_handle (IDIO sh, char *s, size_t slen)
+ptrdiff_t idio_puts_string_handle (IDIO sh, const char *s, size_t slen)
 {
     IDIO_ASSERT (sh);
 

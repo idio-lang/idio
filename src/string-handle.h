@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2020 Ian Fitchet <idf(at)idio-lang.org>
+ * Copyright (c) 2015, 2020, 2021 Ian Fitchet <idf(at)idio-lang.org>
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License.  You
@@ -33,7 +33,7 @@ int idio_eofp_string_handle (IDIO sh);
 int idio_close_string_handle (IDIO sh);
 int idio_putb_string_handle (IDIO sh, uint8_t c);
 int idio_putc_string_handle (IDIO sh, idio_unicode_t c);
-ptrdiff_t idio_puts_string_handle (IDIO sh, char *s, size_t slen);
+ptrdiff_t idio_puts_string_handle (IDIO sh, const char *s, size_t slen);
 int idio_flush_string_handle (IDIO sh);
 off_t idio_seek_string_handle (IDIO sh, off_t offset, int whence);
 void idio_print_string_handle (IDIO sh, IDIO o);

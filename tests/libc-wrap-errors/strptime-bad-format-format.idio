@@ -1,0 +1,2 @@
+
+strptime "1999" "hello\x00world"

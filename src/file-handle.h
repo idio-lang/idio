@@ -72,7 +72,7 @@ int idio_eofp_file_handle (IDIO fh);
 int idio_close_file_handle (IDIO fh);
 int idio_putb_file_handle (IDIO fh, uint8_t c);
 int idio_putc_file_handle (IDIO fh, idio_unicode_t c);
-ptrdiff_t idio_puts_file_handle (IDIO fh, char *s, size_t slen);
+ptrdiff_t idio_puts_file_handle (IDIO fh, const char *s, size_t slen);
 int idio_flush_file_handle (IDIO fh);
 off_t idio_seek_file_handle (IDIO fh, off_t offset, int whence);
 void idio_print_file_handle (IDIO fh, IDIO o);

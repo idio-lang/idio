@@ -8091,8 +8091,8 @@ void idio_final_vm ()
 
 	IDIO stack = IDIO_THREAD_STACK (thr);
 	idio_ai_t ss = idio_array_size (stack);
-	if (ss > 20) {
-	    fprintf (stderr, "VM didn't finish cleanly with %td on stack\n", ss);
+	if (ss > 24) {
+	    fprintf (stderr, "VM didn't finish cleanly with %td > 24 entries on the stack\n", ss);
 	    idio_vm_thread_state (thr);
 	}
 #endif

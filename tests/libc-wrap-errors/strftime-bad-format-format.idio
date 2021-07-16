@@ -1,0 +1,2 @@
+
+strftime "hello\x00world" #t

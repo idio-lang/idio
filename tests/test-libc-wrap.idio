@@ -110,12 +110,16 @@ ru-st := rus.ru_stime
 
 struct-timeval-as-string ru-ut
 
+;; while we're here, libc/sleep returns a C/uint which is a code
+;; coverage issue itself
+sleep (sleep 0)
+
 ;; time tickles the struct-timeval adding/subtracting code
 OTIMEFORMAT := TIMEFORMAT
 TIMEFORMAT = ""
-;; while we're here, sleep return a C/uint which is a code coverage
-;; issue itself
-time sleep (sleep 0)
+
+; XXX - ^rt-command-argv-type-error:can't convert a PRIMITIVE to an execve argument: inconvertible type: arg '#<PRIM sleep>'
+;Idio/time sleep 0
 TIMEFORMAT = OTIMEFORMAT
 
 nfd := dup C/0i
