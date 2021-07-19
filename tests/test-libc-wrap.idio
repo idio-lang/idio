@@ -103,24 +103,144 @@ trap ^rt-bignum-conversion-error (function (c) {
   ;; printf "INTMAX_MIN-1 %s %s\n" INTMAX_MIN INTMAX_MIN-1
 }
 
-;; code coverage
-rus := (getrusage RUSAGE_SELF)
-ru-ut := rus.ru_utime
-ru-st := rus.ru_stime
+;; struct uts: code coverage
+utsname := libc/idio-uname
+struct-utsname-ref utsname 'sysname
+struct-utsname-ref utsname 'nodename
+struct-utsname-ref utsname 'release
+struct-utsname-ref utsname 'version
+struct-utsname-ref utsname 'machine
 
-struct-timeval-as-string ru-ut
+sprintf "%s" utsname
 
-;; while we're here, libc/sleep returns a C/uint which is a code
-;; coverage issue itself
-sleep (sleep 0)
+;; struct tms: code coverage
+tms := (pht (libc/times))
+struct-tms-ref tms 'tms_utime
+struct-tms-ref tms 'tms_stime
+struct-tms-ref tms 'tms_cutime
+struct-tms-ref tms 'tms_cstime
 
-;; time tickles the struct-timeval adding/subtracting code
-OTIMEFORMAT := TIMEFORMAT
-TIMEFORMAT = ""
+sprintf "%s" tms
 
-; XXX - ^rt-command-argv-type-error:can't convert a PRIMITIVE to an execve argument: inconvertible type: arg '#<PRIM sleep>'
-;Idio/time sleep 0
-TIMEFORMAT = OTIMEFORMAT
+;; struct termios: code coverage
+termios := (libc/tcgetattr libc/STDIN_FILENO)
+struct-termios-ref termios 'c_iflag
+struct-termios-ref termios 'c_oflag
+struct-termios-ref termios 'c_cflag
+struct-termios-ref termios 'c_lflag
+struct-termios-ref termios 'c_cc
+(cond-expand
+ ((not uname/sysname/SunOS) {
+   struct-termios-ref termios 'c_ispeed
+   struct-termios-ref termios 'c_ospeed
+ }))
+
+struct-termios-set! termios 'c_iflag (C/integer-> 0 libc/tcflag_t)
+struct-termios-set! termios 'c_oflag (C/integer-> 0 libc/tcflag_t)
+struct-termios-set! termios 'c_cflag (C/integer-> 0 libc/tcflag_t)
+struct-termios-set! termios 'c_lflag (C/integer-> 0 libc/tcflag_t)
+struct-termios-set! termios 'c_cc    (struct-termios-ref termios 'c_cc)
+(cond-expand
+ ((not uname/sysname/SunOS) {
+   struct-termios-set! termios 'c_ispeed (C/integer-> 0 libc/speed_t)
+   struct-termios-set! termios 'c_ospeed (C/integer-> 0 libc/speed_t)
+ }))
+
+sprintf "%s" termios
+
+;; struct tm: code coverage
+tm := (libc/localtime)
+struct-tm-ref tm 'tm_sec
+struct-tm-ref tm 'tm_min
+struct-tm-ref tm 'tm_hour
+struct-tm-ref tm 'tm_mday
+struct-tm-ref tm 'tm_mon
+struct-tm-ref tm 'tm_year
+struct-tm-ref tm 'tm_wday
+struct-tm-ref tm 'tm_yday
+struct-tm-ref tm 'tm_isdst
+(cond-expand
+ ((not uname/sysname/SunOS) {
+   struct-tm-ref tm 'tm_gmtoff
+   struct-tm-ref tm 'tm_zone
+ }))
+
+struct-tm-set! tm 'tm_sec (C/integer-> 0)
+struct-tm-set! tm 'tm_min (C/integer-> 0)
+struct-tm-set! tm 'tm_hour (C/integer-> 0)
+struct-tm-set! tm 'tm_mday (C/integer-> 0)
+struct-tm-set! tm 'tm_mon (C/integer-> 0)
+struct-tm-set! tm 'tm_year (C/integer-> 0)
+struct-tm-set! tm 'tm_wday (C/integer-> 0)
+struct-tm-set! tm 'tm_yday (C/integer-> 0)
+struct-tm-set! tm 'tm_isdst (C/integer-> 0)
+(cond-expand
+ ((not uname/sysname/SunOS) {
+   struct-tm-set! tm 'tm_gmtoff (C/integer-> 0 'long)
+   struct-tm-set! tm 'tm_zone (struct-tm-ref tm 'tm_zone) ; char*
+ }))
+
+sprintf "%s" tm
+
+;; struct stat: code coverage
+st := (libc/stat ".")
+struct-stat-ref st 'st_dev
+struct-stat-ref st 'st_ino
+struct-stat-ref st 'st_nlink
+struct-stat-ref st 'st_mode
+struct-stat-ref st 'st_uid
+struct-stat-ref st 'st_gid
+struct-stat-ref st 'st_rdev
+struct-stat-ref st 'st_size
+struct-stat-ref st 'st_blksize
+struct-stat-ref st 'st_blocks
+struct-stat-ref st 'st_atim
+struct-stat-ref st 'st_mtim
+struct-stat-ref st 'st_ctim
+struct-stat-ref st 'st_atime
+struct-stat-ref st 'st_mtime
+struct-stat-ref st 'st_ctime
+
+sprintf "%s" st
+
+;; struct timespec: code coverage
+timespec := (pht (libc/nanosleep '(0)))
+struct-timespec-ref timespec 'tv_sec
+struct-timespec-ref timespec 'tv_nsec
+
+struct-timespec-set! timespec 'tv_sec (C/integer-> 0 libc/time_t)
+struct-timespec-set! timespec 'tv_nsec (C/integer-> 0 'long)
+
+sprintf "%s" timespec
+
+;; struct rlimit: code coverage
+rlimit := (libc/getrlimit libc/RLIMIT_NOFILE)
+struct-rlimit-ref rlimit 'rlim_cur
+struct-rlimit-ref rlimit 'rlim_max
+
+struct-rlimit-set! rlimit 'rlim_cur (C/integer-> 0 libc/rlim_t)
+struct-rlimit-set! rlimit 'rlim_max (C/integer-> 0 libc/rlim_t)
+
+sprintf "%s" rlimit
+
+;; struct timeval: code coverage
+timeval := (libc/gettimeofday)
+struct-timeval-ref timeval 'tv_sec
+struct-timeval-ref timeval 'tv_usec
+
+struct-timeval-set! timeval 'tv_sec (C/integer-> 0 libc/time_t)
+struct-timeval-set! timeval 'tv_usec (C/integer-> 0 libc/suseconds_t)
+
+sprintf "%s" timeval
+
+;; struct rusage: code coverage
+rusage := (libc/getrusage libc/RUSAGE_SELF)
+struct-rusage-ref rusage 'ru_utime
+struct-rusage-ref rusage 'ru_stime
+
+sprintf "%s" rusage
+
+access "." (C/integer-> #o400)
 
 nfd := dup C/0i
 close nfd
@@ -149,7 +269,9 @@ fd-flags := fcntl C/0i F_GETFD
 
 fcntl C/0i F_SETFD fd-flags
 
+getpgid (getpid)
 (getpgrp)
+(getppid)
 
 ;; I sometimes run the tests with redirected I/O
 trap ^system-error (function (c) {
@@ -166,6 +288,23 @@ tmpdir := (make-tmp-dir)
 rmdir tmpdir
 mkdir tmpdir (C/integer-> #o555 libc/mode_t)
 rmdir tmpdir
+
+;; mkfifo -- quick, reuse that tmpname!
+mkfifo tmpdir (C/integer-> #o600 libc/mode_t)
+rm tmpdir
+
+;; (nanosleep req) has a number of formats for {req}
+;;
+;; it is a common practice to reuse {rem} for {req} to complete a
+;; sleep that was interrupted which is an easy way for us to get a
+;; short duration struct timespec.
+ns_r := nanosleep (list (C/integer-> 0 libc/time_t))
+nanosleep (pht ns_r)			; use {rem} - should be 0!
+nanosleep '(0)
+nanosleep '(1e0)			; ~ sleep 1.0s
+nanosleep (list 0 (C/integer-> 0 'long))
+nanosleep '(0 0)
+nanosleep '(0 6e8)			; ~ sleep 0.6s
 
 ;; test read with a C/int count -- a lot of work for code coverage!
 ofh := open-output-file testfile
@@ -186,6 +325,20 @@ if (C/== (getsid (C/integer-> 0 libc/pid_t)) (getpid)) {
 
 ;; should be safe...
 signal SIGUSR1 (signal-handler SIGUSR1)
+
+;; while we're here, libc/sleep returns a C/uint which is a code
+;; coverage issue itself
+sleep (sleep 0)
+
+stat "."
+
+;; time tickles the struct-timeval adding/subtracting code
+OTIMEFORMAT := TIMEFORMAT
+TIMEFORMAT = ""
+
+; XXX - ^rt-command-argv-type-error:can't convert a PRIMITIVE to an execve argument: inconvertible type: arg '#<PRIM sleep>'
+;Idio/time sleep 0
+TIMEFORMAT = OTIMEFORMAT
 
 strerror EPERM
 
@@ -235,6 +388,24 @@ GID = (C/integer-> gid libc/gid_t)	; C/int
 
 uid := (C/->integer UID)	        ; fixnum
 UID = (C/integer-> uid libc/uid_t)	; C/int
+
+;; time code coverage
+t := (libc/time)
+
+tm := (libc/localtime)
+libc/localtime t
+
+(libc/gmtime)
+libc/gmtime t
+
+asctime tm
+(ctime)
+ctime t
+
+mktime tm
+
+strptime "1999" "%Y"
+strftime "%F" (libc/localtime)
 
 linkfile := "__link__"
 ln -s testfile linkfile

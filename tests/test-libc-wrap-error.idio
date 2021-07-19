@@ -342,6 +342,18 @@ libc-wrap-error-load "libc-wrap-errors/mkstemp-bad-format.idio" "mkstemp: contai
 libc-wrap-error-load "libc-wrap-errors/mktime-bad-tm-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"
 libc-wrap-error-load "libc-wrap-errors/mktime-tm-invalid-pointer-type.idio" "tm should be a struct tm"
 
+libc-wrap-error-load "libc-wrap-errors/mktime-bad-tm-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"
+
+libc-wrap-error-load "libc-wrap-errors/nanosleep-bad-req-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a struct timespec|list"
+libc-wrap-error-load "libc-wrap-errors/nanosleep-req-sec-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a libc/time_t|fixnum|bignum"
+libc-wrap-error-load "libc-wrap-errors/nanosleep-req-sec-negative.idio" "Invalid argument" EINVAL "nanosleep"
+libc-wrap-error-load "libc-wrap-errors/nanosleep-req-sec-float.idio" "nanosleep/sec should be an integer bignum"
+libc-wrap-error-load "libc-wrap-errors/nanosleep-req-nsec-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/long|fixnum|bignum"
+libc-wrap-error-load "libc-wrap-errors/nanosleep-req-nsec-negative.idio" "Invalid argument" EINVAL "nanosleep"
+libc-wrap-error-load "libc-wrap-errors/nanosleep-req-nsec-float.idio" "nanosleep/nsec should be an integer bignum"
+libc-wrap-error-load "libc-wrap-errors/nanosleep-req-nsec-range.idio" "Invalid argument" EINVAL "nanosleep"
+libc-wrap-error-load "libc-wrap-errors/nanosleep-req-invalid-pointer-type.idio" "req should be a struct timespec"
+
 libc-wrap-error-load "libc-wrap-errors/pipe-reader-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"
 libc-wrap-error-load "libc-wrap-errors/pipe-writer-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"
 
@@ -357,6 +369,7 @@ libc-wrap-error-load "libc-wrap-errors/setpgid-bad-pgid-type.idio" "bad paramete
 libc-wrap-error-load "libc-wrap-errors/setpgid-negative-pgid.idio" "Invalid argument" EINVAL "setpgid"
 
 libc-wrap-error-load "libc-wrap-errors/setrlimit-bad-rlim-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"
+libc-wrap-error-load "libc-wrap-errors/setrlimit-rlim-invalid-pointer-type.idio" "rlim should be a struct rlimit"
 libc-wrap-error-load "libc-wrap-errors/setrlimit-bad-rlim.idio" "Invalid argument" EINVAL "setrlimit"
 
 libc-wrap-error-load "libc-wrap-errors/signal-bad-sig-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/int"
@@ -561,4 +574,4 @@ libc-wrap-error-load "libc-wrap-errors/x-bad-type.idio" "bad parameter type: '#t
 libc-wrap-error-load "libc-wrap-errors/x-bad-format.idio" "x?: contains an ASCII NUL"
 
 ;; all done?
-Tests? (libc-wrap-error0 + 314)
+Tests? (libc-wrap-error0 + 331)

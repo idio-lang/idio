@@ -249,6 +249,13 @@ int main (int argc, char **argv)
 	time_t mktime_r = mktime (tmp);
     }
 
+    /* nanosleep(2) */
+    {
+	struct timespec *req = NULL;
+	struct timespec *rem = NULL;
+	int nanosleep_r = nanosleep (req, rem);
+    }
+
     /* pipe(2) */
     {
 	int pipefd[2];

@@ -36,6 +36,7 @@
 #include "gc.h"
 #include "idio.h"
 
+#include "bignum.h"
 #include "c-type.h"
 #include "error.h"
 #include "evaluate.h"
@@ -106,6 +107,7 @@ in C, utsname->member			\n\
 
 	return idio_S_notreached;
     }
+    struct utsname *utsnamep = IDIO_C_TYPE_POINTER_P (utsname);
 
     /*
      * Test Case: libc-errors/struct-utsname-ref-bad-member-type.idio
@@ -114,7 +116,6 @@ in C, utsname->member			\n\
      */
     IDIO_USER_TYPE_ASSERT (symbol, member);
 
-    struct utsname *utsnamep = IDIO_C_TYPE_POINTER_P (utsname);
     if (idio_S_sysname == member) {
 	return idio_string_C (utsnamep->sysname);
     } else if (idio_S_nodename == member) {
@@ -248,6 +249,7 @@ in C, tms->member			\n\
 
 	return idio_S_notreached;
     }
+    struct tms *tmsp = IDIO_C_TYPE_POINTER_P (tms);
 
     /*
      * Test Case: libc-errors/struct-tms-ref-bad-member-type.idio
@@ -256,7 +258,6 @@ in C, tms->member			\n\
      */
     IDIO_USER_TYPE_ASSERT (symbol, member);
 
-    struct tms *tmsp = IDIO_C_TYPE_POINTER_P (tms);
     if (idio_S_tms_utime == member) {
         return idio_libc_clock_t (tmsp->tms_utime);
     } else if (idio_S_tms_stime == member) {
@@ -407,6 +408,7 @@ in C, termios->member			\n\
 
 	return idio_S_notreached;
     }
+    struct termios *termiosp = IDIO_C_TYPE_POINTER_P (termios);
 
     /*
      * Test Case: libc-errors/struct-termios-ref-bad-member-type.idio
@@ -415,7 +417,6 @@ in C, termios->member			\n\
      */
     IDIO_USER_TYPE_ASSERT (symbol, member);
 
-    struct termios *termiosp = IDIO_C_TYPE_POINTER_P (termios);
     if (idio_S_c_iflag == member) {
         return idio_libc_tcflag_t (termiosp->c_iflag);
     } else if (idio_S_c_oflag == member) {
@@ -437,7 +438,16 @@ in C, termios->member			\n\
         cc_t *rp = (cc_t *) idio_alloc (alen);
         memcpy ((void *) rp, (void *) &termiosp->c_cc, alen);
         return idio_C_pointer_free_me (rp);
-    } else {
+    }
+#if defined (__sun) && defined (__SVR4)
+#else
+    else if (idio_S_c_ispeed == member) {
+        return idio_libc_speed_t (termiosp->c_ispeed);
+    } else if (idio_S_c_ospeed == member) {
+        return idio_libc_speed_t (termiosp->c_ospeed);
+    }
+#endif
+    else {
 	/*
 	 * Test Case: libc-errors/struct-termios-ref-invalid-member.idio
 	 *
@@ -484,6 +494,7 @@ in C, termios->member = val		\n\
 
 	return idio_S_notreached;
     }
+    struct termios *termiosp = IDIO_C_TYPE_POINTER_P (termios);
 
     /*
      * Test Case: libc-errors/struct-termios-set-bad-member-type.idio
@@ -492,7 +503,6 @@ in C, termios->member = val		\n\
      */
     IDIO_USER_TYPE_ASSERT (symbol, member);
 
-    struct termios *termiosp = IDIO_C_TYPE_POINTER_P (termios);
     if (idio_S_c_iflag == member) {
        /*
 	* Test Case: not yet: libc-errors/struct-termios-set-c_iflag-bad-value-type.idio
@@ -750,6 +760,7 @@ in C, tm->member			\n\
 
 	return idio_S_notreached;
     }
+    struct tm *tmp = IDIO_C_TYPE_POINTER_P (tm);
 
     /*
      * Test Case: libc-errors/struct-tm-ref-bad-member-type.idio
@@ -758,7 +769,6 @@ in C, tm->member			\n\
      */
     IDIO_USER_TYPE_ASSERT (symbol, member);
 
-    struct tm *tmp = IDIO_C_TYPE_POINTER_P (tm);
     if (idio_S_tm_sec == member) {
         return idio_C_int (tmp->tm_sec);
     } else if (idio_S_tm_min == member) {
@@ -794,6 +804,7 @@ in C, tm->member			\n\
         size_t slen = sizeof (tmp->tm_zone);
         char* rp = (char*) idio_alloc (slen);
         memcpy ((void *) rp, (void *) &tmp->tm_zone, slen);
+	return idio_C_pointer_free_me (rp);
     }
 #endif
     else {
@@ -844,6 +855,7 @@ in C, tm->member = val		\n\
 
 	return idio_S_notreached;
     }
+    struct tm *tmp = IDIO_C_TYPE_POINTER_P (tm);
 
     /*
      * Test Case: libc-errors/struct-tm-set-bad-member-type.idio
@@ -852,7 +864,6 @@ in C, tm->member = val		\n\
      */
     IDIO_USER_TYPE_ASSERT (symbol, member);
 
-    struct tm *tmp = IDIO_C_TYPE_POINTER_P (tm);
     if (idio_S_tm_sec == member) {
        /*
 	* Test Case: libc-errors/struct-tm-set-tm_sec-bad-value-type.idio
@@ -1190,6 +1201,7 @@ in C, stat->member			\n\
 
 	return idio_S_notreached;
     }
+    struct stat *statp = IDIO_C_TYPE_POINTER_P (stat);
 
     /*
      * Test Case: libc-errors/struct-stat-ref-bad-member-type.idio
@@ -1198,7 +1210,6 @@ in C, stat->member			\n\
      */
     IDIO_USER_TYPE_ASSERT (symbol, member);
 
-    struct stat *statp = IDIO_C_TYPE_POINTER_P (stat);
     if (idio_S_st_dev == member) {
         return idio_libc_dev_t (statp->st_dev);
     } else if (idio_S_st_ino == member) {
@@ -1457,7 +1468,7 @@ in C, timespec->member			\n\
 
 	return idio_S_notreached;
     }
-
+    struct timespec *timespecp = IDIO_C_TYPE_POINTER_P (timespec);
 
     /*
      * Test Case: libc-errors/struct-timespec-ref-bad-member-type.idio
@@ -1467,7 +1478,6 @@ in C, timespec->member			\n\
      */
     IDIO_USER_TYPE_ASSERT (symbol, member);
 
-    struct timespec *timespecp = IDIO_C_TYPE_POINTER_P (timespec);
     if (idio_S_tv_sec == member) {
         return idio_libc_time_t (timespecp->tv_sec);
     } else if (idio_S_tv_nsec == member) {
@@ -1520,6 +1530,7 @@ in C, timespec->member = val		\n\
 
 	return idio_S_notreached;
     }
+    struct timespec *timespecp = IDIO_C_TYPE_POINTER_P (timespec);
 
     /*
      * Test Case: libc-errors/struct-timespec-set-bad-member-type.idio
@@ -1529,7 +1540,6 @@ in C, timespec->member = val		\n\
      */
     IDIO_USER_TYPE_ASSERT (symbol, member);
 
-    struct timespec *timespecp = IDIO_C_TYPE_POINTER_P (timespec);
     if (idio_S_tv_sec == member) {
        /*
 	* Test Case: not yet: libc-errors/struct-timespec-set-tv_sec-bad-value-type.idio
@@ -1709,6 +1719,7 @@ in C, rlimit->member			\n\
 
 	return idio_S_notreached;
     }
+    struct rlimit *rlimitp = IDIO_C_TYPE_POINTER_P (rlimit);
 
     /*
      * Test Case: libc-errors/struct-rlimit-ref-bad-member-type.idio
@@ -1717,7 +1728,6 @@ in C, rlimit->member			\n\
      */
     IDIO_USER_TYPE_ASSERT (symbol, member);
 
-    struct rlimit *rlimitp = IDIO_C_TYPE_POINTER_P (rlimit);
     if (idio_S_rlim_cur == member) {
         return idio_libc_rlim_t (rlimitp->rlim_cur);
     } else if (idio_S_rlim_max == member) {
@@ -1769,6 +1779,7 @@ in C, rlimit->member = val		\n\
 
 	return idio_S_notreached;
     }
+    struct rlimit *rlimitp = IDIO_C_TYPE_POINTER_P (rlimit);
 
     /*
      * Test Case: libc-errors/struct-rlimit-set-bad-member-type.idio
@@ -1777,7 +1788,6 @@ in C, rlimit->member = val		\n\
      */
     IDIO_USER_TYPE_ASSERT (symbol, member);
 
-    struct rlimit *rlimitp = IDIO_C_TYPE_POINTER_P (rlimit);
     if (idio_S_rlim_cur == member) {
        /*
 	* Test Case: libc-errors/struct-rlimit-set-bad-value-type.idio
@@ -1914,6 +1924,7 @@ in C, timeval->member			\n\
 
 	return idio_S_notreached;
     }
+    struct timeval *timevalp = IDIO_C_TYPE_POINTER_P (timeval);
 
     /*
      * Test Case: libc-errors/struct-timeval-ref-bad-member-type.idio
@@ -1922,7 +1933,6 @@ in C, timeval->member			\n\
      */
     IDIO_USER_TYPE_ASSERT (symbol, member);
 
-    struct timeval *timevalp = IDIO_C_TYPE_POINTER_P (timeval);
     if (idio_S_tv_sec == member) {
         return idio_libc_time_t (timevalp->tv_sec);
     } else if (idio_S_tv_usec == member) {
@@ -1974,6 +1984,7 @@ in C, timeval->member = val		\n\
 
 	return idio_S_notreached;
     }
+    struct timeval *timevalp = IDIO_C_TYPE_POINTER_P (timeval);
 
     /*
      * Test Case: libc-errors/struct-timeval-set-bad-member-type.idio
@@ -1982,7 +1993,6 @@ in C, timeval->member = val		\n\
      */
     IDIO_USER_TYPE_ASSERT (symbol, member);
 
-    struct timeval *timevalp = IDIO_C_TYPE_POINTER_P (timeval);
     if (idio_S_tv_sec == member) {
        /*
 	* Test Case: not yet: libc-errors/struct-timeval-set-tv_sec-bad-value-type.idio
@@ -2178,6 +2188,7 @@ in C, rusage->member			\n\
 
 	return idio_S_notreached;
     }
+    struct rusage *rusagep = IDIO_C_TYPE_POINTER_P (rusage);
 
     /*
      * Test Case: libc-errors/struct-rusage-ref-bad-member-type.idio
@@ -2186,7 +2197,6 @@ in C, rusage->member			\n\
      */
     IDIO_USER_TYPE_ASSERT (symbol, member);
 
-    struct rusage *rusagep = IDIO_C_TYPE_POINTER_P (rusage);
     if (idio_S_ru_utime == member) {
         struct timeval *rp = (struct timeval *) idio_alloc (sizeof (struct timeval));
         memcpy ((void *) rp, (void *) &rusagep->ru_utime, sizeof (struct timeval));
@@ -2860,7 +2870,6 @@ maximum string size			\n\
 
 	return idio_S_notreached;
     }
-
     struct tm *C_tm = IDIO_C_TYPE_POINTER_P (tm);
 
     char *s = idio_alloc (BUFSIZ);
@@ -3107,7 +3116,6 @@ See ``getrlimit`` to obtain a struct-rlimit.			\n\
 
 	return idio_S_notreached;
     }
-
     struct rlimit *C_rlim = IDIO_C_TYPE_POINTER_P (rlim);
 
     if (setrlimit (C_resource, C_rlim) == -1) {
@@ -3368,6 +3376,167 @@ the pipe array.							\n\
     return idio_C_pointer_free_me (pipefd);
 }
 
+/*
+ * XXX nanosleep requires bignums because 32-bit fixnums only get
+ * halfway...
+ */
+IDIO_DEFINE_PRIMITIVE1_DS ("nanosleep", libc_nanosleep, (IDIO req), "req", "\
+in C: nanosleep (req, rem)		\n\
+a wrapper to libc nanosleep(2)		\n\
+					\n\
+:param req: 				\n\
+:type req: C struct timespec or a list	\n\
+:return:				\n\
+:rtype: list (completed? rem)		\n\
+					\n\
+``EINTR`` will return (#f rem)		\n\
+otherwise return (#t rem)		\n\
+					\n\
+``req`` can be a list of (sec [nsec])	\n\
+where ``sec`` can be a libc/time_t|fixnum|bignum	\n\
+and ``nsec`` can be a C/long|fixnum|bignum	\n\
+")
+{
+    IDIO_ASSERT (req);
+
+    /*
+     * {ts} is a handly automatic variable we can use if we're not
+     * passed a struct timespec and which we only need up to the
+     * system call.  ie. it is not returned to the user.
+     */
+    struct timespec ts;
+    struct timespec* C_req = NULL;
+    if (idio_isa_pair (req)) {
+	ts.tv_sec = 0;
+	ts.tv_nsec = 0;
+	C_req = &ts;
+
+	IDIO sec = IDIO_PAIR_H (req);
+	if (idio_isa_libc_time_t (sec)) {
+	    ts.tv_sec = IDIO_C_TYPE_libc_time_t (sec);
+	} else if (idio_isa_fixnum (sec)) {
+	    ts.tv_sec = IDIO_FIXNUM_VAL (sec);
+	} else if (idio_isa_bignum (sec)) {
+	    if (IDIO_BIGNUM_INTEGER_P (sec)) {
+		/*
+		 * Code coverage: I'm not waiting for the test case to
+		 * finish...
+		 */
+		ts.tv_sec = idio_bignum_ptrdiff_t_value (sec);
+	    } else {
+		IDIO sec_i = idio_bignum_real_to_integer (sec);
+		if (idio_S_nil == sec_i) {
+		    /*
+		     * Test Case: libc-errors/nanosleep-sec-float.idio
+		     *
+		     * nanosleep (1.1)
+		     */
+		    idio_error_param_value ("nanosleep/sec", "should be an integer bignum", IDIO_C_FUNC_LOCATION ());
+
+		    return idio_S_notreached;
+		} else {
+		    ts.tv_sec = idio_bignum_ptrdiff_t_value (sec_i);
+		}
+	    }
+	} else {
+	    /*
+	     * Test Case: libc-errors/nanosleep-req-sec-bad-type.idio
+	     *
+	     * nanosleep '(#t)
+	     */
+	    idio_error_param_type ("libc/time_t|fixnum|bignum", sec, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	}
+
+	if (idio_isa_pair (IDIO_PAIR_T (req))) {
+
+	    IDIO nsec = IDIO_PAIR_HT (req);
+	    if (idio_isa_C_long (nsec)) {
+		ts.tv_nsec = IDIO_C_TYPE_long (nsec);
+	    } else if (idio_isa_fixnum (nsec)) {
+		ts.tv_nsec = IDIO_FIXNUM_VAL (nsec);
+	    } else if (idio_isa_bignum (nsec)) {
+		if (IDIO_BIGNUM_INTEGER_P (nsec)) {
+		    /*
+		     * Code coverage: Hmm, maybe on a 32-bit system
+		     * with a value greater than FIXNUM-MAX but below
+		     * 1e9, so 6e8, say?
+		     */
+		    ts.tv_nsec = idio_bignum_ptrdiff_t_value (nsec);
+		} else {
+		    IDIO nsec_i = idio_bignum_real_to_integer (nsec);
+		    if (idio_S_nil == nsec_i) {
+			/*
+			 * Test Case: libc-errors/nanosleep-nsec-float.idio
+			 *
+			 * nanosleep (0 1.1)
+			 */
+			idio_error_param_value ("nanosleep/nsec", "should be an integer bignum", IDIO_C_FUNC_LOCATION ());
+
+			return idio_S_notreached;
+		    } else {
+			ts.tv_nsec = idio_bignum_ptrdiff_t_value (nsec_i);
+		    }
+		}
+	    } else {
+		/*
+		 * Test Case: libc-errors/nanosleep-req-nsec-bad-type.idio
+		 *
+		 * nanosleep '(0 #t)
+		 */
+		idio_error_param_type ("C/long|fixnum|bignum", nsec, IDIO_C_FUNC_LOCATION ());
+
+		return idio_S_notreached;
+	    }
+	}
+    } else if (idio_isa_C_pointer (req)) {
+	IDIO_USER_C_TYPE_ASSERT (pointer, req);
+	if (idio_CSI_libc_struct_timespec != IDIO_C_TYPE_POINTER_PTYPE (req)) {
+	    /*
+	     * Test Case: libc-errors/nanosleep-req-invalid-pointer-type.idio
+	     *
+	     * nanosleep libc/NULL
+	     */
+	    idio_error_param_value ("req", "should be a struct timespec", IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	}
+	C_req = IDIO_C_TYPE_POINTER_P (req);
+    } else {
+	idio_error_param_type ("struct timespec|list", req, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    struct timespec* C_rem = idio_alloc (sizeof (struct timespec));
+    /* nanosleep does not initialise rem */
+    C_rem->tv_sec = 0;
+    C_rem->tv_nsec = 0;
+
+    int nanosleep_r = nanosleep (C_req, C_rem);
+
+    IDIO completed = idio_S_true;
+
+    /* check for errors */
+    if (-1 == nanosleep_r) {
+	if (EINTR == errno) {
+	    /*
+	     * Code coverage: timing.  The secret of all great code coverage is
+	     */
+	    completed = idio_S_false;
+	} else {
+	    idio_error_system_errno ("nanosleep", req, IDIO_C_FUNC_LOCATION ());
+
+	    return idio_S_notreached;
+	}
+    }
+
+    IDIO rem = idio_C_pointer_type (idio_CSI_libc_struct_timespec, C_rem);
+
+    return IDIO_LIST2 (completed, rem);
+}
+
 IDIO_DEFINE_PRIMITIVE1_DS ("mktime", libc_mktime, (IDIO tm), "tm", "\
 in C: mktime (tm)		\n\
 a wrapper to libc mktime(3)		\n\
@@ -3390,13 +3559,12 @@ a wrapper to libc mktime(3)		\n\
 	/*
 	 * Test Case: libc-errors/mktime-tm-invalid-pointer-type.idio
 	 *
-	 * struct-tm-ref libc/NULL
+	 * mktime libc/NULL
 	 */
 	idio_error_param_value ("tm", "should be a struct tm", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
-
     struct tm *C_tm = IDIO_C_TYPE_POINTER_P (tm);
 
     time_t mktime_r = mktime (C_tm);
@@ -3713,6 +3881,9 @@ a wrapper to libc lstat(2)			\n\
     return idio_C_pointer_type (idio_CSI_libc_struct_stat, statp);
 }
 
+/*
+ * Code coverage: must think of something!
+ */
 IDIO_DEFINE_PRIMITIVE2_DS ("killpg", libc_killpg, (IDIO pgrp, IDIO sig), "pgrp sig", "\
 in C: killpg (pgrp, sig)		\n\
 a wrapper to libc killpg()		\n\
@@ -4626,20 +4797,19 @@ a wrapper to libc asctime(3)		\n\
     /*
      * Test Case: libc-errors/asctime-bad-tm-type.idio
      *
-     * asctime "%c" #t
+     * asctime #t
      */
     IDIO_USER_C_TYPE_ASSERT (pointer, tm);
     if (idio_CSI_libc_struct_tm != IDIO_C_TYPE_POINTER_PTYPE (tm)) {
 	/*
 	 * Test Case: libc-errors/asctime-tm-invalid-pointer-type.idio
 	 *
-	 * struct-tm-ref "%c" libc/NULL
+	 * asctime libc/NULL
 	 */
 	idio_error_param_value ("tm", "should be a struct tm", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
-
     struct tm *C_tm = IDIO_C_TYPE_POINTER_P (tm);
 
     /*
@@ -4886,6 +5056,7 @@ void idio_libc_api_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_rmdir);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_read);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_pipe);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_nanosleep);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_mktime);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_mkstemp);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_mkfifo);
