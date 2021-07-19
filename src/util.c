@@ -1176,7 +1176,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 		size_t s = 0;
 		fprintf (stderr, "ipcf isa %s %s\n", idio_type2string (ipcf), idio_as_string (ipcf, &s, 1, seen, 0));
 
-		idio_error_param_value ("idio-print-conversion-format", "should be unicode", IDIO_C_FUNC_LOCATION ());
+		idio_error_param_value_msg_only ("idio_as_string", "idio-print-conversion-format", "should be unicode", IDIO_C_FUNC_LOCATION ());
 
 		/* notreached */
 		return NULL;
@@ -2374,7 +2374,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 #ifdef IDIO_DEBUG
 				    idio_debug ("C/pointer printer => %s (not a STRING)\n", s);
 #endif
-				    idio_error_param_value ("C/pointer printer", "should return a string", IDIO_C_FUNC_LOCATION ());
+				    idio_error_param_value_msg ("idio_as_string", "C/pointer printer", s, "should return a string", IDIO_C_FUNC_LOCATION ());
 
 				    /* notreached */
 				    return NULL;
@@ -2392,13 +2392,6 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 			IDIO_STRCAT (r, sizep, " ");
 			IDIO_STRCAT_FREE (r, sizep, n, n_size);
 		    }
-
-#ifdef IDIO_DEBUG
-		    char *p;
-		    idio_asprintf (&p, " %p", IDIO_C_TYPE_POINTER_P (o));
-		    size_t p_size = strlen (p);
-		    IDIO_STRCAT_FREE (r, sizep, p, p_size);
-#endif
 
 		    IDIO_STRCAT (r, sizep, IDIO_C_TYPE_POINTER_FREEP (o) ? " free" : "");
 
@@ -2464,7 +2457,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 #ifdef IDIO_DEBUG
 				idio_debug ("bad printer for SI type %s\n", sit);
 #endif
-				idio_error_param_value ("struct instance printer", "should return a string", IDIO_C_FUNC_LOCATION ());
+				idio_error_param_value_msg ("idio_as_string", "struct instance printer", s, "should return a string", IDIO_C_FUNC_LOCATION ());
 
 				/* notreached */
 				return NULL;
@@ -2472,11 +2465,7 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 			}
 		    }
 
-#ifdef IDIO_DEBUG
-		    idio_asprintf (&r, "#<SI %10p ", o);
-#else
 		    idio_asprintf (&r, "#<SI ");
-#endif
 		    *sizep = strlen (r);
 
 		    size_t n_size = 0;
@@ -3014,7 +3003,7 @@ char *idio_display_string (IDIO o, size_t *sizep)
 			 * Hopefully, this is guarded against elsewhere
 			 */
 			fprintf (stderr, "display-string: oops u=%x is invalid\n", u);
-			idio_error_param_value ("codepoint", "out of bounds", IDIO_C_FUNC_LOCATION ());
+			idio_error_param_value_msg ("idio_display_string", "codepoint", o, "out of bounds", IDIO_C_FUNC_LOCATION ());
 
 			/* notreached */
 			return NULL;
@@ -3426,7 +3415,7 @@ value-index is not efficient			\n\
      *
      * 1 . 2
      */
-    idio_error_param_value ("value", "is non-indexable", IDIO_C_FUNC_LOCATION ());
+    idio_error_param_value_msg ("value-index", "value", o, "is non-indexable", IDIO_C_FUNC_LOCATION ());
 
     return idio_S_notreached;
 }
@@ -3522,7 +3511,7 @@ value-index is not efficient			\n\
      *
      * 1 . 2 = 3
      */
-    idio_error_param_value ("value", "is non-indexable", IDIO_C_FUNC_LOCATION ());
+    idio_error_param_value_msg ("set-value-index", "value", o, "is non-indexable", IDIO_C_FUNC_LOCATION ());
 
     return idio_S_notreached;
 }
@@ -3578,7 +3567,7 @@ IDIO idio_copy (IDIO o, int depth)
 #ifdef IDIO_DEBUG
 		    idio_debug ("idio_copy: unexpected ST: %s\n", o);
 #endif
-		    idio_error_param_value ("struct instance", "not of a valid struct type", IDIO_C_FUNC_LOCATION ());
+		    idio_error_param_value_msg ("copy-value", "struct instance", o, "not of a valid struct type", IDIO_C_FUNC_LOCATION ());
 
 		    return idio_S_notreached;
 		}
@@ -3620,7 +3609,7 @@ IDIO idio_copy (IDIO o, int depth)
 		fprintf (stderr, "idio-copy: cannot copy a %s\n", idio_type2string (o));
 		idio_debug ("%s\n", o);
 #endif
-		idio_error_param_value ("value", "invalid type", IDIO_C_FUNC_LOCATION ());
+		idio_error_param_value_msg ("copy-value", "value", o, "invalid type", IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    default:
@@ -3690,7 +3679,7 @@ copy ``v`` to `depth`					\n\
 		 *
 		 * copy-value "hello" 'badly
 		 */
-		idio_error_param_value ("depth", "should be 'deep or 'shallow", IDIO_C_FUNC_LOCATION ());
+		idio_error_param_value_msg ("copy-value", "depth", idepth, "should be 'deep or 'shallow", IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    }
@@ -3976,7 +3965,7 @@ idio-debug \"foo is %20s\n\" foo			\n\
 	 */
 	idio_gc_free (sfmt);
 
-	idio_error_param_value ("fmt", "contains an ASCII NUL", IDIO_C_FUNC_LOCATION ());
+	idio_error_param_value_msg ("idio-debug", "fmt", fmt, "contains an ASCII NUL", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }

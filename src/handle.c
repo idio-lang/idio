@@ -231,13 +231,14 @@ void idio_handle_lookahead_error (IDIO h, int c)
  * comparison any more!
  */
 
-static void idio_handle_method_error (char *msg, IDIO c_location)
+static void idio_handle_method_error (char *func, char *msg, IDIO c_location)
 {
+    IDIO_C_ASSERT (func);
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (string, c_location);
 
-    idio_error_param_value ("handle method", msg, c_location);
+    idio_error_param_value_msg_only (func, "method", msg, c_location);
 
     /* notreached */
 }
@@ -1050,7 +1051,7 @@ off_t idio_seek_handle (IDIO h, off_t offset, int whence)
     }
 
     if (NULL == IDIO_HANDLE_M_SEEK (h)) {
-	idio_handle_method_error ("seek not available", IDIO_C_FUNC_LOCATION ());
+	idio_handle_method_error ("seek-handle", "seek not available", IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return -1;
@@ -1135,7 +1136,7 @@ unless ``whence`` is 'set and position is 0 (zero)	\n\
 	     */
 	    char em[BUFSIZ];
 	    sprintf (em, "'%s' is invalid: 'set, 'end or 'cur", IDIO_SYMBOL_S (w));
-	    idio_error_param_value ("whence", em, IDIO_C_FUNC_LOCATION ());
+	    idio_error_param_value_msg ("seek-handle", "whence", w, em, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -1640,7 +1641,7 @@ or the current output handle				\n\
 	 */
 	char em[BUFSIZ];
 	sprintf (em, "U+%04" PRIX32 " is not a character", c_C);
-	idio_error_param_value ("Unicode code point", em, IDIO_C_FUNC_LOCATION ());
+	idio_error_param_value_msg_only ("write-char", "Unicode code point", em, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return NULL;

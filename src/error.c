@@ -301,17 +301,110 @@ void idio_error_const_param_C (char *type_name, IDIO who, char *file, const char
     idio_error_const_param (type_name, who, idio_string_C (c_location));
 }
 
-void idio_error_param_value (char *name, char *msg, IDIO c_location)
+/*
+ * Use idio_error_param_value_exp() for when val should have an
+ * expected type
+ */
+void idio_error_param_value_exp (char *func, char *param, IDIO val, char *exp, IDIO c_location)
 {
-    IDIO_C_ASSERT (name);
+    IDIO_C_ASSERT (func);
+    IDIO_C_ASSERT (param);
+    IDIO_ASSERT (val);
+    IDIO_C_ASSERT (exp);
+    IDIO_ASSERT (c_location);
+
+    IDIO_TYPE_ASSERT (string, c_location);
+
+    IDIO msh = idio_open_output_string_handle_C ();
+    idio_display_C (func, msh);
+    idio_display_C (" ", msh);
+    idio_display_C (param, msh);
+    idio_display_C ("='", msh);
+    idio_display (val, msh);
+    idio_display_C ("' a ", msh);
+    idio_display_C ((char *) idio_type2string (val), msh);
+    idio_display_C (" is not a ", msh);
+    idio_display_C (exp, msh);
+
+    IDIO location = idio_vm_source_location ();
+
+    IDIO detail = idio_S_nil;
+
+#ifdef IDIO_DEBUG
+    IDIO dsh = idio_open_output_string_handle_C ();
+    idio_display (c_location, dsh);
+    detail = idio_get_output_string (dsh);
+#endif
+
+    IDIO c = idio_struct_instance (idio_condition_rt_parameter_value_error_type,
+				   IDIO_LIST3 (idio_get_output_string (msh),
+					       location,
+					       detail));
+
+    idio_raise_condition (idio_S_false, c);
+    /* notreached */
+}
+
+/*
+ * Use idio_error_param_value_exp() for when val should have a range
+ * of possible values, say
+ */
+void idio_error_param_value_msg (char *func, char *param, IDIO val, char *msg, IDIO c_location)
+{
+    IDIO_C_ASSERT (func);
+    IDIO_C_ASSERT (param);
+    IDIO_ASSERT (val);
     IDIO_C_ASSERT (msg);
     IDIO_ASSERT (c_location);
 
     IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO msh = idio_open_output_string_handle_C ();
-    idio_display_C (name, msh);
+    idio_display_C (func, msh);
     idio_display_C (" ", msh);
+    idio_display_C (param, msh);
+    idio_display_C ("='", msh);
+    idio_display (val, msh);
+    idio_display_C ("': ", msh);
+    idio_display_C (msg, msh);
+
+    IDIO location = idio_vm_source_location ();
+
+    IDIO detail = idio_S_nil;
+
+#ifdef IDIO_DEBUG
+    IDIO dsh = idio_open_output_string_handle_C ();
+    idio_display (c_location, dsh);
+    detail = idio_get_output_string (dsh);
+#endif
+
+    IDIO c = idio_struct_instance (idio_condition_rt_parameter_value_error_type,
+				   IDIO_LIST3 (idio_get_output_string (msh),
+					       location,
+					       detail));
+
+    idio_raise_condition (idio_S_false, c);
+    /* notreached */
+}
+
+/*
+ * Use idio_error_param_value_exp() for when val isn't a printable
+ * value
+ */
+void idio_error_param_value_msg_only (char *func, char *param, char *msg, IDIO c_location)
+{
+    IDIO_C_ASSERT (func);
+    IDIO_C_ASSERT (param);
+    IDIO_C_ASSERT (msg);
+    IDIO_ASSERT (c_location);
+
+    IDIO_TYPE_ASSERT (string, c_location);
+
+    IDIO msh = idio_open_output_string_handle_C ();
+    idio_display_C (func, msh);
+    idio_display_C (" ", msh);
+    idio_display_C (param, msh);
+    idio_display_C (": ", msh);
     idio_display_C (msg, msh);
 
     IDIO location = idio_vm_source_location ();
@@ -371,15 +464,16 @@ void idio_error_param_undefined (IDIO name, IDIO c_location)
  *
  * One place where you can pass an unchecked #n is as the key to a
  * hash table lookup.  Any type is valid as the key to a hash table
- * execpt #n.
+ * except #n.
  */
-void idio_error_param_nil (char *name, IDIO c_location)
+void idio_error_param_nil (char *func, char *name, IDIO c_location)
 {
+    IDIO_C_ASSERT (func);
     IDIO_C_ASSERT (name);
     IDIO_ASSERT (c_location);
     IDIO_TYPE_ASSERT (string, c_location);
 
-    idio_error_param_value (name, "is nil", c_location);
+    idio_error_param_value_msg_only (func, name, "is nil", c_location);
 
     /* notreached */
 }

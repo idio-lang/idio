@@ -1343,9 +1343,9 @@ convert integer `i` to a Unicode code point	\n\
 		 *
 		 * integer->unicode #xd800
 		 */
-		sprintf (em, "U+%04" PRIXPTR " is invalid", iv);
+		sprintf (em, "U+%04" PRIXPTR ": is invalid", iv);
 	    }
-	    idio_error_param_value ("Unicode code point", em, IDIO_C_FUNC_LOCATION ());
+	    idio_error_param_value_msg_only ("integer->unicode", "code point", em, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -1369,9 +1369,9 @@ convert integer `i` to a Unicode code point	\n\
 		 *
 		 * integer->unicode 55296e0
 		 */
-		sprintf (em, "U+%04" PRIXPTR " is invalid", iv);
+		sprintf (em, "U+%04" PRIXPTR ": is invalid", iv);
 	    }
-	    idio_error_param_value ("Unicode code point", em, IDIO_C_FUNC_LOCATION ());
+	    idio_error_param_value_msg_only ("integer->unicode", "code point", em, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}

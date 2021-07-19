@@ -148,7 +148,7 @@ IDIO idio_posix_regex_regcomp (IDIO rx, IDIO flags)
 		 *
 		 * regcomp "" 'REG_PCRE
 		 */
-		idio_error_param_value ("regcomp", "unexpected flag", IDIO_C_FUNC_LOCATION ());
+		idio_error_param_value_msg ("regcomp", "flag", flag, "unexpected flag", IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    }
@@ -293,7 +293,7 @@ IDIO idio_posix_regex_regexec (IDIO rx, IDIO s, IDIO flags)
 		 *
 		 * regexec (regcomp "") "" 'REG_BOTH
 		 */
-		idio_error_param_value ("regexec", "unexpected flag", IDIO_C_FUNC_LOCATION ());
+		idio_error_param_value_msg ("regexec", "flag", flag, "unexpected flag", IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    }

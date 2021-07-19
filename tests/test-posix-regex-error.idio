@@ -66,7 +66,7 @@ posix-regex-error-load := {
 }
 
 posix-regex-error-load "posix-regex-errors/regcomp-bad-rx-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
-posix-regex-error-load "posix-regex-errors/regcomp-bad-flag.idio" "regcomp unexpected flag"
+posix-regex-error-load "posix-regex-errors/regcomp-bad-flag.idio" "regcomp flag='REG_PCRE': unexpected flag"
 posix-regex-error-load "posix-regex-errors/regcomp-bad-flag-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol"
 (cond-expand
  ((or uname/sysname/SunOS
@@ -80,7 +80,7 @@ posix-regex-error-load "posix-regex-errors/regcomp-bad-flag-type.idio" "bad para
 
 posix-regex-error-load "posix-regex-errors/regexec-bad-rx-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/pointer"
 posix-regex-error-load "posix-regex-errors/regexec-bad-str-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a string"
-posix-regex-error-load "posix-regex-errors/regexec-bad-flag.idio" "regexec unexpected flag"
+posix-regex-error-load "posix-regex-errors/regexec-bad-flag.idio" "regexec flag='REG_BOTH': unexpected flag"
 posix-regex-error-load "posix-regex-errors/regexec-bad-flag-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol"
 
 ;; all done?

@@ -1878,7 +1878,7 @@ ${tc-test}
 				  close-handle tc-fh
 
 				  hprintf errors-fh #S{
-${i-module-name}-error-load "${tc-bn}" "${struct-name} should be a struct ${struct-name}"}
+${i-module-name}-error-load "${tc-bn}" "struct-${struct-idio-id}-ref ${struct-name}='#<C/*>' a C/pointer is not a C struct ${struct-name}"}
 
 				  hprintf api-c-fh #S{
 	/*
@@ -1886,7 +1886,7 @@ ${i-module-name}-error-load "${tc-bn}" "${struct-name} should be a struct ${stru
 	 *
 	 * ${tc-test}
 	 */
-	idio_error_param_value ("${struct-name}", "should be a struct ${struct-name}", IDIO_C_FUNC_LOCATION ());
+	idio_error_param_value_msg ("struct-${struct-idio-id}-ref", "${struct-name}", ${var}, "C struct ${struct-name}", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     \}}
@@ -2009,7 +2009,7 @@ ${tc-test}
 				  close-handle tc-fh
 
 				  hprintf errors-fh #S{
-${i-module-name}-error-load "${tc-bn}" "member should be a struct ${struct-name} member"}
+${i-module-name}-error-load "${tc-bn}" "struct-${struct-idio-id}-ref member='notlikely': should be a C struct ${struct-name} member"}
 
 				  hprintf api-c-fh #S{ else \{
 	/*
@@ -2017,7 +2017,7 @@ ${i-module-name}-error-load "${tc-bn}" "member should be a struct ${struct-name}
 	 *
 	 * ${tc-test}
 	 */
-        idio_error_param_value ("member", "should be a struct ${struct-name} member", IDIO_C_FUNC_LOCATION());
+        idio_error_param_value_msg ("struct-${struct-idio-id}-ref", "member", member, "C struct ${struct-name} member", IDIO_C_FUNC_LOCATION());
 
         return idio_S_notreached;
     \}}
@@ -2083,7 +2083,7 @@ ${tc-test}
 				  close-handle tc-fh
 
 				  hprintf errors-fh #S{
-${i-module-name}-error-load "${tc-bn}" "${struct-name} should be a struct ${struct-name}"}
+${i-module-name}-error-load "${tc-bn}" "struct-${struct-idio-id}-set! ${struct-name}='#<C/*>' a C/pointer is not a C struct ${struct-name}"}
 
 				  hprintf api-c-fh #S{
 	/*
@@ -2091,7 +2091,7 @@ ${i-module-name}-error-load "${tc-bn}" "${struct-name} should be a struct ${stru
 	 *
 	 * ${tc-test}
 	 */
-	idio_error_param_value ("${struct-name}", "should be a struct ${struct-name}", IDIO_C_FUNC_LOCATION ());
+	idio_error_param_value_exp ("struct-${struct-idio-id}-set!", "${struct-name}", ${var}, "C struct ${struct-name}", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     \}
@@ -2252,7 +2252,7 @@ ${tc-test}
 				  close-handle tc-fh
 
 				    hprintf errors-fh #S{
-${i-module-name}-error-load "${tc-bn}" "member should be a struct ${struct-name} member"}
+${i-module-name}-error-load "${tc-bn}" "struct-${struct-idio-id}-set! member='notlikely': should be a C struct ${struct-name} member"}
 
 				  hprintf api-c-fh #S{ else \{
 	/*
@@ -2260,7 +2260,7 @@ ${i-module-name}-error-load "${tc-bn}" "member should be a struct ${struct-name}
 	 *
 	 * ${tc-test}
 	 */
-        idio_error_param_value ("member", "should be a struct ${struct-name} member", IDIO_C_FUNC_LOCATION());
+        idio_error_param_value_exp ("struct-${struct-idio-id}-set!", "member", member, "C struct ${struct-name} member", IDIO_C_FUNC_LOCATION());
 
         return idio_S_notreached;
     \}}
@@ -2437,7 +2437,7 @@ ${tc-test}
 				  close-handle tc-fh
 
 				  hprintf errors-fh #S{
-${i-module-name}-error-load "${tc-bn}" "${struct-name} should be a struct ${struct-name}"}
+${i-module-name}-error-load "${tc-bn}" "struct-${struct-idio-id}-as-string ${struct-name}='#<C/*>' a C/pointer is not a C struct ${struct-name}"}
 
 				  hprintf api-c-fh #S{
 	/*
@@ -2445,7 +2445,7 @@ ${i-module-name}-error-load "${tc-bn}" "${struct-name} should be a struct ${stru
 	 *
 	 * ${tc-test}
 	 */
-	idio_error_param_value ("${struct-name}", "should be a struct ${struct-name}", IDIO_C_FUNC_LOCATION ());
+	idio_error_param_value_exp ("struct-${struct-idio-id}-as-string", "${struct-name}", ${var}, "C struct ${struct-name}", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     \}

@@ -830,7 +830,7 @@ char *idio_C_type_format_string (int type)
 		 *
 		 * Coding error.
 		 */
-		idio_error_param_value ("idio-print-conversion-format", "should be unicode", IDIO_C_FUNC_LOCATION ());
+		idio_error_param_value_msg_only ("idio_C_type_format_string", "idio-print-conversion-format", "should be unicode", IDIO_C_FUNC_LOCATION ());
 
 		/* notreached */
 		return NULL;
@@ -1222,6 +1222,11 @@ int idio_C_longdouble_equal_ULP (long double o1, long double o2, unsigned int ma
     }
 }
 
+/*
+ * Code coverage: the n1 type test is actually done in the generic
+ * primitive in fixnum.c so we can't raise that error without calling
+ * the primitive directly from C
+ */
 #define IDIO_DEFINE_C_ARITHMETIC_PRIMITIVE(cname,op)			\
     IDIO idio_C_primitive_binary_ ## cname (IDIO n1, IDIO n2)		\
     {									\
@@ -1229,17 +1234,17 @@ int idio_C_longdouble_equal_ULP (long double o1, long double o2, unsigned int ma
 	IDIO_ASSERT (n2);						\
 									\
 	if (! idio_isa_C_number (n1)) {					\
-	    idio_error_param_value ("C/" #cname " arg", "should be a C numeric", IDIO_C_FUNC_LOCATION ()); \
+	    idio_error_param_value_exp ("C/" #cname, "n1", n1, "C numeric type", IDIO_C_FUNC_LOCATION ()); \
 	    return idio_S_notreached;					\
 	}								\
 	if (! idio_isa_C_number (n2)) {					\
-	    idio_error_param_value ("C/" #cname " arg", "should be a C numeric", IDIO_C_FUNC_LOCATION ()); \
+	    idio_error_param_value_exp ("C/" #cname, "n2", n2, "C numeric type", IDIO_C_FUNC_LOCATION ()); \
 	    return idio_S_notreached;					\
 	}								\
 	int t1 = idio_type (n1);					\
 	int t2 = idio_type (n2);					\
 	if (t1 != t2) {							\
-	    idio_error_param_value ("C/" #cname " arg", "should be the same C numeric", IDIO_C_FUNC_LOCATION ()); \
+	    idio_error_param_value_msg ("C/" #cname, "n1, n2 types", IDIO_LIST2 (n1, n2), "should be the same C numeric type", IDIO_C_FUNC_LOCATION ()); \
 	    return idio_S_notreached;					\
 	}								\
 	switch (t1) {							\
@@ -1886,7 +1891,7 @@ IDIO idio_C_integer2 (IDIO inum, IDIO t)
 	 *
 	 * C/integer-> 1 'float
 	 */
-	idio_error_param_value ("type", "should be a C integral type", IDIO_C_FUNC_LOCATION ());
+	idio_error_param_value_exp ("C/integer->", "type", t, "C integral type", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -1960,9 +1965,9 @@ IDIO idio_C_integer2unsigned (IDIO inum, IDIO t)
 	    /*
 	     * Test Case: c-type-errors/c-type-integer2unsigned-fixnum-negative.idio
 	     *
-	     * C/integer-> -1
+	     * C/integer->unsigned -1
 	     */
-	    idio_error_param_value ("i", "should be a positive integer", IDIO_C_FUNC_LOCATION ());
+	    idio_error_param_value_msg ("C/integer->unsigned", "i", inum, "should be a positive integer", IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -1979,9 +1984,9 @@ IDIO idio_C_integer2unsigned (IDIO inum, IDIO t)
 	    /*
 	     * Test Case: c-type-errors/c-type-integer2unsigned-bignum-negative.idio
 	     *
-	     * C/integer-> -1.0
+	     * C/integer->unsigned -1.0
 	     */
-	    idio_error_param_value ("i", "should be a positive integer", IDIO_C_FUNC_LOCATION ());
+	    idio_error_param_value_msg ("C/integer->unsigned", "i", inum, "should be a positive integer", IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -2003,7 +2008,7 @@ IDIO idio_C_integer2unsigned (IDIO inum, IDIO t)
 	/*
 	 * Test Case: c-type-errors/c-type-integer2unsigned-bad-type.idio
 	 *
-	 * C/integer-> #t
+	 * C/integer->unsigned #t
 	 */
 	idio_error_param_type ("positive integer", inum, IDIO_C_FUNC_LOCATION ());
 
@@ -2015,7 +2020,7 @@ IDIO idio_C_integer2unsigned (IDIO inum, IDIO t)
 	    /*
 	     * Test Case: c-type-errors/c-type-integer2unsigned-uchar-range.idio
 	     *
-	     * C/integer-> ((C/->number libc/UCHAR_MAX) + 1) 'uchar
+	     * C/integer->unsigned ((C/->number libc/UCHAR_MAX) + 1) 'uchar
 	     */
 	    idio_C_conversion_error ("uchar: range error", inum, IDIO_C_FUNC_LOCATION ());
 
@@ -2028,7 +2033,7 @@ IDIO idio_C_integer2unsigned (IDIO inum, IDIO t)
 	    /*
 	     * Test Case: c-type-errors/c-type-integer2unsigned-ushort-range.idio
 	     *
-	     * C/integer-> ((C/->number libc/USHRT_MAX) + 1) 'ushort
+	     * C/integer->unsigned ((C/->number libc/USHRT_MAX) + 1) 'ushort
 	     */
 	    idio_C_conversion_error ("ushort: range error", inum, IDIO_C_FUNC_LOCATION ());
 
@@ -2041,7 +2046,7 @@ IDIO idio_C_integer2unsigned (IDIO inum, IDIO t)
 	    /*
 	     * Test Case: c-type-errors/c-type-integer2unsigned-uint-range.idio
 	     *
-	     * C/integer-> ((C/->number libc/UINT_MAX) + 1) 'uint
+	     * C/integer->unsigned ((C/->number libc/UINT_MAX) + 1) 'uint
 	     */
 	    idio_C_conversion_error ("uint: range error", inum, IDIO_C_FUNC_LOCATION ());
 
@@ -2054,7 +2059,7 @@ IDIO idio_C_integer2unsigned (IDIO inum, IDIO t)
 	    /*
 	     * Test Case: maybe on 32-bit -- c-type-errors/c-type-integer2unsigned-ulong-range.idio
 	     *
-	     * C/integer-> ((C/->number libc/ULONG_MAX) + 1) 'ulong
+	     * C/integer->unsigned ((C/->number libc/ULONG_MAX) + 1) 'ulong
 	     *
 	     * See note above.
 	     */
@@ -2071,7 +2076,7 @@ IDIO idio_C_integer2unsigned (IDIO inum, IDIO t)
 	     *
 	     * See above.
 	     *
-	     * C/integer-> ((C/->number libc/ULLONG_MAX) + 1) 'ulonglong
+	     * C/integer->unsigned ((C/->number libc/ULLONG_MAX) + 1) 'ulonglong
 	     */
 	    idio_C_conversion_error ("ulonglong: range error", inum, IDIO_C_FUNC_LOCATION ());
 
@@ -2083,9 +2088,9 @@ IDIO idio_C_integer2unsigned (IDIO inum, IDIO t)
 	/*
 	 * Test Case: c-type-errors/c-type-integer2unsigned-bad-fixnum-c-type.idio
 	 *
-	 * C/integer-> 1 'float
+	 * C/integer->unsigned 1 'float
 	 */
-	idio_error_param_value ("type", "should be a C unsigned integral type", IDIO_C_FUNC_LOCATION ());
+	idio_error_param_value_exp ("C/integer->unsigned", "type", t, "C unsigned integral type", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -2290,7 +2295,7 @@ floating point type.				\n\
 	     *
 	     * C/number-> 1 'number
 	     */
-	    idio_error_param_value ("type", "should be a C integral type", IDIO_C_FUNC_LOCATION ());
+	    idio_error_param_value_exp ("number->", "type", t, "C integral type", IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -2307,7 +2312,7 @@ floating point type.				\n\
 	     *
 	     * C/number-> 1.0 'int
 	     */
-	    idio_error_param_value ("type", "should be a C floating type", IDIO_C_FUNC_LOCATION ());
+	    idio_error_param_value_exp ("number->", "type", t, "C floating type", IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}

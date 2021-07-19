@@ -720,7 +720,9 @@ void idio_duplicate_array (IDIO a, IDIO o, idio_ai_t n, int depth)
 	     *
 	     * coding error
 	     */
-	    idio_error_param_value ("duplicate n elements", "should be > 0", IDIO_C_FUNC_LOCATION ());
+	    char em[30];
+	    sprintf (em, "n=%td", n);
+	    idio_error_param_value_msg_only ("duplicate_array", em, "should be > 0", IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
 	    return;

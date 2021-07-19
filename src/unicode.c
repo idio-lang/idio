@@ -475,7 +475,7 @@ char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted, int us
 		     */
 		    char em[BUFSIZ];
 		    sprintf (em, "U+%04" PRIX32 " is invalid", c);
-		    idio_error_param_value ("utf8-string: Unicode code point", em, IDIO_C_FUNC_LOCATION ());
+		    idio_error_param_value_msg_only ("idio_utf8_string", "Unicode code point", em, IDIO_C_FUNC_LOCATION ());
 
 		    /* notreached */
 		    return NULL;
@@ -531,7 +531,7 @@ void idio_utf8_code_point (idio_unicode_t c, char *buf, int *sizep)
 	 */
 	char em[BUFSIZ];
 	sprintf (em, "U+%04" PRIX32 " is invalid", c);
-	idio_error_param_value ("utf-8: Unicode code point", em, IDIO_C_FUNC_LOCATION ());
+	idio_error_param_value_msg_only ("idio_utf8_code_point", "Unicode code point", em, IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return;

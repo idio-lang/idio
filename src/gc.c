@@ -988,7 +988,7 @@ void idio_gc_protect_auto (IDIO o)
     IDIO_ASSERT (o);
 
     if (idio_S_nil == o) {
-	idio_error_param_nil ("protect", IDIO_C_FUNC_LOCATION ());
+	idio_error_param_nil ("idio_gc_protect_auto", "protect", IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return;
@@ -1435,7 +1435,7 @@ void idio_gc_sweep_free_value (IDIO vo)
     IDIO_ASSERT (vo);
 
     if (idio_S_nil == vo) {
-	idio_error_param_nil ("vo", IDIO_C_FUNC_LOCATION ());
+	idio_error_param_nil ("idio_gc_sweep_free_value", "vo", IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return;

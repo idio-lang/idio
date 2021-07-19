@@ -103,7 +103,7 @@ in C, utsname->member			\n\
 	 *
 	 * struct-utsname-ref libc/NULL #t
 	 */
-	idio_error_param_value ("utsname", "should be a struct utsname", IDIO_C_FUNC_LOCATION ());
+	idio_error_param_value_exp ("struct-utsname-ref", "utsname", utsname, "C struct utsname", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -132,7 +132,7 @@ in C, utsname->member			\n\
 	 *
 	 * struct-utsname-ref (libc/idio-uname) 'not-likely
 	 */
-        idio_error_param_value ("member", "should be a struct utsname member", IDIO_C_FUNC_LOCATION());
+        idio_error_param_value_exp ("struct-utsname-ref", "member", member, "C struct utsname member", IDIO_C_FUNC_LOCATION());
 
         return idio_S_notreached;
     }
@@ -193,7 +193,7 @@ IDIO_DEFINE_PRIMITIVE1_DS ("struct-utsname-as-string", libc_struct_utsname_as_st
 	 *
 	 * struct-utsname-as-string libc/NULL
 	 */
-	idio_error_param_value ("utsname", "should be a struct utsname", IDIO_C_FUNC_LOCATION ());
+	idio_error_param_value_exp ("struct-utsname-as-string", "utsname", utsname, "C struct utsname", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -245,7 +245,7 @@ in C, tms->member			\n\
 	 *
 	 * struct-tms-ref libc/NULL #t
 	 */
-	idio_error_param_value ("tms", "should be a struct tms", IDIO_C_FUNC_LOCATION ());
+	idio_error_param_value_exp ("struct-tms-ref", "tms", tms, "C struct tms", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -272,7 +272,7 @@ in C, tms->member			\n\
 	 *
 	 * struct-tms-ref (pht (libc/times)) 'not-likely
 	 */
-        idio_error_param_value ("member", "should be a struct tms member", IDIO_C_FUNC_LOCATION());
+        idio_error_param_value_exp ("struct-tms-ref", "member", member, "C struct tms member", IDIO_C_FUNC_LOCATION());
 
         return idio_S_notreached;
     }
@@ -344,7 +344,7 @@ IDIO_DEFINE_PRIMITIVE1_DS ("struct-tms-as-string", libc_struct_tms_as_string, (I
 	 *
 	 * struct-tms-as-string libc/NULL
 	 */
-	idio_error_param_value ("tms", "should be a struct tms", IDIO_C_FUNC_LOCATION ());
+	idio_error_param_value_exp ("struct-tms-as-string", "tms", tms, "C struct tms", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -404,7 +404,7 @@ in C, termios->member			\n\
 	 *
 	 * struct-termios-ref libc/NULL #t
 	 */
-	idio_error_param_value ("termios", "should be a struct termios", IDIO_C_FUNC_LOCATION ());
+	idio_error_param_value_exp ("struct-termios-ref", "termios", termios, "C struct termios", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -453,7 +453,7 @@ in C, termios->member			\n\
 	 *
 	 * struct-termios-ref (libc/tcgetattr libc/STDIN_FILENO) 'not-likely
 	 */
-        idio_error_param_value ("member", "should be a struct termios member", IDIO_C_FUNC_LOCATION());
+        idio_error_param_value_exp ("struct-tms-ref", "member", member, "C struct termios member", IDIO_C_FUNC_LOCATION());
 
         return idio_S_notreached;
     }
@@ -490,7 +490,7 @@ in C, termios->member = val		\n\
 	 *
 	 * struct-termios-set! libc/NULL #t #t
 	 */
-	idio_error_param_value ("termios", "should be a struct termios", IDIO_C_FUNC_LOCATION ());
+	idio_error_param_value_exp ("struct-termios-set!", "termios", termios, "C struct termios", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -594,7 +594,7 @@ in C, termios->member = val		\n\
 	 *
 	 * struct-termios-set! v 'not-likely #t
 	 */
-        idio_error_param_value ("member", "should be a struct termios member", IDIO_C_FUNC_LOCATION());
+        idio_error_param_value_exp ("struct-termios-set!", "member", member, "C struct termios member", IDIO_C_FUNC_LOCATION());
 
         return idio_S_notreached;
     }
@@ -687,7 +687,7 @@ IDIO_DEFINE_PRIMITIVE1_DS ("struct-termios-as-string", libc_struct_termios_as_st
 	 *
 	 * struct-termios-as-string libc/NULL
 	 */
-	idio_error_param_value ("termios", "should be a struct termios", IDIO_C_FUNC_LOCATION ());
+	idio_error_param_value_exp ("struct-termios-as-string", "termios", termios, "C struct termios", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -756,7 +756,7 @@ in C, tm->member			\n\
 	 *
 	 * struct-tm-ref libc/NULL #t
 	 */
-	idio_error_param_value ("tm", "should be a struct tm", IDIO_C_FUNC_LOCATION ());
+	idio_error_param_value_exp ("struct-tm-ref", "tm", tm, "C struct tm", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -813,7 +813,7 @@ in C, tm->member			\n\
 	 *
 	 * struct-tm-ref v 'not-likely
 	 */
-        idio_error_param_value ("member", "should be a struct tm member", IDIO_C_FUNC_LOCATION());
+        idio_error_param_value_exp ("struct-tm-ref", "member", member, "C struct tm member", IDIO_C_FUNC_LOCATION());
 
         return idio_S_notreached;
     }
@@ -851,7 +851,7 @@ in C, tm->member = val		\n\
 	 *
 	 * struct-tm-set! libc/NULL #t #t
 	 */
-	idio_error_param_value ("tm", "should be a struct tm", IDIO_C_FUNC_LOCATION ());
+	idio_error_param_value_exp ("struct-tm-set!", "tm", tm, "C struct tm", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -995,7 +995,7 @@ in C, tm->member = val		\n\
 	 *
 	 * struct-tm-set! v 'not-likely #t
 	 */
-        idio_error_param_value ("member", "should be a struct tm member", IDIO_C_FUNC_LOCATION());
+        idio_error_param_value_exp ("struct-tm-set!", "member", member, "C struct tm member", IDIO_C_FUNC_LOCATION());
 
         return idio_S_notreached;
     }
@@ -1120,7 +1120,7 @@ IDIO_DEFINE_PRIMITIVE1_DS ("struct-tm-as-string", libc_struct_tm_as_string, (IDI
 	 *
 	 * struct-tm-as-string libc/NULL
 	 */
-	idio_error_param_value ("tm", "should be a struct tm", IDIO_C_FUNC_LOCATION ());
+	idio_error_param_value_exp ("struct-tm-as-string", "tm", tm, "C struct tm", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -1197,7 +1197,7 @@ in C, stat->member			\n\
 	 *
 	 * struct-stat-ref libc/NULL #t
 	 */
-	idio_error_param_value ("stat", "should be a struct stat", IDIO_C_FUNC_LOCATION ());
+	idio_error_param_value_exp ("struct-stat-ref", "stat", stat, "C struct stat", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -1278,7 +1278,7 @@ in C, stat->member			\n\
 	 *
 	 * struct-stat-ref (libc/stat ".") 'not-likely
 	 */
-        idio_error_param_value ("member", "should be a struct stat member", IDIO_C_FUNC_LOCATION());
+        idio_error_param_value_exp ("struct-stat-ref", "member", member, "C struct stat member", IDIO_C_FUNC_LOCATION());
 
         return idio_S_notreached;
     }
@@ -1416,7 +1416,7 @@ IDIO_DEFINE_PRIMITIVE1_DS ("struct-stat-as-string", libc_struct_stat_as_string, 
 	 *
 	 * struct-stat-as-string libc/NULL
 	 */
-	idio_error_param_value ("stat", "should be a struct stat", IDIO_C_FUNC_LOCATION ());
+	idio_error_param_value_exp ("struct-stat-as-string", "stat", stat, "C struct stat", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -1464,7 +1464,7 @@ in C, timespec->member			\n\
 	 *
 	 * struct-timespec-ref libc/NULL #t
 	 */
-	idio_error_param_value ("timespec", "should be a struct timespec", IDIO_C_FUNC_LOCATION ());
+	idio_error_param_value_exp ("struct-timespec-ref", "timespec", timespec, "C struct timespec", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -1489,7 +1489,7 @@ in C, timespec->member			\n\
 	 * statbuf := libc/stat "."
 	 * struct-timespec-ref statbuf.st_atim 'not-likely
 	 */
-        idio_error_param_value ("member", "should be a struct timespec member", IDIO_C_FUNC_LOCATION());
+        idio_error_param_value_exp ("struct-timespec-ref", "member", member, "C struct timespec member", IDIO_C_FUNC_LOCATION());
 
         return idio_S_notreached;
     }
@@ -1526,7 +1526,7 @@ in C, timespec->member = val		\n\
 	 *
 	 * struct-timespec-set! libc/NULL #t #t
 	 */
-	idio_error_param_value ("timespec", "should be a struct timespec", IDIO_C_FUNC_LOCATION ());
+	idio_error_param_value_exp ("struct-timespec-set!", "timespec", timespec, "C struct timespec", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -1567,7 +1567,7 @@ in C, timespec->member = val		\n\
 	 * statbuf := libc/stat "."
 	 * struct-timespec-set! statbuf.st_atim 'not-likely
 	 */
-        idio_error_param_value ("member", "should be a struct timespec member", IDIO_C_FUNC_LOCATION());
+        idio_error_param_value_exp ("struct-timespec-set!", "member", member, "C struct timespec member", IDIO_C_FUNC_LOCATION());
 
         return idio_S_notreached;
     }
@@ -1667,7 +1667,7 @@ IDIO_DEFINE_PRIMITIVE1_DS ("struct-timespec-as-string", libc_struct_timespec_as_
 	 *
 	 * struct-timespec-as-string libc/NULL
 	 */
-	idio_error_param_value ("timespec", "should be a struct timespec", IDIO_C_FUNC_LOCATION ());
+	idio_error_param_value_exp ("struct-timespec-as-string", "timespec", timespec, "C struct timespec", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -1715,7 +1715,7 @@ in C, rlimit->member			\n\
 	 *
 	 * struct-rlimit-ref libc/NULL #t
 	 */
-	idio_error_param_value ("rlimit", "should be a struct rlimit", IDIO_C_FUNC_LOCATION ());
+	idio_error_param_value_exp ("struct-rlimit-ref", "rlimit", rlimit, "C struct rlimit", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -1738,7 +1738,7 @@ in C, rlimit->member			\n\
 	 *
 	 * struct-rlimit-ref (libc/getrlimit libc/RLIMIT_NOFILE) 'not-likely
 	 */
-        idio_error_param_value ("member", "should be a struct rlimit member", IDIO_C_FUNC_LOCATION());
+        idio_error_param_value_exp ("struct-rlimit-ref", "member", member, "C struct rlimit member", IDIO_C_FUNC_LOCATION());
 
         return idio_S_notreached;
     }
@@ -1775,7 +1775,7 @@ in C, rlimit->member = val		\n\
 	 *
 	 * struct-rlimit-set! libc/NULL #t #t
 	 */
-	idio_error_param_value ("rlimit", "should be a struct rlimit", IDIO_C_FUNC_LOCATION ());
+	idio_error_param_value_exp ("struct-rlimit-set!", "rlimit", rlimit, "C struct rlimit", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -1814,7 +1814,7 @@ in C, rlimit->member = val		\n\
 	 *
 	 * struct-rlimit-set! (libc/getrlimit libc/RLIMIT_NOFILE) 'not-likely
 	 */
-        idio_error_param_value ("member", "should be a struct rlimit member", IDIO_C_FUNC_LOCATION());
+        idio_error_param_value_exp ("struct-rlimit-set!", "member", member, "C struct rlimit member", IDIO_C_FUNC_LOCATION());
 
         return idio_S_notreached;
     }
@@ -1872,7 +1872,7 @@ IDIO_DEFINE_PRIMITIVE1_DS ("struct-rlimit-as-string", libc_struct_rlimit_as_stri
 	 *
 	 * struct-rlimit-as-string libc/NULL
 	 */
-	idio_error_param_value ("rlimit", "should be a struct rlimit", IDIO_C_FUNC_LOCATION ());
+	idio_error_param_value_exp ("struct-rlimit-as-string", "rlimit", rlimit, "C struct rlimit", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -1920,7 +1920,7 @@ in C, timeval->member			\n\
 	 *
 	 * struct-timeval-ref libc/NULL #t
 	 */
-	idio_error_param_value ("timeval", "should be a struct timeval", IDIO_C_FUNC_LOCATION ());
+	idio_error_param_value_exp ("struct-timeval-ref", "timeval", timeval, "C struct timeval", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -1943,7 +1943,7 @@ in C, timeval->member			\n\
 	 *
 	 * struct-timeval-ref (libc/gettimeofday) 'not-likely
 	 */
-        idio_error_param_value ("member", "should be a struct timeval member", IDIO_C_FUNC_LOCATION());
+        idio_error_param_value_exp ("struct-timeval-ref", "member", member, "C struct timeval member", IDIO_C_FUNC_LOCATION());
 
         return idio_S_notreached;
     }
@@ -1980,7 +1980,7 @@ in C, timeval->member = val		\n\
 	 *
 	 * struct-timeval-set! libc/NULL #t #t
 	 */
-	idio_error_param_value ("timeval", "should be a struct timeval", IDIO_C_FUNC_LOCATION ());
+	idio_error_param_value_exp ("struct-timeval-set!", "timeval", timeval, "C struct timeval", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -2019,7 +2019,7 @@ in C, timeval->member = val		\n\
 	 *
 	 * struct-timeval-set! (libc/gettimeofday) 'not-likely
 	 */
-        idio_error_param_value ("member", "should be a struct timeval member", IDIO_C_FUNC_LOCATION());
+        idio_error_param_value_exp ("struct-timeval-set!", "member", member, "C struct timeval member", IDIO_C_FUNC_LOCATION());
 
         return idio_S_notreached;
     }
@@ -2122,7 +2122,7 @@ IDIO_DEFINE_PRIMITIVE1_DS ("struct-timeval-as-string", libc_struct_timeval_as_st
 	 *
 	 * struct-timeval-as-string libc/NULL
 	 */
-	idio_error_param_value ("timeval", "should be a struct timeval", IDIO_C_FUNC_LOCATION ());
+	idio_error_param_value_exp ("struct-timeval-as-string", "timeval", timeval, "C struct timeval", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -2184,7 +2184,7 @@ in C, rusage->member			\n\
 	 *
 	 * struct-rusage-ref libc/NULL #t
 	 */
-	idio_error_param_value ("rusage", "should be a struct rusage", IDIO_C_FUNC_LOCATION ());
+	idio_error_param_value_exp ("struct-rusage-ref", "rusage", rusage, "C struct rusage", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -2215,7 +2215,7 @@ in C, rusage->member			\n\
 	 *
 	 * struct-rusage-ref (libc/getrusage libc/RUSAGE_SELF) 'not-likely
 	 */
-        idio_error_param_value ("member", "should be a struct rusage member", IDIO_C_FUNC_LOCATION());
+        idio_error_param_value_exp ("struct-rusage-ref", "member", member, "C struct rusage member", IDIO_C_FUNC_LOCATION());
 
         return idio_S_notreached;
     }
@@ -2264,7 +2264,7 @@ IDIO_DEFINE_PRIMITIVE1_DS ("struct-rusage-as-string", libc_struct_rusage_as_stri
 	 *
 	 * struct-rusage-as-string libc/NULL
 	 */
-	idio_error_param_value ("rusage", "should be a struct rusage", IDIO_C_FUNC_LOCATION ());
+	idio_error_param_value_exp ("struct-rusage-as-string", "rusage", rusage, "C struct rusage", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -2866,7 +2866,7 @@ maximum string size			\n\
 	 *
 	 * struct-tm-ref "%c" libc/NULL
 	 */
-	idio_error_param_value ("tm", "should be a struct tm", IDIO_C_FUNC_LOCATION ());
+	idio_error_param_value_exp ("strftime", "tm", tm, "C struct tm", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -3112,7 +3112,7 @@ See ``getrlimit`` to obtain a struct-rlimit.			\n\
 	 *
 	 * setrlimit-ref (C/integer-> 0) libc/NULL
 	 */
-	idio_error_param_value ("rlim", "should be a struct rlimit", IDIO_C_FUNC_LOCATION ());
+	idio_error_param_value_exp ("setrlimit", "rlim", rlim, "C struct rlimit", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -3431,7 +3431,7 @@ and ``nsec`` can be a C/long|fixnum|bignum	\n\
 		     *
 		     * nanosleep (1.1)
 		     */
-		    idio_error_param_value ("nanosleep/sec", "should be an integer bignum", IDIO_C_FUNC_LOCATION ());
+		    idio_error_param_value_exp ("nanosleep", "sec", sec, "an integer bignum", IDIO_C_FUNC_LOCATION ());
 
 		    return idio_S_notreached;
 		} else {
@@ -3472,7 +3472,7 @@ and ``nsec`` can be a C/long|fixnum|bignum	\n\
 			 *
 			 * nanosleep (0 1.1)
 			 */
-			idio_error_param_value ("nanosleep/nsec", "should be an integer bignum", IDIO_C_FUNC_LOCATION ());
+			idio_error_param_value_exp ("nanosleep", "nsec", nsec, "an integer bignum", IDIO_C_FUNC_LOCATION ());
 
 			return idio_S_notreached;
 		    } else {
@@ -3498,7 +3498,7 @@ and ``nsec`` can be a C/long|fixnum|bignum	\n\
 	     *
 	     * nanosleep libc/NULL
 	     */
-	    idio_error_param_value ("req", "should be a struct timespec", IDIO_C_FUNC_LOCATION ());
+	    idio_error_param_value_exp ("nanosleep", "req", req, "C struct timespec", IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -3561,7 +3561,7 @@ a wrapper to libc mktime(3)		\n\
 	 *
 	 * mktime libc/NULL
 	 */
-	idio_error_param_value ("tm", "should be a struct tm", IDIO_C_FUNC_LOCATION ());
+	idio_error_param_value_exp ("mktime", "tm", tm, "C struct tm", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -4532,7 +4532,7 @@ F_SETFL								\n\
 	 *
 	 * fcntl C/0i (C/integer-> 98765)
 	 */
-	idio_error_param_value ("fcntl", "unexpected cmd", IDIO_C_FUNC_LOCATION ());
+	idio_error_param_value_msg ("fcntl", "cmd", cmd, "unexpected cmd", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -4806,7 +4806,7 @@ a wrapper to libc asctime(3)		\n\
 	 *
 	 * asctime libc/NULL
 	 */
-	idio_error_param_value ("tm", "should be a struct tm", IDIO_C_FUNC_LOCATION ());
+	idio_error_param_value_exp ("asctime", "tm", tm, "C struct tm", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }

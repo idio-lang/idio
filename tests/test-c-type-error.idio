@@ -64,6 +64,15 @@ c-type-error-load := {
   }
 }
 
+;; we'll only test + as -, * and / use the same C macro
+;;
+;; Also the first argument will always be verified by the generic
+;; addition code (in fixnum.c) so it requires calling the
+;; idio_C_primitive_binary_add function directly from C to get an n1
+;; error.
+c-type-error-load "c-type-errors/c-type-add-bad-n2-type.idio" "C/add n2='#t' a CONSTANT_IDIO is not a C numeric type"
+c-type-error-load "c-type-errors/c-type-add-mixed-types.idio" "C/add n1, n2 types='(0 0)': should be the same C numeric type"
+
 c-type-error-load "c-type-errors/c-type-2integer-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C integral type"
 
 c-type-error-load "c-type-errors/c-type-integer2-char-range.idio" "char: range error"
@@ -86,12 +95,12 @@ c-type-error-load "c-type-errors/c-type-integer2-uint-range.idio" "uint: range e
    c-type-error-load "c-type-errors/c-type-integer2-longlong-range-max.idio" "longlong: range error"
    c-type-error-load "c-type-errors/c-type-integer2-ulonglong-range.idio" "ulonglong: range error"
  }))
-c-type-error-load "c-type-errors/c-type-integer2-bad-fixnum-c-type.idio" "type should be a C integral type"
+c-type-error-load "c-type-errors/c-type-integer2-bad-fixnum-c-type.idio" "C/integer-> type='float' a SYMBOL is not a C integral type"
 c-type-error-load "c-type-errors/c-type-integer2-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a integer"
 
-c-type-error-load "c-type-errors/c-type-integer2unsigned-fixnum-negative.idio" "i should be a positive integer"
-c-type-error-load "c-type-errors/c-type-integer2unsigned-bad-fixnum-c-type.idio" "type should be a C unsigned integral type"
-c-type-error-load "c-type-errors/c-type-integer2unsigned-bignum-negative.idio" "i should be a positive integer"
+c-type-error-load "c-type-errors/c-type-integer2unsigned-fixnum-negative.idio" "C/integer->unsigned i='-1': should be a positive integer"
+c-type-error-load "c-type-errors/c-type-integer2unsigned-bignum-negative.idio" "C/integer->unsigned i='-1': should be a positive integer"
+c-type-error-load "c-type-errors/c-type-integer2unsigned-bad-fixnum-c-type.idio" "C/integer->unsigned type='float' a SYMBOL is not a C unsigned integral type"
 c-type-error-load "c-type-errors/c-type-integer2unsigned-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a positive integer"
 
 c-type-error-load "c-type-errors/c-type-integer2unsigned-uchar-range.idio" "uchar: range error"
@@ -108,10 +117,10 @@ c-type-error-load "c-type-errors/c-type-2number-bad-type.idio" "bad parameter ty
 
 c-type-error-load "c-type-errors/c-type-2number-long-double.idio" "C/->number for C long double is not supported"
 
-c-type-error-load "c-type-errors/c-type-number2-bad-fixnum-c-type.idio" "type should be a C integral type"
-c-type-error-load "c-type-errors/c-type-number2-bad-bignum-c-type.idio" "type should be a C floating type"
+c-type-error-load "c-type-errors/c-type-number2-bad-fixnum-c-type.idio" "number-> type='number' a SYMBOL is not a C integral type"
+c-type-error-load "c-type-errors/c-type-number2-bad-bignum-c-type.idio" "number-> type='int' a SYMBOL is not a C floating type"
 c-type-error-load "c-type-errors/c-type-number2-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a number"
 c-type-error-load "c-type-errors/c-type-number2-bad-type-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a symbol"
 
 ;; all done?
-Tests? (c-type-error0 + 26)
+Tests? (c-type-error0 + 28)

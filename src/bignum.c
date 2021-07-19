@@ -687,14 +687,14 @@ IDIO idio_bignum_float (float f)
     if (255 == uf.parts.exponent) {
 	if (uf.parts.mantissa) {
 	    char em[30];
-	    sprintf (em, "NaN %07x", uf.parts.mantissa);
-	    idio_error_param_value (em, "non-special float", IDIO_C_FUNC_LOCATION ());
+	    sprintf (em, "NaN %07x non-special float", uf.parts.mantissa);
+	    idio_error_param_value_msg_only ("C/->number", "i", em, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	} else {
 	    char em[30];
-	    sprintf (em, "%cinf", uf.parts.sign ? '-' : '+');
-	    idio_error_param_value (em, "non-special float", IDIO_C_FUNC_LOCATION ());
+	    sprintf (em, "%cinf non-special float", uf.parts.sign ? '-' : '+');
+	    idio_error_param_value_msg_only ("C/->number", "i", em, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -712,15 +712,15 @@ IDIO idio_bignum_double (double d)
 
     if (2047 == ud.parts.exponent) {
 	if (ud.parts.mantissa) {
-	    char em[30];
-	    sprintf (em, "NaN %016llx", (unsigned long long int) ud.parts.mantissa);
-	    idio_error_param_value (em, "non-special double", IDIO_C_FUNC_LOCATION ());
+	    char em[60];
+	    sprintf (em, "NaN %016llx non-special double", (unsigned long long int) ud.parts.mantissa);
+	    idio_error_param_value_msg_only ("C/->number", "i", em, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	} else {
-	    char em[30];
-	    sprintf (em, "%cinf", ud.parts.sign ? '-' : '+');
-	    idio_error_param_value (em, "non-special double", IDIO_C_FUNC_LOCATION ());
+	    char em[60];
+	    sprintf (em, "%cinf non-special double", ud.parts.sign ? '-' : '+');
+	    idio_error_param_value_msg_only ("C/->number", "i", em, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -749,15 +749,15 @@ IDIO idio_bignum_longdouble (long double ld)
      */
     if (32767 == uld.parts_96bit.exponent) {
 	if (uld.parts_96bit.mantissa) {
-	    char em[30];
-	    sprintf (em, "NaN %020llx", uld.parts_96bit.mantissa);
-	    idio_error_param_value (em, "non-special double", IDIO_C_FUNC_LOCATION ());
+	    char em[60];
+	    sprintf (em, "NaN %020llx non-special long double", uld.parts_96bit.mantissa);
+	    idio_error_param_value_msg_only ("C/->number", "i", em, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	} else {
-	    char em[30];
-	    sprintf (em, "%cinf", uld.parts_96bit.sign ? '-' : '+');
-	    idio_error_param_value (em, "non-special double", IDIO_C_FUNC_LOCATION ());
+	    char em[60];
+	    sprintf (em, "%cinf non-special long double", uld.parts_96bit.sign ? '-' : '+');
+	    idio_error_param_value_msg_only ("C/->number", "i", em, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}

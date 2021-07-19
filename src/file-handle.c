@@ -2566,7 +2566,7 @@ off_t idio_seek_file_handle (IDIO fh, off_t offset, int whence)
 		 */
 		char em[BUFSIZ];
 		sprintf (em, "'%#x' is invalid", whence);
-		idio_error_param_value ("whence", em, IDIO_C_FUNC_LOCATION ());
+		idio_error_param_value_msg_only ("seek", "whence", em, IDIO_C_FUNC_LOCATION ());
 
 		/* notreached */
 		return -1;

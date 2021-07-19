@@ -1001,7 +1001,7 @@ IDIO idio_hash_put (IDIO h, void *kv, IDIO v)
 	 *
 	 * hash-set! ht #n #t
 	 */
-	idio_error_param_nil ("key", IDIO_C_FUNC_LOCATION ());
+	idio_error_param_nil ("hash-set!", "key", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -1102,7 +1102,7 @@ idio_hash_entry_t *idio_hash_he (IDIO h, void *kv)
 	 * User interfaces are protected multiple times so probably a
 	 * coding error.
 	 */
-	idio_error_param_nil ("key", IDIO_C_FUNC_LOCATION ());
+	idio_error_param_nil ("idio_hash_he", "key", IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return NULL;
@@ -1145,7 +1145,7 @@ int idio_hash_exists_key (IDIO h, void *kv)
 	 * User interfaces are protected multiple times so probably a
 	 * coding error.
 	 */
-	idio_error_param_nil ("key", IDIO_C_FUNC_LOCATION ());
+	idio_error_param_nil ("hash-exists?", "key", IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return 0;
@@ -1174,7 +1174,7 @@ IDIO idio_hash_exists (IDIO h, void *kv)
 	 *
 	 * hash-exists? ht #n
 	 */
-	idio_error_param_nil ("key", IDIO_C_FUNC_LOCATION ());
+	idio_error_param_nil ("idio_hash_exists", "key", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -1229,7 +1229,7 @@ IDIO idio_hash_ref (IDIO h, void *kv)
 	 *
 	 * hash-ref ht #n
 	 */
-	idio_error_param_nil ("key", IDIO_C_FUNC_LOCATION ());
+	idio_error_param_nil ("hash-ref", "key", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -1344,7 +1344,7 @@ int idio_hash_delete (IDIO h, void *kv)
 	 *
 	 * hash-delete! ht #n
 	 */
-	idio_error_param_nil ("key", IDIO_C_FUNC_LOCATION ());
+	idio_error_param_nil ("hash-delete!", "key", IDIO_C_FUNC_LOCATION ());
 
 	/* notreached */
 	return 0;
@@ -2046,7 +2046,7 @@ copy hash table `orig`					\n\
 		 *
 		 * copy-hash ht 'completely
 		 */
-		idio_error_param_value ("depth", "should be 'deep or 'shallow", IDIO_C_FUNC_LOCATION ());
+		idio_error_param_value_msg ("copy-hash", "depth", idepth, "should be 'deep or 'shallow", IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    }

@@ -467,7 +467,7 @@ IDIO idio_libc_proc_subst_named_pipe ()
 
 	return IDIO_LIST5 (idio_S_false, idio_S_false, np_name, np_name, td);
     } else {
-	idio_error_param_value ("tmpdir", "should be a pathname", IDIO_C_FUNC_LOCATION ());
+	idio_error_param_value_exp ("proc-subst-named-pipe", "tmpdir", td, "C pathname", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -1024,7 +1024,7 @@ char *idio_libc_signal_name (int signum)
 	 *
 	 * signal-name (C/integer-> -1)
 	 */
-	idio_error_param_value ("signum", "should be 0 < int < NSIG (OS dependent)", IDIO_C_FUNC_LOCATION ());
+	idio_error_param_value_msg ("sig-name", "signum", idio_fixnum (signum), "should be 0 < int < NSIG (OS dependent)", IDIO_C_FUNC_LOCATION ());
 
 	return NULL;
     }
@@ -2039,7 +2039,7 @@ char *idio_libc_errno_name (int errnum)
 	 *
 	 * errno-name (C/integer-> -1)
 	 */
-	idio_error_param_value ("errnum", "should be 0 < int < NERRNO (OS dependent)", IDIO_C_FUNC_LOCATION ());
+	idio_error_param_value_msg ("errno-name", "errnum", idio_fixnum (errnum), "should be 0 < int < NERRNO (OS dependent)", IDIO_C_FUNC_LOCATION ());
 
 	return NULL;
     }
@@ -2281,7 +2281,7 @@ char *idio_libc_rlimit_name (int rlim)
 	 *
 	 * rlimit-name (C/integer-> -1)
 	 */
-	idio_error_param_value ("rlim", "should be an 0 <= int < RLIM_NLIMITS", IDIO_C_FUNC_LOCATION ());
+	idio_error_param_value_msg ("rlimit-name", "rlim", idio_fixnum (rlim), "should be an 0 <= int < RLIM_NLIMITS", IDIO_C_FUNC_LOCATION ());
 
 	return NULL;
     }

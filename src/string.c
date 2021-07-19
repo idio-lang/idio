@@ -2915,7 +2915,7 @@ IDIO idio_strip_string (IDIO str, IDIO discard, IDIO ends)
 	     *
 	     * strip-string "abc" "a" 'neither
 	     */
-	    idio_error_param_value ("ends", "should be 'left, 'right, 'both or 'none", IDIO_C_FUNC_LOCATION ());
+	    idio_error_param_value_msg ("strip-string", "ends", end, "should be 'left, 'right, 'both or 'none", IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
