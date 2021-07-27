@@ -45,10 +45,10 @@ posix-regex-error-load := {
     ;eprintf "loading #%s %s looking for %s\n" n filename msg
     trap (^rt-regex-error
 	  ^rt-parameter-error) (function (c) {
-				  ;eprintf "posix-regex-error #%s: %s %s\n" n msg c.location
-				  test c.message msg
+				  ;eprintf "posix-regex-error #%s: %s %s\n" n msg (idio-error-location c)
+				  test (idio-error-message c) msg
 
-				  if (not (string=? c.message msg)) {
+				  if (not (string=? (idio-error-message c) msg)) {
 				    condition-report (append-string "posix-regex-error-load: " filename) c (current-error-handle)
 				  }
 

@@ -88,17 +88,17 @@ command-parent-error-load := {
 	  ^rt-glob-error
 	  ^system-error
 	  ^rt-parameter-type-error) (function (c) {
-				       ;eprintf "command-parent-error #%s: %s %s\n" n msg c.location
-				       test c.message msg
+				       ;eprintf "command-parent-error #%s: %s %s\n" n msg (idio-error-location c)
+				       test (idio-error-message c) msg
 
-				       if (not (string=? c.message msg)) {
+				       if (not (string=? (idio-error-message c) msg)) {
 					 condition-report (append-string "command-parent-error-load: " filename) c (current-error-handle)
 				       }
 
 				       if (system-error? c) {
 					 tested := #f
 					 if (pair? args) {
-					   test c.function (ph args)
+					   test (system-error-function c) (ph args)
 					   tested = #t
 					 }
 
@@ -120,89 +120,23 @@ command-parent-error-load := {
   }
 }
 
-#*
-
-command-child-error-load is for, uh, children of us.  The problem lies
-in that the (currently two) cases only occur once we have forked and
-are constructing the environment before execing the command.
-
-So the condition we are looking for occurs in the child Idio process.
-In order that the parent Idio (us) gets to know if the child Idio saw
-the condition is for the child Idio to exit with a specific error code
--- something not a usual exit code, 1, 2, ....  So we'll use an
-EXIT-STATUS of 10, 11, ....  No-one uses those, right?
-
-So, PARENT fork() -> CHILD -> contructs env for exec()
-
-CHILD runs idio_command_get_envp() which raises our expected
-condition.  As we'd only forked and not yet done anything useful the
-following trap is still in force hence the second clause, where PID
-!= (getpid), can test the condition message and if it matches then
-call exit(EXIT-STATUS).
-
-If the condition message doesn't match then exit with something
-non-zero but not unusual, hence 1.
-
-The PARENT hangs about waiting for the CHILD.  The PARENT gets an
-^rt-command-status-error (because the CHILD exited non-zero) and can
-assert that the reason the child died was because it called
-exit(EXIT-STATUS) which it uses as a proxy for the CHILD having seen
-the expected condition.
-
-Of course, if the expected condition was not raised and therefore the
-command actually ran and just happened to call exit(EXIT-STATUS) by
-sheer coincidence then...well, we'll have to think  of something else.
-
-*#
-
-command-child-error-load := {
+command-env-error-load := {
   n := 0
 
-  function (filename msg exit-status) {
+  function (filename msg) {
     if (not (string? filename)) (error 'load "not a string" filename)
 
     n = n + 1
-    ;eprintf "loading #%s %s looking for %s with exit (%d)\n" n filename msg exit-status
+    ;eprintf "loading #%s %s looking for %s\n" n filename msg
     trap (^rt-command-error
 	  ^rt-parameter-type-error) (function (c) {
-				       C-exit-status := C/integer-> exit-status
+				       test (idio-error-message c) msg
 
-				       if (C/== PID (getpid)) {
-					 ;; PARENT Idio process
-					 ;eprintf "[%d] == PID command-error #%s: %s at %s\n" (getpid) n msg c.location
-					 if (rt-command-error? c) {
-					   test c.message "job failed"
-
-					   jd := job-detail (idio-error-location c)
-					   test (ph jd) 'exit
-					   test (pht jd) C-exit-status
-
-					   if (not (and (equal? (ph jd) 'exit)
-							(equal? (pht jd) C-exit-status))) {
-							  condition-report (append-string "command-child-error-load: " filename) c (current-error-handle)
-							}
-					 } {
-					   test c.message msg
-					   
-					   if (not (string=? c.message msg)) {
-					     condition-report (append-string "command-child-error-load: " filename) c (current-error-handle)
-					   }
-					 }
-
-					 trap-return 'command-error
-				       } {
-					 ;; CHILD Idio process
-					 ;eprintf "[%d] != PID command-error #%s: %s at %s\n" (getpid) n msg c.location
-
-					 if (string=? c.message msg) {
-					   libc/exit exit-status
-					 } {
-					   condition-report (append-string "command-child-error-load: " filename) c (current-error-handle)
-					 }
-
-					 ;; something not 10, 11, 12, ...
-					 libc/exit 1
+				       if (not (string=? (idio-error-message c) msg)) {
+					 condition-report (append-string "command-child-error-load: " filename) c (current-error-handle)
 				       }
+
+				       trap-return #t
 	  }) {
 	    (symbol-value 'load 'Idio) filename
 	  }
@@ -212,8 +146,8 @@ command-child-error-load := {
   }
 }
 
-command-child-error-load "command-errors/env-format.idio" "environ 'IDIO-LIB' contains an ASCII NUL" 10
-command-child-error-load "command-errors/env-type.idio" "environment variable 'IDIO-LIB' is not a string" 11
+command-env-error-load "command-errors/env-format.idio" "environ 'IDIO-LIB' contains an ASCII NUL"
+command-env-error-load "command-errors/env-type.idio" "environment variable 'IDIO-LIB' is not a string"
 
 command-parent-error-load "command-errors/PATH-format.idio" "find-exe 'PATH' contains an ASCII NUL"
 
@@ -268,4 +202,4 @@ PATH = OPATH
 (wait)
 
 ;; all done?
-Tests? (command-error0 + 27)
+Tests? (command-error0 + 23)

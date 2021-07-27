@@ -50,23 +50,33 @@
 #include "util.h"
 #include "vm.h"
 
-static void idio_struct_error (IDIO msg, IDIO c_location)
+static void idio_struct_error (IDIO msg, IDIO st, IDIO args, IDIO c_location)
 {
     IDIO_ASSERT (msg);
+    IDIO_ASSERT (st);
+    IDIO_ASSERT (args);
     IDIO_ASSERT (c_location);
 
     IDIO_TYPE_ASSERT (string, msg);
+    IDIO_TYPE_ASSERT (struct_type, st);
     IDIO_TYPE_ASSERT (string, c_location);
 
     IDIO location = idio_vm_source_location ();
 
     IDIO detail = idio_S_nil;
+    IDIO dsh = idio_open_output_string_handle_C ();
+
+    idio_display_C ("st=", dsh);
+    idio_display (IDIO_STRUCT_TYPE_NAME (st), dsh);
+    idio_display_C (" from ", dsh);
+    idio_display (args, dsh);
 
 #ifdef IDIO_DEBUG
-    IDIO dsh = idio_open_output_string_handle_C ();
+    idio_display_C (": ", dsh);
     idio_display (c_location, dsh);
-    detail = idio_get_output_string (dsh);
 #endif
+
+    detail = idio_get_output_string (dsh);
 
     IDIO c = idio_struct_instance (idio_condition_rt_struct_error_type,
 				   IDIO_LIST3 (msg,
@@ -461,7 +471,7 @@ IDIO idio_struct_instance (IDIO st, IDIO values)
 	 */
 	char em[BUFSIZ];
 	sprintf (em, "make-struct-instance: not enough values: %" PRIdPTR " < %" PRIdPTR, i, size);
-	idio_struct_error (idio_string_C (em), IDIO_C_FUNC_LOCATION ());
+	idio_struct_error (idio_string_C (em), st, values, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -475,7 +485,7 @@ IDIO idio_struct_instance (IDIO st, IDIO values)
 	 */
 	char em[BUFSIZ];
 	sprintf (em, "make-struct-instance: too many values: %" PRIdPTR " > %" PRIdPTR, i, size);
-	idio_struct_error (idio_string_C (em), IDIO_C_FUNC_LOCATION ());
+	idio_struct_error (idio_string_C (em), st, values, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -819,7 +829,7 @@ instance of struct type ``st``			\n\
 	idio_display_C ("' is not a '", msh);
 	idio_display (IDIO_STRUCT_TYPE_NAME (st), msh);
 	idio_display_C ("'", msh);
-	idio_struct_error (idio_get_output_string (msh), IDIO_C_FUNC_LOCATION ());
+	idio_struct_error (idio_get_output_string (msh), st, IDIO_LIST2 (si, index), IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -989,7 +999,7 @@ instance of struct type ``st``			\n\
 	idio_display_C ("' is not a '", msh);
 	idio_display (IDIO_STRUCT_TYPE_NAME (st), msh);
 	idio_display_C ("'", msh);
-	idio_struct_error (idio_get_output_string (msh), IDIO_C_FUNC_LOCATION ());
+	idio_struct_error (idio_get_output_string (msh), st, IDIO_LIST3 (si, index, v), IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }

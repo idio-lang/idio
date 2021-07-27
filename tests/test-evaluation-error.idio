@@ -43,9 +43,9 @@ evaluation-error-load := {
     ;eprintf "loading #%s %s\n" n filename
     trap ^evaluation-error (function (c) {
 			      ;eprintf "evaluation-error #%s: %s %s\n" n msg c
-			      test c.message msg
+			      test (idio-error-message c) msg
 			      
-			      if (not (string=? c.message msg)) {
+			      if (not (string=? (idio-error-message c) msg)) {
 				condition-report (append-string "evaluation-error-load: " filename) c (current-error-handle)
 			      }
 			      

@@ -47,9 +47,9 @@ define-template (expander-trap type) {
 
 	thunk := function () {
 		   trap $condition-name (function (c) {
-					   ;eprintf "caught %s at %s\n" msg c.location
-					   test c.message msg
-					   if (not (string=? c.message msg)) {
+					   ;eprintf "caught %s at %s\n" msg (idio-error-location c)
+					   test (idio-error-message c) msg
+					   if (not (string=? (idio-error-message c) msg)) {
 					     condition-report (append-string $loader-name " " filename) c (current-error-handle)
 					   }
 					   trap-return c

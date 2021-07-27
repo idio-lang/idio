@@ -44,10 +44,10 @@ array-error-load := {
     ;eprintf "loading #%s %s looking for %s\n" n filename msg
     trap (^rt-array-error
 	  ^rt-parameter-type-error) (function (c) {
-				       ;eprintf "array-error #%s: %s %s\n" n msg c.location
-				       test c.message msg
+				       ;eprintf "array-error #%s: %s %s\n" n msg (idio-error-location c)
+				       test (idio-error-message c) msg
 
-				       if (not (string=? c.message msg)) {
+				       if (not (string=? (idio-error-message c) msg)) {
 					 condition-report (append-string "array-error-load: " filename) c (current-error-handle)
 				       }
 				       

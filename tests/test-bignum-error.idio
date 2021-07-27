@@ -44,10 +44,10 @@ bignum-error-load := {
     trap (^rt-bignum-error
 	  ^rt-number-error
 	  ^rt-parameter-type-error) (function (c) {
-				       ;eprintf "bignum-error #%s: %s %s\n" n msg c.location
-				       test c.message msg
+				       ;eprintf "bignum-error #%s: %s %s\n" n msg (idio-error-location c)
+				       test (idio-error-message c) msg
 
-				       if (not (string=? c.message msg)) {
+				       if (not (string=? (idio-error-message c) msg)) {
 					 condition-report (append-string "bignum-error-load: " filename) c (current-error-handle)
 				       }
 				       

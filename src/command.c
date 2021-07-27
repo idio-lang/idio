@@ -165,10 +165,11 @@ static void idio_command_env_type_error (IDIO name, IDIO c_location)
 #endif
 
     IDIO c = idio_struct_instance (idio_condition_rt_command_env_type_error_type,
-				   IDIO_LIST4 (idio_get_output_string (msh),
+				   IDIO_LIST5 (idio_get_output_string (msh),
 					       location,
 					       detail,
-					       name));
+					       name,
+					       idio_S_nil));
 
     idio_raise_condition (idio_S_true, c);
 

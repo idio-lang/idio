@@ -137,7 +137,7 @@ test (error? ^i/o-handle-error) #f
 c9 := condition ^i/o-handle-error (handle (current-input-handle))
 test (i/o-handle-error? c9) #t
 test (i/o-error? c9) #t
-test (i/o-error-handle c9) (current-input-handle)
+test (i/o-handle-error-handle c9) (current-input-handle)
 
 test (condition-type? ^i/o-no-such-file-error) #t
 test (error? ^i/o-no-such-file-error) #f
@@ -159,7 +159,7 @@ test (i/o-filename-error-filename c10) test_filename
 ;;
 trap ^i/o-read-error (function (c) {
 			test (i/o-read-error? c) #t
-			handle := i/o-error-handle c
+			handle := i/o-handle-error-handle c
 
 			'caught-a-read-error
 }) {
@@ -175,7 +175,7 @@ trap ^i/o-read-error (function (c) {
 ;;
 trap ^i/o-write-error (function (c) {
 			 test (i/o-write-error? c) #t
-			 handle := i/o-error-handle c
+			 handle := i/o-handle-error-handle c
 
 			 'caught-a-write-error
 }) {
@@ -193,7 +193,7 @@ trap ^i/o-write-error (function (c) {
 ;; only file-handles generate this
 trap ^i/o-closed-error (function (c) {
 			  test (i/o-closed-error? c) #t
-			  handle := i/o-error-handle c
+			  handle := i/o-handle-error-handle c
 
 			  #t
 }) {

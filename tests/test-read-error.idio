@@ -49,13 +49,13 @@ read-error-load := {
 
     ;eprintf "loading #%s %s looking for %s at line %s\n" n filename msg linenum
     trap (^read-error) (function (c) {
-				    ;eprintf "read-error #%s: %s %s %s\n" n msg c.location c.line
-				    test c.message msg
+				    ;eprintf "read-error #%s: %s %s %s\n" n msg (idio-error-location c) (idio-error-line c)
+				    test (idio-error-message c) msg
 
-				    test c.line linenum
+				    test (read-error-line c) linenum
 
-				    if (or (not (string=? c.message msg))
-					   (not (eq? c.line linenum))) {
+				    if (or (not (string=? (idio-error-message c) msg))
+					   (not (eq? (read-error-line c) linenum))) {
 					     condition-report (append-string "read-error-load: " filename) c (current-error-handle)
 					   }
 
@@ -84,10 +84,10 @@ string-error-load := {
 
     ;eprintf "loading #%s %s looking for %s at line %s\n" n filename msg linenum
     trap (^string-error) (function (c) {
-			    ;eprintf "string-error #%s: %s %s %s\n" n msg c.location c.line
-			    test c.message msg
+			    ;eprintf "string-error #%s: %s %s %s\n" n msg (idio-error-location c) (idio-error-line c)
+			    test (idio-error-message c) msg
 
-			    if (not (string=? c.message msg)) {
+			    if (not (string=? (idio-error-message c) msg)) {
 			      condition-report (append-string "string-error-load: " filename) c (current-error-handle)
 			    }
 

@@ -111,7 +111,7 @@ job-control-error-load := {
 
     exp-tests := 1
 
-    eprintf "loading #%s %s looking for %s\n" n filename exp
+    ;eprintf "loading #%s %s looking for %s\n" n filename exp
 
     ; standard pipe lock
     jcel-lock := (libc/pipe)
@@ -233,7 +233,7 @@ job-control-async-load := {
 
     exp-tests := 2
 
-    eprintf "loading #%s %s looking for %s\n" n filename exp
+    ;eprintf "loading #%s %s looking for %s\n" n filename exp
 
     ; pipe for reporting PIDs
     pid-pipe := (libc/pipe)
@@ -824,4 +824,4 @@ job-control-async-load "job-control-errors/pipeline-named-pipe-from-external-com
 job-control-async-load "job-control-errors/pipeline-named-pipe-from-external-compound-SIGPIPE-external-compound-exit-0.idio" exit-3
 
 ;; all done?
-Tests? (job-control0 + 0)
+Tests? (job-control0 + 187)

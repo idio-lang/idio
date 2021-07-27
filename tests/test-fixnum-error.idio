@@ -35,10 +35,10 @@ fixnum-error-load := {
     trap (^rt-fixnum-error
 	  ^rt-divide-by-zero-error
 	  ^rt-parameter-error) (function (c) {
-				  ;eprintf "fixnum-error #%s: %s %s\n" n msg c.location
-				  test c.message msg
+				  ;eprintf "fixnum-error #%s: %s %s\n" n msg (idio-error-location c)
+				  test (idio-error-message c) msg
 
-				  if (not (string=? c.message msg)) {
+				  if (not (string=? (idio-error-message c) msg)) {
 				    condition-report (append-string "fixnum-error-load: " filename) c (current-error-handle)
 				  }
 

@@ -44,10 +44,10 @@ symbol-error-load := {
     trap (^rt-symbol-error
 	  ^rt-hash-key-not-found-error
 	  ^rt-parameter-error) (function (c) {
-				  ;eprintf "symbol-error #%s: %s %s\n" n msg c.location
-				  test c.message msg
+				  ;eprintf "symbol-error #%s: %s %s\n" n msg (idio-error-location c)
+				  test (idio-error-message c) msg
 
-				  if (not (string=? c.message msg)) {
+				  if (not (string=? (idio-error-message c) msg)) {
 				    condition-report (append-string "symbol-error-load: " filename) c (current-error-handle)
 				  }
 				  

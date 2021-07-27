@@ -76,7 +76,7 @@ trap ^rt-signal-SIGCHLD (function (c) {
 			   raise c
 }) {
   trap ^rt-command-status-error (function (c) {
-				   ;eprintf "test load-handle trap: %s with %s\n" c.message c.status
+				   ;eprintf "test load-handle trap: %s with %s\n" (idio-error-message c) (rt-command-status-error-status c)
 				   test #t #t
   }) {
     ;printf "NOTICE: test-load-handle.idio: exec false; this will be picked up by test load-handle trap: pre\n"
