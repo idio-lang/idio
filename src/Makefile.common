@@ -10,6 +10,7 @@ BINDIR		?= $(TOPDIR)/bin
 LIBDIR		?= $(TOPDIR)/lib
 EXTDIR		?= $(TOPDIR)/ext
 TESTSDIR	?= $(TOPDIR)/tests
+UTILSDIR	?= $(TOPDIR)/utils
 DOCDIR		?= $(TOPDIR)/doc
 SRCDOCDIR	:= $(DOCDIR)/src
 SRCKDOUTDIR	:= $(SRCDOCDIR)/kernel-autodoc-out

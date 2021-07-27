@@ -46,6 +46,9 @@ where options are:
   -o NUM	write NUM lines to stdout (-s N seconds apart)
   -e NUM	write NUM lines to stderr (-s N seconds apart)
 
+  -I FILE	use FILE for input
+  -O FILE	use FILE for output
+
   -v		verbose
 EOF
 }
@@ -56,26 +59,35 @@ opt_read=
 opt_sleep=0
 opt_timeout=
 opt_verbose=
-opt_write_out=
-opt_write_err=
+opt_write_out_lines=
+opt_write_err_lines=
 
-while getopts "E:e:hK:o:r:s:t:v" opt ; do
+var_write_out_name=stdout
+
+while getopts "E:e:hI:K:O:o:r:s:t:v" opt ; do
     case "${opt}" in
     E)
 	opt_exit=${OPTARG}
 	;;
     e)
-	opt_write_err=${OPTARG}
+	opt_write_err_lines=${OPTARG}
 	;;
     h)
 	usage
 	exit 0
 	;;
+    I)
+	exec 0<${OPTARG}
+	;;
     K)
 	opt_kill=${OPTARG}
 	;;
+    O)
+	var_write_out_name=${OPTARG}
+	exec >${OPTARG}
+	;;
     o)
-	opt_write_out=${OPTARG}
+	opt_write_out_lines=${OPTARG}
 	;;
     r)
 	opt_read=${OPTARG}
@@ -104,27 +116,27 @@ if [[ ${opt_verbose} ]] ; then
 fi
 
 var_read=1
-var_write_out=1
-var_write_err=1
+var_write_out_lines=1
+var_write_err_lines=1
 
-if [[ ${opt_read} || $opt_write_out || $opt_write_err ]] ; then
-    while [[ ${opt_read} || ${opt_write_out} || ${opt_write_err} ]] ; do
-	if [[ ${opt_write_out} ]] ; then
-	    if [[ ${opt_write_out} -gt 0 ]] ; then
-		echo "${0##*/}: $$: wrote stdout line ${var_write_out}"
-		var_write_out=$(( var_write_out + 1 ))
-		opt_write_out=$(( opt_write_out - 1 ))
+if [[ ${opt_read} || $opt_write_out_lines || $opt_write_err_lines ]] ; then
+    while [[ ${opt_read} || ${opt_write_out_lines} || ${opt_write_err_lines} ]] ; do
+	if [[ ${opt_write_out_lines} ]] ; then
+	    if [[ ${opt_write_out_lines} -gt 0 ]] ; then
+		echo "${0##*/}: $$: wrote line ${var_write_out_lines} to ${var_write_out_name}"
+		var_write_out_lines=$(( var_write_out_lines + 1 ))
+		opt_write_out_lines=$(( opt_write_out_lines - 1 ))
 	    else
-		opt_write_out=
+		opt_write_out_lines=
 	    fi
 	fi
-	if [[ ${opt_write_err} ]] ; then
-	    if [[ ${opt_write_err} -gt 0 ]] ; then
-		echo "${0##*/}: $$: wrote stderr line ${var_write_err}" >&2
-		var_write_err=$(( var_write_err + 1 ))
-		opt_write_err=$(( opt_write_err - 1 ))
+	if [[ ${opt_write_err_lines} ]] ; then
+	    if [[ ${opt_write_err_lines} -gt 0 ]] ; then
+		echo "${0##*/}: $$: wrote line ${var_write_err_lines} stderr" >&2
+		var_write_err_lines=$(( var_write_err_lines + 1 ))
+		opt_write_err_lines=$(( opt_write_err_lines - 1 ))
 	    else
-		opt_write_err=
+		opt_write_err_lines=
 	    fi
 	fi
 	sleep $opt_sleep

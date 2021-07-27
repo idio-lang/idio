@@ -1,0 +1,14 @@
+
+{
+  (cond-expand
+   (uname/sysname/SunOS {
+     libc/sleep 1
+   })
+   (else {
+     job-control-pipeline-delay 10
+   }))
+  echo "hello"
+} | {
+  sleep 0
+  cat %P"/dev/null"
+}

@@ -70,6 +70,7 @@ clean : build-clean run-clean edit-clean
 
 build-clean:
 	rm -f *.o *.d $(BINDIR)/idio *.so TAGS map
+	rm -rf $(EXTDIR)/*/gen
 
 run-clean :
 	rm -f vgcore.* core.* core *.gcda *.gcno *.gcov gmon.out idio-asan.* idio-valgrind.* o e vm-*
@@ -80,7 +81,7 @@ else ifeq ($(OS),FreeBSD)
 endif
 
 edit-clean :
-	rm -f *~ $(LIBDIR)/*~ $(TESTSDIR)/*~
+	rm -f $(BINDIR)/*~ $(SRCDIR)/*~ $(SRCDIR)/build-bootstrap/*~ $(LIBDIR)/*~ $(TESTSDIR)/*~ $(TESTSDIR)/*/*~ $(EXTDIR)/*/src/*~ $(UTILSDIR)/*~ $(UTILSDIR)/*/*~
 
 dist-clean : clean
 	rm -f $(SRCDIR)/libc-api.h

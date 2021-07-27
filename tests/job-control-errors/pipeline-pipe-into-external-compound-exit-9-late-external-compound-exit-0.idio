@@ -1,0 +1,41 @@
+
+#*
+
+We should get an exit-0 from this test as, despite the late exit-9 in
+the LHS, the RHS will successfully open and create testfile with the
+expected contents as writes to a pipe are atomic
+
+*#
+
+if (e? testfile) {
+  rm testfile
+}
+
+oph := pipe-into {
+  cat "/dev/fd/0"
+  libc/exit 9
+} | {
+  cat "/dev/fd/0" > testfile
+}
+
+hprintf pid-ph "%d,%d\n" PID (%idio-job-pgid %%last-job)
+close-handle pid-ph
+
+str := sprintf "hello from %d" PID
+
+hprintf oph "%s\n" str
+close-handle oph
+
+(wait)
+
+if (e? testfile) {
+  ifh := open-input-file testfile
+  msg := read-line ifh
+  close-handle ifh
+
+  if (not (string=? str msg)) {
+    libc/exit 3
+  }
+} {
+  libc/exit 4
+}

@@ -68,6 +68,14 @@
 
 #include "libc-api.h"
 
+#if !defined (IDIO_DEV_FD)
+#if defined (BSD)
+#undef IDIO_DEV_FD
+#else
+#define IDIO_DEV_FD
+#endif
+#endif
+
 IDIO idio_libc_module = idio_S_nil;
 IDIO idio_vm_signal_handler_conditions;
 char **idio_libc_signal_names = NULL;
@@ -399,7 +407,7 @@ See ``pipe`` for a constructor ofthe pipe array.		\n\
  * pathnames.
  *
  * Otherwise we need to wash through mkdtemp(3)[1] and mkfifo(2).  We
- * do NOT open(2) (twice) otherwise we block!  You need two seaprate
+ * do NOT open(2) (twice) otherwise we block!  You need two separate
  * processes to open each end.  This means we won't be able to return
  * file descriptors as per pipe(2).
  *
@@ -427,9 +435,35 @@ See ``pipe`` for a constructor ofthe pipe array.		\n\
  * both unlink(2) the (named) pipe and rmdir(2) the directory when
  * we're done.
  */
-IDIO idio_libc_proc_subst_named_pipe ()
+IDIO idio_libc_proc_subst_named_pipe (int into)
 {
-#if defined (BSD)
+#ifdef IDIO_DEV_FD
+    int pipefd[2];
+
+    int pipe_r = pipe (pipefd);
+
+    if (-1 == pipe_r) {
+	/*
+	 * Test Case: ??
+	 *
+	 * Short of reaching EMFILE/ENFILE there's not much we can do.
+	 */
+	idio_error_system_errno ("pipe", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    char fd_name_C[PATH_MAX];
+    sprintf (fd_name_C, "/dev/fd/%d", pipefd[0]);
+
+    IDIO rfd_name = idio_fd_pathname_C (fd_name_C);
+
+    sprintf (fd_name_C, "/dev/fd/%d", pipefd[1]);
+
+    IDIO wfd_name = idio_fd_pathname_C (fd_name_C);
+
+    return IDIO_LIST4 (idio_C_int (pipefd[0]), idio_C_int (pipefd[1]), rfd_name, wfd_name);
+#else  /* IDIO_DEV_FD */
     /*
      * I wrote the %get-tmpdir in libc.idio in the style of Bash and
      * now I need it again here...  Poor FreeBSD, we'll need to go the
@@ -451,56 +485,39 @@ IDIO idio_libc_proc_subst_named_pipe ()
 	char *td_C = idio_string_as_C (td, &blen);
 
 	char np_name_C[PATH_MAX];
-	sprintf (np_name_C, "%s/the-pipe", td_C);
+	/* á Magritte */
+	sprintf (np_name_C, "%s/une-pipe", td_C);
 
 	IDIO_GC_FREE (td_C);
 
-	IDIO np_name = idio_pathname_C (np_name_C);
+	IDIO npr_name;
+	IDIO npw_name;
+	if (into) {
+	    npr_name = idio_pathname_C (np_name_C);
+	    npw_name = idio_pathname_C (np_name_C);
+	} else {
+	    npr_name = idio_pathname_C (np_name_C);
+	    npw_name = idio_pathname_C (np_name_C);
+	}
 
 	int mkfifo_r = mkfifo (np_name_C, S_IRUSR | S_IWUSR);
 
 	if (-1 == mkfifo_r) {
-	    idio_error_system_errno ("mkfifo", np_name, IDIO_C_FUNC_LOCATION ());
+	    idio_error_system_errno ("mkfifo", npr_name, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
 
-	return IDIO_LIST5 (idio_S_false, idio_S_false, np_name, np_name, td);
+	return IDIO_LIST5 (idio_S_false, idio_S_false, npr_name, npw_name, td);
     } else {
 	idio_error_param_value_exp ("proc-subst-named-pipe", "tmpdir", td, "C pathname", IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
-#else  /* BSD */
-    int pipefd[2];
-
-    int pipe_r = pipe (pipefd);
-
-    if (-1 == pipe_r) {
-	/*
-	 * Test Case: ??
-	 *
-	 * Short of reaching EMFILE/ENFILE there's not much we can do.
-	 */
-	idio_error_system_errno ("pipe", idio_S_nil, IDIO_C_FUNC_LOCATION ());
-
-	return idio_S_notreached;
-    }
-
-    char fd_name_C[PATH_MAX];
-    sprintf (fd_name_C, "/dev/fd/%d", pipefd[0]);
-
-    IDIO rfd_name = idio_pathname_C (fd_name_C);
-
-    sprintf (fd_name_C, "/dev/fd/%d", pipefd[1]);
-
-    IDIO wfd_name = idio_pathname_C (fd_name_C);
-
-    return IDIO_LIST4 (idio_C_int (pipefd[0]), idio_C_int (pipefd[1]), rfd_name, wfd_name);
-#endif /* BSD */
+#endif /* IDIO_DEV_FD */
 }
 
-IDIO_DEFINE_PRIMITIVE0_DS ("proc-subst-named-pipe", proc_subst_named_pipe, (void), "", "\
+IDIO_DEFINE_PRIMITIVE0_DS ("proc-subst-named-pipe-into", proc_subst_named_pipe_into, (void), "", "\
 return a (possibly named) pipe with pathnames for each end	\n\
 								\n\
 :return: see below						\n\
@@ -513,7 +530,81 @@ Otherwise the return value is:					\n\
 (#f, #f, pipe-name, pipe-name, tmpdir)				\n\
 ")
 {
-    return idio_libc_proc_subst_named_pipe ();
+    return idio_libc_proc_subst_named_pipe (1);
+}
+
+IDIO_DEFINE_PRIMITIVE0_DS ("proc-subst-named-pipe-from", proc_subst_named_pipe_from, (void), "", "\
+return a (possibly named) pipe with pathnames for each end	\n\
+								\n\
+:return: see below						\n\
+:rtype: list							\n\
+								\n\
+On /dev/fd supporting systems the return value is:		\n\
+(rfd, wfd, rname, wname)					\n\
+								\n\
+Otherwise the return value is:					\n\
+(#f, #f, pipe-name, pipe-name, tmpdir)				\n\
+")
+{
+    return idio_libc_proc_subst_named_pipe (0);
+}
+
+/*
+ * close-if-open is (obviously a dirty hack) for
+ * tidy-process-substitution-job where we generally expect the file
+ * descriptor to have been closed by other means.
+ *
+ * The alternative is "suppress-errors! ^system-error libc/close fd"
+ * which is an awful lot of template and trap code for something we
+ * sort of expect to fail.  Here we have two system calls.
+ */
+IDIO_DEFINE_PRIMITIVE1_DS ("close-if-open", libc_close_if_open, (IDIO fd), "fd", "\
+in C, fcntl(fd, F_GETFD) && close (fd)				\n\
+a wrapper to libc close(2)					\n\
+								\n\
+:param fd: file descriptor					\n\
+:type fd: C/int							\n\
+:return: 0 or raises ^system-error				\n\
+:rtype: C/int							\n\
+")
+{
+    IDIO_ASSERT (fd);
+
+    /*
+     * Test Case: libc-wrap-errors/close-if-open-bad-type.idio
+     *
+     * close-if-open #t
+     */
+    IDIO_USER_C_TYPE_ASSERT (int, fd);
+    int C_fd = IDIO_C_TYPE_int (fd);
+
+    int fcntl_r = fcntl (C_fd, F_GETFD);
+
+    if (-1 == fcntl_r) {
+	if (EBADF == errno) {
+	    return idio_C_int (0);
+	}
+
+	/*
+	 * Test Case: ??
+	 */
+	idio_error_system_errno ("close-if-open/fcntl", IDIO_LIST2 (fd, idio_symbols_C_intern ("F_GETFD")), IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    int close_r = close (C_fd);
+
+    if (-1 == close_r) {
+	/*
+	 * Test Case: ??
+	 */
+	idio_error_system_errno ("close-if-open/close", fd, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    }
+
+    return idio_C_int (close_r);
 }
 
 /*
@@ -1975,7 +2066,7 @@ static void idio_libc_set_errno_names ()
     IDIO_LIBC_ERRNO (EUSERS);
 #endif
 
-    /* FreeBSD, Linux, OSX, Solaris */
+    /* FreeBSD, Linux, OSX, Solaris == EGAIN? */
 #if defined (EWOULDBLOCK)
     IDIO_LIBC_ERRNO (EWOULDBLOCK);
 #endif
@@ -3082,7 +3173,9 @@ void idio_libc_wrap_add_primitives ()
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_exit);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_pipe_reader);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_pipe_writer);
-    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, proc_subst_named_pipe);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, proc_subst_named_pipe_into);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, proc_subst_named_pipe_from);
+    IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_close_if_open);
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_signal_handler);
 
     IDIO_EXPORT_MODULE_PRIMITIVE (idio_libc_module, libc_WEXITSTATUS);
@@ -3483,5 +3576,9 @@ void idio_init_libc_wrap ()
      * FreeBSD 10 you might need to define it yourself (as 1).  It is
      * not in OpenIndiana.
      */
+
+#ifdef IDIO_DEV_FD
+    idio_add_feature (idio_symbols_C_intern ("/dev/fd"));
+#endif
 }
 

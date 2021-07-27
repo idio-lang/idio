@@ -1,0 +1,3 @@
+
+auto-exit -K libc/SIGUSR1
+

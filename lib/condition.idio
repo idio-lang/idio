@@ -123,7 +123,7 @@ define-template (condition type & field-bindings) {
 (define-condition-type-accessors-only ^i/o-handle-error
 				      ^i/o-error
 				      i/o-handle-error?
-				      (handle i/o-error-handle))
+				      (handle i/o-handle-error-handle))
 
 (define-condition-type-accessors-only ^i/o-read-error
 				      ^i/o-handle-error
@@ -311,12 +311,14 @@ define-template (condition type & field-bindings) {
 (define-condition-type-accessors-only ^rt-command-format-error
 				      ^rt-command-error
 				      rt-command-format-error?
-				      (name rt-command-format-error-name))
+				      (name rt-command-format-error-name)
+				      (value rt-command-format-error-value))
 
 (define-condition-type-accessors-only ^rt-command-env-type-error
 				      ^rt-command-error
 				      rt-command-env-type-error?
-				      (name rt-command-env-type-error-name))
+				      (name rt-command-env-type-error-name)
+				      (value rt-command-env-type-error-value))
 
 (define-condition-type-accessors-only ^rt-command-exec-error
 				      ^rt-command-error
@@ -489,7 +491,7 @@ define (condition-report prefix c & args) "print a report on condition `c`
    ;; ^read-error
    ((read-error? c) {
      iem c
-     cr-printf " line %d" (idio-error-line c)
+     cr-printf " line %d" (read-error-line c)
    })
 
    ;; ^evaluation-error
@@ -568,11 +570,16 @@ define (condition-report prefix c & args) "print a report on condition `c`
    })
    ((rt-command-format-error? c) {
      iem c
-     cr-printf ": name '%s'" (rt-command-format-error-name c)
+     cr-printf ": "
+     name := (rt-command-format-error-name c)
+     if (not (null? name)) {
+       cr-printf "%s=" name
+     }
+     cr-printf "'%s'" (rt-command-format-error-value c)
    })
    ((rt-command-env-type-error? c) {
      iem c
-     cr-printf ": name '%s'" (rt-command-env-type-error-name c)
+     cr-printf ": name '%s'='%s'" (rt-command-env-type-error-name c) (rt-command-env-type-error-value c)
    })
    ((rt-command-exec-error? c) {
      iem c

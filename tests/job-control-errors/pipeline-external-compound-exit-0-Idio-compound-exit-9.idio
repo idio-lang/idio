@@ -1,0 +1,9 @@
+
+{
+  sleep 0
+  auto-exit -E 0
+} | {
+  libc/sleep 0
+  libc/exit 9
+}
+

@@ -1,0 +1,9 @@
+
+;; this is a foreground pipeline so we can use a pipe(2) lock we need
+;; to small sleep.
+
+{
+  job-control-pipeline-delay 6
+  puts "hello\n"
+} | libc/sleep 0
+

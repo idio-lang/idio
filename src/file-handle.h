@@ -62,7 +62,7 @@ void idio_gc_deregister_file_handle (IDIO fh);
 void idio_remember_file_handle (IDIO fh);
 void idio_forget_file_handle (IDIO fh);
 void idio_free_file_handle (IDIO fh);
-IDIO idio_open_file_handle_C (char *func, IDIO filename, char *pathname, int free_pathname, char *mode, int free_mode);
+IDIO idio_open_file_handle_C (char *func, IDIO filename, char *pathname, int free_pathname, char *mode, int free_mode, int user_mode);
 IDIO idio_stdin_file_handle ();
 IDIO idio_stdout_file_handle ();
 IDIO idio_stderr_file_handle ();

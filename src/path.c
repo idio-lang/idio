@@ -199,9 +199,9 @@ int idio_isa_pathname (IDIO o)
     IDIO_ASSERT (o);
 
     return ((idio_isa (o, IDIO_TYPE_STRING) &&
-	     IDIO_STRING_FLAG_PATHNAME == IDIO_STRING_FLAGS (o))||
+	     (IDIO_STRING_FLAGS (o) & IDIO_STRING_FLAG_PATHNAME)) ||
 	    (idio_isa (o, IDIO_TYPE_SUBSTRING) &&
-	     IDIO_STRING_FLAG_PATHNAME == IDIO_STRING_FLAGS (IDIO_SUBSTRING_PARENT (o))));
+	     (IDIO_STRING_FLAGS (IDIO_SUBSTRING_PARENT (o)) & IDIO_STRING_FLAG_PATHNAME)));
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("pathname?", pathname_p, (IDIO o), "o", "\
@@ -222,6 +222,60 @@ test if `o` is an pathname				\n\
     }
 
     return r;
+}
+
+IDIO idio_fd_pathname_C_len (const char *s_C, size_t blen)
+{
+    IDIO_C_ASSERT (s_C);
+
+    IDIO so = idio_pathname_C_len (s_C, blen);
+    IDIO_STRING_FLAGS (so) = IDIO_STRING_FLAG_FD_PATHNAME;
+
+    return so;
+}
+
+IDIO idio_fd_pathname_C (const char *s_C)
+{
+    IDIO_C_ASSERT (s_C);
+
+    return idio_fd_pathname_C_len (s_C, strlen (s_C));
+}
+
+int idio_isa_fd_pathname (IDIO o)
+{
+    IDIO_ASSERT (o);
+
+    return ((idio_isa (o, IDIO_TYPE_STRING) &&
+	     (IDIO_STRING_FLAGS (o) & IDIO_STRING_FLAG_FD_PATHNAME)) ||
+	    ((idio_isa (o, IDIO_TYPE_SUBSTRING) &&
+	      (IDIO_STRING_FLAGS (IDIO_SUBSTRING_PARENT (o)) & IDIO_STRING_FLAG_FD_PATHNAME))));
+}
+
+IDIO idio_fifo_pathname_C_len (const char *s_C, size_t blen)
+{
+    IDIO_C_ASSERT (s_C);
+
+    IDIO so = idio_pathname_C_len (s_C, blen);
+    IDIO_STRING_FLAGS (so) = IDIO_STRING_FLAG_FIFO_PATHNAME;
+
+    return so;
+}
+
+IDIO idio_fifo_pathname_C (const char *s_C)
+{
+    IDIO_C_ASSERT (s_C);
+
+    return idio_fifo_pathname_C_len (s_C, strlen (s_C));
+}
+
+int idio_isa_fifo_pathname (IDIO o)
+{
+    IDIO_ASSERT (o);
+
+    return ((idio_isa (o, IDIO_TYPE_STRING) &&
+	     (IDIO_STRING_FLAGS (o) & IDIO_STRING_FLAG_FIFO_PATHNAME)) ||
+	    ((idio_isa (o, IDIO_TYPE_SUBSTRING) &&
+	      (IDIO_STRING_FLAGS (IDIO_SUBSTRING_PARENT (o)) & IDIO_STRING_FLAG_FIFO_PATHNAME))));
 }
 
 IDIO idio_path_expand (IDIO p)

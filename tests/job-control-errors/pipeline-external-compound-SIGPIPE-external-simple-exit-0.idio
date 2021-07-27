@@ -1,0 +1,5 @@
+
+{
+  job-control-pipeline-delay 6
+  echo "hello"
+} | sleep 0

@@ -1,0 +1,6 @@
+
+{
+  sleep 0
+  auto-exit -K libc/SIGUSR1
+}
+

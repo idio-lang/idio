@@ -66,11 +66,13 @@
 #include "libc-wrap.h"
 #include "module.h"
 #include "pair.h"
+#include "path.h"
 #include "string-handle.h"
 #include "struct.h"
 #include "symbol.h"
 #include "thread.h"
 #include "util.h"
+#include "vars.h"
 #include "vm.h"
 
 #include "libc-api.h"
@@ -88,6 +90,7 @@ IDIO idio_job_control_process_type;
 IDIO idio_job_control_job_type;
 static IDIO idio_job_control_jobs_sym;
 static IDIO idio_job_control_last_job;
+IDIO idio_job_control_stray_pids_sym;
 
 static IDIO idio_S_background_job;
 static IDIO idio_S_foreground_job;
@@ -116,10 +119,11 @@ static IDIO idio_job_control_default_child_handler_sym;
 #define IDIO_JOB_ST_ASYNC		12
 
 #define IDIO_PROCESS_ST_ARGV		0
-#define IDIO_PROCESS_ST_PID		1
-#define IDIO_PROCESS_ST_COMPLETED	2
-#define IDIO_PROCESS_ST_STOPPED		3
-#define IDIO_PROCESS_ST_STATUS		4
+#define IDIO_PROCESS_ST_EXEC		1
+#define IDIO_PROCESS_ST_PID		2
+#define IDIO_PROCESS_ST_COMPLETED	3
+#define IDIO_PROCESS_ST_STOPPED		4
+#define IDIO_PROCESS_ST_STATUS		5
 
 static void idio_job_control_error_exec (char **argv, char **envp, IDIO c_location)
 {
@@ -444,7 +448,7 @@ static IDIO idio_job_control_job_detail (IDIO job)
 	procs = IDIO_PAIR_T (procs);
     }
 
-    return IDIO_LIST2 (idio_S_exit, idio_fixnum (0));
+    return IDIO_LIST2 (idio_S_exit, idio_C_int (0));
 }
 
 IDIO_DEFINE_PRIMITIVE1_DS ("job-detail", job_detail, (IDIO job), "job", "\
@@ -605,8 +609,6 @@ static IDIO idio_job_control_wait_for_job (IDIO job)
 {
     IDIO_ASSERT (job);
     IDIO_TYPE_ASSERT (struct_instance, job);
-
-    idio_debug ("ijc-wfj: %s\n", job);
 
     if (! idio_struct_instance_isa (job, idio_job_control_job_type)) {
 	idio_error_param_type ("%idio-job", job, IDIO_C_FUNC_LOCATION ());
@@ -770,9 +772,10 @@ void idio_job_control_do_job_notification ()
 	    IDIO psj = idio_hash_ref (ps_jobs, job);
 
 	    if (idio_S_unspec != psj) {
-		idio_debug ("unlink/rm %s\n", psj);
 		IDIO psj_path = idio_struct_instance_ref_direct (psj, 1);
 		if (idio_S_false != psj_path) {
+		    fprintf (stderr, "%6d: SHUTDOWN: ", getpid ());
+		    idio_debug ("unlink/rm %s\n", psj);
 		    size_t size = 0;
 		    char *path_C = idio_string_as_C (psj_path, &size);
 		    size_t C_size = strlen (path_C);
@@ -1150,7 +1153,7 @@ IDIO idio_job_control_SIGTERM_stopped_jobs ()
     IDIO jobs = idio_module_symbol_value (idio_job_control_jobs_sym, idio_job_control_module, idio_S_nil);
     if (idio_S_nil != jobs) {
 	if (idio_job_control_interactive) {
-	    fprintf (stderr, "TERM: outstanding jobs: ");
+	    fprintf (stderr, "%6d: ijc SIGTERM: outstanding jobs: ", getpid());
 	    idio_debug ("%s\n", jobs);
 	}
 
@@ -1167,6 +1170,13 @@ IDIO idio_job_control_SIGTERM_stopped_jobs ()
 	 * YMMV
 	 */
 	jobs = idio_copy (jobs, IDIO_COPY_SHALLOW);
+
+	/*
+	 * In the time it takes us to shutdown jobs we may get
+	 * ^rt-async-command-status-errors
+	 */
+	idio_module_set_symbol_value (idio_vars_suppress_async_command_report_sym, idio_S_true, idio_Idio_module);
+
 	while (idio_S_nil != jobs) {
 	    IDIO job = IDIO_PAIR_H (jobs);
 	    if (idio_job_control_job_is_stopped (job) ||
@@ -1174,7 +1184,8 @@ IDIO idio_job_control_SIGTERM_stopped_jobs ()
 		pid_t job_pgid = IDIO_C_TYPE_libc_pid_t (idio_struct_instance_ref_direct (job, IDIO_JOB_ST_PGID));
 
 		if (job_pgid > 0) {
-		    fprintf (stderr, "%6d: SIGTERM -> pgid %d\n", getpid (), job_pgid);
+		    fprintf (stderr, "%6d: ijc SIGTERM -> pgid %d\n", getpid (), job_pgid);
+		    idio_debug ("job %s\n", job);
 		    /*
 		     * Following in the style of Bash's
 		     * terminate_stopped_jobs(), issue the SIGTERM before
@@ -1191,7 +1202,7 @@ IDIO idio_job_control_SIGTERM_stopped_jobs ()
 		     * async.  Always completed.  Transient timing
 		     * issue?
 		     */
-		    fprintf (stderr, "SIGTERM -> pgid %d ??\n", job_pgid);
+		    fprintf (stderr, "%6d: ijc SIGTERM -> pgid %d ??\n", getpid(), job_pgid);
 		    idio_debug ("job %s\n", job);
 		}
 	    }
@@ -1396,11 +1407,12 @@ static void idio_job_control_prep_io (int infile, int outfile, int errfile)
     }
 }
 
-static void idio_job_control_prep_process (pid_t job_pgid, int infile, int outfile, int errfile, int foreground)
+static void idio_job_control_prep_process (pid_t job_pgid, int infile, int outfile, int errfile, int foreground, int async)
 {
     pid_t pid;
 
-    if (idio_job_control_interactive) {
+    if (idio_job_control_interactive ||
+	async) {
 	pid = getpid ();
 	if (0 == job_pgid) {
 	    job_pgid = pid;
@@ -1419,7 +1431,9 @@ static void idio_job_control_prep_process (pid_t job_pgid, int infile, int outfi
 	    /* notreached */
 	    return;
 	}
+    }
 
+    if (idio_job_control_interactive) {
 	if (foreground) {
 	    /*
 	     * Give the terminal to the process group.  Dupe of parent
@@ -1450,7 +1464,7 @@ static void idio_job_control_prep_process (pid_t job_pgid, int infile, int outfi
     idio_job_control_prep_io (infile, outfile, errfile);
 }
 
-IDIO_DEFINE_PRIMITIVE4_DS ("%prep-process", prep_process, (IDIO ipgid, IDIO iinfile, IDIO ioutfile, IDIO ierrfile, IDIO iforeground), "pgid infile outfile errfile foreground", "\
+IDIO_DEFINE_PRIMITIVE5_DS ("%prep-process", prep_process, (IDIO pgid, IDIO infile, IDIO outfile, IDIO errfile, IDIO foreground, IDIO async), "pgid infile outfile errfile foreground async", "\
 prepare the current process			\n\
 						\n\
 :param pgid: process group id			\n\
@@ -1458,46 +1472,54 @@ prepare the current process			\n\
 :param outfile: file descriptor for stdout	\n\
 :param errfile: file descriptor for stderr	\n\
 :param foreground: boolean			\n\
+:param async: boolean				\n\
 						\n\
 :return: #<unspec>				\n\
 						\n\
 Place the current process in `pgid` and dup() stdin, stdout and stderr.\n\
 Place the current process in the foreground if requested.\n\
+Mark the job as asynchronous if requested.	\n\
 						\n\
 File descriptors are C integers.		\n\
 ")
 {
-    IDIO_ASSERT (ipgid);
-    IDIO_ASSERT (iinfile);
-    IDIO_ASSERT (ioutfile);
-    IDIO_ASSERT (ierrfile);
-    IDIO_ASSERT (iforeground);
+    IDIO_ASSERT (pgid);
+    IDIO_ASSERT (infile);
+    IDIO_ASSERT (outfile);
+    IDIO_ASSERT (errfile);
+    IDIO_ASSERT (foreground);
 
-    IDIO_USER_C_TYPE_ASSERT (int, iinfile);
-    IDIO_USER_C_TYPE_ASSERT (int, ioutfile);
-    IDIO_USER_C_TYPE_ASSERT (int, ierrfile);
-    IDIO_USER_TYPE_ASSERT (boolean, iforeground);
+    IDIO_USER_C_TYPE_ASSERT (int, infile);
+    IDIO_USER_C_TYPE_ASSERT (int, outfile);
+    IDIO_USER_C_TYPE_ASSERT (int, errfile);
+    IDIO_USER_TYPE_ASSERT (boolean, foreground);
 
-    pid_t pgid = 0;
-    if (idio_isa_libc_pid_t (ipgid)) {
-	pgid = IDIO_C_TYPE_libc_pid_t (ipgid);
+    pid_t C_pgid = 0;
+    if (idio_isa_libc_pid_t (pgid)) {
+	C_pgid = IDIO_C_TYPE_libc_pid_t (pgid);
     } else {
-	idio_error_param_type ("libc/pid_t", ipgid, IDIO_C_FUNC_LOCATION ());
+	idio_error_param_type ("libc/pid_t", pgid, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
 
-    int infile = IDIO_C_TYPE_int (iinfile);
-    int outfile = IDIO_C_TYPE_int (ioutfile);
-    int errfile = IDIO_C_TYPE_int (ierrfile);
+    int C_infile = IDIO_C_TYPE_int (infile);
+    int C_outfile = IDIO_C_TYPE_int (outfile);
+    int C_errfile = IDIO_C_TYPE_int (errfile);
 
-    int foreground = 0;
+    int C_foreground = 0;
 
-    if (idio_S_true == iforeground) {
-	foreground = 1;
+    if (idio_S_true == foreground) {
+	C_foreground = 1;
     }
 
-    idio_job_control_prep_process (pgid, infile, outfile, errfile, foreground);
+    int C_async = 0;
+
+    if (idio_S_true == async) {
+	C_async = 1;
+    }
+
+    idio_job_control_prep_process (C_pgid, C_infile, C_outfile, C_errfile, C_foreground, C_async);
 
     return idio_S_unspec;
 }
@@ -1563,7 +1585,8 @@ static void idio_job_control_launch_job (IDIO job, int foreground)
 					   infile,
 					   outfile,
 					   job_stderr,
-					   foreground);
+					   foreground,
+					   0);
 	    /*
 	     * In the info example, we would have execv'd a job_control in
 	     * prep_process whereas we have merely gotten everything
@@ -1632,7 +1655,7 @@ static void idio_job_control_launch_job (IDIO job, int foreground)
     }
 }
 
-IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char **argv)
+IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char *pathname, char **argv, IDIO args)
 {
     IDIO_ASSERT (job);
     IDIO_TYPE_ASSERT (struct_instance, job);
@@ -1656,6 +1679,9 @@ IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char **argv)
     int job_stdin = IDIO_C_TYPE_int (idio_struct_instance_ref_direct (job, IDIO_JOB_ST_STDIN));
     int job_stdout = IDIO_C_TYPE_int (idio_struct_instance_ref_direct (job, IDIO_JOB_ST_STDOUT));
     int job_stderr = IDIO_C_TYPE_int (idio_struct_instance_ref_direct (job, IDIO_JOB_ST_STDERR));
+    IDIO job_async = idio_struct_instance_ref_direct (job, IDIO_JOB_ST_ASYNC);
+
+    char **envp = idio_command_get_envp ();
 
     /*
      * We're here because the VM saw a symbol in functional position
@@ -1667,7 +1693,7 @@ IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char **argv)
      * original Idio's pid.
      */
 
-    if (getpid () == idio_job_control_cmd_pid) {
+    if (idio_S_false == job_async) {
 	IDIO jobs = idio_module_symbol_value (idio_job_control_jobs_sym, idio_job_control_module, idio_S_nil);
 	idio_module_set_symbol_value (idio_job_control_jobs_sym, idio_pair (job, jobs), idio_job_control_module);
 
@@ -1702,9 +1728,8 @@ IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char **argv)
 					   job_stdin,
 					   job_stdout,
 					   job_stderr,
-					   foreground);
-
-	    char **envp = idio_command_get_envp ();
+					   foreground,
+					   0);
 
 	    if (close (pgrp_pipe[1]) < 0) {
 		idio_error_system_errno ("close", idio_fixnum (pgrp_pipe[1]), IDIO_C_FUNC_LOCATION ());
@@ -1724,8 +1749,14 @@ IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char **argv)
 		return idio_S_notreached;
 	    }
 
-	    execve (argv[0], argv, envp);
+	    execve (pathname, argv, envp);
 	    perror ("execv");
+	    char **av;
+	    fprintf (stderr, "exec: [%s] ", pathname);
+	    for (av = argv; *av; av++) {
+		fprintf (stderr, "%s ", *av);
+	    }
+	    fprintf (stderr, "\n");
 	    idio_job_control_error_exec (argv, envp, IDIO_C_FUNC_LOCATION ());
 
 	    exit (33);
@@ -1768,6 +1799,26 @@ IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char **argv)
 		return idio_S_notreached;
 	    }
 
+	    char **av = argv + 1;
+	    IDIO as = args;
+	    while (idio_S_nil != as) {
+		IDIO arg = IDIO_PAIR_H (as);
+		if (idio_isa_fd_pathname (arg)) {
+		    /*
+		     * "/dev/fd/" is 8 chars and the following number
+		     * is in base 10
+		     */
+		    IDIO fd = idio_fixnum_C (*av + 8, 10);
+		    if (close (IDIO_FIXNUM_VAL (fd)) == -1) {
+			if (EBADF != errno) {
+			    perror ("close named-pipe FD");
+			}
+		    }
+		}
+		as = IDIO_PAIR_T (as);
+		av++;
+	    }
+
 	    /*
 	     * We want to prefer the most recently defined versions of
 	     * the following functions.  If not we'll always use the C
@@ -1796,7 +1847,9 @@ IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char **argv)
 	     * As we simply return the result of idio_vm_invoke_C(),
 	     * no need to protect anything here.
 	     */
-	    return idio_vm_invoke_C (idio_thread_current_thread (), cmd);
+	    IDIO r = idio_vm_invoke_C (idio_thread_current_thread (), cmd);
+
+	    return r;
 	}
     } else {
 	/*
@@ -1806,9 +1859,7 @@ IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char **argv)
 				  job_stdout,
 				  job_stderr);
 
-	char **envp = idio_command_get_envp ();
-
-	execve (argv[0], argv, envp);
+	execve (pathname, argv, envp);
 	perror ("execv");
 	idio_job_control_error_exec (argv, envp, IDIO_C_FUNC_LOCATION ());
 
@@ -1869,11 +1920,12 @@ launch a pipeline of `job_controls`			\n\
     IDIO cmds = job_controls;
     while (idio_S_nil != cmds) {
 	IDIO proc = idio_struct_instance (idio_job_control_process_type,
-					  IDIO_LIST5 (IDIO_PAIR_H (cmds),
-						      idio_libc_pid_t (-1),
-						      idio_S_false,
-						      idio_S_false,
-						      idio_S_nil));
+					  idio_pair (IDIO_PAIR_H (cmds),
+						     IDIO_LIST5 (idio_S_nil,
+								 idio_libc_pid_t (-1),
+								 idio_S_false,
+								 idio_S_false,
+								 idio_S_nil)));
 
 	procs = idio_pair (proc, procs);
 
@@ -2232,16 +2284,19 @@ void idio_init_job_control ()
     idio_module_set_symbol_value (idio_job_control_jobs_sym, idio_S_nil, idio_job_control_module);
     idio_job_control_last_job = idio_symbols_C_intern ("%%last-job");
     idio_module_set_symbol_value (idio_job_control_last_job, idio_S_nil, idio_job_control_module);
+    idio_job_control_stray_pids_sym = idio_symbols_C_intern ("%idio-stray-pids");
+    idio_module_set_symbol_value (idio_job_control_stray_pids_sym, IDIO_HASH_EQP (4), idio_job_control_module);
 
     sym = idio_symbols_C_intern ("%idio-process");
     idio_job_control_process_type = idio_struct_type (sym,
 						      idio_S_nil,
 						      idio_pair (idio_symbols_C_intern ("argv"),
+						      idio_pair (idio_symbols_C_intern ("exec"),
 						      idio_pair (idio_symbols_C_intern ("pid"),
 						      idio_pair (idio_symbols_C_intern ("completed"),
 						      idio_pair (idio_symbols_C_intern ("stopped"),
 						      idio_pair (idio_symbols_C_intern ("status"),
-						      idio_S_nil))))));
+						      idio_S_nil)))))));
     idio_module_set_symbol_value (sym, idio_job_control_process_type, idio_job_control_module);
 
     sym = idio_symbols_C_intern ("%idio-job");

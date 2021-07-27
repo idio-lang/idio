@@ -460,16 +460,16 @@ int main (int argc, char **argv, char **envp)
 
     IDIO dosh = idio_open_output_string_handle_C ();
 
-    idio_display_C ("ABORT to main => exit (probably badly)", dosh);
+    idio_display_C ("ABORT to main/bootstrap => exit (probably badly)", dosh);
 
     idio_array_push (idio_vm_krun, IDIO_LIST2 (idio_k_exit, idio_get_output_string (dosh)));
 
     idio_load_file_name (idio_string_C ("bootstrap"), idio_vm_constants);
 
-    idio_state = IDIO_STATE_RUNNING;
     idio_gc_collect_all ("post-bootstrap");
-
     idio_add_terminal_signals ();
+    idio_state = IDIO_STATE_RUNNING;
+
     /*
      * Dig out the (post-bootstrap) definition of "load" which will
      * now be continuation and module aware.
@@ -482,6 +482,49 @@ int main (int argc, char **argv, char **envp)
 	/* notreached */
 	exit (3);
     }
+
+    /*
+     * It would scan better if we don't report the script failing in
+     * bootstrap when it emerges from siglongjmp with
+     * IDIO_VM_SIGLONGJMP_EXIT.
+     *
+     * However, many continuations created during bootstrap cached the
+     * bootstrap's jmp_buf as this one didn't exist at the time.
+     *
+     * That's not to stop us redefining the idio_k_exit continuation
+     * or, more importantly, adding the redefined value to to set of
+     * VM kruns
+     */
+    sjv = sigsetjmp (IDIO_THREAD_JMP_BUF (thr), 1);
+
+    switch (sjv) {
+    case 0:
+	break;
+    case IDIO_VM_SIGLONGJMP_EXIT:
+	fprintf (stderr, "NOTICE: script/exit (%d) for PID %d\n", idio_exit_status, getpid ());
+	IDIO_GC_FREE (sargv);
+	idio_final ();
+	exit (idio_exit_status);
+	break;
+    default:
+	fprintf (stderr, "sigsetjmp: script failed with sjv %d: exit (%d)\n", sjv, idio_exit_status);
+	IDIO_GC_FREE (sargv);
+	idio_final ();
+	exit (idio_exit_status);
+	break;
+    }
+
+    /*
+     * Save a continuation for exit.
+     */
+    idio_k_exit = idio_continuation (thr, IDIO_CONTINUATION_CALL_CC);
+    idio_gc_protect_auto (idio_k_exit);
+
+    dosh = idio_open_output_string_handle_C ();
+
+    idio_display_C ("ABORT to main/script => exit (probably badly)", dosh);
+
+    idio_array_push (idio_vm_krun, IDIO_LIST2 (idio_k_exit, idio_get_output_string (dosh)));
 
     enum options {
 	OPTION_NONE,
@@ -533,7 +576,7 @@ int main (int argc, char **argv, char **envp)
 			    idio_exit_status = 1;
 			    break;
 			case IDIO_VM_SIGLONGJMP_EXIT:
-			    fprintf (stderr, "load/exit (%d)\n", idio_exit_status);
+			    fprintf (stderr, "load %s/exit (%d)\n", argv[i], idio_exit_status);
 			    IDIO_GC_FREE (sargv);
 			    idio_final ();
 			    exit (idio_exit_status);

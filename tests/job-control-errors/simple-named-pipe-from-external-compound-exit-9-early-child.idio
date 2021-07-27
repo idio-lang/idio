@@ -1,0 +1,28 @@
+
+str := sprintf "hello from %d" PID
+
+lock := (libc/pipe)
+
+ipn := named-pipe-from {
+  libc/exit 9
+  echo str
+}
+
+hprintf pid-ph "%d,%d\n" PID (%idio-job-pgid %%last-job)
+close-handle pid-ph
+
+(cond-expand
+ (/dev/fd {
+   ;; ensure the /dev/fd named pipe async command has completed
+   libc/close (libc/pipe-writer lock)
+   libc/read (libc/pipe-reader lock) 1
+   libc/close (libc/pipe-reader lock)
+
+   (wait)
+ }))
+
+msg := job-control-read-line-from ipn
+
+if (not (string=? str msg)) {
+  libc/exit 3
+}

@@ -303,19 +303,18 @@ size_t idio_string_storage_size (IDIO s)
 	width = 4;
 	break;
     case IDIO_STRING_FLAG_PATHNAME:
+    case IDIO_STRING_FLAG_FD_PATHNAME:
+    case IDIO_STRING_FLAG_FIFO_PATHNAME:
 	width = 1;
 	break;
     default:
 	{
 	    /*
-	     * Test Case: ??
-	     *
-	     * Coding error.
+	     * Test Case: coding error
 	     */
-	    char em[BUFSIZ];
+	    char em[30];
 	    sprintf (em, "%#x", flags);
-
-	    idio_string_utf8_decode_error ("unexpected flag", em, IDIO_C_FUNC_LOCATION ());
+	    idio_error_param_value_msg_only ("idio_string_storage_size", "unexpected string flag", em, IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
 	    return 0;
@@ -386,7 +385,7 @@ IDIO idio_string_C_len (const char *s_C, size_t blen)
 	     *
 	     * Coding error.
 	     */
-	    char em[BUFSIZ];
+	    char em[30];
 	    sprintf (em, "%#x", flags);
 
 	    idio_string_utf8_decode_error ("unexpected flag", em, IDIO_C_FUNC_LOCATION ());
@@ -437,7 +436,7 @@ IDIO idio_string_C_len (const char *s_C, size_t blen)
 		 *
 		 * Coding error.  Should have been caught above.
 		 */
-		char em[BUFSIZ];
+		char em[30];
 		sprintf (em, "%#x", flags);
 
 		idio_string_utf8_decode_error ("unexpected flag", em, IDIO_C_FUNC_LOCATION ());
@@ -557,7 +556,7 @@ IDIO idio_string_C_array_lens (size_t ns, char *a_C[], size_t lens[])
 	     *
 	     * Coding error.
 	     */
-	    char em[BUFSIZ];
+	    char em[30];
 	    sprintf (em, "%#x", flags);
 
 	    idio_string_utf8_decode_error ("unexpected flag", em, IDIO_C_FUNC_LOCATION ());
@@ -614,7 +613,7 @@ IDIO idio_string_C_array_lens (size_t ns, char *a_C[], size_t lens[])
 		     *
 		     * Coding error.  Should have been caught above.
 		     */
-		    char em[BUFSIZ];
+		    char em[30];
 		    sprintf (em, "%#x", flags);
 
 		    idio_string_utf8_decode_error ("unexpected flag", em, IDIO_C_FUNC_LOCATION ());
@@ -978,7 +977,7 @@ If no default value is supplied #\{space} is used.	\n\
 	     *
 	     * Coding error.
 	     */
-	    char em[BUFSIZ];
+	    char em[30];
 	    sprintf (em, "%#x", flags);
 
 	    idio_string_utf8_decode_error ("unexpected flag", em, IDIO_C_FUNC_LOCATION ());
@@ -1015,7 +1014,7 @@ If no default value is supplied #\{space} is used.	\n\
 		 *
 		 * Coding error.  Should have been caught above.
 		 */
-		char em[BUFSIZ];
+		char em[30];
 		sprintf (em, "%#x", flags);
 
 		idio_string_utf8_decode_error ("unexpected flag", em, IDIO_C_FUNC_LOCATION ());
@@ -1195,7 +1194,7 @@ IDIO idio_list_list2string (IDIO l)
 	     *
 	     * Coding error.
 	     */
-	    char em[BUFSIZ];
+	    char em[30];
 	    sprintf (em, "%#x", flags);
 
 	    idio_string_utf8_decode_error ("unexpected flag", em, IDIO_C_FUNC_LOCATION ());
@@ -1238,7 +1237,7 @@ IDIO idio_list_list2string (IDIO l)
 		 *
 		 * Coding error.  Should have been caught above.
 		 */
-		char em[BUFSIZ];
+		char em[30];
 		sprintf (em, "%#x", flags);
 
 		idio_string_utf8_decode_error ("unexpected flag", em, IDIO_C_FUNC_LOCATION ());

@@ -908,7 +908,7 @@ does not return per se						\n\
 
 	if (IDIO_STATE_RUNNING == idio_state) {
 	    IDIO cmd = IDIO_LIST1 (idio_module_symbol_value (idio_symbols_C_intern ("debug"),
-							     idio_Idio_module,
+							     idio_debugger_module,
 							     idio_S_nil));
 
 	    IDIO r = idio_vm_invoke_C (thr, cmd);
@@ -1252,8 +1252,8 @@ void idio_init_condition ()
 
     IDIO_DEFINE_CONDITION0 (idio_condition_rt_command_error_type, "^rt-command-error", idio_condition_runtime_error_type);
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_command_argv_type_error_type, "^rt-command-argv-type-error", idio_condition_rt_command_error_type, "arg");
-    IDIO_DEFINE_CONDITION1 (idio_condition_rt_command_format_error_type, "^rt-command-format-error", idio_condition_rt_command_error_type, "name");
-    IDIO_DEFINE_CONDITION1 (idio_condition_rt_command_env_type_error_type, "^rt-command-env-type-error", idio_condition_rt_command_error_type, "name");
+    IDIO_DEFINE_CONDITION2 (idio_condition_rt_command_format_error_type, "^rt-command-format-error", idio_condition_rt_command_error_type, "name", "value");
+    IDIO_DEFINE_CONDITION2 (idio_condition_rt_command_env_type_error_type, "^rt-command-env-type-error", idio_condition_rt_command_error_type, "name", "value");
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_command_exec_error_type, "^rt-command-exec-error", idio_condition_rt_command_error_type, "errno");
     IDIO_DEFINE_CONDITION1 (idio_condition_rt_command_status_error_type, IDIO_CONDITION_RCSE_TYPE_NAME, idio_condition_rt_command_error_type, "status");
     IDIO_DEFINE_CONDITION0 (idio_condition_rt_async_command_status_error_type, IDIO_CONDITION_RACSE_TYPE_NAME, idio_condition_rt_command_status_error_type);

@@ -1,0 +1,13 @@
+
+suppress-pipefail! = #t
+
+{
+  job-control-pipeline-delay 6
+  echo "hello"
+} | {
+  sleep 0
+  cat %P"/dev/null"
+}
+
+;; controlled exit
+libc/exit 3

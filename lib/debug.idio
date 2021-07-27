@@ -19,6 +19,11 @@
 ;; debug.idio
 ;;
 
+module debugger
+export (
+	 debug
+)
+
 debug := #n
 
 {
@@ -105,3 +110,6 @@ debug := #n
 	    })
   }
 }
+
+;; done
+provide debugger

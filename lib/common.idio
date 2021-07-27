@@ -392,7 +392,7 @@ The default padding character is #\{space}
 			     })
 			     (else {
 			       if (null? args) {
-				 eprintf "not enough args for %%%s at .%d in %s\n" k i fmt
+				 eprintf "not enough args for %%%s at %d/%d in '%s'\n" k i e fmt
 				 error '%format "not enough args for %" k
 			       }
 

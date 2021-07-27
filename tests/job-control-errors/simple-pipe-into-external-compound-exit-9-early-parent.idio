@@ -1,0 +1,39 @@
+
+if (e? testfile) {
+  rm testfile
+}
+
+lock := (libc/pipe)
+
+oph := pipe-into {
+  libc/close (libc/pipe-writer lock)
+  libc/read (libc/pipe-reader lock) 1
+  libc/close (libc/pipe-reader lock)
+
+  libc/exit 9
+  cat "/dev/fd/0" > testfile
+}
+
+hprintf pid-ph "%d,%d\n" PID (%idio-job-pgid %%last-job)
+close-handle pid-ph
+
+str := sprintf "hello from %d" PID
+
+hprintf oph "%s\n" str
+close-handle oph
+
+libc/close (libc/pipe-writer lock)
+
+(wait)
+
+if (e? testfile) {
+  ifh := open-input-file testfile
+  msg := read-line ifh
+  close-handle ifh
+
+  if (not (string=? str msg)) {
+    libc/exit 3
+  }
+} {
+  libc/exit 4
+}

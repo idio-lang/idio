@@ -1,0 +1,32 @@
+
+if (e? testfile) {
+  rm testfile
+}
+
+opn := named-pipe-into {
+  job-control-pipeline-delay 6
+  (cat)
+} | {
+  libc/sleep 0
+}
+
+hprintf pid-ph "%d,%d\n" PID (%idio-job-pgid %%last-job)
+close-handle pid-ph
+
+str := sprintf "hello from %d" PID
+
+job-control-write-line-to opn str
+
+(wait)
+
+if (e? testfile) {
+  ifh := open-input-file testfile
+  msg := read-line ifh
+  close-handle ifh
+
+  if (not (string=? str msg)) {
+    libc/exit 3
+  }
+} {
+  libc/exit 4
+}

@@ -1,0 +1,20 @@
+
+str := sprintf "hello from %d" PID
+
+iph := pipe-from {
+  echo str
+} | {
+  cat "/dev/fd/0"
+}
+
+hprintf pid-ph "%d,%d\n" PID (%idio-job-pgid %%last-job)
+close-handle pid-ph
+
+msg := read-line iph
+close-handle iph
+
+(wait)
+
+if (not (string=? str msg)) {
+  libc/exit 3
+}

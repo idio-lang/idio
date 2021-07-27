@@ -1,0 +1,5 @@
+
+{
+  libc/sleep 0
+  libc/exit 0
+}

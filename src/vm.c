@@ -6760,6 +6760,7 @@ IDIO idio_vm_run (IDIO thr, idio_ai_t pc, int caller)
 	idio_gc_reset ("idio_vm_run/event", gc_pause);
 	break;
     case IDIO_VM_SIGLONGJMP_EXIT:
+	fprintf (stderr, "NOTICE: idio_vm_run/exit (%d) for PID %d\n", idio_exit_status, getpid ());
 	idio_gc_reset ("idio_vm_run/exit", gc_pause);
 	idio_final ();
 	exit (idio_exit_status);

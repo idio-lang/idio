@@ -207,9 +207,10 @@ static void idio_command_format_error (char *circumstance, char *msg, IDIO var, 
 #endif
 
     IDIO c = idio_struct_instance (idio_condition_rt_command_format_error_type,
-				   IDIO_LIST4 (idio_get_output_string (msh),
+				   IDIO_LIST5 (idio_get_output_string (msh),
 					       location,
 					       detail,
+					       var,
 					       val));
 
     idio_raise_condition (idio_S_true, c);
@@ -1130,7 +1131,7 @@ void idio_command_free_argv1 (char **argv)
  * that does this, and not have everything duplicated but we're not
  * quite there yet.
  */
-IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
+IDIO idio_command_invoke (IDIO name, IDIO thr, char *pathname)
 {
     IDIO val = IDIO_THREAD_VAL (thr);
 
@@ -1152,7 +1153,15 @@ IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
 
     char **argv = idio_command_argv (args);
 
-    argv[0] = pathname;
+    if (idio_isa_symbol (name)) {
+	argv[0] = IDIO_SYMBOL_S (name);
+    } else if (idio_isa_string (name)) {
+	size_t size = 0;
+	argv[0] = idio_string_as_C (name, &size);
+    } else {
+	fprintf (stderr, "ici: name isa %s\n", idio_type2string (name));
+	argv[0] = pathname;
+    }
 
     IDIO stack = IDIO_THREAD_STACK (thr);
 
@@ -1174,15 +1183,16 @@ IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
     IDIO protected = idio_array (10);
     idio_array_push (stack, protected);
 
-    IDIO command = idio_list_append2 (IDIO_LIST1 (func), args);
+    IDIO command = idio_list_append2 (IDIO_LIST1 (name), args);
     idio_array_push (protected, command);
 
     IDIO proc = idio_struct_instance (idio_job_control_process_type,
-				      IDIO_LIST5 (command,
-						  idio_C_int (-1),
-						  idio_S_false,
-						  idio_S_false,
-						  idio_S_nil));
+				      idio_pair (command,
+						 IDIO_LIST5 (idio_S_nil,
+							     idio_C_int (-1),
+							     idio_S_false,
+							     idio_S_false,
+							     idio_S_nil)));
     idio_array_push (protected, proc);
 
     IDIO cmd_sym;
@@ -1270,7 +1280,7 @@ IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname)
 				     idio_S_nil))))))))))))));
     idio_array_push (protected, job);
 
-    IDIO r = idio_job_control_launch_1proc_job (job, 1, argv);
+    IDIO r = idio_job_control_launch_1proc_job (job, 1, pathname, argv, args);
 
     /*
      * OK, we're in the clear now!

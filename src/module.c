@@ -69,10 +69,15 @@ static IDIO idio_modules_hash = idio_S_nil;
  * There is a little bit of artiface as getting and setting the
  * symbols referred to here is really an indirection to
  * idio_vm_values_(ref|set).
+ *
+ * idio_debugger_module doesn't really have a home but defining it in
+ * condition.c, where it is used, seems wrong.
  */
 
 IDIO idio_primitives_module = idio_S_nil;
 IDIO idio_Idio_module = idio_S_nil;
+IDIO idio_debugger_module = idio_S_nil;
+
 static IDIO idio_module_direct_reference_string = idio_S_nil;
 static IDIO idio_module_set_symbol_value_string = idio_S_nil;
 static IDIO idio_module_add_computed_symbol_string = idio_S_nil;
@@ -2089,7 +2094,7 @@ void idio_init_module ()
     IDIO_MODULE_STRING (init, "idio-module-init");
 
     /*
-     * We need to pre-seed the Idio module with the names of these two
+     * We need to pre-seed the Idio module with the names of these
      * modules.
      *
      * So *primitives* is a symbol (and value) in the Idio module.  As
@@ -2098,21 +2103,28 @@ void idio_init_module ()
      * The implied usage is that in idio_module() we set the default
      * imports list for all other modules to be '(Idio *primitives*)
      */
-    IDIO name;
 
-    name = idio_symbols_C_intern ("*primitives*");
-    idio_primitives_module = idio_module (name);
+    IDIO pname = idio_symbols_C_intern ("*primitives*");
+    idio_primitives_module = idio_module (pname);
     IDIO_MODULE_IMPORTS (idio_primitives_module) = idio_S_nil;
-    idio_ai_t pm_gci = idio_vm_constants_lookup_or_extend (name);
+    idio_ai_t pm_gci = idio_vm_constants_lookup_or_extend (pname);
     idio_ai_t pm_gvi = idio_vm_extend_values ();
 
-    name = idio_symbols_C_intern ("Idio");
-    idio_Idio_module = idio_module (name);
+    IDIO Iname = idio_symbols_C_intern ("Idio");
+    idio_Idio_module = idio_module (Iname);
     IDIO_MODULE_IMPORTS (idio_Idio_module) = IDIO_LIST1 (IDIO_LIST1 (idio_primitives_module));
-    idio_ai_t Im_gci = idio_vm_constants_lookup_or_extend (name);
+    idio_ai_t Im_gci = idio_vm_constants_lookup_or_extend (Iname);
     idio_ai_t Im_gvi = idio_vm_extend_values ();
 
-    idio_module_set_symbol (name, IDIO_LIST5 (idio_S_toplevel, idio_fixnum (pm_gci), idio_fixnum (pm_gvi), idio_Idio_module, idio_module_init_string), idio_Idio_module);
-    idio_module_set_symbol (name, IDIO_LIST5 (idio_S_toplevel, idio_fixnum (Im_gci), idio_fixnum (Im_gvi), idio_Idio_module, idio_module_init_string), idio_Idio_module);
+    IDIO dname = idio_symbols_C_intern ("debugger");
+    idio_debugger_module = idio_module (dname);
+    idio_ai_t dm_gci = idio_vm_constants_lookup_or_extend (dname);
+    idio_ai_t dm_gvi = idio_vm_extend_values ();
+
+    idio_module_set_symbol (pname, IDIO_LIST5 (idio_S_toplevel, idio_fixnum (pm_gci), idio_fixnum (pm_gvi), idio_Idio_module, idio_module_init_string), idio_Idio_module);
+
+    idio_module_set_symbol (Iname, IDIO_LIST5 (idio_S_toplevel, idio_fixnum (Im_gci), idio_fixnum (Im_gvi), idio_Idio_module, idio_module_init_string), idio_Idio_module);
+
+    idio_module_set_symbol (dname, IDIO_LIST5 (idio_S_toplevel, idio_fixnum (dm_gci), idio_fixnum (dm_gvi), idio_Idio_module, idio_module_init_string), idio_Idio_module);
 }
 

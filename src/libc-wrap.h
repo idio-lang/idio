@@ -92,7 +92,9 @@ extern IDIO idio_libc_struct_stat;
 #define IDIO_LIBC_SIGNAL_NAME_AND_CONDITION(n) {			\
 	IDIO sig_sym = idio_symbols_C_intern (#n);			\
 	idio_libc_export_symbol_value (sig_sym, idio_C_int (n));	\
-	sprintf (idio_libc_signal_names[n], "%s", #n); \
+	if ('\0' == idio_libc_signal_names[n][0]) {			\
+	    sprintf (idio_libc_signal_names[n], "%s", #n);		\
+	}								\
 	IDIO sig_ct;							\
 	IDIO_DEFINE_CONDITION0_DYNAMIC (sig_ct, "^rt-signal-" #n, idio_condition_rt_signal_type); \
 	IDIO sig_cond = idio_struct_instance (sig_ct, IDIO_LIST1 (idio_C_int (n))); \
@@ -102,7 +104,9 @@ extern IDIO idio_libc_struct_stat;
 #define IDIO_LIBC_SIGNAL(n) {						\
 	IDIO sig_sym = idio_symbols_C_intern (#n);			\
 	idio_libc_export_symbol_value (sig_sym, idio_C_int (n));	\
-	sprintf (idio_libc_signal_names[n], "%s", #n); \
+	if ('\0' == idio_libc_signal_names[n][0]) {			\
+	    sprintf (idio_libc_signal_names[n], "%s", #n);		\
+	}								\
 	IDIO sig_ct;							\
 	IDIO_DEFINE_CONDITION0_DYNAMIC (sig_ct, "^rt-signal-" #n, idio_condition_rt_signal_type); \
 	IDIO sig_cond = idio_struct_instance (sig_ct, IDIO_LIST1 (idio_C_int (n))); \
@@ -112,7 +116,9 @@ extern IDIO idio_libc_struct_stat;
 #define IDIO_LIBC_ERRNO(n) {						\
 	IDIO err_sym = idio_symbols_C_intern (#n);			\
 	idio_libc_export_symbol_value (err_sym, idio_C_int (n));	\
-	sprintf (idio_libc_errno_names[n], "%s", IDIO_SYMBOL_S (err_sym)); \
+	if ('\0' == idio_libc_errno_names[n][0]) {			\
+	    sprintf (idio_libc_errno_names[n], "%s", IDIO_SYMBOL_S (err_sym)); \
+	}								\
 	IDIO err_ct;							\
 	IDIO_DEFINE_CONDITION0_DYNAMIC (err_ct, "^system-error-" #n, idio_condition_system_error_type);	\
 	IDIO err_cond = idio_struct_instance (err_ct, IDIO_LIST5 (idio_S_nil, idio_S_nil, idio_S_nil, idio_C_int (n), idio_S_nil)); \
@@ -122,7 +128,9 @@ extern IDIO idio_libc_struct_stat;
 #define IDIO_LIBC_RLIMIT(n) {						\
 	IDIO rlimit_sym = idio_symbols_C_intern (#n);			\
 	idio_libc_export_symbol_value (rlimit_sym, idio_C_int (n));	\
-	sprintf (idio_libc_rlimit_names[n], "%s", IDIO_SYMBOL_S (rlimit_sym)); \
+	if ('\0' == idio_libc_rlimit_names[n][0]) {			\
+	    sprintf (idio_libc_rlimit_names[n], "%s", IDIO_SYMBOL_S (rlimit_sym)); \
+	}								\
     }
 
 extern IDIO idio_vm_signal_handler_conditions;

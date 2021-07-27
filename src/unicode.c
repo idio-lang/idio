@@ -321,12 +321,8 @@ char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted, int us
      * Figure out the number of bytes required including escape
      * sequences
      */
-    int is_pathname = 0;
-    switch (flags) {
-    case IDIO_STRING_FLAG_PATHNAME:
-	is_pathname = 1;
-	break;
-    }
+    int is_pathname = (flags & (IDIO_STRING_FLAG_PATHNAME | IDIO_STRING_FLAG_FD_PATHNAME | IDIO_STRING_FLAG_FIFO_PATHNAME));
+
     size_t i;
     size_t n = 0;
     for (i = 0; i < len; i++) {
@@ -342,8 +338,22 @@ char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted, int us
 	    c = s32[i];
 	    break;
 	case IDIO_STRING_FLAG_PATHNAME:
+	case IDIO_STRING_FLAG_FD_PATHNAME:
+	case IDIO_STRING_FLAG_FIFO_PATHNAME:
 	    c = s8[i];
 	    break;
+	default:
+	    {
+		/*
+		 * Test Case: coding error
+		 */
+		char em[30];
+		sprintf (em, "%#x", flags);
+		idio_error_param_value_msg_only ("idio_utf8_string", "unexpected string flag", em, IDIO_C_FUNC_LOCATION ());
+
+		/* notreached */
+		return NULL;
+	    }
 	}
 
 	if (c >= 0x10000) {
@@ -384,6 +394,9 @@ char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted, int us
 	if (is_pathname) {
 	    bytes += 2;		/* leading %P */
 	}
+	if (flags & IDIO_STRING_FLAG_FIFO_PATHNAME) {
+	    bytes += 1;
+	}
     }
 
     char *r = idio_alloc (bytes);
@@ -393,6 +406,9 @@ char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted, int us
 	if (is_pathname) {
 	    r[n++] = '%';
 	    r[n++] = 'P';
+	}
+	if (flags & IDIO_STRING_FLAG_FIFO_PATHNAME) {
+	    r[n++] = 'F';
 	}
 	r[n++] = '"';
     }
@@ -409,8 +425,23 @@ char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted, int us
 	    c = s32[i];
 	    break;
 	case IDIO_STRING_FLAG_PATHNAME:
+	case IDIO_STRING_FLAG_FD_PATHNAME:
+	case IDIO_STRING_FLAG_FIFO_PATHNAME:
 	    c = s8[i];
 	    break;
+	default:
+	    {
+		/*
+		 * Test Case: coding error -- and should have been picked
+		 * up above!
+		 */
+		char em[30];
+		sprintf (em, "%#x", flags);
+		idio_error_param_value_msg_only ("idio_utf8_string", "unexpected string flag", em, IDIO_C_FUNC_LOCATION ());
+
+		/* notreached */
+		return NULL;
+	    }
 	}
 
 	char ec = 0;
@@ -473,7 +504,7 @@ char *idio_utf8_string (IDIO str, size_t *sizep, int escapes, int quoted, int us
 		    /*
 		     * Hopefully, this is guarded against elsewhere
 		     */
-		    char em[BUFSIZ];
+		    char em[50];
 		    sprintf (em, "U+%04" PRIX32 " is invalid", c);
 		    idio_error_param_value_msg_only ("idio_utf8_string", "Unicode code point", em, IDIO_C_FUNC_LOCATION ());
 
@@ -529,7 +560,7 @@ void idio_utf8_code_point (idio_unicode_t c, char *buf, int *sizep)
 	/*
 	 * Hopefully, this is guarded against elsewhere
 	 */
-	char em[BUFSIZ];
+	char em[50];
 	sprintf (em, "U+%04" PRIX32 " is invalid", c);
 	idio_error_param_value_msg_only ("idio_utf8_code_point", "Unicode code point", em, IDIO_C_FUNC_LOCATION ());
 

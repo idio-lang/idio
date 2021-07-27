@@ -46,7 +46,6 @@ include "struct.idio"
 include "condition.idio"
 include "path.idio"
 include "posix-regex.idio"
-include "debug.idio"
 
 include "module.idio"
 
@@ -60,6 +59,14 @@ include "SRFI-95.idio"			; sort, merge
 ; after SRFI-95, please
 include "doc.idio"
 
+import SRFI-0				; cond-expand
 import job-control			; override C primitives
 import unicode
-import SRFI-0				; cond-expand
+
+;; don't create a code dump if there are no debug symbols
+(cond-expand
+ ((not IDIO_DEBUG) {
+   rl := libc/getrlimit libc/RLIMIT_CORE
+   libc/struct-rlimit-set! rl 'rlim_cur (C/integer-> 0 libc/rlim_t)
+   libc/setrlimit libc/RLIMIT_CORE rl
+ }))

@@ -1,0 +1,10 @@
+
+suppress-exit-on-error! = #t
+
+{
+  job-control-pipeline-delay 6
+  puts "hello\n"
+} | libc/sleep 0
+
+;; controlled exit
+libc/exit 3

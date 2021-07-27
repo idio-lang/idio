@@ -744,15 +744,19 @@ int idio_equal (IDIO o1, IDIO o2, int eqp)
 		}
 
 		/*
-		 * string flags is a bit squireely.  We've tacked
+		 * string flags is a bit squirrelly.  We've tacked
 		 * pathnames on the back of strings but strings can
 		 * have different widths and be The Same.
 		 *
-		 * So really we want to verify that if one os a
+		 * So really we want to verify that if one is a
 		 * pathname then the other is too.
 		 */
-		if ((IDIO_STRING_FLAGS (o1) & IDIO_STRING_FLAG_PATHNAME) !=
-		    (IDIO_STRING_FLAGS (o2) & IDIO_STRING_FLAG_PATHNAME)) {
+		if (((IDIO_STRING_FLAGS (o1) & IDIO_STRING_FLAG_PATHNAME) !=
+		     (IDIO_STRING_FLAGS (o2) & IDIO_STRING_FLAG_PATHNAME)) ||
+		    ((IDIO_STRING_FLAGS (o1) & IDIO_STRING_FLAG_FD_PATHNAME) !=
+		     (IDIO_STRING_FLAGS (o2) & IDIO_STRING_FLAG_FD_PATHNAME)) ||
+		    ((IDIO_STRING_FLAGS (o1) & IDIO_STRING_FLAG_FIFO_PATHNAME) !=
+		     (IDIO_STRING_FLAGS (o2) & IDIO_STRING_FLAG_FIFO_PATHNAME))) {
 		    /*
 		     * Code coverage:
 		     *
@@ -2161,6 +2165,11 @@ char *idio_as_string (IDIO o, size_t *sizep, int depth, IDIO seen, int first)
 					case IDIO_TYPE_C_ULONGLONG:
 					    ui = (uintmax_t) IDIO_C_TYPE_ulonglong (o);
 					    j = sizeof (unsigned long long) * CHAR_BIT;
+					    break;
+					default:
+					    fprintf (stderr, "unexpected type=%#x\n", type);
+					    ui = 0;
+					    j = 0;
 					    break;
 					}
 					int seen_bit = 0;

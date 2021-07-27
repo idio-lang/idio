@@ -257,13 +257,16 @@ typedef uint8_t IDIO_I;
  */
 #define IDIO_STRING_FLAG_NONE		0
 /*
- * Coincidentally, these are the number of bytes required for storage
- * per code-point.  Do not rely on this, these are just flags!
+ * Coincidentally, the nBYTE flags are the number of bytes required
+ * for storage per code-point.  Do not rely on this, these are just
+ * flags!
  */
 #define IDIO_STRING_FLAG_1BYTE		(1<<0)
 #define IDIO_STRING_FLAG_2BYTE		(1<<1)
 #define IDIO_STRING_FLAG_4BYTE		(1<<2)
 #define IDIO_STRING_FLAG_PATHNAME	(1<<3)
+#define IDIO_STRING_FLAG_FD_PATHNAME	(1<<4)
+#define IDIO_STRING_FLAG_FIFO_PATHNAME	(1<<5)
 
 struct idio_string_s {
     /**

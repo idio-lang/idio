@@ -51,8 +51,9 @@ export (%idio-interactive
 	background-job
 	foreground-job
 	default-child-handler
-	process-substitution-jobs
+	%%process-substitution-jobs
 	add-process-substitution-job
+	tidy-process-substitution-job
 	wait-for-job
 
 	format-job-detail
@@ -78,10 +79,41 @@ export (%idio-interactive
 	jobs)
 
 
-export-struct-accessors-only %idio-process	argv pid completed stopped status
+export-struct-accessors-only %idio-process	argv exec pid completed stopped status
 export-struct-accessors-only %idio-job		pipeline procs pgid notified raised tcattrs stdin stdout stderr report-timing timing-start timing-end async
 
 %%last-job := #n
+
+define (process-as-string proc seen) {
+  if (%idio-process? proc) {
+    r := (open-output-string)
+    hprintf r "#<SI %%idio-process "
+
+    hprintf r "PID=%s C?=%s S?%s: " (%idio-process-pid proc) (%idio-process-completed proc) (%idio-process-stopped proc)
+    if (%idio-process-completed proc) {
+      status := %idio-process-status proc
+      (cond
+       ((null? status) {
+	 hprintf r " running: "
+       })
+       ((WIFEXITED status) {
+	 hprintf r " exit %d: " (WEXITSTATUS status)
+       })
+       ((WIFSIGNALED status) {
+	 hprintf r " kill -%d: " (WTERMSIG status)
+       })
+       (else {
+	 hprintf r " unknown: "
+       }))
+    }
+    hprintf r "%s " (%idio-process-argv proc)
+
+    hprintf r ">"
+    get-output-string r
+  } #n
+}
+
+add-as-string %idio-process process-as-string
 
 define (job-as-string job seen) {
   if (%idio-job? job) {
@@ -104,11 +136,17 @@ define (job-as-string job seen) {
 			if (%idio-process-completed proc) {
 			  status := %idio-process-status proc
 			  (cond
+			   ((null? status) {
+			     hprintf r " running: "
+			   })
 			   ((WIFEXITED status) {
 			     hprintf r " exit %d: " (WEXITSTATUS status)
 			   })
 			   ((WIFSIGNALED status) {
 			     hprintf r " kill -%d: " (WTERMSIG status)
+			   })
+			   (else {
+			     hprintf r " unknown: "
 			   }))
 			}
 			hprintf r "%s] " (%idio-process-argv proc)
@@ -151,13 +189,9 @@ component when we had it in our hands to begin with.
 
 *#
 
-export-struct %process-substitution-job		fd path dir
+export-struct %process-substitution-job		read fd path dir suppress
 
-%%process-substitution-jobs := make-hash #n #n 4
-
-define (process-substitution-jobs) {
-  %%process-substitution-jobs
-}
+%%process-substitution-jobs := #{}
 
 define (add-process-substitution-job job psj) {
   hash-set! %%process-substitution-jobs job psj
@@ -165,14 +199,40 @@ define (add-process-substitution-job job psj) {
 
 define (tidy-process-substitution-job job) {
   if (hash-exists? %%process-substitution-jobs job) {
+    jd := job-detail job
     psj := hash-ref %%process-substitution-jobs job
     hash-delete! %%process-substitution-jobs job
-    if (C/int? (%process-substitution-job-fd psj)) {
-      libc/close (%process-substitution-job-fd psj)
+    fd := (%process-substitution-job-fd psj)
+    if fd {
+      ;; everything except a read pipe that exited 0 gets closed
+      if (not (and (%process-substitution-job-read psj)
+		   (eq? (ph jd) 'exit)
+		   (C/== (pht jd) C/0i))) {
+		     ;; We're not using suppress-errors! and
+		     ;; libc/close as we expect the fd to already have
+		     ;; been closed (in
+		     ;; idio_job_control_launch_1proc_job() or by the
+		     ;; user directly) and so the suppress-errors!
+		     ;; templated trap is far far (far) more code than
+		     ;; up to two system calls require
+
+		     libc/close-if-open fd
+		   }
     }
     if (%process-substitution-job-path psj) {
       libc/unlink (%process-substitution-job-path psj)
       libc/rmdir (%process-substitution-job-dir psj)
+    }
+
+    pgid := %idio-job-pgid job
+    if (C/> pgid C/0i) {
+      if (not (job-is-completed job)) {
+	eprintf "%6d: tidy-psj: kill -TERM %d:\n" PID pgid
+	format-job-detail job (current-error-handle)
+	suppress-errors! ^system-error killpg pgid SIGTERM
+      }
+    } {
+      eprintf "%6d: tidy-psj: kill -TERM %d? from %s\n" PID pgid job
     }
   }
 }
@@ -310,8 +370,7 @@ left-hand processes are ignored
 
   ;; return rightmost non-zero exit status or the status from the last
   ;; (or any as they all succeeded but the last is top of procs)
-  procs := %idio-job-procs job
-  loop procs
+  loop (%idio-job-procs job)
 }
 
 ;; job-detail => '(exit X) or '(killed Y)
@@ -323,22 +382,39 @@ define (job-detail job) "return the process status of job `job`
 
 kind can be: 'exit or 'killed
 value can be: exit status for 'exit or signal number for 'killed
+
+If ``suppress-pipefail!`` is not ``#f`` then nominally failed
+left-hand processes are ignored
 " {
   if (null? job) (error 'job-detail "null job" job)
 
+  last-proc := #f
+
   loop :+ function (procs) {
 	    if (null? procs) #f {
-	      status := %idio-process-status (ph procs)
+	      last-proc = ph procs
+	      status := %idio-process-status last-proc
 	      (cond
 	       ((null? status) {
 		 loop (pt procs)
 	       })
 	       ((WIFEXITED status) {
-		 if (not (C/== (WEXITSTATUS status) C/0i)) (list 'exit (WEXITSTATUS status)) {
-		   loop (pt procs)
-		 }
+		 if (or (C/== (WEXITSTATUS status) C/0i)
+			(and suppress-pipefail!
+			     (not (null? (pt procs))))) {
+			       loop (pt procs)
+			     } {
+			       list 'exit (WEXITSTATUS status)
+			     }
 	       })
-	       ((WIFSIGNALED status) (list 'killed (WTERMSIG status)))
+	       ((WIFSIGNALED status) {
+		 if (and suppress-pipefail!
+			 (not (null? (pt procs)))) {
+			   loop (pt procs)
+			   } {
+			     list 'killed (WTERMSIG status)
+			   }
+	       })
 	       (else {
 		 loop (pt procs)
 	       }))
@@ -346,13 +422,15 @@ value can be: exit status for 'exit or signal number for 'killed
   }
 
   ;; return rightmost non-zero exit status or the status from the last
-  ;; (or any as they all succeeded but the last is top of procs)
-  ;;
-  ;; NB. the procs were pushed onto the list in reverse order so
-  ;; walking down the list we encounter the rightmost first
-  procs := %idio-job-procs job
-  (or (loop procs)
-      (list 'exit (WEXITSTATUS (%idio-process-status (ph procs)))))
+  ;; (or '(running) if it hadn't actually exited)
+  (or (loop (%idio-job-procs job))
+      {
+	status := %idio-process-status last-proc
+	(cond
+	 ((null? status) (list 'running))
+	 ((WIFEXITED status) (list 'exit C/0i))
+	 (else (list 'unknown)))
+      })
 }
 
 define (pipeline-detail job) "return the process status of each process in the pipeline `job`
@@ -371,7 +449,7 @@ value can be: exit status for 'exit or signal number for 'killed
 	      status := %idio-process-status (ph procs)
 	      (cond
 	       ((null? status) {
-		 loop (pt procs) (pair (list 'no-status) st)
+		 loop (pt procs) (pair (list 'running) st)
 	       })
 	       ((WIFEXITED status) {
 		 loop (pt procs) (pair (list 'exit (WEXITSTATUS status)) st)
@@ -409,6 +487,7 @@ for the benefit of the do loops in update-status_ and wait-for-job_.
 		       if %idio-interactive {
 			 eprintf "no child process %d\n" pid
 		       }
+		       hash-set! %idio-stray-pids pid status
 		       #t
 		     })
 		     (else {
@@ -459,7 +538,7 @@ for the benefit of the do loops in update-status_ and wait-for-job_.
       })
       ((null? status) {
 	;; this should have been picked up by ECHILD, above...
-	eprintf "pid==0 status==#n\n"
+	eprintf "pid==0 status==#n errno!=ECHILD??\n"
       })
       (else {
 	error 'mark-process-status "inconceivable errno!" pid status (libc/errno-name libc/errno)
@@ -499,7 +578,9 @@ define (wait-for-job job) "wait for job `job` to be stopped or completed
 
   ;eprintf "wfj: %5s C=%s S=%s %s %s\n" (%idio-job-pgid job) (job-is-completed job) (job-is-stopped job) (if (job-failed job) "failed" "succeeded") (pipeline-detail job)
 
-  tidy-process-substitution-job job
+  if (job-is-completed job) {
+    tidy-process-substitution-job job
+  }
 
   if (job-failed job) {
     if (not (%idio-job-raised job)) {
@@ -556,7 +637,7 @@ define (format-job-detail job & args) {
   }
 
   hprintf oh "\n"
-  hprintf oh "job %6s: %s: a?=%s\n" (%idio-job-pgid job) (%idio-job-pipeline job) (%idio-job-async job)
+  hprintf oh "job %6s: a?=%s: %s\n" (%idio-job-pgid job) (%idio-job-async job) (%idio-job-pipeline job)
   loop (%idio-job-procs job) (pipeline-detail job)
   if printed {
     hprintf oh "  flags: C - completed; !C - not completed; S - stopped\n"
@@ -564,31 +645,50 @@ define (format-job-detail job & args) {
 
   ;; cf. time/time-command in common.idio
   timing-start := %idio-job-timing-start job
-  tv-before    := ph timing-start
-  rus-before   := pht timing-start
-  ruc-before   := phtt timing-start
   timing-end   := %idio-job-timing-end job
-  tv-end       := ph timing-end
-  rus-end      := pht timing-end
-  ruc-end      := phtt timing-end
 
-  ;; See the commentary for time-command in
-  ;; common.idio about this algorithm
-  h := (make-hash)
-  hash-set! h #\R (libc/subtract-struct-timeval tv-end tv-before)
-  hash-set! h #\U (libc/add-struct-timeval
-		   (libc/subtract-struct-timeval (libc/struct-rusage-ref rus-end    'ru_utime)
-						 (libc/struct-rusage-ref rus-before 'ru_utime))
-		   (libc/subtract-struct-timeval (libc/struct-rusage-ref ruc-end    'ru_utime)
-						 (libc/struct-rusage-ref ruc-before 'ru_utime)))
+  if (and timing-start
+	  timing-end) {
+	    tv-before    := ph timing-start
+	    rus-before   := pht timing-start
+	    ruc-before   := phtt timing-start
+	    tv-end       := ph timing-end
+	    rus-end      := pht timing-end
+	    ruc-end      := phtt timing-end
 
-  hash-set! h #\S (libc/add-struct-timeval
-		   (libc/subtract-struct-timeval (libc/struct-rusage-ref rus-end    'ru_stime)
-						 (libc/struct-rusage-ref rus-before 'ru_stime))
-		   (libc/subtract-struct-timeval (libc/struct-rusage-ref ruc-end    'ru_stime)
-						 (libc/struct-rusage-ref ruc-before 'ru_stime)))
+	    ;; See the commentary for time-command in
+	    ;; common.idio about this algorithm
+	    h := (make-hash)
+	    hash-set! h #\R (libc/subtract-struct-timeval tv-end tv-before)
+	    hash-set! h #\U (libc/add-struct-timeval
+			     (libc/subtract-struct-timeval (libc/struct-rusage-ref rus-end    'ru_utime)
+							   (libc/struct-rusage-ref rus-before 'ru_utime))
+			     (libc/subtract-struct-timeval (libc/struct-rusage-ref ruc-end    'ru_utime)
+							   (libc/struct-rusage-ref ruc-before 'ru_utime)))
 
-  hprintf oh "%s" (%format 'timeformat TIMEFORMAT h)
+	    hash-set! h #\S (libc/add-struct-timeval
+			     (libc/subtract-struct-timeval (libc/struct-rusage-ref rus-end    'ru_stime)
+							   (libc/struct-rusage-ref rus-before 'ru_stime))
+			     (libc/subtract-struct-timeval (libc/struct-rusage-ref ruc-end    'ru_stime)
+							   (libc/struct-rusage-ref ruc-before 'ru_stime)))
+
+	    js := (libc/struct-timeval-ref (ph timing-start) 'tv_sec)
+	    je := (libc/struct-timeval-ref (ph timing-end) 'tv_sec)
+	    hprintf oh " Started at %s, ran for %ss\n" (libc/strftime "%c" (libc/localtime js)) (je - js)
+	    hprintf oh " %s" (%format 'timeformat "R %5.3R; U %5.3U; S %5.3S" h)
+	    hprintf oh "\n"
+	  } {
+	    if (not timing-start) {
+	      hprintf oh "timing-start is unset? "
+	    } {
+	      js := (libc/struct-timeval-ref (ph timing-start) 'tv_sec)
+	      hprintf oh "Started at %s, %ds ago; " (libc/strftime "%c" (libc/localtime js)) ((libc/time) - js)
+	    }
+	    if (not timing-end) {
+	      hprintf oh "timing-end=%s" timing-end
+	    }
+	    hprintf oh "\n"
+	  }
 }
 
 define (do-job-notification) "notify of any job status changes" {
@@ -728,7 +828,7 @@ If `cont` is set a SIGCONT is sent to the process group
 
   if %idio-interactive {
     ;; put the job in the foreground
-    suppress-errors! ^idio-error tcsetpgrp %idio-terminal (%idio-job-pgid job)
+    suppress-errors! ^system-error tcsetpgrp %idio-terminal (%idio-job-pgid job)
   }
 
   if cont {
@@ -792,6 +892,49 @@ Send the process group of `job` a SIGCONT then a SIGHUP
   #t
 }
 
+define (SIGTERM-stopped-jobs) {
+  loop :+ function (jobs) {
+	    if (null? jobs) #t {
+	      job := ph jobs
+	      pgid := %idio-job-pgid job
+
+	      if (C/> pgid libc/0pid_t) {
+		if %idio-interactive {
+		  eprintf "%6d: SIGTERM -> pgid %d\n" PID pgid
+		}
+
+		;; Following in the style of Bash's
+		;; terminate_stopped_jobs() issue the SIGTERM before
+		;; the SIGCONT
+
+		;; ignore errors, we're shutting down
+		;suppress-errors! ^system-error killpg pgid SIGTERM
+		;suppress-errors! ^system-error killpg pgid SIGCONT
+		killpg pgid SIGTERM
+		killpg pgid SIGCONT
+	      } {
+		if %idio-interactive {
+		  eprintf "%6d: SIGTERM -> pgid %d ??\n" PID pgid
+		  eprintf "job %s\n" job
+		}
+	      }
+	      loop (pt jobs)
+	    }
+  }
+
+  if (not (null? %idio-jobs)) {
+    ;; take a copy of %idio-jobs in case the value is perturbed by
+    ;; jobs shutting down during this loop
+    jobs := %idio-jobs
+    if %idio-interactive {
+      eprintf "%6d: SIGTERM: outstanding jobs: %s\n" jobs
+    }
+
+    suppress-async-command-report! = #t
+    loop jobs
+  }
+}
+
 define (stop-job job) {
   job-pgid := %idio-job-pgid job
   killpg job-pgid SIGSTOP
@@ -842,7 +985,7 @@ The default condition handler set in child processes.
 It will report the condition and exit (1).
 " {
   (cond-expand
-   (IDIO_DEBUG {
+   (IDIO_DEBUG-X {
      condition-report (sprintf "[%d] child-error-handler" (libc/getpid)) c (current-error-handle)
      eprintf "[%d] child process will exit (1)\n" (libc/getpid)
    }))
@@ -898,8 +1041,8 @@ define (prep-io infile outfile errfile) "prepare the IO for the current process
   using the file descriptors from pipe(2) but if we have to use a true
   named pipe (FreeBSD) then we need separate processes to open each
   end -- otherwise we block.  In other words
-  libc/proc-subst-named-pipe cannot (pre-)open the named pipe for us,
-  we need to delay opening until we're in a separate process.
+  libc/proc-subst-named-pipe-* cannot (pre-)open the named pipe for
+  us, we need to delay opening until we're in a separate process.
 
   So we need to test if *file is a pathname and set the appropriate
   handle using that.  We're safe doing it here because %prep-process &
@@ -909,7 +1052,11 @@ define (prep-io infile outfile errfile) "prepare the IO for the current process
 
   (cond
    ((pathname? infile) {
-     set-input-handle! (open-input-file infile)
+     ifh := open-input-file infile
+     ifd := file-handle-fd ifh
+     dup2 ifd STDIN_FILENO
+     close-handle ifh
+     set-input-handle! (open-input-file-from-fd STDIN_FILENO)
    })
    ((C/int? infile) {
      if (not (C/== infile STDIN_FILENO)) {
@@ -922,7 +1069,11 @@ define (prep-io infile outfile errfile) "prepare the IO for the current process
 
   (cond
    ((pathname? outfile) {
-     set-output-handle! (open-output-file outfile)
+     ofh := open-output-file outfile
+     ofd := file-handle-fd ofh
+     dup2 ofd STDOUT_FILENO
+     close-handle ofh
+     set-output-handle! (open-output-file-from-fd STDOUT_FILENO)
    })
    ((C/int? outfile) {
      if (not (C/== outfile STDOUT_FILENO)) {
@@ -959,19 +1110,21 @@ define (%prep-process pgid infile outfile errfile foreground async-job) "prepare
 " {
   if (or %idio-interactive
 	 async-job) {
-    pid := (libc/getpid)
-    if (C/== pgid libc/0pid_t) {
-      pgid = pid
-    }
+	   pid := (libc/getpid)
+	   if (C/== pgid libc/0pid_t) {
+	     pgid = pid
+	   }
 
-    ;; put the process in the process group -- dupe of parent to avoid
-    ;; race conditions
-    suppress-errors! ^idio-error setpgid pid pgid
+	   ;; put the process in the process group -- dupe of parent to avoid
+	   ;; race conditions
+	   suppress-errors! ^system-error setpgid pid pgid
+	 }
 
+  if %idio-interactive {
     if foreground {
       ;; give the terminal to the process group -- dupe of parent to
       ;; avoid race conditions
-      suppress-errors! ^idio-error tcsetpgrp %idio-terminal pgid
+      suppress-errors! ^system-error tcsetpgrp %idio-terminal pgid
     }
 
     ;; set job control signals back to default
@@ -1004,7 +1157,7 @@ define-infix-operator | 700 {
 			 before      = pt before
 			 collect     = #t
 			 foreground  = #t
-			 async-job   = #f
+			 async-job   = #t
 			 (meta-loop)
 		       })
 		       ((fg-job) {
@@ -1177,16 +1330,19 @@ define-infix-operator | 700 {
 
   *#
 
-  pipeline-r-phn         := gensym 'pl-r-h
-  pipeline-w-phn         := gensym 'pl-w-h
+  proc-subst-job         := gensym 'psj
 
+  w-pipe		 := gensym 'w-pipe
   pipeline-r-fdn         := gensym 'pl-r-fd
-  cmd-r-fd               := gensym 'cmd-r-fd
-  close-pipeline-r-fdn   := gensym 'close-pl-r-fd
+  close-pipeline-r-fd    := gensym 'close-pl-r-fd
+  pipeline-w-phn         := gensym 'pl-w-h
+  cmd-r-fdn              := gensym 'cmd-r-fdn
 
+  r-pipe		 := gensym 'r-pipe
   pipeline-w-fdn         := gensym 'pl-w-fd
-  cmd-w-fd               := gensym 'cmd-w-fd
-  recover-pipeline-w-fdn := gensym 'rcvr-pl-w-fd
+  pipeline-r-phn         := gensym 'pl-r-h
+  recover-pipeline-w-fd  := gensym 'rcvr-pl-w-fd
+  cmd-w-fdn              := gensym 'cmd-w-fdn
 
   stderr                 := gensym 'stderr
 
@@ -1199,19 +1355,19 @@ define-infix-operator | 700 {
   pid                    := gensym 'pid
   status                 := gensym 'status
 
-  proc-subst-job         := gensym 'psj
-
   nprocs := length op-args
 
   #T{
     {
-      $pipeline-r-fdn       := #f
-      $close-pipeline-r-fdn := #f
-      $pipeline-w-phn       := #f
       $proc-subst-job       := #f
+
+      $w-pipe               := #f
+      $pipeline-r-fdn       := #f
+      $close-pipeline-r-fd  := #f
+      $pipeline-w-phn       := #f
       (cond
        ((eq? $use-w-pipe 'named) {
-	 named-pipe := (libc/proc-subst-named-pipe)
+	 named-pipe := (libc/proc-subst-named-pipe-into)
 	 $pipeline-w-phn = (nth named-pipe 4)
 	 ;; true named pipes will not have opened an fd so substitute the name
 	 $pipeline-r-fdn = (or (nth named-pipe 1)
@@ -1219,34 +1375,34 @@ define-infix-operator | 700 {
 
 	 (cond
 	  ((nth named-pipe 2) {
-	    $proc-subst-job = job-control/make-%process-substitution-job (nth named-pipe 2) #f #f
+	    $proc-subst-job = job-control/make-%process-substitution-job #f (nth named-pipe 2) #f #f #f
 	  })
 	  (else {
-	    $proc-subst-job = job-control/make-%process-substitution-job #f (nth named-pipe 4) (nth named-pipe 5)
+	    $proc-subst-job = job-control/make-%process-substitution-job #f #f (nth named-pipe 4) (nth named-pipe 5) #f
 	  }))
        })
        ($use-w-pipe {
-	 w-pipe := (libc/pipe)
-	 $pipeline-w-phn = open-output-pipe (libc/pipe-writer w-pipe)
-	 $pipeline-r-fdn = libc/pipe-reader w-pipe
+	 $w-pipe         = (libc/pipe)
+	 $pipeline-w-phn = open-output-pipe (libc/pipe-writer $w-pipe)
+	 $pipeline-r-fdn = libc/pipe-reader $w-pipe
        })
        (else {
 	 $pipeline-r-fdn         = (libc/stdin-fileno) ; STDIN_FILENO
 	 if (pair? $pipeline-r-fdn) {
 	   $pipeline-r-fdn       = ph $pipeline-r-fdn
-	   $close-pipeline-r-fdn = $pipeline-r-fdn
+	   $close-pipeline-r-fd = $pipeline-r-fdn
 	 }
        }))
-      ;; set $cmd-r-fd now as it is used immediately in the loop
-      $cmd-r-fd := $pipeline-r-fdn
+      ;; set $cmd-r-fdn now as it is used immediately in the loop
+      $cmd-r-fdn := $pipeline-r-fdn
 
+      $r-pipe                 := #f
       $pipeline-w-fdn         := #f
-      $close-pipeline-w-fdn   := #f
       $pipeline-r-phn         := #f
-      $recover-pipeline-w-fdn := #f
+      $recover-pipeline-w-fd  := #f
       (cond
        ((eq? $use-r-pipe 'named) {
-	 named-pipe := (libc/proc-subst-named-pipe)
+	 named-pipe := (libc/proc-subst-named-pipe-from)
 	 $pipeline-r-phn = (nth named-pipe 3)
 	 ;; true named pipes will not have opened an fd so substitute the name
 	 $pipeline-w-fdn = (or (nth named-pipe 2)
@@ -1254,16 +1410,16 @@ define-infix-operator | 700 {
 
 	 (cond
 	  ((nth named-pipe 1) {
-	    $proc-subst-job = job-control/make-%process-substitution-job (nth named-pipe 1) #f #f
+	    $proc-subst-job = job-control/make-%process-substitution-job #t (nth named-pipe 1) #f #f #f
 	  })
 	  (else {
-	    $proc-subst-job = job-control/make-%process-substitution-job #f (nth named-pipe 3) (nth named-pipe 5)
+	    $proc-subst-job = job-control/make-%process-substitution-job #t #f (nth named-pipe 3) (nth named-pipe 5) #f
 	  }))
        })
        ($use-r-pipe {
-	 r-pipe := (libc/pipe)
-	 $pipeline-r-phn = open-input-pipe (libc/pipe-reader r-pipe)
-	 $pipeline-w-fdn = libc/pipe-writer r-pipe
+	 $r-pipe         = (libc/pipe)
+	 $pipeline-r-phn = open-input-pipe (libc/pipe-reader $r-pipe)
+	 $pipeline-w-fdn = libc/pipe-writer $r-pipe
        })
        ($collect {
 	 $pipeline-w-fdn = (libc/make-tmp-fd)
@@ -1271,19 +1427,31 @@ define-infix-operator | 700 {
        (else {
 	 $pipeline-w-fdn           = (libc/stdout-fileno) ; STDOUT_FILENO
 	 if (pair? $pipeline-w-fdn) {
-	   $recover-pipeline-w-fdn = pht $pipeline-w-fdn
+	   $recover-pipeline-w-fd = pht $pipeline-w-fdn
 	   $pipeline-w-fdn         = ph $pipeline-w-fdn
 	 }
        }))
-      ;; $cmd-w-fd is (re-)set each time round the loop but needs to
+      ;; $cmd-w-fdn is (re-)set each time round the loop but needs to
       ;; exist in the first place
-      $cmd-w-fd := #f
+      $cmd-w-fdn := #f
 
       ;; everyone gets the same stderr!
       $stderr := (libc/stderr-fileno) ; STDERR_FILENO
 
       $pgid      := libc/0pid_t
-      $job       := make-%idio-job '$orig-pipeline #n $pgid #f #f #n $pipeline-r-fdn $pipeline-w-fdn $stderr $report-time (list (libc/gettimeofday) (libc/getrusage libc/RUSAGE_SELF) (libc/getrusage libc/RUSAGE_CHILDREN)) #f $async-job
+      $job       := (make-%idio-job '$orig-pipeline
+				    #n
+				    $pgid
+				    #f
+				    #f
+				    #n
+				    $pipeline-r-fdn
+				    $pipeline-w-fdn
+				    $stderr
+				    $report-time
+				    (list (libc/gettimeofday) (libc/getrusage libc/RUSAGE_SELF) (libc/getrusage libc/RUSAGE_CHILDREN))
+				    #f
+				    $async-job)
 
       $proc-id   := 1
       $cmd-pipe  := #n
@@ -1292,7 +1460,7 @@ define-infix-operator | 700 {
       $@(map (function (cmd) {
 	        #T{
 		  {
-		    $proc := make-%idio-process '$cmd -1 #f #f #n
+		    $proc := make-%idio-process '$cmd #n -1 #f #f #n
 
 		    ;; NB. Update the procs list asap as we can get a
 		    ;; signal about processes in the pipeline at any
@@ -1300,31 +1468,66 @@ define-infix-operator | 700 {
 		    ;; finished creating the pipeline.
 		    ;; do-job-notification/update-status will want to
 		    ;; have a proc entry to update.
+		    ;;
+		    ;; NB this is a reversed order list -- we'll patch
+		    ;; that up at the end
 		    set-%idio-job-procs! $job (pair $proc (%idio-job-procs $job))
 
 		    if ($proc-id lt $nprocs) {
 		      $cmd-pipe = (libc/pipe)
-		      $cmd-w-fd = (libc/pipe-writer $cmd-pipe)
+		      $cmd-w-fdn = (libc/pipe-writer $cmd-pipe)
 		    } {
-		      $cmd-w-fd = $pipeline-w-fdn
+		      $cmd-w-fdn = $pipeline-w-fdn
 		    }
 		    $pid := (libc/fork)
 		    if (C/== $pid libc/0pid_t) {
 		      set-default-handler! ^idio-error default-child-handler
-		      %idio-jobs = #n
-		      %prep-process $pgid $cmd-r-fd $cmd-w-fd $stderr $foreground $async-job
+		      job-control/%idio-jobs = #n
+		      job-control/%%last-job = #n
+		      job-control/%%process-substitution-jobs = #{}
+		      %prep-process $pgid $cmd-r-fdn $cmd-w-fdn $stderr $foreground $async-job
+
+		      (cond
+		       ($use-w-pipe {
+			 ;; sub-Idio should not hold the write end of
+			 ;; the (named-)pipe-into pipe open (if a file
+			 ;; descriptor) -- it will have been dup'ed in
+			 ;; prep-io
+			 if (eq? $use-w-pipe 'named) {
+			   fd := %process-substitution-job-fd $proc-subst-job
+			   if fd {
+			     libc/close fd
+			   }
+			 } {
+			   libc/close (libc/pipe-writer $w-pipe)
+			 }
+		       })
+		       ($use-r-pipe {
+			 ;; sub-Idio should not hold the read end of
+			 ;; the (named-)pipe-from pipe open (if a file
+			 ;; descriptor) -- it will have been dup'ed in
+			 ;; prep-io
+			 if (eq? $use-r-pipe 'named) {
+			   fd := %process-substitution-job-fd $proc-subst-job
+			   if fd {
+			     libc/close fd
+			   }
+			 } {
+			   libc/close (libc/pipe-reader $r-pipe)
+			 }
+		       }))
 
 		      ;; The Libc texinfo page seems to have missed
 		      ;; this.  On the basis that a $cmd-pipe is owned
 		      ;; (created?) by the left hand process of the
-		      ;; two being connected, then $cmd-r-fd is the
+		      ;; two being connected, then $cmd-r-fdn is the
 		      ;; (pipe-reader $cmd-pipe) of the left-hand
 		      ;; process and will have been closed in
 		      ;; %prep-process, above (unless it was
 		      ;; $pipeline-r-fdn).
 
 		      ;; In turn, the current (pipe-reader $cmd-pipe)
-		      ;; will become the $cmd-r-fd of the right-hand
+		      ;; will become the $cmd-r-fdn of the right-hand
 		      ;; process (as the parent Idio also has it open
 		      ;; and will pass it on).  But what of us?  Who
 		      ;; closes (pipe-reader $cmd-pipe) in us?
@@ -1338,10 +1541,10 @@ define-infix-operator | 700 {
 		      ;; (pipe-writer $cmd-pipe) because we only
 		      ;; create the $cmd-pipe when we know there is
 		      ;; another process in the pipeline and
-		      ;; $cmd-w-fd immediately becomes (pipe-writer
+		      ;; $cmd-w-fdn immediately becomes (pipe-writer
 		      ;; $cmd-pipe).
 
-		      ;; $cmd-r-fd is a left-over from the pipe of
+		      ;; $cmd-r-fdn is a left-over from the pipe of
 		      ;; the left hand process and we are suffering an
 		      ;; off-by-one error and the left-over one is the
 		      ;; current (pipe-reader $cmd-pipe) we have in
@@ -1360,12 +1563,14 @@ define-infix-operator | 700 {
 			libc/close (libc/pipe-writer $pgrp-pipe)
 		      }
 
-		      ;; tidy up any trailing $pipeline-*-fd ends
-		      if (and (not (C/== $cmd-r-fd $pipeline-r-fdn))
+		      ;; tidy up any trailing $pipeline-*-fdn ends
+		      if (and (C/int? $pipeline-r-fdn)
+			      (not (C/== $cmd-r-fdn $pipeline-r-fdn))
 			      (not (C/== $pipeline-r-fdn libc/STDIN_FILENO))) {
 				libc/close $pipeline-r-fdn
 		      }
-		      if (and (not (C/== $cmd-w-fd $pipeline-w-fdn))
+		      if (and (C/int? $pipeline-w-fdn)
+			      (not (C/== $cmd-w-fdn $pipeline-w-fdn))
 			      (not (C/== $pipeline-w-fdn libc/STDOUT_FILENO))) {
 				libc/close $pipeline-w-fdn
 		      }
@@ -1382,7 +1587,7 @@ define-infix-operator | 700 {
 		      ;; child continues back into the main Idio
 		      ;; engine.
 
-		      libc/exit 0
+		      exit 0
 		    } {
 		      set-%idio-process-pid! $proc $pid
 		      if (or job-control/%idio-interactive
@@ -1391,19 +1596,25 @@ define-infix-operator | 700 {
 			  $pgid = $pid
 			  set-%idio-job-pgid! $job $pgid
 			}
-			suppress-errors! ^idio-error libc/setpgid $pid $pgid
+			suppress-errors! ^system-error libc/setpgid $pid $pgid
 		      }
 		    }
 
 		    ;; tidy up any trailing $cmd-pipe ends
-		    if (not (C/== $cmd-r-fd $pipeline-r-fdn)) {
-		      libc/close $cmd-r-fd
+		    if (C/int? $cmd-r-fdn) {
+		      if (not (and (C/int? $pipeline-r-fdn)
+				   (C/== $cmd-r-fdn $pipeline-r-fdn))) {
+				     libc/close $cmd-r-fdn
+				   }
 		    }
-		    if (not (C/== $cmd-w-fd $pipeline-w-fdn)) {
-		      libc/close $cmd-w-fd
+		    if (C/int? $cmd-w-fdn) {
+		      if (not (and (C/int? $pipeline-w-fdn)
+				   (C/== $cmd-w-fdn $pipeline-w-fdn))) {
+				     libc/close $cmd-w-fdn
+				   }
 		    }
 
-		    $cmd-r-fd = (libc/pipe-reader $cmd-pipe)
+		    $cmd-r-fdn = (libc/pipe-reader $cmd-pipe)
 		    $proc-id = $proc-id + 1
 		  }
 	        }
@@ -1437,12 +1648,12 @@ define-infix-operator | 700 {
       %idio-jobs = pair $job %idio-jobs
       %%last-job = $job
 
+      ;; put the job's procs back in pipeline order
+      set-%idio-job-procs! $job (reverse (%idio-job-procs $job))
+
       ;; finally let the first process go
       libc/close (libc/pipe-reader $pgrp-pipe)
       libc/close (libc/pipe-writer $pgrp-pipe)
-
-      ;; put the job's procs back in pipeline order
-      set-%idio-job-procs! $job (reverse (%idio-job-procs $job))
 
       ;; OK, how do we, the parent, finish up?
       (cond
@@ -1454,11 +1665,7 @@ define-infix-operator | 700 {
        })
        ($collect {
 	 ;; wait for it!
-	 if (not job-control/%idio-interactive) {
-	   wait-for-job $job
-	 } {
-	   foreground-job $job #f
-	 }
+	 foreground-job $job #f
 
 	 ;; OK, now recover the output
 	 ih := open-input-file-from-fd $pipeline-w-fdn
@@ -1471,9 +1678,6 @@ define-infix-operator | 700 {
        (else {
 	 $status := #f
 	 (cond
-	  #;((not job-control/%idio-interactive) {
-	    $status = wait-for-job $job
-	  })
 	  ($foreground {
 	    $status = foreground-job $job #f
 	  })
@@ -1481,15 +1685,15 @@ define-infix-operator | 700 {
 	    $status = background-job $job #f
 	  }))
 
-	 if $close-pipeline-r-fdn {
-	   libc/close $close-pipeline-r-fdn
+	 if $close-pipeline-r-fd {
+	   libc/close $close-pipeline-r-fd
 	 }
 
-	 if $recover-pipeline-w-fdn {
+	 if $recover-pipeline-w-fd {
 	   ;; if the job was backgrounded then this won't do much!
 	   ih := open-input-file-from-fd $pipeline-w-fdn
 	   seek-handle ih 0 'set
-	   display (read-lines ih) $recover-pipeline-w-fdn
+	   display (read-lines ih) $recover-pipeline-w-fd
 	   close-handle ih
 	 }
 
@@ -1528,13 +1732,16 @@ blocked ourselves from starting them.
 *#
 
 define-template (fork-command foreground use-w-pipe use-r-pipe async-job & cmd) {
-  cmd-r-phn        := gensym 'cmd-r-phn
-  cmd-w-phn        := gensym 'cmd-w-phn
+  proc-subst-job   := gensym 'psj
 
+  w-pipe           := gensym 'w-pipe
   cmd-r-fdn        := gensym 'cmd-r-fdn
   close-cmd-r-fd   := gensym 'close-cmd-r-fd
+  cmd-w-phn        := gensym 'cmd-w-phn
 
+  r-pipe           := gensym 'r-pipe
   cmd-w-fdn        := gensym 'cmd-w-fdn
+  cmd-r-phn        := gensym 'cmd-r-phn
   recover-cmd-w-fd := gensym 'rcvr-cmd-w-fd
 
   cmd-e-fd         := gensym 'cmd-e-fd
@@ -1546,34 +1753,35 @@ define-template (fork-command foreground use-w-pipe use-r-pipe async-job & cmd) 
   pid              := gensym 'pid
   status           := gensym 'status
 
-  proc-subst-job   := gensym 'psj
-
   #T{
     {
+      $proc-subst-job := #f
+
+      $w-pipe         := #f
       $cmd-r-fdn      := #f
       $close-cmd-r-fd := #f
       $cmd-w-phn      := #f
-      $proc-subst-job := #f
       (cond
        ((eq? $use-w-pipe 'named) {
-	 named-pipe := (libc/proc-subst-named-pipe)
+	 named-pipe := (libc/proc-subst-named-pipe-into)
 	 $cmd-w-phn = (nth named-pipe 4)
-	 ;; true named pipes will not have opened an fd so substitute the name
+	 ;; true named pipes will not have opened an fd so substitute
+	 ;; the name
 	 $cmd-r-fdn = (or (nth named-pipe 1)
 			  (nth named-pipe 3))
 
 	 (cond
 	  ((nth named-pipe 2) {
-	    $proc-subst-job = job-control/make-%process-substitution-job (nth named-pipe 2) #f #f
+	    $proc-subst-job = job-control/make-%process-substitution-job #f (nth named-pipe 2) #f #f #f
 	  })
 	  (else {
-	    $proc-subst-job = job-control/make-%process-substitution-job #f (nth named-pipe 4) (nth named-pipe 5)
+	    $proc-subst-job = job-control/make-%process-substitution-job #f #f (nth named-pipe 4) (nth named-pipe 5) #f
 	  }))
        })
        ($use-w-pipe {
-	 w-pipe := (libc/pipe)
-	 $cmd-w-phn = open-output-pipe (libc/pipe-writer w-pipe)
-	 $cmd-r-fdn = libc/pipe-reader w-pipe
+	 $w-pipe    = (libc/pipe)
+	 $cmd-w-phn = open-output-pipe (libc/pipe-writer $w-pipe)
+	 $cmd-r-fdn = libc/pipe-reader $w-pipe
        })
        (else {
 	 $cmd-r-fdn        = (libc/stdin-fileno) ; STDIN_FILENO
@@ -1584,30 +1792,31 @@ define-template (fork-command foreground use-w-pipe use-r-pipe async-job & cmd) 
 	 }
        }))
 
+      $r-pipe           := #f
       $cmd-w-fdn	:= #f
-      $close-cmd-w-fd	:= #f
       $cmd-r-phn	:= #f
       $recover-cmd-w-fd := #f
       (cond
        ((eq? $use-r-pipe 'named) {
-	 named-pipe := (libc/proc-subst-named-pipe)
+	 named-pipe := (libc/proc-subst-named-pipe-from)
 	 $cmd-r-phn = (nth named-pipe 3)
-	 ;; true named pipes will not have opened an fd so substitute the name
+	 ;; true named pipes will not have opened an fd so substitute
+	 ;; the name
 	 $cmd-w-fdn = (or (nth named-pipe 2)
 			  (nth named-pipe 4))
 
 	 (cond
 	  ((nth named-pipe 1) {
-	    $proc-subst-job = job-control/make-%process-substitution-job (nth named-pipe 1) #f #f
+	    $proc-subst-job = job-control/make-%process-substitution-job #t (nth named-pipe 1) #f #f #f
 	  })
 	  (else {
-	    $proc-subst-job = job-control/make-%process-substitution-job #f (nth named-pipe 3) (nth named-pipe 5)
+	    $proc-subst-job = job-control/make-%process-substitution-job #t #f (nth named-pipe 3) (nth named-pipe 5) #f
 	  }))
        })
        ($use-r-pipe {
-	 r-pipe := (libc/pipe)
-	 $cmd-r-phn = open-input-pipe (libc/pipe-reader r-pipe)
-	 $cmd-w-fdn = libc/pipe-writer r-pipe
+	 $r-pipe    = (libc/pipe)
+	 $cmd-r-phn = open-input-pipe (libc/pipe-reader $r-pipe)
+	 $cmd-w-fdn = libc/pipe-writer $r-pipe
        })
        (else {
 	 $cmd-w-fdn          = (libc/stdout-fileno) ; STDOUT_FILENO
@@ -1625,15 +1834,57 @@ define-template (fork-command foreground use-w-pipe use-r-pipe async-job & cmd) 
 	$cmd-e-fd         = ph $cmd-e-fd
       }
       $pgid := libc/0pid_t
-      $proc := make-%idio-process '$cmd -1 #f #f #n
-      $job := make-%idio-job '$cmd (list $proc) $pgid #f #f #n $cmd-r-fdn $cmd-w-fdn $cmd-e-fd #f (list (libc/gettimeofday) (libc/getrusage libc/RUSAGE_SELF) (libc/getrusage libc/RUSAGE_CHILDREN)) #f $async-job
+      $proc := make-%idio-process '$cmd #n -1 #f #f #n
+      $job := (make-%idio-job '$cmd
+			      (list $proc)
+			      $pgid
+			      #f
+			      #f
+			      #n
+			      $cmd-r-fdn
+			      $cmd-w-fdn
+			      $cmd-e-fd
+			      #f
+			      (list (libc/gettimeofday) (libc/getrusage libc/RUSAGE_SELF) (libc/getrusage libc/RUSAGE_CHILDREN))
+			      #f
+			      $async-job)
 
       $pid := (libc/fork)
       (cond
        ((C/== $pid libc/0pid_t) {
 	 set-default-handler! ^idio-error default-child-handler
-	 %idio-jobs = #n
+	 job-control/%idio-jobs = #n
+	 job-control/%%last-job = #n
+	 job-control/%%process-substitution-jobs = #{}
 	 %prep-process $pgid $cmd-r-fdn $cmd-w-fdn $cmd-e-fd $foreground $async-job
+
+	 (cond
+	  ($use-w-pipe {
+	    ;; sub-Idio should not hold the write end of the
+	    ;; (named-)pipe-into pipe open (if a file descriptor) --
+	    ;; it will have been dup'ed in prep-io
+	    if (eq? $use-w-pipe 'named) {
+	      fd := %process-substitution-job-fd $proc-subst-job
+	      if fd {
+		libc/close fd
+	      }
+	    } {
+	      libc/close (libc/pipe-writer $w-pipe)
+	    }
+	  })
+	  ($use-r-pipe {
+	    ;; sub-Idio should not hold the read end of the
+	    ;; (named-)pipe-from pipe open (if a file descriptor) --
+	    ;; it will have been dup'ed in prep-io
+	    if (eq? $use-r-pipe 'named) {
+	      fd := %process-substitution-job-fd $proc-subst-job
+	      if fd {
+		libc/close fd
+	      }
+	    } {
+	      libc/close (libc/pipe-reader $r-pipe)
+	    }
+	  }))
 
 	 (cond
 	  ((pair? (ph '$cmd)) {
@@ -1643,8 +1894,7 @@ define-template (fork-command foreground use-w-pipe use-r-pipe async-job & cmd) 
 
 	 ;; We ought to definitively stop before this child continues
 	 ;; back into the main Idio engine.
-
-	 libc/exit 0
+	 exit 0
        })
        (else {
 	 set-%idio-process-pid! $proc $pid
@@ -1652,13 +1902,14 @@ define-template (fork-command foreground use-w-pipe use-r-pipe async-job & cmd) 
 		$async-job) {
 	   $pgid = $pid
 	   set-%idio-job-pgid! $job $pgid
-	   suppress-errors! ^idio-error libc/setpgid $pid $pgid
+	   suppress-errors! ^system-error libc/setpgid $pid $pgid
 	 }
        }))
 
       (cond
        ($use-w-pipe {
-	 ;; parent should not hold the read end of the pipe-into pipe open
+	 ;; parent should not hold the read end of the
+	 ;; (named-)pipe-into pipe open
 	 if (eq? $use-w-pipe 'named) {
 	   job-control/add-process-substitution-job $job $proc-subst-job
 	   if (C/int? $cmd-r-fdn) {
@@ -1669,7 +1920,8 @@ define-template (fork-command foreground use-w-pipe use-r-pipe async-job & cmd) 
 	 }
        })
        ($use-r-pipe {
-	 ;; parent should not hold the write end of the pipe-from pipe open
+	 ;; parent should not hold the write end of the
+	 ;; (named-)pipe-from pipe open
 	 if (eq? $use-r-pipe 'named) {
 	   job-control/add-process-substitution-job $job $proc-subst-job
 	   if (C/int? $cmd-w-fdn) {
@@ -1693,9 +1945,6 @@ define-template (fork-command foreground use-w-pipe use-r-pipe async-job & cmd) 
        (else {
 	 $status := #f
 	 (cond
-	  #;((not job-control/%idio-interactive) {
-	    $status = wait-for-job $job
-	  })
 	  ($foreground {
 	    $status = foreground-job $job #f
 	  })
@@ -1906,12 +2155,15 @@ define (with-error-to dst thunk) {
 ;; collect-output works fine for standalone commands, (collect-output
 ;; uname -n), but is caught up in a pipeline by the reader operator.
 ;; See above.
+;;
+;; NB call fork-command directly as we want to be both in the
+;; foreground and an async command
 define-template (collect-output & cmd) {
   osh := gensym 'osh
   #T{
     $osh := (open-output-string)
     with-output-to $osh (function #n {
-			   fg-job $@cmd
+			   fork-command #t #f #f #t $@cmd
     })
     strip-string (get-output-string $osh) "\n"
   }

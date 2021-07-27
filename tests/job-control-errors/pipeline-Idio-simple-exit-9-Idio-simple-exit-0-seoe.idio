@@ -1,0 +1,7 @@
+
+suppress-exit-on-error! = #t
+
+libc/exit 9 | libc/exit 0
+
+;; controlled exit
+libc/exit 3

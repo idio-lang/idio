@@ -2323,7 +2323,7 @@ a wrapper to libc write (2)					\n\
     return idio_libc_ssize_t (write_r);
 }
 
-IDIO_DEFINE_PRIMITIVE2_DS ("waitpid", libc_waitpid, (IDIO pid, IDIO options), "pid options", "\
+IDIO_DEFINE_PRIMITIVE1V_DS ("waitpid", libc_waitpid, (IDIO pid, IDIO args), "pid [options]", "\
 in C, waitpid (pid, statusp, options)				\n\
 a wrapper to libc waitpid(2)					\n\
 								\n\
@@ -2340,13 +2340,15 @@ The following options are defined:				\n\
 WNOHANG								\n\
 WUNTRACED							\n\
 								\n\
+Options will be IORed together					\n\
+								\n\
 ``statusp`` is C/pointer to a C ``int *``.  See ``WIFEXITED``,	\n\
 ``WEXITSTATUS``, ``WIFSIGNALLED``, ``WTERMSIG``, ``WIFSTOPPED``	\n\
 for functions to manipulate ``statusp``.			\n\
 ")
 {
     IDIO_ASSERT (pid);
-    IDIO_ASSERT (options);
+    IDIO_ASSERT (args);
 
     /*
      * Test Case: libc-wrap-errors/waitpid-bad-pid-type.idio
@@ -2361,8 +2363,14 @@ for functions to manipulate ``statusp``.			\n\
      *
      * waitpid (C/integer-> 0 libc/pid_t) #t
      */
-    IDIO_USER_C_TYPE_ASSERT (int, options);
-    int C_options = IDIO_C_TYPE_int (options);
+    int C_options = 0;
+    if (idio_S_nil != args) {
+	IDIO option = IDIO_PAIR_H (args);
+
+	IDIO_USER_C_TYPE_ASSERT (int, option);
+	C_options |= IDIO_C_TYPE_int (option);
+	args = IDIO_PAIR_T (args);
+    }
 
     int *statusp = idio_alloc (sizeof (int));
     IDIO istatus = idio_C_pointer_free_me (statusp);
@@ -2379,6 +2387,14 @@ for functions to manipulate ``statusp``.			\n\
 		 * Either way it feels like we're in the wrong, not
 		 * erroring.
 		 */
+		IDIO stray_pids = idio_module_symbol_value (idio_job_control_stray_pids_sym, idio_job_control_module, idio_S_nil);
+		IDIO spid = idio_hash_ref (stray_pids, pid);
+		if (idio_S_unspec != spid) {
+		    fprintf (stderr, "%6d: waitpid: recovered stray pid %d\n", getpid (), C_pid);
+		    idio_hash_delete (stray_pids, pid);
+		    return IDIO_LIST2 (pid, spid);
+		}
+
 		return IDIO_LIST2 (idio_libc_pid_t (0), idio_S_nil);
 	    } else if (EINTR != errno) {
 		/*
@@ -2386,7 +2402,8 @@ for functions to manipulate ``statusp``.			\n\
 		 *
 		 * waitpid (C/integer-> 0 libc/pid_t) (C/integer-> -1)
 		 */
-		idio_error_system_errno ("waitpid", IDIO_LIST2 (pid, options), IDIO_C_FUNC_LOCATION ());
+		args = idio_pair (pid, args);
+		idio_error_system_errno ("waitpid", args, IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    }
@@ -2504,7 +2521,6 @@ available for reference as the exported symbol CLK_TCK.		\n\
 
     clock_t times_r = times (tmsp);
 
-    /* check for errors */
     if (-1 == times_r) {
 	/*
 	 * Test Case: ??
@@ -2802,7 +2818,6 @@ a wrapper to libc strptime(3)		\n\
 	IDIO_GC_FREE (C_format);
     }
 
-    /* check for errors */
     if (NULL == strptime_r) {
 	IDIO_GC_FREE (tmp);
 
@@ -2876,7 +2891,6 @@ maximum string size			\n\
 
     size_t strftime_r = strftime (s, BUFSIZ, C_format, C_tm);
 
-    /* check for errors */
     if (0 == strftime_r) {
 	IDIO_GC_FREE (s);
 
@@ -2971,7 +2985,6 @@ a wrapper to libc stat(2)			\n\
 	IDIO_GC_FREE (pathname_C);
     }
 
-    /* check for errors */
     if (-1 == stat_r) {
 	/*
 	 * Test Case: libc-wrap-errors/stat-empty-pathname.idio
@@ -3124,7 +3137,7 @@ See ``getrlimit`` to obtain a struct-rlimit.			\n\
 	 *
 	 * setrlimit (C/integer-> -1) (getrlimit RLIMIT_CPU)
 	 */
-	idio_error_system_errno ("setrlimit", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+	idio_error_system_errno ("setrlimit", IDIO_LIST2 (resource, rlim), IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -3208,14 +3221,13 @@ a wrapper to libc getpgid(2)		\n\
 
     pid_t getpgid_r = getpgid (C_pid);
 
-    /* check for errors */
     if (-1 == getpgid_r) {
 	/*
 	 * Test Case: libc-errors/getpgid-bad-pid.idio
 	 *
 	 * getpgid (C/integer-> -1)
 	 */
-        idio_error_system_errno ("getpgid", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+        idio_error_system_errno ("getpgid", pid, IDIO_C_FUNC_LOCATION ());
 
         return idio_S_notreached;
     }
@@ -3293,10 +3305,14 @@ a wrapper to libc read(2)					\n\
 :type fd: C/int							\n\
 :param count: number of bytes to read				\n\
 :type count: fixnum or libC/size_t				\n\
-:return: string of bytes read or #<eof>				\n\
-:rtype: string or #<eof>					\n\
+:return: string of bytes read or see below			\n\
+:rtype: string or see below					\n\
 								\n\
 count defaults to BUFSIZ					\n\
+								\n\
+If read(2) returned 0 then this code returns #<eof>.		\n\
+								\n\
+If read(2) indicated EAGAIN then this code returns #f.		\n\
 ")
 {
     IDIO_ASSERT (fd);
@@ -3336,7 +3352,27 @@ count defaults to BUFSIZ					\n\
 
     IDIO r;
 
-    if (n) {
+    if (-1 == n) {
+	/*
+	 * Test Case: ??
+	 */
+	if (EAGAIN == errno) {
+	    /*
+	     * Test Case: ??
+	     *
+	     * The Open Group:
+	     *
+	     *   If some process has the pipe open for writing and
+	     *   O_NONBLOCK is set, read() will return -1 and set
+	     *   errno to [EAGAIN].
+	     */
+	    return idio_S_false;
+	}
+	args = idio_pair (fd, args);
+	idio_error_system_errno ("read", args, IDIO_C_FUNC_LOCATION ());
+
+	return idio_S_notreached;
+    } else if (n) {
 	r = idio_string_C_len (buf, n);
     } else {
 	r = idio_S_eof;
@@ -3518,7 +3554,6 @@ and ``nsec`` can be a C/long|fixnum|bignum	\n\
 
     IDIO completed = idio_S_true;
 
-    /* check for errors */
     if (-1 == nanosleep_r) {
 	if (EINTR == errno) {
 	    /*
@@ -3569,7 +3604,6 @@ a wrapper to libc mktime(3)		\n\
 
     time_t mktime_r = mktime (C_tm);
 
-    /* check for errors */
     if (-1 == mktime_r) {
         idio_error_system_errno ("mktime", tm, IDIO_C_FUNC_LOCATION ());
 
@@ -3694,9 +3728,8 @@ a wrapper to libc mkfifo()		\n\
 	IDIO_GC_FREE (path_C);
     }
 
-    /* check for errors */
     if (-1 == mkfifo_r) {
-        idio_error_system_errno ("mkfifo", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+        idio_error_system_errno ("mkfifo", IDIO_LIST2 (path, mode), IDIO_C_FUNC_LOCATION ());
 
         return idio_S_notreached;
     }
@@ -3866,7 +3899,6 @@ a wrapper to libc lstat(2)			\n\
 	IDIO_GC_FREE (pathname_C);
     }
 
-    /* check for errors */
     if (-1 == lstat_r) {
 	/*
 	 * Test Case: libc-wrap-errors/lstat-empty-pathname.idio
@@ -3917,9 +3949,8 @@ a wrapper to libc killpg()		\n\
 
     int killpg_r = killpg (C_pgrp, C_sig);
 
-    /* check for errors */
     if (-1 == killpg_r) {
-        idio_error_system_errno ("killpg", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+        idio_error_system_errno ("killpg", IDIO_LIST2 (pgrp, sig), IDIO_C_FUNC_LOCATION ());
 
         return idio_S_notreached;
     }
@@ -4054,7 +4085,6 @@ a wrapper to libc gmtime(3)		\n\
 
     struct tm* gmtime_r_r = gmtime_r (&C_t, result);
 
-    /* check for errors */
     if (NULL == gmtime_r_r) {
 	IDIO_GC_FREE (result);
 
@@ -4227,7 +4257,7 @@ and ``RLIMIT_NOFILE``.						\n\
 	 *
 	 * getrlimit (C/integer-> -1)
 	 */
-	idio_error_system_errno ("getrlimit", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+	idio_error_system_errno ("getrlimit", resource, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -4389,7 +4419,6 @@ a wrapper to libc fstat(2)			\n\
 
     int fstat_r = fstat (C_fd, statp);
 
-    /* check for errors */
     if (-1 == fstat_r) {
 	/*
 	 * Test Case: libc-wrap-errors/fstat-bad-fd.idio
@@ -4551,7 +4580,9 @@ F_SETFL								\n\
 	     * delete-file (pht fd+name)
 	     * fcntl (ph fd+name) F_DUPFD C/0i
 	     */
-	    idio_error_system_errno ("fcntl", IDIO_LIST3 (fd, cmd, args), IDIO_C_FUNC_LOCATION ());
+	    args = idio_pair (cmd, args);
+	    args = idio_pair (fd, args);
+	    idio_error_system_errno ("fcntl", args, IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -4683,7 +4714,6 @@ a wrapper to libc ctime(3)		\n\
     char* ctime_r_r = ctime_r (&C_t, buf);
 #endif
 
-    /* check for errors */
     if (NULL == ctime_r_r) {
         idio_error_system_errno ("ctime_r", idio_libc_time_t (C_t), IDIO_C_FUNC_LOCATION ());
 
@@ -4693,7 +4723,7 @@ a wrapper to libc ctime(3)		\n\
     return idio_string_C (buf);
 }
 
-IDIO_DEFINE_PRIMITIVE1_DS ("close", libc_close, (IDIO ifd), "fd", "\
+IDIO_DEFINE_PRIMITIVE1_DS ("close", libc_close, (IDIO fd), "fd", "\
 in C, close (fd)						\n\
 a wrapper to libc close(2)					\n\
 								\n\
@@ -4703,15 +4733,15 @@ a wrapper to libc close(2)					\n\
 :rtype: C/int							\n\
 ")
 {
-    IDIO_ASSERT (ifd);
+    IDIO_ASSERT (fd);
 
     /*
      * Test Case: libc-wrap-errors/close-bad-type.idio
      *
      * close #t
      */
-    IDIO_USER_C_TYPE_ASSERT (int, ifd);
-    int C_fd = IDIO_C_TYPE_int (ifd);
+    IDIO_USER_C_TYPE_ASSERT (int, fd);
+    int C_fd = IDIO_C_TYPE_int (fd);
 
     int close_r = close (C_fd);
 
@@ -4724,7 +4754,7 @@ a wrapper to libc close(2)					\n\
 	 * delete-file (pht fd+name)
 	 * close (ph fd+name)
 	 */
-	idio_error_system_errno ("close", ifd, IDIO_C_FUNC_LOCATION ());
+	idio_error_system_errno ("close", fd, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -4774,7 +4804,7 @@ a wrapper to libc chdir(2)					\n\
 	 * rmdir tmpdir
 	 * chdir tmpdir
 	 */
-	idio_error_system_errno ("chdir", idio_S_nil, IDIO_C_FUNC_LOCATION ());
+	idio_error_system_errno ("chdir", path, IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -4831,7 +4861,6 @@ a wrapper to libc asctime(3)		\n\
     char* asctime_r_r = asctime_r (C_tm, buf);
 #endif
 
-    /* check for errors */
     if (NULL == asctime_r_r) {
         idio_error_system_errno ("asctime_r", tm, IDIO_C_FUNC_LOCATION ());
 
@@ -4883,7 +4912,6 @@ a wrapper to libc localtime(3)		\n\
 
     struct tm* localtime_r_r = localtime_r (&C_t, result);
 
-    /* check for errors */
     if (NULL == localtime_r_r) {
 	IDIO_GC_FREE (result);
 
@@ -4905,7 +4933,6 @@ a wrapper to libc time(2)		\n\
 {
     time_t time_r = time (NULL);
 
-    /* check for errors */
     if (-1 == time_r) {
         idio_error_system_errno ("time", idio_S_nil, IDIO_C_FUNC_LOCATION ());
 
@@ -4925,6 +4952,9 @@ a wrapper to libc access(2)					\n\
 :type mode: C/int						\n\
 :return: #t or #f						\n\
 :rtype: boolean							\n\
+								\n\
+Any non-zero value from access(2) returns #f,			\n\
+no ^system-error is raised.					\n\
 ")
 {
     IDIO_ASSERT (pathname);
@@ -4955,6 +4985,17 @@ a wrapper to libc access(2)					\n\
     int C_mode = IDIO_C_TYPE_int (mode);
 
     IDIO access_r = idio_S_false;
+
+    /*
+     * access(2) errors are a bit vague:
+     *
+     *   On error (at least one bit in mode asked for a permission
+     *   that is denied, or mode is F_OK and the file does not exist,
+     *   or some other error occurred), -1 is returned, and errno is
+     *   set appropriately.
+     *
+     * So, we'll just fail and let the user figure it out...
+     */
 
     if (0 == access (pathname_C, C_mode)) {
 	access_r = idio_S_true;

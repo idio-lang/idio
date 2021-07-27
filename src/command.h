@@ -30,7 +30,7 @@ void idio_command_not_found_error (char *msg, IDIO cmd, IDIO c_location);
 char **idio_command_get_envp ();
 char *idio_command_find_exe_C (char *command);
 char *idio_command_find_exe (IDIO func);
-IDIO idio_command_invoke (IDIO func, IDIO thr, char *pathname);
+IDIO idio_command_invoke (IDIO name, IDIO thr, char *pathname);
 
 void idio_init_command ();
 

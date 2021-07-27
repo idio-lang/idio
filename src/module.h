@@ -25,6 +25,7 @@
 
 extern IDIO idio_primitives_module;
 extern IDIO idio_Idio_module;
+extern IDIO idio_debugger_module;
 
 void idio_error_module_unbound_name (IDIO symbol, IDIO module);
 IDIO idio_module (IDIO name);

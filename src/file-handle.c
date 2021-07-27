@@ -54,12 +54,14 @@
 #include "error.h"
 #include "evaluate.h"
 #include "file-handle.h"
+#include "fixnum.h"
 #include "handle.h"
 #include "hash.h"
 #include "idio-string.h"
 #include "job-control.h"
 #include "module.h"
 #include "pair.h"
+#include "path.h"
 #include "read.h"
 #include "string-handle.h"
 #include "struct.h"
@@ -781,7 +783,7 @@ static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, int h_type, char
 	 * Test Case: ??
 	 */
 	fprintf (stderr, "[%d]fcntl %d (%s) => %d\n", getpid (), fd, idio_type2string (ifd), errno);
-	idio_error_system_errno_msg ("fcntl", "F_GETFL", ifd, IDIO_C_FUNC_LOCATION ());
+	idio_error_system_errno ("fcntl", IDIO_LIST2 (ifd, idio_symbols_C_intern ("F_GETFL")), IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -863,7 +865,7 @@ static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, int h_type, char
 	/*
 	 * Test Case: ??
 	 */
-	idio_error_system_errno_msg ("fcntl", "F_SETFL", ifd, IDIO_C_FUNC_LOCATION ());
+	idio_error_system_errno ("fcntl", IDIO_LIST3 (ifd, idio_symbols_C_intern ("F_SETFL"), idio_C_int (req_fs_flags)), IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -893,7 +895,7 @@ static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, int h_type, char
 	/*
 	 * Test Case: ??
 	 */
-	idio_error_system_errno_msg ("fcntl", "F_GETFD", ifd, IDIO_C_FUNC_LOCATION ());
+	idio_error_system_errno ("fcntl", IDIO_LIST2 (ifd, idio_symbols_C_intern ("F_GETFD")), IDIO_C_FUNC_LOCATION ());
 
 	return idio_S_notreached;
     }
@@ -936,7 +938,7 @@ static IDIO idio_file_handle_open_from_fd (IDIO ifd, IDIO args, int h_type, char
 	     IDIO_STATE_BOOTSTRAP == idio_state)) {
 	    perror ("fcntl F_SETFD");
 	} else {
-	    idio_error_system_errno_msg ("fcntl", "F_SETFD", ifd, IDIO_C_FUNC_LOCATION ());
+	    idio_error_system_errno ("fcntl", IDIO_LIST3 (ifd, idio_symbols_C_intern ("F_SETFD"), idio_C_int (req_fd_flags)), IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -1084,7 +1086,7 @@ Use #n for ``name`` if you only want to set ``mode``	\n\
     return ph;
 }
 
-IDIO idio_open_file_handle_C (char *func, IDIO filename, char *pathname, int free_pathname, char *mode_str, int free_mode_str)
+IDIO idio_open_file_handle_C (char *func, IDIO filename, char *pathname, int free_pathname, char *mode_str, int free_mode_str, int user_mode)
 {
     IDIO_C_ASSERT (func);
     IDIO_ASSERT (filename);	/* the user supplied name */
@@ -1164,164 +1166,215 @@ IDIO idio_open_file_handle_C (char *func, IDIO filename, char *pathname, int fre
     mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH;
 
     int fd;
-    int tries;
-    for (tries = 2; tries > 0 ; tries--) {
-	fd = open (pathname, req_fs_flags, mode);
-	if (-1 == fd) {
-	    switch (errno) {
-	    case EMFILE:	/* process max */
-	    case ENFILE:	/* system max */
-		idio_gc_collect_all ("idio_open_file_handle_C");
+    int h_type = IDIO_HANDLE_FLAG_FILE;
+
+    if (idio_isa_fd_pathname (filename)) {
+	/*
+	 * The file descriptor is already open, we don't need to open
+	 * it but, rather, recover it from the pathname.
+	 */
+
+	/*
+	 * "/dev/fd/" is 8 chars and the following number is in base
+	 * 10
+	 */
+	IDIO I_fd = idio_fixnum_C (pathname + 8, 10);
+	fd = IDIO_FIXNUM_VAL (I_fd);
+	h_type = IDIO_HANDLE_FLAG_PIPE;
+
+	/*
+	 * Given that /dev/fd/n is a special pathname that only we (in
+	 * C-land) can create and we didn't create the underlying pipe
+	 * with O_CLOEXEC then we should be disabling these flags.
+	 *
+	 * However, in calling open-file with such a pathname *and*
+	 * with an explicit mode including "e" (remember the defaults
+	 * are "re" or "we" which is why we're removing the flag) then
+	 * we want to avoid causing a surprise, here.
+	 */
+
+	if (0 == user_mode) {
+	    req_fd_flags &= ~ FD_CLOEXEC;
+	    s_flags &= ~ IDIO_FILE_HANDLE_FLAG_CLOEXEC;
+	}
+
+    } else {
+	if (idio_isa_fifo_pathname (filename)) {
+	    req_fs_flags |= O_NONBLOCK;
+	}
+
+	int tries;
+	for (tries = 2; tries > 0 ; tries--) {
+	    fd = open (pathname, req_fs_flags, mode);
+	    if (-1 == fd) {
+		switch (errno) {
+		case EMFILE:	/* process max */
+		case ENFILE:	/* system max */
+		    idio_gc_collect_all ("idio_open_file_handle_C");
+		    break;
+		case EACCES:
+		    {
+			/*
+			 * Test Cases:
+			 *
+			 *   file-handle-errors/open-file-protection.idio
+			 *   file-handle-errors/open-input-file-protection.idio
+			 *   file-handle-errors/open-output-file-protection.idio
+			 *
+			 * tmpfile := (make-tmp-file)
+			 * chmod \= tmpfile
+			 * open-file tmpfile "re"
+			 */
+			IDIO pn = idio_string_C (pathname);
+
+			if (free_pathname) {
+			    IDIO_GC_FREE (pathname);
+			}
+			if (free_mode_str) {
+			    IDIO_GC_FREE (mode_str);
+			}
+
+			idio_file_handle_file_protection_error (func, pn, IDIO_C_FUNC_LOCATION ());
+
+			return idio_S_notreached;
+		    }
+		case EEXIST:
+		    {
+			/*
+			 * Test Case: file-handle-errors/open-file-exists.idio
+			 *
+			 * tmpfile := (make-tmp-file)
+			 * open-file tmpfile "wx"
+			 *
+			 * XXX requires the non-POSIX "x" == O_EXCL
+			 */
+			IDIO pn = idio_string_C (pathname);
+
+			if (free_pathname) {
+			    IDIO_GC_FREE (pathname);
+			}
+			if (free_mode_str) {
+			    IDIO_GC_FREE (mode_str);
+			}
+
+			idio_file_handle_filename_already_exists_error (func, pn, IDIO_C_FUNC_LOCATION ());
+
+			return idio_S_notreached;
+		    }
+		case ENAMETOOLONG:
+		    {
+			/*
+			 * Test Cases:
+			 *
+			 *   file-handle-errors/open-file-filename-PATH_MAX.idio
+			 *   file-handle-errors/open-input-file-filename-PATH_MAX.idio
+			 *   file-handle-errors/open-output-file-filename-PATH_MAX.idio
+			 *
+			 * open-file (make-string (C/->integer PATH_MAX) #\A) "re"
+			 */
+			IDIO pn = idio_string_C (pathname);
+
+			if (free_pathname) {
+			    IDIO_GC_FREE (pathname);
+			}
+			if (free_mode_str) {
+			    IDIO_GC_FREE (mode_str);
+			}
+
+			idio_file_handle_filename_system_error (func, pn, IDIO_C_FUNC_LOCATION ());
+
+			return idio_S_notreached;
+		    }
+		case ENOENT:
+		    {
+			/*
+			 * Test Cases:
+			 *
+			 *   file-handle-errors/open-file-filename-missing.idio
+			 *   file-handle-errors/open-input-file-filename-missing.idio
+			 *
+			 * tmpfile := (make-tmp-file)
+			 * delete-file tmpfile
+			 * open-file tmpfile "re"
+			 *
+			 * XXX "w" and "a" mode flags imply O_CREAT
+			 */
+			IDIO pn = idio_string_C (pathname);
+
+			if (free_pathname) {
+			    IDIO_GC_FREE (pathname);
+			}
+			if (free_mode_str) {
+			    IDIO_GC_FREE (mode_str);
+			}
+
+			idio_file_handle_filename_not_found_error (func, pn, IDIO_C_FUNC_LOCATION ());
+
+			return idio_S_notreached;
+		    }
+		case ENOTDIR:
+		    {
+			/*
+			 * Test Cases:
+			 *
+			 *   file-handle-errors/open-file-dirname-missing.idio
+			 *   file-handle-errors/open-input-file-dirname-missing.idio
+			 *   file-handle-errors/open-output-file-dirname-missing.idio
+			 *
+			 * tmpfile := (make-tmp-file)
+			 * delete-file tmpfile
+			 * open-file (append-string tmpfile "/foo") "re"
+			 */
+			IDIO pn = idio_string_C (pathname);
+
+			if (free_pathname) {
+			    IDIO_GC_FREE (pathname);
+			}
+			if (free_mode_str) {
+			    IDIO_GC_FREE (mode_str);
+			}
+
+			idio_file_handle_filename_system_error (func, pn, IDIO_C_FUNC_LOCATION ());
+
+			return idio_S_notreached;
+		    }
+		case ENXIO:
+		    {
+			/*
+			 * Test Case: ??
+			 *
+			 * FreeBSD:
+			 *
+			 *   O_NONBLOCK is set, the named file * is a
+			 *   fifo, O_WRONLY is set, and no process *
+			 *   has the file open for reading.
+			 */
+			return idio_S_false;
+		    }
+		default:
+		    {
+			/*
+			 * Test Case: ??
+			 *
+			 * What can we reasonably generate?  ELOOP, maybe?
+			 */
+			IDIO pn = idio_string_C (pathname);
+
+			if (free_pathname) {
+			    IDIO_GC_FREE (pathname);
+			}
+			if (free_mode_str) {
+			    IDIO_GC_FREE (mode_str);
+			}
+
+			idio_error_system_errno ("open", pn, IDIO_C_FUNC_LOCATION ());
+
+			return idio_S_notreached;
+		    }
+		}
+	    } else {
 		break;
-	    case EACCES:
-		{
-		    /*
-		     * Test Cases:
-		     *
-		     *   file-handle-errors/open-file-protection.idio
-		     *   file-handle-errors/open-input-file-protection.idio
-		     *   file-handle-errors/open-output-file-protection.idio
-		     *
-		     * tmpfile := (make-tmp-file)
-		     * chmod \= tmpfile
-		     * open-file tmpfile "re"
-		     */
-		    IDIO pn = idio_string_C (pathname);
-
-		    if (free_pathname) {
-			IDIO_GC_FREE (pathname);
-		    }
-		    if (free_mode_str) {
-			IDIO_GC_FREE (mode_str);
-		    }
-
-		    idio_file_handle_file_protection_error (func, pn, IDIO_C_FUNC_LOCATION ());
-
-		    return idio_S_notreached;
-		}
-	    case EEXIST:
-		{
-		    /*
-		     * Test Case: file-handle-errors/open-file-exists.idio
-		     *
-		     * tmpfile := (make-tmp-file)
-		     * open-file tmpfile "wx"
-		     *
-		     * XXX requires the non-POSIX "x" == O_EXCL
-		     */
-		    IDIO pn = idio_string_C (pathname);
-
-		    if (free_pathname) {
-			IDIO_GC_FREE (pathname);
-		    }
-		    if (free_mode_str) {
-			IDIO_GC_FREE (mode_str);
-		    }
-
-		    idio_file_handle_filename_already_exists_error (func, pn, IDIO_C_FUNC_LOCATION ());
-
-		    return idio_S_notreached;
-		}
-	    case ENAMETOOLONG:
-		{
-		    /*
-		     * Test Cases:
-		     *
-		     *   file-handle-errors/open-file-filename-PATH_MAX.idio
-		     *   file-handle-errors/open-input-file-filename-PATH_MAX.idio
-		     *   file-handle-errors/open-output-file-filename-PATH_MAX.idio
-		     *
-		     * open-file (make-string (C/->integer PATH_MAX) #\A) "re"
-		     */
-		    IDIO pn = idio_string_C (pathname);
-
-		    if (free_pathname) {
-			IDIO_GC_FREE (pathname);
-		    }
-		    if (free_mode_str) {
-			IDIO_GC_FREE (mode_str);
-		    }
-
-		    idio_file_handle_filename_system_error (func, pn, IDIO_C_FUNC_LOCATION ());
-
-		    return idio_S_notreached;
-		}
-	    case ENOENT:
-		{
-		    /*
-		     * Test Cases:
-		     *
-		     *   file-handle-errors/open-file-filename-missing.idio
-		     *   file-handle-errors/open-input-file-filename-missing.idio
-		     *
-		     * tmpfile := (make-tmp-file)
-		     * delete-file tmpfile
-		     * open-file tmpfile "re"
-		     *
-		     * XXX "w" and "a" mode flags imply O_CREAT
-		     */
-		    IDIO pn = idio_string_C (pathname);
-
-		    if (free_pathname) {
-			IDIO_GC_FREE (pathname);
-		    }
-		    if (free_mode_str) {
-			IDIO_GC_FREE (mode_str);
-		    }
-
-		    idio_file_handle_filename_not_found_error (func, pn, IDIO_C_FUNC_LOCATION ());
-
-		    return idio_S_notreached;
-		}
-	    case ENOTDIR:
-		{
-		    /*
-		     * Test Cases:
-		     *
-		     *   file-handle-errors/open-file-dirname-missing.idio
-		     *   file-handle-errors/open-input-file-dirname-missing.idio
-		     *   file-handle-errors/open-output-file-dirname-missing.idio
-		     *
-		     * tmpfile := (make-tmp-file)
-		     * delete-file tmpfile
-		     * open-file (append-string tmpfile "/foo") "re"
-		     */
-		    IDIO pn = idio_string_C (pathname);
-
-		    if (free_pathname) {
-			IDIO_GC_FREE (pathname);
-		    }
-		    if (free_mode_str) {
-			IDIO_GC_FREE (mode_str);
-		    }
-
-		    idio_file_handle_filename_system_error (func, pn, IDIO_C_FUNC_LOCATION ());
-
-		    return idio_S_notreached;
-		}
-	    default:
-		{
-		    /*
-		     * Test Case: ??
-		     *
-		     * What can we reasonably generate?  ELOOP, maybe?
-		     */
-		    IDIO pn = idio_string_C (pathname);
-
-		    if (free_pathname) {
-			IDIO_GC_FREE (pathname);
-		    }
-		    if (free_mode_str) {
-			IDIO_GC_FREE (mode_str);
-		    }
-
-		    idio_error_system_errno ("open", pn, IDIO_C_FUNC_LOCATION ());
-
-		    return idio_S_notreached;
-		}
 	    }
-	} else {
-	    break;
 	}
     }
 
@@ -1374,13 +1427,13 @@ IDIO idio_open_file_handle_C (char *func, IDIO filename, char *pathname, int fre
 	     IDIO_STATE_BOOTSTRAP == idio_state)) {
 	    perror ("fcntl F_SETFD");
 	} else {
-	    idio_error_system_errno_msg ("fcntl", "F_SETFD", idio_C_int (fd), IDIO_C_FUNC_LOCATION ());
+	    idio_error_system_errno ("fcntl", IDIO_LIST3 (idio_C_int (fd), idio_symbols_C_intern ("F_SETFD"), idio_C_int (req_fd_flags)), IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
     }
 
-    return idio_open_file_handle (filename, pathname, fd, IDIO_HANDLE_FLAG_FILE, h_flags, s_flags);
+    return idio_open_file_handle (filename, pathname, fd, h_type, h_flags, s_flags);
 }
 
 /*
@@ -1456,7 +1509,7 @@ static IDIO idio_file_handle_open_file (char *func, IDIO name, IDIO mode, char *
 	break;
     }
 
-    return idio_open_file_handle_C (func, name, name_C, 1, mode_C, free_mode_C);
+    return idio_open_file_handle_C (func, name, name_C, 1, mode_C, free_mode_C, (idio_S_nil != mode));
 }
 
 IDIO_DEFINE_PRIMITIVE2_DS ("open-file", open_file_handle, (IDIO name, IDIO mode), "name mode", "\
@@ -2106,7 +2159,7 @@ int idio_close_file_handle (IDIO fh)
  * idio_putb_handle() is only called by idio_command_invoke() when
  * recovering stdout/stderr handles and will NOT have happened if
  * stdout/stderr was a file handle (see stdout-fileno/stderr-fileno in
- * llibc.idio).
+ * lib/libc.idio).
  *
  * So...we never get here?
  */
@@ -2384,6 +2437,19 @@ int idio_flush_file_handle (IDIO fh)
 	return 0;
     }
 
+    if (0 == IDIO_FILE_HANDLE_COUNT (fh)) {
+	/*
+	 * This is almost certainly a flush -- which is fine.
+	 *
+	 * Unless it's to a pipe which has been closed under our feet
+	 * and we haven't picked up on that yet.  This is likely to be
+	 * an asynchronous process.
+	 *
+	 * So, just to be careful, don't try to write nothing.
+	 */
+	return 0;
+    }
+
     int r = EOF;
 
     struct sigaction nsa;
@@ -2436,9 +2502,26 @@ int idio_flush_file_handle (IDIO fh)
 	       * Hmm, not sure...
 	       */
 
-	      fprintf (stderr, "flush %d bytes failed for fd=%3d\n", IDIO_FILE_HANDLE_COUNT (fh), IDIO_FILE_HANDLE_FD (fh));
-	      fprintf (stderr, "hflags=%#x\n", IDIO_HANDLE_FLAGS (fh));
-	      idio_debug ("fh=%s\n", fh);
+	     fprintf (stderr, "%6d: flush %d bytes failed for fd=%3d", getpid (), IDIO_FILE_HANDLE_COUNT (fh), IDIO_FILE_HANDLE_FD (fh));
+	      fprintf (stderr, " hflags=%#x", IDIO_HANDLE_FLAGS (fh));
+	      idio_debug (" fh=%s\n", fh);
+	      if (EBADF == errno) {
+		  /*
+		   * Particularly for /dev/fd/n "named pipes" we have
+		   * a race condition between the user code closing
+		   * the file handle and the
+		   * tidy-process-substitution-job code running on the
+		   * back of a SIGCHLD.
+		   *
+		   * We can't be sure this is an EBADF because of that
+		   * but...
+		   */
+		  perror ("flush/write");
+		  IDIO_HANDLE_FLAGS (fh) |= IDIO_HANDLE_FLAG_CLOSED;
+		  idio_gc_deregister_finalizer (fh);
+
+		  return EOF;
+	      }
 	      idio_error_system_errno ("write", fh, IDIO_C_FUNC_LOCATION ());
 
 	      /* notreached */
@@ -2651,7 +2734,7 @@ fd handle `fh` with `F_SETFD` and `FD_CLOEXEC` arguments	\n\
 	     *
 	     * Not sure how to provoke this...
 	     */
-	    idio_error_system_errno_msg ("fcntl", "F_SETFD FD_CLOEXEC", fh, IDIO_C_FUNC_LOCATION ());
+	    idio_error_system_errno ("fcntl", IDIO_LIST3 (idio_C_int (fd), idio_symbols_C_intern ("F_SETFD"), idio_symbols_C_intern ("FD_CLOEXEC")), IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -3113,7 +3196,7 @@ IDIO idio_load_file_name (IDIO filename, IDIO cs)
     }
 
     if (access (lfn, R_OK) == 0) {
-	IDIO fh = idio_open_file_handle_C ("load", filename_ext, lfn, 0, "r", 0);
+	IDIO fh = idio_open_file_handle_C ("load", filename_ext, lfn, 0, "r", 0, 0);
 
 	if (free_filename_C) {
 	    IDIO_GC_FREE (filename_C);

@@ -29,6 +29,7 @@ extern int idio_job_control_interactive;
 extern pid_t idio_job_control_cmd_pid;
 extern IDIO idio_job_control_process_type;
 extern IDIO idio_job_control_job_type;
+extern IDIO idio_job_control_stray_pids_sym;
 extern IDIO idio_S_stdin_fileno;
 extern IDIO idio_S_stdout_fileno;
 extern IDIO idio_S_stderr_fileno;
@@ -38,7 +39,7 @@ IDIO idio_job_control_SIGCHLD_signal_handler ();
 IDIO idio_job_control_SIGTERM_stopped_jobs ();
 void idio_job_control_restore_terminal ();
 void idio_job_control_set_interactive (int interactive);
-IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char **argv);
+IDIO idio_job_control_launch_1proc_job (IDIO job, int foreground, char *pathname, char **argv, IDIO args);
 
 void idio_init_job_control ();
 
