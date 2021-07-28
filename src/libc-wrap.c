@@ -310,6 +310,78 @@ tv1 - tv2							\n\
     return idio_libc_struct_timeval_pointer (tvp);
 }
 
+/*
+ * getcwd(3) and its arguments
+ *
+ * A sensible {size}?
+ *
+ * PATH_MAX varies: POSIX is 256, CentOS 7 is 4096
+ *
+ * The Linux man page for realpath(3) suggests that calling
+ * pathconf(3) for _PC_PATH_MAX doesn't improve matters a whole bunch
+ * as it can return a value that is infeasible to allocate in memory.
+ *
+ * Some systems (OS X, FreeBSD) suggest getcwd(3) should accept
+ * MAXPATHLEN (which is #define'd as PATH_MAX in <sys/param.h>).
+ *
+ * A NULL {buf}?
+ *
+ * Some systems (older OS X, FreeBSD) do not support a zero {size}
+ * parameter.  If passed a NULL {buf}, those systems seem to allocate
+ * as much memory as is required to contain the result, regardless of
+ * {size}.
+ *
+ * On systems that do support a zero {size} parameter then they
+ * will limit themselves to allocating a maximum of {size} bytes
+ * if passed a NULL {buf} and a non-zero {size}.
+ *
+ * Given that we can't set {size} to zero on some systems then
+ * always set {size} to PATH_MAX which should be be enough.
+ *
+ * Bah! Until Fedora 33/gcc 10.2.1 which is complaining:
+ *
+ *  warning: argument 1 is null but the corresponding size argument 2 value is 4096
+ *
+ * It also helpfully reports that:
+ *
+ *  /usr/include/unistd.h:520:14: note: in a call to function ‘getcwd’ declared with attribute ‘write_only (1, 2)’
+ *
+ * See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=96832
+ *
+ * If getcwd(3) returns a value that consumes all of PATH_MAX (or
+ * more) then we're doomed to hit other problems in the near future
+ * anyway as other parts of the system try to use the result.
+ *
+ *
+ * Mac OS X: getcwd(3) => EMFILE (the man page says nothing)
+ */
+
+char *idio_getcwd (char *func, char *buf, size_t size)
+{
+    IDIO_C_ASSERT (func);
+
+    char *cwd = NULL;
+
+    for (int tries = 2; tries > 0; tries--) {
+	cwd = getcwd (buf, size);
+
+	if (NULL == cwd) {
+	    switch (errno) {
+	    case EMFILE:
+	    case ENFILE:
+		idio_gc_collect_all (func);
+		break;
+	    default:
+		return cwd;
+	    }
+	} else {
+	    return cwd;
+	}
+    }
+
+    return cwd;
+}
+
 IDIO_DEFINE_PRIMITIVE1_DS ("exit", libc_exit, (IDIO istatus), "status", "\
 in C, close (status)						\n\
 a wrapper to libc exit (3)					\n\
@@ -485,7 +557,7 @@ IDIO idio_libc_proc_subst_named_pipe (int into)
 	char *td_C = idio_string_as_C (td, &blen);
 
 	char np_name_C[PATH_MAX];
-	/* � Magritte */
+	/* á Magritte */
 	sprintf (np_name_C, "%s/une-pipe", td_C);
 
 	IDIO_GC_FREE (td_C);
@@ -3582,3 +3654,7 @@ void idio_init_libc_wrap ()
 #endif
 }
 
+/* Local Variables: */
+/* mode: C */
+/* buffer-file-coding-system: utf-8-unix */
+/* End: */

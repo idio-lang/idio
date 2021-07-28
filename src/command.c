@@ -481,7 +481,7 @@ char *idio_command_find_exe_C (char *command)
      */
     char exename[PATH_MAX];
     char cwd[PATH_MAX];
-    if (getcwd (cwd, PATH_MAX) == NULL) {
+    if (idio_getcwd ("find-exe/getcwd", cwd, PATH_MAX) == NULL) {
 	if (free_path_C){
 	    IDIO_GC_FREE (path_C);
 	}
@@ -499,6 +499,7 @@ char *idio_command_find_exe_C (char *command)
 	/* notreached */
 	return NULL;
     }
+
     size_t cwdlen = strlen (cwd);
 
     int done = 0;

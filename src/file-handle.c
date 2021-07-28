@@ -59,6 +59,7 @@
 #include "hash.h"
 #include "idio-string.h"
 #include "job-control.h"
+#include "libc-wrap.h"
 #include "module.h"
 #include "pair.h"
 #include "path.h"
@@ -2833,7 +2834,7 @@ char *idio_libfile_find_C (char *file)
      */
     char libname[PATH_MAX];
     char cwd[PATH_MAX];
-    if (getcwd (cwd, PATH_MAX) == NULL) {
+    if (idio_getcwd ("find/getcwd", cwd, PATH_MAX) == NULL) {
 	/*
 	 * Test Case: file-handle-errors/find-lib-getcwd-rmdir.idio
 	 *
@@ -2851,6 +2852,7 @@ char *idio_libfile_find_C (char *file)
 	/* notreached */
 	return NULL;
     }
+
     size_t cwdlen = strlen (cwd);
 
     if ('/' == file[0]) {

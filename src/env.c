@@ -47,6 +47,7 @@
 #include "evaluate.h"
 #include "handle.h"
 #include "idio-string.h"
+#include "libc-wrap.h"
 #include "module.h"
 #include "pair.h"
 #include "string-handle.h"
@@ -215,8 +216,7 @@ static void idio_env_add_environ ()
     /*
      * See comment in libc-wrap.c re: getcwd(3)
      */
-    char *cwd = getcwd (NULL, PATH_MAX);
-
+    char *cwd = idio_getcwd ("environ/getcwd", NULL, PATH_MAX);
     if (NULL == cwd) {
 	/*
 	 * Test Case: ??

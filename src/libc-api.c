@@ -4370,8 +4370,12 @@ a wrapper to libc getcwd(3)					\n\
      * future anyway as other parts of the system try to use the
      * result.
      */
-    char *cwd = getcwd (NULL, PATH_MAX);
 
+    /*
+     * Mac OS X: getcwd(3) => EMFILE (the man page says nothing)
+     */
+
+    char *cwd = idio_getcwd ("libc/getcwd", NULL, PATH_MAX);
     if (NULL == cwd) {
 	/*
 	 * Test Case: libc-wrap-errors/getcwd-no-access.idio

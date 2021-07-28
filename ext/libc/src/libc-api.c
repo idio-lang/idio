@@ -133,7 +133,8 @@ int main (int argc, char **argv)
 
     /* getcwd(3) */
     {
-	char *getcwd_r = getcwd (NULL, PATH_MAX);
+	char buf[PATH_MAX];
+	char *getcwd_r = getcwd (buf, PATH_MAX);
     }
 
     /* getpgrp(2) */
