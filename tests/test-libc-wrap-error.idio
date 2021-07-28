@@ -346,7 +346,14 @@ libc-wrap-error-load "libc-wrap-errors/mktime-bad-tm-type.idio" "bad parameter t
 
 libc-wrap-error-load "libc-wrap-errors/nanosleep-bad-req-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a struct timespec|list"
 libc-wrap-error-load "libc-wrap-errors/nanosleep-req-sec-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a libc/time_t|fixnum|bignum"
-libc-wrap-error-load "libc-wrap-errors/nanosleep-req-sec-negative.idio" "Invalid argument" EINVAL "nanosleep"
+(cond-expand
+ (uname/sysname/FreeBSD {
+   ;; FreeBSD treats negative seconds as zero?
+   Tests = Tests + 3
+ })
+ (else {
+   libc-wrap-error-load "libc-wrap-errors/nanosleep-req-sec-negative.idio" "Invalid argument" EINVAL "nanosleep"
+ }))
 libc-wrap-error-load "libc-wrap-errors/nanosleep-req-sec-float.idio" "nanosleep sec='1.1e+0' a BIGNUM is not a an integer bignum"
 libc-wrap-error-load "libc-wrap-errors/nanosleep-req-nsec-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a C/long|fixnum|bignum"
 libc-wrap-error-load "libc-wrap-errors/nanosleep-req-nsec-negative.idio" "Invalid argument" EINVAL "nanosleep"
