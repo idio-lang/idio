@@ -296,9 +296,7 @@ void idio_terminal_signal_handler (int sig)
     /*
      * restore the terminal state
      */
-    if (idio_job_control_interactive) {
-	idio_job_control_restore_terminal ();
-    }
+    idio_job_control_restore_terminal ();
 
     if (SIGHUP == sig) {
 	idio_job_control_SIGHUP_signal_handler ();
@@ -646,9 +644,8 @@ int main (int argc, char **argv, char **envp)
 
     if (sargc) {
 	/*
-	 * idio_job_control_interactive is set to 1 if isatty (0) is
-	 * true however we are about to loop over files in a
-	 * non-interactive way.  So turn it off.
+	 * We are about to loop over files in a non-interactive way.
+	 * So turn interactivity off.
 	 */
 	idio_job_control_set_interactive (0);
 
@@ -698,10 +695,11 @@ int main (int argc, char **argv, char **envp)
 	}
     } else {
 	/*
-	 * idio_command_interactive is set to 1 if isatty (0) is true
-	 * and so will be 0 if stdin is a file (or other non-tty
-	 * entity).
+	 * If the terminal isn't a tty perhaps we shouldn't start the
+	 * REPL.  In practice, though, this acts like a crude:
+	 * load-handle *stdin*
 	 */
+	idio_job_control_set_interactive (idio_job_control_tty_isatty);
 
 	int gc_pause = idio_gc_get_pause ("REPL");
 

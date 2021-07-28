@@ -81,7 +81,8 @@ IDIO idio_job_control_module = idio_S_nil;
 static pid_t idio_job_control_pid;
 static pid_t idio_job_control_pgid;
 static IDIO idio_job_control_tcattrs;
-int idio_job_control_terminal;
+int idio_job_control_tty_fd;
+int idio_job_control_tty_isatty;
 int idio_job_control_interactive;
 
 pid_t idio_job_control_cmd_pid;
@@ -829,21 +830,23 @@ notify of any job status changes		\n\
 
 void idio_job_control_restore_terminal ()
 {
-    struct termios *tcattrsp = IDIO_C_TYPE_POINTER_P (idio_job_control_tcattrs);
-    if (tcsetattr (idio_job_control_terminal, TCSADRAIN, tcattrsp) < 0) {
-	/*
-	 * If the interactive user has typed ^D then read(2) gets EOL
-	 * and closes the file descriptor.
-	 *
-	 * If we're running from a tty then calling tcsetattr(0, ...)
-	 * as we shutdown *after* that gets EBADF.
-	 */
-	if (! (IDIO_STATE_SHUTDOWN == idio_state &&
-	       EBADF == errno)) {
-	    idio_error_system_errno ("tcsetattr", idio_C_int (idio_job_control_terminal), IDIO_C_FUNC_LOCATION ());
+    if (idio_job_control_tty_isatty) {
+	struct termios *tcattrsp = IDIO_C_TYPE_POINTER_P (idio_job_control_tcattrs);
+	if (tcsetattr (idio_job_control_tty_fd, TCSADRAIN, tcattrsp) < 0) {
+	    /*
+	     * If the interactive user has typed ^D then read(2) gets EOL
+	     * and closes the file descriptor.
+	     *
+	     * If we're running from a tty then calling tcsetattr(0, ...)
+	     * as we shutdown *after* that gets EBADF.
+	     */
+	    if (! (IDIO_STATE_SHUTDOWN == idio_state &&
+		   EBADF == errno)) {
+		idio_error_system_errno ("tcsetattr", idio_C_int (idio_job_control_tty_fd), IDIO_C_FUNC_LOCATION ());
 
-	    /* notreached */
-	    return;
+		/* notreached */
+		return;
+	    }
 	}
     }
 }
@@ -865,9 +868,9 @@ static IDIO idio_job_control_foreground_job (IDIO job, int cont)
 	/*
 	 * Put the job in the foreground
 	 */
-	if (tcsetpgrp (idio_job_control_terminal, job_pgid) < 0) {
+	if (tcsetpgrp (idio_job_control_tty_fd, job_pgid) < 0) {
 	    idio_error_system_errno ("tcsetpgrp",
-				     IDIO_LIST3 (idio_C_int (idio_job_control_terminal),
+				     IDIO_LIST3 (idio_C_int (idio_job_control_tty_fd),
 						 idio_libc_pid_t (job_pgid),
 						 job),
 				     IDIO_C_FUNC_LOCATION ());
@@ -882,8 +885,8 @@ static IDIO idio_job_control_foreground_job (IDIO job, int cont)
 	    IDIO_TYPE_ASSERT (C_pointer, job_tcattrs);
 	    struct termios *tcattrsp = IDIO_C_TYPE_POINTER_P (job_tcattrs);
 
-	    if (tcsetattr (idio_job_control_terminal, TCSADRAIN, tcattrsp) < 0) {
-		idio_error_system_errno ("tcsetattr", idio_C_int (idio_job_control_terminal), IDIO_C_FUNC_LOCATION ());
+	    if (tcsetattr (idio_job_control_tty_fd, TCSADRAIN, tcattrsp) < 0) {
+		idio_error_system_errno ("tcsetattr", idio_C_int (idio_job_control_tty_fd), IDIO_C_FUNC_LOCATION ());
 
 		return idio_S_notreached;
 	    }
@@ -906,9 +909,9 @@ static IDIO idio_job_control_foreground_job (IDIO job, int cont)
 	/*
 	 * Put the shell back in the foreground.
 	 */
-	if (tcsetpgrp (idio_job_control_terminal, idio_job_control_pgid) < 0) {
+	if (tcsetpgrp (idio_job_control_tty_fd, idio_job_control_pgid) < 0) {
 	    idio_error_system_errno ("tcsetpgrp",
-				     IDIO_LIST3 (idio_C_int (idio_job_control_terminal),
+				     IDIO_LIST3 (idio_C_int (idio_job_control_tty_fd),
 						 idio_libc_pid_t (idio_job_control_pgid),
 						 job),
 				     IDIO_C_FUNC_LOCATION ());
@@ -928,8 +931,8 @@ static IDIO idio_job_control_foreground_job (IDIO job, int cont)
 	    idio_struct_instance_set_direct (job, IDIO_JOB_ST_TCATTRS, job_tcattrs);
 	}
 
-	if (tcgetattr (idio_job_control_terminal, tcattrsp) < 0) {
-	    idio_error_system_errno ("tcgetattr", idio_C_int (idio_job_control_terminal), IDIO_C_FUNC_LOCATION ());
+	if (tcgetattr (idio_job_control_tty_fd, tcattrsp) < 0) {
+	    idio_error_system_errno ("tcgetattr", idio_C_int (idio_job_control_tty_fd), IDIO_C_FUNC_LOCATION ());
 
 	    return idio_S_notreached;
 	}
@@ -1439,9 +1442,9 @@ static void idio_job_control_prep_process (pid_t job_pgid, int infile, int outfi
 	     * Give the terminal to the process group.  Dupe of parent
 	     * to avoid race conditions.
 	     */
-	    if (tcsetpgrp (idio_job_control_terminal, job_pgid) < 0) {
+	    if (tcsetpgrp (idio_job_control_tty_fd, job_pgid) < 0) {
 		idio_error_system_errno ("ijc-pp tcsetpgrp",
-					 IDIO_LIST2 (idio_C_int (idio_job_control_terminal),
+					 IDIO_LIST2 (idio_C_int (idio_job_control_tty_fd),
 						     idio_libc_pid_t (job_pgid)),
 					 IDIO_C_FUNC_LOCATION ());
 
@@ -2006,13 +2009,6 @@ get the current interactiveness			\n\
 
 void idio_job_control_set_interactive (int interactive)
 {
-    if (interactive < 0) {
-	idio_error_system_errno ("isatty", idio_C_int (idio_job_control_terminal), IDIO_C_FUNC_LOCATION ());
-
-	/* notreached */
-	return;
-    }
-
     idio_job_control_interactive = interactive;
 
     if (idio_job_control_interactive) {
@@ -2024,8 +2020,8 @@ void idio_job_control_set_interactive (int interactive)
 	 * until we check again.
 	 */
 	int c = 0;
-	while (tcgetpgrp (idio_job_control_terminal) != (idio_job_control_pgid = getpgrp ())) {
-	    fprintf (stderr, "%2d: tcgetpgrp(%d)=%d getpgrp()=%d\n", c, tcgetpgrp (idio_job_control_terminal), idio_job_control_terminal, getpgrp ());
+	while (tcgetpgrp (idio_job_control_tty_fd) != (idio_job_control_pgid = getpgrp ())) {
+	    fprintf (stderr, "%2d: tcgetpgrp(%d)=%d getpgrp()=%d\n", c, tcgetpgrp (idio_job_control_tty_fd), idio_job_control_tty_fd, getpgrp ());
 	    c++;
 	    if (c > 2) {
 		exit (128 + 15);
@@ -2095,22 +2091,11 @@ void idio_job_control_set_interactive (int interactive)
 	/*
 	 * Grab control of the terminal.
 	 */
-	if (tcsetpgrp (idio_job_control_terminal, idio_job_control_pgid) < 0) {
+	if (tcsetpgrp (idio_job_control_tty_fd, idio_job_control_pgid) < 0) {
 	    idio_error_system_errno ("tcsetpgrp",
-				     IDIO_LIST2 (idio_C_int (idio_job_control_terminal),
+				     IDIO_LIST2 (idio_C_int (idio_job_control_tty_fd),
 						 idio_libc_pid_t (idio_job_control_pgid)),
 				     IDIO_C_FUNC_LOCATION ());
-
-	    /* notreached */
-	    return;
-	}
-
-	/*
-	 * Save default terminal attributes for shell.
-	 */
-	struct termios *tcattrsp = IDIO_C_TYPE_POINTER_P (idio_job_control_tcattrs);
-	if (tcgetattr (idio_job_control_terminal, tcattrsp) < 0) {
-	    idio_error_system_errno ("tcgetattr", idio_C_int (idio_job_control_terminal), IDIO_C_FUNC_LOCATION ());
 
 	    /* notreached */
 	    return;
@@ -2146,9 +2131,7 @@ void idio_final_job_control ()
     /*
      * restore the terminal state
      */
-    if (idio_job_control_interactive) {
-	idio_job_control_restore_terminal ();
-    }
+    idio_job_control_restore_terminal ();
 
     /*
      * Be a good citizen and tidy up.  This will report completed
@@ -2209,12 +2192,13 @@ void idio_init_job_control ()
      * With some patching of Idio values.
      */
     idio_job_control_pid = getpid ();
-    idio_job_control_terminal = STDIN_FILENO;
+    idio_job_control_tty_fd = STDIN_FILENO;
+    idio_job_control_tty_isatty = isatty (idio_job_control_tty_fd);
 
     IDIO sym;
     sym = idio_symbols_C_intern ("%idio-terminal");
     idio_module_set_symbol_value (sym,
-				  idio_C_int (idio_job_control_terminal),
+				  idio_C_int (idio_job_control_tty_fd),
 				  idio_job_control_module);
     IDIO v = idio_module_symbol_value (sym,
 				       idio_job_control_module,
@@ -2228,11 +2212,13 @@ void idio_init_job_control ()
      * The info pages only set shell_attrs when the shell is
      * interactive.
      */
-    if (tcgetattr (idio_job_control_terminal, tcattrsp) < 0) {
-	idio_error_system_errno ("tcgetattr", idio_C_int (idio_job_control_terminal), IDIO_C_FUNC_LOCATION ());
+    if (idio_job_control_tty_isatty) {
+	if (tcgetattr (idio_job_control_tty_fd, tcattrsp) < 0) {
+	    idio_error_system_errno ("tcgetattr", idio_C_int (idio_job_control_tty_fd), IDIO_C_FUNC_LOCATION ());
 
-	/* notreached */
-	return;
+	    /* notreached */
+	    return;
+	}
     }
 
     idio_module_set_symbol_value (idio_symbols_C_intern ("%idio-tcattrs"),

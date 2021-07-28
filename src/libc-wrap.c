@@ -3108,7 +3108,7 @@ is `fd` a terminal?			\n\
 
     IDIO r = idio_S_false;
 
-    if (isatty (IDIO_C_TYPE_int (fd)) == 0) {
+    if (isatty (IDIO_C_TYPE_int (fd))) {
 	r = idio_S_true;
     }
 

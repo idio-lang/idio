@@ -3258,12 +3258,6 @@ This is the ``load`` primitive.					\n\
     IDIO thr = idio_thread_current_thread ();
     idio_ai_t pc0 = IDIO_THREAD_PC (thr);
 
-    /*
-     * Explicitly disable interactive for the duration of a load
-     *
-     * It will be reset just prior to the prompt.
-     */
-    idio_job_control_set_interactive (0);
     IDIO r = idio_load_file_name (filename, idio_vm_constants);
 
     idio_ai_t pc = IDIO_THREAD_PC (thr);

@@ -2082,6 +2082,13 @@ IDIO idio_load_handle (IDIO h, IDIO (*reader) (IDIO h), IDIO (*evaluator) (IDIO 
 	return idio_load_handle_interactive (h, reader, evaluator, cs);
     }
 
+    /*
+     * Explicitly disable interactive for the duration of a load
+     *
+     * It will be reset just prior to the prompt, if required.
+     */
+    idio_job_control_set_interactive (0);
+
     IDIO thr = idio_thread_current_thread ();
     IDIO stack = IDIO_THREAD_STACK (thr);
 
@@ -2281,7 +2288,7 @@ IDIO idio_load_handle_interactive (IDIO fh, IDIO (*reader) (IDIO h), IDIO (*eval
 	 * idio_command_interactive will have been set to 0 by {load}
 	 * so we need to reset it, just in case.
 	 */
-	idio_job_control_set_interactive (isatty (idio_job_control_terminal));
+	idio_job_control_set_interactive (idio_job_control_tty_isatty);
 
 	idio_flush_handle (oh);
 

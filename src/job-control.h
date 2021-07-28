@@ -24,7 +24,8 @@
 #define JOB_CONTROL_H
 
 extern IDIO idio_job_control_module;
-extern int idio_job_control_terminal;
+extern int idio_job_control_tty_fd;
+extern int idio_job_control_tty_isatty;
 extern int idio_job_control_interactive;
 extern pid_t idio_job_control_cmd_pid;
 extern IDIO idio_job_control_process_type;
