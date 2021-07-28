@@ -499,7 +499,9 @@ int main (int argc, char **argv, char **envp)
     case 0:
 	break;
     case IDIO_VM_SIGLONGJMP_EXIT:
-	fprintf (stderr, "NOTICE: script/exit (%d) for PID %d\n", idio_exit_status, getpid ());
+	if (idio_exit_status) {
+	    fprintf (stderr, "NOTICE: script/exit (%d) for PID %d\n", idio_exit_status, getpid ());
+	}
 	IDIO_GC_FREE (sargv);
 	idio_final ();
 	exit (idio_exit_status);

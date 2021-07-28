@@ -830,7 +830,7 @@ notify of any job status changes		\n\
 
 void idio_job_control_restore_terminal ()
 {
-    if (idio_job_control_tty_isatty) {
+    if (idio_job_control_interactive) {
 	struct termios *tcattrsp = IDIO_C_TYPE_POINTER_P (idio_job_control_tcattrs);
 	if (tcsetattr (idio_job_control_tty_fd, TCSADRAIN, tcattrsp) < 0) {
 	    /*
