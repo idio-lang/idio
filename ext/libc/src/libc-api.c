@@ -322,7 +322,7 @@ int main (int argc, char **argv)
 
 	/*
 	 * Fedora uses __dev_t in struct stat requiring us to provoke
-	 * the use of dev_t.
+	 * the use of dev_t, etc..
 	 */
 	dev_t dev		= statbuf.st_dev;
 	ino_t ino		= statbuf.st_ino;
@@ -368,8 +368,26 @@ int main (int argc, char **argv)
     /* tcgetattr(3) */
     {
 	int fd = STDIN_FILENO;
-	struct termios termios_p;
-	int tcgetattr_r = tcgetattr (fd, &termios_p);
+	struct termios t;
+	int tcgetattr_r = tcgetattr (fd, &t);
+
+	/*
+	 * OpenBSD 6.9:
+	 *
+	 *   typedef unsigned int speed_t;
+	 *
+	 *   struct termios {
+	 *     ...
+	 *     int c_ispeed;
+	 *     int c_ospeed;
+	 *   };
+	 *
+	 *
+	 * which doesn't add up but also doesn't force the use of
+	 * speed_t which we use with idio_libc_speed_t in
+	 * src/libc-api.c.
+	 */
+	speed_t ospeed = (speed_t) t.c_ospeed;
     }
 
     /* tcgetpgrp(3) */
@@ -381,8 +399,8 @@ int main (int argc, char **argv)
     /* tcsetattr(3) */
     {
 	int fd = STDIN_FILENO;
-	struct termios termios_p;
-	int tcsetattr_r = tcsetattr (fd, TCSADRAIN, &termios_p);
+	struct termios t;
+	int tcsetattr_r = tcsetattr (fd, TCSADRAIN, &t);
     }
 
     /* tcsetpgrp(3) */

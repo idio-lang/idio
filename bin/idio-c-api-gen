@@ -232,7 +232,7 @@ various names -- here, the variable elements are in {}s:
 
     i-type-alias is a symbol (ultimately) mapping to a C base_type,
     'int, 'long, etc., and can be used to construct a C integral type
-    from an Idio integer: (C/integer-> 1 pid_t)
+    from an Idio integer: (C/integer-> 1 libc/pid_t)
 
 {libc}/{pid_t}			i-direct-type-name	- used in comments
 {libc}/{pid_t}?			i-direct-pred-name
@@ -546,7 +546,8 @@ for-each (function (lib-n) {
 		   (unwind-protect {
 		     libc/chdir lib-dn
 		     (cond-expand
-		      (uname/sysname/FreeBSD {
+		      ((or uname/sysname/FreeBSD
+			   uname/sysname/OpenBSD) {
 			gmake -C src api-o-fn
 			objdump-flags = "-W"
 		      })
@@ -624,11 +625,20 @@ for-each (function (lib-n) {
 					   }))
 				   })
 				   ;; XXX FreeBSD-10 is prone to trailing TABs
+				   ;; OpenBSD-6 doesn't have the leading <id>
 
 				   (
 				     ;;     <3c>   DW_AT_byte_size   : 4
 				     ;;     <3d>   DW_AT_encoding    : 7        (unsigned)
 				     "<[[:xdigit:]]+>[[:space:]]+DW_AT_([^[:space:]]+)[[:space:]]*: ([[:digit:]]+)" {
+				       hash-set! DIE (string->symbol r.1) (read-number r.2)
+				       objdump-loop depth DIE
+				     })
+				   (
+				     ;; OpenBSD-6
+				     ;;     DW_AT_byte_size   : 4
+				     ;;     DW_AT_encoding    : 7        (unsigned)
+				     "[[:space:]]+DW_AT_([^[:space:]]+)[[:space:]]*: ([[:digit:]]+)" {
 				       hash-set! DIE (string->symbol r.1) (read-number r.2)
 				       objdump-loop depth DIE
 				     })
@@ -652,8 +662,22 @@ for-each (function (lib-n) {
 				       objdump-loop depth DIE
 				     })
 				   (
+				     ;; OpenBSD-6
+				     ;;     DW_AT_type        : <65>
+				     "[[:space:]]+DW_AT_([^[:space:]]+)[[:space:]]+: <([[:xdigit:]]+)>" {
+				       hash-set! DIE (string->symbol r.1) r.2
+				       objdump-loop depth DIE
+				     })
+				   (
 				     ;;    <5a>   DW_AT_name        : int
 				     "<[[:xdigit:]]+>[[:space:]]+DW_AT_([^[:space:]]+)[[:space:]]+: ([^\t]+)" {
+				       hash-set! DIE (string->symbol r.1) r.2
+				       objdump-loop depth DIE
+				     })
+				   (
+				     ;; OpenBSD-6
+				     ;;    DW_AT_name        : int
+				     "[[:space:]]+DW_AT_([^[:space:]]+)[[:space:]]+: ([^\t]+)" {
 				       hash-set! DIE (string->symbol r.1) r.2
 				       objdump-loop depth DIE
 				     })

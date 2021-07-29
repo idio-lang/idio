@@ -1,0 +1,226 @@
+#! /usr/bin/env bash
+
+# Copyright (c) 2021 Ian Fitchet <idf@idio-lang.org>
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you
+# may not use this file except in compliance with the License.  You
+# may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+#
+
+# lsof.OpenBSD -- a poor man's lsof cobbled from fstat
+
+handle_EXIT ()
+{
+    if [[ ${fstat_file} && -f ${fstat_file} ]] ; then
+	rm -f ${fstat_file}
+    fi
+}
+
+usage ()
+{
+    cat << EOF >&2
+
+${0##*/} replicates *some* of the functionality of lsof(1) using
+fstat(1) in OpenBSD.  Enough to allow the testing to work.
+
+If your distribution of OpenBSD has lsof (unlikely):
+
+# pkg_add lsof
+Can't find lsof
+Obsolete package: lsof (ancient software that doesn't work)
+
+then you should be using it rather than this script!
+
+usage: $0 [options]
+where options are:
+  -a		ignored
+  -d FDS	list of file descriptors, eg. 0-2
+  -F FIELDS	fields for output
+  -p PID	process ID to test, default is this script
+  -w		ignored
+
+  -h		this message
+EOF
+}
+
+_uname=( $(uname -mrps) )
+OS=${_uname[0]}
+
+case "${OS}" in
+OpenBSD) ;;
+*)
+    echo "$0: OpenBSD only" >&2
+    exit 1
+    ;;
+esac
+
+
+opt_p=$$
+opt_d=
+opt_F=
+
+while getopts "ap:d:hF:w" opt ; do
+    case "${opt}" in
+    a)
+	;;
+    d)
+	opt_d=${OPTARG}
+	;;
+    F)
+	opt_F=${OPTARG}
+	;;
+    h)
+	usage
+	exit 0
+	;;
+    p)
+	opt_p=${OPTARG}
+	;;
+    w)
+	;;
+    *)
+	usage
+	exit 1
+	;;
+    esac
+done
+
+fstat_file=/tmp/${0##*/}.$$.fstat
+
+fstat -p ${opt_p} > ${fstat_file}
+
+# fstat generic output
+
+# USER     CMD          PID   FD MOUNT        INUM  MODE         R/W    SZ|DV
+# idf      bash       27903 text /usr/local   129838  -rwxr-xr-x     r  1409326
+
+if [[ ! ${opt_F} ]] ; then
+    printf "%-9s %-9s %5s %4s %-10s %6s  %-12s %3s  %s\n" USER CMD PID FD MOUNT INUM MODE "R/W" "SZ|DV"
+fi
+
+(
+    read headers
+
+    printed_pid=
+
+    while read user cmd pid fd mount inum mode rw sz ; do
+	if [[ ${opt_F} ]] ; then
+	    if [[ ! ${printed_pid} ]] ; then
+		echo p${pid}
+		printed_pid=1
+	    fi
+	fi
+
+	p=
+	if [[ ${opt_d} ]] ; then
+	    case "${fd}" in
+	    [${opt_d}])
+		p=1
+		;;
+	    esac
+	else
+	    p=1
+	fi
+
+	if [[ ${opt_F} && ! ${p} ]] ; then
+	    continue
+	fi
+
+	# One of the reasons lsof is declared obsolete is the dubious
+	# mapping from inode to any extant file name.  Technically
+	# correct, of course.
+	#
+	# In the meanwhile...
+	name=UNKNOWN
+
+	# sz is SZ|DV for device
+	case "${sz}" in
+	[0-9]*)
+	    # It will be followed by an asterisk ('*') if the inode is
+	    # unlinked from disk.
+	    case "${inum}" in
+	    *\*)
+		inum=${inum%?}
+		;;
+	    esac
+
+	    # I can't believe many would regard this call to find as
+	    # "efficient" but we might do this for the same inode
+	    # twice per invocation of lsof
+	    name=$(find ${mount} -xdev -inum ${inum})
+	    ;;
+	null)
+	    name=/dev/null
+	    ;;
+	*)
+	    name=${sz}
+	    ;;
+	esac
+
+	case "${mode}" in
+	-*)
+	    ftype=REG
+	    ;;
+	d*)
+	    ftype=DIR
+	    ;;
+	c*)
+	    ftype=CHR
+	    ;;
+	*)
+	    case "${mount}" in
+	    pipe)
+		ftype=PIPE
+		name=pipe
+		;;
+	    *)
+		ftype=UNKNOWN
+		;;
+	    esac
+	    ;;
+	esac
+
+	case "${opt_F}" in
+	*f*)
+	    echo f${fd}
+	    ;;
+	esac
+
+	case "${opt_F}" in
+	*t*)
+	    echo t${ftype}
+	    ;;
+	esac
+
+	case "${opt_F}" in
+	*n*)
+	    echo n${name}
+	    ;;
+	esac
+
+	case "${opt_F}" in
+	*i*)
+	    echo i${inum}
+	    ;;
+	esac
+
+	if [[ ${opt_F} ]] ; then
+	    continue
+	fi
+
+	if [[ ${p} ]] ; then
+	    printf "%-9s %-9s %5s %4s %-10s %6s  %-12s %3s  %s\n" ${user} ${cmd} ${pid} ${fd} ${mount} ${inum} ${mode} ${rw} ${sz}
+	fi
+    done
+) < ${fstat_file}
+
+rm -f ${fstat_file}

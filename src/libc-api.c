@@ -363,8 +363,8 @@ IDIO_DEFINE_PRIMITIVE1_DS ("struct-tms-as-string", libc_struct_tms_as_string, (I
 	  tcflag_t             c_lflag;
 	  cc_t                 c_line;		Linux
 	  cc_t[]               c_cc;
-	  speed_t              c_ispeed;	not SunOS
-	  speed_t              c_ospeed;	not SunOS
+	  speed_t              c_ispeed;	not SunOS; int on OpenBSD
+	  speed_t              c_ospeed;	not SunOS; int on OpenBSD
 	};
 */
 

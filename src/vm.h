@@ -36,7 +36,11 @@
 #define IDIO_LIBC_FSIG 1
 
 #if defined (BSD)
+#if defined (SIGRTMAX)
 #define IDIO_LIBC_NSIG (SIGRTMAX + 1)
+#else
+#define IDIO_LIBC_NSIG NSIG
+#endif
 #else
 #define IDIO_LIBC_NSIG NSIG
 #endif

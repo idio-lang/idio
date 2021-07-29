@@ -360,6 +360,7 @@ void idio_env_exe_pathname (char *argv0, char *a0rp)
 
     a0rp[0] = '\0';
 #if defined (BSD)
+#if defined (KERN_PROC_PATHNAME)
     /*
      * FreeBSD may or may not have procfs, the alternative is
      * sysctl(3)
@@ -372,6 +373,7 @@ void idio_env_exe_pathname (char *argv0, char *a0rp)
     } else {
 	perror ("sysctl CTL_KERN KERN_PROC KERN_PROC_PATHNAME");
     }
+#endif
 #elif defined (__linux__)
     ssize_t r = readlink ("/proc/self/exe", a0rp, PATH_MAX);
     if (r > 0) {

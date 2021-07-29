@@ -413,6 +413,11 @@ libc-wrap-error-load "libc-wrap-errors/strsignal-bad-type.idio" "bad parameter t
  (uname/sysname/SunOS {
    test (strsignal (C/integer-> -1)) #n
  })
+ (uname/sysname/OpenBSD {
+   ;; the interface appears to be defined as char * strsignal(int sig)
+   ;; yet this result appears to be uint32_t - 1
+   test (strsignal (C/integer-> -1)) "Unknown signal: 4294967295"
+ })
  ((or uname/sysname/FreeBSD
       uname/sysname/Darwin) {
    test (strsignal (C/integer-> -1)) "Unknown signal: -1"
@@ -476,6 +481,7 @@ libc-wrap-error-load "libc-wrap-errors/rlimit-name-bad-rlim.idio" "rlimit-name r
 libc-wrap-error-load "libc-wrap-errors/EGID-set-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a libc/gid_t"
 (cond-expand
  ((or uname/sysname/FreeBSD
+      uname/sysname/OpenBSD
       uname/sysname/Darwin) {
    libc-wrap-error-load "libc-wrap-errors/EGID-set-invalid-gid.idio" "Operation not permitted" EPERM "setegid"
  })
@@ -487,6 +493,7 @@ libc-wrap-error-load "libc-wrap-errors/EGID-set-bad-type.idio" "bad parameter ty
 libc-wrap-error-load "libc-wrap-errors/EUID-set-bad-type.idio" "bad parameter type: '#t' a CONSTANT_IDIO is not a libc/uid_t"
 (cond-expand
  ((or uname/sysname/FreeBSD
+      uname/sysname/OpenBSD
       uname/sysname/Darwin) {
    libc-wrap-error-load "libc-wrap-errors/EUID-set-invalid-uid.idio" "Operation not permitted" EPERM "seteuid"
  })
@@ -503,6 +510,7 @@ libc-wrap-error-load "libc-wrap-errors/GID-set-bad-type.idio" "bad parameter typ
    Tests = Tests + 3
  })
  ((or uname/sysname/FreeBSD
+      uname/sysname/OpenBSD
       uname/sysname/Darwin
       (and os-release/ID/CentOS
 	   os-release/VERSION_ID/6)) {
@@ -521,6 +529,7 @@ libc-wrap-error-load "libc-wrap-errors/UID-set-bad-type.idio" "bad parameter typ
    Tests = Tests + 3
  })
  ((or uname/sysname/FreeBSD
+      uname/sysname/OpenBSD
       uname/sysname/Darwin
       (and os-release/ID/CentOS
 	   os-release/VERSION_ID/6)) {

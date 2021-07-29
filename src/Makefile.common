@@ -83,6 +83,15 @@ LDFLAGS		:= -L/usr/local/lib
 # Yes, I know there's an arithmetic shift left of a signed variable!
 CFLAGS		:= -Wno-shift-negative-value
 
+else ifeq ($(OS),OpenBSD)
+
+CC		:= gcc
+
+LIBFFI_INCDIR	:= /usr/local/include
+LDFLAGS		:= -L/usr/local/lib
+
+CFLAGS		:= -DIDIO_DEV_FD
+
 endif
 
 ifndef LIBFFI_INCDIR

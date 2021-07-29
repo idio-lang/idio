@@ -71,6 +71,7 @@ posix-regex-error-load "posix-regex-errors/regcomp-bad-flag-type.idio" "bad para
 (cond-expand
  ((or uname/sysname/SunOS
       uname/sysname/FreeBSD
+      uname/sysname/OpenBSD
       uname/sysname/Darwin) {
    posix-regex-error-load "posix-regex-errors/regcomp-bad-pattern.idio" "regcomp failure: repetition-operator operand invalid"
  })
