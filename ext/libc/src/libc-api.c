@@ -387,7 +387,10 @@ int main (int argc, char **argv)
 	 * speed_t which we use with idio_libc_speed_t in
 	 * src/libc-api.c.
 	 */
+#if defined (__sun) && defined (__SVR4)
+#else
 	speed_t ospeed = (speed_t) t.c_ospeed;
+#endif
     }
 
     /* tcgetpgrp(3) */
