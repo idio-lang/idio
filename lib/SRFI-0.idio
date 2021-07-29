@@ -249,8 +249,11 @@ define-template (cond-expand & clause*) {
    if (not found) {
      rf := "/etc/system-release"
      if (f? rf) {
+       rh := open-input-file rf
+       rl := read-lines rh
+       close-handle rh
        (regex-case
-	(collect-output cat rf)
+	rl
 	("([^[:space:]]+) release ([[:digit:]]+)" {
 	  %add-feature (append-string "os-release/ID/" r.1)
 	  %add-feature (append-string "os-release/VERSION_ID/" r.2)
